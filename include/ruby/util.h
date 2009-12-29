@@ -74,12 +74,6 @@ double ruby_strtod(const char *, char **);
 #pragma warning(push)
 #pragma warning(disable:4723)
 #endif
-static inline double
-ruby_div0(double x)
-{
-    double t = 0.0;
-    return x / t;
-}
 #if defined _MSC_VER && _MSC_VER >= 1300
 #pragma warning(pop)
 #endif

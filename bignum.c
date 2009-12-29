@@ -2485,7 +2485,7 @@ big_fdiv(VALUE x, VALUE y)
 #if SIZEOF_LONG > SIZEOF_INT
 	{
 	    /* Visual C++ can't be here */
-	    if (l > INT_MAX) return DBL2NUM(ruby_div0(1.0));
+	    if (l > INT_MAX) return DBL2NUM(INFINITY);
 	    if (l < INT_MIN) return DBL2NUM(0.0);
 	}
 #endif

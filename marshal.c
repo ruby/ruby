@@ -1322,8 +1322,6 @@ obj_alloc_by_path(VALUE path, struct load_arg *arg)
     return rb_obj_alloc(klass);
 }
 
-#define div0(x) ruby_div0(x)
-
 static int
 has_encoding(struct load_arg *arg)
 {
@@ -1449,13 +1447,13 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    const char *ptr = RSTRING_PTR(str);
 
 	    if (strcmp(ptr, "nan") == 0) {
-		d = div0(0.0);
+		d = NAN;
 	    }
 	    else if (strcmp(ptr, "inf") == 0) {
-		d = div0(+1.0);
+		d = INFINITY;
 	    }
 	    else if (strcmp(ptr, "-inf") == 0) {
-		d = div0(-1.0);
+		d = -INFINITY;
 	    }
 	    else {
 		char *e;

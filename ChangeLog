@@ -1,3 +1,23 @@
+Tue Dec 29 16:03:33 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* numeric.c (Init_Numeric): Add Float::INFINITY and Float::NAN.
+	  [ruby-dev:1657] [ruby-dev:4760] [ruby-list:7023]
+	  [ruby-list:46690]
+	  [ruby-core:26632] [ruby-talk:41352] [ruby-talk:203333]
+
+	* include/ruby/defines.h (INFINITY): defined.
+
+	* include/ruby/defines.h (NAN): defined.
+
+	* include/ruby/util.h (ruby_div0): removed.
+
+	* numeric.c (fix_pow): use INFINITY and NAN
+	  instead of ruby_div0(1.0).
+
+	* marshal.c (r_object0): ditto.
+
+	* bignum.c (big_fdiv): ditto.
+
 Tue Dec 29 10:36:23 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rexml/parsers/baseparser.rb (REXML::Parsers::BaseParser::STANDALONE):
