@@ -99,6 +99,20 @@ void xfree(void*);
 # define BDIGIT_DBL_SIGNED long
 #endif
 
+#ifdef INFINITY
+# define HAVE_INFINITY
+#else
+extern const unsigned char rb_infinity[];
+# define INFINITY (*(double *)rb_infinity)
+#endif
+
+#ifdef NAN
+# define HAVE_NAN
+#else
+extern const unsigned char rb_nan[];
+# define NAN (*(double *)rb_nan)
+#endif
+
 #ifdef __CYGWIN__
 #undef _WIN32
 #endif

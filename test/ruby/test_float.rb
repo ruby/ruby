@@ -24,7 +24,7 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(false, (x >= y))
   end
   def test_nan
-    nan = 0.0/0
+    nan = Float::NAN
     nan_test(nan, nan)
     nan_test(nan, 0)
     nan_test(nan, 1)
@@ -118,7 +118,7 @@ class TestFloat < Test::Unit::TestCase
   end
 
   def test_to_s
-    inf = 1.0 / 0.0
+    inf = Float::INFINITY
     assert_equal("Infinity", inf.to_s)
     assert_equal("-Infinity", (-inf).to_s)
     assert_equal("NaN", (inf / inf).to_s)
@@ -171,7 +171,7 @@ class TestFloat < Test::Unit::TestCase
     assert_equal([1.0, 0.0], 2.0.divmod(2.0))
     assert_raise(TypeError) { 2.0.divmod(nil) }
 
-    inf = 1.0 / 0.0
+    inf = Float::INFINITY
     assert_raise(ZeroDivisionError) {inf.divmod(0)}
 
     a, b = (2.0**32).divmod(1.0)
@@ -186,8 +186,8 @@ class TestFloat < Test::Unit::TestCase
   end
 
   def test_eql
-    inf = 1.0 / 0.0
-    nan = inf / inf
+    inf = Float::INFINITY
+    nan = Float::NAN
     assert(1.0.eql?(1.0))
     assert(inf.eql?(inf))
     assert(!(nan.eql?(nan)))
@@ -200,8 +200,8 @@ class TestFloat < Test::Unit::TestCase
   end
 
   def test_cmp
-    inf = 1.0 / 0.0
-    nan = inf / inf
+    inf = Float::INFINITY
+    nan = Float::NAN
     assert_equal(0, 1.0 <=> 1.0)
     assert_equal(1, 1.0 <=> 0.0)
     assert_equal(-1, 1.0 <=> 2.0)
@@ -232,14 +232,14 @@ class TestFloat < Test::Unit::TestCase
   end
 
   def test_infinite_p
-    inf = 1.0 / 0.0
+    inf = Float::INFINITY
     assert(1, inf.infinite?)
     assert(1, (-inf).infinite?)
     assert_nil(1.0.infinite?)
   end
 
   def test_finite_p
-    inf = 1.0 / 0.0
+    inf = Float::INFINITY
     assert(!(inf.finite?))
     assert(!((-inf).finite?))
     assert(1.0.finite?)
@@ -266,7 +266,7 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(-2, (-2.0).round)
     assert_equal(-2, (-2.0).truncate)
 
-    inf = 1.0/0.0
+    inf = Float::INFINITY
     assert_raise(FloatDomainError) { inf.floor }
     assert_raise(FloatDomainError) { inf.ceil }
     assert_raise(FloatDomainError) { inf.round }
@@ -413,7 +413,7 @@ class TestFloat < Test::Unit::TestCase
     assert(Float("1e10_00").infinite?)
     assert_raise(TypeError) { Float(nil) }
     o = Object.new
-    def o.to_f; inf = 1.0/0.0; inf/inf; end
+    def o.to_f; inf = Float::INFINITY; inf/inf; end
     assert(Float(o).nan?)
   end
 

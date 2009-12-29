@@ -63,6 +63,20 @@
 #define DBL_EPSILON 2.2204460492503131e-16
 #endif
 
+#ifdef HAVE_INFINITY
+#elif BYTE_ORDER == LITTLE_ENDIAN
+const unsigned char rb_infinity[] = "\x00\x00\x00\x00\x00\x00\xf0\x7f";
+#else
+const unsigned char rb_infinity[] = "\x7f\xf0\x00\x00\x00\x00\x00\x00";
+#endif
+
+#ifdef HAVE_NAN
+#elif BYTE_ORDER == LITTLE_ENDIAN
+const unsigned char rb_nan[] = "\x00\x00\x00\x00\x00\x00\xf8\x7f";
+#else
+const unsigned char rb_nan[] = "\x7f\xf8\x00\x00\x00\x00\x00\x00";
+#endif
+
 extern double round(double);
 
 #ifndef HAVE_ROUND
@@ -2467,8 +2481,6 @@ int_pow(long x, unsigned long y)
     return LONG2NUM(z);
 }
 
-#define infinite_value() ruby_div0(1.0)
-
 /*
  *  call-seq:
  *    fix ** numeric  ->  numeric_result
@@ -2496,7 +2508,7 @@ fix_pow(VALUE x, VALUE y)
 	if (b == 1) return x;
 	if (a == 0) {
 	    if (b > 0) return INT2FIX(0);
-	    return DBL2NUM(infinite_value());
+	    return DBL2NUM(INFINITY);
 	}
 	if (a == 1) return INT2FIX(1);
 	if (a == -1) {
@@ -2524,7 +2536,7 @@ fix_pow(VALUE x, VALUE y)
       case T_FLOAT:
 	if (RFLOAT_VALUE(y) == 0.0) return DBL2NUM(1.0);
 	if (a == 0) {
-	    return DBL2NUM(RFLOAT_VALUE(y) < 0 ? infinite_value() : 0.0);
+	    return DBL2NUM(RFLOAT_VALUE(y) < 0 ? INFINITY : 0.0);
 	}
 	if (a == 1) return DBL2NUM(1.0);
 	{
@@ -3305,6 +3317,8 @@ Init_Numeric(void)
     rb_define_const(rb_cFloat, "MIN", DBL2NUM(DBL_MIN));
     rb_define_const(rb_cFloat, "MAX", DBL2NUM(DBL_MAX));
     rb_define_const(rb_cFloat, "EPSILON", DBL2NUM(DBL_EPSILON));
+    rb_define_const(rb_cFloat, "INFINITY", DBL2NUM(INFINITY));
+    rb_define_const(rb_cFloat, "NAN", DBL2NUM(NAN));
 
     rb_define_method(rb_cFloat, "to_s", flo_to_s, 0);
     rb_define_method(rb_cFloat, "coerce", flo_coerce, 1);
