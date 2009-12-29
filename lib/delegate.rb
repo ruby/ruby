@@ -178,22 +178,12 @@ class Delegator
 
   # Serialization support for the object returned by \_\_getobj\_\_.
   def marshal_dump
-    [
-      :__v2__,
-      instance_variables,
-      instance_variables.map{|var| instance_variable_get(var)},
-      __getobj__
-    ]
+    __getobj__
   end
   # Reinitializes delegation from a serialized object.
-  def marshal_load(data)
-    version, vars, values, obj = data
-    if version == :__v2__
-      vars.each_with_index{|var, i| instance_variable_set(var, values[i])}
-      __setobj__(obj)
-    else
-      __setobj__(data)
-    end
+  def marshal_load(obj)
+    initialize_methods(obj)
+    __setobj__(obj)
   end
 end
 

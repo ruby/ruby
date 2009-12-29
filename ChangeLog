@@ -1,3 +1,8 @@
+Tue Dec 29 11:20:41 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/delegate.rb (marshal_dump/load): Revert r26122, r26194, as per
+	  Nobu. [ruby-core:24211]
+
 Tue Dec 29 10:36:23 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rexml/parsers/baseparser.rb (REXML::Parsers::BaseParser::STANDALONE):
