@@ -1,3 +1,9 @@
+Tue Dec 29 10:36:23 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rexml/parsers/baseparser.rb (REXML::Parsers::BaseParser::STANDALONE):
+	  any number spaces can be placed between equal-sign and the value.
+	  patch from Ed Howland in [ruby-core:27345].
+
 Mon Dec 28 22:01:58 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/ruby/test_marshal.rb: added tests for taintness propagation.

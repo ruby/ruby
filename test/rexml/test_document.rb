@@ -2,6 +2,25 @@ require "rexml/document"
 require "test/unit"
 
 class REXML::TestDocument < Test::Unit::TestCase
+  def test_version_attributes_to_s
+    doc = REXML::Document.new(<<-eoxml)
+      <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+      <svg  id="svg2"
+            xmlns:sodipodi="foo"
+            xmlns:inkscape="bar"
+            sodipodi:version="0.32"
+            inkscape:version="0.44.1"
+      >
+      </svg>
+    eoxml
+
+    string = doc.to_s
+    assert_match('xmlns:sodipodi', string)
+    assert_match('xmlns:inkscape', string)
+    assert_match('sodipodi:version', string)
+    assert_match('inkscape:version', string)
+  end
+
   def test_new
     doc = REXML::Document.new(<<EOF)
 <?xml version="1.0" encoding="UTF-8"?>
@@ -62,5 +81,15 @@ EOF
     end
   ensure
     REXML::Document.entity_expansion_limit = 10000
+  end
+
+  def test_xml_declaration_standalone
+    bug2539 = '[ruby-core:27345]'
+    doc = REXML::Document.new('<?xml version="1.0" standalone="no" ?>')
+    assert_equal('no', doc.stand_alone?, bug2539)
+    doc = REXML::Document.new('<?xml version="1.0" standalone= "no" ?>')
+    assert_equal('no', doc.stand_alone?, bug2539)
+    doc = REXML::Document.new('<?xml version="1.0" standalone=  "no" ?>')
+    assert_equal('no', doc.stand_alone?, bug2539)
   end
 end
