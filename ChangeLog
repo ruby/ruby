@@ -1,3 +1,9 @@
+Thu Dec 31 03:27:53 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* thread_win32.c (native_thread_destroy): decreased the probability of
+	  using the interrupt event in the thread termination.
+	  see [ruby-core:27199].
+
 Thu Dec 31 02:35:57 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* thread_win32.c (w32_error): should report the function.
