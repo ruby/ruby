@@ -136,7 +136,7 @@ inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)
 #endif
 
 int
-getnameinfo(const struct sockaddr *sa, size_t salen, char *host, size_t hostlen, char *serv, size_t servlen, int flags)
+getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host, socklen_t hostlen, char *serv, socklen_t servlen, int flags)
 {
 	struct afd *afd;
 	struct hostent *hp;
