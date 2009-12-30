@@ -904,7 +904,7 @@ sock_sockaddr(struct sockaddr *addr, size_t len)
 	ptr = (char*)&((struct sockaddr_in*)addr)->sin_addr.s_addr;
 	len = sizeof(((struct sockaddr_in*)addr)->sin_addr.s_addr);
 	break;
-#ifdef INET6
+#ifdef AF_INET6
       case AF_INET6:
 	ptr = (char*)&((struct sockaddr_in6*)addr)->sin6_addr.s6_addr;
 	len = sizeof(((struct sockaddr_in6*)addr)->sin6_addr.s6_addr);
@@ -1414,7 +1414,7 @@ sock_s_unpack_sockaddr_un(VALUE self, VALUE addr)
 static VALUE
 sockaddr_obj(struct sockaddr *addr)
 {
-    socklen_t len;
+    size_t len;
 #if defined(AF_INET6) && defined(__KAME__)
     struct sockaddr_in6 addr6;
 #endif
