@@ -35,6 +35,8 @@ module Gem
 end
 
 module Kernel
+  # defined in gem_prelude.rb
+  undef gem
 
   ##
   # Use Kernel#gem to activate a specific version of +gem_name+.
@@ -534,26 +536,8 @@ module Gem
 
   ##
   # Finds the user's home directory.
-  #--
-  # Some comments from the ruby-talk list regarding finding the home
-  # directory:
-  #
-  #   I have HOME, USERPROFILE and HOMEDRIVE + HOMEPATH. Ruby seems
-  #   to be depending on HOME in those code samples. I propose that
-  #   it should fallback to USERPROFILE and HOMEDRIVE + HOMEPATH (at
-  #   least on Win32).
 
   def self.find_home
-    unless RUBY_VERSION > '1.9' then
-      ['HOME', 'USERPROFILE'].each do |homekey|
-        return ENV[homekey] if ENV[homekey]
-      end
-
-      if ENV['HOMEDRIVE'] && ENV['HOMEPATH'] then
-        return "#{ENV['HOMEDRIVE']}#{ENV['HOMEPATH']}"
-      end
-    end
-
     File.expand_path "~"
   rescue
     if File::ALT_SEPARATOR then
@@ -1103,10 +1087,6 @@ if defined?(RUBY_ENGINE) then
 end
 
 require 'rubygems/config_file'
-
-if RUBY_VERSION < '1.9' then
-  require 'rubygems/custom_require'
-end
 
 Gem.clear_paths
 
