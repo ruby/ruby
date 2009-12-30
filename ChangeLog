@@ -1,4 +1,7 @@
-Wed Dec 30 17:49:47 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Dec 30 17:59:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gem_prelude.rb (push_all_highest_version_gems_on_load_path):
+	  simplified.
 
 	* lib/rubygems/command_manager.rb (Gem#load_and_instantiate):
 	  rescue only NameError from const_get.

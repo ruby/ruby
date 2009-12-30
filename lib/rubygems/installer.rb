@@ -325,7 +325,7 @@ class Gem::Installer
 
     @spec.executables.each do |filename|
       filename.untaint
-      bin_path = File.expand_path File.join(@gem_dir, @spec.bindir, filename)
+      bin_path = File.expand_path("#{@spec.bindir}/#{filename}", @gem_dir)
       mode = File.stat(bin_path).mode | 0111
       File.chmod mode, bin_path
 

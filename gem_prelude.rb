@@ -233,19 +233,11 @@ if defined?(Gem) then
             Dir.entries(gems_directory).each do |gem_directory_name|
               next if gem_directory_name == "." || gem_directory_name == ".."
 
-              dash = gem_directory_name.rindex("-")
-              next if dash.nil?
-
-              gem_name = gem_directory_name[0...dash]
+              next unless gem_name = gem_directory_name[/(.*)-(.*)/, 1]
+              new_version = integers_for($2)
               current_version = GemVersions[gem_name]
-              new_version = integers_for(gem_directory_name[dash+1..-1])
 
-              if current_version then
-                if (current_version <=> new_version) == -1 then
-                  GemVersions[gem_name] = new_version
-                  GemPaths[gem_name] = File.join(gems_directory, gem_directory_name)
-                end
-              else
+              if !current_version or (current_version <=> new_version) < 0 then
                 GemVersions[gem_name] = new_version
                 GemPaths[gem_name] = File.join(gems_directory, gem_directory_name)
               end
