@@ -64,7 +64,7 @@ Init_native_thread(void)
 }
 
 static void
-w32_error(void)
+w32_error(const char *func)
 {
     LPVOID lpMsgBuf;
     FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
@@ -74,14 +74,14 @@ w32_error(void)
 		  GetLastError(),
 		  MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
 		  (LPTSTR) & lpMsgBuf, 0, NULL);
-    rb_bug("%s", (char*)lpMsgBuf);
+    rb_bug("%s: %s", func, (char*)lpMsgBuf);
 }
 
 static void
 w32_set_event(HANDLE handle)
 {
     if (SetEvent(handle) == 0) {
-	w32_error();
+	w32_error("w32_set_event");
     }
 }
 
@@ -89,7 +89,7 @@ static void
 w32_reset_event(HANDLE handle)
 {
     if (ResetEvent(handle) == 0) {
-	w32_error();
+	w32_error("w32_reset_event");
     }
 }
 
@@ -156,7 +156,7 @@ static void
 w32_close_handle(HANDLE handle)
 {
     if (CloseHandle(handle) == 0) {
-	w32_error();
+	w32_error("w32_close_handle");
     }
 }
 
@@ -164,7 +164,7 @@ static void
 w32_resume_thread(HANDLE handle)
 {
     if (ResumeThread(handle) == -1) {
-	w32_error();
+	w32_error("w32_resume_thread");
     }
 }
 
@@ -318,7 +318,7 @@ native_mutex_initialize(rb_thread_lock_t *lock)
 #if USE_WIN32_MUTEX
     *lock = CreateMutex(NULL, FALSE, NULL);
     if (*lock == NULL) {
-	w32_error();
+	w32_error("native_mutex_initialize");
     }
     /* thread_debug("initialize mutex: %p\n", *lock); */
 #else
