@@ -1,3 +1,8 @@
+Wed Dec 30 14:13:06 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems.rb: Kernel#gem is already defined, and workaround
+	  for home directory and custom_require are no longer needed.
+
 Tue Dec 29 16:03:33 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* numeric.c (Init_Numeric): Add Float::INFINITY and Float::NAN.
