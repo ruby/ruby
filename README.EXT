@@ -94,8 +94,10 @@ respectively.  They are singletons for the data type.
 The equivalent C constants are: Qnil, Qfalse, Qtrue.
 Note that Qfalse is false in C also (i.e. 0), but not Qnil.
 
-The T_FIXNUM data is a 31bit length fixed integer (63bit length on
-some machines), which can be converted to a C integer by using the
+The T_FIXNUM data is a 31bit or 63bit length fixed integer.
+This size is depend on the size of long: if long is 32bit then
+T_FIXNUM is 31bit, if long is 64bit then T_FIXNUM is 63bit.
+T_FIXNUM can be converted to a C integer by using the
 FIX2INT() macro or FIX2LONG().  Though you have to check that the
 data is really FIXNUM before using them, they are faster.  FIX2LONG()
 never raises exceptions, but FIX2INT() raises RangeError if the
