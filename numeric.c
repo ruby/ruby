@@ -65,16 +65,16 @@
 
 #ifdef HAVE_INFINITY
 #elif BYTE_ORDER == LITTLE_ENDIAN
-const unsigned char rb_infinity[] = "\x00\x00\x00\x00\x00\x00\xf0\x7f";
+const unsigned char rb_infinity[] = "\x00\x00\x80\x7f";
 #else
-const unsigned char rb_infinity[] = "\x7f\xf0\x00\x00\x00\x00\x00\x00";
+const unsigned char rb_infinity[] = "\x7f\x80\x00\x00";
 #endif
 
 #ifdef HAVE_NAN
 #elif BYTE_ORDER == LITTLE_ENDIAN
-const unsigned char rb_nan[] = "\x00\x00\x00\x00\x00\x00\xf8\x7f";
+const unsigned char rb_nan[] = "\x00\x00\xc0\x7f";
 #else
-const unsigned char rb_nan[] = "\x7f\xf8\x00\x00\x00\x00\x00\x00";
+const unsigned char rb_nan[] = "\x7f\xc0\x00\x00";
 #endif
 
 extern double round(double);
