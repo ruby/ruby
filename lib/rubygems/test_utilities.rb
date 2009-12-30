@@ -102,30 +102,17 @@ end
 #--
 # This class was added to flush out problems in Rubinius' IO implementation.
 
-class TempIO
-
-  @@count = 0
-
+class TempIO < Tempfile
   def initialize(string = '')
-    @tempfile = Tempfile.new "TempIO-#{@@count += 1}"
-    @tempfile.binmode
-    @tempfile.write string
-    @tempfile.rewind
-  end
-
-  def method_missing(meth, *args, &block)
-    @tempfile.send(meth, *args, &block)
-  end
-
-  def respond_to?(meth)
-    @tempfile.respond_to? meth
+    super "TempIO"
+    binmode
+    write string
+    rewind
   end
 
   def string
-    @tempfile.flush
-
-    Gem.read_binary @tempfile.path
+    flush
+    Gem.read_binary path
   end
-
 end
 
