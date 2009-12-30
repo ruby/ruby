@@ -85,7 +85,7 @@ class Gem::SourceIndex
     def load_specification(file_name)
       return nil unless file_name and File.exist? file_name
 
-      spec_code = if RUBY_VERSION < '1.9' then
+      spec_code = if !defined?(Encoding) then
                     File.read file_name
                   else
                     File.read file_name, :encoding => 'UTF-8'
