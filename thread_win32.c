@@ -449,10 +449,9 @@ native_thread_init_stack(rb_thread_t *th)
 static void
 native_thread_destroy(rb_thread_t *th)
 {
-    HANDLE intr = th->native_thread_data.interrupt_event;
+    HANDLE intr = InterlockedExchangePointer(&th->native_thread_data.interrupt_event, 0);
     native_mutex_destroy(&th->interrupt_lock);
     thread_debug("close handle - intr: %p, thid: %p\n", intr, th->thread_id);
-    th->native_thread_data.interrupt_event = 0;
     w32_close_handle(intr);
 }
 
