@@ -479,36 +479,39 @@ typedef struct {
 } rb_addrinfo_t;
 
 static void
-addrinfo_mark(rb_addrinfo_t *rai)
+addrinfo_mark(void *ptr)
 {
+    rb_addrinfo_t *rai = ptr;
     if (rai) {
         rb_gc_mark(rai->inspectname);
         rb_gc_mark(rai->canonname);
     }
 }
 
-static void
-addrinfo_free(rb_addrinfo_t *rai)
+#define addrinfo_free RUBY_TYPED_DEFAULT_FREE
+
+static size_t
+addrinfo_memsize(const void *ptr)
 {
-    xfree(rai);
+    return ptr ? sizeof(rb_addrinfo_t) : 0;
 }
+
+static const rb_data_type_t addrinfo_type = {
+    "socket/addrinfo",
+    addrinfo_mark, addrinfo_free, addrinfo_memsize,
+};
 
 static VALUE
 addrinfo_s_allocate(VALUE klass)
 {
-    return Data_Wrap_Struct(klass, addrinfo_mark, addrinfo_free, 0);
+    return TypedData_Wrap_Struct(klass, &addrinfo_type, 0);
 }
 
-#define IS_ADDRINFO(obj) (RDATA(obj)->dmark == (RUBY_DATA_FUNC)addrinfo_mark)
-static rb_addrinfo_t *
+#define IS_ADDRINFO(obj) rb_typeddata_is_kind_of(obj, &addrinfo_type)
+static inline rb_addrinfo_t *
 check_addrinfo(VALUE self)
 {
-    Check_Type(self, RUBY_T_DATA);
-    if (!IS_ADDRINFO(self)) {
-        rb_raise(rb_eTypeError, "wrong argument type %s (expected Addrinfo)",
-                 rb_class2name(CLASS_OF(self)));
-    }
-    return DATA_PTR(self);
+    return rb_check_typeddata(self, &addrinfo_type);
 }
 
 static rb_addrinfo_t *
@@ -2040,7 +2043,7 @@ VALUE
 rsock_sockaddr_string_value(volatile VALUE *v)
 {
     VALUE val = *v;
-    if (TYPE(val) == RUBY_T_DATA && IS_ADDRINFO(val)) {
+    if (IS_ADDRINFO(val)) {
         *v = addrinfo_to_sockaddr(val);
     }
     StringValue(*v);
@@ -2057,7 +2060,7 @@ rsock_sockaddr_string_value_ptr(volatile VALUE *v)
 VALUE
 rb_check_sockaddr_string_type(VALUE val)
 {
-    if (TYPE(val) == RUBY_T_DATA && IS_ADDRINFO(val))
+    if (IS_ADDRINFO(val))
         return addrinfo_to_sockaddr(val);
     return rb_check_string_type(val);
 }
