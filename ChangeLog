@@ -1,4 +1,7 @@
-Wed Dec 30 17:45:53 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Dec 30 17:49:47 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems/command_manager.rb (Gem#load_and_instantiate):
+	  rescue only NameError from const_get.
 
 	* lib/rubygems/source_index.rb (Gem#load_specification): don't use
 	  RUBY_VERSION to branch.
