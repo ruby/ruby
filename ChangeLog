@@ -1,4 +1,9 @@
-Wed Dec 30 14:13:06 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Dec 30 17:45:53 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems/source_index.rb (Gem#load_specification): don't use
+	  RUBY_VERSION to branch.
+
+	* lib/rubygems/validator.rb (Gem::TestRunner, Gem#alien): ditto.
 
 	* lib/rubygems.rb: Kernel#gem is already defined, and workaround
 	  for home directory and custom_require are no longer needed.
