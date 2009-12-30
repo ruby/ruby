@@ -120,8 +120,8 @@ if have_func("sendmsg") | have_func("recvmsg")
   have_struct_member('struct msghdr', 'msg_accrights', ['sys/types.h', 'sys/socket.h'])
 end
 
-getaddr_info_ok = enable_config("wide-getaddrinfo") do
-  checking_for("wide getaddrinfo") {try_run(<<EOF)}
+getaddr_info_ok = (enable_config("wide-getaddrinfo") && :wide) ||
+  (checking_for("wide getaddrinfo") {try_run(<<EOF)} && :os)
 #{cpp_include(headers)}
 #include <stdlib.h>
 
@@ -224,7 +224,6 @@ main()
   exit(EXIT_FAILURE);
 }
 EOF
-end
 if ipv6 and not getaddr_info_ok
   abort <<EOS
 
@@ -249,20 +248,11 @@ Fatal: invalid value for --with-lookup-order-hack (expected INET, INET6 or UNSPE
 EOS
 end
 
-$objs = ["socket.#{$OBJEXT}"]
-
-unless getaddr_info_ok and have_func("getnameinfo", "netdb.h") and have_func("getaddrinfo", "netdb.h")
-  if have_struct_member("struct in6_addr", "s6_addr8", headers)
-    $defs[-1] = "-DHAVE_ADDR8"
-  end
-  $CPPFLAGS="-I. "+$CPPFLAGS
-  $objs += ["getaddrinfo.#{$OBJEXT}"]
-  $objs += ["getnameinfo.#{$OBJEXT}"]
-  have_func("inet_ntop") or have_func("inet_ntoa")
-  have_func("inet_pton") or have_func("inet_aton")
-  have_func("getservbyport")
-  if have_func("gai_strerror")
-    unless checking_for("gai_strerror() returns const pointer") {!try_compile(<<EOF)}
+have_type("struct addrinfo", headers)
+have_func("freehostent")
+have_func("freeaddrinfo")
+if have_func("gai_strerror")
+  if checking_for("gai_strerror() returns const pointer") {!try_compile(<<EOF)}
 #{cpp_include(headers)}
 #include <stdlib.h>
 void
@@ -271,9 +261,26 @@ conftest_gai_strerror_is_const()
     *gai_strerror(0) = 0;
 }
 EOF
-      $defs << "-DGAI_STRERROR_CONST"
-    end
+    $defs << "-DGAI_STRERROR_CONST"
   end
+end
+
+$objs = ["socket.#{$OBJEXT}"]
+
+if getaddr_info_ok == :wide or
+    !have_func("getnameinfo", headers) or !have_func("getaddrinfo", headers)
+  if have_struct_member("struct in6_addr", "s6_addr8", headers)
+    $defs[-1] = "s6_addr=s6_addr8"
+  end
+  if ipv6 == "kame" && have_struct_member("struct in6_addr", "s6_addr32", headers)
+    $defs[-1] = "-DFAITH"
+  end
+  $CPPFLAGS="-I. "+$CPPFLAGS
+  $objs += ["getaddrinfo.#{$OBJEXT}"]
+  $objs += ["getnameinfo.#{$OBJEXT}"]
+  have_func("inet_ntop") or have_func("inet_ntoa")
+  have_func("inet_pton") or have_func("inet_aton")
+  have_func("getservbyport")
   have_header("arpa/nameser.h")
   have_header("resolv.h")
 end

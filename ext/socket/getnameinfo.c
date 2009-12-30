@@ -135,11 +135,11 @@ inet_ntop(af, addr, numaddr, numaddr_len)
 int
 getnameinfo(sa, salen, host, hostlen, serv, servlen, flags)
 	const struct sockaddr *sa;
-	size_t salen;
+	socklen_t salen;
 	char *host;
-	size_t hostlen;
+	socklen_t hostlen;
 	char *serv;
-	size_t servlen;
+	socklen_t servlen;
 	int flags;
 {
 	struct afd *afd;

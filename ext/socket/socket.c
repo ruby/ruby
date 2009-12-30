@@ -69,9 +69,7 @@
 #ifndef EWOULDBLOCK
 #define EWOULDBLOCK EAGAIN
 #endif
-#ifndef HAVE_GETADDRINFO
-# include "addrinfo.h"
-#endif
+#include "addrinfo.h"
 #include "sockport.h"
 
 #if defined(__vms)

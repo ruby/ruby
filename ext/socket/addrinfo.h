@@ -29,7 +29,6 @@
 
 #ifndef ADDR_INFO_H
 #define ADDR_INFO_H
-#ifndef HAVE_GETADDRINFO
 
 /* special compatibility hack */
 #undef EAI_ADDRFAMILY
@@ -60,17 +59,6 @@
 #undef NI_NAMEREQD
 #undef NI_NUMERICSERV
 #undef NI_DGRAM
-
-#undef addrinfo
-#define addrinfo addrinfo__compat
-#undef getaddrinfo
-#define getaddrinfo getaddrinfo__compat
-#undef getnameinfo
-#define getnameinfo getnameinfo__compat
-#undef freehostent
-#define freehostent freehostent__compat
-#undef freeaddrinfo
-#define freeaddrinfo freeaddrinfo__compat
 
 #ifndef __P
 # ifdef HAVE_PROTOTYPES
@@ -134,6 +122,7 @@
 #define	NI_NUMERICSERV	0x00000008
 #define	NI_DGRAM	0x00000010
 
+#ifndef HAVE_TYPE_STRUCT_ADDRINFO
 struct addrinfo {
 	int	ai_flags;	/* AI_PASSIVE, AI_CANONNAME */
 	int	ai_family;	/* PF_xxx */
@@ -144,6 +133,24 @@ struct addrinfo {
 	struct sockaddr *ai_addr;	/* binary address */
 	struct addrinfo *ai_next;	/* next structure in linked list */
 };
+#endif
+
+#ifndef HAVE_GETADDRINFO
+#undef getaddrinfo
+#define getaddrinfo getaddrinfo__compat
+#endif
+#ifndef HAVE_GETNAMEINFO
+#undef getnameinfo
+#define getnameinfo getnameinfo__compat
+#endif
+#ifndef HAVE_FREEHOSTENT
+#undef freehostent
+#define freehostent freehostent__compat
+#endif
+#ifndef HAVE_FREEADDRINFO
+#undef freeaddrinfo
+#define freeaddrinfo freeaddrinfo__compat
+#endif
 
 extern int getaddrinfo __P((
 	const char *hostname, const char *servname,
@@ -152,19 +159,20 @@ extern int getaddrinfo __P((
 
 extern int getnameinfo __P((
 	const struct sockaddr *sa,
-	size_t salen,
+	socklen_t salen,
 	char *host,
-	size_t hostlen,
+	socklen_t hostlen,
 	char *serv,
-	size_t servlen,
+	socklen_t servlen,
 	int flags));
 
 extern void freehostent __P((struct hostent *));
 extern void freeaddrinfo __P((struct addrinfo *));
-#if defined __UCLIBC__
+extern
+#ifdef GAI_STRERROR_CONST
 const
 #endif
-extern char *gai_strerror __P((int));
+char *gai_strerror __P((int));
 
 /* In case there is no definition of offsetof() provided - though any proper
 Standard C system should have one. */
@@ -173,5 +181,4 @@ Standard C system should have one. */
 #define offsetof(p_type,field) ((size_t)&(((p_type *)0)->field))
 #endif
 
-#endif
 #endif
