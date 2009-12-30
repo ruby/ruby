@@ -69,8 +69,10 @@ def extract_makefile(makefile, keep = true)
   end
   $target = target
   $extconf_h = m[/^RUBY_EXTCONF_H[ \t]*=[ \t]*(\S+)/, 1]
-  $static ||= m[/^EXTSTATIC[ \t]*=[ \t]*(\S+)/, 1] || false
-  /^STATIC_LIB[ \t]*=[ \t]*\S+/ =~ m or $static = nil
+  if $static.nil?
+    $static ||= m[/^EXTSTATIC[ \t]*=[ \t]*(\S+)/, 1] || false
+    /^STATIC_LIB[ \t]*=[ \t]*\S+/ =~ m or $static = false
+  end
   $preload = Shellwords.shellwords(m[/^preload[ \t]*=[ \t]*(.*)/, 1] || "")
   $DLDFLAGS += " " + (m[/^dldflags[ \t]*=[ \t]*(.*)/, 1] || "")
   if s = m[/^LIBS[ \t]*=[ \t]*(.*)/, 1]
@@ -439,7 +441,7 @@ Dir::chdir('ext')
 hdrdir = $hdrdir
 $hdrdir = ($top_srcdir = relative_from(srcdir, $topdir = "..")) + "/include"
 exts.each do |d|
-  $static = $force_static ? $static_ext[target] : false
+  $static = $force_static ? $static_ext[target] : nil
 
   if $ignore or !$nodynamic or $static
     extmake(d) or abort
@@ -491,7 +493,7 @@ unless $extlist.empty?
       end
       next
     end
-    f = format("%s/%s.%s", s, i, $LIBEXT)
+    f = format("%s/%s.%s", t, i, $LIBEXT)
     if File.exist?(f)
       $extinit << "    init(Init_#{i}, \"#{t}.so\");\n"
       $extobjs << "ext/#{f} "
@@ -570,7 +572,7 @@ $mflags.unshift("topdir=#$topdir")
 ENV.delete("RUBYOPT")
 if $command_output
   message = "echo #{message}"
-  cmd = $makeflags.join(' ')
+  cmd = $makeflags.map {|s|s.sub(/.*[$(){};\s].*/, %q['\&'])}.join(' ')
   open($command_output, 'wb') do |f|
     case $command_output
     when /\.sh\z/
