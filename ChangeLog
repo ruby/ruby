@@ -22,9 +22,9 @@ Wed Dec 30 19:40:00 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* include/ruby/defines.h (NAN): ditto.
 
-	* numericc.c (rb_infinity): change content as float.
+	* numeric.c (rb_infinity): change content as float.
 
-	* numericc.c (rb_nan): ditto.
+	* numeric.c (rb_nan): ditto.
 
 Wed Dec 30 17:59:14 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -323,7 +323,7 @@ Tue Dec  8 23:41:34 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Tue Dec  8 23:39:52 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* numeric.c (flo_eq): supress a warning on VC++ for x64.
+	* numeric.c (flo_eq): suppress a warning on VC++ for x64.
 
 Tue Dec  8 16:19:05 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -651,9 +651,9 @@ Sat Nov 21 16:38:50 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sat Nov 21 15:58:43 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* io.c (read_all): fix: false negative invalid byte seequence
+	* io.c (read_all): fix: false negative invalid byte sequence
 	  on reading from pipes. [ruby-dev:39743]
-	  fix: assigin the variable 'pos' as relative value from recent pos.
+	  fix: assign the variable 'pos' as relative value from recent pos.
 
 Sat Nov 21 14:44:16 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
@@ -722,7 +722,7 @@ Wed Nov 18 15:27:20 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Wed Nov 18 12:33:42 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* encoding.c (enc_set_default_encoding): reset filesytem
+	* encoding.c (enc_set_default_encoding): reset filesystem
 	  encoding because on resetting default_external because
 	  Unix's filesystem encoding depends on default_external.
 
@@ -803,12 +803,12 @@ Mon Nov 16 15:51:53 2009  Shugo Maeda  <shugo@ruby-lang.org>
 
 Mon Nov 16 14:03:53 2009  wanabe  <s.wanabe@gmail.com>
 
-	* io.c (read_all): shift read buffer if exception occured.
+	* io.c (read_all): shift read buffer if exception occurred.
 	  pointed out in [ruby-dev:39702].
 
 Mon Nov 16 07:59:38 2009  wanabe  <s.wanabe@gmail.com>
 
-	* io.c (read_all): don't call io_shift_cbuf until bufffering enough or
+	* io.c (read_all): don't call io_shift_cbuf until buffering enough or
 	  econv_finished.   [ruby-dev:39696]
 
 	* io.c (more_char): don't call clear_readconv to read buffer after
@@ -953,7 +953,7 @@ Wed Nov 11 02:14:48 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 Tue Nov 10 08:23:21 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* process.c (rb_f_exec, rb_f_system, rb_f_spawn): mentioned abou
+	* process.c (rb_f_exec, rb_f_system, rb_f_spawn): mentioned about
 	  the shell to be used when the command line is single string.
 	  See [ruby-core:26652]
 
