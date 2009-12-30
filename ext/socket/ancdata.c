@@ -394,7 +394,7 @@ ancillary_int(VALUE self)
     return INT2NUM(i);
 }
 
-#if defined(IPPROTO_IP) && defined(IP_PKTINFO) && defined(HAVE_TYPE_STRUCT_IN_PKTINFO) && defined(HAVE_IPI_SPEC_DST) /* GNU/Linux */
+#if defined(IPPROTO_IP) && defined(IP_PKTINFO) && defined(HAVE_STRUCT_IN_PKTINFO_IPI_SPEC_DST) /* GNU/Linux */
 /*
  * call-seq:
  *   Socket::AncillaryData.ip_pktinfo(addr, ifindex) => ancdata
@@ -458,7 +458,7 @@ ancillary_s_ip_pktinfo(int argc, VALUE *argv, VALUE self)
 #define ancillary_s_ip_pktinfo rb_f_notimplement
 #endif
 
-#if defined(IPPROTO_IP) && defined(IP_PKTINFO) && defined(HAVE_TYPE_STRUCT_IN_PKTINFO) && defined(HAVE_IPI_SPEC_DST) /* GNU/Linux */
+#if defined(IPPROTO_IP) && defined(IP_PKTINFO) && defined(HAVE_STRUCT_IN_PKTINFO_IPI_SPEC_DST) /* GNU/Linux */
 /*
  * call-seq:
  *   ancdata.ip_pktinfo => [addr, ifindex, spec_dst]
@@ -793,7 +793,7 @@ anc_inspect_ip_recvdstaddr(int level, int type, VALUE data, VALUE ret)
 }
 #endif
 
-#if defined(IPPROTO_IP) && defined(IP_PKTINFO) && defined(HAVE_TYPE_STRUCT_IN_PKTINFO) && defined(HAVE_IPI_SPEC_DST) /* GNU/Linux */
+#if defined(IPPROTO_IP) && defined(IP_PKTINFO) && defined(HAVE_STRUCT_IN_PKTINFO_IPI_SPEC_DST) /* GNU/Linux */
 static int
 anc_inspect_ip_pktinfo(int level, int type, VALUE data, VALUE ret)
 {
@@ -1045,7 +1045,7 @@ ancillary_inspect(VALUE self)
 #            if defined(IP_RECVDSTADDR) /* 4.4BSD */
               case IP_RECVDSTADDR: inspected = anc_inspect_ip_recvdstaddr(level, type, data, ret); break;
 #            endif
-#            if defined(IP_PKTINFO) && defined(HAVE_TYPE_STRUCT_IN_PKTINFO) && defined(HAVE_IPI_SPEC_DST) /* GNU/Linux */
+#            if defined(IP_PKTINFO) && defined(HAVE_STRUCT_IN_PKTINFO_IPI_SPEC_DST) /* GNU/Linux */
               case IP_PKTINFO: inspected = anc_inspect_ip_pktinfo(level, type, data, ret); break;
 #            endif
             }
