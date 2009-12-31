@@ -1,3 +1,8 @@
+Thu Dec 31 18:18:55 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/rubysocket.h: include addrinfo.h only when using our own
+	  getaddrinfo.c.
+
 Thu Dec 31 14:20:11 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* process.c (save_redirect_fd): consider EBADF that the fd is not used.

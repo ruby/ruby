@@ -97,7 +97,9 @@
  */
 #define pseudo_AF_FTIP pseudo_AF_RTIP
 
+#ifndef HAVE_GETADDRINFO
 #include "addrinfo.h"
+#endif
 #include "sockport.h"
 
 #ifndef NI_MAXHOST
