@@ -783,8 +783,6 @@ generator_ptr(obj)
     return ptr;
 }
 
-static VALUE generator_allocate _((VALUE));
-
 /* :nodoc: */
 static VALUE
 generator_allocate(klass)

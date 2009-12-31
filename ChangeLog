@@ -1,3 +1,7 @@
+Thu Dec 31 23:41:48 2009  Akinori MUSHA  <knu@iDaemons.org>
+
+	* enumerator.c: Remove a duplicated declaration.
+
 Thu Dec 31 18:16:51 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/socket.c: include addrinfo.h only when using our own
