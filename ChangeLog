@@ -1,3 +1,7 @@
+Fri Jan  1 00:12:52 2010  Akinori MUSHA  <knu@iDaemons.org>
+
+	* object.c, intern.h: Export rb_sym_to_s.
+
 Thu Dec 31 23:41:48 2009  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enumerator.c: Remove a duplicated declaration.
