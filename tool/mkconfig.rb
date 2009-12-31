@@ -201,6 +201,14 @@ print <<EOS
   CONFIG.each_value do |val|
     RbConfig::expand(val)
   end
+
+  # returns the absolute pathname of the ruby command.
+  def RbConfig.ruby
+    File.join(
+      RbConfig::CONFIG["bindir"],
+      RbConfig::CONFIG["ruby_install_name"] + RbConfig::CONFIG["EXEEXT"]
+    )
+  end
 end
 Config = RbConfig # compatibility for ruby-1.8.4 and older.
 CROSS_COMPILING = nil unless defined? CROSS_COMPILING

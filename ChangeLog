@@ -1,3 +1,17 @@
+Thu Jan  1 00:00:00 2010  Tanaka Akira  <akr@fsij.org>
+
+	* tool/mkconfig.rb: generate RbConfig.ruby in rbconfig.rb.
+
+	* lib/webrick/httpservlet/cgihandler.rb: use RbConfig.ruby.
+
+	* test/ruby/envutil.rb: ditto.
+
+	* benchmark/report.rb: ditto.
+
+	* benchmark/runc.rb: ditto.
+
+	* tool/eval.rb: ditto.
+
 Thu Dec 31 18:18:55 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/rubysocket.h: include addrinfo.h only when using our own
