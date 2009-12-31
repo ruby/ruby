@@ -1863,6 +1863,8 @@ save_redirect_fd(int fd, VALUE save, char *errmsg, size_t errmsg_buflen)
         VALUE newary;
         int save_fd = redirect_dup(fd);
         if (save_fd == -1) {
+            if (errno == EBADF)
+                return 0;
             ERRMSG("dup");
             return -1;
         }
