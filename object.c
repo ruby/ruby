@@ -1197,8 +1197,8 @@ sym_inspect(sym)
  */
 
 
-static VALUE
-sym_to_s(sym)
+VALUE
+rb_sym_to_s(sym)
     VALUE sym;
 {
     return rb_str_new2(rb_id2name(SYM2ID(sym)));
@@ -2817,8 +2817,8 @@ Init_Object()
     rb_define_method(rb_cSymbol, "to_i", sym_to_i, 0);
     rb_define_method(rb_cSymbol, "to_int", sym_to_int, 0);
     rb_define_method(rb_cSymbol, "inspect", sym_inspect, 0);
-    rb_define_method(rb_cSymbol, "to_s", sym_to_s, 0);
-    rb_define_method(rb_cSymbol, "id2name", sym_to_s, 0);
+    rb_define_method(rb_cSymbol, "to_s", rb_sym_to_s, 0);
+    rb_define_method(rb_cSymbol, "id2name", rb_sym_to_s, 0);
     rb_define_method(rb_cSymbol, "to_sym", sym_to_sym, 0);
     rb_define_method(rb_cSymbol, "to_proc", sym_to_proc, 0);
     rb_define_method(rb_cSymbol, "===", rb_obj_equal, 1);
