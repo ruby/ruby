@@ -1,3 +1,7 @@
+Fri Jan  1 00:33:13 2010  Akinori MUSHA  <knu@iDaemons.org>
+
+	* parse.y (dsym): Allow empty symbols. [merge from 1.9]
+
 Fri Jan  1 00:12:52 2010  Akinori MUSHA  <knu@iDaemons.org>
 
 	* object.c, intern.h: Export rb_sym_to_s.

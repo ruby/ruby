@@ -11,6 +11,10 @@ with all sufficient information, see the ChangeLog file.
 
 === Lexical changes
 
+* empty symbol literal
+
+  Empty symbol (:"") is allowed.
+
 * looser splat opetator
 
   You can write things like:
