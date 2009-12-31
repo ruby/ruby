@@ -1,3 +1,8 @@
+Thu Dec 31 14:20:11 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* process.c (save_redirect_fd): consider EBADF that the fd is not used.
+	  [ruby-dev:39938]
+
 Thu Dec 31 06:03:48 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/raddrinfo.c (addrinfo_type): typed.
