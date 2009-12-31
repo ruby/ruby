@@ -1,3 +1,8 @@
+Thu Dec 31 18:16:51 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/socket.c: include addrinfo.h only when using our own
+	  getaddrinfo.c.
+
 Thu Dec 31 05:56:38 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/extconf.rb: fix for wide-getaddrinfo option.
