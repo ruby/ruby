@@ -5,9 +5,7 @@
 require 'benchmark'
 require 'rbconfig'
 
-$rubybin = ENV['RUBY'] || File.join(
-  RbConfig::CONFIG["bindir"],
-  RbConfig::CONFIG["ruby_install_name"] + RbConfig::CONFIG["EXEEXT"])
+$rubybin = ENV['RUBY'] || RbConfig.ruby
 
 def runfile file
   puts file
