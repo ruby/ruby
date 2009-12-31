@@ -110,6 +110,24 @@ with all sufficient information, see the ChangeLog file.
     behavior of String#[] and String#[]= have changed.  String#ord is
     $KCODE aware.
 
+  * Symbol#succ
+  * Symbol#next
+  * Symbol#<=>
+  * Symbol#casecmp
+  * Symbol#=~
+  * Symbol#[]
+  * Symbol#slice
+  * Symbol#length
+  * Symbol#size
+  * Symbol#empty?
+  * Symbol#match
+  * Symbol#upcase
+  * Symbol#downcase
+  * Symbol#capitalize
+  * Symbol#swapcase
+
+    New methods.
+
 * dbm
 
   DBM#key

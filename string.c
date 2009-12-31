@@ -347,6 +347,8 @@ rb_str_init(argc, argv, str)
     return str;
 }
 
+static VALUE rb_str_length _((VALUE));
+
 /*
  *  call-seq:
  *     str.length   => integer
@@ -360,6 +362,8 @@ rb_str_length(str)
 {
     return LONG2NUM(RSTRING(str)->len);
 }
+
+static VALUE rb_str_empty _((VALUE));
 
 /*
  *  call-seq:
@@ -1029,6 +1033,8 @@ rb_str_eql(str1, str2)
     return Qfalse;
 }
 
+static VALUE rb_str_cmp_m _((VALUE, VALUE));
+
 /*
  *  call-seq:
  *     str <=> other_str   => -1, 0, +1 or nil
@@ -1082,6 +1088,8 @@ rb_str_cmp_m(str1, str2)
     }
     return LONG2NUM(result);
 }
+
+static VALUE rb_str_casecmp _((VALUE, VALUE));
 
 /*
  *  call-seq:
@@ -1337,6 +1345,8 @@ rb_str_rindex_m(argc, argv, str)
     return Qnil;
 }
 
+static VALUE rb_str_match _((VALUE, VALUE));
+
 /*
  *  call-seq:
  *     str =~ obj   => fixnum or nil
@@ -1485,6 +1495,8 @@ rb_str_succ(orig)
 }
 
 
+static VALUE rb_str_succ_bang _((VALUE));
+
 /*
  *  call-seq:
  *     str.succ!   => str
@@ -1628,6 +1640,8 @@ rb_str_aref(str, indx)
     return Qnil;		/* not reached */
 }
 
+
+static VALUE rb_str_aref_m _((int, VALUE *, VALUE));
 
 /*
  *  call-seq:
@@ -2883,6 +2897,8 @@ rb_str_dump(str)
 }
 
 
+static VALUE rb_str_upcase_bang _((VALUE));
+
 /*
  *  call-seq:
  *     str.upcase!   => str or nil
@@ -2937,6 +2953,8 @@ rb_str_upcase(str)
 }
 
 
+static VALUE rb_str_downcase_bang _((VALUE));
+
 /*
  *  call-seq:
  *     str.downcase!   => str or nil
@@ -2990,6 +3008,8 @@ rb_str_downcase(str)
     return str;
 }
 
+
+static VALUE rb_str_capitalize_bang _((VALUE));
 
 /*
  *  call-seq:
@@ -3053,6 +3073,8 @@ rb_str_capitalize(str)
     return str;
 }
 
+
+static VALUE rb_str_swapcase_bang _((VALUE));
 
 /*
  *  call-seq:
@@ -5006,6 +5028,183 @@ rb_str_setter(val, id, var)
 
 
 /*
+ * call-seq:
+ *
+ *   sym.succ
+ *
+ * Same as <code>sym.to_s.succ.intern</code>.
+ */
+
+static VALUE
+sym_succ(sym)
+    VALUE sym;
+{
+    VALUE str = rb_sym_to_s(sym);
+    rb_str_succ_bang(str);
+    return rb_str_intern(str);
+}
+
+/*
+ * call-seq:
+ *
+ *   str <=> other       => -1, 0, +1 or nil
+ *
+ * Compares _sym_ with _other_ in string form.
+ */
+
+static VALUE
+sym_cmp(sym, other)
+    VALUE sym, other;
+{
+    if (!SYMBOL_P(other)) {
+	return Qnil;
+    }
+    return rb_str_cmp_m(rb_sym_to_s(sym), rb_sym_to_s(other));
+}
+
+/*
+ * call-seq:
+ *
+ *   sym.casecmp(other)  => -1, 0, +1 or nil
+ *
+ * Case-insensitive version of <code>Symbol#<=></code>.
+ */
+
+static VALUE
+sym_casecmp(sym, other)
+    VALUE sym, other;
+{
+    if (!SYMBOL_P(other)) {
+	return Qnil;
+    }
+    return rb_str_casecmp(rb_sym_to_s(sym), rb_sym_to_s(other));
+}
+
+/*
+ * call-seq:
+ *   sym =~ obj   => fixnum or nil
+ *
+ * Returns <code>sym.to_s =~ obj</code>.
+ */
+
+static VALUE
+sym_match(sym, other)
+    VALUE sym, other;
+{
+    return rb_str_match(rb_sym_to_s(sym), other);
+}
+
+/*
+ * call-seq:
+ *   sym[idx]      => char
+ *   sym[b, n]     => char
+ *
+ * Returns <code>sym.to_s[]</code>.
+ */
+
+static VALUE
+sym_aref(argc, argv, sym)
+    int argc;
+    VALUE *argv;
+    VALUE sym;
+{
+    return rb_str_aref_m(argc, argv, rb_sym_to_s(sym));
+}
+
+/*
+ * call-seq:
+ *   sym.length    => integer
+ *
+ * Same as <code>sym.to_s.length</code>.
+ */
+
+static VALUE
+sym_length(sym)
+    VALUE sym;
+{
+    return rb_str_length(rb_sym_to_s(sym));
+}
+
+/*
+ * call-seq:
+ *   sym.empty?   => true or false
+ *
+ * Returns that _sym_ is :"" or not.
+ */
+
+static VALUE
+sym_empty(sym)
+    VALUE sym;
+{
+    return rb_str_empty(rb_sym_to_s(sym));
+}
+
+/*
+ * call-seq:
+ *   sym.upcase    => symbol
+ *
+ * Same as <code>sym.to_s.upcase.intern</code>.
+ */
+
+static VALUE
+sym_upcase(sym)
+    VALUE sym;
+{
+    VALUE str = rb_sym_to_s(sym);
+    rb_str_upcase_bang(str);
+    return rb_str_intern(str);
+}
+
+/*
+ * call-seq:
+ *   sym.downcase  => symbol
+ *
+ * Same as <code>sym.to_s.downcase.intern</code>.
+ */
+
+static VALUE
+sym_downcase(sym)
+    VALUE sym;
+{
+    VALUE str = rb_sym_to_s(sym);
+    rb_str_downcase_bang(str);
+    return rb_str_intern(str);
+}
+
+/*
+ * call-seq:
+ *   sym.capitalize  => symbol
+ *
+ * Same as <code>sym.to_s.capitalize.intern</code>.
+ */
+
+static VALUE
+sym_capitalize(sym)
+    VALUE sym;
+{
+    VALUE str = rb_sym_to_s(sym);
+    rb_str_capitalize_bang(str);
+    return rb_str_intern(str);
+}
+
+/*
+ * call-seq:
+ *   sym.swapcase  => symbol
+ *
+ * Same as <code>sym.to_s.swapcase.intern</code>.
+ */
+
+static VALUE
+sym_swapcase(sym)
+    VALUE sym;
+{
+    VALUE str = rb_sym_to_s(sym);
+    rb_str_swapcase_bang(str);
+    return rb_str_intern(str);
+}
+
+
+/*
  *  A <code>String</code> object holds and manipulates an arbitrary sequence of
  *  bytes, typically representing characters. String objects may be created
  *  using <code>String::new</code> or as literals.
@@ -5158,4 +5357,23 @@ Init_String()
     rb_fs = Qnil;
     rb_define_variable("$;", &rb_fs);
     rb_define_variable("$-F", &rb_fs);
+
+    rb_define_method(rb_cSymbol, "succ", sym_succ, 0);
+    rb_define_method(rb_cSymbol, "next", sym_succ, 0);
+
+    rb_define_method(rb_cSymbol, "<=>", sym_cmp, 1);
+    rb_define_method(rb_cSymbol, "casecmp", sym_casecmp, 1);
+    rb_define_method(rb_cSymbol, "=~", sym_match, 1);
+
+    rb_define_method(rb_cSymbol, "[]", sym_aref, -1);
+    rb_define_method(rb_cSymbol, "slice", sym_aref, -1);
+    rb_define_method(rb_cSymbol, "length", sym_length, 0);
+    rb_define_method(rb_cSymbol, "size", sym_length, 0);
+    rb_define_method(rb_cSymbol, "empty?", sym_empty, 0);
+    rb_define_method(rb_cSymbol, "match", sym_match, 1);
+
+    rb_define_method(rb_cSymbol, "upcase", sym_upcase, 0);
+    rb_define_method(rb_cSymbol, "downcase", sym_downcase, 0);
+    rb_define_method(rb_cSymbol, "capitalize", sym_capitalize, 0);
+    rb_define_method(rb_cSymbol, "swapcase", sym_swapcase, 0);
 }
