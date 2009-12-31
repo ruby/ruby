@@ -76,6 +76,8 @@ rb_digest_s_hexencode(VALUE klass, VALUE str)
     return hexencode_str_new(str);
 }
 
+NORETURN(static void rb_digest_instance_method_unimpl(VALUE self, const char *method));
+
 /*
  * Document-module: Digest::Instance
  *
@@ -86,8 +88,6 @@ rb_digest_s_hexencode(VALUE klass, VALUE str)
 static void
 rb_digest_instance_method_unimpl(VALUE self, const char *method)
 {
-    VALUE klass = rb_obj_class(self);
-
     rb_raise(rb_eRuntimeError, "%s does not implement %s()",
 	     rb_obj_classname(self), method);
 }
