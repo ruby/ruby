@@ -992,6 +992,9 @@ module URI
       if path && path == ''
         set_path('/')
       end
+      if scheme && scheme != scheme.downcase
+        set_scheme(self.scheme.downcase)
+      end
       if host && host != host.downcase
         set_host(self.host.downcase)
       end

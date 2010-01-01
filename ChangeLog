@@ -1,3 +1,8 @@
+Fri Jan  1 23:17:49 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/generic.rb (URI#normalize!): normalize case of
+	  scheme. [ruby-core:27309]
+
 Fri Jan  1 00:47:57 2010  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/digest.c (rb_digest_instance_method_unimpl): Suppress
