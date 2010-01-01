@@ -1,3 +1,11 @@
+Sat Jan  2 00:43:22 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/common.rb (initialize_regexp): allow leading
+	  and trailing white space, and forbid extra characters
+	  on another lines. [ruby-core:26223]
+	  RFC 3986  Appendix C.  Delimiting a URI in Context
+	  draft-duerst-iri-bis-07  7.2.  Web Address processing
+
 Fri Jan  1 23:17:49 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/generic.rb (URI#normalize!): normalize case of
