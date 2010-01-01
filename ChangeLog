@@ -1,3 +1,8 @@
+Fri Jan  1 15:42:46 2010  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/mkmf.rb: Fix build.  COUTFLAG is not yet landed on this
+	  branch.
+
 Fri Jan  1 00:47:57 2010  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/digest.c (rb_digest_instance_method_unimpl): Suppress
