@@ -9,10 +9,10 @@ rescue LoadError
 end
 
 # Resolv is a thread-aware DNS resolver library written in Ruby.  Resolv can
-# handle multiple DNS requests concurrently without blocking.  The ruby
+# handle multiple DNS requests concurrently without blocking the entire ruby
 # interpreter.
 #
-# See also resolv-replace.rb to replace the libc resolver with # Resolv.
+# See also resolv-replace.rb to replace the libc resolver with Resolv.
 #
 # Resolv can look up various DNS resources using the DNS module directly.
 #
