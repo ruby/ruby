@@ -1385,6 +1385,10 @@ class Resolv
           yield self
         end
 
+        def inspect
+          "\#<#{self.class}: #{@data[0, @index].inspect} #{@data[@index..-1].inspect}>"
+        end
+
         def get_length16
           len, = self.get_unpack('n')
           save_limit = @limit
@@ -2097,8 +2101,11 @@ class Resolv
     end
 
     def initialize(address) # :nodoc:
-      unless address.kind_of?(String) && address.length == 4
-        raise ArgumentError.new('IPv4 address must be 4 bytes')
+      unless address.kind_of?(String)
+        raise ArgumentError, 'IPv4 address must be a string'
+      end
+      unless address.length == 4
+        raise ArgumentError, "IPv4 address expects 4 bytes but #{address.length} bytes"
       end
       @address = address
     end
