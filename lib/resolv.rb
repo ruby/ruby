@@ -313,6 +313,16 @@ class Resolv
     # nil:: Uses /etc/resolv.conf.
     # String:: Path to a file using /etc/resolv.conf's format.
     # Hash:: Must contain :nameserver, :search and :ndots keys.
+    # :nameserver_port can be used to specify port number of nameserver address.
+    #
+    # The value of :nameserver should be an address string or
+    # an array of address strings.
+    # - :nameserver => '8.8.8.8'
+    # - :nameserver => ['8.8.8.8', '8.8.4.4']
+    #
+    # The value of :nameserver_port should be an array of
+    # pair of nameserver address and port number.
+    # - :nameserver_port => [['8.8.8.8', 53], ['8.8.4.4', 53]]
     #
     # Example:
     #
@@ -485,13 +495,13 @@ class Resolv
       requester = make_requester
       senders = {}
       begin
-        @config.resolv(name) {|candidate, tout, nameserver|
+        @config.resolv(name) {|candidate, tout, nameserver, port|
           msg = Message.new
           msg.rd = 1
           msg.add_question(candidate, typeclass)
-          unless sender = senders[[candidate, nameserver]]
-            sender = senders[[candidate, nameserver]] =
-              requester.sender(msg, candidate, nameserver)
+          unless sender = senders[[candidate, nameserver, port]]
+            sender = senders[[candidate, nameserver, port]] =
+              requester.sender(msg, candidate, nameserver, port)
           end
           reply, reply_name = requester.request(sender, tout)
           case reply.rcode
@@ -510,8 +520,8 @@ class Resolv
     end
 
     def make_requester # :nodoc:
-      if nameserver = @config.single?
-        Requester::ConnectedUDP.new(nameserver)
+      if nameserver_port = @config.single?
+        Requester::ConnectedUDP.new(*nameserver_port)
       else
         Requester::UnconnectedUDP.new
       end
@@ -846,7 +856,7 @@ class Resolv
       def lazy_initialize
         @mutex.synchronize {
           unless @initialized
-            @nameserver = []
+            @nameserver_port = []
             @search = nil
             @ndots = 1
             case @config_info
@@ -865,11 +875,18 @@ class Resolv
             else
               raise ArgumentError.new("invalid resolv configuration: #{@config_info.inspect}")
             end
-            @nameserver = config_hash[:nameserver] if config_hash.include? :nameserver
+            if config_hash.include? :nameserver
+              @nameserver_port = config_hash[:nameserver].map {|ns| [ns, Port] }
+            end
+            if config_hash.include? :nameserver_port
+              @nameserver_port = config_hash[:nameserver_port].map {|ns, port| [ns, (port || Port)] }
+            end
             @search = config_hash[:search] if config_hash.include? :search
             @ndots = config_hash[:ndots] if config_hash.include? :ndots
 
-            @nameserver = ['0.0.0.0'] if @nameserver.empty?
+            if @nameserver_port.empty?
+              @nameserver_port = ['0.0.0.0', Port]
+            end
             if @search
               @search = @search.map {|arg| Label.split(arg) }
             else
@@ -881,9 +898,14 @@ class Resolv
               end
             end
 
-            if !@nameserver.kind_of?(Array) ||
-               !@nameserver.all? {|ns| String === ns }
-              raise ArgumentError.new("invalid nameserver config: #{@nameserver.inspect}")
+            if !@nameserver_port.kind_of?(Array) ||
+               @nameserver_port.any? {|ns_port|
+                  !(Array === ns_port) ||
+                  ns_port.length != 2
+                  !(String === ns_port[0]) ||
+                  !(Integer === ns_port[1])
+               }
+              raise ArgumentError.new("invalid nameserver config: #{@nameserver_port.inspect}")
             end
 
             if !@search.kind_of?(Array) ||
@@ -903,8 +925,8 @@ class Resolv
 
       def single?
         lazy_initialize
-        if @nameserver.length == 1
-          return @nameserver[0]
+        if @nameserver_port.length == 1
+          return @nameserver_port[0]
         else
           return nil
         end
@@ -930,7 +952,7 @@ class Resolv
 
       def generate_timeouts
         ts = [InitialTimeout]
-        ts << ts[-1] * 2 / @nameserver.length
+        ts << ts[-1] * 2 / @nameserver_port.length
         ts << ts[-1] * 2
         ts << ts[-1] * 2
         return ts
@@ -943,9 +965,9 @@ class Resolv
           candidates.each {|candidate|
             begin
               timeouts.each {|tout|
-                @nameserver.each {|nameserver|
+                @nameserver_port.each {|nameserver, port|
                   begin
-                    yield candidate, tout, nameserver
+                    yield candidate, tout, nameserver, port
                   rescue ResolvTimeout
                   end
                 }
