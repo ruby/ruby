@@ -694,6 +694,7 @@ add_signal_thread_list(rb_thread_t *th)
 
 	    if (list == 0) {
 		fprintf(stderr, "[FATAL] failed to allocate memory\n");
+                if (UNLIKELY(TRACE_RAISE_ENABLED())) FIRE_RAISE_FATAL();
 		exit(1);
 	    }
 
@@ -805,6 +806,7 @@ rb_thread_create_timer_thread(void)
 	if (err != 0) {
 	    native_mutex_unlock(&timer_thread_lock);
 	    fprintf(stderr, "[FATAL] Failed to create timer thread (errno: %d)\n", err);
+            if (UNLIKELY(TRACE_RAISE_ENABLED())) FIRE_RAISE_FATAL();
 	    exit(EXIT_FAILURE);
 	}
 	native_cond_wait(&timer_thread_cond, &timer_thread_lock);

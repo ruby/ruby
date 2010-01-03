@@ -376,6 +376,8 @@ thread_cleanup_func(void *th_ptr)
 {
     rb_thread_t *th = th_ptr;
 
+    if (TRACE_THREAD_TERM_ENABLED()) FIRE_THREAD_TERM(th->self, rb_sourcefile(), rb_sourceline());
+
     /* unlock all locking mutexes */
     if (th->keeping_mutexes) {
 	rb_mutex_unlock_all(th->keeping_mutexes, th);
@@ -427,10 +429,16 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 		    th->errinfo = Qnil;
 		    th->local_lfp = proc->block.lfp;
 		    th->local_svar = Qnil;
+		    if (TRACE_THREAD_ENTER_ENABLED()) {
+			VALUE filename = proc->block.iseq->filename;
+			int lineno = proc->block.iseq->line_no;
+			FIRE_THREAD_ENTER(th->self, (TYPE(filename) == T_STRING ? RSTRING_PTR(filename) : 0), lineno);
+		    }
 		    th->value = rb_vm_invoke_proc(th, proc, proc->block.self,
 						  (int)RARRAY_LEN(args), RARRAY_PTR(args), 0);
 		}
 		else {
+		    if (TRACE_THREAD_ENTER_ENABLED()) FIRE_THREAD_ENTER(th->self, 0, 0);
 		    th->value = (*th->first_func)((void *)args);
 		}
 	    });
@@ -461,6 +469,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 
 	th->status = THREAD_KILLED;
 	thread_debug("thread end: %p\n", (void *)th);
+	if (TRACE_THREAD_LEAVE_ENABLED()) FIRE_THREAD_LEAVE(th->self, 0, 0);
 
 	main_th = th->vm->main_thread;
 	if (th != main_th) {
@@ -533,6 +542,7 @@ thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(ANYARGS))
     native_mutex_initialize(&th->interrupt_lock);
     /* kick thread */
     st_insert(th->vm->living_threads, thval, (st_data_t) th->thread_id);
+    if (TRACE_THREAD_INIT_ENABLED()) FIRE_THREAD_INIT(th->self, rb_sourcefile(), rb_sourceline());
     err = native_thread_create(th);
     if (err) {
 	st_delete_wrap(th->vm->living_threads, th->self);
@@ -982,6 +992,7 @@ rb_thread_schedule_rec(int sched_depth)
 	rb_thread_t *th = GET_THREAD();
 
 	thread_debug("rb_thread_schedule/switch start\n");
+        if (TRACE_THREAD_LEAVE_ENABLED()) FIRE_THREAD_LEAVE(th->self, rb_sourcefile(), rb_sourceline());
 
 	RB_GC_SAVE_MACHINE_CONTEXT(th);
 	native_mutex_unlock(&th->vm->global_vm_lock);
@@ -992,6 +1003,7 @@ rb_thread_schedule_rec(int sched_depth)
 
 	rb_thread_set_current(th);
 	thread_debug("rb_thread_schedule/switch done\n");
+        if (TRACE_THREAD_ENTER_ENABLED()) FIRE_THREAD_ENTER(th->self, rb_sourcefile(), rb_sourceline());
 
         if (!sched_depth && UNLIKELY(GET_THREAD()->interrupt_flag)) {
             rb_threadptr_execute_interrupts_rec(GET_THREAD(), sched_depth+1);

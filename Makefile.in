@@ -52,6 +52,7 @@ debugflags = @debugflags@
 warnflags = @warnflags@
 XCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir) @XCFLAGS@
 CPPFLAGS = @CPPFLAGS@
+CPPOUTFILE = @CPPOUTFILE@
 LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
 EXTLDFLAGS = 
 XLDFLAGS = @XLDFLAGS@ $(EXTLDFLAGS)
@@ -66,6 +67,10 @@ ARCHMINIOBJS = @MINIOBJS@
 BUILTIN_ENCOBJS = @BUILTIN_ENCOBJS@
 BUILTIN_TRANSSRCS = @BUILTIN_TRANSSRCS@
 BUILTIN_TRANSOBJS = @BUILTIN_TRANSOBJS@
+DTRACE_OBJ      = @DTRACE_OBJ@
+MINIDTRACE_OBJ  = @MINIDTRACE_OBJ@
+GOLFDTRACE_OBJ  = @GOLFDTRACE_OBJ@
+LIBRUBY_DTRACE_OBJ  = @LIBRUBY_DTRACE_OBJ@
 
 RUBY_BASE_NAME=@RUBY_BASE_NAME@
 RUBY_INSTALL_NAME=@RUBY_INSTALL_NAME@
@@ -92,6 +97,7 @@ LIBRUBYARG_STATIC = @LIBRUBYARG_STATIC@
 LIBRUBYARG_SHARED = @LIBRUBYARG_SHARED@
 
 THREAD_MODEL  = @THREAD_MODEL@
+TRACING_MODEL = @TRACING_MODEL@
 
 PREP          = @PREP@
 ARCHFILE      = @ARCHFILE@
@@ -115,8 +121,10 @@ IFCHANGE      = $(srcdir)/tool/ifchange
 SET_LC_MESSAGES = env LC_MESSAGES=C
 OBJDUMP       = @OBJDUMP@
 OBJCOPY       = @OBJCOPY@
+DTRACE        = @DTRACE@
 VCS           = @VCS@
 VCSUP         = @VCSUP@
+DOXYGEN	      = @DOXYGEN@
 
 OBJEXT        = @OBJEXT@
 ASMEXT        = S
@@ -139,27 +147,36 @@ all:
 
 miniruby$(EXEEXT):
 		@-if test -f $@; then $(MV) -f $@ $@.old; $(RM) $@.old; fi
-		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINLIBS) $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT) $(LIBS) $(OUTFLAG)$@
+		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINLIBS) $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT) $(MINIDTRACE_OBJ) $(LIBS) $(OUTFLAG)$@
+$(MINIDTRACE_OBJ): $(arch_hdrdir)/ruby/dtrace.d $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT)
+		$(DTRACE) -G -o $@ -s $(arch_hdrdir)/ruby/dtrace.d $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT)
 
 $(PROGRAM):
 		@$(RM) $@
-		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINLIBS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) $(OUTFLAG)$@
+		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINLIBS) $(MAINOBJ) $(EXTOBJS) $(DTRACE_OBJ) $(LIBRUBYARG) $(LIBS) $(OUTFLAG)$@
+$(DTRACE_OBJ): $(arch_hdrdir)/ruby/dtrace.d $(MAINOBJ) $(EXTOBJS)
+		$(DTRACE) -G -o $@ -s $(arch_hdrdir)/ruby/dtrace.d $(MAINOBJ) $(EXTOBJS)
+$(GOLFDTRACE_OBJ): $(arch_hdrdir)/ruby/dtrace.d $(GOLFOBJS) $(EXTOBJS)
+		$(DTRACE) -G -o $@ -s $(arch_hdrdir)/ruby/dtrace.d $(GOLFOBJS) $(EXTOBJS)
 
 # We must `rm' the library each time this rule is invoked because "updating" a
 # MAB library on Apple/NeXT (see --enable-fat-binary in configure) is not
 # supported.
 $(LIBRUBY_A):
 		@$(RM) $@
-		$(AR) $(ARFLAGS) $@ $(OBJS) $(DMYEXT)
+		$(AR) $(ARFLAGS) $@ $(OBJS) $(DMYEXT) $(LIBRUBY_DTRACE_OBJ)
 		@-$(RANLIB) $@ 2> /dev/null || true
 
 $(LIBRUBY_SO):
 		@-$(PRE_LIBRUBY_UPDATE)
-		$(LDSHARED) $(DLDFLAGS) $(OBJS) $(DLDOBJS) $(SOLIBS) $(OUTFLAG)$@
+		$(LDSHARED) $(DLDFLAGS) $(OBJS) $(DLDOBJS) $(LIBRUBY_DTRACE_OBJ) $(SOLIBS) $(OUTFLAG)$@
 		-$(OBJCOPY) -w -L '@EXPORT_PREFIX@Init_*' -L '@EXPORT_PREFIX@*_threadptr_*' $@
 		@-$(MINIRUBY) -e 'ARGV.each{|link| File.delete link if File.exist? link; \
 						  File.symlink "$(LIBRUBY_SO)", link}' \
 				$(LIBRUBY_ALIASES) || true
+
+$(LIBRUBY_DTRACE_OBJ): $(arch_hdrdir)/ruby/dtrace.d $(OBJS) $(DMYEXT)
+		$(DTRACE) -G -o $@ -s $(arch_hdrdir)/ruby/dtrace.d $(OBJS) $(DMYEXT)
 
 fake: $(arch)-fake.rb
 $(arch)-fake.rb: config.status
@@ -187,6 +204,22 @@ $(srcdir)/configure: $(srcdir)/configure.in
 	$(CHDIR) $(srcdir) && exec $(AUTOCONF)
 
 incs: id.h
+
+$(arch_hdrdir)/ruby/trace_dtrace.h: $(arch_hdrdir)/ruby/dtrace.d
+	$(DTRACE) -h -o $@ -s $(arch_hdrdir)/ruby/dtrace.d
+
+# NOTE: dtrace is not used on cross compiling
+$(arch_hdrdir)/ruby/dtrace.d: $(srcdir)/defs/dtrace.d
+	@echo '#include <limits.h>' > conftest.c
+	@echo '#define RUBY_TRACE_H' >> conftest.c
+	@echo '#include "ruby/ruby.h"' >> conftest.c
+	@echo 'int main(){ printf("%d", SIZEOF_VALUE * CHAR_BIT); return 0; }' >> conftest.c
+	@$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -c $(COUTFLAG)conftest.o conftest.c 
+	$(CC) $(LDFLAGS) $(XLDFLAGS) conftest.o $(LIBS) $(OUTFLAG)conftest
+	@$(CP) $(srcdir)/defs/dtrace.d dtrace.c
+	$(CPP) $(CPPFLAGS) -DBITSIZE_OF_VALUE=`./conftest` dtrace.c $(CPPOUTFILE)
+	$(MV) conftest.i $@
+	@$(RM) conftest conftest.[co] dtrace.c
 
 # Things which should be considered:
 # * with gperf v.s. without gperf

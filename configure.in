@@ -357,6 +357,51 @@ fi
 MAKEDIRS="$MKDIR_P"
 AC_SUBST(MAKEDIRS)
 
+AC_DEFUN([RUBY_DTRACE_POSTPROCESS],
+[AC_CACHE_CHECK(whether $DTRACE needs post processing, rb_cv_prog_dtrace_g,
+[
+ echo "int main(void){ return 0; }" > conftest.c
+ echo "provider conftest{};" > conftest_provider.d
+ $CC $CFLAGS -c -o conftest.o conftest.c
+ if $DTRACE -G -s conftest_provider.d conftest.o 2>/dev/null; then
+   rb_cv_prog_dtrace_g=yes
+   $1
+ else
+   rb_cv_prog_dtrace_g=no
+   $2
+ fi
+ rm -f conftest.o conftest.c conftest_provider.d conftest_provider.o
+])
+])
+
+AC_DEFUN([RUBY_DTRACE_BSD_BROKEN],
+[AC_CACHE_CHECK(whether dtrace USDT is broken, rb_cv_dtrace_bsd_broken,
+[
+    cat <<EOF > conftest.c
+#define _DTRACE_VERSION 1
+#include "conftest_provider.h"
+int main(void)
+{
+    if (CONFTEST_FIRE_ENABLED()) CONFTEST_FIRE();
+    return 0;
+}
+EOF
+    echo "provider conftest{ probe fire(); };" > conftest_provider.d
+    $DTRACE -h -o conftest_provider.h -s conftest_provider.d
+    $CC $CFLAGS -c -o conftest.o conftest.c
+    if $DTRACE -G -o conftest_provider.o -s conftest_provider.d conftest.o >/dev/null 2>/dev/null; then
+        rb_cv_dtrace_bsd_broken=no
+        $2
+    else
+        rb_cv_dtrace_bsd_broken=yes
+        $1
+    fi
+    rm -f conftest.[co] conftest_provider.[dho]
+])
+])
+
+AC_CHECK_TOOL(DTRACE, dtrace)
+
 AC_CHECK_TOOL(DOT, dot)
 AC_CHECK_TOOL(DOXYGEN, doxygen)
 if test x"$DOXYGEN" = x; then
@@ -1022,6 +1067,7 @@ AC_CHECK_HEADERS(limits.h sys/file.h sys/ioctl.h sys/syscall.h\
 		 sys/mkdev.h sys/utime.h xti.h netinet/in_systm.h float.h ieeefp.h \
 		 ucontext.h intrinsics.h langinfo.h locale.h sys/sendfile.h time.h \
 		 net/socket.h sys/socket.h)
+
 
 dnl Check additional types.
 RUBY_CHECK_SIZEOF(rlim_t, [int long "long long"], [], [
@@ -2065,6 +2111,54 @@ case "$target_os" in
     ;;
 esac
 
+AC_ARG_WITH(tracing-model,
+            AS_HELP_STRING([--with-tracing-model=MODEL], [use MODEL for tracing ruby's internal. [[auto]] (none|dtrace|auto)]),
+            [TRACING_MODEL=$withval], [TRACING_MODEL=auto])
+
+if test "${TRACING_MODEL}" = "auto"; then
+    if test x"$DTRACE" != x -a x"$cross_compiling" != xyes; then
+        RUBY_DTRACE_POSTPROCESS()
+        if test "$rb_cv_prog_dtrace_g" = 'yes'; then 
+            RUBY_DTRACE_BSD_BROKEN([TRACING_MODEL=none], [TRACING_MODEL=dtrace]) 
+        else
+            TRACING_MODEL=dtrace
+        fi
+    else
+        TRACING_MODEL=none
+    fi
+fi
+
+case "${TRACING_MODEL}" in
+    when(none)
+        AC_DEFINE(RUBY_TRACING_MODEL, RUBY_TRACING_MODEL_NONE, [none])
+        ;;
+    when(dtrace)
+        if test -z "$DTRACE"; then
+            AC_MSG_ERROR([dtrace(1) is missing])
+        elif test "$cross_compiling" = yes; then
+            AC_MSG_ERROR([--with-tracing-model=dtrace, however, cross compiling])
+        else
+            RUBY_DTRACE_POSTPROCESS()
+            if test "$rb_cv_prog_dtrace_g" = 'yes'; then 
+                RUBY_DTRACE_BSD_BROKEN([AC_MSG_ERROR([--with-tracing-model=dtrace, however, USDT is broken])], [])
+                DTRACE_OBJ='dtrace.$(OBJEXT)'
+                MINIDTRACE_OBJ='minidtrace.$(OBJEXT)'
+                GOLFDTRACE_OBJ='golfdtrace.$(OBJEXT)'
+                LIBRUBY_DTRACE_OBJ='libruby_dtrace.$(OBJEXT)'
+            fi
+        fi
+        AC_DEFINE(RUBY_TRACING_MODEL, RUBY_TRACING_MODEL_DTRACE, [dtrace])
+        AC_SUBST(DTRACE_OBJ)
+        AC_SUBST(MINIDTRACE_OBJ)
+        AC_SUBST(GOLFDTRACE_OBJ)
+        AC_SUBST(LIBRUBY_DTRACE_OBJ)
+        ;;
+    when(*)
+        AC_MSG_ERROR([unknown tracing model: ${TRACING_MODEL}])
+        ;;
+esac
+AC_SUBST(TRACING_MODEL)
+
 AC_ARG_WITH(soname,
 	AS_HELP_STRING([--with-soname=SONAME], [base name of shared library]),
 	[RUBY_SO_NAME=$withval], [RUBY_SO_NAME='$(RUBY_BASE_NAME)'])
@@ -2712,4 +2806,5 @@ AC_CONFIG_FILES(Makefile, [{
 [EXEEXT=$EXEEXT gnumake=$gnumake])
 AC_OUTPUT
 dnl }
+
 dnl }

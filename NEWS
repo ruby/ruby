@@ -217,6 +217,10 @@ with all sufficient information, see the ChangeLog file.
     * Pathname#realdirpath
     * Pathname#each_child
 
+* probe
+  new library.
+  * Kernel#fire_probe
+
 * Readline
   * new methods:
     * Readline.set_screen_size
@@ -261,6 +265,14 @@ with all sufficient information, see the ChangeLog file.
   Unicode semantics
 * $: no longer includes the current directory, use require_relative
 
+=== Tracing (experimental)
+
+* Runtime tracing is supported. Currently implemented on top of dtrace.
+  You can trace a ruby program without any modification if your platform
+  supports dtrace USDT.
+
+  This feature is experimental. The semantics of probes will possibly change.
+
 === Compilation options
 
 * --program-prefix and --program-suffix no longer act on the shared object
@@ -271,6 +283,8 @@ with all sufficient information, see the ChangeLog file.
 
 * --with-arch is added for universal binary, instead of
   --enable-fat-binary option.
+
+* --with-tracing-model is added for choosing a particular tracing mechanism.
 
 === Compatibility issues (excluding feature bug fixes)
 

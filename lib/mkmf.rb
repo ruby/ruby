@@ -69,6 +69,8 @@ $solaris = /solaris/ =~ RUBY_PLATFORM
 $universal = /universal/ =~ RUBY_PLATFORM
 $dest_prefix_pattern = (File::PATH_SEPARATOR == ';' ? /\A([[:alpha:]]:)?/ : /\A/)
 
+$dtrace_postprocess = (CONFIG['DTRACE_OBJ'] and /^\s*$/ !~ CONFIG['DTRACE_OBJ'])
+
 # :stopdoc:
 
 def config_string(key, config = CONFIG)
@@ -1450,6 +1452,7 @@ VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
   mk << %{
 CC = #{CONFIG['CC']}
 CXX = #{CONFIG['CXX']}
+DTRACE = #{CONFIG['DTRACE']}
 LIBRUBY = #{CONFIG['LIBRUBY']}
 LIBRUBY_A = #{CONFIG['LIBRUBY_A']}
 LIBRUBYARG_SHARED = #$LIBRUBYARG_SHARED
@@ -1719,6 +1722,7 @@ LOCAL_LIBS = #{$LOCAL_LIBS}
 LIBS = #{$LIBRUBYARG} #{$libs} #{$LIBS}
 SRCS = #{srcs.collect(&File.method(:basename)).join(' ')}
 OBJS = #{$objs.join(" ")}
+DTRACE_OBJ = #{$dtrace_postprocess ? "$(TARGET)_dtrace.#{$OBJEXT}" : ''}
 TARGET = #{target}
 DLLIB = #{dllib}
 EXTSTATIC = #{$static || ""}
@@ -1739,6 +1743,12 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
 .PHONY: clean clean-so clean-rb
 "
   mfile.print CLEANINGS
+
+  if $dtrace_postprocess 
+    mfile.print "$(DTRACE_OBJ): $(OBJS)\n"
+    mfile.print "\t$(DTRACE) -G -o $@ -s $(arch_hdrdir)/ruby/dtrace.d $(OBJS)\n"
+  end
+
   fsep = config_string('BUILD_FILE_SEPARATOR') {|s| s unless s == "/"}
   if fsep
     sep = ":/=#{fsep}"
@@ -1841,7 +1851,7 @@ site-install-rb: install-rb
   mfile.print "$(RUBYARCHDIR)/" if $extout
   mfile.print "$(DLLIB): "
   mfile.print "$(DEFFILE) " if makedef
-  mfile.print "$(OBJS) Makefile\n"
+  mfile.print "$(OBJS) $(DTRACE_OBJ) Makefile\n"
   mfile.print "\t@-$(RM) $(@#{sep})\n"
   mfile.print "\t@-$(MAKEDIRS) $(@D)\n" if $extout
   link_so = LINK_SO.gsub(/^/, "\t")
@@ -1850,8 +1860,8 @@ site-install-rb: install-rb
   end
   mfile.print link_so, "\n\n"
   unless $static.nil?
-    mfile.print "$(STATIC_LIB): $(OBJS)\n\t@-$(RM) $(@#{sep})\n\t"
-    mfile.print "$(AR) #{config_string('ARFLAGS') || 'cru '}$@ $(OBJS)"
+    mfile.print "$(STATIC_LIB): $(OBJS) $(DTRACE_OBJ)\n\t@-$(RM) $(@#{sep})\n\t"
+    mfile.print "$(AR) #{config_string('ARFLAGS') || 'cru '}$@ $(OBJS) $(DTRACE_OBJ)"
     config_string('RANLIB') do |ranlib|
       mfile.print "\n\t@-#{ranlib} $(DLLIB) 2> /dev/null || true"
     end
@@ -1872,6 +1882,7 @@ site-install-rb: install-rb
     end
     headers << $config_h
     headers << '$(RUBY_EXTCONF_H)' if $extconf_h
+    headers << '$(arch_hdrdir)/ruby/dtrace.d' if $dtrace_postprocess
     mfile.print "$(OBJS): ", headers.join(' '), "\n"
   end
 
@@ -2004,9 +2015,9 @@ TRY_LINK = config_string('TRY_LINK') ||
   "$(CFLAGS) $(src) $(LIBPATH) $(LDFLAGS) $(ARCH_FLAG) $(LOCAL_LIBS) $(LIBS)"
 LINK_SO = config_string('LINK_SO') ||
   if CONFIG["DLEXT"] == $OBJEXT
-    "ld $(DLDFLAGS) -r -o $@ $(OBJS)\n"
+    "ld $(DLDFLAGS) -r -o $@ $(OBJS) $(DTRACE_OBJ)\n"
   else
-    "$(LDSHARED) #{OUTFLAG}$@ $(OBJS) " \
+    "$(LDSHARED) #{OUTFLAG}$@ $(OBJS) $(DTRACE_OBJ) " \
     "$(LIBPATH) $(DLDFLAGS) $(LOCAL_LIBS) $(LIBS)"
   end
 LIBPATHFLAG = config_string('LIBPATHFLAG') || ' -L"%s"'
