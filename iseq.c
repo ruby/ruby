@@ -1473,6 +1473,27 @@ rb_iseq_build_for_ruby2cext(
     return iseqval;
 }
 
+const char *
+rb_vm_insn_name(int insn)
+{
+    if (insn < VM_INSTRUCTION_SIZE) {
+        return insn_name(insn);
+    } else {
+        return 0;
+    }
+}
+
+int
+rb_vm_insn_len(int insn)
+{
+    if (insn < VM_INSTRUCTION_SIZE) {
+        return insn_len(insn);
+    } else {
+        return 0;
+    }
+}
+
+
 void
 Init_ISeq(void)
 {

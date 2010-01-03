@@ -142,11 +142,11 @@ loadpath: $(PREP) PHONY
 
 $(PREP): $(MKFILES)
 
-miniruby$(EXEEXT): config.status $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT) $(ARCHFILE)
+miniruby$(EXEEXT): config.status $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT) $(ARCHFILE) $(MINIDTRACE_OBJ)
 
 GORUBY = go$(RUBY_INSTALL_NAME)
-golf: $(LIBRUBY) $(GOLFOBJS) PHONY
-	$(MAKE) $(MFLAGS) MAINOBJ="$(GOLFOBJS)" PROGRAM=$(GORUBY)$(EXEEXT) program
+golf: $(LIBRUBY) $(GOLFOBJS) $(GOLFDTRACE_OBJ) PHONY
+	$(MAKE) $(MFLAGS) MAINOBJ="$(GOLFOBJS)" DTRACE_OBJ="$(GOLFDTRACE_OBJ)" PROGRAM=$(GORUBY)$(EXEEXT) program
 capi: Doxyfile PHONY $(PREP)
 	@$(MAKEDIRS) doc/capi
 	@$(DOXYGEN)
@@ -157,9 +157,9 @@ Doxyfile: $(srcdir)/template/Doxyfile.tmpl $(PREP) $(srcdir)/tool/generic_erb.rb
 
 program: $(PROGRAM)
 
-$(PROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SETUP) $(PREP)
+$(PROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(DTRACE_OBJ) $(SETUP) $(PREP)
 
-$(LIBRUBY_A):	$(OBJS) $(DMYEXT) $(ARCHFILE)
+$(LIBRUBY_A):	$(OBJS) $(DMYEXT) $(LIBRUBY_DTRACE_OBJ) $(ARCHFILE)
 
 $(LIBRUBY_SO):	$(OBJS) $(DLDOBJS) $(LIBRUBY_A) $(PREP) $(LIBRUBY_SO_UPDATE) $(BUILTIN_ENCOBJS)
 
@@ -385,6 +385,7 @@ distclean: distclean-ext distclean-local distclean-enc distclean-golf distclean-
 distclean-local:: clean-local
 	@$(RM) $(MKFILES) rbconfig.rb yasmdata.rb encdb.h
 	@$(RM) config.cache config.log config.status config.status.lineno $(PRELUDES)
+	@$(RM) $(arch_hdrdir)/ruby/dtrace.d
 	@$(RM) *~ *.bak *.stackdump core *.core gmon.out $(PREP)
 distclean-ext:: PHONY
 distclean-golf: clean-golf
@@ -511,7 +512,8 @@ win32.$(OBJEXT): {$(VPATH)}win32.c $(RUBY_H_INCLUDES)
 ###
 
 RUBY_H_INCLUDES    = {$(VPATH)}ruby.h {$(VPATH)}config.h {$(VPATH)}defines.h \
-		     {$(VPATH)}intern.h {$(VPATH)}missing.h {$(VPATH)}st.h
+		     {$(VPATH)}intern.h {$(VPATH)}missing.h {$(VPATH)}st.h \
+		     {$(VPATH)}trace.h {$(VPATH)}trace_$(TRACING_MODEL).h
 ENCODING_H_INCLUDES= {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h
 ID_H_INCLUDES      = {$(VPATH)}id.h
 VM_CORE_H_INCLUDES = {$(VPATH)}vm_core.h {$(VPATH)}vm_opts.h \
@@ -677,6 +679,9 @@ newline.c: $(srcdir)/enc/trans/newline.trans $(srcdir)/tool/transcode-tblgen.rb
 newline.$(OBJEXT): {$(VPATH)}newline.c {$(VPATH)}defines.h \
   {$(VPATH)}intern.h {$(VPATH)}missing.h {$(VPATH)}st.h \
   {$(VPATH)}transcode_data.h {$(VPATH)}ruby.h {$(VPATH)}config.h
+
+trace_none.h:
+	echo > $@
 
 INSNS2VMOPT = --srcdir="$(srcdir)"
 

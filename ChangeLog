@@ -1,3 +1,96 @@
+Sun Jan  3 23:54:51 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* trace.h: new file. wraps tracing mechanisms.
+
+	* defs/dtrace.d: new file. defined a dtrace provider "ruby".
+
+	* include/ruby/ruby.h (LIKELY): moved from vm.c.
+	  (UNLIKELY): ditto.
+	  (OBJSETUP): probe "object-create".
+	  (RUBY_EVENT_RESCUE): new event.
+
+	* vm_exec.c (DEBUG_ENTER_INSN): embeded a probe insn-entry into it.
+	  (DEBUG_END_INSN): insn-return.
+
+	* vm.c (LIKELY): moved into ruby.h.
+	  (UNLIKELY): ditto.
+	  (Init_BareVM): embeded a probe "raise" into it.
+
+	* variable.c (rb_class2name_without_alloc): new utility function.
+
+	* tool/rbinstall.rb (install?(:ext, :arch, :'ext-arch')): installs 
+	  dtrace.d if necessary.
+
+	* thread_pthread.c (add_signal_thread_list): probe "raise".
+	  (rb_thread_create_timer_thread): ditto.
+
+	* thread.c (rb_thread_schedule_rec): probes "thread-enter" and
+	  "thread-leave",
+	  (thread_start_func_2): ditto.
+	  (thread_cleanup_func): probe "thread-term"
+
+	* lib/mkmf.rb: supports dtrace postprocessor on making an extension.
+
+	* iseq.c (rb_vm_insn_name): new utility function.
+	  (rb_vm_insn_len): ditto.
+
+	* insns.def (hook): probes "method-etnry", "method-return", "line",
+	  and "rescue".
+
+	* compile.c (iseq_compile_each): adds a trace op for "rescue" probe.
+
+	* gc.c (garbage_collect): probes "gc-begin" and "gc-end".
+	  (obj_free): probe "object-free"
+	  (garbage_collect_with_gvl): probe "raise"
+	  (negative_size_allocation_error): ditto.
+	  (rb_memerror): ditto.
+
+	* eval.c (rb_rescue2): probe "rescue"
+	  (rb_longjmp): probe "raise"
+
+	* ext/probe/probe.c: new extension for application defined probes.
+
+	* ext/probe/extconf.rb: ditto.
+
+	* configure.in (--with-tracing-model): new option to choose a tracing
+	  mechanism.
+	  (DTRACE): new substitution. name of dtrace(1).
+	  (RUBY_TRACING_MODEL): new substitution.
+	  (DTRACE_OBJ): ditto.
+	  (MINIDTRACE_OBJ): ditto.
+	  (GOLFDTRACE_OBJ): ditto.
+	  (LIBRUBY_DTRACE_OBJ): ditto.
+	  (RUBY_DTRACE_POSTPROCESS): new macro. checks whether the dtrace on 
+	  the system needs postprocessing.
+	  (RUBY_DTRACE_BSD_BROKEN): new macro. checks whether the dtrace
+	  supports USDT.
+
+	* Makefile.in: 
+	  (DTRACE): new variable. name of dtrace(1).
+	  (TRACING_MODEL): new variable. name of the chosen tracing mechanism.
+	  (DTRACE_OBJ): same as the one in configure.in.
+	  (MINIDTRACE_OBJ): ditto.
+	  (GOLFDTRACE_OBJ): ditto.
+	  (LIBRUBY_DTRACE_OBJ): ditto.
+	  (CPPOUTFILE): new substitution. necessary for generating dtrace.d
+	  (trace_none.h): new target for TRACING_MODEL=none
+	  (RUBY_H_INCLUDES): appended a header for tracing.
+	  (distclean-local): also removes preprocessed version of dtrace.d
+	  ($(LIBRUBY_A)): needs $(LIBRUBY_DTRACE_OBJ) if dtrace needs 
+	  postprocessing.
+	  ($(PROGRAM)): ditto.
+	  (golf): ditto.
+	  (miniruby): ditto.
+	  ($(arch_hdrdir)/ruby/dtrace.d): new target. preprocessed verson 
+	  of defs/dtrace.d. generated if necessary.
+	  ($(arch_hdrdir)/ruby/trace_dtrace.h): new target.
+	  definition of probes.
+	  ($(LIBRUBY_DTRACE_OBJ)): new target. generated if dtrace needs 
+	  postprocessing.
+	  ($(DTRACE_OBJ)): ditto.
+	  ($(MINIDTRACE_OBJ)): ditto.
+	  ($(GOLFDTRACE_OBJ)): ditto.
+
 Sun Jan  3 15:34:19 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/rexml/text.rb: String no longer has #each.

@@ -52,8 +52,39 @@ typedef rb_iseq_t *ISEQ;
 #else
 
 #define debugs
-#define DEBUG_ENTER_INSN(insn)
-#define DEBUG_END_INSN()
+extern const char *rb_vm_insn_name(int);
+#define DEBUG_ENTER_INSN(insn) \
+    do { \
+	if (UNLIKELY(TRACE_INSN_ENTRY_ENABLED())) { \
+	    rb_control_frame_t *cfp = GET_CFP(); \
+	    rb_iseq_t *iseq = cfp->iseq; \
+	    if (iseq != NULL && VM_FRAME_TYPE(cfp) != VM_FRAME_MAGIC_FINISH) { \
+		VALUE *seq = iseq->iseq; \
+		int pc = cfp->pc - iseq->iseq_encoded; \
+		FIRE_INSN_ENTRY((char *)rb_vm_insn_name(seq[pc]), \
+                        seq+1, \
+			(char *)rb_sourcefile(), \
+			rb_sourceline()); \
+	    } \
+	} \
+    } \
+    while (0)
+#define DEBUG_END_INSN() \
+    do { \
+	if (UNLIKELY(TRACE_INSN_RETURN_ENABLED())) { \
+	    rb_control_frame_t *cfp = GET_CFP(); \
+	    rb_iseq_t *iseq = cfp->iseq; \
+	    if (iseq != NULL && VM_FRAME_TYPE(cfp) != VM_FRAME_MAGIC_FINISH) { \
+		VALUE *seq = iseq->iseq; \
+		int pc = cfp->pc - iseq->iseq_encoded; \
+		FIRE_INSN_RETURN((char *)rb_vm_insn_name(seq[pc]), \
+                        seq+1, \
+			(char *)rb_sourcefile(), \
+			rb_sourceline()); \
+	    } \
+	} \
+    } \
+    while (0)
 #endif
 
 #define throwdebug if(0)printf

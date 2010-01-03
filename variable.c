@@ -313,6 +313,27 @@ rb_class2name(VALUE klass)
     return RSTRING_PTR(rb_class_name(klass));
 }
 
+/*!
+ * \internal
+ * Same as rb_class2name but safe if during GC
+ *
+ * \post the returned pointer points a string. not NULL.
+ */
+const char *
+rb_class2name_without_alloc(VALUE klass)
+{
+    if (RCLASS_IV_TBL(klass)) {
+	st_data_t n;
+	if (st_lookup(RCLASS_IV_TBL(klass), (st_data_t)classpath, &n) ||
+	    st_lookup(RCLASS_IV_TBL(klass), (st_data_t)classid, &n) ||
+	    st_lookup(RCLASS_IV_TBL(klass), (st_data_t)tmp_classpath, &n)) {
+	    if (TYPE(n) != T_STRING) rb_bug("class path is not set properly");
+	    return RSTRING_PTR(n);
+	}
+    }
+    return "(anonymous)";
+}
+
 const char *
 rb_obj_classname(VALUE obj)
 {

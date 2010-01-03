@@ -40,10 +40,19 @@ extern "C" {
 #endif
 
 #ifdef __GNUC__
-#define PRINTF_ARGS(decl, string_index, first_to_check) \
-  decl __attribute__((format(printf, string_index, first_to_check)))
+# define PRINTF_ARGS(decl, string_index, first_to_check) \
+   decl __attribute__((format(printf, string_index, first_to_check)))
+# if __GNUC__ >= 3
+#  define LIKELY(x)   (__builtin_expect((x), 1))
+#  define UNLIKELY(x) (__builtin_expect((x), 0))
+# else
+#  define LIKELY(x)   (x)
+#  define UNLIKELY(x) (x)
+# endif
 #else
-#define PRINTF_ARGS(decl, string_index, first_to_check) decl
+# define PRINTF_ARGS(decl, string_index, first_to_check) decl
+# define LIKELY(x)   (x)
+# define UNLIKELY(x) (x)
 #endif
 
 #ifdef HAVE_STDLIB_H
@@ -516,12 +525,17 @@ double rb_num2dbl(VALUE);
 VALUE rb_uint2big(VALUE);
 VALUE rb_int2big(SIGNED_VALUE);
 
+#include "ruby/trace.h"
+
 VALUE rb_newobj(void);
 #define NEWOBJ(obj,type) type *obj = (type*)rb_newobj()
 #define OBJSETUP(obj,c,t) do {\
     RBASIC(obj)->flags = (t);\
     RBASIC(obj)->klass = (c);\
     if (rb_safe_level() >= 3) FL_SET(obj, FL_TAINT | FL_UNTRUSTED);\
+    if (UNLIKELY(TRACE_OBJECT_CREATE_ENABLED())) { \
+        FIRE_OBJECT_CREATE((VALUE)(obj), rb_class2name((c)), rb_sourcefile(), rb_sourceline()); \
+    } \
 } while (0)
 #define CLONESETUP(clone,obj) do {\
     OBJSETUP(clone,rb_singleton_class_clone((VALUE)obj),RBASIC(obj)->flags);\
@@ -1325,6 +1339,7 @@ int ruby_native_thread_p(void);
 #define RUBY_EVENT_C_CALL    0x0020
 #define RUBY_EVENT_C_RETURN  0x0040
 #define RUBY_EVENT_RAISE     0x0080
+#define RUBY_EVENT_RESCUE    0x0100
 #define RUBY_EVENT_ALL       0xffff
 #define RUBY_EVENT_VM       0x10000
 #define RUBY_EVENT_SWITCH   0x20000
