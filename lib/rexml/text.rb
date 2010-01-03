@@ -274,7 +274,7 @@ module REXML
     def indent_text(string, level=1, style="\t", indentfirstline=true)
       return string if level < 0
       new_string = ''
-      string.each { |line|
+      string.each_line { |line|
         indent_string = style * level
         new_line = (indent_string + line).sub(/[\s]+$/,'')
         new_string << new_line
