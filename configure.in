@@ -401,6 +401,7 @@ EOF
 ])
 
 AC_CHECK_TOOL(DTRACE, dtrace)
+$DTRACE -l 1>/dev/null 2>/dev/null || DTRACE=""
 
 AC_CHECK_TOOL(DOT, dot)
 AC_CHECK_TOOL(DOXYGEN, doxygen)
