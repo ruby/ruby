@@ -1,3 +1,9 @@
+Tue Jan  5 02:03:34 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in (DTRACE): clear this when `dtrace -l` fails.
+	  Note that current FreeBSD needs privilege to call it;
+	  so to use DTrace on FreeBSD, you should run configure as root.
+
 Mon Jan  4 21:24:18 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* gc.c: added UNLIKELY to probes for optimization.
