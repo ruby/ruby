@@ -446,6 +446,10 @@ native_thread_init_stack(rb_thread_t *th)
     th->machine_stack_maxsize = size - space;
 }
 
+#ifndef InterlockedExchangePointer
+#define InterlockedExchangePointer(t, v) \
+    (void *)InterlockedExchange((long *)(t), (long)(v))
+#endif
 static void
 native_thread_destroy(rb_thread_t *th)
 {
