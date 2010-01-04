@@ -1,3 +1,11 @@
+Mon Jan  4 21:24:18 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* gc.c: added UNLIKELY to probes for optimization.
+
+	* vm.c: ditto.
+
+	* thread.c: ditto.
+
 Mon Jan  4 09:30:54 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (TRACING_MODEL): follow yugui's previous changes.

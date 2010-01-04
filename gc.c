@@ -1977,7 +1977,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
     }
 
-    if (TRACE_OBJECT_FREE_ENABLED()) FIRE_OBJECT_FREE(rb_obj_id(obj));
+    if (UNLIKELY(TRACE_OBJECT_FREE_ENABLED())) FIRE_OBJECT_FREE(rb_obj_id(obj));
 
     if (FL_TEST(obj, FL_EXIVAR)) {
 	rb_free_generic_ivar((VALUE)obj);
@@ -2159,7 +2159,7 @@ garbage_collect(rb_objspace_t *objspace)
     during_gc++;
     objspace->count++;
 
-    if (TRACE_GC_BEGIN_ENABLED()) FIRE_GC_BEGIN();
+    if (UNLIKELY(TRACE_GC_BEGIN_ENABLED())) FIRE_GC_BEGIN();
     GC_PROF_TIMER_START;
     GC_PROF_MARK_TIMER_START;
     SET_STACK_END;
@@ -2208,7 +2208,7 @@ garbage_collect(rb_objspace_t *objspace)
     GC_PROF_SWEEP_TIMER_STOP;
 
     GC_PROF_TIMER_STOP;
-    if (TRACE_GC_END_ENABLED()) FIRE_GC_END();
+    if (UNLIKELY(TRACE_GC_END_ENABLED())) FIRE_GC_END();
     if (GC_NOTIFY) printf("end garbage_collect()\n");
     return TRUE;
 }
