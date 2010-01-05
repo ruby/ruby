@@ -1,3 +1,7 @@
+Tue Jan  5 19:30:53 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ruby/test_exception.rb: add a test. cf [ruby-dev:39116]
+
 Tue Jan  5 02:03:34 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in (DTRACE): clear this when `dtrace -l` fails.
