@@ -97,6 +97,15 @@
 #endif /* OPT_STACK_CACHING */
 #endif /* OPT_CALL_THREADED_CODE */
 
+/* likely */
+#if __GNUC__ >= 3
+#define LIKELY(x)   (__builtin_expect((x), 1))
+#define UNLIKELY(x) (__builtin_expect((x), 0))
+#else /* __GNUC__ >= 3 */
+#define LIKELY(x)   (x)
+#define UNLIKELY(x) (x)
+#endif /* __GNUC__ >= 3 */
+
 typedef unsigned long rb_num_t;
 
 /* iseq data type */

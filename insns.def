@@ -859,30 +859,6 @@ trace
     rb_event_flag_t flag = (rb_event_flag_t)nf;
 
     EXEC_EVENT_HOOK(th, flag, GET_SELF(), 0, 0 /* TODO: id, klass */);
-    if (UNLIKELY(TRACE_METHOD_ENTRY_ENABLED()
-                | TRACE_METHOD_RETURN_ENABLED()
-                | TRACE_LINE_ENABLED()
-                | TRACE_RESCUE_ENABLED())) {
-	if (UNLIKELY(TRACE_METHOD_ENTRY_ENABLED()) && (flag & RUBY_EVENT_CALL) ) {
-	    VALUE self = GET_SELF(), klass;
-	    ID id;
-	    rb_thread_method_id_and_class(GET_THREAD(), &id, &klass);
-	    FIRE_METHOD_ENTRY(self, (char*)rb_class2name(klass), (char*)rb_id2name(id), (char*)rb_sourcefile(), rb_sourceline());
-	}
-	if (UNLIKELY(TRACE_METHOD_RETURN_ENABLED()) && (flag & RUBY_EVENT_RETURN) ) {
-	    VALUE self = GET_SELF(), klass;
-	    ID id;
-	    rb_thread_method_id_and_class(GET_THREAD(), &id, &klass);
-	    FIRE_METHOD_RETURN(self, (char*)rb_class2name(klass), (char*)rb_id2name(id), (char*)rb_sourcefile(), rb_sourceline());
-	}
-	if (UNLIKELY(TRACE_RESCUE_ENABLED()) && (flag & RUBY_EVENT_RESCUE) ) {
-            VALUE ex = GET_DFP()[-2];
-	    FIRE_RESCUE(ex, (char*)rb_class2name(CLASS_OF(ex)), (char*)rb_sourcefile(), rb_sourceline());
-	}
-	if (UNLIKELY(TRACE_LINE_ENABLED()) && (flag & RUBY_EVENT_LINE) ) {
-	    FIRE_LINE((char*)rb_sourcefile(), rb_sourceline());
-	}
-    }
 }
 
 /**********************************************************/
