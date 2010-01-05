@@ -257,6 +257,10 @@ with all sufficient information, see the ChangeLog file.
   * new methods:
     * Zlib::GzipFile#path
 
+* rbconfig
+  * new methods:
+    * RbConfig.ruby
+
 === Language changes
 
 * Regexp properties (\p{}) names now ignore underscores, spaces, and case, so
