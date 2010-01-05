@@ -46,6 +46,11 @@ with all sufficient information, see the ChangeLog file.
   * ENV
     * Uses locale's encoding
 
+  * Float
+    * new constants:
+      * Float::INFINITY
+      * Float::NAN
+
   * IO
     * new method:
       * IO#fdatasync
@@ -260,7 +265,7 @@ with all sufficient information, see the ChangeLog file.
 
 * Regexp properties (\p{}) names now ignore underscores, spaces, and case, so
   \p{ol chiki} is the same as \p{Ol_Chiki}
-* Regexps now support Unicode 5.1 (new characters and scripts)
+* Regexps now support Unicode 5.2 (new characters and scripts)
 * \d, \s, and \w are now ASCII only; use POSIX bracket classes and \p{} for
   Unicode semantics
 * $: no longer includes the current directory, use require_relative
