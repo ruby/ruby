@@ -95,25 +95,25 @@ module MiniTest
     end
 
     def assert_includes collection, obj, msg = nil
-      msg = message(msg) { "Expected #{mu_pp(collection)} to include #{mu_pp(obj)}" }
-      flip = (obj.respond_to? :include?) && ! (collection.respond_to? :include?) # HACK for specs
-      obj, collection = collection, obj if flip
+      msg = message(msg) {
+        "Expected #{mu_pp(collection)} to include #{mu_pp(obj)}"
+      }
       assert_respond_to collection, :include?
       assert collection.include?(obj), msg
     end
 
     def assert_instance_of cls, obj, msg = nil
-      msg = message(msg) { "Expected #{mu_pp(obj)} to be an instance of #{cls}, not #{obj.class}" }
-      flip = (Module === obj) && ! (Module === cls) # HACK for specs
-      obj, cls = cls, obj if flip
+      msg = message(msg) {
+        "Expected #{mu_pp(obj)} to be an instance of #{cls}, not #{obj.class}"
+      }
+
       assert obj.instance_of?(cls), msg
     end
 
     def assert_kind_of cls, obj, msg = nil # TODO: merge with instance_of
       msg = message(msg) {
         "Expected #{mu_pp(obj)} to be a kind of #{cls}, not #{obj.class}" }
-      flip = (Module === obj) && ! (Module === cls) # HACK for specs
-      obj, cls = cls, obj if flip
+
       assert obj.kind_of?(cls), msg
     end
 
@@ -136,28 +136,29 @@ module MiniTest
 
     def assert_raises *exp
       msg = String === exp.last ? exp.pop : nil
+      msg = msg.to_s + "\n" if msg
       should_raise = false
       begin
         yield
         should_raise = true
       rescue Exception => e
+        details = "#{msg}#{mu_pp(exp)} exception expected, not"
         assert(exp.any? { |ex|
                  ex.instance_of?(Module) ? e.kind_of?(ex) : ex == e.class
-               }, exception_details(e, "#{mu_pp(exp)} exception expected, not"))
+               }, exception_details(e, details))
 
         return e
       end
 
       exp = exp.first if exp.size == 1
-      flunk "#{mu_pp(exp)} expected but nothing was raised." if should_raise
+      flunk "#{msg}#{mu_pp(exp)} expected but nothing was raised." if
+        should_raise
     end
 
     def assert_respond_to obj, meth, msg = nil
       msg = message(msg) {
           "Expected #{mu_pp(obj)} (#{obj.class}) to respond to ##{meth}"
         }
-      flip = (Symbol === obj) && ! (Symbol === meth) # HACK for specs
-      obj, meth = meth, obj if flip
       assert obj.respond_to?(meth), msg
     end
 
@@ -247,13 +248,17 @@ module MiniTest
     end
 
     def refute_equal exp, act, msg = nil
-      msg = message(msg) { "Expected #{mu_pp(act)} to not be equal to #{mu_pp(exp)}" }
+      msg = message(msg) {
+        "Expected #{mu_pp(act)} to not be equal to #{mu_pp(exp)}"
+      }
       refute exp == act, msg
     end
 
     def refute_in_delta exp, act, delta = 0.001, msg = nil
       n = (exp - act).abs
-      msg = message(msg) { "Expected #{exp} - #{act} (#{n}) to not be < #{delta}" }
+      msg = message(msg) {
+        "Expected #{exp} - #{act} (#{n}) to not be < #{delta}"
+      }
       refute delta > n, msg
     end
 
@@ -262,24 +267,22 @@ module MiniTest
     end
 
     def refute_includes collection, obj, msg = nil
-      msg = message(msg) { "Expected #{mu_pp(collection)} to not include #{mu_pp(obj)}" }
-      flip = (obj.respond_to? :include?) && ! (collection.respond_to? :include?) # HACK for specs
-      obj, collection = collection, obj if flip
+      msg = message(msg) {
+        "Expected #{mu_pp(collection)} to not include #{mu_pp(obj)}"
+      }
       assert_respond_to collection, :include?
       refute collection.include?(obj), msg
     end
 
     def refute_instance_of cls, obj, msg = nil
-      msg = message(msg) { "Expected #{mu_pp(obj)} to not be an instance of #{cls}" }
-      flip = (Module === obj) && ! (Module === cls) # HACK for specs
-      obj, cls = cls, obj if flip
+      msg = message(msg) {
+        "Expected #{mu_pp(obj)} to not be an instance of #{cls}"
+      }
       refute obj.instance_of?(cls), msg
     end
 
     def refute_kind_of cls, obj, msg = nil # TODO: merge with instance_of
       msg = message(msg) { "Expected #{mu_pp(obj)} to not be a kind of #{cls}" }
-      flip = (Module === obj) && ! (Module === cls) # HACK for specs
-      obj, cls = cls, obj if flip
       refute obj.kind_of?(cls), msg
     end
 
@@ -296,19 +299,22 @@ module MiniTest
     end
 
     def refute_operator o1, op, o2, msg = nil
-      msg = message(msg) { "Expected #{mu_pp(o1)} to not be #{op} #{mu_pp(o2)}" }
+      msg = message(msg) {
+        "Expected #{mu_pp(o1)} to not be #{op} #{mu_pp(o2)}"
+      }
       refute o1.__send__(op, o2), msg
     end
 
     def refute_respond_to obj, meth, msg = nil
       msg = message(msg) { "Expected #{mu_pp(obj)} to not respond to #{meth}" }
-      flip = (Symbol === obj) && ! (Symbol === meth) # HACK for specs
-      obj, meth = meth, obj if flip
+
       refute obj.respond_to?(meth), msg
     end
 
     def refute_same exp, act, msg = nil
-      msg = message(msg) { "Expected #{mu_pp(act)} to not be the same as #{mu_pp(exp)}" }
+      msg = message(msg) {
+        "Expected #{mu_pp(act)} to not be the same as #{mu_pp(exp)}"
+      }
       refute exp.equal?(act), msg
     end
 
@@ -319,7 +325,7 @@ module MiniTest
   end
 
   class Unit
-    VERSION = "1.4.2"
+    VERSION = "1.5.0"
 
     attr_accessor :report, :failures, :errors, :skips
     attr_accessor :test_count, :assertion_count
@@ -520,8 +526,8 @@ module MiniTest
 
       include MiniTest::Assertions
     end # class TestCase
-  end # class Test
-end # module Mini
+  end # class Unit
+end # module MiniTest
 
 if $DEBUG then
   # this helps me ferret out porting issues

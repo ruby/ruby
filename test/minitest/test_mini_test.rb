@@ -616,6 +616,27 @@ FILE:LINE:in `test_assert_raises_triggered_different'
     assert_equal expected, actual
   end
 
+  def test_assert_raises_triggered_different_msg
+    e = assert_raises MiniTest::Assertion do
+      @tc.assert_raises RuntimeError, "XXX" do
+        raise SyntaxError, "icky"
+      end
+    end
+
+    expected = "XXX
+[RuntimeError] exception expected, not
+Class: <SyntaxError>
+Message: <\"icky\">
+---Backtrace---
+FILE:LINE:in `test_assert_raises_triggered_different_msg'
+---------------"
+
+    actual = e.message.gsub(/^.+:\d+/, 'FILE:LINE')
+    actual.gsub!(/block \(\d+ levels\) in /, '') if RUBY_VERSION =~ /^1\.9/
+
+    assert_equal expected, actual
+  end
+
   def test_assert_raises_triggered_none
     e = assert_raises MiniTest::Assertion do
       @tc.assert_raises MiniTest::Assertion do
@@ -624,6 +645,18 @@ FILE:LINE:in `test_assert_raises_triggered_different'
     end
 
     expected = "MiniTest::Assertion expected but nothing was raised."
+
+    assert_equal expected, e.message
+  end
+
+  def test_assert_raises_triggered_none_msg
+    e = assert_raises MiniTest::Assertion do
+      @tc.assert_raises MiniTest::Assertion, "XXX" do
+        # do nothing
+      end
+    end
+
+    expected = "XXX\nMiniTest::Assertion expected but nothing was raised."
 
     assert_equal expected, e.message
   end

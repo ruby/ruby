@@ -1,3 +1,8 @@
+Thu Jan  7 07:56:09 2010  Ryan Davis  <ryand-ruby@zenspider.com>
+
+	* lib/minitest/*.rb: Imported minitest 1.5.0 r5596.
+	* test/minitest/*.rb: ditto.
+
 Tue Jan  5 19:30:53 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/ruby/test_exception.rb: add a test. cf [ruby-dev:39116]
@@ -50496,7 +50501,7 @@ Sun Jul  9 18:06:47 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* lib/mkmf.rb (create_makefile): prevent substitution of macro
 	  definition.  fixed: http://www.yotabanana.com/lab/20060624.html#p02
 
-Sun Jul  9 07:58:48 2006  Ryan Davis  <ryand@zenspider.com>
+Sun Jul  9 07:58:48 2006  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* lib/rdoc/parsers/parse_f95.rb: massive overhaul from Yasuhiro
 	  Morikawa including new file suffixes, function support, public
@@ -65904,7 +65909,7 @@ Wed Mar 10 16:00:14 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* struct.c (rb_struct_s_def): Struct::new executes block with
 	  generated struct class. [ruby-talk:02606]
 
-Wed Mar 10 15:58:43 2004  Ryan Davis  <ryand@zenspider.com>
+Wed Mar 10 15:58:43 2004  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* eval.c (eval): Only print backtrace if generating the backtrace
 	  doesn't generate an exception.  [ruby-core:02621]
