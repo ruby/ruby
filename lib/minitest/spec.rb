@@ -9,7 +9,23 @@
 require 'minitest/unit'
 
 class Module
-  def infect_with_assertions pos_prefix, neg_prefix, skip_re, map = {}
+  def infect_an_assertion meth, new_name, dont_flip = false
+    # warn "%-22p -> %p %p" % [meth, new_name, dont_flip]
+    self.class_eval <<-EOM
+      def #{new_name} *args, &block
+        return MiniTest::Spec.current.#{meth}(*args, &self) if
+          Proc === self
+        return MiniTest::Spec.current.#{meth}(args.first, self) if
+          args.size == 1 unless #{!!dont_flip}
+        return MiniTest::Spec.current.#{meth}(self, *args)
+      end
+    EOM
+  end
+
+  def infect_with_assertions(pos_prefix, neg_prefix,
+                             skip_re,
+                             dont_flip_re = /\c0/,
+                             map = {})
     MiniTest::Assertions.public_instance_methods(false).each do |meth|
       meth = meth.to_s
 
@@ -25,14 +41,7 @@ class Module
       regexp, replacement = map.find { |re, _| new_name =~ re }
       new_name.sub! regexp, replacement if replacement
 
-      # warn "%-22p -> %p %p" % [meth, new_name, regexp]
-      self.class_eval <<-EOM
-        def #{new_name} *args, &block
-          return MiniTest::Spec.current.#{meth}(*args, &self)     if Proc === self
-          return MiniTest::Spec.current.#{meth}(args.first, self) if args.size == 1
-          return MiniTest::Spec.current.#{meth}(self, *args)
-        end
-      EOM
+      infect_an_assertion meth, new_name, new_name =~ dont_flip_re
     end
   end
 end
@@ -40,6 +49,7 @@ end
 Object.infect_with_assertions(:must, :wont,
                               /^(must|wont)$|wont_(throw)|
                                  must_(block|not?_|nothing|raise$)/x,
+                              /(must|wont)_(include|respond_to)/,
                               /(must_throw)s/                 => '\1',
                               /(?!not)_same/                  => '_be_same_as',
                               /_in_/                          => '_be_within_',
@@ -57,7 +67,9 @@ module Kernel
   def describe desc, &block
     stack = MiniTest::Spec.describe_stack
     name  = desc.to_s.split(/\W+/).map { |s| s.capitalize }.join + "Spec"
-    cls   = Object.class_eval "class #{name} < #{stack.last}; end; #{name}"
+    prev  = stack.last
+    name  = "#{prev == MiniTest::Spec ? nil : prev}::#{name}"
+    cls   = Object.class_eval "class #{name} < #{prev}; end; #{name}"
 
     cls.nuke_test_methods!
 
@@ -85,7 +97,7 @@ class MiniTest::Spec < MiniTest::Unit::TestCase
 
   def self.nuke_test_methods!
     self.public_instance_methods.grep(/^test_/).each do |name|
-      send :remove_method, name rescue nil
+      self.send :undef_method, name
     end
   end
 
@@ -99,11 +111,19 @@ class MiniTest::Spec < MiniTest::Unit::TestCase
   end
 
   def self.before(type = :each, &block)
+    if type == :all
+      warn "change before :all to before :each"
+      type = :each
+    end
     raise "unsupported before type: #{type}" unless type == :each
     define_inheritable_method :setup, &block
   end
 
   def self.after(type = :each, &block)
+    if type == :all # REFACTOR
+      warn "change before :all to before :each"
+      type = :each
+    end
     raise "unsupported after type: #{type}" unless type == :each
     define_inheritable_method :teardown, &block
   end
