@@ -122,6 +122,9 @@ extern void Init_File _((void));
 # endif
 #endif
 
+#define preserving_errno(stmts) \
+	do {int saved_errno = errno; stmts; errno = saved_errno;} while (0)
+
 VALUE rb_cIO;
 VALUE rb_eEOFError;
 VALUE rb_eIOError;
@@ -490,7 +493,7 @@ io_fwrite(str, fptr)
 	r = write(fileno(f), RSTRING(str)->ptr+offset, l);
         TRAP_END;
 #if BSD_STDIO
-	fseeko(f, lseek(fileno(f), (off_t)0, SEEK_CUR), SEEK_SET);
+	preserving_errno(fseeko(f, lseek(fileno(f), (off_t)0, SEEK_CUR), SEEK_SET));
 #endif
         if (r == n) return len;
         if (0 <= r) {
