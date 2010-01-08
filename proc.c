@@ -894,6 +894,7 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
     struct METHOD *data;
     rb_method_entry_t *me, meb;
     rb_method_definition_t *def = 0;
+    rb_method_flag_t flag = NOEX_UNDEF;
 
   again:
     me = rb_method_entry(klass, id);
@@ -921,8 +922,11 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
 	rb_print_undef(klass, id, 0);
     }
     def = me->def;
-    if (scope && (me->flag & NOEX_MASK) != NOEX_PUBLIC) {
-	rb_print_undef(rclass, def->original_id, (int)(me->flag & NOEX_MASK));
+    if (flag == NOEX_UNDEF) {
+	flag = me->flag;
+	if (scope && (flag & NOEX_MASK) != NOEX_PUBLIC) {
+	    rb_print_undef(rclass, def->original_id, (int)(flag & NOEX_MASK));
+	}
     }
     if (def && def->type == VM_METHOD_TYPE_ZSUPER) {
 	klass = RCLASS_SUPER(me->klass);
