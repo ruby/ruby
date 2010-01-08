@@ -85,4 +85,23 @@ class TestAlias < Test::Unit::TestCase
       end
     end
   end
+
+  def test_alias_with_zsuper_method
+    c = Class.new
+    c.class_eval do
+      def foo
+        :ok
+      end
+      def bar
+        :ng
+      end
+      private :foo
+    end
+    d = Class.new(c)
+    d.class_eval do
+      public :foo
+      alias bar foo
+    end
+    assert_equal(:ok, d.new.bar)
+  end
 end
