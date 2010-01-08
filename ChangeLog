@@ -1,3 +1,8 @@
+Fri Jan  8 14:06:01 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (rb_io_s_read): close the IO if an exception is raised on
+	  seeking. [ruby-core:27429]
+
 Fri Jan  8 13:12:26 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (w_symbol): dump no encoding for 7bit only coderange

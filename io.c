@@ -7816,6 +7816,19 @@ io_s_read(struct foreach_arg *arg)
     return io_read(arg->argc, arg->argv, arg->io);
 }
 
+struct seek_arg {
+    VALUE io;
+    VALUE offset;
+    int mode;
+};
+
+static VALUE
+seek_before_read(struct seek_arg *arg)
+{
+    rb_io_binmode(arg->io);
+    return rb_io_seek(arg->io, arg->offset, arg->mode);
+}
+
 /*
  *  call-seq:
  *     IO.read(name, [length [, offset]] )   => string
@@ -7858,8 +7871,16 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
     open_key_args(argc, argv, &arg);
     if (NIL_P(arg.io)) return Qnil;
     if (!NIL_P(offset)) {
-	rb_io_binmode(arg.io);
-	rb_io_seek(arg.io, offset, SEEK_SET);
+	struct seek_arg sarg;
+	int state = 0;
+	sarg.io = arg.io;
+	sarg.offset = offset;
+	sarg.mode = SEEK_SET;
+	rb_protect((VALUE (*)(VALUE))seek_before_read, (VALUE)&sarg, &state);
+	if (state) {
+	    rb_io_close(arg.io);
+	    rb_jump_tag(state);
+	}
 	if (arg.argc == 2) arg.argc = 1;
     }
     return rb_ensure(io_s_read, (VALUE)&arg, rb_io_close, arg.io);
