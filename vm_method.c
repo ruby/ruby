@@ -858,7 +858,9 @@ rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_defini
 void
 rb_alias(VALUE klass, ID name, ID def)
 {
+    VALUE target_klass = klass;
     rb_method_entry_t *orig_me;
+    rb_method_flag_t flag = NOEX_UNDEF;
 
     if (NIL_P(klass)) {
 	rb_raise(rb_eTypeError, "no class to make alias");
@@ -869,6 +871,7 @@ rb_alias(VALUE klass, ID name, ID def)
 	rb_secure(4);
     }
 
+  again:
     orig_me = search_method(klass, def);
 
     if (UNDEFINED_METHOD_ENTRY_P(orig_me)) {
@@ -877,8 +880,15 @@ rb_alias(VALUE klass, ID name, ID def)
 	    rb_print_undef(klass, def, 0);
 	}
     }
+    if (orig_me->def->type == VM_METHOD_TYPE_ZSUPER) {
+	klass = RCLASS_SUPER(klass);
+	def = orig_me->def->original_id;
+	flag = orig_me->flag;
+	goto again;
+    }
 
-    rb_add_method_me(klass, name, orig_me, orig_me->flag);
+    if (flag == NOEX_UNDEF) flag = orig_me->flag;
+    rb_add_method_me(target_klass, name, orig_me, flag);
 }
 
 /*
