@@ -1,3 +1,8 @@
+Fri Jan  8 13:12:26 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (w_symbol): dump no encoding for 7bit only coderange
+	  symbol.  [ruby-core:27375]
+
 Thu Jan  7 07:56:09 2010  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* lib/minitest/*.rb: Imported minitest 1.5.0 r5596.

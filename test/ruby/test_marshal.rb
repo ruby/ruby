@@ -261,6 +261,9 @@ class TestMarshal < Test::Unit::TestCase
     [:ruby, :"\u{7d05}\u{7389}"].each do |sym|
       assert_equal(sym, Marshal.load(Marshal.dump(sym)), '[ruby-core:24788]')
     end
+    bug2548 = '[ruby-core:27375]'
+    ary = [:$1, nil]
+    assert_equal(ary, Marshal.load(Marshal.dump(ary)), bug2548)
   end
 
   ClassUTF8 = eval("class R\u{e9}sum\u{e9}; self; end")

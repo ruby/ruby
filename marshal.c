@@ -424,10 +424,11 @@ w_symbol(ID id, struct dump_arg *arg)
 	    rb_raise(rb_eTypeError, "can't dump anonymous ID %ld", id);
 	}
 	encidx = rb_enc_get_index(sym);
-	if (encidx == rb_usascii_encindex()) {
+	if (encidx == rb_usascii_encindex() ||
+	    rb_enc_str_coderange(sym) == ENC_CODERANGE_7BIT) {
 	    encidx = -1;
 	}
-	else if (rb_enc_str_coderange(sym) != ENC_CODERANGE_7BIT) {
+	else {
 	    w_byte(TYPE_IVAR, arg);
 	}
 	w_byte(TYPE_SYMBOL, arg);
