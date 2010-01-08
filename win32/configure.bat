@@ -161,7 +161,7 @@ goto :loop
   del ~tmp~.mak
 goto :exit
 :end
-echo>> ~tmp~.mak 	WIN32DIR=$(@D)
+echo>> ~tmp~.mak 	WIN32DIR=$(@D:\=/)
 echo.>>confargs.tmp
 echo>confargs.c #define $ $$ 
 echo>>confargs.c !ifndef CONFIGURE_ARGS
