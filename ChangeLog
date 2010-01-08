@@ -1,3 +1,7 @@
+Sat Jan  9 08:40:54 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/configure.bat (WIN32DIR): regularise file separators.
+
 Fri Jan  8 18:51:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (io_fwrite): preserve errno.  [ruby-core:27425]

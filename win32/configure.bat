@@ -95,6 +95,6 @@ goto :loop
   del ~tmp~.mak
 goto :exit
 :end
-echo>> ~tmp~.mak 	WIN32DIR=$(@D)
+echo>> ~tmp~.mak 	WIN32DIR=$(@D:\=/)
 nmake -alf ~tmp~.mak
 :exit
