@@ -1,3 +1,8 @@
+Fri Jan  8 21:15:21 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http, lib/net/https: move content from net/https to
+	  net/http. [ruby-dev:39986]
+
 Fri Jan  8 14:06:01 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (rb_io_s_read): close the IO if an exception is raised on

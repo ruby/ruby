@@ -26,6 +26,7 @@
 #++
 
 require 'net/protocol'
+autoload :OpenSSL, 'openssl'
 require 'uri'
 
 module Net   #:nodoc:
@@ -544,7 +545,33 @@ module Net   #:nodoc:
 
     # returns true if use SSL/TLS with HTTP.
     def use_ssl?
-      false   # redefined in net/https
+      @use_ssl
+    end
+
+    # Turn on/off SSL.
+    # This flag must be set before starting session.
+    # If you change use_ssl value after session started,
+    # a Net::HTTP object raises IOError.
+    def use_ssl=(flag)
+      flag = (flag ? true : false)
+      if started? and @use_ssl != flag
+        raise IOError, "use_ssl value changed, but session already started"
+      end
+      @use_ssl = flag
+    end
+
+    SSL_ATTRIBUTES = %w(
+      ssl_version key cert ca_file ca_path cert_store ciphers
+      verify_mode verify_callback verify_depth ssl_timeout
+    )
+    attr_accessor(*SSL_ATTRIBUTES)
+
+    # return the X.509 certificates the server presented.
+    def peer_cert
+      if not use_ssl? or not @socket
+        return nil
+      end
+      @socket.io.peer_cert
     end
 
     # Opens TCP connection and HTTP session.
