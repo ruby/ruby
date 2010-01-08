@@ -1,3 +1,8 @@
+Fri Jan  8 17:02:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	 * ruby.h (RB_GC_GUARD_PTR): workaround for gcc optimization.
+	   [ruby-core:27402]
+
 Fri Jan  1 15:42:46 2010  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/mkmf.rb: Fix build.  COUTFLAG is not yet landed on this
