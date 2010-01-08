@@ -1,7 +1,16 @@
+Fri Jan  8 23:35:18 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* proc.c (mnew): don't check visibility of method body if public
+	  ZSUPER method is found.  [ruby-dev:39767]
+
+	* test/ruby/test_method.rb: add a test for above.
+
 Fri Jan  8 22:59:40 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm_method.c (rb_alias): skip ZSUPER method when searching body of
 	  source method.  [ruby-dev:39760]
+
+	* test/ruby/test_alias.rb: add a test for above.
 
 Fri Jan  8 21:15:21 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 

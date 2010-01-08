@@ -312,4 +312,19 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:block, :e]], self.class.instance_method(:pmo7).parameters)
     assert_equal([[:req], [:block, :b]], self.class.instance_method(:pma1).parameters)
   end
+
+  def test_public_method_with_zsuper_method
+    c = Class.new
+    c.class_eval do
+      def foo
+        :ok
+      end
+      private :foo
+    end
+    d = Class.new(c)
+    d.class_eval do
+      public :foo
+    end
+    assert_equal(:ok, d.new.public_method(:foo).call)
+  end
 end
