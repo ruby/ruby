@@ -178,7 +178,7 @@ ruby.imp: $(EXPORTOBJS)
 install: install-$(INSTALLDOC)
 docs: $(DOCTARGETS)
 
-install-all: doc pre-install-all do-install-all post-install-all
+install-all: docs pre-install-all do-install-all post-install-all
 pre-install-all:: pre-install-local pre-install-ext pre-install-doc
 do-install-all: $(PROGRAM)
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=all --rdoc-output="$(RDOCOUT)"
