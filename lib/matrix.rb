@@ -569,7 +569,7 @@ class Matrix
 
   #
   # Returns the inverse of the matrix.
-  #   Matrix[[1, 2], [2, 1]].inverse
+  #   Matrix[[-1, -1], [0, -1]].inverse
   #     => -1  1
   #         0 -1
   #

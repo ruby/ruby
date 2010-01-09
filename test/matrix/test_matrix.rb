@@ -144,4 +144,13 @@ class TestMatrix < Test::Unit::TestCase
       assert_equal 3, m.transpose.rank
     end
   end
+
+  def test_inverse
+    assert_equal(Matrix[[-1, 1], [0, -1]], Matrix[[-1, -1], [0, -1]].inverse)
+  end
+
+  def test_determinant
+    assert_equal(45, Matrix[[7,6], [3,9]].determinant)
+    assert_equal(-18, Matrix[[2,0,1],[0,-2,2],[1,2,3]].determinant)
+  end
 end
