@@ -441,7 +441,7 @@ rb_define_class(const char *name, VALUE super)
 	    rb_raise(rb_eTypeError, "%s is not a class", name);
 	}
 	if (rb_class_real(RCLASS_SUPER(klass)) != super) {
-	    rb_name_error(id, "%s is already defined", name);
+	    rb_raise(rb_eTypeError, "superclass mismatch for class %s", name);
 	}
 	return klass;
     }
