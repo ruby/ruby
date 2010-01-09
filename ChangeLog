@@ -1,3 +1,8 @@
+Sun Jan 10 04:54:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (rb_define_class): raise TypeError same as class
+	  statement.  [ruby-core:27504]
+
 Sat Jan  9 08:40:54 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/configure.bat (WIN32DIR): regularise file separators.
