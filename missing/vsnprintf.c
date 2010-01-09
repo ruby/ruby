@@ -769,7 +769,7 @@ reswitch:	switch (ch) {
 			if (flags & QUADINT) {
 				uqval = va_arg(ap, quad_t);
 				if ((quad_t)uqval < 0) {
-					uqval = -uqval;
+					uqval = -(quad_t)uqval;
 					sign = '-';
 				}
 			} else
