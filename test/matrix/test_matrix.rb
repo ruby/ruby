@@ -150,7 +150,7 @@ class TestMatrix < Test::Unit::TestCase
   end
 
   def test_determinant
-    assert_equal(45, Matrix[[7,6], [3,9]].determinant)
-    assert_equal(-18, Matrix[[2,0,1],[0,-2,2],[1,2,3]].determinant)
+    assert_equal(45, Matrix[[7.0,6.0], [3.0,9.0]].determinant)
+    assert_equal(-18, Matrix[[2.0,0.0,1.0],[0.0,-2.0,2.0],[1.0,2.0,3.0]].determinant)
   end
 end

@@ -549,7 +549,7 @@ class Matrix
 
   #
   # Returns the inverse of the matrix.
-  #   Matrix[[-1, -1], [0, -1]].inverse
+  #   Matrix[[1, 2], [2, 1]].inverse
   #     => -1  1
   #         0 -1
   #
@@ -585,7 +585,7 @@ class Matrix
 
       size.times do |i|
         next if i == k
-        q = a[i][k].quo(akk)
+        q = a[i][k] / akk
         a[i][k] = 0
 
         (k + 1 ... size).each do |j|
@@ -597,10 +597,10 @@ class Matrix
       end
 
       (k + 1 ... size).each do |j|
-        a[k][j] = a[k][j].quo(akk)
+        a[k][j] /= akk
       end
       size.times do |j|
-        @rows[k][j] = @rows[k][j].quo(akk)
+        @rows[k][j] /= akk
       end
     end
     self
@@ -649,7 +649,7 @@ class Matrix
   # Returns the determinant of the matrix.  If the matrix is not square, the
   # result is 0.
   #   Matrix[[7,6], [3,9]].determinant
-  #     => 45
+  #     => 63
   #
   def determinant
     return 0 unless square?
@@ -670,7 +670,7 @@ class Matrix
       end
 
       (k + 1 ... size).each do |i|
-        q = a[i][k].quo(akk)
+        q = a[i][k] / akk
         (k + 1 ... size).each do |j|
           a[i][j] -= a[k][j] * q
         end
@@ -720,7 +720,7 @@ class Matrix
       end
 
       (k + 1 ... a_row_size).each do |i|
-        q = a[i][k].quo(akk)
+        q = a[i][k] / akk
         (k + 1... a_column_size).each do |j|
           a[i][j] -= a[k][j] * q
         end
@@ -879,7 +879,7 @@ class Matrix
         self * other.inverse
       else
         x, y = other.coerce(self)
-        x.quo(y)
+        x / y
       end
     end
     
