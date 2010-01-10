@@ -132,7 +132,7 @@ module WEBrick
         end
       end
 
-      # Determin the message length (RFC2616 -- 4.4 Message Length)
+      # Determine the message length (RFC2616 -- 4.4 Message Length)
       if @status == 304 || @status == 204 || HTTPStatus::info?(@status)
         @header.delete('content-length')
         @body = ""

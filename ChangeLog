@@ -1,6 +1,16 @@
+Sun Jan 10 8:00:00 2010  Kirk Haines  <khaines@ruby-lang.org>
+
+	* lib/webrick/accesslog.rb : Added escape fixes for logs to fix a log injection attack.
+
+	* lib/webrick/httpstatus.rb : Added escape fixes for logs to fix a log injection attack.
+
+	* lib/webrick/httprequest.rb : Added escape fixes for logs to fix a log injection attack.
+
+	* lib/webrick/httputils.rb : Added escape fixes for logs to fix a log injection attack.
+
 Thu Nov 19 2:44:00 2009 Kirk Haines <khaines@ruby-lang.org>
 
-	* gc.c: backport r24713 which adds a check for freelist exhaustion in gc_sweep; this prevents segfaults from certain tight loops. An example test case: Time.now while true
+	* gc.c: backport r24713 which adds a check for freelist exhaustion in gc_sweep; this prevents segfaults from certain tight loops. An example test case: Time.now while true. r25871
 
 Fri Aug 28 12:54:00 2009 Kirk Haines <khaines@ruby-lang.org>
 
@@ -69,6 +79,12 @@ Thu Jul  9 11:22:00 2009 Kirk Haines <khaines@ruby-lang.org>
 	* lib/ostruct.rb: Fixed buggy openstruct#inspect recursion.
 
 	* test/ostruct/test_ostruct.rb: Modified tests to fit the #inspect fix.
+
+Thu Jul 7 12:31:58 2009 Kirk Haines <khaines@ruby-lang.org>
+
+	* gc.c: Fix method scoping bug. r24030
+
+	* eval.c: Fix method scoping bug. r24030
 
 Mon Jun  8 12:46:00 2009  Kirk Haines <khaines@ruby-lang.org>
 

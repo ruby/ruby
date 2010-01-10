@@ -242,11 +242,7 @@ module WEBrick
           @raw_header << line
         end
       end
-      begin
-        @header = HTTPUtils::parse_header(@raw_header)
-      rescue => ex
-        raise  HTTPStatus::BadRequest, ex.message
-      end
+      @header = HTTPUtils::parse_header(@raw_header.join)
     end
 
     def parse_uri(str, scheme="http")
