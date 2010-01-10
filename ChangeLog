@@ -1,3 +1,13 @@
+Sun Jan 10 17:25:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/webrick/accesslog.rb : Escape needed.
+
+	* lib/webrick/httpstatus.rb : ditto.
+
+	* lib/webrick/httprequest.rb : ditto.
+
+	* lib/webrick/httputils.rb : ditto.
+
 Sun Jan 10 04:54:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (rb_define_class): raise TypeError same as class
