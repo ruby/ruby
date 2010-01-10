@@ -1,3 +1,8 @@
+Mon Jan 11 03:04:12 2010  Akinori MUSHA  <knu@iDaemons.org>
+
+	* eval.c (recursive_push): Taint internal hash to prevent
+	  unexpected SecurityError; fixes #1864.
+
 Sun Jan 10 17:25:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/webrick/accesslog.rb : Escape needed.
