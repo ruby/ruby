@@ -128,11 +128,11 @@ module WEBrick
         when /^\s+(.*?)\s*\z/om
           value = $1
           unless field
-            raise "bad header '#{line.inspect}'."
+            raise HTTPStatus::BadRequest, "bad header '#{line}'."
           end
           header[field][-1] << " " << value
         else
-          raise "bad header '#{line.inspect}'."
+          raise HTTPStatus::BadRequest, "bad header '#{line}'."
         end
       }
       header.each{|key, values|

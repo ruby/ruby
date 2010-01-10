@@ -1,3 +1,13 @@
+Sun Jan 10 19:00:31 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/webrick/accesslog.rb : Escape needed.
+
+	* lib/webrick/httpstatus.rb : ditto.
+
+	* lib/webrick/httprequest.rb : ditto.
+
+	* lib/webrick/httputils.rb : ditto.
+
 Thu Dec 24 18:04:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: default ac_cv_prog_CC to CC.
