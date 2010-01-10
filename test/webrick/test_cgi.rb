@@ -98,4 +98,36 @@ class TestWEBrickCGI < Test::Unit::TestCase
       end
     }
   end
+
+  CtrlSeq = [0x7f, *(1..31)].pack("C*").gsub(/\s+/, '')
+  CtrlPat = /#{Regexp.quote(CtrlSeq)}/o
+  DumpPat = /#{Regexp.quote(CtrlSeq.dump[1...-1])}/o
+
+  def test_bad_uri
+    start_cgi_server{|server, addr, port, log|
+      res = TCPSocket.open(addr, port) {|sock|
+        sock << "GET /#{CtrlSeq}#{CRLF}#{CRLF}"
+        sock.close_write
+        sock.read
+      }
+      assert_match(%r{\AHTTP/\d.\d 400 Bad Request}, res)
+      s = log.call.each_line.grep(/ERROR bad URI/)[0]
+      assert_match(DumpPat, s)
+      assert_not_match(CtrlPat, s)
+    }
+  end
+
+  def test_bad_header
+    start_cgi_server{|server, addr, port, log|
+      res = TCPSocket.open(addr, port) {|sock|
+        sock << "GET / HTTP/1.0#{CRLF}#{CtrlSeq}#{CRLF}#{CRLF}"
+        sock.close_write
+        sock.read
+      }
+      assert_match(%r{\AHTTP/\d.\d 400 Bad Request}, res)
+      s = log.call.each_line.grep(/ERROR bad header/)[0]
+      assert_match(DumpPat, s)
+      assert_not_match(CtrlPat, s)
+    }
+  end
 end
