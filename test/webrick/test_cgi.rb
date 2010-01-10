@@ -113,7 +113,7 @@ class TestWEBrickCGI < Test::Unit::TestCase
       assert_match(%r{\AHTTP/\d.\d 400 Bad Request}, res)
       s = log.call.each_line.grep(/ERROR bad URI/)[0]
       assert_match(DumpPat, s)
-      assert_not_match(CtrlPat, s)
+      refute_match(CtrlPat, s)
     }
   end
 
@@ -127,7 +127,7 @@ class TestWEBrickCGI < Test::Unit::TestCase
       assert_match(%r{\AHTTP/\d.\d 400 Bad Request}, res)
       s = log.call.each_line.grep(/ERROR bad header/)[0]
       assert_match(DumpPat, s)
-      assert_not_match(CtrlPat, s)
+      refute_match(CtrlPat, s)
     }
   end
 end
