@@ -1,3 +1,10 @@
+Mon Jan 11 13:30:35 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/webrick/accesslog.rb (WEBrick::AccessLog#format): fixed typo.
+
+	* lib/webrick/httpstatus.rb (WEBrick::HTTPStatus::Status#initialize):
+	  accept 0 or more arguments.  [ruby-dev:40021]
+
 Mon Jan 11 03:04:12 2010  Akinori MUSHA  <knu@iDaemons.org>
 
 	* eval.c (recursive_push): Taint internal hash to prevent
