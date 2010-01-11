@@ -1161,7 +1161,7 @@ class TestProcess < Test::Unit::TestCase
         system(RUBY, "-e", "exit true")
         status = $?
       }
-      assert(status.success?)
+      assert(status.success?, "[ruby-dev:38105]")
     }
   end
 end
