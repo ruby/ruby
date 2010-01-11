@@ -2064,10 +2064,13 @@ ruby_setenv(const char *name, const char *value)
 #elif defined(HAVE_SETENV) && defined(HAVE_UNSETENV)
 #undef setenv
 #undef unsetenv
-    if (value)
-	setenv(name,value,1);
-    else
-	unsetenv(name);
+    if (value) {
+	if (setenv(name, value, 1))
+	    rb_sys_fail("setenv");
+    } else {
+	if (unsetenv(name))
+	    rb_sys_fail("unsetenv");
+    }
 #elif defined __sun__
     size_t len = strlen(name);
     char **env_ptr, *str;
@@ -2081,7 +2084,8 @@ ruby_setenv(const char *name, const char *value)
     if (value) {
 	str = malloc(len += strlen(value) + 2);
 	snprintf(str, len, "%s=%s", name, value);
-	putenv(str);
+	if (putenv(str))
+	    rb_sys_fail("putenv");
     }
 #else  /* WIN32 */
     size_t len;
