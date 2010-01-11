@@ -1079,6 +1079,12 @@ str_strlen(VALUE str, rb_encoding *enc)
     return n;
 }
 
+long
+rb_str_strlen(VALUE str)
+{
+    return str_strlen(str, STR_ENC_GET(str));
+}
+
 /*
  *  call-seq:
  *     str.length   => integer
