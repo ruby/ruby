@@ -168,7 +168,8 @@ extern VALUE ruby_vm_const_missing_count;
 } while (0)
 
 #define GET_BLOCK_PTR() \
-  ((rb_block_t *)(GC_GUARDED_PTR_REF(GET_LFP()[0])))
+  ((rb_block_t *)(GC_GUARDED_PTR_REF(GET_LFP()[0] & \
+				     ((GET_LFP()[0] & 0x02) - 0x02))))
 
 /**********************************************************/
 /* deal with control flow 3: exception                    */
