@@ -1148,4 +1148,20 @@ class TestProcess < Test::Unit::TestCase
     rescue ArgumentError
     end
   end
+
+  def test_no_curdir
+    if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
+      skip "removing current directory is not supported"
+    end
+    with_tmpchdir {|d|
+      Dir.mkdir("vd")
+      status = nil
+      Dir.chdir("vd") {
+        Dir.rmdir("#{d}/vd")
+        system(RUBY, "-e", "exit true")
+        status = $?
+      }
+      assert(status.success?)
+    }
+  end
 end
