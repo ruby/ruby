@@ -2045,6 +2045,10 @@ ruby_setenv(const char *name, const char *value)
 #if defined(_WIN32)
     int len;
     char *buf;
+    if (strchr(name, '=')) {
+	errno = EINVAL;
+	rb_sys_fail("ruby_setenv");
+    }
     if (value) {
 	len = strlen(name) + 1 + strlen(value) + 1;
 	buf = ALLOCA_N(char, len);
@@ -2072,8 +2076,13 @@ ruby_setenv(const char *name, const char *value)
 	    rb_sys_fail("unsetenv");
     }
 #elif defined __sun__
-    size_t len = strlen(name);
+    size_t len;
     char **env_ptr, *str;
+    if (strchr(name, '=')) {
+	errno = EINVAL;
+	rb_sys_fail("ruby_setenv");
+    }
+    len = strlen(name);
     for (env_ptr = GET_ENVIRON(environ); (str = *env_ptr) != 0; ++env_ptr) {
 	if (!strncmp(str, name, len) && str[len] == '=') {
 	    if (!in_origenv(str)) free(str);
@@ -2089,7 +2098,12 @@ ruby_setenv(const char *name, const char *value)
     }
 #else  /* WIN32 */
     size_t len;
-    int i=envix(name);		        /* where does it go? */
+    int i;
+    if (strchr(name, '=')) {
+	errno = EINVAL;
+	rb_sys_fail("ruby_setenv");
+    }
+    i=envix(name);		        /* where does it go? */
 
     if (environ == origenviron) {	/* need we copy environment? */
 	int j;
