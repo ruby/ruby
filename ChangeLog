@@ -1,6 +1,7 @@
 Mon Jan 11 18:16:38 2010  wanabe  <s.wanabe@gmail.com>
 
 	* vm_insnhelper.h (GET_BLOCK_PTR): return 0 when in class frame.
+	  [Bug #2583]
 
 Mon Jan 11 16:52:05 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
