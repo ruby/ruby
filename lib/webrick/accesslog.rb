@@ -53,7 +53,7 @@ module WEBrick
          when ?e, ?i, ?n, ?o
            raise AccessLogError,
              "parameter is required for \"#{spec}\"" unless param
-           param = params[spec][param] ? escape(param) : "-"
+           (param = params[spec][param]) ? escape(param) : "-"
          when ?t
            params[spec].strftime(param || CLF_TIME_FORMAT)
          when ?%
