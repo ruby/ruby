@@ -1,3 +1,9 @@
+Mon Jan 11 16:52:05 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_strlen): added. [ruby-dev:40028]
+
+	* include/ruby/intern.h (rb_str_strlen): declared.
+
 Mon Jan 11 13:30:35 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/webrick/accesslog.rb (WEBrick::AccessLog#format): fixed typo.
