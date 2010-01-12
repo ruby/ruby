@@ -3133,6 +3133,7 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, char *unresolved, VALUE loopche
                         rb_sys_fail(RSTRING_PTR(testpath));
                     }
                 }
+#ifdef HAVE_READLINK
                 if (S_ISLNK(sbuf.st_mode)) {
                     volatile VALUE link;
                     char *link_prefix, *link_names;
@@ -3152,7 +3153,9 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, char *unresolved, VALUE loopche
                     }
                     rb_hash_aset(loopcheck, testpath, rb_str_dup_frozen(*resolvedp));
                 }
-                else {
+                else
+#endif
+                {
                     VALUE s = rb_str_dup_frozen(testpath);
                     rb_hash_aset(loopcheck, s, s);
                     *resolvedp = testpath;
