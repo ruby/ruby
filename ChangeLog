@@ -1,3 +1,11 @@
+Tue Jan 12 16:48:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/readline/readline.c (readline_readline): check if instream
+	  is closed instead of fd 0.
+
+	* ext/readline/readline.c (Init_readline): use STDIN for input.
+	  http://d.hatena.ne.jp/codnote/20100111/1263174134
+
 Tue Jan 12 16:09:02 2010  wanabe  <s.wanabe@gmail.com>
 
 	* test/ruby/test_process.rb (test_execopts_env): MANDATORY_ENVS might
@@ -5,7 +13,7 @@ Tue Jan 12 16:09:02 2010  wanabe  <s.wanabe@gmail.com>
 
 Tue Jan 12 14:07:31 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* lib/net/http.rb (Net::HTTP#start): add hash argument to
+	* lib/net/http.rb (Net::HTTP.start): add hash argument to
 	  set ssl related options. when use_ssl is set default value
 	  of verify_mode is OpenSSL::SSL::VERIFY_PEER. [ruby-dev:40003]
 

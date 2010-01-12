@@ -247,7 +247,7 @@ readline_readline(int argc, VALUE *argv, VALUE self)
 	prompt = RSTRING_PTR(tmp);
     }
 
-    if (!isatty(0) && errno == EBADF) rb_raise(rb_eIOError, "closed stdin");
+    if (!isatty(fileno(rl_instream)) && errno == EBADF) rb_raise(rb_eIOError, "closed stdin");
 
 #ifdef _WIN32
     rl_prep_terminal(1);
@@ -1463,4 +1463,6 @@ Init_readline()
 #ifdef HAVE_RL_CLEAR_SIGNALS
     rl_clear_signals();
 #endif
+
+    readline_s_set_input(mReadline, rb_stdin);
 }
