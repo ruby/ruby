@@ -1,3 +1,8 @@
+Tue Jan 12 23:48:29 2010  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/maker/base.rb, test/rss/test_maker_0.9.rb:
+	accept any time format in maker. [ruby-core:26923]
+
 Tue Jan 12 21:56:00 2010  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (rb_str_set_len): call rb_str_modify.
