@@ -1,3 +1,7 @@
+Tue Jan 12 20:44:14 2010  Tanaka Akira  <akr@fsij.org>
+
+	* file.c (realpath_internal): call rb_secure.
+
 Tue Jan 12 16:48:46 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/net/http.rb (Net::HTTP.start): options may not be given.

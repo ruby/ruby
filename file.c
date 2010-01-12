@@ -3173,6 +3173,9 @@ realpath_internal(VALUE path, int strict)
     volatile VALUE unresolved_path;
     char *unresolved_names;
     VALUE loopcheck;
+
+    rb_secure(2);
+
     FilePathValue(path);
     unresolved_path = rb_str_dup_frozen(path);
     unresolved_names = skiproot(RSTRING_PTR(unresolved_path));
