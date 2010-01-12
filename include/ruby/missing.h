@@ -38,6 +38,13 @@ struct timespec {
 };
 #endif
 
+#if !defined(HAVE_STRUCT_TIMEZONE)
+struct timezone {
+    int tz_minuteswest;
+    int tz_dsttime;
+};
+#endif
+
 #ifndef RUBY_EXTERN
 #define RUBY_EXTERN extern
 #endif

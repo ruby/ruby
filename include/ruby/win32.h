@@ -197,11 +197,9 @@ extern int rb_w32_fstat(int, struct stat *);
 #define strncasecmp		_strnicmp
 #define fsync			_commit
 
+struct timezone;
+
 #ifdef __MINGW32__
-struct timezone {
-  int tz_minuteswest;
-  int tz_dsttime;
-};
 #undef isascii
 #define isascii __isascii
 #endif
