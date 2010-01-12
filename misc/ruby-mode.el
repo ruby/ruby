@@ -121,13 +121,15 @@
                (match-string 6)))))
 
 (defun ruby-here-doc-beg-match ()
-  (let ((contents (regexp-quote (concat (match-string 2) (match-string 3)))))
+  (let ((contents (concat
+		   (regexp-quote (concat (match-string 2) (match-string 3)))
+		   (if (string= (match-string 3) "_") "\\B" "\\b"))))
     (concat "<<"
             (let ((match (match-string 1)))
               (if (and match (> (length match) 0))
                   (concat "\\(?:-\\([\"']?\\)\\|\\([\"']\\)" (match-string 1) "\\)"
-                          contents "\\b\\(\\1\\|\\2\\)")
-                (concat "-?\\([\"']\\|\\)" contents "\\b\\1"))))))
+                          contents "\\(\\1\\|\\2\\)")
+                (concat "-?\\([\"']\\|\\)" contents "\\1"))))))
 
 (defconst ruby-delimiter
   (concat "[?$/%(){}#\"'`.:]\\|<<\\|\\[\\|\\]\\|\\<\\("
