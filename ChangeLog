@@ -1,3 +1,8 @@
+Tue Jan 12 12:49:39 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-here-doc-beg-match): fix for here-doc
+	  which ends with an underscore.
+
 Mon Jan 11 13:30:35 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/webrick/accesslog.rb (WEBrick::AccessLog#format): fixed typo.
