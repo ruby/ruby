@@ -358,7 +358,7 @@ module RSS
           :date => date,
           :dc_dates => dc_dates.to_a.dup,
         }
-        _date = date
+        _date = _parse_date_if_needed(date)
         if _date and !dc_dates.any? {|dc_date| dc_date.value == _date}
           dc_date = self.class::DublinCoreDates::DublinCoreDate.new(self)
           dc_date.value = _date.dup
@@ -369,6 +369,11 @@ module RSS
       ensure
         date = keep[:date]
         dc_dates.replace(keep[:dc_dates])
+      end
+
+      def _parse_date_if_needed(date_value)
+        date_value = Time.parse(date_value) if date_value.is_a?(String)
+        date_value
       end
     end
 
@@ -503,10 +508,22 @@ module RSS
       end
 
       %w(id about language
-         managingEditor webMaster rating docs date
-         lastBuildDate ttl).each do |element|
+         managingEditor webMaster rating docs ttl).each do |element|
         attr_accessor element
         add_need_initialize_variable(element)
+      end
+
+      %w(date lastBuildDate).each do |date_element|
+        attr_reader date_element
+        add_need_initialize_variable(date_element)
+      end
+
+      def date=(_date)
+        @date = _parse_date_if_needed(_date)
+      end
+
+      def lastBuildDate=(_date)
+        @lastBuildDate = _parse_date_if_needed(_date)
       end
 
       def pubDate
@@ -703,9 +720,18 @@ module RSS
           def_classed_elements(name, attribute)
 	end
 
-        %w(date comments id published).each do |element|
+        %w(comments id published).each do |element|
           attr_accessor element
           add_need_initialize_variable(element)
+        end
+
+        %w(date).each do |date_element|
+          attr_reader date_element
+          add_need_initialize_variable(date_element)
+        end
+
+        def date=(_date)
+          @date = _parse_date_if_needed(_date)
         end
 
         def pubDate
@@ -764,6 +790,8 @@ module RSS
         end
 
         class SourceBase < Base
+          include SetupDefaultDate
+
           %w(authors categories contributors generator icon
              logo rights subtitle title).each do |name|
             def_classed_element(name)
@@ -775,13 +803,22 @@ module RSS
             def_classed_elements(name, attribute)
           end
 
-          %w(id content date).each do |element|
+          %w(id content).each do |element|
             attr_accessor element
             add_need_initialize_variable(element)
           end
 
           alias_method(:url, :link)
           alias_method(:url=, :link=)
+
+          %w(date).each do |date_element|
+            attr_reader date_element
+            add_need_initialize_variable(date_element)
+          end
+
+          def date=(_date)
+            @date = _parse_date_if_needed(_date)
+          end
 
           def updated
             date
