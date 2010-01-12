@@ -520,7 +520,7 @@ class Shell
       id = id.intern if id.kind_of?(String)
       name = id.id2name
       if Shell.method_defined?(id)
-	Shell.notify "warn: override definnition of Shell##{name}."
+	Shell.notify "warn: override definition of Shell##{name}."
 	Shell.notify "warn: alias Shell##{name} to Shell##{name}_org.\n"
 	Shell.module_eval "alias #{name}_org #{name}"
       end
@@ -536,7 +536,7 @@ class Shell
                           end], __FILE__, __LINE__)
 
       if Shell::Filter.method_defined?(id)
-	Shell.notify "warn: override definnition of Shell::Filter##{name}."
+	Shell.notify "warn: override definition of Shell::Filter##{name}."
 	Shell.notify "warn: alias Shell##{name} to Shell::Filter##{name}_org."
 	Filter.module_eval "alias #{name}_org #{name}"
       end

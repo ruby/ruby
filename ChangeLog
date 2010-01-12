@@ -1,3 +1,8 @@
+Wed Jan 13 00:33:09 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/shell/command-processor.rb: fix typo by Sho Hashimoto.
+	  reported and patched at [ruby-dev:40058] [Bug #2599]
+
 Tue Jan 12 23:48:29 2010  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker/base.rb, test/rss/test_maker_0.9.rb:
