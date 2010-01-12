@@ -471,14 +471,16 @@ module Net   #:nodoc:
     def HTTP.start(address, *arg, &block) # :yield: +http+
       arg.pop if opt = Hash.try_convert(arg[-1])
       port, p_addr, p_port, p_user, p_pass = *arg
-      port = https_default_port if opt[:use_ssl] && !port
+      port = https_default_port if !port && opt && opt[:use_ssl]
       http = new(address, port, p_addr, p_port, p_user, p_pass)
 
-      opt = {verify_mode: OpenSSL::SSL::VERIFY_PEER}.update(opt) if opt[:use_ssl]
-      http.methods.grep(/\A(\w+)=\z/) do |meth|
-        key = $1.to_sym
-        opt.key?(key) or next
-        http.__send__(meth, opt[key])
+      if opt
+        opt = {verify_mode: OpenSSL::SSL::VERIFY_PEER}.update(opt) if opt[:use_ssl]
+        http.methods.grep(/\A(\w+)=\z/) do |meth|
+          key = $1.to_sym
+          opt.key?(key) or next
+          http.__send__(meth, opt[key])
+        end
       end
 
       http.start(&block)
