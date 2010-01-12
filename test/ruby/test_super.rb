@@ -149,4 +149,26 @@ class TestSuper < Test::Unit::TestCase
     c = C.new
     assert_equal([c, "#{C.to_s}::m"], c.m, bug2419)
   end
+
+  class Parent
+    def run
+      :parent_run
+    end
+  end
+
+  class Child < Parent
+    def run
+      callback do
+        super
+      end
+    end
+
+    def callback(&block)
+      block.call
+    end
+  end
+
+  def test_super_in_block_call
+    assert_equal(:parent_run, Child.new.run)
+  end
 end

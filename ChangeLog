@@ -1,3 +1,8 @@
+Tue Jan 12 23:52:43 2010  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/maker/base.rb, test/rss/test_maker_0.9.rb:
+	accept any time format in maker. [ruby-core:26923]
+
 Tue Jan 12 12:49:39 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-here-doc-beg-match): fix for here-doc
