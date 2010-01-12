@@ -14,6 +14,7 @@
 #include "ruby/ruby.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
+#include <errno.h>
 
 #ifdef __APPLE__
 #include <crt_externs.h>
@@ -2056,7 +2057,7 @@ ruby_setenv(const char *name, const char *value)
 	putenv(buf);
 
 	/* putenv() doesn't handle empty value */
-	if (*value)
+	if (!*value)
 	    SetEnvironmentVariable(name,value);
     }
     else {
