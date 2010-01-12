@@ -20,10 +20,9 @@ module EnvUtil
       end
       ruby = File.join("..", ruby)
     end
-    begin
-      require "rbconfig"
+    if defined?(RbConfig.ruby)
       RbConfig.ruby
-    rescue LoadError
+    else
       "ruby"
     end
   end
@@ -202,3 +201,20 @@ module Test
   end
 end
 
+begin
+  require 'rbconfig'
+rescue LoadError
+else
+  module RbConfig
+    @ruby = EnvUtil.rubybin
+    class << self
+      undef ruby if defined?(ruby)
+      attr_reader :ruby
+    end
+    dir = File.dirname(ruby)
+    name = File.basename(ruby, CONFIG['EXEEXT'])
+    CONFIG['bindir'] = dir
+    CONFIG['ruby_install_name'] = name
+    CONFIG['RUBY_INSTALL_NAME'] = name
+  end
+end
