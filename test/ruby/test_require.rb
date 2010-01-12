@@ -2,6 +2,7 @@ require 'test/unit'
 
 require 'tempfile'
 require_relative 'envutil'
+require 'tmpdir'
 
 class TestRequire < Test::Unit::TestCase
   def test_require_invalid_shared_object
@@ -246,7 +247,6 @@ class TestRequire < Test::Unit::TestCase
   end
 
   def test_relative
-    require 'tmpdir'
     load_path = $:.dup
     $:.delete(".")
     Dir.mktmpdir do |tmp|
@@ -267,5 +267,20 @@ class TestRequire < Test::Unit::TestCase
     end
   ensure
     $:.replace(load_path) if load_path
+  end
+
+  def test_relative_symlink
+    Dir.mktmpdir {|tmp|
+      Dir.chdir(tmp) {
+        Dir.mkdir "a"
+        Dir.mkdir "b"
+        File.open("a/lib.rb", "w") {|f| f.puts 'puts "a/lib.rb"' }
+        File.open("b/lib.rb", "w") {|f| f.puts 'puts "b/lib.rb"' }
+        File.open("a/tst.rb", "w") {|f| f.puts 'require_relative "lib"' }
+        File.symlink("../a/tst.rb", "b/tst.rb")
+        result = IO.popen([EnvUtil.rubybin, "b/tst.rb"]).read
+        assert_equal("a/lib.rb\n", result)
+      }
+    }
   end
 end

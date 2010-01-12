@@ -1,3 +1,18 @@
+Tue Jan 12 09:22:43 2010  Tanaka Akira  <akr@fsij.org>
+
+	* prelude.rb (require_relative): use File.realpath.  [ruby-dev:40040]
+
+	* include/ruby/intern.h: declare rb_dir_getwd.
+
+	* dir.c (rb_dir_getwd): copied from dir_s_getwd to export.
+	  (dir_s_getwd): use rb_dir_getwd.
+
+	* file.c (rb_file_s_realpath): new method File.realpath.
+	  (rb_file_s_realdirpath): new method File.realdirpath.
+
+	* lib/pathname.rb (Pathname#realpath): use File.realpath.
+	  (Pathname#realdirpath): use File.realdirpath.
+
 Mon Jan 11 22:45:08 2010  Akinori MUSHA  <knu@iDaemons.org>
 
 	* hash.c (ruby_setenv): Improve the emulatation of setenv(3) on
