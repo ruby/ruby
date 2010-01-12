@@ -238,7 +238,7 @@ class TestProcess < Test::Unit::TestCase
 
     h = {}
     cmd = [h, RUBY]
-    ENV.each do |k,v|
+    (ENV.keys + MANDATORY_ENVS).each do |k|
       case k
       when /\APATH\z/i
       when *MANDATORY_ENVS

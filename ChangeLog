@@ -1,3 +1,8 @@
+Tue Jan 12 16:09:02 2010  wanabe  <s.wanabe@gmail.com>
+
+	* test/ruby/test_process.rb (test_execopts_env): MANDATORY_ENVS might
+	  not be a part of ENV.  e.g. TMPDIR.
+
 Tue Jan 12 14:07:31 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http.rb (Net::HTTP#start): add hash argument to
