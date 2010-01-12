@@ -1,7 +1,7 @@
 require "test/unit"
+require File.join(File.dirname(__FILE__), "utils.rb")
 require "webrick"
 require "stringio"
-require File.join(File.dirname(__FILE__), "utils.rb")
 
 class WEBrick::TestFileHandler < Test::Unit::TestCase
   def default_file_handler(filename)
