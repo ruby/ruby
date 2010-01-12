@@ -1158,7 +1158,7 @@ class TestProcess < Test::Unit::TestCase
       status = nil
       Dir.chdir("vd") {
         Dir.rmdir("#{d}/vd")
-        system(RUBY, "-e", "exit true")
+        system({"RUBYLIB"=>nil}, RUBY, "-e", "exit true")
         status = $?
       }
       assert(status.success?, "[ruby-dev:38105]")
