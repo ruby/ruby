@@ -435,6 +435,7 @@ init_env(void)
 {
     static const WCHAR TMPDIR[] = L"TMPDIR";
     WCHAR env[_MAX_PATH];
+    WCHAR *buf;
     DWORD len;
     BOOL f;
 
@@ -458,7 +459,9 @@ init_env(void)
 	}
 	if (f) {
 	    regulate_path(env);
-	    SetEnvironmentVariableW(L"HOME", env);
+	    buf = ALLOCA_N(WCHAR, 5 + lstrlenW(env) + 1);
+	    wsprintfW(buf, L"HOME=%s", env);
+	    _wputenv(buf);
 	}
     }
 
@@ -468,7 +471,9 @@ init_env(void)
 	    NTLoginName = "<Unknown>";
 	    return;
 	}
-	SetEnvironmentVariableW(L"USER", env);
+	buf = ALLOCA_N(WCHAR, 5 + lstrlenW(env) + 1);
+	wsprintfW(buf, L"USER=%s", env);
+	_wputenv(buf);
     }
     NTLoginName = strdup(rb_w32_getenv("USER"));
 
@@ -482,7 +487,9 @@ init_env(void)
 	if (*(p - 1) != L'/') *p++ = L'/';
 	if (p - env + numberof(temp) < numberof(env)) {
 	    memcpy(p, temp, sizeof(temp));
-	    SetEnvironmentVariableW(TMPDIR, env);
+	    buf = ALLOCA_N(WCHAR, lstrlenW(TMPDIR) + 1 + lstrlenW(env) + 1);
+	    wsprintfW(buf, L"%s=%s", TMPDIR, env);
+	    _wputenv(buf);
 	}
     }
 }

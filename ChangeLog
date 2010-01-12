@@ -1,3 +1,10 @@
+Tue Jan 12 14:53:07 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (init_env): use _wputenv() instead of
+	  SetEnvironmentVariableW() because latter doesn't set msvcrt's environ
+	  work area, of course.
+	  [Bug #2552]
+
 Tue Jan 12 13:33:54 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* file.c (realpath_rec): trace symbolic link only when supporting
