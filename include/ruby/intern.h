@@ -346,6 +346,8 @@ void rb_thread_atfork_before_exec(void);
 VALUE rb_exec_recursive(VALUE(*)(VALUE, VALUE, int),VALUE,VALUE);
 VALUE rb_exec_recursive_paired(VALUE(*)(VALUE, VALUE, int),VALUE,VALUE,VALUE);
 VALUE rb_exec_recursive_outer(VALUE(*)(VALUE, VALUE, int),VALUE,VALUE);
+/* dir.c */
+VALUE rb_dir_getwd(void);
 /* file.c */
 VALUE rb_file_s_expand_path(int, VALUE *);
 VALUE rb_file_expand_path(VALUE, VALUE);

@@ -851,6 +851,21 @@ dir_s_chdir(int argc, VALUE *argv, VALUE obj)
     return INT2FIX(0);
 }
 
+VALUE
+rb_dir_getwd(void)
+{
+    char *path;
+    VALUE cwd;
+
+    rb_secure(4);
+    path = my_getcwd();
+    cwd = rb_tainted_str_new2(path);
+    rb_enc_associate(cwd, rb_filesystem_encoding());
+
+    xfree(path);
+    return cwd;
+}
+
 /*
  *  call-seq:
  *     Dir.getwd => string
@@ -865,16 +880,7 @@ dir_s_chdir(int argc, VALUE *argv, VALUE obj)
 static VALUE
 dir_s_getwd(VALUE dir)
 {
-    char *path;
-    VALUE cwd;
-
-    rb_secure(4);
-    path = my_getcwd();
-    cwd = rb_tainted_str_new2(path);
-    rb_enc_associate(cwd, rb_filesystem_encoding());
-
-    xfree(path);
-    return cwd;
+    return rb_dir_getwd();
 }
 
 static void

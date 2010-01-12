@@ -52,6 +52,11 @@ with all sufficient information, see the ChangeLog file.
       * Float::INFINITY
       * Float::NAN
 
+  * File
+    * new methods:
+      * File.realpath
+      * File.realdirpath
+
   * IO
     * new method:
       * IO#fdatasync

@@ -435,61 +435,6 @@ class Pathname
   end
   private :cleanpath_conservative
 
-  def realpath_rec(prefix, unresolved, h, strict, last = true)
-    resolved = []
-    until unresolved.empty?
-      n = unresolved.shift
-      if n == '.'
-        next
-      elsif n == '..'
-        resolved.pop
-      else
-        path = prepend_prefix(prefix, File.join(*(resolved + [n])))
-        if h.include? path
-          if h[path] == :resolving
-            raise Errno::ELOOP.new(path)
-          else
-            prefix, *resolved = h[path]
-          end
-        else
-          begin
-            s = File.lstat(path)
-          rescue Errno::ENOENT => e
-            raise e if strict || !last || !unresolved.empty?
-            resolved << n
-            break
-          end
-          if s.symlink?
-            h[path] = :resolving
-            link_prefix, link_names = split_names(File.readlink(path))
-            if link_prefix == ''
-              prefix, *resolved = h[path] = realpath_rec(prefix, resolved + link_names, h, strict, unresolved.empty?)
-            else
-              prefix, *resolved = h[path] = realpath_rec(link_prefix, link_names, h, strict, unresolved.empty?)
-            end
-          else
-            resolved << n
-            h[path] = [prefix, *resolved]
-          end
-        end
-      end
-    end
-    return prefix, *resolved
-  end
-  private :realpath_rec
-
-  def real_path_internal(strict = false)
-    path = @path
-    prefix, names = split_names(path)
-    if prefix == ''
-      prefix, names2 = split_names(Dir.pwd)
-      names = names2 + names
-    end
-    prefix, *names = realpath_rec(prefix, names, {}, strict)
-    self.class.new(prepend_prefix(prefix, File.join(*names)))
-  end
-  private :real_path_internal
-
   #
   # Returns the real (absolute) pathname of +self+ in the actual
   # filesystem not containing symlinks or useless dots.
@@ -498,7 +443,7 @@ class Pathname
   # called.
   #
   def realpath
-    real_path_internal(true)
+    self.class.new(File.realpath(@path))
   end
 
   #
@@ -508,7 +453,7 @@ class Pathname
   # The last component of the real pathname can be nonexistent.
   #
   def realdirpath
-    real_path_internal(false)
+    self.class.new(File.realdirpath(@path))
   end
 
   # #parent returns the parent directory.

@@ -3082,6 +3082,145 @@ rb_file_s_absolute_path(int argc, VALUE *argv)
     return rb_file_absolute_path(fname, dname);
 }
 
+static void
+realpath_rec(long *prefixlenp, VALUE *resolvedp, char *unresolved, VALUE loopcheck, int strict, int last)
+{
+    while (*unresolved) {
+        char *testname = unresolved;
+        char *unresolved_firstsep = rb_path_next(unresolved);
+        long testnamelen = unresolved_firstsep - unresolved;
+        char *unresolved_nextname = unresolved_firstsep;
+        while (isdirsep(*unresolved_nextname)) unresolved_nextname++;
+        unresolved = unresolved_nextname;
+        if (testnamelen == 1 && testname[0] == '.') {
+        }
+        else if (testnamelen == 2 && testname[0] == '.' && testname[1] == '.') {
+            if (*prefixlenp < RSTRING_LEN(*resolvedp)) {
+                char *resolved_names = RSTRING_PTR(*resolvedp) + *prefixlenp;
+                long len = rb_path_last_separator(resolved_names) - resolved_names;
+                rb_str_modify(*resolvedp);
+                rb_str_set_len(*resolvedp, *prefixlenp + len);
+            }
+        }
+        else {
+            VALUE checkval;
+            VALUE testpath = rb_str_dup(*resolvedp);
+            if (*prefixlenp < RSTRING_LEN(testpath))
+                rb_str_cat2(testpath, "/");
+            rb_str_cat(testpath, testname, testnamelen);
+            checkval = rb_hash_aref(loopcheck, testpath);
+            if (!NIL_P(checkval)) {
+                if (checkval == ID2SYM(rb_intern("resolving"))) {
+                    errno = ELOOP;
+                    rb_sys_fail(RSTRING_PTR(testpath));
+                }
+                else {
+                    *resolvedp = rb_str_dup(checkval);
+                }
+            }
+            else {
+                struct stat sbuf;
+                int ret;
+                ret = lstat(RSTRING_PTR(testpath), &sbuf);
+                if (ret == -1) {
+                    if (errno == ENOENT) {
+                        if (strict || !last || *unresolved_firstsep)
+                            rb_sys_fail(RSTRING_PTR(testpath));
+                        *resolvedp = testpath;
+                        break;
+                    }
+                    else {
+                        rb_sys_fail(RSTRING_PTR(testpath));
+                    }
+                }
+                if (S_ISLNK(sbuf.st_mode)) {
+                    volatile VALUE link;
+                    char *link_prefix, *link_names;
+                    long link_prefixlen;
+                    rb_hash_aset(loopcheck, testpath, ID2SYM(rb_intern("resolving")));
+                    link = rb_file_s_readlink(rb_cFile, testpath);
+                    link_prefix = RSTRING_PTR(link);
+                    link_names = skiproot(link_prefix);
+                    link_prefixlen = link_names - link_prefix;
+                    if (link_prefixlen == 0) {
+                        realpath_rec(prefixlenp, resolvedp, link_names, loopcheck, strict, *unresolved_firstsep == '\0');
+                    }
+                    else {
+                        *resolvedp = rb_str_new(link_prefix, link_prefixlen);
+                        *prefixlenp = link_prefixlen;
+                        realpath_rec(prefixlenp, resolvedp, link_names, loopcheck, strict, *unresolved_firstsep == '\0');
+                    }
+                    rb_hash_aset(loopcheck, testpath, rb_str_dup_frozen(*resolvedp));
+                }
+                else {
+                    VALUE s = rb_str_dup_frozen(testpath);
+                    rb_hash_aset(loopcheck, s, s);
+                    *resolvedp = testpath;
+                }
+            }
+        }
+    }
+}
+
+static VALUE
+realpath_internal(VALUE path, int strict)
+{
+    long prefixlen;
+    VALUE resolved;
+    volatile VALUE unresolved_path;
+    char *unresolved_names;
+    VALUE loopcheck;
+    FilePathValue(path);
+    unresolved_path = rb_str_dup_frozen(path);
+    unresolved_names = skiproot(RSTRING_PTR(unresolved_path));
+    prefixlen = unresolved_names - RSTRING_PTR(unresolved_path);
+    loopcheck = rb_hash_new();
+    if (prefixlen == 0) {
+        volatile VALUE curdir = rb_dir_getwd();
+        char *unresolved_curdir_names = skiproot(RSTRING_PTR(curdir));
+        prefixlen = unresolved_curdir_names - RSTRING_PTR(curdir);
+        resolved = rb_str_new(RSTRING_PTR(curdir), prefixlen);
+        realpath_rec(&prefixlen, &resolved, unresolved_curdir_names, loopcheck, 1, 0);
+    }
+    else {
+        resolved = rb_str_new(RSTRING_PTR(unresolved_path), prefixlen);
+    }
+    realpath_rec(&prefixlen, &resolved, unresolved_names, loopcheck, strict, 1);
+    OBJ_TAINT(resolved);
+    return resolved;
+}
+
+/*
+ * call-seq:
+ *     File.realpath(pathname) -> real_pathname
+ *
+ *  Returns the real (absolute) pathname of +pathname+ in the actual
+ *  filesystem not containing symlinks or useless dots.
+ * 
+ *  All components of the pathname must exist when this method is
+ *  called.
+ */
+static VALUE
+rb_file_s_realpath(VALUE klass, VALUE path)
+{
+    return realpath_internal(path, 1);
+}
+
+/*
+ * call-seq:
+ *     File.realdirpath(pathname) -> real_pathname
+ *
+ *  Returns the real (absolute) pathname of +pathname+ in the actual filesystem.
+ *  The real pathname doesn't contain symlinks or useless dots.
+ * 
+ *  The last component of the real pathname can be nonexistent.
+ */
+static VALUE
+rb_file_s_realdirpath(VALUE klass, VALUE path)
+{
+    return realpath_internal(path, 0);
+}
+
 static size_t
 rmext(const char *p, long l1, const char *e)
 {
@@ -4896,6 +5035,8 @@ Init_File(void)
     rb_define_singleton_method(rb_cFile, "truncate", rb_file_s_truncate, 2);
     rb_define_singleton_method(rb_cFile, "expand_path", rb_file_s_expand_path, -1);
     rb_define_singleton_method(rb_cFile, "absolute_path", rb_file_s_absolute_path, -1);
+    rb_define_singleton_method(rb_cFile, "realpath", rb_file_s_realpath, 1);
+    rb_define_singleton_method(rb_cFile, "realdirpath", rb_file_s_realdirpath, 1);
     rb_define_singleton_method(rb_cFile, "basename", rb_file_s_basename, -1);
     rb_define_singleton_method(rb_cFile, "dirname", rb_file_s_dirname, 1);
     rb_define_singleton_method(rb_cFile, "extname", rb_file_s_extname, 1);
