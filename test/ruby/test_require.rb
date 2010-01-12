@@ -279,7 +279,7 @@ class TestRequire < Test::Unit::TestCase
         File.open("a/tst.rb", "w") {|f| f.puts 'require_relative "lib"' }
         File.symlink("../a/tst.rb", "b/tst.rb")
         result = IO.popen([EnvUtil.rubybin, "b/tst.rb"]).read
-        assert_equal("a/lib.rb\n", result)
+        assert_equal("a/lib.rb\n", result, "[ruby-dev:40040]")
       }
     }
   end
