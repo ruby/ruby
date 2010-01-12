@@ -3098,7 +3098,6 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, char *unresolved, VALUE loopche
             if (*prefixlenp < RSTRING_LEN(*resolvedp)) {
                 char *resolved_names = RSTRING_PTR(*resolvedp) + *prefixlenp;
                 long len = rb_path_last_separator(resolved_names) - resolved_names;
-                rb_str_modify(*resolvedp);
                 rb_str_set_len(*resolvedp, *prefixlenp + len);
             }
         }
