@@ -1,3 +1,10 @@
+Thu Jan 14 04:01:50 2010  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (time_mdump): use nano_num and nano_den instead of subnano to
+	  avoid Rational class in marshaled data which prevent unmarshal by
+	  Ruby 1.8.
+	  (time_mload): use nano_num and nano_den.
+
 Wed Jan 13 11:57:38 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* object.c (rb_class_initialize): Make sure BasicObject doesn't get

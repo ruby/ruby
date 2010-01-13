@@ -191,6 +191,11 @@ class TestTime < Test::Unit::TestCase
     assert_marshal_roundtrip(Time.at(0, 0.120))
   end
 
+  def test_marshal_rational
+    assert_marshal_roundtrip(Time.at(0, Rational(1,3)))
+    assert_not_match(/Rational/, Marshal.dump(Time.at(0, Rational(1,3))))
+  end
+
   def test_marshal_ivar
     t = Time.at(123456789, 987654.321)
     t.instance_eval { @var = 135 }
