@@ -1,3 +1,7 @@
+Wed Jan 13 22:07:47 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/zlib/test_zlib.rb: backport tests for 1.9
+
 Wed Jan 13 06:54:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: check for if struct timezone is defined.
