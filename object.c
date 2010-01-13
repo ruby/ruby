@@ -1427,7 +1427,7 @@ rb_class_initialize(int argc, VALUE *argv, VALUE klass)
 {
     VALUE super;
 
-    if (RCLASS_SUPER(klass) != 0) {
+    if (RCLASS_SUPER(klass) != 0 || klass == rb_cBasicObject) {
 	rb_raise(rb_eTypeError, "already initialized class");
     }
     if (argc == 0) {
