@@ -103,7 +103,7 @@ rb_localtime(const time_t *tm, struct tm *result)
 }
 #endif
 
-static ID id_divmod, id_mul, id_submicro, id_subnano;
+static ID id_divmod, id_mul, id_submicro, id_nano_num, id_nano_den;
 static ID id_eq, id_ne, id_quo, id_div, id_cmp, id_lshift;
 
 #define eq(x,y) (RTEST(rb_funcall((x), id_eq, 1, (y))))
@@ -3604,6 +3604,8 @@ time_mdump(VALUE time)
     usec = nsec / 1000;
     nsec = nsec % 1000;
 
+    nano = add(LONG2FIX(nsec), subnano);
+
     p = 0x1UL            << 31 | /*  1 */
 	TIME_UTC_P(tobj) << 30 | /*  1 */
 	(year-1900)      << 14 | /* 16 */
@@ -3625,7 +3627,17 @@ time_mdump(VALUE time)
 
     str = rb_str_new(buf, 8);
     rb_copy_generic_ivar(str, time);
-    if (nsec) {
+    if (!rb_equal(nano, INT2FIX(0))) {
+        if (TYPE(nano) == T_RATIONAL) {
+            rb_ivar_set(str, id_nano_num, ((struct RRational *)nano)->num);
+            rb_ivar_set(str, id_nano_den, ((struct RRational *)nano)->den);
+        }
+        else {
+            rb_ivar_set(str, id_nano_num, nano);
+            rb_ivar_set(str, id_nano_den, INT2FIX(1));
+        }
+    }
+    if (nsec) { /* submicro is only for Ruby 1.9.1 compatibility */
         /*
          * submicro is formatted in fixed-point packed BCD (without sign).
          * It represent digits under microsecond.
@@ -3643,9 +3655,6 @@ time_mdump(VALUE time)
         if (buf[1] == 0)
             len = 1;
         rb_ivar_set(str, id_submicro, rb_str_new(buf, len));
-    }
-    if (!rb_equal(subnano, INT2FIX(0))) {
-        rb_ivar_set(str, id_subnano, subnano);
     }
     return str;
 }
@@ -3683,17 +3692,21 @@ time_mload(VALUE time, VALUE str)
     struct vtm vtm;
     int i, gmt;
     long nsec;
-    VALUE timexv, submicro, subnano;
+    VALUE timexv, submicro, nano_num, nano_den;
 
     time_modify(time);
 
+    nano_num = rb_attr_get(str, id_nano_num);
+    if (nano_num != Qnil) {
+        st_delete(rb_generic_ivar_table(str), (st_data_t*)&id_nano_num, 0);
+    }
+    nano_den = rb_attr_get(str, id_nano_den);
+    if (nano_den != Qnil) {
+        st_delete(rb_generic_ivar_table(str), (st_data_t*)&id_nano_den, 0);
+    }
     submicro = rb_attr_get(str, id_submicro);
     if (submicro != Qnil) {
         st_delete(rb_generic_ivar_table(str), (st_data_t*)&id_submicro, 0);
-    }
-    subnano = rb_attr_get(str, id_subnano);
-    if (subnano != Qnil) {
-        st_delete(rb_generic_ivar_table(str), (st_data_t*)&id_subnano, 0);
     }
     rb_copy_generic_ivar(time, str);
 
@@ -3736,7 +3749,13 @@ time_mload(VALUE time, VALUE str)
 	usec = (long)(s & 0xfffff);
         nsec = usec * 1000;
 
-        if (submicro != Qnil) {
+
+        vtm.subsecx = mulquo(LONG2FIX(nsec), INT2FIX(TIME_SCALE), LONG2FIX(1000000000));
+        if (nano_num != Qnil) {
+            VALUE nano = quo(num_exact(nano_num), num_exact(nano_den));
+            vtm.subsecx = add(vtm.subsecx, mulquo(nano, INT2FIX(TIME_SCALE), LONG2FIX(1000000000)));
+        }
+        else if (submicro != Qnil) { /* for Ruby 1.9.1 compatibility */
             unsigned char *ptr;
             long len;
             int digit;
@@ -3753,12 +3772,6 @@ time_mload(VALUE time, VALUE str)
                 nsec += digit;
             }
 end_submicro: ;
-        }
-
-        vtm.subsecx = mulquo(LONG2FIX(nsec), INT2FIX(TIME_SCALE), LONG2FIX(1000000000));
-        if (subnano != Qnil) {
-            subnano = num_exact(subnano);
-            vtm.subsecx = add(vtm.subsecx, mulquo(subnano, INT2FIX(TIME_SCALE), LONG2FIX(1000000000)));
         }
         timexv = timegmxv(&vtm);
     }
@@ -3819,7 +3832,8 @@ Init_Time(void)
     id_divmod = rb_intern("divmod");
     id_mul = rb_intern("*");
     id_submicro = rb_intern("submicro");
-    id_subnano = rb_intern("subnano");
+    id_nano_num = rb_intern("nano_num");
+    id_nano_den = rb_intern("nano_den");
 
     rb_cTime = rb_define_class("Time", rb_cObject);
     rb_include_module(rb_cTime, rb_mComparable);
