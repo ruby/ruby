@@ -99,7 +99,7 @@ Tue Jan 12 09:22:43 2010  Tanaka Akira  <akr@fsij.org>
 
 Mon Jan 11 22:45:08 2010  Akinori MUSHA  <knu@iDaemons.org>
 
-	* hash.c (ruby_setenv): Improve the emulatation of setenv(3) on
+	* hash.c (ruby_setenv): Improve the emulation of setenv(3) on
 	  environments where putenv(3) is used.  Raise EINVAL If a
 	  variable name contains an '='.
 
@@ -230,12 +230,12 @@ Sun Jan  3 23:54:51 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 	  (OBJSETUP): probe "object-create".
 	  (RUBY_EVENT_RESCUE): new event.
 
-	* vm_exec.c (DEBUG_ENTER_INSN): embeded a probe insn-entry into it.
+	* vm_exec.c (DEBUG_ENTER_INSN): embedded a probe insn-entry into it.
 	  (DEBUG_END_INSN): insn-return.
 
 	* vm.c (LIKELY): moved into ruby.h.
 	  (UNLIKELY): ditto.
-	  (Init_BareVM): embeded a probe "raise" into it.
+	  (Init_BareVM): embedded a probe "raise" into it.
 
 	* variable.c (rb_class2name_without_alloc): new utility function.
 
@@ -255,7 +255,7 @@ Sun Jan  3 23:54:51 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 	* iseq.c (rb_vm_insn_name): new utility function.
 	  (rb_vm_insn_len): ditto.
 
-	* insns.def (hook): probes "method-etnry", "method-return", "line",
+	* insns.def (hook): probes "method-entry", "method-return", "line",
 	  and "rescue".
 
 	* compile.c (iseq_compile_each): adds a trace op for "rescue" probe.
@@ -302,7 +302,7 @@ Sun Jan  3 23:54:51 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 	  ($(PROGRAM)): ditto.
 	  (golf): ditto.
 	  (miniruby): ditto.
-	  ($(arch_hdrdir)/ruby/dtrace.d): new target. preprocessed verson 
+	  ($(arch_hdrdir)/ruby/dtrace.d): new target. preprocessed version 
 	  of defs/dtrace.d. generated if necessary.
 	  ($(arch_hdrdir)/ruby/trace_dtrace.h): new target.
 	  definition of probes.
