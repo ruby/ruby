@@ -2425,9 +2425,14 @@ static VALUE
 time_to_r(VALUE time)
 {
     struct time_object *tobj;
+    VALUE v;
 
     GetTimeval(time, tobj);
-    return rb_time_unmagnify(tobj->timexv);
+    v = rb_time_unmagnify(tobj->timexv);
+    if (TYPE(v) != T_RATIONAL) {
+        v = rb_convert_type(v, T_RATIONAL, "Rational", "to_r");
+    }
+    return v;
 }
 
 /*
