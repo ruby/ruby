@@ -1,3 +1,10 @@
+Wed Jan 13 11:57:38 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* object.c (rb_class_initialize): Make sure BasicObject doesn't get
+	  initialized twice [ruby-core:27577]
+	
+	* class.c (rb_class_init_copy): ditto
+
 Wed Jan 13 06:54:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: check for if struct timezone is defined.
