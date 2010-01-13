@@ -540,4 +540,9 @@ class TestTime < Test::Unit::TestCase
     assert_equal(-1, d1 <=> d2)
     assert_equal(1, d2 <=> d1)
   end
+
+  def test_to_r
+    assert_kind_of(Rational, Time.new(2000,1,1,0,0,Rational(4,3)).to_r)
+    assert_kind_of(Rational, Time.utc(1970).to_r)
+  end
 end
