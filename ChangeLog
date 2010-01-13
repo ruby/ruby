@@ -38,6 +38,7 @@ Tue Jan 12 16:48:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  is closed instead of fd 0.
 
 	* ext/readline/readline.c (Init_readline): use STDIN for input.
+	  Reported by Sora Harakami. See
 	  http://d.hatena.ne.jp/codnote/20100111/1263174134
 
 Tue Jan 12 16:09:02 2010  wanabe  <s.wanabe@gmail.com>
