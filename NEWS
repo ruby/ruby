@@ -20,6 +20,14 @@ with all sufficient information, see the ChangeLog file.
     * new method:
       * Dir.home
 
+  * Encoding
+    * new encodings:
+      * Big5
+      * Big5-UAO
+
+    * new method:
+      * ascii_compatible?
+
   * Enumerable
     * New methods:
       * Enumerable#join
