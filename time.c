@@ -1453,6 +1453,20 @@ time_init_1(int argc, VALUE *argv, VALUE time)
  *
  *     Time.new(2008,6,21, 13,30,0, "+09:00") #=> 2008-06-21 13:30:00 +0900
  *
+ *     # A trip for RubyConf 2007
+ *     t1 = Time.new(2007,11,1,15,25,0, "+09:00") # JST (Narita)
+ *     t2 = Time.new(2007,11,1,12, 5,0, "-05:00") # CDT (Minneapolis)
+ *     t3 = Time.new(2007,11,1,13,25,0, "-05:00") # CDT (Minneapolis)
+ *     t4 = Time.new(2007,11,1,16,53,0, "-04:00") # EDT (Charlotte) 
+ *     t5 = Time.new(2007,11,5, 9,24,0, "-05:00") # EST (Charlotte)
+ *     t6 = Time.new(2007,11,5,11,21,0, "-05:00") # EST (Detroit)
+ *     t7 = Time.new(2007,11,5,13,45,0, "-05:00") # EST (Detroit)
+ *     t8 = Time.new(2007,11,6,17,10,0, "+09:00") # JST (Narita)
+ *     p((t2-t1)/3600.0)                          #=> 10.666666666666666
+ *     p((t4-t3)/3600.0)                          #=> 2.466666666666667
+ *     p((t6-t5)/3600.0)                          #=> 1.95
+ *     p((t8-t7)/3600.0)                          #=> 13.416666666666666
+ *
  */
 
 static VALUE
