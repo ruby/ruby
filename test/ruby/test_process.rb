@@ -260,6 +260,24 @@ class TestProcess < Test::Unit::TestCase
       system({"fofo"=>"haha"}, *ENVCOMMAND, STDOUT=>"out")
       assert_match(/^fofo=haha$/, File.read("out").chomp)
     }
+
+    old = ENV["hmm"]
+    begin
+      ENV["hmm"] = "fufu"
+      IO.popen(ENVCOMMAND) {|io| assert_match(/^hmm=fufu$/, io.read) }
+      IO.popen([{"hmm"=>""}, *ENVCOMMAND]) {|io| assert_match(/^hmm=$/, io.read) }
+      IO.popen([{"hmm"=>nil}, *ENVCOMMAND]) {|io| assert_not_match(/^hmm=/, io.read) }
+      ENV["hmm"] = ""
+      IO.popen(ENVCOMMAND) {|io| assert_match(/^hmm=$/, io.read) }
+      IO.popen([{"hmm"=>""}, *ENVCOMMAND]) {|io| assert_match(/^hmm=$/, io.read) }
+      IO.popen([{"hmm"=>nil}, *ENVCOMMAND]) {|io| assert_not_match(/^hmm=/, io.read) }
+      ENV["hmm"] = nil
+      IO.popen(ENVCOMMAND) {|io| assert_not_match(/^hmm=/, io.read) }
+      IO.popen([{"hmm"=>""}, *ENVCOMMAND]) {|io| assert_match(/^hmm=$/, io.read) }
+      IO.popen([{"hmm"=>nil}, *ENVCOMMAND]) {|io| assert_not_match(/^hmm=/, io.read) }
+    ensure
+      ENV["hmm"] = old
+    end
   end
 
   def test_execopts_unsetenv_others
