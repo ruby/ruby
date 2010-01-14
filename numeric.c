@@ -566,7 +566,7 @@ flo_to_s(VALUE flt)
 
     if (isinf(value))
 	return rb_usascii_str_new2(value < 0 ? "-Infinity" : "Infinity");
-    else if(isnan(value))
+    else if (isnan(value))
 	return rb_usascii_str_new2("NaN");
 
 # define FLOFMT(buf, size, fmt, prec, val) snprintf(buf, size, fmt, prec, val), \
@@ -956,7 +956,7 @@ flo_hash(VALUE num)
     /* normalize -0.0 to 0.0 */
     if (d == 0.0) d = 0.0;
     hash = rb_memhash(&d, sizeof(d));
-    return INT2FIX(hash);
+    return LONG2FIX(hash);
 }
 
 VALUE
@@ -1975,7 +1975,7 @@ int_chr(int argc, VALUE *argv, VALUE num)
 {
     char c;
     int n;
-    long i = NUM2LONG(num);
+    SIGNED_VALUE i = NUM2LONG(num);
     rb_encoding *enc;
     VALUE str;
 
@@ -2006,8 +2006,8 @@ int_chr(int argc, VALUE *argv, VALUE num)
     enc = rb_to_encoding(argv[0]);
     if (!enc) enc = rb_ascii8bit_encoding();
   decode:
-#if SIZEOF_INT < SIZEOF_LONG
-    if (i > INT_MAX) goto out_of_range;
+#if SIZEOF_INT < SIZEOF_VALUE
+    if (i > UINT_MAX) goto out_of_range;
 #endif
     if (i < 0 || (n = rb_enc_codelen((int)i, enc)) <= 0) goto out_of_range;
     str = rb_enc_str_new(0, n, enc);
