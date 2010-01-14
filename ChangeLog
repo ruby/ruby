@@ -1,3 +1,8 @@
+Thu Jan 14 12:50:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_concat): fixed range check for Fixnum, and
+	  added checks for integer overflow and invalid char code.
+
 Thu Jan 14 09:34:31 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_str_concat): raise RangeError when the argument is

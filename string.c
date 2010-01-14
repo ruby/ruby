@@ -1983,24 +1983,35 @@ rb_str_append(VALUE str, VALUE str2)
 VALUE
 rb_str_concat(VALUE str1, VALUE str2)
 {
+    SIGNED_VALUE lc;
+
     if (FIXNUM_P(str2)) {
-	if (NEGFIXABLE(str2))
+	lc = FIX2LONG(str2);
+	if (lc < 0)
 	    rb_raise(rb_eRangeError, "negative argument");
     }
     else if (TYPE(str2) == T_BIGNUM) {
 	if (!RBIGNUM_SIGN(str2))
 	    rb_raise(rb_eRangeError, "negative argument");
+	lc = rb_big2ulong(str2);
     }
     else {
 	return rb_str_append(str1, str2);
     }
+#if SIZEOF_INT < SIZEOF_VALUE
+    if ((VALUE)lc > UINT_MAX) {
+	rb_raise(rb_eRangeError, "%"PRIuVALUE" out of char range", lc);
+    }
+#endif
     {
 	rb_encoding *enc = STR_ENC_GET(str1);
-	unsigned int c = NUM2UINT(str2);
 	long pos = RSTRING_LEN(str1);
-	int len = rb_enc_codelen(c, enc);
 	int cr = ENC_CODERANGE(str1);
+	int c, len;
 
+	if ((len = rb_enc_codelen(c = (int)lc, enc)) <= 0) {
+	    rb_raise(rb_eRangeError, "%u invalid char", c);
+	}
 	rb_str_resize(str1, pos+len);
 	rb_enc_mbcput(c, RSTRING_PTR(str1)+pos, enc);
 	ENC_CODERANGE_SET(str1, cr);
