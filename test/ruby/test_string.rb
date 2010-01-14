@@ -218,6 +218,13 @@ class TestString < Test::Unit::TestCase
     l = s.size
     s << "bar"
     assert_equal(l + 3, s.size)
+
+    bug = '[ruby-core:27583]'
+    assert_raise(RangeError, bug) {S("a".force_encoding(Encoding::UTF_8)) << -3}
+    assert_raise(RangeError, bug) {S("a".force_encoding(Encoding::UTF_8)) << -2}
+    assert_raise(RangeError, bug) {S("a".force_encoding(Encoding::UTF_8)) << -1}
+    assert_raise(RangeError, bug) {S("a".force_encoding(Encoding::UTF_8)) << 0x81308130}
+    assert_nothing_raised {S("a".force_encoding(Encoding::GB18030)) << 0x81308130}
   end
 
   def test_MATCH # '=~'
