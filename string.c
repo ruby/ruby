@@ -1983,7 +1983,18 @@ rb_str_append(VALUE str, VALUE str2)
 VALUE
 rb_str_concat(VALUE str1, VALUE str2)
 {
-    if (FIXNUM_P(str2) || TYPE(str2) == T_BIGNUM) {
+    if (FIXNUM_P(str2)) {
+	if (NEGFIXABLE(str2))
+	    rb_raise(rb_eRangeError, "negative argument");
+    }
+    else if (TYPE(str2) == T_BIGNUM) {
+	if (!RBIGNUM_SIGN(str2))
+	    rb_raise(rb_eRangeError, "negative argument");
+    }
+    else {
+	return rb_str_append(str1, str2);
+    }
+    {
 	rb_encoding *enc = STR_ENC_GET(str1);
 	unsigned int c = NUM2UINT(str2);
 	long pos = RSTRING_LEN(str1);
@@ -1995,7 +2006,6 @@ rb_str_concat(VALUE str1, VALUE str2)
 	ENC_CODERANGE_SET(str1, cr);
 	return str1;
     }
-    return rb_str_append(str1, str2);
 }
 
 st_index_t
