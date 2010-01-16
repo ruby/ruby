@@ -757,11 +757,12 @@ class TestM17N < Test::Unit::TestCase
 
   def test_sprintf_p
     enc = "".inspect.encoding
+    asc = Encoding::US_ASCII
     Encoding.list.each do |e|
       format = "%p".force_encoding(e)
       ['', 'a', "\xC2\xA1", "\x00"].each do |s|
         s.force_encoding(e)
-        assert_strenc(s.inspect, enc, format % s)
+        assert_strenc(s.inspect, e.ascii_compatible? && enc == asc ? e : enc, format % s)
       end
       s = "\xC2\xA1".force_encoding(e)
       assert_strenc('%10s' % s.inspect, enc, "%10p" % s)
