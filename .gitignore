@@ -2,6 +2,7 @@
 *.bak
 *.dylib
 *.inc
+*.o
 *.orig
 *.rej
 *.sav
