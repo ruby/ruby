@@ -1,3 +1,7 @@
+Sun Jan 17 19:24:25 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* math.c (domain_check): check errno first.
+
 Sun Jan 17 14:24:35 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (rb_str_derive): use long.
