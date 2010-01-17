@@ -114,6 +114,12 @@ with all sufficient information, see the ChangeLog file.
       * respond_to? can be used to detect methods not implemented.
         For example, Process.respond_to?(:fork) returns false on Windows.
 
+* digest
+    * new methods:
+      * Digest::Class.base64digest
+      * Digest::Instance#base64digest
+      * Digest::Instance#base64digest!
+
 * rss
 
   * 0.2.4 -> 0.2.7.
