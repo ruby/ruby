@@ -29,9 +29,9 @@ domain_check(x, msg)
     double x;
     const char *msg;
 {
-    if (!isnan(x)) return;
-    else {
-	if (!errno) {
+    if (!errno) {
+	if (!isnan(x)) return;
+	else {
 #if defined(EDOM)
 	    errno = EDOM;
 #else
