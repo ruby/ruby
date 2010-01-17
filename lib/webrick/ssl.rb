@@ -83,6 +83,7 @@ module WEBrick
       @ssl_context ||= nil
     end
 
+    undef listen
     def listen(address, port)
       listeners = Utils::create_listeners(address, port, @logger)
       if @config[:SSLEnable]

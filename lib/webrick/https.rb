@@ -33,7 +33,7 @@ module WEBrick
     alias orig_parse_uri parse_uri
 
     def parse_uri(str, scheme="https")
-      if @server_cert
+      if server_cert
         return orig_parse_uri(str, scheme)
       end
       return orig_parse_uri(str)
@@ -43,7 +43,7 @@ module WEBrick
 
     def meta_vars
       meta = orig_meta_vars
-      if @server_cert
+      if server_cert
         meta["HTTPS"] = "on"
         meta["SSL_SERVER_CERT"] = @server_cert.to_pem
         meta["SSL_CLIENT_CERT"] = @client_cert ? @client_cert.to_pem : ""
