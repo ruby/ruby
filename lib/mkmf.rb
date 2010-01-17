@@ -985,6 +985,11 @@ def have_const(const, headers = nil, opt = "", &b)
   end
 end
 
+STRING_OR_FAILED_FORMAT = "%s"
+def STRING_OR_FAILED_FORMAT.%(x)
+  x ? super : "failed"
+end
+
 # Returns the size of the given +type+.  You may optionally specify additional
 # +headers+ to search in for the +type+.
 #
@@ -1002,10 +1007,7 @@ def check_sizeof(type, headers = nil, opts = "", &b)
   prelude << "static rbcv_typedef_ *rbcv_ptr_;\n"
   prelude = [prelude]
   expr = "sizeof((*rbcv_ptr_)#{"." << member if member})"
-  fmt = "%s"
-  def fmt.%(x)
-    x ? super : "failed"
-  end
+  fmt = STRING_OR_FAILED_FORMAT
   checking_for checking_message("size of #{type}", headers), fmt do
     if UNIVERSAL_INTS.include?(type)
       type
@@ -1019,6 +1021,37 @@ def check_sizeof(type, headers = nil, opts = "", &b)
       size
     end
   end
+end
+
+# Returns the signedness of the given +type+.  You may optionally
+# specify additional +headers+ to search in for the +type+.
+#
+# If the +type+ is found and is a numeric type, a macro is passed as a
+# preprocessor constant to the compiler using the +type+ name, in
+# uppercase, prepended with 'SIGNEDNESS_OF_', followed by the +type+
+# name, followed by '=X' where 'X' is positive integer if the +type+ is
+# unsigned, or negative integer if the +type+ is signed.
+#
+# For example, if size_t is defined as unsigned, then
+# check_signedness('size_t') would returned +1 and the
+# SIGNEDNESS_OF_SIZE_T=+1 preprocessor macro would be passed to the
+# compiler, and SIGNEDNESS_OF_INT=-1 if check_signedness('int') is
+# done.
+#
+def check_signedness(type, headers = nil)
+  signed = nil
+  checking_for("signedness of #{type}", STRING_OR_FAILED_FORMAT) do
+    if try_static_assert("(#{type})-1 < 0")
+      signed = -1
+    elsif try_static_assert("(#{type})-1 > 0")
+      signed = +1
+    else
+      next nil
+    end
+    $defs.push("-DSIGNEDNESS_OF_%s=%+d" % [type.tr_cpp, signed])
+    signed < 0 ? "signed" : "unsigned"
+  end
+  signed
 end
 
 # :stopdoc:

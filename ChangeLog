@@ -1,4 +1,8 @@
-Sun Jan 17 14:18:01 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Jan 17 14:23:23 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/iconv.c (iconv_convert): suppress a warning.
+
+	* lib/mkmf.rb (check_signedness): new method.
 
 	* lib/mkmf.rb (have_header, create_header): use String#tr_cpp.
 
