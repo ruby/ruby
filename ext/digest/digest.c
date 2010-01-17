@@ -179,10 +179,7 @@ rb_digest_instance_digest(int argc, VALUE *argv, VALUE self)
         value = rb_funcall(self, id_finish, 0);
         rb_funcall(self, id_reset, 0);
     } else {
-        VALUE clone = rb_obj_clone(self);
-
-        value = rb_funcall(clone, id_finish, 0);
-        rb_funcall(clone, id_reset, 0);
+        value = rb_funcall(rb_obj_clone(self), id_finish, 0);
     }
 
     return value;
@@ -227,10 +224,7 @@ rb_digest_instance_hexdigest(int argc, VALUE *argv, VALUE self)
         value = rb_funcall(self, id_finish, 0);
         rb_funcall(self, id_reset, 0);
     } else {
-        VALUE clone = rb_obj_clone(self);
-
-        value = rb_funcall(clone, id_finish, 0);
-        rb_funcall(clone, id_reset, 0);
+        value = rb_funcall(rb_obj_clone(self), id_finish, 0);
     }
 
     return hexencode_str_new(value);
