@@ -27,10 +27,10 @@ extern VALUE rb_to_float(VALUE val);
 static void
 domain_check(double x, double y, const char *msg)
 {
-    if (!isnan(y)) return;
-    else if (isnan(x)) return;
-    else {
-	if (!errno) {
+    if (!errno) {
+	if (!isnan(y)) return;
+	else if (isnan(x)) return;
+	else {
 #if defined(EDOM)
 	    errno = EDOM;
 #else
