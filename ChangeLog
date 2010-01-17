@@ -1,3 +1,11 @@
+Mon Jan 18 03:59:57 2010  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/digest.c (rb_digest_instance_hexdigest_bang): Fix
+	  rdoc.
+
+	* ext/digest/lib/digest.rb (Digest::Class.base64digest)
+	  (Digest::Instance#base64digest{,!}): New methods.
+
 Sun Jan 17 22:48:44 2010  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/digest.c (rb_digest_instance_digest)

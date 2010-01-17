@@ -234,8 +234,8 @@ rb_digest_instance_hexdigest(int argc, VALUE *argv, VALUE self)
  * call-seq:
  *     digest_obj.hexdigest! -> string
  *
- * Returns the resulting hash value and resets the digest to the
- * initial state.
+ * Returns the resulting hash value in a hex-encoded form and resets
+ * the digest to the initial state.
  */
 static VALUE
 rb_digest_instance_hexdigest_bang(VALUE self)
