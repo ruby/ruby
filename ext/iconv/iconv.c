@@ -464,7 +464,11 @@ iconv_convert(iconv_t cd, VALUE str, long start, long length, int toidx, struct 
 	errmsg[0] = 0;
 	error = iconv_try(cd, &inptr, &inlen, &outptr, &outlen);
 
-	if (0 <= outlen && outlen <= sizeof(buffer)) {
+	if (
+#if SIGNEDNESS_OF_SIZE_T < 0
+	    0 <= outlen &&
+#endif
+	    outlen <= sizeof(buffer)) {
 	    outlen = sizeof(buffer) - outlen;
 	    if (NIL_P(error) ||	/* something converted */
 		outlen > (size_t)(inptr - tmpstart) || /* input can't contain output */
