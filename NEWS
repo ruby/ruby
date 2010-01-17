@@ -128,6 +128,15 @@ with all sufficient information, see the ChangeLog file.
 
     New methods.
 
+* base64
+
+  * Base64#strict_encode64
+  * Base64#strict_decode64
+  * Base64#urlsafe_encode64
+  * Base64#urlsafe_decode64
+
+    New methods.
+
 * dbm
 
   DBM#key

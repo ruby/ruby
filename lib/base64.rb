@@ -97,6 +97,40 @@ module Base64
     [bin].pack("m")
   end
 
+  # Returns the Base64-encoded version of +bin+.
+  # This method complies with RFC 4648.
+  # No line feeds are added.
+  def strict_encode64(bin)
+    [bin].pack((len = bin.bytesize) > 45 ? "m#{len+2}" : "m").chomp
+  end
+
+  # Returns the Base64-decoded version of +str+.
+  # This method complies with RFC 4648.
+  # ArgumentError is raised if +str+ is incorrectly padded or contains
+  # non-alphabet characters.  Note that CR or LF are also rejected.
+  def strict_decode64(str)
+    return str.unpack("m").first if str.bytesize % 4 == 0 &&
+      str.match(%r{\A[A-Za-z0-9+/]*([A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?\z}) &&
+      (!$1 || $1 == $1.unpack('m').pack('m').chomp)
+    raise ArgumentError, 'invalid base64'
+  end
+
+  # Returns the Base64-encoded version of +bin+.
+  # This method complies with ``Base 64 Encoding with URL and Filename Safe
+  # Alphabet'' in RFC 4648.
+  # The alphabet uses '-' instead of '+' and '_' instead of '/'.
+  def urlsafe_encode64(bin)
+    strict_encode64(bin).tr("+/", "-_")
+  end
+
+  # Returns the Base64-decoded version of +str+.
+  # This method complies with ``Base 64 Encoding with URL and Filename Safe
+  # Alphabet'' in RFC 4648.
+  # The alphabet uses '-' instead of '+' and '_' instead of '/'.
+  def urlsafe_decode64(str)
+    strict_decode64(str.tr("-_", "+/"))
+  end
+
   # _Prints_ the Base64 encoded version of +bin+ (a +String+) in lines of
   # +len+ (default 60) characters.
   #

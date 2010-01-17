@@ -1,3 +1,8 @@
+Mon Jan 18 03:39:05 2010  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/base64.rb (Base64#{strict_encode64,strict_decode64,urlsafe_encode64,
+	  urlsafe_decode64): New methods backported from 1.9.
+
 Sun Jan 17 19:24:25 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* math.c (domain_check): check errno first.
