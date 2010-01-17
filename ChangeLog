@@ -1,3 +1,15 @@
+Mon Jan 18 04:15:58 2010  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/digest.c (rb_digest_instance_digest)
+	  (rb_digest_instance_hexdigest): Save a method call of reset()
+	  for a disposable clone.
+
+	* ext/digest/digest.c (rb_digest_instance_hexdigest_bang): Fix
+	  rdoc.
+
+	* ext/digest/lib/digest.rb (Digest::Class.base64digest)
+	  (Digest::Instance#base64digest{,!}): New methods.
+
 Mon Jan 18 03:39:05 2010  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/base64.rb (Base64#{strict_encode64,strict_decode64,urlsafe_encode64,

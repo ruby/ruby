@@ -18,14 +18,22 @@ module TestDigest
   Data2 = "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"
 
   def test_s_hexdigest
-    self.class::DATA.each do |str, digest|
-      assert_equal(digest, self.class::ALGO.hexdigest(str))
+    self.class::DATA.each do |str, hexdigest|
+      assert_equal(hexdigest, self.class::ALGO.hexdigest(str))
+    end
+  end
+
+  def test_s_base64digest
+    self.class::DATA.each do |str, hexdigest|
+      digest = [hexdigest].pack("H*")
+      assert_equal([digest].pack("m0").delete("\n"), self.class::ALGO.base64digest(str))
     end
   end
 
   def test_s_digest
-    self.class::DATA.each do |str, digest|
-      assert_equal([digest].pack("H*"), self.class::ALGO.digest(str))
+    self.class::DATA.each do |str, hexdigest|
+      digest = [hexdigest].pack("H*")
+      assert_equal(digest, self.class::ALGO.digest(str))
     end
   end
 

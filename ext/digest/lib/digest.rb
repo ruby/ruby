@@ -1,4 +1,5 @@
 require 'digest.so'
+autoload :Base64, 'base64'
 
 module Digest
   def self.const_missing(name)
@@ -28,6 +29,13 @@ module Digest
     def self.file(name)
       new.file(name)
     end
+
+    # Returns the base64 encoded hash value of a given _string_.  The
+    # return value is properly padded with '=' and contains no line
+    # feeds.
+    def self.base64digest(str, *args)
+      Base64.strict_encode64(digest(str, *args))
+    end
   end
 
   module Instance
@@ -41,6 +49,25 @@ module Digest
         end
       }
       self
+    end
+
+    # If none is given, returns the resulting hash value of the digest
+    # in a base64 encoded form, keeping the digest's state.
+    #
+    # If a _string_ is given, returns the hash value for the given
+    # _string_ in a base64 encoded form, resetting the digest to the
+    # initial state before and after the process.
+    #
+    # In either case, the return value is properly padded with '=' and
+    # contains no line feeds.
+    def base64digest(str = nil)
+      Base64.strict_encode64(str ? digest(str) : digest)
+    end
+
+    # Returns the resulting hash value and resets the digest to the
+    # initial state.
+    def base64digest!
+      Base64.strict_encode64(digest!)
     end
   end
 end

@@ -194,6 +194,12 @@ with all sufficient information, see the ChangeLog file.
 
     Added as an alias to #ungetc.
 
+* digest
+    * new methods:
+      * Digest::Class.base64digest
+      * Digest::Instance#base64digest
+      * Digest::Instance#base64digest!
+
 * rss
 
   * 0.2.4 -> 0.2.7.
