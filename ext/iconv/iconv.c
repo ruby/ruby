@@ -115,7 +115,7 @@ static iconv_t iconv_create _((VALUE to, VALUE from, struct rb_iconv_opt_t *opt,
 static void iconv_dfree _((void *cd));
 static VALUE iconv_free _((VALUE cd));
 static VALUE iconv_try _((iconv_t cd, const char **inptr, size_t *inlen, char **outptr, size_t *outlen));
-static VALUE rb_str_derive _((VALUE str, const char* ptr, int len));
+static VALUE rb_str_derive _((VALUE str, const char* ptr, long len));
 static VALUE iconv_convert _((iconv_t cd, VALUE str, long start, long length, int toidx,
 			      struct iconv_env_t* env));
 static VALUE iconv_s_allocate _((VALUE klass));
@@ -386,7 +386,7 @@ iconv_fail_retry(VALUE error, VALUE success, VALUE failed, struct iconv_env_t* e
 }
 
 static VALUE
-rb_str_derive(VALUE str, const char* ptr, int len)
+rb_str_derive(VALUE str, const char* ptr, long len)
 {
     VALUE ret;
 
@@ -442,7 +442,7 @@ iconv_convert(iconv_t cd, VALUE str, long start, long length, int toidx, struct 
 	length = 0;
     }
     else {
-	int slen;
+	long slen;
 
 	StringValue(str);
 	slen = RSTRING_LEN(str);
