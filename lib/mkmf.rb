@@ -830,7 +830,7 @@ end
 def have_header(header, preheaders = nil, &b)
   checking_for header do
     if try_header(cpp_include(preheaders)+cpp_include(header), &b)
-      $defs.push(format("-DHAVE_%s", header.tr("a-z./\055", "A-Z___")))
+      $defs.push(format("-DHAVE_%s", header.tr_cpp))
       true
     else
       false
@@ -1263,7 +1263,7 @@ end
 #
 def create_header(header = "extconf.h")
   message "creating %s\n", header
-  sym = header.tr("a-z./\055", "A-Z___")
+  sym = header.tr_cpp
   hdr = ["#ifndef #{sym}\n#define #{sym}\n"]
   for line in $defs
     case line
