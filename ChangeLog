@@ -1,4 +1,6 @@
-Sun Jan 17 14:23:23 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Jan 17 14:24:35 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/iconv.c (rb_str_derive): use long.
 
 	* ext/iconv/iconv.c (iconv_convert): suppress a warning.
 
