@@ -1,3 +1,11 @@
+Tue Jan 19 01:42:36 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* parse.y (top_compstmt, top_stmts, top_stmt): prohibit BEGIN {} in
+	  non-toplevel scope.  [ruby-core:21657]
+
+	* test/ruby/test_beginendblock.rb (test_begininclass): add a test for
+	  above.
+
 Mon Jan 18 17:16:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/webrick/httpservlet/filehandler.rb (make_partial_content):

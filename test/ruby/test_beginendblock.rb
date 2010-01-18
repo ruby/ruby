@@ -41,6 +41,12 @@ class TestBeginEndBlock < Test::Unit::TestCase
     end
   end
 
+  def test_begininclass
+    assert_raise(SyntaxError) do
+      eval("class TestBeginEndBlock; BEGIN {}; end")
+    end
+  end
+
   def test_endblockwarn
     ruby = EnvUtil.rubybin
     # Use Tempfile to create temporary file path.
