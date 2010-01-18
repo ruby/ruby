@@ -1,3 +1,8 @@
+Mon Jan 18 17:16:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/webrick/httpservlet/filehandler.rb (make_partial_content):
+	  add bytes-unit.  [ruby-dev:40030]
+
 Mon Jan 18 15:49:42 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/net/http.rb (Net::HTTPHeader#{content_range,range_length}):
