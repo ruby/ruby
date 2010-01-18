@@ -1516,8 +1516,6 @@ bigsub_int(VALUE x, long y0)
 #if SIZEOF_BDIGITS == SIZEOF_LONG
     num = (BDIGIT_DBL_SIGNED)xds[0] - y;
     if (xn == 1 && num < 0) {
-	for (i=0; i<xn; i++) {
-	}
 	RBIGNUM_SET_SIGN(z, !RBIGNUM_SIGN(x));
 	zds[0] = (BDIGIT)-num;
 	return bignorm(z);

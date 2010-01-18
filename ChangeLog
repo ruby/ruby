@@ -1,3 +1,7 @@
+Tue Jan 19 01:53:11 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* bignum.c (bigsub_int): remove nonsense loop.
+
 Tue Jan 19 01:42:36 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* parse.y (top_compstmt, top_stmts, top_stmt): prohibit BEGIN {} in
