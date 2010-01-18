@@ -1,5 +1,5 @@
-require "webrick"
 require File.join(File.dirname(__FILE__), "utils.rb")
+require "webrick"
 require "test/unit"
 
 class TestWEBrickCGI < Test::Unit::TestCase
