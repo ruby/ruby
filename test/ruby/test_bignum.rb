@@ -208,8 +208,9 @@ class TestBignum < Test::Unit::TestCase
     assert_equal(-1, (x+1) - (x+2))
     assert_equal(0, (2**100) - (2.0**100))
     o = Object.new
-    def o.coerce(x); [2**100+2, x]; end
-    assert_equal(1, (2**100+1) - o)
+    def o.coerce(x); [x, 2**100+2]; end
+    assert_equal(-1, (2**100+1) - o)
+    assert_equal(-1, T_ONE - 2)
   end
 
   def test_plus
@@ -219,7 +220,7 @@ class TestBignum < Test::Unit::TestCase
     assert_equal(1267651809154049016125877911552, (2**80) + (2**100))
     assert_equal(2**101, (2**100) + (2.0**100))
     o = Object.new
-    def o.coerce(x); [2**80, x]; end
+    def o.coerce(x); [x, 2**80]; end
     assert_equal(1267651809154049016125877911552, (2**100) + o)
   end
 
@@ -232,7 +233,7 @@ class TestBignum < Test::Unit::TestCase
     assert_equal(T32.to_f, T32 * 1.0)
     assert_raise(TypeError) { T32 * "foo" }
     o = Object.new
-    def o.coerce(x); [2**100, x]; end
+    def o.coerce(x); [x, 2**100]; end
     assert_equal(2**180, (2**80) * o)
   end
 
