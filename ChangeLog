@@ -1,3 +1,8 @@
+Mon Jan 18 15:49:42 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/net/http.rb (Net::HTTPHeader#{content_range,range_length}):
+	  use inclusive range same as the header representation.
+
 Mon Jan 18 04:15:58 2010  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/digest.c (rb_digest_instance_digest)
