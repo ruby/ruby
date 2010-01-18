@@ -1,3 +1,8 @@
+Tue Jan 19 01:57:12 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_bignum.rb: some coerce definitions (for test) was
+	  wrong.
+
 Tue Jan 19 01:53:11 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* bignum.c (bigsub_int): remove nonsense loop.
