@@ -760,6 +760,40 @@ class TestArray < Test::Unit::TestCase
     assert_match(/reentered/, e.message, '[ruby-dev:34798]')
   end
 
+  def test_permutation_with_callcc
+    respond_to?(:callcc, true) or require 'continuation'
+    n = 1000
+    cont = nil
+    ary = [1,2,3]
+    begin
+      ary.permutation {
+        callcc {|k| cont = k} unless cont
+      }
+    rescue => e
+    end
+    n -= 1
+    cont.call if 0 < n
+    assert_instance_of(RuntimeError, e)
+    assert_match(/reentered/, e.message)
+  end
+
+  def test_combination_with_callcc
+    respond_to?(:callcc, true) or require 'continuation'
+    n = 1000
+    cont = nil
+    ary = [1,2,3]
+    begin
+      ary.combination(2) {
+        callcc {|k| cont = k} unless cont
+      }
+    rescue => e
+    end
+    n -= 1
+    cont.call if 0 < n
+    assert_instance_of(RuntimeError, e)
+    assert_match(/reentered/, e.message)
+  end
+
   def test_hash
     a1 = @cls[ 'cat', 'dog' ]
     a2 = @cls[ 'cat', 'dog' ]
@@ -1140,6 +1174,9 @@ class TestArray < Test::Unit::TestCase
     a = @cls[1, 2, 3, 4, 5]
     assert_equal(nil, a.slice!(-6,2))
     assert_equal(@cls[1, 2, 3, 4, 5], a)
+
+    assert_raise(ArgumentError) { @cls[1].slice! }
+    assert_raise(ArgumentError) { @cls[1].slice!(0, 0, 0) }
   end
 
   def test_sort
@@ -1149,6 +1186,8 @@ class TestArray < Test::Unit::TestCase
 
     assert_equal(@cls[4, 3, 2, 1], a.sort { |x, y| y <=> x} )
     assert_equal(@cls[4, 1, 2, 3], a)
+
+    assert_equal(@cls[1, 2, 3, 4], a.sort { |x, y| (x - y) * (2**100) })
 
     a.fill(1)
     assert_equal(@cls[1, 1, 1, 1], a.sort)
@@ -1417,6 +1456,7 @@ class TestArray < Test::Unit::TestCase
     assert_raise(IndexError) { [0][-2] = 1 }
     assert_raise(IndexError) { [0][LONGP] = 2 }
     assert_raise(IndexError) { [0][(LONGP + 1) / 2 - 1] = 2 }
+    assert_raise(IndexError) { [0][LONGP..-1] = 2 }
     a = [0]
     a[2] = 4
     assert_equal([0, nil, 4], a)

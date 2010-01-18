@@ -1,3 +1,9 @@
+Tue Jan 19 02:02:32 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_array.rb: add some tests (for coverage).
+
+	* test/ruby/test_bignum.rb: ditto.
+
 Tue Jan 19 01:57:12 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_bignum.rb: some coerce definitions (for test) was

@@ -175,6 +175,8 @@ class TestBignum < Test::Unit::TestCase
   def test_to_f
     assert_nothing_raised { T31P.to_f.to_i }
     assert_raise(FloatDomainError) { (1024**1024).to_f.to_i }
+    assert_equal(1, (2**50000).to_f.infinite?)
+    assert_equal(-1, (-(2**50000)).to_f.infinite?)
   end
 
   def test_cmp
@@ -414,4 +416,15 @@ class TestBignum < Test::Unit::TestCase
     assert_in_delta(1.0, @fmax2.fdiv(@fmax2), 0.01)
   end
 
+  def test_float_fdiv
+    b = 1E+300.to_i
+    assert_equal(b, (b ** 2).fdiv(b))
+    assert(@big.fdiv(0.0 / 0.0).nan?)
+  end
+
+  def test_obj_fdiv
+    o = Object.new
+    def o.coerce(x); [x, 2**100]; end
+    assert_equal((2**200).to_f, (2**300).fdiv(o))
+  end
 end
