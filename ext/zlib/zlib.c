@@ -319,6 +319,21 @@ rb_zlib_adler32(int argc, VALUE *argv, VALUE klass)
 }
 
 /*
+ * call-seq: Zlib.adler32_combine(adler1, adler2, len2)
+ *
+ * Combine two Adler-32 check values in to one.  +alder1+ is the first Adler-32
+ * value, +adler2+ is the second Adler-32 value.  +len2+ is the length of the
+ * string used to generate +adler2+.
+ *
+ */
+static VALUE
+rb_zlib_adler32_combine(VALUE klass, VALUE adler1, VALUE adler2, VALUE len2)
+{
+  return ULONG2NUM(
+	adler32_combine(NUM2ULONG(adler1), NUM2ULONG(adler2), NUM2LONG(len2)));
+}
+
+/*
  * call-seq: Zlib.crc32(string, adler)
  *
  * Calculates CRC checksum for +string+, and returns updated value of +crc+. If
@@ -331,6 +346,21 @@ static VALUE
 rb_zlib_crc32(int argc, VALUE *argv, VALUE klass)
 {
     return do_checksum(argc, argv, crc32);
+}
+
+/*
+ * call-seq: Zlib.crc32_combine(crc1, crc2, len2)
+ *
+ * Combine two CRC-32 check values in to one.  +crc1+ is the first CRC-32
+ * value, +crc2+ is the second CRC-32 value.  +len2+ is the length of the
+ * string used to generate +crc2+.
+ *
+ */
+static VALUE
+rb_zlib_crc32_combine(VALUE klass, VALUE crc1, VALUE crc2, VALUE len2)
+{
+  return ULONG2NUM(
+	crc32_combine(NUM2ULONG(crc1), NUM2ULONG(crc2), NUM2LONG(len2)));
 }
 
 /*
@@ -3468,7 +3498,9 @@ Init_zlib()
 
     rb_define_module_function(mZlib, "zlib_version", rb_zlib_version, 0);
     rb_define_module_function(mZlib, "adler32", rb_zlib_adler32, -1);
+    rb_define_module_function(mZlib, "adler32_combine", rb_zlib_adler32_combine, 3);
     rb_define_module_function(mZlib, "crc32", rb_zlib_crc32, -1);
+    rb_define_module_function(mZlib, "crc32_combine", rb_zlib_crc32_combine, 3);
     rb_define_module_function(mZlib, "crc_table", rb_zlib_crc_table, 0);
 
     rb_define_const(mZlib, "VERSION", rb_str_new2(RUBY_ZLIB_VERSION));
