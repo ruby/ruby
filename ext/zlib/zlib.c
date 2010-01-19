@@ -318,6 +318,7 @@ rb_zlib_adler32(int argc, VALUE *argv, VALUE klass)
     return do_checksum(argc, argv, adler32);
 }
 
+#ifdef HAVE_ADLER32_COMBINE
 /*
  * call-seq: Zlib.adler32_combine(adler1, adler2, len2)
  *
@@ -332,6 +333,9 @@ rb_zlib_adler32_combine(VALUE klass, VALUE adler1, VALUE adler2, VALUE len2)
   return ULONG2NUM(
 	adler32_combine(NUM2ULONG(adler1), NUM2ULONG(adler2), NUM2LONG(len2)));
 }
+#else
+#define rb_zlib_adler32_combine rb_f_notimplement
+#endif
 
 /*
  * call-seq: Zlib.crc32(string, adler)
@@ -348,6 +352,7 @@ rb_zlib_crc32(int argc, VALUE *argv, VALUE klass)
     return do_checksum(argc, argv, crc32);
 }
 
+#ifdef HAVE_CRC32_COMBINE
 /*
  * call-seq: Zlib.crc32_combine(crc1, crc2, len2)
  *
@@ -362,6 +367,9 @@ rb_zlib_crc32_combine(VALUE klass, VALUE crc1, VALUE crc2, VALUE len2)
   return ULONG2NUM(
 	crc32_combine(NUM2ULONG(crc1), NUM2ULONG(crc2), NUM2LONG(len2)));
 }
+#else
+#define rb_zlib_crc32_combine rb_f_notimplement
+#endif
 
 /*
  * Returns the table for calculating CRC checksum as an array.
