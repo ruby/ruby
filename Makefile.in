@@ -252,18 +252,17 @@ distclean-rdoc:
 	@$(RMALL) $(RDOCOUT:/=\)
 
 clean-ext distclean-ext realclean-ext::
-	@set dummy ${EXTS}; shift; \
-	if test "$$#" = 0; then \
-	    set dummy `find ext -name Makefile | sed 's:^ext/::;s:/Makefile$$::' | sort`; \
-	    shift; \
-	fi; \
+	@cd ext; set dummy `echo "${EXTS}" | tr , ' '`; shift; \
+	test "$$#" = 0 && set .; \
+	set dummy `for dir; do \
+	    find $$dir -name Makefile | sed 's:^\./::;s:/Makefile$$:~:' | sort | sed 's:~$$::'; \
+	done`; shift; \
 	for dir; do \
-	    [ -f "ext/$$dir/Makefile" ] || continue; \
 	    echo $(@:-ext=)ing "$$dir"; \
-	    (cd "ext/$$dir" && exec $(MAKE) $(MFLAGS) $(@:-ext=)) && \
+	    (cd "$$dir" && exec $(MAKE) $(MFLAGS) $(@:-ext=)) && \
 	    case "$@" in \
 	    *distclean-ext*|*realclean-ext*) \
-		$(RMDIRS) "ext/$$dir";; \
+		$(RMDIRS) "$$dir";; \
 	    esac; \
 	done
 
