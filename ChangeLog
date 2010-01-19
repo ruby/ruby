@@ -1,3 +1,9 @@
+Tue Jan 19 14:29:16 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (clean-ext): allow glob patterns.
+
+	* ext/extmk.rb: ditto.
+
 Tue Jan 19 14:19:26 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/zlib/{extconf.rb, zlib.c): crc32_combine and adler32_combine is
