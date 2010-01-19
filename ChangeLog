@@ -1,4 +1,7 @@
-Tue Jan 19 19:58:26 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Jan 19 20:00:30 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/resolv.rb (Resolv::Config.default_config_hash): return an
+	  empty hash when resolv.conf is not available.  [ruby-core:27620]
 
 	* lib/resolv.rb (Resolv::DNS::Config#lazy_initialize): fixed the
 	  defaults of nameserver and port.
