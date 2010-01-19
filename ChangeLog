@@ -1,3 +1,8 @@
+Tue Jan 19 20:00:30 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/resolv.rb (Resolv::Config.default_config_hash): return an
+	  empty hash when resolv.conf is not available.  [ruby-core:27620]
+
 Tue Jan 19 14:29:16 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (clean-ext): allow glob patterns.

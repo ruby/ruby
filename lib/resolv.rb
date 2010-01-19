@@ -831,7 +831,7 @@ class Resolv
             config_hash[:search] = [search].flatten if search
           end
         end
-        config_hash
+        config_hash || {}
       end
 
       def lazy_initialize
