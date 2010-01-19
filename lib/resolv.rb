@@ -885,7 +885,7 @@ class Resolv
             @ndots = config_hash[:ndots] if config_hash.include? :ndots
 
             if @nameserver_port.empty?
-              @nameserver_port = ['0.0.0.0', Port]
+              @nameserver_port << ['0.0.0.0', Port]
             end
             if @search
               @search = @search.map {|arg| Label.split(arg) }
