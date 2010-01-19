@@ -662,11 +662,23 @@ if defined? Zlib
       assert_equal(0x8a62c964, Zlib.adler32("abc\x01\x02\x03" * 10000))
     end
 
+    def test_adler32_combine
+      one = Zlib.adler32("fo")
+      two = Zlib.adler32("o")
+      assert_equal(0x02820145, Zlib.adler32_combine(one, two, 1))
+    end
+
     def test_crc32
       assert_equal(0x00000000, Zlib.crc32)
       assert_equal(0x8c736521, Zlib.crc32("foo"))
       assert_equal(0x8c736521, Zlib.crc32("o", Zlib.crc32("fo")))
       assert_equal(0x07f0d68f, Zlib.crc32("abc\x01\x02\x03" * 10000))
+    end
+
+    def test_crc32_combine
+      one = Zlib.crc32("fo")
+      two = Zlib.crc32("o")
+      assert_equal(0x8c736521, Zlib.crc32_combine(one, two, 1))
     end
 
     def test_crc_table

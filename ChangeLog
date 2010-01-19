@@ -1,3 +1,10 @@
+Tue Jan 19 09:03:37 2010  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* ext/zlib/zlib.c: added Zlib.crc32_combine and Zlib.adler32_combine
+
+	* test/zlib/test_zlib.rb: corresponding tests [ruby-core:27551]
+
+
 Tue Jan 19 02:02:32 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_array.rb: add some tests (for coverage).
