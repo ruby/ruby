@@ -1,3 +1,8 @@
+Tue Jan 19 14:19:26 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/zlib/{extconf.rb, zlib.c): crc32_combine and adler32_combine is
+	  supported on Zlib 1.2.2.1, so check them for old zlib.
+
 Tue Jan 19 09:03:37 2010  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* ext/zlib/zlib.c: added Zlib.crc32_combine and Zlib.adler32_combine
