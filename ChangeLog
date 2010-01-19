@@ -1,3 +1,9 @@
+Tue Jan 19 14:29:16 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (clean-ext): allow glob patterns.
+
+	* ext/extmk.rb: ditto.
+
 Mon Jan 18 17:16:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/webrick/httpservlet/filehandler.rb (make_partial_content):

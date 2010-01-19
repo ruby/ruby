@@ -178,11 +178,18 @@ distclean-local::
 	-$(RM) $(INSTALLED_LIST)
 
 clean-ext distclean-ext realclean-ext::
-	@find ext -name Makefile | sort | while read mk; do \
-	    dir=`dirname "$$mk"`; \
-	    echo $(@:-ext=)ing `expr "$$dir" : 'ext/\(.*\)'`; \
-	    (cd "$$dir"; $(MAKE) $(MFLAGS) $(@:-ext=)) && \
-	    test $@ = clean-ext || rmdir -p "$$dir" 2> /dev/null; \
+	@cd ext; set dummy `echo "${EXTS}" | tr , ' '`; shift; \
+	test "$$#" = 0 && set .; \
+	set dummy `for dir; do \
+	    find $$dir -name Makefile | sed 's:^\./::;s:/Makefile$$:~:' | sort | sed 's:~$$::'; \
+	done`; shift; \
+	for dir; do \
+	    echo $(@:-ext=)ing "$$dir"; \
+	    (cd "$$dir" && exec $(MAKE) $(MFLAGS) $(@:-ext=)) && \
+	    case "$@" in \
+	    *distclean-ext*|*realclean-ext*) \
+		rmdir -p "$$dir" 2> /dev/null;; \
+	    esac; \
 	done
 
 ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)

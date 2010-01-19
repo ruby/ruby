@@ -397,29 +397,27 @@ end unless $extstatic
 
 ext_prefix = "#{$top_srcdir}/ext"
 exts = $static_ext.sort_by {|t, i| i}.collect {|t, i| t}
-if $extension
-  exts |= $extension.select {|d| File.directory?("#{ext_prefix}/#{d}")}
-else
-  withes, withouts = %w[--with --without].collect {|w|
-    if not (w = %w[-extensions -ext].collect {|o|arg_config(w+o)}).any?
-      nil
-    elsif (w = w.grep(String)).empty?
-      proc {true}
-    else
-      proc {|c1| w.collect {|o| o.split(/,/)}.flatten.any?(&c1)}
-    end
-  }
-  if withes
-    withouts ||= proc {true}
+withes, withouts = %w[--with --without].collect {|w|
+  if not (w = %w[-extensions -ext].collect {|o|arg_config(w+o)}).any?
+    nil
+  elsif (w = w.grep(String)).empty?
+    proc {true}
   else
-    withes = proc {false}
-    withouts ||= withes
+    proc {|c1| w.collect {|o| o.split(/,/)}.flatten.any?(&c1)}
   end
-  cond = proc {|ext, *|
-    cond1 = proc {|n| File.fnmatch(n, ext)}
-    withes.call(cond1) or !withouts.call(cond1)
-  }
-  exts |= Dir.glob("#{ext_prefix}/*/**/extconf.rb").collect {|d|
+}
+if withes
+  withouts ||= proc {true}
+else
+  withes = proc {false}
+  withouts ||= withes
+end
+cond = proc {|ext, *|
+  cond1 = proc {|n| File.fnmatch(n, ext)}
+  withes.call(cond1) or !withouts.call(cond1)
+}
+($extension || %w[*]).each do |e|
+  exts |= Dir.glob("#{ext_prefix}/#{e}/**/extconf.rb").collect {|d|
     d = File.dirname(d)
     d.slice!(0, ext_prefix.length + 1)
     d
