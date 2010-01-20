@@ -1,3 +1,8 @@
+Thu Jan 21 08:45:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (iseq_s_disasm): check for proc first.  based on the
+	  patch by Roger Pack in [ruby-core:27626].  [ruby-core:27227]
+
 Wed Jan 20 16:09:59 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* common.mk (compile.$(OBJEXT)): dependencies lacking.
