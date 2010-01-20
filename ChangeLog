@@ -1,3 +1,11 @@
+Wed Jan 20 16:09:59 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* common.mk (compile.$(OBJEXT)): dependencies lacking.
+
+	* vm_method.c (rb_add_method_cfunc): invalid initializer for C89
+
+	* compile.c (iseq_insns_unification): int might be smaller than int*
+
 Tue Jan 19 20:00:30 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/resolv.rb (Resolv::Config.default_config_hash): return an
