@@ -116,9 +116,9 @@ void
 rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_method_flag_t noex)
 {
     if (func != rb_f_notimplement) {
-	rb_method_cfunc_t opt = {
-	    func, argc,
-	};
+	rb_method_cfunc_t opt;
+	opt.func = func;
+	opt.argc = argc;
 	rb_add_method(klass, mid, VM_METHOD_TYPE_CFUNC, &opt, noex);
     }
     else {
