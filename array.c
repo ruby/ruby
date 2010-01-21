@@ -1495,16 +1495,22 @@ rb_ary_empty_p(VALUE ary)
     return Qfalse;
 }
 
-VALUE
-rb_ary_dup(VALUE ary)
+static VALUE
+rb_ary_dup_setup(VALUE ary)
 {
     VALUE dup = rb_ary_new2(RARRAY_LEN(ary));
     int is_embed = ARY_EMBED_P(dup);
     DUPSETUP(dup, ary);
     if (is_embed) FL_SET_EMBED(dup);
-    MEMCPY(RARRAY_PTR(dup), RARRAY_PTR(ary), VALUE, RARRAY_LEN(ary));
     ARY_SET_LEN(dup, RARRAY_LEN(ary));
+    return dup;
+}
 
+VALUE
+rb_ary_dup(VALUE ary)
+{
+    VALUE dup = rb_ary_dup_setup(ary);
+    MEMCPY(RARRAY_PTR(dup), RARRAY_PTR(ary), VALUE, RARRAY_LEN(ary));
     return dup;
 }
 
@@ -1787,7 +1793,15 @@ rb_ary_reverse_bang(VALUE ary)
 static VALUE
 rb_ary_reverse_m(VALUE ary)
 {
-    return rb_ary_reverse(rb_ary_dup(ary));
+    VALUE dup = rb_ary_dup_setup(ary);
+    long len = RARRAY_LEN(ary);
+
+    if (len > 0) {
+	VALUE *p1 = RARRAY_PTR(ary);
+	VALUE *p2 = RARRAY_PTR(dup) + len - 1;
+	do *p2-- = *p1++; while (--len > 0);
+    }
+    return dup;
 }
 
 struct ary_sort_data {
