@@ -1,3 +1,7 @@
+Thu Jan 21 15:09:35 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* configure.in: some tidy.
+
 Thu Jan 21 11:15:46 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_rotate): new methods, Array#rotate! and

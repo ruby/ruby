@@ -14,13 +14,7 @@ dnl environment section {
 AC_ARG_WITH(baseruby,
 	AS_HELP_STRING([--with-baseruby=RUBY], [use RUBY as baseruby; RUBY is the pathname of ruby]),
 	[
-		AS_CASE(["$withval"],
-		    [*ruby*], [
-			BASERUBY=$withval
-			],
-		    [
-			AC_MSG_ERROR(need ruby)
-			])
+		AS_CASE(["$withval"],[*ruby*],[BASERUBY=$withval],[AC_MSG_ERROR(need ruby)])
 	],
 	[
 		BASERUBY="ruby"
@@ -90,15 +84,9 @@ AC_ARG_WITH(gcc,
 	AS_HELP_STRING([--without-gcc], [never use gcc]),
 	[
 	AS_CASE([$withval],
-	    [no], [
-		: ${CC=cc}
-		],
-	    [yes], [
-		: ${CC=gcc}
-		],
-	    [
-		CC=$withval
-		])])
+	    [no],  [: ${CC=cc}],
+	    [yes], [: ${CC=gcc}],
+	           [CC=$withval])])
 dnl If the user switches compilers, we can't believe the cache
 if test ! -z "$ac_cv_prog_CC" -a ! -z "$CC" -a "$CC" != "$ac_cv_prog_CC"
 then
@@ -158,10 +146,7 @@ if test ${target_archs+set}; then
     # /usr/lib/arch_tool -archify_list $TARGET_ARCHS
     for archs in $target_archs
     do
-	AS_CASE([",$universal_binary,"],
-	  [*",$archs,"*], [
-	    ],
-	  [
+	AS_CASE([",$universal_binary,"],[*",$archs,"*], [],[
 	    cpu=`$SHELL "$ac_aux_dir/config.sub" "${archs}-${target_os}" 2>&1` || {
 	        AC_MSG_RESULT([failed])
 		AC_MSG_ERROR([$cpu])
@@ -175,8 +160,8 @@ if test ${target_archs+set}; then
     target_archs="$universal_binary"
     unset universal_binary
     AS_CASE(["$target_archs"],
-      [*,*], [ universal_binary=yes],
-      [   unset universal_archnames])
+      [*,*], [universal_binary=yes],
+             [unset universal_archnames])
     AC_MSG_RESULT([$target_archs])
 
     target=`echo $target | sed "s/^$target_cpu-/-/"`
@@ -285,9 +270,7 @@ AC_CHECK_TOOL(AS, as)
 ASFLAGS=$ASFLAGS
 AC_SUBST(ASFLAGS)
 
-AS_CASE(["$target_os"],
-[cygwin*|mingw*|darwin*], [
-    ac_cv_prog_ac_ct_OBJCOPY=":"])
+AS_CASE(["$target_os"],[cygwin*|mingw*|darwin*], [ac_cv_prog_ac_ct_OBJCOPY=":"])
 
 # BSD's ports and MacPorts prefix GNU binutils with 'g'
 AC_CHECK_TOOLS(OBJDUMP, [objdump gobjdump])
@@ -317,13 +300,8 @@ AS_CASE(["$target_os"],
     ])
     : ${enable_shared=yes}
     ],
-[aix*], [
-    AC_CHECK_TOOL(NM, nm, /usr/ccs/bin/nm, /usr/ccs/bin:$PATH)
-    ],
-[hiuxmpp*], [
-    # by TOYODA Eizi <toyoda@npd.kishou.go.jp>
-    AC_DEFINE(__HIUX_MPP__)
-    ])
+[aix*],     [AC_CHECK_TOOL(NM, nm, /usr/ccs/bin/nm, /usr/ccs/bin:$PATH)],
+[hiuxmpp*], [AC_DEFINE(__HIUX_MPP__)])    # by TOYODA Eizi <toyoda@npd.kishou.go.jp>
 
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
@@ -395,11 +373,8 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
 		 -Wno-missing-field-initializers -Wshorten-64-to-32 -Wno-long-long; do
 	RUBY_TRY_CFLAGS($wflag, [warnflags="${warnflags+$warnflags }$wflag"])
     done
-    AS_CASE([" $warnflags "],
-    [*" -Wno-missing-field-initializers "*], [
-	wflag=-Wextra],
-    [
-	wflag=-Wall])
+    AS_CASE([" $warnflags "],[*" -Wno-missing-field-initializers "*], [wflag=-Wextra],
+                             [wflag=-Wall])
     RUBY_TRY_CFLAGS($wflag, [warnflags="$wflag${warnflags+ $warnflags}"])
 fi
 
@@ -414,11 +389,7 @@ mv confdefs.h largefile.h
 mv confdefs1.h confdefs.h
 cat largefile.h >> confdefs.h
 
-AS_CASE(["$target_os"],
-[mingw*], [
-	ac_cv_type_off_t=yes
-	ac_cv_sizeof_off_t=8
-	])
+AS_CASE(["$target_os"],[mingw*], [ac_cv_type_off_t=yes;ac_cv_sizeof_off_t=8])
 
 AC_CHECK_TYPES([long long, off_t])
 
@@ -751,9 +722,7 @@ AC_CHECK_DECLS([sys_nerr], [], [], [$ac_includes_default
 
 AC_ARG_ENABLE(win95,
 	AS_HELP_STRING([--enable-win95], [enable Windows 95 series support]),
-  [AS_CASE(["$enableval"],
-    [yes|no], [ enable_win95=$enableval],
-    [ unset enable_win95])])
+  [AS_CASE(["$enableval"],[yes|no],[enable_win95=$enableval],[unset enable_win95])])
 
 AS_CASE(["$target_os"],
 [freebsd*], [
@@ -780,12 +749,7 @@ AC_ARG_ENABLE(pthread,
        AS_HELP_STRING([--enable-pthread], [obsolete, and ignored]))
 
 dnl Checks for libraries.
-AS_CASE(["$target_os"],
-[*bsd*|dragonfly*], [
-    ],
-[
-    ac_cv_func_daemon=no
-    ])
+AS_CASE(["$target_os"],[*bsd*|dragonfly*],[],[ac_cv_func_daemon=no])
 
 AS_CASE(["$target_os"],
 [solaris*], [
@@ -1138,8 +1102,7 @@ main()
 	rb_cv_broken_glibc_ia64_erfc=no,
 	rb_cv_broken_glibc_ia64_erfc=yes,
 	rb_cv_broken_glibc_ia64_erfc=no)])
-AS_CASE([$rb_cv_broken_glibc_ia64_erfc],
-  [yes], [ ac_cv_func_erf=no])
+AS_CASE([$rb_cv_broken_glibc_ia64_erfc],[yes],[ac_cv_func_erf=no])
 
 AC_REPLACE_FUNCS(dup2 memmove strerror\
 		 strchr strstr crypt flock vsnprintf\
@@ -1188,11 +1151,7 @@ elif test "$ac_cv_func___builtin_setjmp" = yes; then
 elif test "$ac_cv_func__setjmp" = yes; then
     setjmp_prefix=_
 elif test "$ac_cv_func_sigsetjmp" = yes; then
-    AS_CASE([$target_os],
-    [solaris*|cygwin*], [
-	setjmp_prefix=],
-    [
-	setjmp_prefix=sig])
+    AS_CASE([$target_os],[solaris*|cygwin*],[setjmp_prefix=],[setjmp_prefix=sig])
 else
     setjmp_prefix=
 fi
@@ -1531,16 +1490,10 @@ if test x"$enable_pthread" = xyes; then
 	AC_DEFINE(_THREAD_SAFE)
 	AC_DEFINE(HAVE_LIBPTHREAD)
 	AS_CASE([$pthread_lib],
-	[c], [
-	    ],
-	[root], [
-	    ],
-	[c_r], [
-	    MAINLIBS="-pthread $MAINLIBS"
-	    ],
-	[
-	    LIBS="-l$pthread_lib $LIBS"
-	    ])
+	[c],    [],
+	[root], []
+	[c_r],  [MAINLIBS="-pthread $MAINLIBS"],
+	        [LIBS="-l$pthread_lib $LIBS"])
     else
 	AC_MSG_WARN("Don't know how to find pthread library on your system -- thread support disabled")
     fi
@@ -1703,11 +1656,11 @@ if test "$with_dln_a_out" != yes; then
       RUBY_APPEND_OPTION(CCDLFLAGS, -fPIC)])
   else
     AS_CASE(["$target_os"],
-	[hpux*], [		CCDLFLAGS="$CCDLFLAGS +Z"],
-	[solaris*|irix*], [	CCDLFLAGS="$CCDLFLAGS -KPIC" ],
-	[sunos*], [		CCDLFLAGS="$CCDLFLAGS -PIC" ],
-	[esix*|uxpds*], [	CCDLFLAGS="$CCDLFLAGS -KPIC" ],
-	[ 		: ${CCDLFLAGS=""} ])
+	[hpux*],          [CCDLFLAGS="$CCDLFLAGS +Z"],
+	[solaris*|irix*], [CCDLFLAGS="$CCDLFLAGS -KPIC"],
+	[sunos*],         [CCDLFLAGS="$CCDLFLAGS -PIC"],
+	[esix*|uxpds*],   [CCDLFLAGS="$CCDLFLAGS -KPIC"],
+	                  [: ${CCDLFLAGS=""}])
   fi
 
 
@@ -1873,11 +1826,7 @@ if test "${LDSHAREDXX}" = ""; then
 	[ld" "*], [
 	    ])
 fi
-AS_CASE([${RPATHFLAG}],
-[*'%1$'*], [
-    : ${LIBPATHFLAG=' -L%1$-s'}],
-[
-    : ${LIBPATHFLAG=' -L%s'}])
+AS_CASE([${RPATHFLAG}],[*'%1$'*],[: ${LIBPATHFLAG=' -L%1$-s'}],[: ${LIBPATHFLAG=' -L%s'}])
 
 AC_SUBST(LINK_SO)
 AC_SUBST(LIBPATHFLAG)
@@ -1962,11 +1911,7 @@ EXTSTATIC=
 AC_SUBST(EXTSTATIC)dnl
 AC_ARG_WITH(static-linked-ext,
 	    AS_HELP_STRING([--with-static-linked-ext], [link external modules statically]),
-            [AS_CASE([$withval],
-	     [yes], [
-		STATIC=
-		EXTSTATIC=static],
-	     [ ])])
+            [AS_CASE([$withval],[yes],[STATIC=;EXTSTATIC=static])])
 
 AS_CASE(["$target_os"],
   [human*], [
@@ -2155,9 +2100,7 @@ else
 fi
 AC_SUBST(RDOCTARGET)
 
-AS_CASE(["$RDOCTARGET:$CAPITARGET"],
-  [nodoc:nodoc], [ INSTALLDOC=nodoc],
-  [ INSTALLDOC=all])
+AS_CASE(["$RDOCTARGET:$CAPITARGET"],[nodoc:nodoc],[INSTALLDOC=nodoc],[INSTALLDOC=all])
 AC_SUBST(INSTALLDOC)
 
 if test "$rb_with_pthread" = "yes"; then
@@ -2209,10 +2152,7 @@ AS_CASE(["$target_os"],
 	fi
 	],
     [beos*], [
-	AS_CASE(["$target_cpu"],
-	[powerpc*], [
-	    CFLAGS="$CFLAGS -relax_pointers"
-	    ])
+	AS_CASE(["$target_cpu"],[powerpc*], [CFLAGS="$CFLAGS -relax_pointers"])
 	CPPFLAGS="$CPPFLAGS -I/boot/home/config/include"
 	],
     [cygwin*|mingw*], [
@@ -2249,37 +2189,22 @@ AS_CASE(["$target_os"],
 	fi
 	],
     [hpux*], [
-	AS_CASE(["$YACC"],
-	  [*yacc*], [
+	AS_CASE(["$YACC"],[*yacc*], [
 	    XCFLAGS="$XCFLAGS -DYYMAXDEPTH=300"
 	    YACC="$YACC -Nl40000 -Nm40000"
-	    ])
-	],
+	])],
     [*msdosdjgpp*], [
 	FIRSTMAKEFILE=GNUmakefile:djgpp/GNUmakefile.in
-	],
-    [
 	])
 MINIOBJS="$MINIDLNOBJ"
 
 AS_CASE(["$THREAD_MODEL"],
-[pthread], [
-    AC_CHECK_HEADERS(pthread.h)
-    ],
-[win32], [
-    ],
-[""], [
-    AC_MSG_ERROR(thread model is missing)
-    ],
-[
-    AC_MSG_ERROR(unknown thread model $THREAD_MODEL)
-    ])
+[pthread], [AC_CHECK_HEADERS(pthread.h)],
+[win32],   [],
+[""],      [AC_MSG_ERROR(thread model is missing)],
+           [AC_MSG_ERROR(unknown thread model $THREAD_MODEL)])
 
-AS_CASE(["$FIRSTMAKEFILE"],
-[*GNUmakefile:*], [
-    gnumake=yes
-    ],
-[
+AS_CASE(["$FIRSTMAKEFILE"], [*GNUmakefile:*], [gnumake=yes], [
     AC_MSG_CHECKING([for if ${MAKE-make} is GNU make])
     mkdir conftest.dir
     echo "all:; @echo yes" > conftest.dir/GNUmakefile
@@ -2294,7 +2219,7 @@ AS_CASE(["$FIRSTMAKEFILE"],
     [
 	gnumake=no])
     AC_MSG_RESULT($gnumake)
-    ])
+])
 
 if test "${universal_binary-no}" = yes ; then
     AC_MSG_CHECKING([for architecture macros])
@@ -2418,12 +2343,8 @@ AC_ARG_WITH(ruby-version,
 unset RUBY_LIB_VERSION
 unset RUBY_LIB_VERSION_STYLE
 AS_CASE(["$ruby_version"],
-  [full], [
-    RUBY_LIB_VERSION_STYLE='3	/* full */'
-    ],
-  [minor], [
-    RUBY_LIB_VERSION_STYLE='2	/* minor */'
-    ])
+  [full],  [RUBY_LIB_VERSION_STYLE='3	/* full */'],
+  [minor], [RUBY_LIB_VERSION_STYLE='2	/* minor */'])
 if test ${RUBY_LIB_VERSION_STYLE+set}; then
     {
     echo "#define RUBY_LIB_VERSION_STYLE $RUBY_LIB_VERSION_STYLE"
@@ -2537,8 +2458,7 @@ else
 fi
 
 unset sitearch
-AS_CASE(["$target_os"],
-  [mingw*], [ sitearch="$target_cpu-$rb_cv_msvcrt"])
+AS_CASE(["$target_os"],[mingw*],[sitearch="$target_cpu-$rb_cv_msvcrt"])
 test ${sitearch+set} && AC_DEFINE_UNQUOTED(RUBY_SITEARCH, "${sitearch}")
 
 AC_DEFINE_UNQUOTED(RUBY_ARCHLIB, RUBY_LIB"/"RUBY_ARCH)
@@ -2578,12 +2498,8 @@ AC_ARG_WITH(mantype,
 	AS_HELP_STRING([--with-mantype=TYPE], [specify man page type; TYPE is one of man and doc]),
 		[
 			AS_CASE(["$withval"],
-			[man|doc], [
-				MANTYPE=$withval
-				],
-			[
-				AC_MSG_ERROR(invalid man type: $withval)
-				])
+			[man|doc], [MANTYPE=$withval],
+			[AC_MSG_ERROR(invalid man type: $withval)])
 		])
 if test -z "$MANTYPE"; then
 	AC_PATH_PROGS(NROFF, nroff awf, /bin/false, "/usr/bin:/usr/ucb")
