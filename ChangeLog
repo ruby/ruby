@@ -1,3 +1,8 @@
+Fri Jan 22 01:03:28 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_require.rb (test_define_class): expect TypeError
+	  instead of NameError.  [ruby-core:27504]
+
 Thu Jan 21 15:09:35 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* configure.in: some tidy.
