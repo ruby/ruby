@@ -1,3 +1,7 @@
+Thu Jan 21 11:12:06 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_reverse_m): copy directly.
+
 Thu Jan 21 09:38:00 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: use AS_CASE instead of when, to get rid of
