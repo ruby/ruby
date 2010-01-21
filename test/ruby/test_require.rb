@@ -85,7 +85,7 @@ class TestRequire < Test::Unit::TestCase
       begin
         require 'socket'
         p :ng
-      rescue NameError
+      rescue TypeError
         p :ok
       end
     INPUT
