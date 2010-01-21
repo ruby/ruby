@@ -871,4 +871,8 @@ class TestHash < Test::Unit::TestCase
     def o.hash; 2<<100; end
     assert_equal({x=>1}.hash, {x=>1}.hash)
   end
+
+  def test_hash_poped
+    assert_nothing_raised { eval("a = 1; {a => a}; a") }
+  end
 end
