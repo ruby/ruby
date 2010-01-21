@@ -1767,4 +1767,51 @@ class TestArray < Test::Unit::TestCase
     a.sort_by! {|x| -x }
     assert_equal([5,4,3,2,1], a)
   end
+
+  def test_rotate
+    a = [1,2,3,4,5].freeze
+    assert_equal([2,3,4,5,1], a.rotate)
+    assert_equal([5,1,2,3,4], a.rotate(-1))
+    assert_equal([3,4,5,1,2], a.rotate(2))
+    assert_equal([4,5,1,2,3], a.rotate(-2))
+    assert_equal([4,5,1,2,3], a.rotate(13))
+    assert_equal([3,4,5,1,2], a.rotate(-13))
+    a = [1].freeze
+    assert_equal([1], a.rotate)
+    assert_equal([1], a.rotate(2))
+    assert_equal([1], a.rotate(-4))
+    assert_equal([1], a.rotate(13))
+    assert_equal([1], a.rotate(-13))
+    a = [].freeze
+    assert_equal([], a.rotate)
+    assert_equal([], a.rotate(2))
+    assert_equal([], a.rotate(-4))
+    assert_equal([], a.rotate(13))
+    assert_equal([], a.rotate(-13))
+  end
+
+  def test_rotate!
+    a = [1,2,3,4,5]
+    assert_equal([2,3,4,5,1], a.rotate!)
+    assert_equal([2,3,4,5,1], a)
+    assert_equal([4,5,1,2,3], a.rotate!(2))
+    assert_equal([5,1,2,3,4], a.rotate!(-4))
+    assert_equal([3,4,5,1,2], a.rotate!(13))
+    assert_equal([5,1,2,3,4], a.rotate!(-13))
+    a = [1]
+    assert_equal([1], a.rotate!)
+    assert_equal([1], a.rotate!(2))
+    assert_equal([1], a.rotate!(-4))
+    assert_equal([1], a.rotate!(13))
+    assert_equal([1], a.rotate!(-13))
+    a = []
+    assert_equal([], a.rotate!)
+    assert_equal([], a.rotate!(2))
+    assert_equal([], a.rotate!(-4))
+    assert_equal([], a.rotate!(13))
+    assert_equal([], a.rotate!(-13))
+    a = [].freeze
+    e = assert_raise(RuntimeError) {a.rotate!}
+    assert_match(/can't modify frozen array/, e.message)
+  end
 end

@@ -1743,22 +1743,27 @@ rb_ary_to_ary_m(VALUE ary)
     return ary;
 }
 
+static void
+ary_reverse(p1, p2)
+    VALUE *p1, *p2;
+{
+    while (p1 < p2) {
+	VALUE tmp = *p1;
+	*p1++ = *p2;
+	*p2-- = tmp;
+    }
+}
+
 VALUE
 rb_ary_reverse(VALUE ary)
 {
     VALUE *p1, *p2;
-    VALUE tmp;
 
     rb_ary_modify(ary);
     if (RARRAY_LEN(ary) > 1) {
 	p1 = RARRAY_PTR(ary);
 	p2 = p1 + RARRAY_LEN(ary) - 1;	/* points last item */
-
-	while (p1 < p2) {
-	    tmp = *p1;
-	    *p1++ = *p2;
-	    *p2-- = tmp;
-	}
+	ary_reverse(p1, p2);
     }
     return ary;
 }
@@ -1802,6 +1807,102 @@ rb_ary_reverse_m(VALUE ary)
 	do *p2-- = *p1++; while (--len > 0);
     }
     return dup;
+}
+
+static inline long
+rotate_count(long cnt, long len)
+{
+    return (cnt < 0) ? (len - (~cnt % len) - 1) : (cnt % len);
+}
+
+VALUE
+rb_ary_rotate(VALUE ary, long cnt)
+{
+    rb_ary_modify(ary);
+
+    if (cnt != 0) {
+	VALUE *ptr = RARRAY_PTR(ary);
+	long len = RARRAY_LEN(ary);
+
+	if (len > 0 && (cnt = rotate_count(cnt, len)) > 0) {
+	    --len;
+	    if (cnt < len) ary_reverse(ptr + cnt, ptr + len);
+	    if (--cnt > 0) ary_reverse(ptr, ptr + cnt);
+	    if (len > 0) ary_reverse(ptr, ptr + len);
+	    return ary;
+	}
+    }
+
+    return Qnil;
+}
+    
+/*
+ *  call-seq:
+ *     array.rotate!([cnt = 1]) -> array
+ *
+ *  Rotates _self_ in place so that the element at +cnt+ comes first,
+ *  and returns _self_.  If +cnt+ is negative then it rotates in
+ *  counter direction.
+ *
+ *     a = [ "a", "b", "c", "d" ]
+ *     a.rotate!        #=> ["b", "c", "d", "a"]
+ *     a                #=> ["b", "c", "d", "a"]
+ *     a.rotate!(2)     #=> ["d", "a", "b", "c"]
+ *     a.rotate!(-3)    #=> ["a", "b", "c", "d"]
+ */
+
+static VALUE
+rb_ary_rotate_bang(int argc, VALUE *argv, VALUE ary)
+{
+    long n = 1;
+
+    switch (argc) {
+      case 1: n = NUM2LONG(argv[0]);
+      case 0: break;
+      default: rb_scan_args(argc, argv, "01", NULL);
+    }
+    rb_ary_rotate(ary, n);
+    return ary;
+}
+
+/*
+ *  call-seq:
+ *     array.rotate([n = 1]) -> an_array
+ *
+ *  Returns new array by rotating _self_, whose first element is the
+ *  element at +cnt+ in _self_.  If +cnt+ is negative then it rotates
+ *  in counter direction.
+ *
+ *     a = [ "a", "b", "c", "d" ]
+ *     a.rotate         #=> ["b", "c", "d", "a"]
+ *     a                #=> ["a", "b", "c", "d"]
+ *     a.rotate(2)      #=> ["c", "d", "a", "b"]
+ *     a.rotate(-3)     #=> ["b", "c", "d", "a"]
+ */
+
+static VALUE
+rb_ary_rotate_m(int argc, VALUE *argv, VALUE ary)
+{
+    VALUE rotated, *ptr, *ptr2;
+    long len, cnt = 1;
+
+    switch (argc) {
+      case 1: cnt = NUM2LONG(argv[0]);
+      case 0: break;
+      default: rb_scan_args(argc, argv, "01", NULL);
+    }
+
+    len = RARRAY_LEN(ary);
+    rotated = rb_ary_dup_setup(ary);
+    if (len > 0) {
+	cnt = rotate_count(cnt, len);
+	ptr = RARRAY_PTR(ary);
+	ptr2 = RARRAY_PTR(rotated);
+	len -= cnt;
+	MEMCPY(ptr2, ptr + cnt, VALUE, len);
+	MEMCPY(ptr2 + len, ptr, VALUE, cnt);
+    }
+    return rotated;
 }
 
 struct ary_sort_data {
@@ -4111,6 +4212,8 @@ Init_Array(void)
     rb_define_method(rb_cArray, "join", rb_ary_join_m, -1);
     rb_define_method(rb_cArray, "reverse", rb_ary_reverse_m, 0);
     rb_define_method(rb_cArray, "reverse!", rb_ary_reverse_bang, 0);
+    rb_define_method(rb_cArray, "rotate", rb_ary_rotate_m, -1);
+    rb_define_method(rb_cArray, "rotate!", rb_ary_rotate_bang, -1);
     rb_define_method(rb_cArray, "sort", rb_ary_sort, 0);
     rb_define_method(rb_cArray, "sort!", rb_ary_sort_bang, 0);
     rb_define_method(rb_cArray, "sort_by!", rb_ary_sort_by_bang, 0);
