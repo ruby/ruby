@@ -1,3 +1,10 @@
+Fri Jan 22 01:07:16 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_bignum.rb, test/ruby/test_class.rb,
+	  test/ruby/test_defined.rb, test/ruby/test_hash.rb,
+	  test/ruby/test_primitive.rb, test/ruby/test_variable.rb: add some
+	  tests (for coverage).
+
 Fri Jan 22 01:03:28 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_require.rb (test_define_class): expect TypeError

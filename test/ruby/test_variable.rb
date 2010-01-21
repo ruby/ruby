@@ -81,4 +81,8 @@ class TestVariable < Test::Unit::TestCase
   def test_global_variable_0
     assert_in_out_err(["-e", "$0='t'*1000;print $0"], "", /\At+\z/, [])
   end
+
+  def test_global_variable_poped
+    assert_nothing_raised { eval("$foo; 1") }
+  end
 end

@@ -420,6 +420,7 @@ class TestBignum < Test::Unit::TestCase
     b = 1E+300.to_i
     assert_equal(b, (b ** 2).fdiv(b))
     assert(@big.fdiv(0.0 / 0.0).nan?)
+    assert_in_delta(1E+300, (10**500).fdiv(1E+200), 1E+285)
   end
 
   def test_obj_fdiv

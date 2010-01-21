@@ -12,6 +12,10 @@ class TestDefined < Test::Unit::TestCase
     end
     def baz(f)
     end
+    attr_accessor :attr
+    def attrasgn_test
+      yield(defined?(self.attr = 1))
+    end
   end
 
   def defined_test
@@ -32,6 +36,7 @@ class TestDefined < Test::Unit::TestCase
     assert(defined?(::Array))		# toplevel constant
     assert(defined?(File::Constants))	# nested constant
     assert(defined?(Object.new))	# method
+    assert(defined?(Object::new))	# method
     assert(!defined?(Object.print))	# private method
     assert(defined?(1 == 2))		# operator expression
 
@@ -45,6 +50,8 @@ class TestDefined < Test::Unit::TestCase
     assert_nil(defined?(f.quux(x)))
     assert(defined?(print(x)))
     assert_nil(defined?(quux(x)))
+    assert(defined?(f.attr = 1))
+    f.attrasgn_test { |v| assert(v) }
 
     assert(defined_test)		# not iterator
     assert(!defined_test{})	        # called as iterator

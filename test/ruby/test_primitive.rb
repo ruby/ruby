@@ -228,6 +228,12 @@ class TestRubyPrimitive < Test::Unit::TestCase
     assert_equal 7, a[0]
     a[0] ||= 3
     assert_equal 7, a[0]
+
+    a = [0, 1, nil, 3, 4]
+    a[*[2]] ||= :foo
+    assert_equal [0, 1, :foo, 3, 4], a
+    a[*[1,3]] &&= [:bar]
+    assert_equal [0, :bar, 4], a
   end
 
   def test_opassign_and_or
