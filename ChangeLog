@@ -1,4 +1,7 @@
-Thu Jan 21 11:12:06 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Jan 21 11:15:46 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_rotate): new methods, Array#rotate! and
+	  Array#rotate.  [ruby-dev:17194]
 
 	* array.c (rb_ary_reverse_m): copy directly.
 
