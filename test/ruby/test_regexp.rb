@@ -795,4 +795,9 @@ class TestRegexp < Test::Unit::TestCase
     h = {a => 42}
     assert_equal(42, h[b], '[ruby-core:24748]')
   end
+
+  def test_regexp_poped
+    assert_nothing_raised { eval("a = 1; /\#{ a }/; a") }
+    assert_nothing_raised { eval("a = 1; /\#{ a }/o; a") }
+  end
 end

@@ -132,4 +132,8 @@ class TestSymbol < Test::Unit::TestCase
     assert_equal(:Foo, :foo.capitalize)
     assert_equal(:fOo, :FoO.swapcase)
   end
+
+  def test_symbol_poped
+    assert_nothing_raised { eval('a = 1; :"#{ a }"; 1') }
+  end
 end

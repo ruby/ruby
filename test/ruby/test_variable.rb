@@ -85,4 +85,8 @@ class TestVariable < Test::Unit::TestCase
   def test_global_variable_poped
     assert_nothing_raised { eval("$foo; 1") }
   end
+
+  def test_constant_poped
+    assert_nothing_raised { eval("TestVariable::Gods; 1") }
+  end
 end
