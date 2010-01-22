@@ -3780,6 +3780,7 @@ time_mload(VALUE time, VALUE str)
             int digit;
             ptr = (unsigned char*)StringValuePtr(submicro);
             len = RSTRING_LEN(submicro);
+            nsec = 0;
             if (0 < len) {
                 if (10 <= (digit = ptr[0] >> 4)) goto end_submicro;
                 nsec += digit * 100;
@@ -3790,6 +3791,7 @@ time_mload(VALUE time, VALUE str)
                 if (10 <= (digit = ptr[1] >> 4)) goto end_submicro;
                 nsec += digit;
             }
+            vtm.subsecx = add(vtm.subsecx, mulquo(LONG2FIX(nsec), INT2FIX(TIME_SCALE), LONG2FIX(1000000000)));
 end_submicro: ;
         }
         timexv = timegmxv(&vtm);
