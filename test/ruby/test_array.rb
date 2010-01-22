@@ -1788,6 +1788,8 @@ class TestArray < Test::Unit::TestCase
     assert_equal([], a.rotate(-4))
     assert_equal([], a.rotate(13))
     assert_equal([], a.rotate(-13))
+    a = [1,2,3]
+    assert_raise(ArgumentError) { a.rotate(1, 1) }
   end
 
   def test_rotate!
@@ -1813,5 +1815,7 @@ class TestArray < Test::Unit::TestCase
     a = [].freeze
     e = assert_raise(RuntimeError) {a.rotate!}
     assert_match(/can't modify frozen array/, e.message)
+    a = [1,2,3]
+    assert_raise(ArgumentError) { a.rotate!(1, 1) }
   end
 end

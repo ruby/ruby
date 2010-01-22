@@ -79,6 +79,8 @@ class TestFnmatch < Test::Unit::TestCase
     assert(File.fnmatch('cat', 'CAT', File::FNM_CASEFOLD))
     assert(!File.fnmatch('[a-z]', 'D'))
     assert(File.fnmatch('[a-z]', 'D', File::FNM_CASEFOLD))
+    assert(!File.fnmatch('[abc]', 'B'))
+    assert(File.fnmatch('[abc]', 'B', File::FNM_CASEFOLD))
     # wildcard doesn't match '/' if FNM_PATHNAME is set
     assert(File.fnmatch('foo?boo', 'foo/boo'))
     assert(File.fnmatch('foo*', 'foo/boo'))

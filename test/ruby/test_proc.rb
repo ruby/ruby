@@ -735,6 +735,10 @@ class TestProc < Test::Unit::TestCase
     assert_equal([[:req, :a], [:rest, :b], [:req, :c], [:block, :d]], method(:pmo6).to_proc.parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:block, :e]], method(:pmo7).to_proc.parameters)
     assert_equal([[:req], [:block, :b]], method(:pma1).to_proc.parameters)
+
+    assert_equal([], "".method(:upcase).to_proc.parameters)
+    assert_equal([[:rest]], "".method(:gsub).to_proc.parameters)
+    assert_equal([[:rest]], proc {}.curry.parameters)
   end
 
   def test_to_s

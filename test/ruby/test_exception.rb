@@ -255,4 +255,53 @@ end.join
     RUBY
     assert_not_match(/:0/, stderr, "[ruby-dev:39116]")
   end
+
+  def test_errinfo
+    begin
+      raise "foo"
+      assert(false)
+    rescue => e
+      assert_equal(e, $!)
+      1.times { assert_equal(e, $!) }
+    end
+
+    assert_equal(nil, $!)
+  end
+
+  def test_inspect
+    assert_equal("#<Exception: Exception>", Exception.new.inspect)
+
+    e = Class.new(Exception)
+    e.class_eval do
+      def to_s; ""; end
+    end
+    assert_equal(e.inspect, e.new.inspect)
+  end
+
+  def test_set_backtrace
+    e = Exception.new
+
+    e.set_backtrace("foo")
+    assert_equal(["foo"], e.backtrace)
+
+    e.set_backtrace(%w(foo bar baz))
+    assert_equal(%w(foo bar baz), e.backtrace)
+
+    assert_raise(TypeError) { e.set_backtrace(1) }
+    assert_raise(TypeError) { e.set_backtrace([1]) }
+  end
+
+  def test_exit_success_p
+    begin
+      exit
+    rescue SystemExit => e
+    end
+    assert(e.success?)
+
+    begin
+      abort
+    rescue SystemExit => e
+    end
+    assert(!e.success?)
+  end
 end
