@@ -8,6 +8,7 @@ accum = !accum || accum == "" || !(%w(f n 0).include?(accum[0]))
 pwd = Dir.pwd
 
 at_exit do
+  exit_exc = $!
   Dir.chdir(pwd) do
     Coverage.result.each do |sfile, covs|
       cfile = sfile + ext
@@ -57,4 +58,5 @@ at_exit do
       end
     end
   end
+  raise exit_exc if exit_exc
 end

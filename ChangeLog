@@ -1,3 +1,7 @@
+Sat Jan 23 00:25:19 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* sample/coverage.rb: preserve exit status.
+
 Sat Jan 23 00:21:18 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_dir.rb: get rid of debug print.
