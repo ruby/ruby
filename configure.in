@@ -1491,7 +1491,7 @@ if test x"$enable_pthread" = xyes; then
 	AC_DEFINE(HAVE_LIBPTHREAD)
 	AS_CASE([$pthread_lib],
 	[c],    [],
-	[root], []
+	[root], [],
 	[c_r],  [MAINLIBS="-pthread $MAINLIBS"],
 	        [LIBS="-l$pthread_lib $LIBS"])
     else

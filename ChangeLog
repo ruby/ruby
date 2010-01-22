@@ -1,3 +1,7 @@
+Fri Jan 22 14:16:18 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: add missing comma.
+
 Fri Jan 22 01:07:16 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_bignum.rb, test/ruby/test_class.rb,
