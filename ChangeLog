@@ -1,3 +1,7 @@
+Fri Jan 22 14:26:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (rdoc): needs encodings and exts.
+
 Fri Jan 22 14:16:18 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: add missing comma.
