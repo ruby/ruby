@@ -179,6 +179,10 @@ class TestMethod < Test::Unit::TestCase
     o = Object.new
     o.instance_eval { define_singleton_method(:foo) { :foo } }
     assert_equal(:foo, o.foo)
+
+    assert_raise(TypeError) do
+      Class.new.class_eval { define_method(:foo, Object.new) }
+    end
   end
 
   def test_clone

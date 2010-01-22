@@ -84,6 +84,12 @@ class TestInteger < Test::Unit::TestCase
     assert_raise(ArgumentError) { Integer("0x123", 10) }
     assert_raise(ArgumentError) { Integer(1234, 10) }
     assert_raise(ArgumentError) { Integer(12.34, 10) }
+    assert_raise(ArgumentError) { Integer(Object.new, 1) }
+
+    assert_raise(ArgumentError) { Integer(1, 1, 1) }
+
+    assert_equal(2 ** 50, Integer(2.0 ** 50))
+    assert_raise(TypeError) { Integer(nil) }
   end
 
   def test_int_p
@@ -191,10 +197,5 @@ class TestInteger < Test::Unit::TestCase
     assert_equal(Bignum, 1111_1111_1111_1111_1111_1111_1111_1111.round(-1).class)
     assert_equal(-1111_1111_1111_1111_1111_1111_1111_1110, (-1111_1111_1111_1111_1111_1111_1111_1111).round(-1))
     assert_equal(Bignum, (-1111_1111_1111_1111_1111_1111_1111_1111).round(-1).class)
-  end
-
-  def test_Integer2
-    assert_equal(2 ** 50, Integer(2.0 ** 50))
-    assert_raise(TypeError) { Integer(nil) }
   end
 end

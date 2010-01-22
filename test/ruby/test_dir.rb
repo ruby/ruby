@@ -162,6 +162,9 @@ class TestDir < Test::Unit::TestCase
     assert_equal([], Dir.glob(File.join(@root, '[')))
     assert_equal([], Dir.glob(File.join(@root, '[a-\\')))
 
+    assert_equal([File.join(@root, "a")], Dir.glob(File.join(@root, 'a\\')))
+    assert_equal((?a..?f).map {|f| File.join(@root, f) }.sort, Dir.glob(File.join(@root, '[abc/def]')).sort)
+
     d = "\u{3042}\u{3044}".encode("utf-16le")
     assert_raise(Encoding::CompatibilityError) {Dir.glob(d)}
     m = Class.new {define_method(:to_path) {d}}
@@ -170,6 +173,44 @@ class TestDir < Test::Unit::TestCase
 
   def test_foreach
     assert_equal(Dir.foreach(@root).to_a.sort, %w(. ..) + (?a..?z).to_a)
+  end
+
+  def test_dir_enc
+    dir = Dir.open(@root, encoding: "UTF-8")
+    begin
+      while name = dir.read
+	assert_equal(Encoding.find("UTF-8"), name.encoding)
+      end
+    ensure
+      dir.close
+    end
+
+    dir = Dir.open(@root, encoding: "ASCII-8BIT")
+    begin
+      while name = dir.read
+	assert_equal(Encoding.find("ASCII-8BIT"), name.encoding)
+      end
+    ensure
+      dir.close
+    end
+  end
+
+  def test_symlink
+    begin
+      [:dummy, *?a..?z].each do |f|
+	File.symlink(File.join(@root, f),
+		     File.join(@root, "symlink-#{ f }"))
+      end
+    rescue NotImplementedError
+      return
+    end
+
+    assert_equal([*?a..?z, *"symlink-a".."symlink-z"].each_slice(2).map {|f, _| File.join(@root, f + "/") }.sort,
+		 Dir.glob(File.join(@root, "*/")).sort)
+
+    puts("1");
+    Dir.glob(File.join(@root, "**/"))
+    puts("2");
   end
 
 end
