@@ -349,7 +349,7 @@ do-install-doc: $(PROGRAM)
 post-install-doc::
 	@$(NULLCMD)
 
-rdoc: $(PROGRAM) PHONY
+rdoc: main PHONY
 	@echo Generating RDoc documentation
 	$(XRUBY) "$(srcdir)/bin/rdoc" --all --ri --op "$(RDOCOUT)" "$(srcdir)"
 nodoc: PHONY
