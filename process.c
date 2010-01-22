@@ -1333,12 +1333,12 @@ rb_f_fork(obj)
 
 #ifdef __NetBSD__
     before_exec();
-    pid = fork();
-    after_exec();
-    switch (pid) {
-#else
-    switch (pid = fork()) {
 #endif
+    pid = fork();
+#ifdef __NetBSD__
+    after_exec();
+#endif
+    switch (pid) {
       case 0:
 #ifdef linux
 	after_exec();
