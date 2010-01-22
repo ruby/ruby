@@ -1,3 +1,7 @@
+Fri Jan 22 21:05:34 2010  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (time_mload): add submicro into vtm.subsecx.  [ruby-dev:40133] 
+
 Fri Jan 22 14:26:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (rdoc): needs encodings and exts.
