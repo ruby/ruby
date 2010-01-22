@@ -385,20 +385,16 @@ class TestModule < Test::Unit::TestCase
     assert_equal([], Module.constants(false))
 
     src = <<-INPUT
+      ary = Module.constants
       module M
         WALTER = 99
       end
       class Module
         include M
       end
-      p Module.constants, Module.constants(true), Module.constants(false)
+      p Module.constants - ary, Module.constants(true), Module.constants(false)
     INPUT
-    assert_in_out_err([], src) do |out, err|
-      assert_equal([:BasicObject, :M], eval(out[0]).sort - Module.constants)
-      assert_equal("[:WALTER]", out[1])
-      assert_equal("[]", out[2])
-      assert_equal([], err)
-    end
+    assert_in_out_err([], src, %w([:M] [:WALTER] []), [])
   end
 
   module M1

@@ -208,9 +208,7 @@ class TestDir < Test::Unit::TestCase
     assert_equal([*?a..?z, *"symlink-a".."symlink-z"].each_slice(2).map {|f, _| File.join(@root, f + "/") }.sort,
 		 Dir.glob(File.join(@root, "*/")).sort)
 
-    puts("1");
     Dir.glob(File.join(@root, "**/"))
-    puts("2");
   end
 
 end
