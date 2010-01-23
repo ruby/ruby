@@ -1,3 +1,9 @@
+Sat Jan 23 23:12:56 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/rdoc/generator/html.rb (RDoc::Generator::HTML#gen_into):
+	  make the rdoc(generating html) run faster and use less memory.
+	  patch by Tetsu Soh [ruby-core:27656]
+
 Sat Jan 23 19:54:48 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: add WIN32OLE.ole_initialize,
