@@ -1,3 +1,8 @@
+Sun Jan 24 00:02:18 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/rdoc/markup/to_html_crossref.rb: fix failure of the test.
+	  [ruby-core:20564]
+
 Sat Jan 23 23:27:12 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* dir.c (dir_s_glob): add rdoc by Roger Pack. [ruby-core:27669]
