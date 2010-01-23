@@ -1732,6 +1732,9 @@ dir_s_aref(int argc, VALUE *argv, VALUE obj)
  *                          Equivalent to pattern alternation in
  *                          regexp.
  *  <code>\</code>::        Escapes the next metacharacter.
+ *                          Note that this means you cannot use backslash in windows
+ *                          as part of a glob, i.e. Dir["c:\\*"] will not work
+ *                          use Dir["c:/*"] instead
  *
  *     Dir["config.?"]                     #=> ["config.h"]
  *     Dir.glob("config.?")                #=> ["config.h"]
