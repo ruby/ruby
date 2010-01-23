@@ -130,7 +130,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.4.6"
+#define WIN32OLE_VERSION "1.4.7"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -357,6 +357,10 @@ static BOOL CALLBACK installed_lcid_proc(LPTSTR str);
 static BOOL lcid_installed(LCID lcid);
 static VALUE fole_s_set_locale(VALUE self, VALUE vlcid);
 static VALUE fole_s_create_guid(VALUE self);
+static void  ole_pure_initialize();
+static VALUE fole_s_ole_initialize(VALUE self);
+static void  ole_pure_uninitialize();
+static VALUE fole_s_ole_uninitialize(VALUE self);
 static VALUE fole_initialize(int argc, VALUE *argv, VALUE self);
 static VALUE hash2named_arg(VALUE pair, struct oleparam* pOp);
 static VALUE set_argv(VARIANTARG* realargs, unsigned int beg, unsigned int end);
@@ -3089,6 +3093,42 @@ fole_s_create_guid(VALUE self)
         rb_raise(rb_eRuntimeError, "failed to create GUID(buffer over)");
     }
     return ole_wc2vstr(bstr, FALSE);
+}
+
+/*
+ * WIN32OLE.ole_initialize and WIN32OLE.ole_uninitialize
+ * are used in win32ole.rb to fix the issue bug #2618 (ruby-core:27634).
+ * You must not use thease method.
+ */
+
+static void  ole_pure_initialize()
+{
+    HRESULT hr;
+    hr = OleInitialize(NULL);
+    if(FAILED(hr)) {
+        ole_raise(hr, rb_eRuntimeError, "fail: OLE initialize");
+    }
+}
+
+static void  ole_pure_uninitialize()
+{
+    OleUninitialize();
+}
+
+/* :nodoc */
+static VALUE 
+fole_s_ole_initialize(VALUE self)
+{
+    ole_pure_initialize();
+    return Qnil;
+}
+
+/* :nodoc */
+static VALUE 
+fole_s_ole_uninitialize(VALUE self)
+{
+    ole_pure_uninitialize();
+    return Qnil;
 }
 
 /*
@@ -9043,6 +9083,8 @@ Init_win32ole()
     rb_define_singleton_method(cWIN32OLE, "locale", fole_s_get_locale, 0);
     rb_define_singleton_method(cWIN32OLE, "locale=", fole_s_set_locale, 1);
     rb_define_singleton_method(cWIN32OLE, "create_guid", fole_s_create_guid, 0);
+    rb_define_singleton_method(cWIN32OLE, "ole_initialize", fole_s_ole_initialize, 0);
+    rb_define_singleton_method(cWIN32OLE, "ole_uninitialize", fole_s_ole_uninitialize, 0);
 
     rb_define_method(cWIN32OLE, "invoke", fole_invoke, -1);
     rb_define_method(cWIN32OLE, "[]", fole_getproperty_with_bracket, -1);
