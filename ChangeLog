@@ -1,7 +1,12 @@
+Sun Jan 24 00:31:39 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/rdoc/parser/ruby.rb: fix typo.
+	  patched by Hal Brodigan [ruby-core:21536]
+
 Sun Jan 24 00:02:18 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/rdoc/markup/to_html_crossref.rb: fix failure of the test.
-	  [ruby-core:20564]
+	  patched by Tomoyuki Chikanaga and nobu [ruby-core:20564]
 
 Sat Jan 23 23:27:12 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
