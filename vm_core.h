@@ -655,6 +655,9 @@ void rb_threadptr_signal_raise(rb_thread_t *th, int sig);
 void rb_threadptr_signal_exit(rb_thread_t *th);
 void rb_threadptr_execute_interrupts(rb_thread_t *);
 
+void rb_thread_lock_unlock(rb_thread_lock_t *);
+void rb_thread_lock_destroy(rb_thread_lock_t *);
+
 #define RUBY_VM_CHECK_INTS_TH(th) do { \
   if (UNLIKELY(th->interrupt_flag)) { \
     rb_threadptr_execute_interrupts(th); \

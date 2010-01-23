@@ -251,6 +251,17 @@ rb_thread_debug(
 }
 #endif
 
+void
+rb_thread_lock_unlock(rb_thread_lock_t *lock)
+{
+    native_mutex_unlock(lock);
+}
+
+void
+rb_thread_lock_destroy(rb_thread_lock_t *lock)
+{
+    native_mutex_destroy(lock);
+}
 
 static void
 set_unblock_function(rb_thread_t *th, rb_unblock_function_t *func, void *arg,
@@ -361,6 +372,15 @@ rb_thread_terminate_all(void)
 }
 
 static void
+thread_unlock_all_locking_mutexes(rb_thread_t *th)
+{
+    if (th->keeping_mutexes) {
+	rb_mutex_unlock_all(th->keeping_mutexes, th);
+	th->keeping_mutexes = NULL;
+    }
+}
+
+static void
 thread_cleanup_func_before_exec(void *th_ptr)
 {
     rb_thread_t *th = th_ptr;
@@ -376,11 +396,6 @@ thread_cleanup_func(void *th_ptr)
 {
     rb_thread_t *th = th_ptr;
 
-    /* unlock all locking mutexes */
-    if (th->keeping_mutexes) {
-	rb_mutex_unlock_all(th->keeping_mutexes, th);
-	th->keeping_mutexes = NULL;
-    }
     th->locking_mutex = Qfalse;
     thread_cleanup_func_before_exec(th_ptr);
     native_thread_destroy(th);
@@ -500,12 +515,15 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	    th->stack = 0;
 	}
     }
-    thread_cleanup_func(th);
+    thread_unlock_all_locking_mutexes(th);
     if (th != main_th) rb_check_deadlock(th->vm);
     if (th->vm->main_thread == th) {
 	ruby_cleanup(state);
     }
-    native_mutex_unlock(&th->vm->global_vm_lock);
+    else {
+	thread_cleanup_func(th);
+	native_mutex_unlock(&th->vm->global_vm_lock);
+    }
 
     return 0;
 }
@@ -2739,6 +2757,7 @@ void
 rb_thread_atfork(void)
 {
     rb_thread_atfork_internal(terminate_atfork_i);
+    GET_THREAD()->join_list_head = 0;
     rb_reset_random_seed();
 }
 
