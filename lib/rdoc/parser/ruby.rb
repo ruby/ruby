@@ -2046,7 +2046,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
       when TkSTRING then
         name = name_t.text[1..-2]
       else
-        warn "#{container.top_level.file_relative_name}:#{name_t.line_no} unknown name token #{name_t.inspect} for meta-method"
+        warn "#{container.toplevel.file_relative_name}:#{name_t.line_no} unknown name token #{name_t.inspect} for meta-method"
         name = 'unknown'
       end
     end
