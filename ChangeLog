@@ -1,3 +1,15 @@
+Sun Jan 24 05:18:34 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (thread_start_func_2): unlock all locking mutexes
+	  before clean up.  [ruby-core:26877]
+
+	* thread.c (rb_thread_atfork): no other threads to be joined.
+
+	* vm_core.h (rb_thread_lock_unlock, rb_thread_lock_destroy):
+	  new functions.
+
+	* vm.c (ruby_vm_destruct): unlock and destroy global VM lock.
+
 Sun Jan 24 00:31:39 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/rdoc/parser/ruby.rb: fix typo.
