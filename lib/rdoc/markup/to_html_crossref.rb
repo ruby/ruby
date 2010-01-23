@@ -65,7 +65,7 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
                       # The key thing is that there must be at least
                       # one special character (period, slash, or
                       # underscore).
-                      | [\/\w]+[_\/\.][\w\/\.]+
+                      | (?:\.\.\/)*[-\/\w]+[_\/\.][-\w\/\.]+
 
                       # Things that have markup suppressed
                       | \\[^\s]
