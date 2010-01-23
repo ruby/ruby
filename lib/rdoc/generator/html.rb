@@ -231,6 +231,10 @@ class RDoc::Generator::HTML
       open op_file, 'w' do |io|
         item.write_on io, file_list, class_list, method_list
       end
+
+      file_list.clear
+      class_list.clear
+      method_list.clear
     end
   end
 
