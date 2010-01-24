@@ -2607,6 +2607,8 @@ rb_fork(int *status, int (*chfunc)(void*), void *charg, VALUE fds)
  *
  *  The thread calling fork is the only thread in the created child process.
  *  fork doesn't copy other threads.
+ *
+ *  If fork is not usable, Process.respond_to?(:fork) returns false.
  */
 
 static VALUE
