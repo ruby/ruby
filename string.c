@@ -4099,9 +4099,14 @@ rb_str_inspect(VALUE str)
         n = rb_enc_precise_mbclen(p, pend, enc);
         if (!MBCLEN_CHARFOUND_P(n)) {
 	    if (p > prev) str_buf_cat(result, prev, p - prev);
-	    snprintf(buf, CHAR_ESC_LEN, "\\x%02X", *p & 0377);
-	    str_buf_cat(result, buf, strlen(buf));
-            prev = ++p;
+            n = rb_enc_mbminlen(enc);
+            if (pend < p + n)
+                n = pend - p;
+            while (n--) {
+                snprintf(buf, CHAR_ESC_LEN, "\\x%02X", *p & 0377);
+                str_buf_cat(result, buf, strlen(buf));
+                prev = ++p;
+            }
 	    continue;
 	}
         n = MBCLEN_CHARFOUND_LEN(n);

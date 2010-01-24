@@ -1,7 +1,8 @@
-Sun Jan 24 13:55:54 2010  Tanaka Akira  <akr@fsij.org>
+Sun Jan 24 14:21:48 2010  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (rb_enc_strlen_cr): increment by rb_enc_mbminlen(enc) for
 	  broken byte sequence.  [ruby-core:27748]
+	  (rb_str_inspect): ditto.
 
 Sun Jan 24 05:18:34 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
