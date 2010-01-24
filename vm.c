@@ -1001,6 +1001,27 @@ vm_init_redefined_flag(void)
 #undef OP
 }
 
+/* for vm development */
+
+static const char *
+vm_frametype_name(const rb_control_frame_t *cfp)
+{
+    switch (VM_FRAME_TYPE(cfp)) {
+      case VM_FRAME_MAGIC_METHOD: return "method";
+      case VM_FRAME_MAGIC_BLOCK:  return "block";
+      case VM_FRAME_MAGIC_CLASS:  return "class";
+      case VM_FRAME_MAGIC_TOP:    return "top";
+      case VM_FRAME_MAGIC_FINISH: return "finish";
+      case VM_FRAME_MAGIC_CFUNC:  return "cfunc";
+      case VM_FRAME_MAGIC_PROC:   return "proc";
+      case VM_FRAME_MAGIC_IFUNC:  return "ifunc";
+      case VM_FRAME_MAGIC_EVAL:   return "eval";
+      case VM_FRAME_MAGIC_LAMBDA: return "lambda";
+      default:
+	rb_bug("unknown frame");
+    }
+}
+
 /* evaluator body */
 
 /*                  finish
@@ -1137,7 +1158,11 @@ vm_exec(rb_thread_t *th)
 	cont_pc = cont_sp = catch_iseqval = 0;
 
 	while (th->cfp->pc == 0 || th->cfp->iseq == 0) {
-	    th->cfp++;
+	    if (UNLIKELY(VM_FRAME_TYPE(th->cfp) == VM_FRAME_MAGIC_CFUNC)) {
+		const rb_method_entry_t *me = th->cfp->me;
+		EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, th->cfp->self, me->called_id, me->klass);
+	    }
+	    th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
 	}
 
 	cfp = th->cfp;
@@ -1298,8 +1323,20 @@ vm_exec(rb_thread_t *th)
 	    goto vm_loop_start;
 	}
 	else {
-	    th->cfp++;
-	    if (th->cfp->pc != &finish_insn_seq[0]) {
+	    /* skip frame */
+
+	    switch (VM_FRAME_TYPE(th->cfp)) {
+	      case VM_FRAME_MAGIC_METHOD:
+		EXEC_EVENT_HOOK(th, RUBY_EVENT_RETURN, th->cfp->self, 0, 0);
+		break;
+	      case VM_FRAME_MAGIC_CLASS:
+		EXEC_EVENT_HOOK(th, RUBY_EVENT_END, th->cfp->self, 0, 0);
+		break;
+	    }
+
+	    th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
+
+	    if (VM_FRAME_TYPE(th->cfp) != VM_FRAME_MAGIC_FINISH) {
 		goto exception_handler;
 	    }
 	    else {

@@ -352,11 +352,10 @@ rb_frozen_class_p(VALUE klass)
 NORETURN(static void rb_longjmp(int, volatile VALUE));
 
 static void
-rb_longjmp(int tag, volatile VALUE mesg)
+setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg)
 {
     VALUE at;
     VALUE e;
-    rb_thread_t *th = GET_THREAD();
     const char *file;
     volatile int line = 0;
 
@@ -425,10 +424,15 @@ rb_longjmp(int tag, volatile VALUE mesg)
     rb_trap_restore_mask();
 
     if (tag != TAG_FATAL) {
-	EXEC_EVENT_HOOK(th, RUBY_EVENT_RAISE, th->cfp->self,
-			0 /* TODO: id */, 0 /* TODO: klass */);
+	EXEC_EVENT_HOOK(th, RUBY_EVENT_RAISE, th->cfp->self, 0, 0);
     }
+}
 
+static void
+rb_longjmp(int tag, volatile VALUE mesg)
+{
+    rb_thread_t *th = GET_THREAD();
+    setup_exception(th, tag, mesg);
     rb_thread_raised_clear(th);
     JUMP_TAG(tag);
 }
@@ -559,9 +563,18 @@ void
 rb_raise_jump(VALUE mesg)
 {
     rb_thread_t *th = GET_THREAD();
+    rb_control_frame_t *cfp = th->cfp;
+    VALUE klass = cfp->me->klass;
+    VALUE self = cfp->self;
+    ID mid = cfp->me->called_id;
+
     th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
-    /* TODO: fix me */
-    rb_longjmp(TAG_RAISE, mesg);
+
+    setup_exception(th, TAG_RAISE, mesg);
+
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, self, mid, klass);
+    rb_thread_raised_clear(th);
+    JUMP_TAG(TAG_RAISE);
 }
 
 void

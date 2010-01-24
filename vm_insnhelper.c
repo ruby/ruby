@@ -360,44 +360,30 @@ call_cfunc(VALUE (*func)(), VALUE recv,
 
 static inline VALUE
 vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp,
-	      int num, VALUE recv, const rb_block_t *blockptr, VALUE flag,
+	      int num, VALUE recv, const rb_block_t *blockptr,
 	      const rb_method_entry_t *me)
 {
     VALUE val = 0;
     int state = 0;
     const rb_method_definition_t *def = me->def;
-    VALUE klass = me->klass;
-    ID id = me->called_id;
+    rb_control_frame_t *cfp;
 
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, id, klass);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, me->called_id, me->klass);
 
-    TH_PUSH_TAG(th);
-    /* TODO: fix me.  separate event */
-    if (th->event_flags & (RUBY_EVENT_C_RETURN | RUBY_EVENT_VM)) {
-	state = TH_EXEC_TAG();
+    cfp = vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC,
+			recv, (VALUE) blockptr, 0, reg_cfp->sp, 0, 1);
+    cfp->me = me;
+    reg_cfp->sp -= num + 1;
+
+    val = call_cfunc(def->body.cfunc.func, recv, (int)def->body.cfunc.argc, num, reg_cfp->sp + 1);
+
+    if (reg_cfp != th->cfp + 1) {
+	rb_bug("cfp consistency error - send");
     }
-    else {
-	_th->tag = _tag.prev;
-    }
-    if (state == 0) {
-	rb_control_frame_t *cfp =
-	    vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC,
-			  recv, (VALUE) blockptr, 0, reg_cfp->sp, 0, 1);
 
-	cfp->me = me;
-	reg_cfp->sp -= num + 1;
+    vm_pop_frame(th);
 
-	val = call_cfunc(def->body.cfunc.func, recv, (int)def->body.cfunc.argc, num, reg_cfp->sp + 1);
-
-	if (reg_cfp != th->cfp + 1) {
-	    rb_bug("cfp consistency error - send");
-	}
-
-	vm_pop_frame(th);
-    }
-    TH_POP_TAG();
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, id, klass);
-    if (state) TH_JUMP_TAG(th, state);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, me->called_id, me->klass);
 
     return val;
 }
@@ -512,7 +498,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 	      }
 	      case VM_METHOD_TYPE_NOTIMPLEMENTED:
 	      case VM_METHOD_TYPE_CFUNC:{
-		val = vm_call_cfunc(th, cfp, num, recv, blockptr, flag, me);
+		val = vm_call_cfunc(th, cfp, num, recv, blockptr, me);
 		break;
 	      }
 	      case VM_METHOD_TYPE_ATTRSET:{
