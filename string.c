@@ -1008,7 +1008,10 @@ rb_enc_strlen_cr(const char *p, const char *e, rb_encoding *enc, int *cr)
 	}
 	else {
 	    *cr = ENC_CODERANGE_BROKEN;
-	    p++;
+            if (p + rb_enc_mbminlen(enc) <= e)
+                p += rb_enc_mbminlen(enc);
+            else
+                p = e;
 	}
     }
     if (!*cr) *cr = ENC_CODERANGE_7BIT;
