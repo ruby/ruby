@@ -263,8 +263,31 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_equal([], events)
   end
 
+  def test_break # [ruby-core:27606] [Bug #2610]
+    events = []
+    eval <<-EOF.gsub(/^.*?: /, "")
+     1: set_trace_func(Proc.new { |event, file, lineno, mid, binding, klass|
+     2:   events << [event, lineno, mid, klass]
+     3: })
+     4: [1,2,3].any? {|n| n}
+     8: set_trace_func(nil)
+    EOF
+
+    [["c-return", 3, :set_trace_func, Kernel],
+     ["line", 4, __method__, self.class],
+     ["c-call", 4, :any?, Enumerable],
+     ["c-call", 4, :each, Array],
+     ["line", 4, __method__, self.class],
+     ["c-return", 4, :each, Array],
+     ["c-return", 4, :any?, Enumerable],
+     ["line", 5, __method__, self.class],
+     ["c-call", 5, :set_trace_func, Kernel]].each{|e|
+      assert_equal(e, events.shift)
+    }
+  end
+
   def test_invalid_proc
-    assert_raise(TypeError) { set_trace_func(1) }
+      assert_raise(TypeError) { set_trace_func(1) }
   end
 
   def test_raise_in_trace

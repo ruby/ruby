@@ -1,3 +1,12 @@
+Sun Jan 24 22:48:05 2010  Koichi Sasada  <ko1@atdot.net>
+
+	* eval.c, vm.c, vm_eval.c, vm_insnhelper.c: fix issues about
+	  return and c-return trace.  This issue skips (c-)return event
+	  with global jump such as break or return.  This fix make vm invoke
+	  hooks at stack rewind timing.  fix [ruby-core:27606] [Bug #2610].
+
+	* test/ruby/test_settracefunc.rb: add a test for above.
+
 Sun Jan 24 14:21:48 2010  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (rb_enc_strlen_cr): increment by rb_enc_mbminlen(enc) for
