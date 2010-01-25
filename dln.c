@@ -84,7 +84,7 @@ char *getenv();
 # endif
 #endif
 
-#ifdef __BEOS__
+#if defined(__BEOS__) || defined(__HAIKU__)
 # include <image.h>
 #endif
 
@@ -1433,7 +1433,7 @@ dln_load(const char *file)
 #endif /* rld or dyld */
 #endif
 
-#ifdef __BEOS__
+#if defined(__BEOS__) || defined(__HAIKU__)
 # define DLN_DEFINED
     {
       status_t err_stat;  /* BeOS error status code */
@@ -1479,7 +1479,7 @@ dln_load(const char *file)
       (*init_fct)();
       return (void*)img_id;
     }
-#endif /* __BEOS__*/
+#endif /* __BEOS__ || __HAIKU__ */
 
 #ifndef DLN_DEFINED
     dln_notimplement();

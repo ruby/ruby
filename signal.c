@@ -34,7 +34,7 @@ typedef int rb_atomic_t;
 # define ATOMIC_DEC(var) (--(var))
 #endif
 
-#ifdef __BEOS__
+#if defined(__BEOS__) || defined(__HAIKU__)
 #undef SIGBUS
 #endif
 
