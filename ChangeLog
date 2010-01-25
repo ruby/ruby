@@ -1,3 +1,8 @@
+Mon Jan 25 17:47:02 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/pty/pty.c (pty_check): needs WNOHANG to poll, return $?, and
+	  call raise_from_check() with pid_t.  [ruby-dev:40141]
+
 Mon Jan 25 17:36:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* version.c (RUBY_LIB, RUBY_*_LIB): moved from configures.
