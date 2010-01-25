@@ -1,3 +1,8 @@
+Mon Jan 25 21:43:05 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/envutil.rb: fix the check if instance method `ruby' is
+	  defined or not.
+
 Mon Jan 25 21:17:32 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_rubyoptions.rb (test_segv_test): add a test for
