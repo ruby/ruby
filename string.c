@@ -3614,7 +3614,9 @@ rb_str_count(argc, argv, str)
  *
  *  If <i>pattern</i> is a <code>Regexp</code>, <i>str</i> is divided where the
  *  pattern matches. Whenever the pattern matches a zero-length string,
- *  <i>str</i> is split into individual characters.
+ *  <i>str</i> is split into individual characters. If
+ *  <i>pattern</i> includes one or more capturing subpatterns,
+ *  these will be returned in the array returned by split.
  *
  *  If <i>pattern</i> is omitted, the value of <code>$;</code> is used.  If
  *  <code>$;</code> is <code>nil</code> (which is the default), <i>str</i> is
@@ -3631,6 +3633,8 @@ rb_str_count(argc, argv, str)
  *     " now's  the time".split(' ')   #=> ["now's", "the", "time"]
  *     " now's  the time".split(/ /)   #=> ["", "now's", "", "the", "time"]
  *     "1, 2.34,56, 7".split(%r{,\s*}) #=> ["1", "2.34", "56", "7"]
+ *     "1, 2.34,56".split(%r{(,\s*)})  #=> ["1", ", ", "2.34", ",", "56"]
+ *     "wd :sp: wd".split(/(:(\w+):)/) #=> ["wd ", ":sp:", "sp", " wd"]
  *     "hello".split(//)               #=> ["h", "e", "l", "l", "o"]
  *     "hello".split(//, 3)            #=> ["h", "e", "llo"]
  *     "hi mom".split(%r{\s*})         #=> ["h", "i", "m", "o", "m"]
