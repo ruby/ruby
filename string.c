@@ -4101,7 +4101,7 @@ rb_str_inspect(VALUE str)
 	    if (p > prev) str_buf_cat(result, prev, p - prev);
             n = rb_enc_mbminlen(enc);
             if (pend < p + n)
-                n = pend - p;
+                n = (int)(pend - p);
             while (n--) {
                 snprintf(buf, CHAR_ESC_LEN, "\\x%02X", *p & 0377);
                 str_buf_cat(result, buf, strlen(buf));
