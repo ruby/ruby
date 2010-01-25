@@ -27,7 +27,10 @@ extern VALUE rb_to_float(VALUE val);
 static void
 domain_check(double x, double y, const char *msg)
 {
-    if (!errno) {
+    if (errno) {
+	if (isinf(y)) return;
+    }
+    else {
 	if (!isnan(y)) return;
 	else if (isnan(x)) return;
 	else {

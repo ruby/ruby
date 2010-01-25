@@ -1,3 +1,10 @@
+Mon Jan 25 11:45:47 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* math.c (domain_check): ignore errno if y is inf.
+	  r26335 is because NetBSD 5.0's asin and acos returns
+	  0.0 with errno EDOM. But it breaks Linux whose gamma returns inf
+	  with errno ERANGE on.
+
 Sun Jan 24 22:48:05 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c, vm.c, vm_eval.c, vm_insnhelper.c: fix issues about
@@ -228,6 +235,7 @@ Sun Jan 17 22:48:44 2010  Akinori MUSHA  <knu@iDaemons.org>
 Sun Jan 17 19:24:25 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* math.c (domain_check): check errno first.
+	  NetBSD 5.0's asin and acos returns 0.0 with errno EDOM.
 
 Sun Jan 17 14:24:35 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
