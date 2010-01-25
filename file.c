@@ -74,11 +74,11 @@ int flock(int, int);
 static int
 be_chown(const char *path, uid_t owner, gid_t group)
 {
-    if (owner == -1 || group == -1) {
+    if (owner == (uid_t)-1 || group == (gid_t)-1) {
 	struct stat st;
 	if (stat(path, &st) < 0) return -1;
-	if (owner == -1) owner = st.st_uid;
-	if (group == -1) group = st.st_gid;
+	if (owner == (uid_t)-1) owner = st.st_uid;
+	if (group == (gid_t)-1) group = st.st_gid;
     }
     return chown(path, owner, group);
 }
@@ -86,11 +86,11 @@ be_chown(const char *path, uid_t owner, gid_t group)
 static int
 be_fchown(int fd, uid_t owner, gid_t group)
 {
-    if (owner == -1 || group == -1) {
+    if (owner == (uid_t)-1 || group == (gid_t)-1) {
 	struct stat st;
 	if (fstat(fd, &st) < 0) return -1;
-	if (owner == -1) owner = st.st_uid;
-	if (group == -1) group = st.st_gid;
+	if (owner == (uid_t)-1) owner = st.st_uid;
+	if (group == (gid_t)-1) group = st.st_gid;
     }
     return fchown(fd, owner, group);
 }
@@ -990,7 +990,7 @@ eaccess(const char *path, int mode)
     else if (group_member(st.st_gid))
 	mode <<= 3;
 
-    if ((st.st_mode & mode) == mode) return 0;
+    if ((int)(st.st_mode & mode) == mode) return 0;
 
     return -1;
 #else
