@@ -2457,7 +2457,7 @@ do_select(int n, fd_set *read, fd_set *write, fd_set *except,
 	wait_100ms.tv_usec = 100 * 1000; /* 100 ms */
 
 	do {
-	    wait = (timeout == 0 || cmp_tv(&wait_100ms, timeout) > 0) ? &wait_100ms : timeout;
+	    wait = (timeout == 0 || cmp_tv(&wait_100ms, timeout) < 0) ? &wait_100ms : timeout;
 	    BLOCKING_REGION({
 		do {
 		    result = select(n, read, write, except, wait);
@@ -2467,16 +2467,16 @@ do_select(int n, fd_set *read, fd_set *write, fd_set *except,
 		    if (read) *read = orig_read;
 		    if (write) *write = orig_write;
 		    if (except) *except = orig_except;
-		    wait = &wait_100ms;
 		    if (timeout) {
 			struct timeval elapsed;
 			gettimeofday(&elapsed, NULL);
 			subtract_tv(&elapsed, &start_time);
+			gettimeofday(&start_time, NULL);
 			if (!subtract_tv(timeout, &elapsed)) {
 			    finish = 1;
 			    break;
 			}
-			if (cmp_tv(&wait_100ms, timeout) < 0) wait = timeout;
+			if (cmp_tv(&wait_100ms, timeout) > 0) wait = timeout;
 		    }
 		} while (__th->interrupt_flag == 0);
 	    }, 0, 0);
