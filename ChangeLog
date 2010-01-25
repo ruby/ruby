@@ -1,3 +1,7 @@
+Mon Jan 25 17:36:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* version.c (RUBY_LIB, RUBY_*_LIB): moved from configures.
+
 Mon Jan 25 12:11:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* signal.c (USE_SIGALTSTACK): only when SA_SIGINFO also is

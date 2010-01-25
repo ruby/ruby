@@ -196,6 +196,10 @@ ASMEXT        = asm
 
 INSTALLED_LIST= .installed.list
 
+MKMAIN_CMD    = mkmain.bat
+
+SRC_FILE      = $(<:\=/)
+
 WINMAINOBJ    = winmain.$(OBJEXT)
 ARCHMINIOBJS  = dmydln.$(OBJEXT)
 
@@ -353,15 +357,8 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/bcc32/Makefile.sub
 \#define DEFAULT_KCODE KCODE_NONE
 \#define LOAD_RELATIVE 1
 \#define DLEXT ".so"
-\#define RUBY_LIB "/lib/ruby/$(MAJOR).$(MINOR).$(TEENY)"
-\#define RUBY_SITE_LIB "/lib/ruby/site_ruby"
-\#define RUBY_SITE_LIB2 "/lib/ruby/site_ruby/$(MAJOR).$(MINOR).$(TEENY)"
-\#define RUBY_VENDOR_LIB "/lib/ruby/vendor_ruby"
-\#define RUBY_VENDOR_LIB2 "/lib/ruby/vendor_ruby/$(MAJOR).$(MINOR).$(TEENY)"
+\#define RUBY_LIB_PREFIX "/lib/ruby"
 \#define RUBY_PLATFORM "$(ARCH)-$(OS)"
-\#define RUBY_ARCHLIB "/lib/ruby/$(MAJOR).$(MINOR).$(TEENY)/$(ARCH)-$(OS)"
-\#define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/$(MAJOR).$(MINOR).$(TEENY)/$(ARCH)-$(OS)"
-\#define RUBY_VENDOR_ARCHLIB "/lib/ruby/vendor_ruby/$(MAJOR).$(MINOR).$(TEENY)/$(ARCH)-$(OS)"
 |
 	@exit > $(@:/=\)
 
