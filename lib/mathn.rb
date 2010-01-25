@@ -54,6 +54,7 @@ class Bignum
 end
 
 class Rational
+  remove_method :**
   def ** (other)
     if other.kind_of?(Rational)
       other2 = other
@@ -188,6 +189,9 @@ module Math
     end
   end
 
+  class << self
+    remove_method(:sqrt)
+  end
   module_function :sqrt
   module_function :rsqrt
 end

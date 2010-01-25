@@ -43,7 +43,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
       UNIXSocket.pair {|s1, s2|
         begin
           ret = s1.sendmsg("\0", 0, nil, [Socket::SOL_SOCKET, Socket::SCM_RIGHTS,
-                                          send_io_ary.map {|io| io.fileno }.pack("i!*")])
+                                          send_io_ary.map {|io2| io2.fileno }.pack("i!*")])
         rescue NotImplementedError
           return
         end
