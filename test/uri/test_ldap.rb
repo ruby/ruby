@@ -81,8 +81,8 @@ class TestLDAP < Test::Unit::TestCase
       ['ldap', nil, URI::LDAP::DEFAULT_PORT,
 	'',
 	nil, 'sub', nil, '!bindname=cn=Manager%2co=Foo'],
-    }.each do |url, ary|
-      u = URI.parse(url)
+    }.each do |url2, ary|
+      u = URI.parse(url2)
       assert_equal(ary, uri_to_ary(u))
     end
   end

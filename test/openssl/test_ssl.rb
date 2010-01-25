@@ -571,7 +571,7 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
     ctx_proc = Proc.new do |ctx, ssl|
       foo_ctx = ctx.dup
 
-      ctx.servername_cb = Proc.new do |ssl, hostname|
+      ctx.servername_cb = Proc.new do |ssl2, hostname|
         case hostname
         when 'foo.example.com'
           foo_ctx

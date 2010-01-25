@@ -64,7 +64,7 @@ class TestBasicInstructions < Test::Unit::TestCase
   end
 
   def test_regexp
-    assert_equal /test/, /test/
+    assert_equal(/test/, /test/)
     assert_equal 'test', /test/.source
     assert_equal 'TEST', /TEST/.source
     assert_equal true, !!(/test/ =~ 'test')
@@ -76,9 +76,9 @@ class TestBasicInstructions < Test::Unit::TestCase
     assert_equal true, !!(re =~ 'test')
     assert_equal false, !!(re =~ 'does not match')
 
-    assert_equal /x#{1+1}x/, /x#{1+1}x/
+    assert_equal(/x#{1+1}x/, /x#{1+1}x/)
     s = "OK"
-    assert_equal /x#{s}x/, /x#{s}x/
+    assert_equal(/x#{s}x/, /x#{s}x/)
     assert_equal true, !!(/x#{s}x/ =~ "xOKx")
     assert_equal false, !!(/x#{s}x/ =~ "does not match")
 

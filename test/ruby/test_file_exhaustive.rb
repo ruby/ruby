@@ -492,7 +492,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     f.close
     make_file("foo", @file)
 
-    assert_raise(IOError) { File.open(@file) {|f| f.truncate(0)} }
+    assert_raise(IOError) { File.open(@file) {|ff| ff.truncate(0)} }
   rescue NotImplementedError
   end
 

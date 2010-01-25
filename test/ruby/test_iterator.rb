@@ -5,8 +5,8 @@ class Array
     collect{|e| [e, yield(e)]}.sort{|a,b|a[1]<=>b[1]}
   end
   def iter_test2
-    a = collect{|e| [e, yield(e)]}
-    a.sort{|a,b|a[1]<=>b[1]}
+    ary = collect{|e| [e, yield(e)]}
+    ary.sort{|a,b|a[1]<=>b[1]}
   end
 end
 
@@ -51,7 +51,7 @@ class TestIterator < Test::Unit::TestCase
 
   def test_nested_iterator
     i = 0
-    tt{|i| break if i == 5}
+    tt{|j| break if j == 5}
     assert_equal(0, i)
 
     assert_raise(ArgumentError) do

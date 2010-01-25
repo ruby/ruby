@@ -80,8 +80,8 @@ EOW
                      '-e', 'raise %[SomethingElse]']) {|f|
       f.read
     }
-    assert_match /SomethingBad/, out, "[ruby-core:9675]"
-    assert_match /SomethingElse/, out, "[ruby-core:9675]"
+    assert_match(/SomethingBad/, out, "[ruby-core:9675]")
+    assert_match(/SomethingElse/, out, "[ruby-core:9675]")
   end
 
   def test_should_propagate_exit_code
@@ -99,7 +99,7 @@ EOW
        '-e', 'at_exit{Process.kill(:INT, $$); loop{}}']) {|f|
       f.read
     }
-    assert_match /Interrupt$/, out
+    assert_match(/Interrupt$/, out)
     Process.kill(0, 0) rescue return # check if signal works
     assert_nil $?.exitstatus
     assert_equal Signal.list["INT"], $?.termsig

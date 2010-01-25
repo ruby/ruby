@@ -51,7 +51,7 @@ class TestHash < Test::Unit::TestCase
     assert_equal([], x[22])
     assert_not_same(x[22], x[22])
 
-    x = Hash.new{|h,k| z = k; h[k] = k*2}
+    x = Hash.new{|h,kk| z = kk; h[kk] = kk*2}
     z = 0
     assert_equal(44, x[22])
     assert_equal(22, z)
@@ -703,14 +703,14 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_default_proc
-    h = Hash.new {|h, k| h + k + "baz" }
+    h = Hash.new {|hh, k| hh + k + "baz" }
     assert_equal("foobarbaz", h.default_proc.call("foo", "bar"))
     h = {}
     assert_nil(h.default_proc)
   end
 
   def test_shift2
-    h = Hash.new {|h, k| :foo }
+    h = Hash.new {|hh, k| :foo }
     h[1] = 2
     assert_equal([1, 2], h.shift)
     assert_equal(:foo, h.shift)

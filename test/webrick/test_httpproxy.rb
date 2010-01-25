@@ -254,8 +254,8 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
             :SSLPrivateKey => key,
           }
           TestWEBrick.start_httpserver(s_config){|s_server, s_addr, s_port, s_log|
-            s_server.mount_proc("/"){|req, res|
-              res.body = "SSL #{req.request_method} #{req.path} #{req.body}"
+            s_server.mount_proc("/"){|req2, res|
+              res.body = "SSL #{req2.request_method} #{req2.path} #{req2.body}"
             }
             http = Net::HTTP.new("127.0.0.1", s_port, addr, port, up_log.call + log.call + s_log.call)
             http.use_ssl = true
@@ -263,14 +263,14 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
               store_ctx.current_cert.to_der == cert.to_der
             end
 
-            req = Net::HTTP::Get.new("/")
-            http.request(req){|res|
+            req2 = Net::HTTP::Get.new("/")
+            http.request(req2){|res|
               assert_equal("SSL GET / ", res.body, up_log.call + log.call + s_log.call)
             }
 
-            req = Net::HTTP::Post.new("/")
-            req.body = "post-data"
-            http.request(req){|res|
+            req2 = Net::HTTP::Post.new("/")
+            req2.body = "post-data"
+            http.request(req2){|res|
               assert_equal("SSL POST / post-data", res.body, up_log.call + log.call + s_log.call)
             }
           }
