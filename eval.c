@@ -690,14 +690,19 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int * state)
     int status;
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = th->cfp;
+    struct rb_vm_protect_tag protect_tag;
     rb_jmpbuf_t org_jmpbuf;
 
+    protect_tag.prev = th->protect_tag;
+
     PUSH_TAG();
+    th->protect_tag = &protect_tag;
     MEMCPY(&org_jmpbuf, &(th)->root_jmpbuf, rb_jmpbuf_t, 1);
     if ((status = EXEC_TAG()) == 0) {
 	SAVE_ROOT_JMPBUF(th, result = (*proc) (data));
     }
     MEMCPY(&(th)->root_jmpbuf, &org_jmpbuf, rb_jmpbuf_t, 1);
+    th->protect_tag = protect_tag.prev;
     POP_TAG();
 
     if (state) {

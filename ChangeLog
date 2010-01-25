@@ -1,3 +1,10 @@
+Tue Jan 26 03:16:45 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* cont.c, vm_core.h, eval.c: because rb_protect must not be jumped by
+	  callcc, revert r26407.  And rename trap_tag to protect_tag and
+	  change exception message (across trap -> across stack rewinding
+	  barrier).
+
 Mon Jan 25 23:08:10 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* thread.c (do_select): wrong conditions.  [ruby-core:27753]

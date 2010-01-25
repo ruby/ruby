@@ -388,6 +388,7 @@ cont_restore_1(rb_context_t *cont)
     th->state = sth->state;
     th->status = sth->status;
     th->tag = sth->tag;
+    th->protect_tag = sth->protect_tag;
     th->errinfo = sth->errinfo;
     th->first_proc = sth->first_proc;
 
@@ -619,6 +620,9 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
 
     if (cont->saved_thread.self != th->self) {
 	rb_raise(rb_eRuntimeError, "continuation called across threads");
+    }
+    if (cont->saved_thread.protect_tag != th->protect_tag) {
+	rb_raise(rb_eRuntimeError, "continuation called across stack rewinding barrier");
     }
     if (cont->saved_thread.fiber) {
 	rb_fiber_t *fcont;
@@ -935,6 +939,9 @@ fiber_switch(VALUE fibval, int argc, VALUE *argv, int is_resume)
 
     if (cont->saved_thread.self != th->self) {
 	rb_raise(rb_eFiberError, "fiber called across threads");
+    }
+    else if (cont->saved_thread.protect_tag != th->protect_tag) {
+	rb_raise(rb_eFiberError, "fiber called across stack rewinding barrier");
     }
     else if (fib->status == TERMINATED) {
 	value = rb_exc_new2(rb_eFiberError, "dead fiber called");
