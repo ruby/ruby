@@ -30,7 +30,7 @@
 # include <sys/socket.h>
 #endif
 
-#if defined(__BOW__) || defined(__CYGWIN__) || defined(_WIN32) || defined(__EMX__) || defined(__BEOS__)
+#if defined(__BOW__) || defined(__CYGWIN__) || defined(_WIN32) || defined(__EMX__) || defined(__BEOS__) || defined(__HAIKU__)
 # define NO_SAFE_RENAME
 #endif
 
@@ -83,7 +83,7 @@
 
 extern void Init_File(void);
 
-#ifdef __BEOS__
+#if defined(__BEOS__) || defined(__HAIKU__)
 # ifndef NOFILE
 #  define NOFILE (OPEN_MAX)
 # endif
@@ -162,7 +162,7 @@ static int max_file_descriptor = NOFILE;
 #  define STDIO_READ_DATA_PENDING(fp) ((fp)->FILE_COUNT > 0)
 #elif defined(FILE_READEND)
 #  define STDIO_READ_DATA_PENDING(fp) ((fp)->FILE_READPTR < (fp)->FILE_READEND)
-#elif defined(__BEOS__)
+#elif defined(__BEOS__) || defined(__HAIKU__)
 #  define STDIO_READ_DATA_PENDING(fp) (fp->_state._eof == 0)
 #else
 #  define STDIO_READ_DATA_PENDING(fp) (!feof(fp))
@@ -1525,7 +1525,7 @@ remain_size(rb_io_t *fptr)
     off_t pos;
 
     if (fstat(fptr->fd, &st) == 0  && S_ISREG(st.st_mode)
-#ifdef __BEOS__
+#if defined(__BEOS__) || defined(__HAIKU__)
 	&& (st.st_dev > 3)
 #endif
 	)

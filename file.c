@@ -70,7 +70,7 @@ int flock(int, int);
 #define lstat stat
 #endif
 
-#ifdef __BEOS__ /* should not change ID if -1 */
+#if defined(__BEOS__) || defined(__HAIKU__) /* should not change ID if -1 */
 static int
 be_chown(const char *path, uid_t owner, gid_t group)
 {
@@ -95,7 +95,7 @@ be_fchown(int fd, uid_t owner, gid_t group)
     return fchown(fd, owner, group);
 }
 #define fchown be_fchown
-#endif /* __BEOS__ */
+#endif /* __BEOS__ || __HAIKU__ */
 
 VALUE rb_cFile;
 VALUE rb_mFileTest;

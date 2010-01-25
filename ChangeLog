@@ -1,3 +1,8 @@
+Mon Jan 25 12:02:34 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* dln.c, file.c, io.c, signal.c: add __HAIKU__.
+	  patched by Alexander von Gluck [ruby-core:27767]
+
 Mon Jan 25 11:45:47 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* math.c (domain_check): ignore errno if y is inf.
