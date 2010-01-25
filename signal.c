@@ -419,8 +419,12 @@ static struct {
 #define sighandler_t sh_t
 #endif
 
+#if defined(SIGSEGV) && defined(HAVE_SIGALTSTACK) && defined(SA_SIGINFO)
+#define USE_SIGALTSTACK
+#endif
+
 typedef RETSIGTYPE (*sighandler_t)(int);
-#if defined SA_SIGINFO && !defined __SYMBIAN32__
+#ifdef USE_SIGALTSTACK
 typedef void ruby_sigaction_t(int, siginfo_t*, void*);
 #define SIGINFO_ARG , siginfo_t *info, void *ctx
 #else
@@ -429,9 +433,6 @@ typedef RETSIGTYPE ruby_sigaction_t(int);
 #endif
 
 #ifdef POSIX_SIGNAL
-#if defined(SIGSEGV) && defined(HAVE_SIGALTSTACK)
-#define USE_SIGALTSTACK
-#endif
 
 #ifdef USE_SIGALTSTACK
 #ifdef SIGSTKSZ
