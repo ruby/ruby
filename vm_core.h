@@ -347,6 +347,10 @@ struct rb_vm_tag {
     struct rb_vm_tag *prev;
 };
 
+struct rb_vm_protect_tag {
+    struct rb_vm_protect_tag *prev;
+};
+
 #define RUBY_VM_VALUE_CACHE_SIZE 0x1000
 #define USE_VALUE_CACHE 0
 
@@ -410,6 +414,7 @@ typedef struct rb_thread_struct
     int transition_for_lock;
 
     struct rb_vm_tag *tag;
+    struct rb_vm_protect_tag *protect_tag;
 
     int parse_in_eval;
     int mild_compile_error;
