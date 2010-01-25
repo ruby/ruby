@@ -603,16 +603,16 @@ class Matrix
       end
       akk = a[k][k]
 
-      size.times do |i|
-        next if i == k
-        q = a[i][k].quo(akk)
-        a[i][k] = 0
+      size.times do |ii|
+        next if ii == k
+        q = a[ii][k].quo(akk)
+        a[ii][k] = 0
 
         (k + 1 ... size).each do |j|
-          a[i][j] -= a[k][j] * q
+          a[ii][j] -= a[k][j] * q
         end
         size.times do |j|
-          @rows[i][j] -= @rows[k][j] * q
+          @rows[ii][j] -= @rows[k][j] * q
         end
       end
 
@@ -678,19 +678,19 @@ class Matrix
     det = 1
     size.times do |k|
       if (akk = a[k][k]) == 0
-        i = (k+1 ... size).find {|i|
-          a[i][k] != 0
+        i = (k+1 ... size).find {|ii|
+          a[ii][k] != 0
         }
-        return 0 if i.nil?
-        a[i], a[k] = a[k], a[i]
+        return 0 if ii.nil?
+        a[ii], a[k] = a[k], a[ii]
         akk = a[k][k]
         det *= -1
       end
 
-      (k + 1 ... size).each do |i|
-        q = a[i][k].quo(akk)
+      (k + 1 ... size).each do |ii|
+        q = a[ii][k].quo(akk)
         (k + 1 ... size).each do |j|
-          a[i][j] -= a[k][j] * q
+          a[ii][j] -= a[k][j] * q
         end
       end
       det *= akk
@@ -718,21 +718,21 @@ class Matrix
     det = 1
     size.times do |k|
       if a[k][k].zero?
-        i = (k+1 ... size).find {|i|
-          a[i][k] != 0
+        i = (k+1 ... size).find {|ii|
+          a[ii][k] != 0
         }
         return 0 if i.nil?
         a[i], a[k] = a[k], a[i]
         det *= -1
       end
 
-      (k + 1 ... size).each do |i|
-        q = a[i][k].quo(a[k][k])
+      (k + 1 ... size).each do |ii|
+        q = a[ii][k].quo(a[k][k])
         (k ... size).each do |j|
-          a[i][j] -= a[k][j] * q
+          a[ii][j] -= a[k][j] * q
         end
-        unless a[i][k].zero?
-          a[i], a[k] = a[k], a[i]
+        unless a[ii][k].zero?
+          a[ii], a[k] = a[k], a[ii]
           det *= -1
           redo
         end
@@ -764,15 +764,15 @@ class Matrix
     rank = 0
     a_column_size.times do |k|
       if (akk = a[k][k]) == 0
-        i = (k+1 ... a_row_size).find {|i|
-          a[i][k] != 0
+        i = (k+1 ... a_row_size).find {|ii|
+          a[ii][k] != 0
         }
         if i
           a[i], a[k] = a[k], a[i]
           akk = a[k][k]
         else
-          i = (k+1 ... a_column_size).find {|i|
-            a[k][i] != 0
+          i = (k+1 ... a_column_size).find {|ii|
+            a[k][ii] != 0
           }
           next if i.nil?
           (k ... a_column_size).each do |j|
@@ -782,10 +782,10 @@ class Matrix
         end
       end
 
-      (k + 1 ... a_row_size).each do |i|
-        q = a[i][k].quo(akk)
+      (k + 1 ... a_row_size).each do |ii|
+        q = a[ii][k].quo(akk)
         (k + 1... a_column_size).each do |j|
-          a[i][j] -= a[k][j] * q
+          a[ii][j] -= a[k][j] * q
         end
       end
       rank += 1

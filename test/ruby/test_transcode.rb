@@ -909,7 +909,7 @@ class TestTranscode < Test::Unit::TestCase
     assert_raise(Encoding::UndefinedConversionError) { "\xFF".encode("utf-8", 'TIS-620') }
   end
 
-    def test_CP850
+  def test_CP850
     check_both_ways("\u00C7", "\x80", 'CP850') # Ç
     check_both_ways("\u00C5", "\x8F", 'CP850') # Å
     check_both_ways("\u00C9", "\x90", 'CP850') # É

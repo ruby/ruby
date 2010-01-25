@@ -38,10 +38,14 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_warning
+    save_rubyopt = ENV['RUBYOPT']
+    ENV['RUBYOPT'] = nil
     assert_in_out_err(%w(-W0 -e) + ['p $-W'], "", %w(0), [])
     assert_in_out_err(%w(-W1 -e) + ['p $-W'], "", %w(1), [])
     assert_in_out_err(%w(-Wx -e) + ['p $-W'], "", %w(1), [])
     assert_in_out_err(%w(-W -e) + ['p $-W'], "", %w(2), [])
+  ensure
+    ENV['RUBYOPT'] = save_rubyopt
   end
 
   def test_safe_level
@@ -271,7 +275,7 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def test_sflag
     assert_in_out_err(%w(- -abc -def=foo -ghi-jkl -- -xyz),
-                      "#!ruby -s\np [$abc, $def, $ghi_jkl, $xyz]\n",
+                      "#!ruby -s\np [$abc, $def, $ghi_jkl, defined?($xyz)]\n",
                       ['[true, "foo", true, nil]'], [])
 
     assert_in_out_err(%w(- -#), "#!ruby -s\n", [],

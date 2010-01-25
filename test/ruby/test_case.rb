@@ -57,11 +57,11 @@ class TestCase < Test::Unit::TestCase
 
   def test_deoptimization
     assert_in_out_err(['-e', <<-EOS], '', %w[42], [])
-      class Symbol; def ===(o); p 42; true; end; end; case :foo; when :foo; end
+      class Symbol; undef ===; def ===(o); p 42; true; end; end; case :foo; when :foo; end
     EOS
 
     assert_in_out_err(['-e', <<-EOS], '', %w[42], [])
-      class Fixnum; def ===(o); p 42; true; end; end; case 1; when 1; end
+      class Fixnum; undef ===; def ===(o); p 42; true; end; end; case 1; when 1; end
     EOS
   end
 end
