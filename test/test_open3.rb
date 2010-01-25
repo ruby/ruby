@@ -190,8 +190,8 @@ class TestOpen3 < Test::Unit::TestCase
       ts.each {|t| assert_kind_of(Thread, t) }
       i.print str
       i.close
-      ts.each_with_index {|t, i|
-        assert_equal(str[i] == ?t, t.value.success?)
+      ts.each_with_index {|t, ii|
+        assert_equal(str[ii] == ?t, t.value.success?)
       }
     }
   end

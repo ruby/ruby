@@ -229,7 +229,7 @@ class TestSprintfComb < Test::Unit::TestCase
 
     digits.reverse!
 
-    str = digits.map {|d| digitmap[d] }.join
+    str = digits.map {|digit| digitmap[digit] }.join
 
     pad = ''
     nlen = prefix.length + sign.length + str.length

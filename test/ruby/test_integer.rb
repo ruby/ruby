@@ -150,10 +150,10 @@ class TestInteger < Test::Unit::TestCase
     1.upto(0) {|x| a << x }
     assert_equal([], a)
 
-    x = 2**30 - 1
+    y = 2**30 - 1
     a = []
-    x.upto(x+2) {|x| a << x }
-    assert_equal([x, x+1, x+2], a)
+    y.upto(y+2) {|x| a << x }
+    assert_equal([y, y+1, y+2], a)
   end
 
   def test_downto
@@ -165,10 +165,10 @@ class TestInteger < Test::Unit::TestCase
     1.downto(2) {|x| a << x }
     assert_equal([], a)
 
-    x = -(2**30)
+    y = -(2**30)
     a = []
-    x.downto(x-2) {|x| a << x }
-    assert_equal([x, x-1, x-2], a)
+    y.downto(y-2) {|x| a << x }
+    assert_equal([y, y-1, y-2], a)
   end
 
   def test_times

@@ -107,7 +107,7 @@ class TestPrime < Test::Unit::TestCase
     def test_from_prime_division
       assert_equal PRIMES.inject(&:*), Integer.from_prime_division(PRIMES.map{|p| [p,1]})
 
-      assert_equal -PRIMES.inject(&:*), Integer.from_prime_division([[-1, 1]] + PRIMES.map{|p| [p,1]})
+      assert_equal(-PRIMES.inject(&:*), Integer.from_prime_division([[-1, 1]] + PRIMES.map{|p| [p,1]}))
     end
 
     def test_prime?
@@ -124,11 +124,11 @@ class TestPrime < Test::Unit::TestCase
       assert !9.prime?
 
       # mersenne numbers
-      assert (2**31-1).prime?
+      assert((2**31-1).prime?)
       assert !(2**32-1).prime?
 
       # fermat numbers
-      assert (2**(2**4)+1).prime?
+      assert((2**(2**4)+1).prime?)
       assert !(2**(2**5)+1).prime? # Euler!
 
       # large composite
@@ -139,8 +139,8 @@ class TestPrime < Test::Unit::TestCase
 
       # negative
       assert !-1.prime?
-      assert -2.prime?
-      assert -3.prime?
+      assert(-2.prime?)
+      assert(-3.prime?)
       assert !-4.prime?
     end
   end

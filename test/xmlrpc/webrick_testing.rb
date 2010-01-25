@@ -7,7 +7,7 @@ module WEBrick_Testing
   end
 
   def start_server(config={})
-    raise "already started" if @__server
+    raise "already started" if defined?(@__server) && @__server
     @__started = false
 
     @__server_thread = Thread.new {

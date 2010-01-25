@@ -366,11 +366,11 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     thru_mlhs_add_star = false
     tree = parse("a, *b = 1, 2", :on_mlhs_add_star) {thru_mlhs_add_star = true}
     assert_equal true, thru_mlhs_add_star
-    assert_match /mlhs_add_star\(mlhs_add\(mlhs_new\(\),a\),b\)/, tree
+    assert_match(/mlhs_add_star\(mlhs_add\(mlhs_new\(\),a\),b\)/, tree)
     thru_mlhs_add_star = false
     tree = parse("a, *b, c = 1, 2", :on_mlhs_add_star) {thru_mlhs_add_star = true}
     assert_equal true, thru_mlhs_add_star
-    assert_match /mlhs_add\(mlhs_add_star\(mlhs_add\(mlhs_new\(\),a\),b\),mlhs_add\(mlhs_new\(\),c\)\)/, tree, bug2232
+    assert_match(/mlhs_add\(mlhs_add_star\(mlhs_add\(mlhs_new\(\),a\),b\),mlhs_add\(mlhs_new\(\),c\)\)/, tree, bug2232)
   end
 
   def test_mlhs_new

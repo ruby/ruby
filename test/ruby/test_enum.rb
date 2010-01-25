@@ -143,27 +143,27 @@ class TestEnumerable < Test::Unit::TestCase
   def test_min
     assert_equal(1, @obj.min)
     assert_equal(3, @obj.min {|a,b| b <=> a })
-    a = %w(albatross dog horse)
-    assert_equal("albatross", a.min)
-    assert_equal("dog", a.min {|a,b| a.length <=> b.length })
+    ary = %w(albatross dog horse)
+    assert_equal("albatross", ary.min)
+    assert_equal("dog", ary.min {|a,b| a.length <=> b.length })
     assert_equal(1, [3,2,1].min)
   end
 
   def test_max
     assert_equal(3, @obj.max)
     assert_equal(1, @obj.max {|a,b| b <=> a })
-    a = %w(albatross dog horse)
-    assert_equal("horse", a.max)
-    assert_equal("albatross", a.max {|a,b| a.length <=> b.length })
+    ary = %w(albatross dog horse)
+    assert_equal("horse", ary.max)
+    assert_equal("albatross", ary.max {|a,b| a.length <=> b.length })
     assert_equal(1, [3,2,1].max{|a,b| b <=> a })
   end
 
   def test_minmax
     assert_equal([1, 3], @obj.minmax)
     assert_equal([3, 1], @obj.minmax {|a,b| b <=> a })
-    a = %w(albatross dog horse)
-    assert_equal(["albatross", "horse"], a.minmax)
-    assert_equal(["dog", "albatross"], a.minmax {|a,b| a.length <=> b.length })
+    ary = %w(albatross dog horse)
+    assert_equal(["albatross", "horse"], ary.minmax)
+    assert_equal(["dog", "albatross"], ary.minmax {|a,b| a.length <=> b.length })
     assert_equal([1, 3], [2,3,1].minmax)
     assert_equal([3, 1], [2,3,1].minmax {|a,b| b <=> a })
     assert_equal([1, 3], [2,2,3,3,1,1].minmax)

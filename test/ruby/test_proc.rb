@@ -178,7 +178,7 @@ class TestProc < Test::Unit::TestCase
     b = proc { :foo }
     assert_equal(:foo, b.curry[])
 
-    b = lambda {|x, y, &b| b.call(x + y) }.curry
+    b = lambda {|x, y, &blk| blk.call(x + y) }.curry
     b = b.call(2) { raise }
     b = b.call(3) {|x| x + 4 }
     assert_equal(9, b)

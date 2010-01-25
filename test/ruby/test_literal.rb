@@ -77,16 +77,16 @@ class TestRubyLiteral < Test::Unit::TestCase
 
   def test_regexp
     assert_instance_of Regexp, //
-    assert_match //, 'a'
-    assert_match //, ''
+    assert_match(//, 'a')
+    assert_match(//, '')
     assert_instance_of Regexp, /a/
-    assert_match /a/, 'a'
-    assert_no_match /test/, 'tes'
+    assert_match(/a/, 'a')
+    assert_no_match(/test/, 'tes')
     re = /test/
     assert_match re, 'test'
     str = 'test'
     assert_match re, str
-    assert_match /test/, str
+    assert_match(/test/, str)
     assert_equal 0, (/test/ =~ 'test')
     assert_equal 0, (re =~ 'test')
     assert_equal 0, (/test/ =~ str)
