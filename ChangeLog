@@ -1,3 +1,8 @@
+Mon Jan 25 22:31:53 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/envutil.rb: use method_defined? instead of
+	  instance_methods.include?.
+
 Mon Jan 25 22:08:20 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* cont.c (rb_cont_call, cont_restore_1): remove trap_tag check because

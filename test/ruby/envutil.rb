@@ -208,7 +208,7 @@ else
   module RbConfig
     @ruby = EnvUtil.rubybin
     class << self
-      undef ruby if instance_methods.include?(:ruby)
+      undef ruby if method_defined?(:ruby)
       attr_reader :ruby
     end
     dir = File.dirname(ruby)
