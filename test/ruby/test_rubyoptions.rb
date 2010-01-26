@@ -343,6 +343,8 @@ class TestRubyOptions < Test::Unit::TestCase
       You\smay\shave\sencountered\sa\sbug\sin\sthe\sRuby\sinterpreter\sor\sextension\slibraries.\n
       Bug\sreports\sare\swelcome.\n
       For\sdetails:\shttp:\/\/www.ruby-lang.org/bugreport.html\n\n\z
-      )x)
+      )x,
+      nil,
+      :rlimit_core=>0)
   end
 end
