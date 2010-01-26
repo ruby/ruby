@@ -1,3 +1,10 @@
+Tue Jan 26 19:59:17 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/zlib/zlib.c (rb_gzfile_s_wrap): add rdoc.
+	  patched by Hugh Sasse [ruby-core:27692]
+
+	* ext/zlib/doc/zlib.rd: removed.
+
 Tue Jan 26 16:43:34 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/strscan/strscan.c: fix rdoc. (length -> bytesize)

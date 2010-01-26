@@ -2420,7 +2420,12 @@ gzfile_ensure_close(VALUE obj)
 }
 
 /*
- * See Zlib::GzipReader#wrap and Zlib::GzipWriter#wrap.
+ * Creates a GzipFile object associated with ((|io|)), and
+ * executes the block with the newly created GzipFile object,
+ * just like File.open. The GzipFile object will be closed
+ * automatically after executing the block. If you want to keep
+ * the associated IO object opening, you may call
+ * ((<Zlib::GzipFile#finish>)) method in the block.
  */
 static VALUE
 rb_gzfile_s_wrap(int argc, VALUE *argv, VALUE klass)
@@ -2785,7 +2790,7 @@ rb_gzwriter_s_allocate(VALUE klass)
  *
  * Opens a file specified by +filename+ for writing gzip compressed data, and
  * returns a GzipWriter object associated with that file.  Further details of
- * this method are found in Zlib::GzipWriter.new and Zlib::GzipWriter#wrap.
+ * this method are found in Zlib::GzipWriter.new and Zlib::GzipFile.wrap.
  */
 static VALUE
 rb_gzwriter_s_open(int argc, VALUE *argv, VALUE klass)
@@ -2985,7 +2990,7 @@ rb_gzreader_s_allocate(VALUE klass)
  *
  * Opens a file specified by +filename+ as a gzipped file, and returns a
  * GzipReader object associated with that file.  Further details of this method
- * are in Zlib::GzipReader.new and ZLib::GzipReader.wrap.
+ * are in Zlib::GzipReader.new and ZLib::GzipFile.wrap.
  */
 static VALUE
 rb_gzreader_s_open(int argc, VALUE *argv, VALUE klass)
