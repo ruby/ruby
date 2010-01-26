@@ -7,7 +7,7 @@ class Rational_Test < Test::Unit::TestCase
   def setup
     @complex = defined?(Complex)
     if @complex
-      @keiju = Complex.instance_variable_get('@RCS_ID')
+      @keiju = Complex.instance_variables.include?(:@RCS_ID)
     end
     seps = [File::SEPARATOR, File::ALT_SEPARATOR].compact.map{|x| Regexp.escape(x)}.join("|")
     @unify = $".grep(/(?:^|#{seps})mathn(?:\.(?:rb|so))?/).size != 0
