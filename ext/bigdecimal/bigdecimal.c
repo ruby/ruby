@@ -947,7 +947,7 @@ BigDecimal_DoDivmod(VALUE self, VALUE r, Real **div, Real **mod)
 
     GUARD_OBJ(a,GetVpValue(self,1));
     b = GetVpValue(r,0);
-    if(!b) return DoSomeOne(self,r,rb_intern("divmod"));
+    if(!b) return Qfalse;
     SAVE(b);
 
     if(VpIsNaN(a) || VpIsNaN(b)) goto NaN;
@@ -960,7 +960,7 @@ BigDecimal_DoDivmod(VALUE self, VALUE r, Real **div, Real **mod)
        GUARD_OBJ(d,VpCreateRbObject(1, "0"));
        *div = d;
        *mod = c;
-       return (VALUE)0;
+       return Qtrue;
     }
 
     mx = a->Prec;
@@ -983,14 +983,14 @@ BigDecimal_DoDivmod(VALUE self, VALUE r, Real **div, Real **mod)
         *div = d;
         *mod = c;
     }
-    return (VALUE)0;
+    return Qtrue;
 
 NaN:
     GUARD_OBJ(c,VpCreateRbObject(1, "NaN"));
     GUARD_OBJ(d,VpCreateRbObject(1, "NaN"));
     *div = d;
     *mod = c;
-    return (VALUE)0;
+    return Qtrue;
 }
 
 /* call-seq:
@@ -1006,10 +1006,11 @@ BigDecimal_mod(VALUE self, VALUE r) /* %: a%b = a - (a.to_f/b).floor * b */
     VALUE obj;
     Real *div=NULL, *mod=NULL;
 
-    obj = BigDecimal_DoDivmod(self,r,&div,&mod);
-    if(obj!=(VALUE)0) return obj;
-    SAVE(div);SAVE(mod);
-    return ToValue(mod);
+    if(BigDecimal_DoDivmod(self,r,&div,&mod)) {
+	SAVE(div); SAVE(mod);
+	return ToValue(mod);
+    }
+    return DoSomeOne(self,r,'%');
 }
 
 static VALUE
@@ -1089,11 +1090,11 @@ BigDecimal_divmod(VALUE self, VALUE r)
     VALUE obj;
     Real *div=NULL, *mod=NULL;
 
-    obj = BigDecimal_DoDivmod(self,r,&div,&mod);
-    if(obj!=(VALUE)0) return obj;
-    SAVE(div);SAVE(mod);
-    obj = rb_assoc_new(BigDecimal_to_i(ToValue(div)), ToValue(mod));
-    return obj;
+    if(BigDecimal_DoDivmod(self,r,&div,&mod)) {
+	SAVE(div); SAVE(mod);
+	return rb_assoc_new(ToValue(div), ToValue(mod));
+    }
+    return DoSomeOne(self,r,rb_intern("divmod"));
 }
 
 static VALUE
@@ -1106,9 +1107,10 @@ BigDecimal_div2(int argc, VALUE *argv, VALUE self)
        VALUE obj;
        Real *div=NULL;
        Real *mod;
-       obj = BigDecimal_DoDivmod(self,b,&div,&mod);
-       if(obj!=(VALUE)0) return obj;
-       return BigDecimal_to_i(ToValue(div));
+       if(BigDecimal_DoDivmod(self,b,&div,&mod)) {
+	  return BigDecimal_to_i(ToValue(div));
+       }
+       return DoSomeOne(self,b,rb_intern("div"));
     } else {    /* div in BigDecimal sense */
        U_LONG ix = (U_LONG)GetPositiveInt(n);
        if(ix==0) return BigDecimal_div(self,b);
