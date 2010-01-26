@@ -1,8 +1,12 @@
+Tue Jan 26 3:03:00 2010 Kirk Haines <khaines@ruby-lang.org>
+
+	* eval.c: Backport #2039 [ruby-core:25339]; backported r24413, r24416, r24442 to fix a problem with IO#select and threads. This is the same issues as Bug #1993 [ruby-core:25114].
+
 Thu Jan 21 5:10:00 2010 Kirk Haines <khaines@ruby-lang.org>
 
-	* eval.c: Backport #2592 [ruby-core:27525]; Added an ifndef for WIN32 so that F_GETFD isn't used on that platform. Fixes a build issue.
+	* eval.c: Backport #2592 [ruby-core:27525]; Added an ifndef for WIN32 so that F_GETFD isn't used on that platform. Fixes a build issue. r26361
 
-	* dln.c: Bug #2220 [ruby-core:26117]; Patch to fix dln.c so that extensions work properly under Snow Leopard.
+	* dln.c: Bug #2220 [ruby-core:26117]; Patch to fix dln.c so that extensions work properly under Snow Leopard. 26361
 
 Sun Jan 10 8:00:00 2010  Kirk Haines  <khaines@ruby-lang.org>
 
