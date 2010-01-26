@@ -189,8 +189,12 @@ class TestRange < Test::Unit::TestCase
 
     o1 = Object.new
     o2 = Object.new
-    def o1.<=>(x); -1; end
-    def o2.<=>(x); 0; end
+    def o1.setcmp(v) @cmpresult = v end
+    o1.setcmp(-1)
+    def o1.<=>(x); @cmpresult; end
+    def o2.setcmp(v) @cmpresult = v end
+    o2.setcmp(0)
+    def o2.<=>(x); @cmpresult; end
     class << o1; self; end.class_eval do
       define_method(:succ) { o2 }
     end
@@ -206,19 +210,19 @@ class TestRange < Test::Unit::TestCase
     r2.each {|x| a << x }
     assert_equal([o1], a)
 
-    def o2.<=>(x); 1; end
+    o2.setcmp(1)
 
     a = []
     r1.each {|x| a << x }
     assert_equal([o1], a)
 
-    def o2.<=>(x); nil; end
+    o2.setcmp(nil)
 
     a = []
     r1.each {|x| a << x }
     assert_equal([o1], a)
 
-    def o1.<=>(x); nil; end
+    o1.setcmp(nil)
 
     a = []
     r2.each {|x| a << x }
@@ -270,20 +274,24 @@ class TestRange < Test::Unit::TestCase
   def test_beg_len
     o = Object.new
     assert_raise(TypeError) { [][o] }
-    def o.begin; -10; end
+    class << o; attr_accessor :begin end
+    o.begin = -10
     assert_raise(TypeError) { [][o] }
-    def o.end; 0; end
+    class << o; attr_accessor :end end
+    o.end = 0
     assert_raise(NoMethodError) { [][o] }
-    def o.exclude_end?; false; end
+    def o.exclude_end=(v) @exclude_end = v end
+    def o.exclude_end?() @exclude_end end
+    o.exclude_end = false
     assert_nil([0][o])
     assert_raise(RangeError) { [0][o] = 1 }
-    def o.begin; 10; end
-    def o.end; 10; end
+    o.begin = 10
+    o.end = 10
     assert_nil([0][o])
-    def o.begin; 0; end
+    o.begin = 0
     assert_equal([0], [0][o])
-    def o.begin; 2; end
-    def o.end; 0; end
+    o.begin = 2
+    o.end = 0
     assert_equal([], [0, 1, 2][o])
   end
 

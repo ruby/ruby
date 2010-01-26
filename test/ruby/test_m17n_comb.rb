@@ -1057,7 +1057,7 @@ class TestM17NComb < Test::Unit::TestCase
   def test_str_oct
     STRINGS.each {|s|
       t = s.oct
-      t2 = a(s)[/\A[0-9a-fA-FxXbB]*/].oct
+      t2 = a(s)[/\A[0-9a-fA-FxX]*/].oct
       assert_equal(t2, t)
     }
   end

@@ -67,7 +67,7 @@ class TestDir_M17N < Test::Unit::TestCase
         s2 = File.stat(filename2) rescue nil
         s3 = File.stat(filename3) rescue nil
         s4 = File.stat(filename4) rescue nil
-        exit (s1 && s2 && !s3 && !s4) ? true : false
+        exit((s1 && s2 && !s3 && !s4) ? true : false)
       EOS
     }
   end
@@ -122,7 +122,7 @@ class TestDir_M17N < Test::Unit::TestCase
         s1 = File.stat(filename1) rescue nil
         s2 = File.stat(filename2) rescue nil
         s3 = File.stat(filename3) rescue nil
-        exit (s1 && s2 && s3) ? true : false
+        exit((s1 && s2 && s3) ? true : false)
       EOS
     }
   end
