@@ -353,9 +353,9 @@ strscan_concat(VALUE self, VALUE str)
 }
 
 /*
- * Returns the position of the scan pointer.  In the 'reset' position, this
+ * Returns the byte position of the scan pointer.  In the 'reset' position, this
  * value is zero.  In the 'terminated' position (i.e. the string is exhausted),
- * this value is the length of the string.
+ * this value is the bytesize of the string.
  *
  * In short, it's a 0-based index into the string.
  *
@@ -378,7 +378,7 @@ strscan_get_pos(VALUE self)
 /*
  * call-seq: pos=(n)
  *
- * Modify the scan pointer.
+ * Set the byte position of the scan pointer.
  *
  *   s = StringScanner.new('test string')
  *   s.pos = 7            # -> 7
