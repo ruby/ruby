@@ -267,7 +267,7 @@ def parse_args()
       if arg = v.first
         arg.insert(0, '-') if /\A[^-][^=]*\Z/ =~ arg
       end
-      $makeflags.concat(v.reject {|arg| /\AMINIRUBY=/ =~ arg}.quote)
+      $makeflags.concat(v.reject {|arg2| /\AMINIRUBY=/ =~ arg2}.quote)
       $mflags.concat(v)
     end
     opts.on('--message [MESSAGE]', String) do |v|
@@ -570,19 +570,19 @@ $mflags.unshift("topdir=#$topdir")
 ENV.delete("RUBYOPT")
 if $command_output
   message = "echo #{message}"
-  cmd = $makeflags.map {|s|s.sub(/.*[$(){};\s].*/, %q['\&'])}.join(' ')
-  open($command_output, 'wb') do |f|
+  cmd = $makeflags.map {|ss|ss.sub(/.*[$(){};\s].*/, %q['\&'])}.join(' ')
+  open($command_output, 'wb') do |ff|
     case $command_output
     when /\.sh\z/
-      f.puts message, "rm -f $0; exec \"$@\" #{cmd}"
+      ff.puts message, "rm -f $0; exec \"$@\" #{cmd}"
     when /\.bat\z/
-      ["@echo off", message, "%* #{cmd}", "del %0 & exit %ERRORLEVEL%"].each do |s|
-        f.print s, "\r\n"
+      ["@echo off", message, "%* #{cmd}", "del %0 & exit %ERRORLEVEL%"].each do |ss|
+        ff.print ss, "\r\n"
       end
     else
-      f.puts cmd
+      ff.puts cmd
     end
-    f.chmod(0755)
+    ff.chmod(0755)
   end
 else
   puts message

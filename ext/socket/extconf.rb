@@ -107,7 +107,7 @@ if have_struct_member("struct sockaddr", "sa_len", headers)
   $defs[-1] = "-DHAVE_SA_LEN "
 end
 
-have_header("netinet/tcp.h") if not /cygwin/ =~ RUBY_PLATFORM # for cygwin 1.1.5
+have_header("netinet/tcp.h") if /cygwin/ !~ RUBY_PLATFORM # for cygwin 1.1.5
 have_header("netinet/udp.h")
 
 if have_func("sendmsg") | have_func("recvmsg")

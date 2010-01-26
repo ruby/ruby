@@ -1218,8 +1218,8 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(Encoding::US_ASCII, eval("\n# -*- encoding: ASCII-8BIT -*-\n__ENCODING__".force_encoding("US-ASCII")))
 
     # leading expressions
-    assert_equal(Encoding::ASCII_8BIT, eval("1+1 # -*- encoding: US-ASCII -*-\n__ENCODING__".force_encoding("ASCII-8BIT")))
-    assert_equal(Encoding::US_ASCII, eval("1+1 # -*- encoding: ASCII-8BIT -*-\n__ENCODING__".force_encoding("US-ASCII")))
+    assert_equal(Encoding::ASCII_8BIT, eval("v=1 # -*- encoding: US-ASCII -*-\n__ENCODING__".force_encoding("ASCII-8BIT")))
+    assert_equal(Encoding::US_ASCII, eval("v=1 # -*- encoding: ASCII-8BIT -*-\n__ENCODING__".force_encoding("US-ASCII")))
   end
 
   def test_regexp_usascii
