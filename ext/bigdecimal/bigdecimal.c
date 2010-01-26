@@ -4009,13 +4009,14 @@ VpCtoV(Real *a, const char *int_chr, U_LONG ni, const char *frac, U_LONG nf, con
     U_LONG i, j, ind_a, ma, mi, me;
     U_LONG loc;
     S_INT  e,es, eb, ef;
-    S_INT  sign, signe;
+    S_INT  sign, signe, exponent_overflow;
     /* get exponent part */
     e = 0;
     ma = a->MaxPrec;
     mi = ni;
     me = ne;
     signe = 1;
+    exponent_overflow = 0;
     memset(a->frac, 0, ma * sizeof(U_LONG));
     if(ne > 0) {
         i = 0;
@@ -4031,12 +4032,8 @@ VpCtoV(Real *a, const char *int_chr, U_LONG ni, const char *frac, U_LONG nf, con
             es = e*((S_INT)BASE_FIG);
             e = e * 10 + exp_chr[i] - '0';
             if(es>e*((S_INT)BASE_FIG)) {
-                VpException(VP_EXCEPTION_INFINITY,"exponent overflow",0);
-                sign = 1;
-                if(int_chr[0] == '-') sign = -1;
-                if(signe > 0) VpSetInf(a, sign);
-                else VpSetZero(a, sign);
-                return 1;
+		exponent_overflow = 1;
+		break;
             }
             ++i;
         }
@@ -4077,6 +4074,16 @@ VpCtoV(Real *a, const char *int_chr, U_LONG ni, const char *frac, U_LONG nf, con
     }
 
     eb = e / ((S_INT)BASE_FIG);
+
+    if(exponent_overflow) {
+	int zero = 1;
+	for(     ; i < mi && zero; i++) zero = int_chr[i] == '0';
+	for(i = 0; i < nf && zero; i++) zero = frac[i] == '0';
+	if(!zero && signe > 0) VpSetInf(a, sign);
+	else VpSetZero(a, sign);
+        VpException(VP_EXCEPTION_INFINITY,"exponent overflow",0);
+	return 1;
+    }
 
     ind_a = 0;
     while(i < mi) {
