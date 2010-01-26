@@ -1,5 +1,3 @@
-require 'drb/drb'
-
 module DRb
   class DRbObject
     def ==(other)
