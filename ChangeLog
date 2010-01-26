@@ -1,3 +1,8 @@
+Wed Jan 27 00:19:30 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/bigdecimal/bigdecimal.c (VpCtoV): do not raise infinity
+	  exception for BigDecimal("0E200000000000").
+
 Tue Jan 26 21:50:31 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/bigdecimal/bigdecimal.c (VpCtoV): BigDecimal("0E200000000000")

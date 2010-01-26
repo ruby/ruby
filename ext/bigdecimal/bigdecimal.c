@@ -4079,9 +4079,11 @@ VpCtoV(Real *a, const char *int_chr, U_LONG ni, const char *frac, U_LONG nf, con
 	int zero = 1;
 	for(     ; i < mi && zero; i++) zero = int_chr[i] == '0';
 	for(i = 0; i < nf && zero; i++) zero = frac[i] == '0';
-	if(!zero && signe > 0) VpSetInf(a, sign);
+	if(!zero && signe > 0) {
+	    VpSetInf(a, sign);
+	    VpException(VP_EXCEPTION_INFINITY,"exponent overflow",0);
+	}
 	else VpSetZero(a, sign);
-        VpException(VP_EXCEPTION_INFINITY,"exponent overflow",0);
 	return 1;
     }
 
