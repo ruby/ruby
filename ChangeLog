@@ -1,3 +1,9 @@
+Wed Jan 27 00:22:20 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_DoDivmod, BigDecimal_mod,
+	  BigDecimal_divmod, BigDecimal_div2): BigDecimal#% and #div returned
+	  an array itself that was returned by #divmod.
+
 Wed Jan 27 00:19:30 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/bigdecimal/bigdecimal.c (VpCtoV): do not raise infinity
