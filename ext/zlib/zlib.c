@@ -2420,12 +2420,14 @@ gzfile_ensure_close(VALUE obj)
 }
 
 /*
- * Creates a GzipFile object associated with ((|io|)), and
+ * call-seq: Zlib::GzipFile.wrap(io) { |gz| ... }
+ *
+ * Creates a GzipFile object associated with +io+, and
  * executes the block with the newly created GzipFile object,
  * just like File.open. The GzipFile object will be closed
  * automatically after executing the block. If you want to keep
  * the associated IO object opening, you may call
- * ((<Zlib::GzipFile#finish>)) method in the block.
+ * +Zlib::GzipFile#finish+ method in the block.
  */
 static VALUE
 rb_gzfile_s_wrap(int argc, VALUE *argv, VALUE klass)
