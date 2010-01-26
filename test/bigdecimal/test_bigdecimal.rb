@@ -177,6 +177,7 @@ class TestBigDecimal < Test::Unit::TestCase
   def test_zero_p
     assert_equal(true, BigDecimal.new("0").zero?)
     assert_equal(false, BigDecimal.new("1").zero?)
+    assert_equal(true, BigDecimal.new("0E200000000000000").zero?)
   end
 
   def test_nonzero_p
