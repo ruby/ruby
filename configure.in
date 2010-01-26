@@ -1121,6 +1121,16 @@ AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall chroot getcwd eacce
               mktime timegm gmtime_r clock_gettime gettimeofday\
               pread sendfile shutdown sigaltstack)
 
+AC_CACHE_CHECK(for unsetenv returns a value, rb_cv_unsetenv_return_value,
+  [AC_TRY_COMPILE([
+#include <stdlib.h>
+], [int v = unsetenv("foo");],
+	rb_cv_unsetenv_return_value=yes,
+	rb_cv_unsetenv_return_value=no)])
+if test "$rb_cv_unsetenv_return_value" = no; then
+  AC_DEFINE(VOID_UNSETENV)
+fi
+
 AC_CACHE_CHECK(for __builtin_setjmp, ac_cv_func___builtin_setjmp,
 [AC_TRY_LINK([@%:@include <setjmp.h>
     jmp_buf jb; void t(v) int v; {__builtin_longjmp(jb, v);}],
