@@ -609,21 +609,6 @@ rb_vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self,
     }
 
     if (state) {
-	if (state == TAG_RETURN && proc->is_lambda) {
-	    VALUE err = th->errinfo;
-	    VALUE *escape_dfp = GET_THROWOBJ_CATCH_POINT(err);
-
-	    if (escape_dfp == cfp->dfp) {
-		printf("ok\n");
-		state = 0;
-		th->errinfo = Qnil;
-		th->cfp = cfp;
-		val = GET_THROWOBJ_VAL(err);
-	    }
-	}
-    }
-
-    if (state) {
 	JUMP_TAG(state);
     }
     return val;
