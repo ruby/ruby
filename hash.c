@@ -2073,8 +2073,12 @@ ruby_setenv(const char *name, const char *value)
 	if (setenv(name, value, 1))
 	    rb_sys_fail("setenv");
     } else {
+#ifdef VOID_UNSETENV
+	unsetenv(name);
+#else
 	if (unsetenv(name))
 	    rb_sys_fail("unsetenv");
+#endif
     }
 #elif defined __sun__
     size_t len;

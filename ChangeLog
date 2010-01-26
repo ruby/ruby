@@ -1,3 +1,11 @@
+Tue Jan 26 21:36:22 2010  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: test unsetenv returns a value.
+	  unsetenv is void in older BSDs (FreeBSD 6 and OpenBSD 4.5 at least).
+
+	* hash.c (ruby_setenv): don't use the result of unsetenv if unsetenv
+	  doesn't return a value.
+
 Tue Jan 26 21:32:03 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/extconf.rb: suppress a warning.
