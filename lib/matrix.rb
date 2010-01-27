@@ -26,7 +26,8 @@ module ExceptionForMatrix # :nodoc:
 
   def_exception("ErrDimensionMismatch", "\#{self.name} dimension mismatch")
   def_exception("ErrNotRegular", "Not Regular Matrix")
-  def_exception("ErrOperationNotDefined", "This operation(%s) can\\'t defined")
+  def_exception("ErrOperationNotDefined", "Operation(%s) can\\'t be defined: %s op %s")
+  def_exception("ErrOperationNotImplemented", "Sorry, Operation(%s) not implemented: %s op %s")
 end
 
 #
@@ -497,7 +498,7 @@ class Matrix
   def +(m)
     case m
     when Numeric
-      Matrix.Raise ErrOperationNotDefined, "+"
+      Matrix.Raise ErrOperationNotDefined, "+", self.class, m.class
     when Vector
       m = Matrix.column_vector(m)
     when Matrix
@@ -525,7 +526,7 @@ class Matrix
   def -(m)
     case m
     when Numeric
-      Matrix.Raise ErrOperationNotDefined, "-"
+      Matrix.Raise ErrOperationNotDefined, "-", self.class, m.class
     when Vector
       m = Matrix.column_vector(m)
     when Matrix
@@ -649,9 +650,9 @@ class Matrix
         x *= x
       end
     elsif other.kind_of?(Float) || defined?(Rational) && other.kind_of?(Rational)
-      Matrix.Raise ErrOperationNotDefined, "**"
+      Matrix.Raise ErrOperationNotImplemented, "**", self.class, other.class
     else
-      Matrix.Raise ErrOperationNotDefined, "**"
+      Matrix.Raise ErrOperationNotDefined, "**", self.class, other.class
     end
   end
 
@@ -976,9 +977,7 @@ class Matrix
       when Numeric
         Scalar.new(@value + other)
       when Vector, Matrix
-        Scalar.Raise WrongArgType, other.class, "Numeric or Scalar"
-      when Scalar
-        Scalar.new(@value + other.value)
+        Scalar.Raise ErrOperationNotDefined, "+", @value.class, other.class
       else
         x, y = other.coerce(self)
         x + y
@@ -990,9 +989,7 @@ class Matrix
       when Numeric
         Scalar.new(@value - other)
       when Vector, Matrix
-        Scalar.Raise WrongArgType, other.class, "Numeric or Scalar"
-      when Scalar
-        Scalar.new(@value - other.value)
+        Scalar.Raise ErrOperationNotDefined, "-", @value.class, other.class
       else
         x, y = other.coerce(self)
         x - y
@@ -1016,7 +1013,7 @@ class Matrix
       when Numeric
         Scalar.new(@value / other)
       when Vector
-        Scalar.Raise WrongArgType, other.class, "Numeric or Scalar or Matrix"
+        Scalar.Raise ErrOperationNotDefined, "/", @value.class, other.class
       when Matrix
         self * other.inverse
       else
@@ -1030,9 +1027,10 @@ class Matrix
       when Numeric
         Scalar.new(@value ** other)
       when Vector
-        Scalar.Raise WrongArgType, other.class, "Numeric or Scalar or Matrix"
+        Scalar.Raise ErrOperationNotDefined, "**", @value.class, other.class
       when Matrix
-        other.powered_by(self)
+        #other.powered_by(self)
+        Scalar.Raise ErrOperationNotImplemented, "**", @value.class, other.class
       else
         x, y = other.coerce(self)
         x ** y
@@ -1214,6 +1212,8 @@ class Vector
       Vector.elements(els, false)
     when Matrix
       Matrix.column_vector(self) * x
+    when Vector
+      Vector.Raise ErrOperationNotDefined, "*", self.class, x.class
     else
       s, x = x.coerce(self)
       s * x
@@ -1255,6 +1255,22 @@ class Vector
     else
       s, x = v.coerce(self)
       s - x
+    end
+  end
+
+  #
+  # Vector division.
+  #
+  def /(x)
+    case x
+    when Numeric
+      els = @elements.collect{|e| e / x}
+      Vector.elements(els, false)
+    when Matrix, Vector
+      Vector.Raise ErrOperationNotDefined, "/", self.class, x.class
+    else
+      s, x = x.coerce(self)
+      s / x
     end
   end
 
