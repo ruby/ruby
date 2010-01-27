@@ -1,3 +1,8 @@
+Wed Jan 27 23:33:21 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/matrix/test_matrix.rb, test/matrix/test_vector.rb: add some
+	  tests.
+
 Wed Jan 27 23:29:36 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/thread.rb (ConditionVariable#wait, signal, broadcast): return
