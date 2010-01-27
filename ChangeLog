@@ -1,6 +1,8 @@
 Wed Jan 27 22:16:00 2010 Kirk Haines <khaines@ruby-lang.org>
 
-	* lib/rexml/text.rb: Backport #1806 [ruby-core:24506]; (REXML::Text.normalize): call to_s for input.
+	* io.c: Backport #1818 [ruby-core:24561]; (argf_eof): go to the next file if called after ARGF.close or ARGF.skip. 
+
+	* lib/rexml/text.rb: Backport #1806 [ruby-core:24506]; (REXML::Text.normalize): call to_s for input. r26442
 
 Tue Jan 26 3:03:00 2010 Kirk Haines <khaines@ruby-lang.org>
 
