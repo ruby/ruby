@@ -681,8 +681,8 @@ class Matrix
         i = (k+1 ... size).find {|ii|
           a[ii][k] != 0
         }
-        return 0 if ii.nil?
-        a[ii], a[k] = a[k], a[ii]
+        return 0 if i.nil?
+        a[i], a[k] = a[k], a[i]
         akk = a[k][k]
         det *= -1
       end
