@@ -1,11 +1,24 @@
-Wed Jan 27 22:16:00 2010 Kirk Haines <khaines@ruby-lang.org>
+Wed Jan 28 04:00:00 2010 Kirk Haines <khaines@ruby-lang.org>
 
-	* io.c: Backport #1916 [ruby-core:24838]; (rb_sysopen): workaround for MSVCRT's bug.
+	* io.c: Backport #2009 [ruby-core:25173]; (rb_io_fptr_finalize): free fptr to avoid memory leaks.
+
+	* ChangeLog: My brain got stuck in a bad pattern, and I kept adding new items under the first record for the day. They are all broken out into their own entries like they should be, now, with timestamps pulled from the SVN log.
+
+Thu Jan 28 03:18:10 2010 Kirk Haines <khaines@ruby-lang.org>
+
+	* io.c: Backport #1916 [ruby-core:24838]; (rb_sysopen): workaround for MSVCRT's bug. r26455
+
+Wed Jan 27 23:58:36 2010 Kirk Haines <khaines@ruby-lang.org>
 
 	* re.h: Backport #1875 [ruby-core:24735]; (RMATCH_REGS): added for compatibility. r26452
 	  ruby.h: (RFLOAT_VALUE, RSTRING_END, RREGEXP_SRC_*, RBIGNUM_*): backported macros for compatiblity from trunk. r26452
 
+
+Wed Jan 27 23:36:38 2010 Kirk Haines <khaines@ruby-lang.org>
+
 	* io.c: Backport #1818 [ruby-core:24561]; (argf_eof): go to the next file if called after ARGF.close or ARGF.skip. r26451
+
+Wed Jan 27 22:16:00 2010 Kirk Haines <khaines@ruby-lang.org>
 
 	* lib/rexml/text.rb: Backport #1806 [ruby-core:24506]; (REXML::Text.normalize): call to_s for input. r26442
 
