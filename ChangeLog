@@ -1,3 +1,9 @@
+Wed Jan 27 14:23:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/dl.c (c_parray): get rid of a deprecated function.
+
+	* ext/dl/handle.c (rb_dlhandle_sym): conditionally used variable.
+
 Wed Jan 27 14:05:46 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c, eval.c, process.c: add __APPLE__ to r26371's condition.

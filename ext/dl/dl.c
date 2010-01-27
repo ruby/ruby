@@ -417,7 +417,7 @@ c_parray(VALUE v, long *size)
       e = tmp;
       /* fall through */
     case T_STRING:
-      rb_check_safe_str(e);
+      SafeStringValue(e);
       {
 	char *str, *src;
 	src = RSTRING(e)->ptr;

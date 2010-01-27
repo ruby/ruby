@@ -136,7 +136,9 @@ rb_dlhandle_sym(int argc, VALUE argv[], VALUE self)
   struct dl_handle *dlhandle;
   void *handle;
   const char *name, *stype;
+#if defined(HAVE_DLERROR)
   const char *err;
+#endif
 
   rb_secure(2);
   if (rb_scan_args(argc, argv, "11", &sym, &type) == 2) {
