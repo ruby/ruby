@@ -1,3 +1,13 @@
+Wed Jan 27 23:27:54 2010  Keiju Ishitsuka  <keiju@emperor2.pendome>
+
+	* lib/matrix.rb: add exception Matrix::ErrOperationNotImplemented
+	  [ruby-dev:40149].
+	* lib/matrix.rb: change message of exception
+	  Matrix::ErrOperationNotDefined [ruby-dev:40150], [ruby-dev:40176].
+	* lib/matrix.rb: add method Vector#/ [ruby-dev:40151].
+	* lib/matrix.rb(Matrix::Scalar#+,-,/): delete meaningless when
+	  switch. [ruby-dev:40149]
+
 Wed Jan 27 23:22:54 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* vm_dump.c (bugreport_backtrace): trivial change.
