@@ -1,3 +1,12 @@
+Wed Jan 27 23:22:54 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* vm_dump.c (bugreport_backtrace): trivial change.
+
+	* vm_dump.c (rb_vm_bugreport): uninitialized local variable i.
+
+	* test/ruby/test_rubyoptions.rb (TestRubyOptions#test_segv_test):
+	  follow above change.
+
 Wed Jan 27 23:20:52 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/ruby/test_exception.rb

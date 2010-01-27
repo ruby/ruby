@@ -571,8 +571,8 @@ static int
 bugreport_backtrace(void *arg, VALUE file, int line, VALUE method)
 {
     if (!*(int *)arg) {
-	fprintf(stderr, "-- Ruby level backtrace information"
-		"-----------------------------------------\n");
+	fprintf(stderr, "-- Ruby level backtrace information "
+		"----------------------------------------\n");
 	*(int *)arg = 1;
     }
     fprintf(stderr, "%s:%d:in `%s'\n", RSTRING_PTR(file), line, RSTRING_PTR(method));
@@ -586,7 +586,7 @@ void
 rb_vm_bugreport(void)
 {
     if (GET_THREAD()->vm) {
-	int i;
+	int i = 0;
 	SDR();
 
 	if (rb_backtrace_each(bugreport_backtrace, &i)) {

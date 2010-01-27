@@ -333,6 +333,7 @@ class TestRubyOptions < Test::Unit::TestCase
       --\scontrol\sframe\s----------\n
       (?:c:.*\n)*
       ---------------------------\n
+      --\sRuby\slevel\sbacktrace\sinformation\s----------------------------------------\n
       -e:1:in\s`<main>'\n
       -e:1:in\s`kill'\n\n
       (?:
