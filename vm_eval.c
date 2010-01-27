@@ -1577,7 +1577,7 @@ print_backtrace(void *arg, VALUE file, int line, VALUE method)
 void
 rb_backtrace(void)
 {
-    vm_backtrace_each(GET_THREAD(), -1, print_backtrace, stdout);
+    vm_backtrace_each(GET_THREAD(), -1, print_backtrace, stderr);
 }
 
 VALUE
