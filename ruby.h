@@ -335,6 +335,8 @@ struct RFloat {
     double value;
 };
 
+#define RFLOAT_VALUE(v) (RFLOAT(v)->value)
+
 #define ELTS_SHARED FL_USER2
 
 struct RString {
@@ -348,6 +350,7 @@ struct RString {
 };
 #define RSTRING_PTR(s) (RSTRING(s)->ptr)
 #define RSTRING_LEN(s) (RSTRING(s)->len)
+#define RSTRING_END(s) (RSTRING_PTR(s)+RSTRING_LEN(s))
 
 struct RArray {
     struct RBasic basic;
@@ -367,6 +370,8 @@ struct RRegexp {
     long len;
     char *str;
 };
+#define RREGEXP_SRC_PTR(r) (RREGEXP(r)->src)
+#define RREGEXP_SRC_LEN(r) (RREGEXP(r)->len)
 
 struct RHash {
     struct RBasic basic;
@@ -424,6 +429,13 @@ struct RBignum {
     long len;
     void *digits;
 };
+#define RBIGNUM_SIGN(b)       (RBIGNUM(b)->sign)
+#define RBIGNUM_SET_SIGN(b,s) (RBIGNUM(b)->sign = (s))
+#define RBIGNUM_POSITIVE_P(b) RBIGNUM_SIGN(b)
+#define RBIGNUM_NEGATIVE_P(b) (!RBIGNUM_SIGN(b))
+#define RBIGNUM_LEN(b)        (RBIGNUM(b)->len)
+#define RBIGNUM_DIGITS(b)     (RBIGNUM(b)->digits)
+
 
 #define R_CAST(st)   (struct st*)
 #define RBASIC(obj)  (R_CAST(RBasic)(obj))
