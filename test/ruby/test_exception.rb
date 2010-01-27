@@ -243,7 +243,7 @@ class TestException < Test::Unit::TestCase
     assert_raise(SystemExit, '[ruby-dev:38760]') {test_proc.call}
   end
 
-  def test_thread_signal_backtrace
+  def test_thread_signal_location
     stdout, stderr, status = EnvUtil.invoke_ruby("-d", <<-RUBY, false, true)
 Thread.start do
   begin
