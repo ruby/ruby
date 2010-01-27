@@ -1,3 +1,7 @@
+Wed Jan 27 22:48:40 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/matrix.rb (determinant): fix name error.
+
 Wed Jan 27 22:26:25 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm_eval.c (rb_backtrace): "circular require" warning was output to
