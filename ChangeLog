@@ -1,3 +1,9 @@
+Wed Jan 27 22:26:25 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* vm_eval.c (rb_backtrace): "circular require" warning was output to
+	  stdout except the first line.  All line is output to stderr now.
+	  [ruby-dev:40147]
+
 Wed Jan 27 00:22:20 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_DoDivmod, BigDecimal_mod,
