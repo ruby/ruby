@@ -1331,11 +1331,11 @@ rb_f_fork(obj)
     fflush(stderr);
 #endif
 
-#ifdef __NetBSD__
+#if defined(__NetBSD__) || defined(__APPLE__)
     before_exec();
 #endif
     pid = fork();
-#ifdef __NetBSD__
+#if defined(__NetBSD__) || defined(__APPLE__)
     after_exec();
 #endif
     switch (pid) {
@@ -1578,7 +1578,7 @@ rb_f_system(argc, argv)
 
     chfunc = signal(SIGCHLD, SIG_DFL);
   retry:
-#ifdef __NetBSD__
+#if defined(__NetBSD__) || defined(__APPLE__)
     before_exec();
 #endif
     pid = fork();
@@ -1588,7 +1588,7 @@ rb_f_system(argc, argv)
 	rb_protect(proc_exec_args, (VALUE)&earg, NULL);
 	_exit(127);
     }
-#ifdef __NetBSD__
+#if defined(__NetBSD__) || defined(__APPLE__)
     after_exec();
 #endif
     if (pid < 0) {

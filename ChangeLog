@@ -1,7 +1,12 @@
+Wed Jan 27 14:05:46 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c, eval.c, process.c: add __APPLE__ to r26371's condition.
+	  patched by Wataru Kimura [ruby-dev:40145]
+
 Tue Jan 26 20:24:04 2010  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/eq.rb: fix circular requrie in drb.
-          reported by akr. see [ruby-dev:40156] [ruby-core:27661]
+	  reported by akr. see [ruby-dev:40156] [ruby-core:27661]
 
 Tue Jan 26 20:13:27 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
