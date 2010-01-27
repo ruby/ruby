@@ -1,7 +1,9 @@
 Wed Jan 27 22:16:00 2010 Kirk Haines <khaines@ruby-lang.org>
 
-	* re.h: Backport #1875 [ruby-core:24735]; (RMATCH_REGS): added for compatibility.
-	  ruby.h: (RFLOAT_VALUE, RSTRING_END, RREGEXP_SRC_*, RBIGNUM_*): backported macros for compatiblity from trunk.
+	* io.c: Backport #1916 [ruby-core:24838]; (rb_sysopen): workaround for MSVCRT's bug.
+
+	* re.h: Backport #1875 [ruby-core:24735]; (RMATCH_REGS): added for compatibility. r26452
+	  ruby.h: (RFLOAT_VALUE, RSTRING_END, RREGEXP_SRC_*, RBIGNUM_*): backported macros for compatiblity from trunk. r26452
 
 	* io.c: Backport #1818 [ruby-core:24561]; (argf_eof): go to the next file if called after ARGF.close or ARGF.skip. r26451
 
