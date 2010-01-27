@@ -70,6 +70,7 @@ class ConditionVariable
       end
       mutex.sleep timeout
     end
+    self
   end
 
   #
@@ -82,6 +83,7 @@ class ConditionVariable
     rescue ThreadError
       retry
     end
+    self
   end
 
   #
@@ -96,10 +98,11 @@ class ConditionVariable
     end
     for t in waiters0
       begin
-	t.run
+        t.run
       rescue ThreadError
       end
     end
+    self
   end
 end
 
