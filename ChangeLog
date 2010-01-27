@@ -1,3 +1,9 @@
+Wed Jan 27 23:20:52 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ruby/test_exception.rb
+	  (TestException#test_thread_signal_location):
+	  change test method name.
+
 Wed Jan 27 22:48:40 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/matrix.rb (determinant): fix name error.
