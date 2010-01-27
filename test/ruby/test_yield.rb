@@ -1,4 +1,5 @@
 require 'test/unit'
+require 'stringio'
 
 class TestRubyYield < Test::Unit::TestCase
 
@@ -209,8 +210,8 @@ class TestRubyYieldGen < Test::Unit::TestCase
     if args.last == []
       args = args[0...-1]
     end
-    code = "emu_return_args #{args.map {|a| a.join('') }.join(",")}"
-    eval code
+    code = "emu_return_args(#{args.map {|a| a.join('') }.join(",")})"
+    eval code, nil, 'generated_code_in_emu_eval_args'
   end
 
   def emu_bind_single(arg, param, result_binding)
@@ -324,6 +325,16 @@ class TestRubyYieldGen < Test::Unit::TestCase
     }
   end
 
+  def disable_stderr
+    begin
+      save_stderr = $stderr
+      $stderr = StringIO.new
+      yield
+    ensure
+      $stderr = save_stderr
+    end
+  end
+
   def check_nofork(t, islambda=false)
     t, vars = rename_var(t)
     t = t.subst('vars') { " [#{vars.join(",")}]" }
@@ -331,11 +342,13 @@ class TestRubyYieldGen < Test::Unit::TestCase
     s = t.to_s
     #print "#{s}\t\t"
     #STDOUT.flush
-    begin
-      eval_values = eval(s)
-    rescue ArgumentError
-      eval_values = ArgumentError
-    end
+    eval_values = disable_stderr {
+      begin
+        eval(s, nil, 'generated_code_in_check_nofork')
+      rescue ArgumentError
+        ArgumentError
+      end
+    }
     #success = emu_values == eval_values ? 'succ' : 'fail'
     #puts "eval:#{vs_ev.inspect[1...-1].delete(' ')}\temu:#{vs_emu.inspect[1...-1].delete(' ')}\t#{success}"
     assert_equal(emu_values, eval_values, s)
@@ -358,7 +371,10 @@ class TestRubyYieldGen < Test::Unit::TestCase
   def test_yield_enum
     syntax = Sentence.expand_syntax(Syntax)
     Sentence.each(syntax, :test_enum, 4) {|t|
-      r1, r2 = eval(t.to_s)
+      code = t.to_s
+      r1, r2 = disable_stderr {
+        eval(code, nil, 'generated_code_in_test_yield_enum')
+      }
       assert_equal(r1, r2, "#{t}")
     }
   end
