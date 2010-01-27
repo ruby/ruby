@@ -1,6 +1,10 @@
+Wed Jan 27 22:16:00 2010 Kirk Haines <khaines@ruby-lang.org>
+
+	* lib/rexml/text.rb: Backport #1806 [ruby-core:24506]; (REXML::Text.normalize): call to_s for input.
+
 Tue Jan 26 3:03:00 2010 Kirk Haines <khaines@ruby-lang.org>
 
-	* eval.c: Backport #2039 [ruby-core:25339]; backported r24413, r24416, r24442 to fix a problem with IO#select and threads. This is the same issues as Bug #1993 [ruby-core:25114].
+	* eval.c: Backport #2039 [ruby-core:25339]; backported r24413, r24416, r24442 to fix a problem with IO#select and threads. This is the same issues as Bug #1993 [ruby-core:25114]. r26435
 
 Thu Jan 21 5:10:00 2010 Kirk Haines <khaines@ruby-lang.org>
 
