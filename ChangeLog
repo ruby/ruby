@@ -47,7 +47,7 @@ Tue Jan 26 20:23:22 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 Tue Jan 26 20:21:28 2010  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
-	* lib/drb/eq.rb: fix circular requrie in drb.
+	* lib/drb/eq.rb: fix circular require in drb.
 	  reported by akr. see [ruby-dev:40156] [ruby-core:27661]
 
 
@@ -177,7 +177,7 @@ Sat Jan 23 19:54:48 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: add WIN32OLE.ole_initialize,
 	  WIN32OLE.ole_uninitialize to use in win32ole.rb.
-	  You must not use thease methods.
+	  You must not use these methods.
 
 	* ext/win32ole/lib/win32ole.rb: add win32ole.rb 
 	  re-define Thread#initialize (fix ruby-core:27634)
