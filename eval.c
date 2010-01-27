@@ -12417,7 +12417,9 @@ rb_thread_alloc(klass)
     return th;
 }
 
+#if defined(HAVE_SETITIMER) || defined(_THREAD_SAFE)
 static int thread_init;
+#endif
 
 #if defined(POSIX_SIGNAL)
 #define CATCH_VTALRM() posix_signal(SIGVTALRM, catch_timer)

@@ -1,4 +1,6 @@
-Wed Jan 27 14:23:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Jan 27 14:25:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (thread_init): used only for setitimer or threaded.
 
 	* ext/dl/dl.c (c_parray): get rid of a deprecated function.
 
