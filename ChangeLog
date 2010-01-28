@@ -1,3 +1,10 @@
+Thu Jan 28 09:44:19 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regcomp.c (onig_compile): initialize ScanEnv.
+	  mainly to initialize env->warnings_flag [ruby-dev:40196]
+
+	* regparse.c (scan_env_clear): clear warnings_flag.
+
 Wed Jan 27 23:33:21 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/matrix/test_matrix.rb, test/matrix/test_vector.rb: add some
