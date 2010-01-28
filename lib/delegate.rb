@@ -201,17 +201,9 @@ class Delegator
     end
   end
 
-  # Clone support for the object returned by \_\_getobj\_\_.
-  def clone
-    new = super
-    new.__setobj__(__getobj__.clone)
-    new
-  end
-  # Duplication support for the object returned by \_\_getobj\_\_.
-  def dup
-    new = super
-    new.__setobj__(__getobj__.dup)
-    new
+  # clone/dup support for the object returned by \_\_getobj\_\_.
+  def initialize_copy(other)
+    self.__setobj__(other.__getobj__.clone)
   end
 
   # Freeze self and target at once.

@@ -1,3 +1,9 @@
+Fri Jan 29 01:42:24 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/delegate.rb (Delegator#initialize_copy): use initialize_copy
+	  instead of overriding clone/dup.  [ruby-dev:40221]
+	  it now always clones the target, it might cause incompatibility.
+
 Fri Jan 29 01:26:53 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_to_i): update RDoc to
