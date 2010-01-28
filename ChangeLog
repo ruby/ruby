@@ -1,3 +1,7 @@
+Fri Jan 29 00:18:54 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/cgi.rb: set autoload to CGI::HtmlExtension.  [ruby-dev:40194]
+
 Thu Jan 28 09:44:19 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regcomp.c (onig_compile): initialize ScanEnv.
