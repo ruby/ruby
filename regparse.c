@@ -956,6 +956,7 @@ scan_env_clear(ScanEnv* env)
   env->curr_max_regnum     = 0;
   env->has_recursion       = 0;
 #endif
+  env->warnings_flag       = 0;
 }
 
 static int

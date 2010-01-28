@@ -5357,7 +5357,7 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
 
   int r, init_size;
   Node*  root;
-  ScanEnv  scan_env;
+  ScanEnv  scan_env = {0};
 #ifdef USE_SUBEXP_CALL
   UnsetAddrList  uslist;
 #endif
