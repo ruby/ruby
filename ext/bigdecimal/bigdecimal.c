@@ -473,9 +473,11 @@ BigDecimal_check_num(Real *p)
     }
 }
 
+static VALUE BigDecimal_split(VALUE self);
+
 /* Returns the value as an integer (Fixnum or Bignum).
  *
- * If the BigNumber is infinity or NaN, returns nil.
+ * If the BigNumber is infinity or NaN, raises FloatDomainError.
  */
 static VALUE
 BigDecimal_to_i(VALUE self)
@@ -497,31 +499,24 @@ BigDecimal_to_i(VALUE self)
         e = VpGetSign(p)*p->frac[0];
         return INT2FIX(e);
     }
-    str = rb_str_new(0, e+nf+2);
-    psz = RSTRING_PTR(str);
+    else {
+	VALUE a = BigDecimal_split(self);
+	VALUE digits = RARRAY_PTR(a)[1];
+	VALUE numerator = rb_funcall(digits, rb_intern("to_i"), 0);
+	int dpower = e - RSTRING_LEN(digits);
 
-    n = (e+nf-1)/nf;
-    pch = psz;
-    if(VpGetSign(p)<0) *pch++ = '-';
-    for(i=0;i<n;++i) {
-        b = VpBaseVal()/10;
-        if(i>=(int)p->Prec) {
-            while(b) {
-                *pch++ = '0';
-                b /= 10;
-            }
-            continue;
-        }
-        v = p->frac[i];
-        while(b) {
-            j = v/b;
-            *pch++ = (char)(j + '0');
-            v -= j*b;
-            b /= 10;
-        }
+	if (VpGetSign(p) < 0) {
+	    numerator = rb_funcall(numerator, '*', 1, INT2FIX(-1));
+	}
+	if (dpower < 0) {
+	    return rb_funcall(numerator, rb_intern("div"), 1,
+			      rb_funcall(INT2FIX(10), rb_intern("**"), 1,
+					 INT2FIX(-dpower)));
+	}
+        return rb_funcall(numerator, '*', 1,
+			  rb_funcall(INT2FIX(10), rb_intern("**"), 1,
+				     INT2FIX(dpower)));
     }
-    *pch++ = 0;
-    return rb_cstr2inum(psz,10);
 }
 
 /* Returns a new Float object having approximately the same value as the
@@ -555,8 +550,6 @@ BigDecimal_to_f(VALUE self)
     return rb_float_new(d);
 }
 
-
-static VALUE BigDecimal_split(VALUE self);
 
 /* Converts a BigDecimal to a Rational.
  */

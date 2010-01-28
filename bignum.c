@@ -437,6 +437,8 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
     VALUE z;
     BDIGIT *zds;
 
+#undef ISDIGIT
+#define ISDIGIT(c) ('0' <= (c) && (c) <= '9')
 #define conv_digit(c) \
     (!ISASCII(c) ? -1 : \
      ISDIGIT(c) ? ((c) - '0') : \
