@@ -1,3 +1,13 @@
+Fri Jan 29 01:26:53 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_to_i): update RDoc to
+	  denote that #to_i raises FloatDomainError for Inf and NaN.
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_to_i): fast #to_i using
+	  BigDecimal_split(). 
+
+	* bignum.c (conv_digit): use faster ISDIGIT() assuming ASCII.
+
 Fri Jan 29 00:18:54 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/cgi.rb: set autoload to CGI::HtmlExtension.  [ruby-dev:40194]
