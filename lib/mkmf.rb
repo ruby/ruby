@@ -367,11 +367,13 @@ The complier failed to generate an executable file.
 You have to install development tools first.
 MSG
   end
-  src = create_tmpsrc(src, &b)
-  xsystem(command)
-ensure
-  log_src(src)
-  rm_rf 'conftest.dSYM'
+  begin
+    src = create_tmpsrc(src, &b)
+    xsystem(command)
+  ensure
+    log_src(src)
+    rm_rf 'conftest.dSYM'
+  end
 end
 
 def link_command(ldflags, opt="", libpath=$DEFLIBPATH|$LIBPATH)
@@ -1682,8 +1684,8 @@ def create_makefile(target, srcprefix = nil)
     target_prefix = ""
   end
 
-  srcprefix ||= '$(srcdir)'
-  RbConfig::expand(srcdir = srcprefix.dup)
+  srcprefix = "$(srcdir)/#{srcprefix}".chomp('/')
+  RbConfig.expand(srcdir = srcprefix.dup)
 
   ext = ".#{$OBJEXT}"
   if not $objs
@@ -1735,7 +1737,9 @@ def create_makefile(target, srcprefix = nil)
   dllib = target ? "$(TARGET).#{CONFIG['DLEXT']}" : ""
   staticlib = target ? "$(TARGET).#$LIBEXT" : ""
   mfile = open("Makefile", "wb")
-  mfile.print(*configuration(srcprefix))
+  conf = configuration(srcprefix)
+  conf = yield(conf) if block_given?
+  mfile.print(conf)
   mfile.print "
 libpath = #{($DEFLIBPATH|$LIBPATH).join(" ")}
 LIBPATH = #{libpath}
