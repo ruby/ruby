@@ -593,6 +593,9 @@ $(BANG)endif
 #	@ren $(RUBY_CONFIG_H:.h=_h).bak $(RUBY_CONFIG_H)
 #!endif
 
+EXECUTABLE_EXTS = $(EXECUTABLE_EXTS:"=) # "
+EXECUTABLE_EXTS = $(EXECUTABLE_EXTS:,= )
+
 config.status: $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub $(srcdir)/common.mk
 	@echo Creating $@
 	@exit <<$@
