@@ -85,10 +85,10 @@ buf_shift(struct from_utf8_mac_status *sp)
 void
 buf_shift_char(struct from_utf8_mac_status *sp)
 {
-    while (sp->beg != sp->end) {
+    if (sp->beg == sp->end) return;
+    do {
         buf_shift(sp);
-        if ((sp->buf[sp->beg] & 0xC0) != 0x80) break;
-    }
+    } while (sp->beg != sp->end && (sp->buf[sp->beg] & 0xC0) == 0x80);
 }
 
 void
