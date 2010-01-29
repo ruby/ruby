@@ -1739,7 +1739,7 @@ def create_makefile(target, srcprefix = nil)
   mfile = open("Makefile", "wb")
   conf = configuration(srcprefix)
   conf = yield(conf) if block_given?
-  mfile.print(conf)
+  mfile.puts(conf)
   mfile.print "
 libpath = #{($DEFLIBPATH|$LIBPATH).join(" ")}
 LIBPATH = #{libpath}
