@@ -1,3 +1,9 @@
+Fri Jan 29 22:49:21 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/getoptlong.rb (set_options): ensure that the type of argument is
+	  Array, restoring this check that was deleted at r10239.  This caused
+	  rubyspec error.
+
 Fri Jan 29 12:59:33 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (mingw): needs $(DEFFILE) for extension libraries.

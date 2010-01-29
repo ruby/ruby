@@ -282,8 +282,11 @@ class GetoptLong
     @canonical_names.clear
     @argument_flags.clear
 
-    arguments.each do |*arg|
-      arg = arg.first # TODO: YARV Hack
+    arguments.each do |arg|
+      if !arg.is_a?(Array)
+       raise ArgumentError, "the option list contains non-Array argument"
+      end
+
       #
       # Find an argument flag and it set to `argument_flag'.
       #
