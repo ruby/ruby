@@ -1,3 +1,8 @@
+Fri Jan 29 09:43:30 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/trans/utf8_mac.trans (buf_shift_char): don't see uninitialised
+	  value. [ruby-dev:40233]
+
 Fri Jan 29 01:42:24 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/delegate.rb (Delegator#initialize_copy): use initialize_copy
