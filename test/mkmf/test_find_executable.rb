@@ -22,7 +22,7 @@ class TestMkmf
       exts.each do |ext|
         full = name+ext
         begin
-          open(full, "w") {|f| f.chmod(0755)}
+          open(full, "w") {|ff| ff.chmod(0755)}
           result = f.do_find_executable(name)
         ensure
           File.unlink(full)
