@@ -125,7 +125,7 @@ BOOTSTRAPRUBY = $(BASERUBY)
 
 COMPILE_PRELUDE = $(MINIRUBY) -I$(srcdir) -I. -rrbconfig $(srcdir)/tool/compile_prelude.rb
 
-all: encs exts main docs
+all: main docs
 
 main: encs exts
 	@$(RUNCMD) $(MKMAIN_CMD) $(MAKE)
@@ -816,13 +816,16 @@ help: PHONY
 	@echo "                Makefile of Ruby"
 	@echo ""
 	@echo "targets:"
-	@echo "  all (default):   builds ruby"
+	@echo "  all (default):   builds all of below"
 	@echo "  miniruby:        builds only miniruby"
+	@echo "  encs:            builds encodings"
+	@echo "  exts:            builds extensions"
+	@echo "  main:            builds encodings, extensions and ruby"
+	@echo "  docs:            builds documents"
 	@echo "  run:             runs test.rb by miniruby"
 	@echo "  runruby:         runs test.rb by ruby you just built"
 	@echo "  gdb:             runs test.rb by miniruby under gdb"
 	@echo "  gdb-ruby:        runs test.rb by ruby under gdb"
-	@echo "  all:             compile ruby and extensions"
 	@echo "  check:           equals make test test-all"
 	@echo "  test:            ruby core tests"
 	@echo "  test-all:        all ruby tests"
