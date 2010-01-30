@@ -589,6 +589,7 @@ gc_with_gvl(void *ptr)
 static int
 garbage_collect_with_gvl(rb_objspace_t *objspace)
 {
+    if (dont_gc) return Qtrue;
     if (ruby_thread_has_gvl_p()) {
 	return garbage_collect(objspace);
     }
