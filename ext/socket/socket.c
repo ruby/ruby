@@ -52,6 +52,9 @@
 #ifdef HAVE_SYS_UN_H
 #include <sys/un.h>
 #endif
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
 
 #if defined(HAVE_FCNTL)
 #ifdef HAVE_SYS_SELECT_H
@@ -237,6 +240,17 @@ static VALUE
 init_sock(VALUE sock, int fd)
 {
     rb_io_t *fp;
+    struct stat sbuf;
+    
+#ifndef _WIN32
+    if (fstat(fd, &sbuf) < 0)
+	rb_sys_fail(0);
+    if (!S_ISSOCK(sbuf.st_mode))
+	rb_raise(rb_eArgError, "not a socket file descriptor");
+#else
+    if (!rb_w32_is_socket(fd))
+	rb_raise(rb_eArgError, "not a socket file descriptor");
+#endif
 
     MakeOpenFile(sock, fp);
     fp->fd = fd;
