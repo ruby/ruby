@@ -1,3 +1,8 @@
+Fri Oct 16 18:42:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bootstraptest/test_gc.rb: added tests based on [ruby-dev:39484]
+	  from wanabe <s.wanabe AT gmail.com>.
+
 Thu Oct 15 14:20:58 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (iconv_create): cannot retry with given block.
