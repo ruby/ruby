@@ -66,7 +66,7 @@ if defined?(Gem) then
     end
 
     def self.set_home(home)
-      @gem_home = home
+      @gem_home = home.force_encoding(Encoding.find('filesystem'))
       ensure_gem_subdirectories(@gem_home)
     end
 
@@ -78,6 +78,7 @@ if defined?(Gem) then
         @gem_path = [Gem.dir]
       end
       @gem_path.uniq!
+      @gem_path.map!{|x|x.force_encoding(Encoding.find('filesystem'))}
       @gem_path.each do |gp| ensure_gem_subdirectories(gp) end
     end
 

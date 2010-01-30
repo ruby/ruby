@@ -1278,6 +1278,7 @@ process_options(VALUE arg)
     ruby_init_loadpath_safe(opt->safe_level);
     rb_enc_find_index("encdb");
     lenc = rb_locale_encoding();
+    (void)rb_filesystem_encoding();
     rb_enc_associate(rb_progname, lenc);
     parser = rb_parser_new();
     if (opt->yydebug) rb_parser_set_yydebug(parser, Qtrue);

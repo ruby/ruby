@@ -921,9 +921,18 @@ enc_list(VALUE klass)
  *   Encoding.find("US-ASCII")  => #<Encoding:US-ASCII>
  *   Encoding.find(:Shift_JIS)  => #<Encoding:Shift_JIS>
  *
+ * Names which this method accept are encoding names and aliases
+ * including following special aliases
+ *
+ * "external"::   default external encoding
+ * "internal"::   default internal encoding
+ * "locale"::     locale encoding
+ * "filesystem":: filesystem encoding
+ *
  * An ArgumentError is raised when no encoding with <i>name</i>.
- * Only +Encoding.find("internal")+ however returns nil when no encoding named "internal",
- * in other words, when Ruby has no default internal encoding.
+ * Only <code>Encoding.find("internal")</code> however returns nil
+ * when no encoding named "internal", in other words, when Ruby has no
+ * default internal encoding.
  */
 static VALUE
 enc_find(VALUE klass, VALUE enc)
@@ -1021,8 +1030,8 @@ rb_usascii_encindex(void)
     return ENCINDEX_US_ASCII;
 }
 
-rb_encoding *
-rb_locale_encoding(void)
+static int
+rb_locale_encindex(void)
 {
     VALUE charmap = rb_locale_charmap(rb_cEncoding);
     int idx;
@@ -1034,25 +1043,40 @@ rb_locale_encoding(void)
 
     if (rb_enc_registered("locale") < 0) enc_alias_internal("locale", idx);
 
-    return rb_enc_from_index(idx);
+    return idx;
+}
+
+rb_encoding *
+rb_locale_encoding(void)
+{
+    return rb_enc_from_index(rb_locale_encindex());
+}
+
+static int
+rb_filesystem_encindex(void)
+{
+    int idx;
+#if defined NO_LOCALE_CHARMAP
+    idx = rb_enc_to_index(rb_default_external_encoding());
+#elif defined _WIN32 || defined __CYGWIN__
+    char cp[sizeof(int) * 8 / 3 + 4];
+    snprintf(cp, sizeof cp, "CP%d", AreFileApisANSI() ? GetACP() : GetOEMCP());
+    idx = rb_enc_find_index(cp);
+#elif defined __APPLE__
+    idx = rb_enc_to_index(rb_enc_find("UTF8-MAC"));
+#else
+    idx = rb_enc_to_index(rb_default_external_encoding());
+#endif
+
+    if (rb_enc_registered("filesystem") < 0) enc_alias_internal("filesystem", idx);
+
+    return idx;
 }
 
 rb_encoding *
 rb_filesystem_encoding(void)
 {
-    rb_encoding *enc;
-#if defined NO_LOCALE_CHARMAP
-    enc = rb_default_external_encoding();
-#elif defined _WIN32 || defined __CYGWIN__
-    char cp[sizeof(int) * 8 / 3 + 4];
-    snprintf(cp, sizeof cp, "CP%d", AreFileApisANSI() ? GetACP() : GetOEMCP());
-    enc = rb_enc_find(cp);
-#elif defined __APPLE__
-    enc = rb_enc_find("UTF8-MAC");
-#else
-    enc = rb_default_external_encoding();
-#endif
-    return enc;
+    return rb_enc_from_index(rb_filesystem_encindex());
 }
 
 struct default_encoding {

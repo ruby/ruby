@@ -37,6 +37,8 @@ class TestEncoding < Test::Unit::TestCase
 
   def test_find
     assert_raise(ArgumentError) { Encoding.find("foobarbazqux") }
+    assert_nothing_raised{Encoding.find("locale")}
+    assert_nothing_raised{Encoding.find("filesystem")}
   end
 
   def test_dummy_p
