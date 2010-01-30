@@ -1,3 +1,8 @@
+Fri Oct 23 09:12:59 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/pathname.rb (Pathname::SAME_PATHS): FNM_SYSCASE is always
+	  non-nil.
+
 Thu Oct 22 20:20:27 2009  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/envutil.rb (assert_in_out_err): test_stdout and

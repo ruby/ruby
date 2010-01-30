@@ -195,7 +195,7 @@ class Pathname
     TO_PATH = :to_path
   end
 
-  SAME_PATHS = if File::FNM_SYSCASE
+  SAME_PATHS = if File::FNM_SYSCASE.nonzero?
     proc {|a, b| a.casecmp(b).zero?}
   else
     proc {|a, b| a == b}
