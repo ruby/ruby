@@ -161,14 +161,14 @@ extern DWORD rb_w32_osid(void);
 #define fdopen(h, m)		rb_w32_fdopen(h, m)
 #undef fsopen
 #define fsopen(p, m, sh)	rb_w32_fsopen(p, m, sh)
-#endif
+#endif /* __BORLANDC__ */
 
 #undef execv
 #define execv(path,argv)	rb_w32_aspawn(P_OVERLAY,path,argv)
 #if !defined(__BORLANDC__)
 #undef isatty
 #define isatty(h)		rb_w32_isatty(h)
-#endif
+#endif /* __BORLANDC__ */
 
 #undef mkdir
 #define mkdir(p, m)		rb_w32_mkdir(p, m)
@@ -176,7 +176,7 @@ extern DWORD rb_w32_osid(void);
 #define rmdir(p)		rb_w32_rmdir(p)
 #undef unlink
 #define unlink(p)		rb_w32_unlink(p)
-#endif
+#endif /* RUBY_EXPORT */
 
 #if SIZEOF_OFF_T == 8
 #define off_t __int64
@@ -282,15 +282,19 @@ extern FILE *rb_w32_fsopen(const char *, const char *, int);
 #ifndef isnan
 #define isnan(x) _isnan(x)
 #endif
-#ifndef finite
-#define finite(x) _finite(x)
-#endif
+static inline int
+finite(double x)
+{
+    return _finite(x);
+}
 #ifndef copysign
 #define copysign(a, b) _copysign(a, b)
 #endif
-#ifndef scalb
-#define scalb(a, b) _scalb(a, b)
-#endif
+static inline double
+scalb(double a, long b)
+{
+    return _scalb(a, b);
+}
 #endif
 
 #if !defined S_IFIFO && defined _S_IFIFO
