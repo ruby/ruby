@@ -1,8 +1,10 @@
 begin
-
-require_relative 'dummyparser'
-require_relative '../ruby/envutil'
-require 'test/unit'
+  require_relative 'dummyparser'
+  require_relative '../ruby/envutil'
+  require 'test/unit'
+  ripper_test = true
+rescue LoadError
+end
 
 class TestRipper_ParserEvents < Test::Unit::TestCase
 
@@ -624,7 +626,4 @@ class TestRipper_ParserEvents < Test::Unit::TestCase
                         ["[fcall(proc,[],&block([],[void()]))]"], [], '[ruby-dev:39423]')
     end
   end
-end
-
-rescue LoadError
-end
+end if ripper_test

@@ -1,7 +1,9 @@
 begin
-
-require 'ripper'
-require 'test/unit'
+  require 'ripper'
+  require 'test/unit'
+  ripper_test = true
+rescue LoadError
+end
 
 class TestRipper_Filter < Test::Unit::TestCase
 
@@ -48,7 +50,4 @@ class TestRipper_Filter < Test::Unit::TestCase
     Filter.new(File.read(filename)).parse(data)
     assert_equal("begin", data[:token])
   end
-end
-
-rescue LoadError
-end
+end if ripper_test

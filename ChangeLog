@@ -1,3 +1,16 @@
+Tue Oct 20 15:38:02 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (ripper_intern): enable literal optimization.
+
+	* parse.y (method_call): dispatch symbols.  a patch from Andy Keep in
+	  [ruby-core:26169].  [ruby-core:26165]
+
+	* parse.y (mlhs_basic): fixed handling splat in middle of mlhs.  a
+	  patch from Andy Keep in [ruby-core:26163]
+
+	* parse.y (parser_here_document): dispatch delayed heredoc
+	  contents.  based on a patch from Andy Keep in [ruby-core:24855].
+
 Sat Jan 30 18:09:36 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* vm_method.c (rb_alias): treats an alias as if it is a newly defined
