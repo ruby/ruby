@@ -17,7 +17,10 @@ class TestSignal < Test::Unit::TestCase
       x = 0
       oldtrap = Signal.trap(:INT) {|sig| x = 2 }
       Process.kill :INT, Process.pid
-      sleep 0.1
+      10.times do
+        break if 2 == x
+        sleep 0.1
+      end
       assert_equal 2, x
 
       Signal.trap(:INT) { raise "Interrupt" }
