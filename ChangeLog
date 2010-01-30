@@ -1,3 +1,7 @@
+Sat Jan 30 17:58:28 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* .gdbinit: follows r24470.
+
 Mon Oct 19 05:49:53 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/rexml/element.rb (text=): false should be converted to string.

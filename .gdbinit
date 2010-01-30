@@ -1,4 +1,4 @@
-if dummy_gdb_enums.special_consts
+if ruby_dummy_gdb_enums.special_consts
 end
 
 define rp
