@@ -389,7 +389,7 @@ module Net
     #
     def login(user = "anonymous", passwd = nil, acct = nil)
       if user == "anonymous" and passwd == nil
-	passwd = getaddress
+        passwd = (getaddress rescue "anonymous@")
       end
       
       resp = ""
