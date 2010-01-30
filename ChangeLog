@@ -1,3 +1,8 @@
+Tue Oct  6 18:56:09 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* struct.c (rb_struct_select): Struct#select should return
+	  enumerator when no block given.
+
 Sun Jan 10 17:25:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/webrick/accesslog.rb : Escape needed.
