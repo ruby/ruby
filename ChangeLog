@@ -1,3 +1,8 @@
+Tue Oct 13 18:54:25 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/variable.rb: bug fix. additional trace definition changes the
+	  option of first trace definition.
+
 Tue Oct 13 18:20:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_magic_comment): fixed normalization.
