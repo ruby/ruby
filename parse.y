@@ -10415,6 +10415,24 @@ ripper_column(VALUE self)
 
 /*
  *  call-seq:
+ *    ripper#filename   -> String
+ *
+ *  Return current parsing filename.
+ */
+static VALUE
+ripper_filename(VALUE self)
+{
+    struct parser_params *parser;
+
+    Data_Get_Struct(self, struct parser_params, parser);
+    if (!ripper_initialized_p(parser)) {
+        rb_raise(rb_eArgError, "method called for uninitialized object");
+    }
+    return parser->parser_ruby_sourcefile_string;
+}
+
+/*
+ *  call-seq:
  *    ripper#lineno   -> Integer
  *
  *  Return line number of current parsing line.
@@ -10464,6 +10482,7 @@ Init_ripper(void)
     rb_define_method(Ripper, "initialize", ripper_initialize, -1);
     rb_define_method(Ripper, "parse", ripper_parse, 0);
     rb_define_method(Ripper, "column", ripper_column, 0);
+    rb_define_method(Ripper, "filename", ripper_filename, 0);
     rb_define_method(Ripper, "lineno", ripper_lineno, 0);
     rb_define_method(Ripper, "end_seen?", rb_parser_end_seen_p, 0);
     rb_define_method(Ripper, "encoding", rb_parser_encoding, 0);
