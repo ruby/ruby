@@ -131,7 +131,7 @@ module IRB
 	      args << "*opts"
 	      arity = -arity - 1
 	    end
-	    args.unshift *(1..arity).map {|i| "arg" + i.to_s }
+	    args.unshift(*(1..arity).map {|i| "arg" + i.to_s })
 	    args << "&block"
 	    args = args.join(", ")
 	    eval <<-"EOS2", binding, __FILE__, __LINE__+1

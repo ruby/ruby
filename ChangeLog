@@ -1,3 +1,11 @@
+Sun Oct 11 10:27:09 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/irb/context.rb (IRB::Context#irb_name): removed duplicated
+	  attr_reader.  [ruby-core:26047]
+
+	* lib/irb/ruby-lex.rb (RubyLex#lex_int2): removed duplicated
+	  character class range.
+
 Sun Oct 11 09:04:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (RB_GC_GUARD_PTR): workaround for gcc
