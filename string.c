@@ -1283,7 +1283,7 @@ rb_check_string_type(VALUE str)
  *     String.try_convert(obj) -> string or nil
  *
  *  Try to convert <i>obj</i> into a String, using to_str method.
- *  Returns converted regexp or nil if <i>obj</i> cannot be converted
+ *  Returns converted string or nil if <i>obj</i> cannot be converted
  *  for any reason.
  *
  *     String.try_convert("str")     # => str
