@@ -1,3 +1,7 @@
+Tue Oct 13 18:20:57 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_magic_comment): fixed normalization.
+
 Mon Oct 12 23:27:57 2009  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (login): use "anonymous@" as a default password.

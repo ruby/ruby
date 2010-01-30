@@ -6332,7 +6332,7 @@ parser_magic_comment(struct parser_params *parser, const char *str, int len)
 	str_copy(name, beg, n);
 	s = RSTRING_PTR(name);
 	for (i = 0; i < n; ++i) {
-	    if (*s == '-') *s = '_';
+	    if (s[i] == '-') s[i] = '_';
 	}
 #ifndef RIPPER
 	do {
