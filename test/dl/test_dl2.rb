@@ -3,6 +3,53 @@ require 'dl/callback'
 
 module DL
 class TestDL < TestBase
+  # TODO: refactor test repetition
+
+  def test_realloc
+    str = "abc"
+    ptr_id = DL.realloc(0, 4)
+    ptr    = CPtr.new(ptr_id, 4)
+
+    assert_equal ptr_id, ptr.to_i
+
+    cfunc  = CFunc.new(@libc['strcpy'], TYPE_VOIDP, 'strcpy')
+    x      = cfunc.call([ptr_id,str].pack("l!p").unpack("l!*"))
+    assert_equal("abc\0", ptr[0,4])
+    DL.free ptr_id
+  end
+
+  def test_realloc_secure
+    assert_raises(SecurityError) do
+      Thread.new do
+        $SAFE = 4
+        DL.realloc(0, 4)
+      end.join
+    end
+  end
+
+  def test_malloc
+    str = "abc"
+
+    ptr_id = DL.malloc(4)
+    ptr    = CPtr.new(ptr_id, 4)
+
+    assert_equal ptr_id, ptr.to_i
+
+    cfunc  = CFunc.new(@libc['strcpy'], TYPE_VOIDP, 'strcpy')
+    x      = cfunc.call([ptr_id,str].pack("l!p").unpack("l!*"))
+    assert_equal("abc\0", ptr[0,4])
+    DL.free ptr_id
+  end
+
+  def test_malloc_security
+    assert_raises(SecurityError) do
+      Thread.new do
+        $SAFE = 4
+        DL.malloc(4)
+      end.join
+    end
+  end
+
   def test_call_int()
     cfunc = CFunc.new(@libc['atoi'], TYPE_INT, 'atoi')
     x = cfunc.call(["100"].pack("p").unpack("l!*"))
