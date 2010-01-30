@@ -1,3 +1,7 @@
+Sat Oct 10 23:57:44 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (path_check_0): prevent from GC.
+
 Fri Oct  9 02:12:02 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* ext/curses/curses.c: Many functions of module Curses could cause a

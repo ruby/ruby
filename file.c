@@ -4405,7 +4405,8 @@ path_check_0(VALUE path, int execpath)
 
 	rb_str_cat2(newpath, "/");
 	rb_str_cat2(newpath, p0);
-	p0 = RSTRING_PTR(path = newpath);
+        path = newpath;
+	p0 = RSTRING_PTR(newpath);
     }
     for (;;) {
 #ifndef S_IWOTH
@@ -4419,6 +4420,7 @@ path_check_0(VALUE path, int execpath)
 	    rb_warn("Insecure world writable dir %s in %sPATH, mode 0%o",
 		    p0, (execpath ? "" : "LOAD_"), st.st_mode);
 	    if (p) *p = '/';
+            RB_GC_GUARD(path);
 	    return 0;
 	}
 	s = strrdirsep(p0);
