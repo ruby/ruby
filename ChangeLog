@@ -1,3 +1,14 @@
+Sun Oct 18 09:49:14 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/test_prime.rb
+	  (TestPrime#test_eratosthenes_works_fine_after_timeout):
+	  test for [ruby-dev:39465].
+
+	* lib/prime.rb (Prime::EratosthenesSieve):
+	  fixed [ruby-dev:39465].
+	  suppressed memory reallocation.
+	  constantified some magic numbers.
+
 Fri Oct 17 00:05:53 2009  wanabe  <s.wanabe@gmail.com>
 
 	* st.c (unpack_entries): save table->bins and never change the table
