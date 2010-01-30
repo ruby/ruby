@@ -219,8 +219,9 @@ PRINTF_ARGS(void ruby_debug_printf(const char*, ...), 1, 2);
 #define ADD_TRACE(seq, line, event) \
   do { \
       if ((event) == RUBY_EVENT_LINE && iseq->coverage && \
-	  RARRAY_PTR(iseq->coverage)[(line) - 1] == Qnil) { \
+	  (line) != iseq->compile_data->last_coverable_line) { \
 	  RARRAY_PTR(iseq->coverage)[(line) - 1] = INT2FIX(0); \
+	  iseq->compile_data->last_coverable_line = (line); \
 	  ADD_INSN1(seq, line, trace, INT2FIX(RUBY_EVENT_COVERAGE)); \
       } \
       if (iseq->compile_data->option->trace_instruction) { \

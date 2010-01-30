@@ -191,6 +191,7 @@ prepare_iseq_build(rb_iseq_t *iseq,
     iseq->compile_data->storage_head->buff =
       (char *)(&iseq->compile_data->storage_head->buff + 1);
     iseq->compile_data->option = option;
+    iseq->compile_data->last_coverable_line = -1;
 
     set_relation(iseq, parent);
 

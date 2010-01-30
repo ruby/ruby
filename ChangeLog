@@ -1,3 +1,10 @@
+Fri Oct  9 01:07:34 2009  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* compile.c (ADD_TRACE): fire coverage event in ensure clause.
+	  [ruby-dev:39303]
+
+	* iseq.h, iseq.c: ditto.
+
 Fri Oct  9 00:33:29 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/net/telnet.rb (cmd): Pass FailEOF options: patch by Brian
