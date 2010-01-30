@@ -1,3 +1,10 @@
+Sat Jan 30 18:09:36 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* vm_method.c (rb_alias): treats an alias as if it is a newly defined
+	  method so that oklass in a method cache refers the class on which the 
+	  aliasing occured.
+	  [ruby-core:26074] (#2202).
+
 Sat Jan 30 17:58:28 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* .gdbinit: follows r24470.

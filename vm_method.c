@@ -771,7 +771,7 @@ rb_alias(VALUE klass, ID name, ID def)
     st_insert(RCLASS_M_TBL(klass), name,
 	      (st_data_t) NEW_FBODY(
 		  method = NEW_METHOD(orig_fbody->nd_body->nd_body,
-			     orig_fbody->nd_body->nd_clss,
+			     klass,
 			     NOEX_WITH_SAFE(orig_fbody->nd_body->nd_noex)), def));
     method->nd_file = (void *)def;
 
