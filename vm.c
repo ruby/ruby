@@ -593,7 +593,6 @@ rb_vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self,
     VALUE val = Qundef;
     int state;
     volatile int stored_safe = th->safe_level;
-    rb_control_frame_t * volatile cfp = th->cfp;
 
     TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == 0) {
