@@ -1,3 +1,8 @@
+Tue Oct 27 05:56:39 2009  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vm.c (invoke_block_from_c): return Qnil when its iseq is
+	  SPECIAL CONST. [ruby-core:26335]
+
 Mon Oct 26 12:06:27 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (io_fwrite): adjust stdio file position after direct write on

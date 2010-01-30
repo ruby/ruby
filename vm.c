@@ -493,7 +493,9 @@ invoke_block_from_c(rb_thread_t *th, const rb_block_t *block,
 		    VALUE self, int argc, const VALUE *argv,
 		    const rb_block_t *blockptr, const NODE *cref)
 {
-    if (BUILTIN_TYPE(block->iseq) != T_NODE) {
+    if (SPECIAL_CONST_P(block->iseq))
+	return Qnil;
+    else if (BUILTIN_TYPE(block->iseq) != T_NODE) {
 	const rb_iseq_t *iseq = block->iseq;
 	const rb_control_frame_t *cfp;
 	int i, opt_pc, arg_size = iseq->arg_size;

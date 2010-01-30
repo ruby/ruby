@@ -1,7 +1,7 @@
 require 'test/unit'
+require_relative 'envutil'
 
 class TestRubyYield < Test::Unit::TestCase
-
   def test_ary_each
     ary = [1]
     ary.each {|a, b, c, d| assert_equal [1,nil,nil,nil], [a,b,c,d] }
@@ -82,6 +82,26 @@ class TestRubyYield < Test::Unit::TestCase
       [a,b,c,d,e]
     }
     assert_equal([1,2,[3],4,5], r, "[ruby-core:19485]")
+  end
+
+  def test_through_a_method_defined_by_define_method
+    assert_normal_exit(<<-EOS, "[ruby-core:26335]")
+      class C
+        def meth
+          yield 1
+        end
+      end
+      
+      class D < C
+        define_method(:meth) do
+          super()
+        end
+      end
+      begin
+        D.new.meth {}
+      rescue LocalJumpError
+      end
+    EOS
   end
 end
 
