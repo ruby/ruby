@@ -1,3 +1,9 @@
+Fri Oct 17 00:05:53 2009  wanabe  <s.wanabe@gmail.com>
+
+	* st.c (unpack_entries): save table->bins and never change the table
+	  during unpacking. Because st_insert() may cause GC and refer the
+	  table, i.e. st_foreach().  [Bug #2196]
+
 Fri Oct 16 18:42:18 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bootstraptest/test_gc.rb: added tests based on [ruby-dev:39484]
