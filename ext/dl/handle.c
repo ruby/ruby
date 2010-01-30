@@ -68,6 +68,7 @@ rb_dlhandle_initialize(int argc, VALUE argv[], VALUE self)
   default:
     rb_bug("rb_dlhandle_new");
   }
+  rb_secure(2);
 
   ptr = dlopen(clib, cflag);
 #if defined(HAVE_DLERROR)
