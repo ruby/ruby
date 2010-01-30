@@ -115,7 +115,7 @@ module Test
       end
 
       LANG_ENVS = %w"LANG LC_ALL LC_CTYPE"
-      def assert_in_out_err(args, test_stdin = "", test_stdout = "", test_stderr = "", message = nil)
+      def assert_in_out_err(args, test_stdin = "", test_stdout = [], test_stderr = [], message = nil)
         in_c, in_p = IO.pipe
         out_p, out_c = IO.pipe
         err_p, err_c = IO.pipe

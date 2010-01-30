@@ -1,3 +1,11 @@
+Thu Oct 22 20:20:27 2009  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/envutil.rb (assert_in_out_err): test_stdout and
+	  test_stderr should be an array.
+
+	* test/ruby/test_rubyoptions.rb (test_notfound): test_stdin of
+	  assert_in_out_err should be a string.
+
 Tue Oct 20 16:41:18 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* include/ruby/win32.h (finite, scalb): inline'ed non-standard
