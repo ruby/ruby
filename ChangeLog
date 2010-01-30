@@ -1,3 +1,14 @@
+Mon Oct  5 17:19:33 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/delegate.rb (Delegator::public_api): take snapshot of
+	  public method at the beginning time.
+
+	* lib/delegate.rb (SimpleDelegator#initialize): use
+	  Delegator.public_api since public_method might be added after
+	  initialization.  [ruby-dev:39383]
+
+	* lib/delegate.rb (DelegateClass): ditto.
+
 Tue Oct  6 18:56:09 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* struct.c (rb_struct_select): Struct#select should return
