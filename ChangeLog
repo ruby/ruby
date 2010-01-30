@@ -1,3 +1,10 @@
+Sun Oct 11 09:04:08 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (RB_GC_GUARD_PTR): workaround for gcc
+	  optimization.
+
+	* include/ruby/ruby.h (ruby_exec_node): declared.
+
 Sat Oct 10 23:57:44 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (path_check_0): prevent from GC.
