@@ -1,3 +1,8 @@
+Fri Oct  9 00:33:29 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/net/telnet.rb (cmd): Pass FailEOF options: patch by Brian
+	  Candler [ruby-core:22723]
+
 Mon Oct  5 17:19:33 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/delegate.rb (Delegator::public_api): take snapshot of
