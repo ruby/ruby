@@ -1,3 +1,7 @@
+Sun Jan 31 13:31:43 2010  wanabe  <s.wanabe@gmail.com>
+
+	* gc.c (obj_free): free rb_classext_t of eigenclass.  [Bug #1392]
+
 Sun Jan 31 13:00:14 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/rexml/document.rb (REXML::Document#add): fix duplicate XMLDecls

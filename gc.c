@@ -2047,6 +2047,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
       case T_ICLASS:
 	/* iClass shares table with the module */
+	xfree(RANY(obj)->as.klass.ptr);
 	break;
 
       case T_FLOAT:
