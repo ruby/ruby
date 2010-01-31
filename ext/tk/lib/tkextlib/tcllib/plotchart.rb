@@ -145,8 +145,8 @@ module Tk::Tcllib::Plotchart
     list(tk_call_without_enc('::Plotchart::coordsToPixel', w.path, x, y))
   end
 
-  def self.determine_scale(w, xmax, ymax)
-    tk_call_without_enc('::Plotchart::determineScale', w.path, xmax, ymax)
+  def self.determine_scale(*args) # (xmin, xmax, inverted=false)
+    tk_call_without_enc('::Plotchart::determineScale', *args)
   end
 
   def self.set_zoom_pan(w)
