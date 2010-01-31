@@ -1167,8 +1167,8 @@ subst_free(ptr)
     }
 }
 
-static struct cbsubst_info *
-allocate_cbsubst_info()
+static VALUE
+allocate_cbsubst_info(struct cbsubst_info **inf_ptr)
 {
   struct cbsubst_info *inf;
   volatile VALUE proc, aliases;
@@ -1191,15 +1191,16 @@ allocate_cbsubst_info()
   aliases = rb_hash_new();
   inf->aliases = aliases;
 
-  return inf;
+  if (inf_ptr != (struct cbsubst_info **)NULL) *inf_ptr = inf;
+
+  return Data_Wrap_Struct(cSUBST_INFO, subst_mark, subst_free, inf);
 }
 
 static void
 cbsubst_init()
 {
-    rb_const_set(cCB_SUBST, ID_SUBST_INFO, 
-		 Data_Wrap_Struct(cSUBST_INFO, subst_mark, subst_free, 
-				  allocate_cbsubst_info()));
+  rb_const_set(cCB_SUBST, ID_SUBST_INFO, 
+	       allocate_cbsubst_info((struct cbsubst_info **)NULL));
 }
 
 static VALUE
@@ -1517,6 +1518,7 @@ cbsubst_table_setup(argc, argv, self)
      VALUE *argv;
      VALUE self;
 {
+  volatile VALUE cbsubst_obj;
   volatile VALUE key_inf;
   volatile VALUE longkey_inf;
   volatile VALUE proc_inf;
@@ -1538,7 +1540,7 @@ cbsubst_table_setup(argc, argv, self)
   }
 
   /* init */
-  subst_inf = allocate_cbsubst_info();
+  cbsubst_obj = allocate_cbsubst_info(&subst_inf);
 
   /*
    * keys : array of [subst, type, ivar]
@@ -1625,9 +1627,7 @@ cbsubst_table_setup(argc, argv, self)
 		 RARRAY_PTR(inf)[1]);
   }
 
-  rb_const_set(self, ID_SUBST_INFO, 
-	       Data_Wrap_Struct(cSUBST_INFO, subst_mark, 
-				subst_free, subst_inf));
+  rb_const_set(self, ID_SUBST_INFO, cbsubst_obj);
 
   return self;
 }

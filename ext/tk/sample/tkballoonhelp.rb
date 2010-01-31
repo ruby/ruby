@@ -111,12 +111,24 @@ class Tk::RbWidget::BalloonHelp<TkLabel
     @frame.deiconify
     @frame.raise
 
-    @org_cursor = @parent['cursor']
-    @parent.cursor('crosshair')
+    begin
+      @org_cursor = @parent.cget('cursor')
+    rescue
+      @org_cursor = @parent['cursor']
+    end
+    begin
+      @parent.configure('cursor', 'crosshair')
+    rescue
+      @parent.cursor('crosshair')
+    end
   end
 
   def erase
-    @parent.cursor(@org_cursor)
+    begin
+      @parent.configure('cursor', @org_cursor)
+    rescue
+      @parent.cursor(@org_cursor)
+    end
     @frame.withdraw
   end
 
