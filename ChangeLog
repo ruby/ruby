@@ -1,3 +1,7 @@
+Sun Jan 31 21:10:15 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* vm_insnhelper.c (vm_throw): fixed infinite loop.  [ruby-core:27969]
+
 Sun Jan 31 15:50:34 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/rexml/text.rb (REXML::Text#initialize): fix typo and a bug that
