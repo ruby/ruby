@@ -1,8 +1,13 @@
+Sun Jan 31 15:50:34 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/rexml/text.rb (REXML::Text#initialize): fix typo and a bug that
+	  seems to be caused by refactoring.
+
 Sun Jan 31 15:46:37 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/rexml/parent.rb (REXML::Parent#delete): return the deleted node
 	  because the rdoc of REXML::Element#delete_element says it returns
-	  "the element that was removed."
+	  "the element that was removed."  [REXMLTracker#161]
 
 Sun Jan 31 14:33:00 2010  James Edward Gray II  <jeg2@ruby-lang.org>
 
