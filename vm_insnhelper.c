@@ -1491,7 +1491,7 @@ vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 				    dfp = cfp->dfp;
 				    goto valid_return;
 				}
-				tdfp = GC_GUARDED_PTR_REF((VALUE *)*dfp);
+				tdfp = GC_GUARDED_PTR_REF((VALUE *)*tdfp);
 			    }
 			}
 		    }
