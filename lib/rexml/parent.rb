@@ -34,6 +34,7 @@ module REXML
       found = false
       @children.delete_if {|c| c.equal?(object) and found = true }
       object.parent = nil if found
+      found ? object : nil
     end
 
     def each(&block)
