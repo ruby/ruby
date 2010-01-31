@@ -1174,6 +1174,8 @@ module TkCore
       opts = ''
     end
 
+    # RUN_EVENTLOOP_ON_MAIN_THREAD = true
+
     unless self.const_defined? :RUN_EVENTLOOP_ON_MAIN_THREAD
       if WITH_RUBY_VM ### check Ruby 1.9 !!!!!!!
         # *** NEED TO FIX ***
@@ -1275,6 +1277,14 @@ module TkCore
 
       INTERP = INTERP_THREAD[:interp]
       INTERP_THREAD_STATUS = INTERP_THREAD[:status]
+
+      # delete the interpreter and kill the eventloop thread at exit
+      END{
+        if INTERP_THREAD.alive?
+          INTERP.delete
+          INTERP_THREAD.kill
+        end
+      }
     end
 
     def INTERP.__getip
@@ -4890,7 +4900,7 @@ class TkObject<TkKernel
       begin
         cget(name)
       rescue
-        if self.kind_of?(TkWindow)
+        if self.kind_of?(TkWindow) && name != "to_ary" && name != "to_str"
           fail NameError,
                "unknown option '#{id}' for #{self.inspect} (deleted widget?)"
         else

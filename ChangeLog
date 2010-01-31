@@ -1,3 +1,14 @@
+Mon Feb  1 07:36:33 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tkutil/tkutil.c: fix SEGV on TkUtil::CallbackSubst._setup_subst_table.
+
+	* ext/tk/lib/tk.rb: [POTENTIAL INCOMPATIBLE] return NoMethodError
+	  for TkWindow#to_ary and to_str.
+
+	* ext/tk/lib/tkextlib/tcllib/plotchart.rb: wrong arguments.
+
+	* ext/tk/sampel/tkballoonhelp.rb: fail to support TkEntry widgets.
+
 Wed Jan 27 14:25:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (thread_init): used only for setitimer or threaded.
