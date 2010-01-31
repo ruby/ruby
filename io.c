@@ -2860,8 +2860,8 @@ rb_io_each_codepoint(VALUE io)
 	    c = rb_enc_codepoint(fptr->cbuf+fptr->cbuf_off,
 				 fptr->cbuf+fptr->cbuf_off+fptr->cbuf_len,
 				 fptr->encs.enc);
-	    fptr->rbuf_off += n;
-	    fptr->rbuf_len -= n;
+	    fptr->cbuf_off += n;
+	    fptr->cbuf_len -= n;
 	    rb_yield(UINT2NUM(c));
 	}
     }
