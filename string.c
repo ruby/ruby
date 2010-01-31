@@ -1349,7 +1349,8 @@ rb_string_value(volatile VALUE *ptr)
 {
     VALUE s = *ptr;
     if (TYPE(s) != T_STRING) {
-	*ptr = rb_str_to_str(s);
+	s = rb_str_to_str(s);
+	*ptr = s;
     }
     return s;
 }
