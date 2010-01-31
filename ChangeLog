@@ -1,3 +1,9 @@
+Sun Jan 31 13:00:14 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/rexml/document.rb (REXML::Document#add): fix duplicate XMLDecls
+	  and bad DocTypes in REXML::Document.    (Bug #19058) [ruby-core:27979]
+	  based on the patch by Federico Builes.
+
 Fri Jan 29 22:49:21 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/getoptlong.rb (set_options): ensure that the type of argument is
