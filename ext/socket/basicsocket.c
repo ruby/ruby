@@ -148,7 +148,9 @@ bsock_close_write(VALUE sock)
 
 /*
  * Document-method: setsockopt
- * call-seq: setsockopt(level, optname, optval)
+ * call-seq:
+ *   setsockopt(level, optname, optval)
+ *   setsockopt(socketoption)
  *
  * Sets a socket option. These are protocol and system specific, see your
  * local system documentation for details.
@@ -156,8 +158,12 @@ bsock_close_write(VALUE sock)
  * === Parameters
  * * +level+ is an integer, usually one of the SOL_ constants such as
  *   Socket::SOL_SOCKET, or a protocol level.
+ *   A string or symbol of the name, possibly without prefix, is also
+ *   accepted.
  * * +optname+ is an integer, usually one of the SO_ constants, such
  *   as Socket::SO_REUSEADDR.
+ *   A string or symbol of the name, possibly without prefix, is also
+ *   accepted.
  * * +optval+ is the value of the option, it is passed to the underlying
  *   setsockopt() as a pointer to a certain number of bytes. How this is
  *   done depends on the type:
@@ -167,16 +173,21 @@ bsock_close_write(VALUE sock)
  *     int is passed as for a Fixnum. Note that +false+ must be passed,
  *     not +nil+.
  *   - String: the string's data and length is passed to the socket.
+ * * +socketoption+ is an instance of Socket::Option
  *
  * === Examples
  *
  * Some socket options are integers with boolean values, in this case
  * #setsockopt could be called like this:
+ *   sock.setsockopt(:SOCKET, :REUSEADDR, true) 
  *   sock.setsockopt(Socket::SOL_SOCKET,Socket::SO_REUSEADDR, true)
+ *   sock.setsockopt(Socket::Option.bool(:INET, :SOCKET, :REUSEADDR, true))
  *
  * Some socket options are integers with numeric values, in this case
  * #setsockopt could be called like this:
+ *   sock.setsockopt(:IP, :TTL, 255)  
  *   sock.setsockopt(Socket::IPPROTO_IP, Socket::IP_TTL, 255)
+ *   sock.setsockopt(Socket::Option.int(:INET, :IP, :TTL, 255))     
  *
  * Option values may be structs. Passing them can be complex as it involves
  * examining your system headers to determine the correct definition. An
@@ -256,19 +267,29 @@ bsock_setsockopt(int argc, VALUE *argv, VALUE sock)
  * === Parameters
  * * +level+ is an integer, usually one of the SOL_ constants such as
  *   Socket::SOL_SOCKET, or a protocol level.
+ *   A string or symbol of the name, possibly without prefix, is also
+ *   accepted.
  * * +optname+ is an integer, usually one of the SO_ constants, such
  *   as Socket::SO_REUSEADDR.
+ *   A string or symbol of the name, possibly without prefix, is also
+ *   accepted.
  *
  * === Examples
  *
  * Some socket options are integers with boolean values, in this case
  * #getsockopt could be called like this:
+ *
+ *   reuseaddr = sock.getsockopt(:SOCKET, :REUSEADDR).bool
+ *
  *   optval = sock.getsockopt(Socket::SOL_SOCKET,Socket::SO_REUSEADDR)
  *   optval = optval.unpack "i"
  *   reuseaddr = optval[0] == 0 ? false : true
  *
  * Some socket options are integers with numeric values, in this case
  * #getsockopt could be called like this:
+ *
+ *   ipttl = sock.getsockopt(:IP, :TTL).int
+ *
  *   optval = sock.getsockopt(Socket::IPPROTO_IP, Socket::IP_TTL)
  *   ipttl = optval.unpack("i")[0]
  *
@@ -282,8 +303,13 @@ bsock_setsockopt(int argc, VALUE *argv, VALUE sock)
  *   };
  * 
  * In this case #getsockopt could be called like this:
+ *
+ *   # Socket::Option knows linger structure.
+ *   onoff, linger = sock.getsockopt(:SOCKET, :LINGER).linger
+ *
  *   optval =  sock.getsockopt(Socket::SOL_SOCKET, Socket::SO_LINGER)
  *   onoff, linger = optval.unpack "ii"
+ *   onoff = onoff == 0 ? false : true
 */
 static VALUE
 bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
