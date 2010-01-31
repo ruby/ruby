@@ -197,7 +197,7 @@ class TestDir < Test::Unit::TestCase
 
   def test_symlink
     begin
-      [:dummy, *?a..?z].each do |f|
+      ["dummy", *?a..?z].each do |f|
 	File.symlink(File.join(@root, f),
 		     File.join(@root, "symlink-#{ f }"))
       end
