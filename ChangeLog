@@ -1,3 +1,8 @@
+Sun Jan 31 21:43:35 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* string.c (rb_string_value): make no exception for Symbol.
+	  [ruby-dev:40274]
+
 Sun Jan 31 21:10:15 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm_insnhelper.c (vm_throw): fixed infinite loop.  [ruby-core:27969]
