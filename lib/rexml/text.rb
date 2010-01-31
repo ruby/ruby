@@ -88,7 +88,7 @@ module REXML
     #   Text.new( "sean russell", false, nil, true, ["s"] ) #-> "sean russell"
     # In the last example, the +entity_filter+ argument is ignored.
     #
-    # +pattern+ INTERNAL USE ONLY
+    # +illegal+ INTERNAL USE ONLY
     def initialize(arg, respect_whitespace=false, parent=nil, raw=nil,
       entity_filter=nil, illegal=NEEDS_A_SECOND_CHECK )
 
@@ -117,7 +117,7 @@ module REXML
 
       @string.gsub!( /\r\n?/, "\n" )
 
-      Text.check(@string, NEEDS_A_SECOND_CHECK, doctype) if @raw and @parent
+      Text.check(@string, illegal, doctype) if @raw
     end
 
     def parent= parent
