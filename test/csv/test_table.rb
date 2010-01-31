@@ -321,6 +321,12 @@ class TestCSVTable < Test::Unit::TestCase
     END_RESULT
   end
 
+  def test_delete_with_blank_rows
+    data = "col1,col2\nra1,ra2\n\nrb1,rb2"
+    table = CSV.parse(data, :headers => true)
+    assert_equal(["ra2", nil, "rb2"], table.delete("col2"))
+  end
+  
   def test_delete_if
     ######################
     ### Mixed/Row Mode ###

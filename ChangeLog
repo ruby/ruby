@@ -1,3 +1,7 @@
+Sun Jan 31 14:33:00 2010  James Edward Gray II  <jeg2@ruby-lang.org>
+
+  * A bug fix for deleting blank Table rows from Andy Hartford.
+
 Sun Jan 31 13:31:43 2010  wanabe  <s.wanabe@gmail.com>
 
 	* gc.c (obj_free): free rb_classext_t of eigenclass.  [Bug #1392]

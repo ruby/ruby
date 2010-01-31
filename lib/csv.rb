@@ -198,7 +198,7 @@ require "stringio"
 #
 class CSV
   # The version of the installed library.
-  VERSION = "2.4.5".freeze
+  VERSION = "2.4.6".freeze
 
   #
   # A CSV::Row is part Array and part Hash.  It retains an order for the fields
@@ -364,10 +364,12 @@ class CSV
     # or +nil+ if a pair could not be found.
     #
     def delete(header_or_index, minimum_index = 0)
-      if header_or_index.is_a? Integer  # by index
+      if header_or_index.is_a? Integer                 # by index
         @row.delete_at(header_or_index)
-      else                              # by header
-        @row.delete_at(index(header_or_index, minimum_index))
+      elsif i = index(header_or_index, minimum_index)  # by header
+        @row.delete_at(i)
+      else
+        [ ]
       end
     end
 
