@@ -259,3 +259,15 @@ assert_normal_exit %q{
     end
   end
 }
+
+assert_normal_exit %q{
+  -> do
+    1.times do
+      begin
+        raise
+      rescue
+        return
+      end
+    end
+  end.call
+}
