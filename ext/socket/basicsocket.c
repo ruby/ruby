@@ -258,11 +258,12 @@ bsock_setsockopt(int argc, VALUE *argv, VALUE sock)
 #if !defined(__BEOS__)
 /*
  * Document-method: getsockopt
- * call-seq: getsockopt(level, optname)
+ * call-seq:
+ *   getsockopt(level, optname) => socketoption
  *
  * Gets a socket option. These are protocol and system specific, see your
  * local system documentation for details. The option is returned as
- * a String with the data being the binary value of the socket option.
+ * a Socket::Option.
  *
  * === Parameters
  * * +level+ is an integer, usually one of the SOL_ constants such as
