@@ -117,7 +117,7 @@ module REXML
 
       @string.gsub!( /\r\n?/, "\n" )
 
-      Text.check(@string, illegal, doctype) if @raw
+      Text.check(@string, illegal, doctype) if @raw and @parent
     end
 
     def parent= parent
