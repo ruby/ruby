@@ -1,3 +1,8 @@
+Mon Feb  1 17:08:42 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (flo_minus): RDoc update.  a patch from red stun
+	  in [ruby-core:27951]
+
 Mon Feb  1 07:36:33 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tkutil/tkutil.c: fix SEGV on TkUtil::CallbackSubst._setup_subst_table.
