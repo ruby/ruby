@@ -637,7 +637,7 @@ flo_plus(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   float + other  ->  float
+ *   float - other  ->  float
  *
  * Returns a new float which is the difference of <code>float</code>
  * and <code>other</code>.
