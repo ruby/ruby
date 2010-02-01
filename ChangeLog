@@ -1,3 +1,11 @@
+Mon Feb  1 16:43:09 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (proc_invoke): reverted r25975.  [ruby-dev:39931]
+	  [ruby-dev:40059]
+
+	* eval.c (rb_mod_define_method): return original block but not
+	  bound block.  [ruby-core:26984]
+
 Mon Feb  1 07:36:33 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tkutil/tkutil.c: fix SEGV on TkUtil::CallbackSubst._setup_subst_table.

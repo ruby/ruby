@@ -10089,7 +10089,7 @@ rb_mod_define_method(argc, argv, mod)
     VALUE mod;
 {
     ID id;
-    VALUE body;
+    VALUE body, orig;
     NODE *node;
     int noex;
 
@@ -10108,6 +10108,7 @@ rb_mod_define_method(argc, argv, mod)
     else {
 	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)", argc);
     }
+    orig = body;
     if (RDATA(body)->dmark == (RUBY_DATA_FUNC)bm_mark) {
 	node = NEW_DMETHOD(method_unbind(body));
     }
@@ -10136,7 +10137,7 @@ rb_mod_define_method(argc, argv, mod)
 	}
     }
     rb_add_method(mod, id, node, noex);
-    return body;
+    return orig;
 }
 
 /*
