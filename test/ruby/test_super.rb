@@ -120,7 +120,7 @@ class TestSuper < Test::Unit::TestCase
     def uu(a)
       class << self
         define_method(:tt) do |sym|
-          super
+          super(sym)
         end
       end
     end
@@ -128,7 +128,7 @@ class TestSuper < Test::Unit::TestCase
 
   class B
     def m
-      [self, "#{self.class.to_s}::m"]
+      [self, "#{self.to_s}::m"]
     end
   end
 
@@ -141,12 +141,12 @@ class TestSuper < Test::Unit::TestCase
   def test_define_method
     a = A.new
     a.uu(12)
-    assert_equal("A#tt", a.tt(12), '[ruby-core:03856]')
+    assert_equal("A#tt", a.tt(12), "[ruby-core:3856]")
 
     bug2419 = '[ruby-core:26984]'
     q = C.t
     assert_raise(NoMethodError, bug2419) {q.call}
     c = C.new
-    assert_equal([c, "#{C.to_s}::m"], c.m, bug2419)
+    assert_equal([c, "#{c.to_s}::m"], c.m, bug2419)
   end
 end
