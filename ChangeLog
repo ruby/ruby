@@ -1,3 +1,7 @@
+Mon Feb  1 21:26:41 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/matrix.rb (Vector#each2): returns a self.  [ruby-dev:40241]
+
 Mon Feb  1 17:08:42 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (flo_minus): RDoc update.  a patch from red stun

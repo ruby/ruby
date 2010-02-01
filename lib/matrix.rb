@@ -1149,6 +1149,7 @@ class Vector
     size.times do |i|
       yield @elements[i], v[i]
     end
+    self
   end
 
   #
