@@ -1620,8 +1620,6 @@ enum_reverse_each(int argc, VALUE *argv, VALUE obj)
 static VALUE
 each_val_i(VALUE i, VALUE p, int argc, VALUE *argv)
 {
-    VALUE *memo = (VALUE *)p;
-
     ENUM_WANT_SVALUE();
     rb_yield(i);
     return Qnil;
