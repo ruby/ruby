@@ -70,8 +70,8 @@ class Set
     enum.nil? and return
 
     if block
-      enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
-      enum.each { |o| add(block[o]) }
+      enum.respond_to?(:each) or raise ArgumentError, "value must be enumerable"
+      enum.each_entry { |o| add(block[o]) }
     else
       merge(enum)
     end
@@ -123,9 +123,9 @@ class Set
     if enum.class == self.class
       @hash.replace(enum.instance_eval { @hash })
     else
-      enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
+      enum.respond_to?(:each) or raise ArgumentError, "value must be enumerable"
       clear
-      enum.each { |o| add(o) }
+      enum.each_entry { |o| add(o) }
     end
 
     self
@@ -281,8 +281,8 @@ class Set
     if enum.instance_of?(self.class)
       @hash.update(enum.instance_variable_get(:@hash))
     else
-      enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
-      enum.each { |o| add(o) }
+      enum.respond_to?(:each) or raise ArgumentError, "value must be enumerable"
+      enum.each_entry { |o| add(o) }
     end
 
     self
@@ -291,8 +291,8 @@ class Set
   # Deletes every element that appears in the given enumerable object
   # and returns self.
   def subtract(enum)
-    enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
-    enum.each { |o| delete(o) }
+    enum.respond_to?(:each) or raise ArgumentError, "value must be enumerable"
+    enum.each_entry { |o| delete(o) }
     self
   end
 
@@ -314,9 +314,9 @@ class Set
   # Returns a new set containing elements common to the set and the
   # given enumerable object.
   def &(enum)
-    enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
+    enum.respond_to?(:each) or raise ArgumentError, "value must be enumerable"
     n = self.class.new
-    enum.each { |o| n.add(o) if include?(o) }
+    enum.each_entry { |o| n.add(o) if include?(o) }
     n
   end
   alias intersection &	##
@@ -514,7 +514,7 @@ class SortedSet < Set
 	  end
 	  
 	  def add(o)
-	    o.respond_to?(:<=>) or raise ArgumentError, "value must repond to <=>"
+	    o.respond_to?(:<=>) or raise ArgumentError, "value must respond to <=>"
 	    super
 	  end
 	  alias << add
@@ -642,16 +642,16 @@ end
 # 	end
 #
 # 	def replace(enum)
-# 	  enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
+# 	  enum.respond_to?(:each) or raise ArgumentError, "value must be enumerable"
 # 	  clear
-# 	  enum.each { |o| add(o) }
+# 	  enum.each_entry { |o| add(o) }
 #
 # 	  self
 # 	end
 #
 # 	def merge(enum)
-# 	  enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
-# 	  enum.each { |o| add(o) }
+# 	  enum.respond_to?(:each) or raise ArgumentError, "value must be enumerable"
+# 	  enum.each_entry { |o| add(o) }
 #
 # 	  self
 # 	end

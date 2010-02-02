@@ -1,3 +1,15 @@
+Tue Feb  2 14:30:27 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_each_entry): new method #each_entry to pack values
+	  from yield into an array.
+
+	* lib/set.rb (Set#merge): use Enumerable#each_entry to implement
+	  Set compatible to 1.8 behavior.  [ruby-core:27985]
+
+	* lib/set.rb: replace is_a?(Enumerable) with respond_to?(:each)
+	  for duck typing.
+
+	* lib/set.rb (SortedSet#add): typo fixed.
 Tue Feb  2 11:13:56 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/delegate.rb (Delegator#marshal_dump): exclude

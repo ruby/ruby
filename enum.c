@@ -1618,6 +1618,46 @@ enum_reverse_each(int argc, VALUE *argv, VALUE obj)
 
 
 static VALUE
+each_val_i(VALUE i, VALUE p, int argc, VALUE *argv)
+{
+    VALUE *memo = (VALUE *)p;
+
+    ENUM_WANT_SVALUE();
+    rb_yield(i);
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.each_entry {|obj| block}  => enum
+ *
+ *  Calls <i>block</i> once for each element in <i>self</i>, passing that
+ *  element as a parameter, converting multiple values from yield to an
+ *  array.
+ *
+ *     class Foo
+ *       include Enumerable
+ *       def each
+ *         yield 1
+ *         yield 1,2
+ *       end
+ *     end
+ *     Foo.new.each_entry{|o| print o, " -- "}
+ *
+ *  produces:
+ *
+ *     1 -- [1, 2] --
+ */
+
+static VALUE
+enum_each_entry(int argc, VALUE *argv, VALUE obj)
+{
+    RETURN_ENUMERATOR(obj, argc, argv);
+    rb_block_call(obj, id_each, argc, argv, each_val_i, 0);
+    return obj;
+}
+
+static VALUE
 zip_ary(VALUE val, NODE *memo, int argc, VALUE *argv)
 {
     volatile VALUE result = memo->u1.value;
@@ -2435,6 +2475,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "include?", enum_member, 1);
     rb_define_method(rb_mEnumerable, "each_with_index", enum_each_with_index, -1);
     rb_define_method(rb_mEnumerable, "reverse_each", enum_reverse_each, -1);
+    rb_define_method(rb_mEnumerable, "each_entry", enum_each_entry, -1);
     rb_define_method(rb_mEnumerable, "zip", enum_zip, -1);
     rb_define_method(rb_mEnumerable, "take", enum_take, 1);
     rb_define_method(rb_mEnumerable, "take_while", enum_take_while, 0);

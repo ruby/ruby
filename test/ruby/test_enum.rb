@@ -219,6 +219,18 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([55, 3628800], ret)
   end
 
+  class Foo
+    include Enumerable
+    def each
+      yield 1
+      yield 1,2
+    end
+  end
+
+  def test_each_entry
+    assert_equal([1, [1, 2]], Foo.new.each_entry.to_a)
+  end
+
   def test_zip
     assert_equal([[1,1],[2,2],[3,3],[1,1],[2,2]], @obj.zip(@obj))
     a = []
