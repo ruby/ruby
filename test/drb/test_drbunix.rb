@@ -1,4 +1,4 @@
-require 'drbtest'
+require_relative 'drbtest'
 
 begin
   require 'drb/unix'

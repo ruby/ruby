@@ -1,4 +1,4 @@
-require 'drbtest'
+require_relative 'drbtest'
 
 class TestDRbCore < Test::Unit::TestCase
   include DRbCore

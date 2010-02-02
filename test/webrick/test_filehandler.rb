@@ -1,5 +1,5 @@
 require "test/unit"
-require File.join(File.dirname(__FILE__), "utils.rb")
+require_relative "utils.rb"
 require "webrick"
 require "stringio"
 

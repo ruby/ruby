@@ -1,4 +1,4 @@
-require 'test_optparse'
+require_relative 'test_optparse'
 
 class TestOptionParser::PlaceArg < TestOptionParser
   def setup

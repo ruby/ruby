@@ -1,6 +1,6 @@
 begin
   require "openssl"
-  require File.join(File.dirname(__FILE__), "utils.rb")
+  require_relative 'utils'
 rescue LoadError
 end
 require 'test/unit'

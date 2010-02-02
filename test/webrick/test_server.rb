@@ -1,7 +1,7 @@
 require "test/unit"
 require "tempfile"
 require "webrick"
-require File.join(File.dirname(__FILE__), "utils.rb")
+require_relative "utils"
 
 class TestWEBrickServer < Test::Unit::TestCase
   class Echo < WEBrick::GenericServer

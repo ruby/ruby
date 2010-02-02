@@ -1,7 +1,7 @@
 require 'test/unit'
 require 'time'
 require 'webrick'
-require File.join(File.dirname(__FILE__), 'webrick_testing')
+require_relative 'webrick_testing'
 require "xmlrpc/server"
 require 'xmlrpc/client'
 

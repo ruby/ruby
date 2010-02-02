@@ -1,4 +1,4 @@
-require File.join(File.dirname(__FILE__), "utils.rb")
+require_relative "utils"
 require "webrick"
 require "test/unit"
 
