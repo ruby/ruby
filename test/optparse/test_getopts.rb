@@ -1,4 +1,5 @@
 require 'test/unit'
+require 'optparse'
 
 class TestOptionParserGetopts < Test::Unit::TestCase
   def setup

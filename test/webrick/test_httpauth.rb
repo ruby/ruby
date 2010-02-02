@@ -3,7 +3,7 @@ require "net/http"
 require "tempfile"
 require "webrick"
 require "webrick/httpauth/basicauth"
-require File.join(File.dirname(__FILE__), "utils.rb")
+require_relative "utils"
 
 class TestWEBrickHTTPAuth < Test::Unit::TestCase
   def test_basic_auth

@@ -1,4 +1,4 @@
-require 'test_optparse'
+require_relative 'test_optparse'
 
 module TestOptionParser::NoArg
   class Def1 < TestOptionParser

@@ -1,7 +1,7 @@
 require "test/unit"
 require "net/http"
 require "webrick"
-require File.join(File.dirname(__FILE__), "utils.rb")
+require_relative "utils"
 
 class TestWEBrickHTTPServer < Test::Unit::TestCase
   def test_mount
