@@ -1,3 +1,8 @@
+Tue Feb  2 11:13:56 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/delegate.rb (Delegator#marshal_dump): exclude
+	  delegator-specific instance variables.
+
 Mon Feb  1 21:26:41 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/matrix.rb (Vector#each2): returns a self.  [ruby-dev:40241]

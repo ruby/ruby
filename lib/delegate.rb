@@ -183,10 +183,10 @@ class Delegator
 
   # Serialization support for the object returned by \_\_getobj\_\_.
   def marshal_dump
+    ivars = instance_variables.reject {|var| /\A@delegate_/ =~ var}
     [
       :__v2__,
-      instance_variables,
-      instance_variables.map{|var| instance_variable_get(var)},
+      ivars, ivars.map{|var| instance_variable_get(var)},
       __getobj__
     ]
   end
