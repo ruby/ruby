@@ -28,7 +28,7 @@ VALUE rb_eSocket;
 VALUE rb_cSOCKSSocket;
 #endif
 
-int rsock_do_not_reverse_lookup = 0;
+int rsock_do_not_reverse_lookup = 1;
 
 void
 rsock_raise_socket_error(const char *reason, int error)
