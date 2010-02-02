@@ -1,3 +1,9 @@
+Tue Feb  2 18:15:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/socket.c: turn on do_not_reverse_lookup by default,
+	  which has been reverted in r9880 probably unintentionally,
+	  according to matz.  [ruby-core:24530]
+
 Tue Feb  2 14:30:27 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enum.c (enum_each_entry): new method #each_entry to pack values
