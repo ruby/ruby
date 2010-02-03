@@ -3097,7 +3097,8 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, char *unresolved, VALUE loopche
         else if (testnamelen == 2 && testname[0] == '.' && testname[1] == '.') {
             if (*prefixlenp < RSTRING_LEN(*resolvedp)) {
                 char *resolved_names = RSTRING_PTR(*resolvedp) + *prefixlenp;
-                long len = rb_path_last_separator(resolved_names) - resolved_names;
+                char *lastsep = rb_path_last_separator(resolved_names);
+                long len = lastsep ? lastsep - resolved_names : 0;
                 rb_str_set_len(*resolvedp, *prefixlenp + len);
             }
         }
