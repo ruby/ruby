@@ -103,7 +103,7 @@ rb_localtime(const time_t *tm, struct tm *result)
 }
 #endif
 
-static ID id_divmod, id_mul, id_submicro, id_nano_num, id_nano_den;
+static ID id_divmod, id_mul, id_submicro, id_nano_num, id_nano_den, id_offset;
 static ID id_eq, id_ne, id_quo, id_div, id_cmp, id_lshift;
 
 #define eq(x,y) (RTEST(rb_funcall((x), id_eq, 1, (y))))
@@ -3675,6 +3675,13 @@ time_mdump(VALUE time)
             len = 1;
         rb_ivar_set(str, id_submicro, rb_str_new(buf, len));
     }
+    if (!TIME_UTC_P(tobj)) {
+	VALUE off = time_utc_offset(time), div, mod;
+	divmodv(off, INT2FIX(1), &div, &mod);
+	if (rb_equal(mod, INT2FIX(0)))
+	    off = rb_Integer(div);
+	rb_ivar_set(str, id_offset, off);
+    }
     return str;
 }
 
@@ -3711,7 +3718,7 @@ time_mload(VALUE time, VALUE str)
     struct vtm vtm;
     int i, gmt;
     long nsec;
-    VALUE timexv, submicro, nano_num, nano_den;
+    VALUE timexv, submicro, nano_num, nano_den, offset;
 
     time_modify(time);
 
@@ -3726,6 +3733,11 @@ time_mload(VALUE time, VALUE str)
     submicro = rb_attr_get(str, id_submicro);
     if (submicro != Qnil) {
         st_delete(rb_generic_ivar_table(str), (st_data_t*)&id_submicro, 0);
+    }
+    offset = rb_attr_get(str, id_offset);
+    if (offset != Qnil) {
+        validate_utc_offset(offset);
+        st_delete(rb_generic_ivar_table(str), (st_data_t*)&id_offset, 0);
     }
     rb_copy_generic_ivar(time, str);
 
@@ -3745,6 +3757,7 @@ time_mload(VALUE time, VALUE str)
 
     if ((p & (1UL<<31)) == 0) {
         gmt = 0;
+	offset = Qnil;
 	sec = p;
 	usec = s;
         nsec = usec * 1000;
@@ -3799,8 +3812,14 @@ end_submicro: ;
 
     GetTimeval(time, tobj);
     tobj->tm_got = 0;
-    if (gmt) TIME_SET_UTC(tobj);
     tobj->timexv = timexv;
+    if (gmt) {
+	TIME_SET_UTC(tobj);
+    }
+    else if (!NIL_P(offset)) {
+	time_set_utc_offset(time, offset);
+	time_fixoff(time);
+    }
 
     return time;
 }
@@ -3855,6 +3874,7 @@ Init_Time(void)
     id_submicro = rb_intern("submicro");
     id_nano_num = rb_intern("nano_num");
     id_nano_den = rb_intern("nano_den");
+    id_offset = rb_intern("offset");
 
     rb_cTime = rb_define_class("Time", rb_cObject);
     rb_include_module(rb_cTime, rb_mComparable);

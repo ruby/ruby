@@ -210,6 +210,20 @@ class TestTime < Test::Unit::TestCase
     assert_marshal_roundtrip(Marshal.load(Marshal.dump(t)))
   end
 
+  def test_marshal_timezone
+    bug = '[ruby-dev:40063]'
+
+    t1 = Time.gm(2000)
+    m = Marshal.dump(t1.getlocal("-02:00"))
+    t2 = Marshal.load(m)
+    assert_equal(t1, t2)
+    assert_equal(-7200, t2.utc_offset, bug)
+    m = Marshal.dump(t1.getlocal("+08:15"))
+    t2 = Marshal.load(m)
+    assert_equal(t1, t2)
+    assert_equal(29700, t2.utc_offset, bug)
+  end
+
   # Sat Jan 01 00:00:00 UTC 2000
   T2000 = Time.at(946684800).gmtime
 
