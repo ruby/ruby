@@ -1,3 +1,7 @@
+Wed Feb  3 11:38:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/{closure,function}.c: removed C99 features and warnings.
+
 Wed Feb  3 10:12:09 2010  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* ext/dl/function.c: DL::Function now uses libffi
@@ -17,7 +21,7 @@ Wed Feb  3 10:12:09 2010  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* ext/dl/lib/dl/callback.rb: Converting internal callbacks to use
 	  DL::Closure
-	
+
 	* ext/dl/lib/dl/closure.rb: Ruby parts of the new DL::Closure object
 
 	* ext/dl/lib/dl/import.rb: More conversion to use DL::Closure object
@@ -171,7 +175,7 @@ Fri Jan 29 01:26:53 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  denote that #to_i raises FloatDomainError for Inf and NaN.
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_to_i): fast #to_i using
-	  BigDecimal_split(). 
+	  BigDecimal_split().
 
 	* bignum.c (conv_digit): use faster ISDIGIT() assuming ASCII.
 
@@ -403,7 +407,7 @@ Sat Jan 23 19:54:48 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 	  WIN32OLE.ole_uninitialize to use in win32ole.rb.
 	  You must not use these methods.
 
-	* ext/win32ole/lib/win32ole.rb: add win32ole.rb 
+	* ext/win32ole/lib/win32ole.rb: add win32ole.rb
 	  re-define Thread#initialize (fix ruby-core:27634)
 
 Sat Jan 23 00:25:19 2010  Yusuke Endoh  <mame@tsg.ne.jp>
@@ -419,7 +423,7 @@ Sat Jan 23 00:21:18 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 Fri Jan 22 23:54:04 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_array.rb: add a test for Array#rotate, rotate!.
-	
+
 	* test/ruby/test_dir.rb, test/ruby/test_fnmatch.rb: add some tests
 	  (for coverage of dir.c).
 
@@ -427,7 +431,7 @@ Fri Jan 22 23:54:04 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_enumerator.rb: add some tests for Enumerator#inspect,
 	  Enumerator::Generator and Yielder.
-	
+
 	* test/ruby/test_env.rb: add a test for ENV#index.
 
 	* test/ruby/test_exception.rb: add some tests (for coverage of
@@ -453,7 +457,7 @@ Fri Jan 22 23:50:03 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 Fri Jan 22 21:05:34 2010  Tanaka Akira  <akr@fsij.org>
 
-	* time.c (time_mload): add submicro into vtm.subsecx.  [ruby-dev:40133] 
+	* time.c (time_mload): add submicro into vtm.subsecx.  [ruby-dev:40133]
 
 Fri Jan 22 14:26:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -622,7 +626,7 @@ Wed Jan 13 11:57:38 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* object.c (rb_class_initialize): Make sure BasicObject doesn't get
 	  initialized twice [ruby-core:27577]
-	
+
 	* class.c (rb_class_init_copy): ditto
 
 Wed Jan 13 06:54:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -859,7 +863,7 @@ Sun Jan  3 23:54:51 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* variable.c (rb_class2name_without_alloc): new utility function.
 
-	* tool/rbinstall.rb (install?(:ext, :arch, :'ext-arch')): installs 
+	* tool/rbinstall.rb (install?(:ext, :arch, :'ext-arch')): installs
 	  dtrace.d if necessary.
 
 	* thread_pthread.c (add_signal_thread_list): probe "raise".
@@ -901,12 +905,12 @@ Sun Jan  3 23:54:51 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 	  (MINIDTRACE_OBJ): ditto.
 	  (GOLFDTRACE_OBJ): ditto.
 	  (LIBRUBY_DTRACE_OBJ): ditto.
-	  (RUBY_DTRACE_POSTPROCESS): new macro. checks whether the dtrace on 
+	  (RUBY_DTRACE_POSTPROCESS): new macro. checks whether the dtrace on
 	  the system needs postprocessing.
 	  (RUBY_DTRACE_BSD_BROKEN): new macro. checks whether the dtrace
 	  supports USDT.
 
-	* Makefile.in: 
+	* Makefile.in:
 	  (DTRACE): new variable. name of dtrace(1).
 	  (TRACING_MODEL): new variable. name of the chosen tracing mechanism.
 	  (DTRACE_OBJ): same as the one in configure.in.
@@ -917,16 +921,16 @@ Sun Jan  3 23:54:51 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 	  (trace_none.h): new target for TRACING_MODEL=none
 	  (RUBY_H_INCLUDES): appended a header for tracing.
 	  (distclean-local): also removes preprocessed version of dtrace.d
-	  ($(LIBRUBY_A)): needs $(LIBRUBY_DTRACE_OBJ) if dtrace needs 
+	  ($(LIBRUBY_A)): needs $(LIBRUBY_DTRACE_OBJ) if dtrace needs
 	  postprocessing.
 	  ($(PROGRAM)): ditto.
 	  (golf): ditto.
 	  (miniruby): ditto.
-	  ($(arch_hdrdir)/ruby/dtrace.d): new target. preprocessed version 
+	  ($(arch_hdrdir)/ruby/dtrace.d): new target. preprocessed version
 	  of defs/dtrace.d. generated if necessary.
 	  ($(arch_hdrdir)/ruby/trace_dtrace.h): new target.
 	  definition of probes.
-	  ($(LIBRUBY_DTRACE_OBJ)): new target. generated if dtrace needs 
+	  ($(LIBRUBY_DTRACE_OBJ)): new target. generated if dtrace needs
 	  postprocessing.
 	  ($(DTRACE_OBJ)): ditto.
 	  ($(MINIDTRACE_OBJ)): ditto.
@@ -1110,7 +1114,7 @@ Sun Dec 27 10:45:00 2009  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 Sun Dec 27 09:41:54 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* tool/rbinstall.rb (install?(:local, :comm, :bin, :'bin-comm')):
-	  Makes it vim friendly.  __END__ in a heredoc is confusing with 
+	  Makes it vim friendly.  __END__ in a heredoc is confusing with
 	  the script end for vim.
 
 Sun Dec 27 09:13:55 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>

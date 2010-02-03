@@ -11,34 +11,37 @@ VALUE rb_cDLFunction;
 
 typedef union
 {
-    unsigned char uchar;   // ffi_type_uchar
-    signed char	  schar;   // ffi_type_schar
-    unsigned short ushort; // ffi_type_sshort
-    signed short sshort;   // ffi_type_ushort
-    unsigned int uint;     // ffi_type_uint
-    signed int sint;	   // ffi_type_sint
-    unsigned long ulong;   // ffi_type_ulong
-    signed long slong;	   // ffi_type_slong
-    float ffloat;	   // ffi_type_float
-    double ddouble;	   // ffi_type_double
+    unsigned char uchar;   /* ffi_type_uchar */
+    signed char   schar;   /* ffi_type_schar */
+    unsigned short ushort; /* ffi_type_sshort */
+    signed short sshort;   /* ffi_type_ushort */
+    unsigned int uint;     /* ffi_type_uint */
+    signed int sint;       /* ffi_type_sint */
+    unsigned long ulong;   /* ffi_type_ulong */
+    signed long slong;     /* ffi_type_slong */
+    float ffloat;          /* ffi_type_float */
+    double ddouble;        /* ffi_type_double */
 #if HAVE_LONG_LONG
-    unsigned LONG_LONG long_long; // ffi_type_uint64
+    unsigned LONG_LONG long_long; /* ffi_type_uint64 */
 #endif
-    void * pointer;	   // ffi_type_pointer
+    void * pointer;        /* ffi_type_pointer */
 } dl_generic;
 
 static void
-dlfunction_free(ffi_cif *ptr)
+dlfunction_free(void *p)
 {
-    if(ptr->arg_types) xfree(ptr->arg_types);
+    ffi_cif *ptr = p;
+    if (ptr->arg_types) xfree(ptr->arg_types);
     xfree(ptr);
 }
 
 static size_t
-dlfunction_memsize(ffi_cif *ptr)
+dlfunction_memsize(const void *p)
 {
+    /* const */ffi_cif *ptr = (ffi_cif *)p;
     size_t size = 0;
-    if(ptr) {
+
+    if (ptr) {
 	size += sizeof(*ptr);
 	size += ffi_raw_size(ptr);
     }
@@ -63,26 +66,27 @@ rb_dlfunction_native_init(VALUE self, VALUE args, VALUE ret_type, VALUE abi)
 {
     ffi_cif * cif;
     ffi_type **arg_types;
+    ffi_status result;
+    int i;
 
     TypedData_Get_Struct(self, ffi_cif, &dlfunction_data_type, cif);
 
     arg_types = xcalloc(RARRAY_LEN(args) + 1, sizeof(ffi_type *));
 
-    int i;
-    for(i = 0; i < RARRAY_LEN(args); i++) {
+    for (i = 0; i < RARRAY_LEN(args); i++) {
 	int type = NUM2INT(RARRAY_PTR(args)[i]);
 	arg_types[i] = DL2FFI_TYPE(type);
     }
     arg_types[RARRAY_LEN(args)] = NULL;
 
-    ffi_status result = ffi_prep_cif(
+    result = ffi_prep_cif (
 	    cif,
 	    NUM2INT(abi),
 	    RARRAY_LEN(args),
 	    DL2FFI_TYPE(NUM2INT(ret_type)),
 	    arg_types);
 
-    if(result)
+    if (result)
 	rb_raise(rb_eRuntimeError, "error creating CIF %d", result);
 
     return self;
@@ -93,41 +97,41 @@ dl2generic(int dl_type, VALUE src, dl_generic * dst)
 {
     int signed_p = 1;
 
-    if(dl_type < 0) {
+    if (dl_type < 0) {
 	dl_type = -1 * dl_type;
 	signed_p = 0;
     }
 
-    switch(dl_type) {
-	case DLTYPE_VOID:
-	    break;
-	case DLTYPE_VOIDP:
-	    dst->pointer = NUM2PTR(rb_Integer(src));
-	    break;
-	case DLTYPE_CHAR:
-	case DLTYPE_SHORT:
-	case DLTYPE_INT:
-	    dst->sint = NUM2INT(src);
-	    break;
-	case DLTYPE_LONG:
-	    if(signed_p)
-		dst->slong = NUM2LONG(src);
-	    else
-		dst->ulong = NUM2LONG(src);
-	    break;
+    switch (dl_type) {
+      case DLTYPE_VOID:
+	break;
+      case DLTYPE_VOIDP:
+	dst->pointer = NUM2PTR(rb_Integer(src));
+	break;
+      case DLTYPE_CHAR:
+      case DLTYPE_SHORT:
+      case DLTYPE_INT:
+	dst->sint = NUM2INT(src);
+	break;
+      case DLTYPE_LONG:
+	if (signed_p)
+	    dst->slong = NUM2LONG(src);
+	else
+	    dst->ulong = NUM2LONG(src);
+	break;
 #if HAVE_LONG_LONG
-	case DLTYPE_LONG_LONG:
-            dst->long_long = rb_big2ull(src);
-	    break;
+      case DLTYPE_LONG_LONG:
+	dst->long_long = rb_big2ull(src);
+	break;
 #endif
-	case DLTYPE_FLOAT:
-	    dst->ffloat = NUM2DBL(src);
-	    break;
-	case DLTYPE_DOUBLE:
-	    dst->ddouble = NUM2DBL(src);
-	    break;
-	default:
-	    rb_raise(rb_eRuntimeError, "unknown type %d", dl_type);
+      case DLTYPE_FLOAT:
+	dst->ffloat = (float)NUM2DBL(src);
+	break;
+      case DLTYPE_DOUBLE:
+	dst->ddouble = NUM2DBL(src);
+	break;
+      default:
+	rb_raise(rb_eRuntimeError, "unknown type %d", dl_type);
     }
 }
 
@@ -137,34 +141,34 @@ unwrap_ffi(VALUE rettype, dl_generic retval)
     int signed_p = 1;
     int dl_type = NUM2INT(rettype);
 
-    if(dl_type < 0) {
+    if (dl_type < 0) {
 	dl_type = -1 * dl_type;
 	signed_p = 0;
     }
 
-    switch(dl_type) {
-	case DLTYPE_VOID:
-	    return Qnil;
-	case DLTYPE_VOIDP:
-	    return rb_dlptr_new((void *)retval.pointer, 0, NULL);
-	case DLTYPE_CHAR:
-	case DLTYPE_SHORT:
-	case DLTYPE_INT:
-	    return INT2NUM(retval.sint);
-	case DLTYPE_LONG:
-	    if(signed_p) return LONG2NUM(retval.slong);
-	    return LONG2NUM(retval.ulong);
+    switch (dl_type) {
+      case DLTYPE_VOID:
+	return Qnil;
+      case DLTYPE_VOIDP:
+	return rb_dlptr_new((void *)retval.pointer, 0, NULL);
+      case DLTYPE_CHAR:
+      case DLTYPE_SHORT:
+      case DLTYPE_INT:
+	return INT2NUM(retval.sint);
+      case DLTYPE_LONG:
+	if (signed_p) return LONG2NUM(retval.slong);
+	return LONG2NUM(retval.ulong);
 #if HAVE_LONG_LONG
-	case DLTYPE_LONG_LONG:
-	    return rb_ll2inum(retval.long_long);
-	    break;
+      case DLTYPE_LONG_LONG:
+	return rb_ll2inum(retval.long_long);
+	break;
 #endif
-	case DLTYPE_FLOAT:
-	    return rb_float_new(retval.ffloat);
-	case DLTYPE_DOUBLE:
-	    return rb_float_new(retval.ddouble);
-	default:
-	    rb_raise(rb_eRuntimeError, "unknown type %d", dl_type);
+      case DLTYPE_FLOAT:
+	return rb_float_new(retval.ffloat);
+      case DLTYPE_DOUBLE:
+	return rb_float_new(retval.ddouble);
+      default:
+	rb_raise(rb_eRuntimeError, "unknown type %d", dl_type);
     }
 }
 
@@ -176,17 +180,18 @@ rb_dlfunction_call(int argc, VALUE argv[], VALUE self)
     dl_generic *generic_args;
     void **values;
     void * fun_ptr;
+    VALUE cfunc, types;
+    int i;
 
     TypedData_Get_Struct(self, ffi_cif, &dlfunction_data_type, cif);
 
     values = xcalloc((size_t)argc + 1, (size_t)sizeof(void *));
     generic_args = xcalloc((size_t)argc, (size_t)sizeof(dl_generic));
 
-    VALUE cfunc = rb_iv_get(self, "@cfunc");
-    VALUE types = rb_iv_get(self, "@args");
+    cfunc = rb_iv_get(self, "@cfunc");
+    types = rb_iv_get(self, "@args");
 
-    int i;
-    for(i = 0; i < argc; i++) {
+    for (i = 0; i < argc; i++) {
 	VALUE dl_type = RARRAY_PTR(types)[i];
 	VALUE src = rb_funcall(self,
 		rb_intern("ruby2ffi"),

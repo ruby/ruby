@@ -27,7 +27,7 @@ dlclosure_free(void * ptr)
     munmap(cls->pcl, sizeof(cls->pcl));
 #endif
     xfree(cls->cif);
-    if(cls->argv) xfree(cls->argv);
+    if (cls->argv) xfree(cls->argv);
     xfree(cls);
 }
 
@@ -35,9 +35,9 @@ static size_t
 dlclosure_memsize(const void * ptr)
 {
     dl_closure * cls = (dl_closure *)ptr;
-
     size_t size = 0;
-    if(ptr) {
+
+    if (ptr) {
 	size += sizeof(*cls);
 	size += ffi_raw_size(cls->cif);
 	size += sizeof(*cls->argv);
@@ -59,73 +59,74 @@ dlc_callback(ffi_cif *cif, void *resp, void **args, void *ctx)
     VALUE ctype     = rb_iv_get(self, "@ctype");
     int argc        = RARRAY_LEN(rbargs);
     VALUE *params   = xcalloc(argc, sizeof(VALUE *));
+    VALUE ret;
+    int i, dl_type;
 
-    int i;
-    for(i = 0; i < argc; i++) {
-        int dl_type = NUM2INT(RARRAY_PTR(rbargs)[i]);
-        switch(dl_type) {
-            case DLTYPE_VOID:
-                argc = 0;
-                break;
-            case DLTYPE_INT:
-                params[i] = INT2NUM(*(int *)args[i]);
-                break;
-            case DLTYPE_VOIDP:
-                params[i] = rb_dlptr_new(*(void **)args[i], 0, NULL);
-                break;
-            case DLTYPE_LONG:
-                params[i] = LONG2NUM(*(long *)args[i]);
-                break;
-            case DLTYPE_CHAR:
-                params[i] = INT2NUM(*(char *)args[i]);
-                break;
-            case DLTYPE_DOUBLE:
-                params[i] = rb_float_new(*(double *)args[i]);
-                break;
-            case DLTYPE_FLOAT:
-                params[i] = rb_float_new(*(float *)args[i]);
-                break;
+    for (i = 0; i < argc; i++) {
+        dl_type = NUM2INT(RARRAY_PTR(rbargs)[i]);
+        switch (dl_type) {
+	  case DLTYPE_VOID:
+	    argc = 0;
+	    break;
+	  case DLTYPE_INT:
+	    params[i] = INT2NUM(*(int *)args[i]);
+	    break;
+	  case DLTYPE_VOIDP:
+	    params[i] = rb_dlptr_new(*(void **)args[i], 0, NULL);
+	    break;
+	  case DLTYPE_LONG:
+	    params[i] = LONG2NUM(*(long *)args[i]);
+	    break;
+	  case DLTYPE_CHAR:
+	    params[i] = INT2NUM(*(char *)args[i]);
+	    break;
+	  case DLTYPE_DOUBLE:
+	    params[i] = rb_float_new(*(double *)args[i]);
+	    break;
+	  case DLTYPE_FLOAT:
+	    params[i] = rb_float_new(*(float *)args[i]);
+	    break;
 #if HAVE_LONG_LONG
-            case DLTYPE_LONG_LONG:
-                params[i] = rb_ull2inum(*(unsigned LONG_LONG *)args[i]);
-                break;
+	  case DLTYPE_LONG_LONG:
+	    params[i] = rb_ull2inum(*(unsigned LONG_LONG *)args[i]);
+	    break;
 #endif
-            default:
-	        rb_raise(rb_eRuntimeError, "closure args: %d", dl_type);
+	  default:
+	    rb_raise(rb_eRuntimeError, "closure args: %d", dl_type);
         }
     }
 
-    VALUE ret = rb_funcall2(self, rb_intern("call"), argc, params);
+    ret = rb_funcall2(self, rb_intern("call"), argc, params);
 
-    int dl_type = NUM2INT(ctype);
-    switch(dl_type) {
-        case DLTYPE_VOID:
-            break;
-        case DLTYPE_LONG:
-            *(long *)resp = NUM2LONG(ret);
-            break;
-        case DLTYPE_CHAR:
-            *(char *)resp = NUM2INT(ret);
-            break;
-        case DLTYPE_VOIDP:
-            *(void **)resp = NUM2PTR(ret);
-            break;
-        case DLTYPE_INT:
-            *(int *)resp = NUM2INT(ret);
-            break;
-        case DLTYPE_DOUBLE:
-            *(double *)resp = NUM2DBL(ret);
-            break;
-        case DLTYPE_FLOAT:
-            *(float *)resp = NUM2DBL(ret);
-            break;
+    dl_type = NUM2INT(ctype);
+    switch (dl_type) {
+      case DLTYPE_VOID:
+	break;
+      case DLTYPE_LONG:
+	*(long *)resp = NUM2LONG(ret);
+	break;
+      case DLTYPE_CHAR:
+	*(char *)resp = NUM2INT(ret);
+	break;
+      case DLTYPE_VOIDP:
+	*(void **)resp = NUM2PTR(ret);
+	break;
+      case DLTYPE_INT:
+	*(int *)resp = NUM2INT(ret);
+	break;
+      case DLTYPE_DOUBLE:
+	*(double *)resp = NUM2DBL(ret);
+	break;
+      case DLTYPE_FLOAT:
+	*(float *)resp = (float)NUM2DBL(ret);
+	break;
 #if HAVE_LONG_LONG
-        case DLTYPE_LONG_LONG:
-            *(unsigned LONG_LONG *)resp = rb_big2ull(ret);
-            break;
+      case DLTYPE_LONG_LONG:
+	*(unsigned LONG_LONG *)resp = rb_big2ull(ret);
+	break;
 #endif
-        default:
-            rb_raise(rb_eRuntimeError, "closure retval: %d", dl_type);
+      default:
+	rb_raise(rb_eRuntimeError, "closure retval: %d", dl_type);
     }
     xfree(params);
 }
@@ -155,22 +156,22 @@ rb_dlclosure_init(int rbargc, VALUE argv[], VALUE self)
     VALUE ret;
     VALUE args;
     VALUE abi;
-
     dl_closure * cl;
     ffi_cif * cif;
     ffi_closure *pcl;
+    ffi_status result;
+    int i, argc;
 
-    if(2 == rb_scan_args(rbargc, argv, "21", &ret, &args, &abi))
+    if (2 == rb_scan_args(rbargc, argv, "21", &ret, &args, &abi))
 	abi = INT2NUM(FFI_DEFAULT_ABI);
 
-    int i;
-    int argc = RARRAY_LEN(args);
+    argc = RARRAY_LEN(args);
 
     TypedData_Get_Struct(self, dl_closure, &dlclosure_data_type, cl);
 
     cl->argv = (ffi_type **)xcalloc(argc + 1, sizeof(ffi_type *));
 
-    for(i = 0; i < argc; i++) {
+    for (i = 0; i < argc; i++) {
         int dltype = NUM2INT(RARRAY_PTR(args)[i]);
         cl->argv[i] = DL2FFI_TYPE(dltype);
     }
@@ -182,11 +183,11 @@ rb_dlclosure_init(int rbargc, VALUE argv[], VALUE self)
     cif = cl->cif;
     pcl = cl->pcl;
 
-    ffi_status result = ffi_prep_cif(cif, NUM2INT(abi), argc,
+    result = ffi_prep_cif(cif, NUM2INT(abi), argc,
                 DL2FFI_TYPE(NUM2INT(ret)),
 		cl->argv);
 
-    if(FFI_OK != result)
+    if (FFI_OK != result)
 	rb_raise(rb_eRuntimeError, "error prepping CIF %d", result);
 
 #ifdef USE_NEW_CLOSURE_API
@@ -198,7 +199,7 @@ rb_dlclosure_init(int rbargc, VALUE argv[], VALUE self)
     mprotect(pcl, sizeof(pcl), PROT_READ | PROT_EXEC);
 #endif
 
-    if(FFI_OK != result)
+    if (FFI_OK != result)
 	rb_raise(rb_eRuntimeError, "error prepping closure %d", result);
 
     return self;
@@ -208,10 +209,11 @@ static VALUE
 rb_dlclosure_to_i(VALUE self)
 {
     dl_closure * cl;
+    void *code;
 
     TypedData_Get_Struct(self, dl_closure, &dlclosure_data_type, cl);
 
-    void * code = cl->code;
+    code = cl->code;
 
     return PTR2NUM(code);
 }
