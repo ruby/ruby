@@ -95,7 +95,8 @@ end
 
 target = OS
 opt = nil
-ARGV.options do |opt|
+ARGV.options do |opt2|
+  opt = opt2
   opt.banner << " config.status map.rb"
   opt.on("--target OS") {|t| target = t}
   opt.parse! and (1..2) === ARGV.size
