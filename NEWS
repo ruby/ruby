@@ -1,3 +1,4 @@
+# -*- rd -*-
 = NEWS
 
 This document is a list of user visible feature changes made between
@@ -195,6 +196,7 @@ with all sufficient information, see the ChangeLog file.
       Addrinfo#to_s returns the old binary sockaddr string.
     * BasicSocket#getsockopt returns Socket::Option object instead of a binary string.
       Socket::Option#to_s returns the old binary string.
+    * Socket.do_not_reverse_lookup is turned on by default now.
 
   * new class:
     * Addrinfo
