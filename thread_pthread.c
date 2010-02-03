@@ -12,7 +12,7 @@
 #ifdef THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION
 
 #include "gc.h"
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined(__DragonFly)
 #include <pthread_np.h>
 #endif
 
@@ -297,10 +297,10 @@ ruby_init_stack(volatile VALUE *addr
 #endif
     {
 	size_t size = 0, space = 0;
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined(__DragonFly)
 	pthread_attr_t attr;
 	if (pthread_attr_init(&attr) == 0) {
-	    pthread_attr_get_np(native_main_thread.id, &attr) ||
+	    if (pthread_attr_get_np(native_main_thread.id, &attr) == 0)
 		pthread_attr_getstacksize(&attr, &size);
 	    pthread_attr_destroy(&attr);
 	}

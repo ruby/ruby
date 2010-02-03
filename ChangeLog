@@ -1,3 +1,8 @@
+Wed Feb  3 13:15:24 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* thread_pthread.c: DragonFlyBSD is also the same as FreeBSD
+	  on getting the stack size of the main thread.
+
 Wed Feb  3 12:30:10 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* thread_pthread.c (ruby_init_stack): use pthread_get_attr_np
