@@ -31,6 +31,18 @@ Tue Feb  2 18:15:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  which has been reverted in r9880 probably unintentionally,
 	  according to matz.  [ruby-core:24530]
 
+Tue Feb  2 14:46:06 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enumerator.c: move implementation of each_slice, each_cons,
+	  each_with_object to enum.c.
+
+	* enum.c (each_slice_i): convert multiple values from yield into
+	  an array.
+
+	* enum.c (each_cons_i): ditto.
+
+	* enum.c (each_with_object_i): ditto.
+
 Tue Feb  2 14:30:27 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enum.c (enum_each_entry): new method #each_entry to pack values
