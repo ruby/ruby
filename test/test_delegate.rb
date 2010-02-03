@@ -34,10 +34,18 @@ class TestDelegateClass < Test::Unit::TestCase
     def m
       :o
     end
+    private
+    def delegate_test_m
+      :o
+    end
   end
 
   class Foo
     def m
+      :m
+    end
+    private
+    def delegate_test_m
       :m
     end
   end
@@ -50,6 +58,9 @@ class TestDelegateClass < Test::Unit::TestCase
     assert_equal(:m, Foo.new.m)
     assert_equal(:m, SimpleDelegator.new(Foo.new).m)
     assert_equal(:m, Bar.new(Foo.new).m)
+    bug = '[ruby-dev:39154]'
+    assert_equal(:m, SimpleDelegator.new(Foo.new).__send__(:delegate_test_m), bug)
+    assert_equal(:m, Bar.new(Foo.new).__send__(:delegate_test_m), bug)
   end
 
   class IV < DelegateClass(Integer)
@@ -66,5 +77,12 @@ class TestDelegateClass < Test::Unit::TestCase
     assert_equal(1, c.var)
     d = Marshal.load(Marshal.dump(c))
     assert_equal(1, d.var, bug1744)
+  end
+
+  def test_copy_frozen
+    bug2679 = '[ruby-dev:40242]'
+    a = [42, :hello].freeze
+    d = SimpleDelegator.new(a)
+    assert_nothing_raised(bug2679) {d.dup[0] += 1}
   end
 end

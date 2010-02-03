@@ -1,3 +1,8 @@
+Thu Feb  4 08:15:53 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/delegate.rb (Delegator): now inherits BasicObject.
+	  [ruby-dev:39154], [Bug #2679], [ruby-dev:40242]
+
 Thu Feb  4 03:00:59 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_DoDivmod): get red of
