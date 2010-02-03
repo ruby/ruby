@@ -958,7 +958,6 @@ BigDecimal_DoDivmod(VALUE self, VALUE r, Real **div, Real **mod)
     }
     if(VpIsInf(b)) {
        GUARD_OBJ(d,VpCreateRbObject(1, "0"));
-       VpSetSign(d,(S_INT)(VpGetSign(a) == VpGetSign(b) ? 1 : -1));
        *div = d;
        *mod = a;
        return Qtrue;

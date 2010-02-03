@@ -1,3 +1,8 @@
+Thu Feb  4 03:00:59 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_DoDivmod): get red of
+	  floating point exception.
+
 Thu Feb  4 01:24:01 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_DoDivmod): fix infinity
