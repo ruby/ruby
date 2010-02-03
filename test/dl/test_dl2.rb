@@ -88,14 +88,16 @@ class TestDL < TestBase
     assert_in_delta(-0.1, x)
   end
 
-  def test_sin()
+  def test_sin
     pi_2 = Math::PI/2
-    cfunc = CFunc.new(@libm['sin'], TYPE_DOUBLE, 'sin')
-    x = cfunc.call([pi_2].pack("d").unpack("l!*"))
+    cfunc = Function.new(CFunc.new(@libm['sin'], TYPE_DOUBLE, 'sin'),
+                        [TYPE_DOUBLE])
+    x = cfunc.call(pi_2)
     assert_equal(Math.sin(pi_2), x)
 
-    cfunc = CFunc.new(@libm['sin'], TYPE_DOUBLE, 'sin')
-    x = cfunc.call([-pi_2].pack("d").unpack("l!*"))
+    cfunc = Function.new(CFunc.new(@libm['sin'], TYPE_DOUBLE, 'sin'),
+                        [TYPE_DOUBLE])
+    x = cfunc.call(-pi_2)
     assert_equal(Math.sin(-pi_2), x)
   end
 

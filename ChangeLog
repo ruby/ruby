@@ -1,3 +1,30 @@
+Wed Feb  3 10:12:09 2010  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* ext/dl/function.c: DL::Function now uses libffi
+
+	* ext/dl/cfunc.c (rb_dl_set_last_error): set to non static so errors
+	  can be exposed.
+
+	* ext/dl/closure.c: DL::Closure will now be used in place of
+	  ext/dl/callback/*.
+
+	* ext/dl/dl.c: legacy callbacks removed in favor of libffi
+
+	* ext/dl/dl_converions.(c,h): used for converting ruby types to FFI
+	  types.
+
+	* ext/dl/callback/*: replaced by libffi callbacks.
+
+	* ext/dl/lib/dl/callback.rb: Converting internal callbacks to use
+	  DL::Closure
+	
+	* ext/dl/lib/dl/closure.rb: Ruby parts of the new DL::Closure object
+
+	* ext/dl/lib/dl/import.rb: More conversion to use DL::Closure object
+
+	* ext/dl/lib/dl/value.rb (ruby2ffi): adding private method for
+	  DL::CPtr to ffi value conversion.
+
 Tue Feb  2 18:15:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/socket.c: turn on do_not_reverse_lookup by default,
