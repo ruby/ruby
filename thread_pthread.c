@@ -12,6 +12,9 @@
 #ifdef THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION
 
 #include "gc.h"
+#ifdef __FreeBSD__
+#include <pthread_np.h>
+#endif
 
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
@@ -292,18 +295,24 @@ ruby_init_stack(volatile VALUE *addr
         native_main_thread.register_stack_start = (VALUE*)bsp;
     }
 #endif
-#ifdef HAVE_GETRLIMIT
     {
-	struct rlimit rlim;
-
-	if (getrlimit(RLIMIT_STACK, &rlim) == 0) {
-	    size_t space = (size_t)(rlim.rlim_cur/5);
-
-	    if (space > 1024*1024) space = 1024*1024;
-	    native_main_thread.stack_maxsize = (size_t)rlim.rlim_cur - space;
+	size_t size = 0, space = 0;
+#ifdef __FreeBSD__
+	pthread_attr_t attr;
+	if (pthread_attr_init(&attr) == 0) {
+	    pthread_attr_get_np(native_main_thread.id, &attr) ||
+		pthread_attr_getstacksize(&attr, &size);
+	    pthread_attr_destroy(&attr);
 	}
-    }
+#elif defined(HAVE_GETRLIMIT)
+	struct rlimit rlim;
+	if (getrlimit(RLIMIT_STACK, &rlim) == 0) {
+	    size = (size_t)rlim.rlim_cur;
+	}
 #endif
+	space = size > 5 * 1024 * 1024 ? 1024 * 1024 : size / 5;
+	native_main_thread.stack_maxsize = size - space;
+    }
 }
 
 #define CHECK_ERR(expr) \

@@ -1,3 +1,10 @@
+Wed Feb  3 12:30:10 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* thread_pthread.c (ruby_init_stack): use pthread_get_attr_np
+	  to get the stack size of the main thread on FreeBSD.
+
+	* thread_pthread.c: include pthread_np.h on FreeBSD.
+
 Wed Feb  3 11:38:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/{closure,function}.c: removed C99 features and warnings.
