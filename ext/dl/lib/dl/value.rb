@@ -36,16 +36,20 @@ module DL
       end
     end
 
-    def wrap_args(args, tys, funcs, &block)
-      result = []
-      tys ||= []
-      args.each_with_index{|arg, idx|
-        result.push(wrap_arg(arg, tys[idx], funcs, &block))
-      }
-      result
+    def ruby2ffi arg, type
+      return arg unless type == TYPE_VOIDP
+      case arg
+      when nil
+        0
+      when CPtr
+        arg.to_i
+      else
+        CPtr[arg].to_i
+      end
     end
+    private :ruby2ffi
 
-    def wrap_arg(arg, ty, funcs, &block)
+    def wrap_arg(arg, ty, funcs = [], &block)
         funcs ||= []
         case arg
         when nil

@@ -16,7 +16,7 @@ rb_dl_get_last_error(VALUE self)
     return rb_thread_local_aref(rb_thread_current(), id_last_error);
 }
 
-static VALUE
+VALUE
 rb_dl_set_last_error(VALUE self, VALUE val)
 {
     rb_thread_local_aset(rb_thread_current(), id_last_error, val);
@@ -33,7 +33,7 @@ rb_dl_get_win32_last_error(VALUE self)
     return rb_thread_local_aref(rb_thread_current(), id_win32_last_error);
 }
 
-static VALUE
+VALUE
 rb_dl_set_win32_last_error(VALUE self, VALUE val)
 {
     rb_thread_local_aset(rb_thread_current(), id_win32_last_error, val);

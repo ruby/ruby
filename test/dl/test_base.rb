@@ -74,7 +74,7 @@ module DL
     end
 
     def assert_zero(actual)
-      assert(actual == 0)
+      assert_equal(0, actual)
     end
 
     def assert_negative(actual)
