@@ -1,3 +1,8 @@
+Wed Feb  3 20:10:52 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/iconv/charset_alias.rb: pass block argument to outer local
+	  variable.
+
 Wed Feb  3 20:08:05 2010  Tanaka Akira  <akr@fsij.org>
 
 	* file.c (realpath_rec): rb_path_last_separator may return NULL.

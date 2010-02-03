@@ -43,9 +43,9 @@ def charset_alias(config_charset, mapfile = nil)
   end
   src << "  end" << "end"
   if mapfile
-    open(mapfile, "wb") {|f| f.puts *src}
+    open(mapfile, "wb") {|f| f.puts(*src)}
   else
-    puts *src
+    puts(*src)
   end
 end
 
