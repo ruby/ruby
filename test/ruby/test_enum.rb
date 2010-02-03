@@ -197,6 +197,14 @@ class TestEnumerable < Test::Unit::TestCase
     assert(!([1,2,3].member?(4)))
   end
 
+  class Foo
+    include Enumerable
+    def each
+      yield 1
+      yield 1,2
+    end
+  end
+
   def test_each_with_index
     a = []
     @obj.each_with_index {|x, i| a << [x, i] }
@@ -207,6 +215,7 @@ class TestEnumerable < Test::Unit::TestCase
       hash[item] = index
     end
     assert_equal({"cat"=>0, "wombat"=>2, "dog"=>1}, hash)
+    assert_equal([[1, 0], [[1, 2], 1]], Foo.new.each_with_index.to_a)
   end
 
   def test_each_with_object
@@ -217,17 +226,11 @@ class TestEnumerable < Test::Unit::TestCase
     }
     assert_same(obj, ret)
     assert_equal([55, 3628800], ret)
-  end
-
-  class Foo
-    include Enumerable
-    def each
-      yield 1
-      yield 1,2
-    end
+    assert_equal([[1, nil], [[1, 2], nil]], Foo.new.each_with_object(nil).to_a)
   end
 
   def test_each_entry
+    assert_equal([1, 2, 3], [1, 2, 3].each_entry.to_a)
     assert_equal([1, [1, 2]], Foo.new.each_entry.to_a)
   end
 

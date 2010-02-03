@@ -1656,6 +1656,147 @@ enum_each_entry(int argc, VALUE *argv, VALUE obj)
 }
 
 static VALUE
+each_slice_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
+{
+    VALUE ary = memo[0];
+    VALUE v = Qnil;
+    long size = (long)memo[1];
+    ENUM_WANT_SVALUE();
+
+    rb_ary_push(ary, i);
+
+    if (RARRAY_LEN(ary) == size) {
+	v = rb_yield(ary);
+	memo[0] = rb_ary_new2(size);
+    }
+
+    return v;
+}
+
+/*
+ *  call-seq:
+ *    e.each_slice(n) {...}
+ *    e.each_slice(n)
+ *
+ *  Iterates the given block for each slice of <n> elements.  If no
+ *  block is given, returns an enumerator.
+ *
+ *  e.g.:
+ *      (1..10).each_slice(3) {|a| p a}
+ *      # outputs below
+ *      [1, 2, 3]
+ *      [4, 5, 6]
+ *      [7, 8, 9]
+ *      [10]
+ *
+ */
+static VALUE
+enum_each_slice(VALUE obj, VALUE n)
+{
+    long size = NUM2LONG(n);
+    VALUE args[2], ary;
+
+    if (size <= 0) rb_raise(rb_eArgError, "invalid slice size");
+    RETURN_ENUMERATOR(obj, 1, &n);
+    args[0] = rb_ary_new2(size);
+    args[1] = (VALUE)size;
+
+    rb_block_call(obj, id_each, 0, 0, each_slice_i, (VALUE)args);
+
+    ary = args[0];
+    if (RARRAY_LEN(ary) > 0) rb_yield(ary);
+
+    return Qnil;
+}
+
+static VALUE
+each_cons_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
+{
+    VALUE ary = memo[0];
+    VALUE v = Qnil;
+    long size = (long)memo[1];
+    ENUM_WANT_SVALUE();
+
+    if (RARRAY_LEN(ary) == size) {
+	rb_ary_shift(ary);
+    }
+    rb_ary_push(ary, i);
+    if (RARRAY_LEN(ary) == size) {
+	v = rb_yield(rb_ary_dup(ary));
+    }
+    return v;
+}
+
+/*
+ *  call-seq:
+ *    each_cons(n) {...}
+ *    each_cons(n)
+ *
+ *  Iterates the given block for each array of consecutive <n>
+ *  elements.  If no block is given, returns an enumerator.
+ *
+ *  e.g.:
+ *      (1..10).each_cons(3) {|a| p a}
+ *      # outputs below
+ *      [1, 2, 3]
+ *      [2, 3, 4]
+ *      [3, 4, 5]
+ *      [4, 5, 6]
+ *      [5, 6, 7]
+ *      [6, 7, 8]
+ *      [7, 8, 9]
+ *      [8, 9, 10]
+ *
+ */
+static VALUE
+enum_each_cons(VALUE obj, VALUE n)
+{
+    long size = NUM2LONG(n);
+    VALUE args[2];
+
+    if (size <= 0) rb_raise(rb_eArgError, "invalid size");
+    RETURN_ENUMERATOR(obj, 1, &n);
+    args[0] = rb_ary_new2(size);
+    args[1] = (VALUE)size;
+
+    rb_block_call(obj, id_each, 0, 0, each_cons_i, (VALUE)args);
+
+    return Qnil;
+}
+
+static VALUE
+each_with_object_i(VALUE i, VALUE memo, int argc, VALUE *argv)
+{
+    ENUM_WANT_SVALUE();
+    return rb_yield_values(2, i, memo);
+}
+
+/*
+ *  call-seq:
+ *    each_with_object(obj) {|(*args), memo_obj| ... }
+ *    each_with_object(obj)
+ *
+ *  Iterates the given block for each element with an arbitrary
+ *  object given, and returns the initially given object.
+ *
+ *  If no block is given, returns an enumerator.
+ *
+ *  e.g.:
+ *      evens = (1..10).each_with_object([]) {|i, a| a << i*2 }
+ *      # => [2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+ *
+ */
+static VALUE
+enum_each_with_object(VALUE obj, VALUE memo)
+{
+    RETURN_ENUMERATOR(obj, 1, &memo);
+
+    rb_block_call(obj, id_each, 0, 0, each_with_object_i, memo);
+
+    return memo;
+}
+
+static VALUE
 zip_ary(VALUE val, NODE *memo, int argc, VALUE *argv)
 {
     volatile VALUE result = memo->u1.value;
@@ -2474,6 +2615,9 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "each_with_index", enum_each_with_index, -1);
     rb_define_method(rb_mEnumerable, "reverse_each", enum_reverse_each, -1);
     rb_define_method(rb_mEnumerable, "each_entry", enum_each_entry, -1);
+    rb_define_method(rb_mEnumerable, "each_slice", enum_each_slice, 1);
+    rb_define_method(rb_mEnumerable, "each_cons", enum_each_cons, 1);
+    rb_define_method(rb_mEnumerable, "each_with_object", enum_each_with_object, 1);
     rb_define_method(rb_mEnumerable, "zip", enum_zip, -1);
     rb_define_method(rb_mEnumerable, "take", enum_take, 1);
     rb_define_method(rb_mEnumerable, "take_while", enum_take_while, 0);
