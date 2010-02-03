@@ -921,8 +921,8 @@ main()
 [bow], [	ac_cv_func_setitimer=no
 		],
 [superux*], [	ac_cv_func_setitimer=no
-              ],
-[ 	LIBS="-lm $LIBS"])
+		],
+[	LIBS="-lm $LIBS"])
 AC_CHECK_LIB(crypt, crypt)
 AC_CHECK_LIB(dl, dlopen)	# Dynamic linking for SunOS/Solaris and SYSV
 AC_CHECK_LIB(dld, shl_load)	# Dynamic linking for HP-UX
@@ -1611,10 +1611,7 @@ AC_ARG_WITH(dln-a-out,
 AC_CACHE_CHECK(whether ELF binaries are produced, rb_cv_binary_elf,
 [AC_TRY_LINK([],[], [
 AS_CASE(["`head -1 conftest$EXEEXT | cat -e`"],
-['^?ELF'*], [
-    rb_cv_binary_elf=yes],
-[
-    rb_cv_binary_elf=no])],
+['^?ELF'*], [rb_cv_binary_elf=yes], [rb_cv_binary_elf=no])],
 rb_cv_binary_elf=no)])
 
 if test "$rb_cv_binary_elf" = yes; then
@@ -1699,31 +1696,31 @@ if test "$with_dln_a_out" != yes; then
 			    : ${LDSHARED='ld -G'}
 			fi
 			rb_cv_dlopen=yes],
-	[sunos*], [ 	: ${LDSHARED='ld -assert nodefinitions'}
+	[sunos*], [	: ${LDSHARED='ld -assert nodefinitions'}
 			rb_cv_dlopen=yes],
 	[irix*], [	: ${LDSHARED='ld -shared'}
 			rb_cv_dlopen=yes],
-	[sysv4*], [ 	: ${LDSHARED='ld -G'}
+	[sysv4*], [	: ${LDSHARED='ld -G'}
 			rb_cv_dlopen=yes],
         [nto-qnx*], [	: ${LDSHARED="qcc -shared"}
-                        rb_cv_dlopen=yes ],
+                        rb_cv_dlopen=yes],
 	[esix*|uxpds*], [ : ${LDSHARED="ld -G"}
-			rb_cv_dlopen=yes ],
+			rb_cv_dlopen=yes],
 	[osf*], [	: ${LDSHARED="ld -shared -expect_unresolved \"*\""}
-			rb_cv_dlopen=yes ],
-	[bsdi3*], [ 	AS_CASE(["$CC"],
+			rb_cv_dlopen=yes],
+	[bsdi3*], [	AS_CASE(["$CC"],
 			[*shlicc*], [	: ${LDSHARED="$CC -r"}
-					rb_cv_dlopen=yes ]) ],
+					rb_cv_dlopen=yes])],
 	[linux* | gnu* | k*bsd*-gnu | netbsd* | bsdi* | kopensolaris*-gnu], [
 			: ${LDSHARED='${CC} -shared'}
 			if test "$rb_cv_binary_elf" = yes; then
 			    LDFLAGS="$LDFLAGS -Wl,-export-dynamic"
 			fi
-			rb_cv_dlopen=yes ],
-	[interix*], [ 	: ${LDSHARED="$CC -shared"}
+			rb_cv_dlopen=yes],
+	[interix*], [	: ${LDSHARED="$CC -shared"}
 			XLDFLAGS="$XLDFLAGS -Wl,-E"
 			LIBPATHFLAG=" -L%1\$-s"
-			rb_cv_dlopen=yes ],
+			rb_cv_dlopen=yes],
 	[freebsd*|dragonfly*], [
 			: ${LDSHARED="$CC -shared"}
 			if test "$rb_cv_binary_elf" = yes; then
@@ -1732,21 +1729,21 @@ if test "$with_dln_a_out" != yes; then
 			else
 			  test "$GCC" = yes && test "$rb_cv_prog_gnu_ld" = yes || LDSHARED="ld -Bshareable"
 			fi
-			rb_cv_dlopen=yes ],
-	[openbsd*], [ 	: ${LDSHARED="\$(CC) -shared ${CCDLFLAGS}"}
+			rb_cv_dlopen=yes],
+	[openbsd*], [	: ${LDSHARED="\$(CC) -shared ${CCDLFLAGS}"}
 			if test "$rb_cv_binary_elf" = yes; then
 			    LDFLAGS="$LDFLAGS -Wl,-E"
 			fi
-			rb_cv_dlopen=yes ],
+			rb_cv_dlopen=yes],
 	[nextstep*], [	: ${LDSHARED='cc -r -nostdlib'}
 			LDFLAGS="$LDFLAGS -u libsys_s"
-			rb_cv_dlopen=yes ],
+			rb_cv_dlopen=yes],
 	[openstep*], [	: ${LDSHARED='cc -dynamic -bundle -undefined suppress'}
 			: ${LDFLAGS=""}
-			rb_cv_dlopen=yes ],
+			rb_cv_dlopen=yes],
 	[rhapsody*], [	: ${LDSHARED='cc -dynamic -bundle -undefined suppress'}
 			: ${LDFLAGS=""}
-			rb_cv_dlopen=yes ],
+			rb_cv_dlopen=yes],
 	[darwin*], [	: ${LDSHARED='$(CC) -dynamic -bundle'}
 			: ${DLDFLAGS="${linker_flag}-undefined${linker_flag:+,}dynamic_lookup ${linker_flag}-multiply_defined${linker_flag:+,}suppress ${linker_flag}-flat_namespace"}
 			: ${LDFLAGS=""}
@@ -1759,7 +1756,7 @@ if test "$with_dln_a_out" != yes; then
 			    echo " $LDFLAGS " | grep -q ' -L */usr/local/lib/* ' ||
 			    LDFLAGS="${LDFLAGS:+$LDFLAGS }-L/usr/local/lib"
 			fi
-			rb_cv_dlopen=yes ],
+			rb_cv_dlopen=yes],
         [aix*], [	if test "$GCC" = yes; then
 			    : ${LDSHARED='$(CC) -shared'}
 			else
@@ -1774,12 +1771,12 @@ if test "$with_dln_a_out" != yes; then
                         TRY_LINK="$TRY_LINK"' $(CFLAGS) $(src) $(LIBPATH) $(LOCAL_LIBS) $(LIBS)'
 			: ${LIBPATHENV=SHLIB_PATH}
 			RPATHFLAG=" ${linker_flag}-blibpath:%1\$-s"
-			rb_cv_dlopen=yes ],
+			rb_cv_dlopen=yes],
 	[human*], [	: ${DLDFLAGS=''}
 			: ${LDSHARED=''}
 			: ${LDFLAGS=''}
 			: ${LINK_SO='ar cru $@ $(OBJS)'}
-			rb_cv_dlopen=yes ],
+			rb_cv_dlopen=yes],
 	[beos*], [	AS_CASE(["$target_cpu"],
 			  [powerpc*], [
 			    : ${LDSHARED="ld -xms"}
@@ -1792,7 +1789,7 @@ if test "$with_dln_a_out" != yes; then
 			    LDFLAGS="$LDFLAGS -L/boot/develop/lib/x86 -L/boot/home/config/lib -lbe -lroot"
 			    ])
 			: ${LIBPATHENV=LIBRARY_PATH}
-			rb_cv_dlopen=yes ],
+			rb_cv_dlopen=yes],
 	[haiku*], [	AS_CASE(["$target_cpu"],
 			  [powerpc*], [
 			    : ${LDSHARED="ld -xms"}
@@ -1813,13 +1810,13 @@ if test "$with_dln_a_out" != yes; then
 			XLDFLAGS="$XLDFLAGS -Wl,--stack,0x00200000,--enable-auto-import"
 			DLDFLAGS="${DLDFLAGS} -Wl,--enable-auto-image-base,--enable-auto-import"
 			: ${LIBPATHENV=""}
-			rb_cv_dlopen=yes ],
-	[hiuxmpp], [	: ${LDSHARED='ld -r'} ],
-	[atheos*], [ 	: ${LDSHARED="$CC -shared"}
-			rb_cv_dlopen=yes ],
+			rb_cv_dlopen=yes],
+	[hiuxmpp], [	: ${LDSHARED='ld -r'}],
+	[atheos*], [	: ${LDSHARED="$CC -shared"}
+			rb_cv_dlopen=yes],
 	[os2-emx*], [	LDFLAGS="$LDFLAGS -Zomf"
 			],
-	[ 	: ${LDSHARED='ld'} ])
+	[ 	: ${LDSHARED='ld'}])
   AC_MSG_RESULT($rb_cv_dlopen)
 fi
 if test "${LDSHAREDXX}" = ""; then
@@ -2076,8 +2073,6 @@ if test "$enable_shared" = 'yes'; then
 	],
     [interix*], [
 	LIBRUBYARG_SHARED='-L. -L${libdir} -l$(RUBY_SO_NAME)'
-	],
-    [
 	])
 fi
 if test "$enable_rpath" = yes; then
