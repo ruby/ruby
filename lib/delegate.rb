@@ -114,10 +114,20 @@
 # subclasses.  Subclasses should redefine \_\_getobj\_\_.  For a concrete
 # implementation, see SimpleDelegator.
 #
-class Delegator
-  [:to_s,:inspect,:=~,:!~,:===,:<=>].each do |m|
-    undef_method m
+class Delegator < BasicObject
+  # :stopdoc:
+  def class
+    (class << self; self; end).superclass
   end
+
+  def extend(*mods)
+    (class << self; self; end).class_eval {include(*mods)}
+  end
+
+  def self.const_missing(n)
+    ::Object.const_get(n)
+  end
+  # :startdoc:
 
   #
   # Pass in the _obj_ to delegate method calls to.  All methods supported by
@@ -131,12 +141,12 @@ class Delegator
   def method_missing(m, *args, &block)
     begin
       target = self.__getobj__
-      unless target.respond_to?(m)
+      unless target.respond_to?(m, true)
         super(m, *args, &block)
       else
         target.__send__(m, *args, &block)
       end
-    rescue Exception
+    rescue ::Exception
       if i = $@.index{|s| %r"\A#{Regexp.quote(__FILE__)}:\d+:in `method_missing'\z"o =~ s}
         $@[0..i] = []
       end
@@ -247,17 +257,6 @@ class SimpleDelegator<Delegator
   def __setobj__(obj)
     raise ArgumentError, "cannot delegate to self" if self.equal?(obj)
     @delegate_sd_obj = obj
-  end
-
-  def initialize(obj)   # :nodoc:
-    (self.public_methods - Delegator.public_api).each do |m|
-      class << self
-        self
-      end.class_eval do
-        undef_method m
-      end
-    end
-    super
   end
 end
 
