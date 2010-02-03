@@ -1,3 +1,8 @@
+Thu Feb  4 01:24:01 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_DoDivmod): fix infinity
+	  handling.  1 / Infinity was evaluated to NaN.
+
 Thu Feb  4 00:37:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* time.c (time_mdump, time_mload): dump/load utc_offset.

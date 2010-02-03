@@ -944,9 +944,24 @@ BigDecimal_DoDivmod(VALUE self, VALUE r, Real **div, Real **mod)
     SAVE(b);
 
     if(VpIsNaN(a) || VpIsNaN(b)) goto NaN;
-    if(VpIsInf(a) || VpIsInf(b)) goto NaN;
+    if(VpIsInf(a) && VpIsInf(b)) goto NaN;
     if(VpIsZero(b)) {
 	rb_raise(rb_eZeroDivError, "divided by 0");
+    }
+    if(VpIsInf(a)) {
+       GUARD_OBJ(d,VpCreateRbObject(1, "0"));
+       VpSetInf(d,(S_INT)(VpGetSign(a) == VpGetSign(b) ? 1 : -1));
+       GUARD_OBJ(c,VpCreateRbObject(1, "NaN"));
+       *div = d;
+       *mod = c;
+       return Qtrue;
+    }
+    if(VpIsInf(b)) {
+       GUARD_OBJ(d,VpCreateRbObject(1, "0"));
+       VpSetSign(d,(S_INT)(VpGetSign(a) == VpGetSign(b) ? 1 : -1));
+       *div = d;
+       *mod = a;
+       return Qtrue;
     }
     if(VpIsZero(a)) {
        GUARD_OBJ(c,VpCreateRbObject(1, "0"));
