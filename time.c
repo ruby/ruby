@@ -1040,7 +1040,7 @@ localtimexv(VALUE timexv, struct vtm *result)
 }
 
 struct time_object {
-    VALUE timexv;
+    VALUE timexv; /* time_t value * TIME_SCALE.  possibly Rational. */
     struct vtm vtm;
     int gmt;
     int tm_got;
