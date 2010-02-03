@@ -179,8 +179,8 @@ quo(VALUE x, VALUE y)
     VALUE ret;
     ret = rb_funcall((x), id_quo, 1, (y));
     if (TYPE(ret) == T_RATIONAL &&
-        ((struct RRational *)ret)->den == INT2FIX(1)) {
-        ret = ((struct RRational *)ret)->num;
+        RRATIONAL(ret)->den == INT2FIX(1)) {
+        ret = RRATIONAL(ret)->num;
     }
     return ret;
 }
@@ -3648,8 +3648,8 @@ time_mdump(VALUE time)
     rb_copy_generic_ivar(str, time);
     if (!rb_equal(nano, INT2FIX(0))) {
         if (TYPE(nano) == T_RATIONAL) {
-            rb_ivar_set(str, id_nano_num, ((struct RRational *)nano)->num);
-            rb_ivar_set(str, id_nano_den, ((struct RRational *)nano)->den);
+            rb_ivar_set(str, id_nano_num, RRATIONAL(nano)->num);
+            rb_ivar_set(str, id_nano_den, RRATIONAL(nano)->den);
         }
         else {
             rb_ivar_set(str, id_nano_num, nano);
