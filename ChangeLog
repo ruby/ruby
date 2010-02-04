@@ -1,3 +1,8 @@
+Wed Dec  9 09:50:35 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_justify): fixed the case a fill size is a
+	  multiple of the length of the padding.  [ruby-dev:39856]
+
 Sat Oct 31 17:19:28 2009  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/net/http.rb (Net::HTTPResponse#each_response_header):
