@@ -1,3 +1,11 @@
+Mon Feb  1 17:11:12 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* string (rb_string_value): warning for implicit conversion
+	  from Symbol to String. This behavior was introduced in r22606,
+	  merged in r22738 to ruby_1_9_1. It was an unexpected language
+	  feature change. It will be removed from Ruby in the 1.9.2.
+	  c.f. [ruby-dev:40274].
+
 Thu Feb 26 13:23:20 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* iseq.c (cdhash_each): resurrects internal literals.

@@ -1242,6 +1242,7 @@ rb_string_value(volatile VALUE *ptr)
     VALUE s = *ptr;
     if (TYPE(s) != T_STRING) {
 	if (SYMBOL_P(s)) {
+            rb_warn("Implicit conversion from Symbol to String was introduced by mistake. This bug will be fixed in Ruby 1.9.2.");
 	    s = rb_sym_to_s(s);
 	}
 	else {
