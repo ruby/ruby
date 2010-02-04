@@ -23,6 +23,22 @@ VALUE rb_cISeq;
 
 #define hidden_obj_p(obj) (!SPECIAL_CONST_P(obj) && !RBASIC(obj)->klass)
 
+static inline VALUE
+obj_resurrect(VALUE obj)
+{
+    if (hidden_obj_p(obj)) {
+	switch (BUILTIN_TYPE(obj)) {
+	case T_STRING:
+	    obj = rb_str_replace(rb_str_new(0, 0), obj);
+	    break;
+	case T_ARRAY:
+	    obj = rb_ary_new4(RARRAY_LEN(obj), RARRAY_PTR(obj));
+	    break;
+	}
+    }
+    return obj;
+}
+
 static void
 compile_data_free(struct iseq_compile_data *compile_data)
 {
@@ -714,6 +730,7 @@ insn_operand_intern(rb_iseq_t *iseq,
 		break;
 	    }
 	}
+	op = obj_resurrect(op);
 	ret = rb_inspect(op);
 	if (CLASS_OF(op) == rb_cISeq) {
 	    rb_ary_push(child, op);
@@ -1015,7 +1032,7 @@ exception_type2symbol(VALUE type)
 static int
 cdhash_each(VALUE key, VALUE value, VALUE ary)
 {
-    rb_ary_push(ary, key);
+    rb_ary_push(ary, obj_resurrect(key));
     rb_ary_push(ary, value);
     return ST_CONTINUE;
 }
@@ -1145,7 +1162,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 		rb_ary_push(ary, INT2FIX(*seq));
 		break;
 	      case TS_VALUE:
-		rb_ary_push(ary, *seq);
+		rb_ary_push(ary, obj_resurrect(*seq));
 		break;
 	      case TS_ISEQ:
 		{
