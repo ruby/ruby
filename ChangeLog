@@ -1,3 +1,12 @@
+Fri Feb  5 02:06:57 2010  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* lib/yaml/rubytypes.rb: Struct members are emitted without a leading
+	  colon.  Thanks Yusuke Endoh! [ruby-core:28052]
+
+	* test/yaml/test_struct.rb: fixed tests to go with Struct changes
+
+	* test/yaml/test_yaml.rb: fixed tests to go with Struct changes
+
 Fri Feb  5 00:34:24 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* bignum.c (big_gt, big_ge, big_lt, big_ge): added Bignum#>, >=, < and

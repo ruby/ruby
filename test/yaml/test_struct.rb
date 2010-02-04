@@ -22,8 +22,8 @@ module YAML
     def test_load
       obj = YAML.load(<<-eoyml)
 --- !ruby/struct:StructWithIvar 
-:foo: bar
-:@bar: hello
+foo: bar
+@bar: hello
       eoyml
 
       assert_equal 'hello', obj.bar
