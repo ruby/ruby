@@ -72,7 +72,7 @@ class Struct
             #
             st = YAML::object_maker( struct_type, {} )
             st.members.each do |m|
-                st.send( "#{m}=", val[m] )
+                st.send( "#{m}=", val[m.to_s] )
             end
             props.each do |k,v|
                 st.instance_variable_set(k, v)
@@ -89,7 +89,7 @@ class Struct
 			#
             out.map( taguri, to_yaml_style ) do |map|
 				self.members.each do |m|
-                    map.add( m, self[m] )
+                    map.add( m.to_s, self[m.to_s] )
                 end
 				self.to_yaml_properties.each do |m|
                     map.add( m, instance_variable_get( m ) )
