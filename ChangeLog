@@ -1,3 +1,10 @@
+Thu Feb  4 09:55:38 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: FreeBSD, DragonFly BSD and Mac OS X needs
+	  pthread_np.h to use pthread_*_np functions.
+	  Mac OS X's pthread_*_np also depend sys/signal.h,
+	  but it is included at signal.h via vm_core.h via thread.c.
+
 Thu Feb  4 08:15:53 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/delegate.rb (Delegator): now inherits BasicObject.
