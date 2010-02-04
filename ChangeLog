@@ -1,3 +1,8 @@
+Fri Feb  5 00:34:24 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* bignum.c (big_gt, big_ge, big_lt, big_ge): added Bignum#>, >=, < and
+	  <= to allow to compare with BigDecimal.  [ruby-dev:40167]
+
 Thu Feb  4 15:47:27 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* thread_pthread.c (native_thread_init_stack): use get_stack.
