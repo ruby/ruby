@@ -12,9 +12,6 @@
 #ifdef THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION
 
 #include "gc.h"
-#if defined(__FreeBSD__) || defined(__DragonFly)
-#include <pthread_np.h>
-#endif
 
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
@@ -234,10 +231,10 @@ get_stack(void **addr, size_t *size)
     CHECK_ERR(pthread_attr_getstacksize(&attr, size));
 # endif
     CHECK_ERR(pthread_attr_getguardsize(&attr, &guard));
+    *size -= guard;
 # ifndef HAVE_PTHREAD_GETATTR_NP
     pthread_attr_destroy(&attr);
 # endif
-    size -= guard;
 #elif defined HAVE_PTHREAD_GET_STACKADDR_NP && defined HAVE_PTHREAD_GET_STACKSIZE_NP
     pthread_t th = pthread_self();
     *addr = pthread_get_stackaddr_np(th);
@@ -296,14 +293,11 @@ ruby_init_stack(volatile VALUE *addr
     }
 #endif
     {
-	size_t size = 0, space = 0;
-#if defined(__FreeBSD__) || defined(__DragonFly)
-	pthread_attr_t attr;
-	if (pthread_attr_init(&attr) == 0) {
-	    if (pthread_attr_get_np(native_main_thread.id, &attr) == 0)
-		pthread_attr_getstacksize(&attr, &size);
-	    pthread_attr_destroy(&attr);
-	}
+	size_t size = 0;
+	size_t space = 0;
+#if defined(HAVE_PTHREAD_ATTR_GET_NP)
+	void* addr;
+	get_stack(&addr, &size);
 #elif defined(HAVE_GETRLIMIT)
 	struct rlimit rlim;
 	if (getrlimit(RLIMIT_STACK, &rlim) == 0) {
@@ -328,17 +322,14 @@ native_thread_init_stack(rb_thread_t *th)
 	th->machine_stack_maxsize = native_main_thread.stack_maxsize;
     }
     else {
-#ifdef HAVE_PTHREAD_GETATTR_NP
-	pthread_attr_t attr;
+#ifdef STACKADDR_AVAILABLE
 	void *start;
-	CHECK_ERR(pthread_getattr_np(curr, &attr));
-# if defined HAVE_PTHREAD_ATTR_GETSTACK
-	CHECK_ERR(pthread_attr_getstack(&attr, &start, &th->machine_stack_maxsize));
-# elif defined HAVE_PTHREAD_ATTR_GETSTACKSIZE && defined HAVE_PTHREAD_ATTR_GETSTACKADDR
-	CHECK_ERR(pthread_attr_getstackaddr(&attr, &start));
-	CHECK_ERR(pthread_attr_getstacksize(&attr, &th->machine_stack_maxsize));
-# endif
-	th->machine_stack_start = start;
+	size_t size;
+
+	if (get_stack(&start, &size) == 0) {
+	    th->machine_stack_start = start;
+	    th->machine_stack_maxsize = size;
+	}
 #else
 	rb_raise(rb_eNotImpError, "ruby engine can initialize only in the main thread");
 #endif

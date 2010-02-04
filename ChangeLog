@@ -1,8 +1,22 @@
+Thu Feb  4 15:47:27 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* thread_pthread.c (native_thread_init_stack): use get_stack.
+	  patched by KOSAKI Motohiro [ruby-dev:40309]
+
+	* thread_pthread.c (ruby_init_stack): use get_stack
+	  on platforms which have pthread_attr_get_np.
+	  (FreeBSD, DragonFlyBSD and NetBSD)
+	  This is because FreeBSD and DragonFly BSD must use
+	  pthread_attr_get_np to get stack size of main thread,
+	  but Mac OS X and Linux with LinuxThreads must use getrlimit.
+	  <http://www.nminoru.jp/~nminoru/programming/stackoverflow_handling.html>
+	  <http://d.hatena.ne.jp/nurse/20100204>
+
 Thu Feb  4 09:55:38 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* configure.in: FreeBSD, DragonFly BSD and Mac OS X needs
+	* configure.in: FreeBSD, DragonFly BSD and OpenBSD needs
 	  pthread_np.h to use pthread_*_np functions.
-	  Mac OS X's pthread_*_np also depend sys/signal.h,
+	  OpenBSD's pthread_*_np also depend sys/signal.h,
 	  but it is included at signal.h via vm_core.h via thread.c.
 
 Thu Feb  4 08:15:53 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
