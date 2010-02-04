@@ -11990,8 +11990,8 @@ static struct timer_thread {
 } time_thread = {PTHREAD_COND_INITIALIZER, PTHREAD_MUTEX_INITIALIZER};
 
 #define safe_mutex_lock(lock) \
-    (pthread_mutex_lock(lock), \
-     pthread_cleanup_push((void (*)_((void *)))pthread_mutex_unlock, lock))
+    pthread_mutex_lock(lock); \
+    pthread_cleanup_push((void (*)_((void *)))pthread_mutex_unlock, lock)
 
 static void*
 thread_timer(dummy)
@@ -12055,25 +12055,6 @@ rb_thread_stop_timer()
     thread_init = 0;
 }
 
-void
-rb_child_atfork()
-{
-    time_thread_alive_p = 0;
-}
-
-void
-rb_thread_cancel_timer()
-{
-#ifdef _THREAD_SAFE
-    if( time_thread_alive_p )
-    {
-	pthread_cancel( time_thread );
-	pthread_join( time_thread, NULL );
-	time_thread_alive_p = 0;
-    }
-    thread_init = 0;
-#endif
-}
 #elif defined(HAVE_SETITIMER)
 static void
 catch_timer(sig)
@@ -12114,18 +12095,6 @@ rb_thread_stop_timer()
     thread_init = 0;
 }
 
-void
-rb_thread_cancel_timer()
-{
-}
-
-#else  /* !(_THREAD_SAFE || HAVE_SETITIMER) */
-int rb_thread_tick = THREAD_TICK;
-
-void
-rb_thread_cancel_timer()
-{
-}
 #endif
 
 static VALUE

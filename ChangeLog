@@ -1,3 +1,9 @@
+Fri Feb 5  07:19:00 2010 Kirk Haines <khaines@ruby-lang.org>
+
+	* eval.c: Small syntax change and dead code removal to fix build problems on some platforms.
+
+	* process.c: Dead code removal.
+
 Wed Feb 4  01:06:00 2010 Kirk Haines <khaines@ruby-lang.org>
 
 	* eval.c: Backport #1743 [ruby-core:24203]; stops timer thread unless other threads exist.
