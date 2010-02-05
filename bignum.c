@@ -1332,8 +1332,6 @@ rb_big_cmp(VALUE x, VALUE y)
 static VALUE
 big_op(VALUE x, VALUE y, int op)
 {
-    long xlen = RBIGNUM_LEN(x);
-    BDIGIT *xds, *yds;
     VALUE rel;
     int n;
 
