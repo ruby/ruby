@@ -1,3 +1,11 @@
+Fri Feb  5 16:38:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/delegate.rb (Delegator): include copy of Kernel.
+	  [ruby-dev:40314]
+
+	* lib/delegate.rb (Delegator#{dup,clone}): class of copy should be
+	  Delegator.  [ruby-dev:40313]
+
 Fri Feb  5 09:26:54 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* bignum.c (big_op): remove unused variables.
