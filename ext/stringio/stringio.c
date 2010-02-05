@@ -725,17 +725,26 @@ strio_ungetc(VALUE self, VALUE c)
 	    c = rb_str_conv_enc(c, enc2, enc);
 	}
     }
-    /* get logical position */
-    lpos = 0; p = RSTRING_PTR(ptr->string); pend = p + ptr->pos;
-    for (;;) {
-	clen = rb_enc_mbclen(p, pend, enc);
-	if (p+clen >= pend) break;
-	p += clen;
-	lpos++;
+    if (RSTRING_LEN(ptr->string) < ptr->pos) {
+	long len = RSTRING_LEN(ptr->string);
+	rb_str_resize(ptr->string, ptr->pos - 1);
+	memset(RSTRING_PTR(ptr->string) + len, 0, ptr->pos - len - 1);
+	rb_str_concat(ptr->string, c);
+	ptr->pos--;
     }
-    clen = p - RSTRING_PTR(ptr->string);
-    rb_str_update(ptr->string, lpos, ptr->pos ? 1 : 0, c);
-    ptr->pos = clen;
+    else {
+	/* get logical position */
+	lpos = 0; p = RSTRING_PTR(ptr->string); pend = p + ptr->pos;
+	for (;;) {
+	    clen = rb_enc_mbclen(p, pend, enc);
+	    if (p+clen >= pend) break;
+	    p += clen;
+	    lpos++;
+	}
+	clen = p - RSTRING_PTR(ptr->string);
+	rb_str_update(ptr->string, lpos, ptr->pos ? 1 : 0, c);
+	ptr->pos = clen;
+    }
 
     return Qnil;
 }

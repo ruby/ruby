@@ -1,3 +1,8 @@
+Sat Feb  6 01:55:02 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/stringio/stringio.c (strio_ungetc): pads with \000 when the
+	  current position is after the end.  [ruby-dev:40271]
+
 Sat Feb  6 01:14:54 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/purelib.rb, common.mk: to simulate ruby command more precisely,
