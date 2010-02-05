@@ -3,7 +3,7 @@ Sat Feb  6 00:02:31 2010  Tanaka Akira  <akr@fsij.org>
 	* random.c (fill_random_seed): don't use O_NOFOLLOW because
 	  /dev/urandom is a symlink in OpenSolaris.
 
-	* lib/securerandom.rb (SecureRandom.random_bytes: ditto.
+	* lib/securerandom.rb (SecureRandom.random_bytes): ditto.
 	  
 Fri Feb  5 16:38:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -113,7 +113,7 @@ Wed Feb  3 10:12:09 2010  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* ext/dl/dl.c: legacy callbacks removed in favor of libffi
 
-	* ext/dl/dl_converions.(c,h): used for converting ruby types to FFI
+	* ext/dl/dl_conversions.(c,h): used for converting ruby types to FFI
 	  types.
 
 	* ext/dl/callback/*: replaced by libffi callbacks.
@@ -183,7 +183,7 @@ Mon Feb  1 07:36:33 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tkextlib/tcllib/plotchart.rb: wrong arguments.
 
-	* ext/tk/sampel/tkballoonhelp.rb: fail to support TkEntry widgets.
+	* ext/tk/sample/tkballoonhelp.rb: fail to support TkEntry widgets.
 
 Sun Jan 31 23:20:43 2010  wanabe  <s.wanabe@gmail.com>
 
@@ -250,7 +250,7 @@ Fri Jan 29 12:59:33 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri Jan 29 11:09:49 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* lib/mkmf.rb (try_do): log no source when no developement env.
+	* lib/mkmf.rb (try_do): log no source when no development env.
 
 	* lib/mkmf.rb (create_makefile): srcprefix always needs $(srcdir).
 
