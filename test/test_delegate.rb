@@ -23,11 +23,15 @@ class TestDelegateClass < Test::Unit::TestCase
   def test_delegateclass_class
     myclass=Myclass.new([])
     assert_equal(Myclass,myclass.class)
+    assert_equal(Myclass,myclass.dup.class,'[ruby-dev:40313]')
+    assert_equal(Myclass,myclass.clone.class,'[ruby-dev:40313]')
   end
 
   def test_simpledelegator_class
     simple=SimpleDelegator.new([])
     assert_equal(SimpleDelegator,simple.class)
+    assert_equal(SimpleDelegator,simple.dup.class)
+    assert_equal(SimpleDelegator,simple.clone.class)
   end
 
   class Object
@@ -44,7 +48,6 @@ class TestDelegateClass < Test::Unit::TestCase
     def m
       :m
     end
-    private
     def delegate_test_m
       :m
     end
@@ -54,13 +57,16 @@ class TestDelegateClass < Test::Unit::TestCase
   end
 
   def test_override
+    foo = Foo.new
+    foo2 = SimpleDelegator.new(foo)
+    bar = Bar.new(foo)
     assert_equal(:o, Object.new.m)
-    assert_equal(:m, Foo.new.m)
-    assert_equal(:m, SimpleDelegator.new(Foo.new).m)
-    assert_equal(:m, Bar.new(Foo.new).m)
+    assert_equal(:m, foo.m)
+    assert_equal(:m, foo2.m)
+    assert_equal(:m, bar.m)
     bug = '[ruby-dev:39154]'
-    assert_equal(:m, SimpleDelegator.new(Foo.new).__send__(:delegate_test_m), bug)
-    assert_equal(:m, Bar.new(Foo.new).__send__(:delegate_test_m), bug)
+    assert_equal(:m, foo2.send(:delegate_test_m), bug)
+    assert_equal(:m, bar.send(:delegate_test_m), bug)
   end
 
   class IV < DelegateClass(Integer)
@@ -84,5 +90,35 @@ class TestDelegateClass < Test::Unit::TestCase
     a = [42, :hello].freeze
     d = SimpleDelegator.new(a)
     assert_nothing_raised(bug2679) {d.dup[0] += 1}
+  end
+
+  def test_frozen
+    d = SimpleDelegator.new([1, :foo])
+    d.freeze
+    assert_raise(RuntimeError, '[ruby-dev:40314]#1') {d.__setobj__("foo")}
+    assert_equal([1, :foo], d)
+  end
+
+  def test_instance_method
+    s = SimpleDelegator.new("foo")
+    m = s.method("upcase")
+    s.__setobj__([1,2,3])
+    assert_raise(NoMethodError, '[ruby-dev:40314]#3') {m.call}
+  end
+
+  class Foo
+    private
+    def delegate_test_private
+      :m
+    end
+  end
+
+  def test_private_method
+    foo = Foo.new
+    d = SimpleDelegator.new(foo)
+    assert_raise(NoMethodError) {foo.delegate_test_private}
+    assert_equal(:m, foo.send(:delegate_test_private))
+    assert_raise(NoMethodError, '[ruby-dev:40314]#4') {d.delegate_test_private}
+    assert_raise(NoMethodError, '[ruby-dev:40314]#5') {d.send(:delegate_test_private)}
   end
 end

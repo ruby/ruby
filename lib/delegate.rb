@@ -115,15 +115,15 @@
 # implementation, see SimpleDelegator.
 #
 class Delegator < BasicObject
+  kernel = ::Kernel.dup
+  kernel.class_eval do
+    [:to_s,:inspect,:=~,:!~,:===,:<=>].each do |m|
+      undef_method m
+    end
+  end
+  include kernel
+
   # :stopdoc:
-  def class
-    (class << self; self; end).superclass
-  end
-
-  def extend(*mods)
-    (class << self; self; end).class_eval {include(*mods)}
-  end
-
   def self.const_missing(n)
     ::Object.const_get(n)
   end
@@ -141,7 +141,7 @@ class Delegator < BasicObject
   def method_missing(m, *args, &block)
     begin
       target = self.__getobj__
-      unless target.respond_to?(m, true)
+      unless target.respond_to?(m)
         super(m, *args, &block)
       else
         target.__send__(m, *args, &block)
@@ -211,9 +211,13 @@ class Delegator < BasicObject
     end
   end
 
-  # clone/dup support for the object returned by \_\_getobj\_\_.
-  def initialize_copy(other)
-    self.__setobj__(other.__getobj__.clone)
+  # :nodoc:
+  def dup
+    self.class.new(__getobj__.dup)
+  end
+  # :nodoc:
+  def clone
+    self.class.new(__getobj__.clone)
   end
 
   # Freeze self and target at once.
