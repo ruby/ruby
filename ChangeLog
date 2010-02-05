@@ -1,3 +1,7 @@
+Fri Feb  5 09:26:54 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* bignum.c (big_op): remove unused variables.
+
 Fri Feb  5 02:06:57 2010  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* lib/yaml/rubytypes.rb: Struct members are emitted without a leading
