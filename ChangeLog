@@ -1,3 +1,8 @@
+Sat Feb  6 02:06:01 2010  Akinori MUSHA  <knu@iDaemons.org>
+
+	* test/ruby/test_array.rb (TestArray#test_splat): Add test cases
+	  where splat fails in when clause.  ref [Bug #2468]
+
 Sat Feb  6 00:02:31 2010  Tanaka Akira  <akr@fsij.org>
 
 	* random.c (fill_random_seed): don't use O_NOFOLLOW because

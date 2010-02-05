@@ -1284,4 +1284,44 @@ class TestArray < Test::Unit::TestCase
     a = [2,3]
     assert_equal([2,3], [*a], bug2401)
   end
+
+  def test_splat_when
+    assert_equal(true,
+      case 2
+      when 1, 2, 3
+        true
+      else
+        false
+      end
+      )
+
+    assert_equal(true,
+      case 2
+      when *[1, 2, 3]
+        true
+      else
+        false
+      end
+      )
+
+    a = [1, 2, 3]
+    assert_equal(true,
+      case 2
+      when 1, *a
+        true
+      else
+        false
+      end
+      )
+
+    a = [1, 2, 3]
+    assert_equal(true,
+      case 2
+      when *a
+        true
+      else
+        false
+      end
+      )
+  end
 end
