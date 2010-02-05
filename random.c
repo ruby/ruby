@@ -472,9 +472,6 @@ fill_random_seed(unsigned int seed[DEFAULT_SEED_CNT])
 #ifdef O_NOCTTY
             |O_NOCTTY
 #endif
-#ifdef O_NOFOLLOW
-            |O_NOFOLLOW
-#endif
             )) >= 0) {
         if (fstat(fd, &statbuf) == 0 && S_ISCHR(statbuf.st_mode)) {
             (void)read(fd, seed, DEFAULT_SEED_LEN);
