@@ -3,7 +3,7 @@ Sat Feb  6 00:02:31 2010  Tanaka Akira  <akr@fsij.org>
 	* random.c (fill_random_seed): don't use O_NOFOLLOW because
 	  /dev/urandom is a symlink in OpenSolaris.
 
-	* lib/securerandom.rb (SecureRandom.random_bytes: ditto.
+	* lib/securerandom.rb (SecureRandom.random_bytes): ditto.
 
 Fri Feb  5 23:09:01 2010  Akinori MUSHA  <knu@iDaemons.org>
 
