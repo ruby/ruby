@@ -7,6 +7,8 @@
 #
 # Documentation by Kevin Jackson and Gavin Sinclair.
 # 
+# Performance improvements by Kurt Stephens.
+#
 # When you <tt>require 'rational'</tt>, all interactions between numbers
 # potentially return a rational result.  For example:
 #
@@ -17,6 +19,8 @@
 # See Rational for full documentation.
 #
 
+# Pull in some optimization
+require "rational.so"
 
 #
 # Creates a Rational number (i.e. a fraction).  +a+ and +b+ should be Integers:
@@ -104,13 +108,8 @@ class Rational < Numeric
       num = -num
       den = -den
     end
-    if num.kind_of?(Integer) and den.kind_of?(Integer)
-      @numerator = num
-      @denominator = den
-    else
-      @numerator = num.to_i
-      @denominator = den.to_i
-    end
+    @numerator = num.to_i
+    @denominator = den.to_i
   end
 
   #
@@ -122,14 +121,13 @@ class Rational < Numeric
   #   r + 0.5                # -> 1.25
   #
   def + (a)
-    if a.kind_of?(Rational)
-      num = @numerator * a.denominator
-      num_a = a.numerator * @denominator
-      Rational(num + num_a, @denominator * a.denominator)
-    elsif a.kind_of?(Integer)
-      self + Rational.new!(a, 1)
-    elsif a.kind_of?(Float)
-      Float(self) + a
+    case a
+    when Rational # => Rational | Integer
+      Rational(@numerator * a.denominator + a.numerator * @denominator, @denominator * a.denominator)
+    when Integer  # => Rational
+      Rational.reduce(@numerator + a * @denominator, @denominator)
+    when Float
+      self.to_f + a
     else
       x, y = a.coerce(self) rescue raise TypeError, "#{a.class} can't be coerced into #{self.class}"
       x + y
@@ -146,18 +144,24 @@ class Rational < Numeric
   #   r - 0.5              # -> 0.25
   #
   def - (a)
-    if a.kind_of?(Rational)
-      num = @numerator * a.denominator
-      num_a = a.numerator * @denominator
-      Rational(num - num_a, @denominator*a.denominator)
-    elsif a.kind_of?(Integer)
-      self - Rational.new!(a, 1)
-    elsif a.kind_of?(Float)
-      Float(self) - a
+    case a
+    when Rational # => Rational | Integer
+      Rational(@numerator * a.denominator - a.numerator * @denominator, @denominator * a.denominator)
+    when Integer  # => Rational
+      Rational.reduce(@numerator - a * @denominator, @denominator)
+    when Float
+      self.to_f - a
     else
       x, y = a.coerce(self) rescue raise TypeError, "#{a.class} can't be coerced into #{self.class}"
       x - y
     end
+  end
+
+  #
+  # Unary Minus--Returns the receiver's value, negated.
+  #
+  def -@
+    Rational.new!(-@numerator, @denominator)
   end
 
   #
@@ -171,14 +175,13 @@ class Rational < Numeric
   #   r * Rational(1,2)    # -> Rational(3,8)
   #
   def * (a)
-    if a.kind_of?(Rational)
-      num = @numerator * a.numerator
-      den = @denominator * a.denominator
-      Rational(num, den)
-    elsif a.kind_of?(Integer)
-      self * Rational.new!(a, 1)
-    elsif a.kind_of?(Float)
-      Float(self) * a
+    case a
+    when Rational
+      Rational(@numerator * a.numerator, @denominator * a.denominator)
+    when Integer
+      Rational(@numerator * a, @denominator)
+    when Float
+      self.to_f * a
     else
       x, y = a.coerce(self) rescue raise TypeError, "#{a.class} can't be coerced into #{self.class}"
       x * y
@@ -193,15 +196,14 @@ class Rational < Numeric
   #   r / Rational(1,2)    # -> Rational(3,2)
   #
   def / (a)
-    if a.kind_of?(Rational)
-      num = @numerator * a.denominator
-      den = @denominator * a.numerator
-      Rational(num, den)
-    elsif a.kind_of?(Integer)
+    case a
+    when Rational
+      Rational(@numerator * a.denominator, @denominator * a.numerator)
+    when Integer
       raise ZeroDivisionError, "division by zero" if a == 0
-      self / Rational.new!(a, 1)
-    elsif a.kind_of?(Float)
-      Float(self) / a
+      Rational(@numerator, @denominator * a)
+    when Float
+      self.to_f / a
     else
       x, y = a.coerce(self) rescue raise TypeError, "#{a.class} can't be coerced into #{self.class}"
       x / y
@@ -218,22 +220,17 @@ class Rational < Numeric
   #   r ** Rational(1,2)   # -> 0.866025403784439
   #
   def ** (other)
-    if other.kind_of?(Rational)
-      Float(self) ** other
-    elsif other.kind_of?(Integer)
+    case other
+    when Rational, Float
+      self.to_f ** other
+    when Integer
       if other > 0
-	num = @numerator ** other
-	den = @denominator ** other
+	Rational.new!(@numerator ** other, @denominator ** other)
       elsif other < 0
-	num = @denominator ** -other
-	den = @numerator ** -other
-      elsif other == 0
-	num = 1
-	den = 1
+	Rational.new!(@denominator ** -other, @numerator ** -other)
+      else
+	Rational.new!(1, 1) # why not Fixnum 1?
       end
-      Rational.new!(num, den)
-    elsif other.kind_of?(Float)
-      Float(self) ** other
     else
       x, y = other.coerce(self) rescue raise TypeError, "#{a.class} can't be coerced into #{self.class}"
       x ** y
@@ -256,7 +253,7 @@ class Rational < Numeric
   #
   def % (other)
     value = (self / other).floor
-    return self - other * value
+    self - other * value
   end
 
   #
@@ -268,7 +265,7 @@ class Rational < Numeric
   #
   def divmod(other)
     value = (self / other).floor
-    return value, self - other * value
+    [value, self - other * value]
   end
 
   #
@@ -282,6 +279,17 @@ class Rational < Numeric
     end
   end
 
+  # Returns true or false.
+  def zero?
+    @numerator.zero?
+  end
+
+  # See Numeric#nonzero?
+  def nonzero?
+    @numerator.nonzero? ? self : nil
+  end
+
+
   #
   # Returns +true+ iff this value is numerically equal to +other+.
   #
@@ -292,12 +300,13 @@ class Rational < Numeric
   # Don't use Rational.new!
   #
   def == (other)
-    if other.kind_of?(Rational)
-      @numerator == other.numerator and @denominator == other.denominator
-    elsif other.kind_of?(Integer)
-      self == Rational.new!(other, 1)
-    elsif other.kind_of?(Float)
-      Float(self) == other
+    case other
+    when Rational
+      @numerator == other.numerator && @denominator == other.denominator
+    when Integer
+      @numerator == other && @denominator == 1
+    when Float
+      self.to_f == other
     else
       other == self
     end
@@ -307,31 +316,24 @@ class Rational < Numeric
   # Standard comparison operator.
   #
   def <=> (other)
-    if other.kind_of?(Rational)
-      num = @numerator * other.denominator
-      num_a = other.numerator * @denominator
-      v = num - num_a
-      if v > 0
-	return 1
-      elsif v < 0
-	return  -1
-      else
-	return 0
-      end
-    elsif other.kind_of?(Integer)
-      return self <=> Rational.new!(other, 1)
-    elsif other.kind_of?(Float)
-      return Float(self) <=> other
+    case other
+    when Rational
+      @numerator * other.denominator <=> other.numerator * @denominator
+    when Integer
+      @numerator <=> other * @denominator
+    when Float
+      self.to_f <=> other
     else
       x, y = other.coerce(self) rescue return nil
-      return x <=> y
+      x <=> y
     end
   end
 
   def coerce(other)
-    if other.kind_of?(Float)
+    case other
+    when Float
       return other, self.to_f
-    elsif other.kind_of?(Integer)
+    when Integer
       return Rational.new!(other, 1), self
     else
       super
@@ -361,23 +363,19 @@ class Rational < Numeric
 
   def truncate()
     if @numerator < 0
-      return -((-@numerator).div(@denominator))
+      -((-@numerator).div(@denominator))
+    else
+      @numerator.div(@denominator)
     end
-    @numerator.div(@denominator)
   end
 
   alias_method :to_i, :truncate
 
   def round()
     if @numerator < 0
-      num = -@numerator
-      num = num * 2 + @denominator
-      den = @denominator * 2
-      -(num.div(den))
+      -((@numerator * -2 + @denominator).div(@denominator * 2))
     else
-      num = @numerator * 2 + @denominator
-      den = @denominator * 2
-      num.div(den)
+      ((@numerator * 2 + @denominator).div(@denominator * 2))
     end
   end
 
@@ -399,7 +397,7 @@ class Rational < Numeric
     if @denominator == 1
       @numerator.to_s
     else
-      @numerator.to_s+"/"+@denominator.to_s
+      "#{@numerator}/#{@denominator}"
     end
   end
 
@@ -416,7 +414,7 @@ class Rational < Numeric
   #   Rational(5,8).inspect     # -> "Rational(5, 8)"
   #
   def inspect
-    sprintf("Rational(%s, %s)", @numerator.inspect, @denominator.inspect)
+    "Rational(#{@numerator.inspect}, #{@denominator.inspect})"
   end
 
   #

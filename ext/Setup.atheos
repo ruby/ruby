@@ -20,6 +20,7 @@ nkf
 pty
 #openssl
 racc/parse
+rational
 readline
 sdbm
 socket

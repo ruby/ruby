@@ -20,6 +20,7 @@
 #pty
 #openssl
 #racc/cparse
+#rational
 #readline
 #sdbm
 #socket
