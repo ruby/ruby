@@ -5,13 +5,17 @@ class IMAPResponseParserTest < Test::Unit::TestCase
   def setup
     @do_not_reverse_lookup = Socket.do_not_reverse_lookup
     Socket.do_not_reverse_lookup = true
-    @max_flag_count = Net::IMAP.max_flag_count
-    Net::IMAP.max_flag_count = 3
+    if Net::IMAP.respond_to?(:max_flag_count)
+      @max_flag_count = Net::IMAP.max_flag_count
+      Net::IMAP.max_flag_count = 3
+    end
   end
 
   def teardown
     Socket.do_not_reverse_lookup = @do_not_reverse_lookup
-    Net::IMAP.max_flag_count = @max_flag_count
+    if Net::IMAP.respond_to?(:max_flag_count)
+      Net::IMAP.max_flag_count = @max_flag_count
+    end
   end
 
   def test_flag_list_safe
@@ -50,5 +54,13 @@ EOF
 EOF
       end
     end
+  end
+
+  def test_resp_text_code
+    parser = Net::IMAP::ResponseParser.new
+    response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
+* OK [CLOSED] Previous mailbox closed.
+EOF
+    assert_equal nil, response
   end
 end
