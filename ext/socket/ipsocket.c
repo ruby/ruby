@@ -129,61 +129,108 @@ rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv,
 		     inetsock_cleanup, (VALUE)&arg);
 }
 
-/*
- * call-seq:
- *   ipsocket.addr => [address_family, port, hostname, numeric_address] 
- *
- * Returns the local address as an array which contains
- * address_family, port, hostname and numeric_address. 
- *
- * hostname is obtained from numeric_address using reverse lookup.
- * If ipsocket.do_not_reverse_lookup is true,
- * hostname is same as numeric_address.
- *
- *   TCPSocket.open("www.ruby-lang.org", 80) {|sock|
- *     p sock.addr #=> ["AF_INET", 49429, "hal", "192.168.0.128"]
- *   }
- *
- */
-static VALUE
-ip_addr(VALUE sock)
+static ID id_numeric, id_hostname;
+
+int
+rsock_revlookup_flag(VALUE revlookup, int *norevlookup)
 {
-    rb_io_t *fptr;
-    struct sockaddr_storage addr;
-    socklen_t len = sizeof addr;
+#define return_norevlookup(x) {*norevlookup = x; return 1;}
+    ID id;
 
-    GetOpenFile(sock, fptr);
-
-    if (getsockname(fptr->fd, (struct sockaddr*)&addr, &len) < 0)
-	rb_sys_fail("getsockname(2)");
-    return rsock_ipaddr((struct sockaddr*)&addr, fptr->mode & FMODE_NOREVLOOKUP);
+    switch (revlookup) {
+      case Qtrue:  return_norevlookup(0);
+      case Qfalse: return_norevlookup(1);
+      case Qnil: break;
+      default:
+	Check_Type(revlookup, T_SYMBOL);
+	id = SYM2ID(revlookup);
+	if (id == id_numeric) return_norevlookup(1);
+	if (id == id_hostname) return_norevlookup(0);
+	rb_raise(rb_eArgError, "invalid reverse_lookup flag: :%s", rb_id2name(id));
+    }
+    return 0;
+#undef return_norevlookup
 }
 
 /*
  * call-seq:
- *   ipsocket.peeraddr => [address_family, port, hostname, numeric_address] 
+ *   ipsocket.addr([reverse_lookup]) => [address_family, port, hostname, numeric_address] 
+ *
+ * Returns the local address as an array which contains
+ * address_family, port, hostname and numeric_address. 
+ *
+ * If +reverse_lookup+ is +true+ or +:hostname+,
+ * hostname is obtained from numeric_address using reverse lookup.
+ * Or if it is +false+, or +:numeric+,
+ * hostname is same as numeric_address.
+ * Or if it is +nil+ or ommitted, obeys to +ipsocket.do_not_reverse_lookup+.
+ * See +Socket.getaddrinfo+ also.
+ *
+ *   TCPSocket.open("www.ruby-lang.org", 80) {|sock|
+ *     p sock.addr #=> ["AF_INET", 49429, "hal", "192.168.0.128"]
+ *     p sock.addr(true)  #=> ["AF_INET", 49429, "hal", "192.168.0.128"]
+ *     p sock.addr(false) #=> ["AF_INET", 49429, "192.168.0.128", "192.168.0.128"]
+ *     p sock.addr(:hostname)  #=> ["AF_INET", 49429, "hal", "192.168.0.128"]
+ *     p sock.addr(:numeric)   #=> ["AF_INET", 49429, "192.168.0.128", "192.168.0.128"]
+ *   }
+ *
+ */
+static VALUE
+ip_addr(int argc, VALUE *argv, VALUE sock)
+{
+    rb_io_t *fptr;
+    struct sockaddr_storage addr;
+    socklen_t len = sizeof addr;
+    int norevlookup;
+
+    GetOpenFile(sock, fptr);
+
+    if (argc < 1 || !rsock_revlookup_flag(argv[0], &norevlookup))
+	norevlookup = fptr->mode & FMODE_NOREVLOOKUP;
+    if (getsockname(fptr->fd, (struct sockaddr*)&addr, &len) < 0)
+	rb_sys_fail("getsockname(2)");
+    return rsock_ipaddr((struct sockaddr*)&addr, norevlookup);
+}
+
+/*
+ * call-seq:
+ *   ipsocket.peeraddr([reverse_lookup]) => [address_family, port, hostname, numeric_address] 
  *
  * Returns the remote address as an array which contains
  * address_family, port, hostname and numeric_address. 
  * It is defined for connection oriented socket such as TCPSocket.
  *
+ * If +reverse_lookup+ is +true+ or +:hostname+,
+ * hostname is obtained from numeric_address using reverse lookup.
+ * Or if it is +false+, or +:numeric+,
+ * hostname is same as numeric_address.
+ * Or if it is +nil+ or ommitted, obeys to +ipsocket.do_not_reverse_lookup+.
+ * See +Socket.getaddrinfo+ also.
+ *
  *   TCPSocket.open("www.ruby-lang.org", 80) {|sock|
  *     p sock.peeraddr #=> ["AF_INET", 80, "carbon.ruby-lang.org", "221.186.184.68"]
+ *     p sock.peeraddr(true)  #=> ["AF_INET", 80, "221.186.184.68", "221.186.184.68"]
+ *     p sock.peeraddr(false) #=> ["AF_INET", 80, "221.186.184.68", "221.186.184.68"]
+ *     p sock.peeraddr(:hostname) #=> ["AF_INET", 80, "carbon.ruby-lang.org", "221.186.184.68"]
+ *     p sock.peeraddr(:numeric)  #=> ["AF_INET", 80, "221.186.184.68", "221.186.184.68"]
  *   }
  *
  */
 static VALUE
-ip_peeraddr(VALUE sock)
+ip_peeraddr(int argc, VALUE *argv, VALUE sock)
 {
     rb_io_t *fptr;
     struct sockaddr_storage addr;
     socklen_t len = sizeof addr;
+    int norevlookup;
 
     GetOpenFile(sock, fptr);
 
+    if (argc < 1 || !rsock_revlookup_flag(argv[0], &norevlookup))
+	norevlookup = fptr->mode & FMODE_NOREVLOOKUP;
     if (getpeername(fptr->fd, (struct sockaddr*)&addr, &len) < 0)
 	rb_sys_fail("getpeername(2)");
-    return rsock_ipaddr((struct sockaddr*)&addr, fptr->mode & FMODE_NOREVLOOKUP);
+    return rsock_ipaddr((struct sockaddr*)&addr, norevlookup);
 }
 
 /*
@@ -243,10 +290,12 @@ void
 Init_ipsocket(void)
 {
     rb_cIPSocket = rb_define_class("IPSocket", rb_cBasicSocket);
-    rb_define_method(rb_cIPSocket, "addr", ip_addr, 0);
-    rb_define_method(rb_cIPSocket, "peeraddr", ip_peeraddr, 0);
+    rb_define_method(rb_cIPSocket, "addr", ip_addr, -1);
+    rb_define_method(rb_cIPSocket, "peeraddr", ip_peeraddr, -1);
     rb_define_method(rb_cIPSocket, "recvfrom", ip_recvfrom, -1);
     rb_define_singleton_method(rb_cIPSocket, "getaddress", ip_s_getaddress, 1);
     rb_undef_method(rb_cIPSocket, "getpeereid");
 
+    id_numeric = rb_intern_const("numeric");
+    id_hostname = rb_intern_const("hostname");
 }
