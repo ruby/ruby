@@ -279,6 +279,34 @@ class IMAPTest < Test::Unit::TestCase
     end
   end
 
+  def test_unexpected_bye
+    server = TCPServer.new(0)
+    port = server.addr[1]
+    Thread.start do
+      begin
+        sock = server.accept
+        begin
+          sock.print("* OK Gimap ready for requests from 75.101.246.151 33if2752585qyk.26\r\n")
+          sock.gets
+          sock.print("* BYE System Error 33if2752585qyk.26\r\n")
+        ensure
+          sock.close
+        end
+      rescue
+      end
+    end
+    begin
+      begin
+        imap = Net::IMAP.new("localhost", :port => port)
+        assert_raise(Net::IMAP::ByeResponseError) do
+          imap.login("user", "password")
+        end
+      end
+    ensure
+      server.close
+    end
+  end
+
   private
 
   def imaps_test
