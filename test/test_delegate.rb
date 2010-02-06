@@ -74,6 +74,7 @@ class TestDelegateClass < Test::Unit::TestCase
 
     def initialize
       @var = 1
+      super(0)
     end
   end
 
@@ -90,6 +91,7 @@ class TestDelegateClass < Test::Unit::TestCase
     a = [42, :hello].freeze
     d = SimpleDelegator.new(a)
     assert_nothing_raised(bug2679) {d.dup[0] += 1}
+    assert_raise(RuntimeError) {d.clone[0] += 1}
   end
 
   def test_frozen
