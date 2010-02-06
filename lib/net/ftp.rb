@@ -25,6 +25,7 @@ module Net
   class FTPTempError < FTPError; end
   class FTPPermError < FTPError; end
   class FTPProtoError < FTPError; end
+  class FTPConnectionError < FTPError; end
   # :startdoc:
 
   #
@@ -132,7 +133,7 @@ module Net
       @passive = false
       @debug_mode = false
       @resume = false
-      @sock = nil
+      @sock = NullSocket.new
       @logged_in = false
       if host
 	connect(host)
@@ -966,8 +967,15 @@ module Net
       return dirname
     end
     private :parse257
-  end
 
+    # :stopdoc:
+    class NullSocket
+      def method_missing(mid, *args)
+        raise FTPConnectionError, "not connected"
+      end
+    end
+    # :startdoc:
+  end
 end
 
 

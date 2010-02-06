@@ -1,3 +1,8 @@
+Sat Feb  6 23:37:11 2010  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (initialize): set @sock to a NullSocket instance to
+	  raise FTPConnectionError when not connected.   [ruby-dev:40258]
+
 Sat Feb  6 23:25:57 2010  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/curses/view2.rb: replaced with Hugh Sasse's version.
