@@ -139,18 +139,11 @@ class Delegator < BasicObject
 
   # Handles the magic of delegation through \_\_getobj\_\_.
   def method_missing(m, *args, &block)
+    target = self.__getobj__
     begin
-      target = self.__getobj__
-      unless target.respond_to?(m)
-        super(m, *args, &block)
-      else
-        target.__send__(m, *args, &block)
-      end
-    rescue ::Exception
-      if i = $@.index{|s| %r"\A#{Regexp.quote(__FILE__)}:\d+:in `method_missing'\z"o =~ s}
-        $@[0..i] = []
-      end
-      ::Kernel::raise
+      target.respond_to?(m) ? target.__send__(m, *args, &block) : super(m, *args, &block)
+    ensure
+      $@.delete_if {|t| %r"\A#{Regexp.quote(__FILE__)}:#{__LINE__-2}:"o =~ t} if $@
     end
   end
 
@@ -267,12 +260,11 @@ end
 # :stopdoc:
 def Delegator.delegating_block(mid)
   lambda do |*args, &block|
+    target = self.__getobj__
     begin
-      __getobj__.__send__(mid, *args, &block)
-    rescue
-      re = /\A#{Regexp.quote(__FILE__)}:#{__LINE__-2}:/o
-      $!.backtrace.delete_if {|t| re =~ t}
-      raise
+      target.__send__(mid, *args, &block)
+    ensure
+      $@.delete_if {|t| /\A#{Regexp.quote(__FILE__)}:#{__LINE__-2}:/o =~ t} if $@
     end
   end
 end

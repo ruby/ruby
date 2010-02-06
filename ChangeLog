@@ -1,3 +1,9 @@
+Sat Feb  6 12:02:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/delegate.rb (Delegator#method_missing),
+	  (Delegator.delegating_block): don't hide backtrace from
+	  __getobj__ and reduced exception messages when $DEBUG.
+
 Sat Feb  6 11:35:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/ipsocket.c (ip_addr, ip_peeraddr),
