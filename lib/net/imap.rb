@@ -1017,7 +1017,8 @@ module Net
     end
 
     def receive_responses
-      while true
+      connection_closed = false
+      until connection_closed
         synchronize do
           @exception = nil
         end
@@ -1054,7 +1055,7 @@ module Net
               if resp.name == "BYE" && @logout_command_tag.nil?
                 @sock.close
                 @exception = ByeResponseError.new(resp)
-                break
+                connection_closed = true
               end
             when ContinuationRequest
               @continuation_request_arrival.signal
