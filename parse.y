@@ -773,83 +773,43 @@ mlhs_entry	: mlhs_basic
 
 mlhs_basic	: mlhs_head
 		    {
-		    /*%%%*/
 			$$ = NEW_MASGN($1, 0);
-		    /*%
-			$$ = $1;
-		    %*/
 		    }
 		| mlhs_head mlhs_item
 		    {
-		    /*%%%*/
 			$$ = NEW_MASGN(list_append($1,$2), 0);
-		    /*%
-			$$ = mlhs_add($1, $2);
-		    %*/
 		    }
 		| mlhs_head tSTAR mlhs_node
 		    {
-		    /*%%%*/
 			$$ = NEW_MASGN($1, $3);
-		    /*%
-			$$ = mlhs_add_star($1, $3);
-		    %*/
 		    }
 		| mlhs_head tSTAR mlhs_node ',' mlhs_post
 		    {
-		    /*%%%*/
 			$$ = NEW_MASGN($1, NEW_POSTARG($3,$5));
-		    /*%
-			$$ = mlhs_add_star($1, $3);
-		    %*/
 		    }
 		| mlhs_head tSTAR
 		    {
-		    /*%%%*/
 			$$ = NEW_MASGN($1, -1);
-		    /*%
-			$$ = mlhs_add_star($1, Qnil);
-		    %*/
 		    }
 		| mlhs_head tSTAR ',' mlhs_post
 		    {
-		    /*%%%*/
 			$$ = NEW_MASGN($1, NEW_POSTARG((NODE *)-1, $4));
-		    /*%
-			$$ = mlhs_add_star($1, Qnil);
-		    %*/
 		    }
 		| tSTAR mlhs_node
 		    {
-		    /*%%%*/
 			$$ = NEW_MASGN(0, $2);
-		    /*%
-			$$ = mlhs_add_star(mlhs_new(), $2);
-		    %*/
 		    }
 		| tSTAR mlhs_node ',' mlhs_post
 		    {
-		    /*%%%*/
 			$$ = NEW_MASGN(0, NEW_POSTARG($2,$4));
-		    /*%
-			$$ = mlhs_add_star(mlhs_new(), $2);
-		    %*/
 		    }
 		| tSTAR
 		    {
-		    /*%%%*/
 			$$ = NEW_MASGN(0, -1);
-		    /*%
-			$$ = mlhs_add_star(mlhs_new(), Qnil);
-		    %*/
 		    }
 		| tSTAR ',' mlhs_post
 		    {
-		    /*%%%*/
 			$$ = NEW_MASGN(0, NEW_POSTARG((NODE *)-1, $3));
-		    /*%
-			$$ = mlhs_add_star(mlhs_new(), Qnil);
-		    %*/
 		    }
 		;
 
@@ -872,19 +832,11 @@ mlhs_head	: mlhs_item ','
 
 mlhs_post	: mlhs_item
 		    {
-		    /*%%%*/
 			$$ = NEW_LIST($1);
-		    /*%
-			$$ = mlhs_add(mlhs_new(), $1);
-		    %*/
 		    }
 		| mlhs_post ',' mlhs_item
 		    {
-		    /*%%%*/
 			$$ = list_append($1, $3);
-		    /*%
-			$$ = mlhs_add($1, $3);
-		    %*/
 		    }
 		;
 
@@ -1331,11 +1283,7 @@ aref_args	: none
 		    }
 		| args ',' assocs trailer
 		    {
-		    /*%%%*/
 			$$ = arg_append($1, NEW_HASH($3));
-		    /*%
-			$$ = arg_add_assocs($1, $3);
-		    %*/
 		    }
 		| assocs trailer
 		    {
@@ -1454,11 +1402,7 @@ args		: arg_value
 		    }
 		| tSTAR arg_value
 		    {
-		    /*%%%*/
 			if (!($$ = splat_array($2))) $$ = NEW_SPLAT($2);
-		    /*%
-			$$ = arg_add_star(arg_new(), $2);
-		    %*/
 		    }
 		| args ',' arg_value
 		    {
@@ -1466,7 +1410,6 @@ args		: arg_value
 		    }
 		| args ',' tSTAR arg_value
 		    {
-		    /*%%%*/
 			NODE *n1;
 			if ((nd_type($4) == NODE_ARRAY) && (n1 = splat_array($1)) != 0) {
 			    $$ = list_concat(n1, $4);
@@ -1474,9 +1417,6 @@ args		: arg_value
 			else {
 			    $$ = arg_concat($1, $4);
 			}
-		    /*%
-			$$ = arg_add_star($1, $4);
-		    %*/
 		    }
 		;
 
@@ -1486,11 +1426,7 @@ args2		: arg_value
 		    }
 		| tSTAR arg_value
 		    {
-		    /*%%%*/
 			$$ = NEW_SPLAT($2);
-		    /*%
-			$$ = arg_add_star(arg_new(), $2);
-		    %*/
 		    }
 		| args2 ',' arg_value
 		    {
@@ -1498,7 +1434,6 @@ args2		: arg_value
 		    }
 		| args2 ',' tSTAR arg_value
 		    {
-		    /*%%%*/
 			NODE *n1;
 			if ((nd_type($4) == NODE_ARRAY) && (n1 = splat_array($1)) != 0) {
 			    $$ = list_concat(n1, $4);
@@ -1506,9 +1441,6 @@ args2		: arg_value
 			else {
 			    $$ = arg_concat($1, $4);
 			}
-		    /*%
-			$$ = arg_add_star($1, $4);
-		    %*/
 		    }
 		;
 
@@ -1979,15 +1911,11 @@ method_call	: operation paren_args
 		    }
 		| primary_value '[' opt_call_args ']'
 		    {
-		    /*%%%*/
 			if ($1 && nd_type($1) == NODE_SELF)
 			    $$ = NEW_FCALL(tAREF, $3);
 			else
 			    $$ = NEW_CALL($1, tAREF, $3);
 			fixpos($$, $1);
-		    /*%
-			$$ = dispatch2(aref, $1, escape_Qundef($3));
-		    %*/
 		    }
 		;
 
@@ -2377,123 +2305,63 @@ f_arglist	: '(' f_args opt_nl ')'
 
 f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    {
-		    /*%%%*/
 			$$ = new_args($1, $3, $5, 0, $6);
-		    /*%
-			$$ = params_new($1, $3, $5, Qnil, escape_Qundef($6));
-		    %*/
 		    }
 		| f_arg ',' f_optarg ',' f_rest_arg ',' f_arg opt_f_block_arg
 		    {
-		    /*%%%*/
 			$$ = new_args($1, $3, $5, $7, $8);
-		    /*%
-			$$ = params_new($1, $3, $5, $7, escape_Qundef($8));
-		    %*/
 		    }
 		| f_arg ',' f_optarg opt_f_block_arg
 		    {
-		    /*%%%*/
 			$$ = new_args($1, $3, 0, 0, $4);
-		    /*%
-			$$ = params_new($1, $3, Qnil, Qnil, escape_Qundef($4));
-		    %*/
 		    }
 		| f_arg ',' f_optarg ',' f_arg opt_f_block_arg
 		    {
-		    /*%%%*/
 			$$ = new_args($1, $3, 0, $5, $6);
-		    /*%
-			$$ = params_new($1, $3, Qnil, $5, escape_Qundef($6));
-		    %*/
 		    }
 		| f_arg ',' f_rest_arg opt_f_block_arg
 		    {
-		    /*%%%*/
 			$$ = new_args($1, 0, $3, 0, $4);
-		    /*%
-			$$ = params_new($1, Qnil, $3, Qnil, escape_Qundef($4));
-		    %*/
 		    }
 		| f_arg ',' f_rest_arg ',' f_arg opt_f_block_arg
 		    {
-		    /*%%%*/
 			$$ = new_args($1, 0, $3, $5, $6);
-		    /*%
-			$$ = params_new($1, Qnil, $3, $5, escape_Qundef($6));
-		    %*/
 		    }
 		| f_arg opt_f_block_arg
 		    {
-		    /*%%%*/
 			$$ = new_args($1, 0, 0, 0, $2);
-		    /*%
-			$$ = params_new($1, Qnil, Qnil, Qnil,escape_Qundef($2));
-		    %*/
 		    }
 		| f_optarg ',' f_rest_arg opt_f_block_arg
 		    {
-		    /*%%%*/
 			$$ = new_args(0, $1, $3, 0, $4);
-		    /*%
-			$$ = params_new(Qnil, $1, $3, Qnil, escape_Qundef($4));
-		    %*/
 		    }
 		| f_optarg ',' f_rest_arg ',' f_arg opt_f_block_arg
 		    {
-		    /*%%%*/
 			$$ = new_args(0, $1, $3, $5, $6);
-		    /*%
-			$$ = params_new(Qnil, $1, $3, $5, escape_Qundef($6));
-		    %*/
 		    }
 		| f_optarg opt_f_block_arg
 		    {
-		    /*%%%*/
 			$$ = new_args(0, $1, 0, 0, $2);
-		    /*%
-			$$ = params_new(Qnil, $1, Qnil, Qnil,escape_Qundef($2));
-		    %*/
 		    }
 		| f_optarg ',' f_arg opt_f_block_arg
 		    {
-		    /*%%%*/
 			$$ = new_args(0, $1, 0, $3, $4);
-		    /*%
-			$$ = params_new(Qnil, $1, Qnil, $3, escape_Qundef($4));
-		    %*/
 		    }
 		| f_rest_arg opt_f_block_arg
 		    {
-		    /*%%%*/
 			$$ = new_args(0, 0, $1, 0, $2);
-		    /*%
-			$$ = params_new(Qnil, Qnil, $1, Qnil,escape_Qundef($2));
-		    %*/
 		    }
 		| f_rest_arg ',' f_arg opt_f_block_arg
 		    {
-		    /*%%%*/
 			$$ = new_args(0, 0, $1, $3, $4);
-		    /*%
-			$$ = params_new(Qnil, Qnil, $1, $3, escape_Qundef($4));
-		    %*/
 		    }
 		| f_block_arg
 		    {
-		    /*%%%*/
 			$$ = new_args(0, 0, 0, 0, $1);
-		    /*%
-			$$ = params_new(Qnil, Qnil, Qnil, Qnil, $1);
-		    %*/
 		    }
 		| /* none */
 		    {
-		    /*%%%*/
 			$$ = new_args(0, 0, 0, 0, 0);
-		    /*%
-			$$ = params_new(Qnil, Qnil, Qnil, Qnil, Qnil);
-		    %*/
 		    }
 		;
 
@@ -2656,11 +2524,7 @@ assoc		: arg_value tASSOC arg_value
 		    }
 		| tLABEL arg_value
 		    {
-		    /*%%%*/
 			$$ = list_append(NEW_LIST(NEW_LIT(ID2SYM($1))), $2);
-		    /*%
-			$$ = dispatch2(assoc_new, $1, $2);
-		    %*/
 		    }
 		;
 
