@@ -1,3 +1,9 @@
+Sat Feb  6 21:31:23 2010  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/monitor.rb (wait): supported timeout.
+
+	* test/net/imap/test_imap.rb (test_exception_during_idle): use timeout.
+
 Sat Feb  6 19:35:16 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* tool/compile_prelude.rb: fix require path.
