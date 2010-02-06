@@ -180,6 +180,9 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
 VALUE
 rb_class_init_copy(VALUE clone, VALUE orig)
 {
+    if (orig == rb_cBasicObject) {
+	rb_raise(rb_eTypeError, "can't copy the root class");
+    }
     if (RCLASS_SUPER(clone) != 0 || clone == rb_cBasicObject) {
 	rb_raise(rb_eTypeError, "already initialized class");
     }

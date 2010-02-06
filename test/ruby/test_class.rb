@@ -181,6 +181,8 @@ class TestClass < Test::Unit::TestCase
     o = Object.new
     c = class << o; self; end
     assert_raise(TypeError) { c.dup }
+
+    assert_raise(TypeError) { BasicObject.dup }
   end
 
   def test_singleton_class
