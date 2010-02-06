@@ -1,3 +1,8 @@
+Sun Feb  7 00:23:21 2010  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* class.c (rb_class_init_copy): raise a TypeError if the argument is 
+	  BasicObject.  [ruby-core:27060]
+
 Sat Feb  6 23:37:11 2010  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (initialize): set @sock to a NullSocket instance to
