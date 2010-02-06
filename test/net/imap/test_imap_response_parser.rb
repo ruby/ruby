@@ -61,6 +61,6 @@ EOF
     response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
 * OK [CLOSED] Previous mailbox closed.
 EOF
-    assert_equal nil, response
+    assert_equal "CLOSED", response.data.code.name
   end
 end
