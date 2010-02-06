@@ -1175,7 +1175,9 @@ class TestProcess < Test::Unit::TestCase
       Dir.mkdir("vd")
       status = nil
       Dir.chdir("vd") {
-        Dir.rmdir("#{d}/vd")
+        dir = "#{d}/vd"
+        # OpenSolaris cannot remove the current directory.
+        system(RUBY, "-e", "Dir.chdir '..'; Dir.rmdir #{dir.dump}")
         system({"RUBYLIB"=>nil}, RUBY, "-e", "exit true")
         status = $?
       }
