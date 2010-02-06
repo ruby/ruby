@@ -215,16 +215,25 @@ class IMAPTest < Test::Unit::TestCase
         begin
           th = Thread.current
           m = Monitor.new
+          in_idle = false
+          exception_raised = false
           c = m.new_cond
           Thread.start do
             m.synchronize do
-              c.wait
+              until in_idle
+                c.wait(0.1)
+              end
             end
             th.raise(Interrupt)
+            exception_raised = true
           end
           imap.idle do |res|
             m.synchronize do
+              in_idle = true
               c.signal
+              until exception_raised
+                c.wait(0.1)
+              end
             end
           end
         rescue Interrupt
