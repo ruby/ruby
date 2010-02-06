@@ -870,7 +870,7 @@ sock_gethostname(VALUE obj)
 #endif
 
 static VALUE
-make_addrinfo(struct addrinfo *res0)
+make_addrinfo(struct addrinfo *res0, int norevlookup)
 {
     VALUE base, ary;
     struct addrinfo *res;
@@ -880,7 +880,7 @@ make_addrinfo(struct addrinfo *res0)
     }
     base = rb_ary_new();
     for (res = res0; res; res = res->ai_next) {
-	ary = rsock_ipaddr(res->ai_addr, rsock_do_not_reverse_lookup);
+	ary = rsock_ipaddr(res->ai_addr, norevlookup);
 	if (res->ai_canonname) {
 	    RARRAY_PTR(ary)[2] = rb_str_new2(res->ai_canonname);
 	}
@@ -955,7 +955,7 @@ sock_s_gethostbyaddr(int argc, VALUE *argv)
     if (!NIL_P(family)) {
 	t = rsock_family_arg(family);
     }
-#ifdef INET6
+#ifdef AF_INET6
     else if (RSTRING_LEN(addr) == 16) {
 	t = AF_INET6;
     }
@@ -1069,7 +1069,7 @@ sock_s_getservbyport(int argc, VALUE *argv)
 
 /*
  * call-seq:
- *   Socket.getaddrinfo(nodename, servname[, family[, socktype[, protocol[, flags]]]]) => array
+ *   Socket.getaddrinfo(nodename, servname[, family[, socktype[, protocol[, flags[, reverse_lookup]]]]]) => array
  *
  * Obtains address information for _nodename_:_servname_.
  *
@@ -1090,14 +1090,22 @@ sock_s_getservbyport(int argc, VALUE *argv)
  *   #    ["AF_INET", 0, "localhost", "127.0.0.1", 2, 2, 17], # PF_INET/SOCK_DGRAM/IPPROTO_UDP
  *   #    ["AF_INET", 0, "localhost", "127.0.0.1", 2, 3, 0]]  # PF_INET/SOCK_RAW/IPPROTO_IP
  *
+ * _reverse_lookup_ directs the form of the third element, and has to
+ * be one of below.
+ * If it is ommitted, the default value is +nil+.
+ *
+ *   +true+, +:hostname+:  hostname is obtained from numeric address using reverse lookup, which may take a time.
+ *   +false+, +:numeric+:  hostname is same as numeric address.
+ *   +nil+:              obey to the current +do_not_reverse_lookup+ flag.
  */
 static VALUE
 sock_s_getaddrinfo(int argc, VALUE *argv)
 {
-    VALUE host, port, family, socktype, protocol, flags, ret;
+    VALUE host, port, family, socktype, protocol, flags, ret, revlookup;
     struct addrinfo hints, *res;
+    int norevlookup;
 
-    rb_scan_args(argc, argv, "24", &host, &port, &family, &socktype, &protocol, &flags);
+    rb_scan_args(argc, argv, "25", &host, &port, &family, &socktype, &protocol, &flags, &revlookup);
 
     MEMZERO(&hints, struct addrinfo, 1);
     hints.ai_family = NIL_P(family) ? PF_UNSPEC : rsock_family_arg(family);
@@ -1111,9 +1119,12 @@ sock_s_getaddrinfo(int argc, VALUE *argv)
     if (!NIL_P(flags)) {
 	hints.ai_flags = NUM2INT(flags);
     }
+    if (NIL_P(revlookup) || !rsock_revlookup_flag(revlookup, &norevlookup)) {
+	norevlookup = rsock_do_not_reverse_lookup;
+    }
     res = rsock_getaddrinfo(host, port, &hints, 0);
 
-    ret = make_addrinfo(res);
+    ret = make_addrinfo(res, norevlookup);
     freeaddrinfo(res);
     return ret;
 }

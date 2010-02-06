@@ -1,3 +1,9 @@
+Sat Feb  6 11:35:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/ipsocket.c (ip_addr, ip_peeraddr),
+	  ext/socket/socket.c (sock_s_getaddrinfo): added optional
+	  reverse_lookup flag.  [ruby-core:28007]
+
 Sat Feb  6 01:55:02 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/stringio/stringio.c (strio_ungetc): pads with \000 when the
