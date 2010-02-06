@@ -87,44 +87,55 @@ module MonitorMixin
   class ConditionVariable
     class Timeout < Exception; end
 
+    #
+    # Releases the lock held in the associated monitor and waits; reacquires the lock on wakeup.
+    #
+    # If +timeout+ is given, this method returns after +timeout+ seconds passed,
+    # even if no other thread doesn't signal.
+    #
     def wait(timeout = nil)
-      if timeout
-        raise NotImplementedError, "timeout is not implemented yet"
-      end
       @monitor.__send__(:mon_check_owner)
       count = @monitor.__send__(:mon_exit_for_cond)
       begin
-        @cond.wait(@monitor.instance_variable_get("@mon_mutex"))
+        @cond.wait(@monitor.instance_variable_get("@mon_mutex"), timeout)
         return true
       ensure
         @monitor.__send__(:mon_enter_for_cond, count)
       end
     end
 
+    #
+    # Calls wait repeatedly while the given block yields a truthy value.
+    #
     def wait_while
       while yield
 	wait
       end
     end
 
+    #
+    # Calls wait repeatedly until the given block yields a truthy value.
+    #
     def wait_until
       until yield
 	wait
       end
     end
 
+    #
+    # Wakes up the first thread in line waiting for this lock.
+    #
     def signal
       @monitor.__send__(:mon_check_owner)
       @cond.signal
     end
 
+    #
+    # Wakes up all threads waiting for this lock.
+    #
     def broadcast
       @monitor.__send__(:mon_check_owner)
       @cond.broadcast
-    end
-
-    def count_waiters
-      raise NotImplementedError
     end
 
     private
@@ -195,7 +206,8 @@ module MonitorMixin
   alias synchronize mon_synchronize
 
   #
-  # FIXME: This isn't documented in Nutshell.
+  # Creates a new MonitorMixin::ConditionVariable associated with the
+  # receiver.
   #
   def new_cond
     return ConditionVariable.new(self)
