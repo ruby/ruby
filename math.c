@@ -710,7 +710,7 @@ static VALUE
 math_lgamma(VALUE obj, VALUE x)
 {
     double d0, d;
-    int sign;
+    int sign=1;
     VALUE v;
     Need_Float(x);
     errno = 0;
