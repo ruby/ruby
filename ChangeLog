@@ -1,3 +1,7 @@
+Sat Feb  6 19:35:16 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* tool/compile_prelude.rb: fix require path.
+
 Sat Feb  6 12:02:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/delegate.rb (Delegator#method_missing),
