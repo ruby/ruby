@@ -1,3 +1,9 @@
+Sat Feb  6 22:57:00 2010  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (receive_responses): does not hang when an
+	  unexpected BYE response received.  fixed [ruby-core:27944].
+	  Thanks, Bob Potter.
+
 Sat Feb  6 21:31:23 2010  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/monitor.rb (wait): supported timeout.
