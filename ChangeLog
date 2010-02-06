@@ -1,3 +1,8 @@
+Sat Feb  6 23:25:57 2010  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* ext/curses/view2.rb: replaced with Hugh Sasse's version.
+	  [ruby-core:27894]
+
 Sat Feb  6 22:57:00 2010  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (receive_responses): does not hang when an
