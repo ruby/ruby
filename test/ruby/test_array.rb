@@ -1323,5 +1323,15 @@ class TestArray < Test::Unit::TestCase
         false
       end
       )
+
+    a = [1, 2, 3]
+    assert_equal(true,
+      case 2
+      when 2, *a
+        true
+      else
+        false
+      end
+      )
   end
 end
