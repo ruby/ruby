@@ -1,3 +1,8 @@
+Sun Feb  7 12:53:12 2010  Tanaka Akira  <akr@fsij.org>
+
+	* lib/rake.rb (Rake::FileList::ARRAY_METHODS): fix test failure by <=>
+	  definition at Kernel.
+
 Sun Feb  7 03:01:46 2010  Tanaka Akira  <akr@fsij.org>
 
 	* math.c (math_lgamma): initialize sign because
