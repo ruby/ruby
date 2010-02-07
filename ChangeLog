@@ -1,3 +1,7 @@
+Sun Feb  7 23:12:34 2010  Tanaka Akira  <akr@fsij.org>
+
+	* sample/test.rb: sort files for syntax validataion.
+
 Sun Feb  7 23:08:53 2010  Tanaka Akira  <akr@fsij.org>
 
 	* bootstraptest/runner.rb: sort test files.
