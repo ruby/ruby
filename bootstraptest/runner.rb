@@ -72,7 +72,7 @@ def main
       @ruby.gsub!(/(\s+-r\s*)(\.\.?\/\S+)/){$1+File.expand_path($2)}
       true
     when /\A--sets=(.*)/
-      tests = Dir.glob("#{File.dirname($0)}/test_{#{$1}}*.rb")
+      tests = Dir.glob("#{File.dirname($0)}/test_{#{$1}}*.rb").sort
       puts tests.map {|path| File.basename(path) }.inspect
       true
     when /\A--dir=(.*)/
@@ -106,7 +106,7 @@ End
     exit false
   end
   tests ||= ARGV
-  tests = Dir.glob("#{File.dirname($0)}/test_*.rb") if tests.empty?
+  tests = Dir.glob("#{File.dirname($0)}/test_*.rb").sort if tests.empty?
   pathes = tests.map {|path| File.expand_path(path) }
 
   unless quiet
