@@ -124,8 +124,35 @@ module DL
     end
 
     def test_NEXT
-      handle = DL::Handle::NEXT
-      assert handle['malloc']
+      begin
+        # Linux / Darwin
+        #
+        # There are two special pseudo-handles, RTLD_DEFAULT and RTLD_NEXT.  The  former  will  find
+        # the  first  occurrence  of the desired symbol using the default library search order.  The
+        # latter will find the next occurrence of a function in the search order after  the  current
+        # library.   This  allows  one  to  provide  a  wrapper  around a function in another shared
+        # library.
+        # --- Ubuntu Linux 8.04 dlsym(3)
+        handle = DL::Handle::NEXT
+        assert handle['malloc']
+      rescue
+        # BSD
+        #
+        # If dlsym() is called with the special handle RTLD_NEXT, then the search
+        # for the symbol is limited to the shared objects which were loaded after
+        # the one issuing the call to dlsym().  Thus, if the function is called
+        # from the main program, all the shared libraries are searched.  If it is
+        # called from a shared library, all subsequent shared libraries are
+        # searched.  RTLD_NEXT is useful for implementing wrappers around library
+        # functions.  For example, a wrapper function getpid() could access the
+        # “real” getpid() with dlsym(RTLD_NEXT, "getpid").  (Actually, the dlfunc()
+        # interface, below, should be used, since getpid() is a function and not a
+        # data object.)
+        # --- FreeBSD 8.0 dlsym(3)
+        require 'objspace'
+        handle = DL::Handle::NEXT
+        assert handle['Init_objspace']
+      end
     end
 
     def test_DEFAULT
