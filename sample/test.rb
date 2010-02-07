@@ -1941,7 +1941,7 @@ rescue Exception
   false
 end
 
-for script in Dir["#{dir}{lib,sample,ext,test}/**/*.rb"]
+for script in Dir["#{dir}{lib,sample,ext,test}/**/*.rb"].sort
   unless valid_syntax? IO::read(script), script
     STDERR.puts script
     $bad = true
