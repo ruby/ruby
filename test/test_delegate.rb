@@ -92,6 +92,9 @@ class TestDelegateClass < Test::Unit::TestCase
     d = SimpleDelegator.new(a)
     assert_nothing_raised(bug2679) {d.dup[0] += 1}
     assert_raise(RuntimeError) {d.clone[0] += 1}
+    d.freeze
+    assert(d.clone.frozen?)
+    assert(!d.dup.frozen?)
   end
 
   def test_frozen

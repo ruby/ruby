@@ -31,7 +31,8 @@ VALUE rb_cNilClass;
 VALUE rb_cTrueClass;
 VALUE rb_cFalseClass;
 
-static ID id_eq, id_eql, id_match, id_inspect, id_init_copy;
+static ID id_eq, id_eql, id_match, id_inspect;
+static ID id_init_copy, id_init_clone, id_init_dup;
 
 /*
  *  call-seq:
@@ -204,7 +205,6 @@ init_copy(VALUE dest, VALUE obj)
 	}
         break;
     }
-    rb_funcall(dest, id_init_copy, 1, obj);
 }
 
 /*
@@ -243,6 +243,7 @@ rb_obj_clone(VALUE obj)
     RBASIC(clone)->klass = rb_singleton_class_clone(obj);
     RBASIC(clone)->flags = (RBASIC(obj)->flags | FL_TEST(clone, FL_TAINT) | FL_TEST(clone, FL_UNTRUSTED)) & ~(FL_FREEZE|FL_FINALIZE);
     init_copy(clone, obj);
+    rb_funcall(clone, id_init_clone, 1, obj);
     RBASIC(clone)->flags |= RBASIC(obj)->flags & FL_FREEZE;
 
     return clone;
@@ -276,6 +277,7 @@ rb_obj_dup(VALUE obj)
     }
     dup = rb_obj_alloc(rb_obj_class(obj));
     init_copy(dup, obj);
+    rb_funcall(dup, id_init_dup, 1, obj);
 
     return dup;
 }
@@ -289,6 +291,14 @@ rb_obj_init_copy(VALUE obj, VALUE orig)
     if (TYPE(obj) != TYPE(orig) || rb_obj_class(obj) != rb_obj_class(orig)) {
 	rb_raise(rb_eTypeError, "initialize_copy should take same class object");
     }
+    return obj;
+}
+
+/* :nodoc: */
+VALUE
+rb_obj_init_dup_clone(VALUE obj, VALUE orig)
+{
+    rb_funcall(obj, id_init_copy, 1, orig);
     return obj;
 }
 
@@ -2578,6 +2588,8 @@ Init_Object(void)
     rb_define_method(rb_mKernel, "clone", rb_obj_clone, 0);
     rb_define_method(rb_mKernel, "dup", rb_obj_dup, 0);
     rb_define_method(rb_mKernel, "initialize_copy", rb_obj_init_copy, 1);
+    rb_define_method(rb_mKernel, "initialize_dup", rb_obj_init_dup_clone, 1);
+    rb_define_method(rb_mKernel, "initialize_clone", rb_obj_init_dup_clone, 1);
 
     rb_define_method(rb_mKernel, "taint", rb_obj_taint, 0);
     rb_define_method(rb_mKernel, "tainted?", rb_obj_tainted, 0);
@@ -2712,6 +2724,8 @@ Init_Object(void)
     id_match = rb_intern("=~");
     id_inspect = rb_intern("inspect");
     id_init_copy = rb_intern("initialize_copy");
+    id_init_clone = rb_intern("initialize_clone");
+    id_init_dup = rb_intern("initialize_dup");
 
     for (i=0; conv_method_names[i].method; i++) {
 	conv_method_names[i].id = rb_intern(conv_method_names[i].method);

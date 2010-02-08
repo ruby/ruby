@@ -205,13 +205,14 @@ class Delegator < BasicObject
   end
 
   # :nodoc:
-  def dup
-    self.class.new(__getobj__.dup)
+  def initialize_clone(obj)
+    self.__setobj__(obj.__getobj__.clone)
   end
   # :nodoc:
-  def clone
-    self.class.new(__getobj__.clone)
+  def initialize_dup(obj)
+    self.__setobj__(obj.__getobj__.dup)
   end
+  private :initialize_clone, :initialize_dup
 
   # Freeze self and target at once.
   def freeze
