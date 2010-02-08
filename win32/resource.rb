@@ -1,6 +1,6 @@
 #!./miniruby -sI.
 
-require 'rbconfig'
+require './rbconfig'
 
 CONFIG = RbConfig::MAKEFILE_CONFIG
 
