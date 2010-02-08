@@ -123,7 +123,7 @@ TESTRUN_SCRIPT = $(srcdir)/test.rb
 
 BOOTSTRAPRUBY = $(BASERUBY)
 
-COMPILE_PRELUDE = $(MINIRUBY) -I$(srcdir) -I. -r./rbconfig $(srcdir)/tool/compile_prelude.rb
+COMPILE_PRELUDE = $(MINIRUBY) -I$(srcdir) $(srcdir)/tool/compile_prelude.rb
 
 all: main docs
 

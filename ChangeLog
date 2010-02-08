@@ -1,3 +1,10 @@
+Mon Feb  8 16:23:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (COMPILE_PRELUDE): rbconfig is loaded on demand.
+
+	* tool/eval.rb, win32/{mkexports,resource}.rb: miniruby no longer
+	  contains "." in $:.
+
 Mon Feb  8 10:28:58 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* configure.in: check pthread_attr_getstack to prevent obsolete

@@ -3,7 +3,7 @@
 $name = $library = $description = nil
 
 module RbConfig
-  autoload :CONFIG, "rbconfig"
+  autoload :CONFIG, "./rbconfig"
 end
 
 class Exports

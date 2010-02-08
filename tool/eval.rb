@@ -1,5 +1,5 @@
 
-require 'rbconfig'
+require './rbconfig'
 require 'fileutils'
 require 'pp'
 
