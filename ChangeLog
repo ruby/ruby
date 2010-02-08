@@ -1,4 +1,6 @@
-Mon Feb  8 16:23:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Feb  8 16:27:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dmyversion.c: empty load path in miniruby.
 
 	* common.mk (COMPILE_PRELUDE): rbconfig is loaded on demand.
 
