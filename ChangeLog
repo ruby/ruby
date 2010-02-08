@@ -7,6 +7,21 @@ Mon Feb  8 16:27:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* tool/eval.rb, win32/{mkexports,resource}.rb: miniruby no longer
 	  contains "." in $:.
 
+Mon Feb  8 15:15:07 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_obj_clone): call initialize_clone hook method to
+	  call initialize_copy.
+
+	* object.c (rb_obj_dup): call initialize_dup hook.
+
+	* lib/delegate.rb (Delegator#initialize_clone): use new hook to
+	  implement deep copy.  [ruby-dev:40242]
+
+	* lib/delegate.rb (Delegator#initialize_dup): ditto.
+
+	* test/test_delegate.rb (TestDelegateClass#test_copy_frozen): add
+	  a test to ensure #clone copies frozen status.
+
 Mon Feb  8 10:28:58 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* configure.in: check pthread_attr_getstack to prevent obsolete
