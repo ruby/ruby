@@ -2287,7 +2287,7 @@ rb_io_getline_fast(rb_io_t *fptr, rb_encoding *enc)
 	    }
 	    len += pending;
 	    if (cr != ENC_CODERANGE_BROKEN)
-		pos = rb_str_coderange_scan_restartable(RSTRING_PTR(str) + pos, RSTRING_PTR(str) + len, enc, &cr);
+		pos += rb_str_coderange_scan_restartable(RSTRING_PTR(str) + pos, RSTRING_PTR(str) + len, enc, &cr);
 	    if (e) break;
 	}
 	rb_thread_wait_fd(fptr->fd);
