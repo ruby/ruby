@@ -56,6 +56,7 @@ const char ruby_copyright[] = RUBY_COPYRIGHT;
 const char ruby_engine[] = "ruby";
 
 const char ruby_initial_load_paths[] =
+#ifndef NO_INITIAL_LOAD_PATH
 #ifdef RUBY_SEARCH_PATH
     RUBY_SEARCH_PATH "\0"
 #endif
@@ -78,6 +79,7 @@ const char ruby_initial_load_paths[] =
     RUBY_THIN_ARCHLIB "\0"
 #endif
     RUBY_ARCHLIB "\0"
+#endif
     "";
 
 void
