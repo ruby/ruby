@@ -1554,13 +1554,22 @@ socket_s_ip_address_list(VALUE self)
 	goto finish;
     }
 
-    close(fd);
-    fd = -1;
-
     list = rb_ary_new();
     for (i = 0; i < ln.lifn_count; i++) {
 	struct lifreq *req = &lc.lifc_req[i];
         if (IS_IP_FAMILY(req->lifr_addr.ss_family)) {
+            if (req->lifr_addr.ss_family == AF_INET6 &&
+                IN6_IS_ADDR_LINKLOCAL(&((struct sockaddr_in6 *)(&req->lifr_addr))->sin6_addr) &&
+                ((struct sockaddr_in6 *)(&req->lifr_addr))->sin6_scope_id == 0) {
+                struct lifreq req2;
+                memcpy(req2.lifr_name, req->lifr_name, LIFNAMSIZ);
+                ret = ioctl(fd, SIOCGLIFINDEX, &req2);
+                if (ret == -1) {
+                    reason = "SIOCGLIFINDEX";
+                    goto finish;
+                }
+                ((struct sockaddr_in6 *)(&req->lifr_addr))->sin6_scope_id = req2.lifr_index;
+            }
             rb_ary_push(list, sockaddr_obj((struct sockaddr *)&req->lifr_addr));
         }
     }
