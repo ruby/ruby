@@ -483,7 +483,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	for (t = p; t < end && *t != '%'; t++) ;
 	PUSH(p, t - p);
 	if (coderange != ENC_CODERANGE_BROKEN && scanned < blen) {
-	    scanned = rb_str_coderange_scan_restartable(buf+scanned, buf+blen, enc, &coderange);
+	    scanned += rb_str_coderange_scan_restartable(buf+scanned, buf+blen, enc, &coderange);
 	    ENC_CODERANGE_SET(result, coderange);
 	}
 	if (t >= end) {
@@ -672,7 +672,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		rb_str_set_len(result, blen);
 		if (coderange != ENC_CODERANGE_BROKEN && scanned < blen) {
 		    int cr = coderange;
-		    scanned = rb_str_coderange_scan_restartable(buf+scanned, buf+blen, enc, &cr);
+		    scanned += rb_str_coderange_scan_restartable(buf+scanned, buf+blen, enc, &cr);
 		    ENC_CODERANGE_SET(result,
 				      (cr == ENC_CODERANGE_UNKNOWN ?
 				       ENC_CODERANGE_BROKEN : (coderange = cr)));
