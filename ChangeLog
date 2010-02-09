@@ -1,3 +1,9 @@
+Tue Feb  9 21:27:38 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/rexml/text.rb (REXML::Text#initialize): REXML::Text.new checks
+	  raw text for illegal characters without entity check, for the sake
+	  of 1.8 compatibility.  This had caused rubyspec error.
+
 Mon Feb  8 23:49:24 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_getline_fast): wrong calculation of new position

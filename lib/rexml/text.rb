@@ -117,7 +117,7 @@ module REXML
 
       @string.gsub!( /\r\n?/, "\n" )
 
-      Text.check(@string, illegal, doctype) if @raw and @parent
+      Text.check(@string, illegal, doctype) if @raw
     end
 
     def parent= parent
@@ -160,7 +160,7 @@ module REXML
             else
               raise "Illegal character '#{$1}' in raw string \"#{string}\""
             end
-          elsif $3 and !SUBSTITUTES.include?($1)
+          elsif @parent and $3 and !SUBSTITUTES.include?($1)
             if !doctype or !doctype.entities.has_key?($3)
               raise "Undeclared entity '#{$1}' in raw string \"#{string}\""
             end
