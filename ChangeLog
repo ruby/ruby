@@ -1,3 +1,8 @@
+Tue Feb  9 22:23:27 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* io.c (READ_CHECK): do not select fd before reading, that had made
+	  TCPServer#gets stuck.  [ruby-dev:40317]
+
 Tue Feb  9 21:27:38 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/rexml/text.rb (REXML::Text#initialize): REXML::Text.new checks

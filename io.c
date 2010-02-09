@@ -175,9 +175,15 @@ static int max_file_descriptor = NOFILE;
 #define READ_DATA_PENDING_PTR(fptr) ((fptr)->rbuf+(fptr)->rbuf_off)
 #define READ_DATA_BUFFERED(fptr) READ_DATA_PENDING(fptr)
 
+#if defined(_WIN32)
+#define WAIT_FD_IN_WIN32(fptr) rb_thread_wait_fd((fptr)->fd);
+#else
+#define WAIT_FD_IN_WIN32(fptr) ;
+#endif
+
 #define READ_CHECK(fptr) do {\
     if (!READ_DATA_PENDING(fptr)) {\
-	rb_thread_wait_fd((fptr)->fd);\
+	WAIT_FD_IN_WIN32(fptr);\
 	rb_io_check_closed(fptr);\
      }\
 } while(0)
@@ -1637,8 +1643,7 @@ fill_cbuf(rb_io_t *fptr, int ec_flags)
 
         if (res == econv_source_buffer_empty) {
             if (fptr->rbuf_len == 0) {
-                rb_thread_wait_fd(fptr->fd);
-                rb_io_check_closed(fptr);
+		READ_CHECK(fptr);
                 if (io_fillbuf(fptr) == -1) {
                     ds = dp = (unsigned char *)fptr->cbuf + fptr->cbuf_off + fptr->cbuf_len;
                     de = (unsigned char *)fptr->cbuf + fptr->cbuf_capa;
@@ -2228,8 +2233,7 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp)
 	    if (limit == 0)
 		return (unsigned char)RSTRING_PTR(str)[RSTRING_LEN(str)-1];
 	}
-	rb_thread_wait_fd(fptr->fd);
-	rb_io_check_closed(fptr);
+	READ_CHECK(fptr);
     } while (io_fillbuf(fptr) >= 0);
     *lp = limit;
     return EOF;
@@ -2251,8 +2255,7 @@ swallow(rb_io_t *fptr, int term)
 	    if (!read_buffered_data(buf, cnt - i, fptr)) /* must not fail */
 		rb_sys_fail_path(fptr->pathv);
 	}
-	rb_thread_wait_fd(fptr->fd);
-	rb_io_check_closed(fptr);
+	READ_CHECK(fptr);
     } while (io_fillbuf(fptr) == 0);
     return FALSE;
 }
@@ -2290,8 +2293,7 @@ rb_io_getline_fast(rb_io_t *fptr, rb_encoding *enc)
 		pos += rb_str_coderange_scan_restartable(RSTRING_PTR(str) + pos, RSTRING_PTR(str) + len, enc, &cr);
 	    if (e) break;
 	}
-	rb_thread_wait_fd(fptr->fd);
-	rb_io_check_closed(fptr);
+	READ_CHECK(fptr);
 	if (io_fillbuf(fptr) < 0) {
 	    if (NIL_P(str)) return Qnil;
 	    break;
