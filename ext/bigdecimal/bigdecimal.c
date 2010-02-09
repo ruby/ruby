@@ -970,8 +970,8 @@ BigDecimal_DoDivmod(VALUE self, VALUE r, Real **div, Real **mod)
        return Qtrue;
     }
 
-    mx = a->Prec;
-    if(mx<b->Prec) mx = b->Prec;
+    mx = a->Prec+abs(a->exponent);
+    if(mx<b->Prec+abs(b->exponent)) mx = b->Prec+abs(b->exponent);
     mx =(mx + 1) * VpBaseFig();
     GUARD_OBJ(c,VpCreateRbObject(mx, "0"));
     GUARD_OBJ(res,VpCreateRbObject((mx+1) * 2 +(VpBaseFig() + 1), "#0"));
@@ -983,6 +983,7 @@ BigDecimal_DoDivmod(VALUE self, VALUE r, Real **div, Real **mod)
     VpAddSub(c,a,res,-1);
     if(!VpIsZero(c) && (VpGetSign(a)*VpGetSign(b)<0)) {
         VpAddSub(res,d,VpOne(),-1);
+	GUARD_OBJ(d,VpCreateRbObject(GetAddSubPrec(c, b)*(VpBaseFig() + 1), "0"));
         VpAddSub(d  ,c,b,       1);
         *div = res;
         *mod = d;
