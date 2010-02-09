@@ -1,3 +1,8 @@
+Tue Feb  9 23:26:07 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_DoDivmod): fix precision.
+	  [ruby-core:17472][ruby-dev:35372][ruby-dev:40105][ruby-dev:40358]
+
 Tue Feb  9 22:23:27 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* io.c (READ_CHECK): do not select fd before reading, that had made
