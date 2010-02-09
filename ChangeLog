@@ -1,3 +1,8 @@
+Wed Feb 10 04:06:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (vm_exec): reset thread state before starting vm loop.
+	  [ruby-core:28129]
+
 Tue Feb  9 23:48:25 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_divide): fix precision too.

@@ -1121,6 +1121,8 @@ vm_exec(rb_thread_t *th)
     _tag.retval = Qnil;
     if ((state = EXEC_TAG()) == 0) {
       vm_loop_start:
+	th->state = 0;
+	th->errinfo = Qnil;
 	result = vm_exec_core(th, initial);
 	if ((state = th->state) != 0) {
 	    err = result;
@@ -1189,7 +1191,6 @@ vm_exec(rb_thread_t *th)
 #else
 		    *th->cfp->sp++ = (GET_THROWOBJ_VAL(err));
 #endif
-		    th->errinfo = Qnil;
 		    goto vm_loop_start;
 		}
 	    }
@@ -1226,7 +1227,6 @@ vm_exec(rb_thread_t *th)
 			escape_dfp = GET_THROWOBJ_CATCH_POINT(err);
 			if (cfp->dfp == escape_dfp) {
 			    cfp->pc = cfp->iseq->iseq_encoded + entry->cont;
-			    th->errinfo = Qnil;
 			    goto vm_loop_start;
 			}
 		    }
@@ -1258,7 +1258,6 @@ vm_exec(rb_thread_t *th)
 			    *th->cfp->sp++ = (GET_THROWOBJ_VAL(err));
 #endif
 			}
-			th->errinfo = Qnil;
 			goto vm_loop_start;
 		    }
 		}
@@ -1302,8 +1301,6 @@ vm_exec(rb_thread_t *th)
 			  cfp->self, (VALUE)cfp->dfp, catch_iseq->iseq_encoded,
 			  cfp->sp + 1 /* push value */, cfp->lfp, catch_iseq->local_size - 1);
 
-	    state = 0;
-	    th->errinfo = Qnil;
 	    goto vm_loop_start;
 	}
 	else {

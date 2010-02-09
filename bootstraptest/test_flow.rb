@@ -502,3 +502,24 @@ assert_equal %Q{ENSURE\n}, %q{
   test
 }, '[ruby-dev:37967]'
 
+[['[ruby-core:28129]', %q{
+  class Bug2728
+    include Enumerable
+    define_method(:dynamic_method) do
+      "dynamically defined method"
+    end
+    def each
+      begin
+        yield :foo
+      ensure
+        dynamic_method
+      end
+    end
+  end
+  e = Bug2728.new
+}]].each do |bug, src|
+  assert_equal "foo", src + %q{e.detect {true}}, bug
+  assert_equal "true", src + %q{e.any? {true}}, bug
+  assert_equal "false", src + %q{e.all? {false}}, bug
+  assert_equal "true", src + %q{e.include?(:foo)}, bug
+end
