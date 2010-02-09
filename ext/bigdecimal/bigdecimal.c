@@ -882,7 +882,9 @@ BigDecimal_divide(Real **c, Real **res, Real **div, VALUE self, VALUE r)
     if(!b) return DoSomeOne(self,r,'/');
     SAVE(b);
     *div = b;
-    mx =(a->MaxPrec + b->MaxPrec + 1) * VpBaseFig();
+    mx = a->Prec+abs(a->exponent);
+    if(mx<b->Prec+abs(b->exponent)) mx = b->Prec+abs(b->exponent);
+    mx =(mx + 1) * VpBaseFig();
     GUARD_OBJ((*c),VpCreateRbObject(mx, "#0"));
     GUARD_OBJ((*res),VpCreateRbObject((mx+1) * 2 +(VpBaseFig() + 1), "#0"));
     VpDivd(*c, *res, a, b);

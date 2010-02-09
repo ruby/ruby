@@ -1,3 +1,7 @@
+Tue Feb  9 23:48:25 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_divide): fix precision too.
+
 Tue Feb  9 23:26:07 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_DoDivmod): fix precision.
