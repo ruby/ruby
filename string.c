@@ -428,7 +428,8 @@ rb_str_times(str, times)
     VALUE times;
 {
     VALUE str2;
-    long i, len;
+    long n, len;
+    char *ptr2;
 
     len = NUM2LONG(times);
     if (len < 0) {
@@ -439,12 +440,17 @@ rb_str_times(str, times)
     }
 
     str2 = rb_str_new5(str,0, len *= RSTRING(str)->len);
-    for (i = 0; i < len; i += RSTRING(str)->len) {
-	memcpy(RSTRING(str2)->ptr + i,
-	       RSTRING(str)->ptr, RSTRING(str)->len);
+    ptr2 = RSTRING_PTR(str2);
+    if (len) {
+        n = RSTRING_LEN(str);
+        memcpy(ptr2, RSTRING_PTR(str), n);
+        while (n <= len/2) {
+            memcpy(ptr2 + n, ptr2, n);
+            n *= 2;
+        }
+        memcpy(ptr2 + n, ptr2, len-n);
     }
-    RSTRING(str2)->ptr[RSTRING(str2)->len] = '\0';
-
+    ptr2[RSTRING_LEN(str2)] = '\0';
     OBJ_INFECT(str2, str);
 
     return str2;
