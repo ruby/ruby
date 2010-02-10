@@ -1,3 +1,8 @@
+Thu Feb 11 01:45:04 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* vm.c (vm_exec): temporarily revert r26628, which causes SEGV when
+	  executing rubyspec.
+
 Wed Feb 10 16:31:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_push_m, rb_ary_unshift_m, rb_ary_aset),
