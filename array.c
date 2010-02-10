@@ -700,6 +700,8 @@ ary_take_first_or_last(int argc, VALUE *argv, VALUE ary, enum ary_take_pos_flags
     return ary_make_partial(ary, rb_cArray, offset, n);
 }
 
+static VALUE rb_ary_push_1(VALUE ary, VALUE item);
+
 /*
  *  call-seq:
  *     array << obj            -> array
@@ -716,9 +718,15 @@ ary_take_first_or_last(int argc, VALUE *argv, VALUE ary, enum ary_take_pos_flags
 VALUE
 rb_ary_push(VALUE ary, VALUE item)
 {
+    rb_ary_modify(ary);
+    return rb_ary_push_1(ary, item);
+}
+
+static VALUE
+rb_ary_push_1(VALUE ary, VALUE item)
+{
     long idx = RARRAY_LEN(ary);
 
-    rb_ary_modify(ary);
     if (idx >= ARY_CAPA(ary)) {
 	ary_double_capa(ary, idx);
     }
@@ -745,7 +753,7 @@ rb_ary_push_m(int argc, VALUE *argv, VALUE ary)
 {
     rb_ary_modify_check(ary);
     while (argc--) {
-	rb_ary_push(ary, *argv++);
+	rb_ary_push_1(ary, *argv++);
     }
     return ary;
 }
@@ -892,8 +900,8 @@ rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary)
 {
     long len;
 
-    if (argc == 0) return ary;
     rb_ary_modify(ary);
+    if (argc == 0) return ary;
     if (ARY_CAPA(ary) <= (len = RARRAY_LEN(ary)) + argc) {
 	ary_double_capa(ary, len + argc);
     }
@@ -1321,6 +1329,7 @@ rb_ary_aset(int argc, VALUE *argv, VALUE ary)
     long offset, beg, len;
 
     if (argc == 3) {
+	rb_ary_modify_check(ary);
 	beg = NUM2LONG(argv[0]);
 	len = NUM2LONG(argv[1]);
 	rb_ary_splice(ary, beg, len, argv[2]);
@@ -1329,6 +1338,7 @@ rb_ary_aset(int argc, VALUE *argv, VALUE ary)
     if (argc != 2) {
 	rb_raise(rb_eArgError, "wrong number of arguments (%d for 2)", argc);
     }
+    rb_ary_modify_check(ary);
     if (FIXNUM_P(argv[0])) {
 	offset = FIX2LONG(argv[0]);
 	goto fixnum;
@@ -1362,10 +1372,11 @@ rb_ary_insert(int argc, VALUE *argv, VALUE ary)
 {
     long pos;
 
-    if (argc == 1) return ary;
     if (argc < 1) {
 	rb_raise(rb_eArgError, "wrong number of arguments (at least 1)");
     }
+    rb_ary_modify_check(ary);
+    if (argc == 1) return ary;
     pos = NUM2LONG(argv[0]);
     if (pos == -1) {
 	pos = RARRAY_LEN(ary);
@@ -2600,8 +2611,8 @@ rb_ary_transpose(VALUE ary)
 VALUE
 rb_ary_replace(VALUE copy, VALUE orig)
 {
-    orig = to_ary(orig);
     rb_ary_modify_check(copy);
+    orig = to_ary(orig);
     if (copy == orig) return copy;
 
     if (RARRAY_LEN(orig) <= RARRAY_EMBED_LEN_MAX) {
@@ -2794,6 +2805,7 @@ rb_ary_plus(VALUE x, VALUE y)
 VALUE
 rb_ary_concat(VALUE x, VALUE y)
 {
+    rb_ary_modify_check(x);
     y = to_ary(y);
     if (RARRAY_LEN(y) > 0) {
 	rb_ary_splice(x, RARRAY_LEN(x), 0, y);
@@ -3301,6 +3313,7 @@ rb_ary_uniq_bang(VALUE ary)
     VALUE hash, v;
     long i, j;
 
+    rb_ary_modify_check(ary);
     if (rb_block_given_p()) {
 	hash = ary_make_hash_by(ary);
 	if (RARRAY_LEN(ary) == (i = RHASH_SIZE(hash))) {
@@ -3547,6 +3560,7 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
     VALUE result, lv;
 
     rb_scan_args(argc, argv, "01", &lv);
+    rb_ary_modify_check(ary);
     if (!NIL_P(lv)) level = NUM2INT(lv);
     if (level == 0) return Qnil;
 
