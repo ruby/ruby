@@ -875,6 +875,12 @@ class TestString < Test::Unit::TestCase
     s2 = ["foo"].pack("p")
     s.replace(s2)
     assert_equal(s2, s)
+
+    fs = "".freeze
+    assert_raise(RuntimeError) { fs.replace("a") }
+    assert_raise(RuntimeError) { fs.replace(fs) }
+    assert_raise(ArgumentError) { fs.replace() }
+    assert_raise(RuntimeError) { fs.replace(42) }
   end
 
   def test_reverse

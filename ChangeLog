@@ -1,3 +1,15 @@
+Wed Feb 10 16:31:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_push_m, rb_ary_unshift_m, rb_ary_aset),
+	  (rb_ary_insert, rb_ary_replace, rb_ary_concat),
+	  (rb_ary_uniq_bang, rb_ary_flatten_bang): check if frozen after
+	  wrong number of arguments but before TypeError.
+	  [ruby-core:28140]
+
+	* hash.c (rb_hash_replace): ditto.
+
+	* string.c (rb_str_replace): ditto.
+
 Wed Feb 10 04:06:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (vm_exec): reset thread state before starting vm loop.

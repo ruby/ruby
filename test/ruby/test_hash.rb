@@ -748,6 +748,13 @@ class TestHash < Test::Unit::TestCase
     h2 = {}
     h2.replace h1
     assert_equal(:foo, h2[0])
+
+    assert_raise(ArgumentError) { h2.replace() }
+    assert_raise(TypeError) { h2.replace(1) }
+    h2.freeze
+    assert_raise(ArgumentError) { h2.replace() }
+    assert_raise(RuntimeError) { h2.replace(h1) }
+    assert_raise(RuntimeError) { h2.replace(42) }
   end
 
   def test_size2

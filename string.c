@@ -3752,6 +3752,7 @@ rb_str_gsub(int argc, VALUE *argv, VALUE str)
 VALUE
 rb_str_replace(VALUE str, VALUE str2)
 {
+    str_modifiable(str);
     if (str == str2) return str;
 
     StringValue(str2);
