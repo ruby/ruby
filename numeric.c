@@ -1370,7 +1370,7 @@ flo_ceil(VALUE num)
  *
  *  Rounds <i>flt</i> to a given precision in decimal digits (default 0 digits).
  *  Precision may be negative.  Returns a floating point number when ndigits
- *  is more than one.
+ *  is more than zero.
  *
  *     1.4.round      #=> 1
  *     1.5.round      #=> 2
@@ -1502,7 +1502,7 @@ num_ceil(VALUE num)
  *
  *  Rounds <i>num</i> to a given precision in decimal digits (default 0 digits).
  *  Precision may be negative.  Returns a floating point number when ndigits
- *  is more than one.  <code>Numeric</code> implements this by converting itself
+ *  is more than zero.  <code>Numeric</code> implements this by converting itself
  *  to a <code>Float</code> and invoking <code>Float#round</code>.
  */
 
