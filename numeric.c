@@ -1372,8 +1372,26 @@ flo_ceil(VALUE num)
  *  Precision may be negative.  Returns a floating point number when ndigits
  *  is more than one.
  *
+ *     1.4.round      #=> 1
  *     1.5.round      #=> 2
+ *     1.6.round      #=> 2
  *     (-1.5).round   #=> -2
+ *
+ *     1.234567.round(2)  #=> 1.23
+ *     1.234567.round(3)  #=> 1.235
+ *     1.234567.round(4)  #=> 1.2346
+ *     1.234567.round(5)  #=> 1.23457
+ *
+ *     34567.89.round(-5) #=> 0
+ *     34567.89.round(-4) #=> 30000
+ *     34567.89.round(-3) #=> 35000
+ *     34567.89.round(-2) #=> 34600
+ *     34567.89.round(-1) #=> 34570
+ *     34567.89.round(0)  #=> 34568
+ *     34567.89.round(1)  #=> 34567.9
+ *     34567.89.round(2)  #=> 34567.89
+ *     34567.89.round(3)  #=> 34567.89
+ *
  */
 
 static VALUE
