@@ -1,3 +1,8 @@
+Thu Feb 11 09:37:01 2010  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb: support :nameserver_port option.  backport r26230
+	  and r26357 from 1.9.
+	
 Wed Feb 10 13:03:29 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_times): backport r15514 to reduce loop

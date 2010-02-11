@@ -13,24 +13,24 @@ end
 # interpreter.
 #
 # See also resolv-replace.rb to replace the libc resolver with # Resolv.
-# 
+#
 # Resolv can look up various DNS resources using the DNS module directly.
-# 
+#
 # Examples:
-# 
+#
 #   p Resolv.getaddress "www.ruby-lang.org"
 #   p Resolv.getname "210.251.121.214"
-# 
+#
 #   Resolv::DNS.open do |dns|
 #     ress = dns.getresources "www.ruby-lang.org", Resolv::DNS::Resource::IN::A
 #     p ress.map { |r| r.address }
 #     ress = dns.getresources "ruby-lang.org", Resolv::DNS::Resource::IN::MX
 #     p ress.map { |r| [r.exchange.to_s, r.preference] }
 #   end
-# 
-# 
+#
+#
 # == Bugs
-# 
+#
 # * NIS is not supported.
 # * /etc/nsswitch.conf is not supported.
 
@@ -38,14 +38,14 @@ class Resolv
 
   ##
   # Looks up the first IP address for +name+.
-  
+
   def self.getaddress(name)
     DefaultResolver.getaddress(name)
   end
 
   ##
   # Looks up all IP address for +name+.
-  
+
   def self.getaddresses(name)
     DefaultResolver.getaddresses(name)
   end
@@ -87,7 +87,7 @@ class Resolv
 
   ##
   # Looks up the first IP address for +name+.
-  
+
   def getaddress(name)
     each_address(name) {|address| return address}
     raise ResolvError.new("no address for #{name}")
@@ -95,7 +95,7 @@ class Resolv
 
   ##
   # Looks up all IP address for +name+.
-  
+
   def getaddresses(name)
     ret = []
     each_address(name) {|address| ret << address}
@@ -314,10 +314,20 @@ class Resolv
     # Creates a new DNS resolver.
     #
     # +config_info+ can be:
-    # 
+    #
     # nil:: Uses /etc/resolv.conf.
     # String:: Path to a file using /etc/resolv.conf's format.
     # Hash:: Must contain :nameserver, :search and :ndots keys.
+    # :nameserver_port can be used to specify port number of nameserver address.
+    #
+    # The value of :nameserver should be an address string or
+    # an array of address strings.
+    # - :nameserver => '8.8.8.8'
+    # - :nameserver => ['8.8.8.8', '8.8.4.4']
+    #
+    # The value of :nameserver_port should be an array of
+    # pair of nameserver address and port number.
+    # - :nameserver_port => [['8.8.8.8', 53], ['8.8.4.4', 53]]
     #
     # Example:
     #
@@ -462,7 +472,7 @@ class Resolv
     ##
     # Looks up all +typeclass+ DNS resources for +name+.  See #getresource for
     # argument details.
-  
+
     def getresources(name, typeclass)
       ret = []
       each_resource(name, typeclass) {|resource| ret << resource}
@@ -472,19 +482,19 @@ class Resolv
     ##
     # Iterates over all +typeclass+ DNS resources for +name+.  See
     # #getresource for argument details.
-  
+
     def each_resource(name, typeclass, &proc)
       lazy_initialize
       requester = make_requester
       senders = {}
       begin
-        @config.resolv(name) {|candidate, tout, nameserver|
+        @config.resolv(name) {|candidate, tout, nameserver, port|
           msg = Message.new
           msg.rd = 1
           msg.add_question(candidate, typeclass)
-          unless sender = senders[[candidate, nameserver]]
-            sender = senders[[candidate, nameserver]] =
-              requester.sender(msg, candidate, nameserver)
+          unless sender = senders[[candidate, nameserver, port]]
+            sender = senders[[candidate, nameserver, port]] =
+              requester.sender(msg, candidate, nameserver, port)
           end
           reply, reply_name = requester.request(sender, tout)
           case reply.rcode
@@ -503,8 +513,8 @@ class Resolv
     end
 
     def make_requester # :nodoc:
-      if nameserver = @config.single?
-        Requester::ConnectedUDP.new(nameserver)
+      if nameserver_port = @config.single?
+        Requester::ConnectedUDP.new(*nameserver_port)
       else
         Requester::UnconnectedUDP.new
       end
@@ -574,7 +584,7 @@ class Resolv
         h = (RequestID[[host, port]] ||= {})
         begin
           id = rangerand(0x0000..0xffff)
-        end while h[id] 
+        end while h[id]
         h[id] = true
       }
       id
@@ -837,7 +847,7 @@ class Resolv
       def lazy_initialize
         @mutex.synchronize {
           unless @initialized
-            @nameserver = []
+            @nameserver_port = []
             @search = nil
             @ndots = 1
             case @config_info
@@ -856,11 +866,18 @@ class Resolv
             else
               raise ArgumentError.new("invalid resolv configuration: #{@config_info.inspect}")
             end
-            @nameserver = config_hash[:nameserver] if config_hash.include? :nameserver
+            if config_hash.include? :nameserver
+              @nameserver_port = config_hash[:nameserver].map {|ns| [ns, Port] }
+            end
+            if config_hash.include? :nameserver_port
+              @nameserver_port = config_hash[:nameserver_port].map {|ns, port| [ns, (port || Port)] }
+            end
             @search = config_hash[:search] if config_hash.include? :search
             @ndots = config_hash[:ndots] if config_hash.include? :ndots
 
-            @nameserver = ['0.0.0.0'] if @nameserver.empty?
+            if @nameserver_port.empty?
+              @nameserver_port << ['0.0.0.0', Port]
+            end
             if @search
               @search = @search.map {|arg| Label.split(arg) }
             else
@@ -872,9 +889,14 @@ class Resolv
               end
             end
 
-            if !@nameserver.kind_of?(Array) ||
-               !@nameserver.all? {|ns| String === ns }
-              raise ArgumentError.new("invalid nameserver config: #{@nameserver.inspect}")
+            if !@nameserver_port.kind_of?(Array) ||
+               @nameserver_port.any? {|ns_port|
+                  !(Array === ns_port) ||
+                  ns_port.length != 2
+                  !(String === ns_port[0]) ||
+                  !(Integer === ns_port[1])
+               }
+              raise ArgumentError.new("invalid nameserver config: #{@nameserver_port.inspect}")
             end
 
             if !@search.kind_of?(Array) ||
@@ -894,8 +916,8 @@ class Resolv
 
       def single?
         lazy_initialize
-        if @nameserver.length == 1
-          return @nameserver[0]
+        if @nameserver_port.length == 1
+          return @nameserver_port[0]
         else
           return nil
         end
@@ -921,7 +943,7 @@ class Resolv
 
       def generate_timeouts
         ts = [InitialTimeout]
-        ts << ts[-1] * 2 / @nameserver.length
+        ts << ts[-1] * 2 / @nameserver_port.length
         ts << ts[-1] * 2
         ts << ts[-1] * 2
         return ts
@@ -934,9 +956,9 @@ class Resolv
           candidates.each {|candidate|
             begin
               timeouts.each {|tout|
-                @nameserver.each {|nameserver|
+                @nameserver_port.each {|nameserver, port|
                   begin
-                    yield candidate, tout, nameserver
+                    yield candidate, tout, nameserver, port
                   rescue ResolvTimeout
                   end
                 }
@@ -1043,7 +1065,7 @@ class Resolv
     # A representation of a DNS name.
 
     class Name
-      
+
       ##
       # Creates a new DNS name from +arg+.  +arg+ can be:
       #
@@ -1463,11 +1485,11 @@ class Resolv
 
     class Query
       def encode_rdata(msg) # :nodoc:
-        raise EncodeError.new("#{self.class} is query.") 
+        raise EncodeError.new("#{self.class} is query.")
       end
 
       def self.decode_rdata(msg) # :nodoc:
-        raise DecodeError.new("#{self.class} is query.") 
+        raise DecodeError.new("#{self.class} is query.")
       end
     end
 
@@ -1934,7 +1956,7 @@ class Resolv
           def initialize(address)
             @address = IPv6.create(address)
           end
-          
+
           ##
           # The Resolv::IPv6 address for this AAAA.
 
@@ -1951,7 +1973,7 @@ class Resolv
 
         ##
         # SRV resource record defined in RFC 2782
-        # 
+        #
         # These records identify the hostname and port that a service is
         # available at.
 
