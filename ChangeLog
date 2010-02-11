@@ -1,3 +1,8 @@
+Thu Feb 11 17:52:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (vm_exec): reset thread state before restarting vm loop
+	  from catch scope.  [ruby-core:28129], [ruby-core:28143]
+
 Thu Feb 11 14:43:16 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (r_object0): read sequentially since marshal source
