@@ -1258,7 +1258,7 @@ r_leave(VALUE v, struct load_arg *arg)
 }
 
 static void
-r_ivar(VALUE obj, struct load_arg *arg)
+r_ivar(VALUE obj, int *has_encoding, struct load_arg *arg)
 {
     long len;
 
@@ -1270,6 +1270,7 @@ r_ivar(VALUE obj, struct load_arg *arg)
 	    int idx = id2encidx(id, val, arg);
 	    if (idx >= 0) {
 		rb_enc_associate_index(obj, idx);
+		if (has_encoding) *has_encoding = TRUE;
 	    }
 	    else {
 		rb_ivar_set(obj, id, val);
@@ -1323,35 +1324,6 @@ obj_alloc_by_path(VALUE path, struct load_arg *arg)
     return rb_obj_alloc(klass);
 }
 
-static int
-has_encoding(struct load_arg *arg)
-{
-    int res = FALSE;
-    long offset = arg->offset;
-    r_long(arg);
-    switch (r_byte(arg)) {
-      case TYPE_SYMBOL:
-	switch (r_byte(arg)) {
-	  case 6:
-	    if (r_byte(arg) == 'E') res = TRUE;
-	    break;
-	  case 13:
-	    if (r_byte(arg) == 'e') res = TRUE;
-	    break;
-	}
-	break;
-      case TYPE_SYMLINK:
-	{
-	    ID id = r_symlink(arg);
-	    if (id == rb_intern("E") || id == rb_id_encoding())
-		res = TRUE;
-	}
-	break;
-    }
-    arg->offset = offset;
-    return res;
-}
-
 static VALUE
 r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 {
@@ -1378,7 +1350,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    int ivar = TRUE;
 
 	    v = r_object0(arg, &ivar, extmod);
-	    if (ivar) r_ivar(v, arg);
+	    if (ivar) r_ivar(v, NULL, arg);
 	}
 	break;
 
@@ -1522,8 +1494,13 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	{
 	    volatile VALUE str = r_bytes(arg);
 	    int options = r_byte(arg);
+	    int has_encoding = FALSE;
 
-	    if (!ivp || !has_encoding(arg)) {
+	    if (ivp) {
+		r_ivar(str, &has_encoding, arg);
+		*ivp = FALSE;
+	    }
+	    if (!has_encoding) {
 		VALUE pat;
 		VALUE dst;
 		static const char rsrc[] =
@@ -1617,7 +1594,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    }
 	    data = r_string(arg);
 	    if (ivp) {
-		r_ivar(data, arg);
+		r_ivar(data, NULL, arg);
 		*ivp = FALSE;
 	    }
 	    v = rb_funcall(klass, s_load, 1, data);
@@ -1659,7 +1636,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 		rb_raise(rb_eArgError, "dump format error");
 	    }
 	    v = r_entry0(v, idx, arg);
-	    r_ivar(v, arg);
+	    r_ivar(v, NULL, arg);
 	    v = r_leave(v, arg);
 	}
 	break;
