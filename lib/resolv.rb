@@ -520,10 +520,11 @@ class Resolv
     end
 
     def make_requester # :nodoc:
-      if nameserver_port = @config.single?
-        Requester::ConnectedUDP.new(*nameserver_port)
+      nameserver_port = @config.nameserver_port
+      if nameserver_port.length == 1
+        Requester::ConnectedUDP.new(*nameserver_port[0])
       else
-        Requester::UnconnectedUDP.new
+        Requester::UnconnectedUDP.new(*nameserver_port)
       end
     end
 
@@ -609,10 +610,10 @@ class Resolv
       }
     end
 
-    def self.bind_random_port(udpsock, is_ipv6=false) # :nodoc:
+    def self.bind_random_port(udpsock, bind_host="0.0.0.0") # :nodoc:
       begin
         port = rangerand(1024..65535)
-        udpsock.bind(is_ipv6 ? "::" : "", port)
+        udpsock.bind(bind_host, port)
       rescue Errno::EADDRINUSE
         retry
       end
@@ -621,7 +622,7 @@ class Resolv
     class Requester # :nodoc:
       def initialize
         @senders = {}
-        @sock = nil
+        @socks = nil
       end
 
       def request(sender, tout)
@@ -629,10 +630,11 @@ class Resolv
         sender.send
         while (now = Time.now) < timelimit
           timeout = timelimit - now
-          if !IO.select([@sock], nil, nil, timeout)
+          select_result = IO.select(@socks, nil, nil, timeout)
+          if !select_result
             raise ResolvTimeout
           end
-          reply, from = recv_reply
+          reply, from = recv_reply(select_result[0])
           begin
             msg = Message.decode(reply)
           rescue DecodeError
@@ -648,9 +650,11 @@ class Resolv
       end
 
       def close
-        sock = @sock
-        @sock = nil
-        sock.close if sock
+        socks = @socks
+        @socks = nil
+        if socks
+          socks.each {|sock| sock.close }
+        end
       end
 
       class Sender # :nodoc:
@@ -662,16 +666,31 @@ class Resolv
       end
 
       class UnconnectedUDP < Requester # :nodoc:
-        def initialize
+        def initialize(*nameserver_port)
           super()
-          @sock = UDPSocket.new
-          @sock.do_not_reverse_lookup = true
-          @sock.fcntl(Fcntl::F_SETFD, Fcntl::FD_CLOEXEC) if defined? Fcntl::F_SETFD
-          DNS.bind_random_port(@sock)
+          @nameserver_port = nameserver_port
+          @socks_hash = {}
+          @socks = []
+          nameserver_port.each {|host, port|
+            if host.index(':')
+              bind_host = "::"
+              af = Socket::AF_INET6
+            else
+              bind_host = "0.0.0.0"
+              af = Socket::AF_INET
+            end
+            next if @socks_hash[bind_host]
+            sock = UDPSocket.new(af)
+            sock.do_not_reverse_lookup = true
+            sock.fcntl(Fcntl::F_SETFD, Fcntl::FD_CLOEXEC) if defined? Fcntl::F_SETFD
+            DNS.bind_random_port(sock, bind_host)
+            @socks << sock
+            @socks_hash[bind_host] = sock
+          }
         end
 
-        def recv_reply
-          reply, from = @sock.recvfrom(UDPSize)
+        def recv_reply(readable_socks)
+          reply, from = readable_socks[0].recvfrom(UDPSize)
           return reply, [from[3],from[1]]
         end
 
@@ -680,8 +699,9 @@ class Resolv
           id = DNS.allocate_request_id(host, port)
           request = msg.encode
           request[0,2] = [id].pack('n')
+          sock = @socks_hash[host.index(':') ? "::" : "0.0.0.0"]
           return @senders[[service, id]] =
-            Sender.new(request, data, @sock, host, port)
+            Sender.new(request, data, sock, host, port)
         end
 
         def close
@@ -711,15 +731,16 @@ class Resolv
           @host = host
           @port = port
           is_ipv6 = host.index(':')
-          @sock = UDPSocket.new(is_ipv6 ? Socket::AF_INET6 : Socket::AF_INET)
-          @sock.do_not_reverse_lookup = true
-          @sock.fcntl(Fcntl::F_SETFD, Fcntl::FD_CLOEXEC) if defined? Fcntl::F_SETFD
-          DNS.bind_random_port(@sock, is_ipv6)
-          @sock.connect(host, port)
+          sock = UDPSocket.new(is_ipv6 ? Socket::AF_INET6 : Socket::AF_INET)
+          @socks = [sock]
+          sock.do_not_reverse_lookup = true
+          sock.fcntl(Fcntl::F_SETFD, Fcntl::FD_CLOEXEC) if defined? Fcntl::F_SETFD
+          DNS.bind_random_port(sock, is_ipv6 ? "::" : "0.0.0.0")
+          sock.connect(host, port)
         end
 
-        def recv_reply
-          reply = @sock.recv(UDPSize)
+        def recv_reply(readable_socks)
+          reply = readable_socks[0].recv(UDPSize)
           return reply, nil
         end
 
@@ -730,7 +751,7 @@ class Resolv
           id = DNS.allocate_request_id(@host, @port)
           request = msg.encode
           request[0,2] = [id].pack('n')
-          return @senders[[nil,id]] = Sender.new(request, data, @sock)
+          return @senders[[nil,id]] = Sender.new(request, data, @socks[0])
         end
 
         def close
@@ -753,14 +774,15 @@ class Resolv
           super()
           @host = host
           @port = port
-          @sock = TCPSocket.new(@host, @port)
-          @sock.fcntl(Fcntl::F_SETFD, Fcntl::FD_CLOEXEC) if defined? Fcntl::F_SETFD
+          sock = TCPSocket.new(@host, @port)
+          @socks = [sock]
+          sock.fcntl(Fcntl::F_SETFD, Fcntl::FD_CLOEXEC) if defined? Fcntl::F_SETFD
           @senders = {}
         end
 
-        def recv_reply
-          len = @sock.read(2).unpack('n')[0]
-          reply = @sock.read(len)
+        def recv_reply(readable_socks)
+          len = readable_socks[0].read(2).unpack('n')[0]
+          reply = @socks[0].read(len)
           return reply, nil
         end
 
@@ -771,7 +793,7 @@ class Resolv
           id = DNS.allocate_request_id(@host, @port)
           request = msg.encode
           request[0,2] = [request.length, id].pack('nn')
-          return @senders[[nil,id]] = Sender.new(request, data, @sock)
+          return @senders[[nil,id]] = Sender.new(request, data, @socks[0])
         end
 
         class Sender < Requester::Sender # :nodoc:
@@ -930,6 +952,10 @@ class Resolv
         else
           return nil
         end
+      end
+
+      def nameserver_port
+        @nameserver_port
       end
 
       def generate_candidates(name)
