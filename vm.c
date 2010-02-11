@@ -1303,6 +1303,7 @@ vm_exec(rb_thread_t *th)
 			  cfp->sp + 1 /* push value */, cfp->lfp, catch_iseq->local_size - 1);
 
 	    state = 0;
+	    th->state = 0;
 	    th->errinfo = Qnil;
 	    goto vm_loop_start;
 	}
