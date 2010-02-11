@@ -115,7 +115,7 @@ Mon Feb  8 10:28:58 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Sun Feb  7 23:12:34 2010  Tanaka Akira  <akr@fsij.org>
 
-	* sample/test.rb: sort files for syntax validataion.
+	* sample/test.rb: sort files for syntax validation.
 
 Sun Feb  7 23:08:53 2010  Tanaka Akira  <akr@fsij.org>
 
