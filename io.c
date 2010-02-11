@@ -4111,11 +4111,14 @@ rb_io_oflags_modestr(int oflags)
 #else
 # define MODE_BINARY(a,b) (a)
 #endif
+    int accmode = oflags & (O_RDONLY|O_WRONLY|O_RDWR);
     if (oflags & O_APPEND) {
-	if ((oflags & O_RDWR) == O_RDWR) {
+	if (accmode == O_WRONLY) {
+	    return MODE_BINARY("a", "ab");
+	}
+	if (accmode == O_RDWR) {
 	    return MODE_BINARY("a+", "ab+");
 	}
-	return MODE_BINARY("a", "ab");
     }
     switch (oflags & (O_RDONLY|O_WRONLY|O_RDWR)) {
       case O_RDONLY:
