@@ -70,12 +70,22 @@ class Set
     enum.nil? and return
 
     if block
-      enum.respond_to?(:each) or raise ArgumentError, "value must be enumerable"
-      enum.each_entry { |o| add(block[o]) }
+      do_with_enum(enum) { |o| add(block[o]) }
     else
       merge(enum)
     end
   end
+
+  def do_with_enum(enum, &block)
+    if enum.respond_to?(:each_entry)
+      enum.each_entry(&block)
+    elsif enum.respond_to?(:each)
+      enum.each(&block)
+    else
+      raise ArgumentError, "value must be enumerable"
+    end
+  end
+  private :do_with_enum
 
   # Copy internal hash.
   def initialize_copy(orig)
@@ -123,9 +133,8 @@ class Set
     if enum.class == self.class
       @hash.replace(enum.instance_eval { @hash })
     else
-      enum.respond_to?(:each) or raise ArgumentError, "value must be enumerable"
       clear
-      enum.each_entry { |o| add(o) }
+      merge(enum)
     end
 
     self
@@ -281,8 +290,7 @@ class Set
     if enum.instance_of?(self.class)
       @hash.update(enum.instance_variable_get(:@hash))
     else
-      enum.respond_to?(:each) or raise ArgumentError, "value must be enumerable"
-      enum.each_entry { |o| add(o) }
+      do_with_enum(enum) { |o| add(o) }
     end
 
     self
@@ -291,8 +299,7 @@ class Set
   # Deletes every element that appears in the given enumerable object
   # and returns self.
   def subtract(enum)
-    enum.respond_to?(:each) or raise ArgumentError, "value must be enumerable"
-    enum.each_entry { |o| delete(o) }
+    do_with_enum(enum) { |o| delete(o) }
     self
   end
 
@@ -314,9 +321,8 @@ class Set
   # Returns a new set containing elements common to the set and the
   # given enumerable object.
   def &(enum)
-    enum.respond_to?(:each) or raise ArgumentError, "value must be enumerable"
     n = self.class.new
-    enum.each_entry { |o| n.add(o) if include?(o) }
+    do_with_enum(enum) { |o| n.add(o) if include?(o) }
     n
   end
   alias intersection &	##

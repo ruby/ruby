@@ -1,3 +1,11 @@
+Fri Feb 12 02:27:39 2010  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/set.rb (Set#initialize, Set#replace, Set#merge)
+	  (Set#subtract, Set#&): Fix duck type tests. [ruby-core:28078]
+
+	* lib/set.rb (Set#initialize, Set#replace, Set#merge)
+	  (Set#subtract, Set#&): Try #each if #each_entry fails.
+
 Thu Feb 11 20:43:00 2010  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_io_oflags_modestr): return "r" for O_RDONLY|O_APPEND.
@@ -358,6 +366,7 @@ Tue Feb  2 14:30:27 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  for duck typing.
 
 	* lib/set.rb (SortedSet#add): typo fixed.
+
 Tue Feb  2 11:13:56 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/delegate.rb (Delegator#marshal_dump): exclude
