@@ -1,7 +1,9 @@
-Thu Feb 11 14:37:39 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Feb 11 14:43:16 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (r_object0): read sequentially since marshal source
 	  may not be possible to rewind.  [ruby-dev:40386]
+
+	* marshal.c (r_object0): replace non-1.8 escapes directly.
 
 Thu Feb 11 09:49:31 2010  Tanaka Akira  <akr@fsij.org>
 

@@ -1501,13 +1501,23 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 		*ivp = FALSE;
 	    }
 	    if (!has_encoding) {
-		VALUE pat;
-		VALUE dst;
-		static const char rsrc[] =
-		    "(?<!\\\\)((?:\\\\\\\\)*)\\\\([ghijklmopquyEFHIJKLNOPQRSTUVXY])";
-		pat = rb_reg_new(rsrc, sizeof(rsrc)-1, 0);
-		dst = rb_usascii_str_new_cstr("\\1\\2");
-		rb_funcall(str, rb_intern("gsub!"), 2, pat, dst);
+		/* 1.8 compatibility; remove escapes undefined in 1.8 */
+		char *ptr = RSTRING_PTR(str), *dst = ptr, *src = ptr;
+		long len = RSTRING_LEN(str);
+		long bs = 0;
+		for (; len-- > 0; *dst++ = *src++) {
+		    switch (*src) {
+		      case '\\': bs++; break;
+		      case 'g': case 'h': case 'i': case 'j': case 'k': case 'l':
+		      case 'm': case 'o': case 'p': case 'q': case 'u': case 'y':
+		      case 'E': case 'F': case 'H': case 'I': case 'J': case 'K':
+		      case 'L': case 'N': case 'O': case 'P': case 'Q': case 'R':
+		      case 'S': case 'T': case 'U': case 'V': case 'X': case 'Y':
+			if (bs & 1) --dst;
+		      default: bs = 0; break;
+		    }
+		}
+		rb_str_set_len(str, dst - ptr);
 	    }
 	    v = r_entry(rb_reg_new_str(str, options), arg);
 	    v = r_leave(v, arg);
