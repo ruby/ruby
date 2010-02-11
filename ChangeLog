@@ -1,3 +1,7 @@
+Thu Feb 11 19:19:21 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* missing/alloca.c: s/RUBY_LIB/RUBY_LIB_PREFIX/ [ruby-dev:40395]
+
 Thu Feb 11 17:52:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (vm_exec): reset thread state before restarting vm loop

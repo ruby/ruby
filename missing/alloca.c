@@ -54,7 +54,7 @@ typedef char	*pointer;		/* generic pointer type */
 
 #define	NULL	0			/* null pointer constant */
 
-#ifdef RUBY_LIB
+#ifdef RUBY_LIB_PREFIX
 #define xmalloc ruby_xmalloc
 #define xfree ruby_xfree
 #endif
