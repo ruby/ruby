@@ -1,3 +1,7 @@
+Fri Feb 12 17:55:21 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (thread_free): fixed typo.
+
 Fri Feb 12 02:27:39 2010  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/set.rb (Set#initialize, Set#replace, Set#merge)
