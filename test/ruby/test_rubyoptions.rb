@@ -338,7 +338,7 @@ class TestRubyOptions < Test::Unit::TestCase
       -e:1:in\s`kill'\n\n
       (?:
         --\sC\slevel\sbacktrace\sinformation\s-------------------------------------------\n
-        (?:.*\s\[0x\h+\]\n)*\n
+        (?:(?:.*\s)?\[0x\h+\]\n)*\n
       )?
       \[NOTE\]\n
       You\smay\shave\sencountered\sa\sbug\sin\sthe\sRuby\sinterpreter\sor\sextension\slibraries.\n
