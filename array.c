@@ -2253,10 +2253,12 @@ rb_ary_select(VALUE ary)
  *     array.delete(obj)            -> obj or nil
  *     array.delete(obj) { block }  -> obj or nil
  *
- *  Deletes items from <i>self</i> that are equal to <i>obj</i>. If
+ *  Deletes items from <i>self</i> that are equal to <i>obj</i>.
+ *  If any items are found, returns <i>obj</i>.   If
  *  the item is not found, returns <code>nil</code>. If the optional
  *  code block is given, returns the result of <i>block</i> if the item
- *  is not found.
+ *  is not found.  (To remove <code>nil</code> elements and
+ *  get an informative return value, use #compact!)
  *
  *     a = [ "a", "b", "b", "b", "c" ]
  *     a.delete("b")                   #=> "b"
@@ -3384,7 +3386,8 @@ rb_ary_uniq(VALUE ary)
  *     array.compact!    ->   array  or  nil
  *
  *  Removes +nil+ elements from array.
- *  Returns +nil+ if no changes were made.
+ *  Returns +nil+ if no changes were made, otherwise return
+ *  </i>array</i>.
  *
  *     [ "a", nil, "b", nil, "c" ].compact! #=> [ "a", "b", "c" ]
  *     [ "a", "b", "c" ].compact!           #=> nil

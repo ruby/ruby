@@ -1,3 +1,10 @@
+Sat Feb 13 17:07:20 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_delete): RDoc update.  a patch from Hugh Sasse.
+	  [ruby-core:28128]
+
+	* array.c (rb_ary_compact_bang): ditto.
+
 Sat Feb 13 15:01:24 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* marshal.c (id2encidx): duplicated entry for encoding name.
