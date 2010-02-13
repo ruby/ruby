@@ -553,6 +553,8 @@ VALUE rb_reg_match_last(VALUE);
 #define HAVE_RB_REG_NEW_STR 1
 VALUE rb_reg_new_str(VALUE, int);
 VALUE rb_reg_new(const char *, long, int);
+VALUE rb_reg_alloc(void);
+VALUE rb_reg_init_str(VALUE re, VALUE s, int options);
 VALUE rb_reg_match(VALUE, VALUE);
 VALUE rb_reg_match2(VALUE);
 int rb_reg_options(VALUE);

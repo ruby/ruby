@@ -1,3 +1,10 @@
+Sun Feb 14 04:45:31 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (r_object0): register regexp object before encoding
+	  name.  [ruby-dev:40414]
+
+	* re.c (rb_reg_alloc, rb_reg_init_str): split from rb_reg_new_str.
+
 Sat Feb 13 17:07:20 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_delete): RDoc update.  a patch from Hugh Sasse.
