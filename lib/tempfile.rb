@@ -128,7 +128,7 @@ class Tempfile < DelegateClass(File)
   # number of tries, then it will raise an exception.
   def initialize(basename, *rest)
     @data = []
-    @clean_proc = self.class.callback(@data)
+    @clean_proc = Remover.new(@data)
     ObjectSpace.define_finalizer(self, @clean_proc)
 
     create(basename, *rest) do |tmpname, n, opts|
@@ -230,7 +230,7 @@ class Tempfile < DelegateClass(File)
       if File.exist?(@tmpname)
         File.unlink(@tmpname)
       end
-      # remove tmpname from callback
+      # remove tmpname from remover
       @data[0] = @data[2] = nil
       @data = @tmpname = nil
     rescue Errno::EACCES
@@ -257,27 +257,33 @@ class Tempfile < DelegateClass(File)
   end
   alias length size
 
-  class << self
-    def callback(data)	# :nodoc:
-      pid = $$
-      Proc.new {
-	if pid == $$
-	  path, tmpfile = *data
-
-	  STDERR.print "removing ", path, "..." if $DEBUG
-
-	  tmpfile.close if tmpfile
-
-	  # keep this order for thread safeness
-	  if path
-	    File.unlink(path) if File.exist?(path)
-	  end
-
-	  STDERR.print "done\n" if $DEBUG
-	end
-      }
+  # :stopdoc:
+  class Remover
+    def initialize(data)
+      @pid = $$
+      @data = data
     end
 
+    def call(*args)
+      if @pid == $$
+        path, tmpfile = *@data
+
+        STDERR.print "removing ", path, "..." if $DEBUG
+
+        tmpfile.close if tmpfile
+
+        # keep this order for thread safeness
+        if path
+          File.unlink(path) if File.exist?(path)
+        end
+
+        STDERR.print "done\n" if $DEBUG
+      end
+    end
+  end
+  # :startdoc:
+
+  class << self
     # Creates a new Tempfile.
     #
     # If no block is given, this is a synonym for Tempfile.new.
