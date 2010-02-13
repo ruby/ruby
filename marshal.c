@@ -1495,6 +1495,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    int options = r_byte(arg);
 	    int has_encoding = FALSE;
 
+	    v = r_entry(rb_reg_alloc(), arg);
 	    if (ivp) {
 		r_ivar(str, &has_encoding, arg);
 		*ivp = FALSE;
@@ -1518,7 +1519,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 		}
 		rb_str_set_len(str, dst - ptr);
 	    }
-	    v = r_entry(rb_reg_new_str(str, options), arg);
+	    v = r_entry(rb_reg_init_str(v, str, options), arg);
 	    v = r_leave(v, arg);
 	}
 	break;

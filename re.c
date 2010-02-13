@@ -2419,9 +2419,20 @@ rb_reg_s_alloc(VALUE klass)
 }
 
 VALUE
+rb_reg_alloc(void)
+{
+    return rb_reg_s_alloc(rb_cRegexp);
+}
+
+VALUE
 rb_reg_new_str(VALUE s, int options)
 {
-    VALUE re = rb_reg_s_alloc(rb_cRegexp);
+    return rb_reg_init_str(rb_reg_alloc(), s, options);
+}
+
+VALUE
+rb_reg_init_str(VALUE re, VALUE s, int options)
+{
     onig_errmsg_buffer err = "";
 
     if (rb_reg_initialize_str(re, s, options, err, NULL, 0) != 0) {
@@ -2440,7 +2451,7 @@ rb_reg_new_ary(VALUE ary, int opt)
 VALUE
 rb_enc_reg_new(const char *s, long len, rb_encoding *enc, int options)
 {
-    VALUE re = rb_reg_s_alloc(rb_cRegexp);
+    VALUE re = rb_reg_alloc();
     onig_errmsg_buffer err = "";
 
     if (rb_reg_initialize(re, s, len, enc, options, err, NULL, 0) != 0) {
@@ -2459,7 +2470,7 @@ rb_reg_new(const char *s, long len, int options)
 VALUE
 rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline)
 {
-    VALUE re = rb_reg_s_alloc(rb_cRegexp);
+    VALUE re = rb_reg_alloc();
     onig_errmsg_buffer err = "";
 
     if (!str) str = rb_str_new(0,0);
