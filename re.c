@@ -1657,33 +1657,33 @@ match_aref(int argc, VALUE *argv, VALUE match)
     rb_scan_args(argc, argv, "11", &idx, &rest);
 
     if (NIL_P(rest)) {
-      if (FIXNUM_P(idx)) {
-        if (FIX2INT(idx) >= 0) {
-          return rb_reg_nth_match(FIX2INT(idx), match);
-        }
-      }
-      else {
-        const char *p;
-        int num;
+	if (FIXNUM_P(idx)) {
+	    if (FIX2INT(idx) >= 0) {
+		return rb_reg_nth_match(FIX2INT(idx), match);
+	    }
+	}
+	else {
+	    const char *p;
+	    int num;
 
-        switch (TYPE(idx)) {
-          case T_SYMBOL:
-            p = rb_id2name(SYM2ID(idx));
-            goto name_to_backref;
-            break;
-          case T_STRING:
-            p = StringValuePtr(idx);
+	    switch (TYPE(idx)) {
+	      case T_SYMBOL:
+		p = rb_id2name(SYM2ID(idx));
+		goto name_to_backref;
+		break;
+	      case T_STRING:
+		p = StringValuePtr(idx);
 
-          name_to_backref:
-            num = name_to_backref_number(RMATCH_REGS(match),
-                       RMATCH(match)->regexp, p, p + strlen(p));
-            return rb_reg_nth_match(num, match);
-            break;
+	      name_to_backref:
+		num = name_to_backref_number(RMATCH_REGS(match),
+					     RMATCH(match)->regexp, p, p + strlen(p));
+		return rb_reg_nth_match(num, match);
+		break;
 
-          default:
-            break;
-        }
-      }
+	      default:
+		break;
+	    }
+	}
     }
 
     return rb_ary_aref(argc, argv, match_to_a(match));
