@@ -1130,7 +1130,6 @@ id2encidx(ID id, VALUE val, struct load_arg *arg)
 {
     if (id == rb_id_encoding()) {
 	int idx = rb_enc_find_index(StringValueCStr(val));
-	r_entry(val, arg);
 	return idx;
     }
     else if (id == rb_intern("E")) {
