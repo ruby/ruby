@@ -428,4 +428,11 @@ class TestMarshal < Test::Unit::TestCase
     o2 = Marshal.load(m)
     assert_equal(STDIN, o.stdin)
   end
+
+  def test_marshal_encoding
+    o = ["foo".force_encoding("EUC-JP")] + [ "bar" ] * 2
+    m = Marshal.dump(o)
+    o2 = Marshal.load(m)
+    assert_equal(o, o2, "[ruby-dev:40388]")
+  end
 end
