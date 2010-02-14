@@ -1,3 +1,8 @@
+Sun Feb 14 12:54:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (r_object0): removed duplicated entry for regexp.
+	  [ruby-dev:40416]
+
 Sun Feb 14 04:45:31 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (r_object0): register regexp object before encoding
