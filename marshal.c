@@ -1519,7 +1519,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 		}
 		rb_str_set_len(str, dst - ptr);
 	    }
-	    v = r_entry(rb_reg_init_str(v, str, options), arg);
+	    v = rb_reg_init_str(v, str, options);
 	    v = r_leave(v, arg);
 	}
 	break;
