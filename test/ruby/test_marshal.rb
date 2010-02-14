@@ -429,10 +429,25 @@ class TestMarshal < Test::Unit::TestCase
     assert_equal(STDIN, o.stdin)
   end
 
-  def test_marshal_encoding
-    o = ["foo".force_encoding("EUC-JP")] + [ "bar" ] * 2
-    m = Marshal.dump(o)
+  def test_marshal_string_encoding
+    o1 = ["foo".force_encoding("EUC-JP")] + [ "bar" ] * 2
+    m = Marshal.dump(o1)
     o2 = Marshal.load(m)
-    assert_equal(o, o2, "[ruby-dev:40388]")
+    assert_equal(o1, o2, "[ruby-dev:40388]")
   end
+
+  def test_marshal_regexp_encoding
+    o1 = [Regexp.new("r1".force_encoding("EUC-JP"))] + ["r2"] * 2
+    m = Marshal.dump(o1)
+    o2 = Marshal.load(m)
+    assert_equal(o1, o2, "[ruby-dev:40416]")
+  end
+
+  def test_marshal_encoding_encoding
+    o1 = [Encoding.find("EUC-JP")] + ["r2"] * 2
+    m = Marshal.dump(o1)
+    o2 = Marshal.load(m)
+    assert_equal(o1, o2)
+  end
+  
 end
