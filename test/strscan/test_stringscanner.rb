@@ -685,7 +685,7 @@ class TestStringScanner < Test::Unit::TestCase
     s.scan(/ string/)
   end
 
-  def test_inspect
+  def test_inspect2
     s = StringScanner.new('test string test')
     s.scan(/test strin/)
     assert_equal('#<StringScanner 10/16 "...strin" @ "g tes...">', s.inspect)

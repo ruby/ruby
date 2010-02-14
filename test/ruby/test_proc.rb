@@ -620,7 +620,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal [1, 2, 3, 4, 5, 6, Proc, :x], (pr.call(1, 2, 3, 4, 5, 6, 7){|x| x})
   end
 
-  def test_proc_args_opt_and_block
+  def test_proc_args_opt_and_block2
     pr = proc {|a,b,c=:c,d=:d,*e,&f|
       [a, b, c, d, e, f.class, f&&f.call(:x)]
     }
