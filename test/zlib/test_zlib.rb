@@ -535,7 +535,7 @@ if defined? Zlib
       assert_equal("foobar".each_byte.to_a, a)
     end
 
-    def test_gets
+    def test_gets2
       t = Tempfile.new("test_zlib_gzip_reader")
       t.close
       Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo\nbar\nbaz\n") }

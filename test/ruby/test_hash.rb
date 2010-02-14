@@ -376,7 +376,7 @@ class TestHash < Test::Unit::TestCase
     assert_equal('nil', @h.fetch(nil))
   end
 
-  def test_key?
+  def test_key2?
     assert(!@cls[].key?(1))
     assert(!@cls[].key?(nil))
     assert(@h.key?(nil))
@@ -648,7 +648,7 @@ class TestHash < Test::Unit::TestCase
     assert_equal(hb, h2)
   end
 
-  def test_value?
+  def test_value2?
     assert(!@cls[].value?(1))
     assert(!@cls[].value?(nil))
     assert(@h.value?(nil))
