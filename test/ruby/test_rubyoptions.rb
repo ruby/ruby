@@ -332,8 +332,8 @@ class TestRubyOptions < Test::Unit::TestCase
       #{ Regexp.quote(RUBY_DESCRIPTION) }\n\n
       --\scontrol\sframe\s----------\n
       (?:c:.*\n)*
-      (?:
       ---------------------------\n
+      (?:
       --\sRuby\slevel\sbacktrace\sinformation\s----------------------------------------\n
       -e:1:in\s`<main>'\n
       -e:1:in\s`kill'\n
