@@ -11,6 +11,19 @@
 #include <time.h>
 #include <ruby/encoding.h>
 
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+# include <valgrind/memcheck.h>
+# ifndef VALGRIND_MAKE_MEM_DEFINED
+#  define VALGRIND_MAKE_MEM_DEFINED(p, n) VALGRIND_MAKE_READABLE(p, n)
+# endif
+# ifndef VALGRIND_MAKE_MEM_UNDEFINED
+#  define VALGRIND_MAKE_MEM_UNDEFINED(p, n) VALGRIND_MAKE_WRITABLE(p, n)
+# endif
+#else
+# define VALGRIND_MAKE_MEM_DEFINED(p, n) /* empty */
+# define VALGRIND_MAKE_MEM_UNDEFINED(p, n) /* empty */
+#endif
+
 #define RUBY_ZLIB_VERSION  "0.6.0"
 
 
@@ -436,7 +449,13 @@ static const struct zstream_funcs inflate_funcs = {
 static voidpf
 zlib_mem_alloc(voidpf opaque, uInt items, uInt size)
 {
-    return xmalloc(items * size);
+    voidpf p = xmalloc(items * size);
+    /* zlib FAQ: Valgrind (or some similar memory access checker) says that
+       deflate is performing a conditional jump that depends on an
+       uninitialized value.  Isn't that a bug?
+       http://www.zlib.net/zlib_faq.html#faq36 */
+    VALGRIND_MAKE_MEM_DEFINED(p, items * size);
+    return p;
 }
 
 static void
