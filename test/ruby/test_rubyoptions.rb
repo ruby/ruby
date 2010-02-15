@@ -328,14 +328,17 @@ class TestRubyOptions < Test::Unit::TestCase
   def test_segv_test
     assert_in_out_err(["-e", "Process.kill :SEGV, $$"], "", [],
       %r(\A
-      -e:1:\s\[BUG\]\sSegmentation\sfault\n
+      -e:(?:1:)?\s\[BUG\]\sSegmentation\sfault\n
       #{ Regexp.quote(RUBY_DESCRIPTION) }\n\n
       --\scontrol\sframe\s----------\n
       (?:c:.*\n)*
+      (?:
       ---------------------------\n
       --\sRuby\slevel\sbacktrace\sinformation\s----------------------------------------\n
       -e:1:in\s`<main>'\n
-      -e:1:in\s`kill'\n\n
+      -e:1:in\s`kill'\n
+      )?
+      \n
       (?:
         --\sC\slevel\sbacktrace\sinformation\s-------------------------------------------\n
         (?:(?:.*\s)?\[0x\h+\]\n)*\n
