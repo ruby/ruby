@@ -2909,6 +2909,11 @@ time_add(struct time_object *tobj, VALUE offset, int sign)
 	GetTimeval(result, tobj);
         TIME_SET_UTC(tobj);
     }
+    else if (TIME_FIXOFF_P(tobj)) {
+        VALUE off = tobj->vtm.utc_offset;
+        GetTimeval(result, tobj);
+        TIME_SET_FIXOFF(tobj, off);
+    }
     return result;
 }
 
