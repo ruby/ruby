@@ -751,7 +751,7 @@ rb_ary_push_1(VALUE ary, VALUE item)
 static VALUE
 rb_ary_push_m(int argc, VALUE *argv, VALUE ary)
 {
-    rb_ary_modify_check(ary);
+    rb_ary_modify(ary);
     while (argc--) {
 	rb_ary_push_1(ary, *argv++);
     }
