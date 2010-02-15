@@ -1,3 +1,8 @@
+Mon Feb 15 13:11:47 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* array.c (rb_ary_push_m): use rb_ary_modify instead of
+	  rb_ary_modify_check.
+
 Sun Feb 14 12:54:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (r_object0): removed duplicated entry for regexp.
