@@ -27,6 +27,16 @@ class TestTime < Test::Unit::TestCase
     assert_equal(Time.utc(2000, 3, 21, 3, 30) + (-3 * 3600),
                  Time.utc(2000, 3, 21, 0, 30))
     assert_equal(0, (Time.at(1.1) + 0.9).usec)
+
+    assert((Time.utc(2000, 4, 1) + 24).utc?)
+    assert(!(Time.local(2000, 4, 1) + 24).utc?)
+
+    t = Time.new(2000, 4, 1, 0, 0, 0, "+01:00") + 24
+    assert(!t.utc?)
+    assert_equal(3600, t.utc_offset)
+    t = Time.new(2000, 4, 1, 0, 0, 0, "+02:00") + 24
+    assert(!t.utc?)
+    assert_equal(7200, t.utc_offset)
   end
 
   def test_time_subt()
