@@ -1,3 +1,8 @@
+Mon Feb 15 22:25:16 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/zlib/zlib.c (zlib_mem_alloc): suppress valgrind warnings.
+	  http://www.zlib.net/zlib_faq.html#faq36
+
 Mon Feb 15 22:18:49 2010  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (time_add): propagate fixed time offset.
