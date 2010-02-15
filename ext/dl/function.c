@@ -157,7 +157,7 @@ unwrap_ffi(VALUE rettype, dl_generic retval)
 	return INT2NUM(retval.sint);
       case DLTYPE_LONG:
 	if (signed_p) return LONG2NUM(retval.slong);
-	return LONG2NUM(retval.ulong);
+	return ULONG2NUM(retval.ulong);
 #if HAVE_LONG_LONG
       case DLTYPE_LONG_LONG:
 	return rb_ll2inum(retval.long_long);
