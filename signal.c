@@ -419,7 +419,7 @@ static struct {
 #define sighandler_t sh_t
 #endif
 
-#if defined(SIGSEGV) && defined(HAVE_SIGALTSTACK) && defined(SA_SIGINFO)
+#if defined(SIGSEGV) && defined(HAVE_SIGALTSTACK) && defined(SA_SIGINFO) && !defined(__NetBSD__)
 #define USE_SIGALTSTACK
 #endif
 

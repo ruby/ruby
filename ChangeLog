@@ -1,7 +1,13 @@
+Mon Feb 15 17:42:20 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* signal.c (USE_SIGALTSTACK): NetBSD can't use sigaltstack(2)
+	  with pthread.
+	  http://netbsd.gw.com/cgi-bin/man-cgi?sigaltstack++NetBSD-current
+
 Mon Feb 15 13:11:47 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* array.c (rb_ary_push_m): use rb_ary_modify instead of
-	  rb_ary_modify_check.
+	  rb_ary_modify_check. This fixes regression due to r26632.
 
 Sun Feb 14 12:54:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
