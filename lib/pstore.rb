@@ -131,6 +131,7 @@ class PStore
     @filename = file
     @abort = false
     @ultra_safe = false
+    @thread_safe = thread_safe
     if @thread_safe
       @lock = Mutex.new
     else
