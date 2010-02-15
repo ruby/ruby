@@ -312,8 +312,9 @@ io_unread(rb_io_t *fptr)
     if (fptr->rbuf_len == 0 || fptr->mode & FMODE_DUPLEX)
         return;
     /* xxx: target position may be negative if buffer is filled by ungetc */
+    errno = 0;
     r = lseek(fptr->fd, -fptr->rbuf_len, SEEK_CUR);
-    if (r < 0) {
+    if (r < 0 && errno) {
         if (errno == ESPIPE)
             fptr->mode |= FMODE_DUPLEX;
         return;
@@ -369,7 +370,7 @@ flush_before_seek(rb_io_t *fptr)
 
 #define io_set_eof(fptr) (void)(((fptr)->mode & FMODE_TTY) && ((fptr)->mode |= FMODE_EOF))
 #define io_unset_eof(fptr) (fptr->mode &= ~FMODE_EOF)
-#define io_seek(fptr, ofs, whence) (io_unset_eof(fptr), lseek(flush_before_seek(fptr)->fd, ofs, whence))
+#define io_seek(fptr, ofs, whence) (errno = 0, io_unset_eof(fptr), lseek(flush_before_seek(fptr)->fd, ofs, whence))
 #define io_tell(fptr) lseek(flush_before_seek(fptr)->fd, 0, SEEK_CUR)
 
 #ifndef SEEK_CUR
@@ -1120,7 +1121,7 @@ rb_io_set_pos(VALUE io, VALUE offset)
     pos = NUM2OFFT(offset);
     GetOpenFile(io, fptr);
     pos = io_seek(fptr, pos, SEEK_SET);
-    if (pos < 0) rb_sys_fail_path(fptr->pathv);
+    if (pos < 0 && errno) rb_sys_fail_path(fptr->pathv);
 
     return OFFT2NUM(pos);
 }
@@ -1147,7 +1148,7 @@ rb_io_rewind(VALUE io)
     rb_io_t *fptr;
 
     GetOpenFile(io, fptr);
-    if (io_seek(fptr, 0L, 0) < 0) rb_sys_fail_path(fptr->pathv);
+    if (io_seek(fptr, 0L, 0) < 0 && errno) rb_sys_fail_path(fptr->pathv);
     if (io == ARGF.current_file) {
 	ARGF.lineno -= fptr->lineno;
     }
@@ -3746,8 +3747,9 @@ rb_io_sysseek(int argc, VALUE *argv, VALUE io)
     if ((fptr->mode & FMODE_WRITABLE) && fptr->wbuf_len) {
 	rb_warn("sysseek for buffered IO");
     }
+    errno = 0;
     pos = lseek(fptr->fd, pos, whence);
-    if (pos == -1) rb_sys_fail_path(fptr->pathv);
+    if (pos == -1 && errno) rb_sys_fail_path(fptr->pathv);
 
     return OFFT2NUM(pos);
 }
@@ -5715,10 +5717,10 @@ io_reopen(VALUE io, VALUE nfile)
 	}
 	rb_thread_fd_close(fd);
 	if ((orig->mode & FMODE_READABLE) && pos >= 0) {
-	    if (io_seek(fptr, pos, SEEK_SET) < 0) {
+	    if (io_seek(fptr, pos, SEEK_SET) < 0 && errno) {
 		rb_sys_fail_path(fptr->pathv);
 	    }
-	    if (io_seek(orig, pos, SEEK_SET) < 0) {
+	    if (io_seek(orig, pos, SEEK_SET) < 0 && errno) {
 		rb_sys_fail_path(orig->pathv);
 	    }
 	}
@@ -8028,8 +8030,9 @@ nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
         if (use_pread)
             copy_length = src_stat.st_size - src_offset;
         else {
+	    errno = 0;
             off_t cur = lseek(stp->src_fd, 0, SEEK_CUR);
-            if (cur == (off_t)-1) {
+            if (cur == (off_t)-1 && errno) {
                 stp->syserr = "lseek";
                 stp->error_no = errno;
                 return -1;
@@ -8161,8 +8164,9 @@ nogvl_copy_stream_read_write(struct copy_stream_struct *stp)
 
     if (use_pread && stp->close_src) {
         off_t r;
+	errno = 0;
         r = lseek(stp->src_fd, src_offset, SEEK_SET);
-        if (r == (off_t)-1) {
+        if (r == (off_t)-1 && errno) {
             stp->syserr = "lseek";
             stp->error_no = errno;
             return;
