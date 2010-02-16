@@ -1,3 +1,10 @@
+Wed Feb 17 01:16:12 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* hash.c (hash_update): always raise an exception when adding a new
+	  key during iteration.  Traditionally, an exception was raised only
+	  when rehash occurs, but it may lead to difficult bug to reproduce.
+	  [ruby-core:23614]
+
 Tue Feb 16 22:09:27 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* gc.c (chain_finalized_object): fix precedence.
