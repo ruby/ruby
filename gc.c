@@ -2551,11 +2551,29 @@ run_single_final(VALUE arg)
 }
 
 static void
-run_final(rb_objspace_t *objspace, VALUE obj)
+run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE objid, VALUE table)
 {
     long i;
     int status;
-    VALUE args[3], table, objid;
+    VALUE args[3];
+
+    args[1] = 0;
+    args[2] = (VALUE)rb_safe_level();
+    if (!args[1] && RARRAY_LEN(table) > 0) {
+	args[1] = rb_obj_freeze(rb_ary_new3(1, objid));
+    }
+    for (i=0; i<RARRAY_LEN(table); i++) {
+	VALUE final = RARRAY_PTR(table)[i];
+	args[0] = RARRAY_PTR(final)[1];
+	args[2] = FIX2INT(RARRAY_PTR(final)[0]);
+	rb_protect(run_single_final, (VALUE)args, &status);
+    }
+}
+
+static void
+run_final(rb_objspace_t *objspace, VALUE obj)
+{
+    VALUE table, objid;
     RUBY_DATA_FUNC free_func = 0;
 
     objid = rb_obj_id(obj);	/* make obj into id */
@@ -2573,17 +2591,7 @@ run_final(rb_objspace_t *objspace, VALUE obj)
 
     if (finalizer_table &&
 	st_delete(finalizer_table, (st_data_t*)&obj, &table)) {
-	args[1] = 0;
-	args[2] = (VALUE)rb_safe_level();
-	if (!args[1] && RARRAY_LEN(table) > 0) {
-	    args[1] = rb_obj_freeze(rb_ary_new3(1, objid));
-	}
-	for (i=0; i<RARRAY_LEN(table); i++) {
-	    VALUE final = RARRAY_PTR(table)[i];
-	    args[0] = RARRAY_PTR(final)[1];
-	    args[2] = FIX2INT(RARRAY_PTR(final)[0]);
-	    rb_protect(run_single_final, (VALUE)args, &status);
-	}
+	run_finalizer(objspace, obj, objid, table);
     }
 }
 
@@ -2615,18 +2623,33 @@ static int
 chain_finalized_object(st_data_t key, st_data_t val, st_data_t arg)
 {
     RVALUE *p = (RVALUE *)key, **final_list = (RVALUE **)arg;
-    if (p->as.basic.flags & FL_FINALIZE) {
+    if (p->as.basic.flags & (FL_FINALIZE|FL_MARK) == FL_FINALIZE) {
 	if (BUILTIN_TYPE(p) != T_ZOMBIE) {
 	    p->as.free.flags = FL_MARK | T_ZOMBIE; /* remain marked */
 	    RDATA(p)->dfree = 0;
 	}
 	p->as.free.next = *final_list;
 	*final_list = p;
-	return ST_CONTINUE;
     }
-    else {
-	return ST_DELETE;
-    }
+    return ST_CONTINUE;
+}
+
+struct force_finalize_list {
+    VALUE obj;
+    VALUE table;
+    struct force_finalize_list *next;
+};
+
+static int
+force_chain_object(st_data_t key, st_data_t val, st_data_t arg)
+{
+    struct force_finalize_list **prev = (struct force_finalize_list **)arg;
+    struct force_finalize_list *curr = ALLOC(struct force_finalize_list);
+    curr->obj = key;
+    curr->table = val;
+    curr->next = *prev;
+    *prev = curr;
+    return ST_DELETE;
 }
 
 void
@@ -2644,15 +2667,24 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 
     /* run finalizers */
     if (finalizer_table) {
-	finalize_deferred(objspace);
-	while (finalizer_table->num_entries > 0) {
+	do {
+	    /* XXX: this loop will make no sense */
+	    /* because mark will not be removed */
+	    finalize_deferred(objspace);
+	    mark_tbl(objspace, finalizer_table, 0);
 	    st_foreach(finalizer_table, chain_finalized_object,
-		       (st_data_t)&final_list);
-	    if (!(p = final_list)) break;
-	    do {
-		final_list = p->as.free.next;
-		run_final(objspace, (VALUE)p);
-	    } while ((p = final_list) != 0);
+		       (st_data_t)&deferred_final_list);
+	} while (deferred_final_list);
+	/* force to run finalizer */
+	while (finalizer_table->num_entries) {
+	    struct force_finalize_list *list = 0;
+	    st_foreach(finalizer_table, force_chain_object, (st_data_t)&list);
+	    while (list) {
+		struct force_finalize_list *curr = list;
+		run_finalizer(objspace, curr->obj, rb_obj_id(curr->obj), curr->table);
+		list = curr->next;
+		xfree(curr);
+	    }
 	}
 	st_free_table(finalizer_table);
 	finalizer_table = 0;
