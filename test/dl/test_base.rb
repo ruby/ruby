@@ -66,11 +66,11 @@ module DL
     end
 
     def assert_match(expected, actual, message="")
-      assert(expected === actual, message)
+      assert_operator(expected, :===, actual, message)
     end
 
     def assert_positive(actual)
-      assert(actual > 0)
+      assert_operator(actual, :>, 0)
     end
 
     def assert_zero(actual)
@@ -78,7 +78,7 @@ module DL
     end
 
     def assert_negative(actual)
-      assert(actual < 0)
+      assert_operator(actual, :<, 0)
     end
 
     def test_empty()

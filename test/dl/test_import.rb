@@ -18,7 +18,7 @@ module DL
     extern "int gettimeofday(timeval*, timezone*)" rescue nil
 
     QsortCallback = bind("void *qsort_callback(void*, void*)", :temp)
-    BoundQsortCallback = bind("void *qsort_callback(void*, void*)"){|ptr1,ptr2| ptr1[0] <=> ptr2[0]}
+    BoundQsortCallback = bind("void *bound_qsort_callback(void*, void*)"){|ptr1,ptr2| ptr1[0] <=> ptr2[0]}
     Timeval = struct [
       "long tv_sec",
       "long tv_usec",

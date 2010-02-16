@@ -4,7 +4,7 @@ module DL
   class TestHandle < TestBase
     def test_to_i
       handle = DL::Handle.new(LIBC_SO)
-      assert handle.to_i
+      assert_kind_of Integer, handle.to_i
     end
 
     def test_static_sym_secure
@@ -22,7 +22,7 @@ module DL
     end
 
     def test_static_sym
-      assert DL::Handle.sym('dlopen')
+      assert_not_nil DL::Handle.sym('dlopen')
       assert_equal DL::Handle.sym('dlopen'), DL::Handle['dlopen']
     end
 
@@ -57,8 +57,8 @@ module DL
 
     def test_sym
       handle = DL::Handle.new(LIBC_SO)
-      assert handle.sym('calloc')
-      assert handle['calloc']
+      assert_not_nil handle.sym('calloc')
+      assert_not_nil handle['calloc']
     end
 
     def test_handle_close
@@ -98,12 +98,12 @@ module DL
 
     def test_initialize_noargs
       handle = DL::Handle.new
-      assert handle['rb_str_new']
+      assert_not_nil handle['rb_str_new']
     end
 
     def test_initialize_flags
       handle = DL::Handle.new(LIBC_SO, DL::RTLD_LAZY | DL::RTLD_GLOBAL)
-      assert handle['calloc']
+      assert_not_nil handle['calloc']
     end
 
     def test_enable_close
@@ -134,7 +134,7 @@ module DL
         # library.
         # --- Ubuntu Linux 8.04 dlsym(3)
         handle = DL::Handle::NEXT
-        assert handle['malloc']
+        assert_not_nil handle['malloc']
       rescue
         # BSD
         #
@@ -145,19 +145,19 @@ module DL
         # called from a shared library, all subsequent shared libraries are
         # searched.  RTLD_NEXT is useful for implementing wrappers around library
         # functions.  For example, a wrapper function getpid() could access the
-        # “real” getpid() with dlsym(RTLD_NEXT, "getpid").  (Actually, the dlfunc()
+        # "real" getpid() with dlsym(RTLD_NEXT, "getpid").  (Actually, the dlfunc()
         # interface, below, should be used, since getpid() is a function and not a
         # data object.)
         # --- FreeBSD 8.0 dlsym(3)
         require 'objspace'
         handle = DL::Handle::NEXT
-        assert handle['Init_objspace']
+        assert_not_nil handle['Init_objspace']
       end
     end
 
     def test_DEFAULT
       handle = DL::Handle::DEFAULT
-      assert handle['malloc']
+      assert_not_nil handle['malloc']
     end
   end
 end
