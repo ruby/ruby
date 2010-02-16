@@ -1,3 +1,10 @@
+Tue Feb 16 19:02:59 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/dl/test_{base,handle}.rb: use more verbose assertions.
+
+	* test/dl/test_import.rb (DL::LIBC::BoundQsortCallback): renamed
+	  to get rid of overwriting warning.
+
 Tue Feb 16 11:03:19 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/dl/method.c: Adding DL::Method as a superclass for DL::Function
