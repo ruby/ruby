@@ -270,6 +270,14 @@ rb_hash_modify(VALUE hash)
 }
 
 static void
+hash_update(VALUE hash, VALUE key)
+{
+    if (RHASH(hash)->iter_lev > 0 && !st_lookup(RHASH(hash)->ntbl, key, 0)) {
+	rb_raise(rb_eRuntimeError, "can't add a new key into hash during iteration");
+    }
+}
+
+static void
 default_proc_arity_check(VALUE proc)
 {
     int n = rb_proc_arity(proc);
@@ -1036,6 +1044,7 @@ VALUE
 rb_hash_aset(VALUE hash, VALUE key, VALUE val)
 {
     rb_hash_modify(hash);
+    hash_update(hash, key);
     if (hash == key) {
 	rb_raise(rb_eArgError, "recursive key for hash");
     }
@@ -1630,6 +1639,7 @@ static int
 rb_hash_update_i(VALUE key, VALUE value, VALUE hash)
 {
     if (key == Qundef) return ST_CONTINUE;
+    hash_update(hash, key);
     st_insert(RHASH(hash)->ntbl, key, value);
     return ST_CONTINUE;
 }
@@ -1641,6 +1651,7 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
     if (rb_hash_has_key(hash, key)) {
 	value = rb_yield_values(3, key, rb_hash_aref(hash, key), value);
     }
+    hash_update(hash, key);
     st_insert(RHASH(hash)->ntbl, key, value);
     return ST_CONTINUE;
 }
