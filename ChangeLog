@@ -1,3 +1,9 @@
+Tue Feb 16 20:56:39 2010  Tanaka Akira  <akr@fsij.org>
+
+	* file.c (rb_group_member): renamed from group_member.
+	  don't use group_member() in glibc because it's not valgrind clean.
+	  http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=570047
+
 Thu Feb 11 20:43:00 2010  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_io_modenum_mode): return "r" for O_RDONLY|O_APPEND.

@@ -646,7 +646,7 @@ AC_CHECK_FUNCS(fmod killpg wait4 waitpid syscall chroot fsync getcwd eaccess\
 	      setproctitle setrgid setegid setregid setresgid issetugid pause\
 	      lchown lchmod getpgrp setpgrp getpgid setpgid initgroups\
 	      getgroups setgroups getpriority getrlimit setrlimit sysconf\
-	      group_member dlopen sigprocmask\
+	      dlopen sigprocmask\
 	      sigaction sigsetjmp _setjmp _longjmp setsid telldir seekdir fchmod\
 	      mktime timegm gettimeofday\
 	      cosh sinh tanh round setuid setgid setenv unsetenv)
