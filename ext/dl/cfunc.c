@@ -347,12 +347,21 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 	return Qnil;
     }
 
+    if( RARRAY_LEN(ary) >= DLSTACK_SIZE ){
+	rb_raise(rb_eDLError, "too many arguments (stack overflow)");
+    }
     for( i = 0; i < RARRAY_LEN(ary); i++ ){
-	if( i >= DLSTACK_SIZE ){
-	    rb_raise(rb_eDLError, "too many arguments (stack overflow)");
+	unsigned long rb_big2ulong_pack(VALUE x);
+	VALUE arg = RARRAY_PTR(ary)[i];
+
+	rb_check_safe_obj(arg);
+	if (FIXNUM_P(arg)) {
+	    stack[i] = FIX2LONG(arg);
 	}
-	rb_check_safe_obj(RARRAY_PTR(ary)[i]);
-	stack[i] = NUM2LONG(RARRAY_PTR(ary)[i]);
+	else {
+	    Check_Type(arg, T_BIGNUM);
+	    stack[i] = rb_big2ulong_pack(arg);
+	}
     }
 
     /* calltype == CFUNC_CDECL */
