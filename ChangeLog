@@ -1,3 +1,7 @@
+Tue Feb 16 22:09:27 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* gc.c (chain_finalized_object): fix precedence.
+
 Tue Feb 16 21:32:01 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* gc.c (rb_objspace_call_finalizer): always run finalizer at exit,
