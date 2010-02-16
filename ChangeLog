@@ -1,3 +1,8 @@
+Tue Feb 16 19:19:21 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/cfunc.c (rb_dlcfunc_call): convert signed value to
+	  unsigned.
+
 Tue Feb 16 19:02:59 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/dl/test_{base,handle}.rb: use more verbose assertions.
