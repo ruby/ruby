@@ -169,7 +169,7 @@ Mon Feb  8 23:49:24 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* io.c (rb_io_getline_fast): wrong calculation of new position
 	  from rb_str_coderange_scan_restartable().  [ruby-core:28103]
 
-	* io.c (read_all): ditto.  
+	* io.c (read_all): ditto.
 
 	* sprintf.c (rb_str_format): ditto.
 
@@ -227,7 +227,7 @@ Sun Feb  7 03:01:46 2010  Tanaka Akira  <akr@fsij.org>
 
 Sun Feb  7 00:23:21 2010  Shugo Maeda  <shugo@ruby-lang.org>
 
-	* class.c (rb_class_init_copy): raise a TypeError if the argument is 
+	* class.c (rb_class_init_copy): raise a TypeError if the argument is
 	  BasicObject.  [ruby-core:27060]
 
 Sat Feb  6 23:37:11 2010  Shugo Maeda  <shugo@ruby-lang.org>
@@ -284,7 +284,7 @@ Sat Feb  6 00:02:31 2010  Tanaka Akira  <akr@fsij.org>
 	  /dev/urandom is a symlink in OpenSolaris.
 
 	* lib/securerandom.rb (SecureRandom.random_bytes): ditto.
-	  
+
 Fri Feb  5 16:38:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/delegate.rb (Delegator): include copy of Kernel.
