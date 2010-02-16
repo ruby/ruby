@@ -3,7 +3,7 @@
 # So all tests will cause failure.
 #
 
-assert_normal_exit %q{
+assert_finish 1, %q{
   open("tst-remove-load.rb", "w") {|f|
     f << <<'End'
 module Kernel
