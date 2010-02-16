@@ -136,6 +136,7 @@
 
 extern VALUE rb_mDL;
 extern VALUE rb_cDLHandle;
+extern VALUE rb_cDLCPtr;
 extern VALUE rb_cDLSymbol;
 extern VALUE rb_eDLError;
 extern VALUE rb_eDLTypeError;

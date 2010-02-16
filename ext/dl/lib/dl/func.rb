@@ -6,7 +6,7 @@ require 'dl/value'
 require 'thread'
 
 module DL
-  class Function
+  class Function < DL::Method
     include DL
     include ValueUtil
 
@@ -20,7 +20,7 @@ module DL
       end
 
       @args   = argtypes
-      native_init(@args.reject { |x| x == TYPE_VOID }, cfunc.ctype, abi)
+      super(@cfunc, @args.reject { |x| x == TYPE_VOID }, cfunc.ctype, abi)
     end
 
     def to_i()
@@ -35,7 +35,7 @@ module DL
       if block_given?
         args.find { |a| DL::Function === a }.bind_at_call(&block)
       end
-      native_call(*args)
+      super
     end
 
     def wrap_result(r)

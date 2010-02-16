@@ -7,7 +7,7 @@
 #include "dl.h"
 #include <dl_conversions.h>
 
-VALUE rb_cDLFunction;
+VALUE rb_cDLMethod;
 
 typedef union
 {
@@ -49,7 +49,7 @@ dlfunction_memsize(const void *p)
 }
 
 const rb_data_type_t dlfunction_data_type = {
-    "dl/function",
+    "dl/method",
     0, dlfunction_free, dlfunction_memsize,
 };
 
@@ -62,12 +62,21 @@ rb_dlfunc_allocate(VALUE klass)
 }
 
 static VALUE
-rb_dlfunction_native_init(VALUE self, VALUE args, VALUE ret_type, VALUE abi)
+rb_dlfunction_initialize(int argc, VALUE argv[], VALUE self)
 {
     ffi_cif * cif;
     ffi_type **arg_types;
     ffi_status result;
+    VALUE ptr, args, ret_type, abi;
     int i;
+
+    rb_scan_args(argc, argv, "31", &ptr, &args, &ret_type, &abi);
+    if(NIL_P(abi)) abi = INT2NUM(FFI_DEFAULT_ABI);
+
+    rb_iv_set(self, "@ptr", ptr);
+    rb_iv_set(self, "@args", args);
+    rb_iv_set(self, "@return_type", ret_type);
+    rb_iv_set(self, "@abi", abi);
 
     TypedData_Get_Struct(self, ffi_cif, &dlfunction_data_type, cif);
 
@@ -188,17 +197,21 @@ rb_dlfunction_call(int argc, VALUE argv[], VALUE self)
     values = xcalloc((size_t)argc + 1, (size_t)sizeof(void *));
     generic_args = xcalloc((size_t)argc, (size_t)sizeof(dl_generic));
 
-    cfunc = rb_iv_get(self, "@cfunc");
+    cfunc = rb_iv_get(self, "@ptr");
     types = rb_iv_get(self, "@args");
 
     for (i = 0; i < argc; i++) {
 	VALUE dl_type = RARRAY_PTR(types)[i];
-	VALUE src = rb_funcall(self,
-		rb_intern("ruby2ffi"),
-		2,
-		argv[i],
-		dl_type
-		);
+	VALUE src = argv[i];
+
+	if(NUM2INT(dl_type) == DLTYPE_VOIDP) {
+	    if(NIL_P(src)) {
+		src = INT2NUM(0);
+	    } else if(rb_cDLCPtr != CLASS_OF(src)) {
+	        src = rb_funcall(rb_cDLCPtr, rb_intern("[]"), 1, src);
+	    }
+	    src = rb_Integer(src);
+	}
 
 	dl2generic(NUM2INT(dl_type), src, &generic_args[i]);
 	values[i] = (void *)&generic_args[i];
@@ -215,24 +228,24 @@ rb_dlfunction_call(int argc, VALUE argv[], VALUE self)
     xfree(values);
     xfree(generic_args);
 
-    return unwrap_ffi(rb_funcall(cfunc, rb_intern("ctype"), 0), retval);
+    return unwrap_ffi(rb_iv_get(self, "@return_type"), retval);
 }
 
 void
 Init_dlfunction(void)
 {
-    rb_cDLFunction = rb_define_class_under(rb_mDL, "Function", rb_cObject);
+    rb_cDLMethod = rb_define_class_under(rb_mDL, "Method", rb_cObject);
 
-    rb_define_const(rb_cDLFunction, "DEFAULT", INT2NUM(FFI_DEFAULT_ABI));
+    rb_define_const(rb_cDLMethod, "DEFAULT", INT2NUM(FFI_DEFAULT_ABI));
 
 #ifdef FFI_STDCALL
-    rb_define_const(rb_cDLFunction, "STDCALL", INT2NUM(FFI_STDCALL));
+    rb_define_const(rb_cDLMethod, "STDCALL", INT2NUM(FFI_STDCALL));
 #endif
 
-    rb_define_alloc_func(rb_cDLFunction, rb_dlfunc_allocate);
+    rb_define_alloc_func(rb_cDLMethod, rb_dlfunc_allocate);
 
-    rb_define_private_method(rb_cDLFunction, "native_call", rb_dlfunction_call, -1);
+    rb_define_method(rb_cDLMethod, "call", rb_dlfunction_call, -1);
 
-    rb_define_private_method(rb_cDLFunction, "native_init", rb_dlfunction_native_init, 3);
+    rb_define_method(rb_cDLMethod, "initialize", rb_dlfunction_initialize, -1);
 }
 /* vim: set noet sw=4 sts=4 */
