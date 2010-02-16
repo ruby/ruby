@@ -36,19 +36,6 @@ module DL
       end
     end
 
-    def ruby2ffi arg, type
-      return arg unless type == TYPE_VOIDP
-      case arg
-      when nil
-        0
-      when CPtr
-        arg.to_i
-      else
-        CPtr[arg].to_i
-      end
-    end
-    private :ruby2ffi
-
     def wrap_arg(arg, ty, funcs = [], &block)
         funcs ||= []
         case arg

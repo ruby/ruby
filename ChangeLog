@@ -1,3 +1,7 @@
+Tue Feb 16 11:03:19 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/dl/method.c: Adding DL::Method as a superclass for DL::Function
+
 Mon Feb 15 23:37:30 2010  Tanaka Akira  <akr@fsij.org>
 
 	* io.c: check lseek error by errno.  NetBSD 4.0.1 may return -1 as
