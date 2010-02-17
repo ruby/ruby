@@ -284,7 +284,7 @@ rb_dlcfunc_inspect(VALUE self)
 {
     VALUE val;
     char  *str;
-    int str_size;
+    size_t str_size;
     struct cfunc_data *cfunc;
 
     TypedData_Get_Struct(self, struct cfunc_data, &dlcfunc_data_type, cfunc);

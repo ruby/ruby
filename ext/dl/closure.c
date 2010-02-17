@@ -57,7 +57,7 @@ dlc_callback(ffi_cif *cif, void *resp, void **args, void *ctx)
     VALUE self      = (VALUE)ctx;
     VALUE rbargs    = rb_iv_get(self, "@args");
     VALUE ctype     = rb_iv_get(self, "@ctype");
-    int argc        = RARRAY_LEN(rbargs);
+    int argc        = RARRAY_LENINT(rbargs);
     VALUE *params   = xcalloc(argc, sizeof(VALUE *));
     VALUE ret;
     int i, dl_type;
@@ -165,7 +165,7 @@ rb_dlclosure_init(int rbargc, VALUE argv[], VALUE self)
     if (2 == rb_scan_args(rbargc, argv, "21", &ret, &args, &abi))
 	abi = INT2NUM(FFI_DEFAULT_ABI);
 
-    argc = RARRAY_LEN(args);
+    argc = RARRAY_LENINT(args);
 
     TypedData_Get_Struct(self, dl_closure, &dlclosure_data_type, cl);
 
