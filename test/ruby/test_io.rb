@@ -823,15 +823,15 @@ class TestIO < Test::Unit::TestCase
     end)
   end
 
-  def test_readpartial_error
+  def test_readpartial_lock
     with_pipe do |r, w|
       s = ""
       t = Thread.new { r.readpartial(5, s) }
       0 until s.size == 5
-      s.clear
+      assert_raise(RuntimeError) { s.clear }
       w.write "foobarbaz"
       w.close
-      assert_raise(RuntimeError) { t.join }
+      assert_equal("fooba", t.value)
     end
   end
 
@@ -858,15 +858,15 @@ class TestIO < Test::Unit::TestCase
     end)
   end
 
-  def test_read_error
+  def test_read_lock
     with_pipe do |r, w|
       s = ""
       t = Thread.new { r.read(5, s) }
       0 until s.size == 5
-      s.clear
+      assert_raise(RuntimeError) { s.clear }
       w.write "foobarbaz"
       w.close
-      assert_raise(RuntimeError) { t.join }
+      assert_equal("fooba", t.value)
     end
   end
 
