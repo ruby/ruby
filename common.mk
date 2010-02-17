@@ -700,7 +700,7 @@ INSNS2VMOPT = --srcdir="$(srcdir)"
 
 srcs: {$(VPATH)}parse.c {$(VPATH)}lex.c {$(VPATH)}newline.c srcs-ext srcs-enc
 
-EXT_SRCS = $(srcdir)/ext/ripper/ripper.c $(srcdir)/ext/dl/callback/callback.c
+EXT_SRCS = $(srcdir)/ext/ripper/ripper.c
 
 srcs-ext: $(EXT_SRCS)
 
