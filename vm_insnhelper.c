@@ -364,7 +364,6 @@ vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 	      const rb_method_entry_t *me)
 {
     VALUE val = 0;
-    int state = 0;
     const rb_method_definition_t *def = me->def;
     rb_control_frame_t *cfp;
 

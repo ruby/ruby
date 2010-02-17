@@ -1,3 +1,9 @@
+Wed Feb 17 17:05:39 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_call_cfunc): removed unused variable.
+
+	* vm.c (vm_frametype_name): define only when VMDEBUG.
+
 Wed Feb 17 15:34:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/dl_conversions.c (rb_dl_type_to_ffi_type): support signed
