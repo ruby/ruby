@@ -1,3 +1,7 @@
+Wed Feb 17 21:26:53 2010  Tanaka Akira  <akr@fsij.org>
+
+	* bootstraptest/runner.rb (assert_normal_exit): add :timeout option.
+
 Wed Feb 17 17:05:39 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_call_cfunc): removed unused variable.

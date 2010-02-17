@@ -213,16 +213,32 @@ def assert_valid_syntax(testsrc, message = '')
   }
 end
 
-def assert_normal_exit(testsrc, message = '', ignore_signals = nil)
+def assert_normal_exit(testsrc, *rest)
+  opt = {}
+  opt = rest.pop if Hash === rest.last
+  message, ignore_signals = rest
+  message ||= ''
+  timeout = opt[:timeout]
   newtest
   $stderr.puts "\##{@count} #{@location}" if @verbose
   faildesc = nil
   filename = make_srcfile(testsrc)
   old_stderr = $stderr.dup
+  timeout_signaled = false
   begin
-    $stderr.reopen("assert_normal_exit_stderr.log", "w")
-    `#{@ruby} -W0 #{filename}`
-    status = $?
+    $stderr.reopen("assert_normal_exit.log", "w")
+    io = IO.popen("#{@ruby} -W0 #{filename}")
+    pid = io.pid
+    th = Thread.new {
+      io.read
+      io.close
+      $?
+    }
+    if !th.join(timeout)
+      Process.kill :KILL, pid
+      timeout_signaled = true
+    end
+    status = th.value
   ensure
     $stderr.reopen(old_stderr)
     old_stderr.close
@@ -235,8 +251,11 @@ def assert_normal_exit(testsrc, message = '', ignore_signals = nil)
       if signame
         sigdesc = "SIG#{signame} (#{sigdesc})"
       end
+      if timeout_signaled
+        sigdesc << " (timeout)"
+      end
       faildesc = pretty(testsrc, "killed by #{sigdesc}", nil)
-      stderr_log = File.read("assert_normal_exit_stderr.log")
+      stderr_log = File.read("assert_normal_exit.log")
       if !stderr_log.empty?
         faildesc << "\n" if /\n\z/ !~ faildesc
         stderr_log << "\n" if /\n\z/ !~ stderr_log
