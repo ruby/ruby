@@ -1,7 +1,13 @@
 cfunc.o: cfunc.c dl.h $(hdrdir)/ruby.h
 
+closure.o: closure.c dl.h dl_conversions.h $(hdrdir)/ruby.h
+
 cptr.o: cptr.c dl.h $(hdrdir)/ruby.h $(hdrdir)/io.h
 
 handle.o: handle.c dl.h $(hdrdir)/ruby.h
 
+method.o: method.c dl.h dl_conversions.h $(hdrdir)/ruby.h
+
 dl.o: dl.c dl.h $(hdrdir)/ruby.h $(hdrdir)/io.h
+
+dl_conversions.o: dl_conversions.c dl_conversions.h
