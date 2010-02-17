@@ -814,8 +814,10 @@ rb_f_loop(VALUE self)
     return Qnil;		/* dummy */
 }
 
+#if VMDEBUG
 static const char *
 vm_frametype_name(const rb_control_frame_t *cfp);
+#endif
 
 VALUE
 rb_iterate(VALUE (* it_proc) (VALUE), VALUE data1,
@@ -858,7 +860,9 @@ rb_iterate(VALUE (* it_proc) (VALUE), VALUE data1,
 
 		/* check skipped frame */
 		while (th->cfp != cfp) {
-		    /* printf("skipped frame: %s\n", vm_frametype_name(th->cfp)); */
+#if VMDEBUG
+		    printf("skipped frame: %s\n", vm_frametype_name(th->cfp));
+#endif
 		    if (UNLIKELY(VM_FRAME_TYPE(th->cfp) == VM_FRAME_MAGIC_CFUNC)) {
 			const rb_method_entry_t *me = th->cfp->me;
 			EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, th->cfp->self, me->called_id, me->klass);
