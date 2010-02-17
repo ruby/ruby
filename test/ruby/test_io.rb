@@ -1312,6 +1312,19 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
+  def test_reopen_inherit
+    mkcdtmpdir {
+      system(EnvUtil.rubybin, '-e', <<"End")
+        f = open("out", "w")
+        STDOUT.reopen(f)
+        STDERR.reopen(f)
+        system(#{EnvUtil.rubybin.dump}, '-e', 'STDOUT.print "out"')
+        system(#{EnvUtil.rubybin.dump}, '-e', 'STDERR.print "err"')
+End
+      assert_equal("outerr", File.read("out"))
+    }
+  end
+
   def test_foreach
     a = []
     IO.foreach("|" + EnvUtil.rubybin + " -e 'puts :foo; puts :bar; puts :baz'") {|x| a << x }
