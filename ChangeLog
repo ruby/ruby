@@ -1,3 +1,10 @@
+Wed Feb 17 21:34:01 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* regcomp.c (setup_tree, onig_compile): optimize .* at last by
+	  converting into (?>.*), which does not backtrack.  [ruby-core:27791]
+
+	* test/ruby/test_regexp.rb: add a test for above.
+
 Wed Feb 17 21:26:53 2010  Tanaka Akira  <akr@fsij.org>
 
 	* bootstraptest/runner.rb (assert_normal_exit): add :timeout option.
