@@ -1,4 +1,7 @@
-Wed Feb 17 14:26:30 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Feb 17 15:34:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/dl_conversions.c (rb_dl_type_to_ffi_type): support signed
+	  long long.
 
 	* ext/dl/cfunc.c (rb_dlcfunc_inspect): get rid of overflow.
 
