@@ -1,3 +1,11 @@
+Thu Feb 18 02:14:26 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* io.c (io_fread, io_getpartial, io_read, io_sysread): by using lock,
+	  prohibit modification of buffer string during read (which had caused
+	  EFAULT or SEGV).  [ruby-dev:40437]
+
+	* test/ruby/test_io.rb: rewrite tests for the old behavior.
+
 Wed Feb 17 21:34:01 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* regcomp.c (setup_tree, onig_compile): optimize .* at last by

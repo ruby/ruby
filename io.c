@@ -1487,6 +1487,7 @@ io_fread(VALUE str, long offset, rb_io_t *fptr)
     long n = len;
     long c;
 
+    rb_str_locktmp(str);
     if (READ_DATA_PENDING(fptr) == 0) {
 	while (n > 0) {
           again:
@@ -1504,6 +1505,7 @@ io_fread(VALUE str, long offset, rb_io_t *fptr)
 	    if ((n -= c) <= 0) break;
 	    rb_thread_wait_fd(fptr->fd);
 	}
+	rb_str_unlocktmp(str);
 	return len - n;
     }
 
@@ -1519,6 +1521,7 @@ io_fread(VALUE str, long offset, rb_io_t *fptr)
 	    break;
 	}
     }
+    rb_str_unlocktmp(str);
     return len - n;
 }
 
@@ -1810,18 +1813,15 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock)
 
     if (!nonblock)
         READ_CHECK(fptr);
-    if (RSTRING_LEN(str) != len) {
-      modified:
-	rb_raise(rb_eRuntimeError, "buffer string modified");
-    }
     n = read_buffered_data(RSTRING_PTR(str), len, fptr);
     if (n <= 0) {
       again:
-	if (RSTRING_LEN(str) != len) goto modified;
         if (nonblock) {
             rb_io_set_nonblock(fptr);
         }
+	rb_str_locktmp(str);
 	n = rb_read_internal(fptr->fd, RSTRING_PTR(str), len);
+	rb_str_unlocktmp(str);
         if (n < 0) {
             if (!nonblock && rb_io_wait_readable(fptr->fd))
                 goto again;
@@ -2136,9 +2136,6 @@ io_read(int argc, VALUE *argv, VALUE io)
     if (len == 0) return str;
 
     READ_CHECK(fptr);
-    if (RSTRING_LEN(str) != len) {
-	rb_raise(rb_eRuntimeError, "buffer string modified");
-    }
     n = io_fread(str, 0, fptr);
     if (n == 0) {
 	if (fptr->fd < 0) return Qnil;
@@ -3841,11 +3838,10 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
     n = fptr->fd;
     rb_thread_wait_fd(fptr->fd);
     rb_io_check_closed(fptr);
-    if (RSTRING_LEN(str) != ilen) {
-	rb_raise(rb_eRuntimeError, "buffer string modified");
-    }
 
+    rb_str_locktmp(str);
     n = rb_read_internal(fptr->fd, RSTRING_PTR(str), ilen);
+    rb_str_unlocktmp(str);
 
     if (n == -1) {
 	rb_sys_fail_path(fptr->pathv);
