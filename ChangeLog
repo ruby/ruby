@@ -1,3 +1,13 @@
+Wed Feb 17 14:26:30 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/cfunc.c (rb_dlcfunc_inspect): get rid of overflow.
+
+	* ext/dl/closure.c (dlc_callback, rb_dlclosure_init): ditto.
+
+	* ext/dl/cptr.c (rb_dlptr_s_malloc): ditto.
+
+	* ext/dl/method.c (rb_dlfunction_initialize): ditto.
+
 Wed Feb 17 01:16:12 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* hash.c (hash_update): always raise an exception when adding a new

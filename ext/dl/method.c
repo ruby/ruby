@@ -91,7 +91,7 @@ rb_dlfunction_initialize(int argc, VALUE argv[], VALUE self)
     result = ffi_prep_cif (
 	    cif,
 	    NUM2INT(abi),
-	    RARRAY_LEN(args),
+	    RARRAY_LENINT(args),
 	    DL2FFI_TYPE(NUM2INT(ret_type)),
 	    arg_types);
 
