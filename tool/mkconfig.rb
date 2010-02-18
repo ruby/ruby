@@ -111,7 +111,10 @@ File.foreach "config.status" do |line|
         end
       end
     end
-    val.gsub!(/ +(?!-)/, "=") if name == "configure_args" && /mswin32/ =~ RUBY_PLATFORM
+    if name == "configure_args"
+      val.gsub!(/ +(?!-)/, "=") if /mswin32/ =~ RUBY_PLATFORM
+      val.gsub!(/--with-out-ext/, "--without-ext")
+    end
     val = val.gsub(/\$(?:\$|\{?(\w+)\}?)/) {$1 ? "$(#{$1})" : $&}.dump
     if /^prefix$/ =~ name
       val = "(TOPDIR || DESTDIR + #{val})"
