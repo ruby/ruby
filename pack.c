@@ -1592,6 +1592,7 @@ pack_unpack(str, fmt)
 		s += QUAD_SIZE;
 		rb_ary_push(ary, rb_quad_unpack(tmp, 0));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 'n':

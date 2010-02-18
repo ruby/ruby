@@ -97,4 +97,11 @@ class TestPack < Test::Unit::TestCase
     assert_equal(["10ef"], "\x10\xef".unpack("H4"))
     assert_equal(["10ef"], "\x10\xef".unpack("H5"))
   end
+
+  def test_short_string
+    %w[n N v V s S l L q Q].each {|fmt|
+      str = [1].pack(fmt)
+      assert_equal([1,nil], str.unpack("#{fmt}2"))
+    }
+  end
 end
