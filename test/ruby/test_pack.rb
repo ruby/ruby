@@ -491,4 +491,11 @@ class TestPack < Test::Unit::TestCase
   def test_length_too_big
     assert_raise(RangeError) { [].pack("C100000000000000000000") }
   end
+
+  def test_short_string
+    %w[n N v V s S l L q Q].each {|fmt|
+      str = [1].pack(fmt)
+      assert_equal([1,nil], str.unpack("#{fmt}2"))
+    }
+  end
 end
