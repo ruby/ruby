@@ -310,6 +310,10 @@ math_atanh(VALUE obj, VALUE x)
     Need_Float(x);
     errno = 0;
     d0 = RFLOAT_VALUE(x);
+    if (d0 == 1.0 || d0 == -1.0) {
+	errno = ERANGE;
+	rb_sys_fail("atanh");
+    }
     d = atanh(d0);
     domain_check(d0, d, "atanh");
     infinity_check(x, d, "atanh");
@@ -715,6 +719,9 @@ math_lgamma(VALUE obj, VALUE x)
     Need_Float(x);
     errno = 0;
     d0 = RFLOAT_VALUE(x);
+    if (isinf(d0)) {
+	return rb_assoc_new(DBL2NUM(INFINITY), INT2FIX(1));
+    }
     d = lgamma_r(d0, &sign);
     domain_check(d0, d, "lgamma");
     v = DBL2NUM(d);

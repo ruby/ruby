@@ -1,3 +1,11 @@
+Thu Feb 18 22:31:15 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* math.c (math_atanh): raise ERANGE without calling atanh if absolute
+	  value is 1 to achieve platform-independent math.  [ruby-core:28219]
+
+	* math.c (math_lgamma): return [Infinity, 1] without calling lgamma_r
+	  if argument is infinity or -infinity.  [ruby-core:28219]
+
 Thu Feb 18 22:28:00 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* confiure.in: new --with-ext and --with-out-ext options for extmk.
