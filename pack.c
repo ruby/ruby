@@ -1605,6 +1605,7 @@ pack_unpack(VALUE str, VALUE fmt)
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
+
 	  case 'L':
 	    PACK_LENGTH_ADJUST(unsigned long,4);
 	    while (len-- > 0) {
@@ -1625,6 +1626,7 @@ pack_unpack(VALUE str, VALUE fmt)
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
+
 	  case 'Q':
 	    PACK_LENGTH_ADJUST_SIZE(QUAD_SIZE);
 	    while (len-- > 0) {
@@ -1632,6 +1634,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		s += QUAD_SIZE;
 		UNPACK_PUSH(rb_quad_unpack(tmp, 0));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 'n':
