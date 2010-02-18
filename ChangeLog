@@ -1,3 +1,8 @@
+Fri Feb 19 00:04:19 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/drb/drb.rb (DRbServer#stop_service): join killed thread to
+	  ensure service stops.  [ruby-dev:40441]
+
 Thu Feb 18 22:31:15 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* math.c (math_atanh): raise ERANGE without calling atanh if absolute

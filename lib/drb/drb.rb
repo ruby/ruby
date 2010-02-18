@@ -1394,7 +1394,7 @@ module DRb
       if  Thread.current['DRb'] && Thread.current['DRb']['server'] == self
         Thread.current['DRb']['stop_service'] = true
       else
-        @thread.kill
+        @thread.kill.join
       end
     end
 
