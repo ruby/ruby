@@ -181,7 +181,8 @@ uncommon.mk: $(srcdir)/common.mk
 		sed 's/{\$$([^(){}]*)[^{}]*}//g' $< > $@
 
 config.status:	$(srcdir)/configure $(srcdir)/enc/Makefile.in
-	PWD= MINIRUBY="$(MINIRUBY)" $(SHELL) ./config.status --recheck
+	@PWD= MINIRUBY="$(MINIRUBY)"; set $(SHELL) ./config.status --recheck; \
+	exec 3>&1; exit `exec 4>&1; { "$$@" 3>&- 4>&-; echo $$? 1>&4; } | fgrep -v '(cached)' 1>&3`
 
 $(srcdir)/configure: $(srcdir)/configure.in
 	$(CHDIR) $(srcdir) && exec $(AUTOCONF)
