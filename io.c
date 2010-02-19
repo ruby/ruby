@@ -1941,14 +1941,21 @@ io_readpartial(int argc, VALUE *argv, VALUE io)
  *  until io is readable for avoiding busy loop.
  *  This can be done as follows.
  *
+ *    # emulates blocking read (readpartial).
  *    begin
  *      result = io.read_nonblock(maxlen)
- *    rescue IO::WaitReadable, Errno::EINTR
+ *    rescue IO::WaitReadable
  *      IO.select([io])
  *      retry
  *    end
  *
- *  Note that this is identical to readpartial
+ *  Although IO#read_nonblock doesn't raise IO::WaitWritable.
+ *  OpenSSL::Buffering#read_nonblock can raise IO::WaitWritable.
+ *  If IO and SSL should be used polymorphically,
+ *  IO::WaitWritable should be rescued too.
+ *  See the document of OpenSSL::Buffering#read_nonblock for sample code.
+ *
+ *  Note that this method is identical to readpartial
  *  except the non-blocking flag is set.
  */
 
