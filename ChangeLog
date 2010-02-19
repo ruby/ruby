@@ -1,7 +1,16 @@
+Fri Feb 19 12:15:21 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/readline/readline.c (Init_readline): initialize
+	  check rl_catch_signals and rl_catch_sigwinch.
+	  [ruby-core:28238] [ruby-core:28242]
+
+	* ext/readline/extconf.rb: check rl_catch_signals and
+	  rl_catch_sigwinch.
+
 Fri Feb 19 00:23:24 2010  Tanaka Akira  <akr@fsij.org>
 
 	* pack.c (pack_unpack): call PACK_ITEM_ADJUST for 'Q'.
-	
+
 Tue Feb 16 20:56:39 2010  Tanaka Akira  <akr@fsij.org>
 
 	* file.c (rb_group_member): renamed from group_member.
@@ -40,7 +49,7 @@ Thu Feb 11 09:37:01 2010  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb: support :nameserver_port option.  backport r26230
 	  and r26357 from 1.9.
-	
+
 Wed Feb 10 13:03:29 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_times): backport r15514 to reduce loop
@@ -757,14 +766,14 @@ Tue Oct  6 06:26:00 2009  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tkextlib/vu/dial.rb: fix logical bug.
 
-	* ext/tk/lib/tk/canvas.rb, ext/tk/lib/tkextlib/blt/component.rb: 
+	* ext/tk/lib/tk/canvas.rb, ext/tk/lib/tkextlib/blt/component.rb:
 	  lack of support for methodcall_optkeys.
 
 Sun Oct  4 22:44:03 2009  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi.rb (CGI.unescapeHTML): fix for hex values 80-FF,
 	  single-byte hex entity encodings from 80-FF are valid HTML.
-		[ruby-core:25702]
+	  [ruby-core:25702]
 
 Sun Oct  4 19:30:54 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
