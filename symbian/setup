@@ -79,6 +79,7 @@ define config_h
 @echo>>$(1) #define HAVE_STRUCT_STAT_ST_MTIMESPEC 1
 @echo>>$(1) #define HAVE_STRUCT_STAT_ST_CTIMESPEC 1
 @echo>>$(1) #define HAVE_STRUCT_TIMESPEC 1
+@echo>>$(1) #define HAVE_STRUCT_TIMEZONE 1
 @echo>>$(1) #define HAVE_RB_FD_INIT 1
 @echo>>$(1) #define GETGROUPS_T gid_t
 @echo>>$(1) #define RETSIGTYPE void
@@ -143,6 +144,7 @@ define config_h
 @echo>>$(1) #define HAVE_SETGID 1
 @echo>>$(1) #define HAVE_SETENV 1
 @echo>>$(1) #define HAVE_UNSETENV 1
+@echo>>$(1) #define VOID_UNSETENV 1
 @echo>>$(1) #define HAVE_MKTIME 1
 @echo>>$(1) #define HAVE_CLOCK_GETTIME 1
 @echo>>$(1) #define HAVE_GETTIMEOFDAY 1
@@ -170,6 +172,7 @@ define config_h
 @echo>>$(1) #define DLEXT ".dll"
 @echo>>$(1) #define EXECUTABLE_EXTS ".exe",".com",".cmd",".bat"
 @echo>>$(1) #define DLN_NEEDS_ALT_SEPARATOR 1
+@echo>>$(1) #define RUBY_LIB_VERSION_STYLE 3
 @echo>>$(1) #define RUBY_LIB_PREFIX "C:/Data/Ruby/lib"
 @echo>>$(1) #define RUBY_SITE_LIB "E:/Data/Ruby/lib"
 @echo>>$(1) #define RUBY_VENDOR_LIB "C:/Data/Ruby/lib"
@@ -253,6 +256,7 @@ define ruby_mmp
 @echo>>$(1) SOURCE main.c
 @echo>>$(1) SOURCE marshal.c
 @echo>>$(1) SOURCE math.c
+@echo>>$(1) SOURCE node.c
 @echo>>$(1) SOURCE numeric.c
 @echo>>$(1) SOURCE object.c
 @echo>>$(1) SOURCE pack.c
