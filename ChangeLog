@@ -1,3 +1,8 @@
+Sat Feb 20 14:36:16 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* vm.c (vm_backtrace_each): use called_id when method definition
+	  structure is already freed.  [ruby-dev:40234] [ruby-core:27959]
+
 Fri Feb 19 00:04:19 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/drb/drb.rb (DRbServer#stop_service): join killed thread to
