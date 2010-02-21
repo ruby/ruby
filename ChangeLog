@@ -1,3 +1,8 @@
+Sun Feb 21 21:20:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile, install_files): honor srcprefix
+	  argument if given.  [ruby-dev:40449]
+
 Sun Feb 21 13:29:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rubygems/rubygems_version.rb: outdated.  [ruby-core:28275]
