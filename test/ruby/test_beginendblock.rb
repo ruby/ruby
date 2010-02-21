@@ -1,5 +1,6 @@
 require 'test/unit'
 require 'tempfile'
+require 'timeout'
 require_relative 'envutil'
 
 class TestBeginEndBlock < Test::Unit::TestCase
@@ -97,7 +98,9 @@ EOW
       [ruby,
        '-e', 'STDERR.reopen(STDOUT)',
        '-e', 'at_exit{Process.kill(:INT, $$); loop{}}']) {|f|
-      f.read
+      timeout(1) {
+        f.read
+      }
     }
     assert_match(/Interrupt$/, out)
     Process.kill(0, 0) rescue return # check if signal works
