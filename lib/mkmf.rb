@@ -624,7 +624,7 @@ end
 def install_files(mfile, ifiles, map = nil, srcprefix = nil)
   ifiles or return
   ifiles.empty? and return
-  srcprefix ||= '$(srcdir)'
+  srcprefix ||= "$(srcdir)/#{srcprefix}".chomp('/')
   RbConfig::expand(srcdir = srcprefix.dup)
   dirs = []
   path = Hash.new {|h, i| h[i] = dirs.push([i])[-1]}
@@ -1684,7 +1684,7 @@ def create_makefile(target, srcprefix = nil)
     target_prefix = ""
   end
 
-  srcprefix = "$(srcdir)/#{srcprefix}".chomp('/')
+  srcprefix ||= "$(srcdir)/#{srcprefix}".chomp('/')
   RbConfig.expand(srcdir = srcprefix.dup)
 
   ext = ".#{$OBJEXT}"
