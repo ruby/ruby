@@ -1,3 +1,7 @@
+Sun Feb 21 13:29:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems/rubygems_version.rb: outdated.  [ruby-core:28275]
+
 Sun Feb 21 06:24:12 2010  Alexander Zavorine  <alexandre.zavorine@nokia.com>
 
 	* symbian/setup (config.h): HAVE_STRUCT_TIMEZONE, VOID_UNSETENV, and RUBY_LIB_VERSION_STYLE defined.
