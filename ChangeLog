@@ -1,3 +1,7 @@
+Mon Feb 22 11:21:18 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/digest/sha2: Use OpenSSL's SHA1 engine if available.
+
 Sun Feb 21 21:20:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile, install_files): honor srcprefix
