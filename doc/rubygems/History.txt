@@ -1,4 +1,57 @@
-﻿=== 1.3.5 / 2009-07-21
+# -*- coding: utf-8 -*-
+
+=== 1.3.6 / 2010-02-17
+
+NOTE:
+
+http://rubygems.org is now the default source for downloading gems.
+
+You may have sources set via ~/.gemrc, so you should replace
+http://gems.rubyforge.org with http://rubygems.org
+
+http://gems.rubyforge.org will continue to work for the forseeable future.
+
+New features:
+
+* `gem` commands
+  * Added `gem push` and `gem owner` for interacting with modern/Gemcutter
+    sources
+  * `gem dep` now supports --prerelease.
+  * `gem fetch` now supports --prerelease.
+  * `gem server` now supports --bind.  Patch #27357 by Bruno Michel.
+  * `gem rdoc` no longer overwrites built documentation.  Use --overwrite
+    force rebuilding.  Patch #25982 by Akinori MUSHA.
+* Captial letters are now allowed in prerelease versions.
+
+Bug fixes:
+
+* Development deps are no longer added to rubygems-update gem so older
+  versions can update sucessfully.
+* Installer bugs:
+  * Prerelease gems can now depend on non-prerelease gems.
+  * Development dependencies are ignored unless explicitly needed.  Bug #27608
+    by Roger Pack.
+* `gem` commands
+  * `gem which` now fails if no paths were found.  Adapted patch #27681 by
+    Caio Chassot.
+  * `gem server` no longer has invalid markup.  Bug #27045 by Eric Young.
+  * `gem list` and friends show both prerelease and regular gems when
+    --prerelease --all is given
+* Gem::Format no longer crashes on empty files.  Bug #27292 by Ian Ragsdale.
+* Gem::GemPathSearcher handles nil require_paths. Patch #27334 by Roger Pack.
+* Gem::RemoteFetcher no longer copies the file if it is where we want it.
+  Patch #27409 by Jakub Šťastný.
+
+Deprecation Notices:
+
+* lib/rubygems/timer.rb has been removed.
+* Gem::Dependency#version_requirements is deprecated and will be removed on or
+  after August 2010.
+* Bulk index update is no longer supported.
+* Gem::manage_gems was removed in 1.3.3.
+* Time::today was removed in 1.3.3.
+
+=== 1.3.5 / 2009-07-21
 
 Bug fixes:
 

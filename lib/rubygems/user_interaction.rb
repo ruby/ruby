@@ -112,6 +112,7 @@ module Gem::UserInteraction
    :alert_error,
    :alert_warning,
    :ask,
+   :ask_for_password,
    :ask_yes_no,
    :choose_from_list,
    :say,
@@ -215,6 +216,50 @@ class Gem::StreamUI
     result = @ins.gets
     result.chomp! if result
     result
+  end
+
+  ##
+  # Ask for a password. Does not echo response to terminal.
+
+  def ask_for_password(question)
+    return nil if not @ins.tty?
+
+    @outs.print(question + "  ")
+    @outs.flush
+
+    Gem.win_platform? ? ask_for_password_on_windows : ask_for_password_on_unix
+  end
+
+  ##
+  # Asks for a password that works on windows. Ripped from the Heroku gem.
+
+  def ask_for_password_on_windows
+    require "Win32API"
+    char = nil
+    password = ''
+
+    while char = Win32API.new("crtdll", "_getch", [ ], "L").Call do
+      break if char == 10 || char == 13 # received carriage return or newline
+      if char == 127 || char == 8 # backspace and delete
+        password.slice!(-1, 1)
+      else
+        password << char.chr
+      end
+    end
+
+    puts
+    password
+  end
+
+  ##
+  # Asks for a password that works on unix
+
+  def ask_for_password_on_unix
+    system "stty -echo"
+    password = @ins.gets
+    password.chomp! if password
+    system "stty echo"
+    password
   end
 
   ##

@@ -2,7 +2,6 @@ require 'rubygems/command'
 require 'fileutils'
 require 'rbconfig'
 require 'tmpdir'
-require 'pathname'
 
 ##
 # Installs RubyGems itself.  This command is ordinarily only available from a
@@ -116,6 +115,8 @@ By default, this RubyGems will install gem as:
     remove_source_caches install_destdir
 
     say "RubyGems #{Gem::VERSION} installed"
+
+    uninstall_old_gemcutter
 
     install_rdoc
 
@@ -357,6 +358,15 @@ abort "#{deprecation_message}"
 
     r = RDoc::RDoc.new
     r.document args
+  end
+
+  def uninstall_old_gemcutter
+    require 'rubygems/uninstaller'
+
+    ui = Gem::Uninstaller.new('gemcutter', :all => true, :ignore => true,
+                              :version => '< 0.4')
+    ui.uninstall
+  rescue Gem::InstallError
   end
 
 end

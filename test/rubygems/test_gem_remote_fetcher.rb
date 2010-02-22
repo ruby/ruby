@@ -1,14 +1,8 @@
-#--
-# Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
-# All rights reserved.
-# See LICENSE.txt for permissions.
-#++
-
 require_relative 'gemutilities'
-require 'webrick'
-require 'zlib'
-require 'rubygems/remote_fetcher'
 require 'ostruct'
+require 'webrick'
+require 'rubygems/remote_fetcher'
+require 'rubygems/format'
 
 # = Testing Proxy Settings
 #
@@ -208,7 +202,7 @@ gems:
 
     fetcher = util_fuck_with_fetcher a1_data
 
-    a1_cache_gem = File.join(@gemhome, 'cache', "#{@a1.full_name}.gem")
+    a1_cache_gem = File.join(@gemhome, 'cache', @a1.file_name)
     assert_equal a1_cache_gem, fetcher.download(@a1, 'http://gems.example.com')
     assert_equal("http://gems.example.com/gems/a-1.gem",
                  fetcher.instance_variable_get(:@test_arg).to_s)
@@ -220,20 +214,20 @@ gems:
 
     inst = Gem::RemoteFetcher.fetcher
 
-    assert_equal File.join(@gemhome, 'cache', "#{@a1.full_name}.gem"),
+    assert_equal File.join(@gemhome, 'cache', @a1.file_name),
                  inst.download(@a1, 'http://gems.example.com')
   end
 
   def test_download_local
     FileUtils.mv @a1_gem, @tempdir
-    local_path = File.join @tempdir, "#{@a1.full_name}.gem"
+    local_path = File.join @tempdir, @a1.file_name
     inst = nil
 
     Dir.chdir @tempdir do
       inst = Gem::RemoteFetcher.fetcher
     end
 
-    assert_equal File.join(@gemhome, 'cache', "#{@a1.full_name}.gem"),
+    assert_equal File.join(@gemhome, 'cache', @a1.file_name),
                  inst.download(@a1, local_path)
   end
 
@@ -241,14 +235,14 @@ gems:
     space_path = File.join @tempdir, 'space path'
     FileUtils.mkdir space_path
     FileUtils.mv @a1_gem, space_path
-    local_path = File.join space_path, "#{@a1.full_name}.gem"
+    local_path = File.join space_path, @a1.file_name
     inst = nil
 
     Dir.chdir @tempdir do
       inst = Gem::RemoteFetcher.fetcher
     end
 
-    assert_equal File.join(@gemhome, 'cache', "#{@a1.full_name}.gem"),
+    assert_equal File.join(@gemhome, 'cache', @a1.file_name),
                  inst.download(@a1, local_path)
   end
 
@@ -262,7 +256,7 @@ gems:
 
     install_dir = File.join @tempdir, 'more_gems'
 
-    a1_cache_gem = File.join install_dir, 'cache', "#{@a1.full_name}.gem"
+    a1_cache_gem = File.join install_dir, 'cache', @a1.file_name
     FileUtils.mkdir_p(File.dirname(a1_cache_gem))
     actual = fetcher.download(@a1, 'http://gems.example.com', install_dir)
 
@@ -276,7 +270,7 @@ gems:
   unless win_platform? # File.chmod doesn't work
     def test_download_local_read_only
       FileUtils.mv @a1_gem, @tempdir
-      local_path = File.join @tempdir, "#{@a1.full_name}.gem"
+      local_path = File.join @tempdir, @a1.file_name
       inst = nil
       File.chmod 0555, File.join(@gemhome, 'cache')
 
@@ -284,7 +278,7 @@ gems:
         inst = Gem::RemoteFetcher.fetcher
       end
 
-      assert_equal File.join(@tempdir, "#{@a1.full_name}.gem"),
+      assert_equal File.join(@tempdir, @a1.file_name),
         inst.download(@a1, local_path)
     ensure
       File.chmod 0755, File.join(@gemhome, 'cache')
@@ -296,8 +290,7 @@ gems:
 
       fetcher = util_fuck_with_fetcher File.read(@a1_gem)
       fetcher.download(@a1, 'http://gems.example.com')
-      assert File.exist?(File.join(Gem.user_dir, 'cache',
-                                   "#{@a1.full_name}.gem"))
+      assert File.exist?(File.join(Gem.user_dir, 'cache', @a1.file_name))
     ensure
       File.chmod 0755, File.join(@gemhome)
       File.chmod 0755, File.join(@gemhome, 'cache')
@@ -319,13 +312,30 @@ gems:
 
     fetcher = util_fuck_with_fetcher e1_data, :blow_chunks
 
-    e1_cache_gem = File.join(@gemhome, 'cache', "#{e1.full_name}.gem")
+    e1_cache_gem = File.join(@gemhome, 'cache', e1.file_name)
 
     assert_equal e1_cache_gem, fetcher.download(e1, 'http://gems.example.com')
 
     assert_equal("http://gems.example.com/gems/#{e1.original_name}.gem",
                  fetcher.instance_variable_get(:@test_arg).to_s)
     assert File.exist?(e1_cache_gem)
+  end
+
+  def test_download_same_file
+    FileUtils.mv @a1_gem, @tempdir
+    local_path = File.join @tempdir, @a1.file_name
+    inst = nil
+
+    Dir.chdir @tempdir do
+      inst = Gem::RemoteFetcher.fetcher
+    end
+
+    cache_path = File.join @gemhome, 'cache', @a1.file_name
+    FileUtils.mv local_path, cache_path
+
+    gem = Gem::Format.from_file_by_path cache_path
+
+    assert_equal cache_path, inst.download(gem.spec, cache_path)
   end
 
   def test_download_unsupported

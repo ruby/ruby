@@ -1,9 +1,3 @@
-#--
-# Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
-# All rights reserved.
-# See LICENSE.txt for permissions.
-#++
-
 require_relative 'gemutilities'
 
 require 'rubygems/indexer'
@@ -145,19 +139,19 @@ pl-1-i386-linux
 
     assert_equal expected, latest_quick_index
 
-    assert_indexed quickdir, "#{@a1.full_name}.gemspec.rz"
-    assert_indexed quickdir, "#{@a2.full_name}.gemspec.rz"
-    assert_indexed quickdir, "#{@b2.full_name}.gemspec.rz"
-    assert_indexed quickdir, "#{@c1_2.full_name}.gemspec.rz"
+    assert_indexed quickdir, "#{@a1.spec_name}.rz"
+    assert_indexed quickdir, "#{@a2.spec_name}.rz"
+    assert_indexed quickdir, "#{@b2.spec_name}.rz"
+    assert_indexed quickdir, "#{@c1_2.spec_name}.rz"
 
     assert_indexed quickdir, "#{@pl1.original_name}.gemspec.rz"
-    refute_indexed quickdir, "#{@pl1.full_name}.gemspec.rz"
+    refute_indexed quickdir, "#{@pl1.spec_name}.rz"
 
-    assert_indexed marshal_quickdir, "#{@a1.full_name}.gemspec.rz"
-    assert_indexed marshal_quickdir, "#{@a2.full_name}.gemspec.rz"
+    assert_indexed marshal_quickdir, "#{@a1.spec_name}.rz"
+    assert_indexed marshal_quickdir, "#{@a2.spec_name}.rz"
 
-    refute_indexed quickdir, "#{@c1_2.full_name}.gemspec"
-    refute_indexed marshal_quickdir, "#{@c1_2.full_name}.gemspec"
+    refute_indexed quickdir, @c1_2.spec_name
+    refute_indexed marshal_quickdir, @c1_2.spec_name
 
     assert_indexed @tempdir, "specs.#{@marshal_version}"
     assert_indexed @tempdir, "specs.#{@marshal_version}.gz"
@@ -172,7 +166,7 @@ pl-1-i386-linux
     <title>ExampleForge gems</title>
     <link>http://example.com</link>
     <description>Recently released gems from http://example.com</description>
-    <generator>RubyGems v1.3.4</generator>
+    <generator>RubyGems v#{Gem::RubyGemsVersion}</generator>
     <docs>http://cyber.law.harvard.edu/rss/rss.html</docs>
     <item>
       <title>a-2</title>
@@ -325,19 +319,19 @@ eighty characters.&lt;/pre&gt;
     assert_indexed quickdir, "latest_index"
     assert_indexed quickdir, "latest_index.rz"
 
-    assert_indexed quickdir, "#{@a1.full_name}.gemspec.rz"
-    assert_indexed quickdir, "#{@a2.full_name}.gemspec.rz"
-    assert_indexed quickdir, "#{@b2.full_name}.gemspec.rz"
-    assert_indexed quickdir, "#{@c1_2.full_name}.gemspec.rz"
+    assert_indexed quickdir, "#{@a1.spec_name}.rz"
+    assert_indexed quickdir, "#{@a2.spec_name}.rz"
+    assert_indexed quickdir, "#{@b2.spec_name}.rz"
+    assert_indexed quickdir, "#{@c1_2.spec_name}.rz"
 
     assert_indexed quickdir, "#{@pl1.original_name}.gemspec.rz"
-    refute_indexed quickdir, "#{@pl1.full_name}.gemspec.rz"
+    refute_indexed quickdir, "#{@pl1.spec_name}.rz"
 
-    assert_indexed marshal_quickdir, "#{@a1.full_name}.gemspec.rz"
-    assert_indexed marshal_quickdir, "#{@a2.full_name}.gemspec.rz"
+    assert_indexed marshal_quickdir, "#{@a1.spec_name}.rz"
+    assert_indexed marshal_quickdir, "#{@a2.spec_name}.rz"
 
-    refute_indexed quickdir, "#{@c1_2.full_name}.gemspec"
-    refute_indexed marshal_quickdir, "#{@c1_2.full_name}.gemspec"
+    refute_indexed quickdir, "#{@c1_2.spec_name}"
+    refute_indexed marshal_quickdir, "#{@c1_2.spec_name}"
 
     refute_indexed @tempdir, "specs.#{@marshal_version}"
     refute_indexed @tempdir, "specs.#{@marshal_version}.gz"
@@ -379,15 +373,15 @@ eighty characters.&lt;/pre&gt;
     assert_indexed quickdir, "latest_index"
     assert_indexed quickdir, "latest_index.rz"
 
-    assert_indexed quickdir, "#{@a1.full_name}.gemspec.rz"
-    assert_indexed quickdir, "#{@a2.full_name}.gemspec.rz"
-    assert_indexed quickdir, "#{@b2.full_name}.gemspec.rz"
-    assert_indexed quickdir, "#{@c1_2.full_name}.gemspec.rz"
+    assert_indexed quickdir, "#{@a1.spec_name}.rz"
+    assert_indexed quickdir, "#{@a2.spec_name}.rz"
+    assert_indexed quickdir, "#{@b2.spec_name}.rz"
+    assert_indexed quickdir, "#{@c1_2.spec_name}.rz"
 
     assert_indexed quickdir, "#{@pl1.original_name}.gemspec.rz"
 
-    assert_indexed marshal_quickdir, "#{@a1.full_name}.gemspec.rz"
-    assert_indexed marshal_quickdir, "#{@a2.full_name}.gemspec.rz"
+    assert_indexed marshal_quickdir, "#{@a1.spec_name}.rz"
+    assert_indexed marshal_quickdir, "#{@a2.spec_name}.rz"
 
     assert_indexed @tempdir, "specs.#{@marshal_version}"
     assert_indexed @tempdir, "specs.#{@marshal_version}.gz"
@@ -421,19 +415,19 @@ eighty characters.&lt;/pre&gt;
     refute_indexed quickdir, "latest_index"
     refute_indexed quickdir, "latest_index.rz"
 
-    refute_indexed quickdir, "#{@a1.full_name}.gemspec.rz"
-    refute_indexed quickdir, "#{@a2.full_name}.gemspec.rz"
-    refute_indexed quickdir, "#{@b2.full_name}.gemspec.rz"
-    refute_indexed quickdir, "#{@c1_2.full_name}.gemspec.rz"
+    refute_indexed quickdir, "#{@a1.spec_name}.rz"
+    refute_indexed quickdir, "#{@a2.spec_name}.rz"
+    refute_indexed quickdir, "#{@b2.spec_name}.rz"
+    refute_indexed quickdir, "#{@c1_2.spec_name}.rz"
 
     refute_indexed quickdir, "#{@pl1.original_name}.gemspec.rz"
-    refute_indexed quickdir, "#{@pl1.full_name}.gemspec.rz"
+    refute_indexed quickdir, "#{@pl1.spec_name}.rz"
 
-    assert_indexed marshal_quickdir, "#{@a1.full_name}.gemspec.rz"
-    assert_indexed marshal_quickdir, "#{@a2.full_name}.gemspec.rz"
+    assert_indexed marshal_quickdir, "#{@a1.spec_name}.rz"
+    assert_indexed marshal_quickdir, "#{@a2.spec_name}.rz"
 
-    refute_indexed quickdir, "#{@c1_2.full_name}.gemspec"
-    refute_indexed marshal_quickdir, "#{@c1_2.full_name}.gemspec"
+    refute_indexed quickdir, "#{@c1_2.spec_name}"
+    refute_indexed marshal_quickdir, "#{@c1_2.spec_name}"
 
     assert_indexed @tempdir, "specs.#{@marshal_version}"
     assert_indexed @tempdir, "specs.#{@marshal_version}.gz"
@@ -475,15 +469,15 @@ eighty characters.&lt;/pre&gt;
     assert_indexed quickdir, "latest_index"
     assert_indexed quickdir, "latest_index.rz"
 
-    assert_indexed quickdir, "#{@a1.full_name}.gemspec.rz"
-    assert_indexed quickdir, "#{@a2.full_name}.gemspec.rz"
-    assert_indexed quickdir, "#{@b2.full_name}.gemspec.rz"
-    assert_indexed quickdir, "#{@c1_2.full_name}.gemspec.rz"
+    assert_indexed quickdir, "#{@a1.spec_name}.rz"
+    assert_indexed quickdir, "#{@a2.spec_name}.rz"
+    assert_indexed quickdir, "#{@b2.spec_name}.rz"
+    assert_indexed quickdir, "#{@c1_2.spec_name}.rz"
 
     assert_indexed quickdir, "#{@pl1.original_name}.gemspec.rz"
 
-    assert_indexed marshal_quickdir, "#{@a1.full_name}.gemspec.rz"
-    assert_indexed marshal_quickdir, "#{@a2.full_name}.gemspec.rz"
+    assert_indexed marshal_quickdir, "#{@a1.spec_name}.rz"
+    assert_indexed marshal_quickdir, "#{@a2.spec_name}.rz"
 
     assert_indexed @tempdir, "specs.#{@marshal_version}"
     assert_indexed @tempdir, "specs.#{@marshal_version}.gz"
@@ -637,14 +631,14 @@ eighty characters.&lt;/pre&gt;
     @d2_1_a_tuple = [@d2_1_a.name, @d2_1_a.version, @d2_1_a.original_platform]
 
     gems = File.join @tempdir, 'gems'
-    FileUtils.mv File.join(@gemhome, 'cache', "#{@d2_1.full_name}.gem"), gems
-    FileUtils.mv File.join(@gemhome, 'cache', "#{@d2_1_a.full_name}.gem"), gems
+    FileUtils.mv File.join(@gemhome, 'cache', @d2_1.file_name), gems
+    FileUtils.mv File.join(@gemhome, 'cache', @d2_1_a.file_name), gems
 
     use_ui @ui do
       @indexer.update_index
     end
 
-    assert_indexed marshal_quickdir, "#{@d2_1.full_name}.gemspec.rz"
+    assert_indexed marshal_quickdir, "#{@d2_1.spec_name}.rz"
 
     specs_index = Marshal.load Gem.read_binary(@indexer.dest_specs_index)
 

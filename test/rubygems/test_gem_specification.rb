@@ -1,11 +1,5 @@
-#--
-# Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
-# All rights reserved.
-# See LICENSE.txt for permissions.
-#++
-
-require 'stringio'
 require_relative 'gemutilities'
+require 'stringio'
 require 'rubygems/specification'
 
 class TestGemSpecification < RubyGemTestCase
@@ -129,7 +123,7 @@ end
   end
 
   def test_self_load
-    spec = File.join @gemhome, 'specifications', "#{@a2.full_name}.gemspec"
+    spec = File.join @gemhome, 'specifications', @a2.spec_name
     gs = Gem::Specification.load spec
 
     assert_equal @a2, gs
@@ -143,16 +137,6 @@ end
     assert_equal Gem::Specification::TODAY, spec.date
     assert spec.required_ruby_version.satisfied_by?(Gem::Version.new('1'))
     assert_equal false, spec.has_unit_tests?
-  end
-
-  def test_self_load_legacy_yaml
-    s = YAML.load StringIO.new(LEGACY_YAML_SPEC)
-    assert_equal 'keyedlist', s.name
-    assert_equal '0.4.0', s.version.to_s
-    assert_equal true, s.has_rdoc?
-    #assert_equal Date.today, s.date
-    #assert s.required_ruby_version.satisfied_by?(Gem::Version.new('1'))
-    assert_equal false, s.has_unit_tests?
   end
 
   def test_self_normalize_yaml_input_with_183_yaml
@@ -538,8 +522,7 @@ end
 
   def test_full_gem_path_double_slash
     gemhome = @gemhome.sub(/\w\//, '\&/')
-    @a1.loaded_from = File.join gemhome, 'specifications',
-                                "#{@a1.full_name}.gemspec"
+    @a1.loaded_from = File.join gemhome, 'specifications', @a1.spec_name
 
     assert_equal File.join(@gemhome, 'gems', @a1.full_name),
                  @a1.full_gem_path
@@ -728,6 +711,10 @@ end
     assert_equal( -1, (s1 <=> s2))
     assert_equal(  0, (s1 <=> s1))
     assert_equal(  1, (s2 <=> s1))
+  end
+
+  def test_spec_name
+    assert_equal 'a-1.gemspec', @a1.spec_name
   end
 
   def test_summary

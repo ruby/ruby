@@ -23,6 +23,7 @@ require 'rubygems/remote_fetcher'
 class Gem::FakeFetcher
 
   attr_reader :data
+  attr_reader :last_request
   attr_accessor :paths
 
   def initialize
@@ -30,16 +31,20 @@ class Gem::FakeFetcher
     @paths = []
   end
 
-  def fetch_path path, mtime = nil
+  def find_data(path)
     path = path.to_s
     @paths << path
-    raise ArgumentError, 'need full URI' unless path =~ %r'^http://'
+    raise ArgumentError, 'need full URI' unless path =~ %r'^https?://'
 
     unless @data.key? path then
       raise Gem::RemoteFetcher::FetchError.new("no data for #{path}", path)
     end
 
-    data = @data[path]
+    @data[path]
+  end
+
+  def fetch_path path, mtime = nil
+    data = find_data(path)
 
     if data.respond_to?(:call) then
       data.call
@@ -50,6 +55,30 @@ class Gem::FakeFetcher
 
       data
     end
+  end
+
+  # Thanks, FakeWeb!
+  def open_uri_or_path(path)
+    data = find_data(path)
+    body, code, msg = data
+
+    response = Net::HTTPResponse.send(:response_class, code.to_s).new("1.0", code.to_s, msg)
+    response.instance_variable_set(:@body, body)
+    response.instance_variable_set(:@read, true)
+    response
+  end
+
+  def request(uri, request_class, last_modified = nil)
+    data = find_data(uri)
+    body, code, msg = data
+
+    @last_request = request_class.new uri.request_uri
+    yield @last_request if block_given?
+
+    response = Net::HTTPResponse.send(:response_class, code.to_s).new("1.0", code.to_s, msg)
+    response.instance_variable_set(:@body, body)
+    response.instance_variable_set(:@read, true)
+    response
   end
 
   def fetch_size(path)
@@ -68,7 +97,7 @@ class Gem::FakeFetcher
   end
 
   def download spec, source_uri, install_dir = Gem.dir
-    name = "#{spec.full_name}.gem"
+    name = spec.file_name
     path = File.join(install_dir, 'cache', name)
 
     Gem.ensure_gem_subdirectories install_dir

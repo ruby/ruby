@@ -98,6 +98,13 @@ class Gem::DocManager
   end
 
   ##
+  # Is the RI documentation installed?
+
+  def ri_installed?
+    File.exist?(File.join(@doc_dir, "ri"))
+  end
+
+  ##
   # Generate the RI documents for this gem spec.
   #
   # Note that if both RI and RDoc documents are generated from the same

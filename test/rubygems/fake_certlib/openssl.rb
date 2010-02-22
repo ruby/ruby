@@ -4,4 +4,4 @@
 # See LICENSE.txt for permissions.
 #++
 
-fail LoadError, "no such file to load -- openssl"
+raise LoadError, "no such file to load -- openssl"

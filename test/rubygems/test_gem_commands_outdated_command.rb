@@ -19,12 +19,10 @@ class TestGemCommandsOutdatedCommand < RubyGemTestCase
     remote_10 = quick_gem 'foo', '1.0'
     remote_20 = quick_gem 'foo', '2.0'
 
-    remote_spec_file = File.join @gemhome, 'specifications',
-                                 remote_10.full_name + ".gemspec"
+    remote_spec_file = File.join @gemhome, 'specifications', remote_10.spec_name
     FileUtils.rm remote_spec_file
 
-    remote_spec_file = File.join @gemhome, 'specifications',
-                                 remote_20.full_name + ".gemspec"
+    remote_spec_file = File.join @gemhome, 'specifications', remote_20.spec_name
     FileUtils.rm remote_spec_file
 
     @fetcher = Gem::FakeFetcher.new

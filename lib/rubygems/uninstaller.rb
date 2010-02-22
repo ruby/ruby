@@ -202,7 +202,7 @@ class Gem::Uninstaller
       spec.name, spec.version, spec.original_platform].join '-'
 
     spec_dir = File.join spec.installation_path, 'specifications'
-    gemspec = File.join spec_dir, "#{spec.full_name}.gemspec"
+    gemspec = File.join spec_dir, spec.spec_name
 
     unless File.exist? gemspec then
       gemspec = File.join spec_dir, "#{original_platform_name}.gemspec"
@@ -211,7 +211,7 @@ class Gem::Uninstaller
     FileUtils.rm_rf gemspec
 
     cache_dir = File.join spec.installation_path, 'cache'
-    gem = File.join cache_dir, "#{spec.full_name}.gem"
+    gem = File.join cache_dir, spec.file_name
 
     unless File.exist? gem then
       gem = File.join cache_dir, "#{original_platform_name}.gem"
@@ -251,7 +251,7 @@ class Gem::Uninstaller
     spec.dependent_gems.each do |gem,dep,satlist|
       msg <<
         ("#{gem.name}-#{gem.version} depends on " +
-        "[#{dep.name} (#{dep.version_requirements})]")
+        "[#{dep.name} (#{dep.requirement})]")
     end
     msg << 'If you remove this gems, one or more dependencies will not be met.'
     msg << 'Continue with Uninstall?'

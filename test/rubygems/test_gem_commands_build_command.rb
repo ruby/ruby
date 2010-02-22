@@ -15,7 +15,7 @@ class TestGemCommandsBuildCommand < RubyGemTestCase
   end
 
   def test_execute
-    gemspec_file = File.join(@tempdir, "#{@gem.full_name}.gemspec")
+    gemspec_file = File.join(@tempdir, @gem.spec_name)
 
     File.open gemspec_file, 'w' do |gs|
       gs.write @gem.to_ruby
@@ -25,7 +25,7 @@ class TestGemCommandsBuildCommand < RubyGemTestCase
   end
 
   def test_execute_yaml
-    gemspec_file = File.join(@tempdir, "#{@gem.full_name}.gemspec")
+    gemspec_file = File.join(@tempdir, @gem.spec_name)
 
     File.open gemspec_file, 'w' do |gs|
       gs.write @gem.to_yaml
@@ -61,7 +61,7 @@ class TestGemCommandsBuildCommand < RubyGemTestCase
     assert_equal [], output
     assert_equal '', @ui.error
 
-    gem_file = File.join @tempdir, "#{gem.full_name}.gem"
+    gem_file = File.join @tempdir, gem.file_name
     assert File.exist?(gem_file)
 
     spec = Gem::Format.from_file_by_path(gem_file).spec

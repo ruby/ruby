@@ -181,7 +181,7 @@ class TestGem < RubyGemTestCase
   end
 
   def test_self_default_sources
-    assert_equal %w[http://gems.rubyforge.org/], Gem.default_sources
+    assert_equal %w[http://rubygems.org/], Gem.default_sources
   end
 
   def test_self_dir
@@ -441,13 +441,13 @@ class TestGem < RubyGemTestCase
   def test_self_refresh
     util_make_gems
 
-    a1_spec = File.join @gemhome, "specifications", "#{@a1.full_name}.gemspec"
+    a1_spec = File.join @gemhome, "specifications", @a1.spec_name
 
     FileUtils.mv a1_spec, @tempdir
 
     refute Gem.source_index.gems.include?(@a1.full_name)
 
-    FileUtils.mv File.join(@tempdir, "#{@a1.full_name}.gemspec"), a1_spec
+    FileUtils.mv File.join(@tempdir, @a1.spec_name), a1_spec
 
     Gem.refresh
 

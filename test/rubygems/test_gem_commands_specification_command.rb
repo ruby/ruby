@@ -80,7 +80,7 @@ class TestGemCommandsSpecificationCommand < RubyGemTestCase
       @cmd.execute
     end
 
-    assert_equal "--- foo\n\n", @ui.output
+    assert_equal "foo", YAML.load(@ui.output)
   end
 
   def test_execute_marshal
@@ -106,8 +106,7 @@ class TestGemCommandsSpecificationCommand < RubyGemTestCase
 
     util_setup_spec_fetcher foo
 
-    FileUtils.rm File.join(@gemhome, 'specifications',
-                           "#{foo.full_name}.gemspec")
+    FileUtils.rm File.join(@gemhome, 'specifications', foo.spec_name)
 
     @cmd.options[:args] = %w[foo]
     @cmd.options[:domain] = :remote

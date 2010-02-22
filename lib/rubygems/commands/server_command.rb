@@ -36,6 +36,12 @@ class Gem::Commands::ServerCommand < Gem::Command
     add_option '--[no-]daemon', 'run as a daemon' do |daemon, options|
       options[:daemon] = daemon
     end
+
+    add_option '-b', '--bind=HOST,HOST',
+               'addresses to bind', Array do |address, options|
+      options[:addresses] ||= []
+      options[:addresses].push(*address)
+    end
   end
 
   def defaults_str # :nodoc:

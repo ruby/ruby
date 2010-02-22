@@ -58,7 +58,9 @@ class Gem::CommandManager
     register_command :lock
     register_command :mirror
     register_command :outdated
+    register_command :owner
     register_command :pristine
+    register_command :push
     register_command :query
     register_command :rdoc
     register_command :search

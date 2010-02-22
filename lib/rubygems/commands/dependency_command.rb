@@ -15,6 +15,7 @@ class Gem::Commands::DependencyCommand < Gem::Command
 
     add_version_option
     add_platform_option
+    add_prerelease_option
 
     add_option('-R', '--[no-]reverse-dependencies',
                'Include reverse dependencies in the output') do
@@ -59,6 +60,7 @@ class Gem::Commands::DependencyCommand < Gem::Command
               end
 
     dependency = Gem::Dependency.new pattern, options[:version]
+    dependency.prerelease = options[:prerelease]
 
     if options[:reverse_dependencies] and remote? and not local? then
       alert_error 'Only reverse dependencies for local gems are supported.'
@@ -75,7 +77,10 @@ class Gem::Commands::DependencyCommand < Gem::Command
       fetcher = Gem::SpecFetcher.fetcher
 
       begin
-        fetcher.find_matching(dependency).each do |spec_tuple, source_uri|
+        specs_and_sources = fetcher.find_matching(dependency, false, true,
+                                                  dependency.prerelease?)
+
+        specs_and_sources.each do |spec_tuple, source_uri|
           spec = fetcher.fetch_spec spec_tuple, URI.parse(source_uri)
 
           source_indexes[source_uri].add_spec spec
@@ -120,8 +125,8 @@ class Gem::Commands::DependencyCommand < Gem::Command
     if options[:pipe_format] then
       specs.values.sort_by { |_, spec| spec }.each do |_, spec|
         unless spec.dependencies.empty?
-          spec.dependencies.each do |dep|
-            say "#{dep.name} --version '#{dep.version_requirements}'"
+          spec.dependencies.sort_by { |dep| dep.name }.each do |dep|
+            say "#{dep.name} --version '#{dep.requirement}'"
           end
         end
       end
@@ -147,7 +152,7 @@ class Gem::Commands::DependencyCommand < Gem::Command
     response = ''
     response << '  ' * level + "Gem #{spec.full_name}\n"
     unless spec.dependencies.empty? then
-      spec.dependencies.each do |dep|
+      spec.dependencies.sort_by { |dep| dep.name }.each do |dep|
         response << '  ' * level + "  #{dep}\n"
       end
     end
@@ -163,7 +168,7 @@ class Gem::Commands::DependencyCommand < Gem::Command
         dep = Gem::Dependency.new(*dep) unless Gem::Dependency === dep
 
         if spec.name == dep.name and
-           dep.version_requirements.satisfied_by?(spec.version) then
+           dep.requirement.satisfied_by?(spec.version) then
           result << [sp.full_name, dep]
         end
       end

@@ -1,9 +1,3 @@
-#--
-# Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
-# All rights reserved.
-# See LICENSE.txt for permissions.
-#++
-
 ##
 # GemPathSearcher has the capability to find loadable files inside
 # gems.  It generates data up front to speed up searches later.
@@ -14,14 +8,16 @@ class Gem::GemPathSearcher
   # Initialise the data we need to make searches later.
 
   def initialize
-    # We want a record of all the installed gemspecs, in the order
-    # we wish to examine them.
+    # We want a record of all the installed gemspecs, in the order we wish to
+    # examine them.
     @gemspecs = init_gemspecs
-    # Map gem spec to glob of full require_path directories.
-    # Preparing this information may speed up searches later.
+
+    # Map gem spec to glob of full require_path directories.  Preparing this
+    # information may speed up searches later.
     @lib_dirs = {}
+
     @gemspecs.each do |spec|
-      @lib_dirs[spec.object_id] = lib_dirs_for(spec)
+      @lib_dirs[spec.object_id] = lib_dirs_for spec
     end
   end
 
@@ -72,6 +68,7 @@ class Gem::GemPathSearcher
   # Some of the intermediate results are cached in @lib_dirs for speed.
 
   def matching_files(spec, path)
+    return [] unless @lib_dirs[spec.object_id] # case no paths
     glob = File.join @lib_dirs[spec.object_id], "#{path}#{Gem.suffix_pattern}"
     Dir[glob].select { |f| File.file? f.untaint }
   end
@@ -95,7 +92,8 @@ class Gem::GemPathSearcher
   #   '/usr/local/lib/ruby/gems/1.8/gems/foobar-1.0/{lib,ext}'
 
   def lib_dirs_for(spec)
-    "#{spec.full_gem_path}/{#{spec.require_paths.join(',')}}"
+    "#{spec.full_gem_path}/{#{spec.require_paths.join(',')}}" if
+      spec.require_paths
   end
 
 end

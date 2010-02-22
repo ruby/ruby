@@ -45,7 +45,7 @@ class Gem::Commands::QueryCommand < Gem::Command
       options[:all] = value
     end
 
-    add_option(      '--prerelease',
+    add_option(      '--[no-]prerelease',
                'Display prerelease versions') do |value, options|
       options[:prerelease] = value
     end
@@ -111,6 +111,9 @@ class Gem::Commands::QueryCommand < Gem::Command
       begin
         fetcher = Gem::SpecFetcher.fetcher
         spec_tuples = fetcher.find_matching dep, all, false, prerelease
+
+        spec_tuples += fetcher.find_matching dep, false, false, true if
+          prerelease and all
       rescue Gem::RemoteFetcher::FetchError => e
         if prerelease then
           raise Gem::OperationNotSupportedError,

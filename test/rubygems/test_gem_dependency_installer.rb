@@ -23,6 +23,16 @@ class TestGemDependencyInstaller < RubyGemTestCase
       s.add_development_dependency 'aa'
     end
 
+    @b1_pre, @b1_pre_gem = util_gem 'b', '1.a' do |s|
+      s.add_dependency 'a'
+      s.add_development_dependency 'aa'
+    end
+
+    @c1_pre, @c1_pre_gem = util_gem 'c', '1.a' do |s|
+      s.add_dependency 'a', '1.a'
+      s.add_dependency 'b', '1'
+    end
+
     @d1, @d1_gem = util_gem 'd', '1'
     @d2, @d2_gem = util_gem 'd', '2'
 
@@ -46,8 +56,8 @@ class TestGemDependencyInstaller < RubyGemTestCase
     @fetcher = Gem::FakeFetcher.new
     Gem::RemoteFetcher.fetcher = @fetcher
 
-    si = util_setup_spec_fetcher(@a1, @a1_pre, @b1, @d1, @d2, @x1_m, @x1_o, @w1, @y1,
-                                 @y1_1_p, @z1)
+    si = util_setup_spec_fetcher(@a1, @a1_pre, @b1, @b1_pre, @c1_pre, @d1, @d2,
+                                 @x1_m, @x1_o, @w1, @y1, @y1_1_p, @z1)
 
     util_clear_gems
   end
@@ -104,8 +114,8 @@ class TestGemDependencyInstaller < RubyGemTestCase
 
     assert_equal %w[a-1 b-1], inst.installed_gems.map { |s| s.full_name }
 
-    assert File.exist?(File.join(@tempdir, 'cache', "#{@a1.full_name}.gem"))
-    assert File.exist?(File.join(@tempdir, 'cache', "#{@b1.full_name}.gem"))
+    assert File.exist?(File.join(@tempdir, 'cache', @a1.file_name))
+    assert File.exist?(File.join(@tempdir, 'cache', @b1.file_name))
   end
 
   def test_install_dependencies_satisfied
@@ -124,7 +134,7 @@ class TestGemDependencyInstaller < RubyGemTestCase
       inst.install 'a-2'
     end
 
-    FileUtils.rm File.join(@tempdir, "#{a2.full_name}.gem")
+    FileUtils.rm File.join(@tempdir, a2.file_name)
 
     Dir.chdir @tempdir do
       inst = Gem::DependencyInstaller.new
@@ -259,7 +269,9 @@ class TestGemDependencyInstaller < RubyGemTestCase
       inst.install 'a'
     end
 
-    assert_match %r|\A#!/\S+/env #{Gem::ConfigMap[:ruby_install_name]}\n|,
+    env = "/\\S+/env" unless Gem.win_platform?
+
+    assert_match %r|\A#!#{env} #{Gem::ConfigMap[:ruby_install_name]}\n|,
                  File.read(File.join(@gemhome, 'bin', 'a_bin'))
   end
 
@@ -302,10 +314,8 @@ class TestGemDependencyInstaller < RubyGemTestCase
 
     assert_equal %w[a-1], inst.installed_gems.map { |s| s.full_name }
 
-    assert File.exist?(File.join(gemhome2, 'specifications',
-                                 "#{@a1.full_name}.gemspec"))
-    assert File.exist?(File.join(gemhome2, 'cache',
-                                 "#{@a1.full_name}.gem"))
+    assert File.exist?(File.join(gemhome2, 'specifications', @a1.spec_name))
+    assert File.exist?(File.join(gemhome2, 'cache', @a1.file_name))
   end
 
   def test_install_domain_both
@@ -327,10 +337,8 @@ class TestGemDependencyInstaller < RubyGemTestCase
     assert_equal %w[a-1 b-1], inst.installed_gems.map { |s| s.full_name }
     a1, b1 = inst.installed_gems
 
-    a1_expected = File.join(@gemhome, 'specifications',
-                            "#{a1.full_name}.gemspec")
-    b1_expected = File.join(@gemhome, 'specifications',
-                            "#{b1.full_name}.gemspec")
+    a1_expected = File.join(@gemhome, 'specifications', a1.spec_name)
+    b1_expected = File.join(@gemhome, 'specifications', b1.spec_name)
 
     assert_equal a1_expected, a1.loaded_from
     assert_equal b1_expected, b1.loaded_from
@@ -463,9 +471,9 @@ class TestGemDependencyInstaller < RubyGemTestCase
     File.open @a1_gem, 'rb' do |fp| a1_data = fp.read end
     File.open a2_o_gem, 'rb' do |fp| a2_o_data = fp.read end
 
-    @fetcher.data["http://gems.example.com/gems/#{@a1.full_name}.gem"] =
+    @fetcher.data["http://gems.example.com/gems/#{@a1.file_name}"] =
       a1_data
-    @fetcher.data["http://gems.example.com/gems/#{a2_o.full_name}.gem"] =
+    @fetcher.data["http://gems.example.com/gems/#{a2_o.file_name}"] =
       a2_o_data
 
     inst = Gem::DependencyInstaller.new :domain => :remote
@@ -576,8 +584,27 @@ class TestGemDependencyInstaller < RubyGemTestCase
 
     local = gems.last
     assert_equal 'a-1', local.first.full_name, 'local spec'
-    assert_equal File.join(@tempdir, "#{@a1.full_name}.gem"),
+    assert_equal File.join(@tempdir, @a1.file_name),
                  local.last, 'local path'
+  end
+
+  def test_find_gems_with_sources_prerelease
+    installer = Gem::DependencyInstaller.new
+
+    dependency = Gem::Dependency.new('a', Gem::Requirement.default)
+
+    releases =
+      installer.find_gems_with_sources(dependency).map { |gems, *| gems }
+
+    assert releases.any? { |s| s.name == 'a' and s.version.to_s == '1' }
+    refute releases.any? { |s| s.name == 'a' and s.version.to_s == '1.a' }
+
+    dependency.prerelease = true
+
+    prereleases =
+      installer.find_gems_with_sources(dependency).map { |gems, *| gems }
+
+    assert_equal [@a1_pre], prereleases
   end
 
   def test_gather_dependencies
@@ -622,6 +649,15 @@ class TestGemDependencyInstaller < RubyGemTestCase
     assert_equal %w[y-1 z-1], inst.gems_to_install.map { |s| s.full_name }
   end
 
+  def test_gather_dependencies_prerelease
+    inst = Gem::DependencyInstaller.new :prerelease => true
+    inst.find_spec_by_name_and_version 'c', '1.a'
+    inst.gather_dependencies
+
+    assert_equal %w[a-1.a b-1 c-1.a],
+                 inst.gems_to_install.map { |s| s.full_name }
+  end
+
   def test_gather_dependencies_old_required
     e1, = util_gem 'e', '1' do |s| s.add_dependency 'd', '= 1' end
 
@@ -636,16 +672,5 @@ class TestGemDependencyInstaller < RubyGemTestCase
     assert_equal %w[d-1 e-1], inst.gems_to_install.map { |s| s.full_name }
   end
 
-  def test_prerelease_uses_pre_index
-    installer = Gem::DependencyInstaller.new
-    pre_installer = Gem::DependencyInstaller.new(:prerelease => true)
-    dependency = Gem::Dependency.new('a', Gem::Requirement.default)
-
-    releases = installer.find_gems_with_sources(dependency).map{ |gems, *| gems }
-    prereleases = pre_installer.find_gems_with_sources(dependency).map{ |gems, *| gems }
-
-    assert releases.select{ |s| s.name == 'a' and s.version.to_s == '1' }.first
-    assert releases.select{ |s| s.name == 'a' and s.version.to_s == '1.a' }.empty?
-    assert_equal [@a1_pre], prereleases
-  end
 end
+

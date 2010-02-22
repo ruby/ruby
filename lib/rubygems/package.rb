@@ -1,3 +1,4 @@
+# -*- coding: iso-8859-1 -*-
 #++
 # Copyright (C) 2004 Mauricio Julio Fernández Pradier
 # See LICENSE.txt for additional licensing information.
@@ -9,7 +10,6 @@ require 'stringio'
 require 'yaml'
 require 'zlib'
 
-require 'rubygems/digest/md5'
 require 'rubygems/security'
 require 'rubygems/specification'
 

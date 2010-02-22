@@ -1,9 +1,3 @@
-#--
-# Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
-# All rights reserved.
-# See LICENSE.txt for permissions.
-#++
-
 require_relative 'gemutilities'
 require 'rubygems/source_index'
 require 'rubygems/config_file'
@@ -31,7 +25,7 @@ class TestGemSourceIndex < RubyGemTestCase
 
     a1 = quick_gem 'a', '1' do |spec| spec.author = 'author 1' end
 
-    spec_file = File.join spec_dir, "#{a1.full_name}.gemspec"
+    spec_file = File.join spec_dir, a1.spec_name
 
     File.open spec_file, 'w' do |fp|
       fp.write a1.to_ruby
@@ -52,7 +46,7 @@ class TestGemSourceIndex < RubyGemTestCase
 
     a1 = quick_gem 'a', '1' do |spec| spec.author = 'author 1' end
 
-    spec_file = File.join spec_dir, "#{a1.full_name}.gemspec"
+    spec_file = File.join spec_dir, a1.spec_name
 
     File.open spec_file, 'w' do |fp|
       fp.write a1.to_ruby
@@ -298,11 +292,11 @@ WARNING:  Invalid .gemspec format in '#{spec_file}'
     a1 = quick_gem 'a', '1' do |spec| spec.author = 'author 1' end
     a2 = quick_gem 'a', '1' do |spec| spec.author = 'author 2' end
 
-    File.open File.join(spec_dir1, "#{a1.full_name}.gemspec"), 'w' do |fp|
+    File.open File.join(spec_dir1, a1.spec_name), 'w' do |fp|
       fp.write a1.to_ruby
     end
 
-    File.open File.join(spec_dir2, "#{a2.full_name}.gemspec"), 'w' do |fp|
+    File.open File.join(spec_dir2, a2.spec_name), 'w' do |fp|
       fp.write a2.to_ruby
     end
 
@@ -340,7 +334,7 @@ WARNING:  Invalid .gemspec format in '#{spec_file}'
   end
 
   def test_refresh_bang
-    a1_spec = File.join @gemhome, "specifications", "#{@a1.full_name}.gemspec"
+    a1_spec = File.join @gemhome, "specifications", @a1.spec_name
 
     FileUtils.mv a1_spec, @tempdir
 
@@ -348,7 +342,7 @@ WARNING:  Invalid .gemspec format in '#{spec_file}'
 
     refute source_index.gems.include?(@a1.full_name)
 
-    FileUtils.mv File.join(@tempdir, "#{@a1.full_name}.gemspec"), a1_spec
+    FileUtils.mv File.join(@tempdir, @a1.spec_name), a1_spec
 
     source_index.refresh!
 

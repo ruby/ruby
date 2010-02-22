@@ -1,9 +1,3 @@
-#--
-# Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
-# All rights reserved.
-# See LICENSE.txt for permissions.
-#++
-
 require_relative 'gemutilities'
 require_relative 'simple_gem'
 require 'rubygems/format'
@@ -16,7 +10,7 @@ class TestGemFormat < RubyGemTestCase
     @simple_gem = SIMPLE_GEM
   end
 
-  def test_from_file_by_path
+  def test_class_from_file_by_path
     util_make_gems
 
     gems = Dir[File.join(@gemhome, 'cache', '*.gem')]
@@ -34,13 +28,22 @@ class TestGemFormat < RubyGemTestCase
     end
   end
 
-  def test_from_file_by_path_nonexistent
+  def test_class_from_file_by_path_empty
+    util_make_gems
+
+    empty_gem = File.join @tempdir, 'empty.gem'
+    FileUtils.touch empty_gem
+
+    assert_nil Gem::Format.from_file_by_path(empty_gem)
+  end
+
+  def test_class_from_file_by_path_nonexistent
     assert_raises Gem::Exception do
       Gem::Format.from_file_by_path '/nonexistent'
     end
   end
 
-  def test_from_io_garbled
+  def test_class_from_io_garbled
     e = assert_raises Gem::Package::FormatError do
       # subtly bogus input
       Gem::Format.from_io(StringIO.new(@simple_gem.upcase))
