@@ -44,7 +44,7 @@ Thu Feb 18 22:31:15 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 Thu Feb 18 22:28:00 2010  Kenta Murata  <mrkn@mrkn.jp>
 
-	* confiure.in: new --with-ext and --with-out-ext options for extmk.
+	* configure.in: new --with-ext and --with-out-ext options for extmk.
 	* tool/mkconfig.rb: normalizing --with-out-ext to --without-ext.
 
 Thu Feb 18 21:50:00 2010  Tanaka Akira  <akr@fsij.org>
