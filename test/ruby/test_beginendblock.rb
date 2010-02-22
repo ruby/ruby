@@ -97,8 +97,8 @@ EOW
     out = IO.popen(
       [ruby,
        '-e', 'STDERR.reopen(STDOUT)',
-       '-e', 'at_exit{Process.kill(:INT, $$); loop{}}']) {|f|
-      timeout(1) {
+       '-e', 'at_exit{Process.kill(:INT, $$); sleep 5 }']) {|f|
+      timeout(10) {
         f.read
       }
     }
