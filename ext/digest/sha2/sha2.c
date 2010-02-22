@@ -234,7 +234,7 @@ void SHA512_Transform(SHA512_CTX*, const sha2_word64*);
 
 /*** SHA-XYZ INITIAL HASH VALUES AND CONSTANTS ************************/
 /* Hash constant words K for SHA-256: */
-const static sha2_word32 K256[64] = {
+static const sha2_word32 K256[64] = {
 	0x428a2f98UL, 0x71374491UL, 0xb5c0fbcfUL, 0xe9b5dba5UL,
 	0x3956c25bUL, 0x59f111f1UL, 0x923f82a4UL, 0xab1c5ed5UL,
 	0xd807aa98UL, 0x12835b01UL, 0x243185beUL, 0x550c7dc3UL,
@@ -254,7 +254,7 @@ const static sha2_word32 K256[64] = {
 };
 
 /* Initial hash value H for SHA-256: */
-const static sha2_word32 sha256_initial_hash_value[8] = {
+static const sha2_word32 sha256_initial_hash_value[8] = {
 	0x6a09e667UL,
 	0xbb67ae85UL,
 	0x3c6ef372UL,
@@ -266,7 +266,7 @@ const static sha2_word32 sha256_initial_hash_value[8] = {
 };
 
 /* Hash constant words K for SHA-384 and SHA-512: */
-const static sha2_word64 K512[80] = {
+static const sha2_word64 K512[80] = {
 	ULL(0x428a2f98d728ae22), ULL(0x7137449123ef65cd),
 	ULL(0xb5c0fbcfec4d3b2f), ULL(0xe9b5dba58189dbbc),
 	ULL(0x3956c25bf348b538), ULL(0x59f111f1b605d019),
@@ -310,7 +310,7 @@ const static sha2_word64 K512[80] = {
 };
 
 /* Initial hash value H for SHA-384 */
-const static sha2_word64 sha384_initial_hash_value[8] = {
+static const sha2_word64 sha384_initial_hash_value[8] = {
 	ULL(0xcbbb9d5dc1059ed8),
 	ULL(0x629a292a367cd507),
 	ULL(0x9159015a3070dd17),
@@ -322,7 +322,7 @@ const static sha2_word64 sha384_initial_hash_value[8] = {
 };
 
 /* Initial hash value H for SHA-512 */
-const static sha2_word64 sha512_initial_hash_value[8] = {
+static const sha2_word64 sha512_initial_hash_value[8] = {
 	ULL(0x6a09e667f3bcc908),
 	ULL(0xbb67ae8584caa73b),
 	ULL(0x3c6ef372fe94f82b),
@@ -536,7 +536,7 @@ void SHA256_Update(SHA256_CTX* context, const sha2_byte *data, size_t len) {
 	/* Sanity check: */
 	assert(context != (SHA256_CTX*)0 && data != (sha2_byte*)0);
 
-	usedspace = (context->bitcount >> 3) % SHA256_BLOCK_LENGTH;
+	usedspace = (unsigned int)((context->bitcount >> 3) % SHA256_BLOCK_LENGTH);
 	if (usedspace > 0) {
 		/* Calculate how much free space is available in the buffer */
 		freespace = SHA256_BLOCK_LENGTH - usedspace;
@@ -573,11 +573,7 @@ void SHA256_Update(SHA256_CTX* context, const sha2_byte *data, size_t len) {
 	usedspace = freespace = 0;
 }
 
-#ifdef RUBY
-void SHA256_Finish(SHA256_CTX* context, sha2_byte digest[]) {
-#else
 void SHA256_Final(sha2_byte digest[], SHA256_CTX* context) {
-#endif
 	sha2_word32	*d = (sha2_word32*)digest;
 	unsigned int	usedspace;
 
@@ -586,7 +582,7 @@ void SHA256_Final(sha2_byte digest[], SHA256_CTX* context) {
 
 	/* If no digest buffer is passed, we don't bother doing this: */
 	if (digest != (sha2_byte*)0) {
-		usedspace = (context->bitcount >> 3) % SHA256_BLOCK_LENGTH;
+		usedspace = (unsigned int)((context->bitcount >> 3) % SHA256_BLOCK_LENGTH);
 #if BYTE_ORDER == LITTLE_ENDIAN
 		/* Convert FROM host byte order */
 		REVERSE64(context->bitcount,context->bitcount);
@@ -648,12 +644,7 @@ char *SHA256_End(SHA256_CTX* context, char buffer[]) {
 	assert(context != (SHA256_CTX*)0);
 
 	if (buffer != (char*)0) {
-#ifdef RUBY
-		SHA256_Finish(context, digest);
-#else
 		SHA256_Final(digest, context);
-#endif
-
 		for (i = 0; i < SHA256_DIGEST_LENGTH; i++) {
 			*buffer++ = sha2_hex_digits[(*d & 0xf0) >> 4];
 			*buffer++ = sha2_hex_digits[*d & 0x0f];
@@ -866,7 +857,7 @@ void SHA512_Update(SHA512_CTX* context, const sha2_byte *data, size_t len) {
 	/* Sanity check: */
 	assert(context != (SHA512_CTX*)0 && data != (sha2_byte*)0);
 
-	usedspace = (context->bitcount[0] >> 3) % SHA512_BLOCK_LENGTH;
+	usedspace = (unsigned int)((context->bitcount[0] >> 3) % SHA512_BLOCK_LENGTH);
 	if (usedspace > 0) {
 		/* Calculate how much free space is available in the buffer */
 		freespace = SHA512_BLOCK_LENGTH - usedspace;
@@ -906,7 +897,7 @@ void SHA512_Update(SHA512_CTX* context, const sha2_byte *data, size_t len) {
 void SHA512_Last(SHA512_CTX* context) {
 	unsigned int	usedspace;
 
-	usedspace = (context->bitcount[0] >> 3) % SHA512_BLOCK_LENGTH;
+	usedspace = (unsigned int)((context->bitcount[0] >> 3) % SHA512_BLOCK_LENGTH);
 #if BYTE_ORDER == LITTLE_ENDIAN
 	/* Convert FROM host byte order */
 	REVERSE64(context->bitcount[0],context->bitcount[0]);
@@ -944,11 +935,7 @@ void SHA512_Last(SHA512_CTX* context) {
 	SHA512_Transform(context, (sha2_word64*)context->buffer);
 }
 
-#ifdef RUBY
-void SHA512_Finish(SHA512_CTX* context, sha2_byte digest[]) {
-#else
 void SHA512_Final(sha2_byte digest[], SHA512_CTX* context) {
-#endif
 	sha2_word64	*d = (sha2_word64*)digest;
 
 	/* Sanity check: */
@@ -985,12 +972,7 @@ char *SHA512_End(SHA512_CTX* context, char buffer[]) {
 	assert(context != (SHA512_CTX*)0);
 
 	if (buffer != (char*)0) {
-#ifdef RUBY
-		SHA512_Finish(context, digest);
-#else
 		SHA512_Final(digest, context);
-#endif
-
 		for (i = 0; i < SHA512_DIGEST_LENGTH; i++) {
 			*buffer++ = sha2_hex_digits[(*d & 0xf0) >> 4];
 			*buffer++ = sha2_hex_digits[*d & 0x0f];
@@ -1027,11 +1009,7 @@ void SHA384_Update(SHA384_CTX* context, const sha2_byte* data, size_t len) {
 	SHA512_Update((SHA512_CTX*)context, data, len);
 }
 
-#ifdef RUBY
-void SHA384_Finish(SHA384_CTX* context, sha2_byte digest[]) {
-#else
 void SHA384_Final(sha2_byte digest[], SHA384_CTX* context) {
-#endif
 	sha2_word64	*d = (sha2_word64*)digest;
 
 	/* Sanity check: */
@@ -1068,12 +1046,7 @@ char *SHA384_End(SHA384_CTX* context, char buffer[]) {
 	assert(context != (SHA384_CTX*)0);
 
 	if (buffer != (char*)0) {
-#ifdef RUBY
-		SHA384_Finish(context, digest);
-#else
 		SHA384_Final(digest, context);
-#endif
-
 		for (i = 0; i < SHA384_DIGEST_LENGTH; i++) {
 			*buffer++ = sha2_hex_digits[(*d & 0xf0) >> 4];
 			*buffer++ = sha2_hex_digits[*d & 0x0f];
