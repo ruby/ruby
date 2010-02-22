@@ -1,10 +1,4 @@
-#--
-# Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
-# All rights reserved.
-# See LICENSE.txt for permissions.
-#++
-
-    SIMPLE_GEM = <<-GEMDATA
+SIMPLE_GEM = <<-GEMDATA
         MD5SUM = "b12a4d48febeb2289c539c2574c4b6f8"
         if $0 == __FILE__
           require 'optparse'
@@ -69,4 +63,4 @@ g1CKTjX9BGAj1w==
 eJwDAAAAAAE=
 ---
 eJwrKC0pVlAvzy9XyE3MU+cCACwiBP4=
-    GEMDATA
+GEMDATA

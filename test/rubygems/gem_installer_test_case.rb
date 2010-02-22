@@ -20,12 +20,12 @@ class GemInstallerTestCase < RubyGemTestCase
     super
 
     @spec = quick_gem 'a'
-    @gem = File.join @tempdir, "#{@spec.full_name}.gem"
+    @gem = File.join @tempdir, @spec.file_name
 
     @installer = util_installer @spec, @gem, @gemhome
 
     @user_spec = quick_gem 'b'
-    @user_gem = File.join @tempdir, "#{@user_spec.full_name}.gem"
+    @user_gem = File.join @tempdir, @user_spec.file_name
 
     @user_installer = util_installer @user_spec, @user_gem, Gem.user_dir
     @user_installer.gem_dir = File.join(Gem.user_dir, 'gems',
@@ -82,7 +82,7 @@ class GemInstallerTestCase < RubyGemTestCase
 
   def util_installer(spec, gem_path, gem_home)
     util_build_gem spec
-    FileUtils.mv File.join(@gemhome, 'cache', "#{spec.full_name}.gem"),
+    FileUtils.mv File.join(@gemhome, 'cache', spec.file_name),
                  @tempdir
 
     installer = Gem::Installer.new gem_path

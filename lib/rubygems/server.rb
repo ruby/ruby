@@ -39,9 +39,9 @@ class Gem::Server
   SEARCH = <<-SEARCH
       <form class="headerSearch" name="headerSearchForm" method="get" action="/rdoc">
         <div id="search" style="float:right">
-          <span>Filter/Search</span>
-          <input id="q" type="text" style="width:10em" name="q"/>
-          <button type="submit" style="display:none" />
+          <label for="q">Filter/Search</label>
+          <input id="q" type="text" style="width:10em" name="q">
+          <button type="submit" style="display:none"></button>
         </div>
       </form>
   SEARCH
@@ -426,15 +426,17 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
   RDOC_SEARCH
 
   def self.run(options)
-    new(options[:gemdir], options[:port], options[:daemon]).run
+    new(options[:gemdir], options[:port], options[:daemon],
+        options[:addresses]).run
   end
 
-  def initialize(gem_dir, port, daemon)
+  def initialize(gem_dir, port, daemon, addresses = nil)
     Socket.do_not_reverse_lookup = true
 
     @gem_dir = gem_dir
     @port = port
     @daemon = daemon
+    @addresses = addresses
     logger = WEBrick::Log.new nil, WEBrick::BasicLog::FATAL
     @server = WEBrick::HTTPServer.new :DoNotListen => true, :Logger => logger
 
@@ -495,6 +497,37 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
       res['content-length'] = specs.length
     else
       res.body << specs
+    end
+  end
+
+  ##
+  # Creates server sockets based on the addresses option.  If no addresses
+  # were given a server socket for all interfaces is created.
+
+  def listen addresses = @addresses
+    addresses = [nil] unless addresses
+
+    listeners = 0
+
+    addresses.each do |address|
+      begin
+        @server.listen address, @port
+        @server.listeners[listeners..-1].each do |listener|
+          host, port = listener.addr.values_at 2, 1
+          host = "[#{host}]" if host =~ /:/ # we don't reverse lookup
+          say "Server started at http://#{host}:#{port}"
+        end
+
+        listeners = @server.listeners.length
+      rescue SystemCallError
+        next
+      end
+    end
+
+    if @server.listeners.empty? then
+      say "Unable to start a server."
+      say "Check for running servers or your --bind and --port arguments"
+      terminate_interaction 1
     end
   end
 
@@ -566,7 +599,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
       deps = spec.dependencies.map do |dep|
         { "name"    => dep.name,
           "type"    => dep.type,
-          "version" => dep.version_requirements.to_s, }
+          "version" => dep.requirement.to_s, }
       end
 
       deps = deps.sort_by { |dep| [dep["name"].downcase, dep["version"]] }
@@ -602,7 +635,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
       "only_one_executable" => true,
       "full_name" => "rubygems-#{Gem::RubyGemsVersion}",
       "has_deps" => false,
-      "homepage" => "http://rubygems.org/",
+      "homepage" => "http://docs.rubygems.org/",
       "name" => 'rubygems',
       "rdoc_installed" => true,
       "summary" => "RubyGems itself",
@@ -716,9 +749,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
   end
 
   def run
-    @server.listen nil, @port
-
-    say "Starting gem server on http://localhost:#{@port}/"
+    listen
 
     WEBrick::Daemon.start if @daemon
 

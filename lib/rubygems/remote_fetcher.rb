@@ -81,7 +81,7 @@ class Gem::RemoteFetcher
       cache_dir = File.join(Gem.user_dir, 'cache')
     end
 
-    gem_file_name = "#{spec.full_name}.gem"
+    gem_file_name = spec.file_name
     local_gem_path = File.join cache_dir, gem_file_name
 
     FileUtils.mkdir_p cache_dir rescue nil unless File.exist? cache_dir
@@ -138,12 +138,18 @@ class Gem::RemoteFetcher
       say "Using local gem #{local_gem_path}" if
         Gem.configuration.really_verbose
     when nil then # TODO test for local overriding cache
+      source_path = if Gem.win_platform? && source_uri.scheme &&
+                       !source_uri.path.include?(':') then
+                      "#{source_uri.scheme}:#{source_uri.path}"
+                    else
+                      source_uri.path
+                    end
+
+      source_path = URI.unescape source_path
+
       begin
-        if Gem.win_platform? && source_uri.scheme && !source_uri.path.include?(':')
-          FileUtils.cp URI.unescape(source_uri.scheme + ':' + source_uri.path), local_gem_path
-        else
-          FileUtils.cp URI.unescape(source_uri.path), local_gem_path
-        end
+        FileUtils.cp source_path, local_gem_path unless
+          File.expand_path(source_path) == File.expand_path(local_gem_path)
       rescue Errno::EACCES
         local_gem_path = source_uri.to_s
       end
@@ -317,6 +323,8 @@ class Gem::RemoteFetcher
       request.add_field 'If-Modified-Since', last_modified.rfc2822
     end
 
+    yield request if block_given?
+
     connection = connection_for uri
 
     retried = false
@@ -324,10 +332,16 @@ class Gem::RemoteFetcher
 
     begin
       @requests[connection.object_id] += 1
-      response = connection.request request
-      say "#{request.method} #{response.code} #{response.message}: #{uri}" if
+
+      say "#{request.method} #{uri}" if
         Gem.configuration.really_verbose
+      response = connection.request request
+      say "#{response.code} #{response.message}" if
+        Gem.configuration.really_verbose
+
     rescue Net::HTTPBadResponse
+      say "bad response" if Gem.configuration.really_verbose
+
       reset connection
 
       raise FetchError.new('too many bad responses', uri) if bad_response
@@ -337,7 +351,7 @@ class Gem::RemoteFetcher
     # HACK work around EOFError bug in Net::HTTP
     # NOTE Errno::ECONNABORTED raised a lot on Windows, and make impossible
     # to install gems.
-    rescue EOFError, Errno::ECONNABORTED, Errno::ECONNRESET
+    rescue EOFError, Errno::ECONNABORTED, Errno::ECONNRESET, Errno::EPIPE
       requests = @requests[connection.object_id]
       say "connection reset after #{requests} requests, retrying" if
         Gem.configuration.really_verbose

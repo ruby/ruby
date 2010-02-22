@@ -115,47 +115,8 @@ beta-gems.example.com is not a URI
     assert_equal '', @ui.error
   end
 
-  def test_execute_add_legacy
-    util_setup_fake_fetcher
-    util_setup_source_info_cache
-
-    si = Gem::SourceIndex.new
-    si.add_spec @a1
-
-    @fetcher.data["#{@new_repo}/yaml"] = ''
-
-    @cmd.handle_options %W[--add #{@new_repo}]
-
-    use_ui @ui do
-      @cmd.execute
-    end
-
-    assert_equal [@gem_repo], Gem.sources
-
-    expected = <<-EOF
-WARNING:  RubyGems 1.2+ index not found for:
-\t#{@new_repo}
-
-Will cause RubyGems to revert to legacy indexes, degrading performance.
-    EOF
-
-    assert_equal "#{@new_repo} added to sources\n", @ui.output
-    assert_equal expected, @ui.error
-  end
-
   def test_execute_clear_all
     @cmd.handle_options %w[--clear-all]
-
-    util_setup_source_info_cache
-
-    cache = Gem::SourceInfoCache.cache
-    cache.update
-    cache.write_cache
-
-    assert File.exist?(cache.system_cache_file),
-           'system cache file'
-    assert File.exist?(cache.latest_system_cache_file),
-           'latest system cache file'
 
     util_setup_spec_fetcher
 
@@ -178,11 +139,6 @@ Will cause RubyGems to revert to legacy indexes, degrading performance.
 
     assert_equal expected, @ui.output
     assert_equal '', @ui.error
-
-    refute File.exist?(cache.system_cache_file),
-           'system cache file'
-    refute File.exist?(cache.latest_system_cache_file),
-           'latest system cache file'
 
     refute File.exist?(fetcher.dir), 'cache dir removed'
   end
@@ -246,31 +202,6 @@ Will cause RubyGems to revert to legacy indexes, degrading performance.
     end
 
     assert_equal "source cache successfully updated\n", @ui.output
-    assert_equal '', @ui.error
-  end
-
-  def test_execute_update_legacy
-    @cmd.handle_options %w[--update]
-
-    util_setup_fake_fetcher
-    util_setup_source_info_cache
-    Gem::SourceInfoCache.reset
-
-    si = Gem::SourceIndex.new
-    si.add_spec @a1
-    @fetcher.data["#{@gem_repo}yaml"] = YAML.dump si
-    @fetcher.data["#{@gem_repo}Marshal.#{@marshal_version}"] = si.dump
-
-    use_ui @ui do
-      @cmd.execute
-    end
-
-    expected = <<-EOF
-Bulk updating Gem source index for: #{@gem_repo}
-source cache successfully updated
-    EOF
-
-    assert_equal expected, @ui.output
     assert_equal '', @ui.error
   end
 

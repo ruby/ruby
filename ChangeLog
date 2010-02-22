@@ -1,3 +1,7 @@
+Mon Feb 22 11:52:30 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems: update to 1.3.6.
+
 Mon Feb 22 11:21:18 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/digest/sha2: Use OpenSSL's SHA1 engine if available.

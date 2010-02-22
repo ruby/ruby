@@ -46,6 +46,26 @@ class TestGemStreamUI < RubyGemTestCase
     end
   end
 
+  def test_ask_for_password
+    skip 'Always uses $stdin on windows' if Gem.win_platform?
+
+    timeout(1) do
+      expected_answer = "Arthur, King of the Britons"
+      @in.string = "#{expected_answer}\n"
+      actual_answer = @sui.ask_for_password("What is your name?")
+      assert_equal expected_answer, actual_answer
+    end
+  end
+
+  def test_ask_for_password_no_tty
+    @in.tty = false
+
+    timeout(0.1) do
+      answer = @sui.ask_for_password("what is the airspeed velocity of an unladen swallow?")
+      assert_equal nil, answer
+    end
+  end
+
   def test_ask_yes_no_no_tty_with_default
     @in.tty = false
 

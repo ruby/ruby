@@ -1,5 +1,149 @@
 # -*- coding: utf-8 -*-
 
+2010-02-20  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems.rb:  1.3.6.
+	* test/*:  Windows test fixes
+	* lib/rubygems/remote_fetcher.rb:  Fix same file detection on windows.
+
+2010-02-15  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/config_file.rb:  Fix use of ConfigFile#api_key= vs
+	  #rubygems_api_key=.  Patch by Nick Quaranto.
+
+2010-02-12  Eric Hodel  <drbrain@segment7.net>
+
+	* Rakefile:  RubyGems doesn't depend on previous RubyGems.
+
+2010-02-11  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems.rb:  http://rubygems.org is now the default source.
+	* lib/rubygems/dependency.rb:  Only warn once about
+	  #version_requirement
+
+2010-02-09  Eric Hodel  <drbrain@segment7.net>
+
+	* bin/update_rubygems:  Use system, exec more correctly, remove
+	  useless puts.
+	* lib/rubygems/commands/query_command.rb:  List every version when
+	  --prerelease --all is given.
+
+2010-02-08  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/commands/dependency_command.rb:  Support --prerelease.
+	* lib/rubygems/commands/fetch_command.rb:  Support --prerelease.
+	* lib/rubygems/format.rb:  Don't crash on empty files.  Bug #27292 by
+	  Ian Ragsdale.
+	* lib/rubygems/server.rb:  Fix markup.  Bug #27045 by Eric Young.
+	* History.txt:  RubyGems 1.3.6 release notes.
+
+2010-02-07  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/dependency_installer.rb:  Allow prerelease gems to
+	  depend on non-prerelease gems.
+
+2010-02-06  Eric Hodel  <drbrain@segment7.net>
+
+	* test/test_gem_commands_specification_command.rb:  Don't enforce YAML
+	  format.  Patch #27791 by Aaron Patterson.
+	* lib/rubygems/version.rb:  Allow captial letters in prerelease
+	  versions.
+	* lib/rubygems/config_file.rb:  Explain format of ~/.gemrc.  Bug
+	  #27698 by J Smith.
+	* lib/rubygems/gem_path_searcher.rb:  Handle nil require_paths.
+	  Patch #27334 by Roger Pack.
+	* lib/rubygems/server.rb:  Handle --bind option.  Patch #27357 by
+	  Bruno Michel.
+	* lib/rubygems/doc_manager:  gem rdoc --overwrite to preserve built
+	  rdoc.  Patch #25982 by Akinori MUSHA.
+	* lib/rubygems/commands/which_command.rb:  Fail if no paths were
+	  found.  Adapted patch #27681 by Caio Chassot.
+	* lib/rubygems/remote_fetcher.rb:  Don't copy if the file is where we
+	  want it.  Patch #27409 by Jakub Šťastný.
+
+2010-02-01  John Barnette  <jbarnette@rubygems.org>
+
+	* lib/rubygems/command*: Add 'gem push' and 'gem owner' for
+	  interacting with modern/Gemcutter sources [Nick Quaranto]
+
+2010-01-18  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/dependency_list.rb:  Ignore development dependencies
+	  unless explicitly needed.  Bug #27608 by Roger Pack.
+
+2010-01-12  John Barnette <jbarnette@rubygems.org>
+
+	* Rakefile: Don't add development deps when building the
+	  rubygems-update gem, it borks older versions when they're updating
+	  from a stub index.
+
+2009-12-22  Evan Phoenix  <evan@fallingsnow.net>
+
+	* lib/rubygems/spec_fetcher.rb: Don't bother re-Marshaling the spec
+	  YAML list.
+
+2009-11-04  John Barnette  <jbarnette@rubygems.org>
+
+	* lib/rubygems/timer.rb: Removed. The deprecation sun set in July.
+
+2009-10-14  John Barnette  <jbarnette@rubygems.org>
+
+	* lib/rubygems/dependency.rb: Burndown/cleanup. Refactored code
+	  and tests. Gem::Dependency.version_requirement(s) is deprecated in
+	  favor of Gem::Dependency.requirement.
+
+	* lib/rubygems/requirement.rb: Burndown/cleanup. Refactored code
+	  and tests. See test/support/shortcuts.rb for some new test helpers.
+
+2009-10-13  John Barnette  <jbarnette@rubygems.org>
+
+	* lib/rubygems/local_remote_options.rb: Make --source additive,
+	  not exclusive. If exclusive sources are desired, use
+	  --clear-sources first.
+
+2009-09-29  John Barnette  <jbarnette@rubyforge.org>
+
+	* lib/rubygems/spec_fetcher.rb: Be slightly more robust when faced
+	  with corrupted indexes.
+
+2009-09-03  John Barnette  <jbarnette@rubyforge.org>
+
+	* LOTS: Use "raise" consistently, not "fail".
+
+2009-09-01  John Barnette  <jbarnette@rubyforge.org>
+
+	* lib/rubygems/version.rb: Gem::Version immutability
+	  burndown. Changed canonical internal representation to an
+	  Array. Refactored significant amounts of the internals for
+	  clarity. Breaking change: Gem::Version::Requirement is no longer
+	  available, use Gem::Requirement instead. Breaking change: custom
+	  YAML marshaling is gone. Credit to Yehuda Katz for certain bits of
+	  a related patch.
+	* test/test_gem_dependency.rb: Moved a bunch of tests over from
+	  test_gem_version.rb. Work in progress.
+	* test/test_gem_specification.rb: Removed a failing YAML
+	  test. Many more will be going away shortly.
+	* test/test_gem_version.rb: Significant refactoring for
+	  maintainability and clarity. Moved a ton of poorly-placed tests to
+	  test_gem_dependency.rb for future refactoring.
+
+2009-08-19  Ryan Davis  <ryand-ruby@zenspider.com>
+
+	* lib/rubygems.rb: Cleanup of rdoc and file layout.
+	* lib/rubygems/versions.rb: Added Version#spermy_recommendation
+	  and fixed bug in Version::Part#inspect. General cleanup.
+
+2009-07-29  John Barnette <jbarnette@rubyforge.org>
+
+	* lib/rubygems/package/tar_input.rb:  Add Maglev to the list of
+	  implementations with working Zlib. Bug #26790 by Peter McLain.
+
+2009-07-21  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems.rb:  1.3.5.
+	* lib/rubygems/package.rb:  Remove dangling digest require.  Reported
+	  by Jeremy Kemper.
+
 2009-06-25  Eric Hodel  <drbrain@segment7.net>
 
 	* release_notes/:  Merged into History.txt for Hoe.
@@ -8,6 +152,8 @@
 2009-06-23  Eric Hodel  <drbrain@segment7.net>
 
 	* release_notes/rel_1_3_5.rdoc:  RubyGems 1.3.5 release notes.
+	* lib/rubygems/builder.rb:  Only print out with verbose.
+	* lib/rubygems/package_task.rb:  Only print out with -t.
 
 2009-06-12  Ryan Davis  <ryand@zenspider.com>
 
@@ -15,7 +161,25 @@
 
 2009-06-10  Phil Hagelberg <technomancy@gmail.com>
 
+	* lib/rubygems/installer.rb:  --user-install is no longer enabled by
+	  default.
 	* lib/rubygems/source_index.rb:  Fix use of prerelease gems.
+
+2009-06-04  Eric Hodel  <drbrain@segment7.net>
+
+	* util/gem_prelude.rb.template:  Backports from 1.9.
+
+2009-06-03  Eric Hodel  <drbrain@segment7.net>
+
+	* bin/gem:  Support 1.8.6+
+	* lib/rubygems/digest*:  Removed, support dropped for Ruby < 1.8.6
+	* lib/rubygems/installer.rb:  Support env(1) in wrong path, use
+	  /bin/sh if shebang has options.  By Nobu, ruby trunk r22853.
+	* lib/rubygems/config_file.rb:  Switch to stdcall for appdata folder.
+	  [ruby-core:22601].
+	* lib/rubygems.rb:  Use only File::expand_path on 1.9 for home dir.
+	  Don't recklessly create directories.  Simplify RbConfig::datadir
+	  definition.
 
 2009-05-30  Eric Hodel  <drbrain@segment7.net>
 

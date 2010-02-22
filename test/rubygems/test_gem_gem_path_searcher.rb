@@ -22,6 +22,9 @@ class TestGemGemPathSearcher < RubyGemTestCase
     @foo2 = quick_gem 'foo', '0.2'
     @bar1 = quick_gem 'bar', '0.1'
     @bar2 = quick_gem 'bar', '0.2'
+    @nrp = quick_gem 'nil_require_paths', '0.1'
+    @nrp.require_paths = nil
+
 
     @fetcher = Gem::FakeFetcher.new
     Gem::RemoteFetcher.fetcher = @fetcher
@@ -50,6 +53,10 @@ class TestGemGemPathSearcher < RubyGemTestCase
     assert_equal expected, lib_dirs
   end
 
+  def test_lib_dirs_for_nil_require_paths
+    assert_nil @gps.lib_dirs_for(@nrp)
+  end
+
   def test_matching_file_eh
     refute @gps.matching_file?(@foo1, 'bar')
     assert @gps.matching_file?(@foo1, 'foo')
@@ -61,6 +68,10 @@ class TestGemGemPathSearcher < RubyGemTestCase
     expected = File.join @foo1.full_gem_path, 'lib', 'foo.rb'
 
     assert_equal [expected], @gps.matching_files(@foo1, 'foo')
+  end
+
+  def test_matching_files_nil_require_paths
+    assert_empty @gps.matching_files(@nrp, 'foo')
   end
 
 end

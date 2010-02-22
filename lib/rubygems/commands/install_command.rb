@@ -32,6 +32,7 @@ class Gem::Commands::InstallCommand < Gem::Command
     add_local_remote_options
     add_platform_option
     add_version_option
+    add_prerelease_option "to be installed. (Only for listed gems)"
   end
 
   def arguments # :nodoc:

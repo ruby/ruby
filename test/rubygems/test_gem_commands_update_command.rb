@@ -13,14 +13,14 @@ class TestGemCommandsUpdateCommand < RubyGemTestCase
 
     util_setup_fake_fetcher
 
-    @a1_path = File.join @gemhome, 'cache', "#{@a1.full_name}.gem"
-    @a2_path = File.join @gemhome, 'cache', "#{@a2.full_name}.gem"
+    @a1_path = File.join @gemhome, 'cache', @a1.file_name
+    @a2_path = File.join @gemhome, 'cache', @a2.file_name
 
     util_setup_spec_fetcher @a1, @a2
 
-    @fetcher.data["#{@gem_repo}gems/#{@a1.full_name}.gem"] =
+    @fetcher.data["#{@gem_repo}gems/#{@a1.file_name}"] =
       read_binary @a1_path
-    @fetcher.data["#{@gem_repo}gems/#{@a2.full_name}.gem"] =
+    @fetcher.data["#{@gem_repo}gems/#{@a2.file_name}"] =
       read_binary @a2_path
   end
 
@@ -65,9 +65,9 @@ class TestGemCommandsUpdateCommand < RubyGemTestCase
     @a2.add_dependency 'c', '2'
     @a2.add_dependency 'b', '2'
 
-    @b2_path = File.join @gemhome, 'cache', "#{@b2.full_name}.gem"
-    @c1_2_path = File.join @gemhome, 'cache', "#{@c1_2.full_name}.gem"
-    @c2_path = File.join @gemhome, 'cache', "#{@c2.full_name}.gem"
+    @b2_path = File.join @gemhome, 'cache', @b2.file_name
+    @c1_2_path = File.join @gemhome, 'cache', @c1_2.file_name
+    @c2_path = File.join @gemhome, 'cache', @c2.file_name
 
     @source_index = Gem::SourceIndex.new
     @source_index.add_spec @a1
@@ -80,12 +80,12 @@ class TestGemCommandsUpdateCommand < RubyGemTestCase
     util_build_gem @a2
     util_build_gem @c2
 
-    @fetcher.data["#{@gem_repo}gems/#{@a1.full_name}.gem"] = read_binary @a1_path
-    @fetcher.data["#{@gem_repo}gems/#{@a2.full_name}.gem"] = read_binary @a2_path
-    @fetcher.data["#{@gem_repo}gems/#{@b2.full_name}.gem"] = read_binary @b2_path
-    @fetcher.data["#{@gem_repo}gems/#{@c1_2.full_name}.gem"] =
+    @fetcher.data["#{@gem_repo}gems/#{@a1.file_name}"] = read_binary @a1_path
+    @fetcher.data["#{@gem_repo}gems/#{@a2.file_name}"] = read_binary @a2_path
+    @fetcher.data["#{@gem_repo}gems/#{@b2.file_name}"] = read_binary @b2_path
+    @fetcher.data["#{@gem_repo}gems/#{@c1_2.file_name}"] =
       read_binary @c1_2_path
-    @fetcher.data["#{@gem_repo}gems/#{@c2.full_name}.gem"] = read_binary @c2_path
+    @fetcher.data["#{@gem_repo}gems/#{@c2.file_name}"] = read_binary @c2_path
 
     util_setup_spec_fetcher @a1, @a2, @b2, @c1_2, @c2
     util_clear_gems

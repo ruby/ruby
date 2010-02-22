@@ -1,8 +1,9 @@
 = RubyGems
 
+* http://rubygems.org/
+* http://docs.rubygems.org/
 * http://rubygems.rubyforge.org/
 * http://rubyforge.org/projects/rubygems
-* http://rubygems.org/
 
 == DESCRIPTION
 
@@ -15,7 +16,7 @@ See Gem for information on RubyGems (or `ri Gem`)
 
 To upgrade to the latest RubyGems, run:
 
-  $ gem install --system  # you might need to be an administrator or root
+  $ gem update --system  # you might need to be an administrator or root
 
 NOTE:  RubyGems 1.1 and 1.2 have problems upgrading when there is no
 rubygems-update installed.  You will need to use the following instructions

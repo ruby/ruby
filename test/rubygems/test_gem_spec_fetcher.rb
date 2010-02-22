@@ -39,16 +39,17 @@ class TestGemSpecFetcher < RubyGemTestCase
   end
 
   def test_fetch_all
-    @fetcher.data["#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{@a1.full_name}.gemspec.rz"] =
+    @fetcher.data["#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{@a1.spec_name}.rz"] =
       util_zip(Marshal.dump(@a1))
-    @fetcher.data["#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{@a2.full_name}.gemspec.rz"] =
+    @fetcher.data["#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{@a2.spec_name}.rz"] =
       util_zip(Marshal.dump(@a2))
-    @fetcher.data["#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{@a_pre.full_name}.gemspec.rz"] =
+    @fetcher.data["#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{@a_pre.spec_name}.rz"] =
       util_zip(Marshal.dump(@a_pre))
-    @fetcher.data["#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{@a3a.full_name}.gemspec.rz"] =
+    @fetcher.data["#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{@a3a.spec_name}.rz"] =
       util_zip(Marshal.dump(@a3a))
 
     dep = Gem::Dependency.new 'a', 1
+
     specs_and_sources = @sf.fetch dep, true
 
     spec_names = specs_and_sources.map do |spec, source_uri|
@@ -63,11 +64,11 @@ class TestGemSpecFetcher < RubyGemTestCase
   end
 
   def test_fetch_latest
-    @fetcher.data["#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{@a1.full_name}.gemspec.rz"] =
+    @fetcher.data["#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{@a1.spec_name}.rz"] =
       util_zip(Marshal.dump(@a1))
-    @fetcher.data["#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{@a2.full_name}.gemspec.rz"] =
+    @fetcher.data["#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{@a2.spec_name}.rz"] =
       util_zip(Marshal.dump(@a2))
-    @fetcher.data["#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{@a_pre.full_name}.gemspec.rz"] =
+    @fetcher.data["#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{@a_pre.spec_name}.rz"] =
       util_zip(Marshal.dump(@a_pre))
 
     dep = Gem::Dependency.new 'a', 1
@@ -81,11 +82,11 @@ class TestGemSpecFetcher < RubyGemTestCase
   end
 
   def test_fetch_prerelease
-    @fetcher.data["#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{@a1.full_name}.gemspec.rz"] =
+    @fetcher.data["#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{@a1.spec_name}.rz"] =
       util_zip(Marshal.dump(@a1))
-    @fetcher.data["#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{@a2.full_name}.gemspec.rz"] =
+    @fetcher.data["#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{@a2.spec_name}.rz"] =
       util_zip(Marshal.dump(@a2))
-    @fetcher.data["#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{@a_pre.full_name}.gemspec.rz"] =
+    @fetcher.data["#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{@a_pre.spec_name}.rz"] =
       util_zip(Marshal.dump(@a_pre))
 
     dep = Gem::Dependency.new 'a', '1.a'
@@ -96,37 +97,6 @@ class TestGemSpecFetcher < RubyGemTestCase
     end
 
     assert_equal [[@a_pre.full_name, @gem_repo]], spec_names
-  end
-
-  def test_fetch_legacy_repo
-    @fetcher.data.delete "#{@gem_repo}specs.#{Gem.marshal_version}.gz"
-    @fetcher.data["#{@gem_repo}yaml"] = ''
-    util_setup_source_info_cache @a1, @a2
-
-    dep = Gem::Dependency.new 'a', 1
-    specs = nil
-
-    use_ui @ui do
-      specs = @sf.fetch dep, true
-    end
-
-    expected = <<-EOF
-WARNING:  RubyGems 1.2+ index not found for:
-\thttp://gems.example.com/
-
-RubyGems will revert to legacy indexes degrading performance.
-    EOF
-
-    assert_equal expected, @ui.error
-
-    specs = specs.map { |spec, source_uri| [spec.full_name, source_uri] }
-
-    expected = [
-      [@a1.full_name, @gem_repo],
-      [@a2.full_name, @gem_repo],
-    ]
-
-    assert_equal expected, specs
   end
 
   def test_fetch_platform
@@ -146,7 +116,7 @@ RubyGems will revert to legacy indexes degrading performance.
   end
 
   def test_fetch_spec
-    spec_uri = "#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{@a1.full_name}.gemspec"
+    spec_uri = "#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{@a1.spec_name}"
     @fetcher.data["#{spec_uri}.rz"] = util_zip(Marshal.dump(@a1))
 
     spec = @sf.fetch_spec ['a', Gem::Version.new(1), 'ruby'], @uri
@@ -154,19 +124,19 @@ RubyGems will revert to legacy indexes degrading performance.
 
     cache_dir = @sf.cache_dir URI.parse(spec_uri)
 
-    cache_file = File.join cache_dir, "#{@a1.full_name}.gemspec"
+    cache_file = File.join cache_dir, @a1.spec_name
 
     assert File.exist?(cache_file)
   end
 
   def test_fetch_spec_cached
-    spec_uri = "#{@gem_repo}/#{Gem::MARSHAL_SPEC_DIR}#{@a1.full_name}.gemspec"
+    spec_uri = "#{@gem_repo}/#{Gem::MARSHAL_SPEC_DIR}#{@a1.spec_name}"
     @fetcher.data["#{spec_uri}.rz"] = nil
 
     cache_dir = @sf.cache_dir URI.parse(spec_uri)
     FileUtils.mkdir_p cache_dir
 
-    cache_file = File.join cache_dir, "#{@a1.full_name}.gemspec"
+    cache_file = File.join cache_dir, @a1.spec_name
 
     open cache_file, 'wb' do |io|
       Marshal.dump @a1, io
@@ -186,7 +156,7 @@ RubyGems will revert to legacy indexes degrading performance.
   end
 
   def test_fetch_spec_platform_ruby
-    @fetcher.data["#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{@a1.full_name}.gemspec.rz"] =
+    @fetcher.data["#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{@a1.spec_name}.rz"] =
       util_zip(Marshal.dump(@a1))
 
     spec = @sf.fetch_spec ['a', Gem::Version.new(1), nil], @uri

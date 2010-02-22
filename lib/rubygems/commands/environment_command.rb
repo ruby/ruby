@@ -118,7 +118,7 @@ lib/rubygems/defaults/operating_system.rb
       end
 
     else
-      fail Gem::CommandLineError, "Unknown enviroment option [#{arg}]"
+      raise Gem::CommandLineError, "Unknown enviroment option [#{arg}]"
     end
     say out
     true

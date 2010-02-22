@@ -197,7 +197,7 @@ class Gem::SpecFetcher
 
     if type == :all
       list.values.map do |gems|
-        gems.reject! { |g| g[1].prerelease? }
+        gems.reject! { |g| !g[1] || g[1].prerelease? }
       end
     end
 
@@ -242,7 +242,7 @@ class Gem::SpecFetcher
         FileUtils.mkdir_p cache_dir
 
         open local_file, 'wb' do |io|
-          Marshal.dump specs, io
+          io << spec_dump
         end
       rescue
       end

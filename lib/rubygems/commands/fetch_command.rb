@@ -17,6 +17,7 @@ class Gem::Commands::FetchCommand < Gem::Command
 
     add_version_option
     add_platform_option
+    add_prerelease_option
   end
 
   def arguments # :nodoc:
@@ -39,12 +40,12 @@ class Gem::Commands::FetchCommand < Gem::Command
 
     gem_names.each do |gem_name|
       dep = Gem::Dependency.new gem_name, version
+      dep.prerelease = options[:prerelease]
 
-      specs_and_sources = Gem::SpecFetcher.fetcher.fetch dep, all
+      specs_and_sources = Gem::SpecFetcher.fetcher.fetch(dep, false, true,
+                                                         dep.prerelease?)
 
-      specs_and_sources.sort_by { |spec,| spec.version }
-
-      spec, source_uri = specs_and_sources.last
+      spec, source_uri = specs_and_sources.sort_by { |s,| s.version }.last
 
       if spec.nil? then
         alert_error "Could not find #{gem_name} in any repository"
@@ -52,7 +53,7 @@ class Gem::Commands::FetchCommand < Gem::Command
       end
 
       path = Gem::RemoteFetcher.fetcher.download spec, source_uri
-      FileUtils.mv path, "#{spec.full_name}.gem"
+      FileUtils.mv path, spec.file_name
 
       say "Downloaded #{spec.full_name}"
     end
