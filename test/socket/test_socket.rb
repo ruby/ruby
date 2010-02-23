@@ -191,7 +191,7 @@ class TestSocket < Test::Unit::TestCase
           assert_equal(clients.length, accepted.length)
         ensure
           tcp_servers.each {|s| s.close if !s.closed?  }
-          unix_server.close if !unix_server.closed?
+          unix_server.close if unix_server && !unix_server.closed?
           clients.each {|s| s.close if !s.closed?  }
           accepted.each {|s| s.close if !s.closed?  }
         end
