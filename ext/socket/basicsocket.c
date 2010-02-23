@@ -198,7 +198,7 @@ bsock_close_write(VALUE sock)
  *   };
  * 
  * In this case #setsockopt could be called like this:
- *   optval =  IPAddr.new("224.0.0.251") + Socket::INADDR_ANY
+ *   optval =  IPAddr.new("224.0.0.251").hton + IPAddr.new(Socket::INADDR_ANY, Socket::AF_INET).hton
  *   sock.setsockopt(Socket::IPPROTO_IP, Socket::IP_ADD_MEMBERSHIP, optval)
  *
 */
