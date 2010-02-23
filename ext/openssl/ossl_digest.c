@@ -37,25 +37,18 @@ GetDigestPtr(VALUE obj)
 {
     const EVP_MD *md;
 
-    if (TYPE(obj) == T_CLASS) {
-        EVP_MD_CTX *ctx;
-	VALUE digest = rb_funcall(obj, rb_intern("new"), 0, 0);
-
-        SafeGetDigest(digest, ctx);
-
-        md = EVP_MD_CTX_md(ctx);
-    } else if (rb_obj_is_kind_of(obj, cDigest)) {
-        EVP_MD_CTX *ctx;
-
-        SafeGetDigest(obj, ctx);
-
-        md = EVP_MD_CTX_md(ctx);
-    } else {
+    if (TYPE(obj) == T_STRING) {
     	const char *name = StringValueCStr(obj);
 
         md = EVP_get_digestbyname(name);
         if (!md)
             ossl_raise(rb_eRuntimeError, "Unsupported digest algorithm (%s).", name);
+    } else {
+        EVP_MD_CTX *ctx;
+
+        SafeGetDigest(obj, ctx);
+
+        md = EVP_MD_CTX_md(ctx);
     }
 
     return md;

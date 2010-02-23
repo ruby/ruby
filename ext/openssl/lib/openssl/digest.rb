@@ -43,6 +43,7 @@ module OpenSSL
       singleton = (class << klass; self; end)
       singleton.class_eval{
         define_method(:digest){|data| Digest.digest(name, data) }
+        define_method(:hexdigest){|data| Digest.hexdigest(name, data) }
       }
       const_set(name, klass)
     }
