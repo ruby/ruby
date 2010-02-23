@@ -125,11 +125,11 @@ hmac_final(HMAC_CTX *ctx, unsigned char **buf, unsigned int *buf_len)
 
 /*
  *  call-seq:
- *     hmac.finish -> aString
+ *     hmac.digest -> aString
  *
  */
 static VALUE
-ossl_hmac_finish(VALUE self)
+ossl_hmac_digest(VALUE self)
 {
     HMAC_CTX *ctx;
     unsigned char *buf;
@@ -141,6 +141,32 @@ ossl_hmac_finish(VALUE self)
     digest = ossl_buf2str((char *)buf, buf_len);
     
     return digest;
+}
+
+/*
+ *  call-seq:
+ *     hmac.hexdigest -> aString
+ *
+ */
+static VALUE
+ossl_hmac_hexdigest(VALUE self)
+{
+    HMAC_CTX *ctx;
+    unsigned char *buf;
+    char *hexbuf;
+    unsigned int buf_len;
+    VALUE hexdigest;
+	
+    GetHMAC(self, ctx);
+    hmac_final(ctx, &buf, &buf_len);
+    if (string2hex(buf, buf_len, &hexbuf, NULL) != 2 * buf_len) {
+	OPENSSL_free(buf);
+	ossl_raise(eHMACError, "Memory alloc error");
+    }
+    OPENSSL_free(buf);
+    hexdigest = ossl_buf2str(hexbuf, 2 * buf_len);
+
+    return hexdigest;
 }
 
 /*
@@ -161,50 +187,15 @@ ossl_hmac_reset(VALUE self)
 
 /*
  *  call-seq:
- *     hmac.digest_length -> integer
+ *     HMAC.digest(digest, key, data) -> aString
  *
- */
-static VALUE
-ossl_hmac_digest_length(VALUE self)
-{
-    HMAC_CTX *ctx;
-
-    GetHMAC(self, ctx);
-
-    return INT2FIX(HMAC_size(ctx));
-}
-
-/*
- *  call-seq:
- *     hmac.block_length -> integer
- *
- */
-static VALUE
-ossl_hmac_block_length(VALUE self)
-{
-    HMAC_CTX *ctx;
-
-    GetHMAC(self, ctx);
-
-    return INT2FIX(EVP_MD_block_size(ctx->md));
-}
-
-/*
- *  call-seq:
- *     HMAC.digest(digest_class, key, data) -> aString
- *     HMAC.digest(digest_object, key, data) -> aString
- *     HMAC.digest(digest_name, key, data) -> aString
- *
- *  The last three forms are still supported for backward compatibility,
- *  and HMAC.digest(data, key, digest_name) is _not_ supported for
- *  that reason.
  */
 static VALUE
 ossl_hmac_s_digest(VALUE klass, VALUE digest, VALUE key, VALUE data)
 {
     unsigned char *buf;
     unsigned int buf_len;
-
+	
     StringValue(key);
     StringValue(data);
     buf = HMAC(GetDigestPtr(digest), RSTRING_PTR(key), RSTRING_LEN(key),
@@ -214,23 +205,48 @@ ossl_hmac_s_digest(VALUE klass, VALUE digest, VALUE key, VALUE data)
 }
 
 /*
+ *  call-seq:
+ *     HMAC.digest(digest, key, data) -> aString
+ *
+ */
+static VALUE
+ossl_hmac_s_hexdigest(VALUE klass, VALUE digest, VALUE key, VALUE data)
+{
+    unsigned char *buf;
+    char *hexbuf;
+    unsigned int buf_len;
+    VALUE hexdigest;
+
+    StringValue(key);
+    StringValue(data);
+	
+    buf = HMAC(GetDigestPtr(digest), RSTRING_PTR(key), RSTRING_LEN(key),
+	       (unsigned char *)RSTRING_PTR(data), RSTRING_LEN(data), NULL, &buf_len);
+    if (string2hex(buf, buf_len, &hexbuf, NULL) != 2 * buf_len) {
+	ossl_raise(eHMACError, "Cannot convert buf to hexbuf");
+    }
+    hexdigest = ossl_buf2str(hexbuf, 2 * buf_len);
+
+    return hexdigest;
+}
+
+/*
  * INIT
  */
 void
 Init_ossl_hmac()
 {
-    rb_require("digest");
-
 #if 0 /* let rdoc know about mOSSL */
     mOSSL = rb_define_module("OpenSSL");
 #endif
 
     eHMACError = rb_define_class_under(mOSSL, "HMACError", eOSSLError);
 	
-    cHMAC = rb_define_class_under(mOSSL, "HMAC", rb_path2class("Digest::Class"));
+    cHMAC = rb_define_class_under(mOSSL, "HMAC", rb_cObject);
 
     rb_define_alloc_func(cHMAC, ossl_hmac_alloc);
     rb_define_singleton_method(cHMAC, "digest", ossl_hmac_s_digest, 3);
+    rb_define_singleton_method(cHMAC, "hexdigest", ossl_hmac_s_hexdigest, 3);
     
     rb_define_method(cHMAC, "initialize", ossl_hmac_initialize, 2);
     rb_define_copy_func(cHMAC, ossl_hmac_copy);
@@ -238,9 +254,10 @@ Init_ossl_hmac()
     rb_define_method(cHMAC, "reset", ossl_hmac_reset, 0);
     rb_define_method(cHMAC, "update", ossl_hmac_update, 1);
     rb_define_alias(cHMAC, "<<", "update");
-    rb_define_private_method(cHMAC, "finish", ossl_hmac_finish, 0);
-    rb_define_method(cHMAC, "digest_length", ossl_hmac_digest_length, 0);
-    rb_define_method(cHMAC, "block_length", ossl_hmac_block_length, 0);
+    rb_define_method(cHMAC, "digest", ossl_hmac_digest, 0);
+    rb_define_method(cHMAC, "hexdigest", ossl_hmac_hexdigest, 0);
+    rb_define_alias(cHMAC, "inspect", "hexdigest");
+    rb_define_alias(cHMAC, "to_s", "hexdigest");
 }
 
 #else /* NO_HMAC */
