@@ -726,6 +726,14 @@ RUBY_ALIAS_FUNCTION(rb_str_new5(VALUE obj, const char *ptr, long len),
 	   rb_str_new_with_class, (obj, ptr, len))
 #define rb_str_new5 rb_str_new_with_class
 
+static VALUE
+str_new_empty(VALUE str)
+{
+    VALUE v = rb_str_new5(str, 0, 0);
+    OBJ_INFECT(v, str);
+    return v;
+}
+
 #define STR_BUF_MIN_SIZE 128
 
 VALUE
@@ -5578,7 +5586,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	    regs = RMATCH_REGS(rb_backref_get());
 	    if (start == end && BEG(0) == END(0)) {
 		if (!ptr) {
-		    rb_ary_push(result, rb_str_new("", 0));
+		    rb_ary_push(result, str_new_empty(str));
 		    break;
 		}
 		else if (last_null == 1) {
@@ -5606,7 +5614,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	    for (idx=1; idx < regs->num_regs; idx++) {
 		if (BEG(idx) == -1) continue;
 		if (BEG(idx) == END(idx))
-		    tmp = rb_str_new5(str, 0, 0);
+		    tmp = str_new_empty(str);
 		else
 		    tmp = rb_str_subseq(str, BEG(idx), END(idx)-BEG(idx));
 		rb_ary_push(result, tmp);
@@ -5616,7 +5624,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
     }
     if (RSTRING_LEN(str) > 0 && (!NIL_P(limit) || RSTRING_LEN(str) > beg || lim < 0)) {
 	if (RSTRING_LEN(str) == beg)
-	    tmp = rb_str_new5(str, 0, 0);
+	    tmp = str_new_empty(str);
 	else
 	    tmp = rb_str_subseq(str, beg, RSTRING_LEN(str)-beg);
 	rb_ary_push(result, tmp);
@@ -6804,7 +6812,7 @@ rb_str_partition(VALUE str, VALUE sep)
     }
     if (pos < 0) {
       failed:
-	return rb_ary_new3(3, str, rb_str_new(0,0),rb_str_new(0,0));
+	return rb_ary_new3(3, str, str_new_empty(str), str_new_empty(str));
     }
     if (regex) {
 	sep = rb_str_subpat(str, sep, INT2FIX(0));
@@ -6854,7 +6862,7 @@ rb_str_rpartition(VALUE str, VALUE sep)
 	pos = rb_str_rindex(str, sep, pos);
     }
     if (pos < 0) {
-	return rb_ary_new3(3, rb_str_new(0,0),rb_str_new(0,0), str);
+	return rb_ary_new3(3, str_new_empty(str), str_new_empty(str), str);
     }
     if (regex) {
 	sep = rb_reg_nth_match(0, rb_backref_get());
