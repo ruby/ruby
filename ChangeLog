@@ -1,4 +1,6 @@
-Wed Feb 24 09:54:58 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Feb 24 11:52:05 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dln.c (translit_separator): moved back from load.c again.
 
 	* dln_find.c: split from dln.c.
 

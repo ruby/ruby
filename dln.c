@@ -1218,6 +1218,18 @@ aix_loaderror(const char *pathname)
 }
 #endif
 
+#if defined(DLN_NEEDS_ALT_SEPARATOR) && DLN_NEEDS_ALT_SEPARATOR
+#define translit_separator(src) do { \
+	char *tmp = ALLOCA_N(char, strlen(src) + 1), *p = tmp, c; \
+	do { \
+	    *p++ = ((c = *file++) == '/') ? DLN_NEEDS_ALT_SEPARATOR : c; \
+	} while (c); \
+	str = tmp; \
+    } while (0)
+#else
+#define translit_separator(str) (void)(str)
+#endif
+
 void*
 dln_load(const char *file)
 {
@@ -1264,6 +1276,7 @@ dln_load(const char *file)
     char *buf;
     /* Load the file as an object one */
     init_funcname(&buf, file);
+    translit_separator(file);
 
 #ifdef USE_DLN_DLOPEN
 #define DLN_DEFINED
