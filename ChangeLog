@@ -1,3 +1,7 @@
+Wed Feb 24 14:38:16 2010  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/indexer: Removed obsolete files.
+
 Wed Feb 24 11:52:05 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dln.c (translit_separator): moved back from load.c again.
