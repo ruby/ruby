@@ -1217,12 +1217,10 @@ onceinlinecache
  */
 DEFINE_INSN
 setinlinecache
-(OFFSET dst)
+(IC ic)
 (VALUE val)
 (VALUE val)
 {
-    IC ic = GET_CONST_INLINE_CACHE(dst);
-
     if (ic->ic_value.value == Qundef) {
 	rb_ary_push(GET_ISEQ()->mark_ary, val);
     }
