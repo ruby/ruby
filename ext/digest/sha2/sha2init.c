@@ -2,7 +2,7 @@
 /* $Id$ */
 
 #include "digest.h"
-#if defined(HAVE_OPENSSL_SHA_H) && defined(HAVE_SHA256_TRANSFORM) && defined(HAVE_SHA512_TRANSFORM)
+#if defined(SHA2_USE_OPENSSL)
 #include "sha2ossl.h"
 #else
 #include "sha2.h"
