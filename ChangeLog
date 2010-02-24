@@ -1,3 +1,7 @@
+Thu Feb 25 00:29:55 2010  Tanaka Akira  <akr@fsij.org>
+
+	* pack.c (pack_unpack): don't use OFF32 for gcc 4.5.
+
 Wed Feb 24 22:39:15 2010  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb: fix [ruby-core:28320] reported by Paul Clegg.

@@ -22,6 +22,12 @@
 # define NATINT_PACK
 #endif
 
+#ifdef WORDS_BIGENDIAN
+# define BIGENDIAN_P 1
+#else
+# define BIGENDIAN_P 0
+#endif
+
 #ifdef NATINT_PACK
 # define OFF16B(p) ((char*)(p) + (natint?0:(sizeof(short) - SIZE16)))
 # define OFF32B(p) ((char*)(p) + (natint?0:(sizeof(long) - SIZE32)))
@@ -76,18 +82,6 @@ TOKEN_PASTE(swap,x)(xtype z)		\
 #ifndef swap16
 #define swap16(x)	((((x)&0xFF)<<8) | (((x)>>8)&0xFF))
 #endif
-#if SIZEOF_SHORT == 2
-#define swaps(x)	swap16(x)
-#else
-#if SIZEOF_SHORT == 4
-#define swaps(x)	((((x)&0xFF)<<24)	\
-			|(((x)>>24)&0xFF)	\
-			|(((x)&0x0000FF00)<<8)	\
-			|(((x)&0x00FF0000)>>8)	)
-#else
-define_swapx(s,short)
-#endif
-#endif
 
 #ifndef swap32
 #define swap32(x)	((((x)&0xFF)<<24)	\
@@ -95,20 +89,70 @@ define_swapx(s,short)
 			|(((x)&0x0000FF00)<<8)	\
 			|(((x)&0x00FF0000)>>8)	)
 #endif
+
+#ifndef swap64
+#if SIZEOF_LONG == 8
+#define swap64(x)       ((((x)&0x00000000000000FFL)<<56)	\
+			|(((x)&0xFF00000000000000L)>>56)	\
+			|(((x)&0x000000000000FF00L)<<40)	\
+			|(((x)&0x00FF000000000000L)>>40)	\
+			|(((x)&0x0000000000FF0000L)<<24)	\
+			|(((x)&0x0000FF0000000000L)>>24)	\
+			|(((x)&0x00000000FF000000L)<<8)	\
+			|(((x)&0x000000FF00000000L)>>8))
+#endif
+#if defined(HAVE_LONG_LONG) && SIZEOF_LONG_LONG == 8
+#define swap64(x)       ((((x)&0x00000000000000FFLL)<<56)	\
+			|(((x)&0xFF00000000000000LL)>>56)	\
+			|(((x)&0x000000000000FF00LL)<<40)	\
+			|(((x)&0x00FF000000000000LL)>>40)	\
+			|(((x)&0x0000000000FF0000LL)<<24)	\
+			|(((x)&0x0000FF0000000000LL)>>24)	\
+			|(((x)&0x00000000FF000000LL)<<8)	\
+			|(((x)&0x000000FF00000000LL)>>8))
+#endif
+#endif
+
+#if SIZEOF_SHORT == 2
+#define swaps(x)	swap16(x)
+#else
+#if SIZEOF_SHORT == 4
+#define swaps(x)	swap32(x)
+#else
+define_swapx(s,short)
+#endif
+#endif
+
+#if SIZEOF_INT == 2
+#define swapi(x)	swap16(x)
+#else
+#if SIZEOF_INT == 4
+#define swapi(x)	swap32(x)
+#else
+define_swapx(i,int)
+#endif
+#endif
+
 #if SIZEOF_LONG == 4
 #define swapl(x)	swap32(x)
 #else
 #if SIZEOF_LONG == 8
-#define swapl(x)        ((((x)&0x00000000000000FF)<<56)	\
-			|(((x)&0xFF00000000000000)>>56)	\
-			|(((x)&0x000000000000FF00)<<40)	\
-			|(((x)&0x00FF000000000000)>>40)	\
-			|(((x)&0x0000000000FF0000)<<24)	\
-			|(((x)&0x0000FF0000000000)>>24)	\
-			|(((x)&0x00000000FF000000)<<8)	\
-			|(((x)&0x000000FF00000000)>>8))
+#define swapl(x)        swap64(x)
 #else
 define_swapx(l,long)
+#endif
+#endif
+
+#ifdef HAVE_LONG_LONG
+
+#if SIZEOF_LONG_LONG == 4
+#define swapll(x)	swap32(x)
+#else
+#if SIZEOF_LONG_LONG == 8
+#define swapll(x)        swap64(x)
+#else
+define_swapx(ll,LONG_LONG)
+#endif
 #endif
 #endif
 
@@ -357,7 +401,7 @@ num2i32(VALUE x)
 #endif
 
 #ifdef HAVE_LONG_LONG
-# define QUAD_SIZE sizeof(LONG_LONG)
+# define QUAD_SIZE SIZEOF_LONG_LONG
 #else
 # define QUAD_SIZE 8
 #endif
@@ -1345,6 +1389,7 @@ pack_unpack(VALUE str, VALUE fmt)
     int natint;			/* native integer */
 #endif
     int block_p = rb_block_given_p();
+    int signed_p, integer_size, bigendian_p;
 #define UNPACK_PUSH(item) do {\
 	VALUE item_val = (item);\
 	if (block_p) {\
@@ -1550,136 +1595,214 @@ pack_unpack(VALUE str, VALUE fmt)
 	    break;
 
 	  case 's':
-	    PACK_LENGTH_ADJUST(short,2);
-	    while (len-- > 0) {
-		short tmp = 0;
-		memcpy(OFF16(&tmp), s, NATINT_LEN(short,2));
-		EXTEND16(tmp);
-		s += NATINT_LEN(short,2);
-		UNPACK_PUSH(INT2FIX(tmp));
-	    }
-	    PACK_ITEM_ADJUST();
-	    break;
+	    signed_p = 1;
+	    integer_size = NATINT_LEN(short, 2);
+	    bigendian_p = BIGENDIAN_P;
+	    goto unpack_integer;
 
 	  case 'S':
-	    PACK_LENGTH_ADJUST(unsigned short,2);
-	    while (len-- > 0) {
-		unsigned short tmp = 0;
-		memcpy(OFF16(&tmp), s, NATINT_LEN(unsigned short,2));
-		s += NATINT_LEN(unsigned short,2);
-		UNPACK_PUSH(INT2FIX(tmp));
-	    }
-	    PACK_ITEM_ADJUST();
-	    break;
+	    signed_p = 0;
+	    integer_size = NATINT_LEN(short, 2);
+	    bigendian_p = BIGENDIAN_P;
+	    goto unpack_integer;
 
 	  case 'i':
-	    PACK_LENGTH_ADJUST(int,sizeof(int));
-	    while (len-- > 0) {
-		int tmp;
-		memcpy(&tmp, s, sizeof(int));
-		s += sizeof(int);
-		UNPACK_PUSH(INT2NUM(tmp));
-	    }
-	    PACK_ITEM_ADJUST();
-	    break;
+	    signed_p = 1;
+	    integer_size = sizeof(int);
+	    bigendian_p = BIGENDIAN_P;
+	    goto unpack_integer;
 
 	  case 'I':
-	    PACK_LENGTH_ADJUST(unsigned int,sizeof(unsigned int));
-	    while (len-- > 0) {
-		unsigned int tmp;
-		memcpy(&tmp, s, sizeof(unsigned int));
-		s += sizeof(unsigned int);
-		UNPACK_PUSH(UINT2NUM(tmp));
-	    }
-	    PACK_ITEM_ADJUST();
-	    break;
+	    signed_p = 0;
+	    integer_size = sizeof(int);
+	    bigendian_p = BIGENDIAN_P;
+	    goto unpack_integer;
 
 	  case 'l':
-	    PACK_LENGTH_ADJUST(long,4);
-	    while (len-- > 0) {
-		long tmp = 0;
-		memcpy(OFF32(&tmp), s, NATINT_LEN(long,4));
-		EXTEND32(tmp);
-		s += NATINT_LEN(long,4);
-		UNPACK_PUSH(LONG2NUM(tmp));
-	    }
-	    PACK_ITEM_ADJUST();
-	    break;
+	    signed_p = 1;
+	    integer_size = NATINT_LEN(long, 4);
+	    bigendian_p = BIGENDIAN_P;
+	    goto unpack_integer;
 
 	  case 'L':
-	    PACK_LENGTH_ADJUST(unsigned long,4);
-	    while (len-- > 0) {
-		unsigned long tmp = 0;
-		memcpy(OFF32(&tmp), s, NATINT_LEN(unsigned long,4));
-		s += NATINT_LEN(unsigned long,4);
-		UNPACK_PUSH(ULONG2NUM(tmp));
-	    }
-	    PACK_ITEM_ADJUST();
-	    break;
+	    signed_p = 0;
+	    integer_size = NATINT_LEN(long, 4);
+	    bigendian_p = BIGENDIAN_P;
+	    goto unpack_integer;
 
 	  case 'q':
-	    PACK_LENGTH_ADJUST_SIZE(QUAD_SIZE);
-	    while (len-- > 0) {
-		char *tmp = (char*)s;
-		s += QUAD_SIZE;
-		UNPACK_PUSH(rb_quad_unpack(tmp, 1));
-	    }
-	    PACK_ITEM_ADJUST();
-	    break;
-
+	    signed_p = 1;
+	    integer_size = QUAD_SIZE;
+	    bigendian_p = BIGENDIAN_P;
+	    goto unpack_integer;
+	    
 	  case 'Q':
-	    PACK_LENGTH_ADJUST_SIZE(QUAD_SIZE);
-	    while (len-- > 0) {
-		char *tmp = (char*)s;
-		s += QUAD_SIZE;
-		UNPACK_PUSH(rb_quad_unpack(tmp, 0));
-	    }
-	    PACK_ITEM_ADJUST();
-	    break;
+	    signed_p = 0;
+	    integer_size = QUAD_SIZE;
+	    bigendian_p = BIGENDIAN_P;
+	    goto unpack_integer;
 
 	  case 'n':
-	    PACK_LENGTH_ADJUST(unsigned short,2);
-	    while (len-- > 0) {
-		unsigned short tmp = 0;
-		memcpy(OFF16B(&tmp), s, NATINT_LEN(unsigned short,2));
-		s += NATINT_LEN(unsigned short,2);
-		UNPACK_PUSH(UINT2NUM(ntohs(tmp)));
-	    }
-	    PACK_ITEM_ADJUST();
-	    break;
+	    signed_p = 0;
+	    integer_size = 2;
+	    bigendian_p = 1;
+	    goto unpack_integer;
 
 	  case 'N':
-	    PACK_LENGTH_ADJUST(unsigned long,4);
-	    while (len-- > 0) {
-		unsigned long tmp = 0;
-		memcpy(OFF32B(&tmp), s, NATINT_LEN(unsigned long,4));
-		s += NATINT_LEN(unsigned long,4);
-		UNPACK_PUSH(ULONG2NUM(ntohl(tmp)));
-	    }
-	    PACK_ITEM_ADJUST();
-	    break;
+	    signed_p = 0;
+	    integer_size = 4;
+	    bigendian_p = 1;
+	    goto unpack_integer;
 
 	  case 'v':
-	    PACK_LENGTH_ADJUST(unsigned short,2);
-	    while (len-- > 0) {
-		unsigned short tmp = 0;
-		memcpy(&tmp, s, NATINT_LEN(unsigned short,2));
-		s += NATINT_LEN(unsigned short,2);
-		UNPACK_PUSH(UINT2NUM(vtohs(tmp)));
-	    }
-	    PACK_ITEM_ADJUST();
-	    break;
+	    signed_p = 0;
+	    integer_size = 2;
+	    bigendian_p = 0;
+	    goto unpack_integer;
 
 	  case 'V':
-	    PACK_LENGTH_ADJUST(unsigned long,4);
-	    while (len-- > 0) {
-		unsigned long tmp = 0;
-		memcpy(&tmp, s, NATINT_LEN(long,4));
-		s += NATINT_LEN(long,4);
-		UNPACK_PUSH(ULONG2NUM(vtohl(tmp)));
+	    signed_p = 0;
+	    integer_size = 4;
+	    bigendian_p = 0;
+	    goto unpack_integer;
+
+	  unpack_integer:
+	    switch (integer_size) {
+	      case SIZEOF_SHORT:
+		if (signed_p) {
+		    PACK_LENGTH_ADJUST(short,sizeof(short));
+		    while (len-- > 0) {
+			short tmp;
+			memcpy(&tmp, s, sizeof(short));
+			if (bigendian_p ^ BIGENDIAN_P) tmp = swaps(tmp);
+			s += sizeof(short);
+			UNPACK_PUSH(INT2FIX(tmp));
+		    }
+		    PACK_ITEM_ADJUST();
+		}
+		else {
+		    PACK_LENGTH_ADJUST(unsigned short,sizeof(unsigned short));
+		    while (len-- > 0) {
+			unsigned short tmp;
+			memcpy(&tmp, s, sizeof(unsigned short));
+			if (bigendian_p ^ BIGENDIAN_P) tmp = swaps(tmp);
+			s += sizeof(unsigned short);
+			UNPACK_PUSH(INT2FIX(tmp));
+		    }
+		    PACK_ITEM_ADJUST();
+		}
+		break;
+
+#if SIZEOF_SHORT != SIZEOF_INT
+	      case SIZEOF_INT:
+		if (signed_p) {
+		    PACK_LENGTH_ADJUST(int,sizeof(int));
+		    while (len-- > 0) {
+			int tmp;
+			memcpy(&tmp, s, sizeof(int));
+			if (bigendian_p ^ BIGENDIAN_P) tmp = swapi(tmp);
+			s += sizeof(int);
+			UNPACK_PUSH(INT2NUM(tmp));
+		    }
+		    PACK_ITEM_ADJUST();
+		}
+		else {
+		    PACK_LENGTH_ADJUST(unsigned int,sizeof(unsigned int));
+		    while (len-- > 0) {
+			unsigned int tmp;
+			memcpy(&tmp, s, sizeof(unsigned int));
+			if (bigendian_p ^ BIGENDIAN_P) tmp = swapi(tmp);
+			s += sizeof(unsigned int);
+			UNPACK_PUSH(UINT2NUM(tmp));
+		    }
+		    PACK_ITEM_ADJUST();
+		}
+		break;
+#endif
+
+#if SIZEOF_INT != SIZEOF_LONG
+	      case SIZEOF_LONG:
+		if (signed_p) {
+		    PACK_LENGTH_ADJUST(long,sizeof(long));
+		    while (len-- > 0) {
+			long tmp;
+			memcpy(&tmp, s, sizeof(long));
+			if (bigendian_p ^ BIGENDIAN_P) tmp = swapl(tmp);
+			s += sizeof(long);
+			UNPACK_PUSH(LONG2NUM(tmp));
+		    }
+		    PACK_ITEM_ADJUST();
+		}
+		else {
+		    PACK_LENGTH_ADJUST(unsigned long,sizeof(unsigned long));
+		    while (len-- > 0) {
+			unsigned long tmp;
+			memcpy(&tmp, s, sizeof(unsigned long));
+			if (bigendian_p ^ BIGENDIAN_P) tmp = swapl(tmp);
+			s += sizeof(unsigned long);
+			UNPACK_PUSH(ULONG2NUM(tmp));
+		    }
+		    PACK_ITEM_ADJUST();
+		}
+		break;
+#endif
+
+#if defined(HAVE_LONG_LONG) && SIZEOF_LONG != SIZEOF_LONG_LONG
+	      case SIZEOF_LONG_LONG:
+		if (signed_p) {
+		    PACK_LENGTH_ADJUST(LONG_LONG,sizeof(LONG_LONG));
+		    while (len-- > 0) {
+			LONG_LONG tmp;
+			memcpy(&tmp, s, sizeof(LONG_LONG));
+			if (bigendian_p ^ BIGENDIAN_P) tmp = swapll(tmp);
+			s += sizeof(LONG_LONG);
+			UNPACK_PUSH(LL2NUM(tmp));
+		    }
+		    PACK_ITEM_ADJUST();
+		}
+		else {
+		    PACK_LENGTH_ADJUST(unsigned LONG_LONG,sizeof(unsigned LONG_LONG));
+		    while (len-- > 0) {
+			unsigned LONG_LONG tmp;
+			memcpy(&tmp, s, sizeof(unsigned LONG_LONG));
+			if (bigendian_p ^ BIGENDIAN_P) tmp = swapll(tmp);
+			s += sizeof(unsigned LONG_LONG);
+			UNPACK_PUSH(ULL2NUM(tmp));
+		    }
+		    PACK_ITEM_ADJUST();
+		}
+		break;
+
+#endif
+
+#if SIZEOF_LONG != QUAD_SIZE && (!defined(HAVE_LONG_LONG) || SIZEOF_LONG_LONG != QUAD_SIZE)
+	      case QUAD_SIZE:
+		if (bigendian_p ^ BIGENDIAN_P)
+		    rb_bug("unexpected endian");
+		if (signed_p) {
+		    PACK_LENGTH_ADJUST_SIZE(QUAD_SIZE);
+		    while (len-- > 0) {
+			char *tmp = (char*)s;
+			s += QUAD_SIZE;
+			UNPACK_PUSH(rb_quad_unpack(tmp, 1));
+		    }
+		    PACK_ITEM_ADJUST();
+		}
+		else {
+		    PACK_LENGTH_ADJUST_SIZE(QUAD_SIZE);
+		    while (len-- > 0) {
+			char *tmp = (char*)s;
+			s += QUAD_SIZE;
+			UNPACK_PUSH(rb_quad_unpack(tmp, 0));
+		    }
+		    PACK_ITEM_ADJUST();
+		}
+		break;
+#endif
+
+              default:
+	        rb_bug("unexpected intger size");
 	    }
-	    PACK_ITEM_ADJUST();
-	    break;
 
 	  case 'f':
 	  case 'F':
