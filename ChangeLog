@@ -1,3 +1,7 @@
+Wed Feb 24 09:54:58 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dln_find.c: split from dln.c.
+
 Wed Feb 24 09:31:33 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/digest/extconf.rb: use OpenSSL only when all transform
