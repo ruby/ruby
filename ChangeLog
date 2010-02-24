@@ -50,6 +50,10 @@ Sun Feb 21 06:24:12 2010  Alexander Zavorine  <alexandre.zavorine@nokia.com>
 	* symbian/setup (config.h): HAVE_STRUCT_TIMEZONE, VOID_UNSETENV, and RUBY_LIB_VERSION_STYLE defined.
 	* symbian/setup (ruby.mmp): SOURCE node.c added.
 
+Mon Feb 22 09:15:45 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (gc_mark_children): lost comment added.
+
 Sat Feb 20 14:42:19 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* marshal.c (r_object0): should prepare placeholder before

@@ -1573,7 +1573,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 	    ptr = (VALUE)obj->as.node.u3.node;
 	    goto again;
 
-	  case NODE_WHILE:
+	  case NODE_WHILE:	/* 1,2 */
 	  case NODE_UNTIL:
 	  case NODE_AND:
 	  case NODE_OR:
@@ -1593,7 +1593,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 	  case NODE_ARGSCAT:
 	    gc_mark(objspace, (VALUE)obj->as.node.u1.node, lev);
 	    /* fall through */
-	  case NODE_GASGN:
+	  case NODE_GASGN:	/* 2 */
 	  case NODE_LASGN:
 	  case NODE_DASGN:
 	  case NODE_DASGN_CURR:
