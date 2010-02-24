@@ -100,8 +100,7 @@ TOKEN_PASTE(swap,x)(xtype z)		\
 			|(((x)&0x0000FF0000000000L)>>24)	\
 			|(((x)&0x00000000FF000000L)<<8)	\
 			|(((x)&0x000000FF00000000L)>>8))
-#endif
-#if defined(HAVE_LONG_LONG) && SIZEOF_LONG_LONG == 8
+#elif defined(HAVE_LONG_LONG) && SIZEOF_LONG_LONG == 8
 #define swap64(x)       ((((x)&0x00000000000000FFLL)<<56)	\
 			|(((x)&0xFF00000000000000LL)>>56)	\
 			|(((x)&0x000000000000FF00LL)<<40)	\

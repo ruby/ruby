@@ -1,3 +1,7 @@
+Thu Feb 25 00:57:59 2010  Tanaka Akira  <akr@fsij.org>
+
+	* pack.c (swap64): don't redefine.
+
 Thu Feb 25 00:29:55 2010  Tanaka Akira  <akr@fsij.org>
 
 	* pack.c (pack_unpack): don't use OFF32 for gcc 4.5.
