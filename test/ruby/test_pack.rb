@@ -493,7 +493,7 @@ class TestPack < Test::Unit::TestCase
   end
 
   def test_short_string
-    %w[n N v V s S l L q Q].each {|fmt|
+    %w[n N v V s S i I l L q Q s! S! i! I! l! l!].each {|fmt|
       str = [1].pack(fmt)
       assert_equal([1,nil], str.unpack("#{fmt}2"))
     }
