@@ -143,7 +143,6 @@ define_swapx(l,long)
 #endif
 
 #ifdef HAVE_LONG_LONG
-
 #if SIZEOF_LONG_LONG == 4
 #define swapll(x)	swap32(x)
 #else
