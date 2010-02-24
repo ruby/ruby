@@ -1126,7 +1126,7 @@ r_bytes0(long len, struct load_arg *arg)
 }
 
 static int
-id2encidx(ID id, VALUE val, struct load_arg *arg)
+id2encidx(ID id, VALUE val)
 {
     if (id == rb_id_encoding()) {
 	int idx = rb_enc_find_index(StringValueCStr(val));
@@ -1165,7 +1165,7 @@ r_symreal(struct load_arg *arg, int ivar)
 	long num = r_long(arg);
 	while (num-- > 0) {
 	    id = r_symbol(arg);
-	    idx = id2encidx(id, r_object(arg), arg);
+	    idx = id2encidx(id, r_object(arg));
 	}
     }
     if (idx < 0) idx = rb_usascii_encindex();
@@ -1266,7 +1266,7 @@ r_ivar(VALUE obj, int *has_encoding, struct load_arg *arg)
 	do {
 	    ID id = r_symbol(arg);
 	    VALUE val = r_object(arg);
-	    int idx = id2encidx(id, val, arg);
+	    int idx = id2encidx(id, val);
 	    if (idx >= 0) {
 		rb_enc_associate_index(obj, idx);
 		if (has_encoding) *has_encoding = TRUE;
@@ -1494,8 +1494,8 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    volatile VALUE str = r_bytes(arg);
 	    int options = r_byte(arg);
 	    int has_encoding = FALSE;
+	    st_index_t idx = r_prepare(arg);
 
-	    v = r_entry(rb_reg_alloc(), arg);
 	    if (ivp) {
 		r_ivar(str, &has_encoding, arg);
 		*ivp = FALSE;
@@ -1519,7 +1519,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 		}
 		rb_str_set_len(str, dst - ptr);
 	    }
-	    v = rb_reg_init_str(v, str, options);
+	    v = r_entry0(rb_reg_new_str(str, options), idx, arg);
 	    v = r_leave(v, arg);
 	}
 	break;

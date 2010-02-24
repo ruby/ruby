@@ -50,6 +50,13 @@ Sun Feb 21 06:24:12 2010  Alexander Zavorine  <alexandre.zavorine@nokia.com>
 	* symbian/setup (config.h): HAVE_STRUCT_TIMEZONE, VOID_UNSETENV, and RUBY_LIB_VERSION_STYLE defined.
 	* symbian/setup (ruby.mmp): SOURCE node.c added.
 
+Sat Feb 20 14:42:19 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (r_object0): should prepare placeholder before
+	  processing instance variables.  [ruby-dev:40414]
+
+	* marshal.c (id2encidx): no longer need arg.
+
 Sat Feb 20 14:36:16 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* vm.c (vm_backtrace_each): use called_id when method definition
