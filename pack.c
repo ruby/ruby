@@ -1770,7 +1770,6 @@ pack_unpack(VALUE str, VALUE fmt)
 		    PACK_ITEM_ADJUST();
 		}
 		break;
-
 #endif
 
 #if SIZEOF_LONG != QUAD_SIZE && (!defined(HAVE_LONG_LONG) || SIZEOF_LONG_LONG != QUAD_SIZE)
