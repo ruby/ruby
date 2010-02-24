@@ -797,7 +797,7 @@ insn_operand_intern(rb_iseq_t *iseq,
 	break;
 
       case TS_IC:
-	ret = rb_str_new2("<ic>");
+	ret = rb_sprintf("<ic:%d>", (struct iseq_inline_cache_entry *)op - iseq->ic_entries);
 	break;
 
       case TS_CDHASH:
@@ -1228,8 +1228,10 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 		    rb_ary_push(ary, ID2SYM(entry->id));
 		}
 		break;
-	      case TS_IC:
-		rb_ary_push(ary, Qnil);
+	      case TS_IC: {
+		  struct iseq_inline_cache_entry *ic = (struct iseq_inline_cache_entry *)*seq;
+		    rb_ary_push(ary, INT2FIX(ic - iseq->ic_entries));
+	        }
 		break;
 	      case TS_ID:
 		rb_ary_push(ary, ID2SYM(*seq));

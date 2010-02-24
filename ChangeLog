@@ -1,3 +1,20 @@
+Thu Feb 25 00:43:57 2010  Koichi Sasada  <ko1@atdot.net>
+
+	* insns.def: Change the operand type of setinlinecache
+	  (OFFSET to IC).  This IC must be same as corresponding
+	  getinlinecache instruction's IC operand.
+	  This change is for a little performance improvement
+	  (getting IC directly) and is for the AOT compilation development.
+
+	* compile.c, iseq.c, insns.def: Change the approach to handling inline
+	  cahce (IC) type operand to enable the above change.
+	  This change also affects ISeq#to_a method.  The inline cache operand
+	  will be dumped by fixnum, the index of inline cache, in other words,
+	  inline cache identity.
+
+	* template/insns_info.inc.tmpl, tool/instruction.rb: No need to count
+	  inline cache size (insn_iclen()).
+
 Thu Feb 25 00:57:59 2010  Tanaka Akira  <akr@fsij.org>
 
 	* pack.c (swap64): don't redefine.
