@@ -584,10 +584,10 @@ class TestIntegerComb < Test::Unit::TestCase
       VS.reverse_each {|a|
         s = [a].pack(template)
         b = s.unpack(template)[0]
-        assert_equal(a & mask, b & mask, "[#{a}].pack(#{template.dump}).unpack(#{template.dump}) & #{mask}")
         if min <= a && a <= max
-          assert_equal(a, b, "[#{a}].pack(#{template.dump}).unpack(#{template.dump})")
+          assert_equal(a, b, "[#{a}].pack(#{template.dump}).unpack(#{template.dump})[0]")
         end
+        assert_equal(a & mask, b & mask, "[#{a}].pack(#{template.dump}).unpack(#{template.dump})[0] & #{mask}")
       }
     }
   end
