@@ -1,3 +1,8 @@
+Wed Feb 24 09:31:33 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/digest/extconf.rb: use OpenSSL only when all transform
+	  functions are available.
+
 Wed Feb 24 00:39:17 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* string.c (str_new_empty): String#split, partition, rpartition
