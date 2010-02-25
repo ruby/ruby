@@ -16,7 +16,7 @@ rb_dl_get_last_error(VALUE self)
     return rb_thread_local_aref(rb_thread_current(), id_last_error);
 }
 
-VALUE
+static VALUE
 rb_dl_set_last_error(VALUE self, VALUE val)
 {
     rb_thread_local_aset(rb_thread_current(), id_last_error, val);
@@ -33,7 +33,7 @@ rb_dl_get_win32_last_error(VALUE self)
     return rb_thread_local_aref(rb_thread_current(), id_win32_last_error);
 }
 
-VALUE
+static VALUE
 rb_dl_set_win32_last_error(VALUE self, VALUE val)
 {
     rb_thread_local_aset(rb_thread_current(), id_win32_last_error, val);
@@ -147,12 +147,12 @@ rb_dlcfunc_initialize(int argc, VALUE argv[], VALUE self)
     struct cfunc_data *data;
     void *saddr;
     const char *sname;
-
+    
     rb_scan_args(argc, argv, "13", &addr, &type, &name, &calltype);
-
+    
     saddr = (void*)(NUM2PTR(rb_Integer(addr)));
     sname = NIL_P(name) ? NULL : StringValuePtr(name);
-
+    
     TypedData_Get_Struct(self, struct cfunc_data, &dlcfunc_data_type, data);
     if( data->name ) xfree(data->name);
     data->ptr  = saddr;
@@ -284,11 +284,11 @@ rb_dlcfunc_inspect(VALUE self)
 {
     VALUE val;
     char  *str;
-    size_t str_size;
+    int str_size;
     struct cfunc_data *cfunc;
-
+    
     TypedData_Get_Struct(self, struct cfunc_data, &dlcfunc_data_type, cfunc);
-
+    
     str_size = (cfunc->name ? strlen(cfunc->name) : 0) + 100;
     str = ruby_xmalloc(str_size);
     snprintf(str, str_size - 1,
@@ -339,31 +339,22 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 
     memset(stack, 0, sizeof(DLSTACK_TYPE) * DLSTACK_SIZE);
     Check_Type(ary, T_ARRAY);
-
+    
     TypedData_Get_Struct(self, struct cfunc_data, &dlcfunc_data_type, cfunc);
 
     if( cfunc->ptr == 0 ){
 	rb_raise(rb_eDLError, "can't call null-function");
 	return Qnil;
     }
-
-    if( RARRAY_LEN(ary) >= DLSTACK_SIZE ){
-	rb_raise(rb_eDLError, "too many arguments (stack overflow)");
-    }
+    
     for( i = 0; i < RARRAY_LEN(ary); i++ ){
-	unsigned long rb_big2ulong_pack(VALUE x);
-	VALUE arg = RARRAY_PTR(ary)[i];
-
-	rb_check_safe_obj(arg);
-	if (FIXNUM_P(arg)) {
-	    stack[i] = FIX2LONG(arg);
+	if( i >= DLSTACK_SIZE ){
+	    rb_raise(rb_eDLError, "too many arguments (stack overflow)");
 	}
-	else {
-	    Check_Type(arg, T_BIGNUM);
-	    stack[i] = rb_big2ulong_pack(arg);
-	}
+	rb_check_safe_obj(RARRAY_PTR(ary)[i]);
+	stack[i] = NUM2LONG(RARRAY_PTR(ary)[i]);
     }
-
+    
     /* calltype == CFUNC_CDECL */
     if( cfunc->calltype == CFUNC_CDECL
 #ifndef FUNC_STDCALL

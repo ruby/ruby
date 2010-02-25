@@ -1,3 +1,7 @@
+Fri Feb 26 07:44:51 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/dl: revert dl with libffi because it can't run on mswin now.
+
 Thu Feb 25 22:59:46 2010  Tanaka Akira  <akr@fsij.org>
 
 	* pack.c: consider DYNAMIC_ENDIAN.  refactored.

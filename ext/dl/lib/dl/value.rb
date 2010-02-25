@@ -36,7 +36,16 @@ module DL
       end
     end
 
-    def wrap_arg(arg, ty, funcs = [], &block)
+    def wrap_args(args, tys, funcs, &block)
+      result = []
+      tys ||= []
+      args.each_with_index{|arg, idx|
+        result.push(wrap_arg(arg, tys[idx], funcs, &block))
+      }
+      result
+    end
+
+    def wrap_arg(arg, ty, funcs, &block)
         funcs ||= []
         case arg
         when nil

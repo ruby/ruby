@@ -104,7 +104,7 @@ rb_dlptr2cptr(VALUE val)
     else{
 	rb_raise(rb_eTypeError, "DL::PtrData was expected");
     }
-
+    
     return ptr;
 }
 
@@ -186,7 +186,7 @@ static VALUE
 rb_dlptr_s_malloc(int argc, VALUE argv[], VALUE klass)
 {
     VALUE size, sym, obj;
-    long s;
+    int   s;
     freefunc_t f;
 
     switch (rb_scan_args(argc, argv, "11", &size, &sym)) {

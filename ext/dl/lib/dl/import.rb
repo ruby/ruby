@@ -1,5 +1,4 @@
 require 'dl'
-require 'dl/closure'
 require 'dl/func.rb'
 require 'dl/struct.rb'
 require 'dl/cparser.rb'
@@ -212,11 +211,9 @@ module DL
     end
 
     def bind_function(name, ctype, argtype, call_type = nil, &block)
-      closure = Class.new(DL::Closure) {
-        define_method(:call, block)
-      }.new(ctype, argtype)
-
-      Function.new(closure, argtype)
+      f = Function.new(CFunc.new(0, ctype, name, call_type || :cdecl), argtype)
+      f.bind(&block)
+      f
     end
 
     def create_temp_function(name, ctype, argtype, call_type = nil)
