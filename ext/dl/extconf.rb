@@ -8,30 +8,8 @@ $INSTALLFILES = [
   ["dl.h", "$(HDRDIR)"],
 ]
 
-if pkg_config("libffi")
-  # libffi closure api must be switched depending on the version
-  if system("pkg-config --atleast-version=3.0.9 libffi")
-    $defs.push(format('-DUSE_NEW_CLOSURE_API'))
-  end
-else
-  dir_config('ffi', '/usr/include', '/usr/lib')
-end
-
-unless have_header('ffi.h')
-  if have_header('ffi/ffi.h')
-    $defs.push(format('-DUSE_HEADER_HACKS'))
-  else
-    abort "ffi is missing"
-  end
-end
-
-unless have_library('ffi')
-  abort "ffi is missing"
-end
-
 check = true
 if( have_header("dlfcn.h") )
-
   have_library("dl")
   check &&= have_func("dlopen")
   check &&= have_func("dlclose")

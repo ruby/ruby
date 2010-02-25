@@ -3,12 +3,6 @@
 
 #include <ruby.h>
 
-#ifdef USE_HEADER_HACKS
-#include <ffi/ffi.h>
-#else
-#include <ffi.h>
-#endif
-
 #if !defined(FUNC_CDECL)
 #  define FUNC_CDECL(x) x
 #endif
@@ -136,7 +130,6 @@
 
 extern VALUE rb_mDL;
 extern VALUE rb_cDLHandle;
-extern VALUE rb_cDLCPtr;
 extern VALUE rb_cDLSymbol;
 extern VALUE rb_eDLError;
 extern VALUE rb_eDLTypeError;
@@ -227,10 +220,5 @@ int rb_dlcfunc_kind_p(VALUE func);
 VALUE rb_dlptr_new(void *ptr, long size, freefunc_t func);
 VALUE rb_dlptr_new2(VALUE klass, void *ptr, long size, freefunc_t func);
 VALUE rb_dlptr_malloc(long size, freefunc_t func);
-
-VALUE rb_dl_set_last_error(VALUE self, VALUE val);
-#if defined(HAVE_WINDOWS_H)
-VALUE rb_dl_set_win32_last_error(VALUE self, VALUE val);
-#endif
 
 #endif
