@@ -587,6 +587,8 @@ class TestIntegerComb < Test::Unit::TestCase
         if min <= a && a <= max
           assert_equal(a, b, "[#{a}].pack(#{template.dump}).unpack(#{template.dump})[0]")
         end
+        assert_operator(min, :<=, b)
+        assert_operator(b, :<=, max)
         assert_equal(a & mask, b & mask, "[#{a}].pack(#{template.dump}).unpack(#{template.dump})[0] & #{mask}")
       }
     }

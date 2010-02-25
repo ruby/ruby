@@ -22,39 +22,31 @@
 # define NATINT_PACK
 #endif
 
-#ifdef WORDS_BIGENDIAN
-# define BIGENDIAN_P 1
+#ifdef DYNAMIC_ENDIAN
+ /* for universal binary of NEXTSTEP and MacOS X */
+ static int
+ is_bigendian(void)
+ {
+     static int init = 0;
+     static int endian_value;
+     char *p;
+
+     if (init) return endian_value;
+     init = 1;
+     p = (char*)&init;
+     return endian_value = p[0]?0:1;
+ }
+# define BIGENDIAN_P() (is_bigendian())
+#elif defined(WORDS_BIGENDIAN)
+# define BIGENDIAN_P() 1
 #else
-# define BIGENDIAN_P 0
+# define BIGENDIAN_P() 0
 #endif
 
 #ifdef NATINT_PACK
-# define OFF16B(p) ((char*)(p) + (natint?0:(sizeof(short) - SIZE16)))
-# define OFF32B(p) ((char*)(p) + (natint?0:(sizeof(long) - SIZE32)))
 # define NATINT_LEN(type,len) (natint?(int)sizeof(type):(int)(len))
-# ifdef WORDS_BIGENDIAN
-#   define OFF16(p) OFF16B(p)
-#   define OFF32(p) OFF32B(p)
-# endif
-# define NATINT_HTOVS(x) (natint?htovs(x):htov16(x))
-# define NATINT_HTOVL(x) (natint?htovl(x):htov32(x))
-# define NATINT_HTONS(x) (natint?htons(x):hton16(x))
-# define NATINT_HTONL(x) (natint?htonl(x):hton32(x))
 #else
 # define NATINT_LEN(type,len) ((int)sizeof(type))
-# define NATINT_HTOVS(x) htovs(x)
-# define NATINT_HTOVL(x) htovl(x)
-# define NATINT_HTONS(x) htons(x)
-# define NATINT_HTONL(x) htonl(x)
-#endif
-
-#ifndef OFF16
-# define OFF16(p) (char*)(p)
-# define OFF32(p) (char*)(p)
-#endif
-#ifndef OFF16B
-# define OFF16B(p) (char*)(p)
-# define OFF32B(p) (char*)(p)
 #endif
 
 #define define_swapx(x, xtype)		\
@@ -80,295 +72,187 @@ TOKEN_PASTE(swap,x)(xtype z)		\
 }
 
 #ifndef swap16
-#define swap16(x)	((((x)&0xFF)<<8) | (((x)>>8)&0xFF))
+# define swap16(x)	((((x)&0xFF)<<8) | (((x)>>8)&0xFF))
 #endif
 
 #ifndef swap32
-#define swap32(x)	((((x)&0xFF)<<24)	\
+# define swap32(x)	((((x)&0xFF)<<24)	\
 			|(((x)>>24)&0xFF)	\
 			|(((x)&0x0000FF00)<<8)	\
 			|(((x)&0x00FF0000)>>8)	)
 #endif
 
 #ifndef swap64
-#if SIZEOF_LONG == 8
-#define swap64(x)       ((((x)&0x00000000000000FFL)<<56)	\
-			|(((x)&0xFF00000000000000L)>>56)	\
-			|(((x)&0x000000000000FF00L)<<40)	\
-			|(((x)&0x00FF000000000000L)>>40)	\
-			|(((x)&0x0000000000FF0000L)<<24)	\
-			|(((x)&0x0000FF0000000000L)>>24)	\
-			|(((x)&0x00000000FF000000L)<<8)	\
-			|(((x)&0x000000FF00000000L)>>8))
-#elif defined(HAVE_LONG_LONG) && SIZEOF_LONG_LONG == 8
-#define swap64(x)       ((((x)&0x00000000000000FFLL)<<56)	\
-			|(((x)&0xFF00000000000000LL)>>56)	\
-			|(((x)&0x000000000000FF00LL)<<40)	\
-			|(((x)&0x00FF000000000000LL)>>40)	\
-			|(((x)&0x0000000000FF0000LL)<<24)	\
-			|(((x)&0x0000FF0000000000LL)>>24)	\
-			|(((x)&0x00000000FF000000LL)<<8)	\
-			|(((x)&0x000000FF00000000LL)>>8))
-#endif
+# if SIZEOF_LONG == 8
+#  define swap64(x)       ((((x)&0x00000000000000FFL)<<56)	\
+			  |(((x)>>56)&0xFF)	                \
+			  |(((x)&0x000000000000FF00L)<<40)	\
+			  |(((x)&0x00FF000000000000L)>>40)	\
+			  |(((x)&0x0000000000FF0000L)<<24)	\
+			  |(((x)&0x0000FF0000000000L)>>24)	\
+			  |(((x)&0x00000000FF000000L)<<8)	\
+			  |(((x)&0x000000FF00000000L)>>8))
+# elif defined(HAVE_LONG_LONG) && SIZEOF_LONG_LONG == 8
+#  define swap64(x)       ((((x)&0x00000000000000FFLL)<<56)	\
+			  |(((x)>>56)&0xFF)	                \
+			  |(((x)&0x000000000000FF00LL)<<40)	\
+			  |(((x)&0x00FF000000000000LL)>>40)	\
+			  |(((x)&0x0000000000FF0000LL)<<24)	\
+			  |(((x)&0x0000FF0000000000LL)>>24)	\
+			  |(((x)&0x00000000FF000000LL)<<8)	\
+			  |(((x)&0x000000FF00000000LL)>>8))
+# endif
 #endif
 
 #if SIZEOF_SHORT == 2
-#define swaps(x)	swap16(x)
+# define swaps(x)	swap16(x)
+#elif SIZEOF_SHORT == 4
+# define swaps(x)	swap32(x)
 #else
-#if SIZEOF_SHORT == 4
-#define swaps(x)	swap32(x)
-#else
-define_swapx(s,short)
-#endif
+  define_swapx(s,short)
 #endif
 
 #if SIZEOF_INT == 2
-#define swapi(x)	swap16(x)
+# define swapi(x)	swap16(x)
+#elif SIZEOF_INT == 4
+# define swapi(x)	swap32(x)
 #else
-#if SIZEOF_INT == 4
-#define swapi(x)	swap32(x)
-#else
-define_swapx(i,int)
-#endif
+  define_swapx(i,int)
 #endif
 
 #if SIZEOF_LONG == 4
-#define swapl(x)	swap32(x)
+# define swapl(x)	swap32(x)
+#elif SIZEOF_LONG == 8
+# define swapl(x)        swap64(x)
 #else
-#if SIZEOF_LONG == 8
-#define swapl(x)        swap64(x)
-#else
-define_swapx(l,long)
-#endif
+  define_swapx(l,long)
 #endif
 
 #ifdef HAVE_LONG_LONG
-#if SIZEOF_LONG_LONG == 4
-#define swapll(x)	swap32(x)
-#else
-#if SIZEOF_LONG_LONG == 8
-#define swapll(x)        swap64(x)
-#else
-define_swapx(ll,LONG_LONG)
-#endif
-#endif
+# if SIZEOF_LONG_LONG == 8
+#  define swapll(x)        swap64(x)
+# else
+   define_swapx(ll,LONG_LONG)
+# endif
 #endif
 
 #if SIZEOF_FLOAT == 4
-#if SIZEOF_LONG == 4	/* SIZEOF_FLOAT == 4 == SIZEOF_LONG */
-#define swapf(x)	swapl(x)
-#define FLOAT_SWAPPER	unsigned long
-#else
-#if SIZEOF_SHORT == 4	/* SIZEOF_FLOAT == 4 == SIZEOF_SHORT */
-#define swapf(x)	swaps(x)
-#define FLOAT_SWAPPER	unsigned short
-#else	/* SIZEOF_FLOAT == 4 but undivide by known size of int */
-define_swapx(f,float)
-#endif	/* #if SIZEOF_SHORT == 4 */
-#endif	/* #if SIZEOF_LONG == 4 */
+# ifdef HAVE_UINT32_T
+#  define swapf(x)	swap32(x)
+#  define FLOAT_SWAPPER	uint32_t
+# else	/* SIZEOF_FLOAT == 4 but undivide by known size of int */
+   define_swapx(f,float)
+# endif
 #else	/* SIZEOF_FLOAT != 4 */
-define_swapx(f,float)
+  define_swapx(f,float)
 #endif	/* #if SIZEOF_FLOAT == 4 */
 
 #if SIZEOF_DOUBLE == 8
-#if SIZEOF_LONG == 8	/* SIZEOF_DOUBLE == 8 == SIZEOF_LONG */
-#define swapd(x)	swapl(x)
-#define DOUBLE_SWAPPER	unsigned long
-#else
-#if SIZEOF_LONG == 4	/* SIZEOF_DOUBLE == 8 && 4 == SIZEOF_LONG */
-static double
-swapd(const double d)
-{
-    double dtmp = d;
-    unsigned long utmp[2];
-    unsigned long utmp0;
+# ifdef HAVE_UINT64_T	/* SIZEOF_DOUBLE == 8 == SIZEOF_UINT64_T */
+#  define swapd(x)	swap64(x)
+#  define DOUBLE_SWAPPER	uint64_t
+# else
+#  if SIZEOF_LONG == 4	/* SIZEOF_DOUBLE == 8 && 4 == SIZEOF_LONG */
+    static double
+    swapd(const double d)
+    {
+	double dtmp = d;
+	unsigned long utmp[2];
+	unsigned long utmp0;
 
-    utmp[0] = 0; utmp[1] = 0;
-    memcpy(utmp,&dtmp,sizeof(double));
-    utmp0 = utmp[0];
-    utmp[0] = swapl(utmp[1]);
-    utmp[1] = swapl(utmp0);
-    memcpy(&dtmp,utmp,sizeof(double));
-    return dtmp;
-}
-#else
-#if SIZEOF_SHORT == 4	/* SIZEOF_DOUBLE == 8 && 4 == SIZEOF_SHORT */
-static double
-swapd(const double d)
-{
-    double dtmp = d;
-    unsigned short utmp[2];
-    unsigned short utmp0;
+	utmp[0] = 0; utmp[1] = 0;
+	memcpy(utmp,&dtmp,sizeof(double));
+	utmp0 = utmp[0];
+	utmp[0] = swapl(utmp[1]);
+	utmp[1] = swapl(utmp0);
+	memcpy(&dtmp,utmp,sizeof(double));
+	return dtmp;
+    }
+#  elif SIZEOF_SHORT == 4	/* SIZEOF_DOUBLE == 8 && 4 == SIZEOF_SHORT */
+    static double
+    swapd(const double d)
+    {
+	double dtmp = d;
+	unsigned short utmp[2];
+	unsigned short utmp0;
 
-    utmp[0] = 0; utmp[1] = 0;
-    memcpy(utmp,&dtmp,sizeof(double));
-    utmp0 = utmp[0];
-    utmp[0] = swaps(utmp[1]);
-    utmp[1] = swaps(utmp0);
-    memcpy(&dtmp,utmp,sizeof(double));
-    return dtmp;
-}
-#else	/* SIZEOF_DOUBLE == 8 but undivide by known size of int */
-define_swapx(d, double)
-#endif	/* #if SIZEOF_SHORT == 4 */
-#endif	/* #if SIZEOF_LONG == 4 */
-#endif	/* #if SIZEOF_LONG == 8 */
+	utmp[0] = 0; utmp[1] = 0;
+	memcpy(utmp,&dtmp,sizeof(double));
+	utmp0 = utmp[0];
+	utmp[0] = swaps(utmp[1]);
+	utmp[1] = swaps(utmp0);
+	memcpy(&dtmp,utmp,sizeof(double));
+	return dtmp;
+    }
+#  else	/* SIZEOF_DOUBLE == 8 but undivide by known size of int */
+    define_swapx(d, double)
+#  endif
+# endif	/* #if SIZEOF_LONG == 8 */
 #else	/* SIZEOF_DOUBLE != 8 */
-define_swapx(d, double)
+  define_swapx(d, double)
 #endif	/* #if SIZEOF_DOUBLE == 8 */
 
 #undef define_swapx
 
-#ifdef DYNAMIC_ENDIAN
-#ifdef ntohs
-#undef ntohs
-#undef ntohl
-#undef htons
-#undef htonl
-#endif
-static int
-endian(void)
-{
-    static int init = 0;
-    static int endian_value;
-    char *p;
-
-    if (init) return endian_value;
-    init = 1;
-    p = (char*)&init;
-    return endian_value = p[0]?0:1;
-}
-
-#define ntohs(x) (endian()?(x):swaps(x))
-#define ntohl(x) (endian()?(x):swapl(x))
-#define ntohf(x) (endian()?(x):swapf(x))
-#define ntohd(x) (endian()?(x):swapd(x))
-#define htons(x) (endian()?(x):swaps(x))
-#define htonl(x) (endian()?(x):swapl(x))
-#define htonf(x) (endian()?(x):swapf(x))
-#define htond(x) (endian()?(x):swapd(x))
-#define htovs(x) (endian()?swaps(x):(x))
-#define htovl(x) (endian()?swapl(x):(x))
-#define htovf(x) (endian()?swapf(x):(x))
-#define htovd(x) (endian()?swapd(x):(x))
-#define vtohs(x) (endian()?swaps(x):(x))
-#define vtohl(x) (endian()?swapl(x):(x))
-#define vtohf(x) (endian()?swapf(x):(x))
-#define vtohd(x) (endian()?swapd(x):(x))
-# ifdef NATINT_PACK
-#define htov16(x) (endian()?swap16(x):(x))
-#define htov32(x) (endian()?swap32(x):(x))
-#define hton16(x) (endian()?(x):swap16(x))
-#define hton32(x) (endian()?(x):swap32(x))
-# endif
-#else
-#ifdef WORDS_BIGENDIAN
-#ifndef ntohs
-#define ntohs(x) (x)
-#define ntohl(x) (x)
-#define htons(x) (x)
-#define htonl(x) (x)
-#endif
-#define ntohf(x) (x)
-#define ntohd(x) (x)
-#define htonf(x) (x)
-#define htond(x) (x)
-#define htovs(x) swaps(x)
-#define htovl(x) swapl(x)
-#define htovf(x) swapf(x)
-#define htovd(x) swapd(x)
-#define vtohs(x) swaps(x)
-#define vtohl(x) swapl(x)
-#define vtohf(x) swapf(x)
-#define vtohd(x) swapd(x)
-# ifdef NATINT_PACK
-#define htov16(x) swap16(x)
-#define htov32(x) swap32(x)
-#define hton16(x) (x)
-#define hton32(x) (x)
-# endif
-#else /* LITTLE ENDIAN */
-#ifdef ntohs
-#undef ntohs
-#undef ntohl
-#undef htons
-#undef htonl
-#endif
-#define ntohs(x) swaps(x)
-#define ntohl(x) swapl(x)
-#define htons(x) swaps(x)
-#define htonl(x) swapl(x)
-#define ntohf(x) swapf(x)
-#define ntohd(x) swapd(x)
-#define htonf(x) swapf(x)
-#define htond(x) swapd(x)
-#define htovs(x) (x)
-#define htovl(x) (x)
-#define htovf(x) (x)
-#define htovd(x) (x)
-#define vtohs(x) (x)
-#define vtohl(x) (x)
-#define vtohf(x) (x)
-#define vtohd(x) (x)
-# ifdef NATINT_PACK
-#define htov16(x) (x)
-#define htov32(x) (x)
-#define hton16(x) swap16(x)
-#define hton32(x) swap32(x)
-# endif
-#endif
-#endif
+#define rb_ntohf(x) (BIGENDIAN_P()?(x):swapf(x))
+#define rb_ntohd(x) (BIGENDIAN_P()?(x):swapd(x))
+#define rb_htonf(x) (BIGENDIAN_P()?(x):swapf(x))
+#define rb_htond(x) (BIGENDIAN_P()?(x):swapd(x))
+#define rb_htovf(x) (BIGENDIAN_P()?swapf(x):(x))
+#define rb_htovd(x) (BIGENDIAN_P()?swapd(x):(x))
+#define rb_vtohf(x) (BIGENDIAN_P()?swapf(x):(x))
+#define rb_vtohd(x) (BIGENDIAN_P()?swapd(x):(x))
 
 #ifdef FLOAT_SWAPPER
-#define FLOAT_CONVWITH(y)	FLOAT_SWAPPER y;
-#define HTONF(x,y)	(memcpy(&y,&x,sizeof(float)),	\
-			 y = htonf((FLOAT_SWAPPER)y),	\
+# define FLOAT_CONVWITH(y)	FLOAT_SWAPPER y;
+# define HTONF(x,y)	(memcpy(&y,&x,sizeof(float)),	\
+			 y = rb_htonf((FLOAT_SWAPPER)y),	\
 			 memcpy(&x,&y,sizeof(float)),	\
 			 x)
-#define HTOVF(x,y)	(memcpy(&y,&x,sizeof(float)),	\
-			 y = htovf((FLOAT_SWAPPER)y),	\
+# define HTOVF(x,y)	(memcpy(&y,&x,sizeof(float)),	\
+			 y = rb_htovf((FLOAT_SWAPPER)y),	\
 			 memcpy(&x,&y,sizeof(float)),	\
 			 x)
-#define NTOHF(x,y)	(memcpy(&y,&x,sizeof(float)),	\
-			 y = ntohf((FLOAT_SWAPPER)y),	\
+# define NTOHF(x,y)	(memcpy(&y,&x,sizeof(float)),	\
+			 y = rb_ntohf((FLOAT_SWAPPER)y),	\
 			 memcpy(&x,&y,sizeof(float)),	\
 			 x)
-#define VTOHF(x,y)	(memcpy(&y,&x,sizeof(float)),	\
-			 y = vtohf((FLOAT_SWAPPER)y),	\
+# define VTOHF(x,y)	(memcpy(&y,&x,sizeof(float)),	\
+			 y = rb_vtohf((FLOAT_SWAPPER)y),	\
 			 memcpy(&x,&y,sizeof(float)),	\
 			 x)
 #else
-#define FLOAT_CONVWITH(y)
-#define HTONF(x,y)	htonf(x)
-#define HTOVF(x,y)	htovf(x)
-#define NTOHF(x,y)	ntohf(x)
-#define VTOHF(x,y)	vtohf(x)
+# define FLOAT_CONVWITH(y)
+# define HTONF(x,y)	rb_htonf(x)
+# define HTOVF(x,y)	rb_htovf(x)
+# define NTOHF(x,y)	rb_ntohf(x)
+# define VTOHF(x,y)	rb_vtohf(x)
 #endif
 
 #ifdef DOUBLE_SWAPPER
-#define DOUBLE_CONVWITH(y)	DOUBLE_SWAPPER y;
-#define HTOND(x,y)	(memcpy(&y,&x,sizeof(double)),	\
-			 y = htond((DOUBLE_SWAPPER)y),	\
+# define DOUBLE_CONVWITH(y)	DOUBLE_SWAPPER y;
+# define HTOND(x,y)	(memcpy(&y,&x,sizeof(double)),	\
+			 y = rb_htond((DOUBLE_SWAPPER)y),	\
 			 memcpy(&x,&y,sizeof(double)),	\
 			 x)
-#define HTOVD(x,y)	(memcpy(&y,&x,sizeof(double)),	\
-			 y = htovd((DOUBLE_SWAPPER)y),	\
+# define HTOVD(x,y)	(memcpy(&y,&x,sizeof(double)),	\
+			 y = rb_htovd((DOUBLE_SWAPPER)y),	\
 			 memcpy(&x,&y,sizeof(double)),	\
 			 x)
-#define NTOHD(x,y)	(memcpy(&y,&x,sizeof(double)),	\
-			 y = ntohd((DOUBLE_SWAPPER)y),	\
+# define NTOHD(x,y)	(memcpy(&y,&x,sizeof(double)),	\
+			 y = rb_ntohd((DOUBLE_SWAPPER)y),	\
 			 memcpy(&x,&y,sizeof(double)),	\
 			 x)
-#define VTOHD(x,y)	(memcpy(&y,&x,sizeof(double)),	\
-			 y = vtohd((DOUBLE_SWAPPER)y),	\
+# define VTOHD(x,y)	(memcpy(&y,&x,sizeof(double)),	\
+			 y = rb_vtohd((DOUBLE_SWAPPER)y),	\
 			 memcpy(&x,&y,sizeof(double)),	\
 			 x)
 #else
-#define DOUBLE_CONVWITH(y)
-#define HTOND(x,y)	htond(x)
-#define HTOVD(x,y)	htovd(x)
-#define NTOHD(x,y)	ntohd(x)
-#define VTOHD(x,y)	vtohd(x)
+# define DOUBLE_CONVWITH(y)
+# define HTOND(x,y)	rb_htond(x)
+# define HTOVD(x,y)	rb_htovd(x)
+# define NTOHD(x,y)	rb_ntohd(x)
+# define VTOHD(x,y)	rb_vtohd(x)
 #endif
 
 unsigned long rb_big2ulong_pack(VALUE x);
@@ -385,18 +269,6 @@ num2i32(VALUE x)
     rb_raise(rb_eTypeError, "can't convert %s to `integer'", rb_obj_classname(x));
     return 0;			/* not reached */
 }
-
-#if SIZEOF_LONG == SIZE32
-# define EXTEND32(x)
-#else
-/* invariant in modulo 1<<31 */
-# define EXTEND32(x) do { if (!natint) {(x) = (((1L<<31)-1-(x))^~(~0L<<31));}} while(0)
-#endif
-#if SIZEOF_SHORT == SIZE16
-# define EXTEND16(x)
-#else
-# define EXTEND16(x) do { if (!natint) {(x) = (short)(((1<<15)-1-(x))^~(~0<<15));}} while(0)
-#endif
 
 #ifdef HAVE_LONG_LONG
 # define QUAD_SIZE SIZEOF_LONG_LONG
@@ -442,8 +314,8 @@ static unsigned long utf8_to_uv(const char*,long*);
  *       a     |  arbitrary binary string (null padded, count is width)
  *       B     |  Bit string (descending bit order)
  *       b     |  Bit string (ascending bit order)
- *       C     |  Unsigned byte (C unsigned char)
- *       c     |  Byte (C char)
+ *       C     |  8-bit unsigned byte (unsigned char)
+ *       c     |  8-bit signed byte (char)
  *       D, d  |  Double-precision float, native format
  *       E     |  Double-precision float, little-endian byte order
  *       e     |  Single-precision float, little-endian byte order
@@ -452,24 +324,29 @@ static unsigned long utf8_to_uv(const char*,long*);
  *       g     |  Single-precision float, network (big-endian) byte order
  *       H     |  Hex string (high nibble first)
  *       h     |  Hex string (low nibble first)
- *       I     |  Unsigned integer
- *       i     |  Integer
- *       L     |  Unsigned long
- *       l     |  Long
+ *       I     |  unsigned int, native endian
+ *       i     |  signed int, native endian
+ *       L     |  32-bit unsigned integer (uint32_t)
+ *       l     |  32-bit signed integer (int32_t)
+ *       L_    |  unsigned long, native endian
+ *       l_    |  signed long, native endian
  *       M     |  Quoted printable, MIME encoding (see RFC2045)
  *       m     |  Base64 encoded string (see RFC 2045, count is width)
  *             |  (if count is 0, no line feed are added, see RFC 4648)
- *       N     |  Long, network (big-endian) byte order
- *       n     |  Short, network (big-endian) byte-order
+ *       N     |  32-bit unsigned integer, network (big-endian) byte order
+ *       n     |  16-bit unsigned integer, network (big-endian) byte order
  *       P     |  Pointer to a structure (fixed-length string)
  *       p     |  Pointer to a null-terminated string
- *       Q, q  |  64-bit number
- *       S     |  Unsigned short
- *       s     |  Short
+ *       Q     |  64-bit unsigned integer (uint64_t)
+ *       q     |  64-bit signed integer (int64_t)
+ *       S     |  16-bit unsigned integer (uint16_t)
+ *       s     |  16-bit signed integer (int16_t)
+ *       S_    |  unsigned short, native endian
+ *       s_    |  signed short, native endian
  *       U     |  UTF-8
  *       u     |  UU-encoded string
- *       V     |  Long, little-endian byte order
- *       v     |  Short, little-endian byte order
+ *       V     |  32-bit unsigned integer, little-endian byte order
+ *       v     |  16-bit unsigned integer, little-endian byte order
  *       w     |  BER-compressed integer
  *       X     |  Back up a byte
  *       x     |  Null byte
@@ -490,6 +367,7 @@ pack_pack(VALUE ary, VALUE fmt)
 #ifdef NATINT_PACK
     int natint;		/* native integer */
 #endif
+    int signed_p, integer_size, bigendian_p;
 
     StringValue(fmt);
     p = RSTRING_PTR(fmt);
@@ -738,90 +616,130 @@ pack_pack(VALUE ary, VALUE fmt)
 	    break;
 
 	  case 's':		/* signed short */
-	  case 'S':		/* unsigned short */
-	    while (len-- > 0) {
-		short s;
+            signed_p = 1;
+            integer_size = NATINT_LEN(short, 2);
+            bigendian_p = BIGENDIAN_P();
+            goto pack_integer;
 
-		from = NEXTFROM;
-		s = (short)num2i32(from);
-		rb_str_buf_cat(res, OFF16(&s), NATINT_LEN(short,2));
-	    }
-	    break;
+	  case 'S':		/* unsigned short */
+            signed_p = 0;
+            integer_size = NATINT_LEN(short, 2);
+            bigendian_p = BIGENDIAN_P();
+            goto pack_integer;
 
 	  case 'i':		/* signed int */
-	  case 'I':		/* unsigned int */
-	    while (len-- > 0) {
-		int i;
+            signed_p = 1;
+            integer_size = sizeof(int);
+            bigendian_p = BIGENDIAN_P();
+            goto pack_integer;
 
-		from = NEXTFROM;
-		i = (int)num2i32(from);
-		rb_str_buf_cat(res, (char*)&i, sizeof(int));
-	    }
-	    break;
+	  case 'I':		/* unsigned int */
+            signed_p = 0;
+            integer_size = sizeof(int);
+            bigendian_p = BIGENDIAN_P();
+            goto pack_integer;
 
 	  case 'l':		/* signed long */
-	  case 'L':		/* unsigned long */
-	    while (len-- > 0) {
-		long l;
+            signed_p = 1;
+            integer_size = NATINT_LEN(long, 4);
+            bigendian_p = BIGENDIAN_P();
+            goto pack_integer;
 
-		from = NEXTFROM;
-		l = num2i32(from);
-		rb_str_buf_cat(res, OFF32(&l), NATINT_LEN(long,4));
-	    }
-	    break;
+	  case 'L':		/* unsigned long */
+            signed_p = 0;
+            integer_size = NATINT_LEN(long, 4);
+            bigendian_p = BIGENDIAN_P();
+            goto pack_integer;
 
 	  case 'q':		/* signed quad (64bit) int */
-	  case 'Q':		/* unsigned quad (64bit) int */
-	    while (len-- > 0) {
-		char tmp[QUAD_SIZE];
+            signed_p = 1;
+            integer_size = 8;
+            bigendian_p = BIGENDIAN_P();
+            goto pack_integer;
 
-		from = NEXTFROM;
-		rb_quad_pack(tmp, from);
-		rb_str_buf_cat(res, (char*)&tmp, QUAD_SIZE);
-	    }
-	    break;
+	  case 'Q':		/* unsigned quad (64bit) int */
+            signed_p = 0;
+            integer_size = 8;
+            bigendian_p = BIGENDIAN_P();
+            goto pack_integer;
 
 	  case 'n':		/* unsigned short (network byte-order)  */
-	    while (len-- > 0) {
-		unsigned short s;
-
-		from = NEXTFROM;
-		s = (unsigned short)num2i32(from);
-		s = NATINT_HTONS(s);
-		rb_str_buf_cat(res, OFF16(&s), NATINT_LEN(short,2));
-	    }
-	    break;
+            signed_p = 0;
+            integer_size = 2;
+            bigendian_p = 1;
+            goto pack_integer;
 
 	  case 'N':		/* unsigned long (network byte-order) */
-	    while (len-- > 0) {
-		unsigned long l;
-
-		from = NEXTFROM;
-		l = num2i32(from);
-		l = NATINT_HTONL(l);
-		rb_str_buf_cat(res, OFF32(&l), NATINT_LEN(long,4));
-	    }
-	    break;
+            signed_p = 0;
+            integer_size = 4;
+            bigendian_p = 1;
+            goto pack_integer;
 
 	  case 'v':		/* unsigned short (VAX byte-order) */
-	    while (len-- > 0) {
-		unsigned short s;
-
-		from = NEXTFROM;
-		s = (unsigned short)num2i32(from);
-		s = NATINT_HTOVS(s);
-		rb_str_buf_cat(res, OFF16(&s), NATINT_LEN(short,2));
-	    }
-	    break;
+            signed_p = 0;
+            integer_size = 2;
+            bigendian_p = 0;
+            goto pack_integer;
 
 	  case 'V':		/* unsigned long (VAX byte-order) */
-	    while (len-- > 0) {
-		unsigned long l;
+            signed_p = 0;
+            integer_size = 4;
+            bigendian_p = 0;
+            goto pack_integer;
 
-		from = NEXTFROM;
-		l = num2i32(from);
-		l = NATINT_HTOVL(l);
-		rb_str_buf_cat(res, OFF32(&l), NATINT_LEN(long,4));
+          pack_integer:
+            switch (integer_size) {
+              case SIZEOF_SHORT:
+		while (len-- > 0) {
+		    short s;
+
+		    from = NEXTFROM;
+		    s = (short)num2i32(from);
+		    if (bigendian_p != BIGENDIAN_P()) s = swaps(s);
+		    rb_str_buf_cat(res, (char *)&s, sizeof(short));
+		}
+		break;
+
+#if SIZEOF_SHORT != SIZEOF_INT
+              case SIZEOF_INT:
+		while (len-- > 0) {
+		    int i;
+
+		    from = NEXTFROM;
+		    i = (int)num2i32(from);
+		    if (bigendian_p != BIGENDIAN_P()) i = swapi(i);
+		    rb_str_buf_cat(res, (char *)&i, sizeof(int));
+		}
+		break;
+#endif
+
+#if SIZEOF_INT != SIZEOF_LONG
+              case SIZEOF_LONG:
+		while (len-- > 0) {
+		    long l;
+
+		    from = NEXTFROM;
+		    l = num2i32(from);
+		    if (bigendian_p != BIGENDIAN_P()) l = swapl(l);
+		    rb_str_buf_cat(res, (char *)&l, sizeof(long));
+		}
+		break;
+#endif
+
+#if SIZEOF_LONG != QUAD_SIZE
+              case QUAD_SIZE:
+                while (len-- > 0) {
+                    char tmp[QUAD_SIZE];
+
+                    from = NEXTFROM;
+                    rb_quad_pack(tmp, from);
+                    rb_str_buf_cat(res, (char*)&tmp, QUAD_SIZE);
+                }
+                break;
+#endif
+
+	      default:
+	        rb_bug("unexpected intger size for pack");
 	    }
 	    break;
 
@@ -1212,16 +1130,6 @@ hex2num(char c)
     }						\
 } while (0)
 
-#ifdef NATINT_PACK
-#define PACK_LENGTH_ADJUST(type,sz) do {	\
-    int t__len = NATINT_LEN(type,(sz));		\
-    PACK_LENGTH_ADJUST_SIZE(t__len);		\
-} while (0)
-#else
-#define PACK_LENGTH_ADJUST(type,sz) 		\
-    PACK_LENGTH_ADJUST_SIZE(sizeof(type))
-#endif
-
 #define PACK_ITEM_ADJUST() while (tmp--) rb_ary_push(ary, Qnil)
 
 static VALUE
@@ -1269,101 +1177,111 @@ infected_str_new(const char *ptr, long len, VALUE str)
  *     -------+---------+-----------------------------------------
  *       a    | String  | arbitrary binary string
  *     -------+---------+-----------------------------------------
- *       B    | String  | extract bits from each character (msb first)
+ *       B    | String  | extract bits from each byte (msb first)
  *     -------+---------+-----------------------------------------
- *       b    | String  | extract bits from each character (lsb first)
+ *       b    | String  | extract bits from each byte (lsb first)
  *     -------+---------+-----------------------------------------
- *       C    | Fixnum  | extract a byte (C char) as an unsigned integer
+ *       C    | Fixnum  | extract a byte (C unsigned char) as an
+ *            |         | 8-bit unsigned integer
  *     -------+---------+-----------------------------------------
- *       c    | Fixnum  | extract a byte (C char) as an integer
+ *       c    | Fixnum  | extract a byte (C char) as an 8-bit
+ *            |         | integer
  *     -------+---------+-----------------------------------------
- *       d,D  | Float   | treat sizeof(double) characters as
+ *       d,D  | Float   | treat sizeof(double) bytes as
  *            |         | a native double
  *     -------+---------+-----------------------------------------
- *       E    | Float   | treat sizeof(double) characters as
+ *       E    | Float   | treat sizeof(double) bytes as
  *            |         | a double in little-endian byte order
  *     -------+---------+-----------------------------------------
- *       e    | Float   | treat sizeof(float) characters as
+ *       e    | Float   | treat sizeof(float) bytes as
  *            |         | a float in little-endian byte order
  *     -------+---------+-----------------------------------------
- *       f,F  | Float   | treat sizeof(float) characters as
+ *       f,F  | Float   | treat sizeof(float) bytes as
  *            |         | a native float
  *     -------+---------+-----------------------------------------
- *       G    | Float   | treat sizeof(double) characters as
+ *       G    | Float   | treat sizeof(double) bytes as
  *            |         | a double in network byte order
  *     -------+---------+-----------------------------------------
- *       g    | Float   | treat sizeof(float) characters as a
+ *       g    | Float   | treat sizeof(float) bytes as a
  *            |         | float in network byte order
  *     -------+---------+-----------------------------------------
- *       H    | String  | extract hex nibbles from each character
+ *       H    | String  | extract hex nibbles from each byte
  *            |         | (most significant first)
  *     -------+---------+-----------------------------------------
- *       h    | String  | extract hex nibbles from each character
+ *       h    | String  | extract hex nibbles from each byte
  *            |         | (least significant first)
  *     -------+---------+-----------------------------------------
- *       I    | Integer | treat sizeof(int) (modified by _)
- *            |         | successive characters as an unsigned
- *            |         | native integer
+ *       I    | Integer | treat sizeof(int) successive bytes as
+*             |         | an unsigned native integer
  *     -------+---------+-----------------------------------------
- *       i    | Integer | treat sizeof(int) (modified by _)
- *            |         | successive characters as a signed
- *            |         | native integer
+ *       i    | Integer | treat sizeof(int) successive bytes as
+ *            |         | a signed native integer
  *     -------+---------+-----------------------------------------
- *       L    | Integer | treat four (modified by _) successive
- *            |         | characters as an unsigned native
- *            |         | long integer
+ *       L    | Integer | treat 4 successive bytes as a 32-bit
+ *            |         | unsigned native integer
  *     -------+---------+-----------------------------------------
- *       l    | Integer | treat four (modified by _) successive
- *            |         | characters as a signed native
- *            |         | long integer
+ *       l    | Integer | treat 4 successive bytes as a 32-bit
+ *            |         | signed native integer
+ *     -------+---------+-----------------------------------------
+ *       L_   | Integer | treat sizeof(unsigned long) successive
+ *            |         | bytes as an unsigned native long integer
+ *     -------+---------+-----------------------------------------
+ *       l_   | Integer | treat sizeof(long) successive bytes as
+ *            |         | a signed native long integer
  *     -------+---------+-----------------------------------------
  *       M    | String  | quoted-printable
  *     -------+---------+-----------------------------------------
  *       m    | String  | base64-encoded (RFC 2045) (default)
  *            |         | base64-encoded (RFC 4648) if followed by 0
  *     -------+---------+-----------------------------------------
- *       N    | Integer | treat four characters as an unsigned
- *            |         | long in network byte order
+ *       N    | Integer | treat 4 bytes as a 32-bit unsigned
+ *            |         | integer in network byte order (big-endian)
  *     -------+---------+-----------------------------------------
- *       n    | Fixnum  | treat two characters as an unsigned
- *            |         | short in network byte order
+ *       n    | Fixnum  | treat 2 bytes as a 16-bit unsigned
+ *            |         | integer in network byte order (big-endian)
  *     -------+---------+-----------------------------------------
- *       P    | String  | treat sizeof(char *) characters as a
+ *       P    | String  | treat sizeof(char *) bytes as a
  *            |         | pointer, and  return the length bytes
  *            |         | from the referenced location
  *     -------+---------+-----------------------------------------
- *       p    | String  | treat sizeof(char *) characters as a
+ *       p    | String  | treat sizeof(char *) bytes as a
  *            |         | pointer to a  null-terminated string
  *     -------+---------+-----------------------------------------
- *       Q    | Integer | treat 8 characters as an unsigned
- *            |         | quad word (64 bits)
+ *       Q    | Integer | treat 8 bytes as a 64-bit unsigned
+ *            |         | native integer
  *     -------+---------+-----------------------------------------
- *       q    | Integer | treat 8 characters as a signed
- *            |         | quad word (64 bits)
+ *       q    | Integer | treat 8 bytes as a 64-bit signed
+ *            |         | native integer
  *     -------+---------+-----------------------------------------
- *       S    | Fixnum  | treat two (different if _ used)
- *            |         | successive characters as an unsigned
- *            |         | short in native byte order
+ *       S    | Fixnum  | treat 2 successive bytes as a 16-bit
+ *            |         | unsigned integer in native byte order
  *     -------+---------+-----------------------------------------
- *       s    | Fixnum  | Treat two (different if _ used)
- *            |         | successive characters as a signed short
- *            |         | in native byte order
+ *       s    | Fixnum  | treat 2 successive bytes as a 16-bit
+ *            |         | signed integer in native byte order
+ *     -------+---------+-----------------------------------------
+ *       S_   | Fixnum  | treat sizeof(unsigned short) successive
+ *            |         | bytes as an unsigned short integer in
+ *            |         | native byte order
+ *     -------+---------+-----------------------------------------
+ *       s_   | Fixnum  | Treat sizeof(short) successive bytes as
+ *            |         | a signed short integer in native byte
+ *            |         | order
  *     -------+---------+-----------------------------------------
  *       U    | Integer | UTF-8 characters as unsigned integers
  *     -------+---------+-----------------------------------------
  *       u    | String  | UU-encoded
  *     -------+---------+-----------------------------------------
- *       V    | Fixnum  | treat four characters as an unsigned
- *            |         | long in little-endian byte order
+ *       V    | Fixnum  | treat four bytes as a 32-bit unsigned
+ *            |         | integer in little-endian byte order
  *     -------+---------+-----------------------------------------
- *       v    | Fixnum  | treat two characters as an unsigned
- *            |         | short in little-endian byte order
+ *       v    | Fixnum  | treat two bytes as a 16-bit unsigned
+ *            |         | integer in little-endian byte order
  *     -------+---------+-----------------------------------------
  *       w    | Integer | BER-compressed integer (see Array.pack)
  *     -------+---------+-----------------------------------------
- *       X    | ---     | skip backward one character
+ *       X    | ---     | skip backward one byte
  *     -------+---------+-----------------------------------------
- *       x    | ---     | skip forward one character
+ *       x    | ---     | skip forward one byte
  *     -------+---------+-----------------------------------------
  *       Z    | String  | with trailing nulls removed
  *            |         | upto first null with *
@@ -1574,7 +1492,7 @@ pack_unpack(VALUE str, VALUE fmt)
 	    break;
 
 	  case 'c':
-	    PACK_LENGTH_ADJUST(char,sizeof(char));
+	    PACK_LENGTH_ADJUST_SIZE(sizeof(char));
 	    while (len-- > 0) {
                 int c = *s++;
                 if (c > (char)127) c-=256;
@@ -1584,7 +1502,7 @@ pack_unpack(VALUE str, VALUE fmt)
 	    break;
 
 	  case 'C':
-	    PACK_LENGTH_ADJUST(unsigned char,sizeof(unsigned char));
+	    PACK_LENGTH_ADJUST_SIZE(sizeof(unsigned char));
 	    while (len-- > 0) {
 		unsigned char c = *s++;
 		UNPACK_PUSH(INT2FIX(c));
@@ -1595,49 +1513,49 @@ pack_unpack(VALUE str, VALUE fmt)
 	  case 's':
 	    signed_p = 1;
 	    integer_size = NATINT_LEN(short, 2);
-	    bigendian_p = BIGENDIAN_P;
+	    bigendian_p = BIGENDIAN_P();
 	    goto unpack_integer;
 
 	  case 'S':
 	    signed_p = 0;
 	    integer_size = NATINT_LEN(short, 2);
-	    bigendian_p = BIGENDIAN_P;
+	    bigendian_p = BIGENDIAN_P();
 	    goto unpack_integer;
 
 	  case 'i':
 	    signed_p = 1;
 	    integer_size = sizeof(int);
-	    bigendian_p = BIGENDIAN_P;
+	    bigendian_p = BIGENDIAN_P();
 	    goto unpack_integer;
 
 	  case 'I':
 	    signed_p = 0;
 	    integer_size = sizeof(int);
-	    bigendian_p = BIGENDIAN_P;
+	    bigendian_p = BIGENDIAN_P();
 	    goto unpack_integer;
 
 	  case 'l':
 	    signed_p = 1;
 	    integer_size = NATINT_LEN(long, 4);
-	    bigendian_p = BIGENDIAN_P;
+	    bigendian_p = BIGENDIAN_P();
 	    goto unpack_integer;
 
 	  case 'L':
 	    signed_p = 0;
 	    integer_size = NATINT_LEN(long, 4);
-	    bigendian_p = BIGENDIAN_P;
+	    bigendian_p = BIGENDIAN_P();
 	    goto unpack_integer;
 
 	  case 'q':
 	    signed_p = 1;
 	    integer_size = QUAD_SIZE;
-	    bigendian_p = BIGENDIAN_P;
+	    bigendian_p = BIGENDIAN_P();
 	    goto unpack_integer;
 	    
 	  case 'Q':
 	    signed_p = 0;
 	    integer_size = QUAD_SIZE;
-	    bigendian_p = BIGENDIAN_P;
+	    bigendian_p = BIGENDIAN_P();
 	    goto unpack_integer;
 
 	  case 'n':
@@ -1668,22 +1586,22 @@ pack_unpack(VALUE str, VALUE fmt)
 	    switch (integer_size) {
 	      case SIZEOF_SHORT:
 		if (signed_p) {
-		    PACK_LENGTH_ADJUST(short,sizeof(short));
+		    PACK_LENGTH_ADJUST_SIZE(sizeof(short));
 		    while (len-- > 0) {
 			short tmp;
 			memcpy(&tmp, s, sizeof(short));
-			if (bigendian_p ^ BIGENDIAN_P) tmp = swaps(tmp);
+			if (bigendian_p != BIGENDIAN_P()) tmp = swaps(tmp);
 			s += sizeof(short);
 			UNPACK_PUSH(INT2FIX(tmp));
 		    }
 		    PACK_ITEM_ADJUST();
 		}
 		else {
-		    PACK_LENGTH_ADJUST(unsigned short,sizeof(unsigned short));
+		    PACK_LENGTH_ADJUST_SIZE(sizeof(unsigned short));
 		    while (len-- > 0) {
 			unsigned short tmp;
 			memcpy(&tmp, s, sizeof(unsigned short));
-			if (bigendian_p ^ BIGENDIAN_P) tmp = swaps(tmp);
+			if (bigendian_p != BIGENDIAN_P()) tmp = swaps(tmp);
 			s += sizeof(unsigned short);
 			UNPACK_PUSH(INT2FIX(tmp));
 		    }
@@ -1694,22 +1612,22 @@ pack_unpack(VALUE str, VALUE fmt)
 #if SIZEOF_SHORT != SIZEOF_INT
 	      case SIZEOF_INT:
 		if (signed_p) {
-		    PACK_LENGTH_ADJUST(int,sizeof(int));
+		    PACK_LENGTH_ADJUST_SIZE(sizeof(int));
 		    while (len-- > 0) {
 			int tmp;
 			memcpy(&tmp, s, sizeof(int));
-			if (bigendian_p ^ BIGENDIAN_P) tmp = swapi(tmp);
+			if (bigendian_p != BIGENDIAN_P()) tmp = swapi(tmp);
 			s += sizeof(int);
 			UNPACK_PUSH(INT2NUM(tmp));
 		    }
 		    PACK_ITEM_ADJUST();
 		}
 		else {
-		    PACK_LENGTH_ADJUST(unsigned int,sizeof(unsigned int));
+		    PACK_LENGTH_ADJUST_SIZE(sizeof(unsigned int));
 		    while (len-- > 0) {
 			unsigned int tmp;
 			memcpy(&tmp, s, sizeof(unsigned int));
-			if (bigendian_p ^ BIGENDIAN_P) tmp = swapi(tmp);
+			if (bigendian_p != BIGENDIAN_P()) tmp = swapi(tmp);
 			s += sizeof(unsigned int);
 			UNPACK_PUSH(UINT2NUM(tmp));
 		    }
@@ -1721,22 +1639,22 @@ pack_unpack(VALUE str, VALUE fmt)
 #if SIZEOF_INT != SIZEOF_LONG
 	      case SIZEOF_LONG:
 		if (signed_p) {
-		    PACK_LENGTH_ADJUST(long,sizeof(long));
+		    PACK_LENGTH_ADJUST_SIZE(sizeof(long));
 		    while (len-- > 0) {
 			long tmp;
 			memcpy(&tmp, s, sizeof(long));
-			if (bigendian_p ^ BIGENDIAN_P) tmp = swapl(tmp);
+			if (bigendian_p != BIGENDIAN_P()) tmp = swapl(tmp);
 			s += sizeof(long);
 			UNPACK_PUSH(LONG2NUM(tmp));
 		    }
 		    PACK_ITEM_ADJUST();
 		}
 		else {
-		    PACK_LENGTH_ADJUST(unsigned long,sizeof(unsigned long));
+		    PACK_LENGTH_ADJUST_SIZE(sizeof(unsigned long));
 		    while (len-- > 0) {
 			unsigned long tmp;
 			memcpy(&tmp, s, sizeof(unsigned long));
-			if (bigendian_p ^ BIGENDIAN_P) tmp = swapl(tmp);
+			if (bigendian_p != BIGENDIAN_P()) tmp = swapl(tmp);
 			s += sizeof(unsigned long);
 			UNPACK_PUSH(ULONG2NUM(tmp));
 		    }
@@ -1748,22 +1666,22 @@ pack_unpack(VALUE str, VALUE fmt)
 #if defined(HAVE_LONG_LONG) && SIZEOF_LONG != SIZEOF_LONG_LONG
 	      case SIZEOF_LONG_LONG:
 		if (signed_p) {
-		    PACK_LENGTH_ADJUST(LONG_LONG,sizeof(LONG_LONG));
+		    PACK_LENGTH_ADJUST_SIZE(sizeof(LONG_LONG));
 		    while (len-- > 0) {
 			LONG_LONG tmp;
 			memcpy(&tmp, s, sizeof(LONG_LONG));
-			if (bigendian_p ^ BIGENDIAN_P) tmp = swapll(tmp);
+			if (bigendian_p != BIGENDIAN_P()) tmp = swapll(tmp);
 			s += sizeof(LONG_LONG);
 			UNPACK_PUSH(LL2NUM(tmp));
 		    }
 		    PACK_ITEM_ADJUST();
 		}
 		else {
-		    PACK_LENGTH_ADJUST(unsigned LONG_LONG,sizeof(unsigned LONG_LONG));
+		    PACK_LENGTH_ADJUST_SIZE(sizeof(unsigned LONG_LONG));
 		    while (len-- > 0) {
 			unsigned LONG_LONG tmp;
 			memcpy(&tmp, s, sizeof(unsigned LONG_LONG));
-			if (bigendian_p ^ BIGENDIAN_P) tmp = swapll(tmp);
+			if (bigendian_p != BIGENDIAN_P()) tmp = swapll(tmp);
 			s += sizeof(unsigned LONG_LONG);
 			UNPACK_PUSH(ULL2NUM(tmp));
 		    }
@@ -1774,8 +1692,8 @@ pack_unpack(VALUE str, VALUE fmt)
 
 #if SIZEOF_LONG != QUAD_SIZE && (!defined(HAVE_LONG_LONG) || SIZEOF_LONG_LONG != QUAD_SIZE)
 	      case QUAD_SIZE:
-		if (bigendian_p ^ BIGENDIAN_P)
-		    rb_bug("unexpected endian");
+		if (bigendian_p != BIGENDIAN_P())
+		    rb_bug("unexpected endian for unpack");
 		if (signed_p) {
 		    PACK_LENGTH_ADJUST_SIZE(QUAD_SIZE);
 		    while (len-- > 0) {
@@ -1798,12 +1716,12 @@ pack_unpack(VALUE str, VALUE fmt)
 #endif
 
               default:
-	        rb_bug("unexpected intger size");
+	        rb_bug("unexpected intger size for unpack");
 	    }
 
 	  case 'f':
 	  case 'F':
-	    PACK_LENGTH_ADJUST(float,sizeof(float));
+	    PACK_LENGTH_ADJUST_SIZE(sizeof(float));
 	    while (len-- > 0) {
 		float tmp;
 		memcpy(&tmp, s, sizeof(float));
@@ -1814,7 +1732,7 @@ pack_unpack(VALUE str, VALUE fmt)
 	    break;
 
 	  case 'e':
-	    PACK_LENGTH_ADJUST(float,sizeof(float));
+	    PACK_LENGTH_ADJUST_SIZE(sizeof(float));
 	    while (len-- > 0) {
 	        float tmp;
 		FLOAT_CONVWITH(ftmp);
@@ -1828,7 +1746,7 @@ pack_unpack(VALUE str, VALUE fmt)
 	    break;
 
 	  case 'E':
-	    PACK_LENGTH_ADJUST(double,sizeof(double));
+	    PACK_LENGTH_ADJUST_SIZE(sizeof(double));
 	    while (len-- > 0) {
 		double tmp;
 		DOUBLE_CONVWITH(dtmp);
@@ -1843,7 +1761,7 @@ pack_unpack(VALUE str, VALUE fmt)
 
 	  case 'D':
 	  case 'd':
-	    PACK_LENGTH_ADJUST(double,sizeof(double));
+	    PACK_LENGTH_ADJUST_SIZE(sizeof(double));
 	    while (len-- > 0) {
 		double tmp;
 		memcpy(&tmp, s, sizeof(double));
@@ -1854,7 +1772,7 @@ pack_unpack(VALUE str, VALUE fmt)
 	    break;
 
 	  case 'g':
-	    PACK_LENGTH_ADJUST(float,sizeof(float));
+	    PACK_LENGTH_ADJUST_SIZE(sizeof(float));
 	    while (len-- > 0) {
 	        float tmp;
 		FLOAT_CONVWITH(ftmp;)
@@ -1868,7 +1786,7 @@ pack_unpack(VALUE str, VALUE fmt)
 	    break;
 
 	  case 'G':
-	    PACK_LENGTH_ADJUST(double,sizeof(double));
+	    PACK_LENGTH_ADJUST_SIZE(sizeof(double));
 	    while (len-- > 0) {
 		double tmp;
 		DOUBLE_CONVWITH(dtmp);
