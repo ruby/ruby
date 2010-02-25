@@ -901,8 +901,6 @@ nurat_fdiv(VALUE self, VALUE other)
     return f_to_f(f_div(self, other));
 }
 
-extern VALUE rb_fexpt(VALUE x, VALUE y);
-
 /*
  * call-seq:
  *    rat ** numeric  ->  numeric_result
@@ -959,7 +957,7 @@ nurat_expt(VALUE self, VALUE other)
 	/* fall through */
       case T_FLOAT:
       case T_RATIONAL:
-	return rb_fexpt(f_to_f(self), other);
+	return f_expt(f_to_f(self), other);
       default:
 	return rb_num_coerce_bin(self, other, id_expt);
     }

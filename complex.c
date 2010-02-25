@@ -825,14 +825,6 @@ m_exp(VALUE x)
 			   f_mul(ere, m_sin_bang(im)));
 }
 
-VALUE
-rb_fexpt(VALUE x, VALUE y)
-{
-    if (f_zero_p(x) || (!k_float_p(x) && !k_float_p(y)))
-	return f_expt(x, y);
-    return m_exp(f_mul(m_log(x), y));
-}
-
 inline static VALUE
 f_reciprocal(VALUE x)
 {

@@ -1,3 +1,11 @@
+Thu Feb 25 11:17:01 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* rational.c (nurat_expt): use Float#** when Rational ** Float.
+	  This fixes Rational(3,1)**3.0=>26.99999999999999 on FreeBSD.
+
+	* complex.c (rb_fexpt): removed.
+	  Note that this function is not static but is private.
+
 Thu Feb 25 00:43:57 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def: Change the operand type of setinlinecache
