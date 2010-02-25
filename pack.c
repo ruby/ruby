@@ -307,50 +307,68 @@ static unsigned long utf8_to_uv(const char*,long*);
  *
  *  Directives for +pack+.
  *
- *   Directive    Meaning
- *   ---------------------------------------------------------------
- *       @     |  Moves to absolute position
- *       A     |  arbitrary binary string (space padded, count is width)
- *       a     |  arbitrary binary string (null padded, count is width)
- *       B     |  Bit string (descending bit order)
- *       b     |  Bit string (ascending bit order)
- *       C     |  8-bit unsigned byte (unsigned char)
- *       c     |  8-bit signed byte (char)
- *       D, d  |  Double-precision float, native format
- *       E     |  Double-precision float, little-endian byte order
- *       e     |  Single-precision float, little-endian byte order
- *       F, f  |  Single-precision float, native format
- *       G     |  Double-precision float, network (big-endian) byte order
- *       g     |  Single-precision float, network (big-endian) byte order
- *       H     |  Hex string (high nibble first)
- *       h     |  Hex string (low nibble first)
- *       I     |  unsigned int, native endian
- *       i     |  signed int, native endian
- *       L     |  32-bit unsigned integer (uint32_t)
- *       l     |  32-bit signed integer (int32_t)
- *       L_    |  unsigned long, native endian
- *       l_    |  signed long, native endian
- *       M     |  Quoted printable, MIME encoding (see RFC2045)
- *       m     |  Base64 encoded string (see RFC 2045, count is width)
- *             |  (if count is 0, no line feed are added, see RFC 4648)
- *       N     |  32-bit unsigned integer, network (big-endian) byte order
- *       n     |  16-bit unsigned integer, network (big-endian) byte order
- *       P     |  Pointer to a structure (fixed-length string)
- *       p     |  Pointer to a null-terminated string
- *       Q     |  64-bit unsigned integer (uint64_t)
- *       q     |  64-bit signed integer (int64_t)
- *       S     |  16-bit unsigned integer (uint16_t)
- *       s     |  16-bit signed integer (int16_t)
- *       S_    |  unsigned short, native endian
- *       s_    |  signed short, native endian
- *       U     |  UTF-8
- *       u     |  UU-encoded string
- *       V     |  32-bit unsigned integer, little-endian byte order
- *       v     |  16-bit unsigned integer, little-endian byte order
- *       w     |  BER-compressed integer
- *       X     |  Back up a byte
- *       x     |  Null byte
- *       Z     |  Same as ``a'', except that null is added with *
+ *   Integer   | Array   |
+ *   Directive | Element | Meaning
+ *   ------------------------------------------------------------------------
+ *      C      | Integer | 8-bit unsigned integer (unsigned char)
+ *      S      | Integer | 16-bit unsigned integer, native endian (uint16_t)
+ *      L      | Integer | 32-bit unsigned integer, native endian (uint32_t)
+ *      Q      | Integer | 64-bit unsigned integer, native endian (uint64_t)
+ *             |         |
+ *      c      | Integer | 8-bit signed integer (char)
+ *      s      | Integer | 16-bit signed integer, native endian (int16_t)
+ *      l      | Integer | 32-bit signed integer, native endian (int32_t)
+ *      q      | Integer | 64-bit signed integer, native endian (int64_t)
+ *             |         | 
+ *      S_     | Integer | unsigned short, native endian
+ *      I, I_  | Integer | unsigned int, native endian
+ *      L_     | Integer | unsigned long, native endian
+ *             |         |
+ *      s_     | Integer | signed short, native endian
+ *      i, i_  | Integer | signed int, native endian
+ *      l_     | Integer | signed long, native endian
+ *             |         |
+ *      n      | Integer | 16-bit unsigned integer, network (big-endian) byte order
+ *      N      | Integer | 32-bit unsigned integer, network (big-endian) byte order
+ *      v      | Integer | 16-bit unsigned integer, VAX (little-endian) byte order
+ *      V      | Integer | 32-bit unsigned integer, VAX (little-endian) byte order
+ *             |         |
+ *      U      | Integer | UTF-8 character
+ *      w      | Integer | BER-compressed integer
+ *                        
+ *   Float     |         |
+ *   Directive |         | Meaning
+ *   ------------------------------------------------------------------------
+ *      D, d   | Float   | Double-precision float, native format
+ *      F, f   | Float   | Single-precision float, native format
+ *      E      | Float   | Double-precision float, little-endian byte order
+ *      e      | Float   | Single-precision float, little-endian byte order
+ *      G      | Float   | Double-precision float, network (big-endian) byte order
+ *      g      | Float   | Single-precision float, network (big-endian) byte order
+ *                        
+ *   String    |         |
+ *   Directive |         | Meaning
+ *   ------------------------------------------------------------------------
+ *      A      | String  | arbitrary binary string (space padded, count is width)
+ *      a      | String  | arbitrary binary string (null padded, count is width)
+ *      Z      | String  | Same as ``a'', except that null is added with *
+ *      B      | String  | Bit string (MSB first)
+ *      b      | String  | Bit string (LSB first)
+ *      H      | String  | Hex string (high nibble first)
+ *      h      | String  | Hex string (low nibble first)
+ *      u      | String  | UU-encoded string
+ *      M      | String  | Quoted printable, MIME encoding (see RFC2045)
+ *      m      | String  | Base64 encoded string (see RFC 2045, count is width)
+ *             |         | (if count is 0, no line feed are added, see RFC 4648)
+ *      P      | String  | Pointer to a structure (fixed-length string)
+ *      p      | String  | Pointer to a null-terminated string
+ *                        
+ *   Misc.     |         |
+ *   Directive |         | Meaning
+ *   ------------------------------------------------------------------------
+ *      @      | ---     | Moves to absolute position
+ *      X      | ---     | Back up a byte
+ *      x      | ---     | Null byte
  */
 
 static VALUE
@@ -1170,125 +1188,68 @@ infected_str_new(const char *ptr, long len, VALUE str)
  *  This table summarizes the various formats and the Ruby classes
  *  returned by each.
  *
- *     Format | Returns | Function
- *     -------+---------+-----------------------------------------
- *       A    | String  | arbitrary binary string with trailing
- *            |         | nulls and ASCII spaces removed
- *     -------+---------+-----------------------------------------
- *       a    | String  | arbitrary binary string
- *     -------+---------+-----------------------------------------
- *       B    | String  | extract bits from each byte (msb first)
- *     -------+---------+-----------------------------------------
- *       b    | String  | extract bits from each byte (lsb first)
- *     -------+---------+-----------------------------------------
- *       C    | Fixnum  | extract a byte (C unsigned char) as an
- *            |         | 8-bit unsigned integer
- *     -------+---------+-----------------------------------------
- *       c    | Fixnum  | extract a byte (C char) as an 8-bit
- *            |         | integer
- *     -------+---------+-----------------------------------------
- *       d,D  | Float   | treat sizeof(double) bytes as
- *            |         | a native double
- *     -------+---------+-----------------------------------------
- *       E    | Float   | treat sizeof(double) bytes as
- *            |         | a double in little-endian byte order
- *     -------+---------+-----------------------------------------
- *       e    | Float   | treat sizeof(float) bytes as
- *            |         | a float in little-endian byte order
- *     -------+---------+-----------------------------------------
- *       f,F  | Float   | treat sizeof(float) bytes as
- *            |         | a native float
- *     -------+---------+-----------------------------------------
- *       G    | Float   | treat sizeof(double) bytes as
- *            |         | a double in network byte order
- *     -------+---------+-----------------------------------------
- *       g    | Float   | treat sizeof(float) bytes as a
- *            |         | float in network byte order
- *     -------+---------+-----------------------------------------
- *       H    | String  | extract hex nibbles from each byte
- *            |         | (most significant first)
- *     -------+---------+-----------------------------------------
- *       h    | String  | extract hex nibbles from each byte
- *            |         | (least significant first)
- *     -------+---------+-----------------------------------------
- *       I    | Integer | treat sizeof(int) successive bytes as
-*             |         | an unsigned native integer
- *     -------+---------+-----------------------------------------
- *       i    | Integer | treat sizeof(int) successive bytes as
- *            |         | a signed native integer
- *     -------+---------+-----------------------------------------
- *       L    | Integer | treat 4 successive bytes as a 32-bit
- *            |         | unsigned native integer
- *     -------+---------+-----------------------------------------
- *       l    | Integer | treat 4 successive bytes as a 32-bit
- *            |         | signed native integer
- *     -------+---------+-----------------------------------------
- *       L_   | Integer | treat sizeof(unsigned long) successive
- *            |         | bytes as an unsigned native long integer
- *     -------+---------+-----------------------------------------
- *       l_   | Integer | treat sizeof(long) successive bytes as
- *            |         | a signed native long integer
- *     -------+---------+-----------------------------------------
- *       M    | String  | quoted-printable
- *     -------+---------+-----------------------------------------
- *       m    | String  | base64-encoded (RFC 2045) (default)
- *            |         | base64-encoded (RFC 4648) if followed by 0
- *     -------+---------+-----------------------------------------
- *       N    | Integer | treat 4 bytes as a 32-bit unsigned
- *            |         | integer in network byte order (big-endian)
- *     -------+---------+-----------------------------------------
- *       n    | Fixnum  | treat 2 bytes as a 16-bit unsigned
- *            |         | integer in network byte order (big-endian)
- *     -------+---------+-----------------------------------------
- *       P    | String  | treat sizeof(char *) bytes as a
- *            |         | pointer, and  return the length bytes
- *            |         | from the referenced location
- *     -------+---------+-----------------------------------------
- *       p    | String  | treat sizeof(char *) bytes as a
- *            |         | pointer to a  null-terminated string
- *     -------+---------+-----------------------------------------
- *       Q    | Integer | treat 8 bytes as a 64-bit unsigned
- *            |         | native integer
- *     -------+---------+-----------------------------------------
- *       q    | Integer | treat 8 bytes as a 64-bit signed
- *            |         | native integer
- *     -------+---------+-----------------------------------------
- *       S    | Fixnum  | treat 2 successive bytes as a 16-bit
- *            |         | unsigned integer in native byte order
- *     -------+---------+-----------------------------------------
- *       s    | Fixnum  | treat 2 successive bytes as a 16-bit
- *            |         | signed integer in native byte order
- *     -------+---------+-----------------------------------------
- *       S_   | Fixnum  | treat sizeof(unsigned short) successive
- *            |         | bytes as an unsigned short integer in
- *            |         | native byte order
- *     -------+---------+-----------------------------------------
- *       s_   | Fixnum  | Treat sizeof(short) successive bytes as
- *            |         | a signed short integer in native byte
- *            |         | order
- *     -------+---------+-----------------------------------------
- *       U    | Integer | UTF-8 characters as unsigned integers
- *     -------+---------+-----------------------------------------
- *       u    | String  | UU-encoded
- *     -------+---------+-----------------------------------------
- *       V    | Fixnum  | treat four bytes as a 32-bit unsigned
- *            |         | integer in little-endian byte order
- *     -------+---------+-----------------------------------------
- *       v    | Fixnum  | treat two bytes as a 16-bit unsigned
- *            |         | integer in little-endian byte order
- *     -------+---------+-----------------------------------------
- *       w    | Integer | BER-compressed integer (see Array.pack)
- *     -------+---------+-----------------------------------------
- *       X    | ---     | skip backward one byte
- *     -------+---------+-----------------------------------------
- *       x    | ---     | skip forward one byte
- *     -------+---------+-----------------------------------------
- *       Z    | String  | with trailing nulls removed
- *            |         | upto first null with *
- *     -------+---------+-----------------------------------------
- *       @    | ---     | skip to the offset given by the
- *            |         | length argument
- *     -------+---------+-----------------------------------------
+ *   Integer   |         |
+ *   Directive | Returns | Meaning
+ *   --------------------------------------------------------------
+ *      C      | Integer | 8-bit unsigned integer (unsigned char)
+ *      S      | Integer | 16-bit unsigned integer, native endian (uint16_t)
+ *      L      | Integer | 32-bit unsigned integer, native endian (uint32_t)
+ *      Q      | Integer | 64-bit unsigned integer, native endian (uint64_t)
+ *             |         |
+ *      c      | Integer | 8-bit signed integer (char)
+ *      s      | Integer | 16-bit signed integer, native endian (int16_t)
+ *      l      | Integer | 32-bit signed integer, native endian (int32_t)
+ *      q      | Integer | 64-bit signed integer, native endian (int64_t)
+ *             |         |
+ *      S_     | Integer | unsigned short, native endian
+ *      I, I_  | Integer | unsigned int, native endian
+ *      L_     | Integer | unsigned long, native endian
+ *             |         |
+ *      s_     | Integer | signed short, native endian
+ *      i, i_  | Integer | signed int, native endian
+ *      l_     | Integer | signed long, native endian
+ *             |         |
+ *      n      | Integer | 16-bit unsigned integer, network (big-endian) byte order
+ *      N      | Integer | 32-bit unsigned integer, network (big-endian) byte order
+ *      v      | Integer | 16-bit unsigned integer, VAX (little-endian) byte order
+ *      V      | Integer | 32-bit unsigned integer, VAX (little-endian) byte order
+ *             |         |
+ *      U      | Integer | UTF-8 character
+ *      w      | Integer | BER-compressed integer (see Array.pack)
+ *             
+ *   Float     |         |
+ *   Directive | Returns | Meaning
+ *   --------------------------------------------------------------
+ *      d, D   | Float   | Double-precision float, native format
+ *      f, F   | Float   | Single-precision float, native format
+ *      E      | Float   | Double-precision float, little-endian byte order
+ *      e      | Float   | Single-precision float, little-endian byte order
+ *      G      | Float   | Double-precision float, network (big-endian) byte order
+ *      g      | Float   | Single-precision float, network (big-endian) byte order
+ *             
+ *   String    |         |
+ *   Directive | Returns | Meaning
+ *   --------------------------------------------------------------
+ *      A      | String  | arbitrary binary string (remove trailing nulls and ASCII spaces)
+ *      a      | String  | arbitrary binary string
+ *      Z      | String  | null-terminated string
+ *      B      | String  | bit string (MSB first)
+ *      b      | String  | bit string (LSB first)
+ *      H      | String  | Hex string (high nibble first)
+ *      h      | String  | Hex string (low nibble first)
+ *      u      | String  | UU-encoded string
+ *      M      | String  | quoted-printable, MIME encoding (see RFC2045)
+ *      m      | String  | base64-encoded (RFC 2045) (default)
+ *             |         | base64-encoded (RFC 4648) if followed by 0
+ *      P      | String  | Pointer to a structure (fixed-length string)
+ *      p      | String  | Pointer to a null-terminated string
+ *             
+ *   Misc.     |         |
+ *   Directive | Returns | Meaning
+ *   --------------------------------------------------------------
+ *      @      | ---     | skip to the offset given by the length argument
+ *      X      | ---     | skip backward one byte
+ *      x      | ---     | skip forward one byte
  */
 
 static VALUE
