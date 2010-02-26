@@ -1,3 +1,10 @@
+Fri Feb 26 20:07:48 2010  Tanaka Akira  <akr@fsij.org>
+
+	* pack.c (QUAD_SIZE): it should be always 8.
+
+	* bignum.c (rb_quad_pack): use LONG_LONG version only if
+	  SIZEOF_LONG_LONG == QUAD_SIZE.
+
 Fri Feb 26 16:49:29 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* pack.c (swap64): fix for VC6.

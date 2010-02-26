@@ -266,11 +266,7 @@ num2i32(VALUE x)
     return 0;			/* not reached */
 }
 
-#ifdef HAVE_LONG_LONG
-# define QUAD_SIZE SIZEOF_LONG_LONG
-#else
-# define QUAD_SIZE 8
-#endif
+#define QUAD_SIZE 8
 static const char toofew[] = "too few arguments";
 
 static void encodes(VALUE,const char*,long,int,int);
