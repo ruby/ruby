@@ -1,3 +1,14 @@
+Fri Feb 26 21:36:51 2010  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c: fix rb_quad_pack and rb_quad_unpack for environments
+	  which don't have 8bytes integer type.  This still depends on little
+	  endian.
+	  (rb_quad_pack): use quad_buf_complement.  don't raise for large
+	  values.
+	  (rb_quad_unpack): use quad_buf_complement.
+	  (quad_buf_complement): new function extracted frm rb_quad_pack.
+	  add one after bitwise negation.
+
 Fri Feb 26 21:29:48 2010  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in (RSHIFT): add parenthesis to supress warning.
