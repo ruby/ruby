@@ -267,6 +267,7 @@ num2i32(VALUE x)
 }
 
 #define QUAD_SIZE 8
+/* #define FORCE_BIG_PACK */
 static const char toofew[] = "too few arguments";
 
 static void encodes(VALUE,const char*,long,int,int);
@@ -724,6 +725,7 @@ pack_pack(VALUE ary, VALUE fmt)
 #endif
 
 #if SIZEOF_INT != SIZEOF_LONG
+#if !defined(FORCE_BIG_PACK) || SIZEOF_LONG != QUAD_SIZE
               case SIZEOF_LONG:
 		while (len-- > 0) {
 		    long l;
@@ -735,15 +737,24 @@ pack_pack(VALUE ary, VALUE fmt)
 		}
 		break;
 #endif
+#endif
 
-#if SIZEOF_LONG != QUAD_SIZE
+#if SIZEOF_LONG != QUAD_SIZE || defined(FORCE_BIG_PACK)
               case QUAD_SIZE:
                 while (len-- > 0) {
-                    char tmp[QUAD_SIZE];
+                    unsigned long tmp[QUAD_SIZE/SIZEOF_LONG];
 
                     from = NEXTFROM;
-                    rb_quad_pack(tmp, from);
-                    rb_str_buf_cat(res, (char*)&tmp, QUAD_SIZE);
+                    rb_big_pack(from, tmp, QUAD_SIZE/SIZEOF_LONG);
+                    if (BIGENDIAN_P()) {
+                        int i;
+                        for (i = 0; i < QUAD_SIZE/SIZEOF_LONG/2; i++) {
+                            unsigned long t = tmp[i];
+                            tmp[i] = tmp[QUAD_SIZE/SIZEOF_LONG-i-1];
+                            tmp[QUAD_SIZE/SIZEOF_LONG-i-1] = t;
+                        }
+                    }
+                    rb_str_buf_cat(res, (char*)tmp, QUAD_SIZE);
                 }
                 break;
 #endif
@@ -1593,6 +1604,7 @@ pack_unpack(VALUE str, VALUE fmt)
 #endif
 
 #if SIZEOF_INT != SIZEOF_LONG
+#if !defined(FORCE_BIG_PACK) || SIZEOF_LONG != QUAD_SIZE
 	      case SIZEOF_LONG:
 		if (signed_p) {
 		    PACK_LENGTH_ADJUST_SIZE(sizeof(long));
@@ -1618,8 +1630,10 @@ pack_unpack(VALUE str, VALUE fmt)
 		}
 		break;
 #endif
+#endif
 
 #if defined(HAVE_LONG_LONG) && SIZEOF_LONG != SIZEOF_LONG_LONG
+#if !defined(FORCE_BIG_PACK) || SIZEOF_LONG_LONG != QUAD_SIZE
 	      case SIZEOF_LONG_LONG:
 		if (signed_p) {
 		    PACK_LENGTH_ADJUST_SIZE(sizeof(LONG_LONG));
@@ -1645,29 +1659,34 @@ pack_unpack(VALUE str, VALUE fmt)
 		}
 		break;
 #endif
+#endif
 
-#if SIZEOF_LONG != QUAD_SIZE && (!defined(HAVE_LONG_LONG) || SIZEOF_LONG_LONG != QUAD_SIZE)
+#if (SIZEOF_LONG != QUAD_SIZE && (!defined(HAVE_LONG_LONG) || SIZEOF_LONG_LONG != QUAD_SIZE)) || defined(FORCE_BIG_PACK)
 	      case QUAD_SIZE:
 		if (bigendian_p != BIGENDIAN_P())
 		    rb_bug("unexpected endian for unpack");
-		if (signed_p) {
-		    PACK_LENGTH_ADJUST_SIZE(QUAD_SIZE);
-		    while (len-- > 0) {
-			char *tmp = (char*)s;
-			s += QUAD_SIZE;
-			UNPACK_PUSH(rb_quad_unpack(tmp, 1));
-		    }
-		    PACK_ITEM_ADJUST();
-		}
-		else {
-		    PACK_LENGTH_ADJUST_SIZE(QUAD_SIZE);
-		    while (len-- > 0) {
-			char *tmp = (char*)s;
-			s += QUAD_SIZE;
-			UNPACK_PUSH(rb_quad_unpack(tmp, 0));
-		    }
-		    PACK_ITEM_ADJUST();
-		}
+                PACK_LENGTH_ADJUST_SIZE(QUAD_SIZE);
+                while (len-- > 0) {
+                    unsigned long tmp[QUAD_SIZE/SIZEOF_LONG+1];
+                    memcpy(tmp, s, QUAD_SIZE);
+                    if (BIGENDIAN_P()) {
+                        int i;
+                        for (i = 0; i < (QUAD_SIZE/SIZEOF_LONG)/2; i++) {
+                            unsigned long t = tmp[i];
+                            tmp[i] = tmp[(QUAD_SIZE/SIZEOF_LONG)-i-1];
+                            tmp[(QUAD_SIZE/SIZEOF_LONG)-i-1] = t;
+                        }
+                    }
+                    s += QUAD_SIZE;
+                    if (signed_p) {
+                        UNPACK_PUSH(rb_big_unpack(tmp, QUAD_SIZE/SIZEOF_LONG));
+                    }
+                    else {
+                        tmp[QUAD_SIZE/SIZEOF_LONG] = 0;
+                        UNPACK_PUSH(rb_big_unpack(tmp, QUAD_SIZE/SIZEOF_LONG+1));
+                    }
+                }
+                PACK_ITEM_ADJUST();
 		break;
 #endif
 

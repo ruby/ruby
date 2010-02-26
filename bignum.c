@@ -304,6 +304,89 @@ rb_int2inum(SIGNED_VALUE n)
     return rb_int2big(n);
 }
 
+void
+rb_big_pack(VALUE val, unsigned long *buf, long num_longs)
+{
+    val = rb_to_int(val);
+    if (num_longs == 0)
+        return;
+    if (FIXNUM_P(val)) {
+        long i;
+        long tmp = FIX2LONG(val);
+        buf[0] = (unsigned long)tmp;
+        tmp = tmp < 0 ? ~0L : 0;
+        for (i = 1; i < num_longs; i++)
+            buf[i] = (unsigned long)tmp;
+        return;
+    }
+    else {
+        long len = RBIGNUM_LEN(val);
+        BDIGIT *ds = BDIGITS(val), *dend = ds + len;
+        long i, j;
+        for (i = 0; i < num_longs && ds < dend; i++) {
+            unsigned long l = 0;
+            for (j = 0; j < SIZEOF_LONG/SIZEOF_BDIGITS && ds < dend; j++, ds++) {
+                l |= ((unsigned long)*ds << (j * SIZEOF_BDIGITS * CHAR_BIT));
+            }
+            buf[i] = l;
+        }
+        for (; i < num_longs; i++)
+            buf[i] = 0;
+        if (RBIGNUM_NEGATIVE_P(val)) {
+            for (i = 0; i < num_longs; i++) {
+                buf[i] = ~buf[i];
+            }
+            for (i = 0; i < num_longs; i++) {
+                buf[i]++;
+                if (buf[i] != 0)
+                    return;
+            }
+        }
+    }
+}
+
+VALUE
+rb_big_unpack(unsigned long *buf, long num_longs)
+{
+    while (2 <= num_longs) {
+        if (buf[num_longs-1] == 0 && (long)buf[num_longs-2] >= 0)
+            num_longs--;
+        else if (buf[num_longs-1] == ~0UL && (long)buf[num_longs-2] < 0)
+            num_longs--;
+        else
+            break;
+    }
+    if (num_longs == 0)
+        return INT2FIX(0);
+    else if (num_longs == 1)
+        return LONG2NUM((long)buf[0]);
+    else {
+        VALUE big;
+        BDIGIT *ds;
+        long len = num_longs * (SIZEOF_LONG/SIZEOF_BDIGITS);
+        long i;
+        big = bignew(len, 1);
+        ds = BDIGITS(big);
+        for (i = 0; i < num_longs; i++) {
+            unsigned long d = buf[i];
+#if SIZEOF_LONG == SIZEOF_BDIGITS
+            *ds++ = d;
+#else
+            int j;
+            for (j = 0; j < SIZEOF_LONG/SIZEOF_BDIGITS; j++) {
+                *ds++ = BIGLO(d);
+                d = BIGDN(d);
+            }
+#endif
+        }
+        if ((long)buf[num_longs-1] < 0) {
+            get2comp(big);
+            RBIGNUM_SET_SIGN(big, 0);
+        }
+        return bignorm(big);
+    }
+}
+
 #define QUAD_SIZE 8
 
 #if SIZEOF_LONG_LONG == QUAD_SIZE && SIZEOF_BDIGITS*2 == SIZEOF_LONG_LONG
