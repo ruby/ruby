@@ -1,3 +1,7 @@
+Fri Feb 26 16:49:29 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* pack.c (swap64): fix for VC6.
+
 Fri Feb 26 14:17:09 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* pack.c (pack_pack, pack_unpack): suppressed warnings.
