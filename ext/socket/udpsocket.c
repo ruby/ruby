@@ -62,6 +62,8 @@ udp_connect_internal(struct udp_arg *arg)
     return Qfalse;
 }
 
+VALUE rsock_freeaddrinfo(struct addrinfo *addr);
+
 /*
  * call-seq:
  *   udpsocket.connect(host, port) => 0
@@ -90,7 +92,7 @@ udp_connect(VALUE sock, VALUE host, VALUE port)
     GetOpenFile(sock, fptr);
     arg.fd = fptr->fd;
     ret = rb_ensure(udp_connect_internal, (VALUE)&arg,
-		    RUBY_METHOD_FUNC(freeaddrinfo), (VALUE)arg.res);
+		    rsock_freeaddrinfo, (VALUE)arg.res);
     if (!ret) rb_sys_fail("connect(2)");
     return INT2FIX(0);
 }
