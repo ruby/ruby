@@ -1,3 +1,7 @@
+Fri Feb 26 21:29:48 2010  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in (RSHIFT): add parenthesis to supress warning.
+
 Fri Feb 26 20:51:47 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/socket/raddrinfo.c, ext/socket/udpsocket.c: avoid illegal cast
