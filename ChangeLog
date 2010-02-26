@@ -1,3 +1,16 @@
+Sat Feb 27 03:48:18 2010  Tanaka Akira  <akr@fsij.org>
+
+	* pack.c: fix q and Q for big endian environments which have no
+	  8 bytes integer type.
+	  (pack_pack): use rb_big_pack.
+	  (pack_unpack): use rb_big_unpack.
+
+	* include/ruby/intern.h (rb_big_pack): declared.
+	  (rb_big_unpack): ditto.
+
+	* bignum.c (rb_big_pack): new function.
+	  (rb_big_unpack): ditto.
+
 Fri Feb 26 21:36:51 2010  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c: fix rb_quad_pack and rb_quad_unpack for environments
