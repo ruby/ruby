@@ -84,23 +84,19 @@ TOKEN_PASTE(swap,x)(xtype z)		\
 
 #ifndef swap64
 # if SIZEOF_LONG == 8
-#  define swap64(x)       ((((x)&0x00000000000000FFL)<<56)	\
-			  |(((x)>>56)&0xFF)	                \
-			  |(((x)&0x000000000000FF00L)<<40)	\
-			  |(((x)&0x00FF000000000000L)>>40)	\
-			  |(((x)&0x0000000000FF0000L)<<24)	\
-			  |(((x)&0x0000FF0000000000L)>>24)	\
-			  |(((x)&0x00000000FF000000L)<<8)	\
-			  |(((x)&0x000000FF00000000L)>>8))
+#  define byte_in_64bit(n) ((unsigned long)0xff << n)
 # elif defined(HAVE_LONG_LONG) && SIZEOF_LONG_LONG == 8
-#  define swap64(x)       ((((x)&0x00000000000000FFLL)<<56)	\
-			  |(((x)>>56)&0xFF)	                \
-			  |(((x)&0x000000000000FF00LL)<<40)	\
-			  |(((x)&0x00FF000000000000LL)>>40)	\
-			  |(((x)&0x0000000000FF0000LL)<<24)	\
-			  |(((x)&0x0000FF0000000000LL)>>24)	\
-			  |(((x)&0x00000000FF000000LL)<<8)	\
-			  |(((x)&0x000000FF00000000LL)>>8))
+#  define byte_in_64bit(n) ((LONG_LONG)0xff << n)
+# endif
+# ifdef byte_in_64bit
+#  define swap64(x)       ((((x)&byte_in_64bit(0))<<56) 	\
+			   |(((x)>>56)&0xFF)	                \
+			   |(((x)&byte_in_64bit(8))<<40)	\
+			   |(((x)&byte_in_64bit(48))>>40)	\
+			   |(((x)&byte_in_64bit(16))<<24)	\
+			   |(((x)&byte_in_64bit(40))>>24)	\
+			   |(((x)&byte_in_64bit(24))<<8)	\
+			   |(((x)&byte_in_64bit(32))>>8))
 # endif
 #endif
 
