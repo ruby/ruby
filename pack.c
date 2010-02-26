@@ -647,13 +647,13 @@ pack_pack(VALUE ary, VALUE fmt)
 
 	  case 'i':		/* signed int */
             signed_p = 1;
-            integer_size = sizeof(int);
+            integer_size = (int)sizeof(int);
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
 
 	  case 'I':		/* unsigned int */
             signed_p = 0;
-            integer_size = sizeof(int);
+            integer_size = (int)sizeof(int);
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
 
@@ -1139,16 +1139,19 @@ hex2num(char c)
 }
 
 #define PACK_LENGTH_ADJUST_SIZE(sz) do {	\
-    tmp = 0;					\
+    tmp_len = 0;				\
     if (len > (long)((send-s)/sz)) {		\
         if (!star) {				\
-	    tmp = len-(send-s)/sz;		\
+	    tmp_len = len-(send-s)/sz;		\
         }					\
 	len = (send-s)/sz;			\
     }						\
 } while (0)
 
-#define PACK_ITEM_ADJUST() while (tmp--) rb_ary_push(ary, Qnil)
+#define PACK_ITEM_ADJUST() do { \
+    if (tmp_len > 0) \
+	rb_ary_store(ary, RARRAY_LEN(ary)+tmp_len-1, Qnil); \
+} while (0)
 
 static VALUE
 infected_str_new(const char *ptr, long len, VALUE str)
@@ -1260,8 +1263,8 @@ pack_unpack(VALUE str, VALUE fmt)
     char *p, *pend;
     VALUE ary;
     char type;
-    long len;
-    int tmp, star;
+    long len, tmp_len;
+    int star;
 #ifdef NATINT_PACK
     int natint;			/* native integer */
 #endif
@@ -1485,13 +1488,13 @@ pack_unpack(VALUE str, VALUE fmt)
 
 	  case 'i':
 	    signed_p = 1;
-	    integer_size = sizeof(int);
+	    integer_size = (int)sizeof(int);
 	    bigendian_p = BIGENDIAN_P();
 	    goto unpack_integer;
 
 	  case 'I':
 	    signed_p = 0;
-	    integer_size = sizeof(int);
+	    integer_size = (int)sizeof(int);
 	    bigendian_p = BIGENDIAN_P();
 	    goto unpack_integer;
 
@@ -1955,7 +1958,7 @@ pack_unpack(VALUE str, VALUE fmt)
 	    break;
 
 	  case 'P':
-	    if (sizeof(char *) <= send - s) {
+	    if (sizeof(char *) <= (size_t)(send - s)) {
 		VALUE tmp = Qnil;
 		char *t;
 
@@ -1995,7 +1998,7 @@ pack_unpack(VALUE str, VALUE fmt)
 	    if (len > (long)((send - s) / sizeof(char *)))
 		len = (send - s) / sizeof(char *);
 	    while (len-- > 0) {
-		if (send - s < sizeof(char *))
+		if ((size_t)(send - s) < sizeof(char *))
 		    break;
 		else {
 		    VALUE tmp = Qnil;
