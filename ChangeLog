@@ -1,3 +1,9 @@
+Fri Feb 26 20:51:47 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/socket/raddrinfo.c, ext/socket/udpsocket.c: avoid illegal cast
+	  from void-returning function to VALUE-returning one.  It causes SEGV
+	  on RubySpec with mingw32.
+
 Fri Feb 26 20:07:48 2010  Tanaka Akira  <akr@fsij.org>
 
 	* pack.c (QUAD_SIZE): it should be always 8.

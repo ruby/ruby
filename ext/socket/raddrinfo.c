@@ -457,6 +457,13 @@ make_hostent_internal(struct hostent_arg *arg)
 }
 
 VALUE
+rsock_freeaddrinfo(struct addrinfo *addr)
+{
+    freeaddrinfo(addr);
+    return Qnil;
+}
+
+VALUE
 rsock_make_hostent(VALUE host, struct addrinfo *addr, VALUE (*ipaddr)(struct sockaddr *, size_t))
 {
     struct hostent_arg arg;
@@ -465,7 +472,7 @@ rsock_make_hostent(VALUE host, struct addrinfo *addr, VALUE (*ipaddr)(struct soc
     arg.addr = addr;
     arg.ipaddr = ipaddr;
     return rb_ensure(make_hostent_internal, (VALUE)&arg,
-                     RUBY_METHOD_FUNC(freeaddrinfo), (VALUE)addr);
+                     rsock_freeaddrinfo, (VALUE)addr);
 }
 
 typedef struct {
