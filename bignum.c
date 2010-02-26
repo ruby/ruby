@@ -304,7 +304,9 @@ rb_int2inum(SIGNED_VALUE n)
     return rb_int2big(n);
 }
 
-#if SIZEOF_BDIGITS*2 == SIZEOF_LONG_LONG
+#define QUAD_SIZE 8
+
+#if SIZEOF_LONG_LONG == QUAD_SIZE && SIZEOF_BDIGITS*2 == SIZEOF_LONG_LONG
 
 void
 rb_quad_pack(char *buf, VALUE val)
@@ -373,8 +375,6 @@ rb_quad_unpack(const char *buf, int sign)
 }
 
 #else
-
-#define QUAD_SIZE 8
 
 void
 rb_quad_pack(char *buf, VALUE val)
