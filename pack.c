@@ -740,6 +740,9 @@ pack_pack(VALUE ary, VALUE fmt)
 #endif
 
 #if SIZEOF_LONG != QUAD_SIZE || defined(FORCE_BIG_PACK)
+#if QUAD_SIZE % SIZEOF_LONG != 0
+# error unexpected QUAD_SIZE : SIZEOF_LONG ratio
+#endif
               case QUAD_SIZE:
                 while (len-- > 0) {
                     unsigned long tmp[QUAD_SIZE/SIZEOF_LONG];
@@ -1662,6 +1665,9 @@ pack_unpack(VALUE str, VALUE fmt)
 #endif
 
 #if (SIZEOF_LONG != QUAD_SIZE && (!defined(HAVE_LONG_LONG) || SIZEOF_LONG_LONG != QUAD_SIZE)) || defined(FORCE_BIG_PACK)
+#if QUAD_SIZE % SIZEOF_LONG != 0
+# error unexpected QUAD_SIZE : SIZEOF_LONG ratio
+#endif
 	      case QUAD_SIZE:
 		if (bigendian_p != BIGENDIAN_P())
 		    rb_bug("unexpected endian for unpack");

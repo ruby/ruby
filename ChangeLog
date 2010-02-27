@@ -1,3 +1,9 @@
+Sat Feb 27 15:54:55 2010  Tanaka Akira  <akr@fsij.org>
+
+	* pack.c: check assuption on QUAD_SIZE and SIZEOF_LONG.
+
+	* bignum.c: check assuption on SIZEOF_LONG and SIZEOF_BDIGITS.
+
 Sat Feb 27 03:48:18 2010  Tanaka Akira  <akr@fsij.org>
 
 	* pack.c: fix q and Q for big endian environments which have no

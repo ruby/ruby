@@ -304,6 +304,10 @@ rb_int2inum(SIGNED_VALUE n)
     return rb_int2big(n);
 }
 
+#if SIZEOF_LONG % SIZEOF_BDIGITS != 0
+# error unexpected SIZEOF_LONG : SIZEOF_BDIGITS ratio
+#endif
+
 void
 rb_big_pack(VALUE val, unsigned long *buf, long num_longs)
 {
