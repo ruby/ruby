@@ -15,6 +15,12 @@
 #include <ctype.h>
 #include <errno.h>
 
+#define GCC_VERSION_SINCE(major, minor, patchlevel) \
+  (defined(__GNUC__) && !defined(__INTEL_COMPILER) && \
+   ((__GNUC__ > (major)) ||  \
+    (__GNUC__ == (major) && __GNUC_MINOR__ > (minor)) || \
+    (__GNUC__ == (major) && __GNUC_MINOR__ == (minor) && __GNUC_PATCHLEVEL__ >= (patchlevel))))
+
 #define SIZE16 2
 #define SIZE32 4
 
@@ -79,6 +85,11 @@ TOKEN_PASTE(swap,x)(xtype z)		\
     return r;				\
 }
 
+#if GCC_VERSION_SINCE(4,3,0)
+# define swap32(x) __builtin_bswap32(x)
+# define swap64(x) __builtin_bswap64(x)
+#endif
+
 #ifndef swap16
 # define swap16(x)	((((x)&0xFF)<<8) | (((x)>>8)&0xFF))
 #endif
@@ -92,7 +103,7 @@ TOKEN_PASTE(swap,x)(xtype z)		\
 
 #ifndef swap64
 # ifdef HAVE_INT64_T
-#  define byte_in_64bit(n) ((uint64_t)0xff << n)
+#  define byte_in_64bit(n) ((uint64_t)0xff << (n))
 #  define swap64(x)       ((((x)&byte_in_64bit(0))<<56) 	\
 			   |(((x)>>56)&0xFF)	                \
 			   |(((x)&byte_in_64bit(8))<<40)	\
