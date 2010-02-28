@@ -459,14 +459,14 @@ module Open3
   #
   #   Open3.pipeline_r("zcat /var/log/apache2/access.log.*.gz",
   #                    [{"LANG"=>"C"}, "grep", "GET /favicon.ico"],
-  #                    "logresolve") {|r, ts|
-  #     r.each_line {|line|
+  #                    "logresolve") {|o, ts|
+  #     o.each_line {|line|
   #       ...
   #     }
   #   }
   #
-  #   Open3.pipeline_r("yes", "head -10") {|r, ts|
-  #     p r.read      #=> "y\ny\ny\ny\ny\ny\ny\ny\ny\ny\n"
+  #   Open3.pipeline_r("yes", "head -10") {|o, ts|
+  #     p o.read      #=> "y\ny\ny\ny\ny\ny\ny\ny\ny\ny\n"
   #     p ts[0].value #=> #<Process::Status: pid 24910 SIGPIPE (signal 13)>
   #     p ts[1].value #=> #<Process::Status: pid 24913 exit 0>
   #   }
@@ -509,8 +509,8 @@ module Open3
   #
   # Example:
   #
-  #   Open3.pipeline_w("bzip2 -c", :out=>"/tmp/hello.bz2") {|w, ts|
-  #     w.puts "hello"
+  #   Open3.pipeline_w("bzip2 -c", :out=>"/tmp/hello.bz2") {|i, ts|
+  #     i.puts "hello"
   #   }
   #
   def pipeline_w(*cmds, &block)
