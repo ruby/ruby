@@ -319,7 +319,7 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
   error:
     if (slavefd != -1) close(slavefd);
     if (masterfd != -1) close(masterfd);
-    if (!fail) {
+    if (fail) {
         rb_raise(rb_eRuntimeError, "can't get Master/Slave device");
     }
     return -1;
@@ -383,7 +383,7 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
   error:
     if (slavefd != -1) close(slavefd);
     if (masterfd != -1) close(masterfd);
-    if (!fail) rb_raise(rb_eRuntimeError, "can't get Master/Slave device");
+    if (fail) rb_raise(rb_eRuntimeError, "can't get Master/Slave device");
     return -1;
 #else
     int	 masterfd = -1, slavefd = -1;
