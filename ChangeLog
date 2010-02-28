@@ -1,3 +1,17 @@
+Sun Feb 28 11:49:35 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* openssl/ossl.c (OSSL_IMPL_SK2ARY): for OpenSSL 1.0.
+	  patched by Jeroen van Meeuwen at [ruby-core:25210]
+	  fixed by Nobuyoshi Nakada [ruby-core:25238],
+	  Hongli Lai [ruby-core:27417],
+	  and Motohiro KOSAKI [ruby-core:28063]
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_method_tab),
+	  (ossl_ssl_cipher_to_ary): constified.
+
+	* ext/openssl/ossl_pkcs7.c (pkcs7_get_certs, pkcs7_get_crls):
+	  split pkcs7_get_certs_or_crls.
+
 Sun Feb 28 11:42:55 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/openssl/{test_x509cert.rb,openssl,test_x509crl.rb,
