@@ -282,7 +282,9 @@ num2i32(VALUE x)
 }
 
 #define QUAD_SIZE 8
+#define MAX_INTEGER_PACK_SIZE 8
 /* #define FORCE_BIG_PACK */
+
 static const char toofew[] = "too few arguments";
 
 static void encodes(VALUE,const char*,long,int,int);
@@ -715,7 +717,7 @@ pack_pack(VALUE ary, VALUE fmt)
 
           pack_integer:
             switch (integer_size) {
-#ifdef HAVE_INT16_T
+#if defined(HAVE_INT16_T) && !defined(FORCE_BIG_PACK)
               case SIZEOF_INT16_T:
 		while (len-- > 0) {
 		    int16_t v;
@@ -728,7 +730,7 @@ pack_pack(VALUE ary, VALUE fmt)
 		break;
 #endif
 
-#ifdef HAVE_INT32_T
+#if defined(HAVE_INT32_T) && !defined(FORCE_BIG_PACK)
               case SIZEOF_INT32_T:
 		while (len-- > 0) {
 		    int32_t v;
@@ -747,36 +749,43 @@ pack_pack(VALUE ary, VALUE fmt)
 		    int64_t v;
 
 		    from = NEXTFROM;
-		    v = num2i32(from);
+		    v = num2i32(from); /* can return 64bit value if SIZEOF_LONG == SIZEOF_INT64_T */
 		    if (bigendian_p != BIGENDIAN_P()) v = swap64(v);
 		    rb_str_buf_cat(res, (char *)&v, sizeof(int64_t));
 		}
 		break;
 #else
-# if QUAD_SIZE % SIZEOF_LONG != 0
-#  error unexpected QUAD_SIZE : SIZEOF_LONG ratio
-# endif
-              case QUAD_SIZE:
-                while (len-- > 0) {
-                    unsigned long tmp[QUAD_SIZE/SIZEOF_LONG];
 
-                    from = NEXTFROM;
-                    rb_big_pack(from, tmp, QUAD_SIZE/SIZEOF_LONG);
-                    if (BIGENDIAN_P()) {
-                        int i;
-                        for (i = 0; i < QUAD_SIZE/SIZEOF_LONG/2; i++) {
-                            unsigned long t = tmp[i];
-                            tmp[i] = tmp[QUAD_SIZE/SIZEOF_LONG-i-1];
-                            tmp[QUAD_SIZE/SIZEOF_LONG-i-1] = t;
-                        }
-                    }
-                    rb_str_buf_cat(res, (char*)tmp, QUAD_SIZE);
-                }
-                break;
 #endif
 
 	      default:
-	        rb_bug("unexpected intger size for pack: %d", integer_size);
+                if (integer_size > MAX_INTEGER_PACK_SIZE)
+                    rb_bug("unexpected intger size for pack: %d", integer_size);
+                while (len-- > 0) {
+                    unsigned long tmp[(MAX_INTEGER_PACK_SIZE+SIZEOF_LONG-1)/SIZEOF_LONG];
+                    int num_longs = (integer_size+SIZEOF_LONG-1)/SIZEOF_LONG;
+                    int i;
+
+                    from = NEXTFROM;
+                    rb_big_pack(from, tmp, num_longs);
+                    if (bigendian_p) {
+                        for (i = 0; i < num_longs/2; i++) {
+                            unsigned long t = tmp[i];
+                            tmp[i] = tmp[num_longs-1-i];
+                            tmp[num_longs-1-i] = t;
+                        }
+                    }
+		    if (bigendian_p != BIGENDIAN_P()) {
+                        for (i = 0; i < num_longs; i++)
+                            tmp[i] = swapl(tmp[i]);
+                    }
+                    rb_str_buf_cat(res,
+                                   bigendian_p ?
+                                     (char*)tmp + sizeof(long)*num_longs - integer_size :
+                                     (char*)tmp,
+                                   integer_size);
+                }
+                break;
 	    }
 	    break;
 
@@ -1567,7 +1576,7 @@ pack_unpack(VALUE str, VALUE fmt)
 
 	  unpack_integer:
 	    switch (integer_size) {
-#ifdef HAVE_INT16_T
+#if defined(HAVE_INT16_T) && !defined(FORCE_BIG_PACK)
 	      case SIZEOF_INT16_T:
 		if (signed_p) {
 		    PACK_LENGTH_ADJUST_SIZE(sizeof(int16_t));
@@ -1594,7 +1603,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		break;
 #endif
 
-#ifdef HAVE_INT32_T
+#if defined(HAVE_INT32_T) && !defined(FORCE_BIG_PACK)
 	      case SIZEOF_INT32_T:
 		if (signed_p) {
 		    PACK_LENGTH_ADJUST_SIZE(sizeof(int32_t));
@@ -1646,40 +1655,41 @@ pack_unpack(VALUE str, VALUE fmt)
 		    PACK_ITEM_ADJUST();
 		}
 		break;
-#else
-# if QUAD_SIZE % SIZEOF_LONG != 0
-#  error unexpected QUAD_SIZE : SIZEOF_LONG ratio
-# endif
-	      case QUAD_SIZE:
-		if (bigendian_p != BIGENDIAN_P())
-		    rb_bug("unexpected endian for unpack");
-                PACK_LENGTH_ADJUST_SIZE(QUAD_SIZE);
-                while (len-- > 0) {
-                    unsigned long tmp[QUAD_SIZE/SIZEOF_LONG+1];
-                    memcpy(tmp, s, QUAD_SIZE);
-                    if (BIGENDIAN_P()) {
-                        int i;
-                        for (i = 0; i < (QUAD_SIZE/SIZEOF_LONG)/2; i++) {
-                            unsigned long t = tmp[i];
-                            tmp[i] = tmp[(QUAD_SIZE/SIZEOF_LONG)-i-1];
-                            tmp[(QUAD_SIZE/SIZEOF_LONG)-i-1] = t;
-                        }
-                    }
-                    s += QUAD_SIZE;
-                    if (signed_p) {
-                        UNPACK_PUSH(rb_big_unpack(tmp, QUAD_SIZE/SIZEOF_LONG));
-                    }
-                    else {
-                        tmp[QUAD_SIZE/SIZEOF_LONG] = 0;
-                        UNPACK_PUSH(rb_big_unpack(tmp, QUAD_SIZE/SIZEOF_LONG+1));
-                    }
-                }
-                PACK_ITEM_ADJUST();
-		break;
 #endif
 
               default:
-	        rb_bug("unexpected intger size for unpack");
+                if (integer_size > MAX_INTEGER_PACK_SIZE)
+                    rb_bug("unexpected intger size for pack: %d", integer_size);
+                PACK_LENGTH_ADJUST_SIZE(integer_size);
+                while (len-- > 0) {
+                    unsigned long tmp[(MAX_INTEGER_PACK_SIZE+SIZEOF_LONG)/SIZEOF_LONG];
+                    int num_longs = (integer_size+SIZEOF_LONG)/SIZEOF_LONG;
+                    int i;
+
+                    if (signed_p && (signed char)s[bigendian_p ? 0 : (integer_size-1)] < 0)
+                        memset(tmp, 0xff, sizeof(long)*num_longs);
+                    else
+                        memset(tmp, 0, sizeof(long)*num_longs);
+                    if (bigendian_p)
+                        memcpy((char*)(tmp + num_longs) - integer_size, s, integer_size);
+                    else
+                        memcpy(tmp, s, integer_size);
+                    if (bigendian_p) {
+                        for (i = 0; i < num_longs/2; i++) {
+                            unsigned long t = tmp[i];
+                            tmp[i] = tmp[num_longs-1-i];
+                            tmp[num_longs-1-i] = t;
+                        }
+                    }
+                    if (bigendian_p != BIGENDIAN_P()) {
+                        for (i = 0; i < num_longs; i++)
+                            tmp[i] = swapl(tmp[i]);
+                    }
+                    s += integer_size;
+                    UNPACK_PUSH(rb_big_unpack(tmp, num_longs));
+                }
+                PACK_ITEM_ADJUST();
+		break;
 	    }
 
 	  case 'f':

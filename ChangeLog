@@ -1,3 +1,8 @@
+Sun Feb 28 11:25:16 2010  Tanaka Akira  <akr@fsij.org>
+
+	* pack.c (pack_pack): generalized integer packer implemented.
+	  (pack_unpack): generalized integer unpacker implemented.
+
 Sun Feb 28 06:58:53 2010  Tanaka Akira  <akr@fsij.org>
 
 	* pack.c (swap32): use __builtin_bswap32 on gcc 4.3.0 or later.
@@ -9,9 +14,9 @@ Sun Feb 28 00:38:18 2010  Tanaka Akira  <akr@fsij.org>
 
 Sat Feb 27 15:54:55 2010  Tanaka Akira  <akr@fsij.org>
 
-	* pack.c: check assuption on QUAD_SIZE and SIZEOF_LONG.
+	* pack.c: check assumption on QUAD_SIZE and SIZEOF_LONG.
 
-	* bignum.c: check assuption on SIZEOF_LONG and SIZEOF_BDIGITS.
+	* bignum.c: check assumption on SIZEOF_LONG and SIZEOF_BDIGITS.
 
 Sat Feb 27 03:48:18 2010  Tanaka Akira  <akr@fsij.org>
 
@@ -34,12 +39,12 @@ Fri Feb 26 21:36:51 2010  Tanaka Akira  <akr@fsij.org>
 	  (rb_quad_pack): use quad_buf_complement.  don't raise for large
 	  values.
 	  (rb_quad_unpack): use quad_buf_complement.
-	  (quad_buf_complement): new function extracted frm rb_quad_pack.
+	  (quad_buf_complement): new function extracted from rb_quad_pack.
 	  add one after bitwise negation.
 
 Fri Feb 26 21:29:48 2010  Tanaka Akira  <akr@fsij.org>
 
-	* configure.in (RSHIFT): add parenthesis to supress warning.
+	* configure.in (RSHIFT): add parenthesis to suppress warning.
 
 Fri Feb 26 20:51:47 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
@@ -87,7 +92,7 @@ Thu Feb 25 00:43:57 2010  Koichi Sasada  <ko1@atdot.net>
 	  (getting IC directly) and is for the AOT compilation development.
 
 	* compile.c, iseq.c, insns.def: Change the approach to handling inline
-	  cahce (IC) type operand to enable the above change.
+	  cache (IC) type operand to enable the above change.
 	  This change also affects ISeq#to_a method.  The inline cache operand
 	  will be dumped by fixnum, the index of inline cache, in other words,
 	  inline cache identity.
