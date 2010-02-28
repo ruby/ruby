@@ -68,6 +68,9 @@ module Open3
       STDERR.reopen(pe[1])
       pe[1].close
 
+      trap("EXIT", "DEFAULT")
+      at_exit {exit!(false)}
+      at_exit {raise($!)}
       exec(*cmd)
     }
 
