@@ -2,8 +2,13 @@ require 'test/unit'
 
 class TestMath < Test::Unit::TestCase
   def assert_infinity(a, *rest)
-    rest = ["not infinity"] if rest.empty?
+    rest = ["not infinity: #{a.inspect}"] if rest.empty?
     assert(!a.finite?, *rest)
+  end
+
+  def assert_nan(a, *rest)
+    rest = ["not nan: #{a.inspect}"] if rest.empty?
+    assert(a.nan?, *rest)
   end
 
   def check(a, b)
@@ -12,6 +17,11 @@ class TestMath < Test::Unit::TestCase
   end
 
   def test_atan2
+    assert_raise(Math::DomainError) { Math.atan2(0, 0) }
+    assert_raise(Math::DomainError) { Math.atan2(Float::INFINITY, Float::INFINITY) }
+    assert_raise(Math::DomainError) { Math.atan2(Float::INFINITY, -Float::INFINITY) }
+    assert_raise(Math::DomainError) { Math.atan2(-Float::INFINITY, Float::INFINITY) }
+    assert_raise(Math::DomainError) { Math.atan2(-Float::INFINITY, -Float::INFINITY) }
     check(0, Math.atan2(0, 1))
     check(Math::PI / 4, Math.atan2(1, 1))
     check(Math::PI / 2, Math.atan2(1, 0))
@@ -46,7 +56,9 @@ class TestMath < Test::Unit::TestCase
     check(1 * Math::PI / 4, Math.acos( 1.0 / Math.sqrt(2)))
     check(2 * Math::PI / 4, Math.acos( 0.0))
     check(4 * Math::PI / 4, Math.acos(-1.0))
-    assert_raise(Errno::EDOM, Errno::ERANGE) { Math.acos(2.0) }
+    assert_raise(Math::DomainError) { Math.acos(+1.0 + Float::EPSILON) }
+    assert_raise(Math::DomainError) { Math.acos(-1.0 - Float::EPSILON) }
+    assert_raise(Math::DomainError) { Math.acos(2.0) }
   end
 
   def test_asin
@@ -54,7 +66,9 @@ class TestMath < Test::Unit::TestCase
     check( 1 * Math::PI / 4, Math.asin( 1.0 / Math.sqrt(2)))
     check( 2 * Math::PI / 4, Math.asin( 1.0))
     check(-2 * Math::PI / 4, Math.asin(-1.0))
-    assert_raise(Errno::EDOM, Errno::ERANGE) { Math.asin(2.0) }
+    assert_raise(Math::DomainError) { Math.asin(+1.0 + Float::EPSILON) }
+    assert_raise(Math::DomainError) { Math.asin(-1.0 - Float::EPSILON) }
+    assert_raise(Math::DomainError) { Math.asin(2.0) }
   end
 
   def test_atan
@@ -86,7 +100,8 @@ class TestMath < Test::Unit::TestCase
     check(0, Math.acosh(1))
     check(1, Math.acosh((Math::E ** 1 + Math::E ** -1) / 2))
     check(2, Math.acosh((Math::E ** 2 + Math::E ** -2) / 2))
-    assert_raise(Errno::EDOM, Errno::ERANGE) { Math.acosh(0) }
+    assert_raise(Math::DomainError) { Math.acosh(1.0 - Float::EPSILON) }
+    assert_raise(Math::DomainError) { Math.acosh(0) }
   end
 
   def test_asinh
@@ -99,7 +114,10 @@ class TestMath < Test::Unit::TestCase
     check(0, Math.atanh(Math.sinh(0) / Math.cosh(0)))
     check(1, Math.atanh(Math.sinh(1) / Math.cosh(1)))
     check(2, Math.atanh(Math.sinh(2) / Math.cosh(2)))
-    assert_raise(Errno::EDOM, Errno::ERANGE) { Math.atanh(-1) }
+    assert_nothing_raised { assert_infinity Math.atanh(1) }
+    assert_nothing_raised { assert_infinity -Math.atanh(-1) }
+    assert_raise(Math::DomainError) { Math.atanh(+1.0 + Float::EPSILON) }
+    assert_raise(Math::DomainError) { Math.atanh(-1.0 - Float::EPSILON) }
   end
 
   def test_exp
@@ -116,8 +134,9 @@ class TestMath < Test::Unit::TestCase
     check(1, Math.log(10, 10))
     check(2, Math.log(100, 10))
     assert_equal(1.0/0, Math.log(1.0/0))
-    assert_raise(Errno::EDOM, Errno::ERANGE) { Math.log(0) }
-    assert_raise(Errno::EDOM, Errno::ERANGE) { Math.log(-1) }
+    assert_nothing_raised { assert_infinity -Math.log(+0.0) }
+    assert_nothing_raised { assert_infinity -Math.log(-0.0) }
+    assert_raise(Math::DomainError) { Math.log(-1.0) }
     assert_raise(TypeError) { Math.log(1,nil) }
   end
 
@@ -126,8 +145,9 @@ class TestMath < Test::Unit::TestCase
     check(1, Math.log2(2))
     check(2, Math.log2(4))
     assert_equal(1.0/0, Math.log2(1.0/0))
-    assert_raise(Errno::EDOM, Errno::ERANGE) { Math.log2(0) }
-    assert_raise(Errno::EDOM, Errno::ERANGE) { Math.log2(-1) }
+    assert_nothing_raised { assert_infinity -Math.log2(+0.0) }
+    assert_nothing_raised { assert_infinity -Math.log2(-0.0) }
+    assert_raise(Math::DomainError) { Math.log2(-1.0) }
   end
 
   def test_log10
@@ -135,8 +155,9 @@ class TestMath < Test::Unit::TestCase
     check(1, Math.log10(10))
     check(2, Math.log10(100))
     assert_equal(1.0/0, Math.log10(1.0/0))
-    assert_raise(Errno::EDOM, Errno::ERANGE) { Math.log10(0) }
-    assert_raise(Errno::EDOM, Errno::ERANGE) { Math.log10(-1) }
+    assert_nothing_raised { assert_infinity -Math.log10(+0.0) }
+    assert_nothing_raised { assert_infinity -Math.log10(-0.0) }
+    assert_raise(Math::DomainError) { Math.log10(-1.0) }
   end
 
   def test_sqrt
@@ -144,7 +165,8 @@ class TestMath < Test::Unit::TestCase
     check(1, Math.sqrt(1))
     check(2, Math.sqrt(4))
     assert_equal(1.0/0, Math.sqrt(1.0/0))
-    assert_raise(Errno::EDOM, Errno::ERANGE) { Math.sqrt(-1) }
+    assert_equal("0.0", Math.sqrt(-0.0).to_s) # insure it is +0.0, not -0.0
+    assert_raise(Math::DomainError) { Math.sqrt(-1.0) }
   end
 
   def test_frexp
@@ -201,6 +223,8 @@ class TestMath < Test::Unit::TestCase
       assert_infinity(Math.gamma(i), "Math.gamma(#{i}) should be INF")
       assert_infinity(Math.gamma(i-1), "Math.gamma(#{i-1}) should be INF")
     end
+
+    assert_raise(Math::DomainError) { Math.gamma(-Float::INFINITY) }
   end
 
   def test_lgamma
@@ -241,6 +265,9 @@ class TestMath < Test::Unit::TestCase
     g, s = Math.lgamma(4)
     check(Math.log(6), g)
     assert_equal(s, 1)
+
+    assert_infinity Math.lgamma(-Float::INFINITY)
+    assert_raise(Math::DomainError) { Math.lgamma(-Float::INFINITY) }
   end
 
   def test_cbrt

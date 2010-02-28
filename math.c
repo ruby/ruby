@@ -16,6 +16,7 @@
 #define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
 
 VALUE rb_mMath;
+VALUE rb_eMathDomainError;
 
 extern VALUE rb_to_float(VALUE val);
 #define Need_Float(x) do {if (TYPE(x) != T_FLOAT) {(x) = rb_to_float(x);}} while(0)
@@ -24,44 +25,8 @@ extern VALUE rb_to_float(VALUE val);
     Need_Float(y);\
 } while (0)
 
-static void
-domain_check(double x, double y, const char *msg)
-{
-    if (errno) {
-	if (isinf(y)) return;
-    }
-    else {
-	if (!isnan(y)) return;
-	else if (isnan(x)) return;
-	else {
-#if defined(EDOM)
-	    errno = EDOM;
-#else
-	    errno = ERANGE;
-#endif
-	}
-    }
-    rb_sys_fail(msg);
-}
-
-static void
-infinity_check(VALUE arg, double res, const char *msg)
-{
-    while(1) {
-	if (errno) {
-	    rb_sys_fail(msg);
-	}
-	if (isinf(res) && !isinf(RFLOAT_VALUE(arg))) {
-#if defined(EDOM)
-	    errno = EDOM;
-#elif defined(ERANGE)
-	    errno = ERANGE;
-#endif
-	    continue;
-	}
-	break;
-    }
-}
+#define domain_error(msg) \
+    rb_raise(rb_eMathDomainError, "Numerical argument is out of domain - " #msg);
 
 /*
  *  call-seq:
@@ -86,8 +51,13 @@ infinity_check(VALUE arg, double res, const char *msg)
 static VALUE
 math_atan2(VALUE obj, VALUE y, VALUE x)
 {
+    double dx, dy;
     Need_Float2(y, x);
-    return DBL2NUM(atan2(RFLOAT_VALUE(y), RFLOAT_VALUE(x)));
+    dx = RFLOAT_VALUE(x);
+    dy = RFLOAT_VALUE(y);
+    if (dx == 0.0 && dy == 0.0) domain_error("atan2");
+    if (isinf(dx) && isinf(dy)) domain_error("atan2");
+    return DBL2NUM(atan2(dy, dx));
 }
 
 
@@ -151,10 +121,10 @@ math_acos(VALUE obj, VALUE x)
     double d0, d;
 
     Need_Float(x);
-    errno = 0;
     d0 = RFLOAT_VALUE(x);
+    /* check for domain error */
+    if (d0 < -1.0 || 1.0 < d0) domain_error("acos");
     d = acos(d0);
-    domain_check(d0, d, "acos");
     return DBL2NUM(d);
 }
 
@@ -171,10 +141,10 @@ math_asin(VALUE obj, VALUE x)
     double d0, d;
 
     Need_Float(x);
-    errno = 0;
     d0 = RFLOAT_VALUE(x);
+    /* check for domain error */
+    if (d0 < -1.0 || 1.0 < d0) domain_error("asin");
     d = asin(d0);
-    domain_check(d0, d, "asin");
     return DBL2NUM(d);
 }
 
@@ -274,10 +244,10 @@ math_acosh(VALUE obj, VALUE x)
     double d0, d;
 
     Need_Float(x);
-    errno = 0;
     d0 = RFLOAT_VALUE(x);
+    /* check for domain error */
+    if (d0 < 1.0) domain_error("acosh");
     d = acosh(d0);
-    domain_check(d0, d, "acosh");
     return DBL2NUM(d);
 }
 
@@ -308,15 +278,13 @@ math_atanh(VALUE obj, VALUE x)
     double d0, d;
 
     Need_Float(x);
-    errno = 0;
     d0 = RFLOAT_VALUE(x);
-    if (d0 == 1.0 || d0 == -1.0) {
-	errno = ERANGE;
-	rb_sys_fail("atanh");
-    }
+    /* check for domain error */
+    if (d0 <  -1.0 || +1.0 <  d0) domain_error("atanh");
+    /* check for pole error */
+    if (d0 == -1.0) return DBL2NUM(-INFINITY);
+    if (d0 == +1.0) return DBL2NUM(+INFINITY);
     d = atanh(d0);
-    domain_check(d0, d, "atanh");
-    infinity_check(x, d, "atanh");
     return DBL2NUM(d);
 }
 
@@ -372,15 +340,16 @@ math_log(int argc, VALUE *argv)
 
     rb_scan_args(argc, argv, "11", &x, &base);
     Need_Float(x);
-    errno = 0;
     d0 = RFLOAT_VALUE(x);
+    /* check for domain error */
+    if (d0 < 0.0) domain_error("log");
+    /* check for pole error */
+    if (d0 == 0.0) return DBL2NUM(-INFINITY);
     d = log(d0);
     if (argc == 2) {
 	Need_Float(base);
 	d /= log(RFLOAT_VALUE(base));
     }
-    domain_check(d0, d, "log");
-    infinity_check(x, d, "log");
     return DBL2NUM(d);
 }
 
@@ -415,11 +384,12 @@ math_log2(VALUE obj, VALUE x)
     double d0, d;
 
     Need_Float(x);
-    errno = 0;
     d0 = RFLOAT_VALUE(x);
+    /* check for domain error */
+    if (d0 < 0.0) domain_error("log2");
+    /* check for pole error */
+    if (d0 == 0.0) return DBL2NUM(-INFINITY);
     d = log2(d0);
-    domain_check(d0, d, "log2");
-    infinity_check(x, d, "log2");
     return DBL2NUM(d);
 }
 
@@ -441,11 +411,12 @@ math_log10(VALUE obj, VALUE x)
     double d0, d;
 
     Need_Float(x);
-    errno = 0;
     d0 = RFLOAT_VALUE(x);
+    /* check for domain error */
+    if (d0 < 0.0) domain_error("log10");
+    /* check for pole error */
+    if (d0 == 0.0) return DBL2NUM(-INFINITY);
     d = log10(d0);
-    domain_check(d0, d, "log10");
-    infinity_check(x, d, "log10");
     return DBL2NUM(d);
 }
 
@@ -479,10 +450,11 @@ math_sqrt(VALUE obj, VALUE x)
     double d0, d;
 
     Need_Float(x);
-    errno = 0;
     d0 = RFLOAT_VALUE(x);
+    /* check for domain error */
+    if (d0 < 0.0) domain_error("sqrt");
+    if (d0 == 0.0) return DBL2NUM(0.0);
     d = sqrt(d0);
-    domain_check(d0, d, "sqrt");
     return DBL2NUM(d);
 }
 
@@ -686,15 +658,17 @@ math_gamma(VALUE obj, VALUE x)
     double intpart, fracpart;
     Need_Float(x);
     d0 = RFLOAT_VALUE(x);
+    /* check for domain error */
+    if (isinf(d0) && signbit(d0)) domain_error("gamma");
     fracpart = modf(d0, &intpart);
-    if (fracpart == 0.0 &&
-        0 < intpart &&
-        intpart - 1 < (double)numberof(fact_table)) {
-        return DBL2NUM(fact_table[(int)intpart - 1]);
+    if (fracpart == 0.0) {
+	if (intpart < 0) domain_error("gamma");
+	if (0 < intpart &&
+	    intpart - 1 < (double)numberof(fact_table)) {
+	    return DBL2NUM(fact_table[(int)intpart - 1]);
+	}
     }
-    errno = 0;
     d = tgamma(d0);
-    domain_check(d0, d, "gamma");
     return DBL2NUM(d);
 }
 
@@ -717,13 +691,13 @@ math_lgamma(VALUE obj, VALUE x)
     int sign=1;
     VALUE v;
     Need_Float(x);
-    errno = 0;
     d0 = RFLOAT_VALUE(x);
+    /* check for domain error */
     if (isinf(d0)) {
+	if (signbit(d0)) domain_error("lgamma");
 	return rb_assoc_new(DBL2NUM(INFINITY), INT2FIX(1));
     }
     d = lgamma_r(d0, &sign);
-    domain_check(d0, d, "lgamma");
     v = DBL2NUM(d);
     return rb_assoc_new(v, INT2FIX(sign));
 }
@@ -772,6 +746,7 @@ void
 Init_Math(void)
 {
     rb_mMath = rb_define_module("Math");
+    rb_eMathDomainError = rb_define_class_under(rb_mMath, "DomainError", rb_eArgError);
 
 #ifdef M_PI
     rb_define_const(rb_mMath, "PI", DBL2NUM(M_PI));

@@ -1,3 +1,19 @@
+Sun Feb 28 18:58:00 2010  Kenta Murata  <mrkn@mrkn.jp>
+
+	* math.c (rb_eMathDomainError): new exception class
+	  for representing mathematical domain error instead
+	  of Errno::EDOM.
+
+	* math.c (domain_check, infinity_check): removed,
+	  no longer needed.
+
+	* math.c (math_atan2, math_acos, math_asin, math_acosh,
+	  math_atanh, math_log, math_log2, math_log10, math_sqrt,
+	  math_gamma, math_lgamma): mathematical domain errors
+	  are checked and raised before calling libm's functions.
+
+	* test/ruby/test_math.rb: updated for changes of maht.c.
+
 Sun Feb 28 15:07:28 2010  Tanaka Akira  <akr@fsij.org>
 
 	* pack.c (pack_pack): use union to avoid pointer cast.
