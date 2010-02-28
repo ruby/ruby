@@ -1,3 +1,8 @@
+Sun Feb 28 21:32:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/pty/pty.c (get_device_once): raise on error when fail is
+	  non-zero.
+
 Sun Feb 28 18:58:00 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* math.c (rb_eMathDomainError): new exception class
