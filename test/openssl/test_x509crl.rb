@@ -197,8 +197,8 @@ class OpenSSL::TestX509CRL < Test::Unit::TestCase
                     cert, @rsa2048, OpenSSL::Digest::SHA1.new)
     assert_equal(false, crl.verify(@rsa1024))
     assert_equal(true,  crl.verify(@rsa2048))
-    assert_equal(false, crl.verify(@dsa256))
-    assert_equal(false, crl.verify(@dsa512))
+    assert_equal(false, crl_error_returns_false { crl.verify(@dsa256) })
+    assert_equal(false, crl_error_returns_false { crl.verify(@dsa512) })
     crl.version = 0
     assert_equal(false, crl.verify(@rsa2048))
 
@@ -206,12 +206,20 @@ class OpenSSL::TestX509CRL < Test::Unit::TestCase
                       nil, nil, OpenSSL::Digest::DSS1.new)
     crl = issue_crl([], 1, Time.now, Time.now+1600, [],
                     cert, @dsa512, OpenSSL::Digest::DSS1.new)
-    assert_equal(false, crl.verify(@rsa1024))
-    assert_equal(false, crl.verify(@rsa2048))
+    assert_equal(false, crl_error_returns_false { crl.verify(@rsa1024) })
+    assert_equal(false, crl_error_returns_false { crl.verify(@rsa2048) })
     assert_equal(false, crl.verify(@dsa256))
     assert_equal(true,  crl.verify(@dsa512))
     crl.version = 0
     assert_equal(false, crl.verify(@dsa512))
+  end
+  
+  private
+  
+  def crl_error_returns_false
+    yield
+  rescue OpenSSL::X509::CRLError
+    false
   end
 end
 

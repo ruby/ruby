@@ -134,24 +134,25 @@ class OpenSSL::TestX509Certificate < Test::Unit::TestCase
                       nil, nil, OpenSSL::Digest::SHA1.new)
     assert_equal(false, cert.verify(@rsa1024))
     assert_equal(true,  cert.verify(@rsa2048))
-    assert_equal(false, cert.verify(@dsa256))
-    assert_equal(false, cert.verify(@dsa512))
+    assert_equal(false, certificate_error_returns_false { cert.verify(@dsa256) })
+    assert_equal(false, certificate_error_returns_false { cert.verify(@dsa512) })
     cert.serial = 2
     assert_equal(false, cert.verify(@rsa2048))
 
     cert = issue_cert(@ca, @rsa2048, 1, Time.now, Time.now+3600, [],
                       nil, nil, OpenSSL::Digest::MD5.new)
     assert_equal(false, cert.verify(@rsa1024))
-    assert_equal(true,  cert.verify(@rsa2048))
-    assert_equal(false, cert.verify(@dsa256))
-    assert_equal(false, cert.verify(@dsa512))
+    assert_equal(true, cert.verify(@rsa2048))
+
+    assert_equal(false, certificate_error_returns_false { cert.verify(@dsa256) })
+    assert_equal(false, certificate_error_returns_false { cert.verify(@dsa512) })
     cert.subject = @ee1
     assert_equal(false, cert.verify(@rsa2048))
 
     cert = issue_cert(@ca, @dsa512, 1, Time.now, Time.now+3600, [],
                       nil, nil, OpenSSL::Digest::DSS1.new)
-    assert_equal(false, cert.verify(@rsa1024))
-    assert_equal(false, cert.verify(@rsa2048))
+    assert_equal(false, certificate_error_returns_false { cert.verify(@rsa1024) })
+    assert_equal(false, certificate_error_returns_false { cert.verify(@rsa2048) })
     assert_equal(false, cert.verify(@dsa256))
     assert_equal(true,  cert.verify(@dsa512))
     cert.not_after = Time.now
@@ -165,6 +166,14 @@ class OpenSSL::TestX509Certificate < Test::Unit::TestCase
       cert = issue_cert(@ca, @dsa512, 1, Time.now, Time.now+3600, [],
                         nil, nil, OpenSSL::Digest::MD5.new)
     }
+  end
+  
+  private
+  
+  def certificate_error_returns_false
+    yield
+  rescue OpenSSL::X509::CertificateError
+    false
   end
 end
 

@@ -107,22 +107,22 @@ class OpenSSL::TestX509Request < Test::Unit::TestCase
     req = issue_csr(0, @dn, @rsa1024, OpenSSL::Digest::SHA1.new)
     assert_equal(true,  req.verify(@rsa1024))
     assert_equal(false, req.verify(@rsa2048))
-    assert_equal(false, req.verify(@dsa256))
-    assert_equal(false, req.verify(@dsa512))
+    assert_equal(false, request_error_returns_false { req.verify(@dsa256) })
+    assert_equal(false, request_error_returns_false { req.verify(@dsa512) })
     req.version = 1
     assert_equal(false, req.verify(@rsa1024))
 
     req = issue_csr(0, @dn, @rsa2048, OpenSSL::Digest::MD5.new)
     assert_equal(false, req.verify(@rsa1024))
     assert_equal(true,  req.verify(@rsa2048))
-    assert_equal(false, req.verify(@dsa256))
-    assert_equal(false, req.verify(@dsa512))
+    assert_equal(false, request_error_returns_false { req.verify(@dsa256) })
+    assert_equal(false, request_error_returns_false { req.verify(@dsa512) })
     req.subject = OpenSSL::X509::Name.parse("/C=JP/CN=FooBar")
     assert_equal(false, req.verify(@rsa2048))
 
     req = issue_csr(0, @dn, @dsa512, OpenSSL::Digest::DSS1.new)
-    assert_equal(false, req.verify(@rsa1024))
-    assert_equal(false, req.verify(@rsa2048))
+    assert_equal(false, request_error_returns_false { req.verify(@rsa1024) })
+    assert_equal(false, request_error_returns_false { req.verify(@rsa2048) })
     assert_equal(false, req.verify(@dsa256))
     assert_equal(true,  req.verify(@dsa512))
     req.public_key = @rsa1024.public_key
@@ -132,6 +132,14 @@ class OpenSSL::TestX509Request < Test::Unit::TestCase
       issue_csr(0, @dn, @rsa1024, OpenSSL::Digest::DSS1.new) }
     assert_raise(OpenSSL::X509::RequestError){
       issue_csr(0, @dn, @dsa512, OpenSSL::Digest::MD5.new) }
+  end
+  
+  private
+  
+  def request_error_returns_false
+    yield
+  rescue OpenSSL::X509::RequestError
+    false
   end
 end
 
