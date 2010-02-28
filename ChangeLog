@@ -1,3 +1,8 @@
+Sun Feb 28 21:32:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/pty/pty.c (get_device_once): raise on error when fail is
+	  non-zero.
+
 Sun Feb 28 15:12:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/open3.rb (Open3#popen3): ignore trap and at_exit also when
