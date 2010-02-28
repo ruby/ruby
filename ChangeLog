@@ -1,3 +1,10 @@
+Sun Feb 28 11:21:03 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/openssl/{test_x509cert.rb,openssl,test_x509req.rb}:
+	  remove false positive tests because of OpenSSL spec change.
+	  patched by Motohiro KOSAKI [ruby-core:28063]
+	  see also [ruby-dev:40077]
+
 Sun Feb 28 11:25:16 2010  Tanaka Akira  <akr@fsij.org>
 
 	* pack.c (pack_pack): generalized integer packer implemented.

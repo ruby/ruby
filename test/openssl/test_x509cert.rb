@@ -165,10 +165,6 @@ class OpenSSL::TestX509Certificate < Test::Unit::TestCase
       cert = issue_cert(@ca, @dsa512, 1, Time.now, Time.now+3600, [],
                         nil, nil, OpenSSL::Digest::MD5.new)
     }
-    assert_raise(OpenSSL::X509::CertificateError){
-      cert = issue_cert(@ca, @dsa512, 1, Time.now, Time.now+3600, [],
-                        nil, nil, OpenSSL::Digest::SHA1.new)
-    }
   end
 end
 
