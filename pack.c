@@ -720,12 +720,15 @@ pack_pack(VALUE ary, VALUE fmt)
 #if defined(HAVE_INT16_T) && !defined(FORCE_BIG_PACK)
               case SIZEOF_INT16_T:
 		while (len-- > 0) {
-		    int16_t v;
+                    union {
+                        int16_t i;
+                        char a[sizeof(int16_t)];
+                    } v;
 
 		    from = NEXTFROM;
-		    v = (int16_t)num2i32(from);
-		    if (bigendian_p != BIGENDIAN_P()) v = swap16(v);
-		    rb_str_buf_cat(res, (char *)&v, sizeof(int16_t));
+		    v.i = (int16_t)num2i32(from);
+		    if (bigendian_p != BIGENDIAN_P()) v.i = swap16(v.i);
+		    rb_str_buf_cat(res, v.a, sizeof(int16_t));
 		}
 		break;
 #endif
@@ -733,12 +736,15 @@ pack_pack(VALUE ary, VALUE fmt)
 #if defined(HAVE_INT32_T) && !defined(FORCE_BIG_PACK)
               case SIZEOF_INT32_T:
 		while (len-- > 0) {
-		    int32_t v;
+		    union {
+                        int32_t i;
+                        char a[sizeof(int32_t)];
+                    } v;
 
 		    from = NEXTFROM;
-		    v = (int32_t)num2i32(from);
-		    if (bigendian_p != BIGENDIAN_P()) v = swap32(v);
-		    rb_str_buf_cat(res, (char *)&v, sizeof(int32_t));
+		    v.i = (int32_t)num2i32(from);
+		    if (bigendian_p != BIGENDIAN_P()) v.i = swap32(v.i);
+		    rb_str_buf_cat(res, v.a, sizeof(int32_t));
 		}
 		break;
 #endif
@@ -746,12 +752,15 @@ pack_pack(VALUE ary, VALUE fmt)
 #if defined(HAVE_INT64_T) && SIZEOF_LONG == SIZEOF_INT64_T && !defined(FORCE_BIG_PACK)
               case SIZEOF_INT64_T:
 		while (len-- > 0) {
-		    int64_t v;
+		    union {
+                        int64_t i;
+                        char a[sizeof(int64_t)];
+                    } v;
 
 		    from = NEXTFROM;
-		    v = num2i32(from); /* can return 64bit value if SIZEOF_LONG == SIZEOF_INT64_T */
-		    if (bigendian_p != BIGENDIAN_P()) v = swap64(v);
-		    rb_str_buf_cat(res, (char *)&v, sizeof(int64_t));
+		    v.i = num2i32(from); /* can return 64bit value if SIZEOF_LONG == SIZEOF_INT64_T */
+		    if (bigendian_p != BIGENDIAN_P()) v.i = swap64(v.i);
+		    rb_str_buf_cat(res, v.a, sizeof(int64_t));
 		}
 		break;
 #else
@@ -762,27 +771,30 @@ pack_pack(VALUE ary, VALUE fmt)
                 if (integer_size > MAX_INTEGER_PACK_SIZE)
                     rb_bug("unexpected intger size for pack: %d", integer_size);
                 while (len-- > 0) {
-                    unsigned long tmp[(MAX_INTEGER_PACK_SIZE+SIZEOF_LONG-1)/SIZEOF_LONG];
+                    union {
+                        unsigned long i[(MAX_INTEGER_PACK_SIZE+SIZEOF_LONG-1)/SIZEOF_LONG];
+                        char a[(MAX_INTEGER_PACK_SIZE+SIZEOF_LONG-1)/SIZEOF_LONG*SIZEOF_LONG];
+                    } v;
                     int num_longs = (integer_size+SIZEOF_LONG-1)/SIZEOF_LONG;
                     int i;
 
                     from = NEXTFROM;
-                    rb_big_pack(from, tmp, num_longs);
+                    rb_big_pack(from, v.i, num_longs);
                     if (bigendian_p) {
                         for (i = 0; i < num_longs/2; i++) {
-                            unsigned long t = tmp[i];
-                            tmp[i] = tmp[num_longs-1-i];
-                            tmp[num_longs-1-i] = t;
+                            unsigned long t = v.i[i];
+                            v.i[i] = v.i[num_longs-1-i];
+                            v.i[num_longs-1-i] = t;
                         }
                     }
 		    if (bigendian_p != BIGENDIAN_P()) {
                         for (i = 0; i < num_longs; i++)
-                            tmp[i] = swapl(tmp[i]);
+                            v.i[i] = swapl(v.i[i]);
                     }
                     rb_str_buf_cat(res,
                                    bigendian_p ?
-                                     (char*)tmp + sizeof(long)*num_longs - integer_size :
-                                     (char*)tmp,
+                                     v.a + sizeof(long)*num_longs - integer_size :
+                                     v.a,
                                    integer_size);
                 }
                 break;
@@ -1581,22 +1593,28 @@ pack_unpack(VALUE str, VALUE fmt)
 		if (signed_p) {
 		    PACK_LENGTH_ADJUST_SIZE(sizeof(int16_t));
 		    while (len-- > 0) {
-			int16_t tmp;
-			memcpy(&tmp, s, sizeof(int16_t));
-			if (bigendian_p != BIGENDIAN_P()) tmp = swap16(tmp);
+			union {
+                            int16_t i;
+                            char a[sizeof(int16_t)];
+                        } v;
+			memcpy(v.a, s, sizeof(int16_t));
+			if (bigendian_p != BIGENDIAN_P()) v.i = swap16(v.i);
 			s += sizeof(int16_t);
-			UNPACK_PUSH(INT2FIX(tmp));
+			UNPACK_PUSH(INT2FIX(v.i));
 		    }
 		    PACK_ITEM_ADJUST();
 		}
 		else {
 		    PACK_LENGTH_ADJUST_SIZE(sizeof(uint16_t));
 		    while (len-- > 0) {
-			uint16_t tmp;
-			memcpy(&tmp, s, sizeof(uint16_t));
-			if (bigendian_p != BIGENDIAN_P()) tmp = swap16(tmp);
+			union {
+                            uint16_t i;
+                            char a[sizeof(uint16_t)];
+                        } v;
+			memcpy(v.a, s, sizeof(uint16_t));
+			if (bigendian_p != BIGENDIAN_P()) v.i = swap16(v.i);
 			s += sizeof(uint16_t);
-			UNPACK_PUSH(INT2FIX(tmp));
+			UNPACK_PUSH(INT2FIX(v.i));
 		    }
 		    PACK_ITEM_ADJUST();
 		}
@@ -1608,22 +1626,28 @@ pack_unpack(VALUE str, VALUE fmt)
 		if (signed_p) {
 		    PACK_LENGTH_ADJUST_SIZE(sizeof(int32_t));
 		    while (len-- > 0) {
-			int32_t tmp;
-			memcpy(&tmp, s, sizeof(int32_t));
-			if (bigendian_p != BIGENDIAN_P()) tmp = swap32(tmp);
+			union {
+                            int32_t i;
+                            char a[sizeof(int32_t)];
+                        } v;
+			memcpy(v.a, s, sizeof(int32_t));
+			if (bigendian_p != BIGENDIAN_P()) v.i = swap32(v.i);
 			s += sizeof(int32_t);
-			UNPACK_PUSH(INT2NUM(tmp));
+			UNPACK_PUSH(INT2NUM(v.i));
 		    }
 		    PACK_ITEM_ADJUST();
 		}
 		else {
 		    PACK_LENGTH_ADJUST_SIZE(sizeof(uint32_t));
 		    while (len-- > 0) {
-			uint32_t tmp;
-			memcpy(&tmp, s, sizeof(uint32_t));
-			if (bigendian_p != BIGENDIAN_P()) tmp = swap32(tmp);
+			union {
+                            uint32_t i;
+                            char a[sizeof(uint32_t)];
+                        } v;
+			memcpy(v.a, s, sizeof(uint32_t));
+			if (bigendian_p != BIGENDIAN_P()) v.i = swap32(v.i);
 			s += sizeof(uint32_t);
-			UNPACK_PUSH(UINT2NUM(tmp));
+			UNPACK_PUSH(UINT2NUM(v.i));
 		    }
 		    PACK_ITEM_ADJUST();
 		}
@@ -1635,22 +1659,28 @@ pack_unpack(VALUE str, VALUE fmt)
 		if (signed_p) {
 		    PACK_LENGTH_ADJUST_SIZE(sizeof(int64_t));
 		    while (len-- > 0) {
-			int64_t tmp;
-			memcpy(&tmp, s, sizeof(int64_t));
-			if (bigendian_p != BIGENDIAN_P()) tmp = swap64(tmp);
+			union {
+                            int64_t i;
+                            char a[sizeof(int64_t)];
+                        } v;
+			memcpy(v.a, s, sizeof(int64_t));
+			if (bigendian_p != BIGENDIAN_P()) v.i = swap64(v.i);
 			s += sizeof(int64_t);
-			UNPACK_PUSH(INT64toNUM(tmp));
+			UNPACK_PUSH(INT64toNUM(v.i));
 		    }
 		    PACK_ITEM_ADJUST();
 		}
 		else {
 		    PACK_LENGTH_ADJUST_SIZE(sizeof(uint64_t));
 		    while (len-- > 0) {
-			uint64_t tmp;
-			memcpy(&tmp, s, sizeof(uint64_t));
-			if (bigendian_p != BIGENDIAN_P()) tmp = swap64(tmp);
+			union {
+                            uint64_t i;
+                            char a[sizeof(uint64_t)];
+                        } v;
+			memcpy(v.a, s, sizeof(uint64_t));
+			if (bigendian_p != BIGENDIAN_P()) v.i = swap64(v.i);
 			s += sizeof(uint64_t);
-			UNPACK_PUSH(UINT64toNUM(tmp));
+			UNPACK_PUSH(UINT64toNUM(v.i));
 		    }
 		    PACK_ITEM_ADJUST();
 		}
@@ -1662,31 +1692,34 @@ pack_unpack(VALUE str, VALUE fmt)
                     rb_bug("unexpected intger size for pack: %d", integer_size);
                 PACK_LENGTH_ADJUST_SIZE(integer_size);
                 while (len-- > 0) {
-                    unsigned long tmp[(MAX_INTEGER_PACK_SIZE+SIZEOF_LONG)/SIZEOF_LONG];
+                    union {
+                        unsigned long i[(MAX_INTEGER_PACK_SIZE+SIZEOF_LONG)/SIZEOF_LONG];
+                        char a[(MAX_INTEGER_PACK_SIZE+SIZEOF_LONG)/SIZEOF_LONG*SIZEOF_LONG];
+                    } v;
                     int num_longs = (integer_size+SIZEOF_LONG)/SIZEOF_LONG;
                     int i;
 
                     if (signed_p && (signed char)s[bigendian_p ? 0 : (integer_size-1)] < 0)
-                        memset(tmp, 0xff, sizeof(long)*num_longs);
+                        memset(v.a, 0xff, sizeof(long)*num_longs);
                     else
-                        memset(tmp, 0, sizeof(long)*num_longs);
+                        memset(v.a, 0, sizeof(long)*num_longs);
                     if (bigendian_p)
-                        memcpy((char*)(tmp + num_longs) - integer_size, s, integer_size);
+                        memcpy(v.a + sizeof(long)*num_longs - integer_size, s, integer_size);
                     else
-                        memcpy(tmp, s, integer_size);
+                        memcpy(v.a, s, integer_size);
                     if (bigendian_p) {
                         for (i = 0; i < num_longs/2; i++) {
-                            unsigned long t = tmp[i];
-                            tmp[i] = tmp[num_longs-1-i];
-                            tmp[num_longs-1-i] = t;
+                            unsigned long t = v.i[i];
+                            v.i[i] = v.i[num_longs-1-i];
+                            v.i[num_longs-1-i] = t;
                         }
                     }
                     if (bigendian_p != BIGENDIAN_P()) {
                         for (i = 0; i < num_longs; i++)
-                            tmp[i] = swapl(tmp[i]);
+                            v.i[i] = swapl(v.i[i]);
                     }
                     s += integer_size;
-                    UNPACK_PUSH(rb_big_unpack(tmp, num_longs));
+                    UNPACK_PUSH(rb_big_unpack(v.i, num_longs));
                 }
                 PACK_ITEM_ADJUST();
 		break;
