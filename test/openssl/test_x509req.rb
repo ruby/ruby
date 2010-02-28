@@ -131,8 +131,6 @@ class OpenSSL::TestX509Request < Test::Unit::TestCase
     assert_raise(OpenSSL::X509::RequestError){
       issue_csr(0, @dn, @rsa1024, OpenSSL::Digest::DSS1.new) }
     assert_raise(OpenSSL::X509::RequestError){
-      issue_csr(0, @dn, @dsa512, OpenSSL::Digest::SHA1.new) }
-    assert_raise(OpenSSL::X509::RequestError){
       issue_csr(0, @dn, @dsa512, OpenSSL::Digest::MD5.new) }
   end
 end
