@@ -1,3 +1,8 @@
+Sun Feb 28 15:07:28 2010  Tanaka Akira  <akr@fsij.org>
+
+	* pack.c (pack_pack): use union to avoid pointer cast.
+	  (pack_unpack): ditto.
+
 Sun Feb 28 11:49:35 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* openssl/ossl.c (OSSL_IMPL_SK2ARY): for OpenSSL 1.0.
