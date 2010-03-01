@@ -1,3 +1,7 @@
+Mon Mar  1 23:26:56 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pty/pty.c (pty_open): refine the path for master IO.
+
 Mon Mar  1 20:07:06 2010  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
 
 	* ext/zlib/zlib.c (zstream_expand_buffer_into): remove compare different type values warning.

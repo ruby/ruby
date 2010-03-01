@@ -453,7 +453,7 @@ pty_close_pty(VALUE assoc)
  * The path name of the terminal device can be gotten by slave_file.path.
  *
  *   PTY.open {|m, s|
- *     p m      #=> #<IO: pty /dev/pts/1>
+ *     p m      #=> #<IO:masterpty:/dev/pts/1>
  *     p s      #=> #<File:/dev/pts/1>
  *     p s.path #=> "/dev/pts/1"
  *   }
@@ -472,6 +472,14 @@ pty_close_pty(VALUE assoc)
  *   p m.gets #=> "42: 2 3 7\n"
  *   w.puts "144"
  *   p m.gets #=> "144: 2 2 2 2 3 3\n"
+ *   w.close
+ *   # The result of read operation when pty slave is closed is platform dependnet.
+ *   ret = begin
+ *           m.gets          # FreeBSD returns nil.
+ *         rescue Errno::EIO # GNU/Linux raises EIO.
+ *           nil
+ *         end
+ *   p ret #=> nil
  *
  */
 static VALUE
@@ -489,7 +497,7 @@ pty_open(VALUE klass)
     MakeOpenFile(master_io, master_fptr);
     master_fptr->mode = FMODE_READWRITE | FMODE_SYNC | FMODE_DUPLEX;
     master_fptr->fd = master_fd;
-    master_fptr->pathv = rb_obj_freeze(rb_sprintf(" pty %s", slavename));
+    master_fptr->pathv = rb_obj_freeze(rb_sprintf("masterpty:%s", slavename));
 
     slave_file = rb_obj_alloc(rb_cFile);
     MakeOpenFile(slave_file, slave_fptr);
