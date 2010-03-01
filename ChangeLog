@@ -10,6 +10,13 @@ Mon Mar  1 17:42:45 2010  wanabe  <s.wanabe@gmail.com>
 
 	* configure.in (mingw): do not detect snprintf/vsnprintf.
 
+Mon Mar  1 16:54:21 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* include/ruby/oniguruma.h: updated to follow Oniguruma 5.9.2.
+
+	* re.c (make_regexp): use onig_new() instead of onig_alloc_init().
+
+	* re.c (rb_reg_to_s): ditto.
 Sun Feb 28 21:32:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/pty/pty.c (get_device_once): raise on error when fail is

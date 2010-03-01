@@ -3,7 +3,7 @@
   regparse.c -  Oniguruma (regular expression library)
 **********************************************************************/
 /*-
- * Copyright (c) 2002-2007  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * Copyright (c) 2002-2008  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -794,6 +794,7 @@ name_add(regex_t* reg, UChar* name, UChar* name_end, int backref, ScanEnv* env)
     e = &(t->e[t->num]);
     t->num++;
     e->name = strdup_with_null(reg->enc, name, name_end);
+    if (IS_NULL(e->name)) return ONIGERR_MEMORY;
     e->name_len = name_end - name;
 #endif
   }
@@ -5499,7 +5500,10 @@ parse_exp(Node** np, OnigToken* tok, int term,
       CHECK_NULL_RETURN_MEMERR(qn);
       NQTFR(qn)->greedy = tok->u.repeat.greedy;
       r = set_quantifier(qn, *targetp, group, env);
-      if (r < 0) return r;
+      if (r < 0) {
+	onig_node_free(qn);
+	return r;
+      }
 
       if (tok->u.repeat.possessive != 0) {
 	Node* en;
@@ -5522,9 +5526,15 @@ parse_exp(Node** np, OnigToken* tok, int term,
 	Node *tmp;
 
 	*targetp = node_new_list(*targetp, NULL);
-	CHECK_NULL_RETURN_MEMERR(*targetp);
+	if (IS_NULL(*targetp)) {
+	  onig_node_free(qn);
+	  return ONIGERR_MEMORY;
+	}
 	tmp = NCDR(*targetp) = node_new_list(qn, NULL);
-	CHECK_NULL_RETURN_MEMERR(tmp);
+	if (IS_NULL(tmp)) {
+	  onig_node_free(qn);
+	  return ONIGERR_MEMORY;
+	}
 	targetp = &(NCAR(tmp));
       }
       goto re_entry;
