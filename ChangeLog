@@ -1,3 +1,7 @@
+Mon Mar  1 20:07:06 2010  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
+
+	* ext/zlib/zlib.c (zstream_expand_buffer_into): remove compare different type values warning.
+
 Mon Mar  1 17:42:45 2010  wanabe  <s.wanabe@gmail.com>
 
 	* configure.in (mingw): do not detect snprintf/vsnprintf.

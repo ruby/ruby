@@ -59,7 +59,7 @@ struct zstream;
 struct zstream_funcs;
 static void zstream_init(struct zstream*, const struct zstream_funcs*);
 static void zstream_expand_buffer(struct zstream*);
-static void zstream_expand_buffer_into(struct zstream*, int);
+static void zstream_expand_buffer_into(struct zstream*, unsigned int);
 static void zstream_append_buffer(struct zstream*, const Bytef*, int);
 static VALUE zstream_detach_buffer(struct zstream*);
 static VALUE zstream_shift_buffer(struct zstream*, int);
@@ -518,7 +518,7 @@ zstream_expand_buffer(struct zstream *z)
 }
 
 static void
-zstream_expand_buffer_into(struct zstream *z, int size)
+zstream_expand_buffer_into(struct zstream *z, unsigned int size)
 {
     if (NIL_P(z->buf)) {
 	/* I uses rb_str_new here not rb_str_buf_new because
@@ -2591,7 +2591,7 @@ rb_gzfile_set_mtime(VALUE obj, VALUE mtime)
     }
     else {
 	val = rb_Integer(mtime);
-	gz->mtime = FIXNUM_P(val) ? FIX2INT(val) : rb_big2ulong(val);
+	gz->mtime = FIXNUM_P(val) ? FIX2UINT(val) : rb_big2ulong(val);
     }
     return mtime;
 }
