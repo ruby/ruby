@@ -521,15 +521,11 @@ rb_reg_to_s(VALUE re)
 	if (*ptr == ':' && ptr[len-1] == ')') {
 	    int r;
 	    Regexp *rp;
-            r = onig_alloc_init(&rp, ONIG_OPTION_DEFAULT,
-                                ONIGENC_CASE_FOLD_DEFAULT,
-                                rb_enc_get(re),
-                                OnigDefaultSyntax);
-	    if (r == 0) {
-		++ptr;
-		len -= 2;
-		err = (onig_compile(rp, ptr, ptr + len, NULL, NULL, 0) != 0);
-	    }
+
+	    ++ptr;
+	    len -= 2;
+            err = onig_new(&rp, ptr, ptr + len, ONIG_OPTION_DEFAULT,
+			   rb_enc_get(re), OnigDefaultSyntax, NULL);
 	    onig_free(rp);
 	}
 	if (err) {
@@ -745,18 +741,10 @@ make_regexp(const char *s, long len, rb_encoding *enc, int flags, onig_errmsg_bu
        from that.
     */
 
-    r = onig_alloc_init(&rp, flags, ONIGENC_CASE_FOLD_DEFAULT,
-                        enc, OnigDefaultSyntax);
+    r = onig_new(&rp, (UChar*)s, (UChar*)(s + len), flags,
+		 enc, OnigDefaultSyntax, &einfo);
     if (r) {
-	onig_error_code_to_str((UChar*)err, r);
-	return 0;
-    }
-
-    r = onig_compile(rp, (UChar*)s, (UChar*)(s + len), &einfo, sourcefile, sourceline);
-
-    if (r != 0) {
-	onig_free(rp);
-	(void )onig_error_code_to_str((UChar*)err, r, &einfo);
+	onig_error_code_to_str((UChar*)err, r, &einfo);
 	return 0;
     }
     return rp;

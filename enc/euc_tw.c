@@ -2,7 +2,7 @@
   euc_tw.c -  Oniguruma (regular expression library)
 **********************************************************************/
 /*-
- * Copyright (c) 2002-2007  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * Copyright (c) 2002-2008  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -168,15 +168,6 @@ euctw_mbc_case_fold(OnigCaseFoldType flag, const UChar** pp, const UChar* end,
   return onigenc_mbn_mbc_case_fold(enc, flag,
                                    pp, end, lower);
 }
-
-#if 0
-static int
-euctw_is_mbc_ambiguous(OnigCaseFoldType flag,
-		       const UChar** pp, const UChar* end, OnigEncoding enc)
-{
-  return onigenc_mbn_is_mbc_ambiguous(enc, flag, pp, end);
-}
-#endif
 
 static int
 euctw_is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc)

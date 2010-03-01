@@ -2,7 +2,7 @@
   regcomp.c -  Oniguruma (regular expression library)
 **********************************************************************/
 /*-
- * Copyright (c) 2002-2007  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * Copyright (c) 2002-2008  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -5194,19 +5194,21 @@ print_optimize_info(FILE* f, regex_t* reg)
 #endif /* ONIG_DEBUG */
 
 
-static void
+extern void
 onig_free_body(regex_t* reg)
 {
-  if (IS_NOT_NULL(reg->p))                xfree(reg->p);
-  if (IS_NOT_NULL(reg->exact))            xfree(reg->exact);
-  if (IS_NOT_NULL(reg->int_map))          xfree(reg->int_map);
-  if (IS_NOT_NULL(reg->int_map_backward)) xfree(reg->int_map_backward);
-  if (IS_NOT_NULL(reg->repeat_range))     xfree(reg->repeat_range);
-  if (IS_NOT_NULL(reg->chain))            onig_free(reg->chain);
+  if (IS_NOT_NULL(reg)) {
+    if (IS_NOT_NULL(reg->p))                xfree(reg->p);
+    if (IS_NOT_NULL(reg->exact))            xfree(reg->exact);
+    if (IS_NOT_NULL(reg->int_map))          xfree(reg->int_map);
+    if (IS_NOT_NULL(reg->int_map_backward)) xfree(reg->int_map_backward);
+    if (IS_NOT_NULL(reg->repeat_range))     xfree(reg->repeat_range);
+    if (IS_NOT_NULL(reg->chain))            onig_free(reg->chain);
 
 #ifdef USE_NAMED_GROUP
-  onig_names_free(reg);
+    onig_names_free(reg);
 #endif
+  }
 }
 
 extern void
@@ -5280,84 +5282,6 @@ onig_chain_reduce(regex_t* reg)
   }
 }
 
-#if 0
-extern int
-onig_clone(regex_t** to, regex_t* from)
-{
-  int r, size;
-  regex_t* reg;
-
-#ifdef USE_MULTI_THREAD_SYSTEM
-  if (ONIG_STATE(from) >= ONIG_STATE_NORMAL) {
-    ONIG_STATE_INC(from);
-    if (IS_NOT_NULL(from->chain) && ONIG_STATE(reg) == ONIG_STATE_NORMAL) {
-      onig_chain_reduce(from);
-      ONIG_STATE_INC(from);
-    }
-  }
-  else {
-    int n = 0;
-    while (ONIG_STATE(from) < ONIG_STATE_NORMAL) {
-      if (++n > THREAD_PASS_LIMIT_COUNT)
-	return ONIGERR_OVER_THREAD_PASS_LIMIT_COUNT;
-      THREAD_PASS;
-    }
-    ONIG_STATE_INC(from);
-  }
-#endif /* USE_MULTI_THREAD_SYSTEM */
-
-  r = onig_alloc_init(&reg, ONIG_OPTION_NONE, ONIGENC_CASE_FOLD_DEFAULT,
-                      from->enc, ONIG_SYNTAX_DEFAULT);
-  if (r != 0) {
-    ONIG_STATE_DEC(from);
-    return r;
-  }
-
-  xmemcpy(reg, from, sizeof(onig_t));
-  reg->chain = (regex_t* )NULL;
-  reg->state = ONIG_STATE_NORMAL;
-
-  if (from->p) {
-    reg->p = (UChar* )xmalloc(reg->alloc);
-    if (IS_NULL(reg->p)) goto mem_error;
-    xmemcpy(reg->p, from->p, reg->alloc);
-  }
-
-  if (from->exact) {
-    reg->exact = (UChar* )xmalloc(from->exact_end - from->exact);
-    if (IS_NULL(reg->exact)) goto mem_error;
-    reg->exact_end = reg->exact + (from->exact_end - from->exact);
-    xmemcpy(reg->exact, from->exact, reg->exact_end - reg->exact);
-  }
-
-  if (from->int_map) {
-    size = sizeof(int) * ONIG_CHAR_TABLE_SIZE;
-    reg->int_map = (int* )xmalloc(size);
-    if (IS_NULL(reg->int_map)) goto mem_error;
-    xmemcpy(reg->int_map, from->int_map, size);
-  }
-
-  if (from->int_map_backward) {
-    size = sizeof(int) * ONIG_CHAR_TABLE_SIZE;
-    reg->int_map_backward = (int* )xmalloc(size);
-    if (IS_NULL(reg->int_map_backward)) goto mem_error;
-    xmemcpy(reg->int_map_backward, from->int_map_backward, size);
-  }
-
-#ifdef USE_NAMED_GROUP
-  reg->name_table = names_clone(from); /* names_clone is not implemented */
-#endif
-
-  ONIG_STATE_DEC(from);
-  *to = reg;
-  return 0;
-
- mem_error:
-  ONIG_STATE_DEC(from);
-  return ONIGERR_MEMORY;
-}
-#endif
-
 #ifdef ONIG_DEBUG
 static void print_compiled_byte_code_list P_((FILE* f, regex_t* reg));
 #endif
@@ -5377,6 +5301,8 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
 #ifdef USE_SUBEXP_CALL
   UnsetAddrList  uslist;
 #endif
+
+  if (IS_NOT_NULL(einfo)) einfo->par = (UChar* )NULL;
 
   scan_env.sourcefile = sourcefile;
   scan_env.sourceline = sourceline;
@@ -5577,12 +5503,15 @@ onig_recompile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
 static int onig_inited = 0;
 
 extern int
-onig_alloc_init(regex_t** reg, OnigOptionType option,
-		OnigCaseFoldType case_fold_flag,
-                OnigEncoding enc, const OnigSyntaxType* syntax)
+onig_reg_init(regex_t* reg, OnigOptionType option,
+	      OnigCaseFoldType case_fold_flag,
+	      OnigEncoding enc, const OnigSyntaxType* syntax)
 {
   if (! onig_inited)
     onig_init();
+
+  if (IS_NULL(reg))
+    return ONIGERR_INVALID_ARGUMENT;
 
   if (ONIGENC_IS_UNDEF(enc))
     return ONIGERR_DEFAULT_ENCODING_IS_NOT_SETTED;
@@ -5592,9 +5521,7 @@ onig_alloc_init(regex_t** reg, OnigOptionType option,
     return ONIGERR_INVALID_COMBINATION_OF_OPTIONS;
   }
 
-  *reg = (regex_t* )xmalloc(sizeof(regex_t));
-  if (IS_NULL(*reg)) return ONIGERR_MEMORY;
-  (*reg)->state = ONIG_STATE_MODIFY;
+  (reg)->state = ONIG_STATE_MODIFY;
 
   if ((option & ONIG_OPTION_NEGATE_SINGLELINE) != 0) {
     option |= syntax->options;
@@ -5603,22 +5530,36 @@ onig_alloc_init(regex_t** reg, OnigOptionType option,
   else
     option |= syntax->options;
 
-  (*reg)->enc              = enc;
-  (*reg)->options          = option;
-  (*reg)->syntax           = syntax;
-  (*reg)->optimize         = 0;
-  (*reg)->exact            = (UChar* )NULL;
-  (*reg)->int_map          = (int* )NULL;
-  (*reg)->int_map_backward = (int* )NULL;
-  (*reg)->chain            = (regex_t* )NULL;
+  (reg)->enc              = enc;
+  (reg)->options          = option;
+  (reg)->syntax           = syntax;
+  (reg)->optimize         = 0;
+  (reg)->exact            = (UChar* )NULL;
+  (reg)->int_map          = (int* )NULL;
+  (reg)->int_map_backward = (int* )NULL;
+  (reg)->chain            = (regex_t* )NULL;
 
-  (*reg)->p                = (UChar* )NULL;
-  (*reg)->alloc            = 0;
-  (*reg)->used             = 0;
-  (*reg)->name_table       = (void* )NULL;
+  (reg)->p                = (UChar* )NULL;
+  (reg)->alloc            = 0;
+  (reg)->used             = 0;
+  (reg)->name_table       = (void* )NULL;
 
-  (*reg)->case_fold_flag   = case_fold_flag;
+  (reg)->case_fold_flag   = case_fold_flag;
   return 0;
+}
+
+extern int
+onig_new_without_alloc(regex_t* reg, const UChar* pattern,
+          const UChar* pattern_end, OnigOptionType option, OnigEncoding enc,
+          OnigSyntaxType* syntax, OnigErrorInfo* einfo)
+{
+  int r;
+
+  r = onig_reg_init(reg, option, ONIGENC_CASE_FOLD_DEFAULT, enc, syntax);
+  if (r) return r;
+
+  r = onig_compile(reg, pattern, pattern_end, einfo, NULL, 0);
+  return r;
 }
 
 extern int
@@ -5628,19 +5569,21 @@ onig_new(regex_t** reg, const UChar* pattern, const UChar* pattern_end,
 {
   int r;
 
-  if (IS_NOT_NULL(einfo)) einfo->par = (UChar* )NULL;
+  *reg = (regex_t* )xmalloc(sizeof(regex_t));
+  if (IS_NULL(*reg)) return ONIGERR_MEMORY;
 
-  r = onig_alloc_init(reg, option, ONIGENC_CASE_FOLD_DEFAULT,
-                      enc, syntax);
-  if (r) return r;
+  r = onig_reg_init(*reg, option, ONIGENC_CASE_FOLD_DEFAULT, enc, syntax);
+  if (r) goto err;
 
   r = onig_compile(*reg, pattern, pattern_end, einfo, NULL, 0);
   if (r) {
+  err:
     onig_free(*reg);
     *reg = NULL;
   }
   return r;
 }
+
 
 extern int
 onig_init(void)
