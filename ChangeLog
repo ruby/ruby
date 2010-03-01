@@ -1,3 +1,7 @@
+Mon Mar  1 17:42:45 2010  wanabe  <s.wanabe@gmail.com>
+
+	* configure.in (mingw): do not detect snprintf/vsnprintf.
+
 Sun Feb 28 21:32:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/pty/pty.c (get_device_once): raise on error when fail is

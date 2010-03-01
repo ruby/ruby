@@ -878,6 +878,8 @@ main()
 		ac_cv_func_times=yes
 		ac_cv_func_waitpid=yes
 		ac_cv_func_fsync=yes
+		ac_cv_func_snprintf=no
+		ac_cv_func_vsnprintf=no
 		ac_cv_func_seekdir=yes
 		ac_cv_func_telldir=yes
 		ac_cv_func_isinf=yes
@@ -1104,8 +1106,9 @@ main()
 	rb_cv_broken_glibc_ia64_erfc=no)])
 AS_CASE([$rb_cv_broken_glibc_ia64_erfc],[yes],[ac_cv_func_erf=no])
 
+AS_CASE(["$target_os"],[mingw*],[],[AC_REPLACE_FUNCS(vsnprintf)])
 AC_REPLACE_FUNCS(dup2 memmove strerror\
-		 strchr strstr crypt flock vsnprintf\
+		 strchr strstr crypt flock\
 		 isnan finite isinf hypot acosh erf tgamma lgamma_r cbrt \
                  strlcpy strlcat)
 AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall chroot getcwd eaccess\
