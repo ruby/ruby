@@ -1,3 +1,7 @@
+Tue Mar  2 14:42:00 2010  Kenta Murata <mrkn@mrkn.jp>
+
+	* test/dl/test_closure.rb: forget to revert at r26764.
+
 Tue Mar  2 14:29:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_find_file_ext_safe, rb_find_file_safe): skip argument
