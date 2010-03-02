@@ -299,13 +299,18 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/bcc32/Makefile.sub
 \#define uint64_t unsigned __int64
 \#define ssize_t int
 !endif
+\#define HAVE_INT8_T 1
 \#define HAVE_UINT8_T 1
+\#define SIZEOF_INT8_T 1
 \#define HAVE_INT16_T 1
 \#define HAVE_UINT16_T 1
+\#define SIZEOF_INT32_T 2
 \#define HAVE_INT32_T 1
 \#define HAVE_UINT32_T 1
-\#define HAVE_INT64_T HAVE_LONG_LONG
-\#define HAVE_UINT64_T HAVE_LONG_LONG
+\#define SIZEOF_INT32_T 4
+\#define HAVE_INT64_T 1
+\#define HAVE_UINT64_T 1
+\#define SIZEOF_INT64_T 8
 \#define HAVE_INTPTR_T 1
 \#define HAVE_UINTPTR_T 1
 \#define HAVE_SSIZE_T 1

@@ -1,3 +1,8 @@
+Wed Mar  3 05:48:54 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub, symbian/setup (config.h): pack.c requires
+	  SIZEOF_INT*_T now.
+
 Tue Mar  2 21:16:48 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* io.c (rb_io_lines, rb_io_bytes, rb_io_chars, rb_io_codepoints):
