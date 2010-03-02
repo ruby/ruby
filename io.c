@@ -2613,6 +2613,22 @@ rb_io_readlines(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
+ *     ios.lines(sep=$/)     => anEnumerator
+ *     ios.lines(limit)      => anEnumerator
+ *     ios.lines(sep, limit) => anEnumerator
+ *
+ *  Returns an enumerator that gives each line in <em>ios</em>.
+ *  The stream must be opened for reading or an <code>IOError</code>
+ *  will be raised.
+ *
+ *     f = File.new("testfile")
+ *     f.lines.to_a  #=> ["foo\n", "bar\n"]
+ *     f.rewind
+ *     f.lines.sort  #=> ["bar\n", "foo\n"]
+ */
+
+/*
+ *  call-seq:
  *     ios.each(sep=$/) {|line| block }         => ios
  *     ios.each(limit) {|line| block }          => ios
  *     ios.each(sep,limit) {|line| block }      => ios
@@ -2648,6 +2664,20 @@ rb_io_each_line(int argc, VALUE *argv, VALUE io)
     }
     return io;
 }
+
+/*
+ *  call-seq:
+ *     ios.bytes   => anEnumerator
+ *
+ *  Returns an enumerator that gives each byte (0..255) in <em>ios</em>.
+ *  The stream must be opened for reading or an <code>IOError</code>
+ *  will be raised.
+ *
+ *     f = File.new("testfile")
+ *     f.bytes.to_a  #=> [104, 101, 108, 108, 111]
+ *     f.rewind
+ *     f.bytes.sort  #=> [101, 104, 108, 108, 111]
+ */
 
 /*
  *  call-seq:
@@ -2783,6 +2813,20 @@ io_getc(rb_io_t *fptr, rb_encoding *enc)
 
 /*
  *  call-seq:
+ *     ios.chars   => anEnumerator
+ *
+ *  Returns an enumerator that gives each character in <em>ios</em>.
+ *  The stream must be opened for reading or an <code>IOError</code>
+ *  will be raised.
+ *
+ *     f = File.new("testfile")
+ *     f.chars.to_a  #=> ["h", "e", "l", "l", "o"]
+ *     f.rewind
+ *     f.chars.sort  #=> ["e", "h", "l", "l", "o"]
+ */
+
+/*
+ *  call-seq:
  *     ios.each_char {|c| block }  => ios
  *
  *  Calls the given block once for each character in <em>ios</em>,
@@ -2813,6 +2857,15 @@ rb_io_each_char(VALUE io)
 }
 
 
+
+/*
+ *  call-seq:
+ *     ios.codepoints   => anEnumerator
+ *
+ *  Returns an enumerator that gives each codepoint in <em>ios</em>.
+ *  The stream must be opened for reading or an <code>IOError</code>
+ *  will be raised.
+ */
 
 /*
  *  call-seq:
@@ -2898,83 +2951,6 @@ rb_io_each_codepoint(VALUE io)
 }
 
 
-
-/*
- *  call-seq:
- *     ios.lines(sep=$/)     => anEnumerator
- *     ios.lines(limit)      => anEnumerator
- *     ios.lines(sep, limit) => anEnumerator
- *
- *  Returns an enumerator that gives each line in <em>ios</em>.
- *  The stream must be opened for reading or an <code>IOError</code>
- *  will be raised.
- *
- *     f = File.new("testfile")
- *     f.lines.to_a  #=> ["foo\n", "bar\n"]
- *     f.rewind
- *     f.lines.sort  #=> ["bar\n", "foo\n"]
- */
-
-static VALUE
-rb_io_lines(int argc, VALUE *argv, VALUE io)
-{
-    return rb_enumeratorize(io, ID2SYM(rb_intern("each_line")), argc, argv);
-}
-
-/*
- *  call-seq:
- *     ios.bytes   => anEnumerator
- *
- *  Returns an enumerator that gives each byte (0..255) in <em>ios</em>.
- *  The stream must be opened for reading or an <code>IOError</code>
- *  will be raised.
- *
- *     f = File.new("testfile")
- *     f.bytes.to_a  #=> [104, 101, 108, 108, 111]
- *     f.rewind
- *     f.bytes.sort  #=> [101, 104, 108, 108, 111]
- */
-
-static VALUE
-rb_io_bytes(VALUE io)
-{
-    return rb_enumeratorize(io, ID2SYM(rb_intern("each_byte")), 0, 0);
-}
-
-/*
- *  call-seq:
- *     ios.chars   => anEnumerator
- *
- *  Returns an enumerator that gives each character in <em>ios</em>.
- *  The stream must be opened for reading or an <code>IOError</code>
- *  will be raised.
- *
- *     f = File.new("testfile")
- *     f.chars.to_a  #=> ["h", "e", "l", "l", "o"]
- *     f.rewind
- *     f.chars.sort  #=> ["e", "h", "l", "l", "o"]
- */
-
-static VALUE
-rb_io_chars(VALUE io)
-{
-    return rb_enumeratorize(io, ID2SYM(rb_intern("each_char")), 0, 0);
-}
-
-/*
- *  call-seq:
- *     ios.codepoints   => anEnumerator
- *
- *  Returns an enumerator that gives each codepoint in <em>ios</em>.
- *  The stream must be opened for reading or an <code>IOError</code>
- *  will be raised.
- */
-
-static VALUE
-rb_io_codepoints(VALUE io)
-{
-    return rb_enumeratorize(io, ID2SYM(rb_intern("each_codepoint")), 0, 0);
-}
 
 /*
  *  call-seq:
@@ -9764,10 +9740,10 @@ Init_IO(void)
     rb_define_method(rb_cIO, "each_byte",  rb_io_each_byte, 0);
     rb_define_method(rb_cIO, "each_char",  rb_io_each_char, 0);
     rb_define_method(rb_cIO, "each_codepoint",  rb_io_each_codepoint, 0);
-    rb_define_method(rb_cIO, "lines",  rb_io_lines, -1);
-    rb_define_method(rb_cIO, "bytes",  rb_io_bytes, 0);
-    rb_define_method(rb_cIO, "chars",  rb_io_chars, 0);
-    rb_define_method(rb_cIO, "codepoints",  rb_io_codepoints, 0);
+    rb_define_method(rb_cIO, "lines",  rb_io_each_line, -1);
+    rb_define_method(rb_cIO, "bytes",  rb_io_each_byte, 0);
+    rb_define_method(rb_cIO, "chars",  rb_io_each_char, 0);
+    rb_define_method(rb_cIO, "codepoints",  rb_io_each_codepoint, 0);
 
     rb_define_method(rb_cIO, "syswrite", rb_io_syswrite, 1);
     rb_define_method(rb_cIO, "sysread",  rb_io_sysread, -1);

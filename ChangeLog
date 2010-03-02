@@ -1,3 +1,9 @@
+Tue Mar  2 21:16:48 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* io.c (rb_io_lines, rb_io_bytes, rb_io_chars, rb_io_codepoints):
+	  change to alias to each_*, in similar way to ARGF and String.
+	  [ruby-core:23948]
+
 Tue Mar  2 15:54:40 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regcomp.c (noname_disable_map): add NT_ANCHOR case.
