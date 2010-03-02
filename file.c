@@ -2752,7 +2752,6 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
     int tainted;
     rb_encoding *extenc = 0;
 
-    FilePathValue(fname);
     s = StringValuePtr(fname);
     BUFINIT();
     tainted = OBJ_TAINTED(fname);
@@ -3012,10 +3011,23 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
     return result;
 }
 
+#define EXPAND_PATH_BUFFER() rb_usascii_str_new(0, MAXPATHLEN + 2)
+
+#define check_expand_path_args(fname, dname) \
+    ((fname = rb_get_path(fname)), \
+     (NIL_P(dname) ? dname : (dname = rb_get_path(dname))))
+
+static VALUE
+file_expand_path_1(VALUE fname)
+{
+    return file_expand_path(fname, Qnil, 0, EXPAND_PATH_BUFFER());
+}
+
 VALUE
 rb_file_expand_path(VALUE fname, VALUE dname)
 {
-    return file_expand_path(fname, dname, 0, rb_usascii_str_new(0, MAXPATHLEN + 2));
+    check_expand_path_args(fname, dname);
+    return file_expand_path(fname, dname, 0, EXPAND_PATH_BUFFER());
 }
 
 /*
@@ -3051,7 +3063,8 @@ rb_file_s_expand_path(int argc, VALUE *argv)
 VALUE
 rb_file_absolute_path(VALUE fname, VALUE dname)
 {
-    return file_expand_path(fname, dname, 1, rb_usascii_str_new(0, MAXPATHLEN + 2));
+    check_expand_path_args(fname, dname);
+    return file_expand_path(fname, dname, 1, EXPAND_PATH_BUFFER());
 }
 
 /*
@@ -4815,7 +4828,7 @@ rb_find_file_ext_safe(VALUE *filep, const char *const *ext, int safe_level)
     if (!ext[0]) return 0;
 
     if (f[0] == '~') {
-	fname = rb_file_expand_path(*filep, Qnil);
+	fname = file_expand_path_1(fname);
 	if (safe_level >= 1 && OBJ_TAINTED(fname)) {
 	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
 	}
@@ -4828,7 +4841,7 @@ rb_find_file_ext_safe(VALUE *filep, const char *const *ext, int safe_level)
 	if (safe_level >= 1 && !fpath_check(fname)) {
 	    rb_raise(rb_eSecurityError, "loading from unsafe path %s", f);
 	}
-	if (!expanded) fname = rb_file_expand_path(fname, Qnil);
+	if (!expanded) fname = file_expand_path_1(fname);
 	fnlen = RSTRING_LEN(fname);
 	for (i=0; ext[i]; i++) {
 	    rb_str_cat2(fname, ext[i]);
@@ -4886,7 +4899,7 @@ rb_find_file_safe(VALUE path, int safe_level)
     int expanded = 0;
 
     if (f[0] == '~') {
-	tmp = rb_file_expand_path(path, Qnil);
+	tmp = file_expand_path_1(path);
 	if (safe_level >= 1 && OBJ_TAINTED(tmp)) {
 	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
 	}
@@ -4901,7 +4914,7 @@ rb_find_file_safe(VALUE path, int safe_level)
 	}
 	if (!file_load_ok(f)) return 0;
 	if (!expanded)
-	    path = copy_path_class(rb_file_expand_path(path, Qnil), path);
+	    path = copy_path_class(file_expand_path_1(path), path);
 	return path;
     }
 
