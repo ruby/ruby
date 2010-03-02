@@ -1,3 +1,12 @@
+Tue Mar  2 15:54:40 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regcomp.c (noname_disable_map): add NT_ANCHOR case.
+	  Without this change, captured groups in anchors (look-ahead,
+	  look-behind, and so on) are not removed and
+	  unintended invalid backref error occur. [ruby-core:28235]
+
+	* regcomp.c (renumber_by_map): ditto.
+
 Tue Mar  2 14:42:00 2010  Kenta Murata <mrkn@mrkn.jp>
 
 	* test/dl/test_closure.rb: forget to revert at r26764.
@@ -17,7 +26,8 @@ Mon Mar  1 23:26:56 2010  Tanaka Akira  <akr@fsij.org>
 
 Mon Mar  1 20:07:06 2010  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
 
-	* ext/zlib/zlib.c (zstream_expand_buffer_into): remove compare different type values warning.
+	* ext/zlib/zlib.c (zstream_expand_buffer_into): remove compare
+	  different type values warning.
 
 Mon Mar  1 17:42:45 2010  wanabe  <s.wanabe@gmail.com>
 
