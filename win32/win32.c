@@ -5272,3 +5272,14 @@ _ftol2_sse(double d)
     return _ftol(d);
 }
 #endif
+
+int
+signbit(double x)
+{
+#ifdef _M_IX86
+    int *ip = (int *)(&x + 1) - 1;
+    return *ip < 0;
+#else
+# error not supported
+#endif
+}

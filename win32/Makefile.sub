@@ -552,6 +552,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_COSH 1
 #define HAVE_SINH 1
 #define HAVE_TANH 1
+#define HAVE_SIGNBIT 1
 #define HAVE_TZNAME 1
 #define HAVE_DAYLIGHT 1
 #define SETPGRP_VOID 1
