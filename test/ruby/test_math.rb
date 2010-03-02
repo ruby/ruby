@@ -266,7 +266,6 @@ class TestMath < Test::Unit::TestCase
     check(Math.log(6), g)
     assert_equal(s, 1)
 
-    assert_infinity Math.lgamma(-Float::INFINITY)
     assert_raise(Math::DomainError) { Math.lgamma(-Float::INFINITY) }
   end
 
