@@ -1,3 +1,8 @@
+Tue Mar  2 14:29:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_find_file_ext_safe, rb_find_file_safe): skip argument
+	  checks in file_expand_path().
+
 Tue Mar  2 13:54:44 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* test/ruby/test_math.rb: Fix lgamma test
