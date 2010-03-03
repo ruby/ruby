@@ -419,7 +419,7 @@ nurat_int_check(VALUE num)
 	break;
       default:
 	if (!k_numeric_p(num) || !f_integer_p(num))
-	    rb_raise(rb_eArgError, "not an integer");
+	    rb_raise(rb_eTypeError, "not an integer");
     }
 }
 
