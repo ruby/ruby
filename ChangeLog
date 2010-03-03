@@ -1,3 +1,11 @@
+Wed Mar  3 23:16:32 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* complex.c (nucomp_real_check): raise TypeError instead of
+	  ArgumentError when argument is not a real as expected
+	  [ruby-core:28395]
+
+	* rational.c (nurat_int_check): ditto (for integers)
+
 Wed Mar  3 23:07:08 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb (Vector#each): Return self and optimization
