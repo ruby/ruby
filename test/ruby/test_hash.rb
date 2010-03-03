@@ -290,6 +290,13 @@ class TestHash < Test::Unit::TestCase
     assert_equal(base.size, n)
   end
 
+  def test_delete_if
+    h = {1=>2,3=>4,5=>6}
+    assert_equal({3=>4,5=>6}, h.keep_if {|k, v| k + v >= 7 })
+    h = {1=>2,3=>4,5=>6}
+    assert_equal({1=>2,3=>4,5=>6}, h.keep_if{true})
+  end
+
   def test_dup
     for taint in [ false, true ]
       for untrust in [ false, true ]
@@ -734,6 +741,14 @@ class TestHash < Test::Unit::TestCase
 
   def test_select
     assert_equal({3=>4,5=>6}, {1=>2,3=>4,5=>6}.select {|k, v| k + v >= 7 })
+  end
+
+  def test_select!
+    h = {1=>2,3=>4,5=>6}
+    assert_equal(h, h.select! {|k, v| k + v >= 7 })
+    assert_equal({3=>4,5=>6}, h)
+    h = {1=>2,3=>4,5=>6}
+    assert_equal(nil, h.select!{true})
   end
 
   def test_clear2
