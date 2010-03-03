@@ -1,3 +1,10 @@
+Wed Mar  3 14:28:23 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_select_bang): select! removes all elements for
+	  which block returns false.  [ruby-core:27286]
+
+	* array.c (rb_ary_keep_if): #keep_if, new method.
+
 Wed Mar  3 06:19:25 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (signbig): defined.

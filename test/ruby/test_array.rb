@@ -1590,6 +1590,22 @@ class TestArray < Test::Unit::TestCase
     assert_equal([0, 2], [0, 1, 2, 3].select {|x| x % 2 == 0 })
   end
 
+  # also keep_if
+  def test_select!
+    a = @cls[ 1, 2, 3, 4, 5 ]
+    assert_equal(nil, a.select! { true })
+    assert_equal(a, a.keep_if { true })
+    assert_equal(@cls[1, 2, 3, 4, 5], a)
+
+    a = @cls[ 1, 2, 3, 4, 5 ]
+    assert_equal(a, a.select! { false })
+    assert_equal(@cls[], a)
+
+    a = @cls[ 1, 2, 3, 4, 5 ]
+    assert_equal(a, a.select! { |i| i > 3 })
+    assert_equal(@cls[4, 5], a)
+  end
+
   def test_delete2
     a = [0] * 1024 + [1] + [0] * 1024
     a.delete(0)
