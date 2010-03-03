@@ -1170,7 +1170,7 @@ class Vector
   def collect2(v) # :yield: e1, e2
     Vector.Raise ErrDimensionMismatch if size != v.size
     return to_enum(:collect2, v) unless block_given?
-    (0 ... size).collect do |i|
+    size.times.collect do |i|
       yield @elements[i], v[i]
     end
   end
