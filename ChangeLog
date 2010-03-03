@@ -1,3 +1,8 @@
+Wed Mar  3 16:14:24 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/matrix.rb (Vector#each): make Vector enumerable.  
+	  [ruby-core:28405]
+
 Wed Mar  3 14:28:23 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_select_bang): select! removes all elements for
