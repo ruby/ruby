@@ -18,17 +18,20 @@ def c_esc(str)
   '"' + str.gsub(C_ESC_PAT) { C_ESC[$&] } + '"'
 end
 
+HEX2 = /[0-9A-Fa-f]{2}/
+
 class StrSet
   attr_reader :pat
+
   def self.parse(pattern)
-    if /\A\s*(([0-9a-f][0-9a-f]|\{([0-9a-f][0-9a-f]|[0-9a-f][0-9a-f]-[0-9a-f][0-9a-f])(,([0-9a-f][0-9a-f]|[0-9a-f][0-9a-f]-[0-9a-f][0-9a-f]))*\})+(\s+|\z))*\z/i !~ pattern
+    if /\A\s*((#{HEX2}|\{(#{HEX2}|#{HEX2}-#{HEX2})(,(#{HEX2}|#{HEX2}-#{HEX2}))*\})+(\s+|\z))*\z/o !~ pattern
       raise ArgumentError, "invalid pattern: #{pattern.inspect}"
     end
     result = []
     pattern.scan(/\S+/) {|seq|
       seq_result = []
       while !seq.empty?
-        if /\A([0-9a-f][0-9a-f])/i =~ seq
+        if /\A(#{HEX2})/o =~ seq
           byte = $1.to_i(16)
           seq_result << [byte..byte]
           seq = $'
@@ -37,11 +40,11 @@ class StrSet
           seq = $'
           set_result = []
           set.scan(/[^,]+/) {|range|
-            if /\A([0-9a-f][0-9a-f])-([0-9a-f][0-9a-f])\z/i =~ range
+            if /\A(#{HEX2})-(#{HEX2})\z/o =~ range
               b = $1.to_i(16)
               e = $2.to_i(16)
               set_result << (b..e)
-            elsif /\A([0-9a-f][0-9a-f])\z/i =~ range
+            elsif /\A(#{HEX2})\z/o =~ range
               byte = $1.to_i(16)
               set_result << (byte..byte)
             else
@@ -333,19 +336,19 @@ class ActionMap
       "FUNio"
     when :func_so
       "FUNso"
-    when /\A([0-9a-f][0-9a-f])\z/i
+    when /\A(#{HEX2})\z/o
       "o1(0x#$1)"
-    when /\A([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])\z/i
+    when /\A(#{HEX2})(#{HEX2})\z/o
       "o2(0x#$1,0x#$2)"
-    when /\A([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])\z/i
+    when /\A(#{HEX2})(#{HEX2})(#{HEX2})\z/o
       "o3(0x#$1,0x#$2,0x#$3)"
     when /funsio\((\d+)\)/
       "funsio(#{$1})"
-    when /\A([0-9a-f][0-9a-f])(3[0-9])([0-9a-f][0-9a-f])(3[0-9])\z/i
+    when /\A(#{HEX2})(3[0-9])(#{HEX2})(3[0-9])\z/o
       "g4(0x#$1,0x#$2,0x#$3,0x#$4)"
-    when /\A(f[0-7])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])\z/i
+    when /\A(f[0-7])(#{HEX2})(#{HEX2})(#{HEX2})\z/o
       "o4(0x#$1,0x#$2,0x#$3,0x#$4)"
-    when /\A([0-9a-f][0-9a-f]){4,259}\z/i
+    when /\A(#{HEX2}){4,259}\z/o
       gen_str(info.upcase)
     when /\A\/\*BYTE_LOOKUP\*\// # pointer to BYTE_LOOKUP structure
       $'.to_s
@@ -740,7 +743,7 @@ ValidEncoding = {
                     {81-fe}{30-39}{81-fe}{30-39}',
 }
 
-def set_valid_byte_pattern (encoding, pattern_or_label)
+def set_valid_byte_pattern(encoding, pattern_or_label)
   pattern =
     if ValidEncoding[pattern_or_label]
       ValidEncoding[pattern_or_label]
