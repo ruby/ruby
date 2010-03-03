@@ -2250,6 +2250,57 @@ rb_ary_select(VALUE ary)
 
 /*
  *  call-seq:
+ *     array.select! {|item| block } -> an_array
+ *
+ *  Invokes the block passing in successive elements from
+ *  <i>array</i>, deleting elements for which the block returns a
+ *  false value.  but returns <code>nil</code> if no changes were
+ *  made.  Also see <code>Array#keep_if</code>
+ */
+
+static VALUE
+rb_ary_select_bang(VALUE ary)
+{
+    long i1, i2;
+
+    RETURN_ENUMERATOR(ary, 0, 0);
+    rb_ary_modify(ary);
+    for (i1 = i2 = 0; i1 < RARRAY_LEN(ary); i1++) {
+	VALUE v = RARRAY_PTR(ary)[i1];
+	if (!RTEST(rb_yield(v))) continue;
+	if (i1 != i2) {
+	    rb_ary_store(ary, i2, v);
+	}
+	i2++;
+    }
+
+    if (RARRAY_LEN(ary) == i2) return Qnil;
+    if (i2 < RARRAY_LEN(ary))
+	ARY_SET_LEN(ary, i2);
+    return ary;
+}
+
+/*
+ *  call-seq:
+ *     array.keep_if {|item| block } -> an_array
+ *
+ *  Deletes every element of <i>self</i> for which <i>block</i> evaluates
+ *  to <code>false</code>.
+ *
+ *     a = %w{ a b c d e f }
+ *     a.keep_if {|v| v =~ /[aeiou]/}   #=> ["a", "e"]
+ */
+
+static VALUE
+rb_ary_keep_if(VALUE ary)
+{
+    RETURN_ENUMERATOR(ary, 0, 0);
+    rb_ary_select_bang(ary);
+    return ary;
+}
+
+/*
+ *  call-seq:
  *     array.delete(obj)            -> obj or nil
  *     array.delete(obj) { block }  -> obj or nil
  *
@@ -4239,6 +4290,8 @@ Init_Array(void)
     rb_define_method(rb_cArray, "map", rb_ary_collect, 0);
     rb_define_method(rb_cArray, "map!", rb_ary_collect_bang, 0);
     rb_define_method(rb_cArray, "select", rb_ary_select, 0);
+    rb_define_method(rb_cArray, "select!", rb_ary_select_bang, 0);
+    rb_define_method(rb_cArray, "keep_if", rb_ary_keep_if, 0);
     rb_define_method(rb_cArray, "values_at", rb_ary_values_at, -1);
     rb_define_method(rb_cArray, "delete", rb_ary_delete, 1);
     rb_define_method(rb_cArray, "delete_at", rb_ary_delete_at_m, 1);
