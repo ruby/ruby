@@ -1081,6 +1081,7 @@ end
 #
 class Vector
   include ExceptionForMatrix
+  include Enumerable
 
   #INSTANCE CREATION
 
@@ -1139,6 +1140,16 @@ class Vector
   #--
   # ENUMERATIONS -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   #++
+
+  #
+  # Iterate over the elements of this vector
+  #
+  def each
+    return to_enum(:each) unless block_given?
+    @elements.each do |i|
+      yield i
+    end
+  end
 
   #
   # Iterate over the elements of this vector and +v+ in conjunction.
