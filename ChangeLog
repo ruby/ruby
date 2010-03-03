@@ -1,3 +1,7 @@
+Thu Mar  4 02:34:59 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_env.rb (TestEnv#test_select_bang): add tests.
+
 Thu Mar  4 02:29:52 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/ruby/test_hash.rb (TestHash#test_keep_if): fix typo.
