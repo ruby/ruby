@@ -290,7 +290,7 @@ class TestHash < Test::Unit::TestCase
     assert_equal(base.size, n)
   end
 
-  def test_delete_if
+  def test_keep_if
     h = {1=>2,3=>4,5=>6}
     assert_equal({3=>4,5=>6}, h.keep_if {|k, v| k + v >= 7 })
     h = {1=>2,3=>4,5=>6}

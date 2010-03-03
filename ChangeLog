@@ -1,3 +1,7 @@
+Thu Mar  4 02:29:52 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ruby/test_hash.rb (TestHash#test_keep_if): fix typo.
+
 Thu Mar  4 00:10:54 2010  Tanaka Akira  <akr@fsij.org>
 
 	* tool/transcode-tblgen.rb (HEX2): extracted from regexps.
@@ -111,7 +115,7 @@ Sun Feb 28 18:58:00 2010  Kenta Murata  <mrkn@mrkn.jp>
 	  math_gamma, math_lgamma): mathematical domain errors
 	  are checked and raised before calling libm's functions.
 
-	* test/ruby/test_math.rb: updated for changes of maht.c.
+	* test/ruby/test_math.rb: updated for changes of math.c.
 
 Sun Feb 28 15:07:28 2010  Tanaka Akira  <akr@fsij.org>
 
