@@ -518,7 +518,7 @@ make_seed_value(const void *ptr)
 }
 
 /*
- * call-seq: Random.seed -> integer
+ * call-seq: Random.new_seed -> integer
  *
  * Returns arbitrary value for seed.
  */
