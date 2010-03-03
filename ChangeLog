@@ -1,3 +1,8 @@
+Wed Mar  3 23:07:08 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb (Vector#each): Return self and optimization
+	  [ruby-core:28405]
+
 Wed Mar  3 18:35:55 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* hash.c (rb_hash_select_bang): add #select! and keep_if to Hash.

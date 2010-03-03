@@ -1144,11 +1144,10 @@ class Vector
   #
   # Iterate over the elements of this vector
   #
-  def each
+  def each(&block)
     return to_enum(:each) unless block_given?
-    @elements.each do |i|
-      yield i
-    end
+    @elements.each(&block)
+    self
   end
 
   #
