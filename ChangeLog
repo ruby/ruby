@@ -1,3 +1,7 @@
+Wed Mar  3 15:54:20 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/matrix.rb (Vector#each2, collect2): small refactoring.
+
 Wed Mar  3 16:14:24 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/matrix.rb (Vector#each): make Vector enumerable.  
