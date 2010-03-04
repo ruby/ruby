@@ -308,6 +308,19 @@ rb_int2inum(SIGNED_VALUE n)
 # error unexpected SIZEOF_LONG : SIZEOF_BDIGITS ratio
 #endif
 
+/*
+ * buf is an array of long integers.
+ * buf is ordered from least significant word to most significant word.
+ * buf[0] is the least significant word and
+ * buf[num_longs-1] is the most significant word.
+ * This means words in buf is little endian.
+ * However each word in buf is native endian.
+ * (buf[i]&1) is the least significant bit and
+ * (buf[i]&(1<<(SIZEOF_LONG*CHAR_BIT-1))) is the most significant bit
+ * for each 0 <= i < num_longs.
+ * So buf is little endian at whole on a little endian machine.
+ * But buf is mixed endian on a big endian machine.
+ */
 void
 rb_big_pack(VALUE val, unsigned long *buf, long num_longs)
 {
@@ -349,6 +362,7 @@ rb_big_pack(VALUE val, unsigned long *buf, long num_longs)
     }
 }
 
+/* See rb_big_pack comment for endianness of buf. */
 VALUE
 rb_big_unpack(unsigned long *buf, long num_longs)
 {
