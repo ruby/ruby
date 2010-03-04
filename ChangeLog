@@ -1,3 +1,10 @@
+Thu Mar  4 22:45:02 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* io.c (io_s_write, io_s_binwrite): add File#write and #binwrite.
+	  [ruby-core:21701]
+
+	* test/ruby/test_io.rb: add tests for above.
+
 Mon Mar  4 13:14:34 2010  wanabe  <s.wanabe@gmail.com>
 
 	* gc.c (gc_profile_total_time): add GC::Profiler.total_time.

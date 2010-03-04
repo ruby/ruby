@@ -1512,4 +1512,34 @@ End
     t.close
     assert_raise(IOError) {t.binmode}
   end
+
+  def test_s_write
+    t = Tempfile.new("foo")
+    path = t.path
+    t.close(false)
+    File.write(path, "foo\nbar\nbaz")
+    assert("foo\nbar\nbaz", File.read(path))
+    File.write(path, "FOO", 0)
+    assert("FOO\nbar\nbaz", File.read(path))
+    File.write(path, "BAR")
+    assert("BAR", File.read(path))
+    File.write(path, "\u{3042}", mode: "w", encoding: "EUC-JP")
+    assert("\u{3042}".encode("EUC-JP"), File.read(path, encoding: "EUC-JP"))
+    t.unlink
+  end
+
+  def test_s_binwrite
+    t = Tempfile.new("foo")
+    path = t.path
+    t.close(false)
+    File.binwrite(path, "foo\nbar\nbaz")
+    assert("foo\nbar\nbaz", File.read(path))
+    File.binwrite(path, "FOO", 0)
+    assert("FOO\nbar\nbaz", File.read(path))
+    File.binwrite(path, "BAR")
+    assert("BAR", File.read(path))
+    File.binwrite(path, "\u{3042}")
+    assert("\u{3042}", File.read(path, encoding: "EUC-JP"))
+    t.unlink
+  end
 end
