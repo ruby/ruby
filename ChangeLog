@@ -1,3 +1,7 @@
+Thu Mar  4 10:15:10 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* complex.c (m_log, m_exp): remove unused functions.
+
 Thu Mar  4 02:34:59 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_env.rb (TestEnv#test_select_bang): add tests.
@@ -133,9 +137,6 @@ Sun Feb 28 11:49:35 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 	  fixed by Nobuyoshi Nakada [ruby-core:25238],
 	  Hongli Lai [ruby-core:27417],
 	  and Motohiro KOSAKI [ruby-core:28063]
-
-	* ext/openssl/ossl_ssl.c (ossl_ssl_method_tab),
-	  (ossl_ssl_cipher_to_ary): constified.
 
 	* ext/openssl/ossl_pkcs7.c (pkcs7_get_certs, pkcs7_get_crls):
 	  split pkcs7_get_certs_or_crls.
