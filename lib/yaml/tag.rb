@@ -88,4 +88,5 @@ class Module
     def yaml_tag_read_class( name )
         name
     end
+    # :startdoc:
 end

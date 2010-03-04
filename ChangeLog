@@ -1,3 +1,7 @@
+Fri Mar 5  03:58:00 2010 Kirk Haines <khaines@ruby-lang.org>
+
+	* lib/yaml/tag.rb: Add a :startdoc: at the end of the YAML specific Module functions so that the rest of the Module docs get generated. Fixes Bug #1718 [ruby-core:24121].
+
 Fri Feb 5  07:19:00 2010 Kirk Haines <khaines@ruby-lang.org>
 
 	* eval.c: Small syntax change and dead code removal to fix build problems on some platforms.
