@@ -1,6 +1,7 @@
 Mon Mar  4 13:14:34 2010  wanabe  <s.wanabe@gmail.com>
 
 	* gc.c (gc_profile_total_time): add GC::Profiler.total_time.
+	  [ruby-core:27169]
 
 	* NEWS: ditto.
 
