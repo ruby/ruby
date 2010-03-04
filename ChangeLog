@@ -1,3 +1,8 @@
+Thu Mar  4 22:49:42 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* eval.c (setup_exception): avoid line number 0 when setting
+	  $DEBUG=true.  [ruby-dev:39116]
+
 Thu Mar  4 22:45:02 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* io.c (io_s_write, io_s_binwrite): add File#write and #binwrite.
