@@ -804,27 +804,6 @@ nucomp_fdiv(VALUE self, VALUE other)
     return f_divide(self, other, f_fdiv, id_fdiv);
 }
 
-static VALUE
-m_log(VALUE x)
-{
-    if (f_real_p(x) && f_positive_p(x))
-	return m_log_bang(x);
-    return rb_complex_new2(m_log_bang(f_abs(x)), f_arg(x));
-}
-
-static VALUE
-m_exp(VALUE x)
-{
-    VALUE ere, im;
-
-    if (f_real_p(x))
-	return m_exp_bang(x);
-    ere = m_exp_bang(f_real(x));
-    im = f_imag(x);
-    return rb_complex_new2(f_mul(ere, m_cos_bang(im)),
-			   f_mul(ere, m_sin_bang(im)));
-}
-
 inline static VALUE
 f_reciprocal(VALUE x)
 {
