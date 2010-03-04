@@ -1,3 +1,9 @@
+Mon Mar  4 13:14:34 2010  wanabe  <s.wanabe@gmail.com>
+
+	* gc.c (gc_profile_total_time): add GC::Profiler.total_time.
+
+	* NEWS: ditto.
+
 Thu Mar  4 10:15:10 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* complex.c (m_log, m_exp): remove unused functions.
