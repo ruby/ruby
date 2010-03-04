@@ -69,6 +69,10 @@ with all sufficient information, see the ChangeLog file.
       * File.realpath
       * File.realdirpath
 
+  * GC::Profiler
+    * new method:
+      * GC::Profiler.total_time
+
   * IO
     * new method:
       * IO#fdatasync
