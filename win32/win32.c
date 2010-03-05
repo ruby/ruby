@@ -5273,6 +5273,7 @@ _ftol2_sse(double d)
 }
 #endif
 
+#ifndef signbit
 int
 signbit(double x)
 {
@@ -5283,3 +5284,4 @@ signbit(double x)
 # error not supported
 #endif
 }
+#endif
