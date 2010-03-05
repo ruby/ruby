@@ -181,7 +181,7 @@ rb_w32_map_errno(DWORD winerr)
 	return 0;
     }
 
-    for (i = 0; i < sizeof(errmap) / sizeof(*errmap); i++) {
+    for (i = 0; i < (int)(sizeof(errmap) / sizeof(*errmap)); i++) {
 	if (errmap[i].winerr == winerr) {
 	    return errmap[i].err;
 	}
@@ -1115,7 +1115,8 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
 rb_pid_t
 rb_w32_aspawn(int mode, const char *prog, char *const *argv)
 {
-    int len, c_switch = 0;
+    int c_switch = 0;
+    size_t len;
     BOOL ntcmd = FALSE, tmpnt;
     const char *shell;
     char *cmd, fbuf[MAXPATHLEN];
@@ -3975,7 +3976,7 @@ winnt_stat(const char *path, struct stati64 *st)
 	// If runtime stat(2) is called for network shares, it fails on WinNT.
 	// Because GetDriveType returns 1 for network shares. (Win98 returns 4)
 	DWORD attr = GetFileAttributes(path);
-	if (attr == -1) {
+	if (attr == (DWORD)-1L) {
 	    errno = map_errno(GetLastError());
 	    return -1;
 	}
@@ -4091,7 +4092,7 @@ rb_chsize(HANDLE h, off_t size)
     end = ((off_t)uend << 32) | (unsigned long)lend;
     usize = (long)(size >> 32);
     lsize = (long)size;
-    if (SetFilePointer(h, lsize, &usize, SEEK_SET) == -1L &&
+    if (SetFilePointer(h, lsize, &usize, SEEK_SET) == (DWORD)-1L &&
 	(e = GetLastError())) {
 	errno = map_errno(e);
     }

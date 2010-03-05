@@ -5006,7 +5006,7 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
     if (argc) {
 	int i;
 
-	if (argc >= FIXNUM_MAX / sizeof(char *)) {
+	if (argc >= (int)(FIXNUM_MAX / sizeof(char *))) {
 	    rb_raise(rb_eArgError, "too many arguments");
 	}
 	argbuf = rb_str_tmp_new((argc+1) * sizeof(char *));
