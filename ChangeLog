@@ -1,3 +1,11 @@
+Fri Mar  5 17:51:09 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (pipe_open): suppressed a warning.
+
+	* win32/win32.c (rb_w32_map_errno, winnt_stat, rb_chsize): ditto.
+
+	* win32/win32.c (rb_w32_aspawn): get rid of overflow.
+
 Fri Mar  5 11:59:30 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (signbit): defined on mingw.
