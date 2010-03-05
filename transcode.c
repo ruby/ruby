@@ -2394,6 +2394,11 @@ econv_opts(VALUE opt)
         rb_raise(rb_eArgError, "unknown value for undefined character option");
     }
 
+    v = rb_hash_aref(opt, sym_replace);
+    if (!NIL_P(v) && !(ecflags & ECONV_INVALID_REPLACE)) {
+        ecflags |= ECONV_UNDEF_REPLACE;
+    }
+
     v = rb_hash_aref(opt, sym_xml);
     if (!NIL_P(v)) {
         if (v==sym_text) {
