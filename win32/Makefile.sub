@@ -496,13 +496,11 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_UINT32_T 1
 #define uint32_t unsigned int
 #define SIZEOF_INT32_T 4
-!if $(MSC_VER) >= 1400
 #define HAVE_INT64_T 1
 #define int64_t __int64
 #define HAVE_UINT64_T 1
 #define uint64_t unsigned __int64
 #define SIZEOF_INT64_T 8
-!endif
 #define HAVE_INTPTR_T 1
 #define HAVE_UINTPTR_T 1
 #define HAVE_SSIZE_T 1
