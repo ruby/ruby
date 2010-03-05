@@ -1,3 +1,7 @@
+Sat Mar  6 01:08:54 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (config.h): VC6 has __int64.
+
 Fri Mar  5 19:36:12 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* transcode.c (econv_opts): set :undef => :replace when
