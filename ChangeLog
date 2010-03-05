@@ -1,3 +1,8 @@
+Fri Mar  5 19:36:12 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* transcode.c (econv_opts): set :undef => :replace when
+	  :replace is given and :invalid is not given. [ruby-dev:40554]
+
 Fri Mar  5 17:51:09 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (pipe_open): suppressed a warning.
