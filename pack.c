@@ -266,7 +266,7 @@ TOKEN_PASTE(swap,x)(xtype z)		\
 # define VTOHD(x,y)	rb_vtohd(x)
 #endif
 
-unsigned long rb_big2ulong_pack(VALUE x);
+VALUE rb_big2ulong_pack(VALUE x);
 
 static unsigned long
 num2i32(VALUE x)
