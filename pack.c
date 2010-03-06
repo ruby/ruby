@@ -763,8 +763,6 @@ pack_pack(VALUE ary, VALUE fmt)
 		    rb_str_buf_cat(res, v.a, sizeof(int64_t));
 		}
 		break;
-#else
-
 #endif
 
 	      default:
