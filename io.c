@@ -7677,7 +7677,7 @@ struct foreach_arg {
 };
 
 static void
-open_key_args_with_opt(int argc, VALUE *argv, struct foreach_arg *arg, int mandatory_argc, int default_mode, int default_perm)
+open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
 {
     VALUE opt, v;
 
@@ -7685,9 +7685,9 @@ open_key_args_with_opt(int argc, VALUE *argv, struct foreach_arg *arg, int manda
     arg->io = 0;
     arg->argc = argc - 1;
     arg->argv = argv + 1;
-    if (argc == mandatory_argc) {
+    if (argc == 1) {
       no_key:
-	arg->io = rb_io_open(argv[0], INT2NUM(default_mode), INT2FIX(default_perm), Qnil);
+	arg->io = rb_io_open(argv[0], INT2NUM(O_RDONLY), INT2FIX(0666), Qnil);
 	return;
     }
     opt = pop_last_hash(&arg->argc, arg->argv);
@@ -7712,21 +7712,7 @@ open_key_args_with_opt(int argc, VALUE *argv, struct foreach_arg *arg, int manda
 	rb_ary_clear(args);	/* prevent from GC */
 	return;
     }
-    if (default_mode != O_RDONLY && NIL_P(rb_hash_aref(opt, sym_mode))) {
-	opt = rb_hash_dup(opt);
-	rb_hash_aset(opt, sym_mode, INT2NUM(default_mode));
-    }
-    if (default_perm != 0666 && NIL_P(rb_hash_aref(opt, sym_perm))) {
-	opt = rb_hash_dup(opt);
-	rb_hash_aset(opt, sym_perm, INT2FIX(default_perm));
-    }
     arg->io = rb_io_open(argv[0], Qnil, Qnil, opt);
-}
-
-static void
-open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
-{
-    open_key_args_with_opt(argc, argv, arg, 1, O_RDONLY, 0666);
 }
 
 static VALUE
@@ -7816,16 +7802,6 @@ io_s_read(struct foreach_arg *arg)
     return io_read(arg->argc, arg->argv, arg->io);
 }
 
-struct write_arg {
-    VALUE io, str;
-};
-
-static VALUE
-io_s_write(struct write_arg *arg)
-{
-    return io_write(arg->io, arg->str, 0);
-}
-
 struct seek_arg {
     VALUE io;
     VALUE offset;
@@ -7833,7 +7809,7 @@ struct seek_arg {
 };
 
 static VALUE
-seek_before_access(struct seek_arg *arg)
+seek_before_read(struct seek_arg *arg)
 {
     rb_io_binmode(arg->io);
     return rb_io_seek(arg->io, arg->offset, arg->mode);
@@ -7844,7 +7820,7 @@ seek_before_access(struct seek_arg *arg)
  *     IO.read(name, [length [, offset]] )   => string
  *     IO.read(name, [length [, offset]], open_args)   => string
  *
- *  Opens the file, optionally seeks to the given <i>offset</i>, then returns
+ *  Opens the file, optionally seeks to the given offset, then returns
  *  <i>length</i> bytes (defaulting to the rest of the file).
  *  <code>read</code> ensures the file is closed before returning.
  *
@@ -7886,7 +7862,7 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
 	sarg.io = arg.io;
 	sarg.offset = offset;
 	sarg.mode = SEEK_SET;
-	rb_protect((VALUE (*)(VALUE))seek_before_access, (VALUE)&sarg, &state);
+	rb_protect((VALUE (*)(VALUE))seek_before_read, (VALUE)&sarg, &state);
 	if (state) {
 	    rb_io_close(arg.io);
 	    rb_jump_tag(state);
@@ -7900,9 +7876,9 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
  *  call-seq:
  *     IO.binread(name, [length [, offset]] )   => string
  *
- *  Opens the file, optionally seeks to the given <i>offset</i>, then returns
+ *  Opens the file, optionally seeks to the given offset, then returns
  *  <i>length</i> bytes (defaulting to the rest of the file).
- *  <code>binread</code> ensures the file is closed before returning.
+ *  <code>read</code> ensures the file is closed before returning.
  *  The open mode would be "rb:ASCII-8BIT".
  *
  *     IO.binread("testfile")           #=> "This is line one\nThis is line two\nThis is line three\nAnd so on...\n"
@@ -7926,117 +7902,6 @@ rb_io_s_binread(int argc, VALUE *argv, VALUE io)
 	rb_io_seek(arg.io, offset, SEEK_SET);
     }
     return rb_ensure(io_s_read, (VALUE)&arg, rb_io_close, arg.io);
-}
-
-/*
- *  call-seq:
- *     IO.write(name, string, [offset] )   => fixnum
- *     IO.write(name, string, [offset], open_args )   => fixnum
- *
- *  Opens the file, optionally seeks to the given <i>offset</i>, writes
- *  <i>string</i>, then returns the length written.
- *  <code>write</code> ensures the file is closed before returning.
- *  If <i>offset</i> is not given, the file is truncated.  Otherwise,
- *  it is not truncated.
- *
- *  If the last argument is a hash, it specifies option for internal
- *  open().  The key would be the following.  open_args: is exclusive
- *  to others.
- *
- *   encoding: string or encoding
- *
- *    specifies encoding of the read string.  encoding will be ignored
- *    if length is specified.
- *
- *   mode: string
- *
- *    specifies mode argument for open().  it should start with "w" or "a" or "r+"
- *    otherwise it would cause error.
- *
- *   perm: fixnum
- *
- *    specifies perm argument for open().
- *
- *   open_args: array of strings
- *
- *    specifies arguments for open() as an array.
- *
- *     IO.write("testfile", "0123456789")      #=> "0123456789"
- *     IO.write("testfile", "0123456789", 20)  #=> "This is line one\nThi0123456789two\nThis is line three\nAnd so on...\n"
- */
-
-static VALUE
-rb_io_s_write(int argc, VALUE *argv, VALUE io)
-{
-    VALUE offset;
-    struct foreach_arg arg;
-    struct write_arg warg;
-    int mode = O_WRONLY | O_CREAT, mandatory_argc;
-
-    rb_scan_args(argc, argv, "22", NULL, &warg.str, &offset, NULL);
-    if (!NIL_P(offset) && FIXNUM_P(offset)) {
-	mandatory_argc = 3;
-    }
-    else {
-	mode |= O_TRUNC;
-	mandatory_argc = 2;
-    }
-    open_key_args_with_opt(argc, argv, &arg, mandatory_argc, mode, 0666);
-    if (NIL_P(arg.io)) return Qnil;
-    if (!NIL_P(offset) && FIXNUM_P(offset)) {
-	struct seek_arg sarg;
-	int state = 0;
-	sarg.io = arg.io;
-	sarg.offset = offset;
-	sarg.mode = SEEK_SET;
-	rb_protect((VALUE (*)(VALUE))seek_before_access, (VALUE)&sarg, &state);
-	if (state) {
-	    rb_io_close(arg.io);
-	    rb_jump_tag(state);
-	}
-	if (arg.argc == 2) arg.argc = 1;
-    }
-    warg.io = arg.io;
-    return rb_ensure(io_s_write, (VALUE)&warg, rb_io_close, arg.io);
-}
-
-/*
- *  call-seq:
- *     IO.binwrite(name, string, [offset] )   => fixnum
- *
- *  Opens the file, optionally seeks to the given <i>offset</i>, write
- *  <i>string</i> then returns the length written.
- *  <code>binwrite</code> ensures the file is closed before returning.
- *  The open mode would be "wb:ASCII-8BIT".
- *  If <i>offset</i> is not given, the file is truncated.  Otherwise,
- *  it is not truncated.
- *
- *     IO.binwrite("testfile", "0123456789")      #=> "0123456789"
- *     IO.binwrite("testfile", "0123456789", 20)  #=> "This is line one\nThi0123456789two\nThis is line three\nAnd so on...\n"
- */
-
-static VALUE
-rb_io_s_binwrite(int argc, VALUE *argv, VALUE io)
-{
-    VALUE offset;
-    const char *mode;
-    struct write_arg warg;
-
-    rb_scan_args(argc, argv, "21", NULL, &warg.str, &offset);
-    if (!NIL_P(offset)) {
-	NUM2OFFT(offset);
-	mode = "r+b:ASCII-8BIT";
-    }
-    else {
-	mode = "wb:ASCII-8BIT";
-    }
-    FilePathValue(argv[0]);
-    warg.io = rb_io_open(argv[0], rb_str_new_cstr(mode), Qnil, Qnil);
-    if (NIL_P(warg.io)) return Qnil;
-    if (!NIL_P(offset)) {
-	rb_io_seek(warg.io, offset, SEEK_SET);
-    }
-    return rb_ensure(io_s_write, (VALUE)&warg, rb_io_close, warg.io);
 }
 
 struct copy_stream_struct {
@@ -9842,8 +9707,6 @@ Init_IO(void)
     rb_define_singleton_method(rb_cIO, "readlines", rb_io_s_readlines, -1);
     rb_define_singleton_method(rb_cIO, "read", rb_io_s_read, -1);
     rb_define_singleton_method(rb_cIO, "binread", rb_io_s_binread, -1);
-    rb_define_singleton_method(rb_cIO, "write", rb_io_s_write, -1);
-    rb_define_singleton_method(rb_cIO, "binwrite", rb_io_s_binwrite, -1);
     rb_define_singleton_method(rb_cIO, "select", rb_f_select, -1);
     rb_define_singleton_method(rb_cIO, "pipe", rb_io_s_pipe, -1);
     rb_define_singleton_method(rb_cIO, "try_convert", rb_io_s_try_convert, 1);

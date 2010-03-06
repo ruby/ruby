@@ -1,3 +1,12 @@
+Sat Mar  6 13:45:37 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* io.c (rb_io_s_write, rb_io_s_binwrite): delete File#write and
+	  #binwrite.  It may take a long time to make them stable, so 1.9.2
+	  should not include them.  We need refactoring to implement them
+	  again.
+
+	* test/ruby/test_io.rb: delete tests for them.
+
 Sat Mar  6 10:03:35 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* io.c (rb_io_s_binwrite): use mode "r+b" instead of "ab" to handle
