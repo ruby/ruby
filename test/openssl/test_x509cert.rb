@@ -129,13 +129,31 @@ class OpenSSL::TestX509Certificate < Test::Unit::TestCase
 
   end
 
+  def test_sign_and_verify_wrong_key_type
+    cert_rsa = issue_cert(@ca, @rsa2048, 1, Time.now, Time.now+3600, [],
+                      nil, nil, OpenSSL::Digest::SHA1.new)
+    cert_dsa = issue_cert(@ca, @dsa512, 1, Time.now, Time.now+3600, [],
+                      nil, nil, OpenSSL::Digest::DSS1.new)
+    begin
+      assert_equal(false, cert_rsa.verify(@dsa256))
+    rescue OpenSSL::X509::CertificateError => e
+      # OpenSSL 1.0.0 added checks for pkey OID
+      assert_equal('wrong public key type', e.message)
+    end
+
+    begin
+      assert_equal(false, cert_dsa.verify(@rsa1024))
+    rescue OpenSSL::X509::CertificateError => e
+      # OpenSSL 1.0.0 added checks for pkey OID
+      assert_equal('wrong public key type', e.message)
+    end
+  end
+
   def test_sign_and_verify
     cert = issue_cert(@ca, @rsa2048, 1, Time.now, Time.now+3600, [],
                       nil, nil, OpenSSL::Digest::SHA1.new)
     assert_equal(false, cert.verify(@rsa1024))
     assert_equal(true,  cert.verify(@rsa2048))
-    assert_equal(false, cert.verify(@dsa256))
-    assert_equal(false, cert.verify(@dsa512))
     cert.serial = 2
     assert_equal(false, cert.verify(@rsa2048))
 
@@ -143,32 +161,43 @@ class OpenSSL::TestX509Certificate < Test::Unit::TestCase
                       nil, nil, OpenSSL::Digest::MD5.new)
     assert_equal(false, cert.verify(@rsa1024))
     assert_equal(true,  cert.verify(@rsa2048))
-    assert_equal(false, cert.verify(@dsa256))
-    assert_equal(false, cert.verify(@dsa512))
     cert.subject = @ee1
     assert_equal(false, cert.verify(@rsa2048))
 
     cert = issue_cert(@ca, @dsa512, 1, Time.now, Time.now+3600, [],
                       nil, nil, OpenSSL::Digest::DSS1.new)
-    assert_equal(false, cert.verify(@rsa1024))
-    assert_equal(false, cert.verify(@rsa2048))
     assert_equal(false, cert.verify(@dsa256))
     assert_equal(true,  cert.verify(@dsa512))
     cert.not_after = Time.now
     assert_equal(false, cert.verify(@dsa512))
+  end
 
-    assert_raise(OpenSSL::X509::CertificateError){
+  def test_dsig_algorithm_mismatch
+    assert_raise(OpenSSL::X509::CertificateError) do
       cert = issue_cert(@ca, @rsa2048, 1, Time.now, Time.now+3600, [],
                         nil, nil, OpenSSL::Digest::DSS1.new)
-    }
-    assert_raise(OpenSSL::X509::CertificateError){
+    end
+    assert_raise(OpenSSL::X509::CertificateError) do
       cert = issue_cert(@ca, @dsa512, 1, Time.now, Time.now+3600, [],
                         nil, nil, OpenSSL::Digest::MD5.new)
-    }
-    assert_raise(OpenSSL::X509::CertificateError){
-      cert = issue_cert(@ca, @dsa512, 1, Time.now, Time.now+3600, [],
-                        nil, nil, OpenSSL::Digest::SHA1.new)
-    }
+    end
+  end
+
+  def test_dsa_with_sha2
+    begin
+      cert = issue_cert(@ca, @dsa256, 1, Time.now, Time.now+3600, [],
+                        nil, nil, OpenSSL::Digest::SHA256.new)
+      assert_equal("dsa_with_SHA256", cert.signature_algorithm)
+    rescue OpenSSL::X509::CertificateError
+      # dsa_with_sha2 not supported. skip following test.
+      return
+    end
+    # TODO: need more tests for dsa + sha2
+
+    # SHA1 is allowed from OpenSSL 1.0.0 (0.9.8 requireds DSS1)
+    cert = issue_cert(@ca, @dsa256, 1, Time.now, Time.now+3600, [],
+                      nil, nil, OpenSSL::Digest::SHA1.new)
+    assert_equal("dsaWithSHA1", cert.signature_algorithm)
   end
 
   def test_check_private_key

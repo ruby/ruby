@@ -190,6 +190,30 @@ class OpenSSL::TestX509CRL < Test::Unit::TestCase
     assert_match((2**100).to_s, crl.extensions[0].value)
   end
 
+  def test_sign_and_verify_wrong_key_type
+    cert_rsa = issue_cert(@ca, @rsa2048, 1, Time.now, Time.now+3600, [],
+                      nil, nil, OpenSSL::Digest::SHA1.new)
+    crl_rsa = issue_crl([], 1, Time.now, Time.now+1600, [],
+                    cert_rsa, @rsa2048, OpenSSL::Digest::SHA1.new)
+    cert_dsa = issue_cert(@ca, @dsa512, 1, Time.now, Time.now+3600, [],
+                      nil, nil, OpenSSL::Digest::DSS1.new)
+    crl_dsa = issue_crl([], 1, Time.now, Time.now+1600, [],
+                    cert_dsa, @dsa512, OpenSSL::Digest::DSS1.new)
+    begin
+      assert_equal(false, crl_rsa.verify(@dsa256))
+    rescue OpenSSL::X509::CRLError => e
+      # OpenSSL 1.0.0 added checks for pkey OID
+      assert_equal('wrong public key type', e.message)
+    end
+
+    begin
+      assert_equal(false, crl_dsa.verify(@rsa1024))
+    rescue OpenSSL::X509::CRLError => e
+      # OpenSSL 1.0.0 added checks for pkey OID
+      assert_equal('wrong public key type', e.message)
+    end
+  end
+
   def test_sign_and_verify
     cert = issue_cert(@ca, @rsa2048, 1, Time.now, Time.now+3600, [],
                       nil, nil, OpenSSL::Digest::SHA1.new)
@@ -197,8 +221,6 @@ class OpenSSL::TestX509CRL < Test::Unit::TestCase
                     cert, @rsa2048, OpenSSL::Digest::SHA1.new)
     assert_equal(false, crl.verify(@rsa1024))
     assert_equal(true,  crl.verify(@rsa2048))
-    assert_equal(false, crl.verify(@dsa256))
-    assert_equal(false, crl.verify(@dsa512))
     crl.version = 0
     assert_equal(false, crl.verify(@rsa2048))
 
@@ -206,8 +228,6 @@ class OpenSSL::TestX509CRL < Test::Unit::TestCase
                       nil, nil, OpenSSL::Digest::DSS1.new)
     crl = issue_crl([], 1, Time.now, Time.now+1600, [],
                     cert, @dsa512, OpenSSL::Digest::DSS1.new)
-    assert_equal(false, crl.verify(@rsa1024))
-    assert_equal(false, crl.verify(@rsa2048))
     assert_equal(false, crl.verify(@dsa256))
     assert_equal(true,  crl.verify(@dsa512))
     crl.version = 0
