@@ -433,11 +433,11 @@ ossl_dsa_verify(VALUE self, VALUE digest, VALUE sig)
     return Qfalse;
 }
 
-OSSL_PKEY_BN(dsa, p);
-OSSL_PKEY_BN(dsa, q);
-OSSL_PKEY_BN(dsa, g);
-OSSL_PKEY_BN(dsa, pub_key);
-OSSL_PKEY_BN(dsa, priv_key);
+OSSL_PKEY_BN(dsa, p)
+OSSL_PKEY_BN(dsa, q)
+OSSL_PKEY_BN(dsa, g)
+OSSL_PKEY_BN(dsa, pub_key)
+OSSL_PKEY_BN(dsa, priv_key)
 
 /*
  * INIT

@@ -139,6 +139,7 @@ int ossl_pem_passwd_cb(char *, int, int, void *);
  */
 #define OSSL_ErrMsg() ERR_reason_error_string(ERR_get_error())
 NORETURN(void ossl_raise(VALUE, const char *, ...));
+VALUE ossl_exc_new(VALUE, const char *, ...);
 
 /*
  * Verify callback
@@ -167,10 +168,10 @@ VALUE ossl_to_der_if_possible(VALUE);
 extern VALUE dOSSL;
 
 #if defined(HAVE_VA_ARGS_MACRO)
-#define OSSL_Debug(fmt, ...) do { \
+#define OSSL_Debug(...) do { \
   if (dOSSL == Qtrue) { \
     fprintf(stderr, "OSSL_DEBUG: "); \
-    fprintf(stderr, fmt, ##__VA_ARGS__); \
+    fprintf(stderr, __VA_ARGS__); \
     fprintf(stderr, " [%s:%d]\n", __FILE__, __LINE__); \
   } \
 } while (0)

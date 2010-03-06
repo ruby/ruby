@@ -519,14 +519,14 @@ ossl_rsa_blinding_off(VALUE self)
 }
  */
 
-OSSL_PKEY_BN(rsa, n);
-OSSL_PKEY_BN(rsa, e);
-OSSL_PKEY_BN(rsa, d);
-OSSL_PKEY_BN(rsa, p);
-OSSL_PKEY_BN(rsa, q);
-OSSL_PKEY_BN(rsa, dmp1);
-OSSL_PKEY_BN(rsa, dmq1);
-OSSL_PKEY_BN(rsa, iqmp);
+OSSL_PKEY_BN(rsa, n)
+OSSL_PKEY_BN(rsa, e)
+OSSL_PKEY_BN(rsa, d)
+OSSL_PKEY_BN(rsa, p)
+OSSL_PKEY_BN(rsa, q)
+OSSL_PKEY_BN(rsa, dmp1)
+OSSL_PKEY_BN(rsa, dmq1)
+OSSL_PKEY_BN(rsa, iqmp)
 
 /*
  * INIT

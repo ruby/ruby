@@ -415,10 +415,10 @@ ossl_dh_compute_key(VALUE self, VALUE pub)
     return str;
 }
 
-OSSL_PKEY_BN(dh, p);
-OSSL_PKEY_BN(dh, g);
-OSSL_PKEY_BN(dh, pub_key);
-OSSL_PKEY_BN(dh, priv_key);
+OSSL_PKEY_BN(dh, p)
+OSSL_PKEY_BN(dh, g)
+OSSL_PKEY_BN(dh, pub_key)
+OSSL_PKEY_BN(dh, priv_key)
 
 /*
  * -----BEGIN DH PARAMETERS-----
