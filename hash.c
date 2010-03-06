@@ -1828,12 +1828,16 @@ rb_hash_update(hash1, hash2)
  *     hsh.merge(other_hash){|key, oldval, newval| block} -> a_hash
  *
  *  Returns a new hash containing the contents of <i>other_hash</i> and
- *  the contents of <i>hsh</i>, overwriting entries in <i>hsh</i> with
- *  duplicate keys with those from <i>other_hash</i>.
+ *  the contents of <i>hsh</i>. If no block is specified, the value for
+ *  entries with duplicate keys will be that of <i>other_hash</i>. Otherwise
+ *  the value for each duplicate key is determined by calling the block
+ *  with the key, its value in <i>hsh</i> and its value in <i>other_hash</i>.
  *
  *     h1 = { "a" => 100, "b" => 200 }
  *     h2 = { "b" => 254, "c" => 300 }
  *     h1.merge(h2)   #=> {"a"=>100, "b"=>254, "c"=>300}
+ *     h1.merge(h2){|key, oldval, newval| newval - oldval}
+ *                    #=> {"a"=>100, "b"=>54,  "c"=>300}
  *     h1             #=> {"a"=>100, "b"=>200}
  *
  */
