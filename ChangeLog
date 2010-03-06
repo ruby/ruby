@@ -1,3 +1,11 @@
+Sun Mar  7 06:47:05 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* ext/openssl/ossl_x509name.c: added X509::Name#hash_old as a wrapper
+	  for X509_NAME_hash_old in OpenSSL 1.0.0.
+
+	* test/openssl/test_x509name.rb (test_hash): make test pass with
+	  OpenSSL 1.0.0.
+
 Sun Mar  7 06:45:58 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/openssl/test_x509*: make tests pass with OpenSSL 1.0.0b5.
