@@ -125,13 +125,13 @@ class OpenSSL::TestX509CRL < Test::Unit::TestCase
   def test_extension
     cert_exts = [
       ["basicConstraints", "CA:TRUE", true],
-      ["subjectKeyIdentifier", "hash", false], 
-      ["authorityKeyIdentifier", "keyid:always", false], 
+      ["subjectKeyIdentifier", "hash", false],
+      ["authorityKeyIdentifier", "keyid:always", false],
       ["subjectAltName", "email:xyzzy@ruby-lang.org", false],
       ["keyUsage", "cRLSign, keyCertSign", true],
     ]
     crl_exts = [
-      ["authorityKeyIdentifier", "keyid:always", false], 
+      ["authorityKeyIdentifier", "keyid:always", false],
       ["issuerAltName", "issuer:copy", false],
     ]
 

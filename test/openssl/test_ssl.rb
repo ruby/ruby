@@ -102,7 +102,7 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
         server_proc.call(ctx, ssl)
       end
     end
-  rescue Errno::EBADF, IOError
+  rescue Errno::EBADF, IOError, Errno::EINVAL, Errno::ECONNABORTED
   end
 
   def start_server(port0, verify_mode, start_immediately, args = {}, &block)
@@ -143,14 +143,25 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
 
       block.call(server, port.to_i)
     ensure
-      tcps.close if (tcps)
-      if (server)
-        server.join(5)
-        if server.alive?
-          server.kill
+      begin
+        begin
+          tcps.shutdown
+        rescue Errno::ENOTCONN
+          # when `Errno::ENOTCONN: Socket is not connected' on some platforms,
+          # call #close instead of #shutdown.
+          tcps.close
+          tcps = nil
+        end if (tcps)
+        if (server)
           server.join(5)
-          flunk("TCPServer was closed and SSLServer is still alive") unless $!
+          if server.alive?
+            server.kill
+            server.join
+            flunk("TCPServer was closed and SSLServer is still alive") unless $!
+          end
         end
+      ensure
+        tcps.close if (tcps)
       end
     end
   end
@@ -594,7 +605,7 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
         ctx.session_add(saved_session)
       end
       connections += 1
-      
+
       readwrite_loop(ctx, ssl)
     end
 
@@ -639,7 +650,7 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
     ctx_proc = Proc.new do |ctx, ssl|
       foo_ctx = ctx.dup
 
-      ctx.servername_cb = Proc.new do |ssl, hostname|
+      ctx.servername_cb = Proc.new do |ssl2, hostname|
         case hostname
         when 'foo.example.com'
           foo_ctx

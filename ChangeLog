@@ -1,3 +1,7 @@
+Sun Mar  7 06:37:27 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/openssl: backport cosmetic changes from 1.9.
+
 Sun Mar  7 06:27:24 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* ext/openssl: backport fixes in 1.9.
