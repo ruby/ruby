@@ -1518,13 +1518,13 @@ End
     path = t.path
     t.close(false)
     File.write(path, "foo\nbar\nbaz")
-    assert("foo\nbar\nbaz", File.read(path))
+    assert_equal("foo\nbar\nbaz", File.read(path))
     File.write(path, "FOO", 0)
-    assert("FOO\nbar\nbaz", File.read(path))
+    assert_equal("FOO\nbar\nbaz", File.read(path))
     File.write(path, "BAR")
-    assert("BAR", File.read(path))
+    assert_equal("BAR", File.read(path))
     File.write(path, "\u{3042}", mode: "w", encoding: "EUC-JP")
-    assert("\u{3042}".encode("EUC-JP"), File.read(path, encoding: "EUC-JP"))
+    assert_equal("\u{3042}".encode("EUC-JP"), File.read(path, encoding: "EUC-JP"))
     t.unlink
   end
 
@@ -1533,13 +1533,13 @@ End
     path = t.path
     t.close(false)
     File.binwrite(path, "foo\nbar\nbaz")
-    assert("foo\nbar\nbaz", File.read(path))
+    assert_equal("foo\nbar\nbaz", File.read(path))
     File.binwrite(path, "FOO", 0)
-    assert("FOO\nbar\nbaz", File.read(path))
+    assert_equal("FOO\nbar\nbaz", File.read(path))
     File.binwrite(path, "BAR")
-    assert("BAR", File.read(path))
+    assert_equal("BAR", File.read(path))
     File.binwrite(path, "\u{3042}")
-    assert("\u{3042}", File.read(path, encoding: "EUC-JP"))
+    assert_equal("\u{3042}", File.read(path))
     t.unlink
   end
 end

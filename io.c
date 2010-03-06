@@ -8025,7 +8025,7 @@ rb_io_s_binwrite(int argc, VALUE *argv, VALUE io)
     rb_scan_args(argc, argv, "21", NULL, &warg.str, &offset);
     if (!NIL_P(offset)) {
 	NUM2OFFT(offset);
-	mode = "ab:ASCII-8BIT";
+	mode = "r+b:ASCII-8BIT";
     }
     else {
 	mode = "wb:ASCII-8BIT";

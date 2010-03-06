@@ -1,3 +1,10 @@
+Sat Mar  6 10:03:35 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* io.c (rb_io_s_binwrite): use mode "r+b" instead of "ab" to handle
+	  offset correctly.  [ruby-core:28517]
+
+	* test/ruby/test_io.rb: use assert_equal instead of assert.
+
 Sat Mar  6 01:08:54 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (config.h): VC6 has __int64.
