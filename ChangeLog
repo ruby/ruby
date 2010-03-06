@@ -1,3 +1,7 @@
+Sat Mar  6 22:07:09 2010  Tanaka Akira  <akr@fsij.org>
+
+	* pack.c: fix the prototype of rb_big2ulong_pack.
+
 Sat Mar  6 13:45:37 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* io.c (rb_io_s_write, rb_io_s_binwrite): delete File#write and
