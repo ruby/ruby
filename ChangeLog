@@ -1,3 +1,12 @@
+Sun Mar  7 02:05:38 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* encoding.c (enc_set_filesystem_encoding):
+	  filesystem encoding on Mac OS X is now
+	  default external encoding. so Mac OS X is now
+	  treated as one of Unix. [ruby-dev:40439]
+
+	* file.c (file_path_convert): ditto.
+
 Sat Mar  6 22:07:09 2010  Tanaka Akira  <akr@fsij.org>
 
 	* pack.c: fix the prototype of rb_big2ulong_pack.

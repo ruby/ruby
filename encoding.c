@@ -1147,8 +1147,6 @@ enc_set_filesystem_encoding(void)
     snprintf(cp, sizeof cp, "CP%d", AreFileApisANSI() ? GetACP() : GetOEMCP());
     idx = rb_enc_find_index(cp);
     if (idx < 0) idx = rb_ascii8bit_encindex();
-#elif defined __APPLE__
-    idx = rb_utf8_encindex();
 #else
     idx = rb_enc_to_index(rb_default_external_encoding());
 #endif
