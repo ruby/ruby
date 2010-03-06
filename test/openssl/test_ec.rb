@@ -87,9 +87,24 @@ class OpenSSL::TestEC < Test::Unit::TestCase
   def test_dsa_sign_verify
     for key in @keys
       sig = key.dsa_sign_asn1(@data1)
-      assert_equal(key.dsa_verify_asn1(@data1, sig), true)
+      assert(key.dsa_verify_asn1(@data1, sig))
+    end
+  end
 
-      assert_raise(OpenSSL::PKey::ECError) { key.dsa_sign_asn1(@data2) }
+  def test_dsa_sign_asn1_FIPS186_3
+    for key in @keys
+      size = key.group.order.num_bits / 8 + 1
+      dgst = (1..size).to_a.pack('C*')
+      begin
+        sig = key.dsa_sign_asn1(dgst)
+        # dgst is auto-truncated according to FIPS186-3 after openssl-0.9.8m
+        assert(key.dsa_verify_asn1(dgst + "garbage", sig))
+      rescue OpenSSL::PKey::ECError => e
+        # just an exception for longer dgst before openssl-0.9.8m
+        assert_equal('ECDSA_sign: data too large for key size', e.message)
+        # no need to do following tests
+        return
+      end
     end
   end
 
