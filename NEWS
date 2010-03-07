@@ -254,6 +254,10 @@ with all sufficient information, see the ChangeLog file.
     * Pathname#realdirpath
     * Pathname#each_child
 
+  * extended methods:
+    * Pathname#realpath and Pathname#realdirpath takes optional basedir
+      argument.
+
 * Readline
   * new methods:
     * Readline.set_screen_size
