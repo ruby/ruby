@@ -342,8 +342,8 @@ rb_big_pack(VALUE val, unsigned long *buf, long num_longs)
         long i, j;
         for (i = 0; i < num_longs && ds < dend; i++) {
             unsigned long l = 0;
-            for (j = 0; j < SIZEOF_LONG/SIZEOF_BDIGITS && ds < dend; j++, ds++) {
-                l |= ((unsigned long)*ds << (j * SIZEOF_BDIGITS * CHAR_BIT));
+            for (j = 0; j < DIGSPERLONG && ds < dend; j++, ds++) {
+                l |= ((unsigned long)*ds << (j * BITSPERDIG));
             }
             buf[i] = l;
         }
@@ -381,7 +381,7 @@ rb_big_unpack(unsigned long *buf, long num_longs)
     else {
         VALUE big;
         BDIGIT *ds;
-        long len = num_longs * (SIZEOF_LONG/SIZEOF_BDIGITS);
+        long len = num_longs * DIGSPERLONG;
         long i;
         big = bignew(len, 1);
         ds = BDIGITS(big);
@@ -391,7 +391,7 @@ rb_big_unpack(unsigned long *buf, long num_longs)
             *ds++ = d;
 #else
             int j;
-            for (j = 0; j < SIZEOF_LONG/SIZEOF_BDIGITS; j++) {
+            for (j = 0; j < DIGSPERLONG; j++) {
                 *ds++ = BIGLO(d);
                 d = BIGDN(d);
             }
