@@ -325,6 +325,45 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err([notexist], "", [], pat)
   end
 
+  def test_program_name
+    ruby = EnvUtil.rubybin
+    IO.popen([ruby, '-e', 'print $0']) {|f|
+      assert_equal('-e', f.read)
+    }
+    IO.popen([ruby, '-'], 'r+') {|f|
+      f << 'print $0'
+      f.close_write
+      assert_equal('-', f.read)
+    }
+    Dir.mktmpdir {|d|
+      n1 = File.join(d, 't1')
+      open(n1, 'w') {|f| f << 'print $0' }
+      IO.popen([ruby, n1]) {|f|
+        assert_equal(n1, f.read)
+      }
+      if File.respond_to? :symlink
+        n2 = File.join(d, 't2')
+        File.symlink(n1, n2)
+        IO.popen([ruby, n2]) {|f|
+          assert_equal(n2, f.read)
+        }
+      end
+      Dir.chdir(d) {
+        n3 = '-e'
+        open(n3, 'w') {|f| f << 'print $0' }
+        IO.popen([ruby, '--', n3]) {|f|
+          assert_equal(n3, f.read)
+        }
+        n4 = '-'
+        IO.popen([ruby, '--', n4], 'r+') {|f|
+          f << 'print $0'
+          f.close_write
+          assert_equal(n4, f.read)
+        }
+      }
+    }
+  end
+
   def test_segv_test
     assert_in_out_err(["-e", "Process.kill :SEGV, $$"], "", [],
       %r(\A
