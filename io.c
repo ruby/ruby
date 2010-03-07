@@ -2613,32 +2613,26 @@ rb_io_readlines(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     ios.lines(sep=$/)     => anEnumerator
- *     ios.lines(limit)      => anEnumerator
- *     ios.lines(sep, limit) => anEnumerator
- *
- *  Returns an enumerator that gives each line in <em>ios</em>.
- *  The stream must be opened for reading or an <code>IOError</code>
- *  will be raised.
- *
- *     f = File.new("testfile")
- *     f.lines.to_a  #=> ["foo\n", "bar\n"]
- *     f.rewind
- *     f.lines.sort  #=> ["bar\n", "foo\n"]
- */
-
-/*
- *  call-seq:
  *     ios.each(sep=$/) {|line| block }         => ios
  *     ios.each(limit) {|line| block }          => ios
  *     ios.each(sep,limit) {|line| block }      => ios
+ *     ios.each(...)                            => anEnumerator
+ *
  *     ios.each_line(sep=$/) {|line| block }    => ios
  *     ios.each_line(limit) {|line| block }     => ios
  *     ios.each_line(sep,limit) {|line| block } => ios
+ *     ios.each_line(...)                       => anEnumerator
+ *
+ *     ios.lines(sep=$/) {|line| block }        => ios
+ *     ios.lines(limit) {|line| block }         => ios
+ *     ios.lines(sep,limit) {|line| block }     => ios
+ *     ios.lines(...)                           => anEnumerator
  *
  *  Executes the block for every line in <em>ios</em>, where lines are
  *  separated by <i>sep</i>. <em>ios</em> must be opened for
  *  reading or an <code>IOError</code> will be raised.
+ *
+ *  If no block is given, an enumerator is returned instead.
  *
  *     f = File.new("testfile")
  *     f.each {|line| puts "#{f.lineno}: #{line}" }
@@ -2667,25 +2661,17 @@ rb_io_each_line(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     ios.bytes   => anEnumerator
+ *     ios.bytes {|byte| block }      => ios
+ *     ios.bytes                      => anEnumerator
  *
- *  Returns an enumerator that gives each byte (0..255) in <em>ios</em>.
- *  The stream must be opened for reading or an <code>IOError</code>
- *  will be raised.
- *
- *     f = File.new("testfile")
- *     f.bytes.to_a  #=> [104, 101, 108, 108, 111]
- *     f.rewind
- *     f.bytes.sort  #=> [101, 104, 108, 108, 111]
- */
-
-/*
- *  call-seq:
  *     ios.each_byte {|byte| block }  => ios
+ *     ios.each_byte                  => anEnumerator
  *
  *  Calls the given block once for each byte (0..255) in <em>ios</em>,
  *  passing the byte as an argument. The stream must be opened for
  *  reading or an <code>IOError</code> will be raised.
+ *
+ *  If no block is given, an enumerator is returned instead.
  *
  *     f = File.new("testfile")
  *     checksum = 0
@@ -2813,25 +2799,17 @@ io_getc(rb_io_t *fptr, rb_encoding *enc)
 
 /*
  *  call-seq:
- *     ios.chars   => anEnumerator
+ *     ios.chars {|c| block }      => ios
+ *     ios.chars                   => anEnumerator
  *
- *  Returns an enumerator that gives each character in <em>ios</em>.
- *  The stream must be opened for reading or an <code>IOError</code>
- *  will be raised.
- *
- *     f = File.new("testfile")
- *     f.chars.to_a  #=> ["h", "e", "l", "l", "o"]
- *     f.rewind
- *     f.chars.sort  #=> ["e", "h", "l", "l", "o"]
- */
-
-/*
- *  call-seq:
  *     ios.each_char {|c| block }  => ios
+ *     ios.each_char               => anEnumerator
  *
  *  Calls the given block once for each character in <em>ios</em>,
  *  passing the character as an argument. The stream must be opened for
  *  reading or an <code>IOError</code> will be raised.
+ *
+ *  If no block is given, an enumerator is returned instead.
  *
  *     f = File.new("testfile")
  *     f.each_char {|c| print c, ' ' }   #=> #<File:testfile>
@@ -9116,24 +9094,23 @@ argf_readbyte(VALUE argf)
 
 /*
  *  call-seq:
- *     ARGF.lines(sep=$/)                      => Enumerator
- *     ARGF.lines(sep=$/)          {|line| }   => Enumerator
- *     ARGF.lines(sep=$/,limit)                => Enumerator
- *     ARGF.lines(sep=$/,limit)    {|line| }   => Enumerator
+ *     ARGF.each(sep=$/)            {|line| block }  => ARGF
+ *     ARGF.each(sep=$/,limit)      {|line| block }  => ARGF
+ *     ARGF.each(...)                                => anEnumerator
  *
- *     ARGF.each_line(sep=$/)                  => Enumerator
- *     ARGF.each_line(sep=$/)       {|line| }  => Enumerator
- *     ARGF.each_line(sep=$/,limit)            => Enumerator
- *     ARGF.each_line(sep=$/,limit) {|line| }  => Enumerator
- *     ARGF.each(sep=$/)                       => Enumerator
- *     ARGF.each(sep=$/)            {|line| }  => Enumerator
- *     ARGF.each(sep=$/,limit)                 => Enumerator
- *     ARGF.each(sep=$/,limit)      {|line| }  => Enumerator
+ *     ARGF.each_line(sep=$/)       {|line| block }  => ARGF
+ *     ARGF.each_line(sep=$/,limit) {|line| block }  => ARGF
+ *     ARGF.each_line(...)                           => anEnumerator
+ *
+ *     ARGF.lines(sep=$/)           {|line| block }   => ARGF
+ *     ARGF.lines(sep=$/,limit)     {|line| block }   => ARGF
+ *     ARGF.lines(...)                                => anEnumerator
  *
  *  Returns an enumerator which iterates over each line (separated by _sep_,
  *  which defaults to your platform's newline character) of each file in
  *  +ARGV+. If a block is supplied, each line in turn will be yielded to the
- *  block. The optional _limit_ argument is a +Fixnum+ specifying the maximum
+ *  block, otherwise an enumerator is returned.
+ *  The optional _limit_ argument is a +Fixnum+ specifying the maximum
  *  length of each line; longer lines will be split according to this limit.
  *
  *  This method allows you to treat the files supplied on the command line as
@@ -9164,21 +9141,22 @@ argf_each_line(int argc, VALUE *argv, VALUE argf)
 
 /*
  *  call-seq:
- *     ARGF.bytes                => Enumerator
- *     ARGF.bytes     {|byte| }  => Enumerator
+ *     ARGF.bytes     {|byte| block }  => ARGF
+ *     ARGF.bytes                      => anEnumerator
  *
- *     ARGF.each_byte            => Enumerator
- *     ARGF.each_byte {|byte| }  => Enumerator
+ *     ARGF.each_byte {|byte| block }  => ARGF
+ *     ARGF.each_byte                  => anEnumerator
  *
- *  Returns an enumerator which iterates over each byte of each file in
- *  +ARGV+. If a block is supplied, each byte in turn will be yielded to the
- *  block. A byte is returned as a +Fixnum+ in the range 0..255.
+ *  Iterates over each byte of each file in +ARGV+.
+ *  A byte is returned as a +Fixnum+ in the range 0..255.
  *
  *  This method allows you to treat the files supplied on the command line as
  *  a single file consisting of the concatenation of each named file. After
  *  the last byte of the first file has been returned, the first byte of the
  *  second file is returned. The +ARGF.filename+ method can be used to
  *  determine the filename of the current byte.
+ *
+ *  If no block is given, an enumerator is returned instead.
  *
  * For example:
  *
@@ -9198,15 +9176,13 @@ argf_each_byte(VALUE argf)
 
 /*
  *  call-seq:
- *     ARGF.chars                 => Enumerator
- *     ARGF.chars      {|char| }  => Enumerator
+ *     ARGF.chars      {|char| block }  => ARGF
+ *     ARGF.chars                       => anEnumerator
  *
- *     ARGF.each_char             => Enumerator
- *     ARGF.each_char  {|char| }  => Enumerator
+ *     ARGF.each_char  {|char| block }  => ARGF
+ *     ARGF.each_char                   => anEnumerator
  *
- *  Returns an enumerator which iterates over each character of each file in
- *  +ARGV+. If a block is supplied, each character in turn will be yielded to
- *  the block.
+ *  Iterates over each character of each file in +ARGF+.
  *
  *  This method allows you to treat the files supplied on the command line as
  *  a single file consisting of the concatenation of each named file. After
@@ -9214,6 +9190,8 @@ argf_each_byte(VALUE argf)
  *  character of the second file is returned. The +ARGF.filename+ method can
  *  be used to determine the name of the file in which the current character
  *  appears.
+ *
+ *  If no block is given, an enumerator is returned instead.
  */
 static VALUE
 argf_each_char(VALUE argf)
