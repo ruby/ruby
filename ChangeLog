@@ -1,3 +1,13 @@
+Sun Mar  7 13:49:49 2010  Tanaka Akira  <akr@fsij.org>
+
+	* file.c: add optional basedir argument for realpath/realdirpath.
+	  (realpath_internal): handle basedir.
+	  (rb_file_s_realpath): extract basedir from argument list.
+	  (rb_file_s_realdirpath): extract basedir from argument list.
+
+	* lib/pathname.rb (realpath): pass basedir.
+	  (realdirpath): ditto.
+
 Sun Mar  7 02:05:38 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c (enc_set_filesystem_encoding):
