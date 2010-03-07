@@ -1224,7 +1224,7 @@ aix_loaderror(const char *pathname)
 	do { \
 	    *p++ = ((c = *file++) == '/') ? DLN_NEEDS_ALT_SEPARATOR : c; \
 	} while (c); \
-	str = tmp; \
+	src = tmp; \
     } while (0)
 #else
 #define translit_separator(str) (void)(str)
