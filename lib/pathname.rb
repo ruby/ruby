@@ -442,8 +442,8 @@ class Pathname
   # All components of the pathname must exist when this method is
   # called.
   #
-  def realpath
-    self.class.new(File.realpath(@path))
+  def realpath(basedir=nil)
+    self.class.new(File.realpath(@path, basedir))
   end
 
   #
@@ -452,8 +452,8 @@ class Pathname
   #
   # The last component of the real pathname can be nonexistent.
   #
-  def realdirpath
-    self.class.new(File.realdirpath(@path))
+  def realdirpath(basedir=nil)
+    self.class.new(File.realdirpath(@path, basedir))
   end
 
   # #parent returns the parent directory.

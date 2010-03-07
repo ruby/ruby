@@ -288,8 +288,8 @@ class TestPathname < Test::Unit::TestCase
     return true
   end
 
-  def realpath(path)
-    Pathname.new(path).realpath.to_s
+  def realpath(path, basedir=nil)
+    Pathname.new(path).realpath(basedir).to_s
   end
 
   def test_realpath
@@ -301,6 +301,7 @@ class TestPathname < Test::Unit::TestCase
 
       File.symlink("loop", "#{dir}/loop")
       assert_raise(Errno::ELOOP) { realpath("#{dir}/loop") }
+      assert_raise(Errno::ELOOP) { realpath("#{dir}/loop", dir) }
 
       File.symlink("../#{File.basename(dir)}/./not-exist-target", "#{dir}/not-exist2")
       assert_raise(Errno::ENOENT) { realpath("#{dir}/not-exist2") }
@@ -314,6 +315,7 @@ class TestPathname < Test::Unit::TestCase
 
       Dir.mkdir("exist")
       assert_equal("#{dir}/exist", realpath("exist"))
+      assert_raise(Errno::ELOOP) { realpath("../loop", "#{dir}/exist") }
 
       File.symlink("loop1/loop1", "loop1")
       assert_raise(Errno::ELOOP) { realpath("#{dir}/loop1") }
