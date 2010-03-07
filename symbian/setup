@@ -252,6 +252,7 @@ define ruby_mmp
 @echo>>$(1) SOURCE debug.c
 @echo>>$(1) SOURCE dir.c
 @echo>>$(1) SOURCE $(DLN).c
+@echo>>$(1) SOURCE dln_find.c
 @echo>>$(1) SOURCE dmyext.c
 @echo>>$(1) SOURCE encoding.c
 @echo>>$(1) SOURCE enum.c
@@ -393,7 +394,7 @@ endef
 
 define ext_pkg
 @echo>>$(1) "$(EPOCROOT)epoc32\release\gcce\urel\$(2).dll"-"!:\sys\bin\$(2).dll"
-@echo>>$(1) "$(EPOCROOT)epoc32\release\gcce\urel\$(2).dll"-"!:\Data\Ruby\$(MAJOR).$(MINOR).$(TEENY)\$(arch)\$(2).dll"
+@echo>>$(1) "$(EPOCROOT)epoc32\release\gcce\urel\$(2).dll"-"!:\Data\Ruby\lib\$(MAJOR).$(MINOR).$(TEENY)\$(arch)\$(2).dll"
 endef
 
 define ext_bigdecimal
