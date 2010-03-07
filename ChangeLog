@@ -1,3 +1,12 @@
+Sun Mar  7 19:21:10 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* io.c: Fix documentation for each/each_line/lines, bytes/each_byte,
+	  codepoints/each_code_point [ruby-core:23948]
+
+	* string.c: ditto
+
+	* ext/stringio/stringio.c: ditto
+
 Sun Mar  7 13:49:49 2010  Tanaka Akira  <akr@fsij.org>
 
 	* file.c: add optional basedir argument for realpath/realdirpath.

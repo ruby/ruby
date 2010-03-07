@@ -5651,27 +5651,19 @@ rb_str_split(VALUE str, const char *sep0)
 
 
 /*
- *  Document-method: lines
- *  call-seq:
- *     str.lines(separator=$/)   => anEnumerator
- *     str.lines(separator=$/) {|substr| block }        => str
- *
- *  Returns an enumerator that gives each line in the string.  If a block is
- *  given, it iterates over each line in the string.
- *
- *     "foo\nbar\n".lines.to_a   #=> ["foo\n", "bar\n"]
- *     "foo\nb ar".lines.sort    #=> ["b ar", "foo\n"]
- */
-
-/*
- *  Document-method: each_line
  *  call-seq:
  *     str.each_line(separator=$/) {|substr| block }   => str
+ *     str.each_line(separator=$/)                     => anEnumerator
+ *
+ *     str.lines(separator=$/) {|substr| block }       => str
+ *     str.lines(separator=$/)                         => anEnumerator
  *
  *  Splits <i>str</i> using the supplied parameter as the record separator
  *  (<code>$/</code> by default), passing each substring in turn to the supplied
  *  block. If a zero-length record separator is supplied, the string is split
  *  into paragraphs delimited by multiple successive newlines.
+ *
+ *  If no block is given, an enumerator is returned instead.
  *
  *     print "Example one\n"
  *     "hello\nworld".each_line {|s| p s}
@@ -5794,23 +5786,15 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 
 
 /*
- *  Document-method: bytes
  *  call-seq:
- *     str.bytes   => anEnumerator
- *     str.bytes {|fixnum| block }    => str
+ *     str.bytes {|fixnum| block }        => str
+ *     str.bytes                          => anEnumerator
  *
- *  Returns an enumerator that gives each byte in the string.  If a block is
- *  given, it iterates over each byte in the string.
- *
- *     "hello".bytes.to_a        #=> [104, 101, 108, 108, 111]
- */
-
-/*
- *  Document-method: each_byte
- *  call-seq:
  *     str.each_byte {|fixnum| block }    => str
+ *     str.each_byte                      => anEnumerator
  *
- *  Passes each byte in <i>str</i> to the given block.
+ *  Passes each byte in <i>str</i> to the given block, or returns
+ *  an enumerator if no block is given.
  *
  *     "hello".each_byte {|c| print c, ' ' }
  *
@@ -5833,23 +5817,15 @@ rb_str_each_byte(VALUE str)
 
 
 /*
- *  Document-method: chars
  *  call-seq:
- *     str.chars                   => anEnumerator
- *     str.chars {|substr| block } => str
+ *     str.chars {|cstr| block }        => str
+ *     str.chars                        => anEnumerator
  *
- *  Returns an enumerator that gives each character in the string.
- *  If a block is given, it iterates over each character in the string.
- *
- *     "foo".chars.to_a   #=> ["f","o","o"]
- */
-
-/*
- *  Document-method: each_char
- *  call-seq:
  *     str.each_char {|cstr| block }    => str
+ *     str.each_char                    => anEnumerator
  *
- *  Passes each character in <i>str</i> to the given block.
+ *  Passes each character in <i>str</i> to the given block, or returns
+ *  an enumerator if no block is given.
  *
  *     "hello".each_char {|c| print c, ' ' }
  *
@@ -5889,27 +5865,18 @@ rb_str_each_char(VALUE str)
 }
 
 /*
- *  Document-method: codepoints
  *  call-seq:
- *     str.codepoints                   => anEnumerator
- *     str.codepoints {|fixnum| block } => str
+ *     str.codepoints {|integer| block }        => str
+ *     str.codepoints                           => anEnumerator
  *
- *  Returns an enumerator that gives the <code>Integer</code> ordinal
- *  of each character in the string, also known as a <i>codepoint</i>
- *  when applied to Unicode strings. If a block is given, it iterates
- *  over each character in the string.
- *
- *     "foo\u0635".codepoints.to_a   #=> [102, 111, 111, 1589]
- */
-
-/*
- *  Document-method: each_codepoint
- *  call-seq:
  *     str.each_codepoint {|integer| block }    => str
+ *     str.each_codepoint                       => anEnumerator
  *
  *  Passes the <code>Integer</code> ordinal of each character in <i>str</i>,
  *  also known as a <i>codepoint</i> when applied to Unicode strings to the
  *  given block.
+ *
+ *  If no block is given, an enumerator is returned instead.
  *
  *     "hello\u0639".each_codepoint {|c| print c, ' ' }
  *

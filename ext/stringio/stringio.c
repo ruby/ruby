@@ -615,7 +615,11 @@ strio_get_sync(VALUE self)
 
 /*
  * call-seq:
+ *   strio.bytes {|byte| block }      -> strio
+ *   strio.bytes                      -> anEnumerator
+ *
  *   strio.each_byte {|byte| block }  -> strio
+ *   strio.each_byte                  -> anEnumerator
  *
  * See IO#each_byte.
  */
@@ -821,7 +825,11 @@ strio_readbyte(VALUE self)
 
 /*
  * call-seq:
+ *   strio.chars {|char| block }      -> strio
+ *   strio.chars                      -> anEnumerator
+ *
  *   strio.each_char {|char| block }  -> strio
+ *   strio.each_char                  -> anEnumerator
  *
  * See IO#each_char.
  */
@@ -840,7 +848,11 @@ strio_each_char(VALUE self)
 
 /*
  * call-seq:
+ *   strio.codepoints {|c| block }      -> strio
+ *   strio.codepoints                   -> anEnumerator
+ *
  *   strio.each_codepoint {|c| block }  -> strio
+ *   strio.each_codepoint               -> anEnumerator
  *
  * See IO#each_codepoint.
  */
@@ -1031,9 +1043,17 @@ strio_readline(int argc, VALUE *argv, VALUE self)
  *   strio.each(sep=$/) {|line| block }         -> strio
  *   strio.each(limit) {|line| block }          -> strio
  *   strio.each(sep, limit) {|line| block }     -> strio
+ *   strio.each(...)                            -> anEnumerator
+ *
  *   strio.each_line(sep=$/) {|line| block }    -> strio
  *   strio.each_line(limit) {|line| block }     -> strio
  *   strio.each_line(sep,limit) {|line| block } -> strio
+ *   strio.each_line(...)                       -> anEnumerator
+ *
+ *   strio.lines(sep=$/) {|line| block }        -> strio
+ *   strio.lines(limit) {|line| block }         -> strio
+ *   strio.lines(sep,limit) {|line| block }     -> strio
+ *   strio.lines(...)                           -> anEnumerator
  *
  * See IO#each.
  */
