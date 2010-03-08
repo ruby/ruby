@@ -1,3 +1,10 @@
+Mon Mar  8 14:58:42 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl_session.c
+	  (ossl_ssl_session_{get,set}_time{,out}): fixed a bug introduced by
+	  backporting. (see [ruby-dev:40573])  use long in according to
+	  OpenSSL API. (SSL_SESSION_{get,set}_time{,out})
+
 Sun Mar  7 06:47:05 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* ext/openssl/ossl_x509name.c: added X509::Name#hash_old as a wrapper
