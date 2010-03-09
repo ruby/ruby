@@ -1,3 +1,7 @@
+Tue Mar  9 20:50:09 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/dl/test_method.rb: delete a residual test for dl on libffi.
+
 Tue Mar  9 18:00:00 2010  Kenta Murata <mrkn@mrkn.jp>
 
 	* enc/trans/EMOJI/*.src, enc/trans/emoji*,
