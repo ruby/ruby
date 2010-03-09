@@ -454,7 +454,7 @@ End
     end
 
     if !name_hint
-      name_hint = "fun_" + NextName.dup
+      name_hint = "fun_" + NextName
       NextName.succ!
     end
 
@@ -636,7 +636,6 @@ def transcode_tbl_only(from, to, map)
   else
     tree_name = "from_#{id_from}_to_#{id_to}"
   end
-  map = encode_utf8(map)
   real_tree_name, max_input = transcode_compile_tree(tree_name, from, map)
   return map, tree_name, real_tree_name, max_input
 end
