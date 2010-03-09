@@ -1,3 +1,9 @@
+Wed Mar 10 04:17:08 2010  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (defined_expr), insns.def (defined): fix to pass a Symbol
+	  object such as :$foo for the "defined?($foo)" expression
+	  on defined instruction.  This patch fixes ISeq#to_a/load.
+
 Tue Mar  9 20:50:09 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/dl/test_method.rb: delete a residual test for dl on libffi.
