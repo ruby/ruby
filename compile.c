@@ -2623,7 +2623,7 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
       case NODE_GVAR:
 	ADD_INSN(ret, nd_line(node), putnil);
 	ADD_INSN3(ret, nd_line(node), defined, INT2FIX(DEFINED_GVAR),
-		  ((VALUE)node->nd_entry) | 1, needstr);
+		  ID2SYM(node->nd_entry->id), needstr);
 	return 1;
 
       case NODE_CVAR:
