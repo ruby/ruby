@@ -1,7 +1,17 @@
+Tue Mar  9 12:17:34 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* tool/transcode-tblgen.rb (StrSet#parse, ActionMap#generate_node):
+	  optimization (reusing object and improving memoize).
+	  [ruby-dev:40582]
+
 Sun Mar  7 02:27:03 2010  Alexander Zavorine  <alexandre.zavorine@nokia.com>
 
-	* dln.c [DLN_NEEDS_ALT_SEPARATOR] (translit_separator): small typo fixed.
-	* symbian/setup (*.pkg): Shared library installation path fixed to match changes in version.c.
+	* dln.c [DLN_NEEDS_ALT_SEPARATOR] (translit_separator): small typo
+	  fixed.
+
+	* symbian/setup (*.pkg): Shared library installation path fixed to
+	  match changes in version.c.
+
 	* symbian/setup (ruby.mmp): SOURCE dln_find.c added.
 
 Sun Mar  7 23:14:22 2010  Tanaka Akira  <akr@fsij.org>
