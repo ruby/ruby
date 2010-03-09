@@ -23,6 +23,8 @@ HEX2 = /[0-9A-Fa-f]{2}/
 class StrSet
   attr_reader :pat
 
+  SINGLE_BYTE_RANGES = (0..255).map {|i| [i..i] }
+
   def self.parse(pattern)
     if /\A\s*((#{HEX2}|\{(#{HEX2}|#{HEX2}-#{HEX2})(,(#{HEX2}|#{HEX2}-#{HEX2}))*\})+(\s+|\z))*\z/o !~ pattern
       raise ArgumentError, "invalid pattern: #{pattern.inspect}"
@@ -33,7 +35,7 @@ class StrSet
       while !seq.empty?
         if /\A(#{HEX2})/o =~ seq
           byte = $1.to_i(16)
-          seq_result << [byte..byte]
+          seq_result << SINGLE_BYTE_RANGES[byte]
           seq = $'
         elsif /\A\{([^\}]+)\}/ =~ seq
           set = $1
@@ -448,7 +450,7 @@ End
     }
 
     if n = PostMemo[table]
-      return n
+      return PreMemo[[self,valid_encoding]] = n
     end
 
     if !name_hint
