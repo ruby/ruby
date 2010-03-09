@@ -29,14 +29,17 @@ ossl_pkcs5_pbkdf2_hmac(VALUE self, VALUE pass, VALUE salt, VALUE iter, VALUE key
     VALUE str;
     const EVP_MD *md;
     int len = NUM2INT(keylen);
+    unsigned char* salt_p;
+    unsigned char* str_p;
 
     StringValue(pass);
     StringValue(salt);
     md = GetDigestPtr(digest);
-
     str = rb_str_new(0, len);
+    salt_p = (unsigned char*)RSTRING_PTR(salt);
+    str_p = (unsigned char*)RSTRING_PTR(str);
 
-    if (PKCS5_PBKDF2_HMAC(RSTRING_PTR(pass), RSTRING_LEN(pass), RSTRING_PTR(salt), RSTRING_LEN(salt), NUM2INT(iter), md, len, RSTRING_PTR(str)) != 1)
+    if (PKCS5_PBKDF2_HMAC(RSTRING_PTR(pass), RSTRING_LEN(pass), salt_p, RSTRING_LEN(salt), NUM2INT(iter), md, len, str_p) != 1)
         ossl_raise(ePKCS5, "PKCS5_PBKDF2_HMAC");
 
     return str;

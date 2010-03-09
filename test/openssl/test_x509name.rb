@@ -270,18 +270,20 @@ class OpenSSL::TestX509Name < Test::Unit::TestCase
     name.respond_to?(:hash_old) ? name.hash_old : name.hash
   end
 
+  def calc_hash(d)
+    (d[0] & 0xff) | (d[1] & 0xff) << 8 | (d[2] & 0xff) << 16 | (d[3] & 0xff) << 24
+  end
+
   def test_hash
     dn = "/DC=org/DC=ruby-lang/CN=www.ruby-lang.org"
     name = OpenSSL::X509::Name.parse(dn)
     d = Digest::MD5.digest(name.to_der)
-    expected = (d[0] & 0xff) | (d[1] & 0xff) << 8 | (d[2] & 0xff) << 16 | (d[3] & 0xff) << 24
-    assert_equal(expected, name_hash(name))
+    assert_equal(calc_hash(d), name_hash(name))
     #
     dn = "/DC=org/DC=ruby-lang/CN=baz.ruby-lang.org"
     name = OpenSSL::X509::Name.parse(dn)
     d = Digest::MD5.digest(name.to_der)
-    expected = (d[0] & 0xff) | (d[1] & 0xff) << 8 | (d[2] & 0xff) << 16 | (d[3] & 0xff) << 24
-    assert_equal(expected, name_hash(name))
+    assert_equal(calc_hash(d), name_hash(name))
   end
 end
 

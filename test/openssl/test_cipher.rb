@@ -101,7 +101,7 @@ class OpenSSL::TestCipher < Test::Unit::TestCase
     assert_equal(@data, decrypted_data[0...@data.size])
   end
 
-  if PLATFORM =~ /java/
+  if RUBY_PLATFORM =~ /java/
     # JRuby extension - using Java padding types
     
     def test_disable_padding_javastyle

@@ -1,3 +1,18 @@
+Tue Mar  9 22:58:59 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* ext/openssl/ossl_config.c: defined own IMPLEMENT_LHASH_DOALL_ARG_FN_098
+	  macro according to IMPLEMENT_LHASH_DOALL_ARG_FN in OpenSSL 0.9.8m.
+	  OpenSSL 1.0.0beta5 has a slightly different definiton so it could
+	  be a temporal workaround for 0.9.8 and 1.0.0 dual support.
+
+	* ext/openssl/ossl_pkcs5.c (ossl_pkcs5_pbkdf2_hmac): follows function
+	  definition in OpenSSL 1.0.0beta5. PKCS5_PBKDF2_HMAC is from 1.0.0
+	  (0.9.8 only has PKCS5_PBKDF2_HMAC_SHA1)
+
+	* ext/openssl/ossl_ssl_session.c (ossl_ssl_session_eq): do not use
+	  SSL_SESSION_cmp and implement equality func by ousrself.  See the
+	  comment.
+
 Mon Mar  8 14:58:42 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl_session.c
