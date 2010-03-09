@@ -1,3 +1,15 @@
+Tue Mar  9 18:00:00 2010  Kenta Murata <mrkn@mrkn.jp>
+
+	* enc/trans/EMOJI/*.src, enc/trans/emoji*,
+	  enc/x-emoji.c, test/ruby/enc/test_emoji.rb,
+	  tool/enc-emoji-citrus-gen.rb, tool/enc-emoji4unicode.rb,
+	  tool/jisx0208.rb, tool/test/test_jisx0208.rb:
+	  new encodings to support emoji charsets, which are used by
+	  Japanese mobile phones [ruby-dev:40528].
+	  Thanks Yoji Shidara for a lot of contribution.
+
+	* tool/transcode-tblgen.rb: modified for enc-emoji4unicode.rb.
+
 Tue Mar  9 14:57:40 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/transcode-tblgen.rb (ActionMap#generate_node):
