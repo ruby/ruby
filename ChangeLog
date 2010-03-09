@@ -1,3 +1,7 @@
+Tue Mar  9 14:55:00 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* re.c (rb_reg_to_s): remove unused variable.
+
 Tue Mar  9 12:17:34 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* tool/transcode-tblgen.rb (StrSet#parse, ActionMap#generate_node):

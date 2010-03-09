@@ -519,7 +519,6 @@ rb_reg_to_s(VALUE re)
 	    goto again;
 	}
 	if (*ptr == ':' && ptr[len-1] == ')') {
-	    int r;
 	    Regexp *rp;
 
 	    ++ptr;
