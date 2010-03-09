@@ -1,3 +1,11 @@
+Tue Mar  9 14:57:40 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/transcode-tblgen.rb (ActionMap#generate_node):
+	  remove useless dup.
+
+	* tool/transcode-tblgen.rb (transcode_tbl_only): remove duplicated
+	  method call for encode_utf8.
+
 Tue Mar  9 14:55:00 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* re.c (rb_reg_to_s): remove unused variable.
