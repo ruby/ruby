@@ -1058,10 +1058,7 @@ min_ii(VALUE i, VALUE *memo, int argc, VALUE *argv)
 	*memo = i;
     }
     else {
-	VALUE ary = memo[1];
-	RARRAY_PTR(ary)[0] = i;
-	RARRAY_PTR(ary)[1] = *memo;
-	cmp = rb_yield(ary);
+	cmp = rb_yield_values(2, i, *memo);
 	if (rb_cmpint(cmp, i, *memo) < 0) {
 	    *memo = i;
 	}
@@ -1087,18 +1084,16 @@ min_ii(VALUE i, VALUE *memo, int argc, VALUE *argv)
 static VALUE
 enum_min(VALUE obj)
 {
-    VALUE result[2];
+    VALUE result = Qundef;
 
-    result[0] = Qundef;
     if (rb_block_given_p()) {
-	result[1] = rb_ary_new3(2, Qnil, Qnil);
-	rb_block_call(obj, id_each, 0, 0, min_ii, (VALUE)result);
+	rb_block_call(obj, id_each, 0, 0, min_ii, (VALUE)&result);
     }
     else {
-	rb_block_call(obj, id_each, 0, 0, min_i, (VALUE)result);
+	rb_block_call(obj, id_each, 0, 0, min_i, (VALUE)&result);
     }
-    if (result[0] == Qundef) return Qnil;
-    return result[0];
+    if (result == Qundef) return Qnil;
+    return result;
 }
 
 static VALUE
@@ -1131,10 +1126,7 @@ max_ii(VALUE i, VALUE *memo, int argc, VALUE *argv)
 	*memo = i;
     }
     else {
-	VALUE ary = memo[1];
-	RARRAY_PTR(ary)[0] = i;
-	RARRAY_PTR(ary)[1] = *memo;
-	cmp = rb_yield(ary);
+	cmp = rb_yield_values(2, i, *memo);
 	if (rb_cmpint(cmp, i, *memo) > 0) {
 	    *memo = i;
 	}
@@ -1159,24 +1151,21 @@ max_ii(VALUE i, VALUE *memo, int argc, VALUE *argv)
 static VALUE
 enum_max(VALUE obj)
 {
-    VALUE result[2];
+    VALUE result = Qundef;
 
-    result[0] = Qundef;
     if (rb_block_given_p()) {
-	result[1] = rb_ary_new3(2, Qnil, Qnil);
-	rb_block_call(obj, id_each, 0, 0, max_ii, (VALUE)result);
+	rb_block_call(obj, id_each, 0, 0, max_ii, (VALUE)&result);
     }
     else {
-	rb_block_call(obj, id_each, 0, 0, max_i, (VALUE)result);
+	rb_block_call(obj, id_each, 0, 0, max_i, (VALUE)&result);
     }
-    if (result[0] == Qundef) return Qnil;
-    return result[0];
+    if (result == Qundef) return Qnil;
+    return result;
 }
 
 struct minmax_t {
     VALUE min;
     VALUE max;
-    VALUE ary;
     VALUE last;
 };
 
@@ -1242,17 +1231,11 @@ minmax_ii_update(VALUE i, VALUE j, struct minmax_t *memo)
 	memo->max = j;
     }
     else {
-	VALUE ary = memo->ary;
-
-        rb_ary_store(ary, 0, i);
-        rb_ary_store(ary, 1, memo->min);
-	n = rb_cmpint(rb_yield(ary), i, memo->min);
+	n = rb_cmpint(rb_yield_values(2, i, memo->min), i, memo->min);
 	if (n < 0) {
 	    memo->min = i;
 	}
-        rb_ary_store(ary, 0, j);
-        rb_ary_store(ary, 1, memo->max);
-	n = rb_cmpint(rb_yield(ary), j, memo->max);
+	n = rb_cmpint(rb_yield_values(2, j, memo->max), j, memo->max);
 	if (n > 0) {
 	    memo->max = j;
 	}
@@ -1264,7 +1247,7 @@ minmax_ii(VALUE i, VALUE _memo, int argc, VALUE *argv)
 {
     struct minmax_t *memo = (struct minmax_t *)_memo;
     int n;
-    VALUE ary, j;
+    VALUE j;
 
     ENUM_WANT_SVALUE();
 
@@ -1275,10 +1258,7 @@ minmax_ii(VALUE i, VALUE _memo, int argc, VALUE *argv)
     j = memo->last;
     memo->last = Qundef;
 
-    ary = memo->ary;
-    rb_ary_store(ary, 0, j);
-    rb_ary_store(ary, 1, i);
-    n = rb_cmpint(rb_yield(ary), j, i);
+    n = rb_cmpint(rb_yield_values(2, j, i), j, i);
     if (n == 0)
         i = j;
     else if (n < 0) {
@@ -1317,7 +1297,6 @@ enum_minmax(VALUE obj)
     memo.min = Qundef;
     memo.last = Qundef;
     if (rb_block_given_p()) {
-	memo.ary = ary;
 	rb_block_call(obj, id_each, 0, 0, minmax_ii, (VALUE)&memo);
         if (memo.last != Qundef)
             minmax_ii_update(memo.last, memo.last, &memo);

@@ -1,3 +1,9 @@
+Wed Mar 10 21:25:41 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* enum.c (min_ii, max_ii, minmax_ii): remove wrong optimization that
+	  reuses array for yield parameter, which caused unexpected behavior.
+	  [ruby-core:25989]
+
 Wed Mar 10 12:10:00 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* enc/x_emoji.h: renamed from enc/x-emoji.c.
