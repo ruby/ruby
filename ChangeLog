@@ -1,3 +1,7 @@
+Thu Mar 11 01:33:30 2010  wanabe  <s.wanabe@gmail.com>
+
+	* win32/win32.c (signbit): allow x64.
+
 Thu Mar 11 01:04:48 2010  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* iseq.c (rb_iseq_clone): sets local_iseq and klass properly.
