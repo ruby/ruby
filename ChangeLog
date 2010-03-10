@@ -1,3 +1,7 @@
+Wed Mar 10 12:10:00 2010  Kenta Murata  <mrkn@mrkn.jp>
+
+	* enc/x_emoji.h: renamed from enc/x-emoji.c.
+
 Wed Mar 10 04:17:08 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (defined_expr), insns.def (defined): fix to pass a Symbol
