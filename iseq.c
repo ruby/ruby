@@ -1344,11 +1344,15 @@ rb_iseq_clone(VALUE iseqval, VALUE newcbase)
     if (!iseq1->orig) {
 	iseq1->orig = iseqval;
     }
+    if (iseq0->local_iseq == iseq0) {
+	iseq1->local_iseq = iseq1;
+    }
     if (newcbase) {
 	iseq1->cref_stack = NEW_BLOCK(newcbase);
 	if (iseq0->cref_stack->nd_next) {
 	    iseq1->cref_stack->nd_next = iseq0->cref_stack->nd_next;
 	}
+	iseq1->klass = newcbase;
     }
 
     return newiseq;
