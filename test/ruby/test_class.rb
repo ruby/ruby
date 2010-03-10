@@ -220,4 +220,20 @@ class TestClass < Test::Unit::TestCase
     assert_raise(SyntaxError) { eval("class C; return; end") }
     assert_raise(SyntaxError) { eval("class C; yield; end") }
   end
+
+  def test_clone
+    original = Class.new {
+      def foo
+        return super()
+      end
+    }
+    mod = Module.new {
+      def foo
+        return "mod#foo"
+      end
+    }
+    copy = original.clone
+    copy.send(:include, mod)
+    assert_equal("mod#foo", copy.new.foo)
+  end
 end
