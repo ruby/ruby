@@ -1,3 +1,7 @@
+Wed Mar 10 16:12:21 2010  Akinori MUSHA  <knu@iDaemons.org>
+
+	* eval.c (rb_f_loop): Return an enumerator if no block is given.
+
 Tue Mar  9 22:58:59 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* ext/openssl/ossl_config.c: defined own IMPLEMENT_LHASH_DOALL_ARG_FN_098

@@ -5319,8 +5319,10 @@ loop_i()
  */
 
 static VALUE
-rb_f_loop()
+rb_f_loop(self)
+    VALUE self;
 {
+    RETURN_ENUMERATOR(self, 0, 0);
     rb_rescue2(loop_i, (VALUE)0, 0, 0, rb_eStopIteration, (VALUE)0);
     return Qnil;		/* dummy */
 }

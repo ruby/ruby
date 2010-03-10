@@ -474,4 +474,25 @@ class TestIterator < Test::Unit::TestCase
   def test_block_given_within_iterator
     assert_equal(["b"], ["a", "b", "c"].grep(IterString.new("b")) {|s| s})
   end
+
+  def test_loop
+    i = 0
+    loop {
+      i = 1
+      break
+    }
+    assert_equal(1, i)
+
+    i = 0
+    loop {
+      i += 1
+      break if i > 1
+    }
+    assert_equal(2, i)
+
+    assert_nothing_raised {
+      x = loop
+      assert_kind_of(Enumerable, x)
+    }
+  end
 end

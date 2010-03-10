@@ -38,6 +38,10 @@ with all sufficient information, see the ChangeLog file.
 
 === Library updates (outstanding ones only)
 
+* global functions
+
+  * Return an enumerator if no block is given.
+
 * builtin classes
 
   * Array#try_convert()
