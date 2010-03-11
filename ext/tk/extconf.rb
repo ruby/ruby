@@ -634,7 +634,7 @@ def get_tclConfig(tclConfig_file, tkConfig_file, tclConfig_dir, tkConfig_dir)
   TkLib_Config["tclConfig-dir"] = tclConfig_dir
   TkLib_Config["tkConfig-dir"] = tkConfig_dir
 
-  print("Search tclConfig.sh and tkConfig.sh.")
+  print("Search tclConfig.sh and tkConfig.sh in #{tclConfig_dir}.")
   if tclConfig_dir
     tclConfig, tkConfig = 
       search_tclConfig([ ((tclConfig_file)? tclConfig_file: tclConfig_dir), 
@@ -1273,7 +1273,7 @@ unless is_win32?
   print(".") # progress
   have_library("dl", "dlopen")
   print(".") # progress
-  have_library("m", "log")
+  have_library("m", "log", "math.h")
   print("\n") # progress
 end
 $CPPFLAGS += ' -D_WIN32' if /cygwin/ =~ RUBY_PLATFORM

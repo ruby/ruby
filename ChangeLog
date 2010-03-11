@@ -1,3 +1,8 @@
+Fri Mar 12 06:48:58 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/tk/extconf.rb: log() is built-in in some compilers and needs
+	  proper declaration.
+
 Fri Mar 12 06:37:13 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sample/timeout.rb: split from lib/timeout.rb.
