@@ -1,3 +1,12 @@
+Fri Mar 12 07:15:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (ruby_init_loadpath_safe, ruby_init_gems): set and remove
+	  TMP_RUBY_PREFIX.
+
+	* variable.c (rb_mod_remove_const): new function.
+
+	* tool/compile_prelude.rb: split each preludes.
+
 Fri Mar 12 07:09:20 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (config.status): setup MINIRUBY environment for
