@@ -108,6 +108,7 @@ with all sufficient information, see the ChangeLog file.
 
     * new method:
       * Time#to_r
+      * Time#round
 
     * incompatible changes:
       * The year argument of Time.{utc,gm,local,mktime} is now interpreted as
