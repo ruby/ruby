@@ -576,4 +576,37 @@ class TestTime < Test::Unit::TestCase
     assert_kind_of(Rational, Time.new(2000,1,1,0,0,Rational(4,3)).to_r)
     assert_kind_of(Rational, Time.utc(1970).to_r)
   end
+
+  def test_round
+    t = Time.utc(1999,12,31, 23,59,59)
+    t2 = (t+0.4).round
+    assert_equal([59,59,23, 31,12,1999, 5,365,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+    t2 = (t+0.49).round
+    assert_equal([59,59,23, 31,12,1999, 5,365,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+    t2 = (t+0.5).round
+    assert_equal([0,0,0, 1,1,2000, 6,1,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+    t2 = (t+1.4).round
+    assert_equal([0,0,0, 1,1,2000, 6,1,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+    t2 = (t+1.49).round
+    assert_equal([0,0,0, 1,1,2000, 6,1,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+    t2 = (t+1.5).round
+    assert_equal([1,0,0, 1,1,2000, 6,1,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+
+    t2 = (t+0.123456789).round(4)
+    assert_equal([59,59,23, 31,12,1999, 5,365,false,"UTC"], t2.to_a)
+    assert_equal(Rational(1235,10000), t2.subsec)
+
+    off = 0.0
+    100.times {|i|
+      t2 = (t+off).round(1)
+      assert_equal(Rational(i % 10, 10), t2.subsec)
+      off += 0.1
+    }
+  end
 end
