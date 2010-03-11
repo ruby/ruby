@@ -2997,6 +2997,64 @@ rb_time_succ(VALUE time)
 
 #define time_succ rb_time_succ
 
+/*
+ * call-seq:
+ *   time.round([ndigits])   => new_time
+ *
+ * Rounds sub seconds to a given precision in decimal digits (0 digits by default).
+ * It returns a new time object.
+ * _ndigits_ should be zero or positive integer.
+ *
+ *     require 'time'
+ *
+ *     t = Time.utc(1999,12,31, 23,59,59)          
+ *     p((t + 0.4).round.iso8601(3))    #=> "1999-12-31T23:59:59.000Z"
+ *     p((t + 0.49).round.iso8601(3))   #=> "1999-12-31T23:59:59.000Z"
+ *     p((t + 0.5).round.iso8601(3))    #=> "2000-01-01T00:00:00.000Z"
+ *     p((t + 1.4).round.iso8601(3))    #=> "2000-01-01T00:00:00.000Z"
+ *     p((t + 1.49).round.iso8601(3))   #=> "2000-01-01T00:00:00.000Z"
+ *     p((t + 1.5).round.iso8601(3))    #=> "2000-01-01T00:00:01.000Z"
+ *
+ *     t = Time.utc(1999,12,31, 23,59,59)
+ *     p (t + 0.123456789).round(4).iso8601(6)  #=> "1999-12-31T23:59:59.123500Z"
+ */
+
+static VALUE
+time_round(int argc, VALUE *argv, VALUE time)
+{
+    VALUE ndigits, v, a, b, den;
+    long nd;
+    struct time_object *tobj;
+
+    rb_scan_args(argc, argv, "01", &ndigits);
+
+    if (NIL_P(ndigits))
+        ndigits = INT2FIX(0);
+    else
+        ndigits = rb_to_int(ndigits);
+
+    nd = NUM2LONG(ndigits);
+    if (nd < 0)
+	rb_raise(rb_eArgError, "negative ndigits given");
+
+    GetTimeval(time, tobj);
+    v = rb_time_unmagnify(tobj->timexv);
+
+    a = INT2FIX(1);
+    b = INT2FIX(10);
+    while (0 < nd) {
+        if (nd & 1)
+            a = mul(a, b);
+        b = mul(b, b);
+        nd = nd >> 1;
+    }
+    den = quo(INT2FIX(1), a);
+    v = mod(v, den);
+    if (lt(v, quo(den, INT2FIX(2))))
+        return time_add(tobj, v, -1);
+    else
+        return time_add(tobj, sub(den, v), 1);
+}
 
 /*
  *  call-seq:
@@ -3918,6 +3976,8 @@ Init_Time(void)
     rb_define_method(rb_cTime, "-", time_minus, 1);
 
     rb_define_method(rb_cTime, "succ", time_succ, 0);
+    rb_define_method(rb_cTime, "round", time_round, -1);
+
     rb_define_method(rb_cTime, "sec", time_sec, 0);
     rb_define_method(rb_cTime, "min", time_min, 0);
     rb_define_method(rb_cTime, "hour", time_hour, 0);
