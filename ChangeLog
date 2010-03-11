@@ -1,3 +1,7 @@
+Thu Mar 11 17:31:59 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (str_transcode0): confirm the code range.
+
 Thu Mar 11 12:14:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* missing/signbit.c: added.
