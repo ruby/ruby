@@ -205,6 +205,11 @@ EOF
     fi
     target_archs="$target_cpu"
 fi
+if test "${target_archs}" != "${rb_cv_target_archs-${target_archs}}"; then
+    AC_MSG_ERROR([target arch(s) has changed from ${rb_cv_target_archs-nothing} to ${target_archs}])
+else
+    rb_cv_target_archs=${target_archs}
+fi
 ])
 
 AC_ARG_ENABLE(load-relative,
@@ -1349,9 +1354,10 @@ else
   AC_DEFINE(RSHIFT(x,y), (((x)<0) ? ~((~(x))>>(y)) : (x)>>(y)))
 fi
 
-AC_MSG_CHECKING(read count field in FILE structures)
-AC_CACHE_VAL(rb_cv_fcnt,
-[for fcnt in	dnl
+test "$rb_cv_fcnt" = "not found" && rb_cv_fcnt="not found (OK if using GNU libc)"
+AC_CACHE_CHECK([read count field in FILE structures], rb_cv_fcnt,
+[rb_cv_fcnt="not found (OK if using GNU libc)"
+for fcnt in	dnl
      _cnt	dnl
      __cnt	dnl
      _r		dnl
@@ -1361,18 +1367,13 @@ AC_CACHE_VAL(rb_cv_fcnt,
     AC_TRY_COMPILE([#include <stdio.h>
 ],
 	[FILE *f = stdin; f->$fcnt = 0;],
-	rb_cv_fcnt="$fcnt"; break,
-	rb_cv_fcnt="not found")
+	[rb_cv_fcnt="$fcnt"; break])
 done])
-if test "$rb_cv_fcnt" = "not found"; then
-  AC_MSG_RESULT([not found(OK if using GNU libc)])
-else
-  AC_MSG_RESULT($rb_cv_fcnt)
-  AC_DEFINE_UNQUOTED(FILE_COUNT, $rb_cv_fcnt)
-fi
+AS_CASE("$rb_cv_fcnt",
+	["not found"*], [rb_cv_fcnt="not found"],
+ 	[AC_DEFINE_UNQUOTED(FILE_COUNT, $rb_cv_fcnt)])
 
-AC_MSG_CHECKING(read buffer ptr field in FILE structures)
-AC_CACHE_VAL(rb_cv_frptr,
+AC_CACHE_CHECK([read buffer ptr field in FILE structures], rb_cv_frptr,
 [for frptr in	dnl
      _IO_read_ptr dnl
      _ptr	dnl
@@ -1387,15 +1388,11 @@ AC_CACHE_VAL(rb_cv_frptr,
 	rb_cv_frptr="$frptr"; break,
 	rb_cv_frptr="not found")
 done])
-if test "$rb_cv_frptr" = "not found"; then
-  AC_MSG_RESULT([not found])
-else
-  AC_MSG_RESULT($rb_cv_frptr)
+if test "$rb_cv_frptr" != "not found"; then
   AC_DEFINE_UNQUOTED(FILE_READPTR, $rb_cv_frptr)
 
   if test "$rb_cv_fcnt" = "not found"; then
-    AC_MSG_CHECKING(read buffer end field in FILE structures)
-    AC_CACHE_VAL(rb_cv_frend,
+    AC_CACHE_CHECK([read buffer end field in FILE structures], rb_cv_frend,
     [for frend in	dnl
          _IO_read_end	dnl
          bufread 	dnl
@@ -1407,10 +1404,7 @@ else
 	rb_cv_frend="$frend"; break,
 	rb_cv_frend="not found")
     done])
-    if test "$rb_cv_frend" = "not found"; then
-      AC_MSG_RESULT([not found])
-    else
-      AC_MSG_RESULT($rb_cv_frend)
+    if test "$rb_cv_frend" != "not found"; then
       AC_DEFINE_UNQUOTED(FILE_READEND, $rb_cv_frend)
     fi
   fi
@@ -2243,7 +2237,7 @@ AS_CASE(["$FIRSTMAKEFILE"], [*GNUmakefile:*], [gnumake=yes], [
 ])
 
 if test "${universal_binary-no}" = yes ; then
-    AC_MSG_CHECKING([for architecture macros])
+    AC_CACHE_CHECK([for architecture macros], rb_cv_architecture_macros, [
     mv confdefs.h confdefs1.h
     : > confdefs.h
     AC_TRY_COMPILE([@%:@if defined __`echo ${universal_archnames} |
@@ -2253,10 +2247,10 @@ if test "${universal_binary-no}" = yes ; then
 >>>>>><<<<<<
 @%:@endif], [],
 [
-    AC_MSG_RESULT(yes)
+    rb_cv_architecture_macros=yes
     mv -f confdefs1.h confdefs.h
 ], [
-    AC_MSG_RESULT(no)
+    rb_cv_architecture_macros=no
     archflagpat=`eval echo '"'"${ARCH_FLAG}"'"' | sed 's/[[][|.*]]/\\&/g'`
     new_cflags=`echo "$CFLAGS" | sed "s|$archflagpat"'||'`
     for archs in ${universal_archnames}; do
@@ -2271,7 +2265,7 @@ if test "${universal_binary-no}" = yes ; then
     done
     mv -f confdefs1.h confdefs.h
     AC_MSG_ERROR([failed])
-    ])
+    ])])
 fi
 
 CPPFLAGS="$CPPFLAGS "'$(DEFS)'
