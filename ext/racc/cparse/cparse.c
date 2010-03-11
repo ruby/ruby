@@ -13,6 +13,13 @@
 
 #include "ruby/ruby.h"
 
+#ifndef FALSE
+#define FALSE 0
+#endif
+#ifndef TRUE
+#define TRUE 1
+#endif
+
 /* -----------------------------------------------------------------------
                         Important Constants
 ----------------------------------------------------------------------- */
@@ -221,7 +228,7 @@ racc_cparse(VALUE parser, VALUE arg, VALUE sysdebug)
     D_puts("starting cparse");
     v->sys_debug = RTEST(sysdebug);
     vparams = initialize_params(vparams, parser, arg, Qnil, Qnil);
-    v->lex_is_iterator = Qfalse;
+    v->lex_is_iterator = FALSE;
     parse_main(v, Qnil, Qnil, 0);
 
     return v->retval;
@@ -238,7 +245,7 @@ racc_yyparse(VALUE parser, VALUE lexer, VALUE lexmid, VALUE arg, VALUE sysdebug)
     v->sys_debug = RTEST(sysdebug);
     D_puts("start C yyparse");
     vparams = initialize_params(vparams, parser, arg, lexer, lexmid);
-    v->lex_is_iterator = Qtrue;
+    v->lex_is_iterator = TRUE;
     D_puts("params initialized");
     parse_main(v, Qnil, Qnil, 0);
     call_lexer(v);
@@ -344,7 +351,7 @@ initialize_params(VALUE vparams, VALUE parser, VALUE arg, VALUE lexer, VALUE lex
         v->use_result_var = RTEST(RARRAY_PTR(arg)[13]);
     }
     else {
-        v->use_result_var = Qtrue;
+        v->use_result_var = TRUE;
     }
 
     v->tstack = v->debug ? NEW_STACK() : Qnil;
@@ -360,7 +367,7 @@ initialize_params(VALUE vparams, VALUE parser, VALUE arg, VALUE lexer, VALUE lex
     v->retval = Qnil;
     v->fin = 0;
 
-    v->lex_is_iterator = Qfalse;
+    v->lex_is_iterator = FALSE;
 
     rb_iv_set(parser, "@vstack", v->vstack);
     if (v->debug) {

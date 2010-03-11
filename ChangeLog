@@ -1,3 +1,8 @@
+Fri Mar 12 07:17:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/racc/cparse/cparse.c: suppressed warnings for shortening on
+	  platforms where pointer is bigger than int.
+
 Fri Mar 12 07:15:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (ruby_init_loadpath_safe, ruby_init_gems): set and remove
