@@ -1,3 +1,7 @@
+Thu Mar 11 12:14:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* missing/signbit.c: added.
+
 Thu Mar 11 11:16:33 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: check if target_archs has changed.
