@@ -1114,7 +1114,7 @@ AS_CASE([$rb_cv_broken_glibc_ia64_erfc],[yes],[ac_cv_func_erf=no])
 AS_CASE(["$target_os"],[mingw*],[],[AC_REPLACE_FUNCS(vsnprintf)])
 AC_REPLACE_FUNCS(dup2 memmove strerror\
 		 strchr strstr crypt flock\
-		 isnan finite isinf hypot acosh erf tgamma lgamma_r cbrt \
+		 isnan finite isinf hypot acosh erf tgamma lgamma_r cbrt signbit \
                  strlcpy strlcat)
 AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall chroot getcwd eaccess\
 	      truncate ftruncate chsize times utimes utimensat fcntl lockf lstat\
@@ -1124,7 +1124,7 @@ AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall chroot getcwd eacce
 	      getpgrp setpgrp getpgid setpgid initgroups getgroups setgroups\
 	      getpriority getrlimit setrlimit sysconf \
 	      dlopen sigprocmask sigaction sigsetjmp _setjmp _longjmp snprintf\
-	      setsid telldir seekdir fchmod cosh sinh tanh log2 round signbit\
+	      setsid telldir seekdir fchmod cosh sinh tanh log2 round\
 	      setuid setgid daemon select_large_fdset setenv unsetenv\
               mktime timegm gmtime_r clock_gettime gettimeofday\
               pread sendfile shutdown sigaltstack)
