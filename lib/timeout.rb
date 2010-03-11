@@ -85,24 +85,3 @@ end
 # Another name for Timeout::Error, defined for backwards compatibility with
 # earlier versions of timeout.rb.
 TimeoutError = Timeout::Error
-
-if __FILE__ == $0
-  p timeout(5) {
-    45
-  }
-  p timeout(5, TimeoutError) {
-    45
-  }
-  p timeout(nil) {
-    54
-  }
-  p timeout(0) {
-    54
-  }
-  p timeout(5) {
-    loop {
-      p 10
-      sleep 1
-    }
-  }
-end
