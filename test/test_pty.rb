@@ -105,5 +105,23 @@ class TestPTY < Test::Unit::TestCase
       assert_equal(0600, s.mode & 0777)
     }
   end
+
+  def test_close_master
+    PTY.open {|master, slave|
+      master.close
+      assert_raise(EOFError) { slave.readpartial(10) }
+    }
+  end
+
+  def test_close_slave
+    PTY.open {|master, slave|
+      slave.close
+      # This exception is platform dependent.
+      assert_raise(
+        EOFError,       # FreeBSD
+        Errno::EIO      # GNU/Linux
+      ) { master.readpartial(10) }
+    }
+  end
 end if defined? PTY
 
