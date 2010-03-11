@@ -1,3 +1,7 @@
+Fri Mar 12 07:25:16 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (init_env): get rid of alloca() for outer string.
+
 Fri Mar 12 07:17:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/racc/cparse/cparse.c: suppressed warnings for shortening on
