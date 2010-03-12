@@ -716,6 +716,92 @@ module URI
     DEFAULT_PARSER.make_regexp(schemes)
   end
 
+  # :nodoc:
+  TBLENCWWWCOMP_ = {}
+
+  # :nodoc:
+  TBLDECWWWCOMP_ = {}
+
+  # Encode given +str+ to URL-encoded form data.
+  #
+  # This doesn't convert *, -, ., 0-9, A-Z, _, a-z,
+  # does convert SP to +, and convert others to %XX.
+  #
+  # This refers http://www.w3.org/TR/html5/forms.html#url-encoded-form-data
+  #
+  # See URI.decode_www_component(str), URI.encode_www_form(enum)
+  def self.encode_www_component(str)
+    if TBLENCWWWCOMP_.empty?
+      256.times do |i|
+        case i
+        when 0x20
+          TBLENCWWWCOMP_[' '] = '+'
+        when 0x2A, 0x2D, 0x2E, 0x30..0x39, 0x41..0x5A, 0x5F, 0x61..0x7A
+        else
+          TBLENCWWWCOMP_[i.chr] = '%%%X' % i
+        end
+      end
+      TBLENCWWWCOMP_.freeze
+    end
+    str = str.dup.force_encoding(Encoding::ASCII_8BIT)
+    str.gsub!(/[^*\-.0-9A-Z_a-z]/, TBLENCWWWCOMP_)
+    str
+  end
+
+  # Decode given +str+ of URL-encoded form data.
+  #
+  # This decods + to SP.
+  #
+  # See URI.encode_www_component(str)
+  def self.decode_www_component(str)
+    if TBLDECWWWCOMP_.empty?
+      256.times do |i|
+        case i
+        when 0x20
+          TBLDECWWWCOMP_['+'] = ' '
+        else
+          h, l = i>>4, i&15
+          TBLDECWWWCOMP_['%%%X%X' % [h, l]] = i.chr
+          TBLDECWWWCOMP_['%%%x%X' % [h, l]] = i.chr
+          TBLDECWWWCOMP_['%%%X%x' % [h, l]] = i.chr
+          TBLDECWWWCOMP_['%%%x%x' % [h, l]] = i.chr
+        end
+      end
+      TBLDECWWWCOMP_.freeze
+    end
+    str.gsub(/\+|%\h\h/, TBLDECWWWCOMP_)
+  end
+
+  # Generate URL-encoded form data from given +enum+.
+  #
+  # This generates application/x-www-form-urlencoded data defined in HTML5
+  # from given an Enumerable object.
+  #
+  # This internally uses URI.encode_www_component(str).
+  #
+  # This doesn't convert encodings of give items, so convert them before call
+  # this method if you want to send data as other than original encoding or
+  # mixed encoding data.
+  #
+  # This doesn't treat files. When you send a file, use multipart/form-data.
+  #
+  # This refers http://www.w3.org/TR/html5/forms.html#url-encoded-form-data
+  #
+  # See URI.encode_www_component(str)
+  def self.encode_www_form(enum)
+    str = nil
+    enum.each do |k,v|
+      if str
+        str << '&'
+      else
+        str = ''.force_encoding(Encoding::US_ASCII)
+      end
+      str << encode_www_component(k)
+      str << '='
+      str << encode_www_component(v)
+    end
+    str
+  end
 end
 
 module Kernel
