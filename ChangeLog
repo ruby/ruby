@@ -1,3 +1,10 @@
+Fri Mar 12 17:36:35 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/webrick/httpservlet/cgihandler.rb
+	  (WEBrick::HTTPServlet::CGIHandler#do_GET):
+	  set binary mode for tempfile.
+	  http://pc12.2ch.net/test/read.cgi/tech/1265467681/286
+
 Fri Mar 12 13:52:00 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* tool/compile_prelude.rb: TMP_RUBY_PREFIX should replace
