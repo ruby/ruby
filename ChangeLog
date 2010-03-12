@@ -1,3 +1,12 @@
+Sat Mar 13 00:11:05 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (ruby_init_loadpath_safe): mark initial load paths.
+
+	* gem_prelude.rb (push_all_highest_version_gems_on_load_path):
+	  search insertion position by initial load path mark.
+
+	* lib/rubygems.rb (Gem.load_path_insert_index): ditto.
+
 Fri Mar 12 21:34:00 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* NEWS: emoji encodings.

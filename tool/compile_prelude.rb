@@ -48,7 +48,7 @@ class Prelude
         key = $1
         unless @mkconf
           require './rbconfig'
-          @mkconf = RbConfig::MAKEFILE_CONFIG.merge('rubylibprefix'=>'#{TMP_RUBY_PREFIX}')
+          @mkconf = RbConfig::MAKEFILE_CONFIG.merge('prefix'=>'#{TMP_RUBY_PREFIX}')
         end
         if RbConfig::MAKEFILE_CONFIG.has_key? key
           val = RbConfig.expand("$(#{key})", @mkconf)

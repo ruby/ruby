@@ -339,6 +339,7 @@ void
 ruby_init_loadpath_safe(int safe_level)
 {
     VALUE load_path;
+    ID id_initial_load_path_mark;
     extern const char ruby_initial_load_paths[];
     const char *paths = ruby_initial_load_paths;
 #if defined LOAD_RELATIVE
@@ -432,16 +433,18 @@ ruby_init_loadpath_safe(int safe_level)
 #define RUBY_RELATIVE(path, len) rubylib_mangled_path(path, len)
 #define PREFIX_PATH() rubylib_mangled_path(RUBY_LIB_PREFIX, sizeof(RUBY_LIB_PREFIX)-1)
 #endif
-#define incpush(path) rb_ary_push(load_path, (path))
     load_path = GET_VM()->load_path;
 
     if (safe_level == 0) {
 	ruby_push_include(getenv("RUBYLIB"), identical_path);
     }
 
+    id_initial_load_path_mark = rb_intern_const("@gem_prelude_index");
     while (*paths) {
 	size_t len = strlen(paths);
-	incpush(RUBY_RELATIVE(paths, len));
+	VALUE path = RUBY_RELATIVE(paths, len);
+	rb_ivar_set(path, id_initial_load_path_mark, path);
+	rb_ary_push(load_path, path);
 	paths += len + 1;
     }
 
