@@ -254,8 +254,6 @@ module Gem
       File.join spec.full_gem_path, path
     end
 
-    sitelibdir = ConfigMap[:sitelibdir]
-
     # gem directories must come after -I and ENV['RUBYLIB']
     insert_index = load_path_insert_index
 
@@ -570,23 +568,9 @@ module Gem
 
   ##
   # The index to insert activated gem paths into the $LOAD_PATH.
-  #
-  # Defaults to the site lib directory unless gem_prelude.rb has loaded paths,
-  # then it inserts the activated gem's paths before the gem_prelude.rb paths
-  # so you can override the gem_prelude.rb default $LOAD_PATH paths.
 
   def self.load_path_insert_index
-    index = $LOAD_PATH.index ConfigMap[:sitelibdir]
-
-    $LOAD_PATH.each_with_index do |path, i|
-      if path.instance_variables.include?(:@gem_prelude_index) or
-        path.instance_variables.include?('@gem_prelude_index') then
-        index = i
-        break
-      end
-    end
-
-    index
+    $LOAD_PATH.index {|path| path.instance_variable_defined?(:@gem_prelude_index)}
   end
 
   ##
