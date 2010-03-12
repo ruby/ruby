@@ -27,6 +27,13 @@ with all sufficient information, see the ChangeLog file.
     * new encodings:
       * Big5
       * Big5-UAO
+      * ISO-2022-JP-KDDI
+      * SJIS-DoCoMo
+      * SJIS-KDDI
+      * SJIS-SoftBank
+      * UTF8-DoCoMo
+      * UTF8-KDDI
+      * UTF8-SoftBank
 
     * new method:
       * ascii_compatible?
