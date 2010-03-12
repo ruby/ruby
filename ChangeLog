@@ -1,3 +1,8 @@
+Fri Mar 12 09:43:11 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* complex.c (f_signbit): remove condition for signbit because
+	  all platforms have signbit from r26871.
+
 Fri Mar 12 07:25:16 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (init_env): get rid of alloca() for outer string.
