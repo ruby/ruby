@@ -1,5 +1,7 @@
 require 'test/unit'
 
+module Emoji
+
 class TestRenameSJIS < Test::Unit::TestCase
   def test_shift_jis
     assert_raise(ArgumentError) { "".force_encoding("Shift_JIS-DoCoMo") }
@@ -9,6 +11,8 @@ class TestRenameSJIS < Test::Unit::TestCase
 end
 
 class TestUTF8_BLACK_SUN_WITH_RAYS < Test::Unit::TestCase
+  include Emoji
+
   def setup
     @codes = {
       "UTF8-DoCoMo"     => utf8_docomo("\u{E63E}"),
@@ -29,6 +33,8 @@ class TestUTF8_BLACK_SUN_WITH_RAYS < Test::Unit::TestCase
 end
 
 class TestDoCoMo < Test::Unit::TestCase
+  include Emoji
+
   def setup
     setup_instance_variable(self)
   end
@@ -109,6 +115,8 @@ class TestDoCoMo < Test::Unit::TestCase
 end
 
 class TestKDDI < Test::Unit::TestCase
+  include Emoji
+
   def setup
     setup_instance_variable(self)
   end
@@ -233,6 +241,8 @@ class TestKDDI < Test::Unit::TestCase
 end
 
 class TestSoftBank < Test::Unit::TestCase
+  include Emoji
+
   def setup
     setup_instance_variable(self)
   end
@@ -427,4 +437,6 @@ end
 
 def to_stateless_iso2022jp_kddi(str)
   str.encode("stateless-ISO-2022-JP-KDDI")
+end
+
 end
