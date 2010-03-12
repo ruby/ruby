@@ -1,3 +1,7 @@
+Fri Mar 12 21:34:00 2010  Kenta Murata  <mrkn@mrkn.jp>
+
+	* NEWS: emoji encodings.
+
 Fri Mar 12 17:14:12 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/common.rb (URI.encode_www_form): new method to
