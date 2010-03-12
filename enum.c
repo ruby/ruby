@@ -2418,15 +2418,18 @@ slicebefore_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
  *
  *  If the block needs to maintain state over multiple elements,
  *  local variables can be used.
- *  For example, monotonically increasing elements can be chunked as follows.
+ *  For example, three or more consecutive increasing numbers can be squashed
+ *  as follows:
  *
- *    a = [3,1,4,1,5,9,2,6,5,3,5]
- *    n = 0
- *    p a.slice_before {|elt|
- *      prev, n = n, elt
- *      prev > elt
- *    }.to_a
- *    #=> [[3], [1, 4], [1, 5, 9], [2, 6], [5], [3, 5]]
+ *    a = [0,2,3,4,6,7,9] 
+ *    prev = a[0]
+ *    p a.slice_before {|e|
+ *      prev, prev2 = e, prev
+ *      prev2 + 1 != e
+ *    }.map {|es|
+ *      es.length <= 2 ? es.join(",") : "#{es.first}-#{es.last}"
+ *    }.join(",")
+ *    #=> "0,2-4,6,7,9"
  *
  *  However local variables are not appropriate to maintain state
  *  if the result enumerator is used twice or more.
