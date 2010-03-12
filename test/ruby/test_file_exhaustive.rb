@@ -423,6 +423,8 @@ class TestFileExhaustive < Test::Unit::TestCase
     end
 
     assert_incompatible_encoding {|d| File.basename(d)}
+    assert_incompatible_encoding {|d| File.basename(d, ".*")}
+    assert_raise(Encoding::CompatibilityError) {File.basename("foo.ext", ".*".encode("utf-16le"))}
   end
 
   def test_dirname

@@ -3324,9 +3324,15 @@ rb_file_s_basename(int argc, VALUE *argv)
     long f, n;
 
     if (rb_scan_args(argc, argv, "11", &fname, &fext) == 2) {
+	rb_encoding *enc;
 	StringValue(fext);
+	if (!rb_enc_asciicompat(enc = rb_enc_get(fext))) {
+	    rb_raise(rb_eEncCompatError, "ascii incompatible character encodings: %s",
+		     rb_enc_name(enc));
+	}
     }
     FilePathStringValue(fname);
+    if (!NIL_P(fext)) rb_enc_check(fname, fext);
     if (RSTRING_LEN(fname) == 0 || !*(name = RSTRING_PTR(fname)))
 	return rb_str_new_shared(fname);
     name = skipprefix(name);
