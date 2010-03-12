@@ -773,6 +773,8 @@ def make_signature(filename, src)
 end
 
 if __FILE__ == $0
+  start_time = Time.now
+
   output_filename = nil
   verbose_mode = false
   force_mode = false
@@ -861,7 +863,9 @@ if __FILE__ == $0
     FileUtils.mkdir_p(File.dirname(output_filename))
     File.open(new_filename, "wb") {|f| f << result }
     File.rename(new_filename, output_filename)
-    STDERR.puts "done." if VERBOSE_MODE
+    tms = Process.times
+    elapsed = Time.now - start_time
+    STDERR.puts "done.  (#{'%.2f' % tms.utime}user #{'%.2f' % tms.stime}system #{'%.2f' % elapsed}elapsed)" if VERBOSE_MODE
   else
     print result
   end
