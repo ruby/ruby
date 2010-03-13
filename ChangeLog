@@ -1,3 +1,8 @@
+Sat Mar 13 11:06:30 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c (numchar_getc): get rid of buffer
+	  overflow.  [ruby-dev:40606]
+
 Sat Mar 13 10:03:52 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/extconf.rb: fix [Bug #2840] Tk doesn't built in mingw.
