@@ -2998,7 +2998,7 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
     return result;
 }
 
-#define EXPAND_PATH_BUFFER() rb_filesystem_str_new(0, MAXPATHLEN + 2)
+#define EXPAND_PATH_BUFFER() rb_usascii_str_new(0, MAXPATHLEN + 2)
 
 #define check_expand_path_args(fname, dname) \
     ((fname = rb_get_path(fname)), \
