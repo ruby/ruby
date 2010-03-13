@@ -1334,7 +1334,7 @@ min_by_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     enum.min_by {| obj| block }   => obj
+ *     enum.min_by {|obj| block }   => obj
  *
  *  Returns the object in <i>enum</i> that gives the minimum
  *  value from the given block.
@@ -1377,7 +1377,7 @@ max_by_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     enum.max_by {| obj| block }   => obj
+ *     enum.max_by {|obj| block }   => obj
  *
  *  Returns the object in <i>enum</i> that gives the maximum
  *  value from the given block.
@@ -1471,7 +1471,7 @@ minmax_by_i(VALUE i, VALUE _memo, int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     enum.minmax_by {| obj| block }   => [min, max]
+ *     enum.minmax_by {|obj| block }   => [min, max]
  *
  *  Returns two elements array array containing the objects in
  *  <i>enum</i> that gives the minimum and maximum values respectively
