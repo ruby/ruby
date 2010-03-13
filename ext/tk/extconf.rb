@@ -634,7 +634,8 @@ def get_tclConfig(tclConfig_file, tkConfig_file, tclConfig_dir, tkConfig_dir)
   TkLib_Config["tclConfig-dir"] = tclConfig_dir
   TkLib_Config["tkConfig-dir"] = tkConfig_dir
 
-  print("Search tclConfig.sh and tkConfig.sh in #{tclConfig_dir}.")
+  print("Search tclConfig.sh", (tclConfig_dir)? " (in #{tclConfig_dir})": "", 
+        " and tkConfig.sh", (tkConfig_dir)? " (in #{tkConfig_dir})": "", ".")
   if tclConfig_dir
     tclConfig, tkConfig = 
       search_tclConfig([ ((tclConfig_file)? tclConfig_file: tclConfig_dir), 
@@ -727,7 +728,14 @@ def check_shlib_search_path(paths)
 end
 
 def search_vers_on_path(vers, path, *heads)
-  files = Dir.glob(File.join(path, "*{#{heads.join(',')}}*.{#{CONFIG['LIBEXT']},#{CONFIG['DLEXT']}}"))
+  if enable_config("shared") == false
+    exts = CONFIG['LIBEXT'] + ',' + CONFIG['DLEXT']
+  else
+    exts = CONFIG['DLEXT'] + ',' + CONFIG['LIBEXT']
+  end
+  exts << ",dll,lib" if is_win32?
+  exts << ",bundle,dylib" if is_macosx? || /nextstep|openstep|rhapsody/ =~ RUBY_PLATFORM
+  files = Dir.glob(File.join(path, "*{#{heads.join(',')}}*.{#{exts}}"))
   vers.find_all{|ver| files.find{|f| f =~ /(#{ver}|#{ver.delete('.')})/} }
 end
 
@@ -1256,6 +1264,8 @@ print(".") # progress
 have_func("rb_obj_taint", "ruby.h")
 print(".") # progress
 have_func("rb_set_safe_level_force", "ruby.h")
+print(".") # progress
+have_func("rb_sourcefile", "ruby.h")
 print("\n") # progress
 
 print("check struct members.")

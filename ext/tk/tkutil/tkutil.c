@@ -7,7 +7,7 @@
 
 ************************************************/
 
-#define TKUTIL_RELEASE_DATE "2009-10-27"
+#define TKUTIL_RELEASE_DATE "2010-02-01"
 
 #include "ruby.h"
 
