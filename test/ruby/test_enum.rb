@@ -311,38 +311,6 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([2,1,3,2,1], @obj.reverse_each.to_a)
   end
 
-  def test_join
-    ofs = $,
-    assert_equal("abc", ("a".."c").join(""))
-    assert_equal("a-b-c", ("a".."c").join("-"))
-    $, = "-"
-    assert_equal("a-b-c", ("a".."c").join())
-    $, = nil
-    assert_equal("abc", ("a".."c").join())
-    assert_equal("123", (1..3).join())
-    assert_raise(TypeError, '[ruby-core:24172]') {("a".."c").join(1)}
-    class << (e = Object.new.extend(Enumerable))
-      def each
-        yield self
-      end
-    end
-    assert_raise(ArgumentError){e.join("")}
-    assert_raise(ArgumentError){[e].join("")}
-    e = Class.new {
-      include Enumerable
-      def initialize(*args)
-        @e = args
-      end
-      def each
-        @e.each {|e| yield e}
-      end
-    }
-    e = e.new(1, e.new(2, e.new(3, e.new(4, 5))))
-    assert_equal("1:2:3:4:5", e.join(':'), '[ruby-core:24196]')
-  ensure
-    $, = ofs
-  end
-
   def test_chunk
     e = [].chunk {|elt| true }
     assert_equal([], e.to_a)

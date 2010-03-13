@@ -2523,25 +2523,6 @@ enum_slice_before(int argc, VALUE *argv, VALUE enumerable)
 }
 
 /*
- *  call-seq:
- *     enum.join(sep=$,)    -> str
- *
- *  Returns a string created by converting each element of the
- *  <i>enum</i> to a string, separated by <i>sep</i>.
- */
-
-static VALUE
-enum_join(int argc, VALUE *argv, VALUE obj)
-{
-    VALUE sep;
-
-    rb_scan_args(argc, argv, "01", &sep);
-    if (NIL_P(sep)) sep = rb_output_fs;
-
-    return rb_ary_join(enum_to_a(0, 0, obj), sep);
-}
-
-/*
  *  The <code>Enumerable</code> mixin provides collection classes with
  *  several traversal and searching methods, and with the ability to
  *  sort. The class must provide a method <code>each</code>, which
@@ -2606,7 +2587,6 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "drop", enum_drop, 1);
     rb_define_method(rb_mEnumerable, "drop_while", enum_drop_while, 0);
     rb_define_method(rb_mEnumerable, "cycle", enum_cycle, -1);
-    rb_define_method(rb_mEnumerable, "join", enum_join, -1);
     rb_define_method(rb_mEnumerable, "chunk", enum_chunk, -1);
     rb_define_method(rb_mEnumerable, "slice_before", enum_slice_before, -1);
 
