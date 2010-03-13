@@ -133,6 +133,12 @@ class StrSet
     }
   end
 
+  def has_nonempty?
+    @pat.any? {|seq|
+      !seq.empty?
+    }
+  end
+
   def first_bytes
     result = {}
     @pat.each {|seq|
@@ -226,6 +232,18 @@ class ActionMap
 
   def max_input_length
     @map.keys.map {|k| k.max_length }.max
+  end
+
+  def check_conflict
+    has_empty = false
+    has_nonempty = false
+    @map.each {|ss, action|
+      has_empty = true if ss.emptyable?
+      has_nonempty = true if ss.has_nonempty?
+    }
+    if has_empty && has_nonempty
+      raise "conflict between empty and nonempty sequence"
+    end
   end
 
   def empty_action
@@ -440,6 +458,7 @@ End
 
     table = Array.new(0x100, :invalid)
     each_firstbyte(valid_encoding) {|byte, rest, rest_valid_encoding|
+      rest.check_conflict
       if a = rest.empty_action
         table[byte] = a
       else
