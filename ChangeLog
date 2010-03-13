@@ -1,3 +1,8 @@
+Sat Mar 13 11:14:26 2010  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* load.c (rb_get_expanded_load_path): expand paths if any item in $:
+	  is not a string.
+
 Sat Mar 13 10:16:32 2010  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* load.c (rb_get_expanded_load_path): does not expand paths if all
