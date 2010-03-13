@@ -1565,7 +1565,7 @@ class TestArray < Test::Unit::TestCase
     a << a
     assert_raise(ArgumentError){a.join}
 
-    def (a = Object.new).to_a
+    def (a = Object.new).to_ary
       [self]
     end
     assert_raise(ArgumentError, '[ruby-core:24150]'){[a].join}

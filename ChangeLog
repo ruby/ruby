@@ -1,3 +1,9 @@
+Sat Mar 13 14:49:55 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_join): remove Enumerable#join. [ruby-core:24786]
+
+	* array.c (ary_join_1): use #to_ary to detect recursive array.
+
 Sat Mar 13 12:26:13 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/io.h (MakeOpenFile): finalize fptr get rid of

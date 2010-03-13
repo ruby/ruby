@@ -1604,7 +1604,7 @@ ary_join_1(VALUE obj, VALUE ary, VALUE sep, long i, VALUE result)
 		val = tmp;
 		goto str_join;
 	    }
-	    tmp = rb_check_convert_type(val, T_ARRAY, "Array", "to_a");
+	    tmp = rb_check_convert_type(val, T_ARRAY, "Array", "to_ary");
 	    if (!NIL_P(tmp)) {
 		obj = val;
 		val = tmp;
