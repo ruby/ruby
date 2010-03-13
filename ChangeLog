@@ -1,3 +1,8 @@
+Sat Mar 13 10:16:32 2010  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* load.c (rb_get_expanded_load_path): does not expand paths if all
+	  the items in $: are absolute paths.  [ruby-core:28113]
+
 Sat Mar 13 10:03:52 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/extconf.rb: fix [Bug #2840] Tk doesn't built in mingw.

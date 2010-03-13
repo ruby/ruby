@@ -37,9 +37,20 @@ VALUE
 rb_get_expanded_load_path(void)
 {
     VALUE load_path = rb_get_load_path();
-    VALUE ary = rb_ary_new2(RARRAY_LEN(load_path));
+    VALUE ary;
     long i;
 
+    for (i = 0; i < RARRAY_LEN(load_path); ++i) {
+	VALUE str = RARRAY_PTR(load_path)[i];
+	if (TYPE(str) != T_STRING)
+	    RB_GC_GUARD(str) = rb_get_path(str);
+	if (!rb_is_absolute_path(RSTRING_PTR(str)))
+	    goto relative_path_found;
+    }
+    return load_path;
+
+  relative_path_found:
+    ary = rb_ary_new2(RARRAY_LEN(load_path));
     for (i = 0; i < RARRAY_LEN(load_path); ++i) {
 	VALUE path = rb_file_expand_path(RARRAY_PTR(load_path)[i], Qnil);
 	rb_str_freeze(path);
