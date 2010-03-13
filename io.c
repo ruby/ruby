@@ -5906,10 +5906,10 @@ rb_io_print(int argc, VALUE *argv, VALUE out)
 	argv = &line;
     }
     for (i=0; i<argc; i++) {
-	rb_io_write(out, argv[i]);
-	if (!NIL_P(rb_output_fs)) {
+	if (!NIL_P(rb_output_fs) && i>0) {
 	    rb_io_write(out, rb_output_fs);
 	}
+	rb_io_write(out, argv[i]);
     }
     if (argc > 0 && !NIL_P(rb_output_rs)) {
 	rb_io_write(out, rb_output_rs);
