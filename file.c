@@ -2831,7 +2831,7 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
 	p = buf + (s - b);
 	BUFCHECK(bdiff >= buflen);
 	memset(buf, '/', p - buf);
-	rb_enc_copy(result, fname);
+	rb_enc_associate(result, rb_enc_check(result, fname));
     }
     if (p > buf && p[-1] == '/')
 	--p;
@@ -2998,7 +2998,7 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
     return result;
 }
 
-#define EXPAND_PATH_BUFFER() rb_usascii_str_new(0, MAXPATHLEN + 2)
+#define EXPAND_PATH_BUFFER() rb_filesystem_str_new(0, MAXPATHLEN + 2)
 
 #define check_expand_path_args(fname, dname) \
     ((fname = rb_get_path(fname)), \

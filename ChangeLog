@@ -1,3 +1,11 @@
+Sat Mar 13 23:48:27 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (file_expand_path): should not just copy the encoding
+	  from fname.  [ruby-core:28635]
+
+	* file.c (EXPAND_PATH_BUFFER): set filesystem_encoding, not
+	  usascii for path buffer.
+
 Sat Mar 13 17:48:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/file2lastrev.rb: refactord.  fixed changed revision of git.
