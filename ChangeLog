@@ -1,3 +1,7 @@
+Sat Mar 13 17:48:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/file2lastrev.rb: refactord.  fixed changed revision of git.
+
 Sat Mar 13 15:44:20 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_print): should not print field separator at the end
@@ -11,7 +15,7 @@ Sat Mar 13 14:49:55 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Sat Mar 13 12:26:13 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* include/ruby/io.h (MakeOpenFile): finalize fptr get rid of
+	* include/ruby/io.h (MakeOpenFile): finalize fptr to get rid of
 	  memory leak.
 
 Sat Mar 13 11:14:26 2010  Shugo Maeda  <shugo@ruby-lang.org>
