@@ -41,10 +41,8 @@ rb_get_expanded_load_path(void)
     long i;
 
     for (i = 0; i < RARRAY_LEN(load_path); ++i) {
-	VALUE str = RARRAY_PTR(load_path)[i];
-	if (TYPE(str) != T_STRING)
-	    RB_GC_GUARD(str) = rb_get_path(str);
-	if (!rb_is_absolute_path(RSTRING_PTR(str)))
+	VALUE str = rb_check_string_type(RARRAY_PTR(load_path)[i]);
+	if (NIL_P(str) || !rb_is_absolute_path(RSTRING_PTR(str)))
 	    goto relative_path_found;
     }
     return load_path;
