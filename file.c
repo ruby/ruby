@@ -2687,8 +2687,6 @@ ntfs_tail(const char *path)
     (void)(extenc || (extenc = rb_default_external_encoding())),\
     rb_enc_associate(result, extenc))
 
-static int is_absolute_path(const char*);
-
 VALUE
 rb_home_dir(const char *user, VALUE result)
 {
@@ -2802,7 +2800,7 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
 	}
     }
 #endif
-    else if (!is_absolute_path(s)) {
+    else if (!rb_is_absolute_path(s)) {
 	if (!NIL_P(dname)) {
 	    file_expand_path(dname, Qnil, abs_mode, result);
 	    BUFINIT();
@@ -4704,8 +4702,8 @@ rb_file_const(const char *name, VALUE value)
     rb_define_const(rb_mFConst, name, value);
 }
 
-static int
-is_absolute_path(const char *path)
+int
+rb_is_absolute_path(const char *path)
 {
 #ifdef DOSISH_DRIVE_LETTER
     if (has_drive_letter(path) && isdirsep(path[2])) return 1;
@@ -4735,7 +4733,7 @@ path_check_0(VALUE path, int execpath)
     const char *p0 = StringValueCStr(path);
     char *p = 0, *s;
 
-    if (!is_absolute_path(p0)) {
+    if (!rb_is_absolute_path(p0)) {
 	char *buf = my_getcwd();
 	VALUE newpath;
 
@@ -4872,7 +4870,7 @@ rb_find_file_ext_safe(VALUE *filep, const char *const *ext, int safe_level)
 	expanded = 1;
     }
 
-    if (expanded || is_absolute_path(f) || is_explicit_relative(f)) {
+    if (expanded || rb_is_absolute_path(f) || is_explicit_relative(f)) {
 	if (safe_level >= 1 && !fpath_check(fname)) {
 	    rb_raise(rb_eSecurityError, "loading from unsafe path %s", f);
 	}
@@ -4943,7 +4941,7 @@ rb_find_file_safe(VALUE path, int safe_level)
 	expanded = 1;
     }
 
-    if (expanded || is_absolute_path(f) || is_explicit_relative(f)) {
+    if (expanded || rb_is_absolute_path(f) || is_explicit_relative(f)) {
 	if (safe_level >= 1 && !fpath_check(path)) {
 	    rb_raise(rb_eSecurityError, "loading from unsafe path %s", f);
 	}
