@@ -1,3 +1,7 @@
+Mon Mar 15 07:16:09 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (FILE_ALT_SEPARATOR): separated condition.
+
 Mon Mar 15 04:41:25 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_each_codepoint): read directly when readconv is

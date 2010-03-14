@@ -2491,7 +2491,10 @@ rb_file_s_umask(int argc, VALUE *argv)
 #if defined __CYGWIN__ || defined DOSISH
 #define DOSISH_UNC
 #define DOSISH_DRIVE_LETTER
-#define isdirsep(x) ((x) == '/' || (x) == '\\')
+#define FILE_ALT_SEPARATOR '\\'
+#endif
+#ifdef FILE_ALT_SEPARATOR
+#define isdirsep(x) ((x) == '/' || (x) == FILE_ALT_SEPARATOR)
 #else
 #define isdirsep(x) ((x) == '/')
 #endif
@@ -5098,8 +5101,8 @@ Init_File(void)
     rb_define_singleton_method(rb_cFile, "split",  rb_file_s_split, 1);
     rb_define_singleton_method(rb_cFile, "join",   rb_file_s_join, -2);
 
-#ifdef DOSISH
-    rb_define_const(rb_cFile, "ALT_SEPARATOR", rb_obj_freeze(rb_usascii_str_new2("\\")));
+#ifdef FILE_ALT_SEPARATOR
+    rb_define_const(rb_cFile, "ALT_SEPARATOR", rb_obj_freeze(rb_usascii_str_new2(file_alt_separator)));
 #else
     rb_define_const(rb_cFile, "ALT_SEPARATOR", Qnil);
 #endif
