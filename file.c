@@ -2495,6 +2495,7 @@ rb_file_s_umask(int argc, VALUE *argv)
 #endif
 #ifdef FILE_ALT_SEPARATOR
 #define isdirsep(x) ((x) == '/' || (x) == FILE_ALT_SEPARATOR)
+static const char file_alt_separator[] = {FILE_ALT_SEPARATOR, '\0'};
 #else
 #define isdirsep(x) ((x) == '/')
 #endif
@@ -3174,9 +3175,9 @@ realpath_internal(VALUE basedir, VALUE path, int strict)
     volatile VALUE unresolved_path;
     VALUE loopcheck;
     volatile VALUE curdir = Qnil;
-    
+
     char *path_names = NULL, *basedir_names = NULL, *curdir_names = NULL;
-    char *ptr;
+    char *ptr, *prefixptr = NULL;
 
     rb_secure(2);
 
@@ -3210,11 +3211,21 @@ realpath_internal(VALUE basedir, VALUE path, int strict)
     resolved = rb_str_new(ptr, curdir_names - ptr);
 
   root_found:
-    ptr = chompdirsep(RSTRING_PTR(resolved));
-    if (*ptr) {
-        rb_str_set_len(resolved, ptr - RSTRING_PTR(resolved) + 1);
-    }
+    prefixptr = RSTRING_PTR(resolved);
     prefixlen = RSTRING_LEN(resolved);
+    ptr = chompdirsep(prefixptr);
+    if (*ptr) {
+        prefixlen = ++ptr - prefixptr;
+        rb_str_set_len(resolved, prefixlen);
+    }
+#ifdef FILE_ALT_SEPARATOR
+    while (prefixptr < ptr) {
+	if (*prefixptr == FILE_ALT_SEPARATOR) {
+	    *prefixptr = '/';
+	}
+	prefixptr = CharNext(prefixptr);
+    }
+#endif
 
     loopcheck = rb_hash_new();
     if (curdir_names)
