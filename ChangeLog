@@ -1,3 +1,13 @@
+Mon Mar 15 01:18:31 2010  Alexander Zavorine  <alexandre.zavorine@nokia.com>
+
+	* symbian/setup (*.pkg): Ruby Core installation separated from standard extensions.
+
+	* symbian/configure.bat: ditto.
+
+	* symbian/README.SYMBIAN: ditto.
+
+	* symbian/setup (config.h): support for 2nd internal drive added.
+
 Mon Mar 15 00:11:23 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/file2lastrev.rb (VCS::GIT_SVN#get_revisions) :
