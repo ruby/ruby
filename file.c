@@ -3087,6 +3087,8 @@ rb_file_s_absolute_path(int argc, VALUE *argv)
 static void
 realpath_rec(long *prefixlenp, VALUE *resolvedp, char *unresolved, VALUE loopcheck, int strict, int last)
 {
+    ID resolving;
+    CONST_ID(resolving, "resolving");
     while (*unresolved) {
         char *testname = unresolved;
         char *unresolved_firstsep = rb_path_next(unresolved);
@@ -3112,7 +3114,7 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, char *unresolved, VALUE loopche
             rb_str_cat(testpath, testname, testnamelen);
             checkval = rb_hash_aref(loopcheck, testpath);
             if (!NIL_P(checkval)) {
-                if (checkval == ID2SYM(rb_intern("resolving"))) {
+                if (checkval == ID2SYM(resolving)) {
                     errno = ELOOP;
                     rb_sys_fail(RSTRING_PTR(testpath));
                 }
@@ -3140,7 +3142,7 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, char *unresolved, VALUE loopche
                     volatile VALUE link;
                     char *link_prefix, *link_names;
                     long link_prefixlen;
-                    rb_hash_aset(loopcheck, testpath, ID2SYM(rb_intern("resolving")));
+                    rb_hash_aset(loopcheck, testpath, ID2SYM(resolving));
                     link = rb_file_s_readlink(rb_cFile, testpath);
                     link_prefix = RSTRING_PTR(link);
                     link_names = skiproot(link_prefix);
