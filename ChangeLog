@@ -1,3 +1,12 @@
+Mon Mar 15 00:11:23 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/file2lastrev.rb (VCS::GIT_SVN#get_revisions) :
+	  use block argument 'path' to get the path given by super.
+
+	* tool/file2lastrev.rb (VCS::GIT#get_revisions):
+	  use double quotes for Windows.
+	  patched by Vladimir Sizikov [ruby-core:28651]
+
 Sun Mar 14 22:38:31 2010  Tanaka Akira  <akr@fsij.org>
 
 	* tool/transcode-tblgen.rb: consider valid_encoding for max_input.

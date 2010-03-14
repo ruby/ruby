@@ -56,7 +56,7 @@ class VCS
     register(".git/svn")
 
     def get_revisions(path)
-      super do
+      super do |path|
         info = `git svn info "#{path}"`
         [info[/^Revision: (\d+)/, 1], info[/^Last Changed Rev: (\d+)/, 1]]
       end
@@ -67,7 +67,7 @@ class VCS
     register(".git")
 
     def get_revisions(path)
-      logcmd = %Q[git log -n1 --grep='^ *git-svn-id: .*@[0-9][0-9]* ']
+      logcmd = %Q[git log -n1 --grep="^ *git-svn-id: .*@[0-9][0-9]* "]
       idpat = /git-svn-id: .*?@(\d+) \S+\Z/
       super do
         last = `#{logcmd}`[idpat, 1]
