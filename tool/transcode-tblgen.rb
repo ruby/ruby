@@ -633,6 +633,7 @@ def transcode_compile_tree(name, from, map)
 
   if ValidEncoding[from]
     valid_encoding = StrSet.parse(ValidEncoding[from])
+    max_input = [max_input, valid_encoding.max_length].max
   else
     valid_encoding = nil
   end
