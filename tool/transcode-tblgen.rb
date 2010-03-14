@@ -69,6 +69,16 @@ class Action
     @value = value
   end
   attr_reader :value
+
+  def hash
+    @value.hash
+  end
+
+  def eql?(other)
+    self.class == other.class &&
+    @value == other.value
+  end
+  alias == eql?
 end
 
 class ActionMap
