@@ -1,3 +1,8 @@
+Sun Mar 14 09:50:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (insn_data_to_s_detail), iseq.c (insn_operand_intern):
+	  fixed format specifiers.
+
 Sun Mar 14 07:20:17 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* file.c (EXPAND_PATH_BUFFER): make it back to usascii, to prevent

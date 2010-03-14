@@ -4973,7 +4973,7 @@ insn_data_to_s_detail(INSN *iobj)
 
 	for (j = 0; types[j]; j++) {
 	    char type = types[j];
-	    printf("str: %p, type: %c\n", str, type);
+	    printf("str: %"PRIxVALUE", type: %c\n", str, type);
 
 	    switch (type) {
 	      case TS_OFFSET:	/* label(destination position) */
