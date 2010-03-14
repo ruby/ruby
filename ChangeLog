@@ -1,4 +1,6 @@
-Mon Mar 15 07:38:28 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Mar 15 07:41:00 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (realpath_rec): use same cache.
 
 	* file.c (realpath_internal): regulate separators in prefix.
 	  [ruby-core:28653]
