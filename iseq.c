@@ -797,7 +797,7 @@ insn_operand_intern(rb_iseq_t *iseq,
 	break;
 
       case TS_IC:
-	ret = rb_sprintf("<ic:%d>", (struct iseq_inline_cache_entry *)op - iseq->ic_entries);
+	ret = rb_sprintf("<ic:%"PRIdPTRDIFF">", (struct iseq_inline_cache_entry *)op - iseq->ic_entries);
 	break;
 
       case TS_CDHASH:
