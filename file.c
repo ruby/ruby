@@ -5114,7 +5114,7 @@ Init_File(void)
     rb_define_singleton_method(rb_cFile, "split",  rb_file_s_split, 1);
     rb_define_singleton_method(rb_cFile, "join",   rb_file_s_join, -2);
 
-#ifdef FILE_ALT_SEPARATOR
+#ifdef DOSISH
     rb_define_const(rb_cFile, "ALT_SEPARATOR", rb_obj_freeze(rb_usascii_str_new2(file_alt_separator)));
 #else
     rb_define_const(rb_cFile, "ALT_SEPARATOR", Qnil);

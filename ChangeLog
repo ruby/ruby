@@ -1,3 +1,7 @@
+Mon Mar 15 07:51:05 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (Init_File): do not define File::ALT_SEPARATOR on cygwin.
+
 Mon Mar 15 07:41:00 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (realpath_rec): use same cache.
