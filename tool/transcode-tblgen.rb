@@ -1,6 +1,23 @@
 require 'optparse'
 require 'erb'
 require 'fileutils'
+require 'pp'
+
+class Array
+  unless [].respond_to? :product
+    def product(*args)
+      if args.empty?
+        self.map {|e| [e] }
+      else
+        result = []
+        self.each {|e0|
+          result.concat args.first.product(*args[1..-1]).map {|es| [e0, *es] }
+        }
+        result
+      end
+    end
+  end
+end
 
 NUM_ELEM_BYTELOOKUP = 2
 
@@ -18,155 +35,7 @@ def c_esc(str)
   '"' + str.gsub(C_ESC_PAT) { C_ESC[$&] } + '"'
 end
 
-HEX2 = /[0-9A-Fa-f]{2}/
-
-class StrSet
-  attr_reader :pat
-
-  SINGLE_BYTE_RANGES = (0..255).map {|i| [i..i] }
-
-  def self.parse(pattern)
-    if /\A\s*((#{HEX2}|\{(#{HEX2}|#{HEX2}-#{HEX2})(,(#{HEX2}|#{HEX2}-#{HEX2}))*\})+(\s+|\z))*\z/o !~ pattern
-      raise ArgumentError, "invalid pattern: #{pattern.inspect}"
-    end
-    result = []
-    pattern.scan(/\S+/) {|seq|
-      seq_result = []
-      while !seq.empty?
-        if /\A(#{HEX2})/o =~ seq
-          byte = $1.to_i(16)
-          seq_result << SINGLE_BYTE_RANGES[byte]
-          seq = $'
-        elsif /\A\{([^\}]+)\}/ =~ seq
-          set = $1
-          seq = $'
-          set_result = []
-          set.scan(/[^,]+/) {|range|
-            if /\A(#{HEX2})-(#{HEX2})\z/o =~ range
-              b = $1.to_i(16)
-              e = $2.to_i(16)
-              set_result << (b..e)
-            elsif /\A(#{HEX2})\z/o =~ range
-              byte = $1.to_i(16)
-              set_result << (byte..byte)
-            else
-              raise "invalid range: #{range.inspect}"
-            end
-          }
-          seq_result << set_result
-        else
-          raise "invalid sequence: #{seq.inspect}"
-        end
-      end
-      result << seq_result
-    }
-    self.new(result)
-  end
-
-  def initialize(pat)
-    @pat = pat
-  end
-
-  def hash
-    return @hash if defined? @hash
-    @hash = @pat.hash
-  end
-
-  def eql?(other)
-    self.class == other.class &&
-    @pat == other.pat
-  end
-
-  alias == eql?
-
-  def to_s
-    if @pat.empty?
-      "(empset)"
-    else
-      @pat.map {|seq|
-        if seq.empty?
-          "(empstr)"
-        else
-          seq.map {|byteset|
-            if byteset.length == 1 && byteset[0].begin == byteset[0].end
-              "%02x" % byteset[0].begin
-            else
-              "{" + 
-              byteset.map {|range|
-                if range.begin == range.end
-                  "%02x" % range.begin
-                else
-                  "%02x-%02x" % [range.begin, range.end]
-                end
-              }.join(',') +
-              "}"
-            end
-          }.join('')
-        end
-      }.join(' ')
-    end
-  end
-
-  def inspect
-    "\#<#{self.class}: #{self.to_s}>"
-  end
-
-  def min_length
-    if @pat.empty?
-      nil
-    else
-      @pat.map {|seq| seq.length }.min
-    end
-  end
-
-  def max_length
-    if @pat.empty?
-      nil
-    else
-      @pat.map {|seq| seq.length }.max
-    end
-  end
-
-  def emptyable?
-    @pat.any? {|seq|
-      seq.empty?
-    }
-  end
-
-  def has_nonempty?
-    @pat.any? {|seq|
-      !seq.empty?
-    }
-  end
-
-  def first_bytes
-    result = {}
-    @pat.each {|seq|
-      next if seq.empty?
-      seq.first.each {|range|
-        range.each {|byte|
-          result[byte] = true
-        }
-      }
-    }
-    result.keys.sort
-  end
-
-  def each_firstbyte
-    h = {}
-    @pat.each {|seq|
-      next if seq.empty?
-      seq.first.each {|range|
-        range.each {|byte|
-          (h[byte] ||= []) << seq[1..-1]
-        }
-      }
-    }
-    h.keys.sort.each {|byte|
-      yield byte, StrSet.new(h[byte])
-    }
-  end
-end
+HEX2 = /(?:[0-9A-Fa-f]{2})/
 
 class ArrayCode
   def initialize(type, name)
@@ -195,98 +64,248 @@ End
   end
 end
 
+class Action
+  def initialize(value)
+    @value = value
+  end
+  attr_reader :value
+end
+
 class ActionMap
-  def self.parse(hash)
+  def self.parse_to_rects(hash)
     h = {}
     hash.each {|pat, action|
-      h[StrSet.parse(pat)] = action
+      pat = pat.to_s
+      h[pat] = action
     }
-    self.new(h)
+    hash = h
+
+    rects = []
+    n = 0
+    hash.each {|pat, action|
+      if /\A\s*\(empset\)\s*\z/ =~ pat
+        next
+      elsif /\A\s*\(empstr\)\s*\z/ =~ pat
+        rects << ['', '', action]
+        n += 1
+      elsif /\A\s*(#{HEX2}+)\s*\z/o =~ pat
+        hex = $1.upcase
+        rects << [hex, hex, action]
+      elsif /\A\s*((#{HEX2}|\{#{HEX2}(?:-#{HEX2})?(,#{HEX2}(?:-#{HEX2})?)*\})+(\s+|\z))*\z/o =~ pat
+        pat = pat.upcase
+        pat.scan(/\S+/) {
+          pat1 = $&
+          ranges_list = []
+          pat1.scan(/#{HEX2}|\{([^\}]*)\}/o) {
+            ranges_list << []
+            if !$1
+              ranges_list.last << [$&,$&]
+            else
+              set = {}
+              $1.scan(/(#{HEX2})(?:-(#{HEX2}))?/o) {
+                if !$2
+                  c = $1.to_i(16)
+                  set[c] = true
+                else
+                  b = $1.to_i(16)
+                  e = $2.to_i(16)
+                  b.upto(e) {|c| set[c] = true }
+                end
+              }
+              i = nil
+              0.upto(256) {|j|
+                if set[j]
+                  if !i
+                    i = j
+                  end
+                  if !set[j+1]
+                    ranges_list.last << ["%02X" % i, "%02X" % j]
+                    i = nil
+                  end
+                end
+              }
+            end
+          }
+          first_ranges = ranges_list.shift
+          first_ranges.product(*ranges_list).each {|range_list|
+            min = range_list.map {|x, y| x }.join
+            max = range_list.map {|x, y| y }.join
+            rects << [min, max, action]
+          }
+        }
+      else
+        raise ArgumentError, "invalid pattern: #{pat.inspect}"
+      end
+    }
+    rects
   end
 
-  def initialize(h)
-    @map = h
+  def self.unambiguous_action(actions0)
+    actions = actions0.uniq
+    if actions.length == 1
+      actions[0]
+    else
+      actions = actions.find_all {|action| action != :nomap0 }
+      if actions.length == 1
+        actions[0]
+      else
+        raise ArgumentError, "ambiguous actions: #{actions0.inspect}"
+      end
+    end
+  end
+
+  def self.build_tree(rects)
+    expand("", rects) {|actions|
+      unambiguous_action(actions)
+    }
+  end
+
+  def self.parse(hash)
+    rects = parse_to_rects(hash)
+    tree = build_tree(rects)
+    self.new("", tree)
+  end
+
+  def self.merge(*rects_list)
+    if rects_list.length < 2
+      raise ArgumentError, "not enough arguments"
+    end
+
+    all_rects = []
+    rects_list.each_with_index {|rects, i|
+      all_rects.concat rects.map {|min, max, action| [min, max, [i, action]] }
+    }
+
+    tree = expand("", all_rects) {|actions|
+      args = Array.new(rects_list.length) { [] }
+      actions.each {|i, action|
+        args[i] << action
+      }
+      yield(args)
+    }
+
+    self.new("", tree)
+  end
+
+  def self.expand(prefix, rects, &block)
+    return [] if rects.empty?
+    has_empty = false
+    has_nonempty = false
+    rects.each {|min, max, action|
+      if min.empty?
+        has_empty = true
+      else
+        has_nonempty = true
+      end
+    }
+    if has_empty && has_nonempty
+      raise ArgumentError, "ambiguous pattern: #{prefix}"
+    end
+    if has_empty
+      actions = rects.map {|min, max, action| action }.uniq
+      act = block.call(actions)
+      tree = Action.new(act)
+    else
+      tree = []
+      each_firstbyte_range(prefix, rects) {|byte_min, byte_max, rects2|
+        prefix2 = prefix
+        if byte_min == byte_max
+          prefix2 += "%02X" % byte_min
+        else
+          prefix2 += "{%02X-%02X}" % [byte_min, byte_max]
+        end
+        child_tree = expand(prefix2, rects2, &block)
+        tree << [byte_min, byte_max, child_tree]
+      }
+    end
+    return tree
+  end
+
+  def self.each_firstbyte_range(prefix, rects)
+    a = []
+    index_from = {}
+    rects.each {|min, max, action|
+      raise ArgumentError, "emptyable pattern" if min.empty?
+      min_firstbyte = min[0,2].to_i(16)
+      min_rest = min[2..-1]
+      max_firstbyte = max[0,2].to_i(16)
+      max_rest = max[2..-1]
+      a << [min_firstbyte, max_firstbyte, [min_rest, max_rest, action]]
+      index_from[min_firstbyte] = true
+      index_from[max_firstbyte+1] = true
+    }
+    byte_from = {}
+    index_from.keys.sort.each_with_index {|byte, i|
+      index_from[byte] = i
+      byte_from[i] = byte
+    }
+    rects_hash = {}
+    a.each {|min_firstbyte, max_firstbyte, rest_elt|
+      index_from[min_firstbyte].upto(index_from[max_firstbyte+1]-1) {|i|
+        rects_hash[i] ||= []
+        rects_hash[i] << rest_elt
+      }
+    }
+    0.upto(index_from.size-1) {|i|
+      rects2 = rects_hash[i]
+      yield byte_from[i], byte_from[i+1]-1, rects2 if rects2
+    }
+  end
+
+  def initialize(prefix, tree)
+    @prefix = prefix # just for debug
+    @tree = tree
   end
 
   def hash
     return @hash if defined? @hash
-    hash = 0
-    @map.each {|k,v|
-      hash ^= k.hash ^ v.hash
-    }
-    @hash = hash
+    @hash = @tree.hash
   end
 
   def eql?(other)
     self.class == other.class &&
-    @map == other.instance_eval { @map }
+    @tree == other.instance_eval { @tree }
   end
 
   alias == eql?
 
   def inspect
     "\#<#{self.class}:" + 
-    @map.map {|k, v| " [" + k.to_s + "]=>" + v.inspect }.join('') +
+    @tree.inspect +
     ">"
   end
 
-  def max_input_length
-    @map.keys.map {|k| k.max_length }.max
+  def max_input_length_rec(tree)
+    case tree
+    when Action
+      0
+    else
+      tree.map {|byte_min, byte_max, child_tree|
+        max_input_length_rec(child_tree)
+      }.max + 1
+    end
   end
 
-  def check_conflict
-    has_empty = false
-    has_nonempty = false
-    @map.each {|ss, action|
-      has_empty = true if ss.emptyable?
-      has_nonempty = true if ss.has_nonempty?
-    }
-    if has_empty && has_nonempty
-      raise "conflict between empty and nonempty sequence"
-    end
+  def max_input_length
+    max_input_length_rec(@tree)
   end
 
   def empty_action
-    @map.each {|ss, action|
-      return action if ss.emptyable?
-    }
-    nil
+    if @tree.kind_of? Action
+      @tree.value
+    else
+      nil
+    end
   end
 
-  def each_firstbyte(valid_encoding=nil)
-    h = {}
-    @map.each {|ss, action|
-      if ss.emptyable?
-        raise "emptyable pattern"
-      else
-        ss.each_firstbyte {|byte, rest|
-          h[byte] ||= {}
-          if h[byte][rest].nil?
-          elsif action == :nomap0
-            next
-          elsif h[byte][rest] != :nomap0
-            raise "ambiguous %s or %s (%02X/%s)" % [h[byte][rest], action, byte, rest]
-          end
-          h[byte][rest] = action
-        }
-      end
+  def each_firstbyte
+    @tree.each {|byte_min, byte_max, child_tree|
+      byte_min.upto(byte_max) {|byte|
+        prefix = @prefix + ("%02X" % byte)
+        am = ActionMap.new(prefix, child_tree)
+        yield byte, am
+      }
     }
-    if valid_encoding
-      valid_encoding.each_firstbyte {|byte, rest|
-        if h[byte]
-          am = ActionMap.new(h[byte])
-          yield byte, am, rest
-        else
-          am = ActionMap.new(rest => :undef)
-          yield byte, am, nil
-        end
-      }
-    else
-      h.keys.sort.each {|byte|
-        am = ActionMap.new(h[byte])
-        yield byte, am, nil
-      }
-    end
   end
 
   OffsetsMemo = {}
@@ -451,25 +470,24 @@ End
   PostMemo = {}
   NextName = "a"
 
-  def generate_node(bytes_code, words_code, name_hint=nil, valid_encoding=nil)
-    if n = PreMemo[[self,valid_encoding]]
+  def generate_node(bytes_code, words_code, name_hint=nil)
+    if n = PreMemo[self]
       return n
     end
 
     table = Array.new(0x100, :invalid)
-    each_firstbyte(valid_encoding) {|byte, rest, rest_valid_encoding|
-      rest.check_conflict
+    each_firstbyte {|byte, rest|
       if a = rest.empty_action
         table[byte] = a
       else
         name_hint2 = nil
         name_hint2 = "#{name_hint}_#{'%02X' % byte}" if name_hint
-        table[byte] = "/*BYTE_LOOKUP*/" + rest.gennode(bytes_code, words_code, name_hint2, rest_valid_encoding)
+        table[byte] = "/*BYTE_LOOKUP*/" + rest.gennode(bytes_code, words_code, name_hint2)
       end
     }
 
     if n = PostMemo[table]
-      return PreMemo[[self,valid_encoding]] = n
+      return PreMemo[self] = n
     end
 
     if !name_hint
@@ -477,16 +495,16 @@ End
       NextName.succ!
     end
 
-    PreMemo[[self,valid_encoding]] = PostMemo[table] = name_hint
+    PreMemo[self] = PostMemo[table] = name_hint
 
     generate_lookup_node(bytes_code, words_code, name_hint, table)
     name_hint
   end
 
-  def gennode(bytes_code, words_code, name_hint=nil, valid_encoding=nil)
+  def gennode(bytes_code, words_code, name_hint=nil)
     @bytes_code = bytes_code
     @words_code = words_code
-    name = generate_node(bytes_code, words_code, name_hint, valid_encoding)
+    name = generate_node(bytes_code, words_code, name_hint)
     @bytes_code = nil
     @words_code = nil
     return name
@@ -627,18 +645,20 @@ def transcode_compile_tree(name, from, map)
   map.each {|k, v|
     h[k] = v unless h[k] # use first mapping
   }
-  am = ActionMap.parse(h)
-
-  max_input = am.max_input_length
-
-  if ValidEncoding[from]
-    valid_encoding = StrSet.parse(ValidEncoding[from])
-    max_input = [max_input, valid_encoding.max_length].max
+  if valid_encoding = ValidEncoding[from]
+    rects = ActionMap.parse_to_rects(h)
+    undef_rects = ActionMap.parse_to_rects(valid_encoding => :undef)
+    am = ActionMap.merge(rects, undef_rects) {|a1, a2|
+      a1 = a1.empty? ? nil : ActionMap.unambiguous_action(a1)
+      a2 = a2.empty? ? nil : ActionMap.unambiguous_action(a2)
+      a1 || a2
+    }
   else
-    valid_encoding = nil
+    am = ActionMap.parse(h)
   end
 
-  defined_name = am.gennode(TRANSCODE_GENERATED_BYTES_CODE, TRANSCODE_GENERATED_WORDS_CODE, name, valid_encoding)
+  max_input = am.max_input_length
+  defined_name = am.gennode(TRANSCODE_GENERATED_BYTES_CODE, TRANSCODE_GENERATED_WORDS_CODE, name)
   return defined_name, max_input
 end
 
