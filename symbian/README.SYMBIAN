@@ -88,13 +88,16 @@
      'abld freeze gcce ruby'
      'abld build gcce urel'
 
-(3) Run `makesis ruby.pkg' from symbian\sis directory
+(3) Run 'makesis ruby.pkg' from symbian\sis directory
      This command will create unsigned installation file ruby.sis. To sign it follow the guidlines from www.symbiansigned.com
+     
+(4) In case dynamic extensions support was enabled repeat (3) for ruby_core_ext.pkg
 
 == Known problems
 
 Currently gems are not supported.
 Currently signals are supported with reduced functionality (see OpenC release notes.)
+Dynamic extensions could be installed only on internal drive "C".
 
 =end
 
