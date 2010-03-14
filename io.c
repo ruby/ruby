@@ -2895,9 +2895,14 @@ rb_io_each_codepoint(VALUE io)
 			 rb_enc_name(fptr->encs.enc));
 	    }
 	    n = MBCLEN_CHARFOUND_LEN(r);
-	    c = rb_enc_codepoint(fptr->cbuf+fptr->cbuf_off,
-				 fptr->cbuf+fptr->cbuf_off+fptr->cbuf_len,
-				 fptr->encs.enc);
+	    if (fptr->encs.enc) {
+		c = rb_enc_codepoint(fptr->cbuf+fptr->cbuf_off,
+				     fptr->cbuf+fptr->cbuf_off+fptr->cbuf_len,
+				     fptr->encs.enc);
+	    }
+	    else {
+		c = (unsigned char)fptr->cbuf[fptr->cbuf_off];
+	    }
 	    fptr->cbuf_off += n;
 	    fptr->cbuf_len -= n;
 	    rb_yield(UINT2NUM(c));
