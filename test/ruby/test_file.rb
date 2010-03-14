@@ -164,6 +164,10 @@ class TestFile < Test::Unit::TestCase
       tst = realdir.sub(/#{Regexp.escape(File::SEPARATOR)}/, '\0\0\0')
       assert_equal(realdir, File.realpath(tst))
       assert_equal(realdir, File.realpath(".", tst))
+      if File::ALT_SEPARATOR
+        bug2961 = '[ruby-core:28653]'
+        assert_equal(realdir, File.realpath(realdir.tr(File::SEPARATOR, File::ALT_SEPARATOR)), bug2961)
+      end
     }
   end
 
