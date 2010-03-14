@@ -150,6 +150,16 @@ class TestIO < Test::Unit::TestCase
     r.close
   end
 
+  def test_each_codepoint
+    t = make_tempfile
+    bug2959 = '[ruby-core:28650]'
+    a = ""
+    File.open(t, 'rt') {|f|
+      f.each_codepoint {|c| a << c}
+    }
+    assert_equal("foo\nbar\nbaz\n", a, bug2959)
+  end
+
   def test_rubydev33072
     assert_raise(Errno::ENOENT, "[ruby-dev:33072]") do
       File.read("empty", nil, nil, {})
