@@ -43,8 +43,8 @@ class VCS
   class SVN < self
     register(".svn")
 
-    def get_revisions(path)
-      super do
+    def get_revisions(*)
+      super do |path|
         info_xml = `svn info --xml "#{path}"`
         _, last, _, changed, _ = info_xml.split(/revision="(\d+)"/)
         [last, changed]
@@ -55,7 +55,7 @@ class VCS
   class GIT_SVN < self
     register(".git/svn")
 
-    def get_revisions(path)
+    def get_revisions(*)
       super do |path|
         info = `git svn info "#{path}"`
         [info[/^Revision: (\d+)/, 1], info[/^Last Changed Rev: (\d+)/, 1]]
@@ -66,10 +66,10 @@ class VCS
   class GIT < self
     register(".git")
 
-    def get_revisions(path)
+    def get_revisions(*)
       logcmd = %Q[git log -n1 --grep="^ *git-svn-id: .*@[0-9][0-9]* "]
       idpat = /git-svn-id: .*?@(\d+) \S+\Z/
-      super do
+      super do |path|
         last = `#{logcmd}`[idpat, 1]
         changed = path ? `#{logcmd} "#{path}"`[idpat, 1] : last
         [last, changed]
