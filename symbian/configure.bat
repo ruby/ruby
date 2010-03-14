@@ -104,9 +104,10 @@ echo>> ~tmp~.mak endif
 echo>> ~tmp~.mak ^	@if not exist sis\nul md sis
 echo>> ~tmp~.mak ^	$(call ruby_pkg,sis\ruby.pkg)
 echo>> ~tmp~.mak ifndef EXTSTATIC
-echo>> ~tmp~.mak ^	$(call ext_bigdecimal,sis\ruby.pkg)
-echo>> ~tmp~.mak ^	$(call ext_pkg,sis\ruby.pkg,stringio)
-echo>> ~tmp~.mak ^	$(call ext_pkg,sis\ruby.pkg,zlib)
+echo>> ~tmp~.mak ^	$(call core_ext_pkg,sis\ruby_core_ext.pkg)
+echo>> ~tmp~.mak ^	$(call ext_bigdecimal,sis\ruby_core_ext.pkg)
+echo>> ~tmp~.mak ^	$(call ext_pkg,sis\ruby_core_ext.pkg,stringio)
+echo>> ~tmp~.mak ^	$(call ext_pkg,sis\ruby_core_ext.pkg,zlib)
 echo>> ~tmp~.mak ^	@if not exist eabi\nul md eabi
 echo>> ~tmp~.mak ^	$(call ext_def,eabi\,stringio)
 echo>> ~tmp~.mak ^	$(call ext_def,eabi\,bigdecimal)
