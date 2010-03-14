@@ -6,7 +6,7 @@
   nomap_table = [
     ["{00-7f}", :nomap],
     ["{c2-df}{80-bf}", :nomap0],
-    ["e0{a0-df}{80-bf}", :nomap0],
+    ["e0{a0-bf}{80-bf}", :nomap0],
     ["{e1-ec}{80-bf}{80-bf}", :nomap0],
     ["ed{80-9f}{80-bf}", :nomap0],
     ["{ee-ef}{80-bf}{80-bf}", :nomap0],
