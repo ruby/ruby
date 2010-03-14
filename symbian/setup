@@ -187,7 +187,7 @@ define config_h
 @echo>>$(1) #define RUBY_LIB_VERSION_STYLE 3
 @echo>>$(1) #define RUBY_LIB_PREFIX "C:/Data/Ruby/lib"
 @echo>>$(1) #define RUBY_SITE_LIB "E:/Data/Ruby/lib"
-@echo>>$(1) #define RUBY_VENDOR_LIB "C:/Data/Ruby/lib"
+@echo>>$(1) #define RUBY_VENDOR_LIB "F:/Data/Ruby/lib"
 @echo>>$(1) #define RUBY_PLATFORM "$(arch)"
 endef
 
@@ -340,6 +340,7 @@ endef
 define ext_mmp
 @echo>$(1)$(2).mmp TARGET $(2).dll
 @echo>>$(1)$(2).mmp TARGETTYPE DLL
+@echo>>$(1)$(2).mmp EPOCALLOWDLLDATA
 @echo>>$(1)$(2).mmp UID 0x10004262 $(3)
 @echo>>$(1)$(2).mmp VENDORID 0
 @echo>>$(1)$(2).mmp SECUREID $(3)
@@ -391,6 +392,19 @@ define ruby_pkg
 @echo>>$(1) "$(EPOCROOT)epoc32\release\gcce\urel\Ruby.exe"-"!:\sys\bin\Ruby.exe"
 endef
 
+define core_ext_pkg
+@echo>$(1) ^&EN
+
+@echo>>$(1) #{"Ruby Core Extensions"},($(STRINGIO_UID)),$(MAJOR),$(MINOR),$(TEENY)
+
+@echo>>$(1) %%{"Symbian Research"}
+
+@echo>>$(1) :"Symbian Research"
+
+@echo>>$(1) ($(RUBY_UID)), $(MAJOR),$(MINOR),$(TEENY), {"Symbian Ruby"}
+
+@echo>>$(1) [0x101F7961], 0, 0, 0, {"S60ProductID"}
+endef
 
 define ext_pkg
 @echo>>$(1) "$(EPOCROOT)epoc32\release\gcce\urel\$(2).dll"-"!:\sys\bin\$(2).dll"
