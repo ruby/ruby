@@ -387,4 +387,14 @@ END
     r2.rand(0x100)
     assert(r1 == r2)
   end
+
+  def test_fork_shuffle
+    pid = fork do
+        (1..10).to_a.shuffle
+        raise 'default seed is not set' if srand == 0
+    end
+    p2, st = Process.waitpid2(pid)
+    assert(st.success?)
+  rescue NotImplementedError, ArgumentError
+  end
 end

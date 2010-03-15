@@ -223,16 +223,34 @@ struct Random {
 
 static struct Random default_rand;
 
+static VALUE rand_init(struct MT *mt, VALUE vseed);
+static VALUE random_seed(void);
+
+static void
+default_rand_init(void)
+{
+    rb_random_t *r = &default_rand.rnd;
+    r->seed = rand_init(&r->mt, random_seed());
+}
+
 unsigned int
 rb_genrand_int32(void)
 {
-    return genrand_int32(&default_rand.rnd.mt);
+    struct MT *mt = &default_rand.rnd.mt;
+    if (!genrand_initialized(mt)) {
+	default_rand_init();
+    }
+    return genrand_int32(mt);
 }
 
 double
 rb_genrand_real(void)
 {
-    return genrand_real(&default_rand.rnd.mt);
+    struct MT *mt = &default_rand.rnd.mt;
+    if (!genrand_initialized(mt)) {
+	default_rand_init();
+    }
+    return genrand_real(mt);
 }
 
 #define BDIGITS(x) (RBIGNUM_DIGITS(x))
@@ -302,8 +320,6 @@ int_pair_to_real_inclusive(unsigned int a, unsigned int b)
 VALUE rb_cRandom;
 #define id_minus '-'
 #define id_plus  '+'
-
-static VALUE random_seed(void);
 
 /* :nodoc: */
 static void
@@ -831,7 +847,7 @@ rb_rand_internal(unsigned long i)
 {
     struct MT *mt = &default_rand.rnd.mt;
     if (!genrand_initialized(mt)) {
-	rand_init(mt, random_seed());
+	default_rand_init();
     }
     return limited_rand(mt, i);
 }
@@ -1111,7 +1127,7 @@ rb_f_rand(int argc, VALUE *argv, VALUE obj)
     struct MT *mt = &default_rand.rnd.mt;
 
     if (!genrand_initialized(mt)) {
-	rand_init(mt, random_seed());
+	default_rand_init();
     }
     if (argc == 0) goto zero_arg;
     rb_scan_args(argc, argv, "01", &vmax);
