@@ -1,3 +1,9 @@
+Mon Mar 15 14:06:07 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (next_state): no initialization here.
+
+	* random.c (default_mt): always return initialized MT.
+
 Mon Mar 15 11:49:48 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* random.c (rb_reset_random_seed): set seed in this.
