@@ -165,7 +165,7 @@ class ActionMap
   end
 
   def self.build_tree(rects)
-    expand("", rects) {|actions|
+    expand("", rects) {|prefix, actions|
       unambiguous_action(actions)
     }
   end
@@ -186,12 +186,12 @@ class ActionMap
       all_rects.concat rects.map {|min, max, action| [min, max, [i, action]] }
     }
 
-    tree = expand("", all_rects) {|actions|
+    tree = expand("", all_rects) {|prefix, actions|
       args = Array.new(rects_list.length) { [] }
       actions.each {|i, action|
         args[i] << action
       }
-      yield(args)
+      yield(prefix, *args)
     }
 
     self.new("", tree)
@@ -213,7 +213,7 @@ class ActionMap
     end
     if has_empty
       actions = rects.map {|min, max, action| action }.uniq
-      act = block.call(actions)
+      act = block.call(prefix, actions)
       tree = Action.new(act)
     else
       tree = []
@@ -649,18 +649,22 @@ def encode_utf8(map)
   r
 end
 
-def transcode_compile_tree(name, from, map)
+def transcode_compile_tree(name, from, map, valid_encoding=nil)
   map = encode_utf8(map)
   h = {}
   map.each {|k, v|
     h[k] = v unless h[k] # use first mapping
   }
-  if valid_encoding = ValidEncoding[from]
+  valid_encoding = ValidEncoding[from] if valid_encoding == nil
+  if valid_encoding
     rects = ActionMap.parse_to_rects(h)
     undef_rects = ActionMap.parse_to_rects(valid_encoding => :undef)
-    am = ActionMap.merge(rects, undef_rects) {|a1, a2|
-      a1 = a1.empty? ? nil : ActionMap.unambiguous_action(a1)
-      a2 = a2.empty? ? nil : ActionMap.unambiguous_action(a2)
+    am = ActionMap.merge(rects, undef_rects) {|prefix, as1, as2|
+      a1 = as1.empty? ? nil : ActionMap.unambiguous_action(as1)
+      a2 = as2.empty? ? nil : ActionMap.unambiguous_action(as2)
+      if !a2
+        raise "invalid mapping: #{prefix}"
+      end
       a1 || a2
     }
   else
@@ -675,7 +679,7 @@ end
 TRANSCODERS = []
 TRANSCODE_GENERATED_TRANSCODER_CODE = ''
 
-def transcode_tbl_only(from, to, map)
+def transcode_tbl_only(from, to, map, valid_encoding=nil)
   if VERBOSE_MODE
     if from.empty? || to.empty?
       STDERR.puts "converter for #{from.empty? ? to : from}"
@@ -692,12 +696,12 @@ def transcode_tbl_only(from, to, map)
   else
     tree_name = "from_#{id_from}_to_#{id_to}"
   end
-  real_tree_name, max_input = transcode_compile_tree(tree_name, from, map)
+  real_tree_name, max_input = transcode_compile_tree(tree_name, from, map, valid_encoding)
   return map, tree_name, real_tree_name, max_input
 end
 
-def transcode_tblgen(from, to, map)
-  map, tree_name, real_tree_name, max_input = transcode_tbl_only(from, to, map)
+def transcode_tblgen(from, to, map, valid_encoding=nil)
+  map, tree_name, real_tree_name, max_input = transcode_tbl_only(from, to, map, valid_encoding)
   transcoder_name = "rb_#{tree_name}"
   TRANSCODERS << transcoder_name
   input_unit_length = UnitLength[from]

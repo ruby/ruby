@@ -1,3 +1,13 @@
+Mon Mar 15 21:22:49 2010  Tanaka Akira  <akr@fsij.org>
+
+	* tool/transcode-tblgen.rb (transcode_tblgen): add valid_encoding
+	  optional argument.
+
+	* enc/trans/single_byte.trans use valid_encoding argument for
+	  transcode_tblgen.
+
+	* enc/trans/chinese.trans: ditto.
+
 Mon Mar 15 18:33:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (default_rand): removed initial buffer.

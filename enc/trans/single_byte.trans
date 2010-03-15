@@ -22,9 +22,8 @@
     require(name.downcase + "-tbl")
     control1_if_needed = (name =~ /^ISO-8859/) ? CONTROL1_TO_UCS_TBL : []
     tbl_to_ucs = control1_if_needed + eval(name.gsub(/-/, '_') + "_TO_UCS_TBL")
-    set_valid_byte_pattern(name, '1byte')
     code = ''
-    code << transcode_tblgen(name, "UTF-8", [["{00-7f}", :nomap], *tbl_to_ucs.reject {|a, b| a.length != 2 }])
+    code << transcode_tblgen(name, "UTF-8", [["{00-7f}", :nomap], *tbl_to_ucs.reject {|a, b| a.length != 2 }], '{00-ff}')
     code << "\n"
     code << transcode_tblgen("UTF-8", name, [["{00-7f}", :nomap], *tbl_to_ucs.map {|a,b| [b,a] }])
     code
