@@ -5884,7 +5884,9 @@ rb_f_printf(int argc, VALUE *argv)
  *     ios.print(obj, ...)     => nil
  *
  *  Writes the given object(s) to <em>ios</em>. The stream must be
- *  opened for writing. If the output record separator (<code>$\\</code>)
+ *  opened for writing. If the output field separator (<code>$,</code>)
+ *  is not <code>nil</code>, it will be inserted between each object.
+ *  If the output record separator (<code>$\\</code>)
  *  is not <code>nil</code>, it will be appended to the output. If no
  *  arguments are given, prints <code>$_</code>. Objects that aren't
  *  strings will be converted by calling their <code>to_s</code> method.
