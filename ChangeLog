@@ -1,3 +1,11 @@
+Mon Mar 15 18:33:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (default_rand): removed initial buffer.
+
+	* random.c (Init_RandomSeed): initialize seed of default random.
+
+	* random.c (Init_RandomSeed2): turn the seed to Bignum object.
+
 Mon Mar 15 17:28:30 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_print): RDoc update.  a patch from Daniel Kelley
