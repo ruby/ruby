@@ -81,6 +81,25 @@ class Action
   alias == eql?
 end
 
+class Branch
+  def initialize(byte_min, byte_max, child_tree)
+    @byte_min = byte_min
+    @byte_max = byte_max
+    @child_tree = child_tree
+    @hash = byte_min.hash ^ byte_max.hash ^ child_tree.hash
+  end
+  attr_reader :byte_min, :byte_max, :child_tree, :hash
+
+  def eql?(other)
+    self.class == other.class &&
+    @hash == other.hash &&
+    @byte_min == other.byte_min &&
+    @byte_max == other.byte_max &&
+    @child_tree == other.child_tree
+  end
+  alias == eql?
+end
+
 class ActionMap
   def self.parse_to_rects(hash)
     h = {}
@@ -173,10 +192,10 @@ class ActionMap
   def self.parse(hash)
     rects = parse_to_rects(hash)
     tree = build_tree(rects)
-    self.new("", tree)
+    self.new(tree)
   end
 
-  def self.merge(*rects_list)
+  def self.merge_rects(*rects_list)
     if rects_list.length < 2
       raise ArgumentError, "not enough arguments"
     end
@@ -194,25 +213,25 @@ class ActionMap
       yield(prefix, *args)
     }
 
-    self.new("", tree)
+    self.new(tree)
+  end
+
+  def self.merge(*mappings, &block)
+    merge_rects(*mappings.map {|m| parse_to_rects(m) }, &block)
   end
 
   def self.expand(prefix, rects, &block)
+    #if prefix == ''
+    #  numsing = numrang = 0
+    #  rects.each {|min, max, action| if min == max then numsing += 1 else numrang += 1 end }
+    #  puts "#{numsing} singleton mappings and #{numrang} range mappings."
+    #end
     return [] if rects.empty?
-    has_empty = false
-    has_nonempty = false
-    rects.each {|min, max, action|
-      if min.empty?
-        has_empty = true
-      else
-        has_nonempty = true
-      end
-    }
-    if has_empty && has_nonempty
-      raise ArgumentError, "ambiguous pattern: #{prefix}"
-    end
-    if has_empty
-      actions = rects.map {|min, max, action| action }.uniq
+    if rects[0][0].empty?
+      actions = rects.map {|min, max, action|
+        raise ArgumentError, "ambiguous pattern: #{prefix}" if !min.empty?
+        action
+      }.uniq
       act = block.call(prefix, actions)
       tree = Action.new(act)
     else
@@ -225,7 +244,7 @@ class ActionMap
           prefix2 += "{%02X-%02X}" % [byte_min, byte_max]
         end
         child_tree = expand(prefix2, rects2, &block)
-        tree << [byte_min, byte_max, child_tree]
+        tree << Branch.new(byte_min, byte_max, child_tree)
       }
     end
     return tree
@@ -235,7 +254,7 @@ class ActionMap
     a = []
     index_from = {}
     rects.each {|min, max, action|
-      raise ArgumentError, "emptyable pattern" if min.empty?
+      raise ArgumentError, "ambiguous pattern: #{prefix}" if min.empty?
       min_firstbyte = min[0,2].to_i(16)
       min_rest = min[2..-1]
       max_firstbyte = max[0,2].to_i(16)
@@ -262,22 +281,9 @@ class ActionMap
     }
   end
 
-  def initialize(prefix, tree)
-    @prefix = prefix # just for debug
+  def initialize(tree)
     @tree = tree
   end
-
-  def hash
-    return @hash if defined? @hash
-    @hash = @tree.hash
-  end
-
-  def eql?(other)
-    self.class == other.class &&
-    @tree == other.instance_eval { @tree }
-  end
-
-  alias == eql?
 
   def inspect
     "\#<#{self.class}:" + 
@@ -290,8 +296,8 @@ class ActionMap
     when Action
       0
     else
-      tree.map {|byte_min, byte_max, child_tree|
-        max_input_length_rec(child_tree)
+      tree.map {|branch|
+        max_input_length_rec(branch.child_tree)
       }.max + 1
     end
   end
@@ -412,7 +418,9 @@ class ActionMap
     code
   end
 
-  def generate_lookup_node(bytes_code, words_code, name, table)
+  def generate_lookup_node(name, table)
+    bytes_code = @bytes_code
+    words_code = @words_code
     offsets = []
     infos = []
     infomap = {}
@@ -470,33 +478,29 @@ End
   PostMemo = {}
   NextName = "a"
 
-  def generate_node(bytes_code, words_code, name_hint=nil)
-    if n = PreMemo[self]
+  def generate_node(name_hint=nil)
+    if n = PreMemo[@tree]
       return n
     end
 
     table = Array.new(0x100, :invalid)
-    @tree.each {|byte_min, byte_max, child_tree|
-      prefix = @prefix + (byte_min == byte_max ? "%02X" % byte_min : "{%02X-%02X}" % [byte_min, byte_max])
-      rest = ActionMap.new(prefix, child_tree)
+    @tree.each {|branch|
+      byte_min, byte_max, child_tree = branch.byte_min, branch.byte_max, branch.child_tree
+      rest = ActionMap.new(child_tree)
       if a = rest.empty_action
-        byte_min.upto(byte_max) {|byte|
-          table[byte] = a
-        }
+        table.fill(a, byte_min..byte_max)
       else
         name_hint2 = nil
         if name_hint
           name_hint2 = "#{name_hint}_#{byte_min == byte_max ? '%02X' % byte_min : '%02Xto%02X' % [byte_min, byte_max]}"
         end
-        v = "/*BYTE_LOOKUP*/" + rest.gennode(bytes_code, words_code, name_hint2)
-        byte_min.upto(byte_max) {|byte|
-          table[byte] = v
-        }
+        v = "/*BYTE_LOOKUP*/" + rest.gennode(@bytes_code, @words_code, name_hint2)
+        table.fill(v, byte_min..byte_max)
       end
     }
 
     if n = PostMemo[table]
-      return PreMemo[self] = n
+      return PreMemo[@tree] = n
     end
 
     if !name_hint
@@ -504,16 +508,16 @@ End
       NextName.succ!
     end
 
-    PreMemo[self] = PostMemo[table] = name_hint
+    PreMemo[@tree] = PostMemo[table] = name_hint
 
-    generate_lookup_node(bytes_code, words_code, name_hint, table)
+    generate_lookup_node(name_hint, table)
     name_hint
   end
 
   def gennode(bytes_code, words_code, name_hint=nil)
     @bytes_code = bytes_code
     @words_code = words_code
-    name = generate_node(bytes_code, words_code, name_hint)
+    name = generate_node(name_hint)
     @bytes_code = nil
     @words_code = nil
     return name
@@ -656,9 +660,7 @@ def transcode_compile_tree(name, from, map, valid_encoding=nil)
   }
   valid_encoding = ValidEncoding[from] if valid_encoding == nil
   if valid_encoding
-    rects = ActionMap.parse_to_rects(h)
-    undef_rects = ActionMap.parse_to_rects(valid_encoding => :undef)
-    am = ActionMap.merge(rects, undef_rects) {|prefix, as1, as2|
+    am = ActionMap.merge(h, {valid_encoding => :undef}) {|prefix, as1, as2|
       a1 = as1.empty? ? nil : ActionMap.unambiguous_action(as1)
       a2 = as2.empty? ? nil : ActionMap.unambiguous_action(as2)
       if !a2
@@ -923,3 +925,4 @@ if __FILE__ == $0
     print result
   end
 end
+
