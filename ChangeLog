@@ -1,3 +1,8 @@
+Mon Mar 15 09:36:22 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* symbian/README.SYMBIAN: fixed broken patch and converted to
+	  unified diff.
+
 Mon Mar 15 07:51:05 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (Init_File): do not define File::ALT_SEPARATOR on cygwin.
