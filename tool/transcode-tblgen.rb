@@ -486,7 +486,7 @@ End
       else
         name_hint2 = nil
         if name_hint
-          name_hint2 = "#{name_hint}_#{'%02X' % byte_min}"
+          name_hint2 = "#{name_hint}_#{byte_min == byte_max ? '%02X' % byte_min : '%02Xto%02X' % [byte_min, byte_max]}"
         end
         v = "/*BYTE_LOOKUP*/" + rest.gennode(bytes_code, words_code, name_hint2)
         byte_min.upto(byte_max) {|byte|

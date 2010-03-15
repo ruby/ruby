@@ -1,3 +1,7 @@
+Tue Mar 16 04:05:13 2010  Tanaka Akira  <akr@fsij.org>
+
+	* tool/transcode-tblgen.rb: more info in generating macro names.
+
 Mon Mar 15 21:58:03 2010  Tanaka Akira  <akr@fsij.org>
 
 	* tool/transcode-tblgen.rb: ActionMap#each_firstbyte inlined.
