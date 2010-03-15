@@ -1396,6 +1396,23 @@ End
     assert_in_out_err(["-", t.path], "print while $<.gets", %w(foo bar baz), [])
   end
 
+  def test_print_separators
+    $, = ':'
+    $\ = "\n"
+    r, w = IO.pipe
+    w.print('a')
+    w.print('a','b','c')
+    w.close
+    assert_equal("a\n", r.gets)
+    assert_equal("a:b:c\n", r.gets)
+    assert_nil r.gets
+    r.close
+    
+  ensure
+    $, = nil
+    $\ = nil
+  end
+
   def test_putc
     pipe(proc do |w|
       w.putc "A"

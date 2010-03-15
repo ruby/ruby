@@ -1,3 +1,8 @@
+Mon Mar 15 17:28:30 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_print): RDoc update.  a patch from Daniel Kelley
+	  in [ruby-core:28643].
+
 Mon Mar 15 14:06:07 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (next_state): no initialization here.
