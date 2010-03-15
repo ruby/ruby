@@ -101,17 +101,11 @@ class Branch
 end
 
 class ActionMap
-  def self.parse_to_rects(hash)
-    h = {}
-    hash.each {|pat, action|
-      pat = pat.to_s
-      h[pat] = action
-    }
-    hash = h
-
+  def self.parse_to_rects(mapping)
     rects = []
     n = 0
-    hash.each {|pat, action|
+    mapping.each {|pat, action|
+      pat = pat.to_s
       if /\A\s*\(empset\)\s*\z/ =~ pat
         next
       elsif /\A\s*\(empstr\)\s*\z/ =~ pat
@@ -189,8 +183,8 @@ class ActionMap
     }
   end
 
-  def self.parse(hash)
-    rects = parse_to_rects(hash)
+  def self.parse(mapping)
+    rects = parse_to_rects(mapping)
     tree = build_tree(rects)
     self.new(tree)
   end
@@ -925,4 +919,3 @@ if __FILE__ == $0
     print result
   end
 end
-
