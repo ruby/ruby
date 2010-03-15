@@ -1,3 +1,7 @@
+Tue Mar 16 07:01:43 2010  Tanaka Akira  <akr@fsij.org>
+
+	* tool/transcode-tblgen.rb: refactored to use tree as memo key.
+
 Tue Mar 16 04:05:13 2010  Tanaka Akira  <akr@fsij.org>
 
 	* tool/transcode-tblgen.rb: more info in generating macro names.
