@@ -137,10 +137,6 @@ next_state(struct MT *mt)
     unsigned int *p = mt->state;
     int j;
 
-    /* if init_genrand() has not been called, */
-    /* a default initial seed is used         */
-    if (!genrand_initialized(mt)) init_genrand(mt, 5489U);
-
     mt->left = N;
     mt->next = mt->state;
 
@@ -157,6 +153,7 @@ next_state(struct MT *mt)
 static unsigned int
 genrand_int32(struct MT *mt)
 {
+    /* mt must be initialized */
     unsigned int y;
 
     if (--mt->left <= 0) next_state(mt);
@@ -175,6 +172,7 @@ genrand_int32(struct MT *mt)
 static double
 genrand_real(struct MT *mt)
 {
+    /* mt must be initialized */
     unsigned int a = genrand_int32(mt)>>5, b = genrand_int32(mt)>>6;
     return(a*67108864.0+b)*(1.0/9007199254740992.0);
 }
@@ -184,6 +182,7 @@ static double int_pair_to_real_inclusive(unsigned int a, unsigned int b);
 static double
 genrand_real2(struct MT *mt)
 {
+    /* mt must be initialized */
     unsigned int a = genrand_int32(mt), b = genrand_int32(mt);
     return int_pair_to_real_inclusive(a, b);
 }
@@ -226,30 +225,28 @@ static struct Random default_rand;
 static VALUE rand_init(struct MT *mt, VALUE vseed);
 static VALUE random_seed(void);
 
-static void
-default_rand_init(void)
+static struct MT *
+default_mt(void)
 {
     rb_random_t *r = &default_rand.rnd;
-    r->seed = rand_init(&r->mt, random_seed());
+    struct MT *mt = &r->mt;
+    if (!genrand_initialized(mt)) {
+	r->seed = rand_init(mt, random_seed());
+    }
+    return mt;
 }
 
 unsigned int
 rb_genrand_int32(void)
 {
-    struct MT *mt = &default_rand.rnd.mt;
-    if (!genrand_initialized(mt)) {
-	default_rand_init();
-    }
+    struct MT *mt = default_mt();
     return genrand_int32(mt);
 }
 
 double
 rb_genrand_real(void)
 {
-    struct MT *mt = &default_rand.rnd.mt;
-    if (!genrand_initialized(mt)) {
-	default_rand_init();
-    }
+    struct MT *mt = default_mt();
     return genrand_real(mt);
 }
 
@@ -774,6 +771,7 @@ make_mask(unsigned long x)
 static unsigned long
 limited_rand(struct MT *mt, unsigned long limit)
 {
+    /* mt must be initialized */
     int i;
     unsigned long val, mask;
 
@@ -795,6 +793,7 @@ limited_rand(struct MT *mt, unsigned long limit)
 static VALUE
 limited_big_rand(struct MT *mt, struct RBignum *limit)
 {
+    /* mt must be initialized */
     unsigned long mask, lim, rnd;
     struct RBignum *val;
     long i, len;
@@ -845,10 +844,7 @@ limited_big_rand(struct MT *mt, struct RBignum *limit)
 unsigned long
 rb_rand_internal(unsigned long i)
 {
-    struct MT *mt = &default_rand.rnd.mt;
-    if (!genrand_initialized(mt)) {
-	default_rand_init();
-    }
+    struct MT *mt = default_mt();
     return limited_rand(mt, i);
 }
 
@@ -919,6 +915,7 @@ range_values(VALUE vmax, VALUE *begp, int *exclp)
 static VALUE
 rand_int(struct MT *mt, VALUE vmax, int restrictive)
 {
+    /* mt must be initialized */
     long max;
     unsigned long r;
 
@@ -1124,11 +1121,8 @@ static VALUE
 rb_f_rand(int argc, VALUE *argv, VALUE obj)
 {
     VALUE vmax, r;
-    struct MT *mt = &default_rand.rnd.mt;
+    struct MT *mt = default_mt();
 
-    if (!genrand_initialized(mt)) {
-	default_rand_init();
-    }
     if (argc == 0) goto zero_arg;
     rb_scan_args(argc, argv, "01", &vmax);
     if (NIL_P(vmax)) goto zero_arg;
