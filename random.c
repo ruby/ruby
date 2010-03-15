@@ -215,12 +215,7 @@ typedef struct {
 
 #define DEFAULT_SEED_CNT 4
 
-struct Random {
-    rb_random_t rnd;
-    unsigned int initial[DEFAULT_SEED_CNT];
-};
-
-static struct Random default_rand;
+static rb_random_t default_rand;
 
 static VALUE rand_init(struct MT *mt, VALUE vseed);
 static VALUE random_seed(void);
@@ -228,7 +223,7 @@ static VALUE random_seed(void);
 static struct MT *
 default_mt(void)
 {
-    rb_random_t *r = &default_rand.rnd;
+    rb_random_t *r = &default_rand;
     struct MT *mt = &r->mt;
     if (!genrand_initialized(mt)) {
 	r->seed = rand_init(mt, random_seed());
@@ -353,7 +348,7 @@ static VALUE
 random_alloc(VALUE klass)
 {
     rb_random_t *rnd;
-    VALUE obj = TypedData_Make_Struct(rb_cRandom, rb_random_t, &random_data_type, rnd);
+    VALUE obj = TypedData_Make_Struct(klass, rb_random_t, &random_data_type, rnd);
     rnd->seed = INT2FIX(0);
     return obj;
 }
@@ -601,7 +596,7 @@ random_state(VALUE obj)
 static VALUE
 random_s_state(VALUE klass)
 {
-    return mt_state(&default_rand.rnd.mt);
+    return mt_state(&default_rand.mt);
 }
 
 /* :nodoc: */
@@ -616,7 +611,7 @@ random_left(VALUE obj)
 static VALUE
 random_s_left(VALUE klass)
 {
-    return INT2FIX(default_rand.rnd.mt.left);
+    return INT2FIX(default_rand.mt.left);
 }
 
 /* :nodoc: */
@@ -739,7 +734,7 @@ static VALUE
 rb_f_srand(int argc, VALUE *argv, VALUE obj)
 {
     VALUE seed, old;
-    struct Random *r = &default_rand;
+    rb_random_t *r = &default_rand;
 
     rb_secure(4);
     if (argc == 0) {
@@ -748,8 +743,8 @@ rb_f_srand(int argc, VALUE *argv, VALUE obj)
     else {
 	rb_scan_args(argc, argv, "01", &seed);
     }
-    old = r->rnd.seed;
-    r->rnd.seed = rand_init(&r->rnd.mt, seed);
+    old = r->seed;
+    r->seed = rand_init(&r->mt, seed);
 
     return old;
 }
@@ -1136,14 +1131,24 @@ rb_f_rand(int argc, VALUE *argv, VALUE obj)
 
 static st_index_t hashseed;
 
+static VALUE
+init_randomseed(struct MT *mt, unsigned int initial[DEFAULT_SEED_CNT])
+{
+    VALUE seed;
+    fill_random_seed(initial);
+    init_by_array(mt, initial, DEFAULT_SEED_CNT);
+    seed = make_seed_value(initial);
+    memset(initial, 0, DEFAULT_SEED_LEN);
+    return seed;
+}
+
 void
 Init_RandomSeed(void)
 {
-    struct Random *r = &default_rand;
-    struct MT *mt = &r->rnd.mt;
-
-    fill_random_seed(r->initial);
-    init_by_array(mt, r->initial, DEFAULT_SEED_CNT);
+    rb_random_t *r = &default_rand;
+    unsigned int initial[DEFAULT_SEED_CNT];
+    struct MT *mt = &r->mt;
+    VALUE seed = init_randomseed(mt, initial);
 
     hashseed = genrand_int32(mt);
 #if SIZEOF_ST_INDEX_T*CHAR_BIT > 4*8
@@ -1158,6 +1163,9 @@ Init_RandomSeed(void)
     hashseed <<= 32;
     hashseed |= genrand_int32(mt);
 #endif
+
+    rb_global_variable(&r->seed);
+    r->seed = seed;
 }
 
 st_index_t
@@ -1169,18 +1177,19 @@ rb_hash_start(st_index_t h)
 static void
 Init_RandomSeed2(void)
 {
-    struct Random *r = &default_rand;
-    rb_global_variable(&r->rnd.seed);
-    r->rnd.seed = make_seed_value(r->initial);
-    memset(r->initial, 0, DEFAULT_SEED_LEN);
+    VALUE seed = default_rand.seed;
+
+    if (RB_TYPE_P(seed, T_BIGNUM)) {
+	RBASIC(seed)->klass = rb_cBignum;
+    }
 }
 
 void
 rb_reset_random_seed(void)
 {
-    struct Random *r = &default_rand;
-    uninit_genrand(&r->rnd.mt);
-    r->rnd.seed = INT2FIX(0);
+    rb_random_t *r = &default_rand;
+    uninit_genrand(&r->mt);
+    r->seed = INT2FIX(0);
 }
 
 void
