@@ -308,16 +308,6 @@ class ActionMap
     end
   end
 
-  def each_firstbyte
-    @tree.each {|byte_min, byte_max, child_tree|
-      byte_min.upto(byte_max) {|byte|
-        prefix = @prefix + ("%02X" % byte)
-        am = ActionMap.new(prefix, child_tree)
-        yield byte, am
-      }
-    }
-  end
-
   OffsetsMemo = {}
   InfosMemo = {}
 
@@ -486,13 +476,22 @@ End
     end
 
     table = Array.new(0x100, :invalid)
-    each_firstbyte {|byte, rest|
+    @tree.each {|byte_min, byte_max, child_tree|
+      prefix = @prefix + (byte_min == byte_max ? "%02X" % byte_min : "{%02X-%02X}" % [byte_min, byte_max])
+      rest = ActionMap.new(prefix, child_tree)
       if a = rest.empty_action
-        table[byte] = a
+        byte_min.upto(byte_max) {|byte|
+          table[byte] = a
+        }
       else
         name_hint2 = nil
-        name_hint2 = "#{name_hint}_#{'%02X' % byte}" if name_hint
-        table[byte] = "/*BYTE_LOOKUP*/" + rest.gennode(bytes_code, words_code, name_hint2)
+        if name_hint
+          name_hint2 = "#{name_hint}_#{'%02X' % byte_min}"
+        end
+        v = "/*BYTE_LOOKUP*/" + rest.gennode(bytes_code, words_code, name_hint2)
+        byte_min.upto(byte_max) {|byte|
+          table[byte] = v
+        }
       end
     }
 
