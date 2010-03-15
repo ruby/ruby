@@ -743,9 +743,11 @@ module URI
       end
       TBLENCWWWCOMP_.freeze
     end
-    str = str.dup.force_encoding(Encoding::ASCII_8BIT)
+    str = str.to_s.dup
+    enc = str.encoding
+    str.force_encoding(Encoding::ASCII_8BIT)
     str.gsub!(/[^*\-.0-9A-Z_a-z]/, TBLENCWWWCOMP_)
-    str
+    str.force_encoding(enc)
   end
 
   # Decode given +str+ of URL-encoded form data.
