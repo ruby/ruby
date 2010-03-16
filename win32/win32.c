@@ -3579,7 +3579,6 @@ char *
 rb_w32_getcwd(char *buffer, int size)
 {
     char *p = buffer;
-    char *bp;
     int len;
 
     len = GetCurrentDirectory(0, NULL);
@@ -3610,11 +3609,7 @@ rb_w32_getcwd(char *buffer, int size)
         return NULL;
     }
 
-    for (bp = p; *bp != '\0'; bp = CharNext(bp)) {
-	if (*bp == '\\') {
-	    *bp = '/';
-	}
-    }
+    translate_char(p, '\\', '/');
 
     return p;
 }
