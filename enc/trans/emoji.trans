@@ -12,6 +12,7 @@
     ["{ee-ef}{80-bf}{80-bf}", :nomap0],
     ["f0{90-bf}{80-bf}{80-bf}", :nomap0],
     ["{f1-f3}{80-bf}{80-bf}{80-bf}", :nomap0],
+    ["f4{80-8f}{80-bf}{80-bf}", :nomap0],
   ]
 
   companies = %w(DoCoMo KDDI SoftBank Unicode)
