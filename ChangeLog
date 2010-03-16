@@ -1,3 +1,17 @@
+Wed Mar 17 02:29:46 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* compile.c, iseq.c, ruby.c, vm.c, vm_core.h, vm_eval.c: add absolute
+	  path field into rb_iseq_t.  The field contains a string representing
+	  a path to corresponding source file. or nil when the iseq is created
+	  from -e, stdin, eval, etc.  This field is used for require_relative.
+	  [ruby-dev:40004]
+
+	* load.c (rb_f_require_relative): add C implementation of
+	  require_relative.
+
+	* prelude.rb (require_relative): get rid of Ruby implementation of
+	  require_relative.
+
 Wed Mar 17 01:24:01 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* parse.y (rb_intern3): prohibit Symbol with an invalid encoding.

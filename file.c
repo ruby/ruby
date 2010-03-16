@@ -3188,8 +3188,8 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, char *unresolved, VALUE loopche
     }
 }
 
-static VALUE
-realpath_internal(VALUE basedir, VALUE path, int strict)
+VALUE
+rb_realpath_internal(VALUE basedir, VALUE path, int strict)
 {
     long prefixlen;
     VALUE resolved;
@@ -3277,7 +3277,7 @@ rb_file_s_realpath(int argc, VALUE *argv, VALUE klass)
 {
     VALUE path, basedir;
     rb_scan_args(argc, argv, "11", &path, &basedir);
-    return realpath_internal(basedir, path, 1);
+    return rb_realpath_internal(basedir, path, 1);
 }
 
 /*
@@ -3297,7 +3297,7 @@ rb_file_s_realdirpath(int argc, VALUE *argv, VALUE klass)
 {
     VALUE path, basedir;
     rb_scan_args(argc, argv, "11", &path, &basedir);
-    return realpath_internal(basedir, path, 0);
+    return rb_realpath_internal(basedir, path, 0);
 }
 
 static size_t
@@ -3429,7 +3429,7 @@ rb_file_s_basename(int argc, VALUE *argv)
  *     File.dirname("/home/gumby/work/ruby.rb")   #=> "/home/gumby/work"
  */
 
-static VALUE
+VALUE
 rb_file_s_dirname(VALUE klass, VALUE fname)
 {
     const char *name, *root, *p;

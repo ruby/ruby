@@ -1709,6 +1709,16 @@ rb_f_block_given_p(void)
     }
 }
 
+VALUE
+rb_current_realfilepath(void)
+{
+    rb_thread_t *th = GET_THREAD();
+    rb_control_frame_t *cfp = th->cfp;
+    cfp = vm_get_ruby_level_caller_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
+    if (cfp != 0) return cfp->iseq->filepath;
+    return Qnil;
+}
+
 void
 Init_vm_eval(void)
 {
