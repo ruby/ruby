@@ -1,3 +1,8 @@
+Wed Mar 17 06:39:59 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.h (rb_warning, rb_sys_warning): fixed typo in rdoc.
+	  [ruby-core:28696]
+
 Wed Mar 17 02:29:46 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* compile.c, iseq.c, ruby.c, vm.c, vm_core.h, vm_eval.c: add absolute
