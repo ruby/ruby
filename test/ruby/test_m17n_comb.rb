@@ -1040,10 +1040,12 @@ class TestM17NComb < Test::Unit::TestCase
     STRINGS.each {|s|
       if /\0/ =~ a(s)
         assert_raise(ArgumentError) { s.intern }
-      else
+      elsif s.valid_encoding?
         sym = s.intern
         assert_equal(s, sym.to_s, "#{encdump s}.intern.to_s")
         assert_equal(sym, s.to_sym)
+      else
+        assert_raise(EncodingError) { s.intern }
       end
     }
   end
