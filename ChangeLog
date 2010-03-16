@@ -1,3 +1,8 @@
+Tue Mar 16 20:13:00 2010  Kenta Murata  <mrkn@mrkn.jp>
+
+	* enc/trans/emoji.trans: added codepoints leading 0xf4 into
+	  nomap_table.
+
 Tue Mar 16 17:33:30 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (VpCtoV): keep e's sign.
