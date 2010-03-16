@@ -169,6 +169,9 @@ PRINTF_ARGS(void ruby_debug_printf(const char*, ...), 1, 2);
 #define iseq_filename(iseq) \
   (((rb_iseq_t*)DATA_PTR(iseq))->filename)
 
+#define iseq_filepath(iseq) \
+  (((rb_iseq_t*)DATA_PTR(iseq))->filepath)
+
 #define NEW_ISEQVAL(node, name, type, line_no)       \
   new_child_iseq(iseq, node, name, 0, type, line_no)
 
@@ -917,7 +920,7 @@ new_child_iseq(rb_iseq_t *iseq, NODE *node,
     VALUE ret;
 
     debugs("[new_child_iseq]> ---------------------------------------\n");
-    ret = rb_iseq_new_with_opt(node, name, iseq_filename(iseq->self), INT2FIX(line_no),
+    ret = rb_iseq_new_with_opt(node, name, iseq_filename(iseq->self), iseq_filepath(iseq->self), INT2FIX(line_no),
 			       parent, type, iseq->compile_data->option);
     debugs("[new_child_iseq]< ---------------------------------------\n");
     iseq_add_mark_object(iseq, ret);

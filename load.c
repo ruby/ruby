@@ -297,7 +297,7 @@ rb_load_internal(VALUE fname, int wrap)
 	th->mild_compile_error++;
 	node = (NODE *)rb_load_file(RSTRING_PTR(fname));
 	loaded = TRUE;
-	iseq = rb_iseq_new_top(node, rb_str_new2("<top (required)>"), fname, Qfalse);
+	iseq = rb_iseq_new_top(node, rb_str_new2("<top (required)>"), fname, fname, Qfalse);
 	th->mild_compile_error--;
 	rb_iseq_eval(iseq);
     }
@@ -446,6 +446,19 @@ VALUE
 rb_f_require(VALUE obj, VALUE fname)
 {
     return rb_require_safe(fname, rb_safe_level());
+}
+
+VALUE
+rb_f_require_relative(VALUE obj, VALUE fname)
+{
+    VALUE rb_current_realfilepath(void);
+    VALUE rb_file_s_dirname(VALUE klass, VALUE fname);
+    VALUE base = rb_current_realfilepath();
+    if (NIL_P(base)) {
+	rb_raise(rb_eLoadError, "cannot infer basepath");
+    }
+    base = rb_file_s_dirname(rb_cFile, base);
+    return rb_require_safe(rb_file_expand_path(fname, base), rb_safe_level());
 }
 
 static int
@@ -743,6 +756,7 @@ Init_load()
 
     rb_define_global_function("load", rb_f_load, -1);
     rb_define_global_function("require", rb_f_require, 1);
+    rb_define_global_function("require_relative", rb_f_require_relative, 1);
     rb_define_method(rb_cModule, "autoload", rb_mod_autoload, 2);
     rb_define_method(rb_cModule, "autoload?", rb_mod_autoload_p, 1);
     rb_define_global_function("autoload", rb_f_autoload, 2);

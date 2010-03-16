@@ -1454,7 +1454,9 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     }
 
     PREPARE_PARSE_MAIN({
-	iseq = rb_iseq_new_main(tree, opt->script_name);
+	VALUE path = Qnil;
+	if (!opt->e_script && strcmp(opt->script, "-")) path = opt->script_name;
+	iseq = rb_iseq_new_main(tree, opt->script_name, path);
     });
 
     if (opt->dump & DUMP_BIT(insns)) {

@@ -155,6 +155,7 @@ struct rb_iseq_struct {
     VALUE type;          /* instruction sequence type */
     VALUE name;	         /* String: iseq name */
     VALUE filename;      /* file information where this sequence from */
+    VALUE filepath;      /* real file path or nil */
     VALUE *iseq;         /* iseq (insn number and openrads) */
     VALUE *iseq_encoded; /* encoded iseq */
     unsigned long iseq_size;
@@ -464,11 +465,11 @@ typedef struct rb_thread_struct
 } rb_thread_t;
 
 /* iseq.c */
-VALUE rb_iseq_new(NODE*, VALUE, VALUE, VALUE, VALUE);
-VALUE rb_iseq_new_top(NODE *node, VALUE name, VALUE filename, VALUE parent);
-VALUE rb_iseq_new_main(NODE *node, VALUE filename);
-VALUE rb_iseq_new_with_bopt(NODE*, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE);
-VALUE rb_iseq_new_with_opt(NODE*, VALUE, VALUE, VALUE, VALUE, VALUE, const rb_compile_option_t*);
+VALUE rb_iseq_new(NODE*, VALUE, VALUE, VALUE, VALUE, VALUE);
+VALUE rb_iseq_new_top(NODE *node, VALUE name, VALUE filename, VALUE filepath, VALUE parent);
+VALUE rb_iseq_new_main(NODE *node, VALUE filename, VALUE filepath);
+VALUE rb_iseq_new_with_bopt(NODE*, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE);
+VALUE rb_iseq_new_with_opt(NODE*, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, const rb_compile_option_t*);
 VALUE rb_iseq_compile(VALUE src, VALUE file, VALUE line);
 VALUE rb_iseq_disasm(VALUE self);
 int rb_iseq_disasm_insn(VALUE str, VALUE *iseqval, size_t pos, rb_iseq_t *iseq, VALUE child);
