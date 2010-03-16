@@ -430,6 +430,22 @@ get_system_directory(WCHAR *path, UINT len)
 
 #define numberof(array) (sizeof(array) / sizeof(*array))
 
+UINT
+rb_w32_system_tmpdir(WCHAR *path, UINT len)
+{
+    static const WCHAR temp[] = L"temp";
+    WCHAR *p;
+
+    if (!get_special_folder(CSIDL_LOCAL_APPDATA, path)) {
+	if (get_system_directory(path, len)) return 0;
+    }
+    p = translate_wchar(path, L'\\', L'/');
+    if (*(p - 1) != L'/') *p++ = L'/';
+    if (p - path + numberof(temp) >= len) return 0;
+    memcpy(p, temp, sizeof(temp));
+    return p - path + numberof(temp) - 1;
+}
+
 static void
 init_env(void)
 {
@@ -484,15 +500,8 @@ init_env(void)
     if (!GetEnvironmentVariableW(TMPDIR, env, numberof(env)) &&
 	!GetEnvironmentVariableW(L"TMP", env, numberof(env)) &&
 	!GetEnvironmentVariableW(L"TEMP", env, numberof(env)) &&
-	(get_special_folder(CSIDL_LOCAL_APPDATA, env) ||
-	 get_system_directory(env, numberof(env)))) {
-	static const WCHAR temp[] = L"temp";
-	WCHAR *p = translate_wchar(env, L'\\', L'/');
-	if (*(p - 1) != L'/') *p++ = L'/';
-	if (p - env + numberof(temp) < numberof(env)) {
-	    memcpy(p, temp, sizeof(temp));
-	    set_env_val(TMPDIR);
-	}
+	rb_w32_system_tmpdir(env, numberof(env))) {
+	set_env_val(TMPDIR);
     }
 
 #undef env

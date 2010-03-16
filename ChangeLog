@@ -1,4 +1,8 @@
-Tue Mar 16 14:47:55 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Mar 16 15:20:13 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/tmpdir: split from lib/tmpdir.rb.
+
+	* win32/win32.c (rb_w32_system_tmpdir): extracted from init_env.
 
 	* win32/win32.c (rb_w32_getcwd): remvoed duplicated code.
 

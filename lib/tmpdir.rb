@@ -5,36 +5,14 @@
 #
 
 require 'fileutils'
+begin
+  require 'tmpdir.so'
+rescue LoadError
+end
 
 class Dir
 
-  @@systmpdir = '/tmp'
-
-  if /mswin|mingw|cygwin/ =~ RUBY_PLATFORM and
-      begin
-        require 'Win32API'
-        true
-      rescue LoadError
-      end
-    CSIDL_LOCAL_APPDATA = 0x001c
-    max_pathlen = 260
-    windir = "\0"*(max_pathlen+1)
-    begin
-      getdir = Win32API.new('shell32', 'SHGetFolderPath', 'LLLLP', 'L')
-      raise RuntimeError if getdir.call(0, CSIDL_LOCAL_APPDATA, 0, 0, windir) != 0
-      windir.rstrip!
-    rescue RuntimeError
-      begin
-        getdir = Win32API.new('kernel32', 'GetSystemWindowsDirectory', 'PL', 'L')
-      rescue RuntimeError
-        getdir = Win32API.new('kernel32', 'GetWindowsDirectory', 'PL', 'L')
-      end
-      windir[getdir.call(windir, windir.size)..-1] = ""
-    end
-    windir.force_encoding(Dir.pwd.encoding)
-    temp = File.expand_path('temp', windir.untaint)
-    @@systmpdir = temp if File.directory?(temp) and File.writable?(temp)
-  end
+  @@systmpdir ||= '/tmp'
 
   ##
   # Returns the operating system's temporary file path.
