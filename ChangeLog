@@ -1,3 +1,9 @@
+Tue Mar 16 17:33:30 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (VpCtoV): keep e's sign.
+	  When e doesn't over flow e * BASE_FIG but overflow e * 10,
+	  e will overflow.
+
 Tue Mar 16 17:18:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/encoding.h (rb_str_conv_enc_opts): missing prototype.
