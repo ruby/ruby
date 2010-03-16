@@ -1,3 +1,8 @@
+Tue Mar 16 11:23:42 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (file_expand_path): ignore dname if it has different
+	  drive letter or UNC.
+
 Tue Mar 16 07:16:56 2010  Tanaka Akira  <akr@fsij.org>
 
 	* tool/transcode-tblgen.rb: redundant loop removed.

@@ -2518,6 +2518,12 @@ static const char file_alt_separator[] = {FILE_ALT_SEPARATOR, '\0'};
 # define CharNext(p) ((p) + 1)
 #endif
 
+#if defined(DOSISH_UNC)
+#define has_unc(buf) (isdirsep((buf)[0]) && isdirsep((buf)[1]))
+#else
+#define has_unc(buf) 0
+#endif
+
 #ifdef DOSISH_DRIVE_LETTER
 static inline int
 has_drive_letter(const char *buf)
@@ -2555,6 +2561,19 @@ getcwdofdrv(int drv)
 	drvcwd = strdup(drive);
     }
     return drvcwd;
+}
+
+static inline int
+not_same_drive(VALUE path, int drive)
+{
+    const char *p = RSTRING_PTR(path);
+    if (RSTRING_LEN(path) < 2) return 0;
+    if (has_drive_letter(p)) {
+	return TOLOWER(p[0]) != TOLOWER(drive);
+    }
+    else {
+	return has_unc(p);
+    }
 }
 #endif
 
@@ -2781,7 +2800,7 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
 	else {
 	    /* specified drive, but not full path */
 	    int same = 0;
-	    if (!NIL_P(dname)) {
+	    if (!NIL_P(dname) || !not_same_drive(dname, s[0])) {
 		file_expand_path(dname, Qnil, abs_mode, result);
 		BUFINIT();
 		if (has_drive_letter(p) && TOLOWER(p[0]) == TOLOWER(s[0])) {
