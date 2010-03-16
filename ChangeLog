@@ -1,3 +1,7 @@
+Tue Mar 16 17:18:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/encoding.h (rb_str_conv_enc_opts): missing prototype.
+
 Tue Mar 16 15:20:13 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/tmpdir: split from lib/tmpdir.rb.
