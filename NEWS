@@ -313,6 +313,7 @@ with all sufficient information, see the ChangeLog file.
 * \d, \s, and \w are now ASCII only; use POSIX bracket classes and \p{} for
   Unicode semantics
 * $: no longer includes the current directory, use require_relative
+* Symbol with an invalid encoding is forbidden to exist.
 
 === Compilation options
 
