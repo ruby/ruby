@@ -1349,9 +1349,9 @@ AC_CACHE_CHECK(whether right shift preserve sign bit, rb_cv_rshift_sign,
 	rb_cv_rshift_sign=yes,
 	rb_cv_rshift_sign=no)])
 if test "$rb_cv_rshift_sign" = yes; then
-  AC_DEFINE(RSHIFT(x,y), ((x)>>((int)y)))
+  AC_DEFINE(RSHIFT(x,y), ((x)>>(int)(y)))
 else
-  AC_DEFINE(RSHIFT(x,y), (((x)<0) ? ~((~(x))>>(y)) : (x)>>(y)))
+  AC_DEFINE(RSHIFT(x,y), (((x)<0) ? ~((~(x))>>(int)(y)) : (x)>>(int)(y)))
 fi
 
 test "$rb_cv_fcnt" = "not found" && rb_cv_fcnt="not found (OK if using GNU libc)"
