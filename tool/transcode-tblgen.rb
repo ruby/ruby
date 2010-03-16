@@ -215,63 +215,99 @@ class ActionMap
   end
 
   def self.expand(prefix, rects, &block)
-    #if prefix == ''
-    #  numsing = numrang = 0
-    #  rects.each {|min, max, action| if min == max then numsing += 1 else numrang += 1 end }
-    #  puts "#{numsing} singleton mappings and #{numrang} range mappings."
-    #end
-    return [] if rects.empty?
-    if rects[0][0].empty?
-      actions = rects.map {|min, max, action|
+    #numsing = numreg = 0
+    #rects.each {|min, max, action| if min == max then numsing += 1 else numreg += 1 end }
+    #puts "#{numsing} singleton mappings and #{numreg} region mappings."
+    singleton_rects = []
+    region_rects = []
+    rects.each {|rect|
+      min, max, action = rect
+      if min == max
+        singleton_rects << rect
+      else
+        region_rects << rect
+      end
+    }
+    expand_rec(prefix, singleton_rects, region_rects, &block)
+  end
+
+  def self.expand_rec(prefix, singleton_rects, region_rects, &block)
+    some_mapping = singleton_rects[0] || region_rects[0]
+    return [] if !some_mapping
+    if some_mapping[0].empty?
+      h = {}
+      (singleton_rects + region_rects).each {|min, max, action|
         raise ArgumentError, "ambiguous pattern: #{prefix}" if !min.empty?
-        action
-      }.uniq
+        h[action] = true
+      }
+      actions = h.keys
       act = block.call(prefix, actions)
       tree = Action.new(act)
     else
       tree = []
-      each_firstbyte_range(prefix, rects) {|byte_min, byte_max, rects2|
-        prefix2 = prefix
+      each_firstbyte_range(prefix, singleton_rects, region_rects) {|byte_min, byte_max, s_rects2, r_rects2|
         if byte_min == byte_max
-          prefix2 += "%02X" % byte_min
+          prefix2 = prefix + "%02X" % byte_min
         else
-          prefix2 += "{%02X-%02X}" % [byte_min, byte_max]
+          prefix2 = prefix + "{%02X-%02X}" % [byte_min, byte_max]
         end
-        child_tree = expand(prefix2, rects2, &block)
+        child_tree = expand_rec(prefix2, s_rects2, r_rects2, &block)
         tree << Branch.new(byte_min, byte_max, child_tree)
       }
     end
     return tree
   end
 
-  def self.each_firstbyte_range(prefix, rects)
-    a = []
+  def self.each_firstbyte_range(prefix, singleton_rects, region_rects)
     index_from = {}
-    rects.each {|min, max, action|
+
+    singleton_ary = []
+    singleton_rects.each {|seq, _, action|
+      raise ArgumentError, "ambiguous pattern: #{prefix}" if seq.empty?
+      seq_firstbyte = seq[0,2].to_i(16)
+      seq_rest = seq[2..-1]
+      singleton_ary << [seq_firstbyte, [seq_rest, seq_rest, action]]
+      index_from[seq_firstbyte] = true
+      index_from[seq_firstbyte+1] = true
+    }
+
+    region_ary = []
+    region_rects.each {|min, max, action|
       raise ArgumentError, "ambiguous pattern: #{prefix}" if min.empty?
       min_firstbyte = min[0,2].to_i(16)
       min_rest = min[2..-1]
       max_firstbyte = max[0,2].to_i(16)
       max_rest = max[2..-1]
-      a << [min_firstbyte, max_firstbyte, [min_rest, max_rest, action]]
+      region_ary << [min_firstbyte, max_firstbyte, [min_rest, max_rest, action]]
       index_from[min_firstbyte] = true
       index_from[max_firstbyte+1] = true
     }
-    byte_from = {}
+
+    byte_from = Array.new(index_from.size)
     index_from.keys.sort.each_with_index {|byte, i|
       index_from[byte] = i
       byte_from[i] = byte
     }
-    rects_hash = {}
-    a.each {|min_firstbyte, max_firstbyte, rest_elt|
+
+    singleton_rects_hash = {}
+    singleton_ary.each {|seq_firstbyte, rest_elt|
+      i = index_from[seq_firstbyte]
+      (singleton_rects_hash[i] ||= []) << rest_elt
+    }
+
+    region_rects_hash = {}
+    region_ary.each {|min_firstbyte, max_firstbyte, rest_elt|
       index_from[min_firstbyte].upto(index_from[max_firstbyte+1]-1) {|i|
-        rects_hash[i] ||= []
-        rects_hash[i] << rest_elt
+        (region_rects_hash[i] ||= []) << rest_elt
       }
     }
+
     0.upto(index_from.size-1) {|i|
-      rects2 = rects_hash[i]
-      yield byte_from[i], byte_from[i+1]-1, rects2 if rects2
+      s_rects = singleton_rects_hash[i]
+      r_rects = region_rects_hash[i]
+      if s_rects || r_rects
+        yield byte_from[i], byte_from[i+1]-1, (s_rects || []), (r_rects || [])
+      end
     }
   end
 
