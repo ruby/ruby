@@ -1,3 +1,7 @@
+Tue Mar 16 22:51:11 2010  Tanaka Akira  <akr@fsij.org>
+
+	* tool/transcode-tblgen.rb: specialize for singletom mappings.
+
 Tue Mar 16 20:13:00 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* enc/trans/emoji.trans: added codepoints leading 0xf4 into
