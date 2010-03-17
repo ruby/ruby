@@ -1,3 +1,12 @@
+Thu Mar 18 06:28:32 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_EXEC_PREFIX): added to config.h.
+
+	* ruby.c (ruby_init_loadpath_safe): TMP_RUBY_PREFIX should be
+	  exec_prefix, not rubylibprefix.  [ruby-core:28718]
+
+	* version.c (RUBY_LIB_PREFIX): fallback to RUBY_EXEC_PREFIX.
+
 Thu Mar 18 05:58:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_{to_i,mod,divmod,div2}):

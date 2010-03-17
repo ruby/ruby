@@ -26,7 +26,10 @@
 #define RUBY_THINARCH RUBY_PLATFORM_CPU"-"RUBY_PLATFORM_OS
 #endif
 #ifndef RUBY_LIB_PREFIX
-#error RUBY_LIB_PREFIX must be defined
+#ifndef RUBY_EXEC_PREFIX
+#error RUBY_EXEC_PREFIX must be defined
+#endif
+#define RUBY_LIB_PREFIX RUBY_EXEC_PREFIX"/lib/ruby"
 #endif
 #ifndef RUBY_SITE_LIB
 #define RUBY_SITE_LIB RUBY_LIB_PREFIX"/site_ruby"
