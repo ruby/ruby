@@ -483,10 +483,7 @@ static VALUE
 BigDecimal_to_i(VALUE self)
 {
     ENTER(5);
-    int e,n,i,nf;
-    U_LONG v,b,j;
-    volatile VALUE str;
-    char *psz,*pch;
+    int e,nf;
     Real *p;
 
     GUARD_OBJ(p,GetVpValue(self,1));
@@ -1013,7 +1010,6 @@ static VALUE
 BigDecimal_mod(VALUE self, VALUE r) /* %: a%b = a - (a.to_f/b).floor * b */
 {
     ENTER(3);
-    VALUE obj;
     Real *div=NULL, *mod=NULL;
 
     if(BigDecimal_DoDivmod(self,r,&div,&mod)) {
@@ -1097,7 +1093,6 @@ static VALUE
 BigDecimal_divmod(VALUE self, VALUE r)
 {
     ENTER(5);
-    VALUE obj;
     Real *div=NULL, *mod=NULL;
 
     if(BigDecimal_DoDivmod(self,r,&div,&mod)) {
@@ -1114,7 +1109,6 @@ BigDecimal_div2(int argc, VALUE *argv, VALUE self)
     VALUE b,n;
     int na = rb_scan_args(argc,argv,"11",&b,&n);
     if(na==1) { /* div in Float sense */
-       VALUE obj;
        Real *div=NULL;
        Real *mod;
        if(BigDecimal_DoDivmod(self,b,&div,&mod)) {

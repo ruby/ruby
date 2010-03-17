@@ -1,3 +1,8 @@
+Thu Mar 18 05:58:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_{to_i,mod,divmod,div2}):
+	  removed unused variables.
+
 Thu Mar 18 04:40:56 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (rb_intern3): get rid of type-punning cast.
