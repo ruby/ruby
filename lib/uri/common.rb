@@ -729,49 +729,60 @@ module URI
   #
   # This refers http://www.w3.org/TR/html5/forms.html#url-encoded-form-data
   #
-  # See URI.decode_www_component(str), URI.encode_www_form(enum)
-  def self.encode_www_component(str)
+  # See URI.decode_www_form_component, URI.encode_www_form
+  def self.encode_www_form_component(str)
     if TBLENCWWWCOMP_.empty?
       256.times do |i|
         case i
         when 0x20
           TBLENCWWWCOMP_[' '] = '+'
-        when 0x2A, 0x2D, 0x2E, 0x30..0x39, 0x41..0x5A, 0x5F, 0x61..0x7A
+        # when 0x2A, 0x2D, 0x2E, 0x30..0x39, 0x41..0x5A, 0x5F, 0x61..0x7A
         else
-          TBLENCWWWCOMP_[i.chr] = '%%%X' % i
+          TBLENCWWWCOMP_[i.chr] = '%%%02X' % i
         end
       end
       TBLENCWWWCOMP_.freeze
     end
-    str = str.to_s.dup
-    enc = str.encoding
-    str.force_encoding(Encoding::ASCII_8BIT)
-    str.gsub!(/[^*\-.0-9A-Z_a-z]/, TBLENCWWWCOMP_)
-    str.force_encoding(enc)
+    str = str.to_s
+    case str.encoding
+    when Encoding::ASCII_8BIT, Encoding::US_ASCII, Encoding::UTF_8
+      str = str.dup.force_encoding(Encoding::ASCII_8BIT)
+      str.gsub!(/[^*\-.0-9A-Z_a-z]/, TBLENCWWWCOMP_)
+    when Encoding::UTF_16BE, Encoding::UTF_16LE, Encoding::UTF_32BE, Encoding::UTF_32LE
+      reg = Regexp.new('[^*\-.0-9A-Z_a-z]+'.encode(str.encoding))
+      str = str.gsub(reg){
+        $&.force_encoding(Encoding::ASCII_8BIT).gsub(/./, TBLENCWWWCOMP_).
+        force_encoding(str.encoding)
+      }
+    else
+      if str.encoding.ascii_compatible?
+        str = str.gsub(/[^*\-.0-9A-Z_a-z]+/){
+          $&.force_encoding(Encoding::ASCII_8BIT).gsub(/./, TBLENCWWWCOMP_)}
+      else
+        str = str.force_encoding(Encoding::ASCII_8BIT).gsub(/./, TBLENCWWWCOMP_)
+      end
+    end
+    str.force_encoding(Encoding::US_ASCII)
   end
 
   # Decode given +str+ of URL-encoded form data.
   #
   # This decods + to SP.
   #
-  # See URI.encode_www_component(str)
-  def self.decode_www_component(str)
+  # See URI.encode_www_form_component, URI.decode_www_form
+  def self.decode_www_form_component(str, enc=Encoding::UTF_8)
     if TBLDECWWWCOMP_.empty?
       256.times do |i|
-        case i
-        when 0x20
-          TBLDECWWWCOMP_['+'] = ' '
-        else
-          h, l = i>>4, i&15
-          TBLDECWWWCOMP_['%%%X%X' % [h, l]] = i.chr
-          TBLDECWWWCOMP_['%%%x%X' % [h, l]] = i.chr
-          TBLDECWWWCOMP_['%%%X%x' % [h, l]] = i.chr
-          TBLDECWWWCOMP_['%%%x%x' % [h, l]] = i.chr
-        end
+        h, l = i>>4, i&15
+        TBLDECWWWCOMP_['%%%X%X' % [h, l]] = i.chr
+        TBLDECWWWCOMP_['%%%x%X' % [h, l]] = i.chr
+        TBLDECWWWCOMP_['%%%X%x' % [h, l]] = i.chr
+        TBLDECWWWCOMP_['%%%x%x' % [h, l]] = i.chr
+        TBLDECWWWCOMP_['+'] = ' ' if i == 0x20
       end
       TBLDECWWWCOMP_.freeze
     end
-    str.gsub(/\+|%\h\h/, TBLDECWWWCOMP_)
+    str.gsub(/\+|%\h\h/, TBLDECWWWCOMP_).force_encoding(Encoding::UTF_8)
   end
 
   # Generate URL-encoded form data from given +enum+.
@@ -779,7 +790,7 @@ module URI
   # This generates application/x-www-form-urlencoded data defined in HTML5
   # from given an Enumerable object.
   #
-  # This internally uses URI.encode_www_component(str).
+  # This internally uses URI.encode_www_form_component(str).
   #
   # This doesn't convert encodings of give items, so convert them before call
   # this method if you want to send data as other than original encoding or
@@ -789,7 +800,7 @@ module URI
   #
   # This refers http://www.w3.org/TR/html5/forms.html#url-encoded-form-data
   #
-  # See URI.encode_www_component(str)
+  # See URI.encode_www_form_component, URI.decode_www_form
   def self.encode_www_form(enum)
     str = nil
     enum.each do |k,v|
@@ -798,11 +809,42 @@ module URI
       else
         str = ''.force_encoding(Encoding::US_ASCII)
       end
-      str << encode_www_component(k)
+      str << encode_www_form_component(k)
       str << '='
-      str << encode_www_component(v)
+      str << encode_www_form_component(v)
     end
     str
+  end
+
+  # Decode URL-encoded form data from given +str+.
+  #
+  # This decodes application/x-www-form-urlencoded data
+  # and returns array of key-value array.
+  # This internally uses URI.decode_www_form_component.
+  #
+  # _charset_ hack is not supported now because the mapping from given charset
+  # to Ruby's encoding is not clear yet.
+  # see also http://www.w3.org/TR/html5/syntax.html#character-encodings-0
+  #
+  # This refers http://www.w3.org/TR/html5/forms.html#url-encoded-form-data
+  #
+  # ary = URI.decode_www_form("a=1&a=2&b=3")
+  # p ary                  #=> [['a', '1'], ['a', '2'], ['b', '3']]
+  # p ary.assoc('a').last  #=> '1'
+  # p ary.assoc('b').last  #=> '3'
+  # p ary.rassoc('a').last #=> '2'
+  # p Hash[ary]            # => {"a"=>"2", "b"=>"3"}
+  #
+  # See URI.decode_www_form_component, URI.encode_www_form
+  def self.decode_www_form(str, enc=Encoding::UTF_8)
+    ary = []
+    unless /\A\??(?<query>[^=;&]*=[^;&]*(?:[;&][^=;&]*=[^;&]*)*)\z/ =~ str
+      raise ArgumentError, "invalid data of application/x-www-form-urlencoded (#{str})"
+    end
+    query.scan(/([^=;&]+)=([^;&]*)/) do
+      ary << [decode_www_form_component($1, enc), decode_www_form_component($2, enc)]
+    end
+    ary
   end
 end
 

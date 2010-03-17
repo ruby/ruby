@@ -50,16 +50,22 @@ class TestCommon < Test::Unit::TestCase
     assert_raise(NoMethodError) { Object.new.URI("http://www.ruby-lang.org/") }
   end
 
-  def test_encode_www_component
-    assert_equal("+%21%22%23%24%25%26%27%28%29*%2B%2C-.%2F09%3A%3B%3C%3D%3E%3F%40" \
+  def test_encode_www_form_component
+    assert_equal("%00+%21%22%23%24%25%26%27%28%29*%2B%2C-.%2F09%3A%3B%3C%3D%3E%3F%40" \
                  "AZ%5B%5C%5D%5E_%60az%7B%7C%7D%7E",
-                 URI.encode_www_component(" !\"\#$%&'()*+,-./09:;<=>?@AZ[\\]^_`az{|}~"))
+                 URI.encode_www_form_component("\x00 !\"\#$%&'()*+,-./09:;<=>?@AZ[\\]^_`az{|}~"))
+    assert_equal("%95%41", URI.encode_www_form_component(
+                   "\x95\x41".force_encoding(Encoding::Shift_JIS)))
+    assert_equal("%30%42", URI.encode_www_form_component(
+                   "\x30\x42".force_encoding(Encoding::UTF_16BE)))
+    assert_equal("%30%42", URI.encode_www_form_component(
+                   "\x30\x42".force_encoding(Encoding::ISO_2022_JP)))
   end
 
-  def test_decode_www_component
-    assert_equal(" !\"\#$%&'()*+,-./09:;<=>?@AZ[\\]^_`az{|}~",
-                 URI.decode_www_component(
-                   "+%21%22%23%24%25%26%27%28%29*%2B%2C-.%2F09%3A%3B%3C%3D%3E%3F%40" \
+  def test_decode_www_form_component
+    assert_equal("  !\"\#$%&'()*+,-./09:;<=>?@AZ[\\]^_`az{|}~",
+                 URI.decode_www_form_component(
+                   "%20+%21%22%23%24%25%26%27%28%29*%2B%2C-.%2F09%3A%3B%3C%3D%3E%3F%40" \
                    "AZ%5B%5C%5D%5E_%60az%7B%7C%7D%7E"))
   end
 
@@ -73,6 +79,12 @@ class TestCommon < Test::Unit::TestCase
     assert_equal(expected, URI.encode_www_form(a: 1, :"\u3042" => "\u6F22"))
     assert_equal(expected, URI.encode_www_form([["a", "1"], ["\u3042", "\u6F22"]]))
     assert_equal(expected, URI.encode_www_form([[:a, 1], [:"\u3042", "\u6F22"]]))
+  end
+
+  def test_decode_www_form
+    assert_equal([%w[a 1], %w[a 2]], URI.decode_www_form("a=1&a=2"))
+    assert_equal([%w[a 1], ["\u3042", "\u6F22"]],
+                 URI.decode_www_form("a=1&%E3%81%82=%E6%BC%A2"))
   end
 end
 
