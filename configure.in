@@ -2394,10 +2394,12 @@ done
 
 if test "${LOAD_RELATIVE+set}"; then
     AC_DEFINE_UNQUOTED(LOAD_RELATIVE, $LOAD_RELATIVE)
+    RUBY_EXEC_PREFIX=""
     RUBY_LIB_PREFIX="`eval echo "$RUBY_LIB_PREFIX" | sed 's|^NONE/|/|;s|^'"$prefix"'/|/|'`"
     RUBY_SITE_LIB_PATH="`eval echo "$SITE_DIR" | sed 's|^NONE/|/|;s|^'"$prefix"'/|/|'`"
     RUBY_VENDOR_LIB_PATH="`eval echo "$VENDOR_DIR" | sed 's|^NONE/|/|;s|^'"$prefix"'/|/|'`"
 else
+    RUBY_EXEC_PREFIX="`eval echo \\"$exec_prefix/\\" | sed 's|^NONE/|'"$prefix"'/|;s|/$||'`"
     RUBY_LIB_PREFIX="`eval echo \\"$RUBY_LIB_PREFIX\\" | sed 's|^NONE/|'"$prefix"'/|'`"
     RUBY_SITE_LIB_PATH="`eval echo \\"$SITE_DIR\\" | sed 's|^NONE/|'"$prefix"'/|'`"
     RUBY_VENDOR_LIB_PATH="`eval echo \\"$VENDOR_DIR\\" | sed 's|^NONE/|'"$prefix"'/|'`"
@@ -2418,13 +2420,22 @@ AS_CASE(["$RUBY_VENDOR_LIB_PATH"],
   [
     RUBY_VENDOR_LIB_PATH="\"${RUBY_VENDOR_LIB_PATH}\""
     ])
+pat=`echo "$RUBY_EXEC_PREFIX/" | tr -c '\012' .`'\(.*\)'
+AS_CASE(["$RUBY_LIB_PREFIX"],
+  ["$RUBY_EXEC_PREFIX/"*], [
+    RUBY_LIB_PREFIX='RUBY_EXEC_PREFIX"/'"`expr \"$RUBY_LIB_PREFIX\" : \"$pat\"`"'"'
+    ],
+  [
+    RUBY_LIB_PREFIX="\"${RUBY_LIB_PREFIX}\""
+    ])
 
 if test ${RUBY_LIB_VERSION_STYLE+set}; then
     AC_DEFINE_UNQUOTED(RUBY_LIB_VERSION_STYLE, $RUBY_LIB_VERSION_STYLE)
 else
     AC_DEFINE_UNQUOTED(RUBY_LIB_VERSION, [$RUBY_LIB_VERSION])
 fi
-AC_DEFINE_UNQUOTED(RUBY_LIB_PREFIX, "${RUBY_LIB_PREFIX}")
+AC_DEFINE_UNQUOTED(RUBY_EXEC_PREFIX, "${RUBY_EXEC_PREFIX}")
+AC_DEFINE_UNQUOTED(RUBY_LIB_PREFIX, ${RUBY_LIB_PREFIX})
 AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, ${RUBY_SITE_LIB_PATH})
 AC_DEFINE_UNQUOTED(RUBY_VENDOR_LIB, ${RUBY_VENDOR_LIB_PATH})
 
