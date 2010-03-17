@@ -1,3 +1,7 @@
+Thu Mar 18 04:40:56 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_intern3): get rid of type-punning cast.
+
 Thu Mar 18 02:29:42 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* compile.c (iseq_build_body): add mark to jump table hash of case.

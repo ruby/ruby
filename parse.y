@@ -9496,6 +9496,7 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
     ID id;
     long last;
     int mb;
+    st_data_t data;
     struct RString fake_str;
     fake_str.basic.flags = T_STRING|RSTRING_NOEMBED|FL_FREEZE;
     fake_str.basic.klass = rb_cString;
@@ -9509,8 +9510,8 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
     	rb_raise(rb_eEncodingError, "invalid encoding symbol");
     }
 
-    if (st_lookup(global_symbols.sym_id, str, (st_data_t *)&id))
-	return id;
+    if (st_lookup(global_symbols.sym_id, str, &data))
+	return (ID)data;
 
     if (rb_cString && !rb_enc_asciicompat(enc)) {
 	id = ID_JUNK;
