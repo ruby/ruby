@@ -2106,6 +2106,44 @@ ruby_strtod(const char *s00, char **se)
         }
 break2:
     if (*s == '0') {
+	if (s[1] == 'x' || s[1] == 'X') {
+	    static const char hexdigit[] = "0123456789abcdef0123456789ABCDEF";
+	    s0 = ++s;
+	    adj = 0;
+
+	    while (*++s && (s1 = strchr(hexdigit, *s))) {
+		adj *= 16;
+		adj += (s1 - hexdigit) & 15;
+	    }
+
+	    if (*s == '.') {
+		aadj = 1.;
+		while (*++s && (s1 = strchr(hexdigit, *s))) {
+		    aadj /= 16;
+		    adj += aadj * ((s1 - hexdigit) & 15);
+		}
+	    }
+
+	    if (*s != 'P' && *s != 'p') {
+		s = s0;
+		goto ret;
+	    }
+
+	    dsign = 0x2C - *++s; /* +: 2B, -: 2D */
+	    if (abs(dsign) != 1) {
+		s = s0;
+		goto ret;
+	    }
+
+	    for (nd = 0, s++; (c = *s) >= '0' && c <= '9'; s++) {
+		nd *= 10;
+		nd += c;
+		nd -= '0';
+	    }
+
+	    dval(rv) = ldexp(adj, nd * dsign);
+	    goto ret;
+	}
         nz0 = 1;
         while (*++s == '0') ;
         if (!*s)

@@ -1385,6 +1385,15 @@ class TestString < Test::Unit::TestCase
     assert_equal(5.9742e24, S("5.9742e24").to_f)
     assert_equal(98.6,      S("98.6 degrees").to_f)
     assert_equal(0.0,       S("degrees 100.0").to_f)
+    assert_equal([ 0.0].pack('G'), [S(" 0.0").to_f].pack('G'))
+    assert_equal([-0.0].pack('G'), [S("-0.0").to_f].pack('G'))
+    assert_equal([ 0.0].pack('G'), [S(" 0x0p+0").to_f].pack('G'))
+    assert_equal([-0.0].pack('G'), [S("-0x0p+0").to_f].pack('G'))
+    assert_equal(1.0,       S("0X1.P+0").to_f)
+    assert_equal(1024.0,    S("0x1p+10").to_f)
+    assert_equal(0.0009765625, S("0x1p-10").to_f)
+    assert_equal(2.6881171418161356e+43, S("0x1.3494a9b171bf5p+144").to_f)
+    assert_equal(-3.720075976020836e-44, S("-0x1.a8c1f14e2af5dp-145").to_f)
   end
 
   def test_to_i
