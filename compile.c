@@ -5290,6 +5290,7 @@ iseq_build_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 				rb_ary_store(op, i+1, (VALUE)label | 1);
 			    }
 			    argv[j] = op;
+			    iseq_add_mark_object_compile_time(iseq, op);
 			}
 			break;
 		      default:
