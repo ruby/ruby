@@ -1096,9 +1096,6 @@ rb_hash_aset(VALUE hash, VALUE key, VALUE val)
 {
     rb_hash_modify(hash);
     hash_update(hash, key);
-    if (hash == key) {
-	rb_raise(rb_eArgError, "recursive key for hash");
-    }
     if (RHASH(hash)->ntbl->type == &identhash || rb_obj_class(key) != rb_cString) {
 	st_insert(RHASH(hash)->ntbl, key, val);
     }
