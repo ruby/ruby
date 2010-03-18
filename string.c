@@ -6537,7 +6537,7 @@ rb_str_ord(VALUE s)
  *  Returns a basic <em>n</em>-bit checksum of the characters in <i>str</i>,
  *  where <em>n</em> is the optional <code>Fixnum</code> parameter, defaulting
  *  to 16. The result is simply the sum of the binary value of each character in
- *  <i>str</i> modulo <code>2n - 1</code>. This is not a particularly good
+ *  <i>str</i> modulo <code>2**n - 1</code>. This is not a particularly good
  *  checksum.
  */
 
@@ -6548,6 +6548,8 @@ rb_str_sum(int argc, VALUE *argv, VALUE str)
     int bits;
     char *ptr, *p, *pend;
     long len;
+    VALUE sum = INT2FIX(0);
+    unsigned long sum0 = 0;
 
     if (argc == 0) {
 	bits = 16;
@@ -6559,36 +6561,42 @@ rb_str_sum(int argc, VALUE *argv, VALUE str)
     ptr = p = RSTRING_PTR(str);
     len = RSTRING_LEN(str);
     pend = p + len;
-    if (bits >= (int)sizeof(long)*CHAR_BIT) {
-	VALUE sum = INT2FIX(0);
 
-	while (p < pend) {
-	    str_mod_check(str, ptr, len);
-	    sum = rb_funcall(sum, '+', 1, INT2FIX((unsigned char)*p));
-	    p++;
-	}
-	if (bits != 0) {
-	    VALUE mod;
+    while (p < pend) {
+        if (FIXNUM_MAX - 255 < sum0) {
+            sum = rb_funcall(sum, '+', 1, LONG2FIX(sum0));
+            str_mod_check(str, ptr, len);
+            sum0 = 0;
+        }
+        sum0 += (unsigned char)*p;
+        p++;
+    }
 
-	    mod = rb_funcall(INT2FIX(1), rb_intern("<<"), 1, INT2FIX(bits));
-	    mod = rb_funcall(mod, '-', 1, INT2FIX(1));
-	    sum = rb_funcall(sum, '&', 1, mod);
-	}
-	return sum;
+    if (bits == 0) {
+        if (sum0) {
+            sum = rb_funcall(sum, '+', 1, LONG2FIX(sum0));
+        }
     }
     else {
-       unsigned long sum = 0;
+        if (sum == INT2FIX(0)) {
+            if (bits < (int)sizeof(long)*CHAR_BIT) {
+                sum0 &= (((unsigned long)1)<<bits)-1;
+            }
+            sum = LONG2FIX(sum0);
+        }
+        else {
+            VALUE mod;
 
-	while (p < pend) {
-	    str_mod_check(str, ptr, len);
-	    sum += (unsigned char)*p;
-	    p++;
-	}
-	if (bits != 0) {
-           sum &= (((unsigned long)1)<<bits)-1;
-	}
-	return rb_int2inum(sum);
+            if (sum0) {
+                sum = rb_funcall(sum, '+', 1, LONG2FIX(sum0));
+            }
+
+            mod = rb_funcall(INT2FIX(1), rb_intern("<<"), 1, INT2FIX(bits));
+            mod = rb_funcall(mod, '-', 1, INT2FIX(1));
+            sum = rb_funcall(sum, '&', 1, mod);
+        }
     }
+    return sum;
 }
 
 static VALUE
