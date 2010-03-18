@@ -288,6 +288,11 @@ with all sufficient information, see the ChangeLog file.
     * SecureRandom.urlsafe_base64
 
 * URI
+  * new methods:
+    * URI.encode_www_form
+    * URI.decode_www_form
+    * URI.encode_www_form_component
+    * URI.decode_www_form_component
   * Obsoleted methods:
     * URI#escape
     * URI#unescape

@@ -27,22 +27,22 @@ Thu Mar 18 00:58:27 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Thu Mar 18 00:00:58 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* lib/uri/common.rb (URI#{en,de}code_www_form_component):
-	  renamed from URI#{en,de}code_www_component. [ruby-dev:40672]
+	* lib/uri/common.rb (URI.{en,de}code_www_form_component):
+	  renamed from URI.{en,de}code_www_component. [ruby-dev:40672]
 
-	* lib/uri/common.rb (URI#encode_www_form_component): %-encoded
+	* lib/uri/common.rb (URI.encode_www_form_component): %-encoded
 	  element should have always two hex.
 
-	* lib/uri/common.rb (URI#encode_www_form_component):
+	* lib/uri/common.rb (URI.encode_www_form_component):
 	  better treatment for ASCII incompatible encodings and
 	  encodings whose lead byte may use 7bit.
 
-	* lib/uri/common.rb (URI#decode_www_form_component): add %20.
+	* lib/uri/common.rb (URI.decode_www_form_component): add %20.
 
-	* lib/uri/common.rb (URI#decode_www_form_component): add
+	* lib/uri/common.rb (URI.decode_www_form_component): add
 	  result's encoding as 2nd argument.
 
-	* lib/uri/common.rb (URI#decode_www_form): added.
+	* lib/uri/common.rb (URI.decode_www_form): added.
 
 Wed Mar 17 16:25:53 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
