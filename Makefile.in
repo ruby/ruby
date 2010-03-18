@@ -139,7 +139,7 @@ all:
 
 miniruby$(EXEEXT):
 		@-if test -f $@; then $(MV) -f $@ $@.old; $(RM) $@.old; fi
-		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINLIBS) $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT) $(LIBS) $(OUTFLAG)$@
+		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINLIBS) $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT) $(LIBS) $(OUTFLAG)$@
 
 $(PROGRAM):
 		@$(RM) $@
