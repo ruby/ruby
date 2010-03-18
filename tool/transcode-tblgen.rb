@@ -19,6 +19,17 @@ class Array
   end
 end
 
+class String
+  unless "".respond_to? :start_with?
+    def start_with?(*prefixes)
+      prefixes.each {|prefix|
+        return true if prefix.length <= self.length && prefix == self[0, prefix.length]
+      }
+      false
+    end
+  end
+end
+
 NUM_ELEM_BYTELOOKUP = 2
 
 C_ESC = {
@@ -228,15 +239,23 @@ class ActionMap
         region_rects << rect
       end
     }
-    expand_rec(prefix, singleton_rects, region_rects, &block)
+    @singleton_rects = singleton_rects.sort_by {|min, max, action| min }
+    @singleton_rects.reverse!
+    ret = expand_rec(prefix, region_rects, &block)
+    @singleton_rects = nil
+    ret
   end
 
-  def self.expand_rec(prefix, singleton_rects, region_rects, &block)
-    some_mapping = singleton_rects[0] || region_rects[0]
-    return [] if !some_mapping
-    if some_mapping[0].empty?
+  def self.expand_rec(prefix, region_rects, &block)
+    return [] if region_rects.empty? && (!(s_rect = @singleton_rects.last) || !s_rect[0].start_with?(prefix))
+    if region_rects.empty? ? s_rect[0].length == prefix.length : region_rects[0][0].empty?
       h = {}
-      (singleton_rects + region_rects).each {|min, max, action|
+      while (s_rect = @singleton_rects.last) && s_rect[0].start_with?(prefix)
+        min, max, action = @singleton_rects.pop
+        raise ArgumentError, "ambiguous pattern: #{prefix}" if min.length != prefix.length
+        h[action] = true
+      end
+      region_rects.each {|min, max, action|
         raise ArgumentError, "ambiguous pattern: #{prefix}" if !min.empty?
         h[action] = true
       }
@@ -245,31 +264,21 @@ class ActionMap
       tree = Action.new(act)
     else
       tree = []
-      each_firstbyte_range(prefix, singleton_rects, region_rects) {|byte_min, byte_max, s_rects2, r_rects2|
+      each_firstbyte_range(prefix, region_rects) {|byte_min, byte_max, r_rects2|
         if byte_min == byte_max
           prefix2 = prefix + "%02X" % byte_min
         else
           prefix2 = prefix + "{%02X-%02X}" % [byte_min, byte_max]
         end
-        child_tree = expand_rec(prefix2, s_rects2, r_rects2, &block)
+        child_tree = expand_rec(prefix2, r_rects2, &block)
         tree << Branch.new(byte_min, byte_max, child_tree)
       }
     end
     return tree
   end
 
-  def self.each_firstbyte_range(prefix, singleton_rects, region_rects)
+  def self.each_firstbyte_range(prefix, region_rects)
     index_from = {}
-
-    singleton_ary = []
-    singleton_rects.each {|seq, _, action|
-      raise ArgumentError, "ambiguous pattern: #{prefix}" if seq.empty?
-      seq_firstbyte = seq[0,2].to_i(16)
-      seq_rest = seq[2..-1]
-      singleton_ary << [seq_firstbyte, [seq_rest, seq_rest, action]]
-      index_from[seq_firstbyte] = true
-      index_from[seq_firstbyte+1] = true
-    }
 
     region_ary = []
     region_rects.each {|min, max, action|
@@ -284,31 +293,59 @@ class ActionMap
     }
 
     byte_from = Array.new(index_from.size)
-    index_from.keys.sort.each_with_index {|byte, i|
+    bytes = index_from.keys
+    bytes.sort!
+    bytes.reverse!
+    bytes.each_with_index {|byte, i|
       index_from[byte] = i
       byte_from[i] = byte
     }
 
-    singleton_rects_hash = {}
-    singleton_ary.each {|seq_firstbyte, rest_elt|
-      i = index_from[seq_firstbyte]
-      (singleton_rects_hash[i] ||= []) << rest_elt
-    }
-
-    region_rects_hash = {}
+    region_rects_ary = Array.new(index_from.size) { [] }
     region_ary.each {|min_firstbyte, max_firstbyte, rest_elt|
-      index_from[min_firstbyte].upto(index_from[max_firstbyte+1]-1) {|i|
-        (region_rects_hash[i] ||= []) << rest_elt
+      index_from[min_firstbyte].downto(index_from[max_firstbyte+1]+1) {|i|
+        region_rects_ary[i] << rest_elt
       }
     }
 
-    0.upto(index_from.size-1) {|i|
-      s_rects = singleton_rects_hash[i]
-      r_rects = region_rects_hash[i]
-      if s_rects || r_rects
-        yield byte_from[i], byte_from[i+1]-1, (s_rects || []), (r_rects || [])
+    r_start = nil
+    r_rects = []
+    until region_rects_ary.empty? || !(s_rect = @singleton_rects.last) || !(seq = s_rect[0]).start_with?(prefix)
+      region_byte = byte_from.last
+      singleton_byte = seq[prefix.length, 2].to_i(16)
+      min_byte = singleton_byte < region_byte ? singleton_byte : region_byte
+      if r_start && r_start < min_byte && !r_rects.empty?
+        yield r_start, min_byte-1, r_rects
       end
-    }
+      if region_byte < singleton_byte
+        r_start = region_byte
+        r_rects = region_rects_ary.pop
+        byte_from.pop
+      elsif region_byte > singleton_byte
+        yield singleton_byte, singleton_byte, r_rects
+        r_start = singleton_byte+1
+      else # region_byte == singleton_byte
+        r_start = region_byte+1
+        r_rects = region_rects_ary.pop
+        byte_from.pop
+        yield singleton_byte, singleton_byte, r_rects
+      end
+    end
+
+    until region_rects_ary.empty?
+      region_byte = byte_from.last
+      if r_start && r_start < region_byte && !r_rects.empty?
+        yield r_start, region_byte-1, r_rects
+      end
+      r_start = region_byte
+      r_rects = region_rects_ary.pop
+      byte_from.pop
+    end
+
+    until !(s_rect = @singleton_rects.last) || !(seq = s_rect[0]).start_with?(prefix)
+      singleton_byte = seq[prefix.length, 2].to_i(16)
+      yield singleton_byte, singleton_byte, []
+    end
   end
 
   def initialize(tree)
