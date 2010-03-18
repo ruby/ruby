@@ -1364,6 +1364,15 @@ class TestString < Test::Unit::TestCase
     }
   end
 
+  def test_sum_long
+    s8421505 = "\xff" * 8421505
+    assert_equal(127, s8421505.sum(31))
+    assert_equal(2147483775, s8421505.sum(0))
+    s16843010 = ("\xff" * 16843010)
+    assert_equal(254, s16843010.sum(32))
+    assert_equal(4294967550, s16843010.sum(0))
+  end
+
   def test_swapcase
     assert_equal(S("hi&LOW"), S("HI&low").swapcase)
   end
