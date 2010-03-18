@@ -1,3 +1,8 @@
+Thu Mar 18 13:51:22 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c, eval.c, process.c: add linux to r26371's condition.
+	  patched by Motohiro KOSAKI [ruby-core:28151]
+
 Wed Mar 17 06:39:59 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.h (rb_warning, rb_sys_warning): fixed typo in rdoc.
