@@ -2384,12 +2384,20 @@ slicebefore_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
  *  the block returns true for the element,
  *  the element is beginning of a chunk.
  *
- *  The result enumerator yields the chunked elements as an array.
- *  So "each" method can be called as follows.
+ *  The === and block is called from the first element to the last element
+ *  of _enum_.
+ *  The result for the first element is ignored.
+ *
+ *  The result enumerator yields the chunked elements as an array for +each+
+ *  method.
+ *  +each+ method can be called as follows.
  *
  *    enum.slice_before(pattern).each {|ary| ... }
  *    enum.slice_before {|elt| bool }.each {|ary| ... }
  *    enum.slice_before(initial_state) {|elt, state| bool }.each {|ary| ... }
+ *
+ *  Other methods of Enumerator class and Enumerable module,
+ *  such as map, etc., are also usable.
  *
  *  For example, iteration over ChangeLog entries can be implemented as
  *  follows.
