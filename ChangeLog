@@ -1,3 +1,7 @@
+Sat Mar 20 00:59:50 2010  wanabe  <s.wanabe@gmail.com>
+
+	* ext/dl/lib/dl/pack.rb (DL#pack): allow LLP64.
+
 Fri Mar 19 05:26:31 2010  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (rb_str_sum): don't call method for each byte.
