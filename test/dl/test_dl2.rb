@@ -1,5 +1,6 @@
 require_relative 'test_base.rb'
 require 'dl/callback'
+require 'dl/func'
 
 module DL
 class TestDL < TestBase
