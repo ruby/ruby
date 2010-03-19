@@ -1,3 +1,8 @@
+Fri Mar 19 17:12:34 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.h (RSTRING_*, RARRAY_*, RREGEXP_*, RSTRUCT_*, RBIGNUM_*):
+	  ensure non-lvalue for compatibility with 1.9.
+
 Thu Mar 18 13:51:22 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c, eval.c, process.c: add linux to r26371's condition.

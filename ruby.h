@@ -364,8 +364,8 @@ struct RString {
 	VALUE shared;
     } aux;
 };
-#define RSTRING_PTR(s) (RSTRING(s)->ptr)
-#define RSTRING_LEN(s) (RSTRING(s)->len)
+#define RSTRING_PTR(s) (*(char *const *)&RSTRING(s)->ptr)
+#define RSTRING_LEN(s) (*(const long *)&RSTRING(s)->len)
 #define RSTRING_END(s) (RSTRING_PTR(s)+RSTRING_LEN(s))
 
 struct RArray {
@@ -377,8 +377,8 @@ struct RArray {
     } aux;
     VALUE *ptr;
 };
-#define RARRAY_PTR(s) (RARRAY(s)->ptr)
-#define RARRAY_LEN(s) (RARRAY(s)->len)
+#define RARRAY_PTR(s) (*(VALUE *const *)&RARRAY(s)->ptr)
+#define RARRAY_LEN(s) (*(const long *)&RARRAY(s)->len)
 
 struct RRegexp {
     struct RBasic basic;
@@ -386,8 +386,8 @@ struct RRegexp {
     long len;
     char *str;
 };
-#define RREGEXP_SRC_PTR(r) (RREGEXP(r)->src)
-#define RREGEXP_SRC_LEN(r) (RREGEXP(r)->len)
+#define RREGEXP_SRC_PTR(r) (*(char *const *)&RREGEXP(r)->src)
+#define RREGEXP_SRC_LEN(r) (*(const long *)&RREGEXP(r)->len)
 
 struct RHash {
     struct RBasic basic;
@@ -441,8 +441,8 @@ struct RStruct {
     long len;
     VALUE *ptr;
 };
-#define RSTRUCT_LEN(st) (RSTRUCT(st)->len)
-#define RSTRUCT_PTR(st) (RSTRUCT(st)->ptr)
+#define RSTRUCT_LEN(st) (*(const long *)&RSTRUCT(st)->len)
+#define RSTRUCT_PTR(st) (*(VALUE *const *)&RSTRUCT(st)->ptr)
 
 struct RBignum {
     struct RBasic basic;
@@ -450,12 +450,12 @@ struct RBignum {
     long len;
     void *digits;
 };
-#define RBIGNUM_SIGN(b)       (RBIGNUM(b)->sign)
+#define RBIGNUM_SIGN(b)       (RBIGNUM(b)->sign != 0)
 #define RBIGNUM_SET_SIGN(b,s) (RBIGNUM(b)->sign = (s))
 #define RBIGNUM_POSITIVE_P(b) RBIGNUM_SIGN(b)
 #define RBIGNUM_NEGATIVE_P(b) (!RBIGNUM_SIGN(b))
-#define RBIGNUM_LEN(b)        (RBIGNUM(b)->len)
-#define RBIGNUM_DIGITS(b)     (RBIGNUM(b)->digits)
+#define RBIGNUM_LEN(b)        (*(const long *)&RBIGNUM(b)->len)
+#define RBIGNUM_DIGITS(b)     (*(VALUE *const *)&RBIGNUM(b)->digits)
 
 #define R_CAST(st)   (struct st*)
 #define RBASIC(obj)  (R_CAST(RBasic)(obj))
