@@ -50,7 +50,7 @@ module DL
     def test_to_s
       s = @cf.to_s
       assert s.tainted?, 'to_s should be tainted'
-      assert_match(/ptr=#{sprintf("0x%x", @cf.ptr)}/, s)
+      assert_match(/ptr=#{sprintf("0x0*%x", @cf.ptr)}/, s)
       assert_match(/name='#{@cf.name}'/, s)
       assert_match(/type=#{@cf.ctype}/, s)
     end
