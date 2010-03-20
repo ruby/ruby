@@ -1308,6 +1308,30 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_uniq
+    a = []
+    b = a.uniq
+    assert_equal([], a)
+    assert_equal([], b)
+    assert_not_same(a, b)
+
+    a = [1]
+    b = a.uniq
+    assert_equal([1], a)
+    assert_equal([1], b)
+    assert_not_same(a, b)
+
+    a = [1,1]
+    b = a.uniq
+    assert_equal([1,1], a)
+    assert_equal([1], b)
+    assert_not_same(a, b)
+
+    a = [1,2]
+    b = a.uniq
+    assert_equal([1,2], a)
+    assert_equal([1,2], b)
+    assert_not_same(a, b)
+
     a = @cls[ 1, 2, 3, 2, 1, 2, 3, 4, nil ]
     b = a.dup
     assert_equal(@cls[1, 2, 3, 4, nil], a.uniq)
@@ -1322,6 +1346,25 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_uniq!
+    a = []
+    b = a.uniq!
+    assert_equal(nil, b)
+
+    a = [1]
+    b = a.uniq!
+    assert_equal(nil, b)
+
+    a = [1,1]
+    b = a.uniq!
+    assert_equal([1], a)
+    assert_equal([1], b)
+    assert_same(a, b)
+
+    a = [1,2]
+    b = a.uniq!
+    assert_equal([1,2], a)
+    assert_equal(nil, b)
+
     a = @cls[ 1, 2, 3, 2, 1, 2, 3, 4, nil ]
     assert_equal(@cls[1, 2, 3, 4, nil], a.uniq!)
     assert_equal(@cls[1, 2, 3, 4, nil], a)
