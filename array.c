@@ -3367,6 +3367,8 @@ rb_ary_uniq_bang(VALUE ary)
     long i, j;
 
     rb_ary_modify_check(ary);
+    if (RARRAY_LEN(ary) <= 1)
+        return Qnil;
     if (rb_block_given_p()) {
 	hash = ary_make_hash_by(ary);
 	if (RARRAY_LEN(ary) == (i = RHASH_SIZE(hash))) {
@@ -3412,6 +3414,8 @@ rb_ary_uniq(VALUE ary)
     VALUE hash, uniq, v;
     long i;
 
+    if (RARRAY_LEN(ary) <= 1)
+        return rb_ary_dup(ary);
     if (rb_block_given_p()) {
 	hash = ary_make_hash_by(ary);
 	uniq = ary_new(rb_obj_class(ary), RHASH_SIZE(hash));

@@ -1,3 +1,9 @@
+Sat Mar 20 13:26:09 2010  Tanaka Akira  <akr@fsij.org>
+
+	* array.c (rb_ary_uniq_bang): the array is already unique if the
+	  length is zero or one.
+	  (rb_ary_uniq): ditto.
+
 Sat Mar 20 12:30:54 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib: fixed typo.  a patch by Sho Hashimoto in [ruby-dev:40716].
