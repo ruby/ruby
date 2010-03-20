@@ -189,7 +189,7 @@ class ActionMap
   end
 
   def self.build_tree(rects)
-    expand("", rects) {|prefix, actions|
+    expand(rects) {|prefix, actions|
       unambiguous_action(actions)
     }
   end
@@ -210,7 +210,7 @@ class ActionMap
       all_rects.concat rects.map {|min, max, action| [min, max, [i, action]] }
     }
 
-    tree = expand("", all_rects) {|prefix, actions|
+    tree = expand(all_rects) {|prefix, actions|
       args = Array.new(rects_list.length) { [] }
       actions.each {|i, action|
         args[i] << action
@@ -225,7 +225,7 @@ class ActionMap
     merge_rects(*mappings.map {|m| parse_to_rects(m) }, &block)
   end
 
-  def self.expand(prefix, rects, &block)
+  def self.expand(rects, &block)
     #numsing = numreg = 0
     #rects.each {|min, max, action| if min == max then numsing += 1 else numreg += 1 end }
     #puts "#{numsing} singleton mappings and #{numreg} region mappings."
@@ -241,13 +241,13 @@ class ActionMap
     }
     @singleton_rects = singleton_rects.sort_by {|min, max, action| min }
     @singleton_rects.reverse!
-    ret = expand_rec(prefix, region_rects, &block)
+    ret = expand_rec("", region_rects, &block)
     @singleton_rects = nil
     ret
   end
 
   def self.expand_rec(prefix, region_rects, &block)
-    return [] if region_rects.empty? && (!(s_rect = @singleton_rects.last) || !s_rect[0].start_with?(prefix))
+    return region_rects if region_rects.empty? && !((s_rect = @singleton_rects.last) && s_rect[0].start_with?(prefix))
     if region_rects.empty? ? s_rect[0].length == prefix.length : region_rects[0][0].empty?
       h = {}
       while (s_rect = @singleton_rects.last) && s_rect[0].start_with?(prefix)
@@ -259,9 +259,8 @@ class ActionMap
         raise ArgumentError, "ambiguous pattern: #{prefix}" if !min.empty?
         h[action] = true
       }
-      actions = h.keys
-      act = block.call(prefix, actions)
-      tree = Action.new(act)
+      tree = Action.new(block.call(prefix, h.keys))
+      h.clear
     else
       tree = []
       each_firstbyte_range(prefix, region_rects) {|byte_min, byte_max, r_rects2|
@@ -308,41 +307,46 @@ class ActionMap
       }
     }
 
-    r_start = nil
-    r_rects = []
-    until region_rects_ary.empty? || !(s_rect = @singleton_rects.last) || !(seq = s_rect[0]).start_with?(prefix)
-      region_byte = byte_from.last
+    index_from.clear
+
+    r_rects = region_rects_ary.pop
+    region_byte = byte_from.pop
+    prev_r_start = region_byte
+    prev_r_rects = []
+    while r_rects && (s_rect = @singleton_rects.last) && (seq = s_rect[0]).start_with?(prefix)
       singleton_byte = seq[prefix.length, 2].to_i(16)
       min_byte = singleton_byte < region_byte ? singleton_byte : region_byte
-      if r_start && r_start < min_byte && !r_rects.empty?
-        yield r_start, min_byte-1, r_rects
+      if prev_r_start < min_byte && !prev_r_rects.empty?
+        yield prev_r_start, min_byte-1, prev_r_rects
       end
       if region_byte < singleton_byte
-        r_start = region_byte
+        prev_r_start = region_byte
+        prev_r_rects = r_rects
         r_rects = region_rects_ary.pop
-        byte_from.pop
+        region_byte = byte_from.pop
       elsif region_byte > singleton_byte
-        yield singleton_byte, singleton_byte, r_rects
-        r_start = singleton_byte+1
+        yield singleton_byte, singleton_byte, prev_r_rects
+        prev_r_start = singleton_byte+1
       else # region_byte == singleton_byte
-        r_start = region_byte+1
+        prev_r_start = region_byte+1
+        prev_r_rects = r_rects
         r_rects = region_rects_ary.pop
-        byte_from.pop
-        yield singleton_byte, singleton_byte, r_rects
+        region_byte = byte_from.pop
+        yield singleton_byte, singleton_byte, prev_r_rects
       end
     end
 
-    until region_rects_ary.empty?
-      region_byte = byte_from.last
-      if r_start && r_start < region_byte && !r_rects.empty?
-        yield r_start, region_byte-1, r_rects
+    while r_rects
+      if prev_r_start < region_byte && !prev_r_rects.empty?
+        yield prev_r_start, region_byte-1, prev_r_rects
       end
-      r_start = region_byte
+      prev_r_start = region_byte
+      prev_r_rects = r_rects
       r_rects = region_rects_ary.pop
-      byte_from.pop
+      region_byte = byte_from.pop
     end
 
-    until !(s_rect = @singleton_rects.last) || !(seq = s_rect[0]).start_with?(prefix)
+    while (s_rect = @singleton_rects.last) && (seq = s_rect[0]).start_with?(prefix)
       singleton_byte = seq[prefix.length, 2].to_i(16)
       yield singleton_byte, singleton_byte, []
     end
@@ -504,6 +508,7 @@ class ActionMap
       end
       offsets[byte] = o
     }
+    infomap.clear
     if !min
       min = max = 0
     end
@@ -738,6 +743,7 @@ def transcode_compile_tree(name, from, map, valid_encoding=nil)
   else
     am = ActionMap.parse(h)
   end
+  h.clear
 
   max_input = am.max_input_length
   defined_name = am.gennode(TRANSCODE_GENERATED_BYTES_CODE, TRANSCODE_GENERATED_WORDS_CODE, name)
