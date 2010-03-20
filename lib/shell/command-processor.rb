@@ -31,7 +31,7 @@ class Shell
 
       install_builtin_commands
 
-      # define CommandProccessor#methods to Shell#methods and Filter#methods
+      # define CommandProcessor#methods to Shell#methods and Filter#methods
       for m in CommandProcessor.instance_methods(false) - NoDelegateMethods
 	add_delegate_command_to_shell(m)
       end

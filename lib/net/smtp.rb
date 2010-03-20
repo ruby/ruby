@@ -118,7 +118,7 @@ module Net
   #     Net::SMTP.start('your.smtp.server', 25) do |smtp|
   #       smtp.send_message msgstr,
   #                         'your@mail.address',
-  #                         'his_addess@example.com'
+  #                         'his_address@example.com'
   #     end
   # 
   # === Closing the Session

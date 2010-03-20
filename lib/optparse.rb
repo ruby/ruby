@@ -1565,7 +1565,7 @@ class OptionParser
   yesno = CompletingHash.new
   %w[- no false].each {|el| yesno[el] = false}
   %w[+ yes true].each {|el| yesno[el] = true}
-  yesno['nil'] = false          # shoud be nil?
+  yesno['nil'] = false          # should be nil?
   accept(TrueClass, yesno) {|arg, val| val == nil or val}
   #
   # Similar to TrueClass, but defaults to false.

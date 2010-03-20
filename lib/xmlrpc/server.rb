@@ -132,8 +132,8 @@ the same class.
        server.set_service_hook {|obj, *args|
          begin
            ret = obj.call(*args)  # call the original service-method
-           # could convert the return value 
-         resuce
+           # could convert the return value
+         rescue
            # rescue exceptions
          end
        }

@@ -26,7 +26,7 @@ module IRB
     end
     module_function :def_notifier
   
-    class AbstructNotifier
+    class AbstractNotifier
       def initialize(prefix, base_notifier)
 	@prefix = prefix
 	@base_notifier = base_notifier
@@ -73,7 +73,7 @@ module IRB
       end
     end
 
-    class CompositeNotifier<AbstructNotifier
+    class CompositeNotifier<AbstractNotifier
       def initialize(prefix, base_notifier)
 	super
 
@@ -94,7 +94,7 @@ module IRB
 
       def level_notifier=(value)
 	case value
-	when AbstructNotifier
+	when AbstractNotifier
 	  @level_notifier = value
 	when Integer
 	  l = @notifiers[value]
@@ -108,7 +108,7 @@ module IRB
       alias level= level_notifier=
     end
 
-    class LeveledNotifier<AbstructNotifier
+    class LeveledNotifier<AbstractNotifier
       include Comparable
 
       def initialize(base, level, prefix)
@@ -141,5 +141,14 @@ module IRB
     end
 
     D_NOMSG = NoMsgNotifier.new
+
+    def self.const_missing(name)
+      if name == :AbstructNotifier
+        warn "#{caller[0]}: fix typo: use AbstractNotifier instead of AbstructNotifier"
+        AbstractNotifier
+      else
+        super
+      end
+    end
   end
 end

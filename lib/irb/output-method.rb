@@ -1,5 +1,5 @@
 #
-#   output-method.rb - optput methods used by irb 
+#   output-method.rb - output methods used by irb 
 #   	$Release Version: 0.9.5$
 #   	$Revision$
 #   	$Date$

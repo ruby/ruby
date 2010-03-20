@@ -234,10 +234,10 @@ class Shell
 	  Thread.critical = false
 	  _pid = Process.waitpid(pid, nil)
 	rescue Errno::ECHILD
-	  command.notify "warn: job(%id) was done already waitipd."
+	  command.notify "warn: job(%id) was done already waitpid."
 	  _pid = true
 	ensure
-	  # when the process ends, wait until the command termintes
+	  # when the process ends, wait until the command terminates
 	  if _pid
 	  else
 	    command.notify("notice: Process finishing...",
