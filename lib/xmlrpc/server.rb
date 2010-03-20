@@ -133,7 +133,7 @@ the same class.
          begin
            ret = obj.call(*args)  # call the original service-method
            # could convert the return value
-         resuce
+         rescue
            # rescue exceptions
          end
        }

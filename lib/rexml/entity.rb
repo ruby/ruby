@@ -25,7 +25,7 @@ module REXML
     # Create a new entity.  Simple entities can be constructed by passing a
     # name, value to the constructor; this creates a generic, plain entity
     # reference. For anything more complicated, you have to pass a Source to
-    # the constructor with the entity definiton, or use the accessor methods.
+    # the constructor with the entity definition, or use the accessor methods.
     # +WARNING+: There is no validation of entity state except when the entity
     # is read from a stream.  If you start poking around with the accessors,
     # you can easily create a non-conformant Entity.  The best thing to do is

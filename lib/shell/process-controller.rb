@@ -191,7 +191,7 @@ class Shell
 	@active_jobs.delete command
 	ProcessController.inactivate(self)
 	if @active_jobs.empty?
-	  command.notify("start_jon in ierminate_jon(%id)", Shell::debug?)
+	  command.notify("start_job in terminate_job(%id)", Shell::debug?)
 	  start_job
 	end
       end
@@ -281,13 +281,13 @@ class Shell
 	  command.notify("job(%id) start to waiting finish.", @shell.debug?)
 	  _pid = Process.waitpid(pid, nil)
 	rescue Errno::ECHILD
-	  command.notify "warn: job(%id) was done already waitipd."
+	  command.notify "warn: job(%id) was done already waitpid."
 	  _pid = true
 	  #	rescue
 	  #	  STDERR.puts $!
 	ensure
 	  command.notify("Job(%id): Wait to finish when Process finished.", @shell.debug?)
-	  # when the process ends, wait until the command termintes
+	  # when the process ends, wait until the command terminates
 	  if USING_AT_EXIT_WHEN_PROCESS_EXIT or _pid
 	  else
 	    command.notify("notice: Process finishing...",

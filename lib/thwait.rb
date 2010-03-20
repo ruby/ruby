@@ -2,7 +2,7 @@
 #   thwait.rb - thread synchronization class
 #   	$Release Version: 0.9 $
 #   	$Revision: 1.3 $
-#   	by Keiju ISHITSUKA(Nihpon Rational Software Co.,Ltd.)
+#   	by Keiju ISHITSUKA(Nihon Rational Software Co.,Ltd.)
 #
 # --
 #  feature:
