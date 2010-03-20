@@ -6563,7 +6563,7 @@ rb_str_sum(int argc, VALUE *argv, VALUE str)
     pend = p + len;
 
     while (p < pend) {
-        if (FIXNUM_MAX - 255 < sum0) {
+        if (FIXNUM_MAX - UCHAR_MAX < sum0) {
             sum = rb_funcall(sum, '+', 1, LONG2FIX(sum0));
             str_mod_check(str, ptr, len);
             sum0 = 0;
