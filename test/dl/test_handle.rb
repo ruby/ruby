@@ -22,6 +22,7 @@ module DL
     end
 
     def test_static_sym
+      skip "DL::Handle.sym is not supported" if /mswin|mingw/ =~ RUBY_PLATFORM
       assert_not_nil DL::Handle.sym('dlopen')
       assert_equal DL::Handle.sym('dlopen'), DL::Handle['dlopen']
     end
@@ -124,6 +125,7 @@ module DL
     end
 
     def test_NEXT
+      skip "DL::Handle::NEXT is not supported" if /mswin|mingw/ =~ RUBY_PLATFORM
       begin
         # Linux / Darwin
         #
@@ -156,6 +158,7 @@ module DL
     end
 
     def test_DEFAULT
+      skip "DL::Handle::DEFAULT is not supported" if /mswin|mingw/ =~ RUBY_PLATFORM
       handle = DL::Handle::DEFAULT
       assert_not_nil handle['malloc']
     end
