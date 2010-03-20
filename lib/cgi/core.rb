@@ -408,7 +408,7 @@ class CGI
     # values is an Array.
     attr_reader :params
 
-    # Get the uploaed files as a hash of name=>values pairs
+    # Get the uploaded files as a hash of name=>values pairs
     attr_reader :files
 
     # Set all the parameters.

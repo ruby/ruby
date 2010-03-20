@@ -1212,7 +1212,7 @@ class CSV
   # Note that a passed String *is* modfied by this method.  Call dup() before
   # passing if you need a new String.
   #
-  # The +options+ parameter can be anthing CSV::new() understands.  This method
+  # The +options+ parameter can be anything CSV::new() understands.  This method
   # understands an additional <tt>:encoding</tt> parameter when not passed a
   # String to set the base Encoding for the output.  CSV needs this hint if you
   # plan to output non-ASCII compatible data.
@@ -1238,7 +1238,7 @@ class CSV
   # This method is a shortcut for converting a single row (Array) into a CSV
   # String.
   #
-  # The +options+ parameter can be anthing CSV::new() understands.  This method
+  # The +options+ parameter can be anything CSV::new() understands.  This method
   # understands an additional <tt>:encoding</tt> parameter to set the base
   # Encoding for the output.  This method will try to guess your Encoding from
   # the first non-+nil+ field in +row+, if possible, but you may need to use
@@ -1372,7 +1372,7 @@ class CSV
   # a into an Array.  Note that if +line+ contains multiple rows, anything
   # beyond the first row is ignored.
   #
-  # The +options+ parameter can be anthing CSV::new() understands.
+  # The +options+ parameter can be anything CSV::new() understands.
   #
   def self.parse_line(line, options = Hash.new)
     new(line, options).shift

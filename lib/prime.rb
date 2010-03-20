@@ -473,7 +473,7 @@ class Prime
     end
   end
 
-  # Provides a +Prime+ object with compatibility to Ruby 1.8 when instanciated via +Prime+.+new+.
+  # Provides a +Prime+ object with compatibility to Ruby 1.8 when instantiated via +Prime+.+new+.
   module OldCompatibility
     # Returns the next prime number and forwards internal pointer.
     def succ

@@ -53,7 +53,7 @@ class Gem::SpecFetcher
   end
 
   ##
-  # Retuns the local directory to write +uri+ to.
+  # Returns the local directory to write +uri+ to.
 
   def cache_dir(uri)
     File.join @dir, "#{uri.host}%#{uri.port}", File.dirname(uri.path)

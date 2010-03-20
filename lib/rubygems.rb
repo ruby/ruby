@@ -310,7 +310,7 @@ module Gem
   ##
   # Find the full path to the executable for gem +name+.  If the +exec_name+
   # is not given, the gem's default_executable is chosen, otherwise the
-  # specifed executable's path is returned.  +version_requirements+ allows you
+  # specified executable's path is returned.  +version_requirements+ allows you
   # to specify specific gem versions.
 
   def self.bin_path(name, exec_name = nil, *version_requirements)

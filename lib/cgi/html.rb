@@ -455,7 +455,7 @@ class CGI
     #   image_button("url", "name", "string")
     #     # <INPUT TYPE="image" SRC="url" NAME="name" ALT="string">
     #
-    #   image_button("SRC" => "url", "ATL" => "strng")
+    #   image_button("SRC" => "url", "ALT" => "string")
     #     # <INPUT TYPE="image" SRC="url" ALT="string">
     def image_button(src = "", name = nil, alt = nil)
       attributes = if src.kind_of?(String)

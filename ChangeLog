@@ -1,3 +1,7 @@
+Sat Mar 20 12:30:54 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib: fixed typo.  a patch by Sho Hashimoto in [ruby-dev:40716].
+
 Sat Mar 20 11:32:18 2010  Tanaka Akira  <akr@fsij.org>
 
 	* tool/transcode-tblgen.rb (each_firstbyte_range): tuned for less

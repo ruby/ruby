@@ -75,7 +75,7 @@ class XMP
       if @encoding and exps.encoding != @encoding
 	enc = Encoding.compatible?(@exps.join("\n"), exps)
 	if enc.nil?
-	  raise Encoding::CompatibilityError, "Encoding in which the passed exression is encoded is not compatible to the preceding's one"
+	  raise Encoding::CompatibilityError, "Encoding in which the passed expression is encoded is not compatible to the preceding's one"
 	else
 	  @encoding = enc
 	end
