@@ -1345,6 +1345,26 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[1, 2, 3], @cls[1, 2, 3].uniq)
   end
 
+  def test_uniq_with_block
+    a = []
+    b = a.uniq {|v| v.even? }
+    assert_equal([], a)
+    assert_equal([], b)
+    assert_not_same(a, b)
+
+    a = [1]
+    b = a.uniq {|v| v.even? }
+    assert_equal([1], a)
+    assert_equal([1], b)
+    assert_not_same(a, b)
+
+    a = [1,3]
+    b = a.uniq {|v| v.even? }
+    assert_equal([1,3], a)
+    assert_equal([1], b)
+    assert_not_same(a, b)
+  end
+
   def test_uniq!
     a = []
     b = a.uniq!
@@ -1383,6 +1403,27 @@ class TestArray < Test::Unit::TestCase
     assert_raise(ArgumentError) { a.uniq!(1) }
     assert_raise(ArgumentError) { f.uniq!(1) }
     assert_raise(RuntimeError) { f.uniq! }
+  end
+
+  def test_uniq_bang_with_block
+    a = []
+    b = a.uniq! {|v| v.even? }
+    assert_equal(nil, b)
+
+    a = [1]
+    b = a.uniq! {|v| v.even? }
+    assert_equal(nil, b)
+
+    a = [1,3]
+    b = a.uniq! {|v| v.even? }
+    assert_equal([1], a)
+    assert_equal([1], b)
+    assert_same(a, b)
+
+    a = [1,2]
+    b = a.uniq! {|v| v.even? }
+    assert_equal([1,2], a)
+    assert_equal(nil, b)
   end
 
   def test_unshift
