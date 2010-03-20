@@ -179,7 +179,7 @@ class ActionMap
     if actions.length == 1
       actions[0]
     else
-      actions = actions.find_all {|action| action != :nomap0 }
+      actions.delete(:nomap0)
       if actions.length == 1
         actions[0]
       else
@@ -223,6 +223,45 @@ class ActionMap
 
   def self.merge(*mappings, &block)
     merge_rects(*mappings.map {|m| parse_to_rects(m) }, &block)
+  end
+
+  def self.merge2(map1, map2, &block)
+    rects1 = parse_to_rects(map1)
+    rects2 = parse_to_rects(map2)
+
+    actions = []
+    all_rects = []
+
+    rects1.each {|rect|
+      min, max, action = rect
+      rect[2] = actions.length
+      actions << action
+      all_rects << rect
+    }
+
+    boundary = actions.length
+
+    rects2.each {|rect|
+      min, max, action = rect
+      rect[2] = actions.length
+      actions << action
+      all_rects << rect
+    }
+
+    tree = expand(all_rects) {|prefix, as0|
+      as1 = []
+      as2 = []
+      as0.each {|i|
+        if i < boundary
+          as1 << actions[i]
+        else
+          as2 << actions[i]
+        end
+      }
+      yield(prefix, as1, as2)
+    }
+
+    self.new(tree)
   end
 
   def self.expand(rects, &block)
@@ -547,7 +586,6 @@ End
   end
 
   PreMemo = {}
-  PostMemo = {}
   NextName = "a"
 
   def generate_node(name_hint=nil)
@@ -571,16 +609,12 @@ End
       end
     }
 
-    if n = PostMemo[table]
-      return PreMemo[@tree] = n
-    end
-
     if !name_hint
       name_hint = "fun_" + NextName
       NextName.succ!
     end
 
-    PreMemo[@tree] = PostMemo[table] = name_hint
+    PreMemo[@tree] = name_hint
 
     generate_lookup_node(name_hint, table)
     name_hint
@@ -732,7 +766,7 @@ def transcode_compile_tree(name, from, map, valid_encoding=nil)
   }
   valid_encoding = ValidEncoding[from] if valid_encoding == nil
   if valid_encoding
-    am = ActionMap.merge(h, {valid_encoding => :undef}) {|prefix, as1, as2|
+    am = ActionMap.merge2(h, {valid_encoding => :undef}) {|prefix, as1, as2|
       a1 = as1.empty? ? nil : ActionMap.unambiguous_action(as1)
       a2 = as2.empty? ? nil : ActionMap.unambiguous_action(as2)
       if !a2
