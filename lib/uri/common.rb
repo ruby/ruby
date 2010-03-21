@@ -722,6 +722,10 @@ module URI
   # :nodoc:
   TBLDECWWWCOMP_ = {}
 
+  # :nodoc:
+  HTML5ASCIIINCOMPAT = [Encoding::UTF_7, Encoding::UTF_16BE, Encoding::UTF_16LE,
+    Encoding::UTF_32BE, Encoding::UTF_32LE]
+
   # Encode given +str+ to URL-encoded form data.
   #
   # This doesn't convert *, -, ., 0-9, A-Z, _, a-z,
@@ -733,35 +737,19 @@ module URI
   def self.encode_www_form_component(str)
     if TBLENCWWWCOMP_.empty?
       256.times do |i|
-        case i
-        when 0x20
-          TBLENCWWWCOMP_[' '] = '+'
-        # when 0x2A, 0x2D, 0x2E, 0x30..0x39, 0x41..0x5A, 0x5F, 0x61..0x7A
-        else
-          TBLENCWWWCOMP_[i.chr] = '%%%02X' % i
-        end
+        TBLENCWWWCOMP_[i.chr] = '%%%02X' % i
       end
+      TBLENCWWWCOMP_[' '] = '+'
       TBLENCWWWCOMP_.freeze
     end
     str = str.to_s
-    case str.encoding
-    when Encoding::ASCII_8BIT, Encoding::US_ASCII, Encoding::UTF_8
-      str = str.dup.force_encoding(Encoding::ASCII_8BIT)
-      str.gsub!(/[^*\-.0-9A-Z_a-z]/, TBLENCWWWCOMP_)
-    when Encoding::UTF_16BE, Encoding::UTF_16LE, Encoding::UTF_32BE, Encoding::UTF_32LE
-      reg = Regexp.new('[^*\-.0-9A-Z_a-z]+'.encode(str.encoding))
-      str = str.gsub(reg){
-        $&.force_encoding(Encoding::ASCII_8BIT).gsub(/./, TBLENCWWWCOMP_).
-        force_encoding(str.encoding)
-      }
+    if HTML5ASCIIINCOMPAT.include?(str.encoding)
+      str = str.encode(Encoding::UTF_8)
     else
-      if str.encoding.ascii_compatible?
-        str = str.gsub(/[^*\-.0-9A-Z_a-z]+/){
-          $&.force_encoding(Encoding::ASCII_8BIT).gsub(/./, TBLENCWWWCOMP_)}
-      else
-        str = str.force_encoding(Encoding::ASCII_8BIT).gsub(/./, TBLENCWWWCOMP_)
-      end
+      str = str.dup
     end
+    str.force_encoding(Encoding::ASCII_8BIT)
+    str.gsub!(/[^*\-.0-9A-Z_a-z]/, TBLENCWWWCOMP_)
     str.force_encoding(Encoding::US_ASCII)
   end
 
@@ -778,11 +766,11 @@ module URI
         TBLDECWWWCOMP_['%%%x%X' % [h, l]] = i.chr
         TBLDECWWWCOMP_['%%%X%x' % [h, l]] = i.chr
         TBLDECWWWCOMP_['%%%x%x' % [h, l]] = i.chr
-        TBLDECWWWCOMP_['+'] = ' ' if i == 0x20
       end
+      TBLDECWWWCOMP_['+'] = ' '
       TBLDECWWWCOMP_.freeze
     end
-    str.gsub(/\+|%\h\h/, TBLDECWWWCOMP_).force_encoding(Encoding::UTF_8)
+    str.gsub(/\+|%\h\h/, TBLDECWWWCOMP_).force_encoding(enc)
   end
 
   # Generate URL-encoded form data from given +enum+.
@@ -794,7 +782,8 @@ module URI
   #
   # This doesn't convert encodings of give items, so convert them before call
   # this method if you want to send data as other than original encoding or
-  # mixed encoding data.
+  # mixed encoding data. (strings which is encoded in HTML5 ASCII incompatible
+  # encoding is converted to UTF-8)
   #
   # This doesn't treat files. When you send a file, use multipart/form-data.
   #

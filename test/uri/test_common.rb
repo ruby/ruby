@@ -54,12 +54,12 @@ class TestCommon < Test::Unit::TestCase
     assert_equal("%00+%21%22%23%24%25%26%27%28%29*%2B%2C-.%2F09%3A%3B%3C%3D%3E%3F%40" \
                  "AZ%5B%5C%5D%5E_%60az%7B%7C%7D%7E",
                  URI.encode_www_form_component("\x00 !\"\#$%&'()*+,-./09:;<=>?@AZ[\\]^_`az{|}~"))
-    assert_equal("%95%41", URI.encode_www_form_component(
+    assert_equal("%95A", URI.encode_www_form_component(
                    "\x95\x41".force_encoding(Encoding::Shift_JIS)))
-    assert_equal("%30%42", URI.encode_www_form_component(
+    assert_equal("%E3%81%82", URI.encode_www_form_component(
                    "\x30\x42".force_encoding(Encoding::UTF_16BE)))
-    assert_equal("%30%42", URI.encode_www_form_component(
-                   "\x30\x42".force_encoding(Encoding::ISO_2022_JP)))
+    assert_equal("%1B%24B%24%22%1B%28B", URI.encode_www_form_component(
+                   "\e$B$\"\e(B".force_encoding(Encoding::ISO_2022_JP)))
   end
 
   def test_decode_www_form_component
@@ -67,6 +67,8 @@ class TestCommon < Test::Unit::TestCase
                  URI.decode_www_form_component(
                    "%20+%21%22%23%24%25%26%27%28%29*%2B%2C-.%2F09%3A%3B%3C%3D%3E%3F%40" \
                    "AZ%5B%5C%5D%5E_%60az%7B%7C%7D%7E"))
+    assert_equal("\xA1\xA2".force_encoding(Encoding::EUC_JP),
+                 URI.decode_www_form_component("%A1%A2", "EUC-JP"))
   end
 
   def test_encode_www_form
