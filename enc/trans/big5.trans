@@ -8,10 +8,10 @@
   transcode_tblgen "Big5", "UTF-8", [["{00-7f}", :nomap], *BIG5_TO_UCS_TBL]
   transcode_tblgen "UTF-8", "Big5", [["{00-7f}", :nomap], *BIG5_TO_UCS_TBL.map {|a,b| [b,a] }]
 
-  transcode_tblgen "Big5-HKSCS", "UTF-8", [["{00-7f}", :nomap], *BIG5_HKSCS_TO_UCS_TBL]
+  transcode_tblgen "Big5-HKSCS", "UTF-8", [["{00-7f}", :nomap], *BIG5_HKSCS_TO_UCS_TBL], ValidEncoding('Big5')
   transcode_tblgen "UTF-8", "Big5-HKSCS", [["{00-7f}", :nomap], *BIG5_HKSCS_TO_UCS_TBL.map {|a,b| [b,a] }]
 
-  transcode_tblgen "Big5-UAO", "UTF-8", [["{00-7f}", :nomap], *BIG5_UAO_TO_UCS_TBL]
+  transcode_tblgen "Big5-UAO", "UTF-8", [["{00-7f}", :nomap], *BIG5_UAO_TO_UCS_TBL], ValidEncoding('Big5')
   transcode_tblgen "UTF-8", "Big5-UAO", [["{00-7f}", :nomap], *BIG5_UAO_TO_UCS_TBL.map {|a,b| [b,a] }]
 
 %>

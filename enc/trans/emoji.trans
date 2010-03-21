@@ -23,7 +23,7 @@
       to_encoding   = (to_company   == "Unicode") ? "UTF-8" : "UTF8-"+to_company
 
       strict_mapping = EMOJI_EXCHANGE_TBL[from_encoding][to_encoding]
-      transcode_tblgen(from_encoding, to_encoding, strict_mapping + nomap_table)
+      transcode_tblgen(from_encoding, to_encoding, strict_mapping + nomap_table, nil)
     end
   end
 %>

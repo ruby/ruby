@@ -1,8 +1,8 @@
 #include "transcode_data.h"
 
 <%
-  gb2312_valid_byte_pattern = ValidEncoding['EUC-KR']
-  gb12345_valid_byte_pattern = ValidEncoding['EUC-KR']
+  gb2312_valid_byte_pattern = ValidEncoding('EUC-KR')
+  gb12345_valid_byte_pattern = ValidEncoding('EUC-KR')
 
   transcode_tblgen "GB2312", "UTF-8",
   [["{00-7f}", :nomap]] +

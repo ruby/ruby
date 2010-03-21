@@ -758,13 +758,17 @@ def encode_utf8(map)
   r
 end
 
-def transcode_compile_tree(name, from, map, valid_encoding=nil)
+UnspecifiedValidEncoding = Object.new
+
+def transcode_compile_tree(name, from, map, valid_encoding)
   map = encode_utf8(map)
   h = {}
   map.each {|k, v|
     h[k] = v unless h[k] # use first mapping
   }
-  valid_encoding = ValidEncoding[from] if valid_encoding == nil
+  if valid_encoding.equal? UnspecifiedValidEncoding
+    valid_encoding = ValidEncoding.fetch(from)
+  end
   if valid_encoding
     am = ActionMap.merge2(h, {valid_encoding => :undef}) {|prefix, as1, as2|
       a1 = as1.empty? ? nil : ActionMap.unambiguous_action(as1)
@@ -787,7 +791,7 @@ end
 TRANSCODERS = []
 TRANSCODE_GENERATED_TRANSCODER_CODE = ''
 
-def transcode_tbl_only(from, to, map, valid_encoding=nil)
+def transcode_tbl_only(from, to, map, valid_encoding=UnspecifiedValidEncoding)
   if VERBOSE_MODE
     if from.empty? || to.empty?
       STDERR.puts "converter for #{from.empty? ? to : from}"
@@ -808,7 +812,7 @@ def transcode_tbl_only(from, to, map, valid_encoding=nil)
   return map, tree_name, real_tree_name, max_input
 end
 
-def transcode_tblgen(from, to, map, valid_encoding=nil)
+def transcode_tblgen(from, to, map, valid_encoding=UnspecifiedValidEncoding)
   map, tree_name, real_tree_name, max_input = transcode_tbl_only(from, to, map, valid_encoding)
   transcoder_name = "rb_#{tree_name}"
   TRANSCODERS << transcoder_name
@@ -911,6 +915,10 @@ ValidEncoding = {
                     {81-fe}{40-7e,80-fe}
                     {81-fe}{30-39}{81-fe}{30-39}',
 }
+
+def ValidEncoding(enc)
+  ValidEncoding.fetch(enc)
+end
 
 def set_valid_byte_pattern(encoding, pattern_or_label)
   pattern =

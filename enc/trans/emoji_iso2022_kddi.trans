@@ -32,7 +32,8 @@
                                                    CP932VDC:NEC_IBM/UCS
                                                    CP932VDC:IBM/UCS
                                                    CP932UDA/UCS
-                                                   JISX0208:MS/UCS).join(","))
+                                                   JISX0208:MS/UCS).join(",")),
+    nil
 
   # mapping from UTF8-KDDI to stateless-ISO-2022-JP-KDDI
   transcode_tblgen "UTF8-KDDI", "stateless-ISO-2022-JP-KDDI",
@@ -43,7 +44,8 @@
                                                    UCS/CP932VDC:NEC_IBM
                                                    UCS/CP932VDC:IBM
                                                    UCS/CP932UDA
-                                                   UCS/JISX0208:MS).join(","))
+                                                   UCS/JISX0208:MS).join(",")),
+    ValidEncoding('UTF-8')
 %>
 
 <%= transcode_generated_code %>
