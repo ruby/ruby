@@ -658,12 +658,12 @@ sockopt_unpack(VALUE self, VALUE template)
     return rb_funcall(sockopt_data(self), rb_intern("unpack"), 1, template);
 }
 
+/*
+ * Document-class: ::Socket::Option
+ */
 void
 Init_sockopt(void)
 {
-    /* for rdoc */
-    /* rb_cSocket = rb_define_class("Socket", rb_cBasicSocket); */
-
     rb_cSockOpt = rb_define_class_under(rb_cSocket, "Option", rb_cObject);
     rb_define_method(rb_cSockOpt, "initialize", sockopt_initialize, 4);
     rb_define_method(rb_cSockOpt, "family", sockopt_family_m, 0);

@@ -83,7 +83,9 @@ EOS
 
 ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_const_defs_in_guard(make_value, name, default_value)")
 #if defined(<%=name%>)
+    /* <%=name%>: */
     rb_define_const(rb_cSocket, <%=c_str name%>, <%=make_value%>(<%=name%>));
+    /* <%=name%>: */
     rb_define_const(rb_mSockConst, <%=c_str name%>, <%=make_value%>(<%=name%>));
 #endif
 EOS
@@ -272,12 +274,13 @@ result = ERB.new(<<'EOS', nil, '%').result(binding)
 
 <%= INTERN_DEFS.map {|vardef, gen_hash, decl, func| vardef }.join("\n") %>
 
+/*
+ * Document-module: Socket::Constants
+ */
 static void
 init_constants(void)
 {
-    /* for rdoc */
-    /* rb_cSocket = rb_define_class("Socket", rb_cBasicSocket); */
-    /* rb_mSockConst = rb_define_module_under(rb_cSocket, "Constants"); */
+    rb_mSockConst = rb_define_module_under(rb_cSocket, "Constants");
 
 <%= gen_const_defs %>
 <%= INTERN_DEFS.map {|vardef, gen_hash, decl, func| gen_hash }.join("\n") %>

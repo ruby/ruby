@@ -254,8 +254,18 @@ int rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks);
 
 VALUE rsock_s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len);
 VALUE rsock_s_accept_nonblock(VALUE klass, rb_io_t *fptr, struct sockaddr *sockaddr, socklen_t *len);
+VALUE rsock_sock_listen(VALUE sock, VALUE log);
 
 VALUE rsock_sockopt_new(int family, int level, int optname, VALUE data);
+
+#if defined(HAVE_SENDMSG)
+VALUE rsock_bsock_sendmsg(int argc, VALUE *argv, VALUE sock);
+VALUE rsock_bsock_sendmsg_nonblock(int argc, VALUE *argv, VALUE sock);
+#endif
+#if defined(HAVE_RECVMSG)
+VALUE rsock_bsock_recvmsg(int argc, VALUE *argv, VALUE sock);
+VALUE rsock_bsock_recvmsg_nonblock(int argc, VALUE *argv, VALUE sock);
+#endif
 
 #ifdef HAVE_ST_MSG_CONTROL
 void rsock_discard_cmsg_resource(struct msghdr *mh);

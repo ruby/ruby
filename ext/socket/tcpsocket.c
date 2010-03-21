@@ -56,6 +56,8 @@ tcp_s_gethostbyname(VALUE obj, VALUE host)
 }
 
 /*
+ * Document-class: ::TCPSocket < IPSocket
+ *
  * TCPSocket class
  */
 void

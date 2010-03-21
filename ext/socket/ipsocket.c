@@ -284,6 +284,8 @@ ip_s_getaddress(VALUE obj, VALUE host)
 }
 
 /*
+ * Document-class: ::IPSocket < BasicSocket
+ *
  * IPSocket class
  */
 void

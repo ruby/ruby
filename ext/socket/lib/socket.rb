@@ -158,7 +158,7 @@ class Addrinfo
   end
 end
 
-class BasicSocket
+class BasicSocket < IO
   # Returns an address of the socket suitable for connect in the local machine.
   #
   # This method returns _self_.local_address, except following condition.
@@ -200,7 +200,7 @@ class BasicSocket
   end
 end
 
-class Socket
+class Socket < BasicSocket
   # enable the socket option IPV6_V6ONLY if IPV6_V6ONLY is available.
   def ipv6only!
     if defined? Socket::IPV6_V6ONLY
