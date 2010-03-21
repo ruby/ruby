@@ -485,6 +485,8 @@ unix_s_socketpair(int argc, VALUE *argv, VALUE klass)
 #endif
 
 /*
+ * Document-class: ::UNIXSocket < BasicSocket
+ *
  * UNIXSocket class
  */
 void

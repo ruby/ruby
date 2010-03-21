@@ -141,6 +141,5 @@ void
 Init_socket_constants(void)
 {
     /* constants */
-    rb_mSockConst = rb_define_module_under(rb_cSocket, "Constants");
     init_constants();
 }

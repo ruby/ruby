@@ -1,3 +1,7 @@
+Sun Mar 21 19:50:04 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket: make sources rdoc friendly.
+
 Sun Mar 21 17:57:49 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (IO_RBUF_CAPA_FOR): use large buffer as cbuf if readconv is

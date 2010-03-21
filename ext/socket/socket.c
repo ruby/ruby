@@ -485,8 +485,8 @@ sock_bind(VALUE sock, VALUE addr)
  * * listen manual pages on unix-based systems
  * * listen function in Microsoft's Winsock functions reference
  */
-static VALUE
-sock_listen(VALUE sock, VALUE log)
+VALUE
+rsock_sock_listen(VALUE sock, VALUE log)
 {
     rb_io_t *fptr;
     int backlog;
@@ -1780,6 +1780,8 @@ socket_s_ip_address_list(VALUE self)
 #endif
 
 /*
+ * Document-class: ::Socket < BasicSocket
+ *
  * Class +Socket+ provides access to the underlying operating system
  * socket implementations. It can be used to provide more operating system
  * specific functionality than the protocol-specific socket classes but at the
@@ -1817,7 +1819,7 @@ Init_socket()
     rb_define_method(rb_cSocket, "connect", sock_connect, 1);
     rb_define_method(rb_cSocket, "connect_nonblock", sock_connect_nonblock, 1);
     rb_define_method(rb_cSocket, "bind", sock_bind, 1);
-    rb_define_method(rb_cSocket, "listen", sock_listen, 1);
+    rb_define_method(rb_cSocket, "listen", rsock_sock_listen, 1);
     rb_define_method(rb_cSocket, "accept", sock_accept, 0);
     rb_define_method(rb_cSocket, "accept_nonblock", sock_accept_nonblock, 0);
     rb_define_method(rb_cSocket, "sysaccept", sock_sysaccept, 0);
@@ -1844,10 +1846,4 @@ Init_socket()
 #endif
 
     rb_define_singleton_method(rb_cSocket, "ip_address_list", socket_s_ip_address_list, 0);
-
-    /* defined here for rdoc */
-    rb_define_method(rb_cTCPServer, "listen", sock_listen, 1);
-#ifdef HAVE_SYS_UN_H
-    rb_define_method(rb_cUNIXServer, "listen", sock_listen, 1);
-#endif
 }

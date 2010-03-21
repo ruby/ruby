@@ -41,6 +41,8 @@ socks_s_close(VALUE sock)
 #endif
 
 /*
+ * Document-class: ::SOCKSSocket < TCPSocket
+ *
  * SOCKSSocket class
  */
 void

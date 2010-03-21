@@ -1325,13 +1325,13 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
  *   sock.sendmsg("\0", 0, nil, ancdata)
  *
  */
-static VALUE
-bsock_sendmsg(int argc, VALUE *argv, VALUE sock)
+VALUE
+rsock_bsock_sendmsg(int argc, VALUE *argv, VALUE sock)
 {
     return bsock_sendmsg_internal(argc, argv, sock, 0);
 }
 #else
-#define bsock_sendmsg rb_f_notimplement
+#define rsock_bsock_sendmsg rb_f_notimplement
 #endif
 
 #if defined(HAVE_SENDMSG)
@@ -1346,8 +1346,8 @@ bsock_sendmsg(int argc, VALUE *argv, VALUE sock)
  * and it doesn't retry the system call.
  *
  */
-static VALUE
-bsock_sendmsg_nonblock(int argc, VALUE *argv, VALUE sock)
+VALUE
+rsock_bsock_sendmsg_nonblock(int argc, VALUE *argv, VALUE sock)
 {
     return bsock_sendmsg_internal(argc, argv, sock, 1);
 }
@@ -1737,13 +1737,13 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
  *   }
  *
  */
-static VALUE
-bsock_recvmsg(int argc, VALUE *argv, VALUE sock)
+VALUE
+rsock_bsock_recvmsg(int argc, VALUE *argv, VALUE sock)
 {
     return bsock_recvmsg_internal(argc, argv, sock, 0);
 }
 #else
-#define bsock_recvmsg rb_f_notimplement
+#define rsock_bsock_recvmsg rb_f_notimplement
 #endif
 
 #if defined(HAVE_RECVMSG)
@@ -1758,27 +1758,21 @@ bsock_recvmsg(int argc, VALUE *argv, VALUE sock)
  * and it doesn't retry the system call.
  *
  */
-static VALUE
-bsock_recvmsg_nonblock(int argc, VALUE *argv, VALUE sock)
+VALUE
+rsock_bsock_recvmsg_nonblock(int argc, VALUE *argv, VALUE sock)
 {
     return bsock_recvmsg_internal(argc, argv, sock, 1);
 }
 #else
-#define bsock_recvmsg_nonblock rb_f_notimplement
+#define rsock_bsock_recvmsg_nonblock rb_f_notimplement
 #endif
 
+/*
+ * Document-class: ::Socket::AncillaryData
+ */
 void
 Init_ancdata(void)
 {
-    /* for rdoc */
-    /* rb_cBasicSocket = rb_define_class("BasicSocket", rb_cIO); */
-    /* rb_cSocket = rb_define_class("Socket", rb_cBasicSocket); */
-
-    rb_define_method(rb_cBasicSocket, "sendmsg", bsock_sendmsg, -1);
-    rb_define_method(rb_cBasicSocket, "sendmsg_nonblock", bsock_sendmsg_nonblock, -1);
-    rb_define_method(rb_cBasicSocket, "recvmsg", bsock_recvmsg, -1);
-    rb_define_method(rb_cBasicSocket, "recvmsg_nonblock", bsock_recvmsg_nonblock, -1);
-
 #if defined(HAVE_ST_MSG_CONTROL)
     rb_cAncillaryData = rb_define_class_under(rb_cSocket, "AncillaryData", rb_cObject);
     rb_define_method(rb_cAncillaryData, "initialize", ancillary_initialize, 4);

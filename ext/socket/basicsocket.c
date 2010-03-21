@@ -747,4 +747,10 @@ Init_basicsocket(void)
     rb_define_method(rb_cBasicSocket, "recv_nonblock", bsock_recv_nonblock, -1);
     rb_define_method(rb_cBasicSocket, "do_not_reverse_lookup", bsock_do_not_reverse_lookup, 0);
     rb_define_method(rb_cBasicSocket, "do_not_reverse_lookup=", bsock_do_not_reverse_lookup_set, 1);
+
+    rb_define_method(rb_cBasicSocket, "sendmsg", rsock_bsock_sendmsg, -1); /* in ancdata.c */
+    rb_define_method(rb_cBasicSocket, "sendmsg_nonblock", rsock_bsock_sendmsg_nonblock, -1); /* in ancdata.c */
+    rb_define_method(rb_cBasicSocket, "recvmsg", rsock_bsock_recvmsg, -1); /* in ancdata.c */
+    rb_define_method(rb_cBasicSocket, "recvmsg_nonblock", rsock_bsock_recvmsg_nonblock, -1); /* in ancdata.c */
+
 }

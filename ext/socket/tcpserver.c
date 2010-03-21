@@ -129,6 +129,8 @@ tcp_sysaccept(VALUE sock)
 }
 
 /*
+ * Document-class: ::TCPServer < TCPSocket
+ *
  * TCPServer class
  */
 void
@@ -139,4 +141,5 @@ Init_tcpserver(void)
     rb_define_method(rb_cTCPServer, "accept_nonblock", tcp_accept_nonblock, 0);
     rb_define_method(rb_cTCPServer, "sysaccept", tcp_sysaccept, 0);
     rb_define_method(rb_cTCPServer, "initialize", tcp_svr_init, -1);
+    rb_define_method(rb_cTCPServer, "listen", rsock_sock_listen, 1); /* in socket.c */
 }
