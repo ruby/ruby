@@ -285,10 +285,11 @@ class ActionMap
     ret
   end
 
+  TMPHASH = {}
   def self.expand_rec(prefix, region_rects, &block)
     return region_rects if region_rects.empty? && !((s_rect = @singleton_rects.last) && s_rect[0].start_with?(prefix))
     if region_rects.empty? ? s_rect[0].length == prefix.length : region_rects[0][0].empty?
-      h = {}
+      h = TMPHASH
       while (s_rect = @singleton_rects.last) && s_rect[0].start_with?(prefix)
         min, max, action = @singleton_rects.pop
         raise ArgumentError, "ambiguous pattern: #{prefix}" if min.length != prefix.length
@@ -316,7 +317,7 @@ class ActionMap
   end
 
   def self.each_firstbyte_range(prefix, region_rects)
-    index_from = {}
+    index_from = TMPHASH
 
     region_ary = []
     region_rects.each {|min, max, action|
