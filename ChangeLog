@@ -1,3 +1,10 @@
+Sun Mar 21 19:52:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_initialize): add autoclose argument to control close
+	  at finalization.  [ruby-core:26222]
+
+	* io.c (rb_io_autoclose_p, rb_io_set_autoclose): new methods.
+
 Sun Mar 21 19:50:04 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket: make sources rdoc friendly.
