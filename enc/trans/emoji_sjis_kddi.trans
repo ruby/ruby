@@ -9,7 +9,8 @@
                                           CP932VDC:NEC_IBM/UCS
                                           CP932VDC:IBM/UCS
                                           CP932UDA/UCS
-                                          JISX0208:MS/UCS).join(","))
+                                          JISX0208:MS/UCS).join(",")),
+    ValidEncoding('Shift_JIS')
 
   transcode_tblgen "UTF8-KDDI", "SJIS-KDDI",
     [["{00-7f}", :nomap]] +
@@ -20,7 +21,8 @@
                                           UCS/CP932VDC:NEC_IBM
                                           UCS/CP932VDC:IBM
                                           UCS/CP932UDA
-                                          UCS/JISX0208:MS).join(","))
+                                          UCS/JISX0208:MS).join(",")),
+    ValidEncoding('UTF-8')
 %>
 
 <%= transcode_generated_code %>
