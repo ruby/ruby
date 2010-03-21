@@ -109,8 +109,9 @@ extern void Init_File(void);
 
 #define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
 
-#define IO_RBUF_CAPA_MIN 16384
-#define IO_CBUF_CAPA_MIN 16384
+#define IO_RBUF_CAPA_MIN  8192
+#define IO_CBUF_CAPA_MIN  (128*1024)
+#define IO_RBUF_CAPA_FOR(fptr) (NEED_READCONV(fptr) ? IO_CBUF_CAPA_MIN : IO_RBUF_CAPA_MIN)
 #define IO_WBUF_CAPA_MIN  8192
 
 VALUE rb_cIO;
@@ -205,6 +206,19 @@ static int max_file_descriptor = NOFILE;
 #    endif
 #  endif
 #endif
+
+#if defined(RUBY_TEST_CRLF_ENVIRONMENT) || defined(_WIN32)
+/* Windows */
+# define NEED_NEWLINE_DECORATOR_ON_READ(fptr) (!(fptr->mode & FMODE_BINMODE))
+# define NEED_NEWLINE_DECORATOR_ON_WRITE(fptr) (!(fptr->mode & FMODE_BINMODE))
+# define TEXTMODE_NEWLINE_DECORATOR_ON_WRITE ECONV_CRLF_NEWLINE_DECORATOR
+#else
+/* Unix */
+# define NEED_NEWLINE_DECORATOR_ON_READ(fptr) (fptr->mode & FMODE_TEXTMODE)
+# define NEED_NEWLINE_DECORATOR_ON_WRITE(fptr) 0
+#endif
+#define NEED_READCONV(fptr) (fptr->encs.enc2 != NULL || NEED_NEWLINE_DECORATOR_ON_READ(fptr))
+#define NEED_WRITECONV(fptr) ((fptr->encs.enc != NULL && fptr->encs.enc != rb_ascii8bit_encoding()) || NEED_NEWLINE_DECORATOR_ON_WRITE(fptr) || (fptr->encs.ecflags & (ECONV_DECORATOR_MASK|ECONV_STATEFUL_DECORATOR_MASK)))
 
 #if !defined HAVE_SHUTDOWN && !defined shutdown
 #define shutdown(a,b)	0
@@ -336,16 +350,17 @@ io_ungetbyte(VALUE str, rb_io_t *fptr)
     long len = RSTRING_LEN(str);
 
     if (fptr->rbuf == NULL) {
+        const int min_capa = IO_RBUF_CAPA_FOR(fptr);
         fptr->rbuf_off = 0;
         fptr->rbuf_len = 0;
 #if SIZEOF_LONG > SIZEOF_INT
 	if (len > INT_MAX)
 	    rb_raise(rb_eIOError, "ungetbyte failed");
 #endif
-	if (len > IO_RBUF_CAPA_MIN)
+	if (len > min_capa)
 	    fptr->rbuf_capa = (int)len;
 	else
-	    fptr->rbuf_capa = IO_RBUF_CAPA_MIN;
+	    fptr->rbuf_capa = min_capa;
         fptr->rbuf = ALLOC_N(char, fptr->rbuf_capa);
     }
     if (fptr->rbuf_capa < len + fptr->rbuf_len) {
@@ -704,19 +719,6 @@ rb_io_wait_writable(int f)
 	return FALSE;
     }
 }
-
-#if defined(RUBY_TEST_CRLF_ENVIRONMENT) || defined(_WIN32)
-/* Windows */
-# define NEED_NEWLINE_DECORATOR_ON_READ(fptr) (!(fptr->mode & FMODE_BINMODE))
-# define NEED_NEWLINE_DECORATOR_ON_WRITE(fptr) (!(fptr->mode & FMODE_BINMODE))
-# define TEXTMODE_NEWLINE_DECORATOR_ON_WRITE ECONV_CRLF_NEWLINE_DECORATOR
-#else
-/* Unix */
-# define NEED_NEWLINE_DECORATOR_ON_READ(fptr) (fptr->mode & FMODE_TEXTMODE)
-# define NEED_NEWLINE_DECORATOR_ON_WRITE(fptr) 0
-#endif
-#define NEED_READCONV(fptr) (fptr->encs.enc2 != NULL || NEED_NEWLINE_DECORATOR_ON_READ(fptr))
-#define NEED_WRITECONV(fptr) ((fptr->encs.enc != NULL && fptr->encs.enc != rb_ascii8bit_encoding()) || NEED_NEWLINE_DECORATOR_ON_WRITE(fptr) || (fptr->encs.ecflags & (ECONV_DECORATOR_MASK|ECONV_STATEFUL_DECORATOR_MASK)))
 
 static void
 make_writeconv(rb_io_t *fptr)
@@ -1175,7 +1177,7 @@ io_fillbuf(rb_io_t *fptr)
     if (fptr->rbuf == NULL) {
         fptr->rbuf_off = 0;
         fptr->rbuf_len = 0;
-        fptr->rbuf_capa = IO_RBUF_CAPA_MIN;
+        fptr->rbuf_capa = IO_RBUF_CAPA_FOR(fptr);
         fptr->rbuf = ALLOC_N(char, fptr->rbuf_capa);
     }
     if (fptr->rbuf_len == 0) {
