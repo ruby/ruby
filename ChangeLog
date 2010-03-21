@@ -1,3 +1,7 @@
+Sun Mar 21 09:22:10 2010  Tanaka Akira  <akr@fsij.org>
+
+	* object.c (rb_obj_hash): use LONG2FIX to avoid Bignum allocation.
+
 Sat Mar 20 22:51:46 2010  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (rb_str_sum): use UCHAR_MAX.
