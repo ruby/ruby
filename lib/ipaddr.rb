@@ -18,7 +18,7 @@
 require 'socket'
 
 unless Socket.const_defined? "AF_INET6"
-  class Socket
+  class Socket < BasicSocket
     AF_INET6 = Object.new
   end
 

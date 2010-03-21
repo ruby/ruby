@@ -12,7 +12,7 @@ class << IPSocket
   end
 end
 
-class TCPSocket
+class TCPSocket < IPSocket
   alias original_resolv_initialize initialize
   def initialize(host, serv, *rest)
     rest[0] = IPSocket.getaddress(rest[0]) unless rest.empty?
@@ -20,7 +20,7 @@ class TCPSocket
   end
 end
 
-class UDPSocket
+class UDPSocket < IPSocket
   alias original_resolv_bind bind
   def bind(host, port)
     host = IPSocket.getaddress(host) if host != ""
@@ -55,7 +55,7 @@ class UDPSocket
   end
 end
 
-class SOCKSSocket
+class SOCKSSocket < TCPSocket
   alias original_resolv_initialize initialize
   def initialize(host, serv)
     original_resolv_initialize(IPSocket.getaddress(host), port)
