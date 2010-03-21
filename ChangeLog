@@ -1,3 +1,9 @@
+Sun Mar 21 21:09:17 2010  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv-replace.rb: specify super class for rdoc.
+
+	* lib/ipaddr.rb: ditto.
+
 Sun Mar 21 19:52:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_initialize): add autoclose argument to control close
