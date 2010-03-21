@@ -109,6 +109,10 @@ extern void Init_File(void);
 
 #define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
 
+#define IO_RBUF_CAPA_MIN 16384
+#define IO_CBUF_CAPA_MIN 16384
+#define IO_WBUF_CAPA_MIN  8192
+
 VALUE rb_cIO;
 VALUE rb_eEOFError;
 VALUE rb_eIOError;
@@ -338,10 +342,10 @@ io_ungetbyte(VALUE str, rb_io_t *fptr)
 	if (len > INT_MAX)
 	    rb_raise(rb_eIOError, "ungetbyte failed");
 #endif
-	if (len > 8192)
+	if (len > IO_RBUF_CAPA_MIN)
 	    fptr->rbuf_capa = (int)len;
 	else
-	    fptr->rbuf_capa = 8192;
+	    fptr->rbuf_capa = IO_RBUF_CAPA_MIN;
         fptr->rbuf = ALLOC_N(char, fptr->rbuf_capa);
     }
     if (fptr->rbuf_capa < len + fptr->rbuf_len) {
@@ -799,7 +803,7 @@ io_binwrite(VALUE str, rb_io_t *fptr, int nosync)
     if (fptr->wbuf == NULL && !(!nosync && (fptr->mode & FMODE_SYNC))) {
         fptr->wbuf_off = 0;
         fptr->wbuf_len = 0;
-        fptr->wbuf_capa = 8192;
+        fptr->wbuf_capa = IO_WBUF_CAPA_MIN;
         fptr->wbuf = ALLOC_N(char, fptr->wbuf_capa);
 	fptr->write_lock = rb_mutex_new();
     }
@@ -1171,7 +1175,7 @@ io_fillbuf(rb_io_t *fptr)
     if (fptr->rbuf == NULL) {
         fptr->rbuf_off = 0;
         fptr->rbuf_len = 0;
-        fptr->rbuf_capa = 8192;
+        fptr->rbuf_capa = IO_RBUF_CAPA_MIN;
         fptr->rbuf = ALLOC_N(char, fptr->rbuf_capa);
     }
     if (fptr->rbuf_len == 0) {
@@ -1426,7 +1430,7 @@ rb_io_inspect(VALUE obj)
 {
     rb_io_t *fptr;
     const char *cname;
-    char fd_desc[256];
+    char fd_desc[4+sizeof(int)*3];
     const char *path;
     const char *st = "";
 
@@ -1587,7 +1591,8 @@ make_readconv(rb_io_t *fptr, int size)
             rb_exc_raise(rb_econv_open_exc(sname, dname, ecflags));
         fptr->cbuf_off = 0;
         fptr->cbuf_len = 0;
-        fptr->cbuf_capa = size < 1024 ? 1024 : size;
+	if (size < IO_CBUF_CAPA_MIN) size = IO_CBUF_CAPA_MIN;
+        fptr->cbuf_capa = size;
         fptr->cbuf = ALLOC_N(char, fptr->cbuf_capa);
     }
 }
