@@ -183,6 +183,7 @@ define config_h
 @echo>>$(1) #define DLEXT_MAXLEN 4
 @echo>>$(1) #define DLEXT ".dll"
 @echo>>$(1) #define EXECUTABLE_EXTS ".exe",".com",".cmd",".bat"
+@echo>>$(1) #define RUBY_EXEC_PREFIX ""
 @echo>>$(1) #define DLN_NEEDS_ALT_SEPARATOR '\\'
 @echo>>$(1) #define RUBY_LIB_VERSION_STYLE 3
 @echo>>$(1) #define RUBY_LIB_PREFIX "C:/Data/Ruby/lib"
