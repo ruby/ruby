@@ -1,3 +1,9 @@
+Sun Mar 21 17:57:49 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (IO_RBUF_CAPA_FOR): use large buffer as cbuf if readconv is
+	  needed for performance improvement.  based on a patch by Roger Pack
+	  in [ruby-core:28163].  [ruby-core:28162]
+
 Sun Mar 21 17:14:49 2010  Tanaka Akira  <akr@fsij.org>
 
 	* tool/transcode-tblgen.rb: reuse hash object.
