@@ -1,3 +1,7 @@
+Mon Mar 22 00:01:24 2010  Alexander Zavorine  <alexandre.zavorine@nokia.com>
+
+	* symbian/setup (config.h): RUBY_EXEC_PREFIX defined.
+
 Sun Mar 21 00:46:29 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/common.rb (URI.encode_www_form_component):
