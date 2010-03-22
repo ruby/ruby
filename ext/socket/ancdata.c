@@ -1775,7 +1775,7 @@ rsock_bsock_recvmsg_nonblock(int argc, VALUE *argv, VALUE sock)
  * It contains socket family, cmsg level, cmsg type and cmsg data.
  */
 void
-Init_ancdata(void)
+rsock_init_ancdata(void)
 {
 #if defined(HAVE_ST_MSG_CONTROL)
     rb_cAncillaryData = rb_define_class_under(rb_cSocket, "AncillaryData", rb_cObject);

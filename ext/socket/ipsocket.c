@@ -289,7 +289,7 @@ ip_s_getaddress(VALUE obj, VALUE host)
  * IPSocket is the super class of TCPSocket and UDPSocket.
  */
 void
-Init_ipsocket(void)
+rsock_init_ipsocket(void)
 {
     rb_cIPSocket = rb_define_class("IPSocket", rb_cBasicSocket);
     rb_define_method(rb_cIPSocket, "addr", ip_addr, -1);

@@ -736,7 +736,7 @@ bsock_do_not_rev_lookup_set(VALUE self, VALUE val)
  * BasicSocket is the super class for the all socket classes.
  */
 void
-Init_basicsocket(void)
+rsock_init_basicsocket(void)
 {
     rb_cBasicSocket = rb_define_class("BasicSocket", rb_cIO);
     rb_undef_method(rb_cBasicSocket, "initialize");

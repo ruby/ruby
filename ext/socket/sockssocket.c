@@ -46,7 +46,7 @@ socks_s_close(VALUE sock)
  * SOCKSSocket class
  */
 void
-Init_sockssocket(void)
+rsock_init_sockssocket(void)
 {
 #ifdef SOCKS
     rb_cSOCKSSocket = rb_define_class("SOCKSSocket", rb_cTCPSocket);

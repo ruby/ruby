@@ -252,7 +252,7 @@ udp_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock)
  * UDPSocket represents a UDP/IP socket.
  */
 void
-Init_udpsocket(void)
+rsock_init_udpsocket(void)
 {
     rb_cUDPSocket = rb_define_class("UDPSocket", rb_cIPSocket);
     rb_define_method(rb_cUDPSocket, "initialize", udp_init, -1);

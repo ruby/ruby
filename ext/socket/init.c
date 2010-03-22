@@ -552,18 +552,18 @@ rsock_getfamily(int sockfd)
  * SocketError is the error class for socket.
  */
 void
-Init_socket_init()
+rsock_init_socket_init()
 {
     rb_eSocket = rb_define_class("SocketError", rb_eStandardError);
-    Init_ipsocket();
-    Init_tcpsocket();
-    Init_tcpserver();
-    Init_sockssocket();
-    Init_udpsocket();
-    Init_unixsocket();
-    Init_unixserver();
-    Init_sockopt();
-    Init_ancdata();
-    Init_addrinfo();
-    Init_socket_constants();
+    rsock_init_ipsocket();
+    rsock_init_tcpsocket();
+    rsock_init_tcpserver();
+    rsock_init_sockssocket();
+    rsock_init_udpsocket();
+    rsock_init_unixsocket();
+    rsock_init_unixserver();
+    rsock_init_sockopt();
+    rsock_init_ancdata();
+    rsock_init_addrinfo();
+    rsock_init_socket_constants();
 }

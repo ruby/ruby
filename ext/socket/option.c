@@ -666,7 +666,7 @@ sockopt_unpack(VALUE self, VALUE template)
  * It contains socket family, protocol level, option name and option value.
  */
 void
-Init_sockopt(void)
+rsock_init_sockopt(void)
 {
     rb_cSockOpt = rb_define_class_under(rb_cSocket, "Option", rb_cObject);
     rb_define_method(rb_cSockOpt, "initialize", sockopt_initialize, 4);
