@@ -1,3 +1,7 @@
+Mon Mar 22 19:31:06 2010  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb (Date#>>): fixed.  [ruby-core:28011]
+
 Mon Mar 22 18:01:13 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RMDIRS): use rmdir -p if possible.

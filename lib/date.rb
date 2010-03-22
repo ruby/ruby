@@ -1,7 +1,7 @@
 #
 # date.rb - date and time library
 #
-# Author: Tadayoshi Funaba 1998-2009
+# Author: Tadayoshi Funaba 1998-2010
 #
 # Documentation: William Webber <william@williamwebber.com>
 #
@@ -1416,7 +1416,10 @@ class Date
     y, m = (year * 12 + (mon - 1) + n).divmod(12)
     m,   = (m + 1)                    .divmod(1)
     d = mday
-    d -= 1 until jd2 = _valid_civil?(y, m, d, @sg)
+    until jd2 = _valid_civil?(y, m, d, @sg)
+      d -= 1
+      raise ArgumentError, 'invalid date' unless d > 0
+    end
     self + (jd2 - jd)
   end
 
