@@ -134,7 +134,7 @@ tcp_sysaccept(VALUE sock)
  * TCPServer represents a TCP/IP server socket.
  */
 void
-Init_tcpserver(void)
+rsock_init_tcpserver(void)
 {
     rb_cTCPServer = rb_define_class("TCPServer", rb_cTCPSocket);
     rb_define_method(rb_cTCPServer, "accept", tcp_accept, 0);

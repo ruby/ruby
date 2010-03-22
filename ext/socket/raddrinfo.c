@@ -2116,7 +2116,7 @@ rsock_io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len)
  * Addrinfo class
  */
 void
-Init_addrinfo(void)
+rsock_init_addrinfo(void)
 {
     rb_cAddrinfo = rb_define_class("Addrinfo", rb_cData);
     rb_define_alloc_func(rb_cAddrinfo, addrinfo_s_allocate);

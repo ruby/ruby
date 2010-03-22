@@ -141,7 +141,7 @@ unix_sysaccept(VALUE sock)
  * UNIXServer represents a UNIX domain stream server socket.
  */
 void
-Init_unixserver(void)
+rsock_init_unixserver(void)
 {
 #ifdef HAVE_SYS_UN_H
     rb_cUNIXServer = rb_define_class("UNIXServer", rb_cUNIXSocket);

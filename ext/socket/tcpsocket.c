@@ -61,7 +61,7 @@ tcp_s_gethostbyname(VALUE obj, VALUE host)
  * TCPSocket represents a TCP/IP client socket.
  */
 void
-Init_tcpsocket(void)
+rsock_init_tcpsocket(void)
 {
     rb_cTCPSocket = rb_define_class("TCPSocket", rb_cIPSocket);
     rb_define_singleton_method(rb_cTCPSocket, "gethostbyname", tcp_s_gethostbyname, 1);

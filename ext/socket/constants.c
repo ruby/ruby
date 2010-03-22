@@ -138,7 +138,7 @@ rsock_shutdown_how_arg(VALUE how)
  * Socket::Constants module
  */
 void
-Init_socket_constants(void)
+rsock_init_socket_constants(void)
 {
     /* constants */
     init_constants();

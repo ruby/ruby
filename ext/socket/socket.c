@@ -1830,11 +1830,11 @@ socket_s_ip_address_list(VALUE self)
 void
 Init_socket()
 {
-    Init_basicsocket();
+    rsock_init_basicsocket();
 
     rb_cSocket = rb_define_class("Socket", rb_cBasicSocket);
 
-    Init_socket_init();
+    rsock_init_socket_init();
 
     rb_define_method(rb_cSocket, "initialize", sock_initialize, -1);
     rb_define_method(rb_cSocket, "connect", sock_connect, 1);
