@@ -2,7 +2,9 @@ require 'socket'
 require 'resolv'
 
 class << IPSocket
+  # :stopdoc:
   alias original_resolv_getaddress getaddress
+  # :startdoc:
   def getaddress(host)
     begin
       return Resolv.getaddress(host).to_s
@@ -13,7 +15,9 @@ class << IPSocket
 end
 
 class TCPSocket < IPSocket
+  # :stopdoc:
   alias original_resolv_initialize initialize
+  # :startdoc:
   def initialize(host, serv, *rest)
     rest[0] = IPSocket.getaddress(rest[0]) unless rest.empty?
     original_resolv_initialize(IPSocket.getaddress(host), serv, *rest)
@@ -21,18 +25,24 @@ class TCPSocket < IPSocket
 end
 
 class UDPSocket < IPSocket
+  # :stopdoc:
   alias original_resolv_bind bind
+  # :startdoc:
   def bind(host, port)
     host = IPSocket.getaddress(host) if host != ""
     original_resolv_bind(host, port)
   end
 
+  # :stopdoc:
   alias original_resolv_connect connect
+  # :startdoc:
   def connect(host, port)
     original_resolv_connect(IPSocket.getaddress(host), port)
   end
 
+  # :stopdoc:
   alias original_resolv_send send
+  # :startdoc:
   def send(mesg, flags, *rest)
     if rest.length == 2
       host, port = rest
@@ -56,7 +66,9 @@ class UDPSocket < IPSocket
 end
 
 class SOCKSSocket < TCPSocket
+  # :stopdoc:
   alias original_resolv_initialize initialize
+  # :startdoc:
   def initialize(host, serv)
     original_resolv_initialize(IPSocket.getaddress(host), port)
   end

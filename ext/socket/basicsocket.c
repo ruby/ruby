@@ -348,6 +348,8 @@ bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
  *   TCPServer.open("127.0.0.1", 15120) {|serv|
  *     p serv.getsockname #=> "\x02\x00;\x10\x7F\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00"
  *   }
+ *
+ * If Addrinfo object is preferred, use BasicSocket#local_address.
  */
 static VALUE
 bsock_getsockname(VALUE sock)
@@ -373,6 +375,8 @@ bsock_getsockname(VALUE sock)
  *     s = serv.accept
  *     p s.getpeername #=> "\x02\x00\x82u\x7F\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00"
  *   }
+ *
+ * If Addrinfo object is preferred, use BasicSocket#remote_address.
  *
  */
 static VALUE
