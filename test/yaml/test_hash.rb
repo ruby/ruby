@@ -14,5 +14,16 @@ module YAML
     def test_dump
       assert_equal @hash, YAML.load(YAML.dump(@hash))
     end
+
+    def test_ref_append
+      hash = YAML.load(<<-eoyml)
+---
+foo: &foo
+  hello: world
+bar:
+  <<: *foo
+eoyml
+      assert_equal({"foo"=>{"hello"=>"world"}, "bar"=>{"hello"=>"world"}}, hash)
+    end
   end
 end
