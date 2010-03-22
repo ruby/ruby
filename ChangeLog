@@ -1,3 +1,22 @@
+Mon Mar 22 20:32:22 2010  wanabe  <s.wanabe@gmail.com>
+
+	* proc.c (rb_method_location): return attr's location if it is setup.
+	  [Feature #2084]
+
+	* NEWS: follow above.
+
+	* vm_method.c (rb_add_method): save attr's location.
+
+	* gc.c (mark_method_entry): mark attr's location.
+
+	* method.h (rb_method_definition_t): add member to save attr's location.
+
+	* vm_eval.c (vm_call0): follow above.
+
+	* vm_insnhelper.c (vm_call_method): ditto.
+
+	* vm_method.c (rb_method_definition_eq): ditto.
+
 Mon Mar 22 19:31:06 2010  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb (Date#>>): fixed.  [ruby-core:28011]

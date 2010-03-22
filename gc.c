@@ -1423,6 +1423,10 @@ mark_method_entry(rb_objspace_t *objspace, const rb_method_entry_t *me, int lev)
       case VM_METHOD_TYPE_BMETHOD:
 	gc_mark(objspace, def->body.proc, lev);
 	break;
+      case VM_METHOD_TYPE_ATTRSET:
+      case VM_METHOD_TYPE_IVAR:
+	gc_mark(objspace, def->body.attr.location, lev);
+	break;
       default:
 	break; /* ignore */
     }

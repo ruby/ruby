@@ -260,6 +260,9 @@ method_added(VALUE klass, ID mid)
 rb_method_entry_t *
 rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_flag_t noex)
 {
+    rb_thread_t *th;
+    rb_control_frame_t *cfp;
+    int line;
     rb_method_entry_t *me = rb_add_method_def(klass, mid, type, 0, noex);
     rb_method_definition_t *def = ALLOC(rb_method_definition_t);
     me->def = def;
@@ -275,7 +278,15 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
 	break;
       case VM_METHOD_TYPE_ATTRSET:
       case VM_METHOD_TYPE_IVAR:
-	def->body.attr_id = (ID)opts;
+	def->body.attr.id = (ID)opts;
+	th = GET_THREAD();
+	cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
+	if (cfp && (line = rb_vm_get_sourceline(cfp))) {
+	    VALUE location = rb_ary_new3(2, cfp->iseq->filename, INT2FIX(line));
+	    def->body.attr.location = rb_ary_freeze(location);
+	} else {
+	    def->body.attr.location = Qfalse;
+	}
 	break;
       case VM_METHOD_TYPE_BMETHOD:
 	def->body.proc = (VALUE)opts;
@@ -838,7 +849,7 @@ rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_defini
 	  d1->body.cfunc.argc == d2->body.cfunc.argc;
       case VM_METHOD_TYPE_ATTRSET:
       case VM_METHOD_TYPE_IVAR:
-	return d1->body.attr_id == d2->body.attr_id;
+	return d1->body.attr.id == d2->body.attr.id;
       case VM_METHOD_TYPE_BMETHOD:
 	return RTEST(rb_equal(d1->body.proc, d2->body.proc));
       case VM_METHOD_TYPE_MISSING:
