@@ -58,14 +58,14 @@ class Addrinfo
   # The socket is returned otherwise.
   #
   #   Addrinfo.tcp("www.ruby-lang.org", 80).connect_from("0.0.0.0", 4649) {|s|
-  #     s.print "GET / HTTP/1.0\r\n\r\n"
-  #     p s.read
+  #     s.print "GET / HTTP/1.0\r\nHost: www.ruby-lang.org\r\n\r\n"
+  #     puts s.read
   #   }
   #
   #   # Addrinfo object can be taken for the argument.
   #   Addrinfo.tcp("www.ruby-lang.org", 80).connect_from(Addrinfo.tcp("0.0.0.0", 4649)) {|s|
-  #     s.print "GET / HTTP/1.0\r\n\r\n"
-  #     p s.read
+  #     s.print "GET / HTTP/1.0\r\nHost: www.ruby-lang.org\r\n\r\n"
+  #     puts s.read
   #   }
   #
   def connect_from(*local_addr_args, &block)
@@ -78,8 +78,8 @@ class Addrinfo
   # The socket is returned otherwise.
   #
   #   Addrinfo.tcp("www.ruby-lang.org", 80).connect {|s|
-  #     s.print "GET / HTTP/1.0\r\n\r\n"
-  #     p s.read
+  #     s.print "GET / HTTP/1.0\r\nHost: www.ruby-lang.org\r\n\r\n"
+  #     puts s.read
   #   }
   #
   def connect(&block)
@@ -92,8 +92,8 @@ class Addrinfo
   # The socket is returned otherwise.
   #
   #   Addrinfo.tcp("0.0.0.0", 4649).connect_to("www.ruby-lang.org", 80) {|s|
-  #     s.print "GET / HTTP/1.0\r\n\r\n"
-  #     p s.read
+  #     s.print "GET / HTTP/1.0\r\nHost: www.ruby-lang.org\r\n\r\n"
+  #     puts s.read
   #   }
   #
   def connect_to(*remote_addr_args, &block)
@@ -220,9 +220,9 @@ class Socket < BasicSocket
   # If no block is given, the socket is returned.
   #
   #   Socket.tcp("www.ruby-lang.org", 80) {|sock|
-  #     sock.print "GET / HTTP/1.0\r\n\r\n"
+  #     sock.print "GET / HTTP/1.0\r\nHost: www.ruby-lang.org\r\n\r\n"
   #     sock.close_write
-  #     print sock.read
+  #     puts sock.read
   #   }
   #
   def self.tcp(host, port, local_host=nil, local_port=nil) # :yield: socket
