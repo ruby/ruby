@@ -138,7 +138,7 @@ unix_sysaccept(VALUE sock)
 /*
  * Document-class: ::UNIXServer < UNIXSocket
  *
- * UNIXServer class
+ * UNIXServer represents a UNIX domain stream server socket.
  */
 void
 Init_unixserver(void)

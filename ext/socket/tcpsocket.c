@@ -58,7 +58,7 @@ tcp_s_gethostbyname(VALUE obj, VALUE host)
 /*
  * Document-class: ::TCPSocket < IPSocket
  *
- * TCPSocket class
+ * TCPSocket represents a TCP/IP client socket.
  */
 void
 Init_tcpsocket(void)

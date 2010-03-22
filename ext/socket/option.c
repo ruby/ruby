@@ -148,7 +148,7 @@ sockopt_data(VALUE self)
  *
  * Creates a new Socket::Option object which contains an int as data.
  *
- * The size and endian is dependent on the host. 
+ * The size and endian is dependent on the platform. 
  *
  *   p Socket::Option.int(:INET, :SOCKET, :KEEPALIVE, 1)
  *   #=> #<Socket::Option: INET SOCKET KEEPALIVE 1>
@@ -169,7 +169,7 @@ sockopt_s_int(VALUE klass, VALUE vfamily, VALUE vlevel, VALUE voptname, VALUE vi
  *
  * Returns the data in _sockopt_ as an int.
  *
- * The size and endian is dependent on the host. 
+ * The size and endian is dependent on the platform. 
  *
  *   sockopt = Socket::Option.int(:INET, :SOCKET, :KEEPALIVE, 1)
  *   p sockopt.int => 1
@@ -660,6 +660,10 @@ sockopt_unpack(VALUE self, VALUE template)
 
 /*
  * Document-class: ::Socket::Option
+ *
+ * Socket::Option represents a socket option used by getsockopt and setsockopt
+ * system call.
+ * It contains socket family, protocol level, option name and option value.
  */
 void
 Init_sockopt(void)

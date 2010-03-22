@@ -683,7 +683,7 @@ class Socket < BasicSocket
     end
   end
 
-  # creates UNIX server sockets on _path_
+  # creates a UNIX server socket on _path_
   #
   # If no block given, it returns a listening socket.
   #
