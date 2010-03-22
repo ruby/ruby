@@ -268,6 +268,7 @@ class Socket < BasicSocket
     end
   end
 
+  # :stopdoc:
   def self.ip_sockets_port0(ai_list, reuseaddr)
     begin
       sockets = []
@@ -317,6 +318,7 @@ class Socket < BasicSocket
   class << self
     private :tcp_server_sockets_port0
   end
+  # :startdoc:
 
   # creates TCP/IP server sockets for _host_ and _port_.
   # _host_ is optional.
