@@ -259,9 +259,10 @@ clean-ext distclean-ext realclean-ext::
 	set dummy `for dir; do \
 	    find $$dir -name Makefile | sed 's:^\./::;s:/Makefile$$:~:' | sort | sed 's:~$$::'; \
 	done`; shift; \
+	cd ..; \
 	for dir; do \
 	    echo $(@:-ext=)ing "$$dir"; \
-	    (cd "$$dir" && exec $(MAKE) $(MFLAGS) $(@:-ext=)) && \
+	    (cd "ext/$$dir" && exec $(MAKE) $(MFLAGS) $(@:-ext=)) && \
 	    case "$@" in \
 	    *distclean-ext*|*realclean-ext*) \
 		$(RMDIRS) "$$dir";; \
