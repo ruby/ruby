@@ -1,4 +1,6 @@
-Mon Mar 22 17:37:58 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Mar 22 18:01:13 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RMDIRS): use rmdir -p if possible.
 
 	* Makefile.in ({dist,real}clean-ext): fix for removing ext
 	  directories.
