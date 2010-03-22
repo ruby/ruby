@@ -1097,6 +1097,8 @@ sock_s_getservbyport(int argc, VALUE *argv)
  *   +true+, +:hostname+:  hostname is obtained from numeric address using reverse lookup, which may take a time.
  *   +false+, +:numeric+:  hostname is same as numeric address.
  *   +nil+:              obey to the current +do_not_reverse_lookup+ flag.
+ *
+ * If Addrinfo object is preferred, use Addrinfo.getaddrinfo.
  */
 static VALUE
 sock_s_getaddrinfo(int argc, VALUE *argv)
@@ -1147,6 +1149,8 @@ sock_s_getaddrinfo(int argc, VALUE *argv)
  *   Socket.getnameinfo(Socket.sockaddr_in(80, "127.0.0.1"))       #=> ["localhost", "www"]
  *   Socket.getnameinfo(["AF_INET", 80, "127.0.0.1"])              #=> ["localhost", "www"]
  *   Socket.getnameinfo(["AF_INET", 80, "localhost", "127.0.0.1"]) #=> ["localhost", "www"]
+ *
+ * If Addrinfo object is preferred, use Addrinfo#getnameinfo.
  */
 static VALUE
 sock_s_getnameinfo(int argc, VALUE *argv)
@@ -1798,6 +1802,15 @@ socket_s_ip_address_list(VALUE self)
  * information on particular exception is needed please refer to the 
  * Unix manual pages or the Windows WinSock reference.
  * 
+ * === Convenient methods
+ *
+ * Although the general way to create socket is Socket.new,
+ * there are several methods for socket creation for most cases.
+ *
+ * * TCP client socket: Socket.tcp, TCPSocket.open
+ * * TCP server socket: Socket.tcp_server_loop, TCPServer.open
+ * * UNIX client socket: Socket.unix, UNIXSocket.open
+ * * UNIX server socket: Socket.unix_server_loop, UNIXServer.open
  * 
  * === Documentation by
  * * Zach Dennis

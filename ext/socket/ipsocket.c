@@ -264,7 +264,7 @@ ip_recvfrom(int argc, VALUE *argv, VALUE sock)
  * call-seq:
  *   IPSocket.getaddress(host)        => ipaddress
  *
- * Lookups IP address of _host_.
+ * Lookups the IP address of _host_.
  *
  *   IPSocket.getaddress("localhost")     #=> "127.0.0.1"
  *   IPSocket.getaddress("ip6-localhost") #=> "::1"
