@@ -487,7 +487,7 @@ unix_s_socketpair(int argc, VALUE *argv, VALUE klass)
 /*
  * Document-class: ::UNIXSocket < BasicSocket
  *
- * UNIXSocket class
+ * UNIXSocket represents a UNIX domain stream client socket.
  */
 void
 Init_unixsocket(void)

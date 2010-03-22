@@ -249,7 +249,7 @@ udp_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock)
 /*
  * Document-class: ::UDPSocket < IPSocket
  *
- * UDPSocket class
+ * UDPSocket represents a UDP/IP socket.
  */
 void
 Init_udpsocket(void)

@@ -89,7 +89,7 @@ bsock_shutdown(int argc, VALUE *argv, VALUE sock)
  * call-seq:
  *   basicsocket.close_read => nil
  *
- * Disallows further read.
+ * Disallows further read using shutdown system call.
  *
  *   s1, s2 = UNIXSocket.pair
  *   s1.close_read
@@ -117,7 +117,7 @@ bsock_close_read(VALUE sock)
  * call-seq:
  *   basicsocket.close_write => nil
  *
- * Disallows further write.
+ * Disallows further write using shutdown system call.
  *
  *   UNIXSocket.pair {|s1, s2|
  *     s1.print "ping"
@@ -198,7 +198,8 @@ bsock_close_write(VALUE sock)
  *   };
  * 
  * In this case #setsockopt could be called like this:
- *   optval =  IPAddr.new("224.0.0.251").hton + IPAddr.new(Socket::INADDR_ANY, Socket::AF_INET).hton
+ *   optval = IPAddr.new("224.0.0.251").hton +
+ *            IPAddr.new(Socket::INADDR_ANY, Socket::AF_INET).hton
  *   sock.setsockopt(Socket::IPPROTO_IP, Socket::IP_ADD_MEMBERSHIP, optval)
  *
 */
@@ -263,7 +264,7 @@ bsock_setsockopt(int argc, VALUE *argv, VALUE sock)
  *
  * Gets a socket option. These are protocol and system specific, see your
  * local system documentation for details. The option is returned as
- * a Socket::Option.
+ * a Socket::Option object.
  *
  * === Parameters
  * * +level+ is an integer, usually one of the SOL_ constants such as
@@ -349,7 +350,8 @@ bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
  *     p serv.getsockname #=> "\x02\x00;\x10\x7F\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00"
  *   }
  *
- * If Addrinfo object is preferred, use BasicSocket#local_address.
+ * If Addrinfo object is preferred over the binary string,
+ * use BasicSocket#local_address.
  */
 static VALUE
 bsock_getsockname(VALUE sock)
@@ -376,7 +378,8 @@ bsock_getsockname(VALUE sock)
  *     p s.getpeername #=> "\x02\x00\x82u\x7F\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00"
  *   }
  *
- * If Addrinfo object is preferred, use BasicSocket#remote_address.
+ * If Addrinfo object is preferred over the binary string,
+ * use BasicSocket#remote_address.
  *
  */
 static VALUE
@@ -458,6 +461,10 @@ bsock_getpeereid(VALUE self)
  *
  * Note that addrinfo.protocol is filled by 0.
  *
+ *   TCPSocket.open("www.ruby-lang.org", 80) {|s|
+ *     p s.local_address #=> #<Addrinfo: 192.168.0.129:36873 TCP>
+ *   }
+ *
  *   TCPServer.open("127.0.0.1", 1512) {|serv|
  *     p serv.local_address #=> #<Addrinfo: 127.0.0.1:1512 TCP>
  *   }
@@ -484,6 +491,10 @@ bsock_local_address(VALUE sock)
  *
  * Note that addrinfo.protocol is filled by 0.
  *
+ *   TCPSocket.open("www.ruby-lang.org", 80) {|s|
+ *     p s.remote_address #=> #<Addrinfo: 221.186.184.68:80 TCP>
+ *   }
+ *
  *   TCPServer.open("127.0.0.1", 1728) {|serv|
  *     c = TCPSocket.new("127.0.0.1", 1728)
  *     s = serv.accept
@@ -506,7 +517,7 @@ bsock_remote_address(VALUE sock)
 
 /*
  * call-seq:
- *   basicsocket.send(mesg, flags [, sockaddr_to]) => numbytes_sent
+ *   basicsocket.send(mesg, flags [, dest_sockaddr]) => numbytes_sent
  *
  * send _mesg_ via _basicsocket_.
  *
@@ -514,7 +525,7 @@ bsock_remote_address(VALUE sock)
  *
  * _flags_ should be a bitwise OR of Socket::MSG_* constants.
  *
- * _sockaddr_to_ should be a packed sockaddr string or an addrinfo.
+ * _dest_sockaddr_ should be a packed sockaddr string or an addrinfo.
  *
  *   TCPSocket.open("localhost", 80) {|s|
  *     s.send "GET / HTTP/1.0\r\n\r\n", 0
@@ -722,7 +733,7 @@ bsock_do_not_rev_lookup_set(VALUE self, VALUE val)
 }
 
 /*
- * BasicSocket class
+ * BasicSocket is the super class for the all socket classes.
  */
 void
 Init_basicsocket(void)

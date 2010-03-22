@@ -286,7 +286,7 @@ ip_s_getaddress(VALUE obj, VALUE host)
 /*
  * Document-class: ::IPSocket < BasicSocket
  *
- * IPSocket class
+ * IPSocket is the super class of TCPSocket and UDPSocket.
  */
 void
 Init_ipsocket(void)

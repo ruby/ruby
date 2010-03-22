@@ -131,7 +131,7 @@ tcp_sysaccept(VALUE sock)
 /*
  * Document-class: ::TCPServer < TCPSocket
  *
- * TCPServer class
+ * TCPServer represents a TCP/IP server socket.
  */
 void
 Init_tcpserver(void)
