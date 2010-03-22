@@ -1,3 +1,7 @@
+Mon Mar 22 09:06:10 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/.document: extracted from ext/.document.
+
 Mon Mar 22 00:50:33 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/rubysocket.h (rsock_revlookup_flag): declared.
