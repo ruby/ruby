@@ -89,14 +89,14 @@ vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
 	if (argc != 1) {
 	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)", argc);
 	}
-	val = rb_ivar_set(recv, def->body.attr_id, argv[0]);
+	val = rb_ivar_set(recv, def->body.attr.id, argv[0]);
 	break;
       }
       case VM_METHOD_TYPE_IVAR: {
 	if (argc != 0) {
 	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
 	}
-	val = rb_attr_get(recv, def->body.attr_id);
+	val = rb_attr_get(recv, def->body.attr.id);
 	break;
       }
       case VM_METHOD_TYPE_BMETHOD: {

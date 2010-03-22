@@ -1634,15 +1634,18 @@ rb_obj_method_arity(VALUE obj, ID id)
     return rb_mod_method_arity(CLASS_OF(obj), id);
 }
 
-rb_iseq_t *
-rb_method_get_iseq(VALUE method)
+static inline rb_method_definition_t *
+method_get_def(VALUE method)
 {
     struct METHOD *data;
-    rb_method_definition_t *def;
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
-    def = data->me.def;
+    return data->me.def;
+}
 
+static rb_iseq_t *
+method_get_iseq(rb_method_definition_t *def)
+{
     switch (def->type) {
       case VM_METHOD_TYPE_BMETHOD:
 	return get_proc_iseq(def->body.proc, 0);
@@ -1651,6 +1654,12 @@ rb_method_get_iseq(VALUE method)
       default:
 	return 0;
     }
+}
+
+rb_iseq_t *
+rb_method_get_iseq(VALUE method)
+{
+    return method_get_iseq(method_get_def(method));
 }
 
 /*
@@ -1664,7 +1673,13 @@ rb_method_get_iseq(VALUE method)
 VALUE
 rb_method_location(VALUE method)
 {
-    return iseq_location(rb_method_get_iseq(method));
+    rb_method_definition_t *def = method_get_def(method);
+    if (def->type == VM_METHOD_TYPE_ATTRSET || def->type == VM_METHOD_TYPE_IVAR) {
+	if (!def->body.attr.location)
+	    return Qnil;
+	return rb_ary_dup(def->body.attr.location);
+    }
+    return iseq_location(method_get_iseq(def));
 }
 
 /*

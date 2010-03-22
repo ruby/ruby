@@ -504,7 +504,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 		if (num != 1) {
 		    rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)", num);
 		}
-		val = rb_ivar_set(recv, me->def->body.attr_id, *(cfp->sp - 1));
+		val = rb_ivar_set(recv, me->def->body.attr.id, *(cfp->sp - 1));
 		cfp->sp -= 2;
 		break;
 	      }
@@ -512,7 +512,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 		if (num != 0) {
 		    rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", num);
 		}
-		val = rb_attr_get(recv, me->def->body.attr_id);
+		val = rb_attr_get(recv, me->def->body.attr.id);
 		cfp->sp -= 1;
 		break;
 	      }
