@@ -761,6 +761,31 @@ class TestProc < Test::Unit::TestCase
     assert_equal(@@line_of_source_location_test, lineno, 'Bug #2427')
   end
 
+  @@line_of_attr_reader_source_location_test   = __LINE__ + 3
+  @@line_of_attr_writer_source_location_test   = __LINE__ + 3
+  @@line_of_attr_accessor_source_location_test = __LINE__ + 3
+  attr_reader   :attr_reader_source_location_test
+  attr_writer   :attr_writer_source_location_test
+  attr_accessor :attr_accessor_source_location_test
+
+  def test_attr_source_location
+    file, lineno = method(:attr_reader_source_location_test).source_location
+    assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
+    assert_equal(@@line_of_attr_reader_source_location_test, lineno)
+
+    file, lineno = method(:attr_writer_source_location_test=).source_location
+    assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
+    assert_equal(@@line_of_attr_writer_source_location_test, lineno)
+
+    file, lineno = method(:attr_accessor_source_location_test).source_location
+    assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
+    assert_equal(@@line_of_attr_accessor_source_location_test, lineno)
+
+    file, lineno = method(:attr_accessor_source_location_test=).source_location
+    assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
+    assert_equal(@@line_of_attr_accessor_source_location_test, lineno)
+  end
+
   def test_splat_without_respond_to
     def (obj = Object.new).respond_to?(m); false end
     [obj].each do |a, b|
