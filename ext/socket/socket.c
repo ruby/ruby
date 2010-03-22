@@ -1784,10 +1784,11 @@ socket_s_ip_address_list(VALUE self)
  *
  * Class +Socket+ provides access to the underlying operating system
  * socket implementations. It can be used to provide more operating system
- * specific functionality than the protocol-specific socket classes but at the
- * expense of greater complexity. In particular, the class handles addresses
- * using +struct+ sockaddr structures packed into Ruby strings, which can be
- * a joy to manipulate.
+ * specific functionality than the protocol-specific socket classes.
+ *
+ * The constants defined under Socket::Constants are also defined under Socket.
+ * For example, Socket::AF_INET is usable as well as Socket::Constants::AF_INET.
+ * See Socket::Constants for the list of constants.
  * 
  * === Exception Handling
  * Ruby's implementation of +Socket+ causes an exception to be raised
