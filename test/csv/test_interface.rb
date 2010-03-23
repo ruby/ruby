@@ -75,6 +75,11 @@ class TestCSVInterface < Test::Unit::TestCase
     assert_equal(%w{1 2 3}, row)
   end
 
+  def test_parse_line_with_empty_lines
+    assert_equal(nil,       CSV.parse_line(""))  # to signal eof
+    assert_equal(Array.new, CSV.parse_line("\n1,2,3"))
+  end
+  
   def test_read_and_readlines
     assert_equal( @expected,
                   CSV.read(@path, col_sep: "\t", row_sep: "\r\n") )
@@ -167,7 +172,7 @@ class TestCSVInterface < Test::Unit::TestCase
       csv << lines.first.keys
       lines.each { |line| csv << line }
     end
-    CSV.open( @path, "w", headers:           true,
+    CSV.open( @path, "r", headers:           true,
                           converters:        :all,
                           header_converters: :symbol ) do |csv|
       csv.each { |line| assert_equal(lines.shift, line.to_hash) }

@@ -253,6 +253,8 @@ class TestCSVTable < Test::Unit::TestCase
     # with options
     assert_equal( csv.gsub(",", "|").gsub("\n", "\r\n"),
                   @table.to_csv(col_sep: "|", row_sep: "\r\n") )
+    assert_equal( csv.lines.to_a[1..-1].join,
+                  @table.to_csv(:write_headers => false) )
 
     # with headers
     assert_equal(csv, @header_table.to_csv)
