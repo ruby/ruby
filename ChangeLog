@@ -1,3 +1,8 @@
+Tue Mar 23 23:58:51 2010  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	* lib/csv.rb: Incorporating the fixes from the recent
+	  FasterCSV releases:  1.5.2 and 1.5.3.  [ruby-core:25038]
+
 Tue Mar 23 18:35:46 2010  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* object.c (rb_obj_singleton_class): new method
