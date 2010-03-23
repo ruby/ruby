@@ -1,3 +1,8 @@
+Tue Mar 23 18:35:46 2010  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* object.c (rb_obj_singleton_class): new method
+	  Kernel#singleton_class.  [ruby-core:21702]
+
 Tue Mar 23 01:13:59 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket: use rsock_ prefix for internal initialization functions.
