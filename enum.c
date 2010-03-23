@@ -2489,6 +2489,7 @@ slicebefore_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
  *        i = mail.index("\n")
  *        header = mail[0...i]
  *        body = mail[(i+1)..-1]
+ *        body.pop if body.last == "\n"
  *        fields = header.slice_before {|line| !" \t".include?(line[0]) }.to_a
  *        p unix_from
  *        pp fields
@@ -2499,11 +2500,13 @@ slicebefore_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
  *    # split mails in mbox (slice before Unix From line after an empty line)
  *    open("mbox") {|f|
  *      f.slice_before(emp: true) {|line,h|
- *      prevemp = h[:emp]
- *      h[:emp] = line == "\n"
- *      prevemp && line.start_with?("From ")
- *    }.each {|mail|
- *      pp mail
+ *        prevemp = h[:emp]
+ *        h[:emp] = line == "\n"
+ *        prevemp && line.start_with?("From ")
+ *      }.each {|mail|
+ *        mail.pop if mail.last == "\n"
+ *        pp mail
+ *      }
  *    }
  *
  */
