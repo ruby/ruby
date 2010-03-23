@@ -409,11 +409,11 @@ inspect_obj(VALUE obj, VALUE str, int recur)
  *     Time.new.inspect                 #=> "2008-03-08 19:43:39 +0900"
  */
 
-extern int rb_obj_basic_to_s_p(VALUE);
-
 static VALUE
 rb_obj_inspect(VALUE obj)
 {
+    extern int rb_obj_basic_to_s_p(VALUE);
+
     if (TYPE(obj) == T_OBJECT && rb_obj_basic_to_s_p(obj)) {
         int has_ivar = 0;
         VALUE *ptr = ROBJECT_IVPTR(obj);
