@@ -1,3 +1,8 @@
+Wed Mar 24 14:33:56 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_read): limit read size to 16KB if the file
+	  seems to be console.  [ruby-core:28902]
+
 Wed Mar 24 10:18:12 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* file.c (file_expand_path): set length of string before calling
