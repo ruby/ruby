@@ -1,3 +1,11 @@
+Wed Mar 24 23:43:40 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* thread.c (thread_create_core): let new thread inherit RUBY_EVENT_VM
+	  of event_flags.  [ruby-core:25191]
+
+	* thread.c (rb_threadptr_exec_event_hooks): delete RUBY_EVENT_VM if
+	  all event_hooks are removed.
+
 Wed Mar 24 22:58:02 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* configure.in: revert the previous commit, which seemed to break make
