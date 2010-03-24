@@ -1,4 +1,7 @@
-Thu Mar 25 04:38:16 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Mar 25 04:42:19 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/make-snapshot (package): take a breath for HP-UX make
+	  [ruby-core:28938].
 
 	* tool/make-snapshot (Dir.mktmpdir): for 1.8.6 backward compatibility.
 
