@@ -28,6 +28,19 @@ class String
   alias bytesize size unless method_defined?(:bytesize)
 end
 
+class Dir
+  def self.mktmpdir(path)
+    path = File.join(tmpdir, path+"-#{$$}-#{rand(100000)}")
+    begin
+      mkdir(path)
+    rescue Errno::EEXIST
+      path.succ!
+      retry
+    end
+    path
+  end unless respond_to?(:mktmpdir)
+end
+
 $patch_file &&= File.expand_path($patch_file)
 path = ENV["PATH"].split(File::PATH_SEPARATOR)
 %w[YACC BASERUBY RUBY MV MINIRUBY].each do |var|

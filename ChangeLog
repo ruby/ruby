@@ -1,4 +1,6 @@
-Thu Mar 25 04:36:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Mar 25 04:38:16 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/make-snapshot (Dir.mktmpdir): for 1.8.6 backward compatibility.
 
 	* tool/make-snapshot (package): $: no longer contains ".", in trunk.
 
