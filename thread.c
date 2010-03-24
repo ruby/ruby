@@ -549,6 +549,9 @@ thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(ANYARGS))
     th->thgroup = GET_THREAD()->thgroup;
 
     native_mutex_initialize(&th->interrupt_lock);
+    if (GET_VM()->event_hooks != NULL)
+	th->event_flags |= RUBY_EVENT_VM;
+
     /* kick thread */
     st_insert(th->vm->living_threads, thval, (st_data_t) th->thread_id);
     err = native_thread_create(th);
@@ -3769,7 +3772,12 @@ rb_threadptr_exec_event_hooks(rb_thread_t *th, rb_event_flag_t flag, VALUE self,
 	exec_event_hooks(th->event_hooks, flag, self, id, klass);
     }
     if (wait_event & RUBY_EVENT_VM) {
-	exec_event_hooks(th->vm->event_hooks, flag, self, id, klass);
+	if (th->vm->event_hooks == NULL) {
+	    th->event_flags &= (~RUBY_EVENT_VM);
+	}
+	else {
+	    exec_event_hooks(th->vm->event_hooks, flag, self, id, klass);
+	}
     }
     th->errinfo = errinfo;
 }
