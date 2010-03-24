@@ -1,3 +1,7 @@
+Thu Mar 25 05:44:31 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (ruby_version): needs runnable CPP.
+
 Thu Mar 25 04:42:19 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/make-snapshot (package): take a breath for HP-UX make
