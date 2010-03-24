@@ -1,3 +1,7 @@
+Thu Mar 25 04:36:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/make-snapshot (package): $: no longer contains ".", in trunk.
+
 Thu Mar 25 03:52:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/charset_alias.rb: update of URL.  [ruby-dev:38360]
