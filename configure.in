@@ -1226,20 +1226,20 @@ if test "$with_dln_a_out" != yes; then
 	osf*) 		: ${LDSHARED="ld -shared -expect_unresolved \"*\""}
 			rb_cv_dlopen=yes ;;
 	bsdi3*) 	case "$CC" in
-			*shlicc*)	: ${LDSHARED="$CC -r"}
+			*shlicc*)	: ${LDSHARED='$(CC) -r'}
 					rb_cv_dlopen=yes ;;
 			esac ;;
 	linux* | gnu* | k*bsd*-gnu | netbsd* | bsdi*)
-			: ${LDSHARED='${CC} -shared'}
+			: ${LDSHARED='$(CC) -shared'}
 			if test "$rb_cv_binary_elf" = yes; then
 			    LDFLAGS="$LDFLAGS -Wl,-export-dynamic"
 			fi
 			rb_cv_dlopen=yes ;;
-	interix*) 	: ${LDSHARED="$CC -shared"}
+	interix*) 	: ${LDSHARED='$(CC) -shared'}
 			XLDFLAGS="$XLDFLAGS -Wl,-E"
 			LIBPATHFLAG=" -L%1\$-s"
 			rb_cv_dlopen=yes ;;
-	freebsd*|dragonfly*)       : ${LDSHARED="$CC -shared"}
+	freebsd*|dragonfly*)       : ${LDSHARED='$(CC) -shared'}
 			if test "$rb_cv_binary_elf" = yes; then
 			    LDFLAGS="$LDFLAGS -rdynamic"
 			    DLDFLAGS="$DLDFLAGS "'-Wl,-soname,$(.TARGET)'
@@ -1247,7 +1247,7 @@ if test "$with_dln_a_out" != yes; then
 			  test "$GCC" = yes && test "$rb_cv_prog_gnu_ld" = yes || LDSHARED="ld -Bshareable"
 			fi
 			rb_cv_dlopen=yes ;;
-	openbsd*) 	: ${LDSHARED="\$(CC) -shared ${CCDLFLAGS}"}
+	openbsd*) 	: ${LDSHARED='$(CC) -shared $(CCDLFLAGS)'}
 			if test "$rb_cv_binary_elf" = yes; then
 			    LDFLAGS="$LDFLAGS -Wl,-E"
 			fi
@@ -1311,13 +1311,13 @@ if test "$with_dln_a_out" != yes; then
 			: ${LDSHARED='ld -Bshareable -x'}
 			LDFLAGS="$LDFLAGS -L/lib -L/usr/lib -L/usr/local/lib"
 			rb_cv_dlopen=yes;;
-	cygwin*|mingw*)	: ${LDSHARED="${CC} -shared "'$(if $(filter-out -g -g0,$(debugflags)),,-s)'}
+	cygwin*|mingw*)	: ${LDSHARED='$(CC) -shared $(if $(filter-out -g -g0,$(debugflags)),,-s)'}
 			XLDFLAGS="$XLDFLAGS -Wl,--stack,0x02000000,--enable-auto-import"
 			DLDFLAGS="${DLDFLAGS} -Wl,--enable-auto-image-base,--enable-auto-import,--export-all"
 			: ${LIBPATHENV=""}
 			rb_cv_dlopen=yes ;;
 	hiuxmpp)	: ${LDSHARED='ld -r'} ;;
-	atheos*) 	: ${LDSHARED="$CC -shared"}
+	atheos*) 	: ${LDSHARED='$(CC) -shared'}
 			rb_cv_dlopen=yes ;;
 	os2-emx*)	LDFLAGS="$LDFLAGS -Zomf"
 			;;
@@ -1325,6 +1325,7 @@ if test "$with_dln_a_out" != yes; then
   esac
   AC_MSG_RESULT($rb_cv_dlopen)
 fi
+case " $CPP " in *" $CC "*) CPP=`echo " $CPP " | sed "s| $CC |"' $(CC) |;s/^ *//;s/  *$//'`;; esac
 case ${RPATHFLAG} in
 *'%1$'*)
     : ${LIBPATHFLAG=' -L%1$-s'};;

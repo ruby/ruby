@@ -1,3 +1,7 @@
+Wed Mar 24 18:16:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (LDSHARED, CPP): keep $(CC).  [ruby-core:28912]
+
 Mon Mar 22 19:32:34 2010  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb (Date#>>): fixed.  [ruby-core:28011]
