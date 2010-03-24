@@ -159,7 +159,7 @@ def package(rev, destdir)
       }
       FileUtils.mkpath(hdrdir = "#{extout}/include/ruby")
       File.open("#{hdrdir}/config.h", "w") {}
-      miniruby = ENV['MINIRUBY'] + " -rcross"
+      miniruby = ENV['MINIRUBY'] + " -r./cross"
       IO.popen("make -f - prereq srcdir=. CHDIR=cd IFCHANGE=tool/ifchange 'MINIRUBY=#{miniruby}' 'RUBY=#{ENV["RUBY"]}'", "w") do |f|
         f.puts(IO.read("Makefile.in").gsub(/^@.*\n/, '').gsub(/@([A-Za-z_]\w*)@/) {ENV[$1]})
         f.puts(commonmk.gsub(/\{[^{}]*\}/, ""))
