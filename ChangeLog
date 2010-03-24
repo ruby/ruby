@@ -1,3 +1,9 @@
+Wed Mar 24 22:58:02 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* configure.in: revert the previous commit, which seemed to break make
+	  install.  The files of standard libraries are directly installed to
+	  $(PREFIX)/lib/ruby instead of $(PREFIX)/lib/ruby/1.9.1
+
 Wed Mar 24 18:16:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (LDSHARED, CPP): keep $(CC).  [ruby-core:28912]
