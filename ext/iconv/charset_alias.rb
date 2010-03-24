@@ -3,8 +3,8 @@
 require 'rbconfig'
 require 'optparse'
 
-# http://www.ctan.org/tex-archive/macros/texinfo/texinfo/intl/config.charset
-# Fri, 30 May 2003 00:09:00 GMT'
+# http://www.ctan.org/get/macros/texinfo/texinfo/gnulib/lib/config.charset
+# Tue, 25 Dec 2007 00:00:00 GMT
 
 OS = Config::CONFIG["target_os"]
 SHELL = Config::CONFIG['SHELL']

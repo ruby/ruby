@@ -1,3 +1,7 @@
+Thu Mar 25 03:52:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/charset_alias.rb: update of URL.  [ruby-dev:38360]
+
 Wed Mar 24 18:16:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (LDSHARED, CPP): keep $(CC).  [ruby-core:28912]
