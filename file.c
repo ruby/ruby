@@ -2849,11 +2849,14 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
 	    p = chompdirsep(skiproot(buf));
     }
     else {
+	size_t len;
 	b = s;
 	do s++; while (isdirsep(*s));
-	p = buf + (s - b);
+	len = s - b;
+	p = buf + len;
 	BUFCHECK(bdiff >= buflen);
-	memset(buf, '/', p - buf);
+	memset(buf, '/', len);
+	rb_str_set_len(result, len);
 	rb_enc_associate(result, rb_enc_check(result, fname));
     }
     if (p > buf && p[-1] == '/')
