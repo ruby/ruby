@@ -30,13 +30,13 @@ class TestDir_M17N < Test::Unit::TestCase
         filename = "\xff".force_encoding("ASCII-8BIT") # invalid byte sequence as UTF-8
         File.open(filename, "w") {}
         ents = Dir.entries(".")
-        exit ents.include?(filename)
+        exit ents.include?(filename) || (RUBY_PLATFORM =~ /darwin/ && ents.include?("%FF"))
       EOS
       assert_ruby_status(%w[-EUTF-8], <<-'EOS', nil, :chdir=>d)
         filename = "\xff".force_encoding("UTF-8") # invalid byte sequence as UTF-8
         File.open(filename, "w") {}
         ents = Dir.entries(".")
-        exit ents.include?(filename)
+        exit ents.include?(filename) || (RUBY_PLATFORM =~ /darwin/ && ents.include?("%FF"))
       EOS
     }
   end
@@ -136,7 +136,8 @@ class TestDir_M17N < Test::Unit::TestCase
         File.open(filename, "w") {}
         ents = Dir.entries(".")
         ents.each {|e| e.force_encoding("ASCII-8BIT") }
-        exit ents.include?(filename.force_encoding("ASCII-8BIT"))
+        exit ents.include?(filename.force_encoding("ASCII-8BIT")) ||
+               (RUBY_PLATFORM =~ /darwin/ && ents.include?("%A4%A2".force_encoding("ASCII-8BIT")))
       EOS
     }
   end
@@ -147,12 +148,14 @@ class TestDir_M17N < Test::Unit::TestCase
         filename = "\xA4\xA2".force_encoding("euc-jp")
         File.open(filename, "w") {}
         ents = Dir.entries(".")
-        exit ents.include?(filename)
+        exit ents.include?(filename) ||
+               (RUBY_PLATFORM =~ /darwin/ && ents.include?("%A4%A2".force_encoding("euc-jp")))
       EOS
       assert_ruby_status(%w[-EASCII-8BIT], <<-'EOS', nil, :chdir=>d)
         filename = "\xA4\xA2"
         ents = Dir.entries(".")
-        exit ents.include?(filename)
+        exit ents.include?(filename) ||
+               (RUBY_PLATFORM =~ /darwin/ && ents.include?("%A4%A2".force_encoding("ASCII-8BIT")))
       EOS
     }
   end
@@ -179,15 +182,15 @@ class TestDir_M17N < Test::Unit::TestCase
         filename = "\xA4\xA2".force_encoding("euc-jp")
         File.open(filename, "w") {}
         ents = Dir.entries(".")
-        exit ents.include?(filename)
+        exit ents.include?(filename) ||
+               (RUBY_PLATFORM =~ /darwin/ && ents.include?("%A4%A2".force_encoding("euc-jp")))
       EOS
       assert_ruby_status(%w[-EEUC-JP:UTF-8], <<-'EOS', nil, :chdir=>d)
         filename = "\u3042"
         ents = Dir.entries(".")
-        exit ents.include?(filename)
+        exit ents.include?(filename) || (RUBY_PLATFORM =~ /darwin/ && ents.include?("%A4%A2"))
       EOS
     }
   end
-
 end
 
