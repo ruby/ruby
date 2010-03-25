@@ -1,6 +1,6 @@
 ##############################################################
 # extconf.rb for tcltklib
-# release date: 2009-08-09
+# release date: 2010-03-26
 ##############################################################
 require 'mkmf'
 
@@ -999,7 +999,7 @@ def find_tcltk_header(tclver, tkver)
   end
 
   if TkConfig_Info['TK_INCLUDE_SPEC'] && 
-      have_tk_h = try_cpp('tk.h', TclConfig_Info['TK_INCLUDE_SPEC'])
+      have_tk_h = try_cpp('tk.h', TkConfig_Info['TK_INCLUDE_SPEC'])
     $INCFLAGS << " " << TkConfig_Info['TK_INCLUDE_SPEC']
   elsif have_tk_h = have_header('tk.h')
     # find
@@ -1026,12 +1026,12 @@ def setup_for_macosx_framework
   if File.exist?(dir = File.join(TkLib_Config["tcltk-framework"], 
                                  'Tcl.framework', 'Headers'))
     TclConfig_Info['TCL_INCLUDE_SPEC'] = "-I#{dir} "
-    TclConfig_Info['TK_INCLUDE_SPEC'] = "-I#{File.join(TkLib_Config['tcltk-framework'], 'Tk.framework', 'Headers')} "
+    TkConfig_Info['TK_INCLUDE_SPEC'] = "-I#{File.join(TkLib_Config['tcltk-framework'], 'Tk.framework', 'Headers')} "
   else
     dir = Dir.glob(File.join(TkLib_Config["tcltk-framework"], 
                              'Tcl.framework', '*', 'Headers'))
     TclConfig_Info['TCL_INCLUDE_SPEC'] = "-I#{dir[0]} " unless dir.empty?
-    TclConfig_Info['TK_INCLUDE_SPEC'] = "-I#{Dir.glob(File.join(TkLib_Config['tcltk-framework'], 'Tk.framework', '*', 'Headers'))[0]} "
+    TkConfig_Info['TK_INCLUDE_SPEC'] = "-I#{Dir.glob(File.join(TkLib_Config['tcltk-framework'], 'Tk.framework', '*', 'Headers'))[0]} "
   end
 
   $LDFLAGS << ' -framework Tk -framework Tcl'
@@ -1083,6 +1083,11 @@ def search_X_libraries
     unless find_X11(x11_ldir2, x11_ldir)
       puts("Can't find X11 libraries. So, can't make tcltklib.so which is required by Ruby/Tk.")
       exit
+    end
+
+    if TkConfig_Info['TK_XINCLUDES'] &&
+        !TkConfig_Info['TK_XINCLUDES'].strip.empty?
+      $INCFLAGS << " " << TkConfig_Info['TK_XINCLUDES'].strip
     end
   end
 
@@ -1400,8 +1405,8 @@ if (TkLib_Config["tcltk-framework"] ||
   $INSTALLFILES << ["lib/tkextlib/SUPPORT_STATUS", "$(RUBYLIBDIR)", "lib"]
 
   # create
-  $defs << %[-DRUBY_VERSION=\\"#{RUBY_VERSION}\\"]
-  $defs << %[-DRUBY_RELEASE_DATE=\\"#{RUBY_RELEASE_DATE}\\"]
+  $CPPFLAGS << %[ -DRUBY_VERSION=\\"#{RUBY_VERSION}\\"]
+  $CPPFLAGS << %[ -DRUBY_RELEASE_DATE=\\"#{RUBY_RELEASE_DATE}\\"]
 
   create_makefile("tcltklib")
 
