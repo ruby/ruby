@@ -193,7 +193,7 @@ fun_so_from_utf8_mac(void *statep,
         unsigned char *o, size_t osize)
 {
     struct from_utf8_mac_status *sp = statep;
-    int n = 0;
+    ssize_t n = 0;
 
     switch (l) {
       case 1:
