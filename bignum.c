@@ -2397,7 +2397,7 @@ bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
 
     dd = 0;
     q = yds[ny-1];
-    while ((q & (1UL<<(BITSPERDIG-1))) == 0) {
+    while ((q & (BDIGIT)(1UL<<(BITSPERDIG-1))) == 0) {
 	q <<= 1UL;
 	dd++;
     }

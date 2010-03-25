@@ -1,5 +1,10 @@
 Thu Mar 25 11:34:00 2010  Kenta Murata  <mrkn@mrkn.jp>
 
+	* bignum.c, node.h, strftime.c, enc/trans/utf8_mac.trans:
+	  added explicit casts for supplessing warnings.
+
+Thu Mar 25 11:34:00 2010  Kenta Murata  <mrkn@mrkn.jp>
+
 	* test/ruby/test_dir_m17n.rb: HFS+ escapes invalid byte sequences of
 	  filenames.
 
