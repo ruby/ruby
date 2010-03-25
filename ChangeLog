@@ -1,3 +1,8 @@
+Thu Mar 25 17:21:49 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* NEWS: add IO#autoclose=, IO#autoclose?, IO#codepoints,
+	  IO#each_codepoint.
+
 Thu Mar 25 14:50:00 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_{read,write}): fix handle leaks.  based on

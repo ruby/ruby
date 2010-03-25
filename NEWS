@@ -82,7 +82,11 @@ with all sufficient information, see the ChangeLog file.
 
   * IO
     * new method:
+      * IO#autoclose=
+      * IO#autoclose?
       * IO#fdatasync
+      * IO#codepoints
+      * IO#each_codepoint
 
     * extended methods:
       * IO.pipe can take a block.
