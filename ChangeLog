@@ -1,3 +1,7 @@
+Thu Mar 25 18:10:08 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* NEWS: Array#{uniq,uniq!} can take a block. see [ruby-dev:37998]
+
 Thu Mar 25 17:21:49 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* NEWS: add IO#autoclose=, IO#autoclose?, IO#codepoints,
