@@ -1,3 +1,19 @@
+Fri Mar 26 04:09:24 2010  Akinori MUSHA  <knu@iDaemons.org>
+
+	* prelude.rb, Makefile.in, common.mk: Introduce prelude.rb.
+
+	* eval.c (rb_eval_prelude): New function exported only for use in
+	  preludes.
+
+	* configure.in: Define RUBY_EXEC_PREFIX and RUBY_LIB_PREFIX.
+
+	* ruby.c (proc_options, ruby_init_loadpath, ruby_prelude): Load
+	  prelude.
+
+	* compile_prelude.rb: Port the prelude compiler from trunk.
+
+	* miniprelude.c: Currently miniruby does not include prelude.rb.
+
 Fri Mar 26 03:58:37 2010  Akinori MUSHA  <knu@iDaemons.org>
 
 	* variable.c, intern.h: Add rb_const_remove().
