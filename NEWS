@@ -82,6 +82,10 @@ with all sufficient information, see the ChangeLog file.
 
     Renamed from Hash#index.
 
+  * Kernel#singleton_class
+
+    New method.
+
   * ENV.key
 
     Renamed from ENV.index.

@@ -1,3 +1,8 @@
+Fri Mar 26 03:09:30 2010  Akinori MUSHA  <knu@iDaemons.org>
+
+	* object.c (rb_obj_singleton_class): new method
+	  Kernel#singleton_class.  [ruby-core:21702]
+
 Thu Mar 25 03:52:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/charset_alias.rb: update of URL.  [ruby-dev:38360]
