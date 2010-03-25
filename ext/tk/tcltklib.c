@@ -4,16 +4,18 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2009-10-27"
+#define TCLTKLIB_RELEASE_DATE "2010-03-26"
 
 #include "ruby.h"
 
 #ifdef HAVE_RUBY_ENCODING_H
 #include "ruby/encoding.h"
 #endif
-#ifndef HAVE_RUBY_RUBY_H
-#undef RUBY_RELEASE_DATE
-#include "version.h"
+#ifndef RUBY_VERSION
+#define RUBY_VERSION "(unknown version)"
+#endif
+#ifndef RUBY_RELEASE_DATE
+#define RUBY_RELEASE_DATE "unknown release-date"
 #endif
 
 #ifdef RUBY_VM
@@ -1064,7 +1066,7 @@ call_original_exit(ptr, state)
 	Tcl_DecrRefCount(cmd_obj);
 
 #if USE_RUBY_ALLOC
-        free(argv);
+        xfree(argv);
 #else /* not USE_RUBY_ALLOC */
 #if 0 /* use Tcl_EventuallyFree */
 	Tcl_EventuallyFree((ClientData)argv, TCL_DYNAMIC); /* XXXXXXXX */
@@ -1099,7 +1101,7 @@ call_original_exit(ptr, state)
         ptr->return_value = (*(info->proc))(info->clientData, ptr->ip, 2, argv);
 
 #if USE_RUBY_ALLOC
-        free(argv);
+        xfree(argv);
 #else /* not USE_RUBY_ALLOC */
 #if 0 /* use Tcl_EventuallyFree */
 	Tcl_EventuallyFree((ClientData)argv, TCL_DYNAMIC); /* XXXXXXXX */
@@ -1138,7 +1140,7 @@ call_original_exit(ptr, state)
                                             2, argv);
 
 #if USE_RUBY_ALLOC
-        free(argv);
+        xfree(argv);
 #else /* not USE_RUBY_ALLOC */
 #if 0 /* use Tcl_EventuallyFree */
 	Tcl_EventuallyFree((ClientData)argv, TCL_DYNAMIC); /* XXXXXXXX */
@@ -2158,7 +2160,7 @@ lib_eventloop_ensure(args)
 
 	rb_thread_critical = ptr->thr_crit_bup;
 
-        free(ptr);
+        xfree(ptr);
         /* ckfree((char*)ptr); */
 
         return Qnil;
@@ -2201,7 +2203,7 @@ lib_eventloop_ensure(args)
 
     rb_thread_critical = ptr->thr_crit_bup;
 
-    free(ptr);
+    xfree(ptr);
     /* ckfree((char*)ptr);*/
 
     DUMP2("finish current eventloop %lx", current_evloop);
@@ -2523,8 +2525,8 @@ lib_thread_callback(argc, argv, self)
         ret = rb_protect(_thread_call_proc_value, th, &status);
     }
 
-    free(q->done);
-    free(q);
+    xfree(q->done);
+    xfree(q);
     /* ckfree((char*)q->done); */
     /* ckfree((char*)q); */
 
@@ -2674,7 +2676,7 @@ ip_set_exc_message(interp, exc)
     Tcl_AppendResult(interp, Tcl_DStringValue(&dstr), (char*)NULL);
     DUMP2("error message:%s", Tcl_DStringValue(&dstr));
     Tcl_DStringFree(&dstr);
-    free(buf);
+    xfree(buf);
     /* ckfree(buf); */
 
 #else /* TCL_VERSION <= 8.0 */
@@ -2803,7 +2805,7 @@ tcl_protect_core(interp, proc, data) /* should not raise exception */
             /* buf = ckalloc(sizeof(char) * 256); */
             sprintf(buf, "unknown loncaljmp status %d", status);
             exc = rb_exc_new2(rb_eException, buf);
-            free(buf);
+            xfree(buf);
             /* ckfree(buf); */
             break;
         }
@@ -2992,7 +2994,7 @@ ip_ruby_eval(clientData, interp, argc, argv)
     code = tcl_protect(interp, rb_eval_string, (VALUE)arg);
 
 #if TCL_MAJOR_VERSION >= 8
-    free(arg);
+    xfree(arg);
     /* ckfree(arg); */
 #endif
 
@@ -3105,7 +3107,7 @@ ip_ruby_cmd_receiver_get(str)
     memcpy(buf + 1, str, len);
     buf[len + 1] = 0;
     receiver = rb_gv_get(buf);
-    free(buf);
+    xfree(buf);
     /* ckfree(buf); */
   }
 
@@ -3227,7 +3229,7 @@ ip_ruby_cmd(clientData, interp, argc, argv)
     /* evaluate the argument string by ruby */
     code = tcl_protect(interp, ip_ruby_cmd_core, (VALUE)arg);
 
-    free(arg);
+    xfree(arg);
     /* ckfree((char*)arg); */
 
     return code;
@@ -5371,7 +5373,7 @@ ip_free(ptr)
                   (unsigned long)Tcl_GetMaster(ptr->ip));
             DUMP2("slave IP(%lx) should not be deleted", 
                   (unsigned long)ptr->ip);
-            free(ptr);
+            xfree(ptr);
             /* ckfree((char*)ptr); */
             rb_thread_critical = thr_crit_bup;
             return;
@@ -5379,7 +5381,7 @@ ip_free(ptr)
 
         if (ptr->ip == (Tcl_Interp*)NULL) {
             DUMP1("ip_free is called for deleted IP");
-            free(ptr);
+            xfree(ptr);
             /* ckfree((char*)ptr); */
             rb_thread_critical = thr_crit_bup;
             return;
@@ -5393,7 +5395,7 @@ ip_free(ptr)
 	}
 
         ptr->ip = (Tcl_Interp*)NULL;
-        free(ptr);
+        xfree(ptr);
         /* ckfree((char*)ptr); */
 
         rb_thread_critical = thr_crit_bup;
@@ -7585,7 +7587,7 @@ lib_toUTF8_core(ip_obj, src, encodename)
     */
     Tcl_DStringFree(&dstr);
 
-    free(buf);
+    xfree(buf);
     /* ckfree(buf); */
 
     rb_thread_critical = thr_crit_bup;
@@ -7787,7 +7789,7 @@ lib_fromUTF8_core(ip_obj, src, encodename)
     */
     Tcl_DStringFree(&dstr);
 
-    free(buf);
+    xfree(buf);
     /* ckfree(buf); */
 
     rb_thread_critical = thr_crit_bup;
@@ -9572,7 +9574,7 @@ tcltklib_compile_info()
 
     ret = rb_obj_freeze(rb_str_new2(info));
 
-    free(info);
+    xfree(info);
     /* ckfree(info); */
 
     return ret;

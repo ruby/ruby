@@ -1,3 +1,14 @@
+Fri Mar 26 04:52:19 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/extconf.rb: fix [ruby-core:28901] [Bug #2997].
+	  Thanks, Michael Graff.
+
+	* ext/tk/tcltklib.c: use xfree() for memories allocated by ALLOC().
+
+	* ext/tk/tkutil/tkutil.c: ditto.
+
+	* ext/tk/lib/tkextlib/version.rb: forgot updating.
+
 Thu Mar 25 23:53:22 2010  wanabe  <s.wanabe@gmail.com>
 
 	* thread.c (thread_reset_event_flags): set flags to thread.  [Bug #693]

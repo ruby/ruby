@@ -7,7 +7,7 @@
 
 ************************************************/
 
-#define TKUTIL_RELEASE_DATE "2010-02-01"
+#define TKUTIL_RELEASE_DATE "2010-03-26"
 
 #include "ruby.h"
 
@@ -1159,11 +1159,11 @@ subst_free(ptr)
     if (ptr) {
       for(i = 0; i < CBSUBST_TBL_MAX; i++) {
 	if (ptr->key[i] != NULL) {
-	  free(ptr->key[i]);
+	  free(ptr->key[i]); /* allocated by malloc */
 	  ptr->key[i] = NULL;
 	}
       }
-      free(ptr);
+      xfree(ptr); /* allocated by ALLOC */
     }
 }
 
@@ -1340,7 +1340,7 @@ cbsubst_sym_to_subst(self, sym)
 
     ret = rb_str_new2(buf);
 
-    free(buf);
+    xfree(buf);
 
     return ret;
 }
@@ -1408,7 +1408,7 @@ cbsubst_get_subst_arg(argc, argv, self)
 
     ret = rb_str_new2(buf);
 
-    free(buf);
+    xfree(buf);
 
     return ret;
 }
@@ -1462,7 +1462,7 @@ cbsubst_get_subst_key(self, str)
     *ptr = '\0';
 
     ret = rb_str_new2(buf);
-    free(buf);
+    xfree(buf);
     return ret;
 }
 
@@ -1506,8 +1506,8 @@ cbsubst_get_all_subst_keys(self)
 
     ret = rb_ary_new3(2, rb_str_new2(keys_buf), rb_str_new2(buf));
 
-    free(buf);
-    free(keys_buf);
+    xfree(buf);
+    xfree(keys_buf);
 
     return ret;
 }
