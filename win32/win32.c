@@ -4895,6 +4895,7 @@ rb_w32_read(int fd, void *buf, size_t size)
     if (!ReadFile((HANDLE)_osfhnd(fd), buf, len, &read, pol)) {
 	err = GetLastError();
 	if (err != ERROR_IO_PENDING) {
+	    if (pol) CloseHandle(ol.hEvent);
 	    if (err == ERROR_ACCESS_DENIED)
 		errno = EBADF;
 	    else if (err == ERROR_BROKEN_PIPE || err == ERROR_HANDLE_EOF) {
@@ -5028,6 +5029,7 @@ rb_w32_write(int fd, const void *buf, size_t size)
     if (!WriteFile((HANDLE)_osfhnd(fd), buf, len, &written, pol)) {
 	err = GetLastError();
 	if (err != ERROR_IO_PENDING) {
+	    if (pol) CloseHandle(ol.hEvent);
 	    if (err == ERROR_ACCESS_DENIED)
 		errno = EBADF;
 	    else
