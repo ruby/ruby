@@ -19,6 +19,9 @@ with all sufficient information, see the ChangeLog file.
       * Array#rotate!
       * Array#rotate
 
+    * extended methods:
+      * Array#{uniq,uniq!} can take a block.
+
   * Dir
     * new method:
       * Dir.home
