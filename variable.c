@@ -1479,12 +1479,21 @@ rb_mod_remove_const(mod, name)
     VALUE mod, name;
 {
     const ID id = rb_to_id(name);
-    VALUE val;
-    st_data_t v, n = id;
 
     if (!rb_is_const_id(id)) {
 	rb_name_error(id, "`%s' is not allowed as a constant name", rb_id2name(id));
     }
+    return rb_const_remove(mod, id);
+}
+
+VALUE
+rb_const_remove(mod, id)
+    VALUE mod;
+    ID id;
+{
+    VALUE val;
+    st_data_t v, n = id;
+
     if (!OBJ_TAINTED(mod) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't remove constant");
     if (OBJ_FROZEN(mod)) rb_error_frozen("class/module");

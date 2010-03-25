@@ -1,3 +1,7 @@
+Fri Mar 26 03:58:37 2010  Akinori MUSHA  <knu@iDaemons.org>
+
+	* variable.c, intern.h: Add rb_const_remove().
+
 Fri Mar 26 03:09:30 2010  Akinori MUSHA  <knu@iDaemons.org>
 
 	* object.c (rb_obj_singleton_class): new method
