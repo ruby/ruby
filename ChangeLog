@@ -1,3 +1,9 @@
+Thu Mar 25 23:17:16 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* file.c (rb_get_path_check): prefer #to_path over #to_str.  a patch
+	  originally written by me, and modified by Nobuyoshi Nakada.
+	  [ruby-core:24257]
+
 Thu Mar 25 18:10:08 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* NEWS: Array#{uniq,uniq!} can take a block. see [ruby-dev:37998]
