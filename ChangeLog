@@ -1,6 +1,6 @@
 Thu Mar 25 23:53:22 2010  wanabe  <s.wanabe@gmail.com>
 
-	* thread.c (thread_reset_event_flags): set flags to thread.
+	* thread.c (thread_reset_event_flags): set flags to thread.  [Bug #693]
 
 Thu Mar 25 23:17:16 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
