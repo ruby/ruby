@@ -373,4 +373,25 @@ class TestObject < Test::Unit::TestCase
       end
     end.call
   end
+
+  def test_singleton_class
+    x = Object.new
+    xs = class << x; self; end
+    assert_equal(xs, x.singleton_class)
+
+    y = Object.new
+    ys = y.singleton_class
+    assert_equal(class << y; self; end, ys)
+
+    assert_equal(NilClass, nil.singleton_class)
+    assert_equal(TrueClass, true.singleton_class)
+    assert_equal(FalseClass, false.singleton_class)
+
+    assert_raise(TypeError) do
+      123.singleton_class
+    end
+    assert_raise(TypeError) do
+      :foo.singleton_class
+    end
+  end
 end
