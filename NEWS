@@ -92,6 +92,10 @@ with all sufficient information, see the ChangeLog file.
       * IO::WaitWritable
         They are used to extend non-blocking exceptions.
 
+  * Kernel
+    * new method:
+      * Kernel#singleton_class
+
   * MatchData
     * New method:
       * MatchData#==
