@@ -6722,6 +6722,14 @@ eval(self, src, scope, file, line)
     return result;
 }
 
+VALUE
+rb_eval_prelude(src, name)
+    VALUE src;
+    const char *name;
+{
+    return eval(ruby_top_self, src, Qnil, name, 1);
+}
+
 /*
  *  call-seq:
  *     eval(string [, binding [, filename [,lineno]]])  => obj

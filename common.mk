@@ -20,8 +20,9 @@ DMYEXT	      = dmyext.$(OBJEXT)
 MAINOBJ	      = main.$(OBJEXT)
 EXTOBJS	      = 
 DLDOBJS	      = $(DMYEXT)
+MINIOBJS      = $(ARCHMINIOBJS) miniprelude.$(OBJEXT)
 
-OBJS	      = array.$(OBJEXT) \
+COMMONOBJS    = array.$(OBJEXT) \
 		bignum.$(OBJEXT) \
 		class.$(OBJEXT) \
 		compar.$(OBJEXT) \
@@ -60,6 +61,11 @@ OBJS	      = array.$(OBJEXT) \
 		version.$(OBJEXT) \
 		$(MISSING)
 
+OBJS          = $(COMMONOBJS) prelude.$(OBJEXT)
+
+PRELUDE_SCRIPTS = $(srcdir)/prelude.rb
+PRELUDES      = prelude.c miniprelude.c
+
 SCRIPT_ARGS   =	--dest-dir="$(DESTDIR)" \
 		--extout="$(EXTOUT)" \
 		--mflags="$(MFLAGS)" \
@@ -81,6 +87,8 @@ TESTWORKDIR   = testwork
 
 VCS           = svn
 
+COMPILE_PRELUDE = $(MINIRUBY) -I$(srcdir) $(srcdir)/compile_prelude.rb
+
 all: main $(RDOCTARGET)
 
 main: exts
@@ -93,7 +101,7 @@ $(MKMAIN_CMD): $(MKFILES) $(PREP) $(RBCONFIG) $(LIBRUBY)
 
 prog: $(PROGRAM) $(WPROGRAM)
 
-miniruby$(EXEEXT): config.status $(LIBRUBY_A) $(MAINOBJ) $(MINIOBJS) $(OBJS) $(DMYEXT)
+miniruby$(EXEEXT): config.status $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT)
 
 $(PROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SETUP) $(PREP)
 
@@ -307,7 +315,7 @@ clean-ext::
 distclean: distclean-ext distclean-local
 distclean-local:: clean-local
 	@$(RM) $(MKFILES) config.h rbconfig.rb
-	@$(RM) config.cache config.log config.status
+	@$(RM) config.cache config.log config.status $(PRELUDES)
 	@$(RM) *~ *.bak *.stackdump core *.core gmon.out $(PREP)
 distclean-ext::
 
@@ -454,6 +462,12 @@ variable.$(OBJEXT): {$(VPATH)}variable.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}env.h {$(VPATH)}node.h {$(VPATH)}st.h {$(VPATH)}util.h
 version.$(OBJEXT): {$(VPATH)}version.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}version.h {$(VPATH)}revision.h
+
+prelude.c: $(srcdir)/compile_prelude.rb $(RBCONFIG) $(PRELUDE_SCRIPTS) $(PREP)
+	$(COMPILE_PRELUDE) $(PRELUDE_SCRIPTS) $@
+
+miniprelude.$(OBJEXT): {$(VPATH)}miniprelude.c $(RUBY_H_INCLUDES)
+prelude.$(OBJEXT): {$(VPATH)}prelude.c $(RUBY_H_INCLUDES)
 
 dist: $(PROGRAM)
 	$(RUNRUBY) $(srcdir)/distruby.rb

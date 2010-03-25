@@ -254,6 +254,7 @@ ruby_init_loadpath()
 {
 #if defined LOAD_RELATIVE
     char libpath[FILENAME_MAX+1];
+    size_t baselen;
     char *p;
     int rest;
 #if defined _WIN32 || defined __CYGWIN__
@@ -298,12 +299,16 @@ ruby_init_loadpath()
 	strcpy(libpath, ".");
 	p = libpath + 1;
     }
+#define PREFIX_PATH() rb_str_new(libpath, baselen)
 
-    rest = FILENAME_MAX - (p - libpath);
+    baselen = p - libpath;
+    rest = FILENAME_MAX - baselen;
 
 #define RUBY_RELATIVE(path) (strncpy(p, (path), rest), libpath)
 #else
+    static const char exec_prefix[] = RUBY_EXEC_PREFIX;
 #define RUBY_RELATIVE(path) (path)
+#define PREFIX_PATH() rubylib_mangled_path(exec_prefix, sizeof(exec_prefix)-1)
 #endif
 #define incpush(path) rb_ary_push(rb_load_path, rubylib_mangled_path2(path))
 
@@ -338,6 +343,8 @@ ruby_init_loadpath()
     if (rb_safe_level() == 0) {
 	incpush(".");
     }
+
+    rb_const_set(rb_cObject, rb_intern("TMP_RUBY_PREFIX"), rb_obj_freeze(PREFIX_PATH()));
 }
 
 struct req_list {
@@ -479,6 +486,16 @@ moreswitches(s)
     while (*s && ISSPACE(*s))
 	s++;
     return s;
+}
+
+static void ruby_prelude _((void));
+void Init_prelude _((void));
+
+static void
+ruby_prelude()
+{
+    Init_prelude();
+    rb_const_remove(rb_cObject, rb_intern("TMP_RUBY_PREFIX"));
 }
 
 static void
@@ -841,6 +858,7 @@ proc_options(argc, argv)
     process_sflag();
 
     ruby_init_loadpath();
+    ruby_prelude();
     ruby_sourcefile = rb_source_filename(argv0);
     if (e_script) {
 	require_libraries();
