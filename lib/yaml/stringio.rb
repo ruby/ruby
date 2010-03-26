@@ -1,3 +1,5 @@
+warn "#{caller[0]}: yaml/stringio is deprecated" if $VERBOSE
+
 #
 # Limited StringIO if no core lib is available
 #

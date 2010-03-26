@@ -1,3 +1,11 @@
+Fri Mar 26 12:29:28 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* lib/yaml/encoding.rb: YAML.encode, YAML.decode are deprecated.
+
+	* lib/yaml/stringio.rb: yaml/stringio.rb is deprecated.
+
+	* lib/yaml/ypath.rb: YAML::YPath is deprecated.
+
 Fri Mar 26 04:52:19 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/extconf.rb: fix [ruby-core:28901] [Bug #2997].
