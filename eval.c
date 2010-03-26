@@ -3133,12 +3133,11 @@ rb_eval(self, n)
 	goto again;
 
       case NODE_WHEN:
-	while (node) {
+	for (; node; node = node->nd_next) {
 	    NODE *tag;
 
 	    if (nd_type(node) != NODE_WHEN) goto again;
-	    tag = node->nd_head;
-	    while (tag) {
+	    for (tag = node->nd_head; tag; tag = tag->nd_next) {
 		EXEC_EVENT_HOOK(RUBY_EVENT_LINE, tag, self,
 				ruby_frame->last_func,
 				ruby_frame->last_class);
@@ -3153,33 +3152,25 @@ rb_eval(self, n)
 			    goto again;
 			}
 		    }
-		    tag = tag->nd_next;
 		    continue;
 		}
 		if (RTEST(rb_eval(self, tag->nd_head))) {
 		    node = node->nd_body;
 		    goto again;
 		}
-		tag = tag->nd_next;
 	    }
-	    node = node->nd_next;
 	}
 	RETURN(Qnil);
 
       case NODE_CASE:
 	{
-	    VALUE val;
+	    VALUE val = rb_eval(self, node->nd_head);
 
-	    val = rb_eval(self, node->nd_head);
-	    node = node->nd_body;
-	    while (node) {
+	    for (node = node->nd_body; node; node = node->nd_next) {
 		NODE *tag;
 
-		if (nd_type(node) != NODE_WHEN) {
-		    goto again;
-		}
-		tag = node->nd_head;
-		while (tag) {
+		if (nd_type(node) != NODE_WHEN) goto again;
+		for (tag = node->nd_head; tag; tag = tag->nd_next) {
 		    EXEC_EVENT_HOOK(RUBY_EVENT_LINE, tag, self,
 				    ruby_frame->last_func,
 				    ruby_frame->last_class);
@@ -3194,16 +3185,13 @@ rb_eval(self, n)
 				goto again;
 			    }
 			}
-			tag = tag->nd_next;
 			continue;
 		    }
 		    if (RTEST(rb_funcall2(rb_eval(self, tag->nd_head), eqq, 1, &val))) {
 			node = node->nd_body;
 			goto again;
 		    }
-		    tag = tag->nd_next;
 		}
-		node = node->nd_next;
 	    }
 	}
 	RETURN(Qnil);
