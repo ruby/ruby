@@ -21,6 +21,7 @@ module YAML
 		end
 
 		def edit( doc_num, doc )
+                  warn "#{caller[0]}: edit is deprecated" if $VERBOSE
 			@documents[ doc_num ] = doc
 		end
 

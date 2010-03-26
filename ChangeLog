@@ -1,3 +1,9 @@
+Fri Mar 26 12:36:10 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* lib/yaml/basenode.rb: deprecating YPath methods
+
+	* lib/yaml/stream.rb: deprecating YAML::Stream#edit
+
 Fri Mar 26 12:29:28 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* lib/yaml/encoding.rb: YAML.encode, YAML.decode are deprecated.

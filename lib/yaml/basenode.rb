@@ -1,7 +1,6 @@
 #
 # YAML::BaseNode class
 #
-require 'yaml/ypath'
 
 module YAML
 
@@ -15,6 +14,7 @@ module YAML
         # qualified nodes.
         #
         def select( ypath_str )
+            warn "#{caller[0]}: select is deprecated" if $VERBOSE
             matches = match_path( ypath_str )
 
             #
@@ -34,6 +34,7 @@ module YAML
         # transformed nodes.
         #
         def select!( ypath_str )
+            warn "#{caller[0]}: select!() is deprecated" if $VERBOSE
             matches = match_path( ypath_str )
 
             #
@@ -53,6 +54,7 @@ module YAML
         # qualified paths.
         #
         def search( ypath_str )
+            warn "#{caller[0]}: search() is deprecated" if $VERBOSE
             matches = match_path( ypath_str )
 
             if matches
@@ -67,6 +69,7 @@ module YAML
         end
 
         def at( seg )
+            warn "#{caller[0]}: at() is deprecated" if $VERBOSE
             if Hash === @value
                 self[seg]
             elsif Array === @value and seg =~ /\A\d+\Z/ and @value[seg.to_i]
@@ -78,6 +81,8 @@ module YAML
         # YPath search returning a complete depth array
         #
         def match_path( ypath_str )
+            warn "#{caller[0]}: match_path is deprecated" if $VERBOSE
+            require 'yaml/ypath'
             depth = 0
             matches = []
             YPath.each_path( ypath_str ) do |ypath|
@@ -91,6 +96,7 @@ module YAML
         # Search a node for a single YPath segment
         #
         def match_segment( ypath, depth )
+            warn "#{caller[0]}: match_segment is deprecated" if $VERBOSE
             deep_nodes = []
             seg = ypath.segments[ depth ]
             if seg == "/"
@@ -200,6 +206,7 @@ module YAML
         end
 
         def children_with_index
+            warn "#{caller[0]}: children_with_index is deprecated, use children" if $VERBOSE
             if Hash === @value
                 @value.keys.collect { |i| [self[i], i] }
             elsif Array === @value
