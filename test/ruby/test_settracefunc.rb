@@ -294,4 +294,64 @@ class TestSetTraceFunc < Test::Unit::TestCase
     set_trace_func proc {raise rescue nil}
     assert_equal(42, (raise rescue 42), '[ruby-core:24118]')
   end
+
+  def test_thread_trace
+    events = {:set => [], :add => []}
+    prc = Proc.new { |event, file, lineno, mid, binding, klass|
+      events[:set] << [event, lineno, mid, klass, :set]
+    }
+    prc2 = Proc.new { |event, file, lineno, mid, binding, klass|
+      events[:add] << [event, lineno, mid, klass, :add]
+    }
+
+    th = Thread.new do
+      th = Thread.current
+      eval <<-EOF.gsub(/^.*?: /, "")
+       1: th.set_trace_func(prc)
+       2: th.add_trace_func(prc2)
+       3: class ThreadTraceInnerClass
+       4:   def foo
+       5:     x = 1 + 1
+       6:   end
+       7: end
+       8: ThreadTraceInnerClass.new.foo
+       9: th.set_trace_func(nil)
+      EOF
+    end
+    th.join
+
+    [["c-return", 1, :set_trace_func, Thread, :set],
+     ["line", 2, __method__, self.class, :set],
+     ["c-call", 2, :add_trace_func, Thread, :set]].each do |e|
+      assert_equal(e, events[:set].shift)
+    end
+
+    [["c-return", 2, :add_trace_func, Thread],
+     ["line", 3, __method__, self.class],
+     ["c-call", 3, :inherited, Class],
+     ["c-return", 3, :inherited, Class],
+     ["class", 3, nil, nil],
+     ["line", 4, nil, nil],
+     ["c-call", 4, :method_added, Module],
+     ["c-return", 4, :method_added, Module],
+     ["end", 7, nil, nil],
+     ["line", 8, __method__, self.class],
+     ["c-call", 8, :new, Class],
+     ["c-call", 8, :initialize, BasicObject],
+     ["c-return", 8, :initialize, BasicObject],
+     ["c-return", 8, :new, Class],
+     ["call", 4, :foo, ThreadTraceInnerClass],
+     ["line", 5, :foo, ThreadTraceInnerClass],
+     ["c-call", 5, :+, Fixnum],
+     ["c-return", 5, :+, Fixnum],
+     ["return", 6, :foo, ThreadTraceInnerClass],
+     ["line", 9, __method__, self.class],
+     ["c-call", 9, :set_trace_func, Thread]].each do |e|
+      [:set, :add].each do |type|
+        assert_equal(e + [type], events[type].shift)
+      end
+    end
+    assert_equal([], events[:set])
+    assert_equal([], events[:add])
+  end
 end
