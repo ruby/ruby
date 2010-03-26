@@ -1,3 +1,8 @@
+Fri Mar 26 19:28:03 2010  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* test/ruby/test_hash.rb (test_recursive_key): recursive keys are
+	  permitted now.  [ruby-dev:40735]
+
 Fri Mar 26 12:36:10 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* lib/yaml/basenode.rb: deprecating YPath methods
