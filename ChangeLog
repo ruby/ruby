@@ -1,3 +1,7 @@
+Fri Mar 26 23:52:07 2010  wanabe  <s.wanabe@gmail.com>
+
+	* NEWS: add Thread#add_trace_func and Thread#set_trace_func.
+
 Fri Mar 26 22:58:10 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/openssl/ossl_x509store.c (ossl_x509store_initialize): initialize

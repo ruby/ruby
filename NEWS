@@ -122,6 +122,11 @@ with all sufficient information, see the ChangeLog file.
     * extended methods:
       * string[regexp, name] is supported for named capture.
 
+  * Thread
+    * new methods:
+      * Thread#add_trace_func
+      * Thread#set_trace_func
+
   * Time
     * extended feature:
       * time_t restriction is removed to represent before 1901 and after 2038.
