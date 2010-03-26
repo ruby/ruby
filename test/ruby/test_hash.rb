@@ -898,8 +898,10 @@ class TestHash < Test::Unit::TestCase
     assert_nothing_raised { eval("a = 1; {a => a}; a") }
   end
 
-  def test_recursive_check
+  def test_recursive_key
     h = {}
-    assert_raise(ArgumentError) { h[h] = :foo }
+    assert_nothing_raised { h[h] = :foo }
+    h.rehash
+    assert_equal(:foo, h[h])
   end
 end
