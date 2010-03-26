@@ -93,12 +93,24 @@ module YAML
 
     # Returns a new default parser
     def YAML.parser; Parser.new.set_resolver( YAML.resolver ); end
+
     # Returns a new generic parser
-    def YAML.generic_parser; Parser.new.set_resolver( GenericResolver ); end
+    def YAML.generic_parser
+        warn "#{caller[0]}: YAML.generic_parser is deprecated, switch to psych" if $VERBOSE
+        Parser.new.set_resolver( GenericResolver )
+    end
+
     # Returns the default resolver
-    def YAML.resolver; DefaultResolver; end
+    def YAML.resolver
+        warn "#{caller[0]}: YAML.resolver is deprecated" if $VERBOSE
+        DefaultResolver
+    end
+
     # Returns a new default emitter
-    def YAML.emitter; Emitter.new.set_resolver( YAML.resolver ); end
+    def YAML.emitter
+        warn "#{caller[0]}: YAML.emitter is deprecated" if $VERBOSE
+        Emitter.new.set_resolver( YAML.resolver )
+    end
 
 	#
 	# Converts _obj_ to YAML and writes the YAML result to _io_.
@@ -214,6 +226,7 @@ module YAML
     #   end
 	#
     def YAML.each_document( io, &block )
+        warn "#{caller[0]}: YAML.each_document is deprecated" if $VERBOSE
 		yp = parser.load_documents( io, &block )
     end
 
@@ -229,7 +242,7 @@ module YAML
     #   end
 	#
     def YAML.load_documents( io, &doc_proc )
-		YAML.each_document( io, &doc_proc )
+		yp = parser.load_documents( io, &doc_proc )
     end
 
 	#
@@ -244,6 +257,7 @@ module YAML
     #   end
 	#
     def YAML.each_node( io, &doc_proc )
+        warn "#{caller[0]}: YAML.each_node is deprecated" if $VERBOSE
 		yp = generic_parser.load_documents( io, &doc_proc )
     end
 
@@ -259,6 +273,7 @@ module YAML
     #   end
 	#
     def YAML.parse_documents( io, &doc_proc )
+        warn "#{caller[0]}: YAML.parse_documents is deprecated, use load_stream" if $VERBOSE
 		YAML.each_node( io, &doc_proc )
     end
 
@@ -311,6 +326,7 @@ module YAML
 	# Add a transfer method for a builtin type
 	#
 	def YAML.add_ruby_type( type_tag, &transfer_proc )
+        warn "#{caller[0]}: YAML.add_ruby_type is deprecated, use add_domain_type" if $VERBOSE
 	    resolver.add_type( "tag:ruby.yaml.org,2002:#{ type_tag }", transfer_proc )
 	end
 
@@ -318,6 +334,7 @@ module YAML
 	# Add a private document type
 	#
 	def YAML.add_private_type( type_re, &transfer_proc )
+        warn "#{caller[0]}: YAML.add_private_type is deprecated, use add_domain_type" if $VERBOSE
 	    resolver.add_type( "x-private:" + type_re, transfer_proc )
 	end
 
@@ -325,6 +342,7 @@ module YAML
     # Detect typing of a string
     #
     def YAML.detect_implicit( val )
+        warn "#{caller[0]}: YAML.detect_implicit is deprecated" if $VERBOSE
         resolver.detect_implicit( val )
     end
 
@@ -332,6 +350,7 @@ module YAML
     # Convert a type_id to a taguri
     #
     def YAML.tagurize( val )
+        warn "#{caller[0]}: YAML.tagurize is deprecated" if $VERBOSE
         resolver.tagurize( val )
     end
 
@@ -339,6 +358,7 @@ module YAML
     # Apply a transfer method to a Ruby object
     #
     def YAML.transfer( type_id, obj )
+        warn "#{caller[0]}: YAML.transfer is deprecated" if $VERBOSE
         resolver.transfer( YAML.tagurize( type_id ), obj )
     end
 
@@ -346,6 +366,7 @@ module YAML
 	# Apply any implicit a node may qualify for
 	#
 	def YAML.try_implicit( obj )
+        warn "#{caller[0]}: YAML.try_implicit is deprecated" if $VERBOSE
 		YAML.transfer( YAML.detect_implicit( obj ), obj )
 	end
 
@@ -354,6 +375,7 @@ module YAML
     # the type and the constant of the class
     #
     def YAML.read_type_class( type, obj_class )
+        warn "#{caller[0]}: YAML.read_type_class is deprecated" if $VERBOSE
         scheme, domain, type, tclass = type.split( ':', 4 )
         tclass.split( "::" ).each { |c| obj_class = obj_class.const_get( c ) } if tclass
         return [ type, obj_class ]
@@ -363,6 +385,7 @@ module YAML
     # Allocate blank object
     #
     def YAML.object_maker( obj_class, val )
+        warn "#{caller[0]}: YAML.object_maker is deprecated" if $VERBOSE
         if Hash === val
             o = obj_class.allocate
             val.each_pair { |k,v|
@@ -378,6 +401,7 @@ module YAML
 	# Allocate an Emitter if needed
 	#
 	def YAML.quick_emit( oid, opts = {}, &e )
+        warn "#{caller[0]}: YAML.quick_emit is deprecated" if $VERBOSE
         out =
             if opts.is_a? YAML::Emitter
                 opts
