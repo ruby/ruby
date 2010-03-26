@@ -8,6 +8,7 @@ module YAML
 	# Escape the string, condensing common escapes
 	#
 	def YAML.escape( value, skip = "" )
+              warn "#{caller[0]}: YAML.escape is deprecated" if $VERBOSE
 		value.gsub( /\\/, "\\\\\\" ).
               gsub( /"/, "\\\"" ).
               gsub( /([\x00-\x1f])/ ) do
@@ -19,6 +20,7 @@ module YAML
 	# Unescape the condenses escapes
 	#
 	def YAML.unescape( value )
+              warn "#{caller[0]}: YAML.unescape is deprecated" if $VERBOSE
 		value.gsub( /\\(?:([nevfbart\\])|0?x([0-9a-fA-F]{2})|u([0-9a-fA-F]{4}))/ ) {
 			if $3
 				["#$3".hex ].pack('U*')

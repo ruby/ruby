@@ -2,6 +2,8 @@
 # YAML::YPath
 #
 
+warn "#{caller[0]}: YAML::YPath is deprecated" if $VERBOSE
+
 module YAML
 
     class YPath
