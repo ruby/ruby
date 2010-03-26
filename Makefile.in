@@ -18,6 +18,7 @@ AUTOCONF = autoconf
 MKFILES = @MAKEFILES@
 BASERUBY = @BASERUBY@
 TEST_RUNNABLE = @TEST_RUNNABLE@
+DOXYGEN = @DOXYGEN@
 
 prefix = @prefix@
 exec_prefix = @exec_prefix@

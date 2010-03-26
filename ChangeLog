@@ -1,3 +1,10 @@
+Fri Mar 26 19:55:41 2010  Akinori MUSHA  <knu@iDaemons.org>
+
+	* Makefile.in (DOXYGEN): Define a missing variable DOXYGEN.  Build
+	  has been failing when doxygen(1) is found by configure but the
+	  variable is not defined by the system and make(1) does not allow
+	  an empty command. ("@$(DOXYGEN)" was the cause)
+
 Fri Mar 26 19:28:03 2010  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/ruby/test_hash.rb (test_recursive_key): recursive keys are
