@@ -1,4 +1,8 @@
-2010-03-27  Tanaka Akira  <akr@fsij.org>
+Sun Mar 28 07:12:41 2010  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (mul): condition refined.
+
+Sun Mar 28 02:14:13 2010  Tanaka Akira  <akr@fsij.org>
 
 	* time.c: fix previos commit.
 
