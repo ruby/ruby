@@ -162,6 +162,16 @@ class TestTime < Test::Unit::TestCase
       assert_equal(999999998, Time.at(-14e-10).nsec)
       assert_equal(999999998, Time.at(-16e-10).nsec)
     end
+
+    t = Time.at(-4611686019).utc
+    assert_equal(1823, t.year)
+
+    t = Time.at(4611686018, 999999).utc
+    assert_equal(2116, t.year)
+    assert_equal("0.999999".to_r, t.subsec)
+
+    t = Time.at(2**40 + "1/3".to_r, 9999999999999).utc
+    assert_equal(36812, t.year)
   end
 
   def test_at2
@@ -287,6 +297,9 @@ class TestTime < Test::Unit::TestCase
 
     t = Time.local(2000)
     assert_equal(t.gmt_offset, T2000 - t)
+
+    assert_equal(-4427700000, Time.utc(-4427700000,12,1).year)
+    assert_equal(-2**30+10, Time.utc(-2**30+10,1,1).year)
   end
 
   def test_time_interval
@@ -405,6 +418,11 @@ class TestTime < Test::Unit::TestCase
     assert_equal(Rational(1,3), (t0 + Rational(4,3)).subsec)
     assert_equal(0.5, (t0 + SimpleDelegator.new(1.5)).subsec)
     assert_equal(Rational(1,3), (t0 + SimpleDelegator.new(Rational(4,3))).subsec)
+  end
+
+  def test_minus
+    t = Time.at(-4611686018).utc - 100
+    assert_equal(1823, t.year)
   end
 
   def test_readers
