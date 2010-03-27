@@ -325,12 +325,32 @@ divmodv(VALUE n, VALUE d, VALUE *q, VALUE *r)
     *r = rb_ary_entry(ary, 1);
 }
 
-#define weq(x,y) (RTEST(rb_funcall(w2xv(x), id_eq, 1, w2xv(y))))
-#define wne(x,y) (RTEST(rb_funcall(w2xv(x), id_ne, 1, w2xv(y))))
-#define wlt(x,y) (RTEST(rb_funcall(w2xv(x), '<', 1, w2xv(y))))
-#define wgt(x,y) (RTEST(rb_funcall(w2xv(x), '>', 1, w2xv(y))))
-#define wle(x,y) (!gt(w2xv(x),w2xv(y)))
-#define wge(x,y) (!lt(w2xv(x),w2xv(y)))
+static int
+weq(timew_t wx, timew_t wy)
+{
+#if TIMEVALUE_IS_UINT64
+    if (FIXTV_P(TIMEW_GETVAL(wx)) && FIXTV_P(TIMEW_GETVAL(wy))) {
+        return FIXTVtoINT64(TIMEW_GETVAL(wx)) == FIXTVtoINT64(TIMEW_GETVAL(wy));
+    }
+#endif
+    return RTEST(rb_funcall(w2xv(wx), id_eq, 1, w2xv(wy)));
+}
+
+static int
+wlt(timew_t wx, timew_t wy)
+{
+#if TIMEVALUE_IS_UINT64
+    if (FIXTV_P(TIMEW_GETVAL(wx)) && FIXTV_P(TIMEW_GETVAL(wy))) {
+        return FIXTVtoINT64(TIMEW_GETVAL(wx)) < FIXTVtoINT64(TIMEW_GETVAL(wy));
+    }
+#endif
+    return RTEST(rb_funcall(w2xv(wx), '<', 1, w2xv(wy)));
+}
+
+#define wne(x,y) (!weq(x,y))
+#define wgt(x,y) (wlt(y,x))
+#define wle(x,y) (!wgt(x,y))
+#define wge(x,y) (!wlt(x,y))
 
 static timew_t
 wadd(timew_t wx, timew_t wy)
@@ -565,14 +585,66 @@ num_exact(VALUE v)
 static timew_t
 rb_time_magnify(VALUE v)
 {
+    timew_t ret;
+    if (FIXNUM_P(v)) {
+#if TIMEVALUE_IS_UINT64 && SIZEOF_LONG * 2 <= SIZEOF_INT64_T
+        int64_t i64 = (int64_t)FIX2LONG(v) * TIME_SCALE;
+        TIMEW_SETVAL(ret, INT64toFIXTV(i64));
+        return ret;
+#else
+        long a, b, c;
+        a = FIX2LONG(v);
+        if (a == 0)
+            return x;
+        b = TIME_SCALE;
+        c = a * b;
+        if (c / a == b) {
+            TIMEW_SETVAL(ret, INT64toFIXTV(c));
+            return ret;
+        }
+#endif
+    }
     return xv2w(mul(v, INT2FIX(TIME_SCALE)));
 }
 
 static VALUE
 rb_time_unmagnify(timew_t w)
 {
-    VALUE v = w2xv(w);
+    VALUE v;
+#if TIMEVALUE_IS_UINT64
+    if (FIXTV_P(TIMEW_GETVAL(w))) {
+      int64_t a, b, c;
+      a = FIXTVtoINT64(TIMEW_GETVAL(w));
+      b = TIME_SCALE;
+      c = a / b;
+      if (c * b == a) {
+          return INT64toNUM(c);
+      }
+    }
+#endif
+    v = w2xv(w);
     return quo(v, INT2FIX(TIME_SCALE));
+}
+
+static VALUE
+rb_time_unmagnify_to_float(timew_t w)
+{
+    VALUE v;
+#if TIMEVALUE_IS_UINT64
+    if (FIXTV_P(TIMEW_GETVAL(w))) {
+        int64_t a, b, c;
+        a = FIXTVtoINT64(TIMEW_GETVAL(w));
+        b = TIME_SCALE;
+        c = a / b;
+        if (c * b == a) {
+            return DBL2NUM((double)c);
+        }
+        v = DBL2NUM(FIXTVtoINT64(TIMEW_GETVAL(w)));
+        return quo(v, DBL2NUM(TIME_SCALE));
+    }
+#endif
+    v = w2xv(w);
+    return quo(v, DBL2NUM(TIME_SCALE));
 }
 
 static const int common_year_yday_offset[] = {
@@ -651,8 +723,8 @@ timegmw_noleapsecond(struct vtm *vtm)
     vdays = LONG2NUM(days_in400);
     vdays = add(vdays, mul(q400, INT2FIX(97)));
     vdays = add(vdays, mul(year1900, INT2FIX(365)));
-    ret = add(ret, mul(vdays, INT2FIX(86400)));
-    wret = wadd(rb_time_magnify(ret), xv2w(vtm->subsecx));
+    wret = wadd(rb_time_magnify(ret), wmul(rb_time_magnify(vdays), xv2w(INT2FIX(86400))));
+    wret = wadd(wret, xv2w(vtm->subsecx));
 
     return wret;
 }
@@ -999,7 +1071,7 @@ gmtimew(timew_t timew, struct vtm *result)
 
     init_leap_second_info();
 
-    if (wlt(rb_time_magnify(LONG2NUM(known_leap_seconds_limit)), timew)) {
+    if (wlt(TIMET2TIMEW(known_leap_seconds_limit), timew)) {
         timew = wsub(timew, rb_time_magnify(INT2NUM(number_of_leap_seconds_known)));
         gmtimew_noleapsecond(timew, result);
         return result;
@@ -2743,7 +2815,7 @@ time_to_f(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    return rb_Float(rb_time_unmagnify(tobj->timew));
+    return rb_Float(rb_time_unmagnify_to_float(tobj->timew));
 }
 
 /*
@@ -3305,7 +3377,7 @@ time_minus(VALUE time1, VALUE time2)
 	struct time_object *tobj2;
 
 	GetTimeval(time2, tobj2);
-        return rb_Float(rb_time_unmagnify(wsub(tobj->timew, tobj2->timew)));
+        return rb_Float(rb_time_unmagnify_to_float(wsub(tobj->timew, tobj2->timew)));
     }
     return time_add(tobj, time2, -1);
 }

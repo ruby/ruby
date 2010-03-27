@@ -1,3 +1,16 @@
+Sun Mar 28 08:20:37 2010  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (weq): specialize for small integer.
+	  (wne): ditto.
+	  (wlt): ditto.
+	  (wgt): ditto.
+	  (wle): ditto.
+	  (wge): ditto.
+	  (rb_time_magnify): ditto.
+	  (rb_time_unmagnify): ditto.
+	  (rb_time_unmagnify_to_float): new function to avoid rational for
+	  Time#to_f and Time#-.
+
 Sun Mar 28 07:12:41 2010  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (mul): condition refined.
