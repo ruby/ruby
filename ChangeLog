@@ -1,3 +1,7 @@
+Sat Mar 27 23:17:52 2010  Tanaka Akira  <akr@fsij.org>
+
+	* time.c: use 64bit arithmetic even on platforms with 32bit VALUE.
+
 Fri Mar 26 23:52:07 2010  wanabe  <s.wanabe@gmail.com>
 
 	* NEWS: add Thread#add_trace_func and Thread#set_trace_func.
