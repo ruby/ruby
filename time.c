@@ -122,11 +122,12 @@ xv2w(VALUE xv) {
                 int64_t i = 0;
                 while (len)
                     i = (i << sizeof(BDIGIT)*CHAR_BIT) | ds[--len];
-                TIMEW_SETVAL(w, INT64toFIXTV(i));
+                if (FIXTVABLE(i))
+                    TIMEW_SETVAL(w, INT64toFIXTV(i));
             }
         }
         else {
-            if (ds[len-1] <= ((BDIGIT)1 << (sizeof(BDIGIT)*CHAR_BIT-2))) {
+            if (ds[len-1] < ((BDIGIT)1 << (sizeof(BDIGIT)*CHAR_BIT-2))) {
                 int64_t i = 0;
                 while (len)
                     i = (i << sizeof(BDIGIT)*CHAR_BIT) | ds[--len];
@@ -616,7 +617,7 @@ timegmw_noleapsecond(struct vtm *vtm)
     int year_mod400;
     int yday = vtm->mday;
     long days_in400;
-    VALUE ret;
+    VALUE vdays, ret;
     timew_t wret;
 
     year1900 = sub(vtm->year, INT2FIX(1900));
@@ -643,9 +644,10 @@ timegmw_noleapsecond(struct vtm *vtm)
                + DIV(year_mod400 - 69, 4)
                - DIV(year_mod400 - 1, 100)
                + (year_mod400 + 299) / 400;
-    ret = add(ret, mul(LONG2NUM(days_in400), INT2FIX(86400)));
-    ret = add(ret, mul(q400, INT2FIX(97*86400)));
-    ret = add(ret, mul(year1900, INT2FIX(365*86400)));
+    vdays = LONG2NUM(days_in400);
+    vdays = add(vdays, mul(q400, INT2FIX(97)));
+    vdays = add(vdays, mul(year1900, INT2FIX(365)));
+    ret = add(ret, mul(vdays, INT2FIX(86400)));
     wret = wadd(rb_time_magnify(ret), xv2w(vtm->subsecx));
 
     return wret;

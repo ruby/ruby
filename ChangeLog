@@ -1,3 +1,7 @@
+2010-03-27  Tanaka Akira  <akr@fsij.org>
+
+	* time.c: fix previos commit.
+
 Sat Mar 27 23:17:52 2010  Tanaka Akira  <akr@fsij.org>
 
 	* time.c: use 64bit arithmetic even on platforms with 32bit VALUE.
