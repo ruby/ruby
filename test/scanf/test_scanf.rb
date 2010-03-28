@@ -269,7 +269,7 @@ module ScanfTests
       [ "%[[:upper:]]", "ABCdefGHI", [ "ABC" ] ],
 
 # Testing 'f'
-      [ "%2f", "x", [0.0] ],  # width-floats match anything (by design)
+      [ "%2f", "x", [] ],
       [ "%F", "1.23e45", [1.23e+45] ],
       [ "%e", "3.25ee", [3.25] ],
       [ "%E", "3..25", [3.0] ],
