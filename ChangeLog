@@ -1,3 +1,9 @@
+Sun Mar 28 21:04:21 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in (ac_cv_func_snprintf, ac_cv_func_vsnprintf):
+	  use own vsnprintf to avoid locale problems and platform
+	  difference.
+
 Sun Mar 28 10:03:51 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/scanf.rb: fix max width modifier for %f.
