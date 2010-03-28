@@ -409,11 +409,11 @@ module Scanf
           [ "([-+][0-7]{1,#{$1.to_i-1}}|[0-7]{1,#{$1}})", :extract_octal ]
 
           # %f
-        when /%\*?f/
+        when /%\*?[efgEFG]/
           [ '([-+]?((\d+(?>(?=[^\d.]|$)))|(\d*(\.(\d*([eE][-+]?\d+)?)))))', :extract_float ]
 
           # %5f
-        when /%\*?(\d+)f/
+        when /%\*?(\d+)[efgEFG]/
           [ "(\\S{1,#{$1}})", :extract_float ]
 
           # %5s
@@ -490,7 +490,7 @@ module Scanf
     attr_reader :string_left, :last_spec_tried,
                 :last_match_tried, :matched_count, :space
 
-    SPECIFIERS = 'diuXxofeEgsc'
+    SPECIFIERS = 'diuXxofFeEgGsc'
     REGEX = /
         # possible space, followed by...
           (?:\s*
