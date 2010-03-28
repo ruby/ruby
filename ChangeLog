@@ -1,3 +1,7 @@
+Sun Mar 28 10:03:51 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/scanf.rb: fix max width modifier for %f.
+
 Sun Mar 28 10:35:45 2010  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* lib/minitest/*.rb: Imported minitest 1.6.0 r5717.

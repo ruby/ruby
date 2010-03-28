@@ -410,11 +410,12 @@ module Scanf
 
           # %f
         when /%\*?[efgEFG]/
-          [ '([-+]?((\d+(?>(?=[^\d.]|$)))|(\d*(\.(\d*([eE][-+]?\d+)?)))))', :extract_float ]
+          [ '([-+]?(?:\d+(?![\d.])|\d*\.\d*(?:[eE][-+]?\d+)?))', :extract_float ]
 
           # %5f
         when /%\*?(\d+)[efgEFG]/
-          [ "(\\S{1,#{$1}})", :extract_float ]
+          [ '(?=[-+]?(?:\d+(?![\d.])|\d*\.\d*(?:[eE][-+]?\d+)?))' +
+            "(\\S{1,#{$1}})", :extract_float ]
 
           # %5s
         when /%\*?(\d+)s/
