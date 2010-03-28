@@ -270,11 +270,11 @@ module ScanfTests
 
 # Testing 'f'
       [ "%2f", "x", [0.0] ],  # width-floats match anything (by design)
-      [ "%f", "1.23e45", [1.23e+45] ],
-      [ "%f", "3.25ee", [3.25] ],
-      [ "%f", "3..25", [3.0] ],
-      [ "%f", "+3.25", [3.25] ],
-      [ "%f", "+3.25e2", [325.0] ],
+      [ "%F", "1.23e45", [1.23e+45] ],
+      [ "%e", "3.25ee", [3.25] ],
+      [ "%E", "3..25", [3.0] ],
+      [ "%g", "+3.25", [3.25] ],
+      [ "%G", "+3.25e2", [325.0] ],
       [ "%f", "3.z", [3.0] ],
 
 # Testing embedded matches including literal '[' behavior
