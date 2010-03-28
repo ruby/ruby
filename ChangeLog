@@ -1,3 +1,9 @@
+Mon Mar 29 06:47:25 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/*: importing Psych to trunk
+	* test/psych/*: ditto
+	* lib/psych/*: ditto
+
 Sun Mar 28 21:04:21 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in (ac_cv_func_snprintf, ac_cv_func_vsnprintf):
