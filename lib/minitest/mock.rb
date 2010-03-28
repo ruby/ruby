@@ -16,6 +16,7 @@ module MiniTest
     def expect(name, retval, args=[])
       n, r, a = name, retval, args # for the closure below
       @expected_calls[name] = { :retval => retval, :args => args }
+      self.class.__send__ :remove_method, name if respond_to? name
       self.class.__send__(:define_method, name) { |*x|
         raise ArgumentError unless @expected_calls[n][:args].size == x.size
         @actual_calls[n] << { :retval => r, :args => x }

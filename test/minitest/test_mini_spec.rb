@@ -17,6 +17,9 @@ describe MiniTest::Spec do
     self._assertions.must_equal @assertion_count
   end
 
+  # TODO: figure out how the hell to write a test for this
+  # it "will skip if there is no block"
+
   it "needs to have all methods named well" do
     @assertion_count = 2
 
