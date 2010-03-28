@@ -594,12 +594,22 @@ rb_time_magnify(VALUE v)
 #else
         long a, b, c;
         a = FIX2LONG(v);
-        if (a == 0)
-            return x;
+        if (a == 0) {
+#if WIDEINT_IS_UINT64
+            WIDEVAL_SET(ret, INT64toFIXWV(0));
+#else
+            WIDEVAL_SET(ret, INT2FIX(0));
+#endif
+            return ret;
+	}
         b = TIME_SCALE;
         c = a * b;
         if (c / a == b) {
+#if WIDEINT_IS_UINT64
             WIDEVAL_SET(ret, INT64toFIXWV(c));
+#else
+            WIDEVAL_SET(ret, LONG2NUM(c));
+#endif
             return ret;
         }
 #endif
