@@ -1,3 +1,9 @@
+Tue Mar 30 08:10:59 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* lib/psych.rb: Fix problem with empty and white-space only strings.
+	  Thanks Peter McLain!
+	* test/psych/test_psych.rb: tests for change.
+
 Tue Mar 30 05:31:39 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* lib/psych.rb: documentation updates.  Thanks Peter McLain!

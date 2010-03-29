@@ -66,4 +66,11 @@ class TestPsych < Psych::TestCase
 
     assert_equal 'hello world', Psych.parse_file(name).transform
   end
+
+  def test_degenerate_strings
+    assert_equal false, Psych.load('    ')
+    assert_equal false, Psych.parse('   ')
+    assert_equal false, Psych.load('')
+    assert_equal false, Psych.parse('')
+  end
 end
