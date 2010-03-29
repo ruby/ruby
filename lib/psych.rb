@@ -101,7 +101,8 @@ module Psych
   #   Psych.load("--- a")           # => 'a'
   #   Psych.load("---\n - a\n - b") # => ['a', 'b']
   def self.load yaml
-    parse(yaml).to_ruby
+    result = parse(yaml)
+    result ? result.to_ruby : result
   end
 
   ###
@@ -113,7 +114,8 @@ module Psych
   #
   # See Psych::Nodes for more information about YAML AST.
   def self.parse yaml
-    parse_stream(yaml).children.first.children.first
+    children = parse_stream(yaml).children
+    children.empty? ? false : children.first.children.first
   end
 
   ###
