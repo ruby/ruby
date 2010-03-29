@@ -141,6 +141,11 @@ class TestModule < Test::Unit::TestCase
       :bClass3
     end
   end
+  
+  class CClass < BClass
+    def self.cClass
+    end
+  end
 
   MyClass = AClass.clone
   class MyClass
@@ -281,6 +286,9 @@ class TestModule < Test::Unit::TestCase
     assert_equal([:user, :mixin].sort, User.instance_methods(true).sort)
     assert_equal([:mixin], Mixin.instance_methods)
     assert_equal([:mixin], Mixin.instance_methods(true))
+    assert_equal([:cClass], (class << CClass; self; end).instance_methods(false))
+    assert_equal([], (class << BClass; self; end).instance_methods(false))
+    assert_equal([:cm2], (class << AClass; self; end).instance_methods(false))
     # Ruby 1.8 feature change:
     # #instance_methods includes protected methods.
     #assert_equal([:aClass], AClass.instance_methods(false))
