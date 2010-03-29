@@ -1154,6 +1154,7 @@ class Vector
   # Iterate over the elements of this vector and +v+ in conjunction.
   #
   def each2(v) # :yield: e1, e2
+    raise TypeError, "Integer is not like Vector" if v.kind_of?(Integer)
     Vector.Raise ErrDimensionMismatch if size != v.size
     return to_enum(:each2, v) unless block_given?
     size.times do |i|
@@ -1167,6 +1168,7 @@ class Vector
   # in conjunction.
   #
   def collect2(v) # :yield: e1, e2
+    raise TypeError, "Integer is not like Vector" if v.kind_of?(Integer)
     Vector.Raise ErrDimensionMismatch if size != v.size
     return to_enum(:collect2, v) unless block_given?
     size.times.collect do |i|
