@@ -115,7 +115,7 @@ description:
         formatted = now.strftime("%Y-%m-%d %H:%M:%S") +
           ".%06d %+.2d:00" % [now.usec, now.gmt_offset / 3600]
 
-        assert_equal now, Nodes::Scalar.new(formatted).to_ruby
+        assert_in_delta now, Nodes::Scalar.new(formatted).to_ruby, 0.000001
       end
 
       def test_time_utc
@@ -123,7 +123,7 @@ description:
         formatted = now.strftime("%Y-%m-%d %H:%M:%S") +
           ".%06dZ" % [now.usec]
 
-        assert_equal now, Nodes::Scalar.new(formatted).to_ruby
+        assert_in_delta now, Nodes::Scalar.new(formatted).to_ruby, 0.000001
       end
 
       def test_time_utc_no_z
@@ -131,7 +131,7 @@ description:
         formatted = now.strftime("%Y-%m-%d %H:%M:%S") +
           ".%06d" % [now.usec]
 
-        assert_equal now, Nodes::Scalar.new(formatted).to_ruby
+        assert_in_delta now, Nodes::Scalar.new(formatted).to_ruby, 0.000001
       end
 
       def test_date
