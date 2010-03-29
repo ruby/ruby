@@ -45,6 +45,12 @@ static VALUE parse(VALUE self, VALUE yaml)
 {
     yaml_parser_t parser;
     yaml_event_t event;
+    int done = 0;
+#ifdef HAVE_RUBY_ENCODING_H
+    int encoding = rb_enc_find_index("ASCII-8BIT");
+#endif
+    VALUE handler = rb_iv_get(self, "@handler");
+
 
     yaml_parser_initialize(&parser);
 
@@ -57,13 +63,6 @@ static VALUE parse(VALUE self, VALUE yaml)
 		(size_t)RSTRING_LEN(yaml)
 		);
     }
-
-    int done = 0;
-#ifdef HAVE_RUBY_ENCODING_H
-    int encoding = rb_enc_find_index("ASCII-8BIT");
-#endif
-
-    VALUE handler = rb_iv_get(self, "@handler");
 
     while(!done) {
 	if(!yaml_parser_parse(&parser, &event)) {
@@ -102,7 +101,9 @@ static VALUE parse(VALUE self, VALUE yaml)
 		break;
 	    case YAML_DOCUMENT_START_EVENT:
 		{
-	// Grab the document version
+	/* Get a list of tag directives (if any) */
+	VALUE tag_directives = rb_ary_new();
+	/* Grab the document version */
 	VALUE version = event.data.document_start.version_directive ?
 	    rb_ary_new3(
 		    (long)2,
@@ -110,8 +111,6 @@ static VALUE parse(VALUE self, VALUE yaml)
 		    INT2NUM((long)event.data.document_start.version_directive->minor)
 		 ) : rb_ary_new();
 
-	// Get a list of tag directives (if any)
-	VALUE tag_directives = rb_ary_new();
 	if(event.data.document_start.tag_directives.start) {
 	    yaml_tag_directive_t *start =
 		event.data.document_start.tag_directives.start;
@@ -119,6 +118,7 @@ static VALUE parse(VALUE self, VALUE yaml)
 		event.data.document_start.tag_directives.end;
 	    for(; start != end; start++) {
 		VALUE handle = Qnil;
+		VALUE prefix = Qnil;
 		if(start->handle) {
 		    handle = rb_str_new2((const char *)start->handle);
 #ifdef HAVE_RUBY_ENCODING_H
@@ -126,7 +126,6 @@ static VALUE parse(VALUE self, VALUE yaml)
 #endif
 		}
 
-		VALUE prefix = Qnil;
 		if(start->prefix) {
 		    prefix = rb_str_new2((const char *)start->prefix);
 #ifdef HAVE_RUBY_ENCODING_H
@@ -134,8 +133,7 @@ static VALUE parse(VALUE self, VALUE yaml)
 #endif
 		}
 
-		VALUE pair = rb_ary_new3((long)2, handle, prefix);
-		rb_ary_push(tag_directives, pair);
+		rb_ary_push(tag_directives, rb_ary_new3((long)2, handle, prefix));
 	    }
 	}
 	rb_funcall(handler, id_start_document, 3,
@@ -164,6 +162,9 @@ static VALUE parse(VALUE self, VALUE yaml)
 		break;
 	    case YAML_SCALAR_EVENT:
 		{
+	VALUE anchor = Qnil;
+	VALUE tag = Qnil;
+	VALUE plain_implicit, quoted_implicit, style;
 	VALUE val = rb_str_new(
 		(const char *)event.data.scalar.value,
 		(long)event.data.scalar.length
@@ -173,7 +174,6 @@ static VALUE parse(VALUE self, VALUE yaml)
 	rb_enc_associate_index(val, encoding);
 #endif
 
-	VALUE anchor = Qnil;
 	if(event.data.scalar.anchor) {
 	    anchor = rb_str_new2((const char *)event.data.scalar.anchor);
 #ifdef HAVE_RUBY_ENCODING_H
@@ -181,7 +181,6 @@ static VALUE parse(VALUE self, VALUE yaml)
 #endif
 	}
 
-	VALUE tag = Qnil;
 	if(event.data.scalar.tag) {
 	    tag = rb_str_new2((const char *)event.data.scalar.tag);
 #ifdef HAVE_RUBY_ENCODING_H
@@ -189,13 +188,13 @@ static VALUE parse(VALUE self, VALUE yaml)
 #endif
 	}
 
-	VALUE plain_implicit =
+	plain_implicit =
 	    event.data.scalar.plain_implicit == 0 ? Qfalse : Qtrue;
 
-	VALUE quoted_implicit =
+	quoted_implicit =
 	    event.data.scalar.quoted_implicit == 0 ? Qfalse : Qtrue;
 
-	VALUE style = INT2NUM((long)event.data.scalar.style);
+	style = INT2NUM((long)event.data.scalar.style);
 
 	rb_funcall(handler, id_scalar, 6,
 		val, anchor, tag, plain_implicit, quoted_implicit, style);
@@ -204,6 +203,8 @@ static VALUE parse(VALUE self, VALUE yaml)
 	    case YAML_SEQUENCE_START_EVENT:
 		{
 	VALUE anchor = Qnil;
+	VALUE tag = Qnil;
+	VALUE implicit, style;
 	if(event.data.sequence_start.anchor) {
 	    anchor = rb_str_new2((const char *)event.data.sequence_start.anchor);
 #ifdef HAVE_RUBY_ENCODING_H
@@ -211,7 +212,7 @@ static VALUE parse(VALUE self, VALUE yaml)
 #endif
 	}
 
-	VALUE tag = Qnil;
+	tag = Qnil;
 	if(event.data.sequence_start.tag) {
 	    tag = rb_str_new2((const char *)event.data.sequence_start.tag);
 #ifdef HAVE_RUBY_ENCODING_H
@@ -219,10 +220,10 @@ static VALUE parse(VALUE self, VALUE yaml)
 #endif
 	}
 
-	VALUE implicit =
+	implicit =
 	    event.data.sequence_start.implicit == 0 ? Qfalse : Qtrue;
 
-	VALUE style = INT2NUM((long)event.data.sequence_start.style);
+	style = INT2NUM((long)event.data.sequence_start.style);
 
 	rb_funcall(handler, id_start_sequence, 4,
 		anchor, tag, implicit, style);
@@ -234,6 +235,8 @@ static VALUE parse(VALUE self, VALUE yaml)
 	    case YAML_MAPPING_START_EVENT:
 		{
 	VALUE anchor = Qnil;
+	VALUE tag = Qnil;
+	VALUE implicit, style;
 	if(event.data.mapping_start.anchor) {
 	    anchor = rb_str_new2((const char *)event.data.mapping_start.anchor);
 #ifdef HAVE_RUBY_ENCODING_H
@@ -241,7 +244,6 @@ static VALUE parse(VALUE self, VALUE yaml)
 #endif
 	}
 
-	VALUE tag = Qnil;
 	if(event.data.mapping_start.tag) {
 	    tag = rb_str_new2((const char *)event.data.mapping_start.tag);
 #ifdef HAVE_RUBY_ENCODING_H
@@ -249,10 +251,10 @@ static VALUE parse(VALUE self, VALUE yaml)
 #endif
 	}
 
-	VALUE implicit =
+	implicit =
 	    event.data.mapping_start.implicit == 0 ? Qfalse : Qtrue;
 
-	VALUE style = INT2NUM((long)event.data.mapping_start.style);
+	style = INT2NUM((long)event.data.mapping_start.style);
 
 	rb_funcall(handler, id_start_mapping, 4,
 		anchor, tag, implicit, style);
