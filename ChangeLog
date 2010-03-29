@@ -1,3 +1,9 @@
+Tue Mar 30 02:40:31 2010  Akinori MUSHA  <knu@iDaemons.org>
+
+	* prelude.rb (Process.daemon): New method.
+
+	* .document: Add prelude.rb.
+
 Mon Mar 29 17:38:24 2010  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* ext/rational/lib/rational.rb: fix [Bug #1397].

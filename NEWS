@@ -102,6 +102,10 @@ with all sufficient information, see the ChangeLog file.
 
     New method primarily for use in the case-when construct.
 
+  * Process.daemon
+
+    New method.
+
   * Range#cover?
 
     New alias to #include? for the forward compatibility with 1.9, in
