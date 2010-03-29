@@ -1,4 +1,4 @@
-require 'test/psych/helper'
+require_relative 'helper'
 
 module Psych
   class TestCoder < TestCase

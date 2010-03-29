@@ -1,4 +1,4 @@
-require 'test/psych/helper'
+require_relative 'helper'
 
 class TestPsych < Psych::TestCase
   def test_dump_stream
