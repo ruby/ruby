@@ -59,7 +59,30 @@ The original copyright notice follows.
    email: matumoto@math.keio.ac.jp
 */
 
+#include "ruby/ruby.h"
+
 #include <limits.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#include <time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
+#include <math.h>
+#include <errno.h>
+
+#ifdef _WIN32
+# if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0400
+#  undef _WIN32_WINNT
+#  define _WIN32_WINNT 0x400
+#  undef __WINCRYPT_H__
+# endif
+#include <wincrypt.h>
+#endif
+
 typedef int int_must_be_32bit_at_least[sizeof(int) * CHAR_BIT < 32 ? -1 : 1];
 
 /* Period parameters */
@@ -193,20 +216,6 @@ genrand_real2(struct MT *mt)
 #undef M
 
 /* These real versions are due to Isaku Wada, 2002/01/09 added */
-
-#include "ruby/ruby.h"
-
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#include <time.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif
-#include <math.h>
-#include <errno.h>
 
 typedef struct {
     VALUE seed;
@@ -448,14 +457,6 @@ random_init(int argc, VALUE *argv, VALUE obj)
 # define USE_DEV_URANDOM 1
 #else
 # define USE_DEV_URANDOM 0
-#endif
-#ifdef _WIN32
-# if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0400
-#  undef _WIN32_WINNT
-#  define _WIN32_WINNT 0x400
-#  undef __WINCRYPT_H__
-# endif
-#include <wincrypt.h>
 #endif
 
 static void

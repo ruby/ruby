@@ -1,3 +1,7 @@
+Mon Mar 29 09:16:45 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* random.c: change include order; ruby.h should be at first.
+
 Mon Mar 29 06:47:25 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/*: importing Psych to trunk
