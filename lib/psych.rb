@@ -109,7 +109,7 @@ module Psych
   #
   # Example:
   #
-  #   Psych.load("---\n - a\n - b") # => #<Psych::Nodes::Sequence:0x00>
+  #   Psych.parse("---\n - a\n - b") # => #<Psych::Nodes::Sequence:0x00>
   #
   # See Psych::Nodes for more information about YAML AST.
   def self.parse yaml
@@ -136,7 +136,7 @@ module Psych
   #
   # Example:
   #
-  #   Psych.load("---\n - a\n - b") # => #<Psych::Nodes::Stream:0x00>
+  #   Psych.parse_stream("---\n - a\n - b") # => #<Psych::Nodes::Stream:0x00>
   #
   # See Psych::Nodes for more information about YAML AST.
   def self.parse_stream yaml

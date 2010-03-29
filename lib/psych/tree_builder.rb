@@ -3,7 +3,7 @@ require 'psych/handler'
 module Psych
   ###
   # This class works in conjunction with Psych::Parser to build an in-memory
-  # parse tree tree that represents a YAML document.
+  # parse tree that represents a YAML document.
   #
   # == Example
   #
