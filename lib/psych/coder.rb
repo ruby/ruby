@@ -1,7 +1,7 @@
 module Psych
   ###
   # If an object defines +encode_with+, then an instance of Psych::Coder will
-  # passed to the method when the object is being serialized.  The Coder
+  # be passed to the method when the object is being serialized.  The Coder
   # automatically assumes a Psych::Nodes::Mapping is being emitted.  Other
   # objects like Sequence and Scalar may be emitted if +seq=+ or +scalar=+ are
   # called, respectively.

@@ -1,3 +1,8 @@
+Tue Mar 30 05:31:39 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* lib/psych.rb: documentation updates.  Thanks Peter McLain!
+	* lib/psych/{coder,tree_builder}.rb: ditto
+
 Tue Mar 30 03:56:13 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/psych/{emitter,parser,psych}.c: move variable
