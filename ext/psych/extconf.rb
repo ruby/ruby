@@ -2,16 +2,10 @@ require 'mkmf'
 
 # :stopdoc:
 
-RbConfig::MAKEFILE_CONFIG['CC'] = ENV['CC'] if ENV['CC']
-
-INCLUDEDIR = Config::CONFIG['includedir']
-LIBDIR     = Config::CONFIG['libdir']
-LIB_DIRS   = ['/opt/local/lib', '/usr/local/lib', LIBDIR, '/usr/lib']
-libyaml    = dir_config 'libyaml', '/opt/local/include', '/opt/local/lib'
+dir_config 'libyaml'
 
 def asplode missing
-  abort "#{missing} is missing. Try 'port install libyaml +universal' " +
-        "or 'yum install libyaml-devel'"
+  abort "#{missing} is missing. Please install libyaml."
 end
 
 asplode('yaml.h')  unless find_header  'yaml.h'

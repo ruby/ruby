@@ -1,3 +1,7 @@
+Tue Mar 30 08:55:50 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/extconf.rb: Making library detection more agnostic.
+
 Tue Mar 30 08:10:59 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* lib/psych.rb: Fix problem with empty and white-space only strings.
