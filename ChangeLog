@@ -1,3 +1,8 @@
+Mon Mar 29 15:10:39 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/tempfile.rb (Tempfile#open): re-open with same mode and
+	  options as initialize.
+
 Mon Mar 29 09:16:45 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* random.c: change include order; ruby.h should be at first.

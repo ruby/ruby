@@ -294,6 +294,8 @@ puts Tempfile.new('foo').path
     t = tempfile("TEST", mode: IO::BINARY)
     if IO::BINARY.nonzero?
       assert(t.binmode?)
+      t.open
+      assert(t.binmode?, 'binmode after reopen')
     else
       assert_equal(0600, t.stat.mode & 0777)
     end
