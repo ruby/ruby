@@ -1,3 +1,7 @@
+Mon Mar 29 17:38:24 2010  Keiju Ishitsuka  <keiju@ruby-lang.org>
+
+	* ext/rational/lib/rational.rb: fix [Bug #1397].
+
 Fri Mar 26 13:09:12 2010  Akinori MUSHA  <knu@iDaemons.org>
 
 	* eval.c (rb_eval): Use for() and make it a bit easier to read and
