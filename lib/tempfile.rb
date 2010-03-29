@@ -138,6 +138,7 @@ class Tempfile < DelegateClass(File)
       if opts
         mode |= opts.delete(:mode) || 0
         opts[:perm] = perm
+        perm = nil
       else
         opts = perm
       end
@@ -148,6 +149,9 @@ class Tempfile < DelegateClass(File)
       ensure
         self.class.rmdir(lock)
       end
+      @mode = mode & ~(File::CREAT|File::EXCL)
+      perm or opts.freeze
+      @opts = opts
     end
 
     super(@tmpfile)
@@ -156,7 +160,7 @@ class Tempfile < DelegateClass(File)
   # Opens or reopens the file with mode "r+".
   def open
     @tmpfile.close if @tmpfile
-    @tmpfile = File.open(@tmpname, 'r+')
+    @tmpfile = File.open(@tmpname, @mode, @opts)
     @data[1] = @tmpfile
     __setobj__(@tmpfile)
   end
