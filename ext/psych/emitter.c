@@ -56,10 +56,10 @@ static VALUE initialize(VALUE self, VALUE io)
 static VALUE start_stream(VALUE self, VALUE encoding)
 {
     yaml_emitter_t * emitter;
+    yaml_event_t event;
     Data_Get_Struct(self, yaml_emitter_t, emitter);
     Check_Type(encoding, T_FIXNUM);
 
-    yaml_event_t event;
     yaml_stream_start_event_initialize(&event, (yaml_encoding_t)NUM2INT(encoding));
 
     emit(emitter, &event);
@@ -76,9 +76,9 @@ static VALUE start_stream(VALUE self, VALUE encoding)
 static VALUE end_stream(VALUE self)
 {
     yaml_emitter_t * emitter;
+    yaml_event_t event;
     Data_Get_Struct(self, yaml_emitter_t, emitter);
 
-    yaml_event_t event;
     yaml_stream_end_event_initialize(&event);
 
     emit(emitter, &event);
@@ -96,9 +96,12 @@ static VALUE end_stream(VALUE self)
 static VALUE start_document(VALUE self, VALUE version, VALUE tags, VALUE imp)
 {
     yaml_emitter_t * emitter;
+    yaml_tag_directive_t * head = NULL;
+    yaml_tag_directive_t * tail = NULL;
+    yaml_event_t event;
+    yaml_version_directive_t version_directive;
     Data_Get_Struct(self, yaml_emitter_t, emitter);
 
-    yaml_version_directive_t version_directive;
 
     Check_Type(version, T_ARRAY);
 
@@ -109,9 +112,6 @@ static VALUE start_document(VALUE self, VALUE version, VALUE tags, VALUE imp)
 	version_directive.major = NUM2INT(major);
 	version_directive.minor = NUM2INT(minor);
     }
-
-    yaml_tag_directive_t * head = NULL;
-    yaml_tag_directive_t * tail = NULL;
 
     if(RTEST(tags)) {
 	int i = 0;
@@ -137,7 +137,6 @@ static VALUE start_document(VALUE self, VALUE version, VALUE tags, VALUE imp)
 	}
     }
 
-    yaml_event_t event;
     yaml_document_start_event_initialize(
 	    &event,
 	    (RARRAY_LEN(version) > 0) ? &version_directive : NULL,
@@ -162,9 +161,9 @@ static VALUE start_document(VALUE self, VALUE version, VALUE tags, VALUE imp)
 static VALUE end_document(VALUE self, VALUE imp)
 {
     yaml_emitter_t * emitter;
+    yaml_event_t event;
     Data_Get_Struct(self, yaml_emitter_t, emitter);
 
-    yaml_event_t event;
     yaml_document_end_event_initialize(&event, imp ? 1 : 0);
 
     emit(emitter, &event);
@@ -189,11 +188,11 @@ static VALUE scalar(
 	VALUE style
 	) {
     yaml_emitter_t * emitter;
+    yaml_event_t event;
     Data_Get_Struct(self, yaml_emitter_t, emitter);
 
     Check_Type(value, T_STRING);
 
-    yaml_event_t event;
     yaml_scalar_event_initialize(
 	    &event,
 	    (yaml_char_t *)(NIL_P(anchor) ? NULL : StringValuePtr(anchor)),
@@ -225,9 +224,9 @@ static VALUE start_sequence(
 	VALUE style
 	) {
     yaml_emitter_t * emitter;
+    yaml_event_t event;
     Data_Get_Struct(self, yaml_emitter_t, emitter);
 
-    yaml_event_t event;
     yaml_sequence_start_event_initialize(
 	    &event,
 	    (yaml_char_t *)(NIL_P(anchor) ? NULL : StringValuePtr(anchor)),
@@ -250,9 +249,9 @@ static VALUE start_sequence(
 static VALUE end_sequence(VALUE self)
 {
     yaml_emitter_t * emitter;
+    yaml_event_t event;
     Data_Get_Struct(self, yaml_emitter_t, emitter);
 
-    yaml_event_t event;
     yaml_sequence_end_event_initialize(&event);
 
     emit(emitter, &event);
@@ -275,9 +274,9 @@ static VALUE start_mapping(
 	VALUE style
 	) {
     yaml_emitter_t * emitter;
+    yaml_event_t event;
     Data_Get_Struct(self, yaml_emitter_t, emitter);
 
-    yaml_event_t event;
     yaml_mapping_start_event_initialize(
 	    &event,
 	    (yaml_char_t *)(NIL_P(anchor) ? NULL : StringValuePtr(anchor)),
@@ -300,9 +299,9 @@ static VALUE start_mapping(
 static VALUE end_mapping(VALUE self)
 {
     yaml_emitter_t * emitter;
+    yaml_event_t event;
     Data_Get_Struct(self, yaml_emitter_t, emitter);
 
-    yaml_event_t event;
     yaml_mapping_end_event_initialize(&event);
 
     emit(emitter, &event);
@@ -319,9 +318,9 @@ static VALUE end_mapping(VALUE self)
 static VALUE alias(VALUE self, VALUE anchor)
 {
     yaml_emitter_t * emitter;
+    yaml_event_t event;
     Data_Get_Struct(self, yaml_emitter_t, emitter);
 
-    yaml_event_t event;
     yaml_alias_event_initialize(
 	    &event,
 	    (yaml_char_t *)(NIL_P(anchor) ? NULL : StringValuePtr(anchor))
