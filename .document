@@ -6,6 +6,9 @@
 # Process all the C source files
 *.c
 
+# prelude
+prelude.rb
+
 # the lib/ directory (which has its own .document file)
 
 lib

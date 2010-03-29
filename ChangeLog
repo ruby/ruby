@@ -1,3 +1,8 @@
+Mon Mar 29 21:47:44 2010  Akinori MUSHA  <knu@iDaemons.org>
+
+	* prelude.rb, .document: Stuff in prelude.rb should be documented
+	  as well.
+
 Mon Mar 29 20:23:05 2010  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* lib/matrix.rb(Vector#each2, Vector#collect2): add type check for
