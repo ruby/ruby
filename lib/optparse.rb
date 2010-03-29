@@ -1531,9 +1531,16 @@ class OptionParser
 
   #
   # Generic numeric format, converts to Integer for integer format, Float
-  # for float format.
+  # for float format, and Rational for rational format.
   #
-  accept(Numeric, %r"\A[-+]?(?:#{octal}|#{float})"io) {|s,| eval(s) if s}
+  real = "[-+]?(?:#{octal}|#{float})"
+  accept(Numeric, /\A(#{real})(?:\/(#{real}))?/io) {|s, d, n|
+    if n
+      Rational(d, n)
+    elsif s
+      eval(s)
+    end
+  }
 
   #
   # Decimal integer format, to be converted to Integer.

@@ -1,3 +1,7 @@
+Mon Mar 29 18:10:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (Numeric): accept rationals.
+
 Mon Mar 29 15:10:39 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/tempfile.rb (Tempfile#open): re-open with same mode and
