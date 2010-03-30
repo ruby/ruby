@@ -1,3 +1,10 @@
+Tue Mar 30 20:55:14 2010  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (w2v): renamed from w2xv.
+	  (v2w): renamed from xv2w.
+	  (rb_time_magnify): takes wideval_t.
+	  (rb_time_unmagnify): returns wideval_t.
+
 Tue Mar 30 19:46:00 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/psych/lib: moved external library dependent files from lib.

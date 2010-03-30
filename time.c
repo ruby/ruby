@@ -91,7 +91,7 @@ typedef unsigned LONG_LONG unsigned_time_t;
 #endif
 
 static inline VALUE
-w2xv(wideval_t w)
+w2v(wideval_t w)
 {
 #if WIDEVALUE_IS_WIDER
     if (FIXWV_P(WIDEVAL_GET(w)))
@@ -136,7 +136,7 @@ xv2w_bignum(VALUE xv)
 #endif
 
 static inline wideval_t
-xv2w(VALUE xv)
+v2w(VALUE xv)
 {
 #if WIDEVALUE_IS_WIDER
     if (FIXNUM_P(xv)) {
@@ -150,7 +150,7 @@ xv2w(VALUE xv)
     return WIDEVAL_WRAP(xv);
 }
 
-static wideval_t rb_time_magnify(VALUE v);
+static wideval_t rb_time_magnify(wideval_t w);
 static wideval_t
 timet2wideval(time_t t)
 {
@@ -160,7 +160,7 @@ timet2wideval(time_t t)
         return WIDEVAL_WRAP(INT64toFIXWV(i64 * TIME_SCALE));
     }
 #endif
-    return rb_time_magnify(TIMET2NUM(t));
+    return rb_time_magnify(v2w(TIMET2NUM(t)));
 }
 #define TIMET2WIDEVAL(t) timet2wideval(t)
 
@@ -355,7 +355,7 @@ weq(wideval_t wx, wideval_t wy)
     if (FIXWV_P(WIDEVAL_GET(wx)) && FIXWV_P(WIDEVAL_GET(wy))) {
         return WIDEVAL_GET(wx) == WIDEVAL_GET(wy);
     }
-    return RTEST(rb_funcall(w2xv(wx), id_eq, 1, w2xv(wy)));
+    return RTEST(rb_funcall(w2v(wx), id_eq, 1, w2v(wy)));
 #else
     return eq(WIDEVAL_GET(wx), WIDEVAL_GET(wy));
 #endif
@@ -368,7 +368,7 @@ wlt(wideval_t wx, wideval_t wy)
     if (FIXWV_P(WIDEVAL_GET(wx)) && FIXWV_P(WIDEVAL_GET(wy))) {
         return (SIGNED_WIDEVALUE)WIDEVAL_GET(wx) < (SIGNED_WIDEVALUE)WIDEVAL_GET(wy);
     }
-    return RTEST(rb_funcall(w2xv(wx), '<', 1,  w2xv(wy)));
+    return RTEST(rb_funcall(w2v(wx), '<', 1,  w2v(wy)));
 #else
     return lt(WIDEVAL_GET(wx), WIDEVAL_GET(wy));
 #endif
@@ -389,13 +389,13 @@ wadd(wideval_t wx, wideval_t wy)
         if (FIXWVABLE(r)) {
             return WIDEVAL_WRAP(INT64toFIXWV(r));
         }
-        return xv2w(INT64toNUM(r));
+        return v2w(INT64toNUM(r));
     }
     else
 #endif
-    x = w2xv(wx);
-    if (TYPE(x) == T_BIGNUM) return xv2w(rb_big_plus(x, w2xv(wy)));
-    return xv2w(rb_funcall(x, '+', 1, w2xv(wy)));
+    x = w2v(wx);
+    if (TYPE(x) == T_BIGNUM) return v2w(rb_big_plus(x, w2v(wy)));
+    return v2w(rb_funcall(x, '+', 1, w2v(wy)));
 }
 
 static wideval_t
@@ -408,14 +408,14 @@ wsub(wideval_t wx, wideval_t wy)
         if (FIXWVABLE(r)) {
             return WIDEVAL_WRAP(INT64toFIXWV(r));
         }
-        return xv2w(INT64toNUM(r));
+        return v2w(INT64toNUM(r));
     }
     else
 #endif
 
-    x = w2xv(wx);
-    if (TYPE(x) == T_BIGNUM) return xv2w(rb_big_minus(x, w2xv(wy)));
-    return xv2w(rb_funcall(x, '-', 1, w2xv(wy)));
+    x = w2v(wx);
+    if (TYPE(x) == T_BIGNUM) return v2w(rb_big_minus(x, w2v(wy)));
+    return v2w(rb_funcall(x, '-', 1, w2v(wy)));
 }
 
 static wideval_t
@@ -434,9 +434,9 @@ wmul(wideval_t wx, wideval_t wy)
         }
     }
 #endif
-    x = w2xv(wx);
-    if (TYPE(x) == T_BIGNUM) return xv2w(rb_big_mul(x, w2xv(wy)));
-    return xv2w(rb_funcall(x, '*', 1, w2xv(wy)));
+    x = w2v(wx);
+    if (TYPE(x) == T_BIGNUM) return v2w(rb_big_mul(x, w2v(wy)));
+    return v2w(rb_funcall(x, '*', 1, w2v(wy)));
 }
 
 static int
@@ -455,8 +455,8 @@ wcmp(wideval_t wx, wideval_t wy)
         return 0;
     }
 #endif
-    x = w2xv(wx);
-    y = w2xv(wy);
+    x = w2v(wx);
+    y = w2v(wy);
     return rb_cmpint(rb_funcall(x, id_cmp, 1, y), x, y);
 }
 
@@ -478,18 +478,18 @@ wquo(wideval_t wx, wideval_t wy)
         }
     }
 #endif
-    x = w2xv(wx);
-    y = w2xv(wy);
+    x = w2v(wx);
+    y = w2v(wy);
     ret = rb_funcall(x, id_quo, 1, y);
     if (TYPE(ret) == T_RATIONAL &&
         RRATIONAL(ret)->den == INT2FIX(1)) {
         ret = RRATIONAL(ret)->num;
     }
-    return xv2w(ret);
+    return v2w(ret);
 }
 
 #define wmulquo(x,y,z) ((WIDEVAL_GET(y) == WIDEVAL_GET(z)) ? (x) : wquo(wmul((x),(y)),(z)))
-#define wmulquoll(x,y,z) (((y) == (z)) ? (x) : wquo(wmul((x),xv2w(LONG2FIX(y))),xv2w(LONG2FIX(z))))
+#define wmulquoll(x,y,z) (((y) == (z)) ? (x) : wquo(wmul((x),v2w(LONG2FIX(y))),v2w(LONG2FIX(z))))
 
 static void
 wdivmodv(wideval_t wn, wideval_t wd, wideval_t *wq, wideval_t *wr)
@@ -545,23 +545,23 @@ wdivmodv(wideval_t wn, wideval_t wd, wideval_t *wq, wideval_t *wr)
         return;
     }
 #endif
-    tmp = rb_funcall(w2xv(wn), id_divmod, 1, w2xv(wd));
+    tmp = rb_funcall(w2v(wn), id_divmod, 1, w2v(wd));
     ary = rb_check_array_type(tmp);
     if (NIL_P(ary)) {
         rb_raise(rb_eTypeError, "unexpected divmod result: into %s",
                  rb_obj_classname(tmp));
     }
-    *wq = xv2w(rb_ary_entry(ary, 0));
-    *wr = xv2w(rb_ary_entry(ary, 1));
+    *wq = v2w(rb_ary_entry(ary, 0));
+    *wr = v2w(rb_ary_entry(ary, 1));
 }
 
 static void
 split_second(wideval_t timew, VALUE *timev_p, VALUE *subsecx_p)
 {
     wideval_t q, r;
-    wdivmodv(timew, xv2w(INT2FIX(TIME_SCALE)), &q, &r);
-    *timev_p = w2xv(q);
-    *subsecx_p = w2xv(r);
+    wdivmodv(timew, v2w(INT2FIX(TIME_SCALE)), &q, &r);
+    *timev_p = w2v(q);
+    *subsecx_p = w2v(r);
 }
 
 static VALUE
@@ -601,12 +601,22 @@ num_exact(VALUE v)
 }
 
 static wideval_t
-rb_time_magnify(VALUE v)
+rb_time_magnify(wideval_t w)
 {
-    if (FIXNUM_P(v)) {
+    if (FIXWV_P(WIDEVAL_GET(w))) {
 #if WIDEVALUE_IS_WIDER
-        int64_t i64 = (int64_t)FIX2LONG(v) * TIME_SCALE;
-        return WIDEVAL_WRAP(INT64toFIXWV(i64));
+        int64_t a, b, c;
+        a = FIXWVtoINT64(WIDEVAL_GET(w));
+        if (a == 0) {
+            return WIDEVAL_WRAP(INT64toFIXWV(0));
+	}
+        b = TIME_SCALE;
+        c = a * b;
+        if (c / b == a) {
+            if (FIXWVABLE(c)) {
+                return WIDEVAL_WRAP(INT64toFIXWV(c));
+            }
+        }
 #else
         long a, b, c;
         a = FIX2LONG(v);
@@ -615,31 +625,29 @@ rb_time_magnify(VALUE v)
 	}
         b = TIME_SCALE;
         c = a * b;
-        if (c / a == b) {
+        if (c / b == a) {
             return WIDEVAL_WRAP(LONG2NUM(c));
         }
 #endif
     }
-    return xv2w(mul(v, INT2FIX(TIME_SCALE)));
+    return wmul(w, WIDEVAL_WRAP(INT64toFIXWV(TIME_SCALE)));
 }
 
-static VALUE
+static wideval_t
 rb_time_unmagnify(wideval_t w)
 {
-    VALUE v;
 #if WIDEVALUE_IS_WIDER
     if (FIXWV_P(WIDEVAL_GET(w))) {
-      int64_t a, b, c;
-      a = FIXWVtoINT64(WIDEVAL_GET(w));
-      b = TIME_SCALE;
-      c = a / b;
-      if (c * b == a) {
-          return INT64toNUM(c);
-      }
+        int64_t a, b, c;
+        a = FIXWVtoINT64(WIDEVAL_GET(w));
+        b = TIME_SCALE;
+        c = a / b;
+        if (c * b == a) {
+            return WIDEVAL_WRAP(INT64toFIXWV(c));
+        }
     }
 #endif
-    v = w2xv(w);
-    return quo(v, INT2FIX(TIME_SCALE));
+    return wquo(w, WIDEVAL_WRAP(INT64toFIXWV(TIME_SCALE)));
 }
 
 static VALUE
@@ -659,7 +667,7 @@ rb_time_unmagnify_to_float(wideval_t w)
         return quo(v, DBL2NUM(TIME_SCALE));
     }
 #endif
-    v = w2xv(w);
+    v = w2v(w);
     return quo(v, DBL2NUM(TIME_SCALE));
 }
 
@@ -739,8 +747,8 @@ timegmw_noleapsecond(struct vtm *vtm)
     vdays = LONG2NUM(days_in400);
     vdays = add(vdays, mul(q400, INT2FIX(97)));
     vdays = add(vdays, mul(year1900, INT2FIX(365)));
-    wret = wadd(rb_time_magnify(ret), wmul(rb_time_magnify(vdays), xv2w(INT2FIX(86400))));
-    wret = wadd(wret, xv2w(vtm->subsecx));
+    wret = wadd(rb_time_magnify(v2w(ret)), wmul(rb_time_magnify(v2w(vdays)), v2w(INT2FIX(86400))));
+    wret = wadd(wret, v2w(vtm->subsecx));
 
     return wret;
 }
@@ -1033,7 +1041,7 @@ init_leap_second_info()
 
         timew = timegmw_noleapsecond(&vtm);
 
-        number_of_leap_seconds_known = NUM2INT(sub(TIMET2NUM(known_leap_seconds_limit), rb_time_unmagnify(timew)));
+        number_of_leap_seconds_known = NUM2INT(sub(TIMET2NUM(known_leap_seconds_limit), w2v(rb_time_unmagnify(timew))));
     }
 }
 
@@ -1055,7 +1063,7 @@ timegmw(struct vtm *vtm)
     timew = timegmw_noleapsecond(vtm);
 
     if (wlt(TIMET2WIDEVAL(known_leap_seconds_limit), timew)) {
-        return wadd(timew, rb_time_magnify(INT2NUM(number_of_leap_seconds_known)));
+        return wadd(timew, rb_time_magnify(v2w(INT2NUM(number_of_leap_seconds_known))));
     }
 
     tm.tm_year = rb_long2int(NUM2LONG(vtm->year) - 1900);
@@ -1069,7 +1077,7 @@ timegmw(struct vtm *vtm)
     errmsg = find_time_t(&tm, 1, &t);
     if (errmsg)
         rb_raise(rb_eArgError, "%s", errmsg);
-    return wadd(TIMET2WIDEVAL(t), xv2w(vtm->subsecx));
+    return wadd(TIMET2WIDEVAL(t), v2w(vtm->subsecx));
 }
 
 static struct vtm *
@@ -1080,7 +1088,7 @@ gmtimew(wideval_t timew, struct vtm *result)
     VALUE subsecx;
     VALUE timev;
 
-    if (wlt(timew, xv2w(INT2FIX(0)))) {
+    if (wlt(timew, v2w(INT2FIX(0)))) {
         gmtimew_noleapsecond(timew, result);
         return result;
     }
@@ -1088,7 +1096,7 @@ gmtimew(wideval_t timew, struct vtm *result)
     init_leap_second_info();
 
     if (wlt(TIMET2WIDEVAL(known_leap_seconds_limit), timew)) {
-        timew = wsub(timew, rb_time_magnify(INT2NUM(number_of_leap_seconds_known)));
+        timew = wsub(timew, rb_time_magnify(v2w(INT2NUM(number_of_leap_seconds_known))));
         gmtimew_noleapsecond(timew, result);
         return result;
     }
@@ -1248,7 +1256,7 @@ guess_local_offset(struct vtm *vtm_utc)
     else
         vtm2.year = INT2FIX(compat_common_month_table[vtm_utc->mon-1][wday]);
 
-    timev = rb_time_unmagnify(timegmw(&vtm2));
+    timev = w2v(rb_time_unmagnify(timegmw(&vtm2)));
     t = NUM2TIMET(timev);
     if (localtime_with_gmtoff(&t, &tm, &gmtoff))
         return LONG2FIX(gmtoff);
@@ -1315,7 +1323,7 @@ timelocalw(struct vtm *vtm)
 
     if (find_time_t(&tm, 0, &t))
         goto no_localtime;
-    return wadd(TIMET2WIDEVAL(t), xv2w(vtm->subsecx));
+    return wadd(TIMET2WIDEVAL(t), v2w(vtm->subsecx));
 
   no_localtime:
     timew1 = timegmw(vtm);
@@ -1325,7 +1333,7 @@ timelocalw(struct vtm *vtm)
 
     n = vtmcmp(vtm, &vtm1);
     if (n == 0) {
-        timew1 = wsub(timew1, rb_time_magnify(INT2FIX(12*3600)));
+        timew1 = wsub(timew1, rb_time_magnify(v2w(INT2FIX(12*3600))));
         if (!localtimew(timew1, &vtm1))
             rb_raise(rb_eArgError, "localtimew error");
         n = 1;
@@ -1334,17 +1342,17 @@ timelocalw(struct vtm *vtm)
     if (n < 0) {
         timew2 = timew1;
         vtm2 = vtm1;
-        timew1 = wsub(timew1, rb_time_magnify(INT2FIX(24*3600)));
+        timew1 = wsub(timew1, rb_time_magnify(v2w(INT2FIX(24*3600))));
         if (!localtimew(timew1, &vtm1))
             rb_raise(rb_eArgError, "localtimew error");
     }
     else {
-        timew2 = wadd(timew1, rb_time_magnify(INT2FIX(24*3600)));
+        timew2 = wadd(timew1, rb_time_magnify(v2w(INT2FIX(24*3600))));
         if (!localtimew(timew2, &vtm2))
             rb_raise(rb_eArgError, "localtimew error");
     }
-    timew1 = wadd(timew1, rb_time_magnify(small_vtm_sub(vtm, &vtm1)));
-    timew2 = wadd(timew2, rb_time_magnify(small_vtm_sub(vtm, &vtm2)));
+    timew1 = wadd(timew1, rb_time_magnify(v2w(small_vtm_sub(vtm, &vtm1))));
+    timew2 = wadd(timew2, rb_time_magnify(v2w(small_vtm_sub(vtm, &vtm2))));
 
     if (weq(timew1, timew2))
         return timew1;
@@ -1413,7 +1421,7 @@ timew_out_of_timet_range(wideval_t timew)
         return 0;
     }
 #endif
-    timexv = w2xv(timew);
+    timexv = w2v(timew);
     if (lt(timexv, mul(INT2FIX(TIME_SCALE), TIMET2NUM(TIMET_MIN))) ||
         le(mul(INT2FIX(TIME_SCALE), add(TIMET2NUM(TIMET_MAX), INT2FIX(1))), timexv))
         return 1;
@@ -1468,7 +1476,7 @@ localtimew(wideval_t timew, struct vtm *result)
 
     offset = guess_local_offset(result);
 
-    if (!gmtimew(wadd(timew, rb_time_magnify(offset)), result))
+    if (!gmtimew(wadd(timew, rb_time_magnify(v2w(offset))), result))
         return NULL;
 
     result->utc_offset = offset;
@@ -1516,7 +1524,7 @@ time_mark(void *ptr)
     struct time_object *tobj = ptr;
     if (!tobj) return;
     if (!FIXWV_P(WIDEVAL_GET(tobj->timew)))
-        rb_gc_mark(w2xv(tobj->timew));
+        rb_gc_mark(w2v(tobj->timew));
     rb_gc_mark(tobj->vtm.year);
     rb_gc_mark(tobj->vtm.subsecx);
     rb_gc_mark(tobj->vtm.utc_offset);
@@ -1547,7 +1555,7 @@ time_s_alloc(VALUE klass)
 
     obj = TypedData_Make_Struct(klass, struct time_object, &time_data_type, tobj);
     tobj->tm_got=0;
-    tobj->timew = xv2w(INT2FIX(0));
+    tobj->timew = v2w(INT2FIX(0));
 
     return obj;
 }
@@ -1567,7 +1575,7 @@ timespec2timew(struct timespec *ts)
 
     timew = TIMET2WIDEVAL(ts->tv_sec);
     if (ts->tv_nsec)
-        timew = wadd(timew, wmulquoll(xv2w(LONG2NUM(ts->tv_nsec)), TIME_SCALE, 1000000000));
+        timew = wadd(timew, wmulquoll(v2w(LONG2NUM(ts->tv_nsec)), TIME_SCALE, 1000000000));
     return timew;
 }
 
@@ -1601,7 +1609,7 @@ time_init_0(VALUE time)
     time_modify(time);
     GetTimeval(time, tobj);
     tobj->tm_got=0;
-    tobj->timew = xv2w(INT2FIX(0));
+    tobj->timew = v2w(INT2FIX(0));
 #ifdef HAVE_CLOCK_GETTIME
     if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
 	rb_sys_fail("clock_gettime");
@@ -1671,7 +1679,7 @@ vtm_add_offset(struct vtm *vtm, VALUE off)
     day = 0;
 
     if (!rb_equal(subsec, INT2FIX(0))) {
-        vtm->subsecx = add(vtm->subsecx, w2xv(rb_time_magnify(subsec)));
+        vtm->subsecx = add(vtm->subsecx, w2v(rb_time_magnify(v2w(subsec))));
         if (lt(vtm->subsecx, INT2FIX(0))) {
             vtm->subsecx = add(vtm->subsecx, INT2FIX(TIME_SCALE));
             sec -= 1;
@@ -1822,7 +1830,7 @@ time_init_1(int argc, VALUE *argv, VALUE time)
         VALUE subsec;
         divmodv(sec, INT2FIX(1), &sec, &subsec);
         vtm.sec = NUM2INT(sec);
-        vtm.subsecx = w2xv(rb_time_magnify(subsec));
+        vtm.subsecx = w2v(rb_time_magnify(v2w(subsec)));
     }
 
     vtm.isdst = -1;
@@ -1842,7 +1850,7 @@ time_init_1(int argc, VALUE *argv, VALUE time)
     time_modify(time);
     GetTimeval(time, tobj);
     tobj->tm_got=0;
-    tobj->timew = xv2w(INT2FIX(0));
+    tobj->timew = v2w(INT2FIX(0));
 
     if (!NIL_P(vtm.utc_offset)) {
         VALUE off = vtm.utc_offset;
@@ -1983,7 +1991,7 @@ rb_time_nano_new(time_t sec, long nsec)
 VALUE
 rb_time_num_new(VALUE timev, VALUE off)
 {
-    VALUE time = time_new_timew(rb_cTime, rb_time_magnify(timev));
+    VALUE time = time_new_timew(rb_cTime, rb_time_magnify(v2w(timev)));
 
     if (!NIL_P(off)) {
         off = utc_offset_arg(off);
@@ -2161,7 +2169,7 @@ time_s_at(int argc, VALUE *argv, VALUE klass)
     if (rb_scan_args(argc, argv, "11", &time, &t) == 2) {
         time = num_exact(time);
         t = num_exact(t);
-        timew = wadd(rb_time_magnify(time), wmulquoll(xv2w(t), TIME_SCALE, 1000000));
+        timew = wadd(rb_time_magnify(v2w(time)), wmulquoll(v2w(t), TIME_SCALE, 1000000));
         t = time_new_timew(klass, timew);
     }
     else if (IsTimeval(time)) {
@@ -2172,7 +2180,7 @@ time_s_at(int argc, VALUE *argv, VALUE klass)
         TIME_COPY_GMT(tobj2, tobj);
     }
     else {
-        timew = rb_time_magnify(num_exact(time));
+        timew = rb_time_magnify(v2w(num_exact(time)));
         t = time_new_timew(klass, timew);
     }
 
@@ -2219,7 +2227,7 @@ obj2subsecx(VALUE obj, VALUE *subsecx)
     }
 
     divmodv(num_exact(obj), INT2FIX(1), &obj, &subsec);
-    *subsecx = w2xv(rb_time_magnify(subsec));
+    *subsecx = w2v(rb_time_magnify(v2w(subsec)));
     return NUM2INT(obj);
 }
 
@@ -2807,7 +2815,7 @@ time_to_i(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    return div(w2xv(tobj->timew), INT2FIX(TIME_SCALE));
+    return div(w2v(tobj->timew), INT2FIX(TIME_SCALE));
 }
 
 /*
@@ -2856,7 +2864,7 @@ time_to_r(VALUE time)
     VALUE v;
 
     GetTimeval(time, tobj);
-    v = rb_time_unmagnify(tobj->timew);
+    v = w2v(rb_time_unmagnify(tobj->timew));
     if (TYPE(v) != T_RATIONAL) {
         v = rb_convert_type(v, T_RATIONAL, "Rational", "to_r");
     }
@@ -2881,7 +2889,7 @@ time_usec(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    return rb_to_int(mulquo(mod(w2xv(tobj->timew), INT2FIX(TIME_SCALE)), INT2FIX(1000000), INT2FIX(TIME_SCALE)));
+    return rb_to_int(mulquo(mod(w2v(tobj->timew), INT2FIX(TIME_SCALE)), INT2FIX(1000000), INT2FIX(TIME_SCALE)));
 }
 
 /*
@@ -2907,7 +2915,7 @@ time_nsec(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    return rb_to_int(mulquo(mod(w2xv(tobj->timew), INT2FIX(TIME_SCALE)), INT2FIX(1000000000), INT2FIX(TIME_SCALE)));
+    return rb_to_int(mulquo(mod(w2v(tobj->timew), INT2FIX(TIME_SCALE)), INT2FIX(1000000000), INT2FIX(TIME_SCALE)));
 }
 
 /*
@@ -2934,7 +2942,7 @@ time_subsec(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    return quo(mod(w2xv(tobj->timew), INT2FIX(TIME_SCALE)), INT2FIX(TIME_SCALE));
+    return quo(mod(w2v(tobj->timew), INT2FIX(TIME_SCALE)), INT2FIX(TIME_SCALE));
 }
 
 /*
@@ -2998,7 +3006,7 @@ time_eql(VALUE time1, VALUE time2)
     GetTimeval(time1, tobj1);
     if (IsTimeval(time2)) {
 	GetTimeval(time2, tobj2);
-        return rb_equal(w2xv(tobj1->timew), w2xv(tobj2->timew));
+        return rb_equal(w2v(tobj1->timew), w2v(tobj2->timew));
     }
     return Qfalse;
 }
@@ -3045,7 +3053,7 @@ time_hash(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    return rb_hash(w2xv(tobj->timew));
+    return rb_hash(w2v(tobj->timew));
 }
 
 /* :nodoc: */
@@ -3330,9 +3338,9 @@ time_add(struct time_object *tobj, VALUE offset, int sign)
     VALUE result;
     offset = num_exact(offset);
     if (sign < 0)
-        result = time_new_timew(rb_cTime, wsub(tobj->timew, rb_time_magnify(offset)));
+        result = time_new_timew(rb_cTime, wsub(tobj->timew, rb_time_magnify(v2w(offset))));
     else
-        result = time_new_timew(rb_cTime, wadd(tobj->timew, rb_time_magnify(offset)));
+        result = time_new_timew(rb_cTime, wadd(tobj->timew, rb_time_magnify(v2w(offset))));
     if (TIME_UTC_P(tobj)) {
 	GetTimeval(result, tobj);
         TIME_SET_UTC(tobj);
@@ -3417,7 +3425,7 @@ rb_time_succ(VALUE time)
 
     rb_warn("Time#succ is obsolete; use time + 1");
     GetTimeval(time, tobj);
-    time = time_new_timew(rb_cTime, wadd(tobj->timew, xv2w(INT2FIX(TIME_SCALE))));
+    time = time_new_timew(rb_cTime, wadd(tobj->timew, v2w(INT2FIX(TIME_SCALE))));
     GetTimeval(time, tobj2);
     TIME_COPY_GMT(tobj2, tobj);
     return time;
@@ -3481,7 +3489,7 @@ time_round(int argc, VALUE *argv, VALUE time)
 	rb_raise(rb_eArgError, "negative ndigits given");
 
     GetTimeval(time, tobj);
-    v = rb_time_unmagnify(tobj->timew);
+    v = w2v(rb_time_unmagnify(tobj->timew));
 
     a = INT2FIX(1);
     b = INT2FIX(10);
@@ -3970,7 +3978,7 @@ strftimev(const char *fmt, VALUE time)
 
     GetTimeval(time, tobj);
     MAKE_TM(time, tobj);
-    len = rb_strftime_alloc(&buf, fmt, &tobj->vtm, rb_time_unmagnify(tobj->timew), TIME_UTC_P(tobj));
+    len = rb_strftime_alloc(&buf, fmt, &tobj->vtm, w2v(rb_time_unmagnify(tobj->timew)), TIME_UTC_P(tobj));
     str = rb_str_new(buf, len);
     if (buf != buffer) xfree(buf);
     return str;
@@ -4068,7 +4076,7 @@ time_strftime(VALUE time, VALUE format)
 
 	str = rb_str_new(0, 0);
 	while (p < pe) {
-	    len = rb_strftime_alloc(&buf, p, &tobj->vtm, rb_time_unmagnify(tobj->timew), TIME_UTC_P(tobj));
+	    len = rb_strftime_alloc(&buf, p, &tobj->vtm, w2v(rb_time_unmagnify(tobj->timew)), TIME_UTC_P(tobj));
 	    rb_str_cat(str, buf, len);
 	    p += strlen(p);
 	    if (buf != buffer) {
@@ -4082,7 +4090,7 @@ time_strftime(VALUE time, VALUE format)
     }
     else {
 	len = rb_strftime_alloc(&buf, RSTRING_PTR(format),
-				&tobj->vtm, rb_time_unmagnify(tobj->timew), TIME_UTC_P(tobj));
+				&tobj->vtm, w2v(rb_time_unmagnify(tobj->timew)), TIME_UTC_P(tobj));
     }
     str = rb_str_new(buf, len);
     if (buf != buffer) xfree(buf);
@@ -4268,7 +4276,7 @@ time_mload(VALUE time, VALUE str)
 	sec = p;
 	usec = s;
         nsec = usec * 1000;
-        timew = wadd(TIMET2WIDEVAL(sec), wmulquoll(xv2w(LONG2FIX(usec)), TIME_SCALE, 1000000));
+        timew = wadd(TIMET2WIDEVAL(sec), wmulquoll(v2w(LONG2FIX(usec)), TIME_SCALE, 1000000));
     }
     else {
 	p &= ~(1UL<<31);
