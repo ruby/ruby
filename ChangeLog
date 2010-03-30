@@ -1,3 +1,7 @@
+Tue Mar 30 21:56:33 2010  Tanaka Akira  <akr@fsij.org>
+
+	* time.c: make wide value more polymorphic.
+
 Tue Mar 30 21:18:32 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/psych/extconf.rb: install psych .so to not psych/ but direct.
