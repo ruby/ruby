@@ -27,7 +27,6 @@ COMMONOBJS    = array.$(OBJEXT) \
 		class.$(OBJEXT) \
 		compar.$(OBJEXT) \
 		dir.$(OBJEXT) \
-		dln.$(OBJEXT) \
 		enum.$(OBJEXT) \
 		enumerator.$(OBJEXT) \
 		error.$(OBJEXT) \
@@ -61,7 +60,9 @@ COMMONOBJS    = array.$(OBJEXT) \
 		version.$(OBJEXT) \
 		$(MISSING)
 
-OBJS          = $(COMMONOBJS) prelude.$(OBJEXT)
+OBJS          = $(COMMONOBJS) \
+		dln.$(OBJEXT) \
+		prelude.$(OBJEXT)
 
 PRELUDE_SCRIPTS = $(srcdir)/prelude.rb
 PRELUDES      = prelude.c miniprelude.c
