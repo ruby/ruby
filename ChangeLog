@@ -1,4 +1,6 @@
-Tue Mar 30 10:33:05 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Mar 30 12:36:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (MINIOBJS): use dmydln.o on all platforms.
 
 	* common.mk (COMMONOBJS): moved dln.o to OBJS not to conflict with
 	  dmydln.o.

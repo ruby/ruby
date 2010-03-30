@@ -1655,7 +1655,6 @@ case "$target_os" in
 	;;
     darwin*)
 	CFLAGS="$CFLAGS -pipe -fno-common"
-	MINIOBJS=dmydln.o
 	;;
     os2-emx)
     	CFLAGS="$CFLAGS -DOS2"
@@ -1716,7 +1715,6 @@ case "$target_os" in
 	    LIBRUBY='lib$(RUBY_SO_NAME).a'
 	    LIBRUBYARG='-l$(RUBY_SO_NAME)'
 	fi
-	MINIOBJS=dmydln.o
 	;;
     hpux*)
 	case "$YACC" in
@@ -1725,11 +1723,11 @@ case "$target_os" in
 	    YACC="$YACC -Nl40000 -Nm40000"
 	    ;;
 	esac
-	MINIOBJS=dmydln.o
 	;;
     *)
 	;;
 esac
+MINIOBJS=dmydln.o
 
 case "$build_os" in
   *msdosdjgpp*) FIRSTMAKEFILE=GNUmakefile:djgpp/GNUmakefile.in;;
