@@ -1,3 +1,8 @@
+Tue Mar 30 22:00:44 2010  Keiju Ishitsuka  <keiju@ruby-lang.org>
+
+	* lib/irb.rb: suppoort [Feature#988], [ruby-core:21177].
+	* lib/irb/context.rb: fix Context#verbose?.
+
 Tue Mar 30 21:56:33 2010  Tanaka Akira  <akr@fsij.org>
 
 	* time.c: make wide value more polymorphic.

@@ -150,6 +150,8 @@ module IRB
 	else
 	  false
 	end
+      else
+	@verbose
       end
     end
 

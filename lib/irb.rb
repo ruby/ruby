@@ -144,6 +144,8 @@ module IRB
 	      if @context.verbose?
 		printf "Use \"exit\" to leave %s\n", @context.ap_name
 	      end
+	    else
+	      print "\n"
 	    end
 	  end
 	  l
