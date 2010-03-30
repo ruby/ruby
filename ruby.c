@@ -252,6 +252,8 @@ ruby_incpush(path)
 void
 ruby_init_loadpath()
 {
+    extern const struct ruby_initial_loadpath ruby_initial_load_paths;
+    const char *paths = (const char *)&ruby_initial_load_paths;
 #if defined LOAD_RELATIVE
     char libpath[FILENAME_MAX+1];
     size_t baselen;
@@ -310,38 +312,20 @@ ruby_init_loadpath()
 #define RUBY_RELATIVE(path) (path)
 #define PREFIX_PATH() rubylib_mangled_path(exec_prefix, sizeof(exec_prefix)-1)
 #endif
-#define incpush(path) rb_ary_push(rb_load_path, rubylib_mangled_path2(path))
+#define incpush(path, len) rb_ary_push(rb_load_path, rubylib_mangled_path(path, len))
 
     if (rb_safe_level() == 0) {
 	ruby_incpush(getenv("RUBYLIB"));
     }
 
-#ifdef RUBY_SEARCH_PATH
-    incpush(RUBY_RELATIVE(RUBY_SEARCH_PATH));
-#endif
-
-    incpush(RUBY_RELATIVE(RUBY_SITE_LIB2));
-#ifdef RUBY_SITE_THIN_ARCHLIB
-    incpush(RUBY_RELATIVE(RUBY_SITE_THIN_ARCHLIB));
-#endif
-    incpush(RUBY_RELATIVE(RUBY_SITE_ARCHLIB));
-    incpush(RUBY_RELATIVE(RUBY_SITE_LIB));
-
-    incpush(RUBY_RELATIVE(RUBY_VENDOR_LIB2));
-#ifdef RUBY_VENDOR_THIN_ARCHLIB
-    incpush(RUBY_RELATIVE(RUBY_VENDOR_THIN_ARCHLIB));
-#endif
-    incpush(RUBY_RELATIVE(RUBY_VENDOR_ARCHLIB));
-    incpush(RUBY_RELATIVE(RUBY_VENDOR_LIB));
-
-    incpush(RUBY_RELATIVE(RUBY_LIB));
-#ifdef RUBY_THIN_ARCHLIB
-    incpush(RUBY_RELATIVE(RUBY_THIN_ARCHLIB));
-#endif
-    incpush(RUBY_RELATIVE(RUBY_ARCHLIB));
+    while (*paths) {
+	size_t len = strlen(paths);
+	incpush(RUBY_RELATIVE(paths), len);
+	paths += len + 1;
+    }
 
     if (rb_safe_level() == 0) {
-	incpush(".");
+	incpush(".", 1);
     }
 
     rb_const_set(rb_cObject, rb_intern("TMP_RUBY_PREFIX"), rb_obj_freeze(PREFIX_PATH()));

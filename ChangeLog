@@ -1,3 +1,8 @@
+Tue Mar 30 18:11:23 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* version.c (ruby_initial_load_paths): moved initial load path
+	  from ruby.c.
+
 Tue Mar 30 18:04:54 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (config.status): ommit cached results.

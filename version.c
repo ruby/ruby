@@ -40,6 +40,56 @@ char ruby_copyright[
     sizeof("ruby - Copyright (C) - ") + 20 + sizeof(RUBY_AUTHOR)-1];
 #endif
 
+const struct ruby_initial_loadpath {
+#ifdef RUBY_SEARCH_PATH
+    char search_path[sizeof(RUBY_SEARCH_PATH)];
+#endif
+    char site_lib2[sizeof(RUBY_SITE_LIB2)];
+#ifdef RUBY_SITE_THIN_ARCHLIB
+    char site_thin_archlib[sizeof(RUBY_SITE_THIN_ARCHLIB)];
+#endif
+    char site_archlib[sizeof(RUBY_SITE_ARCHLIB)];
+    char site_lib[sizeof(RUBY_SITE_LIB)];
+
+    char vendor_lib2[sizeof(RUBY_VENDOR_LIB2)];
+#ifdef RUBY_VENDOR_THIN_ARCHLIB
+    char vendor_thin_archlib[sizeof(RUBY_VENDOR_THIN_ARCHLIB)];
+#endif
+    char vendor_archlib[sizeof(RUBY_VENDOR_ARCHLIB)];
+    char vendor_lib[sizeof(RUBY_VENDOR_LIB)];
+
+    char lib[sizeof(RUBY_LIB)];
+#ifdef RUBY_THIN_ARCHLIB
+    char thin_archlib[sizeof(RUBY_THIN_ARCHLIB)];
+#endif
+    char archlib[sizeof(RUBY_ARCHLIB)];
+    char terminator[1];
+} ruby_initial_load_paths = {
+#ifdef RUBY_SEARCH_PATH
+    RUBY_SEARCH_PATH,
+#endif
+    RUBY_SITE_LIB2,
+#ifdef RUBY_SITE_THIN_ARCHLIB
+    RUBY_SITE_THIN_ARCHLIB,
+#endif
+    RUBY_SITE_ARCHLIB,
+    RUBY_SITE_LIB,
+
+    RUBY_VENDOR_LIB2,
+#ifdef RUBY_VENDOR_THIN_ARCHLIB
+    RUBY_VENDOR_THIN_ARCHLIB,
+#endif
+    RUBY_VENDOR_ARCHLIB,
+    RUBY_VENDOR_LIB,
+
+    RUBY_LIB,
+#ifdef RUBY_THIN_ARCHLIB
+    RUBY_THIN_ARCHLIB,
+#endif
+    RUBY_ARCHLIB,
+    ""
+};
+
 void
 Init_version()
 {
