@@ -4531,8 +4531,8 @@ proc_setmaxgroups(VALUE obj, VALUE val)
 #if defined(HAVE_DAEMON) || defined(HAVE_FORK)
 /*
  *  call-seq:
- *     Process.daemon()                        => fixnum
- *     Process.daemon(nochdir=nil,noclose=nil) => fixnum
+ *     Process.daemon()                        => 0
+ *     Process.daemon(nochdir=nil,noclose=nil) => 0
  *
  *  Detach the process from controlling terminal and run in
  *  the background as system daemon.  Unless the argument
@@ -4540,6 +4540,7 @@ proc_setmaxgroups(VALUE obj, VALUE val)
  *  working directory to the root ("/"). Unless the argument
  *  noclose is true, daemon() will redirect standard input,
  *  standard output and standard error to /dev/null.
+ *  Return zero on success, or raise one of Errno::*.
  */
 
 static VALUE
@@ -4561,7 +4562,7 @@ proc_daemon(int argc, VALUE *argv)
 #elif defined(HAVE_FORK)
     switch (rb_fork(0, 0, 0, Qnil)) {
       case -1:
-	return INT2FIX(-1);
+	rb_sys_fail("daemon");
       case 0:
 	break;
       default:
@@ -4573,7 +4574,7 @@ proc_daemon(int argc, VALUE *argv)
     /* must not be process-leader */
     switch (rb_fork(0, 0, 0, Qnil)) {
       case -1:
-	return INT2FIX(-1);
+	rb_sys_fail("daemon");
       case 0:
 	break;
       default:
