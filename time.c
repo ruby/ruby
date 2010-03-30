@@ -1634,7 +1634,7 @@ timew2timespec(wideval_t timew)
 
     if (timew_out_of_timet_range(timew))
 	rb_raise(rb_eArgError, "time out of system range");
-    split_second(timew, &timew, &subsecx);
+    split_second(timew, &timew2, &subsecx);
     ts.tv_sec = WV2TIMET(timew2);
     ts.tv_nsec = NUM2LONG(mulquo(subsecx, INT2FIX(1000000000), INT2FIX(TIME_SCALE)));
     return ts;

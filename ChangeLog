@@ -1,3 +1,7 @@
+Wed Mar 31 06:57:14 2010  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (timew2timespec): fix previous change.
+
 Wed Mar 31 00:32:19 2010  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (wdivmod): renamed from wdivmodv.  fix neg/pos and pos/neg.
