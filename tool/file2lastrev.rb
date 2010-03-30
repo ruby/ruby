@@ -24,16 +24,17 @@ class VCS
 
   def initialize(path)
     @srcdir = path
+    super()
   end
 
   # return a pair of strings, the last revision and the last revision in which
   # +path+ was modified.
   def get_revisions(path)
     path = relative_to(path)
-    last, changed = Dir.chdir(@srcdir) {yield path}
+    last, changed, *rest = Dir.chdir(@srcdir) {self.class.get_revisions(path)}
     last or raise "last revision not found"
     changed or raise "changed revision not found"
-    return last, changed
+    return last, changed, *rest
   end
 
   def relative_to(path)
@@ -43,37 +44,32 @@ class VCS
   class SVN < self
     register(".svn")
 
-    def get_revisions(*)
-      super do |path|
-        info_xml = `svn info --xml "#{path}"`
-        _, last, _, changed, _ = info_xml.split(/revision="(\d+)"/)
-        [last, changed]
-      end
+    def self.get_revisions(path)
+      info_xml = `svn info --xml "#{path}"`
+      _, last, _, changed, _ = info_xml.split(/revision="(\d+)"/)
+      [last, changed]
     end
   end
 
   class GIT_SVN < self
     register(".git/svn")
 
-    def get_revisions(*)
-      super do |path|
-        info = `git svn info "#{path}"`
-        [info[/^Revision: (\d+)/, 1], info[/^Last Changed Rev: (\d+)/, 1]]
-      end
+    def self.get_revisions(path)
+      lastlog = `git log -n1`
+      info = `git svn info "#{path}"`
+      [info[/^Revision: (\d+)/, 1], info[/^Last Changed Rev: (\d+)/, 1]]
     end
   end
 
   class GIT < self
     register(".git")
 
-    def get_revisions(*)
+    def self.get_revisions(path)
       logcmd = %Q[git log -n1 --grep="^ *git-svn-id: .*@[0-9][0-9]* "]
       idpat = /git-svn-id: .*?@(\d+) \S+\Z/
-      super do |path|
-        last = `#{logcmd}`[idpat, 1]
-        changed = path ? `#{logcmd} "#{path}"`[idpat, 1] : last
-        [last, changed]
-      end
+      last = `#{logcmd}`[idpat, 1]
+      changed = path ? `#{logcmd} "#{path}"`[idpat, 1] : last
+      [last, changed]
     end
   end
 end
