@@ -1,4 +1,6 @@
-Tue Mar 30 15:41:39 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Mar 30 17:52:32 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_EXEC_PREFIX, RUBY_LIB_PREFIX): fixed.
 
 	* common.mk (revision.h): add RUBY_BRANCH_NAME.
 

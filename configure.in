@@ -1647,14 +1647,14 @@ case "$target_os" in
 	# fails to consult /usr/local/include by default.  This causes
 	# mkmf.rb's have_header() to fail if the desired resource happens to be
 	# installed in the /usr/local tree.
-	CFLAGS="$CFLAGS -pipe -fno-common"
+	CFLAGS="$CFLAGS -pipe"
 	CPPFLAGS="$CPPFLAGS -I/usr/local/include"
 	;;
     rhapsody*)
-	CFLAGS="$CFLAGS -pipe -no-precomp -fno-common"
+	CFLAGS="$CFLAGS -pipe -no-precomp"
 	;;
     darwin*)
-	CFLAGS="$CFLAGS -pipe -fno-common"
+	CFLAGS="$CFLAGS -pipe"
 	;;
     os2-emx)
     	CFLAGS="$CFLAGS -DOS2"
@@ -1816,10 +1816,12 @@ SITE_DIR=`eval echo \\"${sitedir}\\"`
 
 case "$target_os" in
   cygwin*|mingw*|*djgpp*|os2-emx*)
+    RUBY_EXEC_PREFIX=""
     RUBY_LIB_PREFIX="`eval echo "$RUBY_LIB_PREFIX" | sed 's|^NONE/|/|;s|^'"$prefix"'/|/|'`"
     RUBY_SITE_LIB_PATH="`eval echo "$SITE_DIR" | sed 's|^NONE/|/|;s|^'"$prefix"'/|/|'`"
     ;;
   *)
+    RUBY_EXEC_PREFIX="`eval echo \\"$exec_prefix/\\" | sed 's|^NONE/|'"$prefix"'/|;s|/$||'`"
     RUBY_LIB_PREFIX="`eval echo \\"$RUBY_LIB_PREFIX\\" | sed 's|^NONE/|'"$prefix"'/|'`"
     RUBY_SITE_LIB_PATH="`eval echo \\"$SITE_DIR\\" | sed 's|^NONE/|'"$prefix"'/|'`"
     ;;
@@ -1828,7 +1830,7 @@ RUBY_LIB_PATH="${RUBY_LIB_PREFIX}/${ruby_version}"
 RUBY_SITE_LIB_PATH2="${RUBY_SITE_LIB_PATH}/${ruby_version}"
 
 AC_DEFINE_UNQUOTED(RUBY_EXEC_PREFIX, "${RUBY_EXEC_PREFIX}")
-AC_DEFINE_UNQUOTED(RUBY_LIB_PREFIX, ${RUBY_LIB_PREFIX})
+AC_DEFINE_UNQUOTED(RUBY_LIB_PREFIX, "${RUBY_LIB_PREFIX}")
 AC_DEFINE_UNQUOTED(RUBY_LIB, "${RUBY_LIB_PATH}")
 AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, "${RUBY_SITE_LIB_PATH}")
 AC_DEFINE_UNQUOTED(RUBY_SITE_LIB2, "${RUBY_SITE_LIB_PATH2}")
