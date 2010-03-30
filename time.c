@@ -619,7 +619,7 @@ rb_time_magnify(wideval_t w)
         }
 #else
         long a, b, c;
-        a = FIX2LONG(v);
+        a = FIX2LONG(WIDEVAL_GET(w));
         if (a == 0) {
             return WIDEVAL_WRAP(INT2FIX(0));
 	}
@@ -630,7 +630,11 @@ rb_time_magnify(wideval_t w)
         }
 #endif
     }
+#if WIDEVALUE_IS_WIDER
     return wmul(w, WIDEVAL_WRAP(INT64toFIXWV(TIME_SCALE)));
+#else
+    return wmul(w, WIDEVAL_WRAP(INT2FIX(TIME_SCALE)));
+#endif
 }
 
 static wideval_t
@@ -646,8 +650,10 @@ rb_time_unmagnify(wideval_t w)
             return WIDEVAL_WRAP(INT64toFIXWV(c));
         }
     }
-#endif
     return wquo(w, WIDEVAL_WRAP(INT64toFIXWV(TIME_SCALE)));
+#else
+    return wquo(w, WIDEVAL_WRAP(INT2FIX(TIME_SCALE)));
+#endif
 }
 
 static VALUE
