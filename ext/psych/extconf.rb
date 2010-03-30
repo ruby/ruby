@@ -11,6 +11,6 @@ end
 asplode('yaml.h')  unless find_header  'yaml.h'
 asplode('libyaml') unless find_library 'yaml', 'yaml_get_version'
 
-create_makefile 'psych/psych'
+create_makefile 'psych'
 
 # :startdoc:
