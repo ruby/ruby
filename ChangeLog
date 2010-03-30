@@ -1,4 +1,7 @@
-Tue Mar 30 13:01:10 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Mar 30 13:11:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/file2lastrev.rb (VCS::GIT_SVN): removed because git-log can
+	  deal with git-svn repository faster than git-svn-info.
 
 	* tool/file2lastrev.rb (VCS#get_revisions): particular commands do
 	  not depend on instance.

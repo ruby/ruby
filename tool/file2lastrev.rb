@@ -51,16 +51,6 @@ class VCS
     end
   end
 
-  class GIT_SVN < self
-    register(".git/svn")
-
-    def self.get_revisions(path)
-      lastlog = `git log -n1`
-      info = `git svn info "#{path}"`
-      [info[/^Revision: (\d+)/, 1], info[/^Last Changed Rev: (\d+)/, 1]]
-    end
-  end
-
   class GIT < self
     register(".git")
 
