@@ -14,6 +14,7 @@ STATIC_RUBY   = static-ruby
 EXTCONF       = extconf.rb
 RBCONFIG      = ./.rbconfig.time
 LIBRUBY_EXTS  = ./.libruby-with-ext.time
+REVISION_H    = ./.revision.time
 RDOCOUT       = $(EXTOUT)/rdoc
 
 DMYEXT	      = dmyext.$(OBJEXT)
@@ -464,28 +465,41 @@ variable.$(OBJEXT): {$(VPATH)}variable.c $(RUBY_H_INCLUDES) \
 version.$(OBJEXT): {$(VPATH)}version.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}version.h {$(VPATH)}revision.h
 
+srcs: {$(VPATH)}parse.c {$(VPATH)}lex.c
+
+incs: $(srcdir)/revision.h $(REVISION_H)
+
 prelude.c: $(srcdir)/compile_prelude.rb $(RBCONFIG) $(PRELUDE_SCRIPTS) $(PREP)
 	$(COMPILE_PRELUDE) $(PRELUDE_SCRIPTS) $@
 
 miniprelude.$(OBJEXT): {$(VPATH)}miniprelude.c $(RUBY_H_INCLUDES)
 prelude.$(OBJEXT): {$(VPATH)}prelude.c $(RUBY_H_INCLUDES)
 
+prereq: incs srcs preludes
+
+preludes: {$(VPATH)}miniprelude.c
+
 dist: $(PROGRAM)
 	$(RUNRUBY) $(srcdir)/distruby.rb
 
-{$(VPATH)}revision.h: $(srcdir)/version.h $(srcdir)/ChangeLog $(REVISION_FORCE)
-	@$(MAKE) revision.h.tmp
+$(srcdir)/revision.h:
+	@exit > $@
+
+$(REVISION_H): $(srcdir)/version.h $(srcdir)/ChangeLog revision.h.tmp $(REVISION_FORCE)
 	@if [ -f $(srcdir)/revision.h ] && \
 	    { [ ! -s revision.h.tmp ] || cmp $(srcdir)/revision.h revision.h.tmp >/dev/null; }; then \
 	  $(RM) revision.h.tmp; \
 	else \
 	  mv -f revision.h.tmp $(srcdir)/revision.h; \
 	fi
+	@exit > $@
 
 revision.h.tmp: $(REVISION_FORCE)
 	@set LC_MESSAGES=C
-	-@$(SET_LC_MESSAGES) $(VCS) info "$(srcdir)" | \
-	sed -n "s/.*Rev:/#define RUBY_REVISION/p" > "$@"
+	-@{ cd "$(srcdir)" && $(SET_LC_MESSAGES) $(VCS) info | \
+	sed -n \
+	  -e '/^URL:/{' -e '/\/trunk$$/d' -e 's!.*/\([^/][^/]*\)$$!#define RUBY_BRANCH_NAME "\1"!p' -e '}' \
+	  -e "s/.*Rev:/#define RUBY_REVISION/p"; } > "$@"
 -IF-NO-STRING-LITERAL-CONCATENATION-::
 	@{ \
 	echo '#include "$@"'; \

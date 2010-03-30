@@ -1,4 +1,6 @@
-Tue Mar 30 12:36:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Mar 30 15:41:39 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (revision.h): add RUBY_BRANCH_NAME.
 
 	* configure.in (MINIOBJS): use dmydln.o on all platforms.
 
