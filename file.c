@@ -3428,8 +3428,14 @@ rb_file_s_basename(int argc, VALUE *argv)
  *     File.dirname("/home/gumby/work/ruby.rb")   #=> "/home/gumby/work"
  */
 
-VALUE
+static VALUE
 rb_file_s_dirname(VALUE klass, VALUE fname)
+{
+    return rb_file_dirname(fname);
+}
+
+VALUE
+rb_file_dirname(VALUE fname)
 {
     const char *name, *root, *p;
     VALUE dirname;

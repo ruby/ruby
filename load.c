@@ -452,13 +452,12 @@ VALUE
 rb_f_require_relative(VALUE obj, VALUE fname)
 {
     VALUE rb_current_realfilepath(void);
-    VALUE rb_file_s_dirname(VALUE klass, VALUE fname);
     VALUE base = rb_current_realfilepath();
     if (NIL_P(base)) {
 	rb_raise(rb_eLoadError, "cannot infer basepath");
     }
-    base = rb_file_s_dirname(rb_cFile, base);
-    return rb_require_safe(rb_file_expand_path(fname, base), rb_safe_level());
+    base = rb_file_dirname(base);
+    return rb_require_safe(rb_file_absolute_path(fname, base), rb_safe_level());
 }
 
 static int
