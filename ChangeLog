@@ -1,4 +1,6 @@
-Tue Mar 30 17:52:32 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Mar 30 18:04:54 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (config.status): ommit cached results.
 
 	* configure.in (RUBY_EXEC_PREFIX, RUBY_LIB_PREFIX): fixed.
 
