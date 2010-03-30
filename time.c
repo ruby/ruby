@@ -24,26 +24,12 @@
 
 #include "timev.h"
 
-#ifndef TYPEOF_TIMEVAL_TV_SEC
-# define TYPEOF_TIMEVAL_TV_SEC time_t
-#endif
-#ifndef TYPEOF_TIMEVAL_TV_USEC
-# if INT_MAX >= 1000000
-# define TYPEOF_TIMEVAL_TV_USEC int
-# else
-# define TYPEOF_TIMEVAL_TV_USEC long
-# endif
-#endif
+static ID id_divmod, id_mul, id_submicro, id_nano_num, id_nano_den, id_offset;
+static ID id_eq, id_ne, id_quo, id_div, id_cmp, id_lshift;
 
-#if SIZEOF_TIME_T == SIZEOF_LONG
-typedef unsigned long unsigned_time_t;
-#elif SIZEOF_TIME_T == SIZEOF_INT
-typedef unsigned int unsigned_time_t;
-#elif SIZEOF_TIME_T == SIZEOF_LONG_LONG
-typedef unsigned LONG_LONG unsigned_time_t;
-#else
-# error cannot find integer type which size is same as time_t.
-#endif
+#define NDIV(x,y) (-(-((x)+1)/(y))-1)
+#define NMOD(x,y) ((y)-(-((x)+1)%(y))-1)
+#define DIV(n,d) ((n)<0 ? NDIV((n),(d)) : (n)/(d))
 
 #if SIZEOF_LONG == 8
 # define INT64toNUM(x) LONG2NUM(x)
@@ -52,9 +38,6 @@ typedef unsigned LONG_LONG unsigned_time_t;
 # define INT64toNUM(x) LL2NUM(x)
 # define UINT64toNUM(x) ULL2NUM(x)
 #endif
-
-#define TIMET_MAX (~(time_t)0 <= 0 ? (time_t)((~(unsigned_time_t)0) >> 1) : (~(unsigned_time_t)0))
-#define TIMET_MIN (~(time_t)0 <= 0 ? (time_t)(((unsigned_time_t)1) << (sizeof(time_t) * CHAR_BIT - 1)) : (time_t)0)
 
 #if defined(HAVE_UINT64_T) && SIZEOF_LONG*2 <= SIZEOF_UINT64_T
     typedef uint64_t uwideint_t;
@@ -175,78 +158,6 @@ v2w(VALUE xv)
 #endif
     return WIDEVAL_WRAP(xv);
 }
-
-static wideval_t rb_time_magnify(wideval_t w);
-static wideval_t
-timet2wideval(time_t t)
-{
-#if WIDEVALUE_IS_WIDER
-    wideint_t wi = t;
-    if (-((-FIXWV_MIN)/TIME_SCALE) <= wi && wi <= FIXWV_MAX/TIME_SCALE) {
-        return WINT2FIXWV(wi * TIME_SCALE);
-    }
-#endif
-    return rb_time_magnify(v2w(TIMET2NUM(t)));
-}
-#define TIMET2WIDEVAL(t) timet2wideval(t)
-
-VALUE rb_cTime;
-static VALUE time_utc_offset _((VALUE));
-
-static int obj2int(VALUE obj);
-static VALUE obj2vint(VALUE obj);
-static int month_arg(VALUE arg);
-static void validate_utc_offset(VALUE utc_offset);
-static void validate_vtm(struct vtm *vtm);
-
-static VALUE time_gmtime(VALUE);
-static VALUE time_localtime(VALUE);
-static VALUE time_fixoff(VALUE);
-
-static time_t timegm_noleapsecond(struct tm *tm);
-static int tmcmp(struct tm *a, struct tm *b);
-static int vtmcmp(struct vtm *a, struct vtm *b);
-static const char *find_time_t(struct tm *tptr, int utc_p, time_t *tp);
-
-static struct vtm *localtimew(wideval_t timew, struct vtm *result);
-
-static int leap_year_p(long y);
-#define leap_year_v_p(y) leap_year_p(NUM2LONG(mod(v, INT2FIX(400))))
-
-#define NDIV(x,y) (-(-((x)+1)/(y))-1)
-#define NMOD(x,y) ((y)-(-((x)+1)%(y))-1)
-#define DIV(n,d) ((n)<0 ? NDIV((n),(d)) : (n)/(d))
-
-#ifdef HAVE_GMTIME_R
-#define IF_HAVE_GMTIME_R(x) x
-#define ASCTIME(tm, buf) asctime_r((tm), (buf))
-#define GMTIME(tm, result) gmtime_r((tm), &(result))
-#define LOCALTIME(tm, result) (tzset(),localtime_r((tm), &(result)))
-#else
-#define IF_HAVE_GMTIME_R(x) 	/* nothing */
-#define ASCTIME(tm, buf) asctime(tm)
-#define GMTIME(tm, result) rb_gmtime((tm), &(result))
-#define LOCALTIME(tm, result) rb_localtime((tm), &(result))
-
-static inline struct tm *
-rb_gmtime(const time_t *tm, struct tm *result)
-{
-    struct tm *t = gmtime(tm);
-    if (t) *result = *t;
-    return t;
-}
-
-static inline struct tm *
-rb_localtime(const time_t *tm, struct tm *result)
-{
-    struct tm *t = localtime(tm);
-    if (t) *result = *t;
-    return t;
-}
-#endif
-
-static ID id_divmod, id_mul, id_submicro, id_nano_num, id_nano_den, id_offset;
-static ID id_eq, id_ne, id_quo, id_div, id_cmp, id_lshift;
 
 static int
 eq(VALUE x, VALUE y)
@@ -576,15 +487,6 @@ wdivmodv(wideval_t wn, wideval_t wd, wideval_t *wq, wideval_t *wr)
     *wr = v2w(rb_ary_entry(ary, 1));
 }
 
-static void
-split_second(wideval_t timew, VALUE *timev_p, VALUE *subsecx_p)
-{
-    wideval_t q, r;
-    wdivmodv(timew, v2w(INT2FIX(TIME_SCALE)), &q, &r);
-    *timev_p = w2v(q);
-    *subsecx_p = w2v(r);
-}
-
 static VALUE
 num_exact(VALUE v)
 {
@@ -620,6 +522,32 @@ num_exact(VALUE v)
     }
     return v;
 }
+
+/* time_t */
+
+#ifndef TYPEOF_TIMEVAL_TV_SEC
+# define TYPEOF_TIMEVAL_TV_SEC time_t
+#endif
+#ifndef TYPEOF_TIMEVAL_TV_USEC
+# if INT_MAX >= 1000000
+# define TYPEOF_TIMEVAL_TV_USEC int
+# else
+# define TYPEOF_TIMEVAL_TV_USEC long
+# endif
+#endif
+
+#if SIZEOF_TIME_T == SIZEOF_LONG
+typedef unsigned long unsigned_time_t;
+#elif SIZEOF_TIME_T == SIZEOF_INT
+typedef unsigned int unsigned_time_t;
+#elif SIZEOF_TIME_T == SIZEOF_LONG_LONG
+typedef unsigned LONG_LONG unsigned_time_t;
+#else
+# error cannot find integer type which size is same as time_t.
+#endif
+
+#define TIMET_MAX (~(time_t)0 <= 0 ? (time_t)((~(unsigned_time_t)0) >> 1) : (~(unsigned_time_t)0))
+#define TIMET_MIN (~(time_t)0 <= 0 ? (time_t)(((unsigned_time_t)1) << (sizeof(time_t) * CHAR_BIT - 1)) : (time_t)0)
 
 static wideval_t
 rb_time_magnify(wideval_t w)
@@ -678,6 +606,79 @@ rb_time_unmagnify_to_float(wideval_t w)
     v = w2v(w);
     return quo(v, DBL2NUM(TIME_SCALE));
 }
+
+static void
+split_second(wideval_t timew, VALUE *timev_p, VALUE *subsecx_p)
+{
+    wideval_t q, r;
+    wdivmodv(timew, v2w(INT2FIX(TIME_SCALE)), &q, &r);
+    *timev_p = w2v(q);
+    *subsecx_p = w2v(r);
+}
+
+static wideval_t
+timet2wideval(time_t t)
+{
+#if WIDEVALUE_IS_WIDER
+    wideint_t wi = t;
+    if (-((-FIXWV_MIN)/TIME_SCALE) <= wi && wi <= FIXWV_MAX/TIME_SCALE) {
+        return WINT2FIXWV(wi * TIME_SCALE);
+    }
+#endif
+    return rb_time_magnify(v2w(TIMET2NUM(t)));
+}
+#define TIMET2WIDEVAL(t) timet2wideval(t)
+
+VALUE rb_cTime;
+static VALUE time_utc_offset _((VALUE));
+
+static int obj2int(VALUE obj);
+static VALUE obj2vint(VALUE obj);
+static int month_arg(VALUE arg);
+static void validate_utc_offset(VALUE utc_offset);
+static void validate_vtm(struct vtm *vtm);
+
+static VALUE time_gmtime(VALUE);
+static VALUE time_localtime(VALUE);
+static VALUE time_fixoff(VALUE);
+
+static time_t timegm_noleapsecond(struct tm *tm);
+static int tmcmp(struct tm *a, struct tm *b);
+static int vtmcmp(struct vtm *a, struct vtm *b);
+static const char *find_time_t(struct tm *tptr, int utc_p, time_t *tp);
+
+static struct vtm *localtimew(wideval_t timew, struct vtm *result);
+
+static int leap_year_p(long y);
+#define leap_year_v_p(y) leap_year_p(NUM2LONG(mod(v, INT2FIX(400))))
+
+#ifdef HAVE_GMTIME_R
+#define IF_HAVE_GMTIME_R(x) x
+#define ASCTIME(tm, buf) asctime_r((tm), (buf))
+#define GMTIME(tm, result) gmtime_r((tm), &(result))
+#define LOCALTIME(tm, result) (tzset(),localtime_r((tm), &(result)))
+#else
+#define IF_HAVE_GMTIME_R(x) 	/* nothing */
+#define ASCTIME(tm, buf) asctime(tm)
+#define GMTIME(tm, result) rb_gmtime((tm), &(result))
+#define LOCALTIME(tm, result) rb_localtime((tm), &(result))
+
+static inline struct tm *
+rb_gmtime(const time_t *tm, struct tm *result)
+{
+    struct tm *t = gmtime(tm);
+    if (t) *result = *t;
+    return t;
+}
+
+static inline struct tm *
+rb_localtime(const time_t *tm, struct tm *result)
+{
+    struct tm *t = localtime(tm);
+    if (t) *result = *t;
+    return t;
+}
+#endif
 
 static const int common_year_yday_offset[] = {
     -1,
