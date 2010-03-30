@@ -420,7 +420,7 @@ wquo(wideval_t wx, wideval_t wy)
 #define wmulquoll(x,y,z) (((y) == (z)) ? (x) : wquo(wmul((x),WINT2WV(y)),WINT2WV(z)))
 
 static void
-wdivmodv(wideval_t wn, wideval_t wd, wideval_t *wq, wideval_t *wr)
+wdivmod(wideval_t wn, wideval_t wd, wideval_t *wq, wideval_t *wr)
 {
     VALUE tmp, ary;
 #if WIDEVALUE_IS_WIDER
@@ -447,8 +447,12 @@ wdivmodv(wideval_t wn, wideval_t wd, wideval_t *wq, wideval_t *wr)
         }
         if (d < 0) {
             if (n < 0) {
-                q = ((-n) / (-d)) - 1;
-                r = ((-n) % (-d)) + d;
+                q = ((-n) / (-d));
+                r = ((-n) % (-d));
+                if (r != 0) {
+                    q -= 1;
+                    r += d;
+                }
             }
             else { /* 0 < n */
                 q = -(n / (-d));
@@ -457,8 +461,12 @@ wdivmodv(wideval_t wn, wideval_t wd, wideval_t *wq, wideval_t *wr)
         }
         else { /* 0 < d */
             if (n < 0) {
-                q = -((-n) / d) - 1;
-                r = -((-n) % d) + d;
+                q = -((-n) / d);
+                r = -((-n) % d);
+                if (r != 0) {
+                    q -= 1;
+                    r += d;
+                }
             }
             else { /* 0 < n */
                 q = n / d;
@@ -601,26 +609,57 @@ rb_time_unmagnify_to_float(wideval_t w)
 }
 
 static void
-split_second(wideval_t timew, VALUE *timev_p, VALUE *subsecx_p)
+split_second(wideval_t timew, wideval_t *timew_p, VALUE *subsecx_p)
 {
     wideval_t q, r;
-    wdivmodv(timew, WINT2FIXWV(TIME_SCALE), &q, &r);
-    *timev_p = w2v(q);
+    wdivmod(timew, WINT2FIXWV(TIME_SCALE), &q, &r);
+    *timew_p = q;
     *subsecx_p = w2v(r);
 }
 
 static wideval_t
-timet2wideval(time_t t)
+timet2wv(time_t t)
 {
 #if WIDEVALUE_IS_WIDER
-    wideint_t wi = t;
-    if (-((-FIXWV_MIN)/TIME_SCALE) <= wi && wi <= FIXWV_MAX/TIME_SCALE) {
-        return WINT2FIXWV(wi * TIME_SCALE);
+    if (TIMET_MIN == 0) {
+        uwideint_t wi = (uwideint_t)t;
+        if (wi <= FIXWV_MAX) {
+            return WINT2FIXWV(wi);
+        }
+    }
+    else {
+        wideint_t wi = (wideint_t)t;
+        if (FIXWV_MIN <= wi && wi <= FIXWV_MAX) {
+            return WINT2FIXWV(wi);
+        }
     }
 #endif
-    return rb_time_magnify(v2w(TIMET2NUM(t)));
+    return v2w(TIMET2NUM(t));
 }
-#define TIMET2WIDEVAL(t) timet2wideval(t)
+#define TIMET2WV(t) timet2wv(t)
+
+static time_t
+wv2timet(wideval_t w)
+{
+#if WIDEVALUE_IS_WIDER
+    if (FIXWV_P(w)) {
+        wideint_t wi = FIXWV2WINT(w);
+        if (TIMET_MIN == 0) {
+            if (wi < 0)
+                rb_raise(rb_eRangeError, "negative value to convert into `time_t'");
+            if (TIMET_MAX < (uwideint_t)wi)
+                rb_raise(rb_eRangeError, "too big to convert into `time_t'");
+        }
+        else {
+            if (wi < TIMET_MIN || TIMET_MAX < wi)
+                rb_raise(rb_eRangeError, "too big to convert into `time_t'");
+        }
+        return (time_t)wi;
+    }
+#endif
+    return NUM2TIMET(w2v(w));
+}
+#define WV2TIMET(t) wv2timet(t)
 
 VALUE rb_cTime;
 static VALUE time_utc_offset _((VALUE));
@@ -784,11 +823,15 @@ gmtimew_noleapsecond(wideval_t timew, struct vtm *vtm)
     const int *yday_offset;
     int wday;
     VALUE timev;
+    wideval_t timew2, w, w2;
 
     vtm->isdst = 0;
 
-    split_second(timew, &timev, &vtm->subsecx);
-    divmodv(timev, INT2FIX(86400), &timev, &v);
+    split_second(timew, &timew2, &vtm->subsecx);
+
+    wdivmod(timew2, WINT2FIXWV(86400), &w2, &w);
+    timev = w2v(w2);
+    v = w2v(w);
 
     wday = NUM2INT(mod(timev, INT2FIX(7)));
     vtm->wday = (wday + 4) % 7;
@@ -1064,7 +1107,7 @@ timegmw(struct vtm *vtm)
 
     timew = timegmw_noleapsecond(vtm);
 
-    if (wlt(TIMET2WIDEVAL(known_leap_seconds_limit), timew)) {
+    if (wlt(rb_time_magnify(TIMET2WV(known_leap_seconds_limit)), timew)) {
         return wadd(timew, rb_time_magnify(WINT2WV(number_of_leap_seconds_known)));
     }
 
@@ -1079,7 +1122,7 @@ timegmw(struct vtm *vtm)
     errmsg = find_time_t(&tm, 1, &t);
     if (errmsg)
         rb_raise(rb_eArgError, "%s", errmsg);
-    return wadd(TIMET2WIDEVAL(t), v2w(vtm->subsecx));
+    return wadd(rb_time_magnify(TIMET2WV(t)), v2w(vtm->subsecx));
 }
 
 static struct vtm *
@@ -1088,7 +1131,7 @@ gmtimew(wideval_t timew, struct vtm *result)
     time_t t;
     struct tm tm;
     VALUE subsecx;
-    VALUE timev;
+    wideval_t timew2;
 
     if (wlt(timew, WINT2FIXWV(0))) {
         gmtimew_noleapsecond(timew, result);
@@ -1097,15 +1140,15 @@ gmtimew(wideval_t timew, struct vtm *result)
 
     init_leap_second_info();
 
-    if (wlt(TIMET2WIDEVAL(known_leap_seconds_limit), timew)) {
+    if (wlt(rb_time_magnify(TIMET2WV(known_leap_seconds_limit)), timew)) {
         timew = wsub(timew, rb_time_magnify(WINT2WV(number_of_leap_seconds_known)));
         gmtimew_noleapsecond(timew, result);
         return result;
     }
 
-    split_second(timew, &timev, &subsecx);
+    split_second(timew, &timew2, &subsecx);
 
-    t = NUM2TIMET(timev);
+    t = WV2TIMET(timew2);
     if (!gmtime_with_leapsecond(&t, &tm))
         return NULL;
 
@@ -1325,7 +1368,7 @@ timelocalw(struct vtm *vtm)
 
     if (find_time_t(&tm, 0, &t))
         goto no_localtime;
-    return wadd(TIMET2WIDEVAL(t), v2w(vtm->subsecx));
+    return wadd(rb_time_magnify(TIMET2WV(t)), v2w(vtm->subsecx));
 
   no_localtime:
     timew1 = timegmw(vtm);
@@ -1433,16 +1476,17 @@ timew_out_of_timet_range(wideval_t timew)
 static struct vtm *
 localtimew(wideval_t timew, struct vtm *result)
 {
-    VALUE timev, subsecx, offset;
+    VALUE subsecx, offset;
 
     if (!timew_out_of_timet_range(timew)) {
         time_t t;
         struct tm tm;
 	long gmtoff;
+        wideval_t timew2;
 
-        split_second(timew, &timev, &subsecx);
+        split_second(timew, &timew2, &subsecx);
 
-        t = NUM2TIMET(timev);
+        t = WV2TIMET(timew2);
 
         if (localtime_with_gmtoff(&t, &tm, &gmtoff)) {
             result->year = LONG2NUM((long)tm.tm_year + 1900);
@@ -1575,7 +1619,7 @@ timespec2timew(struct timespec *ts)
 {
     wideval_t timew;
 
-    timew = TIMET2WIDEVAL(ts->tv_sec);
+    timew = rb_time_magnify(TIMET2WV(ts->tv_sec));
     if (ts->tv_nsec)
         timew = wadd(timew, wmulquoll(WINT2WV(ts->tv_nsec), TIME_SCALE, 1000000000));
     return timew;
@@ -1584,13 +1628,14 @@ timespec2timew(struct timespec *ts)
 static struct timespec
 timew2timespec(wideval_t timew)
 {
-    VALUE timev, subsecx;
+    VALUE subsecx;
     struct timespec ts;
+    wideval_t timew2;
 
     if (timew_out_of_timet_range(timew))
 	rb_raise(rb_eArgError, "time out of system range");
-    split_second(timew, &timev, &subsecx);
-    ts.tv_sec = NUM2TIMET(timev);
+    split_second(timew, &timew, &subsecx);
+    ts.tv_sec = WV2TIMET(timew2);
     ts.tv_nsec = NUM2LONG(mulquo(subsecx, INT2FIX(1000000000), INT2FIX(TIME_SCALE)));
     return ts;
 }
@@ -4278,7 +4323,7 @@ time_mload(VALUE time, VALUE str)
 	sec = p;
 	usec = s;
         nsec = usec * 1000;
-        timew = wadd(TIMET2WIDEVAL(sec), wmulquoll(WINT2FIXWV(usec), TIME_SCALE, 1000000));
+        timew = wadd(rb_time_magnify(TIMET2WV(sec)), wmulquoll(WINT2FIXWV(usec), TIME_SCALE, 1000000));
     }
     else {
 	p &= ~(1UL<<31);
