@@ -136,6 +136,7 @@ with all sufficient information, see the ChangeLog file.
 
     * new method:
       * Time#to_r
+      * Time#subsec
       * Time#round
 
     * incompatible changes:
@@ -315,8 +316,10 @@ with all sufficient information, see the ChangeLog file.
     * URI.encode_www_form_component
     * URI.decode_www_form_component
   * Obsoleted methods:
-    * URI#escape
-    * URI#unescape
+    * URI.decode
+    * URI.encode
+    * URI.escape
+    * URI.unescape
 
 * etc
   * new methods:
