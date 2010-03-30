@@ -1,3 +1,7 @@
+Tue Mar 30 22:24:19 2010  Tanaka Akira  <akr@fsij.org>
+
+	* time.c: use more polymorphic operations.
+
 Tue Mar 30 22:12:38 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* NEWS: add URI.decode and URI.encode to Obsoleted methods,
