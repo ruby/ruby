@@ -103,8 +103,8 @@ long_mul(long x, long y, long *z)
     else {
 	b = (unsigned long)y;
     }
-    c = a * b;
-    if (c / b == a) {
+    if (a <= ULONG_MAX / b) {
+        c = a * b;
 	if (s < 0) {
 	    if (c <= (unsigned long)LONG_MAX + 1) {
 		*z = -(long)c;
@@ -478,8 +478,8 @@ wi_mul(wideint_t x, wideint_t y, wideint_t *z)
     else {
 	b = (uwideint_t)y;
     }
-    c = a * b;
-    if (c / b == a) {
+    if (a <= UWIDEINT_MAX / b) {
+        c = a * b;
 	if (s < 0) {
 	    if (c <= (uwideint_t)WIDEINT_MAX + 1) {
 		*z = -(wideint_t)c;
