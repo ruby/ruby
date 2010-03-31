@@ -89,6 +89,31 @@ module Psych
       end
     end
 
+    def test_map_takes_block
+      coder = Psych::Coder.new 'foo'
+      tag = coder.tag
+      style = coder.style
+      coder.map { |map| map.add 'foo', 'bar' }
+      assert_equal 'bar', coder['foo']
+      assert_equal tag, coder.tag
+      assert_equal style, coder.style
+    end
+
+    def test_map_with_tag
+      coder = Psych::Coder.new 'foo'
+      coder.map('hello') { |map| map.add 'foo', 'bar' }
+      assert_equal 'bar', coder['foo']
+      assert_equal 'hello', coder.tag
+    end
+
+    def test_map_with_tag_and_style
+      coder = Psych::Coder.new 'foo'
+      coder.map('hello', 'world') { |map| map.add 'foo', 'bar' }
+      assert_equal 'bar', coder['foo']
+      assert_equal 'hello', coder.tag
+      assert_equal 'world', coder.style
+    end
+
     def test_represent_map
       thing = Psych.load(Psych.dump(RepresentWithMap.new))
       assert_equal({ 'a' => 'b' }, thing.map)
