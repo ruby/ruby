@@ -7,7 +7,7 @@ module Psych
   # called, respectively.
   class Coder
     attr_accessor :tag, :style, :implicit
-    attr_reader   :type, :map, :scalar, :seq
+    attr_reader   :type, :scalar, :seq
 
     def initialize tag
       @map        = {}
@@ -17,6 +17,14 @@ module Psych
       @tag        = tag
       @style      = Psych::Nodes::Mapping::BLOCK
       @scalar     = nil
+    end
+
+    # Emit a map.  The coder will be yielded to the block.
+    def map tag = @tag, style = @style
+      @tag   = tag
+      @style = style
+      yield self if block_given?
+      @map
     end
 
     # Emit a scalar with +value+ and +tag+
@@ -53,6 +61,7 @@ module Psych
       @type = :map
       @map[k] = v
     end
+    alias :add :[]=
 
     def [] k
       @type = :map
