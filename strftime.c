@@ -189,8 +189,8 @@ max(int a, int b)
 
 /* strftime --- produce formatted time */
 
-size_t
-rb_strftime(char *s, size_t maxsize, const char *format, const struct vtm *vtm, VALUE timev, int gmt)
+static size_t
+rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, const struct vtm *vtm, VALUE timev, struct timespec *ts, int gmt)
 {
 	char *endp = s + maxsize;
 	char *start = s;
@@ -306,7 +306,7 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct vtm *vtm, 
 		} while (0)
 #define STRFTIME(fmt) \
 		do { \
-			i = rb_strftime(s, endp - s, fmt, vtm, timev, gmt); \
+			i = rb_strftime_with_timespec(s, endp - s, fmt, vtm, timev, ts, gmt); \
 			if (!i) return 0; \
 			if (precision > i) {\
 				memmove(s + precision - i, s, i);\
@@ -459,11 +459,18 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct vtm *vtm, 
 			break;
 
 		case 's':
-                        {
+                        if (ts) {
+                                time_t sec = ts->tv_sec;
+                                if (~(time_t)0 <= 0)
+                                    FMT('0', 1, PRI_TIMET_PREFIX"d", sec);
+                                else
+                                    FMT('0', 1, PRI_TIMET_PREFIX"u", sec);
+                        }
+                        else {
                                 VALUE sec = div(timev, INT2FIX(1));
                                 FMTV('0', 1, "d", sec);
-                                continue;
                         }
+                        continue;
 
 		case 'S':	/* second, 00 - 60 */
 			i = range(0, vtm->sec, 60);
@@ -753,15 +760,30 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct vtm *vtm, 
 			 */
 			w = 9;
 		subsec:
-			{
+                        if (precision <= 0) {
+                            precision = w;
+                        }
+                        NEEDS(precision);
+
+                        if (ts) {
+                                long subsec = ts->tv_nsec;
+                                if (9 < precision) {
+                                        snprintf(s, endp - s, "%09ld", subsec);
+                                        memset(s+9, '0', precision-9);
+                                        s += precision;
+                                }
+                                else {
+                                        int i;
+                                        for (i = 0; i < 9-precision; i++)
+                                                subsec /= 10;
+                                        snprintf(s, endp - s, "%0*ld", precision, subsec);
+                                        s += precision;
+                                }
+                        }
+                        else {
                                 VALUE subsec = mod(timev, INT2FIX(1));
                                 int ww;
                                 long n;
-
-				if (precision <= 0) {
-				    precision = w;
-				}
-				NEEDS(precision);
 
                                 ww = precision;
                                 while (9 <= ww) {
@@ -865,6 +887,18 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct vtm *vtm, 
 		return (s - start);
 	} else
 		return 0;
+}
+
+size_t
+rb_strftime(char *s, size_t maxsize, const char *format, const struct vtm *vtm, VALUE timev, int gmt)
+{
+    return rb_strftime_with_timespec(s, maxsize, format, vtm, timev, NULL, gmt);
+}
+
+size_t
+rb_strftime_timespec(char *s, size_t maxsize, const char *format, const struct vtm *vtm, struct timespec *ts, int gmt)
+{
+    return rb_strftime_with_timespec(s, maxsize, format, vtm, Qnil, ts, gmt);
 }
 
 /* isleap --- is a year a leap year? */
