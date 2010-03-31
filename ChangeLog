@@ -1,3 +1,8 @@
+Wed Mar 31 16:05:13 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/rake/test_{package_task,rules,task_manager}.rb: use
+	  temporary directories.
+
 Wed Mar 31 13:53:13 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/rubygems/gemutilities.rb (setup, teardown):
