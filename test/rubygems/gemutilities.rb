@@ -20,6 +20,7 @@ require 'uri'
 require 'rubygems/package'
 require 'rubygems/test_utilities'
 require 'pp'
+require 'yaml'
 
 begin
   gem 'rdoc'
@@ -136,9 +137,25 @@ class RubyGemTestCase < MiniTest::Unit::TestCase
     Gem.pre_uninstall do |uninstaller|
       @pre_uninstall_hook_arg = uninstaller
     end
+
+    Object.class_eval %q{
+      alias tmp_to_yaml to_yaml
+      def to_yaml( opts = {} )
+        YAML::quick_emit( self, opts ) do |out|
+          out.map( taguri, to_yaml_style ) do |map|
+            to_yaml_properties.each do |m|
+              map.add( m[1..-1], instance_variable_get( m ) )
+            end
+          end
+        end
+      end
+    }
   end
 
   def teardown
+    Object.class_eval %q{
+      alias to_yaml tmp_to_yaml
+    }
     Gem::ConfigMap[:BASERUBY] = @orig_BASERUBY
     Gem::ConfigMap[:arch] = @orig_arch
 

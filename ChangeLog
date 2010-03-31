@@ -1,3 +1,8 @@
+Wed Mar 31 13:53:13 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/rubygems/gemutilities.rb (setup, teardown):
+	  Object#to_yaml must use syck on RubyGem.
+
 Wed Mar 31 06:57:14 2010  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (timew2timespec): fix previous change.
