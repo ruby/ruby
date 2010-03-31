@@ -1,10 +1,29 @@
 require_relative 'helper'
 
+require 'stringio'
+require 'tempfile'
+
 class TestPsych < Psych::TestCase
   def test_dump_stream
     things = [22, "foo \n", {}]
     stream = Psych.dump_stream(*things)
     assert_equal things, Psych.load_stream(stream)
+  end
+
+  def test_dump_file
+    hash = {'hello' => 'TGIF!'}
+    Tempfile.open('fun.yml') do |io|
+      assert_equal io, Psych.dump(hash, io)
+      io.rewind
+      assert_equal Psych.dump(hash), io.read
+    end
+  end
+
+  def test_dump_io
+    hash = {'hello' => 'TGIF!'}
+    stringio = StringIO.new ''
+    assert_equal stringio, Psych.dump(hash, stringio)
+    assert_equal Psych.dump(hash), stringio.string
   end
 
   def test_simple

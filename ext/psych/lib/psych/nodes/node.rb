@@ -30,10 +30,12 @@ module Psych
       # Convert this node to YAML.
       #
       # See also Psych::Visitors::Emitter
-      def to_yaml
-        io = StringIO.new
-        Visitors::Emitter.new(io).accept self
-        io.string
+      def to_yaml io = nil
+        real_io = io || StringIO.new
+
+        Visitors::Emitter.new(real_io).accept self
+        return real_io.string unless io
+        io
       end
     end
   end
