@@ -1,4 +1,5 @@
 require 'test/unit'
+require 'tmpdir'
 require 'fileutils'
 require 'rake'
 require_relative 'filecreation'
@@ -16,12 +17,18 @@ class Rake::TestRules < Test::Unit::TestCase
   DOTFOOFILE = "testdata/.foo"
 
   def setup
+    @oldpwd = Dir.pwd
+    @tmpdir = Dir.mktmpdir("rake")
+    Dir.chdir(@tmpdir)
+    Dir.mkdir("testdata")
     Task.clear
     @runs = []
   end
 
   def teardown
-    FileList['testdata/*'].uniq.each do |f| rm_r(f, :verbose=>false) end
+    FileList['testdata/{*,.[^.]*,}'].uniq.each do |f| rm_r(f, :verbose=>false) end
+    Dir.chdir(@oldpwd)
+    Dir.rmdir(@tmpdir)
   end
 
   def test_multiple_rules1

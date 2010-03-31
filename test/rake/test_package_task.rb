@@ -1,3 +1,5 @@
+require 'tmpdir'
+require 'fileutils'
 require 'test/unit'
 require 'rake/packagetask'
 
@@ -5,6 +7,11 @@ class Rake::TestPackageTask < Test::Unit::TestCase
   include Rake
 
   def test_create
+    pwd = Dir.pwd
+    tmpdir = Dir.mktmpdir("rake")
+    Dir.chdir(tmpdir)
+    Dir.mkdir("bin")
+    open("bin/rake", "wb") {}
     pkg = Rake::PackageTask.new("pkgr", "1.2.3") { |p|
       p.package_files << "install.rb"
       p.package_files.include(
@@ -35,6 +42,9 @@ class Rake::TestPackageTask < Test::Unit::TestCase
     assert Task["pkg/pkgr-1.2.3"]
     assert Task[:clobber_package]
     assert Task[:repackage]
+  ensure
+    Dir.chdir(pwd)
+    FileUtils.rm_rf(tmpdir)
   end
 
   def test_missing_version

@@ -1,4 +1,6 @@
 require 'test/unit'
+require 'fileutils'
+require 'tmpdir'
 require 'rake'
 
 class Rake::TestTaskManager < Test::Unit::TestCase
@@ -7,7 +9,16 @@ class Rake::TestTaskManager < Test::Unit::TestCase
   end
 
   def setup
+    @oldpwd = Dir.pwd
+    @tmpdir = Dir.mktmpdir("rake")
+    Dir.chdir(@tmpdir)
     @tm = TaskManager.new
+    open("README", "wb") {}
+  end
+
+  def teardown
+    Dir.chdir(@oldpwd)
+    FileUtils.rm_rf(@tmpdir)
   end
 
   def test_create_task_manager
