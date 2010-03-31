@@ -78,6 +78,50 @@ sub(VALUE x, VALUE y)
     return rb_funcall(x, '-', 1, y);
 }
 
+#if !(HAVE_LONG_LONG && SIZEOF_LONG * 2 <= SIZEOF_LONG_LONG)
+static int
+long_mul(long x, long y, long *z)
+{
+    unsigned long a, b, c;
+    int s;
+    if (x == 0 || y == 0) {
+	*z = 0;
+	return 1;
+    }
+    if (x < 0) {
+	s = -1;
+	a = (unsigned long)-x;
+    }
+    else {
+	s = 1;
+	a = (unsigned long)x;
+    }
+    if (y < 0) {
+        s = -s;
+	b = (unsigned long)-y;
+    }
+    else {
+	b = (unsigned long)y;
+    }
+    c = a * b;
+    if (c / b == a) {
+	if (s < 0) {
+	    if (c <= (unsigned long)LONG_MAX + 1) {
+		*z = -(long)c;
+		return 1;
+	    }
+	}
+	else {
+	    if (c <= (unsigned long)LONG_MAX) {
+		*z = (long)c;
+		return 1;
+	    }
+	}
+    }
+    return 0;
+}
+#endif
+
 static VALUE
 mul(VALUE x, VALUE y)
 {
@@ -88,14 +132,9 @@ mul(VALUE x, VALUE y)
             return LONG2FIX(ll);
         return LL2NUM(ll);
 #else
-        long a, b, c;
-        a = FIX2LONG(x);
-        if (a == 0)
-            return x;
-        b = FIX2LONG(y);
-        c = a * b;
-        if (c / a == b)
-            return LONG2NUM(c);
+	long z;
+	if (long_mul(FIX2LONG(x), FIX2LONG(y), &z))
+	    return LONG2NUM(z);
 #endif
     }
     if (TYPE(x) == T_BIGNUM)
@@ -171,13 +210,14 @@ divmodv(VALUE n, VALUE d, VALUE *q, VALUE *r)
     typedef uint64_t WIDEVALUE;
     typedef int64_t SIGNED_WIDEVALUE;
 #   define WIDEVALUE_IS_WIDER 1
+#   define UWIDEINT_MAX UINT64_MAX
+#   define WIDEINT_MAX INT64_MAX
+#   define WIDEINT_MIN INT64_MIN
 #   define FIXWINT_P(tv) ((tv) & 1)
 #   define FIXWVtoINT64(tv) RSHIFT((SIGNED_WIDEVALUE)(tv), 1)
 #   define INT64toFIXWV(wi) ((WIDEVALUE)((SIGNED_WIDEVALUE)(wi) << 1 | FIXNUM_FLAG))
 #   define FIXWV_MAX (((int64_t)1 << 62) - 1)
 #   define FIXWV_MIN (-((int64_t)1 << 62))
-#   define POSFIXWVABLE(wi) ((wi) < FIXWV_MAX+1)
-#   define NEGFIXWVABLE(wi) ((wi) >= FIXWV_MIN)
 #   define FIXWVABLE(wi) (POSFIXWVABLE(wi) && NEGFIXWVABLE(wi))
 #   define WINT2FIXWV(i) WIDEVAL_WRAP(INT64toFIXWV(i))
 #   define FIXWV2WINT(w) FIXWVtoINT64(WIDEVAL_GET(w))
@@ -187,15 +227,23 @@ divmodv(VALUE n, VALUE d, VALUE *q, VALUE *r)
     typedef VALUE WIDEVALUE;
     typedef SIGNED_VALUE SIGNED_WIDEVALUE;
 #   define WIDEVALUE_IS_WIDER 0
+#   define UWIDEINT_MAX ULONG_MAX
+#   define WIDEINT_MAX LONG_MAX
+#   define WIDEINT_MIN LONG_MIN
 #   define FIXWINT_P(v) FIXNUM_P(v)
+#   define FIXWV_MAX FIXNUM_MAX
+#   define FIXWV_MIN FIXNUM_MIN
 #   define FIXWVABLE(i) FIXABLE(i)
 #   define WINT2FIXWV(i) WIDEVAL_WRAP(LONG2FIX(i))
 #   define FIXWV2WINT(w) FIX2LONG(WIDEVAL_GET(w))
 #endif
 
+#define POSFIXWVABLE(wi) ((wi) < FIXWV_MAX+1)
+#define NEGFIXWVABLE(wi) ((wi) >= FIXWV_MIN)
 #define FIXWV_P(w) FIXWINT_P(WIDEVAL_GET(w))
 
 /* #define STRUCT_WIDEVAL */
+#define STRUCT_WIDEVAL
 #ifdef STRUCT_WIDEVAL
     /* for type checking */
     typedef struct {
@@ -406,20 +454,57 @@ wsub(wideval_t wx, wideval_t wy)
     return v2w(rb_funcall(x, '-', 1, w2v(wy)));
 }
 
+static int
+wi_mul(wideint_t x, wideint_t y, wideint_t *z)
+{
+    uwideint_t a, b, c;
+    int s;
+    if (x == 0 || y == 0) {
+	*z = 0;
+	return 1;
+    }
+    if (x < 0) {
+	s = -1;
+	a = (uwideint_t)-x;
+    }
+    else {
+	s = 1;
+	a = (uwideint_t)x;
+    }
+    if (y < 0) {
+        s = -s;
+	b = (uwideint_t)-y;
+    }
+    else {
+	b = (uwideint_t)y;
+    }
+    c = a * b;
+    if (c / b == a) {
+	if (s < 0) {
+	    if (c <= (uwideint_t)WIDEINT_MAX + 1) {
+		*z = -(wideint_t)c;
+		return 1;
+	    }
+	}
+	else {
+	    if (c <= (uwideint_t)WIDEINT_MAX) {
+		*z = (wideint_t)c;
+		return 1;
+	    }
+	}
+    }
+    return 0;
+}
+
 static wideval_t
 wmul(wideval_t wx, wideval_t wy)
 {
     VALUE x, z;
 #if WIDEVALUE_IS_WIDER
     if (FIXWV_P(wx) && FIXWV_P(wy)) {
-        wideint_t a, b, c;
-        a = FIXWV2WINT(wx);
-        if (a == 0) return wx;
-        b = FIXWV2WINT(wy);
-        c = a * b;
-        if (c / a == b) {
-            return WINT2WV(c);
-        }
+	wideint_t z;
+	if (wi_mul(FIXWV2WINT(wx), FIXWV2WINT(wy), &z))
+	    return WINT2WV(z);
     }
 #endif
     x = w2v(wx);
@@ -643,18 +728,9 @@ static wideval_t
 rb_time_magnify(wideval_t w)
 {
     if (FIXWV_P(w)) {
-        wideint_t a, b, c;
-        a = FIXWV2WINT(w);
-        if (a == 0) {
-            return WINT2FIXWV(0);
-	}
-        b = TIME_SCALE;
-        c = a * b;
-        if (c / b == a) {
-            if (FIXWVABLE(c)) {
-                return WINT2FIXWV(c);
-            }
-        }
+	wideint_t z;
+	if (wi_mul(FIXWV2WINT(w), TIME_SCALE, &z))
+	    return WINT2WV(z);
     }
     return wmul(w, WINT2FIXWV(TIME_SCALE));
 }
