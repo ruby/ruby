@@ -343,7 +343,7 @@ rb_big_abs_find_minbit(VALUE big)
         return Qnil;
     res = mul(LONG2NUM(i), INT2FIX(SIZEOF_BDIGITS * CHAR_BIT));
     d = ds[i];
-    res = add(res, LONG2FIX(bdigit_find_maxbit(d)));
+    res = add(res, LONG2FIX(bdigit_find_maxbit(d & -d)));
     return res;
 }
 

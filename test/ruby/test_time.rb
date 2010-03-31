@@ -181,6 +181,8 @@ class TestTime < Test::Unit::TestCase
     assert_equal(-146138510344, t.year)
     t = Time.at(-0x5000_0000_0000_0001)
     assert_equal(-182673138422, t.year)
+    t = Time.at(-0x6000_0000_0000_0000)
+    assert_equal(-219207766501, t.year)
   end
 
   def test_at2
