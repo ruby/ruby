@@ -1,3 +1,10 @@
+Wed Mar 31 21:30:38 2010  Tanaka Akira  <akr@fsij.org>
+
+	* time.c: less bignum allocations.
+
+	* strftime.c (rb_strftime_timespec): defined to avoid rational for
+	  nano second resolution time.
+
 Wed Mar 31 16:05:13 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/rake/test_{package_task,rules,task_manager}.rb: use

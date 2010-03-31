@@ -31,134 +31,6 @@ static ID id_eq, id_ne, id_quo, id_div, id_cmp, id_lshift;
 #define NMOD(x,y) ((y)-(-((x)+1)%(y))-1)
 #define DIV(n,d) ((n)<0 ? NDIV((n),(d)) : (n)/(d))
 
-#if SIZEOF_LONG == 8
-# define INT64toNUM(x) LONG2NUM(x)
-# define UINT64toNUM(x) ULONG2NUM(x)
-#elif defined(HAVE_LONG_LONG) && SIZEOF_LONG_LONG == 8
-# define INT64toNUM(x) LL2NUM(x)
-# define UINT64toNUM(x) ULL2NUM(x)
-#endif
-
-#if defined(HAVE_UINT64_T) && SIZEOF_LONG*2 <= SIZEOF_UINT64_T
-    typedef uint64_t uwideint_t;
-    typedef int64_t wideint_t;
-    typedef uint64_t WIDEVALUE;
-    typedef int64_t SIGNED_WIDEVALUE;
-#   define WIDEVALUE_IS_WIDER 1
-#   define FIXWINT_P(tv) ((tv) & 1)
-#   define FIXWVtoINT64(tv) RSHIFT((SIGNED_WIDEVALUE)(tv), 1)
-#   define INT64toFIXWV(wi) ((WIDEVALUE)((SIGNED_WIDEVALUE)(wi) << 1 | FIXNUM_FLAG))
-#   define FIXWV_MAX (((int64_t)1 << 62) - 1)
-#   define FIXWV_MIN (-((int64_t)1 << 62))
-#   define POSFIXWVABLE(wi) ((wi) < FIXWV_MAX+1)
-#   define NEGFIXWVABLE(wi) ((wi) >= FIXWV_MIN)
-#   define FIXWVABLE(wi) (POSFIXWVABLE(wi) && NEGFIXWVABLE(wi))
-#   define WINT2FIXWV(i) WIDEVAL_WRAP(INT64toFIXWV(i))
-#   define FIXWV2WINT(w) FIXWVtoINT64(WIDEVAL_GET(w))
-#else
-    typedef unsigned long uwideint_t;
-    typedef long wideint_t;
-    typedef VALUE WIDEVALUE;
-    typedef SIGNED_VALUE SIGNED_WIDEVALUE;
-#   define WIDEVALUE_IS_WIDER 0
-#   define FIXWINT_P(v) FIXNUM_P(v)
-#   define FIXWVABLE(i) FIXABLE(i)
-#   define WINT2FIXWV(i) WIDEVAL_WRAP(LONG2FIX(i))
-#   define FIXWV2WINT(w) FIX2LONG(WIDEVAL_GET(w))
-#endif
-
-#define FIXWV_P(w) FIXWINT_P(WIDEVAL_GET(w))
-
-#define STRUCT_WIDEVAL
-/* #define STRUCT_WIDEVAL */
-#ifdef STRUCT_WIDEVAL
-    /* for type checking */
-    typedef struct {
-        WIDEVALUE value;
-    } wideval_t;
-    static inline wideval_t WIDEVAL_WRAP(WIDEVALUE v) { wideval_t w = { v }; return w; }
-#   define WIDEVAL_GET(w) ((w).value)
-#else
-    typedef WIDEVALUE wideval_t;
-#   define WIDEVAL_WRAP(v) (v)
-#   define WIDEVAL_GET(w) (w)
-#endif
-
-#if WIDEVALUE_IS_WIDER
-    static inline wideval_t
-    wint2wv(wideint_t wi)
-    {
-        if (FIXWVABLE(wi))
-            return WINT2FIXWV(wi);
-        else
-            return WIDEVAL_WRAP(INT64toNUM(wi));
-    }
-#   define WINT2WV(wi) wint2wv(wi)
-#else
-#   define WINT2WV(wi) WIDEVAL_WRAP(LONG2NUM(wi))
-#endif
-
-static inline VALUE
-w2v(wideval_t w)
-{
-#if WIDEVALUE_IS_WIDER
-    if (FIXWV_P(w))
-        return INT64toNUM(FIXWV2WINT(w));
-    return (VALUE)WIDEVAL_GET(w);
-#else
-    return WIDEVAL_GET(w);
-#endif
-}
-
-#if WIDEVALUE_IS_WIDER
-#   if SIZEOF_UINT64_T % SIZEOF_BDIGITS != 0
-#       error SIZEOF_UINT64 is not multiple of SIZEOF_BDIGITS
-#   endif
-static wideval_t
-xv2w_bignum(VALUE xv)
-{
-    long len = RBIGNUM_LEN(xv);
-    BDIGIT *ds;
-    wideval_t w;
-    ds = RBIGNUM_DIGITS(xv);
-    w = WIDEVAL_WRAP(xv);
-    if (RBIGNUM_POSITIVE_P(xv)) {
-        if (ds[len-1] < ((BDIGIT)1 << (sizeof(BDIGIT)*CHAR_BIT-2))) {
-            wideint_t i = 0;
-            while (len)
-                i = (i << sizeof(BDIGIT)*CHAR_BIT) | ds[--len];
-            if (FIXWVABLE(i))
-                w = WINT2FIXWV(i);
-        }
-    }
-    else {
-        if (ds[len-1] < ((BDIGIT)1 << (sizeof(BDIGIT)*CHAR_BIT-2))) {
-            wideint_t i = 0;
-            while (len)
-                i = (i << sizeof(BDIGIT)*CHAR_BIT) | ds[--len];
-            i = -i;
-            w = WINT2FIXWV(i);
-        }
-    }
-    return w;
-}
-#endif
-
-static inline wideval_t
-v2w(VALUE xv)
-{
-#if WIDEVALUE_IS_WIDER
-    if (FIXNUM_P(xv)) {
-        return WIDEVAL_WRAP((WIDEVALUE)(SIGNED_WIDEVALUE)(long)xv);
-    }
-    else if (TYPE(xv) == T_BIGNUM &&
-        RBIGNUM_LEN(xv) * sizeof(BDIGIT) <= sizeof(WIDEVALUE)) {
-        return xv2w_bignum(xv);
-    }
-#endif
-    return WIDEVAL_WRAP(xv);
-}
-
 static int
 eq(VALUE x, VALUE y)
 {
@@ -285,6 +157,192 @@ divmodv(VALUE n, VALUE d, VALUE *q, VALUE *r)
     *r = rb_ary_entry(ary, 1);
 }
 
+#if SIZEOF_LONG == 8
+# define INT64toNUM(x) LONG2NUM(x)
+# define UINT64toNUM(x) ULONG2NUM(x)
+#elif defined(HAVE_LONG_LONG) && SIZEOF_LONG_LONG == 8
+# define INT64toNUM(x) LL2NUM(x)
+# define UINT64toNUM(x) ULL2NUM(x)
+#endif
+
+#if defined(HAVE_UINT64_T) && SIZEOF_LONG*2 <= SIZEOF_UINT64_T
+    typedef uint64_t uwideint_t;
+    typedef int64_t wideint_t;
+    typedef uint64_t WIDEVALUE;
+    typedef int64_t SIGNED_WIDEVALUE;
+#   define WIDEVALUE_IS_WIDER 1
+#   define FIXWINT_P(tv) ((tv) & 1)
+#   define FIXWVtoINT64(tv) RSHIFT((SIGNED_WIDEVALUE)(tv), 1)
+#   define INT64toFIXWV(wi) ((WIDEVALUE)((SIGNED_WIDEVALUE)(wi) << 1 | FIXNUM_FLAG))
+#   define FIXWV_MAX (((int64_t)1 << 62) - 1)
+#   define FIXWV_MIN (-((int64_t)1 << 62))
+#   define POSFIXWVABLE(wi) ((wi) < FIXWV_MAX+1)
+#   define NEGFIXWVABLE(wi) ((wi) >= FIXWV_MIN)
+#   define FIXWVABLE(wi) (POSFIXWVABLE(wi) && NEGFIXWVABLE(wi))
+#   define WINT2FIXWV(i) WIDEVAL_WRAP(INT64toFIXWV(i))
+#   define FIXWV2WINT(w) FIXWVtoINT64(WIDEVAL_GET(w))
+#else
+    typedef unsigned long uwideint_t;
+    typedef long wideint_t;
+    typedef VALUE WIDEVALUE;
+    typedef SIGNED_VALUE SIGNED_WIDEVALUE;
+#   define WIDEVALUE_IS_WIDER 0
+#   define FIXWINT_P(v) FIXNUM_P(v)
+#   define FIXWVABLE(i) FIXABLE(i)
+#   define WINT2FIXWV(i) WIDEVAL_WRAP(LONG2FIX(i))
+#   define FIXWV2WINT(w) FIX2LONG(WIDEVAL_GET(w))
+#endif
+
+#define FIXWV_P(w) FIXWINT_P(WIDEVAL_GET(w))
+
+/* #define STRUCT_WIDEVAL */
+#ifdef STRUCT_WIDEVAL
+    /* for type checking */
+    typedef struct {
+        WIDEVALUE value;
+    } wideval_t;
+    static inline wideval_t WIDEVAL_WRAP(WIDEVALUE v) { wideval_t w = { v }; return w; }
+#   define WIDEVAL_GET(w) ((w).value)
+#else
+    typedef WIDEVALUE wideval_t;
+#   define WIDEVAL_WRAP(v) (v)
+#   define WIDEVAL_GET(w) (w)
+#endif
+
+#if WIDEVALUE_IS_WIDER
+    static inline wideval_t
+    wint2wv(wideint_t wi)
+    {
+        if (FIXWVABLE(wi))
+            return WINT2FIXWV(wi);
+        else
+            return WIDEVAL_WRAP(INT64toNUM(wi));
+    }
+#   define WINT2WV(wi) wint2wv(wi)
+#else
+#   define WINT2WV(wi) WIDEVAL_WRAP(LONG2NUM(wi))
+#endif
+
+static inline VALUE
+w2v(wideval_t w)
+{
+#if WIDEVALUE_IS_WIDER
+    if (FIXWV_P(w))
+        return INT64toNUM(FIXWV2WINT(w));
+    return (VALUE)WIDEVAL_GET(w);
+#else
+    return WIDEVAL_GET(w);
+#endif
+}
+
+#if WIDEVALUE_IS_WIDER
+static int
+bdigit_find_maxbit(BDIGIT d)
+{
+    int res = 0;
+    if (d & ~(BDIGIT)0xffff) {
+        d >>= 16;
+        res += 16;
+    }
+    if (d & ~(BDIGIT)0xff) {
+        d >>= 8;
+        res += 8;
+    }
+    if (d & ~(BDIGIT)0xf) {
+        d >>= 4;
+        res += 4;
+    }
+    if (d & ~(BDIGIT)0x3) {
+        d >>= 2;
+        res += 2;
+    }
+    if (d & ~(BDIGIT)0x1) {
+        d >>= 1;
+        res += 1;
+    }
+    return res;
+}
+
+static VALUE
+rb_big_abs_find_maxbit(VALUE big)
+{
+    BDIGIT *ds = RBIGNUM_DIGITS(big);
+    BDIGIT d;
+    long len = RBIGNUM_LEN(big);
+    VALUE res;
+    while (0 < len && ds[len-1] == 0)
+        len--;
+    if (len == 0)
+        return Qnil;
+    res = mul(LONG2NUM(len-1), INT2FIX(SIZEOF_BDIGITS * CHAR_BIT));
+    d = ds[len-1];
+    res = add(res, LONG2FIX(bdigit_find_maxbit(d)));
+    return res;
+}
+
+static VALUE
+rb_big_abs_find_minbit(VALUE big)
+{
+    BDIGIT *ds = RBIGNUM_DIGITS(big);
+    BDIGIT d;
+    long len = RBIGNUM_LEN(big);
+    long i;
+    VALUE res;
+    for (i = 0; i < len; i++)
+        if (ds[i])
+            break;
+    if (i == len)
+        return Qnil;
+    res = mul(LONG2NUM(i), INT2FIX(SIZEOF_BDIGITS * CHAR_BIT));
+    d = ds[i];
+    res = add(res, LONG2FIX(bdigit_find_maxbit(d)));
+    return res;
+}
+
+static wideval_t
+v2w_bignum(VALUE v)
+{
+    long len = RBIGNUM_LEN(v);
+    BDIGIT *ds;
+    wideval_t w;
+    VALUE maxbit;
+    ds = RBIGNUM_DIGITS(v);
+    w = WIDEVAL_WRAP(v);
+    maxbit = rb_big_abs_find_maxbit(v);
+    if (NIL_P(maxbit))
+        return WINT2FIXWV(0);
+    if (lt(maxbit, INT2FIX(sizeof(wideint_t) * CHAR_BIT - 2)) ||
+        (eq(maxbit, INT2FIX(sizeof(wideint_t) * CHAR_BIT - 2)) &&
+         RBIGNUM_NEGATIVE_P(v) &&
+         eq(rb_big_abs_find_minbit(v), INT2FIX(sizeof(wideint_t) * CHAR_BIT - 2)))) {
+        wideint_t i;
+        i = 0;
+        while (len)
+            i = (i << sizeof(BDIGIT)*CHAR_BIT) | ds[--len];
+        if (RBIGNUM_NEGATIVE_P(v)) {
+            i = -i;
+        }
+        w = WINT2FIXWV(i);
+    }
+    return w;
+}
+#endif
+
+static inline wideval_t
+v2w(VALUE v)
+{
+#if WIDEVALUE_IS_WIDER
+    if (FIXNUM_P(v)) {
+        return WIDEVAL_WRAP((WIDEVALUE)(SIGNED_WIDEVALUE)(long)v);
+    }
+    else if (TYPE(v) == T_BIGNUM &&
+        RBIGNUM_LEN(v) * sizeof(BDIGIT) <= sizeof(WIDEVALUE)) {
+        return v2w_bignum(v);
+    }
+#endif
+    return WIDEVAL_WRAP(v);
+}
+
 static inline int
 weq(wideval_t wx, wideval_t wy)
 {
@@ -351,7 +409,7 @@ wsub(wideval_t wx, wideval_t wy)
 static wideval_t
 wmul(wideval_t wx, wideval_t wy)
 {
-    VALUE x;
+    VALUE x, z;
 #if WIDEVALUE_IS_WIDER
     if (FIXWV_P(wx) && FIXWV_P(wy)) {
         wideint_t a, b, c;
@@ -366,7 +424,11 @@ wmul(wideval_t wx, wideval_t wy)
 #endif
     x = w2v(wx);
     if (TYPE(x) == T_BIGNUM) return v2w(rb_big_mul(x, w2v(wy)));
-    return v2w(rb_funcall(x, '*', 1, w2v(wy)));
+    z = rb_funcall(x, '*', 1, w2v(wy));
+    if (TYPE(z) == T_RATIONAL && RRATIONAL(z)->den == INT2FIX(1)) {
+        z = RRATIONAL(z)->num;
+    }
+    return v2w(z);
 }
 
 static int
@@ -486,6 +548,33 @@ wdivmod(wideval_t wn, wideval_t wd, wideval_t *wq, wideval_t *wr)
     }
     *wq = v2w(rb_ary_entry(ary, 0));
     *wr = v2w(rb_ary_entry(ary, 1));
+}
+
+static void
+wmuldivmod(wideval_t wx, wideval_t wy, wideval_t wz, wideval_t *wq, wideval_t *wr)
+{
+    if (WIDEVAL_GET(wy) == WIDEVAL_GET(wz)) {
+        *wq = wx;
+        *wr = WINT2FIXWV(0);
+        return;
+    }
+    wdivmod(wmul(wx,wy), wz, wq, wr);
+}
+
+static wideval_t
+wdiv(wideval_t wx, wideval_t wy)
+{
+    wideval_t q, r;
+    wdivmod(wx, wy, &q, &r);
+    return q;
+}
+
+static wideval_t
+wmod(wideval_t wx, wideval_t wy)
+{
+    wideval_t q, r;
+    wdivmod(wx, wy, &q, &r);
+    return r;
 }
 
 static VALUE
@@ -1086,7 +1175,7 @@ init_leap_second_info()
 
         timew = timegmw_noleapsecond(&vtm);
 
-        number_of_leap_seconds_known = NUM2INT(sub(TIMET2NUM(known_leap_seconds_limit), w2v(rb_time_unmagnify(timew))));
+        number_of_leap_seconds_known = NUM2INT(w2v(wsub(TIMET2WV(known_leap_seconds_limit), rb_time_unmagnify(timew))));
     }
 }
 
@@ -1633,10 +1722,28 @@ timew2timespec(wideval_t timew)
     wideval_t timew2;
 
     if (timew_out_of_timet_range(timew))
-	rb_raise(rb_eArgError, "time out of system range");
+        rb_raise(rb_eArgError, "time out of system range");
     split_second(timew, &timew2, &subsecx);
     ts.tv_sec = WV2TIMET(timew2);
     ts.tv_nsec = NUM2LONG(mulquo(subsecx, INT2FIX(1000000000), INT2FIX(TIME_SCALE)));
+    return ts;
+}
+
+static struct timespec *
+timew2timespec_exact(wideval_t timew, struct timespec *ts)
+{
+    VALUE subsecx;
+    wideval_t timew2;
+    VALUE nsecv;
+
+    if (timew_out_of_timet_range(timew))
+        return NULL;
+    split_second(timew, &timew2, &subsecx);
+    ts->tv_sec = WV2TIMET(timew2);
+    nsecv = mulquo(subsecx, INT2FIX(1000000000), INT2FIX(TIME_SCALE));
+    if (!FIXNUM_P(nsecv))
+        return NULL;
+    ts->tv_nsec = NUM2LONG(nsecv);
     return ts;
 }
 
@@ -2862,7 +2969,7 @@ time_to_i(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    return div(w2v(tobj->timew), INT2FIX(TIME_SCALE));
+    return w2v(wdiv(tobj->timew, WINT2FIXWV(TIME_SCALE)));
 }
 
 /*
@@ -2934,9 +3041,13 @@ static VALUE
 time_usec(VALUE time)
 {
     struct time_object *tobj;
+    wideval_t w, q, r;
 
     GetTimeval(time, tobj);
-    return rb_to_int(mulquo(mod(w2v(tobj->timew), INT2FIX(TIME_SCALE)), INT2FIX(1000000), INT2FIX(TIME_SCALE)));
+
+    w = wmod(tobj->timew, WINT2WV(TIME_SCALE));
+    wmuldivmod(w, WINT2FIXWV(1000000), WINT2FIXWV(TIME_SCALE), &q, &r);
+    return rb_to_int(w2v(q));
 }
 
 /*
@@ -2962,7 +3073,7 @@ time_nsec(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    return rb_to_int(mulquo(mod(w2v(tobj->timew), INT2FIX(TIME_SCALE)), INT2FIX(1000000000), INT2FIX(TIME_SCALE)));
+    return rb_to_int(w2v(wmulquoll(wmod(tobj->timew, WINT2WV(TIME_SCALE)), 1000000000, TIME_SCALE)));
 }
 
 /*
@@ -3983,12 +4094,20 @@ rb_strftime(char *s, size_t maxsize, const char *format,
             const struct vtm *vtm, VALUE timev,
             int gmt);
 
+size_t
+rb_strftime_timespec(char *s, size_t maxsize, const char *format, const struct vtm *vtm, struct timespec *ts, int gmt);
+
 #define SMALLBUF 100
 static size_t
 rb_strftime_alloc(char **buf, const char *format,
-                  struct vtm *vtm, VALUE timev, int gmt)
+                  struct vtm *vtm, wideval_t timew, int gmt)
 {
     size_t size, len, flen;
+    VALUE timev = Qnil;
+    struct timespec ts;
+
+    if (!timew2timespec_exact(timew, &ts))
+        timev = w2v(rb_time_unmagnify(timew));
 
     (*buf)[0] = '\0';
     flen = strlen(format);
@@ -3996,12 +4115,18 @@ rb_strftime_alloc(char **buf, const char *format,
 	return 0;
     }
     errno = 0;
-    len = rb_strftime(*buf, SMALLBUF, format, vtm, timev, gmt);
+    if (timev == Qnil)
+        len = rb_strftime_timespec(*buf, SMALLBUF, format, vtm, &ts, gmt);
+    else
+        len = rb_strftime(*buf, SMALLBUF, format, vtm, timev, gmt);
     if (len != 0 || (**buf == '\0' && errno != ERANGE)) return len;
     for (size=1024; ; size*=2) {
 	*buf = xmalloc(size);
 	(*buf)[0] = '\0';
-	len = rb_strftime(*buf, size, format, vtm, timev, gmt);
+        if (timev == Qnil)
+            len = rb_strftime_timespec(*buf, size, format, vtm, &ts, gmt);
+        else
+            len = rb_strftime(*buf, size, format, vtm, timev, gmt);
 	/*
 	 * buflen can be zero EITHER because there's not enough
 	 * room in the string, or because the control command
@@ -4025,7 +4150,7 @@ strftimev(const char *fmt, VALUE time)
 
     GetTimeval(time, tobj);
     MAKE_TM(time, tobj);
-    len = rb_strftime_alloc(&buf, fmt, &tobj->vtm, w2v(rb_time_unmagnify(tobj->timew)), TIME_UTC_P(tobj));
+    len = rb_strftime_alloc(&buf, fmt, &tobj->vtm, tobj->timew, TIME_UTC_P(tobj));
     str = rb_str_new(buf, len);
     if (buf != buffer) xfree(buf);
     return str;
@@ -4123,7 +4248,7 @@ time_strftime(VALUE time, VALUE format)
 
 	str = rb_str_new(0, 0);
 	while (p < pe) {
-	    len = rb_strftime_alloc(&buf, p, &tobj->vtm, w2v(rb_time_unmagnify(tobj->timew)), TIME_UTC_P(tobj));
+	    len = rb_strftime_alloc(&buf, p, &tobj->vtm, tobj->timew, TIME_UTC_P(tobj));
 	    rb_str_cat(str, buf, len);
 	    p += strlen(p);
 	    if (buf != buffer) {
@@ -4137,7 +4262,7 @@ time_strftime(VALUE time, VALUE format)
     }
     else {
 	len = rb_strftime_alloc(&buf, RSTRING_PTR(format),
-				&tobj->vtm, w2v(rb_time_unmagnify(tobj->timew)), TIME_UTC_P(tobj));
+				&tobj->vtm, tobj->timew, TIME_UTC_P(tobj));
     }
     str = rb_str_new(buf, len);
     if (buf != buffer) xfree(buf);
