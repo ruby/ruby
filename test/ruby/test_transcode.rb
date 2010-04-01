@@ -1357,6 +1357,24 @@ class TestTranscode < Test::Unit::TestCase
                  "\xA1\xA1".encode("ISO-2022-JP", "EUC-JP"))
   end
 
+  def test_cp50221
+    assert_equal("!", "\e(B\x21".encode("utf-8", "cp50221"))
+    assert_equal("!", "\e(J\x21".encode("utf-8", "cp50221"))
+    assert_equal("\uFF71",     "\xB1".encode("utf-8", "cp50221"))
+    assert_equal("\uFF71", "\e(B\xB1".encode("utf-8", "cp50221"))
+    assert_equal("\uFF71", "\e(J\xB1".encode("utf-8", "cp50221"))
+    assert_equal("\uFF71", "\e(I\xB1".encode("utf-8", "cp50221"))
+    assert_equal("\uFF71", "\e(I\x31".encode("utf-8", "cp50221"))
+    assert_equal("\uFF71", "\x0E\xB1".encode("utf-8", "cp50221"))
+    assert_equal("\u3000", "\e$@\x21\x21".encode("utf-8", "cp50221"))
+    assert_equal("\u3000", "\e$B\x21\x21".encode("utf-8", "cp50221"))
+    assert_equal("\u2460", "\e$B\x2D\x21".encode("utf-8", "cp50221"))
+    assert_equal("\u7e8a", "\e$B\x79\x21".encode("utf-8", "cp50221"))
+    assert_equal("\u5fde", "\e$B\x7A\x21".encode("utf-8", "cp50221"))
+    assert_equal("\u72be", "\e$B\x7B\x21".encode("utf-8", "cp50221"))
+    assert_equal("\u91d7", "\e$B\x7C\x21".encode("utf-8", "cp50221"))
+  end
+
   def test_iso_2022_jp_1
     # check_both_ways("\u9299", "\x1b$(Dd!\x1b(B", "iso-2022-jp-1") # JIS X 0212 区68 点01 銙
   end
