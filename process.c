@@ -2646,13 +2646,13 @@ rb_f_fork(VALUE obj)
 
 /*
  *  call-seq:
- *     Process.exit!(fixnum=-1)
+ *     Process.exit!(status=false)
  *
  *  Exits the process immediately. No exit handlers are
- *  run. <em>fixnum</em> is returned to the underlying system as the
+ *  run. <em>status</em> is returned to the underlying system as the
  *  exit status.
  *
- *     Process.exit!(0)
+ *     Process.exit!(true)
  */
 
 static VALUE
@@ -2700,14 +2700,17 @@ rb_exit(int status)
 
 /*
  *  call-seq:
- *     exit(integer=0)
- *     Kernel::exit(integer=0)
- *     Process::exit(integer=0)
+ *     exit(status=true)
+ *     Kernel::exit(status=true)
+ *     Process::exit(status=true)
  *
  *  Initiates the termination of the Ruby script by raising the
  *  <code>SystemExit</code> exception. This exception may be caught. The
  *  optional parameter is used to return a status code to the invoking
  *  environment.
+ *  +true+ and +FALSE+ of _status_ means success and failure
+ *  respectively.  The interpretation of other integer values are
+ *  system dependent.
  *
  *     begin
  *       exit
@@ -2771,11 +2774,11 @@ rb_f_exit(int argc, VALUE *argv)
 /*
  *  call-seq:
  *     abort
- *     Kernel::abort
- *     Process::abort
+ *     Kernel::abort([msg])
+ *     Process::abort([msg])
  *
  *  Terminate execution immediately, effectively by calling
- *  <code>Kernel.exit(1)</code>. If _msg_ is given, it is written
+ *  <code>Kernel.exit(false)</code>. If _msg_ is given, it is written
  *  to STDERR prior to terminating.
  */
 
