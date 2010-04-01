@@ -2642,7 +2642,7 @@ rb_str_inspect(str)
     while (p < pend) {
 	char c = *p++;
 	int len;
-	if (ismbchar(c) && p + (len = mbclen(c)) <= pend) {
+	if (ismbchar(c) && p - 1 + (len = mbclen(c)) <= pend) {
 	    rb_str_buf_cat(result, p - 1, len);
 	    p += len - 1;
 	}

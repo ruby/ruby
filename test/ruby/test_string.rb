@@ -24,7 +24,7 @@ class TestString < Test::Unit::TestCase
     assert_equal('"\343\201\202"', "\xe3\x81\x82".inspect)
 
     $KCODE = 'u'
-    assert_equal('"\\343\\201\\202"', "\xe3\x81\x82".inspect)
+    assert_equal("\"\343\201\202\"", "\xe3\x81\x82".inspect)
     assert_no_match(/\0/, "\xe3\x81".inspect, '[ruby-dev:39550]')
   ensure
     $KCODE = original_kcode
