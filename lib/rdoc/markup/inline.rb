@@ -1,5 +1,3 @@
-require 'rdoc/markup'
-
 class RDoc::Markup
 
   ##
@@ -7,6 +5,10 @@ class RDoc::Markup
   # value.
 
   class Attribute
+
+    ##
+    # Special attribute type.  See RDoc::Markup#add_special
+
     SPECIAL = 1
 
     @@name_to_bitmap = { :_SPECIAL_ => SPECIAL }
@@ -37,17 +39,18 @@ class RDoc::Markup
         yield name.to_s if (bitmap & bit) != 0
       end
     end
+
   end
 
-  AttrChanger = Struct.new(:turn_on, :turn_off)
+  AttrChanger = Struct.new :turn_on, :turn_off # :nodoc:
 
   ##
   # An AttrChanger records a change in attributes. It contains a bitmap of the
   # attributes to turn on, and a bitmap of those to turn off.
 
   class AttrChanger
-    def to_s
-      "Attr: +#{Attribute.as_string(turn_on)}/-#{Attribute.as_string(turn_on)}"
+    def to_s # :nodoc:
+      "Attr: +#{Attribute.as_string turn_on}/-#{Attribute.as_string turn_on}"
     end
   end
 
@@ -55,42 +58,66 @@ class RDoc::Markup
   # An array of attributes which parallels the characters in a string.
 
   class AttrSpan
+
+    ##
+    # Creates a new AttrSpan for +length+ characters
+
     def initialize(length)
       @attrs = Array.new(length, 0)
     end
 
+    ##
+    # Toggles +bits+ from +start+ to +length+
     def set_attrs(start, length, bits)
       for i in start ... (start+length)
         @attrs[i] |= bits
       end
     end
 
+    ##
+    # Acccesses flags for character +n+
+
     def [](n)
       @attrs[n]
     end
+
   end
 
   ##
   # Hold details of a special sequence
 
   class Special
+
+    ##
+    # Special type
+
     attr_reader   :type
+
+    ##
+    # Special text
+
     attr_accessor :text
+
+    ##
+    # Creates a new special sequence of +type+ with +text+
 
     def initialize(type, text)
       @type, @text = type, text
     end
 
+    ##
+    # Specials are equal when the have the same text and type
+
     def ==(o)
       self.text == o.text && self.type == o.type
     end
 
-    def inspect
+    def inspect # :nodoc:
       "#<RDoc::Markup::Special:0x%x @type=%p, name=%p @text=%p>" % [
         object_id, @type, RDoc::Markup::Attribute.as_string(type), text.dump]
     end
 
-    def to_s
+    def to_s # :nodoc:
       "Special: type=#{type}, name=#{RDoc::Markup::Attribute.as_string type}, text=#{text.dump}"
     end
 
@@ -98,4 +125,3 @@ class RDoc::Markup
 
 end
 
-require 'rdoc/markup/attribute_manager'

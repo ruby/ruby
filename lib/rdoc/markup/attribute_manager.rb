@@ -1,41 +1,76 @@
-require 'rdoc/markup/inline'
+##
+# Manages changes of attributes in a block of text
 
 class RDoc::Markup::AttributeManager
 
+  ##
+  # The NUL character
+
   NULL = "\000".freeze
 
-  ##
+  #--
   # We work by substituting non-printing characters in to the text. For now
   # I'm assuming that I can substitute a character in the range 0..8 for a 7
   # bit character without damaging the encoded string, but this might be
   # optimistic
+  #++
 
-  A_PROTECT  = 004
-  PROTECT_ATTR  = A_PROTECT.chr
+  A_PROTECT  = 004 # :nodoc:
+
+  PROTECT_ATTR  = A_PROTECT.chr # :nodoc:
 
   ##
   # This maps delimiters that occur around words (such as *bold* or +tt+)
   # where the start and end delimiters and the same. This lets us optimize
   # the regexp
 
-  MATCHING_WORD_PAIRS = {}
+  attr_reader :matching_word_pairs
 
   ##
   # And this is used when the delimiters aren't the same. In this case the
   # hash maps a pattern to the attribute character
 
-  WORD_PAIR_MAP = {}
+  attr_reader :word_pair_map
 
   ##
   # This maps HTML tags to the corresponding attribute char
 
-  HTML_TAGS = {}
+  attr_reader :html_tags
+
+  ##
+  # A \ in front of a character that would normally be processed turns off
+  # processing. We do this by turning \< into <#{PROTECT}
+
+  attr_reader :protectable
 
   ##
   # And this maps _special_ sequences to a name. A special sequence is
   # something like a WikiWord
 
-  SPECIAL = {}
+  attr_reader :special
+
+  ##
+  # Creates a new attribute manager that understands bold, emphasized and
+  # teletype text.
+
+  def initialize
+    @html_tags = {}
+    @matching_word_pairs = {}
+    @protectable = %w[<\\]
+    @special = {}
+    @word_pair_map = {}
+
+    add_word_pair "*", "*", :BOLD
+    add_word_pair "_", "_", :EM
+    add_word_pair "+", "+", :TT
+
+    add_html "em", :EM
+    add_html "i",  :EM
+    add_html "b",  :BOLD
+    add_html "tt",   :TT
+    add_html "code", :TT
+  end
+
 
   ##
   # Return an attribute object with the given turn_on and turn_off bits set
@@ -75,19 +110,19 @@ class RDoc::Markup::AttributeManager
 
   def convert_attrs(str, attrs)
     # first do matching ones
-    tags = MATCHING_WORD_PAIRS.keys.join("")
+    tags = @matching_word_pairs.keys.join("")
 
     re = /(^|\W)([#{tags}])([#:\\]?[\w.\/-]+?\S?)\2(\W|$)/
 
     1 while str.gsub!(re) do
-      attr = MATCHING_WORD_PAIRS[$2]
+      attr = @matching_word_pairs[$2]
       attrs.set_attrs($`.length + $1.length + $2.length, $3.length, attr)
       $1 + NULL * $2.length + $3 + NULL * $2.length + $4
     end
 
     # then non-matching
-    unless WORD_PAIR_MAP.empty? then
-      WORD_PAIR_MAP.each do |regexp, attr|
+    unless @word_pair_map.empty? then
+      @word_pair_map.each do |regexp, attr|
         str.gsub!(regexp) {
           attrs.set_attrs($`.length + $1.length, $2.length, attr)
           NULL * $1.length + $2 + NULL * $3.length
@@ -96,11 +131,14 @@ class RDoc::Markup::AttributeManager
     end
   end
 
+  ##
+  # Converts HTML tags to RDoc attributes
+
   def convert_html(str, attrs)
-    tags = HTML_TAGS.keys.join '|'
+    tags = @html_tags.keys.join '|'
 
     1 while str.gsub!(/<(#{tags})>(.*?)<\/\1>/i) {
-      attr = HTML_TAGS[$1.downcase]
+      attr = @html_tags[$1.downcase]
       html_length = $1.length + 2
       seq = NULL * html_length
       attrs.set_attrs($`.length + html_length, $2.length, attr)
@@ -108,9 +146,12 @@ class RDoc::Markup::AttributeManager
     }
   end
 
+  ##
+  # Converts special sequences to RDoc attributes
+
   def convert_specials(str, attrs)
-    unless SPECIAL.empty?
-      SPECIAL.each do |regexp, attr|
+    unless @special.empty?
+      @special.each do |regexp, attr|
         str.scan(regexp) do
           attrs.set_attrs($`.length, $&.length,
                           attr | RDoc::Markup::Attribute::SPECIAL)
@@ -120,31 +161,25 @@ class RDoc::Markup::AttributeManager
   end
 
   ##
-  # A \ in front of a character that would normally be processed turns off
-  # processing. We do this by turning \< into <#{PROTECT}
-
-  PROTECTABLE = %w[<\\]
+  # Escapes special sequences of text to prevent conversion to RDoc
 
   def mask_protected_sequences
-    protect_pattern = Regexp.new("\\\\([#{Regexp.escape(PROTECTABLE.join(''))}])")
-    @str.gsub!(protect_pattern, "\\1#{PROTECT_ATTR}")
+    @str.gsub!(/\\([#{Regexp.escape @protectable.join('')}])/,
+               "\\1#{PROTECT_ATTR}")
   end
+
+  ##
+  # Unescapes special sequences of text
 
   def unmask_protected_sequences
     @str.gsub!(/(.)#{PROTECT_ATTR}/, "\\1\000")
   end
 
-  def initialize
-    add_word_pair("*", "*", :BOLD)
-    add_word_pair("_", "_", :EM)
-    add_word_pair("+", "+", :TT)
-
-    add_html("em", :EM)
-    add_html("i",  :EM)
-    add_html("b",  :BOLD)
-    add_html("tt",   :TT)
-    add_html("code", :TT)
-  end
+  ##
+  # Adds a markup class with +name+ for words wrapped in the +start+ and
+  # +stop+ character.  To make words wrapped with "*" bold:
+  #
+  #   am.add_word_pair '*', '*', :BOLD
 
   def add_word_pair(start, stop, name)
     raise ArgumentError, "Word flags may not start with '<'" if
@@ -153,23 +188,38 @@ class RDoc::Markup::AttributeManager
     bitmap = RDoc::Markup::Attribute.bitmap_for name
 
     if start == stop then
-      MATCHING_WORD_PAIRS[start] = bitmap
+      @matching_word_pairs[start] = bitmap
     else
       pattern = /(#{Regexp.escape start})(\S+)(#{Regexp.escape stop})/
-      WORD_PAIR_MAP[pattern] = bitmap
+      @word_pair_map[pattern] = bitmap
     end
 
-    PROTECTABLE << start[0,1]
-    PROTECTABLE.uniq!
+    @protectable << start[0,1]
+    @protectable.uniq!
   end
+
+  ##
+  # Adds a markup class with +name+ for words surrounded by HTML tag +tag+.
+  # To process emphasis tags:
+  #
+  #   am.add_html 'em', :EM
 
   def add_html(tag, name)
-    HTML_TAGS[tag.downcase] = RDoc::Markup::Attribute.bitmap_for name
+    @html_tags[tag.downcase] = RDoc::Markup::Attribute.bitmap_for name
   end
 
+  ##
+  # Adds a special handler for +pattern+ with +name+.  A simple URL handler
+  # would be:
+  #
+  #   @am.add_special(/((https?:)\S+\w)/, :HYPERLINK)
+
   def add_special(pattern, name)
-    SPECIAL[pattern] = RDoc::Markup::Attribute.bitmap_for name
+    @special[pattern] = RDoc::Markup::Attribute.bitmap_for name
   end
+
+  ##
+  # Processes +str+ converting attributes, HTML and specials
 
   def flow(str)
     @str = str
@@ -178,14 +228,17 @@ class RDoc::Markup::AttributeManager
 
     @attrs = RDoc::Markup::AttrSpan.new @str.length
 
-    convert_attrs(@str, @attrs)
-    convert_html(@str, @attrs)
-    convert_specials(str, @attrs)
+    convert_attrs    @str, @attrs
+    convert_html     @str, @attrs
+    convert_specials @str, @attrs
 
     unmask_protected_sequences
 
-    return split_into_flow
+    split_into_flow
   end
+
+  ##
+  # Debug method that prints a string along with its attributes
 
   def display_attributes
     puts
@@ -258,7 +311,7 @@ class RDoc::Markup::AttributeManager
     # and reset to all attributes off
     res << change_attribute(current_attr, 0) if current_attr != 0
 
-    return res
+    res
   end
 
 end

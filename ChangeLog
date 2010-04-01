@@ -1,3 +1,7 @@
+Thu Apr  1 16:44:00 2010  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc, test/rdoc: Imported RDoc 2.5
+
 Thu Apr  1 14:30:16 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/utf_16{be,le}.c (utf16{be,le}_mbc_to_code): simplified.

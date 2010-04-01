@@ -1,89 +1,77 @@
+require 'abbrev'
 require 'optparse'
-require 'yaml'
+
+begin
+  require 'readline'
+rescue LoadError
+end
 
 require 'rdoc/ri'
 require 'rdoc/ri/paths'
-require 'rdoc/ri/formatter'
-require 'rdoc/ri/display'
-require 'fileutils'
 require 'rdoc/markup'
-require 'rdoc/markup/to_flow'
+require 'rdoc/markup/formatter'
+require 'rdoc/text'
+
+##
+# For RubyGems backwards compatibility
+
+require 'rdoc/ri/formatter'
+
+##
+# The RI driver implements the command-line ri tool.
+#
+# The driver supports:
+# * loading RI data from:
+#   * Ruby's standard library
+#   * RubyGems
+#   * ~/.rdoc
+#   * A user-supplied directory
+# * Paging output (uses RI_PAGER environment variable, PAGER environment
+#   variable or the less, more and pager programs)
+# * Interactive mode with tab-completion
+# * Abbreviated names (ri Zl shows Zlib documentation)
+# * Colorized output
+# * Merging output from multiple RI data sources
 
 class RDoc::RI::Driver
 
-  #
-  # This class offers both Hash and OpenStruct functionality.
-  # We convert from the Core Hash to this before calling any of
-  # the display methods, in order to give the display methods
-  # a cleaner API for accessing the data.
-  #
-  class OpenStructHash < Hash
-    #
-    # This method converts from a Hash to an OpenStructHash.
-    #
-    def self.convert(object)
-      case object
-      when Hash then
-        new_hash = new # Convert Hash -> OpenStructHash
-
-        object.each do |key, value|
-          new_hash[key] = convert(value)
-        end
-
-        new_hash
-      when Array then
-        object.map do |element|
-          convert(element)
-        end
-      else
-        object
-      end
-    end
-
-    def merge_enums(other)
-      other.each do |k, v|
-        if self[k] then
-          case v
-          when Array then
-            # HACK dunno
-            if String === self[k] and self[k].empty? then
-              self[k] = v
-            else
-              self[k] += v
-            end
-          when Hash then
-            self[k].update v
-          else
-            # do nothing
-          end
-        else
-          self[k] = v
-        end
-      end
-    end
-
-    def method_missing method, *args
-      self[method.to_s]
-    end
-  end
+  ##
+  # Base Driver error class
 
   class Error < RDoc::RI::Error; end
 
+  ##
+  # Raised when a name isn't found in the ri data stores
+
   class NotFoundError < Error
-    def message
+
+    ##
+    # Name that wasn't found
+
+    alias name message
+
+    def message # :nodoc:
       "Nothing known about #{super}"
     end
   end
 
-  attr_accessor :homepath # :nodoc:
+  attr_accessor :stores
+
+  ##
+  # Controls the user of the pager vs $stdout
+
+  attr_accessor :use_stdout
+
+  ##
+  # Default options for ri
 
   def self.default_options
     options = {}
     options[:use_stdout] = !$stdout.tty?
     options[:width] = 72
-    options[:formatter] = RDoc::RI::Formatter.for 'plain'
     options[:interactive] = false
     options[:use_cache] = true
+    options[:profile] = false
 
     # By default all standard paths are used.
     options[:use_system] = true
@@ -95,26 +83,32 @@ class RDoc::RI::Driver
     return options
   end
 
-  def self.process_args(argv)
+  ##
+  # Dump +data_path+ using pp
+
+  def self.dump data_path
+    require 'pp'
+
+    open data_path, 'rb' do |io|
+      pp Marshal.load(io.read)
+    end
+  end
+
+  ##
+  # Parses +argv+ and returns a Hash of options
+
+  def self.process_args argv
     options = default_options
 
     opts = OptionParser.new do |opt|
+      opt.accept File do |file,|
+        File.readable?(file) and not File.directory?(file) and file
+      end
+
       opt.program_name = File.basename $0
       opt.version = RDoc::VERSION
       opt.release = nil
       opt.summary_indent = ' ' * 4
-
-      directories = [
-        RDoc::RI::Paths::SYSDIR,
-        RDoc::RI::Paths::SITEDIR,
-        RDoc::RI::Paths::HOMEDIR
-      ]
-
-      if RDoc::RI::Paths::GEMDIRS then
-        Gem.path.each do |dir|
-          directories << "#{dir}/doc/*/ri"
-        end
-      end
 
       opt.banner = <<-EOT
 Usage: #{opt.program_name} [options] [names...]
@@ -142,9 +136,9 @@ punctuation:
     #{opt.program_name} 'Array.[]'
     #{opt.program_name} compact\\!
 
-By default ri searches for documentation in the following directories:
+To see the default directories ri will search, run:
 
-    #{directories.join "\n    "}
+    #{opt.program_name} --list-doc-dirs
 
 Specifying the --system, --site, --home, --gems or --doc-dir options will
 limit ri to searching only the specified directories.
@@ -154,17 +148,60 @@ Options may also be set in the 'RI' environment variable.
 
       opt.separator nil
       opt.separator "Options:"
+
       opt.separator nil
 
-      opt.on("--fmt=FORMAT", "--format=FORMAT", "-f",
-             RDoc::RI::Formatter::FORMATTERS.keys,
-             "Format to use when displaying output:",
-             "   #{RDoc::RI::Formatter.list}",
-             "Use 'bs' (backspace) with most pager",
-             "programs. To use ANSI, either disable the",
-             "pager or tell the pager to allow control",
-             "characters.") do |value|
-        options[:formatter] = RDoc::RI::Formatter.for value
+      formatters = RDoc::Markup.constants.grep(/^To[A-Z][a-z]+$/).sort
+      formatters = formatters.sort.map do |formatter|
+        formatter.to_s.sub('To', '').downcase
+      end
+
+      opt.on("--format=NAME", "-f",
+             "Uses the selected formatter. The default",
+             "formatter is bs for paged output and ansi",
+             "otherwise. Valid formatters are:",
+             formatters.join(' '), formatters) do |value|
+        options[:formatter] = RDoc::Markup.const_get "To#{value.capitalize}"
+      end
+
+      opt.separator nil
+
+      opt.on("--no-pager", "-T",
+             "Send output directly to stdout,",
+             "rather than to a pager.") do
+        options[:use_stdout] = true
+      end
+
+      opt.separator nil
+
+      opt.on("--width=WIDTH", "-w", OptionParser::DecimalInteger,
+             "Set the width of the output.") do |value|
+        options[:width] = value
+      end
+
+      opt.separator nil
+
+      opt.on("--interactive", "-i",
+             "In interactive mode you can repeatedly",
+             "look up methods with autocomplete.") do
+        options[:interactive] = true
+      end
+
+      opt.separator nil
+
+      opt.on("--[no-]profile",
+             "Run with the ruby profiler") do |value|
+        options[:profile] = value
+      end
+
+      opt.separator nil
+      opt.separator "Data source options:"
+      opt.separator nil
+
+      opt.on("--list-doc-dirs",
+             "List the directories from which ri will",
+             "source documentation on stdout and exit.") do
+        options[:list_doc_dirs] = true
       end
 
       opt.separator nil
@@ -184,21 +221,11 @@ Options may also be set in the 'RI' environment variable.
 
       opt.separator nil
 
-      opt.on("--[no-]use-cache",
-             "Whether or not to use ri's cache.",
-             "True by default.") do |value|
-        options[:use_cache] = value
-      end
-
-      opt.separator nil
-
       opt.on("--no-standard-docs",
              "Do not include documentation from",
              "the Ruby standard library, site_lib,",
              "installed gems, or ~/.rdoc.",
-             "Equivalent to specifying",
-             "the options --no-system, --no-site, --no-gems,",
-             "and --no-home") do
+             "Use with --doc-dir") do
         options[:use_system] = false
         options[:use_site] = false
         options[:use_gems] = false
@@ -239,38 +266,12 @@ Options may also be set in the 'RI' environment variable.
       end
 
       opt.separator nil
-
-      opt.on("--list-doc-dirs",
-             "List the directories from which ri will",
-             "source documentation on stdout and exit.") do
-        options[:list_doc_dirs] = true
-      end
-
+      opt.separator "Debug options:"
       opt.separator nil
 
-      opt.on("--no-pager", "-T",
-             "Send output directly to stdout,",
-             "rather than to a pager.") do
-        options[:use_stdout] = true
-      end
-
-      opt.on("--interactive", "-i",
-             "This makes ri go into interactive mode.",
-             "When ri is in interactive mode it will",
-             "allow the user to disambiguate lists of",
-             "methods in case multiple methods match",
-             "against a method search string.  It also",
-             "will allow the user to enter in a method",
-             "name (with auto-completion, if readline",
-             "is supported) when viewing a class.") do
-        options[:interactive] = true
-      end
-
-      opt.separator nil
-
-      opt.on("--width=WIDTH", "-w", OptionParser::DecimalInteger,
-             "Set the width of the output.") do |value|
-        options[:width] = value
+      opt.on("--dump=CACHE", File,
+             "Dumps data from an ri cache or data file") do |value|
+        options[:dump_path] = value
       end
     end
 
@@ -280,7 +281,6 @@ Options may also be set in the 'RI' environment variable.
 
     options[:names] = argv
 
-    options[:formatter] ||= RDoc::RI::Formatter.for('plain')
     options[:use_stdout] ||= !$stdout.tty?
     options[:use_stdout] ||= options[:interactive]
     options[:width] ||= 72
@@ -294,376 +294,765 @@ Options may also be set in the 'RI' environment variable.
     exit 1
   end
 
-  def self.run(argv = ARGV)
+  ##
+  # Runs the ri command line executable using +argv+
+
+  def self.run argv = ARGV
     options = process_args argv
+
+    if options[:dump_path] then
+      dump options[:dump_path]
+      return
+    end
+
     ri = new options
     ri.run
   end
 
-  def initialize(initial_options={})
+  ##
+  # Creates a new driver using +initial_options+ from ::process_args
+
+  def initialize initial_options = {}
+    @paging = false
+    @classes = nil
+
     options = self.class.default_options.update(initial_options)
 
+    @formatter_klass = options[:formatter]
+
+    require 'profile' if options[:profile]
+
     @names = options[:names]
-    @class_cache_name = 'classes'
 
-    @doc_dirs = RDoc::RI::Paths.path(options[:use_system],
-                                     options[:use_site],
-                                     options[:use_home],
-                                     options[:use_gems],
-                                     options[:extra_doc_dirs])
+    @doc_dirs = []
+    @stores   = []
 
-    @homepath = RDoc::RI::Paths.raw_path(false, false, true, false).first
-    @homepath = @homepath.sub(/\.rdoc/, '.ri')
-    @sys_dir = RDoc::RI::Paths.raw_path(true, false, false, false).first
+    RDoc::RI::Paths.each(options[:use_system], options[:use_site],
+                                   options[:use_home], options[:use_gems],
+                                   *options[:extra_doc_dirs]) do |path, type|
+      @doc_dirs << path
+
+      store = RDoc::RI::Store.new path, type
+      store.load_cache
+      @stores << store
+    end
+
     @list_doc_dirs = options[:list_doc_dirs]
 
-    FileUtils.mkdir_p cache_file_path unless File.directory? cache_file_path
-    @cache_doc_dirs_path = File.join cache_file_path, ".doc_dirs"
-
-    @use_cache = options[:use_cache]
-    @class_cache = nil
-
     @interactive = options[:interactive]
-    @display = RDoc::RI::DefaultDisplay.new(options[:formatter],
-                                            options[:width],
-                                            options[:use_stdout])
+    @use_stdout  = options[:use_stdout]
   end
 
-  def class_cache
-    return @class_cache if @class_cache
+  ##
+  # Adds paths for undocumented classes +also_in+ to +out+
 
-    # Get the documentation directories used to make the cache in order to see
-    # whether the cache is valid for the current ri instantiation.
-    if(File.readable?(@cache_doc_dirs_path))
-      cache_doc_dirs = IO.read(@cache_doc_dirs_path).split("\n")
-    else
-      cache_doc_dirs = []
+  def add_also_in out, also_in
+    return if also_in.empty?
+
+    out << RDoc::Markup::Rule.new(1)
+    out << RDoc::Markup::Paragraph.new("Also found in:")
+
+    paths = RDoc::Markup::Verbatim.new
+    also_in.each do |store|
+      paths.parts.push '  ', store.friendly_path, "\n"
     end
+    out << paths
+  end
 
-    newest = map_dirs('created.rid') do |f|
-      File.mtime f if test ?f, f
-    end.max
+  ##
+  # Adds a class header to +out+ for class +name+ which is described in
+  # +classes+.
 
-    # An up to date cache file must have been created more recently than
-    # the last modification of any of the documentation directories.  It also
-    # must have been created with the same documentation directories
-    # as those from which ri currently is sourcing documentation.
-    up_to_date = (File.exist?(class_cache_file_path) and
-                  newest and newest < File.mtime(class_cache_file_path) and
-                  (cache_doc_dirs == @doc_dirs))
+  def add_class out, name, classes
+    heading = if classes.all? { |klass| klass.module? } then
+                name
+              else
+                superclass = classes.map do |klass|
+                  klass.superclass unless klass.module?
+                end.compact.shift || 'Object'
 
-    if up_to_date and @use_cache then
-      open class_cache_file_path, 'rb' do |fp|
-        begin
-          @class_cache = Marshal.load fp.read
-        rescue
-          #
-          # This shouldn't be necessary, since the up_to_date logic above
-          # should force the cache to be recreated when a new version of
-          # rdoc is installed.  This seems like a worthwhile enhancement
-          # to ri's robustness, however.
-          #
-          $stderr.puts "Error reading the class cache; recreating the class cache!"
-          @class_cache = create_class_cache
+                "#{name} < #{superclass}"
+              end
+
+    out << RDoc::Markup::Heading.new(1, heading)
+    out << RDoc::Markup::BlankLine.new
+  end
+
+  ##
+  # Adds "(from ...)" to +out+ for +store+
+
+  def add_from out, store
+    out << RDoc::Markup::Paragraph.new("(from #{store.friendly_path})")
+  end
+
+  ##
+  # Adds +includes+ to +out+
+
+  def add_includes out, includes
+    return if includes.empty?
+
+    out << RDoc::Markup::Rule.new(1)
+    out << RDoc::Markup::Heading.new(1, "Includes:")
+
+    includes.each do |modules, store|
+      if modules.length == 1 then
+        include = modules.first
+        name = include.name
+        path = store.friendly_path
+        out << RDoc::Markup::Paragraph.new("#{name} (from #{path})")
+
+        if include.comment then
+          out << RDoc::Markup::BlankLine.new
+          out << include.comment
         end
-      end
-    else
-      @class_cache = create_class_cache
-    end
-
-    @class_cache
-  end
-
-  def create_class_cache
-    class_cache = OpenStructHash.new
-
-    if(@use_cache)
-      # Dump the documentation directories to a file in the cache, so that
-      # we only will use the cache for future instantiations with identical
-      # documentation directories.
-      File.open @cache_doc_dirs_path, "wb" do |fp|
-        fp << @doc_dirs.join("\n")
-      end
-    end
-
-    classes = map_dirs('**/cdesc*.yaml') { |f| Dir[f] }
-    warn "Updating class cache with #{classes.size} classes..."
-    populate_class_cache class_cache, classes
-
-    write_cache class_cache, class_cache_file_path
-
-    class_cache
-  end
-
-  def populate_class_cache(class_cache, classes, extension = false)
-    classes.each do |cdesc|
-      desc = read_yaml cdesc
-      klassname = desc["full_name"]
-
-      unless class_cache.has_key? klassname then
-        desc["display_name"] = "Class"
-        desc["sources"] = [cdesc]
-        desc["instance_method_extensions"] = []
-        desc["class_method_extensions"] = []
-        class_cache[klassname] = desc
       else
-        klass = class_cache[klassname]
+        out << RDoc::Markup::Paragraph.new("(from #{store.friendly_path})")
 
-        if extension then
-          desc["instance_method_extensions"] = desc.delete "instance_methods"
-          desc["class_method_extensions"] = desc.delete "class_methods"
+        wout, with = modules.partition { |incl| incl.comment.empty? }
+
+        out << RDoc::Markup::BlankLine.new unless with.empty?
+
+        with.each do |incl|
+          out << RDoc::Markup::Paragraph.new(incl.name)
+          out << RDoc::Markup::BlankLine.new
+          out << incl.comment
         end
 
-        klass.merge_enums desc
-        klass["sources"] << cdesc
-      end
-    end
-  end
+        unless wout.empty? then
+          verb = RDoc::Markup::Verbatim.new
 
-  def class_cache_file_path
-    File.join cache_file_path, @class_cache_name
-  end
-
-  def cache_file_for(klassname)
-    File.join cache_file_path, klassname.gsub(/:+/, "-")
-  end
-
-  def cache_file_path
-    File.join @homepath, 'cache'
-  end
-
-  def display_class(name)
-    klass = class_cache[name]
-    @display.display_class_info klass
-  end
-
-  def display_method(method)
-    @display.display_method_info method
-  end
-
-  def get_info_for(arg)
-    @names = [arg]
-    run
-  end
-
-  def load_cache_for(klassname)
-    path = cache_file_for klassname
-
-    cache = nil
-
-    if File.exist? path and
-       File.mtime(path) >= File.mtime(class_cache_file_path) and
-       @use_cache then
-      open path, 'rb' do |fp|
-        begin
-          cache = Marshal.load fp.read
-        rescue
-          #
-          # The cache somehow is bad.  Recreate the cache.
-          #
-          $stderr.puts "Error reading the cache for #{klassname}; recreating the cache!"
-          cache = create_cache_for klassname, path
-        end
-      end
-    else
-      cache = create_cache_for klassname, path
-    end
-
-    cache
-  end
-
-  def create_cache_for(klassname, path)
-    klass = class_cache[klassname]
-    return nil unless klass
-
-    method_files = klass["sources"]
-    cache = OpenStructHash.new
-
-    method_files.each do |f|
-      system_file = f.index(@sys_dir) == 0
-      Dir[File.join(File.dirname(f), "*")].each do |yaml|
-        next unless yaml =~ /yaml$/
-        next if yaml =~ /cdesc-[^\/]+yaml$/
-
-        method = read_yaml yaml
-
-        if system_file then
-          method["source_path"] = "Ruby #{RDoc::RI::Paths::VERSION}"
-        else
-          if(f =~ %r%gems/[\d.]+/doc/([^/]+)%) then
-            ext_path = "gem #{$1}"
-          else
-            ext_path = f
+          wout.each do |incl|
+            verb.push '  ', incl.name, "\n"
           end
 
-          method["source_path"] = ext_path
+          out << verb
         end
+      end
+    end
+  end
 
-        name = method["full_name"]
-        cache[name] = method
+  ##
+  # Adds a list of +methods+ to +out+ with a heading of +name+
+
+  def add_method_list out, methods, name
+    return unless methods
+
+    out << RDoc::Markup::Heading.new(1, "#{name}:")
+    out << RDoc::Markup::BlankLine.new
+
+    out.push(*methods.map do |method|
+      RDoc::Markup::Verbatim.new '  ', method
+    end)
+
+    out << RDoc::Markup::BlankLine.new
+  end
+
+  ##
+  # Returns ancestor classes of +klass+
+
+  def ancestors_of klass
+    ancestors = []
+
+    unexamined = [klass]
+    seen = []
+
+    loop do
+      break if unexamined.empty?
+      current = unexamined.shift
+      seen << current
+
+      stores = classes[current]
+
+      break unless stores and not stores.empty?
+
+      klasses = stores.map do |store|
+        store.ancestors[current]
+      end.flatten.uniq
+
+      klasses = klasses - seen
+
+      ancestors.push(*klasses)
+      unexamined.push(*klasses)
+    end
+
+    ancestors.reverse
+  end
+
+  ##
+  # For RubyGems backwards compatibility
+
+  def class_cache # :nodoc:
+  end
+
+  ##
+  # Hash mapping a known class or module to the stores it can be loaded from
+
+  def classes
+    return @classes if @classes
+
+    @classes = {}
+
+    @stores.each do |store|
+      store.cache[:modules].each do |mod|
+        # using default block causes searched-for modules to be added
+        @classes[mod] ||= []
+        @classes[mod] << store
       end
     end
 
-    write_cache cache, path
+    @classes
   end
 
   ##
-  # Finds the next ancestor of +orig_klass+ after +klass+.
+  # Completes +name+ based on the caches.  For Readline
 
-  def lookup_ancestor(klass, orig_klass)
-    # This is a bit hacky, but ri will go into an infinite
-    # loop otherwise, since Object has an Object ancestor
-    # for some reason.  Depending on the documentation state, I've seen
-    # Kernel as an ancestor of Object and not as an ancestor of Object.
-    if ((orig_klass == "Object") &&
-        ((klass == "Kernel") || (klass == "Object")))
-      return nil
+  def complete name
+    klasses = classes.keys
+    completions = []
+
+    klass, selector, method = parse_name name
+
+    # may need to include Foo when given Foo::
+    klass_name = method ? name : klass
+
+    if name !~ /#|\./ then
+      completions.push(*klasses.grep(/^#{klass_name}/))
+    elsif selector then
+      completions << klass if classes.key? klass
+    elsif classes.key? klass_name then
+      completions << klass_name
     end
 
-    cache = class_cache[orig_klass]
+    if completions.include? klass and name =~ /#|\.|::/ then
+      methods = list_methods_matching name
 
-    return nil unless cache
+      if not methods.empty? then
+        # remove Foo if given Foo:: and a method was found
+        completions.delete klass
+      elsif selector then
+        # replace Foo with Foo:: as given
+        completions.delete klass
+        completions << "#{klass}#{selector}" 
+      end
 
-    ancestors = [orig_klass]
-    ancestors.push(*cache.includes.map { |inc| inc['name'] })
-    ancestors << cache.superclass
-
-    ancestor_index = ancestors.index(klass)
-
-    if ancestor_index
-      ancestor = ancestors[ancestors.index(klass) + 1]
-      return ancestor if ancestor
+      completions.push(*methods)
     end
 
-    lookup_ancestor klass, cache.superclass
+    completions.sort
   end
 
   ##
-  # Finds the method
+  # Converts +document+ to text and writes it to the pager
 
-  def lookup_method(name, klass)
-    cache = load_cache_for klass
-    return nil unless cache
+  def display document
+    page do |io|
+      text = document.accept formatter
 
-    method = cache[name.gsub('.', '#')]
-    method = cache[name.gsub('.', '::')] unless method
-    method
-  end
-
-  def map_dirs(file_name)
-    @doc_dirs.map { |dir| yield File.join(dir, file_name) }.flatten.compact
+      io.write text
+    end
   end
 
   ##
-  # Extract the class and method name parts from +name+ like Foo::Bar#baz
+  # Outputs formatted RI data for class +name+.  Groups undocumented classes
+
+  def display_class name
+    return if name =~ /#|\./
+
+    klasses = []
+    includes = []
+
+    found = @stores.map do |store|
+      begin
+        klass = store.load_class name
+        klasses  << klass
+        includes << [klass.includes, store] if klass.includes
+        [store, klass]
+      rescue Errno::ENOENT
+      end
+    end.compact
+
+    return if found.empty?
+
+    also_in = []
+
+    includes.reject! do |modules,| modules.empty? end
+
+    out = RDoc::Markup::Document.new
+
+    add_class out, name, klasses
+
+    add_includes out, includes
+
+    found.each do |store, klass|
+      comment = klass.comment
+      class_methods    = store.class_methods[klass.full_name]
+      instance_methods = store.instance_methods[klass.full_name]
+      attributes       = store.attributes[klass.full_name]
+
+      if comment.empty? and !(instance_methods or class_methods) then
+        also_in << store
+        next
+      end
+
+      add_from out, store
+
+      unless comment.empty? then
+        out << RDoc::Markup::Rule.new(1)
+        out << comment
+      end
+
+      if class_methods or instance_methods or not klass.constants.empty? then
+        out << RDoc::Markup::Rule.new
+      end
+
+      unless klass.constants.empty? then
+        out << RDoc::Markup::Heading.new(1, "Constants:")
+        out << RDoc::Markup::BlankLine.new
+        list = RDoc::Markup::List.new :NOTE
+
+        constants = klass.constants.sort_by { |constant| constant.name }
+
+        list.push(*constants.map do |constant|
+          parts = constant.comment.parts if constant.comment
+          parts << RDoc::Markup::Paragraph.new('[not documented]') if
+            parts.empty?
+
+          RDoc::Markup::ListItem.new(constant.name, *parts)
+        end)
+
+        out << list
+      end
+
+      add_method_list out, class_methods,    'Class methods'
+      add_method_list out, instance_methods, 'Instance methods'
+      add_method_list out, attributes,       'Attributes'
+
+      out << RDoc::Markup::BlankLine.new
+    end
+
+    add_also_in out, also_in
+
+    display out
+  end
+
+  ##
+  # Outputs formatted RI data for method +name+
+
+  def display_method name
+    found = load_methods_matching name
+
+    raise NotFoundError, name if found.empty?
+
+    out = RDoc::Markup::Document.new
+
+    out << RDoc::Markup::Heading.new(1, name)
+    out << RDoc::Markup::BlankLine.new
+
+    found.each do |store, methods|
+      methods.each do |method|
+        out << RDoc::Markup::Paragraph.new("(from #{store.friendly_path})")
+
+        unless name =~ /^#{Regexp.escape method.parent_name}/ then
+          out << RDoc::Markup::Heading.new(3, "Implementation from #{method.parent_name}")
+        end
+        out << RDoc::Markup::Rule.new(1)
+
+        if method.call_seq then
+          call_seq = method.call_seq.chomp.split "\n"
+          call_seq = call_seq.map { |line| ['  ', line, "\n"] }
+          out << RDoc::Markup::Verbatim.new(*call_seq.flatten)
+        end
+
+        if method.block_params then
+          out << RDoc::Markup::BlankLine.new if method.call_seq
+          params = "yields: #{method.block_params}"
+          out << RDoc::Markup::Verbatim.new('  ', params, "\n")
+        end
+
+        out << RDoc::Markup::Rule.new(1) if
+          method.call_seq or method.block_params
+
+        out << RDoc::Markup::BlankLine.new
+        out << method.comment
+        out << RDoc::Markup::BlankLine.new
+      end
+    end
+
+    display out
+  end
+
+  ##
+  # Outputs formatted RI data for the class or method +name+.
+  #
+  # Returns true if +name+ was found, false if it was not an alternative could
+  # be guessed, raises an error if +name+ couldn't be guessed.
+
+  def display_name name
+    return true if display_class name
+
+    display_method name if name =~ /::|#|\./
+
+    true
+  rescue NotFoundError
+    matches = list_methods_matching name if name =~ /::|#|\./
+    matches = classes.keys.grep(/^#{name}/) if matches.empty?
+
+    raise if matches.empty?
+
+    page do |io|
+      io.puts "#{name} not found, maybe you meant:"
+      io.puts
+      io.puts matches.join("\n")
+    end
+
+    false
+  end
+
+  ##
+  # Displays each name in +name+
+
+  def display_names names
+    names.each do |name|
+      name = expand_name name
+
+      display_name name
+    end
+  end
+  ##
+  # Expands abbreviated klass +klass+ into a fully-qualified class.  "Zl::Da"
+  # will be expanded to Zlib::DataError.
+
+  def expand_class klass
+    klass.split('::').inject '' do |expanded, klass_part|
+      expanded << '::' unless expanded.empty?
+      short = expanded << klass_part
+
+      subset = classes.keys.select do |klass_name|
+        klass_name =~ /^#{expanded}[^:]*$/
+      end
+
+      abbrevs = Abbrev.abbrev subset
+
+      expanded = abbrevs[short]
+
+      raise NotFoundError, short unless expanded
+
+      expanded.dup
+    end
+  end
+
+  ##
+  # Expands the class portion of +name+ into a fully-qualified class.  See
+  # #expand_class.
+
+  def expand_name name
+    klass, selector, method = parse_name name
+
+    return [selector, method].join if klass.empty?
+
+    "#{expand_class klass}#{selector}#{method}"
+  end
+
+  ##
+  # Yields items matching +name+ including the store they were found in, the
+  # class being searched for, the class they were found in (an ancestor) the
+  # types of methods to look up (from #method_type), and the method name being
+  # searched for
+
+  def find_methods name
+    klass, selector, method = parse_name name
+
+    types = method_type selector
+
+    klasses = nil
+    ambiguous = klass.empty?
+
+    if ambiguous then
+      klasses = classes.keys
+    else
+      klasses = ancestors_of klass
+      klasses.unshift klass
+    end
+
+    methods = []
+
+    klasses.each do |ancestor|
+      ancestors = classes[ancestor]
+
+      next unless ancestors
+
+      klass = ancestor if ambiguous
+
+      ancestors.each do |store|
+        methods << [store, klass, ancestor, types, method]
+      end
+    end
+
+    methods = methods.sort_by do |_, k, a, _, m|
+      [k, a, m].compact
+    end
+
+    methods.each do |item|
+      yield(*item)
+    end
+
+    self
+  end
+
+  ##
+  # Creates a new RDoc::Markup::Formatter.  If a formatter is given with -f,
+  # use it.  If we're outputting to a pager, use bs, otherwise ansi.
+
+  def formatter
+    if @formatter_klass then
+      @formatter_klass.new
+    elsif paging? then
+      RDoc::Markup::ToBs.new
+    else
+      RDoc::Markup::ToAnsi.new
+    end
+  end
+
+  ##
+  # Runs ri interactively using Readline if it is available.
+
+  def interactive
+    puts "\nEnter the method name you want to look up."
+
+    if defined? Readline then
+      Readline.completion_proc = method :complete
+      puts "You can use tab to autocomplete."
+    end
+
+    puts "Enter a blank line to exit.\n\n"
+
+    loop do
+      name = if defined? Readline then
+               Readline.readline ">> "
+             else
+               print ">> "
+               $stdin.gets
+             end
+
+      return if name.nil? or name.empty?
+
+      name = expand_name name.strip
+
+      begin
+        display_name name
+      rescue NotFoundError => e
+        puts e.message
+      end
+    end
+
+  rescue Interrupt
+    exit
+  end
+
+  ##
+  # Lists classes known to ri
+
+  def list_known_classes
+    classes = []
+
+    stores.each do |store|
+      classes << store.modules
+    end
+
+    classes = classes.flatten.uniq.sort
+
+    page do |io|
+      if paging? or io.tty? then
+        io.puts "Classes and Modules known to ri:"
+        io.puts
+      end
+
+      io.puts classes.join("\n")
+    end
+  end
+
+  ##
+  # Returns an Array of methods matching +name+
+
+  def list_methods_matching name
+    found = []
+
+    find_methods name do |store, klass, ancestor, types, method|
+      if types == :instance or types == :both then
+        methods = store.instance_methods[ancestor]
+
+        if methods then
+          matches = methods.grep(/^#{method}/)
+
+          matches = matches.map do |match|
+            "#{klass}##{match}"
+          end
+
+          found.push(*matches)
+        end
+      end
+
+      if types == :class or types == :both then
+        methods = store.class_methods[ancestor]
+
+        next unless methods
+        matches = methods.grep(/^#{method}/)
+
+        matches = matches.map do |match|
+          "#{klass}::#{match}"
+        end
+
+        found.push(*matches)
+      end
+    end
+
+    found.uniq
+  end
+
+  ##
+  # Loads RI data for method +name+ on +klass+ from +store+.  +type+ and
+  # +cache+ indicate if it is a class or instance method.
+
+  def load_method store, cache, klass, type, name
+    methods = store.send(cache)[klass]
+
+    return unless methods
+
+    method = methods.find do |method_name|
+      method_name == name
+    end
+
+    return unless method
+
+    store.load_method klass, "#{type}#{method}"
+  end
+
+  ##
+  # Returns an Array of RI data for methods matching +name+
+
+  def load_methods_matching name
+    found = []
+
+    find_methods name do |store, klass, ancestor, types, method|
+      methods = []
+
+      methods << load_method(store, :class_methods, ancestor, '::',  method) if
+        types == :class or types == :both
+
+      methods << load_method(store, :instance_methods, ancestor, '#',  method) if
+        types == :instance or types == :both
+
+      found << [store, methods.compact]
+    end
+
+    found.reject do |path, methods| methods.empty? end
+  end
+
+  ##
+  # Returns the type of method (:both, :instance, :class) for +selector+
+
+  def method_type selector
+    case selector
+    when '.', nil then :both
+    when '#'      then :instance
+    else               :class
+    end
+  end
+
+  ##
+  # Paginates output through a pager program.
+
+  def page
+    if pager = setup_pager then
+      begin
+        yield pager
+      ensure
+        pager.close
+      end
+    else
+      yield $stdout
+    end
+  rescue Errno::EPIPE
+  ensure
+    @paging = false
+  end
+
+  ##
+  # Are we using a pager?
+
+  def paging?
+    @paging
+  end
+
+  ##
+  # Extract the class, selector and method name parts from +name+ like
+  # Foo::Bar#baz.
+  #
+  # NOTE: Given Foo::Bar, Bar is considered a class even though it may be a
+  #       method
 
   def parse_name(name)
-    parts = name.split(/(::|\#|\.)/)
+    parts = name.split(/(::|#|\.)/)
 
-    if parts[-2] != '::' or parts.last !~ /^[A-Z]/ then
+    if parts.length == 1 then
+      if parts.first =~ /^[a-z]/ then
+        type = '.'
+        meth = parts.pop
+      else
+        type = nil
+        meth = nil
+      end
+    elsif parts.length == 2 or parts.last =~ /::|#|\./ then
+      type = parts.pop
+      meth = nil
+    elsif parts[-2] != '::' or parts.last !~ /^[A-Z]/ then
       meth = parts.pop
-      parts.pop
+      type = parts.pop
     end
 
     klass = parts.join
 
-    [klass, meth]
+    [klass, type, meth]
   end
 
-  def read_yaml(path)
-    data = File.read path
-
-    # Necessary to be backward-compatible with documentation generated
-    # by earliar RDoc versions.
-    data = data.gsub(/ \!ruby\/(object|struct):(RDoc::RI|RI).*/, '')
-    data = data.gsub(/ \!ruby\/(object|struct):SM::(\S+)/,
-                     ' !ruby/\1:RDoc::Markup::\2')
-    OpenStructHash.convert(YAML.load(data))
-  end
+  ##
+  # Looks up and displays ri data according to the options given.
 
   def run
-    if(@list_doc_dirs)
-      puts @doc_dirs.join("\n")
+    if @list_doc_dirs then
+      puts @doc_dirs
+    elsif @interactive then
+      interactive
     elsif @names.empty? then
-      @display.list_known_classes class_cache.keys.sort
+      list_known_classes
     else
-      @names.each do |name|
-        if class_cache.key? name then
-          method_map = display_class name
-          if(@interactive)
-            method_name = @display.get_class_method_choice(method_map)
-
-            if(method_name != nil)
-              method = lookup_method "#{name}#{method_name}", name
-              display_method method
-            end
-          end
-        elsif name =~ /::|\#|\./ then
-          klass, = parse_name name
-
-          orig_klass = klass
-          orig_name = name
-
-          loop do
-            method = lookup_method name, klass
-
-            break method if method
-
-            ancestor = lookup_ancestor klass, orig_klass
-
-            break unless ancestor
-
-            name = name.sub klass, ancestor
-            klass = ancestor
-          end
-
-          raise NotFoundError, orig_name unless method
-
-          display_method method
-        else
-          methods = select_methods(/#{name}/)
-
-          if methods.size == 0
-            raise NotFoundError, name
-          elsif methods.size == 1
-            display_method methods[0]
-          else
-            if(@interactive)
-              @display.display_method_list_choice methods
-            else
-              @display.display_method_list methods
-            end
-          end
-        end
-      end
+      display_names @names
     end
   rescue NotFoundError => e
     abort e.message
   end
 
-  def select_methods(pattern)
-    methods = []
-    class_cache.keys.sort.each do |klass|
-      class_cache[klass]["instance_methods"].map{|h|h["name"]}.grep(pattern) do |name|
-        method = load_cache_for(klass)[klass+'#'+name]
-        methods << method if method
-      end
-      class_cache[klass]["class_methods"].map{|h|h["name"]}.grep(pattern) do |name|
-        method = load_cache_for(klass)[klass+'::'+name]
-        methods << method if method
-      end
-    end
-    methods
-  end
+  ##
+  # Sets up a pager program to pass output through.  Tries the RI_PAGER and
+  # PAGER environment variables followed by pager, less then more.
 
-  def write_cache(cache, path)
-    if(@use_cache)
-      File.open path, "wb" do |cache_file|
-        Marshal.dump cache, cache_file
-      end
+  def setup_pager
+    return if @use_stdout
+
+    pagers = [ENV['RI_PAGER'], ENV['PAGER'], 'pager', 'less', 'more']
+
+    pagers.compact.uniq.each do |pager|
+      io = IO.popen(pager, "w") rescue next
+
+      @paging = true
+
+      return io
     end
 
-    cache
+    @use_stdout = true
+
+    nil
   end
 
 end
+
