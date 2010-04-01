@@ -4569,7 +4569,7 @@ proc_daemon(int argc, VALUE *argv)
       case 0:
 	break;
       default:
-	_exit(0);
+	_exit(EXIT_SUCCESS);
     }
 
     proc_setsid();
@@ -4581,7 +4581,7 @@ proc_daemon(int argc, VALUE *argv)
       case 0:
 	break;
       default:
-	_exit(0);
+	_exit(EXIT_SUCCESS);
     }
 
     if (!RTEST(nochdir))
