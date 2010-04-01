@@ -15,9 +15,11 @@ with all sufficient information, see the ChangeLog file.
 
   * Array
     * new method:
-      * Array#sort_by!
+      * Array#keep_if
       * Array#rotate!
       * Array#rotate
+      * Array#select!
+      * Array#sort_by!
 
     * extended methods:
       * Array#{uniq,uniq!} can take a block.
@@ -45,7 +47,9 @@ with all sufficient information, see the ChangeLog file.
     * New methods:
       * Enumerable#join
       * Enumerable#chunk
+      * Enumerable#collect_concat
       * Enumerable#each_entry
+      * Enumerable#flat_map
       * Enumerable#slice_before
 
   * Enumerator
@@ -101,6 +105,7 @@ with all sufficient information, see the ChangeLog file.
 
   * Kernel
     * new method:
+      * Kernel#respond_to_missing?
       * Kernel#singleton_class
 
   * MatchData
