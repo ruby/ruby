@@ -70,6 +70,7 @@ end
 # * <tt> #minor(*param)                 </tt>
 #
 # Properties of a matrix:
+# * <tt> #real?                         </tt>
 # * <tt> #regular?                      </tt>
 # * <tt> #singular?                     </tt>
 # * <tt> #square?                       </tt>
@@ -91,6 +92,15 @@ end
 # * <tt> #tr                            </tt>
 # * <tt> #transpose                     </tt>
 # * <tt> #t                             </tt>
+#
+# Complex arithmetic:
+# * <tt> conj                           </tt>
+# * <tt> conjugate                      </tt>
+# * <tt> imag                           </tt>
+# * <tt> imaginary                      </tt>
+# * <tt> real                           </tt>
+# * <tt> rect                           </tt>
+# * <tt> rectangular                    </tt>
 #
 # Conversion to other data types:
 # * <tt> #coerce(other)                 </tt>
@@ -432,6 +442,13 @@ class Matrix
   #
   def empty?
     column_size == 0 || row_size == 0
+  end
+
+  #
+  # Returns +true+ if all entries of the matrix are real.
+  #
+  def real?
+    all?(&:real?)
   end
 
   #
@@ -896,6 +913,62 @@ class Matrix
     new_matrix @rows.transpose, row_size
   end
   alias t transpose
+
+  #--
+  # COMPLEX ARITHMETIC -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+  #++
+
+  #
+  # Returns the conjugate of the matrix.
+  #   Matrix[[Complex(1,2), Complex(0,1), 0], [1, 2, 3]]
+  #     => 1+2i   i  0
+  #           1   2  3
+  #   Matrix[[Complex(1,2), Complex(0,1), 0], [1, 2, 3]].conjugate
+  #     => 1-2i  -i  0
+  #           1   2  3
+  #
+  def conjugate
+    collect(&:conjugate)
+  end
+  alias conj conjugate
+
+  #
+  # Returns the imaginary part of the matrix.
+  #   Matrix[[Complex(1,2), Complex(0,1), 0], [1, 2, 3]]
+  #     => 1+2i  i  0
+  #           1  2  3
+  #   Matrix[[Complex(1,2), Complex(0,1), 0], [1, 2, 3]].imaginary
+  #     =>   2i  i  0
+  #           0  0  0
+  #
+  def imaginary
+    collect(&:imaginary)
+  end
+  alias imag imaginary
+
+  #
+  # Returns the real part of the matrix.
+  #   Matrix[[Complex(1,2), Complex(0,1), 0], [1, 2, 3]]
+  #     => 1+2i  i  0
+  #           1  2  3
+  #   Matrix[[Complex(1,2), Complex(0,1), 0], [1, 2, 3]].real
+  #     =>    1  0  0
+  #           1  2  3
+  #
+  def real
+    collect(&:real)
+  end
+
+  #
+  # Returns an array containing matrices corresponding to the real and imaginary
+  # parts of the matrix
+  #
+  # m.rect == [m.real, m.imag]  # ==> true for all matrices m
+  #
+  def rect
+    [real, imag]
+  end
+  alias rectangular rect
 
   #--
   # CONVERTING -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
