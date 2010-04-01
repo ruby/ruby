@@ -227,6 +227,10 @@ get_hash(volatile VALUE *hash, int argc, const VALUE *argv)
  *            | equal to the precision, or in dd.dddd form otherwise.
  *            | The precision specifies the number of significant digits.
  *        G   | Equivalent to `g', but use an uppercase `E' in exponent form.
+ *        a   | Convert floating point argument as [-]0xh.hhhhp[+-]dd,
+ *            | which is consisted from optional sign, "0x", fraction part
+ *            | as hexadecimal, "p", and exponential part as decimal.
+ *        A   | Equivalent to `a', but use uppercase `X' and `P'.
  *
  *      Field |  Other Format
  *      ------+--------------------------------------------------------------
@@ -244,7 +248,7 @@ get_hash(volatile VALUE *hash, int argc, const VALUE *argv)
  *    Flag     | Applies to    | Meaning
  *    ---------+---------------+-----------------------------------------
  *    space    | bBdiouxX      | Leave a space at the start of
- *             | eEfgG         | non-negative numbers.
+ *             | aAeEfgG       | non-negative numbers.
  *             | (numeric fmt) | For `o', `x', `X', `b' and `B', use
  *             |               | a minus sign with absolute value for
  *             |               | negative values.
@@ -255,19 +259,19 @@ get_hash(volatile VALUE *hash, int argc, const VALUE *argv)
  *             |               | sprintf string.
  *    ---------+---------------+-----------------------------------------
  *     #       | bBoxX         | Use an alternative format.
- *             | eEfgG         | For the conversions `o', increase the precision
+ *             | aAeEfgG       | For the conversions `o', increase the precision
  *             |               | until the first digit will be `0' if
  *             |               | it is not formatted as complements.
  *             |               | For the conversions `x', `X', `b' and `B'
  *             |               | on non-zero, prefix the result with ``0x'',
  *             |               | ``0X'', ``0b'' and ``0B'', respectively.
- *             |               | For `e', `E', `f', `g', and 'G',
+ *             |               | For `a', `A', `e', `E', `f', `g', and 'G',
  *             |               | force a decimal point to be added,
  *             |               | even if no digits follow.
  *             |               | For `g' and 'G', do not remove trailing zeros.
  *    ---------+---------------+-----------------------------------------
  *    +        | bBdiouxX      | Add a leading plus sign to non-negative
- *             | eEfgG         | numbers.
+ *             | aAeEfgG       | numbers.
  *             | (numeric fmt) | For `o', `x', `X', `b' and `B', use
  *             |               | a minus sign with absolute value for
  *             |               | negative values.
@@ -275,7 +279,7 @@ get_hash(volatile VALUE *hash, int argc, const VALUE *argv)
  *    -        | all           | Left-justify the result of this conversion.
  *    ---------+---------------+-----------------------------------------
  *    0 (zero) | bBdiouxX      | Pad with zeros, not spaces.
- *             | eEfgG         | For `o', `x', `X', `b' and `B', radix-1
+ *             | aAeEfgG       | For `o', `x', `X', `b' and `B', radix-1
  *             | (numeric fmt) | is used for negative numbers formatted as
  *             |               | complements.
  *    ---------+---------------+-----------------------------------------
@@ -983,6 +987,8 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	  case 'G':
 	  case 'e':
 	  case 'E':
+	  case 'a':
+	  case 'A':
 	    {
 		VALUE val = GETARG();
 		double fval;
