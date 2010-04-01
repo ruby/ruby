@@ -112,6 +112,11 @@ with all sufficient information, see the ChangeLog file.
     * New method:
       * MatchData#==
 
+  * Object
+    * extended methods:
+      * Float() supports hexadecimal floating point format.
+      * printf() supports %a/%A format.
+
   * Proc
     * extended method:
       * Proc#source_location returns location even if receiver is a method
@@ -227,6 +232,10 @@ with all sufficient information, see the ChangeLog file.
     * OpenSSL::Buffering#write_nonblock
     * OpenSSL::SSL::SSLSocket#connect_nonblock
     * OpenSSL::SSL::SSLSocket#accept_nonblock
+
+* scanf
+  * support %a/%A format.
+
 
 * socket
 
