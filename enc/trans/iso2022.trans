@@ -46,7 +46,7 @@
     "1b2442" => :func_so,       # designate JIS X 0208 1983 to G0.      "ESC $ B"
     "0e"     => :func_so,       # designate JIS X 0201 katakana to G0.  "SO"
     "0f"     => :func_so,       # designate US-ASCII to G0.             "SI"
-    "{00-0d,10-1a,1c-92}" => :func_si,
+    "{00-0d,10-1a,1c-92,a1-df}" => :func_si,
   }
   transcode_generate_node(ActionMap.parse(map), "cp50221_decoder")
 
@@ -269,22 +269,26 @@ static VALUE
 fun_si_cp50221_decoder(void *statep, const unsigned char *s, size_t l)
 {
     unsigned char *sp = statep;
+    int c;
     switch (*sp) {
       case G0_ASCII:
+        if (0xA1 <= s[0] && s[0] <= 0xDF)
+            return (VALUE)FUNso;
         return (VALUE)NOMAP;
       case G0_JISX0201_KATAKANA:
-        if (0x21 <= s[0] && s[0] <= 0x5f)
+        c = s[0] & 0x7F;
+        if (0x21 <= c && c <= 0x5f)
             return (VALUE)FUNso;
         break;
       case G0_JISX0208_1978:
-        if (0x21 <= s[0] && s[0] <= 0x28 || 0x30 <= s[0] && s[0] <= 0x74)
+        if ((0x21 <= s[0] && s[0] <= 0x28) || (0x30 <= s[0] && s[0] <= 0x74))
             return (VALUE)iso2022jp_decoder_jisx0208_rest;
         break;
       case G0_JISX0208_1983:
-        if (0x21 <= s[0] && s[0] <= 0x28 ||
+        if ((0x21 <= s[0] && s[0] <= 0x28) ||
                 s[0] == 0x2D ||
-                0x30 <= s[0] && s[0] <= 0x74 ||
-                0x79 <= s[0] && s[0] <= 0x7C)
+                (0x30 <= s[0] && s[0] <= 0x74) ||
+                (0x79 <= s[0] && s[0] <= 0x7C))
                 /* 0x7F <= s[0] && s[0] <= 0x92) */
             return (VALUE)iso2022jp_decoder_jisx0208_rest;
         break;
@@ -327,7 +331,8 @@ fun_so_cp50221_decoder(void *statep, const unsigned char *s, size_t l, unsigned 
         *sp = G0_ASCII;
         return 0;
       default:
-        if (*sp == G0_JISX0201_KATAKANA) {
+        if (*sp == G0_JISX0201_KATAKANA ||
+            (0xA1 <= s[0] && s[0] <= 0xDF && *sp == G0_ASCII)) {
             o[0] = 0x8E;
             o[1] = s[0] | 0x80;
         }
