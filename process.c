@@ -3389,6 +3389,10 @@ proc_setpgid(VALUE obj, VALUE pid, VALUE pgrp)
 
 
 #if defined(HAVE_SETSID) || (defined(HAVE_SETPGRP) && defined(TIOCNOTTY))
+#if !defined(HAVE_SETSID)
+static rb_pid_t ruby_setsid(void);
+#define setsid() ruby_setsid()
+#endif
 /*
  *  call-seq:
  *     Process.setsid   => fixnum
@@ -3403,18 +3407,22 @@ proc_setpgid(VALUE obj, VALUE pid, VALUE pgrp)
 static VALUE
 proc_setsid(void)
 {
-#if defined(HAVE_SETSID)
     rb_pid_t pid;
 
     rb_secure(2);
     pid = setsid();
     if (pid < 0) rb_sys_fail(0);
     return PIDT2NUM(pid);
-#elif defined(HAVE_SETPGRP) && defined(TIOCNOTTY)
+}
+
+#if !defined(HAVE_SETSID)
+#define HAVE_SETSID 1
+static rb_pid_t
+ruby_setsid(void)
+{
     rb_pid_t pid;
     int ret;
 
-    rb_secure(2);
     pid = getpid();
 #if defined(SETPGRP_VOID)
     ret = setpgrp();
@@ -3424,15 +3432,15 @@ proc_setsid(void)
 #else
     ret = setpgrp(0, pid);
 #endif
-    if (ret == -1) rb_sys_fail(0);
+    if (ret == -1) return -1;
 
     if ((fd = open("/dev/tty", O_RDWR)) >= 0) {
 	ioctl(fd, TIOCNOTTY, NULL);
 	close(fd);
     }
-    return PIDT2NUM(pid);
-#endif
+    return pid;
 }
+#endif
 #else
 #define proc_setsid rb_f_notimplement
 #endif
@@ -4531,7 +4539,7 @@ proc_setmaxgroups(VALUE obj, VALUE val)
     return INT2FIX(maxgroups);
 }
 
-#if defined(HAVE_DAEMON) || defined(HAVE_FORK)
+#if defined(HAVE_DAEMON) || (defined(HAVE_FORK) && defined(HAVE_SETSID))
 /*
  *  call-seq:
  *     Process.daemon()                        => 0
