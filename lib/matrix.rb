@@ -241,7 +241,8 @@ class Matrix
   #     => Matrix[[0, 0, 0], [0, 0, 0]]
   #
   def Matrix.empty(row_size = 0, column_size = 0)
-    Matrix.Raise ErrDimensionMismatch if column_size != 0 && row_size != 0
+    Matrix.Raise ArgumentError, "One size must be 0" if column_size != 0 && row_size != 0
+    Matrix.Raise ArgumentError, "Negative size" if column_size < 0 || row_size < 0
 
     new([[]]*row_size, column_size)
   end
