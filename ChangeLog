@@ -1,4 +1,6 @@
-Fri Apr  2 08:22:51 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Apr  2 08:24:56 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (ruby_setsid): split from proc_setsid.
 
 	* process.c (proc_daemon): use EXIT_SUCCESS instead of magic number.
 
