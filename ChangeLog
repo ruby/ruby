@@ -1,3 +1,16 @@
+Thu Apr  1 13:30:12 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* sprintf.c (rb_str_format): support %a format. [ruby-dev:40650]
+
+	* missing/vsnprintf.c (BSD_vfprintf): ditto.
+
+	* missing/vsnprintf.c (cvt): ditto.
+
+	* util.c (BSD__hdtoa): added.  This is 2-clause BSDL licensed
+	  by David Schultz and from FreeBSD.
+
+	* LEGAL: add about hdtoa() in util.c.
+
 Thu Apr  1 13:24:12 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* object.c (rb_cstr_to_dbl): return 0.0 if hexadecimal and

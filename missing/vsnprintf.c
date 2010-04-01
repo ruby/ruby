@@ -559,7 +559,7 @@ BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 	struct __suio uio;	/* output information: summary */
 	struct __siov iov[NIOV];/* ... and individual io vectors */
 	char buf[BUF];		/* space for %c, %[diouxX], %[eEfgG] */
-	char ox[2];		/* space for 0x hex-prefix */
+	char ox[4];		/* space for 0x hex-prefix, hexadecimal's 1. */
 	char *const ebuf = buf + sizeof(buf);
 #if SIZEOF_LONG > SIZEOF_INT
 	long ln;
@@ -784,6 +784,11 @@ reswitch:	switch (ch) {
 			base = 10;
 			goto number;
 #ifdef FLOATING_POINT
+		case 'a':
+		case 'A':
+			if (prec >= 0)
+				prec++;
+			goto fp_begin;
 		case 'e':		/* anomalous precision */
 		case 'E':
 			if (prec != 0)
@@ -822,7 +827,12 @@ fp_begin:		_double = va_arg(ap, double);
 				else
 					ch = 'g';
 			} 
-			if (ch <= 'e') {	/* 'e' or 'E' fmt */
+			if (ch == 'a' || ch == 'A') {
+				--expt;
+				expsize = exponent(expstr, expt, ch + 'p' - 'a');
+				size = expsize + ndig;
+			}
+			else if (ch <= 'e') {	/* 'e' or 'E' fmt */
 				--expt;
 				expsize = exponent(expstr, expt, ch);
 				size = expsize + ndig;
@@ -1048,7 +1058,20 @@ long_len:
 		if ((flags & FPT) == 0) {
 			PRINT(cp, fieldsz);
 		} else {	/* glue together f_p fragments */
-			if (ch >= 'f') {	/* 'f' or 'g' */
+			if (ch == 'a' || ch == 'A') {
+				ox[0] = '0';
+				ox[1] = ch + ('x' - 'a');
+				PRINT(ox, 2);
+				if (ndig > 1 || flags & ALT) {
+					ox[2] = *cp++;
+					ox[3] = '.';
+					PRINT(ox+2, 2);
+					PRINT(cp, ndig-1);
+				} else	/* XpYYY */
+					PRINT(cp, 1);
+				PRINT(expstr, expsize);
+			}
+			else if (ch >= 'f') {	/* 'f' or 'g' */
 				if (_double == 0) {
 				/* kludge for __dtoa irregularity */
 					if (ndig <= 1 &&
@@ -1112,6 +1135,7 @@ error:
 #ifdef FLOATING_POINT
 
 extern char *BSD__dtoa __P((double, int, int, int *, int *, char **));
+extern char *BSD__hdtoa(double, const char *, int, int *, int *, char **);
 
 static char *
 cvt(value, ndigits, flags, sign, decpt, ch, length, buf)
@@ -1135,7 +1159,14 @@ cvt(value, ndigits, flags, sign, decpt, ch, length, buf)
 	} else {
 	    *sign = '\000';
 	}
-	digits = BSD__dtoa(value, mode, ndigits, decpt, &dsgn, &rve);
+	if (ch == 'a' || ch =='A') {
+	    digits = BSD__hdtoa(value,
+		    ch == 'a' ? "0123456789abcdef" : "0123456789ABCDEF",
+		    ndigits, decpt, &dsgn, &rve);
+	}
+	else {
+	    digits = BSD__dtoa(value, mode, ndigits, decpt, &dsgn, &rve);
+	}
 	memcpy(buf, digits, rve - digits);
 	xfree(digits);
 	rve = buf + (rve - digits);
@@ -1181,7 +1212,7 @@ exponent(p0, exp, fmtch)
 		for (; t < expbuf + MAXEXP; *p++ = *t++);
 	}
 	else {
-		*p++ = '0';
+		if (fmtch & 15) *p++ = '0'; /* other than p or P */
 		*p++ = to_char(exp);
 	}
 	return (int)(p - p0);
