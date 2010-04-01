@@ -3937,26 +3937,25 @@ BSD__hdtoa(double d, const char *xdigs, int ndigits, int *decpt, int *sign,
 	else
 	    *sign = 0;
 
-	switch (fpclassify(d)) {
-	case FP_NORMAL:
-		*decpt = dexp_get(u) - DBL_ADJ;
-		break;
-	case FP_ZERO:
-		*decpt = 1;
-		return (nrv_alloc("0", rve, 1));
-	case FP_SUBNORMAL:
-		u.d *= 5.363123171977039e+154 /* 0x1p514 */;
-		*decpt = dexp_get(u) - (514 + DBL_ADJ);
-		break;
-	case FP_INFINITE:
-		*decpt = INT_MAX;
-		return (nrv_alloc(INFSTR, rve, sizeof(INFSTR) - 1));
-	default:	/* FP_NAN or unrecognized */
-		*decpt = INT_MAX;
-		return (nrv_alloc(NANSTR, rve, sizeof(NANSTR) - 1));
+	if (isinf(d)) { /* FP_INFINITE */
+	    *decpt = INT_MAX;
+	    return (nrv_alloc(INFSTR, rve, sizeof(INFSTR) - 1));
 	}
-
-	/* FP_NORMAL or FP_SUBNORMAL */
+	else if (isnan(d)) { /* FP_NAN */
+	    *decpt = INT_MAX;
+	    return (nrv_alloc(NANSTR, rve, sizeof(NANSTR) - 1));
+	}
+	else if (d == 0.0) { /* FP_ZERO */
+	    *decpt = 1;
+	    return (nrv_alloc("0", rve, 1));
+	}
+	else if (dexp_get(u)) { /* FP_NORMAL */
+	    *decpt = dexp_get(u) - DBL_ADJ;
+	}
+	else { /* FP_SUBNORMAL */
+	    u.d *= 5.363123171977039e+154 /* 0x1p514 */;
+	    *decpt = dexp_get(u) - (514 + DBL_ADJ);
+	}
 
 	if (ndigits == 0)		/* dtoa() compatibility */
 		ndigits = 1;
