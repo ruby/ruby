@@ -1,3 +1,8 @@
+Thu Apr  1 12:04:10 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* include/ruby/ruby.h (PRE_TIMET_PREFIX): define if configure doesn't
+	  defines it.  [ruby-core:29190]
+
 Thu Apr  1 11:36:04 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_initialize): fixed a rdoc miss that textmode and
