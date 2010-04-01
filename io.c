@@ -6316,9 +6316,9 @@ rb_io_stdio_file(rb_io_t *fptr)
  *  :encoding ::
  *    specifies external and internal encodings as "extern:intern".
  *  :textmode ::
- *    If the value is truth value, same as "b" in argument <code>mode</code>.
- *  :binmode ::
  *    If the value is truth value, same as "t" in argument <code>mode</code>.
+ *  :binmode ::
+ *    If the value is truth value, same as "b" in argument <code>mode</code>.
  *  :autoclose ::
  *    If the value is +false+, the _fd_ will be kept open after this
  *    +IO+ instance gets finalized.
