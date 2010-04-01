@@ -1,5 +1,7 @@
 $DEBUG_RDOC = nil
 
+# :main: README.txt
+
 ##
 # = \RDoc - Ruby Documentation System
 #
@@ -17,7 +19,8 @@ $DEBUG_RDOC = nil
 #
 # * If you want to use RDoc to create documentation for your Ruby source files,
 #   read on.
-# * If you want to include extensions written in C, see RDoc::Parser::C
+# * If you want to generate documentation for extensions written in C, see
+#   RDoc::Parser::C
 # * If you want to drive RDoc programmatically, see RDoc::RDoc.
 # * If you want to use the library to format text blocks into HTML, have a look
 #   at RDoc::Markup.
@@ -31,6 +34,7 @@ $DEBUG_RDOC = nil
 #   % rdoc [options] [names...]
 #
 # For an up-to-date option summary, type
+#
 #   % rdoc --help
 #
 # A typical use might be to generate documentation for a package of Ruby
@@ -59,6 +63,7 @@ $DEBUG_RDOC = nil
 # recursively for C and Ruby source files only.
 #
 # == \Options
+#
 # rdoc can be passed a variety of command-line options.  In addition,
 # options can be specified via the +RDOCOPT+ environment variable, which
 # functions similarly to the +RUBYOPT+ environment variable.
@@ -68,35 +73,22 @@ $DEBUG_RDOC = nil
 # will make rdoc default to inline method source code.  Command-line options
 # always will override those in +RDOCOPT+.
 #
-# Run
+# Run:
 #
-#   % rdoc --help
+#   rdoc --help
 #
 # for full details on rdoc's options.
 #
-# Here are some of the most commonly used options.
-# [-d, --diagram]
-#   Generate diagrams showing modules and
-#   classes. You need dot V1.8.6 or later to
-#   use the --diagram option correctly. Dot is
-#   available from http://graphviz.org
-#
-# [-S, --inline-source]
-#   Show method source code inline, rather than via a popup link.
-#
-# [-T, --template=NAME]
-#   Set the template used when generating output.
-#
 # == Documenting Source Code
 #
-# Comment blocks can be written fairly naturally, either using +#+ on
+# Comment blocks can be written fairly naturally, either using <tt>#</tt> on
 # successive lines of the comment, or by including the comment in
 # a =begin/=end block.  If you use the latter form, the =begin line must be
 # flagged with an RDoc tag:
 #
 #   =begin rdoc
 #   Documentation to be processed by RDoc.
-#
+#   
 #   ...
 #   =end
 #
@@ -112,7 +104,7 @@ $DEBUG_RDOC = nil
 #   # FIXME: fails if the birthday falls on February 29th
 #   #++
 #   # The DOB is returned as a Time object.
-#
+#   
 #   def get_dob(person)
 #     # ...
 #   end
@@ -138,7 +130,7 @@ $DEBUG_RDOC = nil
 #
 #   def fred # :yields: index, position
 #     # ...
-#
+#   
 #     yield line, address
 #
 # which will get documented as
@@ -147,6 +139,11 @@ $DEBUG_RDOC = nil
 #
 # +:yields:+ is an example of a documentation directive.  These appear
 # immediately after the start of the document element they are modifying.
+#
+# RDoc automatically cross-references words with underscores or camel-case.
+# To suppress cross-references, prefix the word with a \\ character.  To
+# include special characters like "\\n", you'll need to use two \\
+# characters like "\\\\\\n".
 #
 # == \Markup
 #
@@ -214,17 +211,17 @@ $DEBUG_RDOC = nil
 #
 #   Word-based markup uses flag characters around individual words:
 #
-#   [\*word*]  displays word in a *bold* font
-#   [\_word_]  displays word in an _emphasized_ font
-#   [\+word+]  displays word in a +code+ font
+#   [<tt>\*word*</tt>]  displays word in a *bold* font
+#   [<tt>\_word_</tt>]  displays word in an _emphasized_ font
+#   [<tt>\+word+</tt>]  displays word in a +code+ font
 #
 #   General markup affects text between a start delimiter and and end
 #   delimiter.  Not surprisingly, these delimiters look like HTML markup.
 #
-#   [\<b>text...</b>]    displays word in a *bold* font
-#   [\<em>text...</em>]  displays word in an _emphasized_ font
-#   [\\<i>text...</i>]    displays word in an <i>italicized</i> font
-#   [\<tt>text...</tt>]  displays word in a +code+ font
+#   [<tt>\<b>text...</b></tt>]    displays word in a *bold* font
+#   [<tt>\<em>text...</em></tt>]  displays word in an _emphasized_ font
+#   [<tt>\<i>text...</i></tt>]    displays word in an <i>italicized</i> font
+#   [<tt>\<tt>text...\</tt></tt>] displays word in a +code+ font
 #
 #   Unlike conventional Wiki markup, general markup can cross line
 #   boundaries.  You can turn off the interpretation of markup by
@@ -233,7 +230,7 @@ $DEBUG_RDOC = nil
 #
 # * Hyperlinks to the web starting http:, mailto:, ftp:, or www. are
 #   recognized.  An HTTP url that references an external image file is
-#   converted into an inline <IMG..>.  Hyperlinks starting 'link:' are
+#   converted into an inline \<IMG..>.  Hyperlinks starting 'link:' are
 #   assumed to refer to local files whose path is relative to the --op
 #   directory.
 #
@@ -241,6 +238,14 @@ $DEBUG_RDOC = nil
 #   case the label is used in the displayed text, and +url+ is
 #   used as the target.  If +label+ contains multiple words,
 #   put it in braces: <em>{multi word label}[</em>url<em>]</em>.
+#
+#   Example hyperlinks:
+#
+#     link:RDoc.html
+#     http://rdoc.rubyforge.org
+#     mailto:user@example.com
+#     {RDoc Documentation}[http://rdoc.rubyforge.org]
+#     {RDoc Markup}[link:RDoc/Markup.html]
 #
 # == Directives
 #
@@ -251,12 +256,12 @@ $DEBUG_RDOC = nil
 #   module also will be omitted.  By default, though, modules and
 #   classes within that class of module _will_ be documented.  This is
 #   turned off by adding the +all+ modifier.
-#
+#   
 #     module MyModule # :nodoc:
 #       class Input
 #       end
 #     end
-#
+#     
 #     module OtherModule # :nodoc: all
 #       class Output
 #       end
@@ -290,7 +295,7 @@ $DEBUG_RDOC = nil
 #   comment block may have one or more lines before the :section: directive.
 #   These will be removed, and any identical lines at the end of the block are
 #   also removed.  This allows you to add visual cues such as:
-#
+#     
 #     # ----------------------------------------
 #     # :section: My Section
 #     # This is the section that I wrote.
@@ -327,6 +332,8 @@ $DEBUG_RDOC = nil
 #   last.  If you don't specify a +:startdoc:+ by the end of the container,
 #   disables documentation for the entire class or module.
 #
+# Further directives can be found in RDoc::Parser::Ruby and RDoc::Parser::C
+#
 # == Other stuff
 #
 # RDoc is currently being maintained by Eric Hodel <drbrain@segment7.net>
@@ -338,9 +345,6 @@ $DEBUG_RDOC = nil
 # * The Ruby parser in rdoc/parse.rb is based heavily on the outstanding
 #   work of Keiju ISHITSUKA of Nippon Rational Inc, who produced the Ruby
 #   parser for irb and the rtags package.
-#
-# * Code to diagram classes and modules was written by Sergey A Yanovitsky
-#   (Jah) of Enticla.
 #
 # * Charset patch from MoonWolf.
 #
@@ -367,12 +371,19 @@ module RDoc
 
   class Error < RuntimeError; end
 
-  RDocError = Error # :nodoc:
+  def self.const_missing const_name # :nodoc:
+    if const_name.to_s == 'RDocError' then
+      warn "RDoc::RDocError is deprecated"
+      return Error
+    end
+
+    super
+  end
 
   ##
   # RDoc version you are using
 
-  VERSION = "2.2.2"
+  VERSION = '2.5'
 
   ##
   # Name of the dotfile that contains the description of files to be processed
@@ -380,13 +391,28 @@ module RDoc
 
   DOT_DOC_FILENAME = ".document"
 
+  ##
+  # General RDoc modifiers
+
   GENERAL_MODIFIERS = %w[nodoc].freeze
+
+  ##
+  # RDoc modifiers for classes
 
   CLASS_MODIFIERS = GENERAL_MODIFIERS
 
-  ATTR_MODIFIERS  = GENERAL_MODIFIERS
+  ##
+  # RDoc modifiers for attributes
+
+  ATTR_MODIFIERS = GENERAL_MODIFIERS
+
+  ##
+  # RDoc modifiers for constants
 
   CONSTANT_MODIFIERS = GENERAL_MODIFIERS
+
+  ##
+  # RDoc modifiers for methods
 
   METHOD_MODIFIERS = GENERAL_MODIFIERS +
     %w[arg args yield yields notnew not-new not_new doc]

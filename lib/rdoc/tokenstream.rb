@@ -9,24 +9,43 @@ module RDoc; end
 
 module RDoc::TokenStream
 
+  ##
+  # Adds +tokens+ to the collected tokens
+
+  def add_tokens(*tokens)
+    tokens.flatten.each { |token| @token_stream << token }
+  end
+
+  alias add_token add_tokens
+
+  ##
+  # Starts collecting tokens
+
+  def collect_tokens
+    @token_stream = []
+  end
+
+  alias start_collecting_tokens collect_tokens
+
+  ##
+  # Remove the last token from the collected tokens
+
+  def pop_token
+    @token_stream.pop
+  end
+
+  ##
+  # Current token stream
+
   def token_stream
     @token_stream
   end
 
-  def start_collecting_tokens
-    @token_stream = []
-  end
+  ##
+  # Returns a string representation of the token stream
 
-  def add_token(tk)
-    @token_stream << tk
-  end
-
-  def add_tokens(tks)
-    tks.each  {|tk| add_token(tk)}
-  end
-
-  def pop_token
-    @token_stream.pop
+  def tokens_to_s
+    token_stream.map { |token| token.text }.join ''
   end
 
 end

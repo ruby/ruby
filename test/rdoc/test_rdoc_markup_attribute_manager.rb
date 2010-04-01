@@ -1,14 +1,13 @@
 require "rubygems"
-require "minitest/unit"
+require "minitest/autorun"
+require 'rdoc'
+require 'rdoc/markup'
 require "rdoc/markup/inline"
 require "rdoc/markup/to_html_crossref"
 
 class TestRDocMarkupAttributeManager < MiniTest::Unit::TestCase
 
   def setup
-    @orig_special = RDoc::Markup::AttributeManager::SPECIAL
-    RDoc::Markup::AttributeManager::SPECIAL.replace Hash.new
-
     @am = RDoc::Markup::AttributeManager.new
 
     @bold_on  = @am.changed_attribute_by_name([], [:BOLD])
@@ -32,10 +31,6 @@ class TestRDocMarkupAttributeManager < MiniTest::Unit::TestCase
     @wombat_off   = @am.changed_attribute_by_name([:WOMBAT], [])
   end
 
-  def teardown
-    RDoc::Markup::AttributeManager::SPECIAL.replace @orig_special
-  end
-
   def crossref(text)
     crossref_bitmap = RDoc::Markup::Attribute.bitmap_for(:_SPECIAL_) |
                       RDoc::Markup::Attribute.bitmap_for(:CROSSREF)
@@ -55,9 +50,9 @@ class TestRDocMarkupAttributeManager < MiniTest::Unit::TestCase
   def test_add_word_pair
     @am.add_word_pair '%', '&', 'percent and'
 
-    assert RDoc::Markup::AttributeManager::WORD_PAIR_MAP.include?(/(%)(\S+)(&)/)
-    assert RDoc::Markup::AttributeManager::PROTECTABLE.include?('%')
-    assert !RDoc::Markup::AttributeManager::PROTECTABLE.include?('&')
+    assert @am.word_pair_map.include?(/(%)(\S+)(&)/)
+    assert @am.protectable.include?('%')
+    assert !@am.protectable.include?('&')
   end
 
   def test_add_word_pair_angle
@@ -71,8 +66,8 @@ class TestRDocMarkupAttributeManager < MiniTest::Unit::TestCase
   def test_add_word_pair_matching
     @am.add_word_pair '^', '^', 'caret'
 
-    assert RDoc::Markup::AttributeManager::MATCHING_WORD_PAIRS.include?('^')
-    assert RDoc::Markup::AttributeManager::PROTECTABLE.include?('^')
+    assert @am.matching_word_pairs.include?('^')
+    assert @am.protectable.include?('^')
   end
 
   def test_basic
@@ -122,6 +117,10 @@ class TestRDocMarkupAttributeManager < MiniTest::Unit::TestCase
 
     assert_equal [@bold_on, '\\bold', @bold_off],
                  @am.flow("*\\bold*")
+  end
+
+  def test_bold_html_escaped
+    assert_equal ['cat <b>dog</b>'], @am.flow('cat \<b>dog</b>')
   end
 
   def test_combined
@@ -196,14 +195,17 @@ class TestRDocMarkupAttributeManager < MiniTest::Unit::TestCase
   end
 
   def test_protect
-    assert_equal(['cat \\ dog'], @am.flow('cat \\ dog'))
+    assert_equal(['cat \\ dog'],
+                 @am.flow('cat \\ dog'))
 
-    assert_equal(["cat <tt>dog</Tt>"], @am.flow("cat \\<tt>dog</Tt>"))
+    assert_equal(["cat <tt>dog</Tt>"],
+                 @am.flow("cat \\<tt>dog</Tt>"))
 
     assert_equal(["cat ", @em_on, "and", @em_off, " <B>dog</b>"],
                   @am.flow("cat <i>and</i> \\<B>dog</b>"))
 
-    assert_equal(["*word* or <b>text</b>"], @am.flow("\\*word* or \\<b>text</b>"))
+    assert_equal(["*word* or <b>text</b>"],
+                 @am.flow("\\*word* or \\<b>text</b>"))
 
     assert_equal(["_cat_", @em_on, "dog", @em_off],
                   @am.flow("\\_cat_<i>dog</i>"))
@@ -229,6 +231,10 @@ class TestRDocMarkupAttributeManager < MiniTest::Unit::TestCase
     assert_equal(["cats' ", crossref("#fred")].flatten, @am.flow("cats' #fred"))
   end
 
+  def test_tt_html
+    assert_equal [@tt_on, '"\n"', @tt_off],
+                 @am.flow('<tt>"\n"</tt>')
+  end
+
 end
 
-MiniTest::Unit.autorun

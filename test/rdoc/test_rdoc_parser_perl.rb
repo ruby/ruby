@@ -1,7 +1,7 @@
 require 'stringio'
 require 'tempfile'
 require 'rubygems'
-require 'minitest/unit'
+require 'minitest/autorun'
 require 'rdoc/options'
 require 'rdoc/parser/perl'
 
@@ -55,7 +55,7 @@ This just contains plain old documentation
 =end
     EOF
     comment = util_get_comment content
-    assert_equal "\nThis just contains plain old documentation\n\n", comment
+    assert_equal 'This just contains plain old documentation', comment
   end
 
   # Get the comment of the @top_level when it has processed the input.
@@ -71,4 +71,3 @@ This just contains plain old documentation
 
 end
 
-MiniTest::Unit.autorun
