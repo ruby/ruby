@@ -112,7 +112,7 @@ and <tt>tests/scanftests.rb</tt> for examples.)
 [x,X]
   Matches an optionally signed hexadecimal integer,
 
-[f,g,e,E]
+[a,e,f,g,A,E,F,G]
   Matches an optionally signed floating-point number.
 
 [s]
@@ -309,7 +309,22 @@ module Scanf
 
     def skip;  /^\s*%\*/.match(@spec_string); end
 
-    def extract_float(s); s.to_f if s &&! skip; end
+    def extract_float(s)
+      return nil unless s &&! skip
+      if /\A(?<sign>[-+]?)0[xX](?<frac>\.\h+|\h+(?:\.\h*)?)[pP](?<exp>[-+]\d+)/ =~ s
+        f1, f2 = frac.split('.')
+        f = f1.hex
+        if f2
+          len = f2.length
+          if len > 0
+            f += f2.hex / (16.0 ** len)
+          end
+        end
+        (sign == ?- ? -1 : 1) * Math.ldexp(f, exp.to_i)
+      else
+        s.to_f
+      end
+    end
     def extract_decimal(s); s.to_i if s &&! skip; end
     def extract_hex(s); s.hex if s &&! skip; end
     def extract_octal(s); s.oct if s &&! skip; end
@@ -409,12 +424,12 @@ module Scanf
           [ "([-+][0-7]{1,#{$1.to_i-1}}|[0-7]{1,#{$1}})", :extract_octal ]
 
           # %f
-        when /%\*?[efgEFG]/
-          [ '([-+]?(?:\d+(?![\d.])|\d*\.\d*(?:[eE][-+]?\d+)?))', :extract_float ]
+        when /%\*?[aefgAEFG]/
+          [ '([-+]?(?:0[xX](?:\.\h+|\h+(?:\.\h*)?)[pP][-+]\d+|\d+(?![\d.])|\d*\.\d*(?:[eE][-+]?\d+)?))', :extract_float ]
 
           # %5f
-        when /%\*?(\d+)[efgEFG]/
-          [ '(?=[-+]?(?:\d+(?![\d.])|\d*\.\d*(?:[eE][-+]?\d+)?))' +
+        when /%\*?(\d+)[aefgAEFG]/
+          [ '(?=[-+]?(?:0[xX](?:\.\h+|\h+(?:\.\h*)?)[pP][-+]\d+|\d+(?![\d.])|\d*\.\d*(?:[eE][-+]?\d+)?))' +
             "(\\S{1,#{$1}})", :extract_float ]
 
           # %5s
@@ -491,7 +506,7 @@ module Scanf
     attr_reader :string_left, :last_spec_tried,
                 :last_match_tried, :matched_count, :space
 
-    SPECIFIERS = 'diuXxofFeEgGsc'
+    SPECIFIERS = 'diuXxofFeEgGscaA'
     REGEX = /
         # possible space, followed by...
           (?:\s*
