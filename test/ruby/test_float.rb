@@ -87,6 +87,18 @@ class TestFloat < Test::Unit::TestCase
     assert_raise(ArgumentError){Float("1__1")}
     # add expected behaviour here.
     assert_equal(10, Float("1_0"))
+
+    assert_equal([ 0.0].pack('G'), [Float(" 0x0p+0").to_f].pack('G'))
+    assert_equal([-0.0].pack('G'), [Float("-0x0p+0").to_f].pack('G'))
+    assert_equal(255.0,     Float("0Xff"))
+    assert_equal(255.5,     Float("0Xff.8"))
+    assert_equal(1.0,       Float("0X1.P+0"))
+    assert_equal(1024.0,    Float("0x1p10"))
+    assert_equal(1024.0,    Float("0x1p+10"))
+    assert_equal(0.0009765625, Float("0x1p-10"))
+    assert_equal(2.6881171418161356e+43, Float("0x1.3494a9b171bf5p+144"))
+    assert_equal(-3.720075976020836e-44, Float("-0x1.a8c1f14e2af5dp-145"))
+ 
   end
 
   def test_divmod

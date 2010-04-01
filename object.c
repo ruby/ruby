@@ -2246,6 +2246,11 @@ rb_cstr_to_dbl(const char *p, int badcheck)
     if (!p) return 0.0;
     q = p;
     while (ISSPACE(*p)) p++;
+
+    if (!badcheck && p[0] == '0' && (p[1] == 'x' || p[1] == 'X')) {
+	return 0.0;
+    }
+
     d = strtod(p, &end);
     if (errno == ERANGE) {
 	OutOfRange();
@@ -2284,6 +2289,11 @@ rb_cstr_to_dbl(const char *p, int badcheck)
 	}
 	*n = '\0';
 	p = buf;
+
+	if (!badcheck && p[0] == '0' && (p[1] == 'x' || p[1] == 'X')) {
+	    return 0.0;
+	}
+
 	d = strtod(p, &end);
 	if (errno == ERANGE) {
 	    OutOfRange();
