@@ -1401,6 +1401,8 @@ int st_strncasecmp(const char *s1, const char *s2, size_t n);
 unsigned long ruby_strtoul(const char *str, char **endptr, int base);
 #define STRTOUL(str, endptr, base) (ruby_strtoul(str, endptr, base))
 
+#define InitVM(ext) {void InitVM_##ext(void);InitVM_##ext();}
+
 #if defined(__cplusplus)
 #if 0
 { /* satisfy cc-mode */

@@ -1,3 +1,8 @@
+Fri Apr  2 05:38:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (InitVM): calls per-VM initialization in
+	  single VM, but does nothing in MVM.
+
 Fri Apr  2 02:56:56 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb: : New instance methods:
