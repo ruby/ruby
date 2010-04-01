@@ -1,3 +1,8 @@
+Thu Apr  1 09:54:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (RUBY_{DEFAULT,NEVER}_FREE): added.
+	  [ruby-dev:40889]
+
 Thu Apr  1 04:55:08 2010  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (rb_big_abs_find_minbit): fix handling the last word.

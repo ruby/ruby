@@ -757,7 +757,10 @@ VALUE rb_data_typed_object_alloc(VALUE klass, void *datap, const rb_data_type_t 
 int rb_typeddata_is_kind_of(VALUE, const rb_data_type_t *);
 void *rb_check_typeddata(VALUE, const rb_data_type_t *);
 #define Check_TypedStruct(v,t) rb_check_typeddata((VALUE)(v),t)
-#define RUBY_TYPED_DEFAULT_FREE ((void (*)(void *))-1)
+#define RUBY_DEFAULT_FREE ((RUBY_DATA_FUNC)-1)
+#define RUBY_NEVER_FREE   ((RUBY_DATA_FUNC)0)
+#define RUBY_TYPED_DEFAULT_FREE RUBY_DEFAULT_FREE
+#define RUBY_TYPED_NEVER_FREE   RUBY_NEVER_FREE
 
 #define Data_Wrap_Struct(klass,mark,free,sval)\
     rb_data_object_alloc(klass,sval,(RUBY_DATA_FUNC)mark,(RUBY_DATA_FUNC)free)
