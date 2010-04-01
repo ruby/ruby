@@ -3969,7 +3969,7 @@ BSD__hdtoa(double d, const char *xdigs, int ndigits, int *decpt, int *sign,
 
 	/* Round to the desired number of digits. */
 	if (SIGFIGS > ndigits && ndigits > 0) {
-		float redux = 1.0;
+		float redux = 1.0f;
 		int offset = 4 * ndigits + DBL_MAX_EXP - 4 - DBL_MANT_DIG;
 		dexp_set(u, offset);
 		u.d += redux;
