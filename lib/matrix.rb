@@ -387,6 +387,14 @@ class Matrix
   #++
 
   #
+  # Returns +true+ if this is an empty matrix, i.e. if the number of rows
+  # or the number of columns is 0.
+  #
+  def empty?
+    column_size == 0 || row_size == 0
+  end
+
+  #
   # Returns +true+ if this is a regular matrix.
   #
   def regular?
@@ -910,7 +918,7 @@ class Matrix
   # Overrides Object#to_s
   #
   def to_s
-    if row_size == 0 || column_size == 0
+    if empty?
       "Matrix.empty(#{row_size}, #{column_size})"
     else
       "Matrix[" + @rows.collect{|row|
@@ -923,7 +931,7 @@ class Matrix
   # Overrides Object#inspect
   #
   def inspect
-    if row_size == 0 || column_size == 0
+    if empty?
       "Matrix.empty(#{row_size}, #{column_size})"
     else
       "Matrix#{@rows.inspect}"
