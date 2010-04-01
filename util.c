@@ -2124,24 +2124,21 @@ break2:
 		}
 	    }
 
-	    if (*s != 'P' && *s != 'p') {
-		s = s0;
-		goto ret;
-	    }
+	    if (*s == 'P' || *s == 'p') {
+		dsign = 0x2C - *++s; /* +: 2B, -: 2D */
+		if (abs(dsign) == 1) s++;
+		else dsign = 1;
 
-	    dsign = 0x2C - *++s; /* +: 2B, -: 2D */
-	    if (abs(dsign) != 1) {
-		s = s0;
-		goto ret;
+		for (nd = 0; (c = *s) >= '0' && c <= '9'; s++) {
+		    nd *= 10;
+		    nd += c;
+		    nd -= '0';
+		}
+		dval(rv) = ldexp(adj, nd * dsign);
 	    }
-
-	    for (nd = 0, s++; (c = *s) >= '0' && c <= '9'; s++) {
-		nd *= 10;
-		nd += c;
-		nd -= '0';
+	    else {
+		dval(rv) = adj;
 	    }
-
-	    dval(rv) = ldexp(adj, nd * dsign);
 	    goto ret;
 	}
         nz0 = 1;

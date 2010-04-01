@@ -1,3 +1,11 @@
+Thu Apr  1 13:24:12 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* object.c (rb_cstr_to_dbl): return 0.0 if hexadecimal and
+	  baccheck is FALSE: Float("0x1p+0") works, but "0x1p+0".to_f
+	  doesn't. [ruby-dev:40650]
+
+	* util.c (ruby_strtod): allow hexdecimal integers.
+
 Thu Apr  1 13:20:50 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/scanf.rb: support %a format. [ruby-dev:40650]
