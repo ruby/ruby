@@ -129,6 +129,16 @@ typedef char ruby_check_sizeof_voidp[SIZEOF_VOIDP == sizeof(void*) ? 1 : -1];
 # define PRI_VALUE_PREFIX ""
 #endif
 
+#ifndef PRI_TIMET_PREFIX
+# if SIZEOF_TIME_T == SIZEOF_INT
+#  define PRI_TIMET_PREFIX
+# elif SIZEOF_TIME_T == SIZEOF_LONG
+#  define PRI_TIMET_PREFIX "l"
+# elif SIZEOF_TIME_T == SIZEOF_LONG_LONG
+#  define PRI_TIMET_PREFIX "ll"
+# endif
+#endif
+
 #if defined PRIdPTR
 # define PRI_PTRDIFF_PREFIX "t"
 #elif SIZEOF_PTRDIFF_T == SIZEOF_INT
