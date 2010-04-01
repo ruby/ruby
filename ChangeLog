@@ -1,3 +1,7 @@
+Fri Apr  2 07:00:28 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/cptr.c (rb_dlptr_inspect): fix format specifiers.
+
 Fri Apr  2 05:38:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (InitVM): calls per-VM initialization in
