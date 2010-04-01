@@ -202,6 +202,10 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal("0x1p+10", sprintf("%a", 1024))
     assert_equal("0x1.23456p+789", sprintf("%a", 3.704450999893983e+237))
     assert_equal("0x1p-1074", sprintf("%a", 4.9e-324))
+    assert_equal("Inf", sprintf("%e", Float::INFINITY))
+    assert_equal("Inf", sprintf("%E", Float::INFINITY))
+    assert_equal("NaN", sprintf("%e", Float::NAN))
+    assert_equal("NaN", sprintf("%E", Float::NAN))
   end
 
   BSIZ = 120
