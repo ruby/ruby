@@ -15,8 +15,8 @@ class TestRDocRDoc < MiniTest::Unit::TestCase
   end
 
   def test_gather_files
-    assert_equal(%w[lib/rdoc.rb],
-                 @rdoc.gather_files(%w[lib/rdoc.rb lib/rdoc.rb]))
+    file = File.expand_path("../../../lib/rdoc.rb", __FILE__)
+    assert_equal([file], @rdoc.gather_files([file, file]))
   end
 
   def test_read_file_contents
