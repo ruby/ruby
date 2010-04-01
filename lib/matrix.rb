@@ -717,8 +717,8 @@ class Matrix
   #++
 
   #
-  # Returns the determinant of the matrix.  If the matrix is not square, the
-  # result is 0. This method's algorithm is Gaussian elimination method
+  # Returns the determinant of the matrix.
+  # This method's algorithm is Gaussian elimination method
   # and using Numeric#quo(). Beware that using Float values, with their
   # usual lack of precision, can affect the value returned by this method.  Use
   # Rational values or Matrix#det_e instead if this is important to you.
@@ -727,7 +727,7 @@ class Matrix
   #     => 45.0
   #
   def determinant
-    return 0 unless square?
+    Matrix.Raise ErrDimensionMismatch unless square?
 
     size = row_size
     a = to_a
@@ -757,8 +757,8 @@ class Matrix
   alias det determinant
 
   #
-  # Returns the determinant of the matrix.  If the matrix is not square, the
-  # result is 0. This method's algorithm is Gaussian elimination method.
+  # Returns the determinant of the matrix.
+  # This method's algorithm is Gaussian elimination method.
   # This method uses Euclidean algorithm. If all elements are integer,
   # really exact value. But, if an element is a float, can't return
   # exact value.
@@ -767,7 +767,7 @@ class Matrix
   #     => 63
   #
   def determinant_e
-    return 0 unless square?
+    Matrix.Raise ErrDimensionMismatch unless square?
 
     size = row_size
     a = to_a
