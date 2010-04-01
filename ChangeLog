@@ -1,3 +1,9 @@
+Thu Apr  1 11:36:04 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_initialize): fixed a rdoc miss that textmode and
+	  bimode flag explanation was reversed each other.  a patch from
+	  Heesob Park in [ruby-core:29166].
+
 Thu Apr  1 09:54:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (RUBY_{DEFAULT,NEVER}_FREE): added.
