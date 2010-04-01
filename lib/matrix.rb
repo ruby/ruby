@@ -424,15 +424,6 @@ class Matrix
     rows.eql? other.rows
   end
 
-  def compare_by_row_vectors(rows, comparison = :==)
-    return false unless @rows.size == rows.size
-
-    @rows.size.times do |i|
-      return false unless @rows[i].send(comparison, rows[i])
-    end
-    true
-  end
-
   #
   # Returns a clone of the matrix, so that the contents of each do not reference
   # identical objects.
@@ -923,12 +914,10 @@ class Matrix
       "Matrix.empty(#{row_size}, #{column_size})"
     else
       "Matrix[" + @rows.collect{|row|
-	"[" + row.collect{|e| e.to_s}.join(", ") + "]"
+        "[" + row.collect{|e| e.to_s}.join(", ") + "]"
       }.join(", ")+"]"
     end
   end
-
-  alias_method :inspect_org, :inspect
 
   #
   # Overrides Object#inspect
@@ -1191,10 +1180,6 @@ class Vector
   def eql?(other)
     return false unless Vector === other
     @elements.eql? other.elements
-  end
-
-  def compare_by(elements, comparison = :==)
-    @elements.send(comparison, elements)
   end
 
   #
