@@ -1,3 +1,7 @@
+Thu Apr  1 14:07:51 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* util.c (BSD__hdtoa): don't use C99 macros. (FP_NORMAL etc)
+
 Thu Apr  1 13:30:12 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): support %a format. [ruby-dev:40650]
