@@ -65,6 +65,8 @@ end
 # * <tt> #column(j)                     </tt>
 # * <tt> #collect                       </tt>
 # * <tt> #map                           </tt>
+# * <tt> #each                          </tt>
+# * <tt> #each_with_index               </tt>
 # * <tt> #minor(*param)                 </tt>
 #
 # Properties of a matrix:
@@ -104,6 +106,7 @@ class Matrix
   @RCS_ID='-$Id: matrix.rb,v 1.13 2001/12/09 14:22:23 keiju Exp keiju $-'
 
 #  extend Exception2MessageMapper
+  include Enumerable
   include ExceptionForMatrix
 
   # instance creations
@@ -338,6 +341,42 @@ class Matrix
     new_matrix rows, column_size
   end
   alias map collect
+
+  #
+  # Yields all elements of the matrix, starting with those of the first row,
+  # or returns an Enumerator is no block given
+  #   Matrix[ [1,2], [3,4] ].each { |e| puts e }
+  #     # => prints the numbers 1 to 4
+  #
+  def each(&block) # :yield: e
+    return to_enum(:each) unless block_given?
+    @rows.each do |row|
+      row.each(&block)
+    end
+    self
+  end
+
+  #
+  # Yields all elements of the matrix, starting with those of the first row,
+  # along with the row index and column index,
+  # or returns an Enumerator is no block given
+  #   Matrix[ [1,2], [3,4] ].each_with_index do |e, row, col|
+  #     puts "#{e} at #{row}, #{col}"
+  #   end
+  #     # => 1 at 0, 0
+  #     # => 2 at 0, 1
+  #     # => 3 at 1, 0
+  #     # => 4 at 1, 1
+  #
+  def each_with_index(&block) # :yield: e, row, column
+    return to_enum(:each_with_index) unless block_given?
+    @rows.each_with_index do |row, row_index|
+      row.each_with_index do |e, col_index|
+        yield e, row_index, col_index
+      end
+    end
+    self
+  end
 
   #
   # Returns a section of the matrix.  The parameters are either:
