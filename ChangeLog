@@ -1,4 +1,7 @@
-Fri Apr  2 14:12:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Apr  2 14:14:28 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/parser/c.rb: fixed a small error in the documentation.
+	  [ruby-core:24744]  reapplied r24395.
 
 	* lib/rdoc/parser.rb (RDoc::Parser.binary?): blksize may be nil
 	  and is irrelevant to whether a file is binary.  TAB and newlines
