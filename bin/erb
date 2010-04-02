@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 # Tiny eRuby --- ERB2
-# Copyright (c) 1999-2000,2002 Masatoshi SEKI 
+# Copyright (c) 1999-2000,2002 Masatoshi SEKI
 # You can redistribute it and/or modify it under the same terms as Ruby.
 
 require 'erb'
@@ -14,11 +14,11 @@ class ERB
       if arg =~ /^-(.)(.*)/
         if $1 == '-'
           arg, @maybe_arg = arg.split(/=/, 2)
-          return arg 
+          return arg
         end
         raise 'unknown switch "-"' if $2[0] == ?- and $1 != 'T'
         if $2.size > 0
-          self.unshift "-#{$2}" 
+          self.unshift "-#{$2}"
           @maybe_arg = $2
         else
           @maybe_arg = nil
@@ -29,7 +29,7 @@ class ERB
         nil
       end
     end
-    
+
     def ARGV.req_arg
       (@maybe_arg || self.shift || raise('missing argument')).tap {
         @maybe_arg = nil
@@ -77,7 +77,7 @@ class ERB
           when '-T'                        # trim mode
             arg = ARGV.req_arg
             if arg == '-'
-              trim_mode = arg 
+              trim_mode = arg
               next
             end
             raise "invalid trim mode #{arg.dump}" unless arg =~ /^[0-2]$/
@@ -97,7 +97,7 @@ class ERB
         end
       rescue                               # usage
         STDERR.puts $!.to_s
-        STDERR.puts File.basename($0) + 
+        STDERR.puts File.basename($0) +
           " [switches] [inputfile]"
         STDERR.puts <<EOU
   -x               print ruby script
