@@ -38,7 +38,22 @@ class VCS
   end
 
   def relative_to(path)
-    path ? Pathname(path).relative_path_from(@srcdir) : '.'
+    if path
+      path = Pathname(path)
+      srcdir = @srcdir
+      if path.absolute? ^ srcdir.absolute?
+        if path.absolute?
+          srcdir = srcdir.expand_path
+        end
+      else
+        if srcdir.absolute?
+          path = path.expand_path
+        end
+      end
+      path.relative_path_from(srcdir)
+    else
+      '.'
+    end
   end
 
   class SVN < self
