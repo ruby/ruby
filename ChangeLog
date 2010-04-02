@@ -1,3 +1,9 @@
+Fri Apr  2 11:54:49 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (init_env): wrong calculation of the head of setenv
+	  string.  [ruby-core:29216]
+	  a patch from Heesob Park in [ruby-core:29218]
+
 Fri Apr  2 08:24:56 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (ruby_setsid): split from proc_setsid.
