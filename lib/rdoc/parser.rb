@@ -67,7 +67,7 @@ class RDoc::Parser
   # content that an RDoc parser shouldn't try to consume.
 
   def self.binary?(file)
-    s = File.read(file, File.stat(file).blksize) || ""
+    s = File.read(file, File.stat(file).blksize || 1024) || ""
 
     if s[0, 2] == Marshal.dump('')[0, 2] then
       true
