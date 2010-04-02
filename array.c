@@ -4117,6 +4117,9 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
 	/* put it on the result array */
 	if(NIL_P(result)) {
 	    rb_yield(subarray);
+	    if (RBASIC(t0)->klass) {
+		rb_raise(rb_eRuntimeError, "product reentered");
+	    }
 	}
 	else {
 	    rb_ary_push(result, subarray);
