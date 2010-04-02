@@ -4052,11 +4052,15 @@ rb_ary_combination(VALUE ary, VALUE num)
 
 /*
  *  call-seq:
- *     ary.product(other_ary, ...)
+ *     ary.product(other_ary, ...)                -> array
+ *     ary.product(other_ary, ...) { |p| block }  -> ary
  *
- *  Returns an array of all combinations of elements from all arrays.
+ *  Returns an array of all combinations of elements from all arrays,
  *  The length of the returned array is the product of the length
- *  of ary and the argument arrays
+ *  of ary and the argument arrays.
+ *  If given a block, <i>product</i> will yield all combinations
+ *  and return self instead.
+ *
  *
  *     [1,2,3].product([4,5])     # => [[1,4],[1,5],[2,4],[2,5],[3,4],[3,5]]
  *     [1,2].product([1,2])       # => [[1,1],[1,2],[2,1],[2,2]]
@@ -4074,7 +4078,7 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
     volatile VALUE t1 = tmpbuf(n, sizeof(int));
     VALUE *arrays = (VALUE*)RSTRING_PTR(t0); /* The arrays we're computing the product of */
     int *counters = (int*)RSTRING_PTR(t1); /* The current position in each one */
-    VALUE result;      /* The array we'll be returning */
+    VALUE result = Qnil;      /* The array we'll be returning, when no block given */
     long i,j;
     long resultlen = 1;
 
@@ -4091,7 +4095,7 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
     /* Compute the length of the result array; return [] if any is empty */
     for (i = 0; i < n; i++) {
 	long k = RARRAY_LEN(arrays[i]), l = resultlen;
-	if (k == 0) return rb_ary_new2(0);
+	if (k == 0) return rb_block_given_p() ? ary : rb_ary_new2(0);
 	resultlen *= k;
 	if (resultlen < k || resultlen < l || resultlen / k != l) {
 	    rb_raise(rb_eRangeError, "too big to product");
@@ -4099,7 +4103,9 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
     }
 
     /* Otherwise, allocate and fill in an array of results */
-    result = rb_ary_new2(resultlen);
+    if (!rb_block_given_p()) {
+	result = rb_ary_new2(resultlen);
+    }
     for (i = 0; i < resultlen; i++) {
 	int m;
 	/* fill in one subarray */
@@ -4109,7 +4115,12 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
 	}
 
 	/* put it on the result array */
-	rb_ary_push(result, subarray);
+	if(NIL_P(result)) {
+	    rb_yield(subarray);
+	}
+	else {
+	    rb_ary_push(result, subarray);
+	}
 
 	/*
 	 * Increment the last counter.  If it overflows, reset to 0
@@ -4126,7 +4137,7 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
     tmpbuf_discard(t0);
     tmpbuf_discard(t1);
 
-    return result;
+    return NIL_P(result) ? ary : result;
 }
 
 /*
