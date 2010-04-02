@@ -417,7 +417,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
   # Adds useful info about the parser to +message+
 
   def make_message message
-    prefix = "\n#{@file_name}:"
+    prefix = "#{@file_name}:"
 
     prefix << "#{@scanner.line_no}:#{@scanner.char_no}:" if @scanner
 
