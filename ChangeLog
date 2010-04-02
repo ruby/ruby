@@ -1,3 +1,7 @@
+Fri Apr  2 21:17:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* NEWS: added reverse_lookup option.
+
 Fri Apr  2 15:26:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/rdoc/test_rdoc_ri_driver.rb (with_dummy_pager): don't grasp

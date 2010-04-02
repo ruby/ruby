@@ -281,6 +281,8 @@ with all sufficient information, see the ChangeLog file.
     * BasicSocket#send, UDPSocket#send, Socket.getnameinfo, Socket#bind, and
       Socket#{connect,connect_nonblock} accepts an Addrinfo object as sockaddr.
     * BasicSocket#getsockopt accepts a Socket::Option object.
+    * Socket.getaddrinfo and IPSocket#{addr,peeraddr} accept an optional
+      argument to turn reverse lookup on/off.
 
     * constant names can be accepted as well as constant values.
       i.e. Socket.new(:PF_INET, :SOCK_STREAM, 0)
