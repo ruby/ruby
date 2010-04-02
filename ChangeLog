@@ -1,3 +1,7 @@
+Sat Apr  3 06:56:11 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* array.c (rb_ary_product): Accept a block [ruby-core:29045]
+
 Sat Apr  3 04:46:00 2010  Tanaka Akira  <akr@fsij.org>
 
 	* tool/file2lastrev.rb (VCS#relative_to): path and @srcdir may have
