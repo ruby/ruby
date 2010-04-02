@@ -212,7 +212,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
   def error(msg)
     msg = make_message msg
     $stderr.puts msg
-    exit(1)
+    exit(false)
   end
 
   ##
