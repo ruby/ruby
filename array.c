@@ -4103,7 +4103,11 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
     }
 
     /* Otherwise, allocate and fill in an array of results */
-    if (!rb_block_given_p()) {
+    if (rb_block_given_p()) {
+	/* Make defensive copies of arrays */
+	for (i = 0; i < n; i++) arrays[i] = ary_make_substitution(arrays[i]);
+    }
+    else {
 	result = rb_ary_new2(resultlen);
     }
     for (i = 0; i < resultlen; i++) {
