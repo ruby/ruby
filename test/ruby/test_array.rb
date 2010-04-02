@@ -780,6 +780,23 @@ class TestArray < Test::Unit::TestCase
     assert_match(/reentered/, e.message)
   end
 
+  def test_product_with_callcc
+    respond_to?(:callcc, true) or require 'continuation'
+    n = 1000
+    cont = nil
+    ary = [1,2,3]
+    begin
+      ary.product {
+        callcc {|k| cont = k} unless cont
+      }
+    rescue => e
+    end
+    n -= 1
+    cont.call if 0 < n
+    assert_instance_of(RuntimeError, e)
+    assert_match(/reentered/, e.message)
+  end
+
   def test_combination_with_callcc
     respond_to?(:callcc, true) or require 'continuation'
     n = 1000
