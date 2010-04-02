@@ -190,10 +190,10 @@ class RDoc::Stats
         line << (" " * padding) if padding > 0
 
         $stdout.print("#{line}\r")
-        $stdout.flush
       else
-        puts "#{progress_bar} #{filename}"
+        $stdout.puts "#{progress_bar} #{filename}"
       end
+      $stdout.flush
     end
 
     def done_adding # :nodoc:
