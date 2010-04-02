@@ -145,12 +145,13 @@ class RDoc::ClassModule < RDoc::Context
   # Merges +class_module+ into this ClassModule
 
   def merge class_module
-    if class_module.comment then
+    comment = class_module.comment
+    if comment then
       document = parse @comment
 
-      class_module.comment.parts.push(*document.parts)
+      comment.parts.concat(document.parts)
 
-      @comment = class_module.comment
+      @comment = comment
     end
 
     class_module.each_attribute do |attr|

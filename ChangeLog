@@ -1,4 +1,6 @@
-Fri Apr  2 22:28:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Apr  3 00:03:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/class_module.rb (RDoc#merge): get rid of stack overflow.
 
 	* lib/rdoc/parser/c.rb (RDoc#handle_method): see source files in
 	  source directory.
