@@ -146,7 +146,7 @@ $TOKEN_DEBUG ||= nil
 
 class RDoc::Parser::Ruby < RDoc::Parser
 
-  parse_files_matching(/\.rbw?$/)
+  parse_files_matching(/\.(?:rbw?|rdoc)\z/)
 
   include RDoc::RubyToken
   include RDoc::TokenStream
