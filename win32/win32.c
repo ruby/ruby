@@ -456,7 +456,7 @@ init_env(void)
 #define env wk.val
 #define set_env_val(vname) do { \
 	typedef char namesizecheck[numberof(wk.name) < numberof(vname) - 1 ? -1 : 1]; \
-	WCHAR *const buf = wk.name + numberof(wk.name) - numberof(vname); \
+	WCHAR *const buf = wk.name + numberof(wk.name) - numberof(vname) + 1; \
 	MEMCPY(buf, vname, WCHAR, numberof(vname) - 1); \
 	_wputenv(buf); \
     } while (0)
