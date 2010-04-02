@@ -1,7 +1,7 @@
 Fri Apr  2 15:26:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* test/rdoc/test_rdoc_ri_driver.rb (with_dummy_pager): don't grap
-	  terminal.
+	* test/rdoc/test_rdoc_ri_driver.rb (with_dummy_pager): don't grasp
+	  the terminal.
 
 Fri Apr  2 14:43:18 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
