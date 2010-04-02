@@ -440,7 +440,7 @@ module Benchmark
     #
     # An in-place version of #add.
     #
-    def add!
+    def add!(&blk)
       t = Benchmark::measure(&blk)
       @utime  = utime + t.utime
       @stime  = stime + t.stime
