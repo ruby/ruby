@@ -67,7 +67,7 @@ class RDoc::Parser
   # content that an RDoc parser shouldn't try to consume.
 
   def self.binary?(file)
-    s = File.read(file, File.stat(file).blksize || 1024) || ""
+    s = File.read(file, 1024) or return false
 
     if s[0, 2] == Marshal.dump('')[0, 2] then
       true
@@ -76,10 +76,7 @@ class RDoc::Parser
     elsif s.scan(/<%|%>/).length >= 4 then
       true
     else
-      # From ptools under the Artistic License 2.0, (c) Daniel Berger.
-      s = s.split(//)
-
-      ((s.size - s.grep(" ".."~").size) / s.size.to_f) > 0.30
+      s.count("^ -~\t\r\n").fdiv(s.size) > 0.3 || s.index("\x00")
     end
   end
 

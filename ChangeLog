@@ -1,3 +1,10 @@
+Fri Apr  2 14:12:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/parser.rb (RDoc::Parser.binary?): blksize may be nil
+	  and is irrelevant to whether a file is binary.  TAB and newlines
+	  would be usually considered to be included in text data.
+	  reapplied r23071 and r24297.
+
 Fri Apr  2 13:59:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/ri/paths.rb (RDoc::RI::Paths): Gem::Enable has been
