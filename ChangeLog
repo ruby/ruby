@@ -1,3 +1,12 @@
+Fri Apr  2 03:27:22 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/net/http.rb (HTTPGenericRequest#send_request_with_body_stream):
+	  increased encoding chunk size for POST request with body_stream
+	  (1K -> 16K). patched by Brian Candler. #1284.
+
+	* test/net/http/test_post_io.rb: added for the patch. It's good if a
+	  patch comes with a test.
+
 Thu Apr  1 05:32:17 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* string.c (rb_str_inspect): wrong result of UTF-8 inspect because of
