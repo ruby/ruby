@@ -1,3 +1,7 @@
+Fri Apr  2 22:13:38 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/rdoc.rb: reverted r27186 to add generators.
+
 Fri Apr  2 21:17:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* NEWS: added reverse_lookup option.
