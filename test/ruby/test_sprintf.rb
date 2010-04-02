@@ -197,8 +197,6 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal("0x1p-1", sprintf("%a", 0.5))
     assert_equal("0x1p+0", sprintf("%a", 1.0))
     assert_equal("0x1p+1", sprintf("%a", 2.0))
-    assert_equal("0x1.193ea7aad030ap+0", sprintf("%a", Math.log(3)))
-    assert_equal("0X1.193EA7AAD030AP+0", sprintf("%A", Math.log(3)))
     assert_equal("0x1p+10", sprintf("%a", 1024))
     assert_equal("0x1.23456p+789", sprintf("%a", 3.704450999893983e+237))
     assert_equal("0x1p-1074", sprintf("%a", 4.9e-324))
