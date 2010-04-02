@@ -65,15 +65,15 @@ Fri Apr  2 05:38:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Fri Apr  2 02:56:56 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb: : New instance methods:
-      empty? [ruby-core:26284], each, each_with_index [ruby-core:28400],
-      conjugate, conj, imaginary, imag, real, real?, rectangular, rect
-        [ruby-core:26285]
+	  empty? [ruby-core:26284], each, each_with_index [ruby-core:28400],
+	  conjugate, conj, imaginary, imag, real, real?, rectangular, rect
+		[ruby-core:26285]
 
-    Removed compare_by*, inspect_org, cf [ruby-core:26268]
+	Removed compare_by*, inspect_org, cf [ruby-core:26268]
 
-    Matrix.empty: raise on negative sizes
+	Matrix.empty: raise on negative sizes
 
-    Matrix.determinant: raise on rectangular matrices [ruby-core:28271]
+	Matrix.determinant: raise on rectangular matrices [ruby-core:28271]
 
 Thu Apr  1 17:17:00 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
