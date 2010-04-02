@@ -1,3 +1,10 @@
+Fri Apr  2 14:43:18 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/rdoc.rb (RDoc::Generator): defer by autoload.
+
+	* lib/rdoc/generator/darkfish.rb: use normal library instead of
+	  gem.
+
 Fri Apr  2 14:26:26 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/rdoc.rb (RDoc::RDoc#parse_files): don't branch by
