@@ -393,7 +393,7 @@ class RDoc::Parser::C < RDoc::Parser
     elsif @content =~ %r{Document-(?:class|module):\s+#{class_name}\s*?(?:<\s+[:,\w]+)?\n((?>.*?\*/))}m then
       comment = $1
     elsif @content =~ %r{((?>/\*.*?\*/\s+))
-                         ([\w\.\s]+\s* = \s+)?rb_define_(class|module).*?"(#{class_name})"}xm then
+                         ([\w\.\s]+\s* = \s+)?rb_define_(class|module).*?"(#{class_name})"}xm then # "
       comment = $1
     end
 
@@ -611,8 +611,7 @@ class RDoc::Parser::C < RDoc::Parser
         meth_obj.params = "(" + (1..p_count).map{|i| "p#{i}"}.join(", ") + ")"
       end
 
-      if source_file and File.exist? source_file then
-        file_name = File.join(@file_dir, source_file)
+      if source_file and File.exist?(file_name = File.join(@file_dir, source_file)) then
         body = (@@known_bodies[source_file] ||= File.read(file_name))
       elsif source_file then
         warn "unknown source file #{source_file}"
