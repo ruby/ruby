@@ -502,7 +502,7 @@ Foo::Bar#bother
     util_store
 
     out, err = capture_io do
-      @driver.list_known_classes 
+      @driver.list_known_classes
     end
 
     assert_equal "Ambiguous\nFoo\nFoo::Bar\nFoo::Baz\nInc\n", out

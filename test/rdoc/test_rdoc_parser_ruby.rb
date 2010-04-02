@@ -1240,7 +1240,7 @@ end
     util_parser 'class A; B = "#{c}"; end'
 
     while tk = @parser.get_tk do last_tk = tk end
-    
+
     assert_equal "\n", last_tk.text
   end
 

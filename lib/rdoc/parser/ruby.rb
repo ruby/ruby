@@ -50,7 +50,7 @@ $TOKEN_DEBUG ||= nil
 #
 #   ##
 #   # This method tries over and over until it is tired
-#   
+#
 #   def go_go_go(thing_to_try, tries = 10) # :args: thing_to_try
 #     puts thing_to_try
 #     go_go_go thing_to_try, tries - 1
@@ -70,7 +70,7 @@ $TOKEN_DEBUG ||= nil
 #   # :call-seq:
 #   #   my_method(Range)
 #   #   my_method(offset, length)
-#   
+#
 #   def my_method(*args)
 #   end
 #
@@ -81,7 +81,7 @@ $TOKEN_DEBUG ||= nil
 #
 #   ##
 #   # My method is awesome
-#   
+#
 #   def my_method(&block) # :yields: happy, times
 #     block.call 1, 2
 #   end
@@ -93,7 +93,7 @@ $TOKEN_DEBUG ||= nil
 #
 #   ##
 #   # This is a meta-programmed method!
-#   
+#
 #   add_my_method :meta_method, :arg1, :arg2
 #
 # The parser looks at the token after the identifier to determine the name, in
@@ -131,14 +131,14 @@ $TOKEN_DEBUG ||= nil
 #   ##
 #   # :attr_writer: ghost_writer
 #   # There is an attribute here, but you can't see it!
-#   
+#
 #   ##
 #   # :method: ghost_method
 #   # There is a method here, but you can't see it!
-#   
+#
 #   ##
 #   # this is a comment for a regular method
-#   
+#
 #   def regular_method() end
 #
 # Note that by default, the :method: directive will be ignored if there is a
@@ -737,27 +737,27 @@ class RDoc::Parser::Ruby < RDoc::Parser
   # To create foo and bar attributes on class C with comment "My attributes":
   #
   #   class C
-  #   
+  #
   #     ##
   #     # :attr:
   #     #
   #     # My attributes
-  #   
+  #
   #     my_attr :foo, :bar
-  #   
+  #
   #   end
   #
   # To create a foo attribute on class C with comment "My attribute":
   #
   #   class C
-  #   
+  #
   #     ##
   #     # :attr: foo
   #     #
   #     # My attribute
-  #   
+  #
   #     my_attr :foo, :bar
-  #   
+  #
   #   end
 
   def parse_meta_attr(context, single, tk, comment)

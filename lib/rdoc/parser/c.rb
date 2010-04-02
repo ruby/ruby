@@ -76,7 +76,7 @@ require 'rdoc/known_classes'
 #    * Encapsulate the writing and reading of the configuration
 #    * file. ...
 #    */
-#   
+#
 #   /*
 #    * Document-method: read_value
 #    *

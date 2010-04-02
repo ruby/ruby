@@ -144,7 +144,7 @@ class RDoc::RubyLex
     end
     @seek += 1
     if c == "\n"
-      @line_no += 1 
+      @line_no += 1
       @char_no = 0
     else
       @char_no += 1
@@ -181,10 +181,10 @@ class RDoc::RubyLex
       c2 = @here_readed.pop
     end
     c = c2 unless c
-    @rests.unshift c #c = 
+    @rests.unshift c #c =
     @seek -= 1
     if c == "\n"
-      @line_no -= 1 
+      @line_no -= 1
       if idx = @readed.reverse.index("\n")
         @char_no = @readed.size - idx
       else
@@ -394,7 +394,7 @@ class RDoc::RubyLex
     end
 
     @OP.def_rule("=begin",
-                 proc{|op, io| @prev_char_no == 0 && peek(0) =~ /\s/}) do 
+                 proc{|op, io| @prev_char_no == 0 && peek(0) =~ /\s/}) do
       |op, io|
       @ltype = "="
       res = ''
@@ -415,8 +415,8 @@ class RDoc::RubyLex
       else
         @continue = false
         @lex_state = EXPR_BEG
-        until (@indent_stack.empty? || 
-               [TkLPAREN, TkLBRACK, TkLBRACE, 
+        until (@indent_stack.empty? ||
+               [TkLPAREN, TkLBRACK, TkLBRACE,
                  TkfLPAREN, TkfLBRACK, TkfLBRACE].include?(@indent_stack.last))
           @indent_stack.pop
         end
@@ -427,7 +427,7 @@ class RDoc::RubyLex
     end
 
     @OP.def_rules("*", "**",
-                  "=", "==", "===", 
+                  "=", "==", "===",
                   "=~", "<=>",
                   "<", "<=",
                   ">", ">=", ">>") do
@@ -641,8 +641,8 @@ class RDoc::RubyLex
     @OP.def_rules(";") do
       |op, io|
       @lex_state = EXPR_BEG
-      until (@indent_stack.empty? || 
-             [TkLPAREN, TkLBRACK, TkLBRACE, 
+      until (@indent_stack.empty? ||
+             [TkLPAREN, TkLBRACK, TkLBRACE,
                TkfLPAREN, TkfLBRACK, TkfLBRACE].include?(@indent_stack.last))
         @indent_stack.pop
       end
@@ -761,7 +761,7 @@ class RDoc::RubyLex
       end
     end
 
-    #       @OP.def_rule("def", proc{|op, io| /\s/ =~ io.peek(0)}) do 
+    #       @OP.def_rule("def", proc{|op, io| /\s/ =~ io.peek(0)}) do
     # 	|op, io|
     # 	@indent += 1
     # 	@lex_state = EXPR_FNAME
@@ -1149,7 +1149,7 @@ class RDoc::RubyLex
           str << read_escape
         end
 
-        if PERCENT_PAREN.values.include?(@quoted) 
+        if PERCENT_PAREN.values.include?(@quoted)
           if PERCENT_PAREN[ch] == @quoted
             nest += 1
           elsif ch == @quoted
@@ -1270,7 +1270,7 @@ class RDoc::RubyLex
         escape << ch << read_escape
       end
     else
-      # other characters 
+      # other characters
     end
 
     escape

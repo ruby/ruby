@@ -9,7 +9,7 @@ class TestRDocMarkupToAnsi < RDoc::Markup::FormatterTestCase
 
   def setup
     super
-    
+
     @to = RDoc::Markup::ToAnsi.new
   end
 

@@ -15,7 +15,7 @@ require 'rdoc/parser'
 #
 # We would like to support all the markup the POD provides
 # so that it will convert happily to HTML.  At the moment
-# I don't think I can do that: time constraints. 
+# I don't think I can do that: time constraints.
 #
 
 class RDoc::Parser::PerlPOD < RDoc::Parser
@@ -45,39 +45,39 @@ class RDoc::Parser::PerlPOD < RDoc::Parser
   # but I think it would obscure the intent, scatter the
   # code all over tha place.  This machine is necessary
   # because POD requires that directives be preceded by
-  # blank lines, so reading line by line is necessary, 
+  # blank lines, so reading line by line is necessary,
   # and preserving state about what is seen is necesary.
 
   def scan
 
     @top_level.comment ||= ""
-    state=:code_blank    
+    state=:code_blank
     line_number = 0
     line = nil
 
     # This started out as a really long nested case statement,
     # which also led to repetitive code.  I'd like to avoid that
     # so I'm using a "table" instead.
-    
+
     # Firstly we need some procs to do the transition and processing
     # work.  Because these are procs they are closures, and they can
     # use variables in the local scope.
     #
     # First, the "nothing to see here" stuff.
-    code_noop = lambda do 
+    code_noop = lambda do
       if line =~ /^\s+$/
 	state = :code_blank
       end
     end
 
-    pod_noop = lambda do 
+    pod_noop = lambda do
       if line =~ /^\s+$/
 	state = :pod_blank
       end
       @top_level.comment += filter(line)
     end
 
-    begin_noop = lambda do 
+    begin_noop = lambda do
       if line =~ /^\s+$/
 	state = :begin_blank
       end
@@ -151,7 +151,7 @@ class RDoc::Parser::PerlPOD < RDoc::Parser
   def filter(comment)
     return '' if comment =~ /^=pod\s*$/
     comment.gsub!(/^=pod/, '==')
-    comment.gsub!(/^=head(\d+)/) do 
+    comment.gsub!(/^=head(\d+)/) do
       "=" * $1.to_i
     end
     comment.gsub!(/=item/, '');
