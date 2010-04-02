@@ -1,3 +1,8 @@
+Fri Apr  2 13:51:52 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/ri/paths.rb (RDoc::HOMEDIR): expand_path deals with
+	  platform dependent envirionments.  reapplied r21312.
+
 Fri Apr  2 12:52:25 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/rdoc/parser.rb (binary?): regression.
