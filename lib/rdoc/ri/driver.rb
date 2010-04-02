@@ -532,7 +532,7 @@ Options may also be set in the 'RI' environment variable.
       elsif selector then
         # replace Foo with Foo:: as given
         completions.delete klass
-        completions << "#{klass}#{selector}" 
+        completions << "#{klass}#{selector}"
       end
 
       completions.push(*methods)

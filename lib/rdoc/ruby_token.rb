@@ -1,5 +1,5 @@
 #--
-#   irb/ruby-token.rb - ruby tokens 
+#   irb/ruby-token.rb - ruby tokens
 #   	$Release Version: 0.9.5$
 #   	$Revision: 11708 $
 #   	$Date: 2007-02-12 15:01:19 -0800 (Mon, 12 Feb 2007) $
@@ -211,7 +211,7 @@ module RDoc::RubyToken
         IRB.fail TkReading2TokenNoKey, token
       end
 
-      tk = Token(tk[0], value) 
+      tk = Token(tk[0], value)
 
       if tk.kind_of?(TkOp) then
         tk.name = token
@@ -221,8 +221,8 @@ module RDoc::RubyToken
         IRB.fail TkSymbol2TokenNoKey, token
       end
 
-      tk = Token(tk[0], value) 
-    else 
+      tk = Token(tk[0], value)
+    else
       if token.instance_method(:initialize).arity == 3 then
         tk = token.new(@prev_seek, @prev_line_no, @prev_char_no)
         tk.set_text value

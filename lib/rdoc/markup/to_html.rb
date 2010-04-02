@@ -290,7 +290,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   # Determins the HTML list element for +list_type+ and +open_tag+
 
   def html_list_name(list_type, open_tag)
-    tags = LIST_TYPE_TO_HTML[list_type] 
+    tags = LIST_TYPE_TO_HTML[list_type]
     raise RDoc::Error, "Invalid list type: #{list_type.inspect}" unless tags
     annotate tags[open_tag ? 0 : 1]
   end

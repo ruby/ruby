@@ -9,7 +9,7 @@ class TestRDocMarkupToRdoc < RDoc::Markup::FormatterTestCase
 
   def setup
     super
-    
+
     @to = RDoc::Markup::ToRdoc.new
   end
 
