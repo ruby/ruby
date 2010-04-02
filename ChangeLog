@@ -1,4 +1,7 @@
-Fri Apr  2 13:57:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Apr  2 13:59:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/ri/paths.rb (RDoc::RI::Paths): Gem::Enable has been
+	  obsolete.  reapplied r24599.
 
 	* lib/rdoc/ri/paths.rb: follows $ridir.  reapplied r23554.
 

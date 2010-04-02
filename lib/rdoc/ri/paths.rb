@@ -54,8 +54,7 @@ module RDoc::RI::Paths
   def self.gemdirs
     return @gemdirs if @gemdirs
 
-    require 'rubygems' unless defined?(Gem) and defined?(Gem::Enable) and
-                              Gem::Enable
+    require 'rubygems' unless defined?(Gem)
 
     # HACK dup'd from Gem.latest_partials and friends
     all_paths = []
