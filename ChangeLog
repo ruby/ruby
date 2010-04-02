@@ -1,3 +1,8 @@
+Sat Apr  3 04:46:00 2010  Tanaka Akira  <akr@fsij.org>
+
+	* tool/file2lastrev.rb (VCS#relative_to): path and @srcdir may have
+	  different relative-ness.
+
 Sat Apr  3 03:19:01 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* lib/benchmark.rb (Benchmark::Tms#add): fix NameError.
