@@ -34,6 +34,15 @@ class TestRDocRIDriver < MiniTest::Unit::TestCase
     FileUtils.rm_rf @tmpdir
   end
 
+  DUMMY_PAGER = ":;\n"
+
+  def with_dummy_pager
+    pager_env, ENV['RI_PAGER'] = ENV['RI_PAGER'], DUMMY_PAGER
+    yield
+  ensure
+    ENV['RI_PAGER'] = pager_env
+  end
+
   def mu_pp(obj)
     s = ''
     s = PP.pp obj, s
@@ -558,10 +567,12 @@ Foo::Bar#bother
   def test_page
     @driver.use_stdout = false
 
-    @driver.page do |io|
-      skip "couldn't find a standard pager" if io == $stdout
+    with_dummy_pager do
+      @driver.page do |io|
+        skip "couldn't find a standard pager" if io == $stdout
 
-      assert @driver.paging?
+        assert @driver.paging?
+      end
     end
 
     refute @driver.paging?
@@ -664,7 +675,7 @@ Foo::Bar#bother
   def test_setup_pager
     @driver.use_stdout = false
 
-    pager = @driver.setup_pager
+    pager = with_dummy_pager {@driver.setup_pager}
 
     skip "couldn't find a standard pager" unless pager
 
