@@ -1,4 +1,6 @@
-Fri Apr  2 13:51:52 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Apr  2 13:57:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/ri/paths.rb: follows $ridir.  reapplied r23554.
 
 	* lib/rdoc/ri/paths.rb (RDoc::HOMEDIR): expand_path deals with
 	  platform dependent envirionments.  reapplied r21312.
