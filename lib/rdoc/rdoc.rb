@@ -387,7 +387,7 @@ The internal error was:
               end
 
     if defined? Encoding then
-      if /coding:\s*([\w-]+)/i =~ content[/\A(?:.*\n){0,2}/]
+      if /coding[=:]\s*([^\s;]+)/i =~ content[%r"\A(?:#!.*\n)?.*\n"]
         if enc = ::Encoding.find($1)
           content.force_encoding(enc)
         end
