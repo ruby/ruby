@@ -1,3 +1,10 @@
+Sat Apr  3 10:51:10 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (random_rand): raise ArgumentError on nil, as the
+	  documentation implies.  [ruby-core:29075]
+
+	* random.c (rb_f_rand): mentioned the case of when max is nil.
+
 Sat Apr  3 06:56:11 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* array.c (rb_ary_product): Accept a block [ruby-core:29045]

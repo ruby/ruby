@@ -207,6 +207,7 @@ class TestRand < Test::Unit::TestCase
     assert_raise(ArgumentError, '[ruby-dev:39166]') { r.rand(0..-1) }
     assert_raise(ArgumentError, '[ruby-dev:39166]') { r.rand(0.0...0.0) }
     assert_raise(ArgumentError, '[ruby-dev:39166]') { r.rand(0.0...-0.1) }
+    assert_raise(ArgumentError, bug3027 = '[ruby-core:29075]') { r.rand(nil) }
   end
 
   def test_random_seed
