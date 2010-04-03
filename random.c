@@ -424,7 +424,7 @@ rand_init(struct MT *mt, VALUE vseed)
  *
  * Creates new Mersenne Twister based pseudorandom number generator with
  * seed.  When the argument seed is omitted, the generator is initialized
- * with Random.seed.
+ * with Random.new_seed.
  *
  * The argument seed is used to ensure repeatable sequences of random numbers
  * between different runs of the program.
