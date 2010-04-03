@@ -20,6 +20,7 @@ class Object
             end
         end
 	end
+    alias :syck_to_yaml :to_yaml
 end
 
 class Hash
@@ -35,6 +36,7 @@ class Hash
         end
     end
 	def to_yaml( opts = {} )
+        return super unless YAML::ENGINE.syck?
 		YAML::quick_emit( self, opts ) do |out|
             out.map( taguri, to_yaml_style ) do |map|
                 each do |k, v|
@@ -83,6 +85,7 @@ class Struct
         end
     end
 	def to_yaml( opts = {} )
+        return super unless YAML::ENGINE.syck?
 		YAML::quick_emit( self, opts ) do |out|
 			#
 			# Basic struct is passed as a YAML map
@@ -104,6 +107,7 @@ class Array
     yaml_as "tag:yaml.org,2002:seq"
     def yaml_initialize( tag, val ); concat( val.to_a ); end
 	def to_yaml( opts = {} )
+        return super unless YAML::ENGINE.syck?
 		YAML::quick_emit( self, opts ) do |out|
             out.seq( taguri, to_yaml_style ) do |seq|
                 each do |x|
@@ -124,6 +128,7 @@ class Exception
         o
     end
 	def to_yaml( opts = {} )
+        return super unless YAML::ENGINE.syck?
 		YAML::quick_emit( self, opts ) do |out|
             out.map( taguri, to_yaml_style ) do |map|
                 map.add( 'message', message )
@@ -161,6 +166,7 @@ class String
         end
     end
 	def to_yaml( opts = {} )
+        return super unless YAML::ENGINE.syck?
 		YAML::quick_emit( is_complex_yaml? ? self : nil, opts ) do |out|
             if is_binary_data?
                 out.scalar( "tag:yaml.org,2002:binary", [self].pack("m"), :literal )
@@ -190,6 +196,7 @@ class Symbol
         end
     end
 	def to_yaml( opts = {} )
+        return super unless YAML::ENGINE.syck?
 		YAML::quick_emit( nil, opts ) do |out|
             out.scalar( "tag:yaml.org,2002:str", self.inspect, :plain )
         end
@@ -227,6 +234,7 @@ class Range
         end
     end
 	def to_yaml( opts = {} )
+        return super unless YAML::ENGINE.syck?
 		YAML::quick_emit( self, opts ) do |out|
             # if self.begin.is_complex_yaml? or self.begin.respond_to? :to_str or
             #   self.end.is_complex_yaml? or self.end.respond_to? :to_str or
@@ -276,6 +284,7 @@ class Regexp
         end
     end
 	def to_yaml( opts = {} )
+        return super unless YAML::ENGINE.syck?
 		YAML::quick_emit( nil, opts ) do |out|
             if to_yaml_properties.empty?
                 out.scalar( taguri, self.inspect, :plain )
@@ -310,6 +319,7 @@ class Time
         end
     end
 	def to_yaml( opts = {} )
+        return super unless YAML::ENGINE.syck?
 		YAML::quick_emit( self, opts ) do |out|
             tz = "Z"
             # from the tidy Tobias Peters <t-peters@gmx.de> Thanks!
@@ -347,6 +357,7 @@ end
 class Date
     yaml_as "tag:yaml.org,2002:timestamp#ymd"
 	def to_yaml( opts = {} )
+        return super unless YAML::ENGINE.syck?
 		YAML::quick_emit( self, opts ) do |out|
             out.scalar( "tag:yaml.org,2002:timestamp", self.to_s, :plain )
         end
@@ -356,6 +367,7 @@ end
 class Integer
     yaml_as "tag:yaml.org,2002:int"
 	def to_yaml( opts = {} )
+        return super unless YAML::ENGINE.syck?
 		YAML::quick_emit( nil, opts ) do |out|
             out.scalar( "tag:yaml.org,2002:int", self.to_s, :plain )
         end
@@ -365,6 +377,7 @@ end
 class Float
     yaml_as "tag:yaml.org,2002:float"
 	def to_yaml( opts = {} )
+        return super unless YAML::ENGINE.syck?
 		YAML::quick_emit( nil, opts ) do |out|
             str = self.to_s
             if str == "Infinity"
@@ -389,6 +402,7 @@ class Rational
 		end
 	end
 	def to_yaml( opts = {} )
+        return super unless YAML::ENGINE.syck?
 		YAML::quick_emit( self, opts ) do |out|
 			out.map( taguri, nil ) do |map|
 				map.add( 'denominator', denominator )
@@ -408,6 +422,7 @@ class Complex
 		end
 	end
 	def to_yaml( opts = {} )
+        return super unless YAML::ENGINE.syck?
 		YAML::quick_emit( self, opts ) do |out|
 			out.map( taguri, nil ) do |map|
 				map.add( 'image', imaginary )
@@ -420,6 +435,7 @@ end
 class TrueClass
     yaml_as "tag:yaml.org,2002:bool#yes"
 	def to_yaml( opts = {} )
+        return super unless YAML::ENGINE.syck?
 		YAML::quick_emit( nil, opts ) do |out|
             out.scalar( taguri, "true", :plain )
         end
@@ -429,6 +445,7 @@ end
 class FalseClass
     yaml_as "tag:yaml.org,2002:bool#no"
 	def to_yaml( opts = {} )
+        return super unless YAML::ENGINE.syck?
 		YAML::quick_emit( nil, opts ) do |out|
             out.scalar( taguri, "false", :plain )
         end
@@ -438,6 +455,7 @@ end
 class NilClass
     yaml_as "tag:yaml.org,2002:null"
 	def to_yaml( opts = {} )
+        return super unless YAML::ENGINE.syck?
 		YAML::quick_emit( nil, opts ) do |out|
             out.scalar( taguri, "", :plain )
         end

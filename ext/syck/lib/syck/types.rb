@@ -3,7 +3,7 @@
 # Classes required by the full core typeset
 #
 
-module YAML
+module Syck
 
     #
     # Default private type
@@ -45,7 +45,7 @@ module YAML
     class Object
         def self.tag_subclasses?; false; end
         def to_yaml( opts = {} )
-            YAML::quick_emit( self, opts ) do |out|
+            Syck.quick_emit( self, opts ) do |out|
                 out.map( "tag:ruby.yaml.org,2002:object:#{ @class }", to_yaml_style ) do |map|
                     @ivars.each do |k,v|
                         map.add( k, v )
@@ -67,7 +67,7 @@ module YAML
             self.default.to_s
         end
         def update( h )
-            if YAML::SpecialHash === h
+            if Syck::SpecialHash === h
                 @default = h.default if h.default
             end
             super( h )
@@ -89,11 +89,11 @@ module YAML
                     if Hash === v
                         concat( v.to_a )		# Convert the map to a sequence
                     else
-                        raise YAML::Error, "Invalid !omap entry: " + val.inspect
+                        raise Syck::Error, "Invalid !omap entry: " + val.inspect
                     end
                 end
             else
-                raise YAML::Error, "Invalid !omap: " + val.inspect
+                raise Syck::Error, "Invalid !omap: " + val.inspect
             end
             self
         end
@@ -123,7 +123,7 @@ module YAML
             true
         end
         def to_yaml( opts = {} )
-            YAML::quick_emit( self, opts ) do |out|
+            Syck.quick_emit( self, opts ) do |out|
                 out.seq( taguri, to_yaml_style ) do |seq|
                     self.each do |v|
                         seq.add( Hash[ *v ] )
@@ -144,11 +144,11 @@ module YAML
                     if Hash === v
                         concat( v.to_a )		# Convert the map to a sequence
                     else
-                        raise YAML::Error, "Invalid !pairs entry: " + val.inspect
+                        raise Syck::Error, "Invalid !pairs entry: " + val.inspect
                     end
                 end
             else
-                raise YAML::Error, "Invalid !pairs: " + val.inspect
+                raise Syck::Error, "Invalid !pairs: " + val.inspect
             end
             self
         end
@@ -173,7 +173,7 @@ module YAML
             true
         end
         def to_yaml( opts = {} )
-            YAML::quick_emit( self, opts ) do |out|
+            Syck.quick_emit( self, opts ) do |out|
                 out.seq( taguri, to_yaml_style ) do |seq|
                     self.each do |v|
                         seq.add( Hash[ *v ] )

@@ -1,10 +1,10 @@
-require 'yaml'
+require 'syck'
 require 'dbm'
 #
 # YAML + DBM = YDBM
 # - Same interface as DBM class
 #
-module YAML
+module Syck
 
 class DBM < ::DBM
     VERSION = "0.1"
@@ -17,7 +17,7 @@ class DBM < ::DBM
     def fetch( keystr, ifnone = nil )
         begin
             val = super( keystr )
-            return YAML::load( val ) if String === val
+            return Syck.load( val ) if String === val
         rescue IndexError
         end
         if block_given?
@@ -35,7 +35,7 @@ class DBM < ::DBM
     def delete( key )
         v = super( key )
         if String === v
-            v = YAML::load( v )
+            v = Syck.load( v )
         end
         v
     end
@@ -54,11 +54,11 @@ class DBM < ::DBM
         self
     end
     def each_value
-        super { |v| yield YAML::load( v ) }
+        super { |v| yield Syck.load( v ) }
         self
     end
     def values
-        super.collect { |v| YAML::load( v ) }
+        super.collect { |v| Syck.load( v ) }
     end
     def has_value?( val )
         each_value { |v| return true if v == val }
@@ -75,7 +75,7 @@ class DBM < ::DBM
     end
     def shift
         a = super
-        a[1] = YAML::load( a[1] ) if a
+        a[1] = Syck.load( a[1] ) if a
         a
     end
     def select( *keys )

@@ -2,7 +2,7 @@
 # Error messages and exception class
 #
 
-module YAML
+module Syck
 
 	#
 	# Error messages

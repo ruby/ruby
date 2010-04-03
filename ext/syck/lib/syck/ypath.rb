@@ -4,7 +4,7 @@
 
 warn "#{caller[0]}: YAML::YPath is deprecated" if $VERBOSE
 
-module YAML
+module Syck
 
     class YPath
         attr_accessor :segments, :predicates, :flags
@@ -24,7 +24,7 @@ module YAML
                 @segments.push "."
             end
         end
-        def YPath.each_path( str )
+        def self.each_path( str )
             #
             # Find choices
             #

@@ -2,7 +2,7 @@
 # YAML::Loader class
 # .. type handling ..
 #
-module YAML
+module Syck
     class Loader
         TRANSFER_DOMAINS = {
             'yaml.org,2002' => {},

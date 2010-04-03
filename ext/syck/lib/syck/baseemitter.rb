@@ -2,15 +2,15 @@
 # BaseEmitter
 #
 
-require 'yaml/constants'
-require 'yaml/encoding'
-require 'yaml/error'
+require 'syck/constants'
+require 'syck/encoding'
+require 'syck/error'
 
-module YAML
+module Syck
   module BaseEmitter
     def options( opt = nil )
       if opt
-        @options[opt] || YAML::DEFAULTS[opt]
+        @options[opt] || DEFAULTS[opt]
       else
         @options
       end
@@ -38,7 +38,7 @@ module YAML
         block =
           if options(:UseBlock)
             '|'
-          elsif not options(:UseFold) and valx =~ /\n[ \t]/ and not valx =~ /#{YAML::ESCAPE_CHAR}/
+          elsif not options(:UseFold) and valx =~ /\n[ \t]/ and not valx =~ /#{ESCAPE_CHAR}/
             '|'
           else
             '>'
@@ -61,7 +61,7 @@ module YAML
       block += "\n"
       if block[0] == ?"
         esc_skip = ( "\t\n" unless valx =~ /^[ \t]/ ) || ""
-        valx = fold( YAML::escape( valx, esc_skip ) + "\"" ).chomp
+        valx = fold( Syck.escape( valx, esc_skip ) + "\"" ).chomp
         self << '"' + indent_text( valx, indt, false )
       else
         if block[0] == ?>
@@ -84,7 +84,7 @@ module YAML
     # Emit double-quoted string
     #
     def double( value )
-      "\"#{YAML.escape( value )}\""
+      "\"#{Syck.escape( value )}\""
     end
 
     #

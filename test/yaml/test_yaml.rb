@@ -4,7 +4,7 @@
 #
 require 'test/unit'
 require 'yaml'
-require 'yaml/ypath'
+require 'syck/ypath'
 
 # [ruby-core:01946]
 module YAML_Tests

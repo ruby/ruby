@@ -1,4 +1,4 @@
-module YAML
+module Syck
 
 	#
 	# YAML::Stream -- for emitting many documents
@@ -28,7 +28,7 @@ module YAML
 		def emit( io = nil )
             # opts = @options.dup
 			# opts[:UseHeader] = true if @documents.length > 1
-            out = YAML.emitter
+            out = Syck.emitter
             out.reset( io || io2 = StringIO.new )
             @documents.each { |v|
                 v.to_yaml( out )
