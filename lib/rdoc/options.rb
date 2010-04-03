@@ -193,7 +193,7 @@ Usage: #{opt.program_name} [options] [names...]
 
       opt.separator nil
 
-      opt.on("--force-update", "-U",
+      opt.on("--[no-]force-update", "-U",
              "Forces rdoc to scan all sources even if",
              "newer than the flag file.") do |value|
         @force_update = value

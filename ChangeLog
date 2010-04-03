@@ -1,3 +1,9 @@
+Sat Apr  3 15:09:30 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (rdoc): no force-update, and add RDOCFLAGS.
+
+	* lib/rdoc/options.rb (RDoc#parse): no-force-update option.
+
 Sat Apr  3 10:51:10 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (random_rand): raise ArgumentError on nil, as the
