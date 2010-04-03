@@ -1,3 +1,11 @@
+Sat Apr  3 18:15:02 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/rdoc.rb (RDoc#{setup,update}_output_dir): store mtimes
+	  per files in the flag file.
+
+	* lib/rdoc/rdoc.rb (RDoc#normalized_file_list): skip already
+	  processed and unmodified files.
+
 Sat Apr  3 15:09:30 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (rdoc): no force-update, and add RDOCFLAGS.
