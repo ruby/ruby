@@ -1850,7 +1850,10 @@ class TestArray < Test::Unit::TestCase
   def test_product2
     a = (0..100).to_a
     assert_raise(RangeError) do
-      a.product(a, a, a, a, a, a, a, a, a, a) {}
+      a.product(a, a, a, a, a, a, a, a, a, a)
+    end
+    assert_nothing_raised(RangeError) do
+      a.product(a, a, a, a, a, a, a, a, a, a) { break }
     end
   end
 
