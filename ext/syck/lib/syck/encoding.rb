@@ -2,12 +2,12 @@
 # Handle Unicode-to-Internal conversion
 #
 
-module YAML
+module Syck
 
 	#
 	# Escape the string, condensing common escapes
 	#
-	def YAML.escape( value, skip = "" )
+	def self.escape( value, skip = "" )
               warn "#{caller[0]}: YAML.escape is deprecated" if $VERBOSE
 		value.gsub( /\\/, "\\\\\\" ).
               gsub( /"/, "\\\"" ).
@@ -19,7 +19,7 @@ module YAML
 	#
 	# Unescape the condenses escapes
 	#
-	def YAML.unescape( value )
+	def self.unescape( value )
               warn "#{caller[0]}: YAML.unescape is deprecated" if $VERBOSE
 		value.gsub( /\\(?:([nevfbart\\])|0?x([0-9a-fA-F]{2})|u([0-9a-fA-F]{4}))/ ) {
 			if $3

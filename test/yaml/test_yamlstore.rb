@@ -1,5 +1,5 @@
 require 'test/unit'
-require 'yaml/store'
+require 'syck/store'
 
 class YAMLStoreTest < Test::Unit::TestCase
   def setup

@@ -54,19 +54,19 @@ rescue LoadError
 	#
 	# Class method for creating streams
 	#
-	def YAML.make_stream( io )
+	def Syck.make_stream( io )
         if String === io
             io = StringIO.new( io )
         elsif not IO === io
-            raise YAML::Error, "YAML stream must be an IO or String object."
+            raise Syck::Error, "YAML stream must be an IO or String object."
         end
-        if YAML::unicode
+        if Syck::unicode
             def io.readline
-                YAML.utf_to_internal( readline( @ln_sep ), @utf_encoding )
+                Syck.utf_to_internal( readline( @ln_sep ), @utf_encoding )
             end
             def io.check_unicode
-                @utf_encoding = YAML.sniff_encoding( read( 4 ) )
-                @ln_sep = YAML.enc_separator( @utf_encoding )
+                @utf_encoding = Syck.sniff_encoding( read( 4 ) )
+                @ln_sep = Syck.enc_separator( @utf_encoding )
                 seek( -4, IO::SEEK_CUR )
             end
 		    def io.utf_encoding

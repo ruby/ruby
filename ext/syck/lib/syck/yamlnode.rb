@@ -1,9 +1,9 @@
 #
 # YAML::YamlNode class
 #
-require 'yaml/basenode'
+require 'syck/basenode'
 
-module YAML
+module Syck
 
     #
     # YAML Generic Model container
@@ -46,7 +46,7 @@ module YAML
             else
                 t = @value
             end
-            YAML.transfer_method( @type_id, t )
+            Syck.transfer_method( @type_id, t )
         end
 
     end

@@ -5,7 +5,7 @@
 #
 # Author:: why the lucky stiff
 #
-module YAML
+module Syck
     # A dictionary of taguris which map to
     # Ruby classes.
     @@tagged_classes = {}
@@ -32,7 +32,7 @@ module YAML
     #
     #  tag:why@ruby-lang.org,2004:notes/personal
     #
-    def YAML.tag_class( tag, cls )
+    def self.tag_class( tag, cls )
         if @@tagged_classes.has_key? tag
             warn "class #{ @@tagged_classes[tag] } held ownership of the #{ tag } tag"
         end
@@ -45,7 +45,7 @@ module YAML
     #
     #  YAML.tagged_classes["tag:yaml.org,2002:int"] => Integer
     #
-    def YAML.tagged_classes
+    def self.tagged_classes
         @@tagged_classes
     end
 end
@@ -62,11 +62,11 @@ class Module
             attr_writer :taguri
             def taguri
                 if respond_to? :to_yaml_type
-                    YAML::tagurize( to_yaml_type[1..-1] )
+                    Syck.tagurize( to_yaml_type[1..-1] )
                 else
                     return @taguri if defined?(@taguri) and @taguri
                     tag = #{ tag.dump }
-                    if self.class.yaml_tag_subclasses? and self.class != YAML::tagged_classes[tag]
+                    if self.class.yaml_tag_subclasses? and self.class != Syck.tagged_classes[tag]
                         tag = "\#{ tag }:\#{ self.class.yaml_tag_class_name }"
                     end
                     tag
@@ -74,7 +74,7 @@ class Module
             end
             def self.yaml_tag_subclasses?; #{ sc ? 'true' : 'false' }; end
         END
-        YAML::tag_class tag, self
+        Syck.tag_class tag, self
     ensure
         $VERBOSE = verbose
     end

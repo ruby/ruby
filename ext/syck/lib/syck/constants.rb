@@ -1,7 +1,7 @@
 #
 # Constants used throughout the library
 #
-module YAML
+module Syck
 
 	#
 	# Constants

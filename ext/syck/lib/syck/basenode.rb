@@ -2,7 +2,7 @@
 # YAML::BaseNode class
 #
 
-module YAML
+module Syck
 
     #
     # YAML Generic Model container
@@ -25,7 +25,7 @@ module YAML
                 matches.each { |m|
                     result.push m.last
                 }
-                YAML.transfer( 'seq', result )
+                Syck.transfer( 'seq', result )
             end
         end
 

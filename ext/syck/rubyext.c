@@ -2111,9 +2111,7 @@ syck_out_scalar(int argc, VALUE *argv, VALUE self)
 void
 Init_syck()
 {
-    VALUE rb_yaml = rb_define_module( "YAML" );
-    VALUE rb_syck = rb_define_module_under( rb_yaml, "Syck" );
-    rb_define_const( rb_syck, "VERSION", rb_str_new2( SYCK_VERSION ) );
+    VALUE rb_syck = rb_define_module_under( rb_cObject, "Syck" );
     rb_define_module_function( rb_syck, "compile", rb_syck_compile, 1 );
 
     /*
@@ -2258,7 +2256,7 @@ Init_syck()
     /*
      * Define YAML::PrivateType class
      */
-    cPrivateType = rb_define_class_under( rb_yaml, "PrivateType", rb_cObject );
+    cPrivateType = rb_define_class_under( rb_syck, "PrivateType", rb_cObject );
     rb_define_attr( cPrivateType, "type_id", 1, 1 );
     rb_define_attr( cPrivateType, "value", 1, 1 );
     rb_define_method( cPrivateType, "initialize", syck_privatetype_initialize, 2);
@@ -2266,7 +2264,7 @@ Init_syck()
     /*
      * Define YAML::DomainType class
      */
-    cDomainType = rb_define_class_under( rb_yaml, "DomainType", rb_cObject );
+    cDomainType = rb_define_class_under( rb_syck, "DomainType", rb_cObject );
     rb_define_attr( cDomainType, "domain", 1, 1 );
     rb_define_attr( cDomainType, "type_id", 1, 1 );
     rb_define_attr( cDomainType, "value", 1, 1 );
@@ -2275,7 +2273,7 @@ Init_syck()
     /*
      * Define YAML::Object class
      */
-    cYObject = rb_define_class_under( rb_yaml, "Object", rb_cObject );
+    cYObject = rb_define_class_under( rb_syck, "Object", rb_cObject );
     rb_define_attr( cYObject, "class", 1, 1 );
     rb_define_attr( cYObject, "ivars", 1, 1 );
     rb_define_method( cYObject, "initialize", syck_yobject_initialize, 2);
