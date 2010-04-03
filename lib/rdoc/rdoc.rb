@@ -135,20 +135,29 @@ class RDoc::RDoc
   def setup_output_dir(op_dir, force)
     flag_file = output_flag_file op_dir
 
+    last = {}
+
     if File.exist? op_dir then
       unless File.directory? op_dir then
         error "'#{op_dir}' exists, and is not a directory"
       end
       begin
-        created = File.read(flag_file)
-      rescue SystemCallError
+        open(flag_file) do |f|
+          unless force
+            Time.parse(f.gets)
+            f.each do |line|
+              file, time = line.split(/\t/, 2)
+              time = Time.parse(time) rescue next
+              last[file] = time
+            end
+          end
+        end
+      rescue
         error "\nDirectory #{op_dir} already exists, but it looks like it\n" +
           "isn't an RDoc directory. Because RDoc doesn't want to risk\n" +
           "destroying any of your existing files, you'll need to\n" +
           "specify a different output directory name (using the\n" +
           "--op <dir> option).\n\n"
-      else
-        last = (Time.parse(created) unless force rescue nil)
       end
     else
       FileUtils.mkdir_p(op_dir)
@@ -160,8 +169,13 @@ class RDoc::RDoc
   ##
   # Update the flag file in an output directory.
 
-  def update_output_dir(op_dir, time)
-    File.open(output_flag_file(op_dir), "w") { |f| f.puts time.rfc2822 }
+  def update_output_dir(op_dir, time, last = {})
+    File.open(output_flag_file(op_dir), "w") do |f|
+      f.puts time.rfc2822
+      last.each do |n, t|
+        f.puts "#{n}\t#{t.rfc2822}"
+      end
+    end
   end
 
   ##
@@ -212,10 +226,11 @@ class RDoc::RDoc
 
       case type = stat.ftype
       when "file"
-        next if @last_created and stat.mtime < @last_created
+        next if last_created = @last_created[rel_file_name] and stat.mtime <= last_created
 
         if force_doc or RDoc::Parser.can_parse(rel_file_name) then
           file_list << rel_file_name.sub(/^\.\//, '')
+          @last_created[rel_file_name] = stat.mtime
         end
       when "directory"
         next if rel_file_name == "CVS" || rel_file_name == ".svn"
@@ -366,7 +381,7 @@ The internal error was:
           self.class.current = self
 
           @generator.generate file_info
-          update_output_dir ".", start_time
+          update_output_dir ".", start_time, @last_created
         ensure
           self.class.current = nil
         end
