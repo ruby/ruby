@@ -4092,25 +4092,30 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
     /* initialize the counters for the arrays */
     for (i = 0; i < n; i++) counters[i] = 0;
 
-    /* Compute the length of the result array; return [] if any is empty */
-    for (i = 0; i < n; i++) {
-	long k = RARRAY_LEN(arrays[i]), l = resultlen;
-	if (k == 0) return rb_block_given_p() ? ary : rb_ary_new2(0);
-	resultlen *= k;
-	if (resultlen < k || resultlen < l || resultlen / k != l) {
-	    rb_raise(rb_eRangeError, "too big to product");
-	}
-    }
-
     /* Otherwise, allocate and fill in an array of results */
     if (rb_block_given_p()) {
-	/* Make defensive copies of arrays */
-	for (i = 0; i < n; i++) arrays[i] = ary_make_substitution(arrays[i]);
+	/* Make defensive copies of arrays; exit if any is empty */
+	for (i = 0; i < n; i++) {
+	    if (RARRAY_LEN(arrays[i]) == 0) goto done;
+	    arrays[i] = ary_make_substitution(arrays[i]);
+	}
     }
     else {
+	/* Compute the length of the result array; return [] if any is empty */
+	for (i = 0; i < n; i++) {
+	    long k = RARRAY_LEN(arrays[i]), l = resultlen;
+	    if (k == 0) {
+		result = rb_ary_new2(0);
+		goto done;
+	    }
+	    resultlen *= k;
+	    if (resultlen < k || resultlen < l || resultlen / k != l) {
+		rb_raise(rb_eRangeError, "too big to product");
+	    }
+	}
 	result = rb_ary_new2(resultlen);
     }
-    for (i = 0; i < resultlen; i++) {
+    for (;;) {
 	int m;
 	/* fill in one subarray */
 	VALUE subarray = rb_ary_new2(n);
@@ -4135,12 +4140,14 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
 	 */
 	m = n-1;
 	counters[m]++;
-	while (m > 0 && counters[m] == RARRAY_LEN(arrays[m])) {
+	while (counters[m] == RARRAY_LEN(arrays[m])) {
 	    counters[m] = 0;
-	    m--;
+	    /* If the first counter overlows, we are done */
+	    if (--m < 0) goto done;
 	    counters[m]++;
 	}
     }
+done:
     tmpbuf_discard(t0);
     tmpbuf_discard(t1);
 
