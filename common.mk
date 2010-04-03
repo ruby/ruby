@@ -352,7 +352,7 @@ post-install-doc::
 
 rdoc: main PHONY
 	@echo Generating RDoc documentation
-	$(XRUBY) "$(srcdir)/bin/rdoc" --all --ri --op "$(RDOCOUT)" "$(srcdir)"
+	$(XRUBY) "$(srcdir)/bin/rdoc" --no-force-update --all --ri --op "$(RDOCOUT)" $(RDOCFLAGS) "$(srcdir)"
 nodoc: PHONY
 
 what-where-doc: no-install-doc
