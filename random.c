@@ -989,7 +989,6 @@ random_rand(int argc, VALUE *argv, VALUE obj)
     int excl = 0;
 
     if (argc == 0) {
-      zero_arg:
 	return rb_float_new(genrand_real(&rnd->mt));
     }
     else if (argc != 1) {
@@ -997,7 +996,7 @@ random_rand(int argc, VALUE *argv, VALUE obj)
     }
     vmax = argv[0];
     if (NIL_P(vmax)) {
-	goto zero_arg;
+	v = Qnil;
     }
     else if (TYPE(vmax) != T_FLOAT && (v = rb_check_to_integer(vmax, "to_int"), !NIL_P(v))) {
 	v = rand_int(&rnd->mt, vmax = v, 1);
@@ -1098,7 +1097,7 @@ random_equal(VALUE self, VALUE other)
  *     rand(max=0)    => number
  *
  *  Converts <i>max</i> to an integer using max1 =
- *  max<code>.to_i.abs</code>. If the result is zero, returns a
+ *  max<code>.to_i.abs</code>. If _max_ is +nil+ the result is zero, returns a
  *  pseudorandom floating point number greater than or equal to 0.0 and
  *  less than 1.0. Otherwise, returns a pseudorandom integer greater
  *  than or equal to zero and less than max1. <code>Kernel::srand</code>
