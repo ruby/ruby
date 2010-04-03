@@ -243,7 +243,6 @@ divmodv(VALUE n, VALUE d, VALUE *q, VALUE *r)
 #define FIXWV_P(w) FIXWINT_P(WIDEVAL_GET(w))
 
 /* #define STRUCT_WIDEVAL */
-#define STRUCT_WIDEVAL
 #ifdef STRUCT_WIDEVAL
     /* for type checking */
     typedef struct {
