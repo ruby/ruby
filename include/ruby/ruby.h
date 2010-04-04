@@ -67,6 +67,7 @@ extern "C" {
 # include <inttypes.h>
 #endif
 
+#include <stdarg.h>
 #include <stddef.h>
 #include <stdio.h>
 
@@ -1402,6 +1403,13 @@ unsigned long ruby_strtoul(const char *str, char **endptr, int base);
 #define STRTOUL(str, endptr, base) (ruby_strtoul(str, endptr, base))
 
 #define InitVM(ext) {void InitVM_##ext(void);InitVM_##ext();}
+
+int ruby_snprintf(char *str, size_t n, char const *fmt, ...);
+int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
+#undef snprintf
+#undef vsnprintf
+#define snprintf ruby_snprintf
+#define vsnprintf ruby_vsnprintf
 
 #if defined(__cplusplus)
 #if 0

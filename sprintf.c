@@ -1113,10 +1113,9 @@ fmt_setup(char *buf, size_t size, int c, int flags, int width, int prec)
 #  define u_quad_t unsigned LONG_LONG
 # endif
 #endif
-#undef snprintf
 #define FLOATING_POINT 1
 #define BSD__dtoa ruby_dtoa
-#include "missing/vsnprintf.c"
+#include "vsnprintf.c"
 
 static int
 ruby__sfvwrite(register rb_printf_buffer *fp, register struct __suio *uio)
