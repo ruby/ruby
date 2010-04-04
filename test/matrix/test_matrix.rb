@@ -267,10 +267,6 @@ class TestMatrix < Test::Unit::TestCase
     assert(!Matrix[[1, 0, 0], [0, 1, 0]].square?)
   end
 
-  def test_compare_by_row_vectors
-    assert(@m1.compare_by_row_vectors([[1, 2, 3], [4, 5, 6]]))
-  end
-
   def test_mul
     assert_equal(Matrix[[2,4],[6,8]], Matrix[[2,4],[6,8]] * Matrix.I(2))
     assert_equal(Matrix[[4,8],[12,16]], Matrix[[2,4],[6,8]] * 2)
@@ -332,14 +328,12 @@ class TestMatrix < Test::Unit::TestCase
     assert_in_delta(45.0, Matrix[[7,6],[3,9]].det, 0.0001)
     assert_in_delta(0.0, Matrix[[0,0],[0,0]].det, 0.0001)
     assert_in_delta(-7.0, Matrix[[0,0,1],[0,7,6],[1,3,9]].det, 0.0001)
-    assert_in_delta(0,0, @m1.det, 0.0001)
   end
 
   def test_det_e
     assert_equal(45, Matrix[[7,6],[3,9]].det_e)
     assert_equal(0, Matrix[[0,0],[0,0]].det_e)
     assert_equal(-7, Matrix[[0,0,1],[0,7,6],[1,3,9]].det_e)
-    assert_equal(0, @m1.det_e)
   end
 
   def test_rank2
