@@ -31,8 +31,6 @@ static ID id_eq, id_ne, id_quo, id_div, id_cmp, id_lshift;
 #define NMOD(x,y) ((y)-(-((x)+1)%(y))-1)
 #define DIV(n,d) ((n)<0 ? NDIV((n),(d)) : (n)/(d))
 
-#define cmp(x,y) (rb_cmpint(rb_funcall((x), id_cmp, 1, (y)), (x), (y)))
-
 static int
 eq(VALUE x, VALUE y)
 {
@@ -43,18 +41,23 @@ eq(VALUE x, VALUE y)
 }
 
 static int
-lt(VALUE x, VALUE y)
+cmp(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x) && FIXNUM_P(y)) {
-        return (long)x < (long)y;
+        if ((long)x < (long)y)
+            return -1;
+        if ((long)x > (long)y)
+            return 1;
+        return 0;
     }
-    return cmp(x,y) < 0;
+    return rb_cmpint(rb_funcall(x, id_cmp, 1, y), x, y);
 }
 
-#define ne(x,y) (!eq(x,y))
-#define gt(x,y) (lt(y,x))
-#define le(x,y) (!gt(x,y))
-#define ge(x,y) (!lt(x,y))
+#define ne(x,y) (!eq((x),(y)))
+#define lt(x,y) (cmp((x),(y)) < 0)
+#define gt(x,y) (cmp((x),(y)) > 0)
+#define le(x,y) (cmp((x),(y)) <= 0)
+#define ge(x,y) (cmp((x),(y)) >= 0)
 
 static VALUE
 add(VALUE x, VALUE y)
@@ -163,15 +166,14 @@ quo(VALUE x, VALUE y)
 {
     VALUE ret;
     if (FIXNUM_P(x) && FIXNUM_P(y)) {
-      long a, b, c;
-      a = FIX2LONG(x);
-      b = FIX2LONG(y);
-      if (b == 0) rb_num_zerodiv();
-      c = a / b;
-      if (c * b == a) {
-          return LONG2NUM(c);
-      }
-
+        long a, b, c;
+        a = FIX2LONG(x);
+        b = FIX2LONG(y);
+        if (b == 0) rb_num_zerodiv();
+        c = a / b;
+        if (c * b == a) {
+            return LONG2NUM(c);
+        }
     }
     ret = rb_funcall(x, id_quo, 1, y);
     if (TYPE(ret) == T_RATIONAL &&
@@ -391,7 +393,7 @@ v2w(VALUE v)
     return WIDEVAL_WRAP(v);
 }
 
-static inline int
+static int
 weq(wideval_t wx, wideval_t wy)
 {
 #if WIDEVALUE_IS_WIDER
@@ -404,23 +406,32 @@ weq(wideval_t wx, wideval_t wy)
 #endif
 }
 
-static inline int
-wlt(wideval_t wx, wideval_t wy)
+static int
+wcmp(wideval_t wx, wideval_t wy)
 {
+    VALUE x, y;
 #if WIDEVALUE_IS_WIDER
     if (FIXWV_P(wx) && FIXWV_P(wy)) {
-        return (SIGNED_WIDEVALUE)WIDEVAL_GET(wx) < (SIGNED_WIDEVALUE)WIDEVAL_GET(wy);
+        wideint_t a, b;
+        a = FIXWV2WINT(wx);
+        b = FIXWV2WINT(wy);
+        if (a < b)
+            return -1;
+        if (a > b)
+            return 1;
+        return 0;
     }
-    return RTEST(rb_funcall(w2v(wx), '<', 1,  w2v(wy)));
-#else
-    return lt(WIDEVAL_GET(wx), WIDEVAL_GET(wy));
 #endif
+    x = w2v(wx);
+    y = w2v(wy);
+    return rb_cmpint(rb_funcall(x, id_cmp, 1, y), x, y);
 }
 
-#define wne(x,y) (!weq(x,y))
-#define wgt(x,y) (wlt(y,x))
-#define wle(x,y) (!wgt(x,y))
-#define wge(x,y) (!wlt(x,y))
+#define wne(x,y) (!weq((x),(y)))
+#define wlt(x,y) (wcmp((x),(y)) < 0)
+#define wgt(x,y) (wcmp((x),(y)) > 0)
+#define wle(x,y) (wcmp((x),(y)) <= 0)
+#define wge(x,y) (wcmp((x),(y)) >= 0)
 
 static wideval_t
 wadd(wideval_t wx, wideval_t wy)
@@ -514,27 +525,6 @@ wmul(wideval_t wx, wideval_t wy)
         z = RRATIONAL(z)->num;
     }
     return v2w(z);
-}
-
-static int
-wcmp(wideval_t wx, wideval_t wy)
-{
-    VALUE x, y;
-#if WIDEVALUE_IS_WIDER
-    if (FIXWV_P(wx) && FIXWV_P(wy)) {
-        wideint_t a, b;
-        a = FIXWV2WINT(wx);
-        b = FIXWV2WINT(wy);
-        if (a < b)
-            return -1;
-        if (a > b)
-            return 1;
-        return 0;
-    }
-#endif
-    x = w2v(wx);
-    y = w2v(wy);
-    return rb_cmpint(rb_funcall(x, id_cmp, 1, y), x, y);
 }
 
 static wideval_t
@@ -3176,7 +3166,7 @@ time_subsec(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    return quo(mod(w2v(tobj->timew), INT2FIX(TIME_SCALE)), INT2FIX(TIME_SCALE));
+    return quo(w2v(wmod(tobj->timew, WINT2FIXWV(TIME_SCALE))), INT2FIX(TIME_SCALE));
 }
 
 /*
