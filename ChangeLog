@@ -1,3 +1,22 @@
+Sun Apr  4 10:04:28 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* include/ruby/ruby.h: replace snprintf and vsnprintf by
+	  ruby_snprintf and ruby_vsnprintf. [ruby-dev:40909]
+
+	* configure.in: don't check snprintf(3) and vsnprintf(3).
+
+	* include/ruby/missing.h: don't delare snprintf and vsnprintf.
+
+	* include/ruby/ruby.h: include stdarg.h.
+
+	* sprintf.c: include vsnprintf.c
+
+	* vsnprintf.c: renamed from missing/vsnprintf.c.
+
+	* vsnprintf.c: remove useless ifdefs.
+
+	* win32/mkexports.rb: use ruby_snprintf and ruby_vsnprintf.
+
 Sun Apr  4 09:44:01 2010  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (lt): call <=> instead of <.

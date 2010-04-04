@@ -230,7 +230,6 @@ struct __suio {
 	size_t	uio_resid;
 };
 
-#if !defined(HAVE_VSNPRINTF) || !defined(HAVE_SNPRINTF)
 /*
  * Write some memory regions.  Return zero on success, EOF on error.
  *
@@ -305,7 +304,6 @@ static int BSD__sfvwrite(fp, uio)
 	}
 	return (0);
 }
-#endif
 
 /*
  * Actual printf innards.
@@ -1219,13 +1217,8 @@ exponent(p0, exp, fmtch)
 }
 #endif /* FLOATING_POINT */
 
-#ifndef HAVE_VSNPRINTF
 int
-vsnprintf(str, n, fmt, ap)
-	char *str;
-	size_t n;
-	const char *fmt;
-	_BSD_VA_LIST_ ap;
+ruby_vsnprintf(char *str, size_t n, const char *fmt, va_list ap)
 {
 	int ret;
 	FILE f;
@@ -1240,22 +1233,9 @@ vsnprintf(str, n, fmt, ap)
 	*f._p = 0;
 	return (ret);
 }
-#endif
 
-#if defined(LIBC_SCCS) && !defined(lint)
-static char sccsid[] = "@(#)snprintf.c	8.1 (Berkeley) 6/4/93";
-#endif /* LIBC_SCCS and not lint */
-
-#ifndef HAVE_SNPRINTF
 int
-#if defined(HAVE_STDARG_PROTOTYPES)
-snprintf(char *str, size_t n, char const *fmt, ...)
-#else
-snprintf(str, n, fmt, va_alist)
-char *str, *fmt;
-size_t n;
-va_dcl
-#endif
+ruby_snprintf(char *str, size_t n, char const *fmt, ...)
 {
 	int ret;
 	va_list ap;
@@ -1264,11 +1244,7 @@ va_dcl
 	if ((int)n < 1)
 		return (EOF);
 
-#if defined(HAVE_STDARG_PROTOTYPES)
 	va_start(ap, fmt);
-#else
-	va_start(ap);
-#endif
 	f._flags = __SWR | __SSTR;
 	f._bf._base = f._p = (unsigned char *)str;
 	f._bf._size = f._w = n - 1;
@@ -1278,4 +1254,3 @@ va_dcl
 	va_end(ap);
 	return (ret);
 }
-#endif

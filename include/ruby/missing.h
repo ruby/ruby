@@ -151,22 +151,6 @@ RUBY_EXTERN long strtol(const char *, char **, int);
 #endif
 */
 
-#if defined HAVE_VSNPRINTF || defined HAVE_SNPRINTF
-# include <stdarg.h>
-#endif
-#ifndef HAVE_SNPRINTF
-RUBY_EXTERN int snprintf(char *, size_t n, char const *, ...);
-#endif
-#ifndef HAVE_VSNPRINTF
-# if _MSC_VER >= 1300
-#  pragma warning(disable: 4273)
-# endif
-RUBY_EXTERN int vsnprintf(char *, size_t n, char const *, va_list);
-# if _MSC_VER >= 1300
-#  pragma warning(default: 4273)
-# endif
-#endif
-
 #ifndef HAVE_STRLCPY
 RUBY_EXTERN size_t strlcpy(char *, const char*, size_t);
 #endif

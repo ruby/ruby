@@ -51,8 +51,8 @@ class Exports
       end
     end
     syms["NtInitialize"] ||= "ruby_sysinit" if syms["ruby_sysinit"]
-    syms["rb_w32_vsnprintf"] ||= "vsnprintf"
-    syms["rb_w32_snprintf"] ||= "snprintf"
+    syms["rb_w32_vsnprintf"] ||= "ruby_vsnprintf"
+    syms["rb_w32_snprintf"] ||= "ruby_snprintf"
     @syms = syms
   end
 
