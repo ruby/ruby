@@ -31,6 +31,8 @@ static ID id_eq, id_ne, id_quo, id_div, id_cmp, id_lshift;
 #define NMOD(x,y) ((y)-(-((x)+1)%(y))-1)
 #define DIV(n,d) ((n)<0 ? NDIV((n),(d)) : (n)/(d))
 
+#define cmp(x,y) (rb_cmpint(rb_funcall((x), id_cmp, 1, (y)), (x), (y)))
+
 static int
 eq(VALUE x, VALUE y)
 {
@@ -46,7 +48,7 @@ lt(VALUE x, VALUE y)
     if (FIXNUM_P(x) && FIXNUM_P(y)) {
         return (long)x < (long)y;
     }
-    return RTEST(rb_funcall(x, '<', 1, y));
+    return cmp(x,y) < 0;
 }
 
 #define ne(x,y) (!eq(x,y))
@@ -154,7 +156,6 @@ mod(VALUE x, VALUE y)
 }
 
 #define neg(x) (sub(INT2FIX(0), (x)))
-#define cmp(x,y) (rb_cmpint(rb_funcall((x), id_cmp, 1, (y)), (x), (y)))
 #define lshift(x,y) (rb_funcall((x), id_lshift, 1, (y)))
 
 static VALUE
@@ -3210,12 +3211,12 @@ time_cmp(VALUE time1, VALUE time2)
 	n = wcmp(tobj1->timew, tobj2->timew);
     }
     else {
-	VALUE cmp;
+	VALUE tmp;
 
-	cmp = rb_funcall(time2, rb_intern("<=>"), 1, time1);
-	if (NIL_P(cmp)) return Qnil;
+	tmp = rb_funcall(time2, rb_intern("<=>"), 1, time1);
+	if (NIL_P(tmp)) return Qnil;
 
-	n = -rb_cmpint(cmp, time1, time2);
+	n = -rb_cmpint(tmp, time1, time2);
     }
     if (n == 0) return INT2FIX(0);
     if (n > 0) return INT2FIX(1);
