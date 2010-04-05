@@ -80,11 +80,6 @@ class TestVector < Test::Unit::TestCase
     assert_equal(Vector[2.0,4.0,6.0], a)
   end
 
-  def test_compare_by
-    assert(@v1.compare_by([1,2,3], :==))
-    assert(!@v1.compare_by([1,2,3], :equal?))
-  end
-
   def test_mul
     assert_equal(Vector[2,4,6], @v1 * 2)
     assert_equal(Matrix[[1, 4, 9], [2, 8, 18], [3, 12, 27]], @v1 * Matrix[[1,4,9]])
