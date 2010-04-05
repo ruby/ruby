@@ -56,7 +56,7 @@ with all sufficient information, see the ChangeLog file.
 
     New method with which replaces #choice.
 
-  * Enumerator#each_entry
+  * Enumerable#each_entry
 
     New method.
 
