@@ -93,12 +93,11 @@ module REXML
       entity_filter=nil, illegal=NEEDS_A_SECOND_CHECK )
 
       @raw = false
+      @parent = nil
 
       if parent
         super( parent )
         @raw = parent.raw
-      else
-        @parent = nil
       end
 
       @raw = raw unless raw.nil?

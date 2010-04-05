@@ -25,15 +25,8 @@ module REXML
     #
     # Nat Price gave me some good ideas for the API.
     class BaseParser
-      if String.method_defined? :encode
-        # Oniguruma / POSIX [understands unicode]
-        LETTER = '[[:alpha:]]'
-        DIGIT = '[[:digit:]]'
-      else
-        # Ruby < 1.9 [doesn't understand unicode]
-        LETTER = 'a-zA-Z'
-        DIGIT = '\d'
-      end
+      LETTER = '[:alpha:]'
+      DIGIT = '[:digit:]'
 
       COMBININGCHAR = '' # TODO
       EXTENDER = ''      # TODO
@@ -42,7 +35,7 @@ module REXML
       NAME_STR= "(?:(#{NCNAME_STR}):)?(#{NCNAME_STR})"
       UNAME_STR= "(?:#{NCNAME_STR}:)?#{NCNAME_STR}"
 
-      NAMECHAR = '[\-\w\d\.:]'
+      NAMECHAR = '[\-\w:]'
       NAME = "([\\w:]#{NAMECHAR}*)"
       NMTOKEN = "(?:#{NAMECHAR})+"
       NMTOKENS = "#{NMTOKEN}(\\s+#{NMTOKEN})*"
