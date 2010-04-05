@@ -159,10 +159,11 @@ module REXML
             else
               raise "Illegal character '#{$1}' in raw string \"#{string}\""
             end
-          elsif @parent and $3 and !SUBSTITUTES.include?($1)
-            if !doctype or !doctype.entities.has_key?($3)
-              raise "Undeclared entity '#{$1}' in raw string \"#{string}\""
-            end
+          # FIXME: below can't work but this needs API change.
+          # elsif @parent and $3 and !SUBSTITUTES.include?($1)
+          #   if !doctype or !doctype.entities.has_key?($3)
+          #     raise "Undeclared entity '#{$1}' in raw string \"#{string}\""
+          #   end
           end
         end
       end
