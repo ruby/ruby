@@ -161,7 +161,7 @@ static struct {
     {	ERROR_PIPE_NOT_CONNECTED,	EPIPE		},
     {	ERROR_OPERATION_ABORTED,	EINTR		},
     {	ERROR_NOT_ENOUGH_QUOTA,		ENOMEM		},
-    {	ERROR_MOD_NOT_FOUND,		ENOENT          },
+    {	ERROR_MOD_NOT_FOUND,		ENOENT		},
     {	WSAENAMETOOLONG,		ENAMETOOLONG	},
     {	WSAENOTEMPTY,			ENOTEMPTY	},
     {	WSAEINTR,			EINTR		},
@@ -170,6 +170,7 @@ static struct {
     {	WSAEFAULT,			EFAULT		},
     {	WSAEINVAL,			EINVAL		},
     {	WSAEMFILE,			EMFILE		},
+    {	WSAEWOULDBLOCK,			EWOULDBLOCK	},
 };
 
 int
