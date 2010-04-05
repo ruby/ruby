@@ -397,7 +397,9 @@ module Syck
 	# Allocate an Emitter if needed
 	#
 	def self.quick_emit( oid, opts = {}, &e )
-        warn "#{caller[0]}: YAML.quick_emit is deprecated" if $VERBOSE
+        if $VERBOSE && /syck\/rubytypes\.rb:\d+:in `to_yaml'/ !~ caller[0]
+            warn "#{caller[0]}: YAML.quick_emit is deprecated" 
+        end
         out =
             if opts.is_a? Emitter
                 opts
