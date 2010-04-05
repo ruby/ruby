@@ -92,19 +92,19 @@ module Syck
 
     # Returns a new generic parser
     def self.generic_parser
-        warn "#{caller[0]}: YAML.generic_parser is deprecated, switch to psych" if $VERBOSE
+        warn "#{caller[0]}: YAML.generic_parser is deprecated, switch to psych" if $VERBOSE && !caller[0].start_with?(File.dirname(__FILE__))
         Parser.new.set_resolver( GenericResolver )
     end
 
     # Returns the default resolver
     def self.resolver
-        warn "#{caller[0]}: YAML.resolver is deprecated" if $VERBOSE
+        warn "#{caller[0]}: YAML.resolver is deprecated" if $VERBOSE && !caller[0].start_with?(File.dirname(__FILE__))
         DefaultResolver
     end
 
     # Returns a new default emitter
     def self.emitter
-        warn "#{caller[0]}: YAML.emitter is deprecated" if $VERBOSE
+        warn "#{caller[0]}: YAML.emitter is deprecated" if $VERBOSE && !caller[0].start_with?(File.dirname(__FILE__))
         Emitter.new.set_resolver( self.resolver )
     end
 
@@ -222,7 +222,7 @@ module Syck
     #   end
 	#
     def self.each_document( io, &block )
-        warn "#{caller[0]}: YAML.each_document is deprecated" if $VERBOSE
+        warn "#{caller[0]}: YAML.each_document is deprecated" if $VERBOSE && !caller[0].start_with?(File.dirname(__FILE__))
 		yp = parser.load_documents( io, &block )
     end
 
@@ -253,7 +253,7 @@ module Syck
     #   end
 	#
     def self.each_node( io, &doc_proc )
-        warn "#{caller[0]}: YAML.each_node is deprecated" if $VERBOSE
+        warn "#{caller[0]}: YAML.each_node is deprecated" if $VERBOSE && !caller[0].start_with?(File.dirname(__FILE__))
 		yp = generic_parser.load_documents( io, &doc_proc )
     end
 
@@ -269,7 +269,7 @@ module Syck
     #   end
 	#
     def self.parse_documents( io, &doc_proc )
-        warn "#{caller[0]}: YAML.parse_documents is deprecated, use load_stream" if $VERBOSE
+        warn "#{caller[0]}: YAML.parse_documents is deprecated, use load_stream" if $VERBOSE && !caller[0].start_with?(File.dirname(__FILE__))
 		self.each_node( io, &doc_proc )
     end
 
@@ -322,7 +322,7 @@ module Syck
 	# Add a transfer method for a builtin type
 	#
 	def self.add_ruby_type( type_tag, &transfer_proc )
-        warn "#{caller[0]}: YAML.add_ruby_type is deprecated, use add_domain_type" if $VERBOSE
+        warn "#{caller[0]}: YAML.add_ruby_type is deprecated, use add_domain_type" if $VERBOSE && !caller[0].start_with?(File.dirname(__FILE__))
 	    resolver.add_type( "tag:ruby.yaml.org,2002:#{ type_tag }", transfer_proc )
 	end
 
@@ -330,7 +330,7 @@ module Syck
 	# Add a private document type
 	#
 	def self.add_private_type( type_re, &transfer_proc )
-        warn "#{caller[0]}: YAML.add_private_type is deprecated, use add_domain_type" if $VERBOSE
+        warn "#{caller[0]}: YAML.add_private_type is deprecated, use add_domain_type" if $VERBOSE && !caller[0].start_with?(File.dirname(__FILE__))
 	    resolver.add_type( "x-private:" + type_re, transfer_proc )
 	end
 
@@ -338,7 +338,7 @@ module Syck
     # Detect typing of a string
     #
     def self.detect_implicit( val )
-        warn "#{caller[0]}: YAML.detect_implicit is deprecated" if $VERBOSE
+        warn "#{caller[0]}: YAML.detect_implicit is deprecated" if $VERBOSE && !caller[0].start_with?(File.dirname(__FILE__))
         resolver.detect_implicit( val )
     end
 
@@ -346,7 +346,7 @@ module Syck
     # Convert a type_id to a taguri
     #
     def self.tagurize( val )
-        warn "#{caller[0]}: YAML.tagurize is deprecated" if $VERBOSE
+        warn "#{caller[0]}: YAML.tagurize is deprecated" if $VERBOSE && !caller[0].start_with?(File.dirname(__FILE__))
         resolver.tagurize( val )
     end
 
@@ -354,7 +354,7 @@ module Syck
     # Apply a transfer method to a Ruby object
     #
     def self.transfer( type_id, obj )
-        warn "#{caller[0]}: YAML.transfer is deprecated" if $VERBOSE
+        warn "#{caller[0]}: YAML.transfer is deprecated" if $VERBOSE && !caller[0].start_with?(File.dirname(__FILE__))
         resolver.transfer( tagurize( type_id ), obj )
     end
 
@@ -362,7 +362,7 @@ module Syck
 	# Apply any implicit a node may qualify for
 	#
 	def self.try_implicit( obj )
-        warn "#{caller[0]}: YAML.try_implicit is deprecated" if $VERBOSE
+        warn "#{caller[0]}: YAML.try_implicit is deprecated" if $VERBOSE && !caller[0].start_with?(File.dirname(__FILE__))
 		transfer( detect_implicit( obj ), obj )
 	end
 
@@ -371,7 +371,7 @@ module Syck
     # the type and the constant of the class
     #
     def self.read_type_class( type, obj_class )
-        warn "#{caller[0]}: YAML.read_type_class is deprecated" if $VERBOSE
+        warn "#{caller[0]}: YAML.read_type_class is deprecated" if $VERBOSE && !caller[0].start_with?(File.dirname(__FILE__))
         scheme, domain, type, tclass = type.split( ':', 4 )
         tclass.split( "::" ).each { |c| obj_class = obj_class.const_get( c ) } if tclass
         return [ type, obj_class ]
@@ -381,7 +381,7 @@ module Syck
     # Allocate blank object
     #
     def self.object_maker( obj_class, val )
-        warn "#{caller[0]}: YAML.object_maker is deprecated" if $VERBOSE
+        warn "#{caller[0]}: YAML.object_maker is deprecated" if $VERBOSE && !caller[0].start_with?(File.dirname(__FILE__))
         if Hash === val
             o = obj_class.allocate
             val.each_pair { |k,v|
@@ -397,9 +397,7 @@ module Syck
 	# Allocate an Emitter if needed
 	#
 	def self.quick_emit( oid, opts = {}, &e )
-        if $VERBOSE && /syck\/rubytypes\.rb:\d+:in `to_yaml'/ !~ caller[0]
-            warn "#{caller[0]}: YAML.quick_emit is deprecated" 
-        end
+        warn "#{caller[0]}: YAML.quick_emit is deprecated" if $VERBOSE && !caller[0].start_with?(File.dirname(__FILE__))
         out =
             if opts.is_a? Emitter
                 opts

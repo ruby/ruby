@@ -12,11 +12,14 @@ class Object
   def psych_to_yaml options = {}
     Psych.dump self, options
   end
+  remove_method :to_yaml rescue nil
   alias :to_yaml :psych_to_yaml
 end
 
 module Kernel
-  def y *objects
+  def psych_y *objects
     puts Psych.dump_stream(*objects)
   end
+  remove_method :y rescue nil
+  alias y psych_y
 end
