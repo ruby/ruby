@@ -401,7 +401,9 @@ extern char *rb_w32_strerror(int);
 /* #undef va_end */
 
 /* winsock error map */
+#ifndef EWOULDBLOCK	/* VC10 has this */
 #define EWOULDBLOCK	WSAEWOULDBLOCK
+#endif
 #define EINPROGRESS	WSAEINPROGRESS
 #define EALREADY	WSAEALREADY
 #define ENOTSOCK	WSAENOTSOCK

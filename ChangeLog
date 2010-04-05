@@ -1,3 +1,9 @@
+Mon Apr  5 13:20:45 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* include/ruby/win32.h, win32/win32.c (EWOULDBLOCK): VC10 already
+	  defined EWOULDBLOCK.  based on a patch from Charlie Savage,
+	  see [ruby-core:29255]
+
 Mon Apr  5 13:10:35 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/psych/lib/psych/core_ext.rb: remove before alias.
