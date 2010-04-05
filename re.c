@@ -725,6 +725,28 @@ rb_reg_named_captures(VALUE re)
     return hash;
 }
 
+static int
+onig_new_with_source(regex_t** reg, const UChar* pattern, const UChar* pattern_end,
+	  OnigOptionType option, OnigEncoding enc, const OnigSyntaxType* syntax,
+	  OnigErrorInfo* einfo, const char *sourcefile, int sourceline)
+{
+  int r;
+
+  *reg = (regex_t* )xmalloc(sizeof(regex_t));
+  if (IS_NULL(*reg)) return ONIGERR_MEMORY;
+
+  r = onig_reg_init(*reg, option, ONIGENC_CASE_FOLD_DEFAULT, enc, syntax);
+  if (r) goto err;
+
+  r = onig_compile(*reg, pattern, pattern_end, einfo, sourcefile, sourceline);
+  if (r) {
+  err:
+    onig_free(*reg);
+    *reg = NULL;
+  }
+  return r;
+}
+
 static Regexp*
 make_regexp(const char *s, long len, rb_encoding *enc, int flags, onig_errmsg_buffer err,
 	const char *sourcefile, int sourceline)
@@ -740,8 +762,8 @@ make_regexp(const char *s, long len, rb_encoding *enc, int flags, onig_errmsg_bu
        from that.
     */
 
-    r = onig_new(&rp, (UChar*)s, (UChar*)(s + len), flags,
-		 enc, OnigDefaultSyntax, &einfo);
+    r = onig_new_with_source(&rp, (UChar*)s, (UChar*)(s + len), flags,
+		 enc, OnigDefaultSyntax, &einfo, sourcefile, sourceline);
     if (r) {
 	onig_error_code_to_str((UChar*)err, r, &einfo);
 	return 0;
