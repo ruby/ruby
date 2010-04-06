@@ -54,6 +54,8 @@ class CGI
     #
     # These keywords correspond to attributes of the cookie object.
     def initialize(name = "", *value)
+      @domain = nil
+      @expires = nil
       if name.kind_of?(String)
         @name = name
         %r|^(.*/)|.match(ENV["SCRIPT_NAME"])

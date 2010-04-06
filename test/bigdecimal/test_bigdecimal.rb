@@ -355,6 +355,7 @@ class TestBigDecimal < Test::Unit::TestCase
     a, b = BigDecimal.new("1").coerce(1.0)
     assert_instance_of(Float, a)
     assert_instance_of(Float, b)
+    assert_equal(2, 1 + BigDecimal.new("1"), '[ruby-core:25697]')
   end
 
   def test_uplus
@@ -702,9 +703,5 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(BigDecimal::SIGN_NEGATIVE_INFINITE, BigDecimal.new("-1E1" + "0" * 10000).sign)
     assert_equal(BigDecimal::SIGN_POSITIVE_ZERO, BigDecimal.new("1E-1" + "0" * 10000).sign)
     assert_equal(BigDecimal::SIGN_NEGATIVE_ZERO, BigDecimal.new("-1E-1" + "0" * 10000).sign)
-  end
-
-  def test_coerce
-    assert_equal(2, 1 + BigDecimal.new("1"), '[ruby-core:25697]')
   end
 end

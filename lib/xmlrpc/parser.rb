@@ -133,7 +133,7 @@ module XMLRPC
 
           hash.delete "___class___"
           hash.each {|key, value|
-            obj.instance_variable_set("@#{ key }", value) if key =~ /^([\w_][\w_0-9]*)$/
+            obj.instance_variable_set("@#{ key }", value) if key =~ /^([a-zA-Z_]\w*)$/
           }
           obj
         rescue
