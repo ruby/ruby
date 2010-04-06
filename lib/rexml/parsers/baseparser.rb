@@ -32,10 +32,11 @@ module REXML
       EXTENDER = ''      # TODO
 
       NCNAME_STR= "[#{LETTER}_:][-.\w:#{COMBININGCHAR}#{EXTENDER}]*"
+      NCNAME_STR= "[#{LETTER}_:][-[:alnum:]._:#{COMBININGCHAR}#{EXTENDER}]*"
       NAME_STR= "(?:(#{NCNAME_STR}):)?(#{NCNAME_STR})"
       UNAME_STR= "(?:#{NCNAME_STR}:)?#{NCNAME_STR}"
 
-      NAMECHAR = '[\-\w:]'
+      NAMECHAR = '[\-\w\.:]'
       NAME = "([\\w:]#{NAMECHAR}*)"
       NMTOKEN = "(?:#{NAMECHAR})+"
       NMTOKENS = "#{NMTOKEN}(\\s+#{NMTOKEN})*"
