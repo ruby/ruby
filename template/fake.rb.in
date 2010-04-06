@@ -22,18 +22,19 @@ prehook = proc do
   config = RbConfig::CONFIG
   mkconfig = RbConfig::MAKEFILE_CONFIG
   mkconfig["top_srcdir"] = $top_srcdir = File.expand_path("@abs_top_srcdir@")
-  $extout = File.expand_path(mkconfig["EXTOUT"], mkconfig["topdir"])
-  mkconfig["extout"] = config["extout"] = $extout
   mkconfig["rubyhdrdir"] = "$(top_srcdir)/include"
+  mkconfig["builddir"] = config["builddir"] = File.expand_path(File.dirname(__FILE__))
   config["rubyhdrdir"] = File.join(mkconfig["top_srcdir"], "include")
   mkconfig["libdir"] = config["libdir"] = mkconfig["topdir"]
-  mkconfig["archdir"] = config["archdir"] = File.expand_path(File.dirname(__FILE__))
   untrace_var(:$extmk, prehook)
 end
 trace_var(:$extmk, prehook)
 posthook = proc do
+  config = RbConfig::CONFIG
+  mkconfig = RbConfig::MAKEFILE_CONFIG
+  extout = File.expand_path(mkconfig["EXTOUT"], mkconfig["builddir"])
+  $arch_hdrdir = "#{extout}/include/$(arch)"
   $ruby = baseruby
-  $arch_hdrdir = "$(extout)/include/$(arch)"
   untrace_var(:$ruby, posthook)
 end
 trace_var(:$ruby, posthook)
