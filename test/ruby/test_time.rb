@@ -183,6 +183,24 @@ class TestTime < Test::Unit::TestCase
     assert_equal(-182673138422, t.year)
     t = Time.at(-0x6000_0000_0000_0000)
     assert_equal(-219207766501, t.year)
+
+    t = Time.at(0).utc
+    assert_equal([1970,1,1, 0,0,0], [t.year, t.mon, t.day, t.hour, t.min, t.sec])
+    t = Time.at(-86400).utc
+    assert_equal([1969,12,31, 0,0,0], [t.year, t.mon, t.day, t.hour, t.min, t.sec])
+    t = Time.at(-86400 * (400 * 365 + 97)).utc
+    assert_equal([1970-400,1,1, 0,0,0], [t.year, t.mon, t.day, t.hour, t.min, t.sec])
+    t = Time.at(-86400 * (400 * 365 + 97)*1000).utc
+    assert_equal([1970-400*1000,1,1, 0,0,0], [t.year, t.mon, t.day, t.hour, t.min, t.sec])
+    t = Time.at(-86400 * (400 * 365 + 97)*2421).utc
+    assert_equal([1970-400*2421,1,1, 0,0,0], [t.year, t.mon, t.day, t.hour, t.min, t.sec])
+    t = Time.at(-86400 * (400 * 365 + 97)*1000000).utc
+    assert_equal([1970-400*1000000,1,1, 0,0,0], [t.year, t.mon, t.day, t.hour, t.min, t.sec])
+
+    t = Time.at(-30613683110400).utc
+    assert_equal([-968139,1,1, 0,0,0], [t.year, t.mon, t.day, t.hour, t.min, t.sec])
+    t = Time.at(-30613683110401).utc
+    assert_equal([-968140,12,31, 23,59,59], [t.year, t.mon, t.day, t.hour, t.min, t.sec])
   end
 
   def test_at2
