@@ -226,8 +226,13 @@ class TestPath < Test::Unit::TestCase
 
   def test_extname
     assert_equal('', File.extname('a'))
-    assert_equal('.rb', File.extname('a.rb'))
-    assert_equal('', File.extname('a.rb.'))
+    ext = '.rb'
+    assert_equal(ext, File.extname('a.rb'))
+    unless /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
+      # trailing spaces and dots are ignored on NTFS.
+      ext = ''
+    end
+    assert_equal(ext, File.extname('a.rb.'))
     assert_equal('', File.extname('a.'))
     assert_equal('', File.extname('.x'))
     assert_equal('', File.extname('..x'))
