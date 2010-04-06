@@ -1290,6 +1290,48 @@ if test "$rb_cv_negative_time_t" = yes; then
   AC_DEFINE(NEGATIVE_TIME_T)
 fi
 
+# [ruby-dev:40910] overflow of time on FreeBSD
+# http://www.freebsd.org/cgi/query-pr.cgi?pr=145341
+AC_CACHE_CHECK(for localtime(3) overflow correctly, rb_cv_localtime_overflow,
+  [AC_TRY_RUN([
+#include <time.h>
+
+void
+check(time_t t1)
+{
+    struct tm *tm;
+    time_t t2;
+    tm = localtime(&t1);
+    if (!tm)
+	return; /* overflow detected.  ok. */
+    t2 = mktime(tm);
+    if (t1 == t2)
+        return; /* round-trip.  ok. */
+    exit(1);
+}
+
+int
+main()
+{
+    time_t t;
+    if (~(time_t)0 <= 0) {
+        t = (((time_t)1) << (sizeof(time_t) * 8 - 2));
+        t |= t - 1;
+    }
+    else {
+        t = ~(time_t)0;
+    }
+    check(t);
+    return 0;
+}
+],
+	rb_cv_localtime_overflow=yes,
+	rb_cv_localtime_overflow=no,
+	rb_cv_localtime_overflow=yes)])
+if test "$rb_cv_localtime_overflow" = no; then
+  AC_DEFINE(LOCALTIME_OVERFLOW_PROBLEM)
+fi
+
 if test "$ac_cv_func_sigprocmask" = yes && test "$ac_cv_func_sigaction" = yes; then
    AC_DEFINE(POSIX_SIGNAL)
 else

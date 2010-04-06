@@ -840,31 +840,62 @@ static int leap_year_p(long y);
 #define leap_year_v_p(y) leap_year_p(NUM2LONG(mod(v, INT2FIX(400))))
 
 #ifdef HAVE_GMTIME_R
-#define IF_HAVE_GMTIME_R(x) x
-#define ASCTIME(tm, buf) asctime_r((tm), (buf))
-#define GMTIME(tm, result) gmtime_r((tm), &(result))
-#define LOCALTIME(tm, result) (tzset(),localtime_r((tm), &(result)))
+#define rb_gmtime_r(t, tm) gmtime_r(t, tm)
+#define rb_localtime_r(t, tm) localtime_r(t, tm)
 #else
-#define IF_HAVE_GMTIME_R(x) 	/* nothing */
+static inline struct tm *
+rb_gmtime_r(const time_t *tp, struct tm *result)
+{
+    struct tm *t = gmtime(tp);
+    if (t) *result = *t;
+    return t;
+}
+
+static inline struct tm *
+rb_localtime_r(const time_t *tp, struct tm *result)
+{
+    struct tm *t = localtime(tp);
+    if (t) *result = *t;
+    return t;
+}
+#endif
+
+static struct tm *
+rb_localtime_r2(const time_t *t, struct tm *result)
+{
+    result = rb_localtime_r(t, result);
+#if defined(HAVE_MKTIME) && defined(LOCALTIME_OVERFLOW_PROBLEM)
+    if (result) {
+	time_t t2 = mktime(result);
+	if (*t != t2)
+	    result = NULL;
+    }
+#endif
+    return result;
+}
+#define LOCALTIME(tm, result) (tzset(),rb_localtime_r2((tm), &(result)))
+
+#if !defined(HAVE_STRUCT_TM_TM_GMTOFF)
+    static struct tm *
+    rb_gmtime_r2(const time_t *t, struct tm *result)
+    {
+        result = rb_gmtime_r(t, result);
+#if defined(HAVE_TIMEGM) && defined(LOCALTIME_OVERFLOW_PROBLEM)
+        if (result) {
+            time_t t2 = timegm(result);
+            if (*t != t2)
+                result = NULL;
+        }
+#endif
+        return result;
+    }
+#   define GMTIME(tm, result) rb_gmtime_r2((tm), &(result))
+#endif
+
+#ifdef HAVE_GMTIME_R
+#define ASCTIME(tm, buf) asctime_r((tm), (buf))
+#else
 #define ASCTIME(tm, buf) asctime(tm)
-#define GMTIME(tm, result) rb_gmtime((tm), &(result))
-#define LOCALTIME(tm, result) rb_localtime((tm), &(result))
-
-static inline struct tm *
-rb_gmtime(const time_t *tm, struct tm *result)
-{
-    struct tm *t = gmtime(tm);
-    if (t) *result = *t;
-    return t;
-}
-
-static inline struct tm *
-rb_localtime(const time_t *tm, struct tm *result)
-{
-    struct tm *t = localtime(tm);
-    if (t) *result = *t;
-    return t;
-}
 #endif
 
 static const int common_year_yday_offset[] = {
@@ -1085,7 +1116,7 @@ gmtime_with_leapsecond(const time_t *timep, struct tm *result)
     int sign;
     int gmtoff_sec, gmtoff_min, gmtoff_hour, gmtoff_day;
     long gmtoff;
-    t = localtime_r(timep, result);
+    t = LOCALTIME(timep, *result);
     if (t == NULL)
         return NULL;
 
