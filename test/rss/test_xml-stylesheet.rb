@@ -94,9 +94,9 @@ module RSS
     end
 
     def parse_pi(pi)
-      /\A\s*<\?(\S+)([^(?:\?>)]+)\?>\s*\z/ =~ pi
+      /\A\s*<\?(\S+)([^?]*\?+(?:[^?>][^?]*\?+)*)>\s*\z/ =~ pi
       target = $1
-      dummy = REXML::Document.new("<dummy #{$2}/>").root
+      dummy = REXML::Document.new("<dummy #{$2.to_s.chop}/>").root
       contents = {}
       dummy.attributes.each do |name, value|
         contents[name] = value
