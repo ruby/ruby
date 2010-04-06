@@ -1,3 +1,7 @@
+Wed Apr  7 02:05:41 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* template/fake.rb.in: not define $extout to make target in cwd.
+
 Tue Apr  6 23:01:35 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* vm_core.h: Introduce UNINITIALIZED_VAR() macro.
