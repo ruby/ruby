@@ -78,7 +78,7 @@ class RDoc::RDoc
     @current      = nil
     @exclude      = nil
     @generator    = nil
-    @last_created = nil
+    @last_created = {}
     @old_siginfo  = nil
     @options      = nil
     @stats        = nil
@@ -135,7 +135,7 @@ class RDoc::RDoc
   def setup_output_dir(op_dir, force)
     flag_file = output_flag_file op_dir
 
-    last = {}
+    last = @last_created
 
     if File.exist? op_dir then
       unless File.directory? op_dir then
@@ -355,7 +355,7 @@ The internal error was:
 
     @exclude = @options.exclude
 
-    @last_created = setup_output_dir @options.op_dir, @options.force_update
+    setup_output_dir @options.op_dir, @options.force_update
 
     start_time = Time.now
 
