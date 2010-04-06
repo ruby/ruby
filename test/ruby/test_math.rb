@@ -114,8 +114,8 @@ class TestMath < Test::Unit::TestCase
     check(0, Math.atanh(Math.sinh(0) / Math.cosh(0)))
     check(1, Math.atanh(Math.sinh(1) / Math.cosh(1)))
     check(2, Math.atanh(Math.sinh(2) / Math.cosh(2)))
-    assert_nothing_raised { assert_infinity Math.atanh(1) }
-    assert_nothing_raised { assert_infinity -Math.atanh(-1) }
+    assert_nothing_raised { assert_infinity(Math.atanh(1)) }
+    assert_nothing_raised { assert_infinity(-Math.atanh(-1)) }
     assert_raise(Math::DomainError) { Math.atanh(+1.0 + Float::EPSILON) }
     assert_raise(Math::DomainError) { Math.atanh(-1.0 - Float::EPSILON) }
   end
@@ -134,8 +134,8 @@ class TestMath < Test::Unit::TestCase
     check(1, Math.log(10, 10))
     check(2, Math.log(100, 10))
     assert_equal(1.0/0, Math.log(1.0/0))
-    assert_nothing_raised { assert_infinity -Math.log(+0.0) }
-    assert_nothing_raised { assert_infinity -Math.log(-0.0) }
+    assert_nothing_raised { assert_infinity(-Math.log(+0.0)) }
+    assert_nothing_raised { assert_infinity(-Math.log(-0.0)) }
     assert_raise(Math::DomainError) { Math.log(-1.0) }
     assert_raise(TypeError) { Math.log(1,nil) }
   end
@@ -145,8 +145,8 @@ class TestMath < Test::Unit::TestCase
     check(1, Math.log2(2))
     check(2, Math.log2(4))
     assert_equal(1.0/0, Math.log2(1.0/0))
-    assert_nothing_raised { assert_infinity -Math.log2(+0.0) }
-    assert_nothing_raised { assert_infinity -Math.log2(-0.0) }
+    assert_nothing_raised { assert_infinity(-Math.log2(+0.0)) }
+    assert_nothing_raised { assert_infinity(-Math.log2(-0.0)) }
     assert_raise(Math::DomainError) { Math.log2(-1.0) }
   end
 
@@ -155,8 +155,8 @@ class TestMath < Test::Unit::TestCase
     check(1, Math.log10(10))
     check(2, Math.log10(100))
     assert_equal(1.0/0, Math.log10(1.0/0))
-    assert_nothing_raised { assert_infinity -Math.log10(+0.0) }
-    assert_nothing_raised { assert_infinity -Math.log10(-0.0) }
+    assert_nothing_raised { assert_infinity(-Math.log10(+0.0)) }
+    assert_nothing_raised { assert_infinity(-Math.log10(-0.0)) }
     assert_raise(Math::DomainError) { Math.log10(-1.0) }
   end
 
