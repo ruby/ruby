@@ -163,8 +163,9 @@ $(LIBRUBY_SO):
 				$(LIBRUBY_ALIASES) || true
 
 fake: $(arch)-fake.rb
-$(arch)-fake.rb: config.status
+$(arch)-fake.rb: config.status $(srcdir)/template/fake.rb.in
 		@./config.status --file=$@:$(srcdir)/template/fake.rb.in
+		@chmod +x $@
 
 Makefile:	$(srcdir)/Makefile.in $(srcdir)/enc/Makefile.in
 
