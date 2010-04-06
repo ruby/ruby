@@ -2415,12 +2415,9 @@ do_select(int n, fd_set *read, fd_set *write, fd_set *except,
 	  struct timeval *timeout)
 {
     int result, lerrno;
-    fd_set orig_read, orig_write, orig_except;
-#if defined __GNUC__ && defined __x86_64__
-#define FAKE_FD_ZERO(f) (*(int *)&(f)=0) /* suppress lots of warnings */
-#else
-#define FAKE_FD_ZERO(f) ((void)0)
-#endif
+    fd_set UNINITIALIZED_VAR(orig_read);
+    fd_set UNINITIALIZED_VAR(orig_write);
+    fd_set UNINITIALIZED_VAR(orig_except);
 
 #ifndef linux
     double limit = 0;
@@ -2442,11 +2439,9 @@ do_select(int n, fd_set *read, fd_set *write, fd_set *except,
     }
 #endif
 
-    if (read) orig_read = *read; else FAKE_FD_ZERO(orig_read);
-    if (write) orig_write = *write; else FAKE_FD_ZERO(orig_write);
-    if (except) orig_except = *except; else FAKE_FD_ZERO(orig_except);
-
-#undef FAKE_FD_ZERO
+    if (read) orig_read = *read;
+    if (write) orig_write = *write;
+    if (except) orig_except = *except;
 
   retry:
     lerrno = 0;

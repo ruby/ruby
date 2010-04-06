@@ -106,6 +106,12 @@
 #define UNLIKELY(x) (x)
 #endif /* __GNUC__ >= 3 */
 
+#if __GNUC__ >= 3
+#define UNINITIALIZED_VAR(x) x = x
+#else
+#define UNINITIALIZED_VAR(x) x
+#endif
+
 typedef unsigned long rb_num_t;
 
 /* iseq data type */

@@ -1,3 +1,9 @@
+Tue Apr  6 23:01:35 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* vm_core.h: Introduce UNINITIALIZED_VAR() macro.
+	* thread.c (do_select): Use UNINITIALIZED_VAR() instead FAKE_FD_ZERO().
+	  Also, remove FAKE_FD_ZERO completely. [Feature #3018]
+
 Tue Apr  6 21:55:25 2010  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: test localtime(3) overflow.  [ruby-dev:40910]
