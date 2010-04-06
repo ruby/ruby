@@ -417,7 +417,7 @@ module RSS
       end
     end
 
-    NAMESPLIT = /^(?:([\w:][-\w\d.]*):)?([\w:][-\w\d.]*)/
+    NAMESPLIT = /^(?:([\w:][-\w.]*):)?([\w:][-\w.]*)/
     def split_name(name)
       name =~ NAMESPLIT
       [$1 || '', $2]
