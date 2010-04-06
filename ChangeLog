@@ -1,3 +1,8 @@
+Wed Apr  7 03:28:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/rdoc.rb (RDoc#{initialize,setup_output_dir}):
+	  initialize @last_created and use it.
+
 Wed Apr  7 02:05:41 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* template/fake.rb.in: not define $extout to make target in cwd.
