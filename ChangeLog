@@ -1,3 +1,11 @@
+Tue Apr  6 14:53:17 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* include/ruby/win32.h: check definition existance before defining
+	  errno macros.
+
+	* win32/win32.c (errmap): define winsock errors mappings.
+	  these are VC++10 support. see [ruby-core:29278]
+
 Tue Apr  6 11:21:23 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* template/fake.rb.in: hooks for extconf.rb.
