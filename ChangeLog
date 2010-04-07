@@ -1,3 +1,8 @@
+Thu Apr  8 07:22:05 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (rand_init): ignore higher bits if all they are same as
+	  the lower sign bit.  [ruby-core:29292](2)
+
 Thu Apr  8 07:16:19 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/irb/cmd/help.rb (IRB::ExtendCommand::Help#execute): use RI
