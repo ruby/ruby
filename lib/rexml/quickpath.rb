@@ -141,6 +141,7 @@ module REXML
       return matches.uniq
     end
 
+    OPERAND_ = '((?=(?:(?!and|or).)*[^\s<>=])[^\s<>=]+)'
     # A predicate filters a node-set with respect to an axis to produce a
     # new node-set. For each node in the node-set to be filtered, the
     # PredicateExpr is evaluated with that node as the context node, with
@@ -170,7 +171,9 @@ module REXML
       rest = path[ind+1..-1]
 
       # have to change 'a [=<>] b [=<>] c' into 'a [=<>] b and b [=<>] c'
-      predicate.gsub!( /([^\s(and)(or)<>=]+)\s*([<>=])\s*([^\s(and)(or)<>=]+)\s*([<>=])\s*([^\s(and)(or)<>=]+)/u,
+      #
+      predicate.gsub!(
+        /#{OPERAND_}\s*([<>=])\s*#{OPERAND_}\s*([<>=])\s*#{OPERAND_}/u,
         '\1 \2 \3 and \3 \4 \5' )
       # Let's do some Ruby trickery to avoid some work:
       predicate.gsub!( /&/u, "&&" )
