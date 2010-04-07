@@ -2618,7 +2618,10 @@ AC_CONFIG_FILES(Makefile, [{
 	fi
 	sed '/^MISSING/s/\$U\././g;/^VCS *=/s#@VCS@#'"$VCS"'#;/^VCSUP *=/s#@VCSUP@#'"$VCSUP"'#' Makefile
 	echo; test x"$EXEEXT" = x || echo 'miniruby: miniruby$(EXEEXT)'
-	test "$RUBY_INSTALL_NAME$EXEEXT" = ruby || echo 'ruby: $(PROGRAM);'
+	test "$RUBY_INSTALL_NAME$EXEEXT" = "$(RUBY_BASE_NAME)" ||
+	  test "$RUBY_BASE_NAME" = "" ||
+	  test "$RUBY_BASE_NAME" = "ruby" ||
+	  echo 'ruby: $(PROGRAM)'
 	if test "$gnumake" != yes; then
 	    echo ['$(MKFILES): $(srcdir)/common.mk']
 	    sed ['s/{\$([^(){}]*)[^{}]*}//g'] ${srcdir}/common.mk

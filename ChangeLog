@@ -1,6 +1,9 @@
 Wed Apr  7 09:44:48 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* configure.in (Makefile): qoute init-commands.
+	* configure.in (Makefile): quote init-commands.
+
+	* configure.in (Makefile): `make ruby` builds ruby command
+	  even if RUBY_INSTALL_NAME is customized or it has extension.
 
 Wed Apr  7 03:28:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
