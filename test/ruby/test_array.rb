@@ -1842,8 +1842,8 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_combination2
-    assert_raise(RangeError) do
-      (0..100).to_a.combination(50) {}
+    assert_nothing_raised do
+      (0..100).to_a.combination(50) { break }
     end
   end
 

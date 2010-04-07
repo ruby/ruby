@@ -3958,26 +3958,6 @@ rb_ary_permutation(int argc, VALUE *argv, VALUE ary)
     return ary;
 }
 
-static long
-combi_len(long n, long k)
-{
-    long i, val = 1;
-
-    if (k*2 > n) k = n-k;
-    if (k == 0) return 1;
-    if (k < 0) return 0;
-    val = 1;
-    for (i=1; i <= k; i++,n--) {
-	long m = val;
-	val *= n;
-	if (val < m) {
-	    rb_raise(rb_eRangeError, "too big for combination");
-	}
-	val /= i;
-    }
-    return val;
-}
-
 /*
  *  call-seq:
  *     ary.combination(n) { |c| block }    -> ary
@@ -4024,14 +4004,13 @@ rb_ary_combination(VALUE ary, VALUE num)
     else {
 	volatile VALUE t0 = tmpbuf(n+1, sizeof(long));
 	long *stack = (long*)RSTRING_PTR(t0);
-	long nlen = combi_len(len, n);
 	volatile VALUE cc = tmpary(n);
 	VALUE *chosen = RARRAY_PTR(cc);
 	long lev = 0;
 
 	MEMZERO(stack, long, n);
 	stack[0] = -1;
-	for (i = 0; i < nlen; i++) {
+	for (;;) {
 	    chosen[lev] = RARRAY_PTR(ary)[stack[lev+1]];
 	    for (lev++; lev < n; lev++) {
 		chosen[lev] = RARRAY_PTR(ary)[stack[lev+1] = stack[lev]+1];
@@ -4041,9 +4020,11 @@ rb_ary_combination(VALUE ary, VALUE num)
 		rb_raise(rb_eRuntimeError, "combination reentered");
 	    }
 	    do {
+		if (lev == 0) goto done;
 		stack[lev--]++;
-	    } while (lev && (stack[lev+1]+n == len+lev+1));
+	    } while (stack[lev+1]+n == len+lev+1);
 	}
+    done:
 	tmpbuf_discard(t0);
 	tmpary_discard(cc);
     }
