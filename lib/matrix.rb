@@ -70,6 +70,7 @@ end
 # * <tt> #minor(*param)                 </tt>
 #
 # Properties of a matrix:
+# * <tt> #empty?                        </tt>
 # * <tt> #real?                         </tt>
 # * <tt> #regular?                      </tt>
 # * <tt> #singular?                     </tt>
