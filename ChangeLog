@@ -1,3 +1,8 @@
+Thu Apr  8 07:16:19 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/irb/cmd/help.rb (IRB::ExtendCommand::Help#execute): use RI
+	  interactive mode if no argument.  [ruby-dev:39839]
+
 Wed Apr  8 02:33:55 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* array.c (rb_ary_permutation): Remove limitation for lengthy permutations
