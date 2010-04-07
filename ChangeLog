@@ -42,7 +42,7 @@ Tue Apr  6 21:55:25 2010  Tanaka Akira  <akr@fsij.org>
 	  
 Tue Apr  6 14:53:17 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* include/ruby/win32.h: check definition existance before defining
+	* include/ruby/win32.h: check definition existence before defining
 	  errno macros.
 
 	* win32/win32.c (errmap): define winsock errors mappings.
@@ -117,7 +117,7 @@ Sun Apr  4 10:04:28 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: don't check snprintf(3) and vsnprintf(3).
 
-	* include/ruby/missing.h: don't delare snprintf and vsnprintf.
+	* include/ruby/missing.h: don't declare snprintf and vsnprintf.
 
 	* include/ruby/ruby.h: include stdarg.h.
 
@@ -244,7 +244,7 @@ Fri Apr  2 13:59:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* lib/rdoc/ri/paths.rb: follows $ridir.  reapplied r23554.
 
 	* lib/rdoc/ri/paths.rb (RDoc::HOMEDIR): expand_path deals with
-	  platform dependent envirionments.  reapplied r21312.
+	  platform dependent environments.  reapplied r21312.
 
 Fri Apr  2 12:52:25 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -273,7 +273,7 @@ Fri Apr  2 05:38:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri Apr  2 02:56:56 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
-	* lib/matrix.rb: : New instance methods:
+	* lib/matrix.rb: New instance methods:
 	  empty? [ruby-core:26284], each, each_with_index [ruby-core:28400],
 	  conjugate, conj, imaginary, imag, real, real?, rectangular, rect
 		[ruby-core:26285]
@@ -316,10 +316,10 @@ Thu Apr  1 13:30:12 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 Thu Apr  1 13:24:12 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* object.c (rb_cstr_to_dbl): return 0.0 if hexadecimal and
-	  baccheck is FALSE: Float("0x1p+0") works, but "0x1p+0".to_f
+	  badcheck is FALSE: Float("0x1p+0") works, but "0x1p+0".to_f
 	  doesn't. [ruby-dev:40650]
 
-	* util.c (ruby_strtod): allow hexdecimal integers.
+	* util.c (ruby_strtod): allow hexadecimal integers.
 
 Thu Apr  1 13:20:50 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
@@ -333,7 +333,7 @@ Thu Apr  1 12:04:10 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 Thu Apr  1 11:36:04 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_initialize): fixed a rdoc miss that textmode and
-	  bimode flag explanation was reversed each other.  a patch from
+	  binmode flag explanation was reversed each other.  a patch from
 	  Heesob Park in [ruby-core:29166].
 
 Thu Apr  1 09:54:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -401,7 +401,7 @@ Tue Mar 30 22:07:12 2010  Tanaka Akira  <akr@fsij.org>
 
 Tue Mar 30 22:00:44 2010  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
-	* lib/irb.rb: suppoort [Feature#988], [ruby-core:21177].
+	* lib/irb.rb: support [Feature#988], [ruby-core:21177].
 	* lib/irb/context.rb: fix Context#verbose?.
 
 Tue Mar 30 21:56:33 2010  Tanaka Akira  <akr@fsij.org>
