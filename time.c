@@ -892,12 +892,6 @@ rb_localtime_r2(const time_t *t, struct tm *result)
 #   define GMTIME(tm, result) rb_gmtime_r2((tm), &(result))
 #endif
 
-#ifdef HAVE_GMTIME_R
-#define ASCTIME(tm, buf) asctime_r((tm), (buf))
-#else
-#define ASCTIME(tm, buf) asctime(tm)
-#endif
-
 static const int common_year_yday_offset[] = {
     -1,
     -1 + 31,
