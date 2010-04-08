@@ -30,6 +30,8 @@ module YAML
   ENGINE = YAML::EngineManager.new
 end
 
+engine = (!defined?(Syck) && defined?(Psych) ? 'psych' : 'syck')
+
 module Syck
   ENGINE = YAML::ENGINE
 end
@@ -38,4 +40,4 @@ module Psych
   ENGINE = YAML::ENGINE
 end
 
-YAML::ENGINE.yamler = 'syck'
+YAML::ENGINE.yamler = engine
