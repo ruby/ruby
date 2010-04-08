@@ -401,6 +401,8 @@ extern char *rb_w32_strerror(int);
 /* #undef va_end */
 
 /* winsock error map */
+#include <errno.h>
+
 #ifndef EWOULDBLOCK
 # define EWOULDBLOCK		WSAEWOULDBLOCK
 #endif
