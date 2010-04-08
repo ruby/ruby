@@ -1,3 +1,9 @@
+Fri Apr  9 01:26:54 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (internal_{read,write}_func, rb_{read,write}_internal):
+	  preserve errno.  a patch from Takehiro Kubo in [ruby-core:29340].
+	  [ruby-core:28924]
+
 Fri Apr  9 01:12:07 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/irb/completion.rb (CompletionProc): calling the method "methods"
