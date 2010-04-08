@@ -530,6 +530,7 @@ wsplit_p(rb_io_t *fptr)
 
 struct io_internal_struct {
     int fd;
+    int saved_errno;
     void *buf;
     size_t capa;
 };
@@ -538,36 +539,48 @@ static VALUE
 internal_read_func(void *ptr)
 {
     struct io_internal_struct *iis = (struct io_internal_struct*)ptr;
-    return read(iis->fd, iis->buf, iis->capa);
+    ssize_t ret = read(iis->fd, iis->buf, iis->capa);
+    iis->saved_errno = errno;
+    return (VALUE)ret;
 }
 
 static VALUE
 internal_write_func(void *ptr)
 {
     struct io_internal_struct *iis = (struct io_internal_struct*)ptr;
-    return write(iis->fd, iis->buf, iis->capa);
+    ssize_t ret = write(iis->fd, iis->buf, iis->capa);
+    iis->saved_errno = errno;
+    return (VALUE)ret;
 }
 
 static ssize_t
 rb_read_internal(int fd, void *buf, size_t count)
 {
     struct io_internal_struct iis;
+    ssize_t ret;
+
     iis.fd = fd;
     iis.buf = buf;
     iis.capa = count;
 
-    return (ssize_t)rb_thread_blocking_region(internal_read_func, &iis, RUBY_UBF_IO, 0);
+    ret = (ssize_t)rb_thread_blocking_region(internal_read_func, &iis, RUBY_UBF_IO, 0);
+    errno = iis.saved_errno;
+    return ret;
 }
 
 static ssize_t
 rb_write_internal(int fd, void *buf, size_t count)
 {
     struct io_internal_struct iis;
+    ssize_t ret;
+
     iis.fd = fd;
     iis.buf = buf;
     iis.capa = count;
 
-    return (ssize_t)rb_thread_blocking_region(internal_write_func, &iis, RUBY_UBF_IO, 0);
+    ret = (ssize_t)rb_thread_blocking_region(internal_write_func, &iis, RUBY_UBF_IO, 0);
+    errno = iis.saved_errno;
+    return ret;
 }
 
 static long
