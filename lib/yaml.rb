@@ -13,7 +13,6 @@ module YAML
     def yamler= engine
       raise(ArgumentError, "bad engine") unless %w{syck psych}.include?(engine)
 
-      @yamler = engine
       require engine
 
       Object.class_eval <<-eorb, __FILE__, __LINE__ + 1
@@ -22,6 +21,8 @@ module YAML
         remove_method :to_yaml
         alias :to_yaml :#{engine}_to_yaml
       eorb
+
+      @yamler = engine
       engine
     end
   end
