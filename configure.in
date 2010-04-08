@@ -1630,6 +1630,7 @@ if test "$install_doc" != no; then
     RDOCTARGET="rdoc"
 else
     RDOCTARGET="nodoc"
+    CAPITARGET="nodoc"
 fi
 AC_SUBST(RDOCTARGET)
 
