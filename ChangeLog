@@ -1,3 +1,8 @@
+Fri Apr  9 01:12:07 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/irb/completion.rb (CompletionProc): calling the method "methods"
+	  may raise an exception.  [ruby-core:28366]
+
 Thu Apr  8 14:33:24 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* configure.in: --disable-install-doc should prohibit doxygen.

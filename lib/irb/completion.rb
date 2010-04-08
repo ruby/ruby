@@ -138,10 +138,7 @@ module IRB
 	lv = eval("local_variables", bind).collect{|m| m.to_s}
 	cv = eval("self.class.constants", bind).collect{|m| m.to_s}
 
-	if (gv | lv | cv).include?(receiver)
-	  # foo.func and foo is local var.
-	  candidates = eval("#{receiver}.methods", bind).collect{|m| m.to_s}
-	elsif /^[A-Z]/ =~ receiver and /\./ !~ receiver
+	if (gv | lv | cv).include?(receiver) || /^[A-Z]/ =~ receiver and /\./ !~ receiver
 	  # Foo::Bar.func
 	  begin
 	    candidates = eval("#{receiver}.methods", bind).collect{|m| m.to_s}
