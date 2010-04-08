@@ -1,4 +1,6 @@
-Thu Apr  8 11:31:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Apr  8 11:45:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/yaml.rb: use Psych if only it is loaded already.
 
 	* lib/yaml.rb (YAML::EngineManager#yamler): set the result after
 	  successfully switched.
