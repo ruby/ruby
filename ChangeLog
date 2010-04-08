@@ -1,3 +1,8 @@
+Thu Apr  8 11:31:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/yaml.rb (YAML::EngineManager#yamler): set the result after
+	  successfully switched.
+
 Thu Apr  8 07:22:05 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (rand_init): ignore higher bits if all they are same as
