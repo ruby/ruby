@@ -1,3 +1,8 @@
+Thu Apr  8 14:23:51 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* include/ruby/win32.h: include errno.h before defining errnos.
+	  see [ruby-core:29314]
+
 Thu Apr  8 11:45:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/yaml.rb: use Psych if only it is loaded already.
