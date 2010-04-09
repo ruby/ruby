@@ -280,13 +280,12 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
       case VM_METHOD_TYPE_ATTRSET:
       case VM_METHOD_TYPE_IVAR:
 	def->body.attr.id = (ID)opts;
+	def->body.attr.location = Qfalse;
 	th = GET_THREAD();
 	cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
 	if (cfp && (line = rb_vm_get_sourceline(cfp))) {
 	    VALUE location = rb_ary_new3(2, cfp->iseq->filename, INT2FIX(line));
 	    def->body.attr.location = rb_ary_freeze(location);
-	} else {
-	    def->body.attr.location = Qfalse;
 	}
 	break;
       case VM_METHOD_TYPE_BMETHOD:
