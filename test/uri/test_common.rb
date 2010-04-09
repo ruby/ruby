@@ -86,7 +86,13 @@ class TestCommon < Test::Unit::TestCase
   def test_decode_www_form
     assert_equal([%w[a 1], %w[a 2]], URI.decode_www_form("a=1&a=2"))
     assert_equal([%w[a 1], ["\u3042", "\u6F22"]],
-                 URI.decode_www_form("a=1&%E3%81%82=%E6%BC%A2"))
+                 URI.decode_www_form("a=1;%E3%81%82=%E6%BC%A2"))
+    assert_equal([%w[?a 1], %w[a 2]], URI.decode_www_form("?a=1&a=2"))
+    assert_raise(ArgumentError){URI.decode_www_form("%=1")}
+    assert_raise(ArgumentError){URI.decode_www_form("a=%")}
+    assert_raise(ArgumentError){URI.decode_www_form("a=1&%=2")}
+    assert_raise(ArgumentError){URI.decode_www_form("a=1&b=%")}
+    assert_raise(ArgumentError){URI.decode_www_form("a&b")}
   end
 end
 
