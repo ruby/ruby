@@ -1,3 +1,9 @@
+Fri Apr  9 23:58:58 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/pty/lib/expect.rb: raise an error when argument is unexpected
+	  type.  based on a patch from Luiz Angelo Daros de Luca in
+	  [ruby-core:23464].
+
 Fri Apr  9 23:57:35 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/pty/lib/expect.rb: add rdoc.  based on a patch from Luiz Angelo

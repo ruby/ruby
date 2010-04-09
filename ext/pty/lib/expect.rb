@@ -14,6 +14,8 @@ class IO
       e_pat = Regexp.new(Regexp.quote(pat))
     when Regexp
       e_pat = pat
+    else
+      raise TypeError, "unsupported pattern class: #{pattern.class}"
     end
     while true
       if !IO.select([self],nil,nil,timeout) or eof? then
