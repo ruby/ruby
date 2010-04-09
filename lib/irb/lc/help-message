@@ -17,6 +17,8 @@ Usage:  irb.rb [options] [programfile] [arguments]
   -I path           Specify $LOAD_PATH directory
   -U                Same as `ruby -U`
   -E enc            Same as `ruby -E`
+  -w                Same as `ruby -w`
+  -W[level=2]       Same as `ruby -W`
   --inspect	    Use `inspect' for output (default except for bc mode)
   --noinspect	    Don't use inspect for output
   --readline	    Use Readline extension module
