@@ -1,3 +1,11 @@
+Fri Apr  9 20:54:10 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/common.rb (decode_www_form): don't ignore leading '?'.
+	  [ruby-dev:40938]
+
+	* lib/uri/common.rb (decode_www_form): check whether argument is
+	  valid application/x-www-form-urlencoded data.
+
 Fri Apr  9 20:29:13 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* dir.c (push_glob): clear up the previous commit (RB_GC_GUARD can

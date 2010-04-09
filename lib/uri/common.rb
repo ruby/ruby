@@ -805,6 +805,9 @@ module URI
     str
   end
 
+  # :nodoc:
+  WFKV_ = '(?:%\h\h|[^%#=;&])'
+
   # Decode URL-encoded form data from given +str+.
   #
   # This decodes application/x-www-form-urlencoded data
@@ -826,11 +829,11 @@ module URI
   #
   # See URI.decode_www_form_component, URI.encode_www_form
   def self.decode_www_form(str, enc=Encoding::UTF_8)
-    ary = []
-    unless /\A\??(?<query>[^=;&]*=[^;&]*(?:[;&][^=;&]*=[^;&]*)*)\z/ =~ str
+    unless /\A#{WFKV_}*=#{WFKV_}*(?:[;&]#{WFKV_}*=#{WFKV_}*)*\z/o =~ str
       raise ArgumentError, "invalid data of application/x-www-form-urlencoded (#{str})"
     end
-    query.scan(/([^=;&]+)=([^;&]*)/) do
+    ary = []
+    $&.scan(/([^=;&]+)=([^;&]*)/) do
       ary << [decode_www_form_component($1, enc), decode_www_form_component($2, enc)]
     end
     ary
