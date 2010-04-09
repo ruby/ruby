@@ -4,6 +4,12 @@ require 'stringio'
 require 'tempfile'
 
 class TestPsych < Psych::TestCase
+  def test_load_argument_error
+    assert_raises(TypeError) do
+      Psych.load nil
+    end
+  end
+
   def test_dump_stream
     things = [22, "foo \n", {}]
     stream = Psych.dump_stream(*things)

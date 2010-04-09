@@ -1,3 +1,7 @@
+Sat Apr 10 01:08:53 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/parser.c: parse raises a TypeError when nil is passed in.
+
 Sat Apr 10 00:01:51 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/pty/lib/expect.rb: preserve buffer read, instead of discard.

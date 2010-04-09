@@ -57,6 +57,7 @@ static VALUE parse(VALUE self, VALUE yaml)
     if(rb_respond_to(yaml, id_read)) {
 	yaml_parser_set_input(&parser, io_reader, (void *)yaml);
     } else {
+	Check_Type(yaml, T_STRING);
 	yaml_parser_set_input_string(
 		&parser,
 		(const unsigned char *)StringValuePtr(yaml),
