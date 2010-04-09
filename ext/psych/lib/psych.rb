@@ -8,6 +8,7 @@ require 'psych/omap'
 require 'psych/set'
 require 'psych/coder'
 require 'psych/core_ext'
+require 'psych/deprecated'
 
 ###
 # = Overview
