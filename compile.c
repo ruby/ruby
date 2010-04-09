@@ -4429,7 +4429,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       case NODE_STR:{
 	debugp_param("nd_lit", node->nd_lit);
 	if (!poped) {
-	    hide_obj(node->nd_lit);
+	    OBJ_FREEZE(node->nd_lit);
 	    ADD_INSN1(ret, nd_line(node), putstring, node->nd_lit);
 	}
 	break;
