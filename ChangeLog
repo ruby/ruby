@@ -1,3 +1,8 @@
+Fri Apr  9 23:54:16 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/irb/init.rb, lib/irb/lc/help-message,
+	  lib/irb/lc/ja/help-message: add -w flag.  [ruby-core:24594]
+
 Fri Apr  9 23:51:45 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/socket/ipsocket.c (init_inetsock_internal),

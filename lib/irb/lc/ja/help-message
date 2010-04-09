@@ -16,6 +16,8 @@ Usage:  irb.rb [options] [programfile] [arguments]
   -I path           $LOAD_PATH に path を追加する.
   -U                ruby -U と同じ.
   -E enc            ruby -E と同じ.
+  -w                ruby -w と同じ.
+  -W[level=2]       ruby -W と同じ.
   --inspect	    結果出力にinspectを用いる(bcモード以外はデフォルト). 
   --noinspect	    結果出力にinspectを用いない.
   --readline	    readlineライブラリを利用する.
