@@ -17,12 +17,17 @@ class IO
     else
       raise TypeError, "unsupported pattern class: #{pattern.class}"
     end
+    @unusedBuf ||= ''
     while true
-      if !IO.select([self],nil,nil,timeout) or eof? then
+      if not @unusedBuf.empty?
+        c = @unusedBuf.slice!(0).chr
+      elsif !IO.select([self],nil,nil,timeout) or eof? then
         result = nil
+        @unusedBuf = buf
         break
+      else
+        c = getc.chr
       end
-      c = getc.chr
       buf << c
       if $expect_verbose
         STDOUT.print c
