@@ -80,7 +80,8 @@ module IRB
 	candidates = Object.constants.collect{|m| m.to_s}
 	candidates.grep(/^#{receiver}/).collect{|e| "::" + e}
 
-      when /^(((::)?[A-Z][^:.\(]*)+)::?([^:.]*)$/
+#      when /^(((::)?[A-Z][^:.\(]*)+)::?([^:.]*)$/
+      when /^([A-Z].*)::([^:.]+)*$/
 	# Constant or class methods
 	receiver = $1
 	message = Regexp.quote($4)
@@ -129,7 +130,8 @@ module IRB
 	candidates = global_variables.collect{|m| m.to_s}.grep(regmessage)
 
 #      when /^(\$?(\.?[^.]+)+)\.([^.]*)$/
-      when /^((\.?[^.]+)+)\.([^.]*)$/
+#      when /^((\.?[^.]+)+)\.([^.]*)$/
+      when /^([^."].*)\.([^.]*)$/
 	# variable
 	receiver = $1
 	message = Regexp.quote($3)
@@ -138,7 +140,8 @@ module IRB
 	lv = eval("local_variables", bind).collect{|m| m.to_s}
 	cv = eval("self.class.constants", bind).collect{|m| m.to_s}
 
-	if (gv | lv | cv).include?(receiver) || /^[A-Z]/ =~ receiver and /\./ !~ receiver
+	if (gv | lv | cv).include?(receiver) or /^[A-Z]/ =~ receiver && /\./ !~ receiver
+	  # foo.func and foo is local var. OR
 	  # Foo::Bar.func
 	  begin
 	    candidates = eval("#{receiver}.methods", bind).collect{|m| m.to_s}

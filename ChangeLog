@@ -1,3 +1,8 @@
+Fri Apr  9 21:22:10 2010  Keiju Ishitsuka  <keiju@ruby-lang.org>
+
+	* lib/irb/completion.rb (CompletionProc): irb will be stuck with
+	  long variable name at copletion. [Bug#1969]. refix [ruby-core:28366].
+
 Fri Apr  9 20:54:10 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/common.rb (decode_www_form): don't ignore leading '?'.
