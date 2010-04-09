@@ -13,6 +13,11 @@ module URI
   #
   # FTP URI syntax is defined by RFC1738 section 3.2.
   #
+  # This class will be redesigned because of difference of implementations;
+  # the structure of its path. draft-hoffman-ftp-uri-04 is a draft but it
+  # is a good summary about the de facto spec.
+  # http://tools.ietf.org/html/draft-hoffman-ftp-uri-04
+  #
   class FTP < Generic
     DEFAULT_PORT = 21
 
