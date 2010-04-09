@@ -1,3 +1,9 @@
+Fri Apr  9 23:51:45 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/socket/ipsocket.c (init_inetsock_internal),
+	  ext/socket/unixsocket.c (rsock_init_unixsock): check the result of
+	  listen(2).  based on a patch from Mike Pomraning.  [ruby-core:23698]
+
 Fri Apr  9 21:22:10 2010  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* lib/irb/completion.rb (CompletionProc): irb will be stuck with

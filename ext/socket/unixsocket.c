@@ -65,7 +65,12 @@ rsock_init_unixsock(VALUE sock, VALUE path, int server)
 	rb_sys_fail(sockaddr.sun_path);
     }
 
-    if (server) listen(fd, 5);
+    if (server) {
+	if (listen(fd, 5) < 0) {
+	    close(fd);
+	    rb_sys_fail("listen(2)");
+	}
+    }
 
     rsock_init_sock(sock, fd);
     if (server) {
