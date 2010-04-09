@@ -104,8 +104,13 @@ init_inetsock_internal(struct inetsock_arg *arg)
 
     arg->fd = -1;
 
-    if (type == INET_SERVER)
-	listen(fd, 5);
+    if (type == INET_SERVER) {
+	status = listen(fd, 5);
+	if (status < 0) {
+	    close(fd);
+	    syscall = "listen(2)";
+	}
+    }
 
     /* create new instance */
     return rsock_init_sock(arg->sock, fd);
