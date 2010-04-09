@@ -36,6 +36,19 @@ module Psych
           return append Nodes::Alias.new target.object_id.to_s
         end
 
+        if target.respond_to?(:to_yaml)
+          loc = target.method(:to_yaml).source_location.first
+          if loc !~ /(syck\/rubytypes.rb|psych\/core_ext.rb)/
+            unless target.respond_to?(:encode_with)
+              if $VERBOSE
+                warn "implementing to_yaml is deprecated, please implement \"encode_with\""
+              end
+
+              target.to_yaml(:nodump => true)
+            end
+          end
+        end
+
         if target.respond_to?(:encode_with)
           dump_coder target
         else

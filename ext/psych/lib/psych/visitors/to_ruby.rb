@@ -219,10 +219,16 @@ module Psych
       end
 
       def init_with o, h, node
+        c = Psych::Coder.new(node.tag)
+        c.map = h
+
         if o.respond_to?(:init_with)
-          c = Psych::Coder.new(node.tag)
-          c.map = h
           o.init_with c
+        elsif o.respond_to?(:yaml_initialize)
+          if $VERBOSE
+            "Implementing #{o.class}#yaml_initialize is deprecated, please implement \"init_with(coder)\""
+          end
+          o.yaml_initialize c.tag, c.map
         else
           h.each { |k,v| o.instance_variable_set(:"@#{k}", v) }
         end

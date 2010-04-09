@@ -1,3 +1,12 @@
+Sat Apr 10 05:27:26 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/deprecated.rb: implementing Psych.quick_emit and
+	  adding deprecation warnings.
+	* ext/psych/lib/psych/visitors/to_ruby.rb: supporting deprecated
+	  yaml_initialize api.
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: supporting deprecated
+	  to_yaml api.
+
 Sat Apr 10 01:08:53 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/parser.c: parse raises a TypeError when nil is passed in.
