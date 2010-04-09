@@ -1,3 +1,8 @@
+Fri Apr  9 20:29:13 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* dir.c (push_glob): clear up the previous commit (RB_GC_GUARD can
+	  precede the last reference).  [ruby-dev:40942]
+
 Fri Apr  9 20:05:05 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* dir.c (push_glob): add RB_GC_GUARD to prevent str being free'ed.
