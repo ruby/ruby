@@ -135,17 +135,17 @@ class RDoc::RDoc
   def setup_output_dir(op_dir, force)
     flag_file = output_flag_file op_dir
 
-    last = @last_created
+    last = {}
 
     if File.exist? op_dir then
       unless File.directory? op_dir then
         error "'#{op_dir}' exists, and is not a directory"
       end
       begin
-        open(flag_file) do |f|
+        open flag_file do |io|
           unless force
-            Time.parse(f.gets)
-            f.each do |line|
+            Time.parse f.gets
+            io.each do |line|
               file, time = line.split(/\t/, 2)
               time = Time.parse(time) rescue next
               last[file] = time
@@ -225,19 +225,20 @@ class RDoc::RDoc
       stat = File.stat rel_file_name rescue next
 
       case type = stat.ftype
-      when "file"
-        next if last_created = @last_created[rel_file_name] and stat.mtime <= last_created
+      when "file" then
+        next if last_created = @last_created[rel_file_name] and
+                stat.mtime <= last_created
 
         if force_doc or RDoc::Parser.can_parse(rel_file_name) then
           file_list << rel_file_name.sub(/^\.\//, '')
           @last_created[rel_file_name] = stat.mtime
         end
-      when "directory"
+      when "directory" then
         next if rel_file_name == "CVS" || rel_file_name == ".svn"
 
         dot_doc = File.join rel_file_name, RDoc::DOT_DOC_FILENAME
 
-        if File.file?(dot_doc) then
+        if File.file? dot_doc then
           file_list << parse_dot_doc_file(rel_file_name, dot_doc)
         else
           file_list << list_files_in_directory(rel_file_name)
@@ -355,7 +356,7 @@ The internal error was:
 
     @exclude = @options.exclude
 
-    setup_output_dir @options.op_dir, @options.force_update
+    @last_created = setup_output_dir @options.op_dir, @options.force_update
 
     start_time = Time.now
 

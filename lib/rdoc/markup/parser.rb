@@ -463,7 +463,7 @@ class RDoc::Markup::Parser
                    token
                  when s.scan(/ +/) then
                    [:INDENT, s.matched_size, *token_pos(pos)]
-                 when s.scan(/(=+)\s+/) then
+                 when s.scan(/(=+)\s*/) then
                    level = s[1].length
                    level = 6 if level > 6
                    @tokens << [:HEADER, level, *token_pos(pos)]

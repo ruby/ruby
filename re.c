@@ -3456,9 +3456,7 @@ re_warn(const char *s)
  *  <code>%r{...}</code> literals, and by the <code>Regexp::new</code>
  *  constructor.
  *
- *  A comprehensive reference for regexp syntax and usage is available as
- *  +Doc::Regexp+.
- *
+ *  :include: doc/re.rdoc
  */
 
 void

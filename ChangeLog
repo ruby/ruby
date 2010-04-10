@@ -1,3 +1,10 @@
+Sat Apr 10 15:18:26 2010  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc: Import RDoc 2.5.2
+	* lib/rdoc/parser/ruby.rb (RDoc::Parser::Ruby): Don't parse rdoc
+	  files, reverts r24976 in favor of include directive support in C
+	  parser.
+
 Sat Apr 10 13:14:22 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/openssl/ossl_ssl.c (Init_ossl_ssl): add SSLContext#ssl_timeout=,

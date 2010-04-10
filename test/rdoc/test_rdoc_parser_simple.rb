@@ -22,6 +22,25 @@ class TestRDocParserSimple < MiniTest::Unit::TestCase
     @tempfile.close
   end
 
+  def test_remove_coding_comment
+    parser = util_parser <<-TEXT
+# -*- mode: rdoc; coding: utf-8; fill-column: 74; -*-
+
+Regular expressions (<i>regexp</i>s) are patterns which describe the
+contents of a string.
+    TEXT
+
+    parser.scan
+
+    expected = <<-TEXT.strip
+
+Regular expressions (<i>regexp</i>s) are patterns which describe the
+contents of a string.
+    TEXT
+
+    assert_equal expected, @top_level.comment
+  end
+
   def test_remove_private_comments
     parser = util_parser ''
     text = "foo\n\n--\nbar\n++\n\nbaz\n"

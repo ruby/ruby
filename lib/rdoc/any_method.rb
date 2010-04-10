@@ -6,7 +6,7 @@ require 'rdoc/tokenstream'
 
 class RDoc::AnyMethod < RDoc::CodeObject
 
-  MARSHAL_VERSION = 0 # :nodoc:
+  MARSHAL_VERSION = 1 # :nodoc:
 
   include Comparable
 
@@ -58,7 +58,7 @@ class RDoc::AnyMethod < RDoc::CodeObject
   ##
   # Parameters for this method
 
-  attr_overridable :params, :param, :parameters, :parameter
+  attr_accessor :params
 
   ##
   # Different ways to call this method
@@ -87,6 +87,7 @@ class RDoc::AnyMethod < RDoc::CodeObject
     @call_seq               = nil
     @dont_rename_initialize = false
     @is_alias_for           = nil
+    @params                 = nil
     @parent_name            = nil
     @singleton              = nil
     @token_stream           = nil
@@ -108,6 +109,19 @@ class RDoc::AnyMethod < RDoc::CodeObject
 
   def add_alias(method)
     @aliases << method
+  end
+
+  ##
+  # The call_seq or the param_seq with method name, if there is no call_seq.
+  #
+  # Use this for displaying a method's argument lists.
+
+  def arglists
+    if @call_seq then
+      @call_seq
+    elsif @params then
+      "#{name}#{param_seq}"
+    end
   end
 
   ##
@@ -151,6 +165,7 @@ class RDoc::AnyMethod < RDoc::CodeObject
       @call_seq,
       @block_params,
       aliases,
+      @params,
     ]
   end
 
@@ -162,7 +177,6 @@ class RDoc::AnyMethod < RDoc::CodeObject
   # * #parent_name
 
   def marshal_load(array)
-    @aliases                = []
     @dont_rename_initialize = nil
     @is_alias_for           = nil
     @token_stream           = nil
@@ -174,6 +188,8 @@ class RDoc::AnyMethod < RDoc::CodeObject
     @comment      = array[5]
     @call_seq     = array[6]
     @block_params = array[7]
+    @aliases      = array[8]
+    @params       = array[9]
 
     @parent_name = if @full_name =~ /#/ then
                      $`
@@ -201,16 +217,16 @@ class RDoc::AnyMethod < RDoc::CodeObject
   # Pretty parameter list for this method
 
   def param_seq
-    params = params.gsub(/\s*\#.*/, '')
+    params = @params.gsub(/\s*\#.*/, '')
     params = params.tr("\n", " ").squeeze(" ")
-    params = "(#{params})" unless p[0] == ?(
+    params = "(#{params})" unless params[0] == ?(
 
-    if block = block_params then # yes, =
+    if @block_params then
       # If this method has explicit block parameters, remove any explicit
       # &block
-      params.sub!(/,?\s*&\w+/)
+      params.sub!(/,?\s*&\w+/, '')
 
-      block.gsub!(/\s*\#.*/, '')
+      block = @block_params.gsub(/\s*\#.*/, '')
       block = block.tr("\n", " ").squeeze(" ")
       if block[0] == ?(
         block.sub!(/^\(/, '').sub!(/\)/, '')

@@ -146,10 +146,11 @@ class RDoc::ClassModule < RDoc::Context
 
   def merge class_module
     comment = class_module.comment
+
     if comment then
       document = parse @comment
 
-      comment.parts.concat(document.parts)
+      comment.parts.concat document.parts
 
       @comment = comment
     end

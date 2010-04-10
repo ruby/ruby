@@ -13,8 +13,7 @@ module RDoc::RI::Paths
   base    = File.join RbConfig::CONFIG['ridir'], version
   SYSDIR  = File.join base, "system"
   SITEDIR = File.join base, "site"
-  HOMEDIR = (File.expand_path("~/.rdoc") rescue nil)
-
+  HOMEDIR = (File.expand_path('~/.rdoc') rescue nil)
   #:startdoc:
 
   @gemdirs = nil
