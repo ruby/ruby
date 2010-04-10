@@ -204,12 +204,10 @@ class Delegator < BasicObject
     end
   end
 
-  # :nodoc:
-  def initialize_clone(obj)
+  def initialize_clone(obj) # :nodoc:
     self.__setobj__(obj.__getobj__.clone)
   end
-  # :nodoc:
-  def initialize_dup(obj)
+  def initialize_dup(obj) # :nodoc:
     self.__setobj__(obj.__getobj__.dup)
   end
   private :initialize_clone, :initialize_dup

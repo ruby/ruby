@@ -15,8 +15,7 @@ class Mutex
 end
 
 class Thread
-  # :nodoc:
-  MUTEX_FOR_THREAD_EXCLUSIVE = Mutex.new
+  MUTEX_FOR_THREAD_EXCLUSIVE = Mutex.new # :nodoc:
 
   # call-seq:
   #    Thread.exclusive { block }   => obj
