@@ -144,7 +144,7 @@ class RDoc::RDoc
       begin
         open flag_file do |io|
           unless force
-            Time.parse f.gets
+            Time.parse io.gets
             io.each do |line|
               file, time = line.split(/\t/, 2)
               time = Time.parse(time) rescue next
