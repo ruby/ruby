@@ -69,6 +69,7 @@ class TestCommon < Test::Unit::TestCase
                    "AZ%5B%5C%5D%5E_%60az%7B%7C%7D%7E"))
     assert_equal("\xA1\xA2".force_encoding(Encoding::EUC_JP),
                  URI.decode_www_form_component("%A1%A2", "EUC-JP"))
+    assert_raise(ArgumentError){URI.decode_www_form_component("%")}
   end
 
   def test_encode_www_form
@@ -88,6 +89,7 @@ class TestCommon < Test::Unit::TestCase
     assert_equal([%w[a 1], ["\u3042", "\u6F22"]],
                  URI.decode_www_form("a=1;%E3%81%82=%E6%BC%A2"))
     assert_equal([%w[?a 1], %w[a 2]], URI.decode_www_form("?a=1&a=2"))
+    assert_equal([], URI.decode_www_form(""))
     assert_raise(ArgumentError){URI.decode_www_form("%=1")}
     assert_raise(ArgumentError){URI.decode_www_form("a=%")}
     assert_raise(ArgumentError){URI.decode_www_form("a=1&%=2")}

@@ -716,15 +716,10 @@ module URI
     DEFAULT_PARSER.make_regexp(schemes)
   end
 
-  # :nodoc:
-  TBLENCWWWCOMP_ = {}
-
-  # :nodoc:
-  TBLDECWWWCOMP_ = {}
-
-  # :nodoc:
+  TBLENCWWWCOMP_ = {} # :nodoc:
+  TBLDECWWWCOMP_ = {} # :nodoc:
   HTML5ASCIIINCOMPAT = [Encoding::UTF_7, Encoding::UTF_16BE, Encoding::UTF_16LE,
-    Encoding::UTF_32BE, Encoding::UTF_32LE]
+    Encoding::UTF_32BE, Encoding::UTF_32LE] # :nodoc:
 
   # Encode given +str+ to URL-encoded form data.
   #
@@ -770,6 +765,7 @@ module URI
       TBLDECWWWCOMP_['+'] = ' '
       TBLDECWWWCOMP_.freeze
     end
+    raise ArgumentError, "invalid %-encoding (#{str})" unless /\A(?:%\h\h|[^%]+)*\z/ =~ str
     str.gsub(/\+|%\h\h/, TBLDECWWWCOMP_).force_encoding(enc)
   end
 
@@ -796,7 +792,7 @@ module URI
       if str
         str << '&'
       else
-        str = ''.force_encoding(Encoding::US_ASCII)
+        str = nil.to_s
       end
       str << encode_www_form_component(k)
       str << '='
@@ -805,8 +801,7 @@ module URI
     str
   end
 
-  # :nodoc:
-  WFKV_ = '(?:%\h\h|[^%#=;&])'
+  WFKV_ = '(?:%\h\h|[^%#=;&]+)' # :nodoc:
 
   # Decode URL-encoded form data from given +str+.
   #
@@ -829,6 +824,7 @@ module URI
   #
   # See URI.decode_www_form_component, URI.encode_www_form
   def self.decode_www_form(str, enc=Encoding::UTF_8)
+    return [] if str.empty?
     unless /\A#{WFKV_}*=#{WFKV_}*(?:[;&]#{WFKV_}*=#{WFKV_}*)*\z/o =~ str
       raise ArgumentError, "invalid data of application/x-www-form-urlencoded (#{str})"
     end
