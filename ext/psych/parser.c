@@ -57,10 +57,10 @@ static VALUE parse(VALUE self, VALUE yaml)
     if(rb_respond_to(yaml, id_read)) {
 	yaml_parser_set_input(&parser, io_reader, (void *)yaml);
     } else {
-	Check_Type(yaml, T_STRING);
+	StringValue(yaml);
 	yaml_parser_set_input_string(
 		&parser,
-		(const unsigned char *)StringValuePtr(yaml),
+		(const unsigned char *)RSTRING_PTR(yaml),
 		(size_t)RSTRING_LEN(yaml)
 		);
     }
