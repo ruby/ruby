@@ -1,3 +1,7 @@
+Sun Apr 11 07:40:48 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/rdoc/rdoc.rb (setup_output_dir): fix typo.
+
 Sun Apr 11 07:01:41 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/common.rb (decode_www_form_component): validate.
