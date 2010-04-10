@@ -1577,6 +1577,7 @@ Init_ossl_ssl()
     for(i = 0; i < numberof(ossl_sslctx_attrs); i++)
         rb_attr(cSSLContext, rb_intern(ossl_sslctx_attrs[i]), 1, 1, Qfalse);
     rb_define_alias(cSSLContext, "ssl_timeout", "timeout");
+    rb_define_alias(cSSLContext, "ssl_timeout=", "timeout=");
     rb_define_method(cSSLContext, "initialize",  ossl_sslctx_initialize, -1);
     rb_define_method(cSSLContext, "ssl_version=", ossl_sslctx_set_ssl_version, 1);
     rb_define_method(cSSLContext, "ciphers",     ossl_sslctx_get_ciphers, 0);
