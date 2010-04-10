@@ -46,7 +46,7 @@ class RDoc::Markup::PreProcess
 
   def include_file(name, indent)
     if full_name = find_include_file(name) then
-      content = File.read full_name
+      content = File.binread full_name
       content = content.sub(/\A# .*coding[=:].*$/, '').lstrip
 
       # strip leading '#'s, but only if all lines start with them
