@@ -73,10 +73,10 @@ class RDoc::Parser
       true
     elsif file =~ /erb\.rb$/ then
       false
-    elsif s.scan(/<%|%>/).length >= 4 then
+    elsif s.scan(/<%|%>/).length >= 4 || s.index("\x00") then
       true
     else
-      s.count("^ -~\t\r\n").fdiv(s.size) > 0.3 || s.index("\x00")
+      s.count("^ -~\t\r\n").fdiv(s.size) > 0.3
     end
   end
 
@@ -102,7 +102,9 @@ class RDoc::Parser
     return if parser == RDoc::Parser::Simple and zip? file_name
 
     # The default parser must not parse binary files
-    return if parser == RDoc::Parser::Simple and file_name !~ /\.(txt|rdoc)$/
+    ext_name = File.extname file_name
+    return parser if ext_name.empty?
+    return if parser == RDoc::Parser::Simple and ext_name !~ /txt|rdoc/
 
     parser
   end

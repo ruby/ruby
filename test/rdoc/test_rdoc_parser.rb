@@ -55,7 +55,10 @@ class TestRDocParser < MiniTest::Unit::TestCase
     assert_equal @RP::Simple, @RP.can_parse(jtest_file_name)
 
     jtest_rdoc_file_name = File.expand_path '../test.ja.rdoc', __FILE__
-    assert_equal @RP::Ruby, @RP.can_parse(jtest_rdoc_file_name)
+    assert_equal @RP::Simple, @RP.can_parse(jtest_rdoc_file_name)
+
+    readme_file_name = File.expand_path '../README', __FILE__
+    assert_equal @RP::Simple, @RP.can_parse(readme_file_name)
   end
 
   ##

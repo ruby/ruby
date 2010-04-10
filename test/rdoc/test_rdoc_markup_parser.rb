@@ -1004,6 +1004,24 @@ the time
     assert_equal expected, @RMP.tokenize(str)
   end
 
+  def test_tokenize_heading_no_space
+    str = <<-STR
+=Heading
+==Heading 2
+    STR
+
+    expected = [
+      [:HEADER,  1,            0, 0],
+      [:TEXT,    'Heading',    1, 0],
+      [:NEWLINE, "\n",         8, 0],
+      [:HEADER,  2,            0, 1],
+      [:TEXT,    'Heading 2',  2, 1],
+      [:NEWLINE, "\n",        11, 1],
+    ]
+
+    assert_equal expected, @RMP.tokenize(str)
+  end
+
   def test_tokenize_label
     str = <<-STR
 [cat] l1

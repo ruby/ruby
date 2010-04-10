@@ -146,7 +146,7 @@ $TOKEN_DEBUG ||= nil
 
 class RDoc::Parser::Ruby < RDoc::Parser
 
-  parse_files_matching(/\.(?:rbw?|rdoc)\z/)
+  parse_files_matching(/\.rbw?$/)
 
   include RDoc::RubyToken
   include RDoc::TokenStream
@@ -212,7 +212,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
   def error(msg)
     msg = make_message msg
     $stderr.puts msg
-    exit(false)
+    exit false
   end
 
   ##
@@ -377,10 +377,9 @@ class RDoc::Parser::Ruby < RDoc::Parser
   # This routine modifies it's parameter
 
   def look_for_directives_in(context, comment)
-    preprocess = RDoc::Markup::PreProcess.new(@file_name,
-                                              @options.rdoc_include)
+    preprocess = RDoc::Markup::PreProcess.new @file_name, @options.rdoc_include
 
-    preprocess.handle(comment) do |directive, param|
+    preprocess.handle comment do |directive, param|
       case directive
       when 'enddoc' then
         throw :enddoc
@@ -391,7 +390,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
            'attr', 'attr_accessor', 'attr_reader', 'attr_writer' then
         false # handled elsewhere
       when 'section' then
-        context.set_current_section(param, comment)
+        context.set_current_section param, comment
         comment.replace ''
         break
       when 'startdoc' then
@@ -405,7 +404,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
         @options.title = param
         ''
       else
-        warn "Unrecognized directive '#{directive}'"
+        warn "Unrecognized directive :#{directive}:"
         false
       end
     end
@@ -1405,16 +1404,12 @@ class RDoc::Parser::Ruby < RDoc::Parser
     end
   end
 
-  def parse_yield_parameters
-    parse_method_or_yield_parameters
-  end
-
   def parse_yield(context, single, tk, method)
-    if method.block_params.nil?
-      get_tkread
-      @scanner.instance_eval{@continue = false}
-      method.block_params = parse_yield_parameters
-    end
+    return if method.block_params
+
+    get_tkread
+    @scanner.instance_eval { @continue = false }
+    method.block_params = parse_method_or_yield_parameters
   end
 
   ##

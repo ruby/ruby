@@ -11,7 +11,7 @@ class C1
   def self.m
   end
 
-  def m
+  def m foo
   end
 end
 

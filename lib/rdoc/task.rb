@@ -160,24 +160,28 @@ class RDoc::Task < Rake::TaskLib
   # Create the tasks defined by this task lib.
 
   def define
-    desc "Build the RDoc HTML files"
+    desc "Build RDoc HTML files"
     task rdoc_task_name
 
-    desc "Force rebuild RDoc HTML files"
+    desc "Rebuild RDoc HTML files"
     task rerdoc_task_name => [clobber_task_name, rdoc_task_name]
 
     desc "Remove RDoc HTML files"
     task clobber_task_name do
-      rm_r rdoc_dir rescue nil
+      rm_r @rdoc_dir rescue nil
     end
 
     task :clobber => [clobber_task_name]
 
     directory @rdoc_dir
 
+    rdoc_target_deps = [
+      @rdoc_files,
+      Rake.application.rakefile
+    ].flatten.compact
+
     task rdoc_task_name => [rdoc_target]
-    file rdoc_target => @rdoc_files + [Rake.application.rakefile] do
-      rm_r @rdoc_dir rescue nil
+    file rdoc_target => rdoc_target_deps do
       @before_running_rdoc.call if @before_running_rdoc
       args = option_list + @rdoc_files
 

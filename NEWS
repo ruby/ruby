@@ -199,6 +199,10 @@ with all sufficient information, see the ChangeLog file.
 
     http://www.ruby-lang.org/en/news/2008/08/23/dos-vulnerability-in-rexml/
 
+* RDoc
+
+  * Updated to RDoc 2.5.2
+
 * logger
 
   * imported upstream version (logger/1.2.7)

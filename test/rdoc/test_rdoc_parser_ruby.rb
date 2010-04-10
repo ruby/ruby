@@ -1246,11 +1246,19 @@ end
 
   # If you're writing code like this you're doing it wrong
 
-  def x_test_sanity_interpolation_crazy
+  def test_sanity_interpolation_crazy
     last_tk = nil
     util_parser '"#{"#{"a")}" if b}"'
 
-    assert_equal RDoc::RubyToken::TkDSTRING, tk.class
+    assert_equal '"#{"#{"a")}" if b}"', @parser.get_tk.text
+    assert_equal RDoc::RubyToken::TkNL, @parser.get_tk.class
+  end
+
+  def test_sanity_interpolation_curly
+    last_tk = nil
+    util_parser '%{ #{} }'
+
+    assert_equal '%{ #{} }', @parser.get_tk.text
     assert_equal RDoc::RubyToken::TkNL, @parser.get_tk.class
   end
 

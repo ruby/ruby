@@ -41,14 +41,13 @@ class RDoc::Markup::PreProcess
     end
   end
 
-  private
-
   ##
   # Include a file, indenting it correctly.
 
   def include_file(name, indent)
     if full_name = find_include_file(name) then
       content = File.read full_name
+      content = content.sub(/\A# .*coding[=:].*$/, '').lstrip
 
       # strip leading '#'s, but only if all lines start with them
       if content =~ /^[^#]/ then
@@ -57,7 +56,7 @@ class RDoc::Markup::PreProcess
         content.gsub(/^#?/, indent)
       end
     else
-      $stderr.puts "Couldn't find file to include '#{name}' from #{@input_file_name}"
+      warn "Couldn't find file to include '#{name}' from #{@input_file_name}"
       ''
     end
   end
@@ -67,7 +66,7 @@ class RDoc::Markup::PreProcess
   # and then in each of the directories specified in the RDOC_INCLUDE path
 
   def find_include_file(name)
-    to_search = [ File.dirname(@input_file_name) ].concat @include_path
+    to_search = [File.dirname(@input_file_name)].concat @include_path
     to_search.each do |dir|
       full_name = File.join(dir, name)
       stat = File.stat(full_name) rescue next

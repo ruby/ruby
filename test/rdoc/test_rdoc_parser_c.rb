@@ -201,6 +201,26 @@ Multiline comment goes here because this comment spans multiple lines.
     assert constants.empty?, constants.inspect
   end
 
+  def test_find_class_comment_include
+    @options.rdoc_include << File.dirname(__FILE__)
+
+    content = <<-EOF
+/*
+ * a comment for class Foo
+ *
+ * :include: test.txt
+ */
+void
+Init_Foo(void) {
+  VALUE foo = rb_define_class("Foo", rb_cObject);
+}
+    EOF
+
+    klass = util_get_class content, 'foo'
+
+    assert_equal "a comment for class Foo\n\ntest file", klass.comment
+  end
+
   def test_find_class_comment_init
     content = <<-EOF
 /*

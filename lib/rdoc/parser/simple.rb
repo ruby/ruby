@@ -24,13 +24,20 @@ class RDoc::Parser::Simple < RDoc::Parser
   # Extract the file contents and attach them to the TopLevel as a comment
 
   def scan
-    @top_level.comment = remove_private_comments(@content)
+    comment = remove_coding_comment @content
+    comment = remove_private_comments comment
+
+    @top_level.comment = comment
     @top_level.parser = self.class
     @top_level
   end
 
   def remove_private_comments(comment)
     comment.gsub(/^--\n.*?^\+\+/m, '').sub(/^--\n.*/m, '')
+  end
+
+  def remove_coding_comment text
+    text.sub(/\A# .*coding[=:].*$/, '')
   end
 
 end

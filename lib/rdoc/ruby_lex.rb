@@ -359,6 +359,8 @@ class RDoc::RubyLex
     "(" => ")"
   }
 
+  PERCENT_PAREN_REV = PERCENT_PAREN.invert
+
   Ltype2Token = {
     "\'" => TkSTRING,
     "\"" => TkSTRING,
@@ -1120,7 +1122,12 @@ class RDoc::RubyLex
   def identify_string(ltype, quoted = ltype)
     @ltype = ltype
     @quoted = quoted
-    str = @ltype.dup
+
+    str = if ltype == quoted then
+            ltype.dup
+          else
+            "%#{PERCENT_PAREN_REV[quoted]}"
+          end
 
     subtype = nil
     begin
@@ -1136,6 +1143,7 @@ class RDoc::RubyLex
           subtype = true
           if ch == "{" then
             str << ch << skip_inner_expression
+            next
           else
             ungetc
           end
@@ -1179,7 +1187,7 @@ class RDoc::RubyLex
   def skip_inner_expression
     res = ""
     nest = 0
-    while (ch = getc)
+    while ch = getc
       res << ch
       if ch == '}'
         break if nest.zero?

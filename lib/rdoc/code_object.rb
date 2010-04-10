@@ -54,25 +54,6 @@ class RDoc::CodeObject
   attr_accessor :viewer
 
   ##
-  # There's a wee trick we pull. Comment blocks can have directives that
-  # override the stuff we extract during the parse. So, we have a special
-  # class method, attr_overridable, that lets code objects list those
-  # directives. When a comment is assigned, we then extract out any matching
-  # directives and update our object
-
-  def self.attr_overridable(name, *aliases)
-    @overridables ||= {}
-
-    attr_accessor name
-
-    aliases.unshift name
-
-    aliases.each do |directive_name|
-      @overridables[directive_name.to_s] = name
-    end
-  end
-
-  ##
   # Creates a new CodeObject that will document itself and its children
 
   def initialize

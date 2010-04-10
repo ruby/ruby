@@ -227,8 +227,8 @@ class RDoc::Parser::C < RDoc::Parser
       next if var_name == "argf"   # it'd be nice to handle this one
 
       var_name = "rb_cObject" if var_name == "rb_mKernel"
-      handle_method(type, var_name, meth_name,
-                    meth_body, param_count, source_file)
+      handle_method(type, var_name, meth_name, meth_body, param_count,
+                    source_file)
     end
 
     @content.scan(%r{rb_define_attr\(
@@ -304,7 +304,7 @@ class RDoc::Parser::C < RDoc::Parser
 
       find_modifiers comment, meth_obj if comment
 
-#        meth_obj.params = params
+      #meth_obj.params = params
       meth_obj.start_collecting_tokens
       tk = RDoc::RubyToken::Token.new nil, 1, 1
       tk.set_text body_text
@@ -397,7 +397,13 @@ class RDoc::Parser::C < RDoc::Parser
       comment = $1
     end
 
-    class_mod.comment = strip_stars comment if comment
+    return unless comment
+
+    comment = strip_stars comment
+
+    comment = look_for_directives_in class_mod, comment
+
+    class_mod.comment = comment
   end
 
   ##
@@ -479,7 +485,7 @@ class RDoc::Parser::C < RDoc::Parser
       end
 
       unless enclosure then
-        warn("Enclosing class/module '#{in_module}' for #{type} #{class_name} not known")
+        warn "Enclosing class/module '#{in_module}' for #{type} #{class_name} not known"
         return
       end
     else
@@ -601,9 +607,9 @@ class RDoc::Parser::C < RDoc::Parser
       meth_obj = RDoc::AnyMethod.new '', meth_name
       meth_obj.singleton = %w[singleton_method module_function].include? type
 
-      p_count = (Integer(param_count) rescue -1)
+      p_count = Integer(param_count) rescue -1
 
-      if p_count < 0
+      if p_count < 0 then
         meth_obj.params = "(...)"
       elsif p_count == 0
         meth_obj.params = "()"
@@ -611,10 +617,14 @@ class RDoc::Parser::C < RDoc::Parser
         meth_obj.params = "(" + (1..p_count).map{|i| "p#{i}"}.join(", ") + ")"
       end
 
-      if source_file and File.exist?(file_name = File.join(@file_dir, source_file)) then
-        body = (@@known_bodies[source_file] ||= File.read(file_name))
-      elsif source_file then
-        warn "unknown source file #{source_file}"
+      if source_file then
+        file_name = File.join @file_dir, source_file
+
+        if File.exist? file_name then
+          body = (@@known_bodies[file_name] ||= File.read(file_name))
+        else
+          warn "unknown source #{source_file} for #{meth_name} in #{@file_name}"
+        end
       else
         body = @content
       end
@@ -640,6 +650,34 @@ class RDoc::Parser::C < RDoc::Parser
   end
 
   ##
+  # Look for directives in a normal comment block:
+  #
+  #   /*
+  #    * :title: My Awesome Project
+  #    */
+  #
+  # This routine modifies it's parameter
+
+  def look_for_directives_in(context, comment)
+    preprocess = RDoc::Markup::PreProcess.new @file_name, @options.rdoc_include
+
+    preprocess.handle comment do |directive, param|
+      case directive
+      when 'main' then
+        @options.main_page = param
+        ''
+      when 'title' then
+        @options.title = param
+        ''
+      else
+        warn "Unrecognized directive :#{directive}:"
+        false
+      end
+    end
+
+    comment
+  end
+  ##
   # Removes lines that are commented out that might otherwise get picked up
   # when scanning for classes and methods
 
@@ -648,8 +686,8 @@ class RDoc::Parser::C < RDoc::Parser
   end
 
   def remove_private_comments(comment)
-     comment.gsub!(/\/?\*--\n(.*?)\/?\*\+\+/m, '')
-     comment.sub!(/\/?\*--\n.*/m, '')
+    comment.gsub!(/\/?\*--\n(.*?)\/?\*\+\+/m, '')
+    comment.sub!(/\/?\*--\n.*/m, '')
   end
 
   ##

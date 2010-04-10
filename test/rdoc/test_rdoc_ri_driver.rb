@@ -366,7 +366,6 @@ class TestRDocRIDriver < MiniTest::Unit::TestCase
     assert_match %r%Foo::Bar#blah%, out
     assert_match %r%blah.5%,        out
     assert_match %r%blah.6%,        out
-    assert_match %r%yields: stuff%, out
   end
 
   def test_display_method_attribute
@@ -423,6 +422,16 @@ Foo::Bar#bother
     EXPECTED
 
     assert_equal expected, out
+  end
+
+  def test_display_method_params
+    util_store
+
+    out, err = capture_io do
+      @driver.display_method 'Foo::Bar#bother'
+    end
+
+    assert_match %r%things.*stuff%, out
   end
 
   def test_expand_class
@@ -511,7 +520,7 @@ Foo::Bar#bother
     util_store
 
     out, err = capture_io do
-      @driver.list_known_classes
+      @driver.list_known_classes 
     end
 
     assert_equal "Ambiguous\nFoo\nFoo::Bar\nFoo::Baz\nInc\n", out
@@ -675,7 +684,7 @@ Foo::Bar#bother
   def test_setup_pager
     @driver.use_stdout = false
 
-    pager = with_dummy_pager {@driver.setup_pager}
+    pager = with_dummy_pager do @driver.setup_pager end
 
     skip "couldn't find a standard pager" unless pager
 
@@ -776,9 +785,10 @@ Foo::Bar#bother
 
     @blah = RDoc::AnyMethod.new nil, 'blah'
     @blah.call_seq = "blah(5) => 5\nblah(6) => 6\n"
-    @blah.block_params = "stuff"
 
     @bother = RDoc::AnyMethod.new nil, 'bother'
+    @bother.params = "(things)"
+    @bother.block_params = "stuff"
 
     @new  = RDoc::AnyMethod.new nil, 'new'
     @new.singleton = true
