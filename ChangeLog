@@ -1,3 +1,8 @@
+Sat Apr 10 21:26:22 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/rdoc/markup/preprocess.rb (RDoc::Markup::PreProcess#handle):
+	  use File.binread to avoid locale dependency.
+
 Sat Apr 10 15:18:26 2010  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc: Import RDoc 2.5.2
