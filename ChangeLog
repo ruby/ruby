@@ -1,3 +1,12 @@
+Sun Apr 11 07:01:41 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/common.rb (decode_www_form_component): validate.
+	  [ruby-dev:40938]
+
+	* lib/uri/common.rb (decode_www_form): allow empty string.
+
+	* lib/uri/common.rb: fix nodoc for constant. [ruby-dev:40949]
+
 Sat Apr 10 21:26:22 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/rdoc/markup/preprocess.rb (RDoc::Markup::PreProcess#handle):
