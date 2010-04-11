@@ -11,6 +11,15 @@ end
 
 module Syck
   class TestStruct < MiniTest::Unit::TestCase
+    def setup
+        @current_engine = YAML::ENGINE.yamler
+        YAML::ENGINE.yamler = 'syck'
+    end
+
+    def teardown
+        YAML::ENGINE.yamler = @current_engine
+    end
+
     def test_roundtrip
       thing = StructWithIvar.new('bar')
       struct = YAML.load(YAML.dump(thing))
@@ -24,7 +33,7 @@ module Syck
 --- !ruby/struct:StructWithIvar 
 foo: bar
 @bar: hello
-      eoyml
+eoyml
 
       assert_equal 'hello', obj.bar
       assert_equal 'bar', obj.foo
