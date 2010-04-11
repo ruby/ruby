@@ -103,7 +103,6 @@ class RubyLex
       @rests.push nil unless buf_input
     end
     c = @rests.shift
-    return if c == nil
     if @here_header
       @here_readed.push c
     else

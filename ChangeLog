@@ -1,3 +1,9 @@
+Sun Apr 11 14:44:45 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/irb/ruby-lex.rb (RubyLex#getc): revert r10817, which caused
+	  regression for handling case when there is no newline at the end of
+	  file.  [ruby-core:28248]
+
 Sun Apr 11 12:08:49 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (enc_replicate): new encoding name must be valid
