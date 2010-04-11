@@ -168,15 +168,8 @@ rubylib_mangled_path(const char *s, unsigned int l)
     ptr[l + newl - oldl] = 0;
     return ret;
 }
-
-static VALUE
-rubylib_mangled_path2(const char *s)
-{
-    return rubylib_mangled_path(s, strlen(s));
-}
 #else
 #define rubylib_mangled_path rb_str_new
-#define rubylib_mangled_path2 rb_str_new2
 #endif
 
 static void push_include _((const char *path));
