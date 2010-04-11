@@ -1,3 +1,7 @@
+Mon Apr 12 03:45:25 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb: Deprecate elements_to_{f/i/r}
+
 Mon Apr 12 03:30:29 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb: Handle coercion errors by raising TypeErrors
