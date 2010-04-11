@@ -366,18 +366,6 @@ class TestMatrix < Test::Unit::TestCase
     assert_equal([Vector[1,4], Vector[2,5], Vector[3,6]], @m1.column_vectors)
   end
 
-  def test_elements_to_f
-    assert_equal(Matrix[[0.5,1.0,1.5],[2.0,2.5,3.0]], @m1.elements_to_f / 2)
-  end
-
-  def test_elements_to_i
-    assert_equal(Matrix[[0,1,1],[2,2,3]], (@m1.elements_to_f / 2).elements_to_i)
-  end
-
-  def test_elements_to_r
-    assert_equal(@m1.collect {|x| Rational(x, 2) }, @m1.elements_to_r / 2)
-  end
-
   def test_to_s
     assert_equal("Matrix[[1, 2, 3], [4, 5, 6]]", @m1.to_s)
     assert_equal("Matrix.empty(0, 0)", Matrix[].to_s)

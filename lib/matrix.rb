@@ -1465,15 +1465,18 @@ class Vector
   end
 
   def elements_to_f
-    collect{|e| e.to_f}
+    warn "#{caller(1)[0]}: warning: Vector#elements_to_f is deprecated"
+    map(&:to_f)
   end
 
   def elements_to_i
-    collect{|e| e.to_i}
+    warn "#{caller(1)[0]}: warning: Vector#elements_to_i is deprecated"
+    map(&:to_i)
   end
 
   def elements_to_r
-    collect{|e| e.to_r}
+    warn "#{caller(1)[0]}: warning: Vector#elements_to_r is deprecated"
+    map(&:to_r)
   end
 
   #
