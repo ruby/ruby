@@ -227,7 +227,7 @@ class RDoc::RDoc
       case type = stat.ftype
       when "file" then
         next if last_created = @last_created[rel_file_name] and
-                stat.mtime <= last_created
+                stat.mtime.to_i <= last_created.to_i
 
         if force_doc or RDoc::Parser.can_parse(rel_file_name) then
           file_list << rel_file_name.sub(/^\.\//, '')

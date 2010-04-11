@@ -1,6 +1,13 @@
+Sun Apr 11 08:56:44 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/rdoc/rdoc.rb (setup_output_dir): compare by Time#to_i.
+	  Cached created time doesn't have fractinal times,
+	  but FileStat#mtime has; so rdoc almost alway judged files
+	  are updated.
+
 Sun Apr 11 07:40:48 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* lib/rdoc/rdoc.rb (setup_output_dir): fix typo.
+	* lib/rdoc/rdoc.rb (setup_output_dir): fix typo. [ruby-core:29415]
 
 Sun Apr 11 07:01:41 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
