@@ -48,6 +48,7 @@ end
 # * <tt> Matrix.[](*rows)               </tt>
 # * <tt> Matrix.rows(rows, copy = true) </tt>
 # * <tt> Matrix.columns(columns)        </tt>
+# * <tt> Matrix.build(row_size, column_size, &block) </tt>
 # * <tt> Matrix.diagonal(*values)       </tt>
 # * <tt> Matrix.scalar(n, value)        </tt>
 # * <tt> Matrix.identity(n)             </tt>
@@ -163,6 +164,30 @@ class Matrix
   #
   def Matrix.columns(columns)
     Matrix.rows(columns, false).transpose
+  end
+
+  #
+  # Creates a matrix of size +row_size+ x +column_size+.
+  # It fills the values by calling the given block,
+  # passing the current row and column.
+  # Returns an enumerator if no block is given.
+  #
+  #   m = Matrix.build(2, 4) {|row, col| col - row }
+  #     => Matrix[[0, 1, 2, 3], [-1, 0, 1, 2]]
+  #   m = Matrix.build(3) { rand }
+  #     => a 3x3 matrix with random elements
+  #
+  def Matrix.build(row_size, column_size = row_size)
+    row_size = CoercionHelper.coerce_to_int(row_size)
+    column_size = CoercionHelper.coerce_to_int(column_size)
+    raise ArgumentError if row_size < 0 || column_size < 0
+    return to_enum :build, row_size, column_size unless block_given?
+    rows = row_size.times.map do |i|
+      column_size.times.map do |j|
+        yield i, j
+      end
+    end
+    new rows, column_size
   end
 
   #
@@ -1074,7 +1099,7 @@ class Matrix
 
   # Private helper module
 
-  module CoercionHelper
+  module CoercionHelper # :nodoc:
     def apply_through_coercion(obj, oper)
       coercion = obj.coerce(self)
       raise TypeError unless coercion.is_a?(Array) && coercion.length == 2
@@ -1083,6 +1108,27 @@ class Matrix
       raise TypeError, "#{obj.inspect} can't be coerced into #{self.class}"
     end
     private :apply_through_coercion
+
+    # Helper method to coerce a value into a specific class.
+    # Raises a TypeError if the coercion fails or the returned value
+    # is not of the right class.
+    # (from Rubinius)
+    def self.coerce_to(obj, cls, meth) # :nodoc:
+      return obj if obj.kind_of?(cls)
+
+      begin
+        ret = obj.__send__(meth)
+      rescue Exception => e
+        raise TypeError, "Coercion error: #{obj.inspect}.#{meth} => #{cls} failed:\n" \
+                         "(#{e.message})"
+      end
+      raise TypeError, "Coercion error: obj.#{meth} did NOT return a #{cls} (was #{ret.class})" unless ret.kind_of? cls
+      ret
+    end
+
+    def self.coerce_to_int(obj)
+      coerce_to(obj, Integer, :to_int)
+    end
   end
 
   include CoercionHelper
