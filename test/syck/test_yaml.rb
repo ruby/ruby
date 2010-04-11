@@ -13,6 +13,15 @@ end
 
 module Syck
 class YAML_Unit_Tests < Test::Unit::TestCase
+    def setup
+        @current_engine = YAML::ENGINE.yamler
+        YAML::ENGINE.yamler = 'syck'
+    end
+
+    def teardown
+        YAML::ENGINE.yamler = @current_engine
+    end
+
 	#
 	# Convert between YAML and the object to verify correct parsing and
 	# emitting
