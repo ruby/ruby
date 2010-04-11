@@ -242,6 +242,24 @@ ruby_incpush(path)
 #define LOAD_RELATIVE 1
 #endif
 
+#if defined _WIN32 || defined __CYGWIN__
+static HMODULE libruby;
+
+BOOL WINAPI
+DllMain(HINSTANCE dll, DWORD reason, LPVOID reserved)
+{
+    if (reason == DLL_PROCESS_ATTACH)
+	libruby = dll;
+    return TRUE;
+}
+
+HANDLE
+rb_libruby_handle(void)
+{
+    return libruby;
+}
+#endif
+
 void
 ruby_init_loadpath()
 {
@@ -251,27 +269,20 @@ ruby_init_loadpath()
     char libpath[FILENAME_MAX+1];
     size_t baselen;
     char *p;
-#if defined _WIN32 || defined __CYGWIN__
-    HMODULE libruby = NULL;
-    MEMORY_BASIC_INFORMATION m;
 
-#ifndef _WIN32_WCE
-    memset(&m, 0, sizeof(m));
-    if (VirtualQuery(ruby_init_loadpath, &m, sizeof(m)) && m.State == MEM_COMMIT)
-	libruby = (HMODULE)m.AllocationBase;
-#endif
+#if defined _WIN32 || defined __CYGWIN__
     GetModuleFileName(libruby, libpath, sizeof libpath);
 #elif defined(DJGPP)
     extern char *__dos_argv0;
-    strncpy(libpath, __dos_argv0, FILENAME_MAX);
+    strncpy(libpath, __dos_argve0, sizeof(libpath) - 1);
 #elif defined(__human68k__)
     extern char **_argv;
-    strncpy(libpath, _argv[0], FILENAME_MAX);
+    strncpy(libpath, _argv[0], sizeof(libpath) - 1);
 #elif defined(__EMX__)
-    _execname(libpath, FILENAME_MAX);
+    _execname(libpath, sizeof(libpath) - 1);
 #endif
 
-    libpath[FILENAME_MAX] = '\0';
+    libpath[sizeof(libpath) - 1] = '\0';
 #if defined DOSISH
     translate_char(libpath, '\\', '/');
 #elif defined __CYGWIN__

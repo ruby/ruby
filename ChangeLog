@@ -1,4 +1,8 @@
-Sun Apr 11 16:37:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Apr 11 16:48:13 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (DllMain, ruby_init_loadpath): use DLL instance handle given
+	  to DllMain instead of VirtualQuery so that loadpath becomes relative
+	  from the DLL on WinCE too.
 
 	* ruby.c (ruby_init_loadpath): do not mangle relative path.
 
