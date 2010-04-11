@@ -1,4 +1,6 @@
-Sun Apr 11 11:28:53 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Apr 11 16:37:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (ruby_init_loadpath): do not mangle relative path.
 
 	* ruby.c (ruby_init_loadpath): fix for the length of mangled path.
 	  [ruby-core:29398]

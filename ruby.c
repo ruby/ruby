@@ -251,7 +251,6 @@ ruby_init_loadpath()
     char libpath[FILENAME_MAX+1];
     size_t baselen;
     char *p;
-    int rest;
 #if defined _WIN32 || defined __CYGWIN__
     HMODULE libruby = NULL;
     MEMORY_BASIC_INFORMATION m;
@@ -297,9 +296,9 @@ ruby_init_loadpath()
 #define PREFIX_PATH() rb_str_new(libpath, baselen)
 
     baselen = p - libpath;
-    rest = FILENAME_MAX - baselen;
+#define BASEPATH() rb_str_buf_cat(rb_str_buf_new(baselen+len), libpath, baselen)
 
-#define RUBY_RELATIVE(path, len) (strncpy(p, (path), rest), rubylib_mangled_path(libpath, baselen+(len)))
+#define RUBY_RELATIVE(path, len) rb_str_buf_cat(BASEPATH(), path, len)
 #else
     static const char exec_prefix[] = RUBY_EXEC_PREFIX;
 #define RUBY_RELATIVE(path, len) rubylib_mangled_path(path, len)
