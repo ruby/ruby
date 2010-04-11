@@ -1,3 +1,5 @@
+require 'date'
+
 module Psych
   module DeprecatedMethods # :nodoc:
     attr_accessor :taguri
