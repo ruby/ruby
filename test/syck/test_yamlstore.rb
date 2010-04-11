@@ -1,5 +1,5 @@
 require 'test/unit'
-require 'syck/store'
+require 'yaml/store'
 
 module Syck
   class YAMLStoreTest < Test::Unit::TestCase

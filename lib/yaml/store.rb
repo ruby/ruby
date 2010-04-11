@@ -1,12 +1,12 @@
 #
 # YAML::Store
 #
-require 'syck'
+require 'yaml'
 require 'pstore'
 
-class Syck::Store < PStore
+class YAML::Store < PStore
   def initialize( *o )
-    @opt = Syck::DEFAULTS.dup
+    @opt = {}
     if String === o.first
       super(o.shift)
     end
@@ -20,7 +20,7 @@ class Syck::Store < PStore
   end
 
   def load(content)
-    table = Syck::load(content)
+    table = YAML.load(content)
     if table == false
       {}
     else
