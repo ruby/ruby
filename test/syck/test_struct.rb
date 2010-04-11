@@ -9,7 +9,7 @@ class StructWithIvar < Struct.new(:foo)
   end
 end
 
-module YAML
+module Syck
   class TestStruct < MiniTest::Unit::TestCase
     def test_roundtrip
       thing = StructWithIvar.new('bar')

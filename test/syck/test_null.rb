@@ -1,7 +1,7 @@
 require 'test/unit'
 require 'yaml'
 
-module YAML
+module Syck
   ###
   # Test null from YAML spec:
   # http://yaml.org/type/null.html

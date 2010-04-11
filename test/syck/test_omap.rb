@@ -1,7 +1,7 @@
 require 'test/unit'
 require 'yaml'
 
-module YAML
+module Syck
   class TestOmap < Test::Unit::TestCase
     def test_keys
       map = YAML::Omap.new

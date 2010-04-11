@@ -1,7 +1,7 @@
 require 'test/unit'
 require 'yaml'
 
-module YAML
+module Syck
   class TestString < Test::Unit::TestCase
     def test_binary_string_null
       string = "\x00"

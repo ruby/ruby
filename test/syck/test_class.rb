@@ -1,7 +1,7 @@
 require 'test/unit'
 require 'yaml'
 
-module YAML
+module Syck
   class TestClass < Test::Unit::TestCase
     def test_to_yaml
       assert_raises(::TypeError) do

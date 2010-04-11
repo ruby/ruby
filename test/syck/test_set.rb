@@ -1,7 +1,7 @@
 require 'test/unit'
 require 'yaml'
 
-module YAML
+module Syck
   class TestSet < Test::Unit::TestCase
     def setup
       @set = YAML::Set.new
