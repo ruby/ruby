@@ -326,7 +326,7 @@ static VALUE
 enc_replicate(VALUE encoding, VALUE name)
 {
     return rb_enc_from_encoding_index(
-	rb_enc_replicate(RSTRING_PTR(name),
+	rb_enc_replicate(StringValueCStr(name),
 			 rb_to_encoding(encoding)));
 }
 
