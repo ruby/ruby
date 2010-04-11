@@ -72,6 +72,9 @@ with all sufficient information, see the ChangeLog file.
   * ENV
     * Uses locale's encoding
     * ENV.[]= raises Errno::{EINVAL,ENOMEM} etc. on failure.
+    * new methods:
+      * ENV.keep_if
+      * ENV.select!
 
   * Float
     * new constants:
@@ -86,6 +89,11 @@ with all sufficient information, see the ChangeLog file.
   * GC::Profiler
     * new method:
       * GC::Profiler.total_time
+
+  * Hash
+    * new methods:
+      * Hash#keep_if
+      * Hash#select!
 
   * IO
     * new method:
