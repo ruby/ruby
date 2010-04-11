@@ -123,18 +123,6 @@ class TestVector < Test::Unit::TestCase
     assert_equal(Matrix[[1,2,3]], @v1.covector)
   end
 
-  def test_elements_to_f
-    assert_equal(Vector[0.5,1.0,1.5], @v1.elements_to_f * Rational(1, 2))
-  end
-
-  def test_elements_to_i
-    assert_equal(Vector[0,1,1], (@v1.elements_to_f * Rational(1, 2)).elements_to_i)
-  end
-
-  def test_elements_to_r
-    assert_equal(@v1.collect {|x| Rational(x, 2) }, @v1.elements_to_r * Rational(1, 2))
-  end
-
   def test_to_s
     assert_equal("Vector[1, 2, 3]", @v1.to_s)
   end
