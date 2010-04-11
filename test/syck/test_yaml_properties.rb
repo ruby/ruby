@@ -1,7 +1,7 @@
 require 'test/unit'
 require 'yaml'
 
-module YAML
+module Syck
   class TestYamlProperties < Test::Unit::TestCase
     class Foo
       attr_reader :a, :b, :c

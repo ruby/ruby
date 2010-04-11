@@ -1,7 +1,7 @@
 require 'test/unit'
 require 'yaml'
 
-module YAML
+module Syck
   class TestHash < Test::Unit::TestCase
     def setup
       @hash = { :a => 'b' }

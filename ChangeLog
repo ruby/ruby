@@ -1,3 +1,8 @@
+Sun Apr 11 09:31:39 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* test/syck/*: Moved test/yaml to test/syck since it's actually
+	  testing the syck YAML engine.
+
 Sun Apr 11 08:56:44 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/rdoc/rdoc.rb (setup_output_dir): compare by Time#to_i.

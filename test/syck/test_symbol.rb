@@ -1,7 +1,7 @@
 require 'test/unit'
 require 'yaml'
 
-module YAML
+module Syck
   class TestSymbol < Test::Unit::TestCase
     def test_to_yaml
       assert_equal :a, YAML.load(:a.to_yaml)

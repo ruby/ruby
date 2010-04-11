@@ -1,7 +1,7 @@
 require 'test/unit'
 require 'yaml'
 
-module YAML
+module Syck
   class TestException < Test::Unit::TestCase
     class Wups < Exception
       attr_reader :foo, :bar

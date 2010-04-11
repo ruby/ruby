@@ -1,7 +1,7 @@
 require 'test/unit'
 require 'yaml'
 
-module YAML
+module Syck
   ###
   # Test booleans from YAML spec:
   # http://yaml.org/type/bool.html

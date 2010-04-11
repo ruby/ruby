@@ -1,7 +1,7 @@
 require 'test/unit'
 require 'yaml'
 
-module YAML
+module Syck
   class TestArray < Test::Unit::TestCase
     def setup
       @list = [{ :a => 'b' }, 'foo']

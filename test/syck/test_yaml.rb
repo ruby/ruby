@@ -11,6 +11,7 @@ module YAML_Tests
     StructTest = Struct::new( :c )
 end
 
+module Syck
 class YAML_Unit_Tests < Test::Unit::TestCase
 	#
 	# Convert between YAML and the object to verify correct parsing and
@@ -1315,6 +1316,7 @@ EOY
       YAML.load("2000-01-01 00:00:00.#{"0"*1000} +00:00\n")
       # '[ruby-core:13735]'
     end
+end
 end
 
 if $0 == __FILE__
