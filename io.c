@@ -2286,7 +2286,7 @@ swallow(rb_io_t *fptr, int term)
 }
 
 static VALUE
-rb_io_getline_fast(rb_io_t *fptr, rb_encoding *enc)
+rb_io_getline_fast(rb_io_t *fptr, rb_encoding *enc, VALUE io)
 {
     VALUE str = Qnil;
     int len = 0;
@@ -2328,7 +2328,13 @@ rb_io_getline_fast(rb_io_t *fptr, rb_encoding *enc)
     str = io_enc_str(str, fptr);
     ENC_CODERANGE_SET(str, cr);
     fptr->lineno++;
-    ARGF.last_lineno = fptr->lineno;
+    if (io == ARGF.current_file) {
+	ARGF.lineno++;
+	ARGF.last_lineno = ARGF.lineno;
+    }
+    else {
+	ARGF.last_lineno = fptr->lineno;
+    }
 
     return str;
 }
@@ -2397,7 +2403,7 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
     }
     else if (rs == rb_default_rs && limit < 0 && !NEED_READCONV(fptr) &&
              rb_enc_asciicompat(enc = io_read_encoding(fptr))) {
-	return rb_io_getline_fast(fptr, enc);
+	return rb_io_getline_fast(fptr, enc, io);
     }
     else {
 	int c, newline = -1;
@@ -2466,7 +2472,13 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
     if (!NIL_P(str)) {
 	if (!nolimit) {
 	    fptr->lineno++;
-	    ARGF.last_lineno = fptr->lineno;
+	    if (io == ARGF.current_file) {
+		ARGF.lineno++;
+		ARGF.last_lineno = ARGF.lineno;
+	    }
+	    else {
+		ARGF.last_lineno = fptr->lineno;
+	    }
 	}
     }
 

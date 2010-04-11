@@ -1,3 +1,11 @@
+Mon Apr 12 00:51:21 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* io.c (rb_io_getline_fast, rb_io_getline_1): fix ARGF.lineno
+	  behavior. [ruby-core:25205]
+
+	* test/ruby/test_argf.rb (TestArgf#test_lineno3): add a test for
+	  above.
+
 Sun Apr 11 23:25:17 2010  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
 
 	* configure.in: can not load libraries if --with-opt-dir is used

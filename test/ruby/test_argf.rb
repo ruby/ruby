@@ -127,6 +127,14 @@ class TestArgf < Test::Unit::TestCase
     SRC
   end
 
+  def test_lineno3
+    assert_in_out_err(["-", @t1.path, @t2.path], <<-INPUT, %w"1 1 1 2 2 2 3 3 1 4 4 2", [], "[ruby-core:25205]")
+      ARGF.each do |line|
+        puts [$., ARGF.lineno, ARGF.file.lineno]
+      end
+    INPUT
+  end
+
   def test_inplace
     assert_in_out_err(["-", @t1.path, @t2.path, @t3.path], <<-INPUT, [], [])
       ARGF.inplace_mode = '.bak'
