@@ -541,8 +541,7 @@ class Matrix
       }
       return new_matrix rows, m.column_size
     else
-      x, y = m.coerce(self)
-      return x * y
+      return apply_through_coercion(m, __method__)
     end
   end
 
@@ -560,8 +559,7 @@ class Matrix
       m = Matrix.column_vector(m)
     when Matrix
     else
-      x, y = m.coerce(self)
-      return x + y
+      return apply_through_coercion(m, __method__)
     end
 
     Matrix.Raise ErrDimensionMismatch unless row_size == m.row_size and column_size == m.column_size
@@ -588,8 +586,7 @@ class Matrix
       m = Matrix.column_vector(m)
     when Matrix
     else
-      x, y = m.coerce(self)
-      return x - y
+      return apply_through_coercion(m, __method__)
     end
 
     Matrix.Raise ErrDimensionMismatch unless row_size == m.row_size and column_size == m.column_size
@@ -620,8 +617,7 @@ class Matrix
     when Matrix
       return self * other.inverse
     else
-      x, y = other.coerce(self)
-      return x / y
+      return apply_through_coercion(other, __method__)
     end
   end
 
@@ -1073,10 +1069,26 @@ class Matrix
     end
   end
 
+  # Private helper module
+
+  module CoercionHelper
+    def apply_through_coercion(obj, oper)
+      coercion = obj.coerce(self)
+      raise TypeError unless coercion.is_a?(Array) && coercion.length == 2
+      coercion[0].public_send(oper, coercion[1])
+    rescue
+      raise TypeError, "#{obj.inspect} can't be coerced into #{self.class}"
+    end
+    private :apply_through_coercion
+  end
+
+  include CoercionHelper
+
   # Private CLASS
 
   class Scalar < Numeric # :nodoc:
     include ExceptionForMatrix
+    include CoercionHelper
 
     def initialize(value)
       @value = value
@@ -1090,8 +1102,7 @@ class Matrix
       when Vector, Matrix
         Scalar.Raise ErrOperationNotDefined, "+", @value.class, other.class
       else
-        x, y = other.coerce(self)
-        x + y
+        apply_through_coercion(other, __method__)
       end
     end
 
@@ -1102,8 +1113,7 @@ class Matrix
       when Vector, Matrix
         Scalar.Raise ErrOperationNotDefined, "-", @value.class, other.class
       else
-        x, y = other.coerce(self)
-        x - y
+        apply_through_coercion(other, __method__)
       end
     end
 
@@ -1114,8 +1124,7 @@ class Matrix
       when Vector, Matrix
         other.collect{|e| @value * e}
       else
-        x, y = other.coerce(self)
-        x * y
+        apply_through_coercion(other, __method__)
       end
     end
 
@@ -1128,8 +1137,7 @@ class Matrix
       when Matrix
         self * other.inverse
       else
-        x, y = other.coerce(self)
-        x.quo(y)
+        apply_through_coercion(other, __method__)
       end
     end
 
@@ -1143,11 +1151,11 @@ class Matrix
         #other.powered_by(self)
         Scalar.Raise ErrOperationNotImplemented, "**", @value.class, other.class
       else
-        x, y = other.coerce(self)
-        x ** y
+        apply_through_coercion(other, __method__)
       end
     end
   end
+
 end
 
 
@@ -1193,7 +1201,7 @@ end
 class Vector
   include ExceptionForMatrix
   include Enumerable
-
+  include Matrix::CoercionHelper
   #INSTANCE CREATION
 
   private_class_method :new
@@ -1335,8 +1343,7 @@ class Vector
     when Vector
       Vector.Raise ErrOperationNotDefined, "*", self.class, x.class
     else
-      s, x = x.coerce(self)
-      s * x
+      apply_through_coercion(x, __method__)
     end
   end
 
@@ -1354,8 +1361,7 @@ class Vector
     when Matrix
       Matrix.column_vector(self) + v
     else
-      s, x = v.coerce(self)
-      s + x
+      apply_through_coercion(v, __method__)
     end
   end
 
@@ -1373,8 +1379,7 @@ class Vector
     when Matrix
       Matrix.column_vector(self) - v
     else
-      s, x = v.coerce(self)
-      s - x
+      apply_through_coercion(v, __method__)
     end
   end
 
@@ -1389,8 +1394,7 @@ class Vector
     when Matrix, Vector
       Vector.Raise ErrOperationNotDefined, "/", self.class, x.class
     else
-      s, x = x.coerce(self)
-      s / x
+      apply_through_coercion(x, __method__)
     end
   end
 

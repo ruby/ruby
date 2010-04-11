@@ -1,3 +1,8 @@
+Mon Apr 12 03:30:29 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb: Handle coercion errors by raising TypeErrors
+	  [ruby-core:26736]
+
 Mon Apr 12 00:51:21 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* io.c (rb_io_getline_fast, rb_io_getline_1): fix ARGF.lineno
