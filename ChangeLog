@@ -1,3 +1,8 @@
+Sun Apr 11 23:25:17 2010  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
+
+	* configure.in: can not load libraries if --with-opt-dir is used
+	  on AIX. [Bug #3107]
+
 Sun Apr 11 14:44:45 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/irb/ruby-lex.rb (RubyLex#getc): revert r10817, which caused
