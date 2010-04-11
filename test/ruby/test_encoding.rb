@@ -54,6 +54,7 @@ class TestEncoding < Test::Unit::TestCase
   def test_replicate
     assert(Encoding::UTF_8.replicate('UTF-8-ANOTHER'))
     assert(Encoding::ISO_2022_JP.replicate('ISO-2022-JP-ANOTHER'))
+    assert_raise(TypeError, bug3127 = '[ruby-dev:40954]') {Encoding::UTF_8.replicate(0)}
   end
 
   def test_dummy_p

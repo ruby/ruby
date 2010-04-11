@@ -1,3 +1,8 @@
+Sun Apr 11 12:08:49 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (enc_replicate): new encoding name must be valid
+	  c-string.  [ruby-dev:40954]
+
 Sun Apr 11 11:58:23 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/win32.h (ftruncate): rename to get rid of conflict
