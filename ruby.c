@@ -306,13 +306,13 @@ ruby_init_loadpath()
     baselen = p - libpath;
     rest = FILENAME_MAX - baselen;
 
-#define RUBY_RELATIVE(path) (strncpy(p, (path), rest), libpath)
+#define RUBY_RELATIVE(path, len) (strncpy(p, (path), rest), rubylib_mangled_path(libpath, baselen+(len)))
 #else
     static const char exec_prefix[] = RUBY_EXEC_PREFIX;
-#define RUBY_RELATIVE(path) (path)
-#define PREFIX_PATH() rubylib_mangled_path(exec_prefix, sizeof(exec_prefix)-1)
+#define RUBY_RELATIVE(path, len) rubylib_mangled_path(path, len)
+#define PREFIX_PATH() RUBY_RELATIVE(exec_prefix, sizeof(exec_prefix)-1)
 #endif
-#define incpush(path, len) rb_ary_push(rb_load_path, rubylib_mangled_path(path, len))
+#define incpush(path) rb_ary_push(rb_load_path, (path))
 
     if (rb_safe_level() == 0) {
 	ruby_incpush(getenv("RUBYLIB"));
@@ -320,12 +320,12 @@ ruby_init_loadpath()
 
     while (*paths) {
 	size_t len = strlen(paths);
-	incpush(RUBY_RELATIVE(paths), len);
+	incpush(RUBY_RELATIVE(paths, len));
 	paths += len + 1;
     }
 
     if (rb_safe_level() == 0) {
-	incpush(".", 1);
+	incpush(rb_str_new2("."));
     }
 
     rb_const_set(rb_cObject, rb_intern("TMP_RUBY_PREFIX"), rb_obj_freeze(PREFIX_PATH()));

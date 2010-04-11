@@ -1,3 +1,8 @@
+Sun Apr 11 11:28:53 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (ruby_init_loadpath): fix for the length of mangled path.
+	  [ruby-core:29398]
+
 Thu Apr  8 14:32:48 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* configure.in: --disable-install-doc should prohibit doxygen.
