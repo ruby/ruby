@@ -359,6 +359,7 @@ scalb(double a, long b)
 //
 
 #define SUFFIX
+#define ftruncate rb_w32_ftruncate
 extern int       truncate(const char *path, off_t length);
 extern int       ftruncate(int fd, off_t length);
 extern int       fseeko(FILE *stream, off_t offset, int whence);

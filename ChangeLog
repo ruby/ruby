@@ -1,3 +1,8 @@
+Sun Apr 11 11:58:23 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/win32.h (ftruncate): rename to get rid of conflict
+	  with same name but non-LFS function on MinGW.  [ruby-core:24757]
+
 Sun Apr 11 10:33:34 2010  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc:  Update to RDoc 2.5.3.  Includes r27288 and r27290.
