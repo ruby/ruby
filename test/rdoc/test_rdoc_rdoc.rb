@@ -1,4 +1,5 @@
 require 'tempfile'
+require 'tmpdir'
 require 'rubygems'
 require 'minitest/autorun'
 require 'rdoc/rdoc'
@@ -11,12 +12,30 @@ class TestRDocRDoc < MiniTest::Unit::TestCase
   end
 
   def teardown
-    @tempfile.close
+    @tempfile.close rescue nil # HACK for 1.8.6
   end
 
   def test_gather_files
     file = File.expand_path __FILE__
     assert_equal [file], @rdoc.gather_files([file, file])
+  end
+
+  def test_normalized_file_list
+    files = @rdoc.normalized_file_list [__FILE__]
+
+    files = files.map { |file| File.expand_path file }
+
+    assert_equal [File.expand_path(__FILE__)], files
+  end
+
+  def test_normalized_file_list_not_modified
+    files = [__FILE__]
+
+    @rdoc.last_modified[__FILE__] = File.stat(__FILE__).mtime
+
+    files = @rdoc.normalized_file_list [__FILE__]
+
+    assert_empty files
   end
 
   def test_read_file_contents
@@ -60,6 +79,76 @@ class TestRDocRDoc < MiniTest::Unit::TestCase
     ]
 
     assert_empty @rdoc.remove_unparseable file_list
+  end
+
+  def test_setup_output_dir
+    path = @tempfile.path
+    @tempfile.unlink
+
+    last = @rdoc.setup_output_dir path, false
+
+    assert_empty last
+
+    assert File.directory? path
+  ensure
+    FileUtils.rm_f path
+  end
+
+  def test_setup_output_dir_exists
+    path = @tempfile.path
+    @tempfile.unlink
+    FileUtils.mkdir_p path
+
+    open @rdoc.output_flag_file(path), 'w' do |io|
+      io.puts Time.at 0
+      io.puts "./lib/rdoc.rb\t#{Time.at 86400}"
+    end
+
+    last = @rdoc.setup_output_dir path, false
+
+    assert_equal 1, last.size
+    assert_equal Time.at(86400), last['./lib/rdoc.rb']
+  ensure
+    FileUtils.rm_f path
+  end
+
+  def test_setup_output_dir_exists_empty_created_rid
+    path = @tempfile.path
+    @tempfile.unlink
+    FileUtils.mkdir_p path
+
+    open @rdoc.output_flag_file(path), 'w' do end
+
+    e = assert_raises RDoc::Error do
+      @rdoc.setup_output_dir path, false
+    end
+
+    assert_match %r%Directory #{Regexp.escape path} already exists%, e.message
+  ensure
+    FileUtils.rm_f path
+  end
+
+  def test_setup_output_dir_exists_file
+    path = @tempfile.path
+
+    e = assert_raises RDoc::Error do
+      @rdoc.setup_output_dir path, false
+    end
+
+    assert_match(%r%#{Regexp.escape path} exists and is not a directory%,
+                 e.message)
+  end
+
+  def test_setup_output_dir_exists_not_rdoc
+    skip "No Dir::mktmpdir, upgrade your ruby" unless Dir.respond_to? :mktmpdir
+
+    Dir.mktmpdir do |dir|
+      e = assert_raises RDoc::Error do
+        @rdoc.setup_output_dir dir, false
+      end
+
+      assert_match %r%Directory #{Regexp.escape dir} already exists%, e.message
+    end
   end
 
 end

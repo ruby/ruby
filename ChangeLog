@@ -1,3 +1,7 @@
+Sun Apr 11 10:33:34 2010  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc:  Update to RDoc 2.5.3.  Includes r27288 and r27290.
+
 Sun Apr 11 09:31:39 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* test/syck/*: Moved test/yaml to test/syck since it's actually
