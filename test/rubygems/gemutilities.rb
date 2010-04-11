@@ -8,13 +8,7 @@ else
   require 'rubygems'
 end
 require 'fileutils'
-begin
-  gem 'minitest', '>= 1.3.1'
-  require 'minitest/unit'
-rescue Gem::LoadError
-  warn "Install minitest gem >= 1.3.1"
-  raise
-end
+require 'minitest/unit'
 require 'tmpdir'
 require 'uri'
 require 'rubygems/package'
