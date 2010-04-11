@@ -3050,8 +3050,8 @@ time_s_mktime(int argc, VALUE *argv, VALUE klass)
  *  since the Epoch.
  *
  *     t = Time.now
- *     "%10.5f" % t.to_f   #=> "1049896564.17839"
- *     t.to_i              #=> 1049896564
+ *     "%10.5f" % t.to_f   #=> "1270968656.89607"
+ *     t.to_i              #=> 1270968656
  */
 
 static VALUE
@@ -3071,11 +3071,11 @@ time_to_i(VALUE time)
  *  seconds since the Epoch.
  *
  *     t = Time.now
- *     "%10.5f" % t.to_f   #=> "1049896564.13654"
- *     t.to_i              #=> 1049896564
+ *     "%10.5f" % t.to_f   #=> "1270968744.77658"
+ *     t.to_i              #=> 1270968744
  *
  *  Note that IEEE 754 double is not accurate enough to represent
- *  nanoseconds from the Epoch.
+ *  number of nanoseconds from the Epoch.
  */
 
 static VALUE
@@ -3095,7 +3095,7 @@ time_to_f(VALUE time)
  *  since the Epoch.
  *
  *     t = Time.now
- *     p t.to_r            #=> (8807170717088293/8388608)
+ *     p t.to_r            #=> (1270968792716287611/1000000000)
  *
  *  This methods is intended to be used to get an accurate value
  *  representing nanoseconds from the Epoch.  You can use this
