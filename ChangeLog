@@ -1,3 +1,8 @@
+Mon Apr 12 09:18:53 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/fileutils.rb (fu_have_st_ino): check if required method is
+	  defined, instead of platform name.
+
 Mon Apr 12 05:10:20 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb: New method Matrix.build [ruby-core:28272]

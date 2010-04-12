@@ -1437,7 +1437,7 @@ module FileUtils
   private_module_function :fu_same?
 
   def fu_have_st_ino?   #:nodoc:
-    not fu_windows?
+    File::Stat.method_defined?(:ino)
   end
   private_module_function :fu_have_st_ino?
 
