@@ -376,6 +376,8 @@ rand_init(struct MT *mt, VALUE vseed)
       case T_FIXNUM:
 	len = 1;
 	fixnum_seed = FIX2LONG(seed);
+        if (fixnum_seed < 0)
+            fixnum_seed = -fixnum_seed;
 	buf[0] = (unsigned int)(fixnum_seed & 0xffffffff);
 #if SIZEOF_LONG > SIZEOF_INT32
 	if ((long)(int)fixnum_seed != fixnum_seed) {

@@ -1,3 +1,9 @@
+Tue Apr 13 00:12:04 2010  Tanaka Akira  <akr@fsij.org>
+
+	* random.c (rand_init): use the absolute value of seed to
+	  make srand(-2**40) portable with 32bit and 64bit.
+	  [ruby-core:29292](2)
+
 Mon Apr 12 22:48:47 2010  Tanaka Akira  <akr@fsij.org>
 
 	* enumerator.c (inspect_enumerator): don't raise for uninitialized
