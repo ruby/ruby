@@ -840,10 +840,9 @@ module FileUtils
     fu_check_options options, OPT_TABLE['install']
     fu_output_message "install -c#{options[:preserve] && ' -p'}#{options[:mode] ? (' -m 0%o' % options[:mode]) : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
     return if options[:noop]
-    fu_each_src_dest(src, dest) do |s, d|
+    fu_each_src_dest(src, dest) do |s, d, st|
       unless File.exist?(d) and compare_file(s, d)
         remove_file d, true
-        st = File.stat(s) if options[:preserve]
         copy_file s, d
         File.utime st.atime, st.mtime, d if options[:preserve]
         File.chmod options[:mode], d if options[:mode]
@@ -1401,7 +1400,7 @@ module FileUtils
   def fu_each_src_dest(src, dest)   #:nodoc:
     fu_each_src_dest0(src, dest) do |s, d|
       raise ArgumentError, "same file: #{s} and #{d}" if fu_same?(s, d)
-      yield s, d
+      yield s, d, File.stat(s)
     end
   end
   private_module_function :fu_each_src_dest
@@ -1424,22 +1423,9 @@ module FileUtils
   private_module_function :fu_each_src_dest0
 
   def fu_same?(a, b)   #:nodoc:
-    if fu_have_st_ino?
-      st1 = File.stat(a)
-      st2 = File.stat(b)
-      st1.dev == st2.dev and st1.ino == st2.ino
-    else
-      File.expand_path(a) == File.expand_path(b)
-    end
-  rescue Errno::ENOENT
-    return false
+    File.identical?(a, b)
   end
   private_module_function :fu_same?
-
-  def fu_have_st_ino?   #:nodoc:
-    File::Stat.method_defined?(:ino)
-  end
-  private_module_function :fu_have_st_ino?
 
   def fu_check_options(options, optdecl)   #:nodoc:
     h = options.dup

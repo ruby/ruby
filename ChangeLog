@@ -1,4 +1,11 @@
-Mon Apr 12 09:18:53 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Apr 12 09:19:49 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/fileutils.rb (fu_each_src_dest): ensure src is accessible.
+
+	* lib/fileutils.rb (fu_same): use File.identical? to get rid of
+	  exceptions.  [ruby-core:28141]
+
+	* lib/fileutils.rb (fu_have_st_ino): no longer used.
 
 	* lib/fileutils.rb (fu_have_st_ino): check if required method is
 	  defined, instead of platform name.
