@@ -1,0 +1,402 @@
+# /
+*.bak
+*.dylib
+*.inc
+*.o
+*.orig
+*.rej
+*.sav
+*.swp
+*~
+.*-*
+.*.list
+.*.time
+.DS_Store
+.ccmalloc
+.ext
+.pc
+.ppack
+.svn
+/.git
+/*_prelude.c
+/COPYING.LIB
+/ChangeLog-1.8.0
+/ChangeLog.pre-alpha
+/ChangeLog.pre1_1
+/Doxyfile
+/GNUmakefile
+/Makefile
+/README.atheos
+/README.fat-patch
+/README.v6
+/TAGS
+/archive
+/autom4te*.cache
+/automake
+/beos
+/breakpoints.gdb
+/config.cache
+/config.h
+/config.h.in
+/config.log
+/config.status
+/config.status.lineno
+/configure
+/enc.mk
+/enc/trans/*.c
+/encdb.h
+/ext/win32ole/.document
+/goruby
+/id.h
+/largefile.h
+/lex.c
+/libruby*.*
+/miniprelude.c
+/miniruby
+/newdate.rb
+/newline.c
+/newver.rb
+/parse.c
+/parse.h
+/patches
+/patches-master
+/pitest.rb
+/ppack
+/prelude.c
+/preview
+/rbconfig.rb
+/rename2.h
+/repack
+/revision.h
+/riscos
+/rubicon
+/ruby
+/ruby-man.rd.gz
+/test.rb
+/tmp
+/transdb.h
+/uncommon.mk
+/web
+/y.output
+/y.tab.c
+/yasmdata.rb
+
+# /benchmark/
+/benchmark/bmx_*.rb
+
+# /enc/trans/
+/enc/trans/*.c
+
+# /ext/
+/ext/extinit.c
+/ext/*.log
+
+# /ext/bigdecimal/
+/ext/bigdecimal/*.def
+/ext/bigdecimal/Makefile
+/ext/bigdecimal/bigdecimal.a
+/ext/bigdecimal/extconf.h
+/ext/bigdecimal/mkmf.log
+/ext/bigdecimal/conftest.dSYM
+
+# /ext/continuation/
+/ext/continuation/extconf.h
+/ext/continuation/Makefile
+
+# /ext/coverage/
+/ext/coverage/extconf.h
+/ext/coverage/Makefile
+
+# /ext/curses/
+/ext/curses/*.def
+/ext/curses/Makefile
+/ext/curses/curses.a
+/ext/curses/extconf.h
+/ext/curses/mkmf.log
+/ext/curses/conftest.dSYM
+
+# /ext/dbm/
+/ext/dbm/Makefile
+/ext/dbm/mkmf.log
+/ext/dbm/*.def
+/ext/dbm/extconf.h
+/ext/dbm/conftest.dSYM
+
+# /ext/digest/
+/ext/digest/*.def
+/ext/digest/Makefile
+/ext/digest/digest.a
+/ext/digest/extconf.h
+/ext/digest/mkmf.log
+
+# /ext/digest/bubblebabble/
+/ext/digest/bubblebabble/Makefile
+/ext/digest/bubblebabble/mkmf.log
+/ext/digest/bubblebabble/*.def
+/ext/digest/bubblebabble/extconf.h
+
+# /ext/digest/md5/
+/ext/digest/md5/*.def
+/ext/digest/md5/Makefile
+/ext/digest/md5/extconf.h
+/ext/digest/md5/md5.a
+/ext/digest/md5/mkmf.log
+/ext/digest/md5/conftest.dSYM
+
+# /ext/digest/rmd160/
+/ext/digest/rmd160/*.def
+/ext/digest/rmd160/Makefile
+/ext/digest/rmd160/extconf.h
+/ext/digest/rmd160/mkmf.log
+/ext/digest/rmd160/rmd160.a
+/ext/digest/rmd160/conftest.dSYM
+
+# /ext/digest/sha1/
+/ext/digest/sha1/*.def
+/ext/digest/sha1/Makefile
+/ext/digest/sha1/extconf.h
+/ext/digest/sha1/mkmf.log
+/ext/digest/sha1/sha1.a
+/ext/digest/sha1/conftest.dSYM
+
+# /ext/digest/sha2/
+/ext/digest/sha2/*.def
+/ext/digest/sha2/Makefile
+/ext/digest/sha2/extconf.h
+/ext/digest/sha2/mkmf.log
+/ext/digest/sha2/sha2.a
+
+# /ext/dl/
+/ext/dl/*.def
+/ext/dl/*.func
+/ext/dl/*.o
+/ext/dl/*~
+/ext/dl/Makefile
+/ext/dl/dl.a
+/ext/dl/extconf.h
+/ext/dl/mkmf.log
+/ext/dl/conftest.dSYM
+
+# /ext/dl/callback/
+/ext/dl/callback/*.def
+/ext/dl/callback/*.func
+/ext/dl/callback/*.o
+/ext/dl/callback/*~
+/ext/dl/callback/Makefile
+/ext/dl/callback/callback-*.c
+/ext/dl/callback/callback.a
+/ext/dl/callback/callback.c
+/ext/dl/callback/extconf.h
+/ext/dl/callback/mkmf.log
+/ext/dl/callback/conftest.dSYM
+
+# /ext/dl/win32/
+/ext/dl/win32/Makefile
+
+# /ext/etc/
+/ext/etc/*.def
+/ext/etc/Makefile
+/ext/etc/etc.a
+/ext/etc/extconf.h
+/ext/etc/mkmf.log
+/ext/etc/conftest.dSYM
+
+# /ext/fcntl/
+/ext/fcntl/*.def
+/ext/fcntl/Makefile
+/ext/fcntl/extconf.h
+/ext/fcntl/fcntl.a
+/ext/fcntl/mkmf.log
+
+# /ext/fiber/
+/ext/fiber/extconf.h
+/ext/fiber/Makefile
+
+# /ext/gdbm/
+/ext/gdbm/Makefile
+/ext/gdbm/mkmf.log
+/ext/gdbm/*.def
+/ext/gdbm/extconf.h
+/ext/gdbm/conftest.dSYM
+
+# /ext/iconv/
+/ext/iconv/*.def
+/ext/iconv/Makefile
+/ext/iconv/config.charset
+/ext/iconv/extconf.h
+/ext/iconv/iconv.a
+/ext/iconv/iconv.rb
+/ext/iconv/mkmf.log
+/ext/iconv/conftest.dSYM
+
+# /ext/io/wait/
+/ext/io/wait/Makefile
+/ext/io/wait/extconf.h
+/ext/io/wait/mkmf.log
+/ext/io/wait/wait.a
+
+# /ext/json/
+/ext/json/Makefile
+/ext/json/extconf.h
+
+# /ext/json/ext/generator/
+/ext/json/ext/generator/*.def
+/ext/json/ext/generator/Makefile
+/ext/json/ext/generator/extconf.h
+/ext/json/ext/generator/mkmf.log
+/ext/json/ext/generator/generator.a
+
+# /ext/json/ext/parser/
+/ext/json/ext/parser/*.def
+/ext/json/ext/parser/Makefile
+/ext/json/ext/parser/extconf.h
+/ext/json/ext/parser/mkmf.log
+/ext/json/ext/parser/parser.a
+
+# /ext/mathn/complex/
+/ext/mathn/complex/Makefile
+/ext/mathn/complex/extconf.h
+
+# /ext/mathn/rational/
+/ext/mathn/rational/Makefile
+/ext/mathn/rational/extconf.h
+
+# /ext/nkf/
+/ext/nkf/*.def
+/ext/nkf/Makefile
+/ext/nkf/extconf.h
+/ext/nkf/mkmf.log
+/ext/nkf/nkf.a
+
+# /ext/objspace/
+/ext/objspace/Makefile
+/ext/objspace/extconf.h
+
+# /ext/openssl/
+/ext/openssl/GNUmakefile
+/ext/openssl/Makefile
+/ext/openssl/dep
+/ext/openssl/extconf.h
+/ext/openssl/mkmf.log
+/ext/openssl/openssl.a
+/ext/openssl/conftest.dSYM
+
+# /ext/pty/
+/ext/pty/*.def
+/ext/pty/Makefile
+/ext/pty/extconf.h
+/ext/pty/mkmf.log
+/ext/pty/pty.a
+/ext/pty/conftest.dSYM
+
+# /ext/racc/cparse/
+/ext/racc/cparse/*.def
+/ext/racc/cparse/Makefile
+/ext/racc/cparse/cparse.a
+/ext/racc/cparse/extconf.h
+/ext/racc/cparse/mkmf.log
+/ext/racc/cparse/conftest.dSYM
+
+# /ext/readline/
+/ext/readline/*.def
+/ext/readline/Makefile
+/ext/readline/extconf.h
+/ext/readline/mkmf.log
+/ext/readline/readline.a
+/ext/readline/conftest.dSYM
+
+# /ext/ripper/
+/ext/ripper/Makefile
+/ext/ripper/mkmf.log
+/ext/ripper/eventids1.c
+/ext/ripper/eventids2table.c
+/ext/ripper/ripper.*
+/ext/ripper/ids1
+/ext/ripper/ids2
+/ext/ripper/extconf.h
+/ext/ripper/y.output
+
+# /ext/sdbm/
+/ext/sdbm/*.def
+/ext/sdbm/Makefile
+/ext/sdbm/extconf.h
+/ext/sdbm/mkmf.log
+/ext/sdbm/sdbm.a
+
+# /ext/socket/
+/ext/socket/*.def
+/ext/socket/Makefile
+/ext/socket/constants.h
+/ext/socket/constdefs.h
+/ext/socket/constdefs.c
+/ext/socket/extconf.h
+/ext/socket/mkmf.log
+/ext/socket/socket.a
+/ext/socket/conftest.dSYM
+
+# /ext/stringio/
+/ext/stringio/*.def
+/ext/stringio/Makefile
+/ext/stringio/extconf.h
+/ext/stringio/mkmf.log
+/ext/stringio/stringio.a
+
+# /ext/strscan/
+/ext/strscan/*.def
+/ext/strscan/Makefile
+/ext/strscan/extconf.h
+/ext/strscan/mkmf.log
+/ext/strscan/strscan.a
+
+# /ext/syck/
+/ext/syck/*.def
+/ext/syck/Makefile
+/ext/syck/extconf.h
+/ext/syck/mkmf.log
+/ext/syck/syck.a
+
+# /ext/syslog/
+/ext/syslog/*.def
+/ext/syslog/Makefile
+/ext/syslog/extconf.h
+/ext/syslog/mkmf.log
+/ext/syslog/syslog.a
+/ext/syslog/conftest.dSYM
+
+# /ext/tk/
+/ext/tk/Makefile
+/ext/tk/*.log
+/ext/tk/*.def
+/ext/tk/conftest.dSYM
+/ext/tk/extconf.h
+/ext/tk/config_list
+
+# /ext/tk/tkutil/
+/ext/tk/tkutil/Makefile
+/ext/tk/tkutil/*.log
+/ext/tk/tkutil/*.def
+/ext/tk/tkutil/conftest.dSYM
+/ext/tk/tkutil/extconf.h
+
+# /ext/win32ole/
+/ext/win32ole/Makefile
+/ext/win32ole/mkmf.log
+/ext/win32ole/*.log
+/ext/win32ole/.document
+
+# /ext/zlib/
+/ext/zlib/*.def
+/ext/zlib/Makefile
+/ext/zlib/extconf.h
+/ext/zlib/mkmf.log
+/ext/zlib/zlib.a
+/ext/zlib/conftest.dSYM
+
+# /lib/rexml/
+
+# /spec/
+/spec/mspec
+/spec/rubyspec
+
+# /win32/
+/win32/*.ico
