@@ -1,3 +1,8 @@
+Mon Apr 12 21:47:41 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* LEGAL: separated the section for parse.c.  contributed by Paul
+	  Betteridge in [ruby-core:29472].
+
 Mon Apr 12 09:19:49 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/fileutils.rb (fu_each_src_dest): ensure src is accessible.
