@@ -32,15 +32,15 @@ handle.o: dl.h
 
 call.func: $(srcdir)/mkcall.rb ./dlconfig.rb
 	@echo "Generating call.func"
-	@$(RUBY) $(srcdir)/mkcall.rb > $@
+	@$(RUBY) -I. $(srcdir)/mkcall.rb > $@
 
 callback.func: $(srcdir)/mkcallback.rb ./dlconfig.rb
 	@echo "Generating callback.func"
-	@$(RUBY) $(srcdir)/mkcallback.rb > $@
+	@$(RUBY) -I. $(srcdir)/mkcallback.rb > $@
 
 cbtable.func: $(srcdir)/mkcbtable.rb ./dlconfig.rb
 	@echo "Generating cbtable.func"
-	@$(RUBY) $(srcdir)/mkcbtable.rb > $@
+	@$(RUBY) -I. $(srcdir)/mkcbtable.rb > $@
 
 debug:
 	$(MAKE) CPPFLAGS="$(CPPFLAGS) -DDEBUG"

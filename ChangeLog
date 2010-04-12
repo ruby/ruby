@@ -1,3 +1,7 @@
+Mon Apr 12 12:37:06 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/depend: add -I. for cross compiling.
+
 Sun Apr 11 16:48:13 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (DllMain, ruby_init_loadpath): use DLL instance handle given
