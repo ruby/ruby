@@ -1,3 +1,8 @@
+Mon Apr 12 22:48:47 2010  Tanaka Akira  <akr@fsij.org>
+
+	* enumerator.c (inspect_enumerator): don't raise for uninitialized
+	  enumerator.
+
 Mon Apr 12 21:47:41 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* LEGAL: separated the section for parse.c.  contributed by Paul

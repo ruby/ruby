@@ -725,10 +725,18 @@ enumerator_rewind(VALUE obj)
 static VALUE
 inspect_enumerator(VALUE obj, VALUE dummy, int recur)
 {
-    struct enumerator *e = enumerator_ptr(obj);
-    const char *cname = rb_obj_classname(obj);
+    struct enumerator *e;
+    const char *cname;
     VALUE eobj, str;
     int tainted, untrusted;
+
+    TypedData_Get_Struct(obj, struct enumerator, &enumerator_data_type, e);
+
+    cname = rb_obj_classname(obj);
+
+    if (!e || e->obj == Qundef) {
+	return rb_sprintf("#<%s: uninitialized>", cname);
+    }
 
     if (recur) {
 	str = rb_sprintf("#<%s: ...>", cname);
