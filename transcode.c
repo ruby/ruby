@@ -21,7 +21,7 @@ VALUE rb_eConverterNotFoundError;
 
 VALUE rb_cEncodingConverter;
 
-static VALUE sym_invalid, sym_undef, sym_replace;
+static VALUE sym_invalid, sym_undef, sym_replace, sym_fallback;
 static VALUE sym_xml, sym_text, sym_attr;
 static VALUE sym_universal_newline;
 static VALUE sym_crlf_newline;
@@ -2256,16 +2256,36 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     unsigned char *out_start = *out_pos;
     int max_output;
     VALUE exc;
+    VALUE fallback = Qnil;
 
     ec = rb_econv_open_opts(src_encoding, dst_encoding, ecflags, ecopts);
     if (!ec)
         rb_exc_raise(rb_econv_open_exc(src_encoding, dst_encoding, ecflags));
 
+    if (!NIL_P(ecopts) && TYPE(ecopts) == T_HASH)
+	fallback = rb_hash_aref(ecopts, sym_fallback);
     last_tc = ec->last_tc;
     max_output = last_tc ? last_tc->transcoder->max_output : 1;
 
   resume:
     ret = rb_econv_convert(ec, in_pos, in_stop, out_pos, out_stop, 0);
+
+    if (!NIL_P(fallback) && ret == econv_undefined_conversion) {
+	VALUE rep = rb_enc_str_new(
+		(const char *)ec->last_error.error_bytes_start,
+		ec->last_error.error_bytes_len,
+		rb_enc_find(ec->last_error.source_encoding));
+	rep = rb_hash_lookup2(fallback, rep, Qundef);
+	if (rep != Qundef) {
+	    StringValue(rep);
+	    ret = rb_econv_insert_output(ec, (const unsigned char *)RSTRING_PTR(rep),
+		    RSTRING_LEN(rep), rb_enc_name(rb_enc_get(rep)));
+	    if (ret == -1) {
+		rb_raise(rb_eArgError, "too big fallback string");
+	    }
+	    goto resume;
+	}
+    }
 
     if (ret == econv_invalid_byte_sequence ||
         ret == econv_incomplete_input ||
@@ -2442,6 +2462,7 @@ rb_econv_prepare_opts(VALUE opthash, VALUE *opts)
         return 0;
     }
     ecflags = econv_opts(opthash);
+
     v = rb_hash_aref(opthash, sym_replace);
     if (!NIL_P(v)) {
 	StringValue(v);
@@ -2454,6 +2475,16 @@ rb_econv_prepare_opts(VALUE opthash, VALUE *opts)
 	v = rb_str_new_frozen(v);
 	newhash = rb_hash_new();
 	rb_hash_aset(newhash, sym_replace, v);
+    }
+
+    v = rb_hash_aref(opthash, sym_fallback);
+    if (!NIL_P(v)) {
+	v = rb_convert_type(v, T_HASH, "Hash", "to_hash");
+	if (!NIL_P(v)) {
+	    if (NIL_P(newhash))
+		newhash = rb_hash_new();
+	    rb_hash_aset(newhash, sym_fallback, v);
+	}
     }
 
     if (!NIL_P(newhash))
@@ -2728,6 +2759,11 @@ str_encode_bang(int argc, VALUE *argv, VALUE str)
  *  :replace ::
  *    Sets the replacement string to the value. The default replacement
  *    string is "\uFFFD" for Unicode encoding forms, and "?" otherwise.
+ *  :fallback ::
+ *    Sets the replacement string by the hash for undefined character.
+ *    Its key is a such undefined character encoded in source encoding
+ *    of current transcoder. Its value can be any encoding until it
+ *    can be converted into the destination encoding of the transcoder.
  *  :xml ::
  *    The value must be <code>:text</code> or <code>:attr</code>.
  *    If the value is <code>:text</code> <code>#encode</code> replaces
@@ -4193,6 +4229,7 @@ Init_transcode(void)
     sym_invalid = ID2SYM(rb_intern("invalid"));
     sym_undef = ID2SYM(rb_intern("undef"));
     sym_replace = ID2SYM(rb_intern("replace"));
+    sym_fallback = ID2SYM(rb_intern("fallback"));
     sym_xml = ID2SYM(rb_intern("xml"));
     sym_text = ID2SYM(rb_intern("text"));
     sym_attr = ID2SYM(rb_intern("attr"));

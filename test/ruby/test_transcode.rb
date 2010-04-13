@@ -1892,8 +1892,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u795E\u6797\u7FA9\u535A", "\xAF\xAB\xAA\x4C\xB8\x71\xB3\xD5", 'Big5-HKSCS') # 神林義博
   end
   
-  def
-	test_Big5_UAO
+  def test_Big5_UAO
     check_both_ways("\u4e17", "\x81\x40", 'Big5-UAO') # 丗
   end
   
@@ -1902,5 +1901,14 @@ class TestTranscode < Test::Unit::TestCase
     b = a.encode("Shift_JIS")
     assert_equal(Encoding::US_ASCII, a.encoding)
     assert_equal(Encoding::Shift_JIS, b.encoding)
+  end
+
+  def test_fallback
+    assert_equal("\u3042".encode("EUC-JP"), "\u{20000}".encode("EUC-JP",
+        fallback: {"\u{20000}" => "\u3042".encode("EUC-JP")}))
+    assert_equal("\u3042".encode("EUC-JP"), "\u{20000}".encode("EUC-JP",
+        fallback: {"\u{20000}" => "\u3042"}))
+    assert_equal("[ISU]", "\u{1F4BA}".encode("SJIS-KDDI",
+        fallback: {"\u{1F4BA}" => "[ISU]"}))
   end
 end
