@@ -1,3 +1,8 @@
+Tue Apr 13 15:00:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (make_seed_value): fix leading-zero-guard condition on
+	  bdigit is smaller than 32bit.
+
 Tue Apr 13 13:57:36 2010  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* lib/irb/completion.rb (CompletionProc): fix [ruby-dev:40953]
