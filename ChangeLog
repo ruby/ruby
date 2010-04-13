@@ -1,3 +1,12 @@
+Tue Apr 13 09:32:12 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* transcode.c (transcode_loop): insert output the value when
+	  fallback hash has a related key. [ruby-dev:40540]
+	  [ruby-dev:40829] #3036
+
+	* transcode.c (rb_econv_prepare_opts): pass to newhash
+	  a value with the key :fallback.
+
 Tue Apr 13 00:12:04 2010  Tanaka Akira  <akr@fsij.org>
 
 	* random.c (rand_init): use the absolute value of seed to
