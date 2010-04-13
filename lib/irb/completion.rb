@@ -81,10 +81,10 @@ module IRB
 	candidates.grep(/^#{receiver}/).collect{|e| "::" + e}
 
 #      when /^(((::)?[A-Z][^:.\(]*)+)::?([^:.]*)$/
-      when /^([A-Z].*)::([^:.]+)*$/
+      when /^([A-Z].*)::([^:.]*)$/
 	# Constant or class methods
 	receiver = $1
-	message = Regexp.quote($4)
+	message = Regexp.quote($2)
 	begin
 	  candidates = eval("#{receiver}.constants.collect{|m| m.to_s}", bind)
 	  candidates |= eval("#{receiver}.methods.collect{|m| m.to_s}", bind)
@@ -134,7 +134,7 @@ module IRB
       when /^([^."].*)\.([^.]*)$/
 	# variable
 	receiver = $1
-	message = Regexp.quote($3)
+	message = Regexp.quote($2)
 
 	gv = eval("global_variables", bind).collect{|m| m.to_s}
 	lv = eval("local_variables", bind).collect{|m| m.to_s}

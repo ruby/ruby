@@ -1,3 +1,8 @@
+Tue Apr 13 13:57:36 2010  Keiju Ishitsuka  <keiju@ruby-lang.org>
+
+	* lib/irb/completion.rb (CompletionProc): fix [ruby-dev:40953]
+	  [Bug #3126]. Thanks Kazuhiro NISHIYAMA.
+
 Tue Apr 13 09:32:12 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* transcode.c (transcode_loop): insert output the value when
