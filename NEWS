@@ -44,17 +44,17 @@ with all sufficient information, see the ChangeLog file.
 
 * builtin classes
 
-  * Array#try_convert()
-  * Hash#try_convert()
-  * IO#try_convert()
-  * Regexp#try_convert()
-  * String#try_convert()
+  * Array#try_convert
+  * Hash#try_convert
+  * IO#try_convert
+  * Regexp#try_convert
+  * String#try_convert
 
     New methods.
 
   * Array#sample
 
-    New method with which replaces #choice.
+    New method which replaces #choice.
 
   * Enumerable#each_entry
 
@@ -203,9 +203,9 @@ with all sufficient information, see the ChangeLog file.
   Set#classify
   Set#collect!
   Set#delete_if
-  Set#delete_if
   Set#divide
   Set#reject!
+  SortedSet#delete_if
 
     Return an enumerator if no block is given.
 
@@ -226,14 +226,14 @@ with all sufficient information, see the ChangeLog file.
   * 0.2.4 -> 0.2.7.
 
   * RSS::Maker.make
-    * raise an exception not returns nil for invalid feed making.
+    * raise an exception instead of returning nil for invalid feed making.
     * requires block.
 
   * RSS::Maker.[]
     * new method to return maker class.
 
   * RSS::Maker.supported?(version)
-    * new method to check whether given version is supported.
+    * new method to check if given version is supported.
 
   * RSS::Maker: item.guid.permanent_link?
     * new alias of item.guid.isPermaLink
