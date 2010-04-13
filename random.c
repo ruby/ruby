@@ -516,18 +516,25 @@ fill_random_seed(unsigned int seed[DEFAULT_SEED_CNT])
 static VALUE
 make_seed_value(const void *ptr)
 {
+    const long len = DEFAULT_SEED_LEN/SIZEOF_BDIGITS;
     BDIGIT *digits;
     NEWOBJ(big, struct RBignum);
     OBJSETUP(big, rb_cBignum, T_BIGNUM);
 
     RBIGNUM_SET_SIGN(big, 1);
-    rb_big_resize((VALUE)big, DEFAULT_SEED_LEN / SIZEOF_BDIGITS + 1);
+    rb_big_resize((VALUE)big, len + 1);
     digits = RBIGNUM_DIGITS(big);
 
     MEMCPY(digits, ptr, char, DEFAULT_SEED_LEN);
 
     /* set leading-zero-guard if need. */
-    digits[RBIGNUM_LEN(big)-1] = digits[RBIGNUM_LEN(big)-2] <= 1 ? 1 : 0;
+    digits[len] =
+#if SIZEOF_INT32 / SIZEOF_BDIGITS > 1
+	digits[len-2] <= 1 && digits[len-1] == 0
+#else
+	digits[len-1] <= 1
+#endif
+	? 1 : 0;
 
     return rb_big_norm((VALUE)big);
 }
