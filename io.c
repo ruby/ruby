@@ -1698,11 +1698,8 @@ io_shift_cbuf(rb_io_t *fptr, int len, VALUE *strp)
         *strp = str = rb_str_new(fptr->cbuf+fptr->cbuf_off, len);
     }
     else {
-        size_t slen;
         str = *strp;
-        slen = RSTRING_LEN(str);
-        rb_str_resize(str, RSTRING_LEN(str) + len);
-        memcpy(RSTRING_PTR(str)+slen, fptr->cbuf+fptr->cbuf_off, len);
+        rb_str_cat(str, fptr->cbuf+fptr->cbuf_off, len);
     }
     fptr->cbuf_off += len;
     fptr->cbuf_len -= len;

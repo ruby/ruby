@@ -1,3 +1,8 @@
+Wed Apr 14 17:56:06 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (io_shift_cbuf): should terminate.
+	  http://golf.shinh.org/p.rb?DECimal+number+to+BINary#Ruby
+
 Wed Apr 14 16:29:02 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (GET_STACK_BOUNDS): fixed macro argument names.  a patch from
