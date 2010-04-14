@@ -1,3 +1,7 @@
+Wed Apr 14 09:24:07 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c: Refix [nkf-bug:21393]. (explicit -X)
+
 Tue Apr 13 20:36:50 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c: Fix: Windows Codepages wrongly convert

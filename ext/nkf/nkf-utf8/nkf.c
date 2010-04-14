@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1987, Fujitsu LTD. (Itaru ICHIKAWA).
- * Copyright (c) 1996-2009, The nkf Project.
+ * Copyright (c) 1996-2010, The nkf Project.
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -21,7 +21,7 @@
  * 3. This notice may not be removed or altered from any source distribution.
  */
 #define NKF_VERSION "2.1.1"
-#define NKF_RELEASE_DATE "2010-04-13"
+#define NKF_RELEASE_DATE "2010-04-14"
 #define COPY_RIGHT \
     "Copyright (C) 1987, FUJITSU LTD. (I.Ichikawa).\n" \
     "Copyright (C) 1996-2010, The nkf Project."
@@ -382,6 +382,8 @@ static unsigned char   stdibuf[IOBUF_SIZE];
 static unsigned char   stdobuf[IOBUF_SIZE];
 #endif
 
+#define NKF_UNSPECIFIED (-TRUE)
+
 /* flags */
 static int             unbuf_f = FALSE;
 static int             estab_f = FALSE;
@@ -396,7 +398,7 @@ static int             mimebuf_f = FALSE;      /* MIME buffered input */
 static int             broken_f = FALSE;       /* convert ESC-less broken JIS */
 static int             iso8859_f = FALSE;      /* ISO8859 through */
 static int             mimeout_f = FALSE;       /* base64 mode */
-static int             x0201_f = X0201_DEFAULT; /* convert JIS X 0201 */
+static int             x0201_f = NKF_UNSPECIFIED;   /* convert JIS X 0201 */
 static int             iso2022jp_f = FALSE;    /* replace non ISO-2022-JP with GETA */
 
 #ifdef UNICODE_NORMALIZATION
@@ -1209,7 +1211,7 @@ set_input_encoding(nkf_encoding *enc)
     case CP50220:
     case CP50221:
     case CP50222:
-	x0201_f = FALSE;
+	if (x0201_f == NKF_UNSPECIFIED) x0201_f = FALSE;	/* -x specified implicitly */
 #ifdef SHIFTJIS_CP932
 	cp51932_f = TRUE;
 #endif
@@ -1231,7 +1233,7 @@ set_input_encoding(nkf_encoding *enc)
     case SHIFT_JIS:
 	break;
     case WINDOWS_31J:
-	x0201_f = FALSE;
+	if (x0201_f == NKF_UNSPECIFIED) x0201_f = FALSE;	/* -x specified implicitly */
 #ifdef SHIFTJIS_CP932
 	cp51932_f = TRUE;
 #endif
@@ -1253,7 +1255,7 @@ set_input_encoding(nkf_encoding *enc)
     case EUCJP_NKF:
 	break;
     case CP51932:
-	x0201_f = FALSE;
+	if (x0201_f == NKF_UNSPECIFIED) x0201_f = FALSE;	/* -x specified implicitly */
 #ifdef SHIFTJIS_CP932
 	cp51932_f = TRUE;
 #endif
@@ -1324,7 +1326,7 @@ set_output_encoding(nkf_encoding *enc)
 {
     switch (nkf_enc_to_index(enc)) {
     case CP50220:
-	x0201_f = TRUE;
+	if (x0201_f == NKF_UNSPECIFIED) x0201_f = FALSE;	/* -x specified implicitly */
 #ifdef SHIFTJIS_CP932
 	if (cp932inv_f == TRUE) cp932inv_f = FALSE;
 #endif
@@ -1333,7 +1335,7 @@ set_output_encoding(nkf_encoding *enc)
 #endif
 	break;
     case CP50221:
-	x0201_f = FALSE;
+	if (x0201_f == NKF_UNSPECIFIED) x0201_f = FALSE;	/* -x specified implicitly */
 #ifdef SHIFTJIS_CP932
 	if (cp932inv_f == TRUE) cp932inv_f = FALSE;
 #endif
@@ -1362,7 +1364,7 @@ set_output_encoding(nkf_encoding *enc)
     case SHIFT_JIS:
 	break;
     case WINDOWS_31J:
-	x0201_f = FALSE;
+	if (x0201_f == NKF_UNSPECIFIED) x0201_f = FALSE;	/* -x specified implicitly */
 #ifdef UTF8_OUTPUT_ENABLE
 	ms_ucs_map_f = UCS_MAP_CP932;
 #endif
@@ -1391,7 +1393,7 @@ set_output_encoding(nkf_encoding *enc)
 #endif
 	break;
     case CP51932:
-	x0201_f = FALSE;
+	if (x0201_f == NKF_UNSPECIFIED) x0201_f = FALSE;	/* -x specified implicitly */
 #ifdef SHIFTJIS_CP932
 	if (cp932inv_f == TRUE) cp932inv_f = FALSE;
 #endif
@@ -5188,7 +5190,7 @@ reinit(void)
     broken_f = FALSE;
     iso8859_f = FALSE;
     mimeout_f = FALSE;
-    x0201_f = X0201_DEFAULT;
+    x0201_f = NKF_UNSPECIFIED;
     iso2022jp_f = FALSE;
 #if defined(UTF8_INPUT_ENABLE) || defined(UTF8_OUTPUT_ENABLE)
     ms_ucs_map_f = UCS_MAP_ASCII;
@@ -5300,6 +5302,10 @@ module_connection(void)
     o_putc = std_putc;
     if (nkf_enc_unicode_p(output_encoding))
 	output_mode = UTF_8;
+
+	if (x0201_f == NKF_UNSPECIFIED) {
+		x0201_f = X0201_DEFAULT;
+	}
 
     /* replace continucation module, from output side */
 
