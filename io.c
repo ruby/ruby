@@ -1594,6 +1594,7 @@ appendline(fptr, delim, strp)
 	    else {
 		*strp = str = rb_str_buf_new(1);
 		RSTRING(str)->ptr[RSTRING(str)->len++] = c;
+		RSTRING(str)->ptr[1] = '\0';
 	    }
 	}
 	rb_thread_wait_fd(fileno(f));

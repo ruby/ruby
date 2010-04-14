@@ -1,4 +1,7 @@
-Wed Apr 14 15:58:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Apr 14 17:53:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (appendline): should terminate.
+	  http://golf.shinh.org/p.rb?DECimal+number+to+BINary#Ruby
 
 	* string.c (rb_string_value_cstr): make NUL terminated if it is
 	  not done.
