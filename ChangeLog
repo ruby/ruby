@@ -1,3 +1,7 @@
+Wed Apr 14 18:23:00 2010  Kenta Murata  <mrkn@mrkn.jp>
+
+	* configure.in (signbit): signbit is a macro in C99.
+
 Wed Apr 14 17:56:06 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (io_shift_cbuf): should terminate.
