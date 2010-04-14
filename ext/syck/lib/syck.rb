@@ -6,13 +6,7 @@
 # Author:: why the lucky stiff
 #
 
-require 'stringio'
-require 'syck.so'
-require 'syck/error'
-require 'syck/syck'
-require 'syck/tag'
-require 'syck/stream'
-require 'syck/constants'
+require 'yaml/syck'
 
 # == YAML
 #
@@ -108,8 +102,8 @@ module Syck
         Emitter.new.set_resolver( self.resolver )
     end
 
-	#
-	# Converts _obj_ to YAML and writes the YAML result to _io_.
+    #
+    # Converts _obj_ to YAML and writes the YAML result to _io_.
     #
     #   File.open( 'animals.yaml', 'w' ) do |out|
     #     YAML.dump( ['badger', 'elephant', 'tiger'], out )
@@ -117,18 +111,18 @@ module Syck
     #
     # If no _io_ is provided, a string containing the dumped YAML
     # is returned.
-	#
+    #
     #   YAML.dump( :locked )
     #      #=> "--- :locked"
     #
-	def self.dump( obj, io = nil )
+    def self.dump( obj, io = nil )
         obj.to_yaml( io || io2 = StringIO.new )
         io || ( io2.rewind; io2.read )
-	end
+    end
 
-	#
-	# Load a document from the current _io_ stream.
-	#
+    #
+    # Load a document from the current _io_ stream.
+    #
     #   File.open( 'animals.yaml' ) { |yf| YAML::load( yf ) }
     #      #=> ['badger', 'elephant', 'tiger']
     #
@@ -137,9 +131,9 @@ module Syck
     #   YAML.load( "--- :locked" )
     #      #=> :locked
     #
-	def self.load( io )
-		yp = parser.load( io )
-	end
+    def self.load( io )
+        yp = parser.load( io )
+    end
 
     #
     # Load a document from the file located at _filepath_.
@@ -153,9 +147,9 @@ module Syck
         end
     end
 
-	#
-	# Parse the first document from the current _io_ stream
-	#
+    #
+    # Parse the first document from the current _io_ stream
+    #
     #   File.open( 'animals.yaml' ) { |yf| YAML::load( yf ) }
     #      #=> #<YAML::Syck::Node:0x82ccce0
     #           @kind=:seq,
@@ -180,9 +174,9 @@ module Syck
     #            @type_id="tag:ruby.yaml.org,2002:sym",
     #            @value=":locked", @kind=:scalar>
     #
-	def self.parse( io )
-		yp = generic_parser.load( io )
-	end
+    def self.parse( io )
+        yp = generic_parser.load( io )
+    end
 
     #
     # Parse a document from the file located at _filepath_.
@@ -210,8 +204,8 @@ module Syck
         end
     end
 
-	#
-	# Calls _block_ with each consecutive document in the YAML
+    #
+    # Calls _block_ with each consecutive document in the YAML
     # stream contained in _io_.
     #
     #   File.open( 'many-docs.yaml' ) do |yf|
@@ -220,14 +214,14 @@ module Syck
     #       ## from the YAML document
     #     end
     #   end
-	#
+    #
     def self.each_document( io, &block )
         warn "#{caller[0]}: YAML.each_document is deprecated" if $VERBOSE && !caller[0].start_with?(File.dirname(__FILE__))
-		yp = parser.load_documents( io, &block )
+        yp = parser.load_documents( io, &block )
     end
 
-	#
-	# Calls _block_ with each consecutive document in the YAML
+    #
+    # Calls _block_ with each consecutive document in the YAML
     # stream contained in _io_.
     #
     #   File.open( 'many-docs.yaml' ) do |yf|
@@ -236,13 +230,13 @@ module Syck
     #       ## from the YAML document
     #     end
     #   end
-	#
+    #
     def self.load_documents( io, &doc_proc )
-		yp = parser.load_documents( io, &doc_proc )
+        yp = parser.load_documents( io, &doc_proc )
     end
 
-	#
-	# Calls _block_ with a tree of +YAML::BaseNodes+, one tree for
+    #
+    # Calls _block_ with a tree of +YAML::BaseNodes+, one tree for
     # each consecutive document in the YAML stream contained in _io_.
     #
     #   File.open( 'many-docs.yaml' ) do |yf|
@@ -251,14 +245,14 @@ module Syck
     #       ## from the YAML document
     #     end
     #   end
-	#
+    #
     def self.each_node( io, &doc_proc )
         warn "#{caller[0]}: YAML.each_node is deprecated" if $VERBOSE && !caller[0].start_with?(File.dirname(__FILE__))
-		yp = generic_parser.load_documents( io, &doc_proc )
+        yp = generic_parser.load_documents( io, &doc_proc )
     end
 
-	#
-	# Calls _block_ with a tree of +YAML::BaseNodes+, one tree for
+    #
+    # Calls _block_ with a tree of +YAML::BaseNodes+, one tree for
     # each consecutive document in the YAML stream contained in _io_.
     #
     #   File.open( 'many-docs.yaml' ) do |yf|
@@ -267,27 +261,27 @@ module Syck
     #       ## from the YAML document
     #     end
     #   end
-	#
+    #
     def self.parse_documents( io, &doc_proc )
         warn "#{caller[0]}: YAML.parse_documents is deprecated, use load_stream" if $VERBOSE && !caller[0].start_with?(File.dirname(__FILE__))
-		self.each_node( io, &doc_proc )
+        self.each_node( io, &doc_proc )
     end
 
-	#
-	# Loads all documents from the current _io_ stream,
+    #
+    # Loads all documents from the current _io_ stream,
     # returning a +YAML::Stream+ object containing all
     # loaded documents.
-	#
-	def self.load_stream( io )
-		d = nil
-		parser.load_documents( io ) do |doc|
-			d = Stream.new if not d
-			d.add( doc )
+    #
+    def self.load_stream( io )
+        d = nil
+        parser.load_documents( io ) do |doc|
+            d = Stream.new if not d
+            d.add( doc )
         end
-		return d
-	end
+        return d
+    end
 
-	#
+    #
     # Returns a YAML stream containing each of the items in +objs+,
     # each having their own document.
     #
@@ -296,43 +290,43 @@ module Syck
     #         --- []
     #         --- {}
     #
-	def self.dump_stream( *objs )
-		d = Stream.new
+    def self.dump_stream( *objs )
+        d = Stream.new
         objs.each do |doc|
-			d.add( doc )
+            d.add( doc )
         end
         d.emit
-	end
+    end
 
-	#
-	# Add a global handler for a YAML domain type.
-	#
-	def self.add_domain_type( domain, type_tag, &transfer_proc )
+    #
+    # Add a global handler for a YAML domain type.
+    #
+    def self.add_domain_type( domain, type_tag, &transfer_proc )
         resolver.add_type( "tag:#{ domain }:#{ type_tag }", transfer_proc )
-	end
+    end
 
-	#
-	# Add a transfer method for a builtin type
-	#
-	def self.add_builtin_type( type_tag, &transfer_proc )
-	    resolver.add_type( "tag:yaml.org,2002:#{ type_tag }", transfer_proc )
-	end
+    #
+    # Add a transfer method for a builtin type
+    #
+    def self.add_builtin_type( type_tag, &transfer_proc )
+        resolver.add_type( "tag:yaml.org,2002:#{ type_tag }", transfer_proc )
+    end
 
-	#
-	# Add a transfer method for a builtin type
-	#
-	def self.add_ruby_type( type_tag, &transfer_proc )
+    #
+    # Add a transfer method for a builtin type
+    #
+    def self.add_ruby_type( type_tag, &transfer_proc )
         warn "#{caller[0]}: YAML.add_ruby_type is deprecated, use add_domain_type" if $VERBOSE && !caller[0].start_with?(File.dirname(__FILE__))
-	    resolver.add_type( "tag:ruby.yaml.org,2002:#{ type_tag }", transfer_proc )
-	end
+        resolver.add_type( "tag:ruby.yaml.org,2002:#{ type_tag }", transfer_proc )
+    end
 
-	#
-	# Add a private document type
-	#
-	def self.add_private_type( type_re, &transfer_proc )
+    #
+    # Add a private document type
+    #
+    def self.add_private_type( type_re, &transfer_proc )
         warn "#{caller[0]}: YAML.add_private_type is deprecated, use add_domain_type" if $VERBOSE && !caller[0].start_with?(File.dirname(__FILE__))
-	    resolver.add_type( "x-private:" + type_re, transfer_proc )
-	end
+        resolver.add_type( "x-private:" + type_re, transfer_proc )
+    end
 
     #
     # Detect typing of a string
@@ -358,13 +352,13 @@ module Syck
         resolver.transfer( tagurize( type_id ), obj )
     end
 
-	#
-	# Apply any implicit a node may qualify for
-	#
-	def self.try_implicit( obj )
+    #
+    # Apply any implicit a node may qualify for
+    #
+    def self.try_implicit( obj )
         warn "#{caller[0]}: YAML.try_implicit is deprecated" if $VERBOSE && !caller[0].start_with?(File.dirname(__FILE__))
-		transfer( detect_implicit( obj ), obj )
-	end
+        transfer( detect_implicit( obj ), obj )
+    end
 
     #
     # Method to extract colon-seperated type and class, returning
@@ -393,10 +387,10 @@ module Syck
         end
     end
 
-	#
-	# Allocate an Emitter if needed
-	#
-	def self.quick_emit( oid, opts = {}, &e )
+    #
+    # Allocate an Emitter if needed
+    #
+    def self.quick_emit( oid, opts = {}, &e )
         warn "#{caller[0]}: YAML.quick_emit is deprecated" if $VERBOSE && !caller[0].start_with?(File.dirname(__FILE__))
         out =
             if opts.is_a? Emitter
@@ -405,12 +399,9 @@ module Syck
                 emitter.reset( opts )
             end
         out.emit( oid, &e )
-	end
+    end
 
 end
-
-require 'syck/rubytypes'
-require 'syck/types'
 
 module Kernel
     #
