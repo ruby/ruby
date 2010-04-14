@@ -82,7 +82,7 @@ module Syck
         #
         def match_path( ypath_str )
             warn "#{caller[0]}: match_path is deprecated" if $VERBOSE
-            require 'yaml/ypath'
+            require 'syck/ypath'
             depth = 0
             matches = []
             YPath.each_path( ypath_str ) do |ypath|

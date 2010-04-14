@@ -1,4 +1,7 @@
-Wed Apr 14 11:37:52 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Apr 14 11:39:26 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/syck/lib/syck/basenode.rb (Syck::BaseNode#match_path): fixed
+	  library name.
 
 	* ext/syck/lib/yaml/syck.rb: split from ext/syck/lib/syck.rb for
 	  backward compatibility.
