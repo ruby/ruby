@@ -2099,7 +2099,7 @@ void rb_vm_mark(void *ptr);
 #elif STACK_GROW_DIRECTION > 0
 #define GET_STACK_BOUNDS(start, end, appendix) (start = STACK_START, end = STACK_END+appendix)
 #else
-#define GET_STACK_BOUNDS(stack_start, stack_end, appendix) \
+#define GET_STACK_BOUNDS(start, end, appendix) \
     ((STACK_END < STACK_START) ? \
      (start = STACK_END, end = STACK_START) : (start = STACK_START, end = STACK_END+appendix))
 #endif

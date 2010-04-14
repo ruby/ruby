@@ -221,7 +221,7 @@ get_stack(void **addr, size_t *size)
 #   endif
     if (pthread_attr_getguardsize(&attr, &guard) == 0) {
 	STACK_GROW_DIR_DETECTION;
-	STACK_DIR_UPPER((void)0, *addr = (char *)*addr + guard);
+	STACK_DIR_UPPER((void)0, (void)(*addr = (char *)*addr + guard));
 	*size -= guard;
     }
 # else
@@ -850,7 +850,7 @@ ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
     }
 #ifdef STACKADDR_AVAILABLE
     else if (get_stack(&base, &size) == 0) {
-	STACK_DIR_UPPER(base = (char *)base + size, (void)0);
+	STACK_DIR_UPPER((void)(base = (char *)base + size), (void)0);
     }
 #endif
     else {
