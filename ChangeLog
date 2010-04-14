@@ -1,3 +1,8 @@
+Wed Apr 14 12:56:21 2010  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap (encode_utf7): encode & properly.  Thanks, Kengo
+	  Matsuyama.  [ruby-dev:38063]
+
 Wed Apr 14 11:39:26 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/syck/lib/syck/basenode.rb (Syck::BaseNode#match_path): fixed
