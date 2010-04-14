@@ -607,10 +607,12 @@ rb_string_value_cstr(ptr)
 {
     VALUE str = rb_string_value(ptr);
     char *s = RSTRING(str)->ptr;
+    long len = RSTRING(str)->len;
 
-    if (!s || RSTRING(str)->len != strlen(s)) {
+    if (!s || memchr(s, 0, len)) {
 	rb_raise(rb_eArgError, "string contains null byte");
     }
+    if (s[len]) rb_str_modify(str);
     return s;
 }
 
