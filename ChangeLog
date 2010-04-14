@@ -1,3 +1,8 @@
+Wed Apr 14 11:37:52 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/syck/lib/yaml/syck.rb: split from ext/syck/lib/syck.rb for
+	  backward compatibility.
+
 Wed Apr 14 09:24:07 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c: Refix [nkf-bug:21393]. (explicit -X)
