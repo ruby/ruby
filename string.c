@@ -1375,10 +1375,12 @@ rb_string_value_cstr(volatile VALUE *ptr)
 {
     VALUE str = rb_string_value(ptr);
     char *s = RSTRING_PTR(str);
+    long len = RSTRING_LEN(str);
 
-    if (!s || RSTRING_LEN(str) != (long)strlen(s)) {
+    if (!s || memchr(s, 0, len)) {
 	rb_raise(rb_eArgError, "string contains null byte");
     }
+    if (s[len]) rb_str_modify(str);
     return s;
 }
 

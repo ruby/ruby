@@ -1,3 +1,8 @@
+Wed Apr 14 15:58:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_string_value_cstr): make NUL terminated if it is
+	  not done.
+
 Wed Apr 14 12:56:21 2010  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap (encode_utf7): encode & properly.  Thanks, Kengo
