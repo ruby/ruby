@@ -19,6 +19,10 @@ class IMAPTest < Test::Unit::TestCase
     utf8 = "\357\274\241\357\274\242\357\274\243".force_encoding("UTF-8")
     s = Net::IMAP.encode_utf7(utf8)
     assert_equal("&,yH,Iv8j-".force_encoding("UTF-8"), s)
+
+    utf8 = "\343\201\202&".force_encoding("UTF-8")
+    s = Net::IMAP.encode_utf7(utf8)
+    assert_equal("&MEI-&-".force_encoding("UTF-8"), s)
   end
 
   def test_decode_utf7

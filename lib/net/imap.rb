@@ -911,7 +911,7 @@ module Net
 
     # Encode a string from UTF-8 format to modified UTF-7.
     def self.encode_utf7(s)
-      return s.gsub(/(&)|([^\x20-\x25\x27-\x7e]+)/u) {
+      return s.gsub(/(&)|([^\x20-\x7e]+)/u) {
         if $1
           "&-"
         else
