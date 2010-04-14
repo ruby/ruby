@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 require "rexml/document"
 require "test/unit"
 
@@ -81,6 +83,18 @@ EOF
     end
   ensure
     REXML::Document.entity_expansion_limit = 10000
+  end
+
+  def test_tag_in_cdata_with_not_ascii_only_but_ascii8bit_encoding_source
+    tag = "<b>...</b>"
+    message = "こんにちは、世界！" # Hello world! in Japanese
+    xml = <<EOX
+<?xml version="1.0" encoding="UTF-8"?>
+<message><![CDATA[#{tag}#{message}]]></message>
+EOX
+    xml.force_encoding(Encoding::ASCII_8BIT)
+    doc = REXML::Document.new(xml)
+    assert_equal("#{tag}#{message}", doc.root.children.first.value)
   end
 
   def test_xml_declaration_standalone
