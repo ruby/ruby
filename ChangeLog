@@ -1,3 +1,8 @@
+Wed Apr 14 22:09:28 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/rexml/source.rb: force_encoding("UTF-8") when the input
+	  is already UTF-8. patched by Kouhei Sutou [ruby-core:23404]
+
 Wed Apr 14 18:23:00 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* configure.in (signbit): signbit is a macro in C99.
