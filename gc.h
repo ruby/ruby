@@ -66,7 +66,7 @@ rb_gc_debug_body(const char *mode, const char *msg, int st, void *ptr)
 # define STACK_UPPER(x, a, b) b
 #else
 RUBY_EXTERN int ruby_stack_grow_direction;
-int ruby_get_stack_grow_direction(VALUE *addr);
+int ruby_get_stack_grow_direction(volatile VALUE *addr);
 # define stack_growup_p(x) (			\
 	(ruby_stack_grow_direction ?		\
 	 ruby_stack_grow_direction :		\

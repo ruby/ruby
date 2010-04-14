@@ -1,3 +1,13 @@
+Wed Apr 14 16:29:02 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (GET_STACK_BOUNDS): fixed macro argument names.  a patch from
+	  Satoshi Shiba <shiba AT rvm.jp> at [ruby-dev:40973].
+
+	* gc.h (ruby_get_stack_grow_direction): fixed prototype.
+
+	* thread_pthread.c (get_stack, ruby_stack_overflowed_p): both side
+	  should be same type.  [Bug #3145]
+
 Wed Apr 14 15:58:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_string_value_cstr): make NUL terminated if it is
