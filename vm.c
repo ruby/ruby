@@ -732,8 +732,9 @@ vm_backtrace_each(rb_thread_t *th, int lev, rb_backtrace_iter_func *iter, void *
 	}
 	else if (RUBYVM_CFUNC_FRAME_P(cfp)) {
 	    ID id;
+	    extern VALUE ruby_engine_name;
 
-	    if (NIL_P(file)) file = rb_str_new_cstr("ruby");
+	    if (NIL_P(file)) file = ruby_engine_name;
 	    if (cfp->me->def)
 		id = cfp->me->def->original_id;
 	    else

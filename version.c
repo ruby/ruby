@@ -57,6 +57,7 @@ const int ruby_patchlevel = RUBY_PATCHLEVEL;
 const char ruby_description[] = RUBY_DESCRIPTION;
 const char ruby_copyright[] = RUBY_COPYRIGHT;
 const char ruby_engine[] = "ruby";
+VALUE ruby_engine_name = Qnil;
 
 const char ruby_initial_load_paths[] =
 #ifndef NO_INITIAL_LOAD_PATH
@@ -95,7 +96,7 @@ Init_version(void)
     rb_define_global_const("RUBY_REVISION", INT2FIX(RUBY_REVISION));
     rb_define_global_const("RUBY_DESCRIPTION", MKSTR(description));
     rb_define_global_const("RUBY_COPYRIGHT", MKSTR(copyright));
-    rb_define_global_const("RUBY_ENGINE", MKSTR(engine));
+    rb_define_global_const("RUBY_ENGINE", ruby_engine_name = MKSTR(engine));
 }
 
 void
