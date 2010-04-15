@@ -1,3 +1,7 @@
+Thu Apr 15 11:51:49 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* common.mk (help): small fix.
+
 Wed Apr 14 22:09:28 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/rexml/source.rb: force_encoding("UTF-8") when the input
