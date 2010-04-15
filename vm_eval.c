@@ -1573,8 +1573,16 @@ rb_f_caller(int argc, VALUE *argv)
 static int
 print_backtrace(void *arg, VALUE file, int line, VALUE method)
 {
-    fprintf((FILE *)arg, "\tfrom %s:%d:in `%s'\n",
-	    RSTRING_PTR(file), line, RSTRING_PTR(method));
+    FILE *fp = arg;
+    const char *filename = NIL_P(file) ? "ruby" : RSTRING_PTR(file);
+    if (NIL_P(method)) {
+	fprintf(fp, "\tfrom %s:%d:in unknown method\n",
+		filename, line);
+    }
+    else {
+	fprintf(fp, "\tfrom %s:%d:in `%s'\n",
+		filename, line, RSTRING_PTR(method));
+    }
     return FALSE;
 }
 

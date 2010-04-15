@@ -1,3 +1,11 @@
+Thu Apr 15 14:38:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (vm_backtrace_each): get rid of use of malloc from signal
+	  handler by using ruby_engine_name.  [ruby-core:29497]
+
+	* vm_eval.c (print_backtrace): file may be nil when segfaulted in
+	  very early stage.
+
 Thu Apr 15 11:51:49 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* common.mk (help): small fix.
