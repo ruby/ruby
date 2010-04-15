@@ -482,7 +482,9 @@ module URI
           "path conflicts with opaque"
       end
 
-      if @scheme
+      # If scheme is ftp, path may be relative.
+      # See RFC 1738 section 3.2.2, and RFC 2396.
+      if @scheme && @scheme != "ftp"
         if v && v != '' && parser.regexp[:ABS_PATH] !~ v
           raise InvalidComponentError,
             "bad component(expected absolute path component): #{v}"
