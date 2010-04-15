@@ -118,12 +118,13 @@ module URI
     # +opaque+, +query+ and +fragment+, in that order.
     #
     def initialize(*arg)
+      arg[5] = arg[5].sub(/^\//,'').sub(/^%2F/,'/')
       super(*arg)
       @typecode = nil
       tmp = @path.index(TYPECODE_PREFIX)
       if tmp
         typecode = @path[tmp + TYPECODE_PREFIX.size..-1]
-        self.set_path(@path[0..tmp - 1])
+        @path = @path[0..tmp - 1]
 
         if arg[-1]
           self.typecode = typecode
@@ -184,6 +185,11 @@ module URI
     def path
       return @path.sub(/^\//,'').sub(/^%2F/,'/')
     end
+
+    def set_path(v)
+      super("/" + v.sub(/^\//, "%2F"))
+    end
+    protected :set_path
 
     def to_s
       save_path = nil
