@@ -570,12 +570,18 @@ rb_vmdebug_thread_dump_state(VALUE self)
 static int
 bugreport_backtrace(void *arg, VALUE file, int line, VALUE method)
 {
+    const char *filename = NIL_P(file) ? "ruby" : RSTRING_PTR(file);
     if (!*(int *)arg) {
 	fprintf(stderr, "-- Ruby level backtrace information "
 		"----------------------------------------\n");
 	*(int *)arg = 1;
     }
-    fprintf(stderr, "%s:%d:in `%s'\n", RSTRING_PTR(file), line, RSTRING_PTR(method));
+    if (NIL_P(method)) {
+	fprintf(stderr, "%s:%d:in unknown method\n", filename, line);
+    }
+    else {
+	fprintf(stderr, "%s:%d:in `%s'\n", filename, line, RSTRING_PTR(method));
+    }
     return 0;
 }
 
