@@ -60,7 +60,19 @@ class VCS
     register(".svn")
 
     def self.get_revisions(path)
-      info_xml = IO.popen(["svn", "info", "--xml", path.to_s, {:err=>[:child, :out]}]) {|f| f.read }
+      begin
+        nulldevice = '/dev/null'
+        if File.exist? nulldevice
+          save_stderr = STDERR.dup
+          STDERR.reopen nulldevice, 'w'
+        end
+        info_xml = `svn info --xml "#{path}"`
+      ensure
+        if save_stderr
+          STDERR.reopen save_stderr
+          save_stderr.close
+        end
+      end
       _, last, _, changed, _ = info_xml.split(/revision="(\d+)"/)
       [last, changed]
     end

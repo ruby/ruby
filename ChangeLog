@@ -1,3 +1,7 @@
+Thu Apr 15 21:54:39 2010  Tanaka Akira  <akr@fsij.org>
+
+	* tool/file2lastrev.rb: use backtick for ruby 1.8.
+
 Thu Apr 15 21:13:29 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/file2lastrev.rb: this should run with ruby 1.8.
