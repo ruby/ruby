@@ -838,6 +838,6 @@ help: PHONY
 	@echo "  install-nodoc:   install without rdoc"
 	@echo "  clean:           clean built objects"
 	@echo "  golf:            for golfers"
-	@echo
+	@echo ""
 	@echo "see DeveloperHowto for more detail: "
 	@echo "  http://redmine.ruby-lang.org/wiki/ruby/DeveloperHowto"
