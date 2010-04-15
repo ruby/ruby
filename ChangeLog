@@ -1,3 +1,8 @@
+Thu Apr 15 20:41:10 2010  Tanaka Akira  <akr@fsij.org>
+
+	* tool/file2lastrev.rb: make -q effective for files not version
+	  controlled.
+
 Thu Apr 15 14:50:19 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (vm_backtrace_each): get rid of use of malloc from signal
