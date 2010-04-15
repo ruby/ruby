@@ -1,3 +1,9 @@
+Thu Apr 15 22:41:47 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* thread.c (rb_thread_priority, rb_thread_priority_set): fix rdoc.
+	  Lower-priority thread may run even if there are higher-priority
+	  threads.  See [ruby-dev:40977].
+
 Thu Apr 15 22:33:35 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/uri/ftp.rb (URI::FTP#set_path): added to correct handling of

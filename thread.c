@@ -2142,8 +2142,11 @@ rb_thread_keys(VALUE self)
  *
  *  Returns the priority of <i>thr</i>. Default is inherited from the
  *  current thread which creating the new thread, or zero for the
- *  initial main thread; higher-priority threads will run before
- *  lower-priority threads.
+ *  initial main thread; higher-priority thread will run more frequently
+ *  than lower-priority threads (but lower-priority threads can also run).
+ *
+ *  This is just hint for Ruby thread scheduler.  It may be ignored on some
+ *  platform.
  *
  *     Thread.current.priority   #=> 0
  */
@@ -2162,7 +2165,11 @@ rb_thread_priority(VALUE thread)
  *     thr.priority= integer   => thr
  *
  *  Sets the priority of <i>thr</i> to <i>integer</i>. Higher-priority threads
- *  will run before lower-priority threads.
+ *  will run more frequently than lower-priority threads (but lower-priority
+ *  threads can also run).
+ *
+ *  This is just hint for Ruby thread scheduler.  It may be ignored on some
+ *  platform.
  *
  *     count1 = count2 = 0
  *     a = Thread.new do
