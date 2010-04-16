@@ -1,3 +1,10 @@
+Fri Apr 16 16:15:40 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_repeated_permutation): new method added. a patch
+	  from Makoto Kishimoto in [ruby-core:29267]   [ruby-core:28724]
+
+	* array.c (rb_ary_repeated_combination): ditto.
+
 Thu Apr 15 22:41:47 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* thread.c (rb_thread_priority, rb_thread_priority_set): fix rdoc.
