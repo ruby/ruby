@@ -1,3 +1,8 @@
+Sat Apr 17 01:32:50 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* io.c (rb_io_rewind, rb_io_eof): add rdoc.  based on a patch from
+	  Roger Pack in [ruby-core:26771] [Bug #2377].
+
 Fri Apr 16 23:42:56 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_folderitem2_invokeverb.rb (test_invokeverb):
