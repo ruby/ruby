@@ -1159,6 +1159,8 @@ static void clear_readconv(rb_io_t *fptr);
  *     f.rewind     #=> 0
  *     f.lineno     #=> 0
  *     f.readline   #=> "This is line one\n"
+ * 
+ *  Note that it cannot be used with streams such as pipes, ttys, and sockets.
  */
 
 static VALUE
@@ -1241,8 +1243,10 @@ io_fillbuf(rb_io_t *fptr)
  *     r, w = IO.pipe
  *     r.eof?  # blocks forever
  *
- *  Note that <code>IO#eof?</code> reads data to a input buffer.
- *  So <code>IO#sysread</code> doesn't work with <code>IO#eof?</code>.
+ *  Note that <code>IO#eof?</code> reads data to the input buffer.
+ *  So <code>IO#sysread</code> may not behave as you intend with
+ *  <code>IO#eof?</code>, unless you call <code>IO#rewind</code>
+ *  first (which is not available for some streams).
  */
 
 VALUE
