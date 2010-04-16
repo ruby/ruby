@@ -814,6 +814,40 @@ class TestArray < Test::Unit::TestCase
     assert_match(/reentered/, e.message)
   end
 
+  def test_repeated_permutation_with_callcc
+    respond_to?(:callcc, true) or require 'continuation'
+    n = 1000
+    cont = nil
+    ary = [1,2,3]
+    begin
+      ary.repeated_permutation(2) {
+        callcc {|k| cont = k} unless cont
+      }
+    rescue => e
+    end
+    n -= 1
+    cont.call if 0 < n
+    assert_instance_of(RuntimeError, e)
+    assert_match(/reentered/, e.message)
+  end
+
+  def test_repeated_combination_with_callcc
+    respond_to?(:callcc, true) or require 'continuation'
+    n = 1000
+    cont = nil
+    ary = [1,2,3]
+    begin
+      ary.repeated_combination(2) {
+        callcc {|k| cont = k} unless cont
+      }
+    rescue => e
+    end
+    n -= 1
+    cont.call if 0 < n
+    assert_instance_of(RuntimeError, e)
+    assert_match(/reentered/, e.message)
+  end
+
   def test_hash
     a1 = @cls[ 'cat', 'dog' ]
     a2 = @cls[ 'cat', 'dog' ]
@@ -1502,6 +1536,54 @@ class TestArray < Test::Unit::TestCase
     a.permutation {|x| b << x; a.replace(@cls[9, 8, 7, 6]) }
     assert_equal(@cls[9, 8, 7, 6], a)
     assert_equal(@cls[1, 2, 3, 4].permutation.to_a, b)
+  end
+
+  def test_repeated_permutation
+    a = @cls[1,2]
+    assert_equal(@cls[[]], a.repeated_permutation(0).to_a)
+    assert_equal(@cls[[1],[2]], a.repeated_permutation(1).to_a.sort)
+    assert_equal(@cls[[1,1],[1,2],[2,1],[2,2]],
+                 a.repeated_permutation(2).to_a.sort)
+    assert_equal(@cls[[1,1,1],[1,1,2],[1,2,1],[1,2,2],
+                      [2,1,1],[2,1,2],[2,2,1],[2,2,2]],
+                 a.repeated_permutation(3).to_a.sort)
+    assert_equal(@cls[], a.repeated_permutation(-1).to_a)
+    assert_equal("abcde".each_char.to_a.repeated_permutation(5).sort,
+                 "edcba".each_char.to_a.repeated_permutation(5).sort)
+    assert_equal(@cls[].repeated_permutation(0).to_a, @cls[[]])
+    assert_equal(@cls[].repeated_permutation(1).to_a, @cls[])
+
+    a = @cls[1, 2, 3, 4]
+    b = @cls[]
+    a.repeated_permutation(4) {|x| b << x; a.replace(@cls[9, 8, 7, 6]) }
+    assert_equal(@cls[9, 8, 7, 6], a)
+    assert_equal(@cls[1, 2, 3, 4].repeated_permutation(4).to_a, b)
+  end
+
+  def test_repeated_combination
+    a = @cls[1,2,3]
+    assert_equal(@cls[[]], a.repeated_combination(0).to_a)
+    assert_equal(@cls[[1],[2],[3]], a.repeated_combination(1).to_a.sort)
+    assert_equal(@cls[[1,1],[1,2],[1,3],[2,2],[2,3],[3,3]],
+                 a.repeated_combination(2).to_a.sort)
+    assert_equal(@cls[[1,1,1],[1,1,2],[1,1,3],[1,2,2],[1,2,3],
+                      [1,3,3],[2,2,2],[2,2,3],[2,3,3],[3,3,3]],
+                 a.repeated_combination(3).to_a.sort)
+    assert_equal(@cls[[1,1,1,1],[1,1,1,2],[1,1,1,3],[1,1,2,2],[1,1,2,3],
+                      [1,1,3,3],[1,2,2,2],[1,2,2,3],[1,2,3,3],[1,3,3,3],
+                      [2,2,2,2],[2,2,2,3],[2,2,3,3],[2,3,3,3],[3,3,3,3]],
+                 a.repeated_combination(4).to_a.sort)
+    assert_equal(@cls[], a.repeated_combination(-1).to_a)
+    assert_equal("abcde".each_char.to_a.repeated_combination(5).map{|a|a.sort}.sort,
+                 "edcba".each_char.to_a.repeated_combination(5).map{|a|a.sort}.sort)
+    assert_equal(@cls[].repeated_combination(0).to_a, @cls[[]])
+    assert_equal(@cls[].repeated_combination(1).to_a, @cls[])
+
+    a = @cls[1, 2, 3, 4]
+    b = @cls[]
+    a.repeated_combination(4) {|x| b << x; a.replace(@cls[9, 8, 7, 6]) }
+    assert_equal(@cls[9, 8, 7, 6], a)
+    assert_equal(@cls[1, 2, 3, 4].repeated_combination(4).to_a, b)
   end
 
   def test_take
