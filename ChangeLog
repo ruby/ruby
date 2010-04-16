@@ -1,3 +1,7 @@
+Fri Apr 16 20:01:47 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* .gitignore: updated.
+
 Fri Apr 16 16:51:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/file2lastrev.rb (VCS::SVN::get_revisions.): remind about
