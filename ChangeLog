@@ -1,3 +1,8 @@
+Sat Apr 17 08:35:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, configure.in, common.mk, */Makefile.sub (CHDIR): cd
+	  using phisical directory.
+
 Sat Apr 17 07:02:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_thread.rb (TestThreadGroup#test_uninitialized):

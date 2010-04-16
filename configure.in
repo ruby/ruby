@@ -258,6 +258,23 @@ else
 fi
 AC_SUBST(MAKEDIRS)
 
+AC_MSG_CHECKING([for cd using phisical directory])
+rm -fr conf$$.dir
+mkdir conf$$.dir &&
+(cd conf$$.dir && mkdir src build && cd src &&
+$as_ln_s ../build . > /dev/null 2>&1 && cd build &&
+for chdir in 'cd -P' 'PWD= cd'; do
+    /bin/sh -c "$chdir ../src && echo '$chdir' > cdcmd" 2> /dev/null && break
+done)
+if test -e conf$$.dir/src/cdcmd; then
+    read CHDIR < conf$$.dir/src/cdcmd 2> /dev/null
+else
+    CHDIR=cd
+fi
+rm -fr conf$$.dir
+AC_MSG_RESULT([$CHDIR])
+AC_SUBST(CHDIR)
+
 dnl check for large file stuff
 mv confdefs.h confdefs1.h
 : > confdefs.h

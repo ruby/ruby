@@ -496,7 +496,7 @@ $(REVISION_H): $(srcdir)/version.h $(srcdir)/ChangeLog revision.h.tmp $(REVISION
 
 revision.h.tmp: $(REVISION_FORCE)
 	@set LC_MESSAGES=C
-	-@{ cd "$(srcdir)" && $(SET_LC_MESSAGES) $(VCS) info | \
+	-@{ $(CHDIR) "$(srcdir)" && $(SET_LC_MESSAGES) $(VCS) info | \
 	sed -n \
 	  -e '/^URL:/{' -e '/\/trunk$$/d' -e 's!.*/\([^/][^/]*\)$$!#define RUBY_BRANCH_NAME "\1"!p' -e '}' \
 	  -e "s/.*Rev:/#define RUBY_REVISION/p"; } > "$@"

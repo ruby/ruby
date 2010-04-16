@@ -2,6 +2,7 @@
 
 SHELL = $(COMSPEC)
 MKFILES = Makefile
+CHDIR = cd
 
 #### Start of system configuration section. ####
 !ifndef OS

@@ -4,6 +4,7 @@ SHELL = $(COMSPEC)
 RUNCMD = $(COMSPEC) /c
 MKFILES = Makefile
 NULL = nul
+CHDIR = cd
 
 !ifndef MFLAGS
 MFLAGS=-l
