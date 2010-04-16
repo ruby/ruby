@@ -19,24 +19,24 @@ module REXML
     attr_accessor :raw
 
     ILLEGAL = /(<|&(?!(#{Entity::NAME})|(#0*((?:\d+)|(?:x[a-fA-F0-9]+)));))/um
-    NUMERICENTITY = /&#0*((?:\d+)|(?:x[a-fA-F0-9]+));/ 
+    NUMERICENTITY = /&#0*((?:\d+)|(?:x[a-fA-F0-9]+));/
 
     # Constructor
     # +arg+ if a String, the content is set to the String.  If a Text,
-    # the object is shallowly cloned.  
+    # the object is shallowly cloned.
     #
     # +respect_whitespace+ (boolean, false) if true, whitespace is
     # respected
     #
     # +parent+ (nil) if this is a Parent object, the parent
-    # will be set to this.  
+    # will be set to this.
     #
     # +raw+ (nil) This argument can be given three values.
-    # If true, then the value of used to construct this object is expected to 
-    # contain no unescaped XML markup, and REXML will not change the text. If 
+    # If true, then the value of used to construct this object is expected to
+    # contain no unescaped XML markup, and REXML will not change the text. If
     # this value is false, the string may contain any characters, and REXML will
     # escape any and all defined entities whose values are contained in the
-    # text.  If this value is nil (the default), then the raw value of the 
+    # text.  If this value is nil (the default), then the raw value of the
     # parent will be used as the raw value for this node.  If there is no raw
     # value for the parent, and no value is supplied, the default is false.
     # Use this field if you have entities defined for some text, and you don't
@@ -57,14 +57,14 @@ module REXML
     # In the last example, the +entity_filter+ argument is ignored.
     #
     # +pattern+ INTERNAL USE ONLY
-    def initialize(arg, respect_whitespace=false, parent=nil, raw=nil, 
+    def initialize(arg, respect_whitespace=false, parent=nil, raw=nil,
       entity_filter=nil, illegal=ILLEGAL )
 
       @raw = false
 
       if parent
         super( parent )
-        @raw = parent.raw 
+        @raw = parent.raw
       else
         @parent = nil
       end
@@ -125,12 +125,12 @@ module REXML
     # escaped, meaning that it is a valid XML text node string, and all
     # entities that can be escaped, have been inserted.  This method respects
     # the entity filter set in the constructor.
-    #   
-    #   # Assume that the entity "s" is defined to be "sean", and that the 
+    #
+    #   # Assume that the entity "s" is defined to be "sean", and that the
     #   # entity "r" is defined to be "russell"
-    #   t = Text.new( "< & sean russell", false, nil, false, ['s'] ) 
+    #   t = Text.new( "< & sean russell", false, nil, false, ['s'] )
     #   t.to_s   #-> "&lt; &amp; &s; russell"
-    #   t = Text.new( "< & &s; russell", false, nil, false ) 
+    #   t = Text.new( "< & &s; russell", false, nil, false )
     #   t.to_s   #-> "&lt; &amp; &s; russell"
     #   u = Text.new( "sean russell", false, nil, true )
     #   u.to_s   #-> "sean russell"
@@ -156,9 +156,9 @@ module REXML
     # console.  This ignores the 'raw' attribute setting, and any
     # entity_filter.
     #
-    #   # Assume that the entity "s" is defined to be "sean", and that the 
+    #   # Assume that the entity "s" is defined to be "sean", and that the
     #   # entity "r" is defined to be "russell"
-    #   t = Text.new( "< & sean russell", false, nil, false, ['s'] ) 
+    #   t = Text.new( "< & sean russell", false, nil, false, ['s'] )
     #   t.value   #-> "< & sean russell"
     #   t = Text.new( "< & &s; russell", false, nil, false )
     #   t.value   #-> "< & sean russell"
@@ -174,7 +174,7 @@ module REXML
       @unnormalized = Text::unnormalize( @string, doctype )
     end
 
-    # Sets the contents of this text node.  This expects the text to be 
+    # Sets the contents of this text node.  This expects the text to be
     # unnormalized.  It returns self.
     #
     #   e = Element.new( "a" )
@@ -187,7 +187,7 @@ module REXML
       @normalized = nil
       @raw = false
     end
- 
+
      def wrap(string, width, addnewline=false)
        # Recursively wrap string at width.
        return string if string.length <= width
@@ -210,11 +210,11 @@ module REXML
       new_string.strip! unless indentfirstline
       return new_string
     end
- 
+
     # == DEPRECATED
     # See REXML::Formatters
     #
-    def write( writer, indent=-1, transitive=false, ie_hack=false ) 
+    def write( writer, indent=-1, transitive=false, ie_hack=false )
       Kernel.warn("#{self.class.name}.write is deprecated.  See REXML::Formatters")
       formatter = if indent > -1
           REXML::Formatters::Pretty.new( indent )
@@ -265,7 +265,7 @@ module REXML
       if copy =~ illegal
         raise ParseException.new( "malformed text: Illegal character #$& in \"#{copy}\"" )
       end if illegal
-      
+
       copy.gsub!( /\r\n?/, "\n" )
       if copy.include? ?&
         copy.gsub!( SETUTITSBUS[0], SLAICEPS[0] )
@@ -293,8 +293,8 @@ module REXML
       if doctype
         # Replace all ampersands that aren't part of an entity
         doctype.entities.each_value do |entity|
-          copy = copy.gsub( entity.value, 
-            "&#{entity.name};" ) if entity.value and 
+          copy = copy.gsub( entity.value,
+            "&#{entity.name};" ) if entity.value and
               not( entity_filter and entity_filter.include?(entity) )
         end
       else

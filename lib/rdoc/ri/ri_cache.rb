@@ -4,7 +4,7 @@ module RI
 
     attr_reader :name
     attr_reader :path_names
-    
+
     def initialize(path_name, name, in_class)
       @path_names = [ path_name ]
       @name = name
@@ -137,7 +137,7 @@ module RI
     end
 
     def module_named(name)
-      
+
     end
 
   end

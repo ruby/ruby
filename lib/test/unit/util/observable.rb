@@ -32,13 +32,13 @@ module Test
           unless(block_given?)
             raise ArgumentError.new("No callback was passed as a listener")
           end
-      
+
           key = listener_key
           if (listener_key == NOTHING)
             listener_key = listener
             key = ProcWrapper.new(listener)
           end
-      
+
           channels[channel_name] ||= {}
           channels[channel_name][key] = listener
           return listener_key

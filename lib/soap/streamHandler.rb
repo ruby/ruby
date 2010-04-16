@@ -74,10 +74,10 @@ class HTTPStreamHandler < StreamHandler
 
 
 public
-  
+
   attr_reader :client
   attr_accessor :wiredump_file_base
-  
+
   MAX_RETRY_COUNT = 10       	# [times]
 
   def initialize(options)

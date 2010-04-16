@@ -10,15 +10,15 @@ module RSS
     def setup
       @prefix = "content"
       @uri = "http://purl.org/rss/1.0/modules/content/"
-      
+
       @elems = {
         :encoded => "<em>ATTENTION</em>",
       }
-      
+
       @content_nodes = @elems.collect do |name, value|
         "<#{@prefix}:#{name}>#{CGI.escapeHTML(value.to_s)}</#{@prefix}:#{name}>"
       end.join("\n")
-      
+
       @rss10_source = make_RDF(<<-EOR, {@prefix => @uri})
 #{make_channel()}
 #{make_image()}
@@ -79,7 +79,7 @@ EOR
         end
       end
     end
-    
+
     def test_to_s
       @elems.each do |name, value|
         excepted = make_element("#{@prefix}:#{name}", {}, value)

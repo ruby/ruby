@@ -1,6 +1,6 @@
 module SM
 
-  ## 
+  ##
   # Handle common directives that can occur in a block of text:
   #
   # : include : filename
@@ -15,10 +15,10 @@ module SM
 
     # Look for common options in a chunk of text. Options that
     # we don't handle are passed back to our caller
-    # as |directive, param| 
+    # as |directive, param|
 
     def handle(text)
-      text.gsub!(/^([ \t#]*):(\w+):\s*(.+)?\n/) do 
+      text.gsub!(/^([ \t#]*):(\w+):\s*(.+)?\n/) do
         prefix    = $1
         directive = $2.downcase
         param     = $3

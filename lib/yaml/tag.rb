@@ -4,13 +4,13 @@
 # = yaml/tag.rb: methods for associating a taguri to a class.
 #
 # Author:: why the lucky stiff
-# 
+#
 module YAML
     # A dictionary of taguris which map to
     # Ruby classes.
     @@tagged_classes = {}
-    
-    # 
+
+    #
     # Associates a taguri _tag_ with a Ruby class _cls_.  The taguri is used to give types
     # to classes when loading YAML.  Taguris are of the form:
     #
@@ -19,7 +19,7 @@ module YAML
     # The +authorityName+ is a domain name or email address.  The +date+ is the date the type
     # was issued in YYYY or YYYY-MM or YYYY-MM-DD format.  The +specific+ is a name for
     # the type being added.
-    # 
+    #
     # For example, built-in YAML types have 'yaml.org' as the +authorityName+ and '2002' as the
     # +date+.  The +specific+ is simply the name of the type:
     #

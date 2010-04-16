@@ -73,7 +73,7 @@ class TestERBCore < Test::Unit::TestCase
 * <%= n %>
 <% end %>
 EOS
-      
+
     ans = <<EOS
 %% hi
 = hello
@@ -118,7 +118,7 @@ EOS
 % n=0
 * 2
 EOS
-      
+
     erb = @erb.new(src, safe, 2)
     assert_equal(ans, erb.result)
     erb = @erb.new(src, safe, '<>')

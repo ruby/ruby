@@ -19,7 +19,7 @@ class TestASPDotNet < Test::Unit::TestCase
         XSD::QName.new(Namespace, 'SayHelloResponse')
       )
     end
-  
+
     def sayHello(arg)
       name = arg['name']
       "Hello #{name}"

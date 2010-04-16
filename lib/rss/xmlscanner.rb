@@ -2,15 +2,15 @@ require 'xmlscan/scanner'
 require 'stringio'
 
 module RSS
-  
+
   class XMLScanParser < BaseParser
-    
+
     class << self
       def listener
         XMLScanListener
       end
     end
-    
+
     private
     def _parse
       begin
@@ -26,11 +26,11 @@ module RSS
         raise NotWellFormedError.new(lineno){e.message}
       end
     end
-    
+
   end
 
   class XMLScanListener < BaseListener
-    
+
     include XMLScan::Visitor
     include ListenerMixin
 

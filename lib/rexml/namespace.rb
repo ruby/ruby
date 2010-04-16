@@ -40,7 +40,7 @@ module REXML
 		# source file.
 		def fully_expanded_name
 			ns = prefix
-			return "#{ns}:#@name" if ns.size > 0 
+			return "#{ns}:#@name" if ns.size > 0
 			return @name
 		end
 	end

@@ -36,12 +36,12 @@ module WEBrick
           [ $stderr, AccessLog::REFERER_LOG_FORMAT ]
         ]
       end
- 
+
       @virtual_hosts = Array.new
     end
 
     def run(sock)
-      while true 
+      while true
         res = HTTPResponse.new(@config)
         req = HTTPRequest.new(@config)
         server = self

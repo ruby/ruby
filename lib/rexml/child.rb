@@ -15,8 +15,8 @@ module REXML
 		#   if supplied, the parent of this child will be set to the
 		#   supplied value, and self will be added to the parent
 		def initialize( parent = nil )
-			@parent = nil  
-			# Declare @parent, but don't define it.  The next line sets the 
+			@parent = nil
+			# Declare @parent, but don't define it.  The next line sets the
 			# parent.
 			parent.add( self ) if parent
 		end
@@ -68,7 +68,7 @@ module REXML
 		  parent.insert_after self, other
 		end
 
-		# Sets the previous sibling of this child.  This can be used to insert a 
+		# Sets the previous sibling of this child.  This can be used to insert a
 		# child before some other child.
 		#  a = Element.new("a")
 		#  b = a.add_element("b")

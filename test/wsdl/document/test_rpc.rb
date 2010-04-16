@@ -21,7 +21,7 @@ class TestRPC < Test::Unit::TestCase
         XSD::QName.new(Namespace, 'echo_response')
       )
     end
-  
+
     def echo(arg)
       if arg.is_a?(Echoele)
         # swap args
@@ -160,7 +160,7 @@ class TestRPC < Test::Unit::TestCase
     assert_equal('attr_string', ret.xmlattr_attr_string)
     assert_equal(5, ret.xmlattr_attr_int)
 
-    echo = {'struct1' => {'m_string' => 'mystring1', 'm_datetime' => '2005-03-17T19:47:31+01:00'}, 
+    echo = {'struct1' => {'m_string' => 'mystring1', 'm_datetime' => '2005-03-17T19:47:31+01:00'},
           'struct-2' => {'m_string' => 'mystring2', 'm_datetime' => '2005-03-17T19:47:32+02:00'}}
     ret = @client.echo(echo)
     timeformat = "%Y-%m-%dT%H:%M:%S"

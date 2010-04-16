@@ -22,9 +22,9 @@ module Test
     class TestCase
       include Assertions
       include Util::BacktraceFilter
-      
+
       attr_reader :method_name
-      
+
       STARTED = name + "::STARTED"
       FINISHED = name + "::FINISHED"
 
@@ -104,7 +104,7 @@ module Test
       # down fixture information.
       def teardown
       end
-      
+
       def default_test
         flunk("No tests were specified")
       end
@@ -148,7 +148,7 @@ module Test
       def to_s
         name
       end
-      
+
       # It's handy to be able to compare TestCase instances.
       def ==(other)
         return false unless(other.kind_of?(self.class))

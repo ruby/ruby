@@ -1,5 +1,5 @@
 #--
-#   mutex_m.rb - 
+#   mutex_m.rb -
 #   	$Release Version: 3.0$
 #   	$Revision: 1.7 $
 #   	$Date: 1998/02/27 04:28:57 $
@@ -25,7 +25,7 @@
 #     include Mutex_m
 #     # ...
 #   end
-#   
+#
 #   obj = Foo.new
 
 module Mutex_m
@@ -37,13 +37,13 @@ module Mutex_m
       alias try_lock mu_try_lock
       alias synchronize mu_synchronize
     }
-  end  
+  end
 
   def Mutex_m.append_features(cl)
     super
     define_aliases(cl) unless cl.instance_of?(Module)
   end
-  
+
   def Mutex_m.extend_object(obj)
     super
     obj.mu_extended
@@ -59,8 +59,8 @@ module Mutex_m
     end
     mu_initialize
   end
-  
-  # locking 
+
+  # locking
   def mu_synchronize
     begin
       mu_lock
@@ -69,11 +69,11 @@ module Mutex_m
       mu_unlock
     end
   end
-  
+
   def mu_locked?
     @mu_locked
   end
-  
+
   def mu_try_lock
     result = false
     Thread.critical = true
@@ -84,7 +84,7 @@ module Mutex_m
     Thread.critical = false
     result
   end
-  
+
   def mu_lock
     while (Thread.critical = true; @mu_locked)
       @mu_waiting.push Thread.current
@@ -94,7 +94,7 @@ module Mutex_m
     Thread.critical = false
     self
   end
-  
+
   def mu_unlock
     return unless @mu_locked
     Thread.critical = true
@@ -107,9 +107,9 @@ module Mutex_m
     end
     self
   end
-  
+
   private
-  
+
   def mu_initialize
     @mu_waiting = []
     @mu_locked = false;

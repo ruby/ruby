@@ -1,14 +1,14 @@
-# 
+#
 # cgi.rb - cgi support library
-# 
+#
 # Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
-# 
+#
 # Copyright (C) 2000  Information-technology Promotion Agency, Japan
 #
 # Author: Wakou Aoyama <wakou@ruby-lang.org>
 #
-# Documentation: Wakou Aoyama (RDoc'd and embellished by William Webber) 
-# 
+# Documentation: Wakou Aoyama (RDoc'd and embellished by William Webber)
+#
 # == Overview
 #
 # The Common Gateway Interface (CGI) is a simple protocol
@@ -18,7 +18,7 @@
 # parameters of the request passed in either in the
 # environment (GET) or via $stdin (POST), and everything
 # it prints to $stdout is returned to the client.
-# 
+#
 # This file holds the +CGI+ class.  This class provides
 # functionality for retrieving HTTP request parameters,
 # managing cookies, and generating HTML output.  See the
@@ -77,18 +77,18 @@ require 'English'
 #
 #
 # For each of these variables, there is a corresponding attribute with the
-# same name, except all lower case and without a preceding HTTP_.  
+# same name, except all lower case and without a preceding HTTP_.
 # +content_length+ and +server_port+ are integers; the rest are strings.
 #
 # === Parameters
 #
 # The method #params() returns a hash of all parameters in the request as
 # name/value-list pairs, where the value-list is an Array of one or more
-# values.  The CGI object itself also behaves as a hash of parameter names 
-# to values, but only returns a single value (as a String) for each 
+# values.  The CGI object itself also behaves as a hash of parameter names
+# to values, but only returns a single value (as a String) for each
 # parameter name.
 #
-# For instance, suppose the request contains the parameter 
+# For instance, suppose the request contains the parameter
 # "favourite_colours" with the multiple values "blue" and "green".  The
 # following behaviour would occur:
 #
@@ -107,7 +107,7 @@ require 'English'
 #
 # === Multipart requests
 #
-# If a request's method is POST and its content type is multipart/form-data, 
+# If a request's method is POST and its content type is multipart/form-data,
 # then it may contain uploaded files.  These are stored by the QueryExtension
 # module in the parameters of the request.  The parameter name is the name
 # attribute of the file input field, as usual.  However, the value is not
@@ -138,7 +138,7 @@ require 'English'
 #
 # Each HTML element has a corresponding method for generating that
 # element as a String.  The name of this method is the same as that
-# of the element, all lowercase.  The attributes of the element are 
+# of the element, all lowercase.  The attributes of the element are
 # passed in as a hash, and the body as a no-argument block that evaluates
 # to a String.  The HTML generation module knows which elements are
 # always empty, and silently drops any passed-in body.  It also knows
@@ -152,57 +152,57 @@ require 'English'
 # as arguments, rather than via a hash.
 #
 # == Examples of use
-# 
+#
 # === Get form values
-# 
+#
 #   require "cgi"
 #   cgi = CGI.new
 #   value = cgi['field_name']   # <== value string for 'field_name'
 #     # if not 'field_name' included, then return "".
 #   fields = cgi.keys            # <== array of field names
-# 
+#
 #   # returns true if form has 'field_name'
 #   cgi.has_key?('field_name')
 #   cgi.has_key?('field_name')
 #   cgi.include?('field_name')
-# 
-# CAUTION! cgi['field_name'] returned an Array with the old 
+#
+# CAUTION! cgi['field_name'] returned an Array with the old
 # cgi.rb(included in ruby 1.6)
-# 
+#
 # === Get form values as hash
-# 
+#
 #   require "cgi"
 #   cgi = CGI.new
 #   params = cgi.params
-# 
+#
 # cgi.params is a hash.
-# 
+#
 #   cgi.params['new_field_name'] = ["value"]  # add new param
 #   cgi.params['field_name'] = ["new_value"]  # change value
 #   cgi.params.delete('field_name')           # delete param
 #   cgi.params.clear                          # delete all params
-# 
-# 
+#
+#
 # === Save form values to file
-# 
+#
 #   require "pstore"
 #   db = PStore.new("query.db")
 #   db.transaction do
 #     db["params"] = cgi.params
 #   end
-# 
-# 
+#
+#
 # === Restore form values from file
-# 
+#
 #   require "pstore"
 #   db = PStore.new("query.db")
 #   db.transaction do
 #     cgi.params = db["params"]
 #   end
-# 
-# 
+#
+#
 # === Get multipart form values
-# 
+#
 #   require "cgi"
 #   cgi = CGI.new
 #   value = cgi['field_name']   # <== value string for 'field_name'
@@ -210,37 +210,37 @@ require 'English'
 #   value.local_path            # <== path to local file of value
 #   value.original_filename     # <== original filename of value
 #   value.content_type          # <== content_type of value
-# 
+#
 # and value has StringIO or Tempfile class methods.
-# 
+#
 # === Get cookie values
-# 
+#
 #   require "cgi"
 #   cgi = CGI.new
 #   values = cgi.cookies['name']  # <== array of 'name'
 #     # if not 'name' included, then return [].
 #   names = cgi.cookies.keys      # <== array of cookie names
-# 
+#
 # and cgi.cookies is a hash.
-# 
+#
 # === Get cookie objects
-# 
+#
 #   require "cgi"
 #   cgi = CGI.new
 #   for name, cookie in cgi.cookies
 #     cookie.expires = Time.now + 30
 #   end
 #   cgi.out("cookie" => cgi.cookies) {"string"}
-# 
+#
 #   cgi.cookies # { "name1" => cookie1, "name2" => cookie2, ... }
-# 
+#
 #   require "cgi"
 #   cgi = CGI.new
 #   cgi.cookies['name'].expires = Time.now + 30
 #   cgi.out("cookie" => cgi.cookies['name']) {"string"}
-# 
+#
 # === Print http header and html string to $DEFAULT_OUTPUT ($>)
-# 
+#
 #   require "cgi"
 #   cgi = CGI.new("html3")  # add HTML generation methods
 #   cgi.out() do
@@ -264,7 +264,7 @@ require 'English'
 #       end
 #     end
 #   end
-# 
+#
 #   # add HTML generation methods
 #   CGI.new("html3")    # html3.2
 #   CGI.new("html4")    # html4.01 (Strict)
@@ -286,7 +286,7 @@ class CGI
 
   REVISION = '$Id$' #:nodoc:
 
-  NEEDS_BINMODE = true if /WIN/ni.match(RUBY_PLATFORM) 
+  NEEDS_BINMODE = true if /WIN/ni.match(RUBY_PLATFORM)
 
   # Path separators in different environments.
   PATH_SEPARATOR = {'UNIX'=>'/', 'WINDOWS'=>'\\', 'MACINTOSH'=>':'}
@@ -321,7 +321,7 @@ class CGI
 
   # :startdoc:
 
-  def env_table 
+  def env_table
     ENV
   end
 
@@ -431,7 +431,7 @@ class CGI
   #   print CGI::unescapeElement(
   #           CGI::escapeHTML('<BR><A HREF="url"></A>'), "A", "IMG")
   #     # "&lt;BR&gt;<A HREF="url"></A>"
-  # 
+  #
   #   print CGI::unescapeElement(
   #           CGI::escapeHTML('<BR><A HREF="url"></A>'), ["A", "IMG"])
   #     # "&lt;BR&gt;<A HREF="url"></A>"
@@ -475,7 +475,7 @@ class CGI
   # status:: the HTTP status code, returned as the Status header.  See the
   #          list of available status codes below.
   # server:: the server software, returned as the Server header.
-  # connection:: the connection type, returned as the Connection header (for 
+  # connection:: the connection type, returned as the Connection header (for
   #              instance, "close".
   # length:: the length of the content that will be sent, returned as the
   #          Content-Length header.
@@ -485,19 +485,19 @@ class CGI
   #           object, returned as the Expires header.
   # cookie:: a cookie or cookies, returned as one or more Set-Cookie headers.
   #          The value can be the literal string of the cookie; a CGI::Cookie
-  #          object; an Array of literal cookie strings or Cookie objects; or a 
+  #          object; an Array of literal cookie strings or Cookie objects; or a
   #          hash all of whose values are literal cookie strings or Cookie objects.
   #          These cookies are in addition to the cookies held in the
   #          @output_cookies field.
   #
   # Other header lines can also be set; they are appended as key: value.
-  # 
+  #
   #   header
   #     # Content-Type: text/html
-  # 
+  #
   #   header("text/plain")
   #     # Content-Type: text/plain
-  # 
+  #
   #   header("nph"        => true,
   #          "status"     => "OK",  # == "200 OK"
   #            # "status"     => "200 GOOD",
@@ -512,9 +512,9 @@ class CGI
   #          "cookie"     => [cookie1, cookie2],
   #          "my_header1" => "my_value"
   #          "my_header2" => "my_value")
-  # 
+  #
   # The status codes are:
-  # 
+  #
   #   "OK"                  --> "200 OK"
   #   "PARTIAL_CONTENT"     --> "206 Partial Content"
   #   "MULTIPLE_CHOICES"    --> "300 Multiple Choices"
@@ -533,8 +533,8 @@ class CGI
   #   "NOT_IMPLEMENTED"     --> "501 Method Not Implemented"
   #   "BAD_GATEWAY"         --> "502 Bad Gateway"
   #   "VARIANT_ALSO_VARIES" --> "506 Variant Also Negotiates"
-  # 
-  # This method does not perform charset conversion. 
+  #
+  # This method does not perform charset conversion.
   #
   def header(options = "text/html")
 
@@ -670,13 +670,13 @@ class CGI
   #     # Content-Length: 6
   #     #
   #     # string
-  # 
+  #
   #   cgi.out("text/plain") { "string" }
   #     # Content-Type: text/plain
   #     # Content-Length: 6
   #     #
   #     # string
-  # 
+  #
   #   cgi.out("nph"        => true,
   #           "status"     => "OK",  # == "200 OK"
   #           "server"     => ENV['SERVER_SOFTWARE'],
@@ -689,16 +689,16 @@ class CGI
   #           "cookie"     => [cookie1, cookie2],
   #           "my_header1" => "my_value",
   #           "my_header2" => "my_value") { "string" }
-  # 
+  #
   # Content-Length is automatically calculated from the size of
   # the String returned by the content block.
   #
   # If ENV['REQUEST_METHOD'] == "HEAD", then only the header
   # is outputted (the content block is still required, but it
   # is ignored).
-  # 
+  #
   # If the charset is "iso-2022-jp" or "euc-jp" or "shift_jis" then
-  # the content is converted to this charset, and the language is set 
+  # the content is converted to this charset, and the language is set
   # to "ja".
   def out(options = "text/html") # :yield:
 
@@ -755,16 +755,16 @@ class CGI
   #                              'expires' => Time.now, # optional
   #                              'secure'  => true      # optional
   #                             )
-  # 
+  #
   #   cgi.out("cookie" => [cookie1, cookie2]) { "string" }
-  # 
+  #
   #   name    = cookie1.name
   #   values  = cookie1.value
   #   path    = cookie1.path
   #   domain  = cookie1.domain
   #   expires = cookie1.expires
   #   secure  = cookie1.secure
-  # 
+  #
   #   cookie1.name    = 'name'
   #   cookie1.value   = ['value1', 'value2', ...]
   #   cookie1.path    = 'path'
@@ -787,7 +787,7 @@ class CGI
     # domain:: the domain for which this cookie applies.
     # expires:: the time at which this cookie expires, as a +Time+ object.
     # secure:: whether this cookie is a secure cookie or not (default to
-    #          false).  Secure cookies are only transmitted to HTTPS 
+    #          false).  Secure cookies are only transmitted to HTTPS
     #          servers.
     #
     # These keywords correspond to attributes of the cookie object.
@@ -914,7 +914,7 @@ class CGI
 
   # Mixin module. It provides the follow functionality groups:
   #
-  # 1. Access to CGI environment variables as methods.  See 
+  # 1. Access to CGI environment variables as methods.  See
   #    documentation to the CGI class for a list of these variables.
   #
   # 2. Access to cookies, including the cookies attribute.
@@ -1050,7 +1050,7 @@ class CGI
 	    (not /MSIE/ni.match(env_table['HTTP_USER_AGENT']))
 	  filename = CGI::unescape(filename)
 	end
-        
+
         /Content-Type: ([^\s]*)/ni.match(head)
         content_type = ($1 or "")
 
@@ -1169,7 +1169,7 @@ class CGI
 
     # Get the value for the parameter with a given key.
     #
-    # If the parameter has multiple values, only the first will be 
+    # If the parameter has multiple values, only the first will be
     # retrieved; use #params() to get the array of values.
     def [](key)
       params = @params[key]
@@ -1216,7 +1216,7 @@ class CGI
   #     #   <BODY>
   #     #   </BODY>
   #     # </HTML>
-  # 
+  #
   #   print CGI::pretty("<HTML><BODY></BODY></HTML>", "\t")
   #     # <HTML>
   #     #         <BODY>
@@ -1301,7 +1301,7 @@ class CGI
   # Modules Http3, Http4, etc., contain more basic HTML-generation methods
   # (:title, :center, etc.).
   #
-  # See class CGI for a detailed example. 
+  # See class CGI for a detailed example.
   #
   module HtmlExtension
 
@@ -1334,7 +1334,7 @@ class CGI
       end
     end
 
-    # Generate a Document Base URI element as a String. 
+    # Generate a Document Base URI element as a String.
     #
     # +href+ can either by a string, giving the base URL for the HREF
     # attribute, or it can be a has of the element's attributes.
@@ -1414,10 +1414,10 @@ class CGI
     #
     #   checkbox("name")
     #     # = checkbox("NAME" => "name")
-    # 
+    #
     #   checkbox("name", "value")
     #     # = checkbox("NAME" => "name", "VALUE" => "value")
-    # 
+    #
     #   checkbox("name", "value", true)
     #     # = checkbox("NAME" => "name", "VALUE" => "value", "CHECKED" => true)
     def checkbox(name = "", value = nil, checked = nil)
@@ -1455,23 +1455,23 @@ class CGI
     #     # <INPUT TYPE="checkbox" NAME="name" VALUE="foo">foo
     #     # <INPUT TYPE="checkbox" NAME="name" VALUE="bar">bar
     #     # <INPUT TYPE="checkbox" NAME="name" VALUE="baz">baz
-    # 
+    #
     #   checkbox_group("name", ["foo"], ["bar", true], "baz")
     #     # <INPUT TYPE="checkbox" NAME="name" VALUE="foo">foo
     #     # <INPUT TYPE="checkbox" CHECKED NAME="name" VALUE="bar">bar
     #     # <INPUT TYPE="checkbox" NAME="name" VALUE="baz">baz
-    # 
+    #
     #   checkbox_group("name", ["1", "Foo"], ["2", "Bar", true], "Baz")
     #     # <INPUT TYPE="checkbox" NAME="name" VALUE="1">Foo
     #     # <INPUT TYPE="checkbox" CHECKED NAME="name" VALUE="2">Bar
     #     # <INPUT TYPE="checkbox" NAME="name" VALUE="Baz">Baz
-    # 
+    #
     #   checkbox_group("NAME" => "name",
     #                    "VALUES" => ["foo", "bar", "baz"])
-    # 
+    #
     #   checkbox_group("NAME" => "name",
     #                    "VALUES" => [["foo"], ["bar", true], "baz"])
-    # 
+    #
     #   checkbox_group("NAME" => "name",
     #                    "VALUES" => [["1", "Foo"], ["2", "Bar", true], "Baz"])
     def checkbox_group(name = "", *values)
@@ -1507,13 +1507,13 @@ class CGI
     #
     #   file_field("name")
     #     # <INPUT TYPE="file" NAME="name" SIZE="20">
-    # 
+    #
     #   file_field("name", 40)
     #     # <INPUT TYPE="file" NAME="name" SIZE="40">
-    # 
+    #
     #   file_field("name", 40, 100)
     #     # <INPUT TYPE="file" NAME="name" SIZE="40" MAXLENGTH="100">
-    # 
+    #
     #   file_field("NAME" => "name", "SIZE" => 40)
     #     # <INPUT TYPE="file" NAME="name" SIZE="40">
     def file_field(name = "", size = 20, maxlength = nil)
@@ -1533,7 +1533,7 @@ class CGI
     #
     # +method+ should be either "get" or "post", and defaults to the latter.
     # +action+ defaults to the current CGI script name.  +enctype+
-    # defaults to "application/x-www-form-urlencoded".  
+    # defaults to "application/x-www-form-urlencoded".
     #
     # Alternatively, the attributes can be specified as a hash.
     #
@@ -1541,19 +1541,19 @@ class CGI
     #
     #   form{ "string" }
     #     # <FORM METHOD="post" ENCTYPE="application/x-www-form-urlencoded">string</FORM>
-    # 
+    #
     #   form("get") { "string" }
     #     # <FORM METHOD="get" ENCTYPE="application/x-www-form-urlencoded">string</FORM>
-    # 
+    #
     #   form("get", "url") { "string" }
     #     # <FORM METHOD="get" ACTION="url" ENCTYPE="application/x-www-form-urlencoded">string</FORM>
-    # 
+    #
     #   form("METHOD" => "post", "ENCTYPE" => "enctype") { "string" }
     #     # <FORM METHOD="post" ENCTYPE="enctype">string</FORM>
     def form(method = "post", action = script_name, enctype = "application/x-www-form-urlencoded")
       attributes = if method.kind_of?(String)
                      { "METHOD" => method, "ACTION" => action,
-                       "ENCTYPE" => enctype } 
+                       "ENCTYPE" => enctype }
                    else
                      unless method.has_key?("METHOD")
                        method["METHOD"] = "post"
@@ -1585,10 +1585,10 @@ class CGI
     #
     #   hidden("name")
     #     # <INPUT TYPE="hidden" NAME="name">
-    # 
+    #
     #   hidden("name", "value")
     #     # <INPUT TYPE="hidden" NAME="name" VALUE="value">
-    # 
+    #
     #   hidden("NAME" => "name", "VALUE" => "reset", "ID" => "foo")
     #     # <INPUT TYPE="hidden" NAME="name" VALUE="value" ID="foo">
     def hidden(name = "", value = nil)
@@ -1611,36 +1611,36 @@ class CGI
     # should include the entire text of this tag, including angle brackets.
     #
     # The body of the html element is supplied as a block.
-    # 
+    #
     #   html{ "string" }
     #     # <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN"><HTML>string</HTML>
-    # 
+    #
     #   html("LANG" => "ja") { "string" }
     #     # <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN"><HTML LANG="ja">string</HTML>
-    # 
+    #
     #   html("DOCTYPE" => false) { "string" }
     #     # <HTML>string</HTML>
-    # 
+    #
     #   html("DOCTYPE" => '<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">') { "string" }
     #     # <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN"><HTML>string</HTML>
-    # 
+    #
     #   html("PRETTY" => "  ") { "<BODY></BODY>" }
     #     # <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
     #     # <HTML>
     #     #   <BODY>
     #     #   </BODY>
     #     # </HTML>
-    # 
+    #
     #   html("PRETTY" => "\t") { "<BODY></BODY>" }
     #     # <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
     #     # <HTML>
     #     #         <BODY>
     #     #         </BODY>
     #     # </HTML>
-    # 
+    #
     #   html("PRETTY") { "<BODY></BODY>" }
     #     # = html("PRETTY" => "  ") { "<BODY></BODY>" }
-    # 
+    #
     #   html(if $VERBOSE then "PRETTY" end) { "HTML string" }
     #
     def html(attributes = {}) # :yield:
@@ -1679,17 +1679,17 @@ class CGI
 
     # Generate an Image Button Input element as a string.
     #
-    # +src+ is the URL of the image to use for the button.  +name+ 
+    # +src+ is the URL of the image to use for the button.  +name+
     # is the input name.  +alt+ is the alternative text for the image.
     #
     # Alternatively, the attributes can be specified as a hash.
-    # 
+    #
     #   image_button("url")
     #     # <INPUT TYPE="image" SRC="url">
-    # 
+    #
     #   image_button("url", "name", "string")
     #     # <INPUT TYPE="image" SRC="url" NAME="name" ALT="string">
-    # 
+    #
     #   image_button("SRC" => "url", "ATL" => "string")
     #     # <INPUT TYPE="image" SRC="url" ALT="string">
     def image_button(src = "", name = nil, alt = nil)
@@ -1715,7 +1715,7 @@ class CGI
     #
     #   img("src", "alt", 100, 50)
     #     # <IMG SRC="src" ALT="alt" WIDTH="100" HEIGHT="50">
-    # 
+    #
     #   img("SRC" => "src", "ALT" => "alt", "WIDTH" => 100, "HEIGHT" => 50)
     #     # <IMG SRC="src" ALT="alt" WIDTH="100" HEIGHT="50">
     def img(src = "", alt = "", width = nil, height = nil)
@@ -1741,15 +1741,15 @@ class CGI
     #
     #   multipart_form{ "string" }
     #     # <FORM METHOD="post" ENCTYPE="multipart/form-data">string</FORM>
-    # 
+    #
     #   multipart_form("url") { "string" }
     #     # <FORM METHOD="post" ACTION="url" ENCTYPE="multipart/form-data">string</FORM>
     def multipart_form(action = nil, enctype = "multipart/form-data")
       attributes = if action == nil
-                     { "METHOD" => "post", "ENCTYPE" => enctype } 
+                     { "METHOD" => "post", "ENCTYPE" => enctype }
                    elsif action.kind_of?(String)
                      { "METHOD" => "post", "ACTION" => action,
-                       "ENCTYPE" => enctype } 
+                       "ENCTYPE" => enctype }
                    else
                      unless action.has_key?("METHOD")
                        action["METHOD"] = "post"
@@ -1777,13 +1777,13 @@ class CGI
     #
     #   password_field("name")
     #     # <INPUT TYPE="password" NAME="name" SIZE="40">
-    # 
+    #
     #   password_field("name", "value")
     #     # <INPUT TYPE="password" NAME="name" VALUE="value" SIZE="40">
-    # 
+    #
     #   password_field("password", "value", 80, 200)
     #     # <INPUT TYPE="password" NAME="name" VALUE="value" SIZE="80" MAXLENGTH="200">
-    # 
+    #
     #   password_field("NAME" => "name", "VALUE" => "value")
     #     # <INPUT TYPE="password" NAME="name" VALUE="value">
     def password_field(name = "", value = nil, size = 40, maxlength = nil)
@@ -1819,21 +1819,21 @@ class CGI
     #     #   <OPTION VALUE="bar">bar</OPTION>
     #     #   <OPTION VALUE="baz">baz</OPTION>
     #     # </SELECT>
-    # 
+    #
     #   popup_menu("name", ["foo"], ["bar", true], "baz")
     #     # <SELECT NAME="name">
     #     #   <OPTION VALUE="foo">foo</OPTION>
     #     #   <OPTION VALUE="bar" SELECTED>bar</OPTION>
     #     #   <OPTION VALUE="baz">baz</OPTION>
     #     # </SELECT>
-    # 
+    #
     #   popup_menu("name", ["1", "Foo"], ["2", "Bar", true], "Baz")
     #     # <SELECT NAME="name">
     #     #   <OPTION VALUE="1">Foo</OPTION>
     #     #   <OPTION SELECTED VALUE="2">Bar</OPTION>
     #     #   <OPTION VALUE="Baz">Baz</OPTION>
     #     # </SELECT>
-    # 
+    #
     #   popup_menu("NAME" => "name", "SIZE" => 2, "MULTIPLE" => true,
     #               "VALUES" => [["1", "Foo"], ["2", "Bar", true], "Baz"])
     #     # <SELECT NAME="name" MULTIPLE SIZE="2">
@@ -1884,10 +1884,10 @@ class CGI
     #
     #   radio_button("name", "value")
     #     # <INPUT TYPE="radio" NAME="name" VALUE="value">
-    # 
+    #
     #   radio_button("name", "value", true)
     #     # <INPUT TYPE="radio" NAME="name" VALUE="value" CHECKED>
-    # 
+    #
     #   radio_button("NAME" => "name", "VALUE" => "value", "ID" => "foo")
     #     # <INPUT TYPE="radio" NAME="name" VALUE="value" ID="foo">
     def radio_button(name = "", value = nil, checked = nil)
@@ -1905,28 +1905,28 @@ class CGI
     #
     # This works the same as #checkbox_group().  However, it is not valid
     # to have more than one radiobutton in a group checked.
-    # 
+    #
     #   radio_group("name", "foo", "bar", "baz")
     #     # <INPUT TYPE="radio" NAME="name" VALUE="foo">foo
     #     # <INPUT TYPE="radio" NAME="name" VALUE="bar">bar
     #     # <INPUT TYPE="radio" NAME="name" VALUE="baz">baz
-    # 
+    #
     #   radio_group("name", ["foo"], ["bar", true], "baz")
     #     # <INPUT TYPE="radio" NAME="name" VALUE="foo">foo
     #     # <INPUT TYPE="radio" CHECKED NAME="name" VALUE="bar">bar
     #     # <INPUT TYPE="radio" NAME="name" VALUE="baz">baz
-    # 
+    #
     #   radio_group("name", ["1", "Foo"], ["2", "Bar", true], "Baz")
     #     # <INPUT TYPE="radio" NAME="name" VALUE="1">Foo
     #     # <INPUT TYPE="radio" CHECKED NAME="name" VALUE="2">Bar
     #     # <INPUT TYPE="radio" NAME="name" VALUE="Baz">Baz
-    # 
+    #
     #   radio_group("NAME" => "name",
     #                 "VALUES" => ["foo", "bar", "baz"])
-    # 
+    #
     #   radio_group("NAME" => "name",
     #                 "VALUES" => [["foo"], ["bar", true], "baz"])
-    # 
+    #
     #   radio_group("NAME" => "name",
     #                 "VALUES" => [["1", "Foo"], ["2", "Bar", true], "Baz"])
     def radio_group(name = "", *values)
@@ -1958,10 +1958,10 @@ class CGI
     #
     #   reset
     #     # <INPUT TYPE="reset">
-    # 
+    #
     #   reset("reset")
     #     # <INPUT TYPE="reset" VALUE="reset">
-    # 
+    #
     #   reset("VALUE" => "reset", "ID" => "foo")
     #     # <INPUT TYPE="reset" VALUE="reset" ID="foo">
     def reset(value = nil, name = nil)
@@ -1985,13 +1985,13 @@ class CGI
     #
     #   submit
     #     # <INPUT TYPE="submit">
-    # 
+    #
     #   submit("ok")
     #     # <INPUT TYPE="submit" VALUE="ok">
-    # 
+    #
     #   submit("ok", "button1")
     #     # <INPUT TYPE="submit" VALUE="ok" NAME="button1">
-    # 
+    #
     #   submit("VALUE" => "ok", "NAME" => "button1", "ID" => "foo")
     #     # <INPUT TYPE="submit" VALUE="ok" NAME="button1" ID="foo">
     def submit(value = nil, name = nil)
@@ -2014,16 +2014,16 @@ class CGI
     #
     #   text_field("name")
     #     # <INPUT TYPE="text" NAME="name" SIZE="40">
-    # 
+    #
     #   text_field("name", "value")
     #     # <INPUT TYPE="text" NAME="name" VALUE="value" SIZE="40">
-    # 
+    #
     #   text_field("name", "value", 80)
     #     # <INPUT TYPE="text" NAME="name" VALUE="value" SIZE="80">
-    # 
+    #
     #   text_field("name", "value", 80, 200)
     #     # <INPUT TYPE="text" NAME="name" VALUE="value" SIZE="80" MAXLENGTH="200">
-    # 
+    #
     #   text_field("NAME" => "name", "VALUE" => "value")
     #     # <INPUT TYPE="text" NAME="name" VALUE="value">
     def text_field(name = "", value = nil, size = 40, maxlength = nil)

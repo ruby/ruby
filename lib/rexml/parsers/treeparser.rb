@@ -39,8 +39,8 @@ module REXML
                 if @build_context[-1].instance_of? Text
                   @build_context[-1] << event[1]
                 else
-                  @build_context.add( 
-                    Text.new(event[1], @build_context.whitespace, nil, true) 
+                  @build_context.add(
+                    Text.new(event[1], @build_context.whitespace, nil, true)
                   ) unless (
                     @build_context.ignore_whitespace_nodes and
                     event[1].strip.size==0

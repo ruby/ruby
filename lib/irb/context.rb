@@ -7,7 +7,7 @@
 #
 # --
 #
-#   
+#
 #
 require "irb/workspace"
 
@@ -46,7 +46,7 @@ module IRB
       @ignore_eof = IRB.conf[:IGNORE_EOF]
 
       @back_trace_limit = IRB.conf[:BACK_TRACE_LIMIT]
-      
+
       self.prompt_mode = IRB.conf[:PROMPT_MODE]
 
       if IRB.conf[:SINGLE_IRB] or !defined?(JobManager)
@@ -91,7 +91,7 @@ module IRB
 	@output_method = StdioOutputMethod.new
       end
 
-      @verbose = IRB.conf[:VERBOSE] 
+      @verbose = IRB.conf[:VERBOSE]
       @echo = IRB.conf[:ECHO]
       if @echo.nil?
 	@echo = true
@@ -107,7 +107,7 @@ module IRB
     attr_accessor :workspace
     attr_reader :thread
     attr_accessor :io
-    
+
     attr_accessor :irb
     attr_accessor :ap_name
     attr_accessor :rc
@@ -142,7 +142,7 @@ module IRB
 
     def verbose?
       if @verbose.nil?
-	if defined?(ReadlineInputMethod) && @io.kind_of?(ReadlineInputMethod) 
+	if defined?(ReadlineInputMethod) && @io.kind_of?(ReadlineInputMethod)
 	  false
 	elsif !STDIN.tty? or @io.kind_of?(FileInputMethod)
 	  true
@@ -180,7 +180,7 @@ module IRB
 	@auto_indent_mode = IRB.conf[:AUTO_INDENT]
       end
     end
-    
+
     def inspect?
       @inspect_mode.nil? or @inspect_mode
     end

@@ -65,9 +65,9 @@ module REXML
     # usual scan() method.  For one thing, the pattern argument has some
     # requirements; for another, the source can be consumed.  You can easily
     # confuse this method.  Originally, the patterns were easier
-    # to construct and this method more robust, because this method 
-    # generated search regexes on the fly; however, this was 
-    # computationally expensive and slowed down the entire REXML package 
+    # to construct and this method more robust, because this method
+    # generated search regexes on the fly; however, this was
+    # computationally expensive and slowed down the entire REXML package
     # considerably, since this is by far the most commonly called method.
     # @param pattern must be a Regexp, and must be in the form of
     # /^\s*(#{your pattern, with no groups})(.*)/.  The first group
@@ -190,7 +190,7 @@ module REXML
     def read
       begin
         str = @source.readline(@line_break)
-        str = decode(str) if @to_utf and str 
+        str = decode(str) if @to_utf and str
         @buffer << str
       rescue Exception, NameError
         @source = nil
@@ -218,7 +218,7 @@ module REXML
       rv.taint
       rv
     end
-    
+
     def empty?
       super and ( @source.nil? || @source.eof? )
     end

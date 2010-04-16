@@ -113,7 +113,7 @@ module DL
 	  }
 	  @size = DL.sizeof(@tys)
 	end
-	
+
 	def parse_elem(elem)
 	  elem.strip!
 	  case elem
@@ -135,7 +135,7 @@ module DL
 	  return [name,ty,num,enc,dec]
 	end
       end  # class Struct
-      
+
       class Union < Struct
 	def new
 	  ptr = DL::malloc(@size)

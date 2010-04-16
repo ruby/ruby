@@ -15,11 +15,11 @@ module REXML
     STOP = ">"
     SYSTEM = "SYSTEM"
     PUBLIC = "PUBLIC"
-    DEFAULT_ENTITIES = { 
-      'gt'=>EntityConst::GT, 
-      'lt'=>EntityConst::LT, 
-      'quot'=>EntityConst::QUOT, 
-      "apos"=>EntityConst::APOS 
+    DEFAULT_ENTITIES = {
+      'gt'=>EntityConst::GT,
+      'lt'=>EntityConst::LT,
+      'quot'=>EntityConst::QUOT,
+      "apos"=>EntityConst::APOS
     }
 
     # name is the name of the doctype
@@ -33,7 +33,7 @@ module REXML
     #   dt = DocType.new( doctype_to_clone )
     #   # Incomplete.  Shallow clone of doctype
     #
-    # +Note+ that the constructor: 
+    # +Note+ that the constructor:
     #
     #  Doctype.new( Source.new( "<!DOCTYPE foo 'bar'>" ) )
     #
@@ -140,8 +140,8 @@ module REXML
       @entities = DEFAULT_ENTITIES.clone if @entities == DEFAULT_ENTITIES
       @entities[ child.name ] = child if child.kind_of? Entity
     end
-    
-    # This method retrieves the public identifier identifying the document's 
+
+    # This method retrieves the public identifier identifying the document's
     # DTD.
     #
     # Method contributed by Henrik Martensson
@@ -153,7 +153,7 @@ module REXML
         strip_quotes(@long_name)
       end
     end
-    
+
     # This method retrieves the system identifier identifying the document's DTD
     #
     # Method contributed by Henrik Martensson
@@ -165,16 +165,16 @@ module REXML
         @uri.kind_of?(String) ? strip_quotes(@uri) : nil
       end
     end
-    
+
     # This method returns a list of notations that have been declared in the
-    # _internal_ DTD subset. Notations in the external DTD subset are not 
+    # _internal_ DTD subset. Notations in the external DTD subset are not
     # listed.
     #
     # Method contributed by Henrik Martensson
     def notations
       children().select {|node| node.kind_of?(REXML::NotationDecl)}
     end
-    
+
     # Retrieves a named notation. Only notations declared in the internal
     # DTD subset can be retrieved.
     #
@@ -184,9 +184,9 @@ module REXML
         notation_decl.name == name
       }
     end
-    
+
     private
-    
+
     # Method contributed by Henrik Martensson
     def strip_quotes(quoted_string)
       quoted_string =~ /^[\'\"].*[\´\"]$/ ?
@@ -218,7 +218,7 @@ module REXML
       output << to_s
     end
   end
-  
+
   public
   class ElementDecl < Declaration
     def initialize( src )
@@ -251,7 +251,7 @@ module REXML
 
     def to_s
       "<!NOTATION #@name #@middle#{
-        @public ? ' ' + public.inspect : '' 
+        @public ? ' ' + public.inspect : ''
       }#{
         @system ? ' ' +@system.inspect : ''
       }>"
@@ -260,7 +260,7 @@ module REXML
     def write( output, indent=-1 )
       output << to_s
     end
-    
+
     # This method retrieves the name of the notation.
     #
     # Method contributed by Henrik Martensson

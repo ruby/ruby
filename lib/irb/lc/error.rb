@@ -1,5 +1,5 @@
 #
-#   irb/lc/error.rb - 
+#   irb/lc/error.rb -
 #   	$Release Version: 0.9.5$
 #   	$Revision$
 #   	$Date$
@@ -7,7 +7,7 @@
 #
 # --
 #
-#   
+#
 #
 require "e2mmap"
 

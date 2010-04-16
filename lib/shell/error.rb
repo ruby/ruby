@@ -1,5 +1,5 @@
 #
-#   shell/error.rb - 
+#   shell/error.rb -
 #   	$Release Version: 0.6.0 $
 #   	$Revision$
 #   	$Date$
@@ -7,7 +7,7 @@
 #
 # --
 #
-#   
+#
 #
 
 require "e2mmap"

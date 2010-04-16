@@ -50,7 +50,7 @@ class WIN32COMGen
     ts = ''
     typedetails.each do |t|
       case t
-      when 'CARRAY', 'VOID', 'UINT', 'RESULT', 'DECIMAL', 'I8', 'UI8' 
+      when 'CARRAY', 'VOID', 'UINT', 'RESULT', 'DECIMAL', 'I8', 'UI8'
 #	  raise "Sorry type\"" + t + "\" not supported"
       ts << "\"??? NOT SUPPORTED TYPE:`#{t}'\""
       when 'USERDEFINED', 'Unknown Type 9'
@@ -81,7 +81,7 @@ class WIN32COMGen
       generate_argtype(param.ole_type_detail)
     }.join(", ")
     if proptypes
-      types += ", " if types.size > 0 
+      types += ", " if types.size > 0
       types += generate_argtype(proptypes)
     end
     types
@@ -98,8 +98,8 @@ class WIN32COMGen
   end
 
   def generate_method_help(method, type = nil)
-    str = "  # "  
-    if type 
+    str = "  # "
+    if type
       str += type
     else
       str += method.return_type
@@ -124,7 +124,7 @@ class WIN32COMGen
   def generate_method_args_help(method)
     args = []
     method.params.each_with_index {|param, i|
-      h = "  #   #{param.ole_type} arg#{i} --- #{param.name}" 
+      h = "  #   #{param.ole_type} arg#{i} --- #{param.name}"
       inout = []
       inout.push "IN" if param.input?
       inout.push "OUT" if param.output?
@@ -167,14 +167,14 @@ class WIN32COMGen
       method.visible? &&
       method.size_params > 0
     }.each do |method|
-      types = method.return_type_detail 
+      types = method.return_type_detail
       io.puts "\n"
       io.puts  generate_method_help(method, types[0])
       io.puts  "  def #{method.name}"
       if klass.ole_type == "Class"
-        io.print "    OLEProperty.new(@dispatch, #{method.dispid}, [" 
+        io.print "    OLEProperty.new(@dispatch, #{method.dispid}, ["
       else
-        io.print "    OLEProperty.new(self, #{method.dispid}, [" 
+        io.print "    OLEProperty.new(self, #{method.dispid}, ["
       end
       io.print generate_argtypes(method, nil)
       io.print "], ["
@@ -321,8 +321,8 @@ STR
 
     ole_classes(typelib).select{|klass|
       klass.visible? &&
-      (klass.ole_type == "Class" || 
-       klass.ole_type == "Interface" || 
+      (klass.ole_type == "Class" ||
+       klass.ole_type == "Interface" ||
        klass.ole_type == "Dispatch" ||
        klass.ole_type == "Enum")
     }.each do |klass|
@@ -330,7 +330,7 @@ STR
     end
     begin
       @ole.quit if @ole
-    rescue 
+    rescue
     end
   end
 end

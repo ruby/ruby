@@ -21,7 +21,7 @@ class YAML_Unit_Tests < Test::Unit::TestCase
         assert_equal( obj, YAML::load( obj.to_yaml ) )
 		assert_equal( obj, YAML::parse( obj.to_yaml ).transform )
         assert_equal( obj, YAML::load(
-			obj.to_yaml( :UseVersion => true, :UseHeader => true, :SortKeys => true ) 
+			obj.to_yaml( :UseVersion => true, :UseHeader => true, :SortKeys => true )
 		) )
 	end
 
@@ -133,7 +133,7 @@ EOY
 	def test_spec_simple_map_with_nested_sequences
 		# Simple mapping with nested sequences
 		assert_to_yaml(
-			{ 'american' => 
+			{ 'american' =>
 			  [ 'Boston Red Sox', 'Detroit Tigers', 'New York Yankees' ],
 			  'national' =>
 			  [ 'New York Mets', 'Chicago Cubs', 'Atlanta Braves' ] }, <<EOY
@@ -171,7 +171,7 @@ EOY
 	def test_spec_sequence_of_sequences
 		# Simple sequence with inline sequences
 		assert_parse_only(
-		  [ 
+		  [
 		  	[ 'name', 'hr', 'avg' ],
 			[ 'Mark McGwire', 65, 0.278 ],
 			[ 'Sammy Sosa', 63, 0.288 ]
@@ -241,11 +241,11 @@ EOY
 
         assert_to_yaml(
             [{"arrival"=>"EDI", "departure"=>"LAX", "fareref"=>"DOGMA", "currency"=>"GBP"}, {"arrival"=>"MEL", "departure"=>"SYD", "fareref"=>"MADF", "currency"=>"AUD"}, {"arrival"=>"MCO", "departure"=>"JFK", "fareref"=>"DFSF", "currency"=>"USD"}], <<EOY
-  -   
+  -
     &F fareref: DOGMA
     &C currency: GBP
     &D departure: LAX
-    &A arrival: EDI 
+    &A arrival: EDI
   - { *F: MADF, *C: AUD, *D: SYD, *A: MEL }
   - { *F: DFSF, *C: USD, *D: JFK, *A: MCO }
 EOY
@@ -285,12 +285,12 @@ EOY
 ? # PLAY SCHEDULE
   - Detroit Tigers
   - Chicago Cubs
-:  
+:
   - 2001-07-23
 
 ? [ New York Yankees,
     Atlanta Braves ]
-: [ 2001-07-02, 2001-08-12, 
+: [ 2001-07-02, 2001-08-12,
     2001-08-14 ]
 EOY
 		)
@@ -352,9 +352,9 @@ EOY
 
     def test_spec_sequence_shortcuts
         # Sequence shortcuts combined
-        assert_parse_only( 
+        assert_parse_only(
 [
-  [ 
+  [
     [ [ 'one' ] ],
     [ 'two', 'three' ],
     { 'four' => nil },
@@ -440,7 +440,7 @@ quoted: "\\
   scalar.\\n"
 EOY
 		)
-	end	
+	end
 
 	def test_spec_type_int
 		assert_parse_only(
@@ -678,7 +678,7 @@ EOY
 
 	def test_spec_force_implicit
 		# Force implicit
-		assert_parse_only( 
+		assert_parse_only(
 			{ 'integer' => 12, 'also int' => 12, 'string' => '12' }, <<EOY
 integer: 12
 also int: ! "12"
@@ -705,7 +705,7 @@ EOY
 					assert_equal( doc['pool'].type_id, 'x-private:ball' )
 					assert_equal( doc['pool'].transform.value, { 'number' => 8, 'color' => 'black' } )
 				when 1
-					assert_equal( doc['bearing'].type_id, 'x-private:ball' ) 
+					assert_equal( doc['bearing'].type_id, 'x-private:ball' )
 					assert_equal( doc['bearing'].transform.value, { 'material' => 'steel' } )
 			end
 			doc_ct += 1
@@ -734,7 +734,7 @@ EOY
 	def test_spec_override_anchor
 		# Override anchor
 		a001 = "The alias node below is a repeated use of this value.\n"
-		assert_parse_only( 
+		assert_parse_only(
 			{ 'anchor' => 'This scalar has an anchor.', 'override' => a001, 'alias' => a001 }, <<EOY
 anchor : &A001 This scalar has an anchor.
 override : &A001 >
@@ -758,7 +758,7 @@ picture: !binary |
  Pz7Y6OjuDg4J+fn5OTk6enp
  56enmleECcgggoBADs=
 
-hmm: !somewhere.com,2002/type | 
+hmm: !somewhere.com,2002/type |
  family above is short for
  http://somewhere.com/type
 EOY
@@ -843,7 +843,7 @@ EOY
 
 	def test_spec_builtin_map
 		# Assortment of mappings
-		assert_parse_only( 
+		assert_parse_only(
 			{ 'empty' => {}, 'in-line' => { 'one' => 1, 'two' => 2 },
 			  'spanning' => { 'one' => 1, 'two' => 2 },
 			  'nested' => { 'first' => 'First entry', 'second' =>
@@ -945,9 +945,9 @@ EOY
 		str1 = "This has one newline.\n"
 		str2 = "This has no newline."
 		str3 = "This has two newlines.\n\n"
-		assert_parse_only( 
-			{ 'clipped' => str1, 'same as "clipped" above' => str1, 
-			  'stripped' => str2, 'same as "stripped" above' => str2, 
+		assert_parse_only(
+			{ 'clipped' => str1, 'same as "clipped" above' => str1,
+			  'stripped' => str2, 'same as "stripped" above' => str2,
 			  'kept' => str3, 'same as "kept" above' => str3 }, <<EOY
 clipped: |
     This has one newline.
@@ -967,7 +967,7 @@ same as "kept" above: "This has two newlines.\\n\\n"
 EOY
 		)
 	end
-	
+
 	def test_spec_span_single_quote
 		assert_parse_only( {"third"=>"a single quote ' must be escaped.", "second"=>"! : \\ etc. can be used freely.", "is same as"=>"this contains six spaces\nand one line break", "empty"=>"", "span"=>"this contains six spaces\nand one line break"}, <<EOY
 empty: ''
@@ -975,7 +975,7 @@ second: '! : \\ etc. can be used freely.'
 third: 'a single quote '' must be escaped.'
 span: 'this contains
       six spaces
-      
+
       and one
       line break'
 is same as: "this contains six spaces\\nand one line break"
@@ -1000,9 +1000,9 @@ EOY
 	def test_spec_builtin_time
 		# Time
 		assert_parse_only(
-			{ "space separated" => mktime( 2001, 12, 14, 21, 59, 43, ".10", "-05:00" ), 
-			  "canonical" => mktime( 2001, 12, 15, 2, 59, 43, ".10" ), 
-			  "date (noon UTC)" => Date.new( 2002, 12, 14), 
+			{ "space separated" => mktime( 2001, 12, 14, 21, 59, 43, ".10", "-05:00" ),
+			  "canonical" => mktime( 2001, 12, 15, 2, 59, 43, ".10" ),
+			  "date (noon UTC)" => Date.new( 2002, 12, 14),
 			  "valid iso8601" => mktime( 2001, 12, 14, 21, 59, 43, ".10", "-05:00" ) }, <<EOY
 canonical: 2001-12-15T02:59:43.1Z
 valid iso8601: 2001-12-14t21:59:43.10-05:00
@@ -1015,7 +1015,7 @@ EOY
 	def test_spec_builtin_binary
 		arrow_gif = "GIF89a\f\000\f\000\204\000\000\377\377\367\365\365\356\351\351\345fff\000\000\000\347\347\347^^^\363\363\355\216\216\216\340\340\340\237\237\237\223\223\223\247\247\247\236\236\236iiiccc\243\243\243\204\204\204\377\376\371\377\376\371\377\376\371\377\376\371\377\376\371\377\376\371\377\376\371\377\376\371\377\376\371\377\376\371\377\376\371\377\376\371\377\376\371\377\376\371!\376\016Made with GIMP\000,\000\000\000\000\f\000\f\000\000\005,  \216\2010\236\343@\024\350i\020\304\321\212\010\034\317\200M$z\357\3770\205p\270\2601f\r\e\316\001\303\001\036\020' \202\n\001\000;"
 		assert_parse_only(
-			{ 'canonical' => arrow_gif, 'base64' => arrow_gif, 
+			{ 'canonical' => arrow_gif, 'base64' => arrow_gif,
 			  'description' => "The binary value above is a tiny arrow encoded as a gif image.\n" }, <<EOY
 canonical: !binary "\\
  R0lGODlhDAAMAIQAAP//9/X17unp5WZmZgAAAOf\\
@@ -1041,7 +1041,7 @@ EOY
 	end
 	def test_ruby_regexp
 		# Test Ruby regular expressions
-		assert_to_yaml( 
+		assert_to_yaml(
 			{ 'simple' => /a.b/, 'complex' => %r'\A"((?:[^"]|\")+)"',
 			  'case-insensitive' => /George McFly/i }, <<EOY
 case-insensitive: !ruby/regexp "/George McFly/i"
@@ -1078,8 +1078,8 @@ EOY
 		book_struct = Struct::new( "BookStruct", :author, :title, :year, :isbn )
 		assert_to_yaml(
 			[ book_struct.new( "Yukihiro Matsumoto", "Ruby in a Nutshell", 2002, "0-596-00214-9" ),
-			  book_struct.new( [ 'Dave Thomas', 'Andy Hunt' ], "The Pickaxe", 2002, 
-				book_struct.new( "This should be the ISBN", "but I have another struct here", 2002, "None" ) 
+			  book_struct.new( [ 'Dave Thomas', 'Andy Hunt' ], "The Pickaxe", 2002,
+				book_struct.new( "This should be the ISBN", "but I have another struct here", 2002, "None" )
 			  ) ], <<EOY
 - !ruby/struct:BookStruct
   author: Yukihiro Matsumoto
@@ -1119,7 +1119,7 @@ EOY
 	#
 	def test_document
 		y = YAML::Stream.new( :Indent => 2, :UseVersion => 0 )
-		y.add( 
+		y.add(
 			{ 'hi' => 'hello', 'map' =>
 				{ 'good' => 'two' },
 			  'time' => Time.now,

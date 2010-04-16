@@ -1,5 +1,5 @@
 # This program illustrates the basic use of the SimpleMarkup
-# class. It extracts the first comment block from the 
+# class. It extracts the first comment block from the
 # simple_markup.rb file and converts it into HTML on
 # standard output. Run it using
 #
@@ -7,7 +7,7 @@
 #
 # You should be in the sample/ directory when you do this,
 # as it hardwires the path to the files it needs to require.
-# This isn't necessary in the code you write once you've 
+# This isn't necessary in the code you write once you've
 # installed the package.
 #
 # For a better way of formatting code comment blocks (and more)

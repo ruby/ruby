@@ -5,7 +5,7 @@ module Test
         TESTUNIT_FILE_SEPARATORS = %r{[\\/:]}
         TESTUNIT_PREFIX = __FILE__.split(TESTUNIT_FILE_SEPARATORS)[0..-3]
         TESTUNIT_RB_FILE = /\.rb\Z/
-        
+
         def filter_backtrace(backtrace, prefix=nil)
           return ["No backtrace"] unless(backtrace)
           split_p = if(prefix)

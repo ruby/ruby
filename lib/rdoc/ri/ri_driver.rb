@@ -27,7 +27,7 @@ class  RiDriver
     @ri_reader = RI::RiReader.new(RI::RiCache.new(path))
     @display   = @options.displayer
   end
-  
+
   # Couldn't find documentation in +path+, so tell the user what to do
 
   def report_missing_documentation(path)
@@ -38,14 +38,14 @@ class  RiDriver
     STDERR.puts "\nWas rdoc run to create documentation?\n\n"
     RDoc::usage("Installing Documentation")
   end
-  
+
   ######################################################################
-  
+
   # If the list of matching methods contains exactly one entry, or
   # if it contains an entry that exactly matches the requested method,
   # then display that entry, otherwise display the list of
   # matching method names
-  
+
   def report_method_stuff(requested_method_name, methods)
     if methods.size == 1
       method = @ri_reader.get_method(methods[0])
@@ -60,14 +60,14 @@ class  RiDriver
       end
     end
   end
-  
+
   ######################################################################
-  
+
   def report_class_stuff(namespaces)
     if namespaces.size == 1
       klass = @ri_reader.get_class(namespaces[0])
       @display.display_class_info(klass, @ri_reader)
-    else 
+    else
 #      entries = namespaces.find_all {|m| m.full_name == requested_class_name}
 #      if entries.size == 1
 #        klass = @ri_reader.get_class(entries[0])
@@ -77,15 +77,15 @@ class  RiDriver
 #      end
     end
   end
-  
+
   ######################################################################
-  
-  
+
+
   def get_info_for(arg)
     desc = NameDescriptor.new(arg)
 
     namespaces = @ri_reader.top_level_namespace
-    
+
     for class_name in desc.class_names
       namespaces = @ri_reader.lookup_namespace_in(class_name, namespaces)
       if namespaces.empty?
@@ -103,7 +103,7 @@ class  RiDriver
     if desc.method_name.nil?
       report_class_stuff(namespaces)
     else
-      methods = @ri_reader.find_methods(desc.method_name, 
+      methods = @ri_reader.find_methods(desc.method_name,
                                         desc.is_class_method,
                                         namespaces)
 

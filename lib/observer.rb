@@ -7,7 +7,7 @@
 #
 # The Observer pattern, also known as Publish/Subscribe, provides a simple
 # mechanism for one object to inform a set of interested third-party objects
-# when its state changes. 
+# when its state changes.
 #
 # == Mechanism
 #
@@ -39,14 +39,14 @@
 # contracts are correct, nothing else can warn you.
 #
 #   require "observer"
-#   
+#
 #   class Ticker          ### Periodically fetch a stock price.
 #     include Observable
-#   
+#
 #     def initialize(symbol)
 #       @symbol = symbol
 #     end
-#   
+#
 #     def run
 #       lastPrice = nil
 #       loop do
@@ -67,14 +67,14 @@
 #       60 + rand(80)
 #     end
 #   end
-#   
+#
 #   class Warner          ### An abstract observer of Ticker objects.
 #     def initialize(ticker, limit)
 #       @limit = limit
 #       ticker.add_observer(self)
 #     end
 #   end
-#   
+#
 #   class WarnLow < Warner
 #     def update(time, price)       # callback for observer
 #       if price < @limit
@@ -82,7 +82,7 @@
 #       end
 #     end
 #   end
-#   
+#
 #   class WarnHigh < Warner
 #     def update(time, price)       # callback for observer
 #       if price > @limit
@@ -123,7 +123,7 @@ module Observable
   def add_observer(observer)
     @observer_peers = [] unless defined? @observer_peers
     unless observer.respond_to? :update
-      raise NoMethodError, "observer needs to respond to `update'" 
+      raise NoMethodError, "observer needs to respond to `update'"
     end
     @observer_peers.push observer
   end

@@ -11,7 +11,7 @@ module Generators
       CHMGenerator.new(options)
     end
 
-    
+
     def initialize(*args)
       super
       @op_name = @options.op_name || "rdoc"
@@ -28,7 +28,7 @@ module Generators
 	"\n\nYou can download a copy for free from:\n\n" <<
 	"    http://msdn.microsoft.com/library/default.asp?" <<
 	"url=/library/en-us/htmlhelp/html/hwMicrosoftHTMLHelpDownloads.asp\n\n"
-      
+
       exit 99
     end
 
@@ -60,7 +60,7 @@ module Generators
       end
 
       values['all_html_files'] = files
-      
+
       File.open(@project_name, "w") do |f|
         template.write_html_on(f, values)
       end
@@ -98,7 +98,7 @@ module Generators
       template = TemplatePage.new(RDoc::Page::CHM_INDEX)
       File.open("index.hhk", "w") do |f|
 	template.write_html_on(f, values)
-      end      
+      end
     end
 
     # Invoke the windows help compiler to compiler the project

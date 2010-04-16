@@ -121,7 +121,7 @@ module Net # :nodoc:
         return rbuf_consume(@rbuf.size)
       end
     end
-        
+
     def readline
       readuntil("\n").chop
     end
@@ -232,7 +232,7 @@ module Net # :nodoc:
       LOG_on()
       LOG "read message (#{read_bytes} bytes)"
     end
-  
+
     # *library private* (cannot handle 'break')
     def each_list_item
       while (str = readuntil("\r\n")) != ".\r\n"

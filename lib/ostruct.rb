@@ -12,13 +12,13 @@
 # OpenStruct allows you to create data objects and set arbitrary attributes.
 # For example:
 #
-#   require 'ostruct' 
+#   require 'ostruct'
 #
 #   record = OpenStruct.new
 #   record.name    = "John Smith"
 #   record.age     = 70
 #   record.pension = 300
-#   
+#
 #   puts record.name     # -> "John Smith"
 #   puts record.address  # -> nil
 #
@@ -41,7 +41,7 @@ class OpenStruct
   #
   #   p data        # -> <OpenStruct country="Australia" population=20000000>
   #
-  # By default, the resulting OpenStruct object will have no attributes. 
+  # By default, the resulting OpenStruct object will have no attributes.
   #
   def initialize(hash=nil)
     @table = {}
@@ -53,7 +53,7 @@ class OpenStruct
     end
   end
 
-  # Duplicate an OpenStruct object members. 
+  # Duplicate an OpenStruct object members.
   def initialize_copy(orig)
     super
     @table = @table.dup

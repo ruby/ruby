@@ -4,9 +4,9 @@ require 'test/unit/autorunner'
 module Test # :nodoc:
   #
   # = Test::Unit - Ruby Unit Testing Framework
-  # 
+  #
   # == Introduction
-  # 
+  #
   # Unit testing is making waves all over the place, largely due to the
   # fact that it is a core practice of XP. While XP is great, unit testing
   # has been around for a long time and has always been a good idea. One
@@ -18,19 +18,19 @@ module Test # :nodoc:
   # as possible, you slowly build up a wall of things that cannot break
   # without you immediately knowing about it. This is when unit testing
   # hits its peak usefulness.
-  # 
+  #
   # Enter Test::Unit, a framework for unit testing in Ruby, helping you to
   # design, debug and evaluate your code by making it easy to write and
   # have tests for it.
-  # 
-  # 
+  #
+  #
   # == Notes
-  # 
+  #
   # Test::Unit has grown out of and superceded Lapidary.
-  # 
-  # 
+  #
+  #
   # == Feedback
-  # 
+  #
   # I like (and do my best to practice) XP, so I value early releases,
   # user feedback, and clean, simple, expressive code. There is always
   # room for improvement in everything I do, and Test::Unit is no
@@ -41,68 +41,68 @@ module Test # :nodoc:
   # hear about any successes you have with Test::Unit, and any
   # documentation you might add will be greatly appreciated. My contact
   # info is below.
-  # 
-  # 
+  #
+  #
   # == Contact Information
-  # 
+  #
   # A lot of discussion happens about Ruby in general on the ruby-talk
   # mailing list (http://www.ruby-lang.org/en/ml.html), and you can ask
   # any questions you might have there. I monitor the list, as do many
   # other helpful Rubyists, and you're sure to get a quick answer. Of
   # course, you're also welcome to email me (Nathaniel Talbott) directly
   # at mailto:testunit@talbott.ws, and I'll do my best to help you out.
-  # 
-  # 
+  #
+  #
   # == Credits
-  # 
+  #
   # I'd like to thank...
-  # 
+  #
   # Matz, for a great language!
-  # 
+  #
   # Masaki Suketa, for his work on RubyUnit, which filled a vital need in
   # the Ruby world for a very long time. I'm also grateful for his help in
   # polishing Test::Unit and getting the RubyUnit compatibility layer
   # right. His graciousness in allowing Test::Unit to supercede RubyUnit
   # continues to be a challenge to me to be more willing to defer my own
   # rights.
-  # 
+  #
   # Ken McKinlay, for his interest and work on unit testing, and for his
   # willingness to dialog about it. He was also a great help in pointing
   # out some of the holes in the RubyUnit compatibility layer.
-  # 
+  #
   # Dave Thomas, for the original idea that led to the extremely simple
   # "require 'test/unit'", plus his code to improve it even more by
   # allowing the selection of tests from the command-line. Also, without
   # RDoc, the documentation for Test::Unit would stink a lot more than it
   # does now.
-  # 
+  #
   # Everyone who's helped out with bug reports, feature ideas,
   # encouragement to continue, etc. It's a real privilege to be a part of
   # the Ruby community.
-  # 
+  #
   # The guys at RoleModel Software, for putting up with me repeating, "But
   # this would be so much easier in Ruby!" whenever we're coding in Java.
-  # 
+  #
   # My Creator, for giving me life, and giving it more abundantly.
-  # 
-  # 
+  #
+  #
   # == License
-  # 
+  #
   # Test::Unit is copyright (c) 2000-2003 Nathaniel Talbott. It is free
   # software, and is distributed under the Ruby license. See the COPYING
   # file in the standard Ruby distribution for details.
-  # 
-  # 
+  #
+  #
   # == Warranty
-  # 
+  #
   # This software is provided "as is" and without any express or
   # implied warranties, including, without limitation, the implied
   # warranties of merchantibility and fitness for a particular
   # purpose.
-  # 
-  # 
+  #
+  #
   # == Author
-  # 
+  #
   # Nathaniel Talbott.
   # Copyright (c) 2000-2003, Nathaniel Talbott
   #
@@ -178,14 +178,14 @@ module Test # :nodoc:
   # commented out to indicate that they are completely optional):
   #
   #     require 'test/unit'
-  #     
+  #
   #     class TC_MyTest < Test::Unit::TestCase
   #       # def setup
   #       # end
-  #     
+  #
   #       # def teardown
   #       # end
-  #     
+  #
   #       def test_fail
   #         assert(false, 'Assertion was false.')
   #       end

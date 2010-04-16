@@ -12,7 +12,7 @@ class TestParse < Test::Unit::TestCase
     def start_accepting
       @res = []
       end
-    
+
     def end_accepting
       @res
     end
@@ -73,7 +73,7 @@ class TestParse < Test::Unit::TestCase
 
     if block != expected
       rows = (0...([expected.size, block.size].max)).collect{|i|
-        [expected[i]||"nil", block[i]||"nil"] 
+        [expected[i]||"nil", block[i]||"nil"]
       }
       printf "\n\n%35s %35s\n", "Expected", "Got"
       rows.each {|e,g| printf "%35s %35s\n", e.dump, g.dump }
@@ -348,7 +348,7 @@ class TestParse < Test::Unit::TestCase
                   "L0: Paragraph\nthe time"
                 ])
 
-    
+
   end
 
   def test_verbatim_merge
@@ -440,7 +440,7 @@ class TestParse < Test::Unit::TestCase
 
 
   end
- 
+
   def test_list_split
     str = %{\
        now is
@@ -469,29 +469,29 @@ class TestParse < Test::Unit::TestCase
 
   def test_headings
     str = "= heading one"
-    line_groups(str, 
+    line_groups(str,
                 [ "L0: Heading\nheading one"
                 ])
 
     str = "=== heading three"
-    line_groups(str, 
+    line_groups(str,
                 [ "L0: Heading\nheading three"
                 ])
 
     str = "text\n   === heading three"
-    line_groups(str, 
+    line_groups(str,
                 [ "L0: Paragraph\ntext",
                   "L0: Verbatim\n   === heading three\n"
                 ])
 
     str = "text\n   code\n   === heading three"
-    line_groups(str, 
+    line_groups(str,
                 [ "L0: Paragraph\ntext",
                   "L0: Verbatim\n   code\n   === heading three\n"
                 ])
 
     str = "text\n   code\n=== heading three"
-    line_groups(str, 
+    line_groups(str,
                 [ "L0: Paragraph\ntext",
                   "L0: Verbatim\n   code\n",
                   "L0: Heading\nheading three"
@@ -499,5 +499,5 @@ class TestParse < Test::Unit::TestCase
 
   end
 
-  
+
 end

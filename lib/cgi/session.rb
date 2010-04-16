@@ -13,7 +13,7 @@
 #
 # This file provides the +CGI::Session+ class, which provides session
 # support for CGI scripts.  A session is a sequence of HTTP requests
-# and responses linked together and associated with a single client.  
+# and responses linked together and associated with a single client.
 # Information associated with the session is stored
 # on the server between requests.  A session id is passed between client
 # and server with every request and response, transparently
@@ -28,7 +28,7 @@ require 'tmpdir'
 
 class CGI
 
-  # Class representing an HTTP session.  See documentation for the file 
+  # Class representing an HTTP session.  See documentation for the file
   # cgi/session.rb for an introduction to HTTP sessions.
   #
   # == Lifecycle
@@ -47,7 +47,7 @@ class CGI
   # == Setting and retrieving session data.
   #
   # The Session class associates data with a session as key-value pairs.
-  # This data can be set and retrieved by indexing the Session instance 
+  # This data can be set and retrieved by indexing the Session instance
   # using '[]', much the same as hashes (although other hash methods
   # are not supported).
   #
@@ -60,21 +60,21 @@ class CGI
   #
   # == Storing session state
   #
-  # The caller can specify what form of storage to use for the session's 
+  # The caller can specify what form of storage to use for the session's
   # data with the +database_manager+ option to CGI::Session::new.  The
   # following storage classes are provided as part of the standard library:
   #
-  # CGI::Session::FileStore:: stores data as plain text in a flat file.  Only 
-  #                           works with String data.  This is the default 
+  # CGI::Session::FileStore:: stores data as plain text in a flat file.  Only
+  #                           works with String data.  This is the default
   #                           storage type.
-  # CGI::Session::MemoryStore:: stores data in an in-memory hash.  The data 
-  #                             only persists for as long as the current ruby 
+  # CGI::Session::MemoryStore:: stores data in an in-memory hash.  The data
+  #                             only persists for as long as the current ruby
   #                             interpreter instance does.
   # CGI::Session::PStore:: stores data in Marshalled format.  Provided by
-  #                        cgi/session/pstore.rb.  Supports data of any type, 
+  #                        cgi/session/pstore.rb.  Supports data of any type,
   #                        and provides file-locking and transaction support.
   #
-  # Custom storage types can also be created by defining a class with 
+  # Custom storage types can also be created by defining a class with
   # the following methods:
   #
   #    new(session, options)
@@ -99,14 +99,14 @@ class CGI
   # The simplest way to do this is via cookies.  The CGI::Session class
   # provides transparent support for session id communication via cookies
   # if the client has cookies enabled.
-  # 
+  #
   # If the client has cookies disabled, the session id must be included
   # as a parameter of all requests sent by the client to the server.  The
   # CGI::Session class in conjunction with the CGI class will transparently
   # add the session id as a hidden input field to all forms generated
   # using the CGI#form() HTML generation method.  No built-in support is
   # provided for other mechanisms, such as URL re-writing.  The caller is
-  # responsible for extracting the session id from the session_id 
+  # responsible for extracting the session id from the session_id
   # attribute and manually encoding it in URLs and adding it as a hidden
   # input to HTML forms created by other mechanisms.  Also, session expiry
   # is not automatically handled.
@@ -124,10 +124,10 @@ class CGI
   #   session = CGI::Session.new(cgi,
   #       'database_manager' => CGI::Session::PStore,  # use PStore
   #       'session_key' => '_rb_sess_id',              # custom session key
-  #       'session_expires' => Time.now + 30 * 60,     # 30 minute timeout 
+  #       'session_expires' => Time.now + 30 * 60,     # 30 minute timeout
   #       'prefix' => 'pstore_sid_')                   # PStore option
   #   if cgi.has_key?('user_name') and cgi['user_name'] != ''
-  #       # coerce to String: cgi[] returns the 
+  #       # coerce to String: cgi[] returns the
   #       # string-like CGI::QueryExtension::Value
   #       session['user_name'] = cgi['user_name'].to_s
   #   elsif !session['user_name']
@@ -143,11 +143,11 @@ class CGI
   #   cgi = CGI.new("html4")
   #
   #   # We make sure to delete an old session if one exists,
-  #   # not just to free resources, but to prevent the session 
+  #   # not just to free resources, but to prevent the session
   #   # from being maliciously hijacked later on.
   #   begin
-  #       session = CGI::Session.new(cgi, 'new_session' => false)      
-  #       session.delete                 
+  #       session = CGI::Session.new(cgi, 'new_session' => false)
+  #       session.delete
   #   rescue ArgumentError  # if no old session
   #   end
   #   session = CGI::Session.new(cgi, 'new_session' => true)
@@ -172,7 +172,7 @@ class CGI
     # The session id is an MD5 hash based upon the time,
     # a random number, and a constant string.  This routine
     # is used internally for automatically generated
-    # session ids. 
+    # session ids.
     def create_new_id
       require 'securerandom'
       begin
@@ -205,7 +205,7 @@ class CGI
     #              it is retrieved from the +session_key+ parameter
     #              of the request, or automatically generated for
     #              a new session.
-    # new_session:: if true, force creation of a new session.  If not set, 
+    # new_session:: if true, force creation of a new session.  If not set,
     #               a new session is only created if none currently
     #               exists.  If false, a new session is never created,
     #               and if none currently exists and the +session_id+
@@ -220,7 +220,7 @@ class CGI
     # The following options are also recognised, but only apply if the
     # session id is stored in a cookie.
     #
-    # session_expires:: the time the current session expires, as a 
+    # session_expires:: the time the current session expires, as a
     #                   +Time+ object.  If not set, the session will terminate
     #                   when the user's browser is closed.
     # session_domain:: the hostname domain for which this session is valid.
@@ -232,10 +232,10 @@ class CGI
     # +option+ is also passed on to the session storage class initializer; see
     # the documentation for each session storage class for the options
     # they support.
-    #                  
+    #
     # The retrieved or created session is automatically added to +request+
     # as a cookie, and also to its +output_hidden+ table, which is used
-    # to add hidden input elements to forms.  
+    # to add hidden input elements to forms.
     #
     # *WARNING* the +output_hidden+
     # fields are surrounded by a <fieldset> tag in HTML 4 generation, which
@@ -322,11 +322,11 @@ class CGI
 
     # Store session data on the server.  For some session storage types,
     # this is a no-op.
-    def update  
+    def update
       @dbman.update
     end
 
-    # Store session data on the server and close the session storage.  
+    # Store session data on the server and close the session storage.
     # For some session storage types, this is a no-op.
     def close
       @dbman.close
@@ -358,7 +358,7 @@ class CGI
       # created.  The session id must only contain alphanumeric
       # characters; automatically generated session ids observe
       # this requirement.
-      # 
+      #
       # +option+ is a hash of options for the initializer.  The
       # following options are recognised:
       #
@@ -450,7 +450,7 @@ class CGI
     # In-memory session storage class.
     #
     # Implements session storage as a global in-memory hash.  Session
-    # data will only persist for as long as the ruby interpreter 
+    # data will only persist for as long as the ruby interpreter
     # instance does.
     class MemoryStore
       GLOBAL_HASH_TABLE = {} #:nodoc:

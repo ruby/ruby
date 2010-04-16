@@ -1,13 +1,13 @@
 # CSV -- module for generating/parsing CSV data.
 # Copyright (C) 2000-2004  NAKAMURA, Hiroshi <nakahiro@sarion.co.jp>.
-  
+
 # $Id$
-  
+
 # This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
 # redistribute it and/or modify it under the same terms of Ruby's license;
 # either the dual license version in 2003, or any later version.
-  
-  
+
+
 class CSV
   class IllegalFormatError < RuntimeError; end
 
@@ -97,7 +97,7 @@ class CSV
   def CSV.read(path, length = nil, offset = nil)
     CSV.parse(IO.read(path, length, offset))
   end
-  
+
   def CSV.readlines(path, rs = nil)
     reader = open_reader(path, 'r', ',', rs)
     begin
@@ -181,7 +181,7 @@ class CSV
     end
     result_str
   end
-  
+
   # Parse a line from string.  Consider using CSV.parse_line instead.
   # To parse lines in CSV string, see EXAMPLE below.
   #
@@ -239,7 +239,7 @@ class CSV
     end
     return parsed_cells, idx
   end
-  
+
   # Convert a line from cells data to string.  Consider using CSV.generate_line
   # instead.  To generate multi-row CSV string, see EXAMPLE below.
   #
@@ -299,7 +299,7 @@ class CSV
     end
     parsed_cells
   end
-  
+
   # Private class methods.
   class << self
   private
@@ -334,7 +334,7 @@ class CSV
         end
         nil
       else
-        writer = CSV::Writer.create(file, fs, rs) 
+        writer = CSV::Writer.create(file, fs, rs)
         writer.close_on_terminate
         writer
       end
@@ -480,7 +480,7 @@ class CSV
       last_idx = idx
       return :DT_EOS, idx, cell
     end
-  
+
     def generate_body(cell, out_dev, fs, rs)
       if cell.nil?
         # empty
@@ -498,7 +498,7 @@ class CSV
         end
       end
     end
-    
+
     def generate_separator(type, out_dev, fs, rs)
       case type
       when :DT_COLSEP
@@ -586,7 +586,7 @@ class CSV
       # Define if needed.
     end
   end
-  
+
 
   class StringReader < Reader
     def initialize(string, fs = ',', rs = nil)
@@ -800,7 +800,7 @@ private
     # returns char at idx if n == nil.
     # returns a partial string, from idx to (idx + n) if n != nil.  at EOF,
     # the string size could not equal to arg n.
-    def [](idx, n = nil) 
+    def [](idx, n = nil)
       if idx < 0
         return nil
       end
@@ -846,7 +846,7 @@ private
       end
     end
     alias get []
-  
+
     # drop a string from the stream.
     # returns dropped size.  at EOF, dropped size might not equals to arg n.
     # Once you drop the head of the stream, access to the dropped part via []
@@ -878,11 +878,11 @@ private
       end
       size_dropped
     end
-  
+
     def is_eos?
       return idx_is_eos?(0)
     end
-  
+
     # WARN: Do not instantiate this class directly.  Define your own class
     # which derives this class and define 'read' instance method.
     def initialize
@@ -893,13 +893,13 @@ private
       add_buf
       @cur_buf = @buf_tail_idx
     end
-  
+
   protected
 
     def terminate
       while (rel_buf); end
     end
-  
+
     # protected method 'read' must be defined in derived classes.
     # CAUTION: Returning a string which size is not equal to 'size' means
     # EnfOfStream.  When it is not at EOS, you must block the callee, try to
@@ -907,9 +907,9 @@ private
     def read(size) # raise EOFError
       raise NotImplementedError.new('Method read must be defined in a derived class.')
     end
-  
+
   private
-  
+
     def buf_size(idx)
       @buf_list[idx].size
     end
@@ -937,7 +937,7 @@ private
         true
       end
     end
-  
+
     def rel_buf
       if (@cur_buf < 0)
         return false
@@ -951,11 +951,11 @@ private
         return true
       end
     end
-  
+
     def idx_is_eos?(idx)
       (@is_eos and ((@cur_buf < 0) or (@cur_buf == @buf_tail_idx)))
     end
-  
+
     BufSize = 1024 * 8
   end
 
@@ -974,7 +974,7 @@ private
       @s = s
       super()
     end
-  
+
     def close
       terminate
     end
@@ -984,7 +984,7 @@ private
     def read(size)
       @s.read(size)
     end
- 
+
     def terminate
       super()
     end

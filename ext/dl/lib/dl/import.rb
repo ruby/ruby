@@ -149,7 +149,7 @@ module DL
 	  mname[0,1] = mname[0,1].downcase
 	end
 	@SYM[mname] = [sym,rdec,enc,dec]
-	
+
 	module_eval [
 	  "def #{mname}(*args)",
 	  "  sym,rdec,enc,dec  = @SYM['#{mname}']",

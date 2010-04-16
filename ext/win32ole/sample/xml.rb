@@ -1,11 +1,11 @@
-# 
+#
 # This file created by olegen.rb as following.
 #    ruby olegen.rb 'Microsoft XML, version 2.0' > xml.rb
-# 
+#
 require 'win32ole'
 require 'win32ole/property'
 
-# 
+#
 module IXMLDOMImplementation
   include WIN32OLE::VARIANT
   attr_reader :lastargs
@@ -343,7 +343,7 @@ module OLEtagDOMNodeType
   NODE_NOTATION = 12
 end
 
-# 
+#
 module IXMLDOMNodeList
   include WIN32OLE::VARIANT
   attr_reader :lastargs
@@ -380,7 +380,7 @@ module IXMLDOMNodeList
   end
 end
 
-# 
+#
 module IXMLDOMNamedNodeMap
   include WIN32OLE::VARIANT
   attr_reader :lastargs
@@ -464,7 +464,7 @@ module IXMLDOMNamedNodeMap
   end
 end
 
-# 
+#
 module IXMLDOMDocument
   include WIN32OLE::VARIANT
   attr_reader :lastargs
@@ -1040,7 +1040,7 @@ module IXMLDOMDocument
   end
 end
 
-# 
+#
 module IXMLDOMDocumentType
   include WIN32OLE::VARIANT
   attr_reader :lastargs
@@ -1368,7 +1368,7 @@ module IXMLDOMDocumentType
   end
 end
 
-# 
+#
 module IXMLDOMElement
   include WIN32OLE::VARIANT
   attr_reader :lastargs
@@ -1752,7 +1752,7 @@ module IXMLDOMElement
   end
 end
 
-# 
+#
 module IXMLDOMAttribute
   include WIN32OLE::VARIANT
   attr_reader :lastargs
@@ -2080,7 +2080,7 @@ module IXMLDOMAttribute
   end
 end
 
-# 
+#
 module IXMLDOMDocumentFragment
   include WIN32OLE::VARIANT
   attr_reader :lastargs
@@ -2384,7 +2384,7 @@ module IXMLDOMDocumentFragment
   end
 end
 
-# 
+#
 module IXMLDOMText
   include WIN32OLE::VARIANT
   attr_reader :lastargs
@@ -2771,7 +2771,7 @@ module IXMLDOMText
   end
 end
 
-# 
+#
 module IXMLDOMCharacterData
   include WIN32OLE::VARIANT
   attr_reader :lastargs
@@ -3149,7 +3149,7 @@ module IXMLDOMCharacterData
   end
 end
 
-# 
+#
 module IXMLDOMComment
   include WIN32OLE::VARIANT
   attr_reader :lastargs
@@ -3527,7 +3527,7 @@ module IXMLDOMComment
   end
 end
 
-# 
+#
 module IXMLDOMCDATASection
   include WIN32OLE::VARIANT
   attr_reader :lastargs
@@ -3914,7 +3914,7 @@ module IXMLDOMCDATASection
   end
 end
 
-# 
+#
 module IXMLDOMProcessingInstruction
   include WIN32OLE::VARIANT
   attr_reader :lastargs
@@ -4242,7 +4242,7 @@ module IXMLDOMProcessingInstruction
   end
 end
 
-# 
+#
 module IXMLDOMEntityReference
   include WIN32OLE::VARIANT
   attr_reader :lastargs
@@ -4608,7 +4608,7 @@ module IXMLDOMParseError
   end
 end
 
-# 
+#
 module IXMLDOMNotation
   include WIN32OLE::VARIANT
   attr_reader :lastargs
@@ -4928,7 +4928,7 @@ module IXMLDOMNotation
   end
 end
 
-# 
+#
 module IXMLDOMEntity
   include WIN32OLE::VARIANT
   attr_reader :lastargs

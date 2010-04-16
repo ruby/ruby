@@ -9,7 +9,7 @@
 # Documentation: Shugo Maeda, with RDoc conversion and overview by William
 # Webber.
 #
-# See Net::IMAP for documentation. 
+# See Net::IMAP for documentation.
 #
 
 
@@ -44,12 +44,12 @@ module Net
   # read-only access) #examine().  Once the client has successfully
   # selected a mailbox, they enter _selected_ state, and that
   # mailbox becomes the _current_ mailbox, on which mail-item
-  # related commands implicitly operate.  
+  # related commands implicitly operate.
   #
   # Messages have two sorts of identifiers: message sequence
-  # numbers, and UIDs.  
+  # numbers, and UIDs.
   #
-  # Message sequence numbers number messages within a mail box 
+  # Message sequence numbers number messages within a mail box
   # from 1 up to the number of items in the mail box.  If new
   # message arrives during a session, it receives a sequence
   # number equal to the new size of the mail box.  If messages
@@ -57,7 +57,7 @@ module Net
   # sequence numbers "shuffled down" to fill the gaps.
   #
   # UIDs, on the other hand, are permanently guaranteed not to
-  # identify another message within the same mailbox, even if 
+  # identify another message within the same mailbox, even if
   # the existing message is deleted.  UIDs are required to
   # be assigned in ascending (but not necessarily sequential)
   # order within a mailbox; this means that if a non-IMAP client
@@ -90,11 +90,11 @@ module Net
   #     imap.store(message_id, "+FLAGS", [:Deleted])
   #   end
   #   imap.expunge
-  # 
+  #
   # == Thread Safety
   #
   # Net::IMAP supports concurrent threads. For example,
-  # 
+  #
   #   imap = Net::IMAP.new("imap.foo.net", "imap2")
   #   imap.authenticate("cram-md5", "bar", "password")
   #   imap.select("inbox")
@@ -102,7 +102,7 @@ module Net
   #   search_result = imap.search(["BODY", "hello"])
   #   fetch_result = fetch_thread.value
   #   imap.disconnect
-  # 
+  #
   # This script invokes the FETCH command and the SEARCH command concurrently.
   #
   # == Errors
@@ -112,9 +112,9 @@ module Net
   #
   # NO:: the attempted command could not be successfully completed.  For
   #      instance, the username/password used for logging in are incorrect;
-  #      the selected mailbox does not exists; etc.  
+  #      the selected mailbox does not exists; etc.
   #
-  # BAD:: the request from the client does not follow the server's 
+  # BAD:: the request from the client does not follow the server's
   #       understanding of the IMAP protocol.  This includes attempting
   #       commands from the wrong client state; for instance, attempting
   #       to perform a SEARCH command without having SELECTed a current
@@ -146,8 +146,8 @@ module Net
   #
   # Finally, a Net::IMAP::DataFormatError is thrown if low-level data
   # is found to be in an incorrect format (for instance, when converting
-  # between UTF-8 and UTF-16), and Net::IMAP::ResponseParseError is 
-  # thrown if a server response is non-parseable. 
+  # between UTF-8 and UTF-16), and Net::IMAP::ResponseParseError is
+  # thrown if a server response is non-parseable.
   #
   #
   # == References
@@ -283,7 +283,7 @@ module Net
     # is the type of authentication this authenticator supports
     # (for instance, "LOGIN").  The +authenticator+ is an object
     # which defines a process() method to handle authentication with
-    # the server.  See Net::IMAP::LoginAuthenticator and 
+    # the server.  See Net::IMAP::LoginAuthenticator and
     # Net::IMAP::CramMD5Authenticator for examples.
     #
     # If +auth_type+ refers to an existing authenticator, it will be
@@ -317,7 +317,7 @@ module Net
     #
     # Note that the Net::IMAP class does not modify its
     # behaviour according to the capabilities of the server;
-    # it is up to the user of the class to ensure that 
+    # it is up to the user of the class to ensure that
     # a certain capability is supported by a server before
     # using it.
     def capability
@@ -343,7 +343,7 @@ module Net
     # the authentication mechanism to be used. Currently Net::IMAP
     # supports authentication mechanisms:
     #
-    #   LOGIN:: login using cleartext user and password. 
+    #   LOGIN:: login using cleartext user and password.
     #   CRAM-MD5:: login with cleartext user and encrypted password
     #              (see [RFC-2195] for a full description).  This
     #              mechanism requires that the server have the user's
@@ -391,7 +391,7 @@ module Net
     end
 
     # Sends a SELECT command to select a +mailbox+ so that messages
-    # in the +mailbox+ can be accessed. 
+    # in the +mailbox+ can be accessed.
     #
     # After you have selected a mailbox, you may retrieve the
     # number of items in that mailbox from @responses["EXISTS"][-1],
@@ -442,7 +442,7 @@ module Net
     # Sends a RENAME command to change the name of the +mailbox+ to
     # +newname+.
     #
-    # A Net::IMAP::NoResponseError is raised if a mailbox with the 
+    # A Net::IMAP::NoResponseError is raised if a mailbox with the
     # name +mailbox+ cannot be renamed to +newname+ for whatever
     # reason; for instance, because +mailbox+ does not exist, or
     # because there is already a mailbox with the name +newname+.
@@ -489,8 +489,8 @@ module Net
     #   imap.create("foo/bar")
     #   imap.create("foo/baz")
     #   p imap.list("", "foo/%")
-    #   #=> [#<Net::IMAP::MailboxList attr=[:Noselect], delim="/", name="foo/">, \\ 
-    #        #<Net::IMAP::MailboxList attr=[:Noinferiors, :Marked], delim="/", name="foo/bar">, \\ 
+    #   #=> [#<Net::IMAP::MailboxList attr=[:Noselect], delim="/", name="foo/">, \\
+    #        #<Net::IMAP::MailboxList attr=[:Noinferiors, :Marked], delim="/", name="foo/bar">, \\
     #        #<Net::IMAP::MailboxList attr=[:Noinferiors], delim="/", name="foo/baz">]
     def list(refname, mailbox)
       synchronize do
@@ -543,7 +543,7 @@ module Net
     # then that user will be stripped of any rights to that mailbox.
     # The IMAP ACL commands are described in [RFC-2086].
     def setacl(mailbox, user, rights)
-      if rights.nil? 
+      if rights.nil?
         send_command("SETACL", mailbox, user, "")
       else
         send_command("SETACL", mailbox, user, rights)
@@ -562,7 +562,7 @@ module Net
 
     # Sends a LSUB command, and returns a subset of names from the set
     # of names that the user has declared as being "active" or
-    # "subscribed".  +refname+ and +mailbox+ are interpreted as 
+    # "subscribed".  +refname+ and +mailbox+ are interpreted as
     # for #list().
     # The return value is an array of +Net::IMAP::MailboxList+.
     def lsub(refname, mailbox)
@@ -585,7 +585,7 @@ module Net
     #   p imap.status("inbox", ["MESSAGES", "RECENT"])
     #   #=> {"RECENT"=>0, "MESSAGES"=>44}
     #
-    # A Net::IMAP::NoResponseError is raised if status values 
+    # A Net::IMAP::NoResponseError is raised if status values
     # for +mailbox+ cannot be returned, for instance because it
     # does not exist.
     def status(mailbox, attr)
@@ -596,9 +596,9 @@ module Net
     end
 
     # Sends a APPEND command to append the +message+ to the end of
-    # the +mailbox+. The optional +flags+ argument is an array of 
+    # the +mailbox+. The optional +flags+ argument is an array of
     # flags to initially passing to the new message.  The optional
-    # +date_time+ argument specifies the creation time to assign to the 
+    # +date_time+ argument specifies the creation time to assign to the
     # new message; it defaults to the current time.
     # For example:
     #
@@ -606,7 +606,7 @@ module Net
     #   Subject: hello
     #   From: shugo@ruby-lang.org
     #   To: shugo@ruby-lang.org
-    #   
+    #
     #   hello world
     #   EOF
     #
@@ -625,7 +625,7 @@ module Net
 
     # Sends a CHECK command to request a checkpoint of the currently
     # selected mailbox.  This performs implementation-specific
-    # housekeeping, for instance, reconciling the mailbox's 
+    # housekeeping, for instance, reconciling the mailbox's
     # in-memory and on-disk state.
     def check
       send_command("CHECK")
@@ -649,8 +649,8 @@ module Net
 
     # Sends a SEARCH command to search the mailbox for messages that
     # match the given searching criteria, and returns message sequence
-    # numbers.  +keys+ can either be a string holding the entire 
-    # search string, or a single-dimension array of search keywords and 
+    # numbers.  +keys+ can either be a string holding the entire
+    # search string, or a single-dimension array of search keywords and
     # arguments.  The following are some common search criteria;
     # see [IMAP] section 6.4.4 for a full list.
     #
@@ -674,7 +674,7 @@ module Net
     #
     # OR <search-key> <search-key>:: "or" two search keys together.
     #
-    # ON <date>:: messages with an internal date exactly equal to <date>, 
+    # ON <date>:: messages with an internal date exactly equal to <date>,
     #             which has a format similar to 8-Aug-2002.
     #
     # SINCE <date>:: messages with an internal date on or after <date>.
@@ -682,7 +682,7 @@ module Net
     # SUBJECT <string>:: messages with <string> in their subject.
     #
     # TO <string>:: messages with <string> in their TO field.
-    # 
+    #
     # For example:
     #
     #   p imap.search(["SUBJECT", "hello", "NOT", "NEW"])
@@ -705,8 +705,8 @@ module Net
     # The return value is an array of Net::IMAP::FetchData. For example:
     #
     #   p imap.fetch(6..8, "UID")
-    #   #=> [#<Net::IMAP::FetchData seqno=6, attr={"UID"=>98}>, \\ 
-    #        #<Net::IMAP::FetchData seqno=7, attr={"UID"=>99}>, \\ 
+    #   #=> [#<Net::IMAP::FetchData seqno=6, attr={"UID"=>98}>, \\
+    #        #<Net::IMAP::FetchData seqno=7, attr={"UID"=>99}>, \\
     #        #<Net::IMAP::FetchData seqno=8, attr={"UID"=>100}>]
     #   p imap.fetch(6, "BODY[HEADER.FIELDS (SUBJECT)]")
     #   #=> [#<Net::IMAP::FetchData seqno=6, attr={"BODY[HEADER.FIELDS (SUBJECT)]"=>"Subject: test\r\n\r\n"}>]
@@ -729,9 +729,9 @@ module Net
     end
 
     # Sends a STORE command to alter data associated with messages
-    # in the mailbox, in particular their flags. The +set+ parameter 
-    # is a number or an array of numbers or a Range object. Each number 
-    # is a message sequence number.  +attr+ is the name of a data item 
+    # in the mailbox, in particular their flags. The +set+ parameter
+    # is a number or an array of numbers or a Range object. Each number
+    # is a message sequence number.  +attr+ is the name of a data item
     # to store: 'FLAGS' means to replace the message's flag list
     # with the provided one; '+FLAGS' means to add the provided flags;
     # and '-FLAGS' means to remove them.  +flags+ is a list of flags.
@@ -739,8 +739,8 @@ module Net
     # The return value is an array of Net::IMAP::FetchData. For example:
     #
     #   p imap.store(6..8, "+FLAGS", [:Deleted])
-    #   #=> [#<Net::IMAP::FetchData seqno=6, attr={"FLAGS"=>[:Seen, :Deleted]}>, \\ 
-    #        #<Net::IMAP::FetchData seqno=7, attr={"FLAGS"=>[:Seen, :Deleted]}>, \\  
+    #   #=> [#<Net::IMAP::FetchData seqno=6, attr={"FLAGS"=>[:Seen, :Deleted]}>, \\
+    #        #<Net::IMAP::FetchData seqno=7, attr={"FLAGS"=>[:Seen, :Deleted]}>, \\
     #        #<Net::IMAP::FetchData seqno=8, attr={"FLAGS"=>[:Seen, :Deleted]}>]
     def store(set, attr, flags)
       return store_internal("STORE", set, attr, flags)
@@ -782,9 +782,9 @@ module Net
       return sort_internal("UID SORT", sort_keys, search_keys, charset)
     end
 
-    # Adds a response handler. For example, to detect when 
+    # Adds a response handler. For example, to detect when
     # the server sends us a new EXISTS response (which normally
-    # indicates new messages being added to the mail box), 
+    # indicates new messages being added to the mail box),
     # you could add the following handler after selecting the
     # mailbox.
     #
@@ -820,7 +820,7 @@ module Net
       return thread_internal("THREAD", algorithm, search_keys, charset)
     end
 
-    # As for #thread(), but returns unique identifiers instead of 
+    # As for #thread(), but returns unique identifiers instead of
     # message sequence numbers.
     def uid_thread(algorithm, search_keys, charset)
       return thread_internal("UID THREAD", algorithm, search_keys, charset)
@@ -871,7 +871,7 @@ module Net
     @@max_flag_count = 10000
 
     # Creates a new Net::IMAP object and connects it to the specified
-    # +port+ (143 by default) on the named +host+.  If +usessl+ is true, 
+    # +port+ (143 by default) on the named +host+.  If +usessl+ is true,
     # then an attempt will
     # be made to use SSL (now TLS) to connect to the server.  For this
     # to work OpenSSL [OSSL] and the Ruby OpenSSL [RSSL]
@@ -887,7 +887,7 @@ module Net
     #                    being dropped by an intervening firewall).
     # Errno::ENETUNREACH:: there is no route to that network.
     # SocketError:: hostname not known or other socket error.
-    # Net::IMAP::ByeResponseError:: we connected to the host, but they 
+    # Net::IMAP::ByeResponseError:: we connected to the host, but they
     #                               immediately said goodbye to us.
     def initialize(host, port = PORT, usessl = false, certs = nil, verify = false)
       super()
@@ -909,7 +909,7 @@ module Net
         context.ca_path = certs if certs && FileTest::directory?(certs)
         context.verify_mode = VERIFY_PEER if verify
         if defined?(VerifyCallbackProc)
-          context.verify_callback = VerifyCallbackProc 
+          context.verify_callback = VerifyCallbackProc
         end
         @sock = SSLSocket.new(@sock, context)
         @sock.connect   # start ssl session.
@@ -1055,7 +1055,7 @@ module Net
       @tagno += 1
       return format("%s%04d", @tag_prefix, @tagno)
     end
-    
+
     def put_string(str)
       @sock.print(str)
       if @@debug
@@ -1104,7 +1104,7 @@ module Net
         put_string(str)
       end
     end
-    
+
     def send_quoted_string(str)
       put_string('"' + str.gsub(/["\\]/n, "\\\\\\&") + '"')
     end
@@ -1447,109 +1447,109 @@ module Net
     end
 
     # Net::IMAP::ContinuationRequest represents command continuation requests.
-    # 
+    #
     # The command continuation request response is indicated by a "+" token
     # instead of a tag.  This form of response indicates that the server is
     # ready to accept the continuation of a command from the client.  The
     # remainder of this response is a line of text.
-    # 
+    #
     #   continue_req    ::= "+" SPACE (resp_text / base64)
-    # 
+    #
     # ==== Fields:
-    # 
+    #
     # data:: Returns the data (Net::IMAP::ResponseText).
-    # 
+    #
     # raw_data:: Returns the raw data string.
     ContinuationRequest = Struct.new(:data, :raw_data)
 
     # Net::IMAP::UntaggedResponse represents untagged responses.
-    # 
+    #
     # Data transmitted by the server to the client and status responses
     # that do not indicate command completion are prefixed with the token
     # "*", and are called untagged responses.
-    # 
+    #
     #   response_data   ::= "*" SPACE (resp_cond_state / resp_cond_bye /
     #                       mailbox_data / message_data / capability_data)
-    # 
+    #
     # ==== Fields:
-    # 
+    #
     # name:: Returns the name such as "FLAGS", "LIST", "FETCH"....
-    # 
+    #
     # data:: Returns the data such as an array of flag symbols,
     #         a ((<Net::IMAP::MailboxList>)) object....
-    # 
+    #
     # raw_data:: Returns the raw data string.
     UntaggedResponse = Struct.new(:name, :data, :raw_data)
-     
+
     # Net::IMAP::TaggedResponse represents tagged responses.
-    # 
+    #
     # The server completion result response indicates the success or
     # failure of the operation.  It is tagged with the same tag as the
     # client command which began the operation.
-    # 
+    #
     #   response_tagged ::= tag SPACE resp_cond_state CRLF
-    #   
+    #
     #   tag             ::= 1*<any ATOM_CHAR except "+">
-    #   
+    #
     #   resp_cond_state ::= ("OK" / "NO" / "BAD") SPACE resp_text
-    # 
+    #
     # ==== Fields:
-    # 
+    #
     # tag:: Returns the tag.
-    # 
+    #
     # name:: Returns the name. the name is one of "OK", "NO", "BAD".
-    # 
+    #
     # data:: Returns the data. See ((<Net::IMAP::ResponseText>)).
-    # 
+    #
     # raw_data:: Returns the raw data string.
     #
     TaggedResponse = Struct.new(:tag, :name, :data, :raw_data)
-     
+
     # Net::IMAP::ResponseText represents texts of responses.
     # The text may be prefixed by the response code.
-    # 
+    #
     #   resp_text       ::= ["[" resp_text_code "]" SPACE] (text_mime2 / text)
     #                       ;; text SHOULD NOT begin with "[" or "="
-    # 
+    #
     # ==== Fields:
-    # 
+    #
     # code:: Returns the response code. See ((<Net::IMAP::ResponseCode>)).
-    #       
+    #
     # text:: Returns the text.
-    # 
+    #
     ResponseText = Struct.new(:code, :text)
 
-    # 
+    #
     # Net::IMAP::ResponseCode represents response codes.
-    # 
+    #
     #   resp_text_code  ::= "ALERT" / "PARSE" /
     #                       "PERMANENTFLAGS" SPACE "(" #(flag / "\*") ")" /
     #                       "READ-ONLY" / "READ-WRITE" / "TRYCREATE" /
     #                       "UIDVALIDITY" SPACE nz_number /
     #                       "UNSEEN" SPACE nz_number /
     #                       atom [SPACE 1*<any TEXT_CHAR except "]">]
-    # 
+    #
     # ==== Fields:
-    # 
+    #
     # name:: Returns the name such as "ALERT", "PERMANENTFLAGS", "UIDVALIDITY"....
-    # 
+    #
     # data:: Returns the data if it exists.
     #
     ResponseCode = Struct.new(:name, :data)
 
     # Net::IMAP::MailboxList represents contents of the LIST response.
-    # 
+    #
     #   mailbox_list    ::= "(" #("\Marked" / "\Noinferiors" /
     #                       "\Noselect" / "\Unmarked" / flag_extension) ")"
     #                       SPACE (<"> QUOTED_CHAR <"> / nil) SPACE mailbox
-    # 
+    #
     # ==== Fields:
-    # 
+    #
     # attr:: Returns the name attributes. Each name attribute is a symbol
     #        capitalized by String#capitalize, such as :Noselect (not :NoSelect).
-    # 
+    #
     # delim:: Returns the hierarchy delimiter
-    # 
+    #
     # name:: Returns the mailbox name.
     #
     MailboxList = Struct.new(:attr, :delim, :name)
@@ -1558,78 +1558,78 @@ module Net
     # This object can also be a response to GETQUOTAROOT.  In the syntax
     # specification below, the delimiter used with the "#" construct is a
     # single space (SPACE).
-    # 
+    #
     #    quota_list      ::= "(" #quota_resource ")"
-    # 
+    #
     #    quota_resource  ::= atom SPACE number SPACE number
-    # 
+    #
     #    quota_response  ::= "QUOTA" SPACE astring SPACE quota_list
-    # 
+    #
     # ==== Fields:
-    # 
+    #
     # mailbox:: The mailbox with the associated quota.
-    # 
+    #
     # usage:: Current storage usage of mailbox.
-    # 
+    #
     # quota:: Quota limit imposed on mailbox.
     #
     MailboxQuota = Struct.new(:mailbox, :usage, :quota)
 
     # Net::IMAP::MailboxQuotaRoot represents part of the GETQUOTAROOT
     # response. (GETQUOTAROOT can also return Net::IMAP::MailboxQuota.)
-    # 
+    #
     #    quotaroot_response ::= "QUOTAROOT" SPACE astring *(SPACE astring)
-    # 
+    #
     # ==== Fields:
-    # 
+    #
     # mailbox:: The mailbox with the associated quota.
-    # 
+    #
     # quotaroots:: Zero or more quotaroots that effect the quota on the
     #              specified mailbox.
     #
     MailboxQuotaRoot = Struct.new(:mailbox, :quotaroots)
 
     # Net::IMAP::MailboxACLItem represents response from GETACL.
-    # 
+    #
     #    acl_data        ::= "ACL" SPACE mailbox *(SPACE identifier SPACE rights)
-    # 
+    #
     #    identifier      ::= astring
-    # 
+    #
     #    rights          ::= astring
-    # 
+    #
     # ==== Fields:
-    # 
+    #
     # user:: Login name that has certain rights to the mailbox
     #        that was specified with the getacl command.
-    # 
+    #
     # rights:: The access rights the indicated user has to the
     #          mailbox.
     #
     MailboxACLItem = Struct.new(:user, :rights)
 
     # Net::IMAP::StatusData represents contents of the STATUS response.
-    # 
+    #
     # ==== Fields:
-    # 
+    #
     # mailbox:: Returns the mailbox name.
-    # 
+    #
     # attr:: Returns a hash. Each key is one of "MESSAGES", "RECENT", "UIDNEXT",
     #        "UIDVALIDITY", "UNSEEN". Each value is a number.
-    # 
+    #
     StatusData = Struct.new(:mailbox, :attr)
 
     # Net::IMAP::FetchData represents contents of the FETCH response.
-    # 
+    #
     # ==== Fields:
-    # 
+    #
     # seqno:: Returns the message sequence number.
     #         (Note: not the unique identifier, even for the UID command response.)
-    # 
+    #
     # attr:: Returns a hash. Each key is a data item name, and each value is
     #        its value.
-    # 
+    #
     #        The current data items are:
-    # 
+    #
     #        [BODY]
     #           A form of BODYSTRUCTURE without extension data.
     #        [BODY[<section>]<<origin_octet>>]
@@ -1656,67 +1656,67 @@ module Net
     #           Equivalent to BODY[TEXT].
     #        [UID]
     #           A number expressing the unique identifier of the message.
-    # 
+    #
     FetchData = Struct.new(:seqno, :attr)
 
     # Net::IMAP::Envelope represents envelope structures of messages.
-    # 
+    #
     # ==== Fields:
-    # 
+    #
     # date:: Returns a string that represents the date.
-    # 
+    #
     # subject:: Returns a string that represents the subject.
-    # 
+    #
     # from:: Returns an array of Net::IMAP::Address that represents the from.
-    # 
+    #
     # sender:: Returns an array of Net::IMAP::Address that represents the sender.
-    # 
+    #
     # reply_to:: Returns an array of Net::IMAP::Address that represents the reply-to.
-    # 
+    #
     # to:: Returns an array of Net::IMAP::Address that represents the to.
-    # 
+    #
     # cc:: Returns an array of Net::IMAP::Address that represents the cc.
-    # 
+    #
     # bcc:: Returns an array of Net::IMAP::Address that represents the bcc.
-    # 
+    #
     # in_reply_to:: Returns a string that represents the in-reply-to.
-    # 
+    #
     # message_id:: Returns a string that represents the message-id.
-    # 
+    #
     Envelope = Struct.new(:date, :subject, :from, :sender, :reply_to,
                           :to, :cc, :bcc, :in_reply_to, :message_id)
 
-    # 
+    #
     # Net::IMAP::Address represents electronic mail addresses.
-    # 
+    #
     # ==== Fields:
-    # 
+    #
     # name:: Returns the phrase from [RFC-822] mailbox.
-    # 
+    #
     # route:: Returns the route from [RFC-822] route-addr.
-    # 
+    #
     # mailbox:: nil indicates end of [RFC-822] group.
     #           If non-nil and host is nil, returns [RFC-822] group name.
     #           Otherwise, returns [RFC-822] local-part
-    # 
+    #
     # host:: nil indicates [RFC-822] group syntax.
     #        Otherwise, returns [RFC-822] domain name.
     #
     Address = Struct.new(:name, :route, :mailbox, :host)
 
-    # 
+    #
     # Net::IMAP::ContentDisposition represents Content-Disposition fields.
-    # 
+    #
     # ==== Fields:
-    # 
+    #
     # dsp_type:: Returns the disposition type.
-    # 
+    #
     # param:: Returns a hash that represents parameters of the Content-Disposition
     #         field.
-    # 
+    #
     ContentDisposition = Struct.new(:dsp_type, :param)
 
-    # Net::IMAP::ThreadMember represents a thread-node returned 
+    # Net::IMAP::ThreadMember represents a thread-node returned
     # by Net::IMAP#thread
     #
     # ==== Fields:
@@ -1729,37 +1729,37 @@ module Net
     ThreadMember = Struct.new(:seqno, :children)
 
     # Net::IMAP::BodyTypeBasic represents basic body structures of messages.
-    # 
+    #
     # ==== Fields:
-    # 
+    #
     # media_type:: Returns the content media type name as defined in [MIME-IMB].
-    # 
+    #
     # subtype:: Returns the content subtype name as defined in [MIME-IMB].
-    # 
+    #
     # param:: Returns a hash that represents parameters as defined in [MIME-IMB].
-    # 
+    #
     # content_id:: Returns a string giving the content id as defined in [MIME-IMB].
-    # 
+    #
     # description:: Returns a string giving the content description as defined in
     #               [MIME-IMB].
-    # 
+    #
     # encoding:: Returns a string giving the content transfer encoding as defined in
     #            [MIME-IMB].
-    # 
+    #
     # size:: Returns a number giving the size of the body in octets.
-    # 
+    #
     # md5:: Returns a string giving the body MD5 value as defined in [MD5].
-    # 
+    #
     # disposition:: Returns a Net::IMAP::ContentDisposition object giving
     #               the content disposition.
-    # 
+    #
     # language:: Returns a string or an array of strings giving the body
     #            language value as defined in [LANGUAGE-TAGS].
-    # 
+    #
     # extension:: Returns extension data.
-    # 
+    #
     # multipart?:: Returns false.
-    # 
+    #
     class BodyTypeBasic < Struct.new(:media_type, :subtype,
                                      :param, :content_id,
                                      :description, :encoding, :size,
@@ -1770,7 +1770,7 @@ module Net
       end
 
       # Obsolete: use +subtype+ instead.  Calling this will
-      # generate a warning message to +stderr+, then return 
+      # generate a warning message to +stderr+, then return
       # the value of +subtype+.
       def media_subtype
         $stderr.printf("warning: media_subtype is obsolete.\n")
@@ -1780,13 +1780,13 @@ module Net
     end
 
     # Net::IMAP::BodyTypeText represents TEXT body structures of messages.
-    # 
+    #
     # ==== Fields:
-    # 
+    #
     # lines:: Returns the size of the body in text lines.
-    # 
+    #
     # And Net::IMAP::BodyTypeText has all fields of Net::IMAP::BodyTypeBasic.
-    # 
+    #
     class BodyTypeText < Struct.new(:media_type, :subtype,
                                     :param, :content_id,
                                     :description, :encoding, :size,
@@ -1798,7 +1798,7 @@ module Net
       end
 
       # Obsolete: use +subtype+ instead.  Calling this will
-      # generate a warning message to +stderr+, then return 
+      # generate a warning message to +stderr+, then return
       # the value of +subtype+.
       def media_subtype
         $stderr.printf("warning: media_subtype is obsolete.\n")
@@ -1808,13 +1808,13 @@ module Net
     end
 
     # Net::IMAP::BodyTypeMessage represents MESSAGE/RFC822 body structures of messages.
-    # 
+    #
     # ==== Fields:
-    # 
+    #
     # envelope:: Returns a Net::IMAP::Envelope giving the envelope structure.
-    # 
+    #
     # body:: Returns an object giving the body structure.
-    # 
+    #
     # And Net::IMAP::BodyTypeMessage has all methods of Net::IMAP::BodyTypeText.
     #
     class BodyTypeMessage < Struct.new(:media_type, :subtype,
@@ -1828,7 +1828,7 @@ module Net
       end
 
       # Obsolete: use +subtype+ instead.  Calling this will
-      # generate a warning message to +stderr+, then return 
+      # generate a warning message to +stderr+, then return
       # the value of +subtype+.
       def media_subtype
         $stderr.printf("warning: media_subtype is obsolete.\n")
@@ -1837,29 +1837,29 @@ module Net
       end
     end
 
-    # Net::IMAP::BodyTypeMultipart represents multipart body structures 
+    # Net::IMAP::BodyTypeMultipart represents multipart body structures
     # of messages.
-    # 
+    #
     # ==== Fields:
-    # 
+    #
     # media_type:: Returns the content media type name as defined in [MIME-IMB].
-    # 
+    #
     # subtype:: Returns the content subtype name as defined in [MIME-IMB].
-    # 
+    #
     # parts:: Returns multiple parts.
-    # 
+    #
     # param:: Returns a hash that represents parameters as defined in [MIME-IMB].
-    # 
+    #
     # disposition:: Returns a Net::IMAP::ContentDisposition object giving
     #               the content disposition.
-    # 
+    #
     # language:: Returns a string or an array of strings giving the body
     #            language value as defined in [LANGUAGE-TAGS].
-    # 
+    #
     # extension:: Returns extension data.
-    # 
+    #
     # multipart?:: Returns true.
-    # 
+    #
     class BodyTypeMultipart < Struct.new(:media_type, :subtype,
                                          :parts,
                                          :param, :disposition, :language,
@@ -1869,7 +1869,7 @@ module Net
       end
 
       # Obsolete: use +subtype+ instead.  Calling this will
-      # generate a warning message to +stderr+, then return 
+      # generate a warning message to +stderr+, then return
       # the value of +subtype+.
       def media_subtype
         $stderr.printf("warning: media_subtype is obsolete.\n")
@@ -2678,35 +2678,35 @@ module Net
       def thread_branch(token)
         rootmember = nil
         lastmember = nil
-        
+
         while true
           shift_token    # ignore first T_LPAR
           token = lookahead
-          
+
           case token.symbol
           when T_NUMBER
             # new member
             newmember = ThreadMember.new(number, [])
             if rootmember.nil?
               rootmember = newmember
-            else    
+            else
               lastmember.children << newmember
-            end     
+            end
             lastmember = newmember
-          when T_SPACE 
-            # do nothing 
+          when T_SPACE
+            # do nothing
           when T_LPAR
             if rootmember.nil?
               # dummy member
               lastmember = rootmember = ThreadMember.new(nil, [])
-            end     
-            
+            end
+
             lastmember.children << thread_branch(token)
           when T_RPAR
-            break   
-          end     
+            break
+          end
         end
-        
+
         return rootmember
       end
 
@@ -3246,7 +3246,7 @@ module Net
     class BadResponseError < ResponseError
     end
 
-    # Error raised upon a "BYE" response from the server, indicating 
+    # Error raised upon a "BYE" response from the server, indicating
     # that the client is not being allowed to login, or has been timed
     # out due to inactivity.
     class ByeResponseError < ResponseError
@@ -3336,7 +3336,7 @@ EOF
     exit(1)
   end
   $port ||= $ssl ? 993 : 143
-    
+
   imap = Net::IMAP.new($host, $port, $ssl)
   begin
     password = get_password

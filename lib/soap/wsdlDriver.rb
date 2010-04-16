@@ -28,7 +28,7 @@ class WSDLDriverFactory
     @wsdl = import(wsdl)
     @methoddefcreator = WSDL::SOAP::MethodDefCreator.new(@wsdl)
   end
-  
+
   def inspect
     "#<#{self.class}:#{@wsdl.name}>"
   end

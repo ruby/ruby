@@ -19,7 +19,7 @@ class TC_Thread < Test::Unit::TestCase
           condvar.signal
         end
       end
-      
+
       result << 0
       condvar.wait(mutex)
       result << 2

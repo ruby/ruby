@@ -486,7 +486,7 @@ class TestLoggerApplication < Test::Unit::TestCase
   def test_start
     @app.set_log(@filename)
     @app.level = Logger::UNKNOWN
-    @app.start # logs FATAL log 
+    @app.start # logs FATAL log
     assert_equal(1, File.read(@filename).split(/\n/).size)
   end
 

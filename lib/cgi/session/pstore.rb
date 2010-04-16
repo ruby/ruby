@@ -2,7 +2,7 @@
 # cgi/session/pstore.rb - persistent storage of marshalled session data
 #
 # Documentation: William Webber (william@williamwebber.com)
-# 
+#
 # == Overview
 #
 # This file provides the CGI::Session::PStore class, which builds
@@ -29,7 +29,7 @@ class CGI
       # created.  The session id must only contain alphanumeric
       # characters; automatically generated session ids observe
       # this requirement.
-      # 
+      #
       # +option+ is a hash of options for the initializer.  The
       # following options are recognised:
       #
@@ -77,7 +77,7 @@ class CGI
       end
 
       # Save session state to the session's PStore file.
-      def update 
+      def update
 	@p.transaction do
 	    @p['hash'] = @hash
 	end

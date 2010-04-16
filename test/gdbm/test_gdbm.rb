@@ -673,7 +673,7 @@ if defined? GDBM
     def test_newdb_open
       GDBM.open("#{TMPROOT}/a.dbm") {|dbm|
         dbm["k"] = "v"
-      } 
+      }
       v = GDBM.open("#{TMPROOT}/a.dbm", nil, GDBM::NEWDB) {|d|
         assert_equal(0, d.length)
         assert_nil(d["k"])

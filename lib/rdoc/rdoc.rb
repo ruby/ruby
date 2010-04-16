@@ -1,6 +1,6 @@
 # See README.
 #
- 
+
 
 VERSION_STRING = %{RDoc V1.0.1 - 20041108}
 
@@ -62,17 +62,17 @@ module RDoc
   #    rdoc.document(args)
   #
   # where _args_ is an array of strings, each corresponding to
-  # an argument you'd give rdoc on the command line. See rdoc/rdoc.rb 
+  # an argument you'd give rdoc on the command line. See rdoc/rdoc.rb
   # for details.
-  
+
   class RDoc
 
     ##
     # This is the list of output generators that we
     # support
-    
+
     Generator = Struct.new(:file_name, :class_name, :key)
-    
+
     GENERATORS = {}
     $:.collect {|d|
       File::expand_path(d)
@@ -88,7 +88,7 @@ module RDoc
                                            type)
         end
       }
-    }                                                    
+    }
 
     #######
     private
@@ -96,22 +96,22 @@ module RDoc
 
     ##
     # Report an error message and exit
-    
+
     def error(msg)
       raise RDocError.new(msg)
     end
-    
+
     ##
     # Create an output dir if it doesn't exist. If it does
     # exist, but doesn't contain the flag file <tt>created.rid</tt>
     # then we refuse to use it, as we may clobber some
     # manually generated documentation
-    
+
     def setup_output_dir(op_dir, force)
       flag_file = output_flag_file(op_dir)
       if File.exist?(op_dir)
         unless File.directory?(op_dir)
-          error "'#{op_dir}' exists, and is not a directory" 
+          error "'#{op_dir}' exists, and is not a directory"
         end
         begin
           created = File.read(flag_file)
@@ -158,12 +158,12 @@ module RDoc
 
 
     # Given a list of files and directories, create a list
-    # of all the Ruby files they contain. 
+    # of all the Ruby files they contain.
     #
     # If +force_doc+ is true, we always add the given files.
     # If false, only add files that we guarantee we can parse
     # It is true when looking at files given on the command line,
-    # false when recursing through subdirectories. 
+    # false when recursing through subdirectories.
     #
     # The effect of this is that if you want a file with a non-
     # standard extension parsed, you must name it explicity.
@@ -208,7 +208,7 @@ module RDoc
     # directories
 
     def parse_files(options)
- 
+
       file_info = []
 
       files = options.files
@@ -218,7 +218,7 @@ module RDoc
 
       file_list.each do |fn|
         $stderr.printf("\n%35s: ", File.basename(fn)) unless options.quiet
-        
+
         content = File.open(fn, "r") {|f| f.read}
 
         top_level = TopLevel.new(fn)

@@ -18,9 +18,9 @@ module Test
         RESET = name + "::RESET"
         STARTED = name + "::STARTED"
         FINISHED = name + "::FINISHED"
-        
+
         include Util::Observable
-        
+
         # Creates a new TestRunnerMediator initialized to run
         # the passed suite.
         def initialize(suite)
@@ -38,15 +38,15 @@ module Test
           result_listener = result.add_listener(TestResult::CHANGED) do |updated_result|
             notify_listeners(TestResult::CHANGED, updated_result)
           end
-          
+
           fault_listener = result.add_listener(TestResult::FAULT) do |fault|
             notify_listeners(TestResult::FAULT, fault)
           end
-          
+
           @suite.run(result) do |channel, value|
             notify_listeners(channel, value)
           end
-          
+
           result.remove_listener(TestResult::FAULT, fault_listener)
           result.remove_listener(TestResult::CHANGED, result_listener)
           end_time = Time.now

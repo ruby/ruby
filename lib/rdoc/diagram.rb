@@ -43,7 +43,7 @@ module RDoc
 
     # Draw the diagrams. We traverse the files, drawing a diagram for
     # each. We also traverse each top-level class and module in that
-    # file drawing a diagram for these too. 
+    # file drawing a diagram for these too.
 
     def draw
       unless @options.quiet
@@ -60,21 +60,21 @@ module RDoc
                                     'fontsize' => '8',
                                     'bgcolor'  => 'lightcyan1',
                                     'compound' => 'true')
-        
+
         # it's a little hack %) i'm too lazy to create a separate class
         # for default node
         graph << DOT::DOTNode.new('name' => 'node',
                                   'fontname' => FONT,
                                   'color' => 'black',
                                   'fontsize' => 8)
-        
+
         i.modules.each do |mod|
           draw_module(mod, graph, true, i.file_relative_name)
         end
         add_classes(i, graph, i.file_relative_name)
 
         i.diagram = convert_to_png("f_#{file_count}", graph)
-        
+
         # now go through and document each top level class and
         # module independently
         i.modules.each_with_index do |mod, count|
@@ -93,8 +93,8 @@ module RDoc
                                     'color' => 'black',
                                     'fontsize' => 8)
           draw_module(mod, graph, true)
-          mod.diagram = convert_to_png("m_#{file_count}_#{count}", 
-                                       graph) 
+          mod.diagram = convert_to_png("m_#{file_count}_#{count}",
+                                       graph)
         end
       end
       $stderr.puts unless @options.quiet
@@ -130,11 +130,11 @@ module RDoc
       m = DOT::DOTSubgraph.new('name' => "cluster_#{mod.full_name.gsub( /:/,'_' )}",
                                'label' => mod.name,
                                'fontname' => FONT,
-                               'color' => 'blue', 
-                               'style' => 'filled', 
+                               'color' => 'blue',
+                               'style' => 'filled',
                                'URL'   => %{"#{url}"},
                                'fillcolor' => toplevel ? 'palegreen1' : 'palegreen3')
-      
+
       @done_modules[mod.full_name] = m
       add_classes(mod, m, file)
       graph << m
@@ -175,8 +175,8 @@ module RDoc
       if container.full_name
         graph << DOT::DOTNode.new('name'     => "#{container.full_name.gsub( /:/,'_' )}",
                                   'label'    => "",
-                                  'width'  => (container.classes.empty? and 
-                                               container.modules.empty?) ? 
+                                  'width'  => (container.classes.empty? and
+                                               container.modules.empty?) ?
                                   '0.75' : '0.01',
                                   'height' => '0.01',
                                   'shape' => 'plaintext')
@@ -197,16 +197,16 @@ module RDoc
         next if cl.name == 'Object' || cl.name[0,2] == "<<"
 
         url = cl.http_url("classes")
-        
+
         label = cl.name.dup
         if use_fileboxes && cl.in_files.length > 1
-          label <<  '\n[' + 
+          label <<  '\n[' +
                         cl.in_files.collect {|i|
-                             i.file_relative_name 
+                             i.file_relative_name
                         }.sort.join( '\n' ) +
                     ']'
-        end 
-                
+        end
+
         attrs = {
           'name' => "#{cl.full_name.gsub( /:/, '_' )}",
           'fontcolor' => 'black',
@@ -218,20 +218,20 @@ module RDoc
         }
 
         c = DOT::DOTNode.new(attrs)
-        
+
         if use_fileboxes
-          files[last_file].push c 
+          files[last_file].push c
         else
           graph << c
         end
       end
-      
+
       if use_fileboxes
         files.each_value do |val|
           graph << val
         end
       end
-      
+
       unless container.classes.empty?
         container.classes.each_with_index do |cl, cl_index|
           cl.includes.each do |m|
@@ -275,7 +275,7 @@ module RDoc
       container.modules.each do |submod|
         draw_module(submod, graph)
       end
-      
+
     end
 
     def convert_to_png(file_base, graph)
@@ -294,7 +294,7 @@ module RDoc
       File.open(src, 'w+' ) do |f|
         f << str << "\n"
       end
-      
+
       system "dot", "-T#{op_type}", src, "-o", dot
 
       # Now construct the imagemap wrapper around
@@ -318,7 +318,7 @@ module RDoc
           $stderr.puts "Unexpected output from dot:\n#{area}"
           return nil
         end
-        
+
         xs, ys = [$1.to_i, $3.to_i], [$2.to_i, $4.to_i]
         url, area_name = $5, $6
 

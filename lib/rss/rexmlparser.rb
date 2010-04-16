@@ -7,7 +7,7 @@ if ([$1.to_i, $2.to_i] <=> [2, 5]) < 0
 end
 
 module RSS
-  
+
   class REXMLParser < BaseParser
 
     class << self
@@ -15,7 +15,7 @@ module RSS
         REXMLListener
       end
     end
-    
+
     private
     def _parse
       begin
@@ -28,9 +28,9 @@ module RSS
         raise NotWellFormedError.new(line){e.message}
       end
     end
-    
+
   end
-  
+
   class REXMLListener < BaseListener
 
     include REXML::StreamListener
@@ -41,7 +41,7 @@ module RSS
         false
       end
     end
-    
+
     def xmldecl(version, encoding, standalone)
       super(version, encoding, standalone == "yes")
       # Encoding is converted to UTF-8 when REXML parse XML.

@@ -7,7 +7,7 @@ require 'rdoc/ri/ri_options'
 # own 'ri' display module (perhaps because you'r writing
 # an IDE or somesuch beast), you simply write a class
 # which implements the various 'display' methods in 'DefaultDisplay',
-# and include the 'RiDisplay' module in that class. 
+# and include the 'RiDisplay' module in that class.
 #
 # To access your class from the command line, you can do
 #
@@ -41,11 +41,11 @@ class  DefaultDisplay
   def initialize(options)
     @options = options
     @formatter = @options.formatter.new(@options, "     ")
-  end    
-  
-  
+  end
+
+
   ######################################################################
-  
+
   def display_usage
     page do
       RI::Options::OptionList.usage(short_form=true)
@@ -54,7 +54,7 @@ class  DefaultDisplay
 
 
   ######################################################################
-  
+
   def display_method_info(method)
     page do
       @formatter.draw_line(method.full_name)
@@ -64,31 +64,31 @@ class  DefaultDisplay
       if method.aliases && !method.aliases.empty?
         @formatter.blankline
         aka = "(also known as "
-        aka << method.aliases.map {|a| a.name }.join(", ") 
+        aka << method.aliases.map {|a| a.name }.join(", ")
         aka << ")"
         @formatter.wrap(aka)
       end
     end
   end
-  
+
   ######################################################################
-  
+
   def display_class_info(klass, ri_reader)
-    page do 
+    page do
       superclass = klass.superclass_string
-      
+
       if superclass
         superclass = " < " + superclass
       else
         superclass = ""
       end
-      
+
       @formatter.draw_line(klass.display_name + ": " +
                            klass.full_name + superclass)
-      
+
       display_flow(klass.comment)
-      @formatter.draw_line 
-    
+      @formatter.draw_line
+
       unless klass.includes.empty?
         @formatter.blankline
         @formatter.display_heading("Includes:", 2, "")
@@ -106,7 +106,7 @@ class  DefaultDisplay
       end
         @formatter.wrap(incs.sort.join(', '))
       end
-      
+
       unless klass.constants.empty?
         @formatter.blankline
         @formatter.display_heading("Constants:", 2, "")
@@ -114,23 +114,23 @@ class  DefaultDisplay
         klass.constants.each { |c| len = c.name.length if c.name.length > len }
         len += 2
         klass.constants.each do |c|
-          @formatter.wrap(c.value, 
+          @formatter.wrap(c.value,
                           @formatter.indent+((c.name+":").ljust(len)))
-        end 
+        end
       end
-      
+
       unless klass.class_methods.empty?
         @formatter.blankline
         @formatter.display_heading("Class methods:", 2, "")
         @formatter.wrap(klass.class_methods.map{|m| m.name}.sort.join(', '))
       end
-      
+
       unless klass.instance_methods.empty?
         @formatter.blankline
         @formatter.display_heading("Instance methods:", 2, "")
         @formatter.wrap(klass.instance_methods.map{|m| m.name}.sort.join(', '))
       end
-      
+
       unless klass.attributes.empty?
         @formatter.blankline
         @formatter.wrap("Attributes:", "")
@@ -138,11 +138,11 @@ class  DefaultDisplay
       end
     end
   end
-  
+
   ######################################################################
-  
+
   # Display a list of method names
-  
+
   def display_method_list(methods)
     page do
       puts "More than one method matched your request. You can refine"
@@ -150,9 +150,9 @@ class  DefaultDisplay
       @formatter.wrap(methods.map {|m| m.full_name} .join(", "))
     end
   end
-  
+
   ######################################################################
-  
+
   def display_class_list(namespaces)
     page do
       puts "More than one class or module matched your request. You can refine"
@@ -160,14 +160,14 @@ class  DefaultDisplay
       @formatter.wrap(namespaces.map {|m| m.full_name}.join(", "))
     end
   end
-  
+
   ######################################################################
 
   def list_known_classes(classes)
     if classes.empty?
       warn_no_database
     else
-      page do 
+      page do
         @formatter.draw_line("Known classes and modules")
         @formatter.blankline
         @formatter.wrap(classes.sort.join(", "))
@@ -181,7 +181,7 @@ class  DefaultDisplay
     if names.empty?
       warn_no_database
     else
-      page do 
+      page do
         names.each {|n| @formatter.raw_print_line(n)}
       end
     end
@@ -219,7 +219,7 @@ class  DefaultDisplay
   end
 
   ######################################################################
-  
+
   def display_params(method)
 
     params = method.params
@@ -232,12 +232,12 @@ class  DefaultDisplay
       end
     end
     params.split(/\n/).each do |p|
-      @formatter.wrap(p) 
+      @formatter.wrap(p)
       @formatter.break_to_newline
     end
   end
   ######################################################################
-  
+
   def display_flow(flow)
     if !flow || flow.empty?
       @formatter.wrap("(no description...)")
@@ -247,7 +247,7 @@ class  DefaultDisplay
   end
 
   ######################################################################
-  
+
   def warn_no_database
     puts "Before using ri, you need to generate documentation"
     puts "using 'rdoc' with the --ri option"

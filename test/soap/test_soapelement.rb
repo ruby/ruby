@@ -99,7 +99,7 @@ class TestSOAPElement < Test::Unit::TestCase
     ct2 = d("ct2", "t2")
     c2.add(ct2)
     obj.add(c2)
-    assert_equal({ "ct1" => "t1", "c2" => { "ct2" => "t2" }}, obj.to_obj) 
+    assert_equal({ "ct1" => "t1", "c2" => { "ct2" => "t2" }}, obj.to_obj)
     #
     assert_equal(nil, d().to_obj)
     assert_equal("abc", d(nil, "abc").to_obj)

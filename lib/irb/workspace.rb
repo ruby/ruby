@@ -1,5 +1,5 @@
 #
-#   irb/workspace-binding.rb - 
+#   irb/workspace-binding.rb -
 #   	$Release Version: 0.9.5$
 #   	$Revision$
 #   	$Date$
@@ -7,7 +7,7 @@
 #
 # --
 #
-#   
+#
 #
 module IRB
   class WorkSpace
@@ -22,7 +22,7 @@ module IRB
 	case IRB.conf[:CONTEXT_MODE]
 	when 0	# binding in proc on TOPLEVEL_BINDING
 	  @binding = eval("proc{binding}.call",
-		      TOPLEVEL_BINDING, 
+		      TOPLEVEL_BINDING,
 		      __FILE__,
 		      __LINE__)
 	when 1	# binding in loaded file
@@ -38,7 +38,7 @@ EOF
 	when 2	# binding in loaded file(thread use)
 	  unless defined? BINDING_QUEUE
 	    require "thread"
-	    
+
 	    IRB.const_set("BINDING_QUEUE", SizedQueue.new(1))
 	    Thread.abort_on_exception = true
 	    Thread.start do
@@ -50,7 +50,7 @@ EOF
 
 	when 3	# binging in function on TOPLEVEL_BINDING(default)
 	  @binding = eval("def irb_binding; binding; end; irb_binding",
-		      TOPLEVEL_BINDING, 
+		      TOPLEVEL_BINDING,
 		      __FILE__,
 		      __LINE__ - 3)
 	end
@@ -64,7 +64,7 @@ EOF
 	when Module
 	  @binding = eval("IRB.conf[:__MAIN__].module_eval('binding', __FILE__, __LINE__)", @binding, __FILE__, __LINE__)
 	else
-	  begin 
+	  begin
 	    @binding = eval("IRB.conf[:__MAIN__].instance_eval('binding', __FILE__, __LINE__)", @binding, __FILE__, __LINE__)
 	  rescue TypeError
 	    IRB.fail CantChangeBinding, @main.inspect
@@ -80,7 +80,7 @@ EOF
     def evaluate(context, statements, file = __FILE__, line = __LINE__)
       eval(statements, @binding, file, line)
     end
-  
+
     # error message manipulator
     def filter_backtrace(bt)
       case IRB.conf[:CONTEXT_MODE]
@@ -96,7 +96,7 @@ EOF
 	return nil if bt =~ /irb\/.*\.rb/
       when 3
 	return nil if bt =~ /irb\/.*\.rb/
-	bt.sub!(/:\s*in `irb_binding'/){""} 
+	bt.sub!(/:\s*in `irb_binding'/){""}
       end
       bt
     end

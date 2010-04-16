@@ -30,7 +30,7 @@ module REXML
         err << "Last 80 unconsumed characters:\n"
         err << @source.buffer[0..80].gsub(/\n/, ' ')
       end
-      
+
       err
     end
 
@@ -40,12 +40,12 @@ module REXML
     end
 
     def line
-      @source.current_line[2] if @source and defined? @source.current_line and 
+      @source.current_line[2] if @source and defined? @source.current_line and
       @source.current_line
     end
 
     def context
       @source.current_line
     end
-  end  
+  end
 end

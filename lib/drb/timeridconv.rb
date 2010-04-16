@@ -19,7 +19,7 @@ module DRb
       end
 
       def add(obj)
-	synchronize do 
+	synchronize do
 	  key = obj.__id__
 	  @curr[key] = obj
 	  return key
@@ -27,7 +27,7 @@ module DRb
       end
 
       def fetch(key, dv=@sentinel)
-	synchronize do 
+	synchronize do
 	  obj = peek(key)
 	  if obj == @sentinel
 	    return dv unless dv == @sentinel
@@ -39,7 +39,7 @@ module DRb
       end
 
       def include?(key)
-	synchronize do 
+	synchronize do
 	  obj = peek(key)
 	  return false if obj == @sentinel
 	  true
@@ -47,7 +47,7 @@ module DRb
       end
 
       def peek(key)
-	synchronize do 
+	synchronize do
 	  return @curr.fetch(key, @renew.fetch(key, @gc.fetch(key, @sentinel)))
 	end
       end

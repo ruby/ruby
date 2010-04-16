@@ -29,7 +29,7 @@ class Info
   end
 
   def parse_element(element); end	# abstract
-  
+
   def parse_attr(attr, value); end	# abstract
 
   def parse_epilogue; end		# abstract

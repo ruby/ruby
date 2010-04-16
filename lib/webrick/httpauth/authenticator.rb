@@ -25,7 +25,7 @@ module WEBrick
           unless config[sym]
             raise ArgumentError, "Argument #{sym.inspect} missing."
           end
-        } 
+        }
         @realm     = config[:Realm]
         @userdb    = config[:UserDB]
         @logger    = config[:Logger] || Log::new($stderr)
@@ -40,8 +40,8 @@ module WEBrick
       def check_scheme(req)
         unless credentials = req[@request_field]
           error("no credentials in the request.")
-          return nil 
-        end  
+          return nil
+        end
         unless match = /^#{@auth_scheme}\s+/.match(credentials)
           error("invalid scheme in %s.", credentials)
           info("%s: %s", @request_field, credentials) if $DEBUG
@@ -60,7 +60,7 @@ module WEBrick
         if @logger.error?
           log(:error, fmt, *args)
         end
-      end                             
+      end
 
       def info(fmt, *args)
         if @logger.info?

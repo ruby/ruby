@@ -15,7 +15,7 @@ module RSS
     BaseListener.install_class_name(IMAGE_URI, name, "Image#{class_name}")
     IMAGE_ELEMENTS << "#{IMAGE_PREFIX}_#{name}"
   end
-  
+
   module ImageModelUtils
     def validate_one_tag_name(ignore_unknown_element, name, tags)
       if !ignore_unknown_element
@@ -25,7 +25,7 @@ module RSS
       raise TooMuchTagError.new(name, tag_name) if tags.size > 1
     end
   end
-  
+
   module ImageItemModel
     include ImageModelUtils
     extend BaseModel
@@ -43,12 +43,12 @@ module RSS
       include DublinCoreModel
 
       @tag_name = "item"
-      
+
       class << self
         def required_prefix
           IMAGE_PREFIX
         end
-        
+
         def required_uri
           IMAGE_URI
         end
@@ -102,11 +102,11 @@ module RSS
       end
     end
   end
-  
+
   module ImageFaviconModel
     include ImageModelUtils
     extend BaseModel
-    
+
     def self.append_features(klass)
       super
 
@@ -122,12 +122,12 @@ module RSS
       include DublinCoreModel
 
       @tag_name = "favicon"
-      
+
       class << self
         def required_prefix
           IMAGE_PREFIX
         end
-        
+
         def required_uri
           IMAGE_URI
         end
@@ -154,7 +154,7 @@ module RSS
         end
         set_size(new_value)
       end
-      
+
       alias image_size= size=
       alias image_size size
 

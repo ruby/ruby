@@ -39,10 +39,10 @@ class Definitions < Info
 =begin
 <xs:complexType name="Fault" final="extension">
   <xs:sequence>
-    <xs:element name="faultcode" type="xs:QName" /> 
-    <xs:element name="faultstring" type="xs:string" /> 
-    <xs:element name="faultactor" type="xs:anyURI" minOccurs="0" /> 
-    <xs:element name="detail" type="tns:detail" minOccurs="0" /> 
+    <xs:element name="faultcode" type="xs:QName" />
+    <xs:element name="faultstring" type="xs:string" />
+    <xs:element name="faultactor" type="xs:anyURI" minOccurs="0" />
+    <xs:element name="detail" type="tns:detail" minOccurs="0" />
   </xs:sequence>
 </xs:complexType>
 =end

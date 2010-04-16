@@ -77,7 +77,7 @@ module WEBrick
         res.set_error(ex)
       rescue HTTPStatus::Status => ex
         res.status = ex.code
-      rescue Exception => ex 
+      rescue Exception => ex
         @logger.error(ex)
         res.set_error(ex, true)
       ensure
@@ -122,7 +122,7 @@ module WEBrick
       include Enumerable
 
       private
-  
+
       def initialize(config, env, stdin, stdout)
         @config = config
         @env = env
@@ -130,7 +130,7 @@ module WEBrick
         @body_part = stdin
         @out_port = stdout
         @out_port.binmode
-  
+
         @server_addr = @env["SERVER_ADDR"] || "0.0.0.0"
         @server_name = @env["SERVER_NAME"]
         @server_port = @env["SERVER_PORT"]
@@ -164,7 +164,7 @@ module WEBrick
         httpv = @config[:HTTPVersion]
         return "#{meth} #{url} HTTP/#{httpv}"
       end
-  
+
       def setup_header
         add_header("CONTENT_TYPE", "Content-Type")
         add_header("CONTENT_LENGTH", "Content-length")
@@ -174,7 +174,7 @@ module WEBrick
           end
         }
       end
-  
+
       def add_header(envname, hdrname)
         if value = @env[envname]
           unless value.empty?
@@ -186,21 +186,21 @@ module WEBrick
       def input
         @header_part.eof? ? @body_part : @header_part
       end
-  
+
       public
-  
+
       def peeraddr
         [nil, @remote_port, @remote_host, @remote_addr]
       end
-  
+
       def addr
         [nil, @server_port, @server_name, @server_addr]
       end
-  
+
       def gets(eol=LF)
         input.gets(eol)
       end
-  
+
       def read(size=nil)
         input.read(size)
       end
@@ -212,7 +212,7 @@ module WEBrick
       def eof?
         input.eof?
       end
-  
+
       def <<(data)
         @out_port << data
       end
@@ -257,5 +257,5 @@ module WEBrick
         end
       end
     end
-  end 
-end  
+  end
+end

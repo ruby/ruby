@@ -3,7 +3,7 @@
 #
 # Author:: Yukihiro Matsumoto
 # Documentation:: Konrad Meyer
-# 
+#
 # Performs the function of the basic network testing tool, ping.
 # See: Ping.
 #
@@ -11,7 +11,7 @@
 require 'timeout'
 require "socket"
 
-# 
+#
 # Ping contains routines to test for the reachability of remote hosts.
 # Currently the only routine implemented is pingecho().
 #
@@ -23,14 +23,14 @@ require "socket"
 # slow. Requiring 'resolv-replace' allows non-blocking name resolution.
 #
 # Usage:
-# 
+#
 #   require 'ping'
 #
 #   puts "'jimmy' is alive and kicking" if Ping.pingecho('jimmy', 10)
 #
 module Ping
 
-  # 
+  #
   # Return true if we can open a connection to the hostname or IP address
   # +host+ on port +service+ (which defaults to the "echo" port) waiting up
   # to +timeout+ seconds.

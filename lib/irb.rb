@@ -93,7 +93,7 @@ module IRB
   end
 
   #
-  # irb interpriter main routine 
+  # irb interpriter main routine
   #
   class Irb
     def initialize(workspace = nil, input_method = nil, output_method = nil)
@@ -134,7 +134,7 @@ module IRB
 	  end
 	end
       end
-       
+
       @scanner.set_input(@context.io) do
 	signal_status(:IN_INPUT) do
 	  if l = @context.io.gets
@@ -166,11 +166,11 @@ module IRB
 	  if exc
 	    print exc.class, ": ", exc, "\n"
 	    if exc.backtrace[0] =~ /irb(2)?(\/.*|-.*|\.rb)?:/ && exc.class.to_s !~ /^IRB/
-	      irb_bug = true 
+	      irb_bug = true
 	    else
 	      irb_bug = false
 	    end
-	    
+
 	    messages = []
 	    lasts = []
 	    levels = 0
@@ -182,7 +182,7 @@ module IRB
 		else
 		  lasts.push "\tfrom "+m
 		  if lasts.size > @context.back_trace_limit
-		    lasts.shift 
+		    lasts.shift
 		    levels += 1
 		  end
 		end
@@ -287,13 +287,13 @@ module IRB
 	when "l"
 	  ltype
 	when "i"
-	  if $1 
+	  if $1
 	    format("%" + $1 + "d", indent)
 	  else
 	    indent.to_s
 	  end
 	when "n"
-	  if $1 
+	  if $1
 	    format("%" + $1 + "d", line_no)
 	  else
 	    line_no.to_s

@@ -31,7 +31,7 @@ class TestSimpleHandler < Test::Unit::TestCase
 
     class PingServerHeaderHandler < SOAP::Header::SimpleHandler
       MyHeaderName = XSD::QName.new("http://xmlsoap.org/Ping", "PingHeader")
-  
+
       def self.create
         new
       end

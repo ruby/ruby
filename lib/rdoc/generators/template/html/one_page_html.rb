@@ -19,7 +19,7 @@ IF:aref
 ENDIF:aref
 IFNOT:aref
 <li>%name%</li>
-ENDIF:aref 
+ENDIF:aref
 END:requires
 </ul>
 ENDIF:requires
@@ -42,7 +42,7 @@ IF:aref
 ENDIF:aref
 IFNOT:aref
 <li>%name%</li>
-ENDIF:aref 
+ENDIF:aref
 END:includes
 </ul>
 ENDIF:includes
@@ -52,7 +52,7 @@ IF:method_list
 START:method_list
 IF:methods
 START:methods
-<h4>%type% %category% method: 
+<h4>%type% %category% method:
 IF:callseq
 <a name="%aref%">%callseq%</a>
 ENDIF:callseq

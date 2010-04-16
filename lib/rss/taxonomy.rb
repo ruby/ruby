@@ -24,7 +24,7 @@ module RSS
 
   module TaxonomyTopicsModel
     extend BaseModel
-    
+
     def self.append_features(klass)
       super
 
@@ -37,21 +37,21 @@ module RSS
 
     class TaxonomyTopics < Element
       include RSS10
-      
+
       Bag = ::RSS::RDF::Bag
 
       class << self
         def required_prefix
           TAXO_PREFIX
         end
-        
+
         def required_uri
           TAXO_URI
         end
       end
 
       @tag_name = "topics"
-      
+
       install_have_child_element("Bag", RDF::URI, nil)
       install_must_call_validator('rdf', RDF::URI)
 
@@ -84,10 +84,10 @@ module RSS
       end
     end
   end
-  
+
   module TaxonomyTopicModel
     extend BaseModel
-    
+
     def self.append_features(klass)
       super
       var_name = "#{TAXO_PREFIX}_topic"
@@ -99,12 +99,12 @@ module RSS
 
       include DublinCoreModel
       include TaxonomyTopicsModel
-      
+
       class << self
         def required_prefix
           TAXO_PREFIX
         end
-        
+
         def required_uri
           TAXO_URI
         end
@@ -115,7 +115,7 @@ module RSS
       install_get_attribute("about", ::RSS::RDF::URI, true, nil, nil,
                             "#{RDF::PREFIX}:about")
       install_text_element("link", TAXO_URI, "?", "#{TAXO_PREFIX}_link")
-        
+
       def initialize(*args)
         if Utils.element_initialize_arguments?(args)
           super

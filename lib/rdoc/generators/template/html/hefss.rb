@@ -5,11 +5,11 @@ module Page
 FONTS = "Verdana, Arial, Helvetica, sans-serif"
 
 STYLE = %{
-body,p { font-family: Verdana, Arial, Helvetica, sans-serif; 
+body,p { font-family: Verdana, Arial, Helvetica, sans-serif;
        color: #000040; background: #BBBBBB;
 }
 
-td { font-family: Verdana, Arial, Helvetica, sans-serif; 
+td { font-family: Verdana, Arial, Helvetica, sans-serif;
        color: #000040;
 }
 
@@ -21,7 +21,7 @@ td { font-family: Verdana, Arial, Helvetica, sans-serif;
 
 .big-title-font { color: white;
                   font-family: Verdana, Arial, Helvetica, sans-serif;
-                  font-size: large; 
+                  font-size: large;
                   height: 50px}
 
 .small-title-font { color: purple;
@@ -281,7 +281,7 @@ START:methods
 <table width="100%" cellspacing="0" cellpadding="5" border="0">
 <tr><td class="methodtitle">
 <a name="%aref%">
-<b>%name%</b>%params% 
+<b>%name%</b>%params%
 IF:codeurl
 <a href="%codeurl%" target="source" class="srclink">src</a>
 ENDIF:codeurl
@@ -343,10 +343,10 @@ FILE_INDEX = %{
 <!--
   body {
 background-color: #bbbbbb;
-     font-family: #{FONTS}; 
-       font-size: 11px; 
+     font-family: #{FONTS};
+       font-size: 11px;
       font-style: normal;
-     line-height: 14px; 
+     line-height: 14px;
            color: #000040;
   }
 div.banner {
@@ -360,7 +360,7 @@ div.banner {
   text-align: center;
   width: 100%;
 }
-  
+
 -->
 </style>
 <base target="docwin">

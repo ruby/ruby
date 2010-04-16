@@ -9,10 +9,10 @@ module RI
   VERSION_STRING = "ri v1.0.1 - 20041108"
 
   class Options
-    
+
     require 'singleton'
     require 'getoptlong'
-    
+
     include Singleton
 
     # No not use a pager. Writable, because ri sets it if it
@@ -35,7 +35,7 @@ module RI
     attr_reader :doc_dir
 
     module OptionList
-      
+
       OPTION_LIST = [
         [ "--help",          "-h",   nil,
           "you're looking at it" ],
@@ -80,7 +80,7 @@ module RI
         ],
 
         [ "--no-pager",      "-T",   nil,
-          "Send output directly to stdout." 
+          "Send output directly to stdout."
         ],
 
         [ "--width",         "-w",   "output width",
@@ -110,10 +110,10 @@ module RI
         text.gsub!(/^#{leading_spaces}/, '')
         $stdout.puts text
       end
-      
-      
+
+
       # Show an error and exit
-      
+
       def OptionList.error(msg)
         $stderr.puts
         $stderr.puts msg
@@ -121,15 +121,15 @@ module RI
         $stderr.puts "\nFor help on options, try '#{name} --help'\n\n"
         exit 1
       end
-      
+
       # Show usage and exit
-      
+
       def OptionList.usage(short_form=false)
-        
+
         puts
         puts(RI::VERSION_STRING)
         puts
-        
+
         name = File.basename($0)
 
         directories = [
@@ -225,7 +225,7 @@ module RI
     def initialize
       @use_stdout   = !STDOUT.tty?
       @width        = 72
-      @formatter    = RI::TextFormatter.for("plain") 
+      @formatter    = RI::TextFormatter.for("plain")
       @list_classes = false
       @list_names   = false
 
@@ -241,7 +241,7 @@ module RI
     # Parse command line options.
 
     def parse(args)
-    
+
       old_argv = ARGV.dup
 
       ARGV.replace(args)
@@ -282,7 +282,7 @@ module RI
           when "--width"
             begin
               @width = Integer(arg)
-            rescue 
+            rescue
               $stderr.puts "Invalid width: '#{arg}'"
               exit 1
             end
@@ -309,7 +309,7 @@ module RI
     # Return an instance of the displayer (the thing that actually writes
     # the information). This allows us to load in new displayer classes
     # at runtime (for example to help with IDE integration)
-    
+
     def displayer
       ::RiDisplay.new(self)
     end

@@ -8,7 +8,7 @@ module RSS
 
     def self.append_features(klass)
       super
-      
+
       klass.install_must_call_validator('', ::RSS::URI)
     end
 
@@ -64,13 +64,13 @@ module RSS
           URI
         end
       end
-      
+
       [
         ["resource", [URI, ""], true]
       ].each do |name, uri, required|
         install_get_attribute(name, uri, required)
       end
-      
+
       def initialize(*args)
         if Utils.element_initialize_arguments?(args)
           super
@@ -98,10 +98,10 @@ module RSS
       end
 
       @tag_name = 'Seq'
-      
+
       install_have_children_element("li", URI, "*")
       install_must_call_validator('rdf', ::RSS::RDF::URI)
-      
+
       def initialize(*args)
         if Utils.element_initialize_arguments?(args)
           super
@@ -114,7 +114,7 @@ module RSS
       def full_name
         tag_name_with_prefix(PREFIX)
       end
-      
+
       def setup_maker(target)
         lis.each do |li|
           target << li.resource
@@ -135,10 +135,10 @@ module RSS
       end
 
       @tag_name = 'Bag'
-      
+
       install_have_children_element("li", URI, "*")
       install_must_call_validator('rdf', URI)
-      
+
       def initialize(*args)
         if Utils.element_initialize_arguments?(args)
           super
@@ -151,7 +151,7 @@ module RSS
       def full_name
         tag_name_with_prefix(PREFIX)
       end
-      
+
       def setup_maker(target)
         lis.each do |li|
           target << li.resource
@@ -162,7 +162,7 @@ module RSS
     class Channel < Element
 
       include RSS10
-      
+
       class << self
 
         def required_uri
@@ -202,17 +202,17 @@ module RSS
       def maker_target(maker)
         maker.channel
       end
-      
+
       def setup_maker_attributes(channel)
         channel.about = about
       end
 
       class Image < Element
-        
+
         include RSS10
 
         class << self
-          
+
           def required_uri
             ::RSS::URI
           end
@@ -225,7 +225,7 @@ module RSS
           install_get_attribute(name, uri, required, nil, nil,
                                 "#{PREFIX}:#{name}")
         end
-      
+
         def initialize(*args)
           if Utils.element_initialize_arguments?(args)
             super
@@ -237,11 +237,11 @@ module RSS
       end
 
       class Textinput < Element
-        
+
         include RSS10
 
         class << self
-          
+
           def required_uri
             ::RSS::URI
           end
@@ -254,7 +254,7 @@ module RSS
           install_get_attribute(name, uri, required, nil, nil,
                                 "#{PREFIX}:#{name}")
         end
-      
+
         def initialize(*args)
           if Utils.element_initialize_arguments?(args)
             super
@@ -264,7 +264,7 @@ module RSS
           end
         end
       end
-      
+
       class Items < Element
 
         include RSS10
@@ -272,16 +272,16 @@ module RSS
         Seq = ::RSS::RDF::Seq
 
         class << self
-          
+
           def required_uri
             ::RSS::URI
           end
-          
+
         end
 
         install_have_child_element("Seq", URI, nil)
         install_must_call_validator('rdf', URI)
-        
+
         def initialize(*args)
           if Utils.element_initialize_arguments?(args)
             super
@@ -309,7 +309,7 @@ module RSS
       include RSS10
 
       class << self
-        
+
         def required_uri
           ::RSS::URI
         end
@@ -351,7 +351,7 @@ module RSS
         def required_uri
           ::RSS::URI
         end
-        
+
       end
 
 

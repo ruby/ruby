@@ -281,21 +281,21 @@ class TimeExtentionTest < Test::Unit::TestCase # :nodoc:
   def test_rfc2822_leap_second
     t = Time.utc(1998,12,31,23,59,59)
     assert_equal(t, Time.rfc2822("Thu, 31 Dec 1998 23:59:59 UTC"))
-    assert_equal(t, Time.rfc2822("Fri, 31 Dec 1998 23:59:59 -0000"));t.localtime                                  
+    assert_equal(t, Time.rfc2822("Fri, 31 Dec 1998 23:59:59 -0000"));t.localtime
     assert_equal(t, Time.rfc2822("Fri,  1 Jan 1999 08:59:59 +0900"))
     assert_equal(t, Time.rfc2822("Fri,  1 Jan 1999 00:59:59 +0100"))
     assert_equal(t, Time.rfc2822("Fri, 31 Dec 1998 23:59:59 +0000"))
-    assert_equal(t, Time.rfc2822("Fri, 31 Dec 1998 22:59:59 -0100"));t.utc                                  
+    assert_equal(t, Time.rfc2822("Fri, 31 Dec 1998 22:59:59 -0100"));t.utc
     t += 1
     assert_equal(t, Time.rfc2822("Thu, 31 Dec 1998 23:59:60 UTC"))
-    assert_equal(t, Time.rfc2822("Fri, 31 Dec 1998 23:59:60 -0000"));t.localtime                                  
+    assert_equal(t, Time.rfc2822("Fri, 31 Dec 1998 23:59:60 -0000"));t.localtime
     assert_equal(t, Time.rfc2822("Fri,  1 Jan 1999 08:59:60 +0900"))
     assert_equal(t, Time.rfc2822("Fri,  1 Jan 1999 00:59:60 +0100"))
     assert_equal(t, Time.rfc2822("Fri, 31 Dec 1998 23:59:60 +0000"))
-    assert_equal(t, Time.rfc2822("Fri, 31 Dec 1998 22:59:60 -0100"));t.utc                                  
+    assert_equal(t, Time.rfc2822("Fri, 31 Dec 1998 22:59:60 -0100"));t.utc
     t += 1 if t.sec == 60
     assert_equal(t, Time.rfc2822("Thu,  1 Jan 1999 00:00:00 UTC"))
-    assert_equal(t, Time.rfc2822("Fri,  1 Jan 1999 00:00:00 -0000"));t.localtime                                  
+    assert_equal(t, Time.rfc2822("Fri,  1 Jan 1999 00:00:00 -0000"));t.localtime
     assert_equal(t, Time.rfc2822("Fri,  1 Jan 1999 09:00:00 +0900"))
     assert_equal(t, Time.rfc2822("Fri,  1 Jan 1999 01:00:00 +0100"))
     assert_equal(t, Time.rfc2822("Fri,  1 Jan 1999 00:00:00 +0000"))

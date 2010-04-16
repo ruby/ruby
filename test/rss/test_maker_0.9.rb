@@ -27,20 +27,20 @@ module RSS
       assert_raise(LocalJumpError) do
         RSS::Maker.make("0.91")
       end
-      
+
       rss = RSS::Maker.make("0.9") do |maker|
         setup_dummy_channel(maker)
         setup_dummy_image(maker)
       end
       assert_equal("0.92", rss.rss_version)
-      
+
       rss = RSS::Maker.make("0.91") do |maker|
         setup_dummy_channel(maker)
         setup_dummy_image(maker)
       end
       assert_equal("0.91", rss.rss_version)
 
-      
+
       rss = RSS::Maker.make("0.91") do |maker|
         setup_dummy_channel(maker)
         setup_dummy_image(maker)
@@ -123,7 +123,7 @@ module RSS
         maker.image.title = image_title
       end
       channel = rss.channel
-      
+
       assert_equal(title, channel.title)
       assert_equal(link, channel.link)
       assert_equal(description, channel.description)
@@ -143,7 +143,7 @@ module RSS
       skipHours.each_with_index do |hour, i|
         assert_equal(hour.to_i, channel.skipHours.hours[i].content)
       end
-      
+
       assert(channel.items.empty?)
 
       assert_equal(image_url, channel.image.url)
@@ -196,7 +196,7 @@ module RSS
         end
       end
     end
-    
+
     def test_image
       title = "fugafuga"
       link = "http://hoge.com"
@@ -208,7 +208,7 @@ module RSS
       rss = RSS::Maker.make("0.91") do |maker|
         setup_dummy_channel(maker)
         maker.channel.link = link
-        
+
         maker.image.title = title
         maker.image.url = url
         maker.image.width = width
@@ -227,7 +227,7 @@ module RSS
         RSS::Maker.make("0.91") do |maker|
           # setup_dummy_channel(maker)
           maker.channel.link = link
-        
+
           maker.image.title = title
           maker.image.url = url
           maker.image.width = width
@@ -263,7 +263,7 @@ module RSS
           setup_dummy_channel(maker)
           # maker.channel.link = link
           maker.channel.link = nil
-        
+
           maker.image.title = title
           maker.image.url = url
           maker.image.width = width
@@ -285,7 +285,7 @@ module RSS
         end
       end
     end
-    
+
     def test_items(with_convenience_way=true)
       title = "TITLE"
       link = "http://hoge.com/"
@@ -299,7 +299,7 @@ module RSS
 
       rss = RSS::Maker.make("0.91") do |maker|
         setup_dummy_channel(maker)
-        
+
         maker.items.new_item do |item|
           item.title = title
           item.link = link
@@ -318,7 +318,7 @@ module RSS
       item_size = 5
       rss = RSS::Maker.make("0.91") do |maker|
         setup_dummy_channel(maker)
-        
+
         item_size.times do |i|
           maker.items.new_item do |_item|
             _item.title = "#{title}#{i}"
@@ -339,7 +339,7 @@ module RSS
 
       rss = RSS::Maker.make("0.91") do |maker|
         setup_dummy_channel(maker)
-        
+
         item_size.times do |i|
           maker.items.new_item do |_item|
             _item.title = "#{title}#{i}"
@@ -402,7 +402,7 @@ module RSS
         end
       end
     end
-    
+
     def test_not_valid_textInput
       title = "fugafuga"
       description = "text hoge fuga"

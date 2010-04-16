@@ -104,7 +104,7 @@ class TestNonblockSocket < Test::Unit::TestCase
     assert_raise(Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::EINVAL) { s2.recvfrom_nonblock(100) }
     s2.send("aaa", 0, s1.getsockname)
     IO.select [s1]
-    mesg, sockaddr = s1.recvfrom_nonblock(100) 
+    mesg, sockaddr = s1.recvfrom_nonblock(100)
     assert_equal("aaa", mesg)
     port, addr = Socket.unpack_sockaddr_in(sockaddr)
     s2_port, s2_addr = Socket.unpack_sockaddr_in(s2.getsockname)

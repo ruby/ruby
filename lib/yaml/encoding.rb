@@ -23,9 +23,9 @@ module YAML
 			if $3
 				["#$3".hex ].pack('U*')
 			elsif $2
-				[$2].pack( "H2" ) 
+				[$2].pack( "H2" )
 			else
-				UNESCAPES[$1] 
+				UNESCAPES[$1]
 			end
 		}
 	end

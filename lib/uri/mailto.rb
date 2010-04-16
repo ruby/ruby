@@ -68,20 +68,20 @@ module URI
     #
     # If a Hash is used, the keys are the component names preceded by colons.
     #
-    # The headers can be supplied as a pre-encoded string, such as 
+    # The headers can be supplied as a pre-encoded string, such as
     # "subject=subscribe&cc=address", or as an Array of Arrays like
     # [['subject', 'subscribe'], ['cc', 'address']]
     #
     # Examples:
-    # 
+    #
     #    require 'uri'
-    #    
+    #
     #    m1 = URI::MailTo.build(['joe@example.com', 'subject=Ruby'])
     #    puts m1.to_s  ->  mailto:joe@example.com?subject=Ruby
-    #    
+    #
     #    m2 = URI::MailTo.build(['john@example.com', [['Subject', 'Ruby'], ['Cc', 'jack@example.com']]])
     #    puts m2.to_s  ->  mailto:john@example.com?Subject=Ruby&Cc=jack@example.com
-    #    
+    #
     #    m3 = URI::MailTo.build({:to => 'listman@example.com', :headers => [['subject', 'subscribe']]})
     #    puts m3.to_s  ->  mailto:listman@example.com?subject=subscribe
     #
@@ -183,7 +183,7 @@ module URI
       return true unless v
       return true if v.size == 0
 
-      if OPAQUE !~ v || 
+      if OPAQUE !~ v ||
           /\A(#{HEADER_PATTERN}(?:\&#{HEADER_PATTERN})*)\z/o !~ v
         raise InvalidComponentError,
           "bad component(expected opaque component): #{v}"
@@ -210,12 +210,12 @@ module URI
     end
 
     def to_s
-      @scheme + ':' + 
-        if @to 
+      @scheme + ':' +
+        if @to
           @to
         else
           ''
-        end + 
+        end +
         if @headers.size > 0
           '?' + @headers.collect{|x| x.join('=')}.join('&')
         else
@@ -227,7 +227,7 @@ module URI
           ''
         end
     end
-    
+
     # Returns the RFC822 e-mail text equivalent of the URL, as a String.
     #
     # Example:

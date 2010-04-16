@@ -101,7 +101,7 @@ module WEBrick
 
     def proxy_service(req, res)
       # Proxy Authentication
-      proxy_auth(req, res)      
+      proxy_auth(req, res)
 
       # Create Request-URI to send to the origin server
       uri  = req.request_uri
@@ -129,7 +129,7 @@ module WEBrick
         http = Net::HTTP.new(uri.host, uri.port, proxy_host, proxy_port)
         http.start{
           if @config[:ProxyTimeout]
-            ##################################   these issues are 
+            ##################################   these issues are
             http.open_timeout = 30   # secs  #   necessary (maybe bacause
             http.read_timeout = 60   # secs  #   Ruby's bug, but why?)
             ##################################
@@ -147,7 +147,7 @@ module WEBrick
         logger.debug("#{err.class}: #{err.message}")
         raise HTTPStatus::ServiceUnavailable, err.message
       end
-  
+
       # Persistent connction requirements are mysterious for me.
       # So I will close the connection in every response.
       res['proxy-connection'] = "close"

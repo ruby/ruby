@@ -1,5 +1,5 @@
 #
-#   irb/ext/cb.rb - 
+#   irb/ext/cb.rb -
 #   	$Release Version: 0.9.5$
 #   	$Revision$
 #   	$Date$
@@ -7,7 +7,7 @@
 #
 # --
 #
-#   
+#
 #
 
 module IRB
@@ -23,12 +23,12 @@ module IRB
 
     def change_workspace(*_main)
       if _main.empty?
-	@workspace = home_workspace 
+	@workspace = home_workspace
 	return main
       end
-      
+
       @workspace = WorkSpace.new(_main[0])
-      
+
       if !(class<<main;ancestors;end).include?(ExtendCommandBundle)
 	main.extend ExtendCommandBundle
       end

@@ -62,7 +62,7 @@ module RSS
             new_category.content = category
           end
         end
-        
+
         maker.channel.generator = generator
         maker.channel.ttl = ttl
       end
@@ -71,7 +71,7 @@ module RSS
         rss.channel.setup_maker(maker)
       end
       channel = new_rss.channel
-      
+
       assert_equal(title, channel.title)
       assert_equal(link, channel.link)
       assert_equal(description, channel.description)
@@ -90,12 +90,12 @@ module RSS
       skipHours.each_with_index do |hour, i|
         assert_equal(hour.to_i, channel.skipHours.hours[i].content)
       end
-      
+
 
       channel.categories.each_with_index do |category, i|
         assert_equal(categories[i], category.content)
       end
-      
+
       assert_equal(generator, channel.generator)
       assert_equal(ttl.to_i, channel.ttl)
 
@@ -116,19 +116,19 @@ module RSS
       rss = RSS::Maker.make("2.0") do |maker|
         setup_dummy_channel(maker)
         maker.channel.link = link
-        
+
         maker.image.title = title
         maker.image.url = url
         maker.image.width = width
         maker.image.height = height
         maker.image.description = description
       end
-      
+
       new_rss = RSS::Maker.make("2.0") do |maker|
         rss.channel.setup_maker(maker)
         rss.image.setup_maker(maker)
       end
-      
+
       image = new_rss.image
       assert_equal(title, image.title)
       assert_equal(link, image.link)
@@ -137,7 +137,7 @@ module RSS
       assert_equal(height.to_i, image.height)
       assert_equal(description, image.description)
     end
-    
+
     def test_setup_maker_textinput
       title = "fugafuga"
       description = "text hoge fuga"
@@ -157,7 +157,7 @@ module RSS
         rss.channel.setup_maker(maker)
         rss.textinput.setup_maker(maker)
       end
-      
+
       textInput = new_rss.channel.textInput
       assert_equal(title, textInput.title)
       assert_equal(description, textInput.description)
@@ -175,22 +175,22 @@ module RSS
 
       guid_isPermaLink = "true"
       guid_content = "http://inessential.com/2002/09/01.php#a2"
-      
+
       enclosure_url = "http://www.scripting.com/mp3s/weatherReportSuite.mp3"
       enclosure_length = "12216320"
       enclosure_type = "audio/mpeg"
 
       source_url = "http://static.userland.com/tomalak/links2.xml"
       source_content = "Tomalak's Realm"
-      
+
       category_domain = "http://www.fool.com/cusips"
       category_content = "MSFT"
-      
+
       item_size = 5
-      
+
       rss = RSS::Maker.make("2.0") do |maker|
         setup_dummy_channel(maker)
-        
+
         item_size.times do |i|
           maker.items.new_item do |item|
             item.title = "#{title}#{i}"
@@ -216,7 +216,7 @@ module RSS
           end
         end
       end
-      
+
       new_rss = RSS::Maker.make("2.0") do |maker|
         rss.channel.setup_maker(maker)
 
@@ -228,7 +228,7 @@ module RSS
           end
         end
       end
-      
+
       assert_equal(item_size, new_rss.items.size)
       new_rss.items.each_with_index do |item, i|
         assert_equal("#{title}#{i}", item.title)
@@ -258,11 +258,11 @@ module RSS
     def test_setup_maker_items_backward_compatibility
       test_setup_maker_items(true)
     end
-    
+
     def test_setup_maker
       encoding = "EUC-JP"
       standalone = true
-      
+
       href = 'a.xsl'
       type = 'text/xsl'
       title = 'sample'
@@ -285,11 +285,11 @@ module RSS
 
         setup_dummy_channel(maker)
       end
-      
+
       new_rss = RSS::Maker.make("2.0") do |maker|
         rss.setup_maker(maker)
       end
-      
+
       assert_equal("2.0", new_rss.rss_version)
       assert_equal(encoding, new_rss.encoding)
       assert_equal(standalone, new_rss.standalone)
@@ -303,6 +303,6 @@ module RSS
       assert_equal(charset, xss.charset)
       assert_equal(alternate, xss.alternate)
     end
-    
+
   end
 end

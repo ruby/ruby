@@ -9,7 +9,7 @@ require "test/unit"
 
 if defined?(WIN32OLE)
   class TestWIN32OLE_WITH_WORD < Test::Unit::TestCase
-    
+
     def setup
       begin
         @obj = WIN32OLE.new('Word.Application')

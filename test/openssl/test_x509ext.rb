@@ -89,7 +89,7 @@ class OpenSSL::TestX509Extension < Test::Unit::TestCase
 
     assert exts["subjectKeyIdentifier"] == "B4:AC:83:5D:21:FB:D6:8A:56:7E:B2:49:6D:69:BB:E4:6F:D8:5A:AC"
   end
-  
+
 end
 
 end

@@ -1,5 +1,5 @@
 #
-#   mathn.rb - 
+#   mathn.rb -
 #   	$Release Version: 0.5 $
 #   	$Revision: 1.1.1.1.4.1 $
 #   	$Date: 1998/01/16 12:36:05 $
@@ -7,7 +7,7 @@
 #
 # --
 #
-#   
+#
 #
 
 require "complex.rb"
@@ -20,10 +20,10 @@ class Integer
     a = self.abs
     b = int.abs
     a, b = b, a if a < b
-    
+
     pd_a = a.prime_division
     pd_b = b.prime_division
-    
+
     gcd = 1
     for pair in pd_a
       as = pd_b.assoc(pair[0])
@@ -33,7 +33,7 @@ class Integer
     end
     return gcd
   end
-  
+
   def Integer.from_prime_division(pd)
     value = 1
     for prime, index in pd
@@ -41,7 +41,7 @@ class Integer
     end
     value
   end
-  
+
   def prime_division
     raise ZeroDivisionError if self == 0
     ps = Prime.new
@@ -65,7 +65,7 @@ class Integer
     return pv
   end
 end
-  
+
 class Prime
   include Enumerable
 
@@ -74,7 +74,7 @@ class Prime
     @primes = []
     @counts = []
   end
-  
+
   def succ
     i = -1
     size = @primes.size
@@ -155,14 +155,14 @@ class Rational
       elsif self == 1
 	return Rational(1,1)
       end
-      
+
       npd = numerator.prime_division
       dpd = denominator.prime_division
       if other < 0
 	other = -other
 	npd, dpd = dpd, npd
       end
-      
+
       for elm in npd
 	elm[1] = elm[1] * other
 	if !elm[1].kind_of?(Integer) and elm[1].denominator != 1
@@ -170,7 +170,7 @@ class Rational
 	end
 	elm[1] = elm[1].to_i
       end
-      
+
       for elm in dpd
 	elm[1] = elm[1] * other
 	if !elm[1].kind_of?(Integer) and elm[1].denominator != 1
@@ -178,12 +178,12 @@ class Rational
 	end
 	elm[1] = elm[1].to_i
       end
-      
+
       num = Integer.from_prime_division(npd)
       den = Integer.from_prime_division(dpd)
-      
+
       Rational(num,den)
-      
+
     elsif other.kind_of?(Integer)
       if other > 0
 	num = numerator ** other
@@ -215,7 +215,7 @@ class Rational
       elsif self == 1
 	return Rational(1,1)
       end
-      
+
       dem = nil
       x = self.denominator.to_f.to_i
       neard = self.denominator.to_f ** (1.0/other.denominator.to_f)
@@ -227,7 +227,7 @@ class Rational
       end
       nearn = self.numerator.to_f ** (1.0/other.denominator.to_f)
       Rational(num,den)
-      
+
     elsif other.kind_of?(Integer)
       if other > 0
 	num = numerator ** other
@@ -261,7 +261,7 @@ module Math
 #      if !(x.kind_of?(Rational) and y.kind_of?(Rational))
 #	return a**Rational(1,2)
 #      end
-      if a.image >= 0 
+      if a.image >= 0
 	Complex(x, y)
       else
 	Complex(x, -y)
@@ -272,7 +272,7 @@ module Math
       Complex(0,rsqrt(-a))
     end
   end
-  
+
   def rsqrt(a)
     if a.kind_of?(Float)
       sqrt!(a)
@@ -286,7 +286,7 @@ module Math
       while (src >= max) and (src >>= 32)
 	byte_a.unshift src & 0xffffffff
       end
-      
+
       answer = 0
       main = 0
       side = 0
@@ -296,13 +296,13 @@ module Math
 	if answer != 0
 	  if main * 4  < side * side
 	    applo = main.div(side)
-	  else 
+	  else
 	    applo = ((sqrt!(side * side + 4 * main) - side)/2.0).to_i + 1
 	  end
 	else
 	  applo = sqrt!(main).to_i + 1
 	end
-	
+
 	while (x = (side + applo) * applo) > main
 	  applo -= 1
 	end

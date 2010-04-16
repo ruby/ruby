@@ -1,6 +1,6 @@
 #
 # Creates XML-RPC call/response documents
-# 
+#
 # Copyright (C) 2001, 2002, 2003 by Michael Neumann (mneumann@ntecs.de)
 #
 # $Id$
@@ -41,7 +41,7 @@ module XMLRPC
       def element(name, attrs, *children)
 	raise "attributes not yet implemented" unless attrs.nil?
         if children.empty?
-          "<#{name}/>" 
+          "<#{name}/>"
         else
           "<#{name}>" + children.join("") + "</#{name}>"
         end
@@ -69,7 +69,7 @@ module XMLRPC
       end
 
       def document(*params)
-	XML::SimpleTree::Document.new(*params) 
+	XML::SimpleTree::Document.new(*params)
       end
 
       def pi(name, *params)
@@ -120,9 +120,9 @@ module XMLRPC
 
       tree = @writer.document(
 	       @writer.pi("xml", 'version="1.0"'),
-	       @writer.ele("methodCall",   
+	       @writer.ele("methodCall",
 		 @writer.tag("methodName", name),
-		 @writer.ele("params", *parameter)    
+		 @writer.ele("params", *parameter)
 	       )
 	     )
 
@@ -137,29 +137,29 @@ module XMLRPC
     # if is_ret == false then the params array must
     # contain only one element, which is a structure
     # of a fault return-value.
-    # 
-    # if is_ret == true then a normal 
+    #
+    # if is_ret == true then a normal
     # return-value of all the given params is created.
     #
     def methodResponse(is_ret, *params)
 
-      if is_ret 
+      if is_ret
 	resp = params.collect do |param|
 	  @writer.ele("param", conv2value(param))
 	end
-     
+
 	resp = [@writer.ele("params", *resp)]
       else
-	if params.size != 1 or params[0] === XMLRPC::FaultException 
+	if params.size != 1 or params[0] === XMLRPC::FaultException
 	  raise ArgumentError, "no valid fault-structure given"
 	end
 	resp = @writer.ele("fault", conv2value(params[0].to_h))
       end
 
-	
+
       tree = @writer.document(
 	       @writer.pi("xml", 'version="1.0"'),
-	       @writer.ele("methodResponse", resp) 
+	       @writer.ele("methodResponse", resp)
 	     )
 
       @writer.document_to_str(tree) + "\n"
@@ -178,7 +178,7 @@ module XMLRPC
     def conv2value(param)
 
 	val = case param
-	when Fixnum 
+	when Fixnum
 	  @writer.tag("i4", param.to_s)
 
 	when Bignum
@@ -194,10 +194,10 @@ module XMLRPC
 	when TrueClass, FalseClass
 	  @writer.tag("boolean", param ? "1" : "0")
 
-	when String 
+	when String
 	  @writer.tag("string", param)
 
-	when Symbol 
+	when Symbol
 	  @writer.tag("string", param.to_s)
 
         when NilClass
@@ -211,51 +211,51 @@ module XMLRPC
 	  @writer.tag("double", param.to_s)
 
 	when Struct
-	  h = param.members.collect do |key| 
+	  h = param.members.collect do |key|
 	    value = param[key]
-	    @writer.ele("member", 
+	    @writer.ele("member",
 	      @writer.tag("name", key.to_s),
-	      conv2value(value) 
+	      conv2value(value)
 	    )
 	  end
 
-	  @writer.ele("struct", *h) 
+	  @writer.ele("struct", *h)
 
 	when Hash
 	  # TODO: can a Hash be empty?
-	  
+
 	  h = param.collect do |key, value|
-	    @writer.ele("member", 
+	    @writer.ele("member",
 	      @writer.tag("name", key.to_s),
-	      conv2value(value) 
+	      conv2value(value)
 	    )
 	  end
 
-	  @writer.ele("struct", *h) 
+	  @writer.ele("struct", *h)
 
 	when Array
 	  # TODO: can an Array be empty?
 	  a = param.collect {|v| conv2value(v) }
-	  
-	  @writer.ele("array", 
+
+	  @writer.ele("array",
 	    @writer.ele("data", *a)
 	  )
 
 	when Time, Date, ::DateTime
-	  @writer.tag("dateTime.iso8601", param.strftime("%Y%m%dT%H:%M:%S"))  
+	  @writer.tag("dateTime.iso8601", param.strftime("%Y%m%dT%H:%M:%S"))
 
 	when XMLRPC::DateTime
-	  @writer.tag("dateTime.iso8601", 
+	  @writer.tag("dateTime.iso8601",
 	    format("%.4d%02d%02dT%02d:%02d:%02d", *param.to_a))
-   
-	when XMLRPC::Base64
-	  @writer.tag("base64", param.encoded) 
 
-	else 
+	when XMLRPC::Base64
+	  @writer.tag("base64", param.encoded)
+
+	else
           if Config::ENABLE_MARSHALLING and param.class.included_modules.include? XMLRPC::Marshallable
             # convert Ruby object into Hash
             ret = {"___class___" => param.class.name}
-            param.instance_variables.each {|v| 
+            param.instance_variables.each {|v|
               name = v[1..-1]
               val = param.instance_variable_get(v)
 
@@ -266,16 +266,16 @@ module XMLRPC
               end
             }
             return conv2value(ret)
-          else 
+          else
             ok, pa = wrong_type(param)
             if ok
               return conv2value(pa)
-            else 
+            else
               raise "Wrong type!"
             end
           end
 	end
-	 
+
 	@writer.ele("value", val)
     end
 
@@ -283,7 +283,7 @@ module XMLRPC
       false
     end
 
-    
+
   end # class Create
 
 end # module XMLRPC

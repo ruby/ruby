@@ -9,8 +9,8 @@
 # [classes] an html file for each class or module encountered.
 #           These classes are not grouped by file: if a file
 #           contains four classes, we'll generate an html
-#           file for the file itself, and four html files 
-#           for the individual classes. 
+#           file for the file itself, and four html files
+#           for the individual classes.
 #
 # [indices] we generate three indices for files, classes,
 #           and methods. These are displayed in a browser
@@ -49,19 +49,19 @@ module Generators
   FILE_DIR  = "files"
   CLASS_DIR = "classes"
   CSS_NAME  = "rdoc-style.css"
-  
+
 
   ##
   # Build a hash of all items that can be cross-referenced.
-  # This is used when we output required and included names: 
+  # This is used when we output required and included names:
   # if the names appear in this hash, we can generate
   # an html cross reference to the appropriate description.
-  # We also use this when parsing comment blocks: any decorated 
+  # We also use this when parsing comment blocks: any decorated
   # words matching an entry in this list are hyperlinked.
 
   class AllReferences
     @@refs = {}
-    
+
     def AllReferences::reset
       @@refs = {}
     end
@@ -155,7 +155,7 @@ module Generators
         end
       end
 
-      if (type == "http" || type == "link") && 
+      if (type == "http" || type == "link") &&
           url =~ /\.(gif|png|jpg|jpeg|bmp)$/
 
         "<img src=\"#{url}\" />"
@@ -179,11 +179,11 @@ module Generators
     # HEre's a hypedlink where the label is different to the URL
     #  <label>[url]
     #
-    
+
     def handle_special_TIDYLINK(special)
       text = special.text
 #      unless text =~ /(\S+)\[(.*?)\]/
-      unless text =~ /\{(.*?)\}\[(.*?)\]/ or text =~ /(\S+)\[(.*?)\]/ 
+      unless text =~ /\{(.*?)\}\[(.*?)\]/ or text =~ /(\S+)\[(.*?)\]/
         return text
       end
       label = $1
@@ -194,7 +194,7 @@ module Generators
   end
 
 
-  
+
   #####################################################################
   #
   # Handle common markup tasks for the various Html classes
@@ -217,9 +217,9 @@ module Generators
                              | \#\w+(\([.\w\*\/\+\-\=\<\>]+\))?  #  meth(**) (for operator in Fortran95)
                              | \b([A-Z]\w*(::\w+)*[.\#]\w+)  #    A::B.meth
                              | \b([A-Z]\w+(::\w+)*)       #    A::B..
-                             | \#\w+[!?=]?                #    #meth_name 
+                             | \#\w+[!?=]?                #    #meth_name
                              | \b\w+([_\/\.]+\w+)*[!?=]?  #    meth_name
-                             )/x, 
+                             )/x,
                             :CROSSREF)
 
         # external hyperlinks
@@ -284,18 +284,18 @@ module Generators
   # A Context is built by the parser to represent a container: contexts
   # hold classes, modules, methods, require lists and include lists.
   # ClassModule and TopLevel are the context objects we process here
-  # 
+  #
   class ContextUser
 
     include MarkUp
 
     attr_reader :context
-    
+
     def initialize(context, options)
       @context = context
       @options = options
     end
-      
+
     # convenience method to build a hyperlink
     def href(link, cls, name)
       %{<a href="#{link}" class="#{cls}">#{name}</a>} #"
@@ -334,7 +334,7 @@ module Generators
       meths.each do |meth|
 	res << {
           "name" => CGI.escapeHTML(meth.name),
-          "aref" => "#{path_prefix}\##{meth.aref}" 
+          "aref" => "#{path_prefix}\##{meth.aref}"
         }
       end
       res
@@ -358,7 +358,7 @@ module Generators
       end
       values
     end
-    
+
     # Build a list of constants
     def build_constants_summary_list(section)
       values = []
@@ -373,7 +373,7 @@ module Generators
       end
       values
     end
-    
+
     def build_requires_list(context)
       potentially_referenced_list(context.requires) {|fn| [fn + ".rb"] }
     end
@@ -394,12 +394,12 @@ module Generators
     def potentially_referenced_list(array)
       res = []
       array.each do |i|
-        ref = AllReferences[i.name] 
+        ref = AllReferences[i.name]
 #         if !ref
 #           container = @context.parent
 #           while !ref && container
 #             name = container.name + "::" + i.name
-#             ref = AllReferences[name] 
+#             ref = AllReferences[name]
 #             container = container.parent
 #           end
 #         end
@@ -434,12 +434,12 @@ module Generators
 
       methods = @methods.sort
       for singleton in [true, false]
-        for vis in [ :public, :protected, :private ] 
+        for vis in [ :public, :protected, :private ]
           res = []
           methods.each do |m|
             if m.section == section and
-                m.document_self and 
-                m.visibility == vis and 
+                m.document_self and
+                m.visibility == vis and
                 m.singleton == singleton
               row = {}
               if m.call_seq
@@ -459,7 +459,7 @@ module Generators
                   alias_names << {
                     'name' => other.name,
                     'aref'  => other.viewer.as_href(path)
-                  } 
+                  }
                 end
               end
               unless alias_names.empty?
@@ -479,7 +479,7 @@ module Generators
               res << row
             end
           end
-          if res.size > 0 
+          if res.size > 0
             outer << {
               "type"    => vis.to_s.capitalize,
               "category"    => singleton ? "Class" : "Instance",
@@ -492,7 +492,7 @@ module Generators
     end
 
     # Build the structured list of classes and modules contained
-    # in this context. 
+    # in this context.
 
     def build_class_list(level, from, section, infile=nil)
       res = ""
@@ -502,7 +502,7 @@ module Generators
         next unless mod.section == section
         next if infile && !mod.defined_in?(infile)
         if mod.document_self
-          res << 
+          res <<
             prefix <<
             "Module " <<
             href(url(mod.viewer.path), "link", mod.full_name) <<
@@ -516,7 +516,7 @@ module Generators
         next if infile && !cls.defined_in?(infile)
         if cls.document_self
           res      <<
-            prefix << 
+            prefix <<
             "Class " <<
             href(url(cls.viewer.path), "link", cls.full_name) <<
             "<br />\n" <<
@@ -526,7 +526,7 @@ module Generators
 
       res
     end
-    
+
     def url(target)
       HTMLGenerator.gen_url(path, target)
     end
@@ -561,7 +561,7 @@ module Generators
     end
 
     # create table of contents if we contain sections
-      
+
     def add_table_of_sections
       toc = []
       @context.sections.each do |section|
@@ -572,7 +572,7 @@ module Generators
           }
         end
       end
-      
+
       @values['toc'] = toc unless toc.empty?
     end
 
@@ -664,16 +664,16 @@ module Generators
 
         al = build_alias_summary_list(section)
         secdata["aliases"] = al unless al.empty?
-        
+
         co = build_constants_summary_list(section)
         secdata["constants"] = co unless co.empty?
-        
+
         al = build_attribute_list(section)
         secdata["attributes"] = al unless al.empty?
-        
+
         cl = build_class_list(0, @context, section)
         secdata["classlist"] = cl unless cl.empty?
-        
+
         mdl = build_method_detail_list(section)
         secdata["method_list"] = mdl unless mdl.empty?
 
@@ -690,8 +690,8 @@ module Generators
         next unless att.section == section
         if att.visibility == :public || att.visibility == :protected || @options.show_all
           entry = {
-            "name"   => CGI.escapeHTML(att.name), 
-            "rw"     => att.rw, 
+            "name"   => CGI.escapeHTML(att.name),
+            "rw"     => att.rw,
             "a_desc" => markup(att.comment, true)
           }
           unless att.visibility == :public || att.visibility == :protected
@@ -851,16 +851,16 @@ module Generators
 
         al = build_alias_summary_list(section)
         secdata["aliases"] = al unless al.empty?
-        
+
         co = build_constants_summary_list(section)
         @values["constants"] = co unless co.empty?
 
         secdata
       end
-      
+
       @values
     end
-    
+
     def write_on(f)
       value_hash
       template = TemplatePage.new(RDoc::Page::BODY,
@@ -872,7 +872,7 @@ module Generators
     def file_attribute_values
       full_path = @context.file_absolute_name
       short_name = File.basename(full_path)
-      
+
       @values["title"] = CGI.escapeHTML("File: #{short_name}")
 
       if @context.diagram
@@ -931,7 +931,7 @@ module Generators
 
       AllReferences.add(name, self)
     end
-    
+
     # return a reference to outselves to be used as an href=
     # the form depends on whether we're all in one file
     # or in multiple files
@@ -1005,7 +1005,7 @@ module Generators
         p = @context.params.gsub(/\s*\#.*/, '')
         p = p.tr("\n", " ").squeeze(" ")
         p = "(" + p + ")" unless p[0] == ?(
-        
+
         if (block = @context.block_params)
          # If this method has explicit block parameters, remove any
          # explicit &block
@@ -1022,7 +1022,7 @@ module Generators
       end
       CGI.escapeHTML(p)
     end
-    
+
     def create_source_code_file(code_body)
       meth_path = @html_class.path.sub(/\.html$/, '.src')
       File.makedirs(meth_path)
@@ -1089,7 +1089,7 @@ module Generators
     end
 
     # we rely on the fact that the first line of a source code
-    # listing has 
+    # listing has
     #    # File xxxxx, line dddd
 
     def add_line_numbers(src)
@@ -1100,7 +1100,7 @@ module Generators
         real_fmt = "%#{size}d: "
         fmt = " " * (size+2)
         src.gsub!(/^/) do
-          res = sprintf(fmt, first) 
+          res = sprintf(fmt, first)
           first += 1
           fmt = real_fmt
           res
@@ -1134,19 +1134,19 @@ module Generators
     ##
     # convert a target url to one that is relative to a given
     # path
-    
+
     def HTMLGenerator.gen_url(path, target)
       from          = File.dirname(path)
       to, to_file   = File.split(target)
-      
+
       from = from.split("/")
       to   = to.split("/")
-      
+
       while from.size > 0 and to.size > 0 and from[0] == to[0]
         from.shift
         to.shift
       end
-      
+
       from.fill("..")
       from.concat(to)
       from << to_file
@@ -1184,7 +1184,7 @@ module Generators
     ##
     # Build the initial indices and output objects
     # based on an array of TopLevel objects containing
-    # the extracted information. 
+    # the extracted information.
 
     def generate(toplevels)
       @toplevels  = toplevels
@@ -1219,7 +1219,7 @@ module Generators
     ##
     # Write out the style sheet used by the main frames
     #
-    
+
     def write_style_sheet
       template = TemplatePage.new(RDoc::Page::STYLE)
       unless @options.css
@@ -1236,7 +1236,7 @@ module Generators
 
     def gen_sub_directories
       File.makedirs(FILE_DIR, CLASS_DIR)
-    rescue 
+    rescue
       $stderr.puts $!.message
       exit 1
     end
@@ -1280,7 +1280,7 @@ module Generators
       gen_class_index
       gen_method_index
       gen_main_index
-      
+
       # this method is defined in the template file
       write_extra_pages if defined? write_extra_pages
     end
@@ -1297,8 +1297,8 @@ module Generators
     end
 
     def gen_file_index
-      gen_an_index(@files, 'Files', 
-                   RDoc::Page::FILE_INDEX, 
+      gen_an_index(@files, 'Files',
+                   RDoc::Page::FILE_INDEX,
                    "fr_file_index.html")
     end
 
@@ -1309,12 +1309,12 @@ module Generators
     end
 
     def gen_method_index
-      gen_an_index(HtmlMethod.all_methods, 'Methods', 
+      gen_an_index(HtmlMethod.all_methods, 'Methods',
                    RDoc::Page::METHOD_INDEX,
                    "fr_method_index.html")
     end
 
-    
+
     def gen_an_index(collection, title, template, filename)
       template = TemplatePage.new(RDoc::Page::FR_INDEX_BODY, template)
       res = []
@@ -1373,7 +1373,7 @@ module Generators
       unless ref
         for file in @files
           if file.document_self
-            ref = file.path 
+            ref = file.path
             break
           end
         end
@@ -1404,7 +1404,7 @@ module Generators
     ##
     # Build the initial indices and output objects
     # based on an array of TopLevel objects containing
-    # the extracted information. 
+    # the extracted information.
 
     def generate(info)
       @toplevels  = info
@@ -1449,13 +1449,13 @@ module Generators
     # all the information in to one big hash
     #
     def generate_xml
-      values = { 
+      values = {
         'charset' => @options.charset,
         'files'   => gen_into(@files),
         'classes' => gen_into(@classes),
         'title'        => CGI.escapeHTML(@options.title),
       }
-      
+
       # this method is defined in the template file
       write_extra_pages if defined? write_extra_pages
 
@@ -1489,7 +1489,7 @@ module Generators
       gen_an_index(HtmlMethod.all_methods, 'Methods')
     end
 
-    
+
     def gen_an_index(collection, title)
       res = []
       collection.sort.each do |f|

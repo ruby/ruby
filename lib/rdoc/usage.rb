@@ -48,12 +48,12 @@
 #
 #    # Display information in the Author and Copyright
 #    # sections, then exit 0.
-#    
+#
 #    RDoc::usage('Author', 'Copyright')
 #
 #    # Display information in the Author and Copyright
 #    # sections, but don't exit
-#  
+#
 #    RDoc::usage_no_exit('Author', 'Copyright')
 #
 # = Author
@@ -105,7 +105,7 @@ module RDoc
 
     markup = SM::SimpleMarkup.new
     flow_convertor = SM::ToFlow.new
-    
+
     flow = markup.convert(comment, flow_convertor)
 
     format = "plain"

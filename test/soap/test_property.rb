@@ -33,7 +33,7 @@ client.protocol.http.no_proxy:  intranet.example.com,local.example.com\r
 client.protocol.http.protocol_version = 1.0
 foo\\:bar\\=baz = qux
 foo\\\\.bar.baz=\tq\\\\ux\ttab
-  a\\ b                            =                          1   
+  a\\ b                            =                          1
 [ppp.qqq.rrr]
 sss = 3
 ttt.uuu = 4

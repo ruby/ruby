@@ -14,7 +14,7 @@ class TestSOAPBodyParts < Test::Unit::TestCase
       add_method(self, 'bar', 'p1', 'p2', 'p3')
       add_method(self, 'baz', 'p1', 'p2', 'p3')
     end
-  
+
     def foo(p1, p2, p3)
       [p1, p2, p3]
     end

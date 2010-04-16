@@ -18,11 +18,11 @@ class TestDRbYield < Test::Unit::TestCase
     @there.echo_yield_1([]) {|one|
       assert_equal([], one)
     }
-    
+
     @there.echo_yield_1(1) {|one|
       assert_equal(1, one)
     }
-    
+
     @there.echo_yield_1(nil) {|one|
       assert_equal(nil, one)
     }
@@ -140,7 +140,7 @@ class TestRubyYield < TestDRbYield
   def setup
     @there = self
   end
-  
+
   def teardown
   end
 end
@@ -150,15 +150,15 @@ class TestRuby18Yield < TestRubyYield
     def echo_yield(*arg, &proc)
       proc.call(*arg)
     end
-    
+
     def echo_yield_0(&proc)
       proc.call
     end
-    
+
     def echo_yield_1(a, &proc)
       proc.call(a)
     end
-    
+
     def echo_yield_2(a, b, &proc)
       proc.call(a, b)
     end
@@ -217,7 +217,7 @@ class TestDRbEval < Test::Unit::TestCase
   def teardown
     @ext.stop_service if @ext
   end
-  
+
   def test_01_safe1_safe4_eval
     assert_raises(SecurityError) do
       @there.method_missing(:instance_eval, 'ENV.inspect')
@@ -239,7 +239,7 @@ class TestDRbEval < Test::Unit::TestCase
 
     four = @there.four
     assert_equal(1, four.method_missing(:send, :eval, '1'))
-    
+
     remote_class = four.remote_class
 
     assert_equal(1, remote_class.class_eval('1'))
@@ -292,7 +292,7 @@ class TestDRbLarge < Test::Unit::TestCase
     ary = ["Hello, World"] * 102400
     exception = nil
     begin
-      @there.size(ary)      
+      @there.size(ary)
     rescue StandardError
       exception = $!
     end

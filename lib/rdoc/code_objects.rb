@@ -107,7 +107,7 @@ module RDoc
 
   end
 
-  # A Context is something that can hold modules, classes, methods, 
+  # A Context is something that can hold modules, classes, methods,
   # attributes, aliases, requires, and includes. Classes, modules, and
   # files are all Contexts.
 
@@ -133,7 +133,7 @@ module RDoc
 
       # Set the comment for this section from the original comment block
       # If the first line contains :section:, strip it and use the rest. Otherwise
-      # remove lines up to the line containing :section:, and look for 
+      # remove lines up to the line containing :section:, and look for
       # those lines again at the end and remove them. This lets us write
       #
       #   # ---------------------
@@ -349,7 +349,7 @@ module RDoc
       @method_list.each {|m| yield m}
     end
 
-    def each_attribute 
+    def each_attribute
       @attributes.each {|a| yield a}
     end
 
@@ -418,12 +418,12 @@ module RDoc
       end
       result
     end
-           
+
     def find_local_symbol(symbol)
       res = find_method_named(symbol) ||
             find_constant_named(symbol) ||
             find_attribute_named(symbol) ||
-            find_module_named(symbol) 
+            find_module_named(symbol)
     end
 
     # Handle sections
@@ -454,7 +454,7 @@ module RDoc
     def find_attribute_named(name)
       @attributes.find {|m| m.name == name}
     end
-    
+
   end
 
 
@@ -465,7 +465,7 @@ module RDoc
     attr_accessor :file_relative_name
     attr_accessor :file_absolute_name
     attr_accessor :diagram
-    
+
     @@all_classes = {}
     @@all_modules = {}
 
@@ -521,7 +521,7 @@ module RDoc
 
     def TopLevel.find_class_named(name)
      @@all_classes.each_value do |c|
-        res = c.find_class_named(name) 
+        res = c.find_class_named(name)
         return res if res
       end
       nil
@@ -582,7 +582,7 @@ module RDoc
 
     # to_s is simply for debugging
     def to_s
-      res = self.class.name + ": " + @name 
+      res = self.class.name + ": " + @name
       res << @comment.to_s
       res << super
       res
@@ -689,7 +689,7 @@ $stderr.puts p
   # with a particular context
   class Alias < CodeObject
     attr_accessor :text, :old_name, :new_name, :comment
-    
+
     def initialize(text, old_name, new_name, comment)
       super()
       @text = text

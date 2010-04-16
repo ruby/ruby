@@ -1,7 +1,7 @@
 #
 # = base64.rb: methods for base64-encoding and -decoding strings
 #
-# Author:: Yukihiro Matsumoto 
+# Author:: Yukihiro Matsumoto
 # Documentation:: Dave Thomas and Gavin Sinclair
 #
 # Until Ruby 1.8.1, these methods were defined at the top-level.  Now
@@ -16,7 +16,7 @@ require "kconv"
 
 # The Base64 module provides for the encoding (#encode64) and decoding
 # (#decode64) of binary data using a Base64 representation.
-# 
+#
 # The following particular features are also provided:
 # - encode into lines of a given length (#b64encode)
 # - decode the special format specified in RFC2047 for the
@@ -24,12 +24,12 @@ require "kconv"
 #
 # == Example
 #
-# A simple encoding and decoding. 
-# 
+# A simple encoding and decoding.
+#
 #     require "base64"
 #
 #     enc   = Base64.encode64('Send reinforcements')
-#                         # -> "U2VuZCByZWluZm9yY2VtZW50cw==\n" 
+#                         # -> "U2VuZCByZWluZm9yY2VtZW50cw==\n"
 #     plain = Base64.decode64(enc)
 #                         # -> "Send reinforcements"
 #
@@ -78,7 +78,7 @@ module Base64
       decode64($1)
     }
     str = Kconv::toeuc(str)
-    str.gsub!(/\n/, ' ') 
+    str.gsub!(/\n/, ' ')
     str.gsub!(/\0/, '')
     str
   end
@@ -135,7 +135,7 @@ module Base64
   # +len+ (default 60) characters.
   #
   #    require 'base64'
-  #    data = "Now is the time for all good coders\nto learn Ruby" 
+  #    data = "Now is the time for all good coders\nto learn Ruby"
   #    Base64.b64encode(data)
   #
   # <i>Generates:</i>
@@ -147,7 +147,7 @@ module Base64
     encode64(bin).scan(/.{1,#{len}}/) do
       print $&, "\n"
     end
-  end 
+  end
 
 
   module Deprecated # :nodoc:

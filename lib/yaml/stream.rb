@@ -11,7 +11,7 @@ module YAML
 			@options = opts
 			@documents = []
 		end
-		
+
         def []( i )
             @documents[ i ]
         end

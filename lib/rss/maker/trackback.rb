@@ -19,7 +19,7 @@ module RSS
         class TrackBackAboutBase < Base
           attr_accessor :value
           add_need_initialize_variable("value")
-          
+
           alias_method(:resource, :value)
           alias_method(:resource=, :value=)
           alias_method(:content, :value)

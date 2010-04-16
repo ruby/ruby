@@ -1,4 +1,4 @@
-# 
+#
 # = ftools.rb: Extra tools for the File class
 #
 # Author:: WATANABE, Hirofumi
@@ -16,7 +16,7 @@
 # creating a directory path.  See the File class for details.
 #
 # FileUtils contains all or nearly all the same functionality and more, and
-# is a recommended option over ftools 
+# is a recommended option over ftools
 #
 # When you
 #
@@ -39,7 +39,7 @@ class << File
   # If +to+ is a valid directory, +from+ will be appended to +to+, adding
   # and escaping backslashes as necessary. Otherwise, +to+ will be returned.
   # Useful for appending +from+ to +to+ only if the filename was not specified
-  # in +to+. 
+  # in +to+.
   #
   def catname(from, to)
     if directory? to

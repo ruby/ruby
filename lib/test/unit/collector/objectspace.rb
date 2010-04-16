@@ -9,14 +9,14 @@ module Test
     module Collector
       class ObjectSpace
         include Collector
-        
+
         NAME = 'collected from the ObjectSpace'
-        
+
         def initialize(source=::ObjectSpace)
           super()
           @source = source
         end
-        
+
         def collect(name=NAME)
           suite = TestSuite.new(name)
           sub_suites = []

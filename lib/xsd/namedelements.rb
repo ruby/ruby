@@ -63,7 +63,7 @@ class NamedElements
     @elements << rhs
     self
   end
-  
+
   def delete(rhs)
     @elements.delete(rhs)
   end

@@ -7,10 +7,10 @@
 #
 # --
 #
-#   
+#
 #
 module IRB
-  # 
+  #
   # InputMethod
   #	StdioInputMethod
   #	FileInputMethod
@@ -26,7 +26,7 @@ module IRB
     attr_reader :file_name
 
     attr_accessor :prompt
-    
+
     def gets
       IRB.fail NotImplementedError, "gets"
     end
@@ -36,7 +36,7 @@ module IRB
       false
     end
   end
-  
+
   class StdioInputMethod < InputMethod
     def initialize
       super
@@ -61,7 +61,7 @@ module IRB
       @line[line_no]
     end
   end
-  
+
   class FileInputMethod < InputMethod
     def initialize(file)
       super
@@ -84,7 +84,7 @@ module IRB
   begin
     require "readline"
     class ReadlineInputMethod < InputMethod
-      include Readline 
+      include Readline
       def initialize
 	super
 

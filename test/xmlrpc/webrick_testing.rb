@@ -5,19 +5,19 @@ module WEBrick_Testing
     def initialize() super(self) end
     def <<(*args) end
   end
-  
+
   def start_server(config={})
     raise "already started" if @__server
     @__started = false
 
     Thread.new {
       @__server = WEBrick::HTTPServer.new(
-        { 
+        {
           :Logger => DummyLog.new,
           :AccessLog => [],
           :StartCallback => proc { @__started = true }
         }.update(config))
-      yield @__server 
+      yield @__server
       @__server.start
       @__started = false
     }

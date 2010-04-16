@@ -64,7 +64,7 @@ module REXML
 			parser.parse(path, element).each( &block )
 		end
 
-		# Returns an array of nodes matching a given XPath.  
+		# Returns an array of nodes matching a given XPath.
 		def XPath::match element, path=nil, namespaces=nil, variables={}
 			parser = XPathParser.new
 			parser.namespaces = namespaces

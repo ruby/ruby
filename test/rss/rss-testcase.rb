@@ -37,11 +37,11 @@ module RSS
     CLOUD_PATH = "/RPC2"
     CLOUD_REGISTER_PROCEDURE = "ourFavoriteSongs.rssPleaseNotify"
     CLOUD_PROTOCOL = "xml-rpc"
-    
+
     ENCLOSURE_URL = "http://www.scripting.com/mp3s/weatherReportSuite.mp3"
     ENCLOSURE_LENGTH = "12216320"
     ENCLOSURE_TYPE = "audio/mpeg"
-    
+
     CATEGORY_DOMAIN = "http://www.superopendirectory.com/"
 
     FEED_TITLE = "dive into mark"
@@ -375,7 +375,7 @@ EOA
       rdf.items << item
       assert_not_equal("", rdf.to_s)
     end
-    
+
     def setup_rss20(rss)
       assert_equal("", rss.to_s)
 
@@ -389,7 +389,7 @@ EOA
       rss.channel = channel
       assert_not_equal("", rss.to_s)
     end
-    
+
     def setup_dummy_channel(maker)
       about = "http://hoge.com"
       title = "fugafuga"
@@ -421,7 +421,7 @@ EOA
       url = "http://hoge.com/hoge.png"
 
       maker.channel.link = link if maker.channel.link.nil?
-      
+
       maker.image.title = title
       maker.image.url = url
     end

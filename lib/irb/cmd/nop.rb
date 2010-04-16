@@ -1,5 +1,5 @@
 #
-#   nop.rb - 
+#   nop.rb -
 #   	$Release Version: 0.9.5$
 #   	$Revision$
 #   	$Date$
@@ -7,12 +7,12 @@
 #
 # --
 #
-#   
+#
 #
 module IRB
   module ExtendCommand
     class Nop
-      
+
       @RCS_ID='-$Id$-'
 
       def self.execute(conf, *opts)

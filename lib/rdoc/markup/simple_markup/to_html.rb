@@ -51,7 +51,7 @@ module SM
       tag
     end
 
-    ## 
+    ##
     # Here's the client side of the visitor pattern
 
     def start_accepting
@@ -189,8 +189,8 @@ module SM
 
     def convert_string(item)
       CGI.escapeHTML(item).
-      
-      
+
+
       # convert -- to em-dash, (-- to en-dash)
         gsub(/---?/, '&#8212;'). #gsub(/--/, '&#8211;').
 
@@ -233,8 +233,8 @@ module SM
 
     def convert_heading(level, flow)
       res =
-        annotate("<h#{level}>") + 
-        convert_flow(flow) + 
+        annotate("<h#{level}>") +
+        convert_flow(flow) +
         annotate("</h#{level}>\n")
     end
 
@@ -256,14 +256,14 @@ module SM
 
       when ListBase::LABELED
         annotate("<dt>") +
-          convert_flow(am.flow(fragment.param)) + 
+          convert_flow(am.flow(fragment.param)) +
           annotate("</dt>") +
           annotate("<dd>")
 
       when ListBase::NOTE
         annotate("<tr>") +
           annotate("<td valign=\"top\">") +
-          convert_flow(am.flow(fragment.param)) + 
+          convert_flow(am.flow(fragment.param)) +
           annotate("</td>") +
           annotate("<td>")
       else

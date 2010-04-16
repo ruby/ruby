@@ -12,10 +12,10 @@
 # found at http://www.sra.co.jp/people/m-kasahr/ruby/getoptlong/
 
 # The GetoptLong class allows you to parse command line options similarly to
-# the GNU getopt_long() C library call. Note, however, that GetoptLong is a 
+# the GNU getopt_long() C library call. Note, however, that GetoptLong is a
 # pure Ruby implementation.
 #
-# GetoptLong allows for POSIX-style options like <tt>--file</tt> as well 
+# GetoptLong allows for POSIX-style options like <tt>--file</tt> as well
 # as single letter options like <tt>-f</tt>
 #
 # The empty option <tt>--</tt> (two minus symbols) is used to end option
@@ -42,16 +42,16 @@
 #     #    greet user by name, if name not supplied default is John
 #     #
 #     # DIR: The directory in which to issue the greeting.
-#     
+#
 #     require 'getoptlong'
 #     require 'rdoc/usage'
-#     
+#
 #     opts = GetoptLong.new(
 #       [ '--help', '-h', GetoptLong::NO_ARGUMENT ],
 #       [ '--repeat', '-n', GetoptLong::REQUIRED_ARGUMENT ],
 #       [ '--name', GetoptLong::OPTIONAL_ARGUMENT ]
 #     )
-#     
+#
 #     dir = nil
 #     name = nil
 #     repetitions = 1
@@ -69,14 +69,14 @@
 #           end
 #       end
 #     end
-#     
+#
 #     if ARGV.length != 1
 #       puts "Missing dir argument (try --help)"
 #       exit 0
 #     end
-#     
+#
 #     dir = ARGV.shift
-#     
+#
 #     Dir.chdir(dir)
 #     for i in (1..repetitions)
 #       print "Hello"
@@ -120,7 +120,7 @@ class GetoptLong
   # Set up option processing.
   #
   # The options to support are passed to new() as an array of arrays.
-  # Each sub-array contains any number of String option names which carry 
+  # Each sub-array contains any number of String option names which carry
   # the same meaning, and one of the following flags:
   #
   # GetoptLong::NO_ARGUMENT :: Option does not take an argument.
@@ -200,23 +200,23 @@ class GetoptLong
   # the processing of options as follows:
   #
   # <b>REQUIRE_ORDER</b> :
-  # 
+  #
   # Options are required to occur before non-options.
   #
   # Processing of options ends as soon as a word is encountered that has not
   # been preceded by an appropriate option flag.
   #
   # For example, if -a and -b are options which do not take arguments,
-  # parsing command line arguments of '-a one -b two' would result in 
-  # 'one', '-b', 'two' being left in ARGV, and only ('-a', '') being 
+  # parsing command line arguments of '-a one -b two' would result in
+  # 'one', '-b', 'two' being left in ARGV, and only ('-a', '') being
   # processed as an option/arg pair.
   #
   # This is the default ordering, if the environment variable
   # POSIXLY_CORRECT is set. (This is for compatibility with GNU getopt_long.)
   #
   # <b>PERMUTE</b> :
-  #  
-  # Options can occur anywhere in the command line parsed. This is the 
+  #
+  # Options can occur anywhere in the command line parsed. This is the
   # default behavior.
   #
   # Every sequence of words which can be interpreted as an option (with or
@@ -233,7 +233,7 @@ class GetoptLong
   #
   # <b>RETURN_IN_ORDER</b> :
   #
-  # All words on the command line are processed as options. Words not 
+  # All words on the command line are processed as options. Words not
   # preceded by a short or long option flag are passed as arguments
   # with an option of '' (empty string).
   #
@@ -279,7 +279,7 @@ class GetoptLong
     # The method is failed if option processing has already started.
     #
     if @status != STATUS_YET
-      raise RuntimeError, 
+      raise RuntimeError,
 	"invoke set_options, but option processing has already started"
     end
 
@@ -331,7 +331,7 @@ class GetoptLong
 	end
 
 	#
-	# Register the option (`i') to the `@canonical_names' and 
+	# Register the option (`i') to the `@canonical_names' and
 	# `@canonical_names' Hashes.
 	#
 	if canonical_name == nil
@@ -463,7 +463,7 @@ class GetoptLong
 	return nil
       end
       argument = ARGV.shift
-    elsif @ordering == REQUIRE_ORDER 
+    elsif @ordering == REQUIRE_ORDER
       if (ARGV[0] !~ /^-./)
 	terminate
 	return nil
@@ -600,7 +600,7 @@ class GetoptLong
   #
   # The block is called repeatedly with two arguments:
   # The first is the option name.
-  # The second is the argument which followed it (if any). 
+  # The second is the argument which followed it (if any).
   # Example: ('--opt', 'value')
   #
   # The option name is always converted to the first (preferred)

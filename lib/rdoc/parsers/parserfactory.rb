@@ -15,23 +15,23 @@ module RDoc
   # to return an appropriately parsed TopLevel code object.
   #
   # The ParseFactory is used to redirect to the correct parser given a filename
-  # extension. This magic works because individual parsers have to register 
+  # extension. This magic works because individual parsers have to register
   # themselves with us as they are loaded in. The do this using the following
   # incantation
   #
   #
   #    require "rdoc/parsers/parsefactory"
-  #    
+  #
   #    module RDoc
-  #    
+  #
   #      class XyzParser
   #        extend ParseFactory                  <<<<
   #        parse_files_matching /\.xyz$/        <<<<
-  #    
+  #
   #        def initialize(file_name, body, options)
   #          ...
   #        end
-  #    
+  #
   #        def scan
   #          ...
   #        end
@@ -74,7 +74,7 @@ module RDoc
       true
     end
 
-    # Find the correct parser for a particular file name. Return a 
+    # Find the correct parser for a particular file name. Return a
     # SimpleParser for ones that we don't know
 
     def ParserFactory.parser_for(top_level, file_name, body, options, stats)
@@ -88,7 +88,7 @@ module RDoc
       end
       parser_description = can_parse(file_name)
       if parser_description
-        parser = parser_description.parser 
+        parser = parser_description.parser
       else
         parser = SimpleParser
       end

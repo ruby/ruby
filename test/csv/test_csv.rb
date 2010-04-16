@@ -153,7 +153,7 @@ public
   end
 
   #### CSV::Reader unit test
-  
+
   def test_Reader_each
     file = File.open(@infile, "rb")
     begin
@@ -351,7 +351,7 @@ public
 
 
   #### CSV::Writer unit test
-  
+
   def test_Writer_s_new
     assert_raises(RuntimeError) do
       CSV::Writer.new(nil)
@@ -831,7 +831,7 @@ public
     assert_equal([nil], CSV.parse_line(""))
     assert_equal([nil], CSV.parse_line("\n"))
     assert_equal([""], CSV.parse_line("\"\"\n"))
-    
+
     # Illegal format.
     buf = []
     row = CSV.parse_line("a,b,\"c\"\ra")
@@ -1368,7 +1368,7 @@ public
     # At first, check ruby's behaviour.
     assert_equal("", "abc"[3, 1])
     assert_equal(nil, "abc"[4, 1])
-    
+
     setupInputStream(22, 1024) do |s|
       [0, 1, 9, 10, 19, 20, 21].each do |idx|
 	assert_equal(expStr(idx, 1), s[idx, 1], idx.to_s)
@@ -1432,7 +1432,7 @@ public
       assert_equal(nil, s.get(-1))
     end
   end
-  
+
   def test_StreamBuf_get_n
     setupInputStream(22, 1024) do |s|
       [0, 1, 9, 10, 19, 20, 21].each do |idx|

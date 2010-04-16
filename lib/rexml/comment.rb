@@ -14,11 +14,11 @@ module REXML
 
 		##
 		# Constructor.  The first argument can be one of three types:
-		# @param first If String, the contents of this comment are set to the 
+		# @param first If String, the contents of this comment are set to the
 		# argument.  If Comment, the argument is duplicated.  If
 		# Source, the argument is scanned for a comment.
-		# @param second If the first argument is a Source, this argument 
-		# should be nil, not supplied, or a Parent to be set as the parent 
+		# @param second If the first argument is a Source, this argument
+		# should be nil, not supplied, or a Parent to be set as the parent
 		# of this object
 		def initialize( first, second = nil )
 			#puts "IN COMMENT CONSTRUCTOR; SECOND IS #{second.type}"

@@ -14,7 +14,7 @@
 #
 #   require "open3"
 #   include Open3
-#   
+#
 #   stdin, stdout, stderr = popen3('nroff -man')
 #
 # Open3.popen3 can also take a block which will receive stdin, stdout and
@@ -27,10 +27,10 @@
 #
 
 module Open3
-  # 
+  #
   # Open stdin, stdout, and stderr streams and start external executable.
   # Non-block form:
-  #   
+  #
   #   require 'open3'
   #
   #   stdin, stdout, stderr = Open3.popen3(cmd)

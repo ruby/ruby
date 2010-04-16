@@ -1,5 +1,5 @@
 #
-#               getopts.rb - 
+#               getopts.rb -
 #                       $Release Version: $
 #                       $Revision$
 #                       $Date$

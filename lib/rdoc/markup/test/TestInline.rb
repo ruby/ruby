@@ -12,20 +12,20 @@ class TestInline < Test::Unit::TestCase
 
     @bold_on  = @am.changed_attribute_by_name([], [:BOLD])
     @bold_off = @am.changed_attribute_by_name([:BOLD], [])
-    
+
     @tt_on    = @am.changed_attribute_by_name([], [:TT])
     @tt_off   = @am.changed_attribute_by_name([:TT], [])
-    
+
     @em_on    = @am.changed_attribute_by_name([], [:EM])
     @em_off   = @am.changed_attribute_by_name([:EM], [])
-    
+
     @bold_em_on   = @am.changed_attribute_by_name([], [:BOLD] | [:EM])
     @bold_em_off  = @am.changed_attribute_by_name([:BOLD] | [:EM], [])
-    
+
     @em_then_bold = @am.changed_attribute_by_name([:EM], [:EM] | [:BOLD])
-    
+
     @em_to_bold   = @am.changed_attribute_by_name([:EM], [:BOLD])
-    
+
     @am.add_word_pair("{", "}", :WOMBAT)
     @wombat_on    = @am.changed_attribute_by_name([], [:WOMBAT])
     @wombat_off   = @am.changed_attribute_by_name([:WOMBAT], [])
@@ -44,9 +44,9 @@ class TestInline < Test::Unit::TestCase
                        \b([A-Z]\w+(::\w+)*)
                        | \#\w+[!?=]?
                        | \b\w+([_\/\.]+\w+)+[!?=]?
-                      )/x, 
+                      )/x,
                     :CROSSREF)
-    
+
     assert_equal(["cat"], @am.flow("cat"))
 
     assert_equal(["cat ", crossref("#fred"), " dog"].flatten,
@@ -101,35 +101,35 @@ class TestInline < Test::Unit::TestCase
     assert_equal(["cat ", @em_on, "and", @em_off, " ", @bold_on, "dog", @bold_off],
                   @am.flow("cat _and_ *dog*"))
 
-    assert_equal(["cat ", @em_on, "a__nd", @em_off, " ", @bold_on, "dog", @bold_off], 
+    assert_equal(["cat ", @em_on, "a__nd", @em_off, " ", @bold_on, "dog", @bold_off],
                   @am.flow("cat _a__nd_ *dog*"))
   end
 
   def test_html_like
     assert_equal(["cat ", @tt_on, "dog", @tt_off], @am.flow("cat <tt>dog</Tt>"))
 
-    assert_equal(["cat ", @em_on, "and", @em_off, " ", @bold_on, "dog", @bold_off], 
+    assert_equal(["cat ", @em_on, "and", @em_off, " ", @bold_on, "dog", @bold_off],
                   @am.flow("cat <i>and</i> <B>dog</b>"))
-    
-    assert_equal(["cat ", @em_on, "and ", @em_then_bold, "dog", @bold_em_off], 
+
+    assert_equal(["cat ", @em_on, "and ", @em_then_bold, "dog", @bold_em_off],
                   @am.flow("cat <i>and <B>dog</B></I>"))
-    
-    assert_equal(["cat ", @em_on, "and ", @em_to_bold, "dog", @bold_off], 
+
+    assert_equal(["cat ", @em_on, "and ", @em_to_bold, "dog", @bold_off],
                   @am.flow("cat <i>and </i><b>dog</b>"))
-    
-    assert_equal(["cat ", @em_on, "and ", @em_to_bold, "dog", @bold_off], 
+
+    assert_equal(["cat ", @em_on, "and ", @em_to_bold, "dog", @bold_off],
                   @am.flow("cat <i>and <b></i>dog</b>"))
-    
-    assert_equal([@tt_on, "cat", @tt_off, " ", @em_on, "and ", @em_to_bold, "dog", @bold_off], 
+
+    assert_equal([@tt_on, "cat", @tt_off, " ", @em_on, "and ", @em_to_bold, "dog", @bold_off],
                   @am.flow("<tt>cat</tt> <i>and <b></i>dog</b>"))
 
-    assert_equal(["cat ", @em_on, "and ", @em_then_bold, "dog", @bold_em_off], 
+    assert_equal(["cat ", @em_on, "and ", @em_then_bold, "dog", @bold_em_off],
                   @am.flow("cat <i>and <b>dog</b></i>"))
-    
-    assert_equal(["cat ", @bold_em_on, "and", @bold_em_off, " dog"], 
+
+    assert_equal(["cat ", @bold_em_on, "and", @bold_em_off, " dog"],
                   @am.flow("cat <i><b>and</b></i> dog"))
-    
-    
+
+
   end
 
   def test_protect
@@ -137,12 +137,12 @@ class TestInline < Test::Unit::TestCase
 
     assert_equal(["cat <tt>dog</Tt>"], @am.flow("cat \\<tt>dog</Tt>"))
 
-    assert_equal(["cat ", @em_on, "and", @em_off, " <B>dog</b>"], 
+    assert_equal(["cat ", @em_on, "and", @em_off, " <B>dog</b>"],
                   @am.flow("cat <i>and</i> \\<B>dog</b>"))
-    
+
     assert_equal(["*word* or <b>text</b>"], @am.flow("\\*word* or \\<b>text</b>"))
 
-    assert_equal(["_cat_", @em_on, "dog", @em_off], 
+    assert_equal(["_cat_", @em_on, "dog", @em_off],
                   @am.flow("\\_cat_<i>dog</i>"))
   end
 

@@ -1,5 +1,5 @@
 #
-#   shell/system-command.rb - 
+#   shell/system-command.rb -
 #   	$Release Version: 0.6.0 $
 #   	$Revision$
 #   	$Date$
@@ -7,7 +7,7 @@
 #
 # --
 #
-#   
+#
 #
 
 require "shell/filter"
@@ -21,7 +21,7 @@ class Shell
       super(sh)
       @command = command
       @opts = opts
-      
+
       @input_queue = Queue.new
       @pid = nil
 
@@ -148,9 +148,9 @@ class Shell
     end
 
     # ex)
-    #    if you wish to output: 
+    #    if you wish to output:
     #	    "shell: job(#{@command}:#{@pid}) close pipe-out."
-    #	 then 
+    #	 then
     #	    mes: "job(%id) close pipe-out."
     #    yorn: Boolean(@shell.debug? or @shell.verbose?)
     def notify(*opts, &block)

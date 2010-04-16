@@ -27,7 +27,7 @@ class SimpleExtension < Info
   def targetnamespace
     parent.targetnamespace
   end
-  
+
   def valid?(value)
     true
   end

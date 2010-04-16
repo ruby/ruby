@@ -9,7 +9,7 @@ module DL
       # ["alias name",
       #  "type name", encoding_method, decoding_method,   for function prototypes
       #  "type name", encoding_method, decoding_method]   for structures (not implemented)
-      
+
       # for Windows
       ["DWORD",  "unsigned long", nil, nil,
                  "unsigned long", nil, nil],
@@ -49,7 +49,7 @@ module DL
                  "unsigned int", nil, nil],
       ["HWND",   "unsigned int", nil, nil,
                  "unsigned int", nil, nil],
-      
+
       # Others
       ["uint",   "unsigned int", nil, nil,
                  "unsigned int", nil, nil],

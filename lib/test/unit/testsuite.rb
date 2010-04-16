@@ -16,7 +16,7 @@ module Test
     # meaningful TestSuite instance.
     class TestSuite
       attr_reader :name, :tests
-      
+
       STARTED = name + "::STARTED"
       FINISHED = name + "::FINISHED"
 
@@ -54,7 +54,7 @@ module Test
         @tests.each { |test| total_size += test.size }
         total_size
       end
-      
+
       def empty?
         tests.empty?
       end
@@ -64,7 +64,7 @@ module Test
       def to_s
         @name
       end
-      
+
       # It's handy to be able to compare TestSuite instances.
       def ==(other)
         return false unless(other.kind_of?(self.class))

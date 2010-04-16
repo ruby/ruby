@@ -7,7 +7,7 @@
 #
 # --
 #
-#   
+#
 #
 
 require "e2mmap"
@@ -25,20 +25,20 @@ module IRB
     D_WARN = DOUT::def_notifier(1, "Warn: ")
     D_DEBUG = DOUT::def_notifier(2, "Debug: ")
     D_DETAIL = DOUT::def_notifier(4, "Detail: ")
-    
+
     DOUT.level = Notifier::D_NOMSG
 
     def initialize
       @head = Node.new("")
     end
-    
+
     def def_rule(token, preproc = nil, postproc = nil, &block)
       D_DETAIL.pp token
 
       postproc = block if block_given?
       node = create(token, preproc, postproc)
     end
-    
+
     def def_rules(*tokens, &block)
       if block_given?
 	p = block
@@ -47,18 +47,18 @@ module IRB
 	def_rule(token, nil, p)
       end
     end
-    
+
     def preproc(token, proc)
       node = search(token)
       node.preproc=proc
     end
-    
-    #要チェック? 
+
+    #要チェック?
     def postproc(token)
       node = search(token, proc)
       node.postproc=proc
     end
-    
+
     def search(token)
       @head.search(token.split(//))
     end
@@ -66,7 +66,7 @@ module IRB
     def create(token, preproc = nil, postproc = nil)
       @head.create_subnode(token.split(//), preproc, postproc)
     end
-    
+
     def match(token)
       case token
       when Array
@@ -79,14 +79,14 @@ module IRB
       D_DETAIL.exec_if{D_DEATIL.printf "match end: %s:%s\n", ret, token.inspect}
       ret
     end
-    
+
     def inspect
       format("<SLex: @head = %s>", @head.inspect)
     end
 
     #----------------------------------------------------------------------
     #
-    #   class Node - 
+    #   class Node -
     #
     #----------------------------------------------------------------------
     class Node
@@ -100,7 +100,7 @@ module IRB
 
       attr_accessor :preproc
       attr_accessor :postproc
-      
+
       def search(chrs, opt = nil)
 	return self if chrs.empty?
 	ch = chrs.shift
@@ -115,7 +115,7 @@ module IRB
 	  end
 	end
       end
-      
+
       def create_subnode(chrs, preproc = nil, postproc = nil)
 	if chrs.empty?
 	  if @postproc
@@ -128,7 +128,7 @@ module IRB
 	  end
 	  return self
 	end
-	
+
 	ch = chrs.shift
 	if node = @Tree[ch]
 	  if chrs.empty?
@@ -162,7 +162,7 @@ module IRB
       # chrs: String
       #       character array
       #       io must have getc()/ungetc(); and ungetc() must be
-      #       able to be called arbitrary number of times. 
+      #       able to be called arbitrary number of times.
       #
       def match(chrs, op = "")
 	D_DETAIL.print "match>: ", chrs, "op:", op, "\n"
@@ -257,14 +257,14 @@ if $0 == __FILE__
     print "1: ", tr.inspect, "\n"
     tr.def_rule("==") {print "==\n"}
     print "2: ", tr.inspect, "\n"
-    
+
     print "case 1:\n"
     print tr.match("="), "\n"
     print "case 2:\n"
     print tr.match("=="), "\n"
     print "case 3:\n"
     print tr.match("=>"), "\n"
-    
+
   when "2"
     tr = SLex.new
     print "0: ", tr.inspect, "\n"
@@ -272,7 +272,7 @@ if $0 == __FILE__
     print "1: ", tr.inspect, "\n"
     tr.def_rule("==", proc{false}) {print "==\n"}
     print "2: ", tr.inspect, "\n"
-    
+
     print "case 1:\n"
     print tr.match("="), "\n"
     print "case 2:\n"

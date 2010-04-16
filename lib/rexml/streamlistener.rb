@@ -1,14 +1,14 @@
 module REXML
 	# A template for stream parser listeners.
 	# Note that the declarations (attlistdecl, elementdecl, etc) are trivially
-	# processed; REXML doesn't yet handle doctype entity declarations, so you 
+	# processed; REXML doesn't yet handle doctype entity declarations, so you
 	# have to parse them out yourself.
 	module StreamListener
 		# Called when a tag is encountered.
 		# @p name the tag name
 		# @p attrs an array of arrays of attribute/value pairs, suitable for
 		# use with assoc or rassoc.  IE, <tag attr1="value1" attr2="value2">
-		# will result in 
+		# will result in
 		# tag_start( "tag", # [["attr1","value1"],["attr2","value2"]])
 		def tag_start name, attrs
 		end
@@ -56,7 +56,7 @@ module REXML
 		# The argument passed to this method is an array of the entity
 		# declaration.  It can be in a number of formats, but in general it
 		# returns (example, result):
-		#  <!ENTITY % YN '"Yes"'>  
+		#  <!ENTITY % YN '"Yes"'>
 		#  ["%", "YN", "'\"Yes\"'", "\""]
 		#  <!ENTITY % YN 'Yes'>
 		#  ["%", "YN", "'Yes'", "s"]

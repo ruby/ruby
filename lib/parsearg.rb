@@ -7,7 +7,7 @@
 #
 # --
 #
-#	
+#
 #
 
 warn "Warning:#{caller[0].sub(/:in `.*'\z/, '')}: parsearg is deprecated after Ruby 1.8.1; use optparse instead"

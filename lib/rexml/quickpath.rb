@@ -68,7 +68,7 @@ module REXML
 				ns = $1
 				rest = $'
 				elements.delete_if do |element|
-					!(element.kind_of? Element and 
+					!(element.kind_of? Element and
 						(element.expanded_name == name or
 						 (element.name == name and
 						  element.namespace == Functions.namespace_context[ns])))
@@ -135,16 +135,16 @@ module REXML
 				matches = filter(elements.collect{|element| element.next_sibling}.uniq,
 					rest)
 			when "previous-sibling"
-				matches = filter(elements.collect{|element| 
+				matches = filter(elements.collect{|element|
 					element.previous_sibling}.uniq, rest )
 			end
 			return matches.uniq
 		end
 
 		# A predicate filters a node-set with respect to an axis to produce a
-		# new node-set. For each node in the node-set to be filtered, the 
-		# PredicateExpr is evaluated with that node as the context node, with 
-		# the number of nodes in the node-set as the context size, and with the 
+		# new node-set. For each node in the node-set to be filtered, the
+		# PredicateExpr is evaluated with that node as the context node, with
+		# the number of nodes in the node-set as the context size, and with the
 		# proximity position of the node in the node-set with respect to the
 		# axis as the context position; if PredicateExpr evaluates to true for
 		# that node, the node is included in the new node-set; otherwise, it is
@@ -157,7 +157,7 @@ module REXML
 		# number, then the result will be converted as if by a call to the
 		# boolean function. Thus a location path para[3] is equivalent to
 		# para[position()=3].
-		def QuickPath::predicate( elements, path ) 
+		def QuickPath::predicate( elements, path )
 			ind = 1
 			bcount = 1
 			while bcount > 0
@@ -170,21 +170,21 @@ module REXML
 			rest = path[ind+1..-1]
 
 			# have to change 'a [=<>] b [=<>] c' into 'a [=<>] b and b [=<>] c'
-			predicate.gsub!( /([^\s(and)(or)<>=]+)\s*([<>=])\s*([^\s(and)(or)<>=]+)\s*([<>=])\s*([^\s(and)(or)<>=]+)/u ) { 
+			predicate.gsub!( /([^\s(and)(or)<>=]+)\s*([<>=])\s*([^\s(and)(or)<>=]+)\s*([<>=])\s*([^\s(and)(or)<>=]+)/u ) {
 				"#$1 #$2 #$3 and #$3 #$4 #$5"
 			}
 			# Let's do some Ruby trickery to avoid some work:
 			predicate.gsub!( /&/u, "&&" )
 			predicate.gsub!( /=/u, "==" )
 			predicate.gsub!( /@(\w[-\w.]*)/u ) {
-				"attribute(\"#$1\")" 
+				"attribute(\"#$1\")"
 			}
 			predicate.gsub!( /\bmod\b/u, "%" )
 			predicate.gsub!( /\b(\w[-\w.]*\()/u ) {
 				fname = $1
 				fname.gsub( /-/u, "_" )
 			}
-			
+
 			Functions.pair = [ 0, elements.size ]
 			results = []
 			elements.each do |element|

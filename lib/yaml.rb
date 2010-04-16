@@ -4,7 +4,7 @@
 # = yaml.rb: top-level module with methods for loading and parsing YAML documents
 #
 # Author:: why the lucky stiff
-# 
+#
 
 require 'stringio'
 require 'yaml/error'
@@ -24,18 +24,18 @@ require 'yaml/constants'
 # serialization format. Together with the Unicode standard for characters, it
 # provides all the information necessary to understand YAML Version 1.0
 # and construct computer programs to process it.
-#                         
+#
 # See http://yaml.org/ for more information.  For a quick tutorial, please
 # visit YAML In Five Minutes (http://yaml.kwiki.org/?YamlInFiveMinutes).
-#                              
+#
 # == About This Library
-#                         
+#
 # The YAML 1.0 specification outlines four stages of YAML loading and dumping.
 # This library honors all four of those stages, although data is really only
 # available to you in three stages.
-#     
+#
 # The four stages are: native, representation, serialization, and presentation.
-#     
+#
 # The native stage refers to data which has been loaded completely into Ruby's
 # own types. (See +YAML::load+.)
 #
@@ -43,14 +43,14 @@ require 'yaml/constants'
 # +YAML::BaseNode+ objects.  In this stage, the document is available as a
 # tree of node objects.  You can perform YPath queries and transformations
 # at this level.  (See +YAML::parse+.)
-#   
+#
 # The serialization stage happens inside the parser.  The YAML parser used in
 # Ruby is called Syck.  Serialized nodes are available in the extension as
 # SyckNode structs.
-#       
+#
 # The presentation stage is the YAML document itself.  This is accessible
 # to you as a string.  (See +YAML::dump+.)
-#   
+#
 # For more information about the various information models, see Chapter
 # 3 of the YAML 1.0 Specification (http://yaml.org/spec/#id2491269).
 #
@@ -102,7 +102,7 @@ module YAML
 
 	#
 	# Converts _obj_ to YAML and writes the YAML result to _io_.
-    #     
+    #
     #   File.open( 'animals.yaml', 'w' ) do |out|
     #     YAML.dump( ['badger', 'elephant', 'tiger'], out )
     #   end
@@ -168,8 +168,8 @@ module YAML
     # Can also load from a string.
     #
     #   YAML.parse( "--- :locked" )
-    #      #=> #<YAML::Syck::Node:0x82edddc 
-    #            @type_id="tag:ruby.yaml.org,2002:sym", 
+    #      #=> #<YAML::Syck::Node:0x82edddc
+    #            @type_id="tag:ruby.yaml.org,2002:sym",
     #            @value=":locked", @kind=:scalar>
     #
 	def YAML.parse( io )
@@ -263,7 +263,7 @@ module YAML
     end
 
 	#
-	# Loads all documents from the current _io_ stream, 
+	# Loads all documents from the current _io_ stream,
     # returning a +YAML::Stream+ object containing all
     # loaded documents.
 	#
@@ -271,7 +271,7 @@ module YAML
 		d = nil
 		parser.load_documents( io ) do |doc|
 			d = YAML::Stream.new if not d
-			d.add( doc ) 
+			d.add( doc )
         end
 		return d
 	end
@@ -288,7 +288,7 @@ module YAML
 	def YAML.dump_stream( *objs )
 		d = YAML::Stream.new
         objs.each do |doc|
-			d.add( doc ) 
+			d.add( doc )
         end
         d.emit
 	end
@@ -378,7 +378,7 @@ module YAML
 	# Allocate an Emitter if needed
 	#
 	def YAML.quick_emit( oid, opts = {}, &e )
-        out = 
+        out =
             if opts.is_a? YAML::Emitter
                 opts
             else
@@ -390,7 +390,7 @@ module YAML
             end
         out.emit( oid, &e )
 	end
-	
+
 end
 
 require 'yaml/rubytypes'
@@ -422,7 +422,7 @@ module Kernel
     #
     # _produces:_
     #
-    #   --- !ruby/struct:S 
+    #   --- !ruby/struct:S
     #   name: dave
     #   state: TX
     #

@@ -382,7 +382,7 @@ module RUNIT
       end
       assert(flag, err.to_s)
     end
-      
+
     def sub_assert_raise_error(p)
       flag = false
       err = nil

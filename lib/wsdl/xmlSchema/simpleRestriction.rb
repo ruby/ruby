@@ -27,7 +27,7 @@ class SimpleRestriction < Info
     @length = nil
     @pattern = nil
   end
-  
+
   def valid?(value)
     return false unless check_restriction(value)
     return false unless check_length(value)

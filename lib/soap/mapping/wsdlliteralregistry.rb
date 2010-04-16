@@ -222,7 +222,7 @@ private
       end
     end
   end
-  
+
   def add_attributes2soap(obj, ele)
     attributes = schema_attribute_definition(obj.class)
     if attributes

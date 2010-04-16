@@ -3,7 +3,7 @@ require 'rexml/encoding'
 module REXML
 	class Output
 		include Encoding
-    
+
     attr_reader :encoding
 
 		def initialize real_IO, encd="iso-8859-1"

@@ -7,7 +7,7 @@
 #
 # --
 #
-#   
+#
 #
 
 autoload :Kconv, "kconv"
@@ -20,7 +20,7 @@ module IRB
     LOCALE_DIR = "/lc/"
 
     def initialize(locale = nil)
-      @lang = locale || ENV["IRB_LANG"] || ENV["LC_MESSAGES"] || ENV["LC_ALL"] || ENV["LANG"] || "C" 
+      @lang = locale || ENV["IRB_LANG"] || ENV["LC_MESSAGES"] || ENV["LC_ALL"] || ENV["LANG"] || "C"
     end
 
     attr_reader :lang
@@ -101,7 +101,7 @@ module IRB
     end
 
     alias toplevel_load load
-    
+
     def load(file, priv=nil)
       dir = File.dirname(file)
       dir = "" if dir == "."
@@ -115,7 +115,7 @@ module IRB
 	  lc_path = search_file(dir, base)
 	  return real_load(lc_path, priv) if lc_path
 	end
-	
+
 	for path in $:
 	  lc_path = search_file(path + "/" + dir, base)
 	  return real_load(lc_path, priv) if lc_path
@@ -124,7 +124,7 @@ module IRB
 	@lang = back if back
       end
       raise LoadError, "No such file to load -- #{file}"
-    end 
+    end
 
     def real_load(path, priv)
       src = self.String(File.read(path))

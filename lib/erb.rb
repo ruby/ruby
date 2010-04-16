@@ -20,7 +20,7 @@
 # purposes of generating document information details and/or flow control.
 #
 # A very simple example is this:
-# 
+#
 #   require 'erb'
 #
 #   x = 42
@@ -68,39 +68,39 @@
 # <tt>%q{...}</tt> to avoid trouble with the backslash.
 #
 #   require "erb"
-#   
+#
 #   # Create template.
 #   template = %q{
 #     From:  James Edward Gray II <james@grayproductions.net>
 #     To:  <%= to %>
 #     Subject:  Addressing Needs
-#   
+#
 #     <%= to[/\w+/] %>:
-#   
+#
 #     Just wanted to send a quick note assuring that your needs are being
 #     addressed.
-#   
+#
 #     I want you to know that my team will keep working on the issues,
 #     especially:
-#   
+#
 #     <%# ignore numerous minor requests -- focus on priorities %>
 #     % priorities.each do |priority|
 #       * <%= priority %>
 #     % end
-#   
+#
 #     Thanks for your patience.
-#   
+#
 #     James Edward Gray II
 #   }.gsub(/^  /, '')
-#   
+#
 #   message = ERB.new(template, 0, "%<>")
-#   
+#
 #   # Set up template data.
 #   to = "Community Spokesman <spokesman@ruby_community.org>"
 #   priorities = [ "Run Ruby Quiz",
 #                  "Document Modules",
 #                  "Answer Questions on Ruby Talk" ]
-#   
+#
 #   # Produce result.
 #   email = message.result
 #   puts email
@@ -110,19 +110,19 @@
 #   From:  James Edward Gray II <james@grayproductions.net>
 #   To:  Community Spokesman <spokesman@ruby_community.org>
 #   Subject:  Addressing Needs
-#   
+#
 #   Community:
-#   
+#
 #   Just wanted to send a quick note assuring that your needs are being addressed.
-#   
+#
 #   I want you to know that my team will keep working on the issues, especially:
-#   
+#
 #       * Run Ruby Quiz
 #       * Document Modules
 #       * Answer Questions on Ruby Talk
-#   
+#
 #   Thanks for your patience.
-#   
+#
 #   James Edward Gray II
 #
 # === Ruby in HTML
@@ -132,7 +132,7 @@
 # variables in the Product object can be resolved.
 #
 #   require "erb"
-#   
+#
 #   # Build template data class.
 #   class Product
 #     def initialize( code, name, desc, cost )
@@ -140,37 +140,37 @@
 #       @name = name
 #       @desc = desc
 #       @cost = cost
-#        	
+#
 #       @features = [ ]
 #     end
-#   
+#
 #     def add_feature( feature )
 #       @features << feature
 #     end
-#   
+#
 #     # Support templating of member data.
 #     def get_binding
 #       binding
 #     end
-#   
+#
 #     # ...
 #   end
-#   
+#
 #   # Create template.
 #   template = %{
 #     <html>
 #       <head><title>Ruby Toys -- <%= @name %></title></head>
 #       <body>
-#   
+#
 #         <h1><%= @name %> (<%= @code %>)</h1>
 #         <p><%= @desc %></p>
-#   
+#
 #         <ul>
 #           <% @features.each do |f| %>
 #             <li><b><%= f %></b></li>
 #           <% end %>
 #         </ul>
-#   
+#
 #         <p>
 #           <% if @cost < 10 %>
 #             <b>Only <%= @cost %>!!!</b>
@@ -178,13 +178,13 @@
 #              Call for a price, today!
 #           <% end %>
 #         </p>
-#    
+#
 #       </body>
 #     </html>
 #   }.gsub(/^  /, '')
-#   
+#
 #   rhtml = ERB.new(template)
-#   
+#
 #   # Set up template data.
 #   toy = Product.new( "TZ-1002",
 #                      "Rubysapien",
@@ -195,7 +195,7 @@
 #   toy.add_feature("Karate-Chop Action!!!")
 #   toy.add_feature("Matz signature on left leg.")
 #   toy.add_feature("Gem studded eyes... Rubies, of course!")
-#   
+#
 #   # Produce result.
 #   rhtml.run(toy.get_binding)
 #
@@ -204,10 +204,10 @@
 #    <html>
 #      <head><title>Ruby Toys -- Rubysapien</title></head>
 #      <body>
-#    
+#
 #        <h1>Rubysapien (TZ-1002)</h1>
 #        <p>Geek's Best Friend!  Responds to Ruby commands...</p>
-#    
+#
 #        <ul>
 #            <li><b>Listens for verbal commands in the Ruby language!</b></li>
 #            <li><b>Ignores Perl, Java, and all C variants.</b></li>
@@ -215,15 +215,15 @@
 #            <li><b>Matz signature on left leg.</b></li>
 #            <li><b>Gem studded eyes... Rubies, of course!</b></li>
 #        </ul>
-#    
+#
 #        <p>
 #             Call for a price, today!
 #        </p>
-#    
+#
 #      </body>
 #    </html>
 #
-# 
+#
 # == Notes
 #
 # There are a variety of templating solutions available in various Ruby projects:
@@ -300,7 +300,7 @@ class ERB
 	end
       end
       attr_accessor :stag
-      
+
       def scan(&block)
 	@stag = nil
 	if @percent
@@ -407,7 +407,7 @@ class ERB
 	end
       end
     end
-    
+
     Scanner.regist_scanner(SimpleScanner, nil, false)
 
     begin
@@ -466,13 +466,13 @@ class ERB
       def push(cmd)
 	@line << cmd
       end
-      
+
       def cr
 	@script << (@line.join('; '))
 	@line = []
 	@script << "\n"
       end
-      
+
       def close
 	return unless @line
 	@compiler.post_cmd.each do |x|
@@ -498,7 +498,7 @@ class ERB
       content = ''
       scanner = make_scanner(s)
       scanner.scan do |token|
-        next if token.nil? 
+        next if token.nil?
         next if token == ''
 	if scanner.stag.nil?
 	  case token
@@ -598,19 +598,19 @@ end
 class ERB
   #
   # Constructs a new ERB object with the template specified in _str_.
-  # 
+  #
   # An ERB object works by building a chunk of Ruby code that will output
   # the completed template when run. If _safe_level_ is set to a non-nil value,
   # ERB code will be run in a separate thread with <b>$SAFE</b> set to the
   # provided level.
-  # 
+  #
   # If _trim_mode_ is passed a String containing one or more of the following
   # modifiers, ERB will adjust its code generation as listed:
-  # 
+  #
   # 	%  enables Ruby code processing for lines beginning with %
   # 	<> omit newline for lines starting with <% and ending in %>
   # 	>  omit newline for lines ending in %>
-  # 
+  #
   # _eoutvar_ can be used to set the name of the variable ERB will build up
   # its output in.  This is useful when you need to run multiple ERB
   # templates through the same binding and/or when you want to control where
@@ -619,20 +619,20 @@ class ERB
   # === Example
   #
   #  require "erb"
-  #  
+  #
   #  # build data class
   #  class Listings
   #    PRODUCT = { :name => "Chicken Fried Steak",
   #                :desc => "A well messages pattie, breaded and fried.",
   #                :cost => 9.95 }
-  #  
+  #
   #    attr_reader :product, :price
-  #    
+  #
   #    def initialize( product = "", price = "" )
   #      @product = product
   #      @price = price
   #    end
-  #    
+  #
   #    def build
   #      b = binding
   #      # create and run templates, filling member data variables
@@ -646,21 +646,21 @@ class ERB
   #      END_PRICE
   #    end
   #  end
-  #  
+  #
   #  # setup template data
   #  listings = Listings.new
   #  listings.build
-  #  
+  #
   #  puts listings.product + "\n" + listings.price
   #
   # _Generates_
   #
   #  Chicken Fried Steak
   #  A well messages pattie, breaded and fried.
-  #  
+  #
   #  Chicken Fried Steak -- 9.95
   #  A well messages pattie, breaded and fried.
-  #  
+  #
   def initialize(str, safe_level=nil, trim_mode=nil, eoutvar='_erbout')
     @safe_level = safe_level
     compiler = ERB::Compiler.new(trim_mode)
@@ -687,7 +687,7 @@ class ERB
 
     cmd = []
     cmd.push "#{eoutvar} = ''"
-    
+
     compiler.pre_cmd = cmd
 
     cmd = []
@@ -705,13 +705,13 @@ class ERB
   # Executes the generated ERB code to produce a completed template, returning
   # the results of that code.  (See ERB#new for details on how this process can
   # be affected by _safe_level_.)
-  # 
+  #
   # _b_ accepts a Binding or Proc object which is used to set the context of
   # code evaluation.
   #
   def result(b=TOPLEVEL_BINDING)
     if @safe_level
-      proc { 
+      proc {
 	$SAFE = @safe_level
 	eval(@src, b, (@filename || '(erb)'), 1)
       }.call
@@ -775,14 +775,14 @@ class ERB
     public
     #
     # A utility method for escaping HTML tag characters in _s_.
-    # 
+    #
     # 	require "erb"
     # 	include ERB::Util
-    # 	
+    #
     # 	puts html_escape("is a > 0 & a < 10?")
-    # 
+    #
     # _Generates_
-    # 
+    #
     # 	is a &gt; 0 &amp; a &lt; 10?
     #
     def html_escape(s)
@@ -791,17 +791,17 @@ class ERB
     alias h html_escape
     module_function :h
     module_function :html_escape
-    
+
     #
     # A utility method for encoding the String _s_ as a URL.
-    # 
+    #
     # 	require "erb"
     # 	include ERB::Util
-    # 	
+    #
     # 	puts url_encode("Programming Ruby:  The Pragmatic Programmer's Guide")
-    # 
+    #
     # _Generates_
-    # 
+    #
     # 	Programming%20Ruby%3A%20%20The%20Pragmatic%20Programmer%27s%20Guide
     #
     def url_encode(s)

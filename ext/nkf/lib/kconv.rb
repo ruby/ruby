@@ -18,9 +18,9 @@ module Kconv
   #
   # Public Constants
   #
-  
+
   #Constant of Encoding
-  
+
   # Auto-Detect
   AUTO = NKF::AUTO
   # ISO-2022-JP
@@ -47,16 +47,16 @@ module Kconv
   #
   # Private Constants
   #
-  
+
   # Revision of kconv.rb
   REVISION = %q$Revision$
-  
+
   #Regexp of Encoding
-  
+
   # Regexp of Shift_JIS string (private constant)
   RegexpShiftjis = /\A(?:
 		       [\x00-\x7f\xa1-\xdf] |
-		       [\x81-\x9f\xe0-\xfc][\x40-\x7e\x80-\xfc] 
+		       [\x81-\x9f\xe0-\xfc][\x40-\x7e\x80-\xfc]
 		      )*\z/nx
 
   # Regexp of EUC-JP string (private constant)
@@ -81,7 +81,7 @@ module Kconv
   #
   # Public Methods
   #
-  
+
   # call-seq:
   #    Kconv.kconv(str, out_code, in_code = Kconv::AUTO)
   #
@@ -277,11 +277,11 @@ class String
   def kconv(out_code, in_code=Kconv::AUTO)
     Kconv::kconv(self, out_code, in_code)
   end
-  
+
   #
   # to Encoding
   #
-  
+
   # call-seq:
   #    String#tojis   -> string
   #

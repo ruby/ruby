@@ -9,8 +9,8 @@
 # [classes] an html file for each class or module encountered.
 #           These classes are not grouped by file: if a file
 #           contains four classes, we'll generate an html
-#           file for the file itself, and four html files 
-#           for the individual classes. 
+#           file for the file itself, and four html files
+#           for the individual classes.
 #
 # [indices] we generate three indices for files, classes,
 #           and methods. These are displayed in a browser
@@ -78,7 +78,7 @@ module Generators
     ##
     # Build the initial indices and output objects
     # based on an array of TopLevel objects containing
-    # the extracted information. 
+    # the extracted information.
 
     def generate(toplevels)
       RDoc::TopLevel.all_classes_and_modules.each do |cls|
@@ -187,17 +187,17 @@ module Generators
       end
       return c,i
     end
-    
+
     def params_of(method)
       if method.call_seq
         method.call_seq
       else
         params = method.params || ""
-        
+
         p = params.gsub(/\s*\#.*/, '')
         p = p.tr("\n", " ").squeeze(" ")
         p = "(" + p + ")" unless p[0] == ?(
-        
+
         if (block = method.block_params)
           block.gsub!(/\s*\#.*/, '')
           block = block.tr("\n", " ").squeeze(" ")
@@ -215,7 +215,7 @@ module Generators
 
       # Convert leading comment markers to spaces, but only
       # if all non-blank lines have them
-      
+
       if comment =~ /^(?>\s*)[^\#]/
         content = comment
       else
@@ -244,7 +244,7 @@ module Generators
           $stderr.puts "documentation. This file references a class or "
           $stderr.puts "module called #{cls_desc.name} which I don't"
           $stderr.puts "have existing documentation for."
-          $stderr.puts 
+          $stderr.puts
           $stderr.puts "Perhaps you need to generate its documentation first"
           exit 1
         else

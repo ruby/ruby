@@ -17,7 +17,7 @@ class TestSimpleType < Test::Unit::TestCase
         XSD::QName.new('urn:example.com:simpletype', 'myid'),
         XSD::QName.new('urn:example.com:simpletype', 'myid'))
     end
-  
+
     def ping(ruby)
       version = ruby["myversion"]
       date = ruby["date"]

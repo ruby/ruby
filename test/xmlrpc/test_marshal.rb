@@ -42,7 +42,7 @@ class Test_Marshal < Test::Unit::TestCase
   end
 
   def test_parser_values
-    v1 = [ 
+    v1 = [
       1, -7778,                        # integers
       1.0, 0.0, -333.0, 2343434343.0,  # floats
       false, true, true, false,        # booleans
@@ -72,9 +72,9 @@ class Test_Marshal < Test::Unit::TestCase
       assert_equal( v3_exp, m.load_response(m.dump_response(v3)) )
 
       pers = m.load_response(m.dump_response(person))
-      
+
       assert( pers.is_a?(Person) )
-      assert( person.name == pers.name ) 
+      assert( person.name == pers.name )
     end
 
     # missing, Date, Time, DateTime

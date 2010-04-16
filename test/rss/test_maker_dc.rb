@@ -7,12 +7,12 @@ module RSS
 
     def setup
       @uri = "http://purl.org/dc/elements/1.1/"
-      
+
       t = Time.iso8601("2000-01-01T12:00:05+00:00")
       class << t
         alias_method(:to_s, :iso8601)
       end
-      
+
       @elements = {
         :title => "hoge",
         :description =>
@@ -103,7 +103,7 @@ module RSS
     def test_date
       t1 = Time.iso8601("2000-01-01T12:00:05+00:00")
       t2 = Time.iso8601("2005-01-01T12:00:05+00:00")
-      
+
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
         maker.channel.date = t1
@@ -121,7 +121,7 @@ module RSS
       assert_equal([t1, t2], rss.channel.dc_dates.collect{|x| x.value})
       assert_equal([t2, t1], rss.items.last.dc_dates.collect{|x| x.value})
     end
-    
+
     private
     def accessor_name(name)
       "dc_#{name}"

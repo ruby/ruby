@@ -1,5 +1,5 @@
 # The Mail class represents an internet mail message (as per RFC822, RFC2822)
-# with headers and a body. 
+# with headers and a body.
 class Mail
 
   # Create a new Mail where +f+ is either a stream which responds to gets(),
@@ -31,7 +31,7 @@ class Mail
 	  @header[attr] += "\n" + line
 	end
       end
-  
+
       return unless line
 
       while line = f.gets()
@@ -53,7 +53,7 @@ class Mail
     return @body
   end
 
-  # Return the header corresponding to +field+. 
+  # Return the header corresponding to +field+.
   #
   # Matching is case-insensitive.
   def [](field)

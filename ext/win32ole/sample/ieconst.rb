@@ -20,7 +20,7 @@ end
 # Remark!!! CONSTANTS has not tested enoughly!!!
 # CONSTANTS is alpha release.
 # If there are constants which first letter is not [a-zA-Z],
-# like a '_Foo', then maybe you can access the value by 
+# like a '_Foo', then maybe you can access the value by
 # using CONSTANTS['_Foo']
 #------------------------------------------------------------
 IE_CONST::CONSTANTS.each do |k, v|

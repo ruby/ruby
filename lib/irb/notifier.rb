@@ -1,5 +1,5 @@
 #
-#   notifier.rb - output methods used by irb 
+#   notifier.rb - output methods used by irb
 #   	$Release Version: 0.9.5$
 #   	$Revision$
 #   	$Date$
@@ -7,7 +7,7 @@
 #
 # --
 #
-#   
+#
 #
 
 require "e2mmap"
@@ -16,16 +16,16 @@ require "irb/output-method"
 module IRB
   module Notifier
     extend Exception2MessageMapper
-    def_exception :ErrUndefinedNotifier, 
+    def_exception :ErrUndefinedNotifier,
       "undefined notifier level: %d is specified"
-    def_exception :ErrUnrecognizedLevel, 
+    def_exception :ErrUnrecognizedLevel,
       "unrecognized notifier level: %s is specified"
 
     def def_notifier(prefix = "", output_method = StdioOutputMethod.new)
       CompositeNotifier.new(prefix, output_method)
     end
     module_function :def_notifier
-  
+
     class AbstractNotifier
       def initialize(prefix, base_notifier)
 	@prefix = prefix
@@ -113,7 +113,7 @@ module IRB
 
       def initialize(base, level, prefix)
 	super(prefix, base)
-	
+
 	@level = level
       end
 
@@ -122,7 +122,7 @@ module IRB
       def <=>(other)
 	@level <=> other.level
       end
-      
+
       def notify?
 	@base_notifier.level >= self
       end

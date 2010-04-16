@@ -47,15 +47,15 @@ module Test
         end
         return return_value
       end
-      
+
       def check_nothing_fails(return_value_expected=false, &proc)
         check_assertions(false, "", return_value_expected, &proc)
       end
-      
+
       def check_fails(expected_message="", &proc)
         check_assertions(true, expected_message, &proc)
       end
-      
+
       def test_assert_block
         check_nothing_fails {
           assert_block {true}
@@ -73,7 +73,7 @@ module Test
           assert_block("failed assert_block") {false}
         }
       end
-      
+
       def test_assert
         check_nothing_fails{assert("a")}
         check_nothing_fails{assert(true)}
@@ -82,7 +82,7 @@ module Test
         check_fails("<false> is not true."){assert(false)}
         check_fails("failed assert.\n<false> is not true."){assert(false, "failed assert")}
       end
-      
+
       def test_assert_equal
         check_nothing_fails {
           assert_equal("string1", "string1")
@@ -103,7 +103,7 @@ module Test
           assert_equal("1", 1)
         end
       end
-      
+
       def test_assert_raise
         return_value = nil
         check_nothing_fails(true) {
@@ -182,7 +182,7 @@ Message: <"Error">
           }
         }
       end
-      
+
       def test_assert_instance_of
         check_nothing_fails {
           assert_instance_of(String, "string")
@@ -200,7 +200,7 @@ Message: <"Error">
           assert_instance_of(Hash, "string", "failed assert_instance_of")
         }
       end
-      
+
       def test_assert_nil
         check_nothing_fails {
           assert_nil(nil)
@@ -218,14 +218,14 @@ Message: <"Error">
           assert_nil("string", "failed assert_nil")
         }
       end
-      
+
       def test_assert_not_nil
         check_nothing_fails{assert_not_nil(false)}
         check_nothing_fails{assert_not_nil(false, "message")}
         check_fails("<nil> expected to not be nil."){assert_not_nil(nil)}
         check_fails("message.\n<nil> expected to not be nil.") {assert_not_nil(nil, "message")}
       end
-        
+
       def test_assert_kind_of
         check_nothing_fails {
           assert_kind_of(Module, Array)
@@ -246,7 +246,7 @@ Message: <"Error">
           assert_kind_of(Class, "string", "failed assert_kind_of")
         }
       end
-      
+
       def test_assert_match
         check_nothing_fails {
           assert_match(/strin./, "string")
@@ -270,7 +270,7 @@ Message: <"Error">
           assert_match(/slin./, "string", "failed assert_match")
         }
       end
-      
+
       def test_assert_same
         thing = "thing"
         check_nothing_fails {
@@ -290,7 +290,7 @@ Message: <"Error">
           assert_same(thing, thing2, "failed assert_same")
         }
       end
-      
+
       def test_assert_nothing_raised
         check_nothing_fails {
           assert_nothing_raised {
@@ -341,7 +341,7 @@ Message: <"Error">
           end
         end
       end
-      
+
       def test_flunk
         check_fails("Flunked.") {
           flunk
@@ -350,7 +350,7 @@ Message: <"Error">
           flunk("flunk message")
         }
       end
-      
+
       def test_assert_not_same
         thing = "thing"
         thing2 = "thing"
@@ -367,7 +367,7 @@ Message: <"Error">
           assert_not_same(thing, thing, "message")
         }
       end
-      
+
       def test_assert_not_equal
         check_nothing_fails {
           assert_not_equal("string1", "string2")
@@ -382,7 +382,7 @@ Message: <"Error">
           assert_not_equal("string", "string", "message")
         }
       end
-      
+
       def test_assert_no_match
         check_nothing_fails{assert_no_match(/sling/, "string")}
         check_nothing_fails{assert_no_match(/sling/, "string", "message")}
@@ -396,7 +396,7 @@ Message: <"Error">
           assert_no_match(/string/, "string", "message")
         end
       end
-      
+
       def test_assert_throws
         check_nothing_fails {
           assert_throws(:thing, "message") {
@@ -414,7 +414,7 @@ Message: <"Error">
           }
         }
       end
-      
+
       def test_assert_nothing_thrown
         check_nothing_fails {
           assert_nothing_thrown("message") {
@@ -427,7 +427,7 @@ Message: <"Error">
           }
         }
       end
-      
+
       def test_assert_operator
         check_nothing_fails {
           assert_operator("thing", :==, "thing", "message")
@@ -439,7 +439,7 @@ Message: <"Error">
           assert_operator("thing1", :==, "thing2", "message")
         }
       end
-      
+
       def test_assert_respond_to
         check_nothing_fails {
           assert_respond_to("thing", :to_s, "message")
@@ -454,7 +454,7 @@ Message: <"Error">
           assert_respond_to(:symbol, :non_existent, "message")
         }
       end
-      
+
       def test_assert_in_delta
         check_nothing_fails {
           assert_in_delta(1.4, 1.4, 0)
@@ -479,7 +479,7 @@ Message: <"Error">
           assert_in_delta(0.5, 0.4, -0.1, "message")
         }
       end
-      
+
       def test_assert_send
         object = Object.new
         class << object
@@ -495,7 +495,7 @@ Message: <"Error">
           assert_send([object, :return_argument, false, "bogus"], "message")
         }
       end
-      
+
       def test_condition_invariant
         object = Object.new
         def object.inspect
@@ -509,13 +509,13 @@ Message: <"Error">
           assert_equal(object, object, "message")
         }
       end
-  
+
       def add_failure(message, location=caller)
         if (!@catch_assertions)
           super
         end
       end
-      
+
       def add_assertion
         if (!@catch_assertions)
           super

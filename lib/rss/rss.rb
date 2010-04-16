@@ -249,7 +249,7 @@ EOC
       # accessor
       convert_attr_reader name
       date_writer(name, type, disp_name)
-      
+
       install_element(name) do |n, elem_name|
         <<-EOC
         if @#{n}
@@ -634,7 +634,7 @@ EOC
     include SetupMaker
 
     INDENT = "  "
-    
+
     MUST_CALL_VALIDATORS = {}
     MODELS = []
     GET_ATTRIBUTES = []
@@ -830,7 +830,7 @@ EOC
     def full_name
       tag_name
     end
-    
+
     def converter=(converter)
       @converter = converter
       targets = children.dup
@@ -865,7 +865,7 @@ EOC
     ensure
       @do_validate = do_validate
     end
-    
+
     def validate_for_stream(tags, ignore_unknown_element=true)
       validate_attribute
       __validate(ignore_unknown_element, tags, false)
@@ -985,7 +985,7 @@ EOC
           end_tag = "\n#{indent}</#{full_name}>"
         end
       end
-      
+
       start_tag + content.join("\n") + end_tag
     end
 
@@ -1010,7 +1010,7 @@ EOC
       end
       attrs
     end
-    
+
     def tag_name_with_prefix(prefix)
       "#{prefix}:#{tag_name}"
     end
@@ -1210,7 +1210,7 @@ EOC
   module RootElementMixin
 
     include XMLStyleSheetMixin
-    
+
     attr_reader :output_encoding
     attr_reader :feed_type, :feed_subtype, :feed_version
     attr_accessor :version, :encoding, :standalone
@@ -1296,7 +1296,7 @@ EOC
       rv << "?>\n"
       rv
     end
-    
+
     def ns_declarations
       decls = {}
       self.class::NSPOOL.collect do |prefix, uri|

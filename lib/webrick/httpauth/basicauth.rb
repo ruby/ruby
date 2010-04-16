@@ -34,7 +34,7 @@ module WEBrick
         unless basic_credentials = check_scheme(req)
           challenge(req, res)
         end
-        userid, password = basic_credentials.unpack("m*")[0].split(":", 2) 
+        userid, password = basic_credentials.unpack("m*")[0].split(":", 2)
         password ||= ""
         if userid.empty?
           error("user id was not given.")

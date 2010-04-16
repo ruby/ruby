@@ -80,7 +80,7 @@ module WEBrick
     }
 
     DigestAuth = {
-      :Algorithm            => 'MD5-sess', # or 'MD5' 
+      :Algorithm            => 'MD5-sess', # or 'MD5'
       :Domain               => nil,        # an array includes domain names.
       :Qop                  => [ 'auth' ], # 'auth' or 'auth-int' or both.
       :UseOpaque            => true,

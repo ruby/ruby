@@ -7,9 +7,9 @@
 
 # This file contains stuff stolen outright from:
 #
-#   rtags.rb - 
+#   rtags.rb -
 #   ruby-lex.rb - ruby lexcal analyzer
-#   ruby-token.rb - ruby tokens 
+#   ruby-token.rb - ruby tokens
 #   	by Keiju ISHITSUKA (Nippon Rational Inc.)
 #
 
@@ -35,7 +35,7 @@ module RubyToken
   EXPR_FNAME = :EXPR_FNAME
   EXPR_DOT   = :EXPR_DOT
   EXPR_CLASS = :EXPR_CLASS
-  
+
   class Token
     NO_TEXT = "??".freeze
     attr :text
@@ -117,8 +117,8 @@ module RubyToken
       if (tk = source[token]).nil?
 	IRB.fail TkReading2TokenNoKey, token
       end
-      tk = Token(tk[0], value) 
-    else 
+      tk = Token(tk[0], value)
+    else
       tk = if (token.ancestors & [TkId, TkVal, TkOPASGN, TkUnknownChar]).empty?
              token.new(@prev_line_no, @prev_char_no)
            else
@@ -218,14 +218,14 @@ module RubyToken
     [:TkASSOC,      TkOp,   "=>"],
     [:TkQUESTION,   TkOp,   "?"],	 #?
     [:TkCOLON,      TkOp,   ":"],        #:
-    
+
     [:TkfLPAREN],         # func( #
     [:TkfLBRACK],         # func[ #
     [:TkfLBRACE],         # func{ #
     [:TkSTAR],            # *arg
     [:TkAMPER],           # &arg #
     [:TkSYMBOL,     TkId],          # :SYMBOL
-    [:TkSYMBEG,     TkId], 
+    [:TkSYMBEG,     TkId],
     [:TkGT,	    TkOp,   ">"],
     [:TkLT,	    TkOp,   "<"],
     [:TkPLUS,	    TkOp,   "+"],
@@ -276,7 +276,7 @@ module RubyToken
     token_c =  Class.new super_token
     RubyToken.const_set token_n, token_c
 #    token_c.inspect
- 
+
     if reading
       if TkReading2Token[reading]
 	IRB.fail TkReading2TokenDuplicateError, token_n, reading
@@ -340,11 +340,11 @@ class RubyLex
   # here document.  Once complete, it needs to read the rest of the
   # original line, but then skip the here document body.
   #
-  
+
   class BufferedReader
-    
+
     attr_reader :line_num
-    
+
     def initialize(content)
       if /\t/ =~ content
         tab_width = Options.instance.tab_width
@@ -363,34 +363,34 @@ class RubyLex
       @last_newline = 0
       @newline_pending = false
     end
-    
+
     def column
       @offset - @last_newline
     end
-    
+
     def getc
       return nil if @offset >= @size
       ch = @content[@offset, 1]
-      
+
       @offset += 1
       @hwm = @offset if @hwm < @offset
-      
+
       if @newline_pending
         @line_num += 1
         @last_newline = @offset - 1
         @newline_pending = false
       end
-      
+
       if ch == "\n"
         @newline_pending = true
       end
       ch
     end
-    
+
     def getc_already_read
       getc
     end
-    
+
     def ungetc(ch)
       raise "unget past beginning of file" if @offset <= 0
       @offset -= 1
@@ -398,13 +398,13 @@ class RubyLex
         @newline_pending = false
       end
     end
-    
+
     def get_read
       res = @content[@read_back_offset...@offset]
       @read_back_offset = @offset
       res
     end
-    
+
     def peek(at)
       pos = @offset + at
       if pos >= @size
@@ -413,11 +413,11 @@ class RubyLex
         @content[pos, 1]
       end
     end
-    
+
     def peek_equal(str)
       @content[@offset, str.length] == str
     end
-    
+
     def divert_read_from(reserve)
       @content[@offset, 0] = reserve
       @size      = @content.size
@@ -430,10 +430,10 @@ class RubyLex
   def_exception(:AlreadyDefinedToken, "Already defined token(%s)")
   def_exception(:TkReading2TokenNoKey, "key nothing(key='%s')")
   def_exception(:TkSymbol2TokenNoKey, "key nothing(key='%s')")
-  def_exception(:TkReading2TokenDuplicateError, 
+  def_exception(:TkReading2TokenDuplicateError,
 		"key duplicate(token_n='%s', key='%s')")
   def_exception(:SyntaxError, "%s")
-  
+
   include RubyToken
   include IRB
 
@@ -457,7 +457,7 @@ class RubyLex
     @quoted = nil
     @lex_state = EXPR_BEG
     @space_seen = false
-    
+
     @continue = false
     @line = ""
 
@@ -548,7 +548,7 @@ class RubyLex
     p tk if $DEBUG
     tk
   end
-  
+
   ENINDENT_CLAUSE = [
     "case", "class", "def", "do", "for", "if",
     "module", "unless", "until", "while", "begin" #, "when"
@@ -563,7 +563,7 @@ class RubyLex
     "r" => "/",
     "w" => "]"
   }
-  
+
   PERCENT_PAREN = {
     "{" => "}",
     "[" => "]",
@@ -646,10 +646,10 @@ class RubyLex
       Token(TkNL).set_text("\n")
     end
 
-    @OP.def_rules("*", "**",	
+    @OP.def_rules("*", "**",
 		  "!", "!=", "!~",
-		  "=", "==", "===", 
-		  "=~", "<=>",	
+		  "=", "==", "===",
+		  "=~", "<=>",
 		  "<", "<=",
 		  ">", ">=", ">>") do
       |op, io|
@@ -716,8 +716,8 @@ class RubyLex
       @lex_state = EXPR_BEG
       Token(op).set_text(op)
     end
-    
-    @OP.def_rules("+=", "-=", "*=", "**=", 
+
+    @OP.def_rules("+=", "-=", "*=", "**=",
 		  "&=", "|=", "^=", "<<=", ">>=", "||=", "&&=") do
       |op, io|
       @lex_state = EXPR_BEG
@@ -771,7 +771,7 @@ class RubyLex
 
     lex_int2
   end
-  
+
   def lex_int2
     @OP.def_rules("]", "}", ")") do
       |op, io|
@@ -813,7 +813,7 @@ class RubyLex
 	Token(TkOPASGN, :/).set_text("/=") #")
       elsif @lex_state == EXPR_ARG and @space_seen and peek(0) !~ /\s/
 	identify_string(op)
-      else 
+      else
 	@lex_state = EXPR_BEG
         Token("/").set_text(op)
       end
@@ -828,7 +828,7 @@ class RubyLex
     # 	@lex_state = EXPR_BEG
     # 	Token(TkOPASGN, :^)
     #       end
-    
+
     @OP.def_rules(",", ";") do
       |op, io|
       @lex_state = EXPR_BEG
@@ -844,7 +844,7 @@ class RubyLex
       @lex_state = EXPR_BEG
       Token("~").set_text("~@")
     end
-    
+
     @OP.def_rule("(") do
       @indent += 1
       if @lex_state == EXPR_BEG || @lex_state == EXPR_MID
@@ -894,15 +894,15 @@ class RubyLex
     end
 
     @OP.def_rule('\\') do   #'
-      if getc == "\n" 
+      if getc == "\n"
 	@space_seen = true
 	@continue = true
 	Token(TkSPACE).set_text("\\\n")
-      else 
+      else
 	ungetc
 	Token("\\").set_text("\\")  #"
-      end 
-    end 
+      end
+    end
 
     @OP.def_rule('%') do
       |op, io|
@@ -932,7 +932,7 @@ class RubyLex
       end
     end
 
-    #       @OP.def_rule("def", proc{|op, io| /\s/ =~ io.peek(0)}) do 
+    #       @OP.def_rule("def", proc{|op, io| /\s/ =~ io.peek(0)}) do
     # 	|op, io|
     # 	@indent += 1
     # 	@lex_state = EXPR_FNAME
@@ -957,10 +957,10 @@ class RubyLex
       printf "MATCH: end %s: %s\n", op, io.inspect if RubyLex.debug?
       t
     end
-    
+
     p @OP if RubyLex.debug?
   end
-  
+
   def identify_gvar
     @lex_state = EXPR_END
     str = "$"
@@ -969,15 +969,15 @@ class RubyLex
          when /[~_*$?!@\/\\;,=:<>".]/   #"
            str << ch
            Token(TkGVAR, str)
-           
+
          when "-"
            str << "-" << getc
            Token(TkGVAR, str)
-           
+
          when "&", "`", "'", "+"
            str << ch
            Token(TkBACK_REF, str)
-           
+
          when /[1-9]/
            str << ch
            while (ch = getc) =~ /[0-9]/
@@ -989,13 +989,13 @@ class RubyLex
            ungetc
            ungetc
            return identify_identifier
-         else 
+         else
            ungetc
-           Token("$")     
+           Token("$")
          end
     tk.set_text(str)
   end
-  
+
   def identify_identifier
     token = ""
     token.concat getc if peek(0) =~ /[$@]/
@@ -1006,7 +1006,7 @@ class RubyLex
       token.concat ch
     end
     ungetc
-    
+
     if ch == "!" or ch == "?"
       token.concat getc
     end
@@ -1021,7 +1021,7 @@ class RubyLex
       @lex_state = EXPR_END
       return Token(TkIVAR, token).set_text(token)
     end
-    
+
     if @lex_state != EXPR_DOT
       print token, "\n" if RubyLex.debug?
 
@@ -1119,7 +1119,7 @@ class RubyLex
     @lex_state = EXPR_END
     Token(Ltype2Token[lt], str).set_text(str.dump)
   end
-  
+
   def identify_quotation(initial_char)
     ch = getc
     if lt = PERCENT_LTYPE[ch]
@@ -1200,7 +1200,7 @@ class RubyLex
     end
     Token(type).set_text(str)
   end
-  
+
   def identify_string(ltype, quoted = ltype, opener=nil, initial_char = nil)
     @ltype = ltype
     @quoted = quoted
@@ -1212,9 +1212,9 @@ class RubyLex
 
     nest = 0
     begin
-      while ch = getc 
+      while ch = getc
 	str << ch
-	if @quoted == ch 
+	if @quoted == ch
           if nest == 0
             break
           else
@@ -1275,7 +1275,7 @@ class RubyLex
         if ch == "\n"
           ch = " "
         else
-          comment << "\\" 
+          comment << "\\"
         end
       else
         if ch == "\n"
@@ -1288,7 +1288,7 @@ class RubyLex
     end
     return Token(TkCOMMENT).set_text(comment)
   end
-  
+
   def read_escape
     res = ""
     case ch = getc
@@ -1305,7 +1305,7 @@ class RubyLex
 	end
         res << ch
       end
-      
+
     when "x"
       res << ch
       2.times do
@@ -1371,7 +1371,7 @@ module RDoc
 
   CONSTANT_MODIFIERS = GENERAL_MODIFIERS
 
-  METHOD_MODIFIERS = GENERAL_MODIFIERS + 
+  METHOD_MODIFIERS = GENERAL_MODIFIERS +
     [ 'arg', 'args', 'yield', 'yields', 'notnew', 'not-new', 'not_new', 'doc' ]
 
 
@@ -1408,14 +1408,14 @@ module RDoc
             $stderr.puts "\n\n"
             $stderr.puts "RDoc failure in #@input_file_name at or around " +
                          "line #{@scanner.line_no} column #{@scanner.char_no}"
-            $stderr.puts 
+            $stderr.puts
             $stderr.puts "Before reporting this, could you check that the file"
             $stderr.puts "you're documenting compiles cleanly--RDoc is not a"
             $stderr.puts "full Ruby parser, and gets confused easily if fed"
             $stderr.puts "invalid programs."
             $stderr.puts
             $stderr.puts "The internal error was:\n\n"
-            
+
             e.set_backtrace(e.backtrace[0,4])
             raise
           end
@@ -1424,7 +1424,7 @@ module RDoc
       @top_level
     end
 
-    private 
+    private
 
     def make_message(msg)
       prefix = "\n" + @input_file_name + ":"
@@ -1573,24 +1573,24 @@ module RDoc
       container.comment = comment unless comment.empty?
       parse_statements(container, NORMAL, nil, comment)
     end
-    
+
     def parse_statements(container, single=NORMAL, current_method=nil, comment='')
       nest = 1
       save_visibility = container.visibility
-      
+
 #      if container.kind_of?(TopLevel)
 #      else
 #        comment = ''
 #      end
 
       non_comment_seen = true
-      
+
       while tk = get_tk
-        
+
         keep_comment = false
-        
+
         non_comment_seen = true unless tk.kind_of?(TkCOMMENT)
-        
+
 	case tk
 
         when TkNL
@@ -1603,12 +1603,12 @@ module RDoc
             end
             while tk.kind_of?(TkCOMMENT)
               comment << tk.text << "\n"
-              tk = get_tk          # this is the newline 
+              tk = get_tk          # this is the newline
               skip_tkspace(false)  # leading spaces
               tk = get_tk
             end
             unless comment.empty?
-              look_for_directives_in(container, comment) 
+              look_for_directives_in(container, comment)
               if container.done_documenting
                 container.ongoing_visibility = save_visibility
 #                return
@@ -1700,7 +1700,7 @@ module RDoc
 	      end
             end
 	  end
-	  
+
 	  case tk.name
 	  when "require"
 	    parse_require(container, comment)
@@ -1729,7 +1729,7 @@ module RDoc
 
       end
     end
-    
+
     def parse_class(container, single, tk, comment, &block)
       progress("c")
 
@@ -1884,11 +1884,11 @@ module RDoc
       @stats.num_methods += 1
       line_no = tk.line_no
       column  = tk.char_no
-      
+
       start_collecting_tokens
       add_token(tk)
       add_token_listener(self)
-      
+
       @scanner.instance_eval{@lex_state = EXPR_FNAME}
       skip_tkspace(false)
       name_t = get_tk
@@ -1982,9 +1982,9 @@ module RDoc
           meth.visibility = :public
         end
       end
-      
+
       parse_statements(container, single, meth)
-      
+
       remove_token_listener(meth)
 
       # Look for a 'call-seq' in the comment, and override the
@@ -1995,19 +1995,19 @@ module RDoc
         seq.gsub!(/^\s*\#\s*/, '')
         meth.call_seq = seq
       end
-      
+
       meth.comment = comment
 
     end
-    
+
     def skip_method(container)
       meth =  AnyMethod.new("", "anon")
       parse_method_parameters(meth)
       parse_statements(container, false, meth)
     end
-    
+
     # Capture the method's parameters. Along the way,
-    # look for a comment containing 
+    # look for a comment containing
     #
     #    # yields: ....
     #
@@ -2084,7 +2084,7 @@ module RDoc
       unget_tk(tk) unless tk.kind_of?(TkIN)
     end
 
-    # while, until, and for have an optional 
+    # while, until, and for have an optional
     def skip_optional_do_after_expression
       skip_tkspace(false)
       tk = get_tk
@@ -2123,19 +2123,19 @@ module RDoc
         get_tk
       end
     end
-    
+
     # Return a superclass, which can be either a constant
     # of an expression
 
     def get_class_specification
       tk = get_tk
       return "self" if tk.kind_of?(TkSELF)
-        
+
       res = ""
       while tk.kind_of?(TkCOLON2) ||
           tk.kind_of?(TkCOLON3)   ||
-          tk.kind_of?(TkCONSTANT)   
-        
+          tk.kind_of?(TkCONSTANT)
+
         res += tk.text
         tk = get_tk
       end
@@ -2206,21 +2206,21 @@ module RDoc
 
       while tk.kind_of?(TkCOLON2) ||
           tk.kind_of?(TkCOLON3)   ||
-          tk.kind_of?(TkCONSTANT)          
-        
+          tk.kind_of?(TkCONSTANT)
+
         res += tk.text
         tk = get_tk
       end
 
 #      if res.empty?
 #        warn("Unexpected token #{tk} in constant")
-#      end 
+#      end
       unget_tk(tk)
       res
     end
 
     # Get a constant that may be surrounded by parens
-    
+
     def get_constant_with_optional_parens
       skip_tkspace(false)
       nest = 0
@@ -2250,12 +2250,12 @@ module RDoc
     #   class SM  # :nodoc:
     #
     # we return the directive name and any parameters as a two element array
-    
+
     def read_directive(allowed)
       tk = get_tk
       puts "directive: #{tk.inspect}" if $DEBUG
       result = nil
-      if tk.kind_of?(TkCOMMENT) 
+      if tk.kind_of?(TkCOMMENT)
         if tk.text =~ /\s*:?(\w+):\s*(.*)/
           directive = $1.downcase
           if allowed.include?(directive)
@@ -2268,7 +2268,7 @@ module RDoc
       result
     end
 
-    
+
     def read_documentation_modifiers(context, allow)
       dir = read_directive(allow)
 
@@ -2298,11 +2298,11 @@ module RDoc
       end if dir
     end
 
-    
+
     # Look for directives in a normal comment block:
     #
     #   #--       - don't display comment from this point forward
-    #  
+    #
     #
     # This routine modifies it's parameter
 
@@ -2339,7 +2339,7 @@ module RDoc
         when "section"
           context.set_current_section(param, comment)
           comment.replace("") # 1.8 doesn't support #clear
-          break 
+          break
         else
           warn "Unrecognized directive '#{directive}'"
           break
@@ -2369,7 +2369,7 @@ module RDoc
         raise "Name or symbol expected (got #{tk})"
       end
     end
-    
+
     def parse_alias(context, single, tk, comment)
       skip_tkspace
       if (peek_tk.kind_of? TkLPAREN)
@@ -2475,7 +2475,7 @@ module RDoc
 	end
       else
 	warn("'attr' ignored - looks like a variable")
-      end    
+      end
 
     end
 
@@ -2493,7 +2493,7 @@ module RDoc
               :public
             else raise "Invalid visibility: #{tk.name}"
             end
-            
+
       skip_tkspace_comment(false)
       case peek_tk
         # Ryan Davis suggested the extension to ignore modifiers, because he
@@ -2502,7 +2502,7 @@ module RDoc
         #   protected unless $TESTING
         #
       when TkNL, TkUNLESS_MOD, TkIF_MOD
-#        error("Missing argument") if singleton        
+#        error("Missing argument") if singleton
         container.ongoing_visibility = vis
       else
         args = parse_symbol_arg
@@ -2528,11 +2528,11 @@ module RDoc
       else
         rw = @options.extra_accessor_flags[tk.name]
       end
-      
+
       for name in args
 	att = Attr.new(get_tkread, name, rw, comment)
         context.add_attribute(att)
-      end    
+      end
     end
 
     def skip_tkspace_comment(skip_nl = true)
@@ -2555,7 +2555,7 @@ module RDoc
 	    args.push tk1
 	    break if no and args.size >= no
 	  end
-	  
+
 	  skip_tkspace_comment
 	  case tk2 = get_tk
 	  when TkRPAREN
@@ -2578,11 +2578,11 @@ module RDoc
 	  skip_tkspace(false)
 
 	  tk1 = get_tk
-	  unless tk1.kind_of?(TkCOMMA) 
+	  unless tk1.kind_of?(TkCOMMA)
 	    unget_tk tk1
 	    break
 	  end
-	  
+
 	  skip_tkspace_comment
 	  if tk = parse_symbol_in_arg
 	    args.push tk

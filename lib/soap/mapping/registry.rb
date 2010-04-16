@@ -23,7 +23,7 @@ end
 
 module Mapping
 
-  
+
 module MappedException; end
 
 
@@ -453,7 +453,7 @@ private
     elsif obj.is_a?(SOAPBasetype)
       return obj
     end
-    begin 
+    begin
       ret = @map.obj2soap(obj) ||
         @default_factory.obj2soap(nil, obj, nil, self)
       return ret if ret

@@ -30,10 +30,10 @@
 #
 module BigMath
 
-  # Computes the square root of x to the specified number of digits of 
+  # Computes the square root of x to the specified number of digits of
   # precision.
   #
-  # BigDecimal.new('2').sqrt(16).to_s 
+  # BigDecimal.new('2').sqrt(16).to_s
   #  -> "0.14142135623730950488016887242096975E1"
   #
   def sqrt(x,prec)
@@ -120,7 +120,7 @@ module BigMath
     y
   end
 
-  # Computes the value of e (the base of natural logarithms) raised to the 
+  # Computes the value of e (the base of natural logarithms) raised to the
   # power of x, to the specified number of digits of precision.
   #
   # If x is infinite or NaN, returns NaN.
@@ -148,7 +148,7 @@ module BigMath
     y
   end
 
-  # Computes the natural logarithm of x to the specified number of digits 
+  # Computes the natural logarithm of x to the specified number of digits
   # of precision.
   #
   # Returns x if x is infinite or NaN.

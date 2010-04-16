@@ -2,7 +2,7 @@
 
 # This class implements a pretty printing algorithm. It finds line breaks and
 # nice indentations for grouped structure.
-# 
+#
 # By default, the class assumes that primitive elements are strings and each
 # byte in the strings have single column in width. But it can be used for
 # other situations by giving suitable arguments for some methods:
@@ -18,28 +18,28 @@
 # == Bugs
 # * Box based formatting?
 # * Other (better) model/algorithm?
-# 
+#
 # == References
 # Christian Lindig, Strictly Pretty, March 2000,
 # http://www.st.cs.uni-sb.de/~lindig/papers/#pretty
-# 
+#
 # Philip Wadler, A prettier printer, March 1998,
 # http://homepages.inf.ed.ac.uk/wadler/topics/language-design.html#prettier
-# 
+#
 # == Author
 # Tanaka Akira <akr@m17n.org>
-# 
+#
 class PrettyPrint
 
   # This is a convenience method which is same as follows:
-  # 
+  #
   #   begin
   #     q = PrettyPrint.new(output, maxwidth, newline, &genspace)
   #     ...
   #     q.flush
   #     output
   #   end
-  # 
+  #
   def PrettyPrint.format(output='', maxwidth=79, newline="\n", genspace=lambda {|n| ' ' * n})
     q = PrettyPrint.new(output, maxwidth, newline, &genspace)
     yield q

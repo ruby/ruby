@@ -61,7 +61,7 @@ module RSS
           rss.channel.items = items
           set_parent(rss.channel, items)
         end
-        
+
         def setup_image(rss)
           if @maker.image.have_required_values?
             image = RDF::Channel::Image.new(@maker.image.url)
@@ -92,11 +92,11 @@ module RSS
         class SkipDays < SkipDaysBase
           def to_feed(*args)
           end
-          
+
           class Day < DayBase
           end
         end
-        
+
         class SkipHours < SkipHoursBase
           def to_feed(*args)
           end
@@ -104,7 +104,7 @@ module RSS
           class Hour < HourBase
           end
         end
-        
+
         class Cloud < CloudBase
           def to_feed(*args)
           end
@@ -404,7 +404,7 @@ module RSS
           end
         end
       end
-      
+
       class Textinput < TextinputBase
         def to_feed(rss)
           if @link

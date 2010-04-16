@@ -1,5 +1,5 @@
 #--
-#   finalizer.rb - 
+#   finalizer.rb -
 #   	$Release Version: 0.3$
 #   	$Revision: 1.4 $
 #   	$Date: 1998/02/27 05:34:33 $

@@ -47,7 +47,7 @@ module REXML
           if @ie_hack
             output << " "
           end
-          output << "/" 
+          output << "/"
         else
           output << ">"
           # If compact and all children are text, and if the formatted output

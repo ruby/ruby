@@ -8,11 +8,11 @@ module RSS
   RDF.install_ns(SY_PREFIX, SY_URI)
 
   module SyndicationModel
-    
+
     extend BaseModel
-    
+
     ELEMENTS = []
-    
+
     def self.append_features(klass)
       super
 

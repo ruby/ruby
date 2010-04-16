@@ -1,4 +1,4 @@
-# You need RubyUnit and MS Excel and MSI to run this test script 
+# You need RubyUnit and MS Excel and MSI to run this test script
 
 require 'rubyunit'
 

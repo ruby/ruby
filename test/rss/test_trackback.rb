@@ -9,26 +9,26 @@ require "rss/trackback"
 
 module RSS
   class TestTrackBack < TestCase
-    
+
     def setup
       @prefix = "trackback"
       @uri = "http://madskills.com/public/xml/rss/module/trackback/"
-      
+
       @parents = %w(item)
-      
+
       @elems = {
         :ping => "http://bar.com/tb.cgi?tb_id=rssplustrackback",
         :about => "http://foo.com/trackback/tb.cgi?tb_id=20020923",
       }
-      
+
       @content_nodes = @elems.collect do |name, value|
         "<#{@prefix}:#{name} rdf:resource=\"#{CGI.escapeHTML(value.to_s)}\"/>"
       end.join("\n")
-      
+
       @content_nodes2 = @elems.collect do |name, value|
         "<#{@prefix}:#{name}>#{CGI.escapeHTML(value.to_s)}</#{@prefix}:#{name}>"
       end.join("\n")
-      
+
       @rss_source = make_RDF(<<-EOR, {@prefix =>  @uri})
 #{make_channel()}
 #{make_image()}
@@ -77,14 +77,14 @@ EOR
       end
 
     end
-  
+
     def test_accessor
-      
+
       new_value = {
         :ping => "http://baz.com/trackback/tb.cgi?tb_id=20030808",
         :about => "http://hoge.com/trackback/tb.cgi?tb_id=90030808",
       }
-      
+
       @elems.each do |name, value|
         @parents.each do |parent|
           accessor = "#{RSS::TRACKBACK_PREFIX}_#{name}"
@@ -104,11 +104,11 @@ EOR
           assert_equal(new_value[name], target20.__send__(accessor))
         end
       end
-      
+
     end
 
     def test_to_s
-      
+
       @elems.each do |name, value|
         excepted = %Q!<#{@prefix}:#{name} rdf:resource="#{CGI.escapeHTML(value)}"/>!
         @parents.each do |parent|
@@ -117,7 +117,7 @@ EOR
           assert_equal(excepted, @rss.__send__(parent).__send__(meth))
         end
       end
-      
+
       REXML::Document.new(@rss_source).root.each_element do |parent|
         if @parents.include?(parent.name)
           parent.each_element do |elem|
@@ -127,9 +127,9 @@ EOR
           end
         end
       end
-      
+
     end
-    
+
   end
 end
 

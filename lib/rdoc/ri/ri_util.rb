@@ -38,7 +38,7 @@ class NameDescriptor
     # Skip leading '::', but remember we potentially have an inst
 
     # leading stuff must be class names
-    
+
     while tokens[0] =~ /^[A-Z]/
       @class_names << tokens.shift
       unless tokens.empty?
@@ -46,7 +46,7 @@ class NameDescriptor
         break unless separator == "::"
       end
     end
-    
+
     # Now must have a single token, the method name, or an empty
     # array
     unless tokens.empty?
@@ -58,7 +58,7 @@ class NameDescriptor
       end
 
       if @method_name =~ /::|\.|#/ or !tokens.empty?
-        raise RiError.new("Bad argument: #{arg}") 
+        raise RiError.new("Bad argument: #{arg}")
       end
       if separator && separator != '.'
         @is_class_method = separator == "::"

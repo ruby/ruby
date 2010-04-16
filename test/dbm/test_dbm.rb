@@ -34,7 +34,7 @@ if defined? DBM
       DBM.open("tmptest_dbm_rdonly") {|dbm|
         dbm['foo'] = 'FOO'
       }
-      
+
       File.chmod(0400, *Dir.glob("tmptest_dbm_rdonly.*"))
 
       assert_instance_of(DBM, @dbm_rdonly = DBM.new("tmptest_dbm_rdonly", nil))
@@ -509,7 +509,7 @@ if defined? DBM
       DBM.open("#{TMPROOT}/a") {}
       v = DBM.open("#{TMPROOT}/a", nil, DBM::READER) {|d|
         # Errno::EPERM is raised on Solaris which use ndbm.
-        # DBMError is raised on Debian which use gdbm. 
+        # DBMError is raised on Debian which use gdbm.
         assert_raises(Errno::EPERM, DBMError) { d["k"] = "v" }
         true
       }

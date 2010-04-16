@@ -76,9 +76,9 @@ module RI
       @name <=> other.name
     end
   end
-  
+
   class ModuleDescription < Description
-    
+
     attr_accessor :class_methods
     attr_accessor :instance_methods
     attr_accessor :attributes
@@ -121,7 +121,7 @@ module RI
       into.replace(names.keys.sort.map {|n| names[n]})
     end
   end
-  
+
   class ClassDescription < ModuleDescription
     attr_accessor :superclass
 
@@ -140,7 +140,7 @@ module RI
 
 
   class MethodDescription < Description
-    
+
     attr_accessor :is_class_method
     attr_accessor :visibility
     attr_accessor :block_params
@@ -150,5 +150,5 @@ module RI
     attr_accessor :params
 
   end
-  
+
 end

@@ -21,7 +21,7 @@ class TestUnqualified < Test::Unit::TestCase
         XSD::QName.new(Namespace, 'loginResponse')
       )
     end
-  
+
     def login(arg)
       nil
     end

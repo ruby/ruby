@@ -1,5 +1,5 @@
 #
-#   shell/builtin-command.rb - 
+#   shell/builtin-command.rb -
 #   	$Release Version: 0.6.0 $
 #   	$Revision$
 #   	$Date$
@@ -7,7 +7,7 @@
 #
 # --
 #
-#   
+#
 #
 
 require "shell/filter"
@@ -27,7 +27,7 @@ class Shell
       super sh
       @strings = strings
     end
-    
+
     def each(rs = nil)
       rs =  @shell.record_separator unless rs
       for str  in @strings

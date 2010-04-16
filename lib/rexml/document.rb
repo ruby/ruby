@@ -25,7 +25,7 @@ module REXML
 		DECLARATION = XMLDecl.default
 
 		# Constructor
-		# @param source if supplied, must be a Document, String, or IO. 
+		# @param source if supplied, must be a Document, String, or IO.
 		# Documents have their context and Element attributes cloned.
 	  # Strings are expected to be valid XML documents.  IOs are expected
 	  # to be sources of valid XML documents.
@@ -69,11 +69,11 @@ module REXML
 				@children.unshift child
         child.parent = self
 			elsif child.kind_of? DocType
-        # Find first Element or DocType node and insert the decl right 
+        # Find first Element or DocType node and insert the decl right
         # before it.  If there is no such node, just insert the child at the
         # end.  If there is a child and it is an DocType, then replace it.
         insert_before_index = 0
-        @children.find { |x| 
+        @children.find { |x|
           insert_before_index += 1
           x.kind_of?(Element) || x.kind_of?(DocType)
         }
@@ -167,7 +167,7 @@ module REXML
     # indent::
     #   An integer.  If -1, no indenting will be used; otherwise, the
     #   indentation will be twice this number of spaces, and children will be
-    #   indented an additional amount.  For a value of 3, every item will be 
+    #   indented an additional amount.  For a value of 3, every item will be
     #   indented 3 more levels, or 6 more spaces (2 * 3). Defaults to -1
     # trans::
     #   If transitive is true and indent is >= 0, then the output will be
@@ -178,7 +178,7 @@ module REXML
     #   Internet Explorer is the worst piece of crap to have ever been
     #   written, with the possible exception of Windows itself.  Since IE is
     #   unable to parse proper XML, we have to provide a hack to generate XML
-    #   that IE's limited abilities can handle.  This hack inserts a space 
+    #   that IE's limited abilities can handle.  This hack inserts a space
     #   before the /> on empty tags.  Defaults to false
 		def write( output=$stdout, indent=-1, trans=false, ie_hack=false )
       if xml_decl.encoding != "UTF-8" && !output.kind_of?(Output)
@@ -196,7 +196,7 @@ module REXML
       formatter.write( self, output )
 		end
 
-		
+
 		def Document::parse_stream( source, listener )
 			Parsers::StreamParser.new( source, listener ).parse
 		end
@@ -214,7 +214,7 @@ module REXML
     end
 
     attr_reader :entity_expansion_count
-    
+
     def record_entity_expansion
       @entity_expansion_count += 1
       if @entity_expansion_count > @@entity_expansion_limit

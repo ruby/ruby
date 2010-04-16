@@ -7,7 +7,7 @@ module RI
       File.join(dir, "cdesc-" + class_desc.name + ".yaml")
     end
 
-    
+
     # Convert a name from internal form (containing punctuation)
     # to an external form (where punctuation is replaced
     # by %xx)

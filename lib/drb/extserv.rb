@@ -1,6 +1,6 @@
 =begin
  external service
- 	Copyright (c) 2000,2002 Masatoshi SEKI 
+ 	Copyright (c) 2000,2002 Masatoshi SEKI
 =end
 
 require 'drb/drb'

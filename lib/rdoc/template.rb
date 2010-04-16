@@ -1,4 +1,4 @@
-# Cheap-n-cheerful HTML page template system. You create a 
+# Cheap-n-cheerful HTML page template system. You create a
 # template containing:
 #
 # * variable names between percent signs (<tt>%fred%</tt>)
@@ -88,7 +88,7 @@ class TemplatePage
       @lines = lines
     end
 
-    # read the next line 
+    # read the next line
     def read
       @lines.shift
     end
@@ -99,7 +99,7 @@ class TemplatePage
       res = []
       while line = read
         if pattern.match(line)
-          return LineReader.new(res) 
+          return LineReader.new(res)
         else
           res << line
         end
@@ -137,7 +137,7 @@ class TemplatePage
     @lines = LineReader.new(result.split($/))
   end
 
-  # Render the templates into HTML, storing the result on +op+ 
+  # Render the templates into HTML, storing the result on +op+
   # using the method <tt><<</tt>. The <tt>value_hash</tt> contains
   # key/value pairs used to drive the substitution (as described above)
 
@@ -147,10 +147,10 @@ class TemplatePage
   end
 
 
-  # Substitute a set of key/value pairs into the given template. 
+  # Substitute a set of key/value pairs into the given template.
   # Keys with scalar values have them substituted directly into
   # the page. Those with array values invoke <tt>substitute_array</tt>
-  # (below), which examples a block of the template once for each 
+  # (below), which examples a block of the template once for each
   # row in the array.
   #
   # This routine also copes with the <tt>IF:</tt>_key_ directive,
@@ -195,7 +195,7 @@ class TemplatePage
     result.join("\n")
   end
 
-  # Given an individual line, we look for %xxx% constructs and 
+  # Given an individual line, we look for %xxx% constructs and
   # HREF:ref:name: constructs, substituting for each.
 
   def expand_line(line)
@@ -218,7 +218,7 @@ class TemplatePage
     # meaningful to the regexp (like \1)
 
     line = line.gsub(/%([a-zA-Z]\w*)%/) {
-      val = @context.find_scalar($1) 
+      val = @context.find_scalar($1)
       val.tr('\\', "\000")
     }
 

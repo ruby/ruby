@@ -63,7 +63,7 @@ to the beginning of the format string, and yields a new array of
 conversions to the block every time the format string is matched
 (including partial matches, but not including complete failures).  The
 actual return value of scanf when called with a block is an array
-containing the results of all the executions of the block. 
+containing the results of all the executions of the block.
 
    str = "123 abc 456 def 789 ghi"
    str.scanf("%d%s") { |num,str| [ num * 2, str.upcase ] }
@@ -100,7 +100,7 @@ and <tt>tests/scanftests.rb</tt> for examples.)
 [u]
   Same as d.
 
-[i] 
+[i]
   Matches an optionally signed integer. The integer is read in base
   16 if it begins with `0x' or `0X', in base 8 if it begins with `0',
   and in base 10 other- wise. Only characters that correspond to the
@@ -280,7 +280,7 @@ Project contributors:: Nolan Darilek, Jason Johnston
 
 Thanks to Hal Fulton for hosting the Codefest.
 
-Thanks to Matz for suggestions about the class design.  
+Thanks to Matz for suggestions about the class design.
 
 Thanks to Gavin Sinclair for some feedback on the documentation.
 
@@ -332,7 +332,7 @@ module Scanf
       @spec_string = str
       h = '[A-Fa-f0-9]'
 
-      @re_string, @handler = 
+      @re_string, @handler =
         case @spec_string
 
           # %[[:...:]]
@@ -482,7 +482,7 @@ module Scanf
 
       return width_left || cc_no_width
     end
-    
+
   end
 
   class FormatString
@@ -671,10 +671,10 @@ class String
     if b
       block_scanf(fstr,&b)
     else
-      fs = 
+      fs =
         if fstr.is_a? Scanf::FormatString
-          fstr 
-        else 
+          fstr
+        else
           Scanf::FormatString.new(fstr)
         end
       fs.match(self)

@@ -1,5 +1,5 @@
 #
-#   math-mode.rb - 
+#   math-mode.rb -
 #   	$Release Version: 0.9.5$
 #   	$Revision$
 #   	$Date$
@@ -7,7 +7,7 @@
 #
 # --
 #
-#   
+#
 #
 require "mathn"
 

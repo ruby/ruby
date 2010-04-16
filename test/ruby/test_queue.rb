@@ -28,7 +28,7 @@ class TestQueue < Test::Unit::TestCase
         num_objects.times { from_workers.pop }
       }
     }.join
-  
+
     num_threads.times { to_workers.push nil }
     workers.each { |t| t.join }
 

@@ -34,7 +34,7 @@ class Tempfile < DelegateClass(File)
 
     lock = nil
     n = failure = 0
-    
+
     begin
       Thread.critical = true
 
@@ -79,7 +79,7 @@ class Tempfile < DelegateClass(File)
     else
       prefix, suffix = basename, ''
     end
- 
+
     t = Time.now.strftime("%Y%m%d")
     path = "#{prefix}#{t}-#{$$}-#{rand(0x100000000).to_s(36)}-#{n}#{suffix}"
   end
@@ -97,7 +97,7 @@ class Tempfile < DelegateClass(File)
     @tmpfile.close if @tmpfile
     @tmpfile = nil
     @data[1] = nil if @data
-  end    
+  end
   protected :_close
 
   # Closes the file.  If the optional flag is true, unlinks the file
@@ -163,7 +163,7 @@ class Tempfile < DelegateClass(File)
     end
 
     def call(arg=nil)
-      if @pid == $$ 
+      if @pid == $$
         path, tmpfile, cleanlist = *@data
 
         print "removing ", path, "..." if $DEBUG

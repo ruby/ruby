@@ -21,7 +21,7 @@ class TestNumber < Test::Unit::TestCase
         XSD::QName.new(Namespace, 'get_foo_response')
       )
     end
-  
+
     def get_foo(arg)
       arg.number
     end

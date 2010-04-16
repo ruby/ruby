@@ -14,7 +14,7 @@ class TestStruct < Test::Unit::TestCase
     def on_init
       add_method(self, 'a_method')
     end
-  
+
     def a_method
       @@test_struct.new("string", 1)
     end

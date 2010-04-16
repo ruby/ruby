@@ -14,7 +14,7 @@
 
 = Version
   $Id$
-  
+
 = Notes
   Tested on FreeBSD 5-CURRENT and 4-STABLE
   - ruby 1.6.8 (2003-01-17) [i386-freebsd5]

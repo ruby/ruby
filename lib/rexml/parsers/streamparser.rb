@@ -5,11 +5,11 @@ module REXML
         @listener = listener
         @parser = BaseParser.new( source )
       end
-      
+
       def add_listener( listener )
         @parser.add_listener( listener )
       end
-      
+
       def parse
         # entity string
         while true

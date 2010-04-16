@@ -67,7 +67,7 @@ module SM
       tag
     end
 
-    ## 
+    ##
     # Here's the client side of the visitor pattern
 
     def start_accepting

@@ -35,14 +35,14 @@ class DBM < ::DBM
     def delete( key )
         v = super( key )
         if String === v
-            v = YAML::load( v ) 
+            v = YAML::load( v )
         end
         v
     end
     def delete_if
         del_keys = keys.dup
         del_keys.delete_if { |k| yield( k, fetch( k ) ) == false }
-        del_keys.each { |k| delete( k ) } 
+        del_keys.each { |k| delete( k ) }
         self
     end
     def reject

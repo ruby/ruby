@@ -10,7 +10,7 @@ module RSS
       class << t
         alias_method(:to_s, :iso8601)
       end
-      
+
       @dc_elems = {
         :title => "hoge",
         :description =>
@@ -39,7 +39,7 @@ module RSS
       @content_elems = {
         :encoded => "<em>ATTENTION</em>",
       }
-      
+
       @trackback_elems = {
         :ping => "http://bar.com/tb.cgi?tb_id=rssplustrackback",
         :about => [
@@ -67,7 +67,7 @@ module RSS
         },
       ]
     end
-    
+
     def test_setup_maker_channel
       about = "http://hoge.com"
       title = "fugafuga"
@@ -79,7 +79,7 @@ module RSS
         maker.channel.title = title
         maker.channel.link = link
         maker.channel.description = description
-        
+
         @dc_elems.each do |var, value|
           maker.channel.__send__("dc_#{var}=", value)
         end
@@ -98,7 +98,7 @@ module RSS
         end
       end
       channel = new_rss.channel
-      
+
       assert_equal(about, channel.about)
       assert_equal(title, channel.title)
       assert_equal(link, channel.link)
@@ -110,23 +110,23 @@ module RSS
       @dc_elems.each do |var, value|
         assert_equal(value, channel.__send__("dc_#{var}"))
       end
-      
+
       @sy_elems.each do |var, value|
         value = value.to_i if var == :updateFrequency
         assert_equal(value, channel.__send__("sy_#{var}"))
       end
-      
+
     end
 
     def test_setup_maker_image
       title = "fugafuga"
       link = "http://hoge.com"
       url = "http://hoge.com/hoge.png"
-      
+
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
         maker.channel.link = link
-        
+
         maker.image.title = title
         maker.image.url = url
 
@@ -136,7 +136,7 @@ module RSS
 
         setup_dummy_item(maker)
       end
-      
+
       new_rss = RSS::Maker.make("1.0") do |maker|
         rss.channel.setup_maker(maker)
         rss.image.setup_maker(maker)
@@ -144,7 +144,7 @@ module RSS
           item.setup_maker(maker)
         end
       end
-      
+
       image = new_rss.image
       assert_equal(url, image.about)
       assert_equal(url, new_rss.channel.image.resource)
@@ -156,7 +156,7 @@ module RSS
         assert_equal(image.__send__("dc_#{var}"), value)
       end
     end
-    
+
     def test_setup_maker_textinput
       title = "fugafuga"
       description = "text hoge fuga"
@@ -165,7 +165,7 @@ module RSS
 
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
-        
+
         maker.textinput.link = link
         maker.textinput.title = title
         maker.textinput.description = description
@@ -177,7 +177,7 @@ module RSS
 
         setup_dummy_item(maker)
       end
-      
+
       new_rss = RSS::Maker.make("1.0") do |maker|
         rss.channel.setup_maker(maker)
         rss.textinput.setup_maker(maker)
@@ -185,7 +185,7 @@ module RSS
           item.setup_maker(maker)
         end
       end
-      
+
       textinput = new_rss.textinput
       assert_equal(link, textinput.about)
       assert_equal(link, new_rss.channel.textinput.resource)
@@ -205,10 +205,10 @@ module RSS
       description = "text hoge fuga"
 
       item_size = 5
-      
+
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
-        
+
         item_size.times do |i|
           maker.items.new_item do |item|
             item.title = "#{title}#{i}"
@@ -232,7 +232,7 @@ module RSS
           end
         end
       end
-      
+
       new_rss = RSS::Maker.make("1.0") do |maker|
         rss.channel.setup_maker(maker)
 
@@ -244,7 +244,7 @@ module RSS
           end
         end
       end
-      
+
       assert_equal(item_size, new_rss.items.size)
       new_rss.items.each_with_index do |item, i|
         assert_equal("#{link}#{i}", item.about)
@@ -255,11 +255,11 @@ module RSS
         @dc_elems.each do |var, value|
           assert_equal(item.__send__("dc_#{var}"), value)
         end
-      
+
         @content_elems.each do |var, value|
           assert_equal(item.__send__("content_#{var}"), value)
         end
-      
+
         assert_equal(@trackback_elems[:ping], item.trackback_ping)
         assert_equal(@trackback_elems[:about].size, item.trackback_abouts.size)
         item.trackback_abouts.each_with_index do |about, j|
@@ -274,10 +274,10 @@ module RSS
       description = "text hoge fuga"
 
       item_size = 5
-      
+
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
-        
+
         item_size.times do |i|
           item = RSS::RDF::Item.new("#{link}#{i}")
           item.title = "#{title}#{i}"
@@ -296,10 +296,10 @@ module RSS
         assert_equal("#{description}#{i}", item.description)
       end
 
-      
+
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
-        
+
         item_size.times do |i|
           item = RSS::RDF::Item.new("#{link}#{i}")
           item.title = "#{title}#{i}"
@@ -322,11 +322,11 @@ module RSS
     def test_setup_maker_items_backward_compatibility
       test_setup_maker_items(true)
     end
-    
+
     def test_setup_maker
       encoding = "EUC-JP"
       standalone = true
-      
+
       href = 'a.xsl'
       type = 'text/xsl'
       title = 'sample'
@@ -350,11 +350,11 @@ module RSS
         setup_dummy_channel(maker)
         setup_dummy_item(maker)
       end
-      
+
       new_rss = RSS::Maker.make("1.0") do |maker|
         rss.setup_maker(maker)
       end
-      
+
       assert_equal("1.0", new_rss.rss_version)
       assert_equal(encoding, new_rss.encoding)
       assert_equal(standalone, new_rss.standalone)
@@ -372,7 +372,7 @@ module RSS
     def test_setup_maker_full
       encoding = "EUC-JP"
       standalone = true
-      
+
       href = 'a.xsl'
       type = 'text/xsl'
       title = 'sample'
@@ -387,18 +387,18 @@ module RSS
 
       image_title = "fugafuga"
       image_url = "http://hoge.com/hoge.png"
-      
+
       textinput_title = "fugafuga"
       textinput_description = "text hoge fuga"
       textinput_name = "hoge"
       textinput_link = "http://hoge.com"
-      
+
       item_title = "TITLE"
       item_link = "http://hoge.com/"
       item_description = "text hoge fuga"
 
       item_size = 5
-      
+
       rss = RSS::Maker.make("1.0") do |maker|
         maker.encoding = encoding
         maker.standalone = standalone
@@ -422,13 +422,13 @@ module RSS
         @sy_elems.each do |var, value|
           maker.channel.__send__("sy_#{var}=", value)
         end
-        
+
         maker.image.title = image_title
         maker.image.url = image_url
         @dc_elems.each do |var, value|
           maker.image.__send__("dc_#{var}=", value)
         end
-        
+
         maker.textinput.link = textinput_link
         maker.textinput.title = textinput_title
         maker.textinput.description = textinput_description
@@ -436,7 +436,7 @@ module RSS
         @dc_elems.each do |var, value|
           maker.textinput.__send__("dc_#{var}=", value)
         end
-        
+
         item_size.times do |i|
           maker.items.new_item do |item|
             item.title = "#{item_title}#{i}"
@@ -462,11 +462,11 @@ module RSS
 
         setup_taxo_topic(maker, @taxo_topic_elems)
       end
-      
+
       new_rss = RSS::Maker.make("1.0") do |maker|
         rss.setup_maker(maker)
       end
-      
+
       assert_equal("1.0", new_rss.rss_version)
       assert_equal(encoding, new_rss.encoding)
       assert_equal(standalone, new_rss.standalone)
@@ -509,7 +509,7 @@ module RSS
       @dc_elems.each do |var, value|
         assert_equal(image.__send__("dc_#{var}"), value)
       end
-      
+
       textinput = new_rss.textinput
       assert_equal(textinput_link, textinput.about)
       assert_equal(textinput_link, new_rss.channel.textinput.resource)
@@ -531,11 +531,11 @@ module RSS
         @dc_elems.each do |var, value|
           assert_equal(item.__send__("dc_#{var}"), value)
         end
-      
+
         @content_elems.each do |var, value|
           assert_equal(item.__send__("content_#{var}"), value)
         end
-      
+
         assert_equal(@trackback_elems[:ping], item.trackback_ping)
         assert_equal(@trackback_elems[:about].size, item.trackback_abouts.size)
         item.trackback_abouts.each_with_index do |about, j|
@@ -545,6 +545,6 @@ module RSS
 
       assert_taxo_topic(@taxo_topic_elems, new_rss)
     end
-    
+
   end
 end

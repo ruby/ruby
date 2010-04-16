@@ -49,7 +49,7 @@ module Rinda
 	end
       end
     end
-  
+
     ##
     # Extracts the response URI from +msg+ and adds it to TupleSpace where it
     # will be picked up by +reply_service+ for notification.
@@ -74,7 +74,7 @@ module Rinda
 	end
       end
     end
-    
+
     ##
     # Pulls lookup tuples out of the TupleSpace and sends their DRb object the
     # address of the local TupleSpace.
@@ -104,7 +104,7 @@ module Rinda
     # created RingFinger.
 
     def self.finger
-      unless @@finger 
+      unless @@finger
 	@@finger = self.new
 	@@finger.lookup_ring_any
       end
@@ -207,7 +207,7 @@ module Rinda
 	  @rings.push(it)
 	end
       end
-      
+
       @primary = queue.pop
       raise('RingNotFound') if @primary.nil?
       @primary

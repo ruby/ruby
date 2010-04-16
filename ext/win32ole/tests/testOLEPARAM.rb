@@ -1,4 +1,4 @@
-# You need RubyUnit and MS Excel and MSI to run this test script 
+# You need RubyUnit and MS Excel and MSI to run this test script
 
 require 'rubyunit'
 
@@ -46,7 +46,7 @@ class TestOLEPARAM < RUNIT::TestCase
     f = methods.find {|m| m.name == 'SaveAs'}
     assert(f.params[0].input?)
   end
-  
+
   def test_output
     classes = WIN32OLE_TYPE.ole_classes(MS_EXCEL_TYPELIB)
     methods = classes.find {|c| c.name == 'Worksheet'}.ole_methods

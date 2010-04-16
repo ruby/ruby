@@ -15,7 +15,7 @@ class TestRPC < Test::Unit::TestCase
       add_rpc_method(self, 'echo', 'arg1', 'arg2')
       add_rpc_method(self, 'echo_err', 'arg1', 'arg2')
     end
-  
+
     DummyPerson = Struct.new("family-name".intern, :given_name)
     def echo(arg1, arg2)
       case arg1.family_name
@@ -30,7 +30,7 @@ class TestRPC < Test::Unit::TestCase
         raise
       end
     end
-  
+
     ErrPerson = Struct.new(:given_name, :no_such_element)
     def echo_err(arg1, arg2)
       ErrPerson.new(58, Time.now)

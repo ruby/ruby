@@ -1,5 +1,5 @@
 #
-#   fork.rb - 
+#   fork.rb -
 #   	$Release Version: 0.9.5 $
 #   	$Revision$
 #   	$Date$
@@ -7,7 +7,7 @@
 #
 # --
 #
-#   
+#
 #
 
 @RCS_ID='-$Id$-'
@@ -18,7 +18,7 @@ module IRB
     class Fork<Nop
       def execute(&block)
 	pid = send ExtendCommand.irb_original_method_name("fork")
-	unless pid 
+	unless pid
 	  class<<self
 	    alias_method :exit, ExtendCommand.irb_original_method_name('exit')
 	  end

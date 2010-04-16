@@ -122,27 +122,27 @@ class TestArray < Test::Unit::TestCase
 
   def test_beg_end_0
     x = [1, 2, 3, 4, 5]
-    
+
     assert_equal(1, x.first)
     assert_equal([1], x.first(1))
     assert_equal([1, 2, 3], x.first(3))
-    
+
     assert_equal(5, x.last)
     assert_equal([5], x.last(1))
     assert_equal([3, 4, 5], x.last(3))
-    
+
     assert_equal(1, x.shift)
     assert_equal([2, 3, 4], x.shift(3))
     assert_equal([5], x)
-    
+
     assert_equal([2, 3, 4, 5], x.unshift(2, 3, 4))
     assert_equal([1, 2, 3, 4, 5], x.unshift(1))
     assert_equal([1, 2, 3, 4, 5], x)
-    
+
     assert_equal(5, x.pop)
     assert_equal([3, 4], x.pop(2))
     assert_equal([1, 2], x)
-    
+
     assert_equal([1, 2, 3, 4], x.push(3, 4))
     assert_equal([1, 2, 3, 4, 5], x.push(5))
     assert_equal([1, 2, 3, 4, 5], x)
@@ -319,7 +319,7 @@ class TestArray < Test::Unit::TestCase
 
     assert_equal(@cls[10, 11, 12], a[9..11])
     assert_equal(@cls[10, 11, 12], a[-91..-89])
-    
+
     assert_nil(a[10, -3])
     # Ruby 1.8 feature change:
     # Array#[size..x] returns [] instead of nil.
@@ -481,7 +481,7 @@ class TestArray < Test::Unit::TestCase
     a = @cls[ 1, 'cat', 1..1 ]
     assert_equal([ Fixnum, String, Range], a.collect! {|e| e.class} )
     assert_equal([ Fixnum, String, Range], a)
-   
+
     a = @cls[ 1, 'cat', 1..1 ]
     assert_equal([ 99, 99, 99], a.collect! { 99 } )
     assert_equal([ 99, 99, 99], a)
@@ -529,7 +529,7 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[1, 2, 3, 4],     @cls[1, 2, 3, 4].concat(@cls[]))
     assert_equal(@cls[],               @cls[].concat(@cls[]))
     assert_equal(@cls[@cls[1, 2], @cls[3, 4]], @cls[@cls[1, 2]].concat(@cls[@cls[3, 4]]))
-    
+
     a = @cls[1, 2, 3]
     a.concat(a)
     assert_equal([1, 2, 3, 1, 2, 3], a)
@@ -702,7 +702,7 @@ class TestArray < Test::Unit::TestCase
     a5 = @cls[ a1, @cls[], a3 ]
     assert_equal(@cls[1, 2, 3, 4, 5, 6], a5.flatten)
     assert_equal(@cls[], @cls[].flatten)
-    assert_equal(@cls[], 
+    assert_equal(@cls[],
                  @cls[@cls[@cls[@cls[],@cls[]],@cls[@cls[]],@cls[]],@cls[@cls[@cls[]]]].flatten)
 
     assert_raise(TypeError, "[ruby-dev:31197]") { [[]].flatten("") }
@@ -721,7 +721,7 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[1, 2, 3, 4, 5, 6], a5)
 
     assert_equal(@cls[], @cls[].flatten)
-    assert_equal(@cls[], 
+    assert_equal(@cls[],
                  @cls[@cls[@cls[@cls[],@cls[]],@cls[@cls[]],@cls[]],@cls[@cls[@cls[]]]].flatten)
   end
 
@@ -816,7 +816,7 @@ class TestArray < Test::Unit::TestCase
     a = @cls[ 1, 'cat', 1..1 ]
     assert_equal(@cls[ Fixnum, String, Range], a.map! {|e| e.class} )
     assert_equal(@cls[ Fixnum, String, Range], a)
-   
+
     a = @cls[ 1, 'cat', 1..1 ]
     assert_equal(@cls[ 99, 99, 99], a.map! { 99 } )
     assert_equal(@cls[ 99, 99, 99], a)
@@ -865,11 +865,11 @@ class TestArray < Test::Unit::TestCase
     assert_equal("ABC",      @cls[ 65, 66, 67 ].pack("c3"))
     assert_equal("\377BC",   @cls[ -1, 66, 67 ].pack("c*"))
 
-    
+
     assert_equal("AB\n\x10",  @cls["4142", "0a", "12"].pack("H4H2H1"))
     assert_equal("AB\n\x02",  @cls["1424", "a0", "21"].pack("h4h2h1"))
 
-    assert_equal("abc=02def=\ncat=\n=01=\n", 
+    assert_equal("abc=02def=\ncat=\n=01=\n",
                  @cls["abc\002def", "cat", "\001"].pack("M9M3M4"))
 
     assert_equal("aGVsbG8K\n",  @cls["hello\n"].pack("m"))
@@ -1069,7 +1069,7 @@ class TestArray < Test::Unit::TestCase
 
     assert_equal(@cls[10, 11, 12], a.slice(9..11))
     assert_equal(@cls[10, 11, 12], a.slice(-91..-89))
-    
+
     assert_nil(a.slice(-101..-1))
 
     assert_nil(a.slice(10, -3))
@@ -1127,7 +1127,7 @@ class TestArray < Test::Unit::TestCase
 
     a.fill(1)
     assert_equal(@cls[1, 1, 1, 1], a.sort)
-    
+
     assert_equal(@cls[], @cls[].sort)
   end
 
@@ -1235,7 +1235,7 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[[1,1],[1,2],[2,1],[2,2]], @cls[1,2].product([1,2]))
 
     assert_equal(@cls[[1,3,5],[1,3,6],[1,4,5],[1,4,6],
-                   [2,3,5],[2,3,6],[2,4,5],[2,4,6]], 
+                   [2,3,5],[2,3,6],[2,4,5],[2,4,6]],
                  @cls[1,2].product([3,4],[5,6]))
     assert_equal(@cls[[1],[2]], @cls[1,2].product)
     assert_equal(@cls[], @cls[1,2].product([]))

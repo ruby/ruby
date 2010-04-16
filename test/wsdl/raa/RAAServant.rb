@@ -15,7 +15,7 @@ class RAABaseServicePortType
     #raise NotImplementedError.new
     ["ruby", "soap4r"]
   end
-  
+
   # SYNOPSIS
   #   getProductTree
   #
@@ -31,7 +31,7 @@ class RAABaseServicePortType
   def getProductTree
     raise NotImplementedError.new
   end
-  
+
   # SYNOPSIS
   #   getInfoFromCategory(category)
   #
@@ -47,7 +47,7 @@ class RAABaseServicePortType
   def getInfoFromCategory(category)
     raise NotImplementedError.new
   end
-  
+
   # SYNOPSIS
   #   getModifiedInfoSince(timeInstant)
   #
@@ -63,7 +63,7 @@ class RAABaseServicePortType
   def getModifiedInfoSince(timeInstant)
     raise NotImplementedError.new
   end
-  
+
   # SYNOPSIS
   #   getInfoFromName(productName)
   #
@@ -79,7 +79,7 @@ class RAABaseServicePortType
   def getInfoFromName(productName)
     raise NotImplementedError.new
   end
-  
+
   # SYNOPSIS
   #   getInfoFromOwnerId(ownerId)
   #

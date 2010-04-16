@@ -58,7 +58,7 @@ module REXML
       end
       array_enc.pack('C*')
     end
-    
+
     # Convert to UTF-8
     def decode_cp1252(str)
       array_latin9 = str.unpack('C*')

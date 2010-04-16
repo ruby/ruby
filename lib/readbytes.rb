@@ -23,7 +23,7 @@ class IO
       raise EOFError, "End of file reached"
     end
     if str.size < n
-      raise TruncatedDataError.new("data truncated", str) 
+      raise TruncatedDataError.new("data truncated", str)
     end
     str
   end

@@ -7,12 +7,12 @@ module RSS
 
     def setup
       @uri = "http://purl.org/rss/1.0/modules/syndication/"
-      
+
       t = Time.iso8601("2000-01-01T12:00:05+00:00")
       class << t
         alias_method(:to_s, :iso8601)
       end
-      
+
       @elements = {
         :updatePeriod => "hourly",
         :updateFrequency => "2",

@@ -18,7 +18,7 @@ module WEBrick
 
       def set_passwd(realm, user, pass)
         self[user] = pass
-      end                             
+      end
 
       def get_passwd(realm, user, reload_db=false)
         # reload_db is dummy

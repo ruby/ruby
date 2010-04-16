@@ -1,11 +1,11 @@
-# 
+#
 # erbhandler.rb -- ERBHandler Class
-# 
+#
 # Author: IPR -- Internet Programming with Ruby -- writers
 # Copyright (c) 2001 TAKAHASHI Masayoshi, GOTOU Yuuzou
 # Copyright (c) 2002 Internet Programming with Ruby writers. All rights
 # reserved.
-# 
+#
 # $IPR: erbhandler.rb,v 1.25 2003/02/24 19:25:31 gotoyuzo Exp $
 
 require 'webrick/httpservlet/abstract.rb'

@@ -55,7 +55,7 @@
 #   while g.next?
 #     puts g.next
 #   end
-#   
+#
 class Generator
   include Enumerable
 
@@ -189,7 +189,7 @@ class Enumerator
     return g.next unless g.end?
 
     g.rewind
-    raise StopIteration, 'iteration reached at end' 
+    raise StopIteration, 'iteration reached at end'
   end
 
   # :nodoc:

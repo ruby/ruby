@@ -7,7 +7,7 @@
 #
 # --
 #
-#   
+#
 #
 
 module IRB
@@ -23,7 +23,7 @@ module IRB
 	next
       end
       space_line = false
-      
+
       l.sub!(/#.*$/, "")
       next if /^\s*$/ =~ l
       lc.puts l

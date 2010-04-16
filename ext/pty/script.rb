@@ -18,7 +18,7 @@ PTY.spawn("/bin/csh") do |r_pty,w_pty,pid|
       w_pty.flush
     end
   end
-  
+
   begin
     while true
       c = r_pty.sysread(512)

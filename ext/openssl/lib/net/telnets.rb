@@ -12,7 +12,7 @@
 
 = Version
   $Id$
-  
+
   2001/11/06: Contiributed to Ruby/OpenSSL project.
 
 == class Net::Telnet
@@ -145,7 +145,7 @@ module Net
         end
       end
     end # preprocess
-    
+
     alias waitfor_org waitfor
 
     def waitfor(options)
@@ -181,7 +181,7 @@ module Net
         begin
           c = @rest + @sock.sysread(1024 * 1024)
           @dumplog.log_dump('<', c) if @options.has_key?("Dump_log")
-          if @options["Telnetmode"]   
+          if @options["Telnetmode"]
             pos = 0
             catch(:next){
               while true
@@ -213,11 +213,11 @@ module Net
           end
           @log.print(buf) if @options.has_key?("Output_log")
           line.concat(buf)
-          yield buf if block_given?   
+          yield buf if block_given?
         rescue EOFError # End of file reached
           if line == ''
             line = nil
-            yield nil if block_given? 
+            yield nil if block_given?
           end
           break
         end

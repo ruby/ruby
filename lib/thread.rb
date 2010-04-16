@@ -40,13 +40,13 @@ end
 #
 #   require 'thread'
 #   semaphore = Mutex.new
-#   
+#
 #   a = Thread.new {
 #     semaphore.synchronize {
 #       # access shared resource
 #     }
 #   }
-#   
+#
 #   b = Thread.new {
 #     semaphore.synchronize {
 #       # access shared resource
@@ -153,7 +153,7 @@ class Mutex
   end
 end
 
-# 
+#
 # ConditionVariable objects augment class Mutex. Using condition variables,
 # it is possible to suspend while in the middle of a critical section until a
 # resource becomes available.
@@ -164,7 +164,7 @@ end
 #
 #   mutex = Mutex.new
 #   resource = ConditionVariable.new
-#   
+#
 #   a = Thread.new {
 #     mutex.synchronize {
 #       # Thread 'a' now needs the resource
@@ -172,7 +172,7 @@ end
 #       # 'a' can now have the resource
 #     }
 #   }
-#   
+#
 #   b = Thread.new {
 #     mutex.synchronize {
 #       # Thread 'b' has finished using the resource
@@ -187,7 +187,7 @@ class ConditionVariable
   def initialize
     @waiters = []
   end
-  
+
   #
   # Releases the lock held in +mutex+ and waits; reacquires the lock on wakeup.
   #
@@ -201,7 +201,7 @@ class ConditionVariable
       mutex.lock
     end
   end
-  
+
   #
   # Wakes up the first thread in line waiting for this lock.
   #
@@ -213,7 +213,7 @@ class ConditionVariable
       retry
     end
   end
-    
+
   #
   # Wakes up all threads waiting for this lock.
   #
@@ -238,9 +238,9 @@ end
 # Example:
 #
 #   require 'thread'
-#   
+#
 #   queue = Queue.new
-#   
+#
 #   producer = Thread.new do
 #     5.times do |i|
 #       sleep rand(i) # simulate expense
@@ -248,7 +248,7 @@ end
 #       puts "#{i} produced"
 #     end
 #   end
-#   
+#
 #   consumer = Thread.new do
 #     5.times do |i|
 #       value = queue.pop
@@ -256,7 +256,7 @@ end
 #       puts "consumed #{value}"
 #     end
 #   end
-#   
+#
 #   consumer.join
 #
 class Queue

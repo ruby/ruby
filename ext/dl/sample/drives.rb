@@ -43,7 +43,7 @@ types = [
   "unknown",
   "no root dir",
   "Removable",
-  "Fixed", 
+  "Fixed",
   "Remote",
   "CDROM",
   "RAM",

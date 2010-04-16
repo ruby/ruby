@@ -20,7 +20,7 @@ module REXML
       def source
         @parser.source
       end
-			
+
       def add_listener( listener )
         @parser.add_listener( listener )
       end
@@ -44,7 +44,7 @@ module REXML
 			# :entitydecl, :notationdecl, :cdata, :xmldecl, :comment
       #
       # There is an additional symbol that can be listened for: :progress.
-      # This will be called for every event generated, passing in the current 
+      # This will be called for every event generated, passing in the current
       # stream position.
 			#
 			# Array contains regular expressions or strings which will be matched
@@ -72,7 +72,7 @@ module REXML
 					add([nil, nil, args[0]])
 				end
 			end
-			
+
 			def deafen( listener=nil, &blok )
 				if listener
 					@listeners.delete_if {|item| item[-1] == listener }
@@ -81,10 +81,10 @@ module REXML
 					@procs.delete_if {|item| item[-1] == blok }
 				end
 			end
-			
+
 			def parse
 				@procs.each { |sym,match,block| block.call if sym == :start_document }
-				@listeners.each { |sym,match,block| 
+				@listeners.each { |sym,match,block|
 					block.start_document if sym == :start_document or sym.nil?
 				}
 				root = context = []
@@ -126,8 +126,8 @@ module REXML
 						listeners = get_listeners( :start_element, event[1] )
 						# notify observers
 						procs.each { |ob| ob.call( uri, local, event[1], event[2] ) } if procs
-						listeners.each { |ob| 
-							ob.start_element( uri, local, event[1], event[2] ) 
+						listeners.each { |ob|
+							ob.start_element( uri, local, event[1], event[2] )
 						} if listeners
 					when :end_element
 						@tag_stack.pop
@@ -140,8 +140,8 @@ module REXML
 						listeners = get_listeners( :end_element, event[1] )
 						# notify observers
 						procs.each { |ob| ob.call( uri, local, event[1] ) } if procs
-						listeners.each { |ob| 
-							ob.end_element( uri, local, event[1] ) 
+						listeners.each { |ob|
+							ob.end_element( uri, local, event[1] )
 						} if listeners
 
 						namespace_mapping = @namespace_stack.pop
@@ -169,7 +169,7 @@ module REXML
           when :entitydecl
             @entities[ event[1] ] = event[2] if event.size == 3
 						handle( *event )
-					when :processing_instruction, :comment, :attlistdecl, 
+					when :processing_instruction, :comment, :attlistdecl,
 						:elementdecl, :cdata, :notationdecl, :xmldecl
 						handle( *event )
 					end
@@ -184,8 +184,8 @@ module REXML
 				listeners = get_listeners( symbol, tag )
 				# notify observers
 				procs.each { |ob| ob.call( *arguments ) } if procs
-				listeners.each { |l| 
-					l.send( symbol.to_s, *arguments ) 
+				listeners.each { |l|
+					l.send( symbol.to_s, *arguments )
 				} if listeners
 			end
 
@@ -196,7 +196,7 @@ module REXML
 				@procs.find_all do |sym, match, block|
           #puts sym.inspect+"=="+symbol.inspect+ "\t"+match.inspect+"=="+name.inspect+ "\t"+( (sym.nil? or symbol == sym) and ((name.nil? and match.nil?) or match.nil? or ( (name == match) or (match.kind_of? Regexp and name =~ match)))).to_s
 					(
-						(sym.nil? or symbol == sym) and 
+						(sym.nil? or symbol == sym) and
 						((name.nil? and match.nil?) or match.nil? or (
 							(name == match) or
 							(match.kind_of? Regexp and name =~ match)
@@ -209,7 +209,7 @@ module REXML
 				return nil if @listeners.size == 0
 				@listeners.find_all do |sym, match, block|
 					(
-						(sym.nil? or symbol == sym) and 
+						(sym.nil? or symbol == sym) and
 						((name.nil? and match.nil?) or match.nil? or (
 							(name == match) or
 							(match.kind_of? Regexp and name =~ match)
@@ -228,7 +228,7 @@ module REXML
 				end
 			end
 
-			def get_namespace( prefix ) 
+			def get_namespace( prefix )
         uris = (@namespace_stack.find_all { |ns| not ns[prefix].nil? }) ||
 					(@namespace_stack.find { |ns| not ns[nil].nil? })
 				uris[-1][prefix] unless uris.nil? or 0 == uris.size

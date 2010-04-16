@@ -159,7 +159,7 @@ class TestString < Test::Unit::TestCase
     assert_equal("now's", result[0])
     assert_equal("the", result[1])
     assert_equal("time", result[2])
-    
+
     result = " now's  the time".split(' ')
     assert_equal("now's", result[0])
     assert_equal("the", result[1])
@@ -209,7 +209,7 @@ class TestString < Test::Unit::TestCase
     assert_equal("m", result[2])
     assert_equal("o", result[3])
     assert_equal("m", result[4])
- 
+
     result = "mellow yellow".split("ello")
     assert_equal("m", result[0])
     assert_equal("w y", result[1])

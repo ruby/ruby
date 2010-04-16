@@ -72,7 +72,7 @@ module WEBrick
   end
 
   class Log < BasicLog
-    attr_accessor :time_format 
+    attr_accessor :time_format
 
     def initialize(log_file=nil, level=nil)
       super(log_file, level)

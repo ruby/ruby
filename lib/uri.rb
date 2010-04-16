@@ -3,11 +3,11 @@
 #
 # Author:: Akira Yamada <akira@ruby-lang.org>
 # Documentation:: Akira Yamada <akira@ruby-lang.org>, Dmitry V. Sabanin <sdmitry@lrn.ru>
-# License:: 
+# License::
 #  Copyright (c) 2001 akira yamada <akira@ruby-lang.org>
 #  You can redistribute it and/or modify it under the same term as Ruby.
 # Revision:: $Id$
-# 
+#
 # See URI for documentation
 #
 

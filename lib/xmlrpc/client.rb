@@ -26,7 +26,7 @@ Released under the same term of license as Ruby.
 or
 
     require "xmlrpc/client"
-  
+
     server = XMLRPC::Client.new("www.ruby-lang.org", "/RPC2", 80)
     ok, param = server.call2("michael.add", 4, 5)
     if ok then
@@ -40,14 +40,14 @@ or
 == Description
 Class (({XMLRPC::Client})) provides remote procedure calls to a XML-RPC server.
 After setting the connection-parameters with ((<XMLRPC::Client.new>)) which
-creates a new (({XMLRPC::Client})) instance, you can execute a remote procedure 
+creates a new (({XMLRPC::Client})) instance, you can execute a remote procedure
 by sending the ((<call|XMLRPC::Client#call>)) or ((<call2|XMLRPC::Client#call2>))
-message to this new instance. The given parameters indicate which method to 
+message to this new instance. The given parameters indicate which method to
 call on the remote-side and of course the parameters for the remote procedure.
 
 == Class Methods
 --- XMLRPC::Client.new( host=nil, path=nil, port=nil, proxy_host=nil, proxy_port=nil, user=nil, password=nil, use_ssl=false, timeout =nil)
-    Creates an object which represents the remote XML-RPC server on the 
+    Creates an object which represents the remote XML-RPC server on the
     given host ((|host|)). If the server is CGI-based, ((|path|)) is the
     path to the CGI-script, which will be called, otherwise (in the
     case of a standalone server) ((|path|)) should be (({"/RPC2"})).
@@ -59,8 +59,8 @@ call on the remote-side and of course the parameters for the remote procedure.
     Default values for ((|host|)), ((|path|)) and ((|port|)) are 'localhost', '/RPC2' and
     '80' respectively using SSL '443'.
 
-    If ((|user|)) and ((|password|)) are given, each time a request is send, 
-    a Authorization header is send. Currently only Basic Authentification is 
+    If ((|user|)) and ((|password|)) are given, each time a request is send,
+    a Authorization header is send. Currently only Basic Authentification is
     implemented no Digest.
 
     If ((|use_ssl|)) is set to (({true})), comunication over SSL is enabled.
@@ -76,9 +76,9 @@ call on the remote-side and of course the parameters for the remote procedure.
 
 :   proxy
     Is of the form "host:port".
- 
+
 :   timeout
-    Defaults to 30. 
+    Defaults to 30.
 
 --- XMLRPC::Client.new3( hash={} )
 --- XMLRPC::Client.new_from_hash( hash={} )
@@ -97,10 +97,10 @@ call on the remote-side and of course the parameters for the remote procedure.
 
 == Instance Methods
 --- XMLRPC::Client#call( method, *args )
-    Invokes the method named ((|method|)) with the parameters given by 
+    Invokes the method named ((|method|)) with the parameters given by
     ((|args|)) on the XML-RPC server.
-    The parameter ((|method|)) is converted into a (({String})) and should 
-    be a valid XML-RPC method-name.  
+    The parameter ((|method|)) is converted into a (({String})) and should
+    be a valid XML-RPC method-name.
     Each parameter of ((|args|)) must be of one of the following types,
     where (({Hash})), (({Struct})) and (({Array})) can contain any of these listed ((:types:)):
     * (({Fixnum})), (({Bignum}))
@@ -110,31 +110,31 @@ call on the remote-side and of course the parameters for the remote procedure.
     * (({Hash})), (({Struct}))
     * (({Array}))
     * (({Date})), (({Time})), (({XMLRPC::DateTime}))
-    * (({XMLRPC::Base64})) 
-    * A Ruby object which class includes XMLRPC::Marshallable (only if Config::ENABLE_MARSHALLABLE is (({true}))). 
+    * (({XMLRPC::Base64}))
+    * A Ruby object which class includes XMLRPC::Marshallable (only if Config::ENABLE_MARSHALLABLE is (({true}))).
       That object is converted into a hash, with one additional key/value pair "___class___" which contains the class name
       for restoring later that object.
-    
-    The method returns the return-value from the RPC 
-    ((-stands for Remote Procedure Call-)). 
+
+    The method returns the return-value from the RPC
+    ((-stands for Remote Procedure Call-)).
     The type of the return-value is one of the above shown,
     only that a (({Bignum})) is only allowed when it fits in 32-bit and
     that a XML-RPC (('dateTime.iso8601')) type is always returned as
-    a ((<(({XMLRPC::DateTime}))|URL:datetime.html>)) object and 
+    a ((<(({XMLRPC::DateTime}))|URL:datetime.html>)) object and
     a (({Struct})) is never returned, only a (({Hash})), the same for a (({Symbol})), where
-    always a (({String})) is returned. 
+    always a (({String})) is returned.
     A (({XMLRPC::Base64})) is returned as a (({String})) from xmlrpc4r version 1.6.1 on.
-    
-    If the remote procedure returned a fault-structure, then a 
+
+    If the remote procedure returned a fault-structure, then a
     (({XMLRPC::FaultException})) exception is raised, which has two accessor-methods
     (({faultCode})) and (({faultString})) of type (({Integer})) and (({String})).
 
 --- XMLRPC::Client#call2( method, *args )
     The difference between this method and ((<call|XMLRPC::Client#call>)) is, that
     this method do ((*not*)) raise a (({XMLRPC::FaultException})) exception.
-    The method returns an array of two values. The first value indicates if 
+    The method returns an array of two values. The first value indicates if
     the second value is a return-value ((({true}))) or an object of type
-    (({XMLRPC::FaultException})). 
+    (({XMLRPC::FaultException})).
     Both are explained in ((<call|XMLRPC::Client#call>)).
 
     Simple to remember: The "2" in "call2" denotes the number of values it returns.
@@ -151,19 +151,19 @@ call on the remote-side and of course the parameters for the remote procedure.
       # => [7, -1]
 
 --- XMLRPC::Client#multicall2( *methods )
-    Same as ((<XMLRPC::Client#multicall>)), but returns like ((<XMLRPC::Client#call2>)) two parameters 
+    Same as ((<XMLRPC::Client#multicall>)), but returns like ((<XMLRPC::Client#call2>)) two parameters
     instead of raising an (({XMLRPC::FaultException})).
 
 --- XMLRPC::Client#proxy( prefix, *args )
     Returns an object of class (({XMLRPC::Client::Proxy})), initialized with
     ((|prefix|)) and ((|args|)). A proxy object returned by this method behaves
     like ((<XMLRPC::Client#call>)), i.e. a call on that object will raise a
-    (({XMLRPC::FaultException})) when a fault-structure is returned by that call. 
+    (({XMLRPC::FaultException})) when a fault-structure is returned by that call.
 
 --- XMLRPC::Client#proxy2( prefix, *args )
     Almost the same like ((<XMLRPC::Client#proxy>)) only that a call on the returned
     (({XMLRPC::Client::Proxy})) object behaves like ((<XMLRPC::Client#call2>)), i.e.
-    a call on that object will return two parameters. 
+    a call on that object will return two parameters.
 
 
 
@@ -175,21 +175,21 @@ call on the remote-side and of course the parameters for the remote procedure.
 --- XMLRPC::Client#proxy_async(...)
 --- XMLRPC::Client#proxy2_async(...)
     In contrast to corresponding methods without "_async", these can be
-    called concurrently and use for each request a new connection, where the 
+    called concurrently and use for each request a new connection, where the
     non-asynchronous counterparts use connection-alive (one connection for all requests)
-    if possible. 
+    if possible.
 
-    Note, that you have to use Threads to call these methods concurrently. 
+    Note, that you have to use Threads to call these methods concurrently.
     The following example calls two methods concurrently:
-    
+
       Thread.new {
         p client.call_async("michael.add", 4, 5)
       }
- 
+
       Thread.new {
         p client.call_async("michael.div", 7, 9)
       }
- 
+
 
 --- XMLRPC::Client#timeout
 --- XMLRPC::Client#user
@@ -200,12 +200,12 @@ call on the remote-side and of course the parameters for the remote procedure.
 --- XMLRPC::Client#user= (new_user)
 --- XMLRPC::Client#password= (new_password)
     Set the corresponding attributes.
-    
+
 
 --- XMLRPC::Client#set_writer( writer )
     Sets the XML writer to use for generating XML output.
     Should be an instance of a class from module (({XMLRPC::XMLWriter})).
-    If this method is not called, then (({XMLRPC::Config::DEFAULT_WRITER})) is used. 
+    If this method is not called, then (({XMLRPC::Config::DEFAULT_WRITER})) is used.
 
 --- XMLRPC::Client#set_parser( parser )
     Sets the XML parser to use for parsing XML documents.
@@ -220,7 +220,7 @@ call on the remote-side and of course the parameters for the remote procedure.
     Set extra HTTP headers that are included in the request.
 
 --- XMLRPC::Client#http_header_extra
-    Access the via ((<XMLRPC::Client#http_header_extra=>)) assigned header. 
+    Access the via ((<XMLRPC::Client#http_header_extra=>)) assigned header.
 
 --- XMLRPC::Client#http_last_response
     Returns the (({Net::HTTPResponse})) object of the last RPC.
@@ -240,31 +240,31 @@ call on the remote-side and of course the parameters for the remote procedure.
 
 == Description
 Class (({XMLRPC::Client::Proxy})) makes XML-RPC calls look nicer!
-You can call any method onto objects of that class - the object handles 
+You can call any method onto objects of that class - the object handles
 (({method_missing})) and will forward the method call to a XML-RPC server.
 Don't use this class directly, but use instead method ((<XMLRPC::Client#proxy>)) or
 ((<XMLRPC::Client#proxy2>)).
 
 == Class Methods
---- XMLRPC::Client::Proxy.new( server, prefix, args=[], meth=:call, delim="." ) 
+--- XMLRPC::Client::Proxy.new( server, prefix, args=[], meth=:call, delim="." )
     Creates an object which provides (({method_missing})).
 
     ((|server|)) must be of type (({XMLRPC::Client})), which is the XML-RPC server to be used
     for a XML-RPC call. ((|prefix|)) and ((|delim|)) will be prepended to the methodname
-    called onto this object. 
+    called onto this object.
 
     Parameter ((|meth|)) is the method (call, call2, call_async, call2_async) to use for
     a RPC.
 
     ((|args|)) are arguments which are automatically given
     to every XML-RPC call before the arguments provides through (({method_missing})).
-    
+
 == Instance Methods
 Every method call is forwarded to the XML-RPC server defined in ((<new|XMLRPC::Client::Proxy#new>)).
-    
+
 Note: Inherited methods from class (({Object})) cannot be used as XML-RPC names, because they get around
-(({method_missing})). 
-          
+(({method_missing})).
+
 
 
 = History
@@ -283,7 +283,7 @@ require "net/http"
 module XMLRPC
 
   class Client
-   
+
     USER_AGENT = "XMLRPC::Client (Ruby #{RUBY_VERSION})"
 
     include ParserWriterChooseMixin
@@ -292,11 +292,11 @@ module XMLRPC
 
     # Constructors -------------------------------------------------------------------
 
-    def initialize(host=nil, path=nil, port=nil, proxy_host=nil, proxy_port=nil, 
+    def initialize(host=nil, path=nil, port=nil, proxy_host=nil, proxy_port=nil,
                    user=nil, password=nil, use_ssl=nil, timeout=nil)
 
       @http_header_extra = nil
-      @http_last_response = nil 
+      @http_last_response = nil
       @cookie = nil
 
       @host       = host || "localhost"
@@ -325,7 +325,7 @@ module XMLRPC
 
       # HTTP object for synchronous calls
       Net::HTTP.version_1_2
-      @http = Net::HTTP.new(@host, @port, @proxy_host, @proxy_port) 
+      @http = Net::HTTP.new(@host, @port, @proxy_host, @proxy_port)
       @http.use_ssl = @use_ssl if @use_ssl
       @http.read_timeout = @timeout
       @http.open_timeout = @timeout
@@ -341,7 +341,7 @@ module XMLRPC
       if match = /^([^:]+):\/\/(([^@]+)@)?([^\/]+)(\/.*)?$/.match(uri)
         proto = match[1]
         user, passwd = (match[3] || "").split(":")
-        host, port = match[4].split(":") 
+        host, port = match[4].split(":")
         path = match[5]
 
         if proto != "http" and proto != "https"
@@ -351,7 +351,7 @@ module XMLRPC
       else
         raise "Wrong URI as parameter!"
       end
- 
+
       proxy_host, proxy_port = (proxy || "").split(":")
 
       self.new(host, path, port, proxy_host, proxy_port, user, passwd, (proto == "https"), timeout)
@@ -384,7 +384,7 @@ module XMLRPC
 
     # Cookie support
     attr_accessor :cookie
-    
+
 
     attr_reader :timeout, :user, :password
 
@@ -407,13 +407,13 @@ module XMLRPC
     # Call methods --------------------------------------------------------------
 
     def call(method, *args)
-      ok, param = call2(method, *args) 
+      ok, param = call2(method, *args)
       if ok
         param
       else
         raise param
       end
-    end 
+    end
 
     def call2(method, *args)
       request = create().methodCall(method, *args)
@@ -422,13 +422,13 @@ module XMLRPC
     end
 
     def call_async(method, *args)
-      ok, param = call2_async(method, *args) 
+      ok, param = call2_async(method, *args)
       if ok
         param
       else
         raise param
       end
-    end 
+    end
 
     def call2_async(method, *args)
       request = create().methodCall(method, *args)
@@ -467,7 +467,7 @@ module XMLRPC
 
 
     # Proxy generating methods ------------------------------------------
-    
+
     def proxy(prefix=nil, *args)
       Proxy.new(self, prefix, args, :call)
     end
@@ -498,10 +498,10 @@ module XMLRPC
     end
 
     def do_rpc(request, async=false)
-      header = {  
+      header = {
        "User-Agent"     =>  USER_AGENT,
        "Content-Type"   => "text/xml; charset=utf-8",
-       "Content-Length" => request.size.to_s, 
+       "Content-Length" => request.size.to_s,
        "Connection"     => (async ? "close" : "keep-alive")
       }
 
@@ -512,41 +512,41 @@ module XMLRPC
         # add authorization header
         header["Authorization"] = @auth
       end
- 
+
       resp = nil
       @http_last_response = nil
 
       if async
-        # use a new HTTP object for each call 
+        # use a new HTTP object for each call
         Net::HTTP.version_1_2
-        http = Net::HTTP.new(@host, @port, @proxy_host, @proxy_port) 
+        http = Net::HTTP.new(@host, @port, @proxy_host, @proxy_port)
         http.use_ssl = @use_ssl if @use_ssl
         http.read_timeout = @timeout
         http.open_timeout = @timeout
-        
+
         # post request
         http.start {
-          resp = http.post2(@path, request, header) 
+          resp = http.post2(@path, request, header)
         }
       else
         # reuse the HTTP object for each call => connection alive is possible
         # we must start connection explicitely first time so that http.request
         # does not assume that we don't want keepalive
         @http.start if not @http.started?
-        
+
         # post request
-        resp = @http.post2(@path, request, header) 
+        resp = @http.post2(@path, request, header)
       end
-  
+
       @http_last_response = resp
 
       data = resp.body
 
       if resp.code == "401"
         # Authorization Required
-        raise "Authorization failed.\nHTTP-Error: #{resp.code} #{resp.message}" 
+        raise "Authorization failed.\nHTTP-Error: #{resp.code} #{resp.message}"
       elsif resp.code[0,1] != "2"
-        raise "HTTP-Error: #{resp.code} #{resp.message}" 
+        raise "HTTP-Error: #{resp.code} #{resp.message}"
       end
 
       ct = parse_content_type(resp["Content-Type"]).first
@@ -559,8 +559,8 @@ module XMLRPC
       end
 
       expected = resp["Content-Length"] || "<unknown>"
-      if data.nil? or data.size == 0 
-        raise "Wrong size. Was #{data.size}, should be #{expected}" 
+      if data.nil? or data.size == 0
+        raise "Wrong size. Was #{data.size}, should be #{expected}"
       elsif expected != "<unknown>" and expected.to_i != data.size and resp["Transfer-Encoding"].nil?
         raise "Wrong size. Was #{data.size}, should be #{expected}"
       end
@@ -581,11 +581,11 @@ module XMLRPC
       meth = :call2
       meth = :call2_async if async
 
-      ok, params = self.send(meth, "system.multicall", 
+      ok, params = self.send(meth, "system.multicall",
         methods.collect {|m| {'methodName' => m[0], 'params' => m[1..-1]} }
       )
 
-      if ok 
+      if ok
         params = params.collect do |param|
           if param.is_a? Array
             param[0]
@@ -593,7 +593,7 @@ module XMLRPC
             XMLRPC::FaultException.new(param["faultCode"], param["faultString"])
           else
             raise "Wrong multicall return value"
-          end 
+          end
         end
       end
 
@@ -607,7 +607,7 @@ module XMLRPC
       def initialize(server, prefix, args=[], meth=:call, delim=".")
 	@server = server
 	@prefix = prefix ? prefix + delim : ""
-	@args   = args 
+	@args   = args
         @meth   = meth
       end
 

@@ -15,7 +15,7 @@ module SM
     RULE      = :RULE
     PARAGRAPH = :PARAGRAPH
     VERBATIM  = :VERBATIM
-    
+
     # line type
     attr_accessor :type
 
@@ -37,7 +37,7 @@ module SM
 
     # true if this line has been deleted from the list of lines
     attr_accessor :deleted
-    
+
 
     def initialize(text)
       @text    = text.dup

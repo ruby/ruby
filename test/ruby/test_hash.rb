@@ -106,7 +106,7 @@ class TestHash < Test::Unit::TestCase
     assert_instance_of(@cls, h)
     assert_equal('default', h.default)
     assert_equal('default', h['spurious'])
-    
+
   end
 
   def test_AREF # '[]'
@@ -516,7 +516,7 @@ class TestHash < Test::Unit::TestCase
 
   def test_shift
     h = @h.dup
-    
+
     @h.length.times {
       k, v = h.shift
       assert(@h.key?(k))

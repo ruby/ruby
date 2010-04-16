@@ -15,14 +15,14 @@ class Options
 
   # the name of the output directory
   attr_accessor :op_dir
-  
+
   # the name to use for the output
   attr_reader :op_name
 
   # include private and protected methods in the
   # output
   attr_accessor :show_all
-  
+
   # name of the file, class or module to display in
   # the initial index page (if not specified
   # the first file we encounter is used)
@@ -103,7 +103,7 @@ class Options
         "friends. Option may be repeated. Each accessorname\n" +
         "may have '=text' appended, in which case that text\n" +
         "appears where the r/w/rw appears for normal accessors."],
-                                                                   
+
       [ "--all",           "-a",   nil,
         "include all methods (not just public)\nin the output" ],
 
@@ -242,9 +242,9 @@ class Options
 
     def OptionList.options
       OPTION_LIST.map do |long, short, arg,|
-        [ long, 
-          short, 
-          arg ? GetoptLong::REQUIRED_ARGUMENT : GetoptLong::NO_ARGUMENT 
+        [ long,
+          short,
+          arg ? GetoptLong::REQUIRED_ARGUMENT : GetoptLong::NO_ARGUMENT
         ]
       end
     end
@@ -268,9 +268,9 @@ class Options
     end
 
     # Show usage and exit
-    
+
     def OptionList.usage(generator_names)
-      
+
       puts
       puts(VERSION_STRING)
       puts
@@ -323,7 +323,7 @@ class Options
       used, and on the options you give.
 
       - HTML output is normally produced into a number of separate files
-        (one per class, module, and file, along with various indices). 
+        (one per class, module, and file, along with various indices).
         These files will appear in the directory given by the --op
         option (doc/ by default).
 
@@ -410,7 +410,7 @@ class Options
         when "--title"         then @title         = arg
         when "--webcvs"        then @webcvs        = arg
 
-        when "--accessor" 
+        when "--accessor"
           arg.split(/,/).each do |accessor|
             if accessor =~ /^(\w+)(=(.*))?$/
               accessors << $1
@@ -429,10 +429,10 @@ class Options
           @generator_name = arg.downcase
           setup_generator(generators)
 
-        when "--help"      
+        when "--help"
           OptionList.usage(generators.keys)
 
-        when "--help-output"      
+        when "--help-output"
           OptionList.help_output
 
         when "--image-format"
@@ -442,13 +442,13 @@ class Options
             raise GetoptLong::InvalidOption.new("unknown image format: #{arg}")
           end
 
-        when "--include"   
+        when "--include"
           @rdoc_include.concat arg.split(/\s*,\s*/)
 
         when "--ri", "--ri-site", "--ri-system"
           @generator_name = "ri"
           @op_dir = case opt
-                    when "--ri" then RI::Paths::HOMEDIR 
+                    when "--ri" then RI::Paths::HOMEDIR
                     when "--ri-site" then RI::Paths::SITEDIR
                     when "--ri-system" then RI::Paths::SYSDIR
                     else fail opt
@@ -458,7 +458,7 @@ class Options
         when "--tab-width"
           begin
             @tab_width     = Integer(arg)
-          rescue 
+          rescue
             $stderr.puts "Invalid tab width: '#{arg}'"
             exit 1
           end
@@ -499,7 +499,7 @@ class Options
 
       # Generate a regexp from the accessors
       unless accessors.empty?
-        re = '^(' + accessors.map{|a| Regexp.quote(a)}.join('|') + ')$' 
+        re = '^(' + accessors.map{|a| Regexp.quote(a)}.join('|') + ')$'
         @extra_accessors = Regexp.new(re)
       end
 
@@ -515,8 +515,8 @@ class Options
   def title
     @title ||= "RDoc Documentation"
   end
-  
-  # Set the title, but only if not already set. This means that a title set from 
+
+  # Set the title, but only if not already set. This means that a title set from
   # the command line trumps one set in a source file
 
   def title=(string)
@@ -532,7 +532,7 @@ class Options
     if !@generator
       OptionList.error("Invalid output formatter")
     end
-    
+
     if @generator_name == "xml"
       @all_one_file = true
       @inline_source = true
@@ -540,7 +540,7 @@ class Options
   end
 
   # Check that the right version of 'dot' is available.
-  # Unfortuately this doesn't work correctly under Windows NT, 
+  # Unfortuately this doesn't work correctly under Windows NT,
   # so we'll bypass the test under Windows
 
   def check_diagram
@@ -568,9 +568,9 @@ class Options
 #      exit
     end
   end
-  
+
   # Check that the files on the command line exist
-  
+
   def check_files
     @files.each do |f|
       stat = File.stat f rescue error("File not found: #{f}")

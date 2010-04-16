@@ -8,7 +8,7 @@ require "rss/taxonomy"
 
 module RSS
   class TestTaxonomy < TestCase
-    
+
     def setup
       @prefix = "taxo"
       @uri = "http://purl.org/rss/1.0/modules/taxonomy/"
@@ -19,9 +19,9 @@ module RSS
         @prefix => @uri,
         @dc_prefix => @dc_uri,
       }
-      
+
       @topics_parents = %w(channel item)
-      
+
       @topics_lis = [
         "http://meerkat.oreillynet.com/?c=cat23",
         "http://meerkat.oreillynet.com/?c=47",
@@ -81,7 +81,7 @@ module RSS
         end
         rv << "</#{@prefix}:topic>"
       end
-      
+
       @rss_source = make_RDF(<<-EOR, @ns)
 #{make_channel(@topics_node)}
 #{make_image()}
@@ -97,7 +97,7 @@ EOR
       assert_nothing_raised do
         Parser.parse(@rss_source)
       end
-      
+
       assert_too_much_tag("topics", "channel") do
         Parser.parse(make_RDF(<<-EOR, @ns))
 #{make_channel(@topics_node * 2)}
@@ -112,7 +112,7 @@ EOR
 EOR
       end
     end
-  
+
     def test_accessor
       topics = @rss.channel.taxo_topics
       assert_equal(@topics_lis.sort,
@@ -136,7 +136,7 @@ EOR
         end
       end
     end
-    
+
     def test_to_s
       @topics_parents.each do |parent|
         meth = "taxo_topics_element"

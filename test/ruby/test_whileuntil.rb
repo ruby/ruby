@@ -12,7 +12,7 @@ class TestWhileuntil < Test::Unit::TestCase
 
     tmp = open("while_tmp", "r")
     assert_instance_of(File, tmp)
-    
+
     while line = tmp.gets()
       break if /vt100/ =~ line
     end

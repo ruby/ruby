@@ -32,7 +32,7 @@ module Test
             def test_4
             end
           end
- 
+
           @object_space = {Class => [@tc1, @tc2, @no_tc], String => ['']}
           def @object_space.each_object(type)
             self[type].each{|item| yield(item) }
@@ -50,14 +50,14 @@ module Test
         def empty_suite
           TestSuite.new(ObjectSpace::NAME)
         end
-        
+
         def test_basic_collection
           assert_equal(full_suite("name"), @c.collect("name"))
 
           @c.filter = []
           assert_equal(full_suite("name"), @c.collect("name"))
         end
-        
+
         def test_filtered_collection
           @c.filter = proc{false}
           assert_equal(empty_suite, @c.collect)
@@ -76,10 +76,10 @@ module Test
 
           @c.filter = [proc{nil}, proc{false}]
           assert_equal(empty_suite, @c.collect)
-          
+
           @c.filter = [proc{nil}, proc{true}]
           assert_equal(full_suite, @c.collect)
-          
+
           expected = TestSuite.new(ObjectSpace::NAME)
           expected << (TestSuite.new(@tc1.name) << @tc1.new('test_1'))
           expected << (TestSuite.new(@tc2.name) << @tc2.new('test_0'))

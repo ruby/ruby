@@ -123,7 +123,7 @@ module SM
   # will end up containing a flow of text
 
   class LineCollection
-    
+
     def initialize
       @fragments = []
     end
@@ -194,17 +194,17 @@ module SM
     #    normal paragraph text.
     #
     #       this is code
-    #   
+    #
     #       and more code
     #
-    # You'll end up with the fragments Paragraph, BlankLine, 
+    # You'll end up with the fragments Paragraph, BlankLine,
     # Verbatim, BlankLine, Verbatim, BlankLine, etc
     #
     # The BlankLine in the middle of the verbatim chunk needs to
     # be changed to a real verbatim newline, and the two
     # verbatim blocks merged
     #
-    #    
+    #
     def change_verbatim_blank_lines
       frag_block = nil
       blank_count = 0
@@ -308,9 +308,9 @@ module SM
 
     def tidy_blank_lines
       (@fragments.size - 1).times do |i|
-        if @fragments[i].kind_of?(BlankLine) and 
+        if @fragments[i].kind_of?(BlankLine) and
             @fragments[i+1].kind_of?(ListEnd)
-          @fragments[i], @fragments[i+1] = @fragments[i+1], @fragments[i] 
+          @fragments[i], @fragments[i+1] = @fragments[i+1], @fragments[i]
         end
       end
 
@@ -324,5 +324,5 @@ module SM
     end
 
   end
-  
+
 end

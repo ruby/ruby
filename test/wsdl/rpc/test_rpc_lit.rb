@@ -14,7 +14,7 @@ class TestRPCLIT < Test::Unit::TestCase
 
     def on_init
       self.generate_explicit_type = false
-      add_rpc_operation(self, 
+      add_rpc_operation(self,
         XSD::QName.new(Namespace, 'echoStringArray'),
         nil,
         'echoStringArray', [
@@ -28,7 +28,7 @@ class TestRPCLIT < Test::Unit::TestCase
           :response_use => :literal
         }
       )
-      add_rpc_operation(self, 
+      add_rpc_operation(self,
         XSD::QName.new(Namespace, 'echoStringArrayInline'),
         nil,
         'echoStringArrayInline', [
@@ -42,7 +42,7 @@ class TestRPCLIT < Test::Unit::TestCase
           :response_use => :literal
         }
       )
-      add_rpc_operation(self, 
+      add_rpc_operation(self,
         XSD::QName.new(Namespace, 'echoNestedStruct'),
         nil,
         'echoNestedStruct', [
@@ -56,7 +56,7 @@ class TestRPCLIT < Test::Unit::TestCase
           :response_use => :literal
         }
       )
-      add_rpc_operation(self, 
+      add_rpc_operation(self,
         XSD::QName.new(Namespace, 'echoStructArray'),
         nil,
         'echoStructArray', [
@@ -71,7 +71,7 @@ class TestRPCLIT < Test::Unit::TestCase
         }
       )
     end
-  
+
     def echoStringArray(strings)
       # strings.stringItem => Array
       ArrayOfstring[*strings.stringItem]

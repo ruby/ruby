@@ -29,7 +29,7 @@ module REXML
         output << "\n"
         output << ' '*@level
         if node.children.empty?
-          output << "/" 
+          output << "/"
         else
           output << ">"
           # If compact and all children are text, and if the formatted output

@@ -7,16 +7,16 @@ module GenericParserTest
   def datafile(base)
     File.join(File.dirname(__FILE__), "data", base)
   end
- 
+
   def load_data(name)
     [File.read(datafile(name) + ".xml"), YAML.load(File.read(datafile(name) + ".expected"))]
   end
 
   def setup
     @xml1, @expected1 = load_data('xml1')
-    @xml2, @expected2 = load_data('bug_covert') 
-    @xml3, @expected3 = load_data('bug_bool') 
-    @xml4, @expected4 = load_data('value') 
+    @xml2, @expected2 = load_data('bug_covert')
+    @xml3, @expected3 = load_data('bug_bool')
+    @xml4, @expected4 = load_data('value')
 
     @cdata_xml, @cdata_expected = load_data('bug_cdata')
 
@@ -27,7 +27,7 @@ module GenericParserTest
   end
 
   # test parseMethodResponse --------------------------------------------------
-  
+
   def test_parseMethodResponse1
     assert_equal(@expected1, @p.parseMethodResponse(@xml1))
   end
@@ -67,7 +67,7 @@ module GenericParserTest
   end
 end
 
-# create test class for each installed parser 
+# create test class for each installed parser
 XMLRPC::XMLParser.each_installed_parser do |parser|
   klass = parser.class
   name = klass.to_s.split("::").last

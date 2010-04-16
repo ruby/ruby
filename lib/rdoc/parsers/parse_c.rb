@@ -134,23 +134,23 @@ module RDoc
   #   Because C source doesn't give descriptive names to Ruby-level parameters,
   #   you need to document the calling sequence explicitly
   #
-  # In addition, RDoc assumes by default that the C method implementing a 
+  # In addition, RDoc assumes by default that the C method implementing a
   # Ruby function is in the same source file as the rb_define_method call.
-  # If this isn't the case, add the comment 
+  # If this isn't the case, add the comment
   #
   #    rb_define_method(....);  // in filename
   #
   # As an example, we might have an extension that defines multiple classes
   # in its Init_xxx method. We could document them using
   #
-  #  
+  #
   #  /*
   #   * Document-class:  MyClass
   #   *
   #   * Encapsulate the writing and reading of the configuration
   #   * file. ...
   #   */
-  #  
+  #
   #  /*
   #   * Document-method: read_value
   #   *
@@ -226,7 +226,7 @@ module RDoc
     def remove_commented_out_lines
       @body.gsub!(%r{//.*rb_define_}, '//')
     end
-    
+
     def handle_class_module(var_name, class_mod, class_name, parent, in_module)
       progress(class_mod[0, 1])
 
@@ -250,7 +250,7 @@ module RDoc
         enclosure = @top_level
       end
 
-      if class_mod == "class" 
+      if class_mod == "class"
         cm = enclosure.add_class(NormalClass, class_name, parent_name)
         @stats.num_classes += 1
       else
@@ -312,26 +312,26 @@ module RDoc
       end
       class_meth.comment = mangle_comment(comment) if comment
     end
-    
+
     ############################################################
 
     def do_classes
-      @body.scan(/(\w+)\s* = \s*rb_define_module\s*\(\s*"(\w+)"\s*\)/mx) do 
+      @body.scan(/(\w+)\s* = \s*rb_define_module\s*\(\s*"(\w+)"\s*\)/mx) do
         |var_name, class_name|
         handle_class_module(var_name, "module", class_name, nil, nil)
       end
-      
+
       # The '.' lets us handle SWIG-generated files
       @body.scan(/([\w\.]+)\s* = \s*rb_define_class\s*
-                \( 
+                \(
                    \s*"(\w+)",
                    \s*(\w+)\s*
-                \)/mx) do 
-        
+                \)/mx) do
+
         |var_name, class_name, parent|
         handle_class_module(var_name, "class", class_name, parent, nil)
       end
-      
+
       @body.scan(/(\w+)\s*=\s*boot_defclass\s*\(\s*"(\w+?)",\s*(\w+?)\s*\)/) do
         |var_name, class_name, parent|
         parent = nil if parent == "0"
@@ -339,26 +339,26 @@ module RDoc
       end
 
       @body.scan(/(\w+)\s* = \s*rb_define_module_under\s*
-                \( 
+                \(
                    \s*(\w+),
                    \s*"(\w+)"
-                \s*\)/mx) do 
-        
+                \s*\)/mx) do
+
         |var_name, in_module, class_name|
         handle_class_module(var_name, "module", class_name, nil, in_module)
       end
-      
+
       @body.scan(/([\w\.]+)\s* = \s*rb_define_class_under\s*
-                \( 
+                \(
                    \s*(\w+),
                    \s*"(\w+)",
                    \s*(\w+)\s*
-                \s*\)/mx) do 
-        
+                \s*\)/mx) do
+
         |var_name, in_module, class_name, parent|
         handle_class_module(var_name, "class", class_name, parent, in_module)
       end
-      
+
     end
 
 		###########################################################
@@ -371,20 +371,20 @@ module RDoc
                         const |
                         global_const |
                       )
-                 \s*\( 
+                 \s*\(
                    (?:\s*(\w+),)?
                    \s*"(\w+)",
                    \s*(.*?)\s*\)\s*;
                    }xm) do
-        
+
         |type, var_name, const_name, definition|
         var_name = "rb_cObject" if !var_name or var_name == "rb_mKernel"
 				handle_constants(type, var_name, const_name, definition)
       end
     end
-    
+
     ############################################################
-    
+
     def do_methods
 
       @body.scan(%r{rb_define_
@@ -401,16 +401,16 @@ module RDoc
                      (?:;\s*/[*/]\s+in\s+(\w+?\.[cy]))?
                    }xm) do
         |type, var_name, meth_name, meth_body, param_count, source_file|
-       #" 
+       #"
 
         # Ignore top-object and weird struct.c dynamic stuff
-        next if var_name == "ruby_top_self" 
+        next if var_name == "ruby_top_self"
         next if var_name == "nstr"
         next if var_name == "envtbl"
         next if var_name == "argf"   # it'd be nice to handle this one
 
         var_name = "rb_cObject" if var_name == "rb_mKernel"
-        handle_method(type, var_name, meth_name, 
+        handle_method(type, var_name, meth_name,
                       meth_body, param_count, source_file)
       end
 
@@ -421,7 +421,7 @@ module RDoc
                                \s*(\d+)\s*\);
                   }xm) do  #"
         |var_name, attr_name, attr_reader, attr_writer|
-        
+
         #var_name = "rb_cObject" if var_name == "rb_mKernel"
         handle_attr(var_name, attr_name,
                     attr_reader.to_i != 0,
@@ -435,23 +435,23 @@ module RDoc
                   (?:;\s*/[*/]\s+in\s+(\w+?\.[cy]))?
                   }xm) do  #"
         |meth_name, meth_body, param_count, source_file|
-        handle_method("method", "rb_mKernel", meth_name, 
+        handle_method("method", "rb_mKernel", meth_name,
                       meth_body, param_count, source_file)
       end
-  
+
       @body.scan(/define_filetest_function\s*\(
                                \s*"([^"]+)",
                                \s*(?:RUBY_METHOD_FUNC\(|VALUEFUNC\()?(\w+)\)?,
                                \s*(-?\w+)\s*\)/xm) do  #"
         |meth_name, meth_body, param_count|
-        
+
         handle_method("method", "rb_mFileTest", meth_name, meth_body, param_count)
         handle_method("singleton_method", "rb_cFile", meth_name, meth_body, param_count)
       end
    end
 
     ############################################################
-    
+
     def do_aliases
       @body.scan(%r{rb_define_alias\s*\(\s*(\w+),\s*"([^"]+)",\s*"([^"]+)"\s*\)}m) do
         |var_name, new_name, old_name|
@@ -477,7 +477,7 @@ module RDoc
     def handle_constants(type, var_name, const_name, definition)
       #@stats.num_constants += 1
       class_name = @known_classes[var_name]
-      
+
       return unless class_name
 
       class_obj  = find_class(var_name, class_name)
@@ -486,7 +486,7 @@ module RDoc
         warn("Enclosing class/module '#{const_name}' for not known")
         return
       end
-      
+
       comment = find_const_comment(type, const_name)
 
       # In the case of rb_define_const, the definition and comment are in
@@ -535,7 +535,7 @@ module RDoc
 
     def handle_attr(var_name, attr_name, reader, writer)
       rw = ''
-      if reader 
+      if reader
         #@stats.num_methods += 1
         rw << 'R'
       end
@@ -547,7 +547,7 @@ module RDoc
       class_name = @known_classes[var_name]
 
       return unless class_name
-      
+
       class_obj  = find_class(var_name, class_name)
 
       if class_obj
@@ -576,7 +576,7 @@ module RDoc
 
     ###########################################################
 
-    def handle_method(type, var_name, meth_name, 
+    def handle_method(type, var_name, meth_name,
                       meth_body, param_count, source_file = nil)
       progress(".")
 
@@ -586,7 +586,7 @@ module RDoc
       return unless class_name
 
       class_obj  = find_class(var_name, class_name)
-      
+
       if class_obj
         if meth_name == "initialize"
           meth_name = "new"
@@ -594,17 +594,17 @@ module RDoc
         end
         meth_obj = AnyMethod.new("", meth_name)
         meth_obj.singleton =
-	  %w{singleton_method module_function}.include?(type) 
-        
+	  %w{singleton_method module_function}.include?(type)
+
         p_count = (Integer(param_count) rescue -1)
-        
+
         if p_count < 0
           meth_obj.params = "(...)"
         elsif p_count == 0
           meth_obj.params = "()"
         else
           meth_obj.params = "(" +
-                            (1..p_count).map{|i| "p#{i}"}.join(", ") + 
+                            (1..p_count).map{|i| "p#{i}"}.join(", ") +
                                                 ")"
         end
 
@@ -619,7 +619,7 @@ module RDoc
         end
       end
     end
-    
+
     ############################################################
 
     # Find the C code corresponding to a Ruby method
@@ -633,7 +633,7 @@ module RDoc
         remove_private_comments(comment) if comment
 
         # see if we can find the whole body
-        
+
         re = Regexp.escape(body_text) + '[^(]*^\{.*?^\}'
         if Regexp.new(re, Regexp::MULTILINE).match(body)
           body_text = $&
@@ -650,7 +650,7 @@ module RDoc
         comment = override_comment if override_comment
 
         find_modifiers(comment, meth_obj) if comment
-        
+
 #        meth_obj.params = params
         meth_obj.start_collecting_tokens
         meth_obj.add_token(RubyToken::Token.new(1,1).set_text(body_text))
@@ -729,7 +729,7 @@ module RDoc
 
     ##
     # Remove the /*'s and leading asterisks from C comments
-    
+
     def mangle_comment(comment)
       comment.sub!(%r{/\*+}) { " " * $&.length }
       comment.sub!(%r{\*+/}) { " " * $&.length }
@@ -739,7 +739,7 @@ module RDoc
 
     def find_class(raw_name, name)
       unless @classes[raw_name]
-        if raw_name =~ /^rb_m/ 
+        if raw_name =~ /^rb_m/
           @classes[raw_name] = @top_level.add_module(NormalModule, name)
         else
           @classes[raw_name] = @top_level.add_class(NormalClass, name, nil)
@@ -762,11 +762,11 @@ module RDoc
 
     ##
     # Removes #ifdefs that would otherwise confuse us
-    
+
     def handle_ifdefs_in(body)
       body.gsub(/^#ifdef HAVE_PROTOTYPES.*?#else.*?\n(.*?)#endif.*?\n/m) { $1 }
     end
-    
+
   end
 
 end

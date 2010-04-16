@@ -462,7 +462,7 @@ private
         response_rpc_lit(result, literal_mapping_registry, opt)
       end
     end
-    
+
     def response_doc(result, mapping_registry, literal_mapping_registry, opt)
       if @doc_response_qnames.size == 1 and !result.is_a?(Array)
         result = [result]

@@ -1,4 +1,4 @@
-# You need RubyUnit and MS Excel and MSI to run this test script 
+# You need RubyUnit and MS Excel and MSI to run this test script
 
 require 'runit/testcase'
 require 'runit/cui/testrunner'
@@ -289,7 +289,7 @@ class TestWin32OLE_WITH_MSI < RUNIT::TestCase
     @record = installer.CreateRecord(2)
   end
 
-  # Sorry, this test fails. 
+  # Sorry, this test fails.
   # Win32OLE does not support this style to set property.
   # Use Win32OLE#setproperty or Win32OLE#[]= .
   # def test_invoke
@@ -317,7 +317,7 @@ end
 # a subclass of Win32OLE
 # override new() and connect()
 class MyExcel<WIN32OLE
-    def MyExcel.new 
+    def MyExcel.new
         super "Excel.Application"
     end
     def MyExcel.connect
@@ -330,7 +330,7 @@ class TestMyExcel < TestWin32OLE
 # because we overrided new() and connect()
 # we need to change the test.
 # also, because the class will be different
-# 
+#
   def setup
     @excel = MyExcel.new
     @excel.visible = true
@@ -344,7 +344,7 @@ class TestMyExcel < TestWin32OLE
   end
 #
 # const_load didn't like to be called twice,
-# and I don't know how to undefine something in Ruby yet 
+# and I don't know how to undefine something in Ruby yet
 # so, hide the test.
 #
   private :test_s_const_load

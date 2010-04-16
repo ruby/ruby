@@ -86,13 +86,13 @@ module WEBrick
 
     RAND_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
                  "0123456789" +
-                 "abcdefghijklmnopqrstuvwxyz" 
+                 "abcdefghijklmnopqrstuvwxyz"
 
     def random_string(len)
       rand_max = RAND_CHARS.size
-      ret = "" 
+      ret = ""
       len.times{ ret << RAND_CHARS[rand(rand_max)] }
-      ret 
+      ret
     end
     module_function :random_string
 

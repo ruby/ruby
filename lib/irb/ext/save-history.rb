@@ -1,6 +1,6 @@
 #!/usr/local/bin/ruby
 #
-#   save-history.rb - 
+#   save-history.rb -
 #   	$Release Version: 0.9.5$
 #   	$Revision$
 #   	$Date$
@@ -8,7 +8,7 @@
 #
 # --
 #
-#   
+#
 #
 
 require "readline"

@@ -84,7 +84,7 @@ class CGIStub < Logger::Application
     @soaplet = ::SOAP::RPC::SOAPlet.new(@router)
     on_init
   end
-  
+
   def on_init
     # do extra initialization in a derived class if needed.
   end

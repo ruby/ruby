@@ -49,7 +49,7 @@ module REXML
 			def EntityDecl.parse_source source, listener
 				md = source.match( PATTERN_RE, true )
 				thing = md[0].squeeze(" \t\n\r")
-				listener.send inspect.downcase, thing 
+				listener.send inspect.downcase, thing
 			end
 		end
 	end

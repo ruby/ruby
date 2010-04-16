@@ -22,7 +22,7 @@ class Operation < Info
     attr_reader :bodyparts
     attr_reader :faultpart
     attr_reader :soapaction
-    
+
     def initialize(style, op_name, optype_name, headerparts, bodyparts, faultpart, soapaction)
       @style = style
       @op_name = op_name

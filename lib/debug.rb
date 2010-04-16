@@ -256,7 +256,7 @@ class Context
   def debug_command(file, line, id, binding)
     MUTEX.lock
     unless defined?($debugger_restart) and $debugger_restart
-      callcc{|c| $debugger_restart = c} 
+      callcc{|c| $debugger_restart = c}
     end
     set_last_thread(Thread.current)
     frame_pos = 0
@@ -335,7 +335,7 @@ class Context
 	    stdout.print "Breakpoints:\n"
 	    for b in break_points
 	      if b[0] and b[1] == 0
-		stdout.printf "  %d %s:%s\n", n, b[2], b[3] 
+		stdout.printf "  %d %s:%s\n", n, b[2], b[3]
 	      end
 	      n += 1
 	    end
@@ -751,7 +751,7 @@ EOHELP
     when 'end'
       @frames.shift
 
-    when 'raise' 
+    when 'raise'
       excn_handle(file, line, id, binding)
 
     end
@@ -921,7 +921,7 @@ class << DEBUGGER__
 	@stdout.print "Already stopped.\n"
       else
 	thread_list(@thread_list[th])
-	context(th).suspend 
+	context(th).suspend
       end
 
     when /^resume\s+(\d+)/

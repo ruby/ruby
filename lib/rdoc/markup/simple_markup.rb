@@ -65,7 +65,7 @@
 #
 #       ant::  a little insect that is known
 #              to enjoy picnics
-#     
+#
 #   This latter style guarantees that the list bodies' left margins are
 #   aligned: think of them as a two column table.
 #
@@ -107,7 +107,7 @@
 #
 # = Using SimpleMarkup
 #
-# For information on using SimpleMarkup programatically, 
+# For information on using SimpleMarkup programatically,
 # see SM::SimpleMarkup.
 #
 # Author::   Dave Thomas,  dave@pragmaticprogrammer.com
@@ -210,7 +210,7 @@ module SM  #:nodoc:
     end
 
     ##
-    # Add to the sequences used to add formatting to an individual word 
+    # Add to the sequences used to add formatting to an individual word
     # (such as *bold*). Matching entries will generate attibutes
     # that the output formatters can recognize by their +name+
 
@@ -232,7 +232,7 @@ module SM  #:nodoc:
     #
     #    parser.add_special(/\b([A-Z][a-z]+[A-Z]\w+)/, :WIKIWORD)
     #
-    # Each wiki word will be presented to the output formatter 
+    # Each wiki word will be presented to the output formatter
     # via the accept_special method
     #
 
@@ -247,7 +247,7 @@ module SM  #:nodoc:
     # using a Visitor to display the result
 
     def convert(str, op)
-      @lines = Lines.new(str.split(/\r?\n/).collect { |aLine| 
+      @lines = Lines.new(str.split(/\r?\n/).collect { |aLine|
                            Line.new(aLine) })
       return "" if @lines.empty?
       @lines.normalize
@@ -276,12 +276,12 @@ module SM  #:nodoc:
           line.stamp(Line::BLANK, level)
           next
         end
-        
+
         # if a line contains non-blanks before the margin, then it must belong
         # to an outer level
 
         text = line.text
-        
+
         for i in 0...margin
           if text[i] != SPACE
             @lines.unget
@@ -349,9 +349,9 @@ module SM  #:nodoc:
           line.strip_leading(margin + prefix_length)
           next
         end
-        
+
         # If the character's a space, then we have verbatim text,
-        # otherwise 
+        # otherwise
 
         if active_line[0] == SPACE
           line.strip_leading(margin) if margin > 0
@@ -378,7 +378,7 @@ module SM  #:nodoc:
     #     here is a more reasonably indented block which
     #     will ab attached to the label.
     #
-    
+
     def handled_labeled_list(line, level, margin, offset, prefix)
       prefix_length = prefix.length
       text = line.text
@@ -392,15 +392,15 @@ module SM  #:nodoc:
         prefix.chop!
       else raise "Invalid List Type: #{self.inspect}"
       end
-      
+
       # body is on the next line
-      
+
       if text.length <= offset
         original_line = line
         line = @lines.next
         return(false) unless line
         text = line.text
-        
+
         for i in 0..margin
           if text[i] != SPACE
             @lines.unget
@@ -418,7 +418,7 @@ module SM  #:nodoc:
           @lines.delete(original_line)
         end
       end
-      
+
       line.stamp(Line::LIST, level+1, prefix, flag)
       text[margin, prefix_length] = " " * prefix_length
       assign_types_to_lines(offset, level + 1)

@@ -1,5 +1,5 @@
 #
-#   shell/process-controller.rb - 
+#   shell/process-controller.rb -
 #   	$Release Version: 0.6.0 $
 #   	$Revision$
 #   	$Date$
@@ -7,7 +7,7 @@
 #
 # --
 #
-#   
+#
 #
 
 require "mutex_m"
@@ -24,10 +24,10 @@ class Shell
 
       def process_controllers_exclusive
 	begin
-	  @ProcessControllers.lock unless Thread.critical 
+	  @ProcessControllers.lock unless Thread.critical
 	  yield
 	ensure
-	  @ProcessControllers.unlock unless Thread.critical 
+	  @ProcessControllers.unlock unless Thread.critical
 	end
       end
 
@@ -83,7 +83,7 @@ class Shell
     def waiting_jobs
       @waiting_jobs
     end
-    
+
     def jobs_exist?
       @jobs_sync.synchronize(:SH) do
 	@active_jobs.empty? or @waiting_jobs.empty?
@@ -202,18 +202,18 @@ class Shell
 	  jobs.flush
 	end
       end
-      
+
       pid = fork {
 	Thread.critical = true
 
-	Thread.list.each do |th| 
+	Thread.list.each do |th|
 	  th.kill unless [Thread.main, Thread.current].include?(th)
 	end
 
 	STDIN.reopen(pipe_peer_in)
 	STDOUT.reopen(pipe_peer_out)
 
-	ObjectSpace.each_object(IO) do |io| 
+	ObjectSpace.each_object(IO) do |io|
 	  if ![STDIN, STDOUT, STDERR].include?(io)
 	    io.close unless io.closed?
 	  end
@@ -246,7 +246,7 @@ class Shell
 	    redo
 	  end
 	  Thread.exclusive do
-	    @job_monitor.synchronize do 
+	    @job_monitor.synchronize do
 	      terminate_job(command)
 	      @job_condition.signal
 	      command.notify "job(%id) finish.", @shell.debug?

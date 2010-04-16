@@ -31,7 +31,7 @@ module REXML
 				@element_name, @pairs, @contents = *source
 			end
 		end
-	
+
 		# Access the attlist attribute/value pairs.
 		#  value = attlist_decl[ attribute_name ]
 		def [](key)

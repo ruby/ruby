@@ -71,7 +71,7 @@ class HTTPServer < Logger::Application
   def add_rpc_servant(obj, namespace = @default_namespace)
     @router.add_rpc_servant(obj, namespace)
   end
-  
+
   def add_request_headerhandler(factory)
     @router.add_request_headerhandler(factory)
   end

@@ -11,10 +11,10 @@ It uses Win32API to call Win32 Registry APIs.
     reg['foo'] = 'bar'                               # write a value
     reg['foo', Win32::Registry::REG_SZ] = 'bar'      # write a value with type
     reg.write('foo', Win32::Registry::REG_SZ, 'bar') # write a value
-    
+
     reg.each_value { |name, type, data| ... }        # Enumerate values
     reg.each_key { |key, wtime| ... }                # Enumerate subkeys
-    
+
     reg.delete_value(name)                         # Delete a value
     reg.delete_key(name)                           # Delete a subkey
     reg.delete_key(name, true)                     # Delete a subkey recursively
@@ -35,26 +35,26 @@ It uses Win32API to call Win32 Registry APIs.
     Open the registry key ((|subkey|)) under ((|key|)).
     ((|key|)) is Win32::Registry object of parent key.
     You can use predefined key HKEY_* (see ((<constants>)))
-    
+
     ((|desired|)) and ((|opt|)) is access mask and key option.
     For detail, see ((<MSDN Library|URL:http://msdn.microsoft.com/library/en-us/sysinfo/base/regopenkeyex.asp>)).
-    
+
     If block is given, the key is closed automatically.
 
 --- Registry.create(key, subkey, desired = KEY_ALL_ACCESS, opt = REG_OPTION_RESERVED)
 --- Registry.create(key, subkey, desired = KEY_ALL_ACCESS, opt = REG_OPTION_RESERVED) { |reg| ... }
     Create or open the registry key ((|subkey|)) under ((|key|)).
     You can use predefined key HKEY_* (see ((<constants>)))
-    
+
     If subkey is already exists, key is opened and Registry#((<created?>))
     method will return false.
-    
+
     If block is given, the key is closed automatically.
 
 --- Registry.expand_environ(str)
     Replace (({%\w+%})) into the environment value of ((|str|)).
     This method is used for REG_EXPAND_SZ.
-    
+
     For detail, see ((<ExpandEnvironmentStrings|URL:http://msdn.microsoft.com/library/en-us/sysinfo/base/expandenvironmentstrings.asp>)) Win32 API.
 
 --- Registry.type2name(type)
@@ -75,14 +75,14 @@ It uses Win32API to call Win32 Registry APIs.
 
 --- close
     Close key.
-    
+
     After closed, most method raises error.
 
 --- read(name, *rtype)
     Read a registry value named ((|name|)) and return array of
     [ ((|type|)), ((|data|)) ].
     When name is nil, the `default' value is read.
-    
+
     ((|type|)) is value type. (see ((<Win32::Registry::Constants module>)))
     ((|data|)) is value data, its class is:
     :REG_SZ, REG_EXPAND_SZ
@@ -93,19 +93,19 @@ It uses Win32API to call Win32 Registry APIs.
        Integer
     :REG_BINARY
        String (contains binary data)
-    
+
     When ((|rtype|)) is specified, the value type must be included by
     ((|rtype|)) array, or TypeError is raised.
 
 --- self[name, *rtype]
     Read a registry value named ((|name|)) and return its value data.
     The class of value is same as ((<read>)) method returns.
-    
+
     If the value type is REG_EXPAND_SZ, returns value data whose environment
     variables are replaced.
     If the value type is neither REG_SZ, REG_MULTI_SZ, REG_DWORD,
     REG_DWORD_BIG_ENDIAN, nor REG_QWORD, TypeError is raised.
-    
+
     The meaning of ((|rtype|)) is same as ((<read>)) method.
 
 --- read_s(name)
@@ -113,26 +113,26 @@ It uses Win32API to call Win32 Registry APIs.
 --- read_bin(name)
     Read a REG_SZ(read_s), REG_DWORD(read_i), or REG_BINARY(read_bin)
     registry value named ((|name|)).
-    
+
     If the values type does not match, TypeError is raised.
 
 --- read_s_expand(name)
     Read a REG_SZ or REG_EXPAND_SZ registry value named ((|name|)).
-    
+
     If the value type is REG_EXPAND_SZ, environment variables are replaced.
     Unless the value type is REG_SZ or REG_EXPAND_SZ, TypeError is raised.
 
 --- write(name, type, data)
     Write ((|data|)) to a registry value named ((|name|)).
     When name is nil, write to the `default' value.
-    
+
     ((|type|)) is type value. (see ((<Registry::Constants module>)))
     Class of ((|data|)) must be same as which ((<read>))
     method returns.
 
 --- self[name, wtype = nil] = value
     Write ((|value|)) to a registry value named ((|name|)).
-    
+
     If ((|wtype|)) is specified, the value type is it.
     Otherwise, the value type is depend on class of ((|value|)):
     :Integer
@@ -146,7 +146,7 @@ It uses Win32API to call Win32 Registry APIs.
 --- write_i(name, value)
 --- write_bin(name, value)
     Write ((|value|)) to a registry value named ((|name|)).
-    
+
     The value type is REG_SZ(write_s), REG_DWORD(write_i), or
     REG_BINARY(write_bin).
 
@@ -156,7 +156,7 @@ It uses Win32API to call Win32 Registry APIs.
 
 --- each_key { |subkey, wtime| ... }
     Enumerate subkeys.
-    
+
     ((|subkey|)) is String which contains name of subkey.
     ((|wtime|)) is last write time as FILETIME (64-bit integer).
     (see ((<Registry.wtime2time>)))
@@ -168,7 +168,7 @@ It uses Win32API to call Win32 Registry APIs.
 
 --- delete_key(name, recursive = false)
     Delete a subkey named ((|name|)) and all its values.
-    
+
     If ((|recursive|)) is false, the subkey must not have subkeys.
     Otherwise, this method deletes all subkeys and values recursively.
 
@@ -215,7 +215,7 @@ It uses Win32API to call Win32 Registry APIs.
       Length of security descriptor.
     :wtime
       Last write time as FILETIME(64-bit integer)
-    
+
     For detail, see ((<RegQueryInfoKey|URL:http://msdn.microsoft.com/library/en-us/sysinfo/base/regqueryinfokey.asp>)) Win32 API.
 
 --- num_keys
@@ -275,7 +275,7 @@ module Win32
       HKEY_PERFORMANCE_NLSTEXT = 0x80000060
       HKEY_CURRENT_CONFIG = 0x80000005
       HKEY_DYN_DATA = 0x80000006
-      
+
       REG_NONE = 0
       REG_SZ = 1
       REG_EXPAND_SZ = 2
@@ -290,7 +290,7 @@ module Win32
       REG_RESOURCE_REQUIREMENTS_LIST = 10
       REG_QWORD = 11
       REG_QWORD_LITTLE_ENDIAN = 11
-      
+
       STANDARD_RIGHTS_READ = 0x00020000
       STANDARD_RIGHTS_WRITE = 0x00020000
       KEY_QUERY_VALUE = 0x0001
@@ -305,7 +305,7 @@ module Win32
         KEY_SET_VALUE | KEY_CREATE_SUB_KEY
       KEY_EXECUTE = KEY_READ
       KEY_ALL_ACCESS = KEY_READ | KEY_WRITE | KEY_CREATE_LINK
-      
+
       REG_OPTION_RESERVED = 0x0000
       REG_OPTION_NON_VOLATILE = 0x0000
       REG_OPTION_VOLATILE = 0x0001
@@ -315,21 +315,21 @@ module Win32
       REG_LEGAL_OPTION = REG_OPTION_RESERVED |
         REG_OPTION_NON_VOLATILE | REG_OPTION_CREATE_LINK |
         REG_OPTION_BACKUP_RESTORE | REG_OPTION_OPEN_LINK
-      
+
       REG_CREATED_NEW_KEY = 1
       REG_OPENED_EXISTING_KEY = 2
-      
+
       REG_WHOLE_HIVE_VOLATILE = 0x0001
       REG_REFRESH_HIVE = 0x0002
       REG_NO_LAZY_FLUSH = 0x0004
       REG_FORCE_RESTORE = 0x0008
-      
+
       MAX_KEY_LENGTH = 514
       MAX_VALUE_LENGTH = 32768
     end
     include Constants
     include Enumerable
-    
+
     #
     # Error
     #
@@ -343,7 +343,7 @@ module Win32
       end
       attr_reader :code
     end
-    
+
     #
     # Predefined Keys
     #
@@ -354,23 +354,23 @@ module Win32
         @keyname = keyname
         @disposition = REG_OPENED_EXISTING_KEY
       end
-      
+
       # Predefined keys cannot be closed
       def close
         raise Error.new(5) ## ERROR_ACCESS_DENIED
       end
-      
+
       # Fake class for Registry#open, Registry#create
       def class
         Registry
       end
-      
+
       # Make all
       Constants.constants.grep(/^HKEY_/) do |c|
         Registry.const_set c, new(Constants.const_get(c), c)
       end
     end
-    
+
     #
     # Win32 APIs
     #
@@ -390,37 +390,37 @@ module Win32
       ].each do |fn|
         const_set fn[0].intern, Win32API.new('advapi32.dll', *fn)
       end
-      
+
       module_function
-      
+
       def check(result)
         raise Error, result, caller(2) if result != 0
       end
-      
+
       def packdw(dw)
         [dw].pack('V')
       end
-      
+
       def unpackdw(dw)
         dw += [0].pack('V')
         dw.unpack('V')[0]
       end
-      
+
       def packqw(qw)
         [ qw & 0xFFFFFFFF, qw >> 32 ].pack('VV')
       end
-      
+
       def unpackqw(qw)
         qw = qw.unpack('VV')
         (qw[1] << 32) | qw[0]
       end
-      
+
       def OpenKey(hkey, name, opt, desired)
         result = packdw(0)
         check RegOpenKeyExA.call(hkey, name, opt, desired, result)
         unpackdw(result)
       end
-      
+
       def CreateKey(hkey, name, opt, desired)
         result = packdw(0)
         disp = packdw(0)
@@ -428,14 +428,14 @@ module Win32
                                    0, result, disp)
         [ unpackdw(result), unpackdw(disp) ]
       end
-      
+
       def EnumValue(hkey, index)
         name = ' ' * Constants::MAX_KEY_LENGTH
         size = packdw(Constants::MAX_KEY_LENGTH)
         check RegEnumValueA.call(hkey, index, name, size, 0, 0, 0, 0)
         name[0, unpackdw(size)]
       end
-      
+
       def EnumKey(hkey, index)
         name = ' ' * Constants::MAX_KEY_LENGTH
         size = packdw(Constants::MAX_KEY_LENGTH)
@@ -443,7 +443,7 @@ module Win32
         check RegEnumKeyExA.call(hkey, index, name, size, 0, 0, 0, wtime)
         [ name[0, unpackdw(size)], unpackqw(wtime) ]
       end
-      
+
       def QueryValue(hkey, name)
         type = packdw(0)
         size = packdw(0)
@@ -452,27 +452,27 @@ module Win32
         check RegQueryValueExA.call(hkey, name, 0, type, data, size)
         [ unpackdw(type), data[0, unpackdw(size)] ]
       end
-      
+
       def SetValue(hkey, name, type, data, size)
         check RegSetValueExA.call(hkey, name, 0, type, data, size)
       end
-      
+
       def DeleteValue(hkey, name)
         check RegDeleteValue.call(hkey, name)
       end
-      
+
       def DeleteKey(hkey, name)
         check RegDeleteKey.call(hkey, name)
       end
-      
+
       def FlushKey(hkey)
         check RegFlushKey.call(hkey)
       end
-      
+
       def CloseKey(hkey)
         check RegCloseKey.call(hkey)
       end
-      
+
       def QueryInfoKey(hkey)
         subkeys = packdw(0)
         maxsubkeylen = packdw(0)
@@ -488,14 +488,14 @@ module Win32
           unpackdw(secdescs), unpackqw(wtime) ]
       end
     end
-    
+
     #
     # utility functions
     #
     def self.expand_environ(str)
       str.gsub(/%([^%]+)%/) { ENV[$1] || ENV[$1.upcase] || $& }
     end
-    
+
     @@type2name = { }
     %w[
       REG_NONE REG_SZ REG_EXPAND_SZ REG_BINARY REG_DWORD
@@ -505,24 +505,24 @@ module Win32
     ].each do |type|
       @@type2name[Constants.const_get(type)] = type
     end
-    
+
     def self.type2name(type)
       @@type2name[type] || type.to_s
     end
-    
+
     def self.wtime2time(wtime)
       Time.at((wtime - 116444736000000000) / 10000000)
     end
-    
+
     def self.time2wtime(time)
       time.to_i * 10000000 + 116444736000000000
     end
-    
+
     #
     # constructors
     #
     private_class_method :new
-    
+
     def self.open(hkey, subkey, desired = KEY_READ, opt = REG_OPTION_RESERVED)
       subkey = subkey.chomp('\\')
       newkey = API.OpenKey(hkey.hkey, subkey, opt, desired)
@@ -537,7 +537,7 @@ module Win32
         obj
       end
     end
-    
+
     def self.create(hkey, subkey, desired = KEY_ALL_ACCESS, opt = REG_OPTION_RESERVED)
       newkey, disp = API.CreateKey(hkey.hkey, subkey, opt, desired)
       obj = new(newkey, hkey, subkey, disp)
@@ -551,12 +551,12 @@ module Win32
         obj
       end
     end
-    
+
     #
     # finalizer
     #
     @@final = proc { |hkey| proc { API.CloseKey(hkey[0]) if hkey[0] } }
-    
+
     #
     # initialize
     #
@@ -569,18 +569,18 @@ module Win32
       ObjectSpace.define_finalizer self, @@final.call(@hkeyfinal)
     end
     attr_reader :hkey, :parent, :keyname, :disposition
-    
+
     #
     # attributes
     #
     def created?
       @disposition == REG_CREATED_NEW_KEY
     end
-    
+
     def open?
       !@hkey.nil?
     end
-    
+
     def name
       parent = self
       name = @keyname
@@ -589,35 +589,35 @@ module Win32
       end
       name
     end
-    
+
     def inspect
       "\#<Win32::Registry key=#{name.inspect}>"
     end
-    
+
     #
     # marshalling
     #
     def _dump(depth)
       raise TypeError, "can't dump Win32::Registry"
     end
-    
+
     #
     # open/close
     #
     def open(subkey, desired = KEY_READ, opt = REG_OPTION_RESERVED, &blk)
       self.class.open(self, subkey, desired, opt, &blk)
     end
-    
+
     def create(subkey, desired = KEY_ALL_ACCESS, opt = REG_OPTION_RESERVED, &blk)
       self.class.create(self, subkey, desired, opt, &blk)
     end
-    
+
     def close
       API.CloseKey(@hkey)
       @hkey = @parent = @keyname = nil
       @hkeyfinal[0] = nil
     end
-    
+
     #
     # iterator
     #
@@ -640,7 +640,7 @@ module Win32
       index
     end
     alias each each_value
-    
+
     def each_key
       index = 0
       while true
@@ -654,13 +654,13 @@ module Win32
       end
       index
     end
-    
+
     def keys
       keys_ary = []
       each_key { |key,| keys_ary << key }
       keys_ary
     end
-    
+
     #
     # reader
     #
@@ -686,7 +686,7 @@ module Win32
         raise TypeError, "Type #{type} is not supported."
       end
     end
-    
+
     def [](name, *rtype)
       type, data = read(name, *rtype)
       case type
@@ -698,11 +698,11 @@ module Win32
         raise TypeError, "Type #{type} is not supported."
       end
     end
-    
+
     def read_s(name)
       read(name, REG_SZ)[1]
     end
-    
+
     def read_s_expand(name)
       type, data = read(name, REG_SZ, REG_EXPAND_SZ)
       if type == REG_EXPAND_SZ
@@ -711,15 +711,15 @@ module Win32
         data
       end
     end
-    
+
     def read_i(name)
       read(name, REG_DWORD, REG_DWORD_BIG_ENDIAN, REG_QWORD)[1]
     end
-    
+
     def read_bin(name)
       read(name, REG_BINARY)[1]
     end
-    
+
     #
     # writer
     #
@@ -742,7 +742,7 @@ module Win32
       end
       API.SetValue(@hkey, name, type, data, data.length)
     end
-    
+
     def []=(name, rtype, value = nil)
       if value
         write name, rtype, value
@@ -760,19 +760,19 @@ module Win32
       end
       value
     end
-    
+
     def write_s(name, value)
       write name, REG_SZ, value.to_s
     end
-    
+
     def write_i(name, value)
       write name, REG_DWORD, value.to_i
     end
-    
+
     def write_bin(name, value)
       write name, REG_BINARY, value.to_s
     end
-    
+
     #
     # delete
     #
@@ -780,7 +780,7 @@ module Win32
       API.DeleteValue(@hkey, name)
     end
     alias delete delete_value
-    
+
     def delete_key(name, recursive = false)
       if recursive
         open(name, KEY_ALL_ACCESS) do |reg|
@@ -802,14 +802,14 @@ module Win32
         raise Error.new(5) ## ERROR_ACCESS_DENIED
       end
     end
-    
+
     #
     # flush
     #
     def flush
       API.FlushKey @hkey
     end
-    
+
     #
     # key information
     #

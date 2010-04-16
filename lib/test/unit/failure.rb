@@ -11,7 +11,7 @@ module Test
     # when an assertion fails.
     class Failure
       attr_reader :test_name, :location, :message
-      
+
       SINGLE_CHARACTER = 'F'
 
       # Creates a new Failure with the given location and
@@ -21,7 +21,7 @@ module Test
         @location = location
         @message = message
       end
-      
+
       # Returns a single character representation of a failure.
       def single_character_display
         SINGLE_CHARACTER

@@ -26,9 +26,9 @@ module XML
 end
 
 module RSS
-  
+
   class REXMLLikeXMLParser < ::XML::Parser
-    
+
     include ::XML::Encoding_ja
 
     def listener=(listener)
@@ -38,7 +38,7 @@ module RSS
     def startElement(name, attrs)
       @listener.tag_start(name, attrs)
     end
-    
+
     def endElement(name)
       @listener.tag_end(name)
     end
@@ -64,7 +64,7 @@ module RSS
         XMLParserListener
       end
     end
-    
+
     private
     def _parse
       begin
@@ -75,13 +75,13 @@ module RSS
         raise NotWellFormedError.new(parser.line){e.message}
       end
     end
-    
+
   end
-  
+
   class XMLParserListener < BaseListener
 
     include ListenerMixin
-    
+
     def xmldecl(version, encoding, standalone)
       super
       # Encoding is converted to UTF-8 when XMLParser parses XML.

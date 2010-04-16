@@ -15,7 +15,7 @@ LIBNAME = ARGV[0] || "libsample.so"
 class Person
   module Core
     extend DL::Importable
-    
+
     dlload LIBNAME
 
     # mangled symbol names

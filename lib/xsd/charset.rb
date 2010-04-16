@@ -54,7 +54,7 @@ public
           Proc.new { |str| NKF.nkf('-eXm0', str) }
       rescue LoadError
       end
-  
+
       begin
 	require 'uconv'
 	@internal_encoding = 'UTF8'

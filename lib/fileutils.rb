@@ -1,17 +1,17 @@
-# 
+#
 # = fileutils.rb
-# 
+#
 # Copyright (c) 2000-2006 Minero Aoki
-# 
+#
 # This program is free software.
 # You can distribute/modify this program under the same terms of ruby.
-# 
+#
 # == module FileUtils
-# 
+#
 # Namespace for several file utility methods for copying, moving, removing, etc.
-# 
+#
 # === Module Functions
-# 
+#
 #   cd(dir, options)
 #   cd(dir, options) {|dir| .... }
 #   pwd()
@@ -64,23 +64,23 @@
 #   uptodate?(file, cmp_list)
 #
 # == module FileUtils::Verbose
-# 
+#
 # This module has all methods of FileUtils module, but it outputs messages
 # before acting.  This equates to passing the <tt>:verbose</tt> flag to methods
 # in FileUtils.
-# 
+#
 # == module FileUtils::NoWrite
-# 
+#
 # This module has all methods of FileUtils module, but never changes
 # files/directories.  This equates to passing the <tt>:noop</tt> flag to methods
 # in FileUtils.
-# 
+#
 # == module FileUtils::DryRun
-# 
+#
 # This module has all methods of FileUtils module, but never changes
 # files/directories.  This equates to passing the <tt>:noop</tt> and
 # <tt>:verbose</tt> flags to methods in FileUtils.
-# 
+#
 
 module FileUtils
 
@@ -107,14 +107,14 @@ module FileUtils
 
   #
   # Options: verbose
-  # 
+  #
   # Changes the current directory to the directory +dir+.
-  # 
+  #
   # If this method is called with block, resumes to the old
   # working directory after the block execution finished.
-  # 
+  #
   #   FileUtils.cd('/', :verbose => true)   # chdir and report it
-  # 
+  #
   def cd(dir, options = {}, &block) # :yield: dir
     fu_check_options options, OPT_TABLE['cd']
     fu_output_message "cd #{dir}" if options[:verbose]
@@ -131,13 +131,13 @@ module FileUtils
 
   #
   # Options: (none)
-  # 
+  #
   # Returns true if +newer+ is newer than all +old_list+.
   # Non-existent files are older than any file.
-  # 
+  #
   #   FileUtils.uptodate?('hello.o', %w(hello.c hello.h)) or \
   #       system 'make hello.o'
-  # 
+  #
   def uptodate?(new, old_list, options = nil)
     raise ArgumentError, 'uptodate? does not accept any option' if options
 
@@ -154,14 +154,14 @@ module FileUtils
 
   #
   # Options: mode noop verbose
-  # 
+  #
   # Creates one or more directories.
-  # 
+  #
   #   FileUtils.mkdir 'test'
   #   FileUtils.mkdir %w( tmp data )
   #   FileUtils.mkdir 'notexist', :noop => true  # Does not really create.
   #   FileUtils.mkdir 'tmp', :mode => 0700
-  # 
+  #
   def mkdir(list, options = {})
     fu_check_options options, OPT_TABLE['mkdir']
     list = fu_list(list)
@@ -178,12 +178,12 @@ module FileUtils
 
   #
   # Options: mode noop verbose
-  # 
+  #
   # Creates a directory and all its parent directories.
   # For example,
-  # 
+  #
   #   FileUtils.mkdir_p '/usr/local/lib/ruby'
-  # 
+  #
   # causes to make following directories, if it does not exist.
   #     * /usr
   #     * /usr/local
@@ -191,7 +191,7 @@ module FileUtils
   #     * /usr/local/lib/ruby
   #
   # You can pass several directories at a time in a list.
-  # 
+  #
   def mkdir_p(list, options = {})
     fu_check_options options, OPT_TABLE['mkdir_p']
     list = fu_list(list)
@@ -247,14 +247,14 @@ module FileUtils
 
   #
   # Options: noop, verbose
-  # 
+  #
   # Removes one or more directories.
-  # 
+  #
   #   FileUtils.rmdir 'somedir'
   #   FileUtils.rmdir %w(somedir anydir otherdir)
   #   # Does not really remove directory; outputs message.
   #   FileUtils.rmdir 'somedir', :verbose => true, :noop => true
-  # 
+  #
   def rmdir(list, options = {})
     fu_check_options options, OPT_TABLE['rmdir']
     list = fu_list(list)
@@ -277,19 +277,19 @@ module FileUtils
   # If +new+ already exists and it is a directory, creates a link +new/old+.
   # If +new+ already exists and it is not a directory, raises Errno::EEXIST.
   # But if :force option is set, overwrite +new+.
-  # 
+  #
   #   FileUtils.ln 'gcc', 'cc', :verbose => true
   #   FileUtils.ln '/usr/bin/emacs21', '/usr/bin/emacs'
-  # 
+  #
   # <b><tt>ln(list, destdir, options = {})</tt></b>
-  # 
+  #
   # Creates several hard links in a directory, with each one pointing to the
   # item in +list+.  If +destdir+ is not a directory, raises Errno::ENOTDIR.
-  # 
+  #
   #   include FileUtils
   #   cd '/sbin'
   #   FileUtils.ln %w(cp mv mkdir), '/bin'   # Now /sbin/cp and /bin/cp are linked.
-  # 
+  #
   def ln(src, dest, options = {})
     fu_check_options options, OPT_TABLE['ln']
     fu_output_message "ln#{options[:force] ? ' -f' : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
@@ -311,24 +311,24 @@ module FileUtils
   # Options: force noop verbose
   #
   # <b><tt>ln_s(old, new, options = {})</tt></b>
-  # 
+  #
   # Creates a symbolic link +new+ which points to +old+.  If +new+ already
   # exists and it is a directory, creates a symbolic link +new/old+.  If +new+
   # already exists and it is not a directory, raises Errno::EEXIST.  But if
   # :force option is set, overwrite +new+.
-  # 
+  #
   #   FileUtils.ln_s '/usr/bin/ruby', '/usr/local/bin/ruby'
   #   FileUtils.ln_s 'verylongsourcefilename.c', 'c', :force => true
-  # 
+  #
   # <b><tt>ln_s(list, destdir, options = {})</tt></b>
-  # 
+  #
   # Creates several symbolic links in a directory, with each one pointing to the
   # item in +list+.  If +destdir+ is not a directory, raises Errno::ENOTDIR.
   #
   # If +destdir+ is not a directory, raises Errno::ENOTDIR.
-  # 
+  #
   #   FileUtils.ln_s Dir.glob('bin/*.rb'), '/home/aamine/bin'
-  # 
+  #
   def ln_s(src, dest, options = {})
     fu_check_options options, OPT_TABLE['ln_s']
     fu_output_message "ln -s#{options[:force] ? 'f' : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
@@ -348,10 +348,10 @@ module FileUtils
 
   #
   # Options: noop verbose
-  # 
+  #
   # Same as
   #   #ln_s(src, dest, :force)
-  # 
+  #
   def ln_sf(src, dest, options = {})
     fu_check_options options, OPT_TABLE['ln_sf']
     options = options.dup
@@ -374,7 +374,7 @@ module FileUtils
   #   FileUtils.cp %w(cgi.rb complex.rb date.rb), '/usr/lib/ruby/1.6'
   #   FileUtils.cp %w(cgi.rb complex.rb date.rb), '/usr/lib/ruby/1.6', :verbose => true
   #   FileUtils.cp 'symlink', 'dest'   # copy content, "dest" is not a symlink
-  # 
+  #
   def cp(src, dest, options = {})
     fu_check_options options, OPT_TABLE['cp']
     fu_output_message "cp#{options[:preserve] ? ' -p' : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
@@ -393,17 +393,17 @@ module FileUtils
 
   #
   # Options: preserve noop verbose dereference_root remove_destination
-  # 
+  #
   # Copies +src+ to +dest+. If +src+ is a directory, this method copies
   # all its contents recursively. If +dest+ is a directory, copies
   # +src+ to +dest/src+.
   #
   # +src+ can be a list of files.
-  # 
+  #
   #   # Installing ruby library "mylib" under the site_ruby
   #   FileUtils.rm_r site_ruby + '/mylib', :force
   #   FileUtils.cp_r 'lib/', site_ruby + '/mylib'
-  # 
+  #
   #   # Examples of copying several files to target directory.
   #   FileUtils.cp_r %w(mail.rb field.rb debug/), site_ruby + '/tmail'
   #   FileUtils.cp_r Dir.glob('*.rb'), '/home/aamine/lib/ruby', :noop => true, :verbose => true
@@ -413,7 +413,7 @@ module FileUtils
   #   # use following code.
   #   FileUtils.cp_r 'src/.', 'dest'     # cp_r('src', 'dest') makes src/dest,
   #                                      # but this doesn't.
-  # 
+  #
   def cp_r(src, dest, options = {})
     fu_check_options options, OPT_TABLE['cp_r']
     fu_output_message "cp -r#{options[:preserve] ? 'p' : ''}#{options[:remove_destination] ? ' --remove-destination' : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
@@ -477,17 +477,17 @@ module FileUtils
 
   #
   # Options: force noop verbose
-  # 
+  #
   # Moves file(s) +src+ to +dest+.  If +file+ and +dest+ exist on the different
   # disk partition, the copied file is created on the +dest+ and the original
   # file removed from +src+.
-  # 
+  #
   #   FileUtils.mv 'badname.rb', 'goodname.rb'
   #   FileUtils.mv 'stuff.rb', '/notexist/lib/ruby', :force => true  # no error
-  # 
+  #
   #   FileUtils.mv %w(junk.txt dust.txt), '/home/aamine/.trash/'
   #   FileUtils.mv Dir.glob('test*.rb'), 'test', :noop => true, :verbose => true
-  # 
+  #
   def mv(src, dest, options = {})
     fu_check_options options, OPT_TABLE['mv']
     fu_output_message "mv#{options[:force] ? ' -f' : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
@@ -532,14 +532,14 @@ module FileUtils
 
   #
   # Options: force noop verbose
-  # 
+  #
   # Remove file(s) specified in +list+.  This method cannot remove directories.
   # All StandardErrors are ignored when the :force option is set.
-  # 
+  #
   #   FileUtils.rm %w( junk.txt dust.txt )
   #   FileUtils.rm Dir.glob('*.so')
   #   FileUtils.rm 'NotExistFile', :force => true   # never raises exception
-  # 
+  #
   def rm(list, options = {})
     fu_check_options options, OPT_TABLE['rm']
     list = fu_list(list)
@@ -560,7 +560,7 @@ module FileUtils
 
   #
   # Options: noop verbose
-  # 
+  #
   # Equivalent to
   #
   #   #rm(list, :force => true)
@@ -581,11 +581,11 @@ module FileUtils
 
   #
   # Options: force noop verbose secure
-  # 
+  #
   # remove files +list+[0] +list+[1]... If +list+[n] is a directory,
   # removes its all contents recursively. This method ignores
   # StandardError when :force option is set.
-  # 
+  #
   #   FileUtils.rm_r Dir.glob('/tmp/*')
   #   FileUtils.rm_r '/', :force => true          #  :-)
   #
@@ -599,7 +599,7 @@ module FileUtils
   #
   # NOTE: This method calls #remove_entry_secure if :secure option is set.
   # See also #remove_entry_secure.
-  # 
+  #
   def rm_r(list, options = {})
     fu_check_options options, OPT_TABLE['rm_r']
     # options[:secure] = true unless options.key?(:secure)
@@ -620,14 +620,14 @@ module FileUtils
 
   #
   # Options: noop verbose secure
-  # 
+  #
   # Equivalent to
   #
   #   #rm_r(list, :force => true)
   #
   # WARNING: This method causes local vulnerability.
   # Read the documentation of #rm_r first.
-  # 
+  #
   def rm_rf(list, options = {})
     fu_check_options options, OPT_TABLE['rm_rf']
     options = options.dup
@@ -786,7 +786,7 @@ module FileUtils
 
   #
   # Returns true if the contents of a file A and a file B are identical.
-  # 
+  #
   #   FileUtils.compare_file('somefile', 'somefile')  #=> true
   #   FileUtils.compare_file('/bin/cp', '/bin/mv')    #=> maybe false
   #
@@ -826,14 +826,14 @@ module FileUtils
 
   #
   # Options: mode preserve noop verbose
-  # 
+  #
   # If +src+ is not same as +dest+, copies it and changes the permission
   # mode to +mode+.  If +dest+ is a directory, destination is +dest+/+src+.
   # This method removes destination before copy.
-  # 
+  #
   #   FileUtils.install 'ruby', '/usr/local/bin/ruby', :mode => 0755, :verbose => true
   #   FileUtils.install 'lib.rb', '/usr/local/lib/ruby/site_ruby', :verbose => true
-  # 
+  #
   def install(src, dest, options = {})
     fu_check_options options, OPT_TABLE['install']
     fu_output_message "install -c#{options[:preserve] && ' -p'}#{options[:mode] ? (' -m 0%o' % options[:mode]) : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
@@ -854,14 +854,14 @@ module FileUtils
 
   #
   # Options: noop verbose
-  # 
+  #
   # Changes permission bits on the named files (in +list+) to the bit pattern
   # represented by +mode+.
-  # 
+  #
   #   FileUtils.chmod 0755, 'somecommand'
   #   FileUtils.chmod 0644, %w(my.rb your.rb his.rb her.rb)
   #   FileUtils.chmod 0755, '/usr/bin/ruby', :verbose => true
-  # 
+  #
   def chmod(mode, list, options = {})
     fu_check_options options, OPT_TABLE['chmod']
     list = fu_list(list)
@@ -877,12 +877,12 @@ module FileUtils
 
   #
   # Options: noop verbose force
-  # 
+  #
   # Changes permission bits on the named files (in +list+)
   # to the bit pattern represented by +mode+.
-  # 
+  #
   #   FileUtils.chmod_R 0700, "/tmp/app.#{$$}"
-  # 
+  #
   def chmod_R(mode, list, options = {})
     fu_check_options options, OPT_TABLE['chmod_R']
     list = fu_list(list)
@@ -906,16 +906,16 @@ module FileUtils
 
   #
   # Options: noop verbose
-  # 
+  #
   # Changes owner and group on the named files (in +list+)
   # to the user +user+ and the group +group+.  +user+ and +group+
   # may be an ID (Integer/String) or a name (String).
   # If +user+ or +group+ is nil, this method does not change
   # the attribute.
-  # 
+  #
   #   FileUtils.chown 'root', 'staff', '/usr/local/bin/ruby'
   #   FileUtils.chown nil, 'bin', Dir.glob('/usr/bin/*'), :verbose => true
-  # 
+  #
   def chown(user, group, list, options = {})
     fu_check_options options, OPT_TABLE['chown']
     list = fu_list(list)
@@ -935,16 +935,16 @@ module FileUtils
 
   #
   # Options: noop verbose force
-  # 
+  #
   # Changes owner and group on the named files (in +list+)
   # to the user +user+ and the group +group+ recursively.
   # +user+ and +group+ may be an ID (Integer/String) or
   # a name (String).  If +user+ or +group+ is nil, this
   # method does not change the attribute.
-  # 
+  #
   #   FileUtils.chown_R 'www', 'www', '/var/www/htdocs'
   #   FileUtils.chown_R 'cvs', 'cvs', '/var/cvs', :verbose => true
-  # 
+  #
   def chown_R(user, group, list, options = {})
     fu_check_options options, OPT_TABLE['chown_R']
     list = fu_list(list)
@@ -1015,13 +1015,13 @@ module FileUtils
 
   #
   # Options: noop verbose
-  # 
+  #
   # Updates modification time (mtime) and access time (atime) of file(s) in
   # +list+.  Files are created if they don't exist.
-  # 
+  #
   #   FileUtils.touch 'timestamp'
   #   FileUtils.touch Dir.glob('*.c');  system 'make'
-  # 
+  #
   def touch(list, options = {})
     fu_check_options options, OPT_TABLE['touch']
     list = fu_list(list)
@@ -1520,11 +1520,11 @@ module FileUtils
   METHODS = singleton_methods() - %w( private_module_function
       commands options have_option? options_of collect_method )
 
-  # 
+  #
   # This module has all methods of FileUtils module, but it outputs messages
   # before acting.  This equates to passing the <tt>:verbose</tt> flag to
   # methods in FileUtils.
-  # 
+  #
   module Verbose
     include FileUtils
     @fileutils_output  = $stderr
@@ -1545,11 +1545,11 @@ module FileUtils
     end
   end
 
-  # 
+  #
   # This module has all methods of FileUtils module, but never changes
   # files/directories.  This equates to passing the <tt>:noop</tt> flag
   # to methods in FileUtils.
-  # 
+  #
   module NoWrite
     include FileUtils
     @fileutils_output  = $stderr
@@ -1570,12 +1570,12 @@ module FileUtils
     end
   end
 
-  # 
+  #
   # This module has all methods of FileUtils module, but never changes
   # files/directories, with printing message before acting.
   # This equates to passing the <tt>:noop</tt> and <tt>:verbose</tt> flag
   # to methods in FileUtils.
-  # 
+  #
   module DryRun
     include FileUtils
     @fileutils_output  = $stderr

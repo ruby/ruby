@@ -8,7 +8,7 @@ module RSS
 
     def self.append_features(klass)
       super
-      
+
       klass.install_must_call_validator('', "")
     end
   end
@@ -123,7 +123,7 @@ module RSS
       def not_need_to_call_setup_maker_variables
         %w(image textInput)
       end
-    
+
       class SkipDays < Element
         include RSS09
 
@@ -146,11 +146,11 @@ module RSS
               self.content = args[0]
             end
           end
-      
+
         end
-        
+
       end
-      
+
       class SkipHours < Element
         include RSS09
 
@@ -174,13 +174,13 @@ module RSS
             end
           end
         end
-        
+
       end
-      
+
       class Image < Element
 
         include RSS09
-        
+
         %w(url title link).each do |name|
           install_text_element(name, "", nil)
         end
@@ -239,9 +239,9 @@ module RSS
           end
         end
       end
-      
+
       class Item < Element
-        
+
         include RSS09
 
         [
@@ -269,7 +269,7 @@ module RSS
           @enclosure.setup_maker(item) if @enclosure
           @source.setup_maker(item) if @source
         end
-        
+
         class Source < Element
 
           include RSS09
@@ -279,7 +279,7 @@ module RSS
           ].each do |name, uri, required|
             install_get_attribute(name, uri, required)
           end
-          
+
           content_setup
 
           def initialize(*args)
@@ -341,7 +341,7 @@ module RSS
         class Category < Element
 
           include RSS09
-          
+
           [
             ["domain", "", false]
           ].each do |name, uri, required|
@@ -369,11 +369,11 @@ module RSS
             category.domain = domain
             category.content = content
           end
-          
+
         end
 
       end
-      
+
       class TextInput < Element
 
         include RSS09
@@ -399,9 +399,9 @@ module RSS
           maker.textinput
         end
       end
-      
+
     end
-    
+
   end
 
   RSS09::ELEMENTS.each do |name|
@@ -412,7 +412,7 @@ module RSS
     private
     def initial_start_rss(tag_name, prefix, attrs, ns)
       check_ns(tag_name, prefix, ns, "", false)
-      
+
       @rss = Rss.new(attrs['version'], @version, @encoding, @standalone)
       @rss.do_validate = @do_validate
       @rss.xml_stylesheets = @xml_stylesheets
@@ -422,7 +422,7 @@ module RSS
       end
       @proc_stack.push(pr)
     end
-    
+
   end
 
 end

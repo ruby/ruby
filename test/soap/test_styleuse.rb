@@ -8,7 +8,7 @@ module SOAP
 
 class TestStyleUse < Test::Unit::TestCase
   # rpc driver: obj in(Hash allowed for literal), obj out
-  # 
+  #
   #   style: not visible from user
   #     rpc: wrapped element
   #     document: unwrappted element

@@ -1,7 +1,7 @@
 # = net/telnet.rb - Simple Telnet Client Library
-# 
+#
 # Author:: Wakou Aoyama <wakou@ruby-lang.org>
-# Documentation:: William Webber and Wakou Aoyama 
+# Documentation:: William Webber and Wakou Aoyama
 #
 # This file holds the class Net::Telnet, which provides client-side
 # telnet functionality.
@@ -13,7 +13,7 @@ require "socket"
 require "delegate"
 require "timeout"
 require "English"
- 
+
 module Net
 
   #
@@ -50,11 +50,11 @@ module Net
   # have to handle authentication yourself.
   #
   # For some protocols, it will be possible to specify the +Prompt+
-  # option once when you create the Telnet object and use #cmd() calls; 
+  # option once when you create the Telnet object and use #cmd() calls;
   # for others, you will have to specify the response sequence to
   # look for as the Match option to every #cmd() call, or call
-  # #puts() and #waitfor() directly; for yet others, you will have 
-  # to use #sysread() instead of #waitfor() and parse server 
+  # #puts() and #waitfor() directly; for yet others, you will have
+  # to use #sysread() instead of #waitfor() and parse server
   # responses yourself.
   #
   # It is worth noting that when you create a new Net::Telnet object,
@@ -63,21 +63,21 @@ module Net
   # to already open sockets, or to any read-write IO object.  This
   # can be useful, for instance, for setting up a test fixture for
   # unit testing.
-  # 
+  #
   # == Examples
-  # 
+  #
   # === Log in and send a command, echoing all output to stdout
-  # 
+  #
   #   localhost = Net::Telnet::new("Host" => "localhost",
   #                                "Timeout" => 10,
   #                                "Prompt" => /[$%#>] \z/n)
   #   localhost.login("username", "password") { |c| print c }
   #   localhost.cmd("command") { |c| print c }
   #   localhost.close
-  # 
-  # 
+  #
+  #
   # === Check a POP server to see if you have mail
-  # 
+  #
   #   pop = Net::Telnet::new("Host" => "your_destination_host_here",
   #                          "Port" => 110,
   #                          "Telnetmode" => false,
@@ -97,73 +97,73 @@ module Net
 
     # :stopdoc:
     IAC   = 255.chr # "\377" # "\xff" # interpret as command
-    DONT  = 254.chr # "\376" # "\xfe" # you are not to use option 
-    DO    = 253.chr # "\375" # "\xfd" # please, you use option 
-    WONT  = 252.chr # "\374" # "\xfc" # I won't use option 
-    WILL  = 251.chr # "\373" # "\xfb" # I will use option 
-    SB    = 250.chr # "\372" # "\xfa" # interpret as subnegotiation 
-    GA    = 249.chr # "\371" # "\xf9" # you may reverse the line 
-    EL    = 248.chr # "\370" # "\xf8" # erase the current line 
-    EC    = 247.chr # "\367" # "\xf7" # erase the current character 
-    AYT   = 246.chr # "\366" # "\xf6" # are you there 
-    AO    = 245.chr # "\365" # "\xf5" # abort output--but let prog finish 
-    IP    = 244.chr # "\364" # "\xf4" # interrupt process--permanently 
-    BREAK = 243.chr # "\363" # "\xf3" # break 
-    DM    = 242.chr # "\362" # "\xf2" # data mark--for connect. cleaning 
-    NOP   = 241.chr # "\361" # "\xf1" # nop 
-    SE    = 240.chr # "\360" # "\xf0" # end sub negotiation 
-    EOR   = 239.chr # "\357" # "\xef" # end of record (transparent mode) 
-    ABORT = 238.chr # "\356" # "\xee" # Abort process 
-    SUSP  = 237.chr # "\355" # "\xed" # Suspend process 
-    EOF   = 236.chr # "\354" # "\xec" # End of file 
-    SYNCH = 242.chr # "\362" # "\xf2" # for telfunc calls 
+    DONT  = 254.chr # "\376" # "\xfe" # you are not to use option
+    DO    = 253.chr # "\375" # "\xfd" # please, you use option
+    WONT  = 252.chr # "\374" # "\xfc" # I won't use option
+    WILL  = 251.chr # "\373" # "\xfb" # I will use option
+    SB    = 250.chr # "\372" # "\xfa" # interpret as subnegotiation
+    GA    = 249.chr # "\371" # "\xf9" # you may reverse the line
+    EL    = 248.chr # "\370" # "\xf8" # erase the current line
+    EC    = 247.chr # "\367" # "\xf7" # erase the current character
+    AYT   = 246.chr # "\366" # "\xf6" # are you there
+    AO    = 245.chr # "\365" # "\xf5" # abort output--but let prog finish
+    IP    = 244.chr # "\364" # "\xf4" # interrupt process--permanently
+    BREAK = 243.chr # "\363" # "\xf3" # break
+    DM    = 242.chr # "\362" # "\xf2" # data mark--for connect. cleaning
+    NOP   = 241.chr # "\361" # "\xf1" # nop
+    SE    = 240.chr # "\360" # "\xf0" # end sub negotiation
+    EOR   = 239.chr # "\357" # "\xef" # end of record (transparent mode)
+    ABORT = 238.chr # "\356" # "\xee" # Abort process
+    SUSP  = 237.chr # "\355" # "\xed" # Suspend process
+    EOF   = 236.chr # "\354" # "\xec" # End of file
+    SYNCH = 242.chr # "\362" # "\xf2" # for telfunc calls
 
-    OPT_BINARY         =   0.chr # "\000" # "\x00" # Binary Transmission 
-    OPT_ECHO           =   1.chr # "\001" # "\x01" # Echo 
-    OPT_RCP            =   2.chr # "\002" # "\x02" # Reconnection 
-    OPT_SGA            =   3.chr # "\003" # "\x03" # Suppress Go Ahead 
-    OPT_NAMS           =   4.chr # "\004" # "\x04" # Approx Message Size Negotiation 
-    OPT_STATUS         =   5.chr # "\005" # "\x05" # Status 
-    OPT_TM             =   6.chr # "\006" # "\x06" # Timing Mark 
-    OPT_RCTE           =   7.chr # "\a"   # "\x07" # Remote Controlled Trans and Echo 
-    OPT_NAOL           =   8.chr # "\010" # "\x08" # Output Line Width 
-    OPT_NAOP           =   9.chr # "\t"   # "\x09" # Output Page Size 
-    OPT_NAOCRD         =  10.chr # "\n"   # "\x0a" # Output Carriage-Return Disposition 
-    OPT_NAOHTS         =  11.chr # "\v"   # "\x0b" # Output Horizontal Tab Stops 
-    OPT_NAOHTD         =  12.chr # "\f"   # "\x0c" # Output Horizontal Tab Disposition 
-    OPT_NAOFFD         =  13.chr # "\r"   # "\x0d" # Output Formfeed Disposition 
-    OPT_NAOVTS         =  14.chr # "\016" # "\x0e" # Output Vertical Tabstops 
-    OPT_NAOVTD         =  15.chr # "\017" # "\x0f" # Output Vertical Tab Disposition 
-    OPT_NAOLFD         =  16.chr # "\020" # "\x10" # Output Linefeed Disposition 
-    OPT_XASCII         =  17.chr # "\021" # "\x11" # Extended ASCII 
-    OPT_LOGOUT         =  18.chr # "\022" # "\x12" # Logout 
-    OPT_BM             =  19.chr # "\023" # "\x13" # Byte Macro 
-    OPT_DET            =  20.chr # "\024" # "\x14" # Data Entry Terminal 
-    OPT_SUPDUP         =  21.chr # "\025" # "\x15" # SUPDUP 
-    OPT_SUPDUPOUTPUT   =  22.chr # "\026" # "\x16" # SUPDUP Output 
-    OPT_SNDLOC         =  23.chr # "\027" # "\x17" # Send Location 
-    OPT_TTYPE          =  24.chr # "\030" # "\x18" # Terminal Type 
-    OPT_EOR            =  25.chr # "\031" # "\x19" # End of Record 
-    OPT_TUID           =  26.chr # "\032" # "\x1a" # TACACS User Identification 
-    OPT_OUTMRK         =  27.chr # "\e"   # "\x1b" # Output Marking 
-    OPT_TTYLOC         =  28.chr # "\034" # "\x1c" # Terminal Location Number 
-    OPT_3270REGIME     =  29.chr # "\035" # "\x1d" # Telnet 3270 Regime 
-    OPT_X3PAD          =  30.chr # "\036" # "\x1e" # X.3 PAD 
-    OPT_NAWS           =  31.chr # "\037" # "\x1f" # Negotiate About Window Size 
-    OPT_TSPEED         =  32.chr # " "    # "\x20" # Terminal Speed 
-    OPT_LFLOW          =  33.chr # "!"    # "\x21" # Remote Flow Control 
-    OPT_LINEMODE       =  34.chr # "\""   # "\x22" # Linemode 
-    OPT_XDISPLOC       =  35.chr # "#"    # "\x23" # X Display Location 
-    OPT_OLD_ENVIRON    =  36.chr # "$"    # "\x24" # Environment Option 
-    OPT_AUTHENTICATION =  37.chr # "%"    # "\x25" # Authentication Option 
-    OPT_ENCRYPT        =  38.chr # "&"    # "\x26" # Encryption Option 
-    OPT_NEW_ENVIRON    =  39.chr # "'"    # "\x27" # New Environment Option 
-    OPT_EXOPL          = 255.chr # "\377" # "\xff" # Extended-Options-List 
+    OPT_BINARY         =   0.chr # "\000" # "\x00" # Binary Transmission
+    OPT_ECHO           =   1.chr # "\001" # "\x01" # Echo
+    OPT_RCP            =   2.chr # "\002" # "\x02" # Reconnection
+    OPT_SGA            =   3.chr # "\003" # "\x03" # Suppress Go Ahead
+    OPT_NAMS           =   4.chr # "\004" # "\x04" # Approx Message Size Negotiation
+    OPT_STATUS         =   5.chr # "\005" # "\x05" # Status
+    OPT_TM             =   6.chr # "\006" # "\x06" # Timing Mark
+    OPT_RCTE           =   7.chr # "\a"   # "\x07" # Remote Controlled Trans and Echo
+    OPT_NAOL           =   8.chr # "\010" # "\x08" # Output Line Width
+    OPT_NAOP           =   9.chr # "\t"   # "\x09" # Output Page Size
+    OPT_NAOCRD         =  10.chr # "\n"   # "\x0a" # Output Carriage-Return Disposition
+    OPT_NAOHTS         =  11.chr # "\v"   # "\x0b" # Output Horizontal Tab Stops
+    OPT_NAOHTD         =  12.chr # "\f"   # "\x0c" # Output Horizontal Tab Disposition
+    OPT_NAOFFD         =  13.chr # "\r"   # "\x0d" # Output Formfeed Disposition
+    OPT_NAOVTS         =  14.chr # "\016" # "\x0e" # Output Vertical Tabstops
+    OPT_NAOVTD         =  15.chr # "\017" # "\x0f" # Output Vertical Tab Disposition
+    OPT_NAOLFD         =  16.chr # "\020" # "\x10" # Output Linefeed Disposition
+    OPT_XASCII         =  17.chr # "\021" # "\x11" # Extended ASCII
+    OPT_LOGOUT         =  18.chr # "\022" # "\x12" # Logout
+    OPT_BM             =  19.chr # "\023" # "\x13" # Byte Macro
+    OPT_DET            =  20.chr # "\024" # "\x14" # Data Entry Terminal
+    OPT_SUPDUP         =  21.chr # "\025" # "\x15" # SUPDUP
+    OPT_SUPDUPOUTPUT   =  22.chr # "\026" # "\x16" # SUPDUP Output
+    OPT_SNDLOC         =  23.chr # "\027" # "\x17" # Send Location
+    OPT_TTYPE          =  24.chr # "\030" # "\x18" # Terminal Type
+    OPT_EOR            =  25.chr # "\031" # "\x19" # End of Record
+    OPT_TUID           =  26.chr # "\032" # "\x1a" # TACACS User Identification
+    OPT_OUTMRK         =  27.chr # "\e"   # "\x1b" # Output Marking
+    OPT_TTYLOC         =  28.chr # "\034" # "\x1c" # Terminal Location Number
+    OPT_3270REGIME     =  29.chr # "\035" # "\x1d" # Telnet 3270 Regime
+    OPT_X3PAD          =  30.chr # "\036" # "\x1e" # X.3 PAD
+    OPT_NAWS           =  31.chr # "\037" # "\x1f" # Negotiate About Window Size
+    OPT_TSPEED         =  32.chr # " "    # "\x20" # Terminal Speed
+    OPT_LFLOW          =  33.chr # "!"    # "\x21" # Remote Flow Control
+    OPT_LINEMODE       =  34.chr # "\""   # "\x22" # Linemode
+    OPT_XDISPLOC       =  35.chr # "#"    # "\x23" # X Display Location
+    OPT_OLD_ENVIRON    =  36.chr # "$"    # "\x24" # Environment Option
+    OPT_AUTHENTICATION =  37.chr # "%"    # "\x25" # Authentication Option
+    OPT_ENCRYPT        =  38.chr # "&"    # "\x26" # Encryption Option
+    OPT_NEW_ENVIRON    =  39.chr # "'"    # "\x27" # New Environment Option
+    OPT_EXOPL          = 255.chr # "\377" # "\xff" # Extended-Options-List
 
-    NULL = "\000" 
-    CR   = "\015"   
-    LF   = "\012" 
-    EOL  = CR + LF 
+    NULL = "\000"
+    CR   = "\015"
+    LF   = "\012"
+    EOL  = CR + LF
     REVISION = '$Id$'
     # :startdoc:
 
@@ -174,13 +174,13 @@ module Net
     # provided: see below).  If a block is provided, it is yielded
     # status messages on the attempt to connect to the server, of
     # the form:
-    # 
+    #
     #   Trying localhost...
     #   Connected to localhost.
     #
     # +options+ is a hash of options.  The following example lists
     # all options and their default values.
-    # 
+    #
     #   host = Net::Telnet::new(
     #            "Host"       => "localhost",  # default: "localhost"
     #            "Port"       => 23,           # default: 23
@@ -198,16 +198,16 @@ module Net
     #
     # The options have the following meanings:
     #
-    # Host:: the hostname or IP address of the host to connect to, as a String. 
+    # Host:: the hostname or IP address of the host to connect to, as a String.
     #        Defaults to "localhost".
     #
     # Port:: the port to connect to.  Defaults to 23.
     #
-    # Binmode:: if false (the default), newline substitution is performed.  
+    # Binmode:: if false (the default), newline substitution is performed.
     #           Outgoing LF is
     #           converted to CRLF, and incoming CRLF is converted to LF.  If
     #           true, this substitution is not performed.  This value can
-    #           also be set with the #binmode() method.  The 
+    #           also be set with the #binmode() method.  The
     #           outgoing conversion only applies to the #puts() and #print()
     #           methods, not the #write() method.  The precise nature of
     #           the newline conversion is also affected by the telnet options
@@ -217,13 +217,13 @@ module Net
     #              and all received traffic to.  In the case of a proper
     #              Telnet session, this will include the client input as
     #              echoed by the host; otherwise, it only includes server
-    #              responses.  Output is appended verbatim to this file.  
+    #              responses.  Output is appended verbatim to this file.
     #              By default, no output log is kept.
     #
     # Dump_log:: as for Output_log, except that output is written in hexdump
     #            format (16 bytes per line as hex pairs, followed by their
     #            printable equivalent), with connection status messages
-    #            preceded by '#', sent traffic preceded by '>', and 
+    #            preceded by '#', sent traffic preceded by '>', and
     #            received traffic preceded by '<'.  By default, not dump log
     #            is kept.
     #
@@ -233,7 +233,7 @@ module Net
     #          ready to receive a new command.  By default, this regular
     #          expression is /[$%#>] \z/n.
     #
-    # Telnetmode:: a boolean value, true by default.  In telnet mode, 
+    # Telnetmode:: a boolean value, true by default.  In telnet mode,
     #              traffic received from the host is parsed for special
     #              command sequences, and these sequences are escaped
     #              in outgoing traffic sent using #puts() or #print()
@@ -255,11 +255,11 @@ module Net
     #           minutes), but other attempts to read data from the host
     #           will hand indefinitely if no data is forthcoming.
     #
-    # Waittime:: the amount of time to wait after seeing what looks like a 
+    # Waittime:: the amount of time to wait after seeing what looks like a
     #            prompt (that is, received data that matches the Prompt
     #            option regular expression) to see if more data arrives.
     #            If more data does arrive in this time, Net::Telnet assumes
-    #            that what it saw was not really a prompt.  This is to try to 
+    #            that what it saw was not really a prompt.  This is to try to
     #            avoid false matches, but it can also lead to missing real
     #            prompts (if, for instance, a background process writes to
     #            the terminal soon after the prompt is displayed).  By
@@ -267,12 +267,12 @@ module Net
     #
     # Proxy:: a proxy object to used instead of opening a direct connection
     #         to the host.  Must be either another Net::Telnet object or
-    #         an IO object.  If it is another Net::Telnet object, this 
+    #         an IO object.  If it is another Net::Telnet object, this
     #         instance will use that one's socket for communication.  If an
     #         IO object, it is used directly for communication.  Any other
     #         kind of object will cause an error to be raised.
     #
-    def initialize(options) # :yield: mesg 
+    def initialize(options) # :yield: mesg
       @options = options
       @options["Host"]       = "localhost"   unless @options.has_key?("Host")
       @options["Port"]       = 23            unless @options.has_key?("Port")
@@ -280,7 +280,7 @@ module Net
       @options["Timeout"]    = 10            unless @options.has_key?("Timeout")
       @options["Waittime"]   = 0             unless @options.has_key?("Waittime")
       unless @options.has_key?("Binmode")
-        @options["Binmode"]    = false         
+        @options["Binmode"]    = false
       else
         unless (true == @options["Binmode"] or false == @options["Binmode"])
           raise ArgumentError, "Binmode option must be true or false"
@@ -288,7 +288,7 @@ module Net
       end
 
       unless @options.has_key?("Telnetmode")
-        @options["Telnetmode"] = true          
+        @options["Telnetmode"] = true
       else
         unless (true == @options["Telnetmode"] or false == @options["Telnetmode"])
           raise ArgumentError, "Telnetmode option must be true or false"
@@ -374,7 +374,7 @@ module Net
     # The socket the Telnet object is using.  Note that this object becomes
     # a delegate of the Telnet object, so normally you invoke its methods
     # directly on the Telnet object.
-    attr :sock 
+    attr :sock
 
     # Set telnet command interpretation on (+mode+ == true) or off
     # (+mode+ == false), or return the current value (+mode+ not
@@ -408,7 +408,7 @@ module Net
     def binmode(mode = nil)
       case mode
       when nil
-        @options["Binmode"] 
+        @options["Binmode"]
       when true, false
         @options["Binmode"] = mode
       else
@@ -428,7 +428,7 @@ module Net
     # Preprocess received data from the host.
     #
     # Performs newline conversion and detects telnet command sequences.
-    # Called automatically by #waitfor().  You should only use this 
+    # Called automatically by #waitfor().  You should only use this
     # method yourself if you have read input directly using sysread()
     # or similar, and even then only if in telnet mode.
     def preprocess(string)
@@ -491,9 +491,9 @@ module Net
     # Read data from the host until a certain sequence is matched.
     #
     # If a block is given, the received data will be yielded as it
-    # is read in (not necessarily all in one go), or nil if EOF 
+    # is read in (not necessarily all in one go), or nil if EOF
     # occurs before any data is received.  Whether a block is given
-    # or not, all data read will be returned in a single string, or again 
+    # or not, all data read will be returned in a single string, or again
     # nil if EOF occurs before any data is received.  Note that
     # received data includes the matched sequence we were looking for.
     #
@@ -507,7 +507,7 @@ module Net
     #          into a regular expression.  Used only if Match and
     #          Prompt are not specified.
     # Timeout:: the number of seconds to wait for data from the host
-    #           before raising a TimeoutError.  If set to false, 
+    #           before raising a TimeoutError.  If set to false,
     #           no timeout will occur.  If not specified, the
     #           Timeout option value specified when this instance
     #           was created will be used, or, failing that, the
@@ -524,7 +524,7 @@ module Net
     #           EOFError will be raised. Otherwise, defaults to the old
     #           behaviour that the function will return whatever data
     #           has been received already, or nil if nothing was received.
-    #           
+    #
     def waitfor(options) # :yield: recvdata
       time_out = @options["Timeout"]
       waittime = @options["Waittime"]
@@ -619,7 +619,7 @@ module Net
     # Sends a string to the host.
     #
     # This does _not_ automatically append a newline to the string.  Embedded
-    # newlines may be converted and telnet command sequences escaped 
+    # newlines may be converted and telnet command sequences escaped
     # depending upon the values of telnetmode, binmode, and telnet options
     # set by the host.
     def print(string)
@@ -654,7 +654,7 @@ module Net
     # data until is sees the prompt or other matched sequence.
     #
     # If a block is given, the received data will be yielded to it as
-    # it is read in.  Whether a block is given or not, the received data 
+    # it is read in.  Whether a block is given or not, the received data
     # will be return as a string.  Note that the received data includes
     # the prompt and in most cases the host's echo of our command.
     #
@@ -701,7 +701,7 @@ module Net
     #
     # The username and password can either be provided as two string
     # arguments in that order, or as a hash with keys "Name" and
-    # "Password".    
+    # "Password".
     #
     # This method looks for the strings "login" and "Password" from the
     # host to determine when to send the username and password.  If the

@@ -41,7 +41,7 @@ class BigDecimal < Numeric
   end
 
   # Converts a BigDecimal to a Rational.
-  def to_r 
+  def to_r
      sign,digits,base,power = self.split
      numerator = sign*digits.to_i
      denomi_power = power - digits.size # base is always 10

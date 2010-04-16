@@ -10,19 +10,19 @@ Released under the same term of license as Ruby.
 = XMLRPC::DateTime
 == Description
 This class is important to handle XMLRPC (('dateTime.iso8601')) values,
-correcly, because normal UNIX-dates (class (({Date}))) only handle dates 
+correcly, because normal UNIX-dates (class (({Date}))) only handle dates
 from year 1970 on, and class (({Time})) handles dates without the time
-component. (({XMLRPC::DateTime})) is able to store a XMLRPC 
+component. (({XMLRPC::DateTime})) is able to store a XMLRPC
 (('dateTime.iso8601')) value correctly.
 
 == Class Methods
 --- XMLRPC::DateTime.new( year, month, day, hour, min, sec )
     Creates a new (({XMLRPC::DateTime})) instance with the
-    parameters ((|year|)), ((|month|)), ((|day|)) as date and 
+    parameters ((|year|)), ((|month|)), ((|day|)) as date and
     ((|hour|)), ((|min|)), ((|sec|)) as time.
     Raises (({ArgumentError})) if a parameter is out of range, or ((|year|)) is not
     of type (({Integer})).
-    
+
 == Instance Methods
 --- XMLRPC::DateTime#year
 --- XMLRPC::DateTime#month
@@ -50,7 +50,7 @@ component. (({XMLRPC::DateTime})) is able to store a XMLRPC
 
 --- XMLRPC::DateTime#to_time
     Return a (({Time})) object of the date/time which (({self})) represents.
-    If the (('year')) is below 1970, this method returns (({nil})), 
+    If the (('year')) is below 1970, this method returns (({nil})),
     because (({Time})) cannot handle years below 1970.
     The used timezone is GMT.
 
@@ -68,7 +68,7 @@ require "date"
 module XMLRPC
 
 class DateTime
-  
+
   attr_reader :year, :month, :day, :hour, :min, :sec
 
   def year= (value)
@@ -102,14 +102,14 @@ class DateTime
   end
 
   alias mon  month
-  alias mon= month= 
- 
+  alias mon= month=
+
 
   def initialize(year, month, day, hour, min, sec)
     self.year, self.month, self.day = year, month, day
     self.hour, self.min, self.sec   = hour, min, sec
   end
- 
+
   def to_time
     if @year >= 1970
       Time.gm(*to_a)

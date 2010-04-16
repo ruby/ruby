@@ -18,7 +18,7 @@ class TestAuthHeaderCGI < Test::Unit::TestCase
     Config::CONFIG["ruby_install_name"] + Config::CONFIG["EXEEXT"]
   )
   RUBYBIN << " -d" if $DEBUG
-  
+
   Port = 17171
   PortName = 'http://tempuri.org/authHeaderPort'
   SupportPortName = 'http://tempuri.org/authHeaderSupportPort'

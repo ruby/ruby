@@ -1,37 +1,37 @@
 
 #
 # == Introduction
-# 
+#
 # This library extends the Time class:
 # * conversion between date string and time object.
 #   * date-time defined by RFC 2822
 #   * HTTP-date defined by RFC 2616
 #   * dateTime defined by XML Schema Part 2: Datatypes (ISO 8601)
 #   * various formats handled by Date._parse (string to time only)
-# 
+#
 # == Design Issues
-# 
+#
 # === Specialized interface
-# 
+#
 # This library provides methods dedicated to special purposes:
 # * RFC 2822, RFC 2616 and XML Schema.
 # * They makes usual life easier.
-# 
+#
 # === Doesn't depend on strftime
-# 
+#
 # This library doesn't use +strftime+.  Especially #rfc2822 doesn't depend
 # on +strftime+ because:
-# 
+#
 # * %a and %b are locale sensitive
-# 
+#
 #   Since they are locale sensitive, they may be replaced to
 #   invalid weekday/month name in some locales.
 #   Since ruby-1.6 doesn't invoke setlocale by default,
 #   the problem doesn't arise until some external library invokes setlocale.
 #   Ruby/GTK is the example of such library.
-# 
+#
 # * %z is not portable
-# 
+#
 #   %z is required to generate zone in date-time of RFC 2822
 #   but it is not portable.
 #
@@ -61,9 +61,9 @@ class Time
       'PST' => -8, 'PDT' => -7,
       # Following definition of military zones is original one.
       # See RFC 1123 and RFC 2822 for the error in RFC 822.
-      'A' => +1, 'B' => +2, 'C' => +3, 'D' => +4,  'E' => +5,  'F' => +6, 
+      'A' => +1, 'B' => +2, 'C' => +3, 'D' => +4,  'E' => +5,  'F' => +6,
       'G' => +7, 'H' => +8, 'I' => +9, 'K' => +10, 'L' => +11, 'M' => +12,
-      'N' => -1, 'O' => -2, 'P' => -3, 'Q' => -4,  'R' => -5,  'S' => -6, 
+      'N' => -1, 'O' => -2, 'P' => -3, 'Q' => -4,  'R' => -5,  'S' => -6,
       'T' => -7, 'U' => -8, 'V' => -9, 'W' => -10, 'X' => -11, 'Y' => -12,
     }
     def zone_offset(zone, year=self.now.year)
@@ -413,8 +413,8 @@ class Time
 
   #
   # Returns a string which represents the time as rfc1123-date of HTTP-date
-  # defined by RFC 2616: 
-  # 
+  # defined by RFC 2616:
+  #
   #   day-of-week, DD month-name CCYY hh:mm:ss GMT
   #
   # Note that the result is always UTC (GMT).

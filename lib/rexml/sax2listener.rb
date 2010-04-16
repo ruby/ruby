@@ -1,11 +1,11 @@
 module REXML
 	# A template for stream parser listeners.
 	# Note that the declarations (attlistdecl, elementdecl, etc) are trivially
-	# processed; REXML doesn't yet handle doctype entity declarations, so you 
+	# processed; REXML doesn't yet handle doctype entity declarations, so you
 	# have to parse them out yourself.
 	# === Missing methods from SAX2
 	#  ignorable_whitespace
-	# === Methods extending SAX2 
+	# === Methods extending SAX2
 	# +WARNING+
 	# These methods are certainly going to change, until DTDs are fully
 	# supported.  Be aware of this.
@@ -58,7 +58,7 @@ module REXML
 		# The argument passed to this method is an array of the entity
 		# declaration.  It can be in a number of formats, but in general it
 		# returns (example, result):
-		#  <!ENTITY % YN '"Yes"'>  
+		#  <!ENTITY % YN '"Yes"'>
 		#  ["%", "YN", "'\"Yes\"'", "\""]
 		#  <!ENTITY % YN 'Yes'>
 		#  ["%", "YN", "'Yes'", "s"]
@@ -93,5 +93,5 @@ module REXML
 		end
     def progress position
     end
-	end	
+	end
 end

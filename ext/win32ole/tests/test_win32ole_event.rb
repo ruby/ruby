@@ -35,8 +35,8 @@ if defined?(WIN32OLE_EVENT)
       ev.on_event {|*args| default_handler(*args)}
       @ie.navigate("file:///#{@f}")
       while @ie.busy
-        WIN32OLE_EVENT.new(@ie, 'DWebBrowserEvents') 
-        GC.start  
+        WIN32OLE_EVENT.new(@ie, 'DWebBrowserEvents')
+        GC.start
         sleep 0.1
       end
       assert_match(/BeforeNavigate/, @event)

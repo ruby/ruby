@@ -1,5 +1,5 @@
 #
-#   frame.rb - 
+#   frame.rb -
 #   	$Release Version: 0.9$
 #   	$Revision$
 #   	$Date$
@@ -7,7 +7,7 @@
 #
 # --
 #
-#   
+#
 #
 
 require "e2mmap"

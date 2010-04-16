@@ -53,8 +53,8 @@ module REXML
             string << "*"
 					when :text
 						string << "text()"
-          when :following, :following_sibling, 
-                :ancestor, :ancestor_or_self, :descendant, 
+          when :following, :following_sibling,
+                :ancestor, :ancestor_or_self, :descendant,
                 :namespace, :preceding, :preceding_sibling
             string << "/" unless string.size == 0
             string << op.to_s.tr("_", "-")
@@ -97,7 +97,7 @@ module REXML
           case op
           when :node
             string << "node()"
-          when :attribute, :child, :following, :following_sibling, 
+          when :attribute, :child, :following, :following_sibling,
                 :ancestor, :ancestor_or_self, :descendant, :descendant_or_self,
                 :namespace, :preceding, :preceding_sibling, :self, :parent
             string << "/" unless string.size == 0
@@ -249,7 +249,7 @@ module REXML
 
             parsed.concat(n)
           end
-          
+
           if path.size > 0
             if path[0] == ?/
               if path[1] == ?/
@@ -332,12 +332,12 @@ module REXML
           predicates << expr[1..-2] if expr
         end
         #puts "PREDICATES = #{predicates.inspect}"
-        predicates.each{ |expr| 
+        predicates.each{ |expr|
           #puts "ORING #{expr}"
           preds = []
           parsed << :predicate
           parsed << preds
-          OrExpr(expr, preds) 
+          OrExpr(expr, preds)
         }
         #puts "PREDICATES = #{predicates.inspect}"
         path
@@ -600,13 +600,13 @@ module REXML
           #puts "LITERAL or NUMBER: #$1"
           varname = $1.nil? ? $2 : $1
           path = $'
-          parsed << :literal 
+          parsed << :literal
           parsed << (varname.include?('.') ? varname.to_f : varname.to_i)
         when LITERAL
           #puts "LITERAL or NUMBER: #$1"
           varname = $1.nil? ? $2 : $1
           path = $'
-          parsed << :literal 
+          parsed << :literal
           parsed << varname
         when /^\(/                                               #/
           path, contents = get_group(path)
@@ -649,7 +649,7 @@ module REXML
         return nil unless depth==0
         [string[ind..-1], string[0..ind-1]]
       end
-      
+
       def parse_args( string )
         arguments = []
         ind = 0
@@ -683,7 +683,7 @@ module REXML
 									s = string[0,ind].strip
 									arguments << s unless s == ""
 									string = string[ind+1..-1]
-									ind = -1 
+									ind = -1
 								end
 							end
             end

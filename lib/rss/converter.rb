@@ -3,7 +3,7 @@ require "rss/utils"
 module RSS
 
   class Converter
-    
+
     include Utils
 
     def initialize(to_enc, from_enc=nil)
@@ -55,11 +55,11 @@ module RSS
         raise UnknownConversionMethodError.new(to_enc, from_enc)
       end
     end
-    
+
     def def_else_enc(to_enc, from_enc)
       def_iconv_convert(to_enc, from_enc, 0)
     end
-    
+
     def def_same_enc()
       def_convert do |value|
         value
@@ -93,40 +93,40 @@ module RSS
     def def_to_euc_jp_from_utf_8
       def_uconv_convert_if_can('u8toeuc', 'EUC-JP', 'UTF-8', '-We')
     end
-    
+
     def def_to_utf_8_from_euc_jp
       def_uconv_convert_if_can('euctou8', 'UTF-8', 'EUC-JP', '-Ew')
     end
-    
+
     def def_to_shift_jis_from_utf_8
       def_uconv_convert_if_can('u8tosjis', 'Shift_JIS', 'UTF-8', '-Ws')
     end
-    
+
     def def_to_utf_8_from_shift_jis
       def_uconv_convert_if_can('sjistou8', 'UTF-8', 'Shift_JIS', '-Sw')
     end
-    
+
     def def_to_euc_jp_from_shift_jis
       require "nkf"
       def_convert do |value|
         "NKF.nkf('-Se', #{value})"
       end
     end
-    
+
     def def_to_shift_jis_from_euc_jp
       require "nkf"
       def_convert do |value|
         "NKF.nkf('-Es', #{value})"
       end
     end
-    
+
     def def_to_euc_jp_from_iso_2022_jp
       require "nkf"
       def_convert do |value|
         "NKF.nkf('-Je', #{value})"
       end
     end
-    
+
     def def_to_iso_2022_jp_from_euc_jp
       require "nkf"
       def_convert do |value|
@@ -139,7 +139,7 @@ module RSS
         "#{value}.unpack('C*').pack('U*')"
       end
     end
-    
+
     def def_to_iso_8859_1_from_utf_8
       def_convert do |value|
         <<-EOC
@@ -156,7 +156,7 @@ module RSS
         EOC
       end
     end
-    
+
   end
-  
+
 end

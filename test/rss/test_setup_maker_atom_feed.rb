@@ -299,7 +299,7 @@ module RSS
     def test_setup_maker
       encoding = "EUC-JP"
       standalone = true
-      
+
       href = 'a.xsl'
       type = 'text/xsl'
       title = 'sample'

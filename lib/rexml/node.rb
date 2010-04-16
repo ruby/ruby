@@ -57,7 +57,7 @@ module REXML
 			}
 		end
 
-		# Find (and return) first subnode (recursively) for which the block 
+		# Find (and return) first subnode (recursively) for which the block
     # evaluates to true. Returns +nil+ if none was found.
 		def find_first_recursive(&block) # :yields: node
       each_recursive {|node|

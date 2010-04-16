@@ -16,7 +16,7 @@ module RUNIT
         def self.name
           "DummyTestCase"
         end
-        
+
         attr_reader :status, :dummy_called, :dummy2_called
 
         def initialize(*arg)
@@ -72,11 +72,11 @@ module RUNIT
         def test_foo
           assert(false)
         end
-        
+
         def test_bar
           assert(true)
         end
-        
+
         def teardown
           raise StandardError
         end

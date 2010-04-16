@@ -47,7 +47,7 @@ class RAABaseServicePortType
     ::SOAP::Mapping::Registry::TypedStructFactory,
     { :type => XSD::QName.new("http://www.ruby-lang.org/xmlns/soap/interface/RAA/0.0.2/", "Owner") }
   )
-  
+
   Methods = [
     ["getAllListings", "getAllListings", [
       ["retval", "return",

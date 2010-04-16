@@ -1,5 +1,5 @@
 #
-#   change-ws.rb - 
+#   change-ws.rb -
 #   	$Release Version: 0.9.5$
 #   	$Revision$
 #   	$Date$
@@ -7,7 +7,7 @@
 #
 # --
 #
-#   
+#
 #
 
 require "irb/cmd/nop.rb"

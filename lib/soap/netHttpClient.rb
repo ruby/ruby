@@ -42,7 +42,7 @@ class NetHttpClient
   def test_loopback_response
     raise NotImplementedError.new("not supported for now")
   end
-  
+
   def proxy=(proxy)
     if proxy.nil?
       @proxy = nil

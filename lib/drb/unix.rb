@@ -8,7 +8,7 @@ module DRb
 
   class DRbUNIXSocket < DRbTCPSocket
     def self.parse_uri(uri)
-      if /^drbunix:(.*?)(\?(.*))?$/ =~ uri 
+      if /^drbunix:(.*?)(\?(.*))?$/ =~ uri
 	filename = $1
 	option = $3
 	[filename, option]
@@ -59,7 +59,7 @@ module DRb
       @server_mode = server_mode
       @acl = nil
     end
-    
+
     # import from tempfile.rb
     Max_try = 10
     private

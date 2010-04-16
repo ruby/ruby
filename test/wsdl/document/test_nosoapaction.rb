@@ -32,12 +32,12 @@ class TestNoSOAPAction < Test::Unit::TestCase
 
       # When no SOAPAction given, latter method(ping) is called.
     end
-  
+
     def ping(arg)
       arg.text = 'ping'
       arg
     end
-  
+
     def ping_with_soapaction(arg)
       arg.text = 'ping_with_soapaction'
       arg

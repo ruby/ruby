@@ -202,10 +202,10 @@ module WEBrick
 
     def set_error(ex, backtrace=false)
       case ex
-      when HTTPStatus::Status 
+      when HTTPStatus::Status
         @keep_alive = false if HTTPStatus::error?(ex.code)
         self.status = ex.code
-      else 
+      else
         @keep_alive = false
         self.status = HTTPStatus::RC_INTERNAL_SERVER_ERROR
       end

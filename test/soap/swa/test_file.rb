@@ -19,7 +19,7 @@ class TestFile < Test::Unit::TestCase
 	'file' => SOAP::Attachment.new(File.open(THIS_FILE)) # closed when GCed.
       }
     end
-  
+
     def put_file(name, file)
       "File '#{name}' was received ok."
     end

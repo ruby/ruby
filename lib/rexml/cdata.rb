@@ -17,7 +17,7 @@ module REXML
 		end
 
 		# Make a copy of this object
-		# 
+		#
 		# _Examples_
 		#  c = CData.new( "Some text" )
 		#  d = c.clone

@@ -30,7 +30,7 @@ module WEBrick
     class Error       < Status; end
     class ClientError < Error; end
     class ServerError < Error; end
-    
+
     class EOFError < StandardError; end
 
     StatusMessage = {

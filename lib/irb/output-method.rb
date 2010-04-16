@@ -1,5 +1,5 @@
 #
-#   output-method.rb - output methods used by irb 
+#   output-method.rb - output methods used by irb
 #   	$Release Version: 0.9.5$
 #   	$Revision$
 #   	$Date$
@@ -7,7 +7,7 @@
 #
 # --
 #
-#   
+#
 #
 
 require "e2mmap"
@@ -40,7 +40,7 @@ module IRB
     # <最小フィールド幅> (\*|\*[1-9][0-9]*\$|[1-9][0-9]*)
     # <精度>.(\*|\*[1-9][0-9]*\$|[1-9][0-9]*|)?
     # #<長さ修正文字>(hh|h|l|ll|L|q|j|z|t)
-    # <変換修正文字>[diouxXeEfgGcsb%] 
+    # <変換修正文字>[diouxXeEfgGcsb%]
     def parse_printf_format(format, opts)
       return format, opts if $1.size % 2 == 1
     end
@@ -52,7 +52,7 @@ module IRB
 	puts [f, p, pp, pos, new_pos, c].join("!")
 	pos = new_pos if new_pos
 	if c == "I"
-	  inspects.push pos.to_i 
+	  inspects.push pos.to_i
 	  (f||"")+(p||"")+(pp||"")+(pos||"")+"s"
 	else
 	  $&

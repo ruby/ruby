@@ -17,7 +17,7 @@ module Generators
       XMLGenerator.new(options)
     end
 
-    
+
     def initialize(*args)
       super
     end
@@ -25,7 +25,7 @@ module Generators
     ##
     # Build the initial indices and output objects
     # based on an array of TopLevel objects containing
-    # the extracted information. 
+    # the extracted information.
 
     def generate(info)
       @info       = info
@@ -70,12 +70,12 @@ module Generators
     # all the information in to one big hash
     #
     def generate_xml
-      values = { 
+      values = {
         'charset' => @options.charset,
         'files'   => gen_into(@files),
         'classes' => gen_into(@classes)
       }
-      
+
       # this method is defined in the template file
       write_extra_pages if defined? write_extra_pages
 
@@ -109,7 +109,7 @@ module Generators
       gen_an_index(HtmlMethod.all_methods, 'Methods')
     end
 
-    
+
     def gen_an_index(collection, title)
       res = []
       collection.sort.each do |f|

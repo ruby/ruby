@@ -36,7 +36,7 @@ module SM
       ListBase::LOWERALPHA =>  [ l("\\begin{enumerate}"), l("\\end{enumerate}"), "\\alph" ],
       ListBase::LABELED => [ l("\\begin{description}"), l("\\end{description}") ],
       ListBase::NOTE    => [
-        l("\\begin{tabularx}{\\linewidth}{@{} l X @{}}"), 
+        l("\\begin{tabularx}{\\linewidth}{@{} l X @{}}"),
         l("\\end{tabularx}") ],
     }
 
@@ -86,7 +86,7 @@ module SM
     end
 
 
-    ## 
+    ##
     # Here's the client side of the visitor pattern
 
     def start_accepting
@@ -225,8 +225,8 @@ module SM
     def convert_string(item)
 
       escape(item).
-      
-      
+
+
       # convert ... to elipsis (and make sure .... becomes .<elipsis>)
         gsub(/\.\.\.\./, '.\ldots{}').gsub(/\.\.\./, '\ldots{}').
 
@@ -270,7 +270,7 @@ module SM
         when 4 then "\\subsubsection{"
         else  "\\paragraph{"
         end +
-        convert_flow(flow) + 
+        convert_flow(flow) +
         "}\n"
     end
 

@@ -23,7 +23,7 @@ module RI
 
     #:stopdoc:
     require 'rbconfig'
-    
+
     DOC_DIR  = "doc/rdoc"
 
     version = Config::CONFIG['ruby_version']

@@ -84,7 +84,7 @@ module SM
       "Special: type=#{type}, text=#{text.dump}"
     end
   end
-  
+
   class AttributeManager
 
     NULL = "\000".freeze
@@ -159,7 +159,7 @@ module SM
       # then non-matching
       unless WORD_PAIR_MAP.empty?
         WORD_PAIR_MAP.each do |regexp, attr|
-          str.gsub!(regexp) { 
+          str.gsub!(regexp) {
             attrs.set_attrs($`.length + $1.length, $2.length, attr)
             NULL*$1.length + $2 + NULL*$3.length
           }
@@ -192,7 +192,7 @@ module SM
     # A \ in front of a character that would normally be
     # processed turns off processing. We do this by turning
     # \< into <#{PROTECT}
-    
+
     PROTECTABLE = [ "<" << "\\" ]  #"
 
 
@@ -209,7 +209,7 @@ module SM
       add_word_pair("*", "*", :BOLD)
       add_word_pair("_", "_", :EM)
       add_word_pair("+", "+", :TT)
-      
+
       add_html("em", :EM)
       add_html("i",  :EM)
       add_html("b",  :BOLD)
@@ -248,7 +248,7 @@ module SM
 
       puts("Before flow, str='#{@str.dump}'") if $DEBUG
       mask_protected_sequences
- 
+
       @attrs = AttrSpan.new(@str.length)
 
       puts("After protecting, str='#{@str.dump}'") if $DEBUG
@@ -290,7 +290,7 @@ module SM
       current_attr = 0
       str = ""
 
-      
+
       str_len = @str.length
 
       # skip leading invisible text
@@ -323,7 +323,7 @@ module SM
           i += 1
         end while i < str_len and @str[i].zero?
       end
-      
+
       # tidy up trailing text
       if start_pos < str_len
         res << copy_string(start_pos, str_len)

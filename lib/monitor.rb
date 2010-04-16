@@ -12,11 +12,11 @@ You can freely distribute/modify this library.
 This is a simple example.
 
   require 'monitor.rb'
-  
+
   buf = []
   buf.extend(MonitorMixin)
   empty_cond = buf.new_cond
-  
+
   # consumer
   Thread.start do
     loop do
@@ -26,7 +26,7 @@ This is a simple example.
       end
     end
   end
-  
+
   # producer
   while line = ARGF.gets
     buf.synchronize do
@@ -41,18 +41,18 @@ reads a line from ARGF and push it to buf, then call
 empty_cond.signal.
 
 =end
-  
+
 
 #
 # Adds monitor functionality to an arbitrary object by mixing the module with
 # +include+.  For example:
 #
 #    require 'monitor.rb'
-#    
+#
 #    buf = []
 #    buf.extend(MonitorMixin)
 #    empty_cond = buf.new_cond
-#    
+#
 #    # consumer
 #    Thread.start do
 #      loop do
@@ -62,7 +62,7 @@ empty_cond.signal.
 #        end
 #      end
 #    end
-#    
+#
 #    # producer
 #    while line = ARGF.gets
 #      buf.synchronize do
@@ -70,7 +70,7 @@ empty_cond.signal.
 #        empty_cond.signal
 #      end
 #    end
-# 
+#
 # The consumer thread waits for the producer thread to push a line
 # to buf while buf.empty?, and the producer thread (main thread)
 # reads a line from ARGF and push it to buf, then call
@@ -85,15 +85,15 @@ module MonitorMixin
   #
   class ConditionVariable
     class Timeout < Exception; end
-    
+
     # Create a new timer with the argument timeout, and add the
     # current thread to the list of waiters.  Then the thread is
-    # stopped.  It will be resumed when a corresponding #signal 
+    # stopped.  It will be resumed when a corresponding #signal
     # occurs.
     def wait(timeout = nil)
       @monitor.instance_eval {mon_check_owner()}
       timer = create_timer(timeout)
-      
+
       Thread.critical = true
       count = @monitor.instance_eval {mon_exit_for_cond()}
       @waiters.push(Thread.current)
@@ -118,7 +118,7 @@ module MonitorMixin
 	end
       end
     end
-    
+
 
     # call #wait while the supplied block returns +true+.
     def wait_while
@@ -126,14 +126,14 @@ module MonitorMixin
 	wait
       end
     end
-    
+
     # call #wait until the supplied block returns +true+.
     def wait_until
       until yield
 	wait
       end
     end
-    
+
     # Wake up and run the next waiter
     def signal
       @monitor.instance_eval {mon_check_owner()}
@@ -143,7 +143,7 @@ module MonitorMixin
       Thread.critical = false
       Thread.pass
     end
-    
+
     # Wake up all the waiters.
     def broadcast
       @monitor.instance_eval {mon_check_owner()}
@@ -155,11 +155,11 @@ module MonitorMixin
       Thread.critical = false
       Thread.pass
     end
-    
+
     def count_waiters
       return @waiters.length
     end
-    
+
     private
 
     def initialize(monitor)
@@ -181,12 +181,12 @@ module MonitorMixin
       end
     end
   end
-  
+
   def self.extend_object(obj)
     super(obj)
     obj.instance_eval {mon_initialize()}
   end
-  
+
   #
   # Attempts to enter exclusive section.  Returns +false+ if lock fails.
   #
@@ -216,7 +216,7 @@ module MonitorMixin
   ensure
     Thread.critical = false
   end
-  
+
   #
   # Leaves exclusive section.
   #
@@ -245,10 +245,10 @@ module MonitorMixin
     end
   end
   alias synchronize mon_synchronize
-  
+
   #
   # FIXME: This isn't documented in Nutshell.
-  # 
+  #
   # Create a new condition variable for this monitor.
   # This facilitates control of the monitor with #signal and #wait.
   #
@@ -316,7 +316,7 @@ end
 # Monitors provide means of mutual exclusion for Thread programming.
 # A critical region is created by means of the synchronize method,
 # which takes a block.
-# The condition variables (created with #new_cond) may be used 
+# The condition variables (created with #new_cond) may be used
 # to control the execution of a monitor with #signal and #wait.
 #
 # the Monitor class wraps MonitorMixin, and provides aliases

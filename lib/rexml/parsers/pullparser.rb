@@ -68,7 +68,7 @@ module REXML
         event = @parser.pull
         case event[0]
         when :entitydecl
-          @entities[ event[1] ] = 
+          @entities[ event[1] ] =
             event[2] unless event[2] =~ /PUBLIC|SYSTEM/
         when :text
           unnormalized = @parser.unnormalize( event[1], @entities )

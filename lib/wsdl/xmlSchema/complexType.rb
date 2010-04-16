@@ -45,7 +45,7 @@ class ComplexType < Info
   def elementformdefault
     parent.elementformdefault
   end
- 
+
   AnyAsElement = Element.new(XSD::QName.new(nil, 'any'), XSD::AnyTypeName)
   def each_element
     if content

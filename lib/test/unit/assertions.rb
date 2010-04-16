@@ -42,7 +42,7 @@ module Test
       #   end
 
       public
-      def assert_block(message="assert_block failed.") # :yields: 
+      def assert_block(message="assert_block failed.") # :yields:
         _wrap_assertion do
           if (! yield)
             raise AssertionFailedError.new(message.to_s)
@@ -355,7 +355,7 @@ EOT
       end
 
       ##
-      # Passes if +regexp+ !~ +string+ 
+      # Passes if +regexp+ !~ +string+
       #
       # Example:
       #   assert_no_match(/two/, 'one 2 three')
@@ -500,7 +500,7 @@ EOT
           return yield
         end
       end
-      
+
       ##
       # Called whenever an assertion is made.  Define this in classes that
       # include Test::Unit::Assertions to record assertion counts.
@@ -517,7 +517,7 @@ EOT
       def self.use_pp=(value)
         AssertionMessage.use_pp = value
       end
-      
+
       # :stopdoc:
 
       class AssertionMessage
@@ -530,7 +530,7 @@ EOT
           def initialize(value)
             @value = value
           end
-          
+
           def inspect
             @value.to_s
           end
@@ -604,7 +604,7 @@ EOM
         def to_s
           message_parts = []
           if (@head)
-            head = @head.to_s 
+            head = @head.to_s
             unless(head.empty?)
               message_parts << add_period(head)
             end

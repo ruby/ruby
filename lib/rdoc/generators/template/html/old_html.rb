@@ -22,7 +22,7 @@ module RDoc
 #   entry in the array is itself a hash. These are used to generate
 #   lists using the START: construct. For example, given a hash
 #   containing
-# 
+#
 #      { 'people' => [ { 'name' => 'Fred', 'age' => '12' },
 #                      { 'name' => 'Mary', 'age' => '21' } ]
 #
@@ -46,7 +46,7 @@ module RDoc
 # [*STYLE*]  a CSS section (without the <style> or comments). This is
 #            used to generate a style.css file
 #
-# [*BODY*] 
+# [*BODY*]
 #   The main body of all non-index RDoc pages. BODY will contain
 #   two !INCLUDE!s. The first is used to include a document-type
 #   specific header (FILE_PAGE or CLASS_PAGE). The second include
@@ -73,19 +73,19 @@ module RDoc
 #       an optional list of %aref%/%name%, one for each method
 #       documented on this page. This is intended to be an index.
 #
-#   %attributes%::  
+#   %attributes%::
 #       An optional list. For each attribute it contains:
 #       %name%::   the attribute name
 #       %rw%::     r/o, w/o, or r/w
 #       %a_desc%:: description of the attribute
 #
-#   %classlist%:: 
+#   %classlist%::
 #       An optional string containing an already-formatted list of
 #       classes and modules documented in this file
 #
 #   For FILE_PAGE entries, the body will be passed
 #
-#   %short_name%::  
+#   %short_name%::
 #       The name of the file
 #
 #   %full_path%::
@@ -115,7 +115,7 @@ module RDoc
 #   For both files and classes, the body is passed the following information
 #   on includes and methods:
 #
-#   %includes%::    
+#   %includes%::
 #       Optional list of included modules. For each, it receives
 #       %aref%:: optional URL to RDoc page for the module
 #       %name%:: the name of the module
@@ -155,7 +155,7 @@ module RDoc
 #
 # [*INDEX*]
 #         The top-level index page. For a browser-like environment
-#         define a frame set that includes the file, class, and 
+#         define a frame set that includes the file, class, and
 #         method indices. Passed
 #         %title%:: title of page
 #         %initial_page% :: url of initial page to display
@@ -186,7 +186,7 @@ module Page
 FONTS = "Verdana, Arial, Helvetica, sans-serif"
 
 STYLE = %{
-body,td,p { font-family: %fonts%; 
+body,td,p { font-family: %fonts%;
        color: #000040;
 }
 
@@ -198,7 +198,7 @@ body,td,p { font-family: %fonts%;
 
 .big-title-font { color: white;
                   font-family: %fonts%;
-                  font-size: large; 
+                  font-size: large;
                   height: 50px}
 
 .small-title-font { color: aqua;
@@ -250,7 +250,7 @@ body,td,p { font-family: %fonts%;
   font-size: medium;
   text-decoration: none;
   color: #0000AA;
-  background: white; 
+  background: white;
 }
 
 .paramsig {
@@ -308,7 +308,7 @@ HEADER = %{
   <script type="text/javascript" language="JavaScript">
   <!--
   function popCode(url) {
-    window.open(url, "Code", 
+    window.open(url, "Code",
           "resizable=yes,scrollbars=yes,toolbar=no,status=no,height=150,width=400")
   }
   //-->
@@ -594,10 +594,10 @@ FILE_INDEX = %{
 <!--
   body {
 background-color: #ddddff;
-     font-family: #{FONTS}; 
-       font-size: 11px; 
+     font-family: #{FONTS};
+       font-size: 11px;
       font-style: normal;
-     line-height: 14px; 
+     line-height: 14px;
            color: #000040;
   }
 div.banner {
@@ -671,7 +671,7 @@ IF:aref
 ENDIF:aref
 IFNOT:aref
 <li>%name%</li>
-ENDIF:aref 
+ENDIF:aref
 END:requires
 </ul>
 ENDIF:requires
@@ -694,7 +694,7 @@ IF:aref
 ENDIF:aref
 IFNOT:aref
 <li>%name%</li>
-ENDIF:aref 
+ENDIF:aref
 END:includes
 </ul>
 ENDIF:includes

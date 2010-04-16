@@ -13,7 +13,7 @@ class TestDocument < Test::Unit::TestCase
     def on_init
       add_document_method(self, 'urn:example.com:document#submit', 'submit', XSD::QName.new(Namespace, 'ruby'), XSD::QName.new(Namespace, 'ruby'))
     end
-  
+
     def submit(ruby)
       ruby
     end

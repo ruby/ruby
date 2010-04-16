@@ -10,7 +10,7 @@ module RSS
         ::RSS::Parser.parse(rss, false).validate
       end
     end
-    
+
     def assert_ns(prefix, uri)
       _wrap_assertion do
         begin
@@ -22,7 +22,7 @@ module RSS
         end
       end
     end
-    
+
     def assert_missing_tag(tag, parent)
       _wrap_assertion do
         begin
@@ -34,7 +34,7 @@ module RSS
         end
       end
     end
-    
+
     def assert_too_much_tag(tag, parent)
       _wrap_assertion do
         begin
@@ -46,7 +46,7 @@ module RSS
         end
       end
     end
-    
+
     def assert_missing_attribute(tag, attrname)
       _wrap_assertion do
         begin
@@ -58,7 +58,7 @@ module RSS
         end
       end
     end
-    
+
     def assert_not_expected_tag(tag, uri, parent)
       _wrap_assertion do
         begin
@@ -71,7 +71,7 @@ module RSS
         end
       end
     end
-    
+
     def assert_not_available_value(tag, value, attribute=nil)
       _wrap_assertion do
         begin
@@ -97,7 +97,7 @@ module RSS
         end
       end
     end
-    
+
     def assert_xml_declaration(version, encoding, standalone, rss)
       _wrap_assertion do
         assert_equal(version, rss.version)
@@ -105,7 +105,7 @@ module RSS
         assert_equal(standalone, rss.standalone)
       end
     end
-    
+
     def assert_xml_stylesheet_attrs(attrs, xsl)
       _wrap_assertion do
         n_attrs = normalized_attrs(attrs)
@@ -114,7 +114,7 @@ module RSS
         end
       end
     end
-    
+
     def assert_xml_stylesheet(target, attrs, xsl)
       _wrap_assertion do
         if attrs.has_key?(:href)
@@ -129,7 +129,7 @@ module RSS
         end
       end
     end
-    
+
     def assert_xml_stylesheet_pis(attrs_ary, rss=nil)
       _wrap_assertion do
         if rss.nil?
@@ -800,7 +800,7 @@ EOA
         end
       end
     end
-    
+
     def assert_multiple_dublin_core(elems, target)
       _wrap_assertion do
         elems.each do |name, values, plural|
@@ -810,7 +810,7 @@ EOA
         end
       end
     end
-    
+
     def assert_syndication(elems, target)
       _wrap_assertion do
         elems.each do |name, value|
@@ -820,7 +820,7 @@ EOA
         end
       end
     end
-    
+
     def assert_content(elems, target)
       _wrap_assertion do
         elems.each do |name, value|
@@ -828,7 +828,7 @@ EOA
         end
       end
     end
-    
+
     def assert_trackback(attrs, target)
       _wrap_assertion do
         n_attrs = normalized_attrs(attrs)

@@ -8,13 +8,13 @@ require 'win32/registry'
 module Win32
   module Resolv
     API = Registry::API
-    
+
     def self.get_hosts_path
       path = get_hosts_dir
       path = File.expand_path('hosts', path)
       File.exist?(path) ? path : nil
     end
-    
+
     def self.get_resolv_info
       search, nameserver = get_info
       if search.empty?
@@ -42,7 +42,7 @@ if info.unpack('V5')[4] == 2  # VER_PLATFORM_WIN32_NT
 #====================================================================
   module_eval <<-'__EOS__', __FILE__, __LINE__+1
     TCPIP_NT = 'SYSTEM\CurrentControlSet\Services\Tcpip\Parameters'
-    
+
     class << self
       private
       def get_hosts_dir
@@ -50,7 +50,7 @@ if info.unpack('V5')[4] == 2  # VER_PLATFORM_WIN32_NT
           reg.read_s_expand('DataBasePath')
         end
       end
-      
+
       def get_info
         search = nil
         nameserver = []
@@ -60,7 +60,7 @@ if info.unpack('V5')[4] == 2  # VER_PLATFORM_WIN32_NT
             search = slist.split(/,\s*/) unless slist.empty?
           rescue Registry::Error
           end
-          
+
           if add_search = search.nil?
             search = []
             begin
@@ -76,7 +76,7 @@ if info.unpack('V5')[4] == 2  # VER_PLATFORM_WIN32_NT
             rescue Registry::Error
             end
           end
-          
+
           reg.open('Interfaces') do |reg|
             reg.each_key do |iface,|
               reg.open(iface) do |regif|
@@ -90,7 +90,7 @@ if info.unpack('V5')[4] == 2  # VER_PLATFORM_WIN32_NT
                   end
                 rescue Registry::Error
                 end
-                
+
                 if add_search
                   begin
                     [ 'Domain', 'DhcpDomain' ].each do |key|
@@ -120,16 +120,16 @@ else
     TCPIP_9X = 'SYSTEM\CurrentControlSet\Services\VxD\MSTCP'
     DHCP_9X = 'SYSTEM\CurrentControlSet\Services\VxD\DHCP'
     WINDOWS = 'Software\Microsoft\Windows\CurrentVersion'
-    
+
     class << self
    #   private
-      
+
       def get_hosts_dir
         Registry::HKEY_LOCAL_MACHINE.open(WINDOWS) do |reg|
           reg.read_s_expand('SystemRoot')
         end
       end
-      
+
       def get_info
         search = []
         nameserver = []
@@ -146,13 +146,13 @@ else
           end
         rescue Registry::Error
         end
-        
+
         dhcpinfo = get_dhcpinfo
         search.concat(dhcpinfo[0])
         nameserver.concat(dhcpinfo[1])
         [ search, nameserver ]
       end
-      
+
       def get_dhcpinfo
         macaddrs = {}
         ipaddrs = {}
@@ -161,7 +161,7 @@ else
           ipaddr.each { |ipaddr| ipaddrs[ipaddr] = 1 }
         end
         iflist = [ macaddrs, ipaddrs ]
-        
+
         search = []
         nameserver = []
         version = -1
@@ -170,7 +170,7 @@ else
             version = API.unpackdw(reg.read_bin("Version"))
           rescue Registry::Error
           end
-          
+
           reg.each_key do |key,|
             catch(:not_used) do
               reg.open(key) do |regdi|
@@ -183,7 +183,7 @@ else
         end
         [ search, nameserver ]
       end
-      
+
       def get_dhcpinfo_95(reg)
         dhcp = reg.read_bin("DhcpInfo")
         [
@@ -194,7 +194,7 @@ else
           reg.read_bin("OptionInfo"),
         ]
       end
-      
+
       def get_dhcpinfo_98(reg)
         [
           API.unpackdw(reg.read_bin("DhcpIPAddress")),
@@ -204,7 +204,7 @@ else
           reg.read_bin("OptionInfo"),
         ]
       end
-      
+
       def get_dhcpinfo_key(version, reg, iflist)
         info = case version
                when 1
@@ -225,7 +225,7 @@ else
           macaddr and macaddr.size == 6 and
           hwtype == 1 and
           iflist[0][macaddr] and iflist[1][ipaddr]
-        
+
         size = opt.size
         idx = 0
         while idx <= size
@@ -249,11 +249,11 @@ else
         throw :not_used
       end
     end
-    
+
     module WsControl
       WsControl = Win32API.new('wsock32.dll', 'WsControl', 'LLPPPP', 'L')
       WSAGetLastError = Win32API.new('wsock32.dll', 'WSAGetLastError', 'V', 'L')
-      
+
       MAX_TDI_ENTITIES = 512
       IPPROTO_TCP = 6
       WSCTL_TCP_QUERY_INFORMATION = 0
@@ -269,7 +269,7 @@ else
       IF_MIB = 0x202
       IF_MIB_STATS_ID = 1
       IP_MIB_ADDRTABLE_ENTRY_ID = 0x102
-      
+
       def self.wsctl(tei_entity, tei_instance,
                      toi_class, toi_type, toi_id,
                      buffsize)
@@ -295,7 +295,7 @@ else
         [ buff, API.unpackdw(buffsize) ]
       end
       private_class_method :wsctl
-      
+
       def self.get_iflist
         # Get TDI Entity List
         entities, size =
@@ -332,7 +332,7 @@ else
             end
           end
         end
-        
+
         # Get IP Addresses
         entities.each do |entity, instance|
           if entity == CL_NL_ENTITY

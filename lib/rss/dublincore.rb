@@ -25,7 +25,7 @@ module RSS
           def #{full_name}
             @#{full_name}.first and @#{full_name}.first.value
           end
-          
+
           def #{full_name}=(new_value)
             @#{full_name}[0] = Utils.new_with_value_if_need(#{klass_name}, new_value)
           end
@@ -50,7 +50,7 @@ module RSS
       EOC
     end
   end
-  
+
   module DublinCoreModel
 
     extend BaseModel
@@ -76,26 +76,26 @@ module RSS
     DATE_ELEMENTS = {
       "date" => "w3cdtf",
     }
-    
+
     ELEMENT_NAME_INFOS = DublinCoreModel::TEXT_ELEMENTS.to_a
     DublinCoreModel::DATE_ELEMENTS.each do |name, |
       ELEMENT_NAME_INFOS << [name, nil]
     end
-    
+
     ELEMENTS = TEXT_ELEMENTS.keys + DATE_ELEMENTS.keys
 
     ELEMENTS.each do |name, plural_name|
       module_eval(<<-EOC, *get_file_and_line_from_caller(0))
         class DublinCore#{Utils.to_class_name(name)} < Element
           include RSS10
-          
+
           content_setup
 
           class << self
             def required_prefix
               DC_PREFIX
             end
-        
+
             def required_uri
               DC_URI
             end
@@ -105,7 +105,7 @@ module RSS
 
           alias_method(:value, :content)
           alias_method(:value=, :content=)
-          
+
           def initialize(*args)
             if Utils.element_initialize_arguments?(args)
               super
@@ -114,7 +114,7 @@ module RSS
               self.content = args[0]
             end
           end
-      
+
           def full_name
             tag_name_with_prefix(DC_PREFIX)
           end

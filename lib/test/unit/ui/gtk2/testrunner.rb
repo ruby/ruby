@@ -189,7 +189,7 @@ module Test
             end
           end
           private :run_count_label
-          
+
           def info_panel
             lazy_initialize(:info_panel) do
               @info_panel = Gtk::HBox.new(false, 0)
@@ -213,7 +213,7 @@ module Test
             end
           end # def green_style
           private :green_style
-          
+
           def red_style
             lazy_initialize(:red_style) do
               @red_style = Gtk::Style.new
@@ -221,7 +221,7 @@ module Test
             end
           end # def red_style
           private :red_style
-          
+
           def test_progress_bar
             lazy_initialize(:test_progress_bar) {
               @test_progress_bar = Gtk::ProgressBar.new
@@ -233,7 +233,7 @@ module Test
             }
           end # def test_progress_bar
           private :test_progress_bar
-          
+
           def progress_panel
             lazy_initialize(:progress_panel) do
               @progress_panel = Gtk::HBox.new(false, 10)

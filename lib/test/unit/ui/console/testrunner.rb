@@ -50,11 +50,11 @@ module Test
             end
             output("Loaded suite #{suite_name}")
           end
-          
+
           def create_mediator(suite)
             return TestRunnerMediator.new(suite)
           end
-          
+
           def attach_to_mediator
             @mediator.add_listener(TestResult::FAULT, &method(:add_fault))
             @mediator.add_listener(TestRunnerMediator::STARTED, &method(:started))
@@ -62,22 +62,22 @@ module Test
             @mediator.add_listener(TestCase::STARTED, &method(:test_started))
             @mediator.add_listener(TestCase::FINISHED, &method(:test_finished))
           end
-          
+
           def start_mediator
             return @mediator.run_suite
           end
-          
+
           def add_fault(fault)
             @faults << fault
             output_single(fault.single_character_display, PROGRESS_ONLY)
             @already_outputted = true
           end
-          
+
           def started(result)
             @result = result
             output("Started")
           end
-          
+
           def finished(elapsed_time)
             nl
             output("Finished in #{elapsed_time} seconds.")
@@ -88,31 +88,31 @@ module Test
             nl
             output(@result)
           end
-          
+
           def test_started(name)
             output_single(name + ": ", VERBOSE)
           end
-          
+
           def test_finished(name)
             output_single(".", PROGRESS_ONLY) unless (@already_outputted)
             nl(VERBOSE)
             @already_outputted = false
           end
-          
+
           def nl(level=NORMAL)
             output("", level)
           end
-          
+
           def output(something, level=NORMAL)
             @io.puts(something) if (output?(level))
             @io.flush
           end
-          
+
           def output_single(something, level=NORMAL)
             @io.write(something) if (output?(level))
             @io.flush
           end
-          
+
           def output?(level)
             level <= @output_level
           end

@@ -67,10 +67,10 @@ class Test_DateTime < Test::Unit::TestCase
 
   def test_set_exception
     dt = createDateTime()
-    
+
     assert_raises(ArgumentError)    { dt.year = 4.5 }
     assert_nothing_raised(ArgumentError) { dt.year = -2000 }
- 
+
     assert_raises(ArgumentError) { dt.month = 0 }
     assert_raises(ArgumentError) { dt.month = 13 }
     assert_nothing_raised(ArgumentError) { dt.month = 7 }
@@ -99,7 +99,7 @@ class Test_DateTime < Test::Unit::TestCase
   def test_to_a
     y, m, d, h, mi, s = 1970, 3, 24, 12, 0, 5
     dt = XMLRPC::DateTime.new(y, m, d, h, mi, s)
-    a = dt.to_a 
+    a = dt.to_a
 
     assert_instance_of(Array, a)
     assert_equal(6,  a.size, "Returned array has wrong size")
@@ -115,8 +115,8 @@ class Test_DateTime < Test::Unit::TestCase
   def test_to_time1
     y, m, d, h, mi, s = 1970, 3, 24, 12, 0, 5
     dt = XMLRPC::DateTime.new(y, m, d, h, mi, s)
-    time = dt.to_time 
-    
+    time = dt.to_time
+
     assert_not_nil(time)
 
     assert_equal(y,  time.year)
@@ -130,15 +130,15 @@ class Test_DateTime < Test::Unit::TestCase
   def test_to_time2
     dt = createDateTime()
     dt.year = 1969
-    
+
     assert_nil(dt.to_time)
   end
 
   def test_to_date1
     y, m, d, h, mi, s = 1970, 3, 24, 12, 0, 5
     dt = XMLRPC::DateTime.new(y, m, d, h, mi, s)
-    date = dt.to_date 
- 
+    date = dt.to_date
+
     assert_equal(y, date.year)
     assert_equal(m, date.month)
     assert_equal(d, date.day)
@@ -147,7 +147,7 @@ class Test_DateTime < Test::Unit::TestCase
   def test_to_date2
     dt = createDateTime()
     dt.year = 666
-    
+
     assert_equal(666, dt.to_date.year)
   end
 

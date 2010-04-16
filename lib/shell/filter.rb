@@ -1,5 +1,5 @@
 #
-#   shell/filter.rb - 
+#   shell/filter.rb -
 #   	$Release Version: 0.6.0 $
 #   	$Revision$
 #   	$Date$
@@ -7,7 +7,7 @@
 #
 # --
 #
-#   
+#
 #
 
 class Shell
@@ -29,7 +29,7 @@ class Shell
     def input=(filter)
       @input = filter
     end
-    
+
     def each(rs = nil)
       rs = @shell.record_separator unless rs
       if @input

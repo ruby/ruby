@@ -14,7 +14,7 @@ IF:requires
       <required-file-list>
 START:requires
          <required-file name="%name%"
-IF:aref 
+IF:aref
                         href="%aref%"
 ENDIF:aref
          />
@@ -90,7 +90,7 @@ START:classes
   <%classmod% name="%full_name%" id="%full_name%">
     <classmod-info>
 IF:infiles
-      <infiles>      
+      <infiles>
 START:infiles
         <infile>HREF:full_path_url:full_path:</infile>
 END:infiles

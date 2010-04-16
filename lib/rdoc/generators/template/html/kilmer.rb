@@ -5,7 +5,7 @@ module Page
 FONTS = "Verdana, Arial, Helvetica, sans-serif"
 
 STYLE = %{
-body,td,p { font-family: %fonts%; 
+body,td,p { font-family: %fonts%;
        color: #000040;
 }
 
@@ -15,11 +15,11 @@ body,td,p { font-family: %fonts%;
              color:      #000010;
 }
 
-.big-title-font { 
+.big-title-font {
   color: black;
   font-weight: bold;
-  font-family: %fonts%; 
-  font-size: large; 
+  font-family: %fonts%;
+  font-size: large;
   height: 60px;
   padding: 10px 3px 10px 3px;
 }
@@ -31,7 +31,7 @@ body,td,p { font-family: %fonts%;
 .aqua { color: black }
 
 .method-name, .attr-name {
-      font-family: font-family: %fonts%; 
+      font-family: font-family: %fonts%;
       font-weight: bold;
       font-size: small;
       margin-left: 20px;
@@ -67,7 +67,7 @@ body,td,p { font-family: %fonts%;
   font-weight: bold;
   text-decoration: none;
   color: #000033;
-  background-color: white; 
+  background-color: white;
 }
 
 .srclink {
@@ -147,7 +147,7 @@ IF:sectitle
 IF:seccomment
       <div class="section-comment">
         %seccomment%
-      </div>      
+      </div>
 ENDIF:seccomment
 ENDIF:sectitle
 
@@ -355,10 +355,10 @@ FILE_INDEX = %{
 <!--
   body {
 background-color: #ddddff;
-     font-family: #{FONTS}; 
-       font-size: 11px; 
+     font-family: #{FONTS};
+       font-size: 11px;
       font-style: normal;
-     line-height: 14px; 
+     line-height: 14px;
            color: #000040;
   }
 div.banner {
@@ -372,7 +372,7 @@ div.banner {
   text-align: center;
   width: 100%;
 }
-  
+
 -->
 </style>
 <base target="docwin">

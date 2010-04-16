@@ -1,5 +1,5 @@
 #
-#   irb/lib/tracer.rb - 
+#   irb/lib/tracer.rb -
 #   	$Release Version: 0.9.5$
 #   	$Revision$
 #   	$Date$
@@ -7,7 +7,7 @@
 #
 # --
 #
-#   
+#
 #
 require "tracer"
 
@@ -44,7 +44,7 @@ module IRB
     alias __evaluate__ evaluate
     def evaluate(context, statements, file = nil, line = nil)
       if context.use_tracer? && file != nil && line != nil
-	Tracer.on 
+	Tracer.on
 	begin
 	  __evaluate__(context, statements, file, line)
 	ensure
@@ -58,4 +58,4 @@ module IRB
 
   IRB.initialize_tracer
 end
-	
+

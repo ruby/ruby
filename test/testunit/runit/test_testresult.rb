@@ -10,21 +10,21 @@ module RUNIT
   class TestTestResult < RUNIT::TestCase
     def setup
       @result = RUNIT::TestResult.new
-      
+
       @normal_suite = Class::new(RUNIT::TestCase) do
         def test_1
           assert(true)
           assert(true)
         end
       end.suite
-      
+
       @failure_suite = Class::new(RUNIT::TestCase) do
         def test_1
           assert(true)
           assert(false)
         end
       end.suite
-      
+
       @error_suite = Class::new(RUNIT::TestCase) do
         def setup
           raise ScriptError
@@ -33,7 +33,7 @@ module RUNIT
           assert(true)
         end
       end.suite
-      
+
       @multi_failure_suite = Class::new(RUNIT::TestCase) do
         def test1
           assert(false)
@@ -45,13 +45,13 @@ module RUNIT
           assert(false)
         end
       end.suite
-      
+
       @with_error_suite = Class::new(RUNIT::TestCase) do
         def test1
           raise StandardError
         end
       end.suite
-      
+
       @multi_error_suite = Class::new(RUNIT::TestCase) do
         def test1
           raise StandardError
@@ -63,7 +63,7 @@ module RUNIT
           raise StandardError
         end
       end.suite
-      
+
       @multi_suite = Class::new(RUNIT::TestCase) do
         def test_1
           assert(true)
@@ -132,7 +132,7 @@ module RUNIT
       assert_equal(0, @result.run_tests)
       @normal_suite.run(@result)
       assert_equal(1, @result.run_tests)
-      @multi_suite.run(@result) 
+      @multi_suite.run(@result)
       assert_equal(4, @result.run_tests)
     end
 

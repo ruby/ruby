@@ -48,7 +48,7 @@ module REXML
     # UNTESTED
     def Functions::local_name( node_set=nil )
       get_namespace( node_set ) do |node|
-        return node.local_name 
+        return node.local_name
       end
     end
 
@@ -57,7 +57,7 @@ module REXML
     end
 
     def Functions::name( node_set=nil )
-      get_namespace( node_set ) do |node| 
+      get_namespace( node_set ) do |node|
         node.expanded_name
       end
     end
@@ -66,7 +66,7 @@ module REXML
     def Functions::get_namespace( node_set = nil )
       if node_set == nil
         yield @@context[:node] if defined? @@context[:node].namespace
-      else  
+      else
         if node_set.respond_to? :each
           node_set.each { |node| yield node if defined? node.namespace }
         elsif node_set.respond_to? :namespace
@@ -81,15 +81,15 @@ module REXML
     #
     # A number is converted to a string as follows
     #
-    # NaN is converted to the string NaN 
+    # NaN is converted to the string NaN
     #
-    # positive zero is converted to the string 0 
+    # positive zero is converted to the string 0
     #
-    # negative zero is converted to the string 0 
+    # negative zero is converted to the string 0
     #
-    # positive infinity is converted to the string Infinity 
+    # positive infinity is converted to the string Infinity
     #
-    # negative infinity is converted to the string -Infinity 
+    # negative infinity is converted to the string -Infinity
     #
     # if the number is an integer, the number is represented in decimal form
     # as a Number with no decimal point and no leading zeros, preceded by a
@@ -156,7 +156,7 @@ module REXML
       string(string).include?(string(test))
     end
 
-    # Kouhei fixed this 
+    # Kouhei fixed this
     def Functions::substring_before( string, test )
       ruby_string = string(string)
       ruby_index = ruby_string.index(string(test))
@@ -166,7 +166,7 @@ module REXML
         ruby_string[ 0...ruby_index ]
       end
     end
- 
+
     # Kouhei fixed this too
     def Functions::substring_after( string, test )
       ruby_string = string(string)
@@ -175,11 +175,11 @@ module REXML
       ""
     end
 
-    # Take equal portions of Mike Stok and Sean Russell; mix 
+    # Take equal portions of Mike Stok and Sean Russell; mix
     # vigorously, and pour into a tall, chilled glass.  Serves 10,000.
     def Functions::substring( string, start, length=nil )
       ruby_string = string(string)
-      ruby_length = if length.nil? 
+      ruby_length = if length.nil?
                       ruby_string.length.to_f
                     else
                       number(length)
@@ -188,15 +188,15 @@ module REXML
 
       # Handle the special cases
       return '' if (
-        ruby_length.nan? or 
+        ruby_length.nan? or
         ruby_start.nan? or
         ruby_start.infinite?
       )
 
       infinite_length = ruby_length.infinite? == 1
       ruby_length = ruby_string.length if infinite_length
-        
-      # Now, get the bounds.  The XPath bounds are 1..length; the ruby bounds 
+
+      # Now, get the bounds.  The XPath bounds are 1..length; the ruby bounds
       # are 0..length.  Therefore, we have to offset the bounds by one.
       ruby_start = ruby_start.round - 1
       ruby_length = ruby_length.round
@@ -247,7 +247,7 @@ module REXML
       0.upto(from.length - 1) { |pos|
         from_char = from[pos]
         unless map.has_key? from_char
-          map[from_char] = 
+          map[from_char] =
           if pos < to.length
             to[pos]
           else
@@ -353,7 +353,7 @@ module REXML
       nodes = [nodes] unless nodes.kind_of? Array
       nodes.inject(0) { |r,n| r += number(string(n)) }
     end
-    
+
     def Functions::floor( number )
       number(number).floor
     end

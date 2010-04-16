@@ -103,11 +103,11 @@ class OpenSSL::TestCipher < Test::Unit::TestCase
 
   if RUBY_PLATFORM =~ /java/
     # JRuby extension - using Java padding types
-    
+
     def test_disable_padding_javastyle
       test_disable_padding('NoPadding')
     end
-  
+
     def test_iso10126_padding
       @c1.encrypt
       @c1.key = @key
@@ -174,7 +174,7 @@ class OpenSSL::TestCipher < Test::Unit::TestCase
     c1.key = key
     e = c1.update data
     e << c1.final
-    
+
     c2 = OpenSSL::Cipher::Cipher.new("DES-CBC")
     c2.padding = 0
     c2.iv = "0" * 8

@@ -401,7 +401,7 @@ private
       params = {}
       idx = 0
       method.input_params.each do |name|
-        params[name] = Mapping.obj2soap(values[idx], mapping_registry, 
+        params[name] = Mapping.obj2soap(values[idx], mapping_registry,
           XSD::QName.new(nil, name), opt)
         idx += 1
       end
