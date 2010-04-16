@@ -16,8 +16,10 @@ with all sufficient information, see the ChangeLog file.
   * Array
     * new method:
       * Array#keep_if
-      * Array#rotate!
+      * Array#repeated_combination
+      * Array#repeated_permutation
       * Array#rotate
+      * Array#rotate!
       * Array#select!
       * Array#sort_by!
 
