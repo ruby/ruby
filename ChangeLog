@@ -1,3 +1,8 @@
+Fri Apr 16 16:51:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/file2lastrev.rb (VCS::SVN::get_revisions.): remind about
+	  DOSISH, sometimes.
+
 Fri Apr 16 16:15:40 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_repeated_permutation): new method added. a patch

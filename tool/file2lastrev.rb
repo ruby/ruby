@@ -61,8 +61,8 @@ class VCS
 
     def self.get_revisions(path)
       begin
-        nulldevice = '/dev/null'
-        if File.exist? nulldevice
+        nulldevice = %w[/dev/null NUL NIL: NL:].find {|dev| File.exist?(dev)}
+        if nulldevice
           save_stderr = STDERR.dup
           STDERR.reopen nulldevice, 'w'
         end
