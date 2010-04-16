@@ -7,7 +7,7 @@ module Psych
   # called, respectively.
   class Coder
     attr_accessor :tag, :style, :implicit
-    attr_reader   :type, :scalar, :seq
+    attr_reader   :type, :seq
 
     def initialize tag
       @map        = {}
@@ -17,6 +17,15 @@ module Psych
       @tag        = tag
       @style      = Psych::Nodes::Mapping::BLOCK
       @scalar     = nil
+    end
+
+    def scalar *args
+      if args.length > 0
+        warn "#{caller[0]}: Coder#scalar(a,b,c) is deprecated" if $VERBOSE
+        @tag, @scalar, _ = args
+        @type = :scalar
+      end
+      @scalar
     end
 
     # Emit a map.  The coder will be yielded to the block.

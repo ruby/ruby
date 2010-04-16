@@ -182,9 +182,7 @@ module Psych
           plain = !quote
         end
 
-        ivars = o.respond_to?(:to_yaml_properties) ?
-          o.to_yaml_properties :
-          o.instance_variables
+        ivars = find_ivars o
 
         scalar = create_scalar str, nil, tag, plain, quote
 
@@ -251,6 +249,19 @@ module Psych
       end
 
       private
+      # FIXME: remove this method once "to_yaml_properties" is removed
+      def find_ivars target
+        m = target.method(:to_yaml_properties)
+        unless m.source_location.first.start_with?(Psych::DEPRECATED)
+          if $VERBOSE
+            warn "to_yaml_properties is deprecated, please implement \"encode_with(coder)\""
+          end
+          return target.to_yaml_properties
+        end
+
+        target.instance_variables
+      end
+
       def append o
         @stack.last.children << o
         o
@@ -295,9 +306,7 @@ module Psych
       end
 
       def dump_ivars target, map
-        ivars = target.respond_to?(:to_yaml_properties) ?
-          target.to_yaml_properties :
-          target.instance_variables
+        ivars = find_ivars target
 
         ivars.each do |iv|
           map.children << create_scalar("#{iv.to_s.sub(/^@/, '')}")

@@ -1,6 +1,8 @@
 require 'date'
 
 module Psych
+  DEPRECATED = __FILE__ # :nodoc:
+
   module DeprecatedMethods # :nodoc:
     attr_accessor :taguri
     attr_accessor :to_yaml_style
@@ -17,5 +19,11 @@ module Psych
       block.call coder
     end
     target.psych_to_yaml unless opts[:nodump]
+  end
+end
+
+class Object
+  def to_yaml_properties # :nodoc:
+    instance_variables
   end
 end
