@@ -76,7 +76,7 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
     range = nil
     bug2593 = '[ruby-dev:40030]'
 
-    TestWEBrick.start_httpserver(config) do |server, addr, port|
+    TestWEBrick.start_httpserver(config) do |server, addr, port, log|
       http = Net::HTTP.new(addr, port)
       req = Net::HTTP::Get.new("/")
       http.request(req){|res|

@@ -1,3 +1,8 @@
+Sat Apr 17 07:01:31 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/webrick/utils.rb (TestWEBrick#start_server): add log for
+	  test_filehandler.rb
+
 Wed Apr 14 17:53:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (appendline): should terminate.
