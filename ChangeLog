@@ -1,3 +1,9 @@
+Sat Apr 17 05:30:22 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/core_ext.rb (yaml_as): supporting deprecated
+	  "yaml_as" method
+	* ext/syck/lib/syck/tag.rb: ditto
+
 Sat Apr 17 05:25:15 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/coder.rb (scalar): supporting deprecated methods

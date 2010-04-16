@@ -139,5 +139,13 @@ module Psych
       assert_equal 'some string', coder.scalar
       assert_equal :scalar, coder.type
     end
+
+    class YamlAs
+      yaml_as 'helloworld'
+    end
+
+    def test_yaml_as
+      assert_match(/helloworld/, Psych.dump(YamlAs.new))
+    end
   end
 end
