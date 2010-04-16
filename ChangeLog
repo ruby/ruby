@@ -1,3 +1,9 @@
+Sat Apr 17 08:57:41 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/net/smtp.rb (Net::SMTP#rcptto_list): continue when at least
+	  one RCPT is accepted.  based on a patch from Kero van Gelder at
+	  [ruby-core:26190].
+
 Sat Apr 17 07:43:55 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/thread/test_queue.rb (TestQueue#grind): fix typos.
