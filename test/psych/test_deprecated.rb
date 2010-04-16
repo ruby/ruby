@@ -131,5 +131,13 @@ module Psych
       assert_equal 'TGIF!', yi.value
       assert_instance_of YamlInitAndInitWith, yi
     end
+
+    def test_coder_scalar
+      coder = Psych::Coder.new 'foo'
+      coder.scalar('tag', 'some string', :plain)
+      assert_equal 'tag', coder.tag
+      assert_equal 'some string', coder.scalar
+      assert_equal :scalar, coder.type
+    end
   end
 end

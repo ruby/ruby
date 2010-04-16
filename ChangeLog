@@ -1,3 +1,9 @@
+Sat Apr 17 05:25:15 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/coder.rb (scalar): supporting deprecated methods
+	* ext/psych/lib/psych/deprecated.rb: supporting deprecated
+	  to_yaml_properties method
+
 Sat Apr 17 01:32:50 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* io.c (rb_io_rewind, rb_io_eof): add rdoc.  based on a patch from
