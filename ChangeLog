@@ -1,3 +1,7 @@
+Sat Apr 17 07:27:53 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* NEWS: add Array#repeated_{combinationpermutation} [Feature #2981]
+
 Sat Apr 17 05:30:22 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/core_ext.rb (yaml_as): supporting deprecated
