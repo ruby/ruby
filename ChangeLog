@@ -1,3 +1,9 @@
+Fri Apr 16 21:27:57 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_coerce): revert r23389,
+	  which not only is unnecessary but also causes the inconsistency of
+	  return type.  [ruby-core:25706] [Bug #2129]
+
 Fri Apr 16 20:05:24 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/thread.rb (Queue#push, #pop, SizedQueue#push, #pop): remove
