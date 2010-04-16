@@ -602,14 +602,9 @@ BigDecimal_coerce(VALUE self, VALUE other)
     ENTER(2);
     VALUE obj;
     Real *b;
-    switch (TYPE(other)) {
-      case T_FLOAT:
+    if (TYPE(other) == T_FLOAT) {
 	obj = rb_assoc_new(other, BigDecimal_to_f(self));
-	break;
-      case T_RATIONAL:
-	obj = rb_assoc_new(other, BigDecimal_to_r(self));
-	break;
-      default:
+    } else {
 	GUARD_OBJ(b,GetVpValue(other,1));
 	obj = rb_assoc_new(b->obj, self);
     }
