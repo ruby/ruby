@@ -1,3 +1,11 @@
+Fri Apr 16 20:05:24 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/thread.rb (Queue#push, #pop, SizedQueue#push, #pop): remove
+	  code that kicks waiting thread twice, which caused race and
+	  deadlock.  [ruby-core:25537]
+
+	* test/thread/test_queue.rb: added.
+
 Fri Apr 16 20:01:47 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* .gitignore: updated.
