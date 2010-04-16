@@ -4033,14 +4033,10 @@ string_content	: tSTRING_CONTENT
 			$<node>$ = lex_strterm;
 			lex_strterm = 0;
 			lex_state = EXPR_BEG;
-			COND_PUSH(0);
-			CMDARG_PUSH(0);
 		    }
 		  compstmt '}'
 		    {
 			lex_strterm = $<node>2;
-			COND_LEXPOP();
-			CMDARG_LEXPOP();
 		    /*%%%*/
 			if ($3) $3->flags &= ~NODE_FL_NEWLINE;
 			$$ = new_evstr($3);
@@ -5873,6 +5869,8 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
 	    pushback(c);
 	    return tSTRING_DVAR;
 	  case '{':
+	    COND_PUSH(0);
+	    CMDARG_PUSH(0);
 	    return tSTRING_DBEG;
 	}
 	tokadd('#');
@@ -6070,6 +6068,8 @@ parser_here_document(struct parser_params *parser, NODE *here)
 		pushback(c);
 		return tSTRING_DVAR;
 	      case '{':
+		COND_PUSH(0);
+		CMDARG_PUSH(0);
 		return tSTRING_DBEG;
 	    }
 	    tokadd('#');
@@ -7314,6 +7314,8 @@ parser_yylex(struct parser_params *parser)
 	    lex_state = EXPR_BEG;
 	    lpar_beg = 0;
 	    --paren_nest;
+	    COND_PUSH(0);
+	    CMDARG_PUSH(0);
 	    return tLAMBEG;
 	}
 	if (IS_ARG() || lex_state == EXPR_END)
