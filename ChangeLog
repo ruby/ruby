@@ -1,3 +1,9 @@
+Sat Apr 17 08:57:41 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/net/smtp.rb (Net::SMTP#rcptto_list): continue when at least
+	  one RCPT is accepted.  based on a patch from Kero van Gelder at
+	  [ruby-core:26190].
+
 Sat Apr 17 08:35:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, configure.in, common.mk, */Makefile.sub (CHDIR): cd
