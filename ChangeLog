@@ -1,3 +1,7 @@
+Sat Apr 17 07:43:55 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/thread/test_queue.rb (TestQueue#grind): fix typos.
+
 Sat Apr 17 07:27:53 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* NEWS: add Array#repeated_{combinationpermutation} [Feature #2981]
