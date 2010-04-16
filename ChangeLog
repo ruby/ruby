@@ -1,4 +1,7 @@
-Sat Apr 17 07:01:31 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Apr 17 07:02:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_thread.rb (TestThreadGroup#test_uninitialized):
+	  typo.
 
 	* test/webrick/utils.rb (TestWEBrick#start_server): add log for
 	  test_filehandler.rb
