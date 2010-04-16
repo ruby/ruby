@@ -32,7 +32,7 @@ class TestQueue < Test::Unit::TestCase
     num_threads.times { to_workers.push nil }
     workers.each { |t| t.join }
 
-    assert 0, from_workers.size
-    assert 0, to_workers.size
+    assert_equal 0, from_workers.size
+    assert_equal 0, to_workers.size
   end
 end
