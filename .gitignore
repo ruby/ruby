@@ -229,6 +229,12 @@
 /ext/iconv/mkmf.log
 /ext/iconv/conftest.dSYM
 
+# /ext/io/nonblock/
+/ext/io/nonblock/Makefile
+/ext/io/nonblock/extconf.h
+/ext/io/nonblock/mkmf.log
+/ext/io/nonblock/nonblock.a
+
 # /ext/io/wait/
 /ext/io/wait/Makefile
 /ext/io/wait/extconf.h
@@ -280,6 +286,12 @@
 /ext/openssl/mkmf.log
 /ext/openssl/openssl.a
 /ext/openssl/conftest.dSYM
+
+# /ext/psych/
+/ext/psych/Makefile
+/ext/psych/extconf.h
+/ext/psych/mkmf.log
+/ext/psych/psych.a
 
 # /ext/pty/
 /ext/pty/*.def
@@ -362,6 +374,12 @@
 /ext/syslog/mkmf.log
 /ext/syslog/syslog.a
 /ext/syslog/conftest.dSYM
+
+# /ext/tmpdir/
+/ext/tmpdir/Makefile
+/ext/tmpdir/extconf.h
+/ext/tmpdir/mkmf.log
+/ext/tmpdir/tmpdir.a
 
 # /ext/tk/
 /ext/tk/Makefile
