@@ -60,19 +60,21 @@ if defined?(WIN32OLE)
     end
 
     def test_invokeverb
-      links = find_link(@dummy_path)
-      assert(0, links.size)
+      # this test should run only when "Create Shortcut (&S)" 
+      # is found in context menu,
+      if @shortcut
+        links = find_link(@dummy_path)
+        assert(0, links.size)
 
-      assert(@shortcut)
+        # Now create shortcut to @dummy_path
+        arg = WIN32OLE_VARIANT.new(@shortcut)
+        @fi2.InvokeVerb(arg)
 
-      # Now create shortcut to @dummy_path
-      arg = WIN32OLE_VARIANT.new(@shortcut)
-      @fi2.InvokeVerb(arg)
-
-      # Now search shortcut to @dummy_path
-      links = find_link(@dummy_path)
-      assert(1, links.size)
-      @lpath = links[0].path
+        # Now search shortcut to @dummy_path
+        links = find_link(@dummy_path)
+        assert(1, links.size)
+        @lpath = links[0].path
+      end
     end
 
     def teardown

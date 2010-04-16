@@ -1,3 +1,9 @@
+Fri Apr 16 23:42:56 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* test/win32ole/test_folderitem2_invokeverb.rb (test_invokeverb):
+	  run test only when "Create Shortcut (&S)" menu is found. 
+	  [ruby-core:29550] [Bug #1602]
+
 Fri Apr 16 21:52:16 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* parse.y (string_content, etc): counts of CMDARG_PUSH and POP were
