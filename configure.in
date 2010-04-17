@@ -1832,42 +1832,35 @@ AC_ARG_WITH(sitedir,
             [sitedir='${libdir}/ruby/site_ruby'])
 SITE_DIR=`eval echo \\"${sitedir}\\"`
 
+AC_ARG_WITH(vendordir,
+	    AS_HELP_STRING([--with-vendordir=DIR], [vendor libraries in DIR [[LIBDIR/ruby/vendor_ruby]]]),
+            [vendordir=$withval],
+            [vendordir='${libdir}/ruby/vendor_ruby'])
+VENDOR_DIR=`eval echo \\"${vendordir}\\"`
+
 case "$target_os" in
   cygwin*|mingw*|*djgpp*|os2-emx*)
     RUBY_EXEC_PREFIX=""
     RUBY_LIB_PREFIX="`eval echo "$RUBY_LIB_PREFIX" | sed 's|^NONE/|/|;s|^'"$prefix"'/|/|'`"
     RUBY_SITE_LIB_PATH="`eval echo "$SITE_DIR" | sed 's|^NONE/|/|;s|^'"$prefix"'/|/|'`"
+    RUBY_VENDOR_LIB_PATH="`eval echo "$VENDOR_DIR" | sed 's|^NONE/|/|;s|^'"$prefix"'/|/|'`"
     ;;
   *)
     RUBY_EXEC_PREFIX="`eval echo \\"$exec_prefix/\\" | sed 's|^NONE/|'"$prefix"'/|;s|/$||'`"
     RUBY_LIB_PREFIX="`eval echo \\"$RUBY_LIB_PREFIX\\" | sed 's|^NONE/|'"$prefix"'/|'`"
     RUBY_SITE_LIB_PATH="`eval echo \\"$SITE_DIR\\" | sed 's|^NONE/|'"$prefix"'/|'`"
+    RUBY_VENDOR_LIB_PATH="`eval echo \\"$VENDOR_DIR\\" | sed 's|^NONE/|'"$prefix"'/|'`"
     ;;
 esac
 RUBY_LIB_PATH="${RUBY_LIB_PREFIX}/${ruby_version}"
 RUBY_SITE_LIB_PATH2="${RUBY_SITE_LIB_PATH}/${ruby_version}"
+RUBY_VENDOR_LIB_PATH2="${RUBY_VENDOR_LIB_PATH}/${ruby_version}"
 
 AC_DEFINE_UNQUOTED(RUBY_EXEC_PREFIX, "${RUBY_EXEC_PREFIX}")
 AC_DEFINE_UNQUOTED(RUBY_LIB_PREFIX, "${RUBY_LIB_PREFIX}")
 AC_DEFINE_UNQUOTED(RUBY_LIB, "${RUBY_LIB_PATH}")
 AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, "${RUBY_SITE_LIB_PATH}")
 AC_DEFINE_UNQUOTED(RUBY_SITE_LIB2, "${RUBY_SITE_LIB_PATH2}")
-
-AC_ARG_WITH(vendordir,
-	    AS_HELP_STRING([--with-vendordir=DIR], [vendor libraries in DIR [[LIBDIR/ruby/vendor_ruby]]]),
-            [vendordir=$withval],
-            [vendordir='${libdir}/ruby/vendor_ruby'])
-VENDOR_DIR=`eval echo \\"${vendordir}\\"`
-case "$target_os" in
-  cygwin*|mingw*|*djgpp*|os2-emx*)
-    RUBY_VENDOR_LIB_PATH="`eval echo "$VENDOR_DIR" | sed 's|^NONE/|/|;s|^'"$prefix"'/|/|'`"
-    ;;
-  *)
-    RUBY_VENDOR_LIB_PATH="`eval echo \\"$VENDOR_DIR\\" | sed 's|^NONE/|'"$prefix"'/|'`"
-    ;;
-esac
-RUBY_VENDOR_LIB_PATH2="${RUBY_VENDOR_LIB_PATH}/${ruby_version}"
-
 AC_DEFINE_UNQUOTED(RUBY_VENDOR_LIB, "${RUBY_VENDOR_LIB_PATH}")
 AC_DEFINE_UNQUOTED(RUBY_VENDOR_LIB2, "${RUBY_VENDOR_LIB_PATH2}")
 
