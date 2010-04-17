@@ -1,3 +1,9 @@
+Sat Apr 17 20:34:09 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/envutil.rb: update Gem::ConfigMap to fake environment for
+	  tests.  Some test of rubygems had failed because envutil.rb changed
+	  only RbConfig::CONFIG but not Gem::ConfigMap.
+
 Sat Apr 17 20:31:08 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/irb/ruby-lex.rb (identify_identifier): allow multibyte character
