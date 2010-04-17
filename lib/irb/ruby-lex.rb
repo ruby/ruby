@@ -727,7 +727,7 @@ class RubyLex
       printf "MATCH: start %s: %s\n", op, io.inspect if RubyLex.debug?
       if peek(0) =~ /[0-9]/
 	t = identify_number
-      elsif peek(0) =~ /[^\x00-\/:-@\[-`{-\x7F]/
+      elsif peek(0) =~ /[^\x00-\/:-@\[-^`{-\x7F]/
 	t = identify_identifier
       end
       printf "MATCH: end %s: %s\n", op, io.inspect if RubyLex.debug?
@@ -770,7 +770,7 @@ class RubyLex
       end
     end
 
-    while (ch = getc) =~ /[^\x00-\/:-@\[-`{-\x7F]/
+    while (ch = getc) =~ /[^\x00-\/:-@\[-^`{-\x7F]/
       print ":", ch, ":" if RubyLex.debug?
       token.concat ch
     end
