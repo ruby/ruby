@@ -251,10 +251,10 @@ module Psych
       private
       # FIXME: remove this method once "to_yaml_properties" is removed
       def find_ivars target
-        m = target.method(:to_yaml_properties)
-        unless m.source_location.first.start_with?(Psych::DEPRECATED)
+        loc = target.method(:to_yaml_properties).source_location.first
+        unless loc.start_with?(Psych::DEPRECATED) || loc.end_with?('rubytypes.rb')
           if $VERBOSE
-            warn "to_yaml_properties is deprecated, please implement \"encode_with(coder)\""
+            warn "#{loc}: to_yaml_properties is deprecated, please implement \"encode_with(coder)\""
           end
           return target.to_yaml_properties
         end
