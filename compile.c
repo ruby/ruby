@@ -3129,40 +3129,30 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    ADD_INSNL(body_seq, nd_line(node), jump, endlabel);
 
 	    vals = node->nd_head;
-	    if (vals && nd_type(vals) == NODE_ARRAY) {
+	    if (!vals) {
+		rb_bug("NODE_WHEN: must be NODE_ARRAY, but 0");
+	    }
+	    switch (nd_type(vals)) {
+	      case NODE_ARRAY:
 		while (vals) {
 		    val = vals->nd_head;
 		    COMPILE(ret, "when2", val);
 		    ADD_INSNL(ret, nd_line(val), branchif, l1);
 		    vals = vals->nd_next;
 		}
-	    }
-	    else if (nd_type(vals) == NODE_SPLAT ||
-		     nd_type(vals) == NODE_ARGSCAT ||
-		     nd_type(vals) == NODE_ARGSPUSH) {
-
-		NODE *val = vals->nd_head;
-
-		if (nd_type(vals) == NODE_ARGSCAT || nd_type(vals) == NODE_ARGSPUSH) {
-		    NODE *vs = vals->nd_head;
-		    val = vals->nd_body;
-
-		    while (vs) {
-			NODE* val = vs->nd_head;
-			COMPILE(ret, "when/argscat", val);
-			ADD_INSNL(ret, nd_line(val), branchif, l1);
-			vs = vs->nd_next;
-		    }
-		}
-
-		ADD_INSN(ret, nd_line(val), putnil);
-		COMPILE(ret, "when2/splat", val);
-		ADD_INSN1(ret, nd_line(val), checkincludearray, Qfalse);
-		ADD_INSN(ret, nd_line(val), pop);
-		ADD_INSNL(ret, nd_line(val), branchif, l1);
-	    }
-	    else {
-		rb_bug("err");
+		break;
+	      case NODE_SPLAT:
+	      case NODE_ARGSCAT:
+	      case NODE_ARGSPUSH:
+		ADD_INSN(ret, nd_line(vals), putnil);
+		COMPILE(ret, "when2/cond splat", vals);
+		ADD_INSN1(ret, nd_line(vals), checkincludearray, Qfalse);
+		ADD_INSN(ret, nd_line(vals), pop);
+		ADD_INSNL(ret, nd_line(vals), branchif, l1);
+		break;
+	      default:
+		rb_bug("NODE_WHEN: unknown node (%s)",
+		       ruby_node_name(nd_type(vals)));
 	    }
 	    node = node->nd_next;
 	}

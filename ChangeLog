@@ -1,3 +1,8 @@
+Sat Apr 17 09:19:27 2010  wanabe  <s.wanabe@gmail.com>
+
+	* compile.c (iseq_compile_each): fix splat condition in NODE_WHEN.
+	  [Bug #2226]
+
 Sat Apr 17 08:57:41 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/net/smtp.rb (Net::SMTP#rcptto_list): continue when at least
