@@ -53,6 +53,26 @@ class TestCase < Test::Unit::TestCase
     else
       assert(false)
     end
+
+    case
+    when *[], false
+      assert(false)
+    else
+      assert(true)
+    end
+
+    case
+    when *false, []
+      assert(true)
+    else
+      assert(false)
+    end
+
+    assert_raise(NameError) do
+      case
+      when false, *x, false
+      end
+    end
   end
 
   def test_deoptimization
