@@ -1119,7 +1119,7 @@ AC_REPLACE_FUNCS(dup2 memmove strerror\
 		 isnan finite isinf hypot acosh erf tgamma lgamma_r cbrt \
                  strlcpy strlcat)
 AC_CACHE_CHECK(for signbit, rb_cv_have_signbit,
-  [AC_TRY_COMPILE([
+  [AC_TRY_LINK([
 #include <math.h>
 ], [int v = signbit(-0.0);],
 	rb_cv_have_signbit=yes,
