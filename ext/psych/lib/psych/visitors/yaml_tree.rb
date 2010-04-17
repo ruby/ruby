@@ -171,10 +171,13 @@ module Psych
       def visit_String o
         plain = false
         quote = false
+        style = Nodes::Scalar::ANY
 
         if o.index("\x00") || o.count("^ -~\t\r\n").fdiv(o.length) > 0.3
           str   = [o].pack('m').chomp
-          tag   = '!binary'
+          tag   = '!binary' # FIXME: change to below when syck is removed
+          #tag   = 'tag:yaml.org,2002:binary'
+          style = Nodes::Scalar::LITERAL
         else
           str   = o
           tag   = nil
@@ -184,7 +187,7 @@ module Psych
 
         ivars = find_ivars o
 
-        scalar = create_scalar str, nil, tag, plain, quote
+        scalar = create_scalar str, nil, tag, plain, quote, style
 
         if ivars.empty?
           append scalar
