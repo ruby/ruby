@@ -1,3 +1,8 @@
+Sat Apr 17 20:31:08 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/irb/ruby-lex.rb (identify_identifier): allow multibyte character
+	  as identifier.  [ruby-core:27275]
+
 Sat Apr 17 09:19:27 2010  wanabe  <s.wanabe@gmail.com>
 
 	* compile.c (iseq_compile_each): fix splat condition in NODE_WHEN.
