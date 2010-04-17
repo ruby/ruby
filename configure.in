@@ -1641,7 +1641,7 @@ fi
 dnl build rdoc index if requested
 RDOCTARGET=""
 AC_ARG_ENABLE(install-doc,
-       AS_HELP_STRING([--enable-install-doc], [build and install rdoc indexes during install ]),
+       AS_HELP_STRING([--enable-install-doc], [build and install rdoc indexes during install]),
        [install_doc=$enableval], [install_doc=no])
 if test "$install_doc" != no; then
     RDOCTARGET="rdoc"
@@ -1814,7 +1814,7 @@ esac
 RUBY_LIB_PREFIX=`eval echo \\"${libdir}/ruby\\"`
 
 AC_ARG_WITH(ruby-version,
-	    [  --with-ruby-version=STR ruby version string for version specific directories [[minor]] (full|minor|STR)],
+	    AS_HELP_STRING([--with-ruby-version=STR], [ruby version string for version specific directories [[minor]] (full|minor|STR)]),
             [ruby_version=$withval],
             [ruby_version=minor])
 case "$ruby_version" in
@@ -1827,7 +1827,7 @@ case "$ruby_version" in
 esac
 
 AC_ARG_WITH(sitedir,
-	    [  --with-sitedir=DIR      site libraries in DIR [[LIBDIR/ruby/site_ruby]]],
+	    AS_HELP_STRING([--with-sitedir=DIR], [site libraries in DIR [[LIBDIR/ruby/site_ruby]]]),
             [sitedir=$withval],
             [sitedir='${libdir}/ruby/site_ruby'])
 SITE_DIR=`eval echo \\"${sitedir}\\"`
@@ -1854,7 +1854,7 @@ AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, "${RUBY_SITE_LIB_PATH}")
 AC_DEFINE_UNQUOTED(RUBY_SITE_LIB2, "${RUBY_SITE_LIB_PATH2}")
 
 AC_ARG_WITH(vendordir,
-	    [  --with-vendordir=DIR    vendor libraries in DIR [[LIBDIR/ruby/vendor_ruby]]],
+	    AS_HELP_STRING([--with-vendordir=DIR], [vendor libraries in DIR [[LIBDIR/ruby/vendor_ruby]]]),
             [vendordir=$withval],
             [vendordir='${libdir}/ruby/vendor_ruby'])
 VENDOR_DIR=`eval echo \\"${vendordir}\\"`

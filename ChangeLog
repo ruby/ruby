@@ -1,3 +1,8 @@
+Sat Apr 17 09:04:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (--with-{ruby-version,{site,vendor}dir}): use
+	  AS_HELP_STRING.
+
 Sat Apr 17 08:57:41 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/net/smtp.rb (Net::SMTP#rcptto_list): continue when at least
