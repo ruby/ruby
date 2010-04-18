@@ -210,12 +210,18 @@ rb_add_method_def(VALUE klass, ID mid, rb_method_type_t type, rb_method_definiti
 				   rb_id2name(old_def->original_id));
 	    }
 	}
-	rb_free_method_entry(old_me);
+
+	/* FIXME: this avoid to free methods used in cfp, but reusing may cause
+	 * another problem when the usage is changed.
+	 */
+	me = old_me;
+    }
+    else {
+	me = ALLOC(rb_method_entry_t);
     }
 
     rb_clear_cache_by_id(mid);
 
-    me = ALLOC(rb_method_entry_t);
     me->flag = NOEX_WITH_SAFE(noex);
     me->called_id = mid;
     me->klass = klass;
