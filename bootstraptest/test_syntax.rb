@@ -884,3 +884,9 @@ assert_normal_exit %q{
     e
   }
 }, '[ruby-dev:39861]'
+
+bug1240 = '[ruby-core:22637]'
+assert_valid_syntax('x y { "#{}".z { } }', bug1240)
+assert_valid_syntax('x y { "#{}".z do end }', bug1240)
+
+assert_valid_syntax('y "#{a 1}" do end', '[ruby-core:29579]')

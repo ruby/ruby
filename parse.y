@@ -4030,18 +4030,26 @@ string_content	: tSTRING_CONTENT
 		    }
 		| tSTRING_DBEG
 		    {
+			$<num>1 = cond_stack;
+			$<num>$ = cmdarg_stack;
+			cond_stack = 0;
+			cmdarg_stack = 0;
+		    }
+		    {
 			$<node>$ = lex_strterm;
 			lex_strterm = 0;
 			lex_state = EXPR_BEG;
 		    }
 		  compstmt '}'
 		    {
-			lex_strterm = $<node>2;
+			cond_stack = $<num>1;
+			cmdarg_stack = $<num>2;
+			lex_strterm = $<node>3;
 		    /*%%%*/
-			if ($3) $3->flags &= ~NODE_FL_NEWLINE;
-			$$ = new_evstr($3);
+			if ($4) $4->flags &= ~NODE_FL_NEWLINE;
+			$$ = new_evstr($4);
 		    /*%
-			$$ = dispatch1(string_embexpr, $3);
+			$$ = dispatch1(string_embexpr, $4);
 		    %*/
 		    }
 		;
@@ -5869,8 +5877,6 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
 	    pushback(c);
 	    return tSTRING_DVAR;
 	  case '{':
-	    COND_PUSH(0);
-	    CMDARG_PUSH(0);
 	    return tSTRING_DBEG;
 	}
 	tokadd('#');
@@ -6068,8 +6074,6 @@ parser_here_document(struct parser_params *parser, NODE *here)
 		pushback(c);
 		return tSTRING_DVAR;
 	      case '{':
-		COND_PUSH(0);
-		CMDARG_PUSH(0);
 		return tSTRING_DBEG;
 	    }
 	    tokadd('#');
