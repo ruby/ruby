@@ -1,3 +1,8 @@
+Sun Apr 18 18:07:47 2010  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb (Resolv::IPv4::Regex): make it only accept 0 to 255.
+	  [ruby-core:29501]
+
 Sun Apr 18 12:48:51 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_yylex): seems like a symbol-literal when spaces
