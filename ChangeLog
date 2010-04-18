@@ -1,3 +1,8 @@
+Sun Apr 18 12:32:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (string_content): preserve cond_stack and cmdarg_stack.
+	  [ruby-core:29579]
+
 Sun Apr 18 05:50:58 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/yaml_tree.rb: defaulting binary string
