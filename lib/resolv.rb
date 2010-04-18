@@ -2110,7 +2110,11 @@ class Resolv
     ##
     # Regular expression IPv4 addresses must match.
 
-    Regex = /\A(\d+)\.(\d+)\.(\d+)\.(\d+)\z/
+    Regex256 = /0
+               |1(?:[0-9][0-9]?)?
+               |2(?:[0-4][0-9]?|5[0-5]?|[6-9])?
+               |[3-9][0-9]?/x
+    Regex = /\A(#{Regex256})\.(#{Regex256})\.(#{Regex256})\.(#{Regex256})\z/
 
     def self.create(arg)
       case arg
