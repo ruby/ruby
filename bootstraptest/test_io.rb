@@ -78,7 +78,7 @@ assert_normal_exit %q{
   ARGF.set_encoding "foo"
 }
 
-50.times do
+1.times do
   assert_normal_exit %q{
     at_exit { p :foo }
 
