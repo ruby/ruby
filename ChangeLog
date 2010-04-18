@@ -1,3 +1,11 @@
+Mon Apr 19 00:27:03 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vm_method.c (rb_add_method_def): workarond fix for redefinition
+	  of methods. This is because cfp->me uses the rb_method_entry
+	  which is freed by redefinition of remove_method. Note that
+	  reusing may cause another problem when the usage is changed.
+	  [ruby-core:27320] [ruby-core:29464]
+
 Sun Apr 18 22:13:21 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (string_content): cond_stack and cmdarg_stack are VALUE.
