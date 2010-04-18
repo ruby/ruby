@@ -4030,8 +4030,8 @@ string_content	: tSTRING_CONTENT
 		    }
 		| tSTRING_DBEG
 		    {
-			$<num>1 = cond_stack;
-			$<num>$ = cmdarg_stack;
+			$<val>1 = cond_stack;
+			$<val>$ = cmdarg_stack;
 			cond_stack = 0;
 			cmdarg_stack = 0;
 		    }
@@ -4042,8 +4042,8 @@ string_content	: tSTRING_CONTENT
 		    }
 		  compstmt '}'
 		    {
-			cond_stack = $<num>1;
-			cmdarg_stack = $<num>2;
+			cond_stack = $<val>1;
+			cmdarg_stack = $<val>2;
 			lex_strterm = $<node>3;
 		    /*%%%*/
 			if ($4) $4->flags &= ~NODE_FL_NEWLINE;
