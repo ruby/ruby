@@ -890,3 +890,6 @@ assert_valid_syntax('x y { "#{}".z { } }', bug1240)
 assert_valid_syntax('x y { "#{}".z do end }', bug1240)
 
 assert_valid_syntax('y "#{a 1}" do end', '[ruby-core:29579]')
+
+bug3163 = '[ruby-core:29578]'
+assert_valid_syntax('foo = 1; foo :bar', bug3163)

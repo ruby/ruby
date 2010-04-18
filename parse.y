@@ -7192,7 +7192,8 @@ parser_yylex(struct parser_params *parser)
 	    lex_state = EXPR_DOT;
 	    return tCOLON2;
 	}
-	if (lex_state == EXPR_END || lex_state == EXPR_ENDARG || (c != -1 && ISSPACE(c))) {
+	if ((!space_seen && (lex_state == EXPR_END || lex_state == EXPR_ENDARG)) ||
+	    (c != -1 && ISSPACE(c))) {
 	    pushback(c);
 	    lex_state = EXPR_BEG;
 	    return ':';
