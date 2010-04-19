@@ -75,8 +75,10 @@ class RDoc::Parser
       false
     elsif s.scan(/<%|%>/).length >= 4 || s.index("\x00") then
       true
-    else
+    elsif 0.respond_to? :fdiv then
       s.count("^ -~\t\r\n").fdiv(s.size) > 0.3
+    else # HACK 1.8.6
+      (s.count("^ -~\t\r\n").to_f / s.size) > 0.3
     end
   end
 

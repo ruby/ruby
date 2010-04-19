@@ -1210,6 +1210,33 @@ EOF
     assert_equal 1, @top_level.requires.length
   end
 
+  def test_parse_statements_while_begin
+    util_parser <<-RUBY
+class A
+  def a
+    while begin a; b end
+    end
+  end
+
+  def b
+  end
+end
+    RUBY
+
+    @parser.parse_statements @top_level, RDoc::Parser::Ruby::NORMAL, nil, ''
+
+    c_a = @top_level.classes.first
+    assert_equal 'A', c_a.full_name
+
+    assert_equal 1, @top_level.classes.length
+
+    m_a = c_a.method_list.first
+    m_b = c_a.method_list.last
+
+    assert_equal 'A#a', m_a.full_name
+    assert_equal 'A#b', m_b.full_name
+  end
+
   def test_parse_top_level_statements_alias_method
     content = <<-CONTENT
 class A

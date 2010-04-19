@@ -1524,24 +1524,29 @@ class RDoc::Parser::Ruby < RDoc::Parser
     skip_tkspace false
     tk = get_tk
     case tk
-    when TkLPAREN, TkfLPAREN
+    when TkLPAREN, TkfLPAREN then
       end_token = TkRPAREN
     else
       end_token = TkNL
     end
 
+    b_nest = 0
     nest = 0
-    @scanner.instance_eval{@continue = false}
+    @scanner.instance_eval { @continue = false }
 
     loop do
       case tk
-      when TkSEMICOLON
-        break
-      when TkLPAREN, TkfLPAREN
+      when TkSEMICOLON then
+        break if b_nest.zero?
+      when TkLPAREN, TkfLPAREN then
         nest += 1
+      when TkBEGIN then
+        b_nest += 1
+      when TkEND then
+        b_nest -= 1
       when TkDO
         break if nest.zero?
-      when end_token
+      when end_token then
         if end_token == TkRPAREN
           nest -= 1
           break if @scanner.lex_state == EXPR_END and nest.zero?
@@ -1553,6 +1558,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
       end
       tk = get_tk
     end
+
     skip_tkspace false
 
     get_tk if TkDO === peek_tk

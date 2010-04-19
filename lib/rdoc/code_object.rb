@@ -6,6 +6,24 @@ require 'rdoc/text'
 #
 # We contain the common stuff for contexts (which are containers) and other
 # elements (methods, attributes and so on)
+#
+# Here's the tree of the CodeObject subclasses:
+#
+# * RDoc::Context
+#   * RDoc::TopLevel
+#   * RDoc::ClassModule
+#     * RDoc::AnonClass
+#     * RDoc::NormalClass
+#     * RDoc::NormalModule
+#     * RDoc::SingleClass
+# * RDoc::AnyMethod
+#   * RDoc::GhostMethod
+#   * RDoc::MetaMethod
+# * RDoc::Alias
+# * RDoc::Attr
+# * RDoc::Constant
+# * RDoc::Require
+# * RDoc::Include
 
 class RDoc::CodeObject
 

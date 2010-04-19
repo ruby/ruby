@@ -511,6 +511,13 @@ class RDoc::Context < RDoc::CodeObject
   end
 
   ##
+  # Finds a class method with +name+ in this context
+
+  def find_class_method_named(name)
+    @method_list.find { |meth| meth.singleton && meth.name == name }
+  end
+
+  ##
   # Finds a constant with +name+ in this context
 
   def find_constant_named(name)
@@ -535,7 +542,7 @@ class RDoc::Context < RDoc::CodeObject
   # Finds an instance method with +name+ in this context
 
   def find_instance_method_named(name)
-    @method_list.find { |meth| meth.name == name && !meth.singleton }
+    @method_list.find { |meth| !meth.singleton && meth.name == name }
   end
 
   ##
@@ -554,7 +561,14 @@ class RDoc::Context < RDoc::CodeObject
   # Finds a instance or module method with +name+ in this context
 
   def find_method_named(name)
-    @method_list.find { |meth| meth.name == name }
+    case name
+    when /\A#/ then
+      find_instance_method_named name[1..-1]
+    when /\A::/ then
+      find_class_method_named name[2..-1]
+    else
+      @method_list.find { |meth| meth.name == name }
+    end
   end
 
   ##
@@ -575,7 +589,7 @@ class RDoc::Context < RDoc::CodeObject
     result = nil
 
     case symbol
-    when /^::(.*)/ then
+    when /^::([A-Z].*)/ then
       result = top_level.find_symbol($1)
     when /::/ then
       modules = symbol.split(/::/)
@@ -591,8 +605,9 @@ class RDoc::Context < RDoc::CodeObject
           end
         end
       end
+    end
 
-    else
+    unless result then
       # if a method is specified, then we're definitely looking for
       # a module, otherwise it could be any symbol
       if method then
@@ -610,10 +625,7 @@ class RDoc::Context < RDoc::CodeObject
       end
     end
 
-    if result and method then
-      fail unless result.respond_to? :find_local_symbol
-      result = result.find_local_symbol(method)
-    end
+    result = result.find_local_symbol method if result and method
 
     result
   end

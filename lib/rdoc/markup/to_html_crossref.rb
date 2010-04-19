@@ -21,7 +21,7 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
   #
   # See CLASS_REGEXP_STR
 
-  METHOD_REGEXP_STR = '(\w+[!?=]?)(?:\([\w.+*/=<>-]*\))?'
+  METHOD_REGEXP_STR = '([a-z]\w*[!?=]?)(?:\([\w.+*/=<>-]*\))?'
 
   ##
   # Regular expressions matching text that should potentially have
@@ -32,10 +32,13 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
 
   CROSSREF_REGEXP = /(
                       # A::B::C.meth
-                      #{CLASS_REGEXP_STR}[\.\#]#{METHOD_REGEXP_STR}
+                      #{CLASS_REGEXP_STR}(?:[.#]|::)#{METHOD_REGEXP_STR}
 
                       # Stand-alone method (proceeded by a #)
                       | \\?\##{METHOD_REGEXP_STR}
+
+                      # Stand-alone method (proceeded by ::)
+                      | ::#{METHOD_REGEXP_STR}
 
                       # A::B::C
                       # The stuff after CLASS_REGEXP_STR is a
@@ -86,11 +89,11 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
   end
 
   ##
-  # We're invoked when any text matches the CROSSREF pattern (defined in
-  # MarkUp).  If we find the corresponding reference, generate a hyperlink.
-  # If the name we're looking for contains no punctuation, we look for it up
-  # the module/class chain.  For example, HyperlinkHtml is found, even without
-  # the Generator:: prefix, because we look for it in module Generator first.
+  # We're invoked when any text matches the CROSSREF pattern.  If we find the
+  # corresponding reference, generate a hyperlink.  If the name we're looking
+  # for contains no punctuation, we look for it up the module/class chain.
+  # For example, HyperlinkHtml is found, even without the Generator:: prefix,
+  # because we look for it in module Generator first.
 
   def handle_special_CROSSREF(special)
     name = special.text
@@ -102,12 +105,9 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
 
     return @seen[name] if @seen.include? name
 
-    if name[0, 1] == '#' then
-      lookup = name[1..-1]
-      name = lookup unless @show_hash
-    else
-      lookup = name
-    end
+    lookup = name
+
+    name = name[0, 1] unless @show_hash if name[0, 1] == '#'
 
     # Find class, module, or method in class or module.
     #
@@ -119,9 +119,11 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
     # (in which case it would match the last pattern, which just checks
     # whether the string as a whole is a known symbol).
 
-    if /#{CLASS_REGEXP_STR}[\.\#]#{METHOD_REGEXP_STR}/ =~ lookup then
+    if /#{CLASS_REGEXP_STR}([.#]|::)#{METHOD_REGEXP_STR}/ =~ lookup then
       container = $1
-      method = $2
+      type = $2
+      type = '#' if type == '.'
+      method = "#{type}#{$3}"
       ref = @context.find_symbol container, method
     end
 
@@ -132,7 +134,7 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
           elsif lookup =~ /^\\/ then
             $'
           elsif ref and ref.document_self then
-            "<a href=\"#{ref.as_href(@from_path)}\">#{name}</a>"
+            "<a href=\"#{ref.as_href @from_path}\">#{name}</a>"
           else
             name
           end

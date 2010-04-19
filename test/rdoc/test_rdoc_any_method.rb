@@ -2,6 +2,16 @@ require File.expand_path '../xref_test_case', __FILE__
 
 class RDocAnyMethodTest < XrefTestCase
 
+  def test_aref
+    m = RDoc::AnyMethod.new nil, 'method?'
+
+    assert_equal 'method-i-method%3F', m.aref
+
+    m.singleton = true
+
+    assert_equal 'method-c-method%3F', m.aref
+  end
+
   def test_arglists
     m = RDoc::AnyMethod.new nil, 'method'
 

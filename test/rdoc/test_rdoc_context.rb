@@ -227,6 +227,14 @@ class TestRDocContext < XrefTestCase
     assert_equal 'RW', @c1.find_attribute_named('attr_accessor').rw
   end
 
+  def test_find_class_method_named
+    assert_equal nil, @c1.find_class_method_named('none')
+
+    m = @c1.find_class_method_named('m')
+    assert_instance_of RDoc::AnyMethod, m
+    assert m.singleton
+  end
+
   def test_find_constant_named
     assert_equal nil,      @c1.find_constant_named('NONE')
     assert_equal ':const', @c1.find_constant_named('CONST').value
@@ -248,7 +256,7 @@ class TestRDocContext < XrefTestCase
 
     m = @c1.find_instance_method_named('m')
     assert_instance_of RDoc::AnyMethod, m
-    assert_equal false, m.singleton
+    refute m.singleton
   end
 
   def test_find_local_symbol
@@ -276,6 +284,12 @@ class TestRDocContext < XrefTestCase
     assert_equal c3,     @xref_data.find_symbol('C3')
     assert_equal c3,     @c2.find_symbol('::C3')
     assert_equal @c2_c3, @c2.find_symbol('C3')
+  end
+
+  def test_find_symbol_method
+    assert_equal @c1__m, @c1.find_symbol('m')
+    assert_equal @c1_m,  @c1.find_symbol('#m')
+    assert_equal @c1__m, @c1.find_symbol('::m')
   end
 
   def test_spaceship
