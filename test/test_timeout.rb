@@ -23,4 +23,10 @@ class TestTimeout < Test::Unit::TestCase
     end
     assert !@flag, "[ruby-dev:38319]"
   end
+
+  def test_cannot_convert_into_time_interval
+    bug3168 = '[ruby-dev:41010]'
+    def (n = Object.new).zero?; false; end
+    assert_raise(TypeError, bug3168) {Timeout.timeout(n) { sleep 0.1 }}
+  end
 end
