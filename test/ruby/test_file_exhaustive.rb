@@ -454,6 +454,8 @@ class TestFileExhaustive < Test::Unit::TestCase
         end
       end
     end
+    bug3175 = '[ruby-core:29627]'
+    assert_equal(".rb", File.extname("/tmp//bla.rb"), bug3175)
 
     assert_incompatible_encoding {|d| File.extname(d)}
   end

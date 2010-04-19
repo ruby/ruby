@@ -1,3 +1,8 @@
+Tue Apr 20 00:43:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_s_extname): skip last directory separators.
+	  [ruby-core:29627]
+
 Tue Apr 20 00:41:25 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (internal_{read,write}_func, rb_{read,write}_internal):

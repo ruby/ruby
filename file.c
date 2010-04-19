@@ -3500,7 +3500,7 @@ rb_file_s_extname(VALUE klass, VALUE fname)
     if (!p)
 	p = name;
     else
-	name = ++p;
+	do name = ++p; while (isdirsep(*p));
 
     e = 0;
     while (*p && *p == '.') p++;
