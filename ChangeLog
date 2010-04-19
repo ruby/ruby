@@ -1,3 +1,8 @@
+Mon Apr 19 12:46:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/timeout.rb (Timeout#timeout): propagate errors to the
+	  caller.  [ruby-dev:41010]'
+
 Sat Apr 17 09:04:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (--with-{ruby-version,{site,vendor}dir}): use
