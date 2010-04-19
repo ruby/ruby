@@ -1054,10 +1054,12 @@ rb_thread_blocking_region_begin(void)
 void
 rb_thread_blocking_region_end(struct rb_blocking_region_buffer *region)
 {
+    int saved_errno = errno;
     rb_thread_t *th = GET_THREAD();
     blocking_region_end(th, region);
     xfree(region);
     RUBY_VM_CHECK_INTS();
+    errno = saved_errno;
 }
 
 /*
@@ -1103,6 +1105,7 @@ rb_thread_blocking_region(
 {
     VALUE val;
     rb_thread_t *th = GET_THREAD();
+    int saved_errno = 0;
 
     if (ubf == RUBY_UBF_IO || ubf == RUBY_UBF_PROCESS) {
 	ubf = ubf_select;
@@ -1111,7 +1114,9 @@ rb_thread_blocking_region(
 
     BLOCKING_REGION({
 	val = func(data1);
+	saved_errno = errno;
     }, ubf, data2);
+    errno = saved_errno;
 
     return val;
 }
