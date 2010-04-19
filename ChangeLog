@@ -1,3 +1,7 @@
+Mon Apr 19 19:41:10 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* lib/fileutils.rb (FileUtils::cp_r): backport r11156 from ruby_1_8.
+
 Mon Apr 19 19:18:53 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_yylex): reduced duplicated conditions.
