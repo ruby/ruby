@@ -1,3 +1,9 @@
+Tue Apr 20 00:41:25 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (internal_{read,write}_func, rb_{read,write}_internal):
+	  reverted r27265, since now rb_thread_blocking_region() preserves
+	  errno.
+
 Mon Apr 19 23:14:45 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* thread.c (rb_thread_blocking_region, rb_thread_blocking_region_end):
