@@ -1,3 +1,8 @@
+Tue Apr 20 06:40:53 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/uri/generic.rb (URI::Generic::eql): Check the class of the
+	  compared object. Based on a patch by Peter McLain [ruby-core:27019]
+
 Fri Apr  2 03:27:22 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/net/http.rb (HTTPGenericRequest#send_request_with_body_stream):
