@@ -46,8 +46,13 @@ module Timeout
     begin
       x = Thread.current
       y = Thread.start {
-        sleep sec
-        x.raise exception, "execution expired" if x.alive?
+        begin
+          sleep sec
+        rescue => e
+          x.raise e
+        else
+          x.raise exception, "execution expired" if x.alive?
+        end
       }
       return yield(sec)
     rescue exception => e
