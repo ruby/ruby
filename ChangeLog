@@ -1,3 +1,8 @@
+Tue Apr 20 08:04:37 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (rb_io_s_read): close the IO if an exception is raised on
+	  seeking. [ruby-core:27429]
+
 Mon Apr 19 22:43:28 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	 * ruby.h (RB_GC_GUARD_PTR): workaround for gcc optimization.
