@@ -1,3 +1,8 @@
+Mon Apr 19 22:43:28 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	 * ruby.h (RB_GC_GUARD_PTR): workaround for gcc optimization.
+	   [ruby-core:27402]
+
 Tue Apr 20 06:40:53 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/uri/generic.rb (URI::Generic::eql): Check the class of the

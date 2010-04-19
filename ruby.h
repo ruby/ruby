@@ -224,7 +224,13 @@ VALUE rb_ull2inum _((unsigned LONG_LONG));
 
 #define TYPE(x) rb_type((VALUE)(x))
 
-#define RB_GC_GUARD(v) (*(volatile VALUE *)&(v))
+#ifdef __GNUC__
+#define RB_GC_GUARD_PTR(ptr) \
+    __extension__ ({volatile VALUE *rb_gc_guarded_ptr = (ptr); rb_gc_guarded_ptr;})
+#else
+#define RB_GC_GUARD_PTR(ptr) (volatile VALUE *)(ptr)
+#endif
+#define RB_GC_GUARD(v) (*RB_GC_GUARD_PTR(&(v)))
 
 void rb_check_type _((VALUE,int));
 #define Check_Type(v,t) rb_check_type((VALUE)(v),t)
