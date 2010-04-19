@@ -26,3 +26,24 @@ assert_normal_exit(<<'End', '[ruby-dev:37934]')
   Process.setrlimit(:NPROC, 1)
   fork {}
 End
+
+assert_equal 'ok', %q{
+  begin
+    if pid1 = fork
+      sleep 1
+      Process.kill("USR1", pid1)
+      _, s = Process.wait2(pid1)
+      s.success? ? :ok : :ng
+    else
+      if pid2 = fork
+        trap("USR1") { Time.now.to_s }
+        Process.wait2(pid2)
+      else
+        sleep 2
+      end
+      exit 0
+    end
+  rescue NotImplementedError
+    :ok
+  end
+}, '[ruby-core:28924]'
