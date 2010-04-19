@@ -1,3 +1,7 @@
+Tue Apr 20 01:03:00 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* bootstraptest/test_fork.rb: add a test for [ruby-core:28924].
+
 Tue Apr 20 00:43:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_s_extname): skip last directory separators.
