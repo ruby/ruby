@@ -1,3 +1,8 @@
+Tue Apr 20 00:43:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_s_extname): skip last directory separators.
+	  [ruby-core:29627]
+
 Mon Apr 19 19:42:08 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* lib/fileutils.rb (FileUtils::cp_r): dup needed here; options are
