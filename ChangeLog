@@ -1,3 +1,8 @@
+Mon Apr 19 23:14:45 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* thread.c (rb_thread_blocking_region, rb_thread_blocking_region_end):
+	  preserve errno.  [Bug #2606] [ruby-core:28924]
+
 Mon Apr 19 19:41:10 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* lib/fileutils.rb (FileUtils::cp_r): backport r11156 from ruby_1_8.
