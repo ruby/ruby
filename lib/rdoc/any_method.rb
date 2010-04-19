@@ -46,11 +46,6 @@ class RDoc::AnyMethod < RDoc::CodeObject
   attr_reader :aliases
 
   ##
-  # Fragment reference for this method
-
-  attr_reader :aref
-
-  ##
   # The method we're aliasing
 
   attr_accessor :is_alias_for
@@ -67,21 +62,13 @@ class RDoc::AnyMethod < RDoc::CodeObject
 
   include RDoc::TokenStream
 
-  ##
-  # Resets method fragment reference counter
-
-  def self.reset
-    @@aref = 'M000000'
-  end
-
-  reset
-
   def initialize(text, name)
     super()
 
     @text = text
     @name = name
 
+    @aref                   = nil
     @aliases                = []
     @block_params           = nil
     @call_seq               = nil
@@ -92,9 +79,6 @@ class RDoc::AnyMethod < RDoc::CodeObject
     @singleton              = nil
     @token_stream           = nil
     @visibility             = :public
-
-    @aref  = @@aref
-    @@aref = @@aref.succ
   end
 
   ##
@@ -109,6 +93,15 @@ class RDoc::AnyMethod < RDoc::CodeObject
 
   def add_alias(method)
     @aliases << method
+  end
+
+  ##
+  # HTML fragment reference for this method
+
+  def aref
+    type = singleton ? 'c' : 'i'
+
+    "method-#{type}-#{CGI.escape name}"
   end
 
   ##
@@ -248,7 +241,7 @@ class RDoc::AnyMethod < RDoc::CodeObject
   # Path to this method
 
   def path
-    "#{@parent.path}##{@aref}"
+    "#{@parent.path}##{aref}"
   end
 
   ##

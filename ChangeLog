@@ -1,3 +1,7 @@
+Mon Apr 19 13:58:04 2010  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc:  Update to RDoc 2.5.4.  Fixes #3169, #3160, #3023.
+
 Mon Apr 19 12:46:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/timeout.rb (Timeout#timeout): propagate errors to the

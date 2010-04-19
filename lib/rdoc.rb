@@ -383,7 +383,7 @@ module RDoc
   ##
   # RDoc version you are using
 
-  VERSION = '2.5.3'
+  VERSION = '2.5.4'
 
   ##
   # Name of the dotfile that contains the description of files to be processed
