@@ -1,3 +1,8 @@
+Mon Apr 19 19:42:08 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* lib/fileutils.rb (FileUtils::cp_r): dup needed here; options are
+	  destroyed otherwise.
+
 Mon Apr 19 19:13:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (search_required): expand home relative path first.

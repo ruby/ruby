@@ -418,6 +418,7 @@ module FileUtils
     fu_check_options options, OPT_TABLE['cp_r']
     fu_output_message "cp -r#{options[:preserve] ? 'p' : ''}#{options[:remove_destination] ? ' --remove-destination' : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
     return if options[:noop]
+    options = options.dup
     options[:dereference_root] = true unless options.key?(:dereference_root)
     fu_each_src_dest(src, dest) do |s, d|
       copy_entry s, d, options[:preserve], options[:dereference_root], options[:remove_destination]
