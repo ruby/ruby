@@ -7411,9 +7411,13 @@ search_required(fname, featurep, path)
     const char *ext, *ftptr;
     int type;
 
+    if (*(ftptr = RSTRING_PTR(fname)) == '~') {
+	fname = rb_file_expand_path(fname, Qnil);
+	ftptr = RSTRING_PTR(fname);
+    }
     *featurep = fname;
     *path = 0;
-    ext = strrchr(ftptr = RSTRING_PTR(fname), '.');
+    ext = strrchr(ftptr, '.');
     if (ext && !strchr(ext, '/')) {
 	if (strcmp(".rb", ext) == 0) {
 	    if (rb_feature_p(ftptr, ext, Qtrue)) {
