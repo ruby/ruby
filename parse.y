@@ -6117,7 +6117,7 @@ arg_ambiguous_gen(struct parser_params *parser)
     dispatch0(arg_ambiguous);
 #endif
 }
-#define arg_ambiguous() arg_ambiguous_gen(parser)
+#define arg_ambiguous() (arg_ambiguous_gen(parser), 1)
 
 static ID
 formal_argument_gen(struct parser_params *parser, ID lhs)
@@ -6886,8 +6886,7 @@ parser_yylex(struct parser_params *parser)
 	    lex_state = EXPR_BEG;
 	    return tOP_ASGN;
 	}
-	if (IS_BEG() || IS_SPCARG(c)) {
-	    if (!IS_BEG()) arg_ambiguous();
+	if (IS_BEG() || (IS_SPCARG(c) && arg_ambiguous())) {
 	    lex_state = EXPR_BEG;
 	    pushback(c);
 	    if (c != -1 && ISDIGIT(c)) {
@@ -6919,8 +6918,7 @@ parser_yylex(struct parser_params *parser)
 	    lex_state = EXPR_ARG;
 	    return tLAMBDA;
 	}
-	if (IS_BEG() || IS_SPCARG(c)) {
-	    if (!IS_BEG()) arg_ambiguous();
+	if (IS_BEG() || (IS_SPCARG(c) && arg_ambiguous())) {
 	    lex_state = EXPR_BEG;
 	    pushback(c);
 	    if (c != -1 && ISDIGIT(c)) {

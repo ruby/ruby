@@ -1,3 +1,7 @@
+Mon Apr 19 19:18:53 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yylex): reduced duplicated conditions.
+
 Mon Apr 19 13:58:04 2010  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc:  Update to RDoc 2.5.4.  Fixes #3169, #3160, #3023.
