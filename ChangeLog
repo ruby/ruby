@@ -1,3 +1,8 @@
+Wed Apr 21 03:17:17 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (io_getc): set read_encoding to resulted one character
+	  string. [ruby-dev:41023]
+
 Wed Apr 21 00:29:39 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* bignum.c (bigmul1_karatsuba): fix calculation order to prevent
