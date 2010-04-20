@@ -67,7 +67,9 @@ enum lex_state_e {
     EXPR_FNAME,			/* ignore newline, no reserved words. */
     EXPR_DOT,			/* right after `.' or `::', no reserved words. */
     EXPR_CLASS,			/* immediate after `class', no here document. */
-    EXPR_VALUE			/* alike EXPR_BEG but label is disallowed. */
+    EXPR_VALUE,			/* alike EXPR_BEG but label is disallowed. */
+    EXPR_VCALL,			/* immediate after vcall */
+    EXPR_MAX_STATE
 };
 
 typedef VALUE stack_type;
@@ -6413,9 +6415,9 @@ parser_prepare(struct parser_params *parser)
 }
 
 #define IS_ARG() (lex_state == EXPR_ARG || lex_state == EXPR_CMDARG)
-#define IS_END() (lex_state == EXPR_END || lex_state == EXPR_ENDARG)
+#define IS_END() (lex_state == EXPR_END || lex_state == EXPR_ENDARG || lex_state == EXPR_VCALL)
 #define IS_BEG() (lex_state == EXPR_BEG || lex_state == EXPR_MID || lex_state == EXPR_VALUE || lex_state == EXPR_CLASS)
-#define IS_SPCARG(c) (IS_ARG() && space_seen && !ISSPACE(c))
+#define IS_SPCARG(c) ((IS_ARG() || lex_state == EXPR_VCALL) && space_seen && !ISSPACE(c))
 
 static int
 parser_yylex(struct parser_params *parser)
@@ -6660,8 +6662,7 @@ parser_yylex(struct parser_params *parser)
 	if (c == '<' &&
 	    lex_state != EXPR_DOT &&
 	    lex_state != EXPR_CLASS &&
-	    !IS_END() &&
-	    (!IS_ARG() || space_seen)) {
+	    (!(IS_ARG() || IS_END()) || space_seen)) {
 	    int token = heredoc_identifier();
 	    if (token) return token;
 	}
@@ -6736,11 +6737,11 @@ parser_yylex(struct parser_params *parser)
 	return tSTRING_BEG;
 
       case '?':
-	if (IS_END()) {
+	c = nextc();
+	if (IS_END() && (!space_seen || ISSPACE(c))) {
 	    lex_state = EXPR_VALUE;
 	    return '?';
 	}
-	c = nextc();
 	if (c == -1) {
 	    compile_error(PARSER_ARG "incomplete character syntax");
 	    return 0;
@@ -7316,7 +7317,7 @@ parser_yylex(struct parser_params *parser)
 	    CMDARG_PUSH(0);
 	    return tLAMBEG;
 	}
-	if (IS_ARG() || lex_state == EXPR_END)
+	if (IS_ARG() || lex_state == EXPR_END || lex_state == EXPR_VCALL)
 	    c = '{';          /* block (primary) */
 	else if (lex_state == EXPR_ENDARG)
 	    c = tLBRACE_ARG;  /* block (expr) */
@@ -7624,7 +7625,7 @@ parser_yylex(struct parser_params *parser)
 	    }
 
 	    if ((lex_state == EXPR_BEG && !cmd_state) ||
-		IS_ARG()) {
+		IS_ARG() || lex_state == EXPR_VCALL) {
 		if (peek(':') && !(lex_p + 1 < lex_pend && lex_p[1] == ':')) {
 		    lex_state = EXPR_BEG;
 		    nextc();
@@ -7687,7 +7688,7 @@ parser_yylex(struct parser_params *parser)
 
             set_yylval_name(ident);
             if (last_state != EXPR_DOT && is_local_id(ident) && lvar_defined(ident)) {
-                lex_state = EXPR_END;
+                lex_state = EXPR_VCALL;
             }
         }
 	return result;
