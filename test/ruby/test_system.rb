@@ -10,6 +10,8 @@ class TestSystem < Test::Unit::TestCase
     }
     code.force_encoding("us-ascii")
     catch {|tag| eval(code, binding, fname, 0)}
+  rescue SyntaxError
+    false
   end
 
   def test_system
