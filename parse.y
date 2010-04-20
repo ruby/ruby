@@ -6658,10 +6658,9 @@ parser_yylex(struct parser_params *parser)
       case '<':
 	c = nextc();
 	if (c == '<' &&
-	    lex_state != EXPR_END &&
 	    lex_state != EXPR_DOT &&
-	    lex_state != EXPR_ENDARG &&
 	    lex_state != EXPR_CLASS &&
+	    !IS_END() &&
 	    (!IS_ARG() || space_seen)) {
 	    int token = heredoc_identifier();
 	    if (token) return token;
@@ -6737,7 +6736,7 @@ parser_yylex(struct parser_params *parser)
 	return tSTRING_BEG;
 
       case '?':
-	if (lex_state == EXPR_END || lex_state == EXPR_ENDARG) {
+	if (IS_END()) {
 	    lex_state = EXPR_VALUE;
 	    return '?';
 	}
@@ -7625,8 +7624,7 @@ parser_yylex(struct parser_params *parser)
 	    }
 
 	    if ((lex_state == EXPR_BEG && !cmd_state) ||
-		lex_state == EXPR_ARG ||
-		lex_state == EXPR_CMDARG) {
+		IS_ARG()) {
 		if (peek(':') && !(lex_p + 1 < lex_pend && lex_p[1] == ':')) {
 		    lex_state = EXPR_BEG;
 		    nextc();
