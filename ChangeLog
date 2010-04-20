@@ -1,3 +1,9 @@
+Wed Apr 21 00:16:44 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/zlib/zlib.c (rb_deflate_params): update buf_filled count because
+	  deflateParams writes to out buffer.  And, revert r18029 because the
+	  flush was not needed now and emits garbage.  [ruby-dev:40802]
+
 Wed Apr 21 00:01:05 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm_method.c (rb_add_method_def): decrement alias count of
