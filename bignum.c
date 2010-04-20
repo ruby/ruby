@@ -2077,7 +2077,7 @@ static VALUE
 bigmul1_karatsuba(VALUE x, VALUE y)
 {
     long i, n, xn, yn, t1n, t2n;
-    VALUE xh, xl, yh, yl, z, t1, t2;
+    VALUE xh, xl, yh, yl, z, t1, t2, t3;
     BDIGIT *zds;
 
     xn = RBIGNUM_LEN(x);
@@ -2122,24 +2122,19 @@ bigmul1_karatsuba(VALUE x, VALUE y)
 	/* copy t2 into low bytes of the result (z0) */
 	MEMCPY(zds, BDIGITS(t2), BDIGIT, t2n);
 	for (i = t2n; i < 2 * n; i++) zds[i] = 0;
-
-	/* subtract t2 from middle bytes of the result (z1) */
-	i = xn + yn - n;
-	bigsub_core(zds + n, i, BDIGITS(t2), t2n, zds + n, i);
     }
     else {
+	t2 = Qundef;
+
 	/* copy 0 into low bytes of the result (z0) */
 	for (i = 0; i < 2 * n; i++) zds[i] = 0;
     }
 
-    /* subtract t1 from middle bytes of the result (z1) */
-    i = xn + yn - n;
-    bigsub_core(zds + n, i, BDIGITS(t1), t1n, zds + n, i);
-
     /* xh <- xh + xl */
     if (RBIGNUM_LEN(xl) > RBIGNUM_LEN(xh)) {
-	t1 = xl; xl = xh; xh = t1;
+	t3 = xl; xl = xh; xh = t3;
     }
+    /* xh has a margin for carry */
     bigadd_core(BDIGITS(xh), RBIGNUM_LEN(xh),
 		BDIGITS(xl), RBIGNUM_LEN(xl),
 		BDIGITS(xh), RBIGNUM_LEN(xh));
@@ -2147,19 +2142,27 @@ bigmul1_karatsuba(VALUE x, VALUE y)
     /* yh <- yh + yl */
     if (x != y) {
 	if (RBIGNUM_LEN(yl) > RBIGNUM_LEN(yh)) {
-	    t1 = yl; yl = yh; yh = t1;
+	    t3 = yl; yl = yh; yh = t3;
 	}
+	/* yh has a margin for carry */
 	bigadd_core(BDIGITS(yh), RBIGNUM_LEN(yh),
 		    BDIGITS(yl), RBIGNUM_LEN(yl),
 		    BDIGITS(yh), RBIGNUM_LEN(yh));
     }
     else yh = xh;
 
-    /* t1 <- xh * yh */
-    t1 = bigmul0(xh, yh);
+    /* t3 <- xh * yh */
+    t3 = bigmul0(xh, yh);
 
-    /* add t1 to middle bytes of the result (z1) */
-    bigadd_core(zds + n, i, BDIGITS(t1), big_real_len(t1), zds + n, i);
+    i = xn + yn - n;
+    /* add t3 to middle bytes of the result (z1) */
+    bigadd_core(zds + n, i, BDIGITS(t3), big_real_len(t3), zds + n, i);
+
+    /* subtract t1 from middle bytes of the result (z1) */
+    bigsub_core(zds + n, i, BDIGITS(t1), t1n, zds + n, i);
+
+    /* subtract t2 from middle bytes of the result (z1) */
+    if (t2 != Qundef) bigsub_core(zds + n, i, BDIGITS(t2), t2n, zds + n, i);
 
     return z;
 }

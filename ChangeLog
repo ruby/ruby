@@ -1,3 +1,8 @@
+Wed Apr 21 00:29:39 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* bignum.c (bigmul1_karatsuba): fix calculation order to prevent
+	  underflow.  [ruby-core:29088]
+
 Wed Apr 21 00:26:17 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* compile.c (NODE_NEXT, NODE_REDO): add dummy putnil instruction to
