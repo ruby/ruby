@@ -7272,10 +7272,8 @@ parser_yylex(struct parser_params *parser)
 	if (IS_BEG()) {
 	    c = tLPAREN;
 	}
-	else if (space_seen) {
-	    if (IS_ARG()) {
-		c = tLPAREN_ARG;
-	    }
+	else if (IS_SPCARG(-1)) {
+	    c = tLPAREN_ARG;
 	}
 	paren_nest++;
 	COND_PUSH(0);
@@ -7687,9 +7685,9 @@ parser_yylex(struct parser_params *parser)
             ID ident = TOK_INTERN(!ENC_SINGLE(mb));
 
             set_yylval_name(ident);
-            if (last_state != EXPR_DOT && is_local_id(ident) && lvar_defined(ident)) {
-                lex_state = EXPR_VCALL;
-            }
+	    if (last_state != EXPR_DOT && last_state != EXPR_FNAME && is_local_id(ident)) {
+		lex_state = EXPR_VCALL;
+	    }
         }
 	return result;
     }
