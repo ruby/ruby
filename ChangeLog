@@ -1,3 +1,8 @@
+Tue Apr 20 21:33:06 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/dl/win32/lib/win32/registry.rb (PredefinedKey#create): root key
+	  name should be a string.  fixed [ruby-core:28192]
+
 Tue Apr 20 19:25:50 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_yylex): fix for tLPAREN_ARG.

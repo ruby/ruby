@@ -198,7 +198,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
 
       # Make all
       Constants.constants.grep(/^HKEY_/) do |c|
-        Registry.const_set c, new(Constants.const_get(c), c)
+        Registry.const_set c, new(Constants.const_get(c), c.to_s)
       end
     end
 
