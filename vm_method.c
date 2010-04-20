@@ -215,6 +215,14 @@ rb_add_method_def(VALUE klass, ID mid, rb_method_type_t type, rb_method_definiti
 	 * another problem when the usage is changed.
 	 */
 	me = old_me;
+
+	if (me->def) {
+	    if (me->def->alias_count == 0)
+		xfree(me->def);
+	    else if (me->def->alias_count > 0)
+		me->def->alias_count--;
+	    me->def = 0;
+	}
     }
     else {
 	me = ALLOC(rb_method_entry_t);
