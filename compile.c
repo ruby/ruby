@@ -3359,6 +3359,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    ADD_ADJUST(ret, nd_line(node), iseq->compile_data->redo_label);
 	    ADD_INSNL(ret, nd_line(node), jump, iseq->compile_data->start_label);
 	    ADD_ADJUST_RESTORE(ret, splabel);
+	    if (!poped) {
+		ADD_INSN(ret, nd_line(node), putnil);
+	    }
 	}
 	else if (iseq->compile_data->end_label) {
 	    LABEL *splabel = NEW_LABEL(0);
@@ -3424,6 +3427,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    add_ensure_iseq(ret, iseq, 0);
 	    ADD_INSNL(ret, nd_line(node), jump, iseq->compile_data->redo_label);
 	    ADD_ADJUST_RESTORE(ret, splabel);
+	    if (!poped) {
+		ADD_INSN(ret, nd_line(node), putnil);
+	    }
 	}
 	else if (iseq->type == ISEQ_TYPE_EVAL) {
 	  redo_in_eval:

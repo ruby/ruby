@@ -271,3 +271,14 @@ assert_normal_exit %q{
     end
   end.call
 }
+
+assert_normal_exit %q{
+  while true
+    begin
+      raise
+      next
+    rescue
+    end
+    break
+  end
+}, '[ruby-core:28172]'
