@@ -1,3 +1,8 @@
+Tue Apr 20 12:24:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (lex_state_e, IS_END, IS_SPCARG, parser_yylex): separate
+	  the state after vcall.  [ruby-core:29578]
+
 Tue Apr 20 01:03:00 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* bootstraptest/test_fork.rb: add a test for [ruby-core:28924].

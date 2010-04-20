@@ -823,4 +823,28 @@ x = __ENCODING__
       c.instance_eval { remove_class_variable(:@var) }
     end
   end
+
+  def result(arg = nil, &pro)
+    pro || arg
+  end
+
+  def test_method_and_lvar
+    result = nil
+    bug3163 = '[ruby-core:29578]'
+    assert_equal(%[bug3163], (result %[bug3163]), bug3163)
+    assert_equal(/bug3163/x, (result /bug3163/x), bug3163)
+    pro = proc {}
+    assert_equal(pro, (result &pro), bug3163)
+    assert_equal(bug3163, (result *bug3163), bug3163)
+    f = g = nil
+    assert_raise(SyntaxError, bug3163) {eval("result ?f : g")}
+    assert_equal("123\n", eval("result <<FOO\n123\nFOO"), bug3163)
+
+    bug3163_2 = '[ruby-core:29594]'
+    one = 1
+    assert_equal(+1, (result +one), bug3163_2)
+    assert_equal(-1, (result -one), bug3163_2)
+
+    assert_equal({:a => 1}, (result a: 1))
+  end
 end
