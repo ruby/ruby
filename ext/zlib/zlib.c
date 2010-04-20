@@ -1371,16 +1371,20 @@ rb_deflate_params(VALUE obj, VALUE v_level, VALUE v_strategy)
     struct zstream *z = get_zstream(obj);
     int level, strategy;
     int err;
+    uInt n;
 
     level = ARG_LEVEL(v_level);
     strategy = ARG_STRATEGY(v_strategy);
 
-    zstream_run(z, (Bytef*)"", 0, Z_SYNC_FLUSH);
+    n = z->stream.avail_out;
     err = deflateParams(&z->stream, level, strategy);
+    z->buf_filled += n - z->stream.avail_out;
     while (err == Z_BUF_ERROR) {
 	rb_warning("deflateParams() returned Z_BUF_ERROR");
 	zstream_expand_buffer(z);
+	n = z->stream.avail_out;
 	err = deflateParams(&z->stream, level, strategy);
+	z->buf_filled += n - z->stream.avail_out;
     }
     if (err != Z_OK) {
 	raise_zlib_error(err, z->stream.msg);
