@@ -517,8 +517,8 @@ class TestParse < Test::Unit::TestCase
     x = nil
 
     assert_raise(SyntaxError) do
-      eval %q(
-<<FOO
+      eval %Q(
+<\<FOO
       )
     end
 
@@ -531,8 +531,8 @@ FOO
     end
 
     assert_raise(SyntaxError) do
-      eval %q(
-<<"
+      eval %Q(
+<\<\"
       )
     end
 
@@ -558,7 +558,7 @@ FOO
     end
 
     assert_nothing_raised do
-      eval "x = <<FOO\r\n1\r\nFOO"
+      eval "x = <<""FOO\r\n1\r\nFOO"
     end
     assert_equal("1\n", x)
   end
