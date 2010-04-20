@@ -145,7 +145,7 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal('//', //.inspect)
     assert_equal('//i', //i.inspect)
     assert_equal('/\//i', /\//i.inspect)
-    assert_equal('/\//i', /#{'/'}/i.inspect)
+    assert_equal('/\//i', %r"#{'/'}"i.inspect)
     assert_equal('/\/x/i', /\/x/i.inspect)
     assert_equal('/\x00/i', /#{"\0"}/i.inspect)
     assert_equal("/\n/i", /#{"\n"}/i.inspect)
@@ -477,7 +477,7 @@ class TestRegexp < Test::Unit::TestCase
     end.value
     assert(m.tainted?)
     assert_nothing_raised('[ruby-core:26137]') {
-      m = proc {$SAFE = 4; /#{}/o}.call
+      m = proc {$SAFE = 4; %r"#{}"o}.call
     }
     assert(m.tainted?)
   end
@@ -496,7 +496,7 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def failcheck(re)
-    assert_raise(RegexpError) { /#{ re }/ }
+    assert_raise(RegexpError) { %r"#{ re }" }
   end
 
   def test_parse
