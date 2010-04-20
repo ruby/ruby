@@ -2739,17 +2739,15 @@ io_getc(rb_io_t *fptr, rb_encoding *enc)
 
     if (NEED_READCONV(fptr)) {
         VALUE str = Qnil;
+	rb_encoding *read_enc = io_read_encoding(fptr);
 
         make_readconv(fptr, 0);
 
         while (1) {
             if (fptr->cbuf_len) {
-                if (fptr->encs.enc)
-                    r = rb_enc_precise_mbclen(fptr->cbuf+fptr->cbuf_off,
-                                              fptr->cbuf+fptr->cbuf_off+fptr->cbuf_len,
-                                              fptr->encs.enc);
-                else
-                    r = ONIGENC_CONSTRUCT_MBCLEN_CHARFOUND(1);
+		r = rb_enc_precise_mbclen(fptr->cbuf+fptr->cbuf_off,
+			fptr->cbuf+fptr->cbuf_off+fptr->cbuf_len,
+			read_enc);
                 if (!MBCLEN_NEEDMORE_P(r))
                     break;
                 if (fptr->cbuf_len == fptr->cbuf_capa) {
@@ -2761,17 +2759,30 @@ io_getc(rb_io_t *fptr, rb_encoding *enc)
                 clear_readconv(fptr);
                 if (fptr->cbuf_len == 0)
                     return Qnil;
-                /* return an incomplete character just before EOF */
-                return io_shift_cbuf(fptr, fptr->cbuf_len, &str);
+                /* return an unit of an incomplete character just before EOF */
+		r = rb_enc_mbclen(fptr->cbuf+fptr->cbuf_off,
+			fptr->cbuf+fptr->cbuf_off+fptr->cbuf_len,
+			read_enc);
+		io_shift_cbuf(fptr, r, &str);
+		str = io_enc_str(str, fptr);
+		ENC_CODERANGE_SET(str, ENC_CODERANGE_BROKEN);
+		return str;
             }
         }
         if (MBCLEN_INVALID_P(r)) {
             r = rb_enc_mbclen(fptr->cbuf+fptr->cbuf_off,
                               fptr->cbuf+fptr->cbuf_off+fptr->cbuf_len,
-                              fptr->encs.enc);
-            return io_shift_cbuf(fptr, r, &str);
-        }
-        return io_shift_cbuf(fptr, MBCLEN_CHARFOUND_LEN(r), &str);
+                              read_enc);
+            io_shift_cbuf(fptr, r, &str);
+	    cr = ENC_CODERANGE_BROKEN;
+	}
+	else {
+	    io_shift_cbuf(fptr, MBCLEN_CHARFOUND_LEN(r), &str);
+	    cr = ENC_CODERANGE_VALID;
+	}
+	str = io_enc_str(str, fptr);
+	ENC_CODERANGE_SET(str, cr);
+	return str;
     }
 
     if (io_fillbuf(fptr) < 0) {

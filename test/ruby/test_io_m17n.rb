@@ -385,6 +385,21 @@ EOT
     }
   end
 
+  def test_getc_newlineconv
+    with_tmpdir {
+      src = "\u3042"
+      generate_file('tmp', src)
+      defext = Encoding.default_external
+      Encoding.default_external = Encoding::UTF_8
+      open("tmp", "rt") {|f|
+        s = f.getc
+        assert_equal(true, s.valid_encoding?)
+        assert_equal("\u3042", s)
+      }
+      Encoding.default_external = defext
+    }
+  end
+
   def test_ungetc_stateful_conversion
     with_tmpdir {
       src = "before \e$B\x23\x30\x23\x31\e(B after".force_encoding("iso-2022-jp")
