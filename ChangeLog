@@ -1,3 +1,8 @@
+Tue Apr 20 12:34:23 2010  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
+
+	* lib/cgi/{core, util}.rb (RFC822_DAYS, RFC822_MONTHS):
+	  move the constant because used only util.rb.
+
 Tue Apr 20 12:24:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (lex_state_e, IS_END, IS_SPCARG, parser_yylex): separate

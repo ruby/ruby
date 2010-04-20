@@ -141,6 +141,12 @@ class CGI
     unescapeElement(str)
   end
 
+  # Abbreviated day-of-week names specified by RFC 822
+  RFC822_DAYS = %w[ Sun Mon Tue Wed Thu Fri Sat ]
+
+  # Abbreviated month names specified by RFC 822
+  RFC822_MONTHS = %w[ Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec ]
+
   # Format a +Time+ object as a String using the format specified by RFC 1123.
   #
   #   CGI::rfc1123_date(Time.now)
