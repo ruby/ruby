@@ -6318,8 +6318,12 @@ rb_io_stdio_file(rb_io_t *fptr)
  *  <code>intern</code> is the internal encoding.
  *  <code>fmode</code> must be combination of the directives. See
  *  the description of class +IO+ for a description of the directives.
- *  Changing reading/writing mode from the original io object is not
- *  supported on some platforms, e.g. Windows.
+ *
+ *  When the mode of original IO is read only, the mode cannot be changed to
+ *  be writable.  Similarly, the mode cannot be changed from write only to
+ *  readable.
+ *  If such a wrong change is directed, timing where the error actually occurs
+ *  is different according to the platform.
  *
  *  ==== Options
  *  <code>opt</code> can have the following keys
