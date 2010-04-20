@@ -2026,6 +2026,10 @@ io_read_nonblock(int argc, VALUE *argv, VALUE io)
  *  Note that this doesn't guarantee to write all data in string.
  *  The length written is reported as result and it should be checked later.
  *
+ *  On some platforms such as Windows, write_nonblock is not supported
+ *  according to the kind of the IO object.
+ *  In such cases, write_nonblock raises <code>Errno::EBADF</code>.
+ *
  */
 
 static VALUE
@@ -6314,6 +6318,8 @@ rb_io_stdio_file(rb_io_t *fptr)
  *  <code>intern</code> is the internal encoding.
  *  <code>fmode</code> must be combination of the directives. See
  *  the description of class +IO+ for a description of the directives.
+ *  Changing reading/writing mode from the original io object is not
+ *  supported on some platforms, e.g. Windows.
  *
  *  ==== Options
  *  <code>opt</code> can have the following keys
