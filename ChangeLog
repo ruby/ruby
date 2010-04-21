@@ -1,3 +1,8 @@
+Wed Apr 21 12:15:46 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yylex): warn confusing binary operators after
+	  local variable.
+
 Wed Apr 21 11:53:47 2010  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc:  Update to RDoc 2.5.5.  Fixes bugs in ri, Darkfish and
