@@ -1,3 +1,7 @@
+Wed Apr 21 11:31:35 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yylex): abandoned EXPR_VCALL.
+
 Wed Apr 21 03:17:17 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (io_getc): set read_encoding to resulted one character
