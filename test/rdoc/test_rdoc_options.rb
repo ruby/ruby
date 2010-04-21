@@ -14,16 +14,18 @@ class TestRDocOptions < MiniTest::Unit::TestCase
     end
 
     refute_match %r%^Usage: %, err
-    assert_match %r%^invalid option: --bogus%, err
+    assert_match %r%^invalid options: --bogus%, err
   end
 
   def test_parse_ignore_invalid_default
     out, err = capture_io do
-      @options.parse %w[--bogus]
+      @options.parse %w[--bogus --main BLAH]
     end
 
     refute_match %r%^Usage: %, err
-    assert_match %r%^invalid option: --bogus%, err
+    assert_match %r%^invalid options: --bogus%, err
+
+    assert_equal 'BLAH', @options.main_page
   end
 
   def test_parse_ignore_invalid_no

@@ -270,8 +270,12 @@ ul.link-list .type {
 	margin: 1em 0.4em;
 }
 
+#description li p {
+  margin: 0;
+}
+
 #description ul {
-	margin-left: 2em;
+	margin-left: 1.5em;
 }
 #description ul li {
 	line-height: 1.4em;
@@ -400,6 +404,9 @@ ul.link-list .type {
 }
 #documentation .method-description p + p {
 	margin-bottom: 0.5em;
+}
+#documentation .method-description ul {
+  margin-left: 1.5em;
 }
 
 #documentation .attribute-method-heading {
