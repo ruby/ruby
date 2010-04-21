@@ -1,3 +1,7 @@
+Wed Apr 21 13:44:54 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (regexp): check each fragments.   [ruby-core:27374]
+
 Wed Apr 21 13:36:01 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_yylex): reverted r27388 due to backward
