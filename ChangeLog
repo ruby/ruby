@@ -1,3 +1,9 @@
+Wed Apr 22 02:16:00 2010  Kenta Murata <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.[ch]: replace _DEBUG with BIGDECIMAL_DEBUG
+	  to prevent activating debugging code when compiled with -DEBUG flag
+	  on Windows. [ruby-core:22989] #1308
+
 Wed Apr 21 21:24:20 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/digest/sha2/extconf.rb: check SHA256_CTX and SHA512_CTX to fix
