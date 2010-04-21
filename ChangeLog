@@ -1,4 +1,7 @@
-Wed Apr 21 12:15:46 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Apr 21 13:36:01 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yylex): reverted r27388 due to backward
+	  compatibility.
 
 	* parse.y (parser_yylex): warn confusing binary operators after
 	  local variable.
