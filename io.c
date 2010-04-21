@@ -2756,15 +2756,15 @@ io_getc(rb_io_t *fptr, rb_encoding *enc)
             }
 
             if (more_char(fptr) == MORE_CHAR_FINISHED) {
-                clear_readconv(fptr);
-                if (fptr->cbuf_len == 0)
-                    return Qnil;
+                if (fptr->cbuf_len == 0) {
+		    clear_readconv(fptr);
+		    return Qnil;
+		}
                 /* return an unit of an incomplete character just before EOF */
-		r = rb_enc_mbclen(fptr->cbuf+fptr->cbuf_off,
-			fptr->cbuf+fptr->cbuf_off+fptr->cbuf_len,
-			read_enc);
-		io_shift_cbuf(fptr, r, &str);
-		str = io_enc_str(str, fptr);
+		str = rb_enc_str_new(fptr->cbuf+fptr->cbuf_off, 1, read_enc);
+		fptr->cbuf_off += 1;
+		fptr->cbuf_len -= 1;
+                if (fptr->cbuf_len == 0) clear_readconv(fptr);
 		ENC_CODERANGE_SET(str, ENC_CODERANGE_BROKEN);
 		return str;
             }
