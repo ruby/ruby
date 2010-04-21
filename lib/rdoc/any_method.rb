@@ -173,6 +173,7 @@ class RDoc::AnyMethod < RDoc::CodeObject
     @dont_rename_initialize = nil
     @is_alias_for           = nil
     @token_stream           = nil
+    @aliases                = []
 
     @name         = array[1]
     @full_name    = array[2]
@@ -181,7 +182,6 @@ class RDoc::AnyMethod < RDoc::CodeObject
     @comment      = array[5]
     @call_seq     = array[6]
     @block_params = array[7]
-    @aliases      = array[8]
     @params       = array[9]
 
     @parent_name = if @full_name =~ /#/ then
@@ -192,8 +192,8 @@ class RDoc::AnyMethod < RDoc::CodeObject
                      name.join '::'
                    end
 
-    array[8].each do |old_name, new_name, comment|
-      add_alias RDoc::Alias.new(nil, old_name, new_name, comment)
+    array[8].each do |new_name, comment|
+      add_alias RDoc::Alias.new(nil, @name, new_name, comment)
     end
   end
 

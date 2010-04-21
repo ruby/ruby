@@ -350,19 +350,25 @@ Usage: #{opt.program_name} [options] [names...]
     end
 
     argv.insert(0, *ENV['RDOCOPT'].split) if ENV['RDOCOPT']
+    ignored = []
 
     begin
       opts.parse! argv
     rescue OptionParser::InvalidArgument, OptionParser::InvalidOption => e
-      if ignore_invalid and not quiet then
-        $stderr.puts e
-        $stderr.puts '(invalid options are ignored)'
+      if ignore_invalid then
+        ignored << e.args.join(' ')
+        retry
       else
         $stderr.puts opts
         $stderr.puts
         $stderr.puts e
         exit 1
       end
+    end
+
+    if ignored and not quiet then
+      $stderr.puts "invalid options: #{ignored.join ', '}"
+      $stderr.puts '(invalid options are ignored)'
     end
 
     @op_dir ||= 'doc'
