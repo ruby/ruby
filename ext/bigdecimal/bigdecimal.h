@@ -209,10 +209,10 @@ VP_EXPORT Real *VpOne(void);
 #define VpHasVal(a)     (a->frac[0])
 #define VpIsOne(a)      ((a->Prec==1)&&(a->frac[0]==1)&&(a->exponent==1))
 #define VpExponent(a)   (a->exponent)
-#ifdef _DEBUG
+#ifdef BIGDECIMAL_DEBUG
 int VpVarCheck(Real * v);
 VP_EXPORT int VPrint(FILE *fp,const char *cntl_chr,Real *a);
-#endif /* _DEBUG */
+#endif /* BIGDECIMAL_DEBUG */
 
 #if defined(__cplusplus)
 }  /* extern "C" { */
