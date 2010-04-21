@@ -400,6 +400,25 @@ EOT
     }
   end
 
+  def test_getc_newlineconv_invalid
+    with_tmpdir {
+      src = "\xE3\x81"
+      generate_file('tmp', src)
+      defext = Encoding.default_external
+      Encoding.default_external = Encoding::UTF_8
+      open("tmp", "rt") {|f|
+        p f.read;f.rewind
+        s = f.getc
+        assert_equal(false, s.valid_encoding?)
+        assert_equal("\xE3".force_encoding("UTF-8"), s)
+        s = f.getc
+        assert_equal(false, s.valid_encoding?)
+        assert_equal("\x81".force_encoding("UTF-8"), s)
+      }
+      Encoding.default_external = defext
+    }
+  end
+
   def test_ungetc_stateful_conversion
     with_tmpdir {
       src = "before \e$B\x23\x30\x23\x31\e(B after".force_encoding("iso-2022-jp")

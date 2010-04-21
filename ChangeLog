@@ -1,3 +1,8 @@
+Wed Apr 21 15:13:10 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (io_getc): fix incomplete character immediately before EOF
+	  with newline converter. [ruby-dev:41024]
+
 Wed Apr 21 13:44:54 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (regexp): check each fragments.   [ruby-core:27374]
@@ -131,7 +136,7 @@ Sun Apr 18 12:32:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* parse.y (string_content): preserve cond_stack and cmdarg_stack.
 	  [ruby-core:29579]
 
-Sun Apr 18 05:50:58 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+Sun Apr 18 05:50:58 2010  Aaron Patterson  <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/yaml_tree.rb: defaulting binary string
 	  format to "literal" format.
@@ -175,13 +180,13 @@ Sat Apr 17 07:27:53 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* NEWS: add Array#repeated_{combinationpermutation} [Feature #2981]
 
-Sat Apr 17 05:30:22 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+Sat Apr 17 05:30:22 2010  Aaron Patterson  <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/core_ext.rb (yaml_as): supporting deprecated
 	  "yaml_as" method
 	* ext/syck/lib/syck/tag.rb: ditto
 
-Sat Apr 17 05:25:15 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+Sat Apr 17 05:25:15 2010  Aaron Patterson  <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/coder.rb (scalar): supporting deprecated methods
 	* ext/psych/lib/psych/deprecated.rb: supporting deprecated
@@ -192,10 +197,10 @@ Sat Apr 17 01:32:50 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 	* io.c (rb_io_rewind, rb_io_eof): add rdoc.  based on a patch from
 	  Roger Pack in [ruby-core:26771] [Bug #2377].
 
-Fri Apr 16 23:42:56 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+Fri Apr 16 23:42:56 2010  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_folderitem2_invokeverb.rb (test_invokeverb):
-	  run test only when "Create Shortcut (&S)" menu is found. 
+	  run test only when "Create Shortcut (&S)" menu is found.
 	  [ruby-core:29550] [Bug #1602]
 
 Fri Apr 16 21:52:16 2010  Yusuke Endoh  <mame@tsg.ne.jp>
@@ -422,7 +427,7 @@ Sun Apr 11 10:33:34 2010  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc:  Update to RDoc 2.5.3.  Includes r27288 and r27290.
 
-Sun Apr 11 09:31:39 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+Sun Apr 11 09:31:39 2010  Aaron Patterson  <aaron@tenderlovemaking.com>
 
 	* test/syck/*: Moved test/yaml to test/syck since it's actually
 	  testing the syck YAML engine.
@@ -469,7 +474,7 @@ Sat Apr 10 07:36:13 2010  wanabe  <s.wanabe@gmail.com>
 	* vm_method.c (rb_add_method): clear attr.location before rb_ary_new3.
 	  a patch from Masaya TARUI in [Bug #3108]
 
-Sat Apr 10 05:27:26 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+Sat Apr 10 05:27:26 2010  Aaron Patterson  <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/deprecated.rb: implementing Psych.quick_emit and
 	  adding deprecation warnings.
@@ -478,7 +483,7 @@ Sat Apr 10 05:27:26 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 	* ext/psych/lib/psych/visitors/yaml_tree.rb: supporting deprecated
 	  to_yaml api.
 
-Sat Apr 10 01:08:53 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+Sat Apr 10 01:08:53 2010  Aaron Patterson  <aaron@tenderlovemaking.com>
 
 	* ext/psych/parser.c: parse raises a TypeError when nil is passed in.
 
@@ -533,7 +538,7 @@ Fri Apr  9 20:05:05 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 	* dir.c (push_glob): add RB_GC_GUARD to prevent str being free'ed.
 	  a patch from Masaya TARUI in [ruby-dev:40939].  [ruby-dev:40514]
 
-Fri Apr  9 10:53:00 2010  Kenta Murata <mrkn@mrkn.jp>
+Fri Apr  9 10:53:00 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* compile.c (iseq_compile_each): stop hiding, and freeze unpopped
 	string nodes to allow method redefinition.  [ruby-dev:40641]
@@ -623,6 +628,14 @@ Tue Apr  6 23:01:35 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 	* thread.c (do_select): Use UNINITIALIZED_VAR() instead FAKE_FD_ZERO().
 	  Also, remove FAKE_FD_ZERO completely. [Feature #3018]
 
+Tue Apr  6 14:53:17 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* include/ruby/win32.h: check definition existence before defining
+	  errno macros.
+
+	* win32/win32.c (errmap): define winsock errors mappings.
+	  these are VC++10 support. see [ruby-core:29278]
+
 Tue Apr  6 21:55:25 2010  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: test localtime(3) overflow.  [ruby-dev:40910]
@@ -633,14 +646,6 @@ Tue Apr  6 21:55:25 2010  Tanaka Akira  <akr@fsij.org>
 	  there is overflow problem.
 	  (rb_gmtime_r2): call rb_gmtime_r and validate the result if there
 	  is overflow problem.
-	  
-Tue Apr  6 14:53:17 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
-
-	* include/ruby/win32.h: check definition existence before defining
-	  errno macros.
-
-	* win32/win32.c (errmap): define winsock errors mappings.
-	  these are VC++10 support. see [ruby-core:29278]
 
 Tue Apr  6 11:21:23 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -661,7 +666,7 @@ Tue Apr  6 05:59:12 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/rexml/xmltokens.rb (NCNAME_STR, NAMECHAR): ditto.
 
-	* lib/rexml/parsers/xpathparser.rb (PathExpr): ditto. 
+	* lib/rexml/parsers/xpathparser.rb (PathExpr): ditto.
 
 	* lib/rexml/text.rb (REXML::Text#initialize):
 	  initialize @parent.
@@ -727,7 +732,7 @@ Sun Apr  4 09:44:01 2010  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (lt): call <=> instead of <.
 
-Sun Apr  4 06:46:16 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+Sun Apr  4 06:46:16 2010  Aaron Patterson  <aaron@tenderlovemaking.com>
 
 	* lib/yaml: Moved to ext/syck/lib, Syck only uses Syck constant.
 	* lib/yaml.rb: Added an engine manager for choosing YAML engine.
@@ -1042,17 +1047,17 @@ Tue Mar 30 13:11:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* tool/file2lastrev.rb (VCS#get_revisions): particular commands do
 	  not depend on instance.
 
-Tue Mar 30 08:55:50 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+Tue Mar 30 08:55:50 2010  Aaron Patterson  <aaron@tenderlovemaking.com>
 
 	* ext/psych/extconf.rb: Making library detection more agnostic.
 
-Tue Mar 30 08:10:59 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+Tue Mar 30 08:10:59 2010  Aaron Patterson  <aaron@tenderlovemaking.com>
 
 	* lib/psych.rb: Fix problem with empty and white-space only strings.
 	  Thanks Peter McLain!
 	* test/psych/test_psych.rb: tests for change.
 
-Tue Mar 30 05:31:39 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+Tue Mar 30 05:31:39 2010  Aaron Patterson  <aaron@tenderlovemaking.com>
 
 	* lib/psych.rb: documentation updates.  Thanks Peter McLain!
 	* lib/psych/{coder,tree_builder}.rb: ditto
@@ -1089,7 +1094,7 @@ Mon Mar 29 09:16:45 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* random.c: change include order; ruby.h should be at first.
 
-Mon Mar 29 06:47:25 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+Mon Mar 29 06:47:25 2010  Aaron Patterson  <aaron@tenderlovemaking.com>
 
 	* ext/psych/*: importing Psych to trunk
 	* test/psych/*: ditto
@@ -1163,13 +1168,13 @@ Fri Mar 26 19:28:03 2010  Shugo Maeda  <shugo@ruby-lang.org>
 	* test/ruby/test_hash.rb (test_recursive_key): recursive keys are
 	  permitted now.  [ruby-dev:40735]
 
-Fri Mar 26 12:36:10 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+Fri Mar 26 12:36:10 2010  Aaron Patterson  <aaron@tenderlovemaking.com>
 
 	* lib/yaml/basenode.rb: deprecating YPath methods
 
 	* lib/yaml/stream.rb: deprecating YAML::Stream#edit
 
-Fri Mar 26 12:29:28 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+Fri Mar 26 12:29:28 2010  Aaron Patterson  <aaron@tenderlovemaking.com>
 
 	* lib/yaml/encoding.rb: YAML.encode, YAML.decode are deprecated.
 
@@ -1870,7 +1875,7 @@ Tue Mar  9 20:50:09 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/dl/test_method.rb: delete a residual test for dl on libffi.
 
-Tue Mar  9 18:00:00 2010  Kenta Murata <mrkn@mrkn.jp>
+Tue Mar  9 18:00:00 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* enc/trans/EMOJI/*.src, enc/trans/emoji*,
 	  enc/x-emoji.c, test/ruby/enc/test_emoji.rb,
@@ -2044,7 +2049,7 @@ Wed Mar  3 15:54:20 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Wed Mar  3 16:14:24 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* lib/matrix.rb (Vector#each): make Vector enumerable.  
+	* lib/matrix.rb (Vector#each): make Vector enumerable.
 	  [ruby-core:28405]
 
 Wed Mar  3 14:28:23 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -2076,7 +2081,7 @@ Tue Mar  2 15:54:40 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regcomp.c (renumber_by_map): ditto.
 
-Tue Mar  2 14:42:00 2010  Kenta Murata <mrkn@mrkn.jp>
+Tue Mar  2 14:42:00 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* test/dl/test_closure.rb: forget to revert at r26764.
 
@@ -2433,7 +2438,7 @@ Tue Feb 16 19:02:59 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* test/dl/test_import.rb (DL::LIBC::BoundQsortCallback): renamed
 	  to get rid of overwriting warning.
 
-Tue Feb 16 11:03:19 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+Tue Feb 16 11:03:19 2010  Aaron Patterson  <aaron@tenderlovemaking.com>
 
 	* ext/dl/method.c: Adding DL::Method as a superclass for DL::Function
 
@@ -2732,7 +2737,7 @@ Fri Feb  5 09:26:54 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* bignum.c (big_op): remove unused variables.
 
-Fri Feb  5 02:06:57 2010  Aaron Patterson <tenderlove@ruby-lang.org>
+Fri Feb  5 02:06:57 2010  Aaron Patterson  <tenderlove@ruby-lang.org>
 
 	* lib/yaml/rubytypes.rb: Struct members are emitted without a leading
 	  colon.  Thanks Yusuke Endoh! [ruby-core:28052]
@@ -2816,7 +2821,7 @@ Wed Feb  3 11:38:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/{closure,function}.c: removed C99 features and warnings.
 
-Wed Feb  3 10:12:09 2010  Aaron Patterson <tenderlove@ruby-lang.org>
+Wed Feb  3 10:12:09 2010  Aaron Patterson  <tenderlove@ruby-lang.org>
 
 	* ext/dl/function.c: DL::Function now uses libffi
 
@@ -3216,7 +3221,7 @@ Sat Jan 23 23:12:56 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 	  make the rdoc(generating html) run faster and use less memory.
 	  patch by Tetsu Soh [ruby-core:27656]
 
-Sat Jan 23 19:54:48 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+Sat Jan 23 19:54:48 2010  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: add WIN32OLE.ole_initialize,
 	  WIN32OLE.ole_uninitialize to use in win32ole.rb.
@@ -3342,7 +3347,7 @@ Tue Jan 19 14:19:26 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* ext/zlib/{extconf.rb, zlib.c): crc32_combine and adler32_combine is
 	  supported on Zlib 1.2.2.1, so check them for old zlib.
 
-Tue Jan 19 09:03:37 2010  Aaron Patterson <tenderlove@ruby-lang.org>
+Tue Jan 19 09:03:37 2010  Aaron Patterson  <tenderlove@ruby-lang.org>
 
 	* ext/zlib/zlib.c: added Zlib.crc32_combine and Zlib.adler32_combine
 
@@ -3918,7 +3923,7 @@ Mon Dec 28 13:18:52 2009  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* tool/install-sh: wrote the intention. [ruby-dev:39928]
 
-Sun Dec 27 10:45:00 2009  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+Sun Dec 27 10:45:00 2009  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (foleparam_initialize): add foleparam_initialize
 	  to check argument of WIN32OLE_PARAM.new
@@ -4307,7 +4312,7 @@ Sun Nov 29 16:56:24 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (check_funcall_failed): pass ID.  [ruby-core:26934]
 
-Sun Nov 29 06:37:53 2009  Aaron Patterson <tenderlove@ruby-lang.org>
+Sun Nov 29 06:37:53 2009  Aaron Patterson  <tenderlove@ruby-lang.org>
 
 	* lib/rexml/formatters/default.rb (write_attribute): fix an
 	  exception when printing a document when duplicate namespaced
