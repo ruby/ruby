@@ -6418,6 +6418,15 @@ parser_prepare(struct parser_params *parser)
 #define IS_BEG() (lex_state == EXPR_BEG || lex_state == EXPR_MID || lex_state == EXPR_VALUE || lex_state == EXPR_CLASS)
 #define IS_SPCARG(c) (IS_ARG() && space_seen && !ISSPACE(c))
 
+#ifndef RIPPER
+#define ambiguous_operator(op, syn) ( \
+    rb_warning0("`"op"' after local variable is interpreted as binary operator"), \
+    rb_warning0("even though it seems like "syn""))
+#else
+#define ambiguous_operator(op, syn) dispatch2(operator_ambiguous, ripper_intern(op), rb_str_new_cstr(syn))
+#endif
+#define warn_balanced(op, syn) (space_seen && !ISSPACE(c) && (ambiguous_operator(op, syn), 0))
+
 static int
 parser_yylex(struct parser_params *parser)
 {
@@ -6463,7 +6472,7 @@ parser_yylex(struct parser_params *parser)
 	/* white spaces */
       case ' ': case '\t': case '\f': case '\r':
       case '\13': /* '\v' */
-	space_seen++;
+	space_seen = 1;
 #ifdef RIPPER
 	while ((c = nextc())) {
 	    switch (c) {
@@ -6514,7 +6523,7 @@ parser_yylex(struct parser_params *parser)
 	    switch (c) {
 	      case ' ': case '\t': case '\f': case '\r':
 	      case '\13': /* '\v' */
-		space_seen++;
+		space_seen = 1;
 		break;
 	      case '.': {
 		  if ((c = nextc()) != '.') {
@@ -6566,6 +6575,7 @@ parser_yylex(struct parser_params *parser)
 		c = tSTAR;
 	    }
 	    else {
+		warn_balanced("*", "argument prefix");
 		c = '*';
 	    }
 	}
@@ -6686,6 +6696,7 @@ parser_yylex(struct parser_params *parser)
 		return tOP_ASGN;
 	    }
 	    pushback(c);
+	    warn_balanced("<<", "here document");
 	    return tLSHFT;
 	}
 	pushback(c);
@@ -6836,6 +6847,7 @@ parser_yylex(struct parser_params *parser)
 	    c = tAMPER;
 	}
 	else {
+	    warn_balanced("&", "argument prefix");
 	    c = '&';
 	}
 	switch (lex_state) {
@@ -6897,6 +6909,7 @@ parser_yylex(struct parser_params *parser)
 	}
 	lex_state = EXPR_BEG;
 	pushback(c);
+	warn_balanced("+", "unary operator");
 	return '+';
 
       case '-':
@@ -6928,6 +6941,7 @@ parser_yylex(struct parser_params *parser)
 	}
 	lex_state = EXPR_BEG;
 	pushback(c);
+	warn_balanced("-", "unary operator");
 	return '-';
 
       case '.':
@@ -7230,6 +7244,7 @@ parser_yylex(struct parser_params *parser)
 	  default:
 	    lex_state = EXPR_BEG; break;
 	}
+	warn_balanced("/", "regexp literal");
 	return '/';
 
       case '^':
@@ -7422,6 +7437,7 @@ parser_yylex(struct parser_params *parser)
 	    lex_state = EXPR_BEG; break;
 	}
 	pushback(c);
+	warn_balanced("%%", "string literal");
 	return '%';
 
       case '$':
