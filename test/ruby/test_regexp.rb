@@ -477,7 +477,7 @@ class TestRegexp < Test::Unit::TestCase
     end.value
     assert(m.tainted?)
     assert_nothing_raised('[ruby-core:26137]') {
-      m = proc {$SAFE = 4; %r"#{}"o}.call
+      m = proc {$SAFE = 4; %r"#{ }"o}.call
     }
     assert(m.tainted?)
   end
@@ -806,5 +806,10 @@ class TestRegexp < Test::Unit::TestCase
     assert_nothing_raised { s.match(/(\d) (.*)/) }
     assert_equal("1", $1)
     assert_equal(" " * 4999999, $2)
+  end
+
+  def test_invalid_fragment
+    bug2547 = '[ruby-core:27374]'
+    assert_raise(SyntaxError, bug2547) {eval('/#{"\\\\"}y/')}
   end
 end
