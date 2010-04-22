@@ -1,3 +1,8 @@
+Thu Apr 22 21:50:17 2010  Keiju Ishitsuka  <keiju@ruby-lang.org>
+
+	* lib/irb/ext/multi-irb.rb: fix multi-irb running
+	  parallelly. [ruby-dev:41031] [Bug #3182]
+
 Thu Apr 22 17:13:34 2010  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems: Import RubyGems 1.3.7.pre.1 (as 1.3.6.1).
