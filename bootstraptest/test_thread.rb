@@ -174,9 +174,9 @@ assert_equal %q{[true, nil, true]}, %q{
   $a = $~
   Thread.new{
     $b = $~
-    /a/ =~ 'a'
+    /b/ =~ 'b'
     $c = $~
-  }
+  }.join
   $d = $~
   [$a == $d, $b, $c != $d]
 }

@@ -1,3 +1,7 @@
+Thu Apr 22 22:56:42 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* bootstraptest/test_thread.rb: fix test.  [Bug #2342]
+
 Thu Apr 22 21:50:17 2010  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* lib/irb/ext/multi-irb.rb: fix multi-irb running
