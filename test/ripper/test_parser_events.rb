@@ -732,10 +732,22 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal true, thru_redo
   end
 
+  def test_regexp_add
+    thru_regexp_add = false
+    parse('/foo/', :on_regexp_add) {thru_regexp_add = true}
+    assert_equal true, thru_regexp_add
+  end
+
   def test_regexp_literal
     thru_regexp_literal = false
     parse('//', :on_regexp_literal) {thru_regexp_literal = true}
     assert_equal true, thru_regexp_literal
+  end
+
+  def test_regexp_new
+    thru_regexp_new = false
+    parse('//', :on_regexp_new) {thru_regexp_new = true}
+    assert_equal true, thru_regexp_new
   end
 
   def test_rescue
