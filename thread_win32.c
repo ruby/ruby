@@ -530,7 +530,6 @@ native_thread_apply_priority(rb_thread_t *th)
 static void
 ubf_handle(void *ptr)
 {
-    typedef BOOL (WINAPI *cancel_io_func_t)(HANDLE);
     rb_thread_t *th = (rb_thread_t *)ptr;
     thread_debug("ubf_handle: %p\n", th);
 
