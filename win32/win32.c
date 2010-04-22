@@ -4684,9 +4684,6 @@ rb_w32_wopen(const WCHAR *file, int oflag, ...)
 	_set_osfhnd(fd, (long)INVALID_HANDLE_VALUE);
 	_set_osflags(fd, 0);
 
-	/* open with FILE_FLAG_OVERLAPPED if have CancelIo */
-	if (cancel_io)
-	    attr |= FILE_FLAG_OVERLAPPED;
 	h = CreateFileW(file, access, FILE_SHARE_READ | FILE_SHARE_WRITE, &sec,
 			create, attr, NULL);
 	if (h == INVALID_HANDLE_VALUE) {
