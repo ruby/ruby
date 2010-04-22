@@ -1,3 +1,8 @@
+Fri Apr 23 01:47:54 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_wopen): shouldn't use FILE_FLAG_OVERLAPPED with
+	  normal file.  #1807, #2510, #2549
+
 Fri Apr 23 01:28:03 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* thread_win32.c (ubf_handle): remove unused typedef.
