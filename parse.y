@@ -6485,7 +6485,10 @@ parser_prepare(struct parser_params *parser)
 #else
 #define ambiguous_operator(op, syn) dispatch2(operator_ambiguous, ripper_intern(op), rb_str_new_cstr(syn))
 #endif
-#define warn_balanced(op, syn) (space_seen && !ISSPACE(c) && (ambiguous_operator(op, syn), 0))
+#define warn_balanced(op, syn) \
+    (lex_state != EXPR_DOT && lex_state != EXPR_FNAME && \
+     space_seen && !ISSPACE(c) && \
+     (ambiguous_operator(op, syn), 0))
 
 static int
 parser_yylex(struct parser_params *parser)
@@ -7699,6 +7702,11 @@ parser_yylex(struct parser_params *parser)
 		}
 	    }
 
+	    if (lex_state == EXPR_FNAME) {
+		const char *p = lex_p, *pe = lex_pend;
+		while (p < pe && (*p == ' ' || *p == '\t')) p++;
+		if (p < pe && *p != '(') lex_p = p;
+	    }
 	    if ((lex_state == EXPR_BEG && !cmd_state) ||
 		IS_ARG()) {
 		if (peek(':') && !(lex_p + 1 < lex_pend && lex_p[1] == ':')) {
