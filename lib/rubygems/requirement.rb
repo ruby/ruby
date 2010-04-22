@@ -93,7 +93,12 @@ class Gem::Requirement
     requirements.uniq!
 
     requirements << ">= 0" if requirements.empty?
+    @none = (requirements == ">= 0")
     @requirements = requirements.map! { |r| self.class.parse r }
+  end
+
+  def none?
+    @none ||= (to_s == ">= 0")
   end
 
   def as_list # :nodoc:

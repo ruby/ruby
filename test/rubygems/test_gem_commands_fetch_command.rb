@@ -27,7 +27,7 @@ class TestGemCommandsFetchCommand < RubyGemTestCase
     end
 
     assert File.exist?(File.join(@tempdir, @a2.file_name)),
-           "#{@a2.full_name} fetched"
+           "#{@a2.full_name} not fetched"
   end
 
   def test_execute_prerelease
@@ -50,6 +50,26 @@ class TestGemCommandsFetchCommand < RubyGemTestCase
 
     assert File.exist?(File.join(@tempdir, @a2_pre.file_name)),
            "#{@a2_pre.full_name} not fetched"
+  end
+
+  def test_execute_version
+    util_setup_fake_fetcher
+    util_setup_spec_fetcher @a1, @a2
+
+    @fetcher.data["#{@gem_repo}gems/#{@a1.file_name}"] =
+      File.read(File.join(@gemhome, 'cache', @a1.file_name))
+
+    @cmd.options[:args] = [@a2.name]
+    @cmd.options[:version] = Gem::Requirement.new '1'
+
+    use_ui @ui do
+      Dir.chdir @tempdir do
+        @cmd.execute
+      end
+    end
+
+    assert File.exist?(File.join(@tempdir, @a1.file_name)),
+           "#{@a1.full_name} not fetched"
   end
 
 end

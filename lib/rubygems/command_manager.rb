@@ -75,10 +75,10 @@ class Gem::CommandManager
   end
 
   ##
-  # Register the command object.
+  # Register the Symbol +command+ as a gem command.
 
-  def register_command(command_obj)
-    @commands[command_obj] = false
+  def register_command(command)
+    @commands[command] = false
   end
 
   ##
@@ -123,7 +123,7 @@ class Gem::CommandManager
       say Gem::Command::HELP
       terminate_interaction(0)
     when '-v', '--version'
-      say Gem::RubyGemsVersion
+      say Gem::VERSION
       terminate_interaction(0)
     when /^-/
       alert_error "Invalid option: #{args[0]}.  See 'gem --help'."
@@ -161,15 +161,19 @@ class Gem::CommandManager
     retried = false
 
     begin
-      commands.const_get(const_name)
+      commands.const_get const_name
     rescue NameError
-      if retried then
-        raise
-      else
-        retried = true
+      raise if retried
+
+      retried = true
+      begin
         require "rubygems/commands/#{command_name}_command"
-        retry
+      rescue Exception => e
+        alert_error "Loading command: #{command_name} (#{e.class})\n    #{e}"
+        ui.errs.puts "\t#{e.backtrace.join "\n\t"}" if
+          Gem.configuration.backtrace
       end
+      retry
     end.new
   end
 

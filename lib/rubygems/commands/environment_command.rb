@@ -69,7 +69,7 @@ lib/rubygems/defaults/operating_system.rb
     when /^packageversion/ then
       out << Gem::RubyGemsPackageVersion
     when /^version/ then
-      out << Gem::RubyGemsVersion
+      out << Gem::VERSION
     when /^gemdir/, /^gemhome/, /^home/, /^GEM_HOME/ then
       out << Gem.dir
     when /^gempath/, /^path/, /^GEM_PATH/ then
@@ -79,7 +79,7 @@ lib/rubygems/defaults/operating_system.rb
     when nil then
       out = "RubyGems Environment:\n"
 
-      out << "  - RUBYGEMS VERSION: #{Gem::RubyGemsVersion}\n"
+      out << "  - RUBYGEMS VERSION: #{Gem::VERSION}\n"
 
       out << "  - RUBY VERSION: #{RUBY_VERSION} (#{RUBY_RELEASE_DATE}"
       out << " patchlevel #{RUBY_PATCHLEVEL}" if defined? RUBY_PATCHLEVEL
@@ -109,6 +109,7 @@ lib/rubygems/defaults/operating_system.rb
 
       out << "  - GEM CONFIGURATION:\n"
       Gem.configuration.each do |name, value|
+        value = value.gsub(/./, '*') if name == 'gemcutter_key'
         out << "     - #{name.inspect} => #{value.inspect}\n"
       end
 

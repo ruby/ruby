@@ -231,7 +231,7 @@ TEXT
 
   def install_rdoc
     gem_doc_dir = File.join Gem.dir, 'doc'
-    rubygems_name = "rubygems-#{Gem::RubyGemsVersion}"
+    rubygems_name = "rubygems-#{Gem::VERSION}"
     rubygems_doc_dir = File.join gem_doc_dir, rubygems_name
 
     if File.writable? gem_doc_dir and

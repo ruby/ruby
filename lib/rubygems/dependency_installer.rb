@@ -69,6 +69,10 @@ class Gem::DependencyInstaller
 
     @install_dir = options[:install_dir] || Gem.dir
     @cache_dir = options[:cache_dir] || @install_dir
+
+    # Set with any errors that SpecFetcher finds while search through
+    # gemspecs for a dep
+    @errors = nil
   end
 
   ##
@@ -78,6 +82,8 @@ class Gem::DependencyInstaller
   # local gems preferred over remote gems.
 
   def find_gems_with_sources(dep)
+    # Reset the errors
+    @errors = nil
     gems_and_sources = []
 
     if @domain == :both or @domain == :local then
@@ -99,7 +105,7 @@ class Gem::DependencyInstaller
               (requirements.length > 1 or
                 (requirements.first != ">=" and requirements.first != ">"))
 
-        found = Gem::SpecFetcher.fetcher.fetch dep, all, true, dep.prerelease?
+        found, @errors = Gem::SpecFetcher.fetcher.fetch_with_errors dep, all, true, dep.prerelease?
 
         gems_and_sources.push(*found)
 
@@ -204,8 +210,9 @@ class Gem::DependencyInstaller
     end
 
     if spec_and_source.nil? then
-      raise Gem::GemNotFoundException,
-        "could not find gem #{gem_name} locally or in a repository"
+      raise Gem::GemNotFoundException.new(
+        "Could not find a valid gem '#{gem_name}' (#{version}) locally or in a repository",
+        gem_name, version, @errors)
     end
 
     @specs_and_sources = [spec_and_source]

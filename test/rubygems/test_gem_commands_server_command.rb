@@ -13,14 +13,21 @@ class TestGemCommandsServerCommand < RubyGemTestCase
     @cmd.send :handle_options, %w[-p 8808 --no-daemon]
 
     assert_equal false, @cmd.options[:daemon]
-    assert_equal @gemhome, @cmd.options[:gemdir]
+    assert_equal [], @cmd.options[:gemdir]
     assert_equal 8808, @cmd.options[:port]
 
     @cmd.send :handle_options, %w[-p 9999 -d /nonexistent --daemon]
 
     assert_equal true, @cmd.options[:daemon]
-    assert_equal File.expand_path('/nonexistent'), @cmd.options[:gemdir]
+    assert_equal [File.expand_path('/nonexistent')], @cmd.options[:gemdir]
     assert_equal 9999, @cmd.options[:port]
+  end
+
+  def test_handle_options_gemdir
+    @cmd.send :handle_options, %w[--dir a --dir b]
+
+    assert_equal [File.expand_path('a'), File.expand_path('b')],
+                 @cmd.options[:gemdir]
   end
 
   def test_handle_options_port

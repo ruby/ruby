@@ -5,7 +5,7 @@ class Gem::Commands::ServerCommand < Gem::Command
 
   def initialize
     super 'server', 'Documentation and gem repository HTTP server',
-          :port => 8808, :gemdir => Gem.dir, :daemon => false
+          :port => 8808, :gemdir => [], :daemon => false
 
     OptionParser.accept :Port do |port|
       if port =~ /\A\d+\z/ then
@@ -29,8 +29,9 @@ class Gem::Commands::ServerCommand < Gem::Command
     end
 
     add_option '-d', '--dir=GEMDIR',
-               'directory from which to serve gems' do |gemdir, options|
-      options[:gemdir] = File.expand_path gemdir
+               'directories from which to serve gems',
+               'multiple directories may be provided' do |gemdir, options|
+      options[:gemdir] << File.expand_path(gemdir)
     end
 
     add_option '--[no-]daemon', 'run as a daemon' do |daemon, options|
@@ -69,6 +70,7 @@ You can set up a shortcut to gem server documentation using the URL:
   end
 
   def execute
+    options[:gemdir] << Gem.dir if options[:gemdir].empty?
     Gem::Server.run options
   end
 

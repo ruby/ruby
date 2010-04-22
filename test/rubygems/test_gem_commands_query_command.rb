@@ -29,7 +29,34 @@ class TestGemCommandsQueryCommand < RubyGemTestCase
 *** REMOTE GEMS ***
 
 a (2)
-pl (1)
+pl (1 i386-linux)
+    EOF
+
+    assert_equal expected, @ui.output
+    assert_equal '', @ui.error
+  end
+
+  def test_execute_platform
+    @a1r = @a1.dup
+
+    @a1.platform = 'x86-linux'
+    @a2.platform = 'universal-darwin'
+
+    @si = util_setup_spec_fetcher @a1, @a1r, @a2, @b2, @pl1
+
+    @cmd.handle_options %w[-r -a]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+
+*** REMOTE GEMS ***
+
+a (2 universal-darwin, 1 ruby x86-linux)
+b (2)
+pl (1 i386-linux)
     EOF
 
     assert_equal expected, @ui.output
@@ -51,7 +78,7 @@ pl (1)
 *** REMOTE GEMS ***
 
 a (2, 1)
-pl (1)
+pl (1 i386-linux)
     EOF
 
     assert_equal expected, @ui.output
@@ -73,7 +100,7 @@ pl (1)
 *** REMOTE GEMS ***
 
 a (3.a, 2, 1)
-pl (1)
+pl (1 i386-linux)
     EOF
 
     assert_equal expected, @ui.output
@@ -311,7 +338,7 @@ a (3.a, 2, 1)
 a_evil (9)
 b (2)
 c (1.2)
-pl (1)
+pl (1 i386-linux)
     EOF
 
     assert_equal expected, @ui.output
@@ -348,7 +375,7 @@ pl
 
     expected = <<-EOF
 a (2)
-pl (1)
+pl (1 i386-linux)
     EOF
 
     assert_equal expected, @ui.output
@@ -388,7 +415,7 @@ a (3.a, 2, 1)
 a_evil (9)
 b (2)
 c (1.2)
-pl (1)
+pl (1 i386-linux)
     EOF
 
     assert_equal expected, @ui.output

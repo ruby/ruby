@@ -1,8 +1,8 @@
-# -*- coding: iso-8859-1 -*-
-#++
-# Copyright (C) 2004 Mauricio Julio Fern·ndez Pradier
-# See LICENSE.txt for additional licensing information.
+# -*- coding: utf-8 -*-
 #--
+# Copyright (C) 2004 Mauricio Julio Fern√°ndez Pradier
+# See LICENSE.txt for additional licensing information.
+#++
 
 module Gem::Package::FSyncDir
 

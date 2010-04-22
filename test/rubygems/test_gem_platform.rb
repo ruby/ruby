@@ -30,6 +30,9 @@ class TestGemPlatform < RubyGemTestCase
       'hppa2.0w-hpux11.31'     => ['hppa2.0w',  'hpux',      '11'],
       'java'                   => [nil,         'java',      nil],
       'jruby'                  => [nil,         'java',      nil],
+      'universal-dotnet'       => ['universal', 'dotnet',    nil],
+      'universal-dotnet2.0'    => ['universal', 'dotnet',  '2.0'],
+      'universal-dotnet4.0'    => ['universal', 'dotnet',  '4.0'],
       'powerpc-aix5.3.0.0'     => ['powerpc',   'aix',       '5'],
       'powerpc-darwin7'        => ['powerpc',   'darwin',    '7'],
       'powerpc-darwin8'        => ['powerpc',   'darwin',    '8'],
@@ -227,6 +230,22 @@ class TestGemPlatform < RubyGemTestCase
     util_set_arch 'java'
     assert_match 'java',  Gem::Platform.local
     assert_match 'jruby', Gem::Platform.local
+      
+    util_set_arch 'universal-dotnet2.0'
+    assert_match 'universal-dotnet',     Gem::Platform.local
+    assert_match 'universal-dotnet-2.0', Gem::Platform.local
+    refute_match 'universal-dotnet-4.0', Gem::Platform.local
+    assert_match 'dotnet',               Gem::Platform.local
+    assert_match 'dotnet-2.0',           Gem::Platform.local
+    refute_match 'dotnet-4.0',           Gem::Platform.local
+    
+    util_set_arch 'universal-dotnet4.0'
+    assert_match 'universal-dotnet',      Gem::Platform.local
+    refute_match 'universal-dotnet-2.0',  Gem::Platform.local  
+    assert_match 'universal-dotnet-4.0',  Gem::Platform.local
+    assert_match 'dotnet',                Gem::Platform.local
+    refute_match 'dotnet-2.0',            Gem::Platform.local  
+    assert_match 'dotnet-4.0',            Gem::Platform.local
 
     util_set_arch 'powerpc-darwin'
     assert_match 'powerpc-darwin', Gem::Platform.local

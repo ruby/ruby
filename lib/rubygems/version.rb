@@ -212,7 +212,7 @@ class Gem::Version
   end
 
   def hash # :nodoc:
-    segments.hash
+    @hash ||= segments.hash
   end
 
   def inspect # :nodoc:
@@ -234,6 +234,7 @@ class Gem::Version
   def marshal_load array
     initialize array[0]
   end
+
   ##
   # A version is considered a prerelease if it contains a letter.
 
@@ -244,6 +245,7 @@ class Gem::Version
   def pretty_print q # :nodoc:
     q.text "Gem::Version.new(#{version.inspect})"
   end
+
   ##
   # The release for this version (e.g. 1.2.0.a -> 1.2.0).
   # Non-prerelease versions return themselves.

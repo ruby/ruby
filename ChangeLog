@@ -1,3 +1,7 @@
+Thu Apr 22 17:13:34 2010  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems: Import RubyGems 1.3.7.pre.1 (as 1.3.6.1).
+
 Thu Apr 22 16:43:31 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (warn_balanced): removed false warning.

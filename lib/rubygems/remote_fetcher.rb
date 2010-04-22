@@ -88,7 +88,9 @@ class Gem::RemoteFetcher
 
    # Always escape URI's to deal with potential spaces and such
     unless URI::Generic === source_uri
-      source_uri = URI.parse(URI.escape(source_uri))
+      source_uri = URI.parse(URI.const_defined?(:DEFAULT_PARSER) ?
+                             URI::DEFAULT_PARSER.escape(source_uri) :
+                             URI.escape(source_uri))
     end
 
     scheme = source_uri.scheme
@@ -252,6 +254,8 @@ class Gem::RemoteFetcher
     connection.start unless connection.started?
 
     connection
+  rescue Errno::EHOSTDOWN => e
+    raise FetchError.new(e.message, uri)
   end
 
   ##
@@ -309,7 +313,7 @@ class Gem::RemoteFetcher
       request.basic_auth uri.user, uri.password
     end
 
-    ua = "RubyGems/#{Gem::RubyGemsVersion} #{Gem::Platform.local}"
+    ua = "RubyGems/#{Gem::VERSION} #{Gem::Platform.local}"
     ua << " Ruby/#{RUBY_VERSION} (#{RUBY_RELEASE_DATE}"
     ua << " patchlevel #{RUBY_PATCHLEVEL}" if defined? RUBY_PATCHLEVEL
     ua << ")"
@@ -351,7 +355,9 @@ class Gem::RemoteFetcher
     # HACK work around EOFError bug in Net::HTTP
     # NOTE Errno::ECONNABORTED raised a lot on Windows, and make impossible
     # to install gems.
-    rescue EOFError, Errno::ECONNABORTED, Errno::ECONNRESET, Errno::EPIPE
+    rescue EOFError, Timeout::Error,
+           Errno::ECONNABORTED, Errno::ECONNRESET, Errno::EPIPE
+
       requests = @requests[connection.object_id]
       say "connection reset after #{requests} requests, retrying" if
         Gem.configuration.really_verbose

@@ -64,11 +64,10 @@ class TestGemCommandsUninstallCommand < GemInstallerTestCase
 
     util_setup_gem
 
-    use_ui @ui do
-      tmp_rake = ENV['rake']
-      ENV['rake'] = @@rake
-      @installer.install
-      ENV['rake'] = tmp_rake
+    build_rake_in do
+      use_ui @ui do
+        @installer.install
+      end
     end
 
     @cmd.options[:args] = ["pre"]
