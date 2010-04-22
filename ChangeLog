@@ -1,3 +1,8 @@
+Thu Apr 22 23:10:59 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* proc.c (mnew): fix wrong error message when Kernel#public_method
+	  receives name of private method.  [Bug #2425]
+
 Thu Apr 22 22:56:42 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* bootstraptest/test_thread.rb: fix test.  [Bug #2342]
