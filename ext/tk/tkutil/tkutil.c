@@ -155,7 +155,7 @@ tk_do_callback(argc, argv, self)
     rb_scan_args(argc, argv, "1*", &id, &rest);
     return rb_apply(rb_hash_aref(CALLBACK_TABLE, id), ID_call, rest);
 #endif
-    return rb_funcall2(rb_hash_aref(CALLBACK_TABLE, argv[0]), 
+    return rb_funcall2(rb_hash_aref(CALLBACK_TABLE, argv[0]),
                        ID_call, argc - 1, argv + 1);
 }
 
@@ -209,12 +209,12 @@ tk_uninstall_cmd(self, cmd_id)
     if (strncmp(cmd_id_head, RSTRING_PTR(cmd_id), head_len) != 0) {
         return Qnil;
     }
-    if (strncmp(cmd_id_prefix, 
+    if (strncmp(cmd_id_prefix,
                 RSTRING_PTR(cmd_id) + head_len, prefix_len) != 0) {
         return Qnil;
     }
 
-    return rb_hash_delete(CALLBACK_TABLE, 
+    return rb_hash_delete(CALLBACK_TABLE,
                           rb_str_new2(RSTRING_PTR(cmd_id) + head_len));
 }
 
@@ -697,7 +697,7 @@ push_kv_enc(key, val, args)
 #if 0
     rb_ary_push(ary, key2keyname(key));
     if (val != TK_None) {
-        rb_ary_push(ary, get_eval_string_core(val, Qtrue, 
+        rb_ary_push(ary, get_eval_string_core(val, Qtrue,
                                               RARRAY_PTR(args)[1]));
     }
 #endif
@@ -829,7 +829,7 @@ get_eval_string_core(obj, enc_flag, self)
     case T_SYMBOL:
         if (RTEST(enc_flag)) {
             if (rb_obj_respond_to(self, ID_toUTF8, Qtrue)) {
-                return rb_funcall(self, ID_toUTF8, 1, 
+                return rb_funcall(self, ID_toUTF8, 1,
                                   rb_str_new2(rb_id2name(SYM2ID(obj))));
             } else {
                 return fromDefaultEnc_toUTF8(rb_str_new2(rb_id2name(SYM2ID(obj))), self);
@@ -867,7 +867,7 @@ get_eval_string_core(obj, enc_flag, self)
     default:
         if (rb_obj_is_kind_of(obj, cTkObject)) {
             /* return rb_str_new3(rb_funcall(obj, ID_path, 0, 0)); */
-            return get_eval_string_core(rb_funcall(obj, ID_path, 0, 0), 
+            return get_eval_string_core(rb_funcall(obj, ID_path, 0, 0),
                                         enc_flag, self);
         }
 
@@ -885,18 +885,18 @@ get_eval_string_core(obj, enc_flag, self)
 
         if (rb_obj_respond_to(obj, ID_to_eval, Qtrue)) {
             /* return rb_funcall(obj, ID_to_eval, 0, 0); */
-            return get_eval_string_core(rb_funcall(obj, ID_to_eval, 0, 0), 
+            return get_eval_string_core(rb_funcall(obj, ID_to_eval, 0, 0),
                                         enc_flag, self);
         } else if (rb_obj_respond_to(obj, ID_path, Qtrue)) {
             /* return rb_funcall(obj, ID_path, 0, 0); */
-            return get_eval_string_core(rb_funcall(obj, ID_path, 0, 0), 
+            return get_eval_string_core(rb_funcall(obj, ID_path, 0, 0),
                                         enc_flag, self);
         } else if (rb_obj_respond_to(obj, ID_to_s, Qtrue)) {
             return rb_funcall(obj, ID_to_s, 0, 0);
         }
     }
 
-    rb_warning("fail to convert '%s' to string for Tk", 
+    rb_warning("fail to convert '%s' to string for Tk",
                RSTRING_PTR(rb_funcall(obj, rb_intern("inspect"), 0, 0)));
 
     return obj;
@@ -1039,7 +1039,7 @@ static VALUE
 tkstr_invalid_numstr(value)
     VALUE value;
 {
-    rb_raise(rb_eArgError, 
+    rb_raise(rb_eArgError,
              "invalid value for Number: '%s'", RSTRING_PTR(value));
     return Qnil; /*dummy*/
 }
@@ -1048,8 +1048,8 @@ static VALUE
 tkstr_rescue_float(value)
     VALUE value;
 {
-    return rb_rescue2(tkstr_to_float, value, 
-                      tkstr_invalid_numstr, value, 
+    return rb_rescue2(tkstr_to_float, value,
+                      tkstr_invalid_numstr, value,
                       rb_eArgError, 0);
 }
 
@@ -1061,8 +1061,8 @@ tkstr_to_number(value)
 
     if (RSTRING_PTR(value) == (char*)NULL) return INT2FIX(0);
 
-    return rb_rescue2(tkstr_to_int, value, 
-                      tkstr_rescue_float, value, 
+    return rb_rescue2(tkstr_to_int, value,
+                      tkstr_rescue_float, value,
                       rb_eArgError, 0);
 }
 
@@ -1111,8 +1111,8 @@ tcl2rb_num_or_str(self, value)
 
     if (RSTRING_PTR(value) == (char*)NULL) return rb_tainted_str_new2("");
 
-    return rb_rescue2(tkstr_to_number, value, 
-                      tkstr_to_str, value, 
+    return rb_rescue2(tkstr_to_number, value,
+                      tkstr_to_str, value,
                       rb_eArgError, 0);
 }
 
@@ -1199,7 +1199,7 @@ allocate_cbsubst_info(struct cbsubst_info **inf_ptr)
 static void
 cbsubst_init()
 {
-  rb_const_set(cCB_SUBST, ID_SUBST_INFO, 
+  rb_const_set(cCB_SUBST, ID_SUBST_INFO,
 	       allocate_cbsubst_info((struct cbsubst_info **)NULL));
 }
 
@@ -1212,7 +1212,7 @@ cbsubst_initialize(argc, argv, self)
     struct cbsubst_info *inf;
     int idx, iv_idx;
 
-    Data_Get_Struct(rb_const_get(rb_obj_class(self), ID_SUBST_INFO), 
+    Data_Get_Struct(rb_const_get(rb_obj_class(self), ID_SUBST_INFO),
                     struct cbsubst_info, inf);
 
    idx = 0;
@@ -1252,7 +1252,7 @@ each_attr_def(key, value, klass)
         key_id = SYM2ID(key);
         break;
     default:
-        rb_raise(rb_eArgError, 
+        rb_raise(rb_eArgError,
                  "includes invalid key(s). expected a String or a Symbol");
     }
 
@@ -1264,7 +1264,7 @@ each_attr_def(key, value, klass)
         value_id = SYM2ID(value);
         break;
     default:
-        rb_raise(rb_eArgError, 
+        rb_raise(rb_eArgError,
                  "includes invalid value(s). expected a String or a Symbol");
     }
 
@@ -1284,7 +1284,7 @@ cbsubst_def_attr_aliases(self, tbl)
         rb_raise(rb_eArgError, "expected a Hash");
     }
 
-    Data_Get_Struct(rb_const_get(self, ID_SUBST_INFO), 
+    Data_Get_Struct(rb_const_get(self, ID_SUBST_INFO),
                     struct cbsubst_info, inf);
 
     rb_hash_foreach(tbl, each_attr_def, self);
@@ -1306,7 +1306,7 @@ cbsubst_sym_to_subst(self, sym)
 
     if (TYPE(sym) != T_SYMBOL) return sym;
 
-    Data_Get_Struct(rb_const_get(self, ID_SUBST_INFO), 
+    Data_Get_Struct(rb_const_get(self, ID_SUBST_INFO),
                     struct cbsubst_info, inf);
 
     if (!NIL_P(ret = rb_hash_aref(inf->aliases, sym))) {
@@ -1358,7 +1358,7 @@ cbsubst_get_subst_arg(argc, argv, self)
     ID id;
     volatile VALUE arg_sym, ret;
 
-    Data_Get_Struct(rb_const_get(self, ID_SUBST_INFO), 
+    Data_Get_Struct(rb_const_get(self, ID_SUBST_INFO),
                     struct cbsubst_info, inf);
 
     ptr = buf = ALLOC_N(char, inf->full_subst_length + 1);
@@ -1428,7 +1428,7 @@ cbsubst_get_subst_key(self, str)
     list = rb_funcall(cTclTkLib, ID_split_tklist, 1, str);
     len = RARRAY_LEN(list);
 
-    Data_Get_Struct(rb_const_get(self, ID_SUBST_INFO), 
+    Data_Get_Struct(rb_const_get(self, ID_SUBST_INFO),
                     struct cbsubst_info, inf);
 
     ptr = buf = ALLOC_N(char, inf->full_subst_length + len + 1);
@@ -1476,7 +1476,7 @@ cbsubst_get_all_subst_keys(self)
     int idx, len;
     volatile VALUE ret;
 
-    Data_Get_Struct(rb_const_get(self, ID_SUBST_INFO), 
+    Data_Get_Struct(rb_const_get(self, ID_SUBST_INFO),
                     struct cbsubst_info, inf);
 
     ptr = buf = ALLOC_N(char, inf->full_subst_length + 1);
@@ -1587,7 +1587,7 @@ cbsubst_table_setup(argc, argv, self)
     chr = (unsigned char)(0x80 + idx);
     subst_inf->keylen[chr] = RSTRING_LEN(RARRAY_PTR(inf)[0]);
 #if HAVE_STRNDUP
-    subst_inf->key[chr] = strndup(RSTRING_PTR(RARRAY_PTR(inf)[0]), 
+    subst_inf->key[chr] = strndup(RSTRING_PTR(RARRAY_PTR(inf)[0]),
 				  RSTRING_LEN(RARRAY_PTR(inf)[0]));
 #else
     subst_inf->key[chr] = malloc(RSTRING_LEN(RARRAY_PTR(inf)[0]) + 1);
@@ -1620,10 +1620,10 @@ cbsubst_table_setup(argc, argv, self)
   for(idx = 0; idx < len; idx++) {
     inf = RARRAY_PTR(proc_inf)[idx];
     if (TYPE(inf) != T_ARRAY) continue;
-    rb_hash_aset(subst_inf->proc, 
-		 ((TYPE(RARRAY_PTR(inf)[0]) == T_STRING)? 
-		  INT2FIX(*(RSTRING_PTR(RARRAY_PTR(inf)[0]))) : 
-		  RARRAY_PTR(inf)[0]), 
+    rb_hash_aset(subst_inf->proc,
+		 ((TYPE(RARRAY_PTR(inf)[0]) == T_STRING)?
+		  INT2FIX(*(RSTRING_PTR(RARRAY_PTR(inf)[0]))) :
+		  RARRAY_PTR(inf)[0]),
 		 RARRAY_PTR(inf)[1]);
   }
 
@@ -1661,7 +1661,7 @@ cbsubst_scan_args(self, arg_key, val_ary)
 
     old_gc = rb_gc_disable();
 
-    Data_Get_Struct(rb_const_get(self, ID_SUBST_INFO), 
+    Data_Get_Struct(rb_const_get(self, ID_SUBST_INFO),
                     struct cbsubst_info, inf);
 
     for(idx = 0; idx < vallen; idx++) {
@@ -1680,7 +1680,7 @@ cbsubst_scan_args(self, arg_key, val_ary)
       if (NIL_P(proc)) {
 	rb_ary_push(dst, RARRAY_PTR(val_ary)[idx]);
       } else {
-	rb_ary_push(dst, rb_funcall(proc, ID_call, 1, 
+	rb_ary_push(dst, rb_funcall(proc, ID_call, 1,
 				    RARRAY_PTR(val_ary)[idx]));
       }
     }
@@ -1736,7 +1736,7 @@ Init_tkutil()
 
     /* --------------------- */
 
-    rb_define_const(mTK, "RELEASE_DATE", 
+    rb_define_const(mTK, "RELEASE_DATE",
                     rb_obj_freeze(rb_str_new2(tkutil_release_date)));
 
     /* --------------------- */
@@ -1766,19 +1766,19 @@ Init_tkutil()
     ID_SUBST_INFO = rb_intern("SUBST_INFO");
     rb_define_singleton_method(cCB_SUBST, "ret_val", cbsubst_ret_val, 1);
     rb_define_singleton_method(cCB_SUBST, "scan_args", cbsubst_scan_args, 2);
-    rb_define_singleton_method(cCB_SUBST, "_sym2subst", 
+    rb_define_singleton_method(cCB_SUBST, "_sym2subst",
 			       cbsubst_sym_to_subst, 1);
-    rb_define_singleton_method(cCB_SUBST, "subst_arg", 
+    rb_define_singleton_method(cCB_SUBST, "subst_arg",
                                cbsubst_get_subst_arg, -1);
-    rb_define_singleton_method(cCB_SUBST, "_get_subst_key", 
+    rb_define_singleton_method(cCB_SUBST, "_get_subst_key",
                                cbsubst_get_subst_key,  1);
-    rb_define_singleton_method(cCB_SUBST, "_get_all_subst_keys", 
+    rb_define_singleton_method(cCB_SUBST, "_get_all_subst_keys",
                                cbsubst_get_all_subst_keys,  0);
-    rb_define_singleton_method(cCB_SUBST, "_setup_subst_table", 
+    rb_define_singleton_method(cCB_SUBST, "_setup_subst_table",
                                cbsubst_table_setup, -1);
-    rb_define_singleton_method(cCB_SUBST, "_get_extra_args_tbl", 
+    rb_define_singleton_method(cCB_SUBST, "_get_extra_args_tbl",
                                cbsubst_get_extra_args_tbl,  0);
-    rb_define_singleton_method(cCB_SUBST, "_define_attribute_aliases", 
+    rb_define_singleton_method(cCB_SUBST, "_define_attribute_aliases",
                                cbsubst_def_attr_aliases,  1);
 
     rb_define_method(cCB_SUBST, "initialize", cbsubst_initialize, -1);
@@ -1827,9 +1827,9 @@ Init_tkutil()
     rb_define_singleton_method(mTK, "uninstall_cmd", tk_uninstall_cmd, 1);
     rb_define_singleton_method(mTK, "_symbolkey2str", tk_symbolkey2str, 1);
     rb_define_singleton_method(mTK, "hash_kv", tk_hash_kv, -1);
-    rb_define_singleton_method(mTK, "_get_eval_string", 
+    rb_define_singleton_method(mTK, "_get_eval_string",
                                tk_get_eval_string, -1);
-    rb_define_singleton_method(mTK, "_get_eval_enc_str", 
+    rb_define_singleton_method(mTK, "_get_eval_enc_str",
                                tk_get_eval_enc_str, 1);
     rb_define_singleton_method(mTK, "_conv_args", tk_conv_args, -1);
 

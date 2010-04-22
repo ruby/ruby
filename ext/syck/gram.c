@@ -1216,7 +1216,7 @@ yyreduce:
 
   case 8:
 #line 76 "gram.y"
-    { 
+    {
             syck_add_transfer( yyvsp[-1].name, yyvsp[0].nodeData, ((SyckParser *)parser)->taguri_expansion );
             yyval.nodeData = yyvsp[0].nodeData;
         }
@@ -1232,7 +1232,7 @@ yyreduce:
 
   case 10:
 #line 86 "gram.y"
-    { 
+    {
            /*
             * _Anchors_: The language binding must keep a separate symbol table
             * for anchors.  The actual ID in the symbol table is returned to the
@@ -1266,7 +1266,7 @@ yyreduce:
 
   case 16:
 #line 114 "gram.y"
-    { 
+    {
                    if ( ((SyckParser *)parser)->implicit_typing == 1 )
                    {
                       try_tag_implicit( yyvsp[0].nodeData, ((SyckParser *)parser)->taguri_expansion );
@@ -1277,7 +1277,7 @@ yyreduce:
 
   case 17:
 #line 122 "gram.y"
-    { 
+    {
                     syck_add_transfer( yyvsp[-1].name, yyvsp[0].nodeData, ((SyckParser *)parser)->taguri_expansion );
                     yyval.nodeData = yyvsp[0].nodeData;
                 }
@@ -1293,7 +1293,7 @@ yyreduce:
 
   case 19:
 #line 132 "gram.y"
-    { 
+    {
                    /*
                     * _Anchors_: The language binding must keep a separate symbol table
                     * for anchors.  The actual ID in the symbol table is returned to the
@@ -1305,7 +1305,7 @@ yyreduce:
 
   case 26:
 #line 165 "gram.y"
-    { 
+    {
                syck_add_transfer( yyvsp[-1].name, yyvsp[0].nodeData, ((SyckParser *)parser)->taguri_expansion );
                yyval.nodeData = yyvsp[0].nodeData;
             }
@@ -1313,7 +1313,7 @@ yyreduce:
 
   case 27:
 #line 170 "gram.y"
-    { 
+    {
                syck_add_transfer( yyvsp[-1].name, yyvsp[0].nodeData, 0 );
                yyval.nodeData = yyvsp[0].nodeData;
             }
@@ -1321,7 +1321,7 @@ yyreduce:
 
   case 28:
 #line 175 "gram.y"
-    { 
+    {
                if ( ((SyckParser *)parser)->implicit_typing == 1 )
                {
                   try_tag_implicit( yyvsp[0].nodeData, ((SyckParser *)parser)->taguri_expansion );
@@ -1332,7 +1332,7 @@ yyreduce:
 
   case 29:
 #line 183 "gram.y"
-    { 
+    {
                yyval.nodeData = syck_hdlr_add_anchor( (SyckParser *)parser, yyvsp[-1].name, yyvsp[0].nodeData );
             }
     break;
@@ -1350,7 +1350,7 @@ yyreduce:
 
   case 31:
 #line 195 "gram.y"
-    { 
+    {
                SyckNode *n = yyvsp[0].nodeData;
                if ( ((SyckParser *)parser)->taguri_expansion == 1 )
                {
@@ -1373,28 +1373,28 @@ yyreduce:
 
   case 39:
 #line 229 "gram.y"
-    { 
+    {
                     yyval.nodeData = yyvsp[-1].nodeData;
                 }
     break;
 
   case 40:
 #line 233 "gram.y"
-    { 
+    {
                     yyval.nodeData = yyvsp[-1].nodeData;
                 }
     break;
 
   case 41:
 #line 239 "gram.y"
-    { 
+    {
                     yyval.nodeId = syck_hdlr_add_node( (SyckParser *)parser, yyvsp[0].nodeData );
                 }
     break;
 
   case 42:
 #line 245 "gram.y"
-    { 
+    {
                     syck_add_transfer( yyvsp[-2].name, yyvsp[0].nodeData, ((SyckParser *)parser)->taguri_expansion );
                     yyval.nodeData = yyvsp[0].nodeData;
                 }
@@ -1402,7 +1402,7 @@ yyreduce:
 
   case 43:
 #line 250 "gram.y"
-    { 
+    {
                     syck_add_transfer( yyvsp[-1].name, yyvsp[0].nodeData, ((SyckParser *)parser)->taguri_expansion );
                     yyval.nodeData = yyvsp[0].nodeData;
                 }
@@ -1410,7 +1410,7 @@ yyreduce:
 
   case 44:
 #line 255 "gram.y"
-    { 
+    {
                     syck_add_transfer( yyvsp[-2].name, yyvsp[0].nodeData, 0 );
                     yyval.nodeData = yyvsp[0].nodeData;
                 }
@@ -1418,7 +1418,7 @@ yyreduce:
 
   case 45:
 #line 260 "gram.y"
-    { 
+    {
                     syck_add_transfer( yyvsp[-1].name, yyvsp[0].nodeData, 0 );
                     yyval.nodeData = yyvsp[0].nodeData;
                 }
@@ -1426,14 +1426,14 @@ yyreduce:
 
   case 46:
 #line 265 "gram.y"
-    { 
+    {
                     yyval.nodeData = syck_hdlr_add_anchor( (SyckParser *)parser, yyvsp[-2].name, yyvsp[0].nodeData );
                 }
     break;
 
   case 47:
 #line 269 "gram.y"
-    { 
+    {
                     yyval.nodeData = syck_hdlr_add_anchor( (SyckParser *)parser, yyvsp[-1].name, yyvsp[0].nodeData );
                 }
     break;
@@ -1447,7 +1447,7 @@ yyreduce:
 
   case 49:
 #line 279 "gram.y"
-    { 
+    {
                     syck_seq_add( yyvsp[-2].nodeData, yyvsp[0].nodeId );
                     yyval.nodeData = yyvsp[-2].nodeData;
 				}
@@ -1455,21 +1455,21 @@ yyreduce:
 
   case 50:
 #line 284 "gram.y"
-    { 
+    {
                     yyval.nodeData = yyvsp[-1].nodeData;
 				}
     break;
 
   case 51:
 #line 293 "gram.y"
-    { 
+    {
                     yyval.nodeData = yyvsp[-1].nodeData;
                 }
     break;
 
   case 52:
 #line 297 "gram.y"
-    { 
+    {
                     yyval.nodeData = syck_alloc_seq();
                 }
     break;
@@ -1483,7 +1483,7 @@ yyreduce:
 
   case 54:
 #line 307 "gram.y"
-    { 
+    {
                     syck_seq_add( yyvsp[-2].nodeData, syck_hdlr_add_node( (SyckParser *)parser, yyvsp[0].nodeData ) );
                     yyval.nodeData = yyvsp[-2].nodeData;
 				}
@@ -1491,7 +1491,7 @@ yyreduce:
 
   case 57:
 #line 321 "gram.y"
-    { 
+    {
                     apply_seq_in_map( (SyckParser *)parser, yyvsp[-1].nodeData );
                     yyval.nodeData = yyvsp[-1].nodeData;
                 }
@@ -1499,7 +1499,7 @@ yyreduce:
 
   case 58:
 #line 326 "gram.y"
-    { 
+    {
                     apply_seq_in_map( (SyckParser *)parser, yyvsp[-1].nodeData );
                     yyval.nodeData = yyvsp[-1].nodeData;
                 }
@@ -1507,7 +1507,7 @@ yyreduce:
 
   case 59:
 #line 333 "gram.y"
-    { 
+    {
                     syck_add_transfer( yyvsp[-2].name, yyvsp[0].nodeData, ((SyckParser *)parser)->taguri_expansion );
                     yyval.nodeData = yyvsp[0].nodeData;
                 }
@@ -1515,7 +1515,7 @@ yyreduce:
 
   case 60:
 #line 338 "gram.y"
-    { 
+    {
                     syck_add_transfer( yyvsp[-1].name, yyvsp[0].nodeData, ((SyckParser *)parser)->taguri_expansion );
                     yyval.nodeData = yyvsp[0].nodeData;
                 }
@@ -1523,7 +1523,7 @@ yyreduce:
 
   case 61:
 #line 343 "gram.y"
-    { 
+    {
                     syck_add_transfer( yyvsp[-2].name, yyvsp[0].nodeData, 0 );
                     yyval.nodeData = yyvsp[0].nodeData;
                 }
@@ -1531,7 +1531,7 @@ yyreduce:
 
   case 62:
 #line 348 "gram.y"
-    { 
+    {
                     syck_add_transfer( yyvsp[-1].name, yyvsp[0].nodeData, 0 );
                     yyval.nodeData = yyvsp[0].nodeData;
                 }
@@ -1539,14 +1539,14 @@ yyreduce:
 
   case 63:
 #line 353 "gram.y"
-    { 
+    {
                     yyval.nodeData = syck_hdlr_add_anchor( (SyckParser *)parser, yyvsp[-2].name, yyvsp[0].nodeData );
                 }
     break;
 
   case 64:
 #line 357 "gram.y"
-    { 
+    {
                     yyval.nodeData = syck_hdlr_add_anchor( (SyckParser *)parser, yyvsp[-1].name, yyvsp[0].nodeData );
                 }
     break;
@@ -1561,8 +1561,8 @@ yyreduce:
   case 68:
 #line 380 "gram.y"
     {
-                    yyval.nodeData = syck_new_map( 
-                        syck_hdlr_add_node( (SyckParser *)parser, yyvsp[-2].nodeData ), 
+                    yyval.nodeData = syck_new_map(
+                        syck_hdlr_add_node( (SyckParser *)parser, yyvsp[-2].nodeData ),
                         syck_hdlr_add_node( (SyckParser *)parser, yyvsp[0].nodeData ) );
                 }
     break;
@@ -1603,8 +1603,8 @@ yyreduce:
   case 73:
 #line 427 "gram.y"
     {
-                    yyval.nodeData = syck_new_map( 
-                        syck_hdlr_add_node( (SyckParser *)parser, yyvsp[-2].nodeData ), 
+                    yyval.nodeData = syck_new_map(
+                        syck_hdlr_add_node( (SyckParser *)parser, yyvsp[-2].nodeData ),
                         syck_hdlr_add_node( (SyckParser *)parser, yyvsp[0].nodeData ) );
                 }
     break;
@@ -1637,8 +1637,8 @@ yyreduce:
 #line 455 "gram.y"
     {
                     NULL_NODE( parser, n );
-                    yyval.nodeData = syck_new_map( 
-                        syck_hdlr_add_node( (SyckParser *)parser, yyvsp[0].nodeData ), 
+                    yyval.nodeData = syck_new_map(
+                        syck_hdlr_add_node( (SyckParser *)parser, yyvsp[0].nodeData ),
                         syck_hdlr_add_node( (SyckParser *)parser, n ) );
                 }
     break;

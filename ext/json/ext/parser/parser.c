@@ -29,7 +29,7 @@ static VALUE mJSON, mExt, cParser, eParserError, eNestingError;
 static VALUE CNaN, CInfinity, CMinusInfinity;
 
 static ID i_json_creatable_p, i_json_create, i_create_id, i_create_additions,
-          i_chr, i_max_nesting, i_allow_nan, i_object_class, i_array_class; 
+          i_chr, i_max_nesting, i_allow_nan, i_object_class, i_array_class;
 
 #define MinusInfinity "-Infinity"
 
@@ -201,7 +201,7 @@ tr11:
 #line 92 "parser.rl"
 	{
         VALUE v = Qnil;
-        char *np = JSON_parse_value(json, p, pe, &v); 
+        char *np = JSON_parse_value(json, p, pe, &v);
         if (np == NULL) {
             p--; {p++; cs = 9; goto _out;}
         } else {
@@ -503,7 +503,7 @@ tr2:
 	goto st21;
 tr5:
 #line 202 "parser.rl"
-	{ 
+	{
         char *np;
         json->current_nesting++;
         np = JSON_parse_array(json, p, pe, result);
@@ -513,7 +513,7 @@ tr5:
 	goto st21;
 tr9:
 #line 210 "parser.rl"
-	{ 
+	{
         char *np;
         json->current_nesting++;
         np =  JSON_parse_object(json, p, pe, result);
@@ -1066,7 +1066,7 @@ tr2:
 #line 312 "parser.rl"
 	{
         VALUE v = Qnil;
-        char *np = JSON_parse_value(json, p, pe, &v); 
+        char *np = JSON_parse_value(json, p, pe, &v);
         if (np == NULL) {
             p--; {p++; cs = 3; goto _out;}
         } else {
@@ -1286,7 +1286,7 @@ static VALUE json_string_unescape(char *p, char *pe)
                     p++;
                     break;
                 case 'u':
-                    if (p > pe - 4) { 
+                    if (p > pe - 4) {
                         return Qnil;
                     } else {
                         p = JSON_convert_UTF16_to_UTF8(result, p, pe, strictConversion);
@@ -1474,7 +1474,7 @@ static const int JSON_en_main = 1;
 #line 473 "parser.rl"
 
 
-/* 
+/*
  * Document-class: JSON::Ext::Parser
  *
  * This is the JSON parser implemented as a C extension. It can be configured

@@ -22,7 +22,7 @@
 	OSSL_Check_Kind(obj, cSSLSession); \
 	GetSSLSession(obj, sess); \
 } while (0)
-        
+
 extern VALUE mSSL;
 extern VALUE eSSLError;
 extern VALUE cSSLSocket;

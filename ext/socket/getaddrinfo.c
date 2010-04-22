@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 1995, 1996, 1997, and 1998 WIDE Project.
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -13,7 +13,7 @@
  * 3. Neither the name of the project nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE PROJECT AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -45,7 +45,7 @@
 #include <sys/types.h>
 #ifndef _WIN32
 #include <sys/param.h>
-#if defined(__BEOS__) && !defined(__HAIKU__) && !defined(BONE) 
+#if defined(__BEOS__) && !defined(__HAIKU__) && !defined(BONE)
 # include <net/socket.h>
 #else
 # include <sys/socket.h>
@@ -97,7 +97,7 @@ static const char in_addrany[] = { 0, 0, 0, 0 };
 static const char in6_addrany[] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
-static const char in_loopback[] = { 127, 0, 0, 1 }; 
+static const char in_loopback[] = { 127, 0, 0, 1 };
 static const char in6_loopback[] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
 };
@@ -502,7 +502,7 @@ getaddrinfo(const char *hostname, const char *servname, const struct addrinfo *h
 				 */
 				get_name(pton, &afdl[i], &top, pton, pai, port);
 				goto good;
-			} else 
+			} else
 				ERR(EAI_FAMILY);	/*xxx*/
 		}
 	}

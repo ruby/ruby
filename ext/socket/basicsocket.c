@@ -57,7 +57,7 @@ bsock_s_for_fd(VALUE klass, VALUE fd)
  *     s2.close
  *     p s1.read          #=> "pong\n"
  *   }
- *   
+ *
  */
 static VALUE
 bsock_shutdown(int argc, VALUE *argv, VALUE sock)
@@ -179,15 +179,15 @@ bsock_close_write(VALUE sock)
  *
  * Some socket options are integers with boolean values, in this case
  * #setsockopt could be called like this:
- *   sock.setsockopt(:SOCKET, :REUSEADDR, true) 
+ *   sock.setsockopt(:SOCKET, :REUSEADDR, true)
  *   sock.setsockopt(Socket::SOL_SOCKET,Socket::SO_REUSEADDR, true)
  *   sock.setsockopt(Socket::Option.bool(:INET, :SOCKET, :REUSEADDR, true))
  *
  * Some socket options are integers with numeric values, in this case
  * #setsockopt could be called like this:
- *   sock.setsockopt(:IP, :TTL, 255)  
+ *   sock.setsockopt(:IP, :TTL, 255)
  *   sock.setsockopt(Socket::IPPROTO_IP, Socket::IP_TTL, 255)
- *   sock.setsockopt(Socket::Option.int(:INET, :IP, :TTL, 255))     
+ *   sock.setsockopt(Socket::Option.int(:INET, :IP, :TTL, 255))
  *
  * Option values may be structs. Passing them can be complex as it involves
  * examining your system headers to determine the correct definition. An
@@ -196,7 +196,7 @@ bsock_close_write(VALUE sock)
  *     struct  in_addr imr_multiaddr;
  *     struct  in_addr imr_interface;
  *   };
- * 
+ *
  * In this case #setsockopt could be called like this:
  *   optval = IPAddr.new("224.0.0.251").hton +
  *            IPAddr.new(Socket::INADDR_ANY, Socket::AF_INET).hton
@@ -303,7 +303,7 @@ bsock_setsockopt(int argc, VALUE *argv, VALUE sock)
  *     int l_onoff;
  *     int l_linger;
  *   };
- * 
+ *
  * In this case #getsockopt could be called like this:
  *
  *   # Socket::Option knows linger structure.
@@ -647,7 +647,7 @@ bsock_recv(int argc, VALUE *argv, VALUE sock)
  * call-seq:
  * 	basicsocket.recv_nonblock(maxlen) => mesg
  * 	basicsocket.recv_nonblock(maxlen, flags) => mesg
- * 
+ *
  * Receives up to _maxlen_ bytes from +socket+ using recvfrom(2) after
  * O_NONBLOCK is set for the underlying file descriptor.
  * _flags_ is zero or more of the +MSG_+ options.
@@ -656,11 +656,11 @@ bsock_recv(int argc, VALUE *argv, VALUE sock)
  * When recvfrom(2) returns 0, Socket#recv_nonblock returns
  * an empty string as data.
  * The meaning depends on the socket: EOF on TCP, empty packet on UDP, etc.
- * 
+ *
  * === Parameters
  * * +maxlen+ - the number of bytes to receive from the socket
- * * +flags+ - zero or more of the +MSG_+ options 
- * 
+ * * +flags+ - zero or more of the +MSG_+ options
+ *
  * === Example
  * 	serv = TCPServer.new("127.0.0.1", 0)
  * 	af, port, host, addr = serv.addr
@@ -675,7 +675,7 @@ bsock_recv(int argc, VALUE *argv, VALUE sock)
  * 	end
  *
  * Refer to Socket#recvfrom for the exceptions that may be thrown if the call
- * to _recv_nonblock_ fails. 
+ * to _recv_nonblock_ fails.
  *
  * BasicSocket#recv_nonblock may raise any error corresponding to recvfrom(2) failure,
  * including Errno::EWOULDBLOCK.

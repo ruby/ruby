@@ -72,7 +72,7 @@ ossl_protect_membio2str(BIO *bio, int *status)
     return rb_protect((VALUE(*)_((VALUE)))ossl_membio2str0, (VALUE)bio, status);
 }
 
-VALUE 
+VALUE
 ossl_membio2str(BIO *bio)
 {
     VALUE ret;

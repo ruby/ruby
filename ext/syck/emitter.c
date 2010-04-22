@@ -4,9 +4,9 @@
  * $Author$
  *
  * Copyright (C) 2003 why the lucky stiff
- * 
+ *
  * All Base64 code from Ruby's pack.c.
- * Ruby is Copyright (C) 1993-2007 Yukihiro Matsumoto 
+ * Ruby is Copyright (C) 1993-2007 Yukihiro Matsumoto
  */
 #include "ruby/ruby.h"
 
@@ -17,7 +17,7 @@
 
 #define DEFAULT_ANCHOR_FORMAT "id%03d"
 
-const char hex_table[] = 
+const char hex_table[] =
 "0123456789ABCDEF";
 static char b64_table[] =
 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -131,7 +131,7 @@ syck_new_emitter(void)
     e->output_handler = NULL;
     e->lvl_idx = 0;
     e->lvl_capa = ALLOC_CT;
-    e->levels = S_ALLOC_N( SyckLevel, e->lvl_capa ); 
+    e->levels = S_ALLOC_N( SyckLevel, e->lvl_capa );
     syck_emitter_reset_levels( e );
     e->bonus = NULL;
     return e;
@@ -197,7 +197,7 @@ syck_emitter_pop_level( SyckEmitter *e )
     free( e->levels[e->lvl_idx].domain );
 }
 
-void 
+void
 syck_emitter_add_level( SyckEmitter *e, int len, enum syck_level_status status )
 {
     ASSERT( e != NULL );
@@ -289,7 +289,7 @@ syck_emitter_write( SyckEmitter *e, const char *str, long len )
     {
         syck_emitter_clear( e );
     }
-    
+
     /*
      * Flush if at end of buffer
      */
@@ -360,7 +360,7 @@ syck_emit( SyckEmitter *e, st_data_t n )
     int indent = 0;
     long x = 0;
     SyckLevel *lvl = syck_emitter_current_level( e );
-    
+
     /*
      * Determine headers.
      */
@@ -485,7 +485,7 @@ void syck_emit_tag( SyckEmitter *e, const char *tag, const char *ignore )
     lvl->anctag = 1;
 }
 
-/* 
+/*
  * Emit a newline and an appropriately spaced indent.
  */
 void syck_emit_indent( SyckEmitter *e )
@@ -569,7 +569,7 @@ syck_scan_scalar( int req_width, const char *cursor, long len )
     } else if ( len > 1 && cursor[len-2] == '\n' ) {
         flags |= SCAN_MANYNL_E;
     }
-    if ( 
+    if (
         ( len > 0 && ( cursor[0] == ' ' || cursor[0] == '\t' ) ) ||
         ( len > 1 && ( cursor[len-1] == ' ' || cursor[len-1] == '\t' ) )
     ) {
@@ -594,7 +594,7 @@ syck_scan_scalar( int req_width, const char *cursor, long len )
             flags |= SCAN_NEWLINE;
             if ( len - i >= 3 && strncmp( &cursor[i+1], "---", 3 ) == 0 )
                 flags |= SCAN_DOCSEP;
-            if ( cursor[i+1] == ' ' || cursor[i+1] == '\t' ) 
+            if ( cursor[i+1] == ' ' || cursor[i+1] == '\t' )
                 flags |= SCAN_INDENTED;
             if ( req_width > 0 && i - start > req_width )
                 flags |= SCAN_WIDE;
@@ -618,12 +618,12 @@ syck_scan_scalar( int req_width, const char *cursor, long len )
         }
         /* remember, if plain collections get implemented, to add nb-plain-flow-char */
         else if ( ( cursor[i] == ' ' && cursor[i+1] == '#' ) ||
-                  ( cursor[i] == ':' && 
+                  ( cursor[i] == ':' &&
                     ( cursor[i+1] == ' ' || cursor[i+1] == '\n' || i == len - 1 ) ) )
         {
             flags |= SCAN_INDIC_C;
         }
-        else if ( cursor[i] == ',' && 
+        else if ( cursor[i] == ',' &&
                   ( cursor[i+1] == ' ' || cursor[i+1] == '\n' || i == len - 1 ) )
         {
             flags |= SCAN_FLOWMAP;
@@ -647,12 +647,12 @@ void syck_emit_scalar( SyckEmitter *e, const char *tag, enum scalar_style force_
     int scan = 0;
     const char *match_implicit;
     char *implicit;
-    
+
     if ( str == NULL ) str = "";
 
     /* No empty nulls as map keys */
-    if ( len == 0 && ( parent->status == syck_lvl_map || parent->status == syck_lvl_imap ) && 
-         parent->ncount % 2 == 1 && syck_tagcmp( tag, "tag:yaml.org,2002:null" ) == 0 ) 
+    if ( len == 0 && ( parent->status == syck_lvl_map || parent->status == syck_lvl_imap ) &&
+         parent->ncount % 2 == 1 && syck_tagcmp( tag, "tag:yaml.org,2002:null" ) == 0 )
     {
         str = "~";
         len = 1;
@@ -668,8 +668,8 @@ void syck_emit_scalar( SyckEmitter *e, const char *tag, enum scalar_style force_
     } else {
         /* complex key */
         if ( parent->status == syck_lvl_map && parent->ncount % 2 == 1 &&
-             ( !( tag == NULL || 
-             ( implicit != NULL && syck_tagcmp( tag, implicit ) == 0 && e->explicit_typing == 0 ) ) ) ) 
+             ( !( tag == NULL ||
+             ( implicit != NULL && syck_tagcmp( tag, implicit ) == 0 && e->explicit_typing == 0 ) ) ) )
         {
             syck_emitter_write( e, "? ", 2 );
             parent->status = syck_lvl_mapx;

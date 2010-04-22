@@ -29,7 +29,7 @@
     GetPKCS7(obj, engine); \
 } while (0)
 
-/* 
+/*
  * Classes
  */
 VALUE cEngine;
@@ -327,7 +327,7 @@ ossl_engine_inspect(VALUE self)
 {
     VALUE str;
     const char *cname = rb_class2name(rb_obj_class(self));
-    
+
     str = rb_str_new2("#<");
     rb_str_cat2(str, cname);
     rb_str_cat2(str, " id=\"");

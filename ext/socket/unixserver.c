@@ -60,11 +60,11 @@ unix_accept(VALUE sock)
 /*
  * call-seq:
  * 	unixserver.accept_nonblock => unixsocket
- * 
+ *
  * Accepts an incoming connection using accept(2) after
  * O_NONBLOCK is set for the underlying file descriptor.
  * It returns an accepted UNIXSocket for the incoming connection.
- * 
+ *
  * === Example
  * 	require 'socket'
  * 	serv = UNIXServer.new("/tmp/sock")
@@ -75,9 +75,9 @@ unix_accept(VALUE sock)
  * 	  retry
  * 	end
  * 	# sock is an accepted socket.
- * 
+ *
  * Refer to Socket#accept for the exceptions that may be thrown if the call
- * to UNIXServer#accept_nonblock fails. 
+ * to UNIXServer#accept_nonblock fails.
  *
  * UNIXServer#accept_nonblock may raise any error corresponding to accept(2) failure,
  * including Errno::EWOULDBLOCK.
@@ -85,7 +85,7 @@ unix_accept(VALUE sock)
  * If the exception is Errno::EWOULDBLOCK, Errno::AGAIN, Errno::ECONNABORTED or Errno::EPROTO,
  * it is extended by IO::WaitReadable.
  * So IO::WaitReadable can be used to rescue the exceptions for retrying accept_nonblock.
- * 
+ *
  * === See
  * * UNIXServer#accept
  * * Socket#accept
@@ -115,7 +115,7 @@ unix_accept_nonblock(VALUE sock)
  *       fd = serv.sysaccept
  *       s = IO.new(fd)
  *       s.puts "hi"
- *       s.close 
+ *       s.close
  *       p c.read #=> "hi\n"
  *     }
  *   }

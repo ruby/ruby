@@ -274,7 +274,7 @@ static VALUE ossl_ec_key_get_group(VALUE self)
  *  the group.
  *
  *  Setting the group will immediately destroy any previously assigned group object.
- *  The group is internally copied by OpenSSL.  Modifying the original group after 
+ *  The group is internally copied by OpenSSL.  Modifying the original group after
  *  assignment will not effect the internal key structure.
  *  (your changes may be lost).  BE CAREFUL.
  *
@@ -1023,7 +1023,7 @@ static VALUE ossl_ec_group_set_asn1_flag(VALUE self, VALUE flag_v)
 }
 
 /*  call-seq:
- *     group.point_conversion_form  => :uncompressed | :compressed | :hybrid 
+ *     group.point_conversion_form  => :uncompressed | :compressed | :hybrid
  *
  *  See the OpenSSL documentation for EC_GROUP_get_point_conversion_form()
  */
@@ -1043,7 +1043,7 @@ static VALUE ossl_ec_group_get_point_conversion_form(VALUE self)
     case POINT_CONVERSION_HYBRID:	ret = ID_hybrid; break;
     default:	rb_raise(eEC_GROUP, "unsupported point conversion form: %d, this module should be updated", form);
     }
-    
+
    return ID2SYM(ret);
 }
 
@@ -1270,7 +1270,7 @@ static VALUE ossl_ec_point_initialize(int argc, VALUE *argv, VALUE self)
             rb_raise(rb_eArgError, "1st argument must be OpenSSL::PKey::EC::Group");
         group_v = arg1;
         SafeRequire_EC_GROUP(group_v, group);
-        
+
         if (rb_obj_is_kind_of(arg2, cBN)) {
             const BIGNUM *bn = GetBNPtr(arg2);
 

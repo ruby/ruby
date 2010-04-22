@@ -743,7 +743,7 @@ init_unix_addrinfo(rb_addrinfo_t *rai, VALUE path, int socktype)
 
     un.sun_family = AF_UNIX;
     memcpy((void*)&un.sun_path, RSTRING_PTR(path), RSTRING_LEN(path));
-   
+
     init_addrinfo(rai, (struct sockaddr *)&un, sizeof(un), PF_UNIX, socktype, 0, Qnil, Qnil);
 }
 #endif
@@ -766,9 +766,9 @@ init_unix_addrinfo(rb_addrinfo_t *rai, VALUE path, int socktype)
  * Socket.sockaddr_in or Socket.unpack_sockaddr_un.
  *
  * sockaddr examples:
- * - ["AF_INET", 46102, "localhost.localdomain", "127.0.0.1"] 
- * - ["AF_INET6", 42304, "ip6-localhost", "::1"] 
- * - ["AF_UNIX", "/tmp/sock"] 
+ * - ["AF_INET", 46102, "localhost.localdomain", "127.0.0.1"]
+ * - ["AF_INET6", 42304, "ip6-localhost", "::1"]
+ * - ["AF_UNIX", "/tmp/sock"]
  * - Socket.sockaddr_in("smtp", "2001:DB8::1")
  * - Socket.sockaddr_in(80, "172.18.22.42")
  * - Socket.sockaddr_in(80, "www.ruby-lang.org")
@@ -1374,7 +1374,7 @@ addrinfo_protocol(VALUE self)
  *
  * returns the socket address as packed struct sockaddr string.
  *
- *   Addrinfo.tcp("localhost", 80).to_sockaddr                    
+ *   Addrinfo.tcp("localhost", 80).to_sockaddr
  *   #=> "\x02\x00\x00P\x7F\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00"
  *
  */
@@ -1928,11 +1928,11 @@ addrinfo_unix_path(VALUE self)
  * nodename or service can be nil if no conversion intended.
  *
  * family, socktype and protocol are hint for preferred protocol.
- * If the result will be used for a socket with SOCK_STREAM, 
+ * If the result will be used for a socket with SOCK_STREAM,
  * SOCK_STREAM should be specified as socktype.
  * If so, Addrinfo.getaddrinfo returns addrinfo list appropriate for SOCK_STREAM.
  * If they are omitted or nil is given, the result is not restricted.
- * 
+ *
  * Similarly, PF_INET6 as family restricts for IPv6.
  *
  * flags should be bitwise OR of Socket::AI_??? constants.

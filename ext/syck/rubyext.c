@@ -196,7 +196,7 @@ VALUE
 syck_get_hash_aref(VALUE hsh, VALUE key)
 {
    VALUE val = rb_hash_aref( hsh, key );
-   if ( NIL_P( val ) ) 
+   if ( NIL_P( val ) )
    {
        val = rb_hash_new();
        rb_hash_aset(hsh, key, val);
@@ -537,11 +537,11 @@ yaml_org_handler( SyckNode *n, VALUE *ref )
                 obj = rb_funcall( cDefaultKey, s_new, 0 );
             }
             else if ( n->data.str->style == scalar_plain &&
-                      n->data.str->len > 1 && 
+                      n->data.str->len > 1 &&
                       strncmp( n->data.str->ptr, ":", 1 ) == 0 )
             {
-                obj = rb_funcall( oDefaultResolver, s_transfer, 2, 
-                                  rb_str_new2( "tag:ruby.yaml.org,2002:sym" ), 
+                obj = rb_funcall( oDefaultResolver, s_transfer, 2,
+                                  rb_str_new2( "tag:ruby.yaml.org,2002:sym" ),
                                   rb_str_new( n->data.str->ptr + 1, n->data.str->len - 1 ) );
             }
             else if ( strcmp( type_id, "str" ) == 0 )
@@ -644,7 +644,7 @@ rb_syck_load_handler(SyckParser *p, SyckNode *n)
     }
 
     /*
-     * Create node, 
+     * Create node,
      */
     obj = rb_funcall( resolver, s_node_import, 1, Data_Wrap_Struct( cNode, NULL, NULL, n ) );
 
@@ -680,8 +680,8 @@ rb_syck_err_handler(SyckParser *p, const char *msg)
     rb_raise(rb_eArgError, "%s on line %d, col %"PRIdPTRDIFF": `%s'",
            msg,
            p->linect,
-           p->cursor - p->lineptr, 
-           p->lineptr); 
+           p->cursor - p->lineptr,
+           p->lineptr);
 }
 
 /*
@@ -715,7 +715,7 @@ syck_set_model(VALUE p, VALUE input, VALUE model)
 
     if ( NIL_P( input ) )
     {
-        input = rb_ivar_get( p, s_input ); 
+        input = rb_ivar_get( p, s_input );
     }
     if ( input == sym_bytecode )
     {
@@ -773,7 +773,7 @@ rb_syck_free_parser(SyckParser *p)
  * YAML::Syck::Parser.allocate
  */
 VALUE syck_parser_s_alloc _((VALUE));
-VALUE 
+VALUE
 syck_parser_s_alloc(VALUE class)
 {
     VALUE pobj;
@@ -880,7 +880,7 @@ syck_parser_load_documents(int argc, VALUE *argv, VALUE self)
     model = rb_hash_aref( rb_attr_get( self, s_options ), sym_model );
     Data_Get_Struct(self, SyckParser, parser);
     syck_set_model( self, input, model );
-    
+
     bonus = (struct parser_xtra *)parser->bonus;
     bonus->taint = syck_parser_assign_io(parser, &port);
     bonus->resolver = rb_attr_get( self, s_resolver );
@@ -947,7 +947,7 @@ syck_resolver_use_types_at(VALUE self, VALUE hsh)
 }
 
 /*
- * YAML::Syck::Resolver#detect_implicit 
+ * YAML::Syck::Resolver#detect_implicit
  */
 VALUE
 syck_resolver_detect_implicit(VALUE self, VALUE val)
@@ -1075,7 +1075,7 @@ syck_const_find(VALUE const_name)
 VALUE
 syck_resolver_transfer(VALUE self, VALUE type, VALUE val)
 {
-    if (NIL_P(type) || RSTRING_LEN(StringValue(type)) == 0) 
+    if (NIL_P(type) || RSTRING_LEN(StringValue(type)) == 0)
     {
         type = rb_funcall( self, s_detect_implicit, 1, val );
     }
@@ -1123,7 +1123,7 @@ syck_resolver_transfer(VALUE self, VALUE type, VALUE val)
                         subclass = rb_funcall( target_class, s_tag_read_class, 1, subclass );
                         subclass_v = syck_const_find( subclass );
 
-                        if ( subclass_v != Qnil ) 
+                        if ( subclass_v != Qnil )
                         {
                             subclass = subclass_v;
                         }
@@ -1177,7 +1177,7 @@ syck_resolver_transfer(VALUE self, VALUE type, VALUE val)
                     rb_block_call( val, s_each, 0, 0, syck_set_ivars, obj );
                 }
             }
-            else 
+            else
             {
                 VALUE parts = rb_str_split( type, ":" );
                 VALUE scheme = rb_ary_shift( parts );
@@ -1219,7 +1219,7 @@ syck_resolver_tagurize(VALUE self, VALUE val)
 }
 
 /*
- * YAML::Syck::DefaultResolver#detect_implicit 
+ * YAML::Syck::DefaultResolver#detect_implicit
  */
 VALUE
 syck_defaultresolver_detect_implicit(VALUE self, VALUE val)
@@ -1278,19 +1278,19 @@ syck_genericresolver_node_import(VALUE self, VALUE node)
             if ( n->data.str->style == scalar_1quote )
             {
                 style = sym_1quote;
-            } 
+            }
             else if ( n->data.str->style == scalar_2quote )
             {
                 style = sym_2quote;
-            } 
+            }
             else if ( n->data.str->style == scalar_fold )
             {
                 style = sym_fold;
-            } 
+            }
             else if ( n->data.str->style == scalar_literal )
             {
                 style = sym_literal;
-            } 
+            }
             else if ( n->data.str->style == scalar_plain )
             {
                 style = sym_plain;
@@ -1308,7 +1308,7 @@ syck_genericresolver_node_import(VALUE self, VALUE node)
             if ( n->data.list->style == seq_inline )
             {
                 style = sym_inline;
-            } 
+            }
             obj = rb_funcall( cSeq, s_new, 3, t, v, style );
             rb_iv_set(obj, "@kind", sym_seq);
         break;
@@ -1322,7 +1322,7 @@ syck_genericresolver_node_import(VALUE self, VALUE node)
             if ( n->data.pairs->style == map_inline )
             {
                 style = sym_inline;
-            } 
+            }
             obj = rb_funcall( cMap, s_new, 3, t, v, style );
             rb_iv_set(obj, "@kind", sym_map);
         break;
@@ -1347,8 +1347,8 @@ syck_badalias_initialize(VALUE self, VALUE val)
 VALUE
 syck_badalias_cmp(VALUE alias1, VALUE alias2)
 {
-    VALUE str1 = rb_ivar_get( alias1, s_name ); 
-    VALUE str2 = rb_ivar_get( alias2, s_name ); 
+    VALUE str1 = rb_ivar_get( alias1, s_name );
+    VALUE str2 = rb_ivar_get( alias2, s_name );
     VALUE val = rb_funcall( str1, s_cmp, 1, str2 );
     return val;
 }
@@ -1459,23 +1459,23 @@ syck_scalar_style_set(VALUE self, VALUE style)
     if ( NIL_P( style ) )
     {
         node->data.str->style = scalar_none;
-    } 
+    }
     else if ( style == sym_1quote )
     {
         node->data.str->style = scalar_1quote;
-    } 
+    }
     else if ( style == sym_2quote )
     {
         node->data.str->style = scalar_2quote;
-    } 
+    }
     else if ( style == sym_fold )
     {
         node->data.str->style = scalar_fold;
-    } 
+    }
     else if ( style == sym_literal )
     {
         node->data.str->style = scalar_literal;
-    } 
+    }
     else if ( style == sym_plain )
     {
         node->data.str->style = scalar_plain;
@@ -1587,7 +1587,7 @@ syck_seq_style_set(VALUE self, VALUE style)
     if ( style == sym_inline )
     {
         node->data.list->style = seq_inline;
-    } 
+    }
     else
     {
         node->data.list->style = seq_none;
@@ -1709,7 +1709,7 @@ syck_map_style_set(VALUE self, VALUE style)
     if ( style == sym_inline )
     {
         node->data.pairs->style = map_inline;
-    } 
+    }
     else
     {
         node->data.pairs->style = map_none;
@@ -1865,7 +1865,7 @@ rb_syck_emitter_handler(SyckEmitter *e, st_data_t data)
 /*
  * Handle output from the emitter
  */
-void 
+void
 rb_syck_output_handler(SyckEmitter * emitter, char *str, long len)
 {
     struct emitter_xtra *bonus = (struct emitter_xtra *)emitter->bonus;
@@ -1921,7 +1921,7 @@ rb_syck_free_emitter(SyckEmitter *e)
  * YAML::Syck::Emitter.allocate
  */
 VALUE syck_emitter_s_alloc _((VALUE));
-VALUE 
+VALUE
 syck_emitter_s_alloc(VALUE class)
 {
     VALUE pobj;
@@ -1982,7 +1982,7 @@ syck_emitter_reset(int argc, VALUE *argv, VALUE self)
         Check_Type(options, T_HASH);
         rb_ivar_set(self, s_options, options);
     }
-    
+
     emitter->headless = 0;
     rb_ivar_set(self, s_level, INT2FIX(0));
     rb_ivar_set(self, s_resolver, Qnil);
@@ -2018,14 +2018,14 @@ syck_emitter_emit(int argc, VALUE *argv, VALUE self)
     /* Second pass, build emitted string */
     level -= 1;
     rb_ivar_set(self, s_level, INT2FIX(level));
-    if ( level == 0 ) 
+    if ( level == 0 )
     {
         syck_emit(emitter, (st_data_t)symple);
         syck_emitter_flush(emitter, 0);
 
         return bonus->port;
     }
-    
+
     return symple;
 }
 

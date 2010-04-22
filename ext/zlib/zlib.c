@@ -1052,7 +1052,7 @@ rb_zstream_avail_out(VALUE obj)
 
 /*
  * Allocates +size+ bytes of free space in the output buffer. If there are more
- * than +size+ bytes already in the buffer, the buffer is truncated. Because 
+ * than +size+ bytes already in the buffer, the buffer is truncated. Because
  * free space is allocated automatically, you usually don't need to use this
  * method.
  */
@@ -1358,7 +1358,7 @@ rb_deflate_flush(int argc, VALUE *argv, VALUE obj)
 
 /*
  * call-seq: params(level, strategy)
- * 
+ *
  * Changes the parameters of the deflate stream. See zlib.h for details. The
  * output from the stream by changing the params is preserved in output
  * buffer.
@@ -2781,7 +2781,7 @@ rb_gzfile_ecopts(struct gzfile *gz, VALUE opts)
  * Document-class: Zlib::GzipWriter
  *
  * Zlib::GzipWriter is a class for writing gzipped files.  GzipWriter should
- * be used with an instance of IO, or IO-like, object. 
+ * be used with an instance of IO, or IO-like, object.
  *
  * For example:
  *
@@ -2842,7 +2842,7 @@ rb_gzwriter_initialize(int argc, VALUE *argv, VALUE obj)
 	opt = rb_check_convert_type(argv[argc-1], T_HASH, "Hash", "to_hash");
 	if (!NIL_P(opt)) argc--;
     }
-    
+
     rb_scan_args(argc, argv, "12", &io, &level, &strategy);
     Data_Get_Struct(obj, struct gzfile, gz);
 
@@ -3739,21 +3739,21 @@ Init_zlib()
 /*
  * Document-class: Zlib::GzipFile::NoFooter
  *
- * Raised when gzip file footer is not found. 
+ * Raised when gzip file footer is not found.
  */
 
 /*
  * Document-class: Zlib::GzipFile::CRCError
  *
  * Raised when the CRC checksum recorded in gzip file footer is not equivalent
- * to the CRC checksum of the actual uncompressed data. 
+ * to the CRC checksum of the actual uncompressed data.
  */
 
 /*
  * Document-class: Zlib::GzipFile::LengthError
  *
  * Raised when the data length recorded in the gzip file footer is not equivalent
- * to the length of the actual uncompressed data. 
+ * to the length of the actual uncompressed data.
  */
 
 

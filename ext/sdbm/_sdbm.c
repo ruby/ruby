@@ -186,7 +186,7 @@ sdbm_prep(char *dirname, char *pagname, int flags, int mode)
         db->blkptr = 0;
         db->keyptr = 0;
 /*
- * adjust user flags so that WRONLY becomes RDWR, 
+ * adjust user flags so that WRONLY becomes RDWR,
  * as required by this package. Also set our internal
  * flag for RDONLY.
  */
@@ -407,7 +407,7 @@ makroom(register DBM *db, long int hash, int need)
  * need to read in anything. BUT we have to write the current
  * [deferred] page out, as the window of failure is too great.
  */
-		db->curbit = 2 * db->curbit + 
+		db->curbit = 2 * db->curbit +
 			((hash & (db->hmask + 1)) ? 2 : 1);
 		db->hmask |= (db->hmask + 1);
 
@@ -483,7 +483,7 @@ getpage(register DBM *db, register long int hash)
  * see if the block we need is already in memory.
  * note: this lookaside cache has about 10% hit rate.
  */
-	if (pagb != db->pagbno) { 
+	if (pagb != db->pagbno) {
 /*
  * note: here, we assume a "hole" is read as 0s.
  * if not, must zero pagbuf first.
@@ -608,8 +608,8 @@ getnext(register DBM *db)
 
 #define exhash(item)	sdbm_hash((item).dptr, (item).dsize)
 
-/* 
- * forward 
+/*
+ * forward
  */
 static int seepair proto((char *, int, char *, int));
 
@@ -829,7 +829,7 @@ splpage(char *pag, char *new, long int sbit)
 
 	n = GET_SHORT(ino,0);
 	for (ino++; n > 0; ino += 2) {
-		key.dptr = cur + GET_SHORT(ino,0); 
+		key.dptr = cur + GET_SHORT(ino,0);
 		key.dsize = off - GET_SHORT(ino,0);
 		val.dptr = cur + GET_SHORT(ino,1);
 		val.dsize = GET_SHORT(ino,0) - GET_SHORT(ino,1);
@@ -842,13 +842,13 @@ splpage(char *pag, char *new, long int sbit)
 		n -= 2;
 	}
 
-	debug(("%d split %d/%d\n", ((short *) cur)[0] / 2, 
+	debug(("%d split %d/%d\n", ((short *) cur)[0] / 2,
 	       ((short *) new)[0] / 2,
 	       ((short *) pag)[0] / 2));
 }
 
 /*
- * check page sanity: 
+ * check page sanity:
  * number of entries should be something
  * reasonable, and all offsets in the index should be in order.
  * this could be made more rigorous.
@@ -891,7 +891,7 @@ chkpage(char *pag)
  * [this seems to work remarkably well, in fact better
  * then the ndbm hash function. Replace at your own risk]
  * use: 65599	nice.
- *      65587   even better. 
+ *      65587   even better.
  */
 long
 sdbm_hash(register char *str, register int len)

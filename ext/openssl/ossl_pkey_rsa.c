@@ -124,7 +124,7 @@ ossl_rsa_s_generate(int argc, VALUE *argv, VALUE klass)
  *  * +pass+ is an optional string with the password to decrypt the encoded key.
  *
  *  === Examples
- *  * RSA.new(2048) -> rsa 
+ *  * RSA.new(2048) -> rsa
  *  * RSA.new(File.read("rsa.pem")) -> rsa
  *  * RSA.new(File.read("rsa.pem"), "mypassword") -> rsa
  */
@@ -211,7 +211,7 @@ ossl_rsa_is_private(VALUE self)
     EVP_PKEY *pkey;
 	
     GetPKeyRSA(self, pkey);
-    
+
     return (RSA_PRIVATE(self, pkey->pkey.rsa)) ? Qtrue : Qfalse;
 }
 
@@ -262,7 +262,7 @@ ossl_rsa_export(int argc, VALUE *argv, VALUE self)
 	}
     }
     str = ossl_membio2str(out);
-    
+
     return str;
 }
 
@@ -346,7 +346,7 @@ ossl_rsa_public_decrypt(int argc, VALUE *argv, VALUE self)
 				 pad);
     if (buf_len < 0) ossl_raise(eRSAError, NULL);
     rb_str_set_len(str, buf_len);
-    
+
     return str;
 }
 
@@ -375,7 +375,7 @@ ossl_rsa_private_encrypt(int argc, VALUE *argv, VALUE self)
 				  pad);
     if (buf_len < 0) ossl_raise(eRSAError, NULL);
     rb_str_set_len(str, buf_len);
-    
+
     return str;
 }
 
@@ -435,7 +435,7 @@ ossl_rsa_get_params(VALUE self)
     rb_hash_aset(hash, rb_str_new2("dmp1"), ossl_bn_new(pkey->pkey.rsa->dmp1));
     rb_hash_aset(hash, rb_str_new2("dmq1"), ossl_bn_new(pkey->pkey.rsa->dmq1));
     rb_hash_aset(hash, rb_str_new2("iqmp"), ossl_bn_new(pkey->pkey.rsa->iqmp));
-    
+
     return hash;
 }
 
@@ -479,7 +479,7 @@ ossl_rsa_to_public_key(VALUE self)
     EVP_PKEY *pkey;
     RSA *rsa;
     VALUE obj;
-    
+
     GetPKeyRSA(self, pkey);
     /* err check performed by rsa_instance */
     rsa = RSAPublicKey_dup(pkey->pkey.rsa);
@@ -498,7 +498,7 @@ static VALUE
 ossl_rsa_blinding_on(VALUE self)
 {
     EVP_PKEY *pkey;
-    
+
     GetPKeyRSA(self, pkey);
 
     if (RSA_blinding_on(pkey->pkey.rsa, ossl_bn_ctx) != 1) {
@@ -511,7 +511,7 @@ static VALUE
 ossl_rsa_blinding_off(VALUE self)
 {
     EVP_PKEY *pkey;
-    
+
     GetPKeyRSA(self, pkey);
     RSA_blinding_off(pkey->pkey.rsa);
 

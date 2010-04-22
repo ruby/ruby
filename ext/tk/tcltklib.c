@@ -93,9 +93,9 @@ set_tcltk_version()
 {
     if (tcltk_version.major) return;
 
-    Tcl_GetVersion(&(tcltk_version.major), 
-		   &(tcltk_version.minor), 
-		   &(tcltk_version.patchlevel), 
+    Tcl_GetVersion(&(tcltk_version.major),
+		   &(tcltk_version.minor),
+		   &(tcltk_version.patchlevel),
 		   &(tcltk_version.type));
 }
 
@@ -412,7 +412,7 @@ struct call_queue {
     VALUE thread;
 };
 
-void 
+void
 invoke_queue_mark(struct invoke_queue *q)
 {
     rb_gc_mark(q->interp);
@@ -420,7 +420,7 @@ invoke_queue_mark(struct invoke_queue *q)
     rb_gc_mark(q->thread);
 }
 
-void 
+void
 eval_queue_mark(struct eval_queue *q)
 {
     rb_gc_mark(q->interp);
@@ -428,7 +428,7 @@ eval_queue_mark(struct eval_queue *q)
     rb_gc_mark(q->thread);
 }
 
-void 
+void
 call_queue_mark(struct call_queue *q)
 {
     int i;
@@ -455,7 +455,7 @@ static VALUE watchdog_thread;
 
 Tcl_Interp  *current_interp;
 
-/* thread control strategy */ 
+/* thread control strategy */
 /* multi-tk works with the following settings only ???
     : CONTROL_BY_STATUS_OF_RB_THREAD_WAITING_FOR_VALUE 1
     : USE_TOGGLE_WINDOW_MODE_FOR_IDLE 0
@@ -475,11 +475,11 @@ Tcl_Interp  *current_interp;
 static int have_rb_thread_waiting_for_value = 0;
 #endif
 
-/* 
- *  'event_loop_max' is a maximum events which the eventloop processes in one 
- *  term of thread scheduling. 'no_event_tick' is the count-up value when 
- *  there are no event for processing. 
- *  'timer_tick' is a limit of one term of thread scheduling. 
+/*
+ *  'event_loop_max' is a maximum events which the eventloop processes in one
+ *  term of thread scheduling. 'no_event_tick' is the count-up value when
+ *  there are no event for processing.
+ *  'timer_tick' is a limit of one term of thread scheduling.
  *  If 'timer_tick' == 0, then not use the timer for thread scheduling.
  */
 #ifdef RUBY_USE_NATIVE_THREAD
@@ -882,18 +882,18 @@ tcltkip_init_tk(interp)
         case TCLTK_STUBS_OK:
             break;
         case NO_Tk_Init:
-            return rb_exc_new2(rb_eLoadError, 
+            return rb_exc_new2(rb_eLoadError,
                                "tcltklib: can't find Tk_SafeInit()");
         case FAIL_Tk_Init:
-            return create_ip_exc(interp, rb_eRuntimeError, 
-                                 "tcltklib: fail to Tk_SafeInit(). %s", 
+            return create_ip_exc(interp, rb_eRuntimeError,
+                                 "tcltklib: fail to Tk_SafeInit(). %s",
                                  Tcl_GetStringResult(ptr->ip));
         case FAIL_Tk_InitStubs:
-            return create_ip_exc(interp, rb_eRuntimeError, 
-                                 "tcltklib: fail to Tk_InitStubs(). %s", 
+            return create_ip_exc(interp, rb_eRuntimeError,
+                                 "tcltklib: fail to Tk_InitStubs(). %s",
                                  Tcl_GetStringResult(ptr->ip));
         default:
-            return create_ip_exc(interp, rb_eRuntimeError, 
+            return create_ip_exc(interp, rb_eRuntimeError,
                                  "tcltklib: unknown error(%d) on ruby_tk_stubs_safeinit", st);
         }
     } else {
@@ -903,18 +903,18 @@ tcltkip_init_tk(interp)
         case TCLTK_STUBS_OK:
             break;
         case NO_Tk_Init:
-            return rb_exc_new2(rb_eLoadError, 
+            return rb_exc_new2(rb_eLoadError,
                                "tcltklib: can't find Tk_Init()");
         case FAIL_Tk_Init:
-            return create_ip_exc(interp, rb_eRuntimeError, 
-                                 "tcltklib: fail to Tk_Init(). %s", 
+            return create_ip_exc(interp, rb_eRuntimeError,
+                                 "tcltklib: fail to Tk_Init(). %s",
                                  Tcl_GetStringResult(ptr->ip));
         case FAIL_Tk_InitStubs:
-            return create_ip_exc(interp, rb_eRuntimeError, 
-                                 "tcltklib: fail to Tk_InitStubs(). %s", 
+            return create_ip_exc(interp, rb_eRuntimeError,
+                                 "tcltklib: fail to Tk_InitStubs(). %s",
                                  Tcl_GetStringResult(ptr->ip));
         default:
-            return create_ip_exc(interp, rb_eRuntimeError, 
+            return create_ip_exc(interp, rb_eRuntimeError,
                                  "tcltklib: unknown error(%d) on ruby_tk_stubs_init", st);
         }
     }
@@ -947,7 +947,7 @@ pending_exception_check0()
 
     if (!NIL_P(exc) && rb_obj_is_kind_of(exc, rb_eException)) {
         DUMP1("find a pending exception");
-        if (rbtk_eventloop_depth > 0 
+        if (rbtk_eventloop_depth > 0
 	    || rbtk_internal_eventloop_handler > 0
 	    ) {
             return 1; /* pending */
@@ -1015,7 +1015,7 @@ pending_exception_check1(thr_crit_bup, ptr)
 
 
 /* call original 'exit' command */
-static void 
+static void
 call_original_exit(ptr, state)
     struct tcltkip *ptr;
     int state;
@@ -1060,7 +1060,7 @@ call_original_exit(ptr, state)
         argv[1] = state_obj;
         argv[2] = (Tcl_Obj *)NULL;
 
-        ptr->return_value 
+        ptr->return_value
             = (*(info->objProc))(info->objClientData, ptr->ip, 2, argv);
 
 	Tcl_DecrRefCount(cmd_obj);
@@ -1136,7 +1136,7 @@ call_original_exit(ptr, state)
         argv[1] = RSTRING_PTR(rb_fix2str(INT2NUM(state), 10));
         argv[2] = (char *)NULL;
 
-        ptr->return_value = (*(info->proc))(info->clientData, ptr->ip, 
+        ptr->return_value = (*(info->proc))(info->clientData, ptr->ip,
                                             2, argv);
 
 #if USE_RUBY_ALLOC
@@ -1185,7 +1185,7 @@ _timer_for_tcl(clientData)
     run_timer_flag = 1;
 
     if (timer_tick > 0) {
-        timer_token = Tcl_CreateTimerHandler(timer_tick, _timer_for_tcl, 
+        timer_token = Tcl_CreateTimerHandler(timer_tick, _timer_for_tcl,
                                              (ClientData)0);
     } else {
         timer_token = (Tcl_TimerToken)NULL;
@@ -1255,7 +1255,7 @@ set_eventloop_tick(self, tick)
     rb_secure(4);
 
     if (ttick < 0) {
-        rb_raise(rb_eArgError, 
+        rb_raise(rb_eArgError,
                  "timer-tick parameter must be 0 or positive number");
     }
 
@@ -1268,7 +1268,7 @@ set_eventloop_tick(self, tick)
     timer_tick = req_timer_tick = ttick;
     if (timer_tick > 0) {
         /* start timer callback */
-        timer_token = Tcl_CreateTimerHandler(timer_tick, _timer_for_tcl, 
+        timer_token = Tcl_CreateTimerHandler(timer_tick, _timer_for_tcl,
                                              (ClientData)0);
     } else {
         timer_token = (Tcl_TimerToken)NULL;
@@ -1322,7 +1322,7 @@ set_no_event_wait(self, wait)
     rb_secure(4);
 
     if (t_wait <= 0) {
-        rb_raise(rb_eArgError, 
+        rb_raise(rb_eArgError,
                  "no_event_wait parameter must be positive number");
     }
 
@@ -1445,7 +1445,7 @@ set_max_block_time(self, time)
     default:
         {
 	    VALUE tmp = rb_funcall(time, ID_inspect, 0, 0);
-	    rb_raise(rb_eArgError, "invalid value for time: '%s'", 
+	    rb_raise(rb_eArgError, "invalid value for time: '%s'",
 		     StringValuePtr(tmp));
 	}
     }
@@ -1715,7 +1715,7 @@ static int
 check_eventloop_interp()
 {
   DUMP1("check eventloop_interp");
-  if (eventloop_interp != (Tcl_Interp*)NULL 
+  if (eventloop_interp != (Tcl_Interp*)NULL
       && Tcl_InterpDeleted(eventloop_interp)) {
     DUMP2("eventloop_interp(%p) was deleted", eventloop_interp);
     return 1;
@@ -1752,7 +1752,7 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
     if (timer_tick > 0) {
         thr_crit_bup = rb_thread_critical;
         rb_thread_critical = Qtrue;
-        timer_token = Tcl_CreateTimerHandler(timer_tick, _timer_for_tcl, 
+        timer_token = Tcl_CreateTimerHandler(timer_tick, _timer_for_tcl,
                                              (ClientData)0);
         rb_thread_critical = thr_crit_bup;
     } else {
@@ -1784,8 +1784,8 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
 
             if (timer_tick == 0 && update_flag == 0) {
                 timer_tick = NO_THREAD_INTERRUPT_TIME;
-                timer_token = Tcl_CreateTimerHandler(timer_tick, 
-                                                     _timer_for_tcl, 
+                timer_token = Tcl_CreateTimerHandler(timer_tick,
+                                                     _timer_for_tcl,
                                                      (ClientData)0);
             }
 
@@ -1793,7 +1793,7 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
                 if (*check_var || !found_event) {
                     return found_event;
                 }
-                if (interp != (Tcl_Interp*)NULL 
+                if (interp != (Tcl_Interp*)NULL
                     && Tcl_InterpDeleted(interp)) {
                     /* IP for check_var is deleted */
                     return 0;
@@ -1801,13 +1801,13 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
             }
 
             /* found_event = Tcl_DoOneEvent(event_flag); */
-            found_event = RTEST(rb_protect(call_DoOneEvent, 
-                                           INT2FIX(event_flag), &status)); 
+            found_event = RTEST(rb_protect(call_DoOneEvent,
+                                           INT2FIX(event_flag), &status));
             if (status) {
                 switch (status) {
                 case TAG_RAISE:
                     if (NIL_P(rb_errinfo())) {
-                        rbtk_pending_exception 
+                        rbtk_pending_exception
                             = rb_exc_new2(rb_eException, "unknown exception");
                     } else {
                         rbtk_pending_exception = rb_errinfo();
@@ -1834,7 +1834,7 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
             }
 
             if (depth != rbtk_eventloop_depth) {
-                DUMP2("DoOneEvent(1) abnormal exit!! %d", 
+                DUMP2("DoOneEvent(1) abnormal exit!! %d",
                       rbtk_eventloop_depth);
             }
 
@@ -1894,7 +1894,7 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
                     if (*check_var || !found_event) {
                         return found_event;
                     }
-                    if (interp != (Tcl_Interp*)NULL 
+                    if (interp != (Tcl_Interp*)NULL
                         && Tcl_InterpDeleted(interp)) {
                         /* IP for check_var is deleted */
                         return 0;
@@ -1906,12 +1906,12 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
                     int status;
 #ifdef RUBY_USE_NATIVE_THREAD
 		    if (update_flag) {
-		      st = RTEST(rb_protect(call_DoOneEvent, 
-					    INT2FIX(event_flag), &status)); 
+		      st = RTEST(rb_protect(call_DoOneEvent,
+					    INT2FIX(event_flag), &status));
 		    } else {
-		      st = RTEST(rb_protect(call_DoOneEvent, 
-					    INT2FIX(event_flag & window_event_mode), 
-					    &status)); 
+		      st = RTEST(rb_protect(call_DoOneEvent,
+					    INT2FIX(event_flag & window_event_mode),
+					    &status));
 #if USE_TOGGLE_WINDOW_MODE_FOR_IDLE
 		      if (!st) {
 			if (toggle_eventloop_window_mode_for_idle()) {
@@ -1926,8 +1926,8 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
 		    }
 #else
                     /* st = Tcl_DoOneEvent(event_flag); */
-                    st = RTEST(rb_protect(call_DoOneEvent, 
-                                          INT2FIX(event_flag), &status)); 
+                    st = RTEST(rb_protect(call_DoOneEvent,
+                                          INT2FIX(event_flag), &status));
 #endif
 
 #if CONTROL_BY_STATUS_OF_RB_THREAD_WAITING_FOR_VALUE
@@ -1941,8 +1941,8 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
                         switch (status) {
                         case TAG_RAISE:
                             if (NIL_P(rb_errinfo())) {
-                                rbtk_pending_exception 
-                                    = rb_exc_new2(rb_eException, 
+                                rbtk_pending_exception
+                                    = rb_exc_new2(rb_eException,
                                                   "unknown exception");
                             } else {
                                 rbtk_pending_exception = rb_errinfo();
@@ -1969,14 +1969,14 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
                     }
 
                     if (depth != rbtk_eventloop_depth) {
-                        DUMP2("DoOneEvent(2) abnormal exit!! %d", 
+                        DUMP2("DoOneEvent(2) abnormal exit!! %d",
                               rbtk_eventloop_depth);
                         return 0;
                     }
 
 		    TRAP_CHECK();
 
-                    if (check_var != (int*)NULL 
+                    if (check_var != (int*)NULL
                         && !NIL_P(rbtk_pending_exception)) {
                         DUMP1("exception on wait");
                         return 0;
@@ -2005,8 +2005,8 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
                             switch (status) {
                             case TAG_RAISE:
                                 if (NIL_P(rb_errinfo())) {
-                                    rbtk_pending_exception 
-                                        = rb_exc_new2(rb_eException, 
+                                    rbtk_pending_exception
+                                        = rb_exc_new2(rb_eException,
                                                       "unknown exception");
                                 } else {
                                     rbtk_pending_exception = rb_errinfo();
@@ -2025,7 +2025,7 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
 
                             case TAG_FATAL:
                                 if (NIL_P(rb_errinfo())) {
-                                    rb_exc_raise(rb_exc_new2(rb_eFatal, 
+                                    rb_exc_raise(rb_exc_new2(rb_eFatal,
                                                              "FATAL"));
                                 } else {
                                     rb_exc_raise(rb_errinfo());
@@ -2101,9 +2101,9 @@ lib_eventloop_main_core(args)
 
     check_rootwidget_flag = params->check_root;
 
-    if (lib_eventloop_core(params->check_root, 
-                           params->update_flag, 
-                           params->check_var, 
+    if (lib_eventloop_core(params->check_root,
+                           params->update_flag,
+                           params->check_var,
                            params->interp)) {
         return Qtrue;
     } else {
@@ -2126,7 +2126,7 @@ lib_eventloop_main(args)
     switch (status) {
     case TAG_RAISE:
         if (NIL_P(rb_errinfo())) {
-            rbtk_pending_exception 
+            rbtk_pending_exception
                 = rb_exc_new2(rb_eException, "unknown exception");
         } else {
             rbtk_pending_exception = rb_errinfo();
@@ -2167,7 +2167,7 @@ lib_eventloop_ensure(args)
     }
 
     while((eventloop_thread = rb_ary_pop(eventloop_stack))) {
-        DUMP2("eventloop-ensure: new eventloop-thread -> %lx", 
+        DUMP2("eventloop-ensure: new eventloop-thread -> %lx",
               eventloop_thread);
 
         if (eventloop_thread == current_evloop) {
@@ -2180,7 +2180,7 @@ lib_eventloop_ensure(args)
           Tcl_DeleteTimerHandler(timer_token);
           timer_token = (Tcl_TimerToken)NULL;
 
-          break; 
+          break;
         }
 
 #ifdef RUBY_VM
@@ -2244,7 +2244,7 @@ lib_eventloop_launcher(check_root, update_flag, check_var, interp)
 
     rb_ary_push(eventloop_stack, parent_evloop);
 
-    DUMP3("tcltklib: eventloop-thread : %lx -> %lx\n", 
+    DUMP3("tcltklib: eventloop-thread : %lx -> %lx\n",
                 parent_evloop, eventloop_thread);
 
     args->check_root   = check_root;
@@ -2256,10 +2256,10 @@ lib_eventloop_launcher(check_root, update_flag, check_var, interp)
     rb_thread_critical = Qfalse;
 
 #if 0
-    return rb_ensure(lib_eventloop_main, (VALUE)args, 
+    return rb_ensure(lib_eventloop_main, (VALUE)args,
                      lib_eventloop_ensure, (VALUE)args);
 #endif
-    return rb_ensure(lib_eventloop_main_core, (VALUE)args, 
+    return rb_ensure(lib_eventloop_main_core, (VALUE)args,
                      lib_eventloop_ensure, (VALUE)args);
 }
 
@@ -2280,7 +2280,7 @@ lib_mainloop(argc, argv, self)
         check_rootwidget = Qfalse;
     }
 
-    return lib_eventloop_launcher(RTEST(check_rootwidget), 0, 
+    return lib_eventloop_launcher(RTEST(check_rootwidget), 0,
                                   (int*)NULL, (Tcl_Interp*)NULL);
 }
 
@@ -2314,7 +2314,7 @@ static VALUE
 watchdog_evloop_launcher(check_rootwidget)
     VALUE check_rootwidget;
 {
-    return lib_eventloop_launcher(RTEST(check_rootwidget), 0, 
+    return lib_eventloop_launcher(RTEST(check_rootwidget), 0,
                                   (int*)NULL, (Tcl_Interp*)NULL);
 }
 
@@ -2350,9 +2350,9 @@ lib_watchdog_core(check_rootwidget)
         if (NIL_P(eventloop_thread)
             || (loop_counter == prev_val && chance >= EVLOOP_WAKEUP_CHANCE)) {
             /* start new eventloop thread */
-            DUMP2("eventloop thread %lx is sleeping or dead", 
+            DUMP2("eventloop thread %lx is sleeping or dead",
                   eventloop_thread);
-            evloop = rb_thread_create(watchdog_evloop_launcher, 
+            evloop = rb_thread_create(watchdog_evloop_launcher,
                                       (void*)&check_rootwidget);
             DUMP2("create new eventloop thread %lx", evloop);
             loop_counter = -1;
@@ -2397,7 +2397,7 @@ lib_mainloop_watchdog(argc, argv, self)
     VALUE check_rootwidget;
 
 #ifdef RUBY_VM
-    rb_raise(rb_eNotImpError, 
+    rb_raise(rb_eNotImpError,
 	     "eventloop_watchdog is not implemented on Ruby VM.");
 #endif
 
@@ -2409,7 +2409,7 @@ lib_mainloop_watchdog(argc, argv, self)
         check_rootwidget = Qfalse;
     }
 
-    return rb_ensure(lib_watchdog_core, check_rootwidget, 
+    return rb_ensure(lib_watchdog_core, check_rootwidget,
                      lib_watchdog_ensure, Qnil);
 }
 
@@ -2440,7 +2440,7 @@ struct thread_call_proc_arg {
     int *done;
 };
 
-void 
+void
 _thread_call_proc_arg_mark(struct thread_call_proc_arg *q)
 {
     rb_gc_mark(q->proc);
@@ -2469,7 +2469,7 @@ _thread_call_proc(arg)
 {
     struct thread_call_proc_arg *q = (struct thread_call_proc_arg*)arg;
 
-    return rb_ensure(_thread_call_proc_core, (VALUE)q, 
+    return rb_ensure(_thread_call_proc_core, (VALUE)q,
                      _thread_call_proc_ensure, (VALUE)q);
 }
 
@@ -2511,7 +2511,7 @@ lib_thread_callback(argc, argv, self)
     rb_thread_schedule();
 
     /* start sub-eventloop */
-    foundEvent = RTEST(lib_eventloop_launcher(/* not check root-widget */0, 0, 
+    foundEvent = RTEST(lib_eventloop_launcher(/* not check root-widget */0, 0,
                                               q->done, (Tcl_Interp*)NULL));
 
 #ifdef RUBY_VM
@@ -2928,7 +2928,7 @@ static int
 #if TCL_MAJOR_VERSION >= 8
 ip_ruby_eval(clientData, interp, argc, argv)
     ClientData clientData;
-    Tcl_Interp *interp; 
+    Tcl_Interp *interp;
     int argc;
     Tcl_Obj *CONST argv[];
 #else /* TCL_MAJOR_VERSION < 8 */
@@ -2944,7 +2944,7 @@ ip_ruby_eval(clientData, interp, argc, argv)
     int code;
 
     if (interp == (Tcl_Interp*)NULL) {
-        rbtk_pending_exception = rb_exc_new2(rb_eRuntimeError, 
+        rbtk_pending_exception = rb_exc_new2(rb_eRuntimeError,
                                              "IP is deleted");
         return TCL_ERROR;
     }
@@ -2952,15 +2952,15 @@ ip_ruby_eval(clientData, interp, argc, argv)
     /* ruby command has 1 arg. */
     if (argc != 2) {
 #if 0
-        rb_raise(rb_eArgError, 
+        rb_raise(rb_eArgError,
                  "wrong number of arguments (%d for 1)", argc - 1);
 #else
         char buf[sizeof(int)*8 + 1];
         Tcl_ResetResult(interp);
         sprintf(buf, "%d", argc-1);
-        Tcl_AppendResult(interp, "wrong number of arguments (", 
+        Tcl_AppendResult(interp, "wrong number of arguments (",
                          buf, " for 1)", (char *)NULL);
-        rbtk_pending_exception = rb_exc_new2(rb_eArgError, 
+        rbtk_pending_exception = rb_exc_new2(rb_eArgError,
                                              Tcl_GetStringResult(interp));
         return TCL_ERROR;
 #endif
@@ -3056,7 +3056,7 @@ ip_ruby_cmd_receiver_const_get(name)
 
   /* has '::' at head ? */
   if (*head == ':')  head += 2;
-  tail = head; 
+  tail = head;
 
   /* search */
   while(*tail) {
@@ -3119,7 +3119,7 @@ static int
 #if TCL_MAJOR_VERSION >= 8
 ip_ruby_cmd(clientData, interp, argc, argv)
     ClientData clientData;
-    Tcl_Interp *interp; 
+    Tcl_Interp *interp;
     int argc;
     Tcl_Obj *CONST argv[];
 #else /* TCL_MAJOR_VERSION < 8 */
@@ -3142,7 +3142,7 @@ ip_ruby_cmd(clientData, interp, argc, argv)
     int code;
 
     if (interp == (Tcl_Interp*)NULL) {
-        rbtk_pending_exception = rb_exc_new2(rb_eRuntimeError, 
+        rbtk_pending_exception = rb_exc_new2(rb_eRuntimeError,
                                              "IP is deleted");
         return TCL_ERROR;
     }
@@ -3153,7 +3153,7 @@ ip_ruby_cmd(clientData, interp, argc, argv)
 #else
         Tcl_ResetResult(interp);
         Tcl_AppendResult(interp, "too few arguments", (char *)NULL);
-        rbtk_pending_exception = rb_exc_new2(rb_eArgError, 
+        rbtk_pending_exception = rb_exc_new2(rb_eArgError,
                                              Tcl_GetStringResult(interp));
         return TCL_ERROR;
 #endif
@@ -3175,13 +3175,13 @@ ip_ruby_cmd(clientData, interp, argc, argv)
     receiver = ip_ruby_cmd_receiver_get(str);
     if (NIL_P(receiver)) {
 #if 0
-        rb_raise(rb_eArgError, 
+        rb_raise(rb_eArgError,
                  "unknown class/module/global-variable '%s'", str);
 #else
         Tcl_ResetResult(interp);
-        Tcl_AppendResult(interp, "unknown class/module/global-variable '", 
+        Tcl_AppendResult(interp, "unknown class/module/global-variable '",
                          str, "'", (char *)NULL);
-        rbtk_pending_exception = rb_exc_new2(rb_eArgError, 
+        rbtk_pending_exception = rb_exc_new2(rb_eArgError,
                                              Tcl_GetStringResult(interp));
         if (old_gc == Qfalse) rb_gc_enable();
         return TCL_ERROR;
@@ -3242,12 +3242,12 @@ ip_ruby_cmd(clientData, interp, argc, argv)
 static int
 #if TCL_MAJOR_VERSION >= 8
 #ifdef HAVE_PROTOTYPES
-ip_InterpExitObjCmd(ClientData clientData, Tcl_Interp *interp, 
+ip_InterpExitObjCmd(ClientData clientData, Tcl_Interp *interp,
 		    int argc, Tcl_Obj *CONST argv[])
 #else
 ip_InterpExitObjCmd(clientData, interp, argc, argv)
     ClientData clientData;
-    Tcl_Interp *interp; 
+    Tcl_Interp *interp;
     int argc;
     Tcl_Obj *CONST argv[];
 #endif
@@ -3265,7 +3265,7 @@ ip_InterpExitCommand(clientData, interp, argc, argv)
 #endif
 {
     DUMP1("start ip_InterpExitCommand");
-    if (interp != (Tcl_Interp*)NULL 
+    if (interp != (Tcl_Interp*)NULL
         && !Tcl_InterpDeleted(interp)
 #if TCL_NAMESPACE_DEBUG
         && !ip_null_namespace(interp)
@@ -3292,7 +3292,7 @@ ip_RubyExitObjCmd(ClientData clientData, Tcl_Interp *interp,
 #else
 ip_RubyExitObjCmd(clientData, interp, argc, argv)
     ClientData clientData;
-    Tcl_Interp *interp; 
+    Tcl_Interp *interp;
     int argc;
     Tcl_Obj *CONST argv[];
 #endif
@@ -3325,8 +3325,8 @@ ip_RubyExitCommand(clientData, interp, argc, argv)
 
     if (argc < 1 || argc > 2) {
         /* arguemnt error */
-        Tcl_AppendResult(interp, 
-                         "wrong number of arguments: should be \"", 
+        Tcl_AppendResult(interp,
+                         "wrong number of arguments: should be \"",
                          cmd, " ?returnCode?\"", (char *)NULL);
         return TCL_ERROR;
     }
@@ -3348,10 +3348,10 @@ ip_RubyExitCommand(clientData, interp, argc, argv)
     switch(argc) {
     case 1:
         /* rb_exit(0); */ /* not return if succeed */
-        Tcl_AppendResult(interp, 
+        Tcl_AppendResult(interp,
                          "fail to call \"", cmd, "\"", (char *)NULL);
 
-        rbtk_pending_exception = rb_exc_new2(rb_eSystemExit, 
+        rbtk_pending_exception = rb_exc_new2(rb_eSystemExit,
                                              Tcl_GetStringResult(interp));
         rb_iv_set(rbtk_pending_exception, "status", INT2FIX(0));
 
@@ -3367,8 +3367,8 @@ ip_RubyExitCommand(clientData, interp, argc, argv)
 #else /* TCL_MAJOR_VERSION < 8 */
         state = (int)strtol(argv[1], &endptr, 0);
         if (*endptr) {
-            Tcl_AppendResult(interp, 
-                             "expected integer but got \"", 
+            Tcl_AppendResult(interp,
+                             "expected integer but got \"",
                              argv[1], "\"", (char *)NULL);
             return TCL_ERROR;
         }
@@ -3376,10 +3376,10 @@ ip_RubyExitCommand(clientData, interp, argc, argv)
 #endif
         /* rb_exit(state); */ /* not return if succeed */
 
-        Tcl_AppendResult(interp, "fail to call \"", cmd, " ", 
+        Tcl_AppendResult(interp, "fail to call \"", cmd, " ",
                          param, "\"", (char *)NULL);
 
-        rbtk_pending_exception = rb_exc_new2(rb_eSystemExit, 
+        rbtk_pending_exception = rb_exc_new2(rb_eSystemExit,
                                              Tcl_GetStringResult(interp));
         rb_iv_set(rbtk_pending_exception, "status", INT2FIX(state));
 
@@ -3387,8 +3387,8 @@ ip_RubyExitCommand(clientData, interp, argc, argv)
 
     default:
         /* arguemnt error */
-        Tcl_AppendResult(interp, 
-                         "wrong number of arguments: should be \"", 
+        Tcl_AppendResult(interp,
+                         "wrong number of arguments: should be \"",
                          cmd, " ?returnCode?\"", (char *)NULL);
         return TCL_ERROR;
     }
@@ -3408,7 +3408,7 @@ static int ip_rbUpdateObjCmd _((ClientData, Tcl_Interp *, int,
 static int
 ip_rbUpdateObjCmd(clientData, interp, objc, objv)
     ClientData clientData;
-    Tcl_Interp *interp; 
+    Tcl_Interp *interp;
     int objc;
     Tcl_Obj *CONST objv[];
 #else /* TCL_MAJOR_VERSION < 8 */
@@ -3429,7 +3429,7 @@ ip_rbUpdateCommand(clientData, interp, objc, objv)
 
     DUMP1("Ruby's 'update' is called");
     if (interp == (Tcl_Interp*)NULL) {
-        rbtk_pending_exception = rb_exc_new2(rb_eRuntimeError, 
+        rbtk_pending_exception = rb_exc_new2(rb_eRuntimeError,
                                              "IP is deleted");
         return TCL_ERROR;
     }
@@ -3476,8 +3476,8 @@ ip_rbUpdateCommand(clientData, interp, objc, objv)
 # if TCL_MAJOR_VERSION >= 8
         int  dummy;
         Tcl_AppendResult(interp, "wrong number of arguments: should be \"",
-                         Tcl_GetStringFromObj(objv[0], &dummy), 
-                         " [ idletasks ]\"", 
+                         Tcl_GetStringFromObj(objv[0], &dummy),
+                         " [ idletasks ]\"",
                          (char *) NULL);
 # else /* TCL_MAJOR_VERSION < 8 */
         Tcl_AppendResult(interp, "wrong number of arguments: should be \"",
@@ -3542,7 +3542,7 @@ struct th_update_param {
 };
 
 static void rb_threadUpdateProc _((ClientData));
-static void 
+static void
 rb_threadUpdateProc(clientData)
     ClientData clientData;      /* Pointer to integer to set to 1. */
 {
@@ -3561,7 +3561,7 @@ static int ip_rb_threadUpdateObjCmd _((ClientData, Tcl_Interp *, int,
 static int
 ip_rb_threadUpdateObjCmd(clientData, interp, objc, objv)
     ClientData clientData;
-    Tcl_Interp *interp; 
+    Tcl_Interp *interp;
     int objc;
     Tcl_Obj *CONST objv[];
 #else /* TCL_MAJOR_VERSION < 8 */
@@ -3585,7 +3585,7 @@ ip_rb_threadUpdateCommand(clientData, interp, objc, objv)
 
     DUMP1("Ruby's 'thread_update' is called");
     if (interp == (Tcl_Interp*)NULL) {
-        rbtk_pending_exception = rb_exc_new2(rb_eRuntimeError, 
+        rbtk_pending_exception = rb_exc_new2(rb_eRuntimeError,
                                              "IP is deleted");
         return TCL_ERROR;
     }
@@ -3597,7 +3597,7 @@ ip_rb_threadUpdateCommand(clientData, interp, objc, objv)
 #endif
 #endif
 
-    if (rb_thread_alone() 
+    if (rb_thread_alone()
         || NIL_P(eventloop_thread) || eventloop_thread == current_thread) {
 #if TCL_MAJOR_VERSION >= 8
         DUMP1("call ip_rbUpdateObjCmd");
@@ -3645,8 +3645,8 @@ ip_rb_threadUpdateCommand(clientData, interp, objc, objv)
 # if TCL_MAJOR_VERSION >= 8
         int  dummy;
         Tcl_AppendResult(interp, "wrong number of arguments: should be \"",
-                         Tcl_GetStringFromObj(objv[0], &dummy), 
-                         " [ idletasks ]\"", 
+                         Tcl_GetStringFromObj(objv[0], &dummy),
+                         " [ idletasks ]\"",
                          (char *) NULL);
 # else /* TCL_MAJOR_VERSION < 8 */
         Tcl_AppendResult(interp, "wrong number of arguments: should be \"",
@@ -3720,7 +3720,7 @@ static int ip_rb_threadTkWaitCommand _((ClientData, Tcl_Interp *, int,
 #endif
 
 #if TCL_MAJOR_VERSION >= 8
-static char *VwaitVarProc _((ClientData, Tcl_Interp *, 
+static char *VwaitVarProc _((ClientData, Tcl_Interp *,
                              CONST84 char *,CONST84 char *, int));
 static char *
 VwaitVarProc(clientData, interp, name1, name2, flags)
@@ -3750,7 +3750,7 @@ VwaitVarProc(clientData, interp, name1, name2, flags)
 static int
 ip_rbVwaitObjCmd(clientData, interp, objc, objv)
     ClientData clientData; /* Not used */
-    Tcl_Interp *interp; 
+    Tcl_Interp *interp;
     int objc;
     Tcl_Obj *CONST objv[];
 #else /* TCL_MAJOR_VERSION < 8 */
@@ -3769,13 +3769,13 @@ ip_rbVwaitCommand(clientData, interp, objc, objv)
 
     DUMP1("Ruby's 'vwait' is called");
     if (interp == (Tcl_Interp*)NULL) {
-        rbtk_pending_exception = rb_exc_new2(rb_eRuntimeError, 
+        rbtk_pending_exception = rb_exc_new2(rb_eRuntimeError,
                                              "IP is deleted");
         return TCL_ERROR;
     }
 
 #if 0
-    if (!rb_thread_alone() 
+    if (!rb_thread_alone()
 	&& eventloop_thread != Qnil
 	&& eventloop_thread != rb_thread_current()) {
 #if TCL_MAJOR_VERSION >= 8
@@ -3833,7 +3833,7 @@ ip_rbVwaitCommand(clientData, interp, objc, objv)
     nameString = objv[1];
 #endif
 
-    /* 
+    /*
     if (Tcl_TraceVar(interp, nameString,
                      TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|TCL_TRACE_UNSETS,
                      VwaitVarProc, (ClientData) &done) != TCL_OK) {
@@ -3856,7 +3856,7 @@ ip_rbVwaitCommand(clientData, interp, objc, objv)
 
     done = 0;
 
-    foundEvent = RTEST(lib_eventloop_launcher(/* not check root-widget */0, 
+    foundEvent = RTEST(lib_eventloop_launcher(/* not check root-widget */0,
                                               0, &done, interp));
 
     thr_crit_bup = rb_thread_critical;
@@ -3934,7 +3934,7 @@ ip_rbVwaitCommand(clientData, interp, objc, objv)
 /*  based on tkCmd.c      */
 /**************************/
 #if TCL_MAJOR_VERSION >= 8
-static char *WaitVariableProc _((ClientData, Tcl_Interp *, 
+static char *WaitVariableProc _((ClientData, Tcl_Interp *,
                                  CONST84 char *,CONST84 char *, int));
 static char *
 WaitVariableProc(clientData, interp, name1, name2, flags)
@@ -3944,7 +3944,7 @@ WaitVariableProc(clientData, interp, name1, name2, flags)
     CONST84 char *name2;        /* Second part of variable name. */
     int flags;                  /* Information about what happened. */
 #else /* TCL_MAJOR_VERSION < 8 */
-static char *WaitVariableProc _((ClientData, Tcl_Interp *, 
+static char *WaitVariableProc _((ClientData, Tcl_Interp *,
                                  char *, char *, int));
 static char *
 WaitVariableProc(clientData, interp, name1, name2, flags)
@@ -3994,7 +3994,7 @@ WaitWindowProc(clientData, eventPtr)
 static int
 ip_rbTkWaitObjCmd(clientData, interp, objc, objv)
     ClientData clientData;
-    Tcl_Interp *interp; 
+    Tcl_Interp *interp;
     int objc;
     Tcl_Obj *CONST objv[];
 #else /* TCL_MAJOR_VERSION < 8 */
@@ -4018,13 +4018,13 @@ ip_rbTkWaitCommand(clientData, interp, objc, objv)
 
     DUMP1("Ruby's 'tkwait' is called");
     if (interp == (Tcl_Interp*)NULL) {
-        rbtk_pending_exception = rb_exc_new2(rb_eRuntimeError, 
+        rbtk_pending_exception = rb_exc_new2(rb_eRuntimeError,
                                              "IP is deleted");
         return TCL_ERROR;
     }
 
 #if 0
-    if (!rb_thread_alone() 
+    if (!rb_thread_alone()
 	&& eventloop_thread != Qnil
 	&& eventloop_thread != rb_thread_current()) {
 #if TCL_MAJOR_VERSION >= 8
@@ -4049,12 +4049,12 @@ ip_rbTkWaitCommand(clientData, interp, objc, objv)
 
 #if TCL_MAJOR_VERSION >= 8
         Tcl_AppendResult(interp, "wrong number of arguments: should be \"",
-                         Tcl_GetStringFromObj(objv[0], &dummy), 
-                         " variable|visibility|window name\"", 
+                         Tcl_GetStringFromObj(objv[0], &dummy),
+                         " variable|visibility|window name\"",
                          (char *) NULL);
 #else /* TCL_MAJOR_VERSION < 8 */
         Tcl_AppendResult(interp, "wrong number of arguments: should be \"",
-                         objv[0], " variable|visibility|window name\"", 
+                         objv[0], " variable|visibility|window name\"",
                          (char *) NULL);
 #endif
 
@@ -4070,14 +4070,14 @@ ip_rbTkWaitCommand(clientData, interp, objc, objv)
     rb_thread_critical = Qtrue;
 
     /*
-    if (Tcl_GetIndexFromObj(interp, objv[1], 
-                            (CONST84 char **)optionStrings, 
+    if (Tcl_GetIndexFromObj(interp, objv[1],
+                            (CONST84 char **)optionStrings,
                             "option", 0, &index) != TCL_OK) {
         return TCL_ERROR;
     }
     */
-    ret = Tcl_GetIndexFromObj(interp, objv[1], 
-                              (CONST84 char **)optionStrings, 
+    ret = Tcl_GetIndexFromObj(interp, objv[1],
+                              (CONST84 char **)optionStrings,
                               "option", 0, &index);
 
     rb_thread_critical = thr_crit_bup;
@@ -4101,7 +4101,7 @@ ip_rbTkWaitCommand(clientData, interp, objc, objv)
             index = TKWAIT_WINDOW;
         } else {
             Tcl_AppendResult(interp, "bad option \"", objv[1],
-                             "\": must be variable, visibility, or window", 
+                             "\": must be variable, visibility, or window",
                              (char *) NULL);
             Tcl_Release(interp);
             return TCL_ERROR;
@@ -4204,8 +4204,8 @@ ip_rbTkWaitCommand(clientData, interp, objc, objv)
         }
 
         if (window == NULL) {
-            Tcl_AppendResult(interp, ": tkwait: ", 
-                             "no main-window (not Tk application?)", 
+            Tcl_AppendResult(interp, ": tkwait: ",
+                             "no main-window (not Tk application?)",
                              (char*)NULL);
             rb_thread_critical = thr_crit_bup;
 #if TCL_MAJOR_VERSION >= 8
@@ -4310,8 +4310,8 @@ ip_rbTkWaitCommand(clientData, interp, objc, objv)
 #endif
 
         if (window == NULL) {
-            Tcl_AppendResult(interp, ": tkwait: ", 
-                             "no main-window (not Tk application?)", 
+            Tcl_AppendResult(interp, ": tkwait: ",
+                             "no main-window (not Tk application?)",
                              (char*)NULL);
             rb_thread_critical = thr_crit_bup;
             Tcl_Release(interp);
@@ -4379,7 +4379,7 @@ struct th_vwait_param {
 };
 
 #if TCL_MAJOR_VERSION >= 8
-static char *rb_threadVwaitProc _((ClientData, Tcl_Interp *, 
+static char *rb_threadVwaitProc _((ClientData, Tcl_Interp *,
                                    CONST84 char *,CONST84 char *, int));
 static char *
 rb_threadVwaitProc(clientData, interp, name1, name2, flags)
@@ -4389,7 +4389,7 @@ rb_threadVwaitProc(clientData, interp, name1, name2, flags)
     CONST84 char *name2;        /* Second part of variable name. */
     int flags;                  /* Information about what happened. */
 #else /* TCL_MAJOR_VERSION < 8 */
-static char *rb_threadVwaitProc _((ClientData, Tcl_Interp *, 
+static char *rb_threadVwaitProc _((ClientData, Tcl_Interp *,
                                    char *, char *, int));
 static char *
 rb_threadVwaitProc(clientData, interp, name1, name2, flags)
@@ -4450,7 +4450,7 @@ rb_threadWaitWindowProc(clientData, eventPtr)
 static int
 ip_rb_threadVwaitObjCmd(clientData, interp, objc, objv)
     ClientData clientData;
-    Tcl_Interp *interp; 
+    Tcl_Interp *interp;
     int objc;
     Tcl_Obj *CONST objv[];
 #else /* TCL_MAJOR_VERSION < 8 */
@@ -4471,7 +4471,7 @@ ip_rb_threadVwaitCommand(clientData, interp, objc, objv)
 
     DUMP1("Ruby's 'thread_vwait' is called");
     if (interp == (Tcl_Interp*)NULL) {
-        rbtk_pending_exception = rb_exc_new2(rb_eRuntimeError, 
+        rbtk_pending_exception = rb_exc_new2(rb_eRuntimeError,
                                              "IP is deleted");
         return TCL_ERROR;
     }
@@ -4607,7 +4607,7 @@ ip_rb_threadVwaitCommand(clientData, interp, objc, objv)
 static int
 ip_rb_threadTkWaitObjCmd(clientData, interp, objc, objv)
     ClientData clientData;
-    Tcl_Interp *interp; 
+    Tcl_Interp *interp;
     int objc;
     Tcl_Obj *CONST objv[];
 #else /* TCL_MAJOR_VERSION < 8 */
@@ -4634,7 +4634,7 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
 
     DUMP1("Ruby's 'thread_tkwait' is called");
     if (interp == (Tcl_Interp*)NULL) {
-        rbtk_pending_exception = rb_exc_new2(rb_eRuntimeError, 
+        rbtk_pending_exception = rb_exc_new2(rb_eRuntimeError,
                                              "IP is deleted");
         return TCL_ERROR;
     }
@@ -4665,12 +4665,12 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
 
 #if TCL_MAJOR_VERSION >= 8
         Tcl_AppendResult(interp, "wrong number of arguments: should be \"",
-                         Tcl_GetStringFromObj(objv[0], &dummy), 
-                         " variable|visibility|window name\"", 
+                         Tcl_GetStringFromObj(objv[0], &dummy),
+                         " variable|visibility|window name\"",
                          (char *) NULL);
 #else /* TCL_MAJOR_VERSION < 8 */
         Tcl_AppendResult(interp, "wrong number of arguments: should be \"",
-                         objv[0], " variable|visibility|window name\"", 
+                         objv[0], " variable|visibility|window name\"",
                          (char *) NULL);
 #endif
 
@@ -4686,14 +4686,14 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
     thr_crit_bup = rb_thread_critical;
     rb_thread_critical = Qtrue;
     /*
-    if (Tcl_GetIndexFromObj(interp, objv[1], 
-                            (CONST84 char **)optionStrings, 
+    if (Tcl_GetIndexFromObj(interp, objv[1],
+                            (CONST84 char **)optionStrings,
                             "option", 0, &index) != TCL_OK) {
         return TCL_ERROR;
     }
     */
-    ret = Tcl_GetIndexFromObj(interp, objv[1], 
-                              (CONST84 char **)optionStrings, 
+    ret = Tcl_GetIndexFromObj(interp, objv[1],
+                              (CONST84 char **)optionStrings,
                               "option", 0, &index);
 
     rb_thread_critical = thr_crit_bup;
@@ -4718,7 +4718,7 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
             index = TKWAIT_WINDOW;
         } else {
             Tcl_AppendResult(interp, "bad option \"", objv[1],
-                             "\": must be variable, visibility, or window", 
+                             "\": must be variable, visibility, or window",
                              (char *) NULL);
             Tcl_Release(tkwin);
             Tcl_Release(interp);
@@ -4752,7 +4752,7 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
     case TKWAIT_VARIABLE:
         thr_crit_bup = rb_thread_critical;
         rb_thread_critical = Qtrue;
-        /* 
+        /*
         if (Tcl_TraceVar(interp, nameString,
                          TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|TCL_TRACE_UNSETS,
                          rb_threadVwaitProc, (ClientData) param) != TCL_OK) {
@@ -4840,8 +4840,8 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
 #endif
 
         if (window == NULL) {
-            Tcl_AppendResult(interp, ": thread_tkwait: ", 
-                             "no main-window (not Tk application?)", 
+            Tcl_AppendResult(interp, ": thread_tkwait: ",
+                             "no main-window (not Tk application?)",
                              (char*)NULL);
 
             rb_thread_critical = thr_crit_bup;
@@ -4892,7 +4892,7 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
         if (param->done != TKWAIT_MODE_DESTROY) {
             Tk_DeleteEventHandler(window,
                                   VisibilityChangeMask|StructureNotifyMask,
-                                  rb_threadWaitVisibilityProc, 
+                                  rb_threadWaitVisibilityProc,
                                   (ClientData) param);
         }
 
@@ -4965,8 +4965,8 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
 #endif
 
         if (window == NULL) {
-            Tcl_AppendResult(interp, ": thread_tkwait: ", 
-                             "no main-window (not Tk application?)", 
+            Tcl_AppendResult(interp, ": thread_tkwait: ",
+                             "no main-window (not Tk application?)",
                              (char*)NULL);
 
             rb_thread_critical = thr_crit_bup;
@@ -5147,7 +5147,7 @@ delete_slaves(ip)
 
     if (!Tcl_InterpDeleted(ip) && Tcl_Eval(ip, "interp slaves") == TCL_OK) {
         slave_list = ip->result;
-        if (Tcl_SplitList((Tcl_Interp*)NULL, 
+        if (Tcl_SplitList((Tcl_Interp*)NULL,
                           slave_list, &argc, &argv) == TCL_OK) {
             for(i = 0; i < argc; i++) {
                 slave_name = argv[i];
@@ -5192,7 +5192,7 @@ ip_null_proc(ClientData clientData, Tcl_Interp *interp,
 #else
 ip_null_proc(clientData, interp, argc, argv)
     ClientData clientData;
-    Tcl_Interp *interp; 
+    Tcl_Interp *interp;
     int argc;
     Tcl_Obj *CONST argv[];
 #endif
@@ -5220,10 +5220,10 @@ ip_finalize(ip)
     int  thr_crit_bup;
 
     VALUE rb_debug_bup, rb_verbose_bup;
-          /* When ruby is exiting, printing debug messages in some callback 
-             operations from Tcl-IP sometimes cause SEGV. I don't know the 
+          /* When ruby is exiting, printing debug messages in some callback
+             operations from Tcl-IP sometimes cause SEGV. I don't know the
              reason. But I got SEGV when calling "rb_io_write(rb_stdout, ...)".
-             So, in some part of this function, debug mode and verbose mode 
+             So, in some part of this function, debug mode and verbose mode
              are disabled. If you know the reason, please fix it.
                            --  Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)  */
 
@@ -5259,33 +5259,33 @@ ip_finalize(ip)
 
     /* shut off some connections from Tcl-proc to Ruby */
     if (at_exit) {
-	/* NOTE: Only when at exit. 
-	   Because, ruby removes objects, which depends on the deleted 
-	   interpreter, on some callback operations. 
+	/* NOTE: Only when at exit.
+	   Because, ruby removes objects, which depends on the deleted
+	   interpreter, on some callback operations.
 	   It is important for GC. */
 #if TCL_MAJOR_VERSION >= 8
-	Tcl_CreateObjCommand(ip, "ruby", ip_null_proc, 
+	Tcl_CreateObjCommand(ip, "ruby", ip_null_proc,
 			     (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
-	Tcl_CreateObjCommand(ip, "ruby_eval", ip_null_proc, 
+	Tcl_CreateObjCommand(ip, "ruby_eval", ip_null_proc,
 			     (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
-	Tcl_CreateObjCommand(ip, "ruby_cmd", ip_null_proc, 
+	Tcl_CreateObjCommand(ip, "ruby_cmd", ip_null_proc,
 			     (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
 #else /* TCL_MAJOR_VERSION < 8 */
-	Tcl_CreateCommand(ip, "ruby", ip_null_proc, 
+	Tcl_CreateCommand(ip, "ruby", ip_null_proc,
 			  (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
-	Tcl_CreateCommand(ip, "ruby_eval", ip_null_proc, 
+	Tcl_CreateCommand(ip, "ruby_eval", ip_null_proc,
 			  (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
-	Tcl_CreateCommand(ip, "ruby_cmd", ip_null_proc, 
+	Tcl_CreateCommand(ip, "ruby_cmd", ip_null_proc,
 			  (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
 #endif
-	/* 
+	/*
 	  rb_thread_critical = thr_crit_bup;
 	  return;
 	*/
     }
 
     /* delete root widget */
-#ifdef RUBY_VM 
+#ifdef RUBY_VM
     /* cause SEGV on Ruby 1.9 */
 #else
     DUMP1("check `destroy'");
@@ -5298,13 +5298,13 @@ ip_finalize(ip)
     DUMP1("destroy root widget");
     if (tk_stubs_init_p() && Tk_MainWindow(ip) != (Tk_Window)NULL) {
         /*
-	 *  On Ruby VM, this code piece may be not called, because 
-	 *  Tk_MainWindow() returns NULL on a native thread except 
+	 *  On Ruby VM, this code piece may be not called, because
+	 *  Tk_MainWindow() returns NULL on a native thread except
          *  the thread which initialize Tk environment.
          *  Of course, that is a problem. But maybe not so serious.
          *  All widgets are destroyed when the Tcl interp is deleted.
-         *  At then, Ruby may raise exceptions on the delete hook 
-         *  callbacks which registered for the deleted widgets, and 
+         *  At then, Ruby may raise exceptions on the delete hook
+         *  callbacks which registered for the deleted widgets, and
 	 *  may fail to clear objects which depends on the widgets.
          *  Although it is the problem, it is possibly avoidable by
          *  rescuing exceptions and the finalize hook of the interp.
@@ -5365,13 +5365,13 @@ ip_free(ptr)
         thr_crit_bup = rb_thread_critical;
         rb_thread_critical = Qtrue;
 
-        if ( ptr->ip != (Tcl_Interp*)NULL 
+        if ( ptr->ip != (Tcl_Interp*)NULL
              && !Tcl_InterpDeleted(ptr->ip)
-             && Tcl_GetMaster(ptr->ip) != (Tcl_Interp*)NULL 
+             && Tcl_GetMaster(ptr->ip) != (Tcl_Interp*)NULL
              && !Tcl_InterpDeleted(Tcl_GetMaster(ptr->ip)) ) {
-            DUMP2("parent IP(%lx) is not deleted", 
+            DUMP2("parent IP(%lx) is not deleted",
                   (unsigned long)Tcl_GetMaster(ptr->ip));
-            DUMP2("slave IP(%lx) should not be deleted", 
+            DUMP2("slave IP(%lx) should not be deleted",
                   (unsigned long)ptr->ip);
             xfree(ptr);
             /* ckfree((char*)ptr); */
@@ -5390,8 +5390,8 @@ ip_free(ptr)
 	if (!Tcl_InterpDeleted(ptr->ip)) {
 	  ip_finalize(ptr->ip);
 
-	  Tcl_DeleteInterp(ptr->ip); 
-	  Tcl_Release(ptr->ip); 
+	  Tcl_DeleteInterp(ptr->ip);
+	  Tcl_Release(ptr->ip);
 	}
 
         ptr->ip = (Tcl_Interp*)NULL;
@@ -5422,66 +5422,66 @@ ip_replace_wait_commands(interp, mainWin)
     /* replace 'vwait' command */
 #if TCL_MAJOR_VERSION >= 8
     DUMP1("Tcl_CreateObjCommand(\"vwait\")");
-    Tcl_CreateObjCommand(interp, "vwait", ip_rbVwaitObjCmd, 
+    Tcl_CreateObjCommand(interp, "vwait", ip_rbVwaitObjCmd,
                          (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
 #else /* TCL_MAJOR_VERSION < 8 */
     DUMP1("Tcl_CreateCommand(\"vwait\")");
-    Tcl_CreateCommand(interp, "vwait", ip_rbVwaitCommand, 
+    Tcl_CreateCommand(interp, "vwait", ip_rbVwaitCommand,
                       (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
 #endif
 
     /* replace 'tkwait' command */
 #if TCL_MAJOR_VERSION >= 8
     DUMP1("Tcl_CreateObjCommand(\"tkwait\")");
-    Tcl_CreateObjCommand(interp, "tkwait", ip_rbTkWaitObjCmd, 
+    Tcl_CreateObjCommand(interp, "tkwait", ip_rbTkWaitObjCmd,
                          (ClientData)mainWin, (Tcl_CmdDeleteProc *)NULL);
 #else /* TCL_MAJOR_VERSION < 8 */
     DUMP1("Tcl_CreateCommand(\"tkwait\")");
-    Tcl_CreateCommand(interp, "tkwait", ip_rbTkWaitCommand, 
+    Tcl_CreateCommand(interp, "tkwait", ip_rbTkWaitCommand,
                       (ClientData)mainWin, (Tcl_CmdDeleteProc *)NULL);
 #endif
 
     /* add 'thread_vwait' command */
 #if TCL_MAJOR_VERSION >= 8
     DUMP1("Tcl_CreateObjCommand(\"thread_vwait\")");
-    Tcl_CreateObjCommand(interp, "thread_vwait", ip_rb_threadVwaitObjCmd, 
+    Tcl_CreateObjCommand(interp, "thread_vwait", ip_rb_threadVwaitObjCmd,
                          (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
 #else /* TCL_MAJOR_VERSION < 8 */
     DUMP1("Tcl_CreateCommand(\"thread_vwait\")");
-    Tcl_CreateCommand(interp, "thread_vwait", ip_rb_threadVwaitCommand, 
+    Tcl_CreateCommand(interp, "thread_vwait", ip_rb_threadVwaitCommand,
                       (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
 #endif
 
     /* add 'thread_tkwait' command */
 #if TCL_MAJOR_VERSION >= 8
     DUMP1("Tcl_CreateObjCommand(\"thread_tkwait\")");
-    Tcl_CreateObjCommand(interp, "thread_tkwait", ip_rb_threadTkWaitObjCmd, 
+    Tcl_CreateObjCommand(interp, "thread_tkwait", ip_rb_threadTkWaitObjCmd,
                          (ClientData)mainWin, (Tcl_CmdDeleteProc *)NULL);
 #else /* TCL_MAJOR_VERSION < 8 */
     DUMP1("Tcl_CreateCommand(\"thread_tkwait\")");
-    Tcl_CreateCommand(interp, "thread_tkwait", ip_rb_threadTkWaitCommand, 
+    Tcl_CreateCommand(interp, "thread_tkwait", ip_rb_threadTkWaitCommand,
                       (ClientData)mainWin, (Tcl_CmdDeleteProc *)NULL);
 #endif
 
     /* replace 'update' command */
 #if TCL_MAJOR_VERSION >= 8
     DUMP1("Tcl_CreateObjCommand(\"update\")");
-    Tcl_CreateObjCommand(interp, "update", ip_rbUpdateObjCmd, 
+    Tcl_CreateObjCommand(interp, "update", ip_rbUpdateObjCmd,
                          (ClientData)mainWin, (Tcl_CmdDeleteProc *)NULL);
 #else /* TCL_MAJOR_VERSION < 8 */
     DUMP1("Tcl_CreateCommand(\"update\")");
-    Tcl_CreateCommand(interp, "update", ip_rbUpdateCommand, 
+    Tcl_CreateCommand(interp, "update", ip_rbUpdateCommand,
                       (ClientData)mainWin, (Tcl_CmdDeleteProc *)NULL);
 #endif
 
     /* add 'thread_update' command */
 #if TCL_MAJOR_VERSION >= 8
     DUMP1("Tcl_CreateObjCommand(\"thread_update\")");
-    Tcl_CreateObjCommand(interp, "thread_update", ip_rb_threadUpdateObjCmd, 
+    Tcl_CreateObjCommand(interp, "thread_update", ip_rb_threadUpdateObjCmd,
                          (ClientData)mainWin, (Tcl_CmdDeleteProc *)NULL);
 #else /* TCL_MAJOR_VERSION < 8 */
     DUMP1("Tcl_CreateCommand(\"thread_update\")");
-    Tcl_CreateCommand(interp, "thread_update", ip_rb_threadUpdateCommand, 
+    Tcl_CreateCommand(interp, "thread_update", ip_rb_threadUpdateCommand,
                       (ClientData)mainWin, (Tcl_CmdDeleteProc *)NULL);
 #endif
 }
@@ -5491,7 +5491,7 @@ ip_replace_wait_commands(interp, mainWin)
 static int
 ip_rb_replaceSlaveTkCmdsObjCmd(clientData, interp, objc, objv)
     ClientData clientData;
-    Tcl_Interp *interp; 
+    Tcl_Interp *interp;
     int objc;
     Tcl_Obj *CONST objv[];
 #else /* TCL_MAJOR_VERSION < 8 */
@@ -5530,7 +5530,7 @@ ip_rb_replaceSlaveTkCmdsCommand(clientData, interp, objc, objv)
 
     slave = Tcl_GetSlave(interp, slave_name);
     if (slave == NULL) {
-        Tcl_AppendResult(interp, "cannot find slave \"", 
+        Tcl_AppendResult(interp, "cannot find slave \"",
                          slave_name, "\"", (char *)NULL);
 	return TCL_ERROR;
     }
@@ -5539,11 +5539,11 @@ ip_rb_replaceSlaveTkCmdsCommand(clientData, interp, objc, objv)
     /* replace 'exit' command --> 'interp_exit' command */
 #if TCL_MAJOR_VERSION >= 8
     DUMP1("Tcl_CreateObjCommand(\"exit\") --> \"interp_exit\"");
-    Tcl_CreateObjCommand(slave, "exit", ip_InterpExitObjCmd, 
+    Tcl_CreateObjCommand(slave, "exit", ip_InterpExitObjCmd,
                          (ClientData)mainWin, (Tcl_CmdDeleteProc *)NULL);
 #else /* TCL_MAJOR_VERSION < 8 */
     DUMP1("Tcl_CreateCommand(\"exit\") --> \"interp_exit\"");
-    Tcl_CreateCommand(slave, "exit", ip_InterpExitCommand, 
+    Tcl_CreateCommand(slave, "exit", ip_InterpExitCommand,
                       (ClientData)mainWin, (Tcl_CmdDeleteProc *)NULL);
 #endif
 
@@ -5560,7 +5560,7 @@ static int ip_rbNamespaceObjCmd _((ClientData, Tcl_Interp *, int,
 static int
 ip_rbNamespaceObjCmd(clientData, interp, objc, objv)
     ClientData clientData;
-    Tcl_Interp *interp; 
+    Tcl_Interp *interp;
     int objc;
     Tcl_Obj *CONST objv[];
 {
@@ -5569,7 +5569,7 @@ ip_rbNamespaceObjCmd(clientData, interp, objc, objv)
 
     if (!Tcl_GetCommandInfo(interp, "__orig_namespace_command__", &(info))) {
         Tcl_ResetResult(interp);
-        Tcl_AppendResult(interp, 
+        Tcl_AppendResult(interp,
                          "invalid command name \"namespace\"", (char*)NULL);
         return TCL_ERROR;
     }
@@ -5596,7 +5596,7 @@ ip_rbNamespaceObjCmd(clientData, interp, objc, objv)
         }
         argv[objc] = (char *)NULL;
 
-        ret = (*(info.proc))(info.clientData, interp, 
+        ret = (*(info.proc))(info.clientData, interp,
                               objc, (CONST84 char **)argv);
 
 #if 0 /* use Tcl_EventuallyFree */
@@ -5620,7 +5620,7 @@ ip_rbNamespaceObjCmd(clientData, interp, objc, objv)
 
 static void
 ip_wrap_namespace_command(interp)
-    Tcl_Interp *interp; 
+    Tcl_Interp *interp;
 {
 #if TCL_MAJOR_VERSION >= 8
     Tcl_CmdInfo orig_info;
@@ -5630,16 +5630,16 @@ ip_wrap_namespace_command(interp)
     }
 
     if (orig_info.isNativeObjectProc) {
-        Tcl_CreateObjCommand(interp, "__orig_namespace_command__", 
-                             orig_info.objProc, orig_info.objClientData, 
+        Tcl_CreateObjCommand(interp, "__orig_namespace_command__",
+                             orig_info.objProc, orig_info.objClientData,
                              orig_info.deleteProc);
     } else {
-        Tcl_CreateCommand(interp, "__orig_namespace_command__", 
-                          orig_info.proc, orig_info.clientData, 
+        Tcl_CreateCommand(interp, "__orig_namespace_command__",
+                          orig_info.proc, orig_info.clientData,
                           orig_info.deleteProc);
     }
 
-    Tcl_CreateObjCommand(interp, "namespace", ip_rbNamespaceObjCmd, 
+    Tcl_CreateObjCommand(interp, "namespace", ip_rbNamespaceObjCmd,
                          (ClientData) 0, (Tcl_CmdDeleteProc *)NULL);
 #endif
 }
@@ -5684,8 +5684,8 @@ ip_init(argc, argv, self)
 
     /* security check */
     if (rb_safe_level() >= 4) {
-        rb_raise(rb_eSecurityError, 
-                 "Cannot create a TclTkIp object at level %d", 
+        rb_raise(rb_eSecurityError,
+                 "Cannot create a TclTkIp object at level %d",
                  rb_safe_level());
     }
 
@@ -5728,7 +5728,7 @@ ip_init(argc, argv, self)
 #if TCL_MAJOR_VERSION >= 8
 #if TCL_NAMESPACE_DEBUG
     DUMP1("get current namespace");
-    if ((ptr->default_ns = Tcl_GetCurrentNamespace(ptr->ip)) 
+    if ((ptr->default_ns = Tcl_GetCurrentNamespace(ptr->ip))
         == (Tcl_Namespace*)NULL) {
       rb_raise(rb_eRuntimeError, "a new Tk interpreter has a NULL namespace");
     }
@@ -5739,7 +5739,7 @@ ip_init(argc, argv, self)
     DUMP2("IP ref_count = %d", ptr->ref_count);
     current_interp = ptr->ip;
 
-    ptr->has_orig_exit 
+    ptr->has_orig_exit
         = Tcl_GetCommandInfo(ptr->ip, "exit", &(ptr->orig_exit_info));
 
     /* from Tcl_AppInit() */
@@ -5768,7 +5768,7 @@ ip_init(argc, argv, self)
                 Tcl_SetVar(ptr->ip, "argv0", "ruby", TCL_GLOBAL_ONLY);
             } else {
                 /* Tcl_SetVar(ptr->ip, "argv0", StringValuePtr(argv0), 0); */
-                Tcl_SetVar(ptr->ip, "argv0", StringValuePtr(argv0), 
+                Tcl_SetVar(ptr->ip, "argv0", StringValuePtr(argv0),
                            TCL_GLOBAL_ONLY);
             }
         }
@@ -5788,10 +5788,10 @@ ip_init(argc, argv, self)
         case NO_Tk_Init:
             rb_raise(rb_eLoadError, "tcltklib: can't find Tk_Init()");
         case FAIL_Tk_Init:
-            rb_raise(rb_eRuntimeError, "tcltklib: fail to Tk_Init(). %s", 
+            rb_raise(rb_eRuntimeError, "tcltklib: fail to Tk_Init(). %s",
                      Tcl_GetStringResult(ptr->ip));
         case FAIL_Tk_InitStubs:
-            rb_raise(rb_eRuntimeError, "tcltklib: fail to Tk_InitStubs(). %s", 
+            rb_raise(rb_eRuntimeError, "tcltklib: fail to Tk_InitStubs(). %s",
                      Tcl_GetStringResult(ptr->ip));
         default:
             rb_raise(rb_eRuntimeError, "tcltklib: unknown error(%d) on ruby_tk_stubs_init", st);
@@ -5840,23 +5840,23 @@ ip_init(argc, argv, self)
     /* add 'interp_exit', 'ruby_exit' and replace 'exit' command */
 #if TCL_MAJOR_VERSION >= 8
     DUMP1("Tcl_CreateObjCommand(\"interp_exit\")");
-    Tcl_CreateObjCommand(ptr->ip, "interp_exit", ip_InterpExitObjCmd, 
+    Tcl_CreateObjCommand(ptr->ip, "interp_exit", ip_InterpExitObjCmd,
                          (ClientData)mainWin, (Tcl_CmdDeleteProc *)NULL);
     DUMP1("Tcl_CreateObjCommand(\"ruby_exit\")");
-    Tcl_CreateObjCommand(ptr->ip, "ruby_exit", ip_RubyExitObjCmd, 
+    Tcl_CreateObjCommand(ptr->ip, "ruby_exit", ip_RubyExitObjCmd,
                          (ClientData)mainWin, (Tcl_CmdDeleteProc *)NULL);
     DUMP1("Tcl_CreateObjCommand(\"exit\") --> \"ruby_exit\"");
-    Tcl_CreateObjCommand(ptr->ip, "exit", ip_RubyExitObjCmd, 
+    Tcl_CreateObjCommand(ptr->ip, "exit", ip_RubyExitObjCmd,
                          (ClientData)mainWin, (Tcl_CmdDeleteProc *)NULL);
 #else /* TCL_MAJOR_VERSION < 8 */
     DUMP1("Tcl_CreateCommand(\"interp_exit\")");
-    Tcl_CreateCommand(ptr->ip, "interp_exit", ip_InterpExitCommand, 
+    Tcl_CreateCommand(ptr->ip, "interp_exit", ip_InterpExitCommand,
                       (ClientData)mainWin, (Tcl_CmdDeleteProc *)NULL);
     DUMP1("Tcl_CreateCommand(\"ruby_exit\")");
-    Tcl_CreateCommand(ptr->ip, "ruby_exit", ip_RubyExitCommand, 
+    Tcl_CreateCommand(ptr->ip, "ruby_exit", ip_RubyExitCommand,
                       (ClientData)mainWin, (Tcl_CmdDeleteProc *)NULL);
     DUMP1("Tcl_CreateCommand(\"exit\") --> \"ruby_exit\"");
-    Tcl_CreateCommand(ptr->ip, "exit", ip_RubyExitCommand, 
+    Tcl_CreateCommand(ptr->ip, "exit", ip_RubyExitCommand,
                       (ClientData)mainWin, (Tcl_CmdDeleteProc *)NULL);
 #endif
 
@@ -5868,12 +5868,12 @@ ip_init(argc, argv, self)
 
     /* define command to replace commands which depend on slave's MainWindow */
 #if TCL_MAJOR_VERSION >= 8
-    Tcl_CreateObjCommand(ptr->ip, "__replace_slave_tk_commands__", 
-			 ip_rb_replaceSlaveTkCmdsObjCmd, 
+    Tcl_CreateObjCommand(ptr->ip, "__replace_slave_tk_commands__",
+			 ip_rb_replaceSlaveTkCmdsObjCmd,
                          (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
 #else /* TCL_MAJOR_VERSION < 8 */
-    Tcl_CreateCommand(ptr->ip, "__replace_slave_tk_commands__", 
-		      ip_rb_replaceSlaveTkCmdsCommand, 
+    Tcl_CreateCommand(ptr->ip, "__replace_slave_tk_commands__",
+		      ip_rb_replaceSlaveTkCmdsCommand,
                       (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
 #endif
 
@@ -5904,7 +5904,7 @@ ip_create_slave_core(interp, argc, argv)
 
     /* ip is deleted? */
     if (deleted_ip(master)) {
-        return rb_exc_new2(rb_eRuntimeError, 
+        return rb_exc_new2(rb_eRuntimeError,
                            "deleted master cannot create a new slave");
     }
 
@@ -5949,7 +5949,7 @@ ip_create_slave_core(interp, argc, argv)
     slave->ip = Tcl_CreateSlave(master->ip, StringValuePtr(name), safe);
     if (slave->ip == NULL) {
         rb_thread_critical = thr_crit_bup;
-        return rb_exc_new2(rb_eRuntimeError, 
+        return rb_exc_new2(rb_eRuntimeError,
                            "fail to create the new slave interpreter");
     }
 #if TCL_MAJOR_VERSION >= 8
@@ -5959,18 +5959,18 @@ ip_create_slave_core(interp, argc, argv)
 #endif
     rbtk_preserve_ip(slave);
 
-    slave->has_orig_exit 
+    slave->has_orig_exit
         = Tcl_GetCommandInfo(slave->ip, "exit", &(slave->orig_exit_info));
 
     /* replace 'exit' command --> 'interp_exit' command */
     mainWin = (tk_stubs_init_p())? Tk_MainWindow(slave->ip): (Tk_Window)NULL;
 #if TCL_MAJOR_VERSION >= 8
     DUMP1("Tcl_CreateObjCommand(\"exit\") --> \"interp_exit\"");
-    Tcl_CreateObjCommand(slave->ip, "exit", ip_InterpExitObjCmd, 
+    Tcl_CreateObjCommand(slave->ip, "exit", ip_InterpExitObjCmd,
                          (ClientData)mainWin, (Tcl_CmdDeleteProc *)NULL);
 #else /* TCL_MAJOR_VERSION < 8 */
     DUMP1("Tcl_CreateCommand(\"exit\") --> \"interp_exit\"");
-    Tcl_CreateCommand(slave->ip, "exit", ip_InterpExitCommand, 
+    Tcl_CreateCommand(slave->ip, "exit", ip_InterpExitCommand,
                       (ClientData)mainWin, (Tcl_CmdDeleteProc *)NULL);
 #endif
 
@@ -5982,12 +5982,12 @@ ip_create_slave_core(interp, argc, argv)
 
     /* define command to replace cmds which depend on slave-slave's MainWin */
 #if TCL_MAJOR_VERSION >= 8
-    Tcl_CreateObjCommand(slave->ip, "__replace_slave_tk_commands__", 
-			 ip_rb_replaceSlaveTkCmdsObjCmd, 
+    Tcl_CreateObjCommand(slave->ip, "__replace_slave_tk_commands__",
+			 ip_rb_replaceSlaveTkCmdsObjCmd,
                          (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
 #else /* TCL_MAJOR_VERSION < 8 */
-    Tcl_CreateCommand(slave->ip, "__replace_slave_tk_commands__", 
-		      ip_rb_replaceSlaveTkCmdsCommand, 
+    Tcl_CreateCommand(slave->ip, "__replace_slave_tk_commands__",
+		      ip_rb_replaceSlaveTkCmdsCommand,
                       (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
 #endif
 
@@ -6012,7 +6012,7 @@ ip_create_slave(argc, argv, self)
 
     /* ip is deleted? */
     if (deleted_ip(master)) {
-        rb_raise(rb_eRuntimeError, 
+        rb_raise(rb_eRuntimeError,
                  "deleted master cannot create a new slave interpreter");
     }
 
@@ -6121,7 +6121,7 @@ ip_create_console(self)
     VALUE self;
 {
     struct tcltkip *ptr = get_ip(self);
-    
+
     /* ip is deleted? */
     if (deleted_ip(ptr)) {
         rb_raise(rb_eRuntimeError, "interpreter is deleted");
@@ -6139,16 +6139,16 @@ ip_make_safe_core(interp, argc, argv)
 {
     struct tcltkip *ptr = get_ip(interp);
     Tk_Window mainWin;
-    
+
     /* ip is deleted? */
     if (deleted_ip(ptr)) {
         return rb_exc_new2(rb_eRuntimeError, "interpreter is deleted");
     }
 
     if (Tcl_MakeSafe(ptr->ip) == TCL_ERROR) {
-        /* return rb_exc_new2(rb_eRuntimeError, 
+        /* return rb_exc_new2(rb_eRuntimeError,
                               Tcl_GetStringResult(ptr->ip)); */
-        return create_ip_exc(interp, rb_eRuntimeError, 
+        return create_ip_exc(interp, rb_eRuntimeError,
                              Tcl_GetStringResult(ptr->ip));
     }
 
@@ -6158,11 +6158,11 @@ ip_make_safe_core(interp, argc, argv)
     mainWin = (tk_stubs_init_p())? Tk_MainWindow(ptr->ip): (Tk_Window)NULL;
 #if TCL_MAJOR_VERSION >= 8
     DUMP1("Tcl_CreateObjCommand(\"exit\") --> \"interp_exit\"");
-    Tcl_CreateObjCommand(ptr->ip, "exit", ip_InterpExitObjCmd, 
+    Tcl_CreateObjCommand(ptr->ip, "exit", ip_InterpExitObjCmd,
                          (ClientData)mainWin, (Tcl_CmdDeleteProc *)NULL);
 #else /* TCL_MAJOR_VERSION < 8 */
     DUMP1("Tcl_CreateCommand(\"exit\") --> \"interp_exit\"");
-    Tcl_CreateCommand(ptr->ip, "exit", ip_InterpExitCommand, 
+    Tcl_CreateCommand(ptr->ip, "exit", ip_InterpExitCommand,
                       (ClientData)mainWin, (Tcl_CmdDeleteProc *)NULL);
 #endif
 
@@ -6174,7 +6174,7 @@ ip_make_safe(self)
     VALUE self;
 {
     struct tcltkip *ptr = get_ip(self);
-    
+
     /* ip is deleted? */
     if (deleted_ip(ptr)) {
         rb_raise(rb_eRuntimeError, "interpreter is deleted");
@@ -6189,7 +6189,7 @@ ip_is_safe_p(self)
     VALUE self;
 {
     struct tcltkip *ptr = get_ip(self);
-    
+
     /* ip is deleted? */
     if (deleted_ip(ptr)) {
         rb_raise(rb_eRuntimeError, "interpreter is deleted");
@@ -6208,7 +6208,7 @@ ip_allow_ruby_exit_p(self)
     VALUE self;
 {
     struct tcltkip *ptr = get_ip(self);
-    
+
     /* ip is deleted? */
     if (deleted_ip(ptr)) {
         rb_raise(rb_eRuntimeError, "interpreter is deleted");
@@ -6237,14 +6237,14 @@ ip_allow_ruby_exit_set(self, val)
     }
 
     if (Tcl_IsSafe(ptr->ip)) {
-        rb_raise(rb_eSecurityError, 
+        rb_raise(rb_eSecurityError,
                  "insecure operation on a safe interpreter");
     }
 
     /*
-     *  Because of cross-threading, the following line may fail to find 
+     *  Because of cross-threading, the following line may fail to find
      *  the MainWindow, even if the Tcl/Tk interpreter has one or more.
-     *  But it has no problem. Current implementation of both type of 
+     *  But it has no problem. Current implementation of both type of
      *  the "exit" command don't need maiinWin token.
      */
     mainWin = (tk_stubs_init_p())? Tk_MainWindow(ptr->ip): (Tk_Window)NULL;
@@ -6253,11 +6253,11 @@ ip_allow_ruby_exit_set(self, val)
         ptr->allow_ruby_exit = 1;
 #if TCL_MAJOR_VERSION >= 8
         DUMP1("Tcl_CreateObjCommand(\"exit\") --> \"ruby_exit\"");
-        Tcl_CreateObjCommand(ptr->ip, "exit", ip_RubyExitObjCmd, 
+        Tcl_CreateObjCommand(ptr->ip, "exit", ip_RubyExitObjCmd,
                              (ClientData)mainWin, (Tcl_CmdDeleteProc *)NULL);
 #else /* TCL_MAJOR_VERSION < 8 */
         DUMP1("Tcl_CreateCommand(\"exit\") --> \"ruby_exit\"");
-        Tcl_CreateCommand(ptr->ip, "exit", ip_RubyExitCommand, 
+        Tcl_CreateCommand(ptr->ip, "exit", ip_RubyExitCommand,
                           (ClientData)mainWin, (Tcl_CmdDeleteProc *)NULL);
 #endif
         return Qtrue;
@@ -6266,11 +6266,11 @@ ip_allow_ruby_exit_set(self, val)
         ptr->allow_ruby_exit = 0;
 #if TCL_MAJOR_VERSION >= 8
         DUMP1("Tcl_CreateObjCommand(\"exit\") --> \"interp_exit\"");
-        Tcl_CreateObjCommand(ptr->ip, "exit", ip_InterpExitObjCmd, 
+        Tcl_CreateObjCommand(ptr->ip, "exit", ip_InterpExitObjCmd,
                              (ClientData)mainWin, (Tcl_CmdDeleteProc *)NULL);
 #else /* TCL_MAJOR_VERSION < 8 */
         DUMP1("Tcl_CreateCommand(\"exit\") --> \"interp_exit\"");
-        Tcl_CreateCommand(ptr->ip, "exit", ip_InterpExitCommand, 
+        Tcl_CreateCommand(ptr->ip, "exit", ip_InterpExitCommand,
                           (ClientData)mainWin, (Tcl_CmdDeleteProc *)NULL);
 #endif
         return Qfalse;
@@ -6517,7 +6517,7 @@ call_queue_handler(evPtr, flags)
     if (RTEST(rb_funcall(thread, ID_alive_p, 0))
 	&& ! RTEST(rb_funcall(thread, ID_stop_p, 0))) {
 #else
-    if (RTEST(rb_thread_alive_p(thread)) 
+    if (RTEST(rb_thread_alive_p(thread))
 	&& ! RTEST(rb_funcall(thread, ID_stop_p, 0))) {
 #endif
       DUMP1("caller is not yet ready to receive the result -> pending");
@@ -6541,7 +6541,7 @@ call_queue_handler(evPtr, flags)
     if (rb_safe_level() != q->safe_level) {
         /* q_dat = Data_Wrap_Struct(rb_cData,0,-1,q); */
         q_dat = Data_Wrap_Struct(rb_cData,call_queue_mark,-1,q);
-        ret = rb_funcall(rb_proc_new(callq_safelevel_handler, q_dat), 
+        ret = rb_funcall(rb_proc_new(callq_safelevel_handler, q_dat),
                          ID_call, 0);
         rb_gc_force_recycle(q_dat);
 	q_dat = (VALUE)NULL;
@@ -6622,11 +6622,11 @@ tk_funcall(func, argc, argv, obj)
 #ifdef RUBY_USE_NATIVE_THREAD
     if (ptr) {
       /* on Tcl interpreter */
-      is_tk_evloop_thread = (ptr->tk_thread_id == (Tcl_ThreadId) 0 
+      is_tk_evloop_thread = (ptr->tk_thread_id == (Tcl_ThreadId) 0
 			     || ptr->tk_thread_id == Tcl_GetCurrentThread());
     } else {
       /* on Tcl/Tk library */
-      is_tk_evloop_thread = (tk_eventloop_thread_id == (Tcl_ThreadId) 0 
+      is_tk_evloop_thread = (tk_eventloop_thread_id == (Tcl_ThreadId) 0
 			     || tk_eventloop_thread_id == Tcl_GetCurrentThread());
     }
 #else
@@ -6697,15 +6697,15 @@ tk_funcall(func, argc, argv, obj)
     DUMP1("add handler");
 #ifdef RUBY_USE_NATIVE_THREAD
     if (ptr && ptr->tk_thread_id) {
-      /* Tcl_ThreadQueueEvent(ptr->tk_thread_id, 
+      /* Tcl_ThreadQueueEvent(ptr->tk_thread_id,
 			   &(callq->ev), TCL_QUEUE_HEAD); */
-      Tcl_ThreadQueueEvent(ptr->tk_thread_id, 
+      Tcl_ThreadQueueEvent(ptr->tk_thread_id,
 			   (Tcl_Event*)callq, TCL_QUEUE_HEAD);
       Tcl_ThreadAlert(ptr->tk_thread_id);
     } else if (tk_eventloop_thread_id) {
-      /* Tcl_ThreadQueueEvent(tk_eventloop_thread_id, 
+      /* Tcl_ThreadQueueEvent(tk_eventloop_thread_id,
 			   &(callq->ev), TCL_QUEUE_HEAD); */
-      Tcl_ThreadQueueEvent(tk_eventloop_thread_id, 
+      Tcl_ThreadQueueEvent(tk_eventloop_thread_id,
 			   (Tcl_Event*)callq, TCL_QUEUE_HEAD);
       Tcl_ThreadAlert(tk_eventloop_thread_id);
     } else {
@@ -6779,7 +6779,7 @@ tk_funcall(func, argc, argv, obj)
     if (rb_obj_is_kind_of(ret, rb_eException)) {
         DUMP1("raise exception");
         /* rb_exc_raise(ret); */
-	rb_exc_raise(rb_exc_new3(rb_obj_class(ret), 
+	rb_exc_raise(rb_exc_new3(rb_obj_class(ret),
 				 rb_funcall(ret, ID_to_s, 0, 0)));
     }
 
@@ -6856,7 +6856,7 @@ ip_eval_real(self, cmd_str, cmd_len)
           switch(status) {
           case TAG_RAISE:
               if (NIL_P(rb_errinfo())) {
-                  rbtk_pending_exception = rb_exc_new2(rb_eException, 
+                  rbtk_pending_exception = rb_exc_new2(rb_eException,
                                                        "unknown exception");
               } else {
                   rbtk_pending_exception = rb_errinfo();
@@ -6889,18 +6889,18 @@ ip_eval_real(self, cmd_str, cmd_len)
 
 	    switch (ptr->return_value) {
 	    case TCL_RETURN:
-	      exc = create_ip_exc(self, eTkCallbackReturn, 
+	      exc = create_ip_exc(self, eTkCallbackReturn,
 				  "ip_eval_real receives TCL_RETURN");
 	    case TCL_BREAK:
-	      exc = create_ip_exc(self, eTkCallbackBreak, 
+	      exc = create_ip_exc(self, eTkCallbackBreak,
 				  "ip_eval_real receives TCL_BREAK");
 	    case TCL_CONTINUE:
-	      exc = create_ip_exc(self, eTkCallbackContinue, 
+	      exc = create_ip_exc(self, eTkCallbackContinue,
 				  "ip_eval_real receives TCL_CONTINUE");
 	    default:
-	      exc = create_ip_exc(self, rb_eRuntimeError, "%s", 
+	      exc = create_ip_exc(self, rb_eRuntimeError, "%s",
 				  Tcl_GetStringResult(ptr->ip));
-	    } 
+	    }
 
             rbtk_release_ip(ptr);
             rb_thread_critical = thr_crit_bup;
@@ -6949,17 +6949,17 @@ ip_eval_real(self, cmd_str, cmd_len)
 
 	switch (ptr->return_value) {
 	case TCL_RETURN:
-	  exc = create_ip_exc(self, eTkCallbackReturn, 
+	  exc = create_ip_exc(self, eTkCallbackReturn,
 			      "ip_eval_real receives TCL_RETURN");
 	case TCL_BREAK:
-	  exc = create_ip_exc(self, eTkCallbackBreak, 
+	  exc = create_ip_exc(self, eTkCallbackBreak,
 			      "ip_eval_real receives TCL_BREAK");
 	case TCL_CONTINUE:
-	  exc = create_ip_exc(self, eTkCallbackContinue, 
+	  exc = create_ip_exc(self, eTkCallbackContinue,
 			       "ip_eval_real receives TCL_CONTINUE");
 	default:
 	  exc = create_ip_exc(self, rb_eRuntimeError, "%s", ptr->ip->result);
-	} 
+	}
 
         rbtk_release_ip(ptr);
         return exc;
@@ -7013,7 +7013,7 @@ eval_queue_handler(evPtr, flags)
     if (RTEST(rb_funcall(thread, ID_alive_p, 0))
 	&& ! RTEST(rb_funcall(thread, ID_stop_p, 0))) {
 #else
-    if (RTEST(rb_thread_alive_p(thread)) 
+    if (RTEST(rb_thread_alive_p(thread))
 	&& ! RTEST(rb_funcall(thread, ID_stop_p, 0))) {
 #endif
       DUMP1("caller is not yet ready to receive the result -> pending");
@@ -7044,7 +7044,7 @@ eval_queue_handler(evPtr, flags)
 #endif
         /* q_dat = Data_Wrap_Struct(rb_cData,0,-1,q); */
         q_dat = Data_Wrap_Struct(rb_cData,eval_queue_mark,-1,q);
-        ret = rb_funcall(rb_proc_new(evq_safelevel_handler, q_dat), 
+        ret = rb_funcall(rb_proc_new(evq_safelevel_handler, q_dat),
                          ID_call, 0);
         rb_gc_force_recycle(q_dat);
 	q_dat = (VALUE)NULL;
@@ -7130,7 +7130,7 @@ ip_eval(self, str)
     if (
 #ifdef RUBY_USE_NATIVE_THREAD
 	(ptr->tk_thread_id == 0 || ptr->tk_thread_id == Tcl_GetCurrentThread())
-	&& 
+	&&
 #endif
 	(NIL_P(eventloop_thread) || current == eventloop_thread)
 	) {
@@ -7198,7 +7198,7 @@ ip_eval(self, str)
       Tcl_ThreadAlert(ptr->tk_thread_id);
     } else if (tk_eventloop_thread_id) {
       Tcl_ThreadQueueEvent(tk_eventloop_thread_id, (Tcl_Event*)evq, position);
-      /* Tcl_ThreadQueueEvent(tk_eventloop_thread_id, 
+      /* Tcl_ThreadQueueEvent(tk_eventloop_thread_id,
 			   &(evq->ev), position); */
       Tcl_ThreadAlert(tk_eventloop_thread_id);
     } else {
@@ -7265,7 +7265,7 @@ ip_eval(self, str)
     if (rb_obj_is_kind_of(ret, rb_eException)) {
         DUMP1("raise exception");
         /* rb_exc_raise(ret); */
-	rb_exc_raise(rb_exc_new3(rb_obj_class(ret), 
+	rb_exc_raise(rb_exc_new3(rb_obj_class(ret),
 				 rb_funcall(ret, ID_to_s, 0, 0)));
     }
 
@@ -7280,7 +7280,7 @@ ip_cancel_eval_core(interp, msg, flag)
     int flag;
 {
 #if TCL_MAJOR_VERSION < 8 || (TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION < 6)
-    rb_raise(rb_eNotImpError, 
+    rb_raise(rb_eNotImpError,
 	     "cancel_eval is supported Tcl/Tk8.6 or later.");
 #else
     Tcl_Obj *msg_obj;
@@ -7506,7 +7506,7 @@ lib_toUTF8_core(ip_obj, src, encodename)
 			if (!RSTRING_LEN(enc)) {
 			  encoding = (Tcl_Encoding)NULL;
 			} else {
-			  encoding = Tcl_GetEncoding((Tcl_Interp*)NULL, 
+			  encoding = Tcl_GetEncoding((Tcl_Interp*)NULL,
 						     RSTRING_PTR(enc));
 			  if (encoding == (Tcl_Encoding)NULL) {
                             rb_warning("Tk-interp has unknown encoding information (@encoding:'%s')", RSTRING_PTR(enc));
@@ -7525,7 +7525,7 @@ lib_toUTF8_core(ip_obj, src, encodename)
                     return str;
                 }
                 /* encoding = Tcl_GetEncoding(interp, RSTRING_PTR(enc)); */
-                encoding = Tcl_GetEncoding((Tcl_Interp*)NULL, 
+                encoding = Tcl_GetEncoding((Tcl_Interp*)NULL,
 					   RSTRING_PTR(enc));
                 if (encoding == (Tcl_Encoding)NULL) {
                     rb_warning("string has unknown encoding information (@encoding:'%s')", RSTRING_PTR(enc));
@@ -7548,10 +7548,10 @@ lib_toUTF8_core(ip_obj, src, encodename)
         encoding = Tcl_GetEncoding((Tcl_Interp*)NULL, RSTRING_PTR(encodename));
         if (encoding == (Tcl_Encoding)NULL) {
             /*
-            rb_warning("unknown encoding name '%s'", 
+            rb_warning("unknown encoding name '%s'",
                        RSTRING_PTR(encodename));
             */
-            rb_raise(rb_eArgError, "unknown encoding name '%s'", 
+            rb_raise(rb_eArgError, "unknown encoding name '%s'",
                      RSTRING_PTR(encodename));
         }
     }
@@ -7697,7 +7697,7 @@ lib_fromUTF8_core(ip_obj, src, encodename)
 		if (!RSTRING_LEN(enc)) {
 		  encoding = (Tcl_Encoding)NULL;
 		} else {
-		  encoding = Tcl_GetEncoding((Tcl_Interp*)NULL, 
+		  encoding = Tcl_GetEncoding((Tcl_Interp*)NULL,
 					     RSTRING_PTR(enc));
 		  if (encoding == (Tcl_Encoding)NULL) {
                     rb_warning("Tk-interp has unknown encoding information (@encoding:'%s')", RSTRING_PTR(enc));
@@ -7735,12 +7735,12 @@ lib_fromUTF8_core(ip_obj, src, encodename)
         /* encoding = Tcl_GetEncoding(interp, RSTRING_PTR(encodename)); */
         encoding = Tcl_GetEncoding((Tcl_Interp*)NULL, RSTRING_PTR(encodename));
         if (encoding == (Tcl_Encoding)NULL) {
-            /* 
-            rb_warning("unknown encoding name '%s'", 
+            /*
+            rb_warning("unknown encoding name '%s'",
                        RSTRING_PTR(encodename));
             encodename = Qnil;
             */
-            rb_raise(rb_eArgError, "unknown encoding name '%s'", 
+            rb_raise(rb_eArgError, "unknown encoding name '%s'",
                      RSTRING_PTR(encodename));
         }
     }
@@ -7948,9 +7948,9 @@ lib_set_system_encoding(self, enc_name)
     }
 
     enc_name = rb_funcall(enc_name, ID_to_s, 0, 0);
-    if (Tcl_SetSystemEncoding((Tcl_Interp *)NULL, 
+    if (Tcl_SetSystemEncoding((Tcl_Interp *)NULL,
                               StringValuePtr(enc_name)) != TCL_OK) {
-        rb_raise(rb_eArgError, "unknown encoding name '%s'", 
+        rb_raise(rb_eArgError, "unknown encoding name '%s'",
                  RSTRING_PTR(enc_name));
     }
 
@@ -8010,16 +8010,16 @@ invoke_tcl_proc(arg)
     /* Invoke the C procedure */
 #if TCL_MAJOR_VERSION >= 8
     if (inf->cmdinfo.isNativeObjectProc) {
-        inf->ptr->return_value 
-            = (*(inf->cmdinfo.objProc))(inf->cmdinfo.objClientData, 
+        inf->ptr->return_value
+            = (*(inf->cmdinfo.objProc))(inf->cmdinfo.objClientData,
                                         inf->ptr->ip, inf->objc, inf->objv);
     }
     else
 #endif
     {
 #if TCL_MAJOR_VERSION >= 8
-        inf->ptr->return_value 
-            = (*(inf->cmdinfo.proc))(inf->cmdinfo.clientData, inf->ptr->ip, 
+        inf->ptr->return_value
+            = (*(inf->cmdinfo.proc))(inf->cmdinfo.clientData, inf->ptr->ip,
                                      argc, (CONST84 char **)argv);
 
 #if 0 /* use Tcl_EventuallyFree */
@@ -8034,8 +8034,8 @@ invoke_tcl_proc(arg)
 #endif
 
 #else /* TCL_MAJOR_VERSION < 8 */
-        inf->ptr->return_value 
-            = (*(inf->cmdinfo.proc))(inf->cmdinfo.clientData, inf->ptr->ip, 
+        inf->ptr->return_value
+            = (*(inf->cmdinfo.proc))(inf->cmdinfo.clientData, inf->ptr->ip,
                                      inf->argc, inf->argv);
 #endif
     }
@@ -8103,11 +8103,11 @@ ip_invoke_core(interp, argc, argv)
     if (!Tcl_GetCommandInfo(ptr->ip, cmd, &info)) {
         DUMP1("error Tcl_GetCommandInfo");
         DUMP1("try auto_load (call 'unknown' command)");
-        if (!Tcl_GetCommandInfo(ptr->ip, 
+        if (!Tcl_GetCommandInfo(ptr->ip,
 #if TCL_MAJOR_VERSION >= 8
-                                "::unknown", 
+                                "::unknown",
 #else
-                                "unknown", 
+                                "unknown",
 #endif
                                 &info)) {
             DUMP1("fail to get 'unknown' command");
@@ -8116,7 +8116,7 @@ ip_invoke_core(interp, argc, argv)
                 /* Tcl_Release(ptr->ip); */
                 rbtk_release_ip(ptr);
                 /*rb_ip_raise(obj,rb_eNameError,"invalid command name `%s'",cmd);*/
-                return create_ip_exc(interp, rb_eNameError, 
+                return create_ip_exc(interp, rb_eNameError,
                                      "invalid command name `%s'", cmd);
             } else {
                 if (event_loop_abort_on_exc < 0) {
@@ -8184,13 +8184,13 @@ ip_invoke_core(interp, argc, argv)
     switch(status) {
     case TAG_RAISE:
         if (NIL_P(rb_errinfo())) {
-            rbtk_pending_exception = rb_exc_new2(rb_eException, 
+            rbtk_pending_exception = rb_exc_new2(rb_eException,
                                                  "unknown exception");
         } else {
             rbtk_pending_exception = rb_errinfo();
         }
         break;
-        
+
     case TAG_FATAL:
         if (NIL_P(rb_errinfo())) {
             rbtk_pending_exception = rb_exc_new2(rb_eFatal, "FATAL");
@@ -8224,7 +8224,7 @@ ip_invoke_core(interp, argc, argv)
     /* Invoke the C procedure */
 #if TCL_MAJOR_VERSION >= 8
     if (info.isNativeObjectProc) {
-        ptr->return_value = (*info.objProc)(info.objClientData, ptr->ip, 
+        ptr->return_value = (*info.objProc)(info.objClientData, ptr->ip,
                                             objc, objv);
 #if 0
         /* get the string value from the result object */
@@ -8237,7 +8237,7 @@ ip_invoke_core(interp, argc, argv)
 #endif
     {
 #if TCL_MAJOR_VERSION >= 8
-        ptr->return_value = (*info.proc)(info.clientData, ptr->ip, 
+        ptr->return_value = (*info.proc)(info.clientData, ptr->ip,
                                          argc, (CONST84 char **)argv);
 
 #if 0 /* use Tcl_EventuallyFree */
@@ -8252,7 +8252,7 @@ ip_invoke_core(interp, argc, argv)
 #endif
 
 #else /* TCL_MAJOR_VERSION < 8 */
-        ptr->return_value = (*info.proc)(info.clientData, ptr->ip, 
+        ptr->return_value = (*info.proc)(info.clientData, ptr->ip,
                                          argc, argv);
 #endif
     }
@@ -8300,18 +8300,18 @@ ip_invoke_core(interp, argc, argv)
         if (event_loop_abort_on_exc > 0 && !Tcl_InterpDeleted(ptr->ip)) {
 	    switch (ptr->return_value) {
 	    case TCL_RETURN:
-	      return create_ip_exc(interp, eTkCallbackReturn, 
+	      return create_ip_exc(interp, eTkCallbackReturn,
 				   "ip_invoke_core receives TCL_RETURN");
 	    case TCL_BREAK:
-	      return create_ip_exc(interp, eTkCallbackBreak, 
+	      return create_ip_exc(interp, eTkCallbackBreak,
 				   "ip_invoke_core receives TCL_BREAK");
 	    case TCL_CONTINUE:
-	      return create_ip_exc(interp, eTkCallbackContinue, 
+	      return create_ip_exc(interp, eTkCallbackContinue,
 				   "ip_invoke_core receives TCL_CONTINUE");
 	    default:
-	      return create_ip_exc(interp, rb_eRuntimeError, "%s", 
+	      return create_ip_exc(interp, rb_eRuntimeError, "%s",
 				   Tcl_GetStringResult(ptr->ip));
-	    } 
+	    }
 
         } else {
             if (event_loop_abort_on_exc < 0) {
@@ -8503,7 +8503,7 @@ invoke_queue_handler(evPtr, flags)
     if (RTEST(rb_funcall(thread, ID_alive_p, 0))
 	&& ! RTEST(rb_funcall(thread, ID_stop_p, 0))) {
 #else
-    if (RTEST(rb_thread_alive_p(thread)) 
+    if (RTEST(rb_thread_alive_p(thread))
 	&& ! RTEST(rb_funcall(thread, ID_stop_p, 0))) {
 #endif
       DUMP1("caller is not yet ready to receive the result -> pending");
@@ -8527,7 +8527,7 @@ invoke_queue_handler(evPtr, flags)
     if (rb_safe_level() != q->safe_level) {
         /* q_dat = Data_Wrap_Struct(rb_cData,0,0,q); */
         q_dat = Data_Wrap_Struct(rb_cData,invoke_queue_mark,-1,q);
-        ret = rb_funcall(rb_proc_new(ivq_safelevel_handler, q_dat), 
+        ret = rb_funcall(rb_proc_new(ivq_safelevel_handler, q_dat),
                          ID_call, 0);
         rb_gc_force_recycle(q_dat);
 	q_dat = (VALUE)NULL;
@@ -8620,7 +8620,7 @@ ip_invoke_with_position(argc, argv, obj, position)
     if (
 #ifdef RUBY_USE_NATIVE_THREAD
 	(ptr->tk_thread_id == 0 || ptr->tk_thread_id == Tcl_GetCurrentThread())
-	&& 
+	&&
 #endif
 	(NIL_P(eventloop_thread) || current == eventloop_thread)
 	) {
@@ -8680,9 +8680,9 @@ ip_invoke_with_position(argc, argv, obj, position)
       Tcl_ThreadQueueEvent(ptr->tk_thread_id, (Tcl_Event*)ivq, position);
       Tcl_ThreadAlert(ptr->tk_thread_id);
     } else if (tk_eventloop_thread_id) {
-      /* Tcl_ThreadQueueEvent(tk_eventloop_thread_id, 
+      /* Tcl_ThreadQueueEvent(tk_eventloop_thread_id,
 			   &(ivq->ev), position); */
-      Tcl_ThreadQueueEvent(tk_eventloop_thread_id, 
+      Tcl_ThreadQueueEvent(tk_eventloop_thread_id,
 			   (Tcl_Event*)ivq, position);
       Tcl_ThreadAlert(tk_eventloop_thread_id);
     } else {
@@ -8746,7 +8746,7 @@ ip_invoke_with_position(argc, argv, obj, position)
     if (rb_obj_is_kind_of(ret, rb_eException)) {
         DUMP1("raise exception");
         /* rb_exc_raise(ret); */
-	rb_exc_raise(rb_exc_new3(rb_obj_class(ret), 
+	rb_exc_raise(rb_exc_new3(rb_obj_class(ret),
 				 rb_funcall(ret, ID_to_s, 0, 0)));
     }
 
@@ -8809,7 +8809,7 @@ ip_get_variable2_core(interp, argc, argv)
     index   = argv[1];
     flag    = argv[2];
 
-    /* 
+    /*
     StringValue(varname);
     if (!NIL_P(index)) StringValue(index);
     */
@@ -8836,9 +8836,9 @@ ip_get_variable2_core(interp, argc, argv)
 
         if (ret == (Tcl_Obj*)NULL) {
             volatile VALUE exc;
-            /* exc = rb_exc_new2(rb_eRuntimeError, 
+            /* exc = rb_exc_new2(rb_eRuntimeError,
                                  Tcl_GetStringResult(ptr->ip)); */
-            exc = create_ip_exc(interp, rb_eRuntimeError, 
+            exc = create_ip_exc(interp, rb_eRuntimeError,
                                 Tcl_GetStringResult(ptr->ip));
             /* Tcl_Release(ptr->ip); */
             rbtk_release_ip(ptr);
@@ -8867,7 +8867,7 @@ ip_get_variable2_core(interp, argc, argv)
         } else {
             /* Tcl_Preserve(ptr->ip); */
             rbtk_preserve_ip(ptr);
-            ret = Tcl_GetVar2(ptr->ip, RSTRING_PTR(varname), 
+            ret = Tcl_GetVar2(ptr->ip, RSTRING_PTR(varname),
                               NIL_P(index) ? NULL : RSTRING_PTR(index),
                               FIX2INT(flag));
         }
@@ -8975,9 +8975,9 @@ ip_set_variable2_core(interp, argc, argv)
 
         if (ret == (Tcl_Obj*)NULL) {
             volatile VALUE exc;
-            /* exc = rb_exc_new2(rb_eRuntimeError, 
+            /* exc = rb_exc_new2(rb_eRuntimeError,
                                  Tcl_GetStringResult(ptr->ip)); */
-            exc = create_ip_exc(interp, rb_eRuntimeError, 
+            exc = create_ip_exc(interp, rb_eRuntimeError,
                                 Tcl_GetStringResult(ptr->ip));
             /* Tcl_Release(ptr->ip); */
             rbtk_release_ip(ptr);
@@ -9007,8 +9007,8 @@ ip_set_variable2_core(interp, argc, argv)
         } else {
             /* Tcl_Preserve(ptr->ip); */
             rbtk_preserve_ip(ptr);
-            ret = Tcl_SetVar2(ptr->ip, RSTRING_PTR(varname), 
-                              NIL_P(index) ? NULL : RSTRING_PTR(index), 
+            ret = Tcl_SetVar2(ptr->ip, RSTRING_PTR(varname),
+                              NIL_P(index) ? NULL : RSTRING_PTR(index),
                               RSTRING_PTR(value), FIX2INT(flag));
         }
 
@@ -9079,7 +9079,7 @@ ip_unset_variable2_core(interp, argc, argv)
     index   = argv[1];
     flag    = argv[2];
 
-    /* 
+    /*
     StringValue(varname);
     if (!NIL_P(index)) StringValue(index);
     */
@@ -9089,15 +9089,15 @@ ip_unset_variable2_core(interp, argc, argv)
         return Qtrue;
     }
 
-    ptr->return_value = Tcl_UnsetVar2(ptr->ip, RSTRING_PTR(varname), 
+    ptr->return_value = Tcl_UnsetVar2(ptr->ip, RSTRING_PTR(varname),
                                       NIL_P(index) ? NULL : RSTRING_PTR(index),
                                       FIX2INT(flag));
 
     if (ptr->return_value == TCL_ERROR) {
         if (FIX2INT(flag) & TCL_LEAVE_ERR_MSG) {
-            /* return rb_exc_new2(rb_eRuntimeError, 
+            /* return rb_exc_new2(rb_eRuntimeError,
                                   Tcl_GetStringResult(ptr->ip)); */
-            return create_ip_exc(interp, rb_eRuntimeError, 
+            return create_ip_exc(interp, rb_eRuntimeError,
                                  Tcl_GetStringResult(ptr->ip));
         }
         return Qfalse;
@@ -9145,7 +9145,7 @@ ip_get_global_var(self, varname)
     VALUE self;
     VALUE varname;
 {
-    return ip_get_variable(self, varname, 
+    return ip_get_variable(self, varname,
                            INT2FIX(TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG));
 }
 
@@ -9155,7 +9155,7 @@ ip_get_global_var2(self, varname, index)
     VALUE varname;
     VALUE index;
 {
-    return ip_get_variable2(self, varname, index, 
+    return ip_get_variable2(self, varname, index,
                             INT2FIX(TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG));
 }
 
@@ -9165,7 +9165,7 @@ ip_set_global_var(self, varname, value)
     VALUE varname;
     VALUE value;
 {
-    return ip_set_variable(self, varname, value, 
+    return ip_set_variable(self, varname, value,
                            INT2FIX(TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG));
 }
 
@@ -9176,7 +9176,7 @@ ip_set_global_var2(self, varname, index, value)
     VALUE index;
     VALUE value;
 {
-    return ip_set_variable2(self, varname, index, value, 
+    return ip_set_variable2(self, varname, index, value,
                             INT2FIX(TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG));
 }
 
@@ -9185,7 +9185,7 @@ ip_unset_global_var(self, varname)
     VALUE self;
     VALUE varname;
 {
-    return ip_unset_variable(self, varname, 
+    return ip_unset_variable(self, varname,
                              INT2FIX(TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG));
 }
 
@@ -9195,7 +9195,7 @@ ip_unset_global_var2(self, varname, index)
     VALUE varname;
     VALUE index;
 {
-    return ip_unset_variable2(self, varname, index, 
+    return ip_unset_variable2(self, varname, index,
                               INT2FIX(TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG));
 }
 
@@ -9302,7 +9302,7 @@ lib_split_tklist_core(ip_obj, list_str)
         int  argc;
         char **argv;
 
-        if (Tcl_SplitList(interp, RSTRING_PTR(list_str), 
+        if (Tcl_SplitList(interp, RSTRING_PTR(list_str),
                           &argc, &argv) == TCL_ERROR) {
             if (interp == (Tcl_Interp*)NULL) {
                 rb_raise(rb_eRuntimeError, "can't get elements from list");
@@ -9387,7 +9387,7 @@ lib_merge_tklist(argc, argv, obj)
         if (OBJ_TAINTED(argv[num])) taint_flag = 1;
         dst = StringValuePtr(argv[num]);
 #if TCL_MAJOR_VERSION >= 8
-        len += Tcl_ScanCountedElement(dst, RSTRING_LEN(argv[num]),  
+        len += Tcl_ScanCountedElement(dst, RSTRING_LEN(argv[num]),
                                       &flagPtr[num]) + 1;
 #else /* TCL_MAJOR_VERSION < 8 */
         len += Tcl_ScanElement(dst, &flagPtr[num]) + 1;
@@ -9403,8 +9403,8 @@ lib_merge_tklist(argc, argv, obj)
     dst = result;
     for(num = 0; num < argc; num++) {
 #if TCL_MAJOR_VERSION >= 8
-        len = Tcl_ConvertCountedElement(RSTRING_PTR(argv[num]), 
-                                        RSTRING_LEN(argv[num]), 
+        len = Tcl_ConvertCountedElement(RSTRING_PTR(argv[num]),
+                                        RSTRING_LEN(argv[num]),
                                         dst, flagPtr[num]);
 #else /* TCL_MAJOR_VERSION < 8 */
         len = Tcl_ConvertElement(RSTRING_PTR(argv[num]), dst, flagPtr[num]);
@@ -9468,10 +9468,10 @@ lib_conv_listelement(self, src)
     StringValue(src);
 
 #if TCL_MAJOR_VERSION >= 8
-    len = Tcl_ScanCountedElement(RSTRING_PTR(src), RSTRING_LEN(src), 
+    len = Tcl_ScanCountedElement(RSTRING_PTR(src), RSTRING_LEN(src),
                                  &scan_flag);
     dst = rb_str_new(0, len + 1);
-    len = Tcl_ConvertCountedElement(RSTRING_PTR(src), RSTRING_LEN(src), 
+    len = Tcl_ConvertCountedElement(RSTRING_PTR(src), RSTRING_LEN(src),
                                     RSTRING_PTR(dst), scan_flag);
 #else /* TCL_MAJOR_VERSION < 8 */
     len = Tcl_ScanElement(RSTRING_PTR(src), &scan_flag);
@@ -9493,9 +9493,9 @@ lib_getversion(self)
 {
     set_tcltk_version();
 
-    return rb_ary_new3(4, INT2NUM(tcltk_version.major), 
-		          INT2NUM(tcltk_version.minor), 
-		          INT2NUM(tcltk_version.type), 
+    return rb_ary_new3(4, INT2NUM(tcltk_version.major),
+		          INT2NUM(tcltk_version.minor),
+		          INT2NUM(tcltk_version.type),
 		          INT2NUM(tcltk_version.patchlevel));
 }
 
@@ -9523,7 +9523,7 @@ tcltklib_compile_info()
 {
     volatile VALUE ret;
     int size;
-    char form[] 
+    char form[]
       = "tcltklib %s :: Ruby%s (%s) %s pthread :: Tcl%s(%s)/Tk%s(%s) %s";
     char *info;
 
@@ -9531,31 +9531,31 @@ tcltklib_compile_info()
         + strlen(TCLTKLIB_RELEASE_DATE)
         + strlen(RUBY_VERSION)
         + strlen(RUBY_RELEASE_DATE)
-        + strlen("without") 
+        + strlen("without")
         + strlen(TCL_PATCH_LEVEL)
         + strlen("without stub")
         + strlen(TK_PATCH_LEVEL)
-        + strlen("without stub") 
+        + strlen("without stub")
         + strlen("unknown tcl_threads");
 
     info = ALLOC_N(char, size);
     /* info = ckalloc(sizeof(char) * size); */ /* SEGV */
 
     sprintf(info, form,
-            TCLTKLIB_RELEASE_DATE, 
-            RUBY_VERSION, RUBY_RELEASE_DATE, 
+            TCLTKLIB_RELEASE_DATE,
+            RUBY_VERSION, RUBY_RELEASE_DATE,
 #ifdef HAVE_NATIVETHREAD
             "with",
 #else
             "without",
 #endif
-            TCL_PATCH_LEVEL, 
+            TCL_PATCH_LEVEL,
 #ifdef USE_TCL_STUBS
             "with stub",
 #else
             "without stub",
 #endif
-            TK_PATCH_LEVEL, 
+            TK_PATCH_LEVEL,
 #ifdef USE_TK_STUBS
             "with stub",
 #else
@@ -9598,7 +9598,7 @@ create_dummy_encoding_for_tk_core(interp, name, error_mode)
 #if TCL_MAJOR_VERSION > 8 || (TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION >= 1)
   if (Tcl_GetEncoding((Tcl_Interp*)NULL, RSTRING_PTR(name)) == (Tcl_Encoding)NULL) {
     if (RTEST(error_mode)) {
-      rb_raise(rb_eArgError, "invalid Tk encoding name '%s'", 
+      rb_raise(rb_eArgError, "invalid Tk encoding name '%s'",
 	       RSTRING_PTR(name));
     } else {
       return Qnil;
@@ -9657,7 +9657,7 @@ update_encoding_table(table, interp, error_mode)
   enc_list = Tcl_GetObjResult(ptr->ip);
   Tcl_IncrRefCount(enc_list);
 
-  if (Tcl_ListObjGetElements(ptr->ip, enc_list, 
+  if (Tcl_ListObjGetElements(ptr->ip, enc_list,
 			     &objc, &objv) != TCL_OK) {
     Tcl_DecrRefCount(enc_list);
     /* rb_raise(rb_eRuntimeError, "failt to get Tcl's encoding names");*/
@@ -9804,7 +9804,7 @@ encoding_table_get_obj_core(table, enc, error_mode)
 {
   volatile VALUE obj = Qnil;
 
-  obj = rb_hash_lookup(table, 
+  obj = rb_hash_lookup(table,
 		       encoding_table_get_name_core(table, enc, error_mode));
   if (RTEST(rb_obj_is_kind_of(obj, cRubyEncoding))) {
     return obj;
@@ -9878,7 +9878,7 @@ encoding_table_get_name_core(table, enc, error_mode)
   }
 
   /* update check */
-  if (update_encoding_table(table, rb_ivar_get(table, ID_at_interp), 
+  if (update_encoding_table(table, rb_ivar_get(table, ID_at_interp),
 					       error_mode)) {
     /* add new relations to the table   */
     /* RETRY: registered Ruby encoding? */
@@ -9962,7 +9962,7 @@ create_encoding_table_core(arg, interp)
   encobj = rb_enc_from_encoding(rb_enc_from_index(ENCODING_INDEX_BINARY));
   rb_hash_aset(table, ENCODING_NAME_BINARY, encobj);
   rb_hash_aset(table, encobj, ENCODING_NAME_BINARY);
-	       
+	
 
   /* Tcl stub check */
   tcl_stubs_check();
@@ -10094,7 +10094,7 @@ static VALUE
 create_encoding_table(interp)
      VALUE interp;
 {
-  return rb_funcall(rb_proc_new(create_encoding_table_core, interp), 
+  return rb_funcall(rb_proc_new(create_encoding_table_core, interp),
 		    ID_call, 0);
 }
 
@@ -10120,7 +10120,7 @@ ip_get_encoding_table(interp)
 /*###############################################*/
 
 /*
- *   The following is based on tkMenu.[ch] 
+ *   The following is based on tkMenu.[ch]
  *   of Tcl/Tk (Tk8.0 -- Tk8.5b1) source code.
  */
 #if TCL_MAJOR_VERSION >= 8
@@ -10183,10 +10183,10 @@ ip_make_menu_embeddable_core(interp, argc, argv)
 #if 0 /* was available on Tk8.0 -- Tk8.4 */
     menuRefPtr = TkFindMenuReferences(ptr->ip, RSTRING_PTR(menu_path));
 #else /* based on Tk8.0 -- Tk8.5b1 */
-    if ((menuTablePtr 
+    if ((menuTablePtr
 	 = (Tcl_HashTable *) Tcl_GetAssocData(ptr->ip, MENU_HASH_KEY, NULL))
 	!= NULL) {
-      if ((hashEntryPtr 
+      if ((hashEntryPtr
 	   = Tcl_FindHashEntry(menuTablePtr, RSTRING_PTR(menu_path)))
 	  != NULL) {
         menuRefPtr = (struct dummy_TkMenuRef *) Tcl_GetHashValue(hashEntryPtr);
@@ -10199,12 +10199,12 @@ ip_make_menu_embeddable_core(interp, argc, argv)
     }
 
     if (menuRefPtr->menuPtr == (struct dummy_TkMenu *) NULL) {
-        rb_raise(rb_eRuntimeError, 
+        rb_raise(rb_eRuntimeError,
 		 "invalid menu widget (maybe already destroyed)");
     }
 
     if ((menuRefPtr->menuPtr)->menuType != MENUBAR) {
-        rb_raise(rb_eRuntimeError, 
+        rb_raise(rb_eRuntimeError,
 		 "target menu widget must be a MENUBAR type");
     }
 
@@ -10223,7 +10223,7 @@ ip_make_menu_embeddable_core(interp, argc, argv)
 
 #if 0 /* was available on Tk8.0 -- Tk8.4 */
     TkEventuallyRecomputeMenu(menuRefPtr->menuPtr);
-    TkEventuallyRedrawMenu(menuRefPtr->menuPtr, 
+    TkEventuallyRedrawMenu(menuRefPtr->menuPtr,
 			   (struct dummy_TkMenuEntry *)NULL);
 #else /* based on Tk8.0 -- Tk8.5b1 */
     memset((void *) &event, 0, sizeof(event));
@@ -10306,10 +10306,10 @@ Init_tcltklib()
 
     rb_define_const(lib, "COMPILE_INFO", tcltklib_compile_info());
 
-    rb_define_const(lib, "RELEASE_DATE", 
+    rb_define_const(lib, "RELEASE_DATE",
                     rb_obj_freeze(rb_str_new2(tcltklib_release_date)));
 
-    rb_define_const(lib, "FINALIZE_PROC_NAME", 
+    rb_define_const(lib, "FINALIZE_PROC_NAME",
                     rb_str_new2(finalize_hook_name));
 
    /* --------------------------------------------------------------- */
@@ -10327,7 +10327,7 @@ Init_tcltklib()
 #endif
 #endif
 #endif
-    rb_define_const(lib, "WINDOWING_SYSTEM", 
+    rb_define_const(lib, "WINDOWING_SYSTEM",
                     rb_obj_freeze(rb_str_new2(TK_WINDOWING_SYSTEM)));
 
    /* --------------------------------------------------------------- */
@@ -10361,7 +10361,7 @@ Init_tcltklib()
     /* --------------------------------------------------------------- */
 
     rb_define_module_function(lib, "get_version", lib_getversion, -1);
-    rb_define_module_function(lib, "get_release_type_name", 
+    rb_define_module_function(lib, "get_release_type_name",
 			      lib_get_reltype_name, -1);
 
     rb_define_const(release_type, "ALPHA", INT2FIX(TCL_ALPHA_RELEASE));
@@ -10413,53 +10413,53 @@ Init_tcltklib()
     /* --------------------------------------------------------------- */
 
     rb_define_module_function(lib, "mainloop", lib_mainloop, -1);
-    rb_define_module_function(lib, "mainloop_thread?", 
+    rb_define_module_function(lib, "mainloop_thread?",
                               lib_evloop_thread_p, 0);
-    rb_define_module_function(lib, "mainloop_watchdog", 
+    rb_define_module_function(lib, "mainloop_watchdog",
                               lib_mainloop_watchdog, -1);
-    rb_define_module_function(lib, "do_thread_callback", 
+    rb_define_module_function(lib, "do_thread_callback",
                               lib_thread_callback, -1);
     rb_define_module_function(lib, "do_one_event", lib_do_one_event, -1);
-    rb_define_module_function(lib, "mainloop_abort_on_exception", 
+    rb_define_module_function(lib, "mainloop_abort_on_exception",
                              lib_evloop_abort_on_exc, 0);
-    rb_define_module_function(lib, "mainloop_abort_on_exception=",  
+    rb_define_module_function(lib, "mainloop_abort_on_exception=",
                              lib_evloop_abort_on_exc_set, 1);
-    rb_define_module_function(lib, "set_eventloop_window_mode", 
+    rb_define_module_function(lib, "set_eventloop_window_mode",
 			      set_eventloop_window_mode, 1);
-    rb_define_module_function(lib, "get_eventloop_window_mode", 
+    rb_define_module_function(lib, "get_eventloop_window_mode",
 			      get_eventloop_window_mode, 0);
     rb_define_module_function(lib, "set_eventloop_tick",set_eventloop_tick,1);
     rb_define_module_function(lib, "get_eventloop_tick",get_eventloop_tick,0);
     rb_define_module_function(lib, "set_no_event_wait", set_no_event_wait, 1);
     rb_define_module_function(lib, "get_no_event_wait", get_no_event_wait, 0);
-    rb_define_module_function(lib, "set_eventloop_weight", 
+    rb_define_module_function(lib, "set_eventloop_weight",
                               set_eventloop_weight, 2);
     rb_define_module_function(lib, "set_max_block_time", set_max_block_time,1);
-    rb_define_module_function(lib, "get_eventloop_weight", 
+    rb_define_module_function(lib, "get_eventloop_weight",
                               get_eventloop_weight, 0);
-    rb_define_module_function(lib, "num_of_mainwindows", 
+    rb_define_module_function(lib, "num_of_mainwindows",
                               lib_num_of_mainwindows, 0);
 
     /* --------------------------------------------------------------- */
 
     rb_define_module_function(lib, "_split_tklist", lib_split_tklist, 1);
     rb_define_module_function(lib, "_merge_tklist", lib_merge_tklist, -1);
-    rb_define_module_function(lib, "_conv_listelement", 
+    rb_define_module_function(lib, "_conv_listelement",
                               lib_conv_listelement, 1);
     rb_define_module_function(lib, "_toUTF8", lib_toUTF8, -1);
     rb_define_module_function(lib, "_fromUTF8", lib_fromUTF8, -1);
-    rb_define_module_function(lib, "_subst_UTF_backslash", 
+    rb_define_module_function(lib, "_subst_UTF_backslash",
                               lib_UTF_backslash, 1);
-    rb_define_module_function(lib, "_subst_Tcl_backslash", 
+    rb_define_module_function(lib, "_subst_Tcl_backslash",
                               lib_Tcl_backslash, 1);
 
-    rb_define_module_function(lib, "encoding_system", 
+    rb_define_module_function(lib, "encoding_system",
                               lib_get_system_encoding, 0);
-    rb_define_module_function(lib, "encoding_system=", 
+    rb_define_module_function(lib, "encoding_system=",
                               lib_set_system_encoding, 1);
-    rb_define_module_function(lib, "encoding", 
+    rb_define_module_function(lib, "encoding",
                               lib_get_system_encoding, 0);
-    rb_define_module_function(lib, "encoding=", 
+    rb_define_module_function(lib, "encoding=",
                               lib_set_system_encoding, 1);
 
     /* --------------------------------------------------------------- */
@@ -10491,7 +10491,7 @@ Init_tcltklib()
 
     /* --------------------------------------------------------------- */
 
-    rb_define_method(ip, "create_dummy_encoding_for_tk", 
+    rb_define_method(ip, "create_dummy_encoding_for_tk",
 		     create_dummy_encoding_for_tk, 1);
     rb_define_method(ip, "encoding_table", ip_get_encoding_table, 0);
 
@@ -10525,9 +10525,9 @@ Init_tcltklib()
     rb_define_method(ip, "mainloop", ip_mainloop, -1);
     rb_define_method(ip, "mainloop_watchdog", ip_mainloop_watchdog, -1);
     rb_define_method(ip, "do_one_event", ip_do_one_event, -1);
-    rb_define_method(ip, "mainloop_abort_on_exception", 
+    rb_define_method(ip, "mainloop_abort_on_exception",
                     ip_evloop_abort_on_exc, 0);
-    rb_define_method(ip, "mainloop_abort_on_exception=", 
+    rb_define_method(ip, "mainloop_abort_on_exception=",
                     ip_evloop_abort_on_exc_set, 1);
     rb_define_method(ip, "set_eventloop_tick", ip_set_eventloop_tick, 1);
     rb_define_method(ip, "get_eventloop_tick", ip_get_eventloop_tick, 0);
@@ -10545,7 +10545,7 @@ Init_tcltklib()
 
 #ifndef DEFAULT_EVENTLOOP_DEPTH
 #define DEFAULT_EVENTLOOP_DEPTH 7
-#endif 
+#endif
     eventloop_stack = rb_ary_new2(DEFAULT_EVENTLOOP_DEPTH);
     RbTk_OBJ_UNTRUST(eventloop_stack);
 
@@ -10556,7 +10556,7 @@ Init_tcltklib()
     /* --------------------------------------------------------------- */
 
 #ifdef HAVE_NATIVETHREAD
-    /* if ruby->nativethread-supprt and tcltklib->doen't, 
+    /* if ruby->nativethread-supprt and tcltklib->doen't,
        the following will cause link-error. */
     ruby_native_thread_p();
 #endif

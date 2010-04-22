@@ -29,7 +29,7 @@ struct strscanner
 
     /* the string to scan */
     VALUE str;
-    
+
     /* scan pointers */
     long prev;   /* legal only when MATCHED_P(s) */
     long curr;   /* always legal */
@@ -173,7 +173,7 @@ static VALUE
 strscan_s_allocate(VALUE klass)
 {
     struct strscanner *p;
-    
+
     p = ALLOC(struct strscanner);
     MEMZERO(p, struct strscanner, 1);
     CLEAR_MATCH_STATUS(p);
@@ -609,7 +609,7 @@ strscan_exist_p(VALUE self, VALUE re)
  *
  *   s = StringScanner.new("Fri Dec 12 1975 14:39")
  *   s.skip_until /12/           # -> 10
- *   s                           # 
+ *   s                           #
  */
 static VALUE
 strscan_skip_until(VALUE self, VALUE re)
@@ -893,7 +893,7 @@ strscan_matched_p(VALUE self)
 
 /*
  * Returns the last matched string.
- * 
+ *
  *   s = StringScanner.new('test string')
  *   s.match?(/\w+/)     # -> 4
  *   s.matched           # -> "test"
@@ -951,7 +951,7 @@ strscan_aref(VALUE self, VALUE idx)
 
     GET_SCANNER(self, p);
     if (! MATCHED_P(p))        return Qnil;
-    
+
     i = NUM2LONG(idx);
     if (i < 0)
         i += p->regs.num_regs;
@@ -1141,20 +1141,20 @@ inspect2(struct strscanner *p)
 
 /*
  * Document-class: StringScanner
- * 
+ *
  * StringScanner provides for lexical scanning operations on a String.  Here is
  * an example of its usage:
  *
  *   s = StringScanner.new('This is an example string')
  *   s.eos?               # -> false
- *   
+ *
  *   p s.scan(/\w+/)      # -> "This"
  *   p s.scan(/\w+/)      # -> nil
  *   p s.scan(/\s+/)      # -> " "
  *   p s.scan(/\s+/)      # -> nil
  *   p s.scan(/\w+/)      # -> "is"
  *   s.eos?               # -> false
- *   
+ *
  *   p s.scan(/\s+/)      # -> " "
  *   p s.scan(/\w+/)      # -> "an"
  *   p s.scan(/\s+/)      # -> " "
@@ -1162,7 +1162,7 @@ inspect2(struct strscanner *p)
  *   p s.scan(/\s+/)      # -> " "
  *   p s.scan(/\w+/)      # -> "string"
  *   s.eos?               # -> true
- *   
+ *
  *   p s.scan(/\s+/)      # -> nil
  *   p s.scan(/\w+/)      # -> nil
  *
@@ -1191,7 +1191,7 @@ inspect2(struct strscanner *p)
  * the string without actually scanning.  You can access the most recent match.
  * You can modify the string being scanned, reset or terminate the scanner,
  * find out or change the position of the scan pointer, skip ahead, and so on.
- * 
+ *
  * === Advancing the Scan Pointer
  *
  * - #getch
@@ -1222,7 +1222,7 @@ inspect2(struct strscanner *p)
  * - #reset
  * - #terminate
  * - #pos=
- * 
+ *
  * === Match Data
  *
  * - #matched
@@ -1259,7 +1259,7 @@ Init_strscan()
     tmp = rb_str_new2("$Id$");
     rb_obj_freeze(tmp);
     rb_const_set(StringScanner, rb_intern("Id"), tmp);
-    
+
     rb_define_alloc_func(StringScanner, strscan_s_allocate);
     rb_define_private_method(StringScanner, "initialize", strscan_initialize, -1);
     rb_define_private_method(StringScanner, "initialize_copy", strscan_init_copy, 1);

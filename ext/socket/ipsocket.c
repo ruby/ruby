@@ -159,10 +159,10 @@ rsock_revlookup_flag(VALUE revlookup, int *norevlookup)
 
 /*
  * call-seq:
- *   ipsocket.addr([reverse_lookup]) => [address_family, port, hostname, numeric_address] 
+ *   ipsocket.addr([reverse_lookup]) => [address_family, port, hostname, numeric_address]
  *
  * Returns the local address as an array which contains
- * address_family, port, hostname and numeric_address. 
+ * address_family, port, hostname and numeric_address.
  *
  * If +reverse_lookup+ is +true+ or +:hostname+,
  * hostname is obtained from numeric_address using reverse lookup.
@@ -199,10 +199,10 @@ ip_addr(int argc, VALUE *argv, VALUE sock)
 
 /*
  * call-seq:
- *   ipsocket.peeraddr([reverse_lookup]) => [address_family, port, hostname, numeric_address] 
+ *   ipsocket.peeraddr([reverse_lookup]) => [address_family, port, hostname, numeric_address]
  *
  * Returns the remote address as an array which contains
- * address_family, port, hostname and numeric_address. 
+ * address_family, port, hostname and numeric_address.
  * It is defined for connection oriented socket such as TCPSocket.
  *
  * If +reverse_lookup+ is +true+ or +:hostname+,
@@ -257,7 +257,7 @@ ip_peeraddr(int argc, VALUE *argv, VALUE sock)
  *   u2 = UDPSocket.new
  *   u2.send "uuuu", 0, "127.0.0.1", 4913
  *   p u1.recvfrom(10) #=> ["uuuu", ["AF_INET", 33230, "localhost", "127.0.0.1"]]
- *   
+ *
  */
 static VALUE
 ip_recvfrom(int argc, VALUE *argv, VALUE sock)

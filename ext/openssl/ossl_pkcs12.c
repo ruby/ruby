@@ -81,7 +81,7 @@ ossl_pkcs12_s_create(int argc, VALUE *argv, VALUE self)
     STACK_OF(X509) *x509s;
     int nkey = 0, ncert = 0, kiter = 0, miter = 0, ktype = 0;
     PKCS12 *p12;
-    
+
     rb_scan_args(argc, argv, "46", &pass, &name, &pkey, &cert, &ca, &key_nid, &cert_nid, &key_iter, &mac_iter, &keytype);
     passphrase = NIL_P(pass) ? NULL : StringValuePtr(pass);
     friendlyname = NIL_P(name) ? NULL : StringValuePtr(name);

@@ -558,7 +558,7 @@ ossl_ocspbres_get_status(VALUE self)
     }
 
     return ret;
-} 
+}
 
 static VALUE
 ossl_ocspbres_sign(int argc, VALUE *argv, VALUE self)

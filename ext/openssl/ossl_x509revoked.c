@@ -36,7 +36,7 @@ VALUE eX509RevError;
 /*
  * PUBLIC
  */
-VALUE 
+VALUE
 ossl_x509revoked_new(X509_REVOKED *rev)
 {
     X509_REVOKED *new;
@@ -71,7 +71,7 @@ DupX509RevokedPtr(VALUE obj)
 /*
  * PRIVATE
  */
-static VALUE 
+static VALUE
 ossl_x509revoked_alloc(VALUE klass)
 {
     X509_REVOKED *rev;
@@ -85,14 +85,14 @@ ossl_x509revoked_alloc(VALUE klass)
     return obj;
 }
 
-static VALUE 
+static VALUE
 ossl_x509revoked_initialize(int argc, VALUE *argv, VALUE self)
 {
     /* EMPTY */
     return self;
 }
 
-static VALUE 
+static VALUE
 ossl_x509revoked_get_serial(VALUE self)
 {
     X509_REVOKED *rev;
@@ -102,7 +102,7 @@ ossl_x509revoked_get_serial(VALUE self)
     return asn1integer_to_num(rev->serialNumber);
 }
 
-static VALUE 
+static VALUE
 ossl_x509revoked_set_serial(VALUE self, VALUE num)
 {
     X509_REVOKED *rev;
@@ -113,7 +113,7 @@ ossl_x509revoked_set_serial(VALUE self, VALUE num)
     return num;
 }
 
-static VALUE 
+static VALUE
 ossl_x509revoked_get_time(VALUE self)
 {
     X509_REVOKED *rev;
@@ -123,7 +123,7 @@ ossl_x509revoked_get_time(VALUE self)
     return asn1time_to_time(rev->revocationDate);
 }
 
-static VALUE 
+static VALUE
 ossl_x509revoked_set_time(VALUE self, VALUE time)
 {
     X509_REVOKED *rev;
@@ -140,7 +140,7 @@ ossl_x509revoked_set_time(VALUE self, VALUE time)
 /*
  * Gets X509v3 extensions as array of X509Ext objects
  */
-static VALUE 
+static VALUE
 ossl_x509revoked_get_extensions(VALUE self)
 {
     X509_REVOKED *rev;
@@ -166,7 +166,7 @@ ossl_x509revoked_get_extensions(VALUE self)
 /*
  * Sets X509_EXTENSIONs
  */
-static VALUE 
+static VALUE
 ossl_x509revoked_set_extensions(VALUE self, VALUE ary)
 {
     X509_REVOKED *rev;
@@ -196,7 +196,7 @@ static VALUE
 ossl_x509revoked_add_extension(VALUE self, VALUE ext)
 {
     X509_REVOKED *rev;
-    
+
     GetX509Rev(self, rev);
     if(!X509_REVOKED_add_ext(rev, DupX509ExtPtr(ext), -1)) {
 	ossl_raise(eX509RevError, NULL);

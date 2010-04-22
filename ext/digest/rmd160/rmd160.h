@@ -7,7 +7,7 @@
  *      FILE:     rmd160.h
  *
  *      CONTENTS: Header file for a sample C-implementation of the
- *                RIPEMD-160 hash-function. 
+ *                RIPEMD-160 hash-function.
  *      TARGET:   any computer with an ANSI C compiler
  *
  *      AUTHOR:   Antoon Bosselaers, ESAT-COSIC

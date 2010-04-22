@@ -41,7 +41,7 @@ ossl_x509attr_new(X509_ATTRIBUTE *attr)
 {
     X509_ATTRIBUTE *new;
     VALUE obj;
-    
+
     if (!attr) {
 	new = X509_ATTRIBUTE_new();
     } else {
@@ -77,7 +77,7 @@ ossl_x509attr_alloc(VALUE klass)
     X509_ATTRIBUTE *attr;
     VALUE obj;
 
-    if (!(attr = X509_ATTRIBUTE_new())) 
+    if (!(attr = X509_ATTRIBUTE_new()))
 	ossl_raise(eX509AttrError, NULL);
     WrapX509Attr(klass, obj, attr);
 
@@ -123,14 +123,14 @@ ossl_x509attr_set_oid(VALUE self, VALUE oid)
     X509_ATTRIBUTE *attr;
     ASN1_OBJECT *obj;
     char *s;
- 
+
     s = StringValuePtr(oid);
     obj = OBJ_txt2obj(s, 0);
     if(!obj) obj = OBJ_txt2obj(s, 1);
     if(!obj) ossl_raise(eX509AttrError, NULL);
     GetX509Attr(self, attr);
     X509_ATTRIBUTE_set1_object(attr, obj);
- 
+
     return oid;
 }
 
@@ -157,7 +157,7 @@ ossl_x509attr_get_oid(VALUE self)
 	i2a_ASN1_OBJECT(out, oid);
 	ret = ossl_membio2str(out);
     }
-  
+
     return ret;
 }
 
@@ -251,7 +251,7 @@ ossl_x509attr_to_der(VALUE self)
     p = (unsigned char *)RSTRING_PTR(str);
     if(i2d_X509_ATTRIBUTE(attr, &p) <= 0)
 	ossl_raise(eX509AttrError, NULL);
-    rb_str_set_len(str, p - (unsigned char*)RSTRING_PTR(str)); 
+    rb_str_set_len(str, p - (unsigned char*)RSTRING_PTR(str));
 
     return str;
 }

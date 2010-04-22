@@ -317,7 +317,7 @@ fdbm_shift(VALUE obj)
     GetDBM2(obj, dbmp, dbm);
     dbmp->di_size = -1;
 
-    key = dbm_firstkey(dbm); 
+    key = dbm_firstkey(dbm);
     if (!key.dptr) return Qnil;
     val = dbm_fetch(dbm, key);
     keystr = rb_tainted_str_new(key.dptr, key.dsize);

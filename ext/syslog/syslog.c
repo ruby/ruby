@@ -1,4 +1,4 @@
-/* 
+/*
  * UNIX Syslog extension for Ruby
  * Amos Gouaux, University of Texas at Dallas
  * <amos+ruby@utdallas.edu>
@@ -65,7 +65,7 @@ static VALUE mSyslog_open(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "03", &ident, &opt, &fac);
 
     if (NIL_P(ident)) {
-        ident = rb_gv_get("$0"); 
+        ident = rb_gv_get("$0");
     }
     SafeStringValue(ident);
     syslog_ident = strdup(RSTRING_PTR(ident));
@@ -232,7 +232,7 @@ static VALUE mSyslogConstants_LOG_UPTO(VALUE klass, VALUE pri)
 void Init_syslog()
 {
     mSyslog = rb_define_module("Syslog");
- 
+
     mSyslogConstants = rb_define_module_under(mSyslog, "Constants");
 
     rb_include_module(mSyslog, mSyslogConstants);

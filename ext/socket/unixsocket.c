@@ -89,7 +89,7 @@ rsock_init_unixsock(VALUE sock, VALUE path, int server)
  *
  *   s = UNIXSocket.new("/tmp/sock")
  *   s.send "hello", 0
- *   
+ *
  */
 static VALUE
 unix_init(VALUE sock, VALUE path)
@@ -271,11 +271,11 @@ recvmsg_blocking(void *data)
  *   unixsocket.recv_io([klass [, mode]]) => io
  *
  *   UNIXServer.open("/tmp/sock") {|serv|
- *     UNIXSocket.open("/tmp/sock") {|c|  
+ *     UNIXSocket.open("/tmp/sock") {|c|
  *       s = serv.accept
  *
- *       c.send_io STDOUT 
- *       stdout = s.recv_io 
+ *       c.send_io STDOUT
+ *       stdout = s.recv_io
  *
  *       p STDOUT.fileno #=> 1
  *       p stdout.fileno #=> 7

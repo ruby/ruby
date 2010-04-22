@@ -1,9 +1,9 @@
 /*
 
     cparse.c -- Racc Runtime Core
-  
+
     Copyright (c) 1999-2006 Minero Aoki
-  
+
     This library is free software.
     You can distribute/modify this program under the same terms of ruby.
 
@@ -293,7 +293,7 @@ lexer_i(VALUE block_args, VALUE data, VALUE self)
     extract_user_token(v, block_args, &tok, &val);
     parse_main(v, tok, val, 1);
     if (v->fin && v->fin != CP_FIN_ACCEPT)
-       rb_iter_break(); 
+       rb_iter_break();
     return Qnil;
 }
 
@@ -460,7 +460,7 @@ parse_main(struct cparse_params *v, VALUE tok, VALUE val, int resume)
 
     if (resume)
         goto resume;
-    
+
     while (1) {
         D_puts("");
         D_puts("---- enter new loop ----");
@@ -519,7 +519,7 @@ parse_main(struct cparse_params *v, VALUE tok, VALUE val, int resume)
       act_fixed:
         D_printf("act=%ld\n", act);
         goto handle_act;
-    
+
       notfound:
         D_puts("(act) not found: use default");
         act_value = AREF(v->action_default, v->curstate);
@@ -620,7 +620,7 @@ parse_main(struct cparse_params *v, VALUE tok, VALUE val, int resume)
 
         D_puts("(err) found: can handle error token");
         break;
-          
+
       error_pop:
         D_puts("(err) act not found: can't handle error token; pop");
 

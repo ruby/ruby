@@ -380,7 +380,7 @@ ossl_bn_div(VALUE self, VALUE other)
     }
     WrapBN(CLASS_OF(self), obj1, r1);
     WrapBN(CLASS_OF(self), obj2, r2);
-    
+
     return rb_ary_new3(2, obj1, obj2);
 }
 
@@ -591,7 +591,7 @@ ossl_bn_s_generate_prime(int argc, VALUE *argv, VALUE klass)
 	ossl_raise(eBNError, NULL);
     }
     WrapBN(klass, obj, result);
-    
+
     return obj;
 }
 
@@ -615,14 +615,14 @@ static VALUE
 ossl_bn_copy(VALUE self, VALUE other)
 {
     BIGNUM *bn1, *bn2;
-    
+
     rb_check_frozen(self);
-    
+
     if (self == other) return self;
-    
+
     GetBN(self, bn1);
     bn2 = GetBNPtr(other);
-    
+
     if (!BN_copy(bn1, bn2)) {
 	ossl_raise(eBNError, NULL);
     }
@@ -793,7 +793,7 @@ Init_ossl_bn()
      * value_one - DON'T IMPL.
      * set_word
      * get_word */
-    
+
     rb_define_singleton_method(cBN, "rand", ossl_bn_s_rand, -1);
     rb_define_singleton_method(cBN, "pseudo_rand", ossl_bn_s_pseudo_rand, -1);
     rb_define_singleton_method(cBN, "rand_range", ossl_bn_s_rand_range, 1);

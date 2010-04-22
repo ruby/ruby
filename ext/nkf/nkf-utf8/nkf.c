@@ -820,7 +820,7 @@ nkf_buf_new(int length)
     buf->capa = length;
     buf->len = 0;
     return buf;
-} 
+}
 
 #if 0
 static void
@@ -5870,7 +5870,7 @@ finished:
 
 /*
  * int options(unsigned char *cp)
- * 
+ *
  * return values:
  *    0: success
  *   -1: ArgumentError

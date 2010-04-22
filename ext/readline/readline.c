@@ -81,7 +81,7 @@ static char **readline_attempted_completion_function(const char *text,
  * GNU Readline:: http://www.gnu.org/directory/readline.html
  * libedit::      http://www.thrysoee.dk/editline/
  *
- * Reads one inputted line with line edit by Readline.readline method. 
+ * Reads one inputted line with line edit by Readline.readline method.
  * At this time, the facilitatation completion and the key
  * bind like Emacs can be operated like GNU Readline.
  *
@@ -173,9 +173,9 @@ readline_get(VALUE prompt)
  *
  * * Catches the Interrupt exception by pressed ^C after returns
  *   terminal status:
- * 
+ *
  *     require "readline"
- *     
+ *
  *     stty_save = `stty -g`.chomp
  *     begin
  *       while buf = Readline.readline
@@ -187,25 +187,25 @@ readline_get(VALUE prompt)
  *         end
  *       end
  *     end
- * 
+ *
  * * Catches the INT signal by pressed ^C after returns terminal
  *   status:
- * 
+ *
  *     require "readline"
- *     
+ *
  *     stty_save = `stty -g`.chomp
  *     trap("INT") { system "stty", stty_save; exit }
- *   
+ *
  *     while buf = Readline.readline
  *       p buf
  *     end
  *
  * * Ignores pressing ^C:
- * 
+ *
  *     require "readline"
- *     
+ *
  *     trap("INT", "SIG_IGN")
- *     
+ *
  *     while buf = Readline.readline
  *       p buf
  *     end
@@ -215,18 +215,18 @@ readline_get(VALUE prompt)
  * the same it as last one.
  *
  *   require "readline"
- *     
+ *
  *   while buf = Readline.readline("> ", true)
  *     # p Readline::HISTORY.to_a
  *     Readline::HISTORY.pop if /^\s*$/ =~ buf
- *  
+ *
  *     begin
  *       if Readline::HISTORY[Readline::HISTORY.length-2] == buf
- *         Readline::HISTORY.pop 
+ *         Readline::HISTORY.pop
  *       end
  *     rescue IndexError
  *     end
- *  
+ *
  *     # p Readline::HISTORY.to_a
  *     print "-> ", buf, "\n"
  *   end
@@ -389,7 +389,7 @@ readline_s_set_completion_case_fold(VALUE self, VALUE val)
  * Readline.completion_case_fold= method.
  *
  *   require "readline"
- *   
+ *
  *   Readline.completion_case_fold = "This is a String."
  *   p Readline.completion_case_fold # => "This is a String."
  *
@@ -521,7 +521,7 @@ readline_attempted_completion_function(const char *text, int start, int end)
  *
  * Set terminal size to +rows+ and +columns+.
  *
- * See GNU Readline's rl_set_screen_size function. 
+ * See GNU Readline's rl_set_screen_size function.
  *
  * Raises NotImplementedError if the using readline library does not support.
  *
@@ -545,7 +545,7 @@ readline_s_set_screen_size(VALUE self, VALUE rows, VALUE columns)
  *
  * Returns the terminal's rows and columns.
  *
- * See GNU Readline's rl_get_screen_size function. 
+ * See GNU Readline's rl_get_screen_size function.
  *
  * Raises NotImplementedError if the using readline library does not support.
  *
@@ -556,7 +556,7 @@ readline_s_get_screen_size(VALUE self)
 {
     int rows, columns;
     VALUE res;
-    
+
     rb_secure(4);
     rl_get_screen_size(&rows, &columns);
     res = rb_ary_new();
@@ -667,20 +667,20 @@ readline_s_emacs_editing_mode_p(VALUE self)
  *
  * For example:
  *   require "readline"
- *   
+ *
  *   Readline.readline("> ", true)
  *   Readline.completion_append_character = " "
  *
  * Result:
  *   >
  *   Input "/var/li".
- *   
+ *
  *   > /var/li
  *   Press TAB key.
- *   
+ *
  *   > /var/lib
  *   Completes "b" and appends " ". So, you can continuously input "/usr".
- *   
+ *
  *   > /var/lib /usr
  *
  * NOTE: Only one character can be specified. When "string" is
@@ -788,7 +788,7 @@ readline_s_set_basic_word_break_characters(VALUE self, VALUE str)
  *
  * Gets the basic list of characters that signal a break between words
  * for the completer routine.
- * 
+ *
  * Raises NotImplementedError if the using readline library does not support.
  *
  * Raises SecurityError exception if $SAFE is 4.
@@ -849,7 +849,7 @@ readline_s_set_completer_word_break_characters(VALUE self, VALUE str)
  *
  * Gets the basic list of characters that signal a break between words
  * for rl_complete_internal().
- * 
+ *
  * Raises NotImplementedError if the using readline library does not support.
  *
  * Raises SecurityError exception if $SAFE is 4.
@@ -1143,7 +1143,7 @@ static VALUE
 hist_push_method(int argc, VALUE *argv, VALUE self)
 {
     VALUE str;
-    
+
     rb_secure(4);
     while (argc--) {
 	str = *argv++;
@@ -1422,7 +1422,7 @@ Init_readline()
 #if defined HAVE_RL_LIBRARY_VERSION
     version = rb_str_new_cstr(rl_library_version);
 #if defined HAVE_CLEAR_HISTORY || defined HAVE_REMOVE_HISTORY
-    if (strncmp(rl_library_version, EDIT_LINE_LIBRARY_VERSION, 
+    if (strncmp(rl_library_version, EDIT_LINE_LIBRARY_VERSION,
 		strlen(EDIT_LINE_LIBRARY_VERSION)) == 0) {
 	add_history("1");
 	if (history_get(history_get_offset_func(0)) == NULL) {

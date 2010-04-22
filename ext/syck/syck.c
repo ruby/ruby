@@ -17,7 +17,7 @@ void syck_parser_pop_level( SyckParser * );
 /*
  * Custom assert
  */
-void 
+void
 syck_assert( const char *file_name, unsigned line_num, const char *expr )
 {
     fflush( NULL );
@@ -160,7 +160,7 @@ syck_new_parser(void)
     p = S_ALLOC( SyckParser );
     S_MEMZERO( p, SyckParser, 1 );
     p->lvl_capa = ALLOC_CT;
-    p->levels = S_ALLOC_N( SyckLevel, p->lvl_capa ); 
+    p->levels = S_ALLOC_N( SyckLevel, p->lvl_capa );
     p->input_type = syck_yaml_utf8;
     p->io_type = syck_io_str;
     p->io.str = NULL;
@@ -378,7 +378,7 @@ syck_parser_pop_level( SyckParser *p )
     free( p->levels[p->lvl_idx].domain );
 }
 
-void 
+void
 syck_parser_add_level( SyckParser *p, int len, enum syck_level_status status )
 {
     ASSERT( p != NULL );
@@ -403,7 +403,7 @@ free_any_io( SyckParser *p )
     switch ( p->io_type )
     {
         case syck_io_str:
-            if ( p->io.str != NULL ) 
+            if ( p->io.str != NULL )
             {
                 S_FREE( p->io.str );
                 p->io.str = NULL;
@@ -411,7 +411,7 @@ free_any_io( SyckParser *p )
         break;
 
         case syck_io_file:
-            if ( p->io.file != NULL ) 
+            if ( p->io.file != NULL )
             {
                 S_FREE( p->io.file );
                 p->io.file = NULL;
@@ -516,7 +516,7 @@ syck_parse( SyckParser *p )
 void
 syck_default_error_handler( SyckParser *p, const char *msg )
 {
-    printf( "Error at [Line %d, Col %"PRIdPTRDIFF"]: %s\n", 
+    printf( "Error at [Line %d, Col %"PRIdPTRDIFF"]: %s\n",
         p->linect,
         p->cursor - p->lineptr,
         msg );

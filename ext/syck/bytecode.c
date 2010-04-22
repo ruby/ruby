@@ -98,7 +98,7 @@ char *get_inline( SyckParser *parser );
                 if ( reset == 1 ) YYPOS(0); \
                 return YAML_IOPEN; \
             } \
-        } 
+        }
 
 /*
  * Nice little macro to ensure closure of levels.
@@ -135,7 +135,7 @@ sycklex_bytecode_utf8( YYSTYPE *sycklval, SyckParser *parser )
 {
     SyckLevel *lvl;
     syck_parser_ptr = parser;
-    if ( YYCURSOR == NULL ) 
+    if ( YYCURSOR == NULL )
     {
         syck_parser_read( parser );
     }
@@ -289,7 +289,7 @@ yy17:	++YYCURSOR;
 	goto yy18;
 yy18:
 #line 288 "bytecode.re"
-{   ADD_BYTE_LEVEL(lvl, lvl->spaces + 1, syck_lvl_str); 
+{   ADD_BYTE_LEVEL(lvl, lvl->spaces + 1, syck_lvl_str);
             goto Scalar;
         }
 #line 296 "<stdout>"
@@ -392,7 +392,7 @@ yy28:
 {   CHK_NL(YYCURSOR);
             if ( lvl->status == syck_lvl_seq )
             {
-                return YAML_INDENT; 
+                return YAML_INDENT;
             }
             else if ( lvl->status == syck_lvl_map )
             {
@@ -434,12 +434,12 @@ yy33:
                 FORCE_NEXT_TOKEN( '}' );
                 return '{';
             }
-            
+
             POP_LEVEL();
             lvl = CURRENT_LEVEL();
             if ( lvl->status == syck_lvl_seq )
             {
-                FORCE_NEXT_TOKEN(YAML_INDENT);   
+                FORCE_NEXT_TOKEN(YAML_INDENT);
             }
             else if ( lvl->status == syck_lvl_map )
             {
@@ -494,7 +494,7 @@ yy39:
             {
                 complex = 1;
             }
-            ADD_BYTE_LEVEL(lvl, lvl->spaces + 1, syck_lvl_map); 
+            ADD_BYTE_LEVEL(lvl, lvl->spaces + 1, syck_lvl_map);
             CHK_NL(YYCURSOR);
             if ( complex )
             {
@@ -990,7 +990,7 @@ yy70:	++YYCURSOR;
 yy71:
 #line 461 "bytecode.re"
 {   YYCURSOR = tok;
-            goto ScalarEnd; 
+            goto ScalarEnd;
         }
 #line 996 "<stdout>"
 yy72:	++YYCURSOR;
@@ -1001,7 +1001,7 @@ yy72:	++YYCURSOR;
 yy73:
 #line 469 "bytecode.re"
 {   CAT(str, cap, idx, tok[0]);
-            goto Scalar2; 
+            goto Scalar2;
         }
 #line 1007 "<stdout>"
 yy74:	++YYCURSOR;
@@ -1071,7 +1071,7 @@ yy84:
 #line 456 "bytecode.re"
 {   CHK_NL(tok+1);
             CAT(str, cap, idx, '\0');
-            goto Scalar2; 
+            goto Scalar2;
         }
 #line 1077 "<stdout>"
 }
@@ -1139,7 +1139,7 @@ yy89:	++YYCURSOR;
 yy90:
 #line 515 "bytecode.re"
 {   CAT(str, cap, idx, tok[0]);
-                goto Inline; 
+                goto Inline;
             }
 #line 1145 "<stdout>"
 yy91:	++YYCURSOR;

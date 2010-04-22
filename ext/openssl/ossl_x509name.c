@@ -41,7 +41,7 @@ VALUE eX509NameError;
 /*
  * Public
  */
-VALUE 
+VALUE
 ossl_x509name_new(X509_NAME *name)
 {
     X509_NAME *new;
@@ -56,7 +56,7 @@ ossl_x509name_new(X509_NAME *name)
 	ossl_raise(eX509NameError, NULL);
     }
     WrapX509Name(cX509Name, obj, new);
-    
+
     return obj;
 }
 
@@ -222,7 +222,7 @@ ossl_x509name_to_s(int argc, VALUE *argv, VALUE self)
  * call-seq:
  *    name.to_a => [[name, data, type], ...]
  */
-static VALUE 
+static VALUE
 ossl_x509name_to_a(VALUE self)
 {
     X509_NAME *name;
@@ -333,7 +333,7 @@ ossl_x509name_to_der(VALUE self)
 /*
  * INIT
  */
-void 
+void
 Init_ossl_x509name()
 {
     VALUE utf8str, ptrstr, ia5str, hash;

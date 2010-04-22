@@ -148,7 +148,7 @@ sockopt_data(VALUE self)
  *
  * Creates a new Socket::Option object which contains an int as data.
  *
- * The size and endian is dependent on the platform. 
+ * The size and endian is dependent on the platform.
  *
  *   p Socket::Option.int(:INET, :SOCKET, :KEEPALIVE, 1)
  *   #=> #<Socket::Option: INET SOCKET KEEPALIVE 1>
@@ -169,7 +169,7 @@ sockopt_s_int(VALUE klass, VALUE vfamily, VALUE vlevel, VALUE voptname, VALUE vi
  *
  * Returns the data in _sockopt_ as an int.
  *
- * The size and endian is dependent on the platform. 
+ * The size and endian is dependent on the platform.
  *
  *   sockopt = Socket::Option.int(:INET, :SOCKET, :KEEPALIVE, 1)
  *   p sockopt.int => 1
@@ -280,7 +280,7 @@ sockopt_linger(VALUE self)
     VALUE vonoff, vsecs;
 
     if (level != SOL_SOCKET || optname != SO_LINGER)
-        rb_raise(rb_eTypeError, "linger socket option expected"); 
+        rb_raise(rb_eTypeError, "linger socket option expected");
     if (RSTRING_LEN(data) != sizeof(l))
         rb_raise(rb_eTypeError, "size differ.  expected as sizeof(struct linger)=%d but %ld",
                  (int)sizeof(struct linger), (long)RSTRING_LEN(data));
