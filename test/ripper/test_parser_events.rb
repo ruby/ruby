@@ -1069,7 +1069,7 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
   end
 
   def test_local_variables
-    cmd = 'command(w,[regexp_literal(xstring_add(xstring_new(),25 # ),/)])'
+    cmd = 'command(w,[regexp_literal(regexp_add(regexp_new(),25 # ),/)])'
     div = 'binary(ref(w),/,25)'
     var = '[w]'
     bug1939 = '[ruby-core:24923]'
