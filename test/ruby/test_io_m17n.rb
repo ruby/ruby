@@ -407,7 +407,6 @@ EOT
       defext = Encoding.default_external
       Encoding.default_external = Encoding::UTF_8
       open("tmp", "rt") {|f|
-        p f.read;f.rewind
         s = f.getc
         assert_equal(false, s.valid_encoding?)
         assert_equal("\xE3".force_encoding("UTF-8"), s)
