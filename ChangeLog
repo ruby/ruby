@@ -1,3 +1,7 @@
+Fri Apr 23 01:28:03 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* thread_win32.c (ubf_handle): remove unused typedef.
+
 Thu Apr 22 23:10:59 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* proc.c (mnew): fix wrong error message when Kernel#public_method
