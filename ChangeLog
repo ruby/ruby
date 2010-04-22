@@ -1,3 +1,9 @@
+Thu Apr 22 16:43:31 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (warn_balanced): removed false warning.
+
+	* parse.y (parser_yylex): skip whitespaces after method name.
+
 Wed Apr 22 02:16:00 2010  Kenta Murata <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.[ch]: replace _DEBUG with BIGDECIMAL_DEBUG
