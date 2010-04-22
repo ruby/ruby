@@ -9962,7 +9962,7 @@ create_encoding_table_core(arg, interp)
   encobj = rb_enc_from_encoding(rb_enc_from_index(ENCODING_INDEX_BINARY));
   rb_hash_aset(table, ENCODING_NAME_BINARY, encobj);
   rb_hash_aset(table, encobj, ENCODING_NAME_BINARY);
-	
+
 
   /* Tcl stub check */
   tcl_stubs_check();
