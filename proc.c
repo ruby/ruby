@@ -925,7 +925,16 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
     if (flag == NOEX_UNDEF) {
 	flag = me->flag;
 	if (scope && (flag & NOEX_MASK) != NOEX_PUBLIC) {
-	    rb_print_undef(rclass, def->original_id, (int)(flag & NOEX_MASK));
+	    const char *v = "";
+	    switch (flag & NOEX_MASK) {
+		case NOEX_PRIVATE: v = "private"; break;
+		case NOEX_PROTECTED: v = "protected"; break;
+	    }
+	    rb_name_error(id, "method `%s' for %s `%s' is %s",
+			  rb_id2name(id),
+			  (TYPE(klass) == T_MODULE) ? "module" : "class",
+			  rb_class2name(klass),
+			  v);
 	}
     }
     if (def && def->type == VM_METHOD_TYPE_ZSUPER) {
