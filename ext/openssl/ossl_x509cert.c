@@ -51,7 +51,7 @@ ossl_x509_new(X509 *x509)
 	ossl_raise(eX509CertError, NULL);
     }
     WrapX509(cX509Cert, obj, new);
-	
+
     return obj;
 }
 
@@ -90,9 +90,9 @@ X509 *
 GetX509CertPtr(VALUE obj)
 {
     X509 *x509;
-	
+
     SafeGetX509(obj, x509);
-	
+
     return x509;
 }
 
@@ -100,11 +100,11 @@ X509 *
 DupX509CertPtr(VALUE obj)
 {
     X509 *x509;
-	
+
     SafeGetX509(obj, x509);
-	
+
     CRYPTO_add(&x509->references, 1, CRYPTO_LOCK_X509);
-	
+
     return x509;
 }
 
@@ -160,7 +160,7 @@ static VALUE
 ossl_x509_copy(VALUE self, VALUE other)
 {
     X509 *a, *b, *x509;
-	
+
     rb_check_frozen(self);
     if (self == other) return self;
 
@@ -210,7 +210,7 @@ ossl_x509_to_pem(VALUE self)
     X509 *x509;
     BIO *out;
     VALUE str;
-	
+
     GetX509(self, x509);
     out = BIO_new(BIO_s_mem());
     if (!out) ossl_raise(eX509CertError, NULL);
@@ -234,7 +234,7 @@ ossl_x509_to_text(VALUE self)
     X509 *x509;
     BIO *out;
     VALUE str;
-	
+
     GetX509(self, x509);
 
     out = BIO_new(BIO_s_mem());
@@ -281,7 +281,7 @@ ossl_x509_get_version(VALUE self)
     X509 *x509;
 
     GetX509(self, x509);
-	
+
     return LONG2NUM(X509_get_version(x509));
 }
 
@@ -316,7 +316,7 @@ ossl_x509_get_serial(VALUE self)
     X509 *x509;
 
     GetX509(self, x509);
-	
+
     return asn1integer_to_num(X509_get_serialNumber(x509));
 }
 
@@ -333,7 +333,7 @@ ossl_x509_set_serial(VALUE self, VALUE num)
 
     x509->cert_info->serialNumber =
 	num_to_asn1integer(num, X509_get_serialNumber(x509));
-	
+
     return num;
 }
 
@@ -370,7 +370,7 @@ ossl_x509_get_subject(VALUE self)
 {
     X509 *x509;
     X509_NAME *name;
-	
+
     GetX509(self, x509);
     if (!(name = X509_get_subject_name(x509))) { /* NO DUP - don't free! */
 	ossl_raise(eX509CertError, NULL);
@@ -387,7 +387,7 @@ static VALUE
 ossl_x509_set_subject(VALUE self, VALUE subject)
 {
     X509 *x509;
-	
+
     GetX509(self, x509);
     if (!X509_set_subject_name(x509, GetX509NamePtr(subject))) { /* DUPs name */
 	ossl_raise(eX509CertError, NULL);
@@ -458,7 +458,7 @@ ossl_x509_set_not_before(VALUE self, VALUE time)
 {
     X509 *x509;
     time_t sec;
-	
+
     sec = time_to_time_t(time);
     GetX509(self, x509);
     if (!X509_time_adj(X509_get_notBefore(x509), 0, &sec)) {
@@ -495,7 +495,7 @@ ossl_x509_set_not_after(VALUE self, VALUE time)
 {
     X509 *x509;
     time_t sec;
-	
+
     sec = time_to_time_t(time);
     GetX509(self, x509);
     if (!X509_time_adj(X509_get_notAfter(x509), 0, &sec)) {
@@ -597,7 +597,7 @@ ossl_x509_check_private_key(VALUE self, VALUE key)
 {
     X509 *x509;
     EVP_PKEY *pkey;
-	
+
     /* not needed private key, but should be */
     pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
     GetX509(self, x509);
@@ -645,7 +645,7 @@ ossl_x509_set_extensions(VALUE self, VALUE ary)
     X509 *x509;
     X509_EXTENSION *ext;
     int i;
-	
+
     Check_Type(ary, T_ARRAY);
     /* All ary's members should be X509Extension */
     for (i=0; i<RARRAY_LEN(ary); i++) {
@@ -656,7 +656,7 @@ ossl_x509_set_extensions(VALUE self, VALUE ary)
     x509->cert_info->extensions = NULL;
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	ext = DupX509ExtPtr(RARRAY_PTR(ary)[i]);
-	
+
 	if (!X509_add_ext(x509, ext, -1)) { /* DUPs ext - FREE it */
 	    X509_EXTENSION_free(ext);
 	    ossl_raise(eX509CertError, NULL);
@@ -676,7 +676,7 @@ ossl_x509_add_extension(VALUE self, VALUE extension)
 {
     X509 *x509;
     X509_EXTENSION *ext;
-	
+
     GetX509(self, x509);
     ext = DupX509ExtPtr(extension);
     if (!X509_add_ext(x509, ext, -1)) { /* DUPs ext - FREE it */
@@ -729,9 +729,9 @@ void
 Init_ossl_x509cert()
 {
     eX509CertError = rb_define_class_under(mX509, "CertificateError", eOSSLError);
-	
+
     cX509Cert = rb_define_class_under(mX509, "Certificate", rb_cObject);
-	
+
     rb_define_alloc_func(cX509Cert, ossl_x509_alloc);
     rb_define_method(cX509Cert, "initialize", ossl_x509_initialize, -1);
     rb_define_copy_func(cX509Cert, ossl_x509_copy);

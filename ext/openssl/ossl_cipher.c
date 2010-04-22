@@ -79,7 +79,7 @@ ossl_cipher_alloc(VALUE klass)
 
     MakeCipher(obj, klass, ctx);
     EVP_CIPHER_CTX_init(ctx);
-	
+
     return obj;
 }
 
@@ -112,7 +112,7 @@ static VALUE
 ossl_cipher_copy(VALUE self, VALUE other)
 {
     EVP_CIPHER_CTX *ctx1, *ctx2;
-	
+
     rb_check_frozen(self);
     if (self == other) return self;
 
@@ -170,7 +170,7 @@ ossl_cipher_reset(VALUE self)
     GetCipher(self, ctx);
     if (EVP_CipherInit_ex(ctx, NULL, NULL, NULL, NULL, -1) != 1)
 	ossl_raise(eCipherError, NULL);
-		
+
     return self;
 }
 

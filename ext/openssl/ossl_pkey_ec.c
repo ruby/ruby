@@ -110,7 +110,7 @@ static VALUE ec_instance(VALUE klass, EC_KEY *ec)
 {
     EVP_PKEY *pkey;
     VALUE obj;
-	
+
     if (!ec) {
 	return Qfalse;
     }
@@ -163,7 +163,7 @@ static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
     EC_KEY *ec = NULL;
     VALUE arg, pass;
     VALUE group = Qnil;
-	
+
     GetPKey(self, pkey);
     if (pkey->pkey.ec)
         rb_raise(eECError, "EC_KEY already initialized");

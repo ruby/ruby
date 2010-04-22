@@ -42,7 +42,7 @@ dh_instance(VALUE klass, DH *dh)
 {
     EVP_PKEY *pkey;
     VALUE obj;
-	
+
     if (!dh) {
 	return Qfalse;
     }
@@ -114,7 +114,7 @@ ossl_dh_s_generate(int argc, VALUE *argv, VALUE klass)
     DH *dh ;
     int g = 2;
     VALUE size, gen, obj;
-	
+
     if (rb_scan_args(argc, argv, "11", &size, &gen) == 2) {
 	g = NUM2INT(gen);
     }
@@ -208,7 +208,7 @@ ossl_dh_is_private(VALUE self)
     EVP_PKEY *pkey;
 
     GetPKeyDH(self, pkey);
-	
+
     return (DH_PRIVATE(pkey->pkey.dh)) ? Qtrue : Qfalse;
 }
 
@@ -328,7 +328,7 @@ ossl_dh_to_public_key(VALUE self)
     EVP_PKEY *pkey;
     DH *dh;
     VALUE obj;
-	
+
     GetPKeyDH(self, pkey);
     dh = DHparams_dup(pkey->pkey.dh); /* err check perfomed by dh_instance */
     obj = dh_instance(CLASS_OF(self), dh);

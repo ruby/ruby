@@ -78,7 +78,7 @@ ossl_x509name_alloc(VALUE klass)
 {
     X509_NAME *name;
     VALUE obj;
-	
+
     if (!(name = X509_NAME_new())) {
 	ossl_raise(eX509NameError, NULL);
     }
@@ -231,7 +231,7 @@ ossl_x509name_to_a(VALUE self)
     char long_name[512];
     const char *short_name;
     VALUE ary, ret;
-	
+
     GetX509Name(self, name);
     entries = X509_NAME_entry_count(name);
     if (entries < 0) {

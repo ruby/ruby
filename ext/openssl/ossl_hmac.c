@@ -53,7 +53,7 @@ ossl_hmac_alloc(VALUE klass)
 
     MakeHMAC(obj, klass, ctx);
     HMAC_CTX_init(ctx);
-	
+
     return obj;
 }
 
@@ -135,7 +135,7 @@ ossl_hmac_digest(VALUE self)
     unsigned char *buf;
     unsigned int buf_len;
     VALUE digest;
-	
+
     GetHMAC(self, ctx);
     hmac_final(ctx, &buf, &buf_len);
     digest = ossl_buf2str((char *)buf, buf_len);
@@ -156,7 +156,7 @@ ossl_hmac_hexdigest(VALUE self)
     char *hexbuf;
     unsigned int buf_len;
     VALUE hexdigest;
-	
+
     GetHMAC(self, ctx);
     hmac_final(ctx, &buf, &buf_len);
     if (string2hex(buf, buf_len, &hexbuf, NULL) != 2 * buf_len) {
@@ -195,7 +195,7 @@ ossl_hmac_s_digest(VALUE klass, VALUE digest, VALUE key, VALUE data)
 {
     unsigned char *buf;
     unsigned int buf_len;
-	
+
     StringValue(key);
     StringValue(data);
     buf = HMAC(GetDigestPtr(digest), RSTRING_PTR(key), RSTRING_LEN(key),
@@ -219,7 +219,7 @@ ossl_hmac_s_hexdigest(VALUE klass, VALUE digest, VALUE key, VALUE data)
 
     StringValue(key);
     StringValue(data);
-	
+
     buf = HMAC(GetDigestPtr(digest), RSTRING_PTR(key), RSTRING_LEN(key),
 	       (unsigned char *)RSTRING_PTR(data), RSTRING_LEN(data), NULL, &buf_len);
     if (string2hex(buf, buf_len, &hexbuf, NULL) != 2 * buf_len) {
@@ -241,7 +241,7 @@ Init_ossl_hmac()
 #endif
 
     eHMACError = rb_define_class_under(mOSSL, "HMACError", eOSSLError);
-	
+
     cHMAC = rb_define_class_under(mOSSL, "HMAC", rb_cObject);
 
     rb_define_alloc_func(cHMAC, ossl_hmac_alloc);
