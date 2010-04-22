@@ -180,7 +180,7 @@ OSSL_X509_REVOKED_cmp(const X509_REVOKED * const *a, const X509_REVOKED * const 
 		(ASN1_STRING *)(*a)->serialNumber,
 		(ASN1_STRING *)(*b)->serialNumber));
 }
-		
+
 int
 X509_CRL_add0_revoked(X509_CRL *crl, X509_REVOKED *rev)
 {
