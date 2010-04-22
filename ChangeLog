@@ -1,3 +1,8 @@
+Fri Apr 23 04:11:26 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ripper/test_parser_events.rb (test_unterminated_regexp):
+	  separate test.
+
 Fri Apr 23 01:47:54 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_wopen): shouldn't use FILE_FLAG_OVERLAPPED with

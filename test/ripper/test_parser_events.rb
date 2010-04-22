@@ -154,7 +154,7 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
 
   def test_operator_ambiguous
     thru_operator_ambiguous = false
-    parse('a=1; a //', :on_operator_ambiguous) {thru_operator_ambiguous = true}
+    parse('a=1; a %[]', :on_operator_ambiguous) {thru_operator_ambiguous = true}
     assert_equal true, thru_operator_ambiguous
   end
 
@@ -1087,5 +1087,13 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
                         'Process.setrlimit(Process::RLIMIT_AS,102400); puts DummyParser.new("proc{|;y|}").parse',
                         ["[fcall(proc,[],&block([],[void()]))]"], [], '[ruby-dev:39423]')
     end
+  end
+
+  def test_unterminated_regexp
+    assert_normal_exit(<<"SRC")
+$:.unshift(File.dirname(#{File.expand_path(__FILE__).dump}))
+require 'dummyparser'
+DummyParser.new('/').parse.to_s
+SRC
   end
 end if ripper_test
