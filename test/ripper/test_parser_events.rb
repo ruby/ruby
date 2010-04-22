@@ -152,6 +152,12 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal true, thru_arg_ambiguous
   end
 
+  def test_operator_ambiguous
+    thru_operator_ambiguous = false
+    parse('a=1; a //', :on_operator_ambiguous) {thru_operator_ambiguous = true}
+    assert_equal true, thru_operator_ambiguous
+  end
+
   def test_array   # array literal
     assert_equal '[array([1,2,3])]', parse('[1,2,3]')
   end
