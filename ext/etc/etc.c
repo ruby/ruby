@@ -133,7 +133,7 @@ etc_getpwuid(int argc, VALUE *argv, VALUE obj)
     pwd = getpwuid(uid);
     if (pwd == 0) rb_raise(rb_eArgError, "can't find user for %d", (int)uid);
     return setup_passwd(pwd);
-#else 
+#else
     return Qnil;
 #endif
 }
@@ -156,7 +156,7 @@ etc_getpwnam(VALUE obj, VALUE nam)
     pwd = getpwnam(RSTRING_PTR(nam));
     if (pwd == 0) rb_raise(rb_eArgError, "can't find user for %s", RSTRING_PTR(nam));
     return setup_passwd(pwd);
-#else 
+#else
     return Qnil;
 #endif
 }
@@ -194,10 +194,10 @@ each_passwd(void)
 }
 #endif
 
-/* Provides a convenient Ruby iterator which executes a block for each entry 
+/* Provides a convenient Ruby iterator which executes a block for each entry
  * in the /etc/passwd file.
  *
- * The code block is passed an Struct::Passwd struct; see getpwent above for 
+ * The code block is passed an Struct::Passwd struct; see getpwent above for
  * details.
  *
  * Example:
@@ -229,7 +229,7 @@ etc_passwd(VALUE obj)
 /* Iterates for each entry in the /etc/passwd file if a block is given.
  * If no block is given, returns the enumerator.
  *
- * The code block is passed an Struct::Passwd struct; see getpwent above for 
+ * The code block is passed an Struct::Passwd struct; see getpwent above for
  * details.
  *
  * Example:
@@ -279,7 +279,7 @@ etc_endpwent(VALUE obj)
 }
 
 /* Returns an entry from the /etc/passwd file. The first time it is called it
- * opens the file and returns the first entry; each successive call returns 
+ * opens the file and returns the first entry; each successive call returns
  * the next entry, or nil if the end of the file has been reached.
  *
  * To close the file when processing is complete, call endpwent.
@@ -296,8 +296,8 @@ etc_endpwent(VALUE obj)
  *
  * - Passwd#gid contains the integer group ID (gid) of the user's primary group.
  *
- * - Passwd#gecos contains a longer String description of the user, such as 
- *   a full name. Some Unix systems provide structured information in the 
+ * - Passwd#gecos contains a longer String description of the user, such as
+ *   a full name. Some Unix systems provide structured information in the
  *   gecos field, but this is system-dependent.
  *
  * - Passwd#dir contains the path to the home directory of the user as a String.
@@ -340,7 +340,7 @@ setup_group(struct group *grp)
 }
 #endif
 
-/* Returns information about the group with specified integer group id (gid), 
+/* Returns information about the group with specified integer group id (gid),
  * as found in /etc/group.
  *
  * The information is returned as a Struct::Group; see getgrent above for
@@ -373,7 +373,7 @@ etc_getgrgid(int argc, VALUE *argv, VALUE obj)
 #endif
 }
 
-/* Returns information about the group with specified String name, as found 
+/* Returns information about the group with specified String name, as found
  * in /etc/group.
  *
  * The information is returned as a Struct::Group; see getgrent above for
@@ -432,10 +432,10 @@ each_group(void)
 }
 #endif
 
-/* Provides a convenient Ruby iterator which executes a block for each entry 
+/* Provides a convenient Ruby iterator which executes a block for each entry
  * in the /etc/group file.
  *
- * The code block is passed an Struct::Group struct; see getgrent above for 
+ * The code block is passed an Struct::Group struct; see getgrent above for
  * details.
  *
  * Example:
@@ -468,7 +468,7 @@ etc_group(VALUE obj)
 /* Iterates for each entry in the /etc/group file if a block is given.
  * If no block is given, returns the enumerator.
  *
- * The code block is passed an Struct::Group struct; see getpwent above for 
+ * The code block is passed an Struct::Group struct; see getpwent above for
  * details.
  *
  * Example:
@@ -504,7 +504,7 @@ etc_setgrent(VALUE obj)
     return Qnil;
 }
 
-/* Ends the process of scanning through the /etc/group file begun by 
+/* Ends the process of scanning through the /etc/group file begun by
  * getgrent, and closes the file.
  */
 static VALUE
@@ -517,7 +517,7 @@ etc_endgrent(VALUE obj)
 }
 
 /* Returns an entry from the /etc/group file. The first time it is called it
- * opens the file and returns the first entry; each successive call returns 
+ * opens the file and returns the first entry; each successive call returns
  * the next entry, or nil if the end of the file has been reached.
  *
  * To close the file when processing is complete, call endgrent.
@@ -527,13 +527,13 @@ etc_endgrent(VALUE obj)
  * - Group#name contains the name of the group as a String.
  *
  * - Group#passwd contains the encrypted password as a String. An 'x' is
- *   returned if password access to the group is not available; an empty 
- *   string is returned if no password is needed to obtain membership of 
+ *   returned if password access to the group is not available; an empty
+ *   string is returned if no password is needed to obtain membership of
  *   the group.
  *
  * - Group#gid contains the group's numeric ID as an integer.
  *
- * - Group#mem is an Array of Strings containing the short login names of the 
+ * - Group#mem is an Array of Strings containing the short login names of the
  *   members of the group.
  */
 static VALUE

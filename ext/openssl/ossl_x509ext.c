@@ -49,7 +49,7 @@ VALUE eX509ExtError;
 /*
  * Public
  */
-VALUE 
+VALUE
 ossl_x509ext_new(X509_EXTENSION *ext)
 {
     X509_EXTENSION *new;
@@ -103,7 +103,7 @@ ossl_x509extfactory_free(X509V3_CTX *ctx)
     OPENSSL_free(ctx);
 }
 
-static VALUE 
+static VALUE
 ossl_x509extfactory_alloc(VALUE klass)
 {
     X509V3_CTX *ctx;
@@ -115,7 +115,7 @@ ossl_x509extfactory_alloc(VALUE klass)
     return obj;
 }
 
-static VALUE 
+static VALUE
 ossl_x509extfactory_set_issuer_cert(VALUE self, VALUE cert)
 {
     X509V3_CTX *ctx;
@@ -127,7 +127,7 @@ ossl_x509extfactory_set_issuer_cert(VALUE self, VALUE cert)
     return cert;
 }
 
-static VALUE 
+static VALUE
 ossl_x509extfactory_set_subject_cert(VALUE self, VALUE cert)
 {
     X509V3_CTX *ctx;
@@ -139,7 +139,7 @@ ossl_x509extfactory_set_subject_cert(VALUE self, VALUE cert)
     return cert;
 }
 
-static VALUE 
+static VALUE
 ossl_x509extfactory_set_subject_req(VALUE self, VALUE req)
 {
     X509V3_CTX *ctx;
@@ -151,7 +151,7 @@ ossl_x509extfactory_set_subject_req(VALUE self, VALUE req)
     return req;
 }
 
-static VALUE 
+static VALUE
 ossl_x509extfactory_set_crl(VALUE self, VALUE crl)
 {
     X509V3_CTX *ctx;
@@ -181,7 +181,7 @@ ossl_x509extfactory_set_config(VALUE self, VALUE config)
 #define rb_f_fork rb_f_notimplement
 #endif
 
-static VALUE 
+static VALUE
 ossl_x509extfactory_initialize(int argc, VALUE *argv, VALUE self)
 {
     /*X509V3_CTX *ctx;*/
@@ -211,7 +211,7 @@ ossl_x509extfactory_initialize(int argc, VALUE *argv, VALUE self)
  * ["ln", "critical,value"] or the same for sn
  * ["ln", "value"] => not critical
  */
-static VALUE 
+static VALUE
 ossl_x509extfactory_create_ext(int argc, VALUE *argv, VALUE self)
 {
     X509V3_CTX *ctx;
@@ -351,7 +351,7 @@ ossl_x509ext_set_critical(VALUE self, VALUE flag)
     return flag;
 }
 
-static VALUE 
+static VALUE
 ossl_x509ext_get_oid(VALUE obj)
 {
     X509_EXTENSION *ext;
@@ -427,7 +427,7 @@ void
 Init_ossl_x509ext()
 {
     eX509ExtError = rb_define_class_under(mX509, "ExtensionError", eOSSLError);
-    
+
     cX509ExtFactory = rb_define_class_under(mX509, "ExtensionFactory", rb_cObject);
 	
     rb_define_alloc_func(cX509ExtFactory, ossl_x509extfactory_alloc);

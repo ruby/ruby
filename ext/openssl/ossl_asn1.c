@@ -27,7 +27,7 @@ asn1time_to_time(ASN1_TIME *time)
 {
     struct tm tm;
     VALUE argv[6];
-    
+
     if (!time || !time->data) return Qnil;
     memset(&tm, 0, sizeof(struct tm));
 	
@@ -36,7 +36,7 @@ asn1time_to_time(ASN1_TIME *time)
 	if (sscanf((const char *)time->data, "%2d%2d%2d%2d%2d%2dZ", &tm.tm_year, &tm.tm_mon,
     		&tm.tm_mday, &tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6) {
 	    ossl_raise(rb_eTypeError, "bad UTCTIME format");
-	} 
+	}
 	if (tm.tm_year < 69) {
 	    tm.tm_year += 2000;
 	} else {
@@ -47,7 +47,7 @@ asn1time_to_time(ASN1_TIME *time)
 	if (sscanf((const char *)time->data, "%4d%2d%2d%2d%2d%2dZ", &tm.tm_year, &tm.tm_mon,
     		&tm.tm_mday, &tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6) {
 	    ossl_raise(rb_eTypeError, "bad GENERALIZEDTIME format" );
-	} 
+	}
 	break;
     default:
 	rb_warning("unknown time format");
@@ -144,7 +144,7 @@ ASN1_INTEGER *
 num_to_asn1integer(VALUE obj, ASN1_INTEGER *ai)
 {
     BIGNUM *bn = GetBNPtr(obj);
-    
+
     if (!(ai = BN_to_ASN1_INTEGER(bn, ai))) {
 	ossl_raise(eOSSLError, NULL);
     }
@@ -321,7 +321,7 @@ decode_int(unsigned char* der, int length)
 {
     ASN1_INTEGER *ai;
     const unsigned char *p;
-    VALUE ret; 
+    VALUE ret;
     int status = 0;
 
     p = der;
@@ -361,7 +361,7 @@ decode_enum(unsigned char* der, int length)
 {
     ASN1_ENUMERATED *ai;
     const unsigned char *p;
-    VALUE ret; 
+    VALUE ret;
     int status = 0;
 
     p = der;
@@ -524,7 +524,7 @@ ossl_asn1_get_asn1type(VALUE obj)
     case V_ASN1_ISO64STRING:     /* FALLTHROUGH */
     case V_ASN1_GENERALSTRING:   /* FALLTHROUGH */
     case V_ASN1_UNIVERSALSTRING: /* FALLTHROUGH */
-    case V_ASN1_BMPSTRING:   
+    case V_ASN1_BMPSTRING:
 	ptr = obj_to_asn1str(value);
 	free_func = ASN1_STRING_free;
 	break;
@@ -660,8 +660,8 @@ ossl_asn1data_initialize(VALUE self, VALUE value, VALUE tag, VALUE tag_class)
     return self;
 }
 
-static VALUE 
-join_der_i(VALUE i, VALUE str) 
+static VALUE
+join_der_i(VALUE i, VALUE str)
 {
     i = ossl_to_der_if_possible(i);
     StringValue(i);
@@ -737,7 +737,7 @@ ossl_asn1_decode0(unsigned char **pp, long length, long *offset, long depth,
 	    rb_yield(arg);
 	}
 	length -= hlen;
-	off += hlen; 
+	off += hlen;
 	if(len > length) ossl_raise(eASN1Error, "value is too short");
 	if((tc & V_ASN1_PRIVATE) == V_ASN1_PRIVATE)
 	    tag_class = sPRIVATE;

@@ -26,20 +26,20 @@
  * == Summary
  *
  * Ruby extension for charset conversion.
- * 
+ *
  * == Abstract
  *
  * Iconv is a wrapper class for the UNIX 95 <tt>iconv()</tt> function family,
  * which translates string between various encoding systems.
- * 
+ *
  * See Open Group's on-line documents for more details.
  * * <tt>iconv.h</tt>:       http://www.opengroup.org/onlinepubs/007908799/xsh/iconv.h.html
  * * <tt>iconv_open()</tt>:  http://www.opengroup.org/onlinepubs/007908799/xsh/iconv_open.html
  * * <tt>iconv()</tt>:       http://www.opengroup.org/onlinepubs/007908799/xsh/iconv.html
  * * <tt>iconv_close()</tt>: http://www.opengroup.org/onlinepubs/007908799/xsh/iconv_close.html
- * 
+ *
  * Which coding systems are available is platform-dependent.
- * 
+ *
  * == Examples
  *
  * 1. Simple conversion between two charsets.
@@ -622,7 +622,7 @@ get_iconv_opt(struct rb_iconv_opt_t *opt, VALUE options)
  *
  * Creates new code converter from a coding-system designated with +from+
  * to another one designated with +to+.
- * 
+ *
  * === Parameters
  *
  * +to+::   encoding name for destination
@@ -1104,7 +1104,7 @@ iconv_failure_success(VALUE self)
  * call-seq: failed
  *
  * Returns substring of the original string passed to Iconv that starts at the
- * character caused the exception. 
+ * character caused the exception.
  */
 static VALUE
 iconv_failure_failed(VALUE self)
@@ -1134,13 +1134,13 @@ iconv_failure_inspect(VALUE self)
 
 /*
  * Document-class: Iconv::InvalidEncoding
- * 
+ *
  * Requested coding-system is not available on this system.
  */
 
 /*
  * Document-class: Iconv::IllegalSequence
- * 
+ *
  * Input conversion stopped due to an input byte that does not belong to
  * the input codeset, or the output codeset does not contain the
  * character.
@@ -1148,20 +1148,20 @@ iconv_failure_inspect(VALUE self)
 
 /*
  * Document-class: Iconv::InvalidCharacter
- * 
+ *
  * Input conversion stopped due to an incomplete character or shift
  * sequence at the end of the input buffer.
  */
 
 /*
  * Document-class: Iconv::OutOfRange
- * 
+ *
  * Iconv library internal error.  Must not occur.
  */
 
 /*
  * Document-class: Iconv::BrokenLibrary
- * 
+ *
  * Detected a bug of underlying iconv(3) libray.
  * * returns an error without setting errno properly
  */

@@ -33,8 +33,8 @@
 VALUE cConfig;
 VALUE eConfigError;
 
-/* 
- * Public 
+/*
+ * Public
  */
 
 static CONF *parse_config(VALUE, CONF*);
@@ -154,7 +154,7 @@ ossl_config_initialize(int argc, VALUE *argv, VALUE self)
 	_CONF_new_data(conf);
     }
 #endif
-    
+
     return self;
 }
 
@@ -187,7 +187,7 @@ ossl_config_add_value(VALUE self, VALUE section, VALUE name, VALUE value)
 	OPENSSL_free(cv);
 	ossl_raise(eConfigError, "_CONF_add_string failure");
     }
-    
+
     return value;
 #endif
 }
@@ -233,7 +233,7 @@ static VALUE
 ossl_config_get_value_old(int argc, VALUE *argv, VALUE self)
 {
     VALUE section, name;
-    
+
     rb_scan_args(argc, argv, "11", &section, &name);
 
     /* support conf.value(nil, "HOME") -> conf.get_value("", "HOME") */

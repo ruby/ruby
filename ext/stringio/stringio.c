@@ -323,7 +323,7 @@ strio_set_string(VALUE self, VALUE string)
  * call-seq:
  *   strio.close  -> nil
  *
- * Closes strio.  The *strio* is unavailable for any further data 
+ * Closes strio.  The *strio* is unavailable for any further data
  * operations; an +IOError+ is raised if such an attempt is made.
  */
 static VALUE
@@ -420,7 +420,7 @@ strio_closed_write(VALUE self)
  *   strio.eof     -> true or false
  *   strio.eof?    -> true or false
  *
- * Returns true if *strio* is at end of file. The stringio must be  
+ * Returns true if *strio* is at end of file. The stringio must be
  * opened for reading or an +IOError+ will be raised.
  */
 static VALUE
@@ -496,7 +496,7 @@ strio_set_lineno(VALUE self, VALUE lineno)
  *   strio.reopen(other_StrIO)     -> strio
  *   strio.reopen(string, mode)    -> strio
  *
- * Reinitializes *strio* with the given <i>other_StrIO</i> or _string_ 
+ * Reinitializes *strio* with the given <i>other_StrIO</i> or _string_
  * and _mode_ (see StringIO#new).
  */
 static VALUE
@@ -971,7 +971,7 @@ strio_getline(int argc, VALUE *argv, struct StringIO *ptr)
 		break;
 	    }
 	}
-	str = strio_substr(ptr, s - RSTRING_PTR(ptr->string), e - s); 
+	str = strio_substr(ptr, s - RSTRING_PTR(ptr->string), e - s);
     }
     else if (n == 1) {
 	if ((p = memchr(s, RSTRING_PTR(str)[0], e - s)) != 0) {

@@ -46,7 +46,7 @@ _nativethread_consistency_check(ip)
         return;
     }
 
-    /* If the variable "tcl_platform(threaded)" exists,  
+    /* If the variable "tcl_platform(threaded)" exists,
        then the Tcl interpreter was compiled with threads enabled. */
     if (Tcl_GetVar2(ip, "tcl_platform", "threaded", TCL_GLOBAL_ONLY) != (char*)NULL) {
 #ifdef HAVE_NATIVETHREAD
@@ -195,13 +195,13 @@ ruby_open_tcltk_dll(appname)
     return( ruby_open_tcl_dll(appname) || ruby_open_tk_dll() );
 }
 
-int 
+int
 tcl_stubs_init_p()
 {
     return(tclStubsPtr != (TclStubs*)NULL);
 }
 
-int 
+int
 tk_stubs_init_p()
 {
     return(tkStubsPtr != (TkStubs*)NULL);
@@ -246,14 +246,14 @@ ruby_tcl_create_ip_and_stubs_init(st)
             }
         }
 
-        p_Tcl_CreateInterp 
+        p_Tcl_CreateInterp
             = (Tcl_Interp *(*)())DL_SYM(tcl_dll, "Tcl_CreateInterp");
         if (!p_Tcl_CreateInterp) {
             if (st) *st = NO_CreateInterp;
             return (Tcl_Interp*)NULL;
         }
 
-        p_Tcl_DeleteInterp 
+        p_Tcl_DeleteInterp
             = (Tcl_Interp *(*)())DL_SYM(tcl_dll, "Tcl_DeleteInterp");
         if (!p_Tcl_DeleteInterp) {
             if (st) *st = NO_DeleteInterp;
@@ -444,7 +444,7 @@ ruby_open_tcl_dll(appname)
     return TCLTK_STUBS_OK;
 }
 
-int 
+int
 ruby_open_tk_dll()
 {
     if (!open_tcl_dll) {
@@ -455,7 +455,7 @@ ruby_open_tk_dll()
     return TCLTK_STUBS_OK;
 }
 
-int 
+int
 #ifdef HAVE_PROTOTYPES
 ruby_open_tcltk_dll(char *appname)
 #else
@@ -466,13 +466,13 @@ ruby_open_tcltk_dll(appname)
     return( ruby_open_tcl_dll(appname) || ruby_open_tk_dll() );
 }
 
-int 
+int
 tcl_stubs_init_p()
 {
     return 1;
 }
 
-int 
+int
 tk_stubs_init_p()
 {
     return call_tk_stubs_init;
@@ -505,13 +505,13 @@ ruby_tcl_create_ip_and_stubs_init(st)
     return tcl_ip;
 }
 
-int 
+int
 ruby_tcl_stubs_init()
 {
     return TCLTK_STUBS_OK;
 }
 
-int 
+int
 #ifdef HAVE_PROTOTYPES
 ruby_tk_stubs_init(Tcl_Interp *tcl_ip)
 #else
@@ -559,7 +559,7 @@ ruby_tk_stubs_safeinit(tcl_ip)
 #endif
 }
 
-int 
+int
 ruby_tcltk_stubs()
 {
     /* Tcl_FindExecutable(RSTRING_PTR(rb_argv0)); */

@@ -65,7 +65,7 @@ ip_cmsg_type_to_sym(int level, int cmsg_type)
  *   p Socket::AncillaryData.new(:INET, :TCP, :NODELAY, "")
  *   #=> #<Socket::AncillaryData: INET TCP NODELAY "">
  *
- *   p Socket::AncillaryData.new(:INET6, :IPV6, :PKTINFO, "")     
+ *   p Socket::AncillaryData.new(:INET6, :IPV6, :PKTINFO, "")
  *   #=> #<Socket::AncillaryData: INET6 IPV6 PKTINFO "">
  *
  */
@@ -228,7 +228,7 @@ ancillary_s_unix_rights(int argc, VALUE *argv, VALUE klass)
  *
  * returns the array of IO objects for SCM_RIGHTS control message in UNIX domain socket.
  *
- * The class of the IO objects in the array is IO or Socket. 
+ * The class of the IO objects in the array is IO or Socket.
  *
  * The array is attached to _ancillarydata_ when it is instantiated.
  * For example, BasicSocket#recvmsg attach the array when
@@ -356,7 +356,7 @@ ancillary_timestamp(VALUE self)
  *
  * Creates a new Socket::AncillaryData object which contains a int as data.
  *
- * The size and endian is dependent on the host. 
+ * The size and endian is dependent on the host.
  *
  *   p Socket::AncillaryData.int(:UNIX, :SOCKET, :RIGHTS, STDERR.fileno)
  *   #=> #<Socket::AncillaryData: UNIX SOCKET RIGHTS 2>
@@ -377,7 +377,7 @@ ancillary_s_int(VALUE klass, VALUE vfamily, VALUE vlevel, VALUE vtype, VALUE int
  *
  * Returns the data in _ancillarydata_ as an int.
  *
- * The size and endian is dependent on the host. 
+ * The size and endian is dependent on the host.
  *
  *   ancdata = Socket::AncillaryData.int(:UNIX, :SOCKET, :RIGHTS, STDERR.fileno)
  *   p ancdata.int #=> 2
@@ -592,7 +592,7 @@ extract_ipv6_pktinfo(VALUE self, struct in6_pktinfo *pktinfo_ptr, struct sockadd
  *
  * IPV6_PKTINFO is defined by RFC 3542.
  *
- *   addr = Addrinfo.ip("::1")      
+ *   addr = Addrinfo.ip("::1")
  *   ifindex = 0
  *   ancdata = Socket::AncillaryData.ipv6_pktinfo(addr, ifindex)
  *   p ancdata.ipv6_pktinfo #=> [#<Addrinfo: ::1>, 0]
@@ -778,7 +778,7 @@ anc_inspect_ip_recvdstaddr(int level, int type, VALUE data, VALUE ret)
 {
     if (level == IPPROTO_IP && type == IP_RECVDSTADDR &&
         RSTRING_LEN(data) == sizeof(struct in_addr)) {
-        struct in_addr addr; 
+        struct in_addr addr;
         char addrbuf[INET_ADDRSTRLEN];
         memcpy(&addr, RSTRING_PTR(data), sizeof(addr));
         if (inet_ntop(AF_INET, &addr, addrbuf, sizeof(addrbuf)) == NULL)
@@ -829,7 +829,7 @@ anc_inspect_ipv6_pktinfo(int level, int type, VALUE data, VALUE ret)
     if (level == IPPROTO_IPV6 && type == IPV6_PKTINFO &&
         RSTRING_LEN(data) == sizeof(struct in6_pktinfo)) {
         struct in6_pktinfo *pktinfo = (struct in6_pktinfo *)RSTRING_PTR(data);
-        struct in6_addr addr; 
+        struct in6_addr addr;
         unsigned int ifindex;
         char addrbuf[INET6_ADDRSTRLEN], ifbuf[IFNAMSIZ];
         memcpy(&addr, &pktinfo->ipi6_addr, sizeof(addr));
@@ -1033,7 +1033,7 @@ ancillary_inspect(VALUE self)
 #        endif
         }
         break;
-       
+
       case AF_INET:
 #ifdef INET6
       case AF_INET6:
@@ -1211,18 +1211,18 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 	if (last_pad) {
             /*
              * This code removes the last padding from msg_controllen.
-             * 
+             *
              * 4.3BSD-Reno reject the padding for SCM_RIGHTS. (There was no 64bit environments in those days?)
              * RFC 2292 require the padding.
              * RFC 3542 relaxes the condition - implementation must accept both as valid.
-             * 
+             *
              * Actual problems:
              *
              * - NetBSD 4.0.1
              *   SCM_RIGHTS with padding causes EINVAL
              *   IPV6_PKTINFO without padding causes "page fault trap"
              *     http://www.netbsd.org/cgi-bin/query-pr-single.pl?number=40661
-             *  
+             *
              * - OpenBSD 4.4
              *   IPV6_PKTINFO without padding causes EINVAL
              *
@@ -1317,7 +1317,7 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
  * sendmsg can be used to implement send_io as follows:
  *
  *   # use Socket::AncillaryData.
- *   ancdata = Socket::AncillaryData.int(:UNIX, :SOCKET, :RIGHTS, io.fileno)       
+ *   ancdata = Socket::AncillaryData.int(:UNIX, :SOCKET, :RIGHTS, io.fileno)
  *   sock.sendmsg("a", 0, nil, ancdata)
  *
  *   # use 3-element array.

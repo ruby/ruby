@@ -104,7 +104,7 @@ rb_dlptr2cptr(VALUE val)
     else{
 	rb_raise(rb_eTypeError, "DL::PtrData was expected");
     }
-    
+
     return ptr;
 }
 

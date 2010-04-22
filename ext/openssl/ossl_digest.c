@@ -56,14 +56,14 @@ GetDigestPtr(VALUE obj)
 
 VALUE
 ossl_digest_new(const EVP_MD *md)
-{  
+{
     VALUE ret;
     EVP_MD_CTX *ctx;
 
     ret = ossl_digest_alloc(cDigest);
     GetDigest(ret, ctx);
     EVP_DigestInit_ex(ctx, md, NULL);
-   
+
     return ret;
 }
 
@@ -104,7 +104,7 @@ ossl_digest_initialize(int argc, VALUE *argv, VALUE self)
 
     GetDigest(self, ctx);
     EVP_DigestInit_ex(ctx, md, NULL);
-    
+
     if (!NIL_P(data)) return ossl_digest_update(self, data);
     return self;
 }
@@ -113,7 +113,7 @@ static VALUE
 ossl_digest_copy(VALUE self, VALUE other)
 {
     EVP_MD_CTX *ctx1, *ctx2;
-    
+
     rb_check_frozen(self);
     if (self == other) return self;
 

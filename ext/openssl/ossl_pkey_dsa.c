@@ -320,7 +320,7 @@ ossl_dsa_get_params(VALUE self)
     rb_hash_aset(hash, rb_str_new2("g"), ossl_bn_new(pkey->pkey.dsa->g));
     rb_hash_aset(hash, rb_str_new2("pub_key"), ossl_bn_new(pkey->pkey.dsa->pub_key));
     rb_hash_aset(hash, rb_str_new2("priv_key"), ossl_bn_new(pkey->pkey.dsa->priv_key));
-    
+
     return hash;
 }
 

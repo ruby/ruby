@@ -147,12 +147,12 @@ rb_dlcfunc_initialize(int argc, VALUE argv[], VALUE self)
     struct cfunc_data *data;
     void *saddr;
     const char *sname;
-    
+
     rb_scan_args(argc, argv, "13", &addr, &type, &name, &calltype);
-    
+
     saddr = (void*)(NUM2PTR(rb_Integer(addr)));
     sname = NIL_P(name) ? NULL : StringValuePtr(name);
-    
+
     TypedData_Get_Struct(self, struct cfunc_data, &dlcfunc_data_type, data);
     if( data->name ) xfree(data->name);
     data->ptr  = saddr;
@@ -286,9 +286,9 @@ rb_dlcfunc_inspect(VALUE self)
     char  *str;
     int str_size;
     struct cfunc_data *cfunc;
-    
+
     TypedData_Get_Struct(self, struct cfunc_data, &dlcfunc_data_type, cfunc);
-    
+
     str_size = (cfunc->name ? strlen(cfunc->name) : 0) + 100;
     str = ruby_xmalloc(str_size);
     snprintf(str, str_size - 1,
@@ -339,14 +339,14 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 
     memset(stack, 0, sizeof(DLSTACK_TYPE) * DLSTACK_SIZE);
     Check_Type(ary, T_ARRAY);
-    
+
     TypedData_Get_Struct(self, struct cfunc_data, &dlcfunc_data_type, cfunc);
 
     if( cfunc->ptr == 0 ){
 	rb_raise(rb_eDLError, "can't call null-function");
 	return Qnil;
     }
-    
+
     for( i = 0; i < RARRAY_LEN(ary); i++ ){
 	if( i >= DLSTACK_SIZE ){
 	    rb_raise(rb_eDLError, "too many arguments (stack overflow)");
@@ -354,7 +354,7 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 	rb_check_safe_obj(RARRAY_PTR(ary)[i]);
 	stack[i] = NUM2LONG(RARRAY_PTR(ary)[i]);
     }
-    
+
     /* calltype == CFUNC_CDECL */
     if( cfunc->calltype == CFUNC_CDECL
 #ifndef FUNC_STDCALL

@@ -7,7 +7,7 @@
  *
  *   WARNING WARNING WARNING  --- THIS IS *NOT JUST* PLAYING
  *   ANYMORE! -- WHY HAS EMBRACED THIS AS THE REAL THING!
- */ 
+ */
 #include "ruby/ruby.h"
 #include <syck.h>
 #include <assert.h>
@@ -35,7 +35,7 @@ typedef struct {
    int  printed;
 } bytestring_t;
 bytestring_t *bytestring_alloc(void) {
-    bytestring_t *ret; 
+    bytestring_t *ret;
     /*TRACE0("bytestring_alloc()");*/
     ret = S_ALLOC(bytestring_t);
     ret->hash   = HASH;
@@ -46,8 +46,8 @@ bytestring_t *bytestring_alloc(void) {
     ret->printed = 0;
     return ret;
 }
-void bytestring_append(bytestring_t *str, char code, 
-                       char *start, char *finish) 
+void bytestring_append(bytestring_t *str, char code,
+                       char *start, char *finish)
 {
     long grow;
     long length = 2;   /* CODE + LF */
@@ -62,14 +62,14 @@ void bytestring_append(bytestring_t *str, char code,
     if(length > str->remaining) {
         grow = (length - str->remaining) + CHUNKSIZE;
         str->remaining += grow;
-        str->length    += grow; 
+        str->length    += grow;
         str->buffer = S_REALLOC_N( str->buffer, char, str->length + 1 );
         assert(str->buffer);
     }
     curr = str->buffer + (str->length - str->remaining);
     *curr = code;
     curr += 1;
-    if(start) 
+    if(start)
         while(start < finish)
             *curr ++ = *start ++;
     *curr = '\n';
@@ -99,7 +99,7 @@ void bytestring_extend(bytestring_t *str, bytestring_t *ext)
         if(length > str->remaining) {
             grow = (length - str->remaining) + CHUNKSIZE;
             str->remaining += grow;
-            str->length    += grow; 
+            str->length    += grow;
             str->buffer = S_REALLOC_N( str->buffer, char, str->length + 1 );
         }
         curr = str->buffer + (str->length - str->remaining);
@@ -176,7 +176,7 @@ syck_yaml2byte_handler(p, n)
                     {
                         bytestring_append(val,YAMLBYTE_NULLCHAR,NULL,NULL);
                     }
-                    else 
+                    else
                     {
                         assert("oops");
                     }

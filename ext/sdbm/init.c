@@ -293,7 +293,7 @@ fsdbm_shift(VALUE obj)
 
     fdbm_modify(obj);
     GetDBM2(obj, dbmp, dbm);
-    key = sdbm_firstkey(dbm); 
+    key = sdbm_firstkey(dbm);
     if (!key.dptr) return Qnil;
     val = sdbm_fetch(dbm, key);
     keystr = rb_external_str_new(key.dptr, key.dsize);

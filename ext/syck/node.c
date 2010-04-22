@@ -59,7 +59,7 @@ syck_alloc_map(void)
 
     n = syck_alloc_node( syck_map_kind );
     n->data.pairs = m;
-    
+
     return n;
 }
 
@@ -94,7 +94,7 @@ syck_alloc_str(void)
 
     n = syck_alloc_node( syck_str_kind );
     n->data.str = s;
-    
+
     return n;
 }
 
@@ -128,7 +128,7 @@ syck_replace_str( SyckNode *n, char *str, enum scalar_style style )
 void
 syck_replace_str2( SyckNode *n, char *str, long len, enum scalar_style style )
 {
-    if ( n->data.str->ptr != NULL ) 
+    if ( n->data.str->ptr != NULL )
     {
         S_FREE( n->data.str->ptr );
         n->data.str->ptr = NULL;
@@ -201,7 +201,7 @@ syck_map_add( SyckNode *map, SYMID key, SYMID value )
 
     ASSERT( map != NULL );
     ASSERT( map->data.pairs != NULL );
-    
+
     m = map->data.pairs;
     idx = m->idx;
     m->idx += 1;
@@ -226,7 +226,7 @@ syck_map_update( SyckNode *map1, SyckNode *map2 )
     m1 = map1->data.pairs;
     m2 = map2->data.pairs;
     if ( m2->idx < 1 ) return;
-        
+
     new_idx = m1->idx;
     new_idx += m2->idx;
     new_capa = m1->capa;
@@ -242,8 +242,8 @@ syck_map_update( SyckNode *map1, SyckNode *map2 )
     }
     for ( new_idx = 0; new_idx < m2->idx; m1->idx++, new_idx++ )
     {
-        m1->keys[m1->idx] = m2->keys[new_idx]; 
-        m1->values[m1->idx] = m2->values[new_idx]; 
+        m1->keys[m1->idx] = m2->keys[new_idx];
+        m1->values[m1->idx] = m2->values[new_idx];
     }
 }
 
@@ -324,7 +324,7 @@ syck_seq_add( SyckNode *arr, SYMID value )
 
     ASSERT( arr != NULL );
     ASSERT( arr->data.list != NULL );
-    
+
     s = arr->data.list;
     idx = s->idx;
     s->idx += 1;
@@ -374,7 +374,7 @@ syck_free_members( SyckNode *n )
     switch ( n->kind  )
     {
         case syck_str_kind:
-            if ( n->data.str != NULL ) 
+            if ( n->data.str != NULL )
             {
                 S_FREE( n->data.str->ptr );
                 n->data.str->ptr = NULL;

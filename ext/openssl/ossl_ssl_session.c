@@ -15,7 +15,7 @@
 	OSSL_Check_Kind(obj, cSSLSession); \
 	GetSSLSession(obj, sess); \
 } while (0)
-        
+
 
 VALUE cSSLSession;
 static VALUE eSSLSession;
@@ -214,7 +214,7 @@ static VALUE ossl_ssl_session_to_pem(VALUE self)
 	BUF_MEM *buf;
 	VALUE str;
 	int i;
-         
+
 	GetSSLSession(self, ctx);
 
 	if (!(out = BIO_new(BIO_s_mem()))) {
@@ -246,7 +246,7 @@ static VALUE ossl_ssl_session_to_text(VALUE self)
 	BIO *out;
 	BUF_MEM *buf;
 	VALUE str;
-         
+
 	GetSSLSession(self, ctx);
 
 	if (!(out = BIO_new(BIO_s_mem()))) {
@@ -264,7 +264,7 @@ static VALUE ossl_ssl_session_to_text(VALUE self)
 
 	return str;
 }
-                                                     
+
 
 void Init_ossl_ssl_session(void)
 {

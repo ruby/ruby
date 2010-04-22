@@ -55,7 +55,7 @@ ossl_x509_new(X509 *x509)
     return obj;
 }
 
-VALUE 
+VALUE
 ossl_x509_new_from_file(VALUE filename)
 {
     X509 *x509;
@@ -111,7 +111,7 @@ DupX509CertPtr(VALUE obj)
 /*
  * Private
  */
-static VALUE 
+static VALUE
 ossl_x509_alloc(VALUE klass)
 {
     X509 *x509;
@@ -130,7 +130,7 @@ ossl_x509_alloc(VALUE klass)
  *    Certificate.new => cert
  *    Certificate.new(string) => cert
  */
-static VALUE 
+static VALUE
 ossl_x509_initialize(int argc, VALUE *argv, VALUE self)
 {
     BIO *in;
@@ -152,7 +152,7 @@ ossl_x509_initialize(int argc, VALUE *argv, VALUE self)
     }
     BIO_free(in);
     if (!x509) ossl_raise(eX509CertError, NULL);
-    
+
     return self;
 }
 
@@ -169,7 +169,7 @@ ossl_x509_copy(VALUE self, VALUE other)
 
     x509 = X509_dup(b);
     if (!x509) ossl_raise(eX509CertError, NULL);
-    
+
     DATA_PTR(self) = x509;
     X509_free(a);
 
@@ -180,7 +180,7 @@ ossl_x509_copy(VALUE self, VALUE other)
  * call-seq:
  *    cert.to_der => string
  */
-static VALUE 
+static VALUE
 ossl_x509_to_der(VALUE self)
 {
     X509 *x509;
@@ -196,7 +196,7 @@ ossl_x509_to_der(VALUE self)
     if (i2d_X509(x509, &p) <= 0)
 	ossl_raise(eX509CertError, NULL);
     ossl_str_adjust(str, p);
-    
+
     return str;
 }
 
@@ -204,7 +204,7 @@ ossl_x509_to_der(VALUE self)
  * call-seq:
  *    cert.to_pem => string
  */
-static VALUE 
+static VALUE
 ossl_x509_to_pem(VALUE self)
 {
     X509 *x509;
@@ -253,7 +253,7 @@ ossl_x509_to_text(VALUE self)
 /*
  * Makes from X509 X509_REQuest
  */
-static VALUE 
+static VALUE
 ossl_x509_to_req(VALUE self)
 {
     X509 *x509;
@@ -275,7 +275,7 @@ ossl_x509_to_req(VALUE self)
  * call-seq:
  *    cert.version => integer
  */
-static VALUE 
+static VALUE
 ossl_x509_get_version(VALUE self)
 {
     X509 *x509;
@@ -289,7 +289,7 @@ ossl_x509_get_version(VALUE self)
  * call-seq:
  *    cert.version = integer => integer
  */
-static VALUE 
+static VALUE
 ossl_x509_set_version(VALUE self, VALUE version)
 {
     X509 *x509;
@@ -310,7 +310,7 @@ ossl_x509_set_version(VALUE self, VALUE version)
  * call-seq:
  *    cert.serial => integer
  */
-static VALUE 
+static VALUE
 ossl_x509_get_serial(VALUE self)
 {
     X509 *x509;
@@ -324,7 +324,7 @@ ossl_x509_get_serial(VALUE self)
  * call-seq:
  *    cert.serial = integer => integer
  */
-static VALUE 
+static VALUE
 ossl_x509_set_serial(VALUE self, VALUE num)
 {
     X509 *x509;
@@ -341,7 +341,7 @@ ossl_x509_set_serial(VALUE self, VALUE num)
  * call-seq:
  *    cert.signature_algorithm => string
  */
-static VALUE 
+static VALUE
 ossl_x509_get_signature_algorithm(VALUE self)
 {
     X509 *x509;
@@ -365,7 +365,7 @@ ossl_x509_get_signature_algorithm(VALUE self)
  * call-seq:
  *    cert.subject => name
  */
-static VALUE 
+static VALUE
 ossl_x509_get_subject(VALUE self)
 {
     X509 *x509;
@@ -383,7 +383,7 @@ ossl_x509_get_subject(VALUE self)
  * call-seq:
  *    cert.subject = name => name
  */
-static VALUE 
+static VALUE
 ossl_x509_set_subject(VALUE self, VALUE subject)
 {
     X509 *x509;
@@ -400,7 +400,7 @@ ossl_x509_set_subject(VALUE self, VALUE subject)
  * call-seq:
  *    cert.issuer => name
  */
-static VALUE 
+static VALUE
 ossl_x509_get_issuer(VALUE self)
 {
     X509 *x509;
@@ -418,7 +418,7 @@ ossl_x509_get_issuer(VALUE self)
  * call-seq:
  *    cert.issuer = name => name
  */
-static VALUE 
+static VALUE
 ossl_x509_set_issuer(VALUE self, VALUE issuer)
 {
     X509 *x509;
@@ -435,7 +435,7 @@ ossl_x509_set_issuer(VALUE self, VALUE issuer)
  * call-seq:
  *    cert.not_before => time
  */
-static VALUE 
+static VALUE
 ossl_x509_get_not_before(VALUE self)
 {
     X509 *x509;
@@ -453,7 +453,7 @@ ossl_x509_get_not_before(VALUE self)
  * call-seq:
  *    cert.not_before = time => time
  */
-static VALUE 
+static VALUE
 ossl_x509_set_not_before(VALUE self, VALUE time)
 {
     X509 *x509;
@@ -472,7 +472,7 @@ ossl_x509_set_not_before(VALUE self, VALUE time)
  * call-seq:
  *    cert.not_after => time
  */
-static VALUE 
+static VALUE
 ossl_x509_get_not_after(VALUE self)
 {
     X509 *x509;
@@ -490,7 +490,7 @@ ossl_x509_get_not_after(VALUE self)
  * call-seq:
  *    cert.not_before = time => time
  */
-static VALUE 
+static VALUE
 ossl_x509_set_not_after(VALUE self, VALUE time)
 {
     X509 *x509;
@@ -509,7 +509,7 @@ ossl_x509_set_not_after(VALUE self, VALUE time)
  * call-seq:
  *    cert.public_key => key
  */
-static VALUE 
+static VALUE
 ossl_x509_get_public_key(VALUE self)
 {
     X509 *x509;
@@ -527,7 +527,7 @@ ossl_x509_get_public_key(VALUE self)
  * call-seq:
  *    cert.public_key = key => key
  */
-static VALUE 
+static VALUE
 ossl_x509_set_public_key(VALUE self, VALUE key)
 {
     X509 *x509;
@@ -544,7 +544,7 @@ ossl_x509_set_public_key(VALUE self, VALUE key)
  * call-seq:
  *    cert.sign(key, digest) => self
  */
-static VALUE 
+static VALUE
 ossl_x509_sign(VALUE self, VALUE key, VALUE digest)
 {
     X509 *x509;
@@ -567,7 +567,7 @@ ossl_x509_sign(VALUE self, VALUE key, VALUE digest)
  *
  * Checks that cert signature is made with PRIVversion of this PUBLIC 'key'
  */
-static VALUE 
+static VALUE
 ossl_x509_verify(VALUE self, VALUE key)
 {
     X509 *x509;
@@ -578,7 +578,7 @@ ossl_x509_verify(VALUE self, VALUE key)
     GetX509(self, x509);
     if ((i = X509_verify(x509, pkey)) < 0) {
 	ossl_raise(eX509CertError, NULL);
-    } 
+    }
     if (i > 0) {
 	return Qtrue;
     }
@@ -592,7 +592,7 @@ ossl_x509_verify(VALUE self, VALUE key)
  *
  * Checks if 'key' is PRIV key for this cert
  */
-static VALUE 
+static VALUE
 ossl_x509_check_private_key(VALUE self, VALUE key)
 {
     X509 *x509;
@@ -613,7 +613,7 @@ ossl_x509_check_private_key(VALUE self, VALUE key)
  * call-seq:
  *    cert.extensions => [extension...]
  */
-static VALUE 
+static VALUE
 ossl_x509_get_extensions(VALUE self)
 {
     X509 *x509;
@@ -639,7 +639,7 @@ ossl_x509_get_extensions(VALUE self)
  * call-seq:
  *    cert.extensions = [ext...] => [ext...]
  */
-static VALUE 
+static VALUE
 ossl_x509_set_extensions(VALUE self, VALUE ary)
 {
     X509 *x509;
@@ -671,7 +671,7 @@ ossl_x509_set_extensions(VALUE self, VALUE ary)
  * call-seq:
  *    cert.add_extension(extension) => extension
  */
-static VALUE 
+static VALUE
 ossl_x509_add_extension(VALUE self, VALUE extension)
 {
     X509 *x509;
@@ -725,7 +725,7 @@ ossl_x509_inspect(VALUE self)
 /*
  * INIT
  */
-void 
+void
 Init_ossl_x509cert()
 {
     eX509CertError = rb_define_class_under(mX509, "CertificateError", eOSSLError);
@@ -735,7 +735,7 @@ Init_ossl_x509cert()
     rb_define_alloc_func(cX509Cert, ossl_x509_alloc);
     rb_define_method(cX509Cert, "initialize", ossl_x509_initialize, -1);
     rb_define_copy_func(cX509Cert, ossl_x509_copy);
-    
+
     rb_define_method(cX509Cert, "to_der", ossl_x509_to_der, 0);
     rb_define_method(cX509Cert, "to_pem", ossl_x509_to_pem, 0);
     rb_define_alias(cX509Cert, "to_s", "to_pem");

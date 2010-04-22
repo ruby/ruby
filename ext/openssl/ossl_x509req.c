@@ -81,7 +81,7 @@ DupX509ReqPtr(VALUE obj)
 /*
  * Private functions
  */
-static VALUE 
+static VALUE
 ossl_x509req_alloc(VALUE klass)
 {
     X509_REQ *req;
@@ -95,7 +95,7 @@ ossl_x509req_alloc(VALUE klass)
     return obj;
 }
 
-static VALUE 
+static VALUE
 ossl_x509req_initialize(int argc, VALUE *argv, VALUE self)
 {
     BIO *in;
@@ -138,7 +138,7 @@ ossl_x509req_copy(VALUE self, VALUE other)
     return self;
 }
 
-static VALUE 
+static VALUE
 ossl_x509req_to_pem(VALUE self)
 {
     X509_REQ *req;
@@ -181,7 +181,7 @@ ossl_x509req_to_der(VALUE self)
     return str;
 }
 
-static VALUE 
+static VALUE
 ossl_x509req_to_text(VALUE self)
 {
     X509_REQ *req;
@@ -208,7 +208,7 @@ ossl_x509req_to_text(VALUE self)
 /*
  * Makes X509 from X509_REQuest
  */
-static VALUE 
+static VALUE
 ossl_x509req_to_x509(VALUE self, VALUE days, VALUE key)
 {
     X509_REQ *req;
@@ -224,7 +224,7 @@ ossl_x509req_to_x509(VALUE self, VALUE days, VALUE key)
 }
 #endif
 
-static VALUE 
+static VALUE
 ossl_x509req_get_version(VALUE self)
 {
     X509_REQ *req;
@@ -236,7 +236,7 @@ ossl_x509req_get_version(VALUE self)
     return LONG2FIX(version);
 }
 
-static VALUE 
+static VALUE
 ossl_x509req_set_version(VALUE self, VALUE version)
 {
     X509_REQ *req;
@@ -253,7 +253,7 @@ ossl_x509req_set_version(VALUE self, VALUE version)
     return version;
 }
 
-static VALUE 
+static VALUE
 ossl_x509req_get_subject(VALUE self)
 {
     X509_REQ *req;
@@ -267,7 +267,7 @@ ossl_x509req_get_subject(VALUE self)
     return ossl_x509name_new(name);
 }
 
-static VALUE 
+static VALUE
 ossl_x509req_set_subject(VALUE self, VALUE subject)
 {
     X509_REQ *req;
@@ -281,7 +281,7 @@ ossl_x509req_set_subject(VALUE self, VALUE subject)
     return subject;
 }
 
-static VALUE 
+static VALUE
 ossl_x509req_get_signature_algorithm(VALUE self)
 {
     X509_REQ *req;
@@ -304,7 +304,7 @@ ossl_x509req_get_signature_algorithm(VALUE self)
     return str;
 }
 
-static VALUE 
+static VALUE
 ossl_x509req_get_public_key(VALUE self)
 {
     X509_REQ *req;
@@ -318,7 +318,7 @@ ossl_x509req_get_public_key(VALUE self)
     return ossl_pkey_new(pkey); /* NO DUP - OK */
 }
 
-static VALUE 
+static VALUE
 ossl_x509req_set_public_key(VALUE self, VALUE key)
 {
     X509_REQ *req;
@@ -333,7 +333,7 @@ ossl_x509req_set_public_key(VALUE self, VALUE key)
     return key;
 }
 
-static VALUE 
+static VALUE
 ossl_x509req_sign(VALUE self, VALUE key, VALUE digest)
 {
     X509_REQ *req;
@@ -353,7 +353,7 @@ ossl_x509req_sign(VALUE self, VALUE key, VALUE digest)
 /*
  * Checks that cert signature is made with PRIVversion of this PUBLIC 'key'
  */
-static VALUE 
+static VALUE
 ossl_x509req_verify(VALUE self, VALUE key)
 {
     X509_REQ *req;
@@ -372,7 +372,7 @@ ossl_x509req_verify(VALUE self, VALUE key)
     return Qfalse;
 }
 
-static VALUE 
+static VALUE
 ossl_x509req_get_attributes(VALUE self)
 {
     X509_REQ *req;
@@ -396,7 +396,7 @@ ossl_x509req_get_attributes(VALUE self)
     return ary;
 }
 
-static VALUE 
+static VALUE
 ossl_x509req_set_attributes(VALUE self, VALUE ary)
 {
     X509_REQ *req;
@@ -421,7 +421,7 @@ ossl_x509req_set_attributes(VALUE self, VALUE ary)
     return ary;
 }
 
-static VALUE 
+static VALUE
 ossl_x509req_add_attribute(VALUE self, VALUE attr)
 {
     X509_REQ *req;
@@ -437,7 +437,7 @@ ossl_x509req_add_attribute(VALUE self, VALUE attr)
 /*
  * X509_REQUEST init
  */
-void 
+void
 Init_ossl_x509req()
 {
     eX509ReqError = rb_define_class_under(mX509, "RequestError", eOSSLError);

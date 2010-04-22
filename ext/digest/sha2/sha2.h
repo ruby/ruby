@@ -1,7 +1,7 @@
 /*
  * FILE:	sha2.h
  * AUTHOR:	Aaron D. Gifford - http://www.aarongifford.com/
- * 
+ *
  * Copyright (c) 2000-2001, Aaron D. Gifford
  * All rights reserved.
  *
@@ -16,7 +16,7 @@
  * 3. Neither the name of the copyright holder nor the names of contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTOR(S) ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -51,7 +51,7 @@ extern "C" {
 
 #ifdef RUBY
 # ifdef HAVE_PROTOTYPES
-#  undef NOPROTO 
+#  undef NOPROTO
 # else
 #  define NOPROTO
 # endif /* HAVE_PROTOTYPES */
@@ -61,7 +61,7 @@ extern "C" {
 #  ifdef WORDS_BIGENDIAN
 #   define BYTE_ORDER	BIG_ENDIAN
 #  else
-#   define BYTE_ORDER	LITTLE_ENDIAN 
+#   define BYTE_ORDER	LITTLE_ENDIAN
 #  endif
 # endif /* BYTE_ORDER */
 # define SHA2_USE_INTTYPES_H
@@ -111,7 +111,7 @@ typedef unsigned long long uint64_t;	/* 8-bytes (64-bits) */
  *
  *   #include <inttypes.h>
  *
- * If you choose to use <inttypes.h> then please define: 
+ * If you choose to use <inttypes.h> then please define:
  *
  *   #define SHA2_USE_INTTYPES_H
  *

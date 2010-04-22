@@ -203,7 +203,7 @@ rb_nkf_guess(VALUE obj, VALUE src)
 
 
 /*
- *  NKF - Ruby extension for Network Kanji Filter 
+ *  NKF - Ruby extension for Network Kanji Filter
  *
  *  == Description
  *
@@ -341,7 +341,7 @@ rb_nkf_guess(VALUE obj, VALUE src)
  *  To see ISO8859-1 (Latin-1) -l is necessary.
  *
  *  [-mB] Decode MIME base64 encoded stream. Remove header or other part before
- *  conversion. 
+ *  conversion.
  *
  *  [-mQ] Decode MIME quoted stream. '_' in quoted stream is converted to space.
  *

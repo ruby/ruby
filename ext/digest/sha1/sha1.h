@@ -15,7 +15,7 @@
 
 typedef struct {
 	uint32_t state[5];
-	uint32_t count[2];  
+	uint32_t count[2];
 	uint8_t buffer[64];
 } SHA1_CTX;
 
@@ -35,5 +35,5 @@ void	SHA1_Finish _((SHA1_CTX *context, uint8_t digest[20]));
 #define SHA1_BLOCK_LENGTH		64
 #define SHA1_DIGEST_LENGTH		20
 #define SHA1_DIGEST_STRING_LENGTH	(SHA1_DIGEST_LENGTH * 2 + 1)
-  
+
 #endif /* _SYS_SHA1_H_ */

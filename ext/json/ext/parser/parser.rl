@@ -27,7 +27,7 @@ static VALUE mJSON, mExt, cParser, eParserError, eNestingError;
 static VALUE CNaN, CInfinity, CMinusInfinity;
 
 static ID i_json_creatable_p, i_json_create, i_create_id, i_create_additions,
-          i_chr, i_max_nesting, i_allow_nan, i_object_class, i_array_class; 
+          i_chr, i_max_nesting, i_allow_nan, i_object_class, i_array_class;
 
 #define MinusInfinity "-Infinity"
 
@@ -91,7 +91,7 @@ static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *resul
 
     action parse_value {
         VALUE v = Qnil;
-        char *np = JSON_parse_value(json, fpc, pe, &v); 
+        char *np = JSON_parse_value(json, fpc, pe, &v);
         if (np == NULL) {
             fhold; fbreak;
         } else {
@@ -199,7 +199,7 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
         fhold; fbreak;
     }
 
-    action parse_array { 
+    action parse_array {
         char *np;
         json->current_nesting++;
         np = JSON_parse_array(json, fpc, pe, result);
@@ -207,7 +207,7 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
         if (np == NULL) { fhold; fbreak; } else fexec np;
     }
 
-    action parse_object { 
+    action parse_object {
         char *np;
         json->current_nesting++;
         np =  JSON_parse_object(json, fpc, pe, result);
@@ -311,7 +311,7 @@ static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *resul
 
     action parse_value {
         VALUE v = Qnil;
-        char *np = JSON_parse_value(json, fpc, pe, &v); 
+        char *np = JSON_parse_value(json, fpc, pe, &v);
         if (np == NULL) {
             fhold; fbreak;
         } else {
@@ -385,7 +385,7 @@ static VALUE json_string_unescape(char *p, char *pe)
                     p++;
                     break;
                 case 'u':
-                    if (p > pe - 4) { 
+                    if (p > pe - 4) {
                         return Qnil;
                     } else {
                         p = JSON_convert_UTF16_to_UTF8(result, p, pe, strictConversion);
@@ -472,7 +472,7 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
             ) ignore*;
 }%%
 
-/* 
+/*
  * Document-class: JSON::Ext::Parser
  *
  * This is the JSON parser implemented as a C extension. It can be configured

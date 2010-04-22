@@ -83,11 +83,11 @@ typedef enum {
     YAMLBYTE_E_OTHER     = '?',   /* some other error condition     */
     YAMLBYTE_E_PARSE     = 'P',   /* parse error, check bytecodes   */
 } yamlbyte_result_t;
- 
-typedef const yamlbyte_char_t *yamlbyte_buff_t; 
 
-/* 
- *  The "Instruction" API 
+typedef const yamlbyte_char_t *yamlbyte_buff_t;
+
+/*
+ *  The "Instruction" API
  */
 
 typedef struct yaml_instruction {
@@ -96,7 +96,7 @@ typedef struct yaml_instruction {
     yamlbyte_buff_t finish;  /* open range, *finish is _not_ part */
 } *yamlbyte_inst_t;
 
-/* producer pushes the instruction with one bytecode event to the 
+/* producer pushes the instruction with one bytecode event to the
  * consumer; if the consumer's result is not YAMLBYTE_OK, then
  * the producer should stop */
 typedef
@@ -110,14 +110,14 @@ typedef
  * case the instruction (and is buffer) are owned by the producer and
  * will remain valid till the pull function is called once again;
  * if the instruction is NULL, then there are no more results; and
- * it is important to call the pull function till it returns NULL so 
+ * it is important to call the pull function till it returns NULL so
  * that the producer can clean up its memory allocations */
-typedef 
+typedef
    yamlbyte_result_t
     (*yamlbyte_pull_t)(
       yamlbyte_producer_t self,
       yamlbyte_inst_t *inst   /* to be filled in by the producer */
-    ); 
+    );
 
 /*
  *  Buffer based API
@@ -139,12 +139,12 @@ typedef
  * is set to NULL, then there are no more results; it is important
  * to call the pull function till it returns NULL so that the
  * producer can clean up its memory allocations */
-typedef 
+typedef
    yamlbyte_result_t
     (*yamlbyte_pullbuff_t)(
       yamlbyte_producer_t self,
       yamlbyte_buff_t *buff   /* to be filled in by the producer */
-    ); 
+    );
 
 /* convert a pull interface to a push interface; the reverse process
  * requires threads and thus is language dependent */

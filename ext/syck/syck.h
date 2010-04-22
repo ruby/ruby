@@ -153,7 +153,7 @@ typedef struct _syck_level SyckLevel;
 typedef SYMID (*SyckNodeHandler)(SyckParser *, SyckNode *);
 typedef void (*SyckErrorHandler)(SyckParser *, const char *);
 typedef SyckNode * (*SyckBadAnchorHandler)(SyckParser *, char *);
-typedef long (*SyckIoFileRead)(char *, SyckIoFile *, long, long); 
+typedef long (*SyckIoFileRead)(char *, SyckIoFile *, long, long);
 typedef long (*SyckIoStrRead)(char *, SyckIoStr *, long, long);
 
 enum syck_io_type {
@@ -205,7 +205,7 @@ struct _syck_str {
 struct _syck_level {
     /* Indent */
     int spaces;
-    /* Counts nodes emitted at this level, useful for parsing 
+    /* Counts nodes emitted at this level, useful for parsing
      * keys and pairs in bytecode */
     int ncount;
     /* Does node have anchors or tags? */
@@ -265,8 +265,8 @@ struct _syck_parser {
 typedef struct _syck_emitter SyckEmitter;
 typedef struct _syck_emitter_node SyckEmitterNode;
 
-typedef void (*SyckOutputHandler)(SyckEmitter *, char *, long); 
-typedef void (*SyckEmitterHandler)(SyckEmitter *, st_data_t); 
+typedef void (*SyckOutputHandler)(SyckEmitter *, char *, long);
+typedef void (*SyckEmitterHandler)(SyckEmitter *, st_data_t);
 
 enum doc_stage {
     doc_open,

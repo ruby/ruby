@@ -41,7 +41,7 @@ tcp_svr_init(int argc, VALUE *argv, VALUE sock)
  *     s.puts Time.now
  *     s.close
  *   }
- *   
+ *
  */
 static VALUE
 tcp_accept(VALUE sock)
@@ -49,7 +49,7 @@ tcp_accept(VALUE sock)
     rb_io_t *fptr;
     struct sockaddr_storage from;
     socklen_t fromlen;
- 
+
     GetOpenFile(sock, fptr);
     fromlen = sizeof(from);
     return rsock_s_accept(rb_cTCPSocket, fptr->fd,
@@ -59,11 +59,11 @@ tcp_accept(VALUE sock)
 /*
  * call-seq:
  * 	tcpserver.accept_nonblock => tcpsocket
- * 
+ *
  * Accepts an incoming connection using accept(2) after
  * O_NONBLOCK is set for the underlying file descriptor.
  * It returns an accepted TCPSocket for the incoming connection.
- * 
+ *
  * === Example
  * 	require 'socket'
  * 	serv = TCPServer.new(2202)
@@ -74,9 +74,9 @@ tcp_accept(VALUE sock)
  * 	  retry
  * 	end
  * 	# sock is an accepted socket.
- * 
+ *
  * Refer to Socket#accept for the exceptions that may be thrown if the call
- * to TCPServer#accept_nonblock fails. 
+ * to TCPServer#accept_nonblock fails.
  *
  * TCPServer#accept_nonblock may raise any error corresponding to accept(2) failure,
  * including Errno::EWOULDBLOCK.
@@ -84,7 +84,7 @@ tcp_accept(VALUE sock)
  * If the exception is Errno::EWOULDBLOCK, Errno::AGAIN, Errno::ECONNABORTED, Errno::EPROTO,
  * it is extended by IO::WaitReadable.
  * So IO::WaitReadable can be used to rescue the exceptions for retrying accept_nonblock.
- * 
+ *
  * === See
  * * TCPServer#accept
  * * Socket#accept
@@ -110,7 +110,7 @@ tcp_accept_nonblock(VALUE sock)
  *
  *   TCPServer.open("127.0.0.1", 28561) {|serv|
  *     fd = serv.sysaccept
- *     s = IO.for_fd(fd)       
+ *     s = IO.for_fd(fd)
  *     s.puts Time.now
  *     s.close
  *   }

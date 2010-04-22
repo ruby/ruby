@@ -42,7 +42,7 @@ pack up your own arguments to pass as args for locking functions, etc.
  * Documented by mathew <meta@pobox.com>
  *
  * = Usage
- * 
+ *
  * To perform a fcntl(2) operation, use IO::fcntl in the core classes.
  *
  * To perform an open(2) operation, use IO::sysopen.
@@ -99,10 +99,10 @@ pack up your own arguments to pass as args for locking functions, etc.
  * - O_ACCMODE - mask to extract read/write flags.
  *
  * Example:
- * 
+ *
  *   require 'fcntl'
  *
- *   fd = IO::sysopen('/tmp/tempfile', 
+ *   fd = IO::sysopen('/tmp/tempfile',
  *        Fcntl::O_WRONLY | Fcntl::O_EXCL | Fcntl::O_CREAT)
  *   f = IO.open(fd)
  *   f.syswrite("TEMP DATA")

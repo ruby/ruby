@@ -15,7 +15,7 @@
 /* objspace library extends ObjectSpace module and add several
  * methods to get internal statistic information about
  * object/memory management.
- * 
+ *
  * Generally, you *SHOULD NOT*use this library if you do not know
  * about the MRI implementation.  Mainly, this library is for (memory)
  * profiler developers and MRI developers who need to know how MRI
@@ -203,7 +203,7 @@ cos_i(void *vstart, void *vend, size_t stride, void *data)
  *
  *  It returns a hash as:
  *    {:TOTAL=>1461154, :T_CLASS=>158280, :T_MODULE=>20672, :T_STRING=>527249, ...}
- * 
+ *
  *  If the optional argument, result_hash, is given,
  *  it is overwritten and returned.
  *  This is intended to avoid probe effect.
@@ -532,7 +532,7 @@ count_tdata_objects(int argc, VALUE *argv, VALUE self)
 /* objspace library extends ObjectSpace module and add several
  * methods to get internal statistic information about
  * object/memory management.
- * 
+ *
  * Generally, you *SHOULD NOT*use this library if you do not know
  * about the MRI implementation.  Mainly, this library is for (memory)
  * profiler developers and MRI developers who need to know how MRI

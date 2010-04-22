@@ -9,12 +9,12 @@
 #include "ruby/ruby.h"
 #include "syck.h"
 
-SYMID 
+SYMID
 syck_hdlr_add_node( SyckParser *p, SyckNode *n )
 {
     SYMID id;
 
-    if ( ! n->id ) 
+    if ( ! n->id )
     {
         n->id = (p->handler)( p, n );
     }
@@ -89,7 +89,7 @@ syck_hdlr_get_anchor( SyckParser *p, char *a )
         if ( st_lookup( p->anchors, (st_data_t)a, (void *)&n ) )
         {
             if ( n != (void *)1 )
-            {    
+            {
                 S_FREE( a );
                 return n;
             }
@@ -116,7 +116,7 @@ syck_hdlr_get_anchor( SyckParser *p, char *a )
     if ( n->anchor )
     {
         S_FREE( a );
-    } 
+    }
     else
     {
         n->anchor = a;
@@ -165,7 +165,7 @@ syck_taguri( const char *domain, const char *type_id, int type_len )
     return uri;
 }
 
-int 
+int
 syck_try_implicit( SyckNode *n )
 {
     return 1;

@@ -32,12 +32,12 @@ ASN1_INTEGER *num_to_asn1integer(VALUE, ASN1_INTEGER *);
  * ASN1 module
  */
 extern VALUE mASN1;
-extern VALUE eASN1Error;  
+extern VALUE eASN1Error;
 
 extern VALUE cASN1Data;
 extern VALUE cASN1Primitive;
 extern VALUE cASN1Constructive;
- 
+
 extern VALUE cASN1Boolean;                           /* BOOLEAN           */
 extern VALUE cASN1Integer, cASN1Enumerated;          /* INTEGER           */
 extern VALUE cASN1BitString;                         /* BIT STRING        */

@@ -39,7 +39,7 @@
 
 /*
  * Select Default Output Encoding
- * 
+ *
  */
 
 /* #define DEFAULT_CODE_JIS    */

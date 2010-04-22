@@ -85,7 +85,7 @@ static DH *
 dh_generate(int size, int gen)
 {
     DH *dh;
-    
+
     dh = DH_generate_parameters(size, gen,
 	    rb_block_given_p() ? ossl_generate_cb : NULL,
 	    NULL);
@@ -244,7 +244,7 @@ ossl_dh_export(VALUE self)
  */
 static VALUE
 ossl_dh_to_der(VALUE self)
-{       
+{
     EVP_PKEY *pkey;
     unsigned char *p;
     long len;
@@ -284,7 +284,7 @@ ossl_dh_get_params(VALUE self)
     rb_hash_aset(hash, rb_str_new2("g"), ossl_bn_new(pkey->pkey.dh->g));
     rb_hash_aset(hash, rb_str_new2("pub_key"), ossl_bn_new(pkey->pkey.dh->pub_key));
     rb_hash_aset(hash, rb_str_new2("priv_key"), ossl_bn_new(pkey->pkey.dh->priv_key));
-    
+
     return hash;
 }
 
@@ -351,7 +351,7 @@ ossl_dh_check_params(VALUE self)
     DH *dh;
     EVP_PKEY *pkey;
     int codes;
-    
+
     GetPKeyDH(self, pkey);
     dh = pkey->pkey.dh;
 
@@ -436,10 +436,10 @@ static unsigned char DEFAULT_DH_512_PRIM[] = {
     0x08, 0x04, 0x8c, 0x52, 0x8f, 0xe3, 0x4a, 0x31,
     0x44, 0x47, 0x19, 0xa1, 0x4a, 0xc8, 0x8b, 0xcb,
 };
-static unsigned char DEFAULT_DH_512_GEN[] = { 0x02 }; 
+static unsigned char DEFAULT_DH_512_GEN[] = { 0x02 };
 DH *OSSL_DEFAULT_DH_512 = NULL;
-  
-/* 
+
+/*
  * -----BEGIN DH PARAMETERS-----
  * MIGHAoGBAJ0lOVy0VIr/JebWn0zDwY2h+rqITFOpdNr6ugsgvkDXuucdcChhYExJ
  * AV/ZD2AWPbrTqV76mGRgJg4EddgT1zG0jq3rnFdMj2XzkBYx3BVvfR0Arnby0RHR

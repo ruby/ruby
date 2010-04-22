@@ -91,7 +91,7 @@ static const char *ossl_ssl_attrs[] = {
 #ifdef HAVE_SSL_SET_TLSEXT_HOST_NAME
     "hostname",
 #endif
-    "sync_close", 
+    "sync_close",
 };
 
 ID ID_callback_state;
@@ -304,7 +304,7 @@ static VALUE
 ossl_call_session_get_cb(VALUE ary)
 {
     VALUE ssl_obj, sslctx_obj, cb;
-    
+
     Check_Type(ary, T_ARRAY);
     ssl_obj = rb_ary_entry(ary, 0);
 
@@ -351,7 +351,7 @@ static VALUE
 ossl_call_session_new_cb(VALUE ary)
 {
     VALUE ssl_obj, sslctx_obj, cb;
-    
+
     Check_Type(ary, T_ARRAY);
     ssl_obj = rb_ary_entry(ary, 0);
 
@@ -398,7 +398,7 @@ static VALUE
 ossl_call_session_remove_cb(VALUE ary)
 {
     VALUE sslctx_obj, cb;
-    
+
     Check_Type(ary, T_ARRAY);
     sslctx_obj = rb_ary_entry(ary, 0);
 
@@ -1585,7 +1585,7 @@ Init_ossl_ssl()
 
     rb_define_method(cSSLContext, "setup", ossl_sslctx_setup, 0);
 
-    
+
     rb_define_const(cSSLContext, "SESSION_CACHE_OFF", LONG2FIX(SSL_SESS_CACHE_OFF));
     rb_define_const(cSSLContext, "SESSION_CACHE_CLIENT", LONG2FIX(SSL_SESS_CACHE_CLIENT)); /* doesn't actually do anything in 0.9.8e */
     rb_define_const(cSSLContext, "SESSION_CACHE_SERVER", LONG2FIX(SSL_SESS_CACHE_SERVER));

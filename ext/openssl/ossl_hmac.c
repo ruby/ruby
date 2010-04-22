@@ -80,7 +80,7 @@ static VALUE
 ossl_hmac_copy(VALUE self, VALUE other)
 {
     HMAC_CTX *ctx1, *ctx2;
-    
+
     rb_check_frozen(self);
     if (self == other) return self;
 
@@ -139,7 +139,7 @@ ossl_hmac_digest(VALUE self)
     GetHMAC(self, ctx);
     hmac_final(ctx, &buf, &buf_len);
     digest = ossl_buf2str((char *)buf, buf_len);
-    
+
     return digest;
 }
 
@@ -247,7 +247,7 @@ Init_ossl_hmac()
     rb_define_alloc_func(cHMAC, ossl_hmac_alloc);
     rb_define_singleton_method(cHMAC, "digest", ossl_hmac_s_digest, 3);
     rb_define_singleton_method(cHMAC, "hexdigest", ossl_hmac_s_hexdigest, 3);
-    
+
     rb_define_method(cHMAC, "initialize", ossl_hmac_initialize, 2);
     rb_define_copy_func(cHMAC, ossl_hmac_copy);
 

@@ -41,7 +41,7 @@ int X509_STORE_set_ex_data(X509_STORE *str, int idx, void *data)
 {
     return CRYPTO_set_ex_data(&str->ex_data, idx, data);
 }
- 
+
 void *X509_STORE_get_ex_data(X509_STORE *str, int idx)
 {
     return CRYPTO_get_ex_data(&str->ex_data, idx);
@@ -111,7 +111,7 @@ HMAC_CTX_cleanup(HMAC_CTX *ctx)
 #endif
 
 #if !defined(HAVE_EVP_CIPHER_CTX_COPY)
-/* 
+/*
  * this function does not exist in OpenSSL yet... or ever?.
  * a future version may break this function.
  * tested on 0.9.7d.
@@ -180,12 +180,12 @@ OSSL_X509_REVOKED_cmp(const X509_REVOKED * const *a, const X509_REVOKED * const 
 		(ASN1_STRING *)(*a)->serialNumber,
 		(ASN1_STRING *)(*b)->serialNumber));
 }
-		    
+		
 int
 X509_CRL_add0_revoked(X509_CRL *crl, X509_REVOKED *rev)
 {
     X509_CRL_INFO *inf;
-    
+
     inf = crl->crl;
     if (!inf->revoked)
 	inf->revoked = sk_X509_REVOKED_new(OSSL_X509_REVOKED_cmp);
@@ -313,7 +313,7 @@ PEM_def_callback(char *buf, int num, int w, void *key)
 {
     int i,j;
     const char *prompt;
-    
+
     if (key) {
 	i = strlen(key);
 	i = (i > num) ? num : i;

@@ -54,7 +54,7 @@ bubblebabble_str_new(VALUE str_digest)
             p[j++] = consonants[16];
             p[j++] = vowels[seed / 6];
             break;
-        } 
+        }
 
         byte1 = digest[i++];
         p[j++] = vowels[(((byte1 >> 6) & 3) + seed) % 6];

@@ -1,12 +1,12 @@
 /*
  *
- * Ruby BigDecimal(Variable decimal precision) extension library. 
+ * Ruby BigDecimal(Variable decimal precision) extension library.
  *
- * Copyright(C) 2002 by Shigeo Kobayashi(shigeo@tinyforest.gr.jp) 
+ * Copyright(C) 2002 by Shigeo Kobayashi(shigeo@tinyforest.gr.jp)
  *
- * You may distribute under the terms of either the GNU General Public 
- * License or the Artistic License, as specified in the README file 
- * of this BigDecimal distribution. 
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Artistic License, as specified in the README file
+ * of this BigDecimal distribution.
  *
  * NOTES:
  *   2003-03-28 V1.0 checked in.
@@ -29,10 +29,10 @@ extern "C" {
 #define SZ_NINF "-Infinity"
 
 /*
- *   #define VP_EXPORT other than static to let VP_ routines 
+ *   #define VP_EXPORT other than static to let VP_ routines
  *   be called from outside of this module.
  */
-#define VP_EXPORT static 
+#define VP_EXPORT static
 
 #define U_LONG unsigned long
 #define S_LONG long
@@ -96,7 +96,7 @@ typedef struct {
     U_LONG frac[1]; /* Pointer to array of fraction part.       */
 } Real;
 
-/*  
+/*
  *  ------------------
  *   EXPORTables.
  *  ------------------
@@ -161,7 +161,7 @@ VP_EXPORT int VpPower(Real *y,Real *x,S_INT n);
 /* VP constants */
 VP_EXPORT Real *VpOne(void);
 
-/*  
+/*
  *  ------------------
  *  MACRO definitions.
  *  ------------------

@@ -62,7 +62,7 @@ typedef struct JSON_Generator_StateStruct {
     JSON_Generator_State *state;              \
     Data_Get_Struct(self, JSON_Generator_State, state);
 
-/* 
+/*
  * Document-module: JSON::Ext::Generator
  *
  * This is the JSON generator implemented as a C extension. It can be
@@ -459,7 +459,7 @@ static VALUE mObject_to_json(int argc, VALUE *argv, VALUE self)
     return result;
 }
 
-/* 
+/*
  * Document-class: JSON::Ext::Generator::State
  *
  * This class is used to create State instances, that are use to hold data
@@ -586,7 +586,7 @@ static VALUE cState_to_h(VALUE self)
  * * *indent*: a string used to indent levels (default: ''),
  * * *space*: a string that is put after, a : or , delimiter (default: ''),
  * * *space_before*: a string that is put before a : pair delimiter (default: ''),
- * * *object_nl*: a string that is put at the end of a JSON object (default: ''), 
+ * * *object_nl*: a string that is put at the end of a JSON object (default: ''),
  * * *array_nl*: a string that is put at the end of a JSON array (default: ''),
  * * *check_circular*: true if checking for circular data structures
  *   should be done, false (the default) otherwise.
@@ -808,7 +808,7 @@ static VALUE cState_allow_nan_p(VALUE self)
 /*
  * call-seq: seen?(object)
  *
- * Returns _true_, if _object_ was already seen during this generating run. 
+ * Returns _true_, if _object_ was already seen during this generating run.
  */
 static VALUE cState_seen_p(VALUE self, VALUE object)
 {
@@ -820,7 +820,7 @@ static VALUE cState_seen_p(VALUE self, VALUE object)
  * call-seq: remember(object)
  *
  * Remember _object_, to find out if it was already encountered (if a cyclic
- * data structure is rendered). 
+ * data structure is rendered).
  */
 static VALUE cState_remember(VALUE self, VALUE object)
 {

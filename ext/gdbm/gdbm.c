@@ -44,7 +44,7 @@
  * 1. Opening/creating a database, and filling it with some entries:
  *
  *      require 'gdbm'
- *      
+ *
  *      gdbm = GDBM.new("fruitstore.db")
  *      gdbm["ananas"]    = "3"
  *      gdbm["banana"]    = "8"
@@ -54,7 +54,7 @@
  * 2. Reading out a database:
  *
  *      require 'gdbm'
- *      
+ *
  *      gdbm = GDBM.new("fruitstore.db")
  *      gdbm.each_pair do |key, value|
  *        print "#{key}: #{value}\n"
@@ -206,19 +206,19 @@ fgdbm_initialize(int argc, VALUE *argv, VALUE obj)
 
     if (flags & RUBY_GDBM_RW_BIT) {
         flags &= ~RUBY_GDBM_RW_BIT;
-        dbm = gdbm_open(RSTRING_PTR(file), MY_BLOCK_SIZE, 
+        dbm = gdbm_open(RSTRING_PTR(file), MY_BLOCK_SIZE,
                         flags, mode, MY_FATAL_FUNC);
     }
     else {
         dbm = 0;
         if (mode >= 0)
-            dbm = gdbm_open(RSTRING_PTR(file), MY_BLOCK_SIZE, 
+            dbm = gdbm_open(RSTRING_PTR(file), MY_BLOCK_SIZE,
                             GDBM_WRCREAT|flags, mode, MY_FATAL_FUNC);
         if (!dbm)
-            dbm = gdbm_open(RSTRING_PTR(file), MY_BLOCK_SIZE, 
+            dbm = gdbm_open(RSTRING_PTR(file), MY_BLOCK_SIZE,
                             GDBM_WRITER|flags, 0, MY_FATAL_FUNC);
         if (!dbm)
-            dbm = gdbm_open(RSTRING_PTR(file), MY_BLOCK_SIZE, 
+            dbm = gdbm_open(RSTRING_PTR(file), MY_BLOCK_SIZE,
                             GDBM_READER|flags, 0, MY_FATAL_FUNC);
     }
 
@@ -537,7 +537,7 @@ fgdbm_delete(VALUE obj, VALUE keystr)
  * call-seq:
  *      gdbm.shift -> (key, value) or nil
  *
- * Removes a key-value-pair from this database and returns it as a 
+ * Removes a key-value-pair from this database and returns it as a
  * two-item array [ _key_, _value_ ]. Returns nil if the database is empty.
  */
 static VALUE
@@ -619,7 +619,7 @@ fgdbm_clear(VALUE obj)
             free(key.dptr);
             rb_raise(rb_eGDBMError, "%s", gdbm_strerror(gdbm_errno));
         }
-        free(key.dptr); 
+        free(key.dptr);
     }
 #else
     while (key = gdbm_firstkey(dbm), key.dptr) {

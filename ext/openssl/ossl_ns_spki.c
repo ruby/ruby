@@ -91,7 +91,7 @@ ossl_spki_to_der(VALUE self)
     if (i2d_NETSCAPE_SPKI(spki, &p) <= 0)
         ossl_raise(eX509CertError, NULL);
     ossl_str_adjust(str, p);
-    
+
     return str;
 }
 
@@ -187,7 +187,7 @@ ossl_spki_set_challenge(VALUE self, VALUE str)
 			 RSTRING_LEN(str))) {
 	ossl_raise(eSPKIError, NULL);
     }
-    
+
     return str;
 }
 
