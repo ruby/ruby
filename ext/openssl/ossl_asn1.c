@@ -30,7 +30,7 @@ asn1time_to_time(ASN1_TIME *time)
 
     if (!time || !time->data) return Qnil;
     memset(&tm, 0, sizeof(struct tm));
-	
+
     switch (time->type) {
     case V_ASN1_UTCTIME:
 	if (sscanf((const char *)time->data, "%2d%2d%2d%2d%2d%2dZ", &tm.tm_year, &tm.tm_mon,

@@ -36,7 +36,7 @@ rsa_instance(VALUE klass, RSA *rsa)
 {
     EVP_PKEY *pkey;
     VALUE obj;
-	
+
     if (!rsa) {
 	return Qfalse;
     }
@@ -48,7 +48,7 @@ rsa_instance(VALUE klass, RSA *rsa)
 	return Qfalse;
     }
     WrapPKey(klass, obj, pkey);
-	
+
     return obj;
 }
 
@@ -136,7 +136,7 @@ ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
     BIO *in;
     char *passwd = NULL;
     VALUE arg, pass;
-	
+
     GetPKey(self, pkey);
     if(rb_scan_args(argc, argv, "02", &arg, &pass) == 0) {
 	rsa = RSA_new();
@@ -209,7 +209,7 @@ static VALUE
 ossl_rsa_is_private(VALUE self)
 {
     EVP_PKEY *pkey;
-	
+
     GetPKeyRSA(self, pkey);
 
     return (RSA_PRIVATE(self, pkey->pkey.rsa)) ? Qtrue : Qfalse;
@@ -365,7 +365,7 @@ ossl_rsa_private_encrypt(int argc, VALUE *argv, VALUE self)
     GetPKeyRSA(self, pkey);
     if (!RSA_PRIVATE(self, pkey->pkey.rsa)) {
 	ossl_raise(eRSAError, "private key needed.");
-    }	
+    }
     rb_scan_args(argc, argv, "11", &buffer, &padding);
     pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
     StringValue(buffer);
@@ -547,7 +547,7 @@ Init_ossl_rsa()
 
     rb_define_singleton_method(cRSA, "generate", ossl_rsa_s_generate, -1);
     rb_define_method(cRSA, "initialize", ossl_rsa_initialize, -1);
-	
+
     rb_define_method(cRSA, "public?", ossl_rsa_is_public, 0);
     rb_define_method(cRSA, "private?", ossl_rsa_is_private, 0);
     rb_define_method(cRSA, "to_text", ossl_rsa_to_text, 0);

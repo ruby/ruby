@@ -116,7 +116,7 @@ static VALUE
 ossl_x509crl_copy(VALUE self, VALUE other)
 {
     X509_CRL *a, *b, *crl;
-	
+
     rb_check_frozen(self);
     if (self == other) return self;
     GetX509CRL(self, a);
@@ -421,7 +421,7 @@ ossl_x509crl_to_text(VALUE self)
     BIO_get_mem_ptr(out, &buf);
     str = rb_str_new(buf->data, buf->length);
     BIO_free(out);
-	
+
     return str;
 }
 
@@ -460,7 +460,7 @@ ossl_x509crl_set_extensions(VALUE self, VALUE ary)
     X509_CRL *crl;
     X509_EXTENSION *ext;
     int i;
-	
+
     Check_Type(ary, T_ARRAY);
     /* All ary members should be X509 Extensions */
     for (i=0; i<RARRAY_LEN(ary); i++) {
@@ -507,7 +507,7 @@ Init_ossl_x509crl()
     eX509CRLError = rb_define_class_under(mX509, "CRLError", eOSSLError);
 
     cX509CRL = rb_define_class_under(mX509, "CRL", rb_cObject);
-	
+
     rb_define_alloc_func(cX509CRL, ossl_x509crl_alloc);
     rb_define_method(cX509CRL, "initialize", ossl_x509crl_initialize, -1);
     rb_define_copy_func(cX509CRL, ossl_x509crl_copy);

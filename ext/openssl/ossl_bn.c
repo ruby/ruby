@@ -91,7 +91,7 @@ ossl_bn_alloc(VALUE klass)
 {
     BIGNUM *bn;
     VALUE obj;
-	
+
     if (!(bn = BN_new())) {
 	ossl_raise(eBNError, NULL);
     }
@@ -573,7 +573,7 @@ ossl_bn_s_generate_prime(int argc, VALUE *argv, VALUE klass)
     VALUE vnum, vsafe, vadd, vrem, obj;
 
     rb_scan_args(argc, argv, "13", &vnum, &vsafe, &vadd, &vrem);
-	
+
     num = NUM2INT(vnum);
 
     if (vsafe == Qfalse) {
@@ -745,7 +745,7 @@ Init_ossl_bn()
 
     rb_define_alloc_func(cBN, ossl_bn_alloc);
     rb_define_method(cBN, "initialize", ossl_bn_initialize, -1);
-	
+
     rb_define_copy_func(cBN, ossl_bn_copy);
     rb_define_method(cBN, "copy", ossl_bn_copy, 1);
 
@@ -830,7 +830,7 @@ Init_ossl_bn()
     rb_define_alias(cBN, "to_int", "to_i");
     rb_define_method(cBN, "to_bn", ossl_bn_to_bn, 0);
     rb_define_method(cBN, "coerce", ossl_bn_coerce, 1);
-	
+
     /*
      * TODO:
      * But how to: from_bin, from_mpi? PACK?

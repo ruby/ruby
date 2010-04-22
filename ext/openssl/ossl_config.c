@@ -298,7 +298,7 @@ ossl_config_get_section(VALUE self, VALUE section)
 	return hash;
     }
     for (i=0; i<entries; i++) {
-	entry = sk_CONF_VALUE_value(sk, i);		
+	entry = sk_CONF_VALUE_value(sk, i);
 	rb_hash_aset(hash, rb_str_new2(entry->name), rb_str_new2(entry->value));
     }
 

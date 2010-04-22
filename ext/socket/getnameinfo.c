@@ -156,7 +156,7 @@ getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host, socklen_t ho
 
 	len = SA_LEN(sa);
 	if (len != salen) return ENI_SALEN;
-	
+
 	family = sa->sa_family;
 	for (i = 0; afdl[i].a_af; i++)
 		if (afdl[i].a_af == family) {
@@ -164,10 +164,10 @@ getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host, socklen_t ho
 			goto found;
 		}
 	return ENI_FAMILY;
-	
+
  found:
 	if (len != afd->a_socklen) return ENI_SALEN;
-	
+
 	port = ((struct sockinet *)sa)->si_port; /* network byte order */
 	addr = (char *)sa + afd->a_off;
 
@@ -199,7 +199,7 @@ getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host, socklen_t ho
 			flags |= NI_NUMERICHOST;
 		v4a >>= IN_CLASSA_NSHIFT;
 		if (v4a == 0)
-			flags |= NI_NUMERICHOST;			
+			flags |= NI_NUMERICHOST;
 		break;
 #ifdef INET6
 	case AF_INET6:

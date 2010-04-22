@@ -65,7 +65,7 @@ static VALUE
 ossl_rand_load_file(VALUE self, VALUE filename)
 {
     SafeStringValue(filename);
-	
+
     if(!RAND_load_file(RSTRING_PTR(filename), -1)) {
 	ossl_raise(eRandomError, NULL);
     }
@@ -134,7 +134,7 @@ static VALUE
 ossl_rand_egd(VALUE self, VALUE filename)
 {
     SafeStringValue(filename);
-	
+
     if(!RAND_egd(RSTRING_PTR(filename))) {
 	ossl_raise(eRandomError, NULL);
     }
@@ -186,9 +186,9 @@ Init_ossl_rand()
 #endif
 
     mRandom = rb_define_module_under(mOSSL, "Random");
-	
+
     eRandomError = rb_define_class_under(mRandom, "RandomError", eOSSLError);
-	
+
     DEFMETH(mRandom, "seed", ossl_rand_seed, 1);
     DEFMETH(mRandom, "random_add", ossl_rand_add, 2);
     DEFMETH(mRandom, "load_random_file", ossl_rand_load_file, 1);
@@ -196,7 +196,7 @@ Init_ossl_rand()
     DEFMETH(mRandom, "random_bytes", ossl_rand_bytes, 1);
     DEFMETH(mRandom, "pseudo_bytes", ossl_rand_pseudo_bytes, 1);
     DEFMETH(mRandom, "egd", ossl_rand_egd, 1);
-    DEFMETH(mRandom, "egd_bytes", ossl_rand_egd_bytes, 2);	
+    DEFMETH(mRandom, "egd_bytes", ossl_rand_egd_bytes, 2);
     DEFMETH(mRandom, "status?", ossl_rand_status, 0)
 }
 

@@ -124,7 +124,7 @@ static VALUE
 ossl_x509req_copy(VALUE self, VALUE other)
 {
     X509_REQ *a, *b, *req;
-	
+
     rb_check_frozen(self);
     if (self == other) return self;
     GetX509Req(self, a);
@@ -145,7 +145,7 @@ ossl_x509req_to_pem(VALUE self)
     BIO *out;
     BUF_MEM *buf;
     VALUE str;
-	
+
     GetX509Req(self, req);
     if (!(out = BIO_new(BIO_s_mem()))) {
 	ossl_raise(eX509ReqError, NULL);
@@ -213,7 +213,7 @@ ossl_x509req_to_x509(VALUE self, VALUE days, VALUE key)
 {
     X509_REQ *req;
     X509 *x509;
-	
+
     GetX509Req(self, req);
     ...
     if (!(x509 = X509_REQ_to_X509(req, d, pkey))) {
@@ -271,7 +271,7 @@ static VALUE
 ossl_x509req_set_subject(VALUE self, VALUE subject)
 {
     X509_REQ *req;
-	
+
     GetX509Req(self, req);
     /* DUPs name */
     if (!X509_REQ_set_subject_name(req, GetX509NamePtr(subject))) {
@@ -290,7 +290,7 @@ ossl_x509req_get_signature_algorithm(VALUE self)
     VALUE str;
 
     GetX509Req(self, req);
-	
+
     if (!(out = BIO_new(BIO_s_mem()))) {
 	ossl_raise(eX509ReqError, NULL);
     }
@@ -379,7 +379,7 @@ ossl_x509req_get_attributes(VALUE self)
     int count, i;
     X509_ATTRIBUTE *attr;
     VALUE ary;
-	
+
     GetX509Req(self, req);
 
     count = X509_REQ_get_attr_count(req);
@@ -441,13 +441,13 @@ void
 Init_ossl_x509req()
 {
     eX509ReqError = rb_define_class_under(mX509, "RequestError", eOSSLError);
-	
+
     cX509Req = rb_define_class_under(mX509, "Request", rb_cObject);
-	
+
     rb_define_alloc_func(cX509Req, ossl_x509req_alloc);
     rb_define_method(cX509Req, "initialize", ossl_x509req_initialize, -1);
     rb_define_copy_func(cX509Req, ossl_x509req_copy);
-	
+
     rb_define_method(cX509Req, "to_pem", ossl_x509req_to_pem, 0);
     rb_define_method(cX509Req, "to_der", ossl_x509req_to_der, 0);
     rb_define_alias(cX509Req, "to_s", "to_pem");

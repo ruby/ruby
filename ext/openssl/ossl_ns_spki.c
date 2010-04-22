@@ -42,12 +42,12 @@ ossl_spki_alloc(VALUE klass)
 {
     NETSCAPE_SPKI *spki;
     VALUE obj;
-	
+
     if (!(spki = NETSCAPE_SPKI_new())) {
 	ossl_raise(eSPKIError, NULL);
-    }	
+    }
     WrapSPKI(klass, obj, spki);
-	
+
     return obj;
 }
 
@@ -57,7 +57,7 @@ ossl_spki_initialize(int argc, VALUE *argv, VALUE self)
     NETSCAPE_SPKI *spki;
     VALUE buffer;
     const unsigned char *p;
-	
+
     if (rb_scan_args(argc, argv, "01", &buffer) == 0) {
 	return self;
     }
@@ -101,7 +101,7 @@ ossl_spki_to_pem(VALUE self)
     NETSCAPE_SPKI *spki;
     char *data;
     VALUE str;
-	
+
     GetSPKI(self, spki);
     if (!(data = NETSCAPE_SPKI_b64_encode(spki))) {
 	ossl_raise(eSPKIError, NULL);
@@ -118,7 +118,7 @@ ossl_spki_print(VALUE self)
     BIO *out;
     BUF_MEM *buf;
     VALUE str;
-	
+
     GetSPKI(self, spki);
     if (!(out = BIO_new(BIO_s_mem()))) {
 	ossl_raise(eSPKIError, NULL);
@@ -130,7 +130,7 @@ ossl_spki_print(VALUE self)
     BIO_get_mem_ptr(out, &buf);
     str = rb_str_new(buf->data, buf->length);
     BIO_free(out);
-	
+
     return str;
 }
 
@@ -235,14 +235,14 @@ void
 Init_ossl_ns_spki()
 {
     mNetscape = rb_define_module_under(mOSSL, "Netscape");
-	
+
     eSPKIError = rb_define_class_under(mNetscape, "SPKIError", eOSSLError);
-	
+
     cSPKI = rb_define_class_under(mNetscape, "SPKI", rb_cObject);
-	
+
     rb_define_alloc_func(cSPKI, ossl_spki_alloc);
     rb_define_method(cSPKI, "initialize", ossl_spki_initialize, -1);
-	
+
     rb_define_method(cSPKI, "to_der", ossl_spki_to_der, 0);
     rb_define_method(cSPKI, "to_pem", ossl_spki_to_pem, 0);
     rb_define_alias(cSPKI, "to_s", "to_pem");

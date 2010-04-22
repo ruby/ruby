@@ -36,7 +36,7 @@ dsa_instance(VALUE klass, DSA *dsa)
 {
     EVP_PKEY *pkey;
     VALUE obj;
-	
+
     if (!dsa) {
 	return Qfalse;
     }
@@ -145,7 +145,7 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
     BIO *in;
     char *passwd = NULL;
     VALUE arg, pass;
-	
+
     GetPKey(self, pkey);
     if(rb_scan_args(argc, argv, "02", &arg, &pass) == 0) {
         dsa = DSA_new();
@@ -211,9 +211,9 @@ static VALUE
 ossl_dsa_is_private(VALUE self)
 {
     EVP_PKEY *pkey;
-	
+
     GetPKeyDSA(self, pkey);
-	
+
     return (DSA_PRIVATE(self, pkey->pkey.dsa)) ? Qtrue : Qfalse;
 }
 
@@ -364,7 +364,7 @@ ossl_dsa_to_public_key(VALUE self)
     EVP_PKEY *pkey;
     DSA *dsa;
     VALUE obj;
-	
+
     GetPKeyDSA(self, pkey);
     /* err check performed by dsa_instance */
     dsa = DSAPublicKey_dup(pkey->pkey.dsa);
@@ -453,7 +453,7 @@ Init_ossl_dsa()
     eDSAError = rb_define_class_under(mPKey, "DSAError", ePKeyError);
 
     cDSA = rb_define_class_under(mPKey, "DSA", cPKey);
-	
+
     rb_define_singleton_method(cDSA, "generate", ossl_dsa_s_generate, 1);
     rb_define_method(cDSA, "initialize", ossl_dsa_initialize, -1);
 

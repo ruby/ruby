@@ -97,7 +97,7 @@ static PKCS7_SIGNER_INFO *
 DupPKCS7SignerPtr(VALUE obj)
 {
     PKCS7_SIGNER_INFO *p7si, *pkcs7;
-	
+
     SafeGetPKCS7si(obj, p7si);
     if (!(pkcs7 = PKCS7_SIGNER_INFO_dup(p7si))) {
 	ossl_raise(ePKCS7Error, NULL);
@@ -123,7 +123,7 @@ static PKCS7_RECIP_INFO *
 DupPKCS7RecipientPtr(VALUE obj)
 {
     PKCS7_RECIP_INFO *p7ri, *pkcs7;
-	
+
     SafeGetPKCS7ri(obj, p7ri);
     if (!(pkcs7 = PKCS7_RECIP_INFO_dup(p7ri))) {
 	ossl_raise(ePKCS7Error, NULL);
@@ -814,7 +814,7 @@ ossl_pkcs7_to_pem(VALUE self)
     PKCS7 *pkcs7;
     BIO *out;
     VALUE str;
-	
+
     GetPKCS7(self, pkcs7);
     if (!(out = BIO_new(BIO_s_mem()))) {
 	ossl_raise(ePKCS7Error, NULL);
@@ -889,9 +889,9 @@ ossl_pkcs7si_get_signed_time(VALUE self)
 {
     PKCS7_SIGNER_INFO *p7si;
     ASN1_TYPE *asn1obj;
-	
+
     GetPKCS7si(self, p7si);
-	
+
     if (!(asn1obj = PKCS7_get_signed_attribute(p7si, NID_pkcs9_signingTime))) {
 	ossl_raise(ePKCS7Error, NULL);
     }

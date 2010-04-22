@@ -99,7 +99,7 @@ EVP_PKEY *
 GetPrivPKeyPtr(VALUE obj)
 {
     EVP_PKEY *pkey;
-	
+
     if (rb_funcall(obj, id_private_q, 0, NULL) != Qtrue) {
 	ossl_raise(rb_eArgError, "Private key is needed.");
     }
@@ -112,7 +112,7 @@ EVP_PKEY *
 DupPKeyPtr(VALUE obj)
 {
     EVP_PKEY *pkey;
-	
+
     SafeGetPKey(obj, pkey);
     CRYPTO_add(&pkey->references, 1, CRYPTO_LOCK_EVP_PKEY);
 
@@ -123,7 +123,7 @@ EVP_PKEY *
 DupPrivPKeyPtr(VALUE obj)
 {
     EVP_PKEY *pkey;
-	
+
     if (rb_funcall(obj, id_private_q, 0, NULL) != Qtrue) {
 	ossl_raise(rb_eArgError, "Private key is needed.");
     }
@@ -216,19 +216,19 @@ Init_ossl_pkey()
 #endif
 
     mPKey = rb_define_module_under(mOSSL, "PKey");
-	
+
     ePKeyError = rb_define_class_under(mPKey, "PKeyError", eOSSLError);
 
     cPKey = rb_define_class_under(mPKey, "PKey", rb_cObject);
-	
+
     rb_define_alloc_func(cPKey, ossl_pkey_alloc);
     rb_define_method(cPKey, "initialize", ossl_pkey_initialize, 0);
 
     rb_define_method(cPKey, "sign", ossl_pkey_sign, 2);
     rb_define_method(cPKey, "verify", ossl_pkey_verify, 3);
-	
+
     id_private_q = rb_intern("private?");
-	
+
     /*
      * INIT rsa, dsa, dh, ec
      */

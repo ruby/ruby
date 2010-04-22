@@ -241,7 +241,7 @@ Init_ossl_digest()
 
     cDigest = rb_define_class_under(mOSSL, "Digest", rb_path2class("Digest::Class"));
     eDigestError = rb_define_class_under(cDigest, "DigestError", eOSSLError);
-	
+
     rb_define_alloc_func(cDigest, ossl_digest_alloc);
 
     rb_define_method(cDigest, "initialize", ossl_digest_initialize, -1);

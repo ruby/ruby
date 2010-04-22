@@ -143,7 +143,7 @@ ossl_buf2str(char *buf, int len)
  */
 static VALUE
 ossl_pem_passwd_cb0(VALUE flag)
-{	
+{
     VALUE pass;
 
     pass = rb_yield(flag);
@@ -360,7 +360,7 @@ void
 ossl_debug(const char *fmt, ...)
 {
     va_list args;
-	
+
     if (dOSSL == Qtrue) {
 	fprintf(stderr, "OSSL_DEBUG: ");
 	va_start(args, fmt);
@@ -393,7 +393,7 @@ ossl_debug_set(VALUE self, VALUE val)
 {
     VALUE old = dOSSL;
     dOSSL = val;
-	
+
     if (old != dOSSL) {
 	if (dOSSL == Qtrue) {
 	    CRYPTO_mem_ctrl(CRYPTO_MEM_CHECK_ON);
