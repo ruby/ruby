@@ -20,6 +20,17 @@ class TestGemServer < RubyGemTestCase
     @res = WEBrick::HTTPResponse.new :HTTPVersion => '1.0'
   end
 
+  def test_spec_dirs
+    s = Gem::Server.new Gem.dir, process_based_port, false
+
+    assert_equal [File.join(Gem.dir, 'specifications')], s.spec_dirs
+
+    s = Gem::Server.new [Gem.dir, Gem.dir], process_based_port, false
+
+    assert_equal [File.join(Gem.dir, 'specifications'),
+                  File.join(Gem.dir, 'specifications')], s.spec_dirs
+  end
+
   def test_Marshal
     data = StringIO.new "GET /Marshal.#{Gem.marshal_version} HTTP/1.0\r\n\r\n"
     @req.parse data

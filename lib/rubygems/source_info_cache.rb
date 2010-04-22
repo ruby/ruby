@@ -285,17 +285,19 @@ class Gem::SourceInfoCache
     cache_data.map do |source_uri, sic_entry|
       next unless Gem.sources.include? source_uri
       # TODO - Remove this gunk after 2008/11
-      unless pattern.kind_of?(Gem::Dependency)
-        pattern = Gem::Dependency.new(pattern, Gem::Requirement.default)
+      unless pattern.kind_of? Gem::Dependency then
+        pattern = Gem::Dependency.new pattern, Gem::Requirement.default
       end
       sic_entry.source_index.search pattern, platform_only
     end.flatten.compact
   end
 
+  ##
   # Searches all source indexes for +pattern+.  If +only_platform+ is true,
   # only gems matching Gem.platforms will be selected.  Returns an Array of
   # pairs containing the Gem::Specification found and the source_uri it was
   # found at.
+
   def search_with_source(pattern, only_platform = false, all = false)
     read_all_cache_data if all
 
@@ -306,7 +308,7 @@ class Gem::SourceInfoCache
 
       # TODO - Remove this gunk after 2008/11
       unless pattern.kind_of?(Gem::Dependency)
-        pattern = Gem::Dependency.new(pattern, Gem::Requirement.default)
+        pattern = Gem::Dependency.new(pattern, Gem::Requirement.default) 
       end
 
       sic_entry.source_index.search(pattern, only_platform).each do |spec|

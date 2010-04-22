@@ -22,8 +22,8 @@ class TestGemCommandsUnpackCommand < RubyGemTestCase
       end
     end
 
-    assert File.exist?(File.join(@tempdir, 'a-3.a')), 'a should be installed'
-    assert File.exist?(File.join(@tempdir, 'b-2')),   'b should be installed'
+    assert File.exist?(File.join(@tempdir, 'a-3.a')), 'a should be unpacked'
+    assert File.exist?(File.join(@tempdir, 'b-2')),   'b should be unpacked'
   end
 
   def test_execute_gem_path
@@ -49,6 +49,7 @@ class TestGemCommandsUnpackCommand < RubyGemTestCase
 
   def test_execute_gem_path_missing
     util_make_gems
+    util_setup_spec_fetcher
 
     Gem.clear_paths
 
@@ -66,6 +67,49 @@ class TestGemCommandsUnpackCommand < RubyGemTestCase
     end
 
     assert_equal '', @ui.output
+  end
+
+  def test_execute_remote
+    util_setup_fake_fetcher
+    util_setup_spec_fetcher @a1, @a2
+    util_clear_gems
+
+    a2_data = nil
+    open File.join(@gemhome, 'cache', @a2.file_name), 'rb' do |fp|
+      a2_data = fp.read
+    end
+
+    Gem::RemoteFetcher.fetcher.data['http://gems.example.com/gems/a-2.gem'] =
+      a2_data
+
+    Gem.configuration.verbose = :really
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      Dir.chdir @tempdir do
+        @cmd.execute
+      end
+    end
+
+    assert File.exist?(File.join(@tempdir, 'a-2')), 'a should be unpacked'
+  end
+
+  def test_execute_sudo
+    util_make_gems
+
+    File.chmod 0555, @gemhome
+
+    @cmd.options[:args] = %w[b]
+
+    use_ui @ui do
+      Dir.chdir @tempdir do
+        @cmd.execute
+      end
+    end
+
+    assert File.exist?(File.join(@tempdir, 'b-2')), 'b should be unpacked'
+  ensure
+    File.chmod 0755, @gemhome
   end
 
   def test_execute_with_target_option

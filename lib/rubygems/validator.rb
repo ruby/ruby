@@ -10,11 +10,10 @@ require 'digest'
 require 'rubygems/format'
 require 'rubygems/installer'
 
-# Load test-unit 2.x if it's a gem
 begin
-   Gem.activate('test-unit')
+  gem 'test-unit'
 rescue Gem::LoadError
-   # Ignore - use the test-unit library that's part of the standard library
+  # Ignore - use the test-unit library that's part of the standard library
 end
 
 ##

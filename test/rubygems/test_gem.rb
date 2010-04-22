@@ -16,6 +16,8 @@ class TestGem < RubyGemTestCase
                       else
                         %r|/[Rr]uby/[Gg]ems/[0-9.]+|
                       end
+
+    util_remove_interrupt_command
   end
 
   def test_self_all_load_paths
@@ -258,8 +260,8 @@ class TestGem < RubyGemTestCase
 
   def test_self_find_files
     discover_path = File.join 'lib', 'foo', 'discover.rb'
-    cwd = File.expand_path('..', __FILE__)
-    $LOAD_PATH.unshift(cwd.dup)
+    cwd = File.expand_path '..', __FILE__
+    $LOAD_PATH.unshift cwd.dup
 
     foo1 = quick_gem 'foo', '1' do |s|
       s.files << discover_path
@@ -290,7 +292,7 @@ class TestGem < RubyGemTestCase
 
     assert_equal expected, Gem.find_files('foo/discover')
   ensure
-    assert_equal(cwd, $LOAD_PATH.shift)
+    assert_equal cwd, $LOAD_PATH.shift
   end
 
   def test_self_latest_load_paths
@@ -617,6 +619,38 @@ class TestGem < RubyGemTestCase
     ENV['USERPATH'] = orig_user_path
   end if '1.9' > RUBY_VERSION
 
+  def test_load_plugins
+    with_plugin('load') { Gem.load_plugins }
+    assert_equal :loaded, TEST_PLUGIN_LOAD
+
+    util_remove_interrupt_command
+
+    # Should attempt to cause a StandardError
+    with_plugin('standarderror') { Gem.load_plugins }
+    assert_equal :loaded, TEST_PLUGIN_STANDARDERROR
+
+    util_remove_interrupt_command
+
+    # Should attempt to cause an Exception
+    with_plugin('exception') { Gem.load_plugins }
+    assert_equal :loaded, TEST_PLUGIN_EXCEPTION
+  end
+
+  def with_plugin(path)
+    test_plugin_path = File.expand_path "../plugin/#{path}", __FILE__
+
+    # A single test plugin should get loaded once only, in order to preserve
+    # sane test semantics.
+    refute_includes $LOAD_PATH, test_plugin_path
+    $LOAD_PATH.unshift test_plugin_path
+
+    capture_io do
+      yield
+    end
+  ensure
+    $LOAD_PATH.delete test_plugin_path
+  end
+
   def util_ensure_gem_dirs
     Gem.ensure_gem_subdirectories @gemhome
     @additional.each do |dir|
@@ -663,6 +697,11 @@ class TestGem < RubyGemTestCase
       defined?(@RUBY_PATCHLEVEL)
     Object.const_set :RUBY_REVISION,   @RUBY_REVISION   if
       defined?(@RUBY_REVISION)
+  end
+
+  def util_remove_interrupt_command
+    Gem::Commands.send :remove_const, :InterruptCommand if
+      Gem::Commands.const_defined? :InterruptCommand
   end
 
 end

@@ -37,7 +37,16 @@ class Gem::FormatException < Gem::Exception
   attr_accessor :file_path
 end
 
-class Gem::GemNotFoundException < Gem::Exception; end
+class Gem::GemNotFoundException < Gem::Exception
+  def initialize(msg, name=nil, version=nil, errors=nil)
+    super msg
+    @name = name
+    @version = version
+    @errors = errors
+  end
+
+  attr_reader :name, :version, :errors
+end
 
 class Gem::InstallError < Gem::Exception; end
 

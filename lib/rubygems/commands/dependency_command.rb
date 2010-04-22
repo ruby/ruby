@@ -159,7 +159,9 @@ class Gem::Commands::DependencyCommand < Gem::Command
     response
   end
 
-  # Returns list of [specification, dep] that are satisfied by spec.
+  ##
+  # Returns an Array of [specification, dep] that are satisfied by +spec+.
+
   def find_reverse_dependencies(spec)
     result = []
 

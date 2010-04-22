@@ -8,13 +8,17 @@ else
   require 'rubygems'
 end
 require 'fileutils'
-require 'minitest/unit'
+require 'minitest/autorun'
 require 'tmpdir'
 require 'uri'
 require 'rubygems/package'
 require 'rubygems/test_utilities'
 require 'pp'
 require 'yaml'
+begin
+  YAML::ENGINE.yamler = 'psych'
+rescue LoadError
+end if YAML.const_defined? :ENGINE
 
 begin
   gem 'rdoc'
@@ -66,10 +70,10 @@ class RubyGemTestCase < MiniTest::Unit::TestCase
 
     Gem.ensure_gem_subdirectories @gemhome
 
-    if ruby = ENV['RUBY']
-      Gem.class_eval {ruby, @ruby = @ruby, ruby}
-      @orig_ruby = ruby
-    end
+    @orig_ruby = if ruby = ENV['RUBY'] then
+                   Gem.class_eval { ruby, @ruby = @ruby, ruby }
+                   ruby
+                 end
 
     Gem.ensure_gem_subdirectories @gemhome
 
@@ -131,7 +135,6 @@ class RubyGemTestCase < MiniTest::Unit::TestCase
     Gem.pre_uninstall do |uninstaller|
       @pre_uninstall_hook_arg = uninstaller
     end
-
   end
 
   def teardown
@@ -150,9 +153,7 @@ class RubyGemTestCase < MiniTest::Unit::TestCase
 
     Gem.clear_paths
 
-    if ruby = @orig_ruby
-      Gem.class_eval {@ruby = ruby}
-    end
+    Gem.class_eval { @ruby = ruby } if ruby = @orig_ruby
 
     if @orig_ENV_HOME then
       ENV['HOME'] = @orig_ENV_HOME
@@ -584,6 +585,4 @@ Also, a list:
   end
 
 end
-
-MiniTest::Unit.autorun
 

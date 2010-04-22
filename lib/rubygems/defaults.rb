@@ -33,15 +33,14 @@ module Gem
   # Path for gems in the user's home directory
 
   def self.user_dir
-    File.join(Gem.user_home, '.gem', ruby_engine,
-              ConfigMap[:ruby_version])
+    File.join Gem.user_home, '.gem', ruby_engine, ConfigMap[:ruby_version]
   end
 
   ##
   # Default gem load path
 
   def self.default_path
-    if File.exist?(Gem.user_home)
+    if File.exist? Gem.user_home then
       [user_dir, default_dir]
     else
       [default_dir]

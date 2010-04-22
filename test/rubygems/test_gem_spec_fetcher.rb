@@ -115,6 +115,21 @@ class TestGemSpecFetcher < RubyGemTestCase
     assert_equal [[@pl1.full_name, @gem_repo]], spec_names
   end
 
+  def test_fetch_with_errors_mismatched_platform
+    util_set_arch 'hrpa-989'
+
+    @fetcher.data["#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{@pl1.original_name}.gemspec.rz"] =
+      util_zip(Marshal.dump(@pl1))
+
+    dep = Gem::Dependency.new 'pl', 1
+    specs_and_sources, errors = @sf.fetch_with_errors dep
+
+    assert_equal 0, specs_and_sources.size
+    assert_equal 1, errors.size
+
+    assert_equal "i386-linux", errors[0].platforms.first
+  end
+
   def test_fetch_spec
     spec_uri = "#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{@a1.spec_name}"
     @fetcher.data["#{spec_uri}.rz"] = util_zip(Marshal.dump(@a1))
@@ -218,6 +233,33 @@ class TestGemSpecFetcher < RubyGemTestCase
     specs = @sf.find_matching dep
 
     assert_equal [], specs
+  end
+
+  def test_find_matching_with_errors_matched_platform
+    util_set_arch 'i386-linux'
+
+    dep = Gem::Dependency.new 'pl', 1
+    specs, errors = @sf.find_matching_with_errors dep
+
+    expected = [
+      [['pl', Gem::Version.new(1), 'i386-linux'], @gem_repo],
+    ]
+
+    assert_equal expected, specs
+    assert_equal 0, errors.size
+  end
+
+  def test_find_matching_with_errors_invalid_platform
+    util_set_arch 'hrpa-899'
+
+    dep = Gem::Dependency.new 'pl', 1
+    specs, errors = @sf.find_matching_with_errors dep
+
+    assert_equal 0, specs.size
+
+    assert_equal 1, errors.size
+
+    assert_equal "i386-linux", errors[0].platforms.first
   end
 
   def test_find_all_platforms

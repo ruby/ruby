@@ -320,7 +320,7 @@ class Gem::Indexer
     <title>#{rss_title}</title>
     <link>http://#{rss_host}</link>
     <description>Recently released gems from http://#{rss_host}</description>
-    <generator>RubyGems v#{Gem::RubyGemsVersion}</generator>
+    <generator>RubyGems v#{Gem::VERSION}</generator>
     <docs>http://cyber.law.harvard.edu/rss/rss.html</docs>
         HEADER
 

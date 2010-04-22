@@ -133,7 +133,8 @@ class Gem::Installer
     end
 
     FileUtils.mkdir_p @gem_home
-    raise Gem::FilePermissionError, @gem_home unless File.writable? @gem_home
+    raise Gem::FilePermissionError, @gem_home unless
+      options[:unpack] or File.writable? @gem_home
 
     @spec = @format.spec
 
@@ -165,7 +166,7 @@ class Gem::Installer
       end
 
       if rrgv = @spec.required_rubygems_version then
-        unless rrgv.satisfied_by? Gem::Version.new(Gem::RubyGemsVersion) then
+        unless rrgv.satisfied_by? Gem::Version.new(Gem::VERSION) then
           raise Gem::InstallError,
             "#{@spec.name} requires RubyGems version #{rrgv}. " +
             "Try 'gem update --system' to update RubyGems itself."
@@ -270,7 +271,7 @@ class Gem::Installer
   ##
   # Creates windows .bat files for easy running of commands
 
-  def generate_windows_script(bindir, filename)
+  def generate_windows_script(filename, bindir)
     if Gem.win_platform? then
       script_name = filename + ".bat"
       script_path = File.join bindir, File.basename(script_name)
@@ -295,7 +296,7 @@ class Gem::Installer
 
     @spec.executables.each do |filename|
       filename.untaint
-      bin_path = File.expand_path("#{@spec.bindir}/#{filename}", @gem_dir)
+      bin_path = File.expand_path "#{@spec.bindir}/#{filename}", @gem_dir
       mode = File.stat(bin_path).mode | 0111
       File.chmod mode, bin_path
 
@@ -329,7 +330,7 @@ class Gem::Installer
 
       say bin_script_path if Gem.configuration.really_verbose
 
-      generate_windows_script bindir, filename
+      generate_windows_script filename, bindir
     #else
     #  FileUtils.rm_f bin_script_path
     #  FileUtils.cp exec_path, bin_script_path,

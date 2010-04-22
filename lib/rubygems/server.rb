@@ -33,6 +33,8 @@ require 'rubygems/doc_manager'
 
 class Gem::Server
 
+  attr_reader :spec_dirs
+
   include ERB::Util
   include Gem::UserInteraction
 
@@ -430,29 +432,36 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
         options[:addresses]).run
   end
 
-  def initialize(gem_dir, port, daemon, addresses = nil)
+  ##
+  # Only the first directory in gem_dirs is used for serving gems
+
+  def initialize(gem_dirs, port, daemon, addresses = nil)
     Socket.do_not_reverse_lookup = true
 
-    @gem_dir = gem_dir
+    @gem_dirs = Array gem_dirs
     @port = port
     @daemon = daemon
     @addresses = addresses
     logger = WEBrick::Log.new nil, WEBrick::BasicLog::FATAL
     @server = WEBrick::HTTPServer.new :DoNotListen => true, :Logger => logger
 
-    @spec_dir = File.join @gem_dir, 'specifications'
+    @spec_dirs = @gem_dirs.map do |gem_dir|
+      spec_dir = File.join gem_dir, 'specifications'
 
-    unless File.directory? @spec_dir then
-      raise ArgumentError, "#{@gem_dir} does not appear to be a gem repository"
+      unless File.directory? spec_dir then
+        raise ArgumentError, "#{gem_dir} does not appear to be a gem repository"
+      end
+
+      spec_dir
     end
 
-    @source_index = Gem::SourceIndex.from_gems_in @spec_dir
+    @source_index = Gem::SourceIndex.from_gems_in(*@spec_dirs)
   end
 
   def Marshal(req, res)
     @source_index.refresh!
 
-    res['date'] = File.stat(@spec_dir).mtime
+    add_date res
 
     index = Marshal.dump @source_index
 
@@ -471,12 +480,18 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
     res.body << index
   end
 
+  def add_date res
+    res['date'] = @spec_dirs.map do |spec_dir|
+      File.stat(spec_dir).mtime
+    end.max
+  end
+
   def latest_specs(req, res)
     @source_index.refresh!
 
     res['content-type'] = 'application/x-gzip'
 
-    res['date'] = File.stat(@spec_dir).mtime
+    add_date res
 
     specs = @source_index.latest_specs.sort.map do |spec|
       platform = spec.original_platform
@@ -535,7 +550,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
     @source_index.refresh!
 
     res['content-type'] = 'text/plain'
-    res['date'] = File.stat(@spec_dir).mtime
+    add_date res
 
     case req.request_uri.path
     when '/quick/index' then
@@ -586,7 +601,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
 
   def root(req, res)
     @source_index.refresh!
-    res['date'] = File.stat(@spec_dir).mtime
+    add_date res
 
     raise WEBrick::HTTPStatus::NotFound, "`#{req.path}' not found." unless
       req.path == '/'
@@ -630,16 +645,16 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
     specs << {
       "authors" => "Chad Fowler, Rich Kilmer, Jim Weirich, Eric Hodel and others",
       "dependencies" => [],
-      "doc_path" => "/doc_root/rubygems-#{Gem::RubyGemsVersion}/rdoc/index.html",
+      "doc_path" => "/doc_root/rubygems-#{Gem::VERSION}/rdoc/index.html",
       "executables" => [{"executable" => 'gem', "is_last" => true}],
       "only_one_executable" => true,
-      "full_name" => "rubygems-#{Gem::RubyGemsVersion}",
+      "full_name" => "rubygems-#{Gem::VERSION}",
       "has_deps" => false,
       "homepage" => "http://docs.rubygems.org/",
       "name" => 'rubygems',
       "rdoc_installed" => true,
       "summary" => "RubyGems itself",
-      "version" => Gem::RubyGemsVersion,
+      "version" => Gem::VERSION,
     }
 
     specs = specs.sort_by { |spec| [spec["name"].downcase, spec["version"]] }
@@ -718,7 +733,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
   # documentation - just put it underneath the main doc folder.
 
   def show_rdoc_for_pattern(pattern, res)
-    found_gems = Dir.glob("#{@gem_dir}/doc/#{pattern}").select {|path|
+    found_gems = Dir.glob("{#{@gem_dirs.join ','}}/doc/#{pattern}").select {|path|
       File.exist? File.join(path, 'rdoc/index.html')
     }
     case found_gems.length
@@ -771,7 +786,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
 
     @server.mount_proc("/gem-server-rdoc-style.css") do |req, res|
       res['content-type'] = 'text/css'
-      res['date'] = File.stat(@spec_dir).mtime
+      add_date res
       res.body << RDOC_CSS
     end
 
@@ -782,7 +797,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
     paths = { "/gems" => "/cache/", "/doc_root" => "/doc/" }
     paths.each do |mount_point, mount_dir|
       @server.mount(mount_point, WEBrick::HTTPServlet::FileHandler,
-                    File.join(@gem_dir, mount_dir), true)
+                    File.join(@gem_dir.first, mount_dir), true)
     end
 
     trap("INT") { @server.shutdown; exit! }
@@ -794,7 +809,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
   def specs(req, res)
     @source_index.refresh!
 
-    res['date'] = File.stat(@spec_dir).mtime
+    add_date res
 
     specs = @source_index.sort.map do |_, spec|
       platform = spec.original_platform
@@ -821,7 +836,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
   def yaml(req, res)
     @source_index.refresh!
 
-    res['date'] = File.stat(@spec_dir).mtime
+    add_date res
 
     index = @source_index.to_yaml
 

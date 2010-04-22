@@ -4,6 +4,8 @@
 # See LICENSE.txt for permissions.
 #++
 
+require 'rubygems/user_interaction'
+
 ##
 # The Builder class processes RubyGem specification files
 # to produce a .gem file.

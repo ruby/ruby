@@ -7,7 +7,7 @@ class Gem::Commands::ContentsCommand < Gem::Command
 
   def initialize
     super 'contents', 'Display the contents of the installed gems',
-          :specdirs => [], :lib_only => false
+          :specdirs => [], :lib_only => false, :prefix => true
 
     add_version_option
 

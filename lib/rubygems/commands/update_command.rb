@@ -56,7 +56,7 @@ class Gem::Commands::UpdateCommand < Gem::Command
 
       rubygems_update = Gem::Specification.new
       rubygems_update.name = 'rubygems-update'
-      rubygems_update.version = Gem::Version.new Gem::RubyGemsVersion
+      rubygems_update.version = Gem::Version.new Gem::VERSION
       hig['rubygems-update'] = rubygems_update
 
       options[:user_install] = false

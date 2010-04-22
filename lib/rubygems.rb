@@ -5,6 +5,8 @@
 # See LICENSE.txt for permissions.
 #++
 
+gem_disabled = !defined? Gem
+
 require 'rubygems/defaults'
 require 'thread'
 require 'etc'
@@ -98,7 +100,7 @@ require 'etc'
 # -The RubyGems Team
 
 module Gem
-  RubyGemsVersion = VERSION = '1.3.6'
+  RubyGemsVersion = VERSION = '1.3.6.1'
 
   ##
   # Raised when RubyGems is unable to load or activate a gem.  Contains the
@@ -127,9 +129,9 @@ module Gem
     :bindir            => RbConfig::CONFIG["bindir"],
     :datadir           => RbConfig::CONFIG["datadir"],
     :libdir            => RbConfig::CONFIG["libdir"],
-    :rubylibprefix     => RbConfig::CONFIG["rubylibprefix"],
     :ruby_install_name => RbConfig::CONFIG["ruby_install_name"],
     :ruby_version      => RbConfig::CONFIG["ruby_version"],
+    :rubylibprefix     => RbConfig::CONFIG["rubylibprefix"],
     :sitedir           => RbConfig::CONFIG["sitedir"],
     :sitelibdir        => RbConfig::CONFIG["sitelibdir"],
     :vendordir         => RbConfig::CONFIG["vendordir"] ,
@@ -144,7 +146,7 @@ module Gem
   # :stopdoc:
   MUTEX = Mutex.new
 
-  RubyGemsPackageVersion = RubyGemsVersion
+  RubyGemsPackageVersion = VERSION
   # :startdoc:
 
   ##
@@ -310,8 +312,8 @@ module Gem
   ##
   # Find the full path to the executable for gem +name+.  If the +exec_name+
   # is not given, the gem's default_executable is chosen, otherwise the
-  # specified executable's path is returned.  +version_requirements+ allows you
-  # to specify specific gem versions.
+  # specified executable's path is returned.  +version_requirements+ allows
+  # you to specify specific gem versions.
 
   def self.bin_path(name, exec_name = nil, *version_requirements)
     version_requirements = Gem::Requirement.default if
@@ -568,9 +570,13 @@ module Gem
 
   ##
   # The index to insert activated gem paths into the $LOAD_PATH.
+  #
+  # Defaults to the site lib directory unless gem_prelude.rb has loaded paths,
+  # then it inserts the activated gem's paths before the gem_prelude.rb paths
+  # so you can override the gem_prelude.rb default $LOAD_PATH paths.
 
   def self.load_path_insert_index
-    $LOAD_PATH.index {|path| path.instance_variable_defined?(:@gem_prelude_index)}
+    $LOAD_PATH.index { |p| p.instance_variable_defined? :@gem_prelude_index }
   end
 
   ##
@@ -667,7 +673,7 @@ module Gem
 
   def self.prefix
     dir = File.dirname File.expand_path(__FILE__)
-    prefix = File.dirname(dir)
+    prefix = File.dirname dir
 
     if prefix == File.expand_path(ConfigMap[:sitelibdir]) or
        prefix == File.expand_path(ConfigMap[:libdir]) or
@@ -942,6 +948,28 @@ module Gem
     @@win_platform
   end
 
+  ##
+  # Find all 'rubygems_plugin' files and load them
+
+  def self.load_plugins
+    plugins = Gem.find_files 'rubygems_plugin'
+
+    plugins.each do |plugin|
+
+      # Skip older versions of the GemCutter plugin: Its commands are in
+      # RubyGems proper now.
+
+      next if plugin =~ /gemcutter-0\.[0-3]/
+
+      begin
+        load plugin
+      rescue ::Exception => e
+        details = "#{plugin.inspect}: #{e.message} (#{e.class})"
+        warn "Error loading RubyGems plugin #{details}"
+      end
+    end
+  end
+
   class << self
 
     ##
@@ -991,8 +1019,8 @@ module Gem
 end
 
 module Kernel
-  # defined in gem_prelude.rb
-  undef gem
+
+  undef gem if respond_to? :gem # defined in gem_prelude.rb on 1.9
 
   ##
   # Use Kernel#gem to activate a specific version of +gem_name+.
@@ -1051,12 +1079,18 @@ require 'rubygems/platform'
 require 'rubygems/builder'              # HACK: Needed for rake's package task.
 
 begin
+  ##
+  # Defaults the operating system (or packager) wants to provide for RubyGems.
+
   require 'rubygems/defaults/operating_system'
 rescue LoadError
 end
 
 if defined?(RUBY_ENGINE) then
   begin
+    ##
+    # Defaults the ruby implementation wants to provide for RubyGems
+
     require "rubygems/defaults/#{RUBY_ENGINE}"
   rescue LoadError
   end
@@ -1064,21 +1098,15 @@ end
 
 require 'rubygems/config_file'
 
+##
+# Enables the require hook for RubyGems.
+#
+# Ruby 1.9 allows --disable-gems, so we require it when we didn't detect a Gem
+# constant at rubygems.rb load time.
+
+require 'rubygems/custom_require' if gem_disabled or RUBY_VERSION < '1.9'
+
 Gem.clear_paths
 
-plugins = Gem.find_files 'rubygems_plugin'
-
-plugins.each do |plugin|
-
-  # Skip older versions of the GemCutter plugin: Its commands are in
-  # RubyGems proper now.
-
-  next if plugin =~ /gemcutter-0\.[0-3]/
-
-  begin
-    load plugin
-  rescue => e
-    warn "error loading #{plugin.inspect}: #{e.message} (#{e.class})"
-  end
-end
+Gem.load_plugins
 

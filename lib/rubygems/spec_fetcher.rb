@@ -3,6 +3,7 @@ require 'fileutils'
 
 require 'rubygems/remote_fetcher'
 require 'rubygems/user_interaction'
+require 'rubygems/errors'
 
 ##
 # SpecFetcher handles metadata updates from remote gem repositories.
@@ -65,20 +66,26 @@ class Gem::SpecFetcher
   # false, all platforms are returned. If +prerelease+ is true,
   # prerelease versions are included.
 
-  def fetch(dependency, all = false, matching_platform = true, prerelease = false)
-    specs_and_sources = find_matching dependency, all, matching_platform, prerelease
+  def fetch_with_errors(dependency, all = false, matching_platform = true, prerelease = false)
+    specs_and_sources, errors = find_matching_with_errors dependency, all, matching_platform, prerelease
 
-    specs_and_sources.map do |spec_tuple, source_uri|
+    ss = specs_and_sources.map do |spec_tuple, source_uri|
       [fetch_spec(spec_tuple, URI.parse(source_uri)), source_uri]
     end
+
+    return [ss, errors]
 
   rescue Gem::RemoteFetcher::FetchError => e
     raise unless warn_legacy e do
       require 'rubygems/source_info_cache'
 
-      return Gem::SourceInfoCache.search_with_source(dependency,
-                                                     matching_platform, all)
+      return [Gem::SourceInfoCache.search_with_source(dependency,
+                                                     matching_platform, all), nil]
     end
+  end
+
+  def fetch(*args)
+    fetch_with_errors(*args).first
   end
 
   def fetch_spec(spec, source_uri)
@@ -117,15 +124,26 @@ class Gem::SpecFetcher
   # matching released versions are returned.  If +matching_platform+
   # is false, gems for all platforms are returned.
 
-  def find_matching(dependency, all = false, matching_platform = true, prerelease = false)
+  def find_matching_with_errors(dependency, all = false, matching_platform = true, prerelease = false)
     found = {}
+
+    rejected_specs = {}
 
     list(all, prerelease).each do |source_uri, specs|
       found[source_uri] = specs.select do |spec_name, version, spec_platform|
-        dependency =~ Gem::Dependency.new(spec_name, version) and
-          (not matching_platform or Gem::Platform.match(spec_platform))
+        if dependency.match?(spec_name, version)
+          if matching_platform and !Gem::Platform.match(spec_platform)
+            pm = (rejected_specs[dependency] ||= Gem::PlatformMismatch.new(spec_name, version))
+            pm.add_platform spec_platform
+            false
+          else
+            true
+          end
+        end
       end
     end
+
+    errors = rejected_specs.values
 
     specs_and_sources = []
 
@@ -134,7 +152,11 @@ class Gem::SpecFetcher
       specs_and_sources.push(*specs.map { |spec| [spec, uri_str] })
     end
 
-    specs_and_sources
+    [specs_and_sources, errors]
+  end
+
+  def find_matching(*args)
+    find_matching_with_errors(*args).first
   end
 
   ##

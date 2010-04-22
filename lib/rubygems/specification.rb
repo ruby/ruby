@@ -504,8 +504,8 @@ class Gem::Specification
     gemspec = nil
     raise "NESTED Specification.load calls not allowed!" if @@gather
     @@gather = proc { |gs| gemspec = gs }
-    data = File.read(filename)
-    eval(data)
+    data = File.read filename
+    eval data, nil, filename
     gemspec
   ensure
     @@gather = nil
@@ -524,7 +524,7 @@ class Gem::Specification
   # Sets the rubygems_version to the current RubyGems version
 
   def mark_version
-    @rubygems_version = Gem::RubyGemsVersion
+    @rubygems_version = Gem::VERSION
   end
 
   ##
@@ -677,31 +677,41 @@ class Gem::Specification
     }
   end
 
-  def to_yaml(opts = {}) # :nodoc:
+  def encode_with coder # :nodoc:
     mark_version
 
     attributes = @@attributes.map { |name,| name.to_s }.sort
     attributes = attributes - %w[name version platform]
 
+    coder.add 'name', @name
+    coder.add 'version', @version
+    platform = case @original_platform
+               when nil, '' then
+                 'ruby'
+               when String then
+                 @original_platform
+               else
+                 @original_platform.to_s
+               end
+    coder.add 'platform', platform
+
+    attributes.each do |name|
+      coder.add name, instance_variable_get("@#{name}")
+    end
+  end
+
+  def to_yaml(opts = {}) # :nodoc:
+    return super if YAML.const_defined?(:ENGINE) && !YAML::ENGINE.syck?
+
     yaml = YAML.quick_emit object_id, opts do |out|
       out.map taguri, to_yaml_style do |map|
-        map.add 'name', @name
-        map.add 'version', @version
-        platform = case @original_platform
-                   when nil, '' then
-                     'ruby'
-                   when String then
-                     @original_platform
-                   else
-                     @original_platform.to_s
-                   end
-        map.add 'platform', platform
-
-        attributes.each do |name|
-          map.add name, instance_variable_get("@#{name}")
-        end
+        encode_with map
       end
     end
+  end
+
+  def init_with coder # :nodoc:
+    yaml_initialize coder.tag, coder.map
   end
 
   def yaml_initialize(tag, vals) # :nodoc:
@@ -759,7 +769,7 @@ class Gem::Specification
     result << "    s.specification_version = #{specification_version}"
     result << nil
 
-    result << "    if Gem::Version.new(Gem::RubyGemsVersion) >= Gem::Version.new('1.2.0') then"
+    result << "    if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then"
 
     unless dependencies.empty? then
       dependencies.each do |dep|
@@ -804,9 +814,9 @@ class Gem::Specification
     extend Gem::UserInteraction
     normalize
 
-    if rubygems_version != Gem::RubyGemsVersion then
+    if rubygems_version != Gem::VERSION then
       raise Gem::InvalidSpecificationException,
-            "expected RubyGems version #{Gem::RubyGemsVersion}, was #{rubygems_version}"
+            "expected RubyGems version #{Gem::VERSION}, was #{rubygems_version}"
     end
 
     @@required_attributes.each do |symbol|
@@ -1052,7 +1062,7 @@ class Gem::Specification
   #
   # Do not set this, it is set automatically when the gem is packaged.
 
-  required_attribute :rubygems_version, Gem::RubyGemsVersion
+  required_attribute :rubygems_version, Gem::VERSION
 
   ##
   # :attr_accessor: specification_version
@@ -1481,14 +1491,12 @@ class Gem::Specification
   end
 
   overwrite_accessor :files do
-    result = []
-    result.push(*@files) if defined?(@files)
-    result.push(*@test_files) if defined?(@test_files)
-    result.push(*(add_bindir(@executables)))
-    result.push(*@extra_rdoc_files) if defined?(@extra_rdoc_files)
-    result.push(*@extensions) if defined?(@extensions)
-    result.uniq.compact
+    # DO NOT CHANGE TO ||= ! This is not a normal accessor. (yes, it sucks)
+    @files = [@files,
+              @test_files,
+              add_bindir(@executables),
+              @extra_rdoc_files,
+              @extensions,
+             ].flatten.uniq.compact
   end
-
 end
-

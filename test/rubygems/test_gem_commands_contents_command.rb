@@ -139,13 +139,15 @@ Rakefile
   end
 
   def test_handle_options
-    assert_equal false, @cmd.options[:lib_only]
-    assert_equal [], @cmd.options[:specdirs]
-    assert_equal nil, @cmd.options[:version]
+    refute @cmd.options[:lib_only]
+    assert @cmd.options[:prefix]
+    assert_empty @cmd.options[:specdirs]
+    assert_nil @cmd.options[:version]
 
-    @cmd.send :handle_options, %w[-l -s foo --version 0.0.2]
+    @cmd.send :handle_options, %w[-l -s foo --version 0.0.2 --no-prefix]
 
-    assert_equal true, @cmd.options[:lib_only]
+    assert @cmd.options[:lib_only]
+    refute @cmd.options[:prefix]
     assert_equal %w[foo], @cmd.options[:specdirs]
     assert_equal Gem::Requirement.new('0.0.2'), @cmd.options[:version]
   end
