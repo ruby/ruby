@@ -172,12 +172,14 @@ module IRB
       ensure
 	unless system_exit
 	  @JobManager.delete(irb)
-	  if parent_thread.alive?
-	    @JobManager.current_job = @JobManager.irb(parent_thread)
-	    parent_thread.run
-	  else
-	    @JobManager.current_job = @JobManager.main_irb
-	    @JobManager.main_thread.run
+	  if @JobManager.current_job == irb
+	    if parent_thread.alive?
+	      @JobManager.current_job = @JobManager.irb(parent_thread)
+	      parent_thread.run
+	    else
+	      @JobManager.current_job = @JobManager.main_irb
+	      @JobManager.main_thread.run
+	    end
 	  end
 	end
       end
