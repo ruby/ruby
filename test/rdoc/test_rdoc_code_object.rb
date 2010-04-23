@@ -61,6 +61,18 @@ class TestRDocCodeObject < XrefTestCase
     assert @co.documented?
   end
 
+  def test_metadata
+    assert_empty @co.metadata
+
+    @co.metadata['markup'] = 'not_rdoc'
+
+    expected = { 'markup' => 'not_rdoc' }
+
+    assert_equal expected, @co.metadata
+
+    assert_equal 'not_rdoc', @co.metadata['markup']
+  end
+
   def test_parent_file_name
     assert_equal '(unknown)', @co.parent_file_name
     assert_equal 'xref_data.rb', @c1.parent_file_name

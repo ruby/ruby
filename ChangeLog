@@ -1,3 +1,7 @@
+Fri Apr 23 11:31:25 2010  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc: Update to RDoc 2.5.6.
+
 Fri Apr 23 04:11:26 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ripper/test_parser_events.rb (test_unterminated_regexp):

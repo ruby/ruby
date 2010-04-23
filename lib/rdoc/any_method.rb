@@ -68,7 +68,6 @@ class RDoc::AnyMethod < RDoc::CodeObject
     @text = text
     @name = name
 
-    @aref                   = nil
     @aliases                = []
     @block_params           = nil
     @call_seq               = nil

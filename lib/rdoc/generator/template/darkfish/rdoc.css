@@ -103,9 +103,7 @@ body.file p {
 	list-style: none;
 }
 .indexpage ul :link,
-.indexpage ul :visited,
-.file #documentation ul :link,
-.file #documentation ul :visited {
+.indexpage ul :visited {
 	font-size: 16px;
 }
 
