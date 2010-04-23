@@ -888,11 +888,7 @@ static VALUE
 trap_ensure(struct trap_arg *arg)
 {
     /* enable interrupt */
-#ifdef HAVE_SIGPROCMASK
-    sigprocmask(SIG_SETMASK, &arg->mask, NULL);
-#else
-    sigsetmask(arg->mask);
-#endif
+    pthread_sigmask(SIG_SETMASK, &arg->mask, NULL);
     trap_last_mask = arg->mask;
     return 0;
 }
@@ -902,11 +898,7 @@ void
 rb_trap_restore_mask(void)
 {
 #if USE_TRAP_MASK
-# ifdef HAVE_SIGPROCMASK
-    sigprocmask(SIG_SETMASK, &trap_last_mask, NULL);
-# else
-    sigsetmask(trap_last_mask);
-# endif
+    pthread_sigmask(SIG_SETMASK, &trap_last_mask, NULL);
 #endif
 }
 
@@ -966,12 +958,8 @@ sig_trap(int argc, VALUE *argv)
     }
 #if USE_TRAP_MASK
     /* disable interrupt */
-# ifdef HAVE_SIGPROCMASK
     sigfillset(&arg.mask);
-    sigprocmask(SIG_BLOCK, &arg.mask, &arg.mask);
-# else
-    arg.mask = sigblock(~0);
-# endif
+    pthread_sigmask(SIG_BLOCK, &arg.mask, &arg.mask);
 
     return rb_ensure(trap, (VALUE)&arg, trap_ensure, (VALUE)&arg);
 #else
@@ -1026,12 +1014,8 @@ init_sigchld(int sig)
 
 #if USE_TRAP_MASK
     /* disable interrupt */
-# ifdef HAVE_SIGPROCMASK
     sigfillset(&mask);
-    sigprocmask(SIG_BLOCK, &mask, &mask);
-# else
-    mask = sigblock(~0);
-# endif
+    pthread_sigmask(SIG_BLOCK, &mask, &mask);
 #endif
 
     oldfunc = ruby_signal(sig, SIG_DFL);
@@ -1042,13 +1026,8 @@ init_sigchld(int sig)
     }
 
 #if USE_TRAP_MASK
-#ifdef HAVE_SIGPROCMASK
     sigdelset(&mask, sig);
-    sigprocmask(SIG_SETMASK, &mask, NULL);
-#else
-    mask &= ~sigmask(sig);
-    sigsetmask(mask);
-#endif
+    pthread_sigmask(SIG_SETMASK, &mask, NULL);
     trap_last_mask = mask;
 #endif
 }
