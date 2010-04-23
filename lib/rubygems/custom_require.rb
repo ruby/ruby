@@ -30,7 +30,7 @@ module Kernel
   def require(path) # :doc:
     gem_original_require path
   rescue LoadError => load_error
-    if load_error.message =~ /#{Regexp.escape path}\z/ and
+    if load_error.message.end_with?(path) and
        spec = Gem.searcher.find(path) then
       Gem.activate(spec.name, "= #{spec.version}")
       gem_original_require path
