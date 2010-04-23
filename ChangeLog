@@ -1,3 +1,12 @@
+Sat Apr 24 00:41:52 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* process.c (rb_f_fork): remove after_exec() which sometimes caused
+	  two timer threads started.  [ruby-core:25217]
+
+	* signal.c: use pthread_sigmask() instead of sigprocmask().
+	  sigprocmask() is unspecified behavior on multi-thread programs.
+	  [ruby-core:25217]
+
 Sat Apr 24 00:36:05 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/dl/test_base.rb: add kfreebsd support.  based on a patch from

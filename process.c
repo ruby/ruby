@@ -2620,9 +2620,6 @@ rb_f_fork(VALUE obj)
 
     switch (pid = rb_fork(0, 0, 0, Qnil)) {
       case 0:
-#ifdef linux
-	after_exec();
-#endif
 	rb_thread_atfork();
 	if (rb_block_given_p()) {
 	    int status;
