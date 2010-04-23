@@ -142,7 +142,7 @@ if defined?(Gem) then
         @loaded_full_rubygems_library = true
 
         class << Gem
-          undef_method *Gem::GEM_PRELUDE_METHODS
+          undef_method(*Gem::GEM_PRELUDE_METHODS)
           undef_method :const_missing
           undef_method :method_missing
         end
