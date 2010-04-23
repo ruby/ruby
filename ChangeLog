@@ -1,3 +1,9 @@
+Sat Apr 24 00:36:05 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/dl/test_base.rb: add kfreebsd support.  based on a patch from
+	  Petr Salinger in [ruby-core:29769].
+	  http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=560293
+
 Sat Apr 24 00:14:41 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl_session.c (SSL_SESSION_cmp): remove static for
