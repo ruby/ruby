@@ -1,3 +1,9 @@
+Fri Apr 23 18:52:13 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_val2variant): fix the core dump
+	  when converting Array object to VT_ARRAY variant. [ruby-core:28446]
+	  [Bug #2836]
+
 Fri Apr 23 14:07:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* doc/etc.rd, doc/etc.rd.ja: moved from ext/etc.

@@ -12,7 +12,6 @@
  */
 
 /*
-  $Date$
   modified for win32ole (ruby) by Masaki.Suketa <masaki.suketa@nifty.ne.jp>
  */
 
@@ -80,7 +79,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.7.7"
+#define WIN32OLE_VERSION "0.7.8"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -823,6 +822,71 @@ ole_ary_m_entry(val, pid)
     return obj;
 }
 
+static VALUE
+is_all_index_under(pid, pub, dim)
+    long *pid; 
+    long *pub; 
+    long dim; 
+{
+    long i = 0;
+    for (i = 0; i < dim; i++) {
+        if (pid[i] > pub[i]) {
+            return Qfalse;
+        }
+    }
+    return Qtrue;
+}
+
+static long
+dimension(val) 
+    VALUE val;
+{
+    long dim = 0;
+    long dim1 = 0;
+    long len = 0;
+    long i = 0;
+    if (TYPE(val) == T_ARRAY) {
+        len = RARRAY(val)->len;
+        for (i = 0; i < len; i++) {
+            dim1 = dimension(rb_ary_entry(val, i));
+            if (dim < dim1) {
+                dim = dim1;
+            }
+        }
+        dim += 1;
+    }
+    return dim;
+}
+
+static long 
+ary_len_of_dim(ary, dim) 
+    VALUE ary;
+    long dim;
+{
+    long ary_len = 0;
+    long ary_len1 = 0;
+    long len = 0;
+    long i = 0;
+    VALUE val;
+    if (dim == 0) {
+        if (TYPE(ary) == T_ARRAY) {
+            ary_len = RARRAY(ary)->len;
+        }
+    } else {
+        if (TYPE(ary) == T_ARRAY) {
+            len = RARRAY(ary)->len;
+            for (i = 0; i < len; i++) {
+                val = rb_ary_entry(ary, i);
+                ary_len1 = ary_len_of_dim(val, dim-1);
+                if (ary_len < ary_len1) {
+                    ary_len = ary_len1;
+                }
+            }
+        }
+    }
+    return ary_len;
+}
+
 static void
 ole_set_safe_array(n, psa, pid, pub, val, dim)
     long n;
@@ -833,22 +897,96 @@ ole_set_safe_array(n, psa, pid, pub, val, dim)
     long dim;
 {
     VALUE val1;
+    HRESULT hr = S_OK;
     VARIANT var;
-    VariantInit(&var);
-    if(n < 0) return;
-    if(n == dim) {
+    VOID *p = NULL;
+    long i = n;
+    while(i >= 0) {
         val1 = ole_ary_m_entry(val, pid);
+        VariantInit(&var);
         ole_val2variant(val1, &var);
-        SafeArrayPutElement(psa, pid, &var);
+        if (is_all_index_under(pid, pub, dim) == Qtrue) {
+            if ((V_VT(&var) == VT_DISPATCH && V_DISPATCH(&var) == NULL) ||
+                (V_VT(&var) == VT_UNKNOWN && V_UNKNOWN(&var) == NULL)) {
+                rb_raise(eWIN32OLE_RUNTIME_ERROR, "element of array does not have IDispatch or IUnknown Interface");
+            }
+            hr = SafeArrayPutElement(psa, pid, &var);
+        }
+        if (FAILED(hr)) {
+            ole_raise(hr, rb_eRuntimeError, "failed to SafeArrayPutElement");
+        }
+        pid[i] += 1;
+        if (pid[i] > pub[i]) {
+            pid[i] = 0;
+            i -= 1;
+        } else {
+            i = dim - 1;
+        }
     }
-    pid[n] += 1;
-    if (pid[n] < pub[n]) {
-        ole_set_safe_array(dim, psa, pid, pub, val, dim);
+}
+
+static HRESULT
+ole_val_ary2variant_ary(val, var, vt)
+    VALUE val;
+    VARIANT *var;
+    VARTYPE vt;
+{
+    long dim = 0;
+    int  i = 0;
+    HRESULT hr = S_OK;
+
+    SAFEARRAYBOUND *psab = NULL;
+    SAFEARRAY *psa = NULL;
+    long      *pub, *pid;
+
+    Check_Type(val, T_ARRAY);
+
+    dim = dimension(val);
+
+    psab = ALLOC_N(SAFEARRAYBOUND, dim);
+    pub  = ALLOC_N(long, dim);
+    pid  = ALLOC_N(long, dim);
+
+    if(!psab || !pub || !pid) {
+        if(pub) free(pub);
+        if(psab) free(psab);
+        if(pid) free(pid);
+        rb_raise(rb_eRuntimeError, "memory allocation error");
+    }
+
+    for (i = 0; i < dim; i++) {
+        psab[i].cElements = ary_len_of_dim(val, i);
+        psab[i].lLbound = 0;
+        pub[i] = psab[i].cElements - 1;
+        pid[i] = 0;
+    }
+    /* Create and fill VARIANT array */
+    if ((vt & ~VT_BYREF) == VT_ARRAY) {
+        vt = (vt | VT_VARIANT);
+    }
+    psa = SafeArrayCreate(VT_VARIANT, dim, psab);
+    if (psa == NULL)
+        hr = E_OUTOFMEMORY;
+    else
+        hr = SafeArrayLock(psa);
+    if (SUCCEEDED(hr)) {
+        ole_set_safe_array(dim-1, psa, pid, pub, val, dim);
+        hr = SafeArrayUnlock(psa);
+    }
+
+    if(pub) free(pub);
+    if(psab) free(psab);
+    if(pid) free(pid);
+
+    if (SUCCEEDED(hr)) {
+        V_VT(var) = vt;
+        V_ARRAY(var) = psa;
     }
     else {
-        pid[n] = 0;
-        ole_set_safe_array(n-1, psa, pid, pub, val, dim);
+        if (psa != NULL)
+            SafeArrayDestroy(psa);
     }
+    return hr;
 }
 
 static void
@@ -871,63 +1009,8 @@ ole_val2variant(val, var)
     }
     switch (TYPE(val)) {
     case T_ARRAY:
-    {
-        VALUE val1;
-        long dim = 0;
-        int  i = 0;
-
-        HRESULT hr;
-        SAFEARRAYBOUND *psab;
-        SAFEARRAY *psa;
-        long      *pub, *pid;
-
-        val1 = val;
-        while(TYPE(val1) == T_ARRAY) {
-            val1 = rb_ary_entry(val1, 0);
-            dim += 1;
-        }
-        psab = ALLOC_N(SAFEARRAYBOUND, dim);
-        pub  = ALLOC_N(long, dim);
-        pid  = ALLOC_N(long, dim);
-
-        if(!psab || !pub || !pid) {
-            if(pub) free(pub);
-            if(psab) free(psab);
-            if(pid) free(pid);
-            rb_raise(rb_eRuntimeError, "memory allocation error");
-        }
-        val1 = val;
-        i = 0;
-        while(TYPE(val1) == T_ARRAY) {
-            psab[i].cElements = RARRAY(val1)->len;
-            psab[i].lLbound = 0;
-            pub[i] = psab[i].cElements;
-            pid[i] = 0;
-            i ++;
-            val1 = rb_ary_entry(val1, 0);
-        }
-        /* Create and fill VARIANT array */
-        psa = SafeArrayCreate(VT_VARIANT, dim, psab);
-        if (psa == NULL)
-            hr = E_OUTOFMEMORY;
-        else
-            hr = SafeArrayLock(psa);
-        if (SUCCEEDED(hr)) {
-            ole_set_safe_array(dim-1, psa, pid, pub, val, dim-1);
-            hr = SafeArrayUnlock(psa);
-        }
-        if(pub) free(pub);
-        if(psab) free(psab);
-        if(pid) free(pid);
-
-        if (SUCCEEDED(hr)) {
-            V_VT(var) = VT_VARIANT | VT_ARRAY;
-            V_ARRAY(var) = psa;
-        }
-        else if (psa != NULL)
-            SafeArrayDestroy(psa);
+        ole_val_ary2variant_ary(val, var, VT_VARIANT|VT_ARRAY);
         break;
-    }
     case T_STRING:
         V_VT(var) = VT_BSTR;
         V_BSTR(var) = ole_mb2wc(StringValuePtr(val), -1);
