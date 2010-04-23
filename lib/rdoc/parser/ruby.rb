@@ -404,7 +404,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
         @options.title = param
         ''
       else
-        warn "Unrecognized directive :#{directive}:"
+        @top_level.metadata[directive] = param
         false
       end
     end

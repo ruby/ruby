@@ -39,5 +39,16 @@ class TestRDocOptions < MiniTest::Unit::TestCase
     assert_match %r%^invalid option: --bogus%, err
   end
 
+  def test_parse_main
+    out, err = capture_io do
+      @options.parse %w[--main MAIN]
+    end
+
+    assert_empty out
+    assert_empty err
+
+    assert_equal 'MAIN', @options.main_page
+  end
+
 end
 

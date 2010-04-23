@@ -366,7 +366,7 @@ Usage: #{opt.program_name} [options] [names...]
       end
     end
 
-    if ignored and not quiet then
+    unless ignored.empty? or quiet then
       $stderr.puts "invalid options: #{ignored.join ', '}"
       $stderr.puts '(invalid options are ignored)'
     end

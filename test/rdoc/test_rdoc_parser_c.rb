@@ -406,6 +406,17 @@ Init_Foo(void) {
     assert_equal "a comment for bar", bar.comment
   end
 
+  def test_look_for_directives_in
+    parser = util_parser ''
+
+    comment = "# :markup: not_rdoc\n"
+
+    parser.look_for_directives_in @top_level, comment
+
+    assert_equal "# :markup: not_rdoc\n", comment
+    assert_equal 'not_rdoc', @top_level.metadata['markup']
+  end
+
   def test_define_method
     content = <<-EOF
 /*Method Comment! */

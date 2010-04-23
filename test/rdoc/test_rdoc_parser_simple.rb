@@ -22,6 +22,15 @@ class TestRDocParserSimple < MiniTest::Unit::TestCase
     @tempfile.close
   end
 
+  def test_initialize_metadata
+    parser = util_parser ":unhandled: \n# :markup: not rdoc\n"
+
+    assert_equal nil,        @top_level.metadata['unhandled']
+    assert_equal 'not rdoc', @top_level.metadata['markup']
+
+    assert_equal ":unhandled: \n# :markup: not rdoc\n", parser.content
+  end
+
   def test_remove_coding_comment
     parser = util_parser <<-TEXT
 # -*- mode: rdoc; coding: utf-8; fill-column: 74; -*-

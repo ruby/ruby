@@ -55,6 +55,11 @@ class RDoc::CodeObject
   attr_accessor :force_documentation
 
   ##
+  # Hash of arbitrary metadata for this CodeObject
+
+  attr_reader :metadata
+
+  ##
   # Our parent CodeObject
 
   attr_accessor :parent
@@ -75,6 +80,7 @@ class RDoc::CodeObject
   # Creates a new CodeObject that will document itself and its children
 
   def initialize
+    @metadata = {}
     @comment = ''
 
     @document_children   = true

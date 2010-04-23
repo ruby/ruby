@@ -7,6 +7,8 @@ class RDoc::Parser::Simple < RDoc::Parser
 
   parse_files_matching(//)
 
+  attr_reader :content # :nodoc:
+
   ##
   # Prepare to parse a plain file
 
@@ -16,7 +18,8 @@ class RDoc::Parser::Simple < RDoc::Parser
     preprocess = RDoc::Markup::PreProcess.new @file_name, @options.rdoc_include
 
     preprocess.handle @content do |directive, param|
-      warn "Unrecognized directive '#{directive}' in #{@file_name}"
+      top_level.metadata[directive] = param
+      false
     end
   end
 

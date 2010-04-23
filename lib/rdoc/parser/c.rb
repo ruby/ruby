@@ -670,7 +670,7 @@ class RDoc::Parser::C < RDoc::Parser
         @options.title = param
         ''
       else
-        warn "Unrecognized directive :#{directive}:"
+        context.metadata[directive] = param
         false
       end
     end
