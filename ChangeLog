@@ -1,3 +1,9 @@
+Fri Apr 23 14:07:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* doc/etc.rd, doc/etc.rd.ja: moved from ext/etc.
+
+	* ext/etc.c (Init_etc): fixed rdoc.
+
 Fri Apr 23 11:31:25 2010  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc: Update to RDoc 2.5.6.

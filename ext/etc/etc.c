@@ -549,8 +549,8 @@ etc_getgrent(VALUE obj)
     return Qnil;
 }
 
-/* The etc module provides access to information from the /etc/passwd and
- * /etc/group files on Linux and Unix systems.
+/*
+ * The etc module provides access to information from the running OS.
  *
  * Documented by mathew <meta@pobox.com>.
  */
