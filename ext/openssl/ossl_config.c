@@ -314,13 +314,14 @@ ossl_config_get_section_old(VALUE self, VALUE section)
 
 #ifdef IMPLEMENT_LHASH_DOALL_ARG_FN
 static void
-get_conf_section(CONF_VALUE *cv, VALUE ary)
+get_conf_section_doall_arg(CONF_VALUE *cv, void *tmp)
 {
+    VALUE ary = (VALUE)tmp;
     if(cv->name) return;
     rb_ary_push(ary, rb_str_new2(cv->section));
 }
 
-static IMPLEMENT_LHASH_DOALL_ARG_FN(get_conf_section, CONF_VALUE*, VALUE)
+static IMPLEMENT_LHASH_DOALL_ARG_FN(get_conf_section, CONF_VALUE, void)
 
 static VALUE
 ossl_config_get_sections(VALUE self)
@@ -330,14 +331,16 @@ ossl_config_get_sections(VALUE self)
 
     GetConfig(self, conf);
     ary = rb_ary_new();
-    lh_doall_arg(conf->data, LHASH_DOALL_ARG_FN(get_conf_section), (void*)ary);
+    lh_doall_arg((_LHASH *)conf->data, LHASH_DOALL_ARG_FN(get_conf_section),
+		 (void*)ary);
 
     return ary;
 }
 
 static void
-dump_conf_value(CONF_VALUE *cv, VALUE str)
+dump_conf_value_doall_arg(CONF_VALUE *cv, void *tmp)
 {
+    VALUE str = (VALUE)tmp;
     STACK_OF(CONF_VALUE) *sk;
     CONF_VALUE *v;
     int i, num;
@@ -358,7 +361,7 @@ dump_conf_value(CONF_VALUE *cv, VALUE str)
     rb_str_cat2(str, "\n");
 }
 
-static IMPLEMENT_LHASH_DOALL_ARG_FN(dump_conf_value, CONF_VALUE*, VALUE)
+static IMPLEMENT_LHASH_DOALL_ARG_FN(dump_conf_value, CONF_VALUE, void)
 
 static VALUE
 dump_conf(CONF *conf)
@@ -366,7 +369,8 @@ dump_conf(CONF *conf)
     VALUE str;
 
     str = rb_str_new(0, 0);
-    lh_doall_arg(conf->data, LHASH_DOALL_ARG_FN(dump_conf_value), (void*)str);
+    lh_doall_arg((_LHASH *)conf->data, LHASH_DOALL_ARG_FN(dump_conf_value),
+		 (void*)str);
 
     return str;
 }
@@ -382,7 +386,7 @@ ossl_config_to_s(VALUE self)
 }
 
 static void
-each_conf_value(CONF_VALUE *cv, void* dummy)
+each_conf_value_doall_arg(CONF_VALUE *cv, void *dummy)
 {
     STACK_OF(CONF_VALUE) *sk;
     CONF_VALUE *v;
@@ -402,7 +406,7 @@ each_conf_value(CONF_VALUE *cv, void* dummy)
     }
 }
 
-static IMPLEMENT_LHASH_DOALL_ARG_FN(each_conf_value, CONF_VALUE*, void*)
+static IMPLEMENT_LHASH_DOALL_ARG_FN(each_conf_value, CONF_VALUE, void *)
 
 static VALUE
 ossl_config_each(VALUE self)
@@ -412,7 +416,8 @@ ossl_config_each(VALUE self)
     RETURN_ENUMERATOR(self, 0, 0);
 
     GetConfig(self, conf);
-    lh_doall_arg(conf->data, LHASH_DOALL_ARG_FN(each_conf_value), (void*)NULL);
+    lh_doall_arg((_LHASH *)conf->data, LHASH_DOALL_ARG_FN(each_conf_value),
+		 (void*)NULL);
 
     return self;
 }
