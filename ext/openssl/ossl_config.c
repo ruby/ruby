@@ -312,7 +312,7 @@ ossl_config_get_section_old(VALUE self, VALUE section)
     return ossl_config_get_section(self, section);
 }
 
-#ifdef IMPLEMENT_LHASH_DOALL_ARG_FN
+#if defined(IMPLEMENT_LHASH_DOALL_ARG_FN) && defined(LHASH_OF)
 static void
 get_conf_section_doall_arg(CONF_VALUE *cv, void *tmp)
 {
