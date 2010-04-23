@@ -29,6 +29,9 @@ when /mingw/, /mswin/
 when /darwin/
   libc_so = "/usr/lib/libc.dylib"
   libm_so = "/usr/lib/libm.dylib"
+when /kfreebsd/
+  libc_so = "/lib/libc.so.0.1"
+  libm_so = "/lib/libm.so.1"
 when /bsd|dragonfly/
   libc_so = "/usr/lib/libc.so"
   libm_so = "/usr/lib/libm.so"
