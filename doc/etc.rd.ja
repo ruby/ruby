@@ -1,18 +1,19 @@
-.\" etc.txt.ja -  -*- Indented-Text -*- created at: Fri Jul 14 00:47:15 JST 1995
+# etc.rd.ja -  -*- mode: rd; coding: euc-jp; -*- created at: Fri Jul 14 00:47:15 JST 1995
+=begin
 
-** Etc(モジュール)
+= Etc(モジュール)
 
-/etcディレクトリ以下の情報を得るためのモジュール．クラスにインクルード
+実行しているOSからの情報を得るためのモジュール．クラスにインクルード
 して使うこともできる．
 
-Module Function:
+== Module Function
 
-   getlogin
+--- getlogin
 
 	自分のlogin名を返す．これが失敗した場合はgetpwuid()を用いると
 	良い．
 
-   getpwnam(name)
+--- getpwnam(name)
 
 	/etc/passwdファイル(あるいはDBMファイルやNISデータベース)を検
 	索し，nameの名前を持つpasswdエントリを返す．戻り値はpasswd構造
@@ -37,13 +38,13 @@ Module Function:
 
 	詳細はgetpwnam(3)を参照のこと．
 
-   getpwuid([uid])
+--- getpwuid([uid])
 
 	uidをユーザIDとするpasswdエントリを返す．戻り値はgetpwnam()と
 	同様である．引数を省略した場合にはgetuid()の値を用いる．詳細は
 	getpwuid(3)を参照のこと．
 
-   getgrgid(gid)
+--- getgrgid(gid)
 
 	/etc/groupファイル(あるいは…getpwnam参照)を検索し，gidをグルー
 	プIDとするグループエントリを返す．戻り値はgroup構造体で以下の
@@ -58,15 +59,17 @@ Module Function:
 
 	詳細はgetgrgid(3)を参照のこと．
 
-   getgrnam(name)
+--- getgrnam(name)
 
 	nameという名前のグループエントリを返す．戻り値はgetgrgid()と同
 	様である．詳細はgetgrnam(3)を参照．
 
-   group
+--- group
 
 	全てのグループエントリを順にアクセスするためのイテレータ．
 
-   passwd
+--- passwd
 
 	全てのpasswdエントリを順にアクセスするためのイテレータ．
+
+=end
