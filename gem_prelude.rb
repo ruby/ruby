@@ -142,9 +142,7 @@ if defined?(Gem) then
         @loaded_full_rubygems_library = true
 
         class << Gem
-          Gem::GEM_PRELUDE_METHODS.each do |method_name|
-            undef_method method_name
-          end
+          undef_method *Gem::GEM_PRELUDE_METHODS
           undef_method :const_missing
           undef_method :method_missing
         end
@@ -154,10 +152,8 @@ if defined?(Gem) then
         end
 
         $".delete path_to_full_rubygems_library
-        $".each do |path|
-          if /#{Regexp.escape File::SEPARATOR}rubygems\.rb\z/ =~ path
-            raise LoadError, "another rubygems is already loaded from #{path}"
-          end
+        if $".any? {|path| path.end_with?('/rubygems.rb')}
+          raise LoadError, "another rubygems is already loaded from #{path}"
         end
         require 'rubygems'
       end

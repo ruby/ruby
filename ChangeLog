@@ -1,3 +1,10 @@
+Fri Apr 23 14:37:22 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gem_prelude.rb (Gem::QuickLoader.load_full_rubygems_library):
+	  get rid of creating same regexps many times.
+
+	* lib/rubygems/custom_require.rb (Kernel#require): ditto.
+
 Fri Apr 23 14:07:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* doc/etc.rd, doc/etc.rd.ja: moved from ext/etc.
