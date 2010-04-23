@@ -1,6 +1,7 @@
 Fri Apr 23 17:29:35 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/openssl/ossl_config.c: OpenSSL 1.0.0 support.
+	  [ruby-core:29256]
 
 	* ext/openssl/extconf.rb: check some functions added/removed at
 	  OpenSSL 1.0.0.
