@@ -1,3 +1,9 @@
+Fri Apr 23 14:07:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* doc/etc.rd, doc/etc.rd.ja: moved from ext/etc.
+
+	* ext/etc.c (Init_etc): fixed rdoc.
+
 Tue Apr 20 00:43:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_s_extname): skip last directory separators.
