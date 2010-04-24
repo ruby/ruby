@@ -191,19 +191,10 @@ module Psych
   # Load multiple documents given in +yaml+.  Returns the parsed documents
   # as a list.  For example:
   #
-  #   Psych.load_documents("--- foo\n...\n--- bar\n...") # => ['foo', 'bar']
+  #   Psych.load_stream("--- foo\n...\n--- bar\n...") # => ['foo', 'bar']
   #
   def self.load_stream yaml
     parse_stream(yaml).children.map { |child| child.to_ruby }
-  end
-
-  def self.load_documents yaml, &block
-    if $VERBOSE
-      warn "#{caller[0]}: load_documents is deprecated, use load_stream"
-    end
-    list = load_stream yaml
-    return list unless block_given?
-    list.each(&block)
   end
 
   ###
