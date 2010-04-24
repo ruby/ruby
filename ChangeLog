@@ -1,3 +1,9 @@
+Sat Apr 24 09:44:40 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/syck/yaml2byte.c (bytestring_append, bytestring_extend):
+	  removed wrong extra assignments.  a patch from Marcus Rueckert
+	  <darix AT opensu.se> at [ruby-core:29759].
+
 Fri Apr 23 18:52:13 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_val2variant): fix the core dump
