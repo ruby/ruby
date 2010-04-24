@@ -164,13 +164,7 @@ class PP < PrettyPrint
       group(1, '#<' + obj.class.name, '>', &block)
     end
 
-    if 0x100000000.class == Bignum
-      # 32bit
-      PointerMask = 0xffffffff
-    else
-      # 64bit
-      PointerMask = 0xffffffffffffffff
-    end
+    PointerMask = (1 << ([""].pack("p").size * 8)) - 1
 
     case Object.new.inspect
     when /\A\#<Object:0x([0-9a-f]+)>\z/
