@@ -30,6 +30,12 @@ module Psych
     list.each(&block)
   end
 
+  def self.detect_implicit thing
+    warn "#{caller[0]}: detect_implicit is deprecated" if $VERBOSE
+    return '' unless String === thing
+    return 'null' if '' == thing
+    ScalarScanner.new.tokenize(thing).class.name.downcase
+  end
 end
 
 class Object
