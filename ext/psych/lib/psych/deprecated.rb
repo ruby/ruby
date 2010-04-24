@@ -36,6 +36,20 @@ module Psych
     return 'null' if '' == thing
     ScalarScanner.new.tokenize(thing).class.name.downcase
   end
+
+  def self.add_ruby_type type_tag, &block
+    warn "#{caller[0]}: add_ruby_type is deprecated, use add_domain_type" if $VERBOSE
+    domain = 'ruby.yaml.org,2002'
+    key = ['tag', domain, type_tag].join ':'
+    @domain_types[key] = [key, block]
+  end
+
+  def self.add_private_type type_tag, &block
+    warn "#{caller[0]}: add_private_type is deprecated, use add_domain_type" if $VERBOSE
+    domain = 'x-private'
+    key = [domain, type_tag].join ':'
+    @domain_types[key] = [key, block]
+  end
 end
 
 class Object
