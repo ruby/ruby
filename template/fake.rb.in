@@ -18,17 +18,6 @@ if RUBY_PLATFORM =~ /mswin|bccwin|mingw/
 end
 
 $:.unshift(File.expand_path("..", __FILE__))
-prehook = proc do
-  config = RbConfig::CONFIG
-  mkconfig = RbConfig::MAKEFILE_CONFIG
-  mkconfig["top_srcdir"] = $top_srcdir = File.expand_path("@abs_top_srcdir@")
-  mkconfig["rubyhdrdir"] = "$(top_srcdir)/include"
-  mkconfig["builddir"] = config["builddir"] = File.expand_path(File.dirname(__FILE__))
-  config["rubyhdrdir"] = File.join(mkconfig["top_srcdir"], "include")
-  mkconfig["libdir"] = config["libdir"] = mkconfig["topdir"]
-  untrace_var(:$extmk, prehook)
-end
-trace_var(:$extmk, prehook)
 posthook = proc do
   config = RbConfig::CONFIG
   mkconfig = RbConfig::MAKEFILE_CONFIG
@@ -37,4 +26,17 @@ posthook = proc do
   $ruby = baseruby
   untrace_var(:$ruby, posthook)
 end
-trace_var(:$ruby, posthook)
+prehook = proc do |extmk|
+  unless extmk
+    config = RbConfig::CONFIG
+    mkconfig = RbConfig::MAKEFILE_CONFIG
+    mkconfig["top_srcdir"] = $top_srcdir = File.expand_path("@abs_top_srcdir@")
+    mkconfig["rubyhdrdir"] = "$(top_srcdir)/include"
+    mkconfig["builddir"] = config["builddir"] = File.expand_path(File.dirname(__FILE__))
+    config["rubyhdrdir"] = File.join(mkconfig["top_srcdir"], "include")
+    mkconfig["libdir"] = config["libdir"] = mkconfig["topdir"]
+    trace_var(:$ruby, posthook)
+  end
+  untrace_var(:$extmk, prehook)
+end
+trace_var(:$extmk, prehook)
