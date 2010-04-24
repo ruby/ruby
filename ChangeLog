@@ -1,3 +1,7 @@
+Sat Apr 24 21:07:27 2010  Tanaka Akira  <akr@fsij.org>
+
+	* test/psych/test_psych.rb: don't leave temporary files.
+
 Sat Apr 24 16:27:48 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (RUBY_PROGRAM_VERSION): added
