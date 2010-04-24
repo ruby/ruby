@@ -50,6 +50,12 @@ module Psych
     key = [domain, type_tag].join ':'
     @domain_types[key] = [key, block]
   end
+
+  def self.tagurize thing
+    warn "#{caller[0]}: add_private_type is deprecated, use add_domain_type" if $VERBOSE
+    return thing unless String === thing
+    "tag:yaml.org,2002:#{thing}"
+  end
 end
 
 class Object

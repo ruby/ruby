@@ -181,5 +181,11 @@ module Psych
 
       assert_equal [["x-private:foo", "bar"]], types
     end
+
+    def test_tagurize
+      assert_nil Psych.tagurize nil
+      assert_equal Psych, Psych.tagurize(Psych)
+      assert_equal 'tag:yaml.org,2002:foo', Psych.tagurize('foo')
+    end
   end
 end
