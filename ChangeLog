@@ -1,3 +1,7 @@
+Sat Apr 24 16:20:26 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* template/fake.rb.in: no need for hook if extmk.
+
 Sat Apr 24 14:40:20 2010  Tanaka Akira  <akr@fsij.org>
 
 	* io.c: raise IOError when byte oriented operations occur with
