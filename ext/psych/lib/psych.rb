@@ -207,11 +207,22 @@ module Psych
   # :stopdoc:
   @domain_types = {}
   def self.add_domain_type domain, type_tag, &block
-    @domain_types[type_tag] = ["http://#{domain}", block]
+    key = ['tag', domain, type_tag].join ':'
+    @domain_types[key] = [key, block]
+    @domain_types["tag:#{type_tag}"] = [key, block]
   end
 
   def self.add_builtin_type type_tag, &block
-    @domain_types[type_tag] = ['yaml.org', block]
+    domain = 'yaml.org,2002'
+    key = ['tag', domain, type_tag].join ':'
+    @domain_types[key] = [key, block]
+  end
+
+  def self.add_ruby_type type_tag, &block
+    warn "#{caller[0]}: add_ruby_type is deprecated, use add_domain_type" if $VERBOSE && !caller[0].start_with?(File.dirname(__FILE__))
+    domain = 'ruby.yaml.org,2002'
+    key = ['tag', domain, type_tag].join ':'
+    @domain_types[key] = [key, block]
   end
 
   def self.remove_type type_tag
