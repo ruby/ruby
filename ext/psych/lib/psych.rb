@@ -241,6 +241,5 @@ module Psych
     attr_accessor :dump_tags
     attr_accessor :domain_types
   end
-
   # :startdoc:
 end
