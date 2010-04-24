@@ -1039,36 +1039,12 @@ VALUE rb_argv0;
 
 #if defined(PSTAT_SETCMD) || defined(HAVE_SETPROCTITLE)
 #elif defined(_WIN32)
-#elif defined(HAVE_SETENV) && defined(HAVE_UNSETENV)
 #else
 #define USE_ENVSPACE_FOR_ARG0
 #endif
 
 #ifdef USE_ENVSPACE_FOR_ARG0
-static struct {
-    char *begin, *end;
-} envspace;
 extern char **environ;
-
-static void
-set_arg0space()
-{
-    char *s;
-    int i;
-
-    if (!environ || (s = environ[0]) == NULL) return;
-    envspace.begin = s;
-    s += strlen(s);
-    for (i = 1; environ[i]; i++) {
-	if (environ[i] == s + 1) {
-	    s++;
-	    s += strlen(s);	/* this one is ok too */
-	}
-    }
-    envspace.end = s;
-}
-#else
-#define set_arg0space() ((void)0)
 #endif
 
 static int
@@ -1090,7 +1066,8 @@ get_arglen(int argc, char **argv)
 	}
     }
 #if defined(USE_ENVSPACE_FOR_ARG0)
-    if (environ && (s == environ[0])) {
+    if (environ && (s+1 == environ[0])) {
+	s++;
 	s += strlen(s);
 	for (i = 1; environ[i]; i++) {
 	    if (environ[i] == s + 1) {
@@ -1098,7 +1075,19 @@ get_arglen(int argc, char **argv)
 		s += strlen(s);	/* this one is ok too */
 	    }
 	}
+# if defined(HAVE_SETENV) && defined(HAVE_UNSETENV)
+	{
+	    char *t = malloc(s - environ[0] + 1);
+	    for (i = 0; environ[i]; i++) {
+		size_t len = strlen(environ[i]) + 1;
+		memcpy(t, environ[i], len);
+		environ[i] = t;
+		t += len;
+	    }
+	}
+# else
 	ruby_setenv("", NULL); /* duplicate environ vars */
+# endif
     }
 #endif
     return s - argv[0];
@@ -1144,13 +1133,13 @@ set_arg0(val, id)
 	len = get_arglen(origargc, origargv);
     }
 
-    if (i >= len) {
-	i = len;
+    if (i > len - origargc) {
+	i = len - origargc;
     }
     memcpy(origargv[0], s, i);
     s = origargv[0] + i;
     *s = '\0';
-    if (++i < len) memset(s + 1, ' ', len - i);
+    if (++i < len) memset(s + 1, '\0', len - i);
     for (i = len-1, j = origargc-1; j > 0 && i >= 0; --i, --j) {
 	origargv[j] = origargv[0] + i;
 	*origargv[j] = '\0';
@@ -1274,7 +1263,6 @@ ruby_process_options(argc, argv)
 #if defined(USE_DLN_A_OUT)
     dln_argv0 = argv[0];
 #endif
-    set_arg0space();
     proc_options(argc, argv);
 
     if (do_check && ruby_nerrs == 0) {
