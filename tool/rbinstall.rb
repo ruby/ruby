@@ -407,7 +407,7 @@ install?(:local, :comm, :bin, :'bin-comm') do
     next unless File.file?(src)
     next if /\/[.#]|(\.(old|bak|orig|rej|diff|patch|core)|~|\/core)$/i =~ src
 
-    name = trans[File.basename(src)]
+    name = RbConfig.expand(trans[File.basename(src)])
 
     shebang = ''
     body = ''
@@ -424,7 +424,7 @@ install?(:local, :comm, :bin, :'bin-comm') do
     open_for_install(cmd, $script_mode) do
       case $cmdtype
       when "bat"
-        [<<-"EOH".gsub(/^\s+/, ''), shebang, body, <<-"EOF".gsub(/^\s+/, '')].join.gsub(/$/, "\r")
+        [<<-"EOH".gsub(/^\s+/, ''), shebang, body, "__END__\n:endofruby\n"].join.gsub(/$/, "\r")
           @echo off
           @if not "%~d0" == "~d0" goto WinNT
           #{ruby_bin} -x "#{cmd}" %1 %2 %3 %4 %5 %6 %7 %8 %9
@@ -433,11 +433,8 @@ install?(:local, :comm, :bin, :'bin-comm') do
           "%~dp0#{ruby_install_name}" -x "%~f0" %*
           @goto endofruby
         EOH
-          __END__
-          :endofruby
-        EOF
       when "cmd"
-        "#{<<"/EOH"}#{shebang}#{body}"
+        <<"/EOH" << shebang << body
 @"%~dp0#{ruby_install_name}" -x "%~f0" %*
 @exit /b %ERRORLEVEL%
 /EOH

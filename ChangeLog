@@ -1,4 +1,6 @@
-Sat Apr 24 16:20:26 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Apr 24 16:27:16 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/rbinstall.rb: expand target file name.
 
 	* template/fake.rb.in: no need for hook if extmk.
 
