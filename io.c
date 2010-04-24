@@ -1250,7 +1250,7 @@ io_fillbuf(rb_io_t *fptr)
  *     r, w = IO.pipe
  *     r.eof?  # blocks forever
  *
- *  Note that <code>IO#eof?</code> reads data to the input buffer.
+ *  Note that <code>IO#eof?</code> reads data to the input byte buffer.
  *  So <code>IO#sysread</code> may not behave as you intend with
  *  <code>IO#eof?</code>, unless you call <code>IO#rewind</code>
  *  first (which is not available for some streams).
@@ -1885,7 +1885,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock)
  *  readpartial is designed for streams such as pipe, socket, tty, etc.
  *  It blocks only when no data immediately available.
  *  This means that it blocks only when following all conditions hold.
- *  * the buffer in the IO object is empty.
+ *  * the byte buffer in the IO object is empty.
  *  * the content of the stream is empty.
  *  * the stream is not reached to EOF.
  *
@@ -1894,7 +1894,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock)
  *  If EOF is reached, readpartial raises EOFError.
  *
  *  When readpartial doesn't blocks, it returns or raises immediately.
- *  If the buffer is not empty, it returns the data in the buffer.
+ *  If the byte buffer is not empty, it returns the data in the buffer.
  *  Otherwise if the stream has some content,
  *  it returns the data in the stream.
  *  Otherwise if the stream is reached to EOF, it raises EOFError.
@@ -1919,7 +1919,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock)
  *
  *  Note that readpartial behaves similar to sysread.
  *  The differences are:
- *  * If the buffer is not empty, read from the buffer instead of "sysread for buffered IO (IOError)".
+ *  * If the byte buffer is not empty, read from the byte buffer instead of "sysread for buffered IO (IOError)".
  *  * It doesn't cause Errno::EWOULDBLOCK and Errno::EINTR.  When readpartial meets EWOULDBLOCK and EINTR by read system call, readpartial retry the system call.
  *
  *  The later means that readpartial is nonblocking-flag insensitive.
@@ -1961,7 +1961,7 @@ io_readpartial(int argc, VALUE *argv, VALUE io)
  *
  *  read_nonblock causes EOFError on EOF.
  *
- *  If the read buffer is not empty,
+ *  If the read byte buffer is not empty,
  *  read_nonblock reads from the buffer like readpartial.
  *  In this case, the read(2) system call is not called.
  *
@@ -3138,7 +3138,7 @@ rb_io_ungetbyte(VALUE io, VALUE b)
  *     ios.ungetc(string)   => nil
  *
  *  Pushes back one character (passed as a parameter) onto <em>ios</em>,
- *  such that a subsequent buffered read will return it. Only one character
+ *  such that a subsequent buffered character read will return it. Only one character
  *  may be pushed back before a subsequent read operation (that is,
  *  you will be able to read only the last of several characters that have been pushed
  *  back). Has no effect with unbuffered reads (such as <code>IO#sysread</code>).
@@ -9004,7 +9004,7 @@ argf_forward_call(VALUE arg)
  *  blocks only when no data is immediately available. This means that it
  *  blocks only when following all conditions hold:
  *
- *  * The buffer in the +IO+ object is empty.
+ *  * The byte buffer in the +IO+ object is empty.
  *  * The content of the stream is empty.
  *  * The stream has not reached EOF.
  *
@@ -9013,7 +9013,7 @@ argf_forward_call(VALUE arg)
  *  an +EOFError+.
  *
  *  When +readpartial+ doesn't block, it returns or raises immediately.  If
- *  the buffer is not empty, it returns the data in the buffer. Otherwise, if
+ *  the byte buffer is not empty, it returns the data in the buffer. Otherwise, if
  *  the stream has some content, it returns the data in the stream. If the
  *  stream reaches EOF an +EOFError+ is raised.
  */
