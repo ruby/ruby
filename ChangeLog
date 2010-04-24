@@ -1,3 +1,13 @@
+Sat Apr 24 13:06:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (get_arglen): skip the last terminator of argv before
+	  checking environ.
+
+	* ruby.c (get_arglen): duplicate environ area if setenv and unsetenv
+	  are provided.
+
+	* ruby.c (set_arg0): keep empty strings.
+
 Sat Apr 24 09:44:40 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/syck/yaml2byte.c (bytestring_append, bytestring_extend):
