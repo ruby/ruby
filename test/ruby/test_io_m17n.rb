@@ -1741,5 +1741,38 @@ EOT
       end
     }
   end
+
+  def test_cbuf
+    with_tmpdir {
+      fn = "tst"
+      open(fn, "w") {|f| f.print "foo" }
+      open(fn, "r+t") {|f|
+        f.ungetc(f.getc)
+        assert_raise(IOError, "[ruby-dev:40493]") { f.readpartial(2) }
+        assert_raise(IOError) { f.read(2) }
+        assert_raise(IOError) { f.each_byte {|c| } }
+        assert_raise(IOError) { f.getbyte }
+        assert_raise(IOError) { f.ungetbyte(0) }
+        assert_raise(IOError) { f.sysread(2) }
+        assert_raise(IOError) { IO.copy_stream(f, "tmpout") }
+        assert_raise(IOError) { f.sysseek(2) }
+      }
+      open(fn, "r+t") {|f|
+        f.ungetc(f.getc)
+        assert_equal("foo", f.read)
+      }
+    }
+  end
+
+  def test_text_mode_ungetc_eof
+    with_tmpdir {
+      open("ff", "w") {|f| }
+      open("ff", "rt") {|f|
+        f.ungetc "a"
+        assert(!f.eof?, "[ruby-dev:40506] (3)")
+      }
+    }
+  end
+
 end
 

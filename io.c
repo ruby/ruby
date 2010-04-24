@@ -180,6 +180,8 @@ static int max_file_descriptor = NOFILE;
 #define READ_DATA_PENDING_PTR(fptr) ((fptr)->rbuf+(fptr)->rbuf_off)
 #define READ_DATA_BUFFERED(fptr) READ_DATA_PENDING(fptr)
 
+#define READ_CHAR_PENDING(fptr) ((fptr)->cbuf_len)
+
 #if defined(_WIN32)
 #define WAIT_FD_IN_WIN32(fptr) rb_thread_wait_fd((fptr)->fd);
 #else
@@ -401,7 +403,7 @@ flush_before_seek(rb_io_t *fptr)
 #define FMODE_SYNCWRITE (FMODE_SYNC|FMODE_WRITABLE)
 
 void
-rb_io_check_readable(rb_io_t *fptr)
+rb_io_check_char_readable(rb_io_t *fptr)
 {
     rb_io_check_closed(fptr);
     if (!(fptr->mode & FMODE_READABLE)) {
@@ -417,6 +419,21 @@ rb_io_check_readable(rb_io_t *fptr)
         if (io_fflush(wfptr) < 0)
             rb_sys_fail(0);
     }
+}
+
+void
+rb_io_check_byte_readable(rb_io_t *fptr)
+{
+    rb_io_check_char_readable(fptr);
+    if (READ_CHAR_PENDING(fptr)) {
+	rb_raise(rb_eIOError, "byte oriented read for character buffered IO");
+    }
+}
+
+void
+rb_io_check_readable(rb_io_t *fptr)
+{
+    rb_io_check_byte_readable(fptr);
 }
 
 static rb_encoding*
@@ -452,6 +469,9 @@ rb_io_check_writable(rb_io_t *fptr)
 int
 rb_io_read_pending(rb_io_t *fptr)
 {
+    /* This function is used for bytes and chars.  Confusing. */
+    if (READ_CHAR_PENDING(fptr))
+        return 1; /* should raise? */
     return READ_DATA_PENDING(fptr);
 }
 
@@ -1242,8 +1262,9 @@ rb_io_eof(VALUE io)
     rb_io_t *fptr;
 
     GetOpenFile(io, fptr);
-    rb_io_check_readable(fptr);
+    rb_io_check_char_readable(fptr);
 
+    if (READ_CHAR_PENDING(fptr)) return Qfalse;
     if (READ_DATA_PENDING(fptr)) return Qfalse;
     READ_CHECK(fptr);
     if (io_fillbuf(fptr) < 0) {
@@ -1814,7 +1835,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock)
     OBJ_TAINT(str);
 
     GetOpenFile(io, fptr);
-    rb_io_check_readable(fptr);
+    rb_io_check_byte_readable(fptr);
 
     if (len == 0)
 	return str;
@@ -2133,7 +2154,7 @@ io_read(int argc, VALUE *argv, VALUE io)
     if (NIL_P(length)) {
 	if (!NIL_P(str)) StringValue(str);
 	GetOpenFile(io, fptr);
-	rb_io_check_readable(fptr);
+	rb_io_check_char_readable(fptr);
 	return read_all(fptr, remain_size(fptr), str);
     }
     len = NUM2LONG(length);
@@ -2151,7 +2172,7 @@ io_read(int argc, VALUE *argv, VALUE io)
     }
 
     GetOpenFile(io, fptr);
-    rb_io_check_readable(fptr);
+    rb_io_check_byte_readable(fptr);
     if (len == 0) return str;
 
     READ_CHECK(fptr);
@@ -2385,7 +2406,7 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
     rb_encoding *enc;
 
     GetOpenFile(io, fptr);
-    rb_io_check_readable(fptr);
+    rb_io_check_char_readable(fptr);
     if (NIL_P(rs) && limit < 0) {
 	str = read_all(fptr, 0, Qnil);
 	if (RSTRING_LEN(str) == 0) return Qnil;
@@ -2550,7 +2571,7 @@ rb_io_lineno(VALUE io)
     rb_io_t *fptr;
 
     GetOpenFile(io, fptr);
-    rb_io_check_readable(fptr);
+    rb_io_check_char_readable(fptr);
     return INT2NUM(fptr->lineno);
 }
 
@@ -2577,7 +2598,7 @@ rb_io_set_lineno(VALUE io, VALUE lineno)
     rb_io_t *fptr;
 
     GetOpenFile(io, fptr);
-    rb_io_check_readable(fptr);
+    rb_io_check_char_readable(fptr);
     fptr->lineno = NUM2INT(lineno);
     return lineno;
 }
@@ -2722,7 +2743,7 @@ rb_io_each_byte(VALUE io)
 	    p++;
 	    errno = 0;
 	}
-	rb_io_check_readable(fptr);
+	rb_io_check_byte_readable(fptr);
 	READ_CHECK(fptr);
 	if (io_fillbuf(fptr) < 0) {
 	    break;
@@ -2859,7 +2880,7 @@ rb_io_each_char(VALUE io)
 
     RETURN_ENUMERATOR(io, 0, 0);
     GetOpenFile(io, fptr);
-    rb_io_check_readable(fptr);
+    rb_io_check_char_readable(fptr);
 
     enc = io_input_encoding(fptr);
     READ_CHECK(fptr);
@@ -2899,7 +2920,7 @@ rb_io_each_codepoint(VALUE io)
 
     RETURN_ENUMERATOR(io, 0, 0);
     GetOpenFile(io, fptr);
-    rb_io_check_readable(fptr);
+    rb_io_check_char_readable(fptr);
 
     READ_CHECK(fptr);
     if (NEED_READCONV(fptr)) {
@@ -2989,7 +3010,7 @@ rb_io_getc(VALUE io)
     rb_encoding *enc;
 
     GetOpenFile(io, fptr);
-    rb_io_check_readable(fptr);
+    rb_io_check_char_readable(fptr);
 
     enc = io_input_encoding(fptr);
     READ_CHECK(fptr);
@@ -3038,7 +3059,7 @@ rb_io_getbyte(VALUE io)
     int c;
 
     GetOpenFile(io, fptr);
-    rb_io_check_readable(fptr);
+    rb_io_check_byte_readable(fptr);
     READ_CHECK(fptr);
     if (fptr->fd == 0 && (fptr->mode & FMODE_TTY) && TYPE(rb_stdout) == T_FILE) {
         rb_io_t *ofp;
@@ -3098,7 +3119,7 @@ rb_io_ungetbyte(VALUE io, VALUE b)
     rb_io_t *fptr;
 
     GetOpenFile(io, fptr);
-    rb_io_check_readable(fptr);
+    rb_io_check_byte_readable(fptr);
     io_unset_eof(fptr);
     if (NIL_P(b)) return Qnil;
     if (FIXNUM_P(b)) {
@@ -3135,7 +3156,7 @@ rb_io_ungetc(VALUE io, VALUE c)
     long len;
 
     GetOpenFile(io, fptr);
-    rb_io_check_readable(fptr);
+    rb_io_check_char_readable(fptr);
     io_unset_eof(fptr);
     if (NIL_P(c)) return Qnil;
     if (FIXNUM_P(c)) {
@@ -3739,7 +3760,8 @@ rb_io_sysseek(int argc, VALUE *argv, VALUE io)
     }
     pos = NUM2OFFT(offset);
     GetOpenFile(io, fptr);
-    if ((fptr->mode & FMODE_READABLE) && READ_DATA_BUFFERED(fptr)) {
+    if ((fptr->mode & FMODE_READABLE) &&
+        (READ_DATA_BUFFERED(fptr) || READ_CHAR_PENDING(fptr))) {
 	rb_raise(rb_eIOError, "sysseek for buffered IO");
     }
     if ((fptr->mode & FMODE_WRITABLE) && fptr->wbuf_len) {
@@ -3830,7 +3852,7 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
     if (ilen == 0) return str;
 
     GetOpenFile(io, fptr);
-    rb_io_check_readable(fptr);
+    rb_io_check_byte_readable(fptr);
 
     if (READ_DATA_BUFFERED(fptr)) {
 	rb_raise(rb_eIOError, "sysread for buffered IO");
@@ -8387,7 +8409,7 @@ copy_stream_body(VALUE arg)
             stp->close_src = 1;
         }
         GetOpenFile(src_io, src_fptr);
-        rb_io_check_readable(src_fptr);
+        rb_io_check_byte_readable(src_fptr);
         src_fd = src_fptr->fd;
     }
     stp->src_fd = src_fd;
