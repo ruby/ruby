@@ -1,4 +1,6 @@
-Sat Apr 24 16:27:16 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Apr 24 16:27:48 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (RUBY_PROGRAM_VERSION): added
 
 	* tool/rbinstall.rb: expand target file name.
 
