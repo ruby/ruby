@@ -1,3 +1,9 @@
+Sat Apr 24 09:44:40 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/syck/yaml2byte.c (bytestring_append, bytestring_extend):
+	  removed wrong extra assignments.  a patch from Marcus Rueckert
+	  <darix AT opensu.se> at [ruby-core:29759].
+
 Sat Apr 24 00:41:52 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* process.c (rb_f_fork): remove after_exec() which sometimes caused
