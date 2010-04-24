@@ -4,6 +4,10 @@ require 'stringio'
 require 'tempfile'
 
 class TestPsych < Psych::TestCase
+  def teardown
+    Psych.domain_types.clear
+  end
+
   def test_load_argument_error
     assert_raises(TypeError) do
       Psych.load nil
@@ -56,7 +60,7 @@ class TestPsych < Psych::TestCase
     Psych.add_builtin_type 'omap', do |type, val|
       got = val
     end
-    Psych.load('--- !omap hello')
+    Psych.load('--- !!omap hello')
     assert_equal 'hello', got
   ensure
     Psych.remove_type 'omap'
@@ -97,5 +101,22 @@ class TestPsych < Psych::TestCase
     assert_equal false, Psych.parse('   ')
     assert_equal false, Psych.load('')
     assert_equal false, Psych.parse('')
+  end
+
+  def test_callbacks
+    types = []
+    appender = lambda { |*args| types << args }
+
+    Psych.add_builtin_type('foo', &appender)
+    Psych.add_domain_type('example.com,2002', 'foo', &appender)
+    Psych.load <<-eoyml
+- !tag:yaml.org,2002:foo bar
+- !tag:example.com,2002:foo bar
+    eoyml
+
+    assert_equal [
+      ["tag:yaml.org,2002:foo", "bar"],
+      ["tag:example.com,2002:foo", "bar"]
+    ], types
   end
 end

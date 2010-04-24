@@ -2,6 +2,10 @@ require_relative 'helper'
 
 module Psych
   class TestDeprecated < TestCase
+    def teardown
+      Psych.domain_types.clear
+    end
+
     class QuickEmitter
       attr_reader :name
       attr_reader :value
@@ -146,6 +150,18 @@ module Psych
 
     def test_yaml_as
       assert_match(/helloworld/, Psych.dump(YamlAs.new))
+    end
+
+    def test_ruby_type
+      types = []
+      appender = lambda { |*args| types << args }
+
+      Psych.add_ruby_type('foo', &appender)
+      Psych.load <<-eoyml
+- !ruby.yaml.org,2002/foo bar
+      eoyml
+
+      assert_equal [["tag:ruby.yaml.org,2002:foo", "bar"]], types
     end
   end
 end

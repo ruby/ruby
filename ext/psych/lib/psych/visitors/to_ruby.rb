@@ -16,10 +16,12 @@ module Psych
         result = super
         return result if @domain_types.empty? || !target.tag
 
-        short_name = target.tag.sub(/^!/, '').split('/', 2).last
-        if Psych.domain_types.key? short_name
-          url, block = Psych.domain_types[short_name]
-          return block.call "#{url}:#{short_name}", result
+        key = target.tag.sub(/^[!\/]*/, '').sub(/(,\d+)\//, '\1:')
+        key = "tag:#{key}" unless key.start_with?('tag:')
+
+        if @domain_types.key? key
+          value, block = @domain_types[key]
+          return block.call value, result
         end
 
         result
