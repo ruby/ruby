@@ -83,17 +83,21 @@ class TestPsych < Psych::TestCase
   end
 
   def test_load_file
-    name = File.join(Dir.tmpdir, 'yikes.yml')
-    File.open(name, 'wb') { |f| f.write('--- hello world') }
-
-    assert_equal 'hello world', Psych.load_file(name)
+    t = Tempfile.new(['yikes', 'yml'])
+    t.binmode
+    t.write('--- hello world')
+    t.close
+    assert_equal 'hello world', Psych.load_file(t.path)
+    t.close(true)
   end
 
   def test_parse_file
-    name = File.join(Dir.tmpdir, 'yikes.yml')
-    File.open(name, 'wb') { |f| f.write('--- hello world') }
-
-    assert_equal 'hello world', Psych.parse_file(name).transform
+    t = Tempfile.new(['yikes', 'yml'])
+    t.binmode
+    t.write('--- hello world')
+    t.close
+    assert_equal 'hello world', Psych.parse_file(t.path).transform
+    t.close(true)
   end
 
   def test_degenerate_strings
