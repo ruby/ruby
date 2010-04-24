@@ -63,7 +63,7 @@ void bytestring_append(bytestring_t *str, char code,
         grow = (length - str->remaining) + CHUNKSIZE;
         str->remaining += grow;
         str->length    += grow;
-        str->buffer = S_REALLOC_N( str->buffer, char, str->length + 1 );
+        S_REALLOC_N( str->buffer, char, str->length + 1 );
         assert(str->buffer);
     }
     curr = str->buffer + (str->length - str->remaining);
@@ -100,7 +100,7 @@ void bytestring_extend(bytestring_t *str, bytestring_t *ext)
             grow = (length - str->remaining) + CHUNKSIZE;
             str->remaining += grow;
             str->length    += grow;
-            str->buffer = S_REALLOC_N( str->buffer, char, str->length + 1 );
+            S_REALLOC_N( str->buffer, char, str->length + 1 );
         }
         curr = str->buffer + (str->length - str->remaining);
         from = ext->buffer;
