@@ -1,3 +1,9 @@
+Sat Apr 24 14:40:20 2010  Tanaka Akira  <akr@fsij.org>
+
+	* io.c: raise IOError when byte oriented operations occur with
+	  non-empty character buffer.
+	  [ruby-dev:40493] [ruby-dev:40506]
+
 Sat Apr 24 13:06:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (get_arglen): skip the last terminator of argv before
