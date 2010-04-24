@@ -182,7 +182,7 @@ module Psych
   ###
   # Dump Ruby object +o+ to a JSON string.
   def self.to_json o
-    visitor = Psych::Visitors::JSONTree.new(:json => true)
+    visitor = Psych::Visitors::JSONTree.new
     visitor << o
     visitor.tree.to_yaml
   end

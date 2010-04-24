@@ -5,7 +5,6 @@ module Psych
 
       def initialize options = {}
         super()
-        @json  = options[:json]
         @tree  = Nodes::Stream.new
         @stack = []
         @st    = {}
