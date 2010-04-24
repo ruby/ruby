@@ -10,6 +10,9 @@ module Psych_Tests
 end
 
 class Psych_Unit_Tests < Psych::TestCase
+    def teardown
+        Psych.domain_types.clear
+    end
 	#
 	# Tests modified from 00basic.t in Psych.pm
 	#
