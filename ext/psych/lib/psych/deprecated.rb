@@ -20,6 +20,16 @@ module Psych
     end
     target.psych_to_yaml unless opts[:nodump]
   end
+
+  def self.load_documents yaml, &block
+    if $VERBOSE
+      warn "#{caller[0]}: load_documents is deprecated, use load_stream"
+    end
+    list = load_stream yaml
+    return list unless block_given?
+    list.each(&block)
+  end
+
 end
 
 class Object
