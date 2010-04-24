@@ -2098,7 +2098,7 @@ rb_io_write_nonblock(VALUE io, VALUE str)
  *  The <i>length</i> bytes string means it doesn't meet EOF.
  *
  *  If <i>length</i> is omitted or is <code>nil</code>,
- *  it reads until EOF.
+ *  it reads until EOF and the encoding conversion is applied.
  *  It returns a string even if EOF is met at beginning.
  *
  *  If <i>length</i> is zero, it returns <code>""</code>.
