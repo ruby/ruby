@@ -1642,7 +1642,7 @@ rb_load_file(const char *fname)
 }
 
 #if !defined(PSTAT_SETCMD) && !defined(HAVE_SETPROCTITLE)
-#if !defined(_WIN32) && !(defined(HAVE_SETENV) && defined(HAVE_UNSETENV))
+#if !defined(_WIN32)
 #define USE_ENVSPACE_FOR_ARG0
 #endif
 
@@ -1669,7 +1669,8 @@ get_arglen(int argc, char **argv)
 	}
     }
 #if defined(USE_ENVSPACE_FOR_ARG0)
-    if (environ && (s == environ[0])) {
+    if (environ && (s+1 == environ[0])) {
+	s++;
 	s += strlen(s);
 	for (i = 1; environ[i]; i++) {
 	    if (environ[i] == s + 1) {
@@ -1677,7 +1678,19 @@ get_arglen(int argc, char **argv)
 		s += strlen(s);	/* this one is ok too */
 	    }
 	}
+# if defined(HAVE_SETENV) && defined(HAVE_UNSETENV)
+	{
+	    char *t = malloc(s - environ[0] + 1);
+	    for (i = 0; environ[i]; i++) {
+		size_t len = strlen(environ[i]) + 1;
+		memcpy(t, environ[i], len);
+		environ[i] = t;
+		t += len;
+	    }
+	}
+# else
 	ruby_setenv("", NULL); /* duplicate environ vars */
+# endif
     }
 #endif
     return s - argv[0];
@@ -1712,8 +1725,8 @@ set_arg0(VALUE val, ID id)
     setproctitle("%.*s", (int)i, s);
 #else
 
-    if ((size_t)i >= origarg.len) {
-	i = (long)(origarg.len - 1);
+    if ((size_t)i > origarg.len - origarg.argc) {
+	i = (long)(origarg.len - origarg.argc);
     }
 
     memcpy(origarg.argv[0], s, i);
@@ -1724,7 +1737,7 @@ set_arg0(VALUE val, ID id)
 	*t = '\0';
 
 	if ((size_t)(i + 1) < origarg.len) {
-	    memset(t + 1, ' ', origarg.len - i - 1);
+	    memset(t + 1, '\0', origarg.len - i - 1);
 	}
 	for (j = 1; j < origarg.argc; j++) {
 	    origarg.argv[j] = t;
