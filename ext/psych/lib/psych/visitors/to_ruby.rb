@@ -17,7 +17,7 @@ module Psych
         return result if @domain_types.empty? || !target.tag
 
         key = target.tag.sub(/^[!\/]*/, '').sub(/(,\d+)\//, '\1:')
-        key = "tag:#{key}" unless key.start_with?('tag:')
+        key = "tag:#{key}" unless key =~ /^(tag:|x-private)/
 
         if @domain_types.key? key
           value, block = @domain_types[key]
