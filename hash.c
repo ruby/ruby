@@ -2129,6 +2129,7 @@ ruby_setenv(const char *name, const char *value)
 	buf = ALLOCA_N(char, len);
 	snprintf(buf, len, "%s=", name);
 	putenv(buf);
+	SetEnvironmentVariable(name, 0);
     }
 #elif defined(HAVE_SETENV) && defined(HAVE_UNSETENV)
 #undef setenv
