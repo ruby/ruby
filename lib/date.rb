@@ -1371,12 +1371,6 @@ class Date
     case other
     when Numeric; return @ajd <=> other
     when Date;    return @ajd <=> other.ajd
-    else
-      begin
-        l, r = other.coerce(self)
-        return l <=> r
-      rescue NoMethodError
-      end
     end
     nil
   end
@@ -1391,9 +1385,6 @@ class Date
     case other
     when Numeric; return jd == other
     when Date;    return jd == other.jd
-    else
-      l, r = other.coerce(self)
-      return l === r
     end
     false
   end
