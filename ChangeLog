@@ -1,3 +1,8 @@
+Sun Apr 25 21:36:41 2010  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap (encode_utf7): encode & properly.  Thanks, Kengo
+	  Matsuyama.  [ruby-dev:38063]  backported from trunk.
+
 Sat Apr 24 13:06:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (get_arglen): skip the last terminator of argv before
