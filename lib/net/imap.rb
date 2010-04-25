@@ -1175,9 +1175,15 @@ module Net
     end
 
     def fetch_internal(cmd, set, attr)
-      if attr.instance_of?(String)
+      case attr
+      when String then
         attr = RawData.new(attr)
+      when Array then
+        attr = attr.map { |arg|
+          arg.is_a?(String) ? RawData.new(arg) : arg
+        }
       end
+
       synchronize do
         @responses.delete("FETCH")
         send_command(cmd, MessageSet.new(set), attr)
