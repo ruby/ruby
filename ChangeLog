@@ -1,3 +1,7 @@
+Sun Apr 25 23:50:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (ruby_dup): update max fd.
+
 Sun Apr 25 21:56:49 2010  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (fetch_internal): do not quote message data item

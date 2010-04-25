@@ -507,6 +507,7 @@ ruby_dup(int orig)
 	    rb_sys_fail(0);
 	}
     }
+    UPDATE_MAXFD(fd);
     return fd;
 }
 
