@@ -1,3 +1,8 @@
+Sun Apr 25 21:56:49 2010  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (fetch_internal): do not quote message data item
+	  names.  Thanks, Eric Hodel.  [ruby-core:23508]
+
 Sun Apr 25 15:59:02 2010  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/cmath.rb: reverted experimental r23900.
