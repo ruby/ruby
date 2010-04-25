@@ -2125,6 +2125,7 @@ bigmul1_karatsuba(VALUE x, VALUE y)
     }
     else {
 	t2 = Qundef;
+	t2n = 0;
 
 	/* copy 0 into low bytes of the result (z0) */
 	for (i = 0; i < 2 * n; i++) zds[i] = 0;
