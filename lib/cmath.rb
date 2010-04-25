@@ -4,10 +4,8 @@ module CMath
 
   alias exp! exp
   alias log! log
-  alias log2! log2
   alias log10! log10
   alias sqrt! sqrt
-  alias cbrt! cbrt
 
   alias sin! sin
   alias cos! cos
@@ -49,14 +47,6 @@ module CMath
     end
   end
 
-  def log2(z)
-    if z.real? and z >= 0
-      log2!(z)
-    else
-      log(z) / log!(2)
-    end
-  end
-
   def log10(z)
     if z.real? and z >= 0
       log10!(z)
@@ -81,14 +71,6 @@ module CMath
 	x = z.real
 	Complex(sqrt!((r + x) / 2), sqrt!((r - x) / 2))
       end
-    end
-  end
-
-  def cbrt(z)
-    if z.real? and z >= 0
-      cbrt!(z)
-    else
-      Complex(z) ** (1.0/3)
     end
   end
 
@@ -204,14 +186,10 @@ module CMath
   module_function :exp
   module_function :log!
   module_function :log
-  module_function :log2!
-  module_function :log2
   module_function :log10!
   module_function :log10
   module_function :sqrt!
   module_function :sqrt
-  module_function :cbrt!
-  module_function :cbrt
 
   module_function :sin!
   module_function :sin
@@ -243,6 +221,8 @@ module CMath
   module_function :atanh!
   module_function :atanh
 
+  module_function :log2
+  module_function :cbrt
   module_function :frexp
   module_function :ldexp
   module_function :hypot

@@ -1,3 +1,7 @@
+Sun Apr 25 15:59:02 2010  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/cmath.rb: reverted experimental r23900.
+
 Sun Apr 25 15:51:00 2010  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c, ratioanl.c: reverted experimental r24565.
