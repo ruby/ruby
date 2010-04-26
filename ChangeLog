@@ -1,7 +1,3 @@
-Mon Apr 26 13:33:39 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
-
-	* ext/jason: came again after canceling gcc-ism.
-
 Mon Apr 26 13:11:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (ripper_get_value): escape Qundef.
