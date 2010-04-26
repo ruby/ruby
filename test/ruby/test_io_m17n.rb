@@ -1774,5 +1774,15 @@ EOT
     }
   end
 
+
+  def test_cbuf_select
+    with_tmpdir {
+      r, w = IO.pipe
+      w << "\r\n"
+      r.set_encoding("US-ASCII:UTF-8", :universal_newline => true)
+      r.ungetc(r.getc)
+      assert_equal([[r],[],[]], IO.select([r], nil, nil, 1))
+    }
+  end
 end
 

@@ -1,3 +1,7 @@
+Tue Apr 27 06:20:13 2010  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (select_internal): IO which cbuf is not empty is readable.
+
 Tue Apr 27 00:07:32 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* parse.y (program): check void_expr when rb_parse_in_main().
