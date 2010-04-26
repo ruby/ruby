@@ -172,7 +172,7 @@ static void convert_UTF8_to_JSON_ASCII(FBuffer *buffer, VALUE string)
                             fbuffer_append(buffer, "\\\"", 2);
                             break;
                         default:
-                            fbuffer_append_char(buffer, ch);
+                            fbuffer_append_char(buffer, (char)ch);
                             break;
                     }
                 } else {
