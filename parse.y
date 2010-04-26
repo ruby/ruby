@@ -786,8 +786,7 @@ static void token_info_pop(struct parser_params*, const char *token);
 program		:  {
 			lex_state = EXPR_BEG;
 		    /*%%%*/
-			$<num>$ = compile_for_eval || rb_parse_in_main();
-			local_push($<num>$);
+			local_push(compile_for_eval || rb_parse_in_main());
 		    /*%
 			local_push(0);
 		    %*/
@@ -795,7 +794,7 @@ program		:  {
 		  top_compstmt
 		    {
 		    /*%%%*/
-			if ($2 && !$<num>1) {
+			if ($2 && !compile_for_eval) {
 			    /* last expression should not be void */
 			    if (nd_type($2) != NODE_BLOCK) void_expr($2);
 			    else {
