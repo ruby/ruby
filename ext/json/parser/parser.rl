@@ -1,59 +1,83 @@
-#include "ruby.h"
-#include "unicode.h"
-#if HAVE_RE_H
-#include "re.h"
-#endif
-#if HAVE_RUBY_ST_H
-#include "ruby/st.h"
-#endif
-#if HAVE_ST_H
-#include "st.h"
-#endif
+#include "parser.h"
 
-#define EVIL 0x666
+/* unicode */
 
-#ifndef RHASH_TBL
-#define RHASH_TBL(hsh) (RHASH(hsh)->tbl)
-#endif
+static const char digit_values[256] = { 
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, -1,
+    -1, -1, -1, -1, -1, -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1
+};
+
+static UTF32 unescape_unicode(const unsigned char *p)
+{
+    char b;
+    UTF32 result = 0;
+    b = digit_values[p[0]];
+    if (b < 0) return UNI_REPLACEMENT_CHAR;
+    result = (result << 4) | b;
+    b = digit_values[p[1]];
+    result = (result << 4) | b;
+    if (b < 0) return UNI_REPLACEMENT_CHAR;
+    b = digit_values[p[2]];
+    result = (result << 4) | b;
+    if (b < 0) return UNI_REPLACEMENT_CHAR;
+    b = digit_values[p[3]];
+    result = (result << 4) | b;
+    if (b < 0) return UNI_REPLACEMENT_CHAR;
+    return result;
+}
+
+static int convert_UTF32_to_UTF8(char *buf, UTF32 ch) 
+{
+    int len = 1;
+    if (ch <= 0x7F) {
+        buf[0] = (char) ch;
+    } else if (ch <= 0x07FF) {
+        buf[0] = (char) ((ch >> 6) | 0xC0);
+        buf[1] = (char) ((ch & 0x3F) | 0x80);
+        len++;
+    } else if (ch <= 0xFFFF) {
+        buf[0] = (char) ((ch >> 12) | 0xE0);
+        buf[1] = (char) (((ch >> 6) & 0x3F) | 0x80);
+        buf[2] = (char) ((ch & 0x3F) | 0x80);
+        len += 2;
+    } else if (ch <= 0x1fffff) {
+        buf[0] =(char) ((ch >> 18) | 0xF0);
+        buf[1] =(char) (((ch >> 12) & 0x3F) | 0x80);
+        buf[2] =(char) (((ch >> 6) & 0x3F) | 0x80);
+        buf[3] =(char) ((ch & 0x3F) | 0x80);
+        len += 3;
+    } else {
+        buf[0] = '?';
+    }
+    return len;
+}
 
 #ifdef HAVE_RUBY_ENCODING_H
-#include "ruby/encoding.h"
-#define FORCE_UTF8(obj) rb_enc_associate((obj), rb_utf8_encoding())
+static VALUE CEncoding_ASCII_8BIT, CEncoding_UTF_8, CEncoding_UTF_16BE,
+    CEncoding_UTF_16LE, CEncoding_UTF_32BE, CEncoding_UTF_32LE;
+static ID i_encoding, i_encode, i_encode_bang, i_force_encoding;
 #else
-#define FORCE_UTF8(obj)
+static ID i_iconv;
 #endif
 
 static VALUE mJSON, mExt, cParser, eParserError, eNestingError;
 static VALUE CNaN, CInfinity, CMinusInfinity;
 
 static ID i_json_creatable_p, i_json_create, i_create_id, i_create_additions,
-          i_chr, i_max_nesting, i_allow_nan, i_object_class, i_array_class;
-
-#define MinusInfinity "-Infinity"
-
-typedef struct JSON_ParserStruct {
-    VALUE Vsource;
-    char *source;
-    long len;
-    char *memo;
-    VALUE create_id;
-    int max_nesting;
-    int current_nesting;
-    int allow_nan;
-    VALUE object_class;
-    VALUE array_class;
-} JSON_Parser;
-
-static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *result);
-static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *result);
-static char *JSON_parse_value(JSON_Parser *json, char *p, char *pe, VALUE *result);
-static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *result);
-static char *JSON_parse_integer(JSON_Parser *json, char *p, char *pe, VALUE *result);
-static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *result);
-
-#define GET_STRUCT                          \
-    JSON_Parser *json;                      \
-    Data_Get_Struct(self, JSON_Parser, json);
+          i_chr, i_max_nesting, i_allow_nan, i_symbolize_names, i_object_class,
+          i_array_class, i_key_p, i_deep_const_get;
 
 %%{
     machine JSON_common;
@@ -91,7 +115,7 @@ static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *resul
 
     action parse_value {
         VALUE v = Qnil;
-        char *np = JSON_parse_value(json, fpc, pe, &v);
+        char *np = JSON_parse_value(json, fpc, pe, &v); 
         if (np == NULL) {
             fhold; fbreak;
         } else {
@@ -101,7 +125,9 @@ static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *resul
     }
 
     action parse_name {
+        json->parsing_name = 1;
         char *np = JSON_parse_string(json, fpc, pe, &last_name);
+        json->parsing_name = 0;
         if (np == NULL) { fhold; fbreak; } else fexec np;
     }
 
@@ -135,7 +161,7 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
         if (RTEST(json->create_id)) {
             VALUE klassname = rb_hash_aref(*result, json->create_id);
             if (!NIL_P(klassname)) {
-                VALUE klass = rb_path2class(StringValueCStr(klassname));
+                VALUE klass = rb_funcall(mJSON, i_deep_const_get, 1, klassname);
                 if RTEST(rb_funcall(klass, i_json_creatable_p, 0)) {
                     *result = rb_funcall(klass, i_json_create, 1, *result);
                 }
@@ -199,7 +225,7 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
         fhold; fbreak;
     }
 
-    action parse_array {
+    action parse_array { 
         char *np;
         json->current_nesting++;
         np = JSON_parse_array(json, fpc, pe, result);
@@ -207,7 +233,7 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
         if (np == NULL) { fhold; fbreak; } else fexec np;
     }
 
-    action parse_object {
+    action parse_object { 
         char *np;
         json->current_nesting++;
         np =  JSON_parse_object(json, fpc, pe, result);
@@ -311,7 +337,7 @@ static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *resul
 
     action parse_value {
         VALUE v = Qnil;
-        char *np = JSON_parse_value(json, fpc, pe, &v);
+        char *np = JSON_parse_value(json, fpc, pe, &v); 
         if (np == NULL) {
             fhold; fbreak;
         } else {
@@ -347,62 +373,77 @@ static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *resul
         return p + 1;
     } else {
         rb_raise(eParserError, "%u: unexpected token at '%s'", __LINE__, p);
+        return NULL;
     }
 }
 
-static VALUE json_string_unescape(char *p, char *pe)
+static VALUE json_string_unescape(VALUE result, char *string, char *stringEnd)
 {
-    VALUE result = rb_str_buf_new(pe - p + 1);
+    char *p = string, *pe = string, *unescape;
+    int unescape_len;
 
-    while (p < pe) {
-        if (*p == '\\') {
-            p++;
-            if (p >= pe) return Qnil; /* raise an exception later, \ at end */
-            switch (*p) {
-                case '"':
-                case '\\':
-                    rb_str_buf_cat(result, p, 1);
-                    p++;
-                    break;
-                case 'b':
-                    rb_str_buf_cat2(result, "\b");
-                    p++;
-                    break;
-                case 'f':
-                    rb_str_buf_cat2(result, "\f");
-                    p++;
-                    break;
+    while (pe < stringEnd) {
+        if (*pe == '\\') {
+            unescape = (char *) "?";
+            unescape_len = 1;
+            if (pe > p) rb_str_buf_cat(result, p, pe - p);
+            switch (*++pe) {
                 case 'n':
-                    rb_str_buf_cat2(result, "\n");
-                    p++;
+                    unescape = (char *) "\n";
                     break;
                 case 'r':
-                    rb_str_buf_cat2(result, "\r");
-                    p++;
+                    unescape = (char *) "\r";
                     break;
                 case 't':
-                    rb_str_buf_cat2(result, "\t");
-                    p++;
+                    unescape = (char *) "\t";
+                    break;
+                case '"':
+                    unescape = (char *) "\"";
+                    break;
+                case '\\':
+                    unescape = (char *) "\\";
+                    break;
+                case 'b':
+                    unescape = (char *) "\b";
+                    break;
+                case 'f':
+                    unescape = (char *) "\f";
                     break;
                 case 'u':
-                    if (p > pe - 4) {
+                    if (pe > stringEnd - 4) { 
                         return Qnil;
                     } else {
-                        p = JSON_convert_UTF16_to_UTF8(result, p, pe, strictConversion);
+                        char buf[4];
+                        UTF32 ch = unescape_unicode((unsigned char *) ++pe);
+                        pe += 3;
+                        if (UNI_SUR_HIGH_START == (ch & 0xFC00)) {
+                            pe++;
+                            if (pe > stringEnd - 6) return Qnil;
+                            if (pe[0] == '\\' && pe[1] == 'u') {
+                                UTF32 sur = unescape_unicode((unsigned char *) pe + 2);
+                                ch = (((ch & 0x3F) << 10) | ((((ch >> 6) & 0xF) + 1) << 16)
+                                        | (sur & 0x3FF));
+                                pe += 5;
+                            } else {
+                                unescape = (char *) "?";
+                                break;
+                            }
+                        }
+                        unescape_len = convert_UTF32_to_UTF8(buf, ch);
+                        unescape = buf;
                     }
                     break;
                 default:
-                    rb_str_buf_cat(result, p, 1);
-                    p++;
-                    break;
+                    p = pe;
+                    continue;
             }
+            rb_str_buf_cat(result, unescape, unescape_len);
+            p = ++pe;
         } else {
-            char *q = p;
-            while (*q != '\\' && q < pe) q++;
-            rb_str_buf_cat(result, p, q - p);
-            p = q;
+            pe++;
         }
     }
+    rb_str_buf_cat(result, p, pe - p);
     return result;
 }
 
@@ -413,7 +454,7 @@ static VALUE json_string_unescape(char *p, char *pe)
     write data;
 
     action parse_string {
-        *result = json_string_unescape(json->memo + 1, p);
+        *result = json_string_unescape(*result, json->memo + 1, p);
         if (NIL_P(*result)) {
 			fhold;
 			fbreak;
@@ -432,11 +473,14 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
 {
     int cs = EVIL;
 
-    *result = rb_str_new("", 0);
+    *result = rb_str_buf_new(0);
     %% write init;
     json->memo = p;
     %% write exec;
 
+    if (json->symbolize_names && json->parsing_name) {
+      *result = rb_str_intern(*result);
+    }
     if (cs >= JSON_string_first_final) {
         return p + 1;
     } else {
@@ -472,7 +516,7 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
             ) ignore*;
 }%%
 
-/*
+/* 
  * Document-class: JSON::Ext::Parser
  *
  * This is the JSON parser implemented as a C extension. It can be configured
@@ -483,6 +527,54 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
  * with the method parser= in JSON.
  *
  */
+
+static VALUE convert_encoding(VALUE source)
+{
+    char *ptr = RSTRING_PTR(source);
+    long len = RSTRING_LEN(source);
+    if (len < 2) {
+        rb_raise(eParserError, "A JSON text must at least contain two octets!");
+    }
+#ifdef HAVE_RUBY_ENCODING_H
+    {
+        VALUE encoding = rb_funcall(source, i_encoding, 0);
+        if (encoding == CEncoding_ASCII_8BIT) {
+            if (len >= 4 &&  ptr[0] == 0 && ptr[1] == 0 && ptr[2] == 0) {
+                source = rb_str_dup(source);
+                rb_funcall(source, i_force_encoding, 1, CEncoding_UTF_32BE);
+                source = rb_funcall(source, i_encode_bang, 1, CEncoding_UTF_8);
+            } else if (len >= 4 && ptr[0] == 0 && ptr[2] == 0) {
+                source = rb_str_dup(source);
+                rb_funcall(source, i_force_encoding, 1, CEncoding_UTF_16BE);
+                source = rb_funcall(source, i_encode_bang, 1, CEncoding_UTF_8);
+            } else if (len >= 4 && ptr[1] == 0 && ptr[2] == 0 && ptr[3] == 0) {
+                source = rb_str_dup(source);
+                rb_funcall(source, i_force_encoding, 1, CEncoding_UTF_32LE);
+                source = rb_funcall(source, i_encode_bang, 1, CEncoding_UTF_8);
+            } else if (len >= 4 && ptr[1] == 0 && ptr[3] == 0) {
+                source = rb_str_dup(source);
+                rb_funcall(source, i_force_encoding, 1, CEncoding_UTF_16LE);
+                source = rb_funcall(source, i_encode_bang, 1, CEncoding_UTF_8);
+            } else {
+                FORCE_UTF8(source);
+            }
+        } else {
+            source = rb_funcall(source, i_encode, 1, CEncoding_UTF_8);
+        }
+    }
+#else
+    if (len >= 4 &&  ptr[0] == 0 && ptr[1] == 0 && ptr[2] == 0) {
+      source = rb_funcall(mJSON, i_iconv, 3, rb_str_new2("utf-8"), rb_str_new2("utf-32be"), source);
+    } else if (len >= 4 && ptr[0] == 0 && ptr[2] == 0) {
+      source = rb_funcall(mJSON, i_iconv, 3, rb_str_new2("utf-8"), rb_str_new2("utf-16be"), source);
+    } else if (len >= 4 && ptr[1] == 0 && ptr[2] == 0 && ptr[3] == 0) {
+      source = rb_funcall(mJSON, i_iconv, 3, rb_str_new2("utf-8"), rb_str_new2("utf-32le"), source);
+    } else if (len >= 4 && ptr[1] == 0 && ptr[3] == 0) {
+      source = rb_funcall(mJSON, i_iconv, 3, rb_str_new2("utf-8"), rb_str_new2("utf-16le"), source);
+    }
+#endif
+    return source;
+}
 
 /*
  * call-seq: new(source, opts => {})
@@ -501,6 +593,9 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
  * * *allow_nan*: If set to true, allow NaN, Infinity and -Infinity in
  *   defiance of RFC 4627 to be parsed by the Parser. This option defaults to
  *   false.
+ * * *symbolize_names*: If set to true, returns symbols for the names
+ *   (keys) in a JSON object. Otherwise strings are returned, which is also
+ *   the default.
  * * *create_additions*: If set to false, the Parser doesn't create
  *   additions even if a matchin class and create_id was found. This option
  *   defaults to true.
@@ -512,21 +607,18 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
     char *ptr;
     long len;
     VALUE source, opts;
-    GET_STRUCT;
+    GET_PARSER;
     rb_scan_args(argc, argv, "11", &source, &opts);
-    source = StringValue(source);
+    source = convert_encoding(StringValue(source));
     ptr = RSTRING_PTR(source);
     len = RSTRING_LEN(source);
-    if (len < 2) {
-        rb_raise(eParserError, "A JSON text must at least contain two octets!");
-    }
     if (!NIL_P(opts)) {
         opts = rb_convert_type(opts, T_HASH, "Hash", "to_hash");
         if (NIL_P(opts)) {
             rb_raise(rb_eArgError, "opts needs to be like a hash");
         } else {
             VALUE tmp = ID2SYM(i_max_nesting);
-            if (st_lookup(RHASH_TBL(opts), tmp, 0)) {
+            if (option_given_p(opts, tmp)) {
                 VALUE max_nesting = rb_hash_aref(opts, tmp);
                 if (RTEST(max_nesting)) {
                     Check_Type(max_nesting, T_FIXNUM);
@@ -538,14 +630,21 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
                 json->max_nesting = 19;
             }
             tmp = ID2SYM(i_allow_nan);
-            if (st_lookup(RHASH_TBL(opts), tmp, 0)) {
+            if (option_given_p(opts, tmp)) {
                 VALUE allow_nan = rb_hash_aref(opts, tmp);
                 json->allow_nan = RTEST(allow_nan) ? 1 : 0;
             } else {
                 json->allow_nan = 0;
             }
+            tmp = ID2SYM(i_symbolize_names);
+            if (option_given_p(opts, tmp)) {
+                VALUE symbolize_names = rb_hash_aref(opts, tmp);
+                json->symbolize_names = RTEST(symbolize_names) ? 1 : 0;
+            } else {
+                json->symbolize_names = 0;
+            }
             tmp = ID2SYM(i_create_additions);
-            if (st_lookup(RHASH_TBL(opts), tmp, 0)) {
+            if (option_given_p(opts, tmp)) {
                 VALUE create_additions = rb_hash_aref(opts, tmp);
                 if (RTEST(create_additions)) {
                     json->create_id = rb_funcall(mJSON, i_create_id, 0);
@@ -556,13 +655,13 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
                 json->create_id = rb_funcall(mJSON, i_create_id, 0);
             }
             tmp = ID2SYM(i_object_class);
-            if (st_lookup(RHASH_TBL(opts), tmp, 0)) {
+            if (option_given_p(opts, tmp)) {
                 json->object_class = rb_hash_aref(opts, tmp);
             } else {
                 json->object_class = Qnil;
             }
             tmp = ID2SYM(i_array_class);
-            if (st_lookup(RHASH_TBL(opts), tmp, 0)) {
+            if (option_given_p(opts, tmp)) {
                 json->array_class = rb_hash_aref(opts, tmp);
             } else {
                 json->array_class = Qnil;
@@ -576,18 +675,6 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
         json->array_class = Qnil;
     }
     json->current_nesting = 0;
-    /*
-       Convert these?
-    if (len >= 4 &&  ptr[0] == 0 && ptr[1] == 0 && ptr[2] == 0) {
-        rb_raise(eParserError, "Only UTF8 octet streams are supported atm!");
-    } else if (len >= 4 && ptr[0] == 0 && ptr[2] == 0) {
-        rb_raise(eParserError, "Only UTF8 octet streams are supported atm!");
-    } else if (len >= 4 && ptr[1] == 0 && ptr[2] == 0 && ptr[3] == 0) {
-        rb_raise(eParserError, "Only UTF8 octet streams are supported atm!");
-    } else if (len >= 4 && ptr[1] == 0 && ptr[3] == 0) {
-        rb_raise(eParserError, "Only UTF8 octet streams are supported atm!");
-    }
-    */
     json->len = len;
     json->source = ptr;
     json->Vsource = source;
@@ -605,7 +692,7 @@ static VALUE cParser_parse(VALUE self)
     char *p, *pe;
     int cs = EVIL;
     VALUE result = Qnil;
-    GET_STRUCT;
+    GET_PARSER;
 
     %% write init;
     p = json->source;
@@ -616,10 +703,11 @@ static VALUE cParser_parse(VALUE self)
         return result;
     } else {
         rb_raise(eParserError, "%u: unexpected token at '%s'", __LINE__, p);
+        return Qnil;
     }
 }
 
-inline static JSON_Parser *JSON_allocate()
+static JSON_Parser *JSON_allocate()
 {
     JSON_Parser *json = ALLOC(JSON_Parser);
     MEMZERO(json, JSON_Parser, 1);
@@ -653,7 +741,7 @@ static VALUE cJSON_parser_s_allocate(VALUE klass)
  */
 static VALUE cParser_source(VALUE self)
 {
-    GET_STRUCT;
+    GET_PARSER;
     return rb_str_dup(json->Vsource);
 }
 
@@ -681,6 +769,23 @@ void Init_parser()
     i_chr = rb_intern("chr");
     i_max_nesting = rb_intern("max_nesting");
     i_allow_nan = rb_intern("allow_nan");
+    i_symbolize_names = rb_intern("symbolize_names");
     i_object_class = rb_intern("object_class");
     i_array_class = rb_intern("array_class");
+    i_key_p = rb_intern("key?");
+    i_deep_const_get = rb_intern("deep_const_get");
+#ifdef HAVE_RUBY_ENCODING_H
+    CEncoding_UTF_8 = rb_funcall(rb_path2class("Encoding"), rb_intern("find"), 1, rb_str_new2("utf-8"));
+    CEncoding_UTF_16BE = rb_funcall(rb_path2class("Encoding"), rb_intern("find"), 1, rb_str_new2("utf-16be"));
+    CEncoding_UTF_16LE = rb_funcall(rb_path2class("Encoding"), rb_intern("find"), 1, rb_str_new2("utf-16le"));
+    CEncoding_UTF_32BE = rb_funcall(rb_path2class("Encoding"), rb_intern("find"), 1, rb_str_new2("utf-32be"));
+    CEncoding_UTF_32LE = rb_funcall(rb_path2class("Encoding"), rb_intern("find"), 1, rb_str_new2("utf-32le"));
+    CEncoding_ASCII_8BIT = rb_funcall(rb_path2class("Encoding"), rb_intern("find"), 1, rb_str_new2("ascii-8bit"));
+    i_encoding = rb_intern("encoding");
+    i_encode = rb_intern("encode");
+    i_encode_bang = rb_intern("encode!");
+    i_force_encoding = rb_intern("force_encoding");
+#else
+    i_iconv = rb_intern("iconv");
+#endif
 }

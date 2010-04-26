@@ -44,8 +44,8 @@ class TC_JSONGenerate < Test::Unit::TestCase
 EOT
   end
 
-  def test_unparse
-    json = unparse(@hash)
+  def test_generate
+    json = generate(@hash)
     assert_equal(JSON.parse(@json2), JSON.parse(json))
     parsed_json = parse(json)
     assert_equal(@hash, parsed_json)
@@ -53,10 +53,11 @@ EOT
     assert_equal('{"1":2}', json)
     parsed_json = parse(json)
     assert_equal({"1"=>2}, parsed_json)
+    assert_raise(GeneratorError) { generate(666) }
   end
 
-  def test_unparse_pretty
-    json = pretty_unparse(@hash)
+  def test_generate_pretty
+    json = pretty_generate(@hash)
     assert_equal(JSON.parse(@json3), JSON.parse(json))
     parsed_json = parse(json)
     assert_equal(@hash, parsed_json)
@@ -68,38 +69,53 @@ EOT
 EOT
     parsed_json = parse(json)
     assert_equal({"1"=>2}, parsed_json)
+    assert_raise(GeneratorError) { pretty_generate(666) }
+  end
+
+  def test_fast_generate
+    json = fast_generate(@hash)
+    assert_equal(JSON.parse(@json2), JSON.parse(json))
+    parsed_json = parse(json)
+    assert_equal(@hash, parsed_json)
+    json = fast_generate({1=>2})
+    assert_equal('{"1":2}', json)
+    parsed_json = parse(json)
+    assert_equal({"1"=>2}, parsed_json)
+    assert_raise(GeneratorError) { fast_generate(666) }
   end
 
   def test_states
     json = generate({1=>2}, nil)
     assert_equal('{"1":2}', json)
-    s = JSON.state.new(:check_circular => true)
-    #assert s.check_circular
+    s = JSON.state.new
+    assert s.check_circular?
+    assert s[:check_circular?]
     h = { 1=>2 }
     h[3] = h
-    assert_raises(JSON::CircularDatastructure) {  generate(h) }
-    assert_raises(JSON::CircularDatastructure) {  generate(h, s) }
-    s = JSON.state.new(:check_circular => true)
-    #assert s.check_circular
+    assert_raises(JSON::NestingError) {  generate(h) }
+    assert_raises(JSON::NestingError) {  generate(h, s) }
+    s = JSON.state.new
     a = [ 1, 2 ]
     a << a
-    assert_raises(JSON::CircularDatastructure) {  generate(a, s) }
+    assert_raises(JSON::NestingError) {  generate(a, s) }
+    assert s.check_circular?
+    assert s[:check_circular?]
   end
 
   def test_allow_nan
     assert_raises(GeneratorError) { generate([JSON::NaN]) }
     assert_equal '[NaN]', generate([JSON::NaN], :allow_nan => true)
-    assert_equal '[NaN]', fast_generate([JSON::NaN])
+    assert_raises(GeneratorError) { fast_generate([JSON::NaN]) }
     assert_raises(GeneratorError) { pretty_generate([JSON::NaN]) }
     assert_equal "[\n  NaN\n]", pretty_generate([JSON::NaN], :allow_nan => true)
     assert_raises(GeneratorError) { generate([JSON::Infinity]) }
     assert_equal '[Infinity]', generate([JSON::Infinity], :allow_nan => true)
-    assert_equal '[Infinity]', fast_generate([JSON::Infinity])
+    assert_raises(GeneratorError) { fast_generate([JSON::Infinity]) }
     assert_raises(GeneratorError) { pretty_generate([JSON::Infinity]) }
     assert_equal "[\n  Infinity\n]", pretty_generate([JSON::Infinity], :allow_nan => true)
     assert_raises(GeneratorError) { generate([JSON::MinusInfinity]) }
     assert_equal '[-Infinity]', generate([JSON::MinusInfinity], :allow_nan => true)
-    assert_equal '[-Infinity]', fast_generate([JSON::MinusInfinity])
+    assert_raises(GeneratorError) { fast_generate([JSON::MinusInfinity]) }
     assert_raises(GeneratorError) { pretty_generate([JSON::MinusInfinity]) }
     assert_equal "[\n  -Infinity\n]", pretty_generate([JSON::MinusInfinity], :allow_nan => true)
   end

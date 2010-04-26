@@ -19,22 +19,36 @@ class TC_JSONUnicode < Test::Unit::TestCase
     assert_equal '" "', ' '.to_json
     assert_equal "\"#{0x7f.chr}\"", 0x7f.chr.to_json
     utf8 = [ "© ≠ €! \01" ]
+    json = '["© ≠ €! \u0001"]'
+    assert_equal json, utf8.to_json(:ascii_only => false)
+    assert_equal utf8, parse(json)
     json = '["\u00a9 \u2260 \u20ac! \u0001"]'
-    assert_equal json, utf8.to_json
+    assert_equal json, utf8.to_json(:ascii_only => true)
     assert_equal utf8, parse(json)
     utf8 = ["\343\201\202\343\201\204\343\201\206\343\201\210\343\201\212"]
+    json = "[\"\343\201\202\343\201\204\343\201\206\343\201\210\343\201\212\"]"
+    assert_equal utf8, parse(json)
+    assert_equal json, utf8.to_json(:ascii_only => false)
+    utf8 = ["\343\201\202\343\201\204\343\201\206\343\201\210\343\201\212"]
+    assert_equal utf8, parse(json)
     json = "[\"\\u3042\\u3044\\u3046\\u3048\\u304a\"]"
-    assert_equal json, utf8.to_json
+    assert_equal json, utf8.to_json(:ascii_only => true)
     assert_equal utf8, parse(json)
     utf8 = ['საქართველო']
+    json = '["საქართველო"]'
+    assert_equal json, utf8.to_json(:ascii_only => false)
     json = "[\"\\u10e1\\u10d0\\u10e5\\u10d0\\u10e0\\u10d7\\u10d5\\u10d4\\u10da\\u10dd\"]"
-    assert_equal json, utf8.to_json
+    assert_equal json, utf8.to_json(:ascii_only => true)
     assert_equal utf8, parse(json)
-    assert_equal '["\\u00c3"]', JSON.generate(["Ã"])
+    assert_equal '["Ã"]', JSON.generate(["Ã"], :ascii_only => false)
+    assert_equal '["\\u00c3"]', JSON.generate(["Ã"], :ascii_only => true)
     assert_equal ["€"], JSON.parse('["\u20ac"]')
     utf8 = ["\xf0\xa0\x80\x81"]
+    json = "[\"\xf0\xa0\x80\x81\"]"
+    assert_equal json, JSON.generate(utf8, :ascii_only => false)
+    assert_equal utf8, JSON.parse(json)
     json = '["\ud840\udc01"]'
-    assert_equal json, JSON.generate(utf8)
+    assert_equal json, JSON.generate(utf8, :ascii_only => true)
     assert_equal utf8, JSON.parse(json)
   end
 
@@ -55,7 +69,7 @@ class TC_JSONUnicode < Test::Unit::TestCase
       end
     end
     assert_raise(JSON::GeneratorError) do
-      JSON.generate(["\x80"])
+      JSON.generate(["\x80"], :ascii_only => true)
     end
     assert_equal "\302\200", JSON.parse('["\u0080"]').first
   end
