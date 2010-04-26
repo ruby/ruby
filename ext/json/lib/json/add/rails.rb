@@ -10,7 +10,7 @@ class Object
   def self.json_create(object)
     obj = new
     for key, value in object
-      next if key == 'json_class'
+      next if key == JSON.create_id
       instance_variable_set "@#{key}", value
     end
     obj
@@ -18,7 +18,7 @@ class Object
 
   def to_json(*a)
     result = {
-      'json_class' => self.class.name
+      JSON.create_id => self.class.name
     }
     instance_variables.inject(result) do |r, name|
       r[name[1..-1]] = instance_variable_get name

@@ -1,3 +1,7 @@
+Mon Apr 26 09:05:30 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/json: Update to JSON 1.4.1.
+
 Sun Apr 25 23:50:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (ruby_dup): update max fd.
@@ -156,7 +160,7 @@ Thu Apr 22 16:43:31 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_yylex): skip whitespaces after method name.
 
-Wed Apr 22 02:16:00 2010  Kenta Murata <mrkn@mrkn.jp>
+Wed Apr 22 02:16:00 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.[ch]: replace _DEBUG with BIGDECIMAL_DEBUG
 	  to prevent activating debugging code when compiled with -DEBUG flag
@@ -1619,7 +1623,7 @@ Thu Mar 18 21:24:21 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Thu Mar 18 19:52:27 2010  Tanaka Akira  <akr@fsij.org>
 
 	* tool/transcode-tblgen.rb: scan singleton mappings sequentially.
-	
+
 Thu Mar 18 06:28:32 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_EXEC_PREFIX): added to config.h.
