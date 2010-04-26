@@ -1354,6 +1354,141 @@ nurat_to_r(VALUE self)
     return self;
 }
 
+#define id_ceil rb_intern("ceil")
+#define f_ceil(x) rb_funcall(x, id_ceil, 0)
+
+#define id_quo rb_intern("quo")
+#define f_quo(x,y) rb_funcall(x, id_quo, 1, y)
+
+#define f_reciprocal(x) f_quo(ONE, x)
+
+/*
+  The algorithm here is the method described in CLISP.  Bruno Haible has
+  graciously given permission to use this algorithm.  He says, "You can use
+  it, if you present the following explanation of the algorithm."
+
+  Algorithm (recursively presented):
+    If x is a rational number, return x.
+    If x = 0.0, return 0.
+    If x < 0.0, return (- (rationalize (- x))).
+    If x > 0.0:
+      Call (integer-decode-float x). It returns a m,e,s=1 (mantissa,
+      exponent, sign).
+      If m = 0 or e >= 0: return x = m*2^e.
+      Search a rational number between a = (m-1/2)*2^e and b = (m+1/2)*2^e
+      with smallest possible numerator and denominator.
+      Note 1: If m is a power of 2, we ought to take a = (m-1/4)*2^e.
+        But in this case the result will be x itself anyway, regardless of
+        the choice of a. Therefore we can simply ignore this case.
+      Note 2: At first, we need to consider the closed interval [a,b].
+        but since a and b have the denominator 2^(|e|+1) whereas x itself
+        has a denominator <= 2^|e|, we can restrict the search to the open
+        interval (a,b).
+      So, for given a and b (0 < a < b) we are searching a rational number
+      y with a <= y <= b.
+      Recursive algorithm fraction_between(a,b):
+        c := (ceiling a)
+        if c < b
+          then return c       ; because a <= c < b, c integer
+          else
+            ; a is not integer (otherwise we would have had c = a < b)
+            k := c-1          ; k = floor(a), k < a < b <= k+1
+            return y = k + 1/fraction_between(1/(b-k), 1/(a-k))
+                              ; note 1 <= 1/(b-k) < 1/(a-k)
+
+  You can see that we are actually computing a continued fraction expansion.
+
+  Algorithm (iterative):
+    If x is rational, return x.
+    Call (integer-decode-float x). It returns a m,e,s (mantissa,
+      exponent, sign).
+    If m = 0 or e >= 0, return m*2^e*s. (This includes the case x = 0.0.)
+    Create rational numbers a := (2*m-1)*2^(e-1) and b := (2*m+1)*2^(e-1)
+    (positive and already in lowest terms because the denominator is a
+    power of two and the numerator is odd).
+    Start a continued fraction expansion
+      p[-1] := 0, p[0] := 1, q[-1] := 1, q[0] := 0, i := 0.
+    Loop
+      c := (ceiling a)
+      if c >= b
+        then k := c-1, partial_quotient(k), (a,b) := (1/(b-k),1/(a-k)),
+             goto Loop
+    finally partial_quotient(c).
+    Here partial_quotient(c) denotes the iteration
+      i := i+1, p[i] := c*p[i-1]+p[i-2], q[i] := c*q[i-1]+q[i-2].
+    At the end, return s * (p[i]/q[i]).
+    This rational number is already in lowest terms because
+    p[i]*q[i-1]-p[i-1]*q[i] = (-1)^i.
+*/
+
+static void
+nurat_rationalize_internal(VALUE a, VALUE b, VALUE *p, VALUE *q)
+{
+    VALUE c, k, t, p0, p1, p2, q0, q1, q2;
+
+    p0 = ZERO;
+    p1 = ONE;
+    q0 = ONE;
+    q1 = ZERO;
+
+    while (1) {
+	c = f_ceil(a);
+	if (f_lt_p(c, b))
+	    break;
+	k = f_sub(c, ONE);
+	p2 = f_add(f_mul(k, p1), p0);
+	q2 = f_add(f_mul(k, q1), q0);
+	t = f_reciprocal(f_sub(b, k));
+	b = f_reciprocal(f_sub(a, k));
+	a = t;
+	p0 = p1;
+	q0 = q1;
+	p1 = p2;
+	q1 = q2;
+    }
+    *p = f_add(f_mul(c, p1), p0);
+    *q = f_add(f_mul(c, q1), q0);
+}
+
+/*
+ * call-seq:
+ *    rat.rationalize       ->  self
+ *    rat.rationalize(eps)  ->  rational
+ *
+ * Returns a simpler approximation of the value if an optional
+ * argument eps is given (rat-|eps| <= result <= rat+|eps|), self
+ * otherwise.
+ *
+ * For example:
+ *
+ *    r = Rational(5033165, 16777216)
+ *    r.rationalize                    #=> (5033165/16777216)
+ *    r.rationalize(Rational('0.01'))  #=> (3/10)
+ *    r.rationalize(Rational('0.1'))   #=> (1/3)
+ */
+static VALUE
+nurat_rationalize(int argc, VALUE *argv, VALUE self)
+{
+    VALUE e, a, b, p, q;
+
+    if (argc == 0)
+	return self;
+
+    if (f_negative_p(self))
+	return f_negate(nurat_rationalize(argc, argv, f_abs(self)));
+
+    rb_scan_args(argc, argv, "01", &e);
+    e = f_abs(e);
+    a = f_sub(self, e);
+    b = f_add(self, e);
+
+    if (f_eqeq_p(a, b))
+	return self;
+
+    nurat_rationalize_internal(a, b, &p, &q);
+    return f_rational_new2(CLASS_OF(self), p, q);
+}
+
 /* :nodoc: */
 static VALUE
 nurat_hash(VALUE self)
@@ -1653,6 +1788,20 @@ nilclass_to_r(VALUE self)
 
 /*
  * call-seq:
+ *    nil.rationalize([eps])  ->  (0/1)
+ *
+ * Returns zero as a rational.  An optional argument eps is always
+ * ignored.
+ */
+static VALUE
+nilclass_rationalize(int argc, VALUE *argv, VALUE self)
+{
+    rb_scan_args(argc, argv, "01", NULL);
+    return nilclass_to_r(self);
+}
+
+/*
+ * call-seq:
  *    int.to_r  ->  rational
  *
  * Returns the value as a rational.
@@ -1666,6 +1815,20 @@ static VALUE
 integer_to_r(VALUE self)
 {
     return rb_rational_new1(self);
+}
+
+/*
+ * call-seq:
+ *    int.rationalize([eps])  ->  rational
+ *
+ * Returns the value as a rational.  An optional argument eps is
+ * always ignored.
+ */
+static VALUE
+integer_rationalize(int argc, VALUE *argv, VALUE self)
+{
+    rb_scan_args(argc, argv, "01", NULL);
+    return integer_to_r(self);
 }
 
 static void
@@ -1731,6 +1894,64 @@ float_to_r(VALUE self)
 #else
     return f_to_r(f_mul(f, f_expt(INT2FIX(FLT_RADIX), n)));
 #endif
+}
+
+/*
+ * call-seq:
+ *    flt.rationalize([eps])  ->  rational
+ *
+ * Returns a simpler approximation of the value (flt-|eps| <= result
+ * <= flt+|eps|).  if eps is not given, it will be chosen
+ * automatically.
+ *
+ * For example:
+ *
+ *    0.3.rationalize          #=> (3/10)
+ *    1.333.rationalize        #=> (1333/1000)
+ *    1.333.rationalize(0.01)  #=> (4/3)
+ */
+static VALUE
+float_rationalize(int argc, VALUE *argv, VALUE self)
+{
+    VALUE e, a, b, p, q;
+
+    if (f_negative_p(self))
+	return f_negate(float_rationalize(argc, argv, f_abs(self)));
+
+    rb_scan_args(argc, argv, "01", &e);
+
+    if (argc != 0) {
+	e = f_abs(e);
+	a = f_sub(self, e);
+	b = f_add(self, e);
+    }
+    else {
+	VALUE f, n;
+
+	float_decode_internal(self, &f, &n);
+	if (f_zero_p(f) || f_positive_p(n))
+	    return rb_rational_new1(f_lshift(f, n));
+
+#if FLT_RADIX == 2
+	a = rb_rational_new2(f_sub(f_mul(TWO, f), ONE),
+			     f_lshift(ONE, f_sub(ONE, n)));
+	b = rb_rational_new2(f_add(f_mul(TWO, f), ONE),
+			     f_lshift(ONE, f_sub(ONE, n)));
+#else
+	a = rb_rational_new2(f_sub(f_mul(INT2FIX(FLT_RADIX), f),
+				   INT2FIX(FLT_RADIX - 1)),
+			     f_expt(INT2FIX(FLT_RADIX), f_sub(ONE, n)));
+	b = rb_rational_new2(f_add(f_mul(INT2FIX(FLT_RADIX), f),
+				   INT2FIX(FLT_RADIX - 1)),
+			     f_expt(INT2FIX(FLT_RADIX), f_sub(ONE, n)));
+#endif
+    }
+
+    if (f_eqeq_p(a, b))
+	return f_to_r(self);
+
+    nurat_rationalize_internal(a, b, &p, &q);
+    return rb_rational_new2(p, q);
 }
 
 static VALUE rat_pat, an_e_pat, a_dot_pat, underscores_pat, an_underscore;
@@ -2101,6 +2322,7 @@ Init_Rational(void)
     rb_define_method(rb_cRational, "to_i", nurat_truncate, 0);
     rb_define_method(rb_cRational, "to_f", nurat_to_f, 0);
     rb_define_method(rb_cRational, "to_r", nurat_to_r, 0);
+    rb_define_method(rb_cRational, "rationalize", nurat_rationalize, -1);
 
     rb_define_method(rb_cRational, "hash", nurat_hash, 0);
 
@@ -2126,8 +2348,11 @@ Init_Rational(void)
     rb_define_method(rb_cFloat, "denominator", float_denominator, 0);
 
     rb_define_method(rb_cNilClass, "to_r", nilclass_to_r, 0);
+    rb_define_method(rb_cNilClass, "rationalize", nilclass_rationalize, -1);
     rb_define_method(rb_cInteger, "to_r", integer_to_r, 0);
+    rb_define_method(rb_cInteger, "rationalize", integer_rationalize, -1);
     rb_define_method(rb_cFloat, "to_r", float_to_r, 0);
+    rb_define_method(rb_cFloat, "rationalize", float_rationalize, -1);
 
     make_patterns();
 

@@ -1,0 +1,84 @@
+# parser.ry: Written by Tadayoshi Funaba 2006,2008,2009 -*- ruby -*-
+
+class Date::Delta::Parser
+
+  prechigh
+    nonassoc UNARY
+    left '^'
+    left '*' '/'
+    left '+' ',' AND '-'
+  preclow
+
+  rule
+
+  stmt	: expr
+	;
+
+  expr	: time
+	| iso
+	| expr '+' expr   {result += val[2]}
+	| expr ',' expr   {result += val[2]}
+	| expr AND expr   {result += val[2]}
+	| expr '-' expr   {result -= val[2]}
+	| expr '*' DIGITS {result *= val[2]}
+	| expr '/' DIGITS {result /= val[2]}
+	| expr '^' DIGITS {result **= val[2]}
+	| '-' expr =UNARY {result = -val[1]}
+	| '+' expr =UNARY {result = +val[1]}
+	| '(' expr ')'    {result =  val[1]}
+	;
+
+  time	: DIGITS unit {result = val[0] * val[1]}
+	;
+
+  unit	: {result = 1} | UNIT
+	;
+
+  iso	: DURATION
+	;
+
+---- header ----
+---- inner ----
+
+  def lookup(str)
+    t = str.downcase
+    k = UNITS4KEY[t]
+    return [:UNIT, k] if k
+    return [:AND, nil] if t == 'and'
+    return [:UNKNOWNWORD, nil]
+  end
+
+  def parse(str)
+    @q = []
+    until str.empty?
+      case str
+      when /\A\s+/
+      when /\AP(\d+y)?(\d+m)?(\d+d)?t?(\d+h)?(\d+m)?(\d+s)?(\d+w)?/i
+	y, m, d, h, min, s, w =
+	  [$1, $2, $3, $4, $5, $6, $7].collect{|x| x.to_i}
+	y *= UNITS4KEY['years']
+	m *= UNITS4KEY['months']
+	d *= UNITS4KEY['days']
+	h *= UNITS4KEY['hours']
+	min *= UNITS4KEY['minutes']
+	s *= UNITS4KEY['seconds']
+	w *= UNITS4KEY['weeks']
+	@q.push [:DURATION, y + m + d + h + min + s + w]
+      when /\A\d+/
+	@q.push [:DIGITS, $&.to_i]
+      when /\A[a-z]+/i
+	@q.push lookup($&)
+      when /\A.|\n/
+	@q.push [$&, $&]
+      end
+      str = $'
+    end
+    @q.push [false, false]
+    do_parse
+  end
+
+  def next_token
+    @q.shift
+  end
+
+---- footer ----

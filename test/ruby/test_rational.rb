@@ -965,6 +965,61 @@ class Rational_Test < Test::Unit::TestCase
     end
   end
 
+  def test_rationalize
+    c = nil.rationalize
+    assert_equal([0,1], [c.numerator, c.denominator])
+
+    c = 0.rationalize
+    assert_equal([0,1], [c.numerator, c.denominator])
+
+    c = 1.rationalize
+    assert_equal([1,1], [c.numerator, c.denominator])
+
+    c = 1.1.rationalize
+    assert_equal([11, 10], [c.numerator, c.denominator])
+
+    c = Rational(1,2).rationalize
+    assert_equal([1,2], [c.numerator, c.denominator])
+
+    assert_equal(nil.rationalize(Rational(1,10)), Rational(0))
+    assert_equal(0.rationalize(Rational(1,10)), Rational(0))
+    assert_equal(10.rationalize(Rational(1,10)), Rational(10))
+
+    r = 0.3333
+    assert_equal(r.rationalize, Rational(3333, 10000))
+    assert_equal(r.rationalize(Rational(1,10)), Rational(1,3))
+    assert_equal(r.rationalize(Rational(-1,10)), Rational(1,3))
+
+    r = Rational(5404319552844595,18014398509481984)
+    assert_equal(r.rationalize, r)
+    assert_equal(r.rationalize(Rational(1,10)), Rational(1,3))
+    assert_equal(r.rationalize(Rational(-1,10)), Rational(1,3))
+
+    r = -0.3333
+    assert_equal(r.rationalize, Rational(-3333, 10000))
+    assert_equal(r.rationalize(Rational(1,10)), Rational(-1,3))
+    assert_equal(r.rationalize(Rational(-1,10)), Rational(-1,3))
+
+    r = Rational(-5404319552844595,18014398509481984)
+    assert_equal(r.rationalize, r)
+    assert_equal(r.rationalize(Rational(1,10)), Rational(-1,3))
+    assert_equal(r.rationalize(Rational(-1,10)), Rational(-1,3))
+
+    if @complex
+      if @keiju
+      else
+	assert_raise(RangeError){Complex(1,2).rationalize}
+      end
+    end
+
+    if (0.0/0).nan?
+      assert_raise(FloatDomainError){(0.0/0).rationalize}
+    end
+    if (1.0/0).infinite?
+      assert_raise(FloatDomainError){(1.0/0).rationalize}
+    end
+  end
+
   def test_gcdlcm
     assert_equal(7, 91.gcd(-49))
     assert_equal(5, 5.gcd(0))

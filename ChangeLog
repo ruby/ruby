@@ -1,3 +1,8 @@
+Mon Apr 26 20:11:05 2010  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c, rational.c, lib/cmath.rb, lib/date.rb lib/date/delta*:
+	  reverted r27484-27486.  now official spec.
+
 Mon Apr 26 15:42:59 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/json/generator/generator.c (convert_UTF8_to_JSON_ASCII): get rid
