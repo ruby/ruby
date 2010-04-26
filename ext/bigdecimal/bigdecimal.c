@@ -641,7 +641,7 @@ BigDecimal_add(VALUE self, VALUE r)
     if(VpIsNaN(b)) return b->obj;
     if(VpIsNaN(a)) return a->obj;
     mx = GetAddSubPrec(a,b);
-    if(mx==(-1L)) {
+    if(mx==(U_LONG)-1L) {
         GUARD_OBJ(c,VpCreateRbObject(VpBaseFig() + 1, "0"));
         VpAddSub(c, a, b, 1);
     } else {
@@ -682,7 +682,7 @@ BigDecimal_sub(VALUE self, VALUE r)
     if(VpIsNaN(a)) return a->obj;
 
     mx = GetAddSubPrec(a,b);
-    if(mx==(-1L)) {
+    if(mx==(U_LONG)-1L) {
         GUARD_OBJ(c,VpCreateRbObject(VpBaseFig() + 1, "0"));
         VpAddSub(c, a, b, -1);
     } else {
@@ -2928,8 +2928,8 @@ VpAddAbs(Real *a, Real *b, Real *c)
     a_pos = ap;
     b_pos = bp;
     c_pos = cp;
-    if(word_shift==-1L) return 0; /* Overflow */
-    if(b_pos == -1L) goto Assign_a;
+    if(word_shift==(U_LONG)-1L) return 0; /* Overflow */
+    if(b_pos == (U_LONG)-1L) goto Assign_a;
 
     mrv = av + bv; /* Most right val. Used for round. */
 
@@ -3021,8 +3021,8 @@ VpSubAbs(Real *a, Real *b, Real *c)
     a_pos = ap;
     b_pos = bp;
     c_pos = cp;
-    if(word_shift==-1L) return 0; /* Overflow */
-    if(b_pos == -1L) goto Assign_a;
+    if(word_shift==(U_LONG)-1L) return 0; /* Overflow */
+    if(b_pos == (U_LONG)-1L) goto Assign_a;
 
     if(av >= bv) {
         mrv = av - bv;
@@ -3297,7 +3297,7 @@ VpMult(Real *c, Real *a, Real *b)
             }
             if(Carry) {
                 ii = ind_c;
-                while((--ii) >= 0) {
+                while(ii-- > 0) {
                     c->frac[ii] += Carry;
                     if(c->frac[ii] >= BASE) {
                         Carry = c->frac[ii] / BASE;
@@ -4044,7 +4044,7 @@ VpCtoV(Real *a, const char *int_chr, U_LONG ni, const char *frac, U_LONG nf, con
     /* get integer part */
     i = 0;
     sign = 1;
-    if(ni >= 0) {
+    if(1 /*ni >= 0*/) {
         if(int_chr[0] == '-') {
             sign = -1;
             ++i;
