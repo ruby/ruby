@@ -463,6 +463,7 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
       thru_def = true
     }
     assert_equal true, thru_def
+    assert_equal '[def(foo,[],bodystmt([void()]))]', parse('def foo ;end')
   end
 
   def test_defined
@@ -1102,10 +1103,8 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
   end
 
   def test_unterminated_regexp
-    assert_normal_exit(<<"SRC")
-$:.unshift(File.dirname(#{File.expand_path(__FILE__).dump}))
-require 'dummyparser'
-DummyParser.new('/').parse.to_s
-SRC
+    compile_error = false
+    parse('/', :compile_error) {|msg| compile_error = msg}
+    assert_equal("unterminated regexp meets end of file", compile_error)
   end
 end if ripper_test

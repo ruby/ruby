@@ -10351,6 +10351,7 @@ static VALUE
 ripper_get_value(VALUE v)
 {
     NODE *nd;
+    if (v == Qundef) return Qnil;
     if (!RB_TYPE_P(v, T_NODE)) return v;
     nd = (NODE *)v;
     if (nd_type(nd) != NODE_LASGN) return Qnil;
