@@ -1,8 +1,8 @@
-require "test/unit"
-require "bigdecimal"
+require_relative "testbase"
 require "bigdecimal/math"
 
 class TestBigMath < Test::Unit::TestCase
+  include TestBigDecimalBase
   include BigMath
   N = 20
   PINF = BigDecimal("+Infinity")

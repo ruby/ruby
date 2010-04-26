@@ -1,14 +1,7 @@
-require "test/unit"
-require "bigdecimal"
+require_relative "testbase"
 
 class TestBigDecimal < Test::Unit::TestCase
-  def setup
-    BigDecimal.mode(BigDecimal::EXCEPTION_ALL, true)
-    BigDecimal.mode(BigDecimal::EXCEPTION_UNDERFLOW, true)
-    BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, true)
-    BigDecimal.mode(BigDecimal::ROUND_MODE, BigDecimal::ROUND_HALF_UP)
-    BigDecimal.limit(0)
-  end
+  include TestBigDecimalBase
 
   def test_version
     assert_equal("1.0.1", BigDecimal.ver)
