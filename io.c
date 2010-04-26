@@ -7153,7 +7153,7 @@ select_internal(VALUE read, VALUE write, VALUE except, struct timeval *tp, rb_fd
 	for (i=0; i<RARRAY_LEN(read); i++) {
 	    GetOpenFile(rb_io_get_io(RARRAY_PTR(read)[i]), fptr);
 	    rb_fd_set(fptr->fd, &fds[0]);
-	    if (READ_DATA_PENDING(fptr)) { /* check for buffered data */
+	    if (READ_DATA_PENDING(fptr) || READ_CHAR_PENDING(fptr)) { /* check for buffered data */
 		pending++;
 		rb_fd_set(fptr->fd, &fds[3]);
 	    }
