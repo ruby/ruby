@@ -61,6 +61,7 @@ enum lex_state_e {
     EXPR_BEG,			/* ignore newline, +/- is a sign. */
     EXPR_END,			/* newline significant, +/- is an operator. */
     EXPR_ENDARG,		/* ditto, and unbound braces. */
+    EXPR_ENDFN, 		/* ditto, and unbound braces. */
     EXPR_ARG,			/* newline significant, +/- is an operator. */
     EXPR_CMDARG,		/* newline significant, +/- is an operator. */
     EXPR_MID,			/* newline significant, +/- is an operator. */
@@ -1775,12 +1776,12 @@ fname		: tIDENTIFIER
 		| tFID
 		| op
 		    {
-			lex_state = EXPR_END;
+			lex_state = EXPR_ENDFN;
 			$$ = $1;
 		    }
 		| reswords
 		    {
-			lex_state = EXPR_END;
+			lex_state = EXPR_ENDFN;
 		    /*%%%*/
 			$$ = $<id>1;
 		    /*%
@@ -2964,7 +2965,7 @@ primary		: literal
 		| k_def singleton dot_or_colon {lex_state = EXPR_FNAME;} fname
 		    {
 			in_single++;
-			lex_state = EXPR_END; /* force for args */
+			lex_state = EXPR_ENDFN; /* force for args */
 			local_push(0);
 		    }
 		  f_arglist
@@ -6474,7 +6475,7 @@ parser_prepare(struct parser_params *parser)
 }
 
 #define IS_ARG() (lex_state == EXPR_ARG || lex_state == EXPR_CMDARG)
-#define IS_END() (lex_state == EXPR_END || lex_state == EXPR_ENDARG)
+#define IS_END() (lex_state == EXPR_END || lex_state == EXPR_ENDARG || lex_state == EXPR_ENDFN)
 #define IS_BEG() (lex_state == EXPR_BEG || lex_state == EXPR_MID || lex_state == EXPR_VALUE || lex_state == EXPR_CLASS)
 #define IS_SPCARG(c) (IS_ARG() && space_seen && !ISSPACE(c))
 
@@ -6486,7 +6487,7 @@ parser_prepare(struct parser_params *parser)
 #define ambiguous_operator(op, syn) dispatch2(operator_ambiguous, ripper_intern(op), rb_str_new_cstr(syn))
 #endif
 #define warn_balanced(op, syn) \
-    (lex_state != EXPR_DOT && lex_state != EXPR_FNAME && \
+    (last_state != EXPR_DOT && last_state != EXPR_FNAME && \
      space_seen && !ISSPACE(c) && \
      (ambiguous_operator(op, syn), 0))
 
@@ -6525,6 +6526,7 @@ parser_yylex(struct parser_params *parser)
     cmd_state = command_start;
     command_start = FALSE;
   retry:
+    last_state = lex_state;
     switch (c = nextc()) {
       case '\0':		/* NUL */
       case '\004':		/* ^D */
@@ -6730,6 +6732,7 @@ parser_yylex(struct parser_params *parser)
 	return '=';
 
       case '<':
+	last_state = lex_state;
 	c = nextc();
 	if (c == '<' &&
 	    lex_state != EXPR_DOT &&
@@ -6793,7 +6796,7 @@ parser_yylex(struct parser_params *parser)
 
       case '`':
 	if (lex_state == EXPR_FNAME) {
-	    lex_state = EXPR_END;
+	    lex_state = EXPR_ENDFN;
 	    return c;
 	}
 	if (lex_state == EXPR_DOT) {
@@ -7394,7 +7397,7 @@ parser_yylex(struct parser_params *parser)
 	    CMDARG_PUSH(0);
 	    return tLAMBEG;
 	}
-	if (IS_ARG() || lex_state == EXPR_END)
+	if (IS_ARG() || lex_state == EXPR_END || lex_state == EXPR_ENDFN)
 	    c = '{';          /* block (primary) */
 	else if (lex_state == EXPR_ENDARG)
 	    c = tLBRACE_ARG;  /* block (expr) */
@@ -7505,7 +7508,6 @@ parser_yylex(struct parser_params *parser)
 	return '%';
 
       case '$':
-	last_state = lex_state;
 	lex_state = EXPR_END;
 	newtok();
 	c = nextc();
@@ -7702,11 +7704,6 @@ parser_yylex(struct parser_params *parser)
 		}
 	    }
 
-	    if (lex_state == EXPR_FNAME) {
-		const char *p = lex_p, *pe = lex_pend;
-		while (p < pe && (*p == ' ' || *p == '\t')) p++;
-		if (p < pe && *p != '(') lex_p = p;
-	    }
 	    if ((lex_state == EXPR_BEG && !cmd_state) ||
 		IS_ARG()) {
 		if (peek(':') && !(lex_p + 1 < lex_pend && lex_p[1] == ':')) {
@@ -7761,6 +7758,9 @@ parser_yylex(struct parser_params *parser)
 		else {
 		    lex_state = EXPR_ARG;
 		}
+	    }
+	    else if (lex_state == EXPR_FNAME) {
+		lex_state = EXPR_ENDFN;
 	    }
 	    else {
 		lex_state = EXPR_END;
