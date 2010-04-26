@@ -1,3 +1,7 @@
+Mon Apr 26 13:11:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (ripper_get_value): escape Qundef.
+
 Mon Apr 26 12:42:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (warn_balanced): warn according to last state.
