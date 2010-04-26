@@ -1,3 +1,8 @@
+Tue Apr 27 00:07:32 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* parse.y (program): check void_expr when rb_parse_in_main().
+	  [ruby-dev:38717]
+
 Mon Apr 26 20:11:05 2010  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c, rational.c, lib/cmath.rb, lib/date.rb lib/date/delta*:
