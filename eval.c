@@ -127,6 +127,12 @@ ruby_cleanup(volatile int ex)
     volatile VALUE errs[2];
     rb_thread_t *th = GET_THREAD();
     int nerr;
+    void rb_threadptr_interrupt(rb_thread_t *th);
+    void rb_threadptr_check_signal(rb_thread_t *mth);
+
+    rb_threadptr_interrupt(th);
+    rb_threadptr_check_signal(th);
+    RUBY_VM_CHECK_INTS();
 
     errs[1] = th->errinfo;
     th->safe_level = 0;
