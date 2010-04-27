@@ -187,5 +187,17 @@ module Psych
       assert_equal Psych, Psych.tagurize(Psych)
       assert_equal 'tag:yaml.org,2002:foo', Psych.tagurize('foo')
     end
+
+    def test_read_type_class
+      things = Psych.read_type_class 'tag:yaml.org,2002:int:Psych::TestDeprecated::QuickEmitter', Object
+      assert_equal 'int', things.first
+      assert_equal Psych::TestDeprecated::QuickEmitter, things.last
+    end
+
+    def test_read_type_class_no_class
+      things = Psych.read_type_class 'tag:yaml.org,2002:int', Object
+      assert_equal 'int', things.first
+      assert_equal Object, things.last
+    end
   end
 end
