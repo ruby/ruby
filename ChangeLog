@@ -1,3 +1,8 @@
+Tue Apr 27 18:00:50 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/net/smtp.rb (Net::SMTP#rcptto_list): fixed typo.
+	  [ruby-core:29809]
+
 Tue Apr 27 12:44:23 2010  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc: Import RDoc 2.5.7.  Fixes #1318 and ruby-core:29780.
