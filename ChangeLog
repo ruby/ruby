@@ -1,3 +1,9 @@
+Tue Apr 27 23:57:04 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* eval.c (ruby_cleanup): add exception guard around code running
+	  signal handler (of r27513).  Absence of the guard made
+	  bootstraptest/test_thread.rb fail sometimes.
+
 Tue Apr 27 22:55:29 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* insns.def (onceinlinecache): add exclusion control for a region
