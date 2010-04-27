@@ -1,3 +1,8 @@
+Tue Apr 27 22:55:29 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* insns.def (onceinlinecache): add exclusion control for a region
+	  between onceinlinecache and setinlinecache.  [ruby-dev:39768]
+
 Tue Apr 27 22:40:54 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* iseq.c (set_relation): do not use top_wrapper as bottom of cref,
