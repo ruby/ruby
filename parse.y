@@ -5593,6 +5593,7 @@ parser_read_escape(struct parser_params *parser, int flags,
 	    goto eof;
 	}
 	if ((c = nextc()) == '\\') {
+	    if (peek('u')) goto eof;
 	    return read_escape(flags|ESCAPE_META, encp) | 0x80;
 	}
 	else if (c == -1 || !ISASCII(c)) goto eof;
@@ -5608,6 +5609,7 @@ parser_read_escape(struct parser_params *parser, int flags,
       case 'c':
 	if (flags & ESCAPE_CONTROL) goto eof;
 	if ((c = nextc())== '\\') {
+	    if (peek('u')) goto eof;
 	    c = read_escape(flags|ESCAPE_CONTROL, encp);
 	}
 	else if (c == '?')
