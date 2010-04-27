@@ -1,3 +1,8 @@
+Tue Apr 27 12:53:20 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* version.c (ruby_description, ruby_copyright): construct literals
+	  statically even if string literal concatenation is not available.
+
 Sun Apr 25 22:06:25 2010  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (fetch_internal): do not quote message data item

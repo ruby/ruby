@@ -1,7 +1,7 @@
 #define RUBY_VERSION "1.8.8"
-#define RUBY_RELEASE_DATE "2010-04-25"
+#define RUBY_RELEASE_DATE "2010-04-27"
 #define RUBY_VERSION_CODE 188
-#define RUBY_RELEASE_CODE 20100425
+#define RUBY_RELEASE_CODE 20100427
 #define RUBY_PATCHLEVEL -1
 
 #define RUBY_VERSION_MAJOR 1
@@ -9,14 +9,15 @@
 #define RUBY_VERSION_TEENY 8
 #define RUBY_RELEASE_YEAR 2010
 #define RUBY_RELEASE_MONTH 4
-#define RUBY_RELEASE_DAY 25
+#define RUBY_RELEASE_DAY 27
 
+#define NO_STRING_LITERAL_CONCATENATION 1
 #ifdef RUBY_EXTERN
 RUBY_EXTERN const char ruby_version[];
 RUBY_EXTERN const char ruby_release_date[];
 RUBY_EXTERN const char ruby_platform[];
 RUBY_EXTERN const int ruby_patchlevel;
-#ifndef NO_STRING_LITERAL_CONCATENATION
+#if !defined(RUBY_VERSION_C) || !defined(NO_STRING_LITERAL_CONCATENATION)
 RUBY_EXTERN const char ruby_description[];
 RUBY_EXTERN const char ruby_copyright[];
 #endif

@@ -11,6 +11,7 @@
 **********************************************************************/
 
 #include "ruby.h"
+#define RUBY_VERSION_C 1
 #include "version.h"
 #include <stdio.h>
 
@@ -27,17 +28,44 @@ const int ruby_patchlevel = RUBY_PATCHLEVEL;
 #ifdef RUBY_DESCRIPTION
 const char ruby_description[] = RUBY_DESCRIPTION;
 #else
-char ruby_description[
-    sizeof("ruby  () []") +
-    sizeof(RUBY_VERSION)-1 + sizeof(RUBY_PATCHLEVEL_STR)-1 +
-    sizeof(RUBY_RELEASE_DATE)-1 + sizeof(RUBY_REVISION_STR)-1 +
-    sizeof(RUBY_PLATFORM)-1];
+const struct {
+    char ruby[sizeof("ruby ")-1];
+    char version[sizeof(RUBY_VERSION)-1];
+    char patchlevel[sizeof(RUBY_PATCHLEVEL_STR)-1];
+    char pad1[2];
+    char release_date[sizeof(RUBY_RELEASE_DATE)-1];
+    char revision[sizeof(RUBY_REVISION_STR)-1];
+    char pad2[3];
+    char platform[sizeof(RUBY_PLATFORM)-1];
+    char pad3[2];
+} ruby_description[1] = {
+    {
+	"ruby ", RUBY_VERSION, RUBY_PATCHLEVEL_STR,
+	" (", RUBY_RELEASE_DATE, RUBY_REVISION_STR, ") [",
+	RUBY_PLATFORM, "]"
+    }
+};
+#define ruby_description ((const char *)ruby_description)
 #endif
+
 #ifdef RUBY_COPYRIGHT
 const char ruby_copyright[] = RUBY_COPYRIGHT;
 #else
-char ruby_copyright[
-    sizeof("ruby - Copyright (C) - ") + 20 + sizeof(RUBY_AUTHOR)-1];
+const struct {
+    char ruby[21];
+    char birth[4];
+    char pad1[1];
+    char release[sizeof(STRINGIZE(RUBY_RELEASE_YEAR))-1];
+    char pad2[1];
+    char author[sizeof(RUBY_AUTHOR)];
+} ruby_copyright[1] = {
+    {
+	"ruby - Copyright (C) ",
+	STRINGIZE(RUBY_BIRTH_YEAR), "-", STRINGIZE(RUBY_RELEASE_YEAR),
+	" ", RUBY_AUTHOR
+    }
+};
+#define ruby_copyright ((const char *)ruby_copyright)
 #endif
 
 const struct ruby_initial_loadpath {
@@ -96,20 +124,6 @@ Init_version()
     VALUE v = MKSTR(version);
     VALUE d = MKSTR(release_date);
     VALUE p = MKSTR(platform);
-
-#ifndef RUBY_DESCRIPTION
-    snprintf(ruby_description, sizeof(ruby_description),
-	     "ruby %s%s (%s%s) [%s]",
-	     RUBY_VERSION, RUBY_PATCHLEVEL_STR,
-	     RUBY_RELEASE_DATE, RUBY_REVISION_STR,
-	     RUBY_PLATFORM);
-#endif
-#ifndef RUBY_COPYRIGHT
-    snprintf(ruby_copyright, sizeof(ruby_copyright),
-	     "ruby - Copyright (C) %d-%d %s",
-	     RUBY_BIRTH_YEAR, RUBY_RELEASE_YEAR,
-	     RUBY_AUTHOR);
-#endif
 
     rb_define_global_const("RUBY_VERSION", v);
     rb_define_global_const("RUBY_RELEASE_DATE", d);
