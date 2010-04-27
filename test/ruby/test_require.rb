@@ -197,6 +197,19 @@ class TestRequire < Test::Unit::TestCase
     assert_raise(ArgumentError) { at_exit }
   end
 
+  def test_load2  # [ruby-core:25039]
+    t = Tempfile.new(["test_ruby_test_require", ".rb"])
+    t.puts "Hello = 'hello'"
+    t.puts "class Foo"
+    t.puts "  p Hello"
+    t.puts "end"
+    t.close
+
+    assert_in_out_err([], <<-INPUT, %w("hello"), [])
+      load(#{ t.path.dump }, true)
+    INPUT
+  end
+
   def test_tainted_loadpath
     t = Tempfile.new(["test_ruby_test_require", ".rb"])
     abs_dir, file = File.split(t.path)
