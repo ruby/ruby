@@ -56,6 +56,16 @@ module Psych
     return thing unless String === thing
     "tag:yaml.org,2002:#{thing}"
   end
+
+  def self.read_type_class type, reference
+    warn "#{caller[0]}: read_type_class is deprecated" if $VERBOSE
+    _, _, type, name = type.split ':', 4
+
+    reference = name.split('::').inject(reference) do |k,n|
+      k.const_get(n.to_sym)
+    end if name
+    [type, reference]
+  end
 end
 
 class Object
