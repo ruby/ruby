@@ -19,12 +19,17 @@
 #ifndef rb_str_new_cstr
 #define rb_str_new_cstr(str) rb_str_new(str, strlen(str))
 #endif
-#define MKSTR(type) rb_obj_freeze(rb_str_new_cstr(TOKEN_PASTE(ruby_,type)))
+#define MKSTR(type) rb_obj_freeze(rb_str_new(TOKEN_PASTE(ruby_,type), sizeof(TOKEN_PASTE(ruby_,type))-1))
+#ifdef __GNUC__
+#define UNALIGNED __attribute__((aligned(1)))
+#else
+#define UNALIGNED
+#endif
 
+const int ruby_patchlevel = RUBY_PATCHLEVEL;
 const char ruby_version[] = RUBY_VERSION;
 const char ruby_release_date[] = RUBY_RELEASE_DATE;
 const char ruby_platform[] = RUBY_PLATFORM;
-const int ruby_patchlevel = RUBY_PATCHLEVEL;
 #ifdef RUBY_DESCRIPTION
 const char ruby_description[] = RUBY_DESCRIPTION;
 #else
@@ -38,14 +43,14 @@ const struct {
     char pad2[3];
     char platform[sizeof(RUBY_PLATFORM)-1];
     char pad3[2];
-} ruby_description[1] = {
+} ruby_description[1] UNALIGNED = {
     {
 	"ruby ", RUBY_VERSION, RUBY_PATCHLEVEL_STR,
 	" (", RUBY_RELEASE_DATE, RUBY_REVISION_STR, ") [",
 	RUBY_PLATFORM, "]"
     }
 };
-#define ruby_description ((const char *)ruby_description)
+#define ruby_description (*(const char (*)[sizeof(ruby_description)])ruby_description)
 #endif
 
 #ifdef RUBY_COPYRIGHT
@@ -58,14 +63,14 @@ const struct {
     char release[sizeof(STRINGIZE(RUBY_RELEASE_YEAR))-1];
     char pad2[1];
     char author[sizeof(RUBY_AUTHOR)];
-} ruby_copyright[1] = {
+} ruby_copyright[1] UNALIGNED = {
     {
 	"ruby - Copyright (C) ",
 	STRINGIZE(RUBY_BIRTH_YEAR), "-", STRINGIZE(RUBY_RELEASE_YEAR),
 	" ", RUBY_AUTHOR
     }
 };
-#define ruby_copyright ((const char *)ruby_copyright)
+#define ruby_copyright (*(const char (*)[sizeof(ruby_copyright[0])])ruby_copyright)
 #endif
 
 const struct ruby_initial_loadpath {
@@ -92,7 +97,7 @@ const struct ruby_initial_loadpath {
 #endif
     char archlib[sizeof(RUBY_ARCHLIB)];
     char terminator[1];
-} ruby_initial_load_paths = {
+} ruby_initial_load_paths UNALIGNED = {
 #ifdef RUBY_SEARCH_PATH
     RUBY_SEARCH_PATH,
 #endif

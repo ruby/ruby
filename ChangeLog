@@ -1,4 +1,7 @@
-Tue Apr 27 12:53:20 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Apr 27 15:21:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* version.c (ruby_description, ruby_copyright): unaligned and
+	  optimized.
 
 	* version.c (ruby_description, ruby_copyright): construct literals
 	  statically even if string literal concatenation is not available.
