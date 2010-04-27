@@ -1199,9 +1199,16 @@ onceinlinecache
 ()
 (VALUE val)
 {
+  retry:
     if (ic->ic_vmstat) {
 	val = ic->ic_value.value;
 	JUMP(dst);
+    }
+    else if (ic->ic_value.value == Qundef)
+    {
+    	RUBY_VM_CHECK_INTS();
+    	rb_thread_schedule();
+	goto retry;
     }
     else {
 	/* none */

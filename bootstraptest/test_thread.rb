@@ -443,3 +443,12 @@ assert_equal 'ok', %q{
     'ok'
   end
 }
+
+assert_equal 'foo', %q{
+  f = proc {|s| /#{ sleep 1; s }/o }
+  [ Thread.new {            f.call("foo"); nil },
+    Thread.new { sleep 0.5; f.call("bar"); nil },
+  ].each {|t| t.join }
+  GC.start
+  f.call.source
+}
