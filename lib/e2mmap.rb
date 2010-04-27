@@ -146,7 +146,7 @@ module Exception2MessageMapper
       E2MM.Fail E2MM, ErrNotRegisteredException, err.inspect
     end
   end
-  class <<E2MM
+  class << E2MM
     alias Fail Raise
   end
 
@@ -160,7 +160,7 @@ module Exception2MessageMapper
     end
     nil
   end
-  class <<self
+  class << self
     alias message e2mm_message
   end
 
