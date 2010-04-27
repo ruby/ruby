@@ -834,6 +834,7 @@ help: PHONY
 	@echo "  test-all:        all ruby tests"
 	@echo "  test-rubyspec    run RubySpec test suite"
 	@echo "  update-rubyspec  update local copy of RubySpec"
+	@echo "  benchmark        benchmark this ruby and COMPARE_RUBY"
 	@echo "  install:         install all ruby distributions"
 	@echo "  install-nodoc:   install without rdoc"
 	@echo "  clean:           clean built objects"
