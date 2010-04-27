@@ -839,7 +839,7 @@ module Net
           ok_users << addr
         end
       end
-      raise ArgumentError, 'mail destination not given' if ok_addrs.empty?
+      raise ArgumentError, 'mail destination not given' if ok_users.empty?
       ret = yield
       unless unknown_users.empty?
         raise SMTPAuthenticationError, "failed to deliver for #{unknown_users.join(', ')}"

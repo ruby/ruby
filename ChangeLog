@@ -1,3 +1,8 @@
+Tue Apr 27 18:00:50 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/net/smtp.rb (Net::SMTP#rcptto_list): fixed typo.
+	  [ruby-core:29809]
+
 Tue Apr 27 15:21:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* version.c (ruby_description, ruby_copyright): unaligned and
