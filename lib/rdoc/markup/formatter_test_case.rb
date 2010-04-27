@@ -87,6 +87,18 @@ class RDoc::Markup::FormatterTestCase < MiniTest::Unit::TestCase
         accept_verbatim
       end
 
+      def test_accept_raw
+        @to.start_accepting
+
+        @to.accept_raw @RM::Raw.new("<table>",
+                                    "<tr><th>Name<th>Count",
+                                    "<tr><td>a<td>1",
+                                    "<tr><td>b<td>2",
+                                    "</table>")
+
+        accept_raw
+      end
+
       def test_accept_rule
         @to.start_accepting
 

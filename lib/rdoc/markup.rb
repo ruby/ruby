@@ -107,15 +107,13 @@ class RDoc::Markup
   end
 
   ##
-  # We take a string, split it into lines, work out the type of each line,
-  # and from there deduce groups of lines (for example all lines in a
-  # paragraph).  We then invoke the output formatter using a Visitor to
-  # display the result.
+  # We take +text+, parse it then invoke the output +formatter+ using a
+  # Visitor to render the result.
 
-  def convert(str, op)
-    document = RDoc::Markup::Parser.parse str
+  def convert text, formatter
+    document = RDoc::Markup::Parser.parse text
 
-    document.accept op
+    document.accept formatter
   end
 
 end

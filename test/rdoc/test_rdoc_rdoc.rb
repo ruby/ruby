@@ -82,50 +82,47 @@ class TestRDocRDoc < MiniTest::Unit::TestCase
   end
 
   def test_setup_output_dir
-    path = @tempfile.path
-    @tempfile.unlink
+    skip "No Dir::mktmpdir, upgrade your ruby" unless Dir.respond_to? :mktmpdir
 
-    last = @rdoc.setup_output_dir path, false
+    Dir.mktmpdir {|d|
+      path = File.join(d, 'testdir')
 
-    assert_empty last
+      last = @rdoc.setup_output_dir path, false
 
-    assert File.directory? path
-  ensure
-    FileUtils.rm_f path
+      assert_empty last
+
+      assert File.directory? path
+    }
   end
 
   def test_setup_output_dir_exists
-    path = @tempfile.path
-    @tempfile.unlink
-    FileUtils.mkdir_p path
+    skip "No Dir::mktmpdir, upgrade your ruby" unless Dir.respond_to? :mktmpdir
 
-    open @rdoc.output_flag_file(path), 'w' do |io|
-      io.puts Time.at 0
-      io.puts "./lib/rdoc.rb\t#{Time.at 86400}"
-    end
+    Dir.mktmpdir {|path|
+      open @rdoc.output_flag_file(path), 'w' do |io|
+        io.puts Time.at 0
+        io.puts "./lib/rdoc.rb\t#{Time.at 86400}"
+      end
 
-    last = @rdoc.setup_output_dir path, false
+      last = @rdoc.setup_output_dir path, false
 
-    assert_equal 1, last.size
-    assert_equal Time.at(86400), last['./lib/rdoc.rb']
-  ensure
-    FileUtils.rm_f path
+      assert_equal 1, last.size
+      assert_equal Time.at(86400), last['./lib/rdoc.rb']
+    }
   end
 
   def test_setup_output_dir_exists_empty_created_rid
-    path = @tempfile.path
-    @tempfile.unlink
-    FileUtils.mkdir_p path
+    skip "No Dir::mktmpdir, upgrade your ruby" unless Dir.respond_to? :mktmpdir
 
-    open @rdoc.output_flag_file(path), 'w' do end
+    Dir.mktmpdir {|path|
+      open @rdoc.output_flag_file(path), 'w' do end
 
-    e = assert_raises RDoc::Error do
-      @rdoc.setup_output_dir path, false
-    end
+      e = assert_raises RDoc::Error do
+        @rdoc.setup_output_dir path, false
+      end
 
-    assert_match %r%Directory #{Regexp.escape path} already exists%, e.message
-  ensure
-    FileUtils.rm_f path
+      assert_match %r%Directory #{Regexp.escape path} already exists%, e.message
+    }
   end
 
   def test_setup_output_dir_exists_file

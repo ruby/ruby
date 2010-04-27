@@ -661,7 +661,7 @@ class RDoc::Parser::C < RDoc::Parser
   def look_for_directives_in(context, comment)
     preprocess = RDoc::Markup::PreProcess.new @file_name, @options.rdoc_include
 
-    preprocess.handle comment do |directive, param|
+    preprocess.handle comment, context do |directive, param|
       case directive
       when 'main' then
         @options.main_page = param
@@ -669,9 +669,6 @@ class RDoc::Parser::C < RDoc::Parser
       when 'title' then
         @options.title = param
         ''
-      else
-        context.metadata[directive] = param
-        false
       end
     end
 

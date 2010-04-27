@@ -5,6 +5,7 @@ module RDoc
 
   KNOWN_CLASSES = {
     "rb_cArray"            => "Array",
+    "rb_cBasicObject"      => "BasicObject",
     "rb_cBignum"           => "Bignum",
     "rb_cClass"            => "Class",
     "rb_cData"             => "Data",

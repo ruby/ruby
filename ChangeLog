@@ -1,3 +1,7 @@
+Tue Apr 27 12:44:23 2010  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc: Import RDoc 2.5.7.  Fixes #1318 and ruby-core:29780.
+
 Tue Apr 27 10:54:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_read_escape): deny extra character escapes.

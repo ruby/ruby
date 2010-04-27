@@ -227,6 +227,10 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
     @res << convert_heading(heading.level, @am.flow(heading.text))
   end
 
+  def accept_raw raw
+    @res << raw.parts.join("\n")
+  end
+
   private
 
   ##

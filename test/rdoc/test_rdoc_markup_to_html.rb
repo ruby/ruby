@@ -170,6 +170,18 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
     assert_equal "<p>\nhi\n</p>\n", @to.res.join
   end
 
+  def accept_raw
+    raw = <<-RAW.rstrip
+<table>
+<tr><th>Name<th>Count
+<tr><td>a<td>1
+<tr><td>b<td>2
+</table>
+    RAW
+
+    assert_equal raw, @to.res.join
+  end
+
   def accept_rule
     assert_equal '<hr style="height: 4px"></hr>', @to.res.join
   end

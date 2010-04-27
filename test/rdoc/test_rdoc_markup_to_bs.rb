@@ -174,6 +174,18 @@ class TestRDocMarkupToBs < RDoc::Markup::FormatterTestCase
     assert_equal "hi\n", @to.res.join
   end
 
+  def accept_raw
+    raw = <<-RAW.rstrip
+<table>
+<tr><th>Name<th>Count
+<tr><td>a<td>1
+<tr><td>b<td>2
+</table>
+    RAW
+
+    assert_equal raw, @to.res.join
+  end
+
   def accept_rule
     assert_equal "#{'-' * 78}\n", @to.res.join
   end
