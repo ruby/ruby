@@ -66,6 +66,13 @@ module Psych
     end if name
     [type, reference]
   end
+
+  def self.object_maker klass, hash
+    warn "#{caller[0]}: object_maker is deprecated" if $VERBOSE
+    klass.allocate.tap do |obj|
+      hash.each { |k,v| obj.instance_variable_set(:"@#{k}", v) }
+    end
+  end
 end
 
 class Object
