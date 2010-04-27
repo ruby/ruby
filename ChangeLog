@@ -1,3 +1,10 @@
+Tue Apr 27 22:40:54 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* iseq.c (set_relation): do not use top_wrapper as bottom of cref,
+	  which caused constant lookup error when "wrapped load" is used;
+	  instead, use Object as bottom, and push top_wrapper on Object.
+	  [ruby-core:25039]
+
 Tue Apr 27 21:24:40 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* eval.c (ruby_cleanup): before cleanup, check signal buffer and run
