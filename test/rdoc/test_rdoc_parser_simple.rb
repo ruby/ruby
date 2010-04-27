@@ -23,12 +23,11 @@ class TestRDocParserSimple < MiniTest::Unit::TestCase
   end
 
   def test_initialize_metadata
-    parser = util_parser ":unhandled: \n# :markup: not rdoc\n"
+    parser = util_parser ":unhandled: \n"
 
-    assert_equal nil,        @top_level.metadata['unhandled']
-    assert_equal 'not rdoc', @top_level.metadata['markup']
+    assert_includes @top_level.metadata, 'unhandled'
 
-    assert_equal ":unhandled: \n# :markup: not rdoc\n", parser.content
+    assert_equal ":unhandled: \n", parser.content
   end
 
   def test_remove_coding_comment

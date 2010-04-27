@@ -1,7 +1,7 @@
 ##
 # A section of verbatim text
 
-class RDoc::Markup::Verbatim < RDoc::Markup::Paragraph
+class RDoc::Markup::Verbatim < RDoc::Markup::Raw
 
   def accept visitor
     visitor.accept_verbatim self

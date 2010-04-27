@@ -366,6 +366,11 @@ Usage: #{opt.program_name} [options] [names...]
       end
     end
 
+    if @pipe and not argv.empty? then
+      @pipe = false
+      ignored << '-p (with files)'
+    end
+
     unless ignored.empty? or quiet then
       $stderr.puts "invalid options: #{ignored.join ', '}"
       $stderr.puts '(invalid options are ignored)'

@@ -127,6 +127,10 @@ class RDoc::Markup::ToRdoc < RDoc::Markup::Formatter
     wrap attributes(paragraph.text)
   end
 
+  def accept_raw raw
+    @res << raw.parts.join("\n")
+  end
+
   def accept_rule rule
     use_prefix or @res << ' ' * @indent
     @res << '-' * (@width - @indent)

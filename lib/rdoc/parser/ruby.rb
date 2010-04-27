@@ -379,7 +379,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
   def look_for_directives_in(context, comment)
     preprocess = RDoc::Markup::PreProcess.new @file_name, @options.rdoc_include
 
-    preprocess.handle comment do |directive, param|
+    preprocess.handle comment, context do |directive, param|
       case directive
       when 'enddoc' then
         throw :enddoc
@@ -403,9 +403,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
       when 'title' then
         @options.title = param
         ''
-      else
-        @top_level.metadata[directive] = param
-        false
       end
     end
 

@@ -50,5 +50,25 @@ class TestRDocOptions < MiniTest::Unit::TestCase
     assert_equal 'MAIN', @options.main_page
   end
 
+  def test_parse_dash_p
+    out, err = capture_io do
+      @options.parse %w[-p]
+    end
+
+    assert @options.pipe
+    refute_match %r%^Usage: %, err
+    refute_match %r%^invalid options%, err
+  end
+
+  def test_parse_dash_p_files
+    out, err = capture_io do
+      @options.parse %w[-p README]
+    end
+
+    refute @options.pipe
+    refute_match %r%^Usage: %, err
+    assert_match %r%^invalid options: -p .with files.%, err
+  end
+
 end
 

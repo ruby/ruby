@@ -17,10 +17,7 @@ class RDoc::Parser::Simple < RDoc::Parser
 
     preprocess = RDoc::Markup::PreProcess.new @file_name, @options.rdoc_include
 
-    preprocess.handle @content do |directive, param|
-      top_level.metadata[directive] = param
-      false
-    end
+    preprocess.handle @content, @top_level
   end
 
   ##

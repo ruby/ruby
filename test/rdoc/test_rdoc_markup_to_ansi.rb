@@ -175,6 +175,18 @@ class TestRDocMarkupToAnsi < RDoc::Markup::FormatterTestCase
     assert_equal "\e[0mhi\n", @to.res.join
   end
 
+  def accept_raw
+    raw = <<-RAW.rstrip
+\e[0m<table>
+<tr><th>Name<th>Count
+<tr><td>a<td>1
+<tr><td>b<td>2
+</table>
+    RAW
+
+    assert_equal raw, @to.res.join
+  end
+
   def accept_rule
     assert_equal "\e[0m#{'-' * 78}\n", @to.res.join
   end

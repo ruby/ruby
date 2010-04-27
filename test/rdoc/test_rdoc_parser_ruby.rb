@@ -151,16 +151,9 @@ class TestRDocParserRuby < MiniTest::Unit::TestCase
   def test_look_for_directives_in_unhandled
     util_parser ""
 
-    comment = "# :unhandled: \n# :markup: not rdoc\n# :title: hi\n"
+    @parser.look_for_directives_in @top_level, "# :unhandled: blah\n"
 
-    @parser.look_for_directives_in @top_level, comment
-
-    assert_equal "# :unhandled: \n# :markup: not rdoc\n", comment
-
-    assert_equal nil,        @top_level.metadata['unhandled']
-    assert_equal 'not rdoc', @top_level.metadata['markup']
-
-    assert_equal 'hi', @options.title
+    assert_equal 'blah', @top_level.metadata['unhandled']
   end
 
   def test_parse_alias

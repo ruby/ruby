@@ -4,8 +4,29 @@ require 'rdoc/markup'
 # Handle common directives that can occur in a block of text:
 #
 # : include : filename
+#
+# RDoc plugin authors can register additional directives to be handled through
+# RDoc::Markup::PreProcess::register
 
 class RDoc::Markup::PreProcess
+
+  @registered = {}
+
+  ##
+  # Registers +directive+ as one handled by RDoc.  If a block is given the
+  # directive will be replaced by the result of the block, otherwise the
+  # directive will be removed from the processed text.
+
+  def self.register directive, &block
+    @registered[directive] = block
+  end
+
+  ##
+  # Registered directives
+
+  def self.registered
+    @registered
+  end
 
   ##
   # Creates a new pre-processor for +input_file_name+ that will look for
@@ -17,10 +38,20 @@ class RDoc::Markup::PreProcess
   end
 
   ##
-  # Look for common options in a chunk of text. Options that we don't handle
-  # are yielded to the caller.
+  # Look for directives in a chunk of +text+.
+  #
+  # Options that we don't handle are yielded.  If the block returns false the
+  # directive is restored to the text.  If the block returns nil or no block
+  # was given the directive is handled according to the registered directives.
+  # If a String was returned the directive is replaced with the string.
+  #
+  # If no matching directive was registered the directive is restored to the
+  # text.
+  #
+  # If +code_object+ is given and the param is set as metadata on the
+  # +code_object+.  See RDoc::CodeObject#metadata
 
-  def handle(text)
+  def handle text, code_object = nil
     text.gsub!(/^([ \t]*#?[ \t]*):(\w+):([ \t]*)(.+)?\n/) do
       next $& if $3.empty? and $4 and $4[0, 1] == ':'
 
@@ -34,11 +65,26 @@ class RDoc::Markup::PreProcess
         include_file filename, prefix
 
       else
-        result = yield directive, param
-        result = "#{prefix}:#{directive}: #{param}\n" unless result
+        result = yield directive, param if block_given?
+
+        case result
+        when nil then
+          code_object.metadata[directive] = param if code_object
+          if RDoc::Markup::PreProcess.registered.include? directive then
+            handler = RDoc::Markup::PreProcess.registered[directive]
+            result = handler.call directive, param if handler
+          else
+            result = "#{prefix}:#{directive}: #{param}\n"
+          end
+        when false then
+          result = "#{prefix}:#{directive}: #{param}\n"
+        end
+
         result
       end
     end
+
+    text
   end
 
   ##
@@ -46,7 +92,11 @@ class RDoc::Markup::PreProcess
 
   def include_file(name, indent)
     if full_name = find_include_file(name) then
-      content = File.binread full_name
+      content = if defined?(Encoding) then
+                  File.binread full_name
+                else
+                  File.read full_name
+                end
       # HACK determine content type and force encoding
       content = content.sub(/\A# .*coding[=:].*$/, '').lstrip
 
