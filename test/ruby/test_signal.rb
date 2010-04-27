@@ -36,7 +36,7 @@ class TestSignal < Test::Unit::TestCase
   end
 
   def test_exit_action
-    return unless have_fork?	# snip this test
+    return unless have_fork?	# skip this test
     begin
       r, w = IO.pipe
       r0, w0 = IO.pipe
@@ -165,5 +165,18 @@ class TestSignal < Test::Unit::TestCase
     ensure
       Signal.trap(:INT, oldtrap) if oldtrap
     end
+  end
+
+  def test_kill_immediately_before_termination
+    return unless have_fork?	# skip this test
+
+    r, w = IO.pipe
+    pid = Process.fork do
+      r.close
+      Signal.trap(:USR1) { w.syswrite("foo") }
+      Process.kill :USR1, $$
+    end
+    w.close
+    assert_equal(r.read, "foo")
   end
 end

@@ -290,7 +290,7 @@ reset_unblock_function(rb_thread_t *th, const struct rb_unblock_callback *old)
     native_mutex_unlock(&th->interrupt_lock);
 }
 
-static void
+void
 rb_threadptr_interrupt(rb_thread_t *th)
 {
     native_mutex_lock(&th->interrupt_lock);
@@ -2651,18 +2651,13 @@ rb_gc_save_machine_context(rb_thread_t *th)
 
 int rb_get_next_signal(void);
 
-static void
-timer_thread_function(void *arg)
+void
+rb_threadptr_check_signal(rb_thread_t *mth)
 {
-    rb_vm_t *vm = GET_VM(); /* TODO: fix me for Multi-VM */
     int sig;
-    rb_thread_t *mth;
 
-    /* for time slice */
-    RUBY_VM_SET_TIMER_INTERRUPT(vm->running_thread);
+    /* mth must be main_thread */
 
-    /* check signal */
-    mth = vm->main_thread;
     if (!mth->exec_signal && (sig = rb_get_next_signal()) > 0) {
 	enum rb_thread_status prev_status = mth->status;
 	thread_debug("main_thread: %s, sig: %d\n",
@@ -2672,6 +2667,19 @@ timer_thread_function(void *arg)
 	rb_threadptr_interrupt(mth);
 	mth->status = prev_status;
     }
+}
+
+static void
+timer_thread_function(void *arg)
+{
+    rb_vm_t *vm = GET_VM(); /* TODO: fix me for Multi-VM */
+    rb_thread_t *mth;
+
+    /* for time slice */
+    RUBY_VM_SET_TIMER_INTERRUPT(vm->running_thread);
+
+    /* check signal */
+    rb_threadptr_check_signal(vm->main_thread);
 
 #if 0
     /* prove profiler */
