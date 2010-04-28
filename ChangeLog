@@ -1,3 +1,8 @@
+Wed Apr 28 17:14:10 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/extconf.rb: CMSG_ macros are broken on 64bit darwin,
+	  because of use of __DARWIN_ALIGN.
+
 Wed Apr 28 16:44:58 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h ({RSTRING,RSTRUCT,RBIGNUM}_LENINT): check long
