@@ -23,6 +23,7 @@ module Psych
       def test_struct_const
         foo = Struct.new("Foo", :bar)
         assert_cycle foo.new('bar')
+        Struct.instance_eval { remove_const(:Foo) }
       end
 
       A = Struct.new(:foo)
