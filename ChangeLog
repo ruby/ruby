@@ -1,3 +1,9 @@
+Wed Apr 28 22:26:55 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/psych/visitors/test_yaml_tree.rb (test_struct_const): remove
+	  Struct::Foo which affects test/ruby/test_struct to warn redefining
+	  constant.
+
 Wed Apr 28 18:04:48 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* time.c (time_timespec): use rb_check_funcall.
