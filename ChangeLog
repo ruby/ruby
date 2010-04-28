@@ -1,3 +1,7 @@
+Wed Apr 28 18:04:48 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* time.c (time_timespec): use rb_check_funcall.
+
 Wed Apr 28 17:14:10 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/extconf.rb: CMSG_ macros are broken on 64bit darwin,
