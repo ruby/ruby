@@ -1,3 +1,9 @@
+Thu Apr 29 03:50:49 2010  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	* lib/xmlrpc/utils.rb: Fixing an incompatibility with
+	  reflection methods returning Symbols.  Patch by
+	  HD Moore.  [ruby-core:29821]
+
 Wed Apr 28 23:53:15 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/thwait.rb: revise rdoc.  a patch from Roger Pack in

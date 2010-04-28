@@ -112,7 +112,7 @@ module XMLRPC
     def get_methods(obj, delim=".")
       prefix = @prefix + delim
       @methods.collect { |name, meth, sig, help|
-        [prefix + name, obj.method(meth).to_proc, sig, help]
+        [prefix + name.to_s, obj.method(meth).to_proc, sig, help]
       }
     end
 
@@ -132,7 +132,7 @@ module XMLRPC
     def get_methods(obj, delim=".")
       prefix = @prefix + delim
       obj.class.public_instance_methods(false).collect { |name|
-        [prefix + name, obj.method(name).to_proc, nil, nil]
+        [prefix + name.to_s, obj.method(name).to_proc, nil, nil]
       }
     end
   end
