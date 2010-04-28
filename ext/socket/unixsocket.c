@@ -169,6 +169,7 @@ struct iomsg_arg {
     struct msghdr msg;
 };
 
+#if defined(HAVE_SENDMSG) && (FD_PASSING_BY_MSG_CONTROL || FD_PASSING_BY_MSG_ACCRIGHTS)
 static VALUE
 sendmsg_blocking(void *data)
 {
@@ -176,7 +177,6 @@ sendmsg_blocking(void *data)
     return sendmsg(arg->fd, &arg->msg, 0);
 }
 
-#if defined(HAVE_SENDMSG) && (FD_PASSING_BY_MSG_CONTROL || FD_PASSING_BY_MSG_ACCRIGHTS)
 /*
  * call-seq:
  *   unixsocket.send_io(io) => nil
@@ -258,6 +258,7 @@ unix_send_io(VALUE sock, VALUE val)
 #define unix_send_io rb_f_notimplement
 #endif
 
+#if defined(HAVE_RECVMSG) && (FD_PASSING_BY_MSG_CONTROL || FD_PASSING_BY_MSG_ACCRIGHTS)
 static VALUE
 recvmsg_blocking(void *data)
 {
@@ -265,7 +266,6 @@ recvmsg_blocking(void *data)
     return recvmsg(arg->fd, &arg->msg, 0);
 }
 
-#if defined(HAVE_RECVMSG) && (FD_PASSING_BY_MSG_CONTROL || FD_PASSING_BY_MSG_ACCRIGHTS)
 /*
  * call-seq:
  *   unixsocket.recv_io([klass [, mode]]) => io
