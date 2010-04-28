@@ -1,3 +1,8 @@
+Wed Apr 28 22:53:57 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* thread. (rb_thread_terminate_all): revert r24591 which caused SEGV
+	  sometimes.  [ruby-dev:40936] [ruby-core:27245] [ruby-core:27416]
+
 Wed Apr 28 22:26:55 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/psych/visitors/test_yaml_tree.rb (test_struct_const): remove
