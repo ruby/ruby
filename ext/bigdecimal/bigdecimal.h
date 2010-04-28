@@ -135,10 +135,10 @@ VP_EXPORT U_LONG VpInit(U_LONG BaseVal);
 VP_EXPORT void *VpMemAlloc(U_LONG mb);
 VP_EXPORT void VpFree(Real *pv);
 VP_EXPORT Real *VpAlloc(U_LONG mx, const char *szVal);
-VP_EXPORT int VpAsgn(Real *c,Real *a,int isw);
-VP_EXPORT int VpAddSub(Real *c,Real *a,Real *b,int operation);
-VP_EXPORT int VpMult(Real *c,Real *a,Real *b);
-VP_EXPORT int VpDivd(Real *c,Real *r,Real *a,Real *b);
+VP_EXPORT U_LONG VpAsgn(Real *c,Real *a,int isw);
+VP_EXPORT U_LONG VpAddSub(Real *c,Real *a,Real *b,int operation);
+VP_EXPORT U_LONG VpMult(Real *c,Real *a,Real *b);
+VP_EXPORT U_LONG VpDivd(Real *c,Real *r,Real *a,Real *b);
 VP_EXPORT int VpComp(Real *a,Real *b);
 VP_EXPORT S_LONG VpExponent10(Real *a);
 VP_EXPORT void VpSzMantissa(Real *a,char *psz);
@@ -152,9 +152,9 @@ VP_EXPORT void VpDtoV(Real *m,double d);
 VP_EXPORT void VpItoV(Real *m,S_INT ival);
 #endif
 VP_EXPORT int VpSqrt(Real *y,Real *x);
-VP_EXPORT int VpActiveRound(Real *y,Real *x,int f,int il);
-VP_EXPORT int VpMidRound(Real *y, int f, int nf);
-VP_EXPORT int VpLeftRound(Real *y, int f, int nf);
+VP_EXPORT int VpActiveRound(Real *y,Real *x,int f,S_LONG il);
+VP_EXPORT int VpMidRound(Real *y, int f, S_LONG nf);
+VP_EXPORT int VpLeftRound(Real *y, int f, S_LONG nf);
 VP_EXPORT void VpFrac(Real *y,Real *x);
 VP_EXPORT int VpPower(Real *y,Real *x,S_INT n);
 
@@ -184,7 +184,7 @@ VP_EXPORT Real *VpOne(void);
 #define VpSetSign(a,s)    {if((s)>0) (a)->sign=(short)VP_SIGN_POSITIVE_FINITE;else (a)->sign=(short)VP_SIGN_NEGATIVE_FINITE;}
 
 /* 1 */
-#define VpSetOne(a)       {(a)->frac[0]=(a)->exponent=(a)->Prec=1;(a)->sign=VP_SIGN_POSITIVE_FINITE;}
+#define VpSetOne(a)       {(a)->frac[0]=(a)->Prec=(a)->exponent=1;(a)->sign=VP_SIGN_POSITIVE_FINITE;}
 
 /* ZEROs */
 #define VpIsPosZero(a)  ((a)->sign==VP_SIGN_POSITIVE_ZERO)
