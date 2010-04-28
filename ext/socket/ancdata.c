@@ -606,7 +606,7 @@ ancillary_ipv6_pktinfo(VALUE self)
     VALUE v_addr;
 
     extract_ipv6_pktinfo(self, &pktinfo, &sa);
-    v_addr = rsock_addrinfo_new((struct sockaddr *)&sa, sizeof(sa), PF_INET6, 0, 0, Qnil, Qnil);
+    v_addr = rsock_addrinfo_new((struct sockaddr *)&sa, (socklen_t)sizeof(sa), PF_INET6, 0, 0, Qnil, Qnil);
     return rb_ary_new3(2, v_addr, UINT2NUM(pktinfo.ipi6_ifindex));
 }
 #else
@@ -634,7 +634,7 @@ ancillary_ipv6_pktinfo_addr(VALUE self)
     struct in6_pktinfo pktinfo;
     struct sockaddr_in6 sa;
     extract_ipv6_pktinfo(self, &pktinfo, &sa);
-    return rsock_addrinfo_new((struct sockaddr *)&sa, sizeof(sa), PF_INET6, 0, 0, Qnil, Qnil);
+    return rsock_addrinfo_new((struct sockaddr *)&sa, (socklen_t)sizeof(sa), PF_INET6, 0, 0, Qnil, Qnil);
 }
 #else
 #define ancillary_ipv6_pktinfo_addr rb_f_notimplement
@@ -781,7 +781,7 @@ anc_inspect_ip_recvdstaddr(int level, int type, VALUE data, VALUE ret)
         struct in_addr addr;
         char addrbuf[INET_ADDRSTRLEN];
         memcpy(&addr, RSTRING_PTR(data), sizeof(addr));
-        if (inet_ntop(AF_INET, &addr, addrbuf, sizeof(addrbuf)) == NULL)
+        if (inet_ntop(AF_INET, &addr, addrbuf, (socklen_t)sizeof(addrbuf)) == NULL)
             rb_str_cat2(ret, " invalid-address");
         else
             rb_str_catf(ret, " %s", addrbuf);
@@ -834,7 +834,7 @@ anc_inspect_ipv6_pktinfo(int level, int type, VALUE data, VALUE ret)
         char addrbuf[INET6_ADDRSTRLEN], ifbuf[IFNAMSIZ];
         memcpy(&addr, &pktinfo->ipi6_addr, sizeof(addr));
         memcpy(&ifindex, &pktinfo->ipi6_ifindex, sizeof(ifindex));
-        if (inet_ntop(AF_INET6, &addr, addrbuf, sizeof(addrbuf)) == NULL)
+        if (inet_ntop(AF_INET6, &addr, addrbuf, (socklen_t)sizeof(addrbuf)) == NULL)
             rb_str_cat2(ret, " invalid-address");
         else
             rb_str_catf(ret, " %s", addrbuf);
@@ -1163,7 +1163,7 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
     if (controls_num) {
 #if defined(HAVE_ST_MSG_CONTROL)
 	int i;
-	int last_pad = 0;
+	size_t last_pad = 0;
         int last_level = 0;
         int last_type = 0;
         controls_str = rb_str_tmp_new(0);
@@ -1201,7 +1201,7 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
             memset((char *)&cmh, 0, sizeof(cmh));
             cmh.cmsg_level = level;
             cmh.cmsg_type = type;
-            cmh.cmsg_len = CMSG_LEN(RSTRING_LEN(cdata));
+            cmh.cmsg_len = (socklen_t)CMSG_LEN(RSTRING_LEN(cdata));
             MEMCPY(cmsg, &cmh, char, sizeof(cmh));
             MEMCPY(cmsg+((char*)CMSG_DATA(&cmh)-(char*)&cmh), RSTRING_PTR(cdata), char, RSTRING_LEN(cdata));
             last_level = cmh.cmsg_level;
@@ -1254,7 +1254,7 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
     memset(&mh, 0, sizeof(mh));
     if (!NIL_P(dest_sockaddr)) {
         mh.msg_name = RSTRING_PTR(dest_sockaddr);
-        mh.msg_namelen = RSTRING_LEN(dest_sockaddr);
+        mh.msg_namelen = RSTRING_LENINT(dest_sockaddr);
     }
     mh.msg_iovlen = 1;
     mh.msg_iov = &iov;
@@ -1263,7 +1263,7 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 #if defined(HAVE_ST_MSG_CONTROL)
     if (controls_str) {
         mh.msg_control = RSTRING_PTR(controls_str);
-        mh.msg_controllen = RSTRING_LEN(controls_str);
+        mh.msg_controllen = RSTRING_LENINT(controls_str);
     }
     else {
         mh.msg_control = NULL;
@@ -1503,7 +1503,8 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 
 #if !defined(HAVE_ST_MSG_CONTROL)
     if (grow_buffer) {
-	int socktype, optlen = sizeof(socktype);
+	int socktype;
+	socklen_t optlen = (socklen_t)sizeof(socktype);
         if (getsockopt(fptr->fd, SOL_SOCKET, SO_TYPE, (void*)&socktype, &optlen) == -1) {
 	    rb_sys_fail("getsockopt(SO_TYPE)");
 	}
@@ -1539,7 +1540,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 
     memset(&namebuf, 0, sizeof(namebuf));
     mh.msg_name = (struct sockaddr *)&namebuf;
-    mh.msg_namelen = sizeof(namebuf);
+    mh.msg_namelen = (socklen_t)sizeof(namebuf);
 
     mh.msg_iov = &iov;
     mh.msg_iovlen = 1;
@@ -1548,7 +1549,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 
 #if defined(HAVE_ST_MSG_CONTROL)
     mh.msg_control = ctlbuf;
-    mh.msg_controllen = maxctllen;
+    mh.msg_controllen = (socklen_t)maxctllen;
 #endif
 
     if (grow_buffer)
@@ -1614,7 +1615,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 #undef BIG_ENOUGH_SPACE
 	}
 #else
-	if (NIL_P(vmaxdatlen) && ss != -1 && ss == iov.iov_len) {
+	if (NIL_P(vmaxdatlen) && ss != -1 && ss == (ssize_t)iov.iov_len) {
             if (SIZE_MAX/2 < maxdatlen)
                 rb_raise(rb_eArgError, "max data length too big");
 	    maxdatlen *= 2;

@@ -73,7 +73,7 @@ init_inetsock_internal(struct inetsock_arg *arg)
 #if !defined(_WIN32) && !defined(__CYGWIN__)
 	    status = 1;
 	    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR,
-		       (char*)&status, sizeof(status));
+		       (char*)&status, (socklen_t)sizeof(status));
 #endif
 	    status = bind(fd, res->ai_addr, res->ai_addrlen);
 	    syscall = "bind(2)";
@@ -185,7 +185,7 @@ ip_addr(int argc, VALUE *argv, VALUE sock)
 {
     rb_io_t *fptr;
     struct sockaddr_storage addr;
-    socklen_t len = sizeof addr;
+    socklen_t len = (socklen_t)sizeof addr;
     int norevlookup;
 
     GetOpenFile(sock, fptr);
@@ -226,7 +226,7 @@ ip_peeraddr(int argc, VALUE *argv, VALUE sock)
 {
     rb_io_t *fptr;
     struct sockaddr_storage addr;
-    socklen_t len = sizeof addr;
+    socklen_t len = (socklen_t)sizeof addr;
     int norevlookup;
 
     GetOpenFile(sock, fptr);
