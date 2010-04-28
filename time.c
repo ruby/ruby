@@ -2296,11 +2296,9 @@ time_timespec(VALUE num, int interval)
 	break;
 
       default:
-        if (rb_respond_to(num, id_divmod)) {
-            ary = rb_check_array_type(rb_funcall(num, id_divmod, 1, INT2FIX(1)));
-            if (NIL_P(ary)) {
-                goto typeerror;
-            }
+	i = INT2FIX(1);
+	ary = rb_check_funcall(num, id_divmod, 1, &i);
+	if (ary != Qundef && !NIL_P(ary = rb_check_array_type(ary))) {
             i = rb_ary_entry(ary, 0);
             f = rb_ary_entry(ary, 1);
             t.tv_sec = NUM2TIMET(i);
@@ -2310,7 +2308,6 @@ time_timespec(VALUE num, int interval)
             t.tv_nsec = NUM2LONG(f);
         }
         else {
-typeerror:
             rb_raise(rb_eTypeError, "can't convert %s into %s",
                      rb_obj_classname(num), tstr);
         }
