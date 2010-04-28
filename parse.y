@@ -6488,7 +6488,7 @@ parser_prepare(struct parser_params *parser)
 #define ambiguous_operator(op, syn) dispatch2(operator_ambiguous, ripper_intern(op), rb_str_new_cstr(syn))
 #endif
 #define warn_balanced(op, syn) \
-    (last_state != EXPR_DOT && last_state != EXPR_FNAME && \
+    (last_state != EXPR_DOT && last_state != EXPR_FNAME && last_state != EXPR_ENDFN && \
      space_seen && !ISSPACE(c) && \
      (ambiguous_operator(op, syn), 0))
 
