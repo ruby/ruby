@@ -51,7 +51,7 @@ tcp_accept(VALUE sock)
     socklen_t fromlen;
 
     GetOpenFile(sock, fptr);
-    fromlen = sizeof(from);
+    fromlen = (socklen_t)sizeof(from);
     return rsock_s_accept(rb_cTCPSocket, fptr->fd,
 		          (struct sockaddr*)&from, &fromlen);
 }
@@ -97,7 +97,7 @@ tcp_accept_nonblock(VALUE sock)
     socklen_t fromlen;
 
     GetOpenFile(sock, fptr);
-    fromlen = sizeof(from);
+    fromlen = (socklen_t)sizeof(from);
     return rsock_s_accept_nonblock(rb_cTCPSocket, fptr,
 			           (struct sockaddr *)&from, &fromlen);
 }
@@ -124,7 +124,7 @@ tcp_sysaccept(VALUE sock)
     socklen_t fromlen;
 
     GetOpenFile(sock, fptr);
-    fromlen = sizeof(from);
+    fromlen = (socklen_t)sizeof(from);
     return rsock_s_accept(0, fptr->fd, (struct sockaddr*)&from, &fromlen);
 }
 

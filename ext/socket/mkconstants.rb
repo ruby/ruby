@@ -143,16 +143,16 @@ end
 ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_name_to_int_decl(funcname, pat, prefix_optional, guard=nil)")
 %if guard
 #ifdef <%=guard%>
-int <%=funcname%>(const char *str, int len, int *valp);
+int <%=funcname%>(const char *str, long len, int *valp);
 #endif
 %else
-int <%=funcname%>(const char *str, int len, int *valp);
+int <%=funcname%>(const char *str, long len, int *valp);
 %end
 EOS
 
 ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_name_to_int_func_in_guard(funcname, pat, prefix_optional, guard=nil)")
 int
-<%=funcname%>(const char *str, int len, int *valp)
+<%=funcname%>(const char *str, long len, int *valp)
 {
     switch (len) {
 %    each_names_with_len(pat, prefix_optional) {|pairs, len|

@@ -129,7 +129,7 @@ rb_getaddrinfo(const char *node, const char *service,
     arg.service = service;
     arg.hints = hints;
     arg.res = res;
-    ret = BLOCKING_REGION(nogvl_getaddrinfo, &arg);
+    ret = (int)BLOCKING_REGION(nogvl_getaddrinfo, &arg);
     return ret;
 #endif
 }
@@ -151,8 +151,8 @@ nogvl_getnameinfo(void *arg)
 {
     struct getnameinfo_arg *ptr = arg;
     return getnameinfo(ptr->sa, ptr->salen,
-                       ptr->host, ptr->hostlen,
-                       ptr->serv, ptr->servlen,
+                       ptr->host, (socklen_t)ptr->hostlen,
+                       ptr->serv, (socklen_t)ptr->servlen,
                        ptr->flags);
 }
 #endif
@@ -174,7 +174,7 @@ rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
     arg.serv = serv;
     arg.servlen = servlen;
     arg.flags = flags;
-    ret = BLOCKING_REGION(nogvl_getnameinfo, &arg);
+    ret = (int)BLOCKING_REGION(nogvl_getnameinfo, &arg);
     return ret;
 #endif
 }
@@ -200,7 +200,7 @@ rsock_make_ipaddr(struct sockaddr *addr)
 }
 
 static void
-make_inetaddr(long host, char *buf, size_t len)
+make_inetaddr(unsigned int host, char *buf, size_t len)
 {
     struct sockaddr_in sin;
 
@@ -233,7 +233,7 @@ host_str(VALUE host, char *hbuf, size_t len, int *flags_ptr)
         return NULL;
     }
     else if (rb_obj_is_kind_of(host, rb_cInteger)) {
-        unsigned long i = NUM2ULONG(host);
+        unsigned int i = NUM2UINT(host);
 
         make_inetaddr(htonl(i), hbuf, len);
         if (flags_ptr) *flags_ptr |= AI_NUMERICHOST;
@@ -481,7 +481,7 @@ typedef struct {
     int pfamily;
     int socktype;
     int protocol;
-    size_t sockaddr_len;
+    socklen_t sockaddr_len;
     struct sockaddr_storage addr;
 } rb_addrinfo_t;
 
@@ -544,7 +544,7 @@ alloc_addrinfo()
 }
 
 static void
-init_addrinfo(rb_addrinfo_t *rai, struct sockaddr *sa, size_t len,
+init_addrinfo(rb_addrinfo_t *rai, struct sockaddr *sa, socklen_t len,
               int pfamily, int socktype, int protocol,
               VALUE canonname, VALUE inspectname)
 {
@@ -744,7 +744,8 @@ init_unix_addrinfo(rb_addrinfo_t *rai, VALUE path, int socktype)
     un.sun_family = AF_UNIX;
     memcpy((void*)&un.sun_path, RSTRING_PTR(path), RSTRING_LEN(path));
 
-    init_addrinfo(rai, (struct sockaddr *)&un, sizeof(un), PF_UNIX, socktype, 0, Qnil, Qnil);
+    init_addrinfo(rai, (struct sockaddr *)&un, (socklen_t)sizeof(un),
+		  PF_UNIX, socktype, 0, Qnil, Qnil);
 }
 #endif
 
@@ -801,7 +802,7 @@ addrinfo_initialize(int argc, VALUE *argv, VALUE self)
     VALUE sockaddr_arg, sockaddr_ary, pfamily, socktype, protocol;
     int i_pfamily, i_socktype, i_protocol;
     struct sockaddr *sockaddr_ptr;
-    size_t sockaddr_len;
+    socklen_t sockaddr_len;
     VALUE canonname = Qnil, inspectname = Qnil;
 
     if (check_addrinfo(self))
@@ -865,7 +866,7 @@ addrinfo_initialize(int argc, VALUE *argv, VALUE self)
     else {
         StringValue(sockaddr_arg);
         sockaddr_ptr = (struct sockaddr *)RSTRING_PTR(sockaddr_arg);
-        sockaddr_len = RSTRING_LEN(sockaddr_arg);
+        sockaddr_len = RSTRING_LENINT(sockaddr_arg);
         init_addrinfo(rai, sockaddr_ptr, sockaddr_len,
                       i_pfamily, i_socktype, i_protocol,
                       canonname, inspectname);
@@ -941,7 +942,7 @@ inspect_sockaddr(VALUE addrinfo, VALUE ret)
                  * draft-ietf-ipv6-scope-api-00.txt: Scoped Address Extensions to the IPv6 Basic Socket API
                  */
                 error = getnameinfo((struct sockaddr *)&rai->addr, rai->sockaddr_len,
-                                    hbuf, sizeof(hbuf), NULL, 0,
+                                    hbuf, (socklen_t)sizeof(hbuf), NULL, 0,
                                     NI_NUMERICHOST|NI_NUMERICSERV);
                 if (error) {
                     rsock_raise_socket_error("getnameinfo", error);
@@ -1182,7 +1183,7 @@ addrinfo_mdump(VALUE self)
         char hbuf[NI_MAXHOST], pbuf[NI_MAXSERV];
         int error;
         error = getnameinfo((struct sockaddr *)&rai->addr, rai->sockaddr_len,
-                            hbuf, sizeof(hbuf), pbuf, sizeof(pbuf),
+                            hbuf, (socklen_t)sizeof(hbuf), pbuf, (socklen_t)sizeof(pbuf),
                             NI_NUMERICHOST|NI_NUMERICSERV);
         if (error) {
             rsock_raise_socket_error("getnameinfo", error);
@@ -1203,7 +1204,7 @@ addrinfo_mload(VALUE self, VALUE ary)
     VALUE canonname, inspectname;
     int afamily, pfamily, socktype, protocol;
     struct sockaddr_storage ss;
-    size_t len;
+    socklen_t len;
     rb_addrinfo_t *rai;
 
     if (check_addrinfo(self))
@@ -1273,7 +1274,7 @@ addrinfo_mload(VALUE self, VALUE ary)
         if (sizeof(uaddr.sun_path) <= (size_t)RSTRING_LEN(v))
             rb_raise(rb_eSocket, "too long AF_UNIX path");
         memcpy(uaddr.sun_path, RSTRING_PTR(v), RSTRING_LEN(v));
-        len = sizeof(uaddr);
+        len = (socklen_t)sizeof(uaddr);
         memcpy(&ss, &uaddr, len);
         break;
       }
@@ -1526,7 +1527,7 @@ addrinfo_getnameinfo(int argc, VALUE *argv, VALUE self)
         flags |= NI_DGRAM;
 
     error = getnameinfo((struct sockaddr *)&rai->addr, rai->sockaddr_len,
-                        hbuf, sizeof(hbuf), pbuf, sizeof(pbuf),
+                        hbuf, (socklen_t)sizeof(hbuf), pbuf, (socklen_t)sizeof(pbuf),
                         flags);
     if (error) {
         rsock_raise_socket_error("getnameinfo", error);
@@ -1867,7 +1868,7 @@ addrinfo_ipv6_to_ipv4(VALUE self)
         sin4.sin_family = AF_INET;
         SET_SIN_LEN(&sin4, sizeof(sin4));
         memcpy(&sin4.sin_addr, (char*)addr + sizeof(*addr) - sizeof(sin4.sin_addr), sizeof(sin4.sin_addr));
-        return rsock_addrinfo_new((struct sockaddr *)&sin4, sizeof(sin4),
+        return rsock_addrinfo_new((struct sockaddr *)&sin4, (socklen_t)sizeof(sin4),
                                   PF_INET, rai->socktype, rai->protocol,
                                   rai->canonname, rai->inspectname);
     }
@@ -2078,7 +2079,7 @@ rsock_fd_socket_addrinfo(int fd, struct sockaddr *addr, socklen_t len)
     int family;
     int socktype;
     int ret;
-    socklen_t optlen = sizeof(socktype);
+    socklen_t optlen = (socklen_t)sizeof(socktype);
 
     /* assumes protocol family and address family are identical */
     family = get_afamily(addr, len);

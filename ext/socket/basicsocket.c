@@ -238,12 +238,12 @@ bsock_setsockopt(int argc, VALUE *argv, VALUE sock)
       case T_TRUE:
 	i = 1;
       numval:
-	v = (char*)&i; vlen = sizeof(i);
+	v = (char*)&i; vlen = (int)sizeof(i);
 	break;
       default:
 	StringValue(val);
 	v = RSTRING_PTR(val);
-	vlen = RSTRING_LEN(val);
+	vlen = RSTRING_LENINT(val);
 	break;
     }
 
@@ -357,7 +357,7 @@ static VALUE
 bsock_getsockname(VALUE sock)
 {
     struct sockaddr_storage buf;
-    socklen_t len = sizeof buf;
+    socklen_t len = (socklen_t)sizeof buf;
     rb_io_t *fptr;
 
     GetOpenFile(sock, fptr);
@@ -386,7 +386,7 @@ static VALUE
 bsock_getpeername(VALUE sock)
 {
     struct sockaddr_storage buf;
-    socklen_t len = sizeof buf;
+    socklen_t len = (socklen_t)sizeof buf;
     rb_io_t *fptr;
 
     GetOpenFile(sock, fptr);
@@ -474,7 +474,7 @@ static VALUE
 bsock_local_address(VALUE sock)
 {
     struct sockaddr_storage buf;
-    socklen_t len = sizeof buf;
+    socklen_t len = (socklen_t)sizeof buf;
     rb_io_t *fptr;
 
     GetOpenFile(sock, fptr);
@@ -506,7 +506,7 @@ static VALUE
 bsock_remote_address(VALUE sock)
 {
     struct sockaddr_storage buf;
-    socklen_t len = sizeof buf;
+    socklen_t len = (socklen_t)sizeof buf;
     rb_io_t *fptr;
 
     GetOpenFile(sock, fptr);
@@ -549,7 +549,7 @@ rsock_bsock_send(int argc, VALUE *argv, VALUE sock)
 	SockAddrStringValue(to);
 	to = rb_str_new4(to);
 	arg.to = (struct sockaddr *)RSTRING_PTR(to);
-	arg.tolen = RSTRING_LEN(to);
+	arg.tolen = (socklen_t)RSTRING_LENINT(to);
 	func = rsock_sendto_blocking;
     }
     else {

@@ -17,10 +17,11 @@ struct unixsock_arg {
 };
 
 static VALUE
-unixsock_connect_internal(struct unixsock_arg *arg)
+unixsock_connect_internal(VALUE a)
 {
+    struct unixsock_arg *arg = (struct unixsock_arg *)a;
     return (VALUE)rsock_connect(arg->fd, (struct sockaddr*)arg->sockaddr,
-			        sizeof(*arg->sockaddr), 0);
+			        (socklen_t)sizeof(*arg->sockaddr), 0);
 }
 
 VALUE
@@ -45,15 +46,14 @@ rsock_init_unixsock(VALUE sock, VALUE path, int server)
     memcpy(sockaddr.sun_path, RSTRING_PTR(path), RSTRING_LEN(path));
 
     if (server) {
-        status = bind(fd, (struct sockaddr*)&sockaddr, sizeof(sockaddr));
+        status = bind(fd, (struct sockaddr*)&sockaddr, (socklen_t)sizeof(sockaddr));
     }
     else {
 	int prot;
 	struct unixsock_arg arg;
 	arg.sockaddr = &sockaddr;
 	arg.fd = fd;
-        status = rb_protect((VALUE(*)(VALUE))unixsock_connect_internal,
-			    (VALUE)&arg, &prot);
+        status = (int)rb_protect(unixsock_connect_internal, (VALUE)&arg, &prot);
 	if (prot) {
 	    close(fd);
 	    rb_jump_tag(prot);
@@ -115,7 +115,7 @@ unix_path(VALUE sock)
     GetOpenFile(sock, fptr);
     if (NIL_P(fptr->pathv)) {
 	struct sockaddr_un addr;
-	socklen_t len = sizeof(addr);
+	socklen_t len = (socklen_t)sizeof(addr);
 	if (getsockname(fptr->fd, (struct sockaddr*)&addr, &len) < 0)
 	    rb_sys_fail(0);
 	fptr->pathv = rb_obj_freeze(rb_str_new_cstr(rsock_unixpath(&addr, len)));
@@ -235,10 +235,10 @@ unix_send_io(VALUE sock, VALUE val)
 
 #if FD_PASSING_BY_MSG_CONTROL
     arg.msg.msg_control = (caddr_t)&cmsg;
-    arg.msg.msg_controllen = CMSG_LEN(sizeof(int));
+    arg.msg.msg_controllen = (socklen_t)CMSG_LEN(sizeof(int));
     arg.msg.msg_flags = 0;
     MEMZERO((char*)&cmsg, char, sizeof(cmsg));
-    cmsg.hdr.cmsg_len = CMSG_LEN(sizeof(int));
+    cmsg.hdr.cmsg_len = (socklen_t)CMSG_LEN(sizeof(int));
     cmsg.hdr.cmsg_level = SOL_SOCKET;
     cmsg.hdr.cmsg_type = SCM_RIGHTS;
     memcpy(CMSG_DATA(&cmsg.hdr), &fd, sizeof(int));
@@ -320,9 +320,9 @@ unix_recv_io(int argc, VALUE *argv, VALUE sock)
 
 #if FD_PASSING_BY_MSG_CONTROL
     arg.msg.msg_control = (caddr_t)&cmsg;
-    arg.msg.msg_controllen = CMSG_SPACE(sizeof(int));
+    arg.msg.msg_controllen = (socklen_t)CMSG_SPACE(sizeof(int));
     arg.msg.msg_flags = 0;
-    cmsg.hdr.cmsg_len = CMSG_LEN(sizeof(int));
+    cmsg.hdr.cmsg_len = (socklen_t)CMSG_LEN(sizeof(int));
     cmsg.hdr.cmsg_level = SOL_SOCKET;
     cmsg.hdr.cmsg_type = SCM_RIGHTS;
     fd = -1;
@@ -415,7 +415,7 @@ unix_addr(VALUE sock)
 {
     rb_io_t *fptr;
     struct sockaddr_un addr;
-    socklen_t len = sizeof addr;
+    socklen_t len = (socklen_t)sizeof addr;
 
     GetOpenFile(sock, fptr);
 
@@ -441,7 +441,7 @@ unix_peeraddr(VALUE sock)
 {
     rb_io_t *fptr;
     struct sockaddr_un addr;
-    socklen_t len = sizeof addr;
+    socklen_t len = (socklen_t)sizeof addr;
 
     GetOpenFile(sock, fptr);
 

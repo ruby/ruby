@@ -121,7 +121,7 @@ rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
 	rb_raise(rb_eIOError, "recv for buffered IO");
     }
     arg.fd = fptr->fd;
-    arg.alen = sizeof(arg.buf);
+    arg.alen = (socklen_t)sizeof(arg.buf);
 
     arg.str = str = rb_tainted_str_new(0, buflen);
     klass = RBASIC(str)->klass;
@@ -174,7 +174,7 @@ rsock_s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type
     rb_io_t *fptr;
     VALUE str;
     struct sockaddr_storage buf;
-    socklen_t alen = sizeof buf;
+    socklen_t alen = (socklen_t)sizeof buf;
     VALUE len, flg;
     long buflen;
     long slen;
@@ -272,7 +272,7 @@ wait_connectable0(int fd, rb_fdset_t *fds_w, rb_fdset_t *fds_e)
 	    return 0;
 	}
 	else if (rb_fd_isset(fd, fds_e)) {
-	    sockerrlen = sizeof(sockerr);
+	    sockerrlen = (socklen_t)sizeof(sockerr);
 	    if (getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)&sockerr,
 			   &sockerrlen) == 0) {
 		if (sockerr == 0)
@@ -388,7 +388,7 @@ rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks)
 	      case EINPROGRESS:
 #endif
 #if WAIT_IN_PROGRESS > 0
-		sockerrlen = sizeof(sockerr);
+		sockerrlen = (socklen_t)sizeof(sockerr);
 		status = getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)&sockerr, &sockerrlen);
 		if (status) break;
 		if (sockerr) {
@@ -418,7 +418,7 @@ rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks)
 		     * some platforms, need to check true error
 		     * status.
 		     */
-		    sockerrlen = sizeof(sockerr);
+		    sockerrlen = (socklen_t)sizeof(sockerr);
 		    status = getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)&sockerr, &sockerrlen);
 		    if (!status && !sockerr) {
 			struct timeval tv = {0, 100000};
@@ -515,7 +515,7 @@ rsock_s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len)
     arg.len = len;
   retry:
     rb_thread_wait_fd(fd);
-    fd2 = BLOCKING_REGION(accept_blocking, &arg);
+    fd2 = (int)BLOCKING_REGION(accept_blocking, &arg);
     if (fd2 < 0) {
 	switch (errno) {
 	  case EMFILE:
@@ -539,7 +539,7 @@ int
 rsock_getfamily(int sockfd)
 {
     struct sockaddr_storage ss;
-    socklen_t sslen = sizeof(ss);
+    socklen_t sslen = (socklen_t)sizeof(ss);
 
     ss.ss_family = AF_UNSPEC;
     if (getsockname(sockfd, (struct sockaddr*)&ss, &sslen) < 0)

@@ -15,7 +15,7 @@ static VALUE rb_mSockConst;
 #include "constdefs.c"
 
 static int
-constant_arg(VALUE arg, int (*str_to_int)(const char*, int, int*), const char *errmsg)
+constant_arg(VALUE arg, int (*str_to_int)(const char*, long, int*), const char *errmsg)
 {
     VALUE tmp;
     char *ptr;
