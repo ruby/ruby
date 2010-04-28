@@ -1,3 +1,8 @@
+Wed Apr 28 23:53:15 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/thwait.rb: revise rdoc.  a patch from Roger Pack in
+	  [ruby-core:27362].
+
 Wed Apr 28 23:21:42 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json: Update to JSON 1.4.2.
