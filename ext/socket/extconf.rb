@@ -110,7 +110,8 @@ end
 have_header("netinet/tcp.h") if /cygwin/ !~ RUBY_PLATFORM # for cygwin 1.1.5
 have_header("netinet/udp.h")
 
-if have_func("sendmsg") | have_func("recvmsg")
+if (have_func("sendmsg") | have_func("recvmsg")) && /64-darwin/ !~ RUBY_PLATFORM
+  # CMSG_ macros are broken on 64bit darwin, because of use of __DARWIN_ALIGN.
   have_struct_member('struct msghdr', 'msg_control', ['sys/types.h', 'sys/socket.h'])
   have_struct_member('struct msghdr', 'msg_accrights', ['sys/types.h', 'sys/socket.h'])
 end
