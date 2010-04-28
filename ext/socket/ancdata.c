@@ -1330,8 +1330,6 @@ rsock_bsock_sendmsg(int argc, VALUE *argv, VALUE sock)
 {
     return bsock_sendmsg_internal(argc, argv, sock, 0);
 }
-#else
-#define rsock_bsock_sendmsg rb_f_notimplement
 #endif
 
 #if defined(HAVE_SENDMSG)
@@ -1351,8 +1349,6 @@ rsock_bsock_sendmsg_nonblock(int argc, VALUE *argv, VALUE sock)
 {
     return bsock_sendmsg_internal(argc, argv, sock, 1);
 }
-#else
-#define bsock_sendmsg_nonblock rb_f_notimplement
 #endif
 
 #if defined(HAVE_RECVMSG)
@@ -1742,8 +1738,6 @@ rsock_bsock_recvmsg(int argc, VALUE *argv, VALUE sock)
 {
     return bsock_recvmsg_internal(argc, argv, sock, 0);
 }
-#else
-#define rsock_bsock_recvmsg rb_f_notimplement
 #endif
 
 #if defined(HAVE_RECVMSG)
@@ -1763,8 +1757,6 @@ rsock_bsock_recvmsg_nonblock(int argc, VALUE *argv, VALUE sock)
 {
     return bsock_recvmsg_internal(argc, argv, sock, 1);
 }
-#else
-#define rsock_bsock_recvmsg_nonblock rb_f_notimplement
 #endif
 
 /*

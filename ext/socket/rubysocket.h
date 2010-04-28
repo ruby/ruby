@@ -263,10 +263,16 @@ VALUE rsock_sockopt_new(int family, int level, int optname, VALUE data);
 #if defined(HAVE_SENDMSG)
 VALUE rsock_bsock_sendmsg(int argc, VALUE *argv, VALUE sock);
 VALUE rsock_bsock_sendmsg_nonblock(int argc, VALUE *argv, VALUE sock);
+#else
+#define rsock_bsock_sendmsg rb_f_notimplement
+#define rsock_bsock_sendmsg_nonblock rb_f_notimplement
 #endif
 #if defined(HAVE_RECVMSG)
 VALUE rsock_bsock_recvmsg(int argc, VALUE *argv, VALUE sock);
 VALUE rsock_bsock_recvmsg_nonblock(int argc, VALUE *argv, VALUE sock);
+#else
+#define rsock_bsock_recvmsg rb_f_notimplement
+#define rsock_bsock_recvmsg_nonblock rb_f_notimplement
 #endif
 
 #ifdef HAVE_ST_MSG_CONTROL

@@ -1,3 +1,8 @@
+Wed Apr 28 16:16:26 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/rubysocket.h: non-implemented method definitions need
+	  to be shared.
+
 Wed Apr 28 10:27:33 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vsnprintf.c (ruby_vsnprintf, ruby_snprintf): suppress warnings.
