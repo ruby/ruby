@@ -921,7 +921,7 @@ static VALUE cState_partial_generate(VALUE self, VALUE obj, VALUE depth)
 
     generate_json(buffer, self, state, obj, NIL_P(depth) ? 0 : FIX2INT(depth));
     result = rb_str_new(FBUFFER_PAIR(buffer));
-    fbuffer_free_only_buffer(buffer);
+    fbuffer_free(buffer);
     FORCE_UTF8(result);
     return result;
 }
