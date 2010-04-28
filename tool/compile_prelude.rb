@@ -113,6 +113,16 @@ prelude_prefix_path(VALUE self)
 }
 % end
 
+% unless preludes.empty?
+VALUE rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE filepath, VALUE line, VALUE opt);
+
+static void
+prelude_eval(VALUE code, VALUE name, VALUE line)
+{
+    rb_iseq_eval(rb_iseq_compile_with_option(code, name, Qnil, line, Qtrue));
+}
+% end
+
 % if @have_sublib
 static VALUE
 prelude_require(VALUE self, VALUE nth)
@@ -136,7 +146,7 @@ prelude_require(VALUE self, VALUE nth)
       default:
 	return Qfalse;
     }
-    rb_iseq_eval(rb_iseq_compile(code, name, INT2FIX(1)));
+    prelude_eval(code, name, INT2FIX(1));
     return Qtrue;
 }
 
@@ -159,10 +169,10 @@ Init_<%=init_name%>(void)
 % end
 % preludes.each do |i, prelude, lines, sub|
 %   next if sub
-    rb_iseq_eval(rb_iseq_compile(
+    prelude_eval(
       rb_usascii_str_new(prelude_code<%=i%>, sizeof(prelude_code<%=i%>) - 1),
       rb_usascii_str_new(prelude_name<%=i%>, sizeof(prelude_name<%=i%>) - 1),
-      INT2FIX(1)));
+      INT2FIX(1));
 % end
 % if @have_sublib or @need_ruby_prefix
     rb_gc_force_recycle(prelude);

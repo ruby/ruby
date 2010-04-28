@@ -1,3 +1,7 @@
+Wed Apr 28 09:49:21 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/compile_prelude.rb: enable optimization.
+
 Wed Apr 28 09:43:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (warn_balanced): do not warn for EXPR_ENDFN.
