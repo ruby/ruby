@@ -272,6 +272,24 @@ VALUE rb_ull2inum(unsigned LONG_LONG);
 # endif
 #endif
 
+#if SIZEOF_INT < SIZEOF_VALUE
+NORETURN(void rb_out_of_int(SIGNED_VALUE num));
+#endif
+
+#if SIZEOF_INT < SIZEOF_LONG
+#define rb_long2int_internal(n, i) \
+    int i = (int)(n); \
+    if ((long)i != (n)) rb_out_of_int(n)
+#ifdef __GNUC__
+#define rb_long2int(n) __extension__ ({long i2l_n = (n); rb_long2int_internal(i2l_n, i2l_i); i2l_i;})
+#else
+static inline int
+rb_long2int(long n) {rb_long2int_internal(n, i); return i;}
+#endif
+#else
+#define rb_long2int(n) ((int)(n))
+#endif
+
 #ifndef PIDT2NUM
 #define PIDT2NUM(v) LONG2NUM(v)
 #endif
@@ -637,6 +655,7 @@ struct RString {
       ((RBASIC(str)->flags >> RSTRING_EMBED_LEN_SHIFT) & \
        (RSTRING_EMBED_LEN_MASK >> RSTRING_EMBED_LEN_SHIFT))) : \
      (RSTRING(str)->as.heap.ptr + RSTRING(str)->as.heap.len))
+#define RSTRING_LENINT(str) rb_long2int(RSTRING_LEN(str))
 
 #define RARRAY_EMBED_LEN_MAX 3
 struct RArray {
@@ -666,24 +685,6 @@ struct RArray {
     ((RBASIC(a)->flags & RARRAY_EMBED_FLAG) ? \
      RARRAY(a)->as.ary : \
      RARRAY(a)->as.heap.ptr)
-
-#if SIZEOF_INT < SIZEOF_VALUE
-NORETURN(void rb_out_of_int(SIGNED_VALUE num));
-#endif
-
-#if SIZEOF_INT < SIZEOF_LONG
-#define rb_long2int_internal(n, i) \
-    int i = (int)(n); \
-    if ((long)i != (n)) rb_out_of_int(n)
-#ifdef __GNUC__
-#define rb_long2int(n) __extension__ ({long i2l_n = (n); rb_long2int_internal(i2l_n, i2l_i); i2l_i;})
-#else
-static inline int
-rb_long2int(long n) {rb_long2int_internal(n, i); return i;}
-#endif
-#else
-#define rb_long2int(n) ((int)(n))
-#endif
 #define RARRAY_LENINT(ary) rb_long2int(RARRAY_LEN(ary))
 
 struct RRegexp {
@@ -822,6 +823,7 @@ struct RStruct {
     ((RBASIC(st)->flags & RSTRUCT_EMBED_LEN_MASK) ? \
      RSTRUCT(st)->as.ary : \
      RSTRUCT(st)->as.heap.ptr)
+#define RSTRUCT_LENINT(st) rb_long2int(RSTRUCT_LEN(st))
 
 #define RBIGNUM_EMBED_LEN_MAX ((int)((sizeof(VALUE)*3)/sizeof(BDIGIT)))
 struct RBignum {
@@ -856,6 +858,7 @@ struct RBignum {
     ((RBASIC(b)->flags & RBIGNUM_EMBED_FLAG) ? \
      RBIGNUM(b)->as.ary : \
      RBIGNUM(b)->as.heap.digits)
+#define RBIGNUM_LENINT(b) rb_long2int(RBIGNUM_LEN(b))
 
 #define R_CAST(st)   (struct st*)
 #define RBASIC(obj)  (R_CAST(RBasic)(obj))
