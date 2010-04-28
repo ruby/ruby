@@ -83,7 +83,7 @@ BigDecimal_version(VALUE self)
  */
 static unsigned short VpGetException(void);
 static void  VpSetException(unsigned short f);
-static void  VpInternalRound(Real *c,int ixDigit,U_LONG vPrev,U_LONG v);
+static void  VpInternalRound(Real *c,U_LONG ixDigit,U_LONG vPrev,U_LONG v);
 static int   VpLimitRound(Real *c,U_LONG ixDigit);
 
 /*
@@ -483,7 +483,7 @@ static VALUE
 BigDecimal_to_i(VALUE self)
 {
     ENTER(5);
-    int e,nf;
+    S_LONG e,nf;
     Real *p;
 
     GUARD_OBJ(p,GetVpValue(self,1));
@@ -500,7 +500,7 @@ BigDecimal_to_i(VALUE self)
 	VALUE a = BigDecimal_split(self);
 	VALUE digits = RARRAY_PTR(a)[1];
 	VALUE numerator = rb_funcall(digits, rb_intern("to_i"), 0);
-	int dpower = e - RSTRING_LEN(digits);
+	S_LONG dpower = e - RSTRING_LEN(digits);
 
 	if (VpGetSign(p) < 0) {
 	    numerator = rb_funcall(numerator, '*', 1, INT2FIX(-1));
@@ -915,7 +915,7 @@ BigDecimal_div(VALUE self, VALUE r)
      */
     /* Round */
     if(VpHasVal(div)) { /* frac[0] must be zero for NaN,INF,Zero */
-       VpInternalRound(c,0,c->frac[c->Prec-1],(VpBaseVal()*res->frac[0])/div->frac[0]);
+	VpInternalRound(c,0,c->frac[c->Prec-1],(VpBaseVal()*res->frac[0])/div->frac[0]);
     }
     return ToValue(c);
 }
@@ -1111,7 +1111,7 @@ BigDecimal_div2(int argc, VALUE *argv, VALUE self)
        }
        return DoSomeOne(self,b,rb_intern("div"));
     } else {    /* div in BigDecimal sense */
-       U_LONG ix = (U_LONG)GetPositiveInt(n);
+       S_INT ix = GetPositiveInt(n);
        if(ix==0) return BigDecimal_div(self,b);
        else {
           Real *res=NULL;
@@ -1127,7 +1127,7 @@ BigDecimal_div2(int argc, VALUE *argv, VALUE self)
           GUARD_OBJ(res,VpCreateRbObject((mx * 2  + 2)*VpBaseFig(), "#0"));
           VpDivd(cv,res,av,bv);
           VpSetPrecLimit(pl);
-          VpLeftRound(cv,VpGetRoundMode(),ix);
+          VpLeftRound(cv,(int)VpGetRoundMode(),ix);
           return ToValue(cv);
        }
     }
@@ -1138,14 +1138,14 @@ BigDecimal_add2(VALUE self, VALUE b, VALUE n)
 {
     ENTER(2);
     Real   *cv;
-    U_LONG mx = (U_LONG)GetPositiveInt(n);
+    S_INT mx = GetPositiveInt(n);
     if(mx==0) return BigDecimal_add(self,b);
     else {
        U_LONG pl = VpSetPrecLimit(0);
        VALUE   c = BigDecimal_add(self,b);
        VpSetPrecLimit(pl);
        GUARD_OBJ(cv,GetVpValue(c,1));
-       VpLeftRound(cv,VpGetRoundMode(),mx);
+       VpLeftRound(cv,(int)VpGetRoundMode(),mx);
        return ToValue(cv);
     }
 }
@@ -1155,14 +1155,14 @@ BigDecimal_sub2(VALUE self, VALUE b, VALUE n)
 {
     ENTER(2);
     Real *cv;
-    U_LONG mx = (U_LONG)GetPositiveInt(n);
+    S_INT mx = GetPositiveInt(n);
     if(mx==0) return BigDecimal_sub(self,b);
     else {
        U_LONG pl = VpSetPrecLimit(0);
        VALUE   c = BigDecimal_sub(self,b);
        VpSetPrecLimit(pl);
        GUARD_OBJ(cv,GetVpValue(c,1));
-       VpLeftRound(cv,VpGetRoundMode(),mx);
+       VpLeftRound(cv,(int)VpGetRoundMode(),mx);
        return ToValue(cv);
     }
 }
@@ -1172,14 +1172,14 @@ BigDecimal_mult2(VALUE self, VALUE b, VALUE n)
 {
     ENTER(2);
     Real *cv;
-    U_LONG mx = (U_LONG)GetPositiveInt(n);
+    S_INT mx = GetPositiveInt(n);
     if(mx==0) return BigDecimal_mult(self,b);
     else {
        U_LONG pl = VpSetPrecLimit(0);
        VALUE   c = BigDecimal_mult(self,b);
        VpSetPrecLimit(pl);
        GUARD_OBJ(cv,GetVpValue(c,1));
-       VpLeftRound(cv,VpGetRoundMode(),mx);
+       VpLeftRound(cv,(int)VpGetRoundMode(),mx);
        return ToValue(cv);
     }
 }
@@ -1217,7 +1217,7 @@ BigDecimal_sqrt(VALUE self, VALUE nFig)
 {
     ENTER(5);
     Real *c, *a;
-    S_INT mx, n;
+    U_LONG mx, n;
 
     GUARD_OBJ(a,GetVpValue(self,1));
     mx = a->Prec *(VpBaseFig() + 1);
@@ -1278,7 +1278,7 @@ BigDecimal_round(int argc, VALUE *argv, VALUE self)
     VALUE  vRound;
     U_LONG pl;
 
-    int    sw = VpGetRoundMode();
+    int    sw = (int)VpGetRoundMode();
 
     int na = rb_scan_args(argc,argv,"02",&vLoc,&vRound);
     switch(na) {
@@ -1596,7 +1596,7 @@ BigDecimal_split(VALUE self)
     VpSzMantissa(vp,psz1);
     s = 1;
     if(psz1[0]=='-') {
-	int len = strlen(psz1+1);
+	size_t len = strlen(psz1+1);
 
 	memmove(psz1, psz1+1, len);
 	psz1[len] = '\0';
@@ -1641,7 +1641,7 @@ BigDecimal_inspect(VALUE self)
     ENTER(5);
     Real *vp;
     volatile VALUE obj;
-    unsigned int nc;
+    U_LONG nc;
     char *psz, *tmp;
 
     GUARD_OBJ(vp,GetVpValue(self,1));
@@ -1671,7 +1671,8 @@ BigDecimal_power(VALUE self, VALUE p)
 {
     ENTER(5);
     Real *x, *y;
-    S_LONG mp, ma, n;
+    S_LONG mp, ma;
+    S_INT n;
 
     Check_Type(p, T_FIXNUM);
     n = FIX2INT(p);
@@ -2734,7 +2735,7 @@ VpAlloc(U_LONG mx, const char *szVal)
  * [Output]
  *  c  ... LHSV
  */
-VP_EXPORT int
+VP_EXPORT U_LONG
 VpAsgn(Real *c, Real *a, int isw)
 {
     U_LONG n;
@@ -2758,9 +2759,9 @@ VpAsgn(Real *c, Real *a, int isw)
         if(isw!=10) {
             /* Not in ActiveRound */
             if(c->Prec < a->Prec) {
-               VpInternalRound(c,n,(n>0)?a->frac[n-1]:0,a->frac[n]);
+		VpInternalRound(c,n,(n>0)?a->frac[n-1]:0,a->frac[n]);
             } else {
-               VpLimitRound(c,0);
+		VpLimitRound(c,0);
             }
         }
     } else {
@@ -2776,7 +2777,7 @@ VpAsgn(Real *c, Real *a, int isw)
  *  = a - b  when operation = -1 or -2.
  *   Returns number of significant digits of c
  */
-VP_EXPORT int
+VP_EXPORT U_LONG
 VpAddSub(Real *c, Real *a, Real *b, int operation)
 {
     S_INT sw, isw;
@@ -3186,7 +3187,7 @@ VpSetPTR(Real *a, Real *b, Real *c, U_LONG *a_pos, U_LONG *b_pos, U_LONG *c_pos,
     }
     c->Prec = *c_pos;
     c->exponent = a->exponent;
-    if(!AddExponent(c,(S_LONG)1)) return (-1L);
+    if(!AddExponent(c,1)) return (U_LONG)-1L;
     return word_shift;
 }
 
@@ -3205,7 +3206,7 @@ VpSetPTR(Real *a, Real *b, Real *c, U_LONG *a_pos, U_LONG *b_pos, U_LONG *c_pos,
  *     nc      <---|
  *     MaxAB |--------------------|
  */
-VP_EXPORT int
+VP_EXPORT U_LONG
 VpMult(Real *c, Real *a, Real *b)
 {
     U_LONG MxIndA, MxIndB, MxIndAB, MxIndC;
@@ -3332,7 +3333,7 @@ Exit:
 /*
  *   c = a / b,  remainder = r
  */
-VP_EXPORT int
+VP_EXPORT U_LONG
 VpDivd(Real *c, Real *r, Real *a, Real *b)
 {
     U_LONG word_a, word_b, word_c, word_r;
@@ -3504,14 +3505,14 @@ carry:
 out_side:
     c->Prec = word_c;
     c->exponent = a->exponent;
-    if(!AddExponent(c,(S_LONG)2))   return 0;
+    if(!AddExponent(c,2))   return 0;
     if(!AddExponent(c,-(b->exponent))) return 0;
 
     VpSetSign(c,VpGetSign(a)*VpGetSign(b));
     VpNmlz(c);            /* normalize c */
     r->Prec = word_r;
     r->exponent = a->exponent;
-    if(!AddExponent(r,(S_LONG)1)) return 0;
+    if(!AddExponent(r,1)) return 0;
     VpSetSign(r,VpGetSign(a));
     VpNmlz(r);            /* normalize r(remainder) */
     goto Exit;
@@ -4009,7 +4010,7 @@ VpCtoV(Real *a, const char *int_chr, U_LONG ni, const char *frac, U_LONG nf, con
 {
     U_LONG i, j, ind_a, ma, mi, me;
     U_LONG loc;
-    S_INT  e,es, eb, ef;
+    S_LONG  e,es, eb, ef;
     S_INT  sign, signe, exponent_overflow;
     /* get exponent part */
     e = 0;
@@ -4132,7 +4133,7 @@ Final:
         ++j;
     }
     a->Prec = ind_a + 1;
-    a->exponent = eb;
+    a->exponent = (S_INT)eb;
     VpSetSign(a,sign);
     VpNmlz(a);
     return 1;
@@ -4221,7 +4222,7 @@ VP_EXPORT void
 VpDtoV(Real *m, double d)
 {
     U_LONG i, ind_m, mm;
-    U_LONG ne;
+    S_INT ne;
     double  val, val2;
 
     if(isnan(d)) {
@@ -4407,7 +4408,7 @@ VpSqrt(Real *y, Real *x)
         n =(e + 1) / 2;
     }
     VpDtoV(y, sqrt(val));    /* y <- sqrt(val) */
-    y->exponent += n;
+    y->exponent += (S_INT)n;
     n = (DBLE_FIG + BASE_FIG - 1) / BASE_FIG;
     y->MaxPrec = (U_LONG)Min(n , y_prec);
     f->MaxPrec = y->MaxPrec + 1;
@@ -4460,7 +4461,7 @@ Exit:
  *
  */
 VP_EXPORT int
-VpMidRound(Real *y, int f, int nf)
+VpMidRound(Real *y, int f, S_LONG nf)
 /*
  * Round reletively from the decimal point.
  *    f: rounding mode
@@ -4469,7 +4470,8 @@ VpMidRound(Real *y, int f, int nf)
 {
     /* fracf: any positive digit under rounding position? */
     /* exptoadd: number of digits needed to compensate negative nf */
-    int n,i,ix,ioffset,fracf,exptoadd;
+    int fracf;
+    S_LONG n,i,ix,ioffset,exptoadd;
     U_LONG v,shifter;
     U_LONG div;
 
@@ -4554,7 +4556,7 @@ VpMidRound(Real *y, int f, int nf)
         VpNmlz(y);
     }
     if (exptoadd > 0) {
-        y->exponent += exptoadd/BASE_FIG;
+        y->exponent += (S_INT)(exptoadd/BASE_FIG);
         exptoadd %= BASE_FIG;
         for(i=0;i<exptoadd;i++) {
             y->frac[0] *= 10;
@@ -4568,7 +4570,7 @@ VpMidRound(Real *y, int f, int nf)
 }
 
 VP_EXPORT int
-VpLeftRound(Real *y, int f, int nf)
+VpLeftRound(Real *y, int f, S_LONG nf)
 /*
  * Round from the left hand side of the digits.
  */
@@ -4583,7 +4585,7 @@ VpLeftRound(Real *y, int f, int nf)
 }
 
 VP_EXPORT int
-VpActiveRound(Real *y, Real *x, int f, int nf)
+VpActiveRound(Real *y, Real *x, int f, S_LONG nf)
 {
     /* First,assign whole value in truncation mode */
     if(VpAsgn(y, x, 10)<=1) return 0; /* Zero,NaN,or Infinity */
@@ -4598,11 +4600,11 @@ VpLimitRound(Real *c,U_LONG ixDigit)
     if(!ix)           return 0;
     if(!ixDigit) ixDigit = c->Prec-1;
     if((ix+BASE_FIG-1)/BASE_FIG > ixDigit+1) return 0;
-    return VpLeftRound(c,VpGetRoundMode(),ix);
+    return VpLeftRound(c,(int)VpGetRoundMode(),(S_LONG)ix);
 }
 
 static void
-VpInternalRound(Real *c,int ixDigit,U_LONG vPrev,U_LONG v)
+VpInternalRound(Real *c,U_LONG ixDigit,U_LONG vPrev,U_LONG v)
 {
     int f = 0;
 
@@ -4656,7 +4658,7 @@ VpRdup(Real *m,U_LONG ind_m)
         else                       carry = 0;
     }
     if(carry > 0) {        /* Overflow,count exponent and set fraction part be 1  */
-        if(!AddExponent(m,(S_LONG)1)) return 0;
+        if(!AddExponent(m,1)) return 0;
         m->Prec = m->frac[0] = 1;
     } else {
         VpNmlz(m);
@@ -4782,14 +4784,11 @@ VpPower(Real *y, Real *x, S_INT n)
     while(n > 0) {
         VpAsgn(w1, x, 1);
         s = 1;
-loop1:  ss = s;
-        s += s;
-        if(s >(U_LONG) n) goto out_loop1;
-        VpMult(w2, w1, w1);
-        VpAsgn(w1, w2, 1);
-        goto loop1;
-out_loop1:
-        n -= ss;
+	while (ss = s, (s += s) <= (U_LONG)n) {
+	    VpMult(w2, w1, w1);
+	    VpAsgn(w1, w2, 1);
+	}
+        n -= (S_INT)ss;
         VpMult(w2, y, w1);
         VpAsgn(y, w2, 1);
     }
