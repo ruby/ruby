@@ -1,3 +1,8 @@
+Wed Apr 28 10:27:33 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vsnprintf.c (ruby_vsnprintf, ruby_snprintf): suppress warnings.
+	  why return int in spite of the arguments of size_t?
+
 Wed Apr 28 09:49:21 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/compile_prelude.rb: enable optimization.
