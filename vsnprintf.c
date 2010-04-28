@@ -1229,7 +1229,7 @@ ruby_vsnprintf(char *str, size_t n, const char *fmt, va_list ap)
 	f._bf._base = f._p = (unsigned char *)str;
 	f._bf._size = f._w = n - 1;
 	f.vwrite = BSD__sfvwrite;
-	ret = BSD_vfprintf(&f, fmt, ap);
+	ret = (int)BSD_vfprintf(&f, fmt, ap);
 	*f._p = 0;
 	return (ret);
 }
@@ -1249,7 +1249,7 @@ ruby_snprintf(char *str, size_t n, char const *fmt, ...)
 	f._bf._base = f._p = (unsigned char *)str;
 	f._bf._size = f._w = n - 1;
 	f.vwrite = BSD__sfvwrite;
-	ret = BSD_vfprintf(&f, fmt, ap);
+	ret = (int)BSD_vfprintf(&f, fmt, ap);
 	*f._p = 0;
 	va_end(ap);
 	return (ret);
