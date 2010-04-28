@@ -1,4 +1,7 @@
-Wed Apr 28 16:16:26 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Apr 28 16:28:51 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/unixsocket.c (sendmsg_blocking, recvmsg_blocking):
+	  define only when used.
 
 	* ext/socket/rubysocket.h: non-implemented method definitions need
 	  to be shared.
