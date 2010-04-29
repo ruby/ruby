@@ -1,3 +1,8 @@
+Fri Apr 30 00:52:56 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (config.h): define some constants to select
+	  collect code for win64.
+
 Thu Apr 29 20:10:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/test_open3.rb (test_commandline): use dump instead of
