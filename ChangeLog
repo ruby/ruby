@@ -1,4 +1,6 @@
-Thu Apr 29 11:17:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Apr 29 11:20:53 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (seek_before_access): renamed.  see [ruby-core:29861].
 
 	* io.c (rb_io_s_binread): fixed rdoc.  parts of a patch from Roger
 	  Pack in [ruby-core:29861].
