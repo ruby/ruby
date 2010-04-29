@@ -300,8 +300,7 @@ class TestFileUtils
     ln_s 'cpr_src', 'tmp/cpr_src2'
     cp_r 'tmp/cpr_src2', 'tmp/cpr_dest2'
     assert_directory 'tmp/cpr_dest2'
-    #assert_not_symlink 'tmp/cpr_dest2'
-    assert_symlink 'tmp/cpr_dest2'   # 2005-05-26: feature change
+    assert_not_symlink 'tmp/cpr_dest2'
     assert_symlink 'tmp/cpr_dest2/symlink'
     assert_equal 'SLdest', File.readlink('tmp/cpr_dest2/symlink')
   end if have_symlink?
