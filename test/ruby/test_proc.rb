@@ -379,7 +379,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal [1,2,3,[4,5,6]], pr.call([1,2,3,4,5,6])
 
     r = proc{|*a| a}.call([1,2,3])
-    assert [1,2,3], r
+    assert_equal [[1,2,3]], r
   end
 
   def test_proc_args_rest_and_post

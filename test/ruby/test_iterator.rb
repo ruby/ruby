@@ -306,7 +306,7 @@ class TestIterator < Test::Unit::TestCase
     rescue LocalJumpError
       assert(false, "LocalJumpError occurred from break in lambda")
     else
-      assert(11, val)
+      assert_equal(11, val)
     end
 
     block = get_block{11}

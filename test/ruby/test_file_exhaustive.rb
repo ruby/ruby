@@ -434,7 +434,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_extname
-    assert(".test", File.extname(@file))
+    assert_equal(".test", File.extname(@file))
     prefixes = ["", "/", ".", "/.", "bar/.", "/bar/."]
     infixes = ["", " ", "."]
     infixes2 = infixes + [".ext "]

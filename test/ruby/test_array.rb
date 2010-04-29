@@ -1837,8 +1837,8 @@ class TestArray < Test::Unit::TestCase
     o = Object.new
     def o.to_ary; end
     def o.==(x); :foo; end
-    assert(:foo, [0, 1, 2] == o)
-    assert([0, 1, 2] != [0, 1, 3])
+    assert_equal([0, 1, 2], o)
+    assert_not_equal([0, 1, 2], [0, 1, 3])
   end
 
   def test_hash2
