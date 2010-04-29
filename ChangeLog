@@ -1,4 +1,6 @@
-Thu Apr 29 14:24:48 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Apr 29 14:33:39 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby: fixed nonsense assertions.
 
 	* lib/test/unit/assertions.rb (Test::Unit::Assertions#assert):
 	  reverted.  [ruby-core:29872]

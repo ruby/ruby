@@ -245,8 +245,8 @@ class TestFloat < Test::Unit::TestCase
 
   def test_infinite_p
     inf = Float::INFINITY
-    assert(1, inf.infinite?)
-    assert(1, (-inf).infinite?)
+    assert_equal(1, inf.infinite?)
+    assert_equal(-1, (-inf).infinite?)
     assert_nil(1.0.infinite?)
   end
 

@@ -241,7 +241,7 @@ class TestModule < Test::Unit::TestCase
         "foo"
       end
     end
-    assert("foo", Other.class_eval_test)
+    assert_equal("foo", Other.class_eval_test)
 
     assert_equal([Other], Other.class_eval { |*args| args })
   end

@@ -287,7 +287,7 @@ module MarshalTestLib
     o.extend(Mod1)
     str = MyString.new(o, "c")
     marshal_equal(str) { |v|
-      assert(v.instance_eval { @v }).kind_of?(Mod1)
+      assert(v.instance_eval { @v }.kind_of?(Mod1))
     }
   end
 
