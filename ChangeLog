@@ -1,3 +1,8 @@
+Thu Apr 29 14:24:48 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit/assertions.rb (Test::Unit::Assertions#assert):
+	  reverted.  [ruby-core:29872]
+
 Thu Apr 29 12:33:42 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/thwait.rb (ThreadsWait#join): refined rdoc.  [ruby-core:29863]
