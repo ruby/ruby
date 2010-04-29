@@ -711,7 +711,7 @@ typedef unsigned LONG_LONG unsigned_time_t;
 # error cannot find integer type which size is same as time_t.
 #endif
 
-#define TIMET_MAX (~(time_t)0 <= 0 ? (time_t)((~(unsigned_time_t)0) >> 1) : (~(unsigned_time_t)0))
+#define TIMET_MAX (~(time_t)0 <= 0 ? (time_t)((~(unsigned_time_t)0) >> 1) : (time_t)(~(unsigned_time_t)0))
 #define TIMET_MIN (~(time_t)0 <= 0 ? (time_t)(((unsigned_time_t)1) << (sizeof(time_t) * CHAR_BIT - 1)) : (time_t)0)
 
 static wideval_t
