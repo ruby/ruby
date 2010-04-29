@@ -101,8 +101,8 @@ class ThreadsWait
   end
 
   #
-  # Waits for specified threads to terminate, and returns when any
-  # thread terminated.
+  # Waits for specified threads to terminate, and returns when one of
+  # the threads terminated.
   #
   def join(*threads)
     join_nowait(*threads)
