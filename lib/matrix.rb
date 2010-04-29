@@ -478,17 +478,17 @@ class Matrix
   end
 
   #
-  # Returns +true+ if this is a regular matrix.
+  # Returns +true+ if this is a regular (i.e. non-singular) matrix.
   #
   def regular?
-    square? and rank == column_size
+    not singular?
   end
 
   #
-  # Returns +true+ is this is a singular (i.e. non-regular) matrix.
+  # Returns +true+ is this is a singular matrix.
   #
   def singular?
-    not regular?
+    determinant == 0
   end
 
   #
