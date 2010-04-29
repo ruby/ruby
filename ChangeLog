@@ -1,3 +1,12 @@
+Fri Apr 30 03:17:20 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb: Improve algorithm for Matrix#determinant and
+	  Matrix#rank
+	  {determinant,det,rank}_e are now deprecated. [ruby-core:28273]
+	  Also fixes a bug in Determinant#rank (e.g. [[0,1][0,1][0,1]])
+	  Matrix#singular?, Matrix#regular? now raise on rectangular matrices
+	  and use determinant instead of rank.
+
 Fri Apr 30 00:52:56 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (config.h): define some constants to select

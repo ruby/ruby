@@ -740,170 +740,146 @@ class Matrix
 
   #
   # Returns the determinant of the matrix.
-  # This method's algorithm is Gaussian elimination method
-  # and using Numeric#quo(). Beware that using Float values, with their
-  # usual lack of precision, can affect the value returned by this method.  Use
-  # Rational values or Matrix#det_e instead if this is important to you.
+  #
+  # Beware that using Float values can yield erroneous results
+  # because of their lack of precision.
+  # Consider using exact types like Rational or BigDecimal instead.
   #
   #   Matrix[[7,6], [3,9]].determinant
-  #     => 45.0
+  #     => 45
   #
   def determinant
     Matrix.Raise ErrDimensionMismatch unless square?
+    m = @rows
+    case row_size
+      # Up to 4x4, give result using Laplacian expansion by minors.
+      # This will typically be faster, as well as giving good results
+      # in case of Floats
+    when 0
+      +1
+    when 1
+      + m[0][0]
+    when 2
+      + m[0][0] * m[1][1] - m[0][1] * m[1][0]
+    when 3
+      m0 = m[0]; m1 = m[1]; m2 = m[2]
+      + m0[0] * m1[1] * m2[2] - m0[0] * m1[2] * m2[1] \
+      - m0[1] * m1[0] * m2[2] + m0[1] * m1[2] * m2[0] \
+      + m0[2] * m1[0] * m2[1] - m0[2] * m1[1] * m2[0]
+    when 4
+      m0 = m[0]; m1 = m[1]; m2 = m[2]; m3 = m[3]
+      + m0[0] * m1[1] * m2[2] * m3[3] - m0[0] * m1[1] * m2[3] * m3[2] \
+      - m0[0] * m1[2] * m2[1] * m3[3] + m0[0] * m1[2] * m2[3] * m3[1] \
+      + m0[0] * m1[3] * m2[1] * m3[2] - m0[0] * m1[3] * m2[2] * m3[1] \
+      - m0[1] * m1[0] * m2[2] * m3[3] + m0[1] * m1[0] * m2[3] * m3[2] \
+      + m0[1] * m1[2] * m2[0] * m3[3] - m0[1] * m1[2] * m2[3] * m3[0] \
+      - m0[1] * m1[3] * m2[0] * m3[2] + m0[1] * m1[3] * m2[2] * m3[0] \
+      + m0[2] * m1[0] * m2[1] * m3[3] - m0[2] * m1[0] * m2[3] * m3[1] \
+      - m0[2] * m1[1] * m2[0] * m3[3] + m0[2] * m1[1] * m2[3] * m3[0] \
+      + m0[2] * m1[3] * m2[0] * m3[1] - m0[2] * m1[3] * m2[1] * m3[0] \
+      - m0[3] * m1[0] * m2[1] * m3[2] + m0[3] * m1[0] * m2[2] * m3[1] \
+      + m0[3] * m1[1] * m2[0] * m3[2] - m0[3] * m1[1] * m2[2] * m3[0] \
+      - m0[3] * m1[2] * m2[0] * m3[1] + m0[3] * m1[2] * m2[1] * m3[0]
+    else
+      # For bigger matrices, use an efficient and general algorithm.
+      # Currently, we use the Gauss-Bareiss algorithm
+      determinant_bareiss
+    end
+  end
+  alias_method :det, :determinant
 
+  #
+  # Private. Use Matrix#determinant
+  #
+  # Returns the determinant of the matrix, using
+  # Bareiss' multistep integer-preserving gaussian elimination.
+  # It has the same computational cost order O(n^3) as standard Gaussian elimination.
+  # Intermediate results are fraction free and of lower complexity.
+  # A matrix of Integers will have thus intermediate results that are also Integers,
+  # with smaller bignums (if any), while a matrix of Float will usually have more
+  # precise intermediate results.
+  #
+  def determinant_bareiss
     size = row_size
+    last = size - 1
     a = to_a
-
-    det = 1
+    no_pivot = Proc.new{ return 0 }
+    sign = +1
+    pivot = 1
     size.times do |k|
-      if (akk = a[k][k]) == 0
-        i = (k+1 ... size).find {|ii|
-          a[ii][k] != 0
+      previous_pivot = pivot
+      if (pivot = a[k][k]) == 0
+        switch = (k+1 ... size).find(no_pivot) {|row|
+          a[row][k] != 0
         }
-        return 0 if i.nil?
-        a[i], a[k] = a[k], a[i]
-        akk = a[k][k]
-        det *= -1
+        a[switch], a[k] = a[k], a[switch]
+        pivot = a[k][k]
+        sign = -sign
       end
-
-      (k + 1 ... size).each do |ii|
-        q = a[ii][k].quo(akk)
-        (k + 1 ... size).each do |j|
-          a[ii][j] -= a[k][j] * q
+      (k+1).upto(last) do |i|
+        ai = a[i]
+        (k+1).upto(last) do |j|
+          ai[j] =  (pivot * ai[j] - ai[k] * a[k][j]) / previous_pivot
         end
       end
-      det *= akk
     end
-    det
+    sign * pivot
   end
-  alias det determinant
+  private :determinant_bareiss
 
   #
-  # Returns the determinant of the matrix.
-  # This method's algorithm is Gaussian elimination method.
-  # This method uses Euclidean algorithm. If all elements are integer,
-  # really exact value. But, if an element is a float, can't return
-  # exact value.
-  #
-  #   Matrix[[7,6], [3,9]].determinant
-  #     => 63
+  # deprecated; use Matrix#determinant
   #
   def determinant_e
-    Matrix.Raise ErrDimensionMismatch unless square?
-
-    size = row_size
-    a = to_a
-
-    det = 1
-    size.times do |k|
-      if a[k][k].zero?
-        i = (k+1 ... size).find {|ii|
-          a[ii][k] != 0
-        }
-        return 0 if i.nil?
-        a[i], a[k] = a[k], a[i]
-        det *= -1
-      end
-
-      (k + 1 ... size).each do |ii|
-        q = a[ii][k].quo(a[k][k])
-        (k ... size).each do |j|
-          a[ii][j] -= a[k][j] * q
-        end
-        unless a[ii][k].zero?
-          a[ii], a[k] = a[k], a[ii]
-          det *= -1
-          redo
-        end
-      end
-      det *= a[k][k]
-    end
-    det
+    warn "#{caller(1)[0]}: warning: Matrix#determinant_e is deprecated; use #determinant"
+    rank
   end
   alias det_e determinant_e
 
   #
-  # Returns the rank of the matrix. Beware that using Float values,
-  # probably return faild value. Use Rational values or Matrix#rank_e
-  # for getting exact result.
+  # Returns the rank of the matrix.
+  # Beware that using Float values can yield erroneous results
+  # because of their lack of precision.
+  # Consider using exact types like Rational or BigDecimal instead.
   #
   #   Matrix[[7,6], [3,9]].rank
   #     => 2
   #
   def rank
-    if column_size > row_size
-      a = transpose.to_a
-      a_column_size = row_size
-      a_row_size = column_size
-    else
-      a = to_a
-      a_column_size = column_size
-      a_row_size = row_size
-    end
+    # We currently use Bareiss' multistep integer-preserving gaussian elimination
+    # (see comments on determinant)
+    a = to_a
+    last_column = column_size - 1
+    last_row = row_size - 1
     rank = 0
-    a_column_size.times do |k|
-      if (akk = a[k][k]) == 0
-        i = (k+1 ... a_row_size).find {|ii|
-          a[ii][k] != 0
-        }
-        if i
-          a[i], a[k] = a[k], a[i]
-          akk = a[k][k]
-        else
-          i = (k+1 ... a_column_size).find {|ii|
-            a[k][ii] != 0
-          }
-          next if i.nil?
-          (k ... a_column_size).each do |j|
-            a[j][k], a[j][i] = a[j][i], a[j][k]
-          end
-          akk = a[k][k]
-        end
+    pivot_row = 0
+    previous_pivot = 1
+    0.upto(last_column) do |k|
+      switch_row = (pivot_row .. last_row).find {|row|
+        a[row][k] != 0
+      }
+      if switch_row
+        a[switch_row], a[pivot_row] = a[pivot_row], a[switch_row] unless pivot_row == switch_row
+        pivot = a[pivot_row][k]
+        (pivot_row+1).upto(last_row) do |i|
+           ai = a[i]
+           (k+1).upto(last_column) do |j|
+             ai[j] =  (pivot * ai[j] - ai[k] * a[pivot_row][j]) / previous_pivot
+           end
+         end
+        pivot_row += 1
+        previous_pivot = pivot
       end
-
-      (k + 1 ... a_row_size).each do |ii|
-        q = a[ii][k].quo(akk)
-        (k + 1... a_column_size).each do |j|
-          a[ii][j] -= a[k][j] * q
-        end
-      end
-      rank += 1
     end
-    return rank
+    pivot_row
   end
 
   #
-  # Returns the rank of the matrix. This method uses Euclidean
-  # algorithm. If all elements are integer, really exact value. But, if
-  # an element is a float, can't return exact value.
-  #
-  #   Matrix[[7,6], [3,9]].rank
-  #     => 2
+  # deprecated; use Matrix#rank
   #
   def rank_e
-    a = to_a
-    a_column_size = column_size
-    a_row_size = row_size
-    pi = 0
-    a_column_size.times do |j|
-      if i = (pi ... a_row_size).find{|i0| !a[i0][j].zero?}
-        if i != pi
-          a[pi], a[i] = a[i], a[pi]
-        end
-        (pi + 1 ... a_row_size).each do |k|
-          q = a[k][j].quo(a[pi][j])
-          (pi ... a_column_size).each do |j0|
-            a[k][j0] -= q * a[pi][j0]
-          end
-          if k > pi && !a[k][j].zero?
-            a[k], a[pi] = a[pi], a[k]
-            redo
-          end
-        end
-        pi += 1
-      end
-    end
-    pi
+    warn "#{caller(1)[0]}: warning: Matrix#rank_e is deprecated; use #rank"
+    rank
   end
 
 
