@@ -7922,7 +7922,7 @@ seek_before_read(struct seek_arg *arg)
  *     IO.read(name, [length [, offset]] )   => string
  *     IO.read(name, [length [, offset]], open_args)   => string
  *
- *  Opens the file, optionally seeks to the given offset, then returns
+ *  Opens the file, optionally seeks to the given <i>offset</i>, then returns
  *  <i>length</i> bytes (defaulting to the rest of the file).
  *  <code>read</code> ensures the file is closed before returning.
  *
@@ -7978,9 +7978,9 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
  *  call-seq:
  *     IO.binread(name, [length [, offset]] )   => string
  *
- *  Opens the file, optionally seeks to the given offset, then returns
+ *  Opens the file, optionally seeks to the given <i>offset</i>, then returns
  *  <i>length</i> bytes (defaulting to the rest of the file).
- *  <code>read</code> ensures the file is closed before returning.
+ *  <code>binread</code> ensures the file is closed before returning.
  *  The open mode would be "rb:ASCII-8BIT".
  *
  *     IO.binread("testfile")           #=> "This is line one\nThis is line two\nThis is line three\nAnd so on...\n"
