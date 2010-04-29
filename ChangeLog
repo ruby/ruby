@@ -1,3 +1,8 @@
+Thu Apr 29 12:16:20 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit/assertions.rb (Test::Unit::Assertions#assert): reject
+	  non-boolean values.  [ruby-core:29868]
+
 Thu Apr 29 11:20:53 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (seek_before_access): renamed.  see [ruby-core:29861].

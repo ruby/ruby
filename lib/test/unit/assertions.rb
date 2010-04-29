@@ -10,6 +10,16 @@ module Test
         obj.pretty_inspect.chomp
       end
 
+      def assert(result, *args, &b)
+        super(result == true || result == false, "assertion result must be true or false")
+        super
+      end
+
+      def refute(result, *args, &b)
+        super(result == true || result == false, "assertion result must be true or false")
+        super
+      end
+
       def assert_raise(*args, &b)
         assert_raises(*args, &b)
       end
