@@ -755,7 +755,7 @@ rb_time_unmagnify_to_float(wideval_t w)
         if (c * b == a) {
             return DBL2NUM((double)c);
         }
-        v = DBL2NUM(FIXWV2WINT(w));
+        v = DBL2NUM((double)FIXWV2WINT(w));
         return quo(v, DBL2NUM(TIME_SCALE));
     }
 #endif
