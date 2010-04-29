@@ -103,15 +103,15 @@ class TestFixnum < Test::Unit::TestCase
   end
 
   def test_lshift
-    assert_equal(0x40000000, 0x20000000<<1)
-    assert_equal(-0x40000000, (-0x20000000)<<1)
-    assert_equal(-0x80000000, (-0x40000000)<<1)
+    assert_equal(0x40000000, 0x20000000 << 1)
+    assert_equal(-0x40000000, (-0x20000000) << 1)
+    assert_equal(-0x80000000, (-0x40000000) << 1)
   end
 
   def test_rshift
-    assert_equal(0x20000000, 0x40000000>>1)
-    assert_equal(-0x20000000, (-0x40000000)>>1)
-    assert_equal(-0x40000000, (-0x80000000)>>1)
+    assert_equal(0x20000000, 0x40000000 >> 1)
+    assert_equal(-0x20000000, (-0x40000000) >> 1)
+    assert_equal(-0x40000000, (-0x80000000) >> 1)
   end
 
   def test_abs
@@ -187,7 +187,7 @@ class TestFixnum < Test::Unit::TestCase
     assert_equal(4, 2**((2**32).coerce(2).first))
     assert_equal(2, 4**0.5)
     assert_equal(0, 0**0.5)
-    assert((0**-1.0).infinite?)
+    assert_equal(1, (0**-1.0).infinite?)
     ### rational changes the behavior of Fixnum#**
     #assert_raise(TypeError) { 1 ** nil }
     assert_raise(TypeError, NoMethodError) { 1 ** nil }

@@ -637,8 +637,8 @@ class TestRegexp < Test::Unit::TestCase
     check(/\u3042\d/, ["\u30421", "\u30422"])
 
     # CClassTable cache test
-    assert(/\u3042\d/.match("\u30421"))
-    assert(/\u3042\d/.match("\u30422"))
+    assert_match(/\u3042\d/, "\u30421")
+    assert_match(/\u3042\d/, "\u30422")
   end
 
   def test_char_class

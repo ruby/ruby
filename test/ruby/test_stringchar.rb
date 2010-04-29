@@ -37,8 +37,8 @@ END
     $x.gsub!(/((.|\n)*?)B((.|\n)*?)D/m ,'\1\3')
     assert_equal("AC\nAC\n", $x)
 
-    assert("foobar" =~ /foo(?=(bar)|(baz))/)
-    assert("foobaz" =~ /foo(?=(bar)|(baz))/)
+    assert_match(/foo(?=(bar)|(baz))/, "foobar")
+    assert_match(/foo(?=(bar)|(baz))/, "foobaz")
 
     $foo = "abc"
     assert_equal("abc = abc", "#$foo = abc")

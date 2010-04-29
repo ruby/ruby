@@ -814,7 +814,7 @@ class TestIO < Test::Unit::TestCase
 
   def test_inspect
     with_pipe do |r, w|
-      assert(r.inspect =~ /^#<IO:fd \d+>$/)
+      assert_match(/^#<IO:fd \d+>$/, r.inspect)
       assert_raise(SecurityError) do
         safe_4 { r.inspect }
       end

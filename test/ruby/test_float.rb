@@ -419,10 +419,10 @@ class TestFloat < Test::Unit::TestCase
   def test_Float
     assert_in_delta(0.125, Float("0.1_2_5"), 0.00001)
     assert_in_delta(0.125, "0.1_2_5__".to_f, 0.00001)
-    assert(Float(([1] * 10000).join).infinite?)
+    assert_equal(1, Float(([1] * 10000).join).infinite?)
     assert(!Float(([1] * 10000).join("_")).infinite?) # is it really OK?
     assert_raise(ArgumentError) { Float("1.0\x001") }
-    assert(Float("1e10_00").infinite?)
+    assert_equal(1, Float("1e10_00").infinite?)
     assert_raise(TypeError) { Float(nil) }
     o = Object.new
     def o.to_f; inf = Float::INFINITY; inf/inf; end
