@@ -1,3 +1,8 @@
+Thu Apr 29 11:17:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_s_binread): fixed rdoc.  parts of a patch from Roger
+	  Pack in [ruby-core:29861].
+
 Thu Apr 29 03:50:49 2010  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	* lib/xmlrpc/utils.rb: Fixing an incompatibility with
