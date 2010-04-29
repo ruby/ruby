@@ -1,6 +1,5 @@
 require 'test/unit'
 require 'open3'
-require 'shellwords'
 require_relative 'ruby/envutil'
 
 class TestOpen3 < Test::Unit::TestCase
@@ -60,8 +59,7 @@ class TestOpen3 < Test::Unit::TestCase
   end
 
   def test_commandline
-    skip "Shellwords is not supported" if /mswin|mingw/ =~ RUBY_PLATFORM
-    commandline = Shellwords.join([RUBY, '-e', 'print "quux"'])
+    commandline = [RUBY, '-e', 'print :quux'].map{|s|/\s/=~s ? s.dump : s}.join(' ')
     Open3.popen3(commandline) {|i,o,e,t|
       assert_equal("quux", o.read)
     }
