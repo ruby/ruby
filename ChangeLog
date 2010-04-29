@@ -1,3 +1,8 @@
+Thu Apr 29 20:10:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/test_open3.rb (test_commandline): use dump instead of
+	  shellwords.  [ruby-core:23797]
+
 Thu Apr 29 18:39:51 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/thwait.rb (ThreadsWait#join): refined rdoc again.
