@@ -1,3 +1,7 @@
+Thu Apr 29 12:33:42 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/thwait.rb (ThreadsWait#join): refined rdoc.  [ruby-core:29863]
+
 Tue Apr 27 18:00:50 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/net/smtp.rb (Net::SMTP#rcptto_list): fixed typo.
