@@ -250,14 +250,12 @@ class TestMatrix < Test::Unit::TestCase
     assert(Matrix[[1, 0], [0, 1]].regular?)
     assert(Matrix[[1, 0, 0], [0, 1, 0], [0, 0, 1]].regular?)
     assert(!Matrix[[1, 0, 0], [0, 0, 1], [0, 0, 1]].regular?)
-    assert(!Matrix[[1, 0, 0], [0, 1, 0]].regular?)
   end
 
   def test_singular?
     assert(!Matrix[[1, 0], [0, 1]].singular?)
     assert(!Matrix[[1, 0, 0], [0, 1, 0], [0, 0, 1]].singular?)
     assert(Matrix[[1, 0, 0], [0, 0, 1], [0, 0, 1]].singular?)
-    assert(Matrix[[1, 0, 0], [0, 1, 0]].singular?)
   end
 
   def test_square?
@@ -325,29 +323,18 @@ class TestMatrix < Test::Unit::TestCase
   end
 
   def test_det
-    assert_in_delta(45.0, Matrix[[7,6],[3,9]].det, 0.0001)
-    assert_in_delta(0.0, Matrix[[0,0],[0,0]].det, 0.0001)
-    assert_in_delta(-7.0, Matrix[[0,0,1],[0,7,6],[1,3,9]].det, 0.0001)
-  end
-
-  def test_det_e
-    assert_equal(45, Matrix[[7,6],[3,9]].det_e)
-    assert_equal(0, Matrix[[0,0],[0,0]].det_e)
-    assert_equal(-7, Matrix[[0,0,1],[0,7,6],[1,3,9]].det_e)
+    assert_equal(45, Matrix[[7,6],[3,9]].det)
+    assert_equal(0, Matrix[[0,0],[0,0]].det)
+    assert_equal(-7, Matrix[[0,0,1],[0,7,6],[1,3,9]].det)
+    assert_equal(42, Matrix[[7,0,1,0,12],[8,1,1,9,1],[4,0,0,-7,17],[-1,0,0,-4,8],[10,1,1,8,6]].det)
   end
 
   def test_rank2
     assert_equal(2, Matrix[[7,6],[3,9]].rank)
     assert_equal(0, Matrix[[0,0],[0,0]].rank)
     assert_equal(3, Matrix[[0,0,1],[0,7,6],[1,3,9]].rank)
+    assert_equal(1, Matrix[[0,1],[0,1],[0,1]].rank)
     assert_equal(2, @m1.rank)
-  end
-
-  def test_rank_e
-    assert_equal(2, Matrix[[7,6],[3,9]].rank_e)
-    assert_equal(0, Matrix[[0,0],[0,0]].rank_e)
-    assert_equal(3, Matrix[[0,0,1],[0,7,6],[1,3,9]].rank_e)
-    assert_equal(2, @m1.rank_e)
   end
 
   def test_trace
