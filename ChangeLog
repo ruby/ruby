@@ -1,7 +1,6 @@
 Thu Apr 29 14:46:00 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* lib/test/unit/assertions.rb (Test::Unit::Assertions#assert):
-	  use more descriptive assertions.
+	* test/ruby: use more descriptive assertions.
 
 	* test/ruby: fixed nonsense assertions.
 
