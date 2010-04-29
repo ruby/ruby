@@ -7911,7 +7911,7 @@ struct seek_arg {
 };
 
 static VALUE
-seek_before_read(struct seek_arg *arg)
+seek_before_access(struct seek_arg *arg)
 {
     rb_io_binmode(arg->io);
     return rb_io_seek(arg->io, arg->offset, arg->mode);
@@ -7964,7 +7964,7 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
 	sarg.io = arg.io;
 	sarg.offset = offset;
 	sarg.mode = SEEK_SET;
-	rb_protect((VALUE (*)(VALUE))seek_before_read, (VALUE)&sarg, &state);
+	rb_protect((VALUE (*)(VALUE))seek_before_access, (VALUE)&sarg, &state);
 	if (state) {
 	    rb_io_close(arg.io);
 	    rb_jump_tag(state);
