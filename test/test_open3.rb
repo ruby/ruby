@@ -60,6 +60,7 @@ class TestOpen3 < Test::Unit::TestCase
   end
 
   def test_commandline
+    skip "Shellwords is not supported" if /mswin|mingw/ =~ RUBY_PLATFORM
     commandline = Shellwords.join([RUBY, '-e', 'print "quux"'])
     Open3.popen3(commandline) {|i,o,e,t|
       assert_equal("quux", o.read)
