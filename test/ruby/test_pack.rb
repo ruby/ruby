@@ -567,7 +567,7 @@ class TestPack < Test::Unit::TestCase
   end
 
   def test_pack_p2
-    assert([nil].pack("p") =~ /\A\0*\Z/)
+    assert_match(/\A\0*\Z/, [nil].pack("p"))
   end
 
   def test_pack_unpack_w

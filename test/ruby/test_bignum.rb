@@ -290,8 +290,8 @@ class TestBignum < Test::Unit::TestCase
   def test_pow
     assert_equal(1.0, T32 ** 0.0)
     assert_equal(1.0 / T32, T32 ** -1)
-    assert((T32 ** T32).infinite?)
-    assert((T32 ** (2**30-1)).infinite?)
+    assert_equal(1, (T32 ** T32).infinite?)
+    assert_equal(1, (T32 ** (2**30-1)).infinite?)
 
     ### rational changes the behavior of Bignum#**
     #assert_raise(TypeError) { T32**"foo" }
