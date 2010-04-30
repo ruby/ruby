@@ -59,9 +59,9 @@ class TestOpen3 < Test::Unit::TestCase
   end
 
   def test_commandline
-    commandline = [RUBY, '-e', 'print :quux'].map{|s|/\s/=~s ? s.dump : s}.join(' ')
+    commandline = "echo quux\n"
     Open3.popen3(commandline) {|i,o,e,t|
-      assert_equal("quux", o.read)
+      assert_equal("quux\n", o.read)
     }
   end
 
