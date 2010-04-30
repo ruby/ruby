@@ -3262,7 +3262,7 @@ rb_f_sleep(int argc, VALUE *argv)
 	rb_thread_wait_for(rb_time_interval(argv[0]));
     }
     else {
-	rb_raise(rb_eArgError, "wrong number of arguments");
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0..1)", argc);
     }
 
     end = time(0) - beg;

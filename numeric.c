@@ -1600,7 +1600,7 @@ num_step(int argc, VALUE *argv, VALUE from)
 	    step = argv[1];
 	}
 	else {
-	    rb_raise(rb_eArgError, "wrong number of arguments");
+	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..2)", argc);
 	}
 	if (rb_equal(step, INT2FIX(0))) {
 	    rb_raise(rb_eArgError, "step can't be 0");
@@ -2018,7 +2018,7 @@ int_chr(int argc, VALUE *argv, VALUE num)
       case 1:
 	break;
       default:
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0 or 1)", argc);
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0..1)", argc);
 	break;
     }
     enc = rb_to_encoding(argv[0]);

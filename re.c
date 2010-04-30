@@ -2867,7 +2867,7 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
     long len;
 
     if (argc == 0 || argc > 3) {
-	rb_raise(rb_eArgError, "wrong number of arguments");
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..3)", argc);
     }
     if (TYPE(argv[0]) == T_REGEXP) {
 	VALUE re = argv[0];

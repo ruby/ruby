@@ -1967,16 +1967,16 @@ curry(VALUE dummy, VALUE args, int argc, VALUE *argv, VALUE passed_proc)
   *
   *     b = lambda {|x, y, z| (x||0) + (y||0) + (z||0) }
   *     p b.curry[1][2][3]           #=> 6
-  *     p b.curry[1, 2][3, 4]        #=> wrong number of arguments (4 or 3)
-  *     p b.curry(5)                 #=> wrong number of arguments (5 or 3)
-  *     p b.curry(1)                 #=> wrong number of arguments (1 or 3)
+  *     p b.curry[1, 2][3, 4]        #=> wrong number of arguments (4 for 3)
+  *     p b.curry(5)                 #=> wrong number of arguments (5 for 3)
+  *     p b.curry(1)                 #=> wrong number of arguments (1 for 3)
   *
   *     b = lambda {|x, y, z, *w| (x||0) + (y||0) + (z||0) + w.inject(0, &:+) }
   *     p b.curry[1][2][3]           #=> 6
   *     p b.curry[1, 2][3, 4]        #=> 10
   *     p b.curry(5)[1][2][3][4][5]  #=> 15
   *     p b.curry(5)[1, 2][3, 4][5]  #=> 15
-  *     p b.curry(1)                 #=> wrong number of arguments (1 or 3)
+  *     p b.curry(1)                 #=> wrong number of arguments (1 for 3)
   *
   *     b = proc { :foo }
   *     p b.curry[]                  #=> :foo

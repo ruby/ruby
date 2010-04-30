@@ -3093,7 +3093,7 @@ rb_str_aref_m(int argc, VALUE *argv, VALUE str)
 	return rb_str_substr(str, NUM2LONG(argv[0]), NUM2LONG(argv[1]));
     }
     if (argc != 1) {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)", argc);
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..2)", argc);
     }
     return rb_str_aref(str, argv[0]);
 }
@@ -3323,7 +3323,7 @@ rb_str_aset_m(int argc, VALUE *argv, VALUE str)
 	return argv[2];
     }
     if (argc != 2) {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 2)", argc);
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 2..3)", argc);
     }
     return rb_str_aset(str, argv[0], argv[1]);
 }
@@ -3388,7 +3388,7 @@ rb_str_slice_bang(int argc, VALUE *argv, VALUE str)
     int i;
 
     if (argc < 1 || 2 < argc) {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)", argc);
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..2)", argc);
     }
     for (i=0; i<argc; i++) {
 	buf[i] = argv[i];
@@ -3462,7 +3462,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	if (OBJ_UNTRUSTED(repl)) untrusted = 1;
     }
     else {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 2)", argc);
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..2)", argc);
     }
 
     pat = get_pat(argv[0], 1);
@@ -3606,7 +3606,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 	if (OBJ_TAINTED(repl)) tainted = 1;
 	break;
       default:
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 2)", argc);
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..2)", argc);
     }
 
     pat = get_pat(argv[0], 1);
@@ -5066,7 +5066,7 @@ rb_str_delete_bang(int argc, VALUE *argv, VALUE str)
 
     if (RSTRING_LEN(str) == 0 || !RSTRING_PTR(str)) return Qnil;
     if (argc < 1) {
-	rb_raise(rb_eArgError, "wrong number of arguments");
+	rb_raise(rb_eArgError, "wrong number of arguments (at least 1)");
     }
     for (i=0; i<argc; i++) {
 	VALUE s = argv[i];
@@ -5312,7 +5312,7 @@ rb_str_count(int argc, VALUE *argv, VALUE str)
     int ascompat;
 
     if (argc < 1) {
-	rb_raise(rb_eArgError, "wrong number of arguments");
+	rb_raise(rb_eArgError, "wrong number of arguments (at least 1)");
     }
     for (i=0; i<argc; i++) {
 	VALUE tstr = argv[i];
