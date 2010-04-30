@@ -2476,7 +2476,7 @@ rb_file_s_umask(int argc, VALUE *argv)
 	omask = umask(NUM2INT(argv[0]));
     }
     else {
-	rb_raise(rb_eArgError, "wrong number of arguments");
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0..1)", argc);
     }
     return INT2FIX(omask);
 }
@@ -3962,7 +3962,7 @@ rb_f_test(int argc, VALUE *argv)
 {
     int cmd;
 
-    if (argc == 0) rb_raise(rb_eArgError, "wrong number of arguments");
+    if (argc == 0) rb_raise(rb_eArgError, "wrong number of arguments (0 for 2..3)");
     cmd = NUM2CHR(argv[0]);
     if (cmd == 0) goto unknown;
     if (strchr("bcdefgGkloOprRsSuwWxXz", cmd)) {

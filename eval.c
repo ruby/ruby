@@ -555,7 +555,7 @@ make_exception(int argc, VALUE *argv, int isstr)
 	}
 	break;
       default:
-	rb_raise(rb_eArgError, "wrong number of arguments");
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0..3)", argc);
 	break;
     }
     if (argc > 0) {
@@ -930,7 +930,7 @@ rb_obj_extend(int argc, VALUE *argv, VALUE obj)
     int i;
 
     if (argc == 0) {
-	rb_raise(rb_eArgError, "wrong number of arguments (0 for 1)");
+	rb_raise(rb_eArgError, "wrong number of arguments (at least 1)");
     }
     for (i = 0; i < argc; i++)
 	Check_Type(argv[i], T_MODULE);

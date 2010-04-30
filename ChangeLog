@@ -1,3 +1,25 @@
+Fri Apr 30 11:40:44 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* eval.c (make_exception, rb_obj_extend): Fix error messages in case
+	  of wrong
+	  number of arguments
+	
+	* file.c (rb_f_test, rb_file_s_umask): ditto
+	
+	* numeric.c (int_chr, num_step): ditto
+	
+	* process.c (rb_f_sleep): ditto
+	
+	* re.c (rb_reg_initialize_m): ditto
+	
+	* signal.c (rb_f_kill, sig_trap): ditto
+	
+	* string.c (rb_str_aref_m, rb_str_aset_m, rb_str_count,
+	  rb_str_delete_bang,
+	  rb_str_slice_bang, rb_str_sub_bang, str_gsub): ditto
+	
+	* proc.c (curry): rdoc fix
+
 Fri Apr 30 04:09:30 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* time.c (TIMET_MAX): should be time_t, not unsigned_time_t.

@@ -351,7 +351,7 @@ rb_f_kill(int argc, VALUE *argv)
 
     rb_secure(2);
     if (argc < 2)
-	rb_raise(rb_eArgError, "wrong number of arguments -- kill(sig, pid...)");
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for at least 2)", argc);
     switch (TYPE(argv[0])) {
       case T_FIXNUM:
 	sig = FIX2INT(argv[0]);
@@ -940,7 +940,7 @@ sig_trap(int argc, VALUE *argv)
 
     rb_secure(2);
     if (argc < 1 || argc > 2) {
-	rb_raise(rb_eArgError, "wrong number of arguments -- trap(sig, cmd)/trap(sig){...}");
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..2)", argc);
     }
 
     arg.sig = trap_signm(argv[0]);
