@@ -1592,11 +1592,10 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
 #define DIRENT_PER_CHAR (CHAR_BIT / 2)
 
 static HANDLE
-open_dir_handle(const char *filename, WIN32_FIND_DATAW *fd)
+open_dir_handle(const WCHAR *filename, WIN32_FIND_DATAW *fd)
 {
     HANDLE fh;
     static const WCHAR wildcard[] = L"\\*";
-    UINT cp = AreFileApisANSI() ? CP_ACP : CP_OEMCP;
     WCHAR *scanname;
     WCHAR *p;
     int len;
@@ -1604,18 +1603,9 @@ open_dir_handle(const char *filename, WIN32_FIND_DATAW *fd)
     //
     // Create the search pattern
     //
-    len = MultiByteToWideChar(cp, 0, filename, -1, NULL, 0);
-    if (len <= 0) {
-	errno = map_errno(GetLastError());
-	return INVALID_HANDLE_VALUE;
-    }
+    len = lstrlenW(filename);
     scanname = ALLOCA_N(WCHAR, len + sizeof(wildcard) / sizeof(WCHAR));
-    len = MultiByteToWideChar(cp, 0, filename, -1, scanname, len + 2);
-    if (len <= 0) {
-	errno = map_errno(GetLastError());
-	return INVALID_HANDLE_VALUE;
-    }
-
+    lstrcpyW(scanname, filename);
     p = CharPrevW(scanname, scanname + len);
     if (*p == L'/' || *p == L'\\' || *p == L':')
 	lstrcatW(scanname, wildcard + 1);
@@ -1700,26 +1690,80 @@ opendir_internal(HANDLE fh, WIN32_FIND_DATAW *fd)
     return p;
 }
 
+static char *
+wstr_to_filecp(const WCHAR *wstr, long *plen)
+{
+    UINT cp = AreFileApisANSI() ? CP_ACP : CP_OEMCP;
+    char *ptr;
+    int len = WideCharToMultiByte(cp, 0, wstr, -1, NULL, 0, NULL, NULL) - 1;
+    if (!(ptr = malloc(len + 1))) return 0;
+    WideCharToMultiByte(cp, 0, wstr, -1, ptr, len + 1, NULL, NULL);
+    if (plen) *plen = len;
+    return ptr;
+}
+
+static WCHAR *
+filecp_to_wstr(const char *str, long *plen)
+{
+    UINT cp = AreFileApisANSI() ? CP_ACP : CP_OEMCP;
+    WCHAR *ptr;
+    int len = MultiByteToWideChar(cp, 0, str, -1, NULL, 0) - 1;
+    if (!(ptr = malloc(sizeof(WCHAR) * (len + 1)))) return 0;
+    MultiByteToWideChar(cp, 0, str, -1, ptr, len + 1);
+    if (plen) *plen = len;
+    return ptr;
+}
+
+static char *
+wstr_to_utf8(const WCHAR *wstr, long *plen)
+{
+    char *ptr;
+    int len = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, NULL, 0, NULL, NULL) - 1;
+    if (!(ptr = malloc(len + 1))) return 0;
+    WideCharToMultiByte(CP_UTF8, 0, wstr, -1, ptr, len + 1, NULL, NULL);
+    if (plen) *plen = len;
+    return ptr;
+}
+
+static WCHAR *
+utf8_to_wstr(const char *str, long *plen)
+{
+    WCHAR *ptr;
+    int len = MultiByteToWideChar(CP_UTF8, 0, str, -1, NULL, 0) - 1;
+    if (!(ptr = malloc(sizeof(WCHAR) * (len + 1)))) return 0;
+    MultiByteToWideChar(CP_UTF8, 0, str, -1, ptr, len + 1);
+    if (plen) *plen = len;
+    return ptr;
+}
+
 DIR *
 rb_w32_opendir(const char *filename)
 {
-    struct stati64     sbuf;
+    struct stati64 sbuf;
     WIN32_FIND_DATAW fd;
     HANDLE fh;
+    WCHAR *wpath;
+
+    if (!(wpath = filecp_to_wstr(filename, NULL)))
+	return NULL;
 
     //
     // check to see if we've got a directory
     //
-    if (rb_w32_stati64(filename, &sbuf) < 0)
+    if (wstati64(wpath, &sbuf) < 0) {
+	free(wpath);
 	return NULL;
+    }
     if (!(sbuf.st_mode & S_IFDIR) &&
 	(!ISALPHA(filename[0]) || filename[1] != ':' || filename[2] != '\0' ||
 	 ((1 << ((filename[0] & 0x5f) - 'A')) & GetLogicalDrives()) == 0)) {
+	free(wpath);
 	errno = ENOTDIR;
 	return NULL;
     }
 
-    fh = open_dir_handle(filename, &fd);
+    fh = open_dir_handle(wpath, &fd);
+    free(wpath);
     return opendir_internal(fh, &fd);
 }
 
@@ -1739,17 +1783,6 @@ move_to_next_entry(DIR *dirp)
     }
 }
 
-static char *
-win32_conv_from_wstr(const WCHAR *wstr, long *len)
-{
-    UINT cp = AreFileApisANSI() ? CP_ACP : CP_OEMCP;
-    char *ptr;
-    *len = WideCharToMultiByte(cp, 0, wstr, -1, NULL, 0, NULL, NULL) - 1;
-    if (!(ptr = malloc(*len + 1))) return 0;
-    WideCharToMultiByte(cp, 0, wstr, -1, ptr, *len + 1, NULL, NULL);
-    return ptr;
-}
-
 //
 // Readdir just returns the current string pointer and bumps the
 // string pointer to the next entry.
@@ -1757,7 +1790,7 @@ win32_conv_from_wstr(const WCHAR *wstr, long *len)
 static BOOL
 win32_direct_conv(const WCHAR *file, struct direct *entry, rb_encoding *dummy)
 {
-    if (!(entry->d_name = win32_conv_from_wstr(file, &entry->d_namlen)))
+    if (!(entry->d_name = wstr_to_filecp(file, &entry->d_namlen)))
 	return FALSE;
     return TRUE;
 }
@@ -1795,7 +1828,7 @@ rb_w32_conv_from_wstr(const WCHAR *wstr, long *lenp, rb_encoding *enc)
     long len;
     char *ptr;
 
-    if (NIL_P(str)) return win32_conv_from_wstr(wstr, lenp);
+    if (NIL_P(str)) return wstr_to_filecp(wstr, lenp);
     *lenp = len = RSTRING_LEN(str);
     memcpy(ptr = malloc(len + 1), RSTRING_PTR(str), len);
     ptr[len] = '\0';
@@ -3665,6 +3698,12 @@ chown(const char *path, int owner, int group)
 }
 
 int
+rb_w32_uchown(const char *path, int owner, int group)
+{
+    return 0;
+}
+
+int
 kill(int pid, int sig)
 {
     int ret = 0;
@@ -3748,19 +3787,19 @@ kill(int pid, int sig)
     return ret;
 }
 
-int
-link(const char *from, const char *to)
+static int
+wlink(const WCHAR *from, const WCHAR *to)
 {
-    static BOOL (WINAPI *pCreateHardLink)(LPCTSTR, LPCTSTR, LPSECURITY_ATTRIBUTES) = NULL;
+    static BOOL (WINAPI *pCreateHardLinkW)(LPCWSTR, LPCWSTR, LPSECURITY_ATTRIBUTES) = NULL;
     static int myerrno = 0;
 
-    if (!pCreateHardLink && !myerrno) {
+    if (!pCreateHardLinkW && !myerrno) {
 	HANDLE hKernel;
 
 	hKernel = GetModuleHandle("kernel32.dll");
 	if (hKernel) {
-	    pCreateHardLink = (BOOL (WINAPI *)(LPCTSTR, LPCTSTR, LPSECURITY_ATTRIBUTES))GetProcAddress(hKernel, "CreateHardLinkA");
-	    if (!pCreateHardLink) {
+	    pCreateHardLinkW = (BOOL (WINAPI *)(LPCWSTR, LPCWSTR, LPSECURITY_ATTRIBUTES))GetProcAddress(hKernel, "CreateHardLinkW");
+	    if (!pCreateHardLinkW) {
 		myerrno = ENOSYS;
 	    }
 	}
@@ -3768,17 +3807,55 @@ link(const char *from, const char *to)
 	    myerrno = map_errno(GetLastError());
 	}
     }
-    if (!pCreateHardLink) {
+    if (!pCreateHardLinkW) {
 	errno = myerrno;
 	return -1;
     }
 
-    if (!pCreateHardLink(to, from, NULL)) {
+    if (!pCreateHardLinkW(to, from, NULL)) {
 	errno = map_errno(GetLastError());
 	return -1;
     }
 
     return 0;
+}
+
+int
+rb_w32_ulink(const char *from, const char *to)
+{
+    WCHAR *wfrom;
+    WCHAR *wto;
+    int ret;
+
+    if (!(wfrom = utf8_to_wstr(from, NULL)))
+	return -1;
+    if (!(wto = utf8_to_wstr(to, NULL))) {
+	free(wfrom);
+	return -1;
+    }
+    ret = wlink(wfrom, wto);
+    free(wto);
+    free(wfrom);
+    return ret;
+}
+
+int
+link(const char *from, const char *to)
+{
+    WCHAR *wfrom;
+    WCHAR *wto;
+    int ret;
+
+    if (!(wfrom = filecp_to_wstr(from, NULL)))
+	return -1;
+    if (!(wto = filecp_to_wstr(to, NULL))) {
+	free(wfrom);
+	return -1;
+    }
+    ret = wlink(wfrom, wto);
+    free(wto);
+    free(wfrom);
+    return ret;
 }
 
 int
@@ -3808,15 +3885,15 @@ rb_w32_getenv(const char *name)
     return NULL;
 }
 
-int
-rb_w32_rename(const char *oldpath, const char *newpath)
+static int
+wrename(const WCHAR *oldpath, const WCHAR *newpath)
 {
     int res = 0;
     int oldatts;
     int newatts;
 
-    oldatts = GetFileAttributes(oldpath);
-    newatts = GetFileAttributes(newpath);
+    oldatts = GetFileAttributesW(oldpath);
+    newatts = GetFileAttributesW(newpath);
 
     if (oldatts == -1) {
 	errno = map_errno(GetLastError());
@@ -3825,9 +3902,9 @@ rb_w32_rename(const char *oldpath, const char *newpath)
 
     RUBY_CRITICAL({
 	if (newatts != -1 && newatts & FILE_ATTRIBUTE_READONLY)
-	    SetFileAttributesA(newpath, newatts & ~ FILE_ATTRIBUTE_READONLY);
+	    SetFileAttributesW(newpath, newatts & ~ FILE_ATTRIBUTE_READONLY);
 
-	if (!MoveFile(oldpath, newpath))
+	if (!MoveFileW(oldpath, newpath))
 	    res = -1;
 
 	if (res) {
@@ -3835,13 +3912,13 @@ rb_w32_rename(const char *oldpath, const char *newpath)
 	      case ERROR_ALREADY_EXISTS:
 	      case ERROR_FILE_EXISTS:
 		if (IsWinNT()) {
-		    if (MoveFileEx(oldpath, newpath, MOVEFILE_REPLACE_EXISTING))
+		    if (MoveFileExW(oldpath, newpath, MOVEFILE_REPLACE_EXISTING))
 			res = 0;
 		} else {
 		    for (;;) {
-			if (!DeleteFile(newpath) && GetLastError() != ERROR_FILE_NOT_FOUND)
+			if (!DeleteFileW(newpath) && GetLastError() != ERROR_FILE_NOT_FOUND)
 			    break;
-			else if (MoveFile(oldpath, newpath)) {
+			else if (MoveFileW(oldpath, newpath)) {
 			    res = 0;
 			    break;
 			}
@@ -3853,27 +3930,63 @@ rb_w32_rename(const char *oldpath, const char *newpath)
 	if (res)
 	    errno = map_errno(GetLastError());
 	else
-	    SetFileAttributes(newpath, oldatts);
+	    SetFileAttributesW(newpath, oldatts);
     });
 
     return res;
 }
 
-static int
-isUNCRoot(const char *path)
+int rb_w32_urename(const char *from, const char *to)
 {
-    if (path[0] == '\\' && path[1] == '\\') {
-	const char *p;
-	for (p = path + 2; *p; p = CharNext(p)) {
-	    if (*p == '\\')
+    WCHAR *wfrom;
+    WCHAR *wto;
+    int ret = -1;
+
+    if (!(wfrom = utf8_to_wstr(from, NULL)))
+	return -1;
+    if (!(wto = utf8_to_wstr(to, NULL))) {
+	free(wfrom);
+	return -1;
+    }
+    ret = wrename(wfrom, wto);
+    free(wto);
+    free(wfrom);
+    return ret;
+}
+
+int rb_w32_rename(const char *from, const char *to)
+{
+    WCHAR *wfrom;
+    WCHAR *wto;
+    int ret = -1;
+
+    if (!(wfrom = filecp_to_wstr(from, NULL)))
+	return -1;
+    if (!(wto = filecp_to_wstr(to, NULL))) {
+	free(wfrom);
+	return -1;
+    }
+    ret = wrename(wfrom, wto);
+    free(wto);
+    free(wfrom);
+    return ret;
+}
+
+static int
+isUNCRoot(const WCHAR *path)
+{
+    if (path[0] == L'\\' && path[1] == L'\\') {
+	const WCHAR *p;
+	for (p = path + 2; *p; p++) {
+	    if (*p == L'\\')
 		break;
 	}
 	if (p[0] && p[1]) {
-	    for (p++; *p; p = CharNext(p)) {
-		if (*p == '\\')
+	    for (p++; *p; p++) {
+		if (*p == L'\\')
 		    break;
 	    }
-	    if (!p[0] || !p[1] || (p[1] == '.' && !p[2]))
+	    if (!p[0] || !p[1] || (p[1] == L'.' && !p[2]))
 		return 1;
 	}
     }
@@ -3943,7 +4056,7 @@ filetime_to_unixtime(const FILETIME *ft)
 }
 
 static unsigned
-fileattr_to_unixmode(DWORD attr, const char *path)
+fileattr_to_unixmode(DWORD attr, const WCHAR *path)
 {
     unsigned mode = 0;
 
@@ -3962,14 +4075,14 @@ fileattr_to_unixmode(DWORD attr, const char *path)
     }
 
     if (path && (mode & S_IFREG)) {
-	const char *end = path + strlen(path);
+	const WCHAR *end = path + lstrlenW(path);
 	while (path < end) {
-	    end = CharPrev(path, end);
-	    if (*end == '.') {
-		if ((strcasecmp(end, ".bat") == 0) ||
-		    (strcasecmp(end, ".cmd") == 0) ||
-		    (strcasecmp(end, ".com") == 0) ||
-		    (strcasecmp(end, ".exe") == 0)) {
+	    end = CharPrevW(path, end);
+	    if (*end == L'.') {
+		if ((_wcsicmp(end, L".bat") == 0) ||
+		    (_wcsicmp(end, L".cmd") == 0) ||
+		    (_wcsicmp(end, L".com") == 0) ||
+		    (_wcsicmp(end, L".exe") == 0)) {
 		    mode |= S_IEXEC;
 		}
 		break;
@@ -3984,7 +4097,7 @@ fileattr_to_unixmode(DWORD attr, const char *path)
 }
 
 static int
-check_valid_dir(const char *path)
+check_valid_dir(const WCHAR *path)
 {
     WIN32_FIND_DATAW fd;
     HANDLE fh = open_dir_handle(path, &fd);
@@ -3995,19 +4108,19 @@ check_valid_dir(const char *path)
 }
 
 static int
-winnt_stat(const char *path, struct stati64 *st)
+winnt_stat(const WCHAR *path, struct stati64 *st)
 {
     HANDLE h;
-    WIN32_FIND_DATA wfd;
+    WIN32_FIND_DATAW wfd;
 
     memset(st, 0, sizeof(*st));
     st->st_nlink = 1;
 
-    if (_mbspbrk((const unsigned char *)path, (const unsigned char *)"?*")) {
+    if (wcspbrk(path, L"?*")) {
 	errno = ENOENT;
 	return -1;
     }
-    h = FindFirstFile(path, &wfd);
+    h = FindFirstFileW(path, &wfd);
     if (h != INVALID_HANDLE_VALUE) {
 	FindClose(h);
 	st->st_mode  = fileattr_to_unixmode(wfd.dwFileAttributes, path);
@@ -4019,7 +4132,7 @@ winnt_stat(const char *path, struct stati64 *st)
     else {
 	// If runtime stat(2) is called for network shares, it fails on WinNT.
 	// Because GetDriveType returns 1 for network shares. (Win98 returns 4)
-	DWORD attr = GetFileAttributes(path);
+	DWORD attr = GetFileAttributesW(path);
 	if (attr == (DWORD)-1L) {
 	    errno = map_errno(GetLastError());
 	    return -1;
@@ -4030,17 +4143,17 @@ winnt_stat(const char *path, struct stati64 *st)
 	st->st_mode  = fileattr_to_unixmode(attr, path);
     }
 
-    st->st_dev = st->st_rdev = (isalpha(path[0]) && path[1] == ':') ?
-	toupper(path[0]) - 'A' : _getdrive() - 1;
+    st->st_dev = st->st_rdev = (iswalpha(path[0]) && path[1] == L':') ?
+	towupper(path[0]) - L'A' : _getdrive() - 1;
 
     return 0;
 }
 
 #ifdef WIN95
 static int
-win95_stat(const char *path, struct stati64 *st)
+win95_stat(const WCHAR *path, struct stati64 *st)
 {
-    int ret = stati64(path, st);
+    int ret = _wstati64(path, st);
     if (ret) return ret;
     if (st->st_mode & S_IFDIR) {
 	return check_valid_dir(path);
@@ -4061,11 +4174,11 @@ rb_w32_stat(const char *path, struct stat *st)
     return 0;
 }
 
-int
-rb_w32_stati64(const char *path, struct stati64 *st)
+static int
+wstati64(const WCHAR *path, struct stati64 *st)
 {
-    const char *p;
-    char *buf1, *s, *end;
+    const WCHAR *p;
+    WCHAR *buf1, *s, *end;
     int len, size;
     int ret;
 
@@ -4073,30 +4186,30 @@ rb_w32_stati64(const char *path, struct stati64 *st)
 	errno = EFAULT;
 	return -1;
     }
-    size = strlen(path) + 2;
-    buf1 = ALLOCA_N(char, size);
+    size = lstrlenW(path) + 2;
+    buf1 = ALLOCA_N(WCHAR, size);
     for (p = path, s = buf1; *p; p++, s++) {
-	if (*p == '/')
-	    *s = '\\';
+	if (*p == L'/')
+	    *s = L'\\';
 	else
 	    *s = *p;
     }
     *s = '\0';
     len = s - buf1;
-    if (!len || '\"' == *(--s)) {
+    if (!len || L'\"' == *(--s)) {
 	errno = ENOENT;
 	return -1;
     }
-    end = CharPrev(buf1, buf1 + len);
+    end = buf1 + len - 1;
 
     if (isUNCRoot(buf1)) {
-	if (*end == '.')
-	    *end = '\0';
-	else if (*end != '\\')
-	    strlcat(buf1, "\\", size);
+	if (*end == L'.')
+	    *end = L'\0';
+	else if (*end != L'\\')
+	    lstrcatW(buf1, L"\\");
     }
-    else if (*end == '\\' || (buf1 + 1 == end && *end == ':'))
-	strlcat(buf1, ".", size);
+    else if (*end == L'\\' || (buf1 + 1 == end && *end == L':'))
+	lstrcatW(buf1, L".");
 
     ret = IsWinNT() ? winnt_stat(buf1, st) : win95_stat(buf1, st);
     if (ret == 0) {
@@ -4106,10 +4219,50 @@ rb_w32_stati64(const char *path, struct stati64 *st)
 }
 
 int
+rb_w32_ustati64(const char *path, struct stati64 *st)
+{
+    WCHAR *wpath;
+    int ret;
+
+    if (!(wpath = utf8_to_wstr(path, NULL)))
+	return -1;
+    ret = wstati64(wpath, st);
+    free(wpath);
+    return ret;
+}
+
+int
+rb_w32_stati64(const char *path, struct stati64 *st)
+{
+    WCHAR *wpath;
+    int ret;
+
+    if (!(wpath = filecp_to_wstr(path, NULL)))
+	return -1;
+    ret = wstati64(wpath, st);
+    free(wpath);
+    return ret;
+}
+
+int
 rb_w32_access(const char *path, int mode)
 {
     struct stati64 stat;
     if (rb_w32_stati64(path, &stat) != 0)
+	return -1;
+    mode <<= 6;
+    if ((stat.st_mode & mode) != mode) {
+	errno = EACCES;
+	return -1;
+    }
+    return 0;
+}
+
+int
+rb_w32_uaccess(const char *path, int mode)
+{
+    struct stati64 stat;
+    if (rb_w32_ustati64(path, &stat) != 0)
 	return -1;
     mode <<= 6;
     if ((stat.st_mode & mode) != mode) {
@@ -4524,11 +4677,10 @@ rb_w32_getppid(void)
 }
 
 int
-rb_w32_open(const char *file, int oflag, ...)
+rb_w32_uopen(const char *file, int oflag, ...)
 {
-    UINT cp = AreFileApisANSI() ? CP_ACP : CP_OEMCP;
-    int len;
     WCHAR *wfile;
+    int ret;
     int pmode;
 
     va_list arg;
@@ -4536,22 +4688,33 @@ rb_w32_open(const char *file, int oflag, ...)
     pmode = va_arg(arg, int);
     va_end(arg);
 
-    if ((oflag & O_TEXT) || !(oflag & O_BINARY)) {
-	return _open(file, oflag, pmode);
-    }
+    if (!(wfile = utf8_to_wstr(file, NULL)))
+	return -1;
+    ret = rb_w32_wopen(wfile, oflag, pmode);
+    free(wfile);
+    return ret;
+}
 
-    len = MultiByteToWideChar(cp, 0, file, -1, NULL, 0);
-    if (len <= 0) {
-	errno = map_errno(GetLastError());
+int
+rb_w32_open(const char *file, int oflag, ...)
+{
+    WCHAR *wfile;
+    int ret;
+    int pmode;
+
+    va_list arg;
+    va_start(arg, oflag);
+    pmode = va_arg(arg, int);
+    va_end(arg);
+
+    if ((oflag & O_TEXT) || !(oflag & O_BINARY))
+	return _open(file, oflag, pmode);
+
+    if (!(wfile = filecp_to_wstr(file, NULL)))
 	return -1;
-    }
-    wfile = ALLOCA_N(WCHAR, len);
-    MultiByteToWideChar(cp, 0, file, -1, wfile, len);
-    if (len <= 0) {
-	errno = map_errno(GetLastError());
-	return -1;
-    }
-    return rb_w32_wopen(wfile, oflag, pmode);
+    ret = rb_w32_wopen(wfile, oflag, pmode);
+    free(wfile);
+    return ret;
 }
 
 int
@@ -5143,15 +5306,15 @@ unixtime_to_filetime(time_t time, FILETIME *ft)
     return 0;
 }
 
-int
-rb_w32_utime(const char *path, const struct utimbuf *times)
+static int
+wutime(const WCHAR *path, const struct utimbuf *times)
 {
     HANDLE hFile;
     FILETIME atime, mtime;
     struct stati64 stat;
     int ret = 0;
 
-    if (rb_w32_stati64(path, &stat)) {
+    if (wstati64(path, &stat)) {
 	return -1;
     }
 
@@ -5169,11 +5332,11 @@ rb_w32_utime(const char *path, const struct utimbuf *times)
     }
 
     RUBY_CRITICAL({
-	const DWORD attr = GetFileAttributes(path);
+	const DWORD attr = GetFileAttributesW(path);
 	if (attr != (DWORD)-1 && (attr & FILE_ATTRIBUTE_READONLY))
-	    SetFileAttributes(path, attr & ~FILE_ATTRIBUTE_READONLY);
-	hFile = CreateFile(path, GENERIC_WRITE, 0, 0, OPEN_EXISTING,
-			   IsWin95() ? 0 : FILE_FLAG_BACKUP_SEMANTICS, 0);
+	    SetFileAttributesW(path, attr & ~FILE_ATTRIBUTE_READONLY);
+	hFile = CreateFileW(path, GENERIC_WRITE, 0, 0, OPEN_EXISTING,
+			    IsWin95() ? 0 : FILE_FLAG_BACKUP_SEMANTICS, 0);
 	if (hFile == INVALID_HANDLE_VALUE) {
 	    errno = map_errno(GetLastError());
 	    ret = -1;
@@ -5186,23 +5349,63 @@ rb_w32_utime(const char *path, const struct utimbuf *times)
 	    CloseHandle(hFile);
 	}
 	if (attr != (DWORD)-1 && (attr & FILE_ATTRIBUTE_READONLY))
-	    SetFileAttributes(path, attr);
+	    SetFileAttributesW(path, attr);
     });
 
     return ret;
 }
 
 int
-rb_w32_mkdir(const char *path, int mode)
+rb_w32_uutime(const char *path, const struct utimbuf *times)
+{
+    WCHAR *wpath;
+    int ret;
+
+    if (!(wpath = utf8_to_wstr(path, NULL)))
+	return -1;
+    ret = wutime(wpath, times);
+    free(wpath);
+    return ret;
+}
+
+int
+rb_w32_utime(const char *path, const struct utimbuf *times)
+{
+    WCHAR *wpath;
+    int ret;
+
+    if (!(wpath = filecp_to_wstr(path, NULL)))
+	return -1;
+    ret = wutime(wpath, times);
+    free(wpath);
+    return ret;
+}
+
+int
+rb_w32_uchdir(const char *path)
+{
+    WCHAR *wpath;
+    int ret;
+
+    if (!(wpath = utf8_to_wstr(path, NULL)))
+	return -1;
+    ret = _wchdir(wpath);
+    free(wpath);
+    return ret;
+}
+
+static int
+wmkdir(const WCHAR *wpath, int mode)
 {
     int ret = -1;
+
     RUBY_CRITICAL(do {
-	if (CreateDirectory(path, NULL) == FALSE) {
+	if (CreateDirectoryW(wpath, NULL) == FALSE) {
 	    errno = map_errno(GetLastError());
 	    break;
 	}
-	if (chmod(path, mode) == -1) {
-	    RemoveDirectory(path);
+	if (_wchmod(wpath, mode) == -1) {
+	    RemoveDirectoryW(wpath);
 	    break;
 	}
 	ret = 0;
@@ -5211,19 +5414,45 @@ rb_w32_mkdir(const char *path, int mode)
 }
 
 int
-rb_w32_rmdir(const char *path)
+rb_w32_umkdir(const char *path, int mode)
+{
+    WCHAR *wpath;
+    int ret;
+
+    if (!(wpath = utf8_to_wstr(path, NULL)))
+	return -1;
+    ret = wmkdir(wpath, mode);
+    free(wpath);
+    return ret;
+}
+
+int
+rb_w32_mkdir(const char *path, int mode)
+{
+    WCHAR *wpath;
+    int ret;
+
+    if (!(wpath = filecp_to_wstr(path, NULL)))
+	return -1;
+    ret = wmkdir(wpath, mode);
+    free(wpath);
+    return ret;
+}
+
+static int
+wrmdir(const WCHAR *wpath)
 {
     int ret = 0;
     RUBY_CRITICAL({
-	const DWORD attr = GetFileAttributes(path);
+	const DWORD attr = GetFileAttributesW(wpath);
 	if (attr != (DWORD)-1 && (attr & FILE_ATTRIBUTE_READONLY)) {
-	    SetFileAttributes(path, attr & ~FILE_ATTRIBUTE_READONLY);
+	    SetFileAttributesW(wpath, attr & ~FILE_ATTRIBUTE_READONLY);
 	}
-	if (RemoveDirectory(path) == FALSE) {
+	if (RemoveDirectoryW(wpath) == FALSE) {
 	    errno = map_errno(GetLastError());
 	    ret = -1;
 	    if (attr != (DWORD)-1 && (attr & FILE_ATTRIBUTE_READONLY)) {
-		SetFileAttributes(path, attr);
+		SetFileAttributesW(wpath, attr);
 	    }
 	}
     });
@@ -5231,22 +5460,87 @@ rb_w32_rmdir(const char *path)
 }
 
 int
-rb_w32_unlink(const char *path)
+rb_w32_rmdir(const char *path)
+{
+    WCHAR *wpath;
+    int ret;
+
+    if (!(wpath = filecp_to_wstr(path, NULL)))
+	return -1;
+    ret = wrmdir(wpath);
+    free(wpath);
+    return ret;
+}
+
+int
+rb_w32_urmdir(const char *path)
+{
+    WCHAR *wpath;
+    int ret;
+
+    if (!(wpath = utf8_to_wstr(path, NULL)))
+	return -1;
+    ret = wrmdir(wpath);
+    free(wpath);
+    return ret;
+}
+
+static int
+wunlink(const WCHAR *path)
 {
     int ret = 0;
     RUBY_CRITICAL({
-	const DWORD attr = GetFileAttributes(path);
+	const DWORD attr = GetFileAttributesW(path);
 	if (attr != (DWORD)-1 && (attr & FILE_ATTRIBUTE_READONLY)) {
-	    SetFileAttributes(path, attr & ~FILE_ATTRIBUTE_READONLY);
+	    SetFileAttributesW(path, attr & ~FILE_ATTRIBUTE_READONLY);
 	}
-	if (DeleteFile(path) == FALSE) {
+	if (DeleteFileW(path) == FALSE) {
 	    errno = map_errno(GetLastError());
 	    ret = -1;
 	    if (attr != (DWORD)-1 && (attr & FILE_ATTRIBUTE_READONLY)) {
-		SetFileAttributes(path, attr);
+		SetFileAttributesW(path, attr);
 	    }
 	}
     });
+    return ret;
+}
+
+int
+rb_w32_uunlink(const char *path)
+{
+    WCHAR *wpath;
+    int ret;
+
+    if (!(wpath = utf8_to_wstr(path, NULL)))
+	return -1;
+    ret = wunlink(wpath);
+    free(wpath);
+    return ret;
+}
+
+int
+rb_w32_unlink(const char *path)
+{
+    WCHAR *wpath;
+    int ret;
+
+    if (!(wpath = filecp_to_wstr(path, NULL)))
+	return -1;
+    ret = wunlink(wpath);
+    free(wpath);
+    return ret;
+}
+
+int
+rb_w32_uchmod(const char *path, int mode)
+{
+    WCHAR *wpath;
+    int ret;
+
+    if (!(wpath = filecp_to_wstr(path, NULL)))
+	return -1;
+    ret = _wchmod(wpath, mode);
+    free(wpath);
     return ret;
 }
 

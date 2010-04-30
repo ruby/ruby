@@ -367,6 +367,7 @@ char *rb_path_skip_prefix(const char *);
 char *rb_path_last_separator(const char *);
 char *rb_path_end(const char *);
 VALUE rb_file_directory_p(VALUE,VALUE);
+VALUE rb_str_encode_ospath(VALUE);
 int rb_is_absolute_path(const char *);
 /* gc.c */
 void ruby_set_stack_size(size_t);
