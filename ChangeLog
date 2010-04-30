@@ -1,3 +1,9 @@
+Sat May  1 00:26:31 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit/assertions.rb (Test::Unit::Assertions#assert):
+	  assertion message must be String or Proc.  suggested by caleb
+	  clausen at [ruby-core:29884].
+
 Sat May  1 00:14:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_io.rb: skip false tests on Windows.
