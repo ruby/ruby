@@ -19,7 +19,7 @@ class TestIO < Test::Unit::TestCase
   end
 
   def have_nonblock?
-    IO.instance_methods.index(:"nonblock=")
+    IO.method_defined?("nonblock=")
   end
 
   def test_pipe
@@ -113,7 +113,8 @@ class TestIO < Test::Unit::TestCase
   def test_ungetc
     r, w = IO.pipe
     w.close
-    assert_raise(IOError, "[ruby-dev:31650]") { 20000.times { r.ungetc "a" } }
+    s = "a" * 1000
+    assert_raise(IOError, "[ruby-dev:31650]") { 200.times { r.ungetc s } }
   ensure
     r.close
   end
@@ -161,8 +162,11 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_rubydev33072
+    t = make_tempfile
+    path = t.path
+    t.close!
     assert_raise(Errno::ENOENT, "[ruby-dev:33072]") do
-      File.read("empty", nil, nil, {})
+      File.read(path, nil, nil, {})
     end
   end
 
@@ -328,7 +332,12 @@ class TestIO < Test::Unit::TestCase
         with_read_pipe("abc") {|r1|
           assert_equal("a", r1.getc)
           with_pipe {|r2, w2|
-            w2.nonblock = true
+            begin
+              w2.nonblock = true
+            rescue Errno::EBADF
+              skip "nonblocking IO for pipe is not implemented"
+              break
+            end
             s = w2.syswrite("a" * 100000)
             t = Thread.new { sleep 0.1; r2.read }
             ret = IO.copy_stream(r1, w2)
@@ -382,10 +391,14 @@ class TestIO < Test::Unit::TestCase
       if have_nonblock?
         with_pipe {|r1, w1|
           with_pipe {|r2, w2|
+            begin
+              r1.nonblock = true
+              w2.nonblock = true
+            rescue Errno::EBADF
+              skip "nonblocking IO for pipe is not implemented"
+            end
             t1 = Thread.new { w1 << megacontent; w1.close }
             t2 = Thread.new { r2.read }
-            r1.nonblock = true
-            w2.nonblock = true
             ret = IO.copy_stream(r1, w2)
             assert_equal(megacontent.bytesize, ret)
             w2.close
@@ -512,8 +525,12 @@ class TestIO < Test::Unit::TestCase
 
       if have_nonblock?
         with_socketpair {|s1, s2|
+          begin
+            s1.nonblock = true
+          rescue Errno::EBADF
+            skip "nonblocking IO for pipe is not implemented"
+          end
           t = Thread.new { s2.read }
-          s1.nonblock = true
           ret = IO.copy_stream("megasrc", s1)
           assert_equal(megacontent.bytesize, ret)
           s1.close
@@ -892,6 +909,7 @@ class TestIO < Test::Unit::TestCase
 
   def test_read_nonblock_error
     return if !have_nonblock?
+    skip "IO#read_nonblock is not supported on file/pipe." if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
     with_pipe {|r, w|
       begin
         r.read_nonblock 4096
@@ -903,6 +921,7 @@ class TestIO < Test::Unit::TestCase
 
   def test_write_nonblock_error
     return if !have_nonblock?
+    skip "IO#write_nonblock is not supported on file/pipe." if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
     with_pipe {|r, w|
       begin
         loop {
@@ -1498,19 +1517,24 @@ End
   end
 
   def test_initialize
+    return unless defined?(Fcntl::F_GETFL)
+
     t = make_tempfile
 
     fd = IO.sysopen(t.path, "w")
     assert_kind_of(Integer, fd)
     %w[r r+ w+ a+].each do |mode|
-      assert_raise(Errno::EINVAL, '[ruby-dev:38571]') {IO.new(fd, mode)}
+      assert_raise(Errno::EINVAL, "#{mode} [ruby-dev:38571]") {IO.new(fd, mode)}
     end
     f = IO.new(fd, "w")
     f.write("FOO\n")
     f.close
 
     assert_equal("FOO\n", File.read(t.path))
+  end
 
+  def test_reinitialize
+    t = make_tempfile
     f = open(t.path)
     assert_raise(RuntimeError) do
       f.instance_eval { initialize }
