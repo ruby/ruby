@@ -1,3 +1,8 @@
+Sat May  1 00:14:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_io.rb: skip false tests on Windows.
+	  [ruby-core:29886]
+
 Fri Apr 30 22:46:27 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* math.c: Math::DomainError < StandardException [ruby-core:29855]
