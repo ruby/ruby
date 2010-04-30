@@ -2858,10 +2858,12 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
     if (p > buf && p[-1] == '/')
 	--p;
     else {
+	rb_str_set_len(result, p-buf);
 	BUFCHECK(bdiff + 1 >= buflen);
 	*p = '/';
     }
 
+    rb_str_set_len(result, p-buf+1);
     BUFCHECK(bdiff + 1 >= buflen);
     p[1] = 0;
     root = skipprefix(buf);
@@ -2925,6 +2927,7 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
 #endif
 	    if (s > b) {
 		long rootdiff = root - buf;
+		rb_str_set_len(result, p-buf+1);
 		BUFCHECK(bdiff + (s-b+1) >= buflen);
 		root = buf + rootdiff;
 		memcpy(++p, b, s-b);
@@ -2955,6 +2958,7 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
 	    }
 	}
 #endif
+	rb_str_set_len(result, p-buf+1);
 	BUFCHECK(bdiff + (s-b) >= buflen);
 	memcpy(++p, b, s-b);
 	p += s-b;

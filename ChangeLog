@@ -1,3 +1,8 @@
+Fri Apr 30 12:05:20 2010  Tanaka Akira  <akr@fsij.org>
+
+	* file.c (file_expand_path): call rb_str_set_len before BUFCHECK to
+	  prevent rb_str_resize in BUFCHECK discard the content.
+
 Fri Apr 30 11:48:31 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* string.c (rb_str_sub_bang): String#sub! now raises an error when
