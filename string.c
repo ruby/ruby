@@ -3466,6 +3466,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
     }
 
     pat = get_pat(argv[0], 1);
+    str_modifiable(str);
     if (rb_reg_search(pat, str, 0, 0) >= 0) {
 	rb_encoding *enc;
 	int cr = ENC_CODERANGE(str);

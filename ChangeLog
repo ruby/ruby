@@ -1,3 +1,9 @@
+Fri Apr 30 11:48:31 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* string.c (rb_str_sub_bang): String#sub! now raises an error when
+	  called on a frozen string, even if no change is made.
+	  See [ruby-core:23657]
+
 Fri Apr 30 11:40:44 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* eval.c (make_exception, rb_obj_extend): Fix error messages in case
