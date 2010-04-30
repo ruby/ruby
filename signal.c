@@ -217,10 +217,11 @@ ruby_signal_name(int no)
 
 /*
  * call-seq:
- *    SignalException.new(sig)   =>  signal_exception
+ *    SignalException.new(sig_name)              =>  signal_exception
+ *    SignalException.new(sig_number [, name])   =>  signal_exception
  *
- *  Construct a new SignalException object.  +sig+ should be a known
- *  signal name, or a signal number.
+ *  Construct a new SignalException object.  +sig_name+ should be a known
+ *  signal name.
  */
 
 static VALUE
