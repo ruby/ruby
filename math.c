@@ -746,7 +746,7 @@ void
 Init_Math(void)
 {
     rb_mMath = rb_define_module("Math");
-    rb_eMathDomainError = rb_define_class_under(rb_mMath, "DomainError", rb_eArgError);
+    rb_eMathDomainError = rb_define_class_under(rb_mMath, "DomainError", rb_eStandardError);
 
 #ifdef M_PI
     rb_define_const(rb_mMath, "PI", DBL2NUM(M_PI));

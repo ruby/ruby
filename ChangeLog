@@ -1,3 +1,7 @@
+Fri Apr 30 22:46:27 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* math.c: Math::DomainError < StandardException [ruby-core:29855]
+
 Fri Apr 30 21:40:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/test_open3.rb (TestOpen3#test_commandline): use simple
