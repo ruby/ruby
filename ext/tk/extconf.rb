@@ -1,12 +1,14 @@
 ##############################################################
 # extconf.rb for tcltklib
-# release date: 2010-03-26
+# release date: 2010-04-30
 ##############################################################
 require 'mkmf'
+#$VERBOSE=true
 
 TkLib_Config = {}
 TkLib_Config['search_versions'] = 
-  %w[8.9 8.8 8.7 8.6 8.5 8.4 8.3 8.2 8.1 8.0 4.2]
+  # %w[8.9 8.8 8.7 8.6 8.5 8.4 8.3 8.2 8.1 8.0 7.6 4.2]
+  %w[8.7 8.6 8.5 8.4 8.3 8.2 8.1 8.0]
 
 
 ##############################################################
@@ -105,6 +107,16 @@ def is_win32?
   /mswin|mingw|cygwin|bccwin/ =~ RUBY_PLATFORM
 end
 
+def win_drive
+  drive = with_config("windows-tcltk-drive", "c")
+  case(RUBY_PLATFORM)
+  when /cygwin/
+    ["/cygdrive/#{drive}", "/cygdrive/[A-Za-z]"]
+  else
+    ["#{drive}:", "[A-Za-z]:"]
+  end
+end
+
 def is_macosx?
  /darwin/ =~ RUBY_PLATFORM
 end
@@ -181,14 +193,51 @@ def get_shlib_path_head
   end
 
   if is_win32?
+    drive, drv_regexp = win_drive
     if TkLib_Config["ActiveTcl"]
-      path_head.concat ["c:/ActiveTcl", "c:/Program Files/ActiveTcl"]
+      path_head.concat [
+        "#{drive}/ActiveTcl*", "#{drive}/Activetcl*",
+        "#{drive}/activeTcl*", "#{drive}/activetcl*",
+        "#{drive}/Program Files/ActiveTcl*", 
+        "#{drive}/Program Files/Activetcl*",
+        "#{drive}/Program Files/activeTcl*",
+        "#{drive}/Program Files/activetcl*",
+        "/ActiveTcl*", "/Activetcl*", "/activeTcl*", "/activetcl*",
+        "/Program Files/ActiveTcl*", "/Program Files/Activetcl*",
+        "/Program Files/activeTcl*", "/Program Files/activetcl*"
+      ]
     end
+
     path_head.concat [
-      "c:/Tcl", "c:/Program Files/Tcl",
-      "/Tcl", "/Program Files/Tcl"
+      "#{drive}/Tcl*", "#{drive}/tcl*",
+      "#{drive}/Program Files/Tcl*", "#{drive}/Program Files/tcl*",
+      "/Tcl*", "/tcl*", "/Program Files/Tcl*", "/Program Files/tcl*"
     ]
-    path_head.each{|dir| path_dirs << "#{dir}"}
+
+    path_head.map!{|d|
+      [Dir.glob(d).sort.reverse,
+       Dir.glob(d.sub(%r|^(#{drv_regexp})?/([^/])|, '\1//\2')).sort.reverse]
+    }.flatten!
+
+    ENV['PATH'].split(File::PATH_SEPARATOR).each{|dir|
+      path_head << dir
+      path_head << File.expand_path(File.join(dir, '..'))
+      if dir.gsub!(/\\/, '/')
+        path_head << dir
+        path_head << File.expand_path(File.join(dir, '..'))
+      end
+      if dir.sub!(%r|^(#{drv_regexp})?/([^/])|, '\1//\2')
+        path_head << dir
+        path_head << File.expand_path(File.join(dir, '..'))
+      end
+    }
+
+    path_head |= path_head
+    path_head.each{|dir|
+      path_dirs << dir
+      dir = File.join(dir, "lib")
+      path_dirs << dir if File.directory?(dir)
+    }
 
   else
     [
@@ -365,7 +414,7 @@ def parse_tclConfig(file)
 end
 
 def get_libpath(lib_flag, lib_spec)
-  # get libpath fro {TCL,Tk}_LIB_FLAG and {TCL,Tk}_LIB_SPEC
+  # get libpath from {TCL,Tk}_LIB_FLAG and {TCL,Tk}_LIB_SPEC
   libpath = lib_spec.gsub(/(#{lib_flag}|-L)/, "").strip
 end
 
@@ -373,19 +422,22 @@ def get_tclConfig_dirs
   config_dir = []
 
   if is_win32?
+    drive, drv_regexp = win_drive
     if TkLib_Config["ActiveTcl"]
       dirs = []
       if TkLib_Config["ActiveTcl"].kind_of?(String)
         dirs << TkLib_Config["ActiveTcl"]
       end
       dirs.concat [
-        "c:/ActiveTcl*/lib", "c:/Activetcl*/lib", 
-        "c:/activeTcl*/lib", "c:/activetcl*/lib", 
-        "c:/Tcl*/lib", "c:/tcl*/lib", 
-        "c:/Program Files/ActiveTcl*/lib", "c:/Program Files/Activetcl*/lib",
-        "c:/Program Files/activeTcl*/lib", "c:/Program Files/activetcl*/lib",
-        "c:/Program Files/Tcl*/lib", "c:/Program Files/tcl*/lib",
-        "/ActiveTcl*/lib", "/Activetcl*/lib", 
+        "#{drive}/ActiveTcl*/lib", "#{drive}/Activetcl*/lib", 
+        "#{drive}/activeTcl*/lib", "#{drive}/activetcl*/lib", 
+        "#{drive}/Tcl*/lib", "#{drive}/tcl*/lib", 
+        "#{drive}/Program Files/ActiveTcl*/lib",
+        "#{drive}/Program Files/Activetcl*/lib",
+        "#{drive}/Program Files/activeTcl*/lib",
+        "#{drive}/Program Files/activetcl*/lib",
+        "#{drive}/Program Files/Tcl*/lib", "#{drive}/Program Files/tcl*/lib",
+        "/ActiveTcl*/lib", "/Activetcl*/lib",
         "/activeTcl*/lib", "/activetcl*/lib", 
         "/Tcl*/lib", "/tcl*/lib", 
         "/Program Files/ActiveTcl*/lib", "/Program Files/Activetcl*/lib",
@@ -394,20 +446,34 @@ def get_tclConfig_dirs
       ]
     else
       dirs = [
-        "c:/Tcl*/lib", "c:/tcl*/lib", 
-        "c:/Program Files/Tcl*/lib", "c:/Program Files/tcl*/lib",
-        "/Tcl*/lib", "/tcl*/lib", 
+        "#{drive}/Tcl*/lib", "#{drive}/tcl*/lib",
+        "#{drive}/Program Files/Tcl*/lib", "#{drive}/Program Files/tcl*/lib",
+        "/Tcl*/lib", "/tcl*/lib",
         "/Program Files/Tcl*/lib", "/Program Files/tcl*/lib"
       ]
     end
-    dirs.collect{|d| Dir.glob(d)}.flatten!
-    dirs |= dirs
+    dirs.map!{|d|
+      [Dir.glob(d).sort.reverse,
+       Dir.glob(d.sub(%r|^(#{drv_regexp})?/([^/])|, '\1//\2')).sort.reverse]
+    }.flatten!
 
-    ENV['PATH'].split(';').each{|dir|
+    ENV['PATH'].split(File::PATH_SEPARATOR).each{|dir|
       dirs << File.expand_path(File.join(dir, '..', 'lib'))
       dirs << dir
       dirs << File.expand_path(File.join(dir, '..'))
+      if dir.gsub!(/\\/, '/')
+        dirs << File.expand_path(File.join(dir, '..', 'lib'))
+        dirs << dir
+        dirs << File.expand_path(File.join(dir, '..'))
+      end
+      if dir.sub!(%r|^(#{drv_regexp})?/([^/])|, '\1//\2')
+        dirs << File.expand_path(File.join(dir, '..', 'lib'))
+        dirs << dir
+        dirs << File.expand_path(File.join(dir, '..'))
+      end
     }
+
+    dirs |= dirs
 
     unless TkLib_Config["space-on-tk-libpath"]
       dirs.delete_if{|path| path =~ / /}
@@ -438,13 +504,13 @@ def get_tclConfig_dirs
       '/usr/local/opt', '/usr/local/pkg', '/usr/local/share', '/usr/local',
       '/usr/opt', '/usr/pkg', '/usr/share', '/usr/contrib', '/usr'
     ].map{|dir|
-      Dir.glob(dir + '/{TclTk,tcltk,Tcl,tcl,Tk,tk}[87]*/lib')
-      Dir.glob(dir + '/{TclTk,tcltk,Tcl,tcl,Tk,tk}[87]*')
+      Dir.glob(dir + '/{TclTk,tcltk,Tcl,tcl,Tk,tk}[987]*/lib')
+      Dir.glob(dir + '/{TclTk,tcltk,Tcl,tcl,Tk,tk}[987]*')
       Dir.glob(dir + '/{TclTk,tcltk,Tcl,tcl,Tk,tk}/lib')
       Dir.glob(dir + '/{TclTk,tcltk,Tcl,tcl,Tk,tk}')
     }.flatten!
 
-    ENV['PATH'].split(':').each{|dir|
+    ENV['PATH'].split(File::PATH_SEPARATOR).each{|dir|
       config_dir << File.expand_path(File.join(dir, '..', 'lib'))
     }
 
@@ -507,7 +573,11 @@ def search_tclConfig(*paths) # libdir list or [tcl-libdir|file, tk-libdir|file]
       tcldir = tkdir = dir
     end
 
-    tails = ['Config-shared.sh', 'config-shared.sh', 'Config.sh', 'config.sh']
+    if enable_config("shared") == false
+      tails = ['Config.sh', 'config.sh', 'Config-shared.sh', 'config-shared.sh']
+    else
+      tails = ['Config-shared.sh', 'config-shared.sh', 'Config.sh', 'config.sh']
+    end
 
     if File.file?(tcldir)
       tclcfg_files = [tcldir] * tails.length
@@ -634,7 +704,7 @@ def get_tclConfig(tclConfig_file, tkConfig_file, tclConfig_dir, tkConfig_dir)
   TkLib_Config["tclConfig-dir"] = tclConfig_dir
   TkLib_Config["tkConfig-dir"] = tkConfig_dir
 
-  print("Search tclConfig.sh", (tclConfig_dir)? " (in #{tclConfig_dir})": "", 
+  print("Search tclConfig.sh", (tclConfig_dir)? " (in #{tclConfig_dir})": "",
         " and tkConfig.sh", (tkConfig_dir)? " (in #{tkConfig_dir})": "", ".")
   if tclConfig_dir
     tclConfig, tkConfig = 
@@ -692,15 +762,15 @@ def check_shlib_search_path(paths)
           dirs = []
 
           if !Dir.glob(head + "-*").empty?
-            dirs << head + "-#{ver}/lib" if !Dir.glob(head + "-[89].*").empty?
-            dirs << head + "-#{ver.delete('.')}/lib" if !Dir.glob(head + "-[89][0-9]*").empty?
+            dirs << head + "-#{ver}/lib" if !Dir.glob(head + "-[987].*").empty?
+            dirs << head + "-#{ver.delete('.')}/lib" if !Dir.glob(head + "-[987][0-9]*").empty?
           end
 
           if !Dir.glob(head + "[_-]*").empty?
-            dirs << head + "_#{ver}/lib" if !Dir.glob(head + "_[89].*").empty?
-            dirs << head + "-#{ver}/lib" if !Dir.glob(head + "-[89].*").empty?
-            dirs << head + "_#{ver.delete('.')}/lib" if !Dir.glob(head + "_[89][0-9]*").empty?
-            dirs << head + "-#{ver.delete('.')}/lib" if !Dir.glob(head + "-[89][0-9]*").empty?
+            dirs << head + "_#{ver}/lib" if !Dir.glob(head + "_[987].*").empty?
+            dirs << head + "-#{ver}/lib" if !Dir.glob(head + "-[987].*").empty?
+            dirs << head + "_#{ver.delete('.')}/lib" if !Dir.glob(head + "_[987][0-9]*").empty?
+            dirs << head + "-#{ver.delete('.')}/lib" if !Dir.glob(head + "-[987][0-9]*").empty?
           end
 
           dirs
@@ -712,17 +782,22 @@ def check_shlib_search_path(paths)
 
   else
     # paths is a string with PATH environment style
-    path_list = paths.split((is_win32?)? ';': ':')
+    path_list = paths.split(File::PATH_SEPARATOR)
+    #path_list = paths.split((is_win32?)? ';': ':')
   end
 
   path_list = check_NG_path(path_list)
 
   if is_win32?
     # exist-dir only
+    drive, drv_regexp = win_drive
     path_list.each{|path|
-      path = path.strip; $LIBPATH |= [path] if File.directory?(path)
+      path = path.strip;
+      #$LIBPATH |= [path] if File.directory?(path)
+      $LIBPATH |= [path.sub(%r|^(#{drv_regexp})?//|, '\1/')] unless Dir.glob(File.join(path, "*.{a,so,dll,lib}")).empty?
     }
   else
+    # keep paths for searching dynamic libs
     path_list.each{|path| $LIBPATH |= [path.strip] }
   end
 end
@@ -730,12 +805,15 @@ end
 def search_vers_on_path(vers, path, *heads)
   if enable_config("shared") == false
     exts = CONFIG['LIBEXT'] + ',' + CONFIG['DLEXT']
+    exts << ",lib,dll" if is_win32?
+    exts << ",bundle,dylib" if is_macosx? || /nextstep|openstep|rhapsody/ =~ RUBY_PLATFORM
   else
     exts = CONFIG['DLEXT'] + ',' + CONFIG['LIBEXT']
+    exts << ",dll,lib" if is_win32?
+    exts << ",dylib,bundle" if is_macosx? || /nextstep|openstep|rhapsody/ =~ RUBY_PLATFORM
   end
-  exts << ",dll,lib" if is_win32?
-  exts << ",bundle,dylib" if is_macosx? || /nextstep|openstep|rhapsody/ =~ RUBY_PLATFORM
   files = Dir.glob(File.join(path, "*{#{heads.join(',')}}*.{#{exts}}"))
+  files |= files
   vers.find_all{|ver| files.find{|f| f =~ /(#{ver}|#{ver.delete('.')})/} }
 end
 
@@ -765,10 +843,68 @@ def find_tcl(tcllib, stubs, version, *opt_paths)
     "/usr/local/lib", "/usr/pkg/lib", "/usr/contrib/lib", "/usr/lib"
   ].find_all{|dir| File.directory?(dir)}
 
-  default_paths.concat [
-    "c:/Tcl/lib", "c:/Program Files/Tcl/lib",
-    "/Tcl/lib", "/Program Files/Tcl/lib"
-  ].find_all{|dir| File.directory?(dir)}
+  if TkLib_Config["ActiveTcl"].kind_of?(String)  # glob path
+    default_paths.concat Dir.glob(TkLib_Config["ActiveTcl"]).sort.reverse.map{|d| d << "/lib"}
+  end
+
+  if is_win32?
+    drive, drv_regexp = win_drive
+    if TkLib_Config["ActiveTcl"]
+      default_paths.concat [
+        "#{drive}/ActiveTcl*", "#{drive}/Activetcl*",
+        "#{drive}/activeTcl*", "#{drive}/activetcl*",
+        "#{drive}/Program Files/ActiveTcl*",
+        "#{drive}/Program Files/Activetcl*",
+        "#{drive}/Program Files/activeTcl*",
+        "#{drive}/Program Files/activetcl*",
+        "/ActiveTcl*", "/Activetcl*", "/activeTcl*", "/activetcl*",
+        "/Program Files/ActiveTcl*", "/Program Files/Activetcl*",
+        "/Program Files/activeTcl*", "/Program Files/activetcl*"
+      ].map{|d| d << "/lib"}
+    end
+    default_paths.concat [
+      "#{drive}/Tcl*", "#{drive}/tcl*",
+      "#{drive}/Program Files/Tcl*", "#{drive}/Program Files/tcl*",
+      "/Tcl*", "/tcl*", "/Program Files/Tcl*", "/Program Files/tcl*",
+    ].map{|d| d << "/lib"}
+    default_paths.map{|d|
+      [Dir.glob(d).sort.reverse,
+       Dir.glob(d.sub(%r|^(#{drv_regexp})?/([^/])|, '\1//\2')).sort.reverse]
+    }.flatten.find_all{|dir| File.directory?(dir)}
+  end
+
+  env_paths = []
+  ENV['PATH'].split(File::PATH_SEPARATOR).each{|dir|
+    env_paths << File.expand_path(File.join(dir, '..', 'lib'))
+    env_paths << dir
+    env_paths << File.expand_path(File.join(dir, '..'))
+    if is_win32?
+      if dir.gsub!(/\\/, '/')
+        env_paths << File.expand_path(File.join(dir, '..', 'lib'))
+        env_paths << dir
+        env_paths << File.expand_path(File.join(dir, '..'))
+      end
+      if dir.sub!(%r|^(#{drv_regexp})?/([^/])|, '\1//\2')
+        env_paths << File.expand_path(File.join(dir, '..', 'lib'))
+        env_paths << dir
+        env_paths << File.expand_path(File.join(dir, '..'))
+      end
+    end
+  }
+
+  if is_win32?
+    env_paths = env_paths.find_all{|d|
+      not (Dir.glob(File.join(d, "*[Tt]cl*")) | Dir.glob(File.join(d.sub(%r|^(#{drv_regexp})?/([^/])|, '\1//\2'), "*[Tt]cl*"))).empty?
+    }
+  else
+    env_paths = env_paths.find_all{|d|
+      not (Dir.glob(File.join(d, "*[Tt]cl*"))).empty?
+    }
+  end
+
+  default_paths.concat env_paths
+
+  default_paths |= default_paths
 
   unless TkLib_Config["space-on-tk-libpath"]
     default_paths.delete_if{|path| path =~ / /}
@@ -811,12 +947,12 @@ def find_tcl(tcllib, stubs, version, *opt_paths)
     end
   end
 
-  ret = paths.map{|path|
+  ret = paths.find{|path|
     if tcllib
       print(".")
-      [path, find_library(tcllib, func, path)]
+      find_library(tcllib, func, path)
     else
-      st = search_vers_on_path(versions, path, lib, 'tcl').find{|ver|
+      search_vers_on_path(versions, path, lib, 'tcl').find{|ver|
         (print(".");find_library("#{lib}#{ver}", func, path)) or
           (print(".");find_library("#{lib}#{ver.delete('.')}", func, path)) or
           (print(".");find_library("#{lib}#{ver}g", func, path)) or
@@ -826,11 +962,11 @@ def find_tcl(tcllib, stubs, version, *opt_paths)
           (print(".");find_library("tcl#{ver}g", func, path)) or
           (print(".");find_library("tcl#{ver.delete('.')}g", func, path))
       } || (!version && (print(".");find_library(lib, func, path)))
-      [path, st]
     end
   }
 
   print("\n") # progress
+  print("Found a Tcl library at #{ret}.\n") if ret
   ret
 end
 
@@ -875,10 +1011,68 @@ def find_tk(tklib, stubs, version, *opt_paths)
     "/usr/local/lib", "/usr/pkg/lib", "/usr/contrib/lib", "/usr/lib"
   ].find_all{|dir| File.directory?(dir)}
 
-  default_paths.concat [
-    "c:/Tcl/lib", "c:/Program Files/Tcl/lib",
-    "/Tcl/lib", "/Program Files/Tcl/lib"
-  ].find_all{|dir| File.directory?(dir)}
+  if TkLib_Config["ActiveTcl"].kind_of?(String)  # glob path
+    default_paths.concat Dir.glob(TkLib_Config["ActiveTcl"]).sort.reverse.map{|d| d << "/lib"}
+  end
+
+  if is_win32?
+    drive, drv_regexp = win_drive
+    if TkLib_Config["ActiveTcl"]
+      default_paths.concat [
+        "#{drive}/ActiveTcl*", "#{drive}/Activetcl*",
+        "#{drive}/activeTcl*", "#{drive}/activetcl*",
+        "#{drive}/Program Files/ActiveTcl*",
+        "#{drive}/Program Files/Activetcl*",
+        "#{drive}/Program Files/activeTcl*",
+        "#{drive}/Program Files/activetcl*",
+        "/ActiveTcl*", "/Activetcl*", "/activeTcl*", "/activetcl*",
+        "/Program Files/ActiveTcl*", "/Program Files/Activetcl*",
+        "/Program Files/activeTcl*", "/Program Files/activetcl*"
+      ].map{|d| d << "/lib"}
+    end
+    default_paths.concat [
+      "#{drive}/Tcl*", "#{drive}/tcl*",
+      "#{drive}/Program Files/Tcl*", "#{drive}/Program Files/tcl*",
+      "/Tcl*", "/tcl*", "/Program Files/Tcl*", "/Program Files/tcl*",
+    ].map{|d| d << "/lib"}
+    default_paths.map{|d|
+      [Dir.glob(d).sort.reverse,
+       Dir.glob(d.sub(%r|^(#{drv_regexp})?/([^/])|, '\1//\2')).sort.reverse]
+    }.flatten.find_all{|dir| File.directory?(dir)}
+  end
+
+  env_paths = []
+  ENV['PATH'].split(File::PATH_SEPARATOR).each{|dir|
+    env_paths << File.expand_path(File.join(dir, '..', 'lib'))
+    env_paths << dir
+    env_paths << File.expand_path(File.join(dir, '..'))
+    if is_win32?
+      if dir.gsub!(/\\/, '/')
+        env_paths << File.expand_path(File.join(dir, '..', 'lib'))
+        env_paths << dir
+        env_paths << File.expand_path(File.join(dir, '..'))
+      end
+      if dir.sub!(%r|^(#{drv_regexp})?/([^/])|, '\1//\2')
+        env_paths << File.expand_path(File.join(dir, '..', 'lib'))
+        env_paths << dir
+        env_paths << File.expand_path(File.join(dir, '..'))
+      end
+    end
+  }
+
+  if is_win32?
+    env_paths = env_paths.find_all{|d|
+      not (Dir.glob(File.join(d, "*[Tt]k*")) | Dir.glob(File.join(d.sub(%r|^(#{drv_regexp})?/([^/])|, '\1//\2'), "*[Tt]k*"))).empty?
+    }
+  else
+    env_paths = env_paths.find_all{|d|
+      not (Dir.glob(File.join(d, "*[Tt]k*"))).empty?
+    }
+  end
+
+  default_paths.concat env_paths
+
+  default_paths |= default_paths
 
   unless TkLib_Config["space-on-tk-libpath"]
     default_paths.delete_if{|path| path =~ / /}
@@ -920,12 +1114,12 @@ def find_tk(tklib, stubs, version, *opt_paths)
     end
   end
 
-  ret = paths.map{|path|
+  ret = paths.find{|path|
     if tklib
       print(".")
-      [path, find_library(tklib, func, path)]
+      find_library(tklib, func, path)
     else
-      st = search_vers_on_path(versions, path, lib, 'tk').find{|ver|
+      search_vers_on_path(versions, path, lib, 'tk').find{|ver|
         (print(".");find_library("#{lib}#{ver}", func, path)) or
           (print(".");find_library("#{lib}#{ver.delete('.')}", func, path)) or
           (print(".");find_library("#{lib}#{ver}g", func, path)) or
@@ -935,24 +1129,22 @@ def find_tk(tklib, stubs, version, *opt_paths)
           (print(".");find_library("tk#{ver}g", func, path)) or
           (print(".");find_library("tk#{ver.delete('.')}g", func, path))
       } || (!version && (print(".");find_library(lib, func, path)))
-      [path, st]
     end
   }
 
   print("\n") # progress
+  print("Found a Tk library at #{ret}.\n") if ret
   ret
 end
 
 def find_tcltk_library(tcllib, tklib, stubs, tclversion, tkversion, 
                        tcl_opt_paths, tk_opt_paths)
-  ret = find_tcl(tcllib, stubs, tclversion, *tcl_opt_paths)
-  unless ret && ret.find{|path, val| val}
+  unless find_tcl(tcllib, stubs, tclversion, *tcl_opt_paths)
     puts("Warning:: cannot find Tcl library. tcltklib will not be compiled (tcltklib is disabled on your Ruby == Ruby/Tk will not work). Please check configure options.")
     return false
   end
 
-  ret = find_tk(tklib, stubs, tkversion, *tk_opt_paths)
-  unless ret && ret.find{|path, val| val}
+  unless find_tk(tklib, stubs, tkversion, *tk_opt_paths)
     puts("Warning:: cannot find Tk library. tcltklib will not be compiled (tcltklib is disabled on your Ruby == Ruby/Tk will not work). Please check configure options.")
     return false
   end
@@ -969,10 +1161,57 @@ def find_tcltk_header(tclver, tkver)
     "/usr/include"
   ].find_all{|dir| File.directory?(dir)}
 
-  base_dir.concat [
-    "c:/Tcl/include", "c:/Program Files/Tcl/include",
-    "/Tcl/include", "/Program Files/Tcl/include"
-  ].find_all{|dir| File.directory?(dir)}
+  if TkLib_Config["ActiveTcl"].kind_of?(String)  # glob path
+    base_dir.concat Dir.glob(TkLib_Config["ActiveTcl"]).sort.reverse.map{|d| d << "/include"}
+  end
+
+  if is_win32?
+    drive, drv_regexp = win_drive
+    if TkLib_Config["ActiveTcl"]
+      base_dir.concat [
+        "#{drive}/ActiveTcl*", "#{drive}/Activetcl*",
+        "#{drive}/activeTcl*", "#{drive}/activetcl*",
+        "#{drive}/Program Files/ActiveTcl*",
+        "#{drive}/Program Files/Activetcl*",
+        "#{drive}/Program Files/activeTcl*",
+        "#{drive}/Program Files/activetcl*",
+        "/ActiveTcl*", "/Activetcl*", "/activeTcl*", "/activetcl*",
+        "/Program Files/ActiveTcl*", "/Program Files/Activetcl*",
+        "/Program Files/activeTcl*", "/Program Files/activetcl*"
+      ].map{|d| d << "/include"}
+    end
+
+    base_dir.concat [
+      "#{drive}/Tcl*/include", "#{drive}/tcl*/include",
+      "#{drive}/Program Files/Tcl*/include",
+      "#{drive}/Program Files/tcl*/include",
+      "/Tcl*/include", "/tcl*/include",
+      "/Program Files/Tcl*/include", "/Program Files/tcl*/include",
+    ]
+
+    base_dir.map{|d|
+      [Dir.glob(d).sort.reverse, 
+       Dir.glob(d.sub(%r|^(#{drv_regexp})?/([^/])|, '\1//\2')).sort.reverse]
+    }.flatten.find_all{|dir| File.directory?(dir)}
+
+    ENV['PATH'].split(File::PATH_SEPARATOR).each{|dir|
+      base_dir << File.expand_path(File.join(dir, '..', 'include'))
+      base_dir << dir
+      base_dir << File.expand_path(File.join(dir, '..'))
+      if dir.gsub!(/\\/, '/')
+        base_dir << File.expand_path(File.join(dir, '..', 'include'))
+        base_dir << dir
+        base_dir << File.expand_path(File.join(dir, '..'))
+      end
+      if dir.sub!(%r|^(#{drv_regexp})?/([^/])|, '\1//\2')
+        base_dir << File.expand_path(File.join(dir, '..', 'include'))
+        base_dir << dir
+        base_dir << File.expand_path(File.join(dir, '..'))
+      end
+    }
+  end
+
+  base_dir |= base_dir
 
   unless TkLib_Config["space-on-tk-libpath"]
     base_dir.delete_if{|path| path =~ / /}
@@ -1367,7 +1606,6 @@ tcl_cfg_dir = File.dirname(TclConfig_Info['config_file_path']) rescue nil
 
 tk_ldir_list  = [tk_ldir,  tk_cfg_dir]
 tcl_ldir_list = [tcl_ldir, tcl_cfg_dir]
-
 
 # check tk_shlib_search_path
 check_shlib_search_path(with_config('tk-shlib-search-path'))
