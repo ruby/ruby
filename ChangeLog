@@ -1,3 +1,8 @@
+Fri Apr 30 21:40:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/test_open3.rb (TestOpen3#test_commandline): use simple
+	  command via shell.  [ruby-dev:41100]
+
 Fri Apr 30 12:05:20 2010  Tanaka Akira  <akr@fsij.org>
 
 	* file.c (file_expand_path): call rb_str_set_len before BUFCHECK to
