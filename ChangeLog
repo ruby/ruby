@@ -1,3 +1,7 @@
+Sat May  1 06:42:57 2010  wanabe  <s.wanabe@gmail.com>
+
+	* win32/win32.c: add declaration of wstati64 for gcc.
+
 Sat May  1 02:41:33 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* merge some patches from win32-uncode-test branch.

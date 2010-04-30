@@ -67,6 +67,7 @@ static struct ChildRecord *CreateChild(const char *, const char *, SECURITY_ATTR
 static int has_redirection(const char *);
 int rb_w32_wait_events(HANDLE *events, int num, DWORD timeout);
 static int rb_w32_open_osfhandle(intptr_t osfhandle, int flags);
+static int wstati64(const WCHAR *path, struct stati64 *st);
 
 #define RUBY_CRITICAL(expr) do { expr; } while (0)
 
