@@ -1,3 +1,34 @@
+Sat May  1 02:41:33 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* merge some patches from win32-uncode-test branch.
+	  see #1685.
+
+	* file.c, include/ruby/intern.h (rb_str_encode_ospath): new function
+	  to convert encoding for pathname.
+
+	* win32.c, include/ruby/win32.h (rb_w32_ulink, rb_w32_urename,
+	  rb_w32_ustati64, rb_w32_uopen, rb_w32_uutime, rb_w32_uchdir,
+	  rb_w32_umkdir, rb_w32_urmdir, rb_w32_uunlink): new functions to
+	  accept UTF-8 path.
+
+	* win32/win32.c (rb_w32_opendir, link, rb_w32_stati64, rb_w32_utime,
+	  rb_w32_unlink): use WCHAR path internally.
+
+	* file.c (rb_stat, eaccess, access_internal, rb_file_s_ftype,
+	  chmod_internal, rb_file_chmod, rb_file_chown, utime_internal,
+	  rb_file_s_link, unlink_internal, rb_file_s_rename): use UTF-8 version
+	  functions on Win32.
+
+	* file.c (apply2files, rb_stat, rb_file_s_lstat, rb_file_symlink_p,
+	  rb_file_readable_p, rb_file_writable_p, rb_file_executable_p,
+	  check3rdbyte, rb_file_identical_p, rb_file_chmod, rb_file_chown,
+	  rb_file_s_link, rb_file_s_symlink, rb_file_s_rename): call
+	  rb_str_encode_ospath() before passing the path to system.
+
+	* io.c (rb_sysopen): ditto.
+
+	* dir.c (dir_chdir, dir_s_mkdir, dir_s_rmdir): ditto.
+
 Sat May  1 00:26:31 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/assertions.rb (Test::Unit::Assertions#assert):

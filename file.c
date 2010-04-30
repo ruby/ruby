@@ -70,13 +70,36 @@ int flock(int, int);
 #define lstat stat
 #endif
 
+/* define system APIs */
+#ifdef _WIN32
+#define STAT(p, s)	rb_w32_ustati64(p, s)
+#undef lstat
+#define lstat(p, s)	rb_w32_ustati64(p, s)
+#undef access
+#define access(p, m)	rb_w32_uaccess(p, m)
+#undef chmod
+#define chmod(p, m)	rb_w32_uchmod(p, m)
+#undef chown
+#define chown(p, o, g)	rb_w32_uchown(p, o, g)
+#undef utime
+#define utime(p, t)	rb_w32_uutime(p, t)
+#undef link
+#define link(f, t)	rb_w32_ulink(f, t)
+#undef unlink
+#define unlink(p)	rb_w32_uunlink(p)
+#undef rename
+#define rename(f, t)	rb_w32_urename(f, t)
+#else
+#define STAT(p, s)	stat(p, s)
+#endif
+
 #if defined(__BEOS__) || defined(__HAIKU__) /* should not change ID if -1 */
 static int
 be_chown(const char *path, uid_t owner, gid_t group)
 {
     if (owner == (uid_t)-1 || group == (gid_t)-1) {
 	struct stat st;
-	if (stat(path, &st) < 0) return -1;
+	if (STAT(path, &st) < 0) return -1;
 	if (owner == (uid_t)-1) owner = st.st_uid;
 	if (group == (gid_t)-1) group = st.st_gid;
     }
@@ -158,6 +181,23 @@ rb_get_path(VALUE obj)
     return rb_get_path_check(obj, rb_safe_level());
 }
 
+VALUE
+rb_str_encode_ospath(VALUE path)
+{
+#ifdef _WIN32
+    char *s;
+    rb_encoding *enc = rb_enc_get(path);
+    if (enc != rb_ascii8bit_encoding()) {
+	rb_encoding *utf8 = rb_utf8_encoding();
+	if (enc != utf8)
+	    path = rb_str_encode(path, rb_enc_from_encoding(utf8), 0, Qnil);
+    }
+    else if (RSTRING_LEN(path) > 0)
+	path = rb_str_encode(path, rb_enc_from_encoding(rb_filesystem_encoding()), 0, Qnil);
+#endif
+    return path;
+}
+
 static long
 apply2files(void (*func)(const char *, void *), VALUE vargs, void *arg)
 {
@@ -167,6 +207,7 @@ apply2files(void (*func)(const char *, void *), VALUE vargs, void *arg)
     rb_secure(4);
     for (i=0; i<RARRAY_LEN(vargs); i++) {
 	path = rb_get_path(RARRAY_PTR(vargs)[i]);
+	path = rb_str_encode_ospath(path);
 	(*func)(StringValueCStr(path), arg);
     }
 
@@ -754,6 +795,7 @@ rb_stat(VALUE file, struct stat *st)
 	return fstat(fptr->fd, st);
     }
     FilePathValue(file);
+    file = rb_str_encode_ospath(file);
     return stat(StringValueCStr(file), st);
 }
 
@@ -773,10 +815,18 @@ w32_io_info(VALUE *file, BY_HANDLE_FILE_INFORMATION *st)
 	if (f == (HANDLE)-1) return INVALID_HANDLE_VALUE;
     }
     else {
+	VALUE tmp;
+	WCHAR *ptr;
+	int len;
 	FilePathValue(*file);
-	f = CreateFile(StringValueCStr(*file), 0,
-	               FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
-	               rb_w32_iswin95() ? 0 : FILE_FLAG_BACKUP_SEMANTICS, NULL);
+	tmp = rb_str_encode_ospath(*file);
+	len = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(tmp), -1, NULL, 0);
+	ptr = ALLOCA_N(WCHAR, len);
+	MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(tmp), -1, ptr, len);
+	f = CreateFileW(ptr, 0,
+			FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
+			rb_w32_iswin95() ? 0 : FILE_FLAG_BACKUP_SEMANTICS,
+			NULL);
 	if (f == INVALID_HANDLE_VALUE) return f;
 	ret = f;
     }
@@ -864,6 +914,7 @@ rb_file_s_lstat(VALUE klass, VALUE fname)
 
     rb_secure(2);
     FilePathValue(fname);
+    fname = rb_str_encode_ospath(fname);
     if (lstat(StringValueCStr(fname), &st) == -1) {
 	rb_sys_fail(RSTRING_PTR(fname));
     }
@@ -893,11 +944,13 @@ rb_file_lstat(VALUE obj)
 #ifdef HAVE_LSTAT
     rb_io_t *fptr;
     struct stat st;
+    VALUE path;
 
     rb_secure(2);
     GetOpenFile(obj, fptr);
     if (NIL_P(fptr->pathv)) return Qnil;
-    if (lstat(RSTRING_PTR(fptr->pathv), &st) == -1) {
+    path = rb_str_encode_ospath(fptr->pathv);
+    if (lstat(RSTRING_PTR(path), &st) == -1) {
 	rb_sys_fail_path(fptr->pathv);
     }
     return stat_new(&st);
@@ -951,7 +1004,8 @@ eaccess(const char *path, int mode)
     struct stat st;
     rb_uid_t euid;
 
-    if (stat(path, &st) < 0) return -1;
+    if (STAT(path, &st) < 0)
+	return -1;
 
     euid = geteuid();
 
@@ -981,6 +1035,12 @@ eaccess(const char *path, int mode)
 #endif
 }
 #endif
+
+static inline int
+access_internal(const char *path, int mode)
+{
+    return access(path, mode);
+}
 
 
 /*
@@ -1094,6 +1154,7 @@ rb_file_symlink_p(VALUE obj, VALUE fname)
 
     rb_secure(2);
     FilePathValue(fname);
+    fname = rb_str_encode_ospath(fname);
     if (lstat(StringValueCStr(fname), &st) < 0) return Qfalse;
     if (S_ISLNK(st.st_mode)) return Qtrue;
 #endif
@@ -1214,6 +1275,7 @@ rb_file_readable_p(VALUE obj, VALUE fname)
 {
     rb_secure(2);
     FilePathValue(fname);
+    fname = rb_str_encode_ospath(fname);
     if (eaccess(StringValueCStr(fname), R_OK) < 0) return Qfalse;
     return Qtrue;
 }
@@ -1231,7 +1293,8 @@ rb_file_readable_real_p(VALUE obj, VALUE fname)
 {
     rb_secure(2);
     FilePathValue(fname);
-    if (access(StringValueCStr(fname), R_OK) < 0) return Qfalse;
+    fname = rb_str_encode_ospath(fname);
+    if (access_internal(StringValueCStr(fname), R_OK) < 0) return Qfalse;
     return Qtrue;
 }
 
@@ -1284,6 +1347,7 @@ rb_file_writable_p(VALUE obj, VALUE fname)
 {
     rb_secure(2);
     FilePathValue(fname);
+    fname = rb_str_encode_ospath(fname);
     if (eaccess(StringValueCStr(fname), W_OK) < 0) return Qfalse;
     return Qtrue;
 }
@@ -1301,7 +1365,8 @@ rb_file_writable_real_p(VALUE obj, VALUE fname)
 {
     rb_secure(2);
     FilePathValue(fname);
-    if (access(StringValueCStr(fname), W_OK) < 0) return Qfalse;
+    fname = rb_str_encode_ospath(fname);
+    if (access_internal(StringValueCStr(fname), W_OK) < 0) return Qfalse;
     return Qtrue;
 }
 
@@ -1346,6 +1411,7 @@ rb_file_executable_p(VALUE obj, VALUE fname)
 {
     rb_secure(2);
     FilePathValue(fname);
+    fname = rb_str_encode_ospath(fname);
     if (eaccess(StringValueCStr(fname), X_OK) < 0) return Qfalse;
     return Qtrue;
 }
@@ -1363,7 +1429,8 @@ rb_file_executable_real_p(VALUE obj, VALUE fname)
 {
     rb_secure(2);
     FilePathValue(fname);
-    if (access(StringValueCStr(fname), X_OK) < 0) return Qfalse;
+    fname = rb_str_encode_ospath(fname);
+    if (access_internal(StringValueCStr(fname), X_OK) < 0) return Qfalse;
     return Qtrue;
 }
 
@@ -1483,7 +1550,8 @@ check3rdbyte(VALUE fname, int mode)
 
     rb_secure(2);
     FilePathValue(fname);
-    if (stat(StringValueCStr(fname), &st) < 0) return Qfalse;
+    fname = rb_str_encode_ospath(fname);
+    if (STAT(StringValueCStr(fname), &st) < 0) return Qfalse;
     if (st.st_mode & mode) return Qtrue;
     return Qfalse;
 }
@@ -1568,13 +1636,13 @@ rb_file_identical_p(VALUE obj, VALUE fname1, VALUE fname2)
     if (st1.st_dev != st2.st_dev) return Qfalse;
     if (st1.st_ino != st2.st_ino) return Qfalse;
 #else
-#ifdef _WIN32
+# ifdef _WIN32
     BY_HANDLE_FILE_INFORMATION st1, st2;
     HANDLE f1 = 0, f2 = 0;
-#endif
+# endif
 
     rb_secure(2);
-#ifdef _WIN32
+# ifdef _WIN32
     f1 = w32_io_info(&fname1, &st1);
     if (f1 == INVALID_HANDLE_VALUE) return Qfalse;
     f2 = w32_io_info(&fname2, &st2);
@@ -1588,13 +1656,15 @@ rb_file_identical_p(VALUE obj, VALUE fname1, VALUE fname2)
 	return Qtrue;
     if (!f1 || !f2) return Qfalse;
     if (rb_w32_iswin95()) return Qfalse;
-#else
+# else
     FilePathValue(fname1);
     fname1 = rb_str_new4(fname1);
+    fname1 = rb_str_encode_ospath(fname1);
     FilePathValue(fname2);
+    fname2 = rb_str_encode_ospath(fname2);
     if (access(RSTRING_PTR(fname1), 0)) return Qfalse;
     if (access(RSTRING_PTR(fname2), 0)) return Qfalse;
-#endif
+# endif
     fname1 = rb_file_expand_path(fname1, Qnil);
     fname2 = rb_file_expand_path(fname2, Qnil);
     if (RSTRING_LEN(fname1) != RSTRING_LEN(fname2)) return Qfalse;
@@ -1686,6 +1756,7 @@ rb_file_s_ftype(VALUE klass, VALUE fname)
 
     rb_secure(2);
     FilePathValue(fname);
+    fname = rb_str_encode_ospath(fname);
     if (lstat(StringValueCStr(fname), &st) == -1) {
 	rb_sys_fail(RSTRING_PTR(fname));
     }
@@ -1912,6 +1983,9 @@ rb_file_chmod(VALUE obj, VALUE vmode)
 {
     rb_io_t *fptr;
     int mode;
+#ifndef HAVE_FCHMOD
+    VALUE path;
+#endif
 
     rb_secure(2);
     mode = NUM2INT(vmode);
@@ -1922,7 +1996,8 @@ rb_file_chmod(VALUE obj, VALUE vmode)
 	rb_sys_fail_path(fptr->pathv);
 #else
     if (NIL_P(fptr->pathv)) return Qnil;
-    if (chmod(RSTRING_PTR(fptr->pathv), mode) == -1)
+    path = rb_str_encode_ospath(fptr->pathv);
+    if (chmod(RSTRING_PTR(path), mode) == -1)
 	rb_sys_fail_path(fptr->pathv);
 #endif
 
@@ -2039,6 +2114,9 @@ rb_file_chown(VALUE obj, VALUE owner, VALUE group)
 {
     rb_io_t *fptr;
     int o, g;
+#ifndef HAVE_FCHOWN
+    VALUE path;
+#endif
 
     rb_secure(2);
     o = NIL_P(owner) ? -1 : NUM2INT(owner);
@@ -2046,7 +2124,8 @@ rb_file_chown(VALUE obj, VALUE owner, VALUE group)
     GetOpenFile(obj, fptr);
 #ifndef HAVE_FCHOWN
     if (NIL_P(fptr->pathv)) return Qnil;
-    if (chown(RSTRING_PTR(fptr->pathv), o, g) == -1)
+    path = rb_str_encode_ospath(fptr->pathv);
+    if (chown(RSTRING_PTR(path), o, g) == -1)
 	rb_sys_fail_path(fptr->pathv);
 #else
     if (fchown(fptr->fd, o, g) == -1)
@@ -2295,6 +2374,8 @@ rb_file_s_link(VALUE klass, VALUE from, VALUE to)
     rb_secure(2);
     FilePathValue(from);
     FilePathValue(to);
+    from = rb_str_encode_ospath(from);
+    to = rb_str_encode_ospath(to);
 
     if (link(StringValueCStr(from), StringValueCStr(to)) < 0) {
 	sys_fail2(from, to);
@@ -2324,6 +2405,8 @@ rb_file_s_symlink(VALUE klass, VALUE from, VALUE to)
     rb_secure(2);
     FilePathValue(from);
     FilePathValue(to);
+    from = rb_str_encode_ospath(from);
+    to = rb_str_encode_ospath(to);
 
     if (symlink(StringValueCStr(from), StringValueCStr(to)) < 0) {
 	sys_fail2(from, to);
@@ -2356,6 +2439,7 @@ rb_file_s_readlink(VALUE klass, VALUE path)
 
     rb_secure(2);
     FilePathValue(path);
+    path = rb_str_encode_ospath(path);
     buf = xmalloc(size);
     while ((rv = readlink(RSTRING_PTR(path), buf, size)) == size
 #ifdef _AIX
@@ -2419,17 +2503,20 @@ static VALUE
 rb_file_s_rename(VALUE klass, VALUE from, VALUE to)
 {
     const char *src, *dst;
+    VALUE f, t;
 
     rb_secure(2);
     FilePathValue(from);
     FilePathValue(to);
-    src = StringValueCStr(from);
-    dst = StringValueCStr(to);
+    f = rb_str_encode_ospath(from);
+    t = rb_str_encode_ospath(to);
+    src = StringValueCStr(f);
+    dst = StringValueCStr(t);
 #if defined __CYGWIN__
     errno = 0;
 #endif
     if (rename(src, dst) < 0) {
-#if defined DOSISH && !defined _WIN32
+#if defined DOSISH
 	switch (errno) {
 	  case EEXIST:
 #if defined (__EMX__)
@@ -3691,6 +3778,7 @@ rb_file_s_truncate(VALUE klass, VALUE path, VALUE len)
     rb_secure(2);
     pos = NUM2OFFT(len);
     FilePathValue(path);
+    path = rb_str_encode_ospath(path);
 #ifdef HAVE_TRUNCATE
     if (truncate(StringValueCStr(path), pos) < 0)
 	rb_sys_fail(RSTRING_PTR(path));
@@ -3698,15 +3786,9 @@ rb_file_s_truncate(VALUE klass, VALUE path, VALUE len)
     {
 	int tmpfd;
 
-#  ifdef _WIN32
-	if ((tmpfd = open(StringValueCStr(path), O_RDWR)) < 0) {
-	    rb_sys_fail(RSTRING_PTR(path));
-	}
-#  else
 	if ((tmpfd = open(StringValueCStr(path), 0)) < 0) {
 	    rb_sys_fail(RSTRING_PTR(path));
 	}
-#  endif
 	if (chsize(tmpfd, pos) < 0) {
 	    close(tmpfd);
 	    rb_sys_fail(RSTRING_PTR(path));
@@ -4135,7 +4217,8 @@ rb_stat_init(VALUE obj, VALUE fname)
 
     rb_secure(2);
     FilePathValue(fname);
-    if (stat(StringValueCStr(fname), &st) == -1) {
+    fname = rb_str_encode_ospath(fname);
+    if (STAT(StringValueCStr(fname), &st) == -1) {
 	rb_sys_fail(RSTRING_PTR(fname));
     }
     if (DATA_PTR(obj)) {
@@ -4793,7 +4876,7 @@ path_check_0(VALUE path, int execpath)
 #ifndef S_IWOTH
 # define S_IWOTH 002
 #endif
-	if (stat(p0, &st) == 0 && S_ISDIR(st.st_mode) && (st.st_mode & S_IWOTH)
+	if (STAT(p0, &st) == 0 && S_ISDIR(st.st_mode) && (st.st_mode & S_IWOTH)
 #ifdef S_ISVTX
 	    && !(p && execpath && (st.st_mode & S_ISVTX))
 #endif

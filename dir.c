@@ -67,6 +67,16 @@ char *strchr(char*,char);
 #define lstat stat
 #endif
 
+/* define system APIs */
+#ifdef _WIN32
+#undef chdir
+#define chdir(p) rb_w32_uchdir(p)
+#undef mkdir
+#define mkdir(p, m) rb_w32_umkdir(p, m)
+#undef rmdir
+#define rmdir(p) rb_w32_urmdir(p)
+#endif
+
 #define FNM_NOESCAPE	0x01
 #define FNM_PATHNAME	0x02
 #define FNM_DOTMATCH	0x04
@@ -740,6 +750,7 @@ dir_close(VALUE dir)
 static void
 dir_chdir(VALUE path)
 {
+    path = rb_str_encode_ospath(path);
     if (chdir(RSTRING_PTR(path)) < 0)
 	rb_sys_fail(RSTRING_PTR(path));
 }
@@ -911,6 +922,7 @@ dir_s_chroot(VALUE dir, VALUE path)
 {
     check_dirname(&path);
 
+    path = rb_str_encode_ospath(path);
     if (chroot(RSTRING_PTR(path)) == -1)
 	rb_sys_fail(RSTRING_PTR(path));
 
@@ -947,6 +959,7 @@ dir_s_mkdir(int argc, VALUE *argv, VALUE obj)
     }
 
     check_dirname(&path);
+    path = rb_str_encode_ospath(path);
     if (mkdir(RSTRING_PTR(path), mode) == -1)
 	rb_sys_fail(RSTRING_PTR(path));
 
@@ -966,6 +979,7 @@ static VALUE
 dir_s_rmdir(VALUE obj, VALUE dir)
 {
     check_dirname(&dir);
+    dir = rb_str_encode_ospath(dir);
     if (rmdir(RSTRING_PTR(dir)) < 0)
 	rb_sys_fail(RSTRING_PTR(dir));
 
@@ -1615,6 +1629,12 @@ ruby_brace_glob(const char *str, int flags, ruby_glob_func *func, VALUE arg)
 {
     return ruby_brace_glob0(str, flags & ~GLOB_VERBOSE, func, arg,
 			    rb_ascii8bit_encoding());
+}
+
+int
+ruby_brace_glob_with_enc(const char *str, int flags, ruby_glob_func *func, VALUE arg, rb_encoding *enc)
+{
+    return ruby_brace_glob0(str, flags & ~GLOB_VERBOSE, func, arg, enc);
 }
 
 static int
