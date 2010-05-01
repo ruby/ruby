@@ -12,7 +12,7 @@ module Test
 
       def assert(test, msg = (nomsg = true; nil))
         unless nomsg or msg.instance_of?(String) or msg.instance_of?(Proc) or
-            (bt = caller).shift.rindex(MiniTest::MINI_DIR, 0)
+            (bt = caller).first.rindex(MiniTest::MINI_DIR, 0)
           bt.delete_if {|s| s.rindex(MiniTest::MINI_DIR, 0)}
           raise ArgumentError, "assertion message must be String or Proc, but #{msg.class} was given.", bt
         end
