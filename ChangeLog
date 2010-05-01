@@ -1,3 +1,7 @@
+Sat May  1 14:05:36 2010  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc:  Upgrade to RDoc 2.5.8.
+
 Sat May  1 09:43:06 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/assertions.rb (Test::Unit::Assertions#assert):

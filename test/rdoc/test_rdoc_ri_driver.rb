@@ -573,7 +573,7 @@ Foo::Bar#bother
     assert_equal expected, @driver.load_methods_matching('Bar#inherit')
   end
 
-  def test_page
+  def _test_page # this test doesn't do anything anymore :(
     @driver.use_stdout = false
 
     with_dummy_pager do
@@ -681,7 +681,7 @@ Foo::Bar#bother
     assert_equal 'baz',      meth,  'Foo::Bar#baz method'
   end
 
-  def test_setup_pager
+  def _test_setup_pager # this test doesn't do anything anymore :(
     @driver.use_stdout = false
 
     pager = with_dummy_pager do @driver.setup_pager end
