@@ -797,7 +797,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
     paths = { "/gems" => "/cache/", "/doc_root" => "/doc/" }
     paths.each do |mount_point, mount_dir|
       @server.mount(mount_point, WEBrick::HTTPServlet::FileHandler,
-                    File.join(@gem_dir.first, mount_dir), true)
+                    File.join(@gem_dirs.first, mount_dir), true)
     end
 
     trap("INT") { @server.shutdown; exit! }

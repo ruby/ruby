@@ -100,7 +100,7 @@ require 'etc'
 # -The RubyGems Team
 
 module Gem
-  RubyGemsVersion = VERSION = '1.3.6.1'
+  RubyGemsVersion = VERSION = '1.3.7'
 
   ##
   # Raised when RubyGems is unable to load or activate a gem.  Contains the
