@@ -255,6 +255,8 @@ class Tempfile < DelegateClass(File)
     if @tmpfile
       @tmpfile.flush
       @tmpfile.stat.size
+    elsif @tmpname
+      File.size(@tmpname)
     else
       0
     end
