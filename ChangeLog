@@ -1,3 +1,8 @@
+Sun May  2 08:54:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/cgi.rb (CGI::NEEDS_BINMODE): check if O_BINARY value instead
+	  of fragile check by platform name.
+
 Sun May  2 07:38:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (dir_config): should not modify argument arrays
