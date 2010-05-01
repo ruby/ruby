@@ -439,7 +439,7 @@ BigDecimal_IsNaN(VALUE self)
     return Qfalse;
 }
 
-/* Returns nil, −1, or +1 depending on whether the value is finite,
+/* Returns nil, -1, or +1 depending on whether the value is finite,
  * -infinity, or +infinity.
  */
 static VALUE

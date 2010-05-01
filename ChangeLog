@@ -1,3 +1,8 @@
+Sat May  1 16:46:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_IsInfinite): don't use
+	  non-ascii character.
+
 Sat May  1 14:08:29 2010  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/server.rb:  Fix bug when serving gems.
