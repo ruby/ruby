@@ -1,4 +1,7 @@
-Sat May  1 22:41:05 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat May  1 22:53:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/tempfile.rb (Tempfile#size): stat by path name when it is
+	  closed.
 
 	* lib/test/unit/assertions.rb (Test::Unit::Assertions#assert):
 	  keep the first trace.
