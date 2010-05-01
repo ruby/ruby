@@ -1,3 +1,8 @@
+Sat May  1 09:43:06 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit/assertions.rb (Test::Unit::Assertions#assert):
+	  filter out traces in minitest directory.  [ruby-core:29908]
+
 Sat May  1 06:42:57 2010  wanabe  <s.wanabe@gmail.com>
 
 	* win32/win32.c: add declaration of wstati64 for gcc.
