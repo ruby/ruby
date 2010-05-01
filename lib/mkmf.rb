@@ -1304,7 +1304,7 @@ def dir_config(target, idefault=nil, ldefault=nil)
   ldir = with_config(target + "-lib", ldefault)
   $arg_config.last[1] ||= "${#{target}-dir}/lib"
 
-  idirs = idir ? Array === idir ? idir : idir.split(File::PATH_SEPARATOR) : []
+  idirs = idir ? Array === idir ? idir.dup : idir.split(File::PATH_SEPARATOR) : []
   if defaults
     idirs.concat(defaults.collect {|d| d + "/include"})
     idir = ([idir] + idirs).compact.join(File::PATH_SEPARATOR)
@@ -1317,7 +1317,7 @@ def dir_config(target, idefault=nil, ldefault=nil)
     end
   end
 
-  ldirs = ldir ? Array === ldir ? ldir : ldir.split(File::PATH_SEPARATOR) : []
+  ldirs = ldir ? Array === ldir ? ldir.dup : ldir.split(File::PATH_SEPARATOR) : []
   if defaults
     ldirs.concat(defaults.collect {|d| d + "/lib"})
     ldir = ([ldir] + ldirs).compact.join(File::PATH_SEPARATOR)

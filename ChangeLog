@@ -1,3 +1,8 @@
+Sun May  2 07:38:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (dir_config): should not modify argument arrays
+	  themselves.
+
 Thu Apr 29 18:39:51 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/thwait.rb (ThreadsWait#join): refined rdoc again.
