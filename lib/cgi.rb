@@ -286,7 +286,7 @@ class CGI
 
   REVISION = '$Id$' #:nodoc:
 
-  NEEDS_BINMODE = true if /WIN/ni.match(RUBY_PLATFORM)
+  NEEDS_BINMODE = File::BINARY != 0
 
   # Path separators in different environments.
   PATH_SEPARATOR = {'UNIX'=>'/', 'WINDOWS'=>'\\', 'MACINTOSH'=>':'}
