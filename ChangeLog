@@ -1,4 +1,7 @@
-Sat May  1 22:27:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat May  1 22:41:05 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit/assertions.rb (Test::Unit::Assertions#assert):
+	  keep the first trace.
 
 	* lib/test/unit/assertions.rb (Test::Unit::Assertions#assert):
 	  fixed filtering.  [ruby-core:29908]
