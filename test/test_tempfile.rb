@@ -153,7 +153,7 @@ class TestTempfile < Test::Unit::TestCase
   end
 
   def test_finalizer_does_not_unlink_if_already_unlinked
-    assert_in_out_err('-rtempfile', <<-'EOS') do |(filename,), (error,)|
+    assert_in_out_err('-rtempfile', <<-'EOS') do |(filename,*), (error,*)|
 file = Tempfile.new('foo')
 path = file.path
 puts path
@@ -165,7 +165,7 @@ File.open(path, "w").close
       assert_nil error
     end
 
-    assert_in_out_err('-rtempfile', <<-'EOS') do |(filename,), (error,)|
+    assert_in_out_err('-rtempfile', <<-'EOS') do |(filename,*), (error,*)|
 file = Tempfile.new('foo')
 path = file.path
 file.unlink
@@ -195,7 +195,7 @@ File.open(path, "w").close
   end
 
   def test_tempfile_is_unlinked_when_ruby_exits
-    assert_in_out_err('-rtempfile', <<-'EOS') do |(filename,), (error,)|
+    assert_in_out_err('-rtempfile', <<-'EOS') do |(filename), (error)|
 puts Tempfile.new('foo').path
     EOS
       assert !File.exist?(filename)
