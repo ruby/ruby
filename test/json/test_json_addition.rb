@@ -154,9 +154,9 @@ class TC_JSONAddition < Test::Unit::TestCase
     assert_equal d, JSON.parse(d.to_json)
     d = DateTime.parse(now.utc.to_s)                # of = 0
     assert_equal d, JSON.parse(d.to_json)
-    d = DateTime.civil(2008, 6, 17, 11, 48, 32, 1)  # of = 1 / 12 => 1/12
+    d = DateTime.civil(2008, 6, 17, 11, 48, 32, Rational(1,24))
     assert_equal d, JSON.parse(d.to_json)
-    d = DateTime.civil(2008, 6, 17, 11, 48, 32, 12) # of = 12 / 12 => 12
+    d = DateTime.civil(2008, 6, 17, 11, 48, 32, Rational(12,24))
     assert_equal d, JSON.parse(d.to_json)
   end
 end
