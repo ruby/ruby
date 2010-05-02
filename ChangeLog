@@ -1,3 +1,7 @@
+Sun May  2 17:52:16 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/task.rb (RDoc::Task): should not override newer code.
+
 Sun May  2 17:25:05 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/cfunc.c (rb_dlcfunc_call): ignore signedness.
