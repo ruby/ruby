@@ -224,6 +224,30 @@ with all sufficient information, see the ChangeLog file.
     * do not raise ShiftingError if an aged file already exists.
       (no ShiftingError will be raised from 1.2.7, just warn() instead)
 
+* matrix
+  * API change to adhere strictly to mathematical definitions:
+    * Matrices must now be rectangular.
+    * trace, regular?, singular? are defined only for square matrices
+    * support for empty matrices
+    * all integer matrices now have the right determinant (also an integer)
+
+  * Matrix and Vector include Enumerable.
+
+  * new methods:
+    * Matrix.build
+    * Matrix.empty
+    * Matrix#conj
+    * Matrix#conjugate
+    * Matrix#each
+    * Matrix#each_with_index
+    * Matrix#empty?
+    * Matrix#imag
+    * Matrix#imaginary
+    * Matrix#real
+    * Matrix#real?
+    * Matrix#rect
+    * Matrix#rectangular
+
 * net/http
   * merged net/https.
 
