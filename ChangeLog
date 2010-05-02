@@ -1,6 +1,7 @@
 Sun May  2 12:04:30 2010  wanabe  <s.wanabe@gmail.com>
 
 	* iseq.c (iseq_load): allow filepath to be nil.
+	  a patch from Tomoyuki Chikanaga in [Bug #3229].
 
 Sun May  2 08:54:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
