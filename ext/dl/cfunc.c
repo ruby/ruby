@@ -6,6 +6,8 @@
 #include <errno.h>
 #include "dl.h"
 
+VALUE rb_big2ulong_pack(VALUE x);
+
 VALUE rb_cDLCFunc;
 
 static ID id_last_error;
@@ -348,11 +350,21 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
     }
 
     for( i = 0; i < RARRAY_LEN(ary); i++ ){
+	VALUE arg;
 	if( i >= DLSTACK_SIZE ){
 	    rb_raise(rb_eDLError, "too many arguments (stack overflow)");
 	}
-	rb_check_safe_obj(RARRAY_PTR(ary)[i]);
-	stack[i] = NUM2LONG(RARRAY_PTR(ary)[i]);
+	arg = rb_to_int(RARRAY_PTR(ary)[i]);
+	rb_check_safe_obj(arg);
+	if (FIXNUM_P(arg)) {
+	    stack[i] = (DLSTACK_TYPE)FIX2LONG(arg);
+	}
+	else if (RB_TYPE_P(arg, T_BIGNUM)) {
+	    stack[i] = (DLSTACK_TYPE)rb_big2ulong_pack(arg);
+	}
+	else {
+	    Check_Type(arg, T_FIXNUM);
+	}
     }
 
     /* calltype == CFUNC_CDECL */
