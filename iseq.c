@@ -465,7 +465,8 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
 
     name        = CHECK_STRING(rb_ary_entry(data, i++));
     filename    = CHECK_STRING(rb_ary_entry(data, i++));
-    filepath    = CHECK_STRING(rb_ary_entry(data, i++));
+    filepath    = rb_ary_entry(data, i++);
+    filepath    = NIL_P(filepath) ? Qnil : CHECK_STRING(filepath);
     line_no     = CHECK_INTEGER(rb_ary_entry(data, i++));
 
     type        = CHECK_SYMBOL(rb_ary_entry(data, i++));
