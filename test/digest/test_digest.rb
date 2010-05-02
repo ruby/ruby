@@ -59,7 +59,7 @@ module TestDigest
     md2 = self.class::ALGO.new
     md2 << "A"
 
-    assert(md1 != md2, self.class::ALGO)
+    assert_not_equal(md1, md2, self.class::ALGO)
 
     md2 << "BC"
 
