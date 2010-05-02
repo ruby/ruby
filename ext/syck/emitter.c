@@ -570,8 +570,8 @@ syck_scan_scalar( int req_width, const char *cursor, long len )
     } else if ( len > 1 && cursor[len-2] == '\n' ) {
         flags |= SCAN_MANYNL_E;
     }
-    if ( 
-        ( len > 0 && ( cursor[0] == ' ' || cursor[0] == '\t' ) ) ||
+    if (
+        ( len > 0 && ( cursor[0] == ' ' || cursor[0] == '\t' || cursor[0] == '\n' || cursor[0] == '\r' ) ) ||
         ( len > 1 && ( cursor[len-1] == ' ' || cursor[len-1] == '\t' ) )
     ) {
         flags |= SCAN_WHITEEDGE;

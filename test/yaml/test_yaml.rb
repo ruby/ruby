@@ -1,4 +1,4 @@
-# -*- mode: ruby; ruby-indent-level: 4; tab-width: 4 -*-
+# -*- mode: ruby; ruby-indent-level: 4; tab-width: 4; indent-tabs-mode: t -*-
 #												vim:sw=4:ts=4
 # $Id$
 #
@@ -15,31 +15,31 @@ class YAML_Unit_Tests < Test::Unit::TestCase
 	# Convert between YAML and the object to verify correct parsing and
 	# emitting
 	#
-	def assert_to_yaml( obj, yaml )
-		assert_equal( obj, YAML::load( yaml ) )
-		assert_equal( obj, YAML::parse( yaml ).transform )
-        assert_equal( obj, YAML::load( obj.to_yaml ) )
-		assert_equal( obj, YAML::parse( obj.to_yaml ).transform )
+	def assert_to_yaml( obj, yaml, msg = nil )
+		assert_equal( obj, YAML::load( yaml ), msg )
+		assert_equal( obj, YAML::parse( yaml ).transform, msg )
+        assert_equal( obj, YAML::load( obj.to_yaml ), msg )
+		assert_equal( obj, YAML::parse( obj.to_yaml ).transform, msg )
         assert_equal( obj, YAML::load(
 			obj.to_yaml( :UseVersion => true, :UseHeader => true, :SortKeys => true )
-		) )
+		), msg )
 	end
 
 	#
 	# Test parser only
 	#
-	def assert_parse_only( obj, yaml )
-		assert_equal( obj, YAML::load( yaml ) )
-		assert_equal( obj, YAML::parse( yaml ).transform )
+	def assert_parse_only( obj, yaml, msg = nil )
+		assert_equal( obj, YAML::load( yaml ), msg )
+		assert_equal( obj, YAML::parse( yaml ).transform, msg )
 	end
 
-    def assert_cycle( obj )
-        assert_equal( obj, YAML::load( obj.to_yaml ) )
+    def assert_cycle( obj, msg = nil )
+        assert_equal( obj, YAML::load( obj.to_yaml ), msg )
     end
 
-    def assert_path_segments( path, segments )
+    def assert_path_segments( path, segments, msg = nil )
         YAML::YPath.each_path( path ) { |choice|
-            assert_equal( choice.segments, segments.shift )
+            assert_equal( choice.segments, segments.shift, msg )
         }
         assert_equal( segments.length, 0, "Some segments leftover: #{ segments.inspect }" )
     end
@@ -425,6 +425,85 @@ stats: |
    0.278 Batting Average
 EOY
 		)
+	end
+
+	#
+	# Reports from N.Easterly & J.Trupiano : Tests with patch from daz
+	# [ruby-core:23006] [Bug #1311] http://redmine.ruby-lang.org/issues/show/1311
+	#
+	def test_scan_scalar_nl
+		bug1311 = '[ruby-core:23006]'
+		assert_cycle(<<EoY, bug1311)
+
+ a
+b
+EoY
+		assert_cycle(<<EoY, bug1311)
+
+ a
+  b
+c
+EoY
+		assert_cycle(<<EoY, bug1311)
+
+  a
+ b
+EoY
+		assert_cycle("  Do I work?\nNo indent", bug1311)
+		assert_cycle("  \n  Do I work?\nNo indent", bug1311)
+		assert_cycle("\n  Do I work?\nNo indent", bug1311)
+		assert_cycle("\n", bug1311)
+		assert_cycle("\n\n", bug1311)
+		assert_cycle("\r\n", bug1311)
+
+		assert_cycle <<EoY, '[ruby-core:28777]'
+    Domain name:
+        ckgteam.co.uk
+
+    Registrant:
+        James Gregory
+
+    Registrant type:
+        UK Individual
+
+    Registrant's address:
+        The registrant is a non-trading individual who has opted to have their
+        address omitted from the WHOIS service.
+
+    Registrar:
+        Webfusion Ltd t/a 123-Reg.co.uk [Tag = 123-REG]
+        URL: http://www.123-reg.co.uk
+
+    Relevant dates:
+        Registered on: 16-Nov-2009
+        Renewal date:  16-Nov-2011
+        Last updated:  25-Nov-2009
+
+    Registration status:
+        Registered until renewal date.
+
+    Name servers:
+        ns1.slicehost.net
+        ns2.slicehost.net
+        ns3.slicehost.net
+
+    WHOIS lookup made at 11:56:46 19-Mar-2010
+
+-- 
+This WHOIS information is provided for free by Nominet UK the central registry
+for .uk domain names. This information and the .uk WHOIS are:
+
+    Copyright Nominet UK 1996 - 2010.
+
+You may not access the .uk WHOIS or use any data from it except as permitted
+by the terms of use available in full at http://www.nominet.org.uk/whois, which
+includes restrictions on: (A) use of the data for advertising, or its
+repackaging, recompilation, redistribution or reuse (B) obscuring, removing
+or hiding any or all of this notice and (C) exceeding query rate or volume
+limits. The data is provided on an 'as-is' basis and may lag behind the
+register. Access may be withdrawn or restricted at any time. 
+EoY
+
 	end
 
 	def test_spec_multiline_scalars
@@ -1280,13 +1359,4 @@ EOY
       1000.times { |i| omap["key_#{i}"] = { "value" => i } }
       raise "id collision in ordered map" if omap.to_yaml =~ /id\d+/
     end
-end
-
-if $0 == __FILE__
-  suite = Test::Unit::TestSuite.new('YAML')
-  ObjectSpace.each_object(Class) do |klass|
-    suite << klass.suite if (Test::Unit::TestCase > klass)
-  end
-  require 'test/unit/ui/console/testrunner'
-  Test::Unit::UI::Console::TestRunner.run(suite).passed?
 end

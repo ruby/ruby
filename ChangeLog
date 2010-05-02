@@ -1,3 +1,10 @@
+Mon May  3 08:15:05 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/syck/emitter.c (syck_scan_scalar): set SCAN_WHITEEDGE flag
+	  when scalar begins with newline.  patches from Dave B <daz AT
+	  d10.karoo.co.uk> at [ruby-core:23019] and caleb clausen at
+	  [ruby-core:25851].  [ruby-core:23006][ruby-core:29925]
+
 Sun May  2 13:39:31 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/cgi.rb (CGI::NEEDS_BINMODE): check if O_BINARY is defined.
