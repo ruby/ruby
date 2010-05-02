@@ -65,15 +65,15 @@ class OpenSSL::TestX509Store < Test::Unit::TestCase
     crl2_2 = issue_crl(revoke_info, 2, now-100, now-1, [],
                        ca2_cert, @rsa1024, OpenSSL::Digest::SHA1.new)
 
-    assert(true, ca1_cert.verify(ca1_cert.public_key))   # self signed
-    assert(true, ca2_cert.verify(ca1_cert.public_key))   # issued by ca1
-    assert(true, ee1_cert.verify(ca2_cert.public_key))   # issued by ca2
-    assert(true, ee2_cert.verify(ca2_cert.public_key))   # issued by ca2
-    assert(true, ee3_cert.verify(ca2_cert.public_key))   # issued by ca2
-    assert(true, crl1.verify(ca1_cert.public_key))       # issued by ca1
-    assert(true, crl1_2.verify(ca1_cert.public_key))     # issued by ca1
-    assert(true, crl2.verify(ca2_cert.public_key))       # issued by ca2
-    assert(true, crl2_2.verify(ca2_cert.public_key))     # issued by ca2
+    assert_equal(true, ca1_cert.verify(ca1_cert.public_key))   # self signed
+    assert_equal(true, ca2_cert.verify(ca1_cert.public_key))   # issued by ca1
+    assert_equal(true, ee1_cert.verify(ca2_cert.public_key))   # issued by ca2
+    assert_equal(true, ee2_cert.verify(ca2_cert.public_key))   # issued by ca2
+    assert_equal(true, ee3_cert.verify(ca2_cert.public_key))   # issued by ca2
+    assert_equal(true, crl1.verify(ca1_cert.public_key))       # issued by ca1
+    assert_equal(true, crl1_2.verify(ca1_cert.public_key))     # issued by ca1
+    assert_equal(true, crl2.verify(ca2_cert.public_key))       # issued by ca2
+    assert_equal(true, crl2_2.verify(ca2_cert.public_key))     # issued by ca2
 
     store = OpenSSL::X509::Store.new
     assert_equal(false, store.verify(ca1_cert))
