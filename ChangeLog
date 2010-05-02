@@ -1,4 +1,7 @@
-Sun May  2 08:54:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun May  2 13:39:31 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/cgi.rb (CGI::NEEDS_BINMODE): check if O_BINARY is defined.
+	  [ruby-core:29922]
 
 	* lib/cgi.rb (CGI::NEEDS_BINMODE): check if O_BINARY value instead
 	  of fragile check by platform name.

@@ -286,7 +286,7 @@ class CGI
 
   REVISION = '$Id$' #:nodoc:
 
-  NEEDS_BINMODE = File::BINARY != 0
+  NEEDS_BINMODE = !!defined?(File::BINARY)
 
   # Path separators in different environments.
   PATH_SEPARATOR = {'UNIX'=>'/', 'WINDOWS'=>'\\', 'MACINTOSH'=>':'}
