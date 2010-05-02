@@ -141,6 +141,7 @@ module Rake
       self
     end
 
+    # List of options that will be supplied to RDoc
     def option_list
       result = @options.dup
       result << "-o" << @rdoc_dir
