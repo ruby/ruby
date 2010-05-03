@@ -1,3 +1,7 @@
+Sat Dec  5 13:19:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: default ac_cv_prog_CC to CC.
+
 Mon Feb  1 17:11:12 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* string (rb_string_value): warning for implicit conversion
