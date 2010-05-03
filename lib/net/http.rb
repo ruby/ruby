@@ -2433,8 +2433,12 @@ module Net   #:nodoc:
             raise HTTPBadResponse, "wrong chunk size line: #{line}"
         len = hexlen.hex
         break if len == 0
-        @socket.read len, dest; total += len
-        @socket.read 2   # \r\n
+        begin
+          @socket.read len, dest
+        ensure
+          total += len
+          @socket.read 2   # \r\n
+        end
       end
       until @socket.readline.empty?
         # none

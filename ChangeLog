@@ -1,3 +1,12 @@
+Tue May  4 07:52:33 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/net/http.rb (Net::HTTPResponse#read_chunked): ensure to skip the
+	  last newline of chunk.  [ruby-core:29229]
+
+	* test/net/http/utils.rb: add an option for chunked response test.
+
+	* test/net/http/test_http.rb: add tests for chunked response.
+
 Tue May  4 03:37:54 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c: Update nkf 2010-04-28.
