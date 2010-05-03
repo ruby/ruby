@@ -17,7 +17,9 @@ module TestNetHTTP_version_1_1_methods
       res = http.head('/')
       assert_kind_of Net::HTTPResponse, res
       assert_equal $test_net_http_data_type, res['Content-Type']
-      assert_equal $test_net_http_data.size, res['Content-Length'].to_i
+      unless self.is_a?(TestNetHTTP_v1_2_chunked)
+        assert_equal $test_net_http_data.size, res['Content-Length'].to_i
+      end
     }
   end
 
@@ -34,8 +36,10 @@ module TestNetHTTP_version_1_1_methods
     assert_kind_of Net::HTTPResponse, res
     assert_kind_of String, res.body
     assert_kind_of String, body
-    assert_not_nil res['content-length']
-    assert_equal $test_net_http_data.size, res['content-length'].to_i
+    unless self.is_a?(TestNetHTTP_v1_2_chunked)
+      assert_not_nil res['content-length']
+      assert_equal $test_net_http_data.size, res['content-length'].to_i
+    end
     assert_equal $test_net_http_data_type, res['Content-Type']
     assert_equal $test_net_http_data.size, body.size
     assert_equal $test_net_http_data, body
@@ -49,8 +53,10 @@ module TestNetHTTP_version_1_1_methods
     assert_kind_of Net::HTTPResponse, res
     # assert_kind_of String, res.body
     # assert_kind_of String, body
-    assert_not_nil res['content-length']
-    assert_equal $test_net_http_data.size, res['content-length'].to_i
+    unless self.is_a?(TestNetHTTP_v1_2_chunked)
+      assert_not_nil res['content-length']
+      assert_equal $test_net_http_data.size, res['content-length'].to_i
+    end
     assert_equal $test_net_http_data_type, res['Content-Type']
     assert_equal $test_net_http_data.size, buf.size
     assert_equal $test_net_http_data, buf
@@ -64,8 +70,10 @@ module TestNetHTTP_version_1_1_methods
     assert_kind_of Net::HTTPResponse, res
     # assert_kind_of String, res.body
     # assert_kind_of String, body
-    assert_not_nil res['content-length']
-    assert_equal $test_net_http_data.size, res['content-length'].to_i
+    unless self.is_a?(TestNetHTTP_v1_2_chunked)
+      assert_not_nil res['content-length']
+      assert_equal $test_net_http_data.size, res['content-length'].to_i
+    end
     assert_equal $test_net_http_data_type, res['Content-Type']
     assert_equal $test_net_http_data.size, buf.size
     assert_equal $test_net_http_data, buf
@@ -89,7 +97,9 @@ module TestNetHTTP_version_1_1_methods
     assert_kind_of Net::HTTPResponse, res
     assert_kind_of String, body
     assert_kind_of String, res.body
-    assert_not_nil res['content-length']
+    unless self.is_a?(TestNetHTTP_v1_2_chunked)
+      assert_not_nil res['content-length']
+    end
     assert_equal $test_net_http_data_type, res['Content-Type']
     assert_equal $test_net_http_data.size, res.body.size
     assert_equal $test_net_http_data, res.body
@@ -100,7 +110,9 @@ module TestNetHTTP_version_1_1_methods
       http.get2('/') {|res|
         assert_kind_of Net::HTTPResponse, res
         assert_kind_of Net::HTTPResponse, res.header
-        assert_not_nil res['content-length']
+        unless self.is_a?(TestNetHTTP_v1_2_chunked)
+          assert_not_nil res['content-length']
+        end
         assert_equal $test_net_http_data_type, res['Content-Type']
         assert_kind_of String, res.body
         assert_kind_of String, res.entity
@@ -178,8 +190,10 @@ module TestNetHTTP_version_1_2_methods
     http.request(req) {|res|
       assert_kind_of Net::HTTPResponse, res
       assert_kind_of String, res.body
-      assert_not_nil res['content-length']
-      assert_equal $test_net_http_data.size, res['content-length'].to_i
+      unless self.is_a?(TestNetHTTP_v1_2_chunked)
+        assert_not_nil res['content-length']
+        assert_equal $test_net_http_data.size, res['content-length'].to_i
+      end
       assert_equal $test_net_http_data.size, res.body.size
       assert_equal $test_net_http_data, res.body
     }
@@ -189,8 +203,10 @@ module TestNetHTTP_version_1_2_methods
     req = Net::HTTP::Get.new('/')
     http.request(req) {|res|
       assert_kind_of Net::HTTPResponse, res
-      assert_not_nil res['content-length']
-      assert_equal $test_net_http_data.size, res['content-length'].to_i
+      unless self.is_a?(TestNetHTTP_v1_2_chunked)
+        assert_not_nil res['content-length']
+        assert_equal $test_net_http_data.size, res['content-length'].to_i
+      end
       f = StringIO.new("".force_encoding("ASCII-8BIT"))
       res.read_body f
       assert_equal $test_net_http_data.bytesize, f.string.bytesize
@@ -209,8 +225,10 @@ module TestNetHTTP_version_1_2_methods
     req = Net::HTTP::Head.new('/')
     http.request(req) {|res|
       assert_kind_of Net::HTTPResponse, res
-      assert_not_nil res['content-length']
-      assert_equal $test_net_http_data.size, res['content-length'].to_i
+      unless self.is_a?(TestNetHTTP_v1_2_chunked)
+        assert_not_nil res['content-length']
+        assert_equal $test_net_http_data.size, res['content-length'].to_i
+      end
       assert_nil res.body
     }
   end
@@ -221,7 +239,9 @@ module TestNetHTTP_version_1_2_methods
     req['Accept'] = $test_net_http_data_type
     http.request(req, data) {|res|
       assert_kind_of Net::HTTPResponse, res
-      assert_equal data.size, res['content-length'].to_i
+      unless self.is_a?(TestNetHTTP_v1_2_chunked)
+        assert_equal data.size, res['content-length'].to_i
+      end
       assert_kind_of String, res.body
       assert_equal data, res.body
     }
@@ -249,7 +269,9 @@ module TestNetHTTP_version_1_2_methods
   def _test_send_request__GET(http)
     res = http.send_request('GET', '/')
     assert_kind_of Net::HTTPResponse, res
-    assert_equal $test_net_http_data.size, res['content-length'].to_i
+    unless self.is_a?(TestNetHTTP_v1_2_chunked)
+      assert_equal $test_net_http_data.size, res['content-length'].to_i
+    end
     assert_kind_of String, res.body
     assert_equal $test_net_http_data, res.body
   end
@@ -296,6 +318,38 @@ class TestNetHTTP_v1_2 < Test::Unit::TestCase
   def new
     Net::HTTP.version_1_2
     super
+  end
+end
+
+class TestNetHTTP_v1_2_chunked < Test::Unit::TestCase
+  CONFIG = {
+    'host' => '127.0.0.1',
+    'port' => 10081,
+    'proxy_host' => nil,
+    'proxy_port' => nil,
+    'chunked' => true,
+  }
+
+  include TestNetHTTPUtils
+  include TestNetHTTP_version_1_1_methods
+  include TestNetHTTP_version_1_2_methods
+
+  def new
+    Net::HTTP.version_1_2
+    super
+  end
+
+  def test_chunked_break
+    i = 0
+    assert_nothing_raised("[ruby-core:29229]") {
+      start {|http|
+        http.request_get('/') {|res|
+          res.read_body {|chunk|
+            break
+          }
+        }
+      }
+    }
   end
 end
 

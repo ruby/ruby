@@ -48,6 +48,7 @@ module TestNetHTTPUtils
       :ShutdownSocketWithoutClose => true,
       :ServerType => Thread,
     }
+    server_config[:OutputBufferSize] = 4 if config('chunked')
     if defined?(OpenSSL) and config('ssl_enable')
       server_config.update({
         :SSLEnable      => true,
@@ -56,7 +57,7 @@ module TestNetHTTPUtils
       })
     end
     @server = WEBrick::HTTPServer.new(server_config)
-    @server.mount('/', Servlet)
+    @server.mount('/', Servlet, config('chunked'))
     @server.start
     n_try_max = 5
     begin
@@ -75,15 +76,21 @@ module TestNetHTTPUtils
   $test_net_http_data_type = 'application/octet-stream'
 
   class Servlet < WEBrick::HTTPServlet::AbstractServlet
+    def initialize(this, chunked = false)
+      @chunked = chunked
+    end
+
     def do_GET(req, res)
       res['Content-Type'] = $test_net_http_data_type
       res.body = $test_net_http_data
+      res.chunked = @chunked
     end
 
     # echo server
     def do_POST(req, res)
       res['Content-Type'] = req['Content-Type']
       res.body = req.body
+      res.chunked = @chunked
     end
   end
 
