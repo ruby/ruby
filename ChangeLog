@@ -617,7 +617,7 @@ Mon Apr 19 13:58:04 2010  Eric Hodel  <drbrain@segment7.net>
 Mon Apr 19 12:46:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/timeout.rb (Timeout#timeout): propagate errors to the
-	  caller.  [ruby-dev:41010]'
+	  caller.  [ruby-dev:41010]
 
 Mon Apr 19 00:27:03 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
@@ -3490,7 +3490,7 @@ Fri Jan 29 11:09:49 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri Jan 29 09:43:30 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* enc/trans/utf8_mac.trans (buf_shift_char): don't see uninitialised
+	* enc/trans/utf8_mac.trans (buf_shift_char): don't see uninitialized
 	  value. [ruby-dev:40233]
 
 Fri Jan 29 01:42:24 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
