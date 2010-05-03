@@ -1,3 +1,8 @@
+Wed Aug 26 13:48:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/tempfile.rb (Tempfile#unlink): reverted r23494, since the
+	  usage in RubyInline is considered wrong.
+
 Tue Feb  9 23:48:25 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_divide): fix precision too.
