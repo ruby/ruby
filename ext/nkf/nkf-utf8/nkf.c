@@ -21,7 +21,7 @@
  * 3. This notice may not be removed or altered from any source distribution.
  */
 #define NKF_VERSION "2.1.1"
-#define NKF_RELEASE_DATE "2010-04-14"
+#define NKF_RELEASE_DATE "2010-04-28"
 #define COPY_RIGHT \
     "Copyright (C) 1987, FUJITSU LTD. (I.Ichikawa).\n" \
     "Copyright (C) 1996-2010, The nkf Project."
@@ -223,6 +223,7 @@ struct {
     {"ISO-2022-JP-2004",	ISO_2022_JP_2004},
     {"SHIFT_JIS",		SHIFT_JIS},
     {"SJIS",			SHIFT_JIS},
+    {"MS_Kanji",		SHIFT_JIS},
     {"PCK",			SHIFT_JIS},
     {"WINDOWS-31J",		WINDOWS_31J},
     {"CSWINDOWS31J",		WINDOWS_31J},
@@ -820,7 +821,7 @@ nkf_buf_new(int length)
     buf->capa = length;
     buf->len = 0;
     return buf;
-}
+} 
 
 #if 0
 static void
@@ -901,7 +902,7 @@ usage(void)
 	    " Z[0-4]   Default/0: Convert JISX0208 Alphabet to ASCII\n"
 	    "          1: Kankaku to one space  2: to two spaces  3: HTML Entity\n"
 	    "          4: JISX0208 Katakana to JISX0201 Katakana\n"
-	    " X,x      Assume X0201 kana in MS-Kanji, -x preserves X0201\n"
+	    " X,x      Convert Halfwidth Katakana to Fullwidth or preserve it\n"
 	    );
     fprintf(HELP_OUTPUT,
 	    " O        Output to File (DEFAULT 'nkf.out')\n"
@@ -1208,10 +1209,10 @@ set_input_encoding(nkf_encoding *enc)
     case ISO_8859_1:
 	iso8859_f = TRUE;
 	break;
-    case CP50220:
     case CP50221:
     case CP50222:
 	if (x0201_f == NKF_UNSPECIFIED) x0201_f = FALSE;	/* -x specified implicitly */
+    case CP50220:
 #ifdef SHIFTJIS_CP932
 	cp51932_f = TRUE;
 #endif
@@ -1264,6 +1265,7 @@ set_input_encoding(nkf_encoding *enc)
 #endif
 	break;
     case EUCJP_MS:
+	if (x0201_f == NKF_UNSPECIFIED) x0201_f = FALSE;	/* -x specified implicitly */
 #ifdef SHIFTJIS_CP932
 	cp51932_f = FALSE;
 #endif
@@ -1272,6 +1274,7 @@ set_input_encoding(nkf_encoding *enc)
 #endif
 	break;
     case EUCJP_ASCII:
+	if (x0201_f == NKF_UNSPECIFIED) x0201_f = FALSE;	/* -x specified implicitly */
 #ifdef SHIFTJIS_CP932
 	cp51932_f = FALSE;
 #endif
@@ -1326,7 +1329,6 @@ set_output_encoding(nkf_encoding *enc)
 {
     switch (nkf_enc_to_index(enc)) {
     case CP50220:
-	if (x0201_f == NKF_UNSPECIFIED) x0201_f = FALSE;	/* -x specified implicitly */
 #ifdef SHIFTJIS_CP932
 	if (cp932inv_f == TRUE) cp932inv_f = FALSE;
 #endif
@@ -1402,12 +1404,14 @@ set_output_encoding(nkf_encoding *enc)
 #endif
 	break;
     case EUCJP_MS:
+	if (x0201_f == NKF_UNSPECIFIED) x0201_f = FALSE;	/* -x specified implicitly */
 	x0212_f = TRUE;
 #ifdef UTF8_OUTPUT_ENABLE
 	ms_ucs_map_f = UCS_MAP_MS;
 #endif
 	break;
     case EUCJP_ASCII:
+	if (x0201_f == NKF_UNSPECIFIED) x0201_f = FALSE;	/* -x specified implicitly */
 	x0212_f = TRUE;
 #ifdef UTF8_OUTPUT_ENABLE
 	ms_ucs_map_f = UCS_MAP_ASCII;
@@ -5870,7 +5874,7 @@ finished:
 
 /*
  * int options(unsigned char *cp)
- *
+ * 
  * return values:
  *    0: success
  *   -1: ArgumentError

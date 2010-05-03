@@ -1,3 +1,7 @@
+Tue May  4 03:37:54 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c: Update nkf 2010-04-28.
+
 Mon May  3 21:08:16 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* sample/README: update file list. [ruby-core:28981]
