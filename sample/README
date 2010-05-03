@@ -3,10 +3,10 @@ biorhythm.rb	biorhythm calculator
 cal.rb		cal(1) clone
 cbreak.rb	no echo done by ioctl
 clnt.rb		socket client
+coverage.rb	simple test code coverage tool
 dir.rb		directory access
 dualstack-fetch.rb	IPv6 demo
 dualstack-httpd.rb	IPv6 demo
-dstore.rb	object database on dbm
 eval.rb		simple evaluator
 export.rb	method access example
 exyacc.rb	extrace BNF from yacc file
@@ -19,8 +19,6 @@ fib.scm		Fibonacci number (Scheme)
 freq.rb		count word occurrence
 from.rb		scan mail spool
 fullpath.rb	convert ls -lR to fullpath format
-io.rb		io test
-irb.rb		interactive ruby
 less.rb		front end for less
 list.rb		stupid object sample
 list2.rb	stupid object sample
@@ -37,11 +35,11 @@ pi.rb		calculate PI
 rcs.awk		random character stereogram (AWK)
 rcs.rb		random character stereogram (Ruby)
 rcs.dat		data for random character stereogram
-rd2html.rb	rd (Ruby Document) to HTML translator
 sieve.rb	sieve of Eratosthenes
 svr.rb		socket server
 test.rb		test suite used by `make test'
 time.rb		/usr/bin/time clone
+timeout.rb	timeout test
 trojan.rb	simple tool to find file that may be trojan horse.
 tsvr.rb		socket server using thread
 uumerge.rb	merge files and uudecode them
