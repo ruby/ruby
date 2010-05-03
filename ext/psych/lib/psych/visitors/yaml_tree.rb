@@ -56,7 +56,7 @@ module Psych
       end
 
       def visit_Psych_Omap o
-        seq = Nodes::Sequence.new(nil, '!omap', false)
+        seq = create_sequence(nil, '!omap', false)
         register(o, seq)
 
         @stack.push append seq
@@ -71,7 +71,7 @@ module Psych
           tag   = ['!ruby/object', klass].compact.join(':')
         end
 
-        map = append Nodes::Mapping.new(nil, tag, false)
+        map = append create_mapping(nil, tag, false)
         register(o, map)
 
         @stack.push map
@@ -82,12 +82,12 @@ module Psych
       def visit_Struct o
         tag = ['!ruby/struct', o.class.name].compact.join(':')
 
-        map = register(o, Nodes::Mapping.new(nil, tag, false))
+        map = register(o, create_mapping(nil, tag, false))
 
         @stack.push append map
 
         o.members.each do |member|
-          map.children <<  Nodes::Scalar.new("#{member}")
+          map.children <<  create_scalar("#{member}")
           accept o[member]
         end
 
@@ -99,7 +99,7 @@ module Psych
       def visit_Exception o
         tag = ['!ruby/exception', o.class.name].join ':'
 
-        map = append Nodes::Mapping.new(nil, tag, false)
+        map = append create_mapping(nil, tag, false)
 
         @stack.push map
 
@@ -108,7 +108,7 @@ module Psych
           'backtrace' => private_iv_get(o, 'backtrace'),
         }.each do |k,v|
           next unless v
-          map.children << Nodes::Scalar.new(k)
+          map.children << create_scalar(k)
           accept v
         end
 
@@ -118,7 +118,7 @@ module Psych
       end
 
       def visit_Regexp o
-        append Nodes::Scalar.new(o.inspect, nil, '!ruby/regexp', false)
+        append create_scalar(o.inspect, nil, '!ruby/regexp', false)
       end
 
       def visit_Time o
@@ -129,24 +129,24 @@ module Psych
           formatted += ".%06d %+.2d:00" % [o.usec, o.gmt_offset / 3600]
         end
 
-        append Nodes::Scalar.new formatted
+        append create_scalar formatted
       end
 
       def visit_Rational o
-        map = append Nodes::Mapping.new(nil, '!ruby/object:Rational', false)
+        map = append create_mapping(nil, '!ruby/object:Rational', false)
         [
           'denominator', o.denominator.to_s,
           'numerator', o.numerator.to_s
         ].each do |m|
-          map.children << Nodes::Scalar.new(m)
+          map.children << create_scalar(m)
         end
       end
 
       def visit_Complex o
-        map = append Nodes::Mapping.new(nil, '!ruby/object:Complex', false)
+        map = append create_mapping(nil, '!ruby/object:Complex', false)
 
         ['real', o.real.to_s, 'image', o.imag.to_s].each do |m|
-          map.children << Nodes::Scalar.new(m)
+          map.children << create_scalar(m)
         end
       end
 
@@ -191,9 +191,9 @@ module Psych
         if ivars.empty?
           append scalar
         else
-          mapping = append Nodes::Mapping.new(nil, '!str', false)
+          mapping = append create_mapping(nil, '!str', false)
 
-          mapping.children << Nodes::Scalar.new('str')
+          mapping.children << create_scalar('str')
           mapping.children << scalar
 
           @stack.push mapping
@@ -207,7 +207,7 @@ module Psych
       end
 
       def visit_Range o
-        @stack.push append Nodes::Mapping.new(nil, '!ruby/range', false)
+        @stack.push append create_mapping(nil, '!ruby/range', false)
         ['begin', o.begin, 'end', o.end, 'excl', o.exclude_end?].each do |m|
           accept m
         end
@@ -226,7 +226,7 @@ module Psych
       end
 
       def visit_Psych_Set o
-        @stack.push append register(o, Nodes::Mapping.new(nil, '!set', false))
+        @stack.push append register(o, create_mapping(nil, '!set', false))
 
         o.each do |k,v|
           accept k
@@ -243,7 +243,7 @@ module Psych
       end
 
       def visit_NilClass o
-        append Nodes::Scalar.new('', nil, 'tag:yaml.org,2002:null', false)
+        append create_scalar('', nil, 'tag:yaml.org,2002:null', false)
       end
 
       def visit_Symbol o
@@ -297,7 +297,7 @@ module Psych
           end
           @stack.pop
         when :map
-          map = append Nodes::Mapping.new(nil, c.tag, c.implicit, c.style)
+          map = append create_mapping(nil, c.tag, c.implicit, c.style)
           @stack.push map
           c.map.each do |k,v|
             map.children << create_scalar(k)
@@ -316,12 +316,12 @@ module Psych
         end
       end
 
-      def create_document
-        Nodes::Document.new
+      def create_document version = [], tag_directives = [], implicit = false
+        Nodes::Document.new version, tag_directives, implicit
       end
 
-      def create_mapping
-        Nodes::Mapping.new
+      def create_mapping anchor = nil, tag = nil, implicit = true, style = Psych::Nodes::Mapping::BLOCK
+        Nodes::Mapping.new anchor, tag, implicit, style
       end
 
       def create_scalar value, anchor = nil, tag = nil, plain = true, quoted = false, style = Nodes::Scalar::ANY
