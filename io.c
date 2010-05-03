@@ -2095,14 +2095,15 @@ rb_io_write_nonblock(VALUE io, VALUE str)
  *
  *  Reads <i>length</i> bytes from the I/O stream.
  *
- *  <i>length</i> must be a non-negative integer or nil.
+ *  <i>length</i> must be a non-negative integer or <code>nil</code>.
  *
  *  If <i>length</i> is a positive integer,
- *  it try to read <i>length</i> bytes.
- *  It returns nil or a string which length is 1 to <i>length</i> bytes.
- *  nil means it met EOF at beginning.
+ *  it try to read <i>length</i> bytes without any conversion (binary mode).
+ *  It returns <code>nil</code> or a string whose length is 1 to <i>length</i> bytes.
+ *  <code>nil</code> means it met EOF at beginning.
  *  The 1 to <i>length</i>-1 bytes string means it met EOF after reading the result.
  *  The <i>length</i> bytes string means it doesn't meet EOF.
+ *  The resulted string is always ASCII-8BIT encoding.
  *
  *  If <i>length</i> is omitted or is <code>nil</code>,
  *  it reads until EOF and the encoding conversion is applied.
@@ -2117,7 +2118,7 @@ rb_io_write_nonblock(VALUE io, VALUE str)
  *  depend on <i>length</i>.
  *  <code><i>ios</i>.read()</code> and
  *  <code><i>ios</i>.read(nil)</code> returns <code>""</code>.
- *  <code><i>ios</i>.read(<i>positive-integer</i>)</code> returns nil.
+ *  <code><i>ios</i>.read(<i>positive-integer</i>)</code> returns <code>nil</code>.
  *
  *     f = File.new("testfile")
  *     f.read(16)   #=> "This is line one"
