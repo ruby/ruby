@@ -185,7 +185,6 @@ VALUE
 rb_str_encode_ospath(VALUE path)
 {
 #ifdef _WIN32
-    char *s;
     rb_encoding *enc = rb_enc_get(path);
     if (enc != rb_ascii8bit_encoding()) {
 	rb_encoding *utf8 = rb_utf8_encoding();
