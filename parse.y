@@ -8951,19 +8951,30 @@ dyna_push_gen(struct parser_params *parser)
 }
 
 static void
-dyna_pop_gen(struct parser_params *parser, const struct vtable *lvargs)
+dyna_pop_1(struct parser_params *parser)
 {
     struct vtable *tmp;
 
-    while (lvtbl->args != lvargs) {
-	local_pop();
-    }
     tmp = lvtbl->args;
     lvtbl->args = lvtbl->args->prev;
     vtable_free(tmp);
     tmp = lvtbl->vars;
     lvtbl->vars = lvtbl->vars->prev;
     vtable_free(tmp);
+}
+
+static void
+dyna_pop_gen(struct parser_params *parser, const struct vtable *lvargs)
+{
+    while (lvtbl->args != lvargs) {
+	dyna_pop_1(parser);
+	if (!lvtbl->args) {
+	    struct local_vars *local = lvtbl->prev;
+	    xfree(lvtbl);
+	    lvtbl = local;
+	}
+    }
+    dyna_pop_1(parser);
 }
 
 static int

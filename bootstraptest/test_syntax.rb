@@ -877,3 +877,10 @@ assert_normal_exit %q{
     end
   end
 }, bug2415
+
+assert_normal_exit %q{
+  a {
+    b {|c.d| }
+    e
+  }
+}, '[ruby-dev:39861]'

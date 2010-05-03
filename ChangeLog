@@ -1,3 +1,7 @@
+Thu Dec 10 01:12:55 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (dyna_pop_gen): pop dvars.  [ruby-dev:39861]
+
 Sat Dec  5 13:19:29 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: default ac_cv_prog_CC to CC.
