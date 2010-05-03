@@ -1,3 +1,7 @@
+Mon May  3 21:08:16 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* sample/README: update file list. [ruby-core:28981]
+
 Mon May  3 08:15:05 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/syck/emitter.c (syck_scan_scalar): set SCAN_WHITEEDGE flag
