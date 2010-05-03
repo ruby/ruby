@@ -1,3 +1,12 @@
+Tue Feb  9 23:48:25 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_divide): fix precision too.
+
+Tue Feb  9 23:26:07 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_DoDivmod): fix precision.
+	  [ruby-core:17472][ruby-dev:35372][ruby-dev:40105][ruby-dev:40358]
+
 Thu Dec 10 01:12:55 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (dyna_pop_gen): pop dvars.  [ruby-dev:39861]
