@@ -2573,9 +2573,8 @@ env_update(VALUE env, VALUE hash)
 /*
  *  A <code>Hash</code> is a collection of key-value pairs. It is
  *  similar to an <code>Array</code>, except that indexing is done via
- *  arbitrary keys of any object type, not an integer index. The order
- *  in which you traverse a hash by either key or value may seem
- *  arbitrary, and will generally not be in the insertion order.
+ *  arbitrary keys of any object type, not an integer index. Hashes enumerate
+ *  their values in the order that the corresponding keys were inserted.
  *
  *  Hashes have a <em>default value</em> that is returned when accessing
  *  keys that do not exist in the hash. By default, that value is
