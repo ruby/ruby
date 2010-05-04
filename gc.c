@@ -1433,7 +1433,7 @@ mark_method_entry(rb_objspace_t *objspace, const rb_method_entry_t *me, int lev)
 }
 
 void
-rb_gc_mark_method_entry(const rb_method_entry_t *me)
+rb_mark_method_entry(const rb_method_entry_t *me)
 {
     mark_method_entry(&rb_objspace, me, 0);
 }

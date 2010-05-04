@@ -90,7 +90,7 @@ rb_method_entry_t *rb_method_entry_set(VALUE klass, ID mid, const rb_method_entr
 
 int rb_method_entry_arity(const rb_method_entry_t *me);
 
-void rb_gc_mark_method_entry(const rb_method_entry_t *me);
+void rb_mark_method_entry(const rb_method_entry_t *me);
 void rb_free_method_entry(rb_method_entry_t *me);
 
 #endif /* METHOD_H */
