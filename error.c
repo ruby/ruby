@@ -880,7 +880,7 @@ name_err_mesg_to_str(VALUE obj)
 	    break;
 	}
 	if (desc && desc[0] != '#') {
-	    d = rb_str_new2(desc);
+	    d = d ? rb_str_dup(d) : rb_str_new2(desc);
 	    rb_str_cat2(d, ":");
 	    rb_str_cat2(d, rb_obj_classname(obj));
 	}
