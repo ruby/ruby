@@ -113,7 +113,6 @@ argument_error(const rb_iseq_t *iseq, int miss_argc, int correct_argc)
 
     if (iseq) {
 	int line_no = 1;
-	const char *name;
 
 	if (iseq->insn_info_size) {
 	    line_no = iseq->insn_info_table[0].line_no;
