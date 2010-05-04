@@ -1,6 +1,6 @@
-Wed May  5 07:23:56 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed May  5 07:27:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* method.h (rb_gc_mark_method_entry): fixed typo.
+	* gc.c (rb_mark_method_entry): renamed.
 
 Wed May  5 05:20:27 2010  Koichi Sasada  <ko1@atdot.net>
 

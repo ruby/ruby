@@ -852,7 +852,7 @@ bm_mark(void *ptr)
     struct METHOD *data = ptr;
     rb_gc_mark(data->rclass);
     rb_gc_mark(data->recv);
-    rb_gc_mark_method_entry(&data->me);
+    rb_mark_method_entry(&data->me);
 }
 
 static void
