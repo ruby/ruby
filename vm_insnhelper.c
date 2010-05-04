@@ -102,11 +102,37 @@ vm_pop_frame(rb_thread_t *th)
 
 /* method dispatch */
 
+static void
+argument_error(const rb_iseq_t *iseq, int miss_argc, int correct_argc)
+{
+    VALUE mesg = rb_sprintf("wrong number of arguments (%d for %d)", miss_argc, correct_argc);
+    VALUE exc = rb_exc_new3(rb_eArgError, mesg);
+    VALUE bt = rb_make_backtrace();
+    VALUE err_line = 0;
+
+    if (iseq) {
+	int line_no = 1;
+	const char *name;
+
+	if (iseq->insn_info_size) {
+	    line_no = iseq->insn_info_table[0].line_no;
+	}
+
+	err_line = rb_sprintf("%s:%d:in `%s'",
+			      RSTRING_PTR(iseq->filename),
+			      line_no, RSTRING_PTR(iseq->name));
+	rb_funcall(bt, rb_intern("unshift"), 1, err_line);
+    }
+
+    rb_funcall(exc, rb_intern("set_backtrace"), 1, bt);
+    rb_exc_raise(exc);
+}
+
 #define VM_CALLEE_SETUP_ARG(ret, th, iseq, orig_argc, orig_argv, block) \
     if (LIKELY(iseq->arg_simple & 0x01)) { \
 	/* simple check */ \
 	if (orig_argc != iseq->argc) { \
-	    rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)", orig_argc, iseq->argc); \
+	    argument_error(iseq, orig_argc, iseq->argc); \
 	} \
 	ret = 0; \
     } \
@@ -128,8 +154,7 @@ vm_callee_setup_arg_complex(rb_thread_t *th, const rb_iseq_t * iseq,
 
     /* mandatory */
     if (argc < (m + iseq->arg_post_len)) { /* check with post arg */
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
-		 argc, m + iseq->arg_post_len);
+	argument_error(iseq, argc, m + iseq->arg_post_len);
     }
 
     argv += m;
@@ -152,8 +177,7 @@ vm_callee_setup_arg_complex(rb_thread_t *th, const rb_iseq_t * iseq,
 	const int opts = iseq->arg_opts - 1 /* no opt */;
 
 	if (iseq->arg_rest == -1 && argc > opts) {
-	    rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
-		     orig_argc, m + opts + iseq->arg_post_len);
+	    argument_error(iseq, orig_argc, m + opts + iseq->arg_post_len);
 	}
 
 	if (argc > opts) {
@@ -183,8 +207,7 @@ vm_callee_setup_arg_complex(rb_thread_t *th, const rb_iseq_t * iseq,
 	const rb_block_t *blockptr = *block;
 
 	if (argc != 0) {
-	    rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
-		     orig_argc, m + iseq->arg_post_len);
+	    argument_error(iseq, orig_argc, m + iseq->arg_post_len);
 	}
 
 	if (blockptr) {
