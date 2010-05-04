@@ -77,7 +77,7 @@ class TestFileUtils
   include FileUtils
 
   def check_singleton(name)
-    assert_equal true, ::FileUtils.public_methods.include?(name.to_sym)
+    assert_respond_to ::FileUtils, name
   end
 
   def my_rm_rf(path)
@@ -941,20 +941,21 @@ class TestFileUtils
     check_singleton :copy_stream
     # IO
     each_srcdest do |srcpath, destpath|
-      File.open(srcpath) {|src|
-        File.open(destpath, 'w') {|dest|
+      File.open(srcpath, 'rb') {|src|
+        File.open(destpath, 'wb') {|dest|
           copy_stream src, dest
         }
       }
       assert_same_file srcpath, destpath
     end
+  end
 
+  def test_copy_stream_duck
+    check_singleton :copy_stream
     # duck typing test  [ruby-dev:25369]
-    my_rm_rf 'tmp'
-    Dir.mkdir 'tmp'
     each_srcdest do |srcpath, destpath|
-      File.open(srcpath) {|src|
-        File.open(destpath, 'w') {|dest|
+      File.open(srcpath, 'rb') {|src|
+        File.open(destpath, 'wb') {|dest|
           copy_stream Stream.new(src), Stream.new(dest)
         }
       }

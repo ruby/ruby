@@ -1,3 +1,9 @@
+Tue May  4 18:38:16 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/fileutils/test_fileutils.rb (test_copy_stream):
+	  IO.copy_stream support binmode only currently.
+	  [ruby-core:23724]
+
 Tue May  4 12:46:09 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (argument_error): push correct backtrace.
