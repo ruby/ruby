@@ -304,4 +304,12 @@ end.join
     end
     assert(!e.success?)
   end
+
+  def test_nomethoderror
+    bug3237 = '[ruby-core:29948]'
+    str = "\u2600"
+    id = :"\u2604"
+    e = assert_raise(NoMethodError) {str.__send__(id)}
+    assert_equal("undefined method `#{id}' for #{str.inspect}:String", e.message, bug3237)
+  end
 end
