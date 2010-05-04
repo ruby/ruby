@@ -633,8 +633,8 @@ sockopt_inspect(VALUE self)
     }
 
     if (!inspected) {
-        data = rb_str_dump(data);
-        rb_str_catf(ret, " %s", StringValueCStr(data));
+        rb_str_cat2(ret, " ");
+        rb_str_append(ret, rb_str_dump(data));
     }
 
     rb_str_cat2(ret, ">");
