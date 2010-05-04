@@ -276,6 +276,7 @@ extern rb_pid_t rb_w32_getppid(void);
 #if !defined(__BORLANDC__)
 extern int rb_w32_isatty(int);
 #endif
+extern int rb_w32_uchdir(const char *);
 extern int rb_w32_mkdir(const char *, int);
 extern int rb_w32_umkdir(const char *, int);
 extern int rb_w32_rmdir(const char *);
