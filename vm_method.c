@@ -132,10 +132,12 @@ rb_free_method_entry(rb_method_entry_t *me)
     rb_method_definition_t *def = me->def;
 
     if (def) {
-	if (def->alias_count == 0)
+	if (def->alias_count == 0) {
 	    xfree(def);
-	else if (def->alias_count > 0)
+	}
+	else if (def->alias_count > 0) {
 	    def->alias_count--;
+	}
 	me->def = 0;
     }
     xfree(me);
@@ -144,7 +146,8 @@ rb_free_method_entry(rb_method_entry_t *me)
 static int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2);
 
 static rb_method_entry_t *
-rb_add_method_def(VALUE klass, ID mid, rb_method_type_t type, rb_method_definition_t *def, rb_method_flag_t noex)
+rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
+		     rb_method_definition_t *def, rb_method_flag_t noex)
 {
     rb_method_entry_t *me;
     st_table *mtbl;
@@ -278,7 +281,7 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
     rb_thread_t *th;
     rb_control_frame_t *cfp;
     int line;
-    rb_method_entry_t *me = rb_add_method_def(klass, mid, type, 0, noex);
+    rb_method_entry_t *me = rb_method_entry_make(klass, mid, type, 0, noex);
     rb_method_definition_t *def = ALLOC(rb_method_definition_t);
     me->def = def;
     def->type = type;
@@ -323,10 +326,10 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
 }
 
 rb_method_entry_t *
-rb_add_method_me(VALUE klass, ID mid, const rb_method_entry_t *me, rb_method_flag_t noex)
+rb_method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me, rb_method_flag_t noex)
 {
     rb_method_type_t type = me->def ? me->def->type : VM_METHOD_TYPE_UNDEF;
-    rb_method_entry_t *newme = rb_add_method_def(klass, mid, type, me->def, noex);
+    rb_method_entry_t *newme = rb_method_entry_make(klass, mid, type, me->def, noex);
     method_added(klass, mid);
     return newme;
 }
@@ -380,13 +383,13 @@ search_method(VALUE klass, ID id)
 }
 
 /*
- * search method entry without method cache.
+ * search method entry without the method cache.
  *
- * if you need method entry with method cache, use
- * rb_method_entry()
+ * if you need method entry with method cache (normal case), use
+ * rb_method_entry() simply.
  */
 rb_method_entry_t *
-rb_get_method_entry(VALUE klass, ID id)
+rb_method_entry_get_without_cache(VALUE klass, ID id)
 {
     rb_method_entry_t *me = search_method(klass, id);
 
@@ -419,7 +422,7 @@ rb_method_entry(VALUE klass, ID id)
 	return ent->me;
     }
 
-    return rb_get_method_entry(klass, id);
+    return rb_method_entry_get_without_cache(klass, id);
 }
 
 static void
@@ -913,7 +916,7 @@ rb_alias(VALUE klass, ID name, ID def)
     }
 
     if (flag == NOEX_UNDEF) flag = orig_me->flag;
-    rb_add_method_me(target_klass, name, orig_me, flag);
+    rb_method_entry_set(target_klass, name, orig_me, flag);
 }
 
 /*
@@ -1176,7 +1179,7 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
 	    if (!m)
 		break;
 	}
-	rb_add_method_me(rb_singleton_class(module), id, me, NOEX_PUBLIC);
+	rb_method_entry_set(rb_singleton_class(module), id, me, NOEX_PUBLIC);
     }
     return module;
 }

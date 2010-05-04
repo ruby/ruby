@@ -83,12 +83,14 @@ typedef struct rb_method_entry_struct {
 
 void rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_method_flag_t noex);
 rb_method_entry_t *rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *option, rb_method_flag_t noex);
-rb_method_entry_t *rb_add_method_me(VALUE klass, ID mid, const rb_method_entry_t *, rb_method_flag_t noex);
 rb_method_entry_t *rb_method_entry(VALUE klass, ID id);
-rb_method_entry_t *rb_get_method_entry(VALUE klass, ID id);
-#define rb_method_entry_without_cache(klass, id) rb_get_method_entry((klass), (id))
+
+rb_method_entry_t *rb_method_entry_get_without_cache(VALUE klass, ID id);
+rb_method_entry_t *rb_method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *, rb_method_flag_t noex);
+
 int rb_method_entry_arity(const rb_method_entry_t *me);
-void rb_gc_mark_method_entry(const rb_method_entry_t *me);
+
+void rb_mark_method_entry(const rb_method_entry_t *me);
 void rb_free_method_entry(rb_method_entry_t *me);
 
 #endif /* METHOD_H */
