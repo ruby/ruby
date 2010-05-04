@@ -177,7 +177,7 @@ class TestM17N < Test::Unit::TestCase
     assert_nothing_raised { eval(u(%{"\\u{6666}\xc2\xa1"})) }
   end
 
-  def test_string_inspect
+  def test_string_inspect_invalid
     assert_equal('"\xFE"', e("\xfe").inspect)
     assert_equal('"\x8E"', e("\x8e").inspect)
     assert_equal('"\x8F"', e("\x8f").inspect)
@@ -200,13 +200,30 @@ class TestM17N < Test::Unit::TestCase
     assert_equal('"\xF8\x80\x80\x80 "', u("\xf8\x80\x80\x80 ").inspect)
     assert_equal('"\xFC\x80\x80\x80\x80 "', u("\xfc\x80\x80\x80\x80 ").inspect)
 
-    assert_equal('"\x{81308130}"', "\x81\x30\x81\x30".force_encoding('GB18030').inspect)
-    assert_equal("\"\\xA1\\x{8FA1A1}\"", e("\xa1\x8f\xa1\xa1").inspect)
-
     assert_equal('"\x81."', s("\x81.").inspect)
-    assert_equal(s('"\x{8140}"'), s("\x81@").inspect)
-
     assert_equal('"\xFC"', u("\xfc").inspect)
+  end
+
+  def test_string_inspect_encoding
+    orig_int = Encoding.default_internal
+    orig_ext = Encoding.default_external
+    Encoding.default_internal = nil
+    [Encoding::UTF_8, Encoding::EUC_JP, Encoding::Windows_31J, Encoding::GB18030].
+      each do |e|
+      Encoding.default_external = e
+      str = "\x81\x30\x81\x30".force_encoding('GB18030')
+      assert_equal(Encoding::GB18030 == e ? %{"#{str}"} : '"\x{81308130}"', str.inspect)
+      str = e("\xa1\x8f\xa1\xa1")
+      expected = "\"\\xA1\x8F\xA1\xA1\"".force_encoding("EUC-JP")
+      assert_equal(Encoding::EUC_JP == e ? expected : "\"\\xA1\\x{8FA1A1}\"", str.inspect)
+      str = s("\x81@")
+      assert_equal(Encoding::Windows_31J == e ? %{"#{str}"} : '"\x{8140}"', str.inspect)
+      str = "\u3042\u{10FFFD}"
+      assert_equal(Encoding::UTF_8 == e ? %{"#{str}"} : '"\u3042\u{10FFFD}"', str.inspect)
+    end
+  ensure
+    Encoding.default_internal = orig_int
+    Encoding.default_external = orig_ext
   end
 
   def test_str_dump
