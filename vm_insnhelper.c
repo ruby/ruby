@@ -102,6 +102,7 @@ vm_pop_frame(rb_thread_t *th)
 
 /* method dispatch */
 
+NORETURN(static void argument_error(const rb_iseq_t *iseq, int miss_argc, int correct_argc));
 static void
 argument_error(const rb_iseq_t *iseq, int miss_argc, int correct_argc)
 {
