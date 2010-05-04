@@ -13,6 +13,14 @@ require 'date'
 class TC_JSONRails < Test::Unit::TestCase
   include JSON
 
+  def setup
+    Symbol.class_eval do
+      def to_json(*a)
+        to_s.to_json(*a)
+      end
+    end
+  end
+
   class A
     def initialize(a)
       @a = a
