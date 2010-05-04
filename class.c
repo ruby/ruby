@@ -134,7 +134,7 @@ clone_method(ID mid, const rb_method_entry_t *me, struct clone_method_data *data
 	rb_add_method(data->klass, mid, VM_METHOD_TYPE_ISEQ, iseq, me->flag);
     }
     else {
-	rb_add_method_me(data->klass, mid, me, me->flag);
+	rb_method_entry_set(data->klass, mid, me, me->flag);
     }
     return ST_CONTINUE;
 }

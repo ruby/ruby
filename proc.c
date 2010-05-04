@@ -1295,7 +1295,7 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 			 rb_class2name(rclass));
 	    }
 	}
-	rb_add_method_me(mod, id, &method->me, noex);
+	rb_method_entry_set(mod, id, &method->me, noex);
     }
     else if (rb_obj_is_proc(body)) {
 	rb_proc_t *proc;
