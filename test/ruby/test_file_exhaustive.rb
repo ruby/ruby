@@ -83,7 +83,9 @@ class TestFileExhaustive < Test::Unit::TestCase
       assert_integer_or_nil(fs1.rdev_minor)
       assert_integer(fs1.ino)
       assert_integer(fs1.mode)
-      unless /emx/ =~ RUBY_PLATFORM
+      unless /emx|mswin|mingw/ =~ RUBY_PLATFORM
+        # on Windows, nlink is always 1. but this behavior will be changed
+        # in the future.
         assert_equal(@hardlinkfile ? 2 : 1, fs1.nlink)
       end
       assert_integer(fs1.uid)
@@ -393,8 +395,10 @@ class TestFileExhaustive < Test::Unit::TestCase
       assert_equal(@file, File.expand_path(@file + "::$DATA"))
     end
     assert_kind_of(String, File.expand_path("~"))
-    assert_raise(ArgumentError) { File.expand_path("~foo_bar_baz_unknown_user_wahaha") }
-    assert_raise(ArgumentError) { File.expand_path("~foo_bar_baz_unknown_user_wahaha", "/") }
+    unless /mingw|mswin/ =~ RUBY_PLATFORM
+      assert_raise(ArgumentError) { File.expand_path("~foo_bar_baz_unknown_user_wahaha") }
+      assert_raise(ArgumentError) { File.expand_path("~foo_bar_baz_unknown_user_wahaha", "/") }
+    end
 
     assert_incompatible_encoding {|d| File.expand_path(d)}
   end
@@ -574,7 +578,9 @@ class TestFileExhaustive < Test::Unit::TestCase
       assert_integer_or_nil(fs1.rdev_minor)
       assert_integer(fs1.ino)
       assert_integer(fs1.mode)
-      unless /emx/ =~ RUBY_PLATFORM
+      unless /emx|mswin|mingw/ =~ RUBY_PLATFORM
+        # on Windows, nlink is always 1. but this behavior will be changed
+        # in the future.
         assert_equal(@hardlinkfile ? 2 : 1, fs1.nlink)
       end
       assert_integer(fs1.uid)
