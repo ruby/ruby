@@ -5269,6 +5269,8 @@ iseq_build_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 			break;
 		      case TS_IC:
 			argv[j] = op;
+			if (NUM2INT(op) >= iseq->ic_size)
+			    iseq->ic_size = NUM2INT(op) + 1;
 			break;
 		      case TS_ID:
 			argv[j] = rb_convert_type(op, T_SYMBOL,
