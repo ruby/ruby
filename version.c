@@ -20,10 +20,12 @@
 #define rb_str_new_cstr(str) rb_str_new(str, strlen(str))
 #endif
 #define MKSTR(type) rb_obj_freeze(rb_str_new(TOKEN_PASTE(ruby_,type), sizeof(TOKEN_PASTE(ruby_,type))-1))
+#ifndef UNALIGNED
 #ifdef __GNUC__
 #define UNALIGNED __attribute__((aligned(1)))
 #else
 #define UNALIGNED
+#endif
 #endif
 
 const int ruby_patchlevel = RUBY_PATCHLEVEL;

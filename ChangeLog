@@ -1,3 +1,7 @@
+Tue May  4 10:07:25 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* version.c (UNALIGNED): get rid of conflict.
+
 Mon May  3 08:15:05 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/syck/emitter.c (syck_scan_scalar): set SCAN_WHITEEDGE flag
