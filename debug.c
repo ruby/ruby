@@ -64,12 +64,12 @@ const union {
         RUBY_NODE_TYPESHIFT = NODE_TYPESHIFT,
         RUBY_NODE_TYPEMASK  = NODE_TYPEMASK,
         RUBY_NODE_LSHIFT    = NODE_LSHIFT,
-        RUBY_NODE_LMASK     = NODE_LMASK,
         RUBY_NODE_FL_NEWLINE   = NODE_FL_NEWLINE
     } various;
 } ruby_dummy_gdb_enums;
 
 const VALUE RUBY_FL_USER19    = FL_USER19;
+const SIGNED_VALUE RUBY_NODE_LMASK = NODE_LMASK;
 
 int
 ruby_debug_print_indent(int level, int debug_level, int indent_level)
