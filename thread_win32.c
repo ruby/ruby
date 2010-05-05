@@ -103,16 +103,20 @@ w32_wait_events(HANDLE *events, int count, DWORD timeout, rb_thread_t *th)
     thread_debug("  w32_wait_events events:%p, count:%d, timeout:%ld, th:%p\n",
 		 events, count, timeout, th);
     if (th && (intr = th->native_thread_data.interrupt_event)) {
-	w32_reset_event(intr);
-	if (RUBY_VM_INTERRUPTED(th)) {
-	    w32_set_event(intr);
+	native_mutex_lock(&th->vm->global_vm_lock);
+	if (intr == th->native_thread_data.interrupt_event) {
+	    w32_reset_event(intr);
+	    if (RUBY_VM_INTERRUPTED(th)) {
+		w32_set_event(intr);
+	    }
+
+	    targets = ALLOCA_N(HANDLE, count + 1);
+	    memcpy(targets, events, sizeof(HANDLE) * count);
+
+	    targets[count++] = intr;
+	    thread_debug("  * handle: %p (count: %d, intr)\n", intr, count);
 	}
-
-	targets = ALLOCA_N(HANDLE, count + 1);
-	memcpy(targets, events, sizeof(HANDLE) * count);
-
-	targets[count++] = intr;
-	thread_debug("  * handle: %p (count: %d, intr)\n", intr, count);
+	native_mutex_unlock(&th->vm->global_vm_lock);
     }
 
     thread_debug("  WaitForMultipleObjects start (count: %d)\n", count);
