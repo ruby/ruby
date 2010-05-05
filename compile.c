@@ -1434,7 +1434,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			{
 			    int ic_index = FIX2INT(operands[j]);
 			    IC ic = &iseq->ic_entries[ic_index];
-			    if (UNLIKELY(ic_index > iseq->ic_size)) {
+			    if (UNLIKELY(ic_index >= iseq->ic_size)) {
 				rb_bug("iseq_set_sequence: ic_index overflow: index: %d, size: %d",
 				       ic_index, iseq->ic_size);
 			    }
