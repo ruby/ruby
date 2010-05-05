@@ -1,3 +1,8 @@
+Wed May  5 15:54:35 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* file.c (rb_stat): use STAT macro instead of calling stat() directly.
+	  reported by Bill Kelly.  [ruby-core:30012]
+
 Wed May  5 11:43:10 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bootstraptest/test_io.rb (megacontent-copy_stream): get rid of
