@@ -1,3 +1,8 @@
+Wed May  5 21:49:31 2010  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
+
+	* dln.c (aix_loaderror): use execerror for load error on AIX.
+	  This can avoid SEGV reported by Perry Smith.  [Bug #2063]
+
 Wed May  5 20:37:54 2010  wanabe  <s.wanabe@gmail.com>
 
 	* thread_win32.c (w32_wait_events): get GVL before handle interrupt

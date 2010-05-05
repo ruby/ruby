@@ -1174,47 +1174,25 @@ dln_strerror(void)
 static void
 aix_loaderror(const char *pathname)
 {
-    char *message[1024], errbuf[1024];
-    int i,j;
-
-    static const struct errtab {
-	int errnum;
-	const char * errstr;
-    } load_errtab[] = {
-	{L_ERROR_TOOMANY,	"too many errors, rest skipped."},
-	{L_ERROR_NOLIB,		"can't load library:"},
-	{L_ERROR_UNDEF,		"can't find symbol in library:"},
-	{L_ERROR_RLDBAD,
-	     "RLD index out of range or bad relocation type:"},
-	{L_ERROR_FORMAT,	"not a valid, executable xcoff file:"},
-	{L_ERROR_MEMBER,
-	     "file not an archive or does not contain requested member:"},
-	{L_ERROR_TYPE,		"symbol table mismatch:"},
-	{L_ERROR_ALIGN,		"text alignment in file is wrong."},
-	{L_ERROR_SYSTEM,	"System error:"},
-	{L_ERROR_ERRNO,		NULL}
-    };
-
-#define LOAD_ERRTAB_LEN	(sizeof(load_errtab)/sizeof(load_errtab[0]))
+  char *message[1024], errbuf[1024];
+  int i;
 #define ERRBUF_APPEND(s) strncat(errbuf, s, sizeof(errbuf)-strlen(errbuf)-1)
+  snprintf(errbuf, sizeof(errbuf), "load failed - %s. ", pathname);
 
-    snprintf(errbuf, sizeof(errbuf), "load failed - %s ", pathname);
-
-    message[0] = NULL;
-    if (!loadquery(L_GETMESSAGES, &message[0], sizeof(message)))
-	ERRBUF_APPEND(strerror(errno));
-    for(i = 0; message[i] && *message[i]; i++) {
-	int nerr = atoi(message[i]);
-	for (j=0; j<LOAD_ERRTAB_LEN; j++) {
-           if (nerr == load_errtab[j].errnum && load_errtab[j].errstr)
-		ERRBUF_APPEND(load_errtab[j].errstr);
-	}
-	while (isdigit(*message[i])) message[i]++;
-	ERRBUF_APPEND(message[i]);
-	ERRBUF_APPEND("\n");
+  if (loadquery(L_GETMESSAGES, &message[0], sizeof(message)) != -1) {
+    ERRBUF_APPEND("Please issue below command for detailed reasons:\n\t");
+    ERRBUF_APPEND("/usr/sbin/execerror ruby ");
+    for (i=0; message[i]; i++) {
+      ERRBUF_APPEND("\"");
+      ERRBUF_APPEND(message[i]);
+      ERRBUF_APPEND("\" ");
     }
-    errbuf[strlen(errbuf)-1] = '\0';	/* trim off last newline */
-    dln_loaderror("%s", errbuf);
+    ERRBUF_APPEND("\n");
+  } else {
+    ERRBUF_APPEND(strerror(errno));
+    ERRBUF_APPEND("[loadquery failed]");
+  }
+  dln_loaderror("%s", errbuf);
 }
 #endif
 
