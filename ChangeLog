@@ -1,3 +1,8 @@
+Wed May  5 11:43:10 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bootstraptest/test_io.rb (megacontent-copy_stream): get rid of
+	  deadlock.
+
 Wed May  5 07:27:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (rb_mark_method_entry): renamed.
