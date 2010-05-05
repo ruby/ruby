@@ -24,7 +24,7 @@ class TestEtc < Test::Unit::TestCase
       assert_kind_of(Integer, s.expire) if s.respond_to?(:expire)
     end
 
-    assert_raise(RuntimeError) { Etc.passwd { Etc.passwd { } } }
+    Etc.passwd { assert_raise(RuntimeError) { Etc.passwd { } }; break }
   end
 
   def test_getpwuid
@@ -63,7 +63,7 @@ class TestEtc < Test::Unit::TestCase
       assert_kind_of(Integer, s.gid)
     end
 
-    assert_raise(RuntimeError) { Etc.group { Etc.group { } } }
+    Etc.group { assert_raise(RuntimeError) { Etc.group { } }; break }
   end
 
   def test_getgrgid
