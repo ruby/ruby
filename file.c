@@ -795,7 +795,7 @@ rb_stat(VALUE file, struct stat *st)
     }
     FilePathValue(file);
     file = rb_str_encode_ospath(file);
-    return stat(StringValueCStr(file), st);
+    return STAT(StringValueCStr(file), st);
 }
 
 #ifdef _WIN32
