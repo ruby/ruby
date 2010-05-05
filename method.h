@@ -74,10 +74,16 @@ typedef struct rb_method_definition_struct {
 
 typedef struct rb_method_entry_struct {
     rb_method_flag_t flag;
+    char mark;
     rb_method_definition_t *def;
     ID called_id;
     VALUE klass;                    /* should be mark */
 } rb_method_entry_t;
+
+struct unlinked_method_entry_list_entry {
+    struct unlinked_method_entry_list_entry *next;
+    rb_method_entry_t *me;
+};
 
 #define UNDEFINED_METHOD_ENTRY_P(me) (!(me) || !(me)->def || (me)->def->type == VM_METHOD_TYPE_UNDEF)
 
@@ -92,5 +98,6 @@ int rb_method_entry_arity(const rb_method_entry_t *me);
 
 void rb_mark_method_entry(const rb_method_entry_t *me);
 void rb_free_method_entry(rb_method_entry_t *me);
+void rb_sweep_method_entry(void *vm);
 
 #endif /* METHOD_H */

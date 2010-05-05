@@ -771,6 +771,7 @@ fiber_init(VALUE fibval, VALUE proc)
     th->cfp->iseq = 0;
     th->cfp->proc = 0;
     th->cfp->block_iseq = 0;
+    th->cfp->me = 0;
     th->tag = 0;
     th->local_storage = st_init_numtable();
 

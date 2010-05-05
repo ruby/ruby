@@ -59,6 +59,7 @@ vm_push_frame(rb_thread_t * th, const rb_iseq_t * iseq,
     cfp->lfp = lfp;
     cfp->dfp = sp;
     cfp->proc = 0;
+    cfp->me = 0;
 
 #define COLLECT_PROFILE 0
 #if COLLECT_PROFILE
@@ -419,7 +420,7 @@ vm_call_bmethod(rb_thread_t *th, VALUE recv, int argc, const VALUE *argv,
     VALUE val;
 
     /* control block frame */
-    (cfp-2)->me = me;
+    th->passed_me = me;
 
     GetProcPtr(me->def->body.proc, proc);
     val = rb_vm_invoke_proc(th, proc, recv, argc, argv, blockptr);

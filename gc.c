@@ -2205,6 +2205,11 @@ garbage_collect(rb_objspace_t *objspace)
     gc_sweep(objspace);
     GC_PROF_SWEEP_TIMER_STOP;
 
+    /* sweep unlinked method entries */
+    if (th->vm->unlinked_method_entry_list) {
+	rb_sweep_method_entry(th->vm);
+    }
+
     GC_PROF_TIMER_STOP;
     if (GC_NOTIFY) printf("end garbage_collect()\n");
     return TRUE;
