@@ -136,7 +136,7 @@ with all sufficient information, see the ChangeLog file.
     * extended methods:
       * Process.spawn accepts [:child, FD] for a redirect target.
 
-  * Random (new library for generating pseudo-random numbers)
+  * Random (new class to generate pseudo-random numbers)
 
   * String
     * extended methods:
