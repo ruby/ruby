@@ -61,8 +61,6 @@ some or all of the following options.
  --with-tcl-lib=<dir>          the directry contains 'libtcl<version>.so'
  --with-tk-lib=<dir>           the directry contains 'libtk<version>.so'
 
- --with-tcltk-drive=<drive>    (Windows) drive letter for Tcl/Tk libraries.
-
  --enable-mac-tcltk-framework  (MacOS X) use Tcl/Tk framework
                                (Obsolete. Please use '--enable-tcltk-framework'.)
 
