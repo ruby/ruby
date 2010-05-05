@@ -1,3 +1,8 @@
+Wed May  5 20:37:54 2010  wanabe  <s.wanabe@gmail.com>
+
+	* thread_win32.c (w32_wait_events): get GVL before handle interrupt
+	  event.   [ruby-core:27199], [ruby-core:29698]
+
 Wed May  5 19:00:01 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/extconf.rb: revert. enbugged by last commit.
