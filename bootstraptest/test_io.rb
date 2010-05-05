@@ -78,7 +78,7 @@ assert_normal_exit %q{
   ARGF.set_encoding "foo"
 }
 
-1.times do
+10.times do
   assert_normal_exit %q{
     at_exit { p :foo }
 
@@ -90,11 +90,13 @@ assert_normal_exit %q{
     r1, w1 = IO.pipe
     r2, w2 = IO.pipe
     t1 = Thread.new { w1 << megacontent; w1.close }
-    t2 = Thread.new { r2.read }
+    t2 = Thread.new { r2.read; r2.close }
     IO.copy_stream(r1, w2) rescue nil
-    r2.close; w2.close
-    r1.close; w1.close
-  }, '', ["INT"] or break
+    w2.close
+    r1.close
+    t1.join
+    t2.join
+  }, 'megacontent-copy_stream', ["INT"], :timeout => 10 or break
 end
 
 assert_normal_exit %q{
