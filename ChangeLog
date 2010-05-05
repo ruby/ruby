@@ -1,3 +1,9 @@
+Thu May  6 03:34:29 2010  Koichi Sasada  <ko1@atdot.net>
+
+	* cont.c: apply FIBER_USE_NATIVE patch.  This patch improve
+	  Fiber context switching cost using system APIs.  Detail comments
+	  are written in cont.c.
+
 Thu May  6 02:16:48 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_method.c (rb_unlink_method_entry, rb_sweep_method_entry):
