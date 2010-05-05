@@ -1,3 +1,10 @@
+Wed May  5 19:00:01 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/extconf.rb: revert. enbugged by last commit.
+	  ([ruby-dev:41133], [ruby-dev:41134], [ruby-core:30010])
+
+	* ext/tk/README.tcltklib: ditto.
+
 Tue May  4 10:07:25 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* version.c (UNALIGNED): get rid of conflict.
@@ -21,6 +28,10 @@ Sun May  2 07:38:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (dir_config): should not modify argument arrays
 	  themselves.
+
+Fri Apr 30 15:38:45 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/extconf.rb: better support for MinGW environment.
 
 Thu Apr 29 18:39:51 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
