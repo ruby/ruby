@@ -126,6 +126,44 @@ rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_me
     }
 }
 
+static void
+rb_unlink_method_entry(rb_method_entry_t *me)
+{
+    struct unlinked_method_entry_list_entry *ume = ALLOC(struct unlinked_method_entry_list_entry);
+    ume->me = me;
+    ume->next = GET_VM()->unlinked_method_entry_list;
+    GET_VM()->unlinked_method_entry_list = ume;
+}
+
+void
+rb_sweep_method_entry(void *pvm)
+{
+    rb_vm_t *vm = pvm;
+    struct unlinked_method_entry_list_entry *ume = vm->unlinked_method_entry_list, *prev_ume = 0, *curr_ume;
+
+    while (ume) {
+	if (ume->me->mark) {
+	    ume->me->mark = 0;
+	    prev_ume = ume;
+	    ume = ume->next;
+	}
+	else {
+	    rb_free_method_entry(ume->me);
+
+	    if (prev_ume == 0) {
+		vm->unlinked_method_entry_list = ume->next;
+	    }
+	    else {
+		prev_ume->next = ume->next;
+	    }
+
+	    curr_ume = ume;
+	    ume = ume->next;
+	    xfree(curr_ume);
+	}
+    }
+}
+
 void
 rb_free_method_entry(rb_method_entry_t *me)
 {
@@ -214,26 +252,15 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 	    }
 	}
 
-	/* FIXME: this avoid to free methods used in cfp, but reusing may cause
-	 * another problem when the usage is changed.
-	 */
-	me = old_me;
+	rb_unlink_method_entry(old_me);
+    }
 
-	if (me->def) {
-	    if (me->def->alias_count == 0)
-		xfree(me->def);
-	    else if (me->def->alias_count > 0)
-		me->def->alias_count--;
-	    me->def = 0;
-	}
-    }
-    else {
-	me = ALLOC(rb_method_entry_t);
-    }
+    me = ALLOC(rb_method_entry_t);
 
     rb_clear_cache_by_id(mid);
 
     me->flag = NOEX_WITH_SAFE(noex);
+    me->mark = 0;
     me->called_id = mid;
     me->klass = klass;
     me->def = def;
@@ -453,7 +480,7 @@ remove_method(VALUE klass, ID mid)
 
     rb_vm_check_redefinition_opt_method(me);
     rb_clear_cache_for_undef(klass, mid);
-    rb_free_method_entry(me);
+    rb_unlink_method_entry(me);
 
     CALL_METHOD_HOOK(klass, removed, mid);
 }

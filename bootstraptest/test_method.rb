@@ -1161,3 +1161,17 @@ assert_equal 'ok', %q{
   "hello"[0, 1] ||= "H"
   "ok"
 }
+
+assert_equal 'ok', %q{
+  class C
+    define_method(:foo) do
+      C.class_eval { remove_method(:foo) }
+      super()
+    end
+  end
+  begin
+    C.new.foo
+  rescue NoMethodError
+    'ok'
+  end
+}

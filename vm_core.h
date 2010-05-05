@@ -307,6 +307,8 @@ typedef struct rb_vm_struct {
     VALUE verbose, debug, progname;
     VALUE coverages;
 
+    struct unlinked_method_entry_list_entry *unlinked_method_entry_list;
+
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
     struct rb_objspace *objspace;
 #endif
@@ -386,6 +388,9 @@ typedef struct rb_thread_struct
 
     /* for rb_iterate */
     const rb_block_t *passed_block;
+
+    /* for bmethod */
+    const rb_method_entry_t *passed_me;
 
     /* for load(true) */
     VALUE top_self;

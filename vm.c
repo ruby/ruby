@@ -528,6 +528,7 @@ invoke_block_from_c(rb_thread_t *th, const rb_block_t *block,
     else if (BUILTIN_TYPE(block->iseq) != T_NODE) {
 	const rb_iseq_t *iseq = block->iseq;
 	const rb_control_frame_t *cfp;
+	rb_control_frame_t *ncfp;
 	int i, opt_pc, arg_size = iseq->arg_size;
 	int type = block_proc_is_lambda(block->proc) ?
 	  VM_FRAME_MAGIC_LAMBDA : VM_FRAME_MAGIC_BLOCK;
@@ -544,10 +545,12 @@ invoke_block_from_c(rb_thread_t *th, const rb_block_t *block,
 	opt_pc = vm_yield_setup_args(th, iseq, argc, cfp->sp, blockptr,
 				     type == VM_FRAME_MAGIC_LAMBDA);
 
-	vm_push_frame(th, iseq, type,
-		      self, GC_GUARDED_PTR(block->dfp),
-		      iseq->iseq_encoded + opt_pc, cfp->sp + arg_size, block->lfp,
-		      iseq->local_size - arg_size);
+	ncfp = vm_push_frame(th, iseq, type,
+			     self, GC_GUARDED_PTR(block->dfp),
+			     iseq->iseq_encoded + opt_pc, cfp->sp + arg_size, block->lfp,
+			     iseq->local_size - arg_size);
+	ncfp->me = th->passed_me;
+	th->passed_me = 0;
 
 	if (cref) {
 	    th->cfp->dfp[-1] = (VALUE)cref;
@@ -1636,6 +1639,7 @@ rb_thread_mark(void *ptr)
 	    while (cfp != limit_cfp) {
 		rb_gc_mark(cfp->proc);
 		if (cfp->iseq) rb_gc_mark(cfp->iseq->self);
+		if (cfp->me) ((rb_method_entry_t *)cfp->me)->mark = 1;
 		cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 	    }
 	}

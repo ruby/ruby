@@ -1,3 +1,38 @@
+Thu May  6 02:16:48 2010  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_method.c (rb_unlink_method_entry, rb_sweep_method_entry):
+	  added.  Unlinked method entries are collected to
+	  vm->unlinked_method_entry_list.  On the GC timing, mark all method
+	  entries which are on all living threads.  Only non-marked method
+	  entries are collected.  This hack prevents releasing living method
+	  entry.
+	  [Performance Consideration] Since this Method Entry GC (MEGC)
+	  doesn't occuer frequently, MEGC will not be a performance bottleneck.
+	  However, to traverse living method entries, every control frame push
+	  needs to clear cfp->me field.  This will be a performance issue
+	  (because pushing control frame is occurred frequently).
+	  Bug #2777 [ruby-dev:40457]
+
+	* cont.c (fiber_init): init cfp->me.
+
+	* gc.c (garbage_collect): kick rb_sweep_method_entry().
+
+	* method.h (rb_method_entry_t): add a mark field.
+
+	* vm.c (invoke_block_from_c): set passed me.
+
+	* vm.c (rb_thread_mark): mark cfp->me.
+
+	* vm_core.h (rb_thread_t): add a field passed_me.
+
+	* vm_core.h (rb_vm_t): add a field unlinked_method_entry_list.
+
+	* vm_insnhelper.c (vm_push_frame): clear cfp->me at all times.
+
+	* vm_insnhelper.c (vm_call_bmethod): pass me.
+
+	* bootstraptest/test_method.rb: add a test.
+
 Wed May  5 22:22:51 2010  wanabe  <s.wanabe@gmail.com>
 
 	* compile.c (iseq_set_sequence): fix check range of ic_index.
