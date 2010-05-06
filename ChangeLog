@@ -1,3 +1,7 @@
+Thu May  6 12:12:26 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* README: update.
+
 Wed May  5 19:00:01 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/extconf.rb: revert. enbugged by last commit.

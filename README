@@ -93,6 +93,25 @@ This is what you need to do to compile and install Ruby:
 
   7. Run 'make install'
 
+     This command will create following directories and install files
+     onto them.
+
+       * ${DESTDIR}${prefix}/bin
+       * ${DESTDIR}${prefix}/lib
+       * ${DESTDIR}${prefix}/lib/ruby
+       * ${DESTDIR}${prefix}/lib/ruby/${MAJOR}.${MINOR}
+       * ${DESTDIR}${prefix}/lib/ruby/${MAJOR}.${MINOR}/${PLATFORM}
+       * ${DESTDIR}${prefix}/lib/ruby/site_ruby
+       * ${DESTDIR}${prefix}/lib/ruby/site_ruby/${MAJOR}.${MINOR}
+       * ${DESTDIR}${prefix}/lib/ruby/site_ruby/${MAJOR}.${MINOR}/${PLATFORM}
+       * ${DESTDIR}${prefix}/lib/ruby/vendor_ruby
+       * ${DESTDIR}${prefix}/lib/ruby/vendor_ruby/${MAJOR}.${MINOR}
+       * ${DESTDIR}${prefix}/lib/ruby/vendor_ruby/${MAJOR}.${MINOR}/${PLATFORM}
+       * ${DESTDIR}${prefix}/share/man/man1
+
+     If Ruby's version is `x.y.z', the ((|${MAJOR}|)) is `x' and the
+     ((|${MINOR}|)) is `y'.
+
      You may have to be a super user to install ruby.
 
 If you fail to compile ruby, please send the detailed error report with
