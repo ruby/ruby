@@ -89,6 +89,32 @@ This is what you need to do to compile and install Ruby:
 
   7. Run 'make install'
 
+     This command will create following directories and install files
+     onto them.
+
+       * ${DESTDIR}${prefix}/bin
+       * ${DESTDIR}${prefix}/include/ruby-${MAJOR}.${MINOR}.${TEENY}
+       * ${DESTDIR}${prefix}/include/ruby-${MAJOR}.${MINOR}.${TEENY}/${PLATFORM}
+       * ${DESTDIR}${prefix}/lib
+       * ${DESTDIR}${prefix}/lib/ruby
+       * ${DESTDIR}${prefix}/lib/ruby/${MAJOR}.${MINOR}.${TEENY}
+       * ${DESTDIR}${prefix}/lib/ruby/${MAJOR}.${MINOR}.${TEENY}/${PLATFORM}
+       * ${DESTDIR}${prefix}/lib/ruby/site_ruby
+       * ${DESTDIR}${prefix}/lib/ruby/site_ruby/${MAJOR}.${MINOR}.${TEENY}
+       * ${DESTDIR}${prefix}/lib/ruby/site_ruby/${MAJOR}.${MINOR}.${TEENY}/${PLATFORM}
+       * ${DESTDIR}${prefix}/lib/ruby/vendor_ruby
+       * ${DESTDIR}${prefix}/lib/ruby/vendor_ruby/${MAJOR}.${MINOR}.${TEENY}
+       * ${DESTDIR}${prefix}/lib/ruby/vendor_ruby/${MAJOR}.${MINOR}.${TEENY}/${PLATFORM}
+       * ${DESTDIR}${prefix}/lib/ruby/gems/${MAJOR}.${MINOR}.${TEENY}
+       * ${DESTDIR}${prefix}/share/man/man1
+       * ${DESTDIR}${prefix}/share/ri/${MAJOR}.${MINOR}.${TEENY}/system
+
+     If Ruby's API version is `x.y.z', the ((|${MAJOR}|)) is `x', the
+     ((|${MINOR}|)) is `y', and the ((|${TEENY}|)) is `z'.
+
+     NOTE: teeny of the API version may be different from one of
+     Ruby's program version
+
      You may have to be a super user to install ruby.
 
 If you fail to compile ruby, please send the detailed error report with

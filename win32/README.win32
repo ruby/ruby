@@ -35,6 +35,7 @@
     You can also specify the install directory.
     For example, run `((%configure --prefix=<install_directory>%))'
     Default of the install directory is /usr .
+    The default ((|<PLATFORM>|)) is `(({i386-mswin32}))'.
 
 (2) Change ((|RUBY_INSTALL_NAME|)) and ((|RUBY_SO_NAME|)) in (({Makefile}))
     if you want to change the name of the executable files. 
@@ -46,19 +47,6 @@
 (4) Run `((%nmake test%))'
 
 (5) Run `((%nmake install%))'
-
-    This command will create following directories and install files onto them.
-      * <install_directory>\bin
-      * <install_directory>\lib
-      * <install_directory>\lib\ruby
-      * <install_directory>\lib\ruby\<MAJOR>.<MINOR>
-      * <install_directory>\lib\ruby\<MAJOR>.<MINOR>\<PLATFORM>
-      * <install_directory>\lib\ruby\site_ruby
-      * <install_directory>\lib\ruby\site_ruby\<MAJOR>.<MINOR>
-      * <install_directory>\lib\ruby\site_ruby\<MAJOR>.<MINOR>\<PLATFORM>
-      * <install_directory>\man\man1
-    If Ruby's version is `x.y.z', the ((|<MAJOR>|)) is `x' and the ((|<MINOR>|)) is `y'.
-    The default ((|<PLATFORM>|)) is `(({i386-mswin32}))'.
 
 == Icons
 
