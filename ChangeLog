@@ -1,3 +1,17 @@
+Thu May  6 19:13:43 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/openssl/test_ec.rb: added test_dsa_sign_asn1_FIPS186_3. dgst is
+	  truncated with ec_key.group.order.size after openssl 0.9.8m for
+	  FIPS 186-3 compliance.
+
+	  WARNING: ruby-openssl aims to wrap an OpenSSL so when you're using
+	  openssl 0.9.8l or earlier version, EC.dsa_sign_asn1 raises
+	  OpenSSL::PKey::ECError as before and EC.dsa_verify_asn1 just returns
+	  false when you pass dgst longer than expected (no truncation
+	  performed).
+
+	* ext/openssl/ossl_pkey_ec.c: rdoc typo fixed.
+
 Thu May  6 18:12:43 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* cont.c (fiber_setcontext): Fix last commit.

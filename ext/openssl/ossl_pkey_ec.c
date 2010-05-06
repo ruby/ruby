@@ -681,7 +681,7 @@ static VALUE ossl_ec_key_dsa_sign_asn1(VALUE self, VALUE data)
 
 /*
  *  call-seq:
- *     key.dsa_verify(data, sig)   => true or false
+ *     key.dsa_verify_asn1(data, sig)   => true or false
  *
  *  See the OpenSSL documentation for ECDSA_verify()
  */
