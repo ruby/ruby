@@ -1,3 +1,8 @@
+Thu May  6 12:41:00 2010  Kenta Murata  <mrkn@mrkn.jp>
+
+	* NEWS: add rationalize methods of Complex, Float, Integer, NilClass,
+	  and Rational classes.
+
 Thu May  6 12:12:26 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* README: update.

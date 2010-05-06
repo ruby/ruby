@@ -26,6 +26,10 @@ with all sufficient information, see the ChangeLog file.
     * extended methods:
       * Array#{uniq,uniq!,product} can take a block.
 
+  * Complex
+    * new methods:
+      * Complex#rationalize
+
   * Dir
     * new method:
       * Dir.home
@@ -82,6 +86,8 @@ with all sufficient information, see the ChangeLog file.
     * new constants:
       * Float::INFINITY
       * Float::NAN
+    * new methods:
+      * Float#rationalize
 
   * File
     * new methods:
@@ -113,6 +119,10 @@ with all sufficient information, see the ChangeLog file.
       * IO::WaitWritable
         They are used to extend non-blocking exceptions.
 
+  * Integer
+    * new methods:
+      * Integer#rationalize
+
   * Kernel
     * new method:
       * Kernel#respond_to_missing?
@@ -121,6 +131,10 @@ with all sufficient information, see the ChangeLog file.
   * MatchData
     * New method:
       * MatchData#==
+
+  * NilClass
+    * new methods:
+      * NilClass#rationalize
 
   * Object
     * extended methods:
@@ -137,6 +151,10 @@ with all sufficient information, see the ChangeLog file.
       * Process.spawn accepts [:child, FD] for a redirect target.
 
   * Random (new class to generate pseudo-random numbers)
+
+  * Rational
+    * new methods:
+      * Rational#rationalize
 
   * String
     * extended methods:
