@@ -211,9 +211,17 @@ module DL
     end
 
     def bind_function(name, ctype, argtype, call_type = nil, &block)
-      f = Function.new(CFunc.new(0, ctype, name, call_type || :cdecl), argtype)
-      f.bind(&block)
-      f
+      if DL.fiddle?
+        closure = Class.new(Fiddle::Closure) {
+          define_method(:call, block)
+        }.new(ctype, argtype)
+
+        Function.new(closure, argtype)
+      else
+        f = Function.new(CFunc.new(0, ctype, name, call_type || :cdecl), argtype)
+        f.bind(&block)
+        f
+      end
     end
 
     def create_temp_function(name, ctype, argtype, call_type = nil)

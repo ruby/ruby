@@ -1,3 +1,11 @@
+Thu May  6 15:56:12 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/fiddle/*: Adding fiddle library to wrap libffi
+	* test/fiddle/*: testing fiddle extension
+	* ext/dl/lib/dl.rb: Requiring fiddle if it is available
+	* ext/dl/lib/dl/callback.rb: using Fiddle if it is available
+	* ext/dl/lib/dl/func.rb: ditto
+
 Thu May  6 15:04:37 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_str_match_m): add description about optional
