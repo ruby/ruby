@@ -1,3 +1,9 @@
+Thu May  6 15:04:37 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_match_m): add description about optional
+	  position parameter. [ruby-list:47064]
+	  patched by KISHIMOTO, Makoto <ksmakoto AT dd.iij4u.or.jp>
+
 Thu May  6 14:12:39 2010  Tanaka Akira  <akr@fsij.org>
 
 	* lib/tmpdir.rb: test RUBY_PLATFORM for loading tmpdir.so to avoid
