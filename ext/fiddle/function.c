@@ -87,7 +87,6 @@ function_call(int argc, VALUE argv[], VALUE self)
     fiddle_generic retval;
     fiddle_generic *generic_args;
     void **values;
-    void * fun_ptr;
     VALUE cfunc, types, cPointer;
     int i;
 
