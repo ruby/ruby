@@ -1,3 +1,8 @@
+Thu May  6 17:16:42 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* time.c (rb_localtime_r2): get rid of infinite loop bug of
+	  localtime() on x86_64-darwin.  [ruby-core:30031]
+
 Thu May  6 15:56:12 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/fiddle/*: Adding fiddle library to wrap libffi
