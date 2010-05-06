@@ -5,9 +5,8 @@
 #
 
 require 'fileutils'
-begin
+if /mswin|mingw/ =~ RUBY_PLATFORM
   require 'tmpdir.so'
-rescue LoadError
 end
 
 class Dir
