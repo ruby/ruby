@@ -4033,9 +4033,9 @@ VpCtoV(Real *a, const char *int_chr, U_LONG ni, const char *frac, U_LONG nf, con
         while(i < me) {
             es = e*((S_INT)BASE_FIG);
             e = e * 10 + exp_chr[i] - '0';
-            if(es>e*((S_INT)BASE_FIG)) {
+            if(es > (S_INT)(e*BASE_FIG)) {
 		exponent_overflow = 1;
-		e = es;
+		e = es; /* keep sign */
 		break;
             }
             ++i;
