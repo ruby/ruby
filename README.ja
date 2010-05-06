@@ -116,6 +116,32 @@ Ruby拡張モジュールについて話し合うruby-extメーリングリストと
 
   7. make install
 
+     以下のディレクトリを作って，そこにファイルをインストー
+     ルします．
+
+       * ${DESTDIR}${prefix}/bin
+       * ${DESTDIR}${prefix}/include/ruby-${MAJOR}.${MINOR}.${TEENY}
+       * ${DESTDIR}${prefix}/include/ruby-${MAJOR}.${MINOR}.${TEENY}/${PLATFORM}
+       * ${DESTDIR}${prefix}/lib
+       * ${DESTDIR}${prefix}/lib/ruby
+       * ${DESTDIR}${prefix}/lib/ruby/${MAJOR}.${MINOR}.${TEENY}
+       * ${DESTDIR}${prefix}/lib/ruby/${MAJOR}.${MINOR}.${TEENY}/${PLATFORM}
+       * ${DESTDIR}${prefix}/lib/ruby/site_ruby
+       * ${DESTDIR}${prefix}/lib/ruby/site_ruby/${MAJOR}.${MINOR}.${TEENY}
+       * ${DESTDIR}${prefix}/lib/ruby/site_ruby/${MAJOR}.${MINOR}.${TEENY}/${PLATFORM}
+       * ${DESTDIR}${prefix}/lib/ruby/vendor_ruby
+       * ${DESTDIR}${prefix}/lib/ruby/vendor_ruby/${MAJOR}.${MINOR}.${TEENY}
+       * ${DESTDIR}${prefix}/lib/ruby/vendor_ruby/${MAJOR}.${MINOR}.${TEENY}/${PLATFORM}
+       * ${DESTDIR}${prefix}/lib/ruby/gems/${MAJOR}.${MINOR}.${TEENY}
+       * ${DESTDIR}${prefix}/share/man/man1
+       * ${DESTDIR}${prefix}/share/ri/${MAJOR}.${MINOR}.${TEENY}/system
+
+     RubyのAPIバージョンが`x.y.z'であれば，((|${MAJOR}|))は
+     `x'で，((|${MINOR}|))は`y'，((|${TEENY}|))は`z'です．
+
+     注意: APIバージョンのteenyは，Rubyプログラムのバージョ
+     ンとは異なることがあります．
+
      rootで作業する必要があるかもしれません．
 
 もし，コンパイル時にエラーが発生した場合にはエラーのログとマ

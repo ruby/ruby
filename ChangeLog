@@ -1,3 +1,7 @@
+Thu May  6 12:12:26 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* README: update.
+
 Thu May  6 03:34:29 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* cont.c: apply FIBER_USE_NATIVE patch.  This patch improve
