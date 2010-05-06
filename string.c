@@ -2555,12 +2555,15 @@ static VALUE get_pat(VALUE, int);
 
 /*
  *  call-seq:
- *     str.match(pattern)   => matchdata or nil
+ *     str.match(pattern)        => matchdata or nil
+ *     str.match(pattern, pos)   => matchdata or nil
  *
  *  Converts <i>pattern</i> to a <code>Regexp</code> (if it isn't already one),
  *  then invokes its <code>match</code> method on <i>str</i>.  If the second
  *  parameter is present, it specifies the position in the string to begin the
  *  search.
+ *  If the second parameter is present, it specifies the position in the string
+ *  to begin the search.
  *
  *     'hello'.match('(.)\1')      #=> #<MatchData "ll" 1:"l">
  *     'hello'.match('(.)\1')[0]   #=> "ll"
@@ -2586,7 +2589,7 @@ rb_str_match_m(int argc, VALUE *argv, VALUE str)
 {
     VALUE re, result;
     if (argc < 1)
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)", argc);
+       rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..2)", argc);
     re = argv[0];
     argv[0] = str;
     result = rb_funcall2(get_pat(re, 0), rb_intern("match"), argc, argv);
