@@ -1,3 +1,10 @@
+Thu May  6 22:19:38 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* cont.c: define FIBER_USE_NATIVE only when _WIN32_WINNT >= 0x0400
+	  on Windows because Fiber APIs are supported only such building
+	  (and running) environments.
+	  [ruby-dev:41192]
+
 Thu May  6 19:13:43 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/openssl/test_ec.rb: added test_dsa_sign_asn1_FIPS186_3. dgst is
