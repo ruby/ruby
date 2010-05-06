@@ -1,3 +1,7 @@
+Fri May  7 03:40:58 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (VpCtoV): fix to check overflow.
+
 Thu May  6 22:19:38 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* cont.c: define FIBER_USE_NATIVE only when _WIN32_WINNT >= 0x0400

@@ -25,6 +25,7 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal( 1, BigDecimal.new("Infinity").infinite?)
     assert_equal(-1, BigDecimal.new("-Infinity").infinite?)
     assert_equal(true, BigDecimal.new("NaN").nan?)
+    assert_equal( 1, BigDecimal.new("1E11111111111").infinite?)
   end
 
   def _test_mode(type)
