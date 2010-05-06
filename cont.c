@@ -621,6 +621,7 @@ fiber_setcontext(rb_fiber_t *newfib, rb_fiber_t *oldfib)
 
     /* save  oldfib's machine stack */
     if (oldfib->status != TERMINATED) {
+	SET_MACHINE_STACK_END(&th->machine_stack_end);
 	switch (stackgrowdirection) {
 	    case STACK_GROW_DOWNWARD:
 		oldfib->cont.machine_stack_size = th->machine_stack_start - th->machine_stack_end;
