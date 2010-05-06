@@ -1425,9 +1425,9 @@ rb_fiber_s_current(VALUE klass)
 void
 Init_Cont(void)
 {
+#ifdef FIBER_USE_NATIVE
     rb_thread_t *th = GET_THREAD();
 
-#ifdef FIBER_USE_NATIVE
 #ifdef _WIN32
     SYSTEM_INFO info;
     GetSystemInfo(&info);
