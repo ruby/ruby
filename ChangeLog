@@ -1,3 +1,8 @@
+Fri May  7 06:45:28 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/extconf.rb: search directories on PATH, only if containing
+	  tclsh or wish command (probably right fix for [ruby-core:30010]).
+
 Thu May  6 12:12:26 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* README: update.
