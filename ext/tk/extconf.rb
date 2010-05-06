@@ -1,12 +1,13 @@
 ##############################################################
 # extconf.rb for tcltklib
-# release date: 2010-03-26
+# release date: 2010-05-07
 ##############################################################
 require 'mkmf'
 
 TkLib_Config = {}
 TkLib_Config['search_versions'] = 
-  %w[8.9 8.8 8.7 8.6 8.5 8.4 8.3 8.2 8.1 8.0 4.2]
+  # %w[8.9 8.8 8.7 8.6 8.5 8.4 8.3 8.2 8.1 8.0 7.6 4.2]
+  %w[8.7 8.6 8.5 8.4 8.3 8.2 8.1 8.0]
 
 
 ##############################################################
@@ -84,8 +85,8 @@ end
 if update_flag
   puts "Configure options for Ruby/Tk may be updated."
   puts "So, delete files which depend on old configs."
-  File.delete(*Dir.glob("*.#{CONFIG['DLEXT']}"))
-  File.delete(*Dir.glob("*.#{$OBJEXT}"))
+  File.delete(*Dir.glob("*.#{CONFIG['DLEXT']}", File::FNM_CASEFOLD))
+  File.delete(*Dir.glob("*.#{$OBJEXT}", File::FNM_CASEFOLD))
   File.delete('Makefile') rescue nil
 
 else
@@ -177,10 +178,11 @@ def get_shlib_path_head
   path_dirs = []
 
   if TkLib_Config["ActiveTcl"].kind_of?(String)  # glob path
-    path_dirs.concat Dir.glob(TkLib_Config["ActiveTcl"]).sort.reverse
+    path_dirs.concat Dir.glob(TkLib_Config["ActiveTcl"], File::FNM_CASEFOLD).sort.reverse
   end
 
-  if is_win32?
+  if CROSS_COMPILING
+  elsif is_win32?
     if TkLib_Config["ActiveTcl"]
       path_head.concat ["c:/ActiveTcl", "c:/Program Files/ActiveTcl"]
     end
@@ -199,17 +201,17 @@ def get_shlib_path_head
       next unless File.directory?(dir)
 
       path_dirs << "#{dir}/lib"
-      path_dirs << "#{dir}" unless Dir.glob("#{dir}/lib*.*").empty?
+      path_dirs << "#{dir}" unless Dir.glob("#{dir}/lib*.*", File::FNM_CASEFOLD).empty?
 
       dirnames = []
       if TkLib_Config["ActiveTcl"]
-        dirnames.concat ["ActiveTcl","activeTcl","Activetcl","activetcl"]
+        dirnames.concat ["ActiveTcl"]
       end
-      dirnames.concat ["TclTk","Tcl_Tk","Tcl-Tk","tcltk","tcl_tk","tcl-tk"]
+      dirnames.concat ["TclTk","Tcl_Tk","Tcl-Tk"]
 
       dirnames.each{|name|
         path_dirs << "#{dir}/#{name}" if File.directory?("#{dir}/#{name}")
-        path_head << "#{dir}/#{name}" unless Dir.glob("#{dir}/#{name}[-89_]*").empty?
+        path_head << "#{dir}/#{name}" unless Dir.glob("#{dir}/#{name}[-89_]*", File::FNM_CASEFOLD).empty?
       }
     }
   end
@@ -372,41 +374,34 @@ end
 def get_tclConfig_dirs
   config_dir = []
 
-  if is_win32?
+  if CROSS_COMPILING
+  elsif is_win32?
     if TkLib_Config["ActiveTcl"]
       dirs = []
       if TkLib_Config["ActiveTcl"].kind_of?(String)
         dirs << TkLib_Config["ActiveTcl"]
       end
       dirs.concat [
-        "c:/ActiveTcl*/lib", "c:/Activetcl*/lib", 
-        "c:/activeTcl*/lib", "c:/activetcl*/lib", 
-        "c:/Tcl*/lib", "c:/tcl*/lib", 
-        "c:/Program Files/ActiveTcl*/lib", "c:/Program Files/Activetcl*/lib",
-        "c:/Program Files/activeTcl*/lib", "c:/Program Files/activetcl*/lib",
-        "c:/Program Files/Tcl*/lib", "c:/Program Files/tcl*/lib",
-        "/ActiveTcl*/lib", "/Activetcl*/lib", 
-        "/activeTcl*/lib", "/activetcl*/lib", 
-        "/Tcl*/lib", "/tcl*/lib", 
-        "/Program Files/ActiveTcl*/lib", "/Program Files/Activetcl*/lib",
-        "/Program Files/activeTcl*/lib", "/Program Files/activetcl*/lib",
-        "/Program Files/Tcl*/lib", "/Program Files/tcl*/lib"
+        "c:/ActiveTcl*/lib", "c:/Tcl*/lib",
+        "c:/Program Files/ActiveTcl*/lib", "c:/Program Files/Tcl*/lib",
+        "/ActiveTcl*/lib", "/Tcl*/lib",
+        "/Program Files/ActiveTcl*/lib", "/Program Files/Tcl*/lib"
       ]
     else
       dirs = [
-        "c:/Tcl*/lib", "c:/tcl*/lib", 
-        "c:/Program Files/Tcl*/lib", "c:/Program Files/tcl*/lib",
-        "/Tcl*/lib", "/tcl*/lib", 
-        "/Program Files/Tcl*/lib", "/Program Files/tcl*/lib"
+        "c:/Tcl*/lib", "c:/Program Files/Tcl*/lib",
+        "/Tcl*/lib", "/Program Files/Tcl*/lib"
       ]
     end
-    dirs.collect{|d| Dir.glob(d)}.flatten!
+    dirs.collect{|d| Dir.glob(d, File::FNM_CASEFOLD)}.flatten!
     dirs |= dirs
 
-    ENV['PATH'].split(';').each{|dir|
+    ENV['PATH'].split(File::PATH_SEPARATOR).each{|dir|
+      dir.tr!(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
+      next if Dir.glob(File.join(dir, '{tclsh,wish}*'), File::FNM_CASEFOLD).empty?
       dirs << File.expand_path(File.join(dir, '..', 'lib'))
       dirs << dir
-      dirs << File.expand_path(File.join(dir, '..'))
+      # dirs << File.expand_path(File.join(dir, '..'))
     }
 
     unless TkLib_Config["space-on-tk-libpath"]
@@ -421,7 +416,7 @@ def get_tclConfig_dirs
   else
     if activeTcl = TkLib_Config['ActiveTcl']
       # check latest version at first
-      config_dir.concat(Dir.glob(activeTcl).sort.reverse)
+      config_dir.concat(Dir.glob(activeTcl, File::FNM_CASEFOLD).sort.reverse)
     end
 
     config_dir.concat [
@@ -438,25 +433,27 @@ def get_tclConfig_dirs
       '/usr/local/opt', '/usr/local/pkg', '/usr/local/share', '/usr/local',
       '/usr/opt', '/usr/pkg', '/usr/share', '/usr/contrib', '/usr'
     ].map{|dir|
-      Dir.glob(dir + '/{TclTk,tcltk,Tcl,tcl,Tk,tk}[87]*/lib')
-      Dir.glob(dir + '/{TclTk,tcltk,Tcl,tcl,Tk,tk}[87]*')
-      Dir.glob(dir + '/{TclTk,tcltk,Tcl,tcl,Tk,tk}/lib')
-      Dir.glob(dir + '/{TclTk,tcltk,Tcl,tcl,Tk,tk}')
+      Dir.glob(dir + '/{tcltk,tcl,tk}[87]*/lib', File::FNM_CASEFOLD)
+      Dir.glob(dir + '/{tcltk,tcl,tk}[87]*', File::FNM_CASEFOLD)
+      Dir.glob(dir + '/{tcltk,tcl,tk}/lib', File::FNM_CASEFOLD)
+      Dir.glob(dir + '/{tcltk,tcl,tk}', File::FNM_CASEFOLD)
     }.flatten!
 
-    ENV['PATH'].split(':').each{|dir|
+    ENV['PATH'].split(File::PATH_SEPARATOR).each{|dir|
+      dir.tr!(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
+      next if Dir.glob(File.join(dir, '{tclsh,wish}*'), File::FNM_CASEFOLD).empty?
       config_dir << File.expand_path(File.join(dir, '..', 'lib'))
     }
 
     # for MacOS X
     #config_dir << "~/Library/Tcl"
-    #config_dir.concat(Dir.glob("~/Library/Tcl/*").sort.reverse)
+    #config_dir.concat(Dir.glob("~/Library/Tcl/*", File::FNM_CASEFOLD).sort.reverse)
     config_dir << "/Library/Tcl"
-    config_dir.concat(Dir.glob("/Library/Tcl/*").sort.reverse)
+    config_dir.concat(Dir.glob("/Library/Tcl/*", File::FNM_CASEFOLD).sort.reverse)
     config_dir << "/Network/Library/Tcl"
-    config_dir.concat(Dir.glob("/Network/Library/Tcl/*").sort.reverse)
+    config_dir.concat(Dir.glob("/Network/Library/Tcl/*", File::FNM_CASEFOLD).sort.reverse)
     config_dir << "/System/Library/Tcl"
-    config_dir.concat(Dir.glob("/System/Library/Tcl/*").sort.reverse)
+    config_dir.concat(Dir.glob("/System/Library/Tcl/*", File::FNM_CASEFOLD).sort.reverse)
     [
       #"~/Library/Frameworks", 
       "/Library/Frameworks",
@@ -483,7 +480,7 @@ def search_tclConfig(*paths) # libdir list or [tcl-libdir|file, tk-libdir|file]
       if path.kind_of?(Array)
         config_dir << path
       else
-        dirs = Dir.glob(path)
+        dirs = Dir.glob(path, File::FNM_CASEFOLD)
         config_dir.concat(dirs.zip(dirs))
       end
     }
@@ -554,7 +551,7 @@ def search_tclConfig(*paths) # libdir list or [tcl-libdir|file, tk-libdir|file]
       libpath = $LIBPATH
       tcllibs = nil
       begin
-        tcllib_ok = Dir.glob(File.join(dir, "*tcl#{stub}#{tclconf['TCL_MAJOR_VERSION']}{.,}#{tclconf['TCL_MINOR_VERSION']}*.*")).find{|file|
+        tcllib_ok = Dir.glob(File.join(dir, "*tcl#{stub}#{tclconf['TCL_MAJOR_VERSION']}{.,}#{tclconf['TCL_MINOR_VERSION']}*.*"), File::FNM_CASEFOLD).find{|file|
           if file =~ /^.*(tcl#{stub}#{tclconf['TCL_MAJOR_VERSION']}(\.|)#{tclconf['TCL_MINOR_VERSION']}.*)\.[^.]*$/
             #puts "check #{file} #{$1} #{tclfunc} #{dir}"
             #find_library($1, tclfunc, dir)
@@ -563,7 +560,7 @@ def search_tclConfig(*paths) # libdir list or [tcl-libdir|file, tk-libdir|file]
             try_func(tclfunc, tcllibs)
           end
         }
-        tklib_ok = Dir.glob(File.join(dir, "*tk#{stub}#{tkconf['TK_MAJOR_VERSION']}{.,}#{tkconf['TK_MINOR_VERSION']}*.*")).find{|file|
+        tklib_ok = Dir.glob(File.join(dir, "*tk#{stub}#{tkconf['TK_MAJOR_VERSION']}{.,}#{tkconf['TK_MINOR_VERSION']}*.*"), File::FNM_CASEFOLD).find{|file|
           if file =~ /^.*(tk#{stub}#{tkconf['TK_MAJOR_VERSION']}(\.|)#{tkconf['TK_MINOR_VERSION']}.*)\.[^.]*$/
             #puts "check #{file} #{$1} #{tkfunc} #{dir}"
             # find_library($1, tkfunc, dir)
@@ -675,10 +672,10 @@ def check_shlib_search_path(paths)
     path_list = []
 
     #if TkLib_Config["ActiveTcl"]
-    #  path_list.concat Dir.glob(TkLib_Config["ActiveTcl"]).sort.reverse
+    #  path_list.concat Dir.glob(TkLib_Config["ActiveTcl"], File::FNM_CASEFOLD).sort.reverse
     #end
     if TkLib_Config["ActiveTcl"].kind_of?(String)  # glob path
-      path_list.concat Dir.glob(TkLib_Config["ActiveTcl"]).sort.reverse
+      path_list.concat Dir.glob(TkLib_Config["ActiveTcl"], File::FNM_CASEFOLD).sort.reverse
     end
 
     vers = get_shlib_versions
@@ -691,16 +688,16 @@ def check_shlib_search_path(paths)
         else
           dirs = []
 
-          if !Dir.glob(head + "-*").empty?
-            dirs << head + "-#{ver}/lib" if !Dir.glob(head + "-[89].*").empty?
-            dirs << head + "-#{ver.delete('.')}/lib" if !Dir.glob(head + "-[89][0-9]*").empty?
+          if !Dir.glob(head + "-*", File::FNM_CASEFOLD).empty?
+            dirs << head + "-#{ver}/lib" if !Dir.glob(head + "-[89].*", File::FNM_CASEFOLD).empty?
+            dirs << head + "-#{ver.delete('.')}/lib" if !Dir.glob(head + "-[89][0-9]*", File::FNM_CASEFOLD).empty?
           end
 
-          if !Dir.glob(head + "[_-]*").empty?
-            dirs << head + "_#{ver}/lib" if !Dir.glob(head + "_[89].*").empty?
-            dirs << head + "-#{ver}/lib" if !Dir.glob(head + "-[89].*").empty?
-            dirs << head + "_#{ver.delete('.')}/lib" if !Dir.glob(head + "_[89][0-9]*").empty?
-            dirs << head + "-#{ver.delete('.')}/lib" if !Dir.glob(head + "-[89][0-9]*").empty?
+          if !Dir.glob(head + "[_-]*", File::FNM_CASEFOLD).empty?
+            dirs << head + "_#{ver}/lib" if !Dir.glob(head + "_[89].*", File::FNM_CASEFOLD).empty?
+            dirs << head + "-#{ver}/lib" if !Dir.glob(head + "-[89].*", File::FNM_CASEFOLD).empty?
+            dirs << head + "_#{ver.delete('.')}/lib" if !Dir.glob(head + "_[89][0-9]*", File::FNM_CASEFOLD).empty?
+            dirs << head + "-#{ver.delete('.')}/lib" if !Dir.glob(head + "-[89][0-9]*", File::FNM_CASEFOLD).empty?
           end
 
           dirs
@@ -716,15 +713,15 @@ def check_shlib_search_path(paths)
   end
 
   path_list = check_NG_path(path_list)
+  path_list.map!{|path| path.strip}
 
-  if is_win32?
+  if !CROSS_COMPILING and is_win32?
     # exist-dir only
-    path_list.each{|path|
-      path = path.strip; $LIBPATH |= [path] if File.directory?(path)
-    }
-  else
-    path_list.each{|path| $LIBPATH |= [path.strip] }
+    path_list.delete_if{|path| Dir.glob(File.join(path, "*.{a,so,dll,lib}")).empty?}
   end
+
+  # keep paths for searching dynamic libs
+  $LIBPATH |= path_list
 end
 
 def search_vers_on_path(vers, path, *heads)
@@ -735,7 +732,7 @@ def search_vers_on_path(vers, path, *heads)
   end
   exts << ",dll,lib" if is_win32?
   exts << ",bundle,dylib" if is_macosx? || /nextstep|openstep|rhapsody/ =~ RUBY_PLATFORM
-  files = Dir.glob(File.join(path, "*{#{heads.join(',')}}*.{#{exts}}"))
+  files = Dir.glob(File.join(path, "*{#{heads.join(',')}}*.{#{exts}}"), File::FNM_CASEFOLD)
   vers.find_all{|ver| files.find{|f| f =~ /(#{ver}|#{ver.delete('.')})/} }
 end
 
@@ -763,12 +760,18 @@ def find_tcl(tcllib, stubs, version, *opt_paths)
     File.join(RbConfig::CONFIG['exec_prefix'], 'lib'),
     File.join(RbConfig::CONFIG['prefix'], 'lib'),
     "/usr/local/lib", "/usr/pkg/lib", "/usr/contrib/lib", "/usr/lib"
-  ].find_all{|dir| File.directory?(dir)}
+  ].find_all{|dir| File.directory?(dir)} unless CROSS_COMPILING
 
-  default_paths.concat [
-    "c:/Tcl/lib", "c:/Program Files/Tcl/lib",
-    "/Tcl/lib", "/Program Files/Tcl/lib"
-  ].find_all{|dir| File.directory?(dir)}
+  if TkLib_Config["ActiveTcl"].kind_of?(String)  # glob path
+    default_paths.concat Dir.glob(TkLib_Config["ActiveTcl"]).sort.reverse.map{|d| d << "/lib"}
+  end
+
+  if !CROSS_COMPILING and is_win32?
+    default_paths.concat [
+      "c:/Tcl/lib", "c:/Program Files/Tcl/lib",
+      "/Tcl/lib", "/Program Files/Tcl/lib"
+    ].find_all{|dir| File.directory?(dir)}
+  end
 
   unless TkLib_Config["space-on-tk-libpath"]
     default_paths.delete_if{|path| path =~ / /}
@@ -873,12 +876,14 @@ def find_tk(tklib, stubs, version, *opt_paths)
     File.join(RbConfig::CONFIG['exec_prefix'], 'lib'),
     File.join(RbConfig::CONFIG['prefix'], 'lib'),
     "/usr/local/lib", "/usr/pkg/lib", "/usr/contrib/lib", "/usr/lib"
-  ].find_all{|dir| File.directory?(dir)}
+  ].find_all{|dir| File.directory?(dir)} unless CROSS_COMPILING
 
-  default_paths.concat [
-    "c:/Tcl/lib", "c:/Program Files/Tcl/lib",
-    "/Tcl/lib", "/Program Files/Tcl/lib"
-  ].find_all{|dir| File.directory?(dir)}
+  if !CROSS_COMPILING and is_win32?
+    default_paths.concat [
+      "c:/Tcl/lib", "c:/Program Files/Tcl/lib",
+      "/Tcl/lib", "/Program Files/Tcl/lib"
+    ].find_all{|dir| File.directory?(dir)}
+  end
 
   unless TkLib_Config["space-on-tk-libpath"]
     default_paths.delete_if{|path| path =~ / /}
@@ -969,10 +974,12 @@ def find_tcltk_header(tclver, tkver)
     "/usr/include"
   ].find_all{|dir| File.directory?(dir)}
 
-  base_dir.concat [
-    "c:/Tcl/include", "c:/Program Files/Tcl/include",
-    "/Tcl/include", "/Program Files/Tcl/include"
-  ].find_all{|dir| File.directory?(dir)}
+  if !CROSS_COMPILING && is_win32?
+    base_dir.concat [
+      "c:/Tcl/include", "c:/Program Files/Tcl/include",
+      "/Tcl/include", "/Program Files/Tcl/include"
+    ].find_all{|dir| File.directory?(dir)}
+  end
 
   unless TkLib_Config["space-on-tk-libpath"]
     base_dir.delete_if{|path| path =~ / /}
@@ -1029,9 +1036,10 @@ def setup_for_macosx_framework
     TkConfig_Info['TK_INCLUDE_SPEC'] = "-I#{File.join(TkLib_Config['tcltk-framework'], 'Tk.framework', 'Headers')} "
   else
     dir = Dir.glob(File.join(TkLib_Config["tcltk-framework"], 
-                             'Tcl.framework', '*', 'Headers'))
+                             'Tcl.framework', '*', 'Headers'),
+                   File::FNM_CASEFOLD)
     TclConfig_Info['TCL_INCLUDE_SPEC'] = "-I#{dir[0]} " unless dir.empty?
-    TkConfig_Info['TK_INCLUDE_SPEC'] = "-I#{Dir.glob(File.join(TkLib_Config['tcltk-framework'], 'Tk.framework', '*', 'Headers'))[0]} "
+    TkConfig_Info['TK_INCLUDE_SPEC'] = "-I#{Dir.glob(File.join(TkLib_Config['tcltk-framework'], 'Tk.framework', '*', 'Headers'), File::FNM_CASEFOLD)[0]} "
   end
 
   $LDFLAGS << ' -framework Tk -framework Tcl'
@@ -1050,8 +1058,8 @@ def find_X11(*opt_paths)
   defaults =
     [ "/usr/X11*/lib", "/usr/lib/X11*", "/usr/local/X11*", "/usr/openwin/lib" ]
   paths = []
-  opt_paths.compact.each{|path| paths.concat(Dir.glob(path.strip.chomp('/')))}
-  defaults.compact.each{|path| paths.concat(Dir.glob(path.strip.chomp('/')))}
+  opt_paths.compact.each{|path| paths.concat(Dir.glob(path.strip.chomp('/'), File::FNM_CASEFOLD))}
+  defaults.compact.each{|path| paths.concat(Dir.glob(path.strip.chomp('/'), File::FNM_CASEFOLD))}
   st = find_library("X11", "XOpenDisplay", *paths)
   unless st
     puts("Warning:: cannot find X11 library. tcltklib will not be compiled (tcltklib is disabled on your Ruby == Ruby/Tk will not work). Please check configure options. If your Tcl/Tk don't require X11, please try --without-X11.")
