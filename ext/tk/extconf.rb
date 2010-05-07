@@ -396,9 +396,10 @@ def get_tclConfig_dirs
     dirs.collect{|d| Dir.glob(d, File::FNM_CASEFOLD)}.flatten!
     dirs |= dirs
 
+    exeext = RbConfig::CONFIG['EXEEXT']
     ENV['PATH'].split(File::PATH_SEPARATOR).each{|dir|
       dir.tr!(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
-      next if Dir.glob(File.join(dir, '{tclsh,wish}*'), File::FNM_CASEFOLD).empty?
+      next if Dir.glob(File.join(dir, "{tclsh,wish}*#{exeext}"), File::FNM_CASEFOLD).empty?
       dirs << File.expand_path(File.join(dir, '..', 'lib'))
       dirs << dir
       # dirs << File.expand_path(File.join(dir, '..'))
@@ -439,9 +440,10 @@ def get_tclConfig_dirs
       Dir.glob(dir + '/{tcltk,tcl,tk}', File::FNM_CASEFOLD)
     }.flatten!
 
+    exeext = RbConfig::CONFIG['EXEEXT']
     ENV['PATH'].split(File::PATH_SEPARATOR).each{|dir|
       dir.tr!(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
-      next if Dir.glob(File.join(dir, '{tclsh,wish}*'), File::FNM_CASEFOLD).empty?
+      next if Dir.glob(File.join(dir, "{tclsh,wish}*#{exeext}"), File::FNM_CASEFOLD).empty?
       config_dir << File.expand_path(File.join(dir, '..', 'lib'))
     }
 
@@ -489,7 +491,8 @@ def search_tclConfig(*paths) # libdir list or [tcl-libdir|file, tk-libdir|file]
   tclver, tkver = TkLib_Config['tcltkversion']
   conf = nil
 
-  (config_dir | config_dir).map{|dir|
+  config_dir.uniq!
+  config_dir.map{|dir|
     if dir.kind_of? Array
       [dir[0].strip.chomp('/'), dir[1].strip.chomp('/')]
     else
@@ -529,7 +532,7 @@ def search_tclConfig(*paths) # libdir list or [tcl-libdir|file, tk-libdir|file]
 
       # nativethread check
       if !TkLib_Config["ruby_with_thread"] && tclconf['TCL_THREADS'] == '1'
-        puts "WARNIG: find #{tclpath.inspect}, but it WITH nativethread-support under ruby WITHOUT nativethread-support. So, ignore it."
+        puts "WARNING: found #{tclpath.inspect}, but it WITH nativethread-support under ruby WITHOUT nativethread-support. So, ignore it."
         TkLib_Config["tcltk-NG-path"] << File.dirname(tclpath)
         next
       end
@@ -574,7 +577,7 @@ def search_tclConfig(*paths) # libdir list or [tcl-libdir|file, tk-libdir|file]
       end
 
       unless tcllib_ok && tklib_ok
-        puts "WARNIG: find #{tclpath.inspect}, but cannot find valid Tcl/Tk libraries on the same directory. So, ignore it."
+        puts "WARNING: found #{tclpath.inspect}, but cannot find valid Tcl/Tk libraries on the same directory. So, ignore it."
         TkLib_Config["tcltk-NG-path"] << File.dirname(tclpath)
         next
       end
