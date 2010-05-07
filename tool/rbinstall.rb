@@ -17,7 +17,6 @@ require 'fileutils'
 require 'shellwords'
 require 'optparse'
 require 'optparse/shellwords'
-require 'tempfile'
 
 STDOUT.sync = true
 File.umask(0)
@@ -483,13 +482,11 @@ install?(:local, :comm, :man) do
     if $mantype == "doc"
       install mdoc, destfile, :mode => $data_mode
     else
-      w = nil
-      Tempfile.open(base) do |f|
-        w = f
-        open(mdoc) {|r| Mdoc2Man.mdoc2man(r, w)}
+      class << (w = [])
+        alias print push
       end
-      install w.path, destfile, :mode => $data_mode
-      w.close!
+      open(mdoc) {|r| Mdoc2Man.mdoc2man(r, w)}
+      open_for_install(destfile, $data_mode) {w.join("")}
     end
   end
 end
