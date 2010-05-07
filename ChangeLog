@@ -1,3 +1,7 @@
+Fri May  7 23:51:39 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* version.h: bump up to 1.9.3.
+
 Fri May  7 11:30:51 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/rbinstall.rb (install-man): install mdocs directly without
