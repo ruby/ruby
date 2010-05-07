@@ -212,6 +212,12 @@
 /ext/fiber/extconf.h
 /ext/fiber/Makefile
 
+# /ext/fiddle/
+/ext/fiddle/Makefile
+/ext/fiddle/extconf.h
+/ext/fiddle/mkmf.log
+/ext/fiddle/fiddle.a
+
 # /ext/gdbm/
 /ext/gdbm/Makefile
 /ext/gdbm/mkmf.log
