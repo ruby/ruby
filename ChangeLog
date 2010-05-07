@@ -1,3 +1,9 @@
+Fri May  7 09:16:16 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/tk/extconf.rb (get_tclConfig_dirs): glob with EXEEXT.
+
+	* ext/tk/extconf.rb (search_tclConfig): fixed typo.
+
 Fri May  7 06:45:28 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/extconf.rb: search directories on PATH, only if containing
