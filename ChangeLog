@@ -1,3 +1,8 @@
+Fri May  7 11:31:50 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* instruby.rb (install-man): install mdocs directly without
+	  temporary files.  [ruby-dev:41204]
+
 Fri May  7 09:16:16 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/tk/extconf.rb (get_tclConfig_dirs): glob with EXEEXT.
