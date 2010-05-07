@@ -46,13 +46,19 @@ class TestWEBrickServer < Test::Unit::TestCase
 
   def test_daemon
     begin
-      pid = Process.fork{
+      r, w = IO.pipe
+      Process.fork{
+        r.close
         WEBrick::Daemon.start
+        w.puts(Process.pid)
         sleep
       }
-      assert(Process.kill(:KILL, pid))
+      assert(Process.kill(:KILL, r.gets.to_i))
     rescue NotImplementedError
       # snip this test
+    ensure
+      r.close
+      w.close
     end
   end
 end
