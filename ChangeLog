@@ -1,3 +1,7 @@
+Sat May  8 19:03:31 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* spec/default.mspec (config): . is no longer in $:.
+
 Sat May  8 13:48:31 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* array.c (rb_ary_fetch, rb_ary_splice, rb_ary_store): Improve
