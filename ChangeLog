@@ -1,3 +1,7 @@
+Sun May  9 00:35:56 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/dl/test_base.rb (libc_so, libm_so): supports solaris.
+
 Sun May  9 00:27:46 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_thread_aset): fixed argument type.
