@@ -4127,6 +4127,20 @@ rb_thread_backtrace_m(VALUE thval)
 }
 
 /*
+ *  Document-class: ThreadError
+ *
+ *  Raised when an invalid operation is attempted on a thread.
+ *
+ *  For example, when no other thread has been started:
+ *
+ *     Thread.stop
+ *
+ *  <em>raises the exception:</em>
+ *
+ *     ThreadError: stopping only thread
+ */
+
+/*
  *  +Thread+ encapsulates the behavior of a thread of
  *  execution, including the main thread of the Ruby script.
  *

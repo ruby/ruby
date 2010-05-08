@@ -735,6 +735,22 @@ exp1(sqrt)
 
 
 /*
+ *  Document-class: Math::DomainError
+ *
+ *  Raised when a mathematical function is evaluated outside of its
+ *  domain of definition.
+ *
+ *  For example, since +cos+ returns values in the range -1..1,
+ *  its inverse function +acos+ is only defined on that interval:
+ *
+ *     Math.acos(42)
+ *
+ *  <em>produces:</em>
+ *
+ *     Math::DomainError: Numerical argument is out of domain - "acos"
+ */
+
+/*
  *  The <code>Math</code> module contains module functions for basic
  *  trigonometric and transcendental functions. See class
  *  <code>Float</code> for a list of constants that

@@ -4217,6 +4217,28 @@ ecerr_incomplete_input(VALUE self)
 
 extern void Init_newline(void);
 
+/*
+ *  Document-class: Encoding::UndefinedConversionError
+ *
+ *  Raised by Encoding and String methods when a transcoding operation
+ *  fails.
+ */
+
+/*
+ *  Document-class: Encoding::InvalidByteSequenceError
+ *
+ *  Raised by Encoding and String methods when the string being
+ *  transcoded contains a byte invalid for the either the source or
+ *  target encoding.
+ */
+
+/*
+ *  Document-class: Encoding::ConverterNotFoundError
+ *
+ *  Raised by transcoding methods when a named encoding does not
+ *  correspond with a known converter.
+ */
+
 void
 Init_transcode(void)
 {

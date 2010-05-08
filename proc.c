@@ -2007,6 +2007,49 @@ proc_curry(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ *  Document-class: LocalJumpError
+ *
+ *  Raised when Ruby can't yield as requested.
+ *
+ *  A typical scenario is attempting to yield when no block is given:
+ *
+ *     def call_block
+ *       yield 42
+ *     end
+ *     call_block
+ *
+ *  <em>raises the exception:</em>
+ *
+ *     LocalJumpError: no block given (yield)
+ *
+ *  A more subtle example:
+ *
+ *     def get_me_a_return
+ *       Proc.new { return 42 }
+ *     end
+ *     get_me_a_return.call
+ *
+ *  <em>raises the exception:</em>
+ *
+ *     LocalJumpError: unexpected return
+ */
+
+/*
+ *  Document-class: SystemStackError
+ *
+ *  Raised in case of a stack overflow.
+ *
+ *     def me_myself_and_i
+ *       me_myself_and_i
+ *     end
+ *     me_myself_and_i
+ *
+ *  <em>raises the exception:</em>
+ *
+ *    SystemStackError: stack level too deep
+ */
+
+/*
  *  <code>Proc</code> objects are blocks of code that have been bound to
  *  a set of local variables. Once bound, the code may be called in
  *  different contexts and still access those variables.
