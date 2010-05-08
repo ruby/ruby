@@ -47,15 +47,8 @@ class Gem::ConfigFile
 
   system_config_path =
     begin
-      require 'Win32API'
-
-      CSIDL_COMMON_APPDATA = 0x0023
-      path = 0.chr * 260
-      SHGetFolderPath = Win32API.new 'shell32', 'SHGetFolderPath', 'PLPLP', 'L',
-                                     :stdcall
-      SHGetFolderPath.call nil, CSIDL_COMMON_APPDATA, nil, 1, path
-
-      path.strip
+      require 'etc.so'
+      Etc.sysconfdir
     rescue LoadError
       '/etc'
     end

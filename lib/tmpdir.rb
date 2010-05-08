@@ -5,13 +5,14 @@
 #
 
 require 'fileutils'
-if /mswin|mingw/ =~ RUBY_PLATFORM
-  require 'tmpdir.so'
+begin
+  require 'etc.so'
+rescue LoadError
 end
 
 class Dir
 
-  @@systmpdir ||= '/tmp'
+  @@systmpdir ||= defined?(Etc.systmpdir) ? Etc.systmpdir : '/tmp'
 
   ##
   # Returns the operating system's temporary file path.

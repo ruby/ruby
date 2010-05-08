@@ -1,3 +1,11 @@
+Sat May  8 12:25:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/etc/etc.c (etc_systmpdir): moved from ext/tmpdir.
+
+	* ext/etc/etc.c (etc_sysconfdir): added.
+
+	* lib/rubygems/config_file.rb, lib/tmpdir.rb: use etc.
+
 Sat May  8 11:07:41 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (VpAlloc): ensure buf does not get
