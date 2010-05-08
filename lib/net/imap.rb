@@ -307,9 +307,12 @@ module Net
         end
       rescue Errno::ENOTCONN
         # ignore `Errno::ENOTCONN: Socket is not connected' on some platforms.
+      rescue Exception => e
+        @receiver_thread.raise(e)
       end
       @receiver_thread.join
       @sock.close
+      raise e if e
     end
 
     # Returns true if disconnected from the server.
@@ -1012,7 +1015,10 @@ module Net
 
       @client_thread = Thread.current
       @receiver_thread = Thread.start {
-        receive_responses
+        begin
+          receive_responses
+        rescue Exception
+        end
       }
     end
 
