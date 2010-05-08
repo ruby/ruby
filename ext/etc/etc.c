@@ -8,6 +8,7 @@
 ************************************************/
 
 #include "ruby.h"
+#include "ruby/encoding.h"
 
 #include <sys/types.h>
 #ifdef HAVE_UNISTD_H
@@ -25,6 +26,13 @@
 static VALUE sPasswd;
 #ifdef HAVE_GETGRENT
 static VALUE sGroup;
+#endif
+
+#ifdef _WIN32
+#include <shlobj.h>
+#ifndef CSIDL_COMMON_APPDATA
+#define CSIDL_COMMON_APPDATA 35
+#endif
 #endif
 
 #ifndef _WIN32
@@ -549,6 +557,43 @@ etc_getgrent(VALUE obj)
     return Qnil;
 }
 
+#define numberof(array) (sizeof(array) / sizeof(*array))
+
+#ifdef _WIN32
+VALUE rb_w32_special_folder(int type);
+UINT rb_w32_system_tmpdir(WCHAR *path, UINT len);
+VALUE rb_w32_conv_from_wchar(const WCHAR *wstr, rb_encoding *enc);
+#endif
+
+/*
+ * Returns system configuration directory.
+ */
+static VALUE
+etc_sysconfdir(VALUE obj)
+{
+#ifdef _WIN32
+    return rb_w32_special_folder(CSIDL_COMMON_APPDATA);
+#else
+    return rb_filesystem_str_new_cstr(SYSCONFDIR);
+#endif
+}
+
+/*
+ * Returns system temporary directory.
+ */
+static VALUE
+etc_systmpdir(void)
+{
+#ifdef _WIN32
+    WCHAR path[_MAX_PATH];
+    UINT len = rb_w32_system_tmpdir(path, numberof(path));
+    if (!len) return Qnil;
+    return rb_w32_conv_from_wchar(path, rb_filesystem_encoding());
+#else
+    return rb_filesystem_str_new_cstr("/tmp");
+#endif
+}
+
 /*
  * The etc module provides access to information from the running OS.
  *
@@ -575,6 +620,8 @@ Init_etc(void)
     rb_define_module_function(mEtc, "setgrent", etc_setgrent, 0);
     rb_define_module_function(mEtc, "endgrent", etc_endgrent, 0);
     rb_define_module_function(mEtc, "getgrent", etc_getgrent, 0);
+    rb_define_module_function(mEtc, "sysconfdir", etc_sysconfdir, 0);
+    rb_define_module_function(mEtc, "systmpdir", etc_systmpdir, 0);
 
     sPasswd =  rb_struct_define("Passwd",
 				"name", "passwd", "uid", "gid",
