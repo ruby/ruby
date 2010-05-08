@@ -1,3 +1,9 @@
+Sat May  8 10:03:39 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/lib/socket.rb (BasicSocket#connect_address): MacOS X 10.6
+	  returns "::ffff:a.b.c.d" for IPv4-mapped IPv6 address.
+	  [ruby-dev:41215] patch by Tomoyuki Chikanaga.
+
 Fri May  7 23:51:39 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* version.h: bump up to 1.9.3.
