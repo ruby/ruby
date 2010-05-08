@@ -1,3 +1,8 @@
+Sat May  8 11:07:41 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (VpAlloc): ensure buf does not get
+	  collected.  based on a patch masaya tarui at [ruby-dev:41213].
+
 Fri May  7 11:31:50 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* instruby.rb (install-man): install mdocs directly without
