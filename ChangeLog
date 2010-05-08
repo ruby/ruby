@@ -1,4 +1,7 @@
-Sat May  8 23:07:28 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat May  8 23:09:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* NEWS (io/console): IO#noecho and IO#raw without block are
+	  obsolete already.  [ruby-dev:41226]
 
 	* ext/io/console/console.c (ttymode): save dupped file descriptors
 	  and restore tty modes using them, so that original modes can be

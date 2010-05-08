@@ -412,9 +412,7 @@ with all sufficient information, see the ChangeLog file.
 
 * io/console
   * new methods:
-    * IO#noecho
     * IO#noecho {|io| }
-    * IO#raw
     * IO#raw {|io| }
     * IO#getch
     * IO#winsize
