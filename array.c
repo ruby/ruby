@@ -616,8 +616,8 @@ rb_ary_store(VALUE ary, long idx, VALUE val)
     if (idx < 0) {
 	idx += RARRAY_LEN(ary);
 	if (idx < 0) {
-	    rb_raise(rb_eIndexError, "index %ld out of array",
-		     idx - RARRAY_LEN(ary));
+	    rb_raise(rb_eIndexError, "index %ld too small for array; minimum: %ld",
+		     idx - RARRAY_LEN(ary), -RARRAY_LEN(ary));
 	}
     }
     else if (idx >= ARY_MAX_SIZE) {
@@ -1133,7 +1133,8 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
     if (idx < 0 || RARRAY_LEN(ary) <= idx) {
 	if (block_given) return rb_yield(pos);
 	if (argc == 1) {
-	    rb_raise(rb_eIndexError, "index %ld out of array", idx);
+	    rb_raise(rb_eIndexError, "index %ld outside of array bounds: %ld...%ld",
+			idx - (idx < 0 ? RARRAY_LEN(ary) : 0), -RARRAY_LEN(ary), RARRAY_LEN(ary));
 	}
 	return ifnone;
     }
@@ -1246,8 +1247,8 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
     if (beg < 0) {
 	beg += RARRAY_LEN(ary);
 	if (beg < 0) {
-	    beg -= RARRAY_LEN(ary);
-	    rb_raise(rb_eIndexError, "index %ld out of array", beg);
+	    rb_raise(rb_eIndexError, "index %ld too small for array; minimum: %ld",
+		     beg - RARRAY_LEN(ary), -RARRAY_LEN(ary));
 	}
     }
     if (RARRAY_LEN(ary) < len || RARRAY_LEN(ary) < beg + len) {
