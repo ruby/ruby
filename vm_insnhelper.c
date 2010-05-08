@@ -415,7 +415,6 @@ static inline VALUE
 vm_call_bmethod(rb_thread_t *th, VALUE recv, int argc, const VALUE *argv,
 		const rb_block_t *blockptr, const rb_method_entry_t *me)
 {
-    rb_control_frame_t *cfp = th->cfp;
     rb_proc_t *proc;
     VALUE val;
 
