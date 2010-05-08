@@ -1,3 +1,7 @@
+Sun May  9 00:27:46 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_aset): fixed argument type.
+
 Sat May  8 23:09:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* NEWS (io/console): IO#noecho and IO#raw without block are

@@ -2052,7 +2052,7 @@ rb_thread_local_aset(VALUE thread, ID id, VALUE val)
  */
 
 static VALUE
-rb_thread_aset(VALUE self, ID id, VALUE val)
+rb_thread_aset(VALUE self, VALUE id, VALUE val)
 {
     return rb_thread_local_aset(self, rb_to_id(id), val);
 }
