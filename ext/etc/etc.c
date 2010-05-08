@@ -166,7 +166,7 @@ static int passwd_blocking = 0;
 static VALUE
 passwd_ensure(void)
 {
-    passwd_blocking = Qfalse;
+    passwd_blocking = (int)Qfalse;
     return Qnil;
 }
 
@@ -189,7 +189,7 @@ each_passwd(void)
     if (passwd_blocking) {
 	rb_raise(rb_eRuntimeError, "parallel passwd iteration");
     }
-    passwd_blocking = Qtrue;
+    passwd_blocking = (int)Qtrue;
     rb_ensure(passwd_iterate, 0, passwd_ensure, 0);
 }
 #endif
@@ -404,7 +404,7 @@ static int group_blocking = 0;
 static VALUE
 group_ensure(void)
 {
-    group_blocking = Qfalse;
+    group_blocking = (int)Qfalse;
     return Qnil;
 }
 
@@ -427,7 +427,7 @@ each_group(void)
     if (group_blocking) {
 	rb_raise(rb_eRuntimeError, "parallel group iteration");
     }
-    group_blocking = Qtrue;
+    group_blocking = (int)Qtrue;
     rb_ensure(group_iterate, 0, group_ensure, 0);
 }
 #endif
