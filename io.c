@@ -8078,8 +8078,9 @@ nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
         if (use_pread)
             copy_length = src_stat.st_size - src_offset;
         else {
+	    off_t cur;
 	    errno = 0;
-            off_t cur = lseek(stp->src_fd, 0, SEEK_CUR);
+            cur = lseek(stp->src_fd, 0, SEEK_CUR);
             if (cur == (off_t)-1 && errno) {
                 stp->syserr = "lseek";
                 stp->error_no = errno;
