@@ -1,3 +1,7 @@
+Sun May  9 00:27:46 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_aset): fixed argument type.
+
 Sat May  8 19:03:31 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* spec/default.mspec (config): . is no longer in $:.
