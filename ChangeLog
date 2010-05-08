@@ -1,3 +1,8 @@
+Sun May  9 08:24:24 2010  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (disconnect): terminates @receiver_thread even if
+	  @sock.shutdown raises an exception.  [ruby-dev:34881]
+
 Sun May  9 06:15:21 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* io.c (nogvl_copy_stream_sendfile): ISO C90 forbids mixed
