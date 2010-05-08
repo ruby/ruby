@@ -9586,6 +9586,41 @@ rb_get_argv(void)
 }
 
 /*
+ * Document-class: IOError
+ *
+ * Raised when an IO operation fails.
+ *
+ *    File.open("/etc/hosts") {|f| f << "example"}
+ *      #=> IOError: not opened for writing
+ *
+ *    File.open("/etc/hosts") {|f| f.close; f.read }
+ *      #=> IOError: closed stream
+ *
+ * Note that some IO failures raise +SystemCallError+s and these are not
+ * subclasses of IOError:
+ *
+ *    File.open("does/not/exist")
+ *      #=> Errno::ENOENT: No such file or directory - does/not/exist
+ */
+
+/*
+* Document-class: EOFError
+*
+ * Raised by some IO operations when reaching the end of file. Many IO
+ * methods exist in two forms,
+ *
+ * one that returns +nil+ when the end of file is reached, the other
+ * raises EOFError +EOFError+.
+ *
+ * +EOFError+ is a subclass of +IOError+.
+ *
+ *    file = File.open("/etc/hosts")
+ *    file.read
+ *    file.gets     #=> nil
+ *    file.readline #=> EOFError: end of file reached
+ */
+
+/*
  * Document-class:  ARGF
  *
  * +ARGF+ is a stream designed for use in scripts that process files given as
