@@ -410,6 +410,16 @@ with all sufficient information, see the ChangeLog file.
   * new methods:
     * RbConfig.ruby
 
+* io/console
+  * new methods:
+    * IO#noecho
+    * IO#noecho {|io| }
+    * IO#raw
+    * IO#raw {|io| }
+    * IO#getch
+    * IO#winsize
+    * IO.console
+
 === Language changes
 
 * Regexp properties (\p{}) names now ignore underscores, spaces, and case, so
