@@ -45,9 +45,6 @@
 #define PAGE_SIZE (pagesize)
 #define PAGE_MASK (~(PAGE_SIZE - 1))
 static long pagesize;
-static long stackgrowdirection;
-#define STACK_GROW_DOWNWARD 1
-#define STACK_GROW_UPWARD   2
 #define FIBER_MACHINE_STACK_ALLOCATION_SIZE  (0x10000 / sizeof(VALUE))
 #endif
 
@@ -498,20 +495,10 @@ static void
 fiber_set_stack_location(void)
 {
     rb_thread_t *th = GET_THREAD();
-    unsigned long ptr;
+    VALUE ptr;
 
-    SET_MACHINE_STACK_END((VALUE**)(&ptr));
-    switch (stackgrowdirection) {
-	case STACK_GROW_DOWNWARD:
-	    th->machine_stack_start = (void*)((ptr & PAGE_MASK) + PAGE_SIZE);
-	    break;
-	case STACK_GROW_UPWARD:
-	    th->machine_stack_start = (void*)(ptr & PAGE_MASK);
-	    break;
-	default:
-	    rb_bug("fiber_get_stacck_location: should not be reached");
-	    break;
-    }
+    SET_MACHINE_STACK_END(&ptr);
+    th->machine_stack_start = (void*)((ptr & PAGE_MASK) + STACK_UPPER(&ptr, 0, PAGE_SIZE));
 }
 
 static VOID CALLBACK
@@ -539,25 +526,14 @@ fiber_machine_stack_alloc(size_t size)
 	}
     }
     else {
+	STACK_GROW_DIR_DETECTION;
 	ptr = (VALUE*)mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
-	if ((int)ptr == -1) {
+	if (ptr == (VALUE*)(SIGNED_VALUE)-1) {
 	    rb_raise(rb_eFiberError, "can't alloc machine stack to fiber");
 	}
-	switch (stackgrowdirection) {
-	    case STACK_GROW_DOWNWARD:
-		if (mprotect(ptr, PAGE_SIZE, PROT_READ | PROT_WRITE) < 0) {
-		    rb_raise(rb_eFiberError, "mprotect failed");
-		}
-		break;
-	    case STACK_GROW_UPWARD:
-		if (mprotect(ptr + (size - PAGE_SIZE) / sizeof(VALUE), 
-		    PAGE_SIZE, PROT_READ | PROT_WRITE) < 0) {
-		    rb_raise(rb_eFiberError, "mprotect failed");
-		}
-		break;
-	    default:
-		rb_bug("fiber_machine_stack_alloc: should not be reached");
-		break;
+	if (mprotect(ptr + STACK_DIR_UPPER((size - PAGE_SIZE) / sizeof(VALUE), 0),
+		     PAGE_SIZE, PROT_READ | PROT_WRITE) < 0) {
+	    rb_raise(rb_eFiberError, "mprotect failed");
 	}
     }
 
@@ -575,6 +551,7 @@ fiber_initialize_machine_stack_context(rb_fiber_t *fib, size_t size)
 #else /* not WIN32 */
     ucontext_t *context = &fib->context;
     VALUE *ptr;
+    STACK_GROW_DIR_DETECTION;
 
     getcontext(context);
     ptr = fiber_machine_stack_alloc(size);
@@ -582,17 +559,7 @@ fiber_initialize_machine_stack_context(rb_fiber_t *fib, size_t size)
     context->uc_stack.ss_sp = ptr;
     context->uc_stack.ss_size = size;
     makecontext(context, rb_fiber_start, 0);
-    switch (stackgrowdirection) {
-	case STACK_GROW_DOWNWARD:
-	    sth->machine_stack_start = ptr + size / sizeof(VALUE);
-	    break;
-	case STACK_GROW_UPWARD:
-	    sth->machine_stack_start = ptr;
-	    break;
-	default:
-	    rb_bug("fiber_initialize_stackcontext: should not be reached");
-	    break;
-    }
+    sth->machine_stack_start = ptr + STACK_DIR_UPPER(0, size / sizeof(VALUE));
 #endif
 
     sth->machine_stack_maxsize = size;
@@ -622,18 +589,13 @@ fiber_setcontext(rb_fiber_t *newfib, rb_fiber_t *oldfib)
     /* save  oldfib's machine stack */
     if (oldfib->status != TERMINATED) {
 	SET_MACHINE_STACK_END(&th->machine_stack_end);
-	switch (stackgrowdirection) {
-	    case STACK_GROW_DOWNWARD:
-		oldfib->cont.machine_stack_size = th->machine_stack_start - th->machine_stack_end;
-		oldfib->cont.machine_stack = th->machine_stack_end;
-		break;
-	    case STACK_GROW_UPWARD:
-		oldfib->cont.machine_stack_size = th->machine_stack_end - th->machine_stack_start;
-		oldfib->cont.machine_stack = th->machine_stack_start;
-		break;
-	    default:
-		rb_bug("fiber_get_stacck_location: should not be reached");
-		break;
+	if (STACK_DIR_UPPER(0, 1)) {
+	    oldfib->cont.machine_stack_size = th->machine_stack_start - th->machine_stack_end;
+	    oldfib->cont.machine_stack = th->machine_stack_end;
+	}
+	else {
+	    oldfib->cont.machine_stack_size = th->machine_stack_end - th->machine_stack_start;
+	    oldfib->cont.machine_stack = th->machine_stack_start;
 	}
     }
     /* exchange machine_stack_start between oldfib and newfib */
@@ -1451,14 +1413,6 @@ Init_Cont(void)
     pagesize = sysconf(_SC_PAGESIZE);
 #endif
     SET_MACHINE_STACK_END(&th->machine_stack_end);
-    if (th->machine_stack_start > th->machine_stack_end) {
-	/* stack grows downward */
-	stackgrowdirection = STACK_GROW_DOWNWARD;
-    }
-    else {
-	/* stack grows upward */
-	stackgrowdirection = STACK_GROW_UPWARD;
-    }
 #endif
 
     rb_cFiber = rb_define_class("Fiber", rb_cObject);

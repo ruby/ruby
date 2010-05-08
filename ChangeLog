@@ -1,3 +1,10 @@
+Sun May  9 01:15:18 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cont.c (stackgrowdirection): removed duplicated code, use
+	  STACK_UPPER macro instead.
+
+	* gc.h (STACK_DIR_UPPER): moved from thread_pthread.c.
+
 Sun May  9 00:35:56 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/dl/test_base.rb (libc_so, libm_so): supports solaris.
