@@ -1,4 +1,7 @@
-Sat May  8 13:05:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat May  8 13:11:28 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems/user_interaction.rb (Gem::StreamUI#ask_for_password):
+	  use io/console.
 
 	* ext/io/console: imported.  [ruby-dev:40897]
 
