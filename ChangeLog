@@ -1,3 +1,10 @@
+Sat May  8 13:48:31 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* array.c (rb_ary_fetch, rb_ary_splice, rb_ary_store): Improve
+	  IndexError messages [ruby-core:28394]
+
+	* hash.c (rb_hash_fetch_m): Improve KeyError message
+
 Sat May  8 11:07:41 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (VpAlloc): ensure buf does not get
