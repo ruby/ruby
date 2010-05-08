@@ -1,3 +1,7 @@
+Sun May  9 05:44:59 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* include/ruby/ruby.h (rb_intern): fix compile error.
+
 Sun May  9 02:37:33 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* io.c (nogvl_copy_stream_sendfile): mixed decls not allowed.

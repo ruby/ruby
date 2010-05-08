@@ -1078,7 +1078,7 @@ VALUE rb_id2str(ID);
 /* __builtin_constant_p and statement expression is available
  * since gcc-2.7.2.3 at least. */
 #define rb_intern(str) \
-    (__builtin_constant_p(str) ?
+    (__builtin_constant_p(str) ? \
         __extension__ (CONST_ID_CACHE((ID), str)) :     \
         rb_intern(str))
 #define rb_intern_const(str) \
