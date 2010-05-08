@@ -2593,7 +2593,7 @@ VpAlloc(U_LONG mx, const char *szVal)
     int  sign=1;
     Real *vp = NULL;
     U_LONG mf = VpGetPrecLimit();
-    volatile VALUE buf;
+    VALUE buf;
 
     mx = (mx + BASE_FIG - 1) / BASE_FIG + 1;    /* Determine allocation unit. */
     if(szVal) {
@@ -2621,7 +2621,7 @@ VpAlloc(U_LONG mx, const char *szVal)
 
     /* Skip all '_' after digit: 2006-6-30 */
     ni = 0;
-    buf = rb_str_new(0,strlen(szVal)+1);
+    buf = rb_str_tmp_new(strlen(szVal)+1);
     psz = RSTRING_PTR(buf);
     i   = 0;
     ipn = 0;
@@ -2720,6 +2720,7 @@ VpAlloc(U_LONG mx, const char *szVal)
     vp->MaxPrec = mx;        /* set max precision */
     VpSetZero(vp,sign);
     VpCtoV(vp, &(szVal[ipn]), ni, &(szVal[ipf]), nf, &(szVal[ipe]), ne);
+    rb_str_resize(buf, 0);
     return vp;
 }
 
