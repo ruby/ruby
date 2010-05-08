@@ -570,7 +570,11 @@ rb_hash_fetch_m(int argc, VALUE *argv, VALUE hash)
     if (!RHASH(hash)->ntbl || !st_lookup(RHASH(hash)->ntbl, key, &val)) {
 	if (block_given) return rb_yield(key);
 	if (argc == 1) {
-	    rb_raise(rb_eKeyError, "key not found");
+	    VALUE desc = rb_protect(rb_inspect, key, 0);
+	    if (NIL_P(desc) || RSTRING_LEN(desc) > 65) {
+		desc = rb_any_to_s(key);
+	    }
+	    rb_raise(rb_eKeyError, "key not found: %s", RSTRING_PTR(desc));
 	}
 	return if_none;
     }
