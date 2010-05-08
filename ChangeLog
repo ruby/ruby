@@ -1,3 +1,8 @@
+Sun May  9 02:57:02 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/fiddle/lib/fiddle.rb: only require DL if it hasn't been required
+	  yet. [ruby-core:30095]
+
 Sun May  9 01:15:18 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cont.c (stackgrowdirection): removed duplicated code, use
