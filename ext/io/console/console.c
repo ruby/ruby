@@ -173,6 +173,23 @@ get_write_fd(const rb_io_t *fptr)
 
 #define FD_PER_IO 2
 
+#if defined HAVE_DUP3
+#define dup_private(fd) dup3((fd), -1, O_CLOEXEC)
+#elif defined F_DUPFD_CLOEXEC
+#define dup_private(fd) fcntl((fd), F_DUPFD_CLOEXEC)
+#elif defined O_CLOEXEC
+static inline int
+dup_private(int fd)
+{
+    fd = dup(fd);
+    if (fd != -1) fcntl(fd, F_SETFD, O_CLOEXEC);
+    return fd;
+}
+#define dup_private(fd) dup_private(fd)
+#else
+#define dup_private(fd) dup(fd)
+#endif
+
 static VALUE
 ttymode(VALUE io, VALUE (*func)(VALUE), void (*setter)(conmode *))
 {
@@ -180,6 +197,7 @@ ttymode(VALUE io, VALUE (*func)(VALUE), void (*setter)(conmode *))
     int status = -1;
     int error = 0;
     int fd[FD_PER_IO];
+    int tmpfd, dupped = 0;
     conmode t[FD_PER_IO];
     VALUE result = Qnil;
 
@@ -187,6 +205,10 @@ ttymode(VALUE io, VALUE (*func)(VALUE), void (*setter)(conmode *))
     fd[0] = GetReadFD(fptr);
     if (fd[0] != -1) {
 	if (set_ttymode(fd[0], t+0, setter)) {
+	    if ((tmpfd = dup_private(fd[0])) != -1) {
+		fd[0] = tmpfd;
+		dupped |= 1 << 0;
+	    }
 	    status = 0;
 	}
 	else {
@@ -197,6 +219,10 @@ ttymode(VALUE io, VALUE (*func)(VALUE), void (*setter)(conmode *))
     fd[1] = GetWriteFD(fptr);
     if (fd[1] != -1 && fd[1] != fd[0]) {
 	if (set_ttymode(fd[1], t+1, setter)) {
+	    if ((tmpfd = dup_private(fd[1])) != -1) {
+		fd[1] = tmpfd;
+		dupped |= 1 << 1;
+	    }
 	    status = 0;
 	}
 	else {
@@ -207,18 +233,19 @@ ttymode(VALUE io, VALUE (*func)(VALUE), void (*setter)(conmode *))
     if (status == 0) {
 	result = rb_protect(func, io, &status);
     }
-    GetOpenFile(io, fptr);
-    if (fd[0] != -1 && fd[0] == GetReadFD(fptr)) {
+    if (fd[0] != -1) {
 	if (!setattr(fd[0], t+0)) {
 	    error = errno;
 	    status = -1;
 	}
+	if (dupped & (1 << 0)) close(fd[0]);
     }
-    if (fd[1] != -1 && fd[1] != fd[0] && fd[1] == GetWriteFD(fptr)) {
+    if (fd[1] != -1 && fd[1] != fd[0]) {
 	if (!setattr(fd[1], t+1)) {
 	    error = errno;
 	    status = -1;
 	}
+	if (dupped & (1 << 1)) close(fd[1]);
     }
     if (status) {
 	if (status == -1) {
