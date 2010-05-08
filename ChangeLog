@@ -1,3 +1,8 @@
+Sun May  9 08:07:55 2010  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb: backported exception handling from trunk.
+	  [ruby-core:29745]
+
 Sat May  8 11:07:41 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (VpAlloc): ensure buf does not get

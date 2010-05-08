@@ -924,6 +924,7 @@ module Net
       @continuation_request = nil
       @logout_command_tag = nil
       @debug_output_bol = true
+      @exception = nil
 
       @greeting = get_response
       if @greeting.name == "BYE"
@@ -939,14 +940,24 @@ module Net
 
     def receive_responses
       while true
+        synchronize do
+          @exception = nil
+        end
         begin
           resp = get_response
-        rescue Exception
-          @sock.close
-          @client_thread.raise($!)
+        rescue Exception => e
+          synchronize do
+            @sock.close unless @sock.closed?
+            @exception = e
+          end
           break
         end
-        break unless resp
+        unless resp
+          synchronize do
+            @exception = EOFError.new("end of file reached")
+          end
+          break
+        end
         begin
           synchronize do
             case resp
@@ -964,7 +975,9 @@ module Net
               end
               if resp.name == "BYE" && @logout_command_tag.nil?
                 @sock.close
-                raise ByeResponseError, resp.raw_data
+                @exception = ByeResponseError.new(resp.raw_data)
+                @response_arrival.broadcast
+                return
               end
             when ContinuationRequest
               @continuation_request = resp
@@ -974,14 +987,21 @@ module Net
               handler.call(resp)
             end
           end
-        rescue Exception
-          @client_thread.raise($!)
+        rescue Exception => e
+          @exception = e
+          synchronize do
+            @response_arrival.broadcast
+          end
         end
+      end
+      synchronize do
+        @response_arrival.broadcast
       end
     end
 
     def get_tagged_response(tag)
       until @tagged_responses.key?(tag)
+        raise @exception if @exception
         @response_arrival.wait
       end
       return pick_up_tagged_response(tag)
@@ -1114,6 +1134,7 @@ module Net
       while @continuation_request.nil? &&
         !@tagged_responses.key?(Thread.current[:net_imap_tag])
         @response_arrival.wait
+        raise @exception if @exception
       end
       if @continuation_request.nil?
         pick_up_tagged_response(Thread.current[:net_imap_tag])
