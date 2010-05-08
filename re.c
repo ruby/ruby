@@ -3449,6 +3449,18 @@ re_warn(const char *s)
 }
 
 /*
+ *  Document-class: RegexpError
+ *
+ *  Raised when given an invalid regexp expression.
+ *
+ *     Regexp.new("?")
+ *
+ *  <em>raises the exception:</em>
+ *
+ *     RegexpError: target of repeat operator is not specified: /?/
+ */
+
+/*
  *  Document-class: Regexp
  *
  *  A <code>Regexp</code> holds a regular expression, used to match a pattern

@@ -1021,7 +1021,22 @@ generator_each(VALUE obj)
 }
 
 /*
- * StopIteration
+ *  Document-class: StopIteration
+ *
+ *  Raised to stop the iteration, in particular by Enumerator#next. It is
+ *  rescued by Kernel#loop.
+ *
+ *     loop do
+ *       puts "Hello"
+ *       raise StopIteration
+ *       puts "World"
+ *     end
+ *     puts "Done!"
+ *
+ *  <em>produces:</em>
+ *
+ *     Hello
+ *     Done!
  */
 
 /*

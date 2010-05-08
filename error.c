@@ -1084,6 +1084,295 @@ syserr_eqq(VALUE self, VALUE exc)
     return Qfalse;
 }
 
+
+/*
+ *  Document-class: StandardError
+ *
+ *  The most standard error types are subclasses of StandardError. A
+ *  rescue clause without an explicit Exception class will rescue all
+ *  StandardErrors (and only those).
+ *
+ *     def foo
+ *       raise "Oups"
+ *     end
+ *     foo rescue "Hello"   # => "Hello"
+ *
+ *  On the other hand:
+ *
+ *     require 'does/not/exist' rescue "Hi"
+ *
+ *  <em>raises the exception:</em>
+ *
+ *     LoadError: no such file to load -- does/not/exist
+ *
+ */
+
+/*
+ *  Document-class: SystemExit
+ *
+ *  Raised by +exit+ to initiate the termination of the script.
+ */
+
+/*
+ *  Document-class: SignalException
+ *
+ *  Raised when a signal is received.
+ *
+ *     begin
+ *       Process.kill('HUP',Process.pid)
+ *     rescue SignalException => e
+ *       puts "received Exception #{e}"
+ *     end
+ *
+ *  <em>produces:</em>
+ *
+ *     received Exception SIGHUP
+ */
+
+/*
+ *  Document-class: Interrupt
+ *
+ *  Raised with the interrupt signal is received, typically because the
+ *  user pressed on Control-C (on most posix platforms). As such, it is a
+ *  subclass of +SignalException+.
+ *
+ *     begin
+ *       puts "Press ctrl-C when you get bored"
+ *       loop {}
+ *     rescue Interrupt => e
+ *       puts "Note: You will typically use Signal.trap instead."
+ *     end
+ *
+ *  <em>produces:</em>
+ *
+ *     Press ctrl-C when you get bored
+ *
+ *  <em>then waits until it is interrupted with Control-C and then prints:</em>
+ *
+ *     Note: You will typically use Signal.trap instead.
+ */
+
+/*
+ *  Document-class: TypeError
+ *
+ *  Raised when encountering an object that is not of the expected type.
+ *
+ *     [1, 2, 3].first("two")
+ *
+ *  <em>raises the exception:</em>
+ *
+ *     TypeError: can't convert String into Integer
+ *
+ */
+
+/*
+ *  Document-class: ArgumentError
+ *
+ *  Raised when the arguments are wrong and there isn't a more specific
+ *  Exception class.
+ *
+ *  Ex: passing the wrong number of arguments
+ *
+ *     [1, 2, 3].first(4, 5)
+ *
+ *  <em>raises the exception:</em>
+ *
+ *     ArgumentError: wrong number of arguments (2 for 1)
+ *
+ *  Ex: passing an argument that is not acceptable:
+ *
+ *     [1, 2, 3].first(-4)
+ *
+ *  <em>raises the exception:</em>
+ *
+ *     ArgumentError: negative array size
+ */
+
+/*
+ *  Document-class: IndexError
+ *
+ *  Raised when the given index is invalid.
+ *
+ *     a = [:foo, :bar]
+ *     a.fetch(0)   #=> :foo
+ *     a[4]         #=> nil
+ *     a.fetch(4)   #=> IndexError: index 4 outside of array bounds: -2...2
+ *
+ */
+
+/*
+ *  Document-class: KeyError
+ *
+ *  Raised when the specified key is not found. It is a subclass of
+ *  IndexError.
+ *
+ *     h = {"foo" => :bar}
+ *     h.fetch("foo") # => :bar
+ *     h.fetch("baz") # => KeyError: key not found: "baz"
+ *
+ */
+
+/*
+ *  Document-class: RangeError
+ *
+ *  Raised when a given numerical value is out of range.
+ *
+ *     [1, 2, 3].drop(1 << 100)
+ *
+ *  <em>raises the exception:</em>
+ *
+ *     RangeError: bignum too big to convert into `long'
+ */
+
+/*
+ *  Document-class: ScriptError
+ *
+ *  ScriptError is the superclass for errors raised when a script
+ *  can not be executed because of a +LoadError+,
+ *  +NotImplementedError+ or a +SyntaxError+. Note these type of
+ *  +ScriptErrors+ are not +StandardExceptions+ and will not be
+ *  rescued unless it is specified explicitly (or its ancestor
+ *  +Exception+).
+ */
+
+/*
+ *  Document-class: SyntaxError
+ *
+ *  Raised when encountering Ruby code with an invalid syntax.
+ *
+ *     eval("1+1=2")
+ *
+ *  <em>raises the exception:</em>
+ *
+ *     SyntaxError: (eval):1: syntax error, unexpected '=', expecting $end
+ */
+
+/*
+ *  Document-class: LoadError
+ *
+ *  Raised when a file required (a Ruby script, extension library, ...)
+ *  fails to load.
+ *
+ *     require 'this/file/does/not/exist'
+ *
+ *  <em>raises the exception:</em>
+ *
+ *     LoadError: no such file to load -- this/file/does/not/exist
+ */
+
+/*
+ *  Document-class: NotImplementedError
+ *
+ *  Raised when a feature is not implemented on the current platform. For
+ *  example, methods depending on the +fsync+ or +fork+ system calls may
+ *  raise this exception if the underlying operating system or Ruby
+ *  runtime does not support them.
+ *
+ *  Note that if +fork+ raises a +NotImplementedError+, then
+ *  <code>respond_to?(:fork)</code> returns +false+.
+ */
+
+/*
+ *  Document-class: NameError
+ *
+ *  Raised when a given name is invalid or undefined.
+ *
+ *     puts foo
+ *
+ *  <em>raises the exception:</em>
+ *
+ *     NameError: undefined local variable or method `foo' for main:Object
+ *
+ *  Since constant names must start with a capital:
+ *
+ *     Fixnum.const_set :answer, 42
+ *
+ *  <em>raises the exception:</em>
+ *
+ *     NameError: wrong constant name answer
+ */
+
+/*
+ *  Document-class: NoMethodError
+ *
+ *  Raised when a method is called on a receiver which doesn't have it
+ *  defined and also fails to respond with +method_missing+.
+ *
+ *     "hello".to_ary
+ *
+ *  <em>raises the exception:</em>
+ *
+ *     NoMethodError: undefined method `to_ary' for "hello":String
+ */
+
+/*
+ *  Document-class: RuntimeError
+ *
+ *  A generic error class raised when an invalid operation is attempted.
+ *
+ *     [1, 2, 3].freeze << 4
+ *
+ *  <em>raises the exception:</em>
+ *
+ *     RuntimeError: can't modify frozen array
+ *
+ *  Kernel.raise will raise a RuntimeError if no Exception class is
+ *  specified.
+ *
+ *     raise "ouch"
+ *
+ *  <em>raises the exception:</em>
+ *
+ *     RuntimeError: ouch
+ */
+
+/*
+ *  Document-class: SecurityError
+ *
+ *  Raised when attempting a potential unsafe operation, typically when
+ *  the $SAFE level is raised above 0.
+ *
+ *     foo = "bar"
+ *     proc = Proc.new do
+ *       $SAFE = 4
+ *       foo.gsub! "a", "*"
+ *     end
+ *     proc.call
+ *
+ *  <em>raises the exception:</em>
+ *
+ *     SecurityError: Insecure: can't modify string
+ */
+
+/*
+ *  Document-class: NoMemoryError
+ *
+ *  Raised when memory allocation fails.
+ */
+
+/*
+ *  Document-class: SystemCallError
+ *
+ *  SystemCallError is the base class for all low-level
+ *  platform-dependent errors.
+ *
+ *  The errors available on the current platform are subclasses of
+ *  SystemCallError and are defined in the Errno module.
+ *
+ *     File.open("does/not/exist")
+ *
+ *  <em>raises the exception:</em>
+ *
+ *     Errno::ENOENT: No such file or directory - does/not/exist
+ */
+
+/*
+ *  Document-class: Encoding::CompatibilityError
+ *
+ *  Raised by Encoding and String methods when the source encoding is
+ *  incompatible with the target encoding.
+ */
+
 /*
  *  Descendants of class <code>Exception</code> are used to communicate
  *  between <code>raise</code> methods and <code>rescue</code>
@@ -1091,7 +1380,8 @@ syserr_eqq(VALUE self, VALUE exc)
  *  objects carry information about the exception---its type (the
  *  exception's class name), an optional descriptive string, and
  *  optional traceback information. Programs may subclass
- *  <code>Exception</code> to add additional information.
+ *  <code>Exception</code>, or more typically <code>StandardException</code>
+ *  to provide custom classes and add additional information.
  */
 
 void
