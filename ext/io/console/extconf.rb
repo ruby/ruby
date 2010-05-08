@@ -14,6 +14,7 @@ else
 end
 have_header("sys/ioctl.h")
 have_func("rb_io_get_write_io", "ruby/io.h")
+have_func("dup3", "unistd.h")
 if ok
   create_makefile("io/console")
 end

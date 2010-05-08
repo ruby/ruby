@@ -1,3 +1,9 @@
+Sat May  8 23:07:28 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/console/console.c (ttymode): save dupped file descriptors
+	  and restore tty modes using them, so that original modes can be
+	  restored even if orignal fds are closed.  [ruby-dev:41225]
+
 Sat May  8 13:48:31 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* array.c (rb_ary_fetch, rb_ary_splice, rb_ary_store): Improve
