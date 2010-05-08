@@ -7,7 +7,7 @@ class MSpecScript
       f.read[/^\s*srcdir\s*=\s*(.+)/i] and srcdir = $1
     }
   end
-  config = proc{|name| `#{builddir}/miniruby -I#{srcdir} -rrbconfig -e 'print RbConfig::CONFIG["#{name}"]'`}
+  config = proc{|name| `#{builddir}/miniruby -I#{srcdir} -r#{builddir}/rbconfig -e 'print RbConfig::CONFIG["#{name}"]'`}
 
   # The default implementation to run the specs.
   set :target, File.join(builddir, "miniruby#{config['exeext']}")
