@@ -1,3 +1,9 @@
+Sun May  9 09:30:09 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/json/{generator/generator.c,parser/parser.rl}: fixed indent.
+
+	* ext/json/{generator,parser}/depend: added.
+
 Sun May  9 09:15:03 2010  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/net/imap/test_imap.rb: use IPv4 for
