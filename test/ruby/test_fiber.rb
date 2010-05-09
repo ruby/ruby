@@ -1,6 +1,7 @@
 require 'test/unit'
 require 'fiber'
 require 'continuation'
+require_relative './envutil'
 
 class TestFiber < Test::Unit::TestCase
   def test_normal
@@ -177,6 +178,16 @@ class TestFiber < Test::Unit::TestCase
   def test_resume_self
     f = Fiber.new {f.resume}
     assert_raise(FiberError, '[ruby-core:23651]') {f.transfer}
+  end
+
+  def test_fiber_transfer_segv
+    assert_normal_exit %q{
+      require 'fiber'
+      f2 = nil
+      f1 = Fiber.new{ f2.resume }
+      f2 = Fiber.new{ f1.resume }
+      f1.transfer
+    }
   end
 end
 

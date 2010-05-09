@@ -1,3 +1,8 @@
+Mon May 10 02:29:51 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* cont.c (fiber_switch): raise FiberError when returning to dead
+	  fiber.  [ruby-dev:40833]
+
 Mon May 10 02:07:20 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/thread.rb (ConditionVariable#wait): ensure to remove the current
