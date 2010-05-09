@@ -1,3 +1,8 @@
+Sun May  9 09:15:03 2010  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* test/net/imap/test_imap.rb: use IPv4 for
+	  test_imaps_post_connection_check.  [ruby-dev:41189]
+
 Sun May  9 02:57:02 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/fiddle/lib/fiddle.rb: only require DL if it hasn't been required
