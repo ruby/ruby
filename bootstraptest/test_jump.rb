@@ -282,3 +282,27 @@ assert_normal_exit %q{
     break
   end
 }, '[ruby-core:28172]'
+
+assert_equal "true", %q{
+  class Object
+    def return_eigenclass
+      class << self
+        return self
+      end
+    end
+  end
+  s = "foo"
+  s.return_eigenclass == class << s; self; end
+}, '[ruby-core:21379]'
+
+assert_equal "true", %q{
+  class Object
+    def yield_eigenclass
+      class << self
+        yield self
+      end
+    end
+  end
+  s = "foo"
+  s.yield_eigenclass {|c| c == class << s; self; end }
+}, '[ruby-dev:40975]'

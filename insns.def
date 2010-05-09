@@ -953,7 +953,7 @@ defineclass
 
     /* enter scope */
     vm_push_frame(th, class_iseq,
-		  VM_FRAME_MAGIC_CLASS, klass, (VALUE) GET_DFP() | 0x02,
+		  VM_FRAME_MAGIC_CLASS, klass, (VALUE) GET_BLOCK_PTR(),
 		  class_iseq->iseq_encoded, GET_SP(), 0,
 		  class_iseq->local_size);
     RESTORE_REGS();
