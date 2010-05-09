@@ -1,3 +1,9 @@
+Sun May  9 16:28:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cont.c (fiber_initialize_machine_stack_context): try to release
+	  unnecessary fibers and retry to create.  based on a patch from
+	  masaya tarui at [ruby-dev:41230].
+
 Sun May  9 08:32:56 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json/generator/generator.c (fbuffer_inc_capa):
