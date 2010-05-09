@@ -413,7 +413,9 @@ with all sufficient information, see the ChangeLog file.
 * io/console
   * new methods:
     * IO#noecho {|io| }
+    * IO#echo=
     * IO#raw {|io| }
+    * IO#raw!
     * IO#getch
     * IO#winsize
     * IO.console

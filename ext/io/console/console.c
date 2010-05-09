@@ -246,6 +246,27 @@ console_raw(VALUE io)
     return ttymode(io, rb_yield, set_rawmode);
 }
 
+/*
+ * call-seq:
+ *   io.raw!
+ *
+ * Enables raw mode.
+ */
+static VALUE
+console_set_raw(VALUE io)
+{
+    conmode t;
+    rb_io_t *fptr;
+    int fd;
+
+    GetOpenFile(io, fptr);
+    fd = GetReadFD(fptr);
+    if (!getattr(fd, &t)) rb_sys_fail(0);
+    set_rawmode(&t);
+    if (!setattr(fd, &t)) rb_sys_fail(0);
+    return io;
+}
+
 static VALUE
 getc_call(VALUE io)
 {
@@ -520,6 +541,7 @@ void
 InitVM_console(void)
 {
     rb_define_method(rb_cIO, "raw", console_raw, 0);
+    rb_define_method(rb_cIO, "raw!", console_set_raw, 0);
     rb_define_method(rb_cIO, "getch", console_getch, 0);
     rb_define_method(rb_cIO, "echo=", console_set_echo, 1);
     rb_define_method(rb_cIO, "echo?", console_echo_p, 0);
