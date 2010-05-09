@@ -548,6 +548,14 @@ fiber_initialize_machine_stack_context(rb_fiber_t *fib, size_t size)
 
 #ifdef _WIN32
     fib->fib_handle = CreateFiberEx(size - 1, size, 0, fiber_entry, NULL);
+    if (!fib->fib_handle) {
+	/* try to release unnecessary fibers & retry to create */
+	rb_gc();
+	fib->fib_handle = CreateFiberEx(size - 1, size, 0, fiber_entry, NULL);
+	if (!fib->fib_handle) {
+	    rb_raise(rb_eFiberError, "can't create fiber");
+	}
+    }
 #else /* not WIN32 */
     ucontext_t *context = &fib->context;
     VALUE *ptr;
