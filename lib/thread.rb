@@ -69,6 +69,10 @@ class ConditionVariable
         @waiters.push(Thread.current)
       end
       mutex.sleep timeout
+    ensure
+      @waiters_mutex.synchronize do
+        @waiters.delete(Thread.current)
+      end
     end
     self
   end
