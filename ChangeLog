@@ -1,3 +1,9 @@
+Sun May  9 23:07:53 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* proc.c (proc_dup): copy blockprocval.  proc_dup is used by
+	  define_method, which made blockprocval be GC'ed mistakenly.
+	  [ruby-core:30023]
+
 Sun May  9 16:28:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cont.c (fiber_initialize_machine_stack_context): try to release
