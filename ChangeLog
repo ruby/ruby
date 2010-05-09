@@ -1,3 +1,8 @@
+Sun May  9 08:32:56 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/json/generator/generator.c (fbuffer_inc_capa):
+	  fix tha use of REALLOC_N. [ruby-dev:41227]
+
 Sun May  9 09:15:03 2010  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/net/imap/test_imap.rb: use IPv4 for
