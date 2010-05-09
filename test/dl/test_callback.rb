@@ -29,8 +29,9 @@ module DL
     end
 
     def test_callback_return_arbitrary
+      foo = 'foo'
       addr = set_callback(TYPE_VOIDP, 1) do |ptr|
-        CPtr['foo'].to_i
+        CPtr[foo].to_i
       end
       func = CFunc.new(addr, TYPE_VOIDP, 'test')
       f = Function.new(func, [TYPE_VOIDP])
