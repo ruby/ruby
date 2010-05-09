@@ -1,3 +1,8 @@
+Sun May  9 23:53:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (RB_GC_GUARD_PTR): get rid of removal by
+	  optimization.
+
 Sun May  9 16:28:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cont.c (fiber_initialize_machine_stack_context): try to release
