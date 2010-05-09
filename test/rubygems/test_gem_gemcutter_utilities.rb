@@ -1,5 +1,6 @@
 require_relative 'gemutilities'
 require 'rubygems'
+require 'rubygems/command'
 require 'rubygems/gemcutter_utilities'
 
 class TestGemGemcutterUtilities < RubyGemTestCase

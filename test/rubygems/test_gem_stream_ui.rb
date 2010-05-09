@@ -12,6 +12,10 @@ class TestGemStreamUI < RubyGemTestCase
     end
 
     alias_method :isatty, :tty?
+
+    def noecho
+      yield self
+    end
   end
 
   def setup

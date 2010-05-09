@@ -13,6 +13,9 @@ class MockGemUi < Gem::StreamUI
       @tty
     end
 
+    def noecho
+      yield self
+    end
   end
 
   def initialize(input = "")
