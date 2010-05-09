@@ -462,10 +462,10 @@ pty_close_pty(VALUE assoc)
  *   # assuming that factor uses stdio for stdout buffering.
  *   # If IO.pipe is used instead of PTY.open,
  *   # this code deadlocks because factor's stdout is fully buffered.
- *   require "io/console"
  *   m, s = PTY.open
+ *   system("stty raw", :in=>s) # disable newline conversion.
  *   r, w = IO.pipe
- *   pid = s.raw { spawn("factor", :in=>r, :out=>s) }
+ *   pid = spawn("factor", :in=>r, :out=>s)
  *   r.close
  *   s.close
  *   w.puts "42"
