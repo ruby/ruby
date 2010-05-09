@@ -703,7 +703,7 @@ class TestBigDecimal < Test::Unit::TestCase
     bug3258 = '[ruby-dev:41213]'
     stress, GC.stress = GC.stress, true
     1000.times do |i|
-      b = BigDecimal.new("1"+"0"*i).to_s
+      b = BigDecimal.new("1"+"0"*i)
       assert_equal([1, "1", 10, i+1], b.split, bug3258)
     end
   ensure
