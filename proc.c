@@ -255,6 +255,7 @@ binding_mark(void *ptr)
     if (ptr) {
 	bind = ptr;
 	RUBY_MARK_UNLESS_NULL(bind->env);
+	RUBY_MARK_UNLESS_NULL(bind->filename);
     }
     RUBY_MARK_LEAVE("binding");
 }
@@ -290,6 +291,8 @@ binding_dup(VALUE self)
     GetBindingPtr(self, src);
     GetBindingPtr(bindval, dst);
     dst->env = src->env;
+    dst->filename = src->filename;
+    dst->line_no = src->line_no;
     return bindval;
 }
 
@@ -316,6 +319,8 @@ rb_binding_new(void)
 
     GetBindingPtr(bindval, bind);
     bind->env = rb_vm_make_env_object(th, cfp);
+    bind->filename = cfp->iseq->filename;
+    bind->line_no = rb_vm_get_sourceline(cfp);
     return bindval;
 }
 
@@ -1892,6 +1897,8 @@ proc_binding(VALUE self)
     bindval = binding_alloc(rb_cBinding);
     GetBindingPtr(bindval, bind);
     bind->env = proc->envval;
+    bind->filename = proc->block.iseq->filename;
+    bind->line_no = rb_iseq_first_lineno(proc->block.iseq);
     return bindval;
 }
 

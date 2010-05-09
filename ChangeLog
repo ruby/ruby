@@ -1,3 +1,11 @@
+Mon May 10 03:36:56 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* vm_eval.c (eval_string_with_cref): propagative filename and line_no
+	  of binding.  [ruby-dev:38767] [ruby-core:28307]
+
+	* vm_core.h (rb_binding_t), proc.c: add filename and line_no fields to
+	  preserve them.
+
 Mon May 10 02:58:33 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* compile.c (iseq_compile_each), vm_insnhelper.c (vm_invoke_block,
