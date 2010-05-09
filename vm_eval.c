@@ -963,6 +963,10 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 	    if (rb_obj_is_kind_of(scope, rb_cBinding)) {
 		GetBindingPtr(scope, bind);
 		envval = bind->env;
+		if (strcmp(file, "(eval)") == 0) {
+		    file = RSTRING_PTR(bind->filename);
+		    line = bind->line_no;
+		}
 	    }
 	    else {
 		rb_raise(rb_eTypeError,

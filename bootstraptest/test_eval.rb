@@ -287,7 +287,7 @@ assert_normal_exit %q{
   eval("", method(:proc).call {}.binding)
 }
 
-assert_equal "(eval):1:in `block in <main>': ", %q{
+assert_equal "", %q{
   b = binding
   10.times{
     eval('', b)
