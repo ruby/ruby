@@ -1,4 +1,6 @@
-Mon May 10 00:35:41 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon May 10 00:54:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/console/console.c (console_set_raw): new method.
 
 	* ext/io/console/console.c (ttymode): reverted previous commit.
 
