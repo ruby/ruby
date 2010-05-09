@@ -1,3 +1,8 @@
+Sun May  9 09:15:03 2010  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* test/net/imap/test_imap.rb: use IPv4 for
+	  test_imaps_post_connection_check.  [ruby-dev:41189]
+
 Sun May  9 08:24:24 2010  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (disconnect): terminates @receiver_thread even if

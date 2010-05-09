@@ -6,6 +6,8 @@ class IMAPTest < Test::Unit::TestCase
   SERVER_KEY = File.expand_path("server.key", File.dirname(__FILE__))
   SERVER_CERT = File.expand_path("server.crt", File.dirname(__FILE__))
 
+  SERVER_ADDR = "127.0.0.1"
+
   def setup
     @do_not_reverse_lookup = Socket.do_not_reverse_lookup
     Socket.do_not_reverse_lookup = true
@@ -83,7 +85,9 @@ class IMAPTest < Test::Unit::TestCase
     if defined?(OpenSSL)
       assert_raise(OpenSSL::SSL::SSLError) do
         imaps_test do |port|
-          Net::IMAP.new("127.0.0.1",
+          # SERVER_ADDR is different from the hostname in the certificate,
+          # so the following code should raise a SSLError.
+          Net::IMAP.new(SERVER_ADDR,
                         :port => port,
                         :ssl => { :ca_file => CA_FILE })
         end
@@ -107,7 +111,7 @@ class IMAPTest < Test::Unit::TestCase
   end
 
   def test_unexpected_eof
-    server = TCPServer.new(0)
+    server = create_tcp_server
     port = server.addr[1]
     Thread.start do
       begin
@@ -138,7 +142,7 @@ class IMAPTest < Test::Unit::TestCase
   end
 
   def test_idle
-    server = TCPServer.new(0)
+    server = create_tcp_server
     port = server.addr[1]
     requests = []
     Thread.start do
@@ -190,7 +194,7 @@ class IMAPTest < Test::Unit::TestCase
   end
 
   def test_exception_during_idle
-    server = TCPServer.new(0)
+    server = create_tcp_server
     port = server.addr[1]
     requests = []
     Thread.start do
@@ -255,7 +259,7 @@ class IMAPTest < Test::Unit::TestCase
   end
 
   def test_idle_done_not_during_idle
-    server = TCPServer.new(0)
+    server = create_tcp_server
     port = server.addr[1]
     requests = []
     Thread.start do
@@ -284,7 +288,7 @@ class IMAPTest < Test::Unit::TestCase
   end
 
   def test_unexpected_bye
-    server = TCPServer.new(0)
+    server = create_tcp_server
     port = server.addr[1]
     Thread.start do
       begin
@@ -312,7 +316,7 @@ class IMAPTest < Test::Unit::TestCase
   end
 
   def test_exception_during_shutdown
-    server = TCPServer.new(0)
+    server = create_tcp_server
     port = server.addr[1]
     Thread.start do
       begin
@@ -351,7 +355,7 @@ class IMAPTest < Test::Unit::TestCase
   private
 
   def imaps_test
-    server = TCPServer.new(0)
+    server = create_tcp_server
     port = server.addr[1]
     ctx = OpenSSL::SSL::SSLContext.new
     ctx.ca_file = CA_FILE
@@ -389,7 +393,7 @@ class IMAPTest < Test::Unit::TestCase
   end
 
   def starttls_test
-    server = TCPServer.new(0)
+    server = create_tcp_server
     port = server.addr[1]
     Thread.start do
       begin
@@ -427,5 +431,9 @@ class IMAPTest < Test::Unit::TestCase
     ensure
       server.close
     end
+  end
+
+  def create_tcp_server
+    return TCPServer.new(SERVER_ADDR, 0)
   end
 end
