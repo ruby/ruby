@@ -187,7 +187,7 @@ class TestFiber < Test::Unit::TestCase
       f1 = Fiber.new{ f2.resume }
       f2 = Fiber.new{ f1.resume }
       f1.transfer
-    }
+    }, '[ruby-dev:40833]'
   end
 end
 
