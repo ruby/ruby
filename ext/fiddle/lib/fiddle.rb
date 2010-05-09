@@ -1,7 +1,7 @@
 require 'fiddle.so'
 require 'fiddle/function'
 require 'fiddle/closure'
-require 'dl'
+require 'dl' unless Object.const_defined?(:DL)
 
 module Fiddle
   Pointer = DL::CPtr
