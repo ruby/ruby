@@ -375,16 +375,14 @@ proc_new(VALUE klass, int is_lambda)
     rb_control_frame_t *cfp = th->cfp;
     rb_block_t *block;
 
-    if ((GC_GUARDED_PTR_REF(cfp->lfp[0])) != 0 &&
-	!RUBY_VM_CLASS_SPECIAL_P(cfp->lfp[0])) {
+    if ((GC_GUARDED_PTR_REF(cfp->lfp[0])) != 0) {
 
 	block = GC_GUARDED_PTR_REF(cfp->lfp[0]);
     }
     else {
 	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 
-	if ((GC_GUARDED_PTR_REF(cfp->lfp[0])) != 0 &&
-	    !RUBY_VM_CLASS_SPECIAL_P(cfp->lfp[0])) {
+	if ((GC_GUARDED_PTR_REF(cfp->lfp[0])) != 0) {
 
 	    block = GC_GUARDED_PTR_REF(cfp->lfp[0]);
 

@@ -913,8 +913,9 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t num, rb_n
     const rb_block_t *block = GET_BLOCK_PTR();
     rb_iseq_t *iseq;
     int argc = (int)num;
+    int type = GET_ISEQ()->local_iseq->type;
 
-    if (GET_ISEQ()->local_iseq->type != ISEQ_TYPE_METHOD || block == 0) {
+    if ((type != ISEQ_TYPE_METHOD && type != ISEQ_TYPE_CLASS) || block == 0) {
 	rb_vm_localjump_error("no block given (yield)", Qnil, 0);
     }
     iseq = block->iseq;
@@ -1434,6 +1435,11 @@ vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 
 	      search_parent:
 		if (cfp->iseq->type != ISEQ_TYPE_BLOCK) {
+		    if (cfp->iseq->type == ISEQ_TYPE_CLASS) {
+			cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+			dfp = cfp->dfp;
+			goto search_parent;
+		    }
 		    dfp = GC_GUARDED_PTR_REF((VALUE *) *dfp);
 		    base_iseq = base_iseq->parent_iseq;
 
@@ -1499,10 +1505,17 @@ vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 	    else if (state == TAG_RETURN) {
 		rb_control_frame_t *cfp = GET_CFP();
 		VALUE *dfp = GET_DFP();
-		VALUE * const lfp = GET_LFP();
+		VALUE *lfp = GET_LFP();
 
 		/* check orphan and get dfp */
 		while ((VALUE *) cfp < th->stack + th->stack_size) {
+		    if (!lfp) {
+			lfp = cfp->lfp;
+		    }
+		    if (cfp->dfp == lfp && cfp->iseq->type == ISEQ_TYPE_CLASS) {
+			lfp = 0;
+		    }
+
 		    if (cfp->lfp == lfp) {
 			if (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_LAMBDA) {
 			    VALUE *tdfp = dfp;
