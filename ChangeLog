@@ -1,3 +1,7 @@
+Mon May 10 23:50:19 2010  Tanaka Akira  <akr@fsij.org>
+
+	* pack.c (pack_unpack): add a missing break.
+
 Sun May  9 23:53:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (RB_GC_GUARD_PTR): get rid of removal by
