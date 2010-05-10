@@ -1,3 +1,14 @@
+Mon May 10 14:13:04 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* time.c (rb_big_abs_find_minbit): get rid of a warning of VC.
+
+Mon May 10 13:59:42 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c, include/ruby/win32.h (rb_w32_has_cancel_io): new
+	  function.
+
+	* io.c (WAIT_FD_IN_WIN32): check only when it's not cancelable.
+
 Mon May 10 06:59:19 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* common.mk (rdoc): rdoc should depend main. Moreover when XRUBY
