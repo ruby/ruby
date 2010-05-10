@@ -1,3 +1,7 @@
+Mon May 10 15:48:28 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* regex.c (read_special): get rid of overrun.
+
 Sun May  9 08:07:55 2010  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb: backported exception handling from trunk.
