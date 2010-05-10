@@ -1723,6 +1723,7 @@ pack_unpack(VALUE str, VALUE fmt)
                 PACK_ITEM_ADJUST();
 		break;
 	    }
+            break;
 
 	  case 'f':
 	  case 'F':
