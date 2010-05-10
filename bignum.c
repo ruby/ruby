@@ -222,7 +222,110 @@ rb_int2inum(n)
     return rb_int2big(n);
 }
 
-#ifdef HAVE_LONG_LONG
+#if SIZEOF_LONG % SIZEOF_BDIGITS != 0
+# error unexpected SIZEOF_LONG : SIZEOF_BDIGITS ratio
+#endif
+
+/*
+ * buf is an array of long integers.
+ * buf is ordered from least significant word to most significant word.
+ * buf[0] is the least significant word and
+ * buf[num_longs-1] is the most significant word.
+ * This means words in buf is little endian.
+ * However each word in buf is native endian.
+ * (buf[i]&1) is the least significant bit and
+ * (buf[i]&(1<<(SIZEOF_LONG*CHAR_BIT-1))) is the most significant bit
+ * for each 0 <= i < num_longs.
+ * So buf is little endian at whole on a little endian machine.
+ * But buf is mixed endian on a big endian machine.
+ */
+void
+rb_big_pack(VALUE val, unsigned long *buf, long num_longs)
+{
+    val = rb_to_int(val);
+    if (num_longs == 0)
+        return;
+    if (FIXNUM_P(val)) {
+        long i;
+        long tmp = FIX2LONG(val);
+        buf[0] = (unsigned long)tmp;
+        tmp = tmp < 0 ? ~0L : 0;
+        for (i = 1; i < num_longs; i++)
+            buf[i] = (unsigned long)tmp;
+        return;
+    }
+    else {
+        long len = RBIGNUM_LEN(val);
+        BDIGIT *ds = BDIGITS(val), *dend = ds + len;
+        long i, j;
+        for (i = 0; i < num_longs && ds < dend; i++) {
+            unsigned long l = 0;
+            for (j = 0; j < DIGSPERLONG && ds < dend; j++, ds++) {
+                l |= ((unsigned long)*ds << (j * BITSPERDIG));
+            }
+            buf[i] = l;
+        }
+        for (; i < num_longs; i++)
+            buf[i] = 0;
+        if (RBIGNUM_NEGATIVE_P(val)) {
+            for (i = 0; i < num_longs; i++) {
+                buf[i] = ~buf[i];
+            }
+            for (i = 0; i < num_longs; i++) {
+                buf[i]++;
+                if (buf[i] != 0)
+                    return;
+            }
+        }
+    }
+}
+
+/* See rb_big_pack comment for endianness of buf. */
+VALUE
+rb_big_unpack(unsigned long *buf, long num_longs)
+{
+    while (2 <= num_longs) {
+        if (buf[num_longs-1] == 0 && (long)buf[num_longs-2] >= 0)
+            num_longs--;
+        else if (buf[num_longs-1] == ~0UL && (long)buf[num_longs-2] < 0)
+            num_longs--;
+        else
+            break;
+    }
+    if (num_longs == 0)
+        return INT2FIX(0);
+    else if (num_longs == 1)
+        return LONG2NUM((long)buf[0]);
+    else {
+        VALUE big;
+        BDIGIT *ds;
+        long len = num_longs * DIGSPERLONG;
+        long i;
+        big = bignew(len, 1);
+        ds = BDIGITS(big);
+        for (i = 0; i < num_longs; i++) {
+            unsigned long d = buf[i];
+#if SIZEOF_LONG == SIZEOF_BDIGITS
+            *ds++ = d;
+#else
+            int j;
+            for (j = 0; j < DIGSPERLONG; j++) {
+                *ds++ = BIGLO(d);
+                d = BIGDN(d);
+            }
+#endif
+        }
+        if ((long)buf[num_longs-1] < 0) {
+            get2comp(big);
+            RBIGNUM_SET_SIGN(big, 0);
+        }
+        return bignorm(big);
+    }
+}
+
+#define QUAD_SIZE 8
+
+#if SIZEOF_LONG_LONG == QUAD_SIZE && SIZEOF_BDIGITS*2 == SIZEOF_LONG_LONG
 
 void
 rb_quad_pack(buf, val)
@@ -295,7 +398,19 @@ rb_quad_unpack(buf, sign)
 
 #else
 
-#define QUAD_SIZE 8
+static int
+quad_buf_complement(char *buf, size_t len)
+{
+    size_t i;
+    for (i = 0; i < len; i++)
+        buf[i] = ~buf[i];
+    for (i = 0; i < len; i++) {
+        buf[i]++;
+        if (buf[i] != 0)
+            return 0;
+    }
+    return 1;
+}
 
 void
 rb_quad_pack(buf, val)
@@ -311,15 +426,11 @@ rb_quad_pack(buf, val)
     }
     len = RBIGNUM(val)->len * SIZEOF_BDIGITS;
     if (len > QUAD_SIZE) {
-	rb_raise(rb_eRangeError, "bignum too big to convert into `quad int'");
+        len = QUAD_SIZE;
     }
     memcpy(buf, (char*)BDIGITS(val), len);
-    if (!RBIGNUM(val)->sign) {
-	len = QUAD_SIZE;
-	while (len--) {
-	    *buf = ~*buf;
-	    buf++;
-	}
+    if (RBIGNUM_NEGATIVE_P(val)) {
+        quad_buf_complement(buf, QUAD_SIZE);
     }
 }
 
@@ -334,14 +445,10 @@ rb_quad_unpack(buf, sign)
 
     memcpy((char*)BDIGITS(big), buf, QUAD_SIZE);
     if (sign && BNEG(buf)) {
-	long len = QUAD_SIZE;
 	char *tmp = (char*)BDIGITS(big);
 
 	RBIGNUM(big)->sign = 0;
-	while (len--) {
-	    *tmp = ~*tmp;
-	    tmp++;
-	}
+        quad_buf_complement(tmp, QUAD_SIZE);
     }
 
     return bignorm(big);

@@ -83,6 +83,8 @@ unsigned LONG_LONG rb_big2ull _((VALUE));
 #endif  /* HAVE_LONG_LONG */
 void rb_quad_pack _((char*,VALUE));
 VALUE rb_quad_unpack _((const char*,int));
+void rb_big_pack(VALUE val, unsigned long *buf, long num_longs);
+VALUE rb_big_unpack(unsigned long *buf, long num_longs);
 VALUE rb_dbl2big _((double));
 double rb_big2dbl _((VALUE));
 VALUE rb_big_plus _((VALUE, VALUE));

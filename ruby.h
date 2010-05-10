@@ -53,6 +53,10 @@ extern "C" {
 # include <intrinsics.h>
 #endif
 
+#ifdef HAVE_STDINT_H
+# include <stdint.h>
+#endif
+
 #include <stddef.h>
 #include <stdio.h>
 

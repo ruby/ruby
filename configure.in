@@ -616,6 +616,43 @@ AC_CHECK_TYPES([struct timezone], [], [], [@%:@ifdef HAVE_TIME_H
 @%:@ include <sys/time.h>
 @%:@endif])
 
+dnl RUBY_DEFINT TYPENAME, SIZE, [SIGNED-OR-UNSIGNED], [INCLUDES = DEFAULT-INCLUDES]
+AC_DEFUN([RUBY_DEFINT], [dnl
+AC_CACHE_CHECK([for $1], [rb_cv_type_$1],
+[AC_COMPILE_IFELSE([AC_LANG_PROGRAM([AC_INCLUDES_DEFAULT([$4])
+typedef $1 t; int s = sizeof(t) == 42;])],
+   [rb_cv_type_$1=yes],
+   [AS_CASE([m4_bmatch([$2], [^[1-9][0-9]*$], $2, [$ac_cv_sizeof_]AS_TR_SH($2))],
+    ["1"], [ rb_cv_type_$1="m4_if([$3], [], [signed ], [$3 ])char"],
+    ["$ac_cv_sizeof_short"], [ rb_cv_type_$1="m4_if([$3], [], [], [$3 ])short"],
+    ["$ac_cv_sizeof_int"], [ rb_cv_type_$1="m4_if([$3], [], [], [$3 ])int"],
+    ["$ac_cv_sizeof_long"], [ rb_cv_type_$1="m4_if([$3], [], [], [$3 ])long"],
+    ["$ac_cv_sizeof_long_long"], [ rb_cv_type_$1="m4_if([$3], [], [], [$3 ])long long"],
+    ["$ac_cv_sizeof___int64"], [ rb_cv_type_$1="m4_if([$3], [], [], [$3 ])__int64"],
+    [ rb_cv_type_$1=no])])])
+if test "${rb_cv_type_$1}" != no; then
+    AC_DEFINE([HAVE_]AS_TR_CPP($1), 1)
+    if test "${rb_cv_type_$1}" = yes; then
+        m4_bmatch([$2], [^[1-9][0-9]*$], [AC_CHECK_SIZEOF([$1], 0, [AC_INCLUDES_DEFAULT([$4])])],
+                        [RUBY_CHECK_SIZEOF([$1], [$2], [], [AC_INCLUDES_DEFAULT([$4])])])
+    else
+        AC_DEFINE_UNQUOTED($1, [$rb_cv_type_$1])
+        AC_DEFINE_UNQUOTED([SIZEOF_]AS_TR_CPP($1), [SIZEOF_]AS_TR_CPP([$rb_cv_type_$1]))
+    fi
+fi
+])
+
+RUBY_DEFINT(int8_t, 1)
+RUBY_DEFINT(uint8_t, 1, unsigned)
+RUBY_DEFINT(int16_t, 2)
+RUBY_DEFINT(uint16_t, 2, unsigned)
+RUBY_DEFINT(int32_t, 4)
+RUBY_DEFINT(uint32_t, 4, unsigned)
+RUBY_DEFINT(int64_t, 8)
+RUBY_DEFINT(uint64_t, 8, unsigned)
+RUBY_DEFINT(int128_t, 16)
+RUBY_DEFINT(uint128_t, 16, unsigned)
+
 dnl Checks for library functions.
 AC_TYPE_GETGROUPS
 AC_TYPE_SIGNAL

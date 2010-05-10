@@ -1,3 +1,17 @@
+Tue May 11 05:37:19 2010  Tanaka Akira  <akr@fsij.org>
+
+	* pack.c: backport integer pack/unpack from 1.9 for [ruby-core:21937].
+
+	* configure.in: backport RUBY_DEFINT and fixed size integer checks.
+
+	* ruby.h: include stdint.h if available.
+
+	* bignum.c (rb_big_pack): defined..
+	  (rb_big_unpack): defined.
+
+	* intern.h (rb_big_pack): declared.
+	  (rb_big_unpack): declared.
+
 Mon May 10 15:48:28 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* regex.c (read_special): get rid of overrun.
