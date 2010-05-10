@@ -1,3 +1,8 @@
+Tue May 11 01:20:43 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/parser.c (parse): Return strings encoded as
+	  Encoding.default_internal if set.
+
 Mon May 10 23:50:19 2010  Tanaka Akira  <akr@fsij.org>
 
 	* pack.c (pack_unpack): add a missing break.
