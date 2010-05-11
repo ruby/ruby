@@ -1,3 +1,8 @@
+Tue May 11 09:53:07 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/psych/parser.c (PSYCH_TRANSCODE): get rid of bare use of gcc
+	  extension.
+
 Tue May 11 01:20:43 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/parser.c (parse): Return strings encoded as
