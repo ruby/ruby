@@ -125,7 +125,7 @@ module BigMath
     x = -x if neg = x < 0
     return pi.div(neg ? -2 : 2, prec) if x.infinite?
     return pi / (neg ? -4 : 4) if x.round(prec) == 1
-    x = 1 / x if inv = x > 1
+    x = BigDecimal("1").div(x, prec) if inv = x > 1
     x = (-1 + sqrt(1 + x**2, prec))/x if dbl = x > 0.5
     n    = prec + BigDecimal.double_fig
     y = x

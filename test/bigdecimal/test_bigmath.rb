@@ -57,6 +57,8 @@ class TestBigMath < Test::Unit::TestCase
     assert_in_delta(Math::PI/4, atan(BigDecimal("1.0"), N))
     assert_in_delta(Math::PI/6, atan(sqrt(BigDecimal("3.0"), N) / 3, N))
     assert_in_delta(Math::PI/2, atan(PINF, N))
+    assert_equal(BigDecimal("0.823840753418636291769355073102514088959345624027952954058347023122539489"),
+                 atan(BigDecimal("1.08"), 72).round(72), '[ruby-dev:41257]')
   end
 
   def test_exp
