@@ -304,7 +304,6 @@ method_added(VALUE klass, ID mid)
 rb_method_entry_t *
 rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_flag_t noex)
 {
-    int rb_vm_get_sourceline(const rb_control_frame_t *cfp);
     rb_thread_t *th;
     rb_control_frame_t *cfp;
     int line;
