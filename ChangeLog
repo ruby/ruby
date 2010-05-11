@@ -1,3 +1,10 @@
+Tue May 11 13:46:00 2010  Kenta Murata <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/lib/bigdecimal/math.rb (atan),
+	  test/bigdecimal/test_bigmath.rb (test_atan): explicitly specify
+	  the precision for calculating a reciprocal number of an argument.
+	  [Bug #3267]
+
 Tue May 11 11:49:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/sdbm/sdbm.h (DBM): large file support on win32.
