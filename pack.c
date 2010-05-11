@@ -738,6 +738,9 @@ pack_pack(ary, fmt)
                     int i;
 
                     from = NEXTFROM;
+                    from = rb_to_int(from);
+                    if (integer_size == QUAD_SIZE)
+                        rb_quad_pack(v.a, from); /* RangeError compatibility for Ruby 1.8. */
                     rb_big_pack(from, v.i, num_longs);
                     if (bigendian_p) {
                         for (i = 0; i < num_longs/2; i++) {

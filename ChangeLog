@@ -1,3 +1,7 @@
+Tue May 11 22:51:11 2010  Tanaka Akira  <akr@fsij.org>
+
+	* pack.c (pack_pack): call rb_quad_pack to preserve RangeError.
+
 Tue May 11 05:37:19 2010  Tanaka Akira  <akr@fsij.org>
 
 	* pack.c: backport integer pack/unpack from 1.9 for [ruby-core:21937].

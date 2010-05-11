@@ -426,7 +426,7 @@ rb_quad_pack(buf, val)
     }
     len = RBIGNUM(val)->len * SIZEOF_BDIGITS;
     if (len > QUAD_SIZE) {
-        len = QUAD_SIZE;
+	rb_raise(rb_eRangeError, "bignum too big to convert into `quad int'");
     }
     memcpy(buf, (char*)BDIGITS(val), len);
     if (RBIGNUM_NEGATIVE_P(val)) {
