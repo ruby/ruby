@@ -3,9 +3,14 @@ require 'rake'
 
 ######################################################################
 class Rake::TestTaskArguments < Test::Unit::TestCase
+  def setup
+    @backup = ENV.to_hash
+    ENV.clear
+  end
+
   def teardown
-    ENV.delete('rev')
-    ENV.delete('VER')
+    ENV.clear
+    @backup.each {|k, v| ENV[k] = v }
   end
 
   def test_empty_arg_list_is_empty
