@@ -1,3 +1,10 @@
+Tue May 11 11:49:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/sdbm/sdbm.h (DBM): large file support on win32.
+	  [ruby-core:23039]
+
+	* ext/sdbm/depend: objects depend on sdbm.h.
+
 Tue May 11 09:57:05 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval_intern.h (rb_vm_get_sourceline): add prototype.
