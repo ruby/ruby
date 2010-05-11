@@ -1,3 +1,10 @@
+Tue May 11 11:49:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/sdbm/sdbm.h (DBM): large file support on win32.
+	  [ruby-core:23039]
+
+	* ext/sdbm/depend: objects depend on sdbm.h.
+
 Mon May 10 23:50:19 2010  Tanaka Akira  <akr@fsij.org>
 
 	* pack.c (pack_unpack): add a missing break.

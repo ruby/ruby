@@ -11,9 +11,9 @@
 /*char sdbm_rcsid[] = "$Id$";*/
 #endif
 
-#include "sdbm.h"
 #include "ruby/config.h"
 #include "ruby/defines.h"
+#include "sdbm.h"
 
 /*
  * sdbm - ndbm work-alike hashed database library

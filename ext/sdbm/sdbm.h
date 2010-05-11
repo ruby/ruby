@@ -7,6 +7,8 @@
 #ifndef	_SDBM_H_
 #define	_SDBM_H_
 
+#include <stdio.h>
+
 #define DBLKSIZ 4096
 #define PBLKSIZ 1024
 #define PAIRMAX 1008			/* arbitrary on PBLKSIZ-N */
@@ -19,11 +21,11 @@ typedef struct {
 	int dirf;		       /* directory file descriptor */
 	int pagf;		       /* page file descriptor */
 	int flags;		       /* status/error flags, see below */
-	long maxbno;		       /* size of dirfile in bits */
+	int keyptr;		       /* current key for nextkey */
+	off_t maxbno;		       /* size of dirfile in bits */
 	long curbit;		       /* current bit number */
 	long hmask;		       /* current hash mask */
 	long blkptr;		       /* current block for nextkey */
-	int keyptr;		       /* current key for nextkey */
 	long blkno;		       /* current page to read/write */
 	long pagbno;		       /* current page in pagbuf */
 	char pagbuf[PBLKSIZ];	       /* page file block buffer */
