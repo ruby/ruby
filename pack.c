@@ -350,36 +350,36 @@ static unsigned long utf8_to_uv(const char*,long*);
  *   Float     |         |
  *   Directive |         | Meaning
  *   ------------------------------------------------------------------------
- *      D, d   | Float   | Double-precision float, native format
- *      F, f   | Float   | Single-precision float, native format
- *      E      | Float   | Double-precision float, little-endian byte order
- *      e      | Float   | Single-precision float, little-endian byte order
- *      G      | Float   | Double-precision float, network (big-endian) byte order
- *      g      | Float   | Single-precision float, network (big-endian) byte order
+ *      D, d   | Float   | double-precision float, native format
+ *      F, f   | Float   | single-precision float, native format
+ *      E      | Float   | double-precision float, little-endian byte order
+ *      e      | Float   | single-precision float, little-endian byte order
+ *      G      | Float   | double-precision float, network (big-endian) byte order
+ *      g      | Float   | single-precision float, network (big-endian) byte order
  *                        
  *   String    |         |
  *   Directive |         | Meaning
  *   ------------------------------------------------------------------------
  *      A      | String  | arbitrary binary string (space padded, count is width)
  *      a      | String  | arbitrary binary string (null padded, count is width)
- *      Z      | String  | Same as ``a'', except that null is added with *
- *      B      | String  | Bit string (MSB first)
- *      b      | String  | Bit string (LSB first)
- *      H      | String  | Hex string (high nibble first)
- *      h      | String  | Hex string (low nibble first)
+ *      Z      | String  | same as ``a'', except that null is added with *
+ *      B      | String  | bit string (MSB first)
+ *      b      | String  | bit string (LSB first)
+ *      H      | String  | hex string (high nibble first)
+ *      h      | String  | hex string (low nibble first)
  *      u      | String  | UU-encoded string
- *      M      | String  | Quoted printable, MIME encoding (see RFC2045)
- *      m      | String  | Base64 encoded string (see RFC 2045, count is width)
+ *      M      | String  | quoted printable, MIME encoding (see RFC2045)
+ *      m      | String  | base64 encoded string (see RFC 2045, count is width)
  *             |         | (if count is 0, no line feed are added, see RFC 4648)
- *      P      | String  | Pointer to a structure (fixed-length string)
- *      p      | String  | Pointer to a null-terminated string
+ *      P      | String  | pointer to a structure (fixed-length string)
+ *      p      | String  | pointer to a null-terminated string
  *                        
  *   Misc.     |         |
  *   Directive |         | Meaning
  *   ------------------------------------------------------------------------
- *      @      | ---     | Moves to absolute position
- *      X      | ---     | Back up a byte
- *      x      | ---     | Null byte
+ *      @      | ---     | moves to absolute position
+ *      X      | ---     | back up a byte
+ *      x      | ---     | null byte
  */
 
 static VALUE
@@ -1238,7 +1238,7 @@ infected_str_new(const char *ptr, long len, VALUE str)
  *      L      | Integer | 32-bit unsigned integer, native endian (uint32_t)
  *      Q      | Integer | 64-bit unsigned integer, native endian (uint64_t)
  *             |         |
- *      c      | Integer | 8-bit signed integer (char)
+ *      c      | Integer | 8-bit signed integer (signed char)
  *      s      | Integer | 16-bit signed integer, native endian (int16_t)
  *      l      | Integer | 32-bit signed integer, native endian (int32_t)
  *      q      | Integer | 64-bit signed integer, native endian (int64_t)
@@ -1262,12 +1262,12 @@ infected_str_new(const char *ptr, long len, VALUE str)
  *   Float     |         |
  *   Directive | Returns | Meaning
  *   --------------------------------------------------------------
- *      d, D   | Float   | Double-precision float, native format
- *      f, F   | Float   | Single-precision float, native format
- *      E      | Float   | Double-precision float, little-endian byte order
- *      e      | Float   | Single-precision float, little-endian byte order
- *      G      | Float   | Double-precision float, network (big-endian) byte order
- *      g      | Float   | Single-precision float, network (big-endian) byte order
+ *      D, d   | Float   | double-precision float, native format
+ *      F, f   | Float   | single-precision float, native format
+ *      E      | Float   | double-precision float, little-endian byte order
+ *      e      | Float   | single-precision float, little-endian byte order
+ *      G      | Float   | double-precision float, network (big-endian) byte order
+ *      g      | Float   | single-precision float, network (big-endian) byte order
  *             
  *   String    |         |
  *   Directive | Returns | Meaning
@@ -1277,14 +1277,14 @@ infected_str_new(const char *ptr, long len, VALUE str)
  *      Z      | String  | null-terminated string
  *      B      | String  | bit string (MSB first)
  *      b      | String  | bit string (LSB first)
- *      H      | String  | Hex string (high nibble first)
- *      h      | String  | Hex string (low nibble first)
+ *      H      | String  | hex string (high nibble first)
+ *      h      | String  | hex string (low nibble first)
  *      u      | String  | UU-encoded string
  *      M      | String  | quoted-printable, MIME encoding (see RFC2045)
- *      m      | String  | base64-encoded (RFC 2045) (default)
- *             |         | base64-encoded (RFC 4648) if followed by 0
- *      P      | String  | Pointer to a structure (fixed-length string)
- *      p      | String  | Pointer to a null-terminated string
+ *      m      | String  | base64 encoded string (RFC 2045) (default)
+ *             |         | base64 encoded string (RFC 4648) if followed by 0
+ *      P      | String  | pointer to a structure (fixed-length string)
+ *      p      | String  | pointer to a null-terminated string
  *             
  *   Misc.     |         |
  *   Directive | Returns | Meaning
