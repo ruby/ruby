@@ -38,7 +38,7 @@ module URI
     # hvalue     =  *urlc
     # header     =  hname "=" hvalue
     HEADER_PATTERN = "(?:[^?=&]*=[^?=&]*)".freeze
-    HEADER_REGEXP  = Regexp.new(HEADER_PATTERN, 'N').freeze
+    HEADER_REGEXP  = Regexp.new(HEADER_PATTERN).freeze
     # headers    =  "?" header *( "&" header )
     # to         =  #mailbox
     # mailtoURL  =  "mailto:" [ to ] [ headers ]
