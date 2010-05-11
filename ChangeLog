@@ -1,3 +1,7 @@
+Tue May 11 14:10:36 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* time.c (rb_big_abs_find_minbit): get rid of a warning of VC.
+
 Tue May 11 14:09:21 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c, include/ruby/win32.h (rb_w32_has_cancel_io): new
