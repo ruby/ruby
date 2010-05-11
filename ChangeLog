@@ -1,3 +1,11 @@
+Tue May 11 23:07:22 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/extconf.rb: test IPPROTO_IP and IPPROTO_IPV6 constants.
+
+	* ext/socket/mkconstants.rb: define macros for enum.
+
+	  [ruby-dev:38849]
+
 Tue May 11 21:53:18 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/rake/test_task_arguments.rb: makes ENV empty during tests

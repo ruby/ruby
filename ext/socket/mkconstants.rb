@@ -73,11 +73,15 @@ end
 
 ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_const_decls")
 % each_const {|guard, make_value, name, default_value|
-%   if default_value
-#ifndef <%=name%>
-# define <%=name%> <%=default_value%>
+#if !defined(<%=name%>)
+# if defined(HAVE_CONST_<%=name.upcase%>)
+#  define <%=name%> <%=name%>
+%if default_value
+# else
+#  define <%=name%> <%=default_value%>
+%end
+# endif
 #endif
-%   end
 % }
 EOS
 
