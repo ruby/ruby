@@ -1,3 +1,7 @@
+Tue May 11 09:57:05 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_intern.h (rb_vm_get_sourceline): add prototype.
+
 Tue May 11 09:53:07 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/psych/parser.c (PSYCH_TRANSCODE): get rid of bare use of gcc
