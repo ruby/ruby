@@ -189,9 +189,10 @@ static int max_file_descriptor = NOFILE;
 #define READ_CHAR_PENDING(fptr) ((fptr)->cbuf_len)
 
 #if defined(_WIN32)
-#define WAIT_FD_IN_WIN32(fptr) rb_thread_wait_fd((fptr)->fd);
+#define WAIT_FD_IN_WIN32(fptr) \
+    (rb_w32_has_cancel_io() ? 0 : rb_thread_wait_fd((fptr)->fd))
 #else
-#define WAIT_FD_IN_WIN32(fptr) ;
+#define WAIT_FD_IN_WIN32(fptr)
 #endif
 
 #define READ_CHECK(fptr) do {\

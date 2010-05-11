@@ -548,6 +548,12 @@ init_env(void)
 typedef BOOL (WINAPI *cancel_io_t)(HANDLE);
 static cancel_io_t cancel_io = NULL;
 
+int
+rb_w32_has_cancel_io(void)
+{
+    return cancel_io != NULL;
+}
+
 static void
 init_func(void)
 {

@@ -1,3 +1,10 @@
+Tue May 11 14:09:21 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c, include/ruby/win32.h (rb_w32_has_cancel_io): new
+	  function.
+
+	* io.c (WAIT_FD_IN_WIN32): check only when it's not cancelable.
+
 Tue May 11 11:49:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/sdbm/sdbm.h (DBM): large file support on win32.
