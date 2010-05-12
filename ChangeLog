@@ -1,3 +1,7 @@
+Wed May 12 16:34:20 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_intern.h (rb_vm_get_sourceline): add prototype.
+
 Wed May 12 16:25:46 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (flo_to_s): exponent needs 2 digits.
