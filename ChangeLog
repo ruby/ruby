@@ -1,3 +1,7 @@
+Wed May 12 16:43:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (flo_to_s): fixed broken output including nuls.
+
 Wed May 12 16:25:46 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (flo_to_s): exponent needs 2 digits.
