@@ -1,3 +1,8 @@
+Wed May 12 15:37:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (flo_to_s): make minimum string representation.
+	  [ruby-core:30145]
+
 Wed May 12 15:04:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/bigdecimal/lib/bigdecimal/math.rb (BigMath#log): improved
