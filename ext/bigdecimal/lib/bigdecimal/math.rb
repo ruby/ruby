@@ -190,8 +190,10 @@ module BigMath
     one = BigDecimal("1")
     two = BigDecimal("2")
     n  = prec + BigDecimal.double_fig
-    if (expo = x.exponent) < 0
+    if (expo = x.exponent) < 0 || expo >= 3
       x = x.mult(BigDecimal("1E#{-expo}"), n)
+    else
+      expo = nil
     end
     x  = (x - one).div(x + one,n)
     x2 = x.mult(x,n)
@@ -206,7 +208,7 @@ module BigMath
       y += d
     end
     y *= two
-    if expo < 0
+    if expo
       y += log(BigDecimal("10"),prec) * BigDecimal(expo.to_s)
     end
     y
