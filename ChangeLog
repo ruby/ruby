@@ -1,3 +1,8 @@
+Tue May 11 15:14:30 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/utf_8.c: Add new alias UTF-8-HFS for UTF8-MAC.
+	  http://www.gnu.org/software/emacs/NEWS.23.2
+
 Wed May 12 09:21:05 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* re.c (rb_reg_initialize_m): fix wrong index for the lang
