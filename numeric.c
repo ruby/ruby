@@ -585,10 +585,9 @@ flo_to_s(VALUE flt)
 	}
 	else if (decpt - digs < float_dig) {
 	    long len;
-	    char *ptr;
 	    rb_str_cat(s, buf, digs);
-	    rb_str_resize(s, (len = RSTRING_LEN(s)) + decpt - digs);
-	    memset(RSTRING_PTR(s) + len, '0', decpt - digs);
+	    rb_str_resize(s, (len = RSTRING_LEN(s)) + decpt - digs + 2);
+	    if (decpt > digs) memset(RSTRING_PTR(s) + len, '0', decpt - digs);
 	    rb_str_cat(s, ".0", 2);
 	}
 	else {
@@ -615,7 +614,7 @@ flo_to_s(VALUE flt)
 	}
 	buf[1] = '.';
 	rb_str_cat(s, buf, digs + 1);
-	rb_str_catf(s, "e%+d", decpt - 1);
+	rb_str_catf(s, "e%+03d", decpt - 1);
     }
     return s;
 }
