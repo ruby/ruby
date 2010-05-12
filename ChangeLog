@@ -1,3 +1,8 @@
+Mon May 10 06:59:19 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* common.mk (rdoc): rdoc should depend main. Moreover when XRUBY
+	  is miniruby, it can run after miniruby is built.
+
 Tue May 11 15:14:30 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/utf_8.c: Add new alias UTF-8-HFS for UTF8-MAC.
