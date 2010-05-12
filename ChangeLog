@@ -1,3 +1,8 @@
+Wed May 12 15:04:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/bigdecimal/lib/bigdecimal/math.rb (BigMath#log): improved
+	  precision and performance. [ruby-dev:41295]
+
 Tue May 11 14:26:00 2010  Kenta Murata <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/lib/bigdecimal/math.rb (atan),
