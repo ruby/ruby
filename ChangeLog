@@ -1,3 +1,8 @@
+Wed May 12 11:39:10 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/extconf.rb: test all IPPROTO_* constants for recent Win32
+	  SDK.
+
 Wed May 12 10:57:04 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (flo_to_s): make minimum string representation.
