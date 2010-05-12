@@ -1,3 +1,7 @@
+Wed May 12 16:25:46 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (flo_to_s): exponent needs 2 digits.
+
 Mon May 10 06:59:19 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* common.mk (rdoc): rdoc should depend main. Moreover when XRUBY
