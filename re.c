@@ -2836,9 +2836,9 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
 
 /*
  *  call-seq:
- *     Regexp.new(string [, options])                => regexp
+ *     Regexp.new(string [, options] [, lang])       => regexp
  *     Regexp.new(regexp)                            => regexp
- *     Regexp.compile(string [, options])            => regexp
+ *     Regexp.compile(string [, options] [, lang])   => regexp
  *     Regexp.compile(regexp)                        => regexp
  *
  *  Constructs a new regular expression from <i>pattern</i>, which can be either
@@ -2849,6 +2849,7 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
  *  <code>Regexp::IGNORECASE</code>, and <code>Regexp::MULTILINE</code>,
  *  <em>or</em>-ed together. Otherwise, if <i>options</i> is not
  *  <code>nil</code>, the regexp will be case insensitive.
+ *  When the <i>lang</i> parameter is `n' or `N' sets the regexp no encoding.
  *
  *     r1 = Regexp.new('^a-z+:\\s+\w+')           #=> /^a-z+:\s+\w+/
  *     r2 = Regexp.new('cat', true)               #=> /cat/i
