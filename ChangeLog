@@ -1,3 +1,8 @@
+Wed May 12 15:04:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/bigdecimal/lib/bigdecimal/math.rb (BigMath#log): improved
+	  precision and performance. [ruby-dev:41295]
+
 Wed May 12 11:39:10 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/extconf.rb: test all IPPROTO_* constants for recent Win32
