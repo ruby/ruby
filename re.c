@@ -2894,7 +2894,7 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
 	enc = 0;
 	if (argc == 3 && !NIL_P(argv[2])) {
 	    char *kcode = StringValuePtr(argv[2]);
-	    if (kcode[0] == 'n' || kcode[1] == 'N') {
+	    if (kcode[0] == 'n' || kcode[0] == 'N') {
 		enc = rb_ascii8bit_encoding();
 		flags |= ARG_ENCODING_NONE;
 	    }
