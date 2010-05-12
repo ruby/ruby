@@ -136,6 +136,13 @@ class TestFloat < Test::Unit::TestCase
     assert_equal("NaN", (inf / inf).to_s)
 
     assert_equal("1.0e+18", 1000_00000_00000_00000.0.to_s)
+
+    bug3273 = '[ruby-core:30145]'
+    [0.21611564636388508, 0.56].each do |f|
+      s = f.to_s
+      assert_equal(f, s.to_f, bug3273)
+      assert_not_equal(f, s.chop.to_f, bug3273)
+    end
   end
 
   def test_coerce
