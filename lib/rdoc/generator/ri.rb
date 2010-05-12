@@ -29,6 +29,8 @@ class RDoc::Generator::RI
   def generate top_levels
     install_siginfo_handler
 
+    @store.load_cache
+
     RDoc::TopLevel.all_classes_and_modules.each do |klass|
       @current = "#{klass.class}: #{klass.full_name}"
 
