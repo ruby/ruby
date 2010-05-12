@@ -558,35 +558,62 @@ rb_float_new(double d)
 static VALUE
 flo_to_s(VALUE flt)
 {
+    char *ruby_dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve);
     enum {decimal_mant = DBL_MANT_DIG-DBL_DIG};
     enum {float_dig = DBL_DIG+1};
     char buf[float_dig + (decimal_mant + CHAR_BIT - 1) / CHAR_BIT + 10];
     double value = RFLOAT_VALUE(flt);
+    VALUE s;
     char *p, *e;
+    int sign, decpt, digs;
 
     if (isinf(value))
 	return rb_usascii_str_new2(value < 0 ? "-Infinity" : "Infinity");
     else if (isnan(value))
 	return rb_usascii_str_new2("NaN");
 
-# define FLOFMT(buf, size, fmt, prec, val) snprintf(buf, size, fmt, prec, val), \
-    (void)((atof(buf) == val) || snprintf(buf, size, fmt, (prec)+1, val))
-
-    FLOFMT(buf, sizeof(buf), "%#.*g", float_dig, value); /* ensure to print decimal point */
-    if (!(e = strchr(buf, 'e'))) {
-	e = buf + strlen(buf);
-    }
-    if (!ISDIGIT(e[-1])) { /* reformat if ended with decimal point (ex 111111111111111.) */
-	FLOFMT(buf, sizeof(buf), "%#.*e", float_dig - 1, value);
-	if (!(e = strchr(buf, 'e'))) {
-	    e = buf + strlen(buf);
+    p = ruby_dtoa(value, 0, 0, &decpt, &sign, &e);
+    s = sign ? rb_usascii_str_new_cstr("-") : rb_usascii_str_new(0, 0);
+    if ((digs = (int)(e - p)) >= (int)sizeof(buf)) digs = (int)sizeof(buf) - 1;
+    memcpy(buf, p, digs);
+    xfree(p);
+    if (decpt > 0) {
+	if (decpt < digs) {
+	    memmove(buf + decpt + 1, buf + decpt, digs - decpt);
+	    buf[decpt] = '.';
+	    rb_str_cat(s, buf, digs + 1);
+	}
+	else if (decpt - digs < float_dig) {
+	    rb_str_cat(s, buf, digs);
+	    rb_str_cat(s, ".0", 2);
+	}
+	else {
+	    goto exp;
 	}
     }
-    p = e;
-    while (p[-1]=='0' && ISDIGIT(p[-2]))
-	p--;
-    memmove(p, e, strlen(e)+1);
-    return rb_usascii_str_new2(buf);
+    else if (decpt > -4) {
+	long len;
+	char *ptr;
+	rb_str_cat(s, "0.", 2);
+	rb_str_resize(s, (len = RSTRING_LEN(s)) - decpt + digs);
+	ptr = RSTRING_PTR(s);
+	memset(ptr += len, '0', -decpt);
+	memcpy(ptr -= decpt, buf, digs);
+    }
+    else {
+      exp:
+	if (digs > 1) {
+	    memmove(buf + 2, buf + 1, digs - 1);
+	}
+	else {
+	    buf[2] = '0';
+	    digs++;
+	}
+	buf[1] = '.';
+	rb_str_cat(s, buf, digs + 1);
+	rb_str_catf(s, "e%+d", decpt - 1);
+    }
+    return s;
 }
 
 /*
