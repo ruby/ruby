@@ -1,3 +1,7 @@
+Wed May 12 16:02:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (flo_to_s): fill lower zeros.
+
 Wed May 12 15:45:36 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/rdoc/generator/ri.rb (generate): should load existing cache

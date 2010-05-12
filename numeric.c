@@ -584,7 +584,11 @@ flo_to_s(VALUE flt)
 	    rb_str_cat(s, buf, digs + 1);
 	}
 	else if (decpt - digs < float_dig) {
+	    long len;
+	    char *ptr;
 	    rb_str_cat(s, buf, digs);
+	    rb_str_resize(s, (len = RSTRING_LEN(s)) + decpt - digs);
+	    memset(RSTRING_PTR(s) + len, '0', decpt - digs);
 	    rb_str_cat(s, ".0", 2);
 	}
 	else {
