@@ -1,3 +1,8 @@
+Thu May 13 07:37:49 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/sdbm/_sdbm.c: include unistd.h before sdbm.h for off_t.
+	  fix compilation problem on FreeBSD 6.4.
+
 Wed May 12 23:48:37 2010  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/intern.h (rb_quad_pack): deprecated.
