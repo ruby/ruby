@@ -1,5 +1,5 @@
 /* ffs.c - find first set bit */
-/* ffs() is defined by POSIX. */
+/* ffs() is defined by Single Unix Specification. */
 
 #include "ruby.h"
 
