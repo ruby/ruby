@@ -286,6 +286,10 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("bar", "foobarbaz"[Regexp.new("b..", nil, "n")])
     assert_equal(//n, Regexp.new("", nil, "n"))
 
+    arg_encoding_none = 32 # ARG_ENCODING_NONE is implementation defined value
+    assert_equal(arg_encoding_none, Regexp.new("", nil, "n").options)
+    assert_equal(arg_encoding_none, Regexp.new("", nil, "N").options)
+
     assert_raise(RegexpError) { Regexp.new(")(") }
   end
 
