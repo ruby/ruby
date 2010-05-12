@@ -159,6 +159,10 @@ RUBY_EXTERN size_t strlcpy(char *, const char*, size_t);
 RUBY_EXTERN size_t strlcat(char *, const char*, size_t);
 #endif
 
+#ifndef HAVE_FFS
+RUBY_EXTERN int ffs(int);
+#endif
+
 #if defined(__cplusplus)
 #if 0
 { /* satisfy cc-mode */
