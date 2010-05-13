@@ -1,3 +1,8 @@
+Thu May 13 18:20:16 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (swallow): should use more_char() instead of fill_cbuf().
+	  suggested by akr.
+
 Thu May 13 13:09:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_core.h (rb_vm_get_sourceline): moved from eval_intern.h for
