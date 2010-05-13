@@ -2296,7 +2296,6 @@ swallow(rb_io_t *fptr, int term)
     if (NEED_READCONV(fptr)) {
 	rb_encoding *enc = io_read_encoding(fptr);
 	int needconv = rb_enc_mbminlen(enc) != 1;
-	VALUE v;
 	make_readconv(fptr, 0);
 	do {
 	    size_t cnt;
@@ -2315,10 +2314,7 @@ swallow(rb_io_t *fptr, int term)
 		}
 		io_shift_cbuf(fptr, (int)cnt - i, NULL);
 	    }
-	    v = fill_cbuf(fptr, 0);
-	    if (v != MORE_CHAR_SUSPENDED && v != MORE_CHAR_FINISHED)
-		rb_exc_raise(v);
-	} while (v == MORE_CHAR_SUSPENDED);
+	} while (more_char(fptr) != MORE_CHAR_FINISHED);
 	return FALSE;
     }
 
