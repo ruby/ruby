@@ -913,7 +913,7 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t num, rb_n
     const rb_block_t *block = GET_BLOCK_PTR();
     rb_iseq_t *iseq;
     int argc = (int)num;
-    int type = GET_ISEQ()->local_iseq->type;
+    VALUE type = GET_ISEQ()->local_iseq->type;
 
     if ((type != ISEQ_TYPE_METHOD && type != ISEQ_TYPE_CLASS) || block == 0) {
 	rb_vm_localjump_error("no block given (yield)", Qnil, 0);
