@@ -6,10 +6,12 @@
 int ffs(int arg)
 {
     unsigned int x = (unsigned int)arg;
-    int r = 0;
+    int r;
 
     if (x == 0)
         return 0;
+
+    r = 1;
 
 #if 32 < SIZEOF_INT * CHAR_BIT
     if ((x & 0xffffffff) == 0) {
