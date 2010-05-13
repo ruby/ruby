@@ -287,18 +287,23 @@ module ScanfTests
 
      ]
   end
+
+  def each_test
+    i = "0" * (Math.log(self.tests.size, 10).floor+1)
+    self.tests.each do |test|
+      yield test, i.succ!
+    end
+  end
 end
 
 class TestStringScanf
   include Scanf
   extend ScanfTests
 
-  i = 1
-  self.tests.each do |test|
+  self.each_test do |test, i|
     define_method("test_#{i}") do ||
       assert_equal(test[2], test[1].scanf(test[0]))
-      end
-    i += 1
+    end
   end
 end
 
@@ -308,8 +313,7 @@ class TestIOScanf
 
   tmpfilename = "#{Dir.tmpdir}/iotest.dat.#{$$}"
 
-  i = 1
-  self.tests.each do |test|
+  self.each_test do |test, i|
     define_method("test_#{i}") do ||
       File.open(tmpfilename, "w") {|fh| fh.print test[1]}
       File.open(tmpfilename, "r") { |fh|
@@ -317,6 +321,5 @@ class TestIOScanf
       }
       File.delete(tmpfilename)
     end
-    i += 1
   end
 end
