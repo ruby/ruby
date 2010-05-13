@@ -592,9 +592,12 @@ dir_read(VALUE dir)
 /*
  *  call-seq:
  *     dir.each { |filename| block }  => dir
+ *     dir.each                       => an_enumerator
  *
  *  Calls the block once for each entry in this directory, passing the
  *  filename of each entry as a parameter to the block.
+ *
+ *  If no block is given, an enumerator is returned instead.
  *
  *     d = Dir.new("testdir")
  *     d.each  {|x| puts "Got #{x}" }
@@ -1820,9 +1823,12 @@ dir_open_dir(int argc, VALUE *argv)
 /*
  *  call-seq:
  *     Dir.foreach( dirname ) {| filename | block }  => nil
+ *     Dir.foreach( dirname )                        => an_enumerator
  *
  *  Calls the block once for each entry in the named directory, passing
  *  the filename of each entry as a parameter to the block.
+ *
+ *  If no block is given, an enumerator is returned instead.
  *
  *     Dir.foreach("testdir") {|x| puts "Got #{x}" }
  *

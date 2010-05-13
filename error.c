@@ -1058,7 +1058,7 @@ syserr_errno(VALUE self)
  *   system_call_error === other  => true or false
  *
  * Return +true+ if the receiver is a generic +SystemCallError+, or
- * if the error numbers _self_ and _other_ are the same.
+ * if the error numbers +self+ and _other_ are the same.
  */
 
 static VALUE

@@ -442,9 +442,12 @@ rb_struct_new(VALUE klass, ...)
 /*
  *  call-seq:
  *     struct.each {|obj| block }  => struct
+ *     struct.each                 => an_enumerator
  *
  *  Calls <i>block</i> once for each instance variable, passing the
  *  value as a parameter.
+ *
+ *  If no block is given, an enumerator is returned instead.
  *
  *     Customer = Struct.new(:name, :address, :zip)
  *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
@@ -472,9 +475,12 @@ rb_struct_each(VALUE s)
 /*
  *  call-seq:
  *     struct.each_pair {|sym, obj| block }     => struct
+ *     struct.each_pair                         => an_enumerator
  *
  *  Calls <i>block</i> once for each instance variable, passing the name
  *  (as a symbol) and the value as parameters.
+ *
+ *  If no block is given, an enumerator is returned instead.
  *
  *     Customer = Struct.new(:name, :address, :zip)
  *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
@@ -734,7 +740,7 @@ struct_entry(VALUE s, long n)
  *   struct.values_at(selector,... )  => an_array
  *
  *   Returns an array containing the elements in
- *   _self_ corresponding to the given selector(s). The selectors
+ *   +self+ corresponding to the given selector(s). The selectors
  *   may be either integer indices or ranges.
  *   See also </code>.select<code>.
  *
@@ -754,6 +760,7 @@ rb_struct_values_at(int argc, VALUE *argv, VALUE s)
 /*
  *  call-seq:
  *     struct.select {|i| block }    => array
+ *     struct.select                 => an_enumerator
  *
  *  Invokes the block passing in successive elements from
  *  <i>struct</i>, returning an array containing those elements
