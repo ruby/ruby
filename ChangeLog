@@ -1,3 +1,8 @@
+Thu May 13 13:09:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_core.h (rb_vm_get_sourceline): moved from eval_intern.h for
+	  vm_dump.c.
+
 Thu May 13 12:53:13 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (swallow): support text mode and UTF-16/32 as internal encoding.
