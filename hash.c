@@ -882,9 +882,12 @@ delete_if_i(VALUE key, VALUE value, VALUE hash)
 /*
  *  call-seq:
  *     hsh.delete_if {| key, value | block }  -> hsh
+ *     hsh.delete_if                          -> an_enumerator
  *
  *  Deletes every key-value pair from <i>hsh</i> for which <i>block</i>
  *  evaluates to <code>true</code>.
+ *
+ *  If no block is given, an enumerator is returned instead.
  *
  *     h = { "a" => 100, "b" => 200, "c" => 300 }
  *     h.delete_if {|key, value| key >= "b" }   #=> {"a"=>100}
@@ -903,6 +906,7 @@ rb_hash_delete_if(VALUE hash)
 /*
  *  call-seq:
  *     hsh.reject! {| key, value | block }  -> hsh or nil
+ *     hsh.reject!                          -> an_enumerator
  *
  *  Equivalent to <code>Hash#delete_if</code>, but returns
  *  <code>nil</code> if no changes were made.
@@ -974,8 +978,11 @@ select_i(VALUE key, VALUE value, VALUE result)
 /*
  *  call-seq:
  *     hsh.select {|key, value| block}   => a_hash
+ *     hsh.select                        => an_enumerator
  *
  *  Returns a new hash consisting of entries for which the block returns true.
+ *
+ *  If no block is given, an enumerator is returned instead.
  *
  *     h = { "a" => 100, "b" => 200, "c" => 300 }
  *     h.select {|k,v| k > "a"}  #=> {"b" => 200, "c" => 300}
@@ -1006,6 +1013,7 @@ keep_if_i(VALUE key, VALUE value, VALUE hash)
 /*
  *  call-seq:
  *     hsh.select! {| key, value | block }  -> hsh or nil
+ *     hsh.select!                          -> an_enumerator
  *
  *  Equivalent to <code>Hash#keep_if</code>, but returns
  *  <code>nil</code> if no changes were made.
@@ -1029,9 +1037,12 @@ rb_hash_select_bang(VALUE hash)
 /*
  *  call-seq:
  *     hsh.keep_if {| key, value | block }  -> hsh
+ *     hsh.keep_if                          -> an_enumerator
  *
  *  Deletes every key-value pair from <i>hsh</i> for which <i>block</i>
- *  evaluates to <code>false</code>.
+ *  evaluates to false.
+ *
+ *  If no block is given, an enumerator is returned instead.
  *
  */
 
@@ -1203,9 +1214,12 @@ each_value_i(VALUE key, VALUE value)
 /*
  *  call-seq:
  *     hsh.each_value {| value | block } -> hsh
+ *     hsh.each_value                    -> an_enumerator
  *
  *  Calls <i>block</i> once for each key in <i>hsh</i>, passing the
  *  value as a parameter.
+ *
+ *  If no block is given, an enumerator is returned instead.
  *
  *     h = { "a" => 100, "b" => 200 }
  *     h.each_value {|value| puts value }
@@ -1235,9 +1249,12 @@ each_key_i(VALUE key, VALUE value)
 /*
  *  call-seq:
  *     hsh.each_key {| key | block } -> hsh
+ *     hsh.each_key                  -> an_enumerator
  *
  *  Calls <i>block</i> once for each key in <i>hsh</i>, passing the key
  *  as a parameter.
+ *
+ *  If no block is given, an enumerator is returned instead.
  *
  *     h = { "a" => 100, "b" => 200 }
  *     h.each_key {|key| puts key }
@@ -1265,11 +1282,15 @@ each_pair_i(VALUE key, VALUE value)
 
 /*
  *  call-seq:
- *     hsh.each {| key, value | block } -> hsh
+ *     hsh.each      {| key, value | block } -> hsh
  *     hsh.each_pair {| key, value | block } -> hsh
+ *     hsh.each                              -> an_enumerator
+ *     hsh.each_pair                         -> an_enumerator
  *
  *  Calls <i>block</i> once for each key in <i>hsh</i>, passing the key-value
  *  pair as parameters.
+ *
+ *  If no block is given, an enumerator is returned instead.
  *
  *     h = { "a" => 100, "b" => 200 }
  *     h.each {|key, value| puts "#{key} is #{value}" }
@@ -1377,7 +1398,7 @@ rb_hash_inspect(VALUE hash)
  * call-seq:
  *    hsh.to_hash   => hsh
  *
- * Returns <i>self</i>.
+ * Returns +self+.
  */
 
 static VALUE

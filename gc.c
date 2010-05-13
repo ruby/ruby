@@ -2424,6 +2424,7 @@ os_obj_of(VALUE of)
 /*
  *  call-seq:
  *     ObjectSpace.each_object([module]) {|obj| ... } => fixnum
+ *     ObjectSpace.each_object([module])              => an_enumerator
  *
  *  Calls the block once for each living, nonimmediate object in this
  *  Ruby process. If <i>module</i> is specified, calls the block
@@ -2434,6 +2435,8 @@ os_obj_of(VALUE of)
  *  never returned. In the example below, <code>each_object</code>
  *  returns both the numbers we defined and several constants defined in
  *  the <code>Math</code> module.
+ *
+ *  If no block is given, an enumerator is returned instead.
  *
  *     a = 102.7
  *     b = 95       # Won't be returned

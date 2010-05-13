@@ -319,12 +319,15 @@ discrete_object_p(VALUE obj)
 /*
  *  call-seq:
  *     rng.step(n=1) {| obj | block }    => rng
+ *     rng.step(n=1)                     => an_enumerator
  *
  *  Iterates over <i>rng</i>, passing each <i>n</i>th element to the block. If
  *  the range contains numbers, <i>n</i> is added for each iteration.  Otherwise
  *  <code>step</code> invokes <code>succ</code> to iterate through range
  *  elements. The following code uses class <code>Xs</code>, which is defined
  *  in the class-level documentation.
+ *
+ *  If no block is given, an enumerator is returned instead.
  *
  *     range = Xs.new(1)..Xs.new(10)
  *     range.step(2) {|x| puts x}
@@ -453,11 +456,14 @@ sym_each_i(VALUE v, void *arg)
 /*
  *  call-seq:
  *     rng.each {| i | block } => rng
+ *     rng.each                => an_enumerator
  *
  *  Iterates over the elements <i>rng</i>, passing each in turn to the
  *  block. You can only iterate if the start object of the range
  *  supports the +succ+ method (which means that you can't iterate over
  *  ranges of +Float+ objects).
+ *
+ *  If no block is given, an enumerator is returned instead.
  *
  *     (10..15).each do |n|
  *        print n, ' '

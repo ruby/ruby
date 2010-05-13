@@ -2703,17 +2703,17 @@ rb_io_readlines(int argc, VALUE *argv, VALUE io)
  *     ios.each(sep=$/) {|line| block }         => ios
  *     ios.each(limit) {|line| block }          => ios
  *     ios.each(sep,limit) {|line| block }      => ios
- *     ios.each(...)                            => anEnumerator
+ *     ios.each(...)                            => an_enumerator
  *
  *     ios.each_line(sep=$/) {|line| block }    => ios
  *     ios.each_line(limit) {|line| block }     => ios
  *     ios.each_line(sep,limit) {|line| block } => ios
- *     ios.each_line(...)                       => anEnumerator
+ *     ios.each_line(...)                       => an_enumerator
  *
  *     ios.lines(sep=$/) {|line| block }        => ios
  *     ios.lines(limit) {|line| block }         => ios
  *     ios.lines(sep,limit) {|line| block }     => ios
- *     ios.lines(...)                           => anEnumerator
+ *     ios.lines(...)                           => an_enumerator
  *
  *  Executes the block for every line in <em>ios</em>, where lines are
  *  separated by <i>sep</i>. <em>ios</em> must be opened for
@@ -2749,10 +2749,10 @@ rb_io_each_line(int argc, VALUE *argv, VALUE io)
 /*
  *  call-seq:
  *     ios.bytes {|byte| block }      => ios
- *     ios.bytes                      => anEnumerator
+ *     ios.bytes                      => an_enumerator
  *
  *     ios.each_byte {|byte| block }  => ios
- *     ios.each_byte                  => anEnumerator
+ *     ios.each_byte                  => an_enumerator
  *
  *  Calls the given block once for each byte (0..255) in <em>ios</em>,
  *  passing the byte as an argument. The stream must be opened for
@@ -2898,10 +2898,10 @@ io_getc(rb_io_t *fptr, rb_encoding *enc)
 /*
  *  call-seq:
  *     ios.chars {|c| block }      => ios
- *     ios.chars                   => anEnumerator
+ *     ios.chars                   => an_enumerator
  *
  *     ios.each_char {|c| block }  => ios
- *     ios.each_char               => anEnumerator
+ *     ios.each_char               => an_enumerator
  *
  *  Calls the given block once for each character in <em>ios</em>,
  *  passing the character as an argument. The stream must be opened for
@@ -2933,23 +2933,19 @@ rb_io_each_char(VALUE io)
 }
 
 
-
-/*
- *  call-seq:
- *     ios.codepoints   => anEnumerator
- *
- *  Returns an enumerator that gives each codepoint in <em>ios</em>.
- *  The stream must be opened for reading or an <code>IOError</code>
- *  will be raised.
- */
-
 /*
  *  call-seq:
  *     ios.each_codepoint {|c| block }  => ios
+ *     ios.codepoints     {|c| block }  => ios
+ *     ios.each_codepoint               => an_enumerator
+ *     ios.codepoints                   => an_enumerator
  *
  *  Passes the <code>Integer</code> ordinal of each character in <i>ios</i>,
  *  passing the codepoint as an argument. The stream must be opened for
  *  reading or an <code>IOError</code> will be raised.
+ *
+ *  If no block is given, an enumerator is returned instead.
+ *
  */
 
 static VALUE
@@ -7833,9 +7829,12 @@ io_s_foreach(struct foreach_arg *arg)
  *     IO.foreach(name, sep=$/ [, open_args]) {|line| block }     => nil
  *     IO.foreach(name, limit [, open_args]) {|line| block }      => nil
  *     IO.foreach(name, sep, limit [, open_args]) {|line| block } => nil
+ *     IO.foreach(...)                                            => an_enumerator
  *
  *  Executes the block for every line in the named I/O port, where lines
  *  are separated by <em>sep</em>.
+ *
+ *  If no block is given, an enumerator is returned instead.
  *
  *     IO.foreach("testfile") {|x| print "GOT ", x }
  *
@@ -9222,15 +9221,15 @@ argf_readbyte(VALUE argf)
  *  call-seq:
  *     ARGF.each(sep=$/)            {|line| block }  => ARGF
  *     ARGF.each(sep=$/,limit)      {|line| block }  => ARGF
- *     ARGF.each(...)                                => anEnumerator
+ *     ARGF.each(...)                                => an_enumerator
  *
  *     ARGF.each_line(sep=$/)       {|line| block }  => ARGF
  *     ARGF.each_line(sep=$/,limit) {|line| block }  => ARGF
- *     ARGF.each_line(...)                           => anEnumerator
+ *     ARGF.each_line(...)                           => an_enumerator
  *
  *     ARGF.lines(sep=$/)           {|line| block }   => ARGF
  *     ARGF.lines(sep=$/,limit)     {|line| block }   => ARGF
- *     ARGF.lines(...)                                => anEnumerator
+ *     ARGF.lines(...)                                => an_enumerator
  *
  *  Returns an enumerator which iterates over each line (separated by _sep_,
  *  which defaults to your platform's newline character) of each file in
@@ -9268,10 +9267,10 @@ argf_each_line(int argc, VALUE *argv, VALUE argf)
 /*
  *  call-seq:
  *     ARGF.bytes     {|byte| block }  => ARGF
- *     ARGF.bytes                      => anEnumerator
+ *     ARGF.bytes                      => an_enumerator
  *
  *     ARGF.each_byte {|byte| block }  => ARGF
- *     ARGF.each_byte                  => anEnumerator
+ *     ARGF.each_byte                  => an_enumerator
  *
  *  Iterates over each byte of each file in +ARGV+.
  *  A byte is returned as a +Fixnum+ in the range 0..255.
@@ -9303,10 +9302,10 @@ argf_each_byte(VALUE argf)
 /*
  *  call-seq:
  *     ARGF.chars      {|char| block }  => ARGF
- *     ARGF.chars                       => anEnumerator
+ *     ARGF.chars                       => an_enumerator
  *
  *     ARGF.each_char  {|char| block }  => ARGF
- *     ARGF.each_char                   => anEnumerator
+ *     ARGF.each_char                   => an_enumerator
  *
  *  Iterates over each character of each file in +ARGF+.
  *
@@ -9590,9 +9589,9 @@ ruby_set_inplace_mode(const char *suffix)
 
 /*
  *  call-seq:
- *     ARGF.argv  => Array
+ *     ARGF.argv  => ARGV
  *
- *  Returns the +ARGV+ Array, which contains the arguments passed to your
+ *  Returns the +ARGV+ array, which contains the arguments passed to your
  *  script, one per element.
  *
  *  For example:
