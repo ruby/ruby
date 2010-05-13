@@ -928,6 +928,7 @@ EOT
   end
 
   def test_stdin_external_encoding_with_reopen
+    skip "passing non-stdio fds is not supported" if /mswin|mingw/ =~ RUBY_PLATFORM
     with_tmpdir {
       open("tst", "w+") {|f|
         pid = spawn(EnvUtil.rubybin, '-e', <<-'End', 10=>f)
