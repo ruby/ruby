@@ -1792,5 +1792,17 @@ EOT
     end
   end
 
+  def test_textmode_paragraph_binaryread
+    with_pipe("US-ASCII:UTF-8", :universal_newline => true) do |r, w|
+      r, w = IO.pipe
+      w << "a\n\n\ncdefgh".gsub(/\n/, "\r\n")
+      w.close
+      r.set_encoding("US-ASCII:UTF-8", :universal_newline => true)
+      assert_equal("a\n\n", r.gets(""))
+      assert_equal("c", r.getc)
+      assert_equal("defgh", r.readpartial(10))
+    end
+  end
+
 end
 
