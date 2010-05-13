@@ -1,3 +1,7 @@
+Fri May 14 07:27:07 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (w_float): strip ".0" from end for rubyspec.
+
 Fri May 14 01:17:10 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm_core.c (rb_thread_struct): add a field for sigaltstack.
