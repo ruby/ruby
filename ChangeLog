@@ -1,3 +1,8 @@
+Thu May 13 17:56:07 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/console/console.c (console_set_echo, console_echo_p): use
+	  primary fd.  [ruby-dev:41309]
+
 Thu May 13 13:30:05 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (w_float): use minimal representation.
