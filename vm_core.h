@@ -63,6 +63,10 @@
 #define va_init_list(a,b) va_start(a)
 #endif
 
+#if defined(SIGSEGV) && defined(HAVE_SIGALTSTACK) && defined(SA_SIGINFO) && !defined(__NetBSD__)
+#define USE_SIGALTSTACK
+#endif
+
 /*****************/
 /* configuration */
 /*****************/
@@ -473,6 +477,9 @@ typedef struct rb_thread_struct
     /* misc */
     int method_missing_reason;
     int abort_on_exception;
+#ifdef USE_SIGALTSTACK
+    void *altstack;
+#endif
 } rb_thread_t;
 
 /* iseq.c */

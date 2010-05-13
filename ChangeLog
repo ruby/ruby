@@ -1,3 +1,13 @@
+Fri May 14 01:17:10 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* vm_core.c (rb_thread_struct): add a field for sigaltstack.
+
+	* thread_pthread.c (thread_start_func_1): initialize machine stack
+	  information.
+
+	* thread.c (thread_start_func_2): set sigaltstack for each sub thread.
+	  [ruby-core:24540] [ruby-core:30207]
+
 Thu May 13 21:40:39 2010  Tanaka Akira  <akr@fsij.org>
 
 	* missing/ffs.c (ffs): fixed for non-zero values.

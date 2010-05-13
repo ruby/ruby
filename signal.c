@@ -420,10 +420,6 @@ static struct {
 #define sighandler_t sh_t
 #endif
 
-#if defined(SIGSEGV) && defined(HAVE_SIGALTSTACK) && defined(SA_SIGINFO) && !defined(__NetBSD__)
-#define USE_SIGALTSTACK
-#endif
-
 typedef RETSIGTYPE (*sighandler_t)(int);
 #ifdef USE_SIGALTSTACK
 typedef void ruby_sigaction_t(int, siginfo_t*, void*);
@@ -442,18 +438,17 @@ typedef RETSIGTYPE ruby_sigaction_t(int);
 #define ALT_STACK_SIZE (4*1024)
 #endif
 /* alternate stack for SIGSEGV */
-static void
-register_sigaltstack(void)
+void
+rb_register_sigaltstack(rb_thread_t *th)
 {
-    static void *altstack = 0;
     stack_t newSS, oldSS;
 
-    if (altstack) return;
+    if (th->altstack) return;
 
-    newSS.ss_sp = altstack = malloc(ALT_STACK_SIZE);
+    newSS.ss_sp = th->altstack = malloc(ALT_STACK_SIZE);
     if (newSS.ss_sp == NULL)
 	/* should handle error */
-	rb_bug("register_sigaltstack. malloc error\n");
+	rb_bug("rb_register_sigaltstack. malloc error\n");
     newSS.ss_size = ALT_STACK_SIZE;
     newSS.ss_flags = 0;
 
@@ -737,7 +732,7 @@ default_handler(int sig)
       case SIGSEGV:
         func = (sighandler_t)sigsegv;
 # ifdef USE_SIGALTSTACK
-        register_sigaltstack();
+        rb_register_sigaltstack(GET_THREAD());
 # endif
         break;
 #endif
@@ -1130,7 +1125,7 @@ Init_signal(void)
 #endif
 #ifdef SIGSEGV
 # ifdef USE_SIGALTSTACK
-    register_sigaltstack();
+    rb_register_sigaltstack(GET_THREAD());
 # endif
     install_sighandler(SIGSEGV, (sighandler_t)sigsegv);
 #endif
