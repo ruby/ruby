@@ -315,7 +315,7 @@ console_set_echo(VALUE io, VALUE f)
     int fd;
 
     GetOpenFile(io, fptr);
-    fd = GetWriteFD(fptr);
+    fd = GetReadFD(fptr);
     if (!getattr(fd, &t)) rb_sys_fail(0);
     if (RTEST(f))
 	set_echo(&t);
@@ -339,7 +339,7 @@ console_echo_p(VALUE io)
     int fd;
 
     GetOpenFile(io, fptr);
-    fd = GetWriteFD(fptr);
+    fd = GetReadFD(fptr);
     if (!getattr(fd, &t)) rb_sys_fail(0);
     return echo_p(&t) ? Qtrue : Qfalse;
 }
