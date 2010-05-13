@@ -494,7 +494,7 @@ num_zero_p(VALUE num)
  *  call-seq:
  *     num.nonzero?  ->  self or nil
  *
- *  Returns <i>self</i> if <i>num</i> is not zero, <code>nil</code>
+ *  Returns +self+ if <i>num</i> is not zero, <code>nil</code>
  *  otherwise. This behavior is useful when chaining comparisons:
  *
  *     a = %w( z Bb bB bb BB a aA Aa AA A )
@@ -1234,7 +1234,7 @@ flo_eql(VALUE x, VALUE y)
  * call-seq:
  *   flt.to_f  ->  self
  *
- * As <code>flt</code> is already a float, returns <i>self</i>.
+ * As <code>flt</code> is already a float, returns +self+.
  */
 
 static VALUE
@@ -1596,7 +1596,7 @@ ruby_float_step(VALUE from, VALUE to, VALUE step, int excl)
 /*
  *  call-seq:
  *     num.step(limit[, step]) {|i| block }  ->  self
- *     num.step(limit[, step])               ->  enumerator
+ *     num.step(limit[, step])               ->  an_enumerator
  *
  *  Invokes <em>block</em> with the sequence of numbers starting at
  *  <i>num</i>, incremented by <i>step</i> (default 1) on each
@@ -1611,6 +1611,8 @@ ruby_float_step(VALUE from, VALUE to, VALUE step, int excl)
  *  either the <code><</code> or <code>></code> operator to compare
  *  the counter against <i>limit</i>, and increments itself using the
  *  <code>+</code> operator.
+ *
+ *  If no block is given, an enumerator is returned instead.
  *
  *     1.step(10, 2) { |i| print i, " " }
  *     Math::E.step(Math::PI, 0.2) { |f| print f, " " }
@@ -3018,10 +3020,12 @@ fix_size(VALUE fix)
 /*
  *  call-seq:
  *     int.upto(limit) {|i| block }  ->  self
- *     int.upto(limit)               ->  enumerator
+ *     int.upto(limit)               ->  an_enumerator
  *
  *  Iterates <em>block</em>, passing in integer values from <i>int</i>
  *  up to and including <i>limit</i>.
+ *
+ *  If no block is given, an enumerator is returned instead.
  *
  *     5.upto(10) { |i| print i, " " }
  *
@@ -3057,10 +3061,12 @@ int_upto(VALUE from, VALUE to)
 /*
  *  call-seq:
  *     int.downto(limit) {|i| block }  ->  self
- *     int.downto(limit)               ->  enumerator
+ *     int.downto(limit)               ->  an_enumerator
  *
  *  Iterates <em>block</em>, passing decreasing values from <i>int</i>
  *  down to and including <i>limit</i>.
+ *
+ *  If no block is given, an enumerator is returned instead.
  *
  *     5.downto(1) { |n| print n, ".. " }
  *     print "  Liftoff!\n"
@@ -3097,10 +3103,12 @@ int_downto(VALUE from, VALUE to)
 /*
  *  call-seq:
  *     int.times {|i| block }  ->  self
- *     int.times               ->  enumerator
+ *     int.times               ->  an_enumerator
  *
  *  Iterates block <i>int</i> times, passing in values from zero to
  *  <i>int</i> - 1.
+ *
+ *  If no block is given, an enumerator is returned instead.
  *
  *     5.times do |i|
  *       print i, " "

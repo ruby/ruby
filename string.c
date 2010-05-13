@@ -2859,12 +2859,15 @@ rb_str_succ_bang(VALUE str)
 /*
  *  call-seq:
  *     str.upto(other_str, exclusive=false) {|s| block }   => str
+ *     str.upto(other_str, exclusive=false)                => an_enumerator
  *
  *  Iterates through successive values, starting at <i>str</i> and
  *  ending at <i>other_str</i> inclusive, passing each value in turn to
  *  the block. The <code>String#succ</code> method is used to generate
- *  each value.  If optional second argument exclusive is omitted or is <code>false</code>,
+ *  each value.  If optional second argument exclusive is omitted or is false,
  *  the last value will be included; otherwise it will be excluded.
+ *
+ *  If no block is given, an enumerator is returned instead.
  *
  *     "a8".upto("b6") {|s| print s, ' ' }
  *     for s in "a8".."b6"
@@ -3548,6 +3551,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *     str.sub(pattern, replacement)         => new_str
  *     str.sub(pattern) {|match| block }     => new_str
+ *     str.sub(pattern)                      => an_enumerator
  *
  *  Returns a copy of <i>str</i> with the <em>first</em> occurrence of
  *  <i>pattern</i> replaced with either <i>replacement</i> or the value of the
@@ -3565,6 +3569,8 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
  *  variables such as <code>$1</code>, <code>$2</code>, <code>$`</code>,
  *  <code>$&</code>, and <code>$'</code> will be set appropriately. The value
  *  returned by the block will be substituted for the match on each call.
+ *
+ *  If no block and no <i>replacement</i> is given, an enumerator is returned instead.
  *
  *  The result inherits any tainting in the original string or any supplied
  *  replacement string.
@@ -5659,10 +5665,10 @@ rb_str_split(VALUE str, const char *sep0)
 /*
  *  call-seq:
  *     str.each_line(separator=$/) {|substr| block }   => str
- *     str.each_line(separator=$/)                     => anEnumerator
+ *     str.each_line(separator=$/)                     => an_enumerator
  *
  *     str.lines(separator=$/) {|substr| block }       => str
- *     str.lines(separator=$/)                         => anEnumerator
+ *     str.lines(separator=$/)                         => an_enumerator
  *
  *  Splits <i>str</i> using the supplied parameter as the record separator
  *  (<code>$/</code> by default), passing each substring in turn to the supplied
@@ -5794,10 +5800,10 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 /*
  *  call-seq:
  *     str.bytes {|fixnum| block }        => str
- *     str.bytes                          => anEnumerator
+ *     str.bytes                          => an_enumerator
  *
  *     str.each_byte {|fixnum| block }    => str
- *     str.each_byte                      => anEnumerator
+ *     str.each_byte                      => an_enumerator
  *
  *  Passes each byte in <i>str</i> to the given block, or returns
  *  an enumerator if no block is given.
@@ -5825,10 +5831,10 @@ rb_str_each_byte(VALUE str)
 /*
  *  call-seq:
  *     str.chars {|cstr| block }        => str
- *     str.chars                        => anEnumerator
+ *     str.chars                        => an_enumerator
  *
  *     str.each_char {|cstr| block }    => str
- *     str.each_char                    => anEnumerator
+ *     str.each_char                    => an_enumerator
  *
  *  Passes each character in <i>str</i> to the given block, or returns
  *  an enumerator if no block is given.
@@ -5873,10 +5879,10 @@ rb_str_each_char(VALUE str)
 /*
  *  call-seq:
  *     str.codepoints {|integer| block }        => str
- *     str.codepoints                           => anEnumerator
+ *     str.codepoints                           => an_enumerator
  *
  *     str.each_codepoint {|integer| block }    => str
- *     str.each_codepoint                       => anEnumerator
+ *     str.each_codepoint                       => an_enumerator
  *
  *  Passes the <code>Integer</code> ordinal of each character in <i>str</i>,
  *  also known as a <i>codepoint</i> when applied to Unicode strings to the

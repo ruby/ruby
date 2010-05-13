@@ -792,9 +792,12 @@ loop_i(void)
 
 /*
  *  call-seq:
- *     loop {|| block }
+ *     loop { block }
+ *     loop            -> an_enumerator
  *
  *  Repeatedly executes the block.
+ *
+ *  If no block is given, an enumerator is returned instead.
  *
  *     loop do
  *       print "Input: "
