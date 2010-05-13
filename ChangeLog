@@ -1,3 +1,10 @@
+Thu May 13 13:04:46 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (swallow): support text mode and UTF-16/32 as internal encoding.
+	  [Bug #1576]
+
+	* io.c (io_shift_cbuf): read and throw it away when str is NULL.
+
 Wed May 12 16:43:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (flo_to_s): fixed broken output including nuls.

@@ -187,6 +187,8 @@ static int max_file_descriptor = NOFILE;
 #define READ_DATA_BUFFERED(fptr) READ_DATA_PENDING(fptr)
 
 #define READ_CHAR_PENDING(fptr) ((fptr)->cbuf_len)
+#define READ_CHAR_PENDING_COUNT(fptr) ((fptr)->cbuf_len)
+#define READ_CHAR_PENDING_PTR(fptr) ((fptr)->cbuf+(fptr)->cbuf_off)
 
 #if defined(_WIN32)
 #define WAIT_FD_IN_WIN32(fptr) \
@@ -1713,18 +1715,20 @@ more_char(rb_io_t *fptr)
 static VALUE
 io_shift_cbuf(rb_io_t *fptr, int len, VALUE *strp)
 {
-    VALUE str;
-    if (NIL_P(*strp)) {
-        *strp = str = rb_str_new(fptr->cbuf+fptr->cbuf_off, len);
-    }
-    else {
-        str = *strp;
-        rb_str_cat(str, fptr->cbuf+fptr->cbuf_off, len);
+    VALUE str = Qnil;
+    if (strp) {
+	str = *strp;
+	if (NIL_P(str)) {
+	    *strp = str = rb_str_new(fptr->cbuf+fptr->cbuf_off, len);
+	}
+	else {
+	    rb_str_cat(str, fptr->cbuf+fptr->cbuf_off, len);
+	}
+	OBJ_TAINT(str);
+	rb_enc_associate(str, fptr->encs.enc);
     }
     fptr->cbuf_off += len;
     fptr->cbuf_len -= len;
-    OBJ_TAINT(str);
-    rb_enc_associate(str, fptr->encs.enc);
     /* xxx: set coderange */
     if (fptr->cbuf_len == 0)
         fptr->cbuf_off = 0;
@@ -2289,6 +2293,35 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp)
 static inline int
 swallow(rb_io_t *fptr, int term)
 {
+    if (NEED_READCONV(fptr)) {
+	rb_encoding *enc = io_read_encoding(fptr);
+	int needconv = rb_enc_mbminlen(enc) != 1;
+	VALUE v;
+	make_readconv(fptr, 0);
+	do {
+	    size_t cnt;
+	    while ((cnt = READ_CHAR_PENDING_COUNT(fptr)) > 0) {
+		const char *p = READ_CHAR_PENDING_PTR(fptr);
+		int i;
+		if (needconv) {
+		    if (*p != term) return TRUE;
+		    while (--i && *++p == term);
+		}
+		else {
+		    const char *e = p + cnt;
+		    if (rb_enc_ascget(p, e, &i, enc) != term) return TRUE;
+		    while ((p += i) < e && rb_enc_ascget(p, e, &i, enc) == term);
+		    i = (int)(e - p);
+		}
+		io_shift_cbuf(fptr, (int)cnt - i, NULL);
+	    }
+	    v = fill_cbuf(fptr, 0);
+	    if (v != MORE_CHAR_SUSPENDED && v != MORE_CHAR_FINISHED)
+		rb_exc_raise(v);
+	} while (v == MORE_CHAR_SUSPENDED);
+	return FALSE;
+    }
+
     do {
 	size_t cnt;
 	while ((cnt = READ_DATA_PENDING_COUNT(fptr)) > 0) {
