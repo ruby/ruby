@@ -70,4 +70,13 @@ class TestIO_Console < Test::Unit::TestCase
     }
   end
 
+  def test_oflush
+    PTY.open {|m, s|
+      s.print "a\n"
+      s.oflush
+      s.print "b\n"
+      assert_equal("b\r\n", m.readpartial(10))
+    }
+  end
+
 end
