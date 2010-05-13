@@ -1,3 +1,9 @@
+Thu May 13 13:30:05 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (w_float): use minimal representation.
+
+	* numeric.c (ruby_dbl2cstr): split from rb_float_new.
+
 Thu May 13 13:09:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_core.h (rb_vm_get_sourceline): moved from eval_intern.h for
