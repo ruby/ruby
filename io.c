@@ -2294,23 +2294,23 @@ static inline int
 swallow(rb_io_t *fptr, int term)
 {
     if (NEED_READCONV(fptr)) {
+	rb_encoding *enc = io_read_encoding(fptr);
+	int needconv = rb_enc_mbminlen(enc) != 1;
 	VALUE v;
 	make_readconv(fptr, 0);
 	do {
 	    size_t cnt;
 	    while ((cnt = READ_CHAR_PENDING_COUNT(fptr)) > 0) {
 		const char *p = READ_CHAR_PENDING_PTR(fptr);
-		rb_encoding *enc = io_read_encoding(fptr);
 		int i;
-		if (rb_enc_mbminlen(enc) == 1) {
+		if (needconv) {
 		    if (*p != term) return TRUE;
 		    while (--i && *++p == term);
 		}
 		else {
 		    const char *e = p + cnt;
 		    if (rb_enc_ascget(p, e, &i, enc) != term) return TRUE;
-		    while ((p += i) < e && rb_enc_ascget(p, e, &i, enc) == term)
-			;
+		    while ((p += i) < e && rb_enc_ascget(p, e, &i, enc) == term);
 		    i = (int)(e - p);
 		}
 		io_shift_cbuf(fptr, (int)cnt - i, NULL);
