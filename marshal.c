@@ -369,7 +369,10 @@ w_float(double d, struct dump_arg *arg)
 	else           w_cstr("0", arg);
     }
     else {
-	w_bytes(buf, ruby_dbl2cstr(d, buf, (int)sizeof(buf)), arg);
+	int len = ruby_dbl2cstr(d, buf, (int)sizeof(buf));
+	if (len > 2 && buf[len - 1] == '0' && buf[len - 2] == '.')
+	    len -= 2;
+	w_bytes(buf, len, arg);
     }
 }
 
