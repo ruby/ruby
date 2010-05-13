@@ -245,6 +245,8 @@ w_bytes(const char *s, long n, struct dump_arg *arg)
     w_nbyte(s, n, arg);
 }
 
+#define w_cstr(s, arg) w_bytes(s, strlen(s), arg)
+
 static void
 w_short(int x, struct dump_arg *arg)
 {
@@ -308,35 +310,6 @@ w_long(long x, struct dump_arg *arg)
 #define MANT_BITS 8
 #endif
 
-static int
-save_mantissa(double d, char *buf)
-{
-    int e, i = 0;
-    unsigned long m;
-    double n;
-
-    d = modf(ldexp(frexp(fabs(d), &e), DECIMAL_MANT), &d);
-    if (d > 0) {
-	buf[i++] = 0;
-	do {
-	    d = modf(ldexp(d, MANT_BITS), &n);
-	    m = (unsigned long)n;
-#if MANT_BITS > 24
-	    buf[i++] = (char)(m >> 24);
-#endif
-#if MANT_BITS > 16
-	    buf[i++] = (char)(m >> 16);
-#endif
-#if MANT_BITS > 8
-	    buf[i++] = (char)(m >> 8);
-#endif
-	    buf[i++] = (char)m;
-	} while (d > 0);
-	while (!buf[i - 1]) --i;
-    }
-    return i;
-}
-
 static double
 load_mantissa(double d, const char *buf, long len)
 {
@@ -370,7 +343,6 @@ load_mantissa(double d, const char *buf, long len)
 }
 #else
 #define load_mantissa(d, buf, len) (d)
-#define save_mantissa(d, buf) 0
 #endif
 
 #ifdef DBL_DIG
@@ -382,29 +354,23 @@ load_mantissa(double d, const char *buf, long len)
 static void
 w_float(double d, struct dump_arg *arg)
 {
+    int ruby_dbl2cstr(double value, char *buf, int size);
     char buf[FLOAT_DIG + (DECIMAL_MANT + 7) / 8 + 10];
 
     if (isinf(d)) {
-	if (d < 0) strcpy(buf, "-inf");
-	else       strcpy(buf, "inf");
+	if (d < 0) w_cstr("-inf", arg);
+	else       w_cstr("inf", arg);
     }
     else if (isnan(d)) {
-	strcpy(buf, "nan");
+	w_cstr("nan", arg);
     }
     else if (d == 0.0) {
-	if (1.0/d < 0) strcpy(buf, "-0");
-	else           strcpy(buf, "0");
+	if (1.0/d < 0) w_cstr("-0", arg);
+	else           w_cstr("0", arg);
     }
     else {
-	size_t len;
-
-	/* xxx: should not use system's sprintf(3) */
-	snprintf(buf, sizeof(buf), "%.*g", FLOAT_DIG, d);
-	len = strlen(buf);
-	w_bytes(buf, len + save_mantissa(d, buf + len), arg);
-	return;
+	w_bytes(buf, ruby_dbl2cstr(d, buf, (int)sizeof(buf)), arg);
     }
-    w_bytes(buf, strlen(buf), arg);
 }
 
 static void
