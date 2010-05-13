@@ -164,7 +164,7 @@ get_write_fd(const rb_io_t *fptr)
 {
     VALUE wio = fptr->tied_io_for_writing;
     rb_io_t *ofptr;
-    if (!wio) return -1;
+    if (!wio) return fptr->fd;
     GetOpenFile(wio, ofptr);
     return ofptr->fd;
 }
