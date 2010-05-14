@@ -365,6 +365,13 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_segv_test
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      opts = {}
+      additional = '[\s\w\.\']*'
+    else
+      opts[:rlimit_core] = 0
+      additional = ""
+    end
     assert_in_out_err(["-e", "Process.kill :SEGV, $$"], "", [],
       %r(\A
       -e:(?:1:)?\s\[BUG\]\sSegmentation\sfault\n
@@ -385,9 +392,12 @@ class TestRubyOptions < Test::Unit::TestCase
       \[NOTE\]\n
       You\smay\shave\sencountered\sa\sbug\sin\sthe\sRuby\sinterpreter\sor\sextension\slibraries.\n
       Bug\sreports\sare\swelcome.\n
-      For\sdetails:\shttp:\/\/www.ruby-lang.org/bugreport.html\n\n\z
+      For\sdetails:\shttp:\/\/www.ruby-lang.org/bugreport.html\n
+      \n
+      (?:#{additional})
+      \z
       )x,
       nil,
-      :rlimit_core=>0)
+      opts)
   end
 end
