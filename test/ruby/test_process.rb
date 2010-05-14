@@ -466,24 +466,24 @@ class TestProcess < Test::Unit::TestCase
           }
           Process.wait pid
         }
+
+        closed_fd = nil
+        with_pipes(5) {|pipes|
+          io = pipes.last.last
+          closed_fd = io.fileno
+        }
+        assert_raise(Errno::EBADF) { Process.wait spawn(*TRUECOMMAND, closed_fd=>closed_fd) }
+
+        with_pipe {|r, w|
+          if w.respond_to?(:"close_on_exec=")
+            w.close_on_exec = true
+            pid = spawn(RUBY, "-e", "IO.new(#{w.fileno}, 'w').print 'a'", w=>w)
+            w.close
+            assert_equal("a", r.read)
+            Process.wait pid
+          end
+        }
       end
-
-      closed_fd = nil
-      with_pipes(5) {|pipes|
-        io = pipes.last.last
-        closed_fd = io.fileno
-      }
-      assert_raise(Errno::EBADF) { Process.wait spawn(*TRUECOMMAND, closed_fd=>closed_fd) }
-
-      with_pipe {|r, w|
-        if w.respond_to?(:"close_on_exec=")
-          w.close_on_exec = true
-          pid = spawn(RUBY, "-e", "IO.new(#{w.fileno}, 'w').print 'a'", w=>w)
-          w.close
-          assert_equal("a", r.read)
-          Process.wait pid
-        end
-      }
 
       system(*ECHO["funya"], :out=>"out")
       assert_equal("funya\n", File.read("out"))
