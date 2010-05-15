@@ -1,3 +1,8 @@
+Sat May 15 17:16:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/iconv.c (rb_iconv_sys_fail): raise BrokenLibrary if
+	  errno is not set.  [ruby-dev:41317]
+
 Sat May 15 12:36:01 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, common.mk, win32/Makefile.sub (REVISION_H): move
