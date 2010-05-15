@@ -1,3 +1,8 @@
+Sun May 16 02:23:00 2010  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
+
+	* configure.in: can not load libruby.so if gcc is used with
+	  --enable-shared on AIX.
+
 Sat May 15 17:16:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (rb_iconv_sys_fail): raise BrokenLibrary if
