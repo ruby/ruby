@@ -1,3 +1,8 @@
+Sat May 15 17:16:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/iconv.c (rb_iconv_sys_fail): raise BrokenLibrary if
+	  errno is not set.  [ruby-dev:41317]
+
 Fri May 14 07:27:07 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (w_float): strip ".0" from end for rubyspec.
