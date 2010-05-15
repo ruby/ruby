@@ -181,6 +181,8 @@ OBJEXT        = obj
 
 INSTALLED_LIST= .installed.list
 
+MKMAIN_CMD    = mkmain.bat
+
 WINMAINOBJ    = winmain.$(OBJEXT)
 MINIOBJS      = dmydln.$(OBJEXT)
 
@@ -207,8 +209,9 @@ rubyw: $(WPROGRAM)
 
 !include $(srcdir)/common.mk
 
-revision.h: revision.h.tmp
-	@$(IFCHANGE) "$(srcdir)/$@" "revision.h.tmp"
+$(REVISION_H):
+	@$(IFCHANGE) "$(srcdir)/revision.h" "revision.h.tmp"
+	@exit > $@
 
 $(MKFILES): $(srcdir)/bcc32/Makefile.sub $(srcdir)/bcc32/configure.bat $(srcdir)/bcc32/setup.mak
 	$(COMSPEC) /C $(srcdir:/=\)\bcc32\configure.bat $(configure_args)

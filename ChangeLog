@@ -1,3 +1,8 @@
+Sat May 15 11:59:40 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, common.mk, win32/Makefile.sub (revision.h): fix for
+	  nmake.  [ruby-core:30249]
+
 Tue May 11 22:51:11 2010  Tanaka Akira  <akr@fsij.org>
 
 	* pack.c (pack_pack): call rb_quad_pack to preserve RangeError.

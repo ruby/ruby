@@ -270,8 +270,9 @@ rubyw: $(WPROGRAM)
 
 !include $(srcdir)/common.mk
 
-revision.h: revision.h.tmp
-	@$(IFCHANGE) "$(srcdir)/$@" "revision.h.tmp"
+$(REVISION_H):
+	@$(IFCHANGE) "$(srcdir)/revision.h" "revision.h.tmp"
+	@exit > $@
 
 $(MKFILES): $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub $(win_srcdir)/configure.bat $(win_srcdir)/setup.mak
 	$(COMSPEC) /C $(win_srcdir:/=\)\configure.bat $(configure_args)
@@ -641,7 +642,7 @@ clean-ext distclean-ext realclean-ext::
 		    cd %CD% \
 		)
 
-$(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc: $(RBCONFIG)
+$(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc: $(RBCONFIG) $(srcdir)/revision.h $(srcdir)/win32/resource.rb
 		@$(MINIRUBY) $(srcdir)/win32/resource.rb \
 			-ruby_name=$(RUBY_INSTALL_NAME) \
 			-rubyw_name=$(RUBYW_INSTALL_NAME) \

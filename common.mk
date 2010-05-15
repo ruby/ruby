@@ -486,20 +486,14 @@ $(srcdir)/revision.h:
 	@exit > $@
 
 $(REVISION_H): $(srcdir)/version.h $(srcdir)/ChangeLog revision.h.tmp $(REVISION_FORCE)
-	@if [ -f $(srcdir)/revision.h ] && \
-	    { [ ! -s revision.h.tmp ] || cmp $(srcdir)/revision.h revision.h.tmp >/dev/null; }; then \
-	  $(RM) revision.h.tmp; \
-	else \
-	  mv -f revision.h.tmp $(srcdir)/revision.h; \
-	fi
-	@exit > $@
 
 revision.h.tmp: $(REVISION_FORCE)
-	@set LC_MESSAGES=C
-	-@{ $(CHDIR) "$(srcdir)" && $(SET_LC_MESSAGES) $(VCS) info | \
+	@exit > "$@"
+	@set LC_ALL=C
+	-@($(CHDIR) "$(srcdir)" && $(SET_LC_MESSAGES) $(VCS) info | \
 	sed -n \
-	  -e '/^URL:/{' -e '/\/trunk$$/d' -e 's!.*/\([^/][^/]*\)$$!#define RUBY_BRANCH_NAME "\1"!p' -e '}' \
-	  -e "s/.*Rev:/#define RUBY_REVISION/p"; } > "$@"
+	  -e '/^URL:/{' -e '/\/trunk$$/d' -e "s!.*/\([^/][^/]*\)$$"'!#define RUBY_BRANCH_NAME "\1"!p' -e '}' \
+	  -e "s/.*Rev:/#define RUBY_REVISION/p") > "$@"
 -IF-NO-STRING-LITERAL-CONCATENATION-::
 	@{ \
 	echo '#include "$@"'; \

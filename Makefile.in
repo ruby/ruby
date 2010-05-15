@@ -173,6 +173,15 @@ lex.c: keywords
 .s.@OBJEXT@:
 	$(AS) $(ASFLAGS) -o $@ $<
 
+$(REVISION_H):
+	@if [ -f $(srcdir)/revision.h ] && \
+	    { [ ! -s revision.h.tmp ] || cmp $(srcdir)/revision.h revision.h.tmp >/dev/null; }; then \
+	  $(RM) revision.h.tmp; \
+	else \
+	  mv -f revision.h.tmp $(srcdir)/revision.h; \
+	fi
+	@exit > $@
+
 clean-local::
 	@$(RM) ext/extinit.c ext/extinit.$(OBJEXT)
 
