@@ -14,7 +14,6 @@ STATIC_RUBY   = static-ruby
 EXTCONF       = extconf.rb
 RBCONFIG      = ./.rbconfig.time
 LIBRUBY_EXTS  = ./.libruby-with-ext.time
-REVISION_H    = ./.revision.time
 RDOCOUT       = $(EXTOUT)/rdoc
 
 DMYEXT	      = dmyext.$(OBJEXT)

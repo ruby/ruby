@@ -95,6 +95,7 @@ OBJEXT        = @OBJEXT@
 MANTYPE	      = @MANTYPE@
 
 INSTALLED_LIST= .installed.list
+REVISION_H    = ./.revision.time
 
 MKMAIN_CMD    = mkmain.sh
 #### End of variables

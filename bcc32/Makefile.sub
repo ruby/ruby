@@ -180,6 +180,7 @@ PREP          = miniruby$(EXEEXT)
 OBJEXT        = obj
 
 INSTALLED_LIST= .installed.list
+REVISION_H    = ./.revision.time
 
 MKMAIN_CMD    = mkmain.bat
 

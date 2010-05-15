@@ -1,4 +1,7 @@
-Sat May 15 11:59:40 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat May 15 12:36:01 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, common.mk, win32/Makefile.sub (REVISION_H): move
+	  before the rule.
 
 	* Makefile.in, common.mk, win32/Makefile.sub (revision.h): fix for
 	  nmake.  [ruby-core:30249]
