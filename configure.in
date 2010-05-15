@@ -1813,11 +1813,7 @@ if test "$with_dln_a_out" != yes; then
 			    LDFLAGS="${LDFLAGS:+$LDFLAGS }-L/usr/local/lib"
 			fi
 			rb_cv_dlopen=yes],
-        [aix*], [	if test "$GCC" = yes; then
-			    : ${LDSHARED='$(CC) -shared'}
-			else
-			    : ${LDSHARED='$(CC)'}
-			fi
+        [aix*], [	: ${LDSHARED='$(CC)'}
 			LDSHARED="$LDSHARED ${linker_flag}-G"
 			DLDFLAGS='-eInit_$(TARGET)'
 			XLDFLAGS="${linker_flag}"'-bE:$(ARCHFILE)'" ${linker_flag}-brtl"
@@ -1826,7 +1822,7 @@ if test "$with_dln_a_out" != yes; then
                         TRY_LINK='$(CC) $(LDFLAGS) -oconftest $(INCFLAGS) -I$(hdrdir) $(CPPFLAGS)'
                         TRY_LINK="$TRY_LINK"' $(CFLAGS) $(src) $(LIBPATH) $(LOCAL_LIBS) $(LIBS)'
 			: ${LIBPATHENV=SHLIB_PATH}
-			RPATHFLAG=" ${linker_flag}-blibpath:%1\$-s:${LIBPATH:-/usr/lib:/lib}"
+			RPATHFLAG=" ${linker_flag}-blibpath:%1\$-s:${prefix}/lib:${LIBPATH:-/usr/lib:/lib}"
 			rb_cv_dlopen=yes],
 	[human*], [	: ${DLDFLAGS=''}
 			: ${LDSHARED=''}
