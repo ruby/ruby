@@ -1,3 +1,8 @@
+Mon May 17 06:19:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (revision.h.tmp): use double quotes for Windows.
+	  [ruby-core:30270]
+
 Mon May 17 00:43:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* version.c (ruby_description): RUBY_REVISION_STR may be empty.
