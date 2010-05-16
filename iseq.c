@@ -229,7 +229,7 @@ prepare_iseq_build(rb_iseq_t *iseq,
     iseq->name = name;
     iseq->filename = filename;
     iseq->filepath = filepath == Qnil ? Qnil : rb_realpath_internal(Qnil, filepath, 1);
-    iseq->line_no = line_no;
+    iseq->line_no = (unsigned short)line_no; /* TODO: really enough? */
     iseq->defined_method_id = 0;
     iseq->mark_ary = rb_ary_tmp_new(3);
     OBJ_UNTRUST(iseq->mark_ary);

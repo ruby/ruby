@@ -495,10 +495,10 @@ static void
 fiber_set_stack_location(void)
 {
     rb_thread_t *th = GET_THREAD();
-    VALUE ptr;
+    VALUE *ptr;
 
     SET_MACHINE_STACK_END(&ptr);
-    th->machine_stack_start = (void*)((ptr & PAGE_MASK) + STACK_UPPER(&ptr, 0, PAGE_SIZE));
+    th->machine_stack_start = (void*)(((VALUE)ptr & PAGE_MASK) + STACK_UPPER(&ptr, 0, PAGE_SIZE));
 }
 
 static VOID CALLBACK
