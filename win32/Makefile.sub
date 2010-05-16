@@ -212,7 +212,7 @@ RFLAGS = -r
 EXTLIBS =
 !endif
 !if !defined(LIBS)
-LIBS = oldnames.lib user32.lib advapi32.lib shell32.lib ws2_32.lib $(EXTLIBS)
+LIBS = oldnames.lib user32.lib advapi32.lib shell32.lib ws2_32.lib imagehlp.lib $(EXTLIBS)
 !endif
 !if "$(ENABLE_WIN95)" == "yes"
 LIBS = unicows.lib $(LIBS)

@@ -874,7 +874,7 @@ main()
 [cygwin*], [	ac_cv_header_langinfo_h=yes
 		AC_LIBOBJ([langinfo])
 		],
-[mingw*], [	LIBS="-lshell32 -lws2_32 $LIBS"
+[mingw*], [	LIBS="-lshell32 -lws2_32 -limagehlp $LIBS"
 		ac_cv_header_a_out_h=no
 		ac_cv_header_pwd_h=no
 		ac_cv_header_utime_h=no

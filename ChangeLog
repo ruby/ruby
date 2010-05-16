@@ -1,3 +1,8 @@
+Sun May 16 15:09:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dln.c (rb_w32_check_imported): check if extension library to be
+	  loaded imports from different ruby dll.
+
 Sun May 16 14:55:39 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (dln_find.o): fix dependency.
