@@ -5568,14 +5568,12 @@ parser_read_escape(struct parser_params *parser, int flags,
 
       case '0': case '1': case '2': case '3': /* octal constant */
       case '4': case '5': case '6': case '7':
-	if (flags & (ESCAPE_CONTROL|ESCAPE_META)) goto eof;
 	pushback(c);
 	c = scan_oct(lex_p, 3, &numlen);
 	lex_p += numlen;
 	return c;
 
       case 'x':	/* hex constant */
-	if (flags & (ESCAPE_CONTROL|ESCAPE_META)) goto eof;
 	c = tok_hex(&numlen);
 	if (numlen == 0) return 0;
 	return c;
@@ -5648,7 +5646,6 @@ parser_tokadd_escape(struct parser_params *parser, rb_encoding **encp)
 
       case '0': case '1': case '2': case '3': /* octal constant */
       case '4': case '5': case '6': case '7':
-	if (flags & (ESCAPE_CONTROL|ESCAPE_META)) goto eof;
 	{
 	    ruby_scan_oct(--lex_p, 3, &numlen);
 	    if (numlen == 0) goto eof;
@@ -5658,7 +5655,6 @@ parser_tokadd_escape(struct parser_params *parser, rb_encoding **encp)
 	return 0;
 
       case 'x':	/* hex constant */
-	if (flags & (ESCAPE_CONTROL|ESCAPE_META)) goto eof;
 	{
 	    tok_hex(&numlen);
 	    if (numlen == 0) goto eof;

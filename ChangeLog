@@ -1,3 +1,10 @@
+Sun May 16 21:51:04 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* parse.y (parser_read_escape, parser_tokadd_escape): allow a hex or
+	  octal encoded character after \c.  This seemed to be prohibited at
+	  r13836, but its ChangeLog mentions nothing about this prohibition.
+	  So I assume this prohibition is not intended.  [ruby-core:27229]
+
 Sun May 16 21:14:04 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* ruby/test_rubyoptions.rb (TestRubyOptions#test_segv_test):
