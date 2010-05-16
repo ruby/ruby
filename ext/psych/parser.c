@@ -16,6 +16,14 @@ static ID id_end_sequence;
 static ID id_start_mapping;
 static ID id_end_mapping;
 
+#define PSYCH_TRANSCODE(_str, _yaml_enc, _internal_enc) \
+  ({ \
+    rb_enc_associate_index(_str, _yaml_enc); \
+    if(_internal_enc) \
+      _str = rb_str_export_to_enc(_str, _internal_enc); \
+    _str; \
+  })
+
 static int io_reader(void * data, unsigned char *buf, size_t size, size_t *read)
 {
     VALUE io = (VALUE)data;
@@ -48,6 +56,7 @@ static VALUE parse(VALUE self, VALUE yaml)
     int done = 0;
 #ifdef HAVE_RUBY_ENCODING_H
     int encoding = rb_enc_find_index("ASCII-8BIT");
+    rb_encoding * internal_enc;
 #endif
     VALUE handler = rb_iv_get(self, "@handler");
 
@@ -94,6 +103,7 @@ static VALUE parse(VALUE self, VALUE yaml)
 		    default:
 			break;
 		}
+		internal_enc = rb_default_internal_encoding();
 #endif
 
 		rb_funcall(handler, id_start_stream, 1,
@@ -123,14 +133,14 @@ static VALUE parse(VALUE self, VALUE yaml)
 		if(start->handle) {
 		    handle = rb_str_new2((const char *)start->handle);
 #ifdef HAVE_RUBY_ENCODING_H
-		    rb_enc_associate_index(handle, encoding);
+		    handle = PSYCH_TRANSCODE(handle, encoding, internal_enc);
 #endif
 		}
 
 		if(start->prefix) {
 		    prefix = rb_str_new2((const char *)start->prefix);
 #ifdef HAVE_RUBY_ENCODING_H
-		    rb_enc_associate_index(prefix, encoding);
+		    prefix = PSYCH_TRANSCODE(prefix, encoding, internal_enc);
 #endif
 		}
 
@@ -154,7 +164,7 @@ static VALUE parse(VALUE self, VALUE yaml)
 	if(event.data.alias.anchor) {
 	    alias = rb_str_new2((const char *)event.data.alias.anchor);
 #ifdef HAVE_RUBY_ENCODING_H
-	    rb_enc_associate_index(alias, encoding);
+	    alias = PSYCH_TRANSCODE(alias, encoding, internal_enc);
 #endif
 	}
 
@@ -172,20 +182,20 @@ static VALUE parse(VALUE self, VALUE yaml)
 		);
 
 #ifdef HAVE_RUBY_ENCODING_H
-	rb_enc_associate_index(val, encoding);
+	val = PSYCH_TRANSCODE(val, encoding, internal_enc);
 #endif
 
 	if(event.data.scalar.anchor) {
 	    anchor = rb_str_new2((const char *)event.data.scalar.anchor);
 #ifdef HAVE_RUBY_ENCODING_H
-	    rb_enc_associate_index(anchor, encoding);
+	    anchor = PSYCH_TRANSCODE(anchor, encoding, internal_enc);
 #endif
 	}
 
 	if(event.data.scalar.tag) {
 	    tag = rb_str_new2((const char *)event.data.scalar.tag);
 #ifdef HAVE_RUBY_ENCODING_H
-	    rb_enc_associate_index(tag, encoding);
+	    tag = PSYCH_TRANSCODE(tag, encoding, internal_enc);
 #endif
 	}
 
@@ -209,7 +219,7 @@ static VALUE parse(VALUE self, VALUE yaml)
 	if(event.data.sequence_start.anchor) {
 	    anchor = rb_str_new2((const char *)event.data.sequence_start.anchor);
 #ifdef HAVE_RUBY_ENCODING_H
-	    rb_enc_associate_index(anchor, encoding);
+	    anchor = PSYCH_TRANSCODE(anchor, encoding, internal_enc);
 #endif
 	}
 
@@ -217,7 +227,7 @@ static VALUE parse(VALUE self, VALUE yaml)
 	if(event.data.sequence_start.tag) {
 	    tag = rb_str_new2((const char *)event.data.sequence_start.tag);
 #ifdef HAVE_RUBY_ENCODING_H
-	    rb_enc_associate_index(tag, encoding);
+	    tag = PSYCH_TRANSCODE(tag, encoding, internal_enc);
 #endif
 	}
 
@@ -241,14 +251,14 @@ static VALUE parse(VALUE self, VALUE yaml)
 	if(event.data.mapping_start.anchor) {
 	    anchor = rb_str_new2((const char *)event.data.mapping_start.anchor);
 #ifdef HAVE_RUBY_ENCODING_H
-	    rb_enc_associate_index(anchor, encoding);
+	    anchor = PSYCH_TRANSCODE(anchor, encoding, internal_enc);
 #endif
 	}
 
 	if(event.data.mapping_start.tag) {
 	    tag = rb_str_new2((const char *)event.data.mapping_start.tag);
 #ifdef HAVE_RUBY_ENCODING_H
-	    rb_enc_associate_index(tag, encoding);
+	    tag = PSYCH_TRANSCODE(tag, encoding, internal_enc);
 #endif
 	}
 
