@@ -1818,9 +1818,6 @@ rb_w32_conv_from_wchar(const WCHAR *wstr, rb_encoding *enc)
 {
     static rb_encoding *utf16 = (rb_encoding *)-1;
     VALUE src;
-    VALUE opthash;
-    int ecflags;
-    VALUE ecopts;
 
     if (utf16 == (rb_encoding *)-1) {
 	utf16 = rb_enc_find("UTF-16LE");
@@ -1832,11 +1829,7 @@ rb_w32_conv_from_wchar(const WCHAR *wstr, rb_encoding *enc)
 	return Qnil;
 
     src = rb_enc_str_new((char *)wstr, lstrlenW(wstr) * sizeof(WCHAR), utf16);
-    opthash = rb_hash_new();
-    rb_hash_aset(opthash, ID2SYM(rb_intern("undef")),
-		 ID2SYM(rb_intern("replace")));
-    ecflags = rb_econv_prepare_opts(opthash, &ecopts);
-    return rb_str_encode(src, rb_enc_from_encoding(enc), ecflags, ecopts);
+    return rb_str_encode(src, rb_enc_from_encoding(enc), ECONV_UNDEF_REPLACE, Qnil);
 }
 
 char *
