@@ -1,3 +1,8 @@
+Mon May 10 02:29:51 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* cont.c (fiber_switch): raise FiberError when returning to dead
+	  fiber.  [ruby-dev:40833]
+
 Sun May 16 11:39:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/missing.h (signbit): add missing prototype.
