@@ -16,6 +16,7 @@ static ID id_end_sequence;
 static ID id_start_mapping;
 static ID id_end_mapping;
 
+#ifdef __GNUC__
 #define PSYCH_TRANSCODE(_str, _yaml_enc, _internal_enc) \
   ({ \
     rb_enc_associate_index(_str, _yaml_enc); \
@@ -85,202 +86,202 @@ static VALUE parse(VALUE self, VALUE yaml)
 	}
 
 	switch(event.type) {
-	    case YAML_STREAM_START_EVENT:
+	  case YAML_STREAM_START_EVENT:
 
 #ifdef HAVE_RUBY_ENCODING_H
-		switch(event.data.stream_start.encoding) {
-		    case YAML_ANY_ENCODING:
-			break;
-		    case YAML_UTF8_ENCODING:
-			encoding = rb_enc_find_index("UTF-8");
-			break;
-		    case YAML_UTF16LE_ENCODING:
-			encoding = rb_enc_find_index("UTF-16LE");
-			break;
-		    case YAML_UTF16BE_ENCODING:
-			encoding = rb_enc_find_index("UTF-16BE");
-			break;
-		    default:
-			break;
-		}
-		internal_enc = rb_default_internal_encoding();
-#endif
-
-		rb_funcall(handler, id_start_stream, 1,
-			INT2NUM((long)event.data.stream_start.encoding)
-	      );
+	    switch(event.data.stream_start.encoding) {
+	      case YAML_ANY_ENCODING:
 		break;
-	    case YAML_DOCUMENT_START_EVENT:
-		{
-	/* Get a list of tag directives (if any) */
-	VALUE tag_directives = rb_ary_new();
-	/* Grab the document version */
-	VALUE version = event.data.document_start.version_directive ?
-	    rb_ary_new3(
-		    (long)2,
-		    INT2NUM((long)event.data.document_start.version_directive->major),
-		    INT2NUM((long)event.data.document_start.version_directive->minor)
-		 ) : rb_ary_new();
-
-	if(event.data.document_start.tag_directives.start) {
-	    yaml_tag_directive_t *start =
-		event.data.document_start.tag_directives.start;
-	    yaml_tag_directive_t *end =
-		event.data.document_start.tag_directives.end;
-	    for(; start != end; start++) {
-		VALUE handle = Qnil;
-		VALUE prefix = Qnil;
-		if(start->handle) {
-		    handle = rb_str_new2((const char *)start->handle);
-#ifdef HAVE_RUBY_ENCODING_H
-		    handle = PSYCH_TRANSCODE(handle, encoding, internal_enc);
-#endif
-		}
-
-		if(start->prefix) {
-		    prefix = rb_str_new2((const char *)start->prefix);
-#ifdef HAVE_RUBY_ENCODING_H
-		    prefix = PSYCH_TRANSCODE(prefix, encoding, internal_enc);
-#endif
-		}
-
-		rb_ary_push(tag_directives, rb_ary_new3((long)2, handle, prefix));
+	      case YAML_UTF8_ENCODING:
+		encoding = rb_enc_find_index("UTF-8");
+		break;
+	      case YAML_UTF16LE_ENCODING:
+		encoding = rb_enc_find_index("UTF-16LE");
+		break;
+	      case YAML_UTF16BE_ENCODING:
+		encoding = rb_enc_find_index("UTF-16BE");
+		break;
+	      default:
+		break;
 	    }
-	}
-	rb_funcall(handler, id_start_document, 3,
-		version, tag_directives,
-		event.data.document_start.implicit == 1 ? Qtrue : Qfalse
-	    );
-    }
-		break;
-	    case YAML_DOCUMENT_END_EVENT:
-		rb_funcall(handler, id_end_document, 1,
-			event.data.document_end.implicit == 1 ? Qtrue : Qfalse
-	      );
-		break;
-	    case YAML_ALIAS_EVENT:
-		{
-	VALUE alias = Qnil;
-	if(event.data.alias.anchor) {
-	    alias = rb_str_new2((const char *)event.data.alias.anchor);
-#ifdef HAVE_RUBY_ENCODING_H
-	    alias = PSYCH_TRANSCODE(alias, encoding, internal_enc);
+	    internal_enc = rb_default_internal_encoding();
 #endif
-	}
 
-	rb_funcall(handler, id_alias, 1, alias);
-    }
-		break;
-	    case YAML_SCALAR_EVENT:
-		{
-	VALUE anchor = Qnil;
-	VALUE tag = Qnil;
-	VALUE plain_implicit, quoted_implicit, style;
-	VALUE val = rb_str_new(
-		(const char *)event.data.scalar.value,
-		(long)event.data.scalar.length
+	    rb_funcall(handler, id_start_stream, 1,
+		       INT2NUM((long)event.data.stream_start.encoding)
 		);
+	    break;
+	  case YAML_DOCUMENT_START_EVENT:
+	    {
+		/* Get a list of tag directives (if any) */
+		VALUE tag_directives = rb_ary_new();
+		/* Grab the document version */
+		VALUE version = event.data.document_start.version_directive ?
+		    rb_ary_new3(
+			(long)2,
+			INT2NUM((long)event.data.document_start.version_directive->major),
+			INT2NUM((long)event.data.document_start.version_directive->minor)
+			) : rb_ary_new();
+
+		if(event.data.document_start.tag_directives.start) {
+		    yaml_tag_directive_t *start =
+			event.data.document_start.tag_directives.start;
+		    yaml_tag_directive_t *end =
+			event.data.document_start.tag_directives.end;
+		    for(; start != end; start++) {
+			VALUE handle = Qnil;
+			VALUE prefix = Qnil;
+			if(start->handle) {
+			    handle = rb_str_new2((const char *)start->handle);
+#ifdef HAVE_RUBY_ENCODING_H
+			    handle = PSYCH_TRANSCODE(handle, encoding, internal_enc);
+#endif
+			}
+
+			if(start->prefix) {
+			    prefix = rb_str_new2((const char *)start->prefix);
+#ifdef HAVE_RUBY_ENCODING_H
+			    prefix = PSYCH_TRANSCODE(prefix, encoding, internal_enc);
+#endif
+			}
+
+			rb_ary_push(tag_directives, rb_ary_new3((long)2, handle, prefix));
+		    }
+		}
+		rb_funcall(handler, id_start_document, 3,
+			   version, tag_directives,
+			   event.data.document_start.implicit == 1 ? Qtrue : Qfalse
+		    );
+	    }
+	    break;
+	  case YAML_DOCUMENT_END_EVENT:
+	    rb_funcall(handler, id_end_document, 1,
+		       event.data.document_end.implicit == 1 ? Qtrue : Qfalse
+		);
+	    break;
+	  case YAML_ALIAS_EVENT:
+	    {
+		VALUE alias = Qnil;
+		if(event.data.alias.anchor) {
+		    alias = rb_str_new2((const char *)event.data.alias.anchor);
+#ifdef HAVE_RUBY_ENCODING_H
+		    alias = PSYCH_TRANSCODE(alias, encoding, internal_enc);
+#endif
+		}
+
+		rb_funcall(handler, id_alias, 1, alias);
+	    }
+	    break;
+	  case YAML_SCALAR_EVENT:
+	    {
+		VALUE anchor = Qnil;
+		VALUE tag = Qnil;
+		VALUE plain_implicit, quoted_implicit, style;
+		VALUE val = rb_str_new(
+		    (const char *)event.data.scalar.value,
+		    (long)event.data.scalar.length
+		    );
 
 #ifdef HAVE_RUBY_ENCODING_H
-	val = PSYCH_TRANSCODE(val, encoding, internal_enc);
+		val = PSYCH_TRANSCODE(val, encoding, internal_enc);
 #endif
 
-	if(event.data.scalar.anchor) {
-	    anchor = rb_str_new2((const char *)event.data.scalar.anchor);
+		if(event.data.scalar.anchor) {
+		    anchor = rb_str_new2((const char *)event.data.scalar.anchor);
 #ifdef HAVE_RUBY_ENCODING_H
-	    anchor = PSYCH_TRANSCODE(anchor, encoding, internal_enc);
+		    anchor = PSYCH_TRANSCODE(anchor, encoding, internal_enc);
 #endif
-	}
+		}
 
-	if(event.data.scalar.tag) {
-	    tag = rb_str_new2((const char *)event.data.scalar.tag);
+		if(event.data.scalar.tag) {
+		    tag = rb_str_new2((const char *)event.data.scalar.tag);
 #ifdef HAVE_RUBY_ENCODING_H
-	    tag = PSYCH_TRANSCODE(tag, encoding, internal_enc);
+		    tag = PSYCH_TRANSCODE(tag, encoding, internal_enc);
 #endif
-	}
+		}
 
-	plain_implicit =
-	    event.data.scalar.plain_implicit == 0 ? Qfalse : Qtrue;
+		plain_implicit =
+		    event.data.scalar.plain_implicit == 0 ? Qfalse : Qtrue;
 
-	quoted_implicit =
-	    event.data.scalar.quoted_implicit == 0 ? Qfalse : Qtrue;
+		quoted_implicit =
+		    event.data.scalar.quoted_implicit == 0 ? Qfalse : Qtrue;
 
-	style = INT2NUM((long)event.data.scalar.style);
+		style = INT2NUM((long)event.data.scalar.style);
 
-	rb_funcall(handler, id_scalar, 6,
-		val, anchor, tag, plain_implicit, quoted_implicit, style);
-    }
-		break;
-	    case YAML_SEQUENCE_START_EVENT:
-		{
-	VALUE anchor = Qnil;
-	VALUE tag = Qnil;
-	VALUE implicit, style;
-	if(event.data.sequence_start.anchor) {
-	    anchor = rb_str_new2((const char *)event.data.sequence_start.anchor);
+		rb_funcall(handler, id_scalar, 6,
+			   val, anchor, tag, plain_implicit, quoted_implicit, style);
+	    }
+	    break;
+	  case YAML_SEQUENCE_START_EVENT:
+	    {
+		VALUE anchor = Qnil;
+		VALUE tag = Qnil;
+		VALUE implicit, style;
+		if(event.data.sequence_start.anchor) {
+		    anchor = rb_str_new2((const char *)event.data.sequence_start.anchor);
 #ifdef HAVE_RUBY_ENCODING_H
-	    anchor = PSYCH_TRANSCODE(anchor, encoding, internal_enc);
+		    anchor = PSYCH_TRANSCODE(anchor, encoding, internal_enc);
 #endif
-	}
+		}
 
-	tag = Qnil;
-	if(event.data.sequence_start.tag) {
-	    tag = rb_str_new2((const char *)event.data.sequence_start.tag);
+		tag = Qnil;
+		if(event.data.sequence_start.tag) {
+		    tag = rb_str_new2((const char *)event.data.sequence_start.tag);
 #ifdef HAVE_RUBY_ENCODING_H
-	    tag = PSYCH_TRANSCODE(tag, encoding, internal_enc);
+		    tag = PSYCH_TRANSCODE(tag, encoding, internal_enc);
 #endif
-	}
+		}
 
-	implicit =
-	    event.data.sequence_start.implicit == 0 ? Qfalse : Qtrue;
+		implicit =
+		    event.data.sequence_start.implicit == 0 ? Qfalse : Qtrue;
 
-	style = INT2NUM((long)event.data.sequence_start.style);
+		style = INT2NUM((long)event.data.sequence_start.style);
 
-	rb_funcall(handler, id_start_sequence, 4,
-		anchor, tag, implicit, style);
-    }
-		break;
-	    case YAML_SEQUENCE_END_EVENT:
-		rb_funcall(handler, id_end_sequence, 0);
-		break;
-	    case YAML_MAPPING_START_EVENT:
-		{
-	VALUE anchor = Qnil;
-	VALUE tag = Qnil;
-	VALUE implicit, style;
-	if(event.data.mapping_start.anchor) {
-	    anchor = rb_str_new2((const char *)event.data.mapping_start.anchor);
+		rb_funcall(handler, id_start_sequence, 4,
+			   anchor, tag, implicit, style);
+	    }
+	    break;
+	  case YAML_SEQUENCE_END_EVENT:
+	    rb_funcall(handler, id_end_sequence, 0);
+	    break;
+	  case YAML_MAPPING_START_EVENT:
+	    {
+		VALUE anchor = Qnil;
+		VALUE tag = Qnil;
+		VALUE implicit, style;
+		if(event.data.mapping_start.anchor) {
+		    anchor = rb_str_new2((const char *)event.data.mapping_start.anchor);
 #ifdef HAVE_RUBY_ENCODING_H
-	    anchor = PSYCH_TRANSCODE(anchor, encoding, internal_enc);
+		    anchor = PSYCH_TRANSCODE(anchor, encoding, internal_enc);
 #endif
-	}
+		}
 
-	if(event.data.mapping_start.tag) {
-	    tag = rb_str_new2((const char *)event.data.mapping_start.tag);
+		if(event.data.mapping_start.tag) {
+		    tag = rb_str_new2((const char *)event.data.mapping_start.tag);
 #ifdef HAVE_RUBY_ENCODING_H
-	    tag = PSYCH_TRANSCODE(tag, encoding, internal_enc);
+		    tag = PSYCH_TRANSCODE(tag, encoding, internal_enc);
 #endif
-	}
+		}
 
-	implicit =
-	    event.data.mapping_start.implicit == 0 ? Qfalse : Qtrue;
+		implicit =
+		    event.data.mapping_start.implicit == 0 ? Qfalse : Qtrue;
 
-	style = INT2NUM((long)event.data.mapping_start.style);
+		style = INT2NUM((long)event.data.mapping_start.style);
 
-	rb_funcall(handler, id_start_mapping, 4,
-		anchor, tag, implicit, style);
-    }
-		break;
-	    case YAML_MAPPING_END_EVENT:
-		rb_funcall(handler, id_end_mapping, 0);
-		break;
-	    case YAML_NO_EVENT:
-		rb_funcall(handler, id_empty, 0);
-		break;
-	    case YAML_STREAM_END_EVENT:
-		rb_funcall(handler, id_end_stream, 0);
-		done = 1;
-		break;
+		rb_funcall(handler, id_start_mapping, 4,
+			   anchor, tag, implicit, style);
+	    }
+	    break;
+	  case YAML_MAPPING_END_EVENT:
+	    rb_funcall(handler, id_end_mapping, 0);
+	    break;
+	  case YAML_NO_EVENT:
+	    rb_funcall(handler, id_empty, 0);
+	    break;
+	  case YAML_STREAM_END_EVENT:
+	    rb_funcall(handler, id_end_stream, 0);
+	    done = 1;
+	    break;
 	}
     }
 
