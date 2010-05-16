@@ -1,3 +1,8 @@
+Wed May 12 09:21:05 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* re.c (rb_reg_initialize_m): fix wrong index for the lang
+	  option's value 'N'. reported by Masaya TARUI via IRC.
+
 Tue May 11 21:53:18 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/rake/test_task_arguments.rb: makes ENV empty during tests
