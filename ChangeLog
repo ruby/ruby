@@ -1,3 +1,8 @@
+Sun May 16 22:17:35 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* eval.c (setup_exception): let SystemStackError#backtrace return an
+	  single element array instead of string itself.  [ruby-core:30196]
+
 Sun May 16 21:51:04 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* parse.y (parser_read_escape, parser_tokadd_escape): allow a hex or
