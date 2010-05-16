@@ -524,6 +524,8 @@ typedef struct {
 
 typedef struct {
     VALUE env;
+    VALUE filename;
+    unsigned short line_no;
 } rb_binding_t;
 
 /* used by compile time and send insn */
