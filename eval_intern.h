@@ -210,6 +210,7 @@ void rb_vm_set_progname(VALUE filename);
 void rb_thread_terminate_all(void);
 VALUE rb_vm_top_self();
 VALUE rb_vm_cbase(void);
+int rb_vm_get_sourceline(const rb_control_frame_t *);
 void rb_trap_restore_mask(void);
 
 #ifndef CharNext		/* defined as CharNext[AW] on Windows. */
