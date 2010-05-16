@@ -1,3 +1,8 @@
+ Sun May 16 22:21:32 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+ 
+ 	* proc.c (mnew): initialize a field.  a patch from Takahiro Kambe.
+ 	  [ruby-dev:41312]
+ 
 Sun May 16 17:16:09 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* proc.c (proc_binding): don't propagative filename and line_no of
