@@ -1,3 +1,8 @@
+Thu May 13 07:37:49 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/sdbm/_sdbm.c: include unistd.h before sdbm.h for off_t.
+	  fix compilation problem on FreeBSD 6.4.
+
 Wed May 12 11:39:10 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/extconf.rb: test all IPPROTO_* constants for recent Win32

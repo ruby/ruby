@@ -13,6 +13,11 @@
 
 #include "ruby/config.h"
 #include "ruby/defines.h"
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
 #include "sdbm.h"
 
 /*
@@ -22,10 +27,6 @@
  */
 
 #define BYTESIZ		8
-
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
 
 #ifdef BSD42
 #define SEEK_SET	L_SET
