@@ -1,3 +1,10 @@
+Sun May 16 17:16:09 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* proc.c (proc_binding): don't propagative filename and line_no of
+	  binding that is created from C level.  [ruby-dev:41322]
+
+	* vm_eval.c (eval_string_with_cref): ditto.
+
 Sun May 16 15:09:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dln.c (rb_w32_check_imported): check if extension library to be
