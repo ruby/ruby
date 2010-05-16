@@ -110,6 +110,12 @@ end
 have_header("netinet/tcp.h") if /cygwin/ !~ RUBY_PLATFORM # for cygwin 1.1.5
 have_header("netinet/udp.h")
 
+if !have_macro("IPPROTO_IPV6", headers) && have_const("IPPROTO_IPV6", headers)
+  IO.read(File.join(File.dirname(__FILE__), "mkconstants.rb")).sub(/\A.*^__END__$/m, '').split(/\r?\n/).grep(/\AIPPROTO_\w*/){$&}.each {|name|
+    have_const(name, headers) unless $defs.include?("-DHAVE_CONST_#{name.upcase}")
+  }
+end
+
 if (have_func("sendmsg") | have_func("recvmsg")) && /64-darwin/ !~ RUBY_PLATFORM
   # CMSG_ macros are broken on 64bit darwin, because of use of __DARWIN_ALIGN.
   have_struct_member('struct msghdr', 'msg_control', ['sys/types.h', 'sys/socket.h'])
@@ -335,7 +341,7 @@ have_header("ucred.h", headers)
 have_func("getpeerucred")
 
 # workaround for recent Windows SDK
-$defs << "-DIPPROTO_IPV6=IPPROTO_IPV6" if have_const("IPPROTO_IPV6") && !have_macro("IPPROTO_IPV6")
+$defs << "-DIPPROTO_IPV6=IPPROTO_IPV6" if $defs.include?("-DHAVE_CONST_IPPROTO_IPV6") && !have_macro("IPPROTO_IPV6")
 
 $distcleanfiles << "constants.h" << "constdefs.*"
 
