@@ -178,7 +178,7 @@ static void
 rb_iconv_sys_fail(const char *s)
 {
     if (errno == 0) {
-	rb_raise(rb_eIconvBrokenLibrary, "%s", s);
+	rb_exc_raise(iconv_fail(rb_eIconvBrokenLibrary, Qnil, Qnil, NULL, s));
     }
     rb_sys_fail(s);
 }
