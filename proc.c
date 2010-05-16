@@ -105,6 +105,7 @@ proc_dup(VALUE self)
 
     dst->block = src->block;
     dst->block.proc = procval;
+    dst->blockprocval = src->blockprocval;
     dst->envval = src->envval;
     dst->safe_level = src->safe_level;
     dst->is_lambda = src->is_lambda;
