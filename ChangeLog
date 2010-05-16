@@ -1,3 +1,7 @@
+Sun May 16 14:41:48 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (dln_find.o): fix dependency.
+
 Tue May 11 01:20:43 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/parser.c (parse): Return strings encoded as
