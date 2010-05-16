@@ -11,6 +11,7 @@
 
 #include "ruby/ruby.h"
 #include "ruby/st.h"
+#include "ruby/encoding.h"
 #include "vm_core.h"
 
 #include <stdio.h>
@@ -1469,7 +1470,7 @@ rb_loaderror(const char *fmt, ...)
     VALUE mesg;
 
     va_start(args, fmt);
-    mesg = rb_vsprintf(fmt, args);
+    mesg = rb_enc_vsprintf(rb_locale_encoding(), fmt, args);
     va_end(args);
     rb_exc_raise(rb_exc_new3(rb_eLoadError, mesg));
 }
