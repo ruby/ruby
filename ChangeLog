@@ -1,3 +1,8 @@
+Sun May 16 10:49:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/iconv.c (rb_iconv_sys_fail): fix number of arguments.
+	  a patch by Masaya TARUI <tarui AT prx.jp>.
+
 Sun May  9 23:07:53 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* proc.c (proc_dup): copy blockprocval.  proc_dup is used by
