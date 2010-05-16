@@ -1897,8 +1897,14 @@ proc_binding(VALUE self)
     bindval = binding_alloc(rb_cBinding);
     GetBindingPtr(bindval, bind);
     bind->env = proc->envval;
-    bind->filename = proc->block.iseq->filename;
-    bind->line_no = rb_iseq_first_lineno(proc->block.iseq);
+    if (RUBY_VM_NORMAL_ISEQ_P(proc->block.iseq)) {
+	bind->filename = proc->block.iseq->filename;
+	bind->line_no = rb_iseq_first_lineno(proc->block.iseq);
+    }
+    else {
+	bind->filename = Qnil;
+	bind->line_no = 0;
+    }
     return bindval;
 }
 
