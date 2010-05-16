@@ -1,3 +1,7 @@
+Sun May 16 14:41:48 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (dln_find.o): fix dependency.
+
 Sun May 16 13:55:25 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (rb_loaderror): use locale string, not ascii-8bit.
