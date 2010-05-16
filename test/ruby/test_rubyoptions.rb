@@ -365,8 +365,8 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_segv_test
+    opts = {}
     if /mswin|mingw/ =~ RUBY_PLATFORM
-      opts = {}
       additional = '[\s\w\.\']*'
     else
       opts[:rlimit_core] = 0

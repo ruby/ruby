@@ -1,3 +1,8 @@
+Sun May 16 21:14:04 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* ruby/test_rubyoptions.rb (TestRubyOptions#test_segv_test):
+	  fixes "NoMethodError: undefined method `[]=' for nil:NilClass"
+
 Sun May 16 17:16:09 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* proc.c (proc_binding): don't propagative filename and line_no of
