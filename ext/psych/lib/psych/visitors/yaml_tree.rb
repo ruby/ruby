@@ -151,7 +151,7 @@ module Psych
       end
 
       def visit_Integer o
-        append Nodes::Scalar.new o.to_s
+        append create_scalar o.to_s
       end
       alias :visit_TrueClass :visit_Integer
       alias :visit_FalseClass :visit_Integer
@@ -159,11 +159,11 @@ module Psych
 
       def visit_Float o
         if o.nan?
-          append Nodes::Scalar.new '.nan'
+          append create_scalar '.nan'
         elsif o.infinite?
-          append Nodes::Scalar.new(o.infinite? > 0 ? '.inf' : '-.inf')
+          append create_scalar(o.infinite? > 0 ? '.inf' : '-.inf')
         else
-          append Nodes::Scalar.new o.to_s
+          append create_scalar o.to_s
         end
       end
 
