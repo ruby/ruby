@@ -1,3 +1,7 @@
+Sun May 16 11:39:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/missing.h (signbit): add missing prototype.
+
 Sun May 16 10:49:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (rb_iconv_sys_fail): fix number of arguments.
