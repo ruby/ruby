@@ -1,4 +1,4 @@
-Sun May 16 14:41:48 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun May 16 14:55:39 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (dln_find.o): fix dependency.
 
