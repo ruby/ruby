@@ -914,6 +914,7 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
 		def->alias_count = 0;
 
 		meb.flag = 0;
+		meb.mark = 0;
 		meb.called_id = id;
 		meb.klass = klass;
 		meb.def = def;
