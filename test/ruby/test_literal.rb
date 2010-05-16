@@ -54,11 +54,14 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_equal "\n", "\n"
     bug2500 = '[ruby-core:27228]'
     %w[c C- M-].each do |pre|
-      ["u", "x", %w[u{ }]].each do |open, close|
+      ["u", %w[u{ }]].each do |open, close|
         str = "\"\\#{pre}\\#{open}5555#{close}\""
         assert_raise(SyntaxError, "#{bug2500} eval(#{str})") {eval(str)}
       end
     end
+    assert_equal "\x13", "\c\x33"
+    assert_equal "\x13", "\C-\x33"
+    assert_equal "\xB3", "\M-\x33"
   end
 
   def test_dstring
