@@ -41,14 +41,20 @@ const struct {
     char patchlevel[sizeof(RUBY_PATCHLEVEL_STR)-1];
     char pad1[2];
     char release_date[sizeof(RUBY_RELEASE_DATE)-1];
+#if RUBY_REVISION
     char revision[sizeof(RUBY_REVISION_STR)-1];
+#endif
     char pad2[3];
     char platform[sizeof(RUBY_PLATFORM)-1];
     char pad3[2];
 } ruby_description[1] UNALIGNED = {
     {
 	"ruby ", RUBY_VERSION, RUBY_PATCHLEVEL_STR,
-	" (", RUBY_RELEASE_DATE, RUBY_REVISION_STR, ") [",
+	" (", RUBY_RELEASE_DATE,
+#if RUBY_REVISION
+	RUBY_REVISION_STR,
+#endif
+	") [",
 	RUBY_PLATFORM, "]"
     }
 };

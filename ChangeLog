@@ -1,3 +1,8 @@
+Mon May 17 00:43:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* version.c (ruby_description): RUBY_REVISION_STR may be empty.
+	  [ruby-core:30268]
+
 Sun May 16 10:49:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (rb_iconv_sys_fail): fix number of arguments.
