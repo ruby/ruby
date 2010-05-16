@@ -477,7 +477,6 @@ rb_vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass)
     }
 
     if (GC_GUARDED_PTR_REF(cfp->lfp[0])) {
-	if (!RUBY_VM_CLASS_SPECIAL_P(cfp->lfp[0])) {
 	    rb_proc_t *p;
 
 	    blockprocval = vm_make_proc_from_block(
@@ -486,7 +485,6 @@ rb_vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass)
 	    GetProcPtr(blockprocval, p);
 	    *cfp->lfp = GC_GUARDED_PTR(&p->block);
 	}
-    }
 
     envval = rb_vm_make_env_object(th, cfp);
 

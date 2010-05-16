@@ -4225,7 +4225,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	rb_iseq_t *is = iseq;
 
 	if (is) {
-	    if (is->type == ISEQ_TYPE_TOP || is->type == ISEQ_TYPE_CLASS) {
+	    if (is->type == ISEQ_TYPE_TOP) {
 		COMPILE_ERROR((ERROR_ARGS "Invalid return"));
 	    }
 	    else {
@@ -4265,7 +4265,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	unsigned long flag = 0;
 
 	INIT_ANCHOR(args);
-	if (iseq->type == ISEQ_TYPE_TOP || iseq->type == ISEQ_TYPE_CLASS) {
+	if (iseq->type == ISEQ_TYPE_TOP) {
 	    COMPILE_ERROR((ERROR_ARGS "Invalid yield"));
 	}
 

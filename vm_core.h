@@ -599,8 +599,6 @@ typedef rb_control_frame_t *
 #define RUBY_VM_NORMAL_ISEQ_P(ptr) \
   (ptr && !RUBY_VM_IFUNC_P(ptr))
 
-#define RUBY_VM_CLASS_SPECIAL_P(ptr) (((VALUE)(ptr)) & 0x02)
-
 #define RUBY_VM_GET_BLOCK_PTR_IN_CFP(cfp) ((rb_block_t *)(&(cfp)->self))
 #define RUBY_VM_GET_CFP_FROM_BLOCK_PTR(b) \
   ((rb_control_frame_t *)((VALUE *)(b) - 5))
