@@ -1775,15 +1775,22 @@ EOT
     }
   end
 
-
   def test_cbuf_select
-    with_tmpdir {
-      r, w = IO.pipe
-      w << "\r\n"
-      r.set_encoding("US-ASCII:UTF-8", :universal_newline => true)
-      r.ungetc(r.getc)
-      assert_equal([[r],[],[]], IO.select([r], nil, nil, 1))
-    }
+    r, w = IO.pipe
+    w << "\r\n"
+    r.set_encoding("US-ASCII:UTF-8", :universal_newline => true)
+    r.ungetc(r.getc)
+    assert_equal([[r],[],[]], IO.select([r], nil, nil, 1))
   end
+
+  def test_textmode_paragraphmode
+    r, w = IO.pipe
+    w << "a\n\n\nc".gsub(/\n/, "\r\n")
+    w.close
+    r.set_encoding("US-ASCII:UTF-8", :universal_newline => true)
+    assert_equal("a\n\n", r.gets(""))
+    assert_equal("c", r.gets(""), "[ruby-core:23723] (18)")
+  end
+
 end
 
