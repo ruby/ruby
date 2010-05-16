@@ -1,3 +1,9 @@
+Tue May 11 21:53:18 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/rake/test_task_arguments.rb: makes ENV empty during tests
+	  because ENV may change the behavior of Rake::TaskArguments.
+	  [ruby-core:29984]
+
 Tue May 11 09:57:05 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval_intern.h (rb_vm_get_sourceline): add prototype.
