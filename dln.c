@@ -1210,7 +1210,7 @@ rb_w32_check_imported(HMODULE ext, HMODULE mine)
 	PIMAGE_THUNK_DATA pint = (PIMAGE_THUNK_DATA)((char *)ext + desc->Characteristics);
 	PIMAGE_THUNK_DATA piat = (PIMAGE_THUNK_DATA)((char *)ext + desc->FirstThunk);
 	while (piat->u1.Function) {
-	    PIMAGE_IMPORT_BY_NAME pii = (PIMAGE_IMPORT_BY_NAME)((char *)ext + pint->u1.AddressOfData);
+	    PIMAGE_IMPORT_BY_NAME pii = (PIMAGE_IMPORT_BY_NAME)((char *)ext + (size_t)pint->u1.AddressOfData);
 	    static const char prefix[] = "rb_";
 	    if (strncmp(pii->Name, prefix, sizeof(prefix) - 1) == 0) {
 		FARPROC addr = GetProcAddress(mine, pii->Name);

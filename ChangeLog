@@ -1,3 +1,7 @@
+Mon May 17 01:07:48 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dln.c (rb_w32_check_imported): workaround for VC6.
+
 Sun May 16 22:21:32 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* proc.c (mnew): initialize a field.  a patch from Takahiro Kambe.
