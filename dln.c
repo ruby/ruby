@@ -1265,11 +1265,13 @@ dln_load(const char *file)
 	goto failed;
     }
 
+#if defined _WIN32 && defined RUBY_EXPORT
     if (!rb_w32_check_imported(handle, rb_libruby_handle())) {
 	FreeLibrary(handle);
 	error = "incompatible library version";
 	goto failed;
     }
+#endif
 
     if ((init_fct = (void(*)())GetProcAddress(handle, buf)) == NULL) {
 	dln_loaderror("%s - %s\n%s", dln_strerror(), buf, file);
