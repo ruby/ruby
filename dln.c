@@ -1116,9 +1116,29 @@ dln_sym(const char *name)
 
 #if defined _WIN32 && !defined __CYGWIN__
 #include <windows.h>
+#include <imagehlp.h>
 #endif
 
-#if ! defined _AIX
+#if defined _WIN32 && !defined __CYGWIN__
+static const char *
+dln_strerror(char *message, size_t size)
+{
+    int error = GetLastError();
+    char *p = message;
+    size_t len = snprintf(message, size, "%d: ", error);
+
+    FormatMessage(
+	FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+	NULL, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+	message + len, size - len, NULL);
+    for (p = message + len; *p; p++) {
+	if (*p == '\n' || *p == '\r')
+	    *p = ' ';
+    }
+    return message;
+}
+#define dln_strerror() dln_strerror(message, sizeof message)
+#elif ! defined _AIX
 static const char *
 dln_strerror(void)
 {
@@ -1145,27 +1165,6 @@ dln_strerror(void)
 
 #ifdef USE_DLN_DLOPEN
     return (char*)dlerror();
-#endif
-
-#if defined _WIN32 && !defined __CYGWIN__
-    static char message[1024];
-    int error = GetLastError();
-    char *p = message;
-    p += sprintf(message, "%d: ", error);
-    FormatMessage(
-	FORMAT_MESSAGE_FROM_SYSTEM	 | FORMAT_MESSAGE_IGNORE_INSERTS,
-	NULL,
-	error,
-	MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-	p,
-	sizeof message - strlen(message),
-	NULL);
-
-    for (p = message; *p; p++) {
-	if (*p == '\n' || *p == '\r')
-	    *p = ' ';
-    }
-    return message;
 #endif
 }
 #endif
@@ -1196,6 +1195,36 @@ aix_loaderror(const char *pathname)
 }
 #endif
 
+#if defined _WIN32 && defined RUBY_EXPORT
+HANDLE rb_libruby_handle(void);
+
+static int
+rb_w32_check_imported(HMODULE ext, HMODULE mine)
+{
+    ULONG size;
+    const IMAGE_IMPORT_DESCRIPTOR *desc;
+
+    desc = ImageDirectoryEntryToData(ext, TRUE, IMAGE_DIRECTORY_ENTRY_IMPORT, &size);
+    if (!desc) return 0;
+    while (desc->Name) {
+	PIMAGE_THUNK_DATA pint = (PIMAGE_THUNK_DATA)((char *)ext + desc->Characteristics);
+	PIMAGE_THUNK_DATA piat = (PIMAGE_THUNK_DATA)((char *)ext + desc->FirstThunk);
+	while (piat->u1.Function) {
+	    PIMAGE_IMPORT_BY_NAME pii = (PIMAGE_IMPORT_BY_NAME)((char *)ext + pint->u1.AddressOfData);
+	    static const char prefix[] = "rb_";
+	    if (strncmp(pii->Name, prefix, sizeof(prefix) - 1) == 0) {
+		FARPROC addr = GetProcAddress(mine, pii->Name);
+		if (addr) return (FARPROC)piat->u1.Function == addr;
+	    }
+	    piat++;
+	    pint++;
+	}
+	desc++;
+    }
+    return 1;
+}
+#endif
+
 #if defined(DLN_NEEDS_ALT_SEPARATOR) && DLN_NEEDS_ALT_SEPARATOR
 #define translit_separator(src) do { \
 	char *tmp = ALLOCA_N(char, strlen(src) + 1), *p = tmp, c; \
@@ -1219,6 +1248,7 @@ dln_load(const char *file)
 #if defined _WIN32 && !defined __CYGWIN__
     HINSTANCE handle;
     char winfile[MAXPATHLEN];
+    char message[1024];
     void (*init_fct)();
     char *buf;
 
@@ -1232,6 +1262,12 @@ dln_load(const char *file)
     /* Load file */
     if ((handle = LoadLibrary(winfile)) == NULL) {
 	error = dln_strerror();
+	goto failed;
+    }
+
+    if (!rb_w32_check_imported(handle, rb_libruby_handle())) {
+	FreeLibrary(handle);
+	error = "incompatible library version";
 	goto failed;
     }
 
