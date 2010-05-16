@@ -501,7 +501,7 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	F_CUSTOM1(nd_nth, "variable", {
 	   char name[3];
 	   name[0] = '$';
-	   name[1] = node->nd_nth;
+	   name[1] = (char)node->nd_nth;
 	   name[2] = '\0';
 	   A(name);
 	});
