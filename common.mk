@@ -529,7 +529,7 @@ dir.$(OBJEXT): {$(VPATH)}dir.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h \
   $(ENCODING_H_INCLUDES)
 dln.$(OBJEXT): {$(VPATH)}dln.c {$(VPATH)}dln.h $(RUBY_H_INCLUDES)
 dln_find.$(OBJEXT): {$(VPATH)}dln_find.c {$(VPATH)}dln.h $(RUBY_H_INCLUDES)
-dmydln.$(OBJEXT): {$(VPATH)}dmydln.c dln.$(OBJEXT)
+dmydln.$(OBJEXT): {$(VPATH)}dmydln.c $(RUBY_H_INCLUDES)
 dmyext.$(OBJEXT): {$(VPATH)}dmyext.c
 dmyencoding.$(OBJEXT): {$(VPATH)}dmyencoding.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}regenc.h {$(VPATH)}util.h $(ENCODING_H_INCLUDES) \
