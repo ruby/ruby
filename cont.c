@@ -1239,9 +1239,15 @@ fiber_switch(VALUE fibval, int argc, VALUE *argv, int is_resume)
     }
     else if (fib->status == TERMINATED) {
 	value = rb_exc_new2(rb_eFiberError, "dead fiber called");
-	if (th->fiber != fibval) rb_exc_raise(value);
-	fibval = fib->prev;
-	if (NIL_P(fibval)) fibval = th->root_fiber;
+	if (th->fiber != fibval) {
+	    GetFiberPtr(th->fiber, fib);
+	    if (fib->status != TERMINATED) rb_exc_raise(value);
+	    fibval = th->root_fiber;
+	}
+	else {
+	    fibval = fib->prev;
+	    if (NIL_P(fibval)) fibval = th->root_fiber;
+	}
 	GetFiberPtr(fibval, fib);
 	cont = &fib->cont;
 	cont->argc = -1;
