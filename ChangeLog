@@ -1,3 +1,8 @@
+Mon May 10 06:59:19 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* common.mk (rdoc): rdoc should depend main. Moreover when XRUBY
+	  is miniruby, it can run after miniruby is built.
+
 Mon May 10 03:36:56 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm_eval.c (eval_string_with_cref): propagative filename and line_no
