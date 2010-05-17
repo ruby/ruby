@@ -1203,7 +1203,7 @@ infected_str_new(const char *ptr, long len, VALUE str)
 
 /*
  *  call-seq:
- *     str.unpack(format)   => anArray
+ *     str.unpack(format)    ->  anArray
  *
  *  Decodes <i>str</i> (which may contain binary data) according to the
  *  format string, returning an array of each value extracted. The

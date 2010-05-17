@@ -160,7 +160,7 @@ static int rb_thread_debug_enabled;
 
 /*
  *  call-seq:
- *     Thread.DEBUG     => num
+ *     Thread.DEBUG     -> num
  *
  *  Returns the thread debug level.  Available only if compiled with
  *  THREAD_DEBUG=-1.
@@ -582,8 +582,8 @@ thread_s_new(int argc, VALUE *argv, VALUE klass)
 
 /*
  *  call-seq:
- *     Thread.start([args]*) {|args| block }   => thread
- *     Thread.fork([args]*) {|args| block }    => thread
+ *     Thread.start([args]*) {|args| block }   -> thread
+ *     Thread.fork([args]*) {|args| block }    -> thread
  *
  *  Basically the same as <code>Thread::new</code>. However, if class
  *  <code>Thread</code> is subclassed, then calling <code>start</code> in that
@@ -731,8 +731,8 @@ thread_join(rb_thread_t *target_th, double delay)
 
 /*
  *  call-seq:
- *     thr.join          => thr
- *     thr.join(limit)   => thr
+ *     thr.join          -> thr
+ *     thr.join(limit)   -> thr
  *
  *  The calling thread will suspend execution and run <i>thr</i>. Does not
  *  return until <i>thr</i> exits or until <i>limit</i> seconds have passed. If
@@ -788,7 +788,7 @@ thread_join_m(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     thr.value   => obj
+ *     thr.value   -> obj
  *
  *  Waits for <i>thr</i> to complete (via <code>Thread#join</code>) and returns
  *  its value.
@@ -1222,7 +1222,7 @@ ruby_thread_has_gvl_p(void)
 
 /*
  *  call-seq:
- *     Thread.pass   => nil
+ *     Thread.pass   -> nil
  *
  *  Invokes the thread scheduler to pass execution to another thread.
  *
@@ -1454,9 +1454,9 @@ thread_raise_m(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     thr.exit        => thr or nil
- *     thr.kill        => thr or nil
- *     thr.terminate   => thr or nil
+ *     thr.exit        -> thr or nil
+ *     thr.kill        -> thr or nil
+ *     thr.terminate   -> thr or nil
  *
  *  Terminates <i>thr</i> and schedules another thread to be run. If this thread
  *  is already marked to be killed, <code>exit</code> returns the
@@ -1493,7 +1493,7 @@ rb_thread_kill(VALUE thread)
 
 /*
  *  call-seq:
- *     Thread.kill(thread)   => thread
+ *     Thread.kill(thread)   -> thread
  *
  *  Causes the given <em>thread</em> to exit (see <code>Thread::exit</code>).
  *
@@ -1514,7 +1514,7 @@ rb_thread_s_kill(VALUE obj, VALUE th)
 
 /*
  *  call-seq:
- *     Thread.exit   => thread
+ *     Thread.exit   -> thread
  *
  *  Terminates the currently running thread and schedules another thread to be
  *  run. If this thread is already marked to be killed, <code>exit</code>
@@ -1531,7 +1531,7 @@ rb_thread_exit(void)
 
 /*
  *  call-seq:
- *     thr.wakeup   => thr
+ *     thr.wakeup   -> thr
  *
  *  Marks <i>thr</i> as eligible for scheduling (it may still remain blocked on
  *  I/O, however). Does not invoke the scheduler (see <code>Thread#run</code>).
@@ -1563,7 +1563,7 @@ rb_thread_wakeup(VALUE thread)
 
 /*
  *  call-seq:
- *     thr.run   => thr
+ *     thr.run   -> thr
  *
  *  Wakes up <i>thr</i>, making it eligible for scheduling.
  *
@@ -1591,7 +1591,7 @@ rb_thread_run(VALUE thread)
 
 /*
  *  call-seq:
- *     Thread.stop   => nil
+ *     Thread.stop   -> nil
  *
  *  Stops execution of the current thread, putting it into a ``sleep'' state,
  *  and schedules execution of another thread.
@@ -1641,7 +1641,7 @@ thread_list_i(st_data_t key, st_data_t val, void *data)
 
 /*
  *  call-seq:
- *     Thread.list   => array
+ *     Thread.list   -> array
  *
  *  Returns an array of <code>Thread</code> objects for all threads that are
  *  either runnable or stopped.
@@ -1675,7 +1675,7 @@ rb_thread_current(void)
 
 /*
  *  call-seq:
- *     Thread.current   => thread
+ *     Thread.current   -> thread
  *
  *  Returns the currently executing thread.
  *
@@ -1696,7 +1696,7 @@ rb_thread_main(void)
 
 /*
  *  call-seq:
- *     Thread.main   => thread
+ *     Thread.main   -> thread
  *
  *  Returns the main thread.
  */
@@ -1710,7 +1710,7 @@ rb_thread_s_main(VALUE klass)
 
 /*
  *  call-seq:
- *     Thread.abort_on_exception   => true or false
+ *     Thread.abort_on_exception   -> true or false
  *
  *  Returns the status of the global ``abort on exception'' condition.  The
  *  default is <code>false</code>. When set to <code>true</code>, or if the
@@ -1729,7 +1729,7 @@ rb_thread_s_abort_exc(void)
 
 /*
  *  call-seq:
- *     Thread.abort_on_exception= boolean   => true or false
+ *     Thread.abort_on_exception= boolean   -> true or false
  *
  *  When set to <code>true</code>, all threads will abort if an exception is
  *  raised. Returns the new state.
@@ -1762,7 +1762,7 @@ rb_thread_s_abort_exc_set(VALUE self, VALUE val)
 
 /*
  *  call-seq:
- *     thr.abort_on_exception   => true or false
+ *     thr.abort_on_exception   -> true or false
  *
  *  Returns the status of the thread-local ``abort on exception'' condition for
  *  <i>thr</i>. The default is <code>false</code>. See also
@@ -1780,7 +1780,7 @@ rb_thread_abort_exc(VALUE thread)
 
 /*
  *  call-seq:
- *     thr.abort_on_exception= boolean   => true or false
+ *     thr.abort_on_exception= boolean   -> true or false
  *
  *  When set to <code>true</code>, causes all threads (including the main
  *  program) to abort if an exception is raised in <i>thr</i>. The process will
@@ -1801,7 +1801,7 @@ rb_thread_abort_exc_set(VALUE thread, VALUE val)
 
 /*
  *  call-seq:
- *     thr.group   => thgrp or nil
+ *     thr.group   -> thgrp or nil
  *
  *  Returns the <code>ThreadGroup</code> which contains <i>thr</i>, or nil if
  *  the thread is not a member of any group.
@@ -1850,7 +1850,7 @@ rb_threadptr_dead(rb_thread_t *th)
 
 /*
  *  call-seq:
- *     thr.status   => string, false or nil
+ *     thr.status   -> string, false or nil
  *
  *  Returns the status of <i>thr</i>: ``<code>sleep</code>'' if <i>thr</i> is
  *  sleeping or waiting on I/O, ``<code>run</code>'' if <i>thr</i> is executing,
@@ -1889,7 +1889,7 @@ rb_thread_status(VALUE thread)
 
 /*
  *  call-seq:
- *     thr.alive?   => true or false
+ *     thr.alive?   -> true or false
  *
  *  Returns <code>true</code> if <i>thr</i> is running or sleeping.
  *
@@ -1912,7 +1912,7 @@ rb_thread_alive_p(VALUE thread)
 
 /*
  *  call-seq:
- *     thr.stop?   => true or false
+ *     thr.stop?   -> true or false
  *
  *  Returns <code>true</code> if <i>thr</i> is dead or sleeping.
  *
@@ -1937,7 +1937,7 @@ rb_thread_stop_p(VALUE thread)
 
 /*
  *  call-seq:
- *     thr.safe_level   => integer
+ *     thr.safe_level   -> integer
  *
  *  Returns the safe level in effect for <i>thr</i>. Setting thread-local safe
  *  levels can help when implementing sandboxes which run insecure code.
@@ -1958,7 +1958,7 @@ rb_thread_safe_level(VALUE thread)
 
 /*
  * call-seq:
- *   thr.inspect   => string
+ *   thr.inspect   -> string
  *
  * Dump the name, id, and status of _thr_ to a string.
  */
@@ -2000,7 +2000,7 @@ rb_thread_local_aref(VALUE thread, ID id)
 
 /*
  *  call-seq:
- *      thr[sym]   => obj or nil
+ *      thr[sym]   -> obj or nil
  *
  *  Attribute Reference---Returns the value of a thread-local variable, using
  *  either a symbol or a string name. If the specified variable does not exist,
@@ -2050,7 +2050,7 @@ rb_thread_local_aset(VALUE thread, ID id, VALUE val)
 
 /*
  *  call-seq:
- *      thr[sym] = obj   => obj
+ *      thr[sym] = obj   -> obj
  *
  *  Attribute Assignment---Sets or creates the value of a thread-local variable,
  *  using either a symbol or a string. See also <code>Thread#[]</code>.
@@ -2064,7 +2064,7 @@ rb_thread_aset(VALUE self, VALUE id, VALUE val)
 
 /*
  *  call-seq:
- *     thr.key?(sym)   => true or false
+ *     thr.key?(sym)   -> true or false
  *
  *  Returns <code>true</code> if the given string (or symbol) exists as a
  *  thread-local variable.
@@ -2118,7 +2118,7 @@ rb_thread_alone(void)
 
 /*
  *  call-seq:
- *     thr.keys   => array
+ *     thr.keys   -> array
  *
  *  Returns an an array of the names of the thread-local variables (as Symbols).
  *
@@ -2145,7 +2145,7 @@ rb_thread_keys(VALUE self)
 
 /*
  *  call-seq:
- *     thr.priority   => integer
+ *     thr.priority   -> integer
  *
  *  Returns the priority of <i>thr</i>. Default is inherited from the
  *  current thread which creating the new thread, or zero for the
@@ -2169,7 +2169,7 @@ rb_thread_priority(VALUE thread)
 
 /*
  *  call-seq:
- *     thr.priority= integer   => thr
+ *     thr.priority= integer   -> thr
  *
  *  Sets the priority of <i>thr</i> to <i>integer</i>. Higher-priority threads
  *  will run more frequently than lower-priority threads (but lower-priority
@@ -2862,7 +2862,7 @@ thgroup_list_i(st_data_t key, st_data_t val, st_data_t data)
 
 /*
  *  call-seq:
- *     thgrp.list   => array
+ *     thgrp.list   -> array
  *
  *  Returns an array of all existing <code>Thread</code> objects that belong to
  *  this group.
@@ -2885,7 +2885,7 @@ thgroup_list(VALUE group)
 
 /*
  *  call-seq:
- *     thgrp.enclose   => thgrp
+ *     thgrp.enclose   -> thgrp
  *
  *  Prevents threads from being added to or removed from the receiving
  *  <code>ThreadGroup</code>. New threads can still be started in an enclosed
@@ -2915,7 +2915,7 @@ thgroup_enclose(VALUE group)
 
 /*
  *  call-seq:
- *     thgrp.enclosed?   => true or false
+ *     thgrp.enclosed?   -> true or false
  *
  *  Returns <code>true</code> if <em>thgrp</em> is enclosed. See also
  *  ThreadGroup#enclose.
@@ -2935,7 +2935,7 @@ thgroup_enclosed_p(VALUE group)
 
 /*
  *  call-seq:
- *     thgrp.add(thread)   => thgrp
+ *     thgrp.add(thread)   -> thgrp
  *
  *  Adds the given <em>thread</em> to this group, removing it from any other
  *  group to which it may have previously belonged.
@@ -3067,7 +3067,7 @@ mutex_alloc(VALUE klass)
 
 /*
  *  call-seq:
- *     Mutex.new   => mutex
+ *     Mutex.new   -> mutex
  *
  *  Creates a new Mutex
  */
@@ -3085,7 +3085,7 @@ rb_mutex_new(void)
 
 /*
  * call-seq:
- *    mutex.locked?  => true or false
+ *    mutex.locked?  -> true or false
  *
  * Returns +true+ if this lock is currently held by some thread.
  */
@@ -3111,7 +3111,7 @@ mutex_locked(rb_thread_t *th, VALUE self)
 
 /*
  * call-seq:
- *    mutex.try_lock  => true or false
+ *    mutex.try_lock  -> true or false
  *
  * Attempts to obtain the lock and returns immediately. Returns +true+ if the
  * lock was granted.
@@ -3186,7 +3186,7 @@ lock_interrupt(void *ptr)
 
 /*
  * call-seq:
- *    mutex.lock  => self
+ *    mutex.lock  -> self
  *
  * Attempts to grab the lock and waits if it isn't available.
  * Raises +ThreadError+ if +mutex+ was locked by the current thread.
@@ -3295,7 +3295,7 @@ mutex_unlock(mutex_t *mutex, rb_thread_t volatile *th)
 
 /*
  * call-seq:
- *    mutex.unlock    => self
+ *    mutex.unlock    -> self
  *
  * Releases the lock.
  * Raises +ThreadError+ if +mutex+ wasn't locked by the current thread.
@@ -3380,7 +3380,7 @@ rb_mutex_sleep(VALUE self, VALUE timeout)
 
 /*
  * call-seq:
- *    mutex.sleep(timeout = nil)    => number
+ *    mutex.sleep(timeout = nil)    -> number
  *
  * Releases the lock and sleeps +timeout+ seconds if it is given and
  * non-nil or forever.  Raises +ThreadError+ if +mutex+ wasn't locked by
@@ -3397,7 +3397,7 @@ mutex_sleep(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *    mutex.synchronize { ... }    => result of the block
+ *    mutex.synchronize { ... }    -> result of the block
  *
  * Obtains a lock, runs the block, and releases the lock when the block
  * completes.  See the example under +Mutex+.
@@ -3883,8 +3883,8 @@ static void call_trace_func(rb_event_flag_t, VALUE data, VALUE self, ID id, VALU
 
 /*
  *  call-seq:
- *     set_trace_func(proc)    => proc
- *     set_trace_func(nil)     => nil
+ *     set_trace_func(proc)    -> proc
+ *     set_trace_func(nil)     -> nil
  *
  *  Establishes _proc_ as the handler for tracing, or disables
  *  tracing if the parameter is +nil+. _proc_ takes up
@@ -3953,7 +3953,7 @@ thread_add_trace_func(rb_thread_t *th, VALUE trace)
 
 /*
  *  call-seq:
- *     thr.add_trace_func(proc)    => proc
+ *     thr.add_trace_func(proc)    -> proc
  *
  *  Adds _proc_ as a handler for tracing.
  *  See <code>Thread#set_trace_func</code> and +set_trace_func+.
@@ -3970,8 +3970,8 @@ thread_add_trace_func_m(VALUE obj, VALUE trace)
 
 /*
  *  call-seq:
- *     thr.set_trace_func(proc)    => proc
- *     thr.set_trace_func(nil)     => nil
+ *     thr.set_trace_func(proc)    -> proc
+ *     thr.set_trace_func(nil)     -> nil
  *
  *  Establishes _proc_ on _thr_ as the handler for tracing, or
  *  disables tracing if the parameter is +nil+.
@@ -4120,7 +4120,7 @@ VALUE rb_thread_backtrace(VALUE thval);
 
 /*
  *  call-seq:
- *     thr.backtrace    => array
+ *     thr.backtrace    -> array
  *
  *  Returns the current back trace of the _thr_.
  */

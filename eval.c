@@ -263,7 +263,7 @@ ruby_exec_node(void *n)
 
 /*
  *  call-seq:
- *     Module.nesting    => array
+ *     Module.nesting    -> array
  *
  *  Returns the list of +Modules+ nested at the point of call.
  *
@@ -295,7 +295,7 @@ rb_mod_nesting(void)
 
 /*
  *  call-seq:
- *     Module.constants   => array
+ *     Module.constants   -> array
  *
  *  Returns an array of the names of all constants defined in the
  *  system. This list includes the names of all modules and classes.
@@ -806,7 +806,7 @@ rb_frame_pop(void)
 
 /*
  *  call-seq:
- *     append_features(mod)   => mod
+ *     append_features(mod)   -> mod
  *
  *  When this module is included in another, Ruby calls
  *  <code>append_features</code> in this module, passing it the
@@ -834,7 +834,7 @@ rb_mod_append_features(VALUE module, VALUE include)
 
 /*
  *  call-seq:
- *     include(module, ...)    => self
+ *     include(module, ...)    -> self
  *
  *  Invokes <code>Module.append_features</code> on each parameter in reverse order.
  */
@@ -868,7 +868,7 @@ rb_extend_object(VALUE obj, VALUE module)
 
 /*
  *  call-seq:
- *     extend_object(obj)    => obj
+ *     extend_object(obj)    -> obj
  *
  *  Extends the specified object by adding this module's constants and
  *  methods (which are added as singleton methods). This is the callback
@@ -902,7 +902,7 @@ rb_mod_extend_object(VALUE mod, VALUE obj)
 
 /*
  *  call-seq:
- *     obj.extend(module, ...)    => obj
+ *     obj.extend(module, ...)    -> obj
  *
  *  Adds to _obj_ the instance methods from each module given as a
  *  parameter.
@@ -944,7 +944,7 @@ rb_obj_extend(int argc, VALUE *argv, VALUE obj)
 
 /*
  *  call-seq:
- *     include(module, ...)   => self
+ *     include(module, ...)   -> self
  *
  *  Invokes <code>Module.append_features</code>
  *  on each parameter in turn. Effectively adds the methods and constants
@@ -1079,8 +1079,8 @@ errat_setter(VALUE val, ID id, VALUE *var)
 
 /*
  *  call-seq:
- *     __method__         => symbol
- *     __callee__         => symbol
+ *     __method__         -> symbol
+ *     __callee__         -> symbol
  *
  *  Returns the name of the current method as a Symbol.
  *  If called outside of a method, it returns <code>nil</code>.

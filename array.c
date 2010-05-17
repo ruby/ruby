@@ -479,8 +479,8 @@ rb_check_array_type(VALUE ary)
  *  for any reason. This method can be used to check if an argument is an
  *  array.
  *
- *     Array.try_convert([1])   # => [1]
- *     Array.try_convert("1")   # => nil
+ *     Array.try_convert([1])   #=> [1]
+ *     Array.try_convert("1")   #=> nil
  *
  *     if tmp = Array.try_convert(arg)
  *       # the argument is an array
@@ -3559,9 +3559,9 @@ rb_ary_compact(VALUE ary)
  *  given, counts the number of elements yielding a true value.
  *
  *     ary = [1, 2, 4, 2]
- *     ary.count             # => 4
- *     ary.count(2)          # => 2
- *     ary.count{|x|x%2==0}  # => 3
+ *     ary.count             #=> 4
+ *     ary.count(2)          #=> 2
+ *     ary.count{|x|x%2==0}  #=> 3
  *
  */
 
@@ -4282,12 +4282,12 @@ rb_ary_repeated_combination(VALUE ary, VALUE num)
  *  and return +self+ instead.
  *
  *
- *     [1,2,3].product([4,5])     # => [[1,4],[1,5],[2,4],[2,5],[3,4],[3,5]]
- *     [1,2].product([1,2])       # => [[1,1],[1,2],[2,1],[2,2]]
- *     [1,2].product([3,4],[5,6]) # => [[1,3,5],[1,3,6],[1,4,5],[1,4,6],
+ *     [1,2,3].product([4,5])     #=> [[1,4],[1,5],[2,4],[2,5],[3,4],[3,5]]
+ *     [1,2].product([1,2])       #=> [[1,1],[1,2],[2,1],[2,2]]
+ *     [1,2].product([3,4],[5,6]) #=> [[1,3,5],[1,3,6],[1,4,5],[1,4,6],
  *                                #     [2,3,5],[2,3,6],[2,4,5],[2,4,6]]
- *     [1,2].product()            # => [[1],[2]]
- *     [1,2].product([])          # => []
+ *     [1,2].product()            #=> [[1],[2]]
+ *     [1,2].product([])          #=> []
  */
 
 static VALUE
@@ -4381,7 +4381,7 @@ done:
  *  Returns first n elements from <i>ary</i>.
  *
  *     a = [1, 2, 3, 4, 5, 0]
- *     a.take(3)             # => [1, 2, 3]
+ *     a.take(3)             #=> [1, 2, 3]
  *
  */
 
@@ -4406,7 +4406,7 @@ rb_ary_take(VALUE obj, VALUE n)
  *  If no block is given, an enumerator is returned instead.
  *
  *     a = [1, 2, 3, 4, 5, 0]
- *     a.take_while {|i| i < 3 }   # => [1, 2]
+ *     a.take_while {|i| i < 3 }   #=> [1, 2]
  *
  */
 
@@ -4430,7 +4430,7 @@ rb_ary_take_while(VALUE ary)
  *  in an array.
  *
  *     a = [1, 2, 3, 4, 5, 0]
- *     a.drop(3)             # => [4, 5, 0]
+ *     a.drop(3)             #=> [4, 5, 0]
  *
  */
 
@@ -4460,7 +4460,7 @@ rb_ary_drop(VALUE ary, VALUE n)
  *  If no block is given, an enumerator is returned instead.
  *
  *     a = [1, 2, 3, 4, 5, 0]
- *     a.drop_while {|i| i < 3 }   # => [3, 4, 5, 0]
+ *     a.drop_while {|i| i < 3 }   #=> [3, 4, 5, 0]
  *
  */
 

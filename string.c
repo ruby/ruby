@@ -903,7 +903,7 @@ rb_str_resurrect(VALUE str)
 
 /*
  *  call-seq:
- *     String.new(str="")   => new_str
+ *     String.new(str="")   -> new_str
  *
  *  Returns a new string object containing a copy of <i>str</i>.
  */
@@ -1098,8 +1098,8 @@ rb_str_strlen(VALUE str)
 
 /*
  *  call-seq:
- *     str.length   => integer
- *     str.size     => integer
+ *     str.length   -> integer
+ *     str.size     -> integer
  *
  *  Returns the character length of <i>str</i>.
  */
@@ -1115,7 +1115,7 @@ rb_str_length(VALUE str)
 
 /*
  *  call-seq:
- *     str.bytesize  => integer
+ *     str.bytesize  -> integer
  *
  *  Returns the length of <i>str</i> in bytes.
  */
@@ -1128,7 +1128,7 @@ rb_str_bytesize(VALUE str)
 
 /*
  *  call-seq:
- *     str.empty?   => true or false
+ *     str.empty?   -> true or false
  *
  *  Returns <code>true</code> if <i>str</i> has a length of zero.
  *
@@ -1146,7 +1146,7 @@ rb_str_empty(VALUE str)
 
 /*
  *  call-seq:
- *     str + other_str   => new_str
+ *     str + other_str   -> new_str
  *
  *  Concatenation---Returns a new <code>String</code> containing
  *  <i>other_str</i> concatenated to <i>str</i>.
@@ -1177,7 +1177,7 @@ rb_str_plus(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *     str * integer   => new_str
+ *     str * integer   -> new_str
  *
  *  Copy---Returns a new <code>String</code> containing <i>integer</i> copies of
  *  the receiver.
@@ -1220,7 +1220,7 @@ rb_str_times(VALUE str, VALUE times)
 
 /*
  *  call-seq:
- *     str % arg   => new_str
+ *     str % arg   -> new_str
  *
  *  Format---Uses <i>str</i> as a format specification, and returns the result
  *  of applying it to <i>arg</i>. If the format specification contains more than
@@ -1399,8 +1399,8 @@ rb_check_string_type(VALUE str)
  *  Returns converted string or nil if <i>obj</i> cannot be converted
  *  for any reason.
  *
- *     String.try_convert("str")     # => str
- *     String.try_convert(/re/)      # => nil
+ *     String.try_convert("str")     #=> str
+ *     String.try_convert(/re/)      #=> nil
  */
 static VALUE
 rb_str_s_try_convert(VALUE dummy, VALUE str)
@@ -1974,10 +1974,10 @@ rb_str_append(VALUE str, VALUE str2)
 
 /*
  *  call-seq:
- *     str << integer       => str
- *     str.concat(integer)  => str
- *     str << obj           => str
- *     str.concat(obj)      => str
+ *     str << integer       -> str
+ *     str.concat(integer)  -> str
+ *     str << obj           -> str
+ *     str.concat(obj)      -> str
  *
  *  Append---Concatenates the given object to <i>str</i>. If the object is a
  *  <code>Integer</code>, it is considered as a codepoint, and is converted
@@ -2058,7 +2058,7 @@ rb_str_hash_cmp(VALUE str1, VALUE str2)
 
 /*
  * call-seq:
- *    str.hash   => fixnum
+ *    str.hash   -> fixnum
  *
  * Return a hash based on the string's length and content.
  */
@@ -2135,7 +2135,7 @@ str_eql(const VALUE str1, const VALUE str2)
 }
 /*
  *  call-seq:
- *     str == obj   => true or false
+ *     str == obj   -> true or false
  *
  *  Equality---If <i>obj</i> is not a <code>String</code>, returns
  *  <code>false</code>. Otherwise, returns <code>true</code> if <i>str</i>
@@ -2157,7 +2157,7 @@ rb_str_equal(VALUE str1, VALUE str2)
 
 /*
  * call-seq:
- *   str.eql?(other)   => true or false
+ *   str.eql?(other)   -> true or false
  *
  * Two strings are equal if they have the same length and content.
  */
@@ -2171,7 +2171,7 @@ rb_str_eql(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *     str <=> other_str   => -1, 0, +1 or nil
+ *     str <=> other_str   -> -1, 0, +1 or nil
  *
  *  Comparison---Returns -1 if <i>other_str</i> is greater than, 0 if
  *  <i>other_str</i> is equal to, and +1 if <i>other_str</i> is less than
@@ -2222,7 +2222,7 @@ rb_str_cmp_m(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *     str.casecmp(other_str)   => -1, 0, +1 or nil
+ *     str.casecmp(other_str)   -> -1, 0, +1 or nil
  *
  *  Case-insensitive version of <code>String#<=></code>.
  *
@@ -2336,8 +2336,8 @@ rb_str_index(VALUE str, VALUE sub, long offset)
 
 /*
  *  call-seq:
- *     str.index(substring [, offset])   => fixnum or nil
- *     str.index(regexp [, offset])      => fixnum or nil
+ *     str.index(substring [, offset])   -> fixnum or nil
+ *     str.index(regexp [, offset])      -> fixnum or nil
  *
  *  Returns the index of the first occurrence of the given <i>substring</i> or
  *  pattern (<i>regexp</i>) in <i>str</i>. Returns <code>nil</code> if not
@@ -2447,8 +2447,8 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
 
 /*
  *  call-seq:
- *     str.rindex(substring [, fixnum])   => fixnum or nil
- *     str.rindex(regexp [, fixnum])   => fixnum or nil
+ *     str.rindex(substring [, fixnum])   -> fixnum or nil
+ *     str.rindex(regexp [, fixnum])   -> fixnum or nil
  *
  *  Returns the index of the last occurrence of the given <i>substring</i> or
  *  pattern (<i>regexp</i>) in <i>str</i>. Returns <code>nil</code> if not
@@ -2522,7 +2522,7 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str =~ obj   => fixnum or nil
+ *     str =~ obj   -> fixnum or nil
  *
  *  Match---If <i>obj</i> is a <code>Regexp</code>, use it as a pattern to match
  *  against <i>str</i>,and returns the position the match starts, or
@@ -2555,8 +2555,8 @@ static VALUE get_pat(VALUE, int);
 
 /*
  *  call-seq:
- *     str.match(pattern)        => matchdata or nil
- *     str.match(pattern, pos)   => matchdata or nil
+ *     str.match(pattern)        -> matchdata or nil
+ *     str.match(pattern, pos)   -> matchdata or nil
  *
  *  Converts <i>pattern</i> to a <code>Regexp</code> (if it isn't already one),
  *  then invokes its <code>match</code> method on <i>str</i>.  If the second
@@ -2741,8 +2741,8 @@ enc_succ_alnum_char(char *p, long len, rb_encoding *enc, char *carry)
 
 /*
  *  call-seq:
- *     str.succ   => new_str
- *     str.next   => new_str
+ *     str.succ   -> new_str
+ *     str.next   -> new_str
  *
  *  Returns the successor to <i>str</i>. The successor is calculated by
  *  incrementing characters starting from the rightmost alphanumeric (or
@@ -2840,8 +2840,8 @@ rb_str_succ(VALUE orig)
 
 /*
  *  call-seq:
- *     str.succ!   => str
- *     str.next!   => str
+ *     str.succ!   -> str
+ *     str.next!   -> str
  *
  *  Equivalent to <code>String#succ</code>, but modifies the receiver in
  *  place.
@@ -2858,8 +2858,8 @@ rb_str_succ_bang(VALUE str)
 
 /*
  *  call-seq:
- *     str.upto(other_str, exclusive=false) {|s| block }   => str
- *     str.upto(other_str, exclusive=false)                => an_enumerator
+ *     str.upto(other_str, exclusive=false) {|s| block }   -> str
+ *     str.upto(other_str, exclusive=false)                -> an_enumerator
  *
  *  Iterates through successive values, starting at <i>str</i> and
  *  ending at <i>other_str</i> inclusive, passing each value in turn to
@@ -2883,9 +2883,9 @@ rb_str_succ_bang(VALUE str)
  *  both are recognized as decimal numbers. In addition, the width of
  *  string (e.g. leading zeros) is handled appropriately.
  *
- *     "9".upto("11").to_a   => ["9", "10", "11"]
- *     "25".upto("5").to_a   => []
- *     "07".upto("11").to_a  => ["07", "08", "09", "10", "11"]
+ *     "9".upto("11").to_a   #=> ["9", "10", "11"]
+ *     "25".upto("5").to_a   #=> []
+ *     "07".upto("11").to_a  #=> ["07", "08", "09", "10", "11"]
  */
 
 static VALUE
@@ -3043,19 +3043,19 @@ rb_str_aref(VALUE str, VALUE indx)
 
 /*
  *  call-seq:
- *     str[fixnum]                 => new_str or nil
- *     str[fixnum, fixnum]         => new_str or nil
- *     str[range]                  => new_str or nil
- *     str[regexp]                 => new_str or nil
- *     str[regexp, fixnum]         => new_str or nil
- *     str[other_str]              => new_str or nil
- *     str.slice(fixnum)           => new_str or nil
- *     str.slice(fixnum, fixnum)   => new_str or nil
- *     str.slice(range)            => new_str or nil
- *     str.slice(regexp)           => new_str or nil
- *     str.slice(regexp, fixnum)   => new_str or nil
- *     str.slice(regexp, capname)  => new_str or nil
- *     str.slice(other_str)        => new_str or nil
+ *     str[fixnum]                 -> new_str or nil
+ *     str[fixnum, fixnum]         -> new_str or nil
+ *     str[range]                  -> new_str or nil
+ *     str[regexp]                 -> new_str or nil
+ *     str[regexp, fixnum]         -> new_str or nil
+ *     str[other_str]              -> new_str or nil
+ *     str.slice(fixnum)           -> new_str or nil
+ *     str.slice(fixnum, fixnum)   -> new_str or nil
+ *     str.slice(range)            -> new_str or nil
+ *     str.slice(regexp)           -> new_str or nil
+ *     str.slice(regexp, fixnum)   -> new_str or nil
+ *     str.slice(regexp, capname)  -> new_str or nil
+ *     str.slice(other_str)        -> new_str or nil
  *
  *  Element Reference---If passed a single <code>Fixnum</code>, returns a
  *  substring of one character at that position. If passed two <code>Fixnum</code>
@@ -3336,7 +3336,7 @@ rb_str_aset_m(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.insert(index, other_str)   => str
+ *     str.insert(index, other_str)   -> str
  *
  *  Inserts <i>other_str</i> before the character at the given
  *  <i>index</i>, modifying <i>str</i>. Negative indices count from the
@@ -3369,11 +3369,11 @@ rb_str_insert(VALUE str, VALUE idx, VALUE str2)
 
 /*
  *  call-seq:
- *     str.slice!(fixnum)           => fixnum or nil
- *     str.slice!(fixnum, fixnum)   => new_str or nil
- *     str.slice!(range)            => new_str or nil
- *     str.slice!(regexp)           => new_str or nil
- *     str.slice!(other_str)        => new_str or nil
+ *     str.slice!(fixnum)           -> fixnum or nil
+ *     str.slice!(fixnum, fixnum)   -> new_str or nil
+ *     str.slice!(range)            -> new_str or nil
+ *     str.slice!(regexp)           -> new_str or nil
+ *     str.slice!(other_str)        -> new_str or nil
  *
  *  Deletes the specified portion from <i>str</i>, and returns the portion
  *  deleted.
@@ -3438,8 +3438,8 @@ get_pat(VALUE pat, int quote)
 
 /*
  *  call-seq:
- *     str.sub!(pattern, replacement)          => str or nil
- *     str.sub!(pattern) {|match| block }      => str or nil
+ *     str.sub!(pattern, replacement)          -> str or nil
+ *     str.sub!(pattern) {|match| block }      -> str or nil
  *
  *  Performs the substitutions of <code>String#sub</code> in place,
  *  returning <i>str</i>, or <code>nil</code> if no substitutions were
@@ -3549,9 +3549,9 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.sub(pattern, replacement)         => new_str
- *     str.sub(pattern) {|match| block }     => new_str
- *     str.sub(pattern)                      => an_enumerator
+ *     str.sub(pattern, replacement)         -> new_str
+ *     str.sub(pattern) {|match| block }     -> new_str
+ *     str.sub(pattern)                      -> an_enumerator
  *
  *  Returns a copy of <i>str</i> with the <em>first</em> occurrence of
  *  <i>pattern</i> replaced with either <i>replacement</i> or the value of the
@@ -3703,8 +3703,8 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 
 /*
  *  call-seq:
- *     str.gsub!(pattern, replacement)        => str or nil
- *     str.gsub!(pattern) {|match| block }    => str or nil
+ *     str.gsub!(pattern, replacement)        -> str or nil
+ *     str.gsub!(pattern) {|match| block }    -> str or nil
  *
  *  Performs the substitutions of <code>String#gsub</code> in place, returning
  *  <i>str</i>, or <code>nil</code> if no substitutions were performed.
@@ -3720,8 +3720,8 @@ rb_str_gsub_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.gsub(pattern, replacement)       => new_str
- *     str.gsub(pattern) {|match| block }   => new_str
+ *     str.gsub(pattern, replacement)       -> new_str
+ *     str.gsub(pattern) {|match| block }   -> new_str
  *
  *  Returns a copy of <i>str</i> with <em>all</em> occurrences of <i>pattern</i>
  *  replaced with either <i>replacement</i> or the value of the block. The
@@ -3760,7 +3760,7 @@ rb_str_gsub(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.replace(other_str)   => str
+ *     str.replace(other_str)   -> str
  *
  *  Replaces the contents and taintedness of <i>str</i> with the corresponding
  *  values in <i>other_str</i>.
@@ -3822,7 +3822,7 @@ rb_str_chr(VALUE str)
 
 /*
  *  call-seq:
- *     str.getbyte(index)          => 0 .. 255
+ *     str.getbyte(index)          -> 0 .. 255
  *
  *  returns the <i>index</i>th byte as an integer.
  */
@@ -3841,7 +3841,7 @@ rb_str_getbyte(VALUE str, VALUE index)
 
 /*
  *  call-seq:
- *     str.setbyte(index, int) => int
+ *     str.setbyte(index, int) -> int
  *
  *  modifies the <i>index</i>th byte as <i>int</i>.
  */
@@ -3865,7 +3865,7 @@ rb_str_setbyte(VALUE str, VALUE index, VALUE value)
 
 /*
  *  call-seq:
- *     str.reverse   => new_str
+ *     str.reverse   -> new_str
  *
  *  Returns a new string with the characters from <i>str</i> in reverse order.
  *
@@ -3931,7 +3931,7 @@ rb_str_reverse(VALUE str)
 
 /*
  *  call-seq:
- *     str.reverse!   => str
+ *     str.reverse!   -> str
  *
  *  Reverses <i>str</i> in place.
  */
@@ -3965,7 +3965,7 @@ rb_str_reverse_bang(VALUE str)
 
 /*
  *  call-seq:
- *     str.include? other_str   => true or false
+ *     str.include? other_str   -> true or false
  *
  *  Returns <code>true</code> if <i>str</i> contains the given string or
  *  character.
@@ -3990,7 +3990,7 @@ rb_str_include(VALUE str, VALUE arg)
 
 /*
  *  call-seq:
- *     str.to_i(base=10)   => integer
+ *     str.to_i(base=10)   -> integer
  *
  *  Returns the result of interpreting leading characters in <i>str</i> as an
  *  integer base <i>base</i> (between 2 and 36). Extraneous characters past the
@@ -4030,7 +4030,7 @@ rb_str_to_i(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.to_f   => float
+ *     str.to_f   -> float
  *
  *  Returns the result of interpreting leading characters in <i>str</i> as a
  *  floating point number. Extraneous characters past the end of a valid number
@@ -4051,8 +4051,8 @@ rb_str_to_f(VALUE str)
 
 /*
  *  call-seq:
- *     str.to_s     => str
- *     str.to_str   => str
+ *     str.to_s     -> str
+ *     str.to_str   -> str
  *
  *  Returns the receiver.
  */
@@ -4080,7 +4080,7 @@ str_cat_char(VALUE str, unsigned int c, rb_encoding *enc)
 
 /*
  * call-seq:
- *   str.inspect   => string
+ *   str.inspect   -> string
  *
  * Returns a printable version of _str_, surrounded by quote marks,
  * with special characters escaped.
@@ -4197,7 +4197,7 @@ rb_str_inspect(VALUE str)
 
 /*
  *  call-seq:
- *     str.dump   => new_str
+ *     str.dump   -> new_str
  *
  *  Produces a version of <i>str</i> with all nonprinting characters replaced by
  *  <code>\nnn</code> notation and all special characters escaped.
@@ -4347,7 +4347,7 @@ rb_str_check_dummy_enc(rb_encoding *enc)
 
 /*
  *  call-seq:
- *     str.upcase!   => str or nil
+ *     str.upcase!   -> str or nil
  *
  *  Upcases the contents of <i>str</i>, returning <code>nil</code> if no changes
  *  were made.
@@ -4409,7 +4409,7 @@ rb_str_upcase_bang(VALUE str)
 
 /*
  *  call-seq:
- *     str.upcase   => new_str
+ *     str.upcase   -> new_str
  *
  *  Returns a copy of <i>str</i> with all lowercase letters replaced with their
  *  uppercase counterparts. The operation is locale insensitive---only
@@ -4430,7 +4430,7 @@ rb_str_upcase(VALUE str)
 
 /*
  *  call-seq:
- *     str.downcase!   => str or nil
+ *     str.downcase!   -> str or nil
  *
  *  Downcases the contents of <i>str</i>, returning <code>nil</code> if no
  *  changes were made.
@@ -4492,7 +4492,7 @@ rb_str_downcase_bang(VALUE str)
 
 /*
  *  call-seq:
- *     str.downcase   => new_str
+ *     str.downcase   -> new_str
  *
  *  Returns a copy of <i>str</i> with all uppercase letters replaced with their
  *  lowercase counterparts. The operation is locale insensitive---only
@@ -4513,7 +4513,7 @@ rb_str_downcase(VALUE str)
 
 /*
  *  call-seq:
- *     str.capitalize!   => str or nil
+ *     str.capitalize!   -> str or nil
  *
  *  Modifies <i>str</i> by converting the first character to uppercase and the
  *  remainder to lowercase. Returns <code>nil</code> if no changes are made.
@@ -4562,7 +4562,7 @@ rb_str_capitalize_bang(VALUE str)
 
 /*
  *  call-seq:
- *     str.capitalize   => new_str
+ *     str.capitalize   -> new_str
  *
  *  Returns a copy of <i>str</i> with the first character converted to uppercase
  *  and the remainder to lowercase.
@@ -4584,7 +4584,7 @@ rb_str_capitalize(VALUE str)
 
 /*
  *  call-seq:
-*     str.swapcase!   => str or nil
+*     str.swapcase!   -> str or nil
  *
  *  Equivalent to <code>String#swapcase</code>, but modifies the receiver in
  *  place, returning <i>str</i>, or <code>nil</code> if no changes were made.
@@ -4626,7 +4626,7 @@ rb_str_swapcase_bang(VALUE str)
 
 /*
  *  call-seq:
- *     str.swapcase   => new_str
+ *     str.swapcase   -> new_str
  *
  *  Returns a copy of <i>str</i> with uppercase alphabetic characters converted
  *  to lowercase and lowercase characters converted to uppercase.
@@ -4943,7 +4943,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 
 /*
  *  call-seq:
- *     str.tr!(from_str, to_str)   => str or nil
+ *     str.tr!(from_str, to_str)   -> str or nil
  *
  *  Translates <i>str</i> in place, using the same rules as
  *  <code>String#tr</code>. Returns <i>str</i>, or <code>nil</code> if no
@@ -4959,7 +4959,7 @@ rb_str_tr_bang(VALUE str, VALUE src, VALUE repl)
 
 /*
  *  call-seq:
- *     str.tr(from_str, to_str)   => new_str
+ *     str.tr(from_str, to_str)   -> new_str
  *
  *  Returns a copy of <i>str</i> with the characters in <i>from_str</i> replaced
  *  by the corresponding characters in <i>to_str</i>. If <i>to_str</i> is
@@ -5058,7 +5058,7 @@ tr_find(unsigned int c, char table[256], VALUE del, VALUE nodel)
 
 /*
  *  call-seq:
- *     str.delete!([other_str]+)   => str or nil
+ *     str.delete!([other_str]+)   -> str or nil
  *
  *  Performs a <code>delete</code> operation in place, returning <i>str</i>, or
  *  <code>nil</code> if <i>str</i> was not modified.
@@ -5130,7 +5130,7 @@ rb_str_delete_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.delete([other_str]+)   => new_str
+ *     str.delete([other_str]+)   -> new_str
  *
  *  Returns a copy of <i>str</i> with all characters in the intersection of its
  *  arguments deleted. Uses the same rules for building the set of characters as
@@ -5153,7 +5153,7 @@ rb_str_delete(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.squeeze!([other_str]*)   => str or nil
+ *     str.squeeze!([other_str]*)   -> str or nil
  *
  *  Squeezes <i>str</i> in place, returning either <i>str</i>, or
  *  <code>nil</code> if no changes were made.
@@ -5236,7 +5236,7 @@ rb_str_squeeze_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.squeeze([other_str]*)    => new_str
+ *     str.squeeze([other_str]*)    -> new_str
  *
  *  Builds a set of characters from the <i>other_str</i> parameter(s) using the
  *  procedure described for <code>String#count</code>. Returns a new string
@@ -5260,7 +5260,7 @@ rb_str_squeeze(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.tr_s!(from_str, to_str)   => str or nil
+ *     str.tr_s!(from_str, to_str)   -> str or nil
  *
  *  Performs <code>String#tr_s</code> processing on <i>str</i> in place,
  *  returning <i>str</i>, or <code>nil</code> if no changes were made.
@@ -5275,7 +5275,7 @@ rb_str_tr_s_bang(VALUE str, VALUE src, VALUE repl)
 
 /*
  *  call-seq:
- *     str.tr_s(from_str, to_str)   => new_str
+ *     str.tr_s(from_str, to_str)   -> new_str
  *
  *  Processes a copy of <i>str</i> as described under <code>String#tr</code>,
  *  then removes duplicate characters in regions that were affected by the
@@ -5297,7 +5297,7 @@ rb_str_tr_s(VALUE str, VALUE src, VALUE repl)
 
 /*
  *  call-seq:
- *     str.count([other_str]+)   => fixnum
+ *     str.count([other_str]+)   -> fixnum
  *
  *  Each <i>other_str</i> parameter defines a set of characters to count.  The
  *  intersection of these sets defines the characters to count in
@@ -5396,7 +5396,7 @@ static const char isspacetable[256] = {
 
 /*
  *  call-seq:
- *     str.split(pattern=$;, [limit])   => anArray
+ *     str.split(pattern=$;, [limit])   -> anArray
  *
  *  Divides <i>str</i> into substrings based on a delimiter, returning an array
  *  of these substrings.
@@ -5664,11 +5664,11 @@ rb_str_split(VALUE str, const char *sep0)
 
 /*
  *  call-seq:
- *     str.each_line(separator=$/) {|substr| block }   => str
- *     str.each_line(separator=$/)                     => an_enumerator
+ *     str.each_line(separator=$/) {|substr| block }   -> str
+ *     str.each_line(separator=$/)                     -> an_enumerator
  *
- *     str.lines(separator=$/) {|substr| block }       => str
- *     str.lines(separator=$/)                         => an_enumerator
+ *     str.lines(separator=$/) {|substr| block }       -> str
+ *     str.lines(separator=$/)                         -> an_enumerator
  *
  *  Splits <i>str</i> using the supplied parameter as the record separator
  *  (<code>$/</code> by default), passing each substring in turn to the supplied
@@ -5799,11 +5799,11 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.bytes {|fixnum| block }        => str
- *     str.bytes                          => an_enumerator
+ *     str.bytes {|fixnum| block }        -> str
+ *     str.bytes                          -> an_enumerator
  *
- *     str.each_byte {|fixnum| block }    => str
- *     str.each_byte                      => an_enumerator
+ *     str.each_byte {|fixnum| block }    -> str
+ *     str.each_byte                      -> an_enumerator
  *
  *  Passes each byte in <i>str</i> to the given block, or returns
  *  an enumerator if no block is given.
@@ -5830,11 +5830,11 @@ rb_str_each_byte(VALUE str)
 
 /*
  *  call-seq:
- *     str.chars {|cstr| block }        => str
- *     str.chars                        => an_enumerator
+ *     str.chars {|cstr| block }        -> str
+ *     str.chars                        -> an_enumerator
  *
- *     str.each_char {|cstr| block }    => str
- *     str.each_char                    => an_enumerator
+ *     str.each_char {|cstr| block }    -> str
+ *     str.each_char                    -> an_enumerator
  *
  *  Passes each character in <i>str</i> to the given block, or returns
  *  an enumerator if no block is given.
@@ -5878,11 +5878,11 @@ rb_str_each_char(VALUE str)
 
 /*
  *  call-seq:
- *     str.codepoints {|integer| block }        => str
- *     str.codepoints                           => an_enumerator
+ *     str.codepoints {|integer| block }        -> str
+ *     str.codepoints                           -> an_enumerator
  *
- *     str.each_codepoint {|integer| block }    => str
- *     str.each_codepoint                       => an_enumerator
+ *     str.each_codepoint {|integer| block }    -> str
+ *     str.each_codepoint                       -> an_enumerator
  *
  *  Passes the <code>Integer</code> ordinal of each character in <i>str</i>,
  *  also known as a <i>codepoint</i> when applied to Unicode strings to the
@@ -5942,7 +5942,7 @@ chopped_length(VALUE str)
 
 /*
  *  call-seq:
- *     str.chop!   => str or nil
+ *     str.chop!   -> str or nil
  *
  *  Processes <i>str</i> as for <code>String#chop</code>, returning <i>str</i>,
  *  or <code>nil</code> if <i>str</i> is the empty string.  See also
@@ -5969,7 +5969,7 @@ rb_str_chop_bang(VALUE str)
 
 /*
  *  call-seq:
- *     str.chop   => new_str
+ *     str.chop   -> new_str
  *
  *  Returns a new <code>String</code> with the last character removed.  If the
  *  string ends with <code>\r\n</code>, both characters are removed. Applying
@@ -5996,7 +5996,7 @@ rb_str_chop(VALUE str)
 
 /*
  *  call-seq:
- *     str.chomp!(separator=$/)   => str or nil
+ *     str.chomp!(separator=$/)   -> str or nil
  *
  *  Modifies <i>str</i> in place as described for <code>String#chomp</code>,
  *  returning <i>str</i>, or <code>nil</code> if no modifications were made.
@@ -6105,7 +6105,7 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.chomp(separator=$/)   => new_str
+ *     str.chomp(separator=$/)   -> new_str
  *
  *  Returns a new <code>String</code> with the given record separator removed
  *  from the end of <i>str</i> (if present). If <code>$/</code> has not been
@@ -6132,7 +6132,7 @@ rb_str_chomp(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.lstrip!   => self or nil
+ *     str.lstrip!   -> self or nil
  *
  *  Removes leading whitespace from <i>str</i>, returning <code>nil</code> if no
  *  change was made. See also <code>String#rstrip!</code> and
@@ -6174,7 +6174,7 @@ rb_str_lstrip_bang(VALUE str)
 
 /*
  *  call-seq:
- *     str.lstrip   => new_str
+ *     str.lstrip   -> new_str
  *
  *  Returns a copy of <i>str</i> with leading whitespace removed. See also
  *  <code>String#rstrip</code> and <code>String#strip</code>.
@@ -6194,7 +6194,7 @@ rb_str_lstrip(VALUE str)
 
 /*
  *  call-seq:
- *     str.rstrip!   => self or nil
+ *     str.rstrip!   -> self or nil
  *
  *  Removes trailing whitespace from <i>str</i>, returning <code>nil</code> if
  *  no change was made. See also <code>String#lstrip!</code> and
@@ -6244,7 +6244,7 @@ rb_str_rstrip_bang(VALUE str)
 
 /*
  *  call-seq:
- *     str.rstrip   => new_str
+ *     str.rstrip   -> new_str
  *
  *  Returns a copy of <i>str</i> with trailing whitespace removed. See also
  *  <code>String#lstrip</code> and <code>String#strip</code>.
@@ -6264,7 +6264,7 @@ rb_str_rstrip(VALUE str)
 
 /*
  *  call-seq:
- *     str.strip!   => str or nil
+ *     str.strip!   -> str or nil
  *
  *  Removes leading and trailing whitespace from <i>str</i>. Returns
  *  <code>nil</code> if <i>str</i> was not altered.
@@ -6283,7 +6283,7 @@ rb_str_strip_bang(VALUE str)
 
 /*
  *  call-seq:
- *     str.strip   => new_str
+ *     str.strip   -> new_str
  *
  *  Returns a copy of <i>str</i> with leading and trailing whitespace removed.
  *
@@ -6339,8 +6339,8 @@ scan_once(VALUE str, VALUE pat, long *start)
 
 /*
  *  call-seq:
- *     str.scan(pattern)                         => array
- *     str.scan(pattern) {|match, ...| block }   => str
+ *     str.scan(pattern)                         -> array
+ *     str.scan(pattern) {|match, ...| block }   -> str
  *
  *  Both forms iterate through <i>str</i>, matching the pattern (which may be a
  *  <code>Regexp</code> or a <code>String</code>). For each match, a result is
@@ -6402,7 +6402,7 @@ rb_str_scan(VALUE str, VALUE pat)
 
 /*
  *  call-seq:
- *     str.hex   => integer
+ *     str.hex   -> integer
  *
  *  Treats leading characters from <i>str</i> as a string of hexadecimal digits
  *  (with an optional sign and an optional <code>0x</code>) and returns the
@@ -6428,7 +6428,7 @@ rb_str_hex(VALUE str)
 
 /*
  *  call-seq:
- *     str.oct   => integer
+ *     str.oct   -> integer
  *
  *  Treats leading characters of <i>str</i> as a string of octal digits (with an
  *  optional sign) and returns the corresponding number.  Returns 0 if the
@@ -6454,7 +6454,7 @@ rb_str_oct(VALUE str)
 
 /*
  *  call-seq:
- *     str.crypt(other_str)   => new_str
+ *     str.crypt(other_str)   -> new_str
  *
  *  Applies a one-way cryptographic hash to <i>str</i> by invoking the standard
  *  library function <code>crypt</code>. The argument is the salt string, which
@@ -6496,8 +6496,8 @@ rb_str_crypt(VALUE str, VALUE salt)
 
 /*
  *  call-seq:
- *     str.intern   => symbol
- *     str.to_sym   => symbol
+ *     str.intern   -> symbol
+ *     str.to_sym   -> symbol
  *
  *  Returns the <code>Symbol</code> corresponding to <i>str</i>, creating the
  *  symbol if it did not previously exist. See <code>Symbol#id2name</code>.
@@ -6527,7 +6527,7 @@ rb_str_intern(VALUE s)
 
 /*
  *  call-seq:
- *     str.ord   => integer
+ *     str.ord   -> integer
  *
  *  Return the <code>Integer</code> ordinal of a one-character string.
  *
@@ -6544,7 +6544,7 @@ rb_str_ord(VALUE s)
 }
 /*
  *  call-seq:
- *     str.sum(n=16)   => integer
+ *     str.sum(n=16)   -> integer
  *
  *  Returns a basic <em>n</em>-bit checksum of the characters in <i>str</i>,
  *  where <em>n</em> is the optional <code>Fixnum</code> parameter, defaulting
@@ -6704,7 +6704,7 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
 
 /*
  *  call-seq:
- *     str.ljust(integer, padstr=' ')   => new_str
+ *     str.ljust(integer, padstr=' ')   -> new_str
  *
  *  If <i>integer</i> is greater than the length of <i>str</i>, returns a new
  *  <code>String</code> of length <i>integer</i> with <i>str</i> left justified
@@ -6724,7 +6724,7 @@ rb_str_ljust(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.rjust(integer, padstr=' ')   => new_str
+ *     str.rjust(integer, padstr=' ')   -> new_str
  *
  *  If <i>integer</i> is greater than the length of <i>str</i>, returns a new
  *  <code>String</code> of length <i>integer</i> with <i>str</i> right justified
@@ -6744,7 +6744,7 @@ rb_str_rjust(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.center(integer, padstr)   => new_str
+ *     str.center(integer, padstr)   -> new_str
  *
  *  If <i>integer</i> is greater than the length of <i>str</i>, returns a new
  *  <code>String</code> of length <i>integer</i> with <i>str</i> centered and
@@ -6763,8 +6763,8 @@ rb_str_center(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.partition(sep)              => [head, sep, tail]
- *     str.partition(regexp)           => [head, match, tail]
+ *     str.partition(sep)              -> [head, sep, tail]
+ *     str.partition(regexp)           -> [head, match, tail]
  *
  *  Searches <i>sep</i> or pattern (<i>regexp</i>) in the string
  *  and returns the part before it, the match, and the part
@@ -6813,8 +6813,8 @@ rb_str_partition(VALUE str, VALUE sep)
 
 /*
  *  call-seq:
- *     str.rpartition(sep)             => [head, sep, tail]
- *     str.rpartition(regexp)          => [head, match, tail]
+ *     str.rpartition(sep)             -> [head, sep, tail]
+ *     str.rpartition(regexp)          -> [head, match, tail]
  *
  *  Searches <i>sep</i> or pattern (<i>regexp</i>) in the string from the end
  *  of the string, and returns the part before it, the match, and the part
@@ -6861,7 +6861,7 @@ rb_str_rpartition(VALUE str, VALUE sep)
 
 /*
  *  call-seq:
- *     str.start_with?([prefix]+)   => true or false
+ *     str.start_with?([prefix]+)   -> true or false
  *
  *  Returns true if <i>str</i> starts with a prefix given.
  *
@@ -6893,7 +6893,7 @@ rb_str_start_with(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.end_with?([suffix]+)   => true or false
+ *     str.end_with?([suffix]+)   -> true or false
  *
  *  Returns true if <i>str</i> ends with a suffix given.
  */
@@ -6933,7 +6933,7 @@ rb_str_setter(VALUE val, ID id, VALUE *var)
 
 /*
  *  call-seq:
- *     str.force_encoding(encoding)   => str
+ *     str.force_encoding(encoding)   -> str
  *
  *  Changes the encoding to +encoding+ and returns self.
  */
@@ -6949,13 +6949,13 @@ rb_str_force_encoding(VALUE str, VALUE enc)
 
 /*
  *  call-seq:
- *     str.valid_encoding?  => true or false
+ *     str.valid_encoding?  -> true or false
  *
  *  Returns true for a string which encoded correctly.
  *
- *    "\xc2\xa1".force_encoding("UTF-8").valid_encoding? => true
- *    "\xc2".force_encoding("UTF-8").valid_encoding? => false
- *    "\x80".force_encoding("UTF-8").valid_encoding? => false
+ *    "\xc2\xa1".force_encoding("UTF-8").valid_encoding?  #=> true
+ *    "\xc2".force_encoding("UTF-8").valid_encoding?      #=> false
+ *    "\x80".force_encoding("UTF-8").valid_encoding?      #=> false
  */
 
 static VALUE
@@ -6968,12 +6968,12 @@ rb_str_valid_encoding_p(VALUE str)
 
 /*
  *  call-seq:
- *     str.ascii_only?  => true or false
+ *     str.ascii_only?  -> true or false
  *
  *  Returns true for a string which has only ASCII characters.
  *
- *    "abc".force_encoding("UTF-8").ascii_only? => true
- *    "abc\u{6666}".force_encoding("UTF-8").ascii_only? => false
+ *    "abc".force_encoding("UTF-8").ascii_only?          #=> true
+ *    "abc\u{6666}".force_encoding("UTF-8").ascii_only?  #=> false
  */
 
 static VALUE
@@ -7020,7 +7020,7 @@ rb_str_is_ascii_only_p(VALUE str)
 
 /*
  *  call-seq:
- *     sym == obj   => true or false
+ *     sym == obj   -> true or false
  *
  *  Equality---If <i>sym</i> and <i>obj</i> are exactly the same
  *  symbol, returns <code>true</code>.
@@ -7049,7 +7049,7 @@ sym_printable(const char *s, const char *send, rb_encoding *enc)
 
 /*
  *  call-seq:
- *     sym.inspect    => string
+ *     sym.inspect    -> string
  *
  *  Returns the representation of <i>sym</i> as a symbol literal.
  *
@@ -7080,8 +7080,8 @@ sym_inspect(VALUE sym)
 
 /*
  *  call-seq:
- *     sym.id2name   => string
- *     sym.to_s      => string
+ *     sym.id2name   -> string
+ *     sym.to_s      -> string
  *
  *  Returns the name or string corresponding to <i>sym</i>.
  *
@@ -7100,8 +7100,8 @@ rb_sym_to_s(VALUE sym)
 
 /*
  * call-seq:
- *   sym.to_sym   => sym
- *   sym.intern   => sym
+ *   sym.to_sym   -> sym
+ *   sym.intern   -> sym
  *
  * In general, <code>to_sym</code> returns the <code>Symbol</code> corresponding
  * to an object. As <i>sym</i> is already a symbol, <code>self</code> is returned
@@ -7182,7 +7182,7 @@ sym_succ(VALUE sym)
 /*
  * call-seq:
  *
- *   str <=> other       => -1, 0, +1 or nil
+ *   str <=> other       -> -1, 0, +1 or nil
  *
  * Compares _sym_ with _other_ in string form.
  */
@@ -7199,7 +7199,7 @@ sym_cmp(VALUE sym, VALUE other)
 /*
  * call-seq:
  *
- *   sym.casecmp(other)  => -1, 0, +1 or nil
+ *   sym.casecmp(other)  -> -1, 0, +1 or nil
  *
  * Case-insensitive version of <code>Symbol#<=></code>.
  */
@@ -7215,7 +7215,7 @@ sym_casecmp(VALUE sym, VALUE other)
 
 /*
  * call-seq:
- *   sym =~ obj   => fixnum or nil
+ *   sym =~ obj   -> fixnum or nil
  *
  * Returns <code>sym.to_s =~ obj</code>.
  */
@@ -7228,8 +7228,8 @@ sym_match(VALUE sym, VALUE other)
 
 /*
  * call-seq:
- *   sym[idx]      => char
- *   sym[b, n]     => char
+ *   sym[idx]      -> char
+ *   sym[b, n]     -> char
  *
  * Returns <code>sym.to_s[]</code>.
  */
@@ -7242,7 +7242,7 @@ sym_aref(int argc, VALUE *argv, VALUE sym)
 
 /*
  * call-seq:
- *   sym.length    => integer
+ *   sym.length    -> integer
  *
  * Same as <code>sym.to_s.length</code>.
  */
@@ -7255,7 +7255,7 @@ sym_length(VALUE sym)
 
 /*
  * call-seq:
- *   sym.empty?   => true or false
+ *   sym.empty?   -> true or false
  *
  * Returns that _sym_ is :"" or not.
  */
@@ -7268,7 +7268,7 @@ sym_empty(VALUE sym)
 
 /*
  * call-seq:
- *   sym.upcase    => symbol
+ *   sym.upcase    -> symbol
  *
  * Same as <code>sym.to_s.upcase.intern</code>.
  */
@@ -7281,7 +7281,7 @@ sym_upcase(VALUE sym)
 
 /*
  * call-seq:
- *   sym.downcase  => symbol
+ *   sym.downcase  -> symbol
  *
  * Same as <code>sym.to_s.downcase.intern</code>.
  */
@@ -7294,7 +7294,7 @@ sym_downcase(VALUE sym)
 
 /*
  * call-seq:
- *   sym.capitalize  => symbol
+ *   sym.capitalize  -> symbol
  *
  * Same as <code>sym.to_s.capitalize.intern</code>.
  */
@@ -7307,7 +7307,7 @@ sym_capitalize(VALUE sym)
 
 /*
  * call-seq:
- *   sym.swapcase  => symbol
+ *   sym.swapcase  -> symbol
  *
  * Same as <code>sym.to_s.swapcase.intern</code>.
  */
@@ -7320,7 +7320,7 @@ sym_swapcase(VALUE sym)
 
 /*
  * call-seq:
- *   sym.encoding   => encoding
+ *   sym.encoding   -> encoding
  *
  * Returns the Encoding object that represents the encoding of _sym_.
  */

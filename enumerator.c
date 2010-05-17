@@ -474,7 +474,7 @@ get_next_values(VALUE obj, struct enumerator *e)
 
 /*
  * call-seq:
- *   e.next_values   => array
+ *   e.next_values   -> array
  *
  * Returns the next object as an array in the enumerator,
  * and move the internal position forward.
@@ -553,7 +553,7 @@ ary2sv(VALUE args, int dup)
 
 /*
  * call-seq:
- *   e.next   => object
+ *   e.next   -> object
  *
  * Returns the next object in the enumerator, and move the internal
  * position forward.  When the position reached at the end, StopIteration
@@ -592,7 +592,7 @@ enumerator_peek_values(VALUE obj)
 
 /*
  * call-seq:
- *   e.peek_values   => array
+ *   e.peek_values   -> array
  *
  * Returns the next object as an array in the enumerator,
  * but don't move the internal position forward.
@@ -624,7 +624,7 @@ enumerator_peek_values_m(VALUE obj)
 
 /*
  * call-seq:
- *   e.peek   => object
+ *   e.peek   -> object
  *
  * Returns the next object in the enumerator, but don't move the internal
  * position forward.  When the position reached at the end, StopIteration
@@ -651,7 +651,7 @@ enumerator_peek(VALUE obj)
 
 /*
  * call-seq:
- *   e.feed obj   => nil
+ *   e.feed obj   -> nil
  *
  * Set the value for the next yield in the enumerator returns.
  *
@@ -700,7 +700,7 @@ enumerator_feed(VALUE obj, VALUE v)
 
 /*
  * call-seq:
- *   e.rewind   => e
+ *   e.rewind   -> e
  *
  * Rewinds the enumeration sequence by the next method.
  *
@@ -781,7 +781,7 @@ inspect_enumerator(VALUE obj, VALUE dummy, int recur)
 
 /*
  * call-seq:
- *   e.inspect  => string
+ *   e.inspect  -> string
  *
  *  Create a printable version of <i>e</i>.
  */
@@ -1041,7 +1041,7 @@ generator_each(VALUE obj)
 
 /*
  * call-seq:
- *   stopiteration.result       => value
+ *   stopiteration.result       -> value
  *
  * Returns the return value of the iterator.
  *

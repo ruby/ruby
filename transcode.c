@@ -2696,8 +2696,8 @@ str_encode_associate(VALUE str, int encidx)
 
 /*
  *  call-seq:
- *     str.encode!(encoding [, options] )   => str
- *     str.encode!(dst_encoding, src_encoding [, options] )   => str
+ *     str.encode!(encoding [, options] )   -> str
+ *     str.encode!(dst_encoding, src_encoding [, options] )   -> str
  *
  *  The first form transcodes the contents of <i>str</i> from
  *  str.encoding to +encoding+.
@@ -2728,9 +2728,9 @@ str_encode_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.encode(encoding [, options] )   => str
- *     str.encode(dst_encoding, src_encoding [, options] )   => str
- *     str.encode([options])   => str
+ *     str.encode(encoding [, options] )   -> str
+ *     str.encode(dst_encoding, src_encoding [, options] )   -> str
+ *     str.encode([options])   -> str
  *
  *  The first form returns a copy of <i>str</i> transcoded
  *  to encoding +encoding+.
@@ -2861,8 +2861,8 @@ make_encobj(const char *name)
 
 /*
  * call-seq:
- *   Encoding::Converter.asciicompat_encoding(string) => encoding or nil
- *   Encoding::Converter.asciicompat_encoding(encoding) => encoding or nil
+ *   Encoding::Converter.asciicompat_encoding(string) -> encoding or nil
+ *   Encoding::Converter.asciicompat_encoding(encoding) -> encoding or nil
  *
  * Returns the corresponding ASCII compatible encoding.
  *
@@ -3907,8 +3907,8 @@ econv_insert_output(VALUE self, VALUE string)
 
 /*
  * call-seq
- *   ec.putback                    => string
- *   ec.putback(max_numbytes)      => string
+ *   ec.putback                    -> string
+ *   ec.putback(max_numbytes)      -> string
  *
  * Put back the bytes which will be converted.
  *
