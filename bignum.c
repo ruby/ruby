@@ -1112,7 +1112,7 @@ rb_big2str(VALUE x, int base)
 
 /*
  *  call-seq:
- *     big.to_s(base=10)   =>  string
+ *     big.to_s(base=10)   ->  string
  *
  *  Returns a string containing the representation of <i>big</i> radix
  *  <i>base</i> (2 through 36).
@@ -1382,7 +1382,7 @@ rb_big_to_f(VALUE x)
 
 /*
  *  call-seq:
- *     big <=> numeric   => -1, 0, +1 or nil
+ *     big <=> numeric   -> -1, 0, +1 or nil
  *
  *  Comparison---Returns -1, 0, or +1 depending on whether <i>big</i> is
  *  less than, equal to, or greater than <i>numeric</i>. This is the
@@ -1543,7 +1543,7 @@ big_le(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     big == obj  => true or false
+ *     big == obj  -> true or false
  *
  *  Returns <code>true</code> only if <i>obj</i> has the same value
  *  as <i>big</i>. Contrast this with <code>Bignum#eql?</code>, which
@@ -1581,7 +1581,7 @@ rb_big_eq(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     big.eql?(obj)   => true or false
+ *     big.eql?(obj)   -> true or false
  *
  *  Returns <code>true</code> only if <i>obj</i> is a
  *  <code>Bignum</code> with the same value as <i>big</i>. Contrast this
@@ -1602,7 +1602,7 @@ rb_big_eql(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *    -big   =>  integer
+ *    -big   ->  integer
  *
  * Unary minus (returns an integer whose value is 0-big)
  */
@@ -1619,7 +1619,7 @@ rb_big_uminus(VALUE x)
 
 /*
  * call-seq:
- *     ~big  =>  integer
+ *     ~big  ->  integer
  *
  * Inverts the bits in big. As Bignums are conceptually infinite
  * length, the result acts as if it had an infinite number of one
@@ -1876,7 +1876,7 @@ bigadd(VALUE x, VALUE y, int sign)
 
 /*
  *  call-seq:
- *     big + other  => Numeric
+ *     big + other  -> Numeric
  *
  *  Adds big and other, returning the result.
  */
@@ -1913,7 +1913,7 @@ rb_big_plus(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     big - other  => Numeric
+ *     big - other  -> Numeric
  *
  *  Subtracts other from big, returning the result.
  */
@@ -2273,7 +2273,7 @@ bigmul0(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     big * other  => Numeric
+ *     big * other  -> Numeric
  *
  *  Multiplies big and other, returning the result.
  */
@@ -2522,7 +2522,7 @@ rb_big_divide(VALUE x, VALUE y, ID op)
 
 /*
  *  call-seq:
- *     big / other     => Numeric
+ *     big / other     -> Numeric
  *
  * Performs division: the class of the resulting object depends on
  * the class of <code>numeric</code> and on the magnitude of the
@@ -2537,7 +2537,7 @@ rb_big_div(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     big.div(other)  => integer
+ *     big.div(other)  -> integer
  *
  * Performs integer division: returns integer value.
  */
@@ -2550,8 +2550,8 @@ rb_big_idiv(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     big % other         => Numeric
- *     big.modulo(other)   => Numeric
+ *     big % other         -> Numeric
+ *     big.modulo(other)   -> Numeric
  *
  *  Returns big modulo other. See Numeric.divmod for more
  *  information.
@@ -2580,7 +2580,7 @@ rb_big_modulo(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     big.remainder(numeric)    => number
+ *     big.remainder(numeric)    -> number
  *
  *  Returns the remainder after dividing <i>big</i> by <i>numeric</i>.
  *
@@ -2610,7 +2610,7 @@ rb_big_remainder(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     big.divmod(numeric)   => array
+ *     big.divmod(numeric)   -> array
  *
  *  See <code>Numeric#divmod</code>.
  *
@@ -2770,7 +2770,7 @@ bigsqr(VALUE x)
 
 /*
  *  call-seq:
- *     big ** exponent   => numeric
+ *     big ** exponent   -> numeric
  *
  *  Raises _big_ to the _exponent_ power (which may be an integer, float,
  *  or anything that will coerce to a number). The result may be
@@ -2891,7 +2891,7 @@ bigand_int(VALUE x, long y)
 
 /*
  * call-seq:
- *     big & numeric   =>  integer
+ *     big & numeric   ->  integer
  *
  * Performs bitwise +and+ between _big_ and _numeric_.
  */
@@ -2982,7 +2982,7 @@ bigor_int(VALUE x, long y)
 
 /*
  * call-seq:
- *     big | numeric   =>  integer
+ *     big | numeric   ->  integer
  *
  * Performs bitwise +or+ between _big_ and _numeric_.
  */
@@ -3073,7 +3073,7 @@ bigxor_int(VALUE x, long y)
 }
 /*
  * call-seq:
- *     big ^ numeric   =>  integer
+ *     big ^ numeric   ->  integer
  *
  * Performs bitwise +exclusive or+ between _big_ and _numeric_.
  */
@@ -3143,7 +3143,7 @@ check_shiftdown(VALUE y, VALUE x)
 
 /*
  * call-seq:
- *     big << numeric   =>  integer
+ *     big << numeric   ->  integer
  *
  * Shifts big left _numeric_ positions (right if _numeric_ is negative).
  */
@@ -3207,7 +3207,7 @@ big_lshift(VALUE x, unsigned long shift)
 
 /*
  * call-seq:
- *     big >> numeric   =>  integer
+ *     big >> numeric   ->  integer
  *
  * Shifts big right _numeric_ positions (left if _numeric_ is negative).
  */
@@ -3351,7 +3351,7 @@ rb_big_aref(VALUE x, VALUE y)
 
 /*
  * call-seq:
- *   big.hash   => fixnum
+ *   big.hash   -> fixnum
  *
  * Compute a hash based on the value of _big_.
  */

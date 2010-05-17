@@ -2371,7 +2371,7 @@ rb_time_timespec(VALUE time)
 
 /*
  *  call-seq:
- *     Time.now => time
+ *     Time.now -> time
  *
  *  Creates a new time object for the current time.
  *
@@ -2386,9 +2386,9 @@ time_s_now(VALUE klass)
 
 /*
  *  call-seq:
- *     Time.at(time) => time
- *     Time.at(seconds_with_frac) => time
- *     Time.at(seconds, microseconds_with_frac) => time
+ *     Time.at(time) -> time
+ *     Time.at(seconds_with_frac) -> time
+ *     Time.at(seconds, microseconds_with_frac) -> time
  *
  *  Creates a new time object with the value given by <i>time</i>,
  *  the given number of <i>seconds_with_frac</i>, or
@@ -2974,22 +2974,22 @@ time_utc_or_local(int argc, VALUE *argv, int utc_p, VALUE klass)
 
 /*
  *  call-seq:
- *    Time.utc(year) => time
- *    Time.utc(year, month) => time
- *    Time.utc(year, month, day) => time
- *    Time.utc(year, month, day, hour) => time
- *    Time.utc(year, month, day, hour, min) => time
- *    Time.utc(year, month, day, hour, min, sec_with_frac) => time
- *    Time.utc(year, month, day, hour, min, sec, usec_with_frac) => time
- *    Time.utc(sec, min, hour, day, month, year, wday, yday, isdst, tz) => time
- *    Time.gm(year) => time
- *    Time.gm(year, month) => time
- *    Time.gm(year, month, day) => time
- *    Time.gm(year, month, day, hour) => time
- *    Time.gm(year, month, day, hour, min) => time
- *    Time.gm(year, month, day, hour, min, sec_with_frac) => time
- *    Time.gm(year, month, day, hour, min, sec, usec_with_frac) => time
- *    Time.gm(sec, min, hour, day, month, year, wday, yday, isdst, tz) => time
+ *    Time.utc(year) -> time
+ *    Time.utc(year, month) -> time
+ *    Time.utc(year, month, day) -> time
+ *    Time.utc(year, month, day, hour) -> time
+ *    Time.utc(year, month, day, hour, min) -> time
+ *    Time.utc(year, month, day, hour, min, sec_with_frac) -> time
+ *    Time.utc(year, month, day, hour, min, sec, usec_with_frac) -> time
+ *    Time.utc(sec, min, hour, day, month, year, wday, yday, isdst, tz) -> time
+ *    Time.gm(year) -> time
+ *    Time.gm(year, month) -> time
+ *    Time.gm(year, month, day) -> time
+ *    Time.gm(year, month, day, hour) -> time
+ *    Time.gm(year, month, day, hour, min) -> time
+ *    Time.gm(year, month, day, hour, min, sec_with_frac) -> time
+ *    Time.gm(year, month, day, hour, min, sec, usec_with_frac) -> time
+ *    Time.gm(sec, min, hour, day, month, year, wday, yday, isdst, tz) -> time
  *
  *  Creates a time based on given values, interpreted as UTC (GMT). The
  *  year must be specified. Other values default to the minimum value
@@ -3012,22 +3012,22 @@ time_s_mkutc(int argc, VALUE *argv, VALUE klass)
 
 /*
  *  call-seq:
- *   Time.local(year) => time
- *   Time.local(year, month) => time
- *   Time.local(year, month, day) => time
- *   Time.local(year, month, day, hour) => time
- *   Time.local(year, month, day, hour, min) => time
- *   Time.local(year, month, day, hour, min, sec_with_frac) => time
- *   Time.local(year, month, day, hour, min, sec, usec_with_frac) => time
- *   Time.local(sec, min, hour, day, month, year, wday, yday, isdst, tz) => time
- *   Time.mktime(year) => time
- *   Time.mktime(year, month) => time
- *   Time.mktime(year, month, day) => time
- *   Time.mktime(year, month, day, hour) => time
- *   Time.mktime(year, month, day, hour, min) => time
- *   Time.mktime(year, month, day, hour, min, sec_with_frac) => time
- *   Time.mktime(year, month, day, hour, min, sec, usec_with_frac) => time
- *   Time.mktime(sec, min, hour, day, month, year, wday, yday, isdst, tz) => time
+ *   Time.local(year) -> time
+ *   Time.local(year, month) -> time
+ *   Time.local(year, month, day) -> time
+ *   Time.local(year, month, day, hour) -> time
+ *   Time.local(year, month, day, hour, min) -> time
+ *   Time.local(year, month, day, hour, min, sec_with_frac) -> time
+ *   Time.local(year, month, day, hour, min, sec, usec_with_frac) -> time
+ *   Time.local(sec, min, hour, day, month, year, wday, yday, isdst, tz) -> time
+ *   Time.mktime(year) -> time
+ *   Time.mktime(year, month) -> time
+ *   Time.mktime(year, month, day) -> time
+ *   Time.mktime(year, month, day, hour) -> time
+ *   Time.mktime(year, month, day, hour, min) -> time
+ *   Time.mktime(year, month, day, hour, min, sec_with_frac) -> time
+ *   Time.mktime(year, month, day, hour, min, sec, usec_with_frac) -> time
+ *   Time.mktime(sec, min, hour, day, month, year, wday, yday, isdst, tz) -> time
  *
  *  Same as <code>Time::gm</code>, but interprets the values in the
  *  local time zone.
@@ -3043,8 +3043,8 @@ time_s_mktime(int argc, VALUE *argv, VALUE klass)
 
 /*
  *  call-seq:
- *     time.to_i   => int
- *     time.tv_sec => int
+ *     time.to_i   -> int
+ *     time.tv_sec -> int
  *
  *  Returns the value of <i>time</i> as an integer number of seconds
  *  since the Epoch.
@@ -3065,7 +3065,7 @@ time_to_i(VALUE time)
 
 /*
  *  call-seq:
- *     time.to_f => float
+ *     time.to_f -> float
  *
  *  Returns the value of <i>time</i> as a floating point number of
  *  seconds since the Epoch.
@@ -3089,7 +3089,7 @@ time_to_f(VALUE time)
 
 /*
  *  call-seq:
- *     time.to_r => Rational
+ *     time.to_r -> Rational
  *
  *  Returns the value of <i>time</i> as a rational number of seconds
  *  since the Epoch.
@@ -3118,8 +3118,8 @@ time_to_r(VALUE time)
 
 /*
  *  call-seq:
- *     time.usec    => int
- *     time.tv_usec => int
+ *     time.usec    -> int
+ *     time.tv_usec -> int
  *
  *  Returns just the number of microseconds for <i>time</i>.
  *
@@ -3143,8 +3143,8 @@ time_usec(VALUE time)
 
 /*
  *  call-seq:
- *     time.nsec    => int
- *     time.tv_nsec => int
+ *     time.nsec    -> int
+ *     time.tv_nsec -> int
  *
  *  Returns just the number of nanoseconds for <i>time</i>.
  *
@@ -3169,7 +3169,7 @@ time_nsec(VALUE time)
 
 /*
  *  call-seq:
- *     time.subsec    => number
+ *     time.subsec    -> number
  *
  *  Returns just the fraction for <i>time</i>.
  *
@@ -3196,7 +3196,7 @@ time_subsec(VALUE time)
 
 /*
  *  call-seq:
- *     time <=> other_time => -1, 0, +1 or nil
+ *     time <=> other_time -> -1, 0, +1 or nil
  *
  *  Comparison---Compares <i>time</i> with <i>other_time</i>.
  *
@@ -3262,8 +3262,8 @@ time_eql(VALUE time1, VALUE time2)
 
 /*
  *  call-seq:
- *     time.utc? => true or false
- *     time.gmt? => true or false
+ *     time.utc? -> true or false
+ *     time.gmt? -> true or false
  *
  *  Returns <code>true</code> if <i>time</i> represents a time in UTC
  *  (GMT).
@@ -3291,7 +3291,7 @@ time_utc_p(VALUE time)
 
 /*
  * call-seq:
- *   time.hash   => fixnum
+ *   time.hash   -> fixnum
  *
  * Return a hash code for this time object.
  */
@@ -3354,8 +3354,8 @@ time_localtime(VALUE time)
 
 /*
  *  call-seq:
- *     time.localtime => time
- *     time.localtime(utc_offset) => time
+ *     time.localtime -> time
+ *     time.localtime(utc_offset) -> time
  *
  *  Converts <i>time</i> to local time (using the local time zone in
  *  effect for this process) modifying the receiver.
@@ -3391,8 +3391,8 @@ time_localtime_m(int argc, VALUE *argv, VALUE time)
 
 /*
  *  call-seq:
- *     time.gmtime    => time
- *     time.utc       => time
+ *     time.gmtime    -> time
+ *     time.utc       -> time
  *
  *  Converts <i>time</i> to UTC (GMT), modifying the receiver.
  *
@@ -3465,8 +3465,8 @@ time_fixoff(VALUE time)
 
 /*
  *  call-seq:
- *     time.getlocal => new_time
- *     time.getlocal(utc_offset) => new_time
+ *     time.getlocal -> new_time
+ *     time.getlocal(utc_offset) -> new_time
  *
  *  Returns a new <code>new_time</code> object representing <i>time</i> in
  *  local time (using the local time zone in effect for this process).
@@ -3505,8 +3505,8 @@ time_getlocaltime(int argc, VALUE *argv, VALUE time)
 
 /*
  *  call-seq:
- *     time.getgm  => new_time
- *     time.getutc => new_time
+ *     time.getgm  -> new_time
+ *     time.getutc -> new_time
  *
  *  Returns a new <code>new_time</code> object representing <i>time</i> in
  *  UTC.
@@ -3536,8 +3536,8 @@ static VALUE strftimev(const char *fmt, VALUE time);
 
 /*
  *  call-seq:
- *     time.asctime => string
- *     time.ctime   => string
+ *     time.asctime -> string
+ *     time.ctime   -> string
  *
  *  Returns a canonical string representation of <i>time</i>.
  *
@@ -3555,8 +3555,8 @@ time_asctime(VALUE time)
 
 /*
  *  call-seq:
- *     time.inspect => string
- *     time.to_s    => string
+ *     time.inspect -> string
+ *     time.to_s    -> string
  *
  *  Returns a string representing <i>time</i>. Equivalent to calling
  *  <code>Time#strftime</code> with a format string of
@@ -3604,7 +3604,7 @@ time_add(struct time_object *tobj, VALUE offset, int sign)
 
 /*
  *  call-seq:
- *     time + numeric => time
+ *     time + numeric -> time
  *
  *  Addition---Adds some number of seconds (possibly fractional) to
  *  <i>time</i> and returns that value as a new time.
@@ -3627,8 +3627,8 @@ time_plus(VALUE time1, VALUE time2)
 
 /*
  *  call-seq:
- *     time - other_time => float
- *     time - numeric    => time
+ *     time - other_time -> float
+ *     time - numeric    -> time
  *
  *  Difference---Returns a new time that represents the difference
  *  between two times, or subtracts the given number of seconds in
@@ -3657,7 +3657,7 @@ time_minus(VALUE time1, VALUE time2)
 
 /*
  * call-seq:
- *   time.succ   => new_time
+ *   time.succ   -> new_time
  *
  * Return a new time object, one second later than <code>time</code>.
  * Time#succ is obsolete since 1.9.2 for time is not a discrete value.
@@ -3684,7 +3684,7 @@ rb_time_succ(VALUE time)
 
 /*
  * call-seq:
- *   time.round([ndigits])   => new_time
+ *   time.round([ndigits])   -> new_time
  *
  * Rounds sub seconds to a given precision in decimal digits (0 digits by default).
  * It returns a new time object.
@@ -3758,7 +3758,7 @@ time_round(int argc, VALUE *argv, VALUE time)
 
 /*
  *  call-seq:
- *     time.sec => fixnum
+ *     time.sec -> fixnum
  *
  *  Returns the second of the minute (0..60)<em>[Yes, seconds really can
  *  range from zero to 60. This allows the system to inject leap seconds
@@ -3781,7 +3781,7 @@ time_sec(VALUE time)
 
 /*
  *  call-seq:
- *     time.min => fixnum
+ *     time.min -> fixnum
  *
  *  Returns the minute of the hour (0..59) for <i>time</i>.
  *
@@ -3801,7 +3801,7 @@ time_min(VALUE time)
 
 /*
  *  call-seq:
- *     time.hour => fixnum
+ *     time.hour -> fixnum
  *
  *  Returns the hour of the day (0..23) for <i>time</i>.
  *
@@ -3821,8 +3821,8 @@ time_hour(VALUE time)
 
 /*
  *  call-seq:
- *     time.day  => fixnum
- *     time.mday => fixnum
+ *     time.day  -> fixnum
+ *     time.mday -> fixnum
  *
  *  Returns the day of the month (1..n) for <i>time</i>.
  *
@@ -3843,8 +3843,8 @@ time_mday(VALUE time)
 
 /*
  *  call-seq:
- *     time.mon   => fixnum
- *     time.month => fixnum
+ *     time.mon   -> fixnum
+ *     time.month -> fixnum
  *
  *  Returns the month of the year (1..12) for <i>time</i>.
  *
@@ -3865,7 +3865,7 @@ time_mon(VALUE time)
 
 /*
  *  call-seq:
- *     time.year => fixnum
+ *     time.year -> fixnum
  *
  *  Returns the year for <i>time</i> (including the century).
  *
@@ -3885,7 +3885,7 @@ time_year(VALUE time)
 
 /*
  *  call-seq:
- *     time.wday => fixnum
+ *     time.wday -> fixnum
  *
  *  Returns an integer representing the day of the week, 0..6, with
  *  Sunday == 0.
@@ -3920,7 +3920,7 @@ time_wday(VALUE time)
 
 /*
  *  call-seq:
- *     time.sunday? => true or false
+ *     time.sunday? -> true or false
  *
  *  Returns <code>true</code> if <i>time</i> represents Sunday.
  *
@@ -3936,7 +3936,7 @@ time_sunday(VALUE time)
 
 /*
  *  call-seq:
- *     time.monday? => true or false
+ *     time.monday? -> true or false
  *
  *  Returns <code>true</code> if <i>time</i> represents Monday.
  *
@@ -3952,7 +3952,7 @@ time_monday(VALUE time)
 
 /*
  *  call-seq:
- *     time.tuesday? => true or false
+ *     time.tuesday? -> true or false
  *
  *  Returns <code>true</code> if <i>time</i> represents Tuesday.
  *
@@ -3968,7 +3968,7 @@ time_tuesday(VALUE time)
 
 /*
  *  call-seq:
- *     time.wednesday? => true or false
+ *     time.wednesday? -> true or false
  *
  *  Returns <code>true</code> if <i>time</i> represents Wednesday.
  *
@@ -3984,7 +3984,7 @@ time_wednesday(VALUE time)
 
 /*
  *  call-seq:
- *     time.thursday? => true or false
+ *     time.thursday? -> true or false
  *
  *  Returns <code>true</code> if <i>time</i> represents Thursday.
  *
@@ -4000,7 +4000,7 @@ time_thursday(VALUE time)
 
 /*
  *  call-seq:
- *     time.friday? => true or false
+ *     time.friday? -> true or false
  *
  *  Returns <code>true</code> if <i>time</i> represents Friday.
  *
@@ -4016,7 +4016,7 @@ time_friday(VALUE time)
 
 /*
  *  call-seq:
- *     time.saturday? => true or false
+ *     time.saturday? -> true or false
  *
  *  Returns <code>true</code> if <i>time</i> represents Saturday.
  *
@@ -4032,7 +4032,7 @@ time_saturday(VALUE time)
 
 /*
  *  call-seq:
- *     time.yday => fixnum
+ *     time.yday -> fixnum
  *
  *  Returns an integer representing the day of the year, 1..366.
  *
@@ -4052,8 +4052,8 @@ time_yday(VALUE time)
 
 /*
  *  call-seq:
- *     time.isdst => true or false
- *     time.dst?  => true or false
+ *     time.isdst -> true or false
+ *     time.dst?  -> true or false
  *
  *  Returns <code>true</code> if <i>time</i> occurs during Daylight
  *  Saving Time in its time zone.
@@ -4087,7 +4087,7 @@ time_isdst(VALUE time)
 
 /*
  *  call-seq:
- *     time.zone => string
+ *     time.zone -> string
  *
  *  Returns the name of the time zone used for <i>time</i>. As of Ruby
  *  1.8, returns ``UTC'' rather than ``GMT'' for UTC times.
@@ -4116,9 +4116,9 @@ time_zone(VALUE time)
 
 /*
  *  call-seq:
- *     time.gmt_offset => fixnum
- *     time.gmtoff     => fixnum
- *     time.utc_offset => fixnum
+ *     time.gmt_offset -> fixnum
+ *     time.gmtoff     -> fixnum
+ *     time.utc_offset -> fixnum
  *
  *  Returns the offset in seconds between the timezone of <i>time</i>
  *  and UTC.
@@ -4147,7 +4147,7 @@ time_utc_offset(VALUE time)
 
 /*
  *  call-seq:
- *     time.to_a => array
+ *     time.to_a -> array
  *
  *  Returns a ten-element <i>array</i> of values for <i>time</i>:
  *  {<code>[ sec, min, hour, day, month, year, wday, yday, isdst, zone
@@ -4249,7 +4249,7 @@ strftimev(const char *fmt, VALUE time)
 
 /*
  *  call-seq:
- *     time.strftime( string ) => string
+ *     time.strftime( string ) -> string
  *
  *  Formats <i>time</i> according to the directives in the given format
  *  string. Any text not listed as a directive will be passed through
@@ -4464,7 +4464,7 @@ time_mdump(VALUE time)
 
 /*
  * call-seq:
- *   time._dump   => string
+ *   time._dump   -> string
  *
  * Dump _time_ for marshaling.
  */
@@ -4604,7 +4604,7 @@ end_submicro: ;
 
 /*
  * call-seq:
- *   Time._load(string)   => time
+ *   Time._load(string)   -> time
  *
  * Unmarshal a dumped +Time+ object.
  */

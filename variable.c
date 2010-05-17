@@ -171,7 +171,7 @@ classname(VALUE klass)
 
 /*
  *  call-seq:
- *     mod.name    => string
+ *     mod.name    -> string
  *
  *  Returns the name of the module <i>mod</i>.  Returns nil for anonymous modules.
  */
@@ -541,8 +541,8 @@ rb_trace_eval(VALUE cmd, VALUE val)
 
 /*
  *  call-seq:
- *     trace_var(symbol, cmd )             => nil
- *     trace_var(symbol) {|val| block }    => nil
+ *     trace_var(symbol, cmd )             -> nil
+ *     trace_var(symbol) {|val| block }    -> nil
  *
  *  Controls tracing of assignments to global variables. The parameter
  *  +symbol_ identifies the variable (as either a string name or a
@@ -614,7 +614,7 @@ remove_trace(struct global_variable *var)
 
 /*
  *  call-seq:
- *     untrace_var(symbol [, cmd] )   => array or nil
+ *     untrace_var(symbol [, cmd] )   -> array or nil
  *
  *  Removes tracing for the specified command on the given global
  *  variable and returns +nil+. If no command is specified,
@@ -750,7 +750,7 @@ gvar_i(ID key, struct global_entry *entry, VALUE ary)
 
 /*
  *  call-seq:
- *     global_variables    => array
+ *     global_variables    -> array
  *
  *  Returns an array of the names of global variables.
  *
@@ -1246,7 +1246,7 @@ ivar_i(ID key, VALUE val, VALUE ary)
 
 /*
  *  call-seq:
- *     obj.instance_variables    => array
+ *     obj.instance_variables    -> array
  *
  *  Returns an array of instance variable names for the receiver. Note
  *  that simply defining an accessor does not create the corresponding
@@ -1273,7 +1273,7 @@ rb_obj_instance_variables(VALUE obj)
 
 /*
  *  call-seq:
- *     obj.remove_instance_variable(symbol)    => obj
+ *     obj.remove_instance_variable(symbol)    -> obj
  *
  *  Removes the named instance variable from <i>obj</i>, returning that
  *  variable's value.
@@ -1363,7 +1363,7 @@ const_missing(VALUE klass, ID id)
 
 /*
  * call-seq:
- *    mod.const_missing(sym)    => obj
+ *    mod.const_missing(sym)    -> obj
  *
  *  Invoked when a reference is made to an undefined constant in
  *  <i>mod</i>. It is passed a symbol for the undefined constant, and
@@ -1622,7 +1622,7 @@ rb_const_get_at(VALUE klass, ID id)
 
 /*
  *  call-seq:
- *     remove_const(sym)   => obj
+ *     remove_const(sym)   -> obj
  *
  *  Removes the definition of the given constant, returning that
  *  constant's value. Predefined classes and singleton objects (such as
@@ -1729,15 +1729,15 @@ rb_const_list(void *data)
 
 /*
  *  call-seq:
- *     mod.constants(inherit=true)    => array
+ *     mod.constants(inherit=true)    -> array
  *
  *  Returns an array of the names of the constants accessible in
  *  <i>mod</i>. This includes the names of constants in any included
  *  modules (example at start of section), unless the <i>all</i>
  *  parameter is set to <code>false</code>.
  *
- *    IO.constants.include?(:SYNC)         => true
- *    IO.constants(false).include?(:SYNC)  => false
+ *    IO.constants.include?(:SYNC)        #=> true
+ *    IO.constants(false).include?(:SYNC) #=> false
  *
  *  Also see <code>Module::const_defined?</code>.
  */
@@ -2013,7 +2013,7 @@ cv_i(ID key, VALUE value, VALUE ary)
 
 /*
  *  call-seq:
- *     mod.class_variables   => array
+ *     mod.class_variables   -> array
  *
  *  Returns an array of the names of class variables in <i>mod</i>.
  *
@@ -2040,7 +2040,7 @@ rb_mod_class_variables(VALUE obj)
 
 /*
  *  call-seq:
- *     remove_class_variable(sym)    => obj
+ *     remove_class_variable(sym)    -> obj
  *
  *  Removes the definition of the <i>sym</i>, returning that
  *  constant's value.

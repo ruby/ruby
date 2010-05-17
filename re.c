@@ -402,7 +402,7 @@ rb_reg_desc(const char *s, long len, VALUE re)
 
 /*
  *  call-seq:
- *      rxp.source   => str
+ *      rxp.source   -> str
  *
  *  Returns the original string of the pattern.
  *
@@ -427,7 +427,7 @@ rb_reg_source(VALUE re)
 
 /*
  * call-seq:
- *    rxp.inspect   => string
+ *    rxp.inspect   -> string
  *
  * Produce a nicely formatted string-version of _rxp_. Perhaps surprisingly,
  * <code>#inspect</code> actually produces the more natural version of
@@ -449,7 +449,7 @@ rb_reg_inspect(VALUE re)
 
 /*
  *  call-seq:
- *     rxp.to_s   => str
+ *     rxp.to_s   -> str
  *
  *  Returns a string containing the regular expression and its options (using the
  *  <code>(?opts:source)</code> notation. This string can be fed back in to
@@ -596,7 +596,7 @@ rb_reg_raise_str(VALUE str, int options, const char *err)
 
 /*
  *  call-seq:
- *     rxp.casefold?   => true or false
+ *     rxp.casefold?   -> true or false
  *
  *  Returns the value of the case-insensitive flag.
  *
@@ -616,7 +616,7 @@ rb_reg_casefold_p(VALUE re)
 
 /*
  *  call-seq:
- *     rxp.options   => fixnum
+ *     rxp.options   -> fixnum
  *
  *  Returns the set of bits corresponding to the options used when creating this
  *  Regexp (see <code>Regexp::new</code> for details. Note that additional bits
@@ -655,7 +655,7 @@ reg_names_iter(const OnigUChar *name, const OnigUChar *name_end,
 
 /*
  * call-seq:
- *    rxp.names   => [name1, name2, ...]
+ *    rxp.names   -> [name1, name2, ...]
  *
  * Returns a list of names of captures as an array of strings.
  *
@@ -696,7 +696,7 @@ reg_named_captures_iter(const OnigUChar *name, const OnigUChar *name_end,
 
 /*
  * call-seq:
- *    rxp.named_captures  => hash
+ *    rxp.named_captures  -> hash
  *
  * Returns a hash representing information about named captures of <i>rxp</i>.
  *
@@ -933,7 +933,7 @@ match_init_copy(VALUE obj, VALUE orig)
 
 /*
  * call-seq:
- *    mtch.regexp   => regexp
+ *    mtch.regexp   -> regexp
  *
  * Returns the regexp.
  *
@@ -950,7 +950,7 @@ match_regexp(VALUE match)
 
 /*
  * call-seq:
- *    mtch.names   => [name1, name2, ...]
+ *    mtch.names   -> [name1, name2, ...]
  *
  * Returns a list of names of captures as an array of strings.
  * It is same as mtch.regexp.names.
@@ -971,8 +971,8 @@ match_names(VALUE match)
 
 /*
  *  call-seq:
- *     mtch.length   => integer
- *     mtch.size     => integer
+ *     mtch.length   -> integer
+ *     mtch.size     -> integer
  *
  *  Returns the number of elements in the match array.
  *
@@ -1031,7 +1031,7 @@ rb_reg_backref_number(VALUE match, VALUE backref)
 
 /*
  *  call-seq:
- *     mtch.offset(n)   => array
+ *     mtch.offset(n)   -> array
  *
  *  Returns a two-element array containing the beginning and ending offsets of
  *  the <em>n</em>th match.
@@ -1068,7 +1068,7 @@ match_offset(VALUE match, VALUE n)
 
 /*
  *  call-seq:
- *     mtch.begin(n)   => integer
+ *     mtch.begin(n)   -> integer
  *
  *  Returns the offset of the start of the <em>n</em>th element of the match
  *  array in the string.
@@ -1103,7 +1103,7 @@ match_begin(VALUE match, VALUE n)
 
 /*
  *  call-seq:
- *     mtch.end(n)   => integer
+ *     mtch.end(n)   -> integer
  *
  *  Returns the offset of the character immediately following the end of the
  *  <em>n</em>th element of the match array in the string.
@@ -1145,7 +1145,7 @@ rb_match_busy(VALUE match)
 
 /*
  *  call-seq:
- *     rxp.fixed_encoding?   => true or false
+ *     rxp.fixed_encoding?   -> true or false
  *
  *  Returns false if rxp is applicable to
  *  a string with any ASCII compatible encoding.
@@ -1440,7 +1440,7 @@ rb_reg_last_match(VALUE match)
 
 /*
  *  call-seq:
- *     mtch.pre_match   => str
+ *     mtch.pre_match   -> str
  *
  *  Returns the portion of the original string before the current match.
  *  Equivalent to the special variable <code>$`</code>.
@@ -1467,7 +1467,7 @@ rb_reg_match_pre(VALUE match)
 
 /*
  *  call-seq:
- *     mtch.post_match   => str
+ *     mtch.post_match   -> str
  *
  *  Returns the portion of the original string after the current match.
  *  Equivalent to the special variable <code>$'</code>.
@@ -1569,7 +1569,7 @@ match_array(VALUE match, int start)
 
 /*
  *  call-seq:
- *     mtch.to_a   => anArray
+ *     mtch.to_a   -> anArray
  *
  *  Returns the array of matches.
  *
@@ -1598,7 +1598,7 @@ match_to_a(VALUE match)
 
 /*
  *  call-seq:
- *     mtch.captures   => array
+ *     mtch.captures   -> array
  *
  *  Returns the array of captures; equivalent to <code>mtch.to_a[1..-1]</code>.
  *
@@ -1633,10 +1633,10 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name
 
 /*
  *  call-seq:
- *     mtch[i]               => str or nil
- *     mtch[start, length]   => array
- *     mtch[range]           => array
- *     mtch[name]            => str or nil
+ *     mtch[i]               -> str or nil
+ *     mtch[start, length]   -> array
+ *     mtch[range]           -> array
+ *     mtch[name]            -> str or nil
  *
  *  Match Reference---<code>MatchData</code> acts as an array, and may be
  *  accessed using the normal array indexing techniques.  <i>mtch</i>[0] is
@@ -1709,7 +1709,7 @@ match_entry(VALUE match, long n)
 /*
  *  call-seq:
  *
- *     mtch.values_at([index]*)   => array
+ *     mtch.values_at([index]*)   -> array
  *
  *  Uses each <i>index</i> to access the matching values, returning an array of
  *  the corresponding matches.
@@ -1732,7 +1732,7 @@ match_values_at(int argc, VALUE *argv, VALUE match)
 
 /*
  *  call-seq:
- *     mtch.to_s   => str
+ *     mtch.to_s   -> str
  *
  *  Returns the entire matched string.
  *
@@ -1755,7 +1755,7 @@ match_to_s(VALUE match)
 
 /*
  *  call-seq:
- *     mtch.string   => str
+ *     mtch.string   -> str
  *
  *  Returns a frozen copy of the string passed in to <code>match</code>.
  *
@@ -1791,7 +1791,7 @@ match_inspect_name_iter(const OnigUChar *name, const OnigUChar *name_end,
 
 /*
  * call-seq:
- *    mtch.inspect   => str
+ *    mtch.inspect   -> str
  *
  * Returns a printable version of <i>mtch</i>.
  *
@@ -2508,7 +2508,7 @@ rb_reg_regcomp(VALUE str)
 static st_index_t reg_hash(VALUE re);
 /*
  * call-seq:
- *   rxp.hash   => fixnum
+ *   rxp.hash   -> fixnum
  *
  * Produce a hash based on the text and options of this regular expression.
  */
@@ -2534,8 +2534,8 @@ reg_hash(VALUE re)
 
 /*
  *  call-seq:
- *     rxp == other_rxp      => true or false
- *     rxp.eql?(other_rxp)   => true or false
+ *     rxp == other_rxp      -> true or false
+ *     rxp.eql?(other_rxp)   -> true or false
  *
  *  Equality---Two regexps are equal if their patterns are identical, they have
  *  the same character set code, and their <code>casefold?</code> values are the
@@ -2565,7 +2565,7 @@ rb_reg_equal(VALUE re1, VALUE re2)
 
 /*
  * call-seq:
- *    mtch.hash   => integer
+ *    mtch.hash   -> integer
  *
  * Produce a hash based on the target string, regexp and matched
  * positions of this matchdata.
@@ -2588,7 +2588,7 @@ match_hash(VALUE match)
 
 /*
  * call-seq:
- *    mtch == mtch2   => true or false
+ *    mtch == mtch2   -> true or false
  *
  *  Equality---Two matchdata are equal if their target strings,
  *  patterns, and matched positions are identical.
@@ -2651,7 +2651,7 @@ reg_match_pos(VALUE re, VALUE *strp, long pos)
 
 /*
  *  call-seq:
- *     rxp =~ str    => integer or nil
+ *     rxp =~ str    -> integer or nil
  *
  *  Match---Matches <i>rxp</i> against <i>str</i>.
  *
@@ -2708,7 +2708,7 @@ rb_reg_match(VALUE re, VALUE str)
 
 /*
  *  call-seq:
- *     rxp === str   => true or false
+ *     rxp === str   -> true or false
  *
  *  Case Equality---Synonym for <code>Regexp#=~</code> used in case statements.
  *
@@ -2744,7 +2744,7 @@ rb_reg_eqq(VALUE re, VALUE str)
 
 /*
  *  call-seq:
- *     ~ rxp   => integer or nil
+ *     ~ rxp   -> integer or nil
  *
  *  Match---Matches <i>rxp</i> against the contents of <code>$_</code>.
  *  Equivalent to <code><i>rxp</i> =~ $_</code>.
@@ -2775,8 +2775,8 @@ rb_reg_match2(VALUE re)
 
 /*
  *  call-seq:
- *     rxp.match(str)       => matchdata or nil
- *     rxp.match(str,pos)   => matchdata or nil
+ *     rxp.match(str)       -> matchdata or nil
+ *     rxp.match(str,pos)   -> matchdata or nil
  *
  *  Returns a <code>MatchData</code> object describing the match, or
  *  <code>nil</code> if there was no match. This is equivalent to retrieving the
@@ -2836,10 +2836,10 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
 
 /*
  *  call-seq:
- *     Regexp.new(string [, options] [, lang])       => regexp
- *     Regexp.new(regexp)                            => regexp
- *     Regexp.compile(string [, options] [, lang])   => regexp
- *     Regexp.compile(regexp)                        => regexp
+ *     Regexp.new(string [, options] [, lang])       -> regexp
+ *     Regexp.new(regexp)                            -> regexp
+ *     Regexp.compile(string [, options] [, lang])   -> regexp
+ *     Regexp.compile(regexp)                        -> regexp
  *
  *  Constructs a new regular expression from <i>pattern</i>, which can be either
  *  a <code>String</code> or a <code>Regexp</code> (in which case that regexp's
@@ -3013,8 +3013,8 @@ rb_reg_quote(VALUE str)
 
 /*
  *  call-seq:
- *     Regexp.escape(str)   => string
- *     Regexp.quote(str)    => string
+ *     Regexp.escape(str)   -> string
+ *     Regexp.quote(str)    -> string
  *
  *  Escapes any characters that would have special meaning in a regular
  *  expression. Returns a new escaped string, or self if no characters are
@@ -3188,8 +3188,8 @@ rb_reg_s_union(VALUE self, VALUE args0)
 
 /*
  *  call-seq:
- *     Regexp.union(pat1, pat2, ...)            => new_regexp
- *     Regexp.union(pats_ary)                   => new_regexp
+ *     Regexp.union(pat1, pat2, ...)            -> new_regexp
+ *     Regexp.union(pats_ary)                   -> new_regexp
  *
  *  Return a <code>Regexp</code> object that is the union of the given
  *  <em>pattern</em>s, i.e., will match any of its parts. The <em>pattern</em>s
@@ -3404,8 +3404,8 @@ match_setter(VALUE val)
 
 /*
  *  call-seq:
- *     Regexp.last_match           => matchdata
- *     Regexp.last_match(n)        => str
+ *     Regexp.last_match           -> matchdata
+ *     Regexp.last_match(n)        -> str
  *
  *  The first form returns the <code>MatchData</code> object generated by the
  *  last successful pattern match. Equivalent to reading the global variable

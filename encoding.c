@@ -315,7 +315,7 @@ rb_enc_replicate(const char *name, rb_encoding *encoding)
 
 /*
  * call-seq:
- *   enc.replicate(name) => encoding
+ *   enc.replicate(name) -> encoding
  *
  * Returns a replicated encoding of _enc_ whose name is _name_.
  * The new encoding should have the same byte structure of _enc_.
@@ -381,7 +381,7 @@ rb_encdb_dummy(const char *name)
 
 /*
  * call-seq:
- *   enc.dummy? => true or false
+ *   enc.dummy? -> true or false
  *
  * Returns true for dummy encodings.
  * A dummy encoding is an encoding for which character handling is not properly
@@ -400,7 +400,7 @@ enc_dummy_p(VALUE enc)
 
 /*
  * call-seq:
- *   enc.ascii_compatible? => true or false
+ *   enc.ascii_compatible? -> true or false
  *
  * Returns whether ASCII-compatible or not.
  *
@@ -791,7 +791,7 @@ rb_enc_copy(VALUE obj1, VALUE obj2)
 
 /*
  *  call-seq:
- *     obj.encoding   => encoding
+ *     obj.encoding   -> encoding
  *
  *  Returns the Encoding object that represents the encoding of obj.
  */
@@ -905,7 +905,7 @@ rb_enc_tolower(int c, rb_encoding *enc)
 
 /*
  * call-seq:
- *   enc.inspect => string
+ *   enc.inspect -> string
  *
  * Returns a string which represents the encoding for programmers.
  *
@@ -924,11 +924,11 @@ enc_inspect(VALUE self)
 
 /*
  * call-seq:
- *   enc.name => string
+ *   enc.name -> string
  *
  * Returns the name of the encoding.
  *
- *   Encoding::UTF_8.name       => "UTF-8"
+ *   Encoding::UTF_8.name      #=> "UTF-8"
  */
 static VALUE
 enc_name(VALUE self)
@@ -951,11 +951,11 @@ enc_names_i(st_data_t name, st_data_t idx, st_data_t args)
 
 /*
  * call-seq:
- *   enc.names => array
+ *   enc.names -> array
  *
  * Returns the list of name and aliases of the encoding.
  *
- *   Encoding::WINDOWS_31J.names => ["Windows-31J", "CP932", "csWindows31J"]
+ *   Encoding::WINDOWS_31J.names  #=> ["Windows-31J", "CP932", "csWindows31J"]
  */
 static VALUE
 enc_names(VALUE self)
@@ -970,20 +970,20 @@ enc_names(VALUE self)
 
 /*
  * call-seq:
- *   Encoding.list => [enc1, enc2, ...]
+ *   Encoding.list -> [enc1, enc2, ...]
  *
  * Returns the list of loaded encodings.
  *
  *   Encoding.list
- *   => [#<Encoding:ASCII-8BIT>, #<Encoding:UTF-8>,
- *       #<Encoding:ISO-2022-JP (dummy)>]
+ *   #=> [#<Encoding:ASCII-8BIT>, #<Encoding:UTF-8>,
+ *         #<Encoding:ISO-2022-JP (dummy)>]
  *
  *   Encoding.find("US-ASCII")
- *   => #<Encoding:US-ASCII>
+ *   #=> #<Encoding:US-ASCII>
  *
  *   Encoding.list
- *   => [#<Encoding:ASCII-8BIT>, #<Encoding:UTF-8>,
- *       #<Encoding:US-ASCII>, #<Encoding:ISO-2022-JP (dummy)>]
+ *   #=> [#<Encoding:ASCII-8BIT>, #<Encoding:UTF-8>,
+ *         #<Encoding:US-ASCII>, #<Encoding:ISO-2022-JP (dummy)>]
  *
  */
 static VALUE
@@ -996,14 +996,14 @@ enc_list(VALUE klass)
 
 /*
  * call-seq:
- *   Encoding.find(string) => enc
- *   Encoding.find(symbol) => enc
+ *   Encoding.find(string) -> enc
+ *   Encoding.find(symbol) -> enc
  *
  * Search the encoding with specified <i>name</i>.
  * <i>name</i> should be a string or symbol.
  *
- *   Encoding.find("US-ASCII")  => #<Encoding:US-ASCII>
- *   Encoding.find(:Shift_JIS)  => #<Encoding:Shift_JIS>
+ *   Encoding.find("US-ASCII")  #=> #<Encoding:US-ASCII>
+ *   Encoding.find(:Shift_JIS)  #=> #<Encoding:Shift_JIS>
  *
  * Names which this method accept are encoding names and aliases
  * including following special aliases
@@ -1026,7 +1026,7 @@ enc_find(VALUE klass, VALUE enc)
 
 /*
  * call-seq:
- *   Encoding.compatible?(str1, str2) => enc or nil
+ *   Encoding.compatible?(str1, str2) -> enc or nil
  *
  * Checks the compatibility of two strings.
  * If they are compatible, means concatenatable,
@@ -1034,12 +1034,12 @@ enc_find(VALUE klass, VALUE enc)
  * If they are not compatible, nil is returned.
  *
  *   Encoding.compatible?("\xa1".force_encoding("iso-8859-1"), "b")
- *   => #<Encoding:ISO-8859-1>
+ *   #=> #<Encoding:ISO-8859-1>
  *
  *   Encoding.compatible?(
  *     "\xa1".force_encoding("iso-8859-1"),
  *     "\xa1\xa1".force_encoding("euc-jp"))
- *   => nil
+ *   #=> nil
  *
  */
 static VALUE
@@ -1226,7 +1226,7 @@ rb_enc_default_external(void)
 
 /*
  * call-seq:
- *   Encoding.default_external => enc
+ *   Encoding.default_external -> enc
  *
  * Returns default external encoding.
  *
@@ -1282,7 +1282,7 @@ rb_enc_default_internal(void)
 
 /*
  * call-seq:
- *   Encoding.default_internal => enc
+ *   Encoding.default_internal -> enc
  *
  * Returns default internal encoding.
  *
@@ -1318,21 +1318,21 @@ set_default_internal(VALUE klass, VALUE encoding)
 
 /*
  * call-seq:
- *   Encoding.locale_charmap => string
+ *   Encoding.locale_charmap -> string
  *
  * Returns the locale charmap name.
  *
  *   Debian GNU/Linux
  *     LANG=C
- *       Encoding.locale_charmap  => "ANSI_X3.4-1968"
+ *       Encoding.locale_charmap  #=> "ANSI_X3.4-1968"
  *     LANG=ja_JP.EUC-JP
- *       Encoding.locale_charmap  => "EUC-JP"
+ *       Encoding.locale_charmap  #=> "EUC-JP"
  *
  *   SunOS 5
  *     LANG=C
- *       Encoding.locale_charmap  => "646"
+ *       Encoding.locale_charmap  #=> "646"
  *     LANG=ja
- *       Encoding.locale_charmap  => "eucJP"
+ *       Encoding.locale_charmap  #=> "eucJP"
  *
  * The result is highly platform dependent.
  * So Encoding.find(Encoding.locale_charmap) may cause an error.
@@ -1426,15 +1426,15 @@ rb_enc_name_list_i(st_data_t name, st_data_t idx, st_data_t arg)
 
 /*
  * call-seq:
- *   Encoding.name_list => ["enc1", "enc2", ...]
+ *   Encoding.name_list -> ["enc1", "enc2", ...]
  *
  * Returns the list of available encoding names.
  *
  *   Encoding.name_list
- *   => ["US-ASCII", "ASCII-8BIT", "UTF-8",
- *       "ISO-8859-1", "Shift_JIS", "EUC-JP",
- *       "Windows-31J",
- *       "BINARY", "CP932", "eucJP"]
+ *   #=> ["US-ASCII", "ASCII-8BIT", "UTF-8",
+ *         "ISO-8859-1", "Shift_JIS", "EUC-JP",
+ *         "Windows-31J",
+ *         "BINARY", "CP932", "eucJP"]
  *
  */
 
@@ -1473,13 +1473,13 @@ rb_enc_aliases_enc_i(st_data_t name, st_data_t orig, st_data_t arg)
 
 /*
  * call-seq:
- *   Encoding.aliases => {"alias1" => "orig1", "alias2" => "orig2", ...}
+ *   Encoding.aliases -> {"alias1" => "orig1", "alias2" => "orig2", ...}
  *
  * Returns the hash of available encoding alias and original encoding name.
  *
  *   Encoding.aliases
- *   => {"BINARY"=>"ASCII-8BIT", "ASCII"=>"US-ASCII", "ANSI_X3.4-1986"=>"US-ASCII",
- *       "SJIS"=>"Shift_JIS", "eucJP"=>"EUC-JP", "CP932"=>"Windows-31J"}
+ *   #=> {"BINARY"=>"ASCII-8BIT", "ASCII"=>"US-ASCII", "ANSI_X3.4-1986"=>"US-ASCII",
+ *         "SJIS"=>"Shift_JIS", "eucJP"=>"EUC-JP", "CP932"=>"Windows-31J"}
  *
  */
 

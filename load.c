@@ -348,7 +348,7 @@ rb_load_protect(VALUE fname, int wrap, int *state)
 
 /*
  *  call-seq:
- *     load(filename, wrap=false)   => true
+ *     load(filename, wrap=false)   -> true
  *
  *  Loads and executes the Ruby
  *  program in the file _filename_. If the filename does not
@@ -422,7 +422,7 @@ load_unlock(const char *ftptr, int done)
 
 /*
  *  call-seq:
- *     require(string)    => true or false
+ *     require(string)    -> true or false
  *
  *  Ruby tries to load the library named _string_, returning
  *  +true+ if successful. If the filename does not resolve to
@@ -651,7 +651,7 @@ ruby_init_ext(const char *name, void (*init)(void))
 
 /*
  *  call-seq:
- *     mod.autoload(module, filename)   => nil
+ *     mod.autoload(module, filename)   -> nil
  *
  *  Registers _filename_ to be loaded (using <code>Kernel::require</code>)
  *  the first time that _module_ (which may be a <code>String</code> or
@@ -675,7 +675,7 @@ rb_mod_autoload(VALUE mod, VALUE sym, VALUE file)
 
 /*
  *  call-seq:
- *     mod.autoload?(name)   => String or nil
+ *     mod.autoload?(name)   -> String or nil
  *
  *  Returns _filename_ to be loaded if _name_ is registered as
  *  +autoload+ in the namespace of _mod_.
@@ -683,7 +683,7 @@ rb_mod_autoload(VALUE mod, VALUE sym, VALUE file)
  *     module A
  *     end
  *     A.autoload(:B, "b")
- *     A.autoload?(:B)            # => "b"
+ *     A.autoload?(:B)            #=> "b"
  */
 
 static VALUE
@@ -694,7 +694,7 @@ rb_mod_autoload_p(VALUE mod, VALUE sym)
 
 /*
  *  call-seq:
- *     autoload(module, filename)   => nil
+ *     autoload(module, filename)   -> nil
  *
  *  Registers _filename_ to be loaded (using <code>Kernel::require</code>)
  *  the first time that _module_ (which may be a <code>String</code> or
@@ -715,13 +715,13 @@ rb_f_autoload(VALUE obj, VALUE sym, VALUE file)
 
 /*
  *  call-seq:
- *     autoload?(name)   => String or nil
+ *     autoload?(name)   -> String or nil
  *
  *  Returns _filename_ to be loaded if _name_ is registered as
  *  +autoload+.
  *
  *     autoload(:B, "b")
- *     autoload?(:B)            # => "b"
+ *     autoload?(:B)            #=> "b"
  */
 
 static VALUE

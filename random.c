@@ -732,7 +732,7 @@ random_load(VALUE obj, VALUE dump)
 
 /*
  *  call-seq:
- *     srand(number=0)    => old_seed
+ *     srand(number=0)    -> old_seed
  *
  *  Seeds the pseudorandom number generator to the value of
  *  <i>number</i>. If <i>number</i> is omitted
@@ -985,10 +985,10 @@ float_value(VALUE v)
  *
  * When the argument _limit_ is a +Range+, it returns a random
  * number where range.member?(number) == true.
- *     prng.rand(5..9)  # => one of [5, 6, 7, 8, 9]
- *     prng.rand(5...9) # => one of [5, 6, 7, 8]
- *     prng.rand(5.0..9.0) # => between 5.0 and 9.0, including 9.0
- *     prng.rand(5.0...9.0) # => between 5.0 and 9.0, excluding 9.0
+ *     prng.rand(5..9)  #=> one of [5, 6, 7, 8, 9]
+ *     prng.rand(5...9) #=> one of [5, 6, 7, 8]
+ *     prng.rand(5.0..9.0) #=> between 5.0 and 9.0, including 9.0
+ *     prng.rand(5.0...9.0) #=> between 5.0 and 9.0, excluding 9.0
  *
  * +begin+/+end+ of the range have to have subtract and add methods.
  *
@@ -1107,7 +1107,7 @@ random_equal(VALUE self, VALUE other)
 
 /*
  *  call-seq:
- *     rand(max=0)    => number
+ *     rand(max=0)    -> number
  *
  *  Converts <i>max</i> to an integer using max1 =
  *  max<code>.to_i.abs</code>. If _max_ is +nil+ the result is zero, returns a

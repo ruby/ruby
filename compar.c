@@ -49,7 +49,7 @@ cmp_failed(void)
 
 /*
  *  call-seq:
- *     obj == other    => true or false
+ *     obj == other    -> true or false
  *
  *  Compares two objects based on the receiver's <code><=></code>
  *  method, returning true if it returns 0. Also returns true if
@@ -69,7 +69,7 @@ cmp_equal(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     obj > other    => true or false
+ *     obj > other    -> true or false
  *
  *  Compares two objects based on the receiver's <code><=></code>
  *  method, returning true if it returns 1.
@@ -86,7 +86,7 @@ cmp_gt(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     obj >= other    => true or false
+ *     obj >= other    -> true or false
  *
  *  Compares two objects based on the receiver's <code><=></code>
  *  method, returning true if it returns 0 or 1.
@@ -103,7 +103,7 @@ cmp_ge(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     obj < other    => true or false
+ *     obj < other    -> true or false
  *
  *  Compares two objects based on the receiver's <code><=></code>
  *  method, returning true if it returns -1.
@@ -120,7 +120,7 @@ cmp_lt(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     obj <= other    => true or false
+ *     obj <= other    -> true or false
  *
  *  Compares two objects based on the receiver's <code><=></code>
  *  method, returning true if it returns -1 or 0.
@@ -137,7 +137,7 @@ cmp_le(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     obj.between?(min, max)    => true or false
+ *     obj.between?(min, max)    -> true or false
  *
  *  Returns <code>false</code> if <i>obj</i> <code><=></code>
  *  <i>min</i> is less than zero or if <i>anObject</i> <code><=></code>

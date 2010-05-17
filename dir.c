@@ -428,8 +428,8 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
 
 /*
  *  call-seq:
- *     Dir.open( string ) => aDir
- *     Dir.open( string ) {| aDir | block } => anObject
+ *     Dir.open( string ) -> aDir
+ *     Dir.open( string ) {| aDir | block } -> anObject
  *
  *  With no block, <code>open</code> is a synonym for
  *  <code>Dir::new</code>. If a block is present, it is passed
@@ -474,7 +474,7 @@ dir_check(VALUE dir)
 
 /*
  *  call-seq:
- *     dir.inspect => string
+ *     dir.inspect -> string
  *
  *  Return a string describing this Dir object.
  */
@@ -493,7 +493,7 @@ dir_inspect(VALUE dir)
 
 /*
  *  call-seq:
- *     dir.path => string or nil
+ *     dir.path -> string or nil
  *
  *  Returns the path parameter passed to <em>dir</em>'s constructor.
  *
@@ -558,7 +558,7 @@ dir_path(VALUE dir)
 
 /*
  *  call-seq:
- *     dir.read => string or nil
+ *     dir.read -> string or nil
  *
  *  Reads the next entry from <em>dir</em> and returns it as a string.
  *  Returns <code>nil</code> at the end of the stream.
@@ -591,8 +591,8 @@ dir_read(VALUE dir)
 
 /*
  *  call-seq:
- *     dir.each { |filename| block }  => dir
- *     dir.each                       => an_enumerator
+ *     dir.each { |filename| block }  -> dir
+ *     dir.each                       -> an_enumerator
  *
  *  Calls the block once for each entry in this directory, passing the
  *  filename of each entry as a parameter to the block.
@@ -629,8 +629,8 @@ dir_each(VALUE dir)
 #ifdef HAVE_TELLDIR
 /*
  *  call-seq:
- *     dir.pos => integer
- *     dir.tell => integer
+ *     dir.pos -> integer
+ *     dir.tell -> integer
  *
  *  Returns the current position in <em>dir</em>. See also
  *  <code>Dir#seek</code>.
@@ -657,7 +657,7 @@ dir_tell(VALUE dir)
 #ifdef HAVE_SEEKDIR
 /*
  *  call-seq:
- *     dir.seek( integer ) => dir
+ *     dir.seek( integer ) -> dir
  *
  *  Seeks to a particular location in <em>dir</em>. <i>integer</i>
  *  must be a value returned by <code>Dir#tell</code>.
@@ -685,7 +685,7 @@ dir_seek(VALUE dir, VALUE pos)
 
 /*
  *  call-seq:
- *     dir.pos( integer ) => integer
+ *     dir.pos( integer ) -> integer
  *
  *  Synonym for <code>Dir#seek</code>, but returns the position
  *  parameter.
@@ -706,7 +706,7 @@ dir_set_pos(VALUE dir, VALUE pos)
 
 /*
  *  call-seq:
- *     dir.rewind => dir
+ *     dir.rewind -> dir
  *
  *  Repositions <em>dir</em> to the first entry.
  *
@@ -730,7 +730,7 @@ dir_rewind(VALUE dir)
 
 /*
  *  call-seq:
- *     dir.close => nil
+ *     dir.close -> nil
  *
  *  Closes the directory stream. Any further attempts to access
  *  <em>dir</em> will raise an <code>IOError</code>.
@@ -791,8 +791,8 @@ chdir_restore(struct chdir_data *args)
 
 /*
  *  call-seq:
- *     Dir.chdir( [ string] ) => 0
- *     Dir.chdir( [ string] ) {| path | block }  => anObject
+ *     Dir.chdir( [ string] ) -> 0
+ *     Dir.chdir( [ string] ) {| path | block }  -> anObject
  *
  *  Changes the current working directory of the process to the given
  *  string. When called without an argument, changes the directory to
@@ -882,8 +882,8 @@ rb_dir_getwd(void)
 
 /*
  *  call-seq:
- *     Dir.getwd => string
- *     Dir.pwd => string
+ *     Dir.getwd -> string
+ *     Dir.pwd -> string
  *
  *  Returns the path to the current working directory of this process as
  *  a string.
@@ -913,7 +913,7 @@ check_dirname(volatile VALUE *dir)
 #if defined(HAVE_CHROOT)
 /*
  *  call-seq:
- *     Dir.chroot( string ) => 0
+ *     Dir.chroot( string ) -> 0
  *
  *  Changes this process's idea of the file system root. Only a
  *  privileged process may make this call. Not available on all
@@ -937,7 +937,7 @@ dir_s_chroot(VALUE dir, VALUE path)
 
 /*
  *  call-seq:
- *     Dir.mkdir( string [, integer] ) => 0
+ *     Dir.mkdir( string [, integer] ) -> 0
  *
  *  Makes a new directory named by <i>string</i>, with permissions
  *  specified by the optional parameter <i>anInteger</i>. The
@@ -971,9 +971,9 @@ dir_s_mkdir(int argc, VALUE *argv, VALUE obj)
 
 /*
  *  call-seq:
- *     Dir.delete( string ) => 0
- *     Dir.rmdir( string ) => 0
- *     Dir.unlink( string ) => 0
+ *     Dir.delete( string ) -> 0
+ *     Dir.rmdir( string ) -> 0
+ *     Dir.unlink( string ) -> 0
  *
  *  Deletes the named directory. Raises a subclass of
  *  <code>SystemCallError</code> if the directory isn't empty.
@@ -1702,8 +1702,8 @@ dir_globs(long argc, VALUE *argv, int flags)
 
 /*
  *  call-seq:
- *     Dir[ array ]                 => array
- *     Dir[ string [, string ...] ] => array
+ *     Dir[ array ]                 -> array
+ *     Dir[ string [, string ...] ] -> array
  *
  *  Equivalent to calling
  *  <code>Dir.glob(</code><i>array,</i><code>0)</code> and
@@ -1721,8 +1721,8 @@ dir_s_aref(int argc, VALUE *argv, VALUE obj)
 
 /*
  *  call-seq:
- *     Dir.glob( pattern, [flags] ) => array
- *     Dir.glob( pattern, [flags] ) {| filename | block }  => nil
+ *     Dir.glob( pattern, [flags] ) -> array
+ *     Dir.glob( pattern, [flags] ) {| filename | block }  -> nil
  *
  *  Returns the filenames found by expanding <i>pattern</i> which is
  *  an +Array+ of the patterns or the pattern +String+, either as an
@@ -1822,8 +1822,8 @@ dir_open_dir(int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     Dir.foreach( dirname ) {| filename | block }  => nil
- *     Dir.foreach( dirname )                        => an_enumerator
+ *     Dir.foreach( dirname ) {| filename | block }  -> nil
+ *     Dir.foreach( dirname )                        -> an_enumerator
  *
  *  Calls the block once for each entry in the named directory, passing
  *  the filename of each entry as a parameter to the block.
@@ -1853,7 +1853,7 @@ dir_foreach(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     Dir.entries( dirname ) => array
+ *     Dir.entries( dirname ) -> array
  *
  *  Returns an array containing all of the filenames in the given
  *  directory. Will raise a <code>SystemCallError</code> if the named
@@ -1873,8 +1873,8 @@ dir_entries(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     File.fnmatch( pattern, path, [flags] ) => (true or false)
- *     File.fnmatch?( pattern, path, [flags] ) => (true or false)
+ *     File.fnmatch( pattern, path, [flags] ) -> (true or false)
+ *     File.fnmatch?( pattern, path, [flags] ) -> (true or false)
  *
  *  Returns true if <i>path</i> matches against <i>pattern</i> The
  *  pattern is not a regular expression; instead it follows rules
@@ -1978,8 +1978,8 @@ VALUE rb_home_dir(const char *user, VALUE result);
 
 /*
  *  call-seq:
- *    Dir.home()       => "/home/me"
- *    Dir.home("root") => "/root"
+ *    Dir.home()       -> "/home/me"
+ *    Dir.home("root") -> "/root"
  *
  *  Returns the home directory of the current user or the named user
  *  if given.

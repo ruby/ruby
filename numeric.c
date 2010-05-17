@@ -3254,9 +3254,9 @@ fix_even_p(VALUE num)
  *
  *  Note that only division by an exact 0 will raise that exception:
  *
- *     42 /  0.0 # => Float::INFINITY
- *     42 / -0.0 # => -Float::INFINITY
- *     0  /  0.0 # => NaN
+ *     42 /  0.0 #=> Float::INFINITY
+ *     42 / -0.0 #=> -Float::INFINITY
+ *     0  /  0.0 #=> NaN
  */
 
 /*

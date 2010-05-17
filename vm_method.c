@@ -498,7 +498,7 @@ rb_remove_method(VALUE klass, const char *name)
 
 /*
  *  call-seq:
- *     remove_method(symbol)   => self
+ *     remove_method(symbol)   -> self
  *
  *  Removes the method identified by _symbol_ from the current
  *  class. For an example, see <code>Module.undef_method</code>.
@@ -672,7 +672,7 @@ rb_undef(VALUE klass, ID id)
 
 /*
  *  call-seq:
- *     undef_method(symbol)    => self
+ *     undef_method(symbol)    -> self
  *
  *  Prevents the current class from responding to calls to the named
  *  method. Contrast this with <code>remove_method</code>, which deletes
@@ -725,7 +725,7 @@ rb_mod_undef_method(int argc, VALUE *argv, VALUE mod)
 
 /*
  *  call-seq:
- *     mod.method_defined?(symbol)    => true or false
+ *     mod.method_defined?(symbol)    -> true or false
  *
  *  Returns +true+ if the named method is defined by
  *  _mod_ (or its included modules and, if _mod_ is a class,
@@ -775,7 +775,7 @@ check_definition(VALUE mod, ID mid, rb_method_flag_t noex)
 
 /*
  *  call-seq:
- *     mod.public_method_defined?(symbol)   => true or false
+ *     mod.public_method_defined?(symbol)   -> true or false
  *
  *  Returns +true+ if the named public method is defined by
  *  _mod_ (or its included modules and, if _mod_ is a class,
@@ -807,7 +807,7 @@ rb_mod_public_method_defined(VALUE mod, VALUE mid)
 
 /*
  *  call-seq:
- *     mod.private_method_defined?(symbol)    => true or false
+ *     mod.private_method_defined?(symbol)    -> true or false
  *
  *  Returns +true+ if the named private method is defined by
  *  _ mod_ (or its included modules and, if _mod_ is a class,
@@ -839,7 +839,7 @@ rb_mod_private_method_defined(VALUE mod, VALUE mid)
 
 /*
  *  call-seq:
- *     mod.protected_method_defined?(symbol)   => true or false
+ *     mod.protected_method_defined?(symbol)   -> true or false
  *
  *  Returns +true+ if the named protected method is defined
  *  by _mod_ (or its included modules and, if _mod_ is a
@@ -947,7 +947,7 @@ rb_alias(VALUE klass, ID name, ID def)
 
 /*
  *  call-seq:
- *     alias_method(new_name, old_name)   => self
+ *     alias_method(new_name, old_name)   -> self
  *
  *  Makes <i>new_name</i> a new copy of the method <i>old_name</i>. This can
  *  be used to retain access to methods that are overridden.
@@ -996,8 +996,8 @@ set_method_visibility(VALUE self, int argc, VALUE *argv, rb_method_flag_t ex)
 
 /*
  *  call-seq:
- *     public                 => self
- *     public(symbol, ...)    => self
+ *     public                 -> self
+ *     public(symbol, ...)    -> self
  *
  *  With no arguments, sets the default visibility for subsequently
  *  defined methods to public. With arguments, sets the named methods to
@@ -1019,8 +1019,8 @@ rb_mod_public(int argc, VALUE *argv, VALUE module)
 
 /*
  *  call-seq:
- *     protected                => self
- *     protected(symbol, ...)   => self
+ *     protected                -> self
+ *     protected(symbol, ...)   -> self
  *
  *  With no arguments, sets the default visibility for subsequently
  *  defined methods to protected. With arguments, sets the named methods
@@ -1042,8 +1042,8 @@ rb_mod_protected(int argc, VALUE *argv, VALUE module)
 
 /*
  *  call-seq:
- *     private                 => self
- *     private(symbol, ...)    => self
+ *     private                 -> self
+ *     private(symbol, ...)    -> self
  *
  *  With no arguments, sets the default visibility for subsequently
  *  defined methods to private. With arguments, sets the named methods
@@ -1074,7 +1074,7 @@ rb_mod_private(int argc, VALUE *argv, VALUE module)
 
 /*
  *  call-seq:
- *     mod.public_class_method(symbol, ...)    => mod
+ *     mod.public_class_method(symbol, ...)    -> mod
  *
  *  Makes a list of existing class methods public.
  */
@@ -1088,7 +1088,7 @@ rb_mod_public_method(int argc, VALUE *argv, VALUE obj)
 
 /*
  *  call-seq:
- *     mod.private_class_method(symbol, ...)   => mod
+ *     mod.private_class_method(symbol, ...)   -> mod
  *
  *  Makes existing class methods private. Often used to hide the default
  *  constructor <code>new</code>.
@@ -1133,7 +1133,7 @@ top_private(int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     module_function(symbol, ...)    => self
+ *     module_function(symbol, ...)    -> self
  *
  *  Creates module functions for the named methods. These functions may
  *  be called with the module as a receiver, and also become available
@@ -1256,7 +1256,7 @@ rb_respond_to(VALUE obj, ID id)
 
 /*
  *  call-seq:
- *     obj.respond_to?(symbol, include_private=false) => true or false
+ *     obj.respond_to?(symbol, include_private=false) -> true or false
  *
  *  Returns +true+ if _obj_ responds to the given
  *  method. Private methods are included in the search only if the
@@ -1285,7 +1285,7 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
 
 /*
  *  call-seq:
- *     obj.respond_to_missing?(symbol, include_private) => true or false
+ *     obj.respond_to_missing?(symbol, include_private) -> true or false
  *
  *  Hook method to return whether the _obj_ can respond to _id_ method
  *  or not.
