@@ -1146,8 +1146,8 @@ uscore_get(void)
 
 /*
  *  call-seq:
- *     sub(pattern, replacement)   => $_
- *     sub(pattern) { block }      => $_
+ *     sub(pattern, replacement)   -> $_
+ *     sub(pattern) { block }      -> $_
  *
  *  Equivalent to <code>$_.sub(<i>args</i>)</code>, except that
  *  <code>$_</code> will be updated if substitution occurs.
@@ -1166,8 +1166,8 @@ rb_f_sub(argc, argv)
 
 /*
  *  call-seq:
- *     gsub(pattern, replacement)    => string
- *     gsub(pattern) {|...| block }  => string
+ *     gsub(pattern, replacement)    -> string
+ *     gsub(pattern) {|...| block }  -> string
  *
  *  Equivalent to <code>$_.gsub...</code>, except that <code>$_</code>
  *  receives the modified result.
@@ -1187,7 +1187,7 @@ rb_f_gsub(argc, argv)
 
 /*
  *  call-seq:
- *     chop   => string
+ *     chop   -> string
  *
  *  Equivalent to <code>($_.dup).chop!</code>, except <code>nil</code>
  *  is never returned. See <code>String#chop!</code>.
@@ -1206,8 +1206,8 @@ rb_f_chop(void)
 
 /*
  *  call-seq:
- *     chomp            => $_
- *     chomp(string)    => $_
+ *     chomp            -> $_
+ *     chomp(string)    -> $_
  *
  *  Equivalent to <code>$_ = $_.chomp(<em>string</em>)</code>. See
  *  <code>String#chomp</code>.

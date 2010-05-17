@@ -139,7 +139,7 @@ static VALUE rb_cProcessTms;
 
 /*
  *  call-seq:
- *     Process.pid   => fixnum
+ *     Process.pid   -> fixnum
  *
  *  Returns the process id of this process. Not available on all
  *  platforms.
@@ -157,7 +157,7 @@ get_pid(void)
 
 /*
  *  call-seq:
- *     Process.ppid   => fixnum
+ *     Process.ppid   -> fixnum
  *
  *  Returns the process id of the parent of this process. Returns
  *  untrustworthy value on Win32/64. Not available on all platforms.
@@ -234,8 +234,8 @@ rb_last_status_clear(void)
 
 /*
  *  call-seq:
- *     stat.to_i     => fixnum
- *     stat.to_int   => fixnum
+ *     stat.to_i     -> fixnum
+ *     stat.to_int   -> fixnum
  *
  *  Returns the bits in _stat_ as a <code>Fixnum</code>. Poking
  *  around in these bits is platform dependent.
@@ -255,7 +255,7 @@ pst_to_i(VALUE st)
 
 /*
  *  call-seq:
- *     stat.pid   => fixnum
+ *     stat.pid   -> fixnum
  *
  *  Returns the process ID that this status object represents.
  *
@@ -307,7 +307,7 @@ pst_message(VALUE str, rb_pid_t pid, int status)
 
 /*
  *  call-seq:
- *     stat.to_s   => string
+ *     stat.to_s   -> string
  *
  *  Show pid and exit status as a string.
  */
@@ -330,7 +330,7 @@ pst_to_s(VALUE st)
 
 /*
  *  call-seq:
- *     stat.inspect   => string
+ *     stat.inspect   -> string
  *
  *  Override the inspection method.
  */
@@ -358,7 +358,7 @@ pst_inspect(VALUE st)
 
 /*
  *  call-seq:
- *     stat == other   => true or false
+ *     stat == other   -> true or false
  *
  *  Returns +true+ if the integer value of _stat_
  *  equals <em>other</em>.
@@ -374,7 +374,7 @@ pst_equal(VALUE st1, VALUE st2)
 
 /*
  *  call-seq:
- *     stat & num   => fixnum
+ *     stat & num   -> fixnum
  *
  *  Logical AND of the bits in _stat_ with <em>num</em>.
  *
@@ -395,7 +395,7 @@ pst_bitand(VALUE st1, VALUE st2)
 
 /*
  *  call-seq:
- *     stat >> num   => fixnum
+ *     stat >> num   -> fixnum
  *
  *  Shift the bits in _stat_ right <em>num</em> places.
  *
@@ -416,7 +416,7 @@ pst_rshift(VALUE st1, VALUE st2)
 
 /*
  *  call-seq:
- *     stat.stopped?   => true or false
+ *     stat.stopped?   -> true or false
  *
  *  Returns +true+ if this process is stopped. This is only
  *  returned if the corresponding <code>wait</code> call had the
@@ -437,7 +437,7 @@ pst_wifstopped(VALUE st)
 
 /*
  *  call-seq:
- *     stat.stopsig   => fixnum or nil
+ *     stat.stopsig   -> fixnum or nil
  *
  *  Returns the number of the signal that caused _stat_ to stop
  *  (or +nil+ if self is not stopped).
@@ -456,7 +456,7 @@ pst_wstopsig(VALUE st)
 
 /*
  *  call-seq:
- *     stat.signaled?   => true or false
+ *     stat.signaled?   -> true or false
  *
  *  Returns +true+ if _stat_ terminated because of
  *  an uncaught signal.
@@ -476,7 +476,7 @@ pst_wifsignaled(VALUE st)
 
 /*
  *  call-seq:
- *     stat.termsig   => fixnum or nil
+ *     stat.termsig   -> fixnum or nil
  *
  *  Returns the number of the signal that caused _stat_ to
  *  terminate (or +nil+ if self was not terminated by an
@@ -496,7 +496,7 @@ pst_wtermsig(VALUE st)
 
 /*
  *  call-seq:
- *     stat.exited?   => true or false
+ *     stat.exited?   -> true or false
  *
  *  Returns +true+ if _stat_ exited normally (for
  *  example using an <code>exit()</code> call or finishing the
@@ -517,7 +517,7 @@ pst_wifexited(VALUE st)
 
 /*
  *  call-seq:
- *     stat.exitstatus   => fixnum or nil
+ *     stat.exitstatus   -> fixnum or nil
  *
  *  Returns the least significant eight bits of the return code of
  *  _stat_. Only available if <code>exited?</code> is
@@ -547,7 +547,7 @@ pst_wexitstatus(VALUE st)
 
 /*
  *  call-seq:
- *     stat.success?   => true, false or nil
+ *     stat.success?   -> true, false or nil
  *
  *  Returns +true+ if _stat_ is successful, +false+ if not.
  *  Returns +nil+ if <code>exited?</code> is not +true+.
@@ -566,7 +566,7 @@ pst_success_p(VALUE st)
 
 /*
  *  call-seq:
- *     stat.coredump?   => true or false
+ *     stat.coredump?   -> true or false
  *
  *  Returns +true+ if _stat_ generated a coredump
  *  when it terminated. Not available on all platforms.
@@ -725,9 +725,9 @@ rb_waitpid(rb_pid_t pid, int *st, int flags)
 
 /*
  *  call-seq:
- *     Process.wait()                     => fixnum
- *     Process.wait(pid=-1, flags=0)      => fixnum
- *     Process.waitpid(pid=-1, flags=0)   => fixnum
+ *     Process.wait()                     -> fixnum
+ *     Process.wait(pid=-1, flags=0)      -> fixnum
+ *     Process.waitpid(pid=-1, flags=0)   -> fixnum
  *
  *  Waits for a child process to exit, returns its process id, and
  *  sets <code>$?</code> to a <code>Process::Status</code> object
@@ -798,8 +798,8 @@ proc_wait(int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     Process.wait2(pid=-1, flags=0)      => [pid, status]
- *     Process.waitpid2(pid=-1, flags=0)   => [pid, status]
+ *     Process.wait2(pid=-1, flags=0)      -> [pid, status]
+ *     Process.waitpid2(pid=-1, flags=0)   -> [pid, status]
  *
  *  Waits for a child process to exit (see Process::waitpid for exact
  *  semantics) and returns an array containing the process id and the
@@ -824,7 +824,7 @@ proc_wait2(int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     Process.waitall   => [ [pid1,status1], ...]
+ *     Process.waitall   -> [ [pid1,status1], ...]
  *
  *  Waits for all children, returning an array of
  *  _pid_/_status_ pairs (where _status_ is a
@@ -922,7 +922,7 @@ rb_detach_process(rb_pid_t pid)
 
 /*
  *  call-seq:
- *     Process.detach(pid)   => thread
+ *     Process.detach(pid)   -> thread
  *
  *  Some operating systems retain the status of terminated child
  *  processes until the parent collects that status (normally using
@@ -2590,8 +2590,8 @@ rb_fork(int *status, int (*chfunc)(void*), void *charg, VALUE fds)
 #if defined(HAVE_FORK) && !defined(CANNOT_FORK_WITH_PTHREAD)
 /*
  *  call-seq:
- *     Kernel.fork  [{ block }]   => fixnum or nil
- *     Process.fork [{ block }]   => fixnum or nil
+ *     Kernel.fork  [{ block }]   -> fixnum or nil
+ *     Process.fork [{ block }]   -> fixnum or nil
  *
  *  Creates a subprocess. If a block is specified, that block is run
  *  in the subprocess, and the subprocess terminates with a status of
@@ -2918,7 +2918,7 @@ rb_spawn(int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     system([env,] command... [,options])    => true, false or nil
+ *     system([env,] command... [,options])    -> true, false or nil
  *
  *  Executes _command..._ in a subshell.
  *  _command..._ is one of following forms.
@@ -2983,8 +2983,8 @@ rb_f_system(int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     spawn([env,] command... [,options])     => pid
- *     Process.spawn([env,] command... [,options])     => pid
+ *     spawn([env,] command... [,options])     -> pid
+ *     Process.spawn([env,] command... [,options])     -> pid
  *
  *  spawn executes specified command and return its pid.
  *
@@ -3234,7 +3234,7 @@ rb_f_spawn(int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     sleep([duration])    => fixnum
+ *     sleep([duration])    -> fixnum
  *
  *  Suspends the current thread for _duration_ seconds (which may be any number,
  *  including a +Float+ with fractional seconds). Returns the actual number of
@@ -3274,7 +3274,7 @@ rb_f_sleep(int argc, VALUE *argv)
 #if (defined(HAVE_GETPGRP) && defined(GETPGRP_VOID)) || defined(HAVE_GETPGID)
 /*
  *  call-seq:
- *     Process.getpgrp   => integer
+ *     Process.getpgrp   -> integer
  *
  *  Returns the process group ID for this process. Not available on
  *  all platforms.
@@ -3307,7 +3307,7 @@ proc_getpgrp(void)
 #if defined(HAVE_SETPGID) || (defined(HAVE_SETPGRP) && defined(SETPGRP_VOID))
 /*
  *  call-seq:
- *     Process.setpgrp   => 0
+ *     Process.setpgrp   -> 0
  *
  *  Equivalent to <code>setpgid(0,0)</code>. Not available on all
  *  platforms.
@@ -3336,7 +3336,7 @@ proc_setpgrp(void)
 #if defined(HAVE_GETPGID)
 /*
  *  call-seq:
- *     Process.getpgid(pid)   => integer
+ *     Process.getpgid(pid)   -> integer
  *
  *  Returns the process group ID for the given process id. Not
  *  available on all platforms.
@@ -3362,7 +3362,7 @@ proc_getpgid(VALUE obj, VALUE pid)
 #ifdef HAVE_SETPGID
 /*
  *  call-seq:
- *     Process.setpgid(pid, integer)   => 0
+ *     Process.setpgid(pid, integer)   -> 0
  *
  *  Sets the process group ID of _pid_ (0 indicates this
  *  process) to <em>integer</em>. Not available on all platforms.
@@ -3392,7 +3392,7 @@ static rb_pid_t ruby_setsid(void);
 #endif
 /*
  *  call-seq:
- *     Process.setsid   => fixnum
+ *     Process.setsid   -> fixnum
  *
  *  Establishes this process as a new session and process group
  *  leader, with no controlling tty. Returns the session id. Not
@@ -3446,7 +3446,7 @@ ruby_setsid(void)
 #ifdef HAVE_GETPRIORITY
 /*
  *  call-seq:
- *     Process.getpriority(kind, integer)   => fixnum
+ *     Process.getpriority(kind, integer)   -> fixnum
  *
  *  Gets the scheduling priority for specified process, process group,
  *  or user. <em>kind</em> indicates the kind of entity to find: one
@@ -3483,7 +3483,7 @@ proc_getpriority(VALUE obj, VALUE which, VALUE who)
 #ifdef HAVE_GETPRIORITY
 /*
  *  call-seq:
- *     Process.setpriority(kind, integer, priority)   => 0
+ *     Process.setpriority(kind, integer, priority)   -> 0
  *
  *  See <code>Process#getpriority</code>.
  *
@@ -3678,7 +3678,7 @@ rlimit_resource_value(VALUE rval)
 #if defined(HAVE_GETRLIMIT) && defined(RLIM2NUM)
 /*
  *  call-seq:
- *     Process.getrlimit(resource)   => [cur_limit, max_limit]
+ *     Process.getrlimit(resource)   -> [cur_limit, max_limit]
  *
  *  Gets the resource limit of the process.
  *  _cur_limit_ means current (soft) limit and
@@ -3715,8 +3715,8 @@ proc_getrlimit(VALUE obj, VALUE resource)
 #if defined(HAVE_SETRLIMIT) && defined(NUM2RLIM)
 /*
  *  call-seq:
- *     Process.setrlimit(resource, cur_limit, max_limit)        => nil
- *     Process.setrlimit(resource, cur_limit)                   => nil
+ *     Process.setrlimit(resource, cur_limit, max_limit)        -> nil
+ *     Process.setrlimit(resource, cur_limit)                   -> nil
  *
  *  Sets the resource limit of the process.
  *  _cur_limit_ means current (soft) limit and
@@ -3818,7 +3818,7 @@ check_gid_switch(void)
 #if defined HAVE_SETUID
 /*
  *  call-seq:
- *     Process::Sys.setuid(integer)   => nil
+ *     Process::Sys.setuid(integer)   -> nil
  *
  *  Set the user ID of the current process to _integer_. Not
  *  available on all platforms.
@@ -3840,7 +3840,7 @@ p_sys_setuid(VALUE obj, VALUE id)
 #if defined HAVE_SETRUID
 /*
  *  call-seq:
- *     Process::Sys.setruid(integer)   => nil
+ *     Process::Sys.setruid(integer)   -> nil
  *
  *  Set the real user ID of the calling process to _integer_.
  *  Not available on all platforms.
@@ -3862,7 +3862,7 @@ p_sys_setruid(VALUE obj, VALUE id)
 #if defined HAVE_SETEUID
 /*
  *  call-seq:
- *     Process::Sys.seteuid(integer)   => nil
+ *     Process::Sys.seteuid(integer)   -> nil
  *
  *  Set the effective user ID of the calling process to
  *  _integer_.  Not available on all platforms.
@@ -3884,7 +3884,7 @@ p_sys_seteuid(VALUE obj, VALUE id)
 #if defined HAVE_SETREUID
 /*
  *  call-seq:
- *     Process::Sys.setreuid(rid, eid)   => nil
+ *     Process::Sys.setreuid(rid, eid)   -> nil
  *
  *  Sets the (integer) real and/or effective user IDs of the current
  *  process to _rid_ and _eid_, respectively. A value of
@@ -3908,7 +3908,7 @@ p_sys_setreuid(VALUE obj, VALUE rid, VALUE eid)
 #if defined HAVE_SETRESUID
 /*
  *  call-seq:
- *     Process::Sys.setresuid(rid, eid, sid)   => nil
+ *     Process::Sys.setresuid(rid, eid, sid)   -> nil
  *
  *  Sets the (integer) real, effective, and saved user IDs of the
  *  current process to _rid_, _eid_, and _sid_ respectively. A
@@ -3931,9 +3931,9 @@ p_sys_setresuid(VALUE obj, VALUE rid, VALUE eid, VALUE sid)
 
 /*
  *  call-seq:
- *     Process.uid           => fixnum
- *     Process::UID.rid      => fixnum
- *     Process::Sys.getuid   => fixnum
+ *     Process.uid           -> fixnum
+ *     Process::UID.rid      -> fixnum
+ *     Process::Sys.getuid   -> fixnum
  *
  *  Returns the (real) user ID of this process.
  *
@@ -3951,7 +3951,7 @@ proc_getuid(VALUE obj)
 #if defined(HAVE_SETRESUID) || defined(HAVE_SETREUID) || defined(HAVE_SETRUID) || defined(HAVE_SETUID)
 /*
  *  call-seq:
- *     Process.uid= integer   => numeric
+ *     Process.uid= integer   -> numeric
  *
  *  Sets the (integer) user ID for this process. Not available on all
  *  platforms.
@@ -4017,7 +4017,7 @@ setreuid(rb_uid_t ruid, rb_uid_t euid)
 
 /*
  *  call-seq:
- *     Process::UID.change_privilege(integer)   => fixnum
+ *     Process::UID.change_privilege(integer)   -> fixnum
  *
  *  Change the current process's real and effective user ID to that
  *  specified by _integer_. Returns the new user ID. Not
@@ -4171,7 +4171,7 @@ p_uid_change_privilege(VALUE obj, VALUE id)
 #if defined HAVE_SETGID
 /*
  *  call-seq:
- *     Process::Sys.setgid(integer)   => nil
+ *     Process::Sys.setgid(integer)   -> nil
  *
  *  Set the group ID of the current process to _integer_. Not
  *  available on all platforms.
@@ -4193,7 +4193,7 @@ p_sys_setgid(VALUE obj, VALUE id)
 #if defined HAVE_SETRGID
 /*
  *  call-seq:
- *     Process::Sys.setrgid(integer)   => nil
+ *     Process::Sys.setrgid(integer)   -> nil
  *
  *  Set the real group ID of the calling process to _integer_.
  *  Not available on all platforms.
@@ -4215,7 +4215,7 @@ p_sys_setrgid(VALUE obj, VALUE id)
 #if defined HAVE_SETEGID
 /*
  *  call-seq:
- *     Process::Sys.setegid(integer)   => nil
+ *     Process::Sys.setegid(integer)   -> nil
  *
  *  Set the effective group ID of the calling process to
  *  _integer_.  Not available on all platforms.
@@ -4237,7 +4237,7 @@ p_sys_setegid(VALUE obj, VALUE id)
 #if defined HAVE_SETREGID
 /*
  *  call-seq:
- *     Process::Sys.setregid(rid, eid)   => nil
+ *     Process::Sys.setregid(rid, eid)   -> nil
  *
  *  Sets the (integer) real and/or effective group IDs of the current
  *  process to <em>rid</em> and <em>eid</em>, respectively. A value of
@@ -4260,7 +4260,7 @@ p_sys_setregid(VALUE obj, VALUE rid, VALUE eid)
 #if defined HAVE_SETRESGID
 /*
  *  call-seq:
- *     Process::Sys.setresgid(rid, eid, sid)   => nil
+ *     Process::Sys.setresgid(rid, eid, sid)   -> nil
  *
  *  Sets the (integer) real, effective, and saved user IDs of the
  *  current process to <em>rid</em>, <em>eid</em>, and <em>sid</em>
@@ -4284,7 +4284,7 @@ p_sys_setresgid(VALUE obj, VALUE rid, VALUE eid, VALUE sid)
 #if defined HAVE_ISSETUGID
 /*
  *  call-seq:
- *     Process::Sys.issetugid   => true or false
+ *     Process::Sys.issetugid   -> true or false
  *
  *  Returns +true+ if the process was created as a result
  *  of an execve(2) system call which had either of the setuid or
@@ -4311,9 +4311,9 @@ p_sys_issetugid(VALUE obj)
 
 /*
  *  call-seq:
- *     Process.gid           => fixnum
- *     Process::GID.rid      => fixnum
- *     Process::Sys.getgid   => fixnum
+ *     Process.gid           -> fixnum
+ *     Process::GID.rid      -> fixnum
+ *     Process::Sys.getgid   -> fixnum
  *
  *  Returns the (real) group ID for this process.
  *
@@ -4331,7 +4331,7 @@ proc_getgid(VALUE obj)
 #if defined(HAVE_SETRESGID) || defined(HAVE_SETREGID) || defined(HAVE_SETRGID) || defined(HAVE_SETGID)
 /*
  *  call-seq:
- *     Process.gid= fixnum   => fixnum
+ *     Process.gid= fixnum   -> fixnum
  *
  *  Sets the group ID for this process.
  */
@@ -4373,7 +4373,7 @@ static int maxgroups = 32;
 #ifdef HAVE_GETGROUPS
 /*
  *  call-seq:
- *     Process.groups   => array
+ *     Process.groups   -> array
  *
  *  Get an <code>Array</code> of the gids of groups in the
  *  supplemental group access list for this process.
@@ -4409,7 +4409,7 @@ proc_getgroups(VALUE obj)
 #ifdef HAVE_SETGROUPS
 /*
  *  call-seq:
- *     Process.groups= array   => array
+ *     Process.groups= array   -> array
  *
  *  Set the supplemental group access list to the given
  *  <code>Array</code> of group IDs.
@@ -4470,7 +4470,7 @@ proc_setgroups(VALUE obj, VALUE ary)
 #ifdef HAVE_INITGROUPS
 /*
  *  call-seq:
- *     Process.initgroups(username, gid)   => array
+ *     Process.initgroups(username, gid)   -> array
  *
  *  Initializes the supplemental group access list by reading the
  *  system group database and using all groups of which the given user
@@ -4500,7 +4500,7 @@ proc_initgroups(VALUE obj, VALUE uname, VALUE base_grp)
 
 /*
  *  call-seq:
- *     Process.maxgroups   => fixnum
+ *     Process.maxgroups   -> fixnum
  *
  *  Returns the maximum number of gids allowed in the supplemental
  *  group access list.
@@ -4517,7 +4517,7 @@ proc_getmaxgroups(VALUE obj)
 
 /*
  *  call-seq:
- *     Process.maxgroups= fixnum   => fixnum
+ *     Process.maxgroups= fixnum   -> fixnum
  *
  *  Sets the maximum number of gids allowed in the supplemental group
  *  access list.
@@ -4539,8 +4539,8 @@ proc_setmaxgroups(VALUE obj, VALUE val)
 #if defined(HAVE_DAEMON) || (defined(HAVE_FORK) && defined(HAVE_SETSID))
 /*
  *  call-seq:
- *     Process.daemon()                        => 0
- *     Process.daemon(nochdir=nil,noclose=nil) => 0
+ *     Process.daemon()                        -> 0
+ *     Process.daemon(nochdir=nil,noclose=nil) -> 0
  *
  *  Detach the process from controlling terminal and run in
  *  the background as system daemon.  Unless the argument
@@ -4635,7 +4635,7 @@ setregid(rb_gid_t rgid, rb_gid_t egid)
 
 /*
  *  call-seq:
- *     Process::GID.change_privilege(integer)   => fixnum
+ *     Process::GID.change_privilege(integer)   -> fixnum
  *
  *  Change the current process's real and effective group ID to that
  *  specified by _integer_. Returns the new group ID. Not
@@ -4788,9 +4788,9 @@ p_gid_change_privilege(VALUE obj, VALUE id)
 
 /*
  *  call-seq:
- *     Process.euid           => fixnum
- *     Process::UID.eid       => fixnum
- *     Process::Sys.geteuid   => fixnum
+ *     Process.euid           -> fixnum
+ *     Process::UID.eid       -> fixnum
+ *     Process::Sys.geteuid   -> fixnum
  *
  *  Returns the effective user ID for this process.
  *
@@ -4884,8 +4884,8 @@ rb_seteuid_core(rb_uid_t euid)
 
 /*
  *  call-seq:
- *     Process::UID.grant_privilege(integer)   => fixnum
- *     Process::UID.eid= integer               => fixnum
+ *     Process::UID.grant_privilege(integer)   -> fixnum
+ *     Process::UID.eid= integer               -> fixnum
  *
  *  Set the effective user ID, and if possible, the saved user ID of
  *  the process to the given _integer_. Returns the new
@@ -4906,9 +4906,9 @@ p_uid_grant_privilege(VALUE obj, VALUE id)
 
 /*
  *  call-seq:
- *     Process.egid          => fixnum
- *     Process::GID.eid      => fixnum
- *     Process::Sys.geteid   => fixnum
+ *     Process.egid          -> fixnum
+ *     Process::GID.eid      -> fixnum
+ *     Process::Sys.geteid   -> fixnum
  *
  *  Returns the effective group ID for this process. Not available on
  *  all platforms.
@@ -4927,7 +4927,7 @@ proc_getegid(VALUE obj)
 #if defined(HAVE_SETRESGID) || defined(HAVE_SETREGID) || defined(HAVE_SETEGID) || defined(HAVE_SETGID) || defined(_POSIX_SAVED_IDS)
 /*
  *  call-seq:
- *     Process.egid = fixnum   => fixnum
+ *     Process.egid = fixnum   -> fixnum
  *
  *  Sets the effective group ID for this process. Not available on all
  *  platforms.
@@ -5004,8 +5004,8 @@ rb_setegid_core(rb_gid_t egid)
 
 /*
  *  call-seq:
- *     Process::GID.grant_privilege(integer)    => fixnum
- *     Process::GID.eid = integer               => fixnum
+ *     Process::GID.grant_privilege(integer)    -> fixnum
+ *     Process::GID.eid = integer               -> fixnum
  *
  *  Set the effective group ID, and if possible, the saved group ID of
  *  the process to the given _integer_. Returns the new
@@ -5026,7 +5026,7 @@ p_gid_grant_privilege(VALUE obj, VALUE id)
 
 /*
  *  call-seq:
- *     Process::UID.re_exchangeable?   => true or false
+ *     Process::UID.re_exchangeable?   -> true or false
  *
  *  Returns +true+ if the real and effective user IDs of a
  *  process may be exchanged on the current platform.
@@ -5048,7 +5048,7 @@ p_uid_exchangeable(void)
 
 /*
  *  call-seq:
- *     Process::UID.re_exchange   => fixnum
+ *     Process::UID.re_exchange   -> fixnum
  *
  *  Exchange real and effective user IDs and return the new effective
  *  user ID. Not available on all platforms.
@@ -5083,7 +5083,7 @@ p_uid_exchange(VALUE obj)
 
 /*
  *  call-seq:
- *     Process::GID.re_exchangeable?   => true or false
+ *     Process::GID.re_exchangeable?   -> true or false
  *
  *  Returns +true+ if the real and effective group IDs of a
  *  process may be exchanged on the current platform.
@@ -5105,7 +5105,7 @@ p_gid_exchangeable(void)
 
 /*
  *  call-seq:
- *     Process::GID.re_exchange   => fixnum
+ *     Process::GID.re_exchange   -> fixnum
  *
  *  Exchange real and effective group IDs and return the new effective
  *  group ID. Not available on all platforms.
@@ -5141,7 +5141,7 @@ p_gid_exchange(VALUE obj)
 
 /*
  *  call-seq:
- *     Process::UID.sid_available?   => true or false
+ *     Process::UID.sid_available?   -> true or false
  *
  *  Returns +true+ if the current platform has saved user
  *  ID functionality.
@@ -5171,8 +5171,8 @@ p_uid_sw_ensure(rb_uid_t id)
 
 /*
  *  call-seq:
- *     Process::UID.switch              => fixnum
- *     Process::UID.switch {|| block}   => object
+ *     Process::UID.switch              -> fixnum
+ *     Process::UID.switch {|| block}   -> object
  *
  *  Switch the effective and real user IDs of the current process. If
  *  a <em>block</em> is given, the user IDs will be switched back
@@ -5250,7 +5250,7 @@ p_uid_switch(VALUE obj)
 
 /*
  *  call-seq:
- *     Process::GID.sid_available?   => true or false
+ *     Process::GID.sid_available?   -> true or false
  *
  *  Returns +true+ if the current platform has saved group
  *  ID functionality.
@@ -5279,8 +5279,8 @@ p_gid_sw_ensure(rb_gid_t id)
 
 /*
  *  call-seq:
- *     Process::GID.switch              => fixnum
- *     Process::GID.switch {|| block}   => object
+ *     Process::GID.switch              -> fixnum
+ *     Process::GID.switch {|| block}   -> object
  *
  *  Switch the effective and real group IDs of the current process. If
  *  a <em>block</em> is given, the group IDs will be switched back
@@ -5359,7 +5359,7 @@ p_gid_switch(VALUE obj)
 #if defined(HAVE_TIMES)
 /*
  *  call-seq:
- *     Process.times   => aStructTms
+ *     Process.times   -> aStructTms
  *
  *  Returns a <code>Tms</code> structure (see <code>Struct::Tms</code>
  *  on page 388) that contains user and system CPU times for this

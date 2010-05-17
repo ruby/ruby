@@ -806,7 +806,7 @@ cont_restore_0(rb_context_t *cont, VALUE *addr_in_prev_frame)
 
 /*
  *  call-seq:
- *     callcc {|cont| block }   =>  obj
+ *     callcc {|cont| block }   ->  obj
  *
  *  Generates a <code>Continuation</code> object, which it passes to the
  *  associated block. Performing a <em>cont</em><code>.call</code> will

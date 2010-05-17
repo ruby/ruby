@@ -485,7 +485,7 @@ rb_memerror(void)
 
 /*
  *  call-seq:
- *    GC.stress                 => true or false
+ *    GC.stress                 -> true or false
  *
  *  returns current status of GC stress mode.
  */
@@ -499,7 +499,7 @@ gc_stress_get(VALUE self)
 
 /*
  *  call-seq:
- *    GC.stress = bool          => bool
+ *    GC.stress = bool          -> bool
  *
  *  updates GC stress mode.
  *
@@ -520,7 +520,7 @@ gc_stress_set(VALUE self, VALUE flag)
 
 /*
  *  call-seq:
- *    GC::Profiler.enable?                 => true or false
+ *    GC::Profiler.enable?                 -> true or false
  *
  *  returns current status of GC profile mode.
  */
@@ -534,7 +534,7 @@ gc_profile_enable_get(VALUE self)
 
 /*
  *  call-seq:
- *    GC::Profiler.enable          => nil
+ *    GC::Profiler.enable          -> nil
  *
  *  updates GC profile mode.
  *  start profiler for GC.
@@ -552,7 +552,7 @@ gc_profile_enable(void)
 
 /*
  *  call-seq:
- *    GC::Profiler.disable          => nil
+ *    GC::Profiler.disable          -> nil
  *
  *  updates GC profile mode.
  *  stop profiler for GC.
@@ -570,7 +570,7 @@ gc_profile_disable(void)
 
 /*
  *  call-seq:
- *    GC::Profiler.clear          => nil
+ *    GC::Profiler.clear          -> nil
  *
  *  clear before profile data.
  *
@@ -782,7 +782,7 @@ ruby_xfree(void *x)
 
 /*
  *  call-seq:
- *     GC.enable    => true or false
+ *     GC.enable    -> true or false
  *
  *  Enables garbage collection, returning <code>true</code> if garbage
  *  collection was previously disabled.
@@ -805,7 +805,7 @@ rb_gc_enable(void)
 
 /*
  *  call-seq:
- *     GC.disable    => true or false
+ *     GC.disable    -> true or false
  *
  *  Disables garbage collection, returning <code>true</code> if garbage
  *  collection was already disabled.
@@ -2237,9 +2237,9 @@ rb_gc_mark_machine_stack(rb_thread_t *th)
 
 /*
  *  call-seq:
- *     GC.start                     => nil
- *     gc.garbage_collect           => nil
- *     ObjectSpace.garbage_collect  => nil
+ *     GC.start                     -> nil
+ *     gc.garbage_collect           -> nil
+ *     ObjectSpace.garbage_collect  -> nil
  *
  *  Initiates garbage collection, unless manually disabled.
  *
@@ -2423,8 +2423,8 @@ os_obj_of(VALUE of)
 
 /*
  *  call-seq:
- *     ObjectSpace.each_object([module]) {|obj| ... } => fixnum
- *     ObjectSpace.each_object([module])              => an_enumerator
+ *     ObjectSpace.each_object([module]) {|obj| ... } -> fixnum
+ *     ObjectSpace.each_object([module])              -> an_enumerator
  *
  *  Calls the block once for each living, nonimmediate object in this
  *  Ruby process. If <i>module</i> is specified, calls the block
@@ -2804,8 +2804,8 @@ id2ref(VALUE obj, VALUE objid)
  *  Document-method: object_id
  *
  *  call-seq:
- *     obj.__id__       => fixnum
- *     obj.object_id    => fixnum
+ *     obj.__id__       -> fixnum
+ *     obj.object_id    -> fixnum
  *
  *  Returns an integer identifier for <i>obj</i>. The same number will
  *  be returned on all calls to <code>id</code> for a given object, and
@@ -2817,7 +2817,7 @@ id2ref(VALUE obj, VALUE objid)
 
 /*
  *  call-seq:
- *     obj.hash    => fixnum
+ *     obj.hash    -> fixnum
  *
  *  Generates a <code>Fixnum</code> hash value for this object. This
  *  function must have the property that <code>a.eql?(b)</code> implies

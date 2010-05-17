@@ -838,7 +838,7 @@ clear_dump_arg(struct dump_arg *arg)
 
 /*
  * call-seq:
- *      dump( obj [, anIO] , limit=--1 ) => anIO
+ *      dump( obj [, anIO] , limit=--1 ) -> anIO
  *
  * Serializes obj and all descendant objects. If anIO is
  * specified, the serialized data will be written to it, otherwise the
@@ -1722,8 +1722,8 @@ clear_load_arg(struct load_arg *arg)
 
 /*
  * call-seq:
- *     load( source [, proc] ) => obj
- *     restore( source [, proc] ) => obj
+ *     load( source [, proc] ) -> obj
+ *     restore( source [, proc] ) -> obj
  *
  * Returns the result of converting the serialized data in source into a
  * Ruby object (possibly with associated subordinate objects). source

@@ -69,7 +69,7 @@ rb_range_new(VALUE beg, VALUE end, int exclude_end)
 
 /*
  *  call-seq:
- *     Range.new(start, end, exclusive=false)    => range
+ *     Range.new(start, end, exclusive=false)    -> range
  *
  *  Constructs a range using the given <i>start</i> and <i>end</i>. If the third
  *  parameter is omitted or is <code>false</code>, the <i>range</i> will include
@@ -94,7 +94,7 @@ range_initialize(int argc, VALUE *argv, VALUE range)
 
 /*
  *  call-seq:
- *     rng.exclude_end?    => true or false
+ *     rng.exclude_end?    -> true or false
  *
  *  Returns <code>true</code> if <i>rng</i> excludes its end value.
  */
@@ -122,7 +122,7 @@ recursive_equal(VALUE range, VALUE obj, int recur)
 
 /*
  *  call-seq:
- *     rng == obj    => true or false
+ *     rng == obj    -> true or false
  *
  *  Returns <code>true</code> only if <i>obj</i> is a Range, has equivalent
  *  beginning and end items (by comparing them with <code>==</code>), and has
@@ -190,7 +190,7 @@ recursive_eql(VALUE range, VALUE obj, int recur)
 
 /*
  *  call-seq:
- *     rng.eql?(obj)    => true or false
+ *     rng.eql?(obj)    -> true or false
  *
  *  Returns <code>true</code> only if <i>obj</i> is a Range, has equivalent
  *  beginning and end items (by comparing them with #eql?), and has the same
@@ -233,7 +233,7 @@ recursive_hash(VALUE range, VALUE dummy, int recur)
 
 /*
  * call-seq:
- *   rng.hash    => fixnum
+ *   rng.hash    -> fixnum
  *
  * Generate a hash value such that two ranges with the same start and
  * end points, and the same value for the "exclude end" flag, generate
@@ -318,8 +318,8 @@ discrete_object_p(VALUE obj)
 
 /*
  *  call-seq:
- *     rng.step(n=1) {| obj | block }    => rng
- *     rng.step(n=1)                     => an_enumerator
+ *     rng.step(n=1) {| obj | block }    -> rng
+ *     rng.step(n=1)                     -> an_enumerator
  *
  *  Iterates over <i>rng</i>, passing each <i>n</i>th element to the block. If
  *  the range contains numbers, <i>n</i> is added for each iteration.  Otherwise
@@ -455,8 +455,8 @@ sym_each_i(VALUE v, void *arg)
 
 /*
  *  call-seq:
- *     rng.each {| i | block } => rng
- *     rng.each                => an_enumerator
+ *     rng.each {| i | block } -> rng
+ *     rng.each                -> an_enumerator
  *
  *  Iterates over the elements <i>rng</i>, passing each in turn to the
  *  block. You can only iterate if the start object of the range
@@ -524,7 +524,7 @@ range_each(VALUE range)
 
 /*
  *  call-seq:
- *     rng.begin    => obj
+ *     rng.begin    -> obj
  *
  *  Returns the first object in <i>rng</i>.
  */
@@ -538,7 +538,7 @@ range_begin(VALUE range)
 
 /*
  *  call-seq:
- *     rng.end    => obj
+ *     rng.end    -> obj
  *
  *  Returns the object that defines the end of <i>rng</i>.
  *
@@ -570,8 +570,8 @@ first_i(VALUE i, VALUE *ary)
 
 /*
  *  call-seq:
- *     rng.first    => obj
- *     rng.first(n) => an_array
+ *     rng.first    -> obj
+ *     rng.first(n) -> an_array
  *
  *  Returns the first object in <i>rng</i>, or the first +n+ elements.
  */
@@ -594,8 +594,8 @@ range_first(int argc, VALUE *argv, VALUE range)
 
 /*
  *  call-seq:
- *     rng.last    => obj
- *     rng.last(n) => an_array
+ *     rng.last    -> obj
+ *     rng.last(n) -> an_array
  *
  *  Returns the last object in <i>rng</i>, or the last +n+ elements.
  */
@@ -612,8 +612,8 @@ range_last(int argc, VALUE *argv, VALUE range)
 
 /*
  *  call-seq:
- *     rng.min                    => obj
- *     rng.min {| a,b | block }   => obj
+ *     rng.min                    -> obj
+ *     rng.min {| a,b | block }   -> obj
  *
  *  Returns the minimum value in <i>rng</i>. The second uses
  *  the block to compare values.  Returns nil if the first
@@ -641,8 +641,8 @@ range_min(VALUE range)
 
 /*
  *  call-seq:
- *     rng.max                    => obj
- *     rng.max {| a,b | block }   => obj
+ *     rng.max                    -> obj
+ *     rng.max {| a,b | block }   -> obj
  *
  *  Returns the maximum value in <i>rng</i>. The second uses
  *  the block to compare values.  Returns nil if the first
@@ -749,7 +749,7 @@ rb_range_beg_len(VALUE range, long *begp, long *lenp, long len, int err)
 
 /*
  * call-seq:
- *   rng.to_s   => string
+ *   rng.to_s   -> string
  *
  * Convert this range object to a printable form.
  */
@@ -789,7 +789,7 @@ inspect_range(VALUE range, VALUE dummy, int recur)
 
 /*
  * call-seq:
- *   rng.inspect  => string
+ *   rng.inspect  -> string
  *
  * Convert this range object to a printable form (using
  * <code>inspect</code> to convert the start and end
@@ -805,7 +805,7 @@ range_inspect(VALUE range)
 
 /*
  *  call-seq:
- *     rng === obj       =>  true or false
+ *     rng === obj       ->  true or false
  *
  *  Returns <code>true</code> if <i>obj</i> is an element of
  *  <i>rng</i>, <code>false</code> otherwise. Conveniently,
@@ -832,15 +832,15 @@ range_eqq(VALUE range, VALUE val)
 
 /*
  *  call-seq:
- *     rng.member?(val)  =>  true or false
- *     rng.include?(val) =>  true or false
+ *     rng.member?(val)  ->  true or false
+ *     rng.include?(val) ->  true or false
  *
  *  Returns <code>true</code> if <i>obj</i> is an element of
  *  <i>rng</i>, <code>false</code> otherwise.  If beg and end are
  *  numeric, comparison is done according magnitude of values.
  *
- *     ("a".."z").include?("g")  # => true
- *     ("a".."z").include?("A")  # => false
+ *     ("a".."z").include?("g")  # -> true
+ *     ("a".."z").include?("A")  # -> false
  */
 
 static VALUE
@@ -893,7 +893,7 @@ range_include(VALUE range, VALUE val)
 
 /*
  *  call-seq:
- *     rng.cover?(val)  =>  true or false
+ *     rng.cover?(val)  ->  true or false
  *
  *  Returns <code>true</code> if <i>obj</i> is between beg and end,
  *  i.e <code>beg <= obj <= end</code> (or <i>end</i> exclusive when
