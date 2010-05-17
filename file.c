@@ -215,7 +215,7 @@ apply2files(void (*func)(const char *, void *), VALUE vargs, void *arg)
 
 /*
  *  call-seq:
- *     file.path -> filename
+ *     file.path  ->  filename
  *
  *  Returns the pathname used to create <i>file</i> as a string. Does
  *  not normalize the name.
@@ -278,7 +278,7 @@ static struct timespec stat_mtimespec(struct stat *st);
 
 /*
  *  call-seq:
- *     stat <=> other_stat   ->-1, 0, 1, nil
+ *     stat <=> other_stat    -> -1, 0, 1, nil
  *
  *  Compares <code>File::Stat</code> objects by comparing their
  *  respective modification times.
@@ -310,7 +310,7 @@ rb_stat_cmp(VALUE self, VALUE other)
 
 /*
  *  call-seq:
- *     stat.dev   ->fixnum
+ *     stat.dev    -> fixnum
  *
  *  Returns an integer representing the device on which <i>stat</i>
  *  resides.
@@ -326,7 +326,7 @@ rb_stat_dev(VALUE self)
 
 /*
  *  call-seq:
- *     stat.dev_major  ->fixnum
+ *     stat.dev_major   -> fixnum
  *
  *  Returns the major part of <code>File_Stat#dev</code> or
  *  <code>nil</code>.
@@ -348,7 +348,7 @@ rb_stat_dev_major(VALUE self)
 
 /*
  *  call-seq:
- *     stat.dev_minor  ->fixnum
+ *     stat.dev_minor   -> fixnum
  *
  *  Returns the minor part of <code>File_Stat#dev</code> or
  *  <code>nil</code>.
@@ -370,7 +370,7 @@ rb_stat_dev_minor(VALUE self)
 
 /*
  *  call-seq:
- *     stat.ino  ->fixnum
+ *     stat.ino   -> fixnum
  *
  *  Returns the inode number for <i>stat</i>.
  *
@@ -390,7 +390,7 @@ rb_stat_ino(VALUE self)
 
 /*
  *  call-seq:
- *     stat.mode  ->fixnum
+ *     stat.mode   -> fixnum
  *
  *  Returns an integer representing the permission bits of
  *  <i>stat</i>. The meaning of the bits is platform dependent; on
@@ -409,7 +409,7 @@ rb_stat_mode(VALUE self)
 
 /*
  *  call-seq:
- *     stat.nlink  ->fixnum
+ *     stat.nlink   -> fixnum
  *
  *  Returns the number of hard links to <i>stat</i>.
  *
@@ -427,7 +427,7 @@ rb_stat_nlink(VALUE self)
 
 /*
  *  call-seq:
- *     stat.uid   ->fixnum
+ *     stat.uid    -> fixnum
  *
  *  Returns the numeric user id of the owner of <i>stat</i>.
  *
@@ -443,7 +443,7 @@ rb_stat_uid(VALUE self)
 
 /*
  *  call-seq:
- *     stat.gid  ->fixnum
+ *     stat.gid   -> fixnum
  *
  *  Returns the numeric group id of the owner of <i>stat</i>.
  *
@@ -459,7 +459,7 @@ rb_stat_gid(VALUE self)
 
 /*
  *  call-seq:
- *     stat.rdev  -> fixnum or nil
+ *     stat.rdev   ->  fixnum or nil
  *
  *  Returns an integer representing the device type on which
  *  <i>stat</i> resides. Returns <code>nil</code> if the operating
@@ -481,7 +481,7 @@ rb_stat_rdev(VALUE self)
 
 /*
  *  call-seq:
- *     stat.rdev_major  ->fixnum
+ *     stat.rdev_major   -> fixnum
  *
  *  Returns the major part of <code>File_Stat#rdev</code> or
  *  <code>nil</code>.
@@ -503,7 +503,7 @@ rb_stat_rdev_major(VALUE self)
 
 /*
  *  call-seq:
- *     stat.rdev_minor  ->fixnum
+ *     stat.rdev_minor   -> fixnum
  *
  *  Returns the minor part of <code>File_Stat#rdev</code> or
  *  <code>nil</code>.
@@ -525,7 +525,7 @@ rb_stat_rdev_minor(VALUE self)
 
 /*
  *  call-seq:
- *     stat.size   ->fixnum
+ *     stat.size    -> fixnum
  *
  *  Returns the size of <i>stat</i> in bytes.
  *
@@ -540,7 +540,7 @@ rb_stat_size(VALUE self)
 
 /*
  *  call-seq:
- *     stat.blksize  ->integer or nil
+ *     stat.blksize   -> integer or nil
  *
  *  Returns the native file system's block size. Will return <code>nil</code>
  *  on platforms that don't support this information.
@@ -561,7 +561,7 @@ rb_stat_blksize(VALUE self)
 
 /*
  *  call-seq:
- *     stat.blocks   ->integer or nil
+ *     stat.blocks    -> integer or nil
  *
  *  Returns the number of native file system blocks allocated for this
  *  file, or <code>nil</code> if the operating system doesn't
@@ -658,7 +658,7 @@ stat_ctime(struct stat *st)
 
 /*
  *  call-seq:
- *     stat.atime  ->time
+ *     stat.atime   -> time
  *
  *  Returns the last access time for this file as an object of class
  *  <code>Time</code>.
@@ -675,7 +675,7 @@ rb_stat_atime(VALUE self)
 
 /*
  *  call-seq:
- *     stat.mtime -> aTime
+ *     stat.mtime  ->  aTime
  *
  *  Returns the modification time of <i>stat</i>.
  *
@@ -691,7 +691,7 @@ rb_stat_mtime(VALUE self)
 
 /*
  *  call-seq:
- *     stat.ctime -> aTime
+ *     stat.ctime  ->  aTime
  *
  *  Returns the change time for <i>stat</i> (that is, the time
  *  directory information about the file was changed, not the file
@@ -709,7 +709,7 @@ rb_stat_ctime(VALUE self)
 
 /*
  * call-seq:
- *   stat.inspect -> string
+ *   stat.inspect  ->  string
  *
  * Produce a nicely formatted description of <i>stat</i>.
  *
@@ -840,7 +840,7 @@ w32_io_info(VALUE *file, BY_HANDLE_FILE_INFORMATION *st)
 
 /*
  *  call-seq:
- *     File.stat(file_name)  -> stat
+ *     File.stat(file_name)   ->  stat
  *
  *  Returns a <code>File::Stat</code> object for the named file (see
  *  <code>File::Stat</code>).
@@ -864,7 +864,7 @@ rb_file_s_stat(VALUE klass, VALUE fname)
 
 /*
  *  call-seq:
- *     ios.stat   ->stat
+ *     ios.stat    -> stat
  *
  *  Returns status information for <em>ios</em> as an object of type
  *  <code>File::Stat</code>.
@@ -893,7 +893,7 @@ rb_io_stat(VALUE obj)
 
 /*
  *  call-seq:
- *     File.lstat(file_name)  ->stat
+ *     File.lstat(file_name)   -> stat
  *
  *  Same as <code>File::stat</code>, but does not follow the last symbolic
  *  link. Instead, reports on the link itself.
@@ -925,7 +925,7 @@ rb_file_s_lstat(VALUE klass, VALUE fname)
 
 /*
  *  call-seq:
- *     file.lstat  -> stat
+ *     file.lstat   ->  stat
  *
  *  Same as <code>IO#stat</code>, but does not follow the last symbolic
  *  link. Instead, reports on the link itself.
@@ -1053,8 +1053,8 @@ access_internal(const char *path, int mode)
  */
 
 /*
- *   File.directory?(file_name)  -> true or false
- *   File.directory?(file_name)  -> true or false
+ *   File.directory?(file_name)   ->  true or false
+ *   File.directory?(file_name)   ->  true or false
  *
  * Returns <code>true</code> if the named file is a directory,
  * <code>false</code> otherwise.
@@ -1066,8 +1066,8 @@ access_internal(const char *path, int mode)
  * Document-method: exist?
  *
  * call-seq:
- *   Dir.exist?(file_name)  -> true or false
- *   Dir.exists?(file_name)  -> true or false
+ *   Dir.exist?(file_name)   ->  true or false
+ *   Dir.exists?(file_name)   ->  true or false
  *
  * Returns <code>true</code> if the named file is a directory,
  * <code>false</code> otherwise.
@@ -1078,7 +1078,7 @@ access_internal(const char *path, int mode)
  * Document-method: directory?
  *
  * call-seq:
- *   File.directory?(file_name)  -> true or false
+ *   File.directory?(file_name)   ->  true or false
  *
  * Returns <code>true</code> if the named file is a directory,
  * <code>false</code> otherwise.
@@ -1102,7 +1102,7 @@ rb_file_directory_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.pipe?(file_name)  -> true or false
+ *   File.pipe?(file_name)   ->  true or false
  *
  * Returns <code>true</code> if the named file is a pipe.
  */
@@ -1126,7 +1126,7 @@ rb_file_pipe_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.symlink?(file_name)  -> true or false
+ *   File.symlink?(file_name)   ->  true or false
  *
  * Returns <code>true</code> if the named file is a symbolic link.
  */
@@ -1163,7 +1163,7 @@ rb_file_symlink_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.socket?(file_name)  -> true or false
+ *   File.socket?(file_name)   ->  true or false
  *
  * Returns <code>true</code> if the named file is a socket.
  */
@@ -1197,7 +1197,7 @@ rb_file_socket_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.blockdev?(file_name)  -> true or false
+ *   File.blockdev?(file_name)   ->  true or false
  *
  * Returns <code>true</code> if the named file is a block device.
  */
@@ -1225,7 +1225,7 @@ rb_file_blockdev_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.chardev?(file_name)  -> true or false
+ *   File.chardev?(file_name)   ->  true or false
  *
  * Returns <code>true</code> if the named file is a character device.
  */
@@ -1246,8 +1246,8 @@ rb_file_chardev_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *    File.exist?(file_name)   -> true or false
- *    File.exists?(file_name)  -> true or false
+ *    File.exist?(file_name)    ->  true or false
+ *    File.exists?(file_name)   ->  true or false
  *
  * Return <code>true</code> if the named file exists.
  */
@@ -1263,7 +1263,7 @@ rb_file_exist_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *    File.readable?(file_name)  ->true or false
+ *    File.readable?(file_name)   -> true or false
  *
  * Returns <code>true</code> if the named file is readable by the effective
  * user id of this process.
@@ -1281,7 +1281,7 @@ rb_file_readable_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *    File.readable_real?(file_name)  ->true or false
+ *    File.readable_real?(file_name)   -> true or false
  *
  * Returns <code>true</code> if the named file is readable by the real
  * user id of this process.
@@ -1307,7 +1307,7 @@ rb_file_readable_real_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *    File.world_readable?(file_name)  ->fixnum or nil
+ *    File.world_readable?(file_name)   -> fixnum or nil
  *
  * If <i>file_name</i> is readable by others, returns an integer
  * representing the file permission bits of <i>file_name</i>. Returns
@@ -1335,7 +1335,7 @@ rb_file_world_readable_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *    File.writable?(file_name)  ->true or false
+ *    File.writable?(file_name)   -> true or false
  *
  * Returns <code>true</code> if the named file is writable by the effective
  * user id of this process.
@@ -1353,7 +1353,7 @@ rb_file_writable_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *    File.writable_real?(file_name)  ->true or false
+ *    File.writable_real?(file_name)   -> true or false
  *
  * Returns <code>true</code> if the named file is writable by the real
  * user id of this process.
@@ -1371,7 +1371,7 @@ rb_file_writable_real_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *    File.world_writable?(file_name)  ->fixnum or nil
+ *    File.world_writable?(file_name)   -> fixnum or nil
  *
  * If <i>file_name</i> is writable by others, returns an integer
  * representing the file permission bits of <i>file_name</i>. Returns
@@ -1399,7 +1399,7 @@ rb_file_world_writable_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *    File.executable?(file_name)  ->true or false
+ *    File.executable?(file_name)   -> true or false
  *
  * Returns <code>true</code> if the named file is executable by the effective
  * user id of this process.
@@ -1417,7 +1417,7 @@ rb_file_executable_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *    File.executable_real?(file_name)  ->true or false
+ *    File.executable_real?(file_name)   -> true or false
  *
  * Returns <code>true</code> if the named file is executable by the real
  * user id of this process.
@@ -1439,7 +1439,7 @@ rb_file_executable_real_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *    File.file?(file_name)  ->true or false
+ *    File.file?(file_name)   -> true or false
  *
  * Returns <code>true</code> if the named file exists and is a
  * regular file.
@@ -1457,7 +1457,7 @@ rb_file_file_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *    File.zero?(file_name)  ->true or false
+ *    File.zero?(file_name)   -> true or false
  *
  * Returns <code>true</code> if the named file exists and has
  * a zero size.
@@ -1475,7 +1475,7 @@ rb_file_zero_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *    File.size?(file_name)  ->Integer or nil
+ *    File.size?(file_name)   -> Integer or nil
  *
  * Returns +nil+ if +file_name+ doesn't exist or has zero size, the size of the
  * file otherwise.
@@ -1493,7 +1493,7 @@ rb_file_size_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *    File.owned?(file_name)  ->true or false
+ *    File.owned?(file_name)   -> true or false
  *
  * Returns <code>true</code> if the named file exists and the
  * effective used id of the calling process is the owner of
@@ -1522,7 +1522,7 @@ rb_file_rowned_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *    File.grpowned?(file_name)  ->true or false
+ *    File.grpowned?(file_name)   -> true or false
  *
  * Returns <code>true</code> if the named file exists and the
  * effective group id of the calling process is the owner of
@@ -1558,7 +1558,7 @@ check3rdbyte(VALUE fname, int mode)
 
 /*
  * call-seq:
- *   File.setuid?(file_name)  -> true or false
+ *   File.setuid?(file_name)   ->  true or false
  *
  * Returns <code>true</code> if the named file has the setuid bit set.
  */
@@ -1575,7 +1575,7 @@ rb_file_suid_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.setgid?(file_name)  -> true or false
+ *   File.setgid?(file_name)   ->  true or false
  *
  * Returns <code>true</code> if the named file has the setgid bit set.
  */
@@ -1592,7 +1592,7 @@ rb_file_sgid_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.sticky?(file_name)  -> true or false
+ *   File.sticky?(file_name)   ->  true or false
  *
  * Returns <code>true</code> if the named file has the sticky bit set.
  */
@@ -1609,7 +1609,7 @@ rb_file_sticky_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.identical?(file_1, file_2)  -> true or false
+ *   File.identical?(file_1, file_2)   ->  true or false
  *
  * Returns <code>true</code> if the named files are identical.
  *
@@ -1675,7 +1675,7 @@ rb_file_identical_p(VALUE obj, VALUE fname1, VALUE fname2)
 
 /*
  * call-seq:
- *    File.size(file_name)  ->integer
+ *    File.size(file_name)   -> integer
  *
  * Returns the size of <code>file_name</code>.
  */
@@ -1735,7 +1735,7 @@ rb_file_ftype(const struct stat *st)
 
 /*
  *  call-seq:
- *     File.ftype(file_name)  ->string
+ *     File.ftype(file_name)   -> string
  *
  *  Identifies the type of the named file; the return string is one of
  *  ``<code>file</code>'', ``<code>directory</code>'',
@@ -1765,7 +1765,7 @@ rb_file_s_ftype(VALUE klass, VALUE fname)
 
 /*
  *  call-seq:
- *     File.atime(file_name) -> time
+ *     File.atime(file_name)  ->  time
  *
  *  Returns the last access time for the named file as a Time object).
  *
@@ -1787,7 +1787,7 @@ rb_file_s_atime(VALUE klass, VALUE fname)
 
 /*
  *  call-seq:
- *     file.atime   ->time
+ *     file.atime    -> time
  *
  *  Returns the last access time (a <code>Time</code> object)
  *   for <i>file</i>, or epoch if <i>file</i> has not been accessed.
@@ -1811,7 +1811,7 @@ rb_file_atime(VALUE obj)
 
 /*
  *  call-seq:
- *     File.mtime(file_name) -> time
+ *     File.mtime(file_name)  ->  time
  *
  *  Returns the modification time for the named file as a Time object.
  *
@@ -1833,7 +1833,7 @@ rb_file_s_mtime(VALUE klass, VALUE fname)
 
 /*
  *  call-seq:
- *     file.mtime -> time
+ *     file.mtime  ->  time
  *
  *  Returns the modification time for <i>file</i>.
  *
@@ -1856,7 +1856,7 @@ rb_file_mtime(VALUE obj)
 
 /*
  *  call-seq:
- *     File.ctime(file_name) ->time
+ *     File.ctime(file_name)  -> time
  *
  *  Returns the change time for the named file (the time at which
  *  directory information about the file was changed, not the file
@@ -1880,7 +1880,7 @@ rb_file_s_ctime(VALUE klass, VALUE fname)
 
 /*
  *  call-seq:
- *     file.ctime -> time
+ *     file.ctime  ->  time
  *
  *  Returns the change time for <i>file</i> (that is, the time directory
  *  information about the file was changed, not the file itself).
@@ -1904,7 +1904,7 @@ rb_file_ctime(VALUE obj)
 
 /*
  *  call-seq:
- *     file.size   ->integer
+ *     file.size    -> integer
  *
  *  Returns the size of <i>file</i> in bytes.
  *
@@ -1937,7 +1937,7 @@ chmod_internal(const char *path, void *mode)
 
 /*
  *  call-seq:
- *     File.chmod(mode_int, file_name, ... ) -> integer
+ *     File.chmod(mode_int, file_name, ... )  ->  integer
  *
  *  Changes permission bits on the named file(s) to the bit pattern
  *  represented by <i>mode_int</i>. Actual effects are operating system
@@ -1966,7 +1966,7 @@ rb_file_s_chmod(int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     file.chmod(mode_int)  ->0
+ *     file.chmod(mode_int)   -> 0
  *
  *  Changes permission bits on <i>file</i> to the bit pattern
  *  represented by <i>mode_int</i>. Actual effects are platform
@@ -2013,7 +2013,7 @@ lchmod_internal(const char *path, void *mode)
 
 /*
  *  call-seq:
- *     File.lchmod(mode_int, file_name, ...) ->integer
+ *     File.lchmod(mode_int, file_name, ...)  -> integer
  *
  *  Equivalent to <code>File::chmod</code>, but does not follow symbolic
  *  links (so it will change the permissions associated with the link,
@@ -2054,7 +2054,7 @@ chown_internal(const char *path, void *arg)
 
 /*
  *  call-seq:
- *     File.chown(owner_int, group_int, file_name,... ) -> integer
+ *     File.chown(owner_int, group_int, file_name,... )  ->  integer
  *
  *  Changes the owner and group of the named file(s) to the given
  *  numeric owner and group id's. Only a process with superuser
@@ -2095,7 +2095,7 @@ rb_file_s_chown(int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     file.chown(owner_int, group_int )  ->0
+ *     file.chown(owner_int, group_int )   -> 0
  *
  *  Changes the owner and group of <i>file</i> to the given numeric
  *  owner and group id's. Only a process with superuser privileges may
@@ -2292,7 +2292,7 @@ utime_internal(const char *path, void *arg)
 
 /*
  * call-seq:
- *  File.utime(atime, mtime, file_name,...)  -> integer
+ *  File.utime(atime, mtime, file_name,...)   ->  integer
  *
  * Sets the access and modification times of each
  * named file to the first two arguments. Returns
@@ -2357,7 +2357,7 @@ sys_fail2(VALUE s1, VALUE s2)
 #ifdef HAVE_LINK
 /*
  *  call-seq:
- *     File.link(old_name, new_name)   ->0
+ *     File.link(old_name, new_name)    -> 0
  *
  *  Creates a new name for an existing file using a hard link. Will not
  *  overwrite <i>new_name</i> if it already exists (raising a subclass
@@ -2388,7 +2388,7 @@ rb_file_s_link(VALUE klass, VALUE from, VALUE to)
 #ifdef HAVE_SYMLINK
 /*
  *  call-seq:
- *     File.symlink(old_name, new_name)  ->0
+ *     File.symlink(old_name, new_name)   -> 0
  *
  *  Creates a symbolic link called <i>new_name</i> for the existing file
  *  <i>old_name</i>. Raises a <code>NotImplemented</code> exception on
@@ -2419,7 +2419,7 @@ rb_file_s_symlink(VALUE klass, VALUE from, VALUE to)
 #ifdef HAVE_READLINK
 /*
  *  call-seq:
- *     File.readlink(link_name) -> file_name
+ *     File.readlink(link_name)  ->  file_name
  *
  *  Returns the name of the file referenced by the given link.
  *  Not available on all platforms.
@@ -2470,8 +2470,8 @@ unlink_internal(const char *path, void *arg)
 
 /*
  *  call-seq:
- *     File.delete(file_name, ...) ->integer
- *     File.unlink(file_name, ...) ->integer
+ *     File.delete(file_name, ...)  -> integer
+ *     File.unlink(file_name, ...)  -> integer
  *
  *  Deletes the named files, returning the number of names
  *  passed as arguments. Raises an exception on any error.
@@ -2490,7 +2490,7 @@ rb_file_s_unlink(VALUE klass, VALUE args)
 
 /*
  *  call-seq:
- *     File.rename(old_name, new_name)  ->0
+ *     File.rename(old_name, new_name)   -> 0
  *
  *  Renames the given file to the new name. Raises a
  *  <code>SystemCallError</code> if the file cannot be renamed.
@@ -2535,8 +2535,8 @@ rb_file_s_rename(VALUE klass, VALUE from, VALUE to)
 
 /*
  *  call-seq:
- *     File.umask()         ->integer
- *     File.umask(integer)  ->integer
+ *     File.umask()          -> integer
+ *     File.umask(integer)   -> integer
  *
  *  Returns the current umask value for this process. If the optional
  *  argument is given, set the umask to that value and return the
@@ -3131,7 +3131,7 @@ rb_file_expand_path(VALUE fname, VALUE dname)
 
 /*
  *  call-seq:
- *     File.expand_path(file_name [, dir_string] ) -> abs_file_name
+ *     File.expand_path(file_name [, dir_string] )  ->  abs_file_name
  *
  *  Converts a pathname to an absolute pathname. Relative paths are
  *  referenced from the current working directory of the process unless
@@ -3168,7 +3168,7 @@ rb_file_absolute_path(VALUE fname, VALUE dname)
 
 /*
  *  call-seq:
- *     File.absolute_path(file_name [, dir_string] ) -> abs_file_name
+ *     File.absolute_path(file_name [, dir_string] )  ->  abs_file_name
  *
  *  Converts a pathname to an absolute pathname. Relative paths are
  *  referenced from the current working directory of the process unless
@@ -3350,7 +3350,7 @@ rb_realpath_internal(VALUE basedir, VALUE path, int strict)
 
 /*
  * call-seq:
- *     File.realpath(pathname [, dir_string]) -> real_pathname
+ *     File.realpath(pathname [, dir_string])  ->  real_pathname
  *
  *  Returns the real (absolute) pathname of _pathname_ in the actual
  *  filesystem not containing symlinks or useless dots.
@@ -3371,7 +3371,7 @@ rb_file_s_realpath(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *     File.realdirpath(pathname [, dir_string]) -> real_pathname
+ *     File.realdirpath(pathname [, dir_string])  ->  real_pathname
  *
  *  Returns the real (absolute) pathname of _pathname_ in the actual filesystem.
  *  The real pathname doesn't contain symlinks or useless dots.
@@ -3423,7 +3423,7 @@ rmext(const char *p, long l1, const char *e)
 
 /*
  *  call-seq:
- *     File.basename(file_name [, suffix] ) -> base_name
+ *     File.basename(file_name [, suffix] )  ->  base_name
  *
  *  Returns the last component of the filename given in <i>file_name</i>,
  *  which must be formed using forward slashes (``<code>/</code>'')
@@ -3508,7 +3508,7 @@ rb_file_s_basename(int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     File.dirname(file_name ) -> dir_name
+ *     File.dirname(file_name )  ->  dir_name
  *
  *  Returns all components of the filename given in <i>file_name</i>
  *  except the last one. The filename must be formed using forward
@@ -3566,7 +3566,7 @@ rb_file_dirname(VALUE fname)
 
 /*
  *  call-seq:
- *     File.extname(path) -> string
+ *     File.extname(path)  ->  string
  *
  *  Returns the extension (the portion of file name in <i>path</i>
  *  after the period).
@@ -3631,7 +3631,7 @@ rb_file_s_extname(VALUE klass, VALUE fname)
 
 /*
  *  call-seq:
- *     File.path(path) -> string
+ *     File.path(path)  ->  string
  *
  *  Returns the string representation of the path
  *
@@ -3648,7 +3648,7 @@ rb_file_s_path(VALUE klass, VALUE fname)
 
 /*
  *  call-seq:
- *     File.split(file_name)  ->array
+ *     File.split(file_name)   -> array
  *
  *  Splits the given string into a directory and a file component and
  *  returns them in a two-element array. See also
@@ -3738,7 +3738,7 @@ rb_file_join(VALUE ary, VALUE sep)
 
 /*
  *  call-seq:
- *     File.join(string, ...) -> path
+ *     File.join(string, ...)  ->  path
  *
  *  Returns a new string formed by joining the strings using
  *  <code>File::SEPARATOR</code>.
@@ -3756,7 +3756,7 @@ rb_file_s_join(VALUE klass, VALUE args)
 #if defined(HAVE_TRUNCATE) || defined(HAVE_CHSIZE)
 /*
  *  call-seq:
- *     File.truncate(file_name, integer) ->0
+ *     File.truncate(file_name, integer)  -> 0
  *
  *  Truncates the file <i>file_name</i> to be at most <i>integer</i>
  *  bytes long. Not available on all platforms.
@@ -3804,7 +3804,7 @@ rb_file_s_truncate(VALUE klass, VALUE path, VALUE len)
 #if defined(HAVE_FTRUNCATE) || defined(HAVE_CHSIZE)
 /*
  *  call-seq:
- *     file.truncate(integer)   ->0
+ *     file.truncate(integer)    -> 0
  *
  *  Truncates <i>file</i> to at most <i>integer</i> bytes. The file
  *  must be opened for writing. Not available on all platforms.
@@ -4203,7 +4203,7 @@ rb_stat_s_alloc(VALUE klass)
 /*
  * call-seq:
  *
- *   File::Stat.new(file_name) ->stat
+ *   File::Stat.new(file_name)  -> stat
  *
  * Create a File::Stat object for the given file name (raising an
  * exception if the file doesn't exist).
@@ -4258,7 +4258,7 @@ rb_stat_init_copy(VALUE copy, VALUE orig)
 
 /*
  *  call-seq:
- *     stat.ftype  ->string
+ *     stat.ftype   -> string
  *
  *  Identifies the type of <i>stat</i>. The return string is one of:
  *  ``<code>file</code>'', ``<code>directory</code>'',
@@ -4278,7 +4278,7 @@ rb_stat_ftype(VALUE obj)
 
 /*
  *  call-seq:
- *     stat.directory?  ->true or false
+ *     stat.directory?   -> true or false
  *
  *  Returns <code>true</code> if <i>stat</i> is a directory,
  *  <code>false</code> otherwise.
@@ -4296,7 +4296,7 @@ rb_stat_d(VALUE obj)
 
 /*
  *  call-seq:
- *     stat.pipe?   ->true or false
+ *     stat.pipe?    -> true or false
  *
  *  Returns <code>true</code> if the operating system supports pipes and
  *  <i>stat</i> is a pipe; <code>false</code> otherwise.
@@ -4314,7 +4314,7 @@ rb_stat_p(VALUE obj)
 
 /*
  *  call-seq:
- *     stat.symlink?   ->true or false
+ *     stat.symlink?    -> true or false
  *
  *  Returns <code>true</code> if <i>stat</i> is a symbolic link,
  *  <code>false</code> if it isn't or if the operating system doesn't
@@ -4340,7 +4340,7 @@ rb_stat_l(VALUE obj)
 
 /*
  *  call-seq:
- *     stat.socket?   ->true or false
+ *     stat.socket?    -> true or false
  *
  *  Returns <code>true</code> if <i>stat</i> is a socket,
  *  <code>false</code> if it isn't or if the operating system doesn't
@@ -4362,7 +4362,7 @@ rb_stat_S(VALUE obj)
 
 /*
  *  call-seq:
- *     stat.blockdev?  ->true or false
+ *     stat.blockdev?   -> true or false
  *
  *  Returns <code>true</code> if the file is a block device,
  *  <code>false</code> if it isn't or if the operating system doesn't
@@ -4385,7 +4385,7 @@ rb_stat_b(VALUE obj)
 
 /*
  *  call-seq:
- *     stat.chardev?   ->true or false
+ *     stat.chardev?    -> true or false
  *
  *  Returns <code>true</code> if the file is a character device,
  *  <code>false</code> if it isn't or if the operating system doesn't
@@ -4405,7 +4405,7 @@ rb_stat_c(VALUE obj)
 
 /*
  *  call-seq:
- *     stat.owned?   ->true or false
+ *     stat.owned?    -> true or false
  *
  *  Returns <code>true</code> if the effective user id of the process is
  *  the same as the owner of <i>stat</i>.
@@ -4431,7 +4431,7 @@ rb_stat_rowned(VALUE obj)
 
 /*
  *  call-seq:
- *     stat.grpowned?  ->true or false
+ *     stat.grpowned?   -> true or false
  *
  *  Returns true if the effective group id of the process is the same as
  *  the group id of <i>stat</i>. On Windows NT, returns <code>false</code>.
@@ -4452,7 +4452,7 @@ rb_stat_grpowned(VALUE obj)
 
 /*
  *  call-seq:
- *     stat.readable?   ->true or false
+ *     stat.readable?    -> true or false
  *
  *  Returns <code>true</code> if <i>stat</i> is readable by the
  *  effective user id of this process.
@@ -4485,7 +4485,7 @@ rb_stat_r(VALUE obj)
 
 /*
  *  call-seq:
- *     stat.readable_real? -> true or false
+ *     stat.readable_real?  ->  true or false
  *
  *  Returns <code>true</code> if <i>stat</i> is readable by the real
  *  user id of this process.
@@ -4544,7 +4544,7 @@ rb_stat_wr(VALUE obj)
 
 /*
  *  call-seq:
- *     stat.writable? -> true or false
+ *     stat.writable?  ->  true or false
  *
  *  Returns <code>true</code> if <i>stat</i> is writable by the
  *  effective user id of this process.
@@ -4577,7 +4577,7 @@ rb_stat_w(VALUE obj)
 
 /*
  *  call-seq:
- *     stat.writable_real? -> true or false
+ *     stat.writable_real?  ->  true or false
  *
  *  Returns <code>true</code> if <i>stat</i> is writable by the real
  *  user id of this process.
@@ -4610,7 +4610,7 @@ rb_stat_W(VALUE obj)
 
 /*
  * call-seq:
- *    stat.world_writable? -> fixnum or nil
+ *    stat.world_writable?  ->  fixnum or nil
  *
  * If <i>stat</i> is writable by others, returns an integer
  * representing the file permission bits of <i>stat</i>. Returns
@@ -4636,7 +4636,7 @@ rb_stat_ww(VALUE obj)
 
 /*
  *  call-seq:
- *     stat.executable?   ->true or false
+ *     stat.executable?    -> true or false
  *
  *  Returns <code>true</code> if <i>stat</i> is executable or if the
  *  operating system doesn't distinguish executable files from
@@ -4673,7 +4673,7 @@ rb_stat_x(VALUE obj)
 
 /*
  *  call-seq:
- *     stat.executable_real?   ->true or false
+ *     stat.executable_real?    -> true or false
  *
  *  Same as <code>executable?</code>, but tests using the real owner of
  *  the process.
@@ -4705,7 +4705,7 @@ rb_stat_X(VALUE obj)
 
 /*
  *  call-seq:
- *     stat.file?   ->true or false
+ *     stat.file?    -> true or false
  *
  *  Returns <code>true</code> if <i>stat</i> is a regular file (not
  *  a device file, pipe, socket, etc.).
@@ -4723,7 +4723,7 @@ rb_stat_f(VALUE obj)
 
 /*
  *  call-seq:
- *     stat.zero?   ->true or false
+ *     stat.zero?    -> true or false
  *
  *  Returns <code>true</code> if <i>stat</i> is a zero-length file;
  *  <code>false</code> otherwise.
@@ -4741,7 +4741,7 @@ rb_stat_z(VALUE obj)
 
 /*
  *  call-seq:
- *     state.size   ->integer
+ *     state.size    -> integer
  *
  *  Returns the size of <i>stat</i> in bytes.
  *
@@ -4760,7 +4760,7 @@ rb_stat_s(VALUE obj)
 
 /*
  *  call-seq:
- *     stat.setuid?   ->true or false
+ *     stat.setuid?    -> true or false
  *
  *  Returns <code>true</code> if <i>stat</i> has the set-user-id
  *  permission bit set, <code>false</code> if it doesn't or if the
@@ -4780,7 +4780,7 @@ rb_stat_suid(VALUE obj)
 
 /*
  *  call-seq:
- *     stat.setgid?  ->true or false
+ *     stat.setgid?   -> true or false
  *
  *  Returns <code>true</code> if <i>stat</i> has the set-group-id
  *  permission bit set, <code>false</code> if it doesn't or if the
@@ -4801,7 +4801,7 @@ rb_stat_sgid(VALUE obj)
 
 /*
  *  call-seq:
- *     stat.sticky?   ->true or false
+ *     stat.sticky?    -> true or false
  *
  *  Returns <code>true</code> if <i>stat</i> has its sticky bit set,
  *  <code>false</code> if it doesn't or if the operating system doesn't
