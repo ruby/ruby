@@ -1399,7 +1399,7 @@ rb_check_string_type(VALUE str)
  *  Returns converted string or nil if <i>obj</i> cannot be converted
  *  for any reason.
  *
- *     String.try_convert("str")     #=> str
+ *     String.try_convert("str")     #=> "str"
  *     String.try_convert(/re/)      #=> nil
  */
 static VALUE

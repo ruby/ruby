@@ -2117,13 +2117,7 @@ time_init_1(int argc, VALUE *argv, VALUE time)
 /*
  *  call-seq:
  *     Time.new -> time
- *     Time.new(year) -> time
- *     Time.new(year, month) -> time
- *     Time.new(year, month, day) -> time
- *     Time.new(year, month, day, hour) -> time
- *     Time.new(year, month, day, hour, min) -> time
- *     Time.new(year, month, day, hour, min, sec) -> time
- *     Time.new(year, month, day, hour, min, sec, utc_offset) -> time
+ *     Time.new(year, month=nil, day=nil, hour=nil, min=nil, sec=nil, utc_offset=nil) -> time
  *
  *  Returns a <code>Time</code> object.
  *
@@ -3089,7 +3083,7 @@ time_to_f(VALUE time)
 
 /*
  *  call-seq:
- *     time.to_r -> Rational
+ *     time.to_r -> a_rational
  *
  *  Returns the value of <i>time</i> as a rational number of seconds
  *  since the Epoch.
