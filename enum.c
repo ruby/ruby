@@ -513,12 +513,12 @@ inject_op_i(VALUE i, VALUE p, int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     enum.inject(initial, sym)->obj
+ *     enum.inject(initial, sym) -> obj
  *     enum.inject(sym)          -> obj
  *     enum.inject(initial) {| memo, obj | block }  -> obj
  *     enum.inject          {| memo, obj | block }  -> obj
  *
- *     enum.reduce(initial, sym)->obj
+ *     enum.reduce(initial, sym) -> obj
  *     enum.reduce(sym)          -> obj
  *     enum.reduce(initial) {| memo, obj | block }  -> obj
  *     enum.reduce          {| memo, obj | block }  -> obj
@@ -2257,8 +2257,8 @@ chunk_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     enum.chunk {|elt| ... }->an_enumerator
- *     enum.chunk(initial_state) {|elt, state| ... }->an_enumerator
+ *     enum.chunk {|elt| ... }                       -> an_enumerator
+ *     enum.chunk(initial_state) {|elt, state| ... } -> an_enumerator
  *
  *  Creates an enumerator for each chunked elements.
  *  The consecutive elements which have same block value are chunked.
@@ -2432,9 +2432,9 @@ slicebefore_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     enum.slice_before(pattern)->an_enumerator
- *     enum.slice_before {|elt| bool }->an_enumerator
- *     enum.slice_before(initial_state) {|elt, state| bool }->an_enumerator
+ *     enum.slice_before(pattern)                            -> an_enumerator
+ *     enum.slice_before {|elt| bool }                       -> an_enumerator
+ *     enum.slice_before(initial_state) {|elt, state| bool } -> an_enumerator
  *
  *  Creates an enumerator for each chunked elements.
  *  The beginnings of chunks are defined by _pattern_ and the block.

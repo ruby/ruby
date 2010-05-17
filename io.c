@@ -2556,7 +2556,7 @@ rb_io_gets(VALUE io)
  *  call-seq:
  *     ios.gets(sep=$/)     -> string or nil
  *     ios.gets(limit)      -> string or nil
- *     ios.gets(sep, limit)->string or nil
+ *     ios.gets(sep, limit) -> string or nil
  *
  *  Reads the next ``line'' from the I/O stream; lines are separated by
  *  <i>sep</i>. A separator of <code>nil</code> reads the entire
@@ -2645,7 +2645,7 @@ rb_io_set_lineno(VALUE io, VALUE lineno)
  *  call-seq:
  *     ios.readline(sep=$/)     -> string
  *     ios.readline(limit)      -> string
- *     ios.readline(sep, limit)->string
+ *     ios.readline(sep, limit) -> string
  *
  *  Reads a line as with <code>IO#gets</code>, but raises an
  *  <code>EOFError</code> on end of file.
@@ -2666,7 +2666,7 @@ rb_io_readline(int argc, VALUE *argv, VALUE io)
  *  call-seq:
  *     ios.readlines(sep=$/)     -> array
  *     ios.readlines(limit)      -> array
- *     ios.readlines(sep, limit)->array
+ *     ios.readlines(sep, limit) -> array
  *
  *  Reads all of the lines in <em>ios</em>, and returns them in
  *  <i>anArray</i>. Lines are separated by the optional <i>sep</i>. If
@@ -2703,7 +2703,7 @@ rb_io_readlines(int argc, VALUE *argv, VALUE io)
  *
  *     ios.each_line(sep=$/) {|line| block }    -> ios
  *     ios.each_line(limit) {|line| block }     -> ios
- *     ios.each_line(sep,limit) {|line| block }->ios
+ *     ios.each_line(sep,limit) {|line| block } -> ios
  *     ios.each_line(...)                       -> an_enumerator
  *
  *     ios.lines(sep=$/) {|line| block }        -> ios
@@ -5218,7 +5218,7 @@ pop_last_hash(int *argc_p, VALUE *argv)
 /*
  *  call-seq:
  *     IO.popen(cmd, mode="r" [, opt])               -> io
- *     IO.popen(cmd, mode="r" [, opt]) {|io| block }->obj
+ *     IO.popen(cmd, mode="r" [, opt]) {|io| block } -> obj
  *
  *  Runs the specified command as a subprocess; the subprocess's
  *  standard input and output will be connected to the returned
@@ -5390,8 +5390,8 @@ rb_open_file(int argc, VALUE *argv, VALUE io)
  *  call-seq:
  *     File.open(filename, mode="r" [, opt])                 -> file
  *     File.open(filename [, mode [, perm]] [, opt])         -> file
- *     File.open(filename, mode="r" [, opt]) {|file| block }->obj
- *     File.open(filename [, mode [, perm]] [, opt]) {|file| block }->obj
+ *     File.open(filename, mode="r" [, opt]) {|file| block } -> obj
+ *     File.open(filename [, mode [, perm]] [, opt]) {|file| block } -> obj
  *
  *  With no associated block, <code>open</code> is a synonym for
  *  <code>File.new</code>. If the optional code block is given, it will
@@ -5405,7 +5405,7 @@ rb_open_file(int argc, VALUE *argv, VALUE io)
  *
  *  call-seq:
  *     IO.open(fd, mode_string="r" [, opt] )               -> io
- *     IO.open(fd, mode_string="r" [, opt] ) {|io| block }->obj
+ *     IO.open(fd, mode_string="r" [, opt] ) {|io| block } -> obj
  *
  *  With no associated block, <code>open</code> is a synonym for
  *  <code>IO.new</code>. If the optional code block is given, it will
@@ -6676,7 +6676,7 @@ argf_set_lineno(VALUE argf, VALUE val)
 
 /*
  *  call-seq:
- *     ARGF.lineno->Integer
+ *     ARGF.lineno -> integer
  *
  *  Returns the current line number of the current file in +ARGF+. This value
  *  can be set manually with +ARGF.lineno=+.
@@ -6899,7 +6899,7 @@ static VALUE argf_gets(int, VALUE *, VALUE);
  *  call-seq:
  *     gets(sep=$/)    -> string or nil
  *     gets(limit)     -> string or nil
- *     gets(sep,limit)->string or nil
+ *     gets(sep,limit) -> string or nil
  *
  *  Returns (and assigns to <code>$_</code>) the next line from the list
  *  of files in +ARGV+ (or <code>$*</code>), or from standard input if
@@ -6939,9 +6939,9 @@ rb_f_gets(int argc, VALUE *argv, VALUE recv)
 
 /*
  *  call-seq:
- *     ARGF.gets(sep=$/)     -> String
- *     ARGF.gets(limit)      -> String
- *     ARGF.gets(sep, limit)->String
+ *     ARGF.gets(sep=$/)     -> string
+ *     ARGF.gets(limit)      -> string
+ *     ARGF.gets(sep, limit) -> string
  *
  *  Returns the next line from the current file in +ARGF+.
  *
@@ -6995,7 +6995,7 @@ static VALUE argf_readline(int, VALUE *, VALUE);
  *  call-seq:
  *     readline(sep=$/)     -> string
  *     readline(limit)      -> string
- *     readline(sep, limit)->string
+ *     readline(sep, limit) -> string
  *
  *  Equivalent to <code>Kernel::gets</code>, except
  *  +readline+ raises +EOFError+ at end of file.
@@ -7013,9 +7013,9 @@ rb_f_readline(int argc, VALUE *argv, VALUE recv)
 
 /*
  *  call-seq:
- *     ARGF.readline(sep=$/)     -> String
- *     ARGF.readline(limit)      -> String
- *     ARGF.readline(sep, limit)->String
+ *     ARGF.readline(sep=$/)     -> string
+ *     ARGF.readline(limit)      -> string
+ *     ARGF.readline(sep, limit) -> string
  *
  *  Returns the next line from the current file in +ARGF+.
  *
@@ -7048,7 +7048,7 @@ static VALUE argf_readlines(int, VALUE *, VALUE);
  *  call-seq:
  *     readlines(sep=$/)    -> array
  *     readlines(limit)     -> array
- *     readlines(sep,limit)->array
+ *     readlines(sep,limit) -> array
  *
  *  Returns an array containing the lines returned by calling
  *  <code>Kernel.gets(<i>sep</i>)</code> until the end of file.
@@ -7065,13 +7065,13 @@ rb_f_readlines(int argc, VALUE *argv, VALUE recv)
 
 /*
  *  call-seq:
- *     ARGF.readlines(sep=$/)     -> Array
- *     ARGF.readlines(limit)      -> Array
- *     ARGF.readlines(sep, limit)->Array
+ *     ARGF.readlines(sep=$/)     -> array
+ *     ARGF.readlines(limit)      -> array
+ *     ARGF.readlines(sep, limit) -> array
  *
- *     ARGF.to_a(sep=$/)     -> Array
- *     ARGF.to_a(limit)      -> Array
- *     ARGF.to_a(sep, limit)->Array
+ *     ARGF.to_a(sep=$/)     -> array
+ *     ARGF.to_a(limit)      -> array
+ *     ARGF.to_a(sep, limit) -> array
  *
  *  Reads +ARGF+'s current file in its entirety, returning an +Array+ of its
  *  lines, one line per element. Lines are assumed to be separated by _sep_.
@@ -7824,7 +7824,7 @@ io_s_foreach(struct foreach_arg *arg)
  *  call-seq:
  *     IO.foreach(name, sep=$/ [, open_args]) {|line| block }     -> nil
  *     IO.foreach(name, limit [, open_args]) {|line| block }      -> nil
- *     IO.foreach(name, sep, limit [, open_args]) {|line| block }->nil
+ *     IO.foreach(name, sep, limit [, open_args]) {|line| block } -> nil
  *     IO.foreach(...)                                            -> an_enumerator
  *
  *  Executes the block for every line in the named I/O port, where lines
@@ -7868,7 +7868,7 @@ io_s_readlines(struct foreach_arg *arg)
  *  call-seq:
  *     IO.readlines(name, sep=$/ [, open_args])     -> array
  *     IO.readlines(name, limit [, open_args])      -> array
- *     IO.readlines(name, sep, limit [, open_args])->array
+ *     IO.readlines(name, sep, limit [, open_args]) -> array
  *
  *  Reads the entire file specified by <i>name</i> as individual
  *  lines, and returns those lines in an array. Lines are separated by
@@ -8607,7 +8607,7 @@ rb_io_internal_encoding(VALUE io)
  *     io.set_encoding(ext_enc)                -> io
  *     io.set_encoding("ext_enc:int_enc")      -> io
  *     io.set_encoding(ext_enc, int_enc)       -> io
- *     io.set_encoding("ext_enc:int_enc", opt)->io
+ *     io.set_encoding("ext_enc:int_enc", opt) -> io
  *     io.set_encoding(ext_enc, int_enc, opt)  -> io
  *
  *  If single argument is specified, read string from io is tagged
@@ -8697,7 +8697,7 @@ argf_internal_encoding(VALUE argf)
  *     ARGF.set_encoding(ext_enc)                -> ARGF
  *     ARGF.set_encoding("ext_enc:int_enc")      -> ARGF
  *     ARGF.set_encoding(ext_enc, int_enc)       -> ARGF
- *     ARGF.set_encoding("ext_enc:int_enc", opt)->ARGF
+ *     ARGF.set_encoding("ext_enc:int_enc", opt) -> ARGF
  *     ARGF.set_encoding(ext_enc, int_enc, opt)  -> ARGF
  *
  *  If single argument is specified, strings read from ARGF are tagged with

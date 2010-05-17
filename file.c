@@ -2145,7 +2145,7 @@ lchown_internal(const char *path, void *arg)
 
 /*
  *  call-seq:
- *     file.lchown(owner_int, group_int, file_name,..)->integer
+ *     file.lchown(owner_int, group_int, file_name,..) -> integer
  *
  *  Equivalent to <code>File::chown</code>, but does not follow symbolic
  *  links (so it will change the owner associated with the link, not the
@@ -3985,7 +3985,7 @@ test_check(int n, int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     test(int_cmd, file1 [, file2] )->obj
+ *     test(int_cmd, file1 [, file2] ) -> obj
  *
  *  Uses the integer <i>aCmd</i> to perform various tests on
  *  <i>file1</i> (first table below) or on <i>file1</i> and
@@ -4518,7 +4518,7 @@ rb_stat_R(VALUE obj)
 
 /*
  * call-seq:
- *    stat.world_readable?->fixnum or nil
+ *    stat.world_readable? -> fixnum or nil
  *
  * If <i>stat</i> is readable by others, returns an integer
  * representing the file permission bits of <i>stat</i>. Returns
