@@ -875,53 +875,19 @@ rb_w32_get_osfhandle(int fh)
 }
 
 static int
-argv_size(char *const *argv, BOOL escape)
-{
-    const char *p;
-    char *const *t;
-    int len, n, bs, quote;
-
-    for (t = argv, len = 0; *t; t++) {
-	for (p = *t, n = quote = bs = 0; *p; ++p) {
-	    switch (*p) {
-	      case '\\':
-		++bs;
-		break;
-	      case '<': case '>': case '|': case '^':
-		bs = 0;
-		if (escape && !quote) n++;
-		break;
-	      case '"':
-		n += bs + 1; bs = 0;
-		quote = 1;
-		break;
-	      case ' ': case '\t':
-		quote = 1;
-	      default:
-		bs = 0;
-		p = CharNext(p) - 1;
-		break;
-	    }
-	}
-	len += p - *t + n + 1;
-	if (p - *t == 0 || quote) len += 2;
-    }
-    return len;
-}
-
-static char *
 join_argv(char *cmd, char *const *argv, BOOL escape)
 {
     const char *p, *s;
     char *q, *const *t;
-    int n, bs, quote;
+    int len, n, bs, quote;
 
-    for (t = argv, q = cmd; p = *t; t++) {
+    for (t = argv, q = cmd, len = 0; p = *t; t++) {
 	quote = 0;
 	s = p;
 	if (!*p || strpbrk(p, " \t\"'")) {
 	    quote = 1;
-	    *q++ = '"';
+	    len++;
+	    if (q) *q++ = '"';
 	}
 	for (bs = 0; *p; ++p) {
 	    switch (*p) {
@@ -929,13 +895,28 @@ join_argv(char *cmd, char *const *argv, BOOL escape)
 		++bs;
 		break;
 	      case '"':
-		memcpy(q, s, n = p - s); q += n; s = p;
-		memset(q, '\\', ++bs); q += bs; bs = 0;
+		len += n = p - s;
+		if (q) {
+		    memcpy(q, s, n);
+		    q += n;
+		}
+		s = p;
+		len += ++bs;
+		if (q) {
+		    memset(q, '\\', bs);
+		    q += bs;
+		}
+		bs = 0;
 		break;
 	      case '<': case '>': case '|': case '^':
 		if (escape && !quote) {
-		    memcpy(q, s, n = p - s); q += n; s = p;
-		    *q++ = '^';
+		    len += (n = p - s) + 1;
+		    if (q) {
+			memcpy(q, s, n);
+			q += n;
+			*q++ = '^';
+		    }
+		    s = p;
 		    break;
 		}
 	      default:
@@ -944,14 +925,21 @@ join_argv(char *cmd, char *const *argv, BOOL escape)
 		break;
 	    }
 	}
-	memcpy(q, s, n = p - s);
-	q += n;
-	if (quote) *q++ = '"';
-	*q++ = ' ';
+	len += (n = p - s) + 1;
+	if (quote) len++;
+	if (q) {
+	    memcpy(q, s, n);
+	    q += n;
+	    if (quote) *q++ = '"';
+	    *q++ = ' ';
+	}
     }
-    if (q > cmd) --q;
-    *q = '\0';
-    return cmd;
+    if (q > cmd) --len;
+    if (q) {
+	if (q > cmd) --q;
+	*q = '\0';
+    }
+    return len;
 }
 
 #ifdef HAVE_SYS_PARAM_H
@@ -1215,10 +1203,10 @@ rb_w32_aspawn(int mode, const char *prog, char *const *argv)
 	char *progs[2];
 	progs[0] = (char *)prog;
 	progs[1] = NULL;
-	len = argv_size(progs, ntcmd);
+	len = join_argv(NULL, progs, ntcmd);
 	if (c_switch) len += 3;
 	else ++argv;
-	if (argv[0]) len += argv_size(argv, ntcmd);
+	if (argv[0]) len += join_argv(NULL, argv, ntcmd);
 	cmd = ALLOCA_N(char, len);
 	join_argv(cmd, progs, ntcmd);
 	if (c_switch) strlcat(cmd, " /c", len);
@@ -1226,7 +1214,7 @@ rb_w32_aspawn(int mode, const char *prog, char *const *argv)
 	prog = c_switch ? shell : 0;
     }
     else {
-	len = argv_size(argv, FALSE);
+	len = join_argv(NULL, argv, FALSE);
 	cmd = ALLOCA_N(char, len);
 	join_argv(cmd, argv, FALSE);
     }
