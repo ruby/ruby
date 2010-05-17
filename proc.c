@@ -528,10 +528,10 @@ proc_lambda(void)
 
 /*
  *  call-seq:
- *     prc === obj   -> obj
+ *     prc === obj   -> result_of_proc
  *
  *  Invokes the block, with <i>obj</i> as the block's parameter.  It is
- *  to allow a proc object to be a target of when clause in the case statement.
+ *  to allow a proc object to be a target of +when+ clause in the case statement.
  */
 
 static VALUE
@@ -728,7 +728,10 @@ unnamed_parameters(int arity)
  * call-seq:
  *    proc.parameters  -> array
  *
- * returns the parameter information of this proc
+ * returns the parameter information of this proc.
+ *
+ *    prc = lambda{|x, y=42, *rest|}
+ *    prc.parameters  #=> [[:req, :x], [:opt, :y], [:rest, :rest]]
  */
 
 static VALUE
