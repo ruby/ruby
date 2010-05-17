@@ -2836,9 +2836,9 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
 
 /*
  *  call-seq:
- *     Regexp.new(string [, options] [, lang])       -> regexp
+ *     Regexp.new(string, [options [, lang]])        -> regexp
  *     Regexp.new(regexp)                            -> regexp
- *     Regexp.compile(string [, options] [, lang])   -> regexp
+ *     Regexp.compile(string, [options [, lang]])    -> regexp
  *     Regexp.compile(regexp)                        -> regexp
  *
  *  Constructs a new regular expression from <i>pattern</i>, which can be either
