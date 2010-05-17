@@ -1,3 +1,9 @@
+Mon May 17 09:37:25 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/fileutils.rb (FileUtils::Entry_#entries): returns pathname in
+	  UTF-8 on Windows to allow FileUtils accessing all pathnames
+	  internally.
+
 Mon May 17 01:07:48 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dln.c (rb_w32_check_imported): workaround for VC6.
