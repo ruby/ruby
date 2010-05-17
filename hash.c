@@ -290,9 +290,9 @@ default_proc_arity_check(VALUE proc)
 
 /*
  *  call-seq:
- *     Hash.new                          => hash
- *     Hash.new(obj)                     => aHash
- *     Hash.new {|hash, key| block }     => aHash
+ *     Hash.new                          -> new_hash
+ *     Hash.new(obj)                     -> new_hash
+ *     Hash.new {|hash, key| block }     -> new_hash
  *
  *  Returns a new, empty hash. If this hash is subsequently accessed by
  *  a key that doesn't correspond to a hash entry, the value returned
@@ -348,9 +348,9 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
 
 /*
  *  call-seq:
- *     Hash[ key, value, ... ]   => hash
- *     Hash[ [ [key, value], ... ] ]   => hash
- *     Hash[ object ]   => hash
+ *     Hash[ key, value, ... ]         -> new_hash
+ *     Hash[ [ [key, value], ... ] ]   -> new_hash
+ *     Hash[ object ]                  -> new_hash
  *
  *  Creates a new hash populated with the given objects. Equivalent to
  *  the literal <code>{ <i>key</i> => <i>value</i>, ... }</code>. In the first
@@ -485,7 +485,7 @@ rb_hash_rehash(VALUE hash)
 
 /*
  *  call-seq:
- *     hsh[key]    =>  value
+ *     hsh[key]    ->  value
  *
  *  Element Reference---Retrieves the <i>value</i> object corresponding
  *  to the <i>key</i> object. If not found, returns the default value (see
@@ -527,8 +527,8 @@ rb_hash_lookup(VALUE hash, VALUE key)
 
 /*
  *  call-seq:
- *     hsh.fetch(key [, default] )       => obj
- *     hsh.fetch(key) {| key | block }   => obj
+ *     hsh.fetch(key [, default] )       -> obj
+ *     hsh.fetch(key) {| key | block }   -> obj
  *
  *  Returns a value from the hash for the given key. If the key can't be
  *  found, there are several options: With no other arguments, it will
@@ -589,7 +589,7 @@ rb_hash_fetch(VALUE hash, VALUE key)
 
 /*
  *  call-seq:
- *     hsh.default(key=nil)   => obj
+ *     hsh.default(key=nil)   -> obj
  *
  *  Returns the default value, the value that would be returned by
  *  <i>hsh</i>[<i>key</i>] if <i>key</i> did not exist in <i>hsh</i>.
@@ -624,7 +624,7 @@ rb_hash_default(int argc, VALUE *argv, VALUE hash)
 
 /*
  *  call-seq:
- *     hsh.default = obj     => obj
+ *     hsh.default = obj     -> obj
  *
  *  Sets the default value, the value returned for a key that does not
  *  exist in the hash. It is not possible to set the default to a
@@ -679,7 +679,7 @@ VALUE rb_obj_is_proc(VALUE proc);
 
 /*
  *  call-seq:
- *     hsh.default_proc = proc_obj     => proc_obj
+ *     hsh.default_proc = proc_obj     -> proc_obj
  *
  *  Sets the default proc to be executed on each key lookup.
  *
@@ -723,7 +723,7 @@ key_i(VALUE key, VALUE value, VALUE arg)
 
 /*
  *  call-seq:
- *     hsh.key(value)    => key
+ *     hsh.key(value)    -> key
  *
  *  Returns the key for a given value. If not found, returns <code>nil</code>.
  *
@@ -774,8 +774,8 @@ rb_hash_delete_key(VALUE hash, VALUE key)
 
 /*
  *  call-seq:
- *     hsh.delete(key)                   => value
- *     hsh.delete(key) {| key | block }  => value
+ *     hsh.delete(key)                   -> value
+ *     hsh.delete(key) {| key | block }  -> value
  *
  *  Deletes and returns a key-value pair from <i>hsh</i> whose key is
  *  equal to <i>key</i>. If the key is not found, returns the
@@ -945,7 +945,7 @@ rb_hash_reject(VALUE hash)
 
 /*
  * call-seq:
- *   hsh.values_at(key, ...)   => array
+ *   hsh.values_at(key, ...)   -> array
  *
  * Return an array containing the values associated with the given keys.
  * Also see <code>Hash.select</code>.
@@ -977,8 +977,8 @@ select_i(VALUE key, VALUE value, VALUE result)
 
 /*
  *  call-seq:
- *     hsh.select {|key, value| block}   => a_hash
- *     hsh.select                        => an_enumerator
+ *     hsh.select {|key, value| block}   -> a_hash
+ *     hsh.select                        -> an_enumerator
  *
  *  Returns a new hash consisting of entries for which the block returns true.
  *
@@ -1090,8 +1090,8 @@ rb_hash_clear(VALUE hash)
 
 /*
  *  call-seq:
- *     hsh[key] = value        => value
- *     hsh.store(key, value)   => value
+ *     hsh[key] = value        -> value
+ *     hsh.store(key, value)   -> value
  *
  *  Element Assignment---Associates the value given by
  *  <i>value</i> with the key given by <i>key</i>.
@@ -1167,8 +1167,8 @@ rb_hash_replace(VALUE hash, VALUE hash2)
 
 /*
  *  call-seq:
- *     hsh.length    =>  fixnum
- *     hsh.size      =>  fixnum
+ *     hsh.length    ->  fixnum
+ *     hsh.size      ->  fixnum
  *
  *  Returns the number of key-value pairs in the hash.
  *
@@ -1189,7 +1189,7 @@ rb_hash_size(VALUE hash)
 
 /*
  *  call-seq:
- *     hsh.empty?    => true or false
+ *     hsh.empty?    -> true or false
  *
  *  Returns <code>true</code> if <i>hsh</i> contains no key-value pairs.
  *
@@ -1377,8 +1377,8 @@ inspect_hash(VALUE hash, VALUE dummy, int recur)
 
 /*
  * call-seq:
- *   hsh.to_s   => string
- *   hsh.inspect  => string
+ *   hsh.to_s     -> string
+ *   hsh.inspect  -> string
  *
  * Return the contents of this hash as a string.
  *
@@ -1417,7 +1417,7 @@ keys_i(VALUE key, VALUE value, VALUE ary)
 
 /*
  *  call-seq:
- *     hsh.keys    => array
+ *     hsh.keys    -> array
  *
  *  Returns a new array populated with the keys from this hash. See also
  *  <code>Hash#values</code>.
@@ -1448,7 +1448,7 @@ values_i(VALUE key, VALUE value, VALUE ary)
 
 /*
  *  call-seq:
- *     hsh.values    => array
+ *     hsh.values    -> array
  *
  *  Returns a new array populated with the values from <i>hsh</i>. See
  *  also <code>Hash#keys</code>.
@@ -1471,10 +1471,10 @@ rb_hash_values(VALUE hash)
 
 /*
  *  call-seq:
- *     hsh.has_key?(key)    => true or false
- *     hsh.include?(key)    => true or false
- *     hsh.key?(key)        => true or false
- *     hsh.member?(key)     => true or false
+ *     hsh.has_key?(key)    -> true or false
+ *     hsh.include?(key)    -> true or false
+ *     hsh.key?(key)        -> true or false
+ *     hsh.member?(key)     -> true or false
  *
  *  Returns <code>true</code> if the given key is present in <i>hsh</i>.
  *
@@ -1510,8 +1510,8 @@ rb_hash_search_value(VALUE key, VALUE value, VALUE arg)
 
 /*
  *  call-seq:
- *     hsh.has_value?(value)    => true or false
- *     hsh.value?(value)        => true or false
+ *     hsh.has_value?(value)    -> true or false
+ *     hsh.value?(value)        -> true or false
  *
  *  Returns <code>true</code> if the given value is present for some key
  *  in <i>hsh</i>.
@@ -1603,7 +1603,7 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
 
 /*
  *  call-seq:
- *     hsh == other_hash    => true or false
+ *     hsh == other_hash    -> true or false
  *
  *  Equality---Two hashes are equal if they each contain the same number
  *  of keys and if each key-value pair is equal to (according to
@@ -1689,7 +1689,7 @@ rb_hash_invert_i(VALUE key, VALUE value, VALUE hash)
 
 /*
  *  call-seq:
- *     hsh.invert -> aHash
+ *     hsh.invert -> new_hash
  *
  *  Returns a new hash created by using <i>hsh</i>'s values as keys, and
  *  the keys as values.
@@ -1731,10 +1731,10 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
 
 /*
  *  call-seq:
- *     hsh.merge!(other_hash)                                 => hsh
- *     hsh.update(other_hash)                                 => hsh
- *     hsh.merge!(other_hash){|key, oldval, newval| block}    => hsh
- *     hsh.update(other_hash){|key, oldval, newval| block}    => hsh
+ *     hsh.merge!(other_hash)                                 -> hsh
+ *     hsh.update(other_hash)                                 -> hsh
+ *     hsh.merge!(other_hash){|key, oldval, newval| block}    -> hsh
+ *     hsh.update(other_hash){|key, oldval, newval| block}    -> hsh
  *
  *  Adds the contents of <i>other_hash</i> to <i>hsh</i>.  If no
  *  block is specified, entries with duplicate keys are overwritten
@@ -1768,8 +1768,8 @@ rb_hash_update(VALUE hash1, VALUE hash2)
 
 /*
  *  call-seq:
- *     hsh.merge(other_hash)                              -> a_hash
- *     hsh.merge(other_hash){|key, oldval, newval| block} -> a_hash
+ *     hsh.merge(other_hash)                              -> new_hash
+ *     hsh.merge(other_hash){|key, oldval, newval| block} -> new_hash
  *
  *  Returns a new hash containing the contents of <i>other_hash</i> and
  *  the contents of <i>hsh</i>. If no block is specified, the value for
@@ -1900,7 +1900,7 @@ rb_hash_flatten(int argc, VALUE *argv, VALUE hash)
 
 /*
  *  call-seq:
- *     hsh.compare_by_identity => hsh
+ *     hsh.compare_by_identity -> hsh
  *
  *  Makes <i>hsh</i> compare its keys by their identity, i.e. it
  *  will consider exact same objects as same keys.
@@ -1925,7 +1925,7 @@ rb_hash_compare_by_id(VALUE hash)
 
 /*
  *  call-seq:
- *     hsh.compare_by_identity? => true or false
+ *     hsh.compare_by_identity? -> true or false
  *
  *  Returns <code>true</code> if <i>hsh</i> will compare its keys by
  *  their identity.  Also see <code>Hash#compare_by_identity</code>.
