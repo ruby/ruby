@@ -241,6 +241,12 @@
 /ext/io/nonblock/mkmf.log
 /ext/io/nonblock/nonblock.a
 
+# /ext/io/console/
+/ext/io/console/Makefile
+/ext/io/console/extconf.h
+/ext/io/console/mkmf.log
+/ext/io/console/console.a
+
 # /ext/io/wait/
 /ext/io/wait/Makefile
 /ext/io/wait/extconf.h
@@ -257,6 +263,11 @@
 /ext/json/ext/generator/extconf.h
 /ext/json/ext/generator/mkmf.log
 /ext/json/ext/generator/generator.a
+/ext/json/generator/*.def
+/ext/json/generator/Makefile
+/ext/json/generator/extconf.h
+/ext/json/generator/mkmf.log
+/ext/json/generator/generator.a
 
 # /ext/json/ext/parser/
 /ext/json/ext/parser/*.def
@@ -264,6 +275,11 @@
 /ext/json/ext/parser/extconf.h
 /ext/json/ext/parser/mkmf.log
 /ext/json/ext/parser/parser.a
+/ext/json/parser/*.def
+/ext/json/parser/Makefile
+/ext/json/parser/extconf.h
+/ext/json/parser/mkmf.log
+/ext/json/parser/parser.a
 
 # /ext/mathn/complex/
 /ext/mathn/complex/Makefile
