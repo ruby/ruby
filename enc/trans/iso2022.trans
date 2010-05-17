@@ -358,6 +358,18 @@ fun_so_cp50221_decoder(void *statep, const unsigned char *s, size_t l, unsigned 
 }
 
 static const rb_transcoder
+rb_cp50220_decoder = {
+    "CP50220", "cp51932", cp50221_decoder,
+    TRANSCODE_TABLE_INFO,
+    1, /* input_unit_length */
+    3, /* max_input */
+    3, /* max_output */
+    asciicompat_decoder, /* asciicompat_type */
+    1, iso2022jp_init, iso2022jp_init, /* state_size, state_init, state_fini */
+    NULL, fun_si_cp50221_decoder, NULL, fun_so_cp50221_decoder
+};
+
+static const rb_transcoder
 rb_cp50221_decoder = {
     "CP50221", "cp51932", cp50221_decoder,
     TRANSCODE_TABLE_INFO,
@@ -370,7 +382,8 @@ rb_cp50221_decoder = {
 };
 
 static ssize_t
-fun_so_cp50221_encoder(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
+fun_so_cp5022x_encoder(void *statep, const unsigned char *s, size_t l,
+        unsigned char *o, size_t osize)
 {
     unsigned char *sp = statep;
     unsigned char *output0 = o;
@@ -425,9 +438,119 @@ rb_cp50221_encoder = {
     5, /* max_output */
     asciicompat_encoder, /* asciicompat_type */
     1, iso2022jp_init, iso2022jp_init, /* state_size, state_init, state_fini */
-    NULL, NULL, NULL, fun_so_cp50221_encoder,
+    NULL, NULL, NULL, fun_so_cp5022x_encoder,
     finish_iso2022jp_encoder,
     iso2022jp_encoder_reset_sequence_size, finish_iso2022jp_encoder
+};
+
+static const char *tbl0208 =
+    "\x21\x23\x21\x56\x21\x57\x21\x22\x21\x26\x25\x72\x25\x21\x25\x23" \
+    "\x25\x25\x25\x27\x25\x29\x25\x63\x25\x65\x25\x67\x25\x43\x21\x3C" \
+    "\x25\x22\x25\x24\x25\x26\x25\x28\x25\x2A\x25\x2B\x25\x2D\x25\x2F" \
+    "\x25\x31\x25\x33\x25\x35\x25\x37\x25\x39\x25\x3B\x25\x3D\x25\x3F" \
+    "\x25\x41\x25\x44\x25\x46\x25\x48\x25\x4A\x25\x4B\x25\x4C\x25\x4D" \
+    "\x25\x4E\x25\x4F\x25\x52\x25\x55\x25\x58\x25\x5B\x25\x5E\x25\x5F" \
+    "\x25\x60\x25\x61\x25\x62\x25\x64\x25\x66\x25\x68\x25\x69\x25\x6A" \
+    "\x25\x6B\x25\x6C\x25\x6D\x25\x6F\x25\x73\x21\x2B\x21\x2C";
+
+static ssize_t
+fun_so_cp50220_encoder(void *statep, const unsigned char *s, size_t l,
+                unsigned char *o, size_t osize)
+{
+    unsigned char *output0 = o;
+    unsigned char *sp = statep;
+
+    if (sp[0] == G0_JISX0201_KATAKANA) {
+        int c = sp[2] & 0x7F;
+        const char *p = tbl0208 + (c - 0x21) * 2;
+        if (sp[1] != G0_JISX0208_1983) {
+            *o++ = 0x1b;
+            *o++ = '$';
+            *o++ = 'B';
+        }
+        sp[0] = G0_JISX0208_1983;
+        *o++ = *p++;
+        if (l == 2 && s[0] == 0x8E) {
+            if (s[1] == 0xDE) {
+                *o++ = *p + 1;
+                return o - output0;
+            }
+            else if (s[1] == 0xDF && (0x4A <= c && c <= 0x4E)) {
+                *o++ = *p + 2;
+                return o - output0;
+            }
+        }
+        *o++ = *p;
+    }
+
+    if (l == 2 && s[0] == 0x8E) {
+        const char *p = tbl0208 + (s[1] - 0xA1) * 2;
+        if ((0xA1 <= s[1] && s[1] <= 0xB5) ||
+            (0xC5 <= s[1] && s[1] <= 0xC9) ||
+            (0xCF <= s[1] && s[1] <= 0xDF)) {
+            if (*sp != G0_JISX0208_1983) {
+                *o++ = 0x1b;
+                *o++ = '$';
+                *o++ = 'B';
+                *sp = G0_JISX0208_1983;
+            }
+            *o++ = *p++;
+            *o++ = *p;
+            return o - output0;
+        }
+
+        sp[2] = s[1];
+        sp[1] = sp[0];
+        sp[0] = G0_JISX0201_KATAKANA;
+        return o - output0;
+    }
+
+    o += fun_so_cp5022x_encoder(statep, s, l, o, osize);
+    return o - output0;
+}
+
+static ssize_t
+finish_cp50220_encoder(void *statep, unsigned char *o, size_t osize)
+{
+    unsigned char *sp = statep;
+    unsigned char *output0 = o;
+
+    if (*sp == G0_ASCII)
+        return 0;
+
+    if (sp[0] == G0_JISX0201_KATAKANA) {
+        int c = sp[2] & 0x7F;
+        const char *p = tbl0208 + (c - 0x21) * 2;
+        if (sp[1] != G0_JISX0208_1983) {
+            *o++ = 0x1b;
+            *o++ = '$';
+            *o++ = 'B';
+        }
+        sp[0] = G0_JISX0208_1983;
+        *o++ = *p++;
+        *o++ = *p;
+    }
+
+    *o++ = 0x1b;
+    *o++ = '(';
+    *o++ = 'B';
+    *sp = G0_ASCII;
+
+    return o - output0;
+}
+
+static const rb_transcoder
+rb_cp50220_encoder = {
+    "CP51932", "CP50220", cp50221_encoder,
+    TRANSCODE_TABLE_INFO,
+    1, /* input_unit_length */
+    3, /* max_input */
+    5, /* max_output */
+    asciicompat_encoder, /* asciicompat_type */
+    3, iso2022jp_init, iso2022jp_init, /* state_size, state_init, state_fini */
+    NULL, NULL, NULL, fun_so_cp50220_encoder,
+    finish_cp50220_encoder,
+    iso2022jp_encoder_reset_sequence_size, finish_cp50220_encoder
 };
 
 void
@@ -437,7 +560,9 @@ Init_iso2022(void)
     rb_register_transcoder(&rb_iso2022jp_encoder);
     rb_register_transcoder(&rb_stateless_iso2022jp_to_eucjp);
     rb_register_transcoder(&rb_eucjp_to_stateless_iso2022jp);
+    rb_register_transcoder(&rb_cp50220_decoder);
     rb_register_transcoder(&rb_cp50221_decoder);
+    rb_register_transcoder(&rb_cp50220_encoder);
     rb_register_transcoder(&rb_cp50221_encoder);
 }
 
