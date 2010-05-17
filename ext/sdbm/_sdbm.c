@@ -861,7 +861,7 @@ chkpage(char *pag)
 	register int off;
 	register short *ino = (short *) pag;
 
-	if ((n = GET_SHORT(ino,0)) < 0 || n > PBLKSIZ / sizeof(short))
+	if ((n = GET_SHORT(ino,0)) < 0 || n > PBLKSIZ / (int)sizeof(short))
 		return 0;
 
 	if (n > 0) {
