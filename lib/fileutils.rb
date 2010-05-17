@@ -1176,7 +1176,9 @@ module FileUtils
     end
 
     def entries
-      Dir.entries(path())\
+      opts = {}
+      opts[:encoding] = "UTF-8" if /mswin|mignw/ =~ RUBY_PLATFORM
+      Dir.entries(path(), opts)\
           .reject {|n| n == '.' or n == '..' }\
           .map {|n| Entry_.new(prefix(), join(rel(), n.untaint)) }
     end
