@@ -275,7 +275,7 @@ mktime_do(struct mktime_arg *arg)
         char *end = ptr + 1;
         char *p = end;
         while ( isdigit( *end ) ) end++;
-        if (end - p < sizeof(padded)) {
+        if (end - p < (int)sizeof(padded)) {
             MEMCPY(padded, ptr + 1, char, end - (ptr + 1));
             p = padded;
         }

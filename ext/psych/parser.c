@@ -55,7 +55,7 @@ static VALUE parse(VALUE self, VALUE yaml)
     int done = 0;
 #ifdef HAVE_RUBY_ENCODING_H
     int encoding = rb_enc_find_index("ASCII-8BIT");
-    rb_encoding * internal_enc;
+    rb_encoding * internal_enc = 0;
 #endif
     VALUE handler = rb_iv_get(self, "@handler");
 

@@ -4093,9 +4093,9 @@ p_uid_change_privilege(VALUE obj, VALUE id)
 #endif
     } else { /* unprivileged user */
 #if defined(HAVE_SETRESUID)
-	if (setresuid((getuid() == uid)? -1: uid,
-		      (geteuid() == uid)? -1: uid,
-		      (SAVED_USER_ID == uid)? -1: uid) < 0) rb_sys_fail(0);
+	if (setresuid((getuid() == uid)? (rb_uid_t)-1: uid,
+		      (geteuid() == uid)? (rb_uid_t)-1: uid,
+		      (SAVED_USER_ID == uid)? (rb_uid_t)-1: uid) < 0) rb_sys_fail(0);
 	SAVED_USER_ID = uid;
 #elif defined(HAVE_SETREUID) && !defined(OBSOLETE_SETREUID)
 	if (SAVED_USER_ID == uid) {
@@ -4712,9 +4712,9 @@ p_gid_change_privilege(VALUE obj, VALUE id)
 #endif
     } else { /* unprivileged user */
 #if defined(HAVE_SETRESGID)
-	if (setresgid((getgid() == gid)? -1: gid,
-		      (getegid() == gid)? -1: gid,
-		      (SAVED_GROUP_ID == gid)? -1: gid) < 0) rb_sys_fail(0);
+	if (setresgid((getgid() == gid)? (rb_gid_t)-1: gid,
+		      (getegid() == gid)? (rb_gid_t)-1: gid,
+		      (SAVED_GROUP_ID == gid)? (rb_gid_t)-1: gid) < 0) rb_sys_fail(0);
 	SAVED_GROUP_ID = gid;
 #elif defined(HAVE_SETREGID) && !defined(OBSOLETE_SETREGID)
 	if (SAVED_GROUP_ID == gid) {
