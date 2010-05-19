@@ -228,6 +228,10 @@ class TestMethod < Test::Unit::TestCase
     assert_in_out_err([], "p __callee__", %w(nil), [])
   end
 
+  def test_caller_top_level
+    assert_in_out_err([], "p caller", %w([]), [])
+  end
+
   def test_caller_negative_level
     assert_raise(ArgumentError) { caller(-1) }
   end
