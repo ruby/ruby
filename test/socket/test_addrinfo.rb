@@ -444,7 +444,7 @@ class TestSocketAddrinfo < Test::Unit::TestCase
     assert_equal(ai1.canonname, ai2.canonname)
   end
 
-  if Socket.const_defined?("AF_INET6")
+  if Socket.const_defined?("AF_INET6") && Socket::AF_INET6.is_a?(Integer)
 
     def test_addrinfo_new_inet6
       ai = Addrinfo.new(["AF_INET6", 42304, "ip6-localhost", "::1"])

@@ -311,10 +311,14 @@ class TestLogDevice < Test::Unit::TestCase
     end
     # create logfile whitch is already exist.
     logdev = d(@filename)
-    logdev.write('world')
-    logfile = File.read(@filename)
-    assert_equal(2, logfile.split(/\n/).size)
-    assert_match(/^helloworld$/, logfile)
+    begin
+      logdev.write('world')
+      logfile = File.read(@filename)
+      assert_equal(2, logfile.split(/\n/).size)
+      assert_match(/^helloworld$/, logfile)
+    ensure
+      logdev.close
+    end
   end
 
   def test_write
@@ -464,6 +468,7 @@ class TestLogDevice < Test::Unit::TestCase
       assert(File.exist?(filename2))
       assert(File.exist?(filename3))
     ensure
+      logger.close if logger
       [filename1, filename2, filename3].each do |filename|
         File.unlink(filename) if File.exist?(filename)
       end
@@ -491,20 +496,32 @@ class TestLoggerApplication < Test::Unit::TestCase
 
   def test_start
     @app.set_log(@filename)
-    @app.level = Logger::UNKNOWN
-    @app.start # logs FATAL log 
-    assert_equal(1, File.read(@filename).split(/\n/).size)
+    begin
+      @app.level = Logger::UNKNOWN
+      @app.start # logs FATAL log 
+      assert_equal(1, File.read(@filename).split(/\n/).size)
+    ensure
+      @app.logger.close
+    end
   end
 
   def test_logger
     @app.level = Logger::WARN
     @app.set_log(@filename)
-    assert_equal(Logger::WARN, @app.logger.level)
+    begin
+      assert_equal(Logger::WARN, @app.logger.level)
+    ensure
+      @app.logger.close
+    end
     @app.logger = logger = Logger.new(STDOUT)
     assert_equal(logger, @app.logger)
     assert_equal(Logger::WARN, @app.logger.level)
     @app.log = @filename
-    assert(logger != @app.logger)
-    assert_equal(Logger::WARN, @app.logger.level)
+    begin
+      assert(logger != @app.logger)
+      assert_equal(Logger::WARN, @app.logger.level)
+    ensure
+      @app.logger.close
+    end
   end
 end
