@@ -1,3 +1,10 @@
+Wed May 19 16:55:09 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* numeric.c (rb_num2ulong): use rb_big2ulong for data from
+	  Bignum. Without this 32bit integer on 32bit environment
+	  can't converted into long.
+	  This fixes 1) and 2) of [ruby-dev:41289]
+
 Mon May 17 22:19:16 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* process.c: suppress warning for signed and unsigned type

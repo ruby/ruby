@@ -1722,10 +1722,35 @@ rb_num2long(VALUE val)
 VALUE
 rb_num2ulong(VALUE val)
 {
-    if (TYPE(val) == T_BIGNUM) {
-	return rb_big2ulong(val);
+  again:
+    if (NIL_P(val)) {
+       rb_raise(rb_eTypeError, "no implicit conversion from nil to integer");
     }
-    return (VALUE)rb_num2long(val);
+
+    if (FIXNUM_P(val)) return FIX2LONG(val); /* this is FIX2LONG, inteneded */
+
+    switch (TYPE(val)) {
+      case T_FLOAT:
+       if (RFLOAT_VALUE(val) <= (double)LONG_MAX
+           && RFLOAT_VALUE(val) >= (double)LONG_MIN) {
+           return (RFLOAT_VALUE(val));
+       }
+       else {
+           char buf[24];
+           char *s;
+
+           snprintf(buf, sizeof(buf), "%-.10g", RFLOAT_VALUE(val));
+           if ((s = strchr(buf, ' ')) != 0) *s = '\0';
+           rb_raise(rb_eRangeError, "float %s out of range of integer", buf);
+       }
+
+      case T_BIGNUM:
+	return rb_big2ulong(val);
+
+      default:
+       val = rb_to_int(val);
+       goto again;
+    }
 }
 
 #if SIZEOF_INT < SIZEOF_VALUE
