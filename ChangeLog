@@ -1,3 +1,9 @@
+Wed May 19 22:48:06 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/extconf.rb: mswin/mingw ruby has socketpair(), but it's
+	  not exist as such name in ruby static library, so mkmf.rb cannot
+	  find it.
+
 Wed May 19 20:09:38 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm_eval.c (rb_f_caller): return [] instead of nil when the function

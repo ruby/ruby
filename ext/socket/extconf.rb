@@ -4,6 +4,7 @@ case RUBY_PLATFORM
 when /(ms|bcc)win32|mingw/
   test_func = "WSACleanup"
   have_library("ws2_32", "WSACleanup")
+  $defs << "-DHAVE_SOCKETPAIR"
 when /cygwin/
   test_func = "socket"
 when /beos/
@@ -348,7 +349,7 @@ $distcleanfiles << "constants.h" << "constdefs.*"
 if have_func(test_func)
   have_func("hsterror")
   have_func("getipnodebyname") or have_func("gethostbyname2")
-  have_func("socketpair")
+  have_func("socketpair") unless $defs.include?("-DHAVE_SOCKETPAIR")
   unless have_func("gethostname")
     have_func("uname")
   end
