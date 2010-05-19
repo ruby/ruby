@@ -293,8 +293,15 @@ static VALUE parse(VALUE self, VALUE yaml)
 static VALUE set_external_encoding(VALUE self, VALUE encoding)
 {
     yaml_parser_t * parser;
+    VALUE exception;
 
     Data_Get_Struct(self, yaml_parser_t, parser);
+
+    if(parser->encoding) {
+	exception = rb_const_get_at(mPsych, rb_intern("Exception"));
+	rb_raise(exception, "don't set the encoding twice!");
+    }
+
     yaml_parser_set_encoding(parser, NUM2INT(encoding));
 
     return encoding;

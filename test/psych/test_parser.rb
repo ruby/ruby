@@ -26,6 +26,15 @@ module Psych
       @parser = Psych::Parser.new EventCatcher.new
     end
 
+    def test_set_encoding_twice
+      @parser.external_encoding = Psych::Parser::UTF16LE
+
+      e = assert_raises(Psych::Exception) do
+        @parser.external_encoding = Psych::Parser::UTF16LE
+      end
+      assert_equal "don't set the encoding twice!", e.message
+    end
+
     def test_bom
       tadpole = 'おたまじゃくし'
 
