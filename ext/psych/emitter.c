@@ -17,15 +17,21 @@ static int writer(void *ctx, unsigned char *buffer, size_t size)
     return (int)NUM2INT(wrote);
 }
 
-static void dealloc(yaml_emitter_t * emitter)
+static void dealloc(void * ptr)
 {
+    yaml_emitter_t * emitter;
+
+    emitter = (yaml_emitter_t *)ptr;
     yaml_emitter_delete(emitter);
-    free(emitter);
+    xfree(emitter);
 }
 
 static VALUE allocate(VALUE klass)
 {
-    yaml_emitter_t * emitter = malloc(sizeof(yaml_emitter_t));
+    yaml_emitter_t * emitter;
+
+    emitter = xmalloc(sizeof(yaml_emitter_t));
+
     yaml_emitter_initialize(emitter);
     yaml_emitter_set_unicode(emitter, 1);
     yaml_emitter_set_indent(emitter, 2);

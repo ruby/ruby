@@ -1,3 +1,5 @@
+# coding: utf-8
+
 require_relative 'helper'
 
 module Psych
@@ -22,6 +24,23 @@ module Psych
     def setup
       super
       @parser = Psych::Parser.new EventCatcher.new
+    end
+
+    def test_bom
+      tadpole = 'おたまじゃくし'
+
+      # BOM + text
+      yml = "\uFEFF#{tadpole}".encode('UTF-16LE')
+      @parser.parse yml
+      assert_equal tadpole, @parser.handler.calls[2][1].first
+    end
+
+    def test_external_encoding
+      tadpole = 'おたまじゃくし'
+
+      @parser.external_encoding = Psych::Parser::UTF16LE
+      @parser.parse tadpole.encode 'UTF-16LE'
+      assert_equal tadpole, @parser.handler.calls[2][1].first
     end
 
     def test_bogus_io
