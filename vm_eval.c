@@ -1562,7 +1562,7 @@ rb_catch_obj(VALUE tag, VALUE (*func)(), VALUE data)
 static VALUE
 rb_f_caller(int argc, VALUE *argv)
 {
-    VALUE level;
+    VALUE level, ary;
     int lev;
 
     rb_scan_args(argc, argv, "01", &level);
@@ -1574,7 +1574,9 @@ rb_f_caller(int argc, VALUE *argv)
     if (lev < 0)
 	rb_raise(rb_eArgError, "negative level (%d)", lev);
 
-    return vm_backtrace(GET_THREAD(), lev);
+    ary = vm_backtrace(GET_THREAD(), lev);
+    if (NIL_P(ary)) ary = rb_ary_new();
+    return ary;
 }
 
 static int

@@ -1,3 +1,8 @@
+Wed May 19 20:09:38 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* vm_eval.c (rb_f_caller): return [] instead of nil when the function
+	  is called on toplevel.  [ruby-dev:41348]
+
 Wed May 19 20:06:11 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* iseq_compile_each (NODE_DEFINED): put nil first to fix stack
