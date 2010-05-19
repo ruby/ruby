@@ -1,3 +1,10 @@
+Wed May 19 19:45:10 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* iseq_compile_each (NODE_DEFINED): put nil first to fix stack
+	  consistency.  [ruby-core:30293]
+	  Now, lfinish[0] of defined_expr seems not to be used.  Refactoring
+	  may be needed.
+
 Wed May 19 16:55:09 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* numeric.c (rb_num2ulong): use rb_big2ulong for data from
