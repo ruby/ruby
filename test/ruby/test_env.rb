@@ -123,7 +123,13 @@ class TestEnv < Test::Unit::TestCase
     assert_equal(nil, ENV["test"])
     assert_raise(ArgumentError) { ENV["foo\0bar"] = "test" }
     assert_raise(ArgumentError) { ENV["test"] = "foo\0bar" }
-    assert_raise(Errno::EINVAL) { ENV["foo=bar"] = "test" }
+    if /netbsd/ =~ RUBY_PLATFORM
+      ENV["foo=bar"] = "test"
+      assert_equal("test", ENV["foo=bar"])
+      assert_equal("test", ENV["foo"])
+    else
+      assert_raise(Errno::EINVAL) { ENV["foo=bar"] = "test" }
+    end
     ENV[PATH_ENV] = "/tmp/".taint
     assert_equal("/tmp/", ENV[PATH_ENV])
   end
