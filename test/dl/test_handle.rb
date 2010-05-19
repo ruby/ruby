@@ -23,8 +23,16 @@ module DL
 
     def test_static_sym
       skip "DL::Handle.sym is not supported" if /mswin|mingw/ =~ RUBY_PLATFORM
-      assert_not_nil DL::Handle.sym('dlopen')
-      assert_equal DL::Handle.sym('dlopen'), DL::Handle['dlopen']
+      begin
+        # Linux / Darwin / FreeBSD
+       assert_not_nil DL::Handle.sym('dlopen')
+       assert_equal DL::Handle.sym('dlopen'), DL::Handle['dlopen']
+      rescue
+        # NetBSD
+        require 'objspace'
+       assert_not_nil DL::Handle.sym('Init_objspace')
+       assert_equal DL::Handle.sym('Init_objspace'), DL::Handle['Init_objspace']
+      end
     end
 
     def test_sym_closed_handle
