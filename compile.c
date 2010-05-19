@@ -4815,11 +4815,12 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    LABEL *lfinish[2];
 	    lfinish[0] = NEW_LABEL(nd_line(node));
 	    lfinish[1] = 0;
+	    ADD_INSN(ret, nd_line(node), putnil);
 	    defined_expr(iseq, ret, node->nd_head, lfinish, Qtrue);
+	    ADD_INSN(ret, nd_line(node), swap);
+	    ADD_INSN(ret, nd_line(node), pop);
 	    if (lfinish[1]) {
-		ADD_INSNL(ret, nd_line(node), jump, lfinish[0]);
 		ADD_LABEL(ret, lfinish[1]);
-		ADD_INSN(ret, nd_line(node), putnil);
 	    }
 	    ADD_LABEL(ret, lfinish[0]);
 	}
