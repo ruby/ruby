@@ -22,8 +22,12 @@ module DL
     end
 
     def test_sinf
-      f = Function.new(CFunc.new(@libm['sinf'], TYPE_FLOAT, 'sinf'),
-                       [TYPE_FLOAT])
+      begin
+        f = Function.new(CFunc.new(@libm['sinf'], TYPE_FLOAT, 'sinf'),
+                         [TYPE_FLOAT])
+      rescue DL::DLError
+        skip "libm may not have sinf()"
+      end
       assert_in_delta 1.0, f.call(90 * Math::PI / 180), 0.0001
     end
 
