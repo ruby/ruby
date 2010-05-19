@@ -64,6 +64,7 @@ module Psych
         ['foo', Object.new, nil, false, true, 1],
         ['foo', nil, Object.new, false, true, 1],
         ['foo', nil, nil, false, true, :foo],
+        [nil, nil, nil, false, true, 1],
       ].each do |args|
         assert_raises(TypeError) do
           @emitter.scalar(*args)

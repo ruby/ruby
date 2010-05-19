@@ -121,6 +121,9 @@ static VALUE start_document(VALUE self, VALUE version, VALUE tags, VALUE imp)
 
     if(RTEST(tags)) {
 	int i = 0;
+#ifdef HAVE_RUBY_ENCODING_H
+	rb_encoding * encoding = rb_utf8_encoding();
+#endif
 
 	Check_Type(tags, T_ARRAY);
 
@@ -129,15 +132,24 @@ static VALUE start_document(VALUE self, VALUE version, VALUE tags, VALUE imp)
 
 	for(i = 0; i < RARRAY_LEN(tags); i++) {
 	    VALUE tuple = RARRAY_PTR(tags)[i];
+	    VALUE name;
+	    VALUE value;
+
 	    Check_Type(tuple, T_ARRAY);
 
 	    if(RARRAY_LEN(tuple) < 2) {
 		xfree(head);
 		rb_raise(rb_eRuntimeError, "tag tuple must be of length 2");
 	    }
+	    name  = RARRAY_PTR(tuple)[0];
+	    value = RARRAY_PTR(tuple)[1];
+#ifdef HAVE_RUBY_ENCODING_H
+	    name = rb_str_export_to_enc(name, encoding);
+	    value = rb_str_export_to_enc(value, encoding);
+#endif
 
-	    tail->handle = (yaml_char_t *)StringValuePtr(RARRAY_PTR(tuple)[0]);
-	    tail->prefix = (yaml_char_t *)StringValuePtr(RARRAY_PTR(tuple)[1]);
+	    tail->handle = (yaml_char_t *)StringValuePtr(name);
+	    tail->prefix = (yaml_char_t *)StringValuePtr(value);
 
 	    tail++;
 	}
@@ -199,6 +211,22 @@ static VALUE scalar(
 
     Check_Type(value, T_STRING);
 
+#ifdef HAVE_RUBY_ENCODING_H
+    rb_encoding * encoding = rb_utf8_encoding();
+
+    value = rb_str_export_to_enc(value, encoding);
+
+    if(!NIL_P(anchor)) {
+	Check_Type(anchor, T_STRING);
+	anchor = rb_str_export_to_enc(anchor, encoding);
+    }
+
+    if(!NIL_P(tag)) {
+	Check_Type(tag, T_STRING);
+	tag = rb_str_export_to_enc(tag, encoding);
+    }
+#endif
+
     yaml_scalar_event_initialize(
 	    &event,
 	    (yaml_char_t *)(NIL_P(anchor) ? NULL : StringValuePtr(anchor)),
@@ -231,6 +259,21 @@ static VALUE start_sequence(
 	) {
     yaml_emitter_t * emitter;
     yaml_event_t event;
+
+#ifdef HAVE_RUBY_ENCODING_H
+    rb_encoding * encoding = rb_utf8_encoding();
+
+    if(!NIL_P(anchor)) {
+	Check_Type(anchor, T_STRING);
+	anchor = rb_str_export_to_enc(anchor, encoding);
+    }
+
+    if(!NIL_P(tag)) {
+	Check_Type(tag, T_STRING);
+	tag = rb_str_export_to_enc(tag, encoding);
+    }
+#endif
+
     Data_Get_Struct(self, yaml_emitter_t, emitter);
 
     yaml_sequence_start_event_initialize(
@@ -283,6 +326,20 @@ static VALUE start_mapping(
     yaml_event_t event;
     Data_Get_Struct(self, yaml_emitter_t, emitter);
 
+#ifdef HAVE_RUBY_ENCODING_H
+    rb_encoding * encoding = rb_utf8_encoding();
+
+    if(!NIL_P(anchor)) {
+	Check_Type(anchor, T_STRING);
+	anchor = rb_str_export_to_enc(anchor, encoding);
+    }
+
+    if(!NIL_P(tag)) {
+	Check_Type(tag, T_STRING);
+	tag = rb_str_export_to_enc(tag, encoding);
+    }
+#endif
+
     yaml_mapping_start_event_initialize(
 	    &event,
 	    (yaml_char_t *)(NIL_P(anchor) ? NULL : StringValuePtr(anchor)),
@@ -326,6 +383,13 @@ static VALUE alias(VALUE self, VALUE anchor)
     yaml_emitter_t * emitter;
     yaml_event_t event;
     Data_Get_Struct(self, yaml_emitter_t, emitter);
+
+#ifdef HAVE_RUBY_ENCODING_H
+    if(!NIL_P(anchor)) {
+	Check_Type(anchor, T_STRING);
+	anchor = rb_str_export_to_enc(anchor, rb_utf8_encoding());
+    }
+#endif
 
     yaml_alias_event_initialize(
 	    &event,
