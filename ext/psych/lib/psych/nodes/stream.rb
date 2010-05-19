@@ -21,7 +21,7 @@ module Psych
       UTF16BE = Psych::Parser::UTF16BE
 
       # The encoding used for this stream
-      attr_reader :encoding
+      attr_accessor :encoding
 
       ###
       # Create a new Psych::Nodes::Stream node with an +encoding+ that
