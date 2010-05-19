@@ -64,7 +64,7 @@ if defined?(WIN32OLE)
       # is found in context menu,
       if @shortcut
         links = find_link(@dummy_path)
-        assert(0, links.size)
+        assert_equal(0, links.size)
 
         # Now create shortcut to @dummy_path
         arg = WIN32OLE_VARIANT.new(@shortcut)
@@ -72,7 +72,7 @@ if defined?(WIN32OLE)
 
         # Now search shortcut to @dummy_path
         links = find_link(@dummy_path)
-        assert(1, links.size)
+        assert_equal(1, links.size)
         @lpath = links[0].path
       end
     end
