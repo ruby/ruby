@@ -80,7 +80,7 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
         server_proc.call(ctx, ssl)
       end
     end
-  rescue Errno::EBADF, IOError, Errno::EINVAL, Errno::ECONNABORTED
+  rescue Errno::EBADF, IOError, Errno::EINVAL, Errno::ECONNABORTED, Errno::ENOTSOCK
   end
 
   def start_server(port0, verify_mode, start_immediately, args = {}, &block)
