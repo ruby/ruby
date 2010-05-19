@@ -890,3 +890,13 @@ assert_valid_syntax('x y { "#{}".z { } }', bug1240)
 assert_valid_syntax('x y { "#{}".z do end }', bug1240)
 
 assert_valid_syntax('y "#{a 1}" do end', '[ruby-core:29579]')
+assert_normal_exit %q{
+  def foo(&block)
+    yield
+  end
+
+  foo do
+    s = defined?(raise + 1)
+    Class
+  end
+}, '[ruby-core:30293]'
