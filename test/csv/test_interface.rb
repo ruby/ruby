@@ -167,14 +167,14 @@ class TestCSVInterface < Test::Unit::TestCase
     File.unlink(@path)
 
     lines = [{a: 1, b: 2, c: 3}, {a: 4, b: 5, c: 6}]
-    CSV.open( @path, "w", headers:           true,
-                          header_converters: :symbol ) do |csv|
+    CSV.open( @path, "wb", headers:           true,
+                           header_converters: :symbol ) do |csv|
       csv << lines.first.keys
       lines.each { |line| csv << line }
     end
-    CSV.open( @path, "r", headers:           true,
-                          converters:        :all,
-                          header_converters: :symbol ) do |csv|
+    CSV.open( @path, "rb", headers:           true,
+                           converters:        :all,
+                           header_converters: :symbol ) do |csv|
       csv.each { |line| assert_equal(lines.shift, line.to_hash) }
     end
   end
