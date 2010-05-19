@@ -1,3 +1,9 @@
+Wed May 19 19:58:01 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/extconf.rb: mswin/mingw ruby has socketpair(), but it's
+	  not exist as such name in ruby static library, so mkmf.rb cannot
+	  find it.
+
 Wed May 19 19:45:10 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* iseq_compile_each (NODE_DEFINED): put nil first to fix stack
