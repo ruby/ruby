@@ -24,9 +24,81 @@ module Psych
 
     def setup
       super
+      @buffer  = StringIO.new
       @handler = EncodingCatcher.new
       @parser  = Psych::Parser.new @handler
       @utf8    = Encoding.find('UTF-8')
+      @emitter = Psych::Emitter.new @buffer
+    end
+
+    def test_emit_alias
+      @emitter.start_stream Psych::Parser::UTF8
+      @emitter.start_document [], [], true
+      e = assert_raises(RuntimeError) do
+        @emitter.alias 'ドラえもん'.encode('EUC-JP')
+      end
+      assert_match(/alias value/, e.message)
+    end
+
+    def test_start_mapping
+      foo = 'foo'
+      bar = 'バー'
+
+      @emitter.start_stream Psych::Parser::UTF8
+      @emitter.start_document [], [], true
+      @emitter.start_mapping(
+        foo.encode('Shift_JIS'),
+        bar.encode('UTF-16LE'),
+        false, Nodes::Sequence::ANY)
+      @emitter.end_mapping
+      @emitter.end_document false
+      @emitter.end_stream
+
+      @parser.parse @buffer.string
+      assert_encodings @utf8, @handler.strings
+      assert_equal [foo, bar], @handler.strings
+    end
+
+    def test_start_sequence
+      foo = 'foo'
+      bar = 'バー'
+
+      @emitter.start_stream Psych::Parser::UTF8
+      @emitter.start_document [], [], true
+      @emitter.start_sequence(
+        foo.encode('Shift_JIS'),
+        bar.encode('UTF-16LE'),
+        false, Nodes::Sequence::ANY)
+      @emitter.end_sequence
+      @emitter.end_document false
+      @emitter.end_stream
+
+      @parser.parse @buffer.string
+      assert_encodings @utf8, @handler.strings
+      assert_equal [foo, bar], @handler.strings
+    end
+
+    def test_doc_tag_encoding
+      key = '鍵'
+      @emitter.start_stream Psych::Parser::UTF8
+      @emitter.start_document(
+        [1, 1],
+        [['!'.encode('EUC-JP'), key.encode('EUC-JP')]],
+        true
+      )
+      @emitter.scalar 'foo', nil, nil, true, false, Nodes::Scalar::ANY
+      @emitter.end_document false
+      @emitter.end_stream
+
+      @parser.parse @buffer.string
+      assert_encodings @utf8, @handler.strings
+      assert_equal key, @handler.strings[1]
+    end
+
+    def test_emitter_encoding
+      str  = "壁に耳あり、障子に目あり"
+      thing = Psych.load Psych.dump str.encode('EUC-JP')
+      assert_equal str, thing
     end
 
     def test_default_internal

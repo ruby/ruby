@@ -1,3 +1,7 @@
+Thu May 20 02:12:20 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/emitter.c: output strings are automatically transcoded
+
 Wed May 19 23:36:57 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/extconf.rb: [ruby-dev:41334] [Bug #3307] invalid result
