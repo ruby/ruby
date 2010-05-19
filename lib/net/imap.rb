@@ -311,7 +311,11 @@ module Net
         @receiver_thread.raise(e)
       end
       @receiver_thread.join
-      @sock.close
+      synchronize do
+        unless @sock.closed?
+          @sock.close 
+        end
+      end
       raise e if e
     end
 

@@ -1,3 +1,8 @@
+Wed May 19 23:19:30 2010  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (disconnect): closes the socket of a Net::IMAP
+	  object only when it is not closed.  [ruby-dev:41350]
+
 Wed May 19 20:09:38 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm_eval.c (rb_f_caller): return [] instead of nil when the function
