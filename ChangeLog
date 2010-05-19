@@ -1,3 +1,14 @@
+Wed May 19 10:46:05 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (argv_size): merged into join_argv() to maintain the
+	  agreement with it.  removed code has a calclulation bug.
+	  fixed [Bug#2388]
+
+	* win32/win32.c (join_argv): calc and return the length of joined
+	  argv.
+	  the cause of the original bug was clarified by Masaya TARUI
+	  <tarui AT prx.jp> and the solution was suggested by him, too.
+
 Mon May 17 11:09:58 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/fileutils.rb (FileUtils::Entry_#entries): returns pathname in
