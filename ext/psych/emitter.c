@@ -207,12 +207,15 @@ static VALUE scalar(
 	) {
     yaml_emitter_t * emitter;
     yaml_event_t event;
+#ifdef HAVE_RUBY_ENCODING_H
+    rb_encoding *encoding;
+#endif
     Data_Get_Struct(self, yaml_emitter_t, emitter);
 
     Check_Type(value, T_STRING);
 
 #ifdef HAVE_RUBY_ENCODING_H
-    rb_encoding * encoding = rb_utf8_encoding();
+    encoding = rb_utf8_encoding();
 
     value = rb_str_export_to_enc(value, encoding);
 
@@ -324,10 +327,13 @@ static VALUE start_mapping(
 	) {
     yaml_emitter_t * emitter;
     yaml_event_t event;
+#ifdef HAVE_RUBY_ENCODING_H
+    rb_encoding *encoding;
+#endif
     Data_Get_Struct(self, yaml_emitter_t, emitter);
 
 #ifdef HAVE_RUBY_ENCODING_H
-    rb_encoding * encoding = rb_utf8_encoding();
+    encoding = rb_utf8_encoding();
 
     if(!NIL_P(anchor)) {
 	Check_Type(anchor, T_STRING);
