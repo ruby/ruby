@@ -817,8 +817,8 @@ class CGI
       super(@value)
     end
 
-    attr_accessor("name", "value", "path", "domain", "expires")
-    attr_reader("secure")
+    attr_accessor("name", "path", "domain", "expires")
+    attr_reader("secure", "value")
 
     # Set whether the Cookie is a secure cookie or not.
     #
@@ -828,16 +828,17 @@ class CGI
       @secure
     end
 
+    # Set the value of the cookie.
+    def value=(val)
+      @value.replace(Array(val))
+    end
+
     # Convert the Cookie to its string representation.
     def to_s
       buf = ""
       buf += @name + '='
 
-      if @value.kind_of?(String)
-        buf += CGI::escape(@value)
-      else
-        buf += @value.collect{|v| CGI::escape(v) }.join("&")
-      end
+      buf += @value.map { |v| CGI::escape(v.to_s) }.join("&")
 
       if @domain
         buf += '; domain=' + @domain
