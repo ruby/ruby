@@ -97,6 +97,8 @@ module Psych
   class Exception < RuntimeError
   end
 
+  autoload :Stream, 'psych/stream'
+
   ###
   # Load +yaml+ in to a Ruby data structure.  If multiple documents are
   # provided, the object contained in the first document will be returned.

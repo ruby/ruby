@@ -1,6 +1,15 @@
 module Psych
   module Visitors
     class Visitor
+      attr_reader :started, :finished
+      alias :finished? :finished
+      alias :started? :started
+
+      def initialize
+        @started  = false
+        @finished = false
+      end
+
       def accept target
         case target
         when Psych::Nodes::Scalar   then visit_Psych_Nodes_Scalar target

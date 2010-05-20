@@ -57,7 +57,7 @@ module Psych
     # and +implicit+ styling.
     #
     # See Psych::Handler#start_document
-    def end_document implicit_end
+    def end_document implicit_end = !streaming?
       @last.implicit_end = implicit_end
       pop
     end

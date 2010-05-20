@@ -10,11 +10,9 @@ module Psych
     class YAMLTree < Psych::Visitors::Visitor
       def initialize options = {}, emitter = Psych::TreeBuilder.new
         super()
-        @emitter = emitter
-        @st      = {}
-        @ss      = ScalarScanner.new
-
-        @emitter.start_stream Psych::Nodes::Stream::UTF8
+        @emitter  = emitter
+        @st       = {}
+        @ss       = ScalarScanner.new
 
         @dispatch_cache = Hash.new do |h,klass|
           method = "visit_#{(klass.name || '').split('::').join('_')}"
@@ -27,15 +25,29 @@ module Psych
         end
       end
 
-      def tree
-        @emitter.end_stream
+      def start encoding = Nodes::Stream::UTF8
+        @emitter.start_stream(encoding).tap do
+          @started = true
+        end
       end
 
-      def << object
+      def finish
+        @emitter.end_stream.tap do
+          @finished = true
+        end
+      end
+
+      def tree
+        finish unless finished?
+      end
+
+      def push object
+        start unless started?
         @emitter.start_document [], [], false
         accept object
-        @emitter.end_document true
+        @emitter.end_document
       end
+      alias :<< :push
 
       def accept target
         # return any aliases we find
