@@ -16,7 +16,7 @@ static inline VALUE rb_vm_set_finish_env(rb_thread_t * th);
 static inline VALUE vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *argv, const NODE *cref);
 static inline VALUE vm_yield(rb_thread_t *th, int argc, const VALUE *argv);
 static inline VALUE vm_backtrace(rb_thread_t *th, int lev);
-static int vm_backtrace_each(rb_thread_t *th, int lev, rb_backtrace_iter_func *iter, void *arg);
+static int vm_backtrace_each(rb_thread_t *th, int lev, void (*init)(void *), rb_backtrace_iter_func *iter, void *arg);
 static NODE *vm_cref_push(rb_thread_t *th, VALUE klass, int noex, rb_block_t *blockptr);
 static VALUE vm_exec(rb_thread_t *th);
 static void vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const NODE *cref);
@@ -1574,9 +1574,7 @@ rb_f_caller(int argc, VALUE *argv)
     if (lev < 0)
 	rb_raise(rb_eArgError, "negative level (%d)", lev);
 
-    ary = vm_backtrace(GET_THREAD(), lev);
-    if (NIL_P(ary)) ary = rb_ary_new();
-    return ary;
+    return vm_backtrace(GET_THREAD(), lev);
 }
 
 static int
@@ -1598,7 +1596,7 @@ print_backtrace(void *arg, VALUE file, int line, VALUE method)
 void
 rb_backtrace(void)
 {
-    vm_backtrace_each(GET_THREAD(), -1, print_backtrace, stderr);
+    vm_backtrace_each(GET_THREAD(), -1, NULL, print_backtrace, stderr);
 }
 
 VALUE
@@ -1629,7 +1627,7 @@ rb_thread_backtrace(VALUE thval)
 int
 rb_backtrace_each(rb_backtrace_iter_func *iter, void *arg)
 {
-    return vm_backtrace_each(GET_THREAD(), -1, iter, arg);
+    return vm_backtrace_each(GET_THREAD(), -1, NULL, iter, arg);
 }
 
 /*
