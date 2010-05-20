@@ -1,3 +1,7 @@
+Thu May 20 22:49:04 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* re.c (rb_reg_s_union_m): update rdoc.  [ruby-dev:41354]
+
 Thu May 20 22:08:28 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm_eval.c (rb_f_caller): update rdoc.  a patch from Nobuhiro IMAI

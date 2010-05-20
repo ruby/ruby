@@ -3195,6 +3195,7 @@ rb_reg_s_union(VALUE self, VALUE args0)
  *  <em>pattern</em>s, i.e., will match any of its parts. The <em>pattern</em>s
  *  can be Regexp objects, in which case their options will be preserved, or
  *  Strings. If no patterns are given, returns <code>/(?!)/</code>.
+ *  The behavior is unspecified if any given <em>pattern</em> contains capture.
  *
  *     Regexp.union                         #=> /(?!)/
  *     Regexp.union("penzance")             #=> /penzance/
