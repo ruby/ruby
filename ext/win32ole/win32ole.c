@@ -130,7 +130,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.4.7"
+#define WIN32OLE_VERSION "1.4.8"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -3347,7 +3347,7 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
                 &wcmdname, 1, lcid, &DispID);
         SysFreeString(wcmdname);
         if(FAILED(hr)) {
-            ole_raise(hr, eWIN32OLERuntimeError,
+            ole_raise(hr, rb_eNoMethodError,
                     "unknown property or method: `%s'",
                     StringValuePtr(cmd));
         }
