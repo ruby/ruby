@@ -1,3 +1,10 @@
+Thu May 20 20:47:46 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_invoke): raise NoMethodError
+	  when COM method is not found. [ruby-core:30160] [Bug #3277]
+
+	* test/win32ole/test_win32ole.rb (test_no_method_error): ditto.
+
 Thu May 20 16:17:14 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/psych/emitter: C99(gcc)-ism.

@@ -55,6 +55,13 @@ if defined?(WIN32OLE)
       assert_match(/^\(in setting property `compareMode': \)/, exc.message) #`
     end
 
+    def test_no_method_error
+      exc = assert_raise(NoMethodError) {
+          @dict1.non_exist_method
+      }
+      assert_match(/non_exist_method/, exc.message)
+    end
+
     def test_ole_methods
       methods = @dict1.ole_methods
       mnames = methods.collect {|m|
