@@ -584,7 +584,7 @@ s,@top_srcdir@,$(srcdir),;t t
 miniruby$(EXEEXT):
 		@echo $(LIBS)
 		@$(RM) $@
-		$(PURIFY) $(CC) $(MAINOBJ) $(MINIOBJS) $(LIBRUBY_A) $(LIBS) -Fe$@ $(LDFLAGS)
+		$(PURIFY) $(CC) $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT) $(LIBS) -Fe$@ $(LDFLAGS)
 		$(LDSHARED_1)
 		$(LDSHARED_2)
 
