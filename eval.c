@@ -13566,6 +13566,7 @@ recursive_push(hash, obj)
     sym = ID2SYM(rb_frame_last_func());
     if (NIL_P(hash) || TYPE(hash) != T_HASH) {
 	hash = rb_hash_new();
+	OBJ_TAINT(hash);
 	rb_thread_local_aset(rb_thread_current(), recursive_key, hash);
 	list = Qnil;
     }
@@ -13574,6 +13575,7 @@ recursive_push(hash, obj)
     }
     if (NIL_P(list) || TYPE(list) != T_HASH) {
 	list = rb_hash_new();
+	OBJ_TAINT(list);
 	rb_hash_aset(hash, sym, list);
     }
     rb_hash_aset(list, obj, Qtrue);

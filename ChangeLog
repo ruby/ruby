@@ -1,3 +1,8 @@
+Thu May 20 15:54:08 2010  Akinori MUSHA  <knu@iDaemons.org>
+
+	* eval.c (recursive_push): Taint internal hash to prevent
+	  unexpected SecurityError; fixes #1864.
+
 Thu May 20 15:39:26 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (io_fwrite): preserve errno.  [ruby-core:27425]
