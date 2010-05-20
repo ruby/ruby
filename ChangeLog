@@ -1,3 +1,10 @@
+Thu May 20 22:04:05 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* vm.c (vm_backtrace_each): now takes an init function to distinguish
+	  an empty stack from out of stack.  [ruby-dev:41366]
+
+	* vm_eval.c (print_backtrace, rb_thread_backtrace): ditto.
+
 Thu May 20 20:47:46 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_invoke): raise NoMethodError
