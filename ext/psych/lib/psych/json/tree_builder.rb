@@ -8,7 +8,7 @@ module Psych
         super(version, tag_directives, true)
       end
 
-      def end_document implicit_end
+      def end_document implicit_end = !streaming?
         super(true)
       end
 

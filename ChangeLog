@@ -1,3 +1,12 @@
+Thu May 20 12:59:49 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/stream.rb: adding YAML streaming API for
+	  infinite length streams.
+
+	* ext/psych/lib/psych.rb: refactoring for streaming API
+
+	* ext/psych/lib/psych/{handler, stream, tree_builder}.rb: ditto
+
 Thu May 20 02:12:20 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/emitter.c: output strings are automatically transcoded

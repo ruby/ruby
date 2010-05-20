@@ -211,5 +211,11 @@ module Psych
     # Called when the YAML stream ends
     def end_stream
     end
+
+    ###
+    # Is this handler a streaming handler?
+    def streaming?
+      false
+    end
   end
 end
