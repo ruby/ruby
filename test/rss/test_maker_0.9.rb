@@ -434,5 +434,22 @@ module RSS
       end
       assert_nil(rss.channel.textInput)
     end
+
+    def test_date_in_string
+      date = Time.now
+
+      rss = RSS::Maker.make("0.91") do |maker|
+        setup_dummy_channel(maker)
+        setup_dummy_image(maker)
+
+        maker.items.new_item do |item|
+          item.title = "The first item"
+          item.link = "http://example.com/blog/1.html"
+          item.date = date.rfc822
+        end
+      end
+
+      assert_equal(date.iso8601, rss.items[0].date.iso8601)
+    end
   end
 end
