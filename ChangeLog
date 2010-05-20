@@ -1,3 +1,10 @@
+Fri May 21 08:33:52 2010  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
+
+	* common.mk (EXPORTOBJS): merged r24482 from trunk. [Bug #3326]
+
+	* common.mk (miniruby$(EXEEXT)): ruby.imp need to be created
+	  before creating miniruby. [Bug #3326]
+
 Thu May 20 21:25:55 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (miniruby.exe): merge miss of r27053, too.

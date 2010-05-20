@@ -60,9 +60,10 @@ COMMONOBJS    = array.$(OBJEXT) \
 		version.$(OBJEXT) \
 		$(MISSING)
 
-OBJS          = $(COMMONOBJS) \
-		dln.$(OBJEXT) \
-		prelude.$(OBJEXT)
+EXPORTOBJS      = $(COMMONOBJS) \
+		dln.$(OBJEXT)
+
+OBJS            = $(EXPORTOBJS) prelude.$(OBJEXT)
 
 PRELUDE_SCRIPTS = $(srcdir)/prelude.rb
 PRELUDES      = prelude.c miniprelude.c
@@ -102,7 +103,7 @@ $(MKMAIN_CMD): $(MKFILES) $(PREP) $(RBCONFIG) $(LIBRUBY)
 
 prog: $(PROGRAM) $(WPROGRAM)
 
-miniruby$(EXEEXT): config.status $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT)
+miniruby$(EXEEXT): config.status $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT) $(ARCHFILE)
 
 $(PROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SETUP) $(PREP)
 
@@ -117,8 +118,8 @@ $(STATIC_RUBY)$(EXEEXT): $(MAINOBJ) $(DLDOBJS) $(EXTOBJS) $(LIBRUBY_A)
 	@$(RM) $@
 	$(PURIFY) $(CC) $(MAINOBJ) $(DLDOBJS) $(EXTOBJS) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(LIBS) $(OUTFLAG)$@ $(LDFLAGS) $(XLDFLAGS)
 
-ruby.imp: $(OBJS)
-	@$(NM) -Pgp $(OBJS) | awk 'BEGIN{print "#!"}; $$2~/^[BD]$$/{print $$1}' | sort -u -o $@
+ruby.imp: $(EXPORTOBJS)
+	@$(NM) -Pgp $(EXPORTOBJS) | awk 'BEGIN{print "#!"}; $$2~/^[BD]$$/{print $$1}' | sort -u -o $@
 
 install: install-$(RDOCTARGET)
 install-rdoc: install-all
