@@ -1,3 +1,7 @@
+Thu May 20 18:54:33 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (ARCHMINIOBJ): merge miss of r27053.
+
 Wed May 19 23:36:57 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/extconf.rb: [ruby-dev:41334] [Bug #3307] invalid result

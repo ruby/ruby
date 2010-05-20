@@ -246,7 +246,7 @@ MKMAIN_CMD    = mkmain.bat
 !if !defined(WINMAINOBJ)
 WINMAINOBJ    = winmain.$(OBJEXT)
 !endif
-MINIOBJS      = dmydln.$(OBJEXT)
+ARCHMINIOBJS  = dmydln.$(OBJEXT)
 LIBOBJS       = acosh.obj crypt.obj erf.obj strlcpy.obj strlcat.obj win32.obj $(LIBOBJS)
 
 !ifndef COMMON_LIBS
