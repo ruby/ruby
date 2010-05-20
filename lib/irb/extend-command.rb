@@ -126,9 +126,15 @@ module IRB
 	eval %[
 	  def #{cmd_name}(*opts, &b)
 	    require "#{load_file}"
+	    arity = ExtendCommand::#{cmd_class}.instance_method(:execute).arity
+	    args = (1..arity.abs).map {|i| "arg" + i.to_s }
+	    args << "*opts" if arity < 0
+	    args << "&block"
+	    args = args.join(", ")
 	    eval %[
-	      def #{cmd_name}(*opts, &b)
-		ExtendCommand::#{cmd_class}.execute(irb_context, *opts, &b)
+	      def #{cmd_name}(\#{args})
+		ExtendCommand::#{cmd_class}.execute(irb_context, \#{args})
+
 	      end
 	    ]
 	    send :#{cmd_name}, *opts, &b
