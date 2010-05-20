@@ -1,3 +1,8 @@
+Thu May 20 16:28:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/webrick/httpservlet/filehandler.rb (make_partial_content):
+	  add bytes-unit.  [ruby-dev:40030]
+
 Thu May 20 16:17:37 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* ext/zlib/zlib.c: backport r18029 and r21861 from trunk.

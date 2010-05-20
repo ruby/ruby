@@ -71,6 +71,11 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
   def test_filehandler
     config = { :DocumentRoot => File.dirname(__FILE__), }
     this_file = File.basename(__FILE__)
+    filesize = File.size(__FILE__)
+    this_data = File.open(__FILE__, "rb") {|f| f.read}
+    range = nil
+    bug2593 = '[ruby-dev:40030]'
+
     TestWEBrick.start_httpserver(config) do |server, addr, port|
       http = Net::HTTP.new(addr, port)
       req = Net::HTTP::Get.new("/")
@@ -85,6 +90,67 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
         assert_equal("text/plain", res.content_type)
         assert_equal(File.read(__FILE__), res.body)
       }
+
+      req = Net::HTTP::Get.new("/#{this_file}", "range"=>"bytes=#{filesize-100}-")
+      http.request(req){|res|
+        assert_equal("206", res.code, log.call)
+        assert_equal("text/plain", res.content_type, log.call)
+        assert_nothing_raised(bug2593) {range = res.content_range}
+        assert_equal((filesize-100)..(filesize-1), range, log.call)
+        assert_equal(this_data[-100..-1], res.body, log.call)
+      }
+
+      req = Net::HTTP::Get.new("/#{this_file}", "range"=>"bytes=-100")
+      http.request(req){|res|
+        assert_equal("206", res.code, log.call)
+        assert_equal("text/plain", res.content_type, log.call)
+        assert_nothing_raised(bug2593) {range = res.content_range}
+        assert_equal((filesize-100)..(filesize-1), range, log.call)
+        assert_equal(this_data[-100..-1], res.body, log.call)
+      }
+
+      req = Net::HTTP::Get.new("/#{this_file}", "range"=>"bytes=0-99")
+      http.request(req){|res|
+        assert_equal("206", res.code, log.call)
+        assert_equal("text/plain", res.content_type, log.call)
+        assert_nothing_raised(bug2593) {range = res.content_range}
+        assert_equal(0..99, range, log.call)
+        assert_equal(this_data[0..99], res.body, log.call)
+      }
+
+      req = Net::HTTP::Get.new("/#{this_file}", "range"=>"bytes=100-199")
+      http.request(req){|res|
+        assert_equal("206", res.code, log.call)
+        assert_equal("text/plain", res.content_type, log.call)
+        assert_nothing_raised(bug2593) {range = res.content_range}
+        assert_equal(100..199, range, log.call)
+        assert_equal(this_data[100..199], res.body, log.call)
+      }
+
+      req = Net::HTTP::Get.new("/#{this_file}", "range"=>"bytes=0-0")
+      http.request(req){|res|
+        assert_equal("206", res.code, log.call)
+        assert_equal("text/plain", res.content_type, log.call)
+        assert_nothing_raised(bug2593) {range = res.content_range}
+        assert_equal(0..0, range, log.call)
+        assert_equal(this_data[0..0], res.body, log.call)
+      }
+
+      req = Net::HTTP::Get.new("/#{this_file}", "range"=>"bytes=-1")
+      http.request(req){|res|
+        assert_equal("206", res.code, log.call)
+        assert_equal("text/plain", res.content_type, log.call)
+        assert_nothing_raised(bug2593) {range = res.content_range}
+        assert_equal((filesize-1)..(filesize-1), range, log.call)
+        assert_equal(this_data[-1, 1], res.body, log.call)
+      }
+
+      req = Net::HTTP::Get.new("/#{this_file}", "range"=>"bytes=0-0, -2")
+      http.request(req){|res|
+        assert_equal("206", res.code, log.call)
+        assert_equal("multipart/byteranges", res.content_type, log.call)
+      }
+
     end
   end
 
