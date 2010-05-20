@@ -1,3 +1,10 @@
+Thu May 20 19:10:21 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/openssl/extconf.rb: check some functions added at OpenSSL 1.0.0.
+
+	* ext/openssl/ossl_engine.c (ossl_engine_s_load): use engines which
+	  exists.
+
 Thu May 20 18:54:33 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (ARCHMINIOBJ): merge miss of r27053.
