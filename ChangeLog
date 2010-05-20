@@ -1,3 +1,10 @@
+Thu May 20 22:17:24 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* vm.c (vm_backtrace_each): now takes an init function to distinguish
+	  an empty stack from out of stack.  [ruby-dev:41366]
+
+	* vm_eval.c (print_backtrace, rb_thread_backtrace): ditto.
+
 Wed May 19 22:48:06 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/extconf.rb: mswin/mingw ruby has socketpair(), but it's

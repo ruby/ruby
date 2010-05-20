@@ -706,19 +706,20 @@ rb_vm_get_sourceline(const rb_control_frame_t *cfp)
 }
 
 static int
-vm_backtrace_each(rb_thread_t *th, int lev, rb_backtrace_iter_func *iter, void *arg)
+vm_backtrace_each(rb_thread_t *th, int lev, void (*init)(void *), rb_backtrace_iter_func *iter, void *arg)
 {
     const rb_control_frame_t *limit_cfp = th->cfp;
     const rb_control_frame_t *cfp = (void *)(th->stack + th->stack_size);
-    VALUE file = Qnil;
+    VALUE file = Qnil, *aryp = arg;
     int line_no = 0;
 
     cfp -= 2;
     while (lev-- >= 0) {
-	if (++limit_cfp >= cfp) {
+	if (++limit_cfp > cfp) {
 	    return FALSE;
 	}
     }
+    if (init) (*init)(arg);
     limit_cfp = RUBY_VM_NEXT_CONTROL_FRAME(limit_cfp);
     if (th->vm->progname) file = th->vm->progname;
     while (cfp > limit_cfp) {
@@ -747,15 +748,19 @@ vm_backtrace_each(rb_thread_t *th, int lev, rb_backtrace_iter_func *iter, void *
     return TRUE;
 }
 
+static void
+vm_backtrace_alloc(void *arg)
+{
+    VALUE *aryp = arg;
+    *aryp = rb_ary_new();
+}
+
 static int
 vm_backtrace_push(void *arg, VALUE file, int line_no, VALUE name)
 {
     VALUE *aryp = arg;
     VALUE bt;
 
-    if (!*aryp) {
-	*aryp = rb_ary_new();
-    }
     bt = rb_enc_sprintf(rb_enc_compatible(file, name), "%s:%d:in `%s'",
 			RSTRING_PTR(file), line_no, RSTRING_PTR(name));
     rb_ary_push(*aryp, bt);
@@ -770,7 +775,7 @@ vm_backtrace(rb_thread_t *th, int lev)
     if (lev < 0) {
 	ary = rb_ary_new();
     }
-    vm_backtrace_each(th, lev, vm_backtrace_push, &ary);
+    vm_backtrace_each(th, lev, vm_backtrace_alloc, vm_backtrace_push, &ary);
     if (!ary) return Qnil;
     return rb_ary_reverse(ary);
 }
