@@ -1,3 +1,8 @@
+Thu May 20 22:08:28 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* vm_eval.c (rb_f_caller): update rdoc.  a patch from Nobuhiro IMAI
+	  <nov at yo.rim.or.jp> in [ruby-dev:41348].
+
 Thu May 20 22:04:05 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm.c (vm_backtrace_each): now takes an init function to distinguish

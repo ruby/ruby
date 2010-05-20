@@ -1536,13 +1536,16 @@ rb_catch_obj(VALUE tag, VALUE (*func)(), VALUE data)
 
 /*
  *  call-seq:
- *     caller(start=1)    -> array
+ *     caller(start=1)    -> Array or nil
  *
  *  Returns the current execution stack---an array containing strings in
  *  the form ``<em>file:line</em>'' or ``<em>file:line: in
  *  `method'</em>''. The optional _start_ parameter
  *  determines the number of initial stack entries to omit from the
  *  result.
+ *
+ *  Returns +nil+ if _start_ is greater than or equal to the size of
+ *  current execution stack.
  *
  *     def a(skip)
  *       caller(skip)
@@ -1557,6 +1560,7 @@ rb_catch_obj(VALUE tag, VALUE (*func)(), VALUE data)
  *     c(1)   #=> ["prog:5:in `b'", "prog:8:in `c'", "prog:11"]
  *     c(2)   #=> ["prog:8:in `c'", "prog:12"]
  *     c(3)   #=> ["prog:13"]
+ *     c(4)   #=> nil
  */
 
 static VALUE
