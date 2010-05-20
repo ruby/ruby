@@ -1,3 +1,7 @@
+Thu May 20 16:17:14 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/psych/emitter: C99(gcc)-ism.
+
 Thu May 20 12:59:49 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/stream.rb: adding YAML streaming API for
