@@ -1,3 +1,7 @@
+Thu May 20 15:39:26 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (io_fwrite): preserve errno.  [ruby-core:27425]
+
 Tue Apr 20 08:04:37 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (rb_io_s_read): close the IO if an exception is raised on
