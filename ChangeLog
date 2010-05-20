@@ -1,3 +1,13 @@
+Thu May 20 16:17:37 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* ext/zlib/zlib.c: backport r18029 and r21861 from trunk.
+	  * r18029 ext/zlib/zlib.c (rb_deflate_params): flush before
+	    deflateParams. [ruby-core:17675] (by mame)
+	  * r21861 ext/zlib/zlib.c (zstream_run): desperately guard the
+	    variable.  [ruby-core:20576] (by usa)
+
+	* test/zlib/test_zlib.rb: backport deflate tests from trunk.
+
 Thu May 20 15:59:14 2010  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker/base.rb, test/rss/test_maker_0.9.rb:
