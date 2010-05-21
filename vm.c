@@ -710,7 +710,7 @@ vm_backtrace_each(rb_thread_t *th, int lev, void (*init)(void *), rb_backtrace_i
 {
     const rb_control_frame_t *limit_cfp = th->cfp;
     const rb_control_frame_t *cfp = (void *)(th->stack + th->stack_size);
-    VALUE file = Qnil, *aryp = arg;
+    VALUE file = Qnil;
     int line_no = 0;
 
     cfp -= 2;
