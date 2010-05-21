@@ -114,7 +114,7 @@ Mon May 17 21:30:50 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 Mon May 17 21:08:53 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (argv_size): merged into join_argv() to maintain the
-	  agreement with it.  removed code has a calclulation bug.
+	  agreement with it.  removed code has a calculation bug.
 	  fixed [Bug#2388]
 
 	* win32/win32.c (join_argv): calc and return the length of joined
@@ -438,7 +438,7 @@ Sun May  9 16:28:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Sun May  9 08:32:56 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json/generator/generator.c (fbuffer_inc_capa):
-	  fix tha use of REALLOC_N. [ruby-dev:41227]
+	  fix the use of REALLOC_N. [ruby-dev:41227]
 
 Sun May  9 09:30:09 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -492,7 +492,7 @@ Sat May  8 23:09:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/io/console/console.c (ttymode): save dupped file descriptors
 	  and restore tty modes using them, so that original modes can be
-	  restored even if orignal fds are closed.  [ruby-dev:41225]
+	  restored even if original fds are closed.  [ruby-dev:41225]
 
 Sat May  8 13:48:31 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
@@ -625,7 +625,7 @@ Thu May  6 02:16:48 2010  Koichi Sasada  <ko1@atdot.net>
 	  entries are collected.  This hack prevents releasing living method
 	  entry.
 	  [Performance Consideration] Since this Method Entry GC (MEGC)
-	  doesn't occuer frequently, MEGC will not be a performance bottleneck.
+	  doesn't occur frequently, MEGC will not be a performance bottleneck.
 	  However, to traverse living method entries, every control frame push
 	  needs to clear cfp->me field.  This will be a performance issue
 	  (because pushing control frame is occurred frequently).
@@ -812,7 +812,7 @@ Sat May  1 06:42:57 2010  wanabe  <s.wanabe@gmail.com>
 
 Sat May  1 02:41:33 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* merge some patches from win32-uncode-test branch.
+	* merge some patches from win32-unicode-test branch.
 	  see #1685.
 
 	* file.c, include/ruby/intern.h (rb_str_encode_ospath): new function
@@ -1044,7 +1044,7 @@ Tue Apr 27 21:24:40 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 	* eval.c (ruby_cleanup): before cleanup, check signal buffer and run
 	  handler if any.  [ruby-core:20970]
 
-	* thread.c (rb_threadptr_check_signal): separeted from
+	* thread.c (rb_threadptr_check_signal): separated from
 	  timer_thread_function.
 
 Tue Apr 27 18:00:50 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -1107,7 +1107,7 @@ Sun Apr 25 15:59:02 2010  Tadayoshi Funaba  <tadf@dotrb.org>
 
 Sun Apr 25 15:51:00 2010  Tadayoshi Funaba  <tadf@dotrb.org>
 
-	* complex.c, ratioanl.c: reverted experimental r24565.
+	* complex.c, rational.c: reverted experimental r24565.
 
 Sun Apr 25 15:34:48 2010  Tadayoshi Funaba  <tadf@dotrb.org>
 
@@ -1193,7 +1193,7 @@ Fri Apr 23 17:29:35 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 	  exists.
 
 	* ext/openssl/ossl_ssl_session (SSL_SESSION_cmp): removed at 1.0.0,
-	  so implement compatible fuction here.
+	  so implement compatible function here.
 
 Fri Apr 23 14:37:22 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -1374,7 +1374,7 @@ Mon Apr 19 12:46:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Mon Apr 19 00:27:03 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* vm_method.c (rb_add_method_def): workarond fix for redefinition
+	* vm_method.c (rb_add_method_def): workaround fix for redefinition
 	  of methods. This is because cfp->me uses the rb_method_entry
 	  which is freed by redefinition of remove_method. Note that
 	  reusing may cause another problem when the usage is changed.
@@ -1441,7 +1441,7 @@ Sat Apr 17 07:43:55 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 Sat Apr 17 07:27:53 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
-	* NEWS: add Array#repeated_{combinationpermutation} [Feature #2981]
+	* NEWS: add Array#repeated_{combination,permutation} [Feature #2981]
 
 Sat Apr 17 05:30:22 2010  Aaron Patterson  <aaron@tenderlovemaking.com>
 
@@ -1698,8 +1698,8 @@ Sun Apr 11 09:31:39 2010  Aaron Patterson  <aaron@tenderlovemaking.com>
 Sun Apr 11 08:56:44 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/rdoc/rdoc.rb (setup_output_dir): compare by Time#to_i.
-	  Cached created time doesn't have fractinal times,
-	  but FileStat#mtime has; so rdoc almost alway judged files
+	  Cached created time doesn't have fractional times,
+	  but FileStat#mtime has; so rdoc almost always judged files
 	  are updated.
 
 Sun Apr 11 07:40:48 2010  NARUSE, Yui  <naruse@ruby-lang.org>
@@ -1781,7 +1781,7 @@ Fri Apr  9 23:51:45 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 Fri Apr  9 21:22:10 2010  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* lib/irb/completion.rb (CompletionProc): irb will be stuck with
-	  long variable name at copletion. [Bug#1969]. refix [ruby-core:28366].
+	  long variable name at completion. [Bug#1969]. refix [ruby-core:28366].
 
 Fri Apr  9 20:54:10 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
