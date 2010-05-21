@@ -1808,7 +1808,7 @@ finalize_list(rb_objspace_t *objspace, RVALUE *p)
 	    add_freelist(objspace, p);
 	}
 	else {
-	    struct heaps_slot *slot = (struct heaps_slot *)RDATA(p)->dmark;
+	    struct heaps_slot *slot = (struct heaps_slot *)(VALUE)RDATA(p)->dmark;
 	    slot->limit--;
 	}
 	p = tmp;
@@ -1908,7 +1908,7 @@ gc_sweep(rb_objspace_t *objspace)
 	    RVALUE *pp;
 
 	    for (pp = final_list; pp != final; pp = pp->as.free.next) {
-		RDATA(pp)->dmark = (void *)&heaps[i];
+		RDATA(pp)->dmark = (void (*)())(VALUE)&heaps[i];
 		pp->as.free.flags |= FL_SINGLETON; /* freeing page mark */
 	    }
 	    heaps[i].limit = final_num;

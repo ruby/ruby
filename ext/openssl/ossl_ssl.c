@@ -16,7 +16,7 @@
 #  include <unistd.h> /* for read(), and write() */
 #endif
 
-#define numberof(ary) (sizeof(ary)/sizeof(ary[0]))
+#define numberof(ary) (int)(sizeof(ary)/sizeof(ary[0]))
 
 #ifdef _WIN32
 #  define TO_SOCKET(s) _get_osfhandle(s)
@@ -103,7 +103,7 @@ struct {
     const char *name;
     SSL_METHOD *(*func)(void);
 } ossl_ssl_method_tab[] = {
-#define OSSL_SSL_METHOD_ENTRY(name) { #name, name##_method }
+#define OSSL_SSL_METHOD_ENTRY(name) { #name, (SSL_METHOD *(*)(void))name##_method }
     OSSL_SSL_METHOD_ENTRY(TLSv1),
     OSSL_SSL_METHOD_ENTRY(TLSv1_server),
     OSSL_SSL_METHOD_ENTRY(TLSv1_client),
@@ -1428,7 +1428,7 @@ ossl_ssl_get_cipher(VALUE self)
         rb_warning("SSL session is not started yet.");
         return Qnil;
     }
-    cipher = SSL_get_current_cipher(ssl);
+    cipher = (SSL_CIPHER *)SSL_get_current_cipher(ssl);
 
     return ossl_ssl_cipher_to_ary(cipher);
 }

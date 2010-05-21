@@ -472,9 +472,9 @@ static VALUE
 unix_s_socketpair(int argc, VALUE *argv, VALUE klass)
 {
     VALUE domain, type, protocol;
-    domain = INT2FIX(PF_UNIX);
     VALUE args[3];
 
+    domain = INT2FIX(PF_UNIX);
     rb_scan_args(argc, argv, "02", &type, &protocol);
     if (argc == 0)
 	type = INT2FIX(SOCK_STREAM);

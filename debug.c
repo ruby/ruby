@@ -27,7 +27,6 @@ const union {
     enum {
         RUBY_ENCODING_INLINE_MAX = ENCODING_INLINE_MAX,
         RUBY_ENCODING_SHIFT = ENCODING_SHIFT,
-        RUBY_ENCODING_MASK  = ENCODING_MASK,
         RUBY_ENC_CODERANGE_MASK    = ENC_CODERANGE_MASK,
         RUBY_ENC_CODERANGE_UNKNOWN = ENC_CODERANGE_UNKNOWN,
         RUBY_ENC_CODERANGE_7BIT    = ENC_CODERANGE_7BIT,
@@ -70,6 +69,7 @@ const union {
 
 const VALUE RUBY_FL_USER19    = FL_USER19;
 const SIGNED_VALUE RUBY_NODE_LMASK = NODE_LMASK;
+const VALUE RUBY_ENCODING_MASK  = ENCODING_MASK;
 
 int
 ruby_debug_print_indent(int level, int debug_level, int indent_level)
