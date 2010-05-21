@@ -15,7 +15,7 @@
 #define YYCURSOR    cursor
 #define YYMARKER    marker
 #define YYLIMIT     limit
-#define YYFILL(n)
+#define YYFILL(n)   (void)0
 
 void
 try_tag_implicit( SyckNode *n, int taguri )
