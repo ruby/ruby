@@ -1,3 +1,10 @@
+Fri May 21 12:25:58 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (w_float): use dtoa directly instead of stripping
+	  needless trailing .0.
+
+	* numeric.c (flo_to_s): reverted.  [ruby-dev:41341]
+
 Fri May 21 01:06:05 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* thread.c (subtract_tv): if the rest is zero, should finish waiting

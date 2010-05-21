@@ -354,7 +354,7 @@ load_mantissa(double d, const char *buf, long len)
 static void
 w_float(double d, struct dump_arg *arg)
 {
-    int ruby_dbl2cstr(double value, char *buf, int size);
+    char *ruby_dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve);
     char buf[FLOAT_DIG + (DECIMAL_MANT + 7) / 8 + 10];
 
     if (isinf(d)) {
@@ -369,9 +369,37 @@ w_float(double d, struct dump_arg *arg)
 	else           w_cstr("0", arg);
     }
     else {
-	int len = ruby_dbl2cstr(d, buf, (int)sizeof(buf));
-	if (len > 2 && buf[len - 1] == '0' && buf[len - 2] == '.')
-	    len -= 2;
+	int decpt, sign, digs, len = 0;
+	char *e, *p = ruby_dtoa(d, 0, 0, &decpt, &sign, &e);
+	if (sign) buf[len++] = '-';
+	digs = (int)(e - p);
+	if (decpt < -3 || decpt > digs) {
+	    buf[len++] = p[0];
+	    buf[len++] = '.';
+	    memcpy(buf + len, p + 1, --digs);
+	    len += digs;
+	    len += snprintf(buf + len, sizeof(buf) - len, "e%d", decpt - 1);
+	}
+	else if (decpt > 0) {
+	    memcpy(buf + len, p, decpt);
+	    len += decpt;
+	    if ((digs -= decpt) > 0) {
+		buf[len++] = '.';
+		memcpy(buf + len, p + decpt, digs);
+		len += digs;
+	    }
+	}
+	else {
+	    buf[len++] = '0';
+	    buf[len++] = '.';
+	    if (decpt) {
+		memset(buf + len, '0', -decpt);
+		len -= decpt;
+	    }
+	    memcpy(buf + len, p, digs);
+	    len += digs;
+	}
+	xfree(p);
 	w_bytes(buf, len, arg);
     }
 }
