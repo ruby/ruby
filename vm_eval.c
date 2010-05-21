@@ -1566,7 +1566,7 @@ rb_catch_obj(VALUE tag, VALUE (*func)(), VALUE data)
 static VALUE
 rb_f_caller(int argc, VALUE *argv)
 {
-    VALUE level, ary;
+    VALUE level;
     int lev;
 
     rb_scan_args(argc, argv, "01", &level);
