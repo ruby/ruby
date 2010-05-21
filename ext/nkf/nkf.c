@@ -155,12 +155,12 @@ rb_nkf_convert(VALUE obj, VALUE opt, VALUE src)
     input_ctr = 0;
     StringValue(src);
     input = (unsigned char *)RSTRING_PTR(src);
-    i_len = RSTRING_LEN(src);
+    i_len = RSTRING_LENINT(src);
     tmp = result = rb_str_new(0, i_len*3 + 10);
 
     output_ctr = 0;
     output     = (unsigned char *)RSTRING_PTR(result);
-    o_len      = RSTRING_LEN(result);
+    o_len      = RSTRING_LENINT(result);
     *output    = '\0';
 
     kanji_convert(NULL);
@@ -192,7 +192,7 @@ rb_nkf_guess(VALUE obj, VALUE src)
     input_ctr = 0;
     StringValue(src);
     input = (unsigned char *)RSTRING_PTR(src);
-    i_len = RSTRING_LEN(src);
+    i_len = RSTRING_LENINT(src);
 
     guess_f = TRUE;
     kanji_convert( NULL );

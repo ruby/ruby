@@ -1,3 +1,8 @@
+Fri May 21 19:11:42 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/nkf/nkf.c (rb_nkf_convert, rb_nkf_guess): check too huge
+	  string.
+
 Fri May 21 18:12:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (rb_intern): C90 needs nonempty macro
