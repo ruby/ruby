@@ -185,6 +185,14 @@ native_thread_destroy(rb_thread_t *th)
 
 #define USE_THREAD_CACHE 0
 
+#if STACK_GROW_DIRECTION
+#define STACK_GROW_DIR_DETECTION
+#define STACK_DIR_UPPER(a,b) STACK_UPPER(0, a, b)
+#else
+#define STACK_GROW_DIR_DETECTION VALUE stack_grow_dir_detection
+#define STACK_DIR_UPPER(a,b) STACK_UPPER(&stack_grow_dir_detection, a, b)
+#endif
+
 #if defined HAVE_PTHREAD_GETATTR_NP || defined HAVE_PTHREAD_ATTR_GET_NP
 #define STACKADDR_AVAILABLE 1
 #elif defined HAVE_PTHREAD_GET_STACKADDR_NP && defined HAVE_PTHREAD_GET_STACKSIZE_NP

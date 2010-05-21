@@ -1,3 +1,8 @@
+Sat May 22 06:46:45 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* cont.c: revert FIBER_USE_NATIVE feature.
+	i.e. r27635, r27643, r27646, r27682, r27701
+
 Fri May 21 23:46:43 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_invoke): merged from trunk (r27922).

@@ -74,12 +74,4 @@ int ruby_get_stack_grow_direction(volatile VALUE *addr);
 # define STACK_UPPER(x, a, b) (stack_growup_p(x) ? a : b)
 #endif
 
-#if STACK_GROW_DIRECTION
-#define STACK_GROW_DIR_DETECTION
-#define STACK_DIR_UPPER(a,b) STACK_UPPER(0, a, b)
-#else
-#define STACK_GROW_DIR_DETECTION VALUE stack_grow_dir_detection
-#define STACK_DIR_UPPER(a,b) STACK_UPPER(&stack_grow_dir_detection, a, b)
-#endif
-
 #endif /* RUBY_GC_H */
