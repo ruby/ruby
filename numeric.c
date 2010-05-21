@@ -545,8 +545,6 @@ rb_float_new(double d)
     return (VALUE)flt;
 }
 
-int ruby_dbl2cstr(double value, char *buf, int size);
-
 /*
  *  call-seq:
  *     flt.to_s  ->  string
@@ -560,70 +558,70 @@ int ruby_dbl2cstr(double value, char *buf, int size);
 static VALUE
 flo_to_s(VALUE flt)
 {
+    char *ruby_dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve);
     enum {decimal_mant = DBL_MANT_DIG-DBL_DIG};
     enum {float_dig = DBL_DIG+1};
     char buf[float_dig + (decimal_mant + CHAR_BIT - 1) / CHAR_BIT + 10];
     double value = RFLOAT_VALUE(flt);
+    VALUE s;
+    char *p, *e;
+    int sign, decpt, digs;
 
     if (isinf(value))
 	return rb_usascii_str_new2(value < 0 ? "-Infinity" : "Infinity");
     else if (isnan(value))
 	return rb_usascii_str_new2("NaN");
-    return rb_usascii_str_new(buf, ruby_dbl2cstr(value, buf, (int)sizeof(buf)));
-}
 
-int
-ruby_dbl2cstr(double value, char *buf, int size)
-{
-    char *ruby_dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve);
-    char *p, *e;
-    int sign, decpt, digs;
-
-    if (size <= 0) return 0;
     p = ruby_dtoa(value, 0, 0, &decpt, &sign, &e);
-    if (sign) *buf++ = '-', --size;
-    if ((digs = (int)(e - p)) >= size) digs = size - 1;
-    if (decpt > -4 && (decpt < digs || decpt - digs < DBL_DIG+1)) {
-	int i = 0, j = 0, n;
-	if (decpt > 0) {
-	    memcpy(buf + j, p + i, (n = decpt > digs ? digs : decpt));
-	    i += n, j += n;
-	    if ((n = decpt - n) > 0) {
-		memset(buf + j, '0', n);
-		j += n;
-	    }
-	}
-	else {
-	    buf[j++] = '0';
-	}
-	buf[j++] = '.';
-	if (decpt < 0) {
-	    memset(buf + j, '0', -decpt);
-	    j -= decpt, decpt = 0;
-	}
+    s = sign ? rb_usascii_str_new_cstr("-") : rb_usascii_str_new(0, 0);
+    if ((digs = (int)(e - p)) >= (int)sizeof(buf)) digs = (int)sizeof(buf) - 1;
+    memcpy(buf, p, digs);
+    xfree(p);
+    if (decpt > 0) {
 	if (decpt < digs) {
-	    memcpy(buf + j, p + i, (n = digs - decpt));
-	    j += n;
+	    memmove(buf + decpt + 1, buf + decpt, digs - decpt);
+	    buf[decpt] = '.';
+	    rb_str_cat(s, buf, digs + 1);
+	}
+	else if (decpt - digs < float_dig) {
+	    long len;
+	    char *ptr;
+	    rb_str_cat(s, buf, digs);
+	    rb_str_resize(s, (len = RSTRING_LEN(s)) + decpt - digs + 2);
+	    ptr = RSTRING_PTR(s) + len;
+	    if (decpt > digs) {
+		memset(ptr, '0', decpt - digs);
+		ptr += decpt - digs;
+	    }
+	    memcpy(ptr, ".0", 2);
 	}
 	else {
-	    buf[j++] = '0';
+	    goto exp;
 	}
-	digs = j;
+    }
+    else if (decpt > -4) {
+	long len;
+	char *ptr;
+	rb_str_cat(s, "0.", 2);
+	rb_str_resize(s, (len = RSTRING_LEN(s)) - decpt + digs);
+	ptr = RSTRING_PTR(s);
+	memset(ptr += len, '0', -decpt);
+	memcpy(ptr -= decpt, buf, digs);
     }
     else {
-	buf[0] = p[0];
-	buf[1] = '.';
+      exp:
 	if (digs > 1) {
-	    memcpy(buf + 2, p + 1, digs++ - 1);
+	    memmove(buf + 2, buf + 1, digs - 1);
 	}
 	else {
 	    buf[2] = '0';
-	    digs = 3;
+	    digs++;
 	}
-	digs += snprintf(buf + digs, size - digs, "e%+03d", decpt - 1);
+	buf[1] = '.';
+	rb_str_cat(s, buf, digs + 1);
+	rb_str_catf(s, "e%+03d", decpt - 1);
     }
-    xfree(p);
-    return digs + sign;
+    return s;
 }
 
 /*
