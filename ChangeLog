@@ -1,3 +1,10 @@
+Fri May 21 17:35:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (warnflags): add -pedantic if gcc.
+
+	* include/ruby/ruby.h (rb_intern): C90 needs nonempty macro
+	  arguments.
+
 Fri May 21 13:55:46 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (LIBRUBYARG_SHARED): shared library will not be
