@@ -1,3 +1,8 @@
+Fri May 21 13:35:55 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (ruby_init_loadpath_safe): use real path for non-shared
+	  build.
+
 Fri May 21 12:25:58 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (w_float): use dtoa directly instead of stripping
