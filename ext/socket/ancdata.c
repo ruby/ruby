@@ -262,8 +262,7 @@ ancillary_unix_rights(VALUE self)
     if (level != SOL_SOCKET || type != SCM_RIGHTS)
         rb_raise(rb_eTypeError, "SCM_RIGHTS ancillary data expected");
 
-    VALUE v = rb_attr_get(self, rb_intern("unix_rights"));
-    return v;
+    return rb_attr_get(self, rb_intern("unix_rights"));
 }
 #else
 #define ancillary_unix_rights rb_f_notimplement

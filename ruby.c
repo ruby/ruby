@@ -369,7 +369,7 @@ ruby_init_loadpath_safe(int safe_level)
     _execname(libpath, sizeof(libpath) - 1);
 #elif defined(HAVE_DLADDR)
     Dl_info dli;
-    if (dladdr(expand_include_path, &dli)) {
+    if (dladdr((void *)(VALUE)expand_include_path, &dli)) {
 	VALUE rb_realpath_internal(VALUE basedir, VALUE path, int strict);
 	char fbuf[MAXPATHLEN];
 	char *f = dln_find_file_r(dli.dli_fname, getenv(PATH_ENV), fbuf, sizeof(fbuf));

@@ -16,9 +16,9 @@ get_freefunc(VALUE func)
 	return NULL;
     }
     if (rb_dlcfunc_kind_p(func)) {
-	return RCFUNC_DATA(func)->ptr;
+	return (freefunc_t)(VALUE)RCFUNC_DATA(func)->ptr;
     }
-    return NUM2PTR(rb_Integer(func));
+    return (freefunc_t)(VALUE)NUM2PTR(rb_Integer(func));
 }
 
 static ID id_to_ptr;

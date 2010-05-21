@@ -82,6 +82,7 @@ typedef enum {
     YAMLBYTE_E_WRITE     = 'W',   /* output stream write error      */
     YAMLBYTE_E_OTHER     = '?',   /* some other error condition     */
     YAMLBYTE_E_PARSE     = 'P',   /* parse error, check bytecodes   */
+    YAMLBYTE_MAX
 } yamlbyte_result_t;
 
 typedef const yamlbyte_char_t *yamlbyte_buff_t;
