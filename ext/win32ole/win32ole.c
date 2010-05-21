@@ -3347,7 +3347,7 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
                 &wcmdname, 1, lcid, &DispID);
         SysFreeString(wcmdname);
         if(FAILED(hr)) {
-            ole_raise(hr, eWIN32OLERuntimeError,
+            ole_raise(hr, rb_eNoMethodError,
                     "unknown property or method: `%s'",
                     StringValuePtr(cmd));
         }

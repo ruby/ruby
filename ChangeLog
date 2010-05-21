@@ -1,3 +1,10 @@
+Fri May 21 23:46:43 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_invoke): merged from trunk (r27922).
+	  raise NoMethodError when COM method is not found.
+
+	* test/win32ole/test_win32ole.rb (test_no_method_error): ditto.
+
 Fri May 21 19:11:42 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/nkf/nkf.c (rb_nkf_convert, rb_nkf_guess): check too huge
