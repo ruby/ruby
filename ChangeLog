@@ -1,3 +1,8 @@
+Sat May 22 03:53:05 2010  Satoshi Shiba  <shiba@rvm.jp>
+
+	* cont.c (fiber_setcontext): Use swapcontext() instead longjmp().
+	[ruby-dev:41316] [Bug #3295]
+
 Fri May 21 19:11:42 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/nkf/nkf.c (rb_nkf_convert, rb_nkf_guess): check too huge
