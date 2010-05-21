@@ -1,4 +1,7 @@
-Fri May 21 13:35:55 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri May 21 13:55:46 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (LIBRUBYARG_SHARED): shared library will not be
+	  created unless enable-shared.
 
 	* ruby.c (ruby_init_loadpath_safe): use real path for non-shared
 	  build.
