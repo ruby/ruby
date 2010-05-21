@@ -386,7 +386,7 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
     AS_CASE([" $warnflags "],[*" -Wno-missing-field-initializers "*], [wflag=-Wextra],
                              [wflag=-Wall])
     RUBY_TRY_CFLAGS($wflag, [warnflags="$wflag${warnflags+ $warnflags}"])
-    warnflags="-pedantic{warnflags+ $warnflags}"
+    warnflags="-pedantic${warnflags+ $warnflags}"
 fi
 
 test -z "${ac_env_CFLAGS_set}" -a -n "${cflags+set}" && eval CFLAGS="\"$cflags $ARCH_FLAG\""
