@@ -3,7 +3,6 @@ require 'psych/nodes'
 require 'psych/visitors'
 require 'psych/handler'
 require 'psych/tree_builder'
-require 'psych/json/tree_builder'
 require 'psych/parser'
 require 'psych/omap'
 require 'psych/set'
@@ -98,6 +97,7 @@ module Psych
   end
 
   autoload :Stream, 'psych/stream'
+  autoload :JSON, 'psych/json'
 
   ###
   # Load +yaml+ in to a Ruby data structure.  If multiple documents are

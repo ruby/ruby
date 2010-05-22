@@ -35,7 +35,7 @@ module Psych
     # Create a new streaming emitter.  Emitter will print to +io+.  See
     # Psych::Stream for an example.
     def initialize io
-      super({}, Emitter.new(io))
+      super({}, self.class.const_get(:Emitter).new(io))
     end
 
     ###
