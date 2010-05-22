@@ -17,7 +17,7 @@ module TestHTTP
       }
       begin
         sleep 0.1 until port
-        assert_raise(Errno::ECONNRESET, bug2708) {
+        assert_raise(EOFError, bug2708) {
           n = Net::HTTP.new(localhost, port)
           n.request_get('/')
         }
