@@ -1731,7 +1731,7 @@ rb_num2ulong(VALUE val)
       case T_FLOAT:
        if (RFLOAT_VALUE(val) <= (double)LONG_MAX
            && RFLOAT_VALUE(val) >= (double)LONG_MIN) {
-           return (RFLOAT_VALUE(val));
+           return (VALUE)RFLOAT_VALUE(val);
        }
        else {
            char buf[24];
