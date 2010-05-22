@@ -1,3 +1,18 @@
+Sun May 23 07:08:34 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/json/stream.rb: adding a JSON streaming API
+
+	* ext/psych/lib/psych/stream.rb: ditto
+
+	* ext/psych/lib/psych.rb: using autoload
+
+	* ext/psych/lib/psych/json.rb: ditto
+
+	* ext/psych/lib/psych/json/tree_builder.rb: refactor
+
+	* ext/psych/lib/psych/visitors/json_tree.rb: refactor
+	
+
 Sat May 22 03:53:05 2010  Satoshi Shiba  <shiba@rvm.jp>
 
 	* cont.c (fiber_setcontext): Use swapcontext() instead longjmp().
