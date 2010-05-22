@@ -1,3 +1,31 @@
+Sat May 22 20:51:39 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* lib/resolv.rb (Resolv::DNS::Config#nameserver_port): 1.8.7
+	  specific tweaks
+
+Sat May 22 20:51:09 2010  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb: fix [ruby-core:28144] reported by Hans de Graaff.
+	  (Resolv::DNS#make_requester): pass nameserver_port to
+	  UnconnectedUDP.new.
+	  (Resolv::DNS.bind_random_port): change the is_ipv6 argument to
+	  bind_host.
+	  (Resolv::DNS::Requester#initialize): change instance variable to
+	  store multiple sockets.
+	  (Resolv::DNS::Requester#request): pass readable sockets to
+	  recv_reply.
+	  (Resolv::DNS::Requester#close): close all sockets.
+	  (Resolv::DNS::Requester::UnconnectedUDP#initialize): allocate
+	  a socket for each address family of name servers.
+	  (Resolv::DNS::Requester::UnconnectedUDP#recv_reply): read from the
+	  passwd readable socket.
+	  (Resolv::DNS::Requester::UnconnectedUDP#sender): use appropriate
+	  socket for the target nameserver.
+	  (Resolv::DNS::Requester::ConnectedUDP): follow the instance variable
+	  change.
+	  (Resolv::DNS::Requester::TCP#sender): ditto.
+	  (Resolv::DNS::Config#nameserver_port): new method.
+
 Sat May 22 19:46:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/net/http.rb (Net::HTTP#request): close @socket only after
