@@ -1,3 +1,12 @@
+Sat May 22 22:14:11 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/readline/readline.c (Init_readline): initialize
+	  check rl_catch_signals and rl_catch_sigwinch.
+	  [ruby-core:28238] [ruby-core:28242]
+
+	* ext/readline/extconf.rb: check rl_catch_signals and
+	  rl_catch_sigwinch.
+
 Sat May 22 21:54:58 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* test/net/http/test_connection.rb (TestHTTP::HTTPConnectionTest#test_connection_refused_in_request):
@@ -318,7 +327,7 @@ Thu Nov 19 18:03:31 2009  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi.rb (CGI.unescapeHTML): fix for hex values 80-FF,
 	  single-byte hex entity encodings from 80-FF are valid HTML.
-		[ruby-core:25702]
+	  [ruby-core:25702]
 
 Thu Nov 19 15:34:40 2009  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
