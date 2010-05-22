@@ -2893,13 +2893,16 @@ rb_io_modenum_mode(flags)
 #else
 # define MODE_BINARY(a,b) (a)
 #endif
+    int accmode = flags & O_ACCMODE;
     if (flags & O_APPEND) {
-	if ((flags & O_RDWR) == O_RDWR) {
+	if (accmode == O_WRONLY) {
+            return MODE_BINARY("a", "ab");
+        }
+	if (accmode == O_RDWR) {
 	    return MODE_BINARY("a+", "ab+");
 	}
-	return MODE_BINARY("a", "ab");
     }
-    switch (flags & (O_RDONLY|O_WRONLY|O_RDWR)) {
+    switch (accmode) {
       case O_RDONLY:
 	return MODE_BINARY("r", "rb");
       case O_WRONLY:

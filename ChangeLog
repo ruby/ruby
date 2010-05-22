@@ -1,3 +1,8 @@
+Sat May 22 21:03:16 2010  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_io_modenum_mode): return "r" for O_RDONLY|O_APPEND.
+	  [ruby-dev:40379]
+
 Sat May 22 20:51:39 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* lib/resolv.rb (Resolv::DNS::Config#nameserver_port): 1.8.7
