@@ -1044,7 +1044,8 @@ module Net   #:nodoc:
       end
 
       req.set_body_internal body
-      begin_transport req
+      begin
+        begin_transport req
         req.exec @socket, @curr_http_version, edit_path(req.path)
         begin
           res = HTTPResponse.read_new(@socket)
@@ -1052,13 +1053,14 @@ module Net   #:nodoc:
         res.reading_body(@socket, req.response_body_permitted?) {
           yield res if block_given?
         }
-      end_transport req, res
+        end_transport req, res
+      rescue => exception
+        D "Conn close because of error #{exception}"
+        @socket.close unless @socket.closed?
+        raise exception
+      end
 
       res
-    rescue => exception
-      D "Conn close because of error #{exception}"
-      @socket.close unless @socket.closed?
-      raise exception
     end
 
     private

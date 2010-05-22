@@ -1,3 +1,8 @@
+Sat May 22 19:46:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/net/http.rb (Net::HTTP#request): close @socket only after
+	  started.  [ruby-core:28028]
+
 Sat May 22 19:36:38 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (proc_invoke): reverted r25975.  [ruby-dev:39931]
