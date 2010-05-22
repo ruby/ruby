@@ -1,3 +1,11 @@
+Sat May 22 19:36:38 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (proc_invoke): reverted r25975.  [ruby-dev:39931]
+	  [ruby-dev:40059]
+
+	* eval.c (rb_mod_define_method): return original block but not
+	  bound block.  [ruby-core:26984]
+
 Thu May 20 16:28:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/webrick/httpservlet/filehandler.rb (make_partial_content):

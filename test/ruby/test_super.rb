@@ -149,4 +149,25 @@ class TestSuper < Test::Unit::TestCase
     c = C.new
     assert_equal([c, "#{C.to_s}::m"], c.m, bug2419)
   end
+
+  module Bug2537
+    class Parent
+      def run(a)
+        a
+      end
+    end
+
+    class Child < Parent
+      def run(*a)
+        proc {super(*a)}.call
+      end
+    end
+  end
+
+  def test_super_in_block_call
+    bug2537 = '[ruby-dev:39931]'
+    assert_nothing_raised(bug2537) do
+      assert_equal(bug2537, Bug2537::Child.new.run(bug2537), bug2537)
+    end
+  end
 end

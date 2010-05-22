@@ -8868,8 +8868,7 @@ proc_invoke(proc, args, self, klass)
     _block = *data;
     _block.block_obj = bvar;
     if (self != Qundef) _block.frame.self = self;
-    _block.frame.last_class = klass;
-    if (!klass) _block.frame.last_func = 0;
+    if (klass) _block.frame.last_class = klass;
     _block.frame.argc = RARRAY(tmp)->len;
     _block.frame.flags = ruby_frame->flags;
     if (_block.frame.argc && DMETHOD_P()) {
@@ -9967,7 +9966,7 @@ rb_mod_define_method(argc, argv, mod)
     VALUE mod;
 {
     ID id;
-    VALUE body;
+    VALUE body, orig;
     NODE *node;
     int noex;
 
@@ -9986,6 +9985,7 @@ rb_mod_define_method(argc, argv, mod)
     else {
 	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)", argc);
     }
+    orig = body;
     if (RDATA(body)->dmark == (RUBY_DATA_FUNC)bm_mark) {
 	node = NEW_DMETHOD(method_unbind(body));
     }
@@ -10014,7 +10014,7 @@ rb_mod_define_method(argc, argv, mod)
 	}
     }
     rb_add_method(mod, id, node, noex);
-    return body;
+    return orig;
 }
 
 /*
