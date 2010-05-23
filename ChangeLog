@@ -1,3 +1,8 @@
+Sun May 23 17:29:41 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* common.mk (capi): uses a timestamp file to get rid of 
+	  generating twice.
+
 Sun May 23 17:48:39 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/lib/openssl/x509-internal.rb, lib/forwardable.rb,

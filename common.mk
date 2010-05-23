@@ -148,9 +148,11 @@ miniruby$(EXEEXT): config.status $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DM
 GORUBY = go$(RUBY_INSTALL_NAME)
 golf: $(LIBRUBY) $(GOLFOBJS) PHONY
 	$(MAKE) $(MFLAGS) MAINOBJ="$(GOLFOBJS)" PROGRAM=$(GORUBY)$(EXEEXT) program
-capi: Doxyfile PHONY $(PREP)
+capi: doc/capi/.timestamp PHONY
+doc/capi/.timestamp: Doxyfile $(PREP) 
 	@$(MAKEDIRS) doc/capi
 	@$(DOXYGEN)
+	$(MINIRUBY) -e 'File.open("doc/capi/.timestamp", "w"){|f| f.puts(Time.now)}'
 
 Doxyfile: $(srcdir)/template/Doxyfile.tmpl $(PREP) $(srcdir)/tool/generic_erb.rb $(RBCONFIG)
 	$(MINIRUBY) $(srcdir)/tool/generic_erb.rb -o $@ $(srcdir)/template/Doxyfile.tmpl \
