@@ -1,3 +1,8 @@
+Sun May 23 17:40:34 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (warn_balanced): no warning for singleton class.
+	  [ruby-core:30366]
+
 Sun May 23 16:56:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (CONST_ID_CACHE, rb_intern_const): suppress
