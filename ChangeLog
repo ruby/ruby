@@ -1,3 +1,8 @@
+Fri Apr 30 03:38:14 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* numeric.c (fix_mul): the width of fixnum is same as long's on all
+	  platforms.
+
 Wed Aug 26 13:48:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/tempfile.rb (Tempfile#unlink): reverted r23494, since the
