@@ -2411,6 +2411,9 @@ cmp_tv(const struct timeval *a, const struct timeval *b)
 static int
 subtract_tv(struct timeval *rest, const struct timeval *wait)
 {
+    if (rest->tv_sec < wait->tv_sec) {
+	return 0;
+    }
     while (rest->tv_usec < wait->tv_usec) {
 	if (rest->tv_sec <= wait->tv_sec) {
 	    return 0;
@@ -2420,7 +2423,7 @@ subtract_tv(struct timeval *rest, const struct timeval *wait)
     }
     rest->tv_sec -= wait->tv_sec;
     rest->tv_usec -= wait->tv_usec;
-    return 1;
+    return rest->tv_sec != 0 || rest->tv_usec != 0;
 }
 #endif
 
