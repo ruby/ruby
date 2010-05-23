@@ -1,3 +1,10 @@
+Thu May 20 20:47:46 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_invoke): raise NoMethodError
+	  when COM method is not found. [ruby-core:30160] [Bug #3277]
+
+	* test/win32ole/test_win32ole.rb (test_no_method_error): ditto.
+
 Wed May 19 23:36:57 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/extconf.rb: [ruby-dev:41334] [Bug #3307] invalid result
