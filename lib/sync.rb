@@ -106,7 +106,7 @@ module Sync_m
 	    defined? unlock and
 	    defined? try_lock and
 	    defined? synchronize)
-      Sync_m.define_aliases(class<<self;self;end)
+      Sync_m.define_aliases(singleton_class)
     end
     sync_initialize
   end

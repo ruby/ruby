@@ -23,7 +23,7 @@ class Shell
     @BlockOutputMonitor = Mutex.new
     @BlockOutputCV = ConditionVariable.new
 
-    class<<self
+    class << self
       extend Forwardable
 
       def_delegator("@ProcessControllersMonitor",

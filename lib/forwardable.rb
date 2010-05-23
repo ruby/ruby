@@ -135,7 +135,7 @@ module Forwardable
   FORWARDABLE_VERSION = "1.1.0"
 
   @debug = nil
-  class<<self
+  class << self
     attr_accessor :debug
   end
 
