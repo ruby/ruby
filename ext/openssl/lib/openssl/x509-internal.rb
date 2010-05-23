@@ -135,7 +135,7 @@ module OpenSSL
         end
       end
 
-      class <<self
+      class << self
         def parse_rfc2253(str, template=OBJECT_TYPE_TEMPLATE)
           ary = OpenSSL::X509::Name::RFC2253DN.scan(str)
           self.new(ary, template)
