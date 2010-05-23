@@ -608,7 +608,7 @@ rb_obj_tap(VALUE obj)
  *       def self.one()     end
  *       def two()          end
  *       def Chatty.three() end
- *       class <<self
+ *       class << self
  *         remove_method :three
  *         remove_method :one
  *       end

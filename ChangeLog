@@ -1,4 +1,9 @@
-Sun May 23 17:40:34 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun May 23 17:48:39 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/openssl/lib/openssl/x509-internal.rb, lib/forwardable.rb,
+	  lib/irb/cmd/fork.rb, lib/mutex_m.rb,
+	  lib/shell/process-controller.rb, lib/sync.rb, object.c:
+	  suppress warnings patched by Benoit Daloze at [ruby-core:30366].
 
 	* parse.y (warn_balanced): no warning for singleton class.
 	  [ruby-core:30366]
