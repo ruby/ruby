@@ -2850,37 +2850,40 @@ rb_syswait(rb_pid_t pid)
     }
 }
 
+static VALUE
+rb_exec_arg_prepare(struct rb_exec_arg *earg, int argc, VALUE *argv, int default_close_others)
+{
+    VALUE prog = rb_exec_arg_init(argc, argv, TRUE, earg);
+    if (NIL_P(rb_ary_entry(earg->options, EXEC_OPTION_CLOSE_OTHERS))) {
+        VALUE v = default_close_others ? Qtrue : Qfalse;
+        rb_exec_arg_addopt(earg, ID2SYM(rb_intern("close_others")), v);
+    }
+    rb_exec_arg_fixup(earg);
+    return prog;
+}
+
 static rb_pid_t
-rb_spawn_internal(int argc, VALUE *argv, int default_close_others,
-                  char *errmsg, size_t errmsg_buflen)
+rb_spawn_process(struct rb_exec_arg *earg, VALUE prog, char *errmsg, size_t errmsg_buflen)
 {
     rb_pid_t pid;
 #if defined HAVE_FORK || !defined HAVE_SPAWNV
     int status;
 #endif
-    VALUE prog;
-    struct rb_exec_arg earg;
 #if !defined HAVE_FORK
     struct rb_exec_arg sarg;
+    int argc;
+    VALUE *argv;
 #endif
 
-    prog = rb_exec_arg_init(argc, argv, TRUE, &earg);
-    if (NIL_P(rb_ary_entry(earg.options, EXEC_OPTION_CLOSE_OTHERS))) {
-        VALUE v = default_close_others ? Qtrue : Qfalse;
-        rb_exec_arg_addopt(&earg, ID2SYM(rb_intern("close_others")), v);
-    }
-    rb_exec_arg_fixup(&earg);
-
 #if defined HAVE_FORK
-    pid = rb_fork_err(&status, rb_exec_atfork, &earg, earg.redirect_fds, errmsg, errmsg_buflen);
-    if (prog && earg.argc) earg.argv[0] = prog;
+    pid = rb_fork_err(&status, rb_exec_atfork, earg, earg->redirect_fds, errmsg, errmsg_buflen);
 #else
-    if (rb_run_exec_options_err(&earg, &sarg, errmsg, errmsg_buflen) < 0) {
+    if (rb_run_exec_options_err(earg, &sarg, errmsg, errmsg_buflen) < 0) {
         return -1;
     }
 
-    argc = earg.argc;
-    argv = earg.argv;
+    argc = earg->argc;
+    argv = earg->argv;
     if (prog && argc) argv[0] = prog;
 # if defined HAVE_SPAWNV
     if (!argc) {
@@ -2902,6 +2905,15 @@ rb_spawn_internal(int argc, VALUE *argv, int default_close_others,
     rb_run_exec_options_err(&sarg, NULL, errmsg, errmsg_buflen);
 #endif
     return pid;
+}
+
+static rb_pid_t
+rb_spawn_internal(int argc, VALUE *argv, int default_close_others,
+                  char *errmsg, size_t errmsg_buflen)
+{
+    struct rb_exec_arg earg;
+    VALUE prog = rb_exec_arg_prepare(&earg, argc, argv, default_close_others);
+    return rb_spawn_process(&earg, prog, errmsg, errmsg_buflen);
 }
 
 rb_pid_t
@@ -3218,12 +3230,15 @@ rb_f_spawn(int argc, VALUE *argv)
 {
     rb_pid_t pid;
     char errmsg[CHILD_ERRMSG_BUFLEN] = { '\0' };
+    struct rb_exec_arg earg;
 
-    pid = rb_spawn_err(argc, argv, errmsg, sizeof(errmsg));
+    pid = rb_spawn_process(&earg, rb_exec_arg_prepare(&earg, argc, argv, TRUE), errmsg, sizeof(errmsg));
     if (pid == -1) {
-        if (errmsg[0] == '\0')
-            rb_sys_fail(RSTRING_PTR(argv[0]));
-        rb_sys_fail(errmsg);
+	const char *prog = errmsg;
+	if (!prog[0] && !(prog = earg.prog) && earg.argc) {
+	    prog = RSTRING_PTR(earg.argv[0]);
+	}
+	rb_sys_fail(prog);
     }
 #if defined(HAVE_FORK) || defined(HAVE_SPAWNV)
     return PIDT2NUM(pid);

@@ -236,6 +236,17 @@ class TestProcess < Test::Unit::TestCase
       system({"F=O"=>"BAR"}, *TRUECOMMAND)
     }
 
+    with_tmpchdir {|d|
+      prog = "#{d}/notexist"
+      e = assert_raise(Errno::ENOENT) {
+        Process.wait Process.spawn({"FOO"=>"BAR"}, prog)
+      }
+      assert_equal(prog, e.message.sub(/.* - /, ''))
+      e = assert_raise(Errno::ENOENT) {
+        Process.wait Process.spawn({"FOO"=>"BAR"}, [prog, "blar"])
+      }
+      assert_equal(prog, e.message.sub(/.* - /, ''))
+    }
     h = {}
     cmd = [h, RUBY]
     (ENV.keys + MANDATORY_ENVS).each do |k|
