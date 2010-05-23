@@ -1,6 +1,6 @@
 ##############################################################
 # extconf.rb for tcltklib
-# release date: 2010-05-07
+# release date: 2010-05-19
 ##############################################################
 require 'mkmf'
 
@@ -989,7 +989,7 @@ def find_tcltk_header(tclver, tkver)
   end
 
   if TclConfig_Info['TCL_INCLUDE_SPEC'] && 
-      have_tcl_h = try_cpp('tcl.h', TclConfig_Info['TCL_INCLUDE_SPEC'])
+      have_tcl_h = try_cpp('#include <tcl.h>', TclConfig_Info['TCL_INCLUDE_SPEC'])
     $INCFLAGS << " " << TclConfig_Info['TCL_INCLUDE_SPEC']
   elsif have_tcl_h = have_header('tcl.h')
     # find
@@ -1009,7 +1009,7 @@ def find_tcltk_header(tclver, tkver)
   end
 
   if TkConfig_Info['TK_INCLUDE_SPEC'] && 
-      have_tk_h = try_cpp('tk.h', TkConfig_Info['TK_INCLUDE_SPEC'])
+      have_tk_h = try_cpp('#include <tk.h>', TkConfig_Info['TK_INCLUDE_SPEC'])
     $INCFLAGS << " " << TkConfig_Info['TK_INCLUDE_SPEC']
   elsif have_tk_h = have_header('tk.h')
     # find

@@ -1,3 +1,8 @@
+Wed May 19 23:36:57 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/extconf.rb: [ruby-dev:41334] [Bug #3307] invalid result
+	  on searching tcl.h/tk.h. Thanks, Masaya Tarui.
+
 Wed May 19 23:19:30 2010  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (disconnect): closes the socket of a Net::IMAP
