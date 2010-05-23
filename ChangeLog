@@ -1,3 +1,8 @@
+Sun May 23 16:56:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (CONST_ID_CACHE, rb_intern_const): suppress
+	  warnings with -Wconversion.
+
 Sun May 23 07:08:34 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/json/stream.rb: adding a JSON streaming API
