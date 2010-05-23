@@ -1,3 +1,8 @@
+Mon May 24 08:16:02 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_f_spawn): use correct command name for the error
+	  message.  [ruby-dev:41395]
+
 Sun May 23 17:48:39 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/lib/openssl/x509-internal.rb, lib/forwardable.rb,
