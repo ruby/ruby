@@ -1070,7 +1070,7 @@ VALUE rb_id2str(ID);
     {							\
 	static ID rb_intern_id_cache;			\
 	if (!rb_intern_id_cache)			\
-	    rb_intern_id_cache = rb_intern2(str, strlen(str));	\
+	    rb_intern_id_cache = rb_intern2(str, (long)strlen(str)); \
 	result rb_intern_id_cache;			\
     }
 #define CONST_ID(var, str) \
@@ -1084,10 +1084,10 @@ VALUE rb_id2str(ID);
         rb_intern(str))
 #define rb_intern_const(str) \
     (__builtin_constant_p(str) ? \
-     __extension__ (rb_intern2(str, strlen(str))) :	\
+     __extension__ (rb_intern2(str, (long)strlen(str))) : \
      (rb_intern)(str))
 #else
-#define rb_intern_const(str) rb_intern2(str, strlen(str))
+#define rb_intern_const(str) rb_intern2(str, (long)strlen(str))
 #endif
 
 const char *rb_class2name(VALUE);
