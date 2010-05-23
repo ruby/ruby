@@ -14,15 +14,14 @@ module Psych
   # See Psych::Handler for documentation on the event methods used in this
   # class.
   class TreeBuilder < Psych::Handler
+    # Returns the root node for the built tree
+    attr_reader :root
+
     # Create a new TreeBuilder instance
     def initialize
       @stack = []
       @last  = nil
-    end
-
-    # Returns the root node for the built tree
-    def root
-      @stack.first
+      @root  = nil
     end
 
     %w{
@@ -48,7 +47,7 @@ module Psych
     #
     # See Psych::Handler#start_document
     def start_document version, tag_directives, implicit
-      n = Nodes::Document.new(version, tag_directives, implicit)
+      n = Nodes::Document.new version, tag_directives, implicit
       @last.children << n
       push n
     end
@@ -64,7 +63,12 @@ module Psych
     end
 
     def start_stream encoding
-      push Nodes::Stream.new(encoding)
+      @root = Nodes::Stream.new(encoding)
+      push @root
+    end
+
+    def end_stream
+      pop
     end
 
     def scalar value, anchor, tag, plain, quoted, style
@@ -82,8 +86,9 @@ module Psych
     end
 
     def pop
-      @stack.pop
+      x = @stack.pop
       @last = @stack.last
+      x
     end
   end
 end
