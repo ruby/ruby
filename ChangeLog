@@ -1,3 +1,7 @@
+Mon Jun 29 20:29:11 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* rational.c (float_to_r): always returns rational.
+
 Sun Jul 19 20:41:24 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (make_patterns): do not use \d.

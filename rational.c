@@ -1307,7 +1307,7 @@ float_to_r(VALUE self)
     VALUE f, n;
 
     float_decode_internal(self, &f, &n);
-    return f_mul(f, f_expt(INT2FIX(FLT_RADIX), n));
+    return f_to_r(f_mul(f, f_expt(INT2FIX(FLT_RADIX), n)));
 }
 
 static VALUE rat_pat, an_e_pat, a_dot_pat, underscores_pat, an_underscore;
