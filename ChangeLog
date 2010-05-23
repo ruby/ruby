@@ -1,3 +1,9 @@
+Sun Jul 19 20:41:24 2009  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c (make_patterns): do not use \d.
+
+	* rational.c (make_patterns): ditto.
+
 Fri Apr 30 03:38:14 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* numeric.c (fix_mul): the width of fixnum is same as long's on all

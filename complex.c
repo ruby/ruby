@@ -1054,7 +1054,7 @@ static VALUE comp_pat0, comp_pat1, comp_pat2, a_slash, a_dot_and_an_e,
     null_string, underscores_pat, an_underscore;
 
 #define WS "\\s*"
-#define DIGITS "(?:\\d(?:_\\d|\\d)*)"
+#define DIGITS "(?:[0-9](?:_[0-9]|[0-9])*)"
 #define NUMERATOR "(?:" DIGITS "?\\.)?" DIGITS "(?:[eE][-+]?" DIGITS ")?"
 #define DENOMINATOR DIGITS
 #define NUMBER "[-+]?" NUMERATOR "(?:\\/" DENOMINATOR ")?"

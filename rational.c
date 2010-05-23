@@ -1313,7 +1313,7 @@ float_to_r(VALUE self)
 static VALUE rat_pat, an_e_pat, a_dot_pat, underscores_pat, an_underscore;
 
 #define WS "\\s*"
-#define DIGITS "(?:\\d(?:_\\d|\\d)*)"
+#define DIGITS "(?:[0-9](?:_[0-9]|[0-9])*)"
 #define NUMERATOR "(?:" DIGITS "?\\.)?" DIGITS "(?:[eE][-+]?" DIGITS ")?"
 #define DENOMINATOR DIGITS
 #define PATTERN "\\A" WS "([-+])?(" NUMERATOR ")(?:\\/(" DENOMINATOR "))?" WS
