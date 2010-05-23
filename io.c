@@ -3271,9 +3271,7 @@ retry:
     }
 
   retry:
-#if defined(__NetBSD__) || defined(__APPLE__) || defined(linux)
     rb_thread_stop_timer();
-#endif
     switch ((pid = fork())) {
       case 0:			/* child */
 	if (modef & FMODE_READABLE) {
@@ -3301,17 +3299,13 @@ retry:
 		    ruby_sourcefile, ruby_sourceline, pname);
 	    _exit(127);
 	}
-#if defined(__NetBSD__) || defined(__APPLE__) || defined(linux)
 	rb_thread_start_timer();
-#endif
 	rb_io_synchronized(RFILE(orig_stdout)->fptr);
 	rb_io_synchronized(RFILE(orig_stderr)->fptr);
 	return Qnil;
 
       case -1:			/* fork failed */
-#if defined(__NetBSD__) || defined(__APPLE__) || defined(linux)
 	rb_thread_start_timer();
-#endif
 	if (errno == EAGAIN) {
 	    rb_thread_sleep(1);
 	    goto retry;
@@ -3332,9 +3326,7 @@ retry:
 	break;
 
       default:			/* parent */
-#if defined(__NetBSD__) || defined(__APPLE__) || defined(linux)
 	rb_thread_start_timer();
-#endif
 	if (pid < 0) rb_sys_fail(pname);
 	else {
 	    VALUE port = io_alloc(rb_cIO);

@@ -12524,9 +12524,6 @@ rb_thread_start_timer()
     safe_mutex_lock(&time_thread.lock);
     if (pthread_create(&time_thread.thread, 0, thread_timer, args) == 0) {
 	thread_init = 1;
-#if !defined(__NetBSD__) && !defined(__APPLE__) && !defined(linux)
-	pthread_atfork(0, 0, rb_thread_stop_timer);
-#endif
 	pthread_cond_wait(&start, &time_thread.lock);
     }
     pthread_cleanup_pop(1);

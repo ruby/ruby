@@ -1,3 +1,8 @@
+Mon May 24 04:58:39 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c, eval.c, process.c: remove all condition of r26371.
+	  now, all platform use the same way. [Bug #3278][ruby-core:30167]
+
 Fri May 21 08:33:52 2010  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
 
 	* common.mk (EXPORTOBJS): merged r24482 from trunk. [Bug #3326]
