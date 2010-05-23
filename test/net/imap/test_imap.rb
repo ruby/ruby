@@ -315,6 +315,43 @@ class IMAPTest < Test::Unit::TestCase
     end
   end
 
+  def test_exception_during_shutdown
+    server = TCPServer.new(0)
+    port = server.addr[1]
+    Thread.start do
+      begin
+        sock = server.accept
+        begin
+          sock.print("* OK test server\r\n")
+          sock.gets
+          sock.print("* BYE terminating connection\r\n")
+          sock.print("RUBY0001 OK LOGOUT completed\r\n")
+        ensure
+          sock.close
+        end
+      rescue
+      end
+    end
+    begin
+      begin
+        imap = Net::IMAP.new("localhost", :port => port)
+        imap.instance_eval do
+          def @sock.shutdown(*args)
+            super
+            raise "error"
+          end
+        end
+        imap.logout
+      ensure
+        assert_raise(RuntimeError) do
+          imap.disconnect
+        end
+      end
+    ensure
+      server.close
+    end
+  end
+
   private
 
   def imaps_test
