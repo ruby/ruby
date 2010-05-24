@@ -1,12 +1,18 @@
-Mon May 24 06:26:00 2010 Kirk haines <khaines@ruby-lang.org>
+Mon May 25 06:59:00 2010 Kirk Haines <khaines@ruby-lang.org>
 
-	* ext/openssl/ossl_config.c: Backport #484 [ruby-core:18377]; OpenSSL::Config now freezes correctly, preventing further modification.
+	* ChangeLog: Changed dates on the last commit records, because I didn't shift the day when I shifted timezones to JST.
 
-Mon May 24 05:25:00 2010 Kirk haines <khaines@ruby-lang.org>
+	* io.c: Backport #776 [ruby-core:20043]; added an ifdef _#WIN32 to rb_io_flush to do an fsync on windows.
+
+Mon May 25 06:26:00 2010 Kirk haines <khaines@ruby-lang.org>
+
+	* ext/openssl/ossl_config.c: Backport #484 [ruby-core:18377]; OpenSSL::Config now freezes correctly, preventing further modification. r28002
+
+Mon May 25 05:25:00 2010 Kirk haines <khaines@ruby-lang.org>
 
 	* lib/fileutils.rb: Backport #1700 [ruby-core:24078]; stringify group argument in #fu_get_gid before making regexp match. r28001
 
-Mon May 24 05:15:00 2010 Kirk Haines <khaines@ruby-lang.org>
+Mon May 25 05:15:00 2010 Kirk Haines <khaines@ruby-lang.org>
 
 	* configure.in: Bug #2553 [ruby-core:27380]; Add a --disable-ucontext option, for use with --enable-pthreads, to avoid performance loss from --enable-pthreads and the oodles of sigprocmask calls that normally brings. r27999
 

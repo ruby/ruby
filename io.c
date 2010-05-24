@@ -643,7 +643,9 @@ rb_io_flush(io)
     f = GetWriteFile(fptr);
 
     io_fflush(f, fptr);
-
+#ifdef _WIN32
+    fsync(fileno(f));
+#endif
     return io;
 }
 
