@@ -1,8 +1,12 @@
+Mon May 24 05:15:00 2010 Kirk Haines <khaines@ruby-lang.org>
+
+	* configure.in: Bug #2553 [ruby-core:27380]; Add a --disable-ucontext option, for use with --enable-pthreads, to avoid performance loss from --enable-pthreads and the oodles of sigprocmask calls that normally brings.
+
 Thu May 20 04:10:00 2010 Kirk Haines <khaines@ruby-lang.org>
 
-	* lib/cgi.rb: Backport #229 [ruby-core:17634]; CGI::Cookie objects can get out of sync when CGI::Cookie#value= is used to assign a new value. Also, if a nil value ends up in the array of values for the cookie, CGI::Cookie#to_s would blow up on a gsub error when it tried to CGI::escape the nil value. This is fixed so that nils are treated as empty strings.
+	* lib/cgi.rb: Backport #229 [ruby-core:17634]; CGI::Cookie objects can get out of sync when CGI::Cookie#value= is used to assign a new value. Also, if a nil value ends up in the array of values for the cookie, CGI::Cookie#to_s would blow up on a gsub error when it tried to CGI::escape the nil value. This is fixed so that nils are treated as empty strings. r27932
 
-	* lib/irb/ext/multi-irb.rb: Backport #145 [ruby-dev:35075]; Fixes some misleading exceptions in IRB's fg command when used with no arguments or invalid arguments.
+	* lib/irb/ext/multi-irb.rb: Backport #145 [ruby-dev:35075]; Fixes some misleading exceptions in IRB's fg command when used with no arguments or invalid arguments. r27934
 	* lib/irb/extended-command.rb: Backport #145 [ruby-dev:35075]
 
 Fri Mar 5  03:58:00 2010 Kirk Haines <khaines@ruby-lang.org>

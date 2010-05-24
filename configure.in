@@ -356,6 +356,10 @@ AC_ARG_WITH(libc_r,
 	*)   with_libc_r=no;;
 	esac], [with_libc_r=no])
 
+AC_ARG_ENABLE(ucontext,
+       [  --disable-ucontext      do not use getcontext()/setcontext().],
+       [disable_ucontext=yes], [disable_ucontext=no])
+
 AC_ARG_ENABLE(pthread,
        [  --enable-pthread        use pthread library.],
        [enable_pthread=$enableval], [enable_pthread=no])
@@ -951,7 +955,8 @@ if test x"$enable_pthread" = xyes; then
        fi
     fi
 fi
-if test x"$ac_cv_header_ucontext_h" = xyes; then
+
+if test x"$ac_cv_header_ucontext_h" = xyes && test x"$disable_ucontext" = xno; then
     if test x"$rb_with_pthread" = xyes; then
 	AC_CHECK_FUNCS(getcontext setcontext)
     fi
