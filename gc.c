@@ -1908,7 +1908,7 @@ gc_sweep(rb_objspace_t *objspace)
 	    RVALUE *pp;
 
 	    for (pp = final_list; pp != final; pp = pp->as.free.next) {
-		RDATA(pp)->dmark = (void (*)())(VALUE)&heaps[i];
+		RDATA(pp)->dmark = (void (*)_((void *)))(VALUE)&heaps[i];
 		pp->as.free.flags |= FL_SINGLETON; /* freeing page mark */
 	    }
 	    heaps[i].limit = final_num;
