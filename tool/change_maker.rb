@@ -7,7 +7,7 @@ def diff2index(cmd, *argv)
     case line
     when /^Index: (\S*)/, /^diff --git [a-z]\/(\S*) [a-z]\/\1/
       path = $1
-    when /^@@\s*-\d+,\d+ +\+(\d+),\d+\s*@@(?: +([A-Za-z_][A-Za-z_0-9 ]*[A-Za-z_0-9]))?/
+    when /^@@\s*-[,\d]+ +\+(\d+)[,\d]*\s*@@(?: +([A-Za-z_][A-Za-z_0-9 ]*[A-Za-z_0-9]))?/
       line = $1.to_i
       ent = "* #{path}"
       ent << " (#{$2})" if $2
