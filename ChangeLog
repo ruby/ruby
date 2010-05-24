@@ -1,3 +1,8 @@
+Tue May 25 01:46:49 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* vm_eval.c (rb_f_caller): update rdoc.  a patch from Nobuhiro IMAI
+	  <nov at yo.rim.or.jp> in [ruby-dev:41387].
+
 Mon May 24 19:00:34 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (warn_balanced, parser_yylex): no warnings after closing
