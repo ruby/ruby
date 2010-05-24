@@ -1,3 +1,7 @@
+Mon May 24 09:19:59 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* gc.c (gc_sweep): suppres a warning on VC.
+
 Mon May 24 08:16:02 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_f_spawn): use correct command name for the error
