@@ -1,3 +1,8 @@
+Mon May 24 19:00:34 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (warn_balanced, parser_yylex): no warnings after closing
+	  parens.
+
 Mon May 24 12:52:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (change), tool/change_maker.rb: make a brief template
