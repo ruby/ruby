@@ -740,7 +740,7 @@ prelude.c: $(srcdir)/tool/compile_prelude.rb $(RBCONFIG) $(srcdir)/lib/rubygems/
 golf_prelude.c: $(srcdir)/tool/compile_prelude.rb $(RBCONFIG) $(srcdir)/prelude.rb $(srcdir)/golf_prelude.rb $(PREP)
 	$(COMPILE_PRELUDE) $(srcdir)/golf_prelude.rb $@
 
-prereq: incs srcs preludes
+prereq: incs srcs preludes PHONY
 
 preludes: {$(VPATH)}miniprelude.c
 preludes: {$(srcdir)}golf_prelude.c
@@ -816,7 +816,7 @@ info-libruby_so:
 info-arch:
 	@echo arch=$(arch)
 
-change:
+change: PHONY
 	$(BASERUBY) -C "$(srcdir)" ./tool/change_maker.rb $(CHANGES) > change.log
 
 help: PHONY
