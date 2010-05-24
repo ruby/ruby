@@ -14,6 +14,7 @@
   $Id$
 =end
 
+module OpenSSL
 module Buffering
   include Enumerable
   attr_accessor :sync
@@ -236,4 +237,5 @@ module Buffering
     flush rescue nil
     sysclose
   end
+end
 end

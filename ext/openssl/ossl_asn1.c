@@ -306,14 +306,14 @@ obj_to_asn1derstr(VALUE obj)
 static VALUE
 decode_bool(unsigned char* der, int length)
 {
-    int bool;
+    int val;
     unsigned char *p;
 
     p = der;
-    if((bool = d2i_ASN1_BOOLEAN(NULL, &p, length)) < 0)
+    if((val = d2i_ASN1_BOOLEAN(NULL, &p, length)) < 0)
 	ossl_raise(eASN1Error, NULL);
 
-    return bool ? Qtrue : Qfalse;
+    return val ? Qtrue : Qfalse;
 }
 
 static VALUE
@@ -339,7 +339,7 @@ static VALUE
 decode_bstr(unsigned char* der, int length, long *unused_bits)
 {
     ASN1_BIT_STRING *bstr;
-    unsigned char *p, *buf;
+    const unsigned char *p;
     long len;
     VALUE ret;
 
@@ -347,16 +347,11 @@ decode_bstr(unsigned char* der, int length, long *unused_bits)
     if(!(bstr = d2i_ASN1_BIT_STRING(NULL, &p, length)))
 	ossl_raise(eASN1Error, NULL);
     len = bstr->length;
-    if(!(buf = OPENSSL_malloc(len))){
-	ASN1_BIT_STRING_free(bstr);
-	ossl_raise(eASN1Error, NULL);
-    }
     *unused_bits = 0;
     if(bstr->flags & ASN1_STRING_FLAG_BITS_LEFT)
 	*unused_bits = bstr->flags & 0x07;
-    memcpy(buf, bstr->data, len);
+    ret = rb_str_new((const char *)bstr->data, len);
     ASN1_BIT_STRING_free(bstr);
-    ret = ossl_buf2str(buf, len);
 
     return ret;
 }
@@ -500,7 +495,7 @@ ossl_asn1_get_asn1type(VALUE obj)
     value = ossl_asn1_get_value(obj);
     switch(tag){
     case V_ASN1_BOOLEAN:
-	ptr = (void*)obj_to_asn1bool(value);
+	ptr = (void*)(VALUE)obj_to_asn1bool(value);
 	free_func = NULL;
 	break;
     case V_ASN1_INTEGER:         /* FALLTHROUGH */
@@ -925,7 +920,7 @@ ossl_asn1prim_to_der(VALUE self)
 {
     ASN1_TYPE *asn1;
     int tn, tc, explicit;
-    long length, reallen;
+    long len, reallen;
     unsigned char *buf, *p;
     VALUE str;
 
@@ -934,26 +929,24 @@ ossl_asn1prim_to_der(VALUE self)
     explicit = ossl_asn1_is_explicit(self);
     asn1 = ossl_asn1_get_asn1type(self);
 
-    length = ASN1_object_size(1, ossl_i2d_ASN1_TYPE(asn1, NULL), tn);
-    if(!(buf = OPENSSL_malloc(length))){
+    len = ASN1_object_size(1, ossl_i2d_ASN1_TYPE(asn1, NULL), tn);
+    if(!(buf = OPENSSL_malloc(len))){
 	ossl_ASN1_TYPE_free(asn1);
 	ossl_raise(eASN1Error, "cannot alloc buffer");
     }
     p = buf;
-    if(tc == V_ASN1_UNIVERSAL) ossl_i2d_ASN1_TYPE(asn1, &p);
-    else{
-	if(explicit){
-	    ASN1_put_object(&p, 1, ossl_i2d_ASN1_TYPE(asn1, NULL), tn, tc);
-	    ossl_i2d_ASN1_TYPE(asn1, &p);
-	}
-	else{
-	    ossl_i2d_ASN1_TYPE(asn1, &p);
-	    *buf = tc | tn | (*buf & V_ASN1_CONSTRUCTED);
-	}
+    if (tc == V_ASN1_UNIVERSAL) {
+        ossl_i2d_ASN1_TYPE(asn1, &p);
+    } else if (explicit) {
+        ASN1_put_object(&p, 1, ossl_i2d_ASN1_TYPE(asn1, NULL), tn, tc);
+        ossl_i2d_ASN1_TYPE(asn1, &p);
+    } else {
+        ossl_i2d_ASN1_TYPE(asn1, &p);
+        *buf = tc | tn | (*buf & V_ASN1_CONSTRUCTED);
     }
     ossl_ASN1_TYPE_free(asn1);
     reallen = p - buf;
-    assert(reallen <= length);
+    assert(reallen <= len);
     str = ossl_buf2str(buf, reallen); /* buf will be free in ossl_buf2str */
 
     return str;

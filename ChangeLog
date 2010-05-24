@@ -1,3 +1,108 @@
+Tue May 25 08:42:42 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* ext/openssl: backport fixes in 1.9.
+
+	  * r25019 by marcandre
+	    * ossl_ocsp.c (ossl_ocspres_to_der): Bug fix in Response#to_def.
+	      Patch by Chris Chandler [ruby-core:18411]
+
+	  * r25017 by marcandre
+	    * ossl_config.c (ossl_config_add_value_m,
+	      ossl_config_set_section): Check if frozen (or untrusted for
+	      $SECURE >= 4) [ruby-core:18377]
+
+	  * r22925 by nobu
+	    * ext/openssl/openssl_missing.h (i2d_of_void): cast for callbacks.
+	      [ruby-core:22860]
+
+	    * ext/openssl/ossl_engine.c (ossl_engine_s_by_id): suppress a
+	      warning.
+
+	    * ext/openssl/ossl_ssl.c (ossl_sslctx_flush_sessions): time_t may
+	      be larger than long.
+
+	    * ext/openssl/ossl_ssl_session.c (ossl_ssl_session_get_time),
+	      (ossl_ssl_session_get_timeout): use TIMET2NUM() to convert
+	      time_t.
+
+	  * r22924 by nobu
+	    * ext/openssl/ossl_x509ext.c (ossl_x509ext_set_value): should use
+	      OPENSSL_free instead of free.  a patch from Charlie Savage at
+	      [ruby-core:22858].
+
+	  * r22918 by akr
+	    * ext/openssl: suppress warnings.
+
+	    * ext/openssl/ossl.h (OSSL_Debug): don't use gcc extention for
+	      variadic macro.
+
+	  * r22666 by akr
+	    * ext/openssl/lib/openssl/buffering.rb: define Buffering module
+	      under OpenSSL.  [ruby-dev:37906]
+
+	  * r22440 by nobu
+	    * ext/openssl/ossl_ocsp.c (ossl_ocspbres_verify): OCSP_basic_verify
+	      returns positive value on success, not non-zero.
+	      [ruby-core:21762]
+
+	  * r22378 by akr
+	    * ext/openssl: avoid cyclic require.
+
+	    * ext/openssl/lib/openssl/ssl-internal.rb: renamed from ssl.rb
+
+	    * ext/openssl/lib/openssl/x509-internal.rb: renamed from x509.rb.
+	      [ruby-dev:38018]
+
+	  * r22101 by nobu
+	    * ext/openssl/ossl_cipher.c (add_cipher_name_to_ary): used
+	      conditionally.
+
+	  * r21510 by akr
+	    * ext/openssl/ossl.c (ossl_raise): abolish a warning.
+
+	  * r21208 by akr
+	    * ext/openssl/ossl_digest.c (GetDigestPtr): use StringValueCStr
+	      instead of STR2CSTR.
+
+	    * ext/openssl/ossl_pkey_ec.c (ossl_ec_key_initialize): ditto.
+	      (ossl_ec_group_initialize): ditto.
+
+	  * r19420 by mame
+	    * ext/openssl/ossl_pkey_ec.c (ossl_ec_key_to_string): comment out
+	      fragments of unused code.
+
+	  * r18975 by nobu
+	    * ext/openssl/ossl_ocsp.c (ossl_ocspres_initialize): fix for
+	      initialization of r18168.
+
+	  * r18971 by nobu
+	    * ext/openssl/ossl_config.c (Init_ossl_config): removed C99ism.
+
+	  * r18944 by matz
+	    * ext/openssl/ossl_config.c (Init_ossl_config): memory leak fixed.
+	      a patch <shinichiro.hamaji at gmail.com> in [ruby-dev:35880].
+
+	    * ext/openssl/ossl_x509ext.c (ossl_x509ext_set_value): ditto.
+
+	  * r18917 by nobu
+	    * ext/openssl/ossl_x509attr.c (ossl_x509attr_initialize): fix for
+	      initialization of r18168.
+
+	    * ext/openssl/ossl_ocsp.c (ossl_ocspreq_initialize): ditto.
+
+	    * ext/openssl/ossl_x509name.c (ossl_x509name_initialize): ditto.
+
+	  * r18283 by nobu
+	    * ext/openssl/ossl_asn1.c (ossl_asn1_get_asn1type): suppress
+	      warnings on platforms which int size differs from pointer size.
+
+	  * r18181 by nobu
+	    * ext/openssl/openssl_missing.h (d2i_of_void): define for older
+	      versions.  [ruby-dev:35637]
+
+	  * r18168 by nobu
+	    * ext/openssl: suppress warnings.
+
 Sat May 22 22:31:36 2010  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb: fix [ruby-core:28320] reported by Paul Clegg.

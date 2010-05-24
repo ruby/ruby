@@ -158,14 +158,6 @@ ossl_config_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
-static void
-rb_ossl_config_modify_check(VALUE config)
-{
-    if (OBJ_FROZEN(config)) rb_error_frozen("OpenSSL::Config");
-    if (!OBJ_TAINTED(config) && rb_safe_level() >= 4)
-	rb_raise(rb_eSecurityError, "Insecure: can't modify OpenSSL config");
-}
-
 static VALUE
 ossl_config_add_value(VALUE self, VALUE section, VALUE name, VALUE value)
 {
@@ -175,7 +167,6 @@ ossl_config_add_value(VALUE self, VALUE section, VALUE name, VALUE value)
     CONF *conf;
     CONF_VALUE *sv, *cv;
 
-    rb_ossl_config_modify_check(self);
     StringValue(section);
     StringValue(name);
     StringValue(value);
@@ -198,6 +189,25 @@ ossl_config_add_value(VALUE self, VALUE section, VALUE name, VALUE value)
     }
     
     return value;
+#endif
+}
+
+static void
+rb_ossl_config_modify_check(VALUE config)
+{
+    if (OBJ_FROZEN(config)) rb_error_frozen("OpenSSL::Config");
+    if (!OBJ_TAINTED(config) && rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: can't modify OpenSSL config");
+}
+
+static VALUE
+ossl_config_add_value_m(VALUE self, VALUE section, VALUE name, VALUE value)
+{
+#if defined(OSSL_NO_CONF_API)
+    rb_notimplement();
+#else
+    rb_ossl_config_modify_check(self);
+    return ossl_config_add_value(self, section, name, value);
 #endif
 }
 
@@ -310,7 +320,7 @@ get_conf_section(CONF_VALUE *cv, VALUE ary)
     rb_ary_push(ary, rb_str_new2(cv->section));
 }
 
-static IMPLEMENT_LHASH_DOALL_ARG_FN(get_conf_section, CONF_VALUE*, VALUE);
+static IMPLEMENT_LHASH_DOALL_ARG_FN(get_conf_section, CONF_VALUE*, VALUE)
 
 static VALUE
 ossl_config_get_sections(VALUE self)
@@ -348,7 +358,7 @@ dump_conf_value(CONF_VALUE *cv, VALUE str)
     rb_str_cat2(str, "\n");
 }
 
-static IMPLEMENT_LHASH_DOALL_ARG_FN(dump_conf_value, CONF_VALUE*, VALUE);
+static IMPLEMENT_LHASH_DOALL_ARG_FN(dump_conf_value, CONF_VALUE*, VALUE)
 
 static VALUE
 dump_conf(CONF *conf)
@@ -392,12 +402,14 @@ each_conf_value(CONF_VALUE *cv, void* dummy)
     }
 }
 
-static IMPLEMENT_LHASH_DOALL_ARG_FN(each_conf_value, CONF_VALUE*, void*);
+static IMPLEMENT_LHASH_DOALL_ARG_FN(each_conf_value, CONF_VALUE*, void*)
 
 static VALUE
 ossl_config_each(VALUE self)
 {
     CONF *conf;
+
+    RETURN_ENUMERATOR(self, 0, 0);
 
     GetConfig(self, conf);
     lh_doall_arg(conf->data, LHASH_DOALL_ARG_FN(each_conf_value), (void*)NULL);
@@ -448,11 +460,14 @@ ossl_config_inspect(VALUE self)
 void
 Init_ossl_config()
 {
+    char *default_config_file;
     eConfigError = rb_define_class_under(mOSSL, "ConfigError", eOSSLError);
     cConfig = rb_define_class_under(mOSSL, "Config", rb_cObject);
 
+    default_config_file = CONF_get1_default_config_file();
     rb_define_const(cConfig, "DEFAULT_CONFIG_FILE",
-		    rb_str_new2(CONF_get1_default_config_file()));
+		    rb_str_new2(default_config_file));
+    OPENSSL_free(default_config_file);
     rb_include_module(cConfig, rb_mEnumerable);
     rb_define_singleton_method(cConfig, "parse", ossl_config_s_parse, 1);
     rb_define_alias(CLASS_OF(cConfig), "load", "new");
@@ -461,7 +476,7 @@ Init_ossl_config()
     rb_define_method(cConfig, "initialize", ossl_config_initialize, -1);
     rb_define_method(cConfig, "get_value", ossl_config_get_value, 2);
     rb_define_method(cConfig, "value", ossl_config_get_value_old, -1);
-    rb_define_method(cConfig, "add_value", ossl_config_add_value, 3);
+    rb_define_method(cConfig, "add_value", ossl_config_add_value_m, 3);
     rb_define_method(cConfig, "[]", ossl_config_get_section, 1);
     rb_define_method(cConfig, "section", ossl_config_get_section_old, 1);
     rb_define_method(cConfig, "[]=", ossl_config_set_section, 2);
