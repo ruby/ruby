@@ -1,3 +1,8 @@
+Mon May 24 19:00:34 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (warn_balanced, parser_yylex): no warnings after closing
+	  parens.
+
 Mon May 24 08:16:02 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_f_spawn): use correct command name for the error
