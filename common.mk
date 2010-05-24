@@ -816,6 +816,9 @@ info-libruby_so:
 info-arch:
 	@echo arch=$(arch)
 
+change:
+	$(BASERUBY) -C "$(srcdir)" ./tool/change_maker.rb $(CHANGES) > change.log
+
 help: PHONY
 	@echo "                Makefile of Ruby"
 	@echo ""
@@ -839,6 +842,7 @@ help: PHONY
 	@echo "  install:         install all ruby distributions"
 	@echo "  install-nodoc:   install without rdoc"
 	@echo "  clean:           clean built objects"
+	@echo "  change:          make change log template"
 	@echo "  golf:            for golfers"
 	@echo ""
 	@echo "see DeveloperHowto for more detail: "
