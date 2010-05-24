@@ -1065,6 +1065,7 @@ class TestProcess < Test::Unit::TestCase
       Thread.new { sleep 1; Process.kill(:SIGQUIT, pid) }
       Process.wait(pid)
       s = $?
+      assert_equal(true, s.signaled?, "status.signaled?")
       assert_send(
         [["#<Process::Status: pid #{ s.pid } SIGQUIT (signal #{ s.termsig })>",
           "#<Process::Status: pid #{ s.pid } SIGQUIT (signal #{ s.termsig }) (core dumped)>"],
