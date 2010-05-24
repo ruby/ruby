@@ -1,3 +1,8 @@
+Mon May 24 12:52:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (change), tool/change_maker.rb: make a brief template
+	  for ChangeLog.
+
 Mon May 24 09:19:59 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* gc.c (gc_sweep): suppres a warning on VC.
