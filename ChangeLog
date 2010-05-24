@@ -1,8 +1,14 @@
+Mon May 24 06:26:00 2010 Kirk haines <khaines@ruby-lang.org>
+
+	* ext/openssl/ossl_config.c: Backport #484 [ruby-core:18377]; OpenSSL::Config now freezes correctly, preventing further modification.
+
+Mon May 24 05:25:00 2010 Kirk haines <khaines@ruby-lang.org>
+
+	* lib/fileutils.rb: Backport #1700 [ruby-core:24078]; stringify group argument in #fu_get_gid before making regexp match. r28001
+
 Mon May 24 05:15:00 2010 Kirk Haines <khaines@ruby-lang.org>
 
 	* configure.in: Bug #2553 [ruby-core:27380]; Add a --disable-ucontext option, for use with --enable-pthreads, to avoid performance loss from --enable-pthreads and the oodles of sigprocmask calls that normally brings. r27999
-
-	* lib/fileutils.rb: Backport #1700 [ruby-core:24078]; stringify group argument in #fu_get_gid before making regexp match.
 
 Thu May 20 04:10:00 2010 Kirk Haines <khaines@ruby-lang.org>
 
