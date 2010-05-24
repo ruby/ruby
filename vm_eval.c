@@ -1536,7 +1536,7 @@ rb_catch_obj(VALUE tag, VALUE (*func)(), VALUE data)
 
 /*
  *  call-seq:
- *     caller(start=1)    -> Array or nil
+ *     caller(start=1)    -> array or nil
  *
  *  Returns the current execution stack---an array containing strings in
  *  the form ``<em>file:line</em>'' or ``<em>file:line: in
@@ -1544,7 +1544,7 @@ rb_catch_obj(VALUE tag, VALUE (*func)(), VALUE data)
  *  determines the number of initial stack entries to omit from the
  *  result.
  *
- *  Returns +nil+ if _start_ is greater than or equal to the size of
+ *  Returns +nil+ if _start_ is greater than the size of
  *  current execution stack.
  *
  *     def a(skip)
@@ -1556,11 +1556,12 @@ rb_catch_obj(VALUE tag, VALUE (*func)(), VALUE data)
  *     def c(skip)
  *       b(skip)
  *     end
- *     c(0)   #=> ["prog:2:in `a'", "prog:5:in `b'", "prog:8:in `c'", "prog:10"]
- *     c(1)   #=> ["prog:5:in `b'", "prog:8:in `c'", "prog:11"]
- *     c(2)   #=> ["prog:8:in `c'", "prog:12"]
- *     c(3)   #=> ["prog:13"]
- *     c(4)   #=> nil
+ *     c(0)   #=> ["prog:2:in `a'", "prog:5:in `b'", "prog:8:in `c'", "prog:10:in `<main>'"]
+ *     c(1)   #=> ["prog:5:in `b'", "prog:8:in `c'", "prog:11:in `<main>'"]
+ *     c(2)   #=> ["prog:8:in `c'", "prog:12:in `<main>'"]
+ *     c(3)   #=> ["prog:13:in `<main>'"]
+ *     c(4)   #=> []
+ *     c(5)   #=> nil
  */
 
 static VALUE
