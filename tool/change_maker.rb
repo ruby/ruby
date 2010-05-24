@@ -1,26 +1,29 @@
 #! ./miniruby
 
-if File.directory?(".svn")
-  cmd = "svn diff"
-elsif File.directory?(".git")
-  cmd = "git diff"
-else
-  abort "does not seem to be under a vcs"
-end
-
 def diff2index(cmd, *argv)
+  lines = []
   path = nil
   `#{cmd} #{argv.join(" ")}`.split(/\n/).each do |line|
     case line
     when /^Index: (\S*)/, /^diff --git [a-z]\/(\S*) [a-z]\/\1/
       path = $1
-    when /^@@.*@@ +([A-Za-z_][A-Za-z_0-9 ]*[A-Za-z_0-9])/
-      puts "* #{path} (#{$1}):"
+    when /^@@\s*-\d+,\d+ +\+(\d+),\d+\s*@@(?: +([A-Za-z_][A-Za-z_0-9 ]*[A-Za-z_0-9]))?/
+      line = $1.to_i
+      ent = "* #{path}"
+      ent << " (#{$2})" if $2
+      lines << "#{ent}:"
     end
   end
-  !!path
+  lines.uniq!
+  lines.empty? ? nil : lines
 end
 
-if !diff2index(cmd, ARGV) and /^git/ =~ cmd
-  diff2index(cmd, "--cached", ARGV)
+if File.directory?(".svn")
+  cmd = "svn diff --diff-cmd=diff -x-pU0"
+  puts diff2index(cmd, ARGV)
+elsif File.directory?(".git")
+  cmd = "git diff"
+  puts diff2index(cmd, ARGV) || diff2index(cmd, "--cached", ARGV)
+else
+  abort "does not seem to be under a vcs"
 end
