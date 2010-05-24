@@ -1,3 +1,7 @@
+Mon May 24 23:04:41 2010  Tanaka Akira  <akr@fsij.org>
+
+	* error.c: fix wrong exception class name in rdoc.
+
 Mon May 24 19:00:34 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (warn_balanced, parser_yylex): no warnings after closing
@@ -918,7 +922,7 @@ Sat May  1 00:14:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri Apr 30 22:46:27 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
-	* math.c: Math::DomainError < StandardException [ruby-core:29855]
+	* math.c: Math::DomainError < StandardError [ruby-core:29855]
 
 Fri Apr 30 21:40:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
