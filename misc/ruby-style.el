@@ -21,7 +21,7 @@
   "Ruby style revision string.")
 
 (defconst ruby-style-version
-  (progn
+  (and
    (string-match "[0-9.]+" ruby-style-revision)
    (substring ruby-style-revision (match-beginning 0) (match-end 0)))
   "Ruby style version number.")
