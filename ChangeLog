@@ -1,3 +1,8 @@
+Tue May 25 16:37:39 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-style.el (ruby-style-version): take revision if
+	  keyword is expanded. [ruby-dev:41408]
+
 Tue May 25 13:26:49 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/vm.h, include/ruby/encoding.h: add external
