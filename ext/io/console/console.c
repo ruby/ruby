@@ -251,6 +251,8 @@ console_raw(VALUE io)
  *   io.raw!
  *
  * Enables raw mode.
+ *
+ * If the terminal mode needs to be back, use io.raw { ... }.
  */
 static VALUE
 console_set_raw(VALUE io)
