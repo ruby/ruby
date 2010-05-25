@@ -1,3 +1,9 @@
+Tue May 25 14:00:51 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regparse.c (add_code_range_to_buf0): fix false negative
+	  warning when given range is just before previous range.
+	  [ruby-dev:41406]
+
 Tue May 25 16:37:39 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-style.el (ruby-style-version): take revision if
