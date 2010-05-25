@@ -91,6 +91,7 @@ class TestFind < Test::Unit::TestCase
   end
 
   def test_unreadable_dir
+    skip "no meaning test on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
     Dir.mktmpdir {|d|
       Dir.mkdir(dir = "#{d}/dir")
       File.open(file = "#{dir}/foo", "w"){}
@@ -114,6 +115,7 @@ class TestFind < Test::Unit::TestCase
         a = []
         Find.find(d) {|f| a << f }
         assert_equal([d, dir, file], a)
+        skip "no meaning test on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
         assert_raise(Errno::EACCES) { File.lstat(file) }
       ensure
         File.chmod(0700, dir)
