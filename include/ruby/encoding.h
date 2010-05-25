@@ -12,6 +12,13 @@
 #ifndef RUBY_ENCODING_H
 #define RUBY_ENCODING_H 1
 
+#if defined(__cplusplus)
+extern "C" {
+#if 0
+} /* satisfy cc-mode */
+#endif
+#endif
+
 #include <stdarg.h>
 #include "ruby/oniguruma.h"
 
@@ -302,5 +309,12 @@ void rb_econv_binmode(rb_econv_t *ec);
 #define ECONV_PARTIAL_INPUT                     0x00010000
 #define ECONV_AFTER_OUTPUT                      0x00020000
 /* end of flags for rb_econv_convert */
+
+#if defined(__cplusplus)
+#if 0
+{ /* satisfy cc-mode */
+#endif
+}  /* extern "C" { */
+#endif
 
 #endif /* RUBY_ENCODING_H */
