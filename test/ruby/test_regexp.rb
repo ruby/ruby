@@ -1,4 +1,5 @@
 require 'test/unit'
+require_relative 'envutil'
 
 class TestRegexp < Test::Unit::TestCase
   def setup
@@ -815,5 +816,11 @@ class TestRegexp < Test::Unit::TestCase
   def test_invalid_fragment
     bug2547 = '[ruby-core:27374]'
     assert_raise(SyntaxError, bug2547) {eval('/#{"\\\\"}y/')}
+  end
+
+  def test_dup_warn
+    assert_in_out_err('-w', 'x=/[\u3042\u3041]/', [], /\A\z/)
+    assert_in_out_err('-w', 'x=/[\u3042\u3042]/', [], /duplicated/)
+    assert_in_out_err('-w', 'x=/[\u3042\u3041-\u3043]/', [], /duplicated/)
   end
 end
