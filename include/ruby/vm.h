@@ -12,6 +12,13 @@
 #ifndef RUBY_VM_H
 #define RUBY_VM_H 1
 
+#if defined(__cplusplus)
+extern "C" {
+#if 0
+} /* satisfy cc-mode */
+#endif
+#endif
+
 /* Place holder.
  *
  * We will prepare VM creation/control APIs on 1.9.2 or later.
@@ -24,5 +31,12 @@ typedef struct rb_vm_struct ruby_vm_t;
 
 /* core API */
 int ruby_vm_destruct(ruby_vm_t *vm);
+
+#if defined(__cplusplus)
+#if 0
+{ /* satisfy cc-mode */
+#endif
+}  /* extern "C" { */
+#endif
 
 #endif /* RUBY_VM_H */

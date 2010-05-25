@@ -1,3 +1,8 @@
+Tue May 25 13:26:49 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/vm.h, include/ruby/encoding.h: add external
+	  linkage.
+
 Tue May 25 01:46:49 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm_eval.c (rb_f_caller): update rdoc.  a patch from Nobuhiro IMAI
