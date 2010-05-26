@@ -1,3 +1,7 @@
+Wed May 26 19:55:33 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* file.c (file_expand_path): revert a part of r22392. it's commit miss.
+
 Wed May 26 18:40:23 2010  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* test/rinda/test_rinda.rb (TupleSpaceTest, TupleSpaceProxyTest):
