@@ -1,3 +1,8 @@
+Wed May 26 20:19:22 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (random_rand): add the result of random to the
+	  beginning of range, not the opposite.  [ruby-dev:41415]
+
 Wed May 26 19:55:33 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* file.c (file_expand_path): revert a part of r22392. it's commit miss.
@@ -5,8 +10,7 @@ Wed May 26 19:55:33 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 Wed May 26 12:08:06 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (random_rand): subtraction method of non-numeric can
-	  return Float, and add the result of random to the beginning of
-	  range, not the opposite.  [ruby-dev:41410]
+	  return Float.  [ruby-dev:41410]
 
 Wed May 26 10:35:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
