@@ -1085,7 +1085,7 @@ random_rand(int argc, VALUE *argv, VALUE obj)
 	}
       }
       default:
-	return rb_funcall2(v, id_plus, 1, &beg);
+	return rb_funcall2(beg, id_plus, 1, &v);
     }
 }
 
