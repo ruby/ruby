@@ -1,3 +1,7 @@
+Wed May 26 19:55:33 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* file.c (file_expand_path): revert a part of r22392. it's commit miss.
+
 Mon May 24 04:58:39 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c, eval.c, process.c: remove all condition of r26371.
