@@ -3051,7 +3051,7 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
     }
     if (p == skiproot(buf) - 1) p++;
 
-#if USE_NTFS && defined __WIN32__
+#if USE_NTFS
     *p = '\0';
     if ((s = strrdirsep(b = buf)) != 0 && !strpbrk(s, "*?")) {
 	size_t len;
