@@ -1,3 +1,7 @@
+Wed May 26 11:50:09 2010  Eric Hodel  <drbrain@segment7.net>
+
+	* marshal.c (Init_marshal): document marshal_dump and marshal_load.
+
 Wed May 26 10:35:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (rb_cv_large_fd_select): needed on mingw, even

@@ -892,8 +892,10 @@ clear_dump_arg(struct dump_arg *arg)
  *
  * Marshal can't dump following objects:
  * * anonymous Class/Module.
- * * objects which related to its system (ex: Dir, File::Stat, IO, File, Socket and so on)
- * * an instance of MatchData, Data, Method, UnboundMethod, Proc, Thread, ThreadGroup, Continuation
+ * * objects which related to its system (ex: Dir, File::Stat, IO, File, Socket
+ *   and so on)
+ * * an instance of MatchData, Data, Method, UnboundMethod, Proc, Thread,
+ *   ThreadGroup, Continuation
  * * objects which defines singleton methods
  */
 static VALUE
@@ -1820,6 +1822,7 @@ marshal_load(int argc, VALUE *argv)
  * byte stream, allowing them to be stored outside the currently
  * active script. This data may subsequently be read and the original
  * objects reconstituted.
+ *
  * Marshaled data has major and minor version numbers stored along
  * with the object information. In normal use, marshaling can only
  * load data written with the same major version number and an equal
@@ -1837,16 +1840,78 @@ marshal_load(int argc, VALUE *argv)
  * Some objects cannot be dumped: if the objects to be dumped include
  * bindings, procedure or method objects, instances of class IO, or
  * singleton objects, a TypeError will be raised.
+ *
  * If your class has special serialization needs (for example, if you
  * want to serialize in some specific format), or if it contains
  * objects that would otherwise not be serializable, you can implement
- * your own serialization strategy by defining two methods, _dump and
- * _load:
- * The instance method _dump should return a String object containing
- * all the information necessary to reconstitute objects of this class
- * and all referenced objects up to a maximum depth given as an integer
- * parameter (a value of -1 implies that you should disable depth checking).
- * The class method _load should take a String and return an object of this class.
+ * your own serialization strategy.
+ *
+ * There are two methods of doing this, your object can define either
+ * marshal_dump and marshal_load or _dump and _load.  marshal_dump will take
+ * precedence over _dump if both are defined.  marshal_dump may result in
+ * smaller Marshal strings.
+ *
+ * == marshal_dump and marshal_load
+ *
+ * When dumping an object the method marshal_dump will be called.
+ * marshal_dump must return a result containing the information necessary for
+ * marshal_load to reconstitute the object.  The result can be any object.
+ *
+ * When loading an object dumped using marshal_dump the object is first
+ * allocated then marshal_load is called with the result from marshal_dump.
+ * marshal_load must recreate the object from the information in the result.
+ *
+ * Example:
+ *
+ *   class MyObj
+ *     def initialize name, version, data
+ *       @name    = name
+ *       @version = version
+ *       @data    = data
+ *     end
+ *
+ *     def marshal_dump
+ *       [@name, @version]
+ *     end
+ *
+ *     def marshal_load array
+ *       @name, @version = array
+ *     end
+ *   end
+ *
+ * == _dump and _load
+ *
+ * Use _dump and _load when you need to allocate the object you're restoring
+ * yourself.
+ *
+ * When dumping an object the instance method _dump is called with an Integer
+ * which indicates the maximum depth of objects to dump (a value of -1 implies
+ * that you should disable depth checking).  _dump must return a String
+ * containing the information necessary to reconstitute the object.
+ *
+ * The class method _load should take a String and use it to return an object
+ * of the same class.
+ *
+ * Example:
+ *
+ *   class MyObj
+ *     def initialize name, version, data
+ *       @name    = name
+ *       @version = version
+ *       @data    = data
+ *     end
+ *
+ *     def _dump level
+ *       [@name, @version].join ':'
+ *     end
+ *
+ *     def self._load args
+ *       new(*args.split(':'))
+ *     end
+ *   end
+ *
+ * Since Marhsal.dump outputs a string you can have _dump return a Marshal
+ * string which is Marshal.loaded in _load for complex objects.
  */
 void
 Init_marshal(void)
