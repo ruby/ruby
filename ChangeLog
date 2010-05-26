@@ -1,3 +1,9 @@
+Wed May 26 12:08:06 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (random_rand): subtraction method of non-numeric can
+	  return Float, and add the result of random to the beginning of
+	  range, not the opposite.  [ruby-dev:41410]
+
 Wed May 26 11:50:09 2010  Eric Hodel  <drbrain@segment7.net>
 
 	* marshal.c (Init_marshal): document marshal_dump and marshal_load.

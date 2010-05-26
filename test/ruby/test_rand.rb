@@ -357,6 +357,9 @@ END
     v = r.rand(3.1..4)
     assert_instance_of(Float, v, '[ruby-core:24679]')
     assert_includes(3.1..4, v)
+
+    now = Time.now
+    assert_equal(now, r.rand(now..now))
   end
 
   def test_random_float
