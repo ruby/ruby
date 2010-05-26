@@ -906,6 +906,7 @@ main()
 		rb_cv_negative_time_t=no
 		ac_cv_func_fcntl=yes
 		ac_cv_func_flock=yes
+		rb_cv_large_fd_select=yes
 		AC_LIBOBJ([langinfo])
 		: ${enable_win95=maybe}
 		],
@@ -1021,7 +1022,11 @@ AC_CHECK_TYPES([struct timezone], [], [], [@%:@ifdef HAVE_TIME_H
 @%:@ include <sys/time.h>
 @%:@endif])
 
-AC_CHECK_TYPE(fd_mask, [AC_DEFINE(HAVE_RB_FD_INIT, 1)])
+AC_CACHE_VAL([rb_cv_large_fd_select],
+    [AC_CHECK_TYPE(fd_mask, [rb_cv_large_fd_select=yes], [rb_cv_large_fd_select=no])])
+if test "$rb_cv_large_fd_select" = yes; then
+    AC_DEFINE(HAVE_RB_FD_INIT, 1)
+fi
 
 dnl RUBY_DEFINT TYPENAME, SIZE, [SIGNED-OR-UNSIGNED], [INCLUDES = DEFAULT-INCLUDES]
 AC_DEFUN([RUBY_DEFINT], [dnl
