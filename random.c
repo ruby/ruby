@@ -1077,9 +1077,13 @@ random_rand(int argc, VALUE *argv, VALUE obj)
     switch (TYPE(v)) {
       case T_BIGNUM:
 	return rb_big_plus(v, beg);
-      case T_FLOAT:
-	RFLOAT_VALUE(v) += RFLOAT_VALUE(rb_check_to_float(beg));
-	return v;
+      case T_FLOAT: {
+	VALUE f = rb_check_to_float(beg);
+	if (!NIL_P(f)) {
+	    RFLOAT_VALUE(v) += RFLOAT_VALUE(f);
+	    return v;
+	}
+      }
       default:
 	return rb_funcall2(v, id_plus, 1, &beg);
     }
