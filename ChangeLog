@@ -1,3 +1,7 @@
+Wed May 26 19:55:33 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* file.c (file_expand_path): revert a part of r22392. it's commit miss.
+
 Wed May 26 12:08:06 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (random_rand): subtraction method of non-numeric can
