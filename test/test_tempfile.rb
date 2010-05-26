@@ -86,6 +86,7 @@ class TestTempfile < Test::Unit::TestCase
   end
 
   def test_unlink_before_close_works_on_posix_systems
+    skip "on Windows, unlink is always delayed" if /mswin|mingw/ =~ RUBY_PLATFORM
     tempfile = tempfile("foo")
     begin
       path = tempfile.path
@@ -118,6 +119,7 @@ class TestTempfile < Test::Unit::TestCase
   end
 
   def test_close_with_unlink_now_true_does_not_unlink_if_already_unlinked
+    skip "on Windows, unlink is always delayed" if /mswin|mingw/ =~ RUBY_PLATFORM
     t = tempfile("foo")
     path = t.path
     t.unlink
@@ -140,6 +142,7 @@ class TestTempfile < Test::Unit::TestCase
   end
 
   def test_close_bang_does_not_unlink_if_already_unlinked
+    skip "on Windows, unlink is always delayed" if /mswin|mingw/ =~ RUBY_PLATFORM
     t = tempfile("foo")
     path = t.path
     t.unlink
@@ -153,6 +156,7 @@ class TestTempfile < Test::Unit::TestCase
   end
 
   def test_finalizer_does_not_unlink_if_already_unlinked
+    skip "on Windows, unlink is always delayed" if /mswin|mingw/ =~ RUBY_PLATFORM
     assert_in_out_err('-rtempfile', <<-'EOS') do |(filename,*), (error,*)|
 file = Tempfile.new('foo')
 path = file.path
