@@ -1,8 +1,12 @@
+Thu May 26 02:15:00 2010 Kirk Haines <khaines@ruby-lang.org>
+
+	* signal.c: Bug #911 [ruby-core:20723]; this problem exists because Resolv::ResolvTimeout has Interrupt in its ancestry, and Interrupt, which descends from Signal, still used Signal's initialize() method, which requires an argument. Interrupt, however, should not require an argument. This is a backport of r12226 on the 1.8.7 branch, which fixed this problem.
+
 Mon May 25 06:59:00 2010 Kirk Haines <khaines@ruby-lang.org>
 
-	* ChangeLog: Changed dates on the last commit records, because I didn't shift the day when I shifted timezones to JST.
+	* ChangeLog: Changed dates on the last commit records, because I didn't shift the day when I shifted timezones to JST. r28003
 
-	* io.c: Backport #776 [ruby-core:20043]; added an ifdef _#WIN32 to rb_io_flush to do an fsync on windows.
+	* io.c: Backport #776 [ruby-core:20043]; added an ifdef _#WIN32 to rb_io_flush to do an fsync on windows. r28003
 
 Mon May 25 06:26:00 2010 Kirk haines <khaines@ruby-lang.org>
 

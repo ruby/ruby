@@ -270,14 +270,17 @@ esignal_init(argc, argv, self)
 }
 
 static VALUE
-interrupt_init(self, mesg)
-    VALUE self, mesg;
+interrupt_init(argc, argv, self)
+    int argc;
+    VALUE *argv;
+    VALUE self;
 {
-    VALUE argv[2];
+    VALUE args[2];
 
-    argv[0] = INT2FIX(SIGINT);
-    argv[1] = mesg;
-    return rb_call_super(2, argv);
+    args[0] = INT2FIX(SIGINT);
+    rb_scan_args(argc, argv, "01", &args[1]);
+
+    return rb_call_super(2, args);
 }
 
 void
@@ -1078,7 +1081,7 @@ Init_signal()
     rb_define_method(rb_eSignal, "initialize", esignal_init, -1);
     rb_attr(rb_eSignal, rb_intern("signo"), 1, 0, 0);
     rb_alias(rb_eSignal, rb_intern("signm"), rb_intern("message"));
-    rb_define_method(rb_eInterrupt, "initialize", interrupt_init, 1);
+    rb_define_method(rb_eInterrupt, "initialize", interrupt_init, -1);
 
     install_sighandler(SIGINT, sighandler);
 #ifdef SIGHUP
