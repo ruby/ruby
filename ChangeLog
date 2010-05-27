@@ -1,3 +1,8 @@
+Thu May 27 12:42:23 2010  Akinori MUSHA  <knu@iDaemons.org>
+
+	* LGPL: Removed.  We no longer have LGPL'd source files in our
+	  tree.
+
 Wed May 26 20:19:22 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (random_rand): add the result of random to the
