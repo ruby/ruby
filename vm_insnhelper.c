@@ -1402,6 +1402,11 @@ vm_search_superclass(rb_control_frame_t *reg_cfp, rb_iseq_t *ip,
 	    }
 	}
 
+	/* temporary measure for [Bug #2420] [Bug #3136] */
+	if (!lcfp->me) {
+	    rb_raise(rb_eNoMethodError, "super called outside of method");
+	}
+
 	id = lcfp->me->def->original_id;
 	klass = vm_search_normal_superclass(lcfp->me->klass, recv);
     }
