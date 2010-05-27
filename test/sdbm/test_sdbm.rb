@@ -120,6 +120,7 @@ class TestSDBM < Test::Unit::TestCase
   end
 
   def test_s_open_error
+    skip "doesn't support to avoid read access by owner on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
     assert_instance_of(SDBM, sdbm = SDBM.open("#{@tmpdir}/#{@prefix}", 0))
     assert_raise(Errno::EACCES) {
       SDBM.open("#{@tmpdir}/#{@prefix}", 0)
