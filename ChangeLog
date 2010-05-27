@@ -1,3 +1,11 @@
+Thu May 27 23:07:45 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* file.c (file_expand_path): use rb_enc_associate_index and
+	  rb_filesystem_encindex. Strings related FileSystem should
+	  have filesystem_encoding.
+
+	* file.c (SET_EXTERNAL_ENCODING): removed.
+
 Thu May 27 23:03:19 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* include/ruby/encoding.h (rb_filesystem_encindex): defined.
