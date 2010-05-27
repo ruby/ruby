@@ -1,3 +1,8 @@
+Fri May 28 00:47:16 2010  Masaya Tarui  <tarui@ruby-lnag.org>
+
+	* error.c (rb_bug): suppress the error report dialog if report_bug() 
+	  is finished successfly.
+
 Thu May 27 23:52:43 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* include/ruby/encoding.h (rb_filesystem_encindex): defined.

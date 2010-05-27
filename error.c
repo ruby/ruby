@@ -246,6 +246,10 @@ rb_bug(const char *fmt, ...)
     report_bug(rb_sourcefile(), rb_sourceline(), fmt, args);
     va_end(args);
 
+#if defined(_WIN32) && defined(_MSC_VER) && _MSC_VER >= 1400
+    _set_abort_behavior( 0, _CALL_REPORTFAULT);
+#endif
+
     abort();
 }
 
