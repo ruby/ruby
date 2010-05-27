@@ -2828,6 +2828,7 @@ rb_home_dir(const char *user, VALUE result)
 	}
     }
 #endif
+    rb_enc_associate_index(result, rb_filesystem_encindex());
     return result;
 }
 
