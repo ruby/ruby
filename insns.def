@@ -1022,6 +1022,12 @@ invokesuper
 
     recv = GET_SELF();
     vm_search_superclass(GET_CFP(), GET_ISEQ(), recv, TOPN(num), &id, &klass);
+
+    /* temporary measure for [Bug #2402] [Bug #2502] [Bug #3136] */
+    if (!rb_obj_is_kind_of(recv, klass)) {
+	rb_raise(rb_eNotImpError, "super from singleton method that is defined to multiple classes is not supported; this will be fixed in 1.9.3 or later");
+    }
+
     me = rb_method_entry(klass, id);
 
     CALL_METHOD(num, blockptr, flag, id, me, recv);

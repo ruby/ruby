@@ -1,3 +1,12 @@
+Fri May 28 00:32:25 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* insns.def (invokesuper): check consistency between class of self and
+	  class of method being invoked by super.  This is temporary measure
+	  for YARV.  See [ruby-core:30313] in detail.  See [ruby-dev:40959]
+	  [ruby-dev:39772] [ruby-core:27000] [ruby-core:27230]
+
+	* vm_insnhelper.c (vm_search_superclass): ditto.
+
 Thu May 27 23:38:31 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* file.c (rb_home_dir): set filesystem encoding.
