@@ -1,3 +1,13 @@
+Thu May 27 23:52:43 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* include/ruby/encoding.h (rb_filesystem_encindex): defined.
+
+	* include/ruby/encoding.h (rb_locale_encindex): ditto.
+
+	* encoding.c (rb_filesystem_encindex): remove static.
+
+	* encoding.c (rb_locale_encindex): ditto.
+
 Thu May 27 23:51:05 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* file.c (rb_home_dir): set filesystem encoding.

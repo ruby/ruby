@@ -1114,7 +1114,7 @@ rb_usascii_encindex(void)
     return ENCINDEX_US_ASCII;
 }
 
-static int
+int
 rb_locale_encindex(void)
 {
     VALUE charmap = rb_locale_charmap(rb_cEncoding);
@@ -1155,7 +1155,7 @@ enc_set_filesystem_encoding(void)
     return idx;
 }
 
-static int
+int
 rb_filesystem_encindex(void)
 {
     int idx = rb_enc_registered("filesystem");
