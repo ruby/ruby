@@ -1,3 +1,13 @@
+Thu May 27 23:03:19 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* include/ruby/encoding.h (rb_filesystem_encindex): defined.
+
+	* include/ruby/encoding.h (rb_locale_encindex): ditto.
+
+	* encoding.c (rb_filesystem_encindex): remove static.
+
+	* encoding.c (rb_locale_encindex): ditto.
+
 Thu May 27 22:34:27 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_read): call ReadFile() with len = 0 before
