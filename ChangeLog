@@ -1,3 +1,10 @@
+Thu May 27 22:34:27 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_read): call ReadFile() with len = 0 before
+	  reading really on console, because the first ReadFile() call after
+	  PeekConsoleInput() always returns broken data. (Windows's bug).
+	  [ruby-core:29018]
+
 Thu May 27 12:42:23 2010  Akinori MUSHA  <knu@iDaemons.org>
 
 	* LGPL: Removed.  We no longer have LGPL'd source files in our

@@ -5032,6 +5032,7 @@ rb_w32_read(int fd, void *buf, size_t size)
     size_t len;
     size_t ret;
     OVERLAPPED ol, *pol = NULL;
+    int start = 0;
 
     if (is_socket(sock))
 	return rb_w32_recv(fd, buf, size, 0);
@@ -5054,8 +5055,17 @@ rb_w32_read(int fd, void *buf, size_t size)
 
     ret = 0;
   retry:
-    /* get rid of console writing bug */
-    len = (_osfile(fd) & FDEV) ? min(16 * 1024, size) : size;
+    /* get rid of console reading bug */
+    if (is_console(_osfhnd(fd))) {
+	if (start)
+	    len = min(16 * 1024, size);
+	else {
+	    len = 0;
+	    start = 1;
+	}
+    }
+    else
+	len = size;
     size -= len;
 
     /* if have cancel_io, use Overlapped I/O */
