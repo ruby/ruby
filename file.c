@@ -2788,10 +2788,6 @@ ntfs_tail(const char *path)
     buflen = RSTRING_LEN(result),\
     pend = p + buflen)
 
-#define SET_EXTERNAL_ENCODING() (\
-    (void)(extenc || (extenc = rb_default_external_encoding())),\
-    rb_enc_associate(result, extenc))
-
 VALUE
 rb_home_dir(const char *user, VALUE result)
 {
@@ -2832,6 +2828,7 @@ rb_home_dir(const char *user, VALUE result)
 	}
     }
 #endif
+    rb_enc_associate_index(result, rb_filesystem_encindex());
     return result;
 }
 
@@ -2842,7 +2839,6 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
     char *buf, *p, *pend, *root;
     size_t buflen, dirlen, bdiff;
     int tainted;
-    rb_encoding *extenc = 0;
 
     s = StringValuePtr(fname);
     BUFINIT();
@@ -2898,8 +2894,9 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
 		BUFCHECK(dirlen > buflen);
 		strcpy(buf, dir);
 		xfree(dir);
-		SET_EXTERNAL_ENCODING();
+		rb_enc_associate_index(result, rb_filesystem_encindex());
 	    }
+	    else rb_enc_copy(result, fname);
 	    p = chompdirsep(skiproot(buf));
 	    s += 2;
 	}
@@ -2909,6 +2906,7 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
 	if (!NIL_P(dname)) {
 	    file_expand_path(dname, Qnil, abs_mode, result);
 	    BUFINIT();
+	    rb_enc_copy(result, fname);
 	}
 	else {
 	    char *dir = my_getcwd();
@@ -2918,7 +2916,7 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
 	    BUFCHECK(dirlen > buflen);
 	    strcpy(buf, dir);
 	    xfree(dir);
-	    SET_EXTERNAL_ENCODING();
+	    rb_enc_associate_index(result, rb_filesystem_encindex());
 	}
 #if defined DOSISH || defined __CYGWIN__
 	if (isdirsep(*s)) {

@@ -1,3 +1,20 @@
+Thu May 27 23:51:05 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* file.c (rb_home_dir): set filesystem encoding.
+
+Thu May 27 23:51:05 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* file.c (file_expand_path): set encoding as the same of fname
+	  when _result_ is not filesystem encoding. [ruby-dev:41429]
+
+Thu May 27 23:51:05 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* file.c (file_expand_path): use rb_enc_associate_index and
+	  rb_filesystem_encindex. Strings related FileSystem should
+	  have filesystem_encoding.
+
+	* file.c (SET_EXTERNAL_ENCODING): removed.
+
 Thu May 27 22:39:23 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_read): call ReadFile() with len = 0 before
