@@ -1,3 +1,8 @@
+Fri May 28 00:47:16 2010  Masaya Tarui  <tarui@ruby-lnag.org>
+
+	* error.c (rb_bug): suppress the error report dialog if report_bug() 
+	  is finished successfly.
+
 Fri May 28 00:32:25 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* insns.def (invokesuper): check consistency between class of self and
