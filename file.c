@@ -2895,6 +2895,7 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
 		xfree(dir);
 		rb_enc_associate_index(result, rb_filesystem_encindex());
 	    }
+	    else rb_enc_copy(result, fname);
 	    p = chompdirsep(skiproot(buf));
 	    s += 2;
 	}
@@ -2904,6 +2905,7 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
 	if (!NIL_P(dname)) {
 	    file_expand_path(dname, Qnil, abs_mode, result);
 	    BUFINIT();
+	    rb_enc_copy(result, fname);
 	}
 	else {
 	    char *dir = my_getcwd();

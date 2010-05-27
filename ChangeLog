@@ -1,3 +1,8 @@
+Thu May 27 23:29:18 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* file.c (file_expand_path): set encoding as the same of fname
+	  when _result_ is not filesystem encoding. [ruby-dev:41429]
+
 Thu May 27 23:07:45 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* file.c (file_expand_path): use rb_enc_associate_index and
