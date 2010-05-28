@@ -1,3 +1,7 @@
+Fri May 28 17:34:48 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* array.c (rb_ary_product): Ensure arrays to be marked by GC.
+
 Fri May 28 10:40:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (checking_for): ignore toplevel.

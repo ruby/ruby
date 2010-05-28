@@ -3683,9 +3683,9 @@ rb_ary_product(argc, argv, ary)
     VALUE ary;
 {
     int n = argc+1;    /* How many arrays we're operating on */
-    volatile VALUE t0 = tmpbuf(n, sizeof(VALUE));
+    volatile VALUE t0 = ary_new(0, n);
     volatile VALUE t1 = tmpbuf(n, sizeof(int));
-    VALUE *arrays = (VALUE*)RSTRING(t0)->ptr; /* The arrays we're computing the product of */
+    VALUE *arrays = RARRAY(t0)->ptr; /* The arrays we're computing the product of */
     int *counters = (int*)RSTRING(t1)->ptr; /* The current position in each one */
     VALUE result;      /* The array we'll be returning */
     long i,j;
