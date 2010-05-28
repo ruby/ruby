@@ -1,3 +1,7 @@
+Fri May 28 18:37:04 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_inspect): escape ASCII-compatible strings.
+
 Fri May 28 17:34:48 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* array.c (rb_ary_product): Use tmpary instead, to ensure marking
