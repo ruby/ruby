@@ -22,7 +22,7 @@ if File.directory?(".svn")
   cmd = "svn diff --diff-cmd=diff -x-pU0"
   change = diff2index(cmd, ARGV)
 elsif File.directory?(".git")
-  cmd = "git diff"
+  cmd = "git diff -U0"
   change = diff2index(cmd, ARGV) || diff2index(cmd, "--cached", ARGV)
 else
   abort "does not seem to be under a vcs"
