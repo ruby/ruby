@@ -7063,17 +7063,29 @@ sym_inspect(VALUE sym)
     VALUE str;
     ID id = SYM2ID(sym);
     rb_encoding *enc;
+    const char *ptr;
+    long len;
+    char *dest;
 
     sym = rb_id2str(id);
     enc = STR_ENC_GET(sym);
-    str = rb_enc_str_new(0, RSTRING_LEN(sym)+1, enc);
-    RSTRING_PTR(str)[0] = ':';
-    memcpy(RSTRING_PTR(str)+1, RSTRING_PTR(sym), RSTRING_LEN(sym));
-    if (RSTRING_LEN(sym) != (long)strlen(RSTRING_PTR(sym)) ||
-	!rb_enc_symname_p(RSTRING_PTR(sym), enc) ||
-	!sym_printable(RSTRING_PTR(sym), RSTRING_END(sym), enc)) {
-	str = rb_str_inspect(str);
-	memcpy(RSTRING_PTR(str), ":\"", 2);
+    ptr = RSTRING_PTR(sym);
+    len = RSTRING_LEN(sym);
+    if (!rb_enc_asciicompat(enc) || len != (long)strlen(ptr) ||
+	!rb_enc_symname_p(ptr, enc) || !sym_printable(ptr, ptr + len, enc)) {
+	str = rb_str_inspect(sym);
+	len = RSTRING_LEN(str);
+	rb_str_resize(str, len + 1);
+	dest = RSTRING_PTR(str);
+	memmove(dest + 1, dest, len);
+	dest[0] = ':';
+    }
+    else {
+	char *dest;
+	str = rb_enc_str_new(0, len + 1, enc);
+	dest = RSTRING_PTR(str);
+	dest[0] = ':';
+	memcpy(dest + 1, ptr, len);
     }
     return str;
 }
