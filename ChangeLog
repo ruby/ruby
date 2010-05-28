@@ -1,3 +1,14 @@
+Fri May 28 19:37:47 2010  Narihiro Nakamura  <authorNari@gmail.com>
+
+	* gc.c : use simple lazy sweep algorithm for response performance
+	  gain. See [ruby-dev:41067].
+
+	* object.c: FL_MARK of some objects by lazy sweep is copied when
+	  RVALUE is cloned. These objects are not marked in the mark phase.
+	  So delete FL_MARK.
+
+	* class.c: ditto.
+
 Fri May 28 18:39:38 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (sym_inspect): escape ASCII-compatible strings.
