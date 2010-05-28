@@ -1,4 +1,6 @@
-Fri May 28 18:37:04 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri May 28 18:39:38 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (sym_inspect): escape ASCII-compatible strings.
 
 	* string.c (rb_str_inspect): escape ASCII-compatible strings.
 
