@@ -9,7 +9,7 @@ def diff2index(cmd, *argv)
       path = $1
     when /^@@\s*-[,\d]+ +\+(\d+)[,\d]*\s*@@(?: +([A-Za-z_][A-Za-z_0-9 ]*[A-Za-z_0-9]))?/
       line = $1.to_i
-      ent = "* #{path}"
+      ent = "\t* #{path}"
       ent << " (#{$2})" if $2
       lines << "#{ent}:"
     end
@@ -20,10 +20,11 @@ end
 
 if File.directory?(".svn")
   cmd = "svn diff --diff-cmd=diff -x-pU0"
-  puts diff2index(cmd, ARGV)
+  change = diff2index(cmd, ARGV)
 elsif File.directory?(".git")
   cmd = "git diff"
-  puts diff2index(cmd, ARGV) || diff2index(cmd, "--cached", ARGV)
+  change = diff2index(cmd, ARGV) || diff2index(cmd, "--cached", ARGV)
 else
   abort "does not seem to be under a vcs"
 end
+puts change if change
