@@ -1,3 +1,8 @@
+Fri May 28 11:40:07 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* array.c (rb_ary_product): Do not rely on GC, t0 should be
+	  checked explicitly.
+
 Fri May 28 10:40:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (checking_for): ignore toplevel.
