@@ -4294,9 +4294,9 @@ static VALUE
 rb_ary_product(int argc, VALUE *argv, VALUE ary)
 {
     int n = argc+1;    /* How many arrays we're operating on */
-    volatile VALUE t0 = tmpbuf(n, sizeof(VALUE));
+    volatile VALUE t0 = tmpary(n);
     volatile VALUE t1 = tmpbuf(n, sizeof(int));
-    VALUE *arrays = (VALUE*)RSTRING_PTR(t0); /* The arrays we're computing the product of */
+    VALUE *arrays = RARRAY_PTR(t0); /* The arrays we're computing the product of */
     int *counters = (int*)RSTRING_PTR(t1); /* The current position in each one */
     VALUE result = Qnil;      /* The array we'll be returning, when no block given */
     long i,j;
@@ -4372,7 +4372,7 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
 	}
     }
 done:
-    tmpbuf_discard(t0);
+    tmpary_discard(t0);
     tmpbuf_discard(t1);
 
     return NIL_P(result) ? ary : result;
