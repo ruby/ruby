@@ -4100,6 +4100,7 @@ rb_str_inspect(VALUE str)
     VALUE result = rb_str_buf_new(0);
     rb_encoding *resenc = rb_default_internal_encoding();
     int unicode_p = rb_enc_unicode_p(enc);
+    int asciicompat = rb_enc_asciicompat(enc);
 
     if (resenc == NULL) resenc = rb_default_external_encoding();
     if (!rb_enc_asciicompat(resenc)) resenc = rb_usascii_encoding();
@@ -4159,7 +4160,7 @@ rb_str_inspect(VALUE str)
 	    continue;
 	}
 	if ((enc == resenc && rb_enc_isprint(c, enc)) ||
-	    (rb_enc_isascii(c, enc) && ISPRINT(c))) {
+	    (asciicompat && rb_enc_isascii(c, enc) && ISPRINT(c))) {
 	    continue;
 	}
 	else {

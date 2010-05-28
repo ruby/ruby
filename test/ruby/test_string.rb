@@ -1874,4 +1874,11 @@ class TestString < Test::Unit::TestCase
     assert_equal(s, k, '[ruby-dev:39068]')
     assert_equal(Encoding::UTF_8, k.encoding, '[ruby-dev:39068]')
   end
+
+  def test_ascii_incomat_inspect
+    [Encoding::UTF_16LE, Encoding::UTF_16BE,
+     Encoding::UTF_32LE, Encoding::UTF_32BE].each do |e|
+      assert_equal('"\\u0061\\u0062\\u0063"', "abc".encode(e).inspect)
+    end
+  end
 end
