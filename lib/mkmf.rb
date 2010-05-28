@@ -682,7 +682,7 @@ end
 # Internal use only.
 #
 def checking_for(m, fmt = nil)
-  f = caller[0][/in `(.*)'$/, 1] and f << ": " #` for vim #'
+  f = caller[0][/in `([^<].*)'$/, 1] and f << ": " #` for vim #'
   m = "checking #{/\Acheck/ =~ f ? '' : 'for '}#{m}... "
   message "%s", m
   a = r = nil

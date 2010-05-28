@@ -1,3 +1,7 @@
+Fri May 28 10:40:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (checking_for): ignore toplevel.
+
 Wed May 26 19:55:33 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* file.c (file_expand_path): revert a part of r22392. it's commit miss.
