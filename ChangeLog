@@ -1,3 +1,8 @@
+Sat May 29 08:46:29 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (allocate_sorted_heaps, before_gc_sweep, gc_sweep): removed
+	  unused variables.
+
 Fri May 28 20:35:21 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (blocking_region_begin): avoid RUBY_VM_CHECK_INTS()

@@ -894,7 +894,7 @@ static void
 allocate_sorted_heaps(rb_objspace_t *objspace, size_t next_heaps_length)
 {
     struct sorted_heaps_slot *p;
-    size_t size, i;
+    size_t size;
 
     size = next_heaps_length*sizeof(struct sorted_heaps_slot);
 
@@ -1968,8 +1968,6 @@ ready_to_gc(rb_objspace_t *objspace)
 static void
 before_gc_sweep(rb_objspace_t *objspace, size_t *free_min)
 {
-    size_t i = 0;
-    struct heaps_slot *find_slot, *slot;
     freelist = 0;
     objspace->heap.do_heap_free = (size_t)((heaps_used * HEAP_OBJ_LIMIT) * 0.65);
     *free_min = (size_t)((heaps_used * HEAP_OBJ_LIMIT)  * 0.2);
@@ -2065,8 +2063,6 @@ gc_lazy_sweep(rb_objspace_t *objspace)
 static void
 gc_sweep(rb_objspace_t *objspace)
 {
-    RVALUE *p, *pend;
-    size_t i;
     size_t free_min = 0;
 
     before_gc_sweep(objspace, &free_min);
