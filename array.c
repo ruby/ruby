@@ -4345,9 +4345,13 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
 
 	/* put it on the result array */
 	if(NIL_P(result)) {
+	    FL_SET(t0, FL_USER5);
 	    rb_yield(subarray);
-	    if (RBASIC(t0)->klass) {
+	    if (! FL_TEST(t0, FL_USER5)) {
 		rb_raise(rb_eRuntimeError, "product reentered");
+	    }
+	    else {
+		FL_UNSET(t0, FL_USER5);
 	    }
 	}
 	else {
