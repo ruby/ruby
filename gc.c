@@ -517,6 +517,14 @@ gc_stress_get(VALUE self)
     return ruby_gc_stress ? Qtrue : Qfalse;
 }
 
+void 
+ruby_gc_stress_start(void)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    if(ruby_gc_stress)
+	rb_gc();
+}
+
 /*
  *  call-seq:
  *    GC.stress = bool          -> bool

@@ -1,3 +1,10 @@
+Sun May 30 01:25:48 2010  Masaya Tarui  <tarui@ruby-lnag.org>
+
+	* thread.c (RB_GC_SAVE_MACHINE_CONTEXT): start GC 
+	  by switching the thread if gc_stress == true 
+
+	* gc.c (ruby_gc_stress_start): dotto.
+
 Sun May 30 00:02:39 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* gc.c (force_chain_object, rb_objspace_call_finalizer): delete
