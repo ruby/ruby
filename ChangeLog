@@ -1,3 +1,8 @@
+Sun May 30 02:20:26 2010  Masaya Tarui  <tarui@ruby-lnag.org>
+
+	* thread.c (RB_GC_SAVE_MACHINE_CONTEXT), gc.c (ruby_gc_stress_start):
+	  revert r28078.
+
 Sun May 30 02:21:34 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/zlib/zlib.c (zstream_append_input2): add RB_GC_GUARD.

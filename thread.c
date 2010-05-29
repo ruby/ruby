@@ -99,13 +99,10 @@ static void reset_unblock_function(rb_thread_t *th, const struct rb_unblock_call
 
 static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_region_buffer *region);
 
-void ruby_gc_stress_start(void);
-
 #define RB_GC_SAVE_MACHINE_CONTEXT(th) \
   do { \
     rb_gc_save_machine_context(th); \
     SET_MACHINE_STACK_END(&(th)->machine_stack_end); \
-    ruby_gc_stress_start(); \
   } while (0)
 
 #define GVL_UNLOCK_BEGIN() do { \
