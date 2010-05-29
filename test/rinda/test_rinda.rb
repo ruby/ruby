@@ -519,6 +519,10 @@ class TupleSpaceTest < Test::Unit::TestCase
     ThreadGroup.new.add(Thread.current)
     @ts = Rinda::TupleSpace.new(1)
   end
+  def teardown
+    # implementation-dependent
+    @ts.instance_eval{@keeper.kill if @keeper}
+  end
 end
 
 class TupleSpaceProxyTest < Test::Unit::TestCase
@@ -528,6 +532,10 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
     ThreadGroup.new.add(Thread.current)
     @ts_base = Rinda::TupleSpace.new(1)
     @ts = Rinda::TupleSpaceProxy.new(@ts_base)
+  end
+  def teardown
+    # implementation-dependent
+    @ts_base.instance_eval{@keeper.kill if @keeper}
   end
 
   def test_remote_array_and_hash

@@ -1,3 +1,8 @@
+Wed May 26 18:40:23 2010  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* test/rinda/test_rinda.rb (TupleSpaceTest, TupleSpaceProxyTest):
+	  kill a used thread at teardown.  [ruby-dev:41397]
+
 Wed May 26 11:50:09 2010  Eric Hodel  <drbrain@segment7.net>
 
 	* marshal.c (Init_marshal): document marshal_dump and marshal_load.
