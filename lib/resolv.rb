@@ -638,7 +638,13 @@ class Resolv
           if !select_result
             raise ResolvTimeout
           end
-          reply, from = recv_reply(select_result[0])
+          begin
+            reply, from = recv_reply(select_result[0])
+          rescue Errno::ECONNREFUSED
+            # No name server running on the server?
+            # Don't wait anymore.
+            raise ResolvTimeout
+          end
           begin
             msg = Message.decode(reply)
           rescue DecodeError
