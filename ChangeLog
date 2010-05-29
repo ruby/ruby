@@ -1,3 +1,9 @@
+Sun May 30 00:02:39 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* gc.c (force_chain_object, rb_objspace_call_finalizer): delete
+	  finalizer entry after corresponding finalizer is executed.
+	  This caused SEGV when test/cgi is executed with GC.stress = true.
+
 Sat May 29 23:30:33 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* string.c (str_replace_shared): change embedded state atomically.
