@@ -406,11 +406,13 @@ The internal error was:
   def read_file_contents(filename)
     content = open filename, "rb" do |f| f.read end
 
+    utf8 = content.sub!(/\A\xef\xbb\xbf/, '')
     if defined? Encoding then
       if /coding[=:]\s*([^\s;]+)/i =~ content[%r"\A(?:#!.*\n)?.*\n"]
-        if enc = ::Encoding.find($1)
-          content.force_encoding(enc)
-        end
+        enc = ::Encoding.find($1)
+      end
+      if enc ||= (Encoding::UTF_8 if utf8)
+        content.force_encoding(enc)
       end
     end
 

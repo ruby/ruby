@@ -68,6 +68,18 @@ class TestRDocRDoc < MiniTest::Unit::TestCase
     assert_equal Encoding::UTF_8, contents.encoding
   end
 
+  def test_read_file_contents_encoding_with_signature
+    skip "Encoding not implemented" unless defined? ::Encoding
+
+    @tempfile.write "\xEF\xBB\xBF""hi everybody"
+    @tempfile.flush
+
+    bug3360 = '[ruby-dev:41452]'
+    contents = @rdoc.read_file_contents @tempfile.path
+    assert_equal "hi everybody", contents, bug3360
+    assert_equal Encoding::UTF_8, contents.encoding, bug3360
+  end
+
   def test_remove_unparsable
     file_list = %w[
       blah.class
