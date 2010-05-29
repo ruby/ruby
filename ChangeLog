@@ -1,3 +1,9 @@
+Sun May 30 03:40:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_tokadd_utf8, parser_tokadd_string): allow NUL
+	  containing symbol literals, as well as String#to_sym.
+	  [ruby-dev:41447]
+
 Sun May 30 02:21:34 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/zlib/zlib.c (zstream_append_input2): add RB_GC_GUARD.

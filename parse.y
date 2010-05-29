@@ -5487,11 +5487,6 @@ parser_tokadd_utf8(struct parser_params *parser, rb_encoding **encp,
 		if (string_literal) tokaddmbc(codepoint, *encp);
 	    }
 	    else if (string_literal) {
-		if (codepoint == 0 && symbol_literal) {
-		    yyerror("symbol cannot contain '\\u{0}'");
-		    return 0;
-		}
-
 		tokadd(codepoint);
 	    }
 	} while (string_literal && (peek(' ') || peek('\t')));
@@ -5519,11 +5514,6 @@ parser_tokadd_utf8(struct parser_params *parser, rb_encoding **encp,
 	    if (string_literal) tokaddmbc(codepoint, *encp);
 	}
 	else if (string_literal) {
-	    if (codepoint == 0 && symbol_literal) {
-		yyerror("symbol cannot contain '\\u0000'");
-		return 0;
-	    }
-
 	    tokadd(codepoint);
 	}
     }
@@ -5882,11 +5872,6 @@ parser_tokadd_string(struct parser_params *parser,
 	else if ((func & STR_FUNC_QWORDS) && ISSPACE(c)) {
 	    pushback(c);
 	    break;
-	}
-	if (!c && (func & STR_FUNC_SYMBOL)) {
-	    func &= ~STR_FUNC_SYMBOL;
-	    compile_error(PARSER_ARG "symbol cannot contain '\\0'");
-	    continue;
 	}
         if (c & 0x80) {
             has_nonascii = 1;
