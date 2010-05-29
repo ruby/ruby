@@ -104,4 +104,18 @@ class TestResolvDNS < Test::Unit::TestCase
       end
     }
   end
+
+  def test_no_server
+    u = UDPSocket.new
+    u.bind("127.0.0.1", 0)
+    _, port, _, host = u.addr
+    u.close
+    # A rase condition here.
+    # Another program may use the port.
+    # But no way to prevent it.
+    Resolv::DNS.open(:nameserver_port => [[host, port]]) {|dns|
+      assert_equal([], dns.getresources("test-no-server.example.org", Resolv::DNS::Resource::IN::A))
+    }
+  end
+
 end
