@@ -2661,7 +2661,7 @@ force_chain_object(st_data_t key, st_data_t val, st_data_t arg)
     curr->table = val;
     curr->next = *prev;
     *prev = curr;
-    return ST_DELETE;
+    return ST_CONTINUE;
 }
 
 void
@@ -2694,6 +2694,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 	    while (list) {
 		struct force_finalize_list *curr = list;
 		run_finalizer(objspace, curr->obj, rb_obj_id(curr->obj), curr->table);
+		st_delete(finalizer_table, (st_data_t*)&curr->obj, 0);
 		list = curr->next;
 		xfree(curr);
 	    }
