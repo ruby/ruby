@@ -1,3 +1,8 @@
+Sat May 29 23:30:33 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* string.c (str_replace_shared): change embedded state atomically.
+	  [ruby-core:29953] [ruby-dev:41456]
+
 Fri May 28 00:32:25 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* insns.def (invokesuper): check consistency between class of self and
