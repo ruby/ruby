@@ -21,8 +21,8 @@ Sun May 30 02:21:34 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 Sun May 30 01:25:48 2010  Masaya Tarui  <tarui@ruby-lnag.org>
 
-	* thread.c (RB_GC_SAVE_MACHINE_CONTEXT): start GC 
-	  by switching the thread if gc_stress == true 
+	* thread.c (RB_GC_SAVE_MACHINE_CONTEXT): start GC
+	  by switching the thread if gc_stress == true
 
 	* gc.c (ruby_gc_stress_start): ditto.
 
@@ -103,7 +103,7 @@ Fri May 28 10:40:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri May 28 00:47:16 2010  Masaya Tarui  <tarui@ruby-lnag.org>
 
-	* error.c (rb_bug): suppress the error report dialog if report_bug() 
+	* error.c (rb_bug): suppress the error report dialog if report_bug()
 	  is finished successfly.
 
 Fri May 28 00:32:25 2010  Yusuke Endoh  <mame@tsg.ne.jp>
@@ -254,7 +254,6 @@ Sun May 23 07:08:34 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 	* ext/psych/lib/psych/json/tree_builder.rb: refactor
 
 	* ext/psych/lib/psych/visitors/json_tree.rb: refactor
-	
 
 Sat May 22 03:53:05 2010  Satoshi Shiba  <shiba@rvm.jp>
 
@@ -772,7 +771,7 @@ Sat May  8 13:48:31 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 	* array.c (rb_ary_fetch, rb_ary_splice, rb_ary_store): Improve
 	  IndexError
 	  messages [ruby-core:28394]
-	
+
 	* hash.c (rb_hash_fetch_m): Improve KeyError message
 
 Sat May  8 13:11:28 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -1154,21 +1153,21 @@ Fri Apr 30 11:40:44 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 	* eval.c (make_exception, rb_obj_extend): Fix error messages in case
 	  of wrong
 	  number of arguments
-	
+
 	* file.c (rb_f_test, rb_file_s_umask): ditto
-	
+
 	* numeric.c (int_chr, num_step): ditto
-	
+
 	* process.c (rb_f_sleep): ditto
-	
+
 	* re.c (rb_reg_initialize_m): ditto
-	
+
 	* signal.c (rb_f_kill, sig_trap): ditto
-	
+
 	* string.c (rb_str_aref_m, rb_str_aset_m, rb_str_count,
 	  rb_str_delete_bang,
 	  rb_str_slice_bang, rb_str_sub_bang, str_gsub): ditto
-	
+
 	* proc.c (curry): rdoc fix
 
 Fri Apr 30 04:09:30 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
@@ -4634,7 +4633,6 @@ Tue Jan 26 20:21:28 2010  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 	* lib/drb/eq.rb: fix circular require in drb.
 	  reported by akr. see [ruby-dev:40156] [ruby-core:27661]
 
-
 Tue Jan 26 19:59:17 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/zlib/zlib.c (rb_gzfile_s_wrap): add rdoc. [Bug #2656]
@@ -4888,7 +4886,6 @@ Tue Jan 19 09:03:37 2010  Aaron Patterson  <tenderlove@ruby-lang.org>
 	* ext/zlib/zlib.c: added Zlib.crc32_combine and Zlib.adler32_combine
 
 	* test/zlib/test_zlib.rb: corresponding tests [ruby-core:27551]
-
 
 Tue Jan 19 02:02:32 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
@@ -6710,7 +6707,6 @@ Wed Oct 28 14:51:31 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/etc/etc.c (etc_each_group): fixed typo.
 
-
 Wed Oct 28 13:02:10 2009  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (Net::FTP#initialize): sets @binary to true.
@@ -8044,7 +8040,6 @@ Wed Sep 23 11:28:06 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/instruction.rb (make_footer_stack_val): ditto.
 
-
 Wed Sep 23 05:03:36 2009  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* proc.c (umethod_bind, rb_mod_define_method): Fix bug that
@@ -8467,7 +8462,6 @@ Mon Sep 14 03:30:23 2009  Alexander Zavorine  <alexandre.zavorine@nokia.com>
 	* symbian/pre-build: added rule to generate id.h for Symbian build.
 
 	* symbian/configure.bat: fixed harmless error message.
-
 
 Sun Sep 13 22:18:33 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
