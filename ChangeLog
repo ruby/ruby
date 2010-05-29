@@ -1,3 +1,8 @@
+Sun May 30 02:21:34 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/zlib/zlib.c (zstream_append_input2): add RB_GC_GUARD.
+	  This caused failure when test/csv is executed with GC.stress = true.
+
 Sun May 30 01:25:48 2010  Masaya Tarui  <tarui@ruby-lnag.org>
 
 	* thread.c (RB_GC_SAVE_MACHINE_CONTEXT): start GC 

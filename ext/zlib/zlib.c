@@ -661,6 +661,7 @@ zstream_append_input(struct zstream *z, const Bytef *src, unsigned int len)
 }
 
 #define zstream_append_input2(z,v)\
+    RB_GC_GUARD(v),\
     zstream_append_input((z), (Bytef*)RSTRING_PTR(v), RSTRING_LEN(v))
 
 static void
