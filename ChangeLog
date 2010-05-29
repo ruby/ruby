@@ -1,3 +1,8 @@
+Sun May 30 03:03:20 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/rdoc/generator/template/darkfish/classpage.rhtml:
+	  fix encoding value of XML declaration. [ruby-dev:41452]
+
 Sun May 30 02:20:26 2010  Masaya Tarui  <tarui@ruby-lnag.org>
 
 	* thread.c (RB_GC_SAVE_MACHINE_CONTEXT), gc.c (ruby_gc_stress_start):
