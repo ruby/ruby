@@ -613,8 +613,8 @@ str_replace_shared(VALUE str2, VALUE str)
 	STR_SET_EMBED_LEN(str2, RSTRING_LEN(str));
     }
     else {
-	FL_SET(str2, STR_NOEMBED);
 	str = rb_str_new_frozen(str);
+	FL_SET(str2, STR_NOEMBED);
 	RSTRING(str2)->as.heap.len = RSTRING_LEN(str);
 	RSTRING(str2)->as.heap.ptr = RSTRING_PTR(str);
 	RSTRING(str2)->as.heap.aux.shared = str;
