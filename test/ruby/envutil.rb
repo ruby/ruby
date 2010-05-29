@@ -216,6 +216,6 @@ else
     CONFIG['bindir'] = dir
     CONFIG['ruby_install_name'] = name
     CONFIG['RUBY_INSTALL_NAME'] = name
-    Gem::ConfigMap[:bindir] = dir
+    Gem::ConfigMap[:bindir] = dir if defined?(Gem)
   end
 end
