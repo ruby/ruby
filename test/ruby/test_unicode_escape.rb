@@ -57,12 +57,14 @@ EOS
     assert_equal(:"\u{41}", :"\u0041")
     assert_equal(:ü, :"\u{fc}")
 
-    # the NUL character is not allowed in symbols
-    assert_raise(SyntaxError) { eval %q(:"\u{0}")}
-    assert_raise(SyntaxError) { eval %q(:"\u0000")}
-    assert_raise(SyntaxError) { eval %q(:"\u{fc 0 0041}")}
-    assert_raise(SyntaxError) { eval %q(:"\x00")}
-    assert_raise(SyntaxError) { eval %q(:"\0")}
+    # the NUL character is allowed in symbols
+    bug = '[ruby-dev:41447]'
+    sym = "\0".to_sym
+    assert_nothing_raised(SyntaxError, bug) {assert_equal(sym, eval(%q(:"\u{0}")))}
+    assert_nothing_raised(SyntaxError, bug) {assert_equal(sym, eval(%q(:"\u0000")))}
+    assert_nothing_raised(SyntaxError, bug) {assert_equal("\u{fc}\0A".to_sym, eval(%q(:"\u{fc 0 0041}")))}
+    assert_nothing_raised(SyntaxError, bug) {assert_equal(sym, eval(%q(:"\x00")))}
+    assert_nothing_raised(SyntaxError, bug) {assert_equal(sym, eval(%q(:"\0")))}
   end
 
   def test_regexp

@@ -1,3 +1,9 @@
+Sun May 30 03:40:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_tokadd_utf8, parser_tokadd_string): allow NUL
+	  containing symbol literals, as well as String#to_sym.
+	  [ruby-dev:41447]
+
 Sun May 30 03:03:20 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/rdoc/generator/template/darkfish/classpage.rhtml:
