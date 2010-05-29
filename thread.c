@@ -3725,7 +3725,7 @@ thread_reset_event_flags(rb_thread_t *th)
 }
 
 static void
-rb_threadptr_add_event_hook(rb_thread_t *th, 
+rb_threadptr_add_event_hook(rb_thread_t *th,
 			 rb_event_hook_func_t func, rb_event_flag_t events, VALUE data)
 {
     rb_event_hook_t *hook = alloc_event_hook(func, events, data);

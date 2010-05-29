@@ -330,7 +330,7 @@ static unsigned long utf8_to_uv(const char*,long*);
  *      s      | Integer | 16-bit signed integer, native endian (int16_t)
  *      l      | Integer | 32-bit signed integer, native endian (int32_t)
  *      q      | Integer | 64-bit signed integer, native endian (int64_t)
- *             |         | 
+ *             |         |
  *      S_     | Integer | unsigned short, native endian
  *      I, I_  | Integer | unsigned int, native endian
  *      L_     | Integer | unsigned long, native endian
@@ -346,7 +346,7 @@ static unsigned long utf8_to_uv(const char*,long*);
  *             |         |
  *      U      | Integer | UTF-8 character
  *      w      | Integer | BER-compressed integer
- *                        
+ *
  *   Float     |         |
  *   Directive |         | Meaning
  *   ------------------------------------------------------------------------
@@ -356,7 +356,7 @@ static unsigned long utf8_to_uv(const char*,long*);
  *      e      | Float   | Single-precision float, little-endian byte order
  *      G      | Float   | Double-precision float, network (big-endian) byte order
  *      g      | Float   | Single-precision float, network (big-endian) byte order
- *                        
+ *
  *   String    |         |
  *   Directive |         | Meaning
  *   ------------------------------------------------------------------------
@@ -373,7 +373,7 @@ static unsigned long utf8_to_uv(const char*,long*);
  *             |         | (if count is 0, no line feed are added, see RFC 4648)
  *      P      | String  | Pointer to a structure (fixed-length string)
  *      p      | String  | Pointer to a null-terminated string
- *                        
+ *
  *   Misc.     |         |
  *   Directive |         | Meaning
  *   ------------------------------------------------------------------------
@@ -1258,7 +1258,7 @@ infected_str_new(const char *ptr, long len, VALUE str)
  *             |         |
  *      U      | Integer | UTF-8 character
  *      w      | Integer | BER-compressed integer (see Array.pack)
- *             
+ *
  *   Float     |         |
  *   Directive | Returns | Meaning
  *   --------------------------------------------------------------
@@ -1268,7 +1268,7 @@ infected_str_new(const char *ptr, long len, VALUE str)
  *      e      | Float   | Single-precision float, little-endian byte order
  *      G      | Float   | Double-precision float, network (big-endian) byte order
  *      g      | Float   | Single-precision float, network (big-endian) byte order
- *             
+ *
  *   String    |         |
  *   Directive | Returns | Meaning
  *   --------------------------------------------------------------
@@ -1285,7 +1285,7 @@ infected_str_new(const char *ptr, long len, VALUE str)
  *             |         | base64-encoded (RFC 4648) if followed by 0
  *      P      | String  | Pointer to a structure (fixed-length string)
  *      p      | String  | Pointer to a null-terminated string
- *             
+ *
  *   Misc.     |         |
  *   Directive | Returns | Meaning
  *   --------------------------------------------------------------
@@ -1554,7 +1554,7 @@ pack_unpack(VALUE str, VALUE fmt)
 	    integer_size = QUAD_SIZE;
 	    bigendian_p = BIGENDIAN_P();
 	    goto unpack_integer;
-	    
+
 	  case 'Q':
 	    signed_p = 0;
 	    integer_size = QUAD_SIZE;

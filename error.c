@@ -31,7 +31,7 @@ static const char *
 rb_strerrno(int err)
 {
 #define defined_error(name, num) if (err == num) return name;
-#define undefined_error(name) 
+#define undefined_error(name)
 #include "known_errors.inc"
 #undef defined_error
 #undef undefined_error

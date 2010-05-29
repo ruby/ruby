@@ -397,7 +397,7 @@ collect_local_variables_in_iseq(rb_iseq_t *iseq, const VALUE ary)
 static int
 collect_local_variables_in_env(rb_env_t * env, const VALUE ary)
 {
-    
+
     while (collect_local_variables_in_iseq(env->block.iseq, ary),
 	   env->prev_envval) {
 	GetEnvPtr(env->prev_envval, env);

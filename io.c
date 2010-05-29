@@ -1176,7 +1176,7 @@ static void clear_readconv(rb_io_t *fptr);
  *     f.rewind     #=> 0
  *     f.lineno     #=> 0
  *     f.readline   #=> "This is line one\n"
- * 
+ *
  *  Note that it cannot be used with streams such as pipes, ttys, and sockets.
  */
 

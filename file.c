@@ -3355,7 +3355,7 @@ rb_realpath_internal(VALUE basedir, VALUE path, int strict)
  *
  *  If _dir_string_ is given, it is used as a base directory
  *  for interpreting relative pathname instead of the current directory.
- * 
+ *
  *  All components of the pathname must exist when this method is
  *  called.
  */
@@ -3373,10 +3373,10 @@ rb_file_s_realpath(int argc, VALUE *argv, VALUE klass)
  *
  *  Returns the real (absolute) pathname of _pathname_ in the actual filesystem.
  *  The real pathname doesn't contain symlinks or useless dots.
- * 
+ *
  *  If _dir_string_ is given, it is used as a base directory
  *  for interpreting relative pathname instead of the current directory.
- * 
+ *
  *  The last component of the real pathname can be nonexistent.
  */
 static VALUE

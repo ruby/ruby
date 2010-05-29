@@ -37,7 +37,7 @@
  * paragraph 3 above is now null and void.
  */
 
-/* SNPRINTF.C  
+/* SNPRINTF.C
  * fjc 7-31-97 Modified by Mib Software to be a standalone snprintf.c module.
  *      http://www.mibsoftware.com
  * Mib Software does not warrant this software any differently than the
@@ -50,7 +50,7 @@
  *      allow inclusion into libraries with less chance of namespace collisions.
  *
  *      snprintf should be the only externally visible item.
- *     
+ *
  *      As of 7-31-97 FLOATING_POINT is NOT provided.  The code is somewhat
  *        non-portable, so it is disabled.
  */
@@ -84,7 +84,7 @@
 # endif
 # include <varargs.h>
 #endif
-#ifndef _BSD_VA_LIST_ 
+#ifndef _BSD_VA_LIST_
 #define	_BSD_VA_LIST_ va_list
 #endif
 
@@ -408,7 +408,7 @@ BSD__uqtoa(register u_quad_t val, char *endp, int base, int octzero, const char 
 		break;
 
 	default:			/* oops */
-		/* 
+		/*
 		abort();
 		*/
 		break;	/* fjc 7-31-97.  Don't reference abort() here */
@@ -473,7 +473,7 @@ BSD__ultoa(register u_long val, char *endp, int base, int octzero, const char *x
 		break;
 
 	default:			/* oops */
-		/* 
+		/*
 		abort();
 		*/
 		break;	/* fjc 7-31-97.  Don't reference abort() here */
@@ -824,7 +824,7 @@ fp_begin:		_double = va_arg(ap, double);
 					ch = (ch == 'g') ? 'e' : 'E';
 				else
 					ch = 'g';
-			} 
+			}
 			if (ch == 'a' || ch == 'A') {
 				--expt;
 				expsize = exponent(expstr, expt, ch + 'p' - 'a');

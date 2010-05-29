@@ -448,8 +448,8 @@ vm_method_missing(rb_thread_t *th, ID id, VALUE recv,
 }
 
 static inline void
-vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp, 
-		VALUE recv, int argc, const rb_block_t *blockptr, VALUE flag, 
+vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
+		VALUE recv, int argc, const rb_block_t *blockptr, VALUE flag,
 		const rb_method_entry_t *me)
 {
     int opt_pc, i;

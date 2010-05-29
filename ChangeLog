@@ -83,7 +83,7 @@ Fri May 28 10:40:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri May 28 00:47:16 2010  Masaya Tarui  <tarui@ruby-lnag.org>
 
-	* error.c (rb_bug): suppress the error report dialog if report_bug() 
+	* error.c (rb_bug): suppress the error report dialog if report_bug()
 	  is finished successfly.
 
 Thu May 27 23:52:43 2010  NARUSE, Yui  <naruse@ruby-lang.org>
@@ -211,7 +211,7 @@ Sun May 16 22:17:35 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 Sun May 23 17:29:41 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
-	* common.mk (capi): uses a timestamp file to get rid of 
+	* common.mk (capi): uses a timestamp file to get rid of
 	  generating twice.
 
 Sun May 23 17:48:39 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -991,21 +991,21 @@ Fri Apr 30 11:40:44 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 	* eval.c (make_exception, rb_obj_extend): Fix error messages in case
 	  of wrong
 	  number of arguments
-	
+
 	* file.c (rb_f_test, rb_file_s_umask): ditto
-	
+
 	* numeric.c (int_chr, num_step): ditto
-	
+
 	* process.c (rb_f_sleep): ditto
-	
+
 	* re.c (rb_reg_initialize_m): ditto
-	
+
 	* signal.c (rb_f_kill, sig_trap): ditto
-	
+
 	* string.c (rb_str_aref_m, rb_str_aset_m, rb_str_count,
 	  rb_str_delete_bang,
 	  rb_str_slice_bang, rb_str_sub_bang, str_gsub): ditto
-	
+
 	* proc.c (curry): rdoc fix
 
 Fri Apr 30 04:09:30 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
@@ -4470,7 +4470,6 @@ Tue Jan 26 20:21:28 2010  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/eq.rb: fix circular require in drb.
 	  reported by akr. see [ruby-dev:40156] [ruby-core:27661]
-
 
 Tue Jan 26 19:59:17 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 

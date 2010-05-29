@@ -1610,7 +1610,7 @@ ary_join_1(VALUE obj, VALUE ary, VALUE sep, long i, VALUE result)
 	    }
 	    else {
 		VALUE args[3];
-		
+
 		args[0] = val;
 		args[1] = sep;
 		args[2] = result;
@@ -1865,7 +1865,7 @@ rb_ary_rotate(VALUE ary, long cnt)
 
     return Qnil;
 }
-    
+
 /*
  *  call-seq:
  *     ary.rotate!(cnt=1) -> ary
