@@ -1,3 +1,8 @@
+Sat May 29 12:56:09 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* encoding.c (rb_filesystem_encindex): avoid infinite require
+	  loop. [ruby-core:30467]
+
 Sat May 29 12:05:51 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/rdoc.rb (RDoc#read_file_contents): take care of BOM.
