@@ -214,7 +214,7 @@ static inline int rb_method_call_status(rb_thread_t *th, rb_method_entry_t *me, 
  * \param mid    an ID that represents the name of the method
  * \param argc   the number of method arguments
  * \param argv   a pointer to an array of method arguments
- * \param scope  
+ * \param scope
  * \param self   self in the caller. Qundef means the current control frame's self.
  *
  * \note \a self is used in order to controlling access to protected methods.
@@ -429,7 +429,7 @@ rb_method_call_status(rb_thread_t *th, rb_method_entry_t *me, call_type scope, V
  * \param mid    an ID that represents the name of the method
  * \param argc   the number of method arguments
  * \param argv   a pointer to an array of method arguments
- * \param scope  
+ * \param scope
  */
 static inline VALUE
 rb_call(VALUE recv, ID mid, int argc, const VALUE *argv, call_type scope)

@@ -756,7 +756,7 @@ rb_mod_method_defined(VALUE mod, VALUE mid)
 	return Qfalse;
     }
     return Qtrue;
-    
+
 }
 
 #define VISI_CHECK(x,f) (((x)&NOEX_MASK) == (f))

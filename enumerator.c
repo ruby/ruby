@@ -22,7 +22,7 @@
  *
  * An enumerator can be created by following methods.
  * - Kernel#to_enum
- * - Kernel#enum_for 
+ * - Kernel#enum_for
  * - Enumerator.new
  *
  * Also, most iteration methods without a block returns an enumerator.
@@ -72,7 +72,7 @@
  *   # convert o.each to an external iterator for
  *   # implementing an internal iterator.
  *   p ext_each(o.to_enum) {|*x| p x; [:b, *x] }
- *   #=> [], [:b], [1], [:b, 1], [1, 2], [:b, 1, 2], 3 
+ *   #=> [], [:b], [1], [:b, 1], [1, 2], [:b, 1, 2], 3
  *
  */
 VALUE rb_cEnumerator;
@@ -600,18 +600,18 @@ enumerator_peek_values(VALUE obj)
  *
  *   o = Object.new
  *   def o.each
- *     yield  
+ *     yield
  *     yield 1
  *     yield 1, 2
  *   end
  *   e = o.to_enum
  *   p e.peek_values    #=> []
- *   e.next  
+ *   e.next
  *   p e.peek_values    #=> [1]
  *   p e.peek_values    #=> [1]
- *   e.next  
+ *   e.next
  *   p e.peek_values    #=> [1, 2]
- *   e.next  
+ *   e.next
  *   p e.peek_values    # raises StopIteration
  *
  */
@@ -662,10 +662,10 @@ enumerator_peek(VALUE obj)
  *   o = Object.new
  *   def o.each
  *     # (2)
- *     x = yield               
+ *     x = yield
  *     p x          #=> "foo"
  *     # (5)
- *     x = yield                 
+ *     x = yield
  *     p x          #=> nil
  *     # (7)
  *     x = yield
@@ -1061,7 +1061,7 @@ generator_each(VALUE obj)
  *   rescue StopIteration
  *     p $!.result              #=> 100
  *   end
- * 
+ *
  */
 static VALUE
 stop_result(VALUE self)
