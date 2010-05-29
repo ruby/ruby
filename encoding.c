@@ -1160,7 +1160,7 @@ rb_filesystem_encindex(void)
 {
     int idx = rb_enc_registered("filesystem");
     if (idx < 0)
-	idx = enc_set_filesystem_encoding();
+	idx = rb_ascii8bit_encindex();
     return idx;
 }
 
