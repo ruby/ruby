@@ -491,14 +491,16 @@ class TestParse < Test::Unit::TestCase
   end
 
   def test_symbol
-    assert_raise(SyntaxError) do
-      eval ":'foo\0bar'"
+    bug = '[ruby-dev:41447]'
+    sym = "foo\0bar".to_sym
+    assert_nothing_raised(SyntaxError, bug) do
+      assert_equal(sym, eval(":'foo\0bar'"))
     end
-    assert_raise(SyntaxError) do
-      eval ':"foo\u0000bar"'
+    assert_nothing_raised(SyntaxError, bug) do
+      assert_equal(sym, eval(':"foo\u0000bar"'))
     end
-    assert_raise(SyntaxError) do
-      eval ':"foo\u{0}bar"'
+    assert_nothing_raised(SyntaxError, bug) do
+      assert_equal(sym, eval(':"foo\u{0}bar"'))
     end
     assert_raise(SyntaxError) do
       eval ':"foo\u{}bar"'
