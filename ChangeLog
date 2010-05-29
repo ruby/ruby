@@ -1,3 +1,8 @@
+Sat May 29 23:30:33 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* string.c (str_replace_shared): change embedded state atomically.
+	  [ruby-core:29953] [ruby-dev:41456]
+
 Sat May 29 12:56:09 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c (rb_filesystem_encindex): avoid infinite require
