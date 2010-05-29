@@ -1,3 +1,8 @@
+Sat May 29 10:12:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (GC_PROF_TIMER_STOP): regularize `marked' to suppress
+	  warnings.
+
 Sat May 29 09:34:32 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/envutil.rb: fix for --disable-gems.

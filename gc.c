@@ -166,8 +166,8 @@ getrusage_time(void)
 	    gc_time = getrusage_time() - gc_time;\
 	    if (gc_time < 0) gc_time = 0;\
 	    objspace->profile.record[count].gc_time = gc_time;\
-	    objspace->profile.record[count].is_marked = marked;\
-            GC_PROF_SET_HEAP_INFO(objspace->profile.record[count]);\
+	    objspace->profile.record[count].is_marked = !!(marked);\
+	    GC_PROF_SET_HEAP_INFO(objspace->profile.record[count]);\
 	    objspace->profile.count++;\
 	}\
     } while(0)
