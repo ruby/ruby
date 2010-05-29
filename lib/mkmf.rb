@@ -988,9 +988,11 @@ def have_const(const, headers = nil, opt = "", &b)
 end
 
 STRING_OR_FAILED_FORMAT = "%s"
+# :stopdoc:
 def STRING_OR_FAILED_FORMAT.%(x)
   x ? super : "failed"
 end
+# :startdoc:
 
 # Returns the size of the given +type+.  You may optionally specify additional
 # +headers+ to search in for the +type+.
