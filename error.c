@@ -1235,7 +1235,7 @@ syserr_eqq(VALUE self, VALUE exc)
  *  ScriptError is the superclass for errors raised when a script
  *  can not be executed because of a +LoadError+,
  *  +NotImplementedError+ or a +SyntaxError+. Note these type of
- *  +ScriptErrors+ are not +StandardExceptions+ and will not be
+ *  +ScriptErrors+ are not +StandardError+ and will not be
  *  rescued unless it is specified explicitly (or its ancestor
  *  +Exception+).
  */
@@ -1385,7 +1385,7 @@ syserr_eqq(VALUE self, VALUE exc)
  *  objects carry information about the exception---its type (the
  *  exception's class name), an optional descriptive string, and
  *  optional traceback information. Programs may subclass
- *  <code>Exception</code>, or more typically <code>StandardException</code>
+ *  <code>Exception</code>, or more typically <code>StandardError</code>
  *  to provide custom classes and add additional information.
  */
 
