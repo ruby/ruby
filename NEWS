@@ -373,6 +373,11 @@ with all sufficient information, see the ChangeLog file.
     * Readline.completion_proc= accepts nil.
       nil means to use default completion proc.
 
+* set
+  * new methods:
+    * Set#keep_if
+    * Set#select!
+
 * time
   * incompatible changes:
     * Time.parse raises ArgumentError when no date information.
