@@ -2279,7 +2279,7 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_thread_t *th)
 void rb_gc_mark_encodings(void);
 
 static void
-gc_mark_all_clear(rb_objspace_t *objspace)
+gc_clear_mark_on_sweep_slots(rb_objspace_t *objspace)
 {
     struct heaps_slot *scan;
     RVALUE *p, *pend;
@@ -2289,24 +2289,12 @@ gc_mark_all_clear(rb_objspace_t *objspace)
             scan = objspace->heap.sweep_slots;
             p = scan->slot; pend = p + scan->limit;
             while (p < pend) {
-                if (!(RBASIC(p)->flags & FL_MARK)) {
-                    if (p->as.basic.flags && !FL_TEST(p, FL_FINALIZE)) {
-                        obj_free(objspace, (VALUE)p);
-                        VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
-                        p->as.free.flags = 0;
-                    }
-                }
-                else if (RBASIC(p)->flags != FL_MARK) {
+                if (p->as.free.flags & FL_MARK && BUILTIN_TYPE(p) != T_ZOMBIE) {
                     p->as.basic.flags &= ~FL_MARK;
                 }
                 p++;
             }
             objspace->heap.sweep_slots = objspace->heap.sweep_slots->next;
-        }
-        p = deferred_final_list;
-        while(p) {
-            p->as.free.flags |= FL_MARK;
-            p = p->as.free.next;
         }
     }
 }
@@ -2322,7 +2310,7 @@ gc_marks(rb_objspace_t *objspace)
     objspace->count++;
 
 
-    gc_mark_all_clear(objspace);
+    gc_clear_mark_on_sweep_slots(objspace);
 
     SET_STACK_END;
 
@@ -2858,6 +2846,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 
     /* run finalizers */
     if (finalizer_table) {
+        gc_clear_mark_on_sweep_slots(objspace);
 	do {
 	    /* XXX: this loop will make no sense */
 	    /* because mark will not be removed */

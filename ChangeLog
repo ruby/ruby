@@ -1,3 +1,15 @@
+Sun May 30 14:59:13 2010  Narihiro Nakamura  <authorNari@gmail.com>
+
+	* gc.c (gc_mark_all_clear): don't call obj_free() in
+	  gc_mark_all_clear(), because obj_free() may make T_ZOMBIE
+	  objects.
+
+	* gc.c (gc_clear_mark_on_sweep_slots): renamed.
+
+	* gc.c (rb_objspace_call_finalizer): call
+  	  gc_clear_mark_on_sweep_slots() before calling mark_tbl().
+	  [ruby-dev:41459]
+
 Sun May 30 03:40:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_tokadd_utf8, parser_tokadd_string): allow NUL
