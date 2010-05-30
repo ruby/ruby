@@ -1,3 +1,8 @@
+Sun May 30 19:17:31 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c: updated to b856dd07.
+	  this cleans warnings.
+
 Sun May 30 18:49:45 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/rdoc/generator/template/darkfish/classpage.rhtml:
