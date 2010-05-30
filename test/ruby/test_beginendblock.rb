@@ -55,6 +55,7 @@ class TestBeginEndBlock < Test::Unit::TestCase
     errout = Tempfile.new(self.class.name)
 
     launcher << <<EOF
+# -*- coding: #{ruby.encoding.name} -*-
 errout = ARGV.shift
 STDERR.reopen(File.open(errout, "w"))
 STDERR.sync = true

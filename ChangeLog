@@ -1,3 +1,11 @@
+Mon May 31 04:03:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (file_expand_path): check if expanded dname encoding is
+	  compatible with fname, not just copying.  [ruby-core:30516]
+
+	* test/ruby/test_beginendblock.rb (test_endblockwarn): needs
+	  encoding comment.
+
 Mon May 31 01:28:58 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/delegate: Delegator: combine (public|protected) methods with
