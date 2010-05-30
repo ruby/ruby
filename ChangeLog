@@ -1,3 +1,11 @@
+Mon May 31 04:03:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (file_expand_path): check if expanded dname encoding is
+	  compatible with fname, not just copying.  [ruby-core:30516]
+
+	* test/ruby/test_beginendblock.rb (test_endblockwarn): needs
+	  encoding comment.
+
 Mon May 31 02:17:54 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* insns.def (defined): respond_to_missing? may not be available
