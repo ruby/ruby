@@ -477,7 +477,7 @@ struct input_code input_code_list[] = {
     {"UTF-16",     0, 0, 0, {0, 0, 0}, NULL, w_iconv16, 0},
     {"UTF-32",     0, 0, 0, {0, 0, 0}, NULL, w_iconv32, 0},
 #endif
-    {0}
+    {NULL,        0, 0, 0, {0, 0, 0}, NULL, NULL, 0}
 };
 
 static int              mimeout_mode = 0; /* 0, -1, 'Q', 'B', 1, 2 */
@@ -2202,8 +2202,8 @@ unicode_iconv(nkf_char wc)
     return 0;
 }
 
-#define NKF_ICONV_NEED_ONE_MORE_BYTE -1
-#define NKF_ICONV_NEED_TWO_MORE_BYTES -2
+#define NKF_ICONV_NEED_ONE_MORE_BYTE (size_t)-1
+#define NKF_ICONV_NEED_TWO_MORE_BYTES (size_t)-2
 #define UTF16_TO_UTF32(lead, trail) (((lead) << 10) + (trail) - NKF_INT32_C(0x35FDC00))
 static size_t
 nkf_iconv_utf_16(nkf_char c1, nkf_char c2, nkf_char c3, nkf_char c4)
@@ -5418,7 +5418,7 @@ noconvert(FILE *f)
 #define NEXT continue        /* no output, get next */
 #define SKIP c2=0;continue        /* no output, get next */
 #define MORE c2=c1;continue  /* need one more byte */
-#define SEND ;               /* output c1 and c2, get next */
+#define SEND (void)0         /* output c1 and c2, get next */
 #define LAST break           /* end of loop, go closing  */
 #define set_input_mode(mode) do { \
     input_mode = mode; \
@@ -5463,7 +5463,7 @@ kanji_convert(FILE *f)
     else if (iconv == w_iconv16) {
 	while ((c1 = (*i_getc)(f)) != EOF &&
 	       (c2 = (*i_getc)(f)) != EOF) {
-	    if (nkf_iconv_utf_16(c1, c2, 0, 0) == -2 &&
+	    if (nkf_iconv_utf_16(c1, c2, 0, 0) == NKF_ICONV_NEED_TWO_MORE_BYTES &&
 		(c3 = (*i_getc)(f)) != EOF &&
 		(c4 = (*i_getc)(f)) != EOF) {
 		nkf_iconv_utf_16(c1, c2, c3, c4);
@@ -5903,7 +5903,7 @@ options(unsigned char *cp)
 		option_mode = 1;
 		return 0;
 	    }
-	    for (i=0;i<sizeof(long_option)/sizeof(long_option[0]);i++) {
+	    for (i=0;i<(int)(sizeof(long_option)/sizeof(long_option[0]));i++) {
 		p = (unsigned char *)long_option[i].name;
 		for (j=0;*p && *p != '=' && *p == cp[j];p++, j++);
 		if (*p == cp[j] || cp[j] == SP){
