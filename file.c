@@ -1053,16 +1053,6 @@ access_internal(const char *path, int mode)
  */
 
 /*
- *   File.directory?(file_name)   ->  true or false
- *   File.directory?(file_name)   ->  true or false
- *
- * Returns <code>true</code> if the named file is a directory,
- * <code>false</code> otherwise.
- *
- *    File.directory?(".")
- */
-
-/*
  * Document-method: exist?
  *
  * call-seq:
@@ -1081,7 +1071,8 @@ access_internal(const char *path, int mode)
  *   File.directory?(file_name)   ->  true or false
  *
  * Returns <code>true</code> if the named file is a directory,
- * <code>false</code> otherwise.
+ * or a symlink that points at a directory, and <code>false</code>
+ * otherwise.
  *
  *    File.directory?(".")
  */
