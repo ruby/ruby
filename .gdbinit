@@ -105,7 +105,7 @@ define rp
     print (struct RObject *)($arg0)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_CLASS
-    printf "T_CLASS: "
+    printf "T_CLASS%s: ", ($flags & RUBY_FL_SINGLETON) ? "*" : ""
     print (struct RClass *)($arg0)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_ICLASS
