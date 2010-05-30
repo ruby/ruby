@@ -1,3 +1,8 @@
+Sun May 30 18:25:55 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* load.c (load_failed): use more accurate error message.
+	  [ruby-core:23851]
+
 Sun May 30 16:54:34 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* file.c (rb_file_directory_p): update rdoc.  a patch from Ilkka
