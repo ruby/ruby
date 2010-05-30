@@ -799,8 +799,15 @@ defined
 		}
 	    }
 	}
-	if (RTEST(rb_funcall(v, rb_intern("respond_to_missing?"), 2, obj, Qfalse)))
-	    expr_type = "method";
+	{
+	    VALUE args[2];
+	    VALUE r;
+
+	    args[0] = obj; args[1] = Qfalse;
+	    r = rb_check_funcall(v, rb_intern("respond_to_missing?"), 2, args);
+	    if (r != Qundef && RTEST(r)) 
+		expr_type = "method";
+	}
 	break;
       }
       case DEFINED_YIELD:

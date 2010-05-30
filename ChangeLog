@@ -1,3 +1,8 @@
+Mon May 31 02:17:54 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* insns.def (defined): respond_to_missing? may not be available
+	  (for BasicObject instances).
+
 Mon May 31 01:43:42 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/delegate: Delegator: combine (public|protected) methods with
