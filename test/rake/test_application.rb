@@ -438,7 +438,7 @@ class Rake::TestApplicationOptions < Test::Unit::TestCase
       flags(['--require', File.expand_path('../missing', __FILE__)]) do |opts|
       end
     end
-    assert_match(/no such file/, ex.message)
+    assert_match(/cannot load such file/, ex.message)
     assert_match(/#{File.basename(File.dirname(__FILE__))}\/missing/, ex.message)
   end
 
