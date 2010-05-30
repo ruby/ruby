@@ -550,7 +550,7 @@ search_required(VALUE fname, volatile VALUE *path, int safe_level)
 static void
 load_failed(VALUE fname)
 {
-    rb_raise(rb_eLoadError, "no such file to load -- %s",
+    rb_raise(rb_eLoadError, "cannot load such file -- %s",
 	     RSTRING_PTR(fname));
 }
 
