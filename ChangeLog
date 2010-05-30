@@ -1,3 +1,10 @@
+Mon May 31 01:43:42 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/delegate: Delegator: combine (public|protected) methods with
+	  those of the delegated object. [ruby-core:27224]
+	  DelegateClass: combine (public|protected) instance methods
+	  with those of the delegated superclass.
+
 Sun May 30 22:18:49 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/set.rb (keep_if, select!): New methods [ruby-core:29749]

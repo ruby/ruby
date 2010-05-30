@@ -161,6 +161,32 @@ class Delegator < BasicObject
   end
 
   #
+  # Returns the methods available to this delegate object as the union
+  # of this object's and \_\_getobj\_\_ methods.
+  #
+  def methods
+    __getobj__.methods | super
+  end
+
+  #
+  # Returns the methods available to this delegate object as the union
+  # of this object's and \_\_getobj\_\_ public methods.
+  #
+  def public_methods(all=true)
+    __getobj__.public_methods(all) | super
+  end
+
+  #
+  # Returns the methods available to this delegate object as the union
+  # of this object's and \_\_getobj\_\_ protected methods.
+  #
+  def protected_methods(all=true)
+    __getobj__.protected_methods(all) | super
+  end
+
+  # Note: no need to specialize private_methods, since they are not forwarded
+
+  #
   # Returns true if two objects are considered same.
   #
   def ==(obj)
@@ -281,10 +307,10 @@ end
 #
 def DelegateClass(superclass)
   klass = Class.new(Delegator)
-  methods = superclass.public_instance_methods(true)
+  methods = superclass.instance_methods
   methods -= ::Delegator.public_api
   methods -= [:to_s,:inspect,:=~,:!~,:===]
-  klass.module_eval {
+  klass.module_eval do
     def __getobj__  # :nodoc:
       @delegate_dc_obj
     end
@@ -292,11 +318,15 @@ def DelegateClass(superclass)
       raise ArgumentError, "cannot delegate to self" if self.equal?(obj)
       @delegate_dc_obj = obj
     end
-  }
-  klass.module_eval do
     methods.each do |method|
       define_method(method, Delegator.delegating_block(method))
     end
+  end
+  klass.define_singleton_method :public_instance_methods do |all=true|
+    super(all) - superclass.protected_instance_methods
+  end
+  klass.define_singleton_method :protected_instance_methods do |all=true|
+    super(all) | superclass.protected_instance_methods
   end
   return klass
 end
