@@ -1,3 +1,7 @@
+Sun May 30 22:18:49 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/set.rb (keep_if, select!): New methods [ruby-core:29749]
+
 Sun May 30 21:51:59 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/rake/test_application.rb: update a test because of r28089.

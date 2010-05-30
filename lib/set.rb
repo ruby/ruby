@@ -266,6 +266,14 @@ class Set
     self
   end
 
+  # Deletes every element of the set for which block evaluates to
+  # false, and returns self.
+  def keep_if
+    block_given? or return enum_for(__method__)
+    to_a.each { |o| @hash.delete(o) unless yield(o) }
+    self
+  end
+
   # Replaces the elements with ones returned by collect().
   def collect!
     block_given? or return enum_for(__method__)
@@ -281,6 +289,15 @@ class Set
     block_given? or return enum_for(__method__)
     n = size
     delete_if { |o| yield(o) }
+    size == n ? nil : self
+  end
+
+  # Equivalent to Set#keep_if, but returns nil if no changes were
+  # made.
+  def select!
+    block_given? or return enum_for(__method__)
+    n = size
+    keep_if { |o| yield(o) }
     size == n ? nil : self
   end
 
@@ -557,6 +574,14 @@ class SortedSet < Set
 
 	  def delete_if
             block_given? or return enum_for(__method__)
+	    n = @hash.size
+	    super
+	    @keys = nil if @hash.size != n
+	    self
+	  end
+
+	  def keep_if
+	    block_given? or return enum_for(__method__)
 	    n = @hash.size
 	    super
 	    @keys = nil if @hash.size != n
