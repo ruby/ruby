@@ -1,3 +1,8 @@
+Mon May 31 14:47:09 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_inspect): inspect as ASCII when the codepoint
+	  of a character in Unicode string is ASCII printable one.
+
 Mon May 31 13:44:40 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c (rb_enc_unicode_p): check the encoding is Unicode
