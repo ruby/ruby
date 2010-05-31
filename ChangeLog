@@ -1,3 +1,8 @@
+Mon May 31 15:07:18 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* file.c (file_expand_path): Refix r28102: this breaks
+	  r28039. test for [ruby-dev:41429] is added. [ruby-core:30516]
+
 Mon May 31 14:47:09 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_str_inspect): inspect as ASCII when the codepoint
