@@ -5112,6 +5112,9 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
 	    break;
 	}
     }
+
+    RB_GC_GUARD(argbuf);
+
     if (eargp)
 	rb_run_exec_options(&sarg, NULL);
     if ((fmode & FMODE_READABLE) && (fmode & FMODE_WRITABLE)) {
