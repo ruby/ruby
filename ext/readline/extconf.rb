@@ -3,7 +3,7 @@ require "mkmf"
 $readline_headers = ["stdio.h"]
 
 def have_readline_header(header)
-  if have_header(header)
+  if have_header(header, &$readline_extra_check)
     $readline_headers.push(header)
     return true
   else
@@ -24,6 +24,12 @@ dir_config('ncurses')
 dir_config('termcap')
 dir_config("readline")
 enable_libedit = enable_config("libedit")
+$readline_extra_check = (proc {|src| src << <<EOS} unless enable_config("readline-v6"))
+#if RL_VERSION_MAJOR >= 6
+#error GPLv2 incompatible
+#endif
+EOS
+
 have_library("user32", nil) if /cygwin/ === RUBY_PLATFORM
 have_library("ncurses", "tgetnum") ||
   have_library("termcap", "tgetnum") ||

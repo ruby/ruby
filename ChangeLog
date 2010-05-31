@@ -1,3 +1,8 @@
+Tue Jun  1 03:46:08 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/readline/extconf.rb: reject GPLv3 readline. [ruby-dev:39172]
+	  [ruby-core:25272] [ruby-dev:39167] [ruby-core:28736]
+
 Tue Jun  1 01:14:31 2010  Masaya Tarui  <tarui@ruby-lnag.org>
 
 	* io.c (pipe_open): add RB_GC_GUARD.
