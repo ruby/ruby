@@ -420,7 +420,8 @@ enc_ascii_compatible_p(VALUE enc)
 int
 rb_enc_unicode_p(rb_encoding *enc)
 {
-    return rb_utf8_encoding()->is_code_ctype == enc->is_code_ctype;
+    const char *name = rb_enc_name(enc);
+    return name[0] == 'U' && name[1] == 'T' && name[2] == 'F' && name[4] != '7';
 }
 
 static const char *

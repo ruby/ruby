@@ -1,3 +1,8 @@
+Mon May 31 13:44:40 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* encoding.c (rb_enc_unicode_p): check the encoding is Unicode
+	  or not by the name; not function's pointer. [ruby-dev:41479]
+
 Mon May 31 04:03:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (file_expand_path): check if expanded dname encoding is
