@@ -4,7 +4,8 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2010-03-26"
+#define TCLTKLIB_RELEASE_DATE "2010-05-31"
+/* #define CREATE_RUBYTK_KIT */
 
 #include "ruby.h"
 
@@ -56,6 +57,20 @@ extern VALUE rb_proc_new _((VALUE (*)(ANYARGS/* VALUE yieldarg[, VALUE procarg] 
 #define va_init_list(a,b) va_start(a)
 #endif
 #include <string.h>
+
+#if !defined HAVE_VSNPRINTF && !defined vsnprintf
+#  ifdef WIN32
+     /* In Win32, vsnprintf is available as the "non-ANSI" _vsnprintf. */
+#    define vsnprintf _vsnprintf
+#  else
+#    ifdef HAVE_RUBY_RUBY_H
+#      include "ruby/missing.h"
+#    else
+#      include "missing.h"
+#    endif
+#  endif
+#endif
+
 #include <tcl.h>
 #include <tk.h>
 
@@ -68,9 +83,14 @@ extern VALUE rb_proc_new _((VALUE (*)(ANYARGS/* VALUE yieldarg[, VALUE procarg] 
 
 #ifndef HAVE_RB_ERRINFO
 #define rb_errinfo() (ruby_errinfo+0) /* cannot be l-value */
+#else
+VALUE rb_errinfo(void);
 #endif
 #ifndef HAVE_RB_SAFE_LEVEL
-#define rb_safe_level() (ruby_safe_level+0) /* cannot be l-value */
+#define rb_safe_level() (ruby_safe_level+0)
+#endif
+#ifndef HAVE_RB_SOURCEFILE
+#define rb_sourcefile() (ruby_sourcefile+0)
 #endif
 
 #include "stubs.h"
@@ -529,7 +549,6 @@ struct cmd_body_arg {
     VALUE args;
 };
 
-
 /*----------------------------*/
 /* use Tcl internal functions */
 /*----------------------------*/
@@ -837,6 +856,195 @@ create_ip_exc(interp, exc, fmt, va_alist)
     return einfo;
 }
 
+/*-------------------------------------------------------*/
+#if defined CREATE_RUBYTK_KIT || defined CREATE_RUBYKIT
+
+/* Tcl/Tk stubs may work, but probably it is meaningless. */
+#if defined USE_TCL_STUBS || defined USE_TK_STUBS
+#  error Not support Tcl/Tk stubs with Ruby/Tk-Kit or Rubykit.
+#endif
+
+#ifndef KIT_INCLUDES_TK
+#  define KIT_INCLUDES_TK  1
+#endif
+/* #define KIT_INCLUDES_ITCL 1 */
+/* #define KIT_INCLUDES_THREAD  1 */
+
+#ifdef KIT_INCLUDES_ITCL
+Tcl_AppInitProc Itcl_Init;
+#endif
+Tcl_AppInitProc Mk4tcl_Init, Vfs_Init, Rechan_Init, Zlib_Init;
+#if 10 * TCL_MAJOR_VERSION + TCL_MINOR_VERSION < 85
+Tcl_AppInitProc Pwb_Init;
+#endif
+#if defined TCL_THREADS && defined KIT_INCLUDES_THREAD
+Tcl_AppInitProc Thread_Init;
+#endif
+#ifdef _WIN32
+Tcl_AppInitProc Dde_Init, Registry_Init;
+#endif
+
+static const char *tcltklib_filepath = "[info nameofexecutable]";
+static char *rubytkkit_preInitCmd = (char *)NULL;
+static const char *rubytkkit_preInitCmd_head = "set ::rubytkkit_exe [list ";
+static const char *rubytkkit_preInitCmd_tail =
+"]\n"
+/*=== following init scripts are quoted from kitInit.c of Tclkit ===*/
+/* Tclkit license terms ---
+ LICENSE
+
+   The Tclkit-specific sources are license free, they just have a copyright.
+   Hold the author(s) harmless and any lawful use is permitted.
+
+   This does *not* apply to any of the sources of the other major Open Source
+   Software used in Tclkit, which each have very liberal BSD/MIT-like licenses:
+         Tcl/Tk, Incrtcl, Metakit, TclVFS, Zlib
+*/
+#ifdef _WIN32_WCE
+/* silly hack to get wince port to launch, some sort of std{in,out,err} problem
+*/
+"open /kitout.txt a; open /kitout.txt a; open /kitout.txt a\n"
+/* this too seems to be needed on wince - it appears to be related to the above
+*/
+"catch {rename source ::tcl::source}\n"
+"proc source file {\n"
+    "set old [info script]\n"
+    "info script $file\n"
+    "set fid [open $file]\n"
+    "set data [read $fid]\n"
+    "close $fid\n"
+    "set code [catch {uplevel 1 $data} res]\n"
+    "info script $old\n"
+    "if {$code == 2} { set code 0 }\n"
+    "return -code $code $res\n"
+"}\n"
+#endif
+"proc tclKitInit {} {\n"
+    "rename tclKitInit {}\n"
+    "load {} Mk4tcl\n"
+#if defined KIT_VFS_WRITABLE && !defined CREATE_RUBYKIT
+    /* running command cannot open itself for writing */
+    "mk::file open exe $::rubytkkit_exe\n"
+#else
+    "mk::file open exe $::rubytkkit_exe -readonly\n"
+#endif
+    "set n [mk::select exe.dirs!0.files name boot.tcl]\n"
+    "if {$n != \"\"} {\n"
+        "set s [mk::get exe.dirs!0.files!$n contents]\n"
+        "if {![string length $s]} { error \"empty boot.tcl\" }\n"
+        "catch {load {} zlib}\n"
+        "if {[mk::get exe.dirs!0.files!$n size] != [string length $s]} {\n"
+            "set s [zlib decompress $s]\n"
+        "}\n"
+    "} else {\n"
+        "set f [open setup.tcl]\n"
+        "set s [read $f]\n"
+        "close $f\n"
+    "}\n"
+    "uplevel #0 $s\n"
+#ifdef _WIN32
+    "package ifneeded dde 1.3.1 {load {} dde}\n"
+    "package ifneeded registry 1.1.5 {load {} registry}\n"
+#endif
+"}\n"
+"tclKitInit"
+;
+
+#if 0
+/* Not use this script. 
+   It's a memo to support an initScript for Tcl interpreters in the future. */
+static const char initScript[] =
+"if {[file isfile [file join $::rubytkkit_exe main.tcl]]} {\n"
+    "if {[info commands console] != {}} { console hide }\n"
+    "set tcl_interactive 0\n"
+    "incr argc\n"
+    "set argv [linsert $argv 0 $argv0]\n"
+    "set argv0 [file join $::rubytkkit_exe main.tcl]\n"
+"} else continue\n"
+;
+#endif
+
+#if !defined(TclSetPreInitScript) && !defined(TclSetPreInitScript_TCL_DECLARED)
+EXTERN char* TclSetPreInitScript _((char *));
+#endif
+static char*
+setup_preInitCmd(const char *path)
+{
+  int head_len, path_len, tail_len;
+  char *ptr;
+
+  head_len = strlen(rubytkkit_preInitCmd_head);
+  path_len = strlen(path);
+  tail_len = strlen(rubytkkit_preInitCmd_tail);
+
+  rubytkkit_preInitCmd = ALLOC_N(char, head_len + path_len + tail_len + 1);
+
+  ptr = rubytkkit_preInitCmd;
+  memcpy(ptr, rubytkkit_preInitCmd_head, head_len);
+
+  ptr += head_len;
+  memcpy(ptr, path, path_len);
+
+  ptr += path_len;
+  memcpy(ptr, rubytkkit_preInitCmd_tail, tail_len);
+
+  ptr += tail_len;
+  *ptr = '\0';
+
+  return TclSetPreInitScript(rubytkkit_preInitCmd);
+}
+
+static void
+init_static_tcltk_packages()
+{
+#ifdef KIT_INCLUDES_ITCL
+    Tcl_StaticPackage(0, "Itcl", Itcl_Init, NULL);
+#endif
+    Tcl_StaticPackage(0, "Mk4tcl", Mk4tcl_Init, NULL);
+#if 10 * TCL_MAJOR_VERSION + TCL_MINOR_VERSION < 85
+    Tcl_StaticPackage(0, "pwb", Pwb_Init, NULL);
+#endif
+    Tcl_StaticPackage(0, "rechan", Rechan_Init, NULL);
+    Tcl_StaticPackage(0, "vfs", Vfs_Init, NULL);
+    Tcl_StaticPackage(0, "zlib", Zlib_Init, NULL);
+#if defined TCL_THREADS && defined KIT_INCLUDES_THREAD
+    Tcl_StaticPackage(0, "Thread", Thread_Init, NULL);
+#endif
+#ifdef _WIN32
+    Tcl_StaticPackage(0, "dde", Dde_Init, NULL);
+    Tcl_StaticPackage(0, "registry", Registry_Init, NULL);
+#endif
+#ifdef KIT_INCLUDES_TK
+    Tcl_StaticPackage(0, "Tk", Tk_Init, Tk_SafeInit);
+#endif
+}
+
+/* SetExecName --  Hack to get around Tcl bug 1224888. */
+void SetExecName(Tcl_Interp *interp) {
+  /* dummy */
+}
+#endif /* defined CREATE_RUBYTK_KIT || defined CREATE_RUBYKIT */
+
+static int
+call_tclkit_init_script(Tcl_Interp  *interp)
+{
+#if 0
+  /* Currently, nothing do in this function. 
+     It's a memo (quoted from kitInit.c of Tclkit) 
+     to support an initScript for Tcl interpreters in the future. */
+  if (Tcl_Eval(interp, initScript) == TCL_OK) {
+    Tcl_Obj* path = TclGetStartupScriptPath();
+    TclSetStartupScriptPath(Tcl_GetObjResult(interp));
+    if (path == NULL)
+      Tcl_Eval(interp, "incr argc -1; set argv [lrange $argv 1 end]");
+  }
+#endif
+
+  return 1;
+}
+
+
+/**********************************************************************/
 
 /* stub status */
 static void
@@ -5668,6 +5876,30 @@ ip_CallWhenDeleted(clientData, ip)
     rb_thread_critical = thr_crit_bup;
 }
 
+/*--------------------------------------------------------*/
+
+#ifdef __WIN32__
+/* #include <tkWinInt.h> *//* conflict definition of struct timezone */
+/* #include <tkIntPlatDecls.h> */
+/* #include <windows.h> */
+EXTERN void TkWinSetHINSTANCE(HINSTANCE hInstance);
+void rbtk_win32_SetHINSTANCE(const char *module_name)
+{
+  /* TCHAR szBuf[256]; */
+  HINSTANCE hInst;
+
+  /* hInst = GetModuleHandle(NULL); */
+  /* hInst = GetModuleHandle("tcltklib.so"); */
+  hInst = GetModuleHandle(module_name);
+  TkWinSetHINSTANCE(hInst);
+
+  /* GetModuleFileName(hInst, szBuf, sizeof(szBuf) / sizeof(TCHAR)); */
+  /* MessageBox(NULL, szBuf, TEXT("OK"), MB_OK); */
+}
+#endif
+
+/*--------------------------------------------------------*/
+
 /* initialize interpreter */
 static VALUE
 ip_init(argc, argv, self)
@@ -5738,6 +5970,8 @@ ip_init(argc, argv, self)
     rbtk_preserve_ip(ptr);
     DUMP2("IP ref_count = %d", ptr->ref_count);
     current_interp = ptr->ip;
+
+    call_tclkit_init_script(current_interp);
 
     ptr->has_orig_exit
         = Tcl_GetCommandInfo(ptr->ip, "exit", &(ptr->orig_exit_info));
@@ -10315,17 +10549,17 @@ Init_tcltklib()
    /* --------------------------------------------------------------- */
 
 #ifdef __WIN32__
-#define TK_WINDOWING_SYSTEM "win32"
+#  define TK_WINDOWING_SYSTEM "win32"
 #else
-#ifdef MAC_TCL
-#define TK_WINDOWING_SYSTEM "classic"
-#else
-#ifdef MAC_OSX_TK
-#define TK_WINDOWING_SYSTEM "aqua"
-#else
-#define TK_WINDOWING_SYSTEM "x11"
-#endif
-#endif
+#  ifdef MAC_TCL
+#    define TK_WINDOWING_SYSTEM "classic"
+#  else
+#    ifdef MAC_OSX_TK
+#      define TK_WINDOWING_SYSTEM "aqua"
+#    else
+#      define TK_WINDOWING_SYSTEM "x11"
+#    endif
+#  endif
 #endif
     rb_define_const(lib, "WINDOWING_SYSTEM",
                     rb_obj_freeze(rb_str_new2(TK_WINDOWING_SYSTEM)));
@@ -10578,6 +10812,19 @@ Init_tcltklib()
     default:
         rb_raise(rb_eLoadError, "tcltklib: unknown error(%d) on ruby_open_tcl_dll", ret);
     }
+
+    /* --------------------------------------------------------------- */
+
+#if defined CREATE_RUBYTK_KIT
+#ifdef __WIN32__
+    rbtk_win32_SetHINSTANCE("tcltklib.so");
+#endif
+    tcltklib_filepath = strdup(rb_sourcefile());
+#endif
+#if defined CREATE_RUBYTK_KIT || defined CREATE_RUBYKIT
+    init_static_tcltk_packages();
+    setup_preInitCmd(tcltklib_filepath);
+#endif
 
     /* --------------------------------------------------------------- */
 
