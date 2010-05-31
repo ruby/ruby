@@ -823,4 +823,8 @@ class TestRegexp < Test::Unit::TestCase
     assert_in_out_err('-w', 'x=/[\u3042\u3042]/', [], /duplicated/)
     assert_in_out_err('-w', 'x=/[\u3042\u3041-\u3043]/', [], /duplicated/)
   end
+
+  def test_property_warn
+    assert_in_out_err('-w', 'x=/\p%s/', [], %r"warning: invalid Unicode Property \\p: /\\p%s/")
+  end
 end
