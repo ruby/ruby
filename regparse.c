@@ -2859,9 +2859,9 @@ onig_syntax_warn(ScanEnv *env, const char *fmt, ...)
 		(const UChar *)fmt, args);
     va_end(args);
     if (env->sourcefile == NULL)
-	rb_warn((char *)buf);
+      rb_warn("%s", (char *)buf);
     else
-	rb_compile_warn(env->sourcefile, env->sourceline, (char *)buf);
+      rb_compile_warn(env->sourcefile, env->sourceline, "%s", (char *)buf);
 }
 
 static void
