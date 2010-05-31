@@ -1537,7 +1537,7 @@ Init_Encoding(void)
     }
 }
 
-/* locale insensitive functions */
+/* locale insensitive ctype functions */
 
 #define ctype_test(c, ctype) \
     (rb_isascii(c) && ONIGENC_IS_ASCII_CODE_CTYPE((c), ctype))
