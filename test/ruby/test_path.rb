@@ -42,6 +42,8 @@ class TestPath < Test::Unit::TestCase
     end
     assert_equal("//", File.expand_path(".", "//"))
     assert_equal("//sub", File.expand_path("sub", "//"))
+
+    assert_equal("/tmp/\u3042", File.expand_path("\u3042", "/tmp"))
   end
 
   def test_dirname
