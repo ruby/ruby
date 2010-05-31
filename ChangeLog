@@ -1,3 +1,8 @@
+Mon May 31 19:25:58 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* regparse.c (onig_syntax_warn): do not use external strings as
+	  printf format.
+
 Mon May 31 18:22:23 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-mode-set-encoding): skip shebang line
