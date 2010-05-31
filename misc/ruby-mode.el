@@ -342,7 +342,7 @@ Also ignores spaces after parenthesis when 'space."
                             (cdr (assq coding-system ruby-encoding-map)))
                        coding-system))
                 "ascii-8bit"))
-        (unless (looking-at "^#![^\n]*ruby") (beginning-of-line 2))
+        (if (looking-at "^#!") (beginning-of-line 2))
         (cond ((looking-at "\\s *#.*-\*-\\s *\\(en\\)?coding\\s *:\\s *\\([-a-z0-9_]*\\)\\s *\\(;\\|-\*-\\)")
                (unless (string= (match-string 2) coding-system)
                  (goto-char (match-beginning 2))
