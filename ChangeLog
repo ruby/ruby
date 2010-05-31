@@ -1,3 +1,15 @@
+Mon May 31 23:44:22 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/extconf.rb: use tclConfig.sh/tkConfig.sh when frameworks
+	  are enabled on MacOS X.
+
+	* ext/tk/stubs.c: dirty hack for frameworks and stubs on MacOS X.
+
+	* ext/tk/lib/tk.rb: stop creating a dummy Tcl/Tk interpreter. 
+	  And hide a root window before starting eventloop. (for ruby 1.9)
+
+	* ext/tk/tcltklib.c: add codes to support Ruby/Tk-Kit (Rubykit).
+
 Mon May 31 21:49:42 2010  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb (Resolv::DNS::Requester#request): rescue ECONNRESET

@@ -92,6 +92,10 @@ _nativethread_consistency_check(ip)
 # define TK_INDEX 7
 # define TCL_NAME "libtcl8.9%s"
 # define TK_NAME "libtk8.9%s"
+# if defined(__APPLE__) && defined(__MACH__)   /* Mac OS X */
+#  undef DLEXT
+#  define DLEXT ".dylib"
+# endif
 #endif
 
 static DL_HANDLE tcl_dll = (DL_HANDLE)0;
@@ -320,6 +324,22 @@ ruby_tk_stubs_init(tcl_ip)
         p_Tk_Init = (int (*)(Tcl_Interp *))DL_SYM(tk_dll, "Tk_Init");
         if (!p_Tk_Init)
             return NO_Tk_Init;
+
+#if defined USE_TK_STUBS && defined TK_FRAMEWORK && defined(__APPLE__) && defined(__MACH__)
+	/*
+	  FIX ME : dirty hack for Mac OS X frameworks.
+	  With stubs, fails to find Resource/Script directory of Tk.framework.
+	  So, teach it to a Tcl interpreter by an environment variable.
+	  e.g. when $tcl_library == 
+	               /Library/Frameworks/Tcl.framwwork/8.5/Resources/Scripts
+		   ==> /Library/Frameworks/Tk.framwwork/8.5/Resources/Scripts
+	*/
+	if (Tcl_Eval(tcl_ip,
+		     "if {[array get env TK_LIBRARY] == {}} { set env(TK_LIBRARY) [regsub -all -nocase {(t)cl} $tcl_library  {\\1k}] }"
+		     ) != TCL_OK) {
+	  return FAIL_Tk_Init;
+	}
+#endif
 
         if ((*p_Tk_Init)(tcl_ip) == TCL_ERROR)
             return FAIL_Tk_Init;
