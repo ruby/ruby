@@ -640,7 +640,8 @@ class Resolv
           end
           begin
             reply, from = recv_reply(select_result[0])
-          rescue Errno::ECONNREFUSED
+          rescue Errno::ECONNREFUSED, # GNU/Linux, FreeBSD
+                 Errno::ECONNRESET # Windows
             # No name server running on the server?
             # Don't wait anymore.
             raise ResolvTimeout
