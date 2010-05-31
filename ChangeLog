@@ -1,3 +1,9 @@
+Tue Jun  1 01:14:31 2010  Masaya Tarui  <tarui@ruby-lnag.org>
+
+	* io.c (pipe_open): add RB_GC_GUARD.
+	  This caused failure when test/ruby/test_argf.rb is executed with
+	  GC.stress = true in mswin32_90
+
 Mon May 31 23:44:22 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/extconf.rb: use tclConfig.sh/tkConfig.sh when frameworks
