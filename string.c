@@ -4166,7 +4166,10 @@ rb_str_inspect(VALUE str)
 	else {
 	    if (p - n > prev) str_buf_cat(result, prev, p - n - prev);
 	    if (unicode_p) {
-		if (c < 0x10000) {
+		if (c < 0x100 && ISPRINT(c)) {
+		    snprintf(buf, CHAR_ESC_LEN, "%c", c);
+		}
+		else if (c < 0x10000) {
 		    snprintf(buf, CHAR_ESC_LEN, "\\u%04X", c);
 		}
 		else {
