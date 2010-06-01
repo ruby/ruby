@@ -2197,6 +2197,7 @@ unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
                 }
 
               case 'p': /* \p{Hiragana} */
+              case 'P':
                 if (!*encp) {
                     *has_property = 1;
                 }
