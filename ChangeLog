@@ -1,3 +1,8 @@
+Tue Jun  1 23:12:06 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* re.c (unescape_nonascii): \P{FOO} is also Unicode property in
+	  regexp. [ruby-core:30540]
+
 Tue Jun  1 21:29:39 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http.rb: adding support to rfc5789 patch verb.
