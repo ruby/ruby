@@ -966,16 +966,13 @@ module Net   #:nodoc:
     # "application/x-www-form-urlencoded" by default.
     #
     def post(path, data, initheader = nil, dest = nil, &block) # :yield: +body_segment+
-      res = nil
-      request(Post.new(path, initheader), data) {|r|
-        r.read_body dest, &block
-        res = r
-      }
-      unless @newimpl
-        res.value
-        return res, res.body
-      end
-      res
+      send_entity(path, data, initheader, dest, Post, &block)
+    end
+
+    # Sends a PATCH request to the +path+ and gets a response,
+    # as an HTTPResponse object.
+    def patch(path, data, initheader = nil, dest = nil, &block) # :yield: +body_segment+
+      send_entity(path, data, initheader, dest, Patch, &block)
     end
 
     def put(path, data, initheader = nil)   #:nodoc:
@@ -1175,6 +1172,21 @@ module Net   #:nodoc:
     end
 
     private
+
+    # Executes a request which uses a representation
+    # and returns its body.
+    def send_entity(path, data, initheader, dest, type, &block)
+      res = nil
+      request(type.new(path, initheader), data) {|r|
+        r.read_body dest, &block
+        res = r
+      }
+      unless @newimpl
+        res.value
+        return res, res.body
+      end
+      res
+    end
 
     def transport_request(req)
       begin_transport req
@@ -1828,6 +1840,16 @@ module Net   #:nodoc:
     class Trace < HTTPRequest
       METHOD = 'TRACE'
       REQUEST_HAS_BODY = false
+      RESPONSE_HAS_BODY = true
+    end
+
+    #
+    # PATCH method --- RFC5789
+    #
+
+    class Patch < HTTPRequest
+      METHOD = 'PATCH'
+      REQUEST_HAS_BODY = true
       RESPONSE_HAS_BODY = true
     end
 

@@ -1,3 +1,16 @@
+Tue Jun  1 21:29:39 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http.rb: adding support to rfc5789 patch verb.
+	  Added a Net::HTTP::Patch class which expects a message body
+	  and response body. It recycles the post method into a patch one,
+	  that will send the encoded representation to the server.
+	  Summarizing, a new class has been created, the post method
+	  extracted into send_entity, including a new argument,
+	  which defines which class to use (Post or Patch) and
+	  finally a patch method was created. [ruby-core:30426]
+	  Patched by Guilherme Silveira
+	  <guilherme.silveira AT caelum.com.br>
+
 Tue Jun  1 03:46:08 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/readline/extconf.rb: reject GPLv3 readline. [ruby-dev:39172]
