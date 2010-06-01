@@ -169,6 +169,25 @@ module TestNetHTTP_version_1_1_methods
     assert_equal ["a=x1", "a=x2", "b=y"], res.body.split(/[;&]/).sort
   end
 
+  def test_patch
+    start {|http|
+      _test_patch__base http
+    }
+  end
+
+  def _test_patch__base(http)
+    uheader = {}
+    uheader['Accept'] = 'application/octet-stream'
+    data = 'patch data'
+    res, body = http.patch('/', data)
+    assert_kind_of Net::HTTPResponse, res
+    assert_kind_of String, body
+    assert_kind_of String, res.body
+    assert_equal data, body
+    assert_equal data, res.body
+    assert_equal data, res.entity
+  end
+
 end
 
 

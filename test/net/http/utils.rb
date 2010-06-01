@@ -92,6 +92,12 @@ module TestNetHTTPUtils
       res.body = req.body
       res.chunked = @chunked
     end
+
+    def do_PATCH(req, res)
+      res['Content-Type'] = req['Content-Type']
+      res.body = req.body
+      res.chunked = @chunked
+    end
   end
 
   class NullWriter
