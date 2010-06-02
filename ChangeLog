@@ -1,3 +1,7 @@
+Thu Jun  3 01:22:45 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: fix typo and race condition.
+
 Thu Jun  3 00:58:45 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/dl/lib/dl/cparser.rb (parse_ctype): add backwards compatibility
