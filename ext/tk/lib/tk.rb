@@ -1229,7 +1229,8 @@ module TkCore
       INTERP_ROOT_CHECK = ConditionVariable.new
       INTERP_THREAD = Thread.new{
         begin
-          Thread.current[:interp] = interp = TclTkIp.new(name, opts)
+          #Thread.current[:interp] = interp = TclTkIp.new(name, opts)
+          interp = TclTkIp.new(name, opts)
         rescue => e
           Thread.current[:interp] = e
           raise e
@@ -1248,13 +1249,15 @@ module TkCore
 
         # like as 1.8, withdraw a root widget before calling Tk.mainloop
         interp._eval <<EOS
+wm withdraw .
 rename wm __wm_orig__
 proc wm {subcmd win args} {
-  eval [list __wm_orig__ $subcmd $win] $args
+  set val [eval [list __wm_orig__ $subcmd $win] $args]
   if {[string equal $subcmd withdraw] && [string equal $win .]} {
     rename wm {}
     rename __wm_orig__ wm
   }
+  return $val
 }
 proc __startup_rbtk_mainloop__ {args} {
   rename __startup_rbtk_mainloop__ {}
@@ -1275,6 +1278,7 @@ EOS
             #TclTkLib.mainloop_abort_on_exception = false
             #Thread.current[:status].value = TclTkLib.mainloop(true)
             interp.mainloop_abort_on_exception = true
+            Thread.current[:interp] = interp
             Thread.current[:status].value = interp.mainloop(true)
           rescue SystemExit=>e
             Thread.current[:status].value = e
@@ -1836,7 +1840,8 @@ EOS
       end
 
       # like as 1.8, withdraw a root widget before calling Tk.mainloop
-      TkCore::INTERP._eval_without_enc('unset __initail_state_of_rubytk__')
+      TkCore::INTERP._eval_without_enc('catch {unset __initial_state_of_rubytk__}')
+      INTERP_THREAD.run
 
       begin
         TclTkLib.set_eventloop_window_mode(true)
@@ -5693,7 +5698,7 @@ TkWidget = TkWindow
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2010-05-31'.freeze
+  RELEASE_DATE = '2010-06-03'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'
