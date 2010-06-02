@@ -1,3 +1,8 @@
+Thu Jun  3 05:37:46 2010  Ryan Davis  <ryand-ruby@zenspider.com>
+
+	* tool/rbinstall.rb (install-bin): Allow bin/* install from dot-dirs.
+	  Fixes rvm and multiruby installations.
+
 Thu Jun  3 01:22:45 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: fix typo and race condition.
