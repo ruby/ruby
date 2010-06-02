@@ -1,4 +1,7 @@
-Thu Jun  3 06:25:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Jun  3 06:30:20 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_path.rb (test_path): workaround for drive
+	  letter.
 
 	* test/ruby/test_path.rb (test_path): get rid of blocking on
 	  access to non-existent host.
