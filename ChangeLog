@@ -1,3 +1,11 @@
+Wed Jun  2 11:40:02 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): should consider block on stack,
+	  if block argument is passed.  [ruby-core:30534]
+
+	* parse.c (arg_concat_gen): should append to nd_head, not to
+	  nd_iter for NODE_BLOCK_PASS.
+
 Tue Jun  1 23:12:06 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* re.c (unescape_nonascii): \P{FOO} is also Unicode property in

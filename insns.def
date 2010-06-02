@@ -498,6 +498,7 @@ concatarray
 (VALUE ary1, VALUE ary2st)
 (VALUE ary)
 {
+    const VALUE *sp = GET_SP();
     const VALUE ary2 = ary2st;
     VALUE tmp1 = rb_check_convert_type(ary1, T_ARRAY, "Array", "to_a");
     VALUE tmp2 = rb_check_convert_type(ary2, T_ARRAY, "Array", "to_a");
