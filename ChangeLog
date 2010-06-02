@@ -1,3 +1,8 @@
+Thu Jun  3 06:25:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_path.rb (test_path): get rid of blocking on
+	  access to non-existent host.
+
 Tue Jun  1 23:22:59 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* re.c (unescape_nonascii): \P{FOO} is also Unicode property in

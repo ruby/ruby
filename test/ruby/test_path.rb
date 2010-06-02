@@ -35,8 +35,8 @@ class TestPath < Test::Unit::TestCase
       assert_equal("/sub", File.expand_path("sub", "/"))
     end
     if dosish
-      assert_equal("//machine/share", File.expand_path("/", "//machine/share/sub"))
-      assert_equal("//machine/share/dir", File.expand_path("/dir", "//machine/share/sub"))
+      assert_equal("//127.0.0.1/share", File.expand_path("/", "//127.0.0.1/share/sub"))
+      assert_equal("//127.0.0.1/share/dir", File.expand_path("/dir", "//127.0.0.1/share/sub"))
       assert_equal("z:/", File.expand_path("/", "z:/sub"))
       assert_equal("z:/dir", File.expand_path("/dir", "z:/sub"))
     end
