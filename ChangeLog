@@ -1,3 +1,8 @@
+Thu Jun  3 06:25:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_path.rb (test_path): get rid of blocking on
+	  access to non-existent host.
+
 Thu Jun  3 05:37:46 2010  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* tool/rbinstall.rb (install-bin): Allow bin/* install from dot-dirs.
