@@ -596,7 +596,7 @@ rb_require_safe(VALUE fname, int safe)
 
 		  case 's':
 		    handle = (long)rb_vm_call_cfunc(rb_vm_top_self(), load_ext,
-						    path, 0, path);
+						    path, 0, path, path);
 		    rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
 		    break;
 		}
@@ -643,7 +643,7 @@ ruby_init_ext(const char *name, void (*init)(void))
 {
     if (load_lock(name)) {
 	rb_vm_call_cfunc(rb_vm_top_self(), init_ext_call, (VALUE)init,
-			 0, rb_str_new2(name));
+			 0, rb_str_new2(name), Qnil);
 	rb_provide(name);
 	load_unlock(name, 1);
     }
