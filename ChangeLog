@@ -1,3 +1,8 @@
+Thu Jun  3 09:39:54 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/dl/dl.h (DLSTACK_TYPE): type of stack is same as VALUE.
+	  reported by sakiyama shin in [ruby-dev:41514]
+
 Thu Jun  3 06:25:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_path.rb (test_path): get rid of blocking on
