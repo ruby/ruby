@@ -83,7 +83,7 @@ if defined? GDBM
       begin
         assert_instance_of(GDBM, gdbm = GDBM.open("#{@tmpdir}/#{@prefix}"))
         gdbm.close
-        assert_equal(File.stat("#{@tmpdir}/#{@prefix}").mode & 0777, 0666)
+        assert_equal(File.stat("#{@tmpdir}/#{@prefix}").mode & 0777, 0666) unless /mswin|mignw/ =~ RUBY_PLATFORM
         assert_instance_of(GDBM, gdbm = GDBM.open("#{@tmpdir}/#{@prefix}2", 0644))
         gdbm.close
         assert_equal(File.stat("#{@tmpdir}/#{@prefix}2").mode & 0777, 0644)
@@ -198,7 +198,7 @@ if defined? GDBM
 
     def test_s_open_error
       assert_instance_of(GDBM, gdbm = GDBM.open("#{@tmpdir}/#{@prefix}", 0))
-      assert_raise(Errno::EACCES) {
+      assert_raise(Errno::EACCES, Errno::EWOULDBLOCK) {
         GDBM.open("#{@tmpdir}/#{@prefix}", 0)
       }
       gdbm.close
