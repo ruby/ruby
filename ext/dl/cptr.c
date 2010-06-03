@@ -186,7 +186,7 @@ static VALUE
 rb_dlptr_s_malloc(int argc, VALUE argv[], VALUE klass)
 {
     VALUE size, sym, obj;
-    int   s;
+    long s;
     freefunc_t f;
 
     switch (rb_scan_args(argc, argv, "11", &size, &sym)) {
