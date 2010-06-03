@@ -1,3 +1,8 @@
+Thu Jun  3 13:05:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/io/nonblock/test_flush.rb (test_flush): try pipe and
+	  socketpair.  [ruby-dev:41517]
+
 Thu Jun  3 09:39:54 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/dl/dl.h (DLSTACK_TYPE): type of stack is same as VALUE.
