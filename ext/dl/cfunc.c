@@ -284,25 +284,15 @@ rb_dlcfunc_set_ptr(VALUE self, VALUE addr)
 static VALUE
 rb_dlcfunc_inspect(VALUE self)
 {
-    VALUE val;
-    char  *str;
-    int str_size;
     struct cfunc_data *cfunc;
 
     TypedData_Get_Struct(self, struct cfunc_data, &dlcfunc_data_type, cfunc);
 
-    str_size = (cfunc->name ? strlen(cfunc->name) : 0) + 100;
-    str = ruby_xmalloc(str_size);
-    snprintf(str, str_size - 1,
-	     "#<DL::CFunc:%p ptr=%p type=%d name='%s'>",
+    return rb_sprintf("#<DL::CFunc:%p ptr=%p type=%d name='%s'>",
 	     cfunc,
 	     cfunc->ptr,
 	     cfunc->type,
 	     cfunc->name ? cfunc->name : "");
-    val = rb_tainted_str_new2(str);
-    ruby_xfree(str);
-
-    return val;
 }
 
 
