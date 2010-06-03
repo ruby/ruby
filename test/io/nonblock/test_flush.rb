@@ -7,8 +7,17 @@ end
 
 class TestIONonblock < Test::Unit::TestCase
   def test_flush
-    r,w = IO.pipe
-    w.nonblock = true
+    flush_test(*IO.pipe) or
+      (require 'socket'; flush_test(*Socket.pair(:INET, :STREAM))) or
+      skip "nonblocking IO did not work"
+  end
+
+  def flush_test(r, w)
+    begin
+      w.nonblock = true
+    rescue Errno::EBADF
+      return false
+    end
     w.sync = false
     w << "b"
     w.flush
