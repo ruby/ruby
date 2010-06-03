@@ -1,3 +1,10 @@
+Thu Jun  3 18:58:28 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (ruby_init_ext): statically linked extensions have no
+	  real path.  [ruby-dev:41526]
+
+	* vm.c (rb_vm_call_cfunc): add filepath argument.
+
 Thu Jun  3 18:17:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/rake/test_win32.rb (Rake::TestWin32): update tests.
