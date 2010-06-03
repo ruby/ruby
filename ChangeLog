@@ -1,3 +1,9 @@
+Thu Jun  3 23:34:55 2010  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/lib/digest/hmac.rb: Emit a deprecation warning in
+	  verbose mode and add a caution to the overview section of the
+	  document. [ruby-dev:41525]
+
 Thu Jun  3 19:33:51 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/cfunc.c (rb_dlcfunc_inspect): suppress warnings by
