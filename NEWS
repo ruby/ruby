@@ -191,10 +191,14 @@ with all sufficient information, see the ChangeLog file.
         For example, Process.respond_to?(:fork) returns false on Windows.
 
 * digest
-    * new methods:
-      * Digest::Class.base64digest
-      * Digest::Instance#base64digest
-      * Digest::Instance#base64digest!
+  * new methods:
+    * Digest::Class.base64digest
+    * Digest::Instance#base64digest
+    * Digest::Instance#base64digest!
+
+  * Digest::HMAC (digest/hmac) has been marked as deprecated because
+    it was unintentional for the experimental library to be included
+    in the final release of 1.9.1.  Please use OpenSSL::HMAC instead.
 
 * rss
 
@@ -455,3 +459,7 @@ with all sufficient information, see the ChangeLog file.
   * $:
 
     See above.
+
+  * Digest::HMAC
+
+    Deprecated.  See above.
