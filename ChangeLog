@@ -1,3 +1,10 @@
+Thu Jun  3 19:33:51 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/cfunc.c (rb_dlcfunc_inspect): suppress warnings by
+	  rb_sprintf.
+
+	* ext/dl/cptr.c (rb_dlptr_s_malloc): suppress warnings.
+
 Thu Jun  3 18:58:28 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (ruby_init_ext): statically linked extensions have no
