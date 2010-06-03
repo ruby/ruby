@@ -4,6 +4,11 @@
 #
 # == Overview
 #
+# CAUTION: Use of this library is discouraged, because this
+# implementation was meant to be experimental but somehow got into the
+# 1.9 series without being noticed.  Please use OpenSSL::HMAC in the
+# "openssl" library instead.
+#
 # This library adds a method named hmac() to Digest classes, which
 # creates a Digest class for calculating HMAC digests.
 #
@@ -35,6 +40,8 @@
 #
 #   $Id$
 #
+
+warn "use of the experimetal library 'digest/hmac' is discouraged; require 'openssl' and use OpenSSL::HMAC instead." if $VERBOSE
 
 require 'digest'
 
