@@ -226,6 +226,9 @@ cygwin*|mingw*)
 		esac], [with_winsock2=no])
 	if test "$with_winsock2" = yes; then
 	  AC_DEFINE(USE_WINSOCK2)
+	  COMMON_HEADERS="winsock2.h windows.h"
+	else
+	  COMMON_HEADERS="windows.h winsock.h"
 	fi
     esac
     : ${enable_shared=yes}
@@ -1758,7 +1761,6 @@ case "$target_os" in
 	    AC_LIBOBJ([win32])
 	    COMMON_LIBS=m
 #	    COMMON_MACROS="WIN32_LEAN_AND_MEAN="
-	    COMMON_HEADERS="windows.h winsock.h"
 	    ;;
 	esac
 	LIBRUBY_DLDFLAGS="${DLDFLAGS}"' -Wl,--out-implib=$(LIBRUBY)'

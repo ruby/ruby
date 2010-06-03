@@ -1,3 +1,8 @@
+Thu Jun  3 18:14:15 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* configure.in: should replace COMMON_HEADERS if --with-winsock2 is
+	  specified.  [ruby-dev:41521]
+
 Thu Jun  3 01:22:45 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: fix typo and race condition.
