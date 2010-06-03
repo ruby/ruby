@@ -1,4 +1,7 @@
-Thu Jun  3 13:05:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Jun  3 18:17:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/rake/test_win32.rb (Rake::TestWin32): update tests.
+	  [ruby-core:30309]
 
 	* test/io/nonblock/test_flush.rb (test_flush): try pipe and
 	  socketpair.  [ruby-dev:41517]
