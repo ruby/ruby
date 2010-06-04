@@ -1914,7 +1914,6 @@ rb_num2ull(VALUE val)
  *
  */
 
-
 /*
  *  call-seq:
  *     int.to_i      ->  integer
