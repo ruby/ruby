@@ -1,3 +1,8 @@
+Sat Jun  5 08:30:42 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_f_test): 'W' should test writable by real uid/git,
+	  not world writable.   [ruby-core:30587]
+
 Fri Jun  4 10:46:33 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/cfunc.c (rb_dlcfunc_inspect): should taint the result.

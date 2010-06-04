@@ -4107,7 +4107,7 @@ rb_f_test(int argc, VALUE *argv)
 	    return rb_file_writable_p(0, argv[1]);
 
 	  case 'W':
-	    return rb_file_world_writable_p(0, argv[1]);
+	    return rb_file_writable_real_p(0, argv[1]);
 
 	  case 'x':
 	    return rb_file_executable_p(0, argv[1]);
