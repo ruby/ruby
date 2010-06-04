@@ -538,7 +538,7 @@ class TestFileExhaustive < Test::Unit::TestCase
       assert_equal(File.socket?(f), test(?S, f))
       assert_equal(File.setuid?(f), test(?u, f))
       assert_equal(File.writable?(f), test(?w, f))
-      assert_equal(File.world_writable?(f), test(?W, f))
+      assert_equal(File.writable_real?(f), test(?W, f))
       assert_equal(File.executable?(f), test(?x, f))
       assert_equal(File.executable_real?(f), test(?X, f))
       assert_equal(File.zero?(f), test(?z, f))
