@@ -1939,7 +1939,7 @@ slot_sweep(rb_objspace_t *objspace, struct heaps_slot *sweep_slot)
         RVALUE *pp;
 
         for (pp = deferred_final_list; pp != final; pp = pp->as.free.next) {
-            RDATA(pp)->dmark = (void (*)())(VALUE)sweep_slot;
+	    RDATA(pp)->dmark = (void (*)(void *))(VALUE)sweep_slot;
             pp->as.free.flags |= FL_SINGLETON; /* freeing page mark */
         }
         sweep_slot->limit = final_num;
