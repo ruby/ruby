@@ -1,3 +1,8 @@
+Sat Jun  5 06:20:57 2010  Eric Hodel  <drbrain@segment7.net>
+
+	* dir.c: Clarification of what '*' matches.  Patch by John Wells
+	  <john.wells at greatworx.com>
+
 Fri Jun  4 10:46:33 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/cfunc.c (rb_dlcfunc_inspect): should taint the result.
