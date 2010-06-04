@@ -1,3 +1,8 @@
+Fri Jun  4 10:46:33 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/cfunc.c (rb_dlcfunc_inspect): should taint the result.
+	  [ruby-dev:41533]
+
 Thu Jun  3 23:34:55 2010  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/lib/digest/hmac.rb: Emit a deprecation warning in
