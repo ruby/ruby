@@ -284,15 +284,18 @@ rb_dlcfunc_set_ptr(VALUE self, VALUE addr)
 static VALUE
 rb_dlcfunc_inspect(VALUE self)
 {
+    VALUE val;
     struct cfunc_data *cfunc;
 
     TypedData_Get_Struct(self, struct cfunc_data, &dlcfunc_data_type, cfunc);
 
-    return rb_sprintf("#<DL::CFunc:%p ptr=%p type=%d name='%s'>",
+    val = rb_sprintf("#<DL::CFunc:%p ptr=%p type=%d name='%s'>",
 	     cfunc,
 	     cfunc->ptr,
 	     cfunc->type,
 	     cfunc->name ? cfunc->name : "");
+    OBJ_TAINT(val);
+    return val;
 }
 
 
