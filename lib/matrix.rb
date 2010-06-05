@@ -442,7 +442,7 @@ class Matrix
     rows = @rows[from_row, size_row].collect{|row|
       row[from_col, size_col]
     }
-    new_matrix rows, column_size - from_col
+    new_matrix rows, [column_size - from_col, size_col].min
   end
 
   #--
@@ -493,12 +493,14 @@ class Matrix
   # Returns +true+ if and only if the two matrices contain equal elements.
   #
   def ==(other)
-    return false unless Matrix === other
+    return false unless Matrix === other &&
+                        column_size == other.column_size # necessary for empty matrices
     rows == other.rows
   end
 
   def eql?(other)
-    return false unless Matrix === other
+    return false unless Matrix === other &&
+                        column_size == other.column_size # necessary for empty matrices
     rows.eql? other.rows
   end
 
