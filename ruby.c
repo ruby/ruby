@@ -1356,6 +1356,8 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	}
     }
     ruby_init_gems(!(opt->disable & DISABLE_BIT(gems)));
+    rb_progname = opt->script_name;
+    rb_vm_set_progname(rb_progname);
     ruby_set_argv(argc, argv);
     process_sflag(&opt->sflag);
 
@@ -1400,8 +1402,6 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	    tree = load_file(parser, opt->script, 1, opt);
 	});
     }
-    rb_progname = opt->script_name;
-    rb_vm_set_progname(rb_progname);
     if (opt->dump & DUMP_BIT(yydebug)) return Qtrue;
 
     if (opt->ext.enc.index >= 0) {

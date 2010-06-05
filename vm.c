@@ -761,8 +761,14 @@ vm_backtrace_push(void *arg, VALUE file, int line_no, VALUE name)
     VALUE *aryp = arg;
     VALUE bt;
 
-    bt = rb_enc_sprintf(rb_enc_compatible(file, name), "%s:%d:in `%s'",
-			RSTRING_PTR(file), line_no, RSTRING_PTR(name));
+    if (line_no) {
+	bt = rb_enc_sprintf(rb_enc_compatible(file, name), "%s:%d:in `%s'",
+			    RSTRING_PTR(file), line_no, RSTRING_PTR(name));
+    }
+    else {
+	bt = rb_enc_sprintf(rb_enc_compatible(file, name), "%s:in `%s'",
+			    RSTRING_PTR(file), RSTRING_PTR(name));
+    }
     rb_ary_push(*aryp, bt);
     return 0;
 }

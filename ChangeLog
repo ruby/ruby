@@ -1,3 +1,8 @@
+Sat Jun  5 09:56:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (process_options): revert r25330, so that $0 can be seen
+	  from required libraries by -r option.  [ruby-core:23717]
+
 Sat Jun  5 08:30:42 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_f_test): 'W' should test writable by real uid/git,
