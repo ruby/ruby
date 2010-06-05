@@ -1,3 +1,9 @@
+Sat Jun  5 01:20:14 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (sym_inspect): Escape when the symbol is not
+	  resulted encoding and not ascii_only. It had escaped
+	  ascii-incompatible string, but it is wrong.
+
 Sat Jun  5 01:10:12 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_str_buf_cat_escaped_char): defined.

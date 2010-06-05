@@ -7078,12 +7078,14 @@ sym_inspect(VALUE sym)
     const char *ptr;
     long len;
     char *dest;
+    rb_encoding *resenc = rb_default_internal_encoding();
 
+    if (resenc == NULL) resenc = rb_default_external_encoding();
     sym = rb_id2str(id);
     enc = STR_ENC_GET(sym);
     ptr = RSTRING_PTR(sym);
     len = RSTRING_LEN(sym);
-    if (!rb_enc_asciicompat(enc) || len != (long)strlen(ptr) ||
+    if ((resenc != enc && !rb_str_is_ascii_only_p(sym)) || len != (long)strlen(ptr) ||
 	!rb_enc_symname_p(ptr, enc) || !sym_printable(ptr, ptr + len, enc)) {
 	str = rb_str_inspect(sym);
 	len = RSTRING_LEN(str);
