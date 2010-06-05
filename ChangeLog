@@ -1,3 +1,8 @@
+Sun Jun  6 02:56:42 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* encoding.c (rb_enc_unicode_p): check the encoding is Unicode
+	  or not by the name; not function's pointer. [ruby-dev:41479]
+
 Sat Jun  5 23:15:42 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* re.c (rb_reg_expr_str): ASCII incompatible strings
