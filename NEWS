@@ -51,7 +51,6 @@ with all sufficient information, see the ChangeLog file.
 
   * Enumerable
     * New methods:
-      * Enumerable#join
       * Enumerable#chunk
       * Enumerable#collect_concat
       * Enumerable#each_entry

@@ -1,3 +1,7 @@
+Sun Jun  6 08:21:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* NEWS: Enumerable#join has been reverted.  [ruby-core:30604]
+
 Sun Jun  6 02:56:42 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c (rb_enc_unicode_p): check the encoding is Unicode
