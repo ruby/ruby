@@ -1,3 +1,15 @@
+Sun Jun  6 08:26:01 2010  Tanaka Akira  <akr@fsij.org>
+
+	* vm.c (Init_BareVM): call Init_native_thread here.
+
+	* thread.c (Init_Thread): don't call Init_native_thread.
+
+	* thread_pthread.c (Init_native_thread): exported.
+
+	* thread_win32.c (Init_native_thread): ditto.
+
+	[ruby-dev:41536]
+
 Sun Jun  6 08:21:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* NEWS: Enumerable#join has been reverted.  [ruby-core:30604]

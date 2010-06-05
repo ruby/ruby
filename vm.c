@@ -2110,6 +2110,8 @@ struct rb_objspace *rb_objspace_alloc(void);
 #endif
 void ruby_thread_init_stack(rb_thread_t *th);
 
+extern void Init_native_thread(void);
+
 void
 Init_BareVM(void)
 {
@@ -2130,6 +2132,7 @@ Init_BareVM(void)
 #endif
     ruby_current_vm = vm;
 
+    Init_native_thread();
     th_init2(th, 0);
     th->vm = vm;
     ruby_thread_init_stack(th);
