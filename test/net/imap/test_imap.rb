@@ -316,7 +316,7 @@ class IMAPTest < Test::Unit::TestCase
   end
 
   def test_exception_during_shutdown
-    server = TCPServer.new(0)
+    server = create_tcp_server
     port = server.addr[1]
     Thread.start do
       begin
@@ -338,6 +338,7 @@ class IMAPTest < Test::Unit::TestCase
         imap.instance_eval do
           def @sock.shutdown(*args)
             super
+          ensure
             raise "error"
           end
         end
