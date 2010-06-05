@@ -269,7 +269,7 @@ define rp
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_DATA
     if ((struct RTypedData *)($arg0))->typed_flag == 1
-      printf "T_DATA(typed): "
+      printf "T_DATA(%s): ", ((struct RTypedData *)($arg0))->type->wrap_struct_name
       print (struct RTypedData *)($arg0)
     else
       printf "T_DATA: "
