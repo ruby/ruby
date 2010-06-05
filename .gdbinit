@@ -268,8 +268,13 @@ define rp
     print (struct RBasic *)($arg0)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_DATA
-    printf "T_DATA: "
-    print (struct RData *)($arg0)
+    if ((struct RTypedData *)($arg0))->typed_flag == 1
+      printf "T_DATA(typed): "
+      print (struct RTypedData *)($arg0)
+    else
+      printf "T_DATA: "
+      print (struct RData *)($arg0)
+    end
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_MATCH
     printf "T_MATCH: "
