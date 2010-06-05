@@ -221,6 +221,12 @@ class TestM17N < Test::Unit::TestCase
       str = "\u3042\u{10FFFD}"
       assert_equal(Encoding::UTF_8 == e ? %{"#{str}"} : '"\u3042\u{10FFFD}"', str.inspect)
     end
+    Encoding.default_external = Encoding::UTF_8
+    [Encoding::UTF_16BE, Encoding::UTF_16LE, Encoding::UTF_32BE, Encoding::UTF_32LE,
+      Encoding::UTF8_SOFTBANK].each do |e|
+      str = "abc".encode(e)
+      assert_equal('"abc"', str.inspect)
+    end
   ensure
     Encoding.default_internal = orig_int
     Encoding.default_external = orig_ext
