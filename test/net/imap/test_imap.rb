@@ -338,6 +338,7 @@ class IMAPTest < Test::Unit::TestCase
         imap.instance_eval do
           def @sock.shutdown(*args)
             super
+          ensure
             raise "error"
           end
         end
