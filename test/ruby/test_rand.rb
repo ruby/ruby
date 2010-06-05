@@ -398,7 +398,7 @@ END
         raise 'default seed is not set' if srand == 0
     end
     p2, st = Process.waitpid2(pid)
-    assert(st.success?)
+    assert(st.success?, "#{st.inspect}")
   rescue NotImplementedError, ArgumentError
   end
 
