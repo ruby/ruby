@@ -4239,7 +4239,6 @@ Init_Thread(void)
     rb_define_method(rb_cThread, "add_trace_func", thread_add_trace_func_m, 1);
 
     /* init thread core */
-    Init_native_thread();
     {
 	/* main thread setting */
 	{
