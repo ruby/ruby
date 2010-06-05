@@ -1,3 +1,9 @@
+Sat Jun  5 13:31:15 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb: Matrix library copied from 1.9. It is now identical
+	  except for methods dealing with Complex numbers which are absent.
+	  [ruby-core:26268]
+
 Thu Jun  3 18:14:15 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* configure.in: should replace COMMON_HEADERS if --with-winsock2 is

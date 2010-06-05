@@ -165,6 +165,22 @@ with all sufficient information, see the ChangeLog file.
 
     Renamed from GDBM#index.
 
+* matrix
+  * API change to adhere strictly to mathematical definitions:
+    * Matrices must now be rectangular.
+    * trace, regular?, singular? are defined only for square matrices
+    * support for empty matrices
+    * all integer matrices now have the right determinant (also an integer)
+
+  * Matrix and Vector include Enumerable.
+
+  * new methods:
+    * Matrix.build
+    * Matrix.empty
+    * Matrix#each
+    * Matrix#each_with_index
+    * Matrix#empty?
+
 * open-uri
 
   * Added a lot of new options:
