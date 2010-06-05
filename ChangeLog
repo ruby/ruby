@@ -1,3 +1,8 @@
+Sat Jun  5 01:10:12 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_buf_cat_escaped_char): defined.
+	  Splited from rb_str_inspect.
+
 Sat Jun  5 16:39:13 2010  Tanaka Akira  <akr@fsij.org>
 
 	* .gdbinit (rp): show type name for RTypedData.
