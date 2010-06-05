@@ -1,3 +1,8 @@
+Sat Jun  5 11:00:48 2010  Tanaka Akira  <akr@fsij.org>
+
+	* error.c (rb_name_err_mesg_new): guard mesg, recv and method.
+	  The problem in [ruby-dev:41464] is caused because mesg is collected.
+
 Sat Jun  5 09:56:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (process_options): revert r25330, so that $0 can be seen
