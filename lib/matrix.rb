@@ -167,8 +167,8 @@ class Matrix
     column_size = CoercionHelper.coerce_to_int(column_size)
     raise ArgumentError if row_size < 0 || column_size < 0
     return to_enum :build, row_size, column_size unless block_given?
-    rows = row_size.times.map do |i|
-      column_size.times.map do |j|
+    rows = Array.new(row_size) do |i|
+      Array.new(column_size) do |j|
         yield i, j
       end
     end
@@ -184,7 +184,7 @@ class Matrix
   #
   def Matrix.diagonal(*values)
     size = values.size
-    rows = (0 ... size).collect {|j|
+    rows = Array.new(size) {|j|
       row = Array.new(size, 0)
       row[j] = values[j]
       row
@@ -342,7 +342,7 @@ class Matrix
       self
     else
       return nil if j >= column_size || j < -column_size
-      col = (0 ... row_size).collect {|i|
+      col = Array.new(row_size) {|i|
         @rows[i][j]
       }
       Vector.elements(col, false)
@@ -532,9 +532,7 @@ class Matrix
     case(m)
     when Numeric
       rows = @rows.collect {|row|
-        row.collect {|e|
-          e * m
-        }
+        row.collect {|e| e * m }
       }
       return new_matrix rows, column_size
     when Vector
@@ -544,8 +542,8 @@ class Matrix
     when Matrix
       Matrix.Raise ErrDimensionMismatch if column_size != m.row_size
 
-      rows = (0 ... row_size).collect {|i|
-        (0 ... m.column_size).collect {|j|
+      rows = Array.new(row_size) {|i|
+        Array.new(m.column_size) {|j|
           (0 ... column_size).inject(0) do |vij, k|
             vij + self[i, k] * m[k, j]
           end
@@ -576,8 +574,8 @@ class Matrix
 
     Matrix.Raise ErrDimensionMismatch unless row_size == m.row_size and column_size == m.column_size
 
-    rows = (0 ... row_size).collect {|i|
-      (0 ... column_size).collect {|j|
+    rows = Array.new(row_size) {|i|
+      Array.new(column_size) {|j|
         self[i, j] + m[i, j]
       }
     }
@@ -603,8 +601,8 @@ class Matrix
 
     Matrix.Raise ErrDimensionMismatch unless row_size == m.row_size and column_size == m.column_size
 
-    rows = (0 ... row_size).collect {|i|
-      (0 ... column_size).collect {|j|
+    rows = Array.new(row_size) {|i|
+      Array.new(column_size) {|j|
         self[i, j] - m[i, j]
       }
     }
@@ -621,9 +619,7 @@ class Matrix
     case other
     when Numeric
       rows = @rows.collect {|row|
-        row.collect {|e|
-          e / other
-        }
+        row.collect {|e| e / other }
       }
       return new_matrix rows, column_size
     when Matrix
@@ -977,7 +973,7 @@ class Matrix
   # Returns an array of the row vectors of the matrix.  See Vector.
   #
   def row_vectors
-    (0 ... row_size).collect {|i|
+    Array.new(row_size) {|i|
       row(i)
     }
   end
@@ -986,7 +982,7 @@ class Matrix
   # Returns an array of the column vectors of the matrix.  See Vector.
   #
   def column_vectors
-    (0 ... column_size).collect {|i|
+    Array.new(column_size) {|i|
       column(i)
     }
   end
@@ -995,7 +991,7 @@ class Matrix
   # Returns an array of arrays that describe the rows of the matrix.
   #
   def to_a
-    @rows.collect{|row| row.dup}
+    @rows.collect(&:dup)
   end
 
   def elements_to_f
@@ -1317,7 +1313,7 @@ class Vector
     raise TypeError, "Integer is not like Vector" if v.kind_of?(Integer)
     Vector.Raise ErrDimensionMismatch if size != v.size
     return to_enum(:collect2, v) unless block_given?
-    size.times.collect do |i|
+    Array.new(size) do |i|
       yield @elements[i], v[i]
     end
   end
