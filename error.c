@@ -825,11 +825,16 @@ VALUE
 rb_name_err_mesg_new(VALUE obj, VALUE mesg, VALUE recv, VALUE method)
 {
     VALUE *ptr = ALLOC_N(VALUE, NAME_ERR_MESG_COUNT);
+    VALUE result;
 
     ptr[0] = mesg;
     ptr[1] = recv;
     ptr[2] = method;
-    return TypedData_Wrap_Struct(rb_cNameErrorMesg, &name_err_mesg_data_type, ptr);
+    result = TypedData_Wrap_Struct(rb_cNameErrorMesg, &name_err_mesg_data_type, ptr);
+    RB_GC_GUARD(mesg);
+    RB_GC_GUARD(recv);
+    RB_GC_GUARD(method);
+    return result;
 }
 
 /* :nodoc: */
