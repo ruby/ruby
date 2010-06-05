@@ -1,3 +1,8 @@
+Sat Jun  5 15:15:52 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/envutil.rb (EnvUtil#invoke_ruby): support for child
+	  process env.
+
 Sat Jun  5 14:11:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/net/imap/test_imap.rb (test_exception_during_shutdown):
