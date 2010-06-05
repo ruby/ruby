@@ -64,6 +64,7 @@ module EnvUtil
   module_function :rubyexec
 
   def invoke_ruby(args, stdin_data="", capture_stdout=false, capture_stderr=false, opt={})
+    args = [args] if args.kind_of?(String)
     begin
       in_c, in_p = IO.pipe
       out_p, out_c = IO.pipe if capture_stdout
