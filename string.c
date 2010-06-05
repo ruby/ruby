@@ -4078,6 +4078,36 @@ str_cat_char(VALUE str, unsigned int c, rb_encoding *enc)
 }
 #endif
 
+#define CHAR_ESC_LEN 13 /* sizeof(\x{ hex of 32bit unsigned int } \0) */
+
+int
+rb_str_buf_cat_escaped_char(VALUE result, unsigned int c, int unicode_p) {
+    char buf[CHAR_ESC_LEN + 1];
+    int l;
+    if (unicode_p) {
+	if (c < 0x7F && ISPRINT(c)) {
+	    snprintf(buf, CHAR_ESC_LEN, "%c", c);
+	}
+	else if (c < 0x10000) {
+	    snprintf(buf, CHAR_ESC_LEN, "\\u%04X", c);
+	}
+	else {
+	    snprintf(buf, CHAR_ESC_LEN, "\\u{%X}", c);
+	}
+    }
+    else {
+	if (c < 0x100) {
+	    snprintf(buf, CHAR_ESC_LEN, "\\x%02X", c);
+	}
+	else {
+	    snprintf(buf, CHAR_ESC_LEN, "\\x{%X}", c);
+	}
+    }
+    l = strlen(buf);
+    rb_str_buf_cat(result, buf, l);
+    return l;
+}
+
 /*
  * call-seq:
  *   str.inspect   -> string
@@ -4095,7 +4125,6 @@ rb_str_inspect(VALUE str)
 {
     rb_encoding *enc = STR_ENC_GET(str);
     const char *p, *pend, *prev;
-#define CHAR_ESC_LEN 13 /* sizeof(\x{ hex of 32bit unsigned int } \0) */
     char buf[CHAR_ESC_LEN + 1];
     VALUE result = rb_str_buf_new(0);
     rb_encoding *resenc = rb_default_internal_encoding();
@@ -4165,27 +4194,7 @@ rb_str_inspect(VALUE str)
 	}
 	else {
 	    if (p - n > prev) str_buf_cat(result, prev, p - n - prev);
-	    if (unicode_p) {
-		if (c < 0x100 && ISPRINT(c)) {
-		    snprintf(buf, CHAR_ESC_LEN, "%c", c);
-		}
-		else if (c < 0x10000) {
-		    snprintf(buf, CHAR_ESC_LEN, "\\u%04X", c);
-		}
-		else {
-		    snprintf(buf, CHAR_ESC_LEN, "\\u{%X}", c);
-		}
-		str_buf_cat(result, buf, strlen(buf));
-	    }
-	    else {
-		if (c < 0x100) {
-		    snprintf(buf, CHAR_ESC_LEN, "\\x%02X", c);
-		}
-		else {
-		    snprintf(buf, CHAR_ESC_LEN, "\\x{%X}", c);
-		}
-		str_buf_cat(result, buf, strlen(buf));
-	    }
+	    rb_str_buf_cat_escaped_char(result, c, unicode_p);
 	    prev = p;
 	    continue;
 	}
@@ -7069,12 +7078,14 @@ sym_inspect(VALUE sym)
     const char *ptr;
     long len;
     char *dest;
+    rb_encoding *resenc = rb_default_internal_encoding();
 
+    if (resenc == NULL) resenc = rb_default_external_encoding();
     sym = rb_id2str(id);
     enc = STR_ENC_GET(sym);
     ptr = RSTRING_PTR(sym);
     len = RSTRING_LEN(sym);
-    if (!rb_enc_asciicompat(enc) || len != (long)strlen(ptr) ||
+    if ((resenc != enc && !rb_str_is_ascii_only_p(sym)) || len != (long)strlen(ptr) ||
 	!rb_enc_symname_p(ptr, enc) || !sym_printable(ptr, ptr + len, enc)) {
 	str = rb_str_inspect(sym);
 	len = RSTRING_LEN(str);

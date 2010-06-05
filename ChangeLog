@@ -1,3 +1,24 @@
+Sat Jun  5 23:15:42 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* re.c (rb_reg_expr_str): ASCII incompatible strings
+	  must always escape or converted.
+
+	* re.c (rb_reg_expr_str): use rb_str_buf_cat_escaped_char
+	  when resenc is given: for Regexp#inspect or error message.
+
+	  * re.c (rb_reg_desc): add 'n' for ENCODING_NONE.
+
+Sat Jun  5 23:15:42 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (sym_inspect): Escape when the symbol is not
+	  resulted encoding and not ascii_only. It had escaped
+	  ascii-incompatible string, but it is wrong.
+
+Sat Jun  5 23:15:42 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_buf_cat_escaped_char): defined.
+	  Splited from rb_str_inspect.
+
 Sat Jun  5 23:14:51 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_str_inspect): inspect as ASCII when the codepoint
