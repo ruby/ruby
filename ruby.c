@@ -1353,8 +1353,6 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	}
     }
     ruby_init_gems(!(opt->disable & DISABLE_BIT(gems)));
-    rb_progname = opt->script_name;
-    rb_vm_set_progname(rb_progname);
     ruby_set_argv(argc, argv);
     process_sflag(&opt->sflag);
 
@@ -1376,6 +1374,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 } while (0)
 
     if (opt->e_script) {
+	VALUE progname = rb_progname;
 	rb_encoding *eenc;
 	if (opt->src.enc.index >= 0) {
 	    eenc = rb_enc_from_index(opt->src.enc.index);
@@ -1384,7 +1383,9 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	    eenc = lenc;
 	}
 	rb_enc_associate(opt->e_script, eenc);
+	rb_vm_set_progname(rb_progname = opt->script_name);
 	require_libraries(&opt->req_list);
+	rb_vm_set_progname(rb_progname = progname);
 
 	PREPARE_PARSE_MAIN({
 	    tree = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
@@ -1399,6 +1400,8 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	    tree = load_file(parser, opt->script, 1, opt);
 	});
     }
+    rb_progname = opt->script_name;
+    rb_vm_set_progname(rb_progname);
     if (opt->dump & DUMP_BIT(yydebug)) return Qtrue;
 
     if (opt->ext.enc.index >= 0) {
@@ -1590,6 +1593,7 @@ load_file_internal(VALUE arg)
 	else if (!NIL_P(c)) {
 	    rb_io_ungetbyte(f, c);
 	}
+	rb_vm_set_progname(rb_progname = opt->script_name);
 	require_libraries(&opt->req_list);	/* Why here? unnatural */
     }
     if (opt->src.enc.index >= 0) {
