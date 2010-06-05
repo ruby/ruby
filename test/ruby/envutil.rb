@@ -75,7 +75,11 @@ module EnvUtil
       opt[:in] = in_c
       opt[:out] = out_c if capture_stdout
       opt[:err] = err_c if capture_stderr
-      pid = spawn(EnvUtil.rubybin, *args, opt)
+      case args.first
+      when Hash
+        child_env = [args.shift]
+      end
+      pid = spawn(*child_env, EnvUtil.rubybin, *args, opt)
       in_c.close
       out_c.close if capture_stdout
       err_c.close if capture_stderr
