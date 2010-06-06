@@ -4308,6 +4308,7 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
     /* initialize the arrays of arrays */
     ARY_SET_LEN(t0, n);
     arrays[0] = ary;
+    for (i = 1; i < n; i++) arrays[i] = Qnil;
     for (i = 1; i < n; i++) arrays[i] = to_ary(argv[i-1]);
 
     /* initialize the counters for the arrays */
