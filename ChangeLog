@@ -1,3 +1,8 @@
+Sun Jun  6 10:44:34 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_product): need to set the length in order to get
+	  the entries marked.  [ruby-dev:41540]
+
 Sun Jun  6 08:26:01 2010  Tanaka Akira  <akr@fsij.org>
 
 	* vm.c (Init_BareVM): call Init_native_thread here.
