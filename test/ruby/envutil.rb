@@ -130,6 +130,14 @@ module EnvUtil
     return stderr
   end
   module_function :verbose_warning
+
+  def under_gc_stress
+    stress, GC.stress = GC.stress, true
+    yield
+  ensure
+    GC.stress = stress
+  end
+  module_function :under_gc_stress
 end
 
 module Test

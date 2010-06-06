@@ -1,4 +1,5 @@
 require 'test/unit'
+require_relative 'envutil'
 
 class TestArray < Test::Unit::TestCase
   def setup
@@ -1515,6 +1516,13 @@ class TestArray < Test::Unit::TestCase
                  @cls[1,2].product([3,4],[5,6]))
     assert_equal(@cls[[1],[2]], @cls[1,2].product)
     assert_equal(@cls[], @cls[1,2].product([]))
+
+    bug3394 = '[ruby-dev:41540]'
+    acc = []
+    EnvUtil.under_gc_stress {[1,2].product([3,4,5],[6,8]){|array| acc << array}}
+    assert_equal([[1, 3, 6], [1, 3, 8], [1, 4, 6], [1, 4, 8], [1, 5, 6], [1, 5, 8],
+                  [2, 3, 6], [2, 3, 8], [2, 4, 6], [2, 4, 8], [2, 5, 6], [2, 5, 8]],
+                 acc, bug3394)
   end
 
   def test_permutation
