@@ -1,3 +1,8 @@
+Sun Jun  6 19:55:21 2010  Tanaka Akira  <akr@fsij.org>
+
+	* array.c (rb_ary_product): clear uninitialized elements in temporary
+	  array.
+
 Sun Jun  6 12:31:57 2010  Narihiro Nakamura  <authorNari@gmail.com>
 
 	* gc.c: set_heaps_increment is not
