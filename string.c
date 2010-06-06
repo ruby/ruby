@@ -4081,9 +4081,14 @@ str_cat_char(VALUE str, unsigned int c, rb_encoding *enc)
 #define CHAR_ESC_LEN 13 /* sizeof(\x{ hex of 32bit unsigned int } \0) */
 
 int
-rb_str_buf_cat_escaped_char(VALUE result, unsigned int c, int unicode_p) {
+rb_str_buf_cat_escaped_char(VALUE result, unsigned int c, int unicode_p)
+{
     char buf[CHAR_ESC_LEN + 1];
     int l;
+
+#if SIZEOF_INT > 4
+    c &= 0xffffffff;
+#endif
     if (unicode_p) {
 	if (c < 0x7F && ISPRINT(c)) {
 	    snprintf(buf, CHAR_ESC_LEN, "%c", c);
@@ -4103,7 +4108,7 @@ rb_str_buf_cat_escaped_char(VALUE result, unsigned int c, int unicode_p) {
 	    snprintf(buf, CHAR_ESC_LEN, "\\x{%X}", c);
 	}
     }
-    l = strlen(buf);
+    l = (int)strlen(buf);	/* CHAR_ESC_LEN cannot exceed INT_MAX */
     rb_str_buf_cat(result, buf, l);
     return l;
 }
