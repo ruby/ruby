@@ -327,6 +327,7 @@ typedef struct rb_objspace {
 	RVALUE *freed;
 	size_t live_num;
 	size_t free_num;
+	size_t free_min;
 	size_t do_heap_free;
     } heap;
     struct {
@@ -968,6 +969,7 @@ assign_heap_slot(rb_objspace_t *objspace)
     heaps->membase = membase;
     heaps->slot = p;
     heaps->limit = objs;
+    objspace->heap.free_num += objs;
     pend = p + objs;
     if (lomem == 0 || lomem > p) lomem = p;
     if (himem < pend) himem = pend;
@@ -1966,14 +1968,14 @@ ready_to_gc(rb_objspace_t *objspace)
 }
 
 static void
-before_gc_sweep(rb_objspace_t *objspace, size_t *free_min)
+before_gc_sweep(rb_objspace_t *objspace)
 {
     freelist = 0;
     objspace->heap.do_heap_free = (size_t)((heaps_used * HEAP_OBJ_LIMIT) * 0.65);
-    *free_min = (size_t)((heaps_used * HEAP_OBJ_LIMIT)  * 0.2);
-    if (*free_min < FREE_MIN) {
+    objspace->heap.free_min = (size_t)((heaps_used * HEAP_OBJ_LIMIT)  * 0.2);
+    if (objspace->heap.free_min < FREE_MIN) {
 	objspace->heap.do_heap_free = heaps_used * HEAP_OBJ_LIMIT;
-        *free_min = FREE_MIN;
+        objspace->heap.free_min = FREE_MIN;
     }
     objspace->heap.sweep_slots = heaps;
     objspace->heap.free_num = 0;
@@ -1984,6 +1986,11 @@ after_gc_sweep(rb_objspace_t *objspace)
 {
     rb_thread_t *th = GET_THREAD();
     GC_PROF_SET_MALLOC_INFO;
+
+    if (objspace->heap.free_num < objspace->heap.free_min) {
+        set_heaps_increment(objspace);
+        heaps_increment(objspace);
+    }
 
     if (malloc_increase > malloc_limit) {
 	malloc_limit += (size_t)((malloc_increase - malloc_limit) * (double)objspace->heap.live_num / (heaps_used * HEAP_OBJ_LIMIT));
@@ -2025,7 +2032,6 @@ static void gc_marks(rb_objspace_t *objspace);
 static int
 gc_lazy_sweep(rb_objspace_t *objspace)
 {
-    size_t free_min;
     int res;
 
     INIT_GC_PROF_PARAMS;
@@ -2047,13 +2053,19 @@ gc_lazy_sweep(rb_objspace_t *objspace)
 
     gc_marks(objspace);
 
-    before_gc_sweep(objspace, &free_min);
-    if (free_min > (heaps_used * HEAP_OBJ_LIMIT - objspace->heap.live_num)) {
+    before_gc_sweep(objspace);
+    if (objspace->heap.free_min > (heaps_used * HEAP_OBJ_LIMIT - objspace->heap.live_num)) {
 	set_heaps_increment(objspace);
     }
 
     GC_PROF_SWEEP_TIMER_START;
-    res = lazy_sweep(objspace);
+    if(!(res = lazy_sweep(objspace))) {
+        after_gc_sweep(objspace);
+        if(freelist) {
+            res = TRUE;
+            during_gc = 0;
+        }
+    }
     GC_PROF_SWEEP_TIMER_STOP;
 
     GC_PROF_TIMER_STOP(Qtrue);
@@ -2063,18 +2075,11 @@ gc_lazy_sweep(rb_objspace_t *objspace)
 static void
 gc_sweep(rb_objspace_t *objspace)
 {
-    size_t free_min = 0;
-
-    before_gc_sweep(objspace, &free_min);
+    before_gc_sweep(objspace);
 
     while (objspace->heap.sweep_slots) {
 	slot_sweep(objspace, objspace->heap.sweep_slots);
         objspace->heap.sweep_slots = objspace->heap.sweep_slots->next;
-    }
-
-    if (objspace->heap.free_num < free_min) {
-        set_heaps_increment(objspace);
-        heaps_increment(objspace);
     }
 
     after_gc_sweep(objspace);

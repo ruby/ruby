@@ -1,3 +1,11 @@
+Sun Jun  6 12:31:57 2010  Narihiro Nakamura  <authorNari@gmail.com>
+
+	* gc.c: set_heaps_increment is not
+	  called before gc_makrs of lazy sweeping because live_num not
+	  contain finalize objects. So call set_heaps_increment after lazy
+	  sweeping if free_num are not enough. And move free_min to struct
+	  rb_objspace for above.  [ruby-dev:41499]
+
 Sun Jun  6 10:44:34 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_product): need to set the length in order to get
