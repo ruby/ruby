@@ -4253,7 +4253,6 @@ Init_Thread(void)
     rb_thread_create_timer_thread();
 
     (void)native_mutex_trylock;
-    (void)ruby_thread_set_native;
 }
 
 int
