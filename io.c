@@ -4216,7 +4216,7 @@ rb_io_ext_int_to_encs(rb_encoding *ext, rb_encoding *intern, rb_encoding **enc, 
 }
 
 static void
-parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p)
+parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p, int *fmode_p)
 {
     const char *p;
     char encname[ENCODING_MAXNAMELEN+1];
@@ -4232,6 +4232,7 @@ parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p)
 	    idx = -1;
 	else {
 	    if (io_encname_bom_p(estr, len)) {
+		if (fmode_p) *fmode_p |= FMODE_SETENC_BY_BOM;
 		estr += 4;
                 len -= 4;
             }
@@ -4244,6 +4245,7 @@ parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p)
     else {
 	long len = strlen(estr);
 	if (io_encname_bom_p(estr, len)) {
+	    if (fmode_p) *fmode_p |= FMODE_SETENC_BY_BOM;
 	    estr += 4;
             len -= 4;
 	    memcpy(encname, estr, len);
@@ -4288,7 +4290,7 @@ mode_enc(rb_io_t *fptr, const char *estr)
 {
     clear_codeconv(fptr);
 
-    parse_mode_enc(estr, &fptr->encs.enc, &fptr->encs.enc2);
+    parse_mode_enc(estr, &fptr->encs.enc, &fptr->encs.enc2, NULL);
 }
 
 static void
@@ -4301,7 +4303,7 @@ rb_io_mode_enc(rb_io_t *fptr, const char *modestr)
 }
 
 int
-rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p)
+rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p, int *fmode_p)
 {
     VALUE encoding=Qnil, extenc=Qundef, intenc=Qundef, tmp;
     int extracted = 0;
@@ -4351,7 +4353,7 @@ rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2
     }
     if (!NIL_P(encoding)) {
 	extracted = 1;
-	parse_mode_enc(StringValueCStr(encoding), enc_p, enc2_p);
+	parse_mode_enc(StringValueCStr(encoding), enc_p, enc2_p, fmode_p);
     }
     else if (extenc != Qundef || intenc != Qundef) {
         extracted = 1;
@@ -4426,9 +4428,7 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
         p = strchr(p, ':');
         if (p) {
             has_enc = 1;
-            parse_mode_enc(p+1, &enc, &enc2);
-	    if (io_encname_bom_p(p+1, 0))
-		fmode |= FMODE_SETENC_BY_BOM;
+            parse_mode_enc(p+1, &enc, &enc2, &fmode);
         }
 	else {
 	    rb_encoding *e;
@@ -4474,7 +4474,7 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
 	}
         ecflags = rb_econv_prepare_opts(opthash, &ecopts);
 
-        if (rb_io_extract_encoding_option(opthash, &enc, &enc2)) {
+        if (rb_io_extract_encoding_option(opthash, &enc, &enc2, &fmode)) {
             if (has_enc) {
                 rb_raise(rb_eArgError, "encoding specified twice");
             }
@@ -4700,7 +4700,7 @@ rb_file_open_internal(VALUE io, VALUE filename, const char *modestr)
     convconfig_t convconfig;
 
     if (p) {
-        parse_mode_enc(p+1, &convconfig.enc, &convconfig.enc2);
+        parse_mode_enc(p+1, &convconfig.enc, &convconfig.enc2, &fmode);
     }
     else {
 	rb_encoding *e;
@@ -7630,7 +7630,7 @@ io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
 	else {
 	    tmp = rb_check_string_type(v1);
 	    if (!NIL_P(tmp) && rb_enc_asciicompat(rb_enc_get(tmp))) {
-                parse_mode_enc(RSTRING_PTR(tmp), &enc, &enc2);
+                parse_mode_enc(RSTRING_PTR(tmp), &enc, &enc2, NULL);
                 ecflags = rb_econv_prepare_opts(opt, &ecopts);
 	    }
 	    else {
