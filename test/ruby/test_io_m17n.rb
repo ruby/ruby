@@ -1740,6 +1740,10 @@ EOT
         assert_equal(content[1].force_encoding("ascii-8bit"),
                      result.force_encoding("ascii-8bit"))
       end
+
+      bug3407 = '[ruby-core:30641]'
+      result = File.read('UTF-8-bom.txt', encoding: 'BOM|UTF-8')
+      assert_equal("a", result.force_encoding("ascii-8bit"), bug3407)
     }
   end
 
