@@ -15,6 +15,6 @@ end}
     env = {"HOME"=>basedir, "GEM_HOME"=>basedir, "GEM_PATH"=>basedir}
     assert_in_out_err([env, "-rrubygems-bug-child", "-e", src], "",
                       /can't activate rubygems-bug-child.*already activated rubygems-bug-child-1\.1/, [],
-                      $bug_3140)
+                      bug3140)
   end
 end if defined?(::Gem)
