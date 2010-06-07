@@ -1,3 +1,13 @@
+Mon Jun  7 18:18:03 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* include/ruby/win32.h: include errno.h before defining errnos.
+
+	* include/ruby/win32.h: check definition existance before defining
+	  errno macros.
+
+	* win32/win32.c (errmap): define winsock errors mappings.
+	  these are VC++10 support, merge from trunk (r27236, r27258).
+
 Mon Jun  7 12:27:29 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regexp.c (re_compile_pattern): allow zero times match for
