@@ -3031,7 +3031,7 @@ rb_obj_id(VALUE obj)
      *  24 if 32-bit, double is 8-byte aligned
      *  40 if 64-bit
      */
-    if (TYPE(obj) == T_SYMBOL) {
+    if (SYMBOL_P(obj)) {
         return (SYM2ID(obj) * sizeof(RVALUE) + (4 << 2)) | FIXNUM_FLAG;
     }
     if (SPECIAL_CONST_P(obj)) {
