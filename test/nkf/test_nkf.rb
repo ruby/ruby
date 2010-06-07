@@ -13,4 +13,9 @@ Ruby"
     assert_equal(::NKF::EUC, NKF.guess(str_euc))
   end
 
+  def test_numchar_input
+    bug2953 = '[ruby-dev:40606]'
+    assert_equal("A", NKF.nkf("-w --numchar-input", "&#x000041;"), bug2953)
+    assert_equal("B", NKF.nkf("-w --numchar-input", "&#0000066;"), bug2953)
+  end
 end

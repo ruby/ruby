@@ -5004,7 +5004,7 @@ nkf_char numchar_getc(FILE *f)
     nkf_char (*g)(FILE *) = i_ngetc;
     nkf_char (*u)(nkf_char c ,FILE *f) = i_nungetc;
     int i = 0, j;
-    nkf_char buf[8];
+    nkf_char buf[10];
     long c = -1;
 
     buf[i] = (*g)(f);
