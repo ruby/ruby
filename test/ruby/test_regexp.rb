@@ -467,4 +467,9 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("1", $1)
     assert_equal(" " * 4999999, $2)
   end
+
+  def test_range_greedy
+    /wo{0,3}?/ =~ "woo"
+    assert_equal("w", $&)
+  end
 end
