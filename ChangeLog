@@ -1,3 +1,8 @@
+Tue Jun 9 3:20:00 2010 Kirk Haines <khaines@ruby-lang.org>
+
+	* lib/net/http.rb: Backport #1284 [ruby-core:22874]; Change Net:HTTP to use a block size of 16k instead of 1k when streaming or chunking POST bodies.
+	* test/net/http/test_post_io.rb: Backport #1284 [ruby-core:22874]; A test to go with the above change.
+
 Fri Jun 4 5:57:00 2010 Kirk Haines <khaines@ruby-lang.org>
 
 	* util.c: Backport #2392 [ruby-core:26868]; backport of r23353 which suppresses a strict-aliasing warning in gcc-4.4.x -O2.
