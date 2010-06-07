@@ -4,8 +4,6 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems'
-
 module Kernel
 
   ##
@@ -31,10 +29,17 @@ module Kernel
     gem_original_require path
   rescue LoadError => load_error
     if load_error.message.end_with?(path) and
-       spec = Gem.searcher.find(path) then
-      Gem.activate(spec.name, "= #{spec.version}")
-      gem_original_require path
+        begin
+          Gem.try_activate(path)
+        rescue Gem::LoadError => load_error
+          pat = "#{__FILE__}:#{__LINE__-2}:in "
+          bt = load_error.backtrace
+          num = bt.index {|e| e.start_with?(pat)} and bt.shift(num+2)
+          raise load_error
+        end
+      retry
     else
+      load_error.backtrace.shift(2)
       raise load_error
     end
   end
@@ -42,5 +47,5 @@ module Kernel
   private :require
   private :gem_original_require
 
-end
+end unless Kernel.private_method_defined?(:gem_original_require)
 

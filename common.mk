@@ -736,7 +736,9 @@ known_errors.inc: $(srcdir)/template/known_errors.inc.tmpl $(srcdir)/defs/known_
 miniprelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
 	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $@
 
-prelude.c: $(srcdir)/tool/compile_prelude.rb $(RBCONFIG) $(srcdir)/lib/rubygems/defaults.rb $(PRELUDE_SCRIPTS) $(PREP)
+prelude.c: $(srcdir)/tool/compile_prelude.rb $(RBCONFIG) \
+	   $(srcdir)/lib/rubygems/defaults.rb $(srcdir)/lib/rubygems/custom_require.rb \
+	   $(PRELUDE_SCRIPTS) $(PREP)
 	$(COMPILE_PRELUDE) $(PRELUDE_SCRIPTS) $@
 
 golf_prelude.c: $(srcdir)/tool/compile_prelude.rb $(RBCONFIG) $(srcdir)/prelude.rb $(srcdir)/golf_prelude.rb $(PREP)
