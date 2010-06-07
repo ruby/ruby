@@ -1,0 +1,1 @@
+require "rubygems-bug-child"

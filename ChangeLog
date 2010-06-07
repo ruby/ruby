@@ -1,3 +1,8 @@
+Tue Jun  8 06:27:09 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gem_prelude.rb: load full rubygems at LoadError for activation
+	  check.  [ruby-core:29486]
+
 Tue Jun  8 06:04:49 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (parse_mode_enc): set set_by_bom bit.  [ruby-core:30641]
