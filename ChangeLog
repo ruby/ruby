@@ -1,3 +1,14 @@
+Tue Jun  8 15:15:18 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/net/smtp.rb (Net::SMTP#rcptto_list): fixed typo.
+	  [ruby-core:29809]
+
+Tue Jun  8 15:15:18 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/net/smtp.rb (Net::SMTP#rcptto_list): continue when at least
+	  one RCPT is accepted.  based on a patch from Kero van Gelder at
+	  [ruby-core:26190].
+
 Tue Jun  8 15:14:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* LEGAL: separated the section for parse.c.  contributed by Paul
