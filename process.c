@@ -1330,13 +1330,10 @@ rb_f_fork(obj)
     fflush(stderr);
 #endif
 
-#if defined(__NetBSD__) || defined(__APPLE__) || defined(linux)
     before_exec();
-#endif
     pid = fork();
-#if defined(__NetBSD__) || defined(__APPLE__) || defined(linux)
     after_exec();
-#endif
+
     switch (pid) {
       case 0:
 #ifdef linux
@@ -1577,9 +1574,7 @@ rb_f_system(argc, argv)
 
     chfunc = signal(SIGCHLD, SIG_DFL);
   retry:
-#if defined(__NetBSD__) || defined(__APPLE__) || defined(linux)
     before_exec();
-#endif
     pid = fork();
     if (pid == 0) {
 	/* child process */
@@ -1587,9 +1582,7 @@ rb_f_system(argc, argv)
 	rb_protect(proc_exec_args, (VALUE)&earg, NULL);
 	_exit(127);
     }
-#if defined(__NetBSD__) || defined(__APPLE__) || defined(linux)
     after_exec();
-#endif
     if (pid < 0) {
 	if (errno == EAGAIN) {
 	    rb_thread_sleep(1);
