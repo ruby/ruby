@@ -387,7 +387,7 @@ class Rational < Numeric
   # Converts the rational to a Float.
   #
   def to_f
-    @numerator.to_f/@denominator.to_f
+    @numerator.fdiv(@denominator)
   end
 
   #
