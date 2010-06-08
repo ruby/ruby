@@ -134,7 +134,7 @@ fake.rb:	Makefile
 		if RUBY_PLATFORM =~ /mswin|bccwin|mingw/; \
 		  class File; \
 		    remove_const :ALT_SEPARATOR; \
-		    ALT_SEPARATOR = "\\"; \
+		    ALT_SEPARATOR = "\\\\"; \
 		  end; \
 		end; \
 		' > $@

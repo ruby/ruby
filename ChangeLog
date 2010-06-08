@@ -1,3 +1,12 @@
+Tue Jun  8 18:08:18 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* Makefile.in (fake.rb): double the backslash.
+
+Tue Jun  8 18:08:15 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* configure.in: should replace COMMON_HEADERS if --with-winsock2 is
+	  specified.  [ruby-dev:41521]
+
 Tue Jun  8 17:49:18 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c, eval.c, process.c: remove all condition of r26371.
