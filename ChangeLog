@@ -1,3 +1,7 @@
+Tue Jun  8 18:57:48 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (config.status): no need to embbed manifest if not exist.
+
 Tue Jun  8 18:38:36 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* include/ruby/win32.h: include errno.h before defining errnos.

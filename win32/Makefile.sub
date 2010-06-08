@@ -537,8 +537,8 @@ s,@RPATHFLAG@,,;t t
 s,@LIBARG@,%s.lib,;t t
 s,@LINK_SO@,$$(LDSHARED) -Fe$$(@) $$(OBJS) $$(LIBS) $$(LOCAL_LIBS) $$(DLDFLAGS) -implib:$$(*F:.so=)-$$(arch).lib -pdb:$$(*F:.so=)-$$(arch).pdb -def:$$(DEFFILE),;t t
 !if $(MSC_VER) >= 1400
-s,@LINK_SO@,$(MANIFESTTOOL) -manifest $$(@).manifest -outputresource:$$(@);2,;t t
-s,@LINK_SO@,@$$(RM) $$(@:/=\).manifest,;t t
+s,@LINK_SO@,@if exist $$(@).manifest $(MANIFESTTOOL) -manifest $$(@).manifest -outputresource:$$(@);2,;t t
+s,@LINK_SO@,@if exist $$(@).manifest $$(RM) $$(@:/=\).manifest,;t t
 !endif
 s,@COMPILE_C@,$$(CC) $$(INCFLAGS) $$(CFLAGS) $$(CPPFLAGS) -c -Tc$$(<:\=/),;t t
 s,@COMPILE_CXX@,$$(CXX) $$(INCFLAGS) $$(CXXFLAGS) $$(CPPFLAGS) -c -Tp$$(<:\=/),;t t
