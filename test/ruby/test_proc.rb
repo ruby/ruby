@@ -706,7 +706,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal([[:opt, nil], [:block, :b]], proc {|(a), &b|}.parameters)
     assert_equal([[:opt, :a], [:opt, :b], [:opt, :c], [:opt, :d], [:rest, :e], [:opt, :f], [:opt, :g], [:block, :h]], proc {|a,b,c=:c,d=:d,*e,f,g,&h|}.parameters)
 
-    assert_equal([[:req]], method(:require).parameters)
+    assert_equal([[:req]], method(:putc).parameters)
     assert_equal([[:rest]], method(:p).parameters)
   end
 
