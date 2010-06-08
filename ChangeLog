@@ -1,3 +1,9 @@
+Tue Jun  8 15:43:43 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_val2variant): fix the core dump
+	  when converting Array object to VT_ARRAY variant. [ruby-core:28446]
+	  [Bug #2836]
+
 Tue Jun  8 15:34:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_s_extname): skip last directory separators.
