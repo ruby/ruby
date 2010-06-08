@@ -12292,6 +12292,8 @@ static struct timer_thread {
     pthread_t thread;
 } time_thread = {PTHREAD_COND_INITIALIZER, PTHREAD_MUTEX_INITIALIZER};
 
+static int timer_stopping;
+
 #define safe_mutex_lock(lock) \
     pthread_mutex_lock(lock); \
     pthread_cleanup_push((void (*)_((void *)))pthread_mutex_unlock, lock)
@@ -12316,6 +12318,9 @@ thread_timer(dummy)
 #define WAIT_FOR_10MS() \
     pthread_cond_timedwait(&running->cond, &running->lock, get_ts(&to, PER_NANO/100))
     while ((err = WAIT_FOR_10MS()) == EINTR || err == ETIMEDOUT) {
+	if (timer_stopping)
+	    break;
+
 	if (!rb_thread_critical) {
 	    rb_thread_pending = 1;
 	    if (rb_trap_immediate) {
@@ -12343,7 +12348,9 @@ rb_thread_start_timer()
     safe_mutex_lock(&time_thread.lock);
     if (pthread_create(&time_thread.thread, 0, thread_timer, args) == 0) {
 	thread_init = 1;
+#if !defined(__NetBSD__) && !defined(__APPLE__) && !defined(linux)
 	pthread_atfork(0, 0, rb_thread_stop_timer);
+#endif
 	pthread_cond_wait(&start, &time_thread.lock);
     }
     pthread_cleanup_pop(1);
@@ -12354,10 +12361,12 @@ rb_thread_stop_timer()
 {
     if (!thread_init) return;
     safe_mutex_lock(&time_thread.lock);
+    timer_stopping = 1;
     pthread_cond_signal(&time_thread.cond);
     thread_init = 0;
     pthread_cleanup_pop(1);
     pthread_join(time_thread.thread, NULL);
+    timer_stopping = 0;
 }
 #elif defined(HAVE_SETITIMER)
 static void

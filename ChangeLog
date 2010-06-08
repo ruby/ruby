@@ -1,3 +1,25 @@
+Tue Jun  8 12:37:56 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c, eval.c, process.c: add linux to r26371's condition.
+	  patched by Motohiro KOSAKI [ruby-core:28151]
+
+Tue Jun  8 12:37:56 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* eval.c (thread_timer, rb_thread_stop_timer): check the timing of
+	  stopping timer.  patch from KOSAKI Motohiro <kosaki.motohiro _AT_
+	  jp.fujitsu.com> via IRC.
+
+	* eval.c (rb_thread_start_timer): NetBSD5 seems to be hung when calling
+	  pthread_create() from pthread_atfork()'s parent handler.
+
+	* io.c (pipe_open): workaround for NetBSD5. stop timer thread before
+	  fork(), and restart it after fork() on parent, and on child if
+	  needed.
+
+	* process.c (rb_f_fork, rb_f_system): ditto.
+
+	  these changes are tested by naruse.  fixed [ruby-dev:40074]
+
 Mon Jun  7 19:23:04 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c (numchar_getc): get rid of buffer
