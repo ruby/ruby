@@ -1,6 +1,10 @@
+Wed Jun 9 04:35:00 Kirk Haines <khaines@ruby-lang.org>
+
+	* gc.c: Backport #1785 [ruby-core:24395]; check to make sure finalizer_table isn't null before trying to run finalizers.
+
 Wed Jun 9 02:10:00 Kirk Haines <khaines@ruby-lang.org>
 
-	* lib/pathname.rb: Backport #2110 [ruby-core:25627]; backport of r23093 to handle the scenario where, on filesystems like Windows', paths are compared using casecmp instead of ==.
+	* lib/pathname.rb: Backport #2110 [ruby-core:25627]; backport of r23093 to handle the scenario where, on filesystems like Windows', paths are compared using casecmp instead of ==. r28234
 
 Wed Jun 9 01:42:00 Kirk Haines <khaines@ruby-lang.org>
 

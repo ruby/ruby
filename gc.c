@@ -1963,7 +1963,7 @@ rb_gc_call_finalizer_at_exit()
     int i;
 
     /* run finalizers */
-    if (need_call_final) {
+    if (need_call_final && finalizer_table) {
 	do {
 	    p = deferred_final_list;
 	    deferred_final_list = 0;
