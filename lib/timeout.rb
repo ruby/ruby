@@ -56,8 +56,13 @@ module Timeout
     begin
       x = Thread.current
       y = Thread.start {
-        sleep sec
-        x.raise exception, "execution expired" if x.alive?
+        begin
+          sleep sec
+        rescue => e
+          x.raise e
+        else
+          x.raise exception, "execution expired" if x.alive?
+        end
       }
       yield sec
       #    return true
@@ -73,7 +78,10 @@ module Timeout
                                 # would be expected outside.
       raise Error, e.message, e.backtrace
     ensure
-      y.kill if y and y.alive?
+      if y and y.alive?
+        y.kill
+        y.join # make sure y is dead.
+      end
     end
   end
 

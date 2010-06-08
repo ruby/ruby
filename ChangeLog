@@ -1,3 +1,8 @@
+Tue Jun  8 15:23:10 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/timeout.rb (Timeout#timeout): propagate errors to the
+	  caller.  [ruby-dev:41010]'
+
 Tue Jun  8 15:15:18 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/net/smtp.rb (Net::SMTP#rcptto_list): fixed typo.
