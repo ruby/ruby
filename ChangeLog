@@ -1,6 +1,10 @@
+Wed Jun 9 02:10:00 Kirk Haines <khaines@ruby-lang.org>
+
+	* lib/pathname.rb: Backport #2110 [ruby-core:25627]; backport of r23093 to handle the scenario where, on filesystems like Windows', paths are compared using casecmp instead of ==.
+
 Wed Jun 9 01:42:00 Kirk Haines <khaines@ruby-lang.org>
 
-	* lib/date.rb:  Backport #2707 [ruby-core:28011]; backport r27014 to fix problem with Date#>> and very small numbers.
+	* lib/date.rb:  Backport #2707 [ruby-core:28011]; backport r27014 to fix problem with Date#>> and very small numbers. r28233
 
 Wed Jun 9 01:05:00 Kirk Haines <khaines@ruby-lang.org>
 
