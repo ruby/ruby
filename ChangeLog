@@ -1,3 +1,9 @@
+Tue Jun  8 16:08:00 2010  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (fetch_internal): do not quote message data item
+	  names.  Thanks, Eric Hodel.  [ruby-core:23508]  backported form
+	  trunk.
+
 Tue Jun  8 15:45:52 2010  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap (encode_utf7): encode & properly.  Thanks, Kengo
