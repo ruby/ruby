@@ -2147,6 +2147,12 @@ re_compile_pattern(pattern, size, bufp)
 	   more at the end of the loop.  */
 	unsigned nbytes = upper_bound == 1 ? 10 : 20;
 
+	if (lower_bound == 0 && greedy == 0) {
+	    GET_BUFFER_SPACE(3);
+	    insert_jump(try_next, laststart, b + 3, b);
+	    b += 3;
+	}
+
 	GET_BUFFER_SPACE(nbytes);
 	/* Initialize lower bound of the `succeed_n', even
 	   though it will be set during matching by its

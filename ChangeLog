@@ -1,20 +1,26 @@
-Tue Jun 9 20:40:00 2010 Kirk Haines <khaines@ruby-lang.org>
+Tue Jun 8 23:45:00 2010 Kirk Haines <khaines@ruby-lang.org>
 
-	* eval.c: Backport #2202 [ruby-core:26074]; backport of r25359, which modifies rb_clear_cache_for_undef to clear entries for inherited methods.
-	* test/ruby/test_object.rb: Backport #2202 [ruby-core:26074]; Added this file, from r25359, which tests a number of behaviors of Object, including this change. This version differs from the one in r25359 because there are several tests which currently fail on 1.8.6 because those capabilities are not implemented. Those tests are commented out.
+	* regexp.c: Backport #3403; backported from r28192 to fix a bug with non-greedy matching.
+	* test/ruby/test_regexp.rb: Backport #3403; added this test suite, commenting out inapplicable tests to the current 1.8.6.
+	* ChangeLog: Got my date wrong in the last few entries. Tuesday is the 8th, not the 9th!
 
-Tue Jun 9 3:20:00 2010 Kirk Haines <khaines@ruby-lang.org>
+Tue Jun 8 20:40:00 2010 Kirk Haines <khaines@ruby-lang.org>
 
-	* lib/net/http.rb: Backport #1284 [ruby-core:22874]; Change Net:HTTP to use a block size of 16k instead of 1k when streaming or chunking POST bodies.
-	* test/net/http/test_post_io.rb: Backport #1284 [ruby-core:22874]; A test to go with the above change.
+	* eval.c: Backport #2202 [ruby-core:26074]; backport of r25359, which modifies rb_clear_cache_for_undef to clear entries for inherited methods. r28229
+	* test/ruby/test_object.rb: Backport #2202 [ruby-core:26074]; Added this file, from r25359, which tests a number of behaviors of Object, including this change. This version differs from the one in r25359 because there are several tests which currently fail on 1.8.6 because those capabilities are not implemented. Those tests are commented out. r28229
+
+Tue Jun 8 3:20:00 2010 Kirk Haines <khaines@ruby-lang.org>
+
+	* lib/net/http.rb: Backport #1284 [ruby-core:22874]; Change Net:HTTP to use a block size of 16k instead of 1k when streaming or chunking POST bodies. r28198
+	* test/net/http/test_post_io.rb: Backport #1284 [ruby-core:22874]; A test to go with the above change. r28198 
 
 Fri Jun 4 5:57:00 2010 Kirk Haines <khaines@ruby-lang.org>
 
-	* util.c: Backport #2392 [ruby-core:26868]; backport of r23353 which suppresses a strict-aliasing warning in gcc-4.4.x -O2.
+	* util.c: Backport #2392 [ruby-core:26868]; backport of r23353 which suppresses a strict-aliasing warning in gcc-4.4.x -O2. r28153
 
 Thu May 26 02:15:00 2010 Kirk Haines <khaines@ruby-lang.org>
 
-	* signal.c: Bug #911 [ruby-core:20723]; this problem exists because Resolv::ResolvTimeout has Interrupt in its ancestry, and Interrupt, which descends from Signal, still used Signal's initialize() method, which requires an argument. Interrupt, however, should not require an argument. This is a backport of r12226 on the 1.8.7 branch, which fixed this problem.
+	* signal.c: Bug #911 [ruby-core:20723]; this problem exists because Resolv::ResolvTimeout has Interrupt in its ancestry, and Interrupt, which descends from Signal, still used Signal's initialize() method, which requires an argument. Interrupt, however, should not require an argument. This is a backport of r12226 on the 1.8.7 branch, which fixed this problem. r28029
 
 Mon May 25 06:59:00 2010 Kirk Haines <khaines@ruby-lang.org>
 
