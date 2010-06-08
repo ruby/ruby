@@ -1,3 +1,8 @@
+Tue Jun  8 18:31:02 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regexp.c (re_compile_pattern): allow zero times match for
+	  non-greedy range repeatation. [ruby-core:30613]
+
 Tue Jun  8 18:08:18 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* Makefile.in (fake.rb): double the backslash.
