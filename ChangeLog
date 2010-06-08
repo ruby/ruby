@@ -1,3 +1,7 @@
+Tue Jun  8 18:32:47 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* configure.in (USE_WINSOCK2): ws2tcpip.h needs listed here.
+
 Mon Jun  7 18:18:03 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* include/ruby/win32.h: include errno.h before defining errnos.

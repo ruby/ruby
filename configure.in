@@ -226,7 +226,7 @@ cygwin*|mingw*)
 		esac], [with_winsock2=no])
 	if test "$with_winsock2" = yes; then
 	  AC_DEFINE(USE_WINSOCK2)
-	  COMMON_HEADERS="winsock2.h windows.h"
+	  COMMON_HEADERS="ws2tcpip.h winsock2.h windows.h"
 	else
 	  COMMON_HEADERS="windows.h winsock.h"
 	fi
