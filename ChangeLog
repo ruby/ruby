@@ -1,3 +1,11 @@
+Tue Jun  8 22:14:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/etc/etc.c (etc_systmpdir): moved from ext/tmpdir.
+
+	* ext/etc/etc.c (etc_sysconfdir): added.
+
+	* lib/rubygems/config_file.rb, lib/tmpdir.rb: use etc.
+
 Tue Jun  8 06:27:09 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gem_prelude.rb: load full rubygems at LoadError for activation

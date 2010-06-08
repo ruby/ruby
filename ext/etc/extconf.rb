@@ -4,7 +4,9 @@ have_library("sun", "getpwnam")	# NIS (== YP) interface for IRIX 4
 a = have_func("getlogin")
 b = have_func("getpwent")
 c = have_func("getgrent")
-if  a or b or c
+sysconfdir = RbConfig.expand(RbConfig::MAKEFILE_CONFIG["sysconfdir"].dup, "prefix"=>"")
+$defs.push("-DSYSCONFDIR=#{Shellwords.escape(sysconfdir.dump)}")
+if  a or b or c or sysconfdir
   have_struct_member('struct passwd', 'pw_gecos', 'pwd.h')
   have_struct_member('struct passwd', 'pw_change', 'pwd.h')
   have_struct_member('struct passwd', 'pw_quota', 'pwd.h')
