@@ -1203,7 +1203,8 @@ read_special(p, pend, pp)
     else if (c == -1) return ~0;
     return c & 0x9f;
   default:
-    *pp = p + 1;
+    PATFETCH_RAW(c);
+    *pp = p;
     return read_backslash(c);
   }
 
