@@ -1,3 +1,13 @@
+Tue Jun  8 17:45:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/iconv.c (rb_iconv_sys_fail): fix number of arguments.
+	  a patch by Masaya TARUI <tarui AT prx.jp>.
+
+Tue Jun  8 17:45:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/iconv.c (rb_iconv_sys_fail): raise BrokenLibrary if
+	  errno is not set.  [ruby-dev:41317]
+
 Tue Jun  8 17:32:37 2010  Tanaka Akira  <akr@fsij.org>
 
 	* pack.c (pack_pack): call rb_quad_pack to preserve RangeError.
