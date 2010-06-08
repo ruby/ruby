@@ -1273,7 +1273,11 @@ class Date
     y, m = (year * 12 + (mon - 1) + n).divmod(12)
     m,   = (m + 1)                    .divmod(1)
     d = mday
-    d -= 1 until jd2 = self.class.valid_civil?(y, m, d, fix_style)
+    until jd2 = self.class.valid_civil?(y, m, d, fix_style)
+      d -= 1
+      raise ArgumentError, 'invalid date' unless d > 0
+    end
+
     self + (jd2 - jd)
   end
 

@@ -1,8 +1,11 @@
-Wed June 9 01:05:00 Kirk Haines <khaines@ruby-lang.org>
+Wed Jun 9 01:42:00 Kirk Haines <khaines@ruby-lang.org>
 
-	* lib/monitor.rb:  Backport #2240 [ruby-core:26185]; backport r25420 to ensure that the scheduled thread is alive when a monitor is released.
-	* test/monitor/test_monitor.rb: Backport #2240 [ruby-core:26185]; added a test for the above functionality.
+	* lib/date.rb:  Backport #2707 [ruby-core:28011]; backport r27014 to fix problem with Date#>> and very small numbers.
 
+Wed Jun 9 01:05:00 Kirk Haines <khaines@ruby-lang.org>
+
+	* lib/monitor.rb:  Backport #2240 [ruby-core:26185]; backport r25420 to ensure that the scheduled thread is alive when a monitor is released. r28232
+	* test/monitor/test_monitor.rb: Backport #2240 [ruby-core:26185]; added a test for the above functionality. r28232
 
 Tue Jun 8 23:45:00 2010 Kirk Haines <khaines@ruby-lang.org>
 
