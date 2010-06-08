@@ -1,8 +1,14 @@
+Wed June 9 01:05:00 Kirk Haines <khaines@ruby-lang.org>
+
+	* lib/monitor.rb:  Backport #2240 [ruby-core:26185]; backport r25420 to ensure that the scheduled thread is alive when a monitor is released.
+	* test/monitor/test_monitor.rb: Backport #2240 [ruby-core:26185]; added a test for the above functionality.
+
+
 Tue Jun 8 23:45:00 2010 Kirk Haines <khaines@ruby-lang.org>
 
-	* regexp.c: Backport #3403; backported from r28192 to fix a bug with non-greedy matching.
-	* test/ruby/test_regexp.rb: Backport #3403; added this test suite, commenting out inapplicable tests to the current 1.8.6.
-	* ChangeLog: Got my date wrong in the last few entries. Tuesday is the 8th, not the 9th!
+	* regexp.c: Backport #3403; backported from r28192 to fix a bug with non-greedy matching. r28231
+	* test/ruby/test_regexp.rb: Backport #3403; added this test suite, commenting out inapplicable tests to the current 1.8.6. r28231
+	* ChangeLog: Got my date wrong in the last few entries. Tuesday is the 8th, not the 9th! r28231
 
 Tue Jun 8 20:40:00 2010 Kirk Haines <khaines@ruby-lang.org>
 
