@@ -372,7 +372,8 @@ rb_clear_cache_for_undef(klass, id)
     ent = cache; end = ent + CACHE_SIZE;
     while (ent < end) {
 	if (ent->mid == id &&
-	    RCLASS(ent->origin)->m_tbl == RCLASS(klass)->m_tbl) {
+	    (ent->klass == klass ||
+	     RCLASS(ent->origin)->m_tbl == RCLASS(klass)->m_tbl)) {
 	    ent->mid = 0;
 	}
 	ent++;

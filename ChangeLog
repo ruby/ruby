@@ -1,3 +1,8 @@
+Tue Jun 9 20:40:00 2010 Kirk Haines <khaines@ruby-lang.org>
+
+	* eval.c: Backport #2202 [ruby-core:26074]; backport of r25359, which modifies rb_clear_cache_for_undef to clear entries for inherited methods.
+	* test/ruby/test_object.rb: Backport #2202 [ruby-core:26074]; Added this file, from r25359, which tests a number of behaviors of Object, including this change. This version differs from the one in r25359 because there are several tests which currently fail on 1.8.6 because those capabilities are not implemented. Those tests are commented out.
+
 Tue Jun 9 3:20:00 2010 Kirk Haines <khaines@ruby-lang.org>
 
 	* lib/net/http.rb: Backport #1284 [ruby-core:22874]; Change Net:HTTP to use a block size of 16k instead of 1k when streaming or chunking POST bodies.
