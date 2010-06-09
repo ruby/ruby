@@ -2674,6 +2674,7 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
     int find_dst;
     struct tm result;
     int status;
+    int tptr_tm_yday;
 
 #define GUESS(p) (DEBUG_FIND_TIME_NUMGUESS_INC (utc_p ? gmtime_with_leapsecond(p, &result) : LOCALTIME(p, result)))
 
@@ -2901,22 +2902,30 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
 	}
     }
     /* Given argument has no corresponding time_t. Let's outerpolation. */
-    if (tm_lo.tm_year == tptr->tm_year && tm_lo.tm_mon == tptr->tm_mon) {
-	*tp = guess_lo +
-	      (tptr->tm_mday - tm_lo.tm_mday) * 24 * 60 * 60 +
-	      (tptr->tm_hour - tm_lo.tm_hour) * 60 * 60 +
-	      (tptr->tm_min - tm_lo.tm_min) * 60 +
-	      (tptr->tm_sec - tm_lo.tm_sec);
-        return NULL;
-    }
-    else if (tm_hi.tm_year == tptr->tm_year && tm_hi.tm_mon == tptr->tm_mon) {
-	*tp = guess_hi +
-	      (tptr->tm_mday - tm_hi.tm_mday) * 24 * 60 * 60 +
-	      (tptr->tm_hour - tm_hi.tm_hour) * 60 * 60 +
-	      (tptr->tm_min - tm_hi.tm_min) * 60 +
-	      (tptr->tm_sec - tm_hi.tm_sec);
-        return NULL;
-    }
+    /*
+     *  `Seconds Since the Epoch' in SUSv3:
+     *  tm_sec + tm_min*60 + tm_hour*3600 + tm_yday*86400 +
+     *  (tm_year-70)*31536000 + ((tm_year-69)/4)*86400 -
+     *  ((tm_year-1)/100)*86400 + ((tm_year+299)/400)*86400
+     */
+
+    tptr_tm_yday = calc_tm_yday(tptr->tm_year, tptr->tm_mon, tptr->tm_mday);
+
+    *tp = guess_lo +
+          ((tptr->tm_year - tm_lo.tm_year) * 365 +
+           ((tptr->tm_year-69)/4) -
+           ((tptr->tm_year-1)/100) +
+           ((tptr->tm_year+299)/400) -
+           ((tm_lo.tm_year-69)/4) +
+           ((tm_lo.tm_year-1)/100) -
+           ((tm_lo.tm_year+299)/400) +
+           tptr_tm_yday -
+           tm_lo.tm_yday) * 86400 +
+          (tptr->tm_hour - tm_lo.tm_hour) * 3600 +
+          (tptr->tm_min - tm_lo.tm_min) * 60 +
+          (tptr->tm_sec - tm_lo.tm_sec);
+
+    return NULL;
 
   out_of_range:
     return "time out of range";

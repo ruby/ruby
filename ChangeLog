@@ -1,3 +1,8 @@
+Wed Jun  9 22:51:50 2010  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (find_time_t): always outerpolate from past.
+	  [ruby-core:30672] reported by Benoit Daloze.
+
 Wed Jun  9 22:13:08 2010  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (calc_tm_yday): extracted from timegmw_noleapsecond.
