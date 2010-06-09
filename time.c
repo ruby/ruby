@@ -30,6 +30,7 @@ static ID id_eq, id_ne, id_quo, id_div, id_cmp, id_lshift;
 #define NDIV(x,y) (-(-((x)+1)/(y))-1)
 #define NMOD(x,y) ((y)-(-((x)+1)%(y))-1)
 #define DIV(n,d) ((n)<0 ? NDIV((n),(d)) : (n)/(d))
+#define MOD(n,d) ((n)<0 ? NMOD((n),(d)) : (n)%(d))
 
 static int
 eq(VALUE x, VALUE y)
@@ -933,13 +934,29 @@ static const int leap_year_days_in_month[] = {
     31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
 };
 
+static int
+calc_tm_yday(long tm_year, int tm_mon, int tm_mday)
+{
+    int tm_year_mod400;
+    int tm_yday = tm_mday;
+
+    tm_year_mod400 = MOD(tm_year, 400);
+
+    if (leap_year_p(tm_year_mod400 + 1900))
+	tm_yday += leap_year_yday_offset[tm_mon];
+    else
+	tm_yday += common_year_yday_offset[tm_mon];
+
+    return tm_yday;
+}
+
 static wideval_t
 timegmw_noleapsecond(struct vtm *vtm)
 {
     VALUE year1900;
     VALUE q400, r400;
     int year_mod400;
-    int yday = vtm->mday;
+    int yday;
     long days_in400;
     VALUE vdays, ret;
     wideval_t wret;
@@ -949,10 +966,7 @@ timegmw_noleapsecond(struct vtm *vtm)
     divmodv(year1900, INT2FIX(400), &q400, &r400);
     year_mod400 = NUM2INT(r400);
 
-    if (leap_year_p(year_mod400 + 1900))
-	yday += leap_year_yday_offset[vtm->mon-1];
-    else
-	yday += common_year_yday_offset[vtm->mon-1];
+    yday = calc_tm_yday(year_mod400, vtm->mon-1, vtm->mday);
 
     /*
      *  `Seconds Since the Epoch' in SUSv3:
