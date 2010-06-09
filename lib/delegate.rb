@@ -152,12 +152,12 @@ class Delegator
   alias initialize_methods initialize
 
   # Handles the magic of delegation through \_\_getobj\_\_.
-  def method_missing(m, *args)
+  def method_missing(m, *args, &block)
     target = self.__getobj__
     unless target.respond_to?(m)
-      super(m, *args)
+      super(m, *args, &block)
     end
-    target.__send__(m, *args)
+    target.__send__(m, *args, &block)
   end
 
   # 
@@ -265,11 +265,11 @@ def DelegateClass(superclass)
     def initialize(obj)  # :nodoc:
       @_dc_obj = obj
     end
-    def method_missing(m, *args)  # :nodoc:
+    def method_missing(m, *args, &block)  # :nodoc:
       unless @_dc_obj.respond_to?(m)
-        super(m, *args)
+        super(m, *args, &block)
       end
-      @_dc_obj.__send__(m, *args)
+      @_dc_obj.__send__(m, *args, &block)
     end
     def respond_to?(m, include_private = false)  # :nodoc:
       return true if super

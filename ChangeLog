@@ -1,6 +1,10 @@
+Thu Jun 10 01:40:00 Kirk Haines <khaines@ruby-lang.org>
+
+	* lib/delegate.rb: Backport #1781 [ruby-core:24356]; allow a block to be properly passed through.
+
 Wed Jun 9 04:35:00 Kirk Haines <khaines@ruby-lang.org>
 
-	* gc.c: Backport #1785 [ruby-core:24395]; check to make sure finalizer_table isn't null before trying to run finalizers.
+	* gc.c: Backport #1785 [ruby-core:24395]; check to make sure finalizer_table isn't null before trying to run finalizers. r28235
 
 Wed Jun 9 02:10:00 Kirk Haines <khaines@ruby-lang.org>
 
