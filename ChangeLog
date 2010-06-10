@@ -1,3 +1,8 @@
+Thu Jun 10 23:05:44 2010  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (rb_localtime_r2): refine localtime overflow check for
+	  FreeBSD 6.4.
+
 Thu Jun 10 21:35:27 2010  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (find_time_t): always outerpolate from past.

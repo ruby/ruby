@@ -153,8 +153,10 @@ class TestTimeTZ < Test::Unit::TestCase
     sample.each {|tz, u, l, gmtoff|
       with_tz(tz) {
         expected = "%04d-%02d-%02d %02d:%02d:%02d %s" % (l+[format_gmtoff(gmtoff)])
-        t = Time.utc(*u).localtime
-        assert_equal(expected, time_to_s(t), "TZ=#{tz} Time.utc(#{u.map(&:inspect).join(', ')}).localtime")
+        mesg = "TZ=#{tz} Time.utc(#{u.map(&:inspect).join(', ')}).localtime"
+        t = nil
+        assert_nothing_raised(mesg) { t = Time.utc(*u).localtime }
+        assert_equal(expected, time_to_s(t), mesg)
         assert_equal(gmtoff, t.gmtoff)
       }
     }
