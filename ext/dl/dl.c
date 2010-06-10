@@ -588,7 +588,7 @@ VALUE
 rb_dl_strdup(VALUE self, VALUE str)
 {
   SafeStringValue(str);
-  return rb_dlptr_new(strdup(RSTRING(str)->ptr), RSTRING(str)->len, dlfree);
+  return rb_dlptr_new(strdup(RSTRING(str)->ptr), strlen(RSTRING(str)->ptr)+1, dlfree);
 }
 
 static VALUE

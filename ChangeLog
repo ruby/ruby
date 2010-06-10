@@ -1,3 +1,8 @@
+Thu Jun 10 14:45:28 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ext/dl/dl.c (rb_dl_strdup): strdup() only allocates a buffer of
+	  strlen()+1 bytes. [Bug #2794]
+
 Tue Jun  8 18:32:47 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* configure.in (USE_WINSOCK2): ws2tcpip.h needs listed here.
