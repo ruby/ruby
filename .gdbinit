@@ -105,7 +105,7 @@ define rp
     print (struct RObject *)($arg0)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_CLASS
-    printf "T_CLASS: "
+    printf "T_CLASS%s: ", ($flags & RUBY_FL_SINGLETON) ? "*" : ""
     print (struct RClass *)($arg0)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_ICLASS
@@ -268,8 +268,13 @@ define rp
     print (struct RBasic *)($arg0)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_DATA
-    printf "T_DATA: "
-    print (struct RData *)($arg0)
+    if ((struct RTypedData *)($arg0))->typed_flag == 1
+      printf "T_DATA(%s): ", ((struct RTypedData *)($arg0))->type->wrap_struct_name
+      print (struct RTypedData *)($arg0)
+    else
+      printf "T_DATA: "
+      print (struct RData *)($arg0)
+    end
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_MATCH
     printf "T_MATCH: "
