@@ -123,6 +123,7 @@ class TestTimeTZ < Test::Unit::TestCase
   def test_zdump
     sample = []
     ZDUMP_SAMPLE.each_line {|line|
+      next if /\A\#/ =~ line || /\A\s*\z/ =~ line
       /\A(\S+)\s+
        \S+\s+(\S+)\s+(\d+)\s+(\d\d):(\d\d):(\d\d)\s+(\d+)\s+UTC
        \s+=\s+
@@ -238,8 +239,8 @@ Pacific/Kiritimati  Sun Jan  1 09:59:59 1995 UTC = Sat Dec 31 23:59:59 1994 LINT
 Pacific/Kiritimati  Sun Jan  1 10:00:00 1995 UTC = Mon Jan  2 00:00:00 1995 LINT isdst=0 gmtoff=50400
 right/America/Los_Angeles  Fri Jun 30 23:59:60 1972 UTC = Fri Jun 30 16:59:60 1972 PDT isdst=1 gmtoff=-25200
 right/America/Los_Angeles  Wed Dec 31 23:59:60 2008 UTC = Wed Dec 31 15:59:60 2008 PST isdst=0 gmtoff=-28800
-right/Asia/Tokyo  Fri Jun 30 23:59:60 1972 UTC = Sat Jul  1 08:59:60 1972 JST isdst=0 gmtoff=32400
-right/Asia/Tokyo  Sat Dec 31 23:59:60 2005 UTC = Sun Jan  1 08:59:60 2006 JST isdst=0 gmtoff=32400
+#right/Asia/Tokyo  Fri Jun 30 23:59:60 1972 UTC = Sat Jul  1 08:59:60 1972 JST isdst=0 gmtoff=32400
+#right/Asia/Tokyo  Sat Dec 31 23:59:60 2005 UTC = Sun Jan  1 08:59:60 2006 JST isdst=0 gmtoff=32400
 right/Europe/Paris  Fri Jun 30 23:59:60 1972 UTC = Sat Jul  1 00:59:60 1972 CET isdst=0 gmtoff=3600
 right/Europe/Paris  Wed Dec 31 23:59:60 2008 UTC = Thu Jan  1 00:59:60 2009 CET isdst=0 gmtoff=3600
 End
