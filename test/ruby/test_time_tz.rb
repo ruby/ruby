@@ -177,12 +177,16 @@ class TestTimeTZ < Test::Unit::TestCase
                  gmtoff]
     }
     sample.each {|tz, u, l, gmtoff|
+      expected_utc = "%04d-%02d-%02d %02d:%02d:%02d UTC" % u
       expected = "%04d-%02d-%02d %02d:%02d:%02d %s" % (l+[format_gmtoff(gmtoff)])
-      mesg = "TZ=#{tz} Time.utc(#{u.map {|arg| arg.inspect }.join(', ')}).localtime"
+      mesg_utc = "TZ=#{tz} Time.utc(#{u.map {|arg| arg.inspect }.join(', ')})"
+      mesg = "#{mesg_utc}.localtime"
       define_method(gen_test_name(tz)) {
         with_tz(tz) {
           t = nil
-          assert_nothing_raised(mesg) { t = Time.utc(*u).localtime }
+          assert_nothing_raised(mesg) { t = Time.utc(*u) }
+          assert_equal(expected_utc, time_to_s(t), mesg_utc)
+          assert_nothing_raised(mesg) { t.localtime }
           assert_equal(expected, time_to_s(t), mesg)
           assert_equal(gmtoff, t.gmtoff)
         }
