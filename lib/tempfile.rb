@@ -236,7 +236,7 @@ class Tempfile < DelegateClass(File)
       end
       # remove tmpname from remover
       @data[0] = @data[2] = nil
-      @data = @tmpname = nil
+      @tmpname = nil
     rescue Errno::EACCES
       # may not be able to unlink on Windows; just ignore
     end

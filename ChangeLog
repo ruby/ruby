@@ -1,3 +1,9 @@
+Sun May 30 21:48:07 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/tempfile.rb (Tempfile#unlink): leave @data.  Assigning nil to
+	  @data caused double closing error of the same IO in finalizer.  a
+	  patch from Simon Nicholls.  [ruby-core:29395]
+
 Sun May 30 16:54:34 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* file.c (rb_file_directory_p): update rdoc.  a patch from Ilkka
