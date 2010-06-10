@@ -1,3 +1,7 @@
+Fri Jun 11 07:34:25 2010  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (find_time_t): test the result of LOCALTIME.
+
 Fri Jun 11 00:42:45 2010  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (rb_localtime_r2): fix localtime overflow check.
