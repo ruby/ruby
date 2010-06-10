@@ -1020,6 +1020,8 @@ end
 
 module Kernel
 
+  undef gem if respond_to? :gem # defined in gem_prelude.rb on 1.9
+
   ##
   # Use Kernel#gem to activate a specific version of +gem_name+.
   #
@@ -1096,34 +1098,13 @@ end
 
 require 'rubygems/config_file'
 
-class << Gem
-  verbose, debug = $VERBOSE, $DEBUG
-  $VERBOSE = $DEBUG = nil
-
-  ##
-  #
-  # Called from the custom_require to attempt to activate +path+
-  # Internal use only.
-
-  def try_activate(path) # :doc:
-    spec = Gem.searcher.find(path)
-    return false unless spec
-
-    Gem.activate(spec.name, "= #{spec.version}")
-    return true
-  end
-
-ensure
-  $VERBOSE, $DEBUG = verbose, debug
-end
-
 ##
 # Enables the require hook for RubyGems.
 #
 # Ruby 1.9 allows --disable-gems, so we require it when we didn't detect a Gem
 # constant at rubygems.rb load time.
 
-require 'rubygems/custom_require'
+require 'rubygems/custom_require' if gem_disabled or RUBY_VERSION < '1.9'
 
 Gem.clear_paths
 
