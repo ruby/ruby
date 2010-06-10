@@ -2870,7 +2870,7 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
 				guess2 += 24 * 60 * 60;
 			    if (guess != guess2) {
 				tm = LOCALTIME(&guess2, result);
-				if (tmcmp(tptr, tm) == 0) {
+				if (tm && tmcmp(tptr, tm) == 0) {
 				    if (guess < guess2)
 					*tp = guess;
 				    else
@@ -2895,7 +2895,7 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
 				guess2 -= 24 * 60 * 60;
 			    if (guess != guess2) {
 				tm = LOCALTIME(&guess2, result);
-				if (tmcmp(tptr, tm) == 0) {
+				if (tm && tmcmp(tptr, tm) == 0) {
 				    if (guess < guess2)
 					*tp = guess2;
 				    else

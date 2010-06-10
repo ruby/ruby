@@ -1,3 +1,7 @@
+Fri Jun 11 07:34:25 2010  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (find_time_t): test the result of LOCALTIME.
+
 Mon May 31 15:07:18 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* file.c (file_expand_path): Refix r28102: this breaks
