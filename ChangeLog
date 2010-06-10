@@ -1,3 +1,8 @@
+Mon May 31 02:17:54 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* insns.def (defined): respond_to_missing? may not be available
+	  (for BasicObject instances).
+
 Sun May 30 21:48:07 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/tempfile.rb (Tempfile#unlink): leave @data.  Assigning nil to
