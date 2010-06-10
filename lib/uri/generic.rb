@@ -1054,6 +1054,7 @@ module URI
     end
 
     def eql?(oth)
+      self.class == oth.class &&
       self.component_ary.eql?(oth.component_ary)
     end
 

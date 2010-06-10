@@ -1,8 +1,13 @@
+Thu Jun 10 22:50:00 Kirk Haines <khaines@ruby-lang.org>
+
+	* lib/uri/generic.rb: Backport #2428 [ruby-core:27019]; fixed #eql? so that it can handle being passed a nil value.
+	* test/generic/test_generic.rb: added a test for the fix to #eql?.
+
 Thu Jun 10 06:46:00 Kirk Haines <khaines@ruby-ang.org>
 
-	* ext/nkf/nkf-utf8/nkf.c: Backport #2953 [ruby-dev:40606]; change nkf_char buffer in numchar_getc() size form 8 to 10 to avoid potential for a segfault.
+	* ext/nkf/nkf-utf8/nkf.c: Backport #2953 [ruby-dev:40606]; change nkf_char buffer in numchar_getc() size form 8 to 10 to avoid potential for a segfault. r28242
 
-	* test/nkf/test_nkf.rb: Added a test for the change.
+	* test/nkf/test_nkf.rb: Added a test for the change. r28242
 
 Thu Jun 10 01:40:00 Kirk Haines <khaines@ruby-lang.org>
 

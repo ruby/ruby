@@ -692,6 +692,14 @@ class TestGeneric < Test::Unit::TestCase
     assert_raises(URI::InvalidURIError) { uri.path = 'bar' }
     assert_raises(URI::InvalidURIError) { uri.query = 'bar' }
   end
+
+  def test_eql
+    require 'uri'
+    uri = URI.parse 'http://gemcutter.org'
+
+    assert_equal(false,uri.eql?(nil))  # => blows up prior to the bug fix for Backport #2428 [ruby-core:27019]
+  end
+
 end
 
 
