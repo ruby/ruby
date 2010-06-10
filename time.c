@@ -872,12 +872,13 @@ rb_localtime_r2(const time_t *t, struct tm *result)
     if (result) {
         int gmtoff1 = 0;
         int gmtoff2 = 0;
+        struct tm tmp = *result;
 #  if defined(HAVE_STRUCT_TM_TM_GMTOFF)
         gmtoff1 = result->tm_gmtoff;
 #  endif
-        time_t t2 = mktime(result);
+        time_t t2 = mktime(&tmp);
 #  if defined(HAVE_STRUCT_TM_TM_GMTOFF)
-        gmtoff2 = result->tm_gmtoff;
+        gmtoff2 = tmp.tm_gmtoff;
 #  endif
         if (*t + gmtoff1 != t2 + gmtoff2)
             result = NULL;
@@ -894,7 +895,8 @@ rb_localtime_r2(const time_t *t, struct tm *result)
         result = rb_gmtime_r(t, result);
 #if defined(HAVE_TIMEGM) && defined(LOCALTIME_OVERFLOW_PROBLEM)
         if (result) {
-            time_t t2 = timegm(result);
+            struct tm tmp = *result;
+            time_t t2 = timegm(&tmp);
             if (*t != t2)
                 result = NULL;
         }
