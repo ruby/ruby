@@ -1,3 +1,8 @@
+Mon May 31 15:07:18 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* file.c (file_expand_path): Refix r28102: this breaks
+	  r28039. test for [ruby-dev:41429] is added. [ruby-core:30516]
+
 Mon May 31 02:17:54 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* insns.def (defined): respond_to_missing? may not be available
