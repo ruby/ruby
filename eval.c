@@ -7035,6 +7035,7 @@ rb_load(fname, wrap)
     PUSH_ITER(ITER_NOT);
     PUSH_FRAME();
     ruby_frame->last_func = 0;
+    ruby_frame->orig_func = 0;
     ruby_frame->last_class = 0;
     ruby_frame->self = self;
     PUSH_SCOPE();
