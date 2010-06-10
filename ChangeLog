@@ -1,3 +1,8 @@
+Sun May 30 16:54:34 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* file.c (rb_file_directory_p): update rdoc.  a patch from Ilkka
+	  Laukkanen.  [ruby-core:30016]
+
 Sat Jun  5 16:39:13 2010  Tanaka Akira  <akr@fsij.org>
 
 	* .gdbinit (rp): show type name for RTypedData.
