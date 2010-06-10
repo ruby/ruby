@@ -6012,9 +6012,11 @@ rb_f_print(int argc, VALUE *argv)
  *  call-seq:
  *     ios.putc(obj)    -> obj
  *
- *  If <i>obj</i> is <code>Numeric</code>, write the character whose
- *  code is <i>obj</i>, otherwise write the first character of the
- *  string representation of  <i>obj</i> to <em>ios</em>.
+ *  If <i>obj</i> is <code>Numeric</code>, write the character whose code is
+ *  the least-significant byte of <i>obj</i>, otherwise write the first byte
+ *  of the string representation of <i>obj</i> to <em>ios</em>. Note: This
+ *  method is not safe for use with multi-byte characters as it will truncate
+ *  them.
  *
  *     $stdout.putc "A"
  *     $stdout.putc 65
@@ -6040,6 +6042,9 @@ rb_io_putc(VALUE io, VALUE ch)
  *  Equivalent to:
  *
  *    $stdout.putc(int)
+ * 
+ * Refer to the documentation for IO#putc for important information regarding
+ * multi-byte characters.
  */
 
 static VALUE
