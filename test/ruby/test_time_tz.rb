@@ -29,6 +29,19 @@ class TestTimeTZ < Test::Unit::TestCase
       expected << "%02d%02d" % [gmtoff / 60, gmtoff % 60]
       expected
     end
+
+    def group_by(e, &block)
+      if e.respond_to? :group_by
+        e.group_by(&block)
+      else
+        h = {}
+        e.each {|o|
+          (h[yield(o)] ||= []) << o
+        }
+        h
+      end
+    end
+
   end
 
   include Util
@@ -42,9 +55,10 @@ class TestTimeTZ < Test::Unit::TestCase
     end
   end
 
+
   def assert_time_constructor(tz, expected, method, args, message=nil)
     m = message ? "#{message}\n" : ""
-    m << "TZ=#{tz} Time.#{method}(#{args.map(&:inspect).join(', ')})"
+    m << "TZ=#{tz} Time.#{method}(#{args.map {|arg| arg.inspect }.join(', ')})"
     real = time_to_s(Time.send(method, *args))
     assert_equal(expected, real, m)
   end
@@ -125,10 +139,11 @@ class TestTimeTZ < Test::Unit::TestCase
     "Jul" => 7, "Aug" => 8, "Sep" => 9, "Oct" => 10, "Nov" => 11, "Dec" => 12
   }
 
-  GENTESTNAME = "test_gen_0"
+  @testnum = 0
   def self.gen_test_name(hint)
-    GENTESTNAME.succ!
-    GENTESTNAME.sub(/gen_/) { "gen" + "_#{hint}_".gsub(/[^0-9A-Za-z]+/, '_') }
+    @testnum += 1
+    s = "test_gen_#{@testnum}"
+    s.sub(/gen_/) { "gen" + "_#{hint}_".gsub(/[^0-9A-Za-z]+/, '_') }
   end
 
   def self.gen_zdump_test
@@ -163,7 +178,7 @@ class TestTimeTZ < Test::Unit::TestCase
     }
     sample.each {|tz, u, l, gmtoff|
       expected = "%04d-%02d-%02d %02d:%02d:%02d %s" % (l+[format_gmtoff(gmtoff)])
-      mesg = "TZ=#{tz} Time.utc(#{u.map(&:inspect).join(', ')}).localtime"
+      mesg = "TZ=#{tz} Time.utc(#{u.map {|arg| arg.inspect }.join(', ')}).localtime"
       define_method(gen_test_name(tz)) {
         with_tz(tz) {
           t = nil
@@ -173,7 +188,7 @@ class TestTimeTZ < Test::Unit::TestCase
         }
       }
     }
-    sample.group_by {|tz, _, _, _| tz }.each {|tz, a|
+    group_by(sample) {|tz, _, _, _| tz }.each {|tz, a|
       a.each_with_index {|(_, u, l, gmtoff), i|
         expected = "%04d-%02d-%02d %02d:%02d:%02d %s" % (l+[format_gmtoff(gmtoff)])
         monotonic_to_past = i == 0 || (a[i-1][2] <=> l) < 0
