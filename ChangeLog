@@ -1,3 +1,8 @@
+Fri May 28 20:35:21 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (blocking_region_begin): avoid RUBY_VM_CHECK_INTS()
+	call during GVL state transition. [Bug#3354] [ruby-dev:41435]
+
 Fri Jun 11 00:42:45 2010  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (rb_localtime_r2): fix localtime overflow check.

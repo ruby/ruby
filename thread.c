@@ -125,8 +125,8 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
 #define blocking_region_begin(th, region, func, arg) \
   do { \
     (region)->prev_status = (th)->status; \
-    (th)->blocking_region_buffer = (region); \
     set_unblock_function((th), (func), (arg), &(region)->oldubf); \
+    (th)->blocking_region_buffer = (region); \
     (th)->status = THREAD_STOPPED; \
     thread_debug("enter blocking region (%p)\n", (void *)(th)); \
     RB_GC_SAVE_MACHINE_CONTEXT(th); \
