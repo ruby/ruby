@@ -1,3 +1,8 @@
+Sun Jun  6 19:55:21 2010  Tanaka Akira  <akr@fsij.org>
+
+	* array.c (rb_ary_product): clear uninitialized elements in temporary
+	  array.
+
 Sat Jun  5 06:20:57 2010  Eric Hodel  <drbrain@segment7.net>
 
 	* dir.c: Clarification of what '*' matches.  Patch by John Wells
