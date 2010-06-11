@@ -98,10 +98,7 @@ have_func("SSL_SESSION_get_id")
 have_func("SSL_SESSION_cmp")
 have_func("OPENSSL_cleanse")
 unless have_func("SSL_set_tlsext_host_name", ['openssl/ssl.h'])
-	have_macro("SSL_set_tlsext_host_name", ['openssl/ssl.h']) && $defs.push("-DHAVE_SSL_SET_TLSEXT_HOST_NAME")
-end
-if try_compile("#define FOO(...) foo(__VA_ARGS__)\n int x(){FOO(1);FOO(1,2);FOO(1,2,3);}\n")
-  $defs.push("-DHAVE_VA_ARGS_MACRO")
+  have_macro("SSL_set_tlsext_host_name", ['openssl/ssl.h']) && $defs.push("-DHAVE_SSL_SET_TLSEXT_HOST_NAME")
 end
 if have_header("openssl/engine.h")
   have_func("ENGINE_add")
@@ -119,12 +116,9 @@ if have_header("openssl/engine.h")
   have_func("ENGINE_load_sureware")
   have_func("ENGINE_load_ubsec")
 end
-if try_compile(<<SRC)
-#include <openssl/opensslv.h>
-#if OPENSSL_VERSION_NUMBER < 0x00907000L
-# error "OpenSSL version is less than 0.9.7."
-#endif
-SRC
+if checking_for('OpenSSL version is 0.9.7 or later') {
+    try_static_assert('OPENSSL_VERSION_NUMBER >= 0x00907000L', 'openssl/opensslv.h')
+  }
   have_header("openssl/ocsp.h")
 end
 have_struct_member("EVP_CIPHER_CTX", "flags", "openssl/evp.h")
