@@ -1,3 +1,9 @@
+Fri Jun 11 23:04:59 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_sslctx_get_ciphers):
+	  use sk_SSL_CIPHER_num and sk_SSL_CIPHER_value instead of cast.
+	  patched by Takahiro Kambe [ruby-dev:41530]
+
 Fri Jun 11 22:59:31 2010  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/missing.h (isnan): fix compilation error on OpenBSD.
