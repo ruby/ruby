@@ -20,7 +20,9 @@ class TestIO_Console < Test::Unit::TestCase
     PTY.open {|m, s|
       assert(s.echo?)
       m.print "a\n"
+      sleep 0.1
       s.print "b\n"
+      sleep 0.1
       assert_equal("a\r\nb\r\n", m.readpartial(10))
       assert_equal("a\n", s.readpartial(10))
       s.noecho {
@@ -32,7 +34,9 @@ class TestIO_Console < Test::Unit::TestCase
       }
       assert(s.echo?)
       m.print "a\n"
+      sleep 0.1
       s.print "b\n"
+      sleep 0.1
       assert_equal("a\r\nb\r\n", m.readpartial(10))
       assert_equal("a\n", s.readpartial(10))
     }
@@ -42,7 +46,9 @@ class TestIO_Console < Test::Unit::TestCase
     PTY.open {|m, s|
       assert(s.echo?)
       m.print "a\n"
+      sleep 0.1
       s.print "b\n"
+      sleep 0.1
       assert_equal("a\r\nb\r\n", m.readpartial(10))
       assert_equal("a\n", s.readpartial(10))
       s.echo = false
@@ -54,7 +60,9 @@ class TestIO_Console < Test::Unit::TestCase
       s.echo = true
       assert(s.echo?)
       m.print "a\n"
+      sleep 0.1
       s.print "b\n"
+      sleep 0.1
       assert_equal("a\r\nb\r\n", m.readpartial(10))
       assert_equal("a\n", s.readpartial(10))
     }
@@ -63,8 +71,11 @@ class TestIO_Console < Test::Unit::TestCase
   def test_iflush
     PTY.open {|m, s|
       m.print "a\n"
+      sleep 0.1
       s.iflush
+      sleep 0.1
       m.print "b\n"
+      sleep 0.1
       assert_equal("a\r\nb\r\n", m.readpartial(10))
       assert_equal("b\n", s.readpartial(10))
     }
