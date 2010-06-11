@@ -1741,7 +1741,10 @@ dir_s_aref(int argc, VALUE *argv, VALUE obj)
  *                          <code>\*c\*</code> will match all files that
  *                          have <code>c</code> in them (including at
  *                          the beginning or end). Equivalent to
- *                          <code>/ .* /x</code> in regexp.
+ *                          <code>/ .* /x</code> in regexp. Note, this
+ *                          will not match Unix-like hidden files (dotfiles).
+ *                          In order to include those in the match results,
+ *                          you must use something like "{*,.*}".
  *  <code>**</code>::       Matches directories recursively.
  *  <code>?</code>::        Matches any one character. Equivalent to
  *                          <code>/.{1}/</code> in regexp.
