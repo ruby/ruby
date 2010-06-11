@@ -389,7 +389,7 @@ class TestOpenURI < Test::Unit::TestCase
           ) {|f|
         assert_equal(1, length.length)
         assert_equal(content.length, length[0])
-        assert(progress.length>1,"maybe test is worng")
+        assert(progress.length>1,"maybe test is wrong")
         assert(progress.sort == progress,"monotone increasing expected but was\n#{progress.inspect}")
         assert_equal(content.length, progress[-1])
         assert_equal(content, f.read)
