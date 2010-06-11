@@ -120,6 +120,10 @@ This is what you need to do to compile and install Ruby:
 If you fail to compile ruby, please send the detailed error report with
 the error log and machine/OS type, to help others.
 
+DO NOT LINK Ruby WITH A LIBRARY WHOSE LICENSE IS NOT COMPATIBLE WITH Ruby
+License (see COPYING).
+For example, currently you cannot link with readline6, which is under GPLv3.
+
 
 * Copying
 
