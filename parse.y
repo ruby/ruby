@@ -1953,7 +1953,12 @@ arg		: lhs '=' arg
 
 			value_expr($6);
 			if (!$3) $3 = NEW_ZARRAY();
-			args = arg_concat($3, $6);
+			if (nd_type($3) == NODE_BLOCK_PASS) {
+			    args = NEW_ARGSCAT($3, $6);
+			}
+		        else {
+			    args = arg_concat($3, $6);
+		        }
 			if ($5 == tOROP) {
 			    $5 = 0;
 			}
@@ -8313,7 +8318,10 @@ arg_concat_gen(struct parser_params *parser, NODE *node1, NODE *node2)
     if (!node2) return node1;
     switch (nd_type(node1)) {
       case NODE_BLOCK_PASS:
-	node1->nd_iter = arg_concat(node1->nd_iter, node2);
+	if (node1->nd_head)
+	    node1->nd_head = arg_concat(node1->nd_head, node2);
+	else
+	    node1->nd_head = NEW_LIST(node2);
 	return node1;
       case NODE_ARGSPUSH:
 	if (nd_type(node2) != NODE_ARRAY) break;

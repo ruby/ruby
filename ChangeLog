@@ -1,3 +1,11 @@
+Wed Jun  2 11:40:02 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): should consider block on stack,
+	  if block argument is passed.  [ruby-core:30534]
+
+	* parse.c (arg_concat_gen): should append to nd_head, not to
+	  nd_iter for NODE_BLOCK_PASS.
+
 Fri Jun 11 07:34:25 2010  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (find_time_t): test the result of LOCALTIME.
