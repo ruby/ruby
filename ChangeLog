@@ -1,3 +1,8 @@
+Sat Jun 12 00:38:37 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/dbm/extconf.rb: accept Berkley DB version 3, 4 and 5.
+	  [ruby-dev:41531]
+
 Fri Jun 11 23:21:35 2010  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (init_leap_second_info): check the result of
