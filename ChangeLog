@@ -1,3 +1,9 @@
+Thu Jun  3 00:58:45 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/dl/lib/dl/cparser.rb (parse_ctype): add backwards compatibility
+	  by supporting "uint" types in the c parser. [ruby-core:29750]
+	* test/dl/test_cparser.rb: adding a test for "uint" changes.
+
 Wed Jun  2 11:40:02 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* compile.c (iseq_compile_each): should consider block on stack,

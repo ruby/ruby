@@ -73,7 +73,7 @@ module DL
         return -TYPE_SHORT
       when "int"
         return TYPE_INT
-      when "unsigned int"
+      when "unsigned int", 'uint'
         return -TYPE_INT
       when "long"
         return TYPE_LONG
