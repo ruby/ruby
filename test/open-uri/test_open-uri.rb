@@ -379,7 +379,7 @@ class TestOpenURI < Test::Unit::TestCase
 
   def test_progress
     with_http {|srv, dr, url|
-      content = "a" * 10000
+      content = "a" * 100000
       srv.mount_proc("/data/") {|req, res| res.body = content }
       length = []
       progress = []
@@ -389,7 +389,9 @@ class TestOpenURI < Test::Unit::TestCase
           ) {|f|
         assert_equal(1, length.length)
         assert_equal(content.length, length[0])
-        assert_equal(content.length, progress.inject(&:+))
+        assert(progress.length>1,"maybe test is worng")
+        assert(progress.sort == progress,"monotone increasing expected but was\n#{progress.inspect}")
+        assert_equal(content.length, progress[-1])
         assert_equal(content, f.read)
       }
     }
@@ -397,7 +399,7 @@ class TestOpenURI < Test::Unit::TestCase
 
   def test_progress_chunked
     with_http {|srv, dr, url|
-      content = "a" * 10000
+      content = "a" * 100000
       srv.mount_proc("/data/") {|req, res| res.body = content; res.chunked = true }
       length = []
       progress = []
@@ -407,7 +409,9 @@ class TestOpenURI < Test::Unit::TestCase
           ) {|f|
         assert_equal(1, length.length)
         assert_equal(nil, length[0])
-        assert_equal(content.length, progress.inject(&:+))
+        assert(progress.length>1,"maybe test is worng")
+        assert(progress.sort == progress,"monotone increasing expected but was\n#{progress.inspect}")
+        assert_equal(content.length, progress[-1])
         assert_equal(content, f.read)
       }
     }
