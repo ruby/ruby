@@ -59,8 +59,7 @@ module Gem::InstallUpdateOptions
     end
 
     add_option(:"Install/Update", '-t', '--[no-]test',
-               'Run unit tests prior to installation') do |value, options|
-      options[:test] = value
+               'Ignored; just for compatiblity') do |value, options|
     end
 
     add_option(:"Install/Update", '-w', '--[no-]wrappers',
@@ -110,7 +109,7 @@ module Gem::InstallUpdateOptions
   # Default options for the gem install command.
 
   def install_update_defaults_str
-    '--rdoc --no-force --no-test --wrappers'
+    '--rdoc --no-force --wrappers'
   end
 
 end
