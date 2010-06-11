@@ -1,7 +1,11 @@
+Sat Jun 12 07:34:00 Kirk Haines <khaines@ruby-lang.org>
+
+	* configure.in: Backport #1710 [ruby-core:24104]; backport of r20573 to clean up handling of LIBPATHFLAG.
+
 Thu Jun 10 22:50:00 Kirk Haines <khaines@ruby-lang.org>
 
-	* lib/uri/generic.rb: Backport #2428 [ruby-core:27019]; fixed #eql? so that it can handle being passed a nil value.
-	* test/generic/test_generic.rb: added a test for the fix to #eql?.
+	* lib/uri/generic.rb: Backport #2428 [ruby-core:27019]; fixed #eql? so that it can handle being passed a nil value. r28255
+	* test/generic/test_generic.rb: added a test for the fix to #eql?. r28255
 
 Thu Jun 10 06:46:00 Kirk Haines <khaines@ruby-ang.org>
 

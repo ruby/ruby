@@ -1031,7 +1031,6 @@ AC_SUBST(DLEXT2)dnl
 AC_SUBST(LIBEXT)dnl
 
 STATIC=
-: ${LIBPATHFLAG=' -L%s'}
 : ${PATHFLAG=''}
 
 if test "$with_dln_a_out" != yes; then
@@ -1054,6 +1053,14 @@ if test "$with_dln_a_out" != yes; then
 	esix*|uxpds*)   CCDLFLAGS="$CCDLFLAGS -KPIC" ;;
 	*)		: ${CCDLFLAGS=""} ;;
     esac
+  fi
+
+
+  AC_ARG_ENABLE(rpath,
+       [  --disable-rpath         embed run path into extension libraries.],
+       [enable_rpath=$enableval], [enable_rpath="$rb_cv_binary_elf"])
+  if test "$enable_rpath" = yes; then
+    RPATHFLAG=" ${linker_flag}-R%1\$-s"
   fi
 
   case "$target_os" in
@@ -1170,15 +1177,13 @@ if test "$with_dln_a_out" != yes; then
 	*) 		: ${LDSHARED='ld'} ;;
   esac
   AC_MSG_RESULT($rb_cv_dlopen)
-
-  AC_ARG_ENABLE(rpath,
-       [  --disable-rpath         embed run path into extension libraries.],
-       [enable_rpath=$enableval], [enable_rpath="$rb_cv_binary_elf"])
-  if test "$enable_rpath" = yes; then
-    LIBPATHFLAG=" -L%1\$-s"
-    RPATHFLAG=" ${linker_flag}-R%1\$-s"
-  fi
 fi
+case ${RPATHFLAG} in
+*'%1$'*)
+    : ${LIBPATHFLAG=' -L%1$-s'};;
+*)
+    : ${LIBPATHFLAG=' -L%s'};;
+esac
 AC_SUBST(LINK_SO)
 AC_SUBST(LIBPATHFLAG)
 AC_SUBST(RPATHFLAG)
