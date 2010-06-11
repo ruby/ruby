@@ -700,10 +700,10 @@ ossl_sslctx_get_ciphers(VALUE self)
     if (!ciphers)
         return rb_ary_new();
 
-    num = sk_num((STACK*)ciphers);
+    num = sk_SSL_CIPHER_num(ciphers);
     ary = rb_ary_new2(num);
     for(i = 0; i < num; i++){
-        cipher = (SSL_CIPHER*)sk_value((STACK*)ciphers, i);
+        cipher = sk_SSL_CIPHER_value(ciphers, i);
         rb_ary_push(ary, ossl_ssl_cipher_to_ary(cipher));
     }
     return ary;
