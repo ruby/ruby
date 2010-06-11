@@ -1,3 +1,11 @@
+Fri Jun 11 22:39:50 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/rubygems/install_update_options.rb
+	  (Gem::InstallUpdateOptions#add_install_update_options): deprecate
+	  --test option which has not worked.  [ruby-core:21714]
+	
+	* test/rubygems/test_gem_command_manager.rb: ditto.
+
 Fri Jun 11 22:36:25 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* README: add a note about linking a library whose license is not

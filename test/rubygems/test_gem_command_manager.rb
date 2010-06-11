@@ -67,7 +67,6 @@ class TestGemCommandManager < RubyGemTestCase
       check_options = nil
       @command_manager.process_args(
         "install --force --test --local --rdoc --install-dir . --version 3.0 --no-wrapper --bindir . ")
-      assert_equal true, check_options[:test]
       assert_equal true, check_options[:generate_rdoc]
       assert_equal true, check_options[:force]
       assert_equal :local, check_options[:domain]
@@ -197,7 +196,6 @@ class TestGemCommandManager < RubyGemTestCase
     #check settings
     check_options = nil
     @command_manager.process_args("update --force --test --rdoc --install-dir .")
-    assert_equal true, check_options[:test]
     assert_equal true, check_options[:generate_rdoc]
     assert_equal true, check_options[:force]
     assert_equal Dir.pwd, check_options[:install_dir]
