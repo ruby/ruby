@@ -1280,7 +1280,8 @@ init_leap_second_info()
         else
             known_leap_seconds_limit = now + (time_t)(366*86400);
 
-        gmtime_with_leapsecond(&known_leap_seconds_limit, &result);
+        if (!gmtime_with_leapsecond(&known_leap_seconds_limit, &result))
+            return;
 
         vtm.year = LONG2NUM(result.tm_year + 1900);
         vtm.mon = result.tm_mon + 1;
