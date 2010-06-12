@@ -5250,7 +5250,7 @@ rb_f_syscall(argc, argv)
 	VALUE v = rb_check_string_type(*argv);
 
 	if (!NIL_P(v)) {
-	    StringValue(v);
+	    SafeStringValue(v);
 	    rb_str_modify(v);
 	    arg[i] = (unsigned long)StringValueCStr(v);
 	}

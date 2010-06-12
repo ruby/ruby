@@ -1,3 +1,8 @@
+Sat Jun 12 10:02:26 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_f_syscall): should check argument string taint before
+	  invoking system calls.
+
 Thu Jun 10 14:45:28 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/dl/dl.c (rb_dl_strdup): strdup() only allocates a buffer of
