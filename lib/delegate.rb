@@ -117,7 +117,7 @@
 class Delegator < BasicObject
   kernel = ::Kernel.dup
   kernel.class_eval do
-    [:to_s,:inspect,:=~,:!~,:===,:<=>].each do |m|
+    [:to_s,:inspect,:=~,:!~,:===,:<=>,:eql?,:hash].each do |m|
       undef_method m
     end
   end
@@ -187,11 +187,23 @@ class Delegator < BasicObject
   # Note: no need to specialize private_methods, since they are not forwarded
 
   #
-  # Returns true if two objects are considered same.
+  # Returns true if two objects are considered of equal value.
   #
   def ==(obj)
     return true if obj.equal?(self)
     self.__getobj__ == obj
+  end
+
+  #
+  # Returns true if two objects are not considered of equal value.
+  #
+  def !=(obj)
+    return false if obj.equal?(self)
+    __getobj__ != obj
+  end
+
+  def !
+    !__getobj__
   end
 
   #
