@@ -1,7 +1,7 @@
 require 'dl.so'
 
 begin
-  require 'fiddle'
+  require 'fiddle' unless Object.const_defined?(:Fiddle)
 rescue LoadError
 end
 
