@@ -1,3 +1,8 @@
+Sun Jun 13 02:12:46 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/trans/utf8_mac.trans (buf_apply): fix for patterns
+	  whose result is 2 bytes. [ruby-core:30751]
+
 Sun Jun 13 01:38:17 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* time.c (rb_localtime_r2): fix mixed declarations and code.
