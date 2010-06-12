@@ -926,4 +926,17 @@ class TestModule < Test::Unit::TestCase
     e = assert_raise(NameError) {eval("Bug3123", TOPLEVEL_BINDING)}
     assert_not_match(/Object::/, e.message, bug3123)
   end
+
+  def test_attr_inherited_visibility
+    c = Class.new do
+      class << self
+        private
+        def attr_accessor(*); super; end
+      end
+      attr_accessor :x
+    end.new
+    bug3406 = '[ruby-core:30638]'
+    assert_nothing_raised(bug3406) {c.x = 1}
+    assert_equal(1, c.x, bug3406)
+  end
 end
