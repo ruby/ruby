@@ -1,3 +1,8 @@
+Sat Jun 12 10:02:26 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_f_syscall): should check argument string taint before
+	  invoking system calls.
+
 Sat Jun 12 09:18:31 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* variable.c (uninitialized_constant): process through
