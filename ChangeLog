@@ -1,3 +1,8 @@
+Sun Jun 13 01:37:08 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/fiddle/closure.c (dealloc): workaround fix for libffi's
+	  ffi_closure_free. [ruby-dev:41483] [ruby-dev:41214]
+
 Fri Jun 11 23:21:35 2010  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (init_leap_second_info): check the result of
