@@ -892,12 +892,4 @@ class TestEncodingConverter < Test::Unit::TestCase
       "".encode("euc-jp", :undef => :replace, :replace => broken)
     }
   end
-
-  def test_utf8_mac
-    assert_equal("\u{fb4d}", "\u05DB\u05BF".encode("UTF-8", "UTF8-MAC"))
-    assert_equal("\u{1ff7}", "\u03C9\u0345\u0342".encode("UTF-8", "UTF8-MAC"))
-
-    assert_equal("\u05DB\u05BF", "\u{fb4d}".encode("UTF8-MAC").force_encoding("UTF-8"))
-    assert_equal("\u03C9\u0345\u0342", "\u{1ff7}".encode("UTF8-MAC").force_encoding("UTF-8"))
-  end
 end
