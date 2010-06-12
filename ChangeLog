@@ -1,3 +1,8 @@
+Sun Jun 13 00:02:56 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/fiddle/closure.c (dealloc): workaround fix for libffi's
+	  ffi_closure_free. [ruby-dev:41483] [ruby-dev:41214]
+
 Sat Jun 12 10:02:26 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_f_syscall): should check argument string taint before
