@@ -1,3 +1,7 @@
+Sun Jun 13 00:27:24 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/dl/lib/dl.rb: don't require when already loaded.
+
 Sun Jun 13 00:02:56 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/fiddle/closure.c (dealloc): workaround fix for libffi's
