@@ -873,10 +873,11 @@ rb_localtime_r2(const time_t *t, struct tm *result)
         int gmtoff1 = 0;
         int gmtoff2 = 0;
         struct tm tmp = *result;
+        time_t t2;
 #  if defined(HAVE_STRUCT_TM_TM_GMTOFF)
         gmtoff1 = result->tm_gmtoff;
 #  endif
-        time_t t2 = mktime(&tmp);
+        t2 = mktime(&tmp);
 #  if defined(HAVE_STRUCT_TM_TM_GMTOFF)
         gmtoff2 = tmp.tm_gmtoff;
 #  endif
