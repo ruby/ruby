@@ -920,4 +920,10 @@ class TestModule < Test::Unit::TestCase
       y.bar
     end
   end
+
+  def test_uninitialized_toplevel_constant
+    bug3123 = '[ruby-dev:40951]'
+    e = assert_raise(NameError) {eval("Bug3123", TOPLEVEL_BINDING)}
+    assert_not_match(/Object::/, e.message, bug3123)
+  end
 end
