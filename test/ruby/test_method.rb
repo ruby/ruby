@@ -335,4 +335,14 @@ class TestMethod < Test::Unit::TestCase
     end
     assert_equal(:ok, d.new.public_method(:foo).call)
   end
+
+  def test_public_methods_with_extended
+    m = Module.new do def m1; end end
+    a = Class.new do def a; end end
+    bug = '[ruby-dev:41553]'
+    obj = a.new
+    assert_equal([:a], obj.public_methods(false), bug)
+    obj.extend(m)
+    assert_equal([:m1, :a], obj.public_methods(false), bug)
+  end
 end
