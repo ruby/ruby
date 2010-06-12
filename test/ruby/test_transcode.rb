@@ -1912,6 +1912,16 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal(Encoding::Shift_JIS, b.encoding)
   end
 
+  def test_utf8_mac
+    assert_equal("\u{fb4d}", "\u05DB\u05BF".encode("UTF-8", "UTF8-MAC"))
+    assert_equal("\u{1ff7}", "\u03C9\u0345\u0342".encode("UTF-8", "UTF8-MAC"))
+
+    assert_equal("\u05DB\u05BF", "\u{fb4d}".encode("UTF8-MAC").force_encoding("UTF-8"))
+    assert_equal("\u03C9\u0345\u0342", "\u{1ff7}".encode("UTF8-MAC").force_encoding("UTF-8"))
+
+    check_both_ways("\u{e9 74 e8}", "e\u0301te\u0300", 'UTF8-MAC')
+  end
+
   def test_fallback
     assert_equal("\u3042".encode("EUC-JP"), "\u{20000}".encode("EUC-JP",
         fallback: {"\u{20000}" => "\u3042".encode("EUC-JP")}))

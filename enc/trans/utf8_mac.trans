@@ -150,10 +150,10 @@ buf_apply(int mode, struct from_utf8_mac_status *sp, unsigned char *o)
     next_info = get_info(next_info, sp);
     switch (next_info & 0x1F) {
       case THREEbt:
-        o[n++] = getBT1(next_info);
       case TWObt:
+        o[n++] = getBT1(next_info);
         o[n++] = getBT2(next_info);
-        o[n++] = getBT3(next_info);
+        if (THREEbt == (next_info & 0x1F)) o[n++] = getBT3(next_info);
         if (mode == 3) {
             buf_clear(sp);
         }
