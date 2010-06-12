@@ -1,3 +1,7 @@
+Sun Jun 13 01:38:17 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* time.c (rb_localtime_r2): fix mixed declarations and code.
+
 Sun Jun 13 00:27:24 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/dl/lib/dl.rb: don't require when already loaded.
