@@ -14,11 +14,15 @@ static void
 dealloc(void * ptr)
 {
     fiddle_closure * cls = (fiddle_closure *)ptr;
+    /*
 #ifndef MACOSX
     ffi_closure_free(cls->pcl);
 #else
+    */
     munmap(cls->pcl, sizeof(cls->pcl));
+    /*
 #endif
+    */
     xfree(cls->cif);
     if (cls->argv) xfree(cls->argv);
     xfree(cls);
