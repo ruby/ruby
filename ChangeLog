@@ -1,3 +1,7 @@
+Sun Jun 13 04:24:18 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/delegate.rb: Delegate !=, eql? and hash [ruby-core:26139]
+
 Sun Jun 13 02:12:46 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/trans/utf8_mac.trans (buf_apply): fix for patterns
