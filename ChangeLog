@@ -1,3 +1,8 @@
+Sun Jun 13 15:46:07 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_rubyoptions.rb: add a simple test for __END__ and
+	  DATA.
+
 Sun Jun 13 04:24:18 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/delegate.rb: Delegate !=, eql? and hash [ruby-core:26139]
