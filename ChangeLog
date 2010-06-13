@@ -1,3 +1,10 @@
+Mon Jun 14 04:03:55 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/fiddle/closure.c (dealloc): refix workaround r28300.
+	  don't use ffi_closure_alloc, ffi_prep_closure_loc and
+	  ffi_closure_free on MACOSX and __linux__.
+	  [ruby-dev:41483] [ruby-dev:41214]
+
 Sun Jun 13 15:46:07 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_rubyoptions.rb: add a simple test for __END__ and

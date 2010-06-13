@@ -10,19 +10,19 @@ typedef struct {
     ffi_type **argv;
 } fiddle_closure;
 
+#if defined(MACOSX) || defined(__linux)
+#define DONT_USE_FFI_CLOSURE_ALLOC
+#endif
+
 static void
 dealloc(void * ptr)
 {
     fiddle_closure * cls = (fiddle_closure *)ptr;
-    /*
-#ifndef MACOSX
+#ifndef DONT_USE_FFI_CLOSURE_ALLOC
     ffi_closure_free(cls->pcl);
 #else
-    */
     munmap(cls->pcl, sizeof(cls->pcl));
-    /*
 #endif
-    */
     xfree(cls->cif);
     if (cls->argv) xfree(cls->argv);
     xfree(cls);
@@ -142,7 +142,7 @@ allocate(VALUE klass)
     VALUE i = TypedData_Make_Struct(klass, fiddle_closure,
 	    &closure_data_type, closure);
 
-#ifndef MACOSX
+#ifndef DONT_USE_FFI_CLOSURE_ALLOC
     closure->pcl = ffi_closure_alloc(sizeof(ffi_closure), &closure->code);
 #else
     closure->pcl = mmap(NULL, sizeof(ffi_closure), PROT_READ | PROT_WRITE,
@@ -195,7 +195,7 @@ initialize(int rbargc, VALUE argv[], VALUE self)
     if (FFI_OK != result)
 	rb_raise(rb_eRuntimeError, "error prepping CIF %d", result);
 
-#ifndef MACOSX
+#ifndef DONT_USE_FFI_CLOSURE_ALLOC
     result = ffi_prep_closure_loc(pcl, cif, callback,
 		(void *)self, cl->code);
 #else
