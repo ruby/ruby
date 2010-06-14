@@ -257,7 +257,7 @@ distclean-rdoc:
 	@$(RMALL) $(RDOCOUT:/=\)
 
 clean-ext distclean-ext realclean-ext::
-	@cd ext; set dummy `echo "${EXTS}" | tr , ' '`; shift; \
+	@cd ext 2>/dev/null || exit 0; set dummy `echo "${EXTS}" | tr , ' '`; shift; \
 	test "$$#" = 0 && set .; \
 	set dummy `for dir; do \
 	    find $$dir -name Makefile | sed 's:^\./::;s:/Makefile$$:~:' | sort | sed 's:~$$::'; \
@@ -274,6 +274,14 @@ clean-ext distclean-ext realclean-ext::
 
 distclean-ext realclean-ext::
 	@-rmdir ext 2> /dev/null || true
+
+clean-extout:
+	@-$(RMDIRS) $(EXTOUT) 2> /dev/null || true
+
+clean-enc distclean-enc realclean-enc:
+	@test -f "$(ENC_MK)" || exit 0; \
+	echo $(@:-enc=ing) encodings; \
+	exec $(MAKE) -f $(ENC_MK) $(MFLAGS) $(@F)
 
 ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c ext/extinit.c
