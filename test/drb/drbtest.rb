@@ -135,7 +135,7 @@ module DRbCore
 
   def test_03
     assert_equal(8, @there.sum(1, 1, 1, 1, 1, 1, 1, 1))
-    assert_raise(ArgumentError) do
+    assert_raise(DRb::DRbConnError) do
       @there.sum(1, 1, 1, 1, 1, 1, 1, 1, 1)
     end
     assert_raise(DRb::DRbConnError) do
