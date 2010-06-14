@@ -1,3 +1,12 @@
+Mon Jun 14 22:36:09 2010  Tanaka Akira  <akr@fsij.org>
+
+	* test/socket/test_socket.rb (test_udp_server): rescue Errno::ENOSYS
+	  for Windows.
+
+	* test/socket/test_nonblock.rb (test_sendmsg_nonblock_error): ditto.
+
+	  [ruby-dev:41597] reported by Masaya Tarui.
+
 Mon Jun 14 17:44:39 2010  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb: raise DRbConnError instead of ArgumentError if too
