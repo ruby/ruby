@@ -613,7 +613,7 @@ module DRb
       ro = DRb.to_obj(ref)
       msg = load(stream)
       argc = load(stream)
-      raise ArgumentError, 'too many arguments' if @argc_limit < argc
+      raise(DRbConnError, "too many arguments") if @argc_limit < argc
       argv = Array.new(argc, nil)
       argc.times do |n|
 	argv[n] = load(stream)

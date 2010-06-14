@@ -1,3 +1,12 @@
+Mon Jun 14 18:32:38 2010  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb: raise DRbConnError instead of ArgumentError if too
+	  many arguments. [ruby-dev:41481]
+
+	* test/drb/test_drb.rb: ditto.
+
+	* test/drb/drbtest.rb: ditto.
+
 Sat Jun 12 10:02:26 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_f_syscall): should check argument string taint before
