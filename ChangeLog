@@ -1,3 +1,12 @@
+Mon Jun 14 22:36:09 2010  Tanaka Akira  <akr@fsij.org>
+
+	* test/socket/test_socket.rb (test_udp_server): rescue Errno::ENOSYS 
+	  for Windows.
+
+	* test/socket/test_nonblock.rb (test_sendmsg_nonblock_error): ditto.
+
+	  [ruby-dev:41597] reported by Masaya Tarui.
+
 Sun Jun 13 04:27:55 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/delegate.rb: Delegate !=, eql? and hash [ruby-core:26139]
