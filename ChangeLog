@@ -1,3 +1,12 @@
+Mon Jun 14 17:44:39 2010  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb: raise DRbConnError instead of ArgumentError if too
+	  many arguments. [ruby-dev:41481]
+
+	* Test/drb/test_drb.rb: ditto.
+
+	* test/drb/drbtest.rb: ditto.
+
 Mon Jun 14 04:03:55 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/fiddle/closure.c (dealloc): refix workaround r28300.
