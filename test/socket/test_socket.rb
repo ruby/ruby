@@ -289,7 +289,7 @@ class TestSocket < Test::Unit::TestCase
             assert_equal(ai.ip_address, addr.ip_address)
           }
         }
-      rescue NotImplementedError
+      rescue NotImplementedError, Errno::ENOSYS
         skipped = true
         skip "need sendmsg and recvmsg"
       ensure
