@@ -380,7 +380,6 @@ clean-golf: PHONY
 	@$(RM) $(GORUBY)$(EXEEXT) $(GOLFOBJS)
 clean-rdoc: PHONY
 clean-extout: PHONY
-	@-$(RMDIRS) $(EXTOUT)/$(arch)
 
 distclean: distclean-ext distclean-local distclean-enc distclean-golf distclean-extout
 distclean-local:: clean-local
@@ -392,7 +391,6 @@ distclean-golf: clean-golf
 	@$(RM) $(GOLFPRELUDES)
 distclean-rdoc: PHONY
 distclean-extout: clean-extout
-	@-$(RMDIRS) $(EXTOUT)
 
 realclean:: realclean-ext realclean-local realclean-enc realclean-golf realclean-extout
 realclean-local:: distclean-local
@@ -401,9 +399,7 @@ realclean-ext::
 realclean-golf: distclean-golf
 realclean-extout: distclean-extout
 
-clean-enc distclean-enc realclean-enc:
-	@echo $(@:-enc=ing) encodings
-	@-$(MAKE) -f $(ENC_MK) $(MFLAGS) $(@:-enc=)
+clean-enc distclean-enc realclean-enc: PHONY
 
 check: test test-all
 check-ruby: test test-ruby
