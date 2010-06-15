@@ -1,3 +1,10 @@
+Wed Jun 16 01:38:40 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/fiddle/extconf.rb: check ffi.h even when pkg-config succeeded.
+	  On Debian/lenny, which is a "supported" platform, ffi.h is installed
+	  in /usr/include/i486-linux-gnu/.  This causes build error when using
+	  gcc whose target is not i486-linux-gnu.
+
 Wed Jun 16 00:04:38 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_io.rb (safe_4): does not use Timeout because
