@@ -1,3 +1,13 @@
+Wed Jun 16 00:04:38 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_io.rb (safe_4): does not use Timeout because
+	  Timeout.timeout uses Thread#kill which raises SecurityError when
+	  $SAFE == 4.  based on a patch from Tomoyuki Chikanaga.
+	  [ruby-dev:41484]
+
+	* test/ruby/test_io.rb (test_print_separators): use pipe (test helper
+	  method) instead of IO.pipe.  [ruby-dev:41484]
+
 Tue Jun 15 17:14:58 2010  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/fiddle/extconf.rb: De Morgan's laws.
