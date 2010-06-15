@@ -281,7 +281,7 @@ clean-extout:
 clean-enc distclean-enc realclean-enc:
 	@test -f "$(ENC_MK)" || exit 0; \
 	echo $(@:-enc=ing) encodings; \
-	exec $(MAKE) -f $(ENC_MK) $(MFLAGS) $(@F)
+	exec $(MAKE) -f $(ENC_MK) $(MFLAGS) $(@:-enc=)
 
 ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c ext/extinit.c
