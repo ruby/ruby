@@ -819,9 +819,9 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_dup_warn
-    assert_in_out_err('-w', "#coding:utf-8\nx=/[\u3042\u3041]/", [], /\A\z/)
-    assert_in_out_err('-w', "#coding:utf-8\nx=/[\u3042\u3042]/", [], /duplicated/)
-    assert_in_out_err('-w', "1#coding:utf-8\nx=/[\u3042\u3041-\u3043]/", [], /duplicated/)
+    assert_in_out_err('-w -U', "#coding:utf-8\nx=/[\u3042\u3041]/", [], /\A\z/)
+    assert_in_out_err('-w -U', "#coding:utf-8\nx=/[\u3042\u3042]/", [], /duplicated/)
+    assert_in_out_err('-w -U', "#coding:utf-8\nx=/[\u3042\u3041-\u3043]/", [], /duplicated/)
   end
 
   def test_property_warn
