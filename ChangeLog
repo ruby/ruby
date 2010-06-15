@@ -1,3 +1,9 @@
+Tue Jun 15 10:29:00 2010  Kenta Murata  <mrkn@mrkn.jp>
+
+	* bignum.c (rb_big2dbl), test/ruby/test_bignum.rb (test_to_f):
+	  A negative Bignum out of Float range should be converted to -Infinity.
+	  [ruby-core:30492] [Bug #3362]
+
 Mon Jun 14 18:32:38 2010  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb: raise DRbConnError instead of ArgumentError if too

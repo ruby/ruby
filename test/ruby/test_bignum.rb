@@ -103,4 +103,10 @@ class TestBignum < Test::Unit::TestCase
     e = assert_raise(RangeError) {(1 << big).to_s}
     assert_match(/too big to convert/, e.message)
   end
+
+  def test_to_f
+    inf = 1 / 0.0
+    assert_equal(inf,  (1  << 65536).to_f)
+    assert_equal(-inf, (-1 << 65536).to_f) # [ruby-core:30492] [Bug #3362]
+  end
 end
