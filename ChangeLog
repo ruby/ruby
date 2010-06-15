@@ -1,3 +1,7 @@
+Tue Jun 15 12:09:00 2010  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/fiddle/extconf.rb: use pkg_config to find ffi.h.
+
 Tue Jun 15 02:31:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, common.mk (clean-ext, clean-enc): clean up cleaning
