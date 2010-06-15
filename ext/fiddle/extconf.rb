@@ -4,7 +4,7 @@ require 'mkmf'
 
 dir_config 'libffi'
 
-unless pkg_config("libffi") and have_header('ffi.h')
+unless pkg_config("libffi") or have_header('ffi.h')
   if have_header('ffi/ffi.h')
     $defs.push(format('-DUSE_HEADER_HACKS'))
   else

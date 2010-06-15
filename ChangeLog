@@ -1,3 +1,7 @@
+Tue Jun 15 17:14:58 2010  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/fiddle/extconf.rb: De Morgan's laws.
+
 Tue Jun 15 12:09:00 2010  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/fiddle/extconf.rb: use pkg_config to find ffi.h.
