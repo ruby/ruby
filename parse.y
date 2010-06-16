@@ -8917,6 +8917,7 @@ new_args_gen(struct parser_params *parser, NODE *m, NODE *o, ID r, NODE *p, ID b
     ruby_sourceline = saved_line;
     return node;
 }
+#endif /* !RIPPER */
 
 #define LVAR_USED (1UL << (sizeof(ID) * CHAR_BIT - 1))
 
@@ -8938,7 +8939,6 @@ warn_unused_var(struct parser_params *parser, struct local_vars *local)
 	rb_compile_warn(ruby_sourcefile, (int)u[i], "assigned but unused variable %s", rb_id2name(v[i]));
     }
 }
-#endif /* !RIPPER */
 
 static void
 local_push_gen(struct parser_params *parser, int inherit_dvars)
