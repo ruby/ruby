@@ -1,3 +1,7 @@
+Wed Jun 16 18:34:54 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* parse.y: ripper needs warn_unused_var(), too.
+
 Wed Jun 16 18:20:00 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (warn_unused_var): warn unused variables.
