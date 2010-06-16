@@ -291,6 +291,7 @@ class TestRubyOptions < Test::Unit::TestCase
     t.puts "end"
     t.puts "0.times do"
     t.puts "  if b = 2"
+    t.puts "    a += b"
     t.puts "  end"
     t.puts "end"
     t.close
@@ -382,8 +383,8 @@ class TestRubyOptions < Test::Unit::TestCase
       ---------------------------\n
       (?:
       --\sRuby\slevel\sbacktrace\sinformation\s----------------------------------------\n
-      -e:1:in\s`<main>'\n
-      -e:1:in\s`kill'\n
+      -e:1:in\s\`<main>\'\n
+      -e:1:in\s\`kill\'\n
       )?
       \n
       (?:
