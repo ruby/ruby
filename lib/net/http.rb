@@ -1366,13 +1366,13 @@ module Net   #:nodoc:
       return nil unless @header['content-range']
       m = %r<bytes\s+(\d+)-(\d+)/(\d+|\*)>i.match(self['Content-Range']) or
           raise HTTPHeaderSyntaxError, 'wrong Content-Range format'
-      m[1].to_i .. m[2].to_i + 1
+      m[1].to_i .. m[2].to_i
     end
 
     # The length of the range represented in Content-Range: header.
     def range_length
       r = content_range() or return nil
-      r.end - r.begin
+      r.end - r.begin + 1
     end
 
     # Returns a content type string such as "text/html".

@@ -1,3 +1,13 @@
+Wed Jun 16 15:21:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/webrick/utils.rb (TestWEBrick#start_server): add log for
+	  test_filehandler.rb
+
+Wed Jun 16 15:21:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/net/http.rb (Net::HTTPHeader#{content_range,range_length}):
+	  use inclusive range same as the header representation.
+
 Thu Jun 10 14:39:35 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/iconv/test_option.rb: removed particular implementation specific tests.
