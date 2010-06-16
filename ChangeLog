@@ -1,3 +1,8 @@
+Wed Jun 16 16:01:42 2010  Tanaka Akira  <akr@fsij.org>
+
+	* lib/pathname.rb (Pathname#sub): suppress a warning.
+	  [ruby-dev:38488]
+
 Wed Jun 16 15:21:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/webrick/utils.rb (TestWEBrick#start_server): add log for
