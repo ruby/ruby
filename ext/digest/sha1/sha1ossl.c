@@ -1,6 +1,6 @@
 /* $Id$ */
 
-#include "defs.h"
+#include "../defs.h"
 #include "sha1ossl.h"
 
 void

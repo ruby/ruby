@@ -1,7 +1,7 @@
 /* $RoughId: sha2init.c,v 1.3 2001/07/13 20:00:43 knu Exp $ */
 /* $Id$ */
 
-#include "digest.h"
+#include "../digest.h"
 #if defined(SHA2_USE_OPENSSL)
 #include "sha2ossl.h"
 #else
