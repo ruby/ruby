@@ -1,3 +1,8 @@
+Wed Jun 16 18:20:00 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (warn_unused_var): warn unused variables.
+	  [ruby-dev:41620]
+
 Wed Jun 16 15:40:53 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* error.c (rb_bug): existance of _set_abort_behavior() depends on
