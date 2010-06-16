@@ -1,3 +1,8 @@
+Wed Jun 16 15:40:53 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* error.c (rb_bug): existance of _set_abort_behavior() depends on
+	  runtime version, not compiler version.
+
 Wed Jun 16 01:38:40 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/fiddle/extconf.rb: check ffi.h even when pkg-config succeeded.
