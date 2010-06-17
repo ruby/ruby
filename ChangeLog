@@ -1,3 +1,7 @@
+Thu Jun 17 17:30:00 2010  Kenta Murata <mrkn@mrkn.jp>
+
+	* ext/digest/sha2/extconf.rb: remove a check for uint64_t.
+
 Wed Jun 16 18:35:20 2010  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest: Work around a build problem with VC++ 2010, likely
