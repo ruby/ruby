@@ -833,7 +833,7 @@ method_entry(ID key, const rb_method_entry_t *me, st_table *list)
 }
 
 static VALUE
-class_instance_method_list(int argc, VALUE *argv, VALUE mod, int (*func) (ID, long, VALUE))
+class_instance_method_list(int argc, VALUE *argv, VALUE mod, int obj, int (*func) (ID, long, VALUE))
 {
     VALUE ary;
     int recur;
@@ -852,6 +852,7 @@ class_instance_method_list(int argc, VALUE *argv, VALUE mod, int (*func) (ID, lo
     for (; mod; mod = RCLASS_SUPER(mod)) {
 	st_foreach(RCLASS_M_TBL(mod), method_entry, (st_data_t)list);
 	if (BUILTIN_TYPE(mod) == T_ICLASS) continue;
+	if (obj && FL_TEST(mod, FL_SINGLETON)) continue;
 	if (!recur) break;
     }
     ary = rb_ary_new();
@@ -891,7 +892,7 @@ class_instance_method_list(int argc, VALUE *argv, VALUE mod, int (*func) (ID, lo
 VALUE
 rb_class_instance_methods(int argc, VALUE *argv, VALUE mod)
 {
-    return class_instance_method_list(argc, argv, mod, ins_methods_i);
+    return class_instance_method_list(argc, argv, mod, 0, ins_methods_i);
 }
 
 /*
@@ -906,7 +907,7 @@ rb_class_instance_methods(int argc, VALUE *argv, VALUE mod)
 VALUE
 rb_class_protected_instance_methods(int argc, VALUE *argv, VALUE mod)
 {
-    return class_instance_method_list(argc, argv, mod, ins_methods_prot_i);
+    return class_instance_method_list(argc, argv, mod, 0, ins_methods_prot_i);
 }
 
 /*
@@ -929,7 +930,7 @@ rb_class_protected_instance_methods(int argc, VALUE *argv, VALUE mod)
 VALUE
 rb_class_private_instance_methods(int argc, VALUE *argv, VALUE mod)
 {
-    return class_instance_method_list(argc, argv, mod, ins_methods_priv_i);
+    return class_instance_method_list(argc, argv, mod, 0, ins_methods_priv_i);
 }
 
 /*
@@ -944,7 +945,93 @@ rb_class_private_instance_methods(int argc, VALUE *argv, VALUE mod)
 VALUE
 rb_class_public_instance_methods(int argc, VALUE *argv, VALUE mod)
 {
-    return class_instance_method_list(argc, argv, mod, ins_methods_pub_i);
+    return class_instance_method_list(argc, argv, mod, 0, ins_methods_pub_i);
+}
+
+/*
+ *  call-seq:
+ *     obj.methods    -> array
+ *
+ *  Returns a list of the names of methods publicly accessible in
+ *  <i>obj</i>. This will include all the methods accessible in
+ *  <i>obj</i>'s ancestors.
+ *
+ *     class Klass
+ *       def kMethod()
+ *       end
+ *     end
+ *     k = Klass.new
+ *     k.methods[0..9]    #=> [:kMethod, :freeze, :nil?, :is_a?,
+ *                        #    :class, :instance_variable_set,
+ *                        #    :methods, :extend, :__send__, :instance_eval]
+ *     k.methods.length   #=> 42
+ */
+
+VALUE
+rb_obj_methods(int argc, VALUE *argv, VALUE obj)
+{
+  retry:
+    if (argc == 0) {
+	VALUE args[1];
+
+	args[0] = Qtrue;
+	return class_instance_method_list(argc, argv, CLASS_OF(obj), 1, ins_methods_i);
+    }
+    else {
+	VALUE recur;
+
+	rb_scan_args(argc, argv, "1", &recur);
+	if (RTEST(recur)) {
+	    argc = 0;
+	    goto retry;
+	}
+	return rb_obj_singleton_methods(argc, argv, obj);
+    }
+}
+
+/*
+ *  call-seq:
+ *     obj.protected_methods(all=true)   -> array
+ *
+ *  Returns the list of protected methods accessible to <i>obj</i>. If
+ *  the <i>all</i> parameter is set to <code>false</code>, only those methods
+ *  in the receiver will be listed.
+ */
+
+VALUE
+rb_obj_protected_methods(int argc, VALUE *argv, VALUE obj)
+{
+    return class_instance_method_list(argc, argv, CLASS_OF(obj), 1, ins_methods_prot_i);
+}
+
+/*
+ *  call-seq:
+ *     obj.private_methods(all=true)   -> array
+ *
+ *  Returns the list of private methods accessible to <i>obj</i>. If
+ *  the <i>all</i> parameter is set to <code>false</code>, only those methods
+ *  in the receiver will be listed.
+ */
+
+VALUE
+rb_obj_private_methods(int argc, VALUE *argv, VALUE obj)
+{
+    return class_instance_method_list(argc, argv, CLASS_OF(obj), 1, ins_methods_priv_i);
+}
+
+/*
+ *  call-seq:
+ *     obj.public_methods(all=true)   -> array
+ *
+ *  Returns the list of public methods accessible to <i>obj</i>. If
+ *  the <i>all</i> parameter is set to <code>false</code>, only those methods
+ *  in the receiver will be listed.
+ */
+
+VALUE
+rb_obj_public_methods(int argc, VALUE *argv, VALUE obj)
+{
+    return class_instance_method_list(argc, argv, CLASS_OF(obj), 1, ins_methods_pub_i);
 }
 
 /*
