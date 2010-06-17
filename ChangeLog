@@ -1,4 +1,9 @@
-Thu Jun 17 17:30:00 2010  Kenta Murata <mrkn@mrkn.jp>
+Thu Jun 17 17:32:00 2010  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/digest/sha2/lib/sha2.rb: Darwin uses ".bundle", but not ".so",
+	  for the filename extension part of native libraries.
+
+Thu Jun 17 17:30:00 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/digest/sha2/extconf.rb: remove a check for uint64_t.
 
