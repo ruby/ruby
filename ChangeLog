@@ -1,3 +1,9 @@
+Fri Jun 18 01:22:55 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/webrick/httpservlet/filehandler.rb
+	  (prevent_directory_traversal): apply filesystem encoding to path
+	  only during calling File.expand_path.  [ruby-dev:41423]
+
 Thu Jun 17 23:20:14 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* load.c (rb_load_internal): remove call to rb_realpath_internal
