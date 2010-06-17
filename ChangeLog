@@ -1,3 +1,18 @@
+Thu Jun 17 18:55:01 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* file.c (rb_str_encode_ospath): when the encoding of the parameter
+	  is ASCII-8BIT, should recognize as filesystem encoding, and convert
+	  to UTF-8 on Windows.
+
+	* file.c (realpath_rec): should convert to ospath encoding before
+	  calling lstat().
+
+	* file.c (rb_realpath_internal): resolved string should take over
+	  the encoding of base string.
+
+	* transcode.c (rb_str_encode): should return new string always.
+	  fixed #3444.
+
 Thu Jun 17 18:22:00 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/digest/sha2/lib/sha2.rb: revert r28347.  It's my mistake.

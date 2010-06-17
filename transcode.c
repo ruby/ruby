@@ -2805,7 +2805,12 @@ rb_str_encode(VALUE str, VALUE to, int ecflags, VALUE ecopts)
     int encidx = str_transcode0(argc, argv, &newstr, ecflags, ecopts);
 
     if (encidx < 0) return rb_str_dup(str);
-    RBASIC(newstr)->klass = rb_obj_class(str);
+    if (newstr == str) {
+	newstr = rb_str_dup(str);
+    }
+    else {
+	RBASIC(newstr)->klass = rb_obj_class(str);
+    }
     return str_encode_associate(newstr, encidx);
 }
 
