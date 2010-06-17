@@ -1450,11 +1450,11 @@ rb_thread_current_status(const rb_thread_t *th)
 
 VALUE
 rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg,
-		 const rb_block_t *blockptr, VALUE filename, VALUE filepath)
+		 const rb_block_t *blockptr, VALUE filename)
 {
     rb_thread_t *th = GET_THREAD();
     const rb_control_frame_t *reg_cfp = th->cfp;
-    volatile VALUE iseqval = rb_iseq_new(0, filename, filename, filepath, 0, ISEQ_TYPE_TOP);
+    volatile VALUE iseqval = rb_iseq_new(0, filename, filename, Qnil, 0, ISEQ_TYPE_TOP);
     VALUE val;
 
     vm_push_frame(th, DATA_PTR(iseqval), VM_FRAME_MAGIC_TOP,
