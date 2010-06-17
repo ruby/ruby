@@ -297,7 +297,7 @@ rb_load_internal(VALUE fname, int wrap)
 	th->mild_compile_error++;
 	node = (NODE *)rb_load_file(RSTRING_PTR(fname));
 	loaded = TRUE;
-	iseq = rb_iseq_new_top(node, rb_str_new2("<top (required)>"), fname, fname, Qfalse);
+	iseq = rb_iseq_new_top(node, rb_str_new2("<top (required)>"), fname, rb_realpath_internal(Qnil, fname, 1), Qfalse);
 	th->mild_compile_error--;
 	rb_iseq_eval(iseq);
     }
@@ -596,7 +596,7 @@ rb_require_safe(VALUE fname, int safe)
 
 		  case 's':
 		    handle = (long)rb_vm_call_cfunc(rb_vm_top_self(), load_ext,
-						    path, 0, path, path);
+						    path, 0, path);
 		    rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
 		    break;
 		}
@@ -643,7 +643,7 @@ ruby_init_ext(const char *name, void (*init)(void))
 {
     if (load_lock(name)) {
 	rb_vm_call_cfunc(rb_vm_top_self(), init_ext_call, (VALUE)init,
-			 0, rb_str_new2(name), Qnil);
+			 0, rb_str_new2(name));
 	rb_provide(name);
 	load_unlock(name, 1);
     }

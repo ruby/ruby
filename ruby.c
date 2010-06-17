@@ -1462,7 +1462,8 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 
     PREPARE_PARSE_MAIN({
 	VALUE path = Qnil;
-	if (!opt->e_script && strcmp(opt->script, "-")) path = opt->script_name;
+	if (!opt->e_script && strcmp(opt->script, "-"))
+	    path = rb_realpath_internal(Qnil, opt->script_name, 1);
 	iseq = rb_iseq_new_main(tree, opt->script_name, path);
     });
 

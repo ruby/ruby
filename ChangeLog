@@ -1,3 +1,16 @@
+Thu Jun 17 23:20:14 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* load.c (rb_load_internal): remove call to rb_realpath_internal
+	  within rb_load_internal which caused big performance degradation.
+	  Instead, call rb_realpath_internal in the caller of
+	  rb_load_internal.  [ruby-dev:41502] [ruby-dev:41610]
+
+	* vm.c (rb_vm_call_cfunc): ditto.
+
+	* eval_intern.h (rb_vm_call_cfunc): ditto.
+
+	* ruby.c (process_options): ditto.
+
 Thu Jun 17 18:37:47 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* file.c (rb_str_encode_ospath): when the encoding of the parameter

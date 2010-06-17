@@ -228,7 +228,7 @@ prepare_iseq_build(rb_iseq_t *iseq,
 
     iseq->name = name;
     iseq->filename = filename;
-    iseq->filepath = filepath == Qnil ? Qnil : rb_realpath_internal(Qnil, filepath, 1);
+    iseq->filepath = filepath;
     iseq->line_no = (unsigned short)line_no; /* TODO: really enough? */
     iseq->defined_method_id = 0;
     iseq->mark_ary = rb_ary_tmp_new(3);
@@ -606,7 +606,8 @@ iseq_s_compile_file(int argc, VALUE *argv, VALUE self)
     parser = rb_parser_new();
     node = rb_parser_compile_file(parser, fname, f, NUM2INT(line));
     make_compile_option(&option, opt);
-    return rb_iseq_new_with_opt(node, rb_str_new2("<main>"), file, file, line, Qfalse,
+    return rb_iseq_new_with_opt(node, rb_str_new2("<main>"), file,
+				rb_realpath_internal(Qnil, file, 1), line, Qfalse,
 				ISEQ_TYPE_TOP, &option);
 }
 
