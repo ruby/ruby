@@ -1,3 +1,8 @@
+Fri Jun 18 01:33:21 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* enc/Makefile.in (realclean): has been missing. necessary
+	  for make realclean-enc.
+
 Fri Jun 18 01:12:33 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* configure.in (RMDIRS): reverts r27011 because it causes bothersome
