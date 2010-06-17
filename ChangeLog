@@ -1,3 +1,8 @@
+Fri Jun 18 01:12:33 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* configure.in (RMDIRS): reverts r27011 because it causes bothersome
+	  messages on make clean.
+
 Thu Jun 17 18:55:01 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* file.c (rb_str_encode_ospath): when the encoding of the parameter

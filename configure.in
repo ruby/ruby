@@ -337,12 +337,7 @@ AC_USE_SYSTEM_EXTENSIONS
 
 AC_SUBST(RM, ['rm -f'])
 AC_SUBST(CP, ['cp'])
-RMDIRS='$(top_srcdir)/tool/rmdirs'
-mkdir "rmdirs_$$_test" "rmdirs_$$_test/a"
-rmdir -p "rmdirs_$$_test/a" 2>/dev/null &&
-{ test -d "rmdirs_$$_test" || RMDIRS='rmdir -p'; }
-rmdir "rmdirs_$$_test/a" "rmdirs_$$_test" 2>/dev/null
-AC_SUBST(RMDIRS)
+AC_SUBST(RMDIRS, ['$(top_srcdir)/tool/rmdirs'])
 AC_SUBST(RMALL, ['rm -fr'])
 
 AC_MSG_CHECKING([for cd using phisical directory])
