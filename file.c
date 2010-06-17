@@ -191,8 +191,11 @@ rb_str_encode_ospath(VALUE path)
 	if (enc != utf8)
 	    path = rb_str_encode(path, rb_enc_from_encoding(utf8), 0, Qnil);
     }
-    else if (RSTRING_LEN(path) > 0)
-	path = rb_str_encode(path, rb_enc_from_encoding(rb_filesystem_encoding()), 0, Qnil);
+    else if (RSTRING_LEN(path) > 0) {
+	path = rb_str_dup(path);
+	rb_enc_associate(path, rb_filesystem_encoding());
+	path = rb_str_encode(path, rb_enc_from_encoding(rb_utf8_encoding()), 0, Qnil);
+    }
 #endif
     return path;
 }
@@ -3223,7 +3226,8 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, char *unresolved, VALUE loopche
             else {
                 struct stat sbuf;
                 int ret;
-                ret = lstat(RSTRING_PTR(testpath), &sbuf);
+                VALUE testpath2 = rb_str_encode_ospath(testpath);
+                ret = lstat(RSTRING_PTR(testpath2), &sbuf);
                 if (ret == -1) {
                     if (errno == ENOENT) {
                         if (strict || !last || *unresolved_firstsep)
@@ -3292,7 +3296,8 @@ rb_realpath_internal(VALUE basedir, VALUE path, int strict)
     ptr = RSTRING_PTR(unresolved_path);
     path_names = skiproot(ptr);
     if (ptr != path_names) {
-        resolved = rb_str_new(ptr, path_names - ptr);
+        resolved = rb_enc_str_new(ptr, path_names - ptr,
+				  rb_enc_get(unresolved_path));
         goto root_found;
     }
 
@@ -3300,7 +3305,8 @@ rb_realpath_internal(VALUE basedir, VALUE path, int strict)
         ptr = RSTRING_PTR(basedir);
         basedir_names = skiproot(ptr);
         if (ptr != basedir_names) {
-            resolved = rb_str_new(ptr, basedir_names - ptr);
+            resolved = rb_enc_str_new(ptr, basedir_names - ptr,
+				      rb_enc_get(basedir));
             goto root_found;
         }
     }
@@ -3308,7 +3314,7 @@ rb_realpath_internal(VALUE basedir, VALUE path, int strict)
     curdir = rb_dir_getwd();
     ptr = RSTRING_PTR(curdir);
     curdir_names = skiproot(ptr);
-    resolved = rb_str_new(ptr, curdir_names - ptr);
+    resolved = rb_enc_str_new(ptr, curdir_names - ptr, rb_enc_get(curdir));
 
   root_found:
     prefixptr = RSTRING_PTR(resolved);
