@@ -1,6 +1,6 @@
 Wed Jun 16 15:40:53 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* error.c (rb_bug): existance of _set_abort_behavior() depends on
+	* error.c (rb_bug): existence of _set_abort_behavior() depends on
 	  runtime version, not compiler version.
 
 Wed Jun 16 01:38:40 2010  Yusuke Endoh  <mame@tsg.ne.jp>
@@ -121,7 +121,7 @@ Fri Jun 11 22:39:50 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 	* lib/rubygems/install_update_options.rb
 	  (Gem::InstallUpdateOptions#add_install_update_options): deprecate
 	  --test option which has not worked.  [ruby-core:21714]
-	
+
 	* test/rubygems/test_gem_command_manager.rb: ditto.
 
 Fri Jun 11 07:34:25 2010  Tanaka Akira  <akr@fsij.org>
@@ -468,7 +468,7 @@ Sun May 30 14:59:13 2010  Narihiro Nakamura  <authorNari@gmail.com>
 	* gc.c (gc_clear_mark_on_sweep_slots): renamed.
 
 	* gc.c (rb_objspace_call_finalizer): call
-  	  gc_clear_mark_on_sweep_slots() before calling mark_tbl().
+	  gc_clear_mark_on_sweep_slots() before calling mark_tbl().
 	  [ruby-dev:41459]
 
 Sun May 30 03:40:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -545,7 +545,7 @@ Fri May 28 20:35:21 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 Fri May 28 19:37:47 2010  Narihiro Nakamura  <authorNari@gmail.com>
 
-	* gc.c : use simple lazy sweep algorithm for response performance
+	* gc.c: use simple lazy sweep algorithm for response performance
 	  gain. See [ruby-dev:41067].
 
 	* object.c: FL_MARK of some objects by lazy sweep is copied when
