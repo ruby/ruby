@@ -10,11 +10,7 @@
 #   $Id$
 
 require 'digest'
-begin
-  require 'digest/sha2.so'
-rescue LoadError
-  require 'digest/sha2.bundle'
-end
+require 'digest/sha2.so'
 
 module Digest
   #

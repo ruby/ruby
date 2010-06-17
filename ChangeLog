@@ -1,3 +1,7 @@
+Thu Jun 17 18:22:00 2010  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/digest/sha2/lib/sha2.rb: revert r28347.  It's my mistake.
+
 Thu Jun 17 17:32:00 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/digest/sha2/lib/sha2.rb: Darwin uses ".bundle", but not ".so",
