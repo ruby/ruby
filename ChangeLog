@@ -1,3 +1,11 @@
+Sat Jun 19 03:35:58 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb (resolve_klass): fix the
+	  exception message when attempting to load an unknown class.  Thanks
+	  nobu! [ruby-dev:41399]
+
+	* test/psych/test_psych.rb: test for the exception message
+
 Fri Jun 18 10:37:46 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* gc.c (gc_lazy_sweep): clean a warning.
