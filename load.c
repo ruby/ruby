@@ -260,6 +260,7 @@ rb_provide(const char *feature)
 }
 
 NORETURN(static void load_failed(VALUE));
+VALUE rb_realpath_internal(VALUE basedir, VALUE path, int strict);
 
 static void
 rb_load_internal(VALUE fname, int wrap)
