@@ -1,3 +1,10 @@
+Fri Jun 18 23:08:18 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* Makefile.in (distclean-ext): removes directories for extensions
+	  correctly.
+
+	* common.mk (realclean-local): removes id.h too.
+
 Fri Jun 18 01:33:21 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* enc/Makefile.in (realclean): has been missing. necessary

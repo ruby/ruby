@@ -268,7 +268,7 @@ clean-ext distclean-ext realclean-ext::
 	    (cd "ext/$$dir" && exec $(MAKE) $(MFLAGS) $(@:-ext=)) && \
 	    case "$@" in \
 	    *distclean-ext*|*realclean-ext*) \
-		$(RMDIRS) "$$dir";; \
+		$(RMDIRS) "ext/$$dir";; \
 	    esac; \
 	done
 

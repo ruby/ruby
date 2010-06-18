@@ -398,7 +398,7 @@ distclean-extout: clean-extout
 
 realclean:: realclean-ext realclean-local realclean-enc realclean-golf realclean-extout
 realclean-local:: distclean-local
-	@$(RM) parse.c parse.h lex.c newline.c revision.h
+	@$(RM) parse.c parse.h lex.c newline.c revision.h id.h
 realclean-ext::
 realclean-golf: distclean-golf
 realclean-extout: distclean-extout
