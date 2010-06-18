@@ -1230,6 +1230,7 @@ rb_f_chomp(argc, argv)
 
 void rb_stdio_set_default_encoding(void);
 VALUE rb_parser_dump_tree(NODE *node, int comment);
+VALUE rb_realpath_internal(VALUE basedir, VALUE path, int strict);
 
 static VALUE
 process_options(int argc, char **argv, struct cmdline_options *opt)
