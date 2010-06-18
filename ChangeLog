@@ -1,3 +1,16 @@
+Fri Jun 18 10:37:46 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* gc.c (gc_lazy_sweep): clean a warning.
+	  "suggest parentheses around assignment used as truth value"
+
+	* transcode_data.h (getGB4bt1): clean a warning.
+	  "suggest parentheses around arithmetic in operand of |"
+
+	* transcode_data.h (getGB4bt3): ditto.
+
+	* vm.c (thread_free): clean a warning. "format 'p' expects type
+	  'void *', but argument 3 has type 'struct rb_mutex_struct *'"
+
 Fri Jun 18 10:15:12 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ruby.c: add prototype of rb_realpath_internal.

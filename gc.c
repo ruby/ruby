@@ -2042,7 +2042,8 @@ gc_lazy_sweep(rb_objspace_t *objspace)
     GC_PROF_TIMER_START;
     GC_PROF_SWEEP_TIMER_START;
 
-    if (res = lazy_sweep(objspace)) {
+    res = lazy_sweep(objspace);
+    if (res) {
         GC_PROF_SWEEP_TIMER_STOP;
         GC_PROF_SET_MALLOC_INFO;
         GC_PROF_TIMER_STOP(Qfalse);

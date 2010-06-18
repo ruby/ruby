@@ -56,9 +56,9 @@
 #define getBT0(a)	(((unsigned char)((a)>> 5)&0x07)|0xF0)   /* for UTF-8 only!!! */
 
 #define getGB4bt0(a)	((unsigned char)((a)>> 8))
-#define getGB4bt1(a)	((unsigned char)((a)>>24)&0x0F|0x30)
+#define getGB4bt1(a)	(((unsigned char)((a)>>24)&0x0F)|0x30)
 #define getGB4bt2(a)	((unsigned char)((a)>>16))
-#define getGB4bt3(a)	((unsigned char)((a)>>28)&0x0F|0x30)
+#define getGB4bt3(a)	(((unsigned char)((a)>>28)&0x0F)|0x30)
 
 #define o2FUNii(b1,b2)	(PType((((unsigned char)(b1))<<8)|(((unsigned char)(b2))<<16)|FUNii))
 
