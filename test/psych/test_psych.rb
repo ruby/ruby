@@ -14,6 +14,13 @@ class TestPsych < Psych::TestCase
     end
   end
 
+  def test_non_existing_class_on_deserialize
+    e = assert_raises(ArgumentError) do
+      Psych.load("--- !ruby/object:NonExistent\nfoo: 1")
+    end
+    assert_equal 'undefined class/module NonExistent', e.message
+  end
+
   def test_dump_stream
     things = [22, "foo \n", {}]
     stream = Psych.dump_stream(*things)
