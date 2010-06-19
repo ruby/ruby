@@ -85,9 +85,9 @@ module IRB
 
   def IRB.irb_abort(irb, exception = Abort)
     if defined? Thread
-      irb.context.thread.raise exception, "abort then interrupt!!"
+      irb.context.thread.raise exception, "abort then interrupt!"
     else
-      raise exception, "abort then interrupt!!"
+      raise exception, "abort then interrupt!"
     end
   end
 
@@ -195,7 +195,7 @@ module IRB
 	      printf "... %d levels...\n", levels if levels > 0
 	      print lasts.join("\n")
 	    end
-	    print "Maybe IRB bug!!\n" if irb_bug
+	    print "Maybe IRB bug!\n" if irb_bug
 	  end
           if $SAFE > 2
             abort "Error: irb does not work for $SAFE level higher than 2"
@@ -245,7 +245,7 @@ module IRB
 
     def signal_handle
       unless @context.ignore_sigint?
-	print "\nabort!!\n" if @context.verbose?
+	print "\nabort!\n" if @context.verbose?
 	exit
       end
 
