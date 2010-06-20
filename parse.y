@@ -8935,7 +8935,7 @@ warn_unused_var(struct parser_params *parser, struct local_vars *local)
     }
     for (i = 0; i < cnt; ++i) {
 	if (!v[i] || (u[i] & LVAR_USED)) continue;
-	rb_compile_warn(ruby_sourcefile, (int)u[i], "assigned but unused variable %s", rb_id2name(v[i]));
+	rb_compile_warn(ruby_sourcefile, (int)u[i], "assigned but unused variable - %s", rb_id2name(v[i]));
     }
 }
 
