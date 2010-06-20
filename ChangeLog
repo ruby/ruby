@@ -1,4 +1,8 @@
-Sun Jun 20 15:14:05 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Jun 20 16:17:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* id.c (Init_id): add underscore name.
+
+	* parse.y (warn_unused_var): ignore underscore name.
 
 	* parse.y (warn_unused_var): use same format as shadowing local
 	  variable.

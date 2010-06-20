@@ -47,4 +47,5 @@ Init_id(void)
     REGISTER_SYMID(idSend, "send");
     REGISTER_SYMID(id__send__, "__send__");
     REGISTER_SYMID(idInitialize, "initialize");
+    REGISTER_SYMID(idUScore, "_");
 }

@@ -8229,10 +8229,7 @@ assignable_gen(struct parser_params *parser, ID id, NODE *val)
 static ID
 shadowing_lvar_gen(struct parser_params *parser, ID name)
 {
-    ID uscore;
-
-    CONST_ID(uscore, "_");
-    if (uscore == name) return name;
+    if (idUScore == name) return name;
     if (dyna_in_block()) {
 	if (dvar_curr(name)) {
 	    yyerror("duplicated argument name");
@@ -8935,6 +8932,7 @@ warn_unused_var(struct parser_params *parser, struct local_vars *local)
     }
     for (i = 0; i < cnt; ++i) {
 	if (!v[i] || (u[i] & LVAR_USED)) continue;
+	if (idUScore == v[i]) continue;
 	rb_compile_warn(ruby_sourcefile, (int)u[i], "assigned but unused variable - %s", rb_id2name(v[i]));
     }
 }
