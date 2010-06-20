@@ -100,6 +100,7 @@ enum ruby_method_ids {
     tSend,
     t__send__,
     tInitialize,
+    tUScore,
 #if SUPPORT_JOKE
     tBitblt,
     tAnswer,
@@ -120,7 +121,9 @@ enum ruby_method_ids {
     TOKEN2ID(Lambda),
     TOKEN2ID(Send),
     TOKEN2ID(__send__),
-    TOKEN2ID(Initialize)
+    TOKEN2ID(Initialize),
+    TOKEN2ID(UScore),
+    TOKEN2ID(LAST_ID)
 };
 
 #ifdef tLAST_TOKEN
