@@ -415,4 +415,10 @@ class TestRubyOptions < Test::Unit::TestCase
   ensure
     t.close(true) if t
   end
+
+  def test_unused_variable
+    feature3446 = '[ruby-dev:41620]'
+    assert_in_out_err(["-we", "a=1"], "", [], ["-e:1: warning: assigned but unused variable - a"], feature3446)
+    assert_in_out_err(["-we", "1.times do\n  a=1\nend"], "", [], ["-e:2: warning: assigned but unused variable - a"], feature3446)
+  end
 end
