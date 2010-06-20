@@ -1,4 +1,7 @@
-Sun Jun 20 14:40:50 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Jun 20 15:14:05 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (warn_unused_var): use same format as shadowing local
+	  variable.
 
 	* parse.y (shadowing_lvar_gen): get rid of adding extra name for
 	  shadowing local variable.  [ruby-dev:41628]
