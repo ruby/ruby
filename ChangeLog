@@ -1,6 +1,11 @@
+Tue Jun 22 04:29:00 Kirk Haines <khaines@ruby-lang.org>
+
+	* eval.c: Bug #1886 [ruby-core:24767]; ensure that rb_exc_raise and rb_exc_fatal require an exception object. Backport of r24403.
+	* test/ruby/test_exception.rb: test for exception change. Backport of r24404.
+
 Sat Jun 12 07:34:00 Kirk Haines <khaines@ruby-lang.org>
 
-	* configure.in: Backport #1710 [ruby-core:24104]; backport of r20573 to clean up handling of LIBPATHFLAG.
+	* configure.in: Backport #1710 [ruby-core:24104]; backport of r20573 to clean up handling of LIBPATHFLAG. r28291
 
 Thu Jun 10 22:50:00 Kirk Haines <khaines@ruby-lang.org>
 

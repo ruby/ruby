@@ -1,5 +1,11 @@
 require 'test/unit'
 
+class ZeroDivisionError
+  def self.new(message)
+    42
+  end
+end
+
 class TestException < Test::Unit::TestCase
   def test_exception
     begin
@@ -20,6 +26,9 @@ class TestException < Test::Unit::TestCase
       end
     end
     assert(true)
+
+    e = assert_raise(TypeError) { 1/0 }
+    assert_equal('exception class/object expected', e.message)
 
     # exception in rescue clause
     $string = "this must be handled no.3"
