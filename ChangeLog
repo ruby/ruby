@@ -1,3 +1,12 @@
+Tue Jun 22 01:38:23 2010  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb: raise DRbConnError instead of ArgumentError if too
+	  many arguments. [ruby-dev:41481]
+
+	* test/drb/test_drb.rb: ditto.
+
+	* test/drb/drbtest.rb: ditto.
+
 Tue Jun 22 00:57:57 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/webrick/httpservlet/filehandler.rb
