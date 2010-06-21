@@ -1,3 +1,11 @@
+Mon Jun 21 23:41:08 2010  wanabe  <s.wanabe@gmail.com>
+
+	* eval_error.c (error_print): clear raised_flag while error-printing
+	  to avoid hang. [ruby-core:27608]
+
+	* test/ruby/test_beginendblock.rb (test_endblock_raise): add test for
+	  above.
+
 Fri Jun 18 23:08:18 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* Makefile.in (distclean-ext): removes directories for extensions
