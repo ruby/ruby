@@ -214,16 +214,20 @@ module WEBrick
         # character in URI notation. So the value of path_info should be
         # normalize before accessing to the filesystem.
 
+        # dirty hack for filesystem encoding; in nature, File.expand_path
+        # should not be used for path normalization.  [Bug #3345]
+        path = req.path_info.dup.force_encoding(Encoding.find("filesystem"))
         if trailing_pathsep?(req.path_info)
           # File.expand_path removes the trailing path separator.
           # Adding a character is a workaround to save it.
           #  File.expand_path("/aaa/")        #=> "/aaa"
           #  File.expand_path("/aaa/" + "x")  #=> "/aaa/x"
-          expanded = File.expand_path(req.path_info + "x")
+          expanded = File.expand_path(path + "x")
           expanded.chop!  # remove trailing "x"
         else
-          expanded = File.expand_path(req.path_info)
+          expanded = File.expand_path(path)
         end
+        expanded.force_encoding(req.path_info.encoding)
         req.path_info = expanded
       end
 

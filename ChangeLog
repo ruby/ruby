@@ -1,3 +1,9 @@
+Tue Jun 22 00:57:57 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/webrick/httpservlet/filehandler.rb
+	  (prevent_directory_traversal): apply filesystem encoding to path
+	  only during calling File.expand_path.  [ruby-dev:41423]
+
 Mon Jun 21 23:41:08 2010  wanabe  <s.wanabe@gmail.com>
 
 	* eval_error.c (error_print): clear raised_flag while error-printing
