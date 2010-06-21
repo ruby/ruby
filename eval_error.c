@@ -67,13 +67,16 @@ static void
 error_print(void)
 {
     volatile VALUE errat = Qnil;		/* OK */
-    VALUE errinfo = GET_THREAD()->errinfo;
+    rb_thread_t *th = GET_THREAD();
+    VALUE errinfo = th->errinfo;
+    int raised_flag = th->raised_flag;
     volatile VALUE eclass, e;
     const char *volatile einfo;
     volatile long elen;
 
     if (NIL_P(errinfo))
 	return;
+    rb_thread_raised_clear(th);
 
     PUSH_TAG();
     if (EXEC_TAG() == 0) {
@@ -179,6 +182,7 @@ error_print(void)
     }
   error:
     POP_TAG();
+    rb_thread_raised_set(th, raised_flag);
 }
 
 void

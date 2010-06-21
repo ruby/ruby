@@ -108,4 +108,20 @@ EOW
     assert_nil $?.exitstatus
     assert_equal Signal.list["INT"], $?.termsig
   end
+
+  def test_endblock_raise
+    ruby = EnvUtil.rubybin
+    out = IO.popen(
+      [ruby,
+       '-e', 'class C; def write(x); puts x; STDOUT.flush; sleep 0.01; end; end',
+       '-e', '$stderr = C.new',
+       '-e', 'END {raise "e1"}; END {puts "e2"}',
+       '-e', 'END {raise "e3"}; END {puts "e4"}',
+       '-e', 'END {raise "e5"}; END {puts "e6"}']) {|f|
+      Thread.new {sleep 5; Process.kill :KILL, f.pid}
+      f.read
+    }
+    assert_match(/e1/, out)
+    assert_match(/e6/, out)
+  end
 end
