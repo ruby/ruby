@@ -92,7 +92,7 @@ ossl_x509_ary2sk(VALUE ary)
 
 #define OSSL_IMPL_SK2ARY(name, type)	        \
 VALUE						\
-ossl_##name##_sk2ary(STACK *sk)			\
+ossl_##name##_sk2ary(STACK_OF(type) *sk)	\
 {						\
     type *t;					\
     int i, num;					\
@@ -102,7 +102,7 @@ ossl_##name##_sk2ary(STACK *sk)			\
 	OSSL_Debug("empty sk!");		\
 	return Qnil;				\
     }						\
-    num = sk_num(sk);				\
+    num = sk_##type##_num(sk);			\
     if (num < 0) {				\
 	OSSL_Debug("items in sk < -1???");	\
 	return rb_ary_new();			\
@@ -110,7 +110,7 @@ ossl_##name##_sk2ary(STACK *sk)			\
     ary = rb_ary_new2(num);			\
 						\
     for (i=0; i<num; i++) {			\
-	t = (type *)sk_value(sk, i);		\
+	t = sk_##type##_value(sk, i);		\
 	rb_ary_push(ary, ossl_##name##_new(t));	\
     }						\
     return ary;					\

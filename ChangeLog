@@ -1,3 +1,78 @@
+Mon Jun 21 18:12:15 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/openssl/extconf.rb: check some functions added at OpenSSL 1.0.0.
+
+	* ext/openssl/ossl_engine.c (ossl_engine_s_load): use engines which
+	  exists.
+
+Mon Jun 21 18:12:15 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* ext/openssl/ossl_config.c: defined own IMPLEMENT_LHASH_DOALL_ARG_FN_098
+	  macro according to IMPLEMENT_LHASH_DOALL_ARG_FN in OpenSSL 0.9.8m.
+	  OpenSSL 1.0.0beta5 has a slightly different definiton so it could
+	  be a temporal workaround for 0.9.8 and 1.0.0 dual support.
+
+	* ext/openssl/ossl_pkcs5.c (ossl_pkcs5_pbkdf2_hmac): follows function
+	  definition in OpenSSL 1.0.0beta5. PKCS5_PBKDF2_HMAC is from 1.0.0
+	  (0.9.8 only has PKCS5_PBKDF2_HMAC_SHA1)
+
+	* ext/openssl/ossl_ssl_session.c (ossl_ssl_session_eq): do not use
+	  SSL_SESSION_cmp and implement equality func by ousrself.  See the
+	  comment.
+
+Mon Jun 21 18:12:15 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl_session.c
+	  (ossl_ssl_session_{get,set}_time{,out}): fixed a bug introduced by
+	  backporting. (see [ruby-dev:40573])  use long in according to
+	  OpenSSL API. (SSL_SESSION_{get,set}_time{,out})
+
+Mon Jun 21 18:12:15 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* ext/openssl/ossl_x509name.c: added X509::Name#hash_old as a wrapper
+	  for X509_NAME_hash_old in OpenSSL 1.0.0.
+
+	* test/openssl/test_x509name.rb (test_hash): make test pass with
+	  OpenSSL 1.0.0.
+
+Mon Jun 21 18:12:15 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/openssl/test_x509*: make tests pass with OpenSSL 1.0.0b5.
+	  * PKey::PKey#verify raises an exception when a given PKey does not
+	    match with signature.
+	  * PKey::DSA#sign accepts SHA1, SHA256 other than DSS1.
+
+Mon Jun 21 18:12:15 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* backport the commit from trunk:
+	  Sun Feb 28 11:49:35 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* openssl/ossl.c (OSSL_IMPL_SK2ARY): for OpenSSL 1.0.
+	  patched by Jeroen van Meeuwen at [ruby-core:25210]
+	  fixed by Nobuyoshi Nakada [ruby-core:25238],
+	  Hongli Lai [ruby-core:27417],
+	  and Motohiro KOSAKI [ruby-core:28063]
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_method_tab),
+	  (ossl_ssl_cipher_to_ary): constified.
+
+	* ext/openssl/ossl_pkcs7.c (pkcs7_get_certs, pkcs7_get_crls):
+	  split pkcs7_get_certs_or_crls.
+
+Mon Jun 21 18:12:15 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/openssl/test_ec.rb: added test_dsa_sign_asn1_FIPS186_3. dgst is
+	  truncated with ec_key.group.order.size after openssl 0.9.8m for
+	  FIPS 186-3 compliance.
+
+	  WARNING: ruby-openssl aims to wrap an OpenSSL so when you're using
+	  openssl 0.9.8l or earlier version, EC.dsa_sign_asn1 raises
+	  OpenSSL::PKey::ECError as before and EC.dsa_verify_asn1 just returns
+	  false when you pass dgst longer than expected (no truncation
+	  performed).
+
+	* ext/openssl/ossl_pkey_ec.c: rdoc typo fixed.
+
 Wed Jun 16 16:01:42 2010  Tanaka Akira  <akr@fsij.org>
 
 	* lib/pathname.rb (Pathname#sub): suppress a warning.

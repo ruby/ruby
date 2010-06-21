@@ -87,9 +87,7 @@ class OpenSSL::TestEC < Test::Unit::TestCase
   def test_dsa_sign_verify
     for key in @keys
       sig = key.dsa_sign_asn1(@data1)
-      assert_equal(key.dsa_verify_asn1(@data1, sig), true)
-        
-      assert_raises(OpenSSL::PKey::ECError) { key.dsa_sign_asn1(@data2) }
+      assert(key.dsa_verify_asn1(@data1, sig))
     end
   end
 

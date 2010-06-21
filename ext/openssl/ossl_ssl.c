@@ -1196,10 +1196,10 @@ ossl_ssl_get_peer_cert_chain(VALUE self)
     }
     chain = SSL_get_peer_cert_chain(ssl);
     if(!chain) return Qnil;
-    num = sk_num(chain);
+    num = sk_X509_num(chain);
     ary = rb_ary_new2(num);
     for (i = 0; i < num; i++){
-	cert = (X509*)sk_value(chain, i);
+	cert = sk_X509_value(chain, i);
 	rb_ary_push(ary, ossl_x509_new(cert));
     }
 

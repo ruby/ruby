@@ -86,9 +86,18 @@ static VALUE ossl_ssl_session_eq(VALUE val1, VALUE val2)
 	GetSSLSession(val1, ctx1);
 	SafeGetSSLSession(val2, ctx2);
 
-	switch (SSL_SESSION_cmp(ctx1, ctx2)) {
-	case 0:		return Qtrue;
-	default:	return Qfalse;
+	/*
+	 * OpenSSL 1.0.0betas do not have non-static SSL_SESSION_cmp.
+	 * ssl_session_cmp (was SSL_SESSION_cmp in 0.9.8) is for lhash
+	 * comparing so we should not depend on it.  Just compare sessions
+	 * by version and id.
+	 */
+	if ((ctx1->ssl_version == ctx2->ssl_version) &&
+	    (ctx1->session_id_length == ctx2->session_id_length) &&
+	    (memcmp(ctx1->session_id, ctx2->session_id, ctx1->session_id_length) == 0)) {
+	    return Qtrue;
+	} else {
+	    return Qfalse;
 	}
 }
 
