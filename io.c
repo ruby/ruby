@@ -6660,7 +6660,7 @@ argf_initialize_copy(VALUE argf, VALUE orig)
  *  call-seq:
  *     ARGF.lineno = number  -> nil
  *
- *  Sets the line number of the current file in +ARGF+ to the given +Integer+.
+ *  Sets the line number of +ARGF+ as a whole to the given +Integer+.
  *
  *  +ARGF+ sets the line number automatically as you read data, so normally
  *  you will not need to set it explicitly. To access the current line number
@@ -6686,7 +6686,7 @@ argf_set_lineno(VALUE argf, VALUE val)
  *  call-seq:
  *     ARGF.lineno -> integer
  *
- *  Returns the current line number of the current file in +ARGF+. This value
+ *  Returns the current line number of ARGF as a whole. This value
  *  can be set manually with +ARGF.lineno=+.
  *
  *  For example:
