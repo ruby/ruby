@@ -656,35 +656,50 @@ wmod(wideval_t wx, wideval_t wy)
 static VALUE
 num_exact(VALUE v)
 {
-    switch (TYPE(v)) {
+    VALUE tmp;
+    int t;
+
+    t = TYPE(v);
+    switch (t) {
       case T_FIXNUM:
       case T_BIGNUM:
-      case T_RATIONAL:
-        break;
+        return v;
 
-      case T_FLOAT:
-        v = rb_convert_type(v, T_RATIONAL, "Rational", "to_r");
+      case T_RATIONAL:
         break;
 
       case T_STRING:
       case T_NIL:
         goto typeerror;
 
-      default: {
-        VALUE tmp;
-        if (!NIL_P(tmp = rb_check_convert_type(v, T_RATIONAL, "Rational", "to_r"))) {
-	    if (rb_respond_to(v, rb_intern("to_str"))) goto typeerror;
+      default:
+        if ((tmp = rb_check_funcall(v, rb_intern("to_r"), 0, NULL)) != Qundef) {
+            if (rb_respond_to(v, rb_intern("to_str"))) goto typeerror;
             v = tmp;
-	}
-        else if (!NIL_P(tmp = rb_check_to_integer(v, "to_int")))
-            v = tmp;
-        else {
-          typeerror:
-            rb_raise(rb_eTypeError, "can't convert %s into an exact number",
-		                    NIL_P(v) ? "nil" : rb_obj_classname(v));
+            break;
         }
+        if (!NIL_P(tmp = rb_check_to_integer(v, "to_int"))) {
+            v = tmp;
+            break;
+        }
+        goto typeerror;
+    }
+
+    t = TYPE(v);
+    switch (t) {
+      case T_FIXNUM:
+      case T_BIGNUM:
+        return v;
+
+      case T_RATIONAL:
+        if (RRATIONAL(v)->den == INT2FIX(1))
+            v = RRATIONAL(v)->num;
         break;
-      }
+
+      default:
+      typeerror:
+        rb_raise(rb_eTypeError, "can't convert %s into an exact number",
+                                NIL_P(v) ? "nil" : rb_obj_classname(v));
     }
     return v;
 }
@@ -3140,7 +3155,7 @@ time_to_r(VALUE time)
     GetTimeval(time, tobj);
     v = w2v(rb_time_unmagnify(tobj->timew));
     if (TYPE(v) != T_RATIONAL) {
-        v = rb_convert_type(v, T_RATIONAL, "Rational", "to_r");
+        v = rb_Rational1(v);
     }
     return v;
 }
