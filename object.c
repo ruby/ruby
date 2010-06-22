@@ -1755,7 +1755,7 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
  *  call-seq:
  *     obj.methods    -> array
  *
- *  Returns a list of the names of methods publicly accessible in
+ *  Returns a list of the names of public and protected methods of
  *  <i>obj</i>. This will include all the methods accessible in
  *  <i>obj</i>'s ancestors.
  *
