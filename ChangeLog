@@ -1,6 +1,7 @@
 Wed Jun 23 06:44:05 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* configure.in (fchown): need to check.  [ruby-core:30818]
+	* configure.in (fchown): need to check.  a patch by Eric Wong
+	  at [ruby-core:30818].
 
 	* io.c (argf_next_argv): check for setting owner/group.
 
