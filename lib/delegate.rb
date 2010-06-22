@@ -137,7 +137,9 @@ class Delegator < BasicObject
     __setobj__(obj)
   end
 
+  #
   # Handles the magic of delegation through \_\_getobj\_\_.
+  #
   def method_missing(m, *args, &block)
     target = self.__getobj__
     begin
@@ -222,7 +224,9 @@ class Delegator < BasicObject
     raise NotImplementedError, "need to define `__setobj__'"
   end
 
+  #
   # Serialization support for the object returned by \_\_getobj\_\_.
+  #
   def marshal_dump
     ivars = instance_variables.reject {|var| /\A@delegate_/ =~ var}
     [
@@ -231,7 +235,10 @@ class Delegator < BasicObject
       __getobj__
     ]
   end
+
+  #
   # Reinitializes delegation from a serialized object.
+  #
   def marshal_load(data)
     version, vars, values, obj = data
     if version == :__v2__
@@ -250,10 +257,36 @@ class Delegator < BasicObject
   end
   private :initialize_clone, :initialize_dup
 
-  # Freeze self and target at once.
-  def freeze
-    __getobj__.freeze
-    super
+  ##
+  # :method: trust
+  # Trust both the object returned by \_\_getobj\_\_ and self.
+  #
+
+  ##
+  # :method: untrust
+  # Untrust both the object returned by \_\_getobj\_\_ and self.
+  #
+
+  ##
+  # :method: taint
+  # Taint both the object returned by \_\_getobj\_\_ and self.
+  #
+
+  ##
+  # :method: untaint
+  # Untaint both the object returned by \_\_getobj\_\_ and self.
+  #
+
+  ##
+  # :method: freeze
+  # Freeze both the object returned by \_\_getobj\_\_ and self.
+  #
+
+  [:trust, :untrust, :taint, :untaint, :freeze].each do |method|
+    define_method method do
+      __getobj__.send(method)
+      super()
+    end
   end
 
   @delegator_api = self.public_instance_methods
