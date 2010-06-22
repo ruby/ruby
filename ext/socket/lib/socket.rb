@@ -488,7 +488,6 @@ class Socket < BasicSocket
   def self.udp_server_sockets(host=nil, port)
     last_error = nil
     sockets = []
-    addr_hash = {}
 
     ipv6_recvpktinfo = nil
     if defined? Socket::AncillaryData
@@ -608,7 +607,7 @@ class Socket < BasicSocket
   def self.udp_server_loop_on(sockets, &b) # :yield: msg, msg_src
     loop {
       readable, _, _ = IO.select(sockets)
-      udp_server_recv(sockets, &b)
+      udp_server_recv(readable, &b)
     }
   end
 

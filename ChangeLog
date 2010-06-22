@@ -1,3 +1,7 @@
+Tue Jun 22 22:00:06 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/lib/socket.rb: suppress warnings.
+
 Tue Jun 22 13:26:47 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/delegate.rb: Forward #trust, #untrust, #taint and #untaint
