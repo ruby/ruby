@@ -1,7 +1,11 @@
+Wed Jun 23 02:07:00 Kirk Haines <khaines@ruby-lang.org>
+
+	* object.c: Backport #2364 [ruby-core:26733]; Allow result of to_f to be NaN to permit conversion from BigDecimal('NaN') to Float. 
+
 Tue Jun 22 04:29:00 Kirk Haines <khaines@ruby-lang.org>
 
-	* eval.c: Bug #1886 [ruby-core:24767]; ensure that rb_exc_raise and rb_exc_fatal require an exception object. Backport of r24403.
-	* test/ruby/test_exception.rb: test for exception change. Backport of r24404.
+	* eval.c: Bug #1886 [ruby-core:24767]; ensure that rb_exc_raise and rb_exc_fatal require an exception object. Backport of r24403. r28374
+	* test/ruby/test_exception.rb: test for exception change. Backport of r24404. r28374
 
 Sat Jun 12 07:34:00 Kirk Haines <khaines@ruby-lang.org>
 
