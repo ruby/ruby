@@ -215,7 +215,7 @@ module FileUtils
       stack.reverse_each do |dir|
         begin
           fu_mkdir dir, options[:mode]
-        rescue SystemCallError => err
+        rescue SystemCallError
           raise unless File.directory?(dir)
         end
       end
