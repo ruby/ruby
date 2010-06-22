@@ -36,6 +36,14 @@
 # define USE_SETVBUF
 #endif
 
+#ifndef BSD_STDIO
+# if defined(__MACH__) || defined(__DARWIN__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__bsdi__)
+#   define BSD_STDIO 1
+# else
+#   define BSD_STDIO 0
+# endif
+#endif
+
 #ifdef __QNXNTO__
 #include "unix.h"
 #endif
@@ -472,6 +480,9 @@ io_fwrite(str, fptr)
         TRAP_BEG;
 	r = write(fileno(f), RSTRING(str)->ptr+offset, l);
         TRAP_END;
+#if BSD_STDIO
+	fseeko(f, lseek(fileno(f), (off_t)0, SEEK_CUR), SEEK_SET);
+#endif
         if (r == n) return len;
         if (0 <= r) {
             offset += r;

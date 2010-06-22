@@ -1,6 +1,11 @@
+Wed Jun 23 04:26:00 Kirk Haines <khaines@ruby-lang.org>
+
+	* io.c: Backport #2267 [ruby-core:26300]; Fix problem with IO so that the file position is correct after a direct write on BSDish platforms like OS X.
+	* test/ruby/test_io.rb: Added a test for the fix.
+
 Wed Jun 23 02:07:00 Kirk Haines <khaines@ruby-lang.org>
 
-	* object.c: Backport #2364 [ruby-core:26733]; Allow result of to_f to be NaN to permit conversion from BigDecimal('NaN') to Float. 
+	* object.c: Backport #2364 [ruby-core:26733]; Allow result of to_f to be NaN to permit conversion from BigDecimal('NaN') to Float. r28392
 
 Tue Jun 22 04:29:00 Kirk Haines <khaines@ruby-lang.org>
 
