@@ -1,3 +1,8 @@
+Tue Jun 22 13:26:47 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/delegate.rb: Forward #trust, #untrust, #taint and #untaint
+	  to both the delegator and __getobj__ [ruby-core:26138]
+
 Tue Jun 22 01:38:23 2010  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb: raise DRbConnError instead of ArgumentError if too
