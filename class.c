@@ -866,8 +866,8 @@ class_instance_method_list(int argc, VALUE *argv, VALUE mod, int obj, int (*func
  *  call-seq:
  *     mod.instance_methods(include_super=true)   -> array
  *
- *  Returns an array containing the names of instance methods that is callable
- *  from outside in the receiver. For a module, these are the public methods;
+ *  Returns an array containing the names of the public and protected instance
+ *  methods in the receiver. For a module, these are the public and protected methods;
  *  for a class, they are the instance (not singleton) methods. With no
  *  argument, or with an argument that is <code>false</code>, the
  *  instance methods in <i>mod</i> are returned, otherwise the methods
@@ -952,7 +952,7 @@ rb_class_public_instance_methods(int argc, VALUE *argv, VALUE mod)
  *  call-seq:
  *     obj.methods    -> array
  *
- *  Returns a list of the names of methods publicly accessible in
+ *  Returns a list of the names of public and protected methods of
  *  <i>obj</i>. This will include all the methods accessible in
  *  <i>obj</i>'s ancestors.
  *
@@ -1041,6 +1041,7 @@ rb_obj_public_methods(int argc, VALUE *argv, VALUE obj)
  *  Returns an array of the names of singleton methods for <i>obj</i>.
  *  If the optional <i>all</i> parameter is true, the list will include
  *  methods in modules included in <i>obj</i>.
+ *  Only public and protected singleton methods are returned.
  *
  *     module Other
  *       def three() end
