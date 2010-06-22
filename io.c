@@ -6818,11 +6818,21 @@ argf_next_argv(VALUE argf)
 		    chmod(fn, st.st_mode);
 #endif
 		    if (st.st_uid!=st2.st_uid || st.st_gid!=st2.st_gid) {
+			int err;
 #ifdef HAVE_FCHOWN
-			(void)fchown(fw, st.st_uid, st.st_gid);
+			err = fchown(fw, st.st_uid, st.st_gid);
 #else
-			(void)chown(fn, st.st_uid, st.st_gid);
+			err = chown(fn, st.st_uid, st.st_gid);
 #endif
+			if (err && getuid() == 0 && st2.st_uid == 0) {
+			    const char *wkfn = RSTRING_PTR(ARGF.filename);
+			    rb_warn("Can't set owner/group of %s to same as %s: %s, skipping file",
+				    wkfn, fn, strerror(errno));
+			    (void)close(fr);
+			    (void)close(fw);
+			    (void)unlink(wkfn);
+			    goto retry;
+			}
 		    }
 #endif
 		    rb_stdout = prep_io(fw, FMODE_WRITABLE, rb_cFile, fn);
