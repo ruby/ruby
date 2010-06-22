@@ -1,8 +1,6 @@
-require 'test/unit'
-require 'optparse'
+require_relative 'test_optparse'
 
-class TestOptionParser < Test::Unit::TestCase; end
-class TestOptionParser::SummaryTest < Test::Unit::TestCase
+class TestOptionParser::SummaryTest < TestOptionParser
   def test_short_clash
     r = nil
     o = OptionParser.new do |opts|
