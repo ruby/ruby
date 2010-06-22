@@ -1,3 +1,8 @@
+Tue Jun 22 21:33:23 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/optparse/test_summary.rb: fixed superclass so that it run
+	  solely.
+
 Tue Jun 22 19:57:33 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (shadowing_lvar_gen): should add lvar to vars and
