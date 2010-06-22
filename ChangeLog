@@ -1,3 +1,8 @@
+Tue Jun 22 19:57:33 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (shadowing_lvar_gen): should add lvar to vars and
+	  used.  [ruby-dev:41666]
+
 Tue Jun 22 13:23:13 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/delegate.rb: Forward #trust, #untrust, #taint and #untaint
