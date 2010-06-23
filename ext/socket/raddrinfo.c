@@ -343,6 +343,7 @@ rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_h
     }
 
 #if defined(__APPLE__) && defined(__MACH__)
+    /* [ruby-dev:23164] */
     {
         struct addrinfo *r;
         r = res;
