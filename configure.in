@@ -587,7 +587,7 @@ AC_CHECK_HEADERS(stdlib.h string.h unistd.h limits.h sys/file.h sys/ioctl.h sys/
 		 fcntl.h sys/fcntl.h sys/select.h sys/time.h sys/times.h sys/param.h\
 		 syscall.h pwd.h grp.h a.out.h utime.h memory.h direct.h sys/resource.h \
 		 sys/mkdev.h sys/utime.h netinet/in_systm.h float.h ieeefp.h \
-		 ucontext.h intrinsics.h time.h)
+		 intrinsics.h time.h)
 
 dnl Check additional types.
 AC_CHECK_SIZEOF(rlim_t, 0, [
@@ -1146,8 +1146,22 @@ if test x"$enable_pthread" = xyes; then
        fi
     fi
 fi
-if test x"$ac_cv_header_ucontext_h" = xyes; then
-    if test x"$rb_with_pthread" = xyes; then
+
+use_context=no
+if test x"$rb_with_pthread" = xyes; then
+    AS_CASE("$target_cpu:$target_os:$cross_compiling",
+    [*:linux*:no], [
+        if test -n "`(/lib/libc.so.6 2>/dev/null | fgrep 'Native POSIX Threads') 2> /dev/null`"; then
+	    use_context=yes
+	fi
+    ],
+    [sparc*], [
+    	use_context=yes
+    ])
+fi
+if test x"$use_context" = xyes; then
+    AC_CHECK_HEADERS(ucontext.h)
+    if test x"$ac_cv_header_ucontext_h" = xyes; then
 	AC_CHECK_FUNCS(getcontext setcontext)
     fi
 fi

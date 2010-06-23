@@ -1,3 +1,9 @@
+Wed Jun 23 21:36:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: avoid getcontext() overhead if possible.
+	[ruby-core:27380][Bug #2553]
+	Thanks, Joe Damato, Dan Peterson and Patrick Mohr.
+
 Tue Jun 22 21:33:23 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/optparse/test_summary.rb: fixed superclass so that it run
