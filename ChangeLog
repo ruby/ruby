@@ -1,3 +1,13 @@
+Thu Jun 24 05:44:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (struct dump_arg, struct load_arg): merge taint and
+	  untrust flags into infection as bit flags.
+
+	* marshal.c (w_nbyte, clear_dump_arg): infect the buffer as soon
+	  as appending, because it might have been finalized already at
+	  exit.  based on a patch by Tomoyuki Chikanaga
+	  at [ruby-dev:41672].  [Bug #3463]
+
 Wed Jun 23 17:12:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* NEWS (ptr): new method and deprecated methods.  [ruby-dev:41681]

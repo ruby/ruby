@@ -131,14 +131,16 @@ rb_marshal_define_compat(VALUE newclass, VALUE oldclass, VALUE (*dumper)(VALUE),
     st_insert(compat_allocator_tbl, (st_data_t)allocator, (st_data_t)compat);
 }
 
+#define MARSHAL_INFECTION (FL_TAINT|FL_UNTRUSTED)
+typedef char ruby_check_marshal_viral_flags[MARSHAL_INFECTION == (int)MARSHAL_INFECTION ? 1 : -1];
+
 struct dump_arg {
     VALUE str, dest;
     st_table *symbols;
     st_table *data;
-    int taint;
-    int untrust;
     st_table *compat_tbl;
     st_table *encodings;
+    int infection;
 };
 
 struct dump_call_arg {
@@ -224,9 +226,8 @@ w_nbyte(const char *s, long n, struct dump_arg *arg)
 {
     VALUE buf = arg->str;
     rb_str_buf_cat(buf, s, n);
+    RBASIC(buf)->flags |= arg->infection;
     if (arg->dest && RSTRING_LEN(buf) >= BUFSIZ) {
-	if (arg->taint) OBJ_TAINT(buf);
-	if (arg->untrust) OBJ_UNTRUST(buf);
 	rb_io_write(arg->dest, buf);
 	rb_str_resize(buf, 0);
     }
@@ -639,8 +640,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	w_symbol(SYM2ID(obj), arg);
     }
     else {
-	if (OBJ_TAINTED(obj)) arg->taint = TRUE;
-	if (OBJ_UNTRUSTED(obj)) arg->untrust = TRUE;
+	arg->infection |= FL_TEST(obj, MARSHAL_INFECTION);
 
 	if (rb_respond_to(obj, s_mdump)) {
 	    volatile VALUE v;
@@ -859,12 +859,6 @@ clear_dump_arg(struct dump_arg *arg)
 	st_free_table(arg->encodings);
 	arg->encodings = 0;
     }
-    if (arg->taint) {
-	OBJ_TAINT(arg->str);
-    }
-    if (arg->untrust) {
-	OBJ_UNTRUST(arg->str);
-    }
 }
 
 /*
@@ -925,8 +919,7 @@ marshal_dump(int argc, VALUE *argv)
     arg->dest = 0;
     arg->symbols = st_init_numtable();
     arg->data    = st_init_numtable();
-    arg->taint   = FALSE;
-    arg->untrust = FALSE;
+    arg->infection = 0;
     arg->compat_tbl = st_init_numtable();
     arg->encodings = 0;
     arg->str = rb_str_buf_new(0);
@@ -965,9 +958,8 @@ struct load_arg {
     st_table *symbols;
     st_table *data;
     VALUE proc;
-    int taint;
-    int untrust;
     st_table *compat_tbl;
+    int infection;
 };
 
 static void
@@ -1121,8 +1113,7 @@ r_bytes0(long len, struct load_arg *arg)
 	if (NIL_P(str)) goto too_short;
 	StringValue(str);
 	if (RSTRING_LEN(str) != len) goto too_short;
-	if (OBJ_TAINTED(str)) arg->taint = TRUE;
-	if (OBJ_UNTRUSTED(str)) arg->untrust = TRUE;
+	arg->infection |= FL_TEST(str, MARSHAL_INFECTION);
     }
     return str;
 }
@@ -1223,15 +1214,10 @@ r_entry0(VALUE v, st_index_t num, struct load_arg *arg)
     else {
         st_insert(arg->data, num, (st_data_t)v);
     }
-    if (arg->taint) {
-        OBJ_TAINT(v);
-        if ((VALUE)real_obj != Qundef)
-            OBJ_TAINT((VALUE)real_obj);
-    }
-    if (arg->untrust) {
-        OBJ_UNTRUST(v);
-        if ((VALUE)real_obj != Qundef)
-            OBJ_UNTRUST((VALUE)real_obj);
+    if (arg->infection) {
+	FL_SET(v, arg->infection);
+	if ((VALUE)real_obj != Qundef)
+	    FL_SET((VALUE)real_obj, arg->infection);
     }
     return v;
 }
@@ -1768,7 +1754,7 @@ static VALUE
 marshal_load(int argc, VALUE *argv)
 {
     VALUE port, proc;
-    int major, minor, taint = FALSE;
+    int major, minor, infection = 0;
     VALUE v;
     volatile VALUE wrapper;
     struct load_arg *arg;
@@ -1776,21 +1762,20 @@ marshal_load(int argc, VALUE *argv)
     rb_scan_args(argc, argv, "11", &port, &proc);
     v = rb_check_string_type(port);
     if (!NIL_P(v)) {
-	taint = OBJ_TAINTED(port); /* original taintedness */
+	infection = FL_TEST(port, MARSHAL_INFECTION); /* original taintedness */
 	port = v;
     }
     else if (rb_respond_to(port, s_getbyte) && rb_respond_to(port, s_read)) {
 	if (rb_respond_to(port, s_binmode)) {
 	    rb_funcall2(port, s_binmode, 0, 0);
 	}
-	taint = TRUE;
+	infection = FL_TAINT | FL_TEST(port, FL_UNTRUSTED);
     }
     else {
 	rb_raise(rb_eTypeError, "instance of IO needed");
     }
     wrapper = TypedData_Make_Struct(rb_cData, struct load_arg, &load_arg_data, arg);
-    arg->taint = taint;
-    arg->untrust = OBJ_UNTRUSTED(port);
+    arg->infection = infection;
     arg->src = port;
     arg->offset = 0;
     arg->symbols = st_init_numtable();
