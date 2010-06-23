@@ -819,9 +819,11 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_dup_warn
-    assert_in_out_err(%w/-w -U/, "#coding:utf-8\nx=/[\u3042\u3041]/\n!x", [], /\A\z/)
-    assert_in_out_err(%w/-w -U/, "#coding:utf-8\nx=/[\u3042\u3042]/\n!x", [], /duplicated/)
-    assert_in_out_err(%w/-w -U/, "#coding:utf-8\nx=/[\u3042\u3041-\u3043]/\n!x", [], /duplicated/)
+    assert_in_out_err(%w/-w -U/, "#coding:utf-8\nx=/[\u3042\u3041]/\n!x", [], [])
+    assert_in_out_err(%w/-w -U/, "#coding:utf-8\nx=/[\u3042\u3042]/\n!x", [], /duplicated/u, nil,
+                      encoding: Encoding::UTF_8)
+    assert_in_out_err(%w/-w -U/, "#coding:utf-8\nx=/[\u3042\u3041-\u3043]/\n!x", [], /duplicated/u, nil,
+                      encoding: Encoding::UTF_8)
   end
 
   def test_property_warn
