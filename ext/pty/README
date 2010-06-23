@@ -43,6 +43,25 @@ following module fungtions:
 
       These functions are obsolete in this version of pty.
 
+   PTY.open
+
+      Allocates a pty (pseudo-terminal).
+
+      It returns an array which contains an IO object and a File object.
+      The former is the master of the pty.
+      The latter is the slave of the pty.
+
+      If a block is given, it yields the array instead of return.
+      The value of the block is returned.
+      master_io and slave_file is closed when return if they are not closed.
+
+   PTY.check(pid[, raise=false])
+
+      checks the status of the child process specified by pid, and
+      returns nil if the process is still alive and active.
+      Otherwise, returns Process::Status about the process if raise is
+      false, or PTY::ChildExited exception is raised.
+
 4. License
 
 (C) Copyright 1998 by Akinori Ito.
