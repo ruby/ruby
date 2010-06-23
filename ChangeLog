@@ -1,3 +1,10 @@
+Wed Jun 23 12:44:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_regexp.rb (test_dup_warn): read in UTF-8
+	  encoding regardless environment.
+
+	* test/ruby/envutil.rb (invoke_ruby): add encoding option.
+
 Tue Jun 22 23:10:10 2010  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (num_exact): fix for mathn.  [ruby-dev:41599]
