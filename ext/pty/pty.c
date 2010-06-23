@@ -606,6 +606,15 @@ raise_from_check(pid_t pid, int status)
     rb_exc_raise(exc);
 }
 
+/*
+ * call-seq:
+ *   PTY.check(pid[, raise=false])   => Process::Status or nil
+ *
+ * checks the status of the child process specified by _pid_, and
+ * returns +nil+ if the process is still alive and active.  Otherwise,
+ * returns +Process::Status+ about the process if _raise_ is false, or
+ * +PTY::ChildExited+ exception is raised.
+ */
 static VALUE
 pty_check(int argc, VALUE *argv, VALUE self)
 {

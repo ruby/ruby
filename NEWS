@@ -286,8 +286,12 @@ with all sufficient information, see the ChangeLog file.
     * Open3.pipeline
 
 * pty
-  * new method:
+  * new methods:
     * PTY.open
+    * PTY.check
+  * deprecated methods:
+    * protect_signal
+    * reset_signal
 
 * openssl
   * new methods:
