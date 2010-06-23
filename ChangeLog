@@ -1,3 +1,8 @@
+Wed Jun 23 21:32:08 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (reg_get_typelib_file_path): try win64
+	  registry entry at first. [ruby-dev:41674] [Bug #3464]
+
 Wed Jun 23 21:17:32 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/raddrinfo.c (ruby_getaddrinfo__darwin): new workaround for
