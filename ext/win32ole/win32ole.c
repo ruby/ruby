@@ -130,7 +130,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.4.8"
+#define WIN32OLE_VERSION "1.4.9"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -2353,10 +2353,15 @@ static VALUE
 reg_get_typelib_file_path(HKEY hkey)
 {
     VALUE path = Qnil;
-    path = reg_get_val2(hkey, "win32");
-    if (path == Qnil) {
-        path = reg_get_val2(hkey, "win16");
+    path = reg_get_val2(hkey, "win64");
+    if (path != Qnil) {
+        return path;
     }
+    path = reg_get_val2(hkey, "win32");
+    if (path != Qnil) {
+        return path;
+    }
+    path = reg_get_val2(hkey, "win16");
     return path;
 }
 
