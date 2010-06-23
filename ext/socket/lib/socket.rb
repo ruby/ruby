@@ -577,7 +577,7 @@ class Socket < BasicSocket
   def self.udp_server_recv(sockets)
     sockets.each {|r|
       begin
-        msg, sender_addrinfo, rflags, *controls = r.recvmsg_nonblock
+        msg, sender_addrinfo, _, *controls = r.recvmsg_nonblock
       rescue IO::WaitReadable
         next
       end

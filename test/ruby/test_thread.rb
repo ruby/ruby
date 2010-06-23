@@ -231,7 +231,7 @@ class TestThread < Test::Unit::TestCase
       t1 = Thread.new { sleep }
       Thread.pass
       t2 = Thread.new { loop { } }
-      t3 = Thread.new { }.join
+      Thread.new { }.join
       p [Thread.current, t1, t2].map{|t| t.object_id }.sort
       p Thread.list.map{|t| t.object_id }.sort
     INPUT

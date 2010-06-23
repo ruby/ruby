@@ -834,7 +834,6 @@ class Matrix
     a = to_a
     last_column = column_size - 1
     last_row = row_size - 1
-    rank = 0
     pivot_row = 0
     previous_pivot = 1
     0.upto(last_column) do |k|
@@ -1237,7 +1236,7 @@ class Vector
   #   Vector[7, 4, ...]
   #
   def Vector.[](*array)
-    new convert_to_array(array, copy = false)
+    new convert_to_array(array, false)
   end
 
   #
@@ -1532,6 +1531,6 @@ class Vector
   # Overrides Object#inspect
   #
   def inspect
-    str = "Vector"+@elements.inspect
+    "Vector" + @elements.inspect
   end
 end
