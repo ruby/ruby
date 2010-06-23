@@ -1,3 +1,7 @@
+Wed Jun 23 23:45:31 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* NEWS (stringio): new methods.  [ruby-dev:41687] [Bug #3469]
+
 Wed Jun 23 22:52:00 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/raddrinfo.c: don't use __P.
