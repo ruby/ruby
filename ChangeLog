@@ -1,3 +1,11 @@
+Wed Jun 23 17:12:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* NEWS (ptr): new method and deprecated methods.  [ruby-dev:41681]
+
+	* ext/pty/{README,README.ja}: ditto.
+
+	* ext/pty/pty.c (pty_check): add rdoc.
+
 Wed Jun 23 12:44:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_regexp.rb (test_dup_warn): read in UTF-8
