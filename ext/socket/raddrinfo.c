@@ -97,6 +97,33 @@ ruby_getnameinfo__aix(const struct sockaddr *sa, size_t salen,
             ruby_getnameinfo__aix((sa), (salen), (host), (hostlen), (serv), (servlen), (flags))
 #endif
 
+static int str_isnumber __P((const char *));
+
+#if defined(__APPLE__)
+/* fix [ruby-core:29427] */
+static int
+ruby_getaddrinfo__darwin(const char *nodename, const char *servname,
+			 struct addrinfo *hints, struct addrinfo **res)
+{
+    const char *tmp_servname;
+    struct addrinfo tmp_hints;
+    tmp_servname = servname;
+    MEMCPY(&tmp_hints, hints, struct addrinfo, 1);
+    if (nodename && servname) {
+	if (str_isnumber(tmp_servname) && atoi(servname) == 0) {
+	    tmp_servname = NULL;
+#ifdef AI_NUMERICSERV
+	    if (tmp_hints.ai_flags) tmp_hints.ai_flags &= ~AI_NUMERICSERV;
+#endif
+	}
+    }
+    int error = getaddrinfo(nodename, tmp_servname, &tmp_hints, res);
+    return error;
+}
+#undef getaddrinfo
+#define getaddrinfo(node,serv,hints,res) ruby_getaddrinfo__darwin((node),(serv),(hints),(res))
+#endif
+
 #ifndef GETADDRINFO_EMU
 struct getaddrinfo_arg
 {
