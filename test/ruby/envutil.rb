@@ -76,6 +76,10 @@ module EnvUtil
       opt[:in] = in_c
       opt[:out] = out_c if capture_stdout
       opt[:err] = err_c if capture_stderr
+      if enc = opt.delete(:encoding)
+        out_p.set_encoding(enc) if out_p
+        err_p.set_encoding(enc) if err_p
+      end
       case args.first
       when Hash
         child_env = [args.shift]
