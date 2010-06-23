@@ -182,7 +182,7 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_syntax_check
-    assert_in_out_err(%w(-c -e a=1+1), "", ["Syntax OK"], [])
+    assert_in_out_err(%w(-c -e a=1+1 -e !a), "", ["Syntax OK"], [])
   end
 
   def test_invalid_option

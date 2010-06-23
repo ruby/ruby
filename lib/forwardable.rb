@@ -246,7 +246,7 @@ module SingleForwardable
   # provided, it is used as the name for the delegate method.
   #
   def def_single_delegator(accessor, method, ali = method)
-    line_no = __LINE__; str = %{
+    str = %{
       def #{ali}(*args, &block)
 	begin
 	  #{accessor}.__send__(:#{method}, *args, &block)
@@ -264,7 +264,3 @@ module SingleForwardable
   alias def_delegators def_single_delegators
   alias def_delegator def_single_delegator
 end
-
-
-
-

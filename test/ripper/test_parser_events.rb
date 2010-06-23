@@ -1097,8 +1097,8 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal("[fcall(proc,[],&block([],[void()]))]", parse("proc{|;y|}"))
     if defined?(Process::RLIMIT_AS)
       assert_in_out_err(["-I#{File.dirname(__FILE__)}", "-rdummyparser"],
-                        'Process.setrlimit(Process::RLIMIT_AS,102400); puts DummyParser.new("proc{|;y|}").parse',
-                        ["[fcall(proc,[],&block([],[void()]))]"], [], '[ruby-dev:39423]')
+                        'Process.setrlimit(Process::RLIMIT_AS,102400); puts DummyParser.new("proc{|;y|!y}").parse',
+                        ["[fcall(proc,[],&block([],[unary(!,ref(y))]))]"], [], '[ruby-dev:39423]')
     end
   end
 

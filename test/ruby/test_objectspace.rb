@@ -61,6 +61,7 @@ End
       ObjectSpace.define_finalizer(a) { p :ok }
       b = a.dup
       ObjectSpace.define_finalizer(a) { p :ok }
+      !b
     END
     assert_raise(ArgumentError) { ObjectSpace.define_finalizer([], Object.new) }
   end
