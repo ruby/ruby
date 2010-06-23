@@ -100,11 +100,11 @@ ruby_getnameinfo__aix(const struct sockaddr *sa, size_t salen,
 static int str_is_number(const char *);
 
 #if defined(__APPLE__)
-/* fix [ruby-core:29427] */
 static int
 ruby_getaddrinfo__darwin(const char *nodename, const char *servname,
 			 struct addrinfo *hints, struct addrinfo **res)
 {
+    /* fix [ruby-core:29427] */
     const char *tmp_servname;
     struct addrinfo tmp_hints;
     tmp_servname = servname;
@@ -118,6 +118,26 @@ ruby_getaddrinfo__darwin(const char *nodename, const char *servname,
 	}
     }
     int error = getaddrinfo(nodename, tmp_servname, &tmp_hints, res);
+
+    if (error == 0)
+    {
+        /* [ruby-dev:23164] */
+        struct addrinfo *r;
+        r = *res;
+        while (r) {
+            if (! r->ai_socktype) r->ai_socktype = hints->ai_socktype;
+            if (! r->ai_protocol) {
+                if (r->ai_socktype == SOCK_DGRAM) {
+                    r->ai_protocol = IPPROTO_UDP;
+                }
+                else if (r->ai_socktype == SOCK_STREAM) {
+                    r->ai_protocol = IPPROTO_TCP;
+                }
+            }
+            r = r->ai_next;
+        }
+    }
+
     return error;
 }
 #undef getaddrinfo
@@ -342,25 +362,6 @@ rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_h
         rsock_raise_socket_error("getaddrinfo", error);
     }
 
-#if defined(__APPLE__) && defined(__MACH__)
-    /* [ruby-dev:23164] */
-    {
-        struct addrinfo *r;
-        r = res;
-        while (r) {
-            if (! r->ai_socktype) r->ai_socktype = hints->ai_socktype;
-            if (! r->ai_protocol) {
-                if (r->ai_socktype == SOCK_DGRAM) {
-                    r->ai_protocol = IPPROTO_UDP;
-                }
-                else if (r->ai_socktype == SOCK_STREAM) {
-                    r->ai_protocol = IPPROTO_TCP;
-                }
-            }
-            r = r->ai_next;
-        }
-    }
-#endif
     return res;
 }
 
