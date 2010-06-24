@@ -290,7 +290,7 @@ class TestSocket < Test::Unit::TestCase
             msg1 = "<<<#{ai.inspect}>>>"
             s.sendmsg msg1
             unless IO.select([s], nil, nil, 10)
-              raise "no response"
+              raise "no response from #{ai.inspect}"
             end
             msg2, addr = s.recvmsg
             msg2, remote_address, local_address = Marshal.load(msg2)
