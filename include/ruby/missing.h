@@ -112,8 +112,10 @@ RUBY_EXTERN int isinf(double);
 # endif
 #endif
 
-#ifndef HAVE_ISNAN
+#ifndef isnan
+# ifndef HAVE_ISNAN
 RUBY_EXTERN int isnan(double);
+# endif
 #endif
 
 /*
