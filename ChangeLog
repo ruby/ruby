@@ -1,3 +1,7 @@
+Fri Jun 25 05:49:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/un.rb (setup): fix of word splitting.  [ruby-dev:41723]
+
 Wed Jun 16 01:38:40 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/fiddle/extconf.rb: check ffi.h even when pkg-config succeeded.
