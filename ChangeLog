@@ -1,6 +1,10 @@
-Fri Jun 25 06:14:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jun 25 06:24:25 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/un.rb (httpd): MaxClients also should be integer.
+	  [ruby-dev:41724] [Bug #3477]
 
 	* lib/un.rb (setup): fix of word splitting.  [ruby-dev:41723]
+	  [Bug #3476]
 
 Wed Jun 16 01:38:40 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
