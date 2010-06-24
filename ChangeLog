@@ -1,3 +1,8 @@
+Fri Jun 25 01:07:17 2010  Masaya Tarui  <tarui@ruby-lnag.org>
+
+	* include/ruby/ruby.h (static inline rb_gc_guarded_ptr): prevent
+	  RB_GC_GUARD_PTR being removed by optimization.
+
 Thu Jun 24 06:22:27 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/raddrinfo.c (ruby_getaddrinfo__darwin): the workaround
