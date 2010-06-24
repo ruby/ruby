@@ -1,4 +1,4 @@
-Fri Jun 25 05:49:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jun 25 06:14:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/un.rb (setup): fix of word splitting.  [ruby-dev:41723]
 
