@@ -1,3 +1,8 @@
+Sun Jun 13 15:46:07 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_rubyoptions.rb: add a simple test for __END__ and
+	  DATA.
+
 Fri Jun 11 22:59:31 2010  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/missing.h (isnan): fix compilation error on OpenBSD.

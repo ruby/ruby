@@ -401,4 +401,17 @@ class TestRubyOptions < Test::Unit::TestCase
       nil,
       opts)
   end
+
+  def test_DATA
+    t = Tempfile.new(["test_ruby_test_rubyoption", ".rb"])
+    t.puts "puts DATA.read.inspect"
+    t.puts "__END__"
+    t.puts "foo"
+    t.puts "bar"
+    t.puts "baz"
+    t.close
+    assert_in_out_err([t.path], "", %w("foo\\nbar\\nbaz\\n"), [])
+  ensure
+    t.close(true) if t
+  end
 end
