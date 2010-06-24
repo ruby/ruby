@@ -1,3 +1,7 @@
+Fri Jun 25 05:49:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/un.rb (setup): fix of word splitting.  [ruby-dev:41723]
+
 Fri Jun 25 01:07:17 2010  Masaya Tarui  <tarui@ruby-lnag.org>
 
 	* include/ruby/ruby.h (static inline rb_gc_guarded_ptr): prevent
