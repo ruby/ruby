@@ -1,4 +1,7 @@
-Fri Jun 25 09:58:32 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jun 25 10:07:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/envutil.rb (Test::Unit::Assertions#assert_in_out_err):
+	  return the exit status.
 
 	* test/ruby/envutil.rb (EnvUtil#invoke_ruby): change the
 	  environment of spawned process only.

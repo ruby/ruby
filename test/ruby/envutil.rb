@@ -198,6 +198,7 @@ module Test
           else
             assert_equal(test_stderr, stderr.lines.map {|l| l.chomp }, message)
           end
+          status
         end
       end
 
