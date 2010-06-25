@@ -1,3 +1,8 @@
+Fri Jun 25 23:45:24 2010  Akinori MUSHA  <knu@iDaemons.org>
+
+	* common.mk (version.$(OBJEXT)): Fix build. (GNU make seems to
+	  have handled it)
+
 Fri Jun 25 11:37:34 2010  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/socket/raddrinfo.c (ruby_getaddrinfo__darwin): new workaround for

@@ -463,7 +463,7 @@ util.$(OBJEXT): {$(VPATH)}util.c $(RUBY_H_INCLUDES) \
 variable.$(OBJEXT): {$(VPATH)}variable.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}env.h {$(VPATH)}node.h {$(VPATH)}st.h {$(VPATH)}util.h
 version.$(OBJEXT): {$(VPATH)}version.c $(RUBY_H_INCLUDES) \
-  {$(VPATH)}version.h {$(VPATH)}revision.h
+  {$(VPATH)}version.h $(srcdir)/revision.h
 
 srcs: {$(VPATH)}parse.c {$(VPATH)}lex.c
 
