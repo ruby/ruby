@@ -1,7 +1,7 @@
 Fri Jun 25 11:45:36 2010  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	* lib/csv.rb: Fixing a bug that prevented CSV from parsing
-	  all multi-line fields correctly.  Patch by Rob Biedenham.
+	  all multi-line fields correctly.  Patch by Rob Biedenharn.
 
 Fri Jun 25 10:07:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
