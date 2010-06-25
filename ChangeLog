@@ -1,3 +1,8 @@
+Sat Jun 26 00:04:27 2010  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/fileutils.rb (FileUtils#rmdir): Backport -p (parents).  This
+	  fixes "make clean".
+
 Fri Jun 25 23:45:24 2010  Akinori MUSHA  <knu@iDaemons.org>
 
 	* common.mk (version.$(OBJEXT)): Fix build. (GNU make seems to
