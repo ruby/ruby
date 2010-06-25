@@ -165,6 +165,10 @@ with all sufficient information, see the ChangeLog file.
 
     Renamed from GDBM#index.
 
+* fileutils
+
+  * New option for FileUtils.rmdir(): :parents
+
 * matrix
   * API change to adhere strictly to mathematical definitions:
     * Matrices must now be rectangular.
