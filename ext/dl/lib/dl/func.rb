@@ -55,8 +55,8 @@ module DL
         super
       else
         funcs = []
-        args = wrap_args(args, @stack.types, funcs, &block)
-        r = @cfunc.call(@stack.pack(args))
+        _args = wrap_args(args, @stack.types, funcs, &block)
+        r = @cfunc.call(@stack.pack(_args))
         funcs.each{|f| f.unbind_at_call()}
         return wrap_result(r)
       end
