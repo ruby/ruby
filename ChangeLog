@@ -1,3 +1,9 @@
+Fri Jun 25 11:37:34 2010  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/socket/raddrinfo.c (ruby_getaddrinfo__darwin): new workaround for
+	  getaddrinfo problem on Mac OS X Snow Leopard.  [ruby-core:29427]
+	  patch by Wataru Kimura.  [ruby-core:30842] [Backport #3474]
+
 Wed Jun 23 21:36:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: avoid getcontext() overhead if possible.
