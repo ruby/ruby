@@ -1,3 +1,8 @@
+Fri Jun 25 09:56:39 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/envutil.rb (EnvUtil#invoke_ruby): get rid of possible
+	  deadlock.
+
 Fri Jun 25 06:24:25 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/un.rb (httpd): MaxClients also should be integer.
