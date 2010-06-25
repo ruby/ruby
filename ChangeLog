@@ -1,3 +1,7 @@
+Sat Jun 26 08:44:22 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* NEWS (zlib): new methods.  [ruby-dev:41706] [Bug #3472]
+
 Sat Jun 26 07:59:18 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_win32ole_method.rb (test_offset_vtbl): check
