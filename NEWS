@@ -154,22 +154,34 @@ with all sufficient information, see the ChangeLog file.
     New methods.
 
 * dbm
-
-  DBM#key
-
-    Renamed from DBM#index.
-
 * gdbm
+* sdbm
 
-  GDBM#key
+  * {DBM,GDBM,SDBM}#key
 
-    Renamed from GDBM#index.
+    Renamed from #index.
+
+* digest
+
+  * Digest::Class.base64digest
+  * Digest::Instance#base64digest
+  * Digest::Instance#base64digest!
+
+    New methods.
 
 * fileutils
 
   * New option for FileUtils.rmdir(): :parents
 
+* logger
+
+  * imported upstream version (logger/1.2.7)
+    * do not raise an exception even if log writing failed.
+    * do not raise ShiftingError if an aged file already exists.
+      (no ShiftingError will be raised from 1.2.7, just warn() instead)
+
 * matrix
+
   * API change to adhere strictly to mathematical definitions:
     * Matrices must now be rectangular.
     * trace, regular?, singular? are defined only for square matrices
@@ -206,11 +218,33 @@ with all sufficient information, see the ChangeLog file.
   * Performace improved by making overall code optimization and
     introducing Fixnum#gcd implemented in C.
 
-* sdbm
+* rexml
 
-  SDBM#key
+  * REXML::Document.entity_expansion_limit=
 
-    Renamed from SDBM#index.
+    New method to set the entity expansion limit. By default the limit is
+    set to 10000.  See the following URL for details.
+
+    http://www.ruby-lang.org/en/news/2008/08/23/dos-vulnerability-in-rexml/
+
+* rss
+
+  * 0.2.4 -> 0.2.7.
+
+  * RSS::Maker.make
+    * raise an exception instead of returning nil for invalid feed making.
+    * requires block.
+
+  * RSS::Maker.[]
+    * new method to return maker class.
+
+  * RSS::Maker.supported?(version)
+    * new method to check if given version is supported.
+
+  * RSS::Maker: item.guid.permanent_link?
+    * new alias of item.guid.isPermaLink
+  * RSS::Maker: item.guid.permanent_link=
+    * new alias of item.guid.isPermaLink=
 
 * securerandom
 
@@ -234,47 +268,6 @@ with all sufficient information, see the ChangeLog file.
   * StringIO#ungetbyte
 
     Added as an alias to #ungetc.
-
-* digest
-    * new methods:
-      * Digest::Class.base64digest
-      * Digest::Instance#base64digest
-      * Digest::Instance#base64digest!
-
-* rss
-
-  * 0.2.4 -> 0.2.7.
-
-  * RSS::Maker.make
-    * raise an exception instead of returning nil for invalid feed making.
-    * requires block.
-
-  * RSS::Maker.[]
-    * new method to return maker class.
-
-  * RSS::Maker.supported?(version)
-    * new method to check if given version is supported.
-
-  * RSS::Maker: item.guid.permanent_link?
-    * new alias of item.guid.isPermaLink
-  * RSS::Maker: item.guid.permanent_link=
-    * new alias of item.guid.isPermaLink=
-
-* REXML
-
-  * REXML::Document.entity_expansion_limit=
-
-    New method to set the entity expansion limit. By default the limit is
-    set to 10000.  See the following URL for details.
-
-    http://www.ruby-lang.org/en/news/2008/08/23/dos-vulnerability-in-rexml/
-
-* logger
-
-  * imported upstream version (logger/1.2.7)
-    * do not raise an exception even if log writing failed.
-    * do not raise ShiftingError if an aged file already exists.
-      (no ShiftingError will be raised from 1.2.7, just warn() instead)
 
 === Compatibility issues (excluding feature bug fixes)
 
