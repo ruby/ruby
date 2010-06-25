@@ -1,3 +1,9 @@
+Sat Jun 26 07:59:18 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* test/win32ole/test_win32ole_method.rb (test_offset_vtbl): check
+	  that OS is Windows 32bit or Windows 64bit in order to get
+	  correct offset value.
+
 Sat Jun 26 04:39:12 2010  Masaya Tarui  <tarui@ruby-lnag.org>
 
 	* ext/dl/lib/dl/func.rb (call): don't overwrite original arguments
