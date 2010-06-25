@@ -198,7 +198,7 @@ require "stringio"
 #
 class CSV
   # The version of the installed library.
-  VERSION = "2.4.6".freeze
+  VERSION = "2.4.7".freeze
 
   #
   # A CSV::Row is part Array and part Hash.  It retains an order for the fields
@@ -1843,7 +1843,13 @@ class CSV
       end
 
       parts =  parse.split(@col_sep, -1)
-      csv   << nil if parts.empty?
+      if parts.empty?
+        if in_extended_col
+          csv[-1] << @col_sep   # will be replaced with a @row_sep after the parts.each loop
+        else
+          csv << nil
+        end
+      end
 
       # This loop is the hot path of csv parsing. Some things may be non-dry
       # for a reason. Make sure to benchmark when refactoring.
