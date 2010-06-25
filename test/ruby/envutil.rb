@@ -69,9 +69,6 @@ module EnvUtil
       in_c, in_p = IO.pipe
       out_p, out_c = IO.pipe if capture_stdout
       err_p, err_c = IO.pipe if capture_stderr
-      c = "C"
-      env = {}
-      LANG_ENVS.each {|lc| env[lc], ENV[lc] = ENV[lc], c}
       opt = opt.dup
       opt[:in] = in_c
       opt[:out] = out_c if capture_stdout
@@ -80,11 +77,14 @@ module EnvUtil
         out_p.set_encoding(enc) if out_p
         err_p.set_encoding(enc) if err_p
       end
+      c = "C"
+      child_env = ENV.dup
+      LANG_ENVS.each {|lc| child_env[lc] = c}
       case args.first
       when Hash
-        child_env = [args.shift]
+        child_env.update(args.shift)
       end
-      pid = spawn(*child_env, EnvUtil.rubybin, *args, opt)
+      pid = spawn(child_env, EnvUtil.rubybin, *args, opt)
       in_c.close
       out_c.close if capture_stdout
       err_c.close if capture_stderr
@@ -103,13 +103,6 @@ module EnvUtil
       Process.wait pid
       status = $?
     ensure
-      env.each_pair {|lc, v|
-        if v
-          ENV[lc] = v
-        else
-          ENV.delete(lc)
-        end
-      } if env
       in_c.close if in_c && !in_c.closed?
       in_p.close if in_p && !in_p.closed?
       out_c.close if out_c && !out_c.closed?

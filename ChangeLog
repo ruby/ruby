@@ -1,4 +1,7 @@
-Fri Jun 25 09:56:39 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jun 25 09:58:32 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/envutil.rb (EnvUtil#invoke_ruby): change the
+	  environment of spawned process only.
 
 	* test/ruby/envutil.rb (EnvUtil#invoke_ruby): get rid of possible
 	  deadlock.
