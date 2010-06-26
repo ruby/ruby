@@ -27,6 +27,8 @@ if "%1" == "--enable-install-doc" goto :enable-rdoc
 if "%1" == "--disable-install-doc" goto :disable-rdoc
 if "%1" == "--enable-win95" goto :enable-win95
 if "%1" == "--disable-win95" goto :disable-win95
+if "%1" == "--enable-debug-env" goto :enable-debug-env
+if "%1" == "--disable-debug-env" goto :disable-debug-env
 if "%1" == "--extout" goto :extout
 if "%1" == "--path" goto :path
 if "%1" == "--with-baseruby" goto :baseruby
@@ -111,6 +113,16 @@ goto :loop
 goto :loop
 :disable-win95
   echo>> ~tmp~.mak 	"ENABLE_WIN95=no" \
+  echo>>confargs.tmp %1 \
+  shift
+goto :loop
+:enable-debug-env
+  echo>> ~tmp~.mak 	"ENABLE_DEBUG_ENV=yes" \
+  echo>>confargs.tmp %1 \
+  shift
+goto :loop
+:disable-debug-env
+  echo>> ~tmp~.mak 	"ENABLE_DEBUG_ENV=no" \
   echo>>confargs.tmp %1 \
   shift
 goto :loop
