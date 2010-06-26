@@ -1,3 +1,9 @@
+Sat Jun 26 11:56:31 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (clear-installed-list): put redirection before set
+	  command, since it seems to be handled by nmake in special way.
+	  [ruby-dev:41711]
+
 Sat Jun 26 10:08:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/envutil.rb (EnvUtil#invoke_ruby): no needs to copy the

@@ -368,7 +368,7 @@ CLEAR_INSTALLED_LIST = clear-installed-list
 install-prereq: $(CLEAR_INSTALLED_LIST) PHONY
 
 clear-installed-list: PHONY
-	@set MAKE="$(MAKE)" > $(INSTALLED_LIST)
+	@> $(INSTALLED_LIST) set MAKE="$(MAKE)"
 
 clean: clean-ext clean-local clean-enc clean-golf clean-rdoc clean-extout
 clean-local:: PHONY
