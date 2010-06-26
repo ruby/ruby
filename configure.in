@@ -2277,6 +2277,10 @@ AS_CASE(["$THREAD_MODEL"],
 [""],      [AC_MSG_ERROR(thread model is missing)],
            [AC_MSG_ERROR(unknown thread model $THREAD_MODEL)])
 
+AC_ARG_ENABLE(debug-env,
+       AS_HELP_STRING([--enable-debug-env], [enable RUBY_DEBUG environment variable]),
+       [AC_DEFINE(RUBY_DEBUG_ENV)])
+
 AS_CASE(["$FIRSTMAKEFILE"], [*GNUmakefile:*], [gnumake=yes], [
     AC_MSG_CHECKING([for if ${MAKE-make} is GNU make])
     mkdir conftest.dir

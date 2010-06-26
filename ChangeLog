@@ -1,3 +1,7 @@
+Sat Jun 26 13:07:09 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (enable-debug-env): option for RUBY_DEBUG env.
+
 Sat Jun 26 11:56:31 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (clear-installed-list): put redirection before set

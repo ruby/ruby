@@ -584,6 +584,9 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !endif
 #define CANONICALIZATION_FOR_MATHN 1
 #define DEFAULT_KCODE KCODE_NONE
+!if "$(ENABLE_DEBUG_ENV)" == "yes"
+#define RUBY_DEBUG_ENV 1
+!endif
 #define LOAD_RELATIVE 1
 #define DLEXT ".so"
 #define EXECUTABLE_EXTS $(EXECUTABLE_EXTS)
