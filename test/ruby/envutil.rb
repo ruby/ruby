@@ -78,7 +78,7 @@ module EnvUtil
         err_p.set_encoding(enc) if err_p
       end
       c = "C"
-      child_env = ENV.dup
+      child_env = {}
       LANG_ENVS.each {|lc| child_env[lc] = c}
       case args.first
       when Hash

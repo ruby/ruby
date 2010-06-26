@@ -1,3 +1,9 @@
+Sat Jun 26 10:08:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/envutil.rb (EnvUtil#invoke_ruby): no needs to copy the
+	  original ENV, since it's done in spawn automatically.
+	  [ruby-dev:41733]
+
 Sat Jun 26 08:44:22 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* NEWS (zlib): new methods.  [ruby-dev:41706] [Bug #3472]
