@@ -398,9 +398,7 @@ flush_before_seek(rb_io_t *fptr)
     return fptr;
 }
 
-#define io_set_eof(fptr) (void)(((fptr)->mode & FMODE_TTY) && ((fptr)->mode |= FMODE_EOF))
-#define io_unset_eof(fptr) (fptr->mode &= ~FMODE_EOF)
-#define io_seek(fptr, ofs, whence) (errno = 0, io_unset_eof(fptr), lseek(flush_before_seek(fptr)->fd, ofs, whence))
+#define io_seek(fptr, ofs, whence) (errno = 0, lseek(flush_before_seek(fptr)->fd, ofs, whence))
 #define io_tell(fptr) lseek(flush_before_seek(fptr)->fd, 0, SEEK_CUR)
 
 #ifndef SEEK_CUR
@@ -1203,9 +1201,6 @@ io_fillbuf(rb_io_t *fptr)
 {
     ssize_t r;
 
-    if (fptr->mode & FMODE_EOF) {
-	return -1;
-    }
     if (fptr->rbuf == NULL) {
         fptr->rbuf_off = 0;
         fptr->rbuf_len = 0;
@@ -1224,10 +1219,8 @@ io_fillbuf(rb_io_t *fptr)
         }
         fptr->rbuf_off = 0;
         fptr->rbuf_len = (int)r; /* r should be <= rbuf_capa */
-        if (r == 0) {
-	    io_set_eof(fptr);
+        if (r == 0)
             return -1; /* EOF */
-	}
     }
     return 0;
 }
@@ -1533,10 +1526,7 @@ io_fread(VALUE str, long offset, rb_io_t *fptr)
 	while (n > 0) {
           again:
 	    c = rb_read_internal(fptr->fd, RSTRING_PTR(str)+offset, n);
-	    if (c == 0) {
-		io_set_eof(fptr);
-		break;
-	    }
+	    if (c == 0) break;
 	    if (c < 0) {
                 if (rb_io_wait_readable(fptr->fd))
                     goto again;
@@ -1870,9 +1860,6 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock)
                 rb_mod_sys_fail(rb_mWaitReadable, "read would block");
             rb_sys_fail_path(fptr->pathv);
         }
-	else if (n == 0) {
-	    io_set_eof(fptr);
-	}
     }
     rb_str_resize(str, n);
 
@@ -3154,7 +3141,6 @@ rb_io_ungetbyte(VALUE io, VALUE b)
 
     GetOpenFile(io, fptr);
     rb_io_check_byte_readable(fptr);
-    io_unset_eof(fptr);
     if (NIL_P(b)) return Qnil;
     if (FIXNUM_P(b)) {
 	char cc = FIX2INT(b);
@@ -3191,7 +3177,6 @@ rb_io_ungetc(VALUE io, VALUE c)
 
     GetOpenFile(io, fptr);
     rb_io_check_char_readable(fptr);
-    io_unset_eof(fptr);
     if (NIL_P(c)) return Qnil;
     if (FIXNUM_P(c)) {
 	int cc = FIX2INT(c);
