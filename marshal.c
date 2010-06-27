@@ -640,7 +640,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	w_symbol(SYM2ID(obj), arg);
     }
     else {
-	arg->infection |= FL_TEST(obj, MARSHAL_INFECTION);
+	arg->infection |= (int)FL_TEST(obj, MARSHAL_INFECTION);
 
 	if (rb_respond_to(obj, s_mdump)) {
 	    volatile VALUE v;
@@ -1113,7 +1113,7 @@ r_bytes0(long len, struct load_arg *arg)
 	if (NIL_P(str)) goto too_short;
 	StringValue(str);
 	if (RSTRING_LEN(str) != len) goto too_short;
-	arg->infection |= FL_TEST(str, MARSHAL_INFECTION);
+	arg->infection |= (int)FL_TEST(str, MARSHAL_INFECTION);
     }
     return str;
 }
@@ -1762,14 +1762,14 @@ marshal_load(int argc, VALUE *argv)
     rb_scan_args(argc, argv, "11", &port, &proc);
     v = rb_check_string_type(port);
     if (!NIL_P(v)) {
-	infection = FL_TEST(port, MARSHAL_INFECTION); /* original taintedness */
+	infection = (int)FL_TEST(port, MARSHAL_INFECTION); /* original taintedness */
 	port = v;
     }
     else if (rb_respond_to(port, s_getbyte) && rb_respond_to(port, s_read)) {
 	if (rb_respond_to(port, s_binmode)) {
 	    rb_funcall2(port, s_binmode, 0, 0);
 	}
-	infection = FL_TAINT | FL_TEST(port, FL_UNTRUSTED);
+	infection = (int)(FL_TAINT | FL_TEST(port, FL_UNTRUSTED));
     }
     else {
 	rb_raise(rb_eTypeError, "instance of IO needed");
