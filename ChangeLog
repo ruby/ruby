@@ -1,3 +1,10 @@
+Sun Jun 27 23:31:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/io.h, io.c: reverted r21709.
+
+	* ruby.c (load_file_internal): nothing to read if EOF reached
+	  while reading shebang.  [ruby-core:30910]
+
 Sun Jun 27 13:25:07 2010  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (simple_sendfile): don't try to send data more than SSIZE_MAX

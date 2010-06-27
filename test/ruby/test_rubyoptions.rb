@@ -414,4 +414,28 @@ class TestRubyOptions < Test::Unit::TestCase
   ensure
     t.close(true) if t
   end
+
+  def test_script_from_stdin
+    begin
+      require 'pty'
+      require 'io/console'
+    rescue LoadError
+      return
+    end
+    require 'timeout'
+    result = nil
+    PTY.spawn(EnvUtil.rubybin) do |s, m|
+      m.print("\C-d")
+      assert_nothing_raised('[ruby-dev:37798]') do
+        Timeout.timeout(3) {s.read}
+      end
+    end
+    PTY.spawn(EnvUtil.rubybin) do |s, m|
+      m.print("$stdin.read; p $stdin.gets\n\C-d")
+      m.print("abc\n\C-d")
+      m.print("zzz\n")
+      result = s.read
+    end
+    assert_match(/zzz\r\n"zzz\\n"\r\n\z/, result, '[ruby-core:30910]')
+  end
 end

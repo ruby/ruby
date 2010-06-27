@@ -1593,6 +1593,10 @@ load_file_internal(VALUE arg)
 	else if (!NIL_P(c)) {
 	    rb_io_ungetbyte(f, c);
 	}
+	else {
+	    if (f != rb_stdin) rb_io_close(f);
+	    f = Qnil;
+	}
 	rb_vm_set_progname(rb_progname = opt->script_name);
 	require_libraries(&opt->req_list);	/* Why here? unnatural */
     }
@@ -1605,6 +1609,11 @@ load_file_internal(VALUE arg)
     else {
 	enc = rb_usascii_encoding();
     }
+    if (NIL_P(f)) {
+	f = rb_str_new(0, 0);
+	rb_enc_associate(f, enc);
+	return (VALUE)rb_parser_compile_string(parser, fname, f, line_start);
+    }
     rb_funcall(f, set_encoding, 2, rb_enc_from_encoding(enc), rb_str_new_cstr("-"));
     tree = rb_parser_compile_file(parser, fname, f, line_start);
     rb_funcall(f, set_encoding, 1, rb_parser_encoding(parser));
@@ -1613,9 +1622,6 @@ load_file_internal(VALUE arg)
     }
     else if (f != rb_stdin) {
 	rb_io_close(f);
-    }
-    else {
-	rb_io_ungetbyte(f, Qnil);
     }
     return (VALUE)tree;
 }
