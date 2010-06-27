@@ -150,3 +150,10 @@ assert_match /::C\z/, %q{
   Module.new{|m| c = class m::C; name; end}
   c
 }, '[ruby-dev:38456]'
+
+assert_normal_exit %q{
+  s = Symbol.dup
+  class << s
+  end
+  s.allocate.to_s
+}, '[ruby-core:30843]'
