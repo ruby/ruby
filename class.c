@@ -146,6 +146,7 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
     rb_obj_init_copy(clone, orig);
     if (!FL_TEST(CLASS_OF(clone), FL_SINGLETON)) {
 	RBASIC(clone)->klass = rb_singleton_class_clone(orig);
+	rb_singleton_class_attached(RBASIC(clone)->klass, (VALUE)clone);
     }
     RCLASS_SUPER(clone) = RCLASS_SUPER(orig);
     if (RCLASS_IV_TBL(orig)) {

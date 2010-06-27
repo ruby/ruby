@@ -1,3 +1,9 @@
+Mon Jun 28 02:43:35 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* class.c (rb_mod_init_copy): when class is dup'ed, a metaclass of the
+	  class should be attached to the dup'ed class, not the original
+	  class.  [ruby-core:30843] [Bug #3461]
+
 Sun Jun 27 23:31:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/io.h, io.c: reverted r21709.
