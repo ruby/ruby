@@ -8068,9 +8068,14 @@ nogvl_copy_stream_wait_write(struct copy_stream_struct *stp)
 #endif
 
 static ssize_t
-simple_sendfile(int out_fd, int in_fd, off_t *offset, size_t count)
+simple_sendfile(int out_fd, int in_fd, off_t *offset, off_t count)
 {
-    return sendfile(out_fd, in_fd, offset, count);
+#if SIZEOF_OFF_T > SIZEOF_SIZE_T
+    /* we are limited by the 32-bit ssize_t return value on 32-bit */
+    if (count > (off_t)SSIZE_MAX)
+        count = SSIZE_MAX;
+#endif
+    return sendfile(out_fd, in_fd, offset, (size_t)count);
 }
 
 #endif
