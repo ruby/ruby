@@ -92,7 +92,6 @@ typedef struct rb_io_t {
 #define FMODE_WSPLIT_INITIALIZED    0x00000400
 #define FMODE_TRUNC                 0x00000800
 #define FMODE_TEXTMODE              0x00001000
-#define FMODE_EOF                   0x00002000
 /* #define FMODE_PREP               0x00010000 */
 #define FMODE_SETENC_BY_BOM         0x00100000
 
