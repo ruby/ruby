@@ -1904,7 +1904,7 @@ zip_i(VALUE val, NODE *memo, int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     enum.zip(arg, ...)                   -> an_enumerator
+ *     enum.zip(arg, ...)                   -> an_array_of_array
  *     enum.zip(arg, ...) {|arr| block }    -> nil
  *
  *  Takes one element from <i>enum</i> and merges corresponding
