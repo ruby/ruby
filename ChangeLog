@@ -1,3 +1,9 @@
+Sun Jun 27 13:25:07 2010  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (simple_sendfile): don't try to send data more than SSIZE_MAX
+	  with single sendfile call..
+	  based on the patch by Eric Wong.  [ruby-core:30908]
+
 Sun Jun 27 10:41:38 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rubygems/require_paths_builder.rb (write_require_paths_file_if_needed):
