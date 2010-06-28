@@ -1,3 +1,8 @@
+Tue Jun 29 01:22:08 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/fiddle/fiddle.h: added FFI type detection to avoid bug in ffi
+	  header files. Thanks Yugui! [ruby-core:30917]
+
 Sun Jun 27 23:31:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/io.h, io.c: reverted r21709.
