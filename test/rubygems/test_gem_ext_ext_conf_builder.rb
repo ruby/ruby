@@ -39,14 +39,8 @@ class TestGemExtExtConfBuilder < RubyGemTestCase
 
     assert_match(/^#{Gem.ruby} extconf.rb/, output[0])
     assert_equal "creating Makefile\n", output[1]
-    case RUBY_PLATFORM
-    when /mswin/ then
-      assert_equal "nmake", output[2]
-      assert_equal "nmake install", output[4]
-    else
-      assert_equal "make", output[2]
-      assert_equal "make install", output[4]
-    end
+    assert_equal make_command, output[2]
+    assert_equal make_command + " install", output[4]
   end
 
   def test_class_build_extconf_fail
