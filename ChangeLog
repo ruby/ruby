@@ -1,3 +1,9 @@
+Mon Jun 28 20:32:33 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* test/win32ole/test_win32ole_method.rb (test_offset_vtbl): check
+	  that Ruby is 32bit or 64bit binary in order to get correct offset
+	  value. [ruby-dev:41741]
+
 Mon Jun 28 05:32:51 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/rdoc/ri/driver.rb (RDoc::RI::Driver#formatter): should use bs

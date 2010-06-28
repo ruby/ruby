@@ -108,28 +108,12 @@ if defined?(WIN32OLE_METHOD)
       assert_equal(1610743810, @m_namespace.dispid)
     end
 
-    def is_win64?
-      if /win64$/ =~ RUBY_PLATFORM
-        return true
-      end
-      require 'Win32API'
-      get_current_process = Win32API.new('kernel32', 'GetCurrentProcess', nil, 'i')
-      handle = get_current_process.call
-      is_wow64 = false
-      begin
-        is_wow64_process = Win32API.new('Kernel32', 'IsWow64Process', ['i', 'p'], 'i')
-        bool = "\0\0\0\0"
-        if is_wow64_process.call(handle, bool) != 0
-          is_wow64 = bool != "\0\0\0\0"
-        end
-      rescue RuntimeError
-        # no IsWow64Process
-      end
-      is_wow64
+    def is_ruby64?
+      /win64/ =~ RUBY_PLATFORM
     end
 
     def test_offset_vtbl
-      exp = is_win64? ? 48 : 24
+      exp = is_ruby64? ? 48 : 24
       assert_equal(exp, @m_invoke.offset_vtbl)
     end
 
