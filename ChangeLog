@@ -1,3 +1,8 @@
+Mon Jun 28 22:14:22 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/rdoc/test_rdoc_ri_driver.rb (TestRDocRIDriver#test_formatter):
+	  fix a test accordingly to r28455.
+
 Mon Jun 28 21:56:14 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* thread.c (rb_fd_resize, rb_fd_copy): avoid NULL dereference upon
