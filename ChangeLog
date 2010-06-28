@@ -1,3 +1,9 @@
+Tue Jun 29 01:44:33 2010  Masaya Tarui  <tarui@ruby-lnag.org>
+
+	* ext/dl/lib/dl/func.rb (call): don't overwrite original arguments
+	  to defend from GC.
+	* test/dl/test_func.rb (test_string): add test for above.
+
 Tue Jun 29 01:41:42 2010  Masaya Tarui  <tarui@ruby-lnag.org>
 
 	* include/ruby/ruby.h (static inline rb_gc_guarded_ptr): prevent

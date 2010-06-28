@@ -46,6 +46,18 @@ module DL
       assert_equal("123", str.to_s)
     end
 
+    def test_string()
+      stress, GC.stress = GC.stress, true
+      f = Function.new(CFunc.new(@libc['strcpy'], TYPE_VOIDP, 'strcpy'),
+                       [TYPE_VOIDP, TYPE_VOIDP])
+      buff = "000"
+      str = f.call(buff, "123")
+      assert_equal("123", buff)
+      assert_equal("123", str.to_s)
+    ensure
+      GC.stress = stress
+    end   
+
     def test_isdigit()
       f = Function.new(CFunc.new(@libc['isdigit'], TYPE_INT, 'isdigit'),
                        [TYPE_INT])
