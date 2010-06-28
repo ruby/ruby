@@ -9,6 +9,7 @@ class TestRDocRDoc < MiniTest::Unit::TestCase
   def setup
     @rdoc = RDoc::RDoc.new
     @tempfile = Tempfile.new 'test_rdoc_rdoc'
+    @tempfile.binmode
   end
 
   def teardown
