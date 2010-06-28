@@ -474,7 +474,7 @@ Also, a list:
   # other platforms, including Cygwin, it will return 'make'.
   #
   def self.make_command
-    vc_windows? ? 'nmake' : 'make'
+    ENV["make"] || (vc_windows? ? 'nmake' : 'make')
   end
 
   # Returns the make command for the current platform. For versions of Ruby
@@ -482,7 +482,7 @@ Also, a list:
   # other platforms, including Cygwin, it will return 'make'.
   #
   def make_command
-    vc_windows? ? 'nmake' : 'make'
+    ENV["make"] || (vc_windows? ? 'nmake' : 'make')
   end
 
   # Returns whether or not the nmake command could be found.

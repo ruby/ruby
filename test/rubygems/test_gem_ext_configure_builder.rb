@@ -30,9 +30,9 @@ class TestGemExtConfigureBuilder < RubyGemTestCase
 
     assert_equal "sh ./configure --prefix=#{@dest_path}", output.shift
     assert_equal "", output.shift
-    assert_equal "make", output.shift
+    assert_equal make_command, output.shift
     assert_match(/^ok$/m, output.shift)
-    assert_equal "make install", output.shift
+    assert_equal make_command + " install", output.shift
     assert_match(/^ok$/m, output.shift)
   end
 
