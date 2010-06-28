@@ -1179,40 +1179,43 @@ module TkCore
     unless self.const_defined? :RUN_EVENTLOOP_ON_MAIN_THREAD
       if WITH_RUBY_VM ### check Ruby 1.9 !!!!!!!
         # *** NEED TO FIX ***
-        ip = TclTkIp.new(name, opts)
-        if RUBY_PLATFORM =~ /cygwin/
+        case RUBY_PLATFORM
+        when /cygwin/
           RUN_EVENTLOOP_ON_MAIN_THREAD = true
-          INTERP = ip
-        elsif ip._invoke_without_enc('tk', 'windowingsystem') == 'aqua' &&
-            (TclTkLib.get_version<=>[8,4,TclTkLib::RELEASE_TYPE::FINAL,6]) > 0
-          # *** KNOWN BUG ***
-          #   Main event loop thread of TkAqua (> Tk8.4.9) must be the main
-          #   application thread. So, ruby1.9 users must call Tk.mainloop on
-          #   the main application thread.
-          #
-          # *** ADD (2009/05/10) ***
-          #   In some cases (I don't know the description of conditions), 
-          #   TkAqua 8.4.7 has a same kind of hang-up trouble. 
-          #   So, if 8.4.7 or later, set RUN_EVENTLOOP_ON_MAIN_THREAD to true. 
-          #   When you want to control this mode, please call the following 
-          #   (set true/false as you want) before "require 'tk'".
-          #   ----------------------------------------------------------
-          #   module TkCore; RUN_EVENTLOOP_ON_MAIN_THREAD = true; end
-          #   ----------------------------------------------------------
-          #
-          RUN_EVENTLOOP_ON_MAIN_THREAD = true
-          INTERP = ip
-        else
-          unless self.const_defined? :RUN_EVENTLOOP_ON_MAIN_THREAD
-            RUN_EVENTLOOP_ON_MAIN_THREAD = false
-          end
-          if RUN_EVENTLOOP_ON_MAIN_THREAD
-            INTERP = ip
+        when /darwin/ # MacOS X
+=begin
+          ip = TclTkIp.new(name, opts)
+          if ip._invoke_without_enc('tk', 'windowingsystem') == 'aqua' &&
+             (TclTkLib.get_version<=>[8,4,TclTkLib::RELEASE_TYPE::FINAL,6]) > 0
+=end
+          if TclTkLib::WINDOWING_SYSTEM == 'aqua' &&
+             (TclTkLib.get_version<=>[8,4,TclTkLib::RELEASE_TYPE::FINAL,6]) > 0
+            # *** KNOWN BUG ***
+            #  Main event loop thread of TkAqua (> Tk8.4.9) must be the main
+            #  application thread. So, ruby1.9 users must call Tk.mainloop on
+            #  the main application thread.
+            #
+            # *** ADD (2009/05/10) ***
+            #  In some cases (I don't know the description of conditions),
+            #  TkAqua 8.4.7 has a same kind of hang-up trouble.
+            #  So, if 8.4.7 or later, set RUN_EVENTLOOP_ON_MAIN_THREAD to true.
+            #  When you want to control this mode, please call the following
+            #  (set true/false as you want) before "require 'tk'".
+            #  ----------------------------------------------------------
+            #  module TkCore; RUN_EVENTLOOP_ON_MAIN_THREAD = true; end
+            #  ----------------------------------------------------------
+            #
+            RUN_EVENTLOOP_ON_MAIN_THREAD = true
           else
+            RUN_EVENTLOOP_ON_MAIN_THREAD = false
+=begin
             ip.delete
+            ip = nil
+=end
           end
+        else
+          RUN_EVENTLOOP_ON_MAIN_THREAD = false
         end
-        ip = nil
 
       else # Ruby 1.8.x
         RUN_EVENTLOOP_ON_MAIN_THREAD = false
@@ -1226,7 +1229,8 @@ module TkCore
       INTERP_ROOT_CHECK = ConditionVariable.new
       INTERP_THREAD = Thread.new{
         begin
-          Thread.current[:interp] = interp = TclTkIp.new(name, opts)
+          #Thread.current[:interp] = interp = TclTkIp.new(name, opts)
+          interp = TclTkIp.new(name, opts)
         rescue => e
           Thread.current[:interp] = e
           raise e
@@ -1243,11 +1247,38 @@ module TkCore
         Thread.current[:status] = status
         #sleep
 
+        # like as 1.8, withdraw a root widget before calling Tk.mainloop
+        interp._eval <<EOS
+wm withdraw .
+rename wm __wm_orig__
+proc wm {subcmd win args} {
+  set val [eval [list __wm_orig__ $subcmd $win] $args]
+  if {[string equal $subcmd withdraw] && [string equal $win .]} {
+    rename wm {}
+    rename __wm_orig__ wm
+  }
+  return $val
+}
+proc __startup_rbtk_mainloop__ {args} {
+  rename __startup_rbtk_mainloop__ {}
+  if {[info command __wm_orig__] == "__wm_orig__"} {
+    rename wm {}
+    rename __wm_orig__ wm
+    if [string equal [wm state .] withdrawn] {
+      wm deiconify .
+    }
+  }
+}
+set __initial_state_of_rubytk__ 1
+trace add variable __initial_state_of_rubytk__ unset __startup_rbtk_mainloop__
+EOS
+
         begin
           begin
             #TclTkLib.mainloop_abort_on_exception = false
             #Thread.current[:status].value = TclTkLib.mainloop(true)
             interp.mainloop_abort_on_exception = true
+            Thread.current[:interp] = interp
             Thread.current[:status].value = interp.mainloop(true)
           rescue SystemExit=>e
             Thread.current[:status].value = e
@@ -1807,6 +1838,10 @@ module TkCore
         # [MultiTkIp] slave interp ?
         return TkCore::INTERP._thread_tkwait('window', '.') if check_root
       end
+
+      # like as 1.8, withdraw a root widget before calling Tk.mainloop
+      TkCore::INTERP._eval_without_enc('catch {unset __initial_state_of_rubytk__}')
+      INTERP_THREAD.run
 
       begin
         TclTkLib.set_eventloop_window_mode(true)
@@ -5663,7 +5698,7 @@ TkWidget = TkWindow
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2010-02-01'.freeze
+  RELEASE_DATE = '2010-06-03'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'

@@ -1,3 +1,13 @@
+Tue Jun 29 06:41:01 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: stop creating a dummy Tcl/Tk interpreter (fix
+	  [ruby-core:30358]). And hide a root window before starting eventloop.
+
+	* ext/tk/extconf.rb: use tclConfig.sh/tkConfig.sh when frameworks
+	  are enabled on MacOS X.
+
+	* ext/tk/stubs.c: dirty hack for frameworks and stubs on MacOS X.
+
 Tue Jun 29 01:44:33 2010  Masaya Tarui  <tarui@ruby-lnag.org>
 
 	* ext/dl/lib/dl/func.rb (call): don't overwrite original arguments

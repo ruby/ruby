@@ -1,13 +1,14 @@
 ##############################################################
 # extconf.rb for tcltklib
-# release date: 2010-05-19
+# release date: 2010-05-31
 ##############################################################
 require 'mkmf'
 
 TkLib_Config = {}
 TkLib_Config['search_versions'] = 
   # %w[8.9 8.8 8.7 8.6 8.5 8.4 8.3 8.2 8.1 8.0 7.6 4.2]
-  %w[8.7 8.6 8.5 8.4 8.3 8.2 8.1 8.0]
+  # %w[8.7 8.6 8.5 8.4 8.3 8.2 8.1 8.0]
+  %w[8.7 8.6 8.5 8.4 8.0] # to shorten search steps
 
 
 ##############################################################
@@ -178,7 +179,9 @@ def get_shlib_path_head
   path_dirs = []
 
   if TkLib_Config["ActiveTcl"].kind_of?(String)  # glob path
-    path_dirs.concat Dir.glob(TkLib_Config["ActiveTcl"], File::FNM_CASEFOLD).sort.reverse
+    # path_head << TkLib_Config["ActiveTcl"]
+    path_head.concat Dir.glob(TkLib_Config["ActiveTcl"], File::FNM_CASEFOLD).sort.reverse
+    # path_dirs.concat Dir.glob(File.join(TkLib_Config["ActiveTcl"], 'lib'), File::FNM_CASEFOLD).sort.reverse
   end
 
   if CROSS_COMPILING
@@ -288,6 +291,7 @@ def find_macosx_framework
     "/Library/Frameworks",
     "/Network/Library/Frameworks", "/System/Library/Frameworks"
   ]
+  paths.reverse! unless TkLib_Config["ActiveTcl"] # system has higher priority
 
   paths.map{|dir| dir.strip.chomp('/')}.each{|dir|
     next unless File.directory?(tcldir = File.join(dir, "Tcl.framework"))
@@ -379,7 +383,7 @@ def get_tclConfig_dirs
     if TkLib_Config["ActiveTcl"]
       dirs = []
       if TkLib_Config["ActiveTcl"].kind_of?(String)
-        dirs << TkLib_Config["ActiveTcl"]
+        dirs << File.join(TkLib_Config["ActiveTcl"], 'lib')
       end
       dirs.concat [
         "c:/ActiveTcl*/lib", "c:/Tcl*/lib",
@@ -411,13 +415,32 @@ def get_tclConfig_dirs
 
     config_dir.concat(dirs.zip(dirs))
 
-  elsif framework = find_macosx_framework()
-    config_dir.unshift(framework)
-
   else
+    if framework = find_macosx_framework()
+      config_dir.unshift(framework)
+    end
+
     if activeTcl = TkLib_Config['ActiveTcl']
       # check latest version at first
-      config_dir.concat(Dir.glob(activeTcl, File::FNM_CASEFOLD).sort.reverse)
+      if is_macosx?
+        base = File.expand_path(activeTcl)
+        config_dir << [
+          File.join(base, 'Tcl.framework'), File.join(base, 'Tk.framework')
+        ]
+
+        config_dir << [
+          File.join(base, 'Tcl.framework', 'Versions', 'Current'),
+          File.join(base, 'Tk.framework', 'Versions', 'Current')
+        ]
+
+        Dir.glob(File.join(base, 'Tcl.framework', 
+                           'Versions', '*')).sort.reverse.each{|dir|
+          next if dir =~ /Current/
+          config_dir << [dir, dir.gsub(/Tcl/, 'Tk')]
+        }
+      else
+        config_dir.concat(Dir.glob(File.join(activeTcl, 'lib'), File::FNM_CASEFOLD).sort.reverse)
+      end
     end
 
     config_dir.concat [
@@ -448,25 +471,86 @@ def get_tclConfig_dirs
     }
 
     # for MacOS X
-    #config_dir << "~/Library/Tcl"
-    #config_dir.concat(Dir.glob("~/Library/Tcl/*", File::FNM_CASEFOLD).sort.reverse)
-    config_dir << "/Library/Tcl"
-    config_dir.concat(Dir.glob("/Library/Tcl/*", File::FNM_CASEFOLD).sort.reverse)
-    config_dir << "/Network/Library/Tcl"
-    config_dir.concat(Dir.glob("/Network/Library/Tcl/*", File::FNM_CASEFOLD).sort.reverse)
-    config_dir << "/System/Library/Tcl"
-    config_dir.concat(Dir.glob("/System/Library/Tcl/*", File::FNM_CASEFOLD).sort.reverse)
-    [
+    paths = [
+      #"~/Library/Tcl",
+      "/Library/Tcl", "/Network/Library/Tcl", "/System/Library/Tcl"
+    ]
+    paths.reverse! unless TkLib_Config["ActiveTcl"]
+
+    paths.each{|path|
+      config_dir << path
+      config_dir.concat(Dir.glob(File.join(path, '{tcl,tk}*'), File::FNM_CASEFOLD).sort.reverse.find_all{|d| File.directory?(d)})
+    }
+
+    paths = [
       #"~/Library/Frameworks", 
       "/Library/Frameworks",
       "/Network/Library/Frameworks", "/System/Library/Frameworks"
-    ].each{|framework|
-      config_dir << [File.expand_path(File.join(framework, 'Tcl.framework')),
-        File.expand_path(File.join(framework, 'Tk.framework'))]
+    ]
+    paths.reverse! unless TkLib_Config["ActiveTcl"]
+
+    paths.each{|framework|
+      base = File.expand_path(framework)
+      config_dir << [
+        File.join(base, 'Tcl.framework'), File.join(base, 'Tk.framework')
+      ]
+
+      config_dir << [
+        File.join(base, 'Tcl.framework', 'Versions', 'Current'),
+        File.join(base, 'Tk.framework', 'Versions', 'Current')
+      ]
+
+      Dir.glob(File.join(base, 'Tcl.framework', 
+                         'Versions', '*')).sort.reverse.each{|dir|
+        next if dir =~ /Current/
+        config_dir << [dir, dir.gsub(/Tcl/, 'Tk')]
+      }
     }
   end
 
   config_dir
+end
+
+def libcheck_for_tclConfig(dir, tclconf, tkconf)
+  tcllib_ok = tklib_ok = false
+
+  if TkLib_Config["tcltk-stubs"]
+    stub = "stub"
+    tclfunc = "Tcl_InitStubs"
+    tkfunc  = "Tk_InitStubs"
+  else
+    stub = ""
+    tclfunc = "Tcl_FindExecutable"
+    tkfunc  = "Tk_Init"
+  end
+
+  libpath = $LIBPATH
+  tcllibs = nil
+
+  begin
+    tcllib_ok ||= Dir.glob(File.join(dir, "*tcl#{stub}#{tclconf['TCL_MAJOR_VERSION']}{.,}#{tclconf['TCL_MINOR_VERSION']}*.*"), File::FNM_CASEFOLD).find{|file|
+      if file =~ /^.*(tcl#{stub}#{tclconf['TCL_MAJOR_VERSION']}(\.|)#{tclconf['TCL_MINOR_VERSION']}.*)\.[^.]*$/
+        #puts "check #{file} #{$1} #{tclfunc} #{dir}"
+        #find_library($1, tclfunc, dir)
+        tcllibs = append_library($libs, $1)
+        $LIBPATH = libpath | [dir]
+        try_func(tclfunc, tcllibs)
+      end
+    }
+    tklib_ok ||= Dir.glob(File.join(dir, "*tk#{stub}#{tkconf['TK_MAJOR_VERSION']}{.,}#{tkconf['TK_MINOR_VERSION']}*.*"), File::FNM_CASEFOLD).find{|file|
+      if file =~ /^.*(tk#{stub}#{tkconf['TK_MAJOR_VERSION']}(\.|)#{tkconf['TK_MINOR_VERSION']}.*)\.[^.]*$/
+        #puts "check #{file} #{$1} #{tkfunc} #{dir}"
+        # find_library($1, tkfunc, dir)
+        tklibs = append_library(tcllibs, $1)
+        $LIBPATH = libpath | [dir]
+        try_func(tkfunc, tklibs)
+      end
+    }
+  ensure
+    $LIBPATH = libpath
+  end
+
+  [tcllib_ok, tklib_ok]
 end
 
 def search_tclConfig(*paths) # libdir list or [tcl-libdir|file, tk-libdir|file]
@@ -518,7 +602,7 @@ def search_tclConfig(*paths) # libdir list or [tcl-libdir|file, tk-libdir|file]
     if File.file?(tkdir)
       tkcfg_files = [tkdir] * tails.length
     else
-      tkcfg_files = tails.map{|f| File.join(tcldir, 'tk' << f)}
+      tkcfg_files = tails.map{|f| File.join(tkdir, 'tk' << f)}
     end
 
     tclcfg_files.zip(tkcfg_files).uniq.each{|tclpath, tkpath|
@@ -532,7 +616,7 @@ def search_tclConfig(*paths) # libdir list or [tcl-libdir|file, tk-libdir|file]
 
       # nativethread check
       if !TkLib_Config["ruby_with_thread"] && tclconf['TCL_THREADS'] == '1'
-        puts "WARNING: found #{tclpath.inspect}, but it WITH nativethread-support under ruby WITHOUT nativethread-support. So, ignore it."
+        puts "\nWARNING: found #{tclpath.inspect}, but it WITH nativethread-support under ruby WITHOUT nativethread-support. So, ignore it."
         TkLib_Config["tcltk-NG-path"] << File.dirname(tclpath)
         next
       end
@@ -541,43 +625,54 @@ def search_tclConfig(*paths) # libdir list or [tcl-libdir|file, tk-libdir|file]
       conf = [tclconf, tkconf] unless conf
 
       # check Tcl library
-      if TkLib_Config["tcltk-stubs"]
-        stub = "stub"
-        tclfunc = "Tcl_InitStubs"
-        tkfunc  = "Tk_InitStubs"
+      if is_macosx? && TkLib_Config["tcltk-framework"]
+        # if use framework, not check (believe it is installed properly)
+        tcllib_ok = tklib_ok = true
       else
-        stub = ""
-        tclfunc = "Tcl_FindExecutable"
-        tkfunc  = "Tk_Init"
-      end
-      dir = File.dirname(tclpath)
-      libpath = $LIBPATH
-      tcllibs = nil
-      begin
-        tcllib_ok = Dir.glob(File.join(dir, "*tcl#{stub}#{tclconf['TCL_MAJOR_VERSION']}{.,}#{tclconf['TCL_MINOR_VERSION']}*.*"), File::FNM_CASEFOLD).find{|file|
-          if file =~ /^.*(tcl#{stub}#{tclconf['TCL_MAJOR_VERSION']}(\.|)#{tclconf['TCL_MINOR_VERSION']}.*)\.[^.]*$/
-            #puts "check #{file} #{$1} #{tclfunc} #{dir}"
-            #find_library($1, tclfunc, dir)
-            tcllibs = append_library($libs, $1)
-            $LIBPATH = libpath | [dir]
-            try_func(tclfunc, tcllibs)
-          end
-        }
-        tklib_ok = Dir.glob(File.join(dir, "*tk#{stub}#{tkconf['TK_MAJOR_VERSION']}{.,}#{tkconf['TK_MINOR_VERSION']}*.*"), File::FNM_CASEFOLD).find{|file|
-          if file =~ /^.*(tk#{stub}#{tkconf['TK_MAJOR_VERSION']}(\.|)#{tkconf['TK_MINOR_VERSION']}.*)\.[^.]*$/
-            #puts "check #{file} #{$1} #{tkfunc} #{dir}"
-            # find_library($1, tkfunc, dir)
-            tklibs = append_library(tcllibs, $1)
-            $LIBPATH = libpath | [dir]
-            try_func(tkfunc, tklibs)
-          end
-        }
-      ensure
-        $LIBPATH = libpath
+        tcllib_ok, tklib_ok = libcheck_for_tclConfig(File.dirname(tclpath),
+                                                      tclconf, tkconf)
+=begin
+        tcllib_ok = tklib_ok = false
+        if TkLib_Config["tcltk-stubs"]
+          stub = "stub"
+          tclfunc = "Tcl_InitStubs"
+          tkfunc  = "Tk_InitStubs"
+        else
+          stub = ""
+          tclfunc = "Tcl_FindExecutable"
+          tkfunc  = "Tk_Init"
+        end
+        dir = File.dirname(tclpath)
+        libpath = $LIBPATH
+        tcllibs = nil
+
+        begin
+          tcllib_ok ||= Dir.glob(File.join(dir, "*tcl#{stub}#{tclconf['TCL_MAJOR_VERSION']}{.,}#{tclconf['TCL_MINOR_VERSION']}*.*"), File::FNM_CASEFOLD).find{|file|
+            if file =~ /^.*(tcl#{stub}#{tclconf['TCL_MAJOR_VERSION']}(\.|)#{tclconf['TCL_MINOR_VERSION']}.*)\.[^.]*$/
+              #puts "check #{file} #{$1} #{tclfunc} #{dir}"
+              #find_library($1, tclfunc, dir)
+              tcllibs = append_library($libs, $1)
+              $LIBPATH = libpath | [dir]
+              try_func(tclfunc, tcllibs)
+            end
+          }
+          tklib_ok ||= Dir.glob(File.join(dir, "*tk#{stub}#{tkconf['TK_MAJOR_VERSION']}{.,}#{tkconf['TK_MINOR_VERSION']}*.*"), File::FNM_CASEFOLD).find{|file|
+            if file =~ /^.*(tk#{stub}#{tkconf['TK_MAJOR_VERSION']}(\.|)#{tkconf['TK_MINOR_VERSION']}.*)\.[^.]*$/
+              #puts "check #{file} #{$1} #{tkfunc} #{dir}"
+              # find_library($1, tkfunc, dir)
+              tklibs = append_library(tcllibs, $1)
+              $LIBPATH = libpath | [dir]
+              try_func(tkfunc, tklibs)
+            end
+          }
+        ensure
+          $LIBPATH = libpath
+        end
+=end
       end
 
       unless tcllib_ok && tklib_ok
-        puts "WARNING: found #{tclpath.inspect}, but cannot find valid Tcl/Tk libraries on the same directory. So, ignore it."
+        puts "\nWARNING: found #{tclpath.inspect}, but cannot find valid Tcl/Tk libraries on the same directory. So, ignore it."
         TkLib_Config["tcltk-NG-path"] << File.dirname(tclpath)
         next
       end
@@ -589,6 +684,13 @@ def search_tclConfig(*paths) # libdir list or [tcl-libdir|file, tk-libdir|file]
 
     # print("\n");
   }
+
+  if is_macosx? && TkLib_Config["tcltk-stubs"]
+    CONFIG['LDSHARED'] << " -Xlinker -bind_at_load"
+    if config_string('LDSHAREDXX')
+      config_string('LDSHAREDXX') << " -Xlinker -bind_at_load"
+    end
+  end
 
   if TkLib_Config["tclConfig_paths"].empty?
     [nil, nil]
@@ -691,6 +793,10 @@ def check_shlib_search_path(paths)
         else
           dirs = []
 
+          if Dir.glob(head, File::FNM_CASEFOLD).find{|dir| dir == head}
+            dirs << head + "/lib"
+          end
+
           if !Dir.glob(head + "-*", File::FNM_CASEFOLD).empty?
             dirs << head + "-#{ver}/lib" if !Dir.glob(head + "-[89].*", File::FNM_CASEFOLD).empty?
             dirs << head + "-#{ver.delete('.')}/lib" if !Dir.glob(head + "-[89][0-9]*", File::FNM_CASEFOLD).empty?
@@ -718,7 +824,7 @@ def check_shlib_search_path(paths)
   path_list = check_NG_path(path_list)
   path_list.map!{|path| path.strip}
 
-  if !CROSS_COMPILING and is_win32?
+  if !CROSS_COMPILING and (is_win32? || is_macosx?)
     # exist-dir only
     path_list.delete_if{|path| Dir.glob(File.join(path, "*.{a,so,dll,lib}")).empty?}
   end
@@ -1031,29 +1137,52 @@ def find_tcltk_header(tclver, tkver)
   have_tcl_h && have_tk_h
 end
 
-def setup_for_macosx_framework
-  # search directory of header files
-  if File.exist?(dir = File.join(TkLib_Config["tcltk-framework"], 
-                                 'Tcl.framework', 'Headers'))
-    TclConfig_Info['TCL_INCLUDE_SPEC'] = "-I#{dir} "
-    TkConfig_Info['TK_INCLUDE_SPEC'] = "-I#{File.join(TkLib_Config['tcltk-framework'], 'Tk.framework', 'Headers')} "
-  else
-    dir = Dir.glob(File.join(TkLib_Config["tcltk-framework"], 
-                             'Tcl.framework', '*', 'Headers'),
-                   File::FNM_CASEFOLD)
-    TclConfig_Info['TCL_INCLUDE_SPEC'] = "-I#{dir[0]} " unless dir.empty?
-    TkConfig_Info['TK_INCLUDE_SPEC'] = "-I#{Dir.glob(File.join(TkLib_Config['tcltk-framework'], 'Tk.framework', '*', 'Headers'), File::FNM_CASEFOLD)[0]} "
+def setup_for_macosx_framework(tclver, tkver)
+  # use framework, but no tclConfig.sh
+  unless $LDFLAGS.include?('-framework')
+    $LDFLAGS << ' -framework Tk -framework Tcl'
   end
-
-  $LDFLAGS << ' -framework Tk -framework Tcl'
 
   if TkLib_Config["tcl-framework-header"]
-    TclConfig_Info['TCL_INCLUDE_SPEC'] = 
-      "-I#{TkLib_Config["tcl-framework-header"]} "
+    TclConfig_Info['TCL_INCLUDE_SPEC'] <<
+      "-I#{TkLib_Config["tcl-framework-header"].quote} "
+  else
+    TclConfig_Info['TCL_INCLUDE_SPEC'] = ""
+
+    tcl_base = File.join(TkLib_Config["tcltk-framework"], 'Tcl.framework')
+    if tclver
+      TclConfig_Info['TCL_INCLUDE_SPEC'] <<
+        "-I#{File.join(tcl_base, 'Versions', tclver, 'Headers').quote} "
+    end
+
+    TclConfig_Info['TCL_INCLUDE_SPEC'] << File.join(tcl_base, 'Headers')
+
+    unless tclver
+      dir = Dir.glob(File.join(tcl_base, 'Versions', '*', 'Headers'), 
+                     File::FNM_CASEFOLD).sort.reverse[0]
+      TclConfig_Info['TCL_INCLUDE_SPEC'] << "-I#{dir.quote} " if dir
+    end
   end
+
   if TkLib_Config["tk-framework-header"]
     TkConfig_Info['TK_INCLUDE_SPEC'] = 
-      "-I#{TkLib_Config["tk-framework-header"]} "
+      "-I#{TkLib_Config["tk-framework-header"].quote} "
+  else
+    TkConfig_Info['TK_INCLUDE_SPEC'] = ""
+
+    tk_base  = File.join(TkLib_Config["tcltk-framework"], 'Tk.framework')
+    if tkver
+      TkConfig_Info['TK_INCLUDE_SPEC'] <<
+        "-I#{File.join(tk_base, 'Versions', tkver, 'Headers').quote} "
+    end
+
+    TkConfig_Info['TK_INCLUDE_SPEC'] << File.join(tk_base, 'Headers')
+
+    unless tkver
+      dir = Dir.glob(File.join(tk_base, 'Versions', '*', 'Headers'), 
+                     File::FNM_CASEFOLD).sort.reverse[0]
+      TkConfig_Info['TK_INCLUDE_SPEC'] << "-I#{dir.quote} " if dir
+    end
   end
 end
 
@@ -1320,7 +1449,17 @@ puts("Specified Tcl/Tk version is #{[tclver, tkver].inspect}") if tclver&&tkver
 #if activeTcl = with_config("ActiveTcl")
 if activeTcl = with_config("ActiveTcl", true)
   puts("Use ActiveTcl libraries (if available).")
-  activeTcl = '/opt/ActiveTcl*/lib' unless activeTcl.kind_of? String
+  unless activeTcl.kind_of? String
+    # set default ActiveTcl path
+    if CROSS_COMPILING
+    elsif is_win32?
+      activeTcl = 'c:/Tcl*'
+    elsif is_macosx?
+      activeTcl = '/Library/Frameworks'
+    else
+      activeTcl = '/opt/ActiveTcl*'
+    end
+  end
 end
 TkLib_Config["ActiveTcl"] = activeTcl
 
@@ -1379,7 +1518,6 @@ tcl_cfg_dir = File.dirname(TclConfig_Info['config_file_path']) rescue nil
 tk_ldir_list  = [tk_ldir,  tk_cfg_dir]
 tcl_ldir_list = [tcl_ldir, tcl_cfg_dir]
 
-
 # check tk_shlib_search_path
 check_shlib_search_path(with_config('tk-shlib-search-path'))
 
@@ -1391,7 +1529,25 @@ $CPPFLAGS += collect_tcltk_defs(TclConfig_Info['TCL_DEFS'], TkConfig_Info['TK_DE
 # MacOS X Frameworks?
 if TkLib_Config["tcltk-framework"]
   puts("Use MacOS X Frameworks.")
-  setup_for_macosx_framework
+  if tcl_cfg_dir
+    $INCFLAGS << ' ' << TclConfig_Info['TCL_INCLUDE_SPEC']
+    $LDFLAGS  << ' ' << TclConfig_Info['TCL_LIBS']
+    if stubs
+      $LDFLAGS << ' ' << TclConfig_Info['TCL_STUB_LIB_SPEC']
+    else
+      $LDFLAGS << ' ' << TclConfig_Info['TCL_LIB_SPEC']
+    end
+  end
+  if tk_cfg_dir
+    $INCFLAGS << ' ' << TkConfig_Info['TK_INCLUDE_SPEC']
+    $LDFLAGS  << ' ' << TkConfig_Info['TK_LIBS']
+    if stubs
+      $LDFLAGS << ' ' << TkConfig_Info['TK_STUB_LIB_SPEC']
+    else
+      $LDFLAGS << ' ' << TkConfig_Info['TK_LIB_SPEC']
+    end
+  end
+  setup_for_macosx_framework(tclver, tkver) if tcl_cfg_dir && tk_cfg_dir
 end
 
 # name of  Tcl/Tk libraries
