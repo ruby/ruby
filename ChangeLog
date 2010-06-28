@@ -1,3 +1,10 @@
+Mon Jun 28 21:56:14 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* thread.c (rb_fd_resize, rb_fd_copy): avoid NULL dereference upon
+	  failed realloc by using xrealloc instead of not realloc.  a patch
+	  from Jim Meyering <meyering at redhat.com> in [ruby-core:30920]
+	  [Bug #3489]
+
 Mon Jun 28 20:32:33 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_win32ole_method.rb (test_offset_vtbl): check
