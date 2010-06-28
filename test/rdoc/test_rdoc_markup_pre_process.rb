@@ -10,6 +10,7 @@ class TestRDocMarkupPreProcess < MiniTest::Unit::TestCase
     RDoc::Markup::PreProcess.registered.clear
 
     @tempfile = Tempfile.new 'test_rdoc_markup_pre_process'
+    @tempfile.binmode
     @name = File.basename @tempfile.path
     @dir  = File.dirname @tempfile.path
 
