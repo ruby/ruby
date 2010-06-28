@@ -27,14 +27,14 @@
 #undef ffi_type_ulong
 #undef ffi_type_slong
 
-#ifdef CHAR_BIT == 8
+#if CHAR_BIT == 8
 # define ffi_type_uchar ffi_type_uint8
 # define ffi_type_schar ffi_type_sint8
 #else
 # error "CHAR_BIT not supported"
 #endif
 
-# ifdef SIZEOF_SHORT == 2
+# if SIZEOF_SHORT == 2
 #  define ffi_type_ushort ffi_type_uint16
 #  define ffi_type_sshort ffi_type_sint16
 # elif SIZEOF_SHORT == 4
