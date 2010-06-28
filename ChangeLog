@@ -1,3 +1,8 @@
+Tue Jun 29 01:41:42 2010  Masaya Tarui  <tarui@ruby-lnag.org>
+
+	* include/ruby/ruby.h (static inline rb_gc_guarded_ptr): prevent
+	  RB_GC_GUARD_PTR being removed by optimization.
+
 Tue Jun 29 01:22:08 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/fiddle/fiddle.h: added FFI type detection to avoid bug in ffi
