@@ -1,3 +1,8 @@
+Tue Jun 29 01:22:08 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/fiddle/fiddle.h: added FFI type detection to avoid bug in ffi
+	  header files. Thanks Yugui! [ruby-core:30917]
+
 Mon Jun 28 22:14:22 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/rdoc/test_rdoc_ri_driver.rb (TestRDocRIDriver#test_formatter):
