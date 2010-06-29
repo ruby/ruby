@@ -63,6 +63,10 @@ class TestRequire < Test::Unit::TestCase
     env_home ? ENV["HOME"] = env_home : ENV.delete("HOME")
   end
 
+  def test_require_with_unc
+    assert(system(File.expand_path(EnvUtil.rubybin).sub(/\A(\w):/, '//localhost/\1$/'), "-rabbrev", "-e0"))
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
+
   def test_define_class
     begin
       require "socket"
