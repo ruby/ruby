@@ -246,13 +246,13 @@ module Psych
 
         begin
           path2class(name)
-        rescue ArgumentError => ex
-          name    = "Struct::#{name}"
+        rescue ArgumentError, NameError => ex
           unless retried
-            retried = true
+            name    = "Struct::#{name}"
+            retried = ex
             retry
           end
-          raise ex
+          raise retried
         end
       end
     end
