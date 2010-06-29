@@ -1,3 +1,9 @@
+Wed Jun 30 02:30:26 2010  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
+
+	* thread_pthread.c (get_stack): use pthread_getthrds_np() for AIX.
+
+	* configure.in: ditto.
+
 Tue Jun 29 21:11:15 2010  Masaya Tarui  <tarui@ruby-lnag.org>
 
 	* ext/stringio/stringio.c (strio_write): add RB_GC_GUARD.
