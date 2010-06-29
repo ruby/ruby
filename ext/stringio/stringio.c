@@ -1107,6 +1107,7 @@ strio_write(VALUE self, VALUE str)
     long len, olen;
     rb_encoding *enc, *enc2;
 
+    RB_GC_GUARD(str);
     if (TYPE(str) != T_STRING)
 	str = rb_obj_as_string(str);
     enc = rb_enc_get(ptr->string);

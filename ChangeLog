@@ -1,3 +1,8 @@
+Tue Jun 29 21:11:15 2010  Masaya Tarui  <tarui@ruby-lnag.org>
+
+	* ext/stringio/stringio.c (strio_write): add RB_GC_GUARD.
+
+
 Tue Jun 29 19:39:59 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_win32ole_method.rb (is_ruby64): check
