@@ -1,3 +1,9 @@
+Tue Jun 29 11:52:33 2010  Narihiro Nakamura  <authorNari@gmail.com>
+
+	* gc.c (unlink_heap_slot, slot_sweep): unlink heaps_slot of
+	  heaps_slot linked list if heaps_slot is empty at slot_sweep.
+	  fixed [ruby-dev:41543], [ruby-core:24894].
+
 Tue Jun 29 01:22:08 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/fiddle/fiddle.h: added FFI type detection to avoid bug in ffi

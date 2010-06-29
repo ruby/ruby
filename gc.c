@@ -1857,6 +1857,22 @@ finalize_list(rb_objspace_t *objspace, RVALUE *p)
 }
 
 static void
+unlink_heap_slot(rb_objspace_t *objspace, struct heaps_slot *slot)
+{
+    if (slot->prev)
+        slot->prev->next = slot->next;
+    if (slot->next)
+        slot->next->prev = slot->prev;
+    if (heaps == slot)
+        heaps = slot->next;
+    if (objspace->heap.sweep_slots == slot)
+        objspace->heap.sweep_slots = slot->next;
+    slot->prev = NULL;
+    slot->next = NULL;
+}
+
+
+static void
 free_unused_heaps(rb_objspace_t *objspace)
 {
     size_t i, j;
@@ -1870,14 +1886,6 @@ free_unused_heaps(rb_objspace_t *objspace)
 	    else {
 		free(objspace->heap.sorted[i].slot->membase);
 	    }
-            if (objspace->heap.sorted[i].slot->prev)
-                objspace->heap.sorted[i].slot->prev->next = objspace->heap.sorted[i].slot->next;
-            if (objspace->heap.sorted[i].slot->next)
-                objspace->heap.sorted[i].slot->next->prev = objspace->heap.sorted[i].slot->prev;
-            if (heaps == objspace->heap.sorted[i].slot)
-                heaps = objspace->heap.sorted[i].slot->next;
-            if (objspace->heap.sweep_slots == objspace->heap.sorted[i].slot)
-                objspace->heap.sweep_slots = objspace->heap.sorted[i].slot->next;
             free(objspace->heap.sorted[i].slot);
 	    heaps_used--;
 	}
@@ -1946,6 +1954,7 @@ slot_sweep(rb_objspace_t *objspace, struct heaps_slot *sweep_slot)
         }
         sweep_slot->limit = final_num;
         freelist = free;	/* cancel this page from freelist */
+        unlink_heap_slot(objspace, sweep_slot);
     }
     else {
         objspace->heap.free_num += free_num;
@@ -2015,10 +2024,13 @@ after_gc_sweep(rb_objspace_t *objspace)
 static int
 lazy_sweep(rb_objspace_t *objspace)
 {
+    struct heaps_slot *next;
+
     heaps_increment(objspace);
     while (objspace->heap.sweep_slots) {
-        slot_sweep(objspace, objspace->heap.sweep_slots);
-        objspace->heap.sweep_slots = objspace->heap.sweep_slots->next;
+        next = objspace->heap.sweep_slots->next;
+	slot_sweep(objspace, objspace->heap.sweep_slots);
+        objspace->heap.sweep_slots = next;
         if (freelist) {
             during_gc = 0;
             return TRUE;
@@ -2076,11 +2088,14 @@ gc_lazy_sweep(rb_objspace_t *objspace)
 static void
 gc_sweep(rb_objspace_t *objspace)
 {
+    struct heaps_slot *next;
+
     before_gc_sweep(objspace);
 
     while (objspace->heap.sweep_slots) {
+        next = objspace->heap.sweep_slots->next;
 	slot_sweep(objspace, objspace->heap.sweep_slots);
-        objspace->heap.sweep_slots = objspace->heap.sweep_slots->next;
+        objspace->heap.sweep_slots = next;
     }
 
     after_gc_sweep(objspace);
