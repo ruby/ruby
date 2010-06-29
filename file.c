@@ -2699,6 +2699,18 @@ rb_path_skip_prefix(const char *path)
     return (char *)path;
 }
 
+static inline char *
+skipprefixroot(const char *path)
+{
+#if defined(DOSISH_UNC) || defined(DOSISH_DRIVE_LETTER)
+    char *p = skipprefix(path);
+    while (isdirsep(*p)) p++;
+    return p;
+#else
+    return skiproot(path);
+#endif
+}
+
 #define strrdirsep rb_path_last_separator
 char *
 rb_path_last_separator(const char *path)
@@ -3247,7 +3259,7 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, char *unresolved, VALUE loopche
                     rb_hash_aset(loopcheck, testpath, ID2SYM(resolving));
                     link = rb_file_s_readlink(rb_cFile, testpath);
                     link_prefix = RSTRING_PTR(link);
-                    link_names = skiproot(link_prefix);
+                    link_names = skipprefixroot(link_prefix);
                     link_prefixlen = link_names - link_prefix;
                     if (link_prefixlen == 0) {
                         realpath_rec(prefixlenp, resolvedp, link_names, loopcheck, strict, *unresolved_firstsep == '\0');
@@ -3294,7 +3306,7 @@ rb_realpath_internal(VALUE basedir, VALUE path, int strict)
     }
 
     ptr = RSTRING_PTR(unresolved_path);
-    path_names = skiproot(ptr);
+    path_names = skipprefixroot(ptr);
     if (ptr != path_names) {
         resolved = rb_enc_str_new(ptr, path_names - ptr,
 				  rb_enc_get(unresolved_path));
@@ -3303,7 +3315,7 @@ rb_realpath_internal(VALUE basedir, VALUE path, int strict)
 
     if (!NIL_P(basedir)) {
         ptr = RSTRING_PTR(basedir);
-        basedir_names = skiproot(ptr);
+	basedir_names = skipprefixroot(ptr);
         if (ptr != basedir_names) {
             resolved = rb_enc_str_new(ptr, basedir_names - ptr,
 				      rb_enc_get(basedir));
@@ -3313,7 +3325,7 @@ rb_realpath_internal(VALUE basedir, VALUE path, int strict)
 
     curdir = rb_dir_getwd();
     ptr = RSTRING_PTR(curdir);
-    curdir_names = skiproot(ptr);
+    curdir_names = skipprefixroot(ptr);
     resolved = rb_enc_str_new(ptr, curdir_names - ptr, rb_enc_get(curdir));
 
   root_found:
