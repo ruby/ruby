@@ -1,3 +1,8 @@
+Tue Jun 22 21:33:23 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/optparse/test_summary.rb: fixed superclass so that it run
+	  solely.
+
 Sat Jun 19 03:35:58 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/to_ruby.rb (resolve_klass): fix the
