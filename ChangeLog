@@ -1,3 +1,14 @@
+Fri Jun 18 01:50:21 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* object.c: Object#public_methods, private_methods, etc. returns
+	  method ids that belong to the class or the singleton class(es) of
+	  the object.  [ruby-dev:41613]
+
+	* class.c: on the other hand, Module#public_instance_methods, etc.
+	  returns method ids that belong to the module itself (even if the
+	  module is singleton, it does not return method ids of super
+	  class(es); see [ruby-core:28837]).
+
 Tue Jun 29 21:16:05 2010  Masaya Tarui  <tarui@ruby-lnag.org>
 
 	* ext/stringio/stringio.c (strio_write): add RB_GC_GUARD.
