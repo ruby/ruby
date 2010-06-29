@@ -1,3 +1,9 @@
+Tue Jun 29 14:18:21 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* file.c (rb_realpath_internal, realpath_rec): skip UNC share root
+	  on DOSISH platforms.
+	  http://pc12.2ch.net/test/read.cgi/tech/1272248179/600
+
 Tue Jun 29 11:52:33 2010  Narihiro Nakamura  <authorNari@gmail.com>
 
 	* gc.c (unlink_heap_slot, slot_sweep): unlink heaps_slot of
