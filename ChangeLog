@@ -1,3 +1,9 @@
+Wed Jun 30 07:29:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_rubyoptions.rb (test_script_from_stdin): by using
+	  a pipe, get rid of not-well-defined behavior after the child
+	  process terminated in pty.
+
 Wed Jun 30 02:37:30 2010  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
 
 	* thread_pthread.c (get_stack): use pthread_getthrds_np() for AIX.
