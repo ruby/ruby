@@ -199,6 +199,8 @@ native_thread_destroy(rb_thread_t *th)
 #define STACKADDR_AVAILABLE 1
 #elif defined HAVE_THR_STKSEGMENT || defined HAVE_PTHREAD_STACKSEG_NP
 #define STACKADDR_AVAILABLE 1
+#elif defined HAVE_PTHREAD_GETTHRDS_NP
+#define STACKADDR_AVAILABLE 1
 #endif
 
 #ifdef STACKADDR_AVAILABLE
@@ -248,6 +250,16 @@ get_stack(void **addr, size_t *size)
 # endif
     *addr = stk.ss_sp;
     *size = stk.ss_size;
+#elif defined HAVE_PTHREAD_GETTHRDS_NP
+    pthread_t th = pthread_self();
+    struct __pthrdsinfo thinfo;
+    char reg[256];
+    int regsiz=sizeof(reg);
+    CHECK_ERR(pthread_getthrds_np(&th, PTHRDSINFO_QUERY_ALL,
+				  &thinfo, sizeof(thinfo),
+				  &reg, &regsiz));
+    *addr = thinfo.__pi_stackaddr;
+    *size = thinfo.__pi_stacksize;
 #endif
     return 0;
 #undef CHECK_ERR
