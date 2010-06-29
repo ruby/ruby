@@ -1,3 +1,7 @@
+Tue Jun 29 21:16:05 2010  Masaya Tarui  <tarui@ruby-lnag.org>
+
+	* ext/stringio/stringio.c (strio_write): add RB_GC_GUARD.
+
 Tue Jun 29 14:41:07 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* file.c (rb_realpath_internal, realpath_rec): skip UNC share root
