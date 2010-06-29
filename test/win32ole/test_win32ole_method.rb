@@ -109,7 +109,7 @@ if defined?(WIN32OLE_METHOD)
     end
 
     def is_ruby64?
-      /win64/ =~ RUBY_PLATFORM
+      /mswin64|mingw64/ =~ RUBY_PLATFORM
     end
 
     def test_offset_vtbl

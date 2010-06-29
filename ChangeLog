@@ -1,3 +1,8 @@
+Tue Jun 29 19:39:59 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* test/win32ole/test_win32ole_method.rb (is_ruby64): check
+	  ruby binary is mswin64 or mingw64. [ruby-dev:41756]
+
 Tue Jun 29 14:18:21 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* file.c (rb_realpath_internal, realpath_rec): skip UNC share root
