@@ -1,3 +1,8 @@
+Thu Jul  1 08:40:26 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (w_object): suppress empty instance variable entry on
+	  compatible dump objects.
+
 Wed Jun 30 07:29:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_rubyoptions.rb (test_script_from_stdin): by using

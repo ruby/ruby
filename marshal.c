@@ -607,9 +607,6 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	return;
     }
 
-    if ((hasiv = has_ivars(obj, ivtbl)) != 0) {
-	w_byte(TYPE_IVAR, arg);
-    }
     if (obj == Qnil) {
 	w_byte(TYPE_NIL, arg);
     }
@@ -646,6 +643,8 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 
 	    v = rb_funcall(obj, s_mdump, 0, 0);
 	    check_dump_arg(arg, s_mdump);
+	    hasiv = has_ivars(obj, ivtbl);
+	    if (hasiv) w_byte(TYPE_IVAR, arg);
 	    w_class(TYPE_USRMARSHAL, obj, arg, FALSE);
 	    w_object(v, arg, limit);
 	    if (hasiv) w_ivar(obj, ivtbl, &c_arg);
@@ -661,6 +660,8 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	    if (TYPE(v) != T_STRING) {
 		rb_raise(rb_eTypeError, "_dump() must return string");
 	    }
+	    hasiv = has_ivars(obj, ivtbl);
+	    if (hasiv) w_byte(TYPE_IVAR, arg);
 	    if ((hasiv2 = has_ivars(v, ivtbl2)) != 0 && !hasiv) {
 		w_byte(TYPE_IVAR, arg);
 	    }
@@ -678,6 +679,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 
         st_add_direct(arg->data, obj, arg->data->num_entries);
 
+	hasiv = has_ivars(obj, ivtbl);
         {
             st_data_t compat_data;
             rb_alloc_func_t allocator = rb_get_alloc_func(RBASIC(obj)->klass);
@@ -688,8 +690,10 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
                 VALUE real_obj = obj;
                 obj = compat->dumper(real_obj);
                 st_insert(arg->compat_tbl, (st_data_t)obj, (st_data_t)real_obj);
+		if (obj != real_obj && !ivtbl) hasiv = 0;
             }
         }
+	if (hasiv) w_byte(TYPE_IVAR, arg);
 
 	switch (BUILTIN_TYPE(obj)) {
 	  case T_CLASS:
