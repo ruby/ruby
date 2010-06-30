@@ -3550,35 +3550,41 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 /*
  *  call-seq:
  *     str.sub(pattern, replacement)         -> new_str
+ *     str.sub(pattern, hash)                -> new_str
  *     str.sub(pattern) {|match| block }     -> new_str
- *     str.sub(pattern)                      -> an_enumerator
  *
  *  Returns a copy of <i>str</i> with the <em>first</em> occurrence of
- *  <i>pattern</i> replaced with either <i>replacement</i> or the value of the
- *  block. The <i>pattern</i> will typically be a <code>Regexp</code>; if it is
- *  a <code>String</code> then no regular expression metacharacters will be
- *  interpreted (that is <code>/\d/</code> will match a digit, but
- *  <code>'\d'</code> will match a backslash followed by a 'd').
+ *  <i>pattern</i> substituted for the second argument. The <i>pattern</i> is
+ *  typically a <code>Regexp</code>; if given as a <code>String</code>, any
+ *  regular expression metacharacters it contains will be interpreted
+ *  literally, e.g. <code>'\\\d'</code> will match a backlash followed by 'd',
+ *  instead of a digit.
  *
- *  If the method call specifies <i>replacement</i>, special variables such as
- *  <code>$&</code> will not be useful, as substitution into the string occurs
- *  before the pattern match starts. However, the sequences <code>\1</code>,
- *  <code>\2</code>, <code>\k<group_name></code>, etc., may be used.
+ *  If <i>replacement</i> is a <code>String</code> it will be substituted for
+ *  the matched text. It may contain back-references to the pattern's capture
+ *  groups of the form <code>\\\d</code>, where <i>d</i> is a group number, or
+ *  <code>\\\k<n></code>, where <i>n</i> is a group name. If it is a
+ *  double-quoted string, both back-references must be preceded by an
+ *  additional backslash. However, within <i>replacement</i> the special match
+ *  variables, such as <code>&$</code>, will not refer to the current match.
  *
- *  In the block form, the current match string is passed in as a parameter, and
- *  variables such as <code>$1</code>, <code>$2</code>, <code>$`</code>,
+ *  If the second argument is a <code>Hash</code>, and the matched text is one
+ *  of its keys, the corresponding value is the replacement string.
+ *
+ *  In the block form, the current match string is passed in as a parameter,
+ *  and variables such as <code>$1</code>, <code>$2</code>, <code>$`</code>,
  *  <code>$&</code>, and <code>$'</code> will be set appropriately. The value
  *  returned by the block will be substituted for the match on each call.
- *
- *  If no block and no <i>replacement</i> is given, an enumerator is returned instead.
  *
  *  The result inherits any tainting in the original string or any supplied
  *  replacement string.
  *
  *     "hello".sub(/[aeiou]/, '*')                  #=> "h*llo"
  *     "hello".sub(/([aeiou])/, '<\1>')             #=> "h<e>llo"
- *     "hello".sub(/./) {|s| s[0].ord.to_s + ' ' }  #=> "104 ello"
+ *     "hello".sub(/./) {|s| s.ord.to_s + ' ' }     #=> "104 ello"
  *     "hello".sub(/(?<foo>[aeiou])/, '*\k<foo>*')  #=> "h*e*llo"
+ *     'Is SHELL your preferred shell?'.sub(/[[:upper:]]{2,}/, ENV)
+ *      #=> "Is /bin/bash your preferred shell?"
  */
 
 static VALUE
@@ -3705,9 +3711,11 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
  *  call-seq:
  *     str.gsub!(pattern, replacement)        -> str or nil
  *     str.gsub!(pattern) {|match| block }    -> str or nil
+ *     str.gsub!(pattern)                     -> an_enumerator
  *
  *  Performs the substitutions of <code>String#gsub</code> in place, returning
  *  <i>str</i>, or <code>nil</code> if no substitutions were performed.
+ *  If no block and no <i>replacement</i> is given, an enumerator is returned instead.
  */
 
 static VALUE
@@ -3721,34 +3729,44 @@ rb_str_gsub_bang(int argc, VALUE *argv, VALUE str)
 /*
  *  call-seq:
  *     str.gsub(pattern, replacement)       -> new_str
+ *     str.gsub(pattern, hash)              -> new_str
  *     str.gsub(pattern) {|match| block }   -> new_str
+ *     str.gsub(pattern)                    -> enumerator
  *
- *  Returns a copy of <i>str</i> with <em>all</em> occurrences of <i>pattern</i>
- *  replaced with either <i>replacement</i> or the value of the block. The
- *  <i>pattern</i> will typically be a <code>Regexp</code>; if it is a
- *  <code>String</code> then no regular expression metacharacters will be
- *  interpreted (that is <code>/\d/</code> will match a digit, but
- *  <code>'\d'</code> will match a backslash followed by a 'd').
+ *  Returns a copy of <i>str</i> with the <em>all</em> occurrences of
+ *  <i>pattern</i> substituted for the second argument. The <i>pattern</i> is
+ *  typically a <code>Regexp</code>; if given as a <code>String</code>, any
+ *  regular expression metacharacters it contains will be interpreted
+ *  literally, e.g. <code>'\\\d'</code> will match a backlash followed by 'd',
+ *  instead of a digit.
  *
- *  If a string is used as the replacement, special variables from the match
- *  (such as <code>$&</code> and <code>$1</code>) cannot be substituted into it,
- *  as substitution into the string occurs before the pattern match
- *  starts. However, the sequences <code>\1</code>, <code>\2</code>,
- *  <code>\k<group_name></code>, and so on may be used to interpolate
- *  successive groups in the match.
+ *  If <i>replacement</i> is a <code>String</code> it will be substituted for
+ *  the matched text. It may contain back-references to the pattern's capture
+ *  groups of the form <code>\\\d</code>, where <i>d</i> is a group number, or
+ *  <code>\\\k<n></code>, where <i>n</i> is a group name. If it is a
+ *  double-quoted string, both back-references must be preceded by an
+ *  additional backslash. However, within <i>replacement</i> the special match
+ *  variables, such as <code>&$</code>, will not refer to the current match.
  *
- *  In the block form, the current match string is passed in as a parameter, and
- *  variables such as <code>$1</code>, <code>$2</code>, <code>$`</code>,
+ *  If the second argument is a <code>Hash</code>, and the matched text is one
+ *  of its keys, the corresponding value is the replacement string.
+ *
+ *  In the block form, the current match string is passed in as a parameter,
+ *  and variables such as <code>$1</code>, <code>$2</code>, <code>$`</code>,
  *  <code>$&</code>, and <code>$'</code> will be set appropriately. The value
  *  returned by the block will be substituted for the match on each call.
  *
  *  The result inherits any tainting in the original string or any supplied
  *  replacement string.
  *
+ *  When neither a block nor a second argument is supplied, an
+ *  <code>Enumerator</code> is returned.
+ *
  *     "hello".gsub(/[aeiou]/, '*')                  #=> "h*ll*"
  *     "hello".gsub(/([aeiou])/, '<\1>')             #=> "h<e>ll<o>"
- *     "hello".gsub(/./) {|s| s[0].ord.to_s + ' '}   #=> "104 101 108 108 111 "
+ *     "hello".gsub(/./) {|s| s.ord.to_s + ' '}      #=> "104 101 108 108 111 "
  *     "hello".gsub(/(?<foo>[aeiou])/, '{\k<foo>}')  #=> "h{e}ll{o}"
+ *     'hello'.gsub(/[eo]/, 'e' => 3, 'o' => '*')    #=> "h3ll*"
  */
 
 static VALUE
