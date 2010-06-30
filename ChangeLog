@@ -1,3 +1,7 @@
+Thu Jul  1 04:21:10 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/raddrinfo.c: don't use __P.
+
 Wed Jun 30 07:29:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_rubyoptions.rb (test_script_from_stdin): by using
