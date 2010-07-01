@@ -97,7 +97,7 @@ ruby_getnameinfo__aix(const struct sockaddr *sa, size_t salen,
             ruby_getnameinfo__aix((sa), (salen), (host), (hostlen), (serv), (servlen), (flags))
 #endif
 
-static int str_isnumber(const char *);
+static int str_is_number(const char *);
 
 #if defined(__APPLE__)
 /* fix [ruby-core:29427] */
@@ -110,7 +110,7 @@ ruby_getaddrinfo__darwin(const char *nodename, const char *servname,
     tmp_servname = servname;
     MEMCPY(&tmp_hints, hints, struct addrinfo, 1);
     if (nodename && servname) {
-	if (str_isnumber(tmp_servname) && atoi(servname) == 0) {
+	if (str_is_number(tmp_servname) && atoi(servname) == 0) {
 	    tmp_servname = NULL;
 #ifdef AI_NUMERICSERV
 	    if (tmp_hints.ai_flags) tmp_hints.ai_flags &= ~AI_NUMERICSERV;
@@ -239,7 +239,7 @@ make_inetaddr(unsigned int host, char *buf, size_t len)
 }
 
 static int
-str_isnumber(const char *p)
+str_is_number(const char *p)
 {
     char *ep;
 
@@ -329,7 +329,7 @@ rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_h
     hostp = host_str(host, hbuf, sizeof(hbuf), &additional_flags);
     portp = port_str(port, pbuf, sizeof(pbuf), &additional_flags);
 
-    if (socktype_hack && hints->ai_socktype == 0 && str_isnumber(portp)) {
+    if (socktype_hack && hints->ai_socktype == 0 && str_is_number(portp)) {
        hints->ai_socktype = SOCK_DGRAM;
     }
     hints->ai_flags |= additional_flags;
