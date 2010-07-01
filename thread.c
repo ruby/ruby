@@ -2285,7 +2285,7 @@ rb_fd_resize(int n, rb_fdset_t *fds)
     if (o < sizeof(fd_set)) o = sizeof(fd_set);
 
     if (m > o) {
-	fds->fdset = realloc(fds->fdset, m);
+	fds->fdset = xrealloc(fds->fdset, m);
 	memset((char *)fds->fdset + o, 0, m - o);
     }
     if (n >= fds->maxfd) fds->maxfd = n + 1;
@@ -2319,7 +2319,7 @@ rb_fd_copy(rb_fdset_t *dst, const fd_set *src, int max)
 
     if (size < sizeof(fd_set)) size = sizeof(fd_set);
     dst->maxfd = max;
-    dst->fdset = realloc(dst->fdset, size);
+    dst->fdset = xrealloc(dst->fdset, size);
     memcpy(dst->fdset, src, size);
 }
 
