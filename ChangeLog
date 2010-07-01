@@ -1,3 +1,7 @@
+Thu Jul  1 13:00:54 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (test-knownbug): ignore known bugs.
+
 Thu Jul  1 12:59:14 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/rubygems/test_gem_activation.rb: comment out a test for WONTFIX
