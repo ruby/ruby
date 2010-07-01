@@ -1,3 +1,20 @@
+Sat Jun 26 10:08:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/envutil.rb (EnvUtil#invoke_ruby): no needs to copy the
+	  original ENV, since it's done in spawn automatically.
+	  [ruby-dev:41733]
+
+Fri Jun 25 10:07:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/envutil.rb (Test::Unit::Assertions#assert_in_out_err):
+	  return the exit status.
+
+	* test/ruby/envutil.rb (EnvUtil#invoke_ruby): change the
+	  environment of spawned process only.
+
+	* test/ruby/envutil.rb (EnvUtil#invoke_ruby): get rid of possible
+	  deadlock.
+
 Wed Jun 23 23:49:21 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/raddrinfo.c (str_is_number): renamed from str_isnumber to
