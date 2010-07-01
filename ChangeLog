@@ -1,3 +1,7 @@
+Thu Jul  1 13:00:54 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (test-knownbug): ignore known bugs.
+
 Thu Jul  1 08:40:26 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (w_object): suppress empty instance variable entry on
