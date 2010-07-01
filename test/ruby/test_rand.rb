@@ -164,4 +164,14 @@ class TestRand < Test::Unit::TestCase
     srand(0)
     assert_equal([1,4,2,5,3], [1,2,3,4,5].shuffle)
   end
+  
+  def test_fork_shuffle
+    pid = fork do
+      (1..10).to_a.shuffle
+      raise 'default seed is not set' if srand == 0
+    end
+    p2, st = Process.waitpid2(pid)
+    assert(st.success?)
+  rescue NotImplementedError, ArgumentError
+  end
 end

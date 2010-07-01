@@ -205,16 +205,28 @@ struct Random {
 
 static struct Random default_mt;
 
+static VALUE rand_init(struct MT *mt, VALUE vseed);
+static VALUE random_seed(void);
+static VALUE rand_srand(struct Random *rand, VALUE seed);
+
 unsigned long
 rb_genrand_int32(void)
 {
-    return genrand_int32(&default_mt.mt);
+    struct MT *mt = &default_mt.mt;
+    if (!genrand_initialized(mt)) {
+        rand_srand(&default_mt, random_seed());
+    }
+    return genrand_int32(mt);
 }
 
 double
 rb_genrand_real(void)
 {
-    return genrand_real(&default_mt.mt);
+    struct MT *mt = &default_mt.mt;
+    if (!genrand_initialized(mt)) {
+        rand_srand(&default_mt, random_seed());
+    }
+    return genrand_real(mt);
 }
 
 static VALUE
@@ -337,6 +349,15 @@ random_seed(void)
     return make_seed_value(buf);
 }
 
+static VALUE
+rand_srand(struct Random *rand, VALUE seed)
+{
+    VALUE old = rand->seed.value;
+    rand->seed.value = rand_init(&rand->mt, seed);
+
+    return old;
+}
+
 /*
  *  call-seq:
  *     srand(number=0)    => old_seed
@@ -354,7 +375,7 @@ random_seed(void)
 static VALUE
 rb_f_srand(int argc, VALUE *argv, VALUE obj)
 {
-    VALUE seed, old;
+    VALUE seed;
 
     rb_secure(4);
     if (argc == 0) {
@@ -363,10 +384,7 @@ rb_f_srand(int argc, VALUE *argv, VALUE obj)
     else {
 	rb_scan_args(argc, argv, "01", &seed);
     }
-    old = default_mt.seed.value;
-    default_mt.seed.value = rand_init(&default_mt.mt, seed);
-
-    return old;
+    return rand_srand(&default_mt, seed);
 }
 
 static unsigned long 
@@ -481,7 +499,7 @@ rb_f_rand(int argc, VALUE *argv, VALUE obj)
 
     rb_scan_args(argc, argv, "01", &vmax);
     if (!genrand_initialized(mt)) {
-	rand_init(mt, random_seed());
+        rand_srand(&default_mt, random_seed());
     }
     switch (TYPE(vmax)) {
       case T_FLOAT:

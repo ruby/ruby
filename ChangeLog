@@ -1,3 +1,19 @@
+Wed May 26 13:27:18 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* random.c: refactoring.
+
+	* random.c (rand_srand): a new function that wraps
+	  rand_init and (re)initialization of the random seed as
+	  a VALUE.
+
+	* random.c (genrand_int32, genrand_real, rb_f_rand,
+	  rb_f_srand): using rand_srand.
+
+Mon Mar 15 11:49:48 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* random.c (rb_reset_random_seed): set seed in this.
+	  [ruby-core:28655]
+
 Mon Jun 29 20:29:11 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* rational.c (float_to_r): always returns rational.
