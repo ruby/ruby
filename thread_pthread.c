@@ -364,7 +364,9 @@ thread_start_func_1(void *th_ptr)
 	rb_thread_t *th = th_ptr;
 	VALUE stack_start;
 
+#ifndef __CYGWIN__
 	native_thread_init_stack(th);
+#endif
 	/* run */
 	thread_start_func_2(th, &stack_start, rb_ia64_bsp());
     }

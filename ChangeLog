@@ -1,3 +1,11 @@
+Thu Jul  1 16:26:42 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* thread_pthread.c (thread_start_func_1): don't call
+	  native_thread_init_stack(th) on cygwin to avoid the segv
+	  introduced by r27789. Cygwin's signal implementation is half
+	  baked so USE_SIGNALSTACK is not defined and it needs another
+	  treatment.
+
 Thu Jul  1 13:00:54 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (test-knownbug): ignore known bugs.
