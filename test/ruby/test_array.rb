@@ -2033,6 +2033,8 @@ class TestArray < Test::Unit::TestCase
     assert_equal([], a.rotate(-13))
     a = [1,2,3]
     assert_raise(ArgumentError) { a.rotate(1, 1) }
+    assert_equal([1,2,3,4,5].rotate(2**31-1), [1,2,3,4,5].rotate(2**31-0.1))
+    assert_equal([1,2,3,4,5].rotate(-2**31), [1,2,3,4,5].rotate(-2**31-0.9))
   end
 
   def test_rotate!
