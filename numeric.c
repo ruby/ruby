@@ -1729,7 +1729,7 @@ rb_num2ulong(VALUE val)
 
     switch (TYPE(val)) {
       case T_FLOAT:
-       if (RFLOAT_VALUE(val) <= (double)LONG_MAX
+       if (RFLOAT_VALUE(val) <= (double)ULONG_MAX
            && RFLOAT_VALUE(val) >= (double)LONG_MIN) {
            return (VALUE)RFLOAT_VALUE(val);
        }
