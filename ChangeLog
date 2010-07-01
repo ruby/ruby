@@ -1,3 +1,7 @@
+Thu Jul  1 23:10:25 2010  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	* lib/csv.rb: Improving documentation.
+
 Thu Jul  1 22:15:01 2010  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (rb_num2ulong): fix the lower limit for float.
