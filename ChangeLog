@@ -1,3 +1,9 @@
+Sat Jun 26 07:59:18 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* test/win32ole/test_win32ole_method.rb (test_offset_vtbl): check
+	  that OS is Windows 32bit or Windows 64bit in order to get
+	  correct offset value.
+
 Fri Jun 25 11:45:36 2010  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	* lib/csv.rb: Fixing a bug that prevented CSV from parsing
