@@ -1,3 +1,13 @@
+Fri Jul  2 05:31:51 2010  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (rb_num2long): accept LONG_MAX < x < LONG_MAX+1 and
+	  LONG_MIN-1 < x < LONG_MIN as well because they are converted
+	  into the valid range of long by truncation.
+	  (rb_num2ulong): accept ULONG_MAX < x < ULONG_MAX+1 and
+	  LONG_MIN-1 < x < LONG_MIN as well.
+	  (rb_num2ll): accept LLONG_MAX < x < LLONG_MAX+1 and
+	  LLONG_MIN-1 < x < LLONG_MIN.
+
 Thu Jul  1 23:10:25 2010  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	* lib/csv.rb: Improving documentation.

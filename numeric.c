@@ -1683,6 +1683,10 @@ num_step(int argc, VALUE *argv, VALUE from)
     return from;
 }
 
+#define LONG_MIN_MINUS_ONE ((double)LONG_MIN-1)
+#define LONG_MAX_PLUS_ONE (2*(double)(LONG_MAX/2+1))
+#define ULONG_MAX_PLUS_ONE (2*(double)(ULONG_MAX/2+1))
+
 SIGNED_VALUE
 rb_num2long(VALUE val)
 {
@@ -1695,8 +1699,8 @@ rb_num2long(VALUE val)
 
     switch (TYPE(val)) {
       case T_FLOAT:
-	if (RFLOAT_VALUE(val) <= (double)LONG_MAX
-	    && RFLOAT_VALUE(val) >= (double)LONG_MIN) {
+	if (RFLOAT_VALUE(val) < LONG_MAX_PLUS_ONE
+	    && RFLOAT_VALUE(val) > LONG_MIN_MINUS_ONE) {
 	    return (SIGNED_VALUE)(RFLOAT_VALUE(val));
 	}
 	else {
@@ -1729,8 +1733,8 @@ rb_num2ulong(VALUE val)
 
     switch (TYPE(val)) {
       case T_FLOAT:
-       if (RFLOAT_VALUE(val) <= (double)ULONG_MAX
-           && RFLOAT_VALUE(val) >= (double)LONG_MIN) {
+       if (RFLOAT_VALUE(val) < ULONG_MAX_PLUS_ONE
+           && RFLOAT_VALUE(val) > LONG_MIN_MINUS_ONE) {
            return (VALUE)RFLOAT_VALUE(val);
        }
        else {
@@ -1853,6 +1857,10 @@ rb_num2fix(VALUE val)
 
 #if HAVE_LONG_LONG
 
+#define LLONG_MIN_MINUS_ONE ((double)LLONG_MIN-1)
+#define LLONG_MAX_PLUS_ONE (2*(double)(LLONG_MAX/2+1))
+#define ULLONG_MAX_PLUS_ONE (2*(double)(ULLONG_MAX/2+1))
+
 LONG_LONG
 rb_num2ll(VALUE val)
 {
@@ -1864,8 +1872,8 @@ rb_num2ll(VALUE val)
 
     switch (TYPE(val)) {
       case T_FLOAT:
-	if (RFLOAT_VALUE(val) <= (double)LLONG_MAX
-	    && RFLOAT_VALUE(val) >= (double)LLONG_MIN) {
+	if (RFLOAT_VALUE(val) < LLONG_MAX_PLUS_ONE
+	    && RFLOAT_VALUE(val) > LLONG_MIN_MINUS_ONE) {
 	    return (LONG_LONG)(RFLOAT_VALUE(val));
 	}
 	else {
