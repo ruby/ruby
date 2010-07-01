@@ -30,69 +30,38 @@ module EnvUtil
 
   LANG_ENVS = %w"LANG LC_ALL LC_CTYPE"
 
-  def rubyexec(*args)
-    ruby = EnvUtil.rubybin
-    c = "C"
-    env = {}
-    LANG_ENVS.each {|lc| env[lc], ENV[lc] = ENV[lc], c}
-    stdin = stdout = stderr = nil
-    Timeout.timeout(10) do
-      stdin, stdout, stderr = Open3.popen3(*([ruby] + args))
-      env.each_pair {|lc, v|
-        if v
-          ENV[lc] = v
-        else
-          ENV.delete(lc)
-        end
-      }
-      env = nil
-      yield(stdin, stdout, stderr)
-    end
-
-  ensure
-    env.each_pair {|lc, v|
-      if v
-        ENV[lc] = v
-      else
-        ENV.delete(lc)
-      end
-    } if env
-    stdin .close unless !stdin  || stdin .closed?
-    stdout.close unless !stdout || stdout.closed?
-    stderr.close unless !stderr || stderr.closed?
-  end
-  module_function :rubyexec
-
   def invoke_ruby(args, stdin_data="", capture_stdout=false, capture_stderr=false, opt={})
+    in_c, in_p = IO.pipe
+    out_p, out_c = IO.pipe if capture_stdout
+    err_p, err_c = IO.pipe if capture_stderr
+    opt = opt.dup
+    opt[:in] = in_c
+    opt[:out] = out_c if capture_stdout
+    opt[:err] = err_c if capture_stderr
+    if enc = opt.delete(:encoding)
+      out_p.set_encoding(enc) if out_p
+      err_p.set_encoding(enc) if err_p
+    end
+    c = "C"
+    child_env = {}
+    LANG_ENVS.each {|lc| child_env[lc] = c}
+    if Array === args and Hash === args.first
+      child_env.update(args.shift)
+    end
     args = [args] if args.kind_of?(String)
-    begin
-      in_c, in_p = IO.pipe
-      out_p, out_c = IO.pipe if capture_stdout
-      err_p, err_c = IO.pipe if capture_stderr
-      opt = opt.dup
-      opt[:in] = in_c
-      opt[:out] = out_c if capture_stdout
-      opt[:err] = err_c if capture_stderr
-      if enc = opt.delete(:encoding)
-        out_p.set_encoding(enc) if out_p
-        err_p.set_encoding(enc) if err_p
-      end
-      c = "C"
-      child_env = {}
-      LANG_ENVS.each {|lc| child_env[lc] = c}
-      case args.first
-      when Hash
-        child_env.update(args.shift)
-      end
-      pid = spawn(child_env, EnvUtil.rubybin, *args, opt)
-      in_c.close
-      out_c.close if capture_stdout
-      err_c.close if capture_stderr
+    pid = spawn(child_env, EnvUtil.rubybin, *args, opt)
+    in_c.close
+    out_c.close if capture_stdout
+    err_c.close if capture_stderr
+    if block_given?
+      return yield in_p, out_p, err_p
+    else
       th_stdout = Thread.new { out_p.read } if capture_stdout
       th_stderr = Thread.new { err_p.read } if capture_stderr
       in_p.write stdin_data.to_str
       in_p.close
-      if (!capture_stdout || th_stdout.join(10)) && (!capture_stderr || th_stderr.join(10))
+      timeout = opt.fetch(:timeout, 10)
+      if (!capture_stdout || th_stdout.join(timeout)) && (!capture_stderr || th_stderr.join(timeout))
         stdout = th_stdout.value if capture_stdout
         stderr = th_stderr.value if capture_stderr
       else
@@ -102,19 +71,22 @@ module EnvUtil
       err_p.close if capture_stderr
       Process.wait pid
       status = $?
-    ensure
-      in_c.close if in_c && !in_c.closed?
-      in_p.close if in_p && !in_p.closed?
-      out_c.close if out_c && !out_c.closed?
-      out_p.close if out_p && !out_p.closed?
-      err_c.close if err_c && !err_c.closed?
-      err_p.close if err_p && !err_p.closed?
-      (th_stdout.kill; th_stdout.join) if th_stdout
-      (th_stderr.kill; th_stderr.join) if th_stderr
+      return stdout, stderr, status
     end
-    return stdout, stderr, status
+  ensure
+    [in_c, in_p, out_c, out_p, err_c, err_p].each do |io|
+      io.close if io && !io.closed?
+    end
+    [th_stdout, th_stderr].each do |th|
+      (th.kill; th.join) if th
+    end
   end
   module_function :invoke_ruby
+
+  alias rubyexec invoke_ruby
+  class << self
+    alias rubyexec invoke_ruby
+  end
 
   def verbose_warning
     class << (stderr = "")
@@ -141,20 +113,10 @@ module Test
   module Unit
     module Assertions
       public
-      def assert_normal_exit(testsrc, message = '')
-        in_c, in_p = IO.pipe
-        out_p, out_c = IO.pipe
-        pid = spawn(EnvUtil.rubybin, '-W0', STDIN=>in_c, STDOUT=>out_c, STDERR=>out_c)
-        in_c.close
-        out_c.close
-        in_p.write testsrc
-        in_p.close
-        msg = out_p.read
-        out_p.close
-        Process.wait pid
-        status = $?
-        faildesc = nil
-        if status.signaled?
+      def assert_normal_exit(testsrc, message = '', opt = {})
+        stdout, stderr, status = EnvUtil.invoke_ruby(%W'-W0', testsrc, true, true, opt)
+        pid = status.pid
+        faildesc = proc do
           signo = status.termsig
           signame = Signal.list.invert[signo]
           sigdesc = "signal #{signo}"
@@ -174,13 +136,9 @@ module Test
             msg << "\n" if /\n\z/ !~ msg
             full_message << "pid #{pid} killed by #{sigdesc}\n#{msg.gsub(/^/, '| ')}"
           end
+          full_message
         end
-        assert_block(full_message) { !status.signaled? }
-      ensure
-        in_c.close if in_c && !in_c.closed?
-        in_p.close if in_p && !in_p.closed?
-        out_c.close if out_c && !out_c.closed?
-        out_p.close if out_p && !out_p.closed?
+        assert_block(faildesc) { !status.signaled? }
       end
 
       def assert_in_out_err(args, test_stdin = "", test_stdout = [], test_stderr = [], message = nil, opt={})
