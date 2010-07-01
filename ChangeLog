@@ -1,3 +1,8 @@
+Fri Jun 25 11:45:36 2010  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	* lib/csv.rb: Fixing a bug that prevented CSV from parsing
+	  all multi-line fields correctly.  Patch by Rob Biedenharn.
+
 Sat Jun 26 10:08:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/envutil.rb (EnvUtil#invoke_ruby): no needs to copy the
