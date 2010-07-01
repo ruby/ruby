@@ -13,8 +13,9 @@ else
 end}
     basedir = File.expand_path("../gems/current", __FILE__)
     env = {"HOME"=>basedir, "GEM_HOME"=>basedir, "GEM_PATH"=>basedir}
-    assert_in_out_err([env, "-rrubygems-bug-child", "-e", src], "",
-                      /can't activate rubygems-bug-child.*already activated rubygems-bug-child-1\.1/, [],
-                      bug3140)
+    # WONTFIX in 1.9.2
+    #assert_in_out_err([env, "-rrubygems-bug-child", "-e", src], "",
+    #                  /can't activate rubygems-bug-child.*already activated rubygems-bug-child-1\.1/, [],
+    #                  bug3140)
   end
 end if defined?(::Gem)

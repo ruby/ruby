@@ -1,3 +1,8 @@
+Thu Jul  1 12:59:14 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/rubygems/test_gem_activation.rb: comment out a test for WONTFIX
+	  bug.
+
 Mon Jun 28 22:14:22 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/rdoc/test_rdoc_ri_driver.rb (TestRDocRIDriver#test_formatter):
