@@ -1,3 +1,8 @@
+Thu Jul  1 22:15:01 2010  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (rb_num2ulong): fix the lower limit for float.
+	  [ruby-dev:41361]
+
 Thu Jul  1 21:37:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/envutil.rb (EnvUtil#invoke_ruby): integrated with
