@@ -1,3 +1,13 @@
+Mon Jun 28 03:12:03 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* bootstraptest/test_class.rb: add a test for [ruby-core:30843].
+
+Mon Jun 28 02:43:35 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* class.c (rb_mod_init_copy): when class is dup'ed, a metaclass of the
+	  class should be attached to the dup'ed class, not the original
+	  class.  [ruby-core:30843] [Bug #3461]
+
 Sat Jun 26 07:59:18 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_win32ole_method.rb (test_offset_vtbl): check
