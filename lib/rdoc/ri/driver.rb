@@ -546,7 +546,7 @@ Options may also be set in the 'RI' environment variable.
 
   def display document
     page do |io|
-      text = document.accept formatter
+      text = document.accept formatter(io)
 
       io.write text
     end
@@ -795,10 +795,10 @@ Options may also be set in the 'RI' environment variable.
   # Creates a new RDoc::Markup::Formatter.  If a formatter is given with -f,
   # use it.  If we're outputting to a pager, use bs, otherwise ansi.
 
-  def formatter
+  def formatter(io)
     if @formatter_klass then
       @formatter_klass.new
-    elsif paging? then
+    elsif paging? or !io.tty? then
       RDoc::Markup::ToBs.new
     else
       RDoc::Markup::ToAnsi.new

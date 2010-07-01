@@ -498,15 +498,18 @@ Foo::Bar#bother
   def test_formatter
     driver = RDoc::RI::Driver.new
 
-    assert_instance_of @RM::ToAnsi, driver.formatter
+    io = Object.new
+    def io.tty?; true; end
+
+    assert_instance_of @RM::ToAnsi, driver.formatter(io)
 
     driver.instance_variable_set :@paging, true
 
-    assert_instance_of @RM::ToBs, driver.formatter
+    assert_instance_of @RM::ToBs, driver.formatter(io)
 
     driver.instance_variable_set :@formatter_klass, @RM::ToHtml
 
-    assert_instance_of @RM::ToHtml, driver.formatter
+    assert_instance_of @RM::ToHtml, driver.formatter(io)
   end
 
   def test_method_type

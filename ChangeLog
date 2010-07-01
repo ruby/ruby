@@ -1,3 +1,13 @@
+Mon Jun 28 22:14:22 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/rdoc/test_rdoc_ri_driver.rb (TestRDocRIDriver#test_formatter):
+	  fix a test accordingly to r28455.
+
+Mon Jun 28 05:32:51 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/rdoc/ri/driver.rb (RDoc::RI::Driver#formatter): should use bs
+	  format when stdout is piped.  [ruby-core:30734]
+
 Mon Jun 28 03:12:03 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* bootstraptest/test_class.rb: add a test for [ruby-core:30843].
