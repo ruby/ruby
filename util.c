@@ -258,77 +258,85 @@ static int valid_filename(const char *s);
 static const char suffix1[] = ".$$$";
 static const char suffix2[] = ".~~~";
 
-#define ext (&buf[1000])
-
 #define strEQ(s1,s2) (strcmp(s1,s2) == 0)
+
+extern const char *ruby_find_basename(const char *, long *, long *);
+extern const char *ruby_find_extname(const char *, long *);
 
 void
 ruby_add_suffix(VALUE str, const char *suffix)
 {
     int baselen;
     int extlen = strlen(suffix);
-    char *s, *t, *p;
+    char *p, *q;
     long slen;
     char buf[1024];
-    char *const bufend = buf + sizeof(buf);
+    const char *name;
+    const char *ext;
+    long len;
 
-    if (RSTRING_LEN(str) > 1000)
-        rb_fatal("Cannot do inplace edit on long filename (%ld characters)",
-		 RSTRING_LEN(str));
+    name = StringValueCStr(str);
+    slen = strlen(name);
+    if (slen > sizeof(buf) - 1)
+	rb_fatal("Cannot do inplace edit on long filename (%ld characters)",
+		 slen);
 
-#if defined(__CYGWIN32__) || defined(_WIN32)
     /* Style 0 */
-    slen = RSTRING_LEN(str);
     rb_str_cat(str, suffix, extlen);
     if (valid_filename(RSTRING_PTR(str))) return;
 
     /* Fooey, style 0 failed.  Fix str before continuing. */
     rb_str_resize(str, slen);
-#endif
-
-    slen = extlen;
-    t = buf; baselen = 0; s = RSTRING_PTR(str);
-    while ((*t = *s) && *s != '.') {
-	baselen++;
-	if (*s == '\\' || *s == '/') baselen = 0;
-	s++; t++;
-    }
-    p = t;
-
-    t = ext; extlen = 0;
-    while ((*t++ = *s++) != 0) extlen++;
-    if (extlen == 0) { ext[0] = '.'; ext[1] = 0; extlen++; }
+    name = StringValueCStr(str);
+    ext = ruby_find_extname(name, &len);
 
     if (*suffix == '.') {        /* Style 1 */
-        if (strEQ(ext, suffix)) goto fallback;
-	strlcpy(p, suffix, bufend - p);
+	if (ext) {
+	    if (strEQ(ext, suffix)) goto fallback;
+	    slen = ext - name;
+	}
+	rb_str_resize(str, slen);
+	rb_str_cat(str, suffix, extlen);
     }
-    else if (suffix[1] == '\0') {  /* Style 2 */
-        if (extlen < 4) {
-	    ext[extlen] = *suffix;
-	    ext[++extlen] = '\0';
-        }
-	else if (baselen < 8) {
-	    *p++ = *suffix;
+    else {
+	strncpy(buf, name, slen);
+	if (ext)
+	    p = buf + (ext - name);
+	else
+	    p = buf + slen;
+	p[len] = '\0';
+	if (suffix[1] == '\0') {  /* Style 2 */
+	    if (len <= 3) {
+		p[len] = *suffix;
+		p[++len] = '\0';
+	    }
+	    else if ((q = (char *)ruby_find_basename(buf, &baselen, 0)) &&
+		     baselen < 8) {
+		q += baselen;
+		*q++ = *suffix;
+		if (ext) {
+		    strncpy(q, ext, ext - name);
+		    q[ext - name + 1] = '\0';
+		}
+		else
+		    *q = '\0';
+	    }
+	    else if (len == 4 && p[3] != *suffix)
+		p[3] = *suffix;
+	    else if (baselen == 8 && q[7] != *suffix)
+		q[7] = *suffix;
+	    else
+		goto fallback;
 	}
-	else if (ext[3] != *suffix) {
-	    ext[3] = *suffix;
+	else { /* Style 3:  Panic */
+	  fallback:
+	    (void)memcpy(p, !ext || strEQ(ext, suffix1) ? suffix2 : suffix1, 5);
 	}
-	else if (buf[7] != *suffix) {
-	    buf[7] = *suffix;
-	}
-	else goto fallback;
-	strlcpy(p, ext, bufend - p);
-    }
-    else { /* Style 3:  Panic */
-fallback:
-	(void)memcpy(p, strEQ(ext, suffix1) ? suffix2 : suffix1, 5);
     }
     rb_str_resize(str, strlen(buf));
     memcpy(RSTRING_PTR(str), buf, RSTRING_LEN(str));
 }
 
-#if defined(__CYGWIN32__) || defined(_WIN32)
 static int
 valid_filename(const char *s)
 {
@@ -349,7 +357,6 @@ valid_filename(const char *s)
     }
     return 0;
 }
-#endif
 #endif
 
 
