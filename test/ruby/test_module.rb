@@ -928,6 +928,8 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_attr_inherited_visibility
+    bug3406 = '[ruby-core:30638]'
+    skip(bug3406)
     c = Class.new do
       class << self
         private
@@ -935,7 +937,6 @@ class TestModule < Test::Unit::TestCase
       end
       attr_accessor :x
     end.new
-    bug3406 = '[ruby-core:30638]'
     assert_nothing_raised(bug3406) {c.x = 1}
     assert_equal(1, c.x, bug3406)
   end
