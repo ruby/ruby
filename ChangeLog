@@ -1,3 +1,11 @@
+Fri Jul  2 19:07:09 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* io.c (argf_inplace_mode_set): prohibits an assignment
+	  of a tainted value. Patch by unak.
+
+	* util.c, file.c: prevents a buffer over-run on windows.
+	  Patch by unak.
+
 Wed May 26 13:27:18 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* random.c: refactoring.
