@@ -1,3 +1,8 @@
+Sat Jul  3 09:13:55 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb (visit_Time): use
+	  Time#nsec to accurately serialize time objects. [ruby-core:29233]
+
 Fri Jul  2 23:30:23 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (argf_inplace_mode_set): prohibits an assignment of a tainted
