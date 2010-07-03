@@ -155,7 +155,15 @@ module BigMath
   # -> "0.271828182845904523536028752390026306410273E1"
   def exp(x, prec)
     raise ArgumentError, "Zero or negative precision for exp" if prec <= 0
-    return BigDecimal("NaN") if x.infinite? || x.nan?
+    if x.infinite?
+      if x < 0
+        return BigDecimal("0", prec)
+      else
+        return BigDecimal("+Infinity", prec)
+      end
+    elsif x.nan?
+      return BigDecimal("NaN", prec)
+    end
     n    = prec + BigDecimal.double_fig
     one  = BigDecimal("1")
     x = -x if neg = x < 0
