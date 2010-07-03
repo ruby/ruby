@@ -1,3 +1,16 @@
+Sat Jul  3 09:47:26 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb(visit_Psych_Nodes_Scalar):
+	  teaching Psych to deserialize DateTime objects. [Bug #1390]
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb(visit_DateTime): added a
+	  method for serializing DateTime objects.
+
+	* ext/psych/lib/psych/scalar_scanner.rb(parse_time): add method for
+	  parsing times objects from a string.
+	
+	* test/psych/test_date_time.rb: tests for dumping DateTime objects.
+
 Sat Jul  3 09:13:55 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/yaml_tree.rb (visit_Time): use
