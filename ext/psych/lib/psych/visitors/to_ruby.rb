@@ -50,6 +50,9 @@ module Psych
           o.value.unpack('m').first
         when '!str', 'tag:yaml.org,2002:str'
           o.value
+        when "!ruby/object:DateTime"
+          require 'date'
+          @ss.parse_time(o.value).to_datetime
         when "!ruby/object:Complex"
           Complex(o.value)
         when "!ruby/object:Rational"

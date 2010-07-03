@@ -135,6 +135,19 @@ module Psych
         @emitter.scalar o.inspect, nil, '!ruby/regexp', false, false, Nodes::Scalar::ANY
       end
 
+      def visit_DateTime o
+        o = o.to_time
+        formatted = o.strftime("%Y-%m-%d %H:%M:%S")
+        if o.utc?
+          formatted += ".%06dZ" % [o.nsec]
+        else
+          formatted += ".%06d %+.2d:00" % [o.nsec, o.gmt_offset / 3600]
+        end
+
+        tag = '!ruby/object:DateTime'
+        @emitter.scalar formatted, nil, tag, false, false, Nodes::Scalar::ANY
+      end
+
       def visit_Time o
         formatted = o.strftime("%Y-%m-%d %H:%M:%S")
         if o.utc?
