@@ -1902,6 +1902,8 @@ BigDecimal_sign(VALUE self)
 void
 Init_bigdecimal(void)
 {
+    VALUE arg;
+
     /* Initialize VP routines */
     VpInit((U_LONG)0);
 
@@ -2022,6 +2024,12 @@ Init_bigdecimal(void)
 
     /* -3: Indicates that a value is negative and infinite. See BigDecimal.sign. */
     rb_define_const(rb_cBigDecimal, "SIGN_NEGATIVE_INFINITE",INT2FIX(VP_SIGN_NEGATIVE_INFINITE));
+
+    arg = rb_str_new2("+Infinity");
+    rb_define_const(rb_cBigDecimal, "INFINITY", BigDecimal_global_new(1, &arg, rb_cBigDecimal));
+    arg = rb_str_new2("NaN");
+    rb_define_const(rb_cBigDecimal, "NAN", BigDecimal_global_new(1, &arg, rb_cBigDecimal));
+
 
     /* instance methods */
     rb_define_method(rb_cBigDecimal, "precs", BigDecimal_prec, 0);

@@ -709,4 +709,12 @@ class TestBigDecimal < Test::Unit::TestCase
   ensure
     GC.stress = stress
   end
+
+  def test_INFINITY
+    assert(BigDecimal::INFINITY.infinite?, "BigDecimal::INFINITY is not a infinity")
+  end
+
+  def test_NAN
+    assert(BigDecimal::NAN.nan?, "BigDecimal::NAN is not NaN")
+  end
 end

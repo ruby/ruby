@@ -67,6 +67,14 @@ class TestBigMath < Test::Unit::TestCase
     assert_in_epsilon(Math.exp(40), exp(BigDecimal("40"), N))
     assert_in_epsilon(Math.exp(-N), exp(BigDecimal("-20"), N))
     assert_in_epsilon(Math.exp(-40), exp(BigDecimal("-40"), N))
+    begin
+      old_mode = BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY)
+      BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
+      assert(exp(BigDecimal::INFINITY, N).infinite?, "exp(INFINITY) is not an infinity")
+    ensure
+      #BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, old_mode)
+    end
+    assert_equal(0.0, exp(-BigDecimal::INFINITY, N))
   end
 
   def test_log

@@ -1,4 +1,12 @@
-Sat Jul  3 09:47:26 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+Sat Jul  3 16:14:10 2010  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (Init_bigdecimal): add two new constants
+	  BigDecimal::INFINITY and BigDecimal::NAN.
+
+	* ext/bigdecimal/lib/bigdecimal/math.rb (BigMath.exp): modify the
+	  behaviors for infinity arguments as same as Math.exp.
+
+Sat Jul  3 09:47:26 2010  Aaron Patterson  <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/to_ruby.rb(visit_Psych_Nodes_Scalar):
 	  teaching Psych to deserialize DateTime objects. [Bug #1390]
@@ -11,7 +19,7 @@ Sat Jul  3 09:47:26 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 	
 	* test/psych/test_date_time.rb: tests for dumping DateTime objects.
 
-Sat Jul  3 09:13:55 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+Sat Jul  3 09:13:55 2010  Aaron Patterson  <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/yaml_tree.rb (visit_Time): use
 	  Time#nsec to accurately serialize time objects. [ruby-core:29233]
