@@ -138,7 +138,10 @@ class TestIO_Console < Test::Unit::TestCase
 
   def test_winsize
     PTY.open {|m, s|
-      assert_equal([0, 0], s.winsize)
+      begin
+        assert_equal([0, 0], s.winsize)
+      rescue Errno::EINVAL # OpenSolaris 2009.06 TIOCGWINSZ causes Errno::EINVAL before TIOCSWINSZ.
+      end
     }
   end
 end
