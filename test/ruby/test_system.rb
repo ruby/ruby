@@ -14,6 +14,19 @@ class TestSystem < Test::Unit::TestCase
     false
   end
 
+  def valid_syntax2?(code, fname)
+    p fname
+    code = code.dup.force_encoding("ascii-8bit")
+    code.sub!(/\A(?:\xef\xbb\xbf)?(\s*\#.*$)*(\n)?/n) {
+      "#$&#{"\n" if $1 && !$2}BEGIN{throw tag, :ok}\n"
+    }
+    code.force_encoding("us-ascii")
+    catch {|tag| eval(code, binding, fname, 0)}
+  rescue Exception
+    STDERR.puts $!.message
+    false
+  end
+
   def test_system
     ruby = EnvUtil.rubybin
     assert_equal("foobar\n", `echo foobar`)
@@ -103,6 +116,20 @@ class TestSystem < Test::Unit::TestCase
     assert_nothing_raised(Exception) do
       for script in Dir[File.expand_path("../../../{lib,sample,ext}/**/*.rb", __FILE__)]
         valid_syntax? IO::read(script), script
+      end
+    end
+  end
+
+  def test_syntax2
+    if (dir = File.dirname(File.dirname(File.dirname(__FILE__)))) == '.'
+      dir = ""
+    else
+      dir << "/"
+    end
+    for script in Dir["#{dir}{lib,sample,ext,test}/**/*.rb"].sort
+      unless valid_syntax2? IO::read(script), script
+	STDERR.puts script
+        flunk("syntax error: #{script}")
       end
     end
   end
