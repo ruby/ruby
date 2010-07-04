@@ -2289,8 +2289,9 @@ swallow(rb_io_t *fptr, int term)
 	    while ((cnt = READ_CHAR_PENDING_COUNT(fptr)) > 0) {
 		const char *p = READ_CHAR_PENDING_PTR(fptr);
 		int i;
-		if (needconv) {
+		if (!needconv) {
 		    if (*p != term) return TRUE;
+		    i = (int)cnt;
 		    while (--i && *++p == term);
 		}
 		else {
@@ -2406,7 +2407,7 @@ prepare_getline_args(int argc, VALUE *argv, VALUE *rsp, long *limit, VALUE io)
 	enc_io = io_read_encoding(fptr);
 	if (enc_io != enc_rs &&
 	    (rb_enc_str_coderange(rs) != ENC_CODERANGE_7BIT ||
-	     !rb_enc_asciicompat(enc_io))) {
+	     (RSTRING_LEN(rs) > 0 && !rb_enc_asciicompat(enc_io)))) {
             if (rs == rb_default_rs) {
                 rs = rb_enc_str_new(0, 0, enc_io);
                 rb_str_buf_cat_ascii(rs, "\n");
@@ -2450,6 +2451,8 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 	int rspara = 0;
         int extra_limit = 16;
 
+        enc = io_read_encoding(fptr);
+
 	if (!NIL_P(rs)) {
 	    rslen = RSTRING_LEN(rs);
 	    if (rslen == 0) {
@@ -2458,6 +2461,13 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 		rspara = 1;
 		swallow(fptr, '\n');
 		rs = 0;
+		if (!rb_enc_asciicompat(enc)) {
+		    rs = rb_usascii_str_new(rsptr, rslen);
+		    rs = rb_str_encode(rs, rb_enc_from_encoding(enc), 0, Qnil);
+		    OBJ_FREEZE(rs);
+		    rsptr = RSTRING_PTR(rs);
+		    rslen = RSTRING_LEN(rs);
+		}
 	    }
 	    else {
 		rsptr = RSTRING_PTR(rs);
@@ -2466,7 +2476,6 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 	}
 
 	/* MS - Optimisation */
-        enc = io_read_encoding(fptr);
 	while ((c = appendline(fptr, newline, &str, &limit)) != EOF) {
             const char *s, *p, *pp, *e;
 

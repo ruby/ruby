@@ -1,3 +1,9 @@
+Sun Jul  4 17:13:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (swallow, prepare_getline_args, rb_io_getline_1): fix for
+	  paragraph mode reading in non-ascii-compatible encoding.
+	  [ruby-dev:41803]
+
 Sat Jul  3 16:14:10 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (Init_bigdecimal): add two new constants
