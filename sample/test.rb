@@ -1921,34 +1921,6 @@ test_ok(done)
 File.unlink "script_tmp" or `/bin/rm -f "script_tmp"`
 File.unlink "script_tmp.bak" or `/bin/rm -f "script_tmp.bak"`
 
-$bad = false
-if (dir = File.dirname(File.dirname(__FILE__))) == '.'
-  dir = ""
-else
-  dir << "/"
-end
-
-def valid_syntax?(code, fname)
-  p fname
-  code = code.dup.force_encoding("ascii-8bit")
-  code.sub!(/\A(?:\xef\xbb\xbf)?(\s*\#.*$)*(\n)?/n) {
-    "#$&#{"\n" if $1 && !$2}BEGIN{throw tag, :ok}\n"
-  }
-  code.force_encoding("us-ascii")
-  catch {|tag| eval(code, binding, fname, 0)}
-rescue Exception
-  STDERR.puts $!.message
-  false
-end
-
-for script in Dir["#{dir}{lib,sample,ext,test}/**/*.rb"].sort
-  unless valid_syntax? IO::read(script), script
-    STDERR.puts script
-    $bad = true
-  end
-end
-test_ok(!$bad)
-
 test_check "const"
 TEST1 = 1
 TEST2 = 2
