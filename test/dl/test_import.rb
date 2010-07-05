@@ -48,6 +48,7 @@ module DL
           extern "void *strcpy(char*, char*)"
         end
       end
+      assert_match(/call dlload before/, err.message)
     end
 
     def test_malloc()
