@@ -41,6 +41,15 @@ module DL
   end
 
   class TestImport < TestBase
+    def test_ensure_call_dlload
+      err = assert_raises(RuntimeError) do
+        Class.new do
+          extend DL::Importer
+          extern "void *strcpy(char*, char*)"
+        end
+      end
+    end
+
     def test_malloc()
       s1 = LIBC::Timeval.malloc()
       s2 = LIBC::Timeval.malloc()
