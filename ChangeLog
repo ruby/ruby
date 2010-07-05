@@ -1,3 +1,9 @@
+Tue Jul  6 08:35:58 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/dl/lib/dl/import.rb (handler): add a more helpful error message
+	  when calling import_symbol or import_function without calling
+	  dlload.  Thanks nobu! [ruby-core:30996]
+
 Tue Jul  6 00:34:50 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm.c (thread_free): free altstack to prevent memory leak.  a patch

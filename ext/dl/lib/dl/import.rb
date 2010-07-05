@@ -194,8 +194,12 @@ module DL
       return ptr
     end
 
+    def handler
+      @handler or raise "call dlload before importing symbols and functions"
+    end
+
     def import_symbol(name)
-      addr = @handler.sym(name)
+      addr = handler.sym(name)
       if( !addr )
         raise(DLError, "cannot find the symbol: #{name}")
       end
@@ -203,7 +207,7 @@ module DL
     end
 
     def import_function(name, ctype, argtype, call_type = nil)
-      addr = @handler.sym(name)
+      addr = handler.sym(name)
       if( !addr )
         raise(DLError, "cannot find the function: #{name}()")
       end
