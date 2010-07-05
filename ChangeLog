@@ -1,3 +1,8 @@
+Tue Jul  6 00:29:27 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* string.c (NONASCII_MASK): NONASCII_MASK must be unsigned.
+	  [ruby-dev:41782]
+
 Mon Jul  5 16:05:39 2010  Akinori MUSHA  <knu@iDaemons.org>
 
 	* vm_method.c (rb_method_boundp): Return false for protected

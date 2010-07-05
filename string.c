@@ -141,7 +141,7 @@ static inline const char *
 search_nonascii(const char *p, const char *e)
 {
 #if SIZEOF_VALUE == 8
-# define NONASCII_MASK 0x8080808080808080LL
+# define NONASCII_MASK 0x8080808080808080ULL
 #elif SIZEOF_VALUE == 4
 # define NONASCII_MASK 0x80808080UL
 #endif
