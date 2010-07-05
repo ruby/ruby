@@ -1,3 +1,8 @@
+Tue Jul  6 00:34:50 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* vm.c (thread_free): free altstack to prevent memory leak.  a patch
+	  from Tomoyuki Chikanaga in [ruby-dev:41815]. [Bug #3537]
+
 Tue Jul  6 00:29:27 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* string.c (NONASCII_MASK): NONASCII_MASK must be unsigned.
