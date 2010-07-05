@@ -1726,6 +1726,11 @@ thread_free(void *ptr)
 	    RUBY_GC_INFO("main thread\n");
 	}
 	else {
+#ifdef USE_SIGALTSTACK
+	    if (th->altstack) {
+		free(th->altstack);
+	    }
+#endif
 	    ruby_xfree(ptr);
 	}
     }
