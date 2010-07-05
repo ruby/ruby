@@ -90,7 +90,7 @@ module Psych
       return time if 'Z' == md[3]
       return Time.at(time.to_i, us) unless md[3]
 
-      tz = md[3].split(':').map { |digit| Integer(digit.sub(/([-+])0/, '\1')) }
+      tz = md[3].split(':').map { |digit| Integer(digit, 10) }
       offset = tz.first * 3600 + ((tz[1] || 0) * 60)
       Time.at((time - offset).to_i, us)
     end
