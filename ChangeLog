@@ -1,3 +1,8 @@
+Mon Jul  5 16:05:39 2010  Akinori MUSHA  <knu@iDaemons.org>
+
+	* vm_method.c (rb_method_boundp): Return false for protected
+	  methods when called from Kernel#respond_to?. [ruby-dev:40461]
+
 Mon Jul  5 12:32:01 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/scalar_scanner.rb (parse_string): support

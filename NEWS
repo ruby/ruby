@@ -8,6 +8,21 @@ Note that each entry is kept so brief that no reason behind or
 reference information is supplied with.  For a full list of changes
 with all sufficient information, see the ChangeLog file.
 
+== Changes since the 1.9.2 release
+=== Library updates (outstanding ones only)
+
+* builtin classes
+
+  * Kernel
+
+    * Kernel#respond_to? now returns false for protected methods.
+
+=== Compatibility issues (excluding feature bug fixes)
+
+* Kernel#respond_to?
+
+  See above.
+
 == Changes since the 1.9.1 release
 === Library updates (outstanding ones only)
 

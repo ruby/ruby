@@ -39,6 +39,20 @@ class TestMethod < Test::Unit::TestCase
     def meth; end
   end
 
+  def mv1() end
+  def mv2() end
+  private :mv2
+  def mv3() end
+  protected :mv3
+
+  class Visibility
+    def mv1() end
+    def mv2() end
+    private :mv2
+    def mv3() end
+    protected :mv3
+  end
+
   def test_arity
     assert_equal(0, method(:m0).arity)
     assert_equal(1, method(:m1).arity)
@@ -344,5 +358,49 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([:a], obj.public_methods(false), bug)
     obj.extend(m)
     assert_equal([:m1, :a], obj.public_methods(false), bug)
+  end
+
+  def test_visibility
+    assert_equal('method', defined?(mv1))
+    assert_equal('method', defined?(mv2))
+    assert_equal('method', defined?(mv3))
+
+    assert_equal('method', defined?(self.mv1))
+    assert_equal(nil, defined?(self.mv2))
+    assert_equal('method', defined?(self.mv3))
+
+    assert_equal(true,  respond_to?(:mv1))
+    assert_equal(false, respond_to?(:mv2))
+    assert_equal(false, respond_to?(:mv3))
+
+    assert_nothing_raised { mv1 }
+    assert_nothing_raised { mv2 }
+    assert_nothing_raised { mv3 }
+
+    assert_nothing_raised { self.mv1 }
+    assert_raise(NoMethodError) { self.mv2 }
+    assert_nothing_raised { self.mv3 }
+
+    v = Visibility.new
+
+    assert_equal('method', defined?(v.mv1))
+    assert_equal(nil, defined?(v.mv2))
+    assert_equal(nil, defined?(v.mv3))
+
+    assert_equal(true,  v.respond_to?(:mv1))
+    assert_equal(false, v.respond_to?(:mv2))
+    assert_equal(false, v.respond_to?(:mv3))
+
+    assert_nothing_raised { v.mv1 }
+    assert_raise(NoMethodError) { v.mv2 }
+    assert_raise(NoMethodError) { v.mv3 }
+
+    assert_nothing_raised { v.__send__(:mv1) }
+    assert_nothing_raised { v.__send__(:mv2) }
+    assert_nothing_raised { v.__send__(:mv3) }
+
+    assert_nothing_raised { v.instance_eval { mv1 } }
+    assert_nothing_raised { v.instance_eval { mv2 } }
+    assert_nothing_raised { v.instance_eval { mv3 } }
   end
 end
