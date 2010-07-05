@@ -88,9 +88,11 @@ module Psych
       time = Time.utc(yy, m, dd, hh, mm, ss, us)
 
       return time if 'Z' == md[3]
+      return Time.at(time.to_i, us) unless md[3]
 
-      tz = md[3] ? Integer(md[3].split(':').first.sub(/([-+])0/, '\1')) : 0
-      Time.at((time - (tz * 3600)).to_i, us)
+      tz = md[3].split(':').map { |digit| Integer(digit.sub(/([-+])0/, '\1')) }
+      offset = tz.first * 3600 + ((tz[1] || 0) * 60)
+      Time.at((time - offset).to_i, us)
     end
   end
 end
