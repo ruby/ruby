@@ -271,9 +271,9 @@ module Psych
       def format_time time
         formatted = time.strftime("%Y-%m-%d %H:%M:%S")
         if time.utc?
-          formatted += ".%06dZ" % [time.nsec]
+          formatted += ".%09dZ" % [time.nsec]
         else
-          formatted += ".%06d %+.2d:%.2d" % [time.nsec,
+          formatted += ".%09d %+.2d:%.2d" % [time.nsec,
             time.gmt_offset / 3600, time.gmt_offset % 3600 / 60]
         end
         formatted
