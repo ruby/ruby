@@ -1,3 +1,8 @@
+Tue Jul  6 00:29:27 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* string.c (NONASCII_MASK): NONASCII_MASK must be unsigned.
+	  [ruby-dev:41782]
+
 Fri Jul  2 19:07:09 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* io.c (argf_inplace_mode_set): prohibits an assignment
