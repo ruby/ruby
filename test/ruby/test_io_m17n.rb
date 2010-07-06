@@ -1809,7 +1809,21 @@ EOT
   def test_textmode_paragraph_nonasciicompat
     bug3534 = ['[ruby-dev:41803]', '[Bug #3534]']
     r, w = IO.pipe
+    [Encoding::UTF_32BE, Encoding::UTF_32LE,
+     Encoding::UTF_16BE, Encoding::UTF_16LE,
+     Encoding::UTF_8].each do |e|
+      r.set_encoding(Encoding::US_ASCII, e)
+      w.print(bug3534[0], "\n\n\n\n", bug3534[1], "\n")
+      assert_equal((bug3534[0]+"\n\n").encode(e), r.gets(""), bug3534[0])
+      assert_equal((bug3534[1]+"\n").encode(e), r.gets(), bug3534[1])
+    end
+  end
+
+  def test_binmode_paragraph_nonasciicompat
+    bug3534 = ['[ruby-dev:41803]', '[Bug #3534]']
+    r, w = IO.pipe
     r.binmode
+    w.binmode
     [Encoding::UTF_32BE, Encoding::UTF_32LE,
      Encoding::UTF_16BE, Encoding::UTF_16LE,
      Encoding::UTF_8].each do |e|
