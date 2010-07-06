@@ -1,3 +1,8 @@
+Tue Jul  6 21:45:34 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io/console/console.c (winsize_row): should return actual screen
+	  size, not buffer size.
+
 Tue Jul  6 08:35:58 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/dl/lib/dl/import.rb (handler): add a more helpful error message
