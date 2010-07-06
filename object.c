@@ -2110,6 +2110,8 @@ rb_Integer(VALUE val)
  *     Integer(123.999)    #=> 123
  *     Integer("0x1a")     #=> 26
  *     Integer(Time.new)   #=> 1204973019
+ *     Integer("0930", 10) #=> 930
+ *     Integer("111", 2)   #=> 7
  */
 
 static VALUE
