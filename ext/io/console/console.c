@@ -356,7 +356,7 @@ typedef CONSOLE_SCREEN_BUFFER_INFO rb_console_size_t;
 #define getwinsize(fd, buf) ( \
     GetConsoleScreenBufferInfo((HANDLE)rb_w32_get_osfhandle(fd), (buf)) || \
     SET_LAST_ERROR)
-#define winsize_row(buf) (buf)->dwSize.Y
+#define winsize_row(buf) ((buf)->srWindow.Bottom - (buf)->srWindow.Top + 1)
 #define winsize_col(buf) (buf)->dwSize.X
 #endif
 
