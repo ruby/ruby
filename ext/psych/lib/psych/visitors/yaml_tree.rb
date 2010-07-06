@@ -269,12 +269,12 @@ module Psych
 
       private
       def format_time time
-        formatted = time.strftime("%Y-%m-%d %H:%M:%S")
+        formatted = time.strftime("%Y-%m-%d %H:%M:%S.%9N")
         if time.utc?
-          formatted += ".%09dZ" % [time.nsec]
+          formatted += "Z"
         else
-          formatted += ".%09d %+.2d:%.2d" % [time.nsec,
-            time.gmt_offset / 3600, time.gmt_offset % 3600 / 60]
+          zone = time.strftime('%z')
+          formatted += " #{zone[0,3]}:#{zone[3,5]}"
         end
         formatted
       end

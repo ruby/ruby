@@ -91,7 +91,14 @@ module Psych
       return Time.at(time.to_i, us) unless md[3]
 
       tz = md[3].split(':').map { |digit| Integer(digit, 10) }
-      offset = tz.first * 3600 + ((tz[1] || 0) * 60)
+      offset = tz.first * 3600
+
+      if offset < 0
+        offset -= ((tz[1] || 0) * 60)
+      else
+        offset += ((tz[1] || 0) * 60)
+      end
+
       Time.at((time - offset).to_i, us)
     end
   end
