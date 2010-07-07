@@ -155,11 +155,29 @@ module Psych
   end
 
   ###
-  # Dump Ruby object +o+ to a YAML string using +options+.
+  # call-seq:
+  #   Psych.dump(o)               -> string of yaml
+  #   Psych.dump(o, options)      -> string of yaml
+  #   Psych.dump(o, io)           -> io object passed in
+  #   Psych.dump(o, io, options)  -> io object passed in
+  #
+  # Dump Ruby object +o+ to a YAML string.  Optional +options+ may be passed in
+  # to control the output format.  If an IO object is passed in, the YAML will
+  # be dumped to that IO object.
   #
   # Example:
   #
+  #   # Dump an array, get back a YAML string
   #   Psych.dump(['a', 'b'])  # => "---\n- a\n- b\n"
+  #
+  #   # Dump an array to an IO object
+  #   Psych.dump(['a', 'b'], StringIO.new)  # => #<StringIO:0x000001009d0890>
+  #
+  #   # Dump an array with indentation set
+  #   Psych.dump(['a', ['b']], :indentation => 3) # => "---\n- a\n-  - b\n"
+  #
+  #   # Dump an array to an IO with indentation set
+  #   Psych.dump(['a', ['b']], StringIO.new, :indentation => 3)
   def self.dump o, io = nil, options = {}
     if Hash === io
       options = io
@@ -168,7 +186,7 @@ module Psych
 
     visitor = Psych::Visitors::YAMLTree.new options
     visitor << o
-    visitor.tree.to_yaml io
+    visitor.tree.to_yaml io, options
   end
 
   ###
