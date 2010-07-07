@@ -2801,10 +2801,7 @@ fix_le(VALUE x, VALUE y)
 static VALUE
 fix_rev(VALUE num)
 {
-    long val = FIX2LONG(num);
-
-    val = ~val;
-    return LONG2NUM(val);
+    return ~num | FIXNUM_FLAG;
 }
 
 static VALUE
