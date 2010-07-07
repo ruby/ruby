@@ -1,3 +1,10 @@
+Thu Jul  8 08:16:57 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb (push): adding version
+	  and header emit options.
+	
+	* test/psych/test_psych.rb: corresponding test.
+
 Thu Jul  8 08:01:03 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/emitter.c: updating documentation about emit options

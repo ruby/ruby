@@ -13,6 +13,7 @@ module Psych
         @emitter  = emitter
         @st       = {}
         @ss       = ScalarScanner.new
+        @options  = options
 
         @dispatch_cache = Hash.new do |h,klass|
           method = "visit_#{(klass.name || '').split('::').join('_')}"
@@ -43,7 +44,19 @@ module Psych
 
       def push object
         start unless started?
-        @emitter.start_document [], [], false
+        version = []
+        version = [1,1] if @options[:header]
+
+        case @options[:version]
+        when Array
+          version = @options[:version]
+        when String
+          version = @options[:version].split('.').map { |x| x.to_i }
+        else
+          version = [1,1]
+        end if @options[:version]
+
+        @emitter.start_document version, [], false
         accept object
         @emitter.end_document
       end
