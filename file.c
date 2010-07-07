@@ -2859,13 +2859,13 @@ rmext(p, l1, e)
 }
 
 const char *
-ruby_find_basename(const char *name, long *len, long *ext)
+ruby_find_basename(const char *name, long *baselen, long *alllen)
 {
-    const char *p;
+    const char *p, *q, *e;
 #if defined DOSISH_DRIVE_LETTER || defined DOSISH_UNC
     const char *root;
 #endif
-    long f, n = -1;
+    long f = 0, n = -1;
 
     name = skipprefix(name);
 #if defined DOSISH_DRIVE_LETTER || defined DOSISH_UNC
@@ -2905,12 +2905,18 @@ ruby_find_basename(const char *name, long *len, long *ext)
 #else
 	n = chompdirsep(p) - p;
 #endif
+	for (q = p; q - p < n && *q == '.'; q++);
+	for (e = 0; q - p < n; q = CharNext(q)) {
+	    if (*q == '.') e = q;
+	}
+	if (e) f = e - p;
+	else f = n;
     }
 
-    if (len)
-	*len = f;
-    if (ext)
-	*ext = n;
+    if (baselen)
+	*baselen = f;
+    if (alllen)
+	*alllen = n;
     return p;
 }
 
