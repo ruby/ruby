@@ -18,6 +18,26 @@ class TestPsych < Psych::TestCase
     assert_match(/\? ! "b/, yml)
   end
 
+  def test_header
+    yml = Psych.dump({:a => {'b' => 'c'}}, {:header => true})
+    assert_match(/YAML/, yml)
+  end
+
+  def test_version_array
+    yml = Psych.dump({:a => {'b' => 'c'}}, {:version => [1,1]})
+    assert_match(/1.1/, yml)
+  end
+
+  def test_version_string
+    yml = Psych.dump({:a => {'b' => 'c'}}, {:version => '1.1'})
+    assert_match(/1.1/, yml)
+  end
+
+  def test_version_bool
+    yml = Psych.dump({:a => {'b' => 'c'}}, {:version => true})
+    assert_match(/1.1/, yml)
+  end
+
   def test_load_argument_error
     assert_raises(TypeError) do
       Psych.load nil
