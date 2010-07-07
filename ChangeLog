@@ -1,3 +1,7 @@
+Wed Jul  7 13:22:20 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* file.c (ruby_find_basename): set correct baselen.
+
 Wed Jul  7 13:02:59 2010  Akinori MUSHA  <knu@iDaemons.org>
 
 	* vm_method.c (rb_method_boundp): respond_to?(:protected_method,
