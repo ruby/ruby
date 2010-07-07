@@ -136,7 +136,7 @@ if defined?(Gem) then
 
       @loaded_full_rubygems_library = false
 
-      def self.load_full_rubygems_library
+      def self.remove
         return if @loaded_full_rubygems_library
 
         @loaded_full_rubygems_library = true
@@ -150,6 +150,12 @@ if defined?(Gem) then
         Kernel.module_eval do
           undef_method :gem if method_defined? :gem
         end
+      end
+
+      def self.load_full_rubygems_library
+        return if @loaded_full_rubygems_library
+
+        remove
 
         $".delete path_to_full_rubygems_library
         if $".any? {|path| path.end_with?('/rubygems.rb')}
@@ -179,6 +185,7 @@ if defined?(Gem) then
 
       GemPaths = {}
       GemVersions = {}
+      GemLoadPaths = []
 
       def push_gem_version_on_load_path(gem_name, *version_requirements)
         if version_requirements.empty?
@@ -241,29 +248,27 @@ if defined?(Gem) then
           end
         end
 
-        require_paths = []
-
         GemPaths.each_value do |path|
           if File.exist?(file = File.join(path, ".require_paths")) then
             paths = File.read(file).split.map do |require_path|
               File.join path, require_path
             end
 
-            require_paths.concat paths
+            GemLoadPaths.concat paths
           else
-            require_paths << file if File.exist?(file = File.join(path, "bin"))
-            require_paths << file if File.exist?(file = File.join(path, "lib"))
+            GemLoadPaths << file if File.exist?(file = File.join(path, "bin"))
+            GemLoadPaths << file if File.exist?(file = File.join(path, "lib"))
           end
         end
 
         # "tag" the first require_path inserted into the $LOAD_PATH to enable
         # indexing correctly with rubygems proper when it inserts an explicitly
         # gem version
-        unless require_paths.empty? then
-          require_paths.first.instance_variable_set(:@gem_prelude_index, true)
+        unless GemLoadPaths.empty? then
+          GemLoadPaths.first.instance_variable_set(:@gem_prelude_index, true)
         end
         # gem directories must come after -I and ENV['RUBYLIB']
-        $:[$:.index{|e|e.instance_variable_defined?(:@gem_prelude_index)}||-1,0] = require_paths
+        $:[$:.index{|e|e.instance_variable_defined?(:@gem_prelude_index)}||-1,0] = GemLoadPaths
       end
 
       def const_missing(constant)
@@ -289,7 +294,6 @@ if defined?(Gem) then
 
   begin
     Gem.push_all_highest_version_gems_on_load_path
-    Gem::QuickLoader.fake_rubygems_as_loaded
   rescue Exception => e
     puts "Error loading gem paths on load path in gem_prelude"
     puts e

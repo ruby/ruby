@@ -7,6 +7,11 @@
 
 gem_disabled = !defined? Gem
 
+unless gem_disabled
+  # Nuke the Quickloader stuff
+  Gem::QuickLoader.remove
+end
+
 require 'rubygems/defaults'
 require 'thread'
 require 'etc'
@@ -579,6 +584,12 @@ module Gem
     $LOAD_PATH.index { |p| p.instance_variable_defined? :@gem_prelude_index }
   end
 
+  def self.remove_prelude_paths
+    Gem::QuickLoader::GemLoadPaths.each do |path|
+      $LOAD_PATH.delete(path)
+    end
+  end
+
   ##
   # The file name and line number of the caller of the caller of this method.
 
@@ -1098,13 +1109,14 @@ end
 
 require 'rubygems/config_file'
 
+Gem.remove_prelude_paths
+
 ##
 # Enables the require hook for RubyGems.
 #
-# Ruby 1.9 allows --disable-gems, so we require it when we didn't detect a Gem
-# constant at rubygems.rb load time.
-
-require 'rubygems/custom_require' if gem_disabled or RUBY_VERSION < '1.9'
+# We remove the paths prelude added, so we need custom require to get
+# any gems now.
+require 'rubygems/custom_require'
 
 Gem.clear_paths
 

@@ -1,3 +1,12 @@
+Thu Jul  8 00:15:50 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* gem_prelude.rb: provide workaround for gem activation.  Currently,
+	  gem activation does not work by default.  Now it can be worked
+	  around by requiring "rubygems" first.  [ruby-core:29486]
+	  a patch from Evan Phoenix in [ruby-core:31096].
+
+	* lib/rubygems.rb: ditto.
+
 Wed Jul  7 10:01:34 2010  Adrian Bloomer  <adrian.bloomer@gmail.com>
 
 	* numeric.c (fix_rev): Replaced fix_rev with '~num | FIXNUM_FLAG'.
