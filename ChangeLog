@@ -1,3 +1,7 @@
+Wed Jul  7 12:00:24 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* file.c (ruby_find_basename): should initialize f.
+
 Wed Jul  7 11:44:01 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/zlib/zlib.c (gzfile_raise): add invalid header to
