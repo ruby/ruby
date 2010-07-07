@@ -1,3 +1,7 @@
+Wed Jul  7 13:24:24 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* file.c (ruby_find_basename): set correct baselen.
+
 Fri Jul  2 23:34:45 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* file.c (ruby_find_basename, ruby_find_extname): split from
