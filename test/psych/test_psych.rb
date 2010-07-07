@@ -8,6 +8,16 @@ class TestPsych < Psych::TestCase
     Psych.domain_types.clear
   end
 
+  def test_indent
+    yml = Psych.dump({:a => {'b' => 'c'}}, {:indentation => 5})
+    assert_match(/^[ ]{5}b/, yml)
+  end
+
+  def test_canonical
+    yml = Psych.dump({:a => {'b' => 'c'}}, {:canonical => true})
+    assert_match(/\? ! "b/, yml)
+  end
+
   def test_load_argument_error
     assert_raises(TypeError) do
       Psych.load nil

@@ -1,8 +1,10 @@
 module Psych
   module Visitors
     class Emitter < Psych::Visitors::Visitor
-      def initialize io
+      def initialize io, options = {}
         @handler = Psych::Emitter.new io
+        @handler.indentation = options[:indentation] if options[:indentation]
+        @handler.canonical = options[:canonical] if options[:canonical]
       end
 
       def visit_Psych_Nodes_Stream o

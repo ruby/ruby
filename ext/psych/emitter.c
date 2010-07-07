@@ -435,7 +435,8 @@ static VALUE canonical(VALUE self)
 
 /* call-seq: emitter.indentation = level
  *
- * Set the indentation level to +level+.
+ * Set the indentation level to +level+.  The level must be less than 10 and
+ * greater than 1.
  */
 static VALUE set_indentation(VALUE self, VALUE level)
 {
