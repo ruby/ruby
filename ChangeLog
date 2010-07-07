@@ -1,3 +1,7 @@
+Wed Jul  7 10:01:34 2010  Adrian Bloomer  <adrian.bloomer@gmail.com>
+
+	* numeric.c (fix_rev): Replaced fix_rev with '~num | FIXNUM_FLAG'.
+
 Tue Jul  6 22:57:21 2010  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (nogvl_copy_stream_sendfile): jump to retry_sendfile directly
