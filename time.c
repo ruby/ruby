@@ -4346,7 +4346,9 @@ strftimev(const char *fmt, VALUE time)
  *    %X - Preferred representation for the time alone, no date
  *    %y - Year without a century (00..99)
  *    %Y - Year with century
- *    %z - Time zone as  hour offset from UTC (e.g. +0900)
+ *    %z - Time zone as hour and minute offset from UTC (e.g. +0900)
+ *            %:z - hour and minute offset from UTC with a colon (e.g. +09:00)
+ *            %::z - hour, minute and second offset from UTC (e.g. +09:00:00)
  *    %Z - Time zone name
  *    %% - Literal ``%'' character
  *
