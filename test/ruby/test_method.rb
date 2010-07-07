@@ -366,12 +366,16 @@ class TestMethod < Test::Unit::TestCase
     assert_equal('method', defined?(mv3))
 
     assert_equal('method', defined?(self.mv1))
-    assert_equal(nil, defined?(self.mv2))
+    assert_equal(nil,      defined?(self.mv2))
     assert_equal('method', defined?(self.mv3))
 
     assert_equal(true,  respond_to?(:mv1))
     assert_equal(false, respond_to?(:mv2))
     assert_equal(false, respond_to?(:mv3))
+
+    assert_equal(true,  respond_to?(:mv1, true))
+    assert_equal(true,  respond_to?(:mv2, true))
+    assert_equal(true,  respond_to?(:mv3, true))
 
     assert_nothing_raised { mv1 }
     assert_nothing_raised { mv2 }
@@ -384,12 +388,16 @@ class TestMethod < Test::Unit::TestCase
     v = Visibility.new
 
     assert_equal('method', defined?(v.mv1))
-    assert_equal(nil, defined?(v.mv2))
-    assert_equal(nil, defined?(v.mv3))
+    assert_equal(nil,      defined?(v.mv2))
+    assert_equal(nil,      defined?(v.mv3))
 
     assert_equal(true,  v.respond_to?(:mv1))
     assert_equal(false, v.respond_to?(:mv2))
     assert_equal(false, v.respond_to?(:mv3))
+
+    assert_equal(true,  v.respond_to?(:mv1, true))
+    assert_equal(true,  v.respond_to?(:mv2, true))
+    assert_equal(true,  v.respond_to?(:mv3, true))
 
     assert_nothing_raised { v.mv1 }
     assert_raise(NoMethodError) { v.mv2 }

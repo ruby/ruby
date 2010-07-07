@@ -1,3 +1,9 @@
+Wed Jul  7 13:02:59 2010  Akinori MUSHA  <knu@iDaemons.org>
+
+	* vm_method.c (rb_method_boundp): respond_to?(:protected_method,
+	  true) should return true.  Pointed out by Marc-Andre Lafortune.
+	  [ruby-dev:41837]
+
 Wed Jul  7 12:00:24 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* file.c (ruby_find_basename): should initialize f.
