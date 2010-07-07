@@ -155,6 +155,8 @@ static struct gzfile *get_gzfile(VALUE);
 static VALUE gzfile_ensure_close(VALUE);
 static VALUE rb_gzfile_s_wrap(int, VALUE*, VALUE);
 static VALUE gzfile_s_open(int, VALUE*, VALUE, const char*);
+NORETURN(static void gzfile_raise(struct gzfile *, VALUE, const char *));
+static VALUE gzfile_error_inspect(VALUE);
 
 static VALUE rb_gzfile_to_io(VALUE);
 static VALUE rb_gzfile_crc(VALUE);
@@ -1716,7 +1718,7 @@ rb_inflate_set_dictionary(VALUE obj, VALUE dic)
 #define OS_CODE  OS_UNIX
 #endif
 
-static ID id_write, id_read, id_readpartial, id_flush, id_seek, id_close, id_path;
+static ID id_write, id_read, id_readpartial, id_flush, id_seek, id_close, id_path, id_input;
 static VALUE cGzError, cNoFooter, cCRCError, cLengthError;
 
 
@@ -1957,6 +1959,32 @@ gzfile_set32(unsigned long n, unsigned char *dst)
 }
 
 static void
+gzfile_raise(struct gzfile *gz, VALUE klass, const char *message)
+{
+    VALUE exc = rb_exc_new2(klass, message);
+    if (!NIL_P(gz->z.input)) {
+	VALUE rb_str_resurrect(VALUE);
+	rb_ivar_set(exc, id_input, rb_str_resurrect(gz->z.input));
+    }
+    rb_exc_raise(exc);
+}
+
+static VALUE
+gzfile_error_inspect(VALUE error)
+{
+    VALUE str = rb_call_super(0, 0);
+    VALUE input = rb_attr_get(error, id_input);
+
+    if (!NIL_P(input)) {
+	rb_str_resize(str, RSTRING_LEN(str)-1);
+	rb_str_cat2(str, ", input=");
+	rb_str_append(str, rb_str_inspect(input));
+	rb_str_cat2(str, ">");
+    }
+    return str;
+}
+
+static void
 gzfile_make_header(struct gzfile *gz)
 {
     Bytef buf[10];  /* the size of gzip header */
@@ -2019,13 +2047,13 @@ gzfile_read_header(struct gzfile *gz)
     char flags, *p;
 
     if (!gzfile_read_raw_ensure(gz, 10)) {  /* 10 is the size of gzip header */
-	rb_raise(cGzError, "not in gzip format");
+	gzfile_raise(gz, cGzError, "not in gzip format");
     }
 
     head = (unsigned char*)RSTRING_PTR(gz->z.input);
 
     if (head[0] != GZ_MAGIC1 || head[1] != GZ_MAGIC2) {
-	rb_raise(cGzError, "not in gzip format");
+	gzfile_raise(gz, cGzError, "not in gzip format");
     }
     if (head[2] != GZ_METHOD_DEFLATE) {
 	rb_raise(cGzError, "unsupported compression method %d", head[2]);
@@ -2094,7 +2122,7 @@ gzfile_check_footer(struct gzfile *gz)
     gz->z.flags |= GZFILE_FLAG_FOOTER_FINISHED;
 
     if (!gzfile_read_raw_ensure(gz, 8)) { /* 8 is the size of gzip footer */
-	rb_raise(cNoFooter, "footer is not found");
+	gzfile_raise(gz, cNoFooter, "footer is not found");
     }
 
     crc = gzfile_get32((Bytef*)RSTRING_PTR(gz->z.input));
@@ -3617,9 +3645,12 @@ Init_zlib()
     id_seek = rb_intern("seek");
     id_close = rb_intern("close");
     id_path = rb_intern("path");
+    id_input = rb_intern("@input");
 
     cGzipFile = rb_define_class_under(mZlib, "GzipFile", rb_cObject);
     cGzError = rb_define_class_under(cGzipFile, "Error", cZError);
+    rb_define_attr(cGzError, "input", 1, 0);
+    rb_define_method(cGzError, "inspect", gzfile_error_inspect, 0);
 
     cNoFooter = rb_define_class_under(cGzipFile, "NoFooter", cGzError);
     cCRCError = rb_define_class_under(cGzipFile, "CRCError", cGzError);

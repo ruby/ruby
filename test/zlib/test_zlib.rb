@@ -431,6 +431,24 @@ if defined? Zlib
     def test_open
       t = Tempfile.new("test_zlib_gzip_reader")
       t.close
+      e = assert_raise(Zlib::GzipFile::Error) {
+        Zlib::GzipReader.open(t.path)
+      }
+      assert_equal("not in gzip format", e.message)
+      assert_nil(e.input)
+      open(t.path, "wb") {|f| f.write("foo")}
+      e = assert_raise(Zlib::GzipFile::Error) {
+        Zlib::GzipReader.open(t.path)
+      }
+      assert_equal("not in gzip format", e.message)
+      assert_equal("foo", e.input)
+      open(t.path, "wb") {|f| f.write("foobarzothoge")}
+      e = assert_raise(Zlib::GzipFile::Error) {
+        Zlib::GzipReader.open(t.path)
+      }
+      assert_equal("not in gzip format", e.message)
+      assert_equal("foobarzothoge", e.input)
+
       Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo") }
 
       assert_raise(ArgumentError) { Zlib::GzipReader.open }
