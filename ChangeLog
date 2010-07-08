@@ -1,3 +1,9 @@
+Thu Jul  8 23:12:30 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/openssl/test_config.rb: test_s_parse_format added in the
+	  prvious commit fails for all OpenSSL implementations.  fixed the
+	  test. tested against OpenSSL 1.0.0a and OpenSSL 0.9.8o.
+
 Thu Jul  8 21:10:36 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/openssl/test_config.rb: added tests for class methods, 

@@ -30,9 +30,16 @@ __EOD__
   end
 
   def test_s_parse_format
-    c = OpenSSL::Config.parse(<<__EOC__)
+    excn = assert_raise(OpenSSL::ConfigError) do
+      OpenSSL::Config.parse(<<__EOC__)
 [default]\t\t             # trailing chars are ignored
           f o =b  ar      # it's "o = b"
+__EOC__
+    end
+    assert_equal("error in line 2: missing equal sign", excn.message)
+
+    excn = assert_raise(OpenSSL::ConfigError) do
+      OpenSSL::Config.parse(<<__EOC__)
 # comment 1               # all comments (non foo=bar line) are ignored
 
 #
@@ -40,17 +47,24 @@ __EOD__
 \t#comment 3
   [second    ]\t          # section line must start with [. ignored
 [third                    # ignored (section not terminated)
+__EOC__
+    end
+    assert_equal("error in line 7: missing close square bracket", excn.message)
+
+    c = OpenSSL::Config.parse(<<__EOC__)
  baz =qx\t                # "baz = qx"
 
-a=\t \t
- =b
-    c=                    # must have key and value. and this line is "c = #"
+a=\t \t                   # "a = ": trailing spaces are ignored
+ =b                       # " = b": empty key
+ =c                       # " = c": empty key (override the above line)
+    d=                    # "c = ": trailing comment is ignored
 __EOC__
     assert_equal(['default'], c.sections)
-    assert_equal('b', c['default']['o'])
+    assert_equal(['', 'a', 'baz', 'd'], c['default'].keys.sort)
+    assert_equal('c', c['default'][''])
+    assert_equal('', c['default']['a'])
     assert_equal('qx', c['default']['baz'])
-    assert_equal('#', c['default']['c'])
-    assert_equal(['baz', 'c', 'o'], c['default'].keys.sort)
+    assert_equal('', c['default']['d'])
   end
 
   def test_s_load
@@ -176,9 +190,7 @@ __EOC__
   end
 
   def test_inspect
-    assert_nothing_raised do
-      @it.inspect
-    end
+    assert_equal('#<OpenSSL::Config sections=["CA_default", "default", "ca"]>', @it.inspect)
   end
 
   def test_freeze
