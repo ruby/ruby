@@ -1,3 +1,10 @@
+Fri Jul  9 00:49:46 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/emitter.c (line_width, set_line_width): preferred line may
+	  be set on the emitter.
+
+	* test/psych/test_emitter.rb: corresponding tests.
+
 Thu Jul  8 15:47:34 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_str_conv_enc_opts): fix infinite loop because

@@ -10,6 +10,12 @@ module Psych
       @emitter = Psych::Emitter.new @out
     end
 
+    def test_line_width
+      assert_equal 0, @emitter.line_width
+      assert_equal 10, @emitter.line_width = 10
+      assert_equal 10, @emitter.line_width
+    end
+
     def test_set_canonical
       @emitter.canonical = true
       assert_equal true, @emitter.canonical

@@ -54,7 +54,7 @@ module Psych
           version = @options[:version].split('.').map { |x| x.to_i }
         else
           version = [1,1]
-        end if @options[:version]
+        end if @options.key? :version
 
         @emitter.start_document version, [], false
         accept object
