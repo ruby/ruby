@@ -1,8 +1,14 @@
+Thu Jul  8 15:47:34 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_conv_enc_opts): fix infinite loop because
+	  of ISO-2022-JP conversion with empty string.
+	  patched by Brian Buchanan [ruby-core:31107]
+
 Thu Jul  8 08:16:57 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/yaml_tree.rb (push): adding version
 	  and header emit options.
-	
+
 	* test/psych/test_psych.rb: corresponding test.
 
 Thu Jul  8 08:01:03 2010  Aaron Patterson <aaron@tenderlovemaking.com>
@@ -138,7 +144,7 @@ Sat Jul  3 09:47:26 2010  Aaron Patterson  <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/scalar_scanner.rb(parse_time): add method for
 	  parsing times objects from a string.
-	
+
 	* test/psych/test_date_time.rb: tests for dumping DateTime objects.
 
 Sat Jul  3 09:13:55 2010  Aaron Patterson  <aaron@tenderlovemaking.com>
@@ -917,7 +923,7 @@ Mon May 31 23:44:22 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/stubs.c: dirty hack for frameworks and stubs on MacOS X.
 
-	* ext/tk/lib/tk.rb: stop creating a dummy Tcl/Tk interpreter. 
+	* ext/tk/lib/tk.rb: stop creating a dummy Tcl/Tk interpreter.
 	  And hide a root window before starting eventloop. (for ruby 1.9)
 
 	* ext/tk/tcltklib.c: add codes to support Ruby/Tk-Kit (Rubykit).
