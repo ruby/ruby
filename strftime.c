@@ -515,21 +515,6 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, const str
 			continue;
 
 #ifdef MAILHEADER_EXT
-		/*
-		 * From: Chip Rosenthal <chip@chinacat.unicom.com>
-		 * Date: Sun, 19 Mar 1995 00:33:29 -0600 (CST)
-		 *
-		 * Warning: the %z [code] is implemented by inspecting the
-		 * timezone name conditional compile settings, and
-		 * inferring a method to get timezone offsets. I've tried
-		 * this code on a couple of machines, but I don't doubt
-		 * there is some system out there that won't like it.
-		 * Maybe the easiest thing to do would be to bracket this
-		 * with an #ifdef that can turn it off. The %z feature
-		 * would be an admittedly obscure one that most folks can
-		 * live without, but it would be a great help to those of
-		 * us that muck around with various message processors.
-		 */
 		case 'z':	/* time zone offset east of GMT e.g. -0600 */
                         switch (colons) {
                           case 0: /* %z -> +hhmm */
@@ -556,45 +541,6 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, const str
 			}
 			else {
 				off = NUM2LONG(rb_funcall(vtm->utc_offset, rb_intern("round"), 0));
-#if 0
-#ifdef HAVE_TM_NAME
-				/*
-				 * Systems with tm_name probably have tm_tzadj as
-				 * secs west of GMT.  Convert to mins east of GMT.
-				 */
-				off = -timeptr->tm_tzadj / 60;
-#else /* !HAVE_TM_NAME */
-#ifdef HAVE_TM_ZONE
-				/*
-				 * Systems with tm_zone probably have tm_gmtoff as
-				 * secs east of GMT.  Convert to mins east of GMT.
-				 */
-				off = timeptr->tm_gmtoff / 60;
-#else /* !HAVE_TM_ZONE */
-#if HAVE_VAR_TIMEZONE
-#if HAVE_VAR_ALTZONE
-				off = -(daylight ? timezone : altzone) / 60;
-#else
-				off = -timezone / 60;
-#endif
-#else /* !HAVE_VAR_TIMEZONE */
-#ifdef HAVE_GETTIMEOFDAY
-				gettimeofday(&tv, &zone);
-				off = -zone.tz_minuteswest;
-#else
-				/* no timezone info, then calc by myself */
-				{
-					struct tm utc;
-					time_t now;
-					time(&now);
-					utc = *gmtime(&now);
-					off = (long)((now - mktime(&utc)) / 60);
-				}
-#endif
-#endif /* !HAVE_VAR_TIMEZONE */
-#endif /* !HAVE_TM_ZONE */
-#endif /* !HAVE_TM_NAME */
-#endif /* 0 */
 			}
 			if (off < 0) {
 				off = -off;
@@ -631,29 +577,6 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, const str
 				tp = "UTC";
 				break;
 			}
-#if 0
-#ifdef HAVE_TZNAME
-			i = (daylight && timeptr->tm_isdst > 0); /* 0 or 1 */
-			tp = tzname[i];
-#else
-#ifdef HAVE_TM_ZONE
-			tp = timeptr->tm_zone;
-#else
-#ifdef HAVE_TM_NAME
-			tp = timeptr->tm_name;
-#else
-#ifdef HAVE_TIMEZONE
-			gettimeofday(& tv, & zone);
-#ifdef TIMEZONE_VOID
-			tp = timezone();
-#else
-			tp = timezone(zone.tz_minuteswest, timeptr->tm_isdst > 0);
-#endif /* TIMEZONE_VOID */
-#endif /* HAVE_TIMEZONE */
-#endif /* HAVE_TM_NAME */
-#endif /* HAVE_TM_ZONE */
-#endif /* HAVE_TZNAME */
-#endif /* 0 */
                         if (vtm->zone == NULL)
                             tp = "";
                         else
