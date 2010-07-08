@@ -4310,6 +4310,8 @@ strftimev(const char *fmt, VALUE time)
  *    %D - Date (%m/%d/%y)
  *    %e - Day of the month, blank-padded ( 1..31)
  *    %F - Equivalent to %Y-%m-%d (the ISO 8601 date format)
+ *    %g - The last 2 digits of the week-based year according to ISO 8601
+ *    %G - The week-based year according to ISO 8601
  *    %h - Equivalent to %b
  *    %H - Hour of the day, 24-hour clock (00..23)
  *    %I - Hour of the day, 12-hour clock (01..12)
