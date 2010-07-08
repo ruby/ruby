@@ -151,17 +151,8 @@ class OpenSSL::TestPKCS7 < Test::Unit::TestCase
     assert_equal(data, p7.decrypt(@rsa1024, @ee2_cert))
   end
 
-  def silent
-    begin
-      back, $VERBOSE = $VERBOSE, nil
-      yield
-    ensure
-      $VERBOSE = back if back
-    end
-  end
-
   def test_signed_pkcs7_pkcs7
-  silent do
+  OpenSSL::TestUtils.silent do
     store = OpenSSL::X509::Store.new
     store.add_cert(@ca_cert)
     ca_certs = [@ca_cert]
@@ -224,7 +215,7 @@ class OpenSSL::TestPKCS7 < Test::Unit::TestCase
   end
 
   def test_detached_sign_pkcs7_pkcs7
-  silent do
+  OpenSSL::TestUtils.silent do
     store = OpenSSL::X509::Store.new
     store.add_cert(@ca_cert)
     ca_certs = [@ca_cert]
@@ -250,7 +241,7 @@ class OpenSSL::TestPKCS7 < Test::Unit::TestCase
   end
 
   def test_enveloped_pkcs7_pkcs7
-  silent do
+  OpenSSL::TestUtils.silent do
     if OpenSSL::OPENSSL_VERSION_NUMBER <= 0x0090704f
       # PKCS7_encrypt() of OpenSSL-0.9.7d goes to SEGV.
       # http://www.mail-archive.com/openssl-dev@openssl.org/msg17376.html

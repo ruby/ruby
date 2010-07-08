@@ -1,3 +1,7 @@
+Thu Jul  8 13:43:13 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/openssl/test_config.c: added tests for all Config methods.
+
 Wed Jul  7 13:24:24 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* file.c (ruby_find_basename): set correct baselen.
