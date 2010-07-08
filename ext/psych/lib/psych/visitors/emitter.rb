@@ -5,6 +5,7 @@ module Psych
         @handler = Psych::Emitter.new io
         @handler.indentation = options[:indentation] if options[:indentation]
         @handler.canonical = options[:canonical] if options[:canonical]
+        @handler.line_width = options[:line_width] if options[:line_width]
       end
 
       def visit_Psych_Nodes_Stream o

@@ -1,3 +1,10 @@
+Fri Jul  9 01:08:46 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/emitter.rb (initialize): line_width is
+	  a valid option passed to the emitter.
+	
+	* test/psych/test_psych.rb: corresponding tests.
+
 Fri Jul  9 00:49:46 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/emitter.c (line_width, set_line_width): preferred line may

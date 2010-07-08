@@ -8,6 +8,11 @@ class TestPsych < Psych::TestCase
     Psych.domain_types.clear
   end
 
+  def test_line_width
+    yml = Psych.dump('123456 7', { :line_width => 5 })
+    assert_match(/^\s*7/, yml)
+  end
+
   def test_indent
     yml = Psych.dump({:a => {'b' => 'c'}}, {:indentation => 5})
     assert_match(/^[ ]{5}b/, yml)
