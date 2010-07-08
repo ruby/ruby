@@ -513,7 +513,7 @@ rb_str_conv_enc_opts(VALUE str, rb_encoding *from, rb_encoding *to, int ecflags,
     switch (ret) {
       case econv_destination_buffer_full:
 	/* destination buffer short */
-	len *= 2;
+	len = len < 2 ? 2 : len * 2;
 	rb_str_resize(newstr, len);
 	goto retry;
 
