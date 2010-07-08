@@ -1,3 +1,8 @@
+Thu Jul  8 21:10:36 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/openssl/test_config.rb: added tests for class methods, 
+	  constants and parse format of OpenSSL itself.
+
 Thu Jul  8 13:43:13 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/openssl/test_config.rb: added tests for all Config methods.

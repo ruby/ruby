@@ -18,6 +18,54 @@ __EOD__
     @it = OpenSSL::Config.new(file.path)
   end
 
+  def test_constants
+    assert(OpenSSL::Config.constants.include?('DEFAULT_CONFIG_FILE'))
+  end
+
+  def test_s_parse
+    c = OpenSSL::Config.parse('')
+    assert_equal("[ default ]\n\n", c.to_s)
+    c = OpenSSL::Config.parse(@it.to_s)
+    assert_equal(['CA_default', 'ca', 'default'], c.sections.sort)
+  end
+
+  def test_s_parse_format
+    c = OpenSSL::Config.parse(<<__EOC__)
+[default]\t\t             # trailing chars are ignored
+          f o =b  ar      # it's "o = b"
+# comment 1               # all comments (non foo=bar line) are ignored
+
+#
+ # comment 2
+\t#comment 3
+  [second    ]\t          # section line must start with [. ignored
+[third                    # ignored (section not terminated)
+ baz =qx\t                # "baz = qx"
+
+a=\t \t
+ =b
+    c=                    # must have key and value. and this line is "c = #"
+__EOC__
+    assert_equal(['default'], c.sections)
+    assert_equal('b', c['default']['o'])
+    assert_equal('qx', c['default']['baz'])
+    assert_equal('#', c['default']['c'])
+    assert_equal(['baz', 'c', 'o'], c['default'].keys.sort)
+  end
+
+  def test_s_load
+    # alias of new
+    c = OpenSSL::Config.load
+    assert_equal("", c.to_s)
+    assert_equal([], c.sections)
+    #
+    file = Tempfile.open("openssl.cnf")
+    file.close
+    c = OpenSSL::Config.load(file.path)
+    assert_equal("[ default ]\n\n", c.to_s)
+    assert_equal(['default'], c.sections)
+  end
+
   def test_initialize
     c = OpenSSL::Config.new
     assert_equal("", c.to_s)
@@ -90,13 +138,17 @@ __EOD__
     assert_equal("[ default ]\nfoo=bar\n\n", c.to_s)
     # add another key
     c.add_value('default', 'baz', 'qux')
-    assert_equal("[ default ]\nfoo=bar\nbaz=qux\n\n", c.to_s)
+    assert_equal('bar', c['default']['foo'])
+    assert_equal('qux', c['default']['baz'])
     # update the value
     c.add_value('default', 'baz', 'quxxx')
-    assert_equal("[ default ]\nfoo=bar\nbaz=quxxx\n\n", c.to_s)
+    assert_equal('bar', c['default']['foo'])
+    assert_equal('quxxx', c['default']['baz'])
     # add section and key
     c.add_value('section', 'foo', 'bar')
-    assert_equal("[ default ]\nfoo=bar\nbaz=quxxx\n\n[ section ]\nfoo=bar\n\n", c.to_s)
+    assert_equal('bar', c['default']['foo'])
+    assert_equal('quxxx', c['default']['baz'])
+    assert_equal('bar', c['section']['foo'])
   end
 
   def test_aset
