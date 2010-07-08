@@ -282,14 +282,11 @@ module Psych
 
       private
       def format_time time
-        formatted = time.strftime("%Y-%m-%d %H:%M:%S.%9N")
         if time.utc?
-          formatted += "Z"
+          time.strftime("%Y-%m-%d %H:%M:%S.%9NZ")
         else
-          zone = time.strftime('%z')
-          formatted += " #{zone[0,3]}:#{zone[3,5]}"
+          time.strftime("%Y-%m-%d %H:%M:%S.%9N %:z")
         end
-        formatted
       end
 
       # FIXME: remove this method once "to_yaml_properties" is removed
