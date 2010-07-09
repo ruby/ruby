@@ -2928,6 +2928,7 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
             return NULL;
 	}
     }
+
     /* Given argument has no corresponding time_t. Let's outerpolation. */
     /*
      *  `Seconds Since the Epoch' in SUSv3:
@@ -2950,7 +2951,7 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
            tm_lo.tm_yday) * 86400 +
           (tptr->tm_hour - tm_lo.tm_hour) * 3600 +
           (tptr->tm_min - tm_lo.tm_min) * 60 +
-          (tptr->tm_sec - tm_lo.tm_sec);
+          (tptr->tm_sec - (tm_lo.tm_sec == 60 ? 59 : tm_lo.tm_sec));
 
     return NULL;
 

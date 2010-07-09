@@ -147,6 +147,23 @@ class TestTimeTZ < Test::Unit::TestCase
     }
   end
 
+  def test_right_utc
+    with_tz(tz="right/UTC") {
+      assert_time_constructor(tz, "2008-12-31 23:59:59 UTC", :utc, [2008,12,31,23,59,59])
+      assert_time_constructor(tz, "2008-12-31 23:59:60 UTC", :utc, [2008,12,31,23,59,60])
+      assert_time_constructor(tz, "2009-01-01 00:00:00 UTC", :utc, [2008,12,31,24,0,0])
+      assert_time_constructor(tz, "2009-01-01 00:00:00 UTC", :utc, [2009,1,1,0,0,0])
+    }
+  end
+
+  def test_right_america_los_angeles
+    with_tz(tz="right/America/Los_Angeles") {
+      assert_time_constructor(tz, "2008-12-31 15:59:59 -0800", :local, [2008,12,31,15,59,59])
+      assert_time_constructor(tz, "2008-12-31 15:59:60 -0800", :local, [2008,12,31,15,59,60])
+      assert_time_constructor(tz, "2008-12-31 16:00:00 -0800", :local, [2008,12,31,16,0,0])
+    }
+  end
+
   MON2NUM = {
     "Jan" => 1, "Feb" => 2, "Mar" => 3, "Apr" => 4, "May" => 5, "Jun" => 6,
     "Jul" => 7, "Aug" => 8, "Sep" => 9, "Oct" => 10, "Nov" => 11, "Dec" => 12
