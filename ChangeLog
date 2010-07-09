@@ -1,3 +1,7 @@
+Fri Jul  9 23:31:26 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/openssl/test_config.rb: more tests for parse_config formats.
+
 Thu Jul  8 23:12:30 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/openssl/test_config.rb: test_s_parse_format added in the

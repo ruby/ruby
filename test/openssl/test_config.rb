@@ -20,6 +20,9 @@ __EOD__
 
   def test_constants
     assert(OpenSSL::Config.constants.include?('DEFAULT_CONFIG_FILE'))
+    assert_nothing_raised do
+      OpenSSL::Config.load(OpenSSL::Config::DEFAULT_CONFIG_FILE)
+    end
   end
 
   def test_s_parse
@@ -30,41 +33,82 @@ __EOD__
   end
 
   def test_s_parse_format
-    excn = assert_raise(OpenSSL::ConfigError) do
-      OpenSSL::Config.parse(<<__EOC__)
-[default]\t\t             # trailing chars are ignored
-          f o =b  ar      # it's "o = b"
-__EOC__
-    end
-    assert_equal("error in line 2: missing equal sign", excn.message)
-
-    excn = assert_raise(OpenSSL::ConfigError) do
-      OpenSSL::Config.parse(<<__EOC__)
-# comment 1               # all comments (non foo=bar line) are ignored
-
-#
- # comment 2
-\t#comment 3
-  [second    ]\t          # section line must start with [. ignored
-[third                    # ignored (section not terminated)
-__EOC__
-    end
-    assert_equal("error in line 7: missing close square bracket", excn.message)
-
     c = OpenSSL::Config.parse(<<__EOC__)
  baz =qx\t                # "baz = qx"
 
+foo::bar = baz            # shortcut section::key format
+  default::bar = baz      # ditto
 a=\t \t                   # "a = ": trailing spaces are ignored
  =b                       # " = b": empty key
  =c                       # " = c": empty key (override the above line)
     d=                    # "c = ": trailing comment is ignored
+
+sq = 'foo''b\\'ar'
+    dq ="foo""''\\""
+    dq2 = foo""bar
+esc=a\\r\\n\\b\\tb
+foo\\bar = foo\\b\\\\ar
+foo\\bar::foo\\bar = baz
+[default1  default2]\t\t  # space is allowed in section name
+          fo =b  ar       # space allowed in value
+[emptysection]
+ [doller ]
+foo=bar
+bar = $(foo)
+baz = 123$(default::bar)456${foo}798
+qux = ${baz}
+quxx = $qux.$qux
 __EOC__
-    assert_equal(['default'], c.sections)
-    assert_equal(['', 'a', 'baz', 'd'], c['default'].keys.sort)
+    assert_equal(['default', 'default1  default2', 'doller', 'emptysection', 'foo', 'foo\\bar'], c.sections.sort)
+    assert_equal(['', 'a', 'bar', 'baz', 'd', 'dq', 'dq2', 'esc', 'foo\\bar', 'sq'], c['default'].keys.sort)
     assert_equal('c', c['default'][''])
     assert_equal('', c['default']['a'])
     assert_equal('qx', c['default']['baz'])
     assert_equal('', c['default']['d'])
+    assert_equal('baz', c['default']['bar'])
+    assert_equal("foob'ar", c['default']['sq'])
+    assert_equal("foo''\"", c['default']['dq'])
+    assert_equal("foobar", c['default']['dq2'])
+    assert_equal("a\r\n\b\tb", c['default']['esc'])
+    assert_equal("foo\b\\ar", c['default']['foo\\bar'])
+    assert_equal('baz', c['foo']['bar'])
+    assert_equal('baz', c['foo\\bar']['foo\\bar'])
+    assert_equal('b  ar', c['default1  default2']['fo'])
+
+    # dolloer
+    assert_equal('bar', c['doller']['foo'])
+    assert_equal('bar', c['doller']['bar'])
+    assert_equal('123baz456bar798', c['doller']['baz'])
+    assert_equal('123baz456bar798', c['doller']['qux'])
+    assert_equal('123baz456bar798.123baz456bar798', c['doller']['quxx'])
+
+    excn = assert_raise(OpenSSL::ConfigError) do
+      OpenSSL::Config.parse("foo = $bar")
+    end
+    assert_equal("error in line 1: variable has no value", excn.message)
+
+    excn = assert_raise(OpenSSL::ConfigError) do
+      OpenSSL::Config.parse("foo = $(bar")
+    end
+    assert_equal("error in line 1: no close brace", excn.message)
+
+    excn = assert_raise(OpenSSL::ConfigError) do
+      OpenSSL::Config.parse("f o =b  ar      # no space in key")
+    end
+    assert_equal("error in line 1: missing equal sign", excn.message)
+
+    excn = assert_raise(OpenSSL::ConfigError) do
+      OpenSSL::Config.parse(<<__EOC__)
+# comment 1               # comments
+
+#
+ # comment 2
+\t#comment 3
+  [second    ]\t
+[third                    # section not terminated
+__EOC__
+    end
+    assert_equal("error in line 7: missing close square bracket", excn.message)
   end
 
   def test_s_load
@@ -106,6 +150,14 @@ __EOC__
     assert_raise(TypeError) do
       @it.get_value(nil, 'HOME') # not allowed unlike Config#value
     end
+    # fallback to 'default' ugly...
+    assert_equal('.', @it.get_value('unknown', 'HOME'))
+  end
+
+  def test_get_value_ENV
+    key = ENV.keys.first
+    assert_not_nil(key) # make sure we have at least one ENV var.
+    assert_equal(ENV[key], @it.get_value('ENV', key))
   end
 
   def test_value
@@ -117,6 +169,16 @@ __EOC__
       assert_equal('.', @it.value('', 'HOME'))
       assert_equal('.', @it.value(nil, 'HOME'))
       assert_equal('.', @it.value('HOME'))
+      # fallback to 'default' ugly...
+      assert_equal('.', @it.value('unknown', 'HOME'))
+    end
+  end
+
+  def test_value_ENV
+    OpenSSL::TestUtils.silent do
+      key = ENV.keys.first
+      assert_not_nil(key) # make sure we have at least one ENV var.
+      assert_equal(ENV[key], @it.value('ENV', key))
     end
   end
 
@@ -189,8 +251,13 @@ __EOC__
     assert_equal(["default", "HOME", "."], ary[3])
   end
 
+  def test_to_s
+    c = OpenSSL::Config.parse("[empty]\n")
+    assert_equal("[ default ]\n\n[ empty ]\n\n", c.to_s)
+  end
+
   def test_inspect
-    assert_equal('#<OpenSSL::Config sections=["CA_default", "default", "ca"]>', @it.inspect)
+    assert_match(/#<OpenSSL::Config sections=\[.*\]>/, @it.inspect)
   end
 
   def test_freeze
