@@ -122,25 +122,6 @@ extern char *strchr();
 
 #define range(low, item, hi)	max(low, min(item, hi))
 
-#if defined __WIN32__ || defined _WIN32
-#define DLL_IMPORT __declspec(dllimport)
-#endif
-#ifndef DLL_IMPORT
-#define DLL_IMPORT
-#endif
-#if !defined(OS2) && defined(HAVE_TZNAME)
-extern DLL_IMPORT char *tzname[2];
-#ifdef HAVE_DAYLIGHT
-extern DLL_IMPORT int daylight;
-#endif
-#ifdef HAVE_VAR_TIMEZONE
-extern DLL_IMPORT TYPEOF_VAR_TIMEZONE timezone;
-#endif
-#ifdef HAVE_VAR_ALTZONE
-extern DLL_IMPORT TYPEOF_VAR_ALTZONE altzone;
-#endif
-#endif
-
 #undef min	/* just in case */
 
 /* min --- return minimum of two numbers */
@@ -197,15 +178,6 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, const str
 	ptrdiff_t i;
 	int w;
 	long y;
-#ifndef HAVE_TM_ZONE
-#ifndef HAVE_TM_NAME
-#if ((defined(MAILHEADER_EXT) && !HAVE_VAR_TIMEZONE && HAVE_GETTIMEOFDAY) || \
-     (!HAVE_TZNAME && HAVE_TIMEZONE))
-	struct timeval tv;
-	struct timezone zone;
-#endif
-#endif /* HAVE_TM_NAME */
-#endif /* HAVE_TM_ZONE */
 	int precision, flags, colons;
 	char padding;
 	enum {LEFT, CHCASE, LOWER, UPPER, LOCALE_O, LOCALE_E};
