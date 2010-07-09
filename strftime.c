@@ -73,9 +73,6 @@
 #define VMS_EXT		1	/* include %v for VMS date format */
 #define MAILHEADER_EXT	1	/* add %z for HHMM format */
 #define ISO_DATE_EXT	1	/* %G and %g for year of ISO week */
-#ifndef GAWK
-#define POSIX_SEMANTICS	1	/* call tzset() if TZ changes */
-#endif
 
 #if defined(ISO_DATE_EXT)
 #if ! defined(POSIX2_DATE)
@@ -200,12 +197,6 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, const str
 	ptrdiff_t i;
 	int w;
 	long y;
-	static short first = 1;
-#ifdef POSIX_SEMANTICS
-	static char *savetz = NULL;
-	static size_t savetzlen = 0;
-	char *tz;
-#endif /* POSIX_SEMANTICS */
 #ifndef HAVE_TM_ZONE
 #ifndef HAVE_TM_NAME
 #if ((defined(MAILHEADER_EXT) && !HAVE_VAR_TIMEZONE && HAVE_GETTIMEOFDAY) || \
@@ -241,41 +232,6 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, const str
 		errno = ERANGE;
 		return 0;
 	}
-
-#ifndef POSIX_SEMANTICS
-	if (first) {
-		tzset();
-		first = 0;
-	}
-#else	/* POSIX_SEMANTICS */
-	tz = getenv("TZ");
-	if (first) {
-		if (tz != NULL) {
-			size_t tzlen = strlen(tz);
-
-			savetz = (char *) malloc(tzlen + 1);
-			if (savetz != NULL) {
-				savetzlen = tzlen + 1;
-				memcpy(savetz, tz, savetzlen);
-			}
-		}
-		tzset();
-		first = 0;
-	}
-	/* if we have a saved TZ, and it is different, recapture and reset */
-	if (tz && savetz && (tz[0] != savetz[0] || strcmp(tz, savetz) != 0)) {
-		size_t i = strlen(tz) + 1;
-		if (i > savetzlen) {
-			savetz = (char *) realloc(savetz, i);
-			if (savetz) {
-				savetzlen = i;
-				memcpy(savetz, tz, i);
-			}
-		} else
-			memcpy(savetz, tz, i);
-		tzset();
-	}
-#endif	/* POSIX_SEMANTICS */
 
 	for (; *format && s < endp - 1; format++) {
 #define FLAG_FOUND() do { \
