@@ -771,6 +771,7 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, const str
 			precision = -1;
 			flags = 0;
 			padding = 0;
+                        colons = 0;
 			break;
 		}
 		if (i) {
