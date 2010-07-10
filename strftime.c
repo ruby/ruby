@@ -451,12 +451,12 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, const str
                             break;
 
                           case 1: /* %:z -> +hh:mm */
-                            precision = precision <= 5 ? 2 : precision-3;
+                            precision = precision <= 6 ? 2 : precision-4;
                             NEEDS(precision + 4);
                             break;
 
                           case 2: /* %::z -> +hh:mm:ss */
-                            precision = precision <= 5 ? 2 : precision-3;
+                            precision = precision <= 9 ? 2 : precision-7;
                             NEEDS(precision + 7);
                             break;
 
