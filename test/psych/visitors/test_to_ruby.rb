@@ -112,8 +112,10 @@ description:
 
       def test_time
         now = Time.now
-        formatted = now.strftime("%Y-%m-%d %H:%M:%S") +
-          ".%06d %+.2d:00" % [now.nsec, now.gmt_offset / 3600]
+        zone = now.strftime('%z')
+        zone = " #{zone[0,3]}:#{zone[3,5]}"
+
+        formatted = now.strftime("%Y-%m-%d %H:%M:%S.%9N") + zone
 
         assert_equal now, Nodes::Scalar.new(formatted).to_ruby
       end
@@ -121,7 +123,7 @@ description:
       def test_time_utc
         now = Time.now.utc
         formatted = now.strftime("%Y-%m-%d %H:%M:%S") +
-          ".%06dZ" % [now.nsec]
+          ".%09dZ" % [now.nsec]
 
         assert_equal now, Nodes::Scalar.new(formatted).to_ruby
       end
@@ -129,7 +131,7 @@ description:
       def test_time_utc_no_z
         now = Time.now.utc
         formatted = now.strftime("%Y-%m-%d %H:%M:%S") +
-          ".%06d" % [now.nsec]
+          ".%09d" % [now.nsec]
 
         assert_equal now, Nodes::Scalar.new(formatted).to_ruby
       end
