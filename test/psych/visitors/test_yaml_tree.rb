@@ -54,7 +54,7 @@ module Psych
 
       def test_time
         t = Time.now
-        assert_in_delta t, Psych.load(Psych.dump(t)), 0.000001
+        assert_equal t, Psych.load(Psych.dump(t))
       end
 
       def test_date

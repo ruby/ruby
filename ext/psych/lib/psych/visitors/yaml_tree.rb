@@ -126,9 +126,9 @@ module Psych
       def visit_Time o
         formatted = o.strftime("%Y-%m-%d %H:%M:%S")
         if o.utc?
-          formatted += ".%06dZ" % [o.usec]
+          formatted += ".%06dZ" % [o.nsec]
         else
-          formatted += ".%06d %+.2d:00" % [o.usec, o.gmt_offset / 3600]
+          formatted += ".%06d %+.2d:00" % [o.nsec, o.gmt_offset / 3600]
         end
 
         @emitter.scalar formatted, nil, nil, true, false, Nodes::Scalar::ANY
