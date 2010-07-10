@@ -1,3 +1,15 @@
+Sat Jul 10 11:41:54 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/psych/test_date_time.rb (TestDateTime#test_round_trip_with_offset):
+	  test for [ruby-core:31023].
+
+Mon Jul  5 12:32:01 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/scalar_scanner.rb (parse_string): support
+	  timezones that are not one hour off. [ruby-core:31023]
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: ditto
+
 Sat Jul  3 09:47:26 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/to_ruby.rb(visit_Psych_Nodes_Scalar):
