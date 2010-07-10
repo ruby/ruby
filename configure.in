@@ -1151,7 +1151,7 @@ use_context=no
 if test x"$rb_with_pthread" = xyes; then
     AS_CASE("$target_cpu:$target_os:$cross_compiling",
     [*:linux*:no], [
-        if test -n "`(/lib/libc.so.6 2>/dev/null | fgrep 'Native POSIX Threads') 2> /dev/null`"; then
+        if test -n "`(/lib/libc.so.6 2>/dev/null | fgrep 'linuxthreads') 2> /dev/null`"; then
 	    use_context=yes
 	fi
     ],
