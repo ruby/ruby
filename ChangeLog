@@ -1,6 +1,7 @@
 Sat Jul 10 10:51:29 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: fix use_context condition inversion.
+	[Bug #2553][ruby-core:31164]. Thanks, Andre Nathan. 
 
 Fri Jul  9 23:31:26 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
