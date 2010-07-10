@@ -39,19 +39,7 @@ module Psych
           string
         end
       when TIME
-        date, time = *(string.split(/[ tT]/, 2))
-        (yy, m, dd) = date.split('-').map { |x| x.to_i }
-        md = time.match(/(\d+:\d+:\d+)(\.\d*)?\s*(Z|[-+]\d+(:\d\d)?)?/)
-
-        (hh, mm, ss) = md[1].split(':').map { |x| x.to_i }
-        us = (md[2] ? Rational(md[2].sub(/^\./, '0.')) : 0) * 1000000
-
-        time = Time.utc(yy, m, dd, hh, mm, ss, us)
-
-        return time if 'Z' == md[3]
-
-        tz = md[3] ? Integer(md[3].split(':').first.sub(/([-+])0/, '\1')) : 0
-        Time.at((time - (tz * 3600)).to_i, us)
+        parse_time string
       when /^\d{4}-\d{1,2}-\d{1,2}$/
         require 'date'
         Date.strptime(string, '%Y-%m-%d')
@@ -85,6 +73,24 @@ module Psych
         @string_cache[string] = true
         string
       end
+    end
+
+    ###
+    # Parse and return a Time from +string+
+    def parse_time string
+      date, time = *(string.split(/[ tT]/, 2))
+      (yy, m, dd) = date.split('-').map { |x| x.to_i }
+      md = time.match(/(\d+:\d+:\d+)(\.\d*)?\s*(Z|[-+]\d+(:\d\d)?)?/)
+
+      (hh, mm, ss) = md[1].split(':').map { |x| x.to_i }
+      us = (md[2] ? Rational(md[2].sub(/^\./, '0.')) : 0) * 1000000
+
+      time = Time.utc(yy, m, dd, hh, mm, ss, us)
+
+      return time if 'Z' == md[3]
+
+      tz = md[3] ? Integer(md[3].split(':').first.sub(/([-+])0/, '\1')) : 0
+      Time.at((time - (tz * 3600)).to_i, us)
     end
   end
 end
