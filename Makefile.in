@@ -257,20 +257,22 @@ distclean-rdoc:
 	@$(RMALL) $(RDOCOUT:/=\)
 
 clean-ext distclean-ext realclean-ext::
-	@cd ext; set dummy `echo "${EXTS}" | tr , ' '`; shift; \
-	test "$$#" = 0 && set .; \
-	set dummy `for dir; do \
-	    find $$dir -name Makefile | sed 's:^\./::;s:/Makefile$$:~:' | sort | sed 's:~$$::'; \
-	done`; shift; \
-	cd ..; \
-	for dir; do \
-	    echo $(@:-ext=)ing "$$dir"; \
-	    (cd "ext/$$dir" && exec $(MAKE) $(MFLAGS) $(@:-ext=)) && \
-	    case "$@" in \
-	    *distclean-ext*|*realclean-ext*) \
-		$(RMDIRS) "ext/$$dir";; \
-	    esac; \
-	done
+	@if [ -d ext ]; then \
+	    cd ext; set dummy `echo "${EXTS}" | tr , ' '`; shift; \
+	    test "$$#" = 0 && set .; \
+	    set dummy `for dir in $$*; do \
+	        find $$dir -name Makefile | sed 's:^\./::;s:/Makefile$$:~:' | sort | sed 's:~$$::'; \
+	    done`; shift; \
+	    cd ..; \
+	    for dir in $$*; do \
+	        echo $(@:-ext=)ing "$$dir"; \
+	        (cd "ext/$$dir" && exec $(MAKE) $(MFLAGS) $(@:-ext=)) && \
+	        case "$@" in \
+	        *distclean-ext*|*realclean-ext*) \
+		    $(RMDIRS) "ext/$$dir";; \
+	        esac; \
+	    done \
+	fi
 
 distclean-ext realclean-ext::
 	@-rmdir ext 2> /dev/null || true
