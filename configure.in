@@ -921,6 +921,10 @@ main()
 		AC_DEFINE(BROKEN_SETREGID, 1)
                 ac_cv_sizeof_rlim_t=8],
 [freebsd*], [	LIBS="-lm $LIBS"
+		ac_cv_func_getpeername=no
+		ac_cv_func_getsockname=no
+		ac_cv_func_shutdown=no
+		ac_cv_func_close=no
 		],
 [dragonfly*], [	LIBS="-lm $LIBS"
 		],
@@ -1114,6 +1118,7 @@ main()
 	rb_cv_broken_glibc_ia64_erfc=no)])
 AS_CASE([$rb_cv_broken_glibc_ia64_erfc],[yes],[ac_cv_func_erf=no])
 
+AS_CASE(["$target_os"],[freebsd],[],[AC_REPLACE_FUNCS(close)])
 AC_REPLACE_FUNCS(dup2 memmove strerror\
 		 strchr strstr crypt flock\
 		 isnan finite isinf hypot acosh erf tgamma lgamma_r cbrt \
@@ -1135,7 +1140,7 @@ AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall chroot getcwd eacce
 	      setitimer setruid seteuid setreuid setresuid setproctitle socketpair\
 	      setrgid setegid setregid setresgid issetugid pause lchown lchmod\
 	      getpgrp setpgrp getpgid setpgid initgroups getgroups setgroups\
-	      getpriority getrlimit setrlimit sysconf \
+	      getpriority getrlimit setrlimit sysconf close\
 	      dlopen sigprocmask sigaction sigsetjmp _setjmp _longjmp\
 	      setsid telldir seekdir fchmod cosh sinh tanh log2 round\
 	      setuid setgid daemon select_large_fdset setenv unsetenv\

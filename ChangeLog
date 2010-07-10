@@ -1,3 +1,11 @@
+Wed Jul  7 10:26:20 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* missing/close.c: ignore ECONNRESET.
+	  FreeBSD wrongly sets ECONNRESET on close(2) and
+	  it causes false-negative exceptions. [ruby-dev:41778]
+
+	* configure.in: ditto.
+
 Sun Jul  4 17:13:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (swallow, prepare_getline_args, rb_io_getline_1): fix for
