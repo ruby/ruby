@@ -1,3 +1,8 @@
+Sat Jul 10 21:43:11 2010  Tanaka Akira  <akr@fsij.org>
+
+	* strftime.c (rb_strftime_with_timespec): fix precision handling for
+	  %:z and %::z.
+
 Fri Jul  9 22:32:54 2010  Tanaka Akira  <akr@fsij.org>
 
 	* strftime.c: unused declarations removed.
