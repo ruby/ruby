@@ -1,8 +1,7 @@
-Sun Jul 11 15:36:20 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Jul 11 17:01:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* Makefile.in ({,dist-,real-}clean-ext): omission of "in WORDS" of
-	  FOR-statement is not allowed in /bin/sh on Solaris.  fore-ported
-	  r28609 from 1.9.2.
+	* Makefile.in ({,dist-,real-}clean-ext): should also omit
+	  semicolon when omitting "in WORDS" of FOR-statement.
 
 	* tool/rmdirs: ditto.
 
