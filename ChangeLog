@@ -1,3 +1,11 @@
+Sun Jul 11 15:36:20 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in ({,dist-,real-}clean-ext): omission of "in WORDS" of
+	  FOR-statement is not allowed in /bin/sh on Solaris.  fore-ported
+	  r28609 from 1.9.2.
+
+	* tool/rmdirs: ditto.
+
 Sun Jul 11 11:07:42 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/rdoc/test_rdoc_ri_driver.rb (test_formatter): add a test.  a
