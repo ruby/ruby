@@ -499,6 +499,10 @@ Foo::Bar#bother
     driver = RDoc::RI::Driver.new
 
     io = Object.new
+    def io.tty?; false; end
+
+    assert_instance_of @RM::ToBs, driver.formatter(io)
+
     def io.tty?; true; end
 
     assert_instance_of @RM::ToAnsi, driver.formatter(io)
