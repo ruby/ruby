@@ -176,7 +176,7 @@ require 'monitor'
 
 class Logger
   VERSION = "1.2.7"
-  id, name, rev = %w$Id$
+  _, name, rev = %w$Id$
   if name
     name = name.chomp(",v")
   else
@@ -530,7 +530,7 @@ private
         @mutex.synchronize do
           @dev.close rescue nil
         end
-      rescue Exception => ignored
+      rescue Exception
         @dev.close rescue nil
       end
     end

@@ -1,3 +1,24 @@
+Mon Jul 12 01:58:56 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/csv.rb: Fix unused variable warnings.
+	  Patch by Run Paint [ruby-core:30991]
+	
+	* lib/date.rb: ditto
+	
+	* lib/debug.rb: ditto
+	
+	* lib/drb/drb.rb: ditto
+	
+	* lib/drb/invokemethod.rb: ditto
+	
+	* lib/irb/ruby-lex.rb: ditto
+	
+	* lib/irb/slex.rb: ditto
+	
+	* lib/logger.rb: ditto
+	
+	* lib/pathname.rb: ditto
+
 Sun Jul 11 21:20:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* README.EXT{,.ja} (rb_block_call): fixed about third/fourth

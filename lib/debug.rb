@@ -125,7 +125,7 @@ class Context
 
   def debug_eval(str, binding)
     begin
-      val = eval(str, binding)
+      eval(str, binding)
     rescue StandardError, ScriptError => e
       at = eval("caller(1)", binding)
       stdout.printf "%s:%s\n", at.shift, e.to_s.sub(/\(eval\):1:(in `.*?':)?/, '')
@@ -585,7 +585,7 @@ EOHELP
   end
 
   def format_frame(pos)
-    bind, file, line, id = @frames[pos]
+    _, file, line, id = @frames[pos]
     sprintf "#%d %s:%s%s\n", pos + 1, file, line,
       (id ? ":in `#{id.id2name}'" : "")
   end
