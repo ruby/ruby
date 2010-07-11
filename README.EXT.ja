@@ -1260,9 +1260,12 @@ VALUE rb_iv_set(VALUE obj, const char *name, VALUE val)
 VALUE rb_block_call(VALUE obj, ID mid, int argc, VALUE * argv,
 		    VALUE (*func) (ANYARGS), VALUE data2)
 
-  funcをブロックとして設定し, objをレシーバ, argcとargvを引
-  数としてmidメソッドを呼び出す. funcは第一引数にyieldされた
-  値, 第二引数にdata2, 第三, 第四引数にargcとargvを受け取る.
+  funcをブロックとして設定し，objをレシーバ，argcとargvを引数
+  としてmidメソッドを呼び出す．funcは第一引数にyieldされた値，
+  第二引数にdata2を受け取る．複数の値がyieldされた場合(Cでは
+  rb_yield_values()とrb_yield_values2(), rb_yield_splat())，
+  data2はArrayとしてパックされている．第三, 第四引数のargcと
+  argvによってyieldされた値を取り出すことができる．
 
 [OBSOLETE] VALUE rb_iterate(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2)
 
