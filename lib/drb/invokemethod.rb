@@ -7,7 +7,7 @@ module DRb
 	if x.size == 1 && x[0].class == Array
 	  x[0] = DRbArray.new(x[0])
 	end
-        block_value = @block.call(*x)
+        @block.call(*x)
       end
 
       def perform_with_block

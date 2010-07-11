@@ -1813,9 +1813,6 @@ class CSV
       end
     end
 
-    # begin with a blank line, so we can always add to it
-    line = ""
-
     #
     # it can take multiple calls to <tt>@io.gets()</tt> to get a full line,
     # because of \r and/or \n characters embedded in quoted fields
@@ -2080,7 +2077,6 @@ class CSV
     @field_size_limit = options.delete(:field_size_limit)
 
     # prebuild Regexps for faster parsing
-    esc_col_sep = escape_re(@col_sep)
     esc_row_sep = escape_re(@row_sep)
     esc_quote   = escape_re(@quote_char)
     @parsers = {

@@ -496,7 +496,7 @@ class Pathname
   def relative?
     path = @path
     while r = chop_basename(path)
-      path, basename = r
+      path, = r
     end
     path == ''
   end
@@ -509,7 +509,7 @@ class Pathname
   #
   def each_filename # :yield: filename
     return to_enum(__method__) unless block_given?
-    prefix, names = split_names(@path)
+    _, names = split_names(@path)
     names.each {|filename| yield filename }
     nil
   end
@@ -565,7 +565,7 @@ class Pathname
     path = @path
     yield self
     while r = chop_basename(path)
-      path, name = r
+      path, = r
       break if path.empty?
       yield self.class.new(del_trailing_separator(path))
     end

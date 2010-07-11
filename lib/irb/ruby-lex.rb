@@ -623,7 +623,7 @@ class RubyLex
 	tk_c = TkLPAREN
       end
       @indent_stack.push tk_c
-      tk = Token(tk_c)
+      Token(tk_c)
     end
 
     @OP.def_rule("[]", proc{|op, io| @lex_state == EXPR_FNAME}) do

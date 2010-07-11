@@ -820,7 +820,7 @@ module DRb
 
     # Open a client connection to +uri+ using configuration +config+.
     def self.open(uri, config)
-      host, port, option = parse_uri(uri)
+      host, port, = parse_uri(uri)
       host.untaint
       port.untaint
       soc = TCPSocket.open(host, port)
@@ -852,7 +852,7 @@ module DRb
     # configuration +config+.
     def self.open_server(uri, config)
       uri = 'druby://:0' unless uri
-      host, port, opt = parse_uri(uri)
+      host, port, _ = parse_uri(uri)
       config = {:tcp_original_host => host}.update(config)
       if host.size == 0
         host = getservername
