@@ -260,11 +260,11 @@ clean-ext distclean-ext realclean-ext::
 	@if [ -d ext ]; then \
 	    cd ext; set dummy `echo "${EXTS}" | tr , ' '`; shift; \
 	    test "$$#" = 0 && set .; \
-	    set dummy `for dir in $$*; do \
+	    set dummy `for dir in "$$@"; do \
 	        find $$dir -name Makefile | sed 's:^\./::;s:/Makefile$$:~:' | sort | sed 's:~$$::'; \
 	    done`; shift; \
 	    cd ..; \
-	    for dir in $$*; do \
+	    for dir in "$$@"; do \
 	        echo $(@:-ext=)ing "$$dir"; \
 	        (cd "ext/$$dir" && exec $(MAKE) $(MFLAGS) $(@:-ext=)) && \
 	        case "$@" in \
