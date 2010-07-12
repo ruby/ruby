@@ -1,3 +1,12 @@
+Mon Jul 12 22:26:00 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* ext/openssl/ossl_config.c (ossl_config_copy): wrongly updating the
+	  given object with uninitialized CONF data.  now
+	  OpenSSL::Config#clone works as expected; cloning the config instead of
+	  SEGV or empty definition.
+
+	* test/openssl/test_config.rb: added tests for Config#clone.
+
 Sat Jul 10 10:51:29 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: fix use_context condition inversion.

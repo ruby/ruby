@@ -271,4 +271,16 @@ __EOC__
       c['foo'] = [['key', 'wrong']]
     end
   end
+
+  def test_dup
+    assert(!@it.sections.empty?)
+    c = @it.dup
+    assert_equal(@it.sections.sort, c.sections.sort)
+  end
+
+  def test_clone
+    assert(!@it.sections.empty?)
+    c = @it.clone
+    assert_equal(@it.sections.sort, c.sections.sort)
+  end
 end

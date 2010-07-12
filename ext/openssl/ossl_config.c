@@ -119,8 +119,8 @@ ossl_config_copy(VALUE self, VALUE other)
     VALUE str;
     CONF *conf;
 
-    str = rb_funcall(self, rb_intern("to_s"), 0);
-    GetConfig(other, conf);
+    str = rb_funcall(other, rb_intern("to_s"), 0);
+    GetConfig(self, conf);
     parse_config(str, conf);
 
     return self;
