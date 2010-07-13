@@ -108,6 +108,10 @@ static char **readline_attempted_completion_function(const char *text,
 static VALUE readline_instream;
 static ID id_getbyte;
 
+#ifdef HAVE_EDITLINE_READLINE_H
+extern int rl_getc(FILE *);
+#endif
+
 static int readline_getc(FILE *);
 static int
 readline_getc(FILE *input)
