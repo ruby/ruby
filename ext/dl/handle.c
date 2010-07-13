@@ -70,7 +70,7 @@ rb_dlhandle_close(VALUE self)
 	/* Check dlclose for successful return value */
 	if(ret) {
 #if defined(HAVE_DLERROR)
-	    rb_raise(rb_eDLError, dlerror());
+	    rb_raise(rb_eDLError, "%s", dlerror());
 #else
 	    rb_raise(rb_eDLError, "could not close handle");
 #endif

@@ -1,3 +1,8 @@
+Tue Jul 13 20:46:00 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/handle.c (rb_dlhandle_close): should not pass a dynamic
+	          string to rb_raise directly.
+
 Tue Jul 13 12:04:57 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* missing/close.c: keep original errno.
