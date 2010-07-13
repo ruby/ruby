@@ -1,3 +1,9 @@
+Tue Jul 13 21:28:35 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_fork_err): suppress gcc 4.4 warnings.
+
+	* random.c (fill_random_seed): ditto.
+
 Tue Jul 13 21:01:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/pty/pty.c (establishShell): chfunc must not raise any
