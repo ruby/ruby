@@ -1,3 +1,11 @@
+Tue Jul 13 21:46:38 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* ext/openssl/ossl_config.c, ext/openssl/lib/openssl/config.rb,
+	  ext/openssl/lib/openssl.rb: reimplement OpenSSL::Config in Ruby. Now
+	  it should work on windows.
+
+	* test/openssl/test_config.rb: added tests for OpenSSL::Config#dup.
+
 Mon Jul 12 22:26:00 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* ext/openssl/ossl_config.c (ossl_config_copy): wrongly updating the

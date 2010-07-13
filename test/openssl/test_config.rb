@@ -276,11 +276,15 @@ __EOC__
     assert(!@it.sections.empty?)
     c = @it.dup
     assert_equal(@it.sections.sort, c.sections.sort)
+    @it['newsection'] = {'a' => 'b'}
+    assert_not_equal(@it.sections.sort, c.sections.sort)
   end
 
   def test_clone
     assert(!@it.sections.empty?)
     c = @it.clone
     assert_equal(@it.sections.sort, c.sections.sort)
+    @it['newsection'] = {'a' => 'b'}
+    assert_not_equal(@it.sections.sort, c.sections.sort)
   end
 end
