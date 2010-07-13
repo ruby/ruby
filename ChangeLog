@@ -1,3 +1,8 @@
+Tue Jul 13 21:34:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/readline/readline.c: libedit is missing declaration of
+	  rl_getc.
+
 Tue Jul 13 21:31:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_daemon): split from proc_daemon.
