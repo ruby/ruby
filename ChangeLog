@@ -1,3 +1,12 @@
+Thu Jul  8 00:15:50 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* gem_prelude.rb: provide workaround for gem activation.  Currently,
+	  gem activation does not work by default.  Now it can be worked
+	  around by requiring "rubygems" first.  [ruby-core:29486]
+	  a patch from Evan Phoenix in [ruby-core:31096].
+
+	* lib/rubygems.rb: ditto.
+
 Sun Jul 11 15:14:03 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* Makefile.in ({|dist-|real-}clean-ext): fixes the previous

@@ -18,4 +18,4 @@ end}
     #                  /can't activate rubygems-bug-child.*already activated rubygems-bug-child-1\.1/, [],
     #                  bug3140)
   end
-end if defined?(::Gem)
+end if defined?(::Gem) and RUBY_VERSION < "1.9"
