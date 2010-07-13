@@ -1,4 +1,6 @@
-Tue Jul 13 21:28:35 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Jul 13 21:31:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_daemon): split from proc_daemon.
 
 	* process.c (rb_fork_err): suppress gcc 4.4 warnings.
 
