@@ -1,3 +1,8 @@
+Tue Jul 13 21:01:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/pty/pty.c (establishShell): chfunc must not raise any
+	  exceptions.
+
 Tue Jul 13 20:58:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_DEFAULT_ARCH): adjust for target

@@ -155,7 +155,7 @@ struct child_info {
 };
 
 static int
-chfunc(void *data)
+chfunc(void *data, char *errbuf, size_t errbuf_len)
 {
     struct child_info *carg = data;
     int master = carg->master;
@@ -165,6 +165,10 @@ chfunc(void *data)
 
     struct exec_info arg;
     int status;
+#define ERROR_EXIT(str) do { \
+	strlcpy(errbuf, str, errbuf_len); \
+	return -1; \
+    } while (0)
 
     /*
      * Set free from process group and controlling terminal
@@ -175,15 +179,15 @@ chfunc(void *data)
 # ifdef HAVE_SETPGRP
 #  ifdef SETGRP_VOID
     if (setpgrp() == -1)
-        perror("setpgrp()");
+        ERROR_EXIT("setpgrp()");
 #  else /* SETGRP_VOID */
     if (setpgrp(0, getpid()) == -1)
-        rb_sys_fail("setpgrp()");
+        ERROR_EXIT("setpgrp()");
     {
         int i = open("/dev/tty", O_RDONLY);
-        if (i < 0) rb_sys_fail("/dev/tty");
+        if (i < 0) ERROR_EXIT("/dev/tty");
         if (ioctl(i, TIOCNOTTY, (char *)0))
-            perror("ioctl(TIOCNOTTY)");
+            ERROR_EXIT("ioctl(TIOCNOTTY)");
         close(i);
     }
 #  endif /* SETGRP_VOID */
@@ -201,12 +205,10 @@ chfunc(void *data)
     close(slave);
     slave = open(carg->slavename, O_RDWR);
     if (slave < 0) {
-        perror("open: pty slave");
-        _exit(1);
+        ERROR_EXIT("open: pty slave");
     }
     close(master);
 #endif
-    write(slave, "", 1);
     dup2(slave,0);
     dup2(slave,1);
     dup2(slave,2);
@@ -219,7 +221,8 @@ chfunc(void *data)
     arg.argv = argv;
     rb_protect(pty_exec, (VALUE)&arg, &status);
     sleep(1);
-    _exit(1);
+    return -1;
+#undef ERROR_EXIT
 }
 
 static void
@@ -228,10 +231,11 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
 {
     int 		master,slave;
     rb_pid_t		pid;
-    char		*p, tmp, *getenv();
+    char		*p, *getenv();
     struct passwd	*pwent;
     VALUE		v;
     struct child_info   carg;
+    char		errbuf[32];
 
     if (argc == 0) {
 	const char *shellname;
@@ -258,15 +262,17 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
     carg.slavename = SlaveName;
     carg.argc = argc;
     carg.argv = argv;
-    pid = rb_fork(0, chfunc, &carg, Qnil);
+    errbuf[0] = '\0';
+    pid = rb_fork_err(0, chfunc, &carg, Qnil, errbuf, sizeof(errbuf));
 
     if (pid < 0) {
+	int e = errno;
 	close(master);
 	close(slave);
-	rb_sys_fail("fork failed");
+	errno = e;
+	rb_sys_fail(errbuf[0] ? errbuf : "fork failed");
     }
 
-    read(master, &tmp, 1);
     close(slave);
 
     info->child_pid = pid;
