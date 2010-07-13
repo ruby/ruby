@@ -2513,10 +2513,12 @@ rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALU
 	    if (!(*chfunc)(charg, errmsg, errmsg_buflen)) _exit(EXIT_SUCCESS);
 #ifdef FD_CLOEXEC
 	    err = errno;
-	    (void)write(ep[1], &err, sizeof(err));
+	    if (write(ep[1], &err, sizeof(err)) < 0) err = errno;
             if (errmsg && 0 < errmsg_buflen) {
                 errmsg[errmsg_buflen-1] = '\0';
-                (void)write(ep[1], errmsg, strlen(errmsg));
+                errmsg_buflen = strlen(errmsg);
+		if (errmsg_buflen > 0 &&write(ep[1], errmsg, errmsg_buflen) < 0)
+                  err = errno;
             }
 #endif
 #if EXIT_SUCCESS == 127

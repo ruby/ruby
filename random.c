@@ -489,7 +489,9 @@ fill_random_seed(unsigned int seed[DEFAULT_SEED_CNT])
 #endif
             )) >= 0) {
         if (fstat(fd, &statbuf) == 0 && S_ISCHR(statbuf.st_mode)) {
-            (void)read(fd, seed, DEFAULT_SEED_LEN);
+	    if (read(fd, seed, DEFAULT_SEED_LEN) < DEFAULT_SEED_LEN) {
+		/* abandon */;
+	    }
         }
         close(fd);
     }
