@@ -1,3 +1,8 @@
+Thu Jul 15 06:11:29 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* lib/rdoc/markup/attribute_manager.rb: fixing ri output when special
+	  characters are inside html tags.  Thanks Tomo Kazahaya! [Bug #3512]
+
 Thu Jul 15 06:01:42 2010  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (guess_local_offset): use the UTC offset of an older date on

@@ -11,6 +11,22 @@ class TestAttributeManager < MiniTest::Unit::TestCase
     @klass = RDoc::Markup::AttributeManager
   end
 
+  def test_convert_attrs_ignores_code
+    collector = RDoc::Markup::AttrSpan.new 10
+    str = 'foo <code>__send__</code> bar'
+    @am.convert_html str, collector
+    @am.convert_attrs str, collector
+    assert_match(/__send__/, str)
+  end
+
+  def test_convert_attrs_ignores_tt
+    collector = RDoc::Markup::AttrSpan.new 10
+    str = 'foo <tt>__send__</tt> bar'
+    @am.convert_html str, collector
+    @am.convert_attrs str, collector
+    assert_match(/__send__/, str)
+  end
+
   def test_initial_word_pairs
     word_pairs = @am.matching_word_pairs
     assert word_pairs.is_a?(Hash)
