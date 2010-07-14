@@ -112,7 +112,7 @@ class RDoc::Markup::AttributeManager
     # first do matching ones
     tags = @matching_word_pairs.keys.join("")
 
-    re = /(^|\W)([#{tags}])([#:\\]?[\w.\/-]+?\S?)\2(\W|$)/
+    re = /(^|[^\w#{NULL}])([#{tags}])([#:\\]?[\w.\/-]+?\S?)\2(\W|$)/
 
     1 while str.gsub!(re) do
       attr = @matching_word_pairs[$2]
@@ -228,8 +228,8 @@ class RDoc::Markup::AttributeManager
 
     @attrs = RDoc::Markup::AttrSpan.new @str.length
 
-    convert_attrs    @str, @attrs
     convert_html     @str, @attrs
+    convert_attrs    @str, @attrs
     convert_specials @str, @attrs
 
     unmask_protected_sequences
