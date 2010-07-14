@@ -1,3 +1,11 @@
+Thu Jul 15 00:35:09 2010  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (localtime_with_gmtoff_zone): renamed from
+	  localtime_with_gmtoff and return the timezone abbreviation name.
+	  (guess_local_offset): return the isdst and timezone abbreviation name.
+	  (localtimew): use the returned isdst and timezone abbreviation name.
+	  [ruby-core:31275]
+
 Wed Jul 14 20:23:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (frame_func_id), vm_eval.c (rb_iterate),

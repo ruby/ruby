@@ -80,6 +80,11 @@ class TestTimeTZ < Test::Unit::TestCase
     with_tz(tz="America/Los_Angeles") {
       assert_time_constructor(tz, "2007-03-11 03:00:00 -0700", :local, [2007,3,11,2,0,0])
       assert_time_constructor(tz, "2007-03-11 03:59:59 -0700", :local, [2007,3,11,2,59,59])
+      #assert_equal("PST", Time.new(-0x1_0000_0000_0000_0000).zone)
+      assert_equal("PST", Time.new(0x1_0000_0000_0000_0000, 1).zone)
+      assert_equal("PDT", Time.new(0x1_0000_0000_0000_0000, 8).zone)
+      assert_equal(false, Time.new(0x1_0000_0000_0000_0000, 1).isdst)
+      assert_equal(true, Time.new(0x1_0000_0000_0000_0000, 8).isdst)
     }
   end
 
