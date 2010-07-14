@@ -1506,8 +1506,15 @@ guess_local_offset(struct vtm *vtm_utc, int *isdst_ret, const char **zone_ret)
         zone = "UTC";
 
 # if defined(NEGATIVE_TIME_T)
-        /* 1901-12-13 20:45:52 UTC : The oldest time in 32-bit signed time_t. */
-        if (localtime_with_gmtoff_zone((t = (time_t)0x80000000, &t), &tm, &gmtoff, &zone)) {
+#  if SIZEOF_TIME_T <= 4
+    /* 1901-12-13 20:45:52 UTC : The oldest time in 32-bit signed time_t. */
+#   define THE_TIME_OLD_ENOUGH ((time_t)0x80000000)
+#  else
+    /* Since the Royal Greenwich Observatory was commissioned in 1675,
+       no timezone defined using GMT at 1600. */
+#   define THE_TIME_OLD_ENOUGH ((time_t)(1600-1970)*366*24*60*60)
+#  endif
+        if (localtime_with_gmtoff_zone((t = THE_TIME_OLD_ENOUGH, &t), &tm, &gmtoff, &zone)) {
             off = LONG2FIX(gmtoff);
             isdst = tm.tm_isdst;
         }
