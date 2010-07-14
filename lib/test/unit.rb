@@ -3,6 +3,7 @@
 require 'minitest/unit'
 require 'test/unit/assertions'
 require 'test/unit/testcase'
+require 'optparse'
 
 module Test
   module Unit
@@ -13,19 +14,27 @@ module Test
       files = []
       reject = []
       original_argv = original_argv.dup
-      while arg = original_argv.shift
-        case arg
-        when '-v'
-          minitest_argv << arg
-        when /\A(-n)(.+)?/, /\A(--name)=?\b(.+)?/
-          minitest_argv << $1
-          minitest_argv << ($2 || original_argv.shift)
-        when /\A-x(.+)?/
-          reject << ($1 || original_argv.shift)
-        else
-          files << arg
+      OptionParser.new do |parser|
+        parser.default_argv = original_argv
+
+        parser.on '-v', '--verbose' do |v|
+          minitest_argv << '-v' if v
         end
-      end
+
+        parser.on '-n', '--name TESTNAME' do |name|
+          minitest_argv << '-n'
+          minitest_argv << name
+        end
+
+        parser.on '-x', '--exclude PATTERN' do |pattern|
+          reject << pattern
+        end
+
+        parser.on '-Idirectory' do |dirs|
+          dirs.split(':').each { |d| $LOAD_PATH.unshift d }
+        end
+      end.parse!
+      files = original_argv
 
       if block_given?
         files = yield files

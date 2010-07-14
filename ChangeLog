@@ -1,3 +1,8 @@
+Thu Jul 15 02:42:51 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* lib/test/unit.rb (setup_argv): convert to using optparse, adding
+	  --help and -I. [ruby-core:30154]
+
 Thu Jul 15 00:35:09 2010  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (localtime_with_gmtoff_zone): renamed from
