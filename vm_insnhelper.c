@@ -717,7 +717,7 @@ vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block,
 	blockarg = Qnil;
     }
 
-    vm_push_frame(th, 0, VM_FRAME_MAGIC_IFUNC,
+    vm_push_frame(th, (rb_iseq_t *)ifunc, VM_FRAME_MAGIC_IFUNC,
 		  self, (VALUE)block->dfp,
 		  0, th->cfp->sp, block->lfp, 1);
 
