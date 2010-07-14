@@ -391,6 +391,8 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
     * RDoc
           o Updated to version 2.2.2.  See:
             http://rubyforge.org/frs/shownotes.php?group_id=627&release_id=26434
+    * json
+          o JSON (JavaScript Object Notation) encoder/decoder
 
 * commandline options
     * -E, --encoding
