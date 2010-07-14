@@ -80,7 +80,6 @@ class TestTimeTZ < Test::Unit::TestCase
     with_tz(tz="America/Los_Angeles") {
       assert_time_constructor(tz, "2007-03-11 03:00:00 -0700", :local, [2007,3,11,2,0,0])
       assert_time_constructor(tz, "2007-03-11 03:59:59 -0700", :local, [2007,3,11,2,59,59])
-      #assert_equal("PST", Time.new(-0x1_0000_0000_0000_0000).zone)
       assert_equal("PST", Time.new(0x1_0000_0000_0000_0000, 1).zone)
       assert_equal("PDT", Time.new(0x1_0000_0000_0000_0000, 8).zone)
       assert_equal(false, Time.new(0x1_0000_0000_0000_0000, 1).isdst)
@@ -133,6 +132,12 @@ class TestTimeTZ < Test::Unit::TestCase
       assert_time_constructor(tz, "1916-05-01 01:59:59 +0200", :local, [1916,5,1,0,59,59])
       assert_time_constructor(tz, "1916-05-01 01:00:00 +0200", :local, [1916,5,1,1,0,0])
       assert_time_constructor(tz, "1916-05-01 01:59:59 +0200", :local, [1916,5,1,1,59,59])
+    }
+  end
+
+  def test_europe_lisbon
+    with_tz(tz="Europe/Lisbon") {
+      assert_equal("LMT", Time.new(-0x1_0000_0000_0000_0000).zone)
     }
   end
 
