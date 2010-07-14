@@ -756,10 +756,13 @@ frame_func_id(rb_control_frame_t *cfp)
 {
     rb_iseq_t *iseq = cfp->iseq;
     if (!iseq) {
+	if (!cfp->me) return 0;
 	return cfp->me->def->original_id;
     }
     while (iseq) {
 	if (RUBY_VM_IFUNC_P(iseq)) {
+	    NODE *ifunc = (NODE *)iseq;
+	    if (ifunc->nd_aid) return ifunc->nd_aid;
 	    return rb_intern("<ifunc>");
 	}
 	if (iseq->defined_method_id) {

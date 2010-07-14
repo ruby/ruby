@@ -832,6 +832,7 @@ rb_iterate(VALUE (* it_proc) (VALUE), VALUE data1,
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *volatile cfp = th->cfp;
 
+    node->nd_aid = rb_frame_this_func();
     TH_PUSH_TAG(th);
     state = TH_EXEC_TAG();
     if (state == 0) {
