@@ -1,3 +1,8 @@
+Wed Jul 14 18:18:05 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regexec.c (match_at): add end point to enclen's argument.
+	  This only effect on compilinig with -DONIG_DEBUG_MATCH.
+
 Tue Jul 13 21:34:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/readline/readline.c: libedit is missing declaration of
