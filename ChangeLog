@@ -1,3 +1,10 @@
+Thu Jul 15 15:47:32 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regexec.c (onig_search): don't skip non-ANYCHARs when
+	  .* fails to match. This causes to fail matching
+	  ANYCHAR_STAR with LOOK_BEHIND. This fix is workaround
+	  and disable the optimization. [ruby-dev:41851]
+
 Thu Jul 15 06:11:29 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* lib/rdoc/markup/attribute_manager.rb: fixing ri output when special
