@@ -1,3 +1,9 @@
+Thu Jul 15 21:43:35 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* numeric.c (fix_divide): must not use rb_rational_new1 for coercion
+	  because it returns an argument itself when canonical mode is set.
+	  [ruby-core:31279]
+
 Thu Jul 15 21:38:31 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* proc.c (bm_free): fix memory leak.  [ruby-core:30869] [Bug #3466]
