@@ -1,3 +1,7 @@
+Thu Jul 15 21:38:31 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* proc.c (bm_free): fix memory leak.  [ruby-core:30869] [Bug #3466]
+
 Tue Jul 13 12:04:57 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* missing/close.c: keep original errno.
