@@ -11,6 +11,11 @@ class TestRegexp < Test::Unit::TestCase
     $VERBOSE = @verbose
   end
 
+  def test_ruby_dev_999
+    assert_match(/(?<=a).*b/, "aab")
+    assert_match(/(?<=\u3042).*b/, "\u3042ab")
+  end
+
   def test_ruby_core_27247
     assert_match(/(a){2}z/, "aaz")
   end
