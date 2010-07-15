@@ -871,6 +871,7 @@ bm_free(void *ptr)
 	xfree(def);
     else if (def->alias_count > 0)
 	def->alias_count--;
+    xfree(ptr);
 }
 
 static size_t
