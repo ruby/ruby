@@ -1,3 +1,8 @@
+Fri Jul 16 22:08:10 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/test/unit.rb, bin/testrb, test/runner.rb: revert r28655, which
+	  broke test-all.
+
 Fri Jul 16 14:58:38 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit.rb (Test::Unit.setup_argv): run tests only when
