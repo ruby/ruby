@@ -26,7 +26,7 @@ static VALUE rb_cDBM, rb_eDBMError;
 #define RUBY_DBM_RW_BIT 0x20000000
 
 struct dbmdata {
-    int  di_size;
+    long di_size;
     DBM *di_dbm;
 };
 
@@ -212,7 +212,7 @@ fdbm_key(VALUE obj, VALUE valstr)
     GetDBM2(obj, dbmp, dbm);
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
-	if (val.dsize == RSTRING_LEN(valstr) &&
+	if ((long)val.dsize == RSTRING_LEN(valstr) &&
 	    memcmp(val.dptr, RSTRING_PTR(valstr), val.dsize) == 0) {
 	    return rb_tainted_str_new(key.dptr, key.dsize);
 	}
@@ -335,7 +335,8 @@ fdbm_delete_if(VALUE obj)
     DBM *dbm;
     VALUE keystr, valstr;
     VALUE ret, ary = rb_ary_new();
-    int i, status = 0, n;
+    int i, status = 0;
+    long n;
 
     fdbm_modify(obj);
     GetDBM2(obj, dbmp, dbm);

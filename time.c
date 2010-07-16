@@ -963,10 +963,8 @@ static const int leap_year_days_in_month[] = {
 static int
 calc_tm_yday(long tm_year, int tm_mon, int tm_mday)
 {
-    int tm_year_mod400;
+    int tm_year_mod400 = (int)MOD(tm_year, 400);
     int tm_yday = tm_mday;
-
-    tm_year_mod400 = MOD(tm_year, 400);
 
     if (leap_year_p(tm_year_mod400 + 1900))
 	tm_yday += leap_year_yday_offset[tm_mon];
