@@ -9,21 +9,7 @@ module Test
   module Unit
     TEST_UNIT_IMPLEMENTATION = 'test/unit compatibility layer using minitest'
 
-    @@installed_at_exit = true
-    @@run_count = 0
-
-    RunCount = Module.new do
-      def run(*)
-        @@run_count += 1
-        super
-      end
-    end
-
-    def self.new(*)
-      super.extend(RunCount)
-    end
-
-    def self.setup_argv(original_argv=::ARGV)
+    def self.setup_argv(original_argv=ARGV)
       minitest_argv = []
       files = []
       reject = []
@@ -81,23 +67,9 @@ module Test
         end
       }
 
-      at_exit {
-        next if @@run_count.nonzero?
-        next if $! # don't run if there was an exception
-        exit false unless run(minitest_argv)
-      } unless @@installed_at_exit
-      @@installed_at_exit = true
-
-      minitest_argv
-    end
-
-    def self.run(args)
-      exit_code = MiniTest::Unit.new.run(args)
-      !exit_code || exit_code == 0
-    end
-
-    def self.start(argv=::ARGV, &block)
-      run(setup_argv(argv, &block))
+      ARGV.replace minitest_argv
     end
   end
 end
+
+MiniTest::Unit.autorun
