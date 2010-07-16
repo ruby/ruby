@@ -338,7 +338,7 @@ end
 
 install?(:ext, :arch, :'ext-arch') do
   prepare "extension objects", archlibdir
-  noinst = %w[-*] | (CONFIG["no_install_files"] || "").split
+  noinst = %w[-* -*/] | (CONFIG["no_install_files"] || "").split
   install_recursive("#{$extout}/#{CONFIG['arch']}", archlibdir, :no_install => noinst, :mode => $prog_mode, :strip => $strip)
   prepare "extension objects", sitearchlibdir
   prepare "extension objects", vendorarchlibdir
