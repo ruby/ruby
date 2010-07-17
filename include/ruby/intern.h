@@ -333,6 +333,7 @@ void rb_thread_sleep(int);
 void rb_thread_sleep_forever(void);
 VALUE rb_thread_stop(void);
 VALUE rb_thread_wakeup(VALUE);
+VALUE rb_thread_wakeup_alive(VALUE);
 VALUE rb_thread_run(VALUE);
 VALUE rb_thread_kill(VALUE);
 VALUE rb_thread_create(VALUE (*)(ANYARGS), void*);
