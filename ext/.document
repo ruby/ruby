@@ -47,6 +47,8 @@ openssl/ossl_x509req.c
 openssl/ossl_x509revoked.c
 openssl/ossl_x509store.c
 openssl/lib/openssl/buffering.rb
+pathname/pathname.c
+pathname/lib
 pty/pty.c
 pty/lib
 readline/readline.c
