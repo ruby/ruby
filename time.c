@@ -4357,7 +4357,7 @@ strftimev(const char *fmt, VALUE time)
  *  The minimum field width specifies the minimum width.
  *
  *  The modifier is "E" and "O".
- *  It is ignored.
+ *  They are ignored.
  *
  *  Format directives:
  *
@@ -4482,18 +4482,18 @@ strftimev(const char *fmt, VALUE time)
  *    t.strftime("%T.%L")            #=> "08:37:48.000"   # Local time with decimal fraction, full stop as decimal sign (extended format)
  *    t.strftime("%H%M%S%z")         #=> "083748-0600"    # Local time and the difference from UTC (basic format)
  *    t.strftime("%T%:z")            #=> "08:37:48-06:00" # Local time and the difference from UTC (extended format)
- *    t.strftime("%Y%m%dT%H%M%S%z")  #=> "20071119T083748-0600" # Date and time of day for calendar date (basic format)
+ *    t.strftime("%Y%m%dT%H%M%S%z")  #=> "20071119T083748-0600"      # Date and time of day for calendar date (basic format)
  *    t.strftime("%FT%T%:z")         #=> "2007-11-19T08:37:48-06:00" # Date and time of day for calendar date (extended format)
- *    t.strftime("%Y%jT%H%M%S%z")    #=> "2007323T083748-0600" # Date and time of day for ordinal date (basic format)
- *    t.strftime("%Y-%jT%T%:z")      #=> "2007-323T08:37:48-06:00" # Date and time of day for ordinal date (extended format)
- *    t.strftime("%GW%V%uT%H%M%S%z") #=> "2007W471T083748-0600" # Date and time of day for week date (basic format)
+ *    t.strftime("%Y%jT%H%M%S%z")    #=> "2007323T083748-0600"       # Date and time of day for ordinal date (basic format)
+ *    t.strftime("%Y-%jT%T%:z")      #=> "2007-323T08:37:48-06:00"   # Date and time of day for ordinal date (extended format)
+ *    t.strftime("%GW%V%uT%H%M%S%z") #=> "2007W471T083748-0600"      # Date and time of day for week date (basic format)
  *    t.strftime("%G-W%V-%uT%T%:z")  #=> "2007-W47-1T08:37:48-06:00" # Date and time of day for week date (extended format)
- *    t.strftime("%Y%m%dT%H%M")      #=> "20071119T0837" # Calendar date and local time (basic format)
- *    t.strftime("%FT%R")            #=> "2007-11-19T08:37" # Calendar date and local time (extended format)
- *    t.strftime("%Y%jT%H%MZ")       #=> "2007323T0837Z" # Ordinal date and UTC of day (basic format)
- *    t.strftime("%Y-%jT%RZ")        #=> "2007-323T08:37Z" # Ordinal date and UTC of day (extended format)
- *    t.strftime("%GW%V%uT%H%M%z")   #=> "2007W471T0837-0600" # Week date and local time and difference from UTC (basic format)
- *    t.strftime("%G-W%V-%uT%R%:z")  #=> "2007-W47-1T08:37-06:00" # Week date and local time and difference from UTC (extended format)
+ *    t.strftime("%Y%m%dT%H%M")      #=> "20071119T0837"             # Calendar date and local time (basic format)
+ *    t.strftime("%FT%R")            #=> "2007-11-19T08:37"          # Calendar date and local time (extended format)
+ *    t.strftime("%Y%jT%H%MZ")       #=> "2007323T0837Z"             # Ordinal date and UTC of day (basic format)
+ *    t.strftime("%Y-%jT%RZ")        #=> "2007-323T08:37Z"           # Ordinal date and UTC of day (extended format)
+ *    t.strftime("%GW%V%uT%H%M%z")   #=> "2007W471T0837-0600"        # Week date and local time and difference from UTC (basic format)
+ *    t.strftime("%G-W%V-%uT%R%:z")  #=> "2007-W47-1T08:37-06:00"    # Week date and local time and difference from UTC (extended format)
  *
  */
 
