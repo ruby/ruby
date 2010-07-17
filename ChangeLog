@@ -1,3 +1,9 @@
+Sat Jul 17 15:19:58 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: Change AC_PREREQ from 2.58 to 2.60 because
+	  AC_CASE macro require 2.60 or later. Thanks, Mitsuru SHIMAMURA.
+	  [Bug #3579] [ruby-dev:41856]
+
 Wed Jun 23 22:22:42 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/optparse/test_summary.rb: fixed superclass so that it run
