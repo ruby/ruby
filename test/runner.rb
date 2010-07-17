@@ -6,7 +6,7 @@ require 'test/unit'
 src_testdir = File.dirname(File.expand_path(__FILE__))
 srcdir = File.dirname(src_testdir)
 
-Test::Unit.setup_argv {|files|
+exit Test::Unit.start {|files|
   if files.empty?
     [src_testdir]
   else

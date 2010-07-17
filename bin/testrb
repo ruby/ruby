@@ -1,9 +1,9 @@
 #!/usr/bin/env ruby
 require 'test/unit'
-Test::Unit.setup_argv {|files|
+exit Test::Unit.start {|files|
   if files.empty?
     puts "Usage: testrb [options] tests..."
-    exit 1
+    exit false
   end
   if files.size == 1
     $0 = File.basename(files[0])

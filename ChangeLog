@@ -1,7 +1,7 @@
-Fri Jul 16 22:08:10 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+Sat Jul 17 10:07:52 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* lib/test/unit.rb, bin/testrb, test/runner.rb: revert r28655, which
-	  broke test-all.
+	* lib/test/unit.rb: MiniTest::Unit is different class from
+	  Test::Unit, and install runner before loading test/minitest.
 
 Fri Jul 16 14:58:38 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

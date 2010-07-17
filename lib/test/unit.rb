@@ -9,7 +9,20 @@ module Test
   module Unit
     TEST_UNIT_IMPLEMENTATION = 'test/unit compatibility layer using minitest'
 
-    def self.setup_argv(original_argv=ARGV)
+    module RunCount
+      @@run_count = 0
+
+      def self.have_run?
+        @@run_count.nonzero?
+      end
+
+      def run(*)
+        @@run_count += 1
+        super
+      end
+    end
+
+    def self.setup_argv(original_argv=::ARGV)
       minitest_argv = []
       files = []
       reject = []
@@ -55,6 +68,12 @@ module Test
       reject_pat = Regexp.union(reject.map {|r| /#{r}/ })
       files.reject! {|f| reject_pat =~ f }
 
+      MiniTest::Unit._install_at_exit {
+        next if RunCount.have_run?
+        next if $! # don't run if there was an exception
+        exit false unless run(minitest_argv)
+      }
+
       files.each {|f|
         d = File.dirname(path = File.expand_path(f))
         unless $:.include? d
@@ -67,9 +86,27 @@ module Test
         end
       }
 
-      ARGV.replace minitest_argv
+      minitest_argv
+    end
+
+    def self.run(args)
+      exit_code = MiniTest::Unit.new.run(args)
+      !exit_code || exit_code == 0
+    end
+
+    def self.start(argv=::ARGV, &block)
+      run(setup_argv(argv, &block))
     end
   end
 end
 
-MiniTest::Unit.autorun
+class MiniTest::Unit
+  def self.new(*)
+    super.extend(Test::Unit::RunCount)
+  end
+
+  def self._install_at_exit(&block)
+    at_exit(&block) unless @@installed_at_exit
+    @@installed_at_exit = true
+  end
+end
