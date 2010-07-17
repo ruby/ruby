@@ -11,6 +11,8 @@
 # <tt>pathname.rb</tt> is distributed with Ruby since 1.8.0.
 #
 
+require 'pathname.so'
+
 #
 # == Pathname
 #

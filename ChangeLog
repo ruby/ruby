@@ -1,3 +1,12 @@
+Sat Jul 17 13:48:22 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/lib/pathname.rb: moved from lib/pathname.rb.
+	  require pathname.so.
+
+	* ext/pathname/pathname.c: new file to define empty Pathname class.
+
+	* ext/pathname/extconf.rb: new file.
+
 Sat Jul 17 13:04:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_thread_wakeup_alive): split from rb_thread_wakeup.
