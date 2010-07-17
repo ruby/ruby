@@ -266,9 +266,8 @@ extern const char *ruby_find_extname(const char *, long *);
 void
 ruby_add_suffix(VALUE str, const char *suffix)
 {
-    int baselen;
-    int extlen = strlen(suffix);
-    char *p, *q;
+    long baselen;
+    long extlen = strlen(suffix);
     long slen;
     char buf[1024];
     const char *name;
@@ -299,11 +298,12 @@ ruby_add_suffix(VALUE str, const char *suffix)
 	rb_str_cat(str, suffix, extlen);
     }
     else {
+	char *p = buf, *q;
 	strncpy(buf, name, slen);
 	if (ext)
-	    p = buf + (ext - name);
+	    p += (ext - name);
 	else
-	    p = buf + slen;
+	    p += slen;
 	p[len] = '\0';
 	if (suffix[1] == '\0') {  /* Style 2 */
 	    if (len <= 3) {
