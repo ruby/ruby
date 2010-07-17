@@ -3,9 +3,15 @@
 ENV.delete('PWD')
 
 require 'optparse'
-require 'pathname'
 
-Program = Pathname($0)
+unless File.respond_to? :realpath
+  require 'pathname'
+  def File.realpath(arg)
+    Pathname(arg).realpath.to_s
+  end
+end
+
+Program = $0
 
 class VCS
   class NotFoundError < RuntimeError; end
@@ -39,18 +45,19 @@ class VCS
 
   def relative_to(path)
     if path
-      path = Pathname(path)
-      srcdir = @srcdir
-      if path.absolute? ^ srcdir.absolute?
-        if path.absolute?
-          srcdir = srcdir.expand_path
-        end
-      else
-        if srcdir.absolute?
-          path = path.expand_path
-        end
+      srcdir = File.realpath(@srcdir)
+      path = File.realpath(path)
+      list1 = srcdir.split(%r{/})
+      list2 = path.split(%r{/})
+      while !list1.empty? && !list2.empty? && list1.first == list2.first
+        list1.shift
+        list2.shift
       end
-      path.relative_path_from(srcdir)
+      if list1.empty? && list2.empty?
+        "."
+      else
+        ([".."] * list1.length + list2).join("/")
+      end
     else
       '.'
     end
@@ -118,18 +125,18 @@ parser = OptionParser.new {|opts|
     @suppress_not_found = true
   end
 }
-parser.parse! rescue abort "#{Program.basename}: #{$!}\n#{parser}"
+parser.parse! rescue abort "#{File.basename(Program)}: #{$!}\n#{parser}"
 
-srcdir = (srcdir ? Pathname(srcdir) : Program.parent.parent).freeze
+srcdir = srcdir ? srcdir : File.dirname(File.dirname(Program))
 begin
   vcs = VCS.detect(srcdir)
 rescue VCS::NotFoundError => e
-  abort "#{Program.basename}: #{e.message}" unless @suppress_not_found
+  abort "#{File.basename(Program)}: #{e.message}" unless @suppress_not_found
 else
   begin
     last, changed = vcs.get_revisions(ARGV.shift)
   rescue => e
-    abort "#{Program.basename}: #{e.message}" unless @suppress_not_found
+    abort "#{File.basename(Program)}: #{e.message}" unless @suppress_not_found
     exit false
   end
 end
