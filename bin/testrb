@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 require 'test/unit'
-exit Test::Unit.start {|files|
+tests = Test::Unit.new {|files|
   if files.empty?
     puts "Usage: testrb [options] tests..."
     exit false
@@ -12,3 +12,4 @@ exit Test::Unit.start {|files|
   end
   files
 }
+exit tests.run(ARGV) || true
