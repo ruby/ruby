@@ -1,3 +1,11 @@
+Sun Jul 18 00:02:19 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/lib/pathname.rb (Pathname#initialize): removed.
+
+	* ext/pathname/pathname.c (path_initialize): implemented.
+	  (get_strpath): new function.
+	  (set_strpath): ditto.
+
 Sat Jul 17 19:01:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit.rb (MiniTest::Unit#process_args): refactored.
