@@ -1322,6 +1322,7 @@ set_default_internal(VALUE klass, VALUE encoding)
  *   Encoding.locale_charmap -> string
  *
  * Returns the locale charmap name.
+ * It returns nil if no appropriate information.
  *
  *   Debian GNU/Linux
  *     LANG=C
