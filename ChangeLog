@@ -1,3 +1,8 @@
+Sat Jul 17 13:04:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_wakeup_alive): split from rb_thread_wakeup.
+	  merged from r13476.  c.f. [ruby-core:31320]
+
 Sat Jul 17 10:07:52 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit.rb: MiniTest::Unit is different class from

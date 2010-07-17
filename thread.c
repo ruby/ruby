@@ -1547,11 +1547,20 @@ rb_thread_exit(void)
 VALUE
 rb_thread_wakeup(VALUE thread)
 {
+    if (!RTEST(rb_thread_wakeup_alive(thread))) {
+	rb_raise(rb_eThreadError, "killed thread");
+    }
+    return thread;
+}
+
+VALUE
+rb_thread_wakeup_alive(VALUE thread)
+{
     rb_thread_t *th;
     GetThreadPtr(thread, th);
 
     if (th->status == THREAD_KILLED) {
-	rb_raise(rb_eThreadError, "killed thread");
+	return Qnil;
     }
     rb_threadptr_ready(th);
     if (th->status != THREAD_TO_KILL) {
