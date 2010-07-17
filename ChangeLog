@@ -1,3 +1,7 @@
+Sat Jul 17 19:01:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (MiniTest::Unit#process_args): refactored.
+
 Sat Jul 17 18:30:05 2010  Tanaka Akira  <akr@fsij.org>
 
 	* tool/file2lastrev.rb: don't depend on pathname.rb if File.realpath
