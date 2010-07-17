@@ -33,6 +33,7 @@ path_initialize(VALUE self, VALUE arg)
 
     set_strpath(self, str);
     OBJ_INFECT(self, str);
+    return self;
 }
 
 void
