@@ -344,7 +344,7 @@ dir_memsize(const void *ptr)
 
 static const rb_data_type_t dir_data_type = {
     "dir",
-    dir_mark, dir_free, dir_memsize
+    {dir_mark, dir_free, dir_memsize,},
 };
 
 static VALUE dir_close(VALUE);

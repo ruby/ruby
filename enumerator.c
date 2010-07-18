@@ -131,9 +131,11 @@ enumerator_memsize(const void *p)
 
 static const rb_data_type_t enumerator_data_type = {
     "enumerator",
-    enumerator_mark,
-    enumerator_free,
-    enumerator_memsize,
+    {
+	enumerator_mark,
+	enumerator_free,
+	enumerator_memsize,
+    },
 };
 
 static struct enumerator *
@@ -812,9 +814,11 @@ yielder_memsize(const void *p)
 
 static const rb_data_type_t yielder_data_type = {
     "yielder",
-    yielder_mark,
-    yielder_free,
-    yielder_memsize,
+    {
+	yielder_mark,
+	yielder_free,
+	yielder_memsize,
+    },
 };
 
 static struct yielder *
@@ -915,9 +919,11 @@ generator_memsize(const void *p)
 
 static const rb_data_type_t generator_data_type = {
     "generator",
-    generator_mark,
-    generator_free,
-    generator_memsize,
+    {
+	generator_mark,
+	generator_free,
+	generator_memsize,
+    },
 };
 
 static struct generator *

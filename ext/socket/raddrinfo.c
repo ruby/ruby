@@ -534,7 +534,7 @@ addrinfo_memsize(const void *ptr)
 
 static const rb_data_type_t addrinfo_type = {
     "socket/addrinfo",
-    addrinfo_mark, addrinfo_free, addrinfo_memsize,
+    {addrinfo_mark, addrinfo_free, addrinfo_memsize,},
 };
 
 static VALUE

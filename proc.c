@@ -71,9 +71,11 @@ proc_memsize(const void *ptr)
 
 static const rb_data_type_t proc_data_type = {
     "proc",
-    proc_mark,
-    proc_free,
-    proc_memsize,
+    {
+	proc_mark,
+	proc_free,
+	proc_memsize,
+    },
 };
 
 VALUE
@@ -268,9 +270,11 @@ binding_memsize(const void *ptr)
 
 static const rb_data_type_t binding_data_type = {
     "binding",
-    binding_mark,
-    binding_free,
-    binding_memsize,
+    {
+	binding_mark,
+	binding_free,
+	binding_memsize,
+    },
 };
 
 static VALUE
@@ -882,9 +886,11 @@ bm_memsize(const void *ptr)
 
 static const rb_data_type_t method_data_type = {
     "method",
-    bm_mark,
-    bm_free,
-    bm_memsize,
+    {
+	bm_mark,
+	bm_free,
+	bm_memsize,
+    },
 };
 
 static inline int

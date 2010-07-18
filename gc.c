@@ -1177,7 +1177,7 @@ size_t
 rb_objspace_data_type_memsize(VALUE obj)
 {
     if (RTYPEDDATA_P(obj)) {
-	return RTYPEDDATA_TYPE(obj)->dsize(RTYPEDDATA_DATA(obj));
+	return RTYPEDDATA_TYPE(obj)->function.dsize(RTYPEDDATA_DATA(obj));
     }
     else {
 	return 0;
@@ -1749,7 +1749,8 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 
       case T_DATA:
 	if (RTYPEDDATA_P(obj)) {
-	    if (obj->as.typeddata.type->dmark) (*obj->as.typeddata.type->dmark)(DATA_PTR(obj));
+	    RUBY_DATA_FUNC mark_func = obj->as.typeddata.type->function.dmark;
+	    if (mark_func) (*mark_func)(DATA_PTR(obj));
 	}
 	else {
 	    if (obj->as.data.dmark) (*obj->as.data.dmark)(DATA_PTR(obj));
@@ -2186,7 +2187,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       case T_DATA:
 	if (DATA_PTR(obj)) {
 	    if (RTYPEDDATA_P(obj)) {
-		RDATA(obj)->dfree = RANY(obj)->as.typeddata.type->dfree;
+		RDATA(obj)->dfree = RANY(obj)->as.typeddata.type->function.dfree;
 	    }
 	    if ((long)RANY(obj)->as.data.dfree == -1) {
 		xfree(DATA_PTR(obj));
@@ -2780,7 +2781,7 @@ run_final(rb_objspace_t *objspace, VALUE obj)
     RBASIC(obj)->klass = 0;
 
     if (RTYPEDDATA_P(obj)) {
-	free_func = RTYPEDDATA_TYPE(obj)->dfree;
+	free_func = RTYPEDDATA_TYPE(obj)->function.dfree;
     }
     else {
 	free_func = RDATA(obj)->dfree;
@@ -2902,7 +2903,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 		RANY(p)->as.basic.klass != rb_cThread && RANY(p)->as.basic.klass != rb_cMutex) {
 		p->as.free.flags = 0;
 		if (RTYPEDDATA_P(p)) {
-		    RDATA(p)->dfree = RANY(p)->as.typeddata.type->dfree;
+		    RDATA(p)->dfree = RANY(p)->as.typeddata.type->function.dfree;
 		}
 		if ((long)RANY(p)->as.data.dfree == -1) {
 		    xfree(DATA_PTR(p));

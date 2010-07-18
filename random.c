@@ -339,9 +339,11 @@ random_memsize(const void *ptr)
 
 static const rb_data_type_t random_data_type = {
     "random",
-    random_mark,
-    random_free,
-    random_memsize,
+    {
+	random_mark,
+	random_free,
+	random_memsize,
+    },
 };
 
 static rb_random_t *

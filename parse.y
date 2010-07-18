@@ -10027,9 +10027,11 @@ parser_memsize(const void *ptr)
 
 static const rb_data_type_t parser_data_type = {
     "parser",
-    parser_mark,
-    parser_free,
-    parser_memsize,
+    {
+	parser_mark,
+	parser_free,
+	parser_memsize,
+    },
 };
 
 VALUE rb_parser_get_yydebug(VALUE);
