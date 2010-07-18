@@ -48,7 +48,7 @@ dlhandle_memsize(const void *ptr)
 
 static const rb_data_type_t dlhandle_data_type = {
     "dl/handle",
-    0, dlhandle_free, dlhandle_memsize,
+    {0, dlhandle_free, dlhandle_memsize,},
 };
 
 /*

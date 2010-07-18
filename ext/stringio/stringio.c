@@ -73,9 +73,11 @@ strio_memsize(const void *p)
 
 static const rb_data_type_t strio_data_type = {
     "strio",
-    strio_mark,
-    strio_free,
-    strio_memsize,
+    {
+	strio_mark,
+	strio_free,
+	strio_memsize,
+    },
 };
 
 #define check_strio(self) ((struct StringIO*)rb_check_typeddata(self, &strio_data_type))

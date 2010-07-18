@@ -2824,7 +2824,7 @@ thgroup_memsize(const void *ptr)
 
 static const rb_data_type_t thgroup_data_type = {
     "thgroup",
-    NULL, RUBY_TYPED_DEFAULT_FREE, thgroup_memsize,
+    {NULL, RUBY_TYPED_DEFAULT_FREE, thgroup_memsize,},
 };
 
 /*
@@ -3062,7 +3062,7 @@ mutex_memsize(const void *ptr)
 
 static const rb_data_type_t mutex_data_type = {
     "mutex",
-    mutex_mark, mutex_free, mutex_memsize,
+    {mutex_mark, mutex_free, mutex_memsize,},
 };
 
 static VALUE
@@ -3433,7 +3433,7 @@ barrier_mark(void *ptr)
 
 static const rb_data_type_t barrier_data_type = {
     "barrier",
-    barrier_mark, 0, 0,
+    {barrier_mark, 0, 0,},
 };
 
 static VALUE

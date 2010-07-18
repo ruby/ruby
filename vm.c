@@ -244,7 +244,7 @@ env_memsize(const void *ptr)
 
 static const rb_data_type_t env_data_type = {
     "VM/env",
-    env_mark, env_free, env_memsize,
+    {env_mark, env_free, env_memsize,},
 };
 
 static VALUE
@@ -1569,7 +1569,7 @@ vm_memsize(const void *ptr)
 
 static const rb_data_type_t vm_data_type = {
     "VM",
-    rb_vm_mark, vm_free, vm_memsize,
+    {rb_vm_mark, vm_free, vm_memsize,},
 };
 
 static void
@@ -1759,9 +1759,11 @@ thread_memsize(const void *ptr)
 
 static const rb_data_type_t thread_data_type = {
     "VM/thread",
-    rb_thread_mark,
-    thread_free,
-    thread_memsize,
+    {
+	rb_thread_mark,
+	thread_free,
+	thread_memsize,
+    },
 };
 
 static VALUE

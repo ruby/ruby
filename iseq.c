@@ -156,9 +156,11 @@ iseq_memsize(const void *ptr)
 
 static const rb_data_type_t iseq_data_type = {
     "iseq",
-    iseq_mark,
-    iseq_free,
-    iseq_memsize,
+    {
+	iseq_mark,
+	iseq_free,
+	iseq_memsize,
+    },
 };
 
 static VALUE

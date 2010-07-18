@@ -70,7 +70,7 @@ dlcfunc_memsize(const void *ptr)
 
 const rb_data_type_t dlcfunc_data_type = {
     "dl/cfunc",
-    0, dlcfunc_free, dlcfunc_memsize,
+    {0, dlcfunc_free, dlcfunc_memsize,},
 };
 
 VALUE

@@ -1851,7 +1851,7 @@ time_memsize(const void *tobj)
 
 static const rb_data_type_t time_data_type = {
     "time",
-    time_mark, time_free, time_memsize,
+    {time_mark, time_free, time_memsize,},
 };
 
 static VALUE

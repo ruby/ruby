@@ -1418,7 +1418,7 @@ autoload_memsize(const void *ptr)
 
 static const rb_data_type_t autoload_data_type = {
     "autoload",
-    autoload_mark, autoload_free, autoload_memsize,
+    {autoload_mark, autoload_free, autoload_memsize,},
 };
 
 #define check_autoload_table(av) \
