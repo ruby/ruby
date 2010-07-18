@@ -758,6 +758,10 @@ struct rb_data_type_struct {
                           by a programmer who define the type. */
 };
 
+#define HAVE_TYPE_RB_DATA_TYPE_T 1
+#define HAVE_RB_DATA_TYPE_T_FUNCTION 1
+#define HAVE_RB_DATA_TYPE_T_PARENT 1
+
 struct RTypedData {
     struct RBasic basic;
     const rb_data_type_t *type;
