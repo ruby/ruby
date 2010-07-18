@@ -2772,9 +2772,12 @@ rb_ary_replace(VALUE copy, VALUE orig)
 VALUE
 rb_ary_clear(VALUE ary)
 {
-    rb_ary_modify(ary);
+    rb_ary_modify_check(ary);
     ARY_SET_LEN(ary, 0);
-    if (ARY_DEFAULT_SIZE * 2 < ARY_CAPA(ary)) {
+    if (ARY_SHARED_P(ary)) {
+	rb_ary_unshare(ary);
+    }
+    else if (ARY_DEFAULT_SIZE * 2 < ARY_CAPA(ary)) {
 	ary_resize_capa(ary, ARY_DEFAULT_SIZE * 2);
     }
     return ary;
