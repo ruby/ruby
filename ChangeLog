@@ -1,3 +1,8 @@
+Sun Jul 18 21:20:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_clear): no need to duplicate buffer just before
+	  clearing.
+
 Sun Jul 18 16:31:50 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (rb_data_type_t): restructured.  [ruby-dev:41862]
