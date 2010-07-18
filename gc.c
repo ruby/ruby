@@ -2535,9 +2535,9 @@ rb_objspace_each_objects(int (*callback)(void *vstart, void *vend,
     i = 0;
     while (i < heaps_used) {
 	while (0 < i && (uintptr_t)membase < (uintptr_t)objspace->heap.sorted[i-1].slot->membase)
-	  i--;
+	    i--;
 	while (i < heaps_used && (uintptr_t)objspace->heap.sorted[i].slot->membase <= (uintptr_t)membase )
-	  i++;
+	    i++;
 	if (heaps_used <= i)
 	  break;
 	membase = objspace->heap.sorted[i].slot->membase;
