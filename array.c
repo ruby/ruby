@@ -2775,7 +2775,10 @@ rb_ary_clear(VALUE ary)
     rb_ary_modify_check(ary);
     ARY_SET_LEN(ary, 0);
     if (ARY_SHARED_P(ary)) {
-	rb_ary_unshare(ary);
+	if (!ARY_EMBED_P(ary)) {
+	    rb_ary_unshare(ary);
+	    FL_SET_EMBED(ary);
+	}
     }
     else if (ARY_DEFAULT_SIZE * 2 < ARY_CAPA(ary)) {
 	ary_resize_capa(ary, ARY_DEFAULT_SIZE * 2);
