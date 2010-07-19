@@ -141,6 +141,14 @@ with all sufficient information, see the ChangeLog file.
     * new method:
       * Kernel#respond_to_missing?
       * Kernel#singleton_class
+      * Kernel#require_relative
+
+    * extended methods:
+      * Kernel#respond_to? can be used to detect methods not implemented.
+        For example, Process.respond_to?(:fork) returns false on Windows.
+
+    * incompatible changes:
+      * Kernel#instance_eval yields the receiver.
 
   * MatchData
     * New method:
@@ -195,14 +203,6 @@ with all sufficient information, see the ChangeLog file.
       * The year argument of Time.{utc,gm,local,mktime} is now interpreted as
         the value itself.  For example, Time.utc(99) means the year 99 AD,
         not 1999 AD.
-
-  * Kernel
-    * new method:
-      * Kernel#require_relative
-
-    * extended methods:
-      * respond_to? can be used to detect methods not implemented.
-        For example, Process.respond_to?(:fork) returns false on Windows.
 
 * digest
   * new methods:
