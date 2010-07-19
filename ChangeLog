@@ -1,3 +1,11 @@
+Mon Jul 19 18:34:12 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/pathname.c (get_strpath): check the type.
+	  (path_initialize): bypass to_path call for T_STRING.
+	  (path_freeze): implemented.
+
+	* ext/pathname/lib/pathname.rb (Pathname#freeze): removed.
+
 Mon Jul 19 12:33:29 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_clear): should not unshare embedded array, and
