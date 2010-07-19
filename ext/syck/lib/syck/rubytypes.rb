@@ -61,7 +61,7 @@ class Struct
             props = {}
             val.delete_if { |k,v| props[k] = v if k =~ /^@/ }
             begin
-                struct_name, struct_type = YAML.read_type_class( tag, Struct )
+                struct_type = YAML.read_type_class( tag, Struct ).last
             rescue NameError
             end
             if not struct_type

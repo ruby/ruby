@@ -132,7 +132,7 @@ module Syck
     #      #=> :locked
     #
     def self.load( io )
-        yp = parser.load( io )
+        parser.load( io )
     end
 
     #
@@ -175,7 +175,7 @@ module Syck
     #            @value=":locked", @kind=:scalar>
     #
     def self.parse( io )
-        yp = generic_parser.load( io )
+        generic_parser.load( io )
     end
 
     #
@@ -217,7 +217,7 @@ module Syck
     #
     def self.each_document( io, &block )
         warn "#{caller[0]}: YAML.each_document is deprecated" if $VERBOSE && !caller[0].start_with?(File.dirname(__FILE__))
-        yp = parser.load_documents( io, &block )
+        parser.load_documents( io, &block )
     end
 
     #
@@ -232,7 +232,7 @@ module Syck
     #   end
     #
     def self.load_documents( io, &doc_proc )
-        yp = parser.load_documents( io, &doc_proc )
+        parser.load_documents( io, &doc_proc )
     end
 
     #
@@ -248,7 +248,7 @@ module Syck
     #
     def self.each_node( io, &doc_proc )
         warn "#{caller[0]}: YAML.each_node is deprecated" if $VERBOSE && !caller[0].start_with?(File.dirname(__FILE__))
-        yp = generic_parser.load_documents( io, &doc_proc )
+        generic_parser.load_documents( io, &doc_proc )
     end
 
     #
@@ -366,7 +366,7 @@ module Syck
     #
     def self.read_type_class( type, obj_class )
         warn "#{caller[0]}: YAML.read_type_class is deprecated" if $VERBOSE && !caller[0].start_with?(File.dirname(__FILE__))
-        scheme, domain, type, tclass = type.split( ':', 4 )
+        type, tclass = type.split( ':', 4 ).last(2)
         tclass.split( "::" ).each { |c| obj_class = obj_class.const_get( c ) } if tclass
         return [ type, obj_class ]
     end
