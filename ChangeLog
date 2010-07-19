@@ -1,3 +1,8 @@
+Mon Jul 19 12:33:29 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_clear): should not unshare embedded array, and
+	  should make unshared array embedded.
+
 Mon Jul 19 09:00:58 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* NEWS (Kernel#instance_eval): add an incompatible change since
