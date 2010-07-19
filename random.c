@@ -459,7 +459,7 @@ random_init(int argc, VALUE *argv, VALUE obj)
     return obj;
 }
 
-#define DEFAULT_SEED_LEN (DEFAULT_SEED_CNT * sizeof(int))
+#define DEFAULT_SEED_LEN (DEFAULT_SEED_CNT * (int)sizeof(int))
 
 #if defined(S_ISCHR) && !defined(DOSISH)
 # define USE_DEV_URANDOM 1
