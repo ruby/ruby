@@ -1124,9 +1124,12 @@ end
 ##
 # Enables the require hook for RubyGems.
 #
-# We remove the paths prelude added, so we need custom require to get
-# any gems now.
-# require 'rubygems/custom_require'
+# if --disable-rubygems was used, then the prelude wasn't loaded, so
+# we need to load the custom_require now.
+
+if gem_disabled
+  require 'rubygems/custom_require'
+end
 
 Gem.clear_paths
 
