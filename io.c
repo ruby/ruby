@@ -610,52 +610,57 @@ io_writable_length(rb_io_t *fptr, long l)
 }
 
 static VALUE
-io_flush_buffer(VALUE arg)
+io_flush_buffer_sync(void *arg)
 {
-    rb_io_t *fptr = (rb_io_t *)arg;
+    rb_io_t *fptr = arg;
     long l = io_writable_length(fptr, fptr->wbuf_len);
-    return rb_write_internal(fptr->fd, fptr->wbuf+fptr->wbuf_off, l);
+    ssize_t r = write(fptr->fd, fptr->wbuf+fptr->wbuf_off, (size_t)l);
+
+    if (fptr->wbuf_len <= r) {
+	fptr->wbuf_off = 0;
+	fptr->wbuf_len = 0;
+	return 0;
+    }
+    if (0 <= r) {
+	fptr->wbuf_off += (int)r;
+	fptr->wbuf_len -= (int)r;
+	errno = EAGAIN;
+    }
+    return (VALUE)-1;
+}
+
+static VALUE
+io_flush_buffer_async(VALUE arg)
+{
+    return rb_thread_blocking_region(io_flush_buffer_sync, (void *)arg, RUBY_UBF_IO, 0);
+}
+
+static inline int
+io_flush_buffer(rb_io_t *fptr)
+{
+    if (fptr->write_lock) {
+	return (int)rb_mutex_synchronize(fptr->write_lock, io_flush_buffer_async, (VALUE)fptr);
+    }
+    else {
+	return (int)io_flush_buffer_async((VALUE)fptr);
+    }
 }
 
 static int
 io_fflush(rb_io_t *fptr)
 {
-    long r;
-
     rb_io_check_closed(fptr);
     if (fptr->wbuf_len == 0)
         return 0;
     if (!rb_thread_fd_writable(fptr->fd)) {
         rb_io_check_closed(fptr);
     }
-  retry:
-    if (fptr->wbuf_len == 0)
-        return 0;
-    if (fptr->write_lock) {
-	r = rb_mutex_synchronize(fptr->write_lock, io_flush_buffer, (VALUE)fptr);
-    }
-    else {
-	long l = io_writable_length(fptr, fptr->wbuf_len);
-	r = rb_write_internal(fptr->fd, fptr->wbuf+fptr->wbuf_off, l);
-    }
-    /* xxx: Other threads may modify wbuf.
-     * A lock is required, definitely. */
-    rb_io_check_closed(fptr);
-    if (fptr->wbuf_len <= r) {
-        fptr->wbuf_off = 0;
-        fptr->wbuf_len = 0;
-        return 0;
-    }
-    if (0 <= r) {
-        fptr->wbuf_off += (int)r;
-        fptr->wbuf_len -= (int)r;
-        errno = EAGAIN;
-    }
-    if (rb_io_wait_writable(fptr->fd)) {
+    while (fptr->wbuf_len > 0 && io_flush_buffer(fptr) != 0) {
+	if (!rb_io_wait_writable(fptr->fd))
+	    return -1;
         rb_io_check_closed(fptr);
-        goto retry;
     }
-    return -1;
+    return 0;
 }
 
 #ifdef HAVE_RB_FD_INIT
@@ -3512,9 +3517,9 @@ rb_io_fptr_finalize(rb_io_t *fptr)
 {
     if (!fptr) return 0;
     fptr->pathv = Qnil;
-    fptr->write_lock = 0;
     if (0 <= fptr->fd)
 	rb_io_fptr_cleanup(fptr, TRUE);
+    fptr->write_lock = 0;
     if (fptr->rbuf) {
         free(fptr->rbuf);
         fptr->rbuf = 0;
