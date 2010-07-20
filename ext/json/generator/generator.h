@@ -67,7 +67,6 @@ static char *fstrndup(const char *ptr, int len);
 static FBuffer *fbuffer_alloc();
 static FBuffer *fbuffer_alloc_with_length(unsigned initial_length);
 static void fbuffer_free(FBuffer *fb);
-static void fbuffer_free_only_buffer(FBuffer *fb);
 static void fbuffer_clear(FBuffer *fb);
 static void fbuffer_append(FBuffer *fb, const char *newstr, unsigned int len);
 static void fbuffer_append_long(FBuffer *fb, long number);
