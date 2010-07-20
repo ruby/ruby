@@ -317,11 +317,6 @@ static void fbuffer_free(FBuffer *fb)
     ruby_xfree(fb);
 }
 
-static void fbuffer_free_only_buffer(FBuffer *fb)
-{
-    ruby_xfree(fb);
-}
-
 static void fbuffer_clear(FBuffer *fb)
 {
     fb->len = 0;
