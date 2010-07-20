@@ -1031,7 +1031,7 @@ end
 
 module Kernel
 
-  undef gem if respond_to? :gem # defined in gem_prelude.rb on 1.9
+  remove_method :gem if respond_to?(:gem, true) # defined in gem_prelude.rb on 1.9
 
   ##
   # Use Kernel#gem to activate a specific version of +gem_name+.
@@ -1109,14 +1109,24 @@ end
 
 require 'rubygems/config_file'
 
-Gem.remove_prelude_paths
+class << Gem
+  remove_method :try_activate if Gem.respond_to?(:try_activate, true)
+
+  def try_activate(path)
+    spec = Gem.searcher.find(path)
+    return false unless spec
+
+    Gem.activate(spec.name, "= #{spec.version}")
+    return true
+  end
+end
 
 ##
 # Enables the require hook for RubyGems.
 #
 # We remove the paths prelude added, so we need custom require to get
 # any gems now.
-require 'rubygems/custom_require'
+# require 'rubygems/custom_require'
 
 Gem.clear_paths
 
