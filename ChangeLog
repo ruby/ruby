@@ -1,3 +1,9 @@
+Tue Jul 20 14:21:38 2010  Narihiro Nakamura  <authorNari@gmail.com>
+
+	* gc.c: don't call after_gc_sweep() after when garbage_collect()
+	  was called, because rb_sweep_method_entry() free live unlinked
+	  method entries. [ruby-core:31169]
+
 Tue Jul 20 12:42:06 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* ext/socket/raddrinfo.c (rb_getaddrinfo): according to my
