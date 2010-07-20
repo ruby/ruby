@@ -13,7 +13,8 @@ if defined?(Gem) then
   module Kernel
 
     def gem(gem_name, *version_requirements)
-      Gem.push_gem_version_on_load_path(gem_name, *version_requirements)
+      Gem::QuickLoader.load_full_rubygems_library
+      gem gem_name, *version_requirements
     end
     private :gem
   end
@@ -143,9 +144,10 @@ if defined?(Gem) then
 
         class << Gem
           undef_method(*Gem::GEM_PRELUDE_METHODS)
-          undef_method :const_missing
-          undef_method :method_missing
         end
+
+        remove_method :const_missing
+        remove_method :method_missing
 
         Kernel.module_eval do
           undef_method :gem if method_defined? :gem
@@ -164,11 +166,6 @@ if defined?(Gem) then
         require 'rubygems'
       end
 
-      def self.fake_rubygems_as_loaded
-        path = path_to_full_rubygems_library
-        $" << path unless $".include?(path)
-      end
-
       def self.path_to_full_rubygems_library
         installed_path = File.join(Gem::ConfigMap[:rubylibprefix], Gem::ConfigMap[:ruby_version])
         if $:.include?(installed_path)
@@ -181,94 +178,6 @@ if defined?(Gem) then
           end
           raise LoadError, 'rubygems.rb'
         end
-      end
-
-      GemPaths = {}
-      GemVersions = {}
-      GemLoadPaths = []
-
-      def push_gem_version_on_load_path(gem_name, *version_requirements)
-        if version_requirements.empty?
-          unless GemPaths.has_key?(gem_name) then
-            raise Gem::LoadError, "Could not find RubyGem #{gem_name} (>= 0)\n"
-          end
-
-          # highest version gems already active
-          return false
-        else
-          if version_requirements.length > 1 then
-            QuickLoader.load_full_rubygems_library
-            return gem(gem_name, *version_requirements)
-          end
-
-          requirement, version = version_requirements[0].split
-          requirement.strip!
-
-          if loaded_version = GemVersions[gem_name] then
-            case requirement
-            when ">", ">=" then
-              return false if
-                (loaded_version <=> Gem.integers_for(version)) >= 0
-            when "~>" then
-              required_version = Gem.integers_for version
-
-              return false if loaded_version.first == required_version.first
-            end
-          end
-
-          QuickLoader.load_full_rubygems_library
-          gem gem_name, *version_requirements
-        end
-      end
-
-      def integers_for(gem_version)
-        numbers = gem_version.split(".").collect {|n| n.to_i}
-        numbers.pop while numbers.last == 0
-        numbers << 0 if numbers.empty?
-        numbers
-      end
-
-      def push_all_highest_version_gems_on_load_path
-        Gem.path.each do |path|
-          gems_directory = File.join(path, "gems")
-
-          if File.exist?(gems_directory) then
-            Dir.entries(gems_directory).each do |gem_directory_name|
-              next if gem_directory_name == "." || gem_directory_name == ".."
-
-              next unless gem_name = gem_directory_name[/(.*)-(.*)/, 1]
-              new_version = integers_for($2)
-              current_version = GemVersions[gem_name]
-
-              if !current_version or (current_version <=> new_version) < 0 then
-                GemVersions[gem_name] = new_version
-                GemPaths[gem_name] = File.join(gems_directory, gem_directory_name)
-              end
-            end
-          end
-        end
-
-        GemPaths.each_value do |path|
-          if File.exist?(file = File.join(path, ".require_paths")) then
-            paths = File.read(file).split.map do |require_path|
-              File.join path, require_path
-            end
-
-            GemLoadPaths.concat paths
-          else
-            GemLoadPaths << file if File.exist?(file = File.join(path, "bin"))
-            GemLoadPaths << file if File.exist?(file = File.join(path, "lib"))
-          end
-        end
-
-        # "tag" the first require_path inserted into the $LOAD_PATH to enable
-        # indexing correctly with rubygems proper when it inserts an explicitly
-        # gem version
-        unless GemLoadPaths.empty? then
-          GemLoadPaths.first.instance_variable_set(:@gem_prelude_index, true)
-        end
-        # gem directories must come after -I and ENV['RUBYLIB']
-        $:[$:.index{|e|e.instance_variable_defined?(:@gem_prelude_index)}||-1,0] = GemLoadPaths
       end
 
       def const_missing(constant)
@@ -290,10 +199,19 @@ if defined?(Gem) then
 
     extend QuickLoader
 
+    def self.try_activate(path)
+      # Just a stub to make sure rubygems is loaded
+      QuickLoader.load_full_rubygems_library
+
+      # But doesn't actually load anything, so that custom_require
+      # can always call try_activate and get some decent response
+      return false
+    end
+
   end
 
   begin
-    Gem.push_all_highest_version_gems_on_load_path
+    require 'lib/rubygems/custom_require.rb'
   rescue Exception => e
     puts "Error loading gem paths on load path in gem_prelude"
     puts e
