@@ -1,3 +1,8 @@
+Tue Jul 20 11:35:11 2010  Evan Phoenix  <evan@ruby-lang.org>
+
+	* lib/rubygems.rb: Load the custom require if --disable-rubygems
+	  was used.
+
 Tue Jul 20 11:27:18 2010  Evan Phoenix  <evan@ruby-lang.org>
 
 	* gem_prelude.rb: Pull in rubygem's custom require
