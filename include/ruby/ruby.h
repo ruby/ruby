@@ -647,10 +647,12 @@ struct RString {
 #define RSTRING_NOEMBED FL_USER1
 #define RSTRING_EMBED_LEN_MASK (FL_USER2|FL_USER3|FL_USER4|FL_USER5|FL_USER6)
 #define RSTRING_EMBED_LEN_SHIFT (FL_USHIFT+2)
+#define RSTRING_EMBED_LEN(str) \
+     (long)((RBASIC(str)->flags >> RSTRING_EMBED_LEN_SHIFT) & \
+            (RSTRING_EMBED_LEN_MASK >> RSTRING_EMBED_LEN_SHIFT))
 #define RSTRING_LEN(str) \
     (!(RBASIC(str)->flags & RSTRING_NOEMBED) ? \
-     (long)((RBASIC(str)->flags >> RSTRING_EMBED_LEN_SHIFT) & \
-            (RSTRING_EMBED_LEN_MASK >> RSTRING_EMBED_LEN_SHIFT)) : \
+     RSTRING_EMBED_LEN(str) : \
      RSTRING(str)->as.heap.len)
 #define RSTRING_PTR(str) \
     (!(RBASIC(str)->flags & RSTRING_NOEMBED) ? \
@@ -658,11 +660,13 @@ struct RString {
      RSTRING(str)->as.heap.ptr)
 #define RSTRING_END(str) \
     (!(RBASIC(str)->flags & RSTRING_NOEMBED) ? \
-     (RSTRING(str)->as.ary + \
-      ((RBASIC(str)->flags >> RSTRING_EMBED_LEN_SHIFT) & \
-       (RSTRING_EMBED_LEN_MASK >> RSTRING_EMBED_LEN_SHIFT))) : \
+     (RSTRING(str)->as.ary + RSTRING_EMBED_LEN(str)) : \
      (RSTRING(str)->as.heap.ptr + RSTRING(str)->as.heap.len))
 #define RSTRING_LENINT(str) rb_long2int(RSTRING_LEN(str))
+#define RSTRING_GETMEM(str, ptrvar, lenvar) \
+    (!(RBASIC(str)->flags & RSTRING_NOEMBED) ? \
+     ((ptrvar) = RSTRING(str)->as.ary, (lenvar) = RSTRING_EMBED_LEN(str)) : \
+     ((ptrvar) = RSTRING(str)->as.heap.ptr, (lenvar) = RSTRING(str)->as.heap.len))
 
 #define RARRAY_EMBED_LEN_MAX 3
 struct RArray {
