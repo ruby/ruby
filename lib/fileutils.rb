@@ -1240,7 +1240,7 @@ module FileUtils
       when file?
         copy_file dest
       when directory?
-        if !File.exist?(dest) and /^#{Regexp.quote(path)}/ =~ File.dirname(dest)
+        if !File.exist?(dest) and descendant_diretory?(dest, path)
           raise ArgumentError, "cannot copy directory %s to itself %s" % [path, dest]
         end
         begin
@@ -1393,6 +1393,17 @@ module FileUtils
       return File.path(dir) if not base or base == '.'
       return File.path(base) if not dir or dir == '.'
       File.join(dir, base)
+    end
+
+    if File::ALT_SEPARATOR
+      DIRECTORY_TERM = "(?=[/#{Regexp.quote(File::ALT_SEPARATOR)}]|\\z)".freeze
+    else
+      DIRECTORY_TERM = "(?=/|\\z)".freeze
+    end
+    SYSCASE = File::FNM_SYSCASE.nonzero? ? "-i" : ""
+
+    def descendant_diretory?(descendant, ascendant)
+      /\A(?#{SYSCASE}:#{Regexp.quote(ascendant)})#{DIRECTORY_TERM}/ =~ File.dirname(descendant)
     end
   end   # class Entry_
 

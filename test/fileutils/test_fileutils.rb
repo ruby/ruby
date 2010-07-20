@@ -286,6 +286,15 @@ class TestFileUtils
     assert_directory 'tmp/cpr_dest/d'
     my_rm_rf 'tmp/cpr_src'
     my_rm_rf 'tmp/cpr_dest'
+
+    bug3588 = '[ruby-core:31360]'
+    assert_nothing_raised(ArgumentError, bug3588) do
+      cp_r 'tmp', 'tmp2'
+    end
+    assert_directory 'tmp2/tmp'
+    assert_raise(ArgumentError, bug3588) do
+      cp_r 'tmp2', 'tmp2/new_tmp2'
+    end
   end
 
   def test_cp_r_symlink
