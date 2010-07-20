@@ -2100,13 +2100,15 @@ rb_str_comparable(VALUE str1, VALUE str2)
 int
 rb_str_cmp(VALUE str1, VALUE str2)
 {
-    long len;
+    long len1, len2;
+    const char *ptr1, *ptr2;
     int retval;
 
-    len = lesser(RSTRING_LEN(str1), RSTRING_LEN(str2));
-    retval = memcmp(RSTRING_PTR(str1), RSTRING_PTR(str2), len);
-    if (retval == 0) {
-	if (RSTRING_LEN(str1) == RSTRING_LEN(str2)) {
+    if (str1 == str2) return 0;
+    RSTRING_GETMEM(str1, ptr1, len1);
+    RSTRING_GETMEM(str2, ptr2, len2);
+    if (ptr1 == ptr2 || (retval = memcmp(ptr1, ptr2, lesser(len1, len2))) == 0) {
+	if (len1 == len2) {
 	    if (!rb_str_comparable(str1, str2)) {
 		if (ENCODING_GET(str1) > ENCODING_GET(str2))
 		    return 1;
@@ -2114,7 +2116,7 @@ rb_str_cmp(VALUE str1, VALUE str2)
 	    }
 	    return 0;
 	}
-	if (RSTRING_LEN(str1) > RSTRING_LEN(str2)) return 1;
+	if (len1 > len2) return 1;
 	return -1;
     }
     if (retval > 0) return 1;
@@ -2126,10 +2128,13 @@ static VALUE
 str_eql(const VALUE str1, const VALUE str2)
 {
     const long len = RSTRING_LEN(str1);
+    const char *ptr1, *ptr2;
 
     if (len != RSTRING_LEN(str2)) return Qfalse;
     if (!rb_str_comparable(str1, str2)) return Qfalse;
-    if (memcmp(RSTRING_PTR(str1), RSTRING_PTR(str2), len) == 0)
+    if ((ptr1 = RSTRING_PTR(str1)) == (ptr2 = RSTRING_PTR(str2)))
+	return Qtrue;
+    if (memcmp(ptr1, ptr2, len) == 0)
 	return Qtrue;
     return Qfalse;
 }
@@ -2165,6 +2170,7 @@ rb_str_equal(VALUE str1, VALUE str2)
 static VALUE
 rb_str_eql(VALUE str1, VALUE str2)
 {
+    if (str1 == str2) return Qtrue;
     if (TYPE(str2) != T_STRING) return Qfalse;
     return str_eql(str1, str2);
 }
