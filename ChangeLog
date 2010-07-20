@@ -1,3 +1,8 @@
+Tue Jul 20 12:42:06 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* ext/socket/raddrinfo.c (rb_getaddrinfo): according to my
+	  valgrind output this variable should be initialized beforehand.
+
 Tue Jul 20 12:50:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (io_flush_buffer): write and buffer operations should be
