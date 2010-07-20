@@ -1,3 +1,9 @@
+Tue Jul 20 18:23:04 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/fiddle/closure.c (closure_data_type),
+	  ext/fiddle/function.c (function_data_type): rb_data_type_t has
+	  changed.
+
 Tue Jul 20 14:21:38 2010  Narihiro Nakamura  <authorNari@gmail.com>
 
 	* gc.c: don't call after_gc_sweep() after when garbage_collect()
