@@ -27,7 +27,7 @@ function_memsize(const void *p)
 
 const rb_data_type_t function_data_type = {
     "fiddle/function",
-    0, deallocate, function_memsize,
+    {0, deallocate, function_memsize,},
 };
 
 static VALUE
