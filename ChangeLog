@@ -1,3 +1,8 @@
+Wed Jul 21 12:39:15 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/cmath.rb (CMath#cbrt): cbrt should accept a negative real
+	  numbers.  [ruby-core:31234]
+
 Wed Jul 21 12:31:30 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/uri/common.rb: Have URI() and URI.join accept URI objects in
@@ -15,6 +20,7 @@ Tue Jul 20 11:35:11 2010  Evan Phoenix  <evan@ruby-lang.org>
 Tue Jul 20 11:27:18 2010  Evan Phoenix  <evan@ruby-lang.org>
 
 	* gem_prelude.rb: Pull in rubygem's custom require
+
 	* lib/rubygems.rb: Handle always having custom require available
 
 Tue Jul 20 18:39:18 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
