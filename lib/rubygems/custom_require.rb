@@ -29,7 +29,9 @@ module Kernel
     gem_original_require path
   rescue LoadError => load_error
     if load_error.message.end_with?(path)
-      return true if Gem.try_activate(path)
+      if Gem.try_activate(path)
+        return gem_original_require(path)
+      end
     end
 
     raise load_error

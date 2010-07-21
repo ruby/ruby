@@ -155,7 +155,7 @@ if defined?(Gem) then
       end
 
       def self.load_full_rubygems_library
-        return if @loaded_full_rubygems_library
+        return false if @loaded_full_rubygems_library
 
         remove
 
@@ -163,7 +163,10 @@ if defined?(Gem) then
         if $".any? {|path| path.end_with?('/rubygems.rb')}
           raise LoadError, "another rubygems is already loaded from #{path}"
         end
+
         require 'rubygems'
+
+        return true
       end
 
       def self.path_to_full_rubygems_library
@@ -200,11 +203,21 @@ if defined?(Gem) then
     extend QuickLoader
 
     def self.try_activate(path)
-      # Just a stub to make sure rubygems is loaded
-      QuickLoader.load_full_rubygems_library
+      # This method is only hit when the custom require is hit the first time.
+      # So we go off and dutifully load all of rubygems and retry the call
+      # to Gem.try_activate. We retry because full rubygems replaces this
+      # method with one that actually tries to find a gem for +path+ and load it.
+      #
+      # This is conditional because in the course of loading rubygems, the custom
+      # require will call back into here before all of rubygems is loaded. So
+      # we must not always retry the call. We only redo the call when
+      # load_full_rubygems_library returns true, which it only does the first
+      # time it's called.
+      #
+      if QuickLoader.load_full_rubygems_library
+        return Gem.try_activate(path)
+      end
 
-      # But doesn't actually load anything, so that custom_require
-      # can always call try_activate and get some decent response
       return false
     end
 
