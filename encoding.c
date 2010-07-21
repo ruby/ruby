@@ -23,6 +23,17 @@
 #endif
 #include "ruby/util.h"
 
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility push(default)
+int rb_enc_register(const char *name, rb_encoding *encoding);
+void rb_enc_set_base(const char *name, const char *orig);
+void rb_encdb_declare(const char *name);
+int rb_encdb_replicate(const char *name, const char *orig);
+int rb_encdb_dummy(const char *name);
+int rb_encdb_alias(const char *alias, const char *orig);
+#pragma GCC visibility pop
+#endif
+
 static ID id_encoding;
 VALUE rb_cEncoding;
 static VALUE rb_encoding_list;

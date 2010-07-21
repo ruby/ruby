@@ -39,6 +39,10 @@
 #endif
 #include "ruby/oniguruma.h"
 
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility push(default)
+#endif
+
 typedef struct {
   OnigCodePoint from;
   OnigCodePoint to;
@@ -207,5 +211,9 @@ extern int ONIG_ENC_REGISTER(const char *, OnigEncodingType*);
 #define ENC_REPLICATE(name, orig)
 #define ENC_ALIAS(name, orig)
 #define ENC_DUMMY(name)
+
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility pop
+#endif
 
 #endif /* ONIGURUMA_REGENC_H */

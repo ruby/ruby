@@ -1,4 +1,6 @@
-Thu Jul 22 06:26:48 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Jul 22 06:38:18 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (XCFLAGS): use -fvisibility=hidden if possible.
 
 	* configure.in (RMDIR): use --ignore-fail-on-non-empty if possible.
 

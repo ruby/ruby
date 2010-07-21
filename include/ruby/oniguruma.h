@@ -97,6 +97,10 @@ extern "C" {
 #define ONIG_EXTERN   extern
 #endif
 
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility push(default)
+#endif
+
 /* PART: character encoding */
 
 #ifndef ONIG_ESCAPE_UCHAR_COLLISION
@@ -788,6 +792,10 @@ ONIG_EXTERN
 const char* onig_version P_((void));
 ONIG_EXTERN
 const char* onig_copyright P_((void));
+
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility pop
+#endif
 
 #ifdef __cplusplus
 #if 0

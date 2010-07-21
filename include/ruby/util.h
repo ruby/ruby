@@ -40,6 +40,10 @@ extern "C" {
 #endif
 #endif
 
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility push(default)
+#endif
+
 #define scan_oct(s,l,e) (int)ruby_scan_oct(s,l,e)
 unsigned long ruby_scan_oct(const char *, size_t, size_t *);
 #define scan_hex(s,l,e) (int)ruby_scan_hex(s,l,e)
@@ -79,6 +83,10 @@ double ruby_strtod(const char *, char **);
 #endif
 
 void ruby_each_words(const char *, void (*)(const char*, int, void*), void *);
+
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility pop
+#endif
 
 #if defined(__cplusplus)
 #if 0

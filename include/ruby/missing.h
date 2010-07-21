@@ -49,6 +49,10 @@ struct timezone {
 #define RUBY_EXTERN extern
 #endif
 
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility push(default)
+#endif
+
 #ifndef HAVE_ACOSH
 RUBY_EXTERN double acosh(double);
 RUBY_EXTERN double asinh(double);
@@ -167,6 +171,10 @@ RUBY_EXTERN int signbit(double x);
 
 #ifndef HAVE_FFS
 RUBY_EXTERN int ffs(int);
+#endif
+
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility pop
 #endif
 
 #if defined(__cplusplus)

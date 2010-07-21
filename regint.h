@@ -225,6 +225,10 @@
 
 #include "regenc.h"
 
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility push(default)
+#endif
+
 #ifdef MIN
 #undef MIN
 #endif
@@ -837,5 +841,9 @@ extern int onigenc_property_list_add_property P_((UChar* name, const OnigCodePoi
 typedef int (*ONIGENC_INIT_PROPERTY_LIST_FUNC_TYPE)(void);
 
 extern int onigenc_property_list_init P_((ONIGENC_INIT_PROPERTY_LIST_FUNC_TYPE));
+
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility pop
+#endif
 
 #endif /* ONIGURUMA_REGINT_H */

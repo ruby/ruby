@@ -14,6 +14,10 @@
 #ifndef RUBY_TRANSCODE_DATA_H
 #define RUBY_TRANSCODE_DATA_H 1
 
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility push(default)
+#endif
+
 #define WORDINDEX_SHIFT_BITS 2
 #define WORDINDEX2INFO(widx)      ((widx) << WORDINDEX_SHIFT_BITS)
 #define INFO2WORDINDEX(info)      ((info) >> WORDINDEX_SHIFT_BITS)
@@ -105,5 +109,9 @@ struct rb_transcoder {
 
 void rb_declare_transcoder(const char *enc1, const char *enc2, const char *lib);
 void rb_register_transcoder(const rb_transcoder *);
+
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility pop
+#endif
 
 #endif /* RUBY_TRANSCODE_DATA_H */

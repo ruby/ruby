@@ -73,6 +73,10 @@ extern "C" {
 
 #include "defines.h"
 
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility push(default)
+#endif
+
 #if defined(HAVE_ALLOCA_H)
 #include <alloca.h>
 #else
@@ -1445,6 +1449,10 @@ int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
 #define shutdown ruby_shutdown
 #undef close
 #define close ruby_close
+#endif
+
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility pop
 #endif
 
 #if defined(__cplusplus)
