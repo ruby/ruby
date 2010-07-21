@@ -85,7 +85,7 @@ module CMath
   end
 
   def cbrt(z)
-    if z.real? and z >= 0
+    if z.real?
       cbrt!(z)
     else
       Complex(z) ** (1.0/3)
