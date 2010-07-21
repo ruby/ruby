@@ -1,3 +1,7 @@
+Thu Jul 22 03:23:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_EXTERN): FUNCTION-BODY was missing.
+
 Thu Jul 22 03:02:55 2010  Eric Hodel  <drbrain@segment7.net>
 
 	* README.EXT: fix signature of rb_ensure and rb_rescue to match

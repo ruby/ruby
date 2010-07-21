@@ -740,6 +740,7 @@ AC_CACHE_CHECK([for RUBY_EXTERN], rb_cv_ruby_extern,
 for mac in "__attribute__((dllimport))" "__declspec(dllimport)"; do
   AC_TRY_COMPILE(
     [extern $mac void conftest(void);],
+    [conftest();],
     [rb_cv_ruby_extern="extern $mac"; break])
 done])
 test "x$rb_cv_ruby_extern" = xno || AC_DEFINE_UNQUOTED(RUBY_EXTERN, $rb_cv_ruby_extern)
