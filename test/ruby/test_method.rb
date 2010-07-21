@@ -371,7 +371,7 @@ class TestMethod < Test::Unit::TestCase
 
     assert_equal(true,  respond_to?(:mv1))
     assert_equal(false, respond_to?(:mv2))
-    assert_equal(false, respond_to?(:mv3))
+    assert_equal(true, respond_to?(:mv3))
 
     assert_equal(true,  respond_to?(:mv1, true))
     assert_equal(true,  respond_to?(:mv2, true))
@@ -393,7 +393,7 @@ class TestMethod < Test::Unit::TestCase
 
     assert_equal(true,  v.respond_to?(:mv1))
     assert_equal(false, v.respond_to?(:mv2))
-    assert_equal(false, v.respond_to?(:mv3))
+    assert_equal(true, v.respond_to?(:mv3))
 
     assert_equal(true,  v.respond_to?(:mv1, true))
     assert_equal(true,  v.respond_to?(:mv2, true))
