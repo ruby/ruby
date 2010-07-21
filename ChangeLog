@@ -1,3 +1,8 @@
+Wed Jul 21 12:31:30 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/uri/common.rb: Have URI() and URI.join accept URI objects in
+	  addition to strings. [ruby-core:30960]
+
 Wed Jul 21 11:55:06 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (ruby_hdtoa): renamed from BSD__hdtoa.
