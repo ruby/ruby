@@ -1,3 +1,7 @@
+Wed Jul 21 23:07:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* template/fake.rb.in: get rid of embeding an absolute path.
+
 Wed Jul 21 15:22:17 2010  Evan Phoenix <evan@fallingsnow.net>
 
 	* lib/rubygems/custom_require.rb, gem_prelude.rb: Load code from
