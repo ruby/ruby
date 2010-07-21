@@ -1,4 +1,6 @@
-Thu Jul 22 03:23:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Jul 22 06:26:48 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RMDIR): use --ignore-fail-on-non-empty if possible.
 
 	* configure.in (RUBY_EXTERN): FUNCTION-BODY was missing.
 

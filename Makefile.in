@@ -105,6 +105,7 @@ MAKEDIRS      = @MKDIR_P@
 CP            = cp
 MV            = mv
 RM            = rm -f
+RMDIR         = @RMDIR@
 RMDIRS        = @RMDIRS@
 RMALL         = @RMALL@
 NM            = @NM@
@@ -273,7 +274,7 @@ clean-ext distclean-ext realclean-ext::
 	done
 
 distclean-ext realclean-ext::
-	@-rmdir ext 2> /dev/null || true
+	@-$(RMDIR) ext 2> /dev/null || true
 
 clean-extout:
 	@-$(RMDIRS) $(EXTOUT) 2> /dev/null || true

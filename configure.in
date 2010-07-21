@@ -361,10 +361,14 @@ AC_USE_SYSTEM_EXTENSIONS
 AC_SUBST(RM, ['rm -f'])
 AC_SUBST(CP, ['cp'])
 RMDIRS='$(top_srcdir)/tool/rmdirs'
+RMDIR=rmdir
 mkdir "rmdirs_$$_test" "rmdirs_$$_test/a"
-rmdir -p "rmdirs_$$_test/a" 2>/dev/null &&
-{ test -d "rmdirs_$$_test" || RMDIRS='rmdir -p'; }
+rmdir --ignore-fail-on-non-empty "rmdirs_$$_test" 2>/dev/null &&
+RMDIR='rmdir --ignore-fail-on-non-empty'
+$RMDIR -p "rmdirs_$$_test/a" 2>/dev/null &&
+{ test -d "rmdirs_$$_test" || RMDIRS="$RMDIR -p"; }
 rmdir "rmdirs_$$_test/a" "rmdirs_$$_test" 2>/dev/null
+AC_SUBST(RMDIR)
 AC_SUBST(RMDIRS)
 AC_SUBST(RMALL, ['rm -fr'])
 
