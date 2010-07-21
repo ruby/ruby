@@ -1,3 +1,4 @@
+
 #
 # = uri/generic.rb
 #
@@ -783,14 +784,7 @@ module URI
     # return base and rel.
     # you can modify `base', but can not `rel'.
     def merge0(oth)
-      case oth
-      when Generic
-      when String
-        oth = parser.parse(oth)
-      else
-        raise ArgumentError,
-          "bad argument(expected URI object or URI string)"
-      end
+      oth = URI(oth, parser)
 
       if self.relative? && oth.relative?
         raise BadURIError,
@@ -854,15 +848,7 @@ module URI
     private :route_from_path
 
     def route_from0(oth)
-      case oth
-      when Generic
-      when String
-        oth = parser.parse(oth)
-      else
-        raise ArgumentError,
-          "bad argument(expected URI object or URI string)"
-      end
-
+      oth = URI(oth, parser)
       if self.relative?
         raise BadURIError,
           "relative URI: #{self}"
@@ -966,16 +952,7 @@ module URI
     #   #=> #<URI::Generic:0x2020c2f6 URL:/main.rbx?page=1>
     #
     def route_to(oth)
-      case oth
-      when Generic
-      when String
-        oth = parser.parse(oth)
-      else
-        raise ArgumentError,
-          "bad argument(expected URI object or URI string)"
-      end
-
-      oth.route_from(self)
+      URI(oth, parser).route_from(self)
     end
 
     #
