@@ -294,5 +294,8 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal("value", sprintf("%<key>s", :key => "value"))
     assert_raise(ArgumentError) {sprintf("%1$<key2>s", :key => "value")}
     assert_raise(ArgumentError) {sprintf("%<key><key2>s", :key => "value")}
+    assert_equal("value", sprintf("%{key}", :key => "value"))
+    assert_raise(ArgumentError) {sprintf("%1${key2}", :key => "value")}
+    assert_equal("value{key2}", sprintf("%{key}{key2}", :key => "value"))
   end
 end
