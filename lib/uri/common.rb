@@ -185,13 +185,7 @@ module URI
     end
 
     def join(*uris)
-      if uris[0].is_a?(URI::Generic)
-      elsif uri = String.try_convert(uris[0])
-        uris[0] = self.parse(uri)
-      else
-        raise ArgumentError,
-          "bad argument(expected URI object or URI string)"
-      end
+      uris[0] = URI(uris[0], self)
       uris.inject :merge
     end
 
@@ -844,11 +838,11 @@ module Kernel
   #
   # Returns +uri+ converted to a URI object.
   #
-  def URI(uri)
+  def URI(uri, parser = URI::DEFAULT_PARSER)
     if uri.is_a?(URI::Generic)
       uri
     elsif uri = String.try_convert(uri)
-      URI.parse(uri)
+      parser.parse(uri)
     else
       raise ArgumentError,
         "bad argument (expected URI object or URI string)"

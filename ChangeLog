@@ -1,3 +1,10 @@
+Wed Jul 21 13:37:35 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/uri/common.rb: Have URI#route_to, URI#route_from accept
+	  string-like arguments [ruby-core:30961]
+
+	* lib/uri/generic.rb: ditto for URI.join, URI#merge
+
 Wed Jul 21 12:39:15 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/cmath.rb (CMath#cbrt): cbrt should accept a negative real
