@@ -33,6 +33,10 @@ extern "C" {
 # include <inttypes.h>
 #endif
 
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility push(default)
+#endif
+
 #if SIZEOF_LONG == SIZEOF_VOIDP
 typedef unsigned long st_data_t;
 #elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
@@ -124,6 +128,10 @@ st_index_t st_hash_uint(st_index_t h, st_index_t i);
 st_index_t st_hash_end(st_index_t h);
 st_index_t st_hash_start(st_index_t h);
 #define st_hash_start(h) ((st_index_t)(h))
+
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility pop
+#endif
 
 #if defined(__cplusplus)
 #if 0

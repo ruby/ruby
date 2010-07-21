@@ -31,6 +31,10 @@
 
 #include "regint.h"
 
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility push(default)
+#endif
+
 /* node type */
 #define NT_STR         0
 #define NT_CCLASS      1
@@ -349,6 +353,10 @@ extern int    onig_free_shared_cclass_table P_((void));
 #ifdef USE_NAMED_GROUP
 extern int onig_print_names(FILE*, regex_t*);
 #endif
+#endif
+
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility pop
 #endif
 
 #endif /* ONIGURUMA_REGPARSE_H */

@@ -24,6 +24,10 @@ extern "C" {
 #include "oniguruma.h"
 #endif
 
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility push(default)
+#endif
+
 #ifndef ONIG_RUBY_M17N
 
 ONIG_EXTERN OnigEncoding    OnigEncDefaultCharEncoding;
@@ -31,6 +35,10 @@ ONIG_EXTERN OnigEncoding    OnigEncDefaultCharEncoding;
 #define mbclen(p,e,enc)  rb_enc_mbclen((p),(e),(enc))
 
 #endif /* ifndef ONIG_RUBY_M17N */
+
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility pop
+#endif
 
 #if defined(__cplusplus)
 #if 0

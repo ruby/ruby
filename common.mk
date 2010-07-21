@@ -680,6 +680,8 @@ newline.$(OBJEXT): {$(VPATH)}newline.c {$(VPATH)}defines.h \
   {$(VPATH)}intern.h {$(VPATH)}missing.h {$(VPATH)}st.h \
   {$(VPATH)}transcode_data.h {$(VPATH)}ruby.h {$(VPATH)}config.h
 
+$(OBJS):  {$(VPATH)}config.h {$(VPATH)}missing.h
+
 INSNS2VMOPT = --srcdir="$(srcdir)"
 
 {$(VPATH)}minsns.inc: $(srcdir)/template/minsns.inc.tmpl

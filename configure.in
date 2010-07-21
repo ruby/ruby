@@ -269,6 +269,7 @@ if test "$GCC" = yes; then
     linker_flag=-Wl,
     : ${optflags=-O3}
     AS_CASE(["$target_os"], [linux*|darwin*], [: ${debugflags=-ggdb}])
+    RUBY_APPEND_OPTIONS(XCFLAGS, ["-include ruby/config.h" "-include ruby/missing.h"])
 else
     linker_flag=
 fi
@@ -413,6 +414,9 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
     AS_CASE([" $warnflags "],[*" -Wno-missing-field-initializers "*], [wflag=-Wextra],
                              [wflag=-Wall])
     RUBY_TRY_CFLAGS($wflag, [warnflags="$wflag${warnflags+ $warnflags}"])
+fi
+if test "$GCC" = yes; then
+    RUBY_TRY_CFLAGS(-fvisibility=hidden, RUBY_APPEND_OPTION(XCFLAGS, -fvisibility=hidden))
 fi
 
 test -z "${ac_env_CFLAGS_set}" -a -n "${cflags+set}" && eval CFLAGS="\"$cflags $ARCH_FLAG\""
@@ -2160,8 +2164,6 @@ AS_CASE("$enable_shared", [yes], [
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-install_name '${libprefix}'/$(LIBRUBY_SO)'
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-current_version $(MAJOR).$(MINOR).$(TEENY)'
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-compatibility_version $(ruby_version)'
-	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-Wl,-unexported_symbol,_Init_*'
-	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-Wl,-unexported_symbol,*_threadptr_*'
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "' $(XLDFLAGS)'
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).dylib'
 	LIBRUBY_ALIASES='lib$(RUBY_BASE_NAME).$(MAJOR).$(MINOR).dylib lib$(RUBY_INSTALL_NAME).dylib'

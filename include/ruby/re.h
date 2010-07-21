@@ -24,6 +24,10 @@ extern "C" {
 
 #include "ruby/regex.h"
 
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility push(default)
+#endif
+
 typedef struct re_pattern_buffer Regexp;
 
 struct rmatch_offset {
@@ -55,6 +59,11 @@ VALUE rb_reg_regsub(VALUE, VALUE, struct re_registers *, VALUE);
 long rb_reg_adjust_startpos(VALUE, VALUE, long, int);
 void rb_match_busy(VALUE);
 VALUE rb_reg_quote(VALUE);
+regex_t *rb_reg_prepare_re(VALUE re, VALUE str);
+
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility pop
+#endif
 
 #if defined(__cplusplus)
 #if 0

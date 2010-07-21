@@ -12,6 +12,10 @@
 #ifndef RUBY_COMPILE_H
 #define RUBY_COMPILE_H
 
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility push(default)
+#endif
+
 /* compile.c */
 VALUE rb_iseq_compile_node(VALUE self, NODE *node);
 int rb_iseq_translate_threaded_code(rb_iseq_t *iseq);
@@ -100,5 +104,9 @@ struct iseq_compile_data {
 #define DEFINED_REF    INT2FIX(8)
 #define DEFINED_ZSUPER INT2FIX(9)
 #define DEFINED_FUNC   INT2FIX(10)
+
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility pop
+#endif
 
 #endif /* RUBY_COMPILE_H */

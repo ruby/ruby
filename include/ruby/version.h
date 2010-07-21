@@ -36,6 +36,11 @@ extern "C" {
 } /* satisfy cc-mode */
 #endif
 #endif
+
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility push(default)
+#endif
+
 /*
  * Interfaces from extension libraries.
  *
@@ -50,6 +55,11 @@ RUBY_EXTERN const int  ruby_patchlevel;
 RUBY_EXTERN const char ruby_description[];
 RUBY_EXTERN const char ruby_copyright[];
 RUBY_EXTERN const char ruby_engine[];
+
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility pop
+#endif
+
 #if defined(__cplusplus)
 #if 0
 { /* satisfy cc-mode */

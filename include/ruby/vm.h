@@ -19,6 +19,10 @@ extern "C" {
 #endif
 #endif
 
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility push(default)
+#endif
+
 /* Place holder.
  *
  * We will prepare VM creation/control APIs on 1.9.2 or later.
@@ -31,6 +35,10 @@ typedef struct rb_vm_struct ruby_vm_t;
 
 /* core API */
 int ruby_vm_destruct(ruby_vm_t *vm);
+
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility pop
+#endif
 
 #if defined(__cplusplus)
 #if 0

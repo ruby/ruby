@@ -28,6 +28,10 @@ extern "C" {
 #endif
 #include "ruby/st.h"
 
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility push(default)
+#endif
+
 /*
  * Functions and variables that are used by more than one source file of
  * the kernel.
@@ -840,6 +844,10 @@ VALUE rb_str_succ(VALUE);
 VALUE rb_time_succ(VALUE);
 void rb_frame_pop(void);
 int rb_frame_method_id_and_class(ID *idp, VALUE *klassp);
+
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility pop
+#endif
 
 #if defined(__cplusplus)
 #if 0

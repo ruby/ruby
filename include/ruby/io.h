@@ -27,6 +27,10 @@ extern "C" {
 #include <stdio_ext.h>
 #endif
 
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility push(default)
+#endif
+
 typedef struct rb_io_t {
     int fd;                     /* file descriptor */
     FILE *stdio_file;		/* stdio ptr for read/write if available */
@@ -164,6 +168,10 @@ NORETURN(void rb_eof_error(void));
 void rb_io_read_check(rb_io_t*);
 int rb_io_read_pending(rb_io_t*);
 DEPRECATED(void rb_read_check(FILE*));
+
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility pop
+#endif
 
 #if defined(__cplusplus)
 #if 0

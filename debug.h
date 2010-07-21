@@ -15,6 +15,10 @@
 #include "ruby/ruby.h"
 #include "node.h"
 
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility push(default)
+#endif
+
 #define dpv(h,v) ruby_debug_print_value(-1, 0, h, v)
 #define dp(v)    ruby_debug_print_value(-1, 0, "", v)
 #define dpi(i)   ruby_debug_print_id(-1, 0, "", i)
@@ -31,6 +35,10 @@ void  ruby_debug_gc_check_func(void);
 
 #ifdef RUBY_DEBUG_ENV
 void ruby_set_debug_option(const char *str);
+#endif
+
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility pop
 #endif
 
 #endif /* RUBY_DEBUG_H */
