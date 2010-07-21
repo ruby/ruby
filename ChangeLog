@@ -1,3 +1,8 @@
+Wed Jul 21 15:00:19 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (local_push_gen): disable unused variable warnings in
+	  eval.  [ruby-dev:41869]
+
 Wed Jul 21 13:57:37 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vm_method.c (rb_method_boundp): revert r28543, r28564.
