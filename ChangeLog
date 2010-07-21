@@ -1,3 +1,8 @@
+Wed Jul 21 13:57:37 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vm_method.c (rb_method_boundp): revert r28543, r28564.
+	  They may be merged in Ruby 2.0. [ruby-core:31217]
+
 Wed Jul 21 13:37:35 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/uri/common.rb: Have URI#route_to, URI#route_from accept

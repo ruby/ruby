@@ -565,19 +565,18 @@ rb_method_boundp(VALUE klass, ID id, int ex)
 {
     rb_method_entry_t *me = rb_method_entry(klass, id);
 
-    if (!me) return 0; 
-    if (ex & ~NOEX_RESPONDS) { /* pub */
-	if (me->flag & NOEX_PRIVATE) return 0;
-	if (ex & NOEX_RESPONDS) {
-	    if (me->flag & NOEX_PROTECTED) return 0;
+    if (me != 0) {
+	if ((ex & ~NOEX_RESPONDS) && (me->flag & NOEX_PRIVATE)) {
+	    return FALSE;
 	}
+	if (!me->def) return 0;
+	if (me->def->type == VM_METHOD_TYPE_NOTIMPLEMENTED) {
+	    if (ex & NOEX_RESPONDS) return 2;
+	    return 0;
+	}
+	return 1;
     }
-    if (!me->def) return 0;
-    if (me->def->type == VM_METHOD_TYPE_NOTIMPLEMENTED) {
-	if (ex & NOEX_RESPONDS) return 2;
-	return 0;
-    }
-    return 1;
+    return 0;
 }
 
 void
