@@ -1,3 +1,8 @@
+Thu Jul 22 03:02:55 2010  Eric Hodel  <drbrain@segment7.net>
+
+	* README.EXT: fix signature of rb_ensure and rb_rescue to match
+	  implementation.
+
 Wed Jul 21 23:07:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* template/fake.rb.in: get rid of embeding an absolute path.

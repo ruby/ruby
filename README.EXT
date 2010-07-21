@@ -1188,14 +1188,14 @@ This function is obsolete since 1.9; use rb_block_call instead.
 
 Evaluates the block with value val.
 
- VALUE rb_rescue(VALUE (*func1)(), void *arg1, VALUE (*func2)(), void *arg2)
+ VALUE rb_rescue(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2)
 
 Calls the function func1, with arg1 as the argument.  If an exception
 occurs during func1, it calls func2 with arg2 as the argument.  The
 return value of rb_rescue() is the return value from func1 if no
 exception occurs, from func2 otherwise.
 
- VALUE rb_ensure(VALUE (*func1)(), void *arg1, void (*func2)(), void *arg2)
+ VALUE rb_ensure(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2)
 
 Calls the function func1 with arg1 as the argument, then calls func2
 with arg2 if execution terminated.  The return value from
