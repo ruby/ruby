@@ -1115,6 +1115,7 @@ fmt_setup(char *buf, size_t size, int c, int flags, int width, int prec)
 #endif
 #define FLOATING_POINT 1
 #define BSD__dtoa ruby_dtoa
+#define BSD__hdtoa ruby_hdtoa
 #include "vsnprintf.c"
 
 static int

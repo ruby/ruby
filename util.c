@@ -3927,7 +3927,7 @@ ruby_each_words(const char *str, void (*func)(const char*, int, void*), void *ar
  * Outputs:	decpt, sign, rve
  */
 char *
-BSD__hdtoa(double d, const char *xdigs, int ndigits, int *decpt, int *sign,
+ruby_hdtoa(double d, const char *xdigs, int ndigits, int *decpt, int *sign,
     char **rve)
 {
 	U u;
