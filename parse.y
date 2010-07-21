@@ -8950,7 +8950,7 @@ local_push_gen(struct parser_params *parser, int inherit_dvars)
     local->prev = lvtbl;
     local->args = vtable_alloc(0);
     local->vars = vtable_alloc(inherit_dvars ? DVARS_INHERIT : DVARS_TOPSCOPE);
-    local->used = RTEST(ruby_verbose) ? vtable_alloc(0) : 0;
+    local->used = !inherit_dvars && RTEST(ruby_verbose) ? vtable_alloc(0) : 0;
     lvtbl = local;
 }
 
