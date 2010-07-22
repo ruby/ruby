@@ -165,6 +165,19 @@ RUBY_EXTERN size_t strlcat(char *, const char*, size_t);
 RUBY_EXTERN int signbit(double x);
 #endif
 
+#ifndef HAVE_FFS
+RUBY_EXTERN int ffs(int);
+#endif
+
+#ifndef HAVE_CLOSE
+#include <sys/types.h>
+#include <sys/socket.h>
+RUBY_EXTERN int ruby_getpeername(int, struct sockaddr *, socklen_t *);
+RUBY_EXTERN int ruby_getsockname(int, struct sockaddr *, socklen_t *);
+RUBY_EXTERN int ruby_shutdown(int, int);
+RUBY_EXTERN int ruby_close(int);
+#endif
+
 #if defined(__cplusplus)
 #if 0
 { /* satisfy cc-mode */
