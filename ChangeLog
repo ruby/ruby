@@ -1,3 +1,9 @@
+Thu Jul 22 20:12:56 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* thread_pthread.c (get_stack): fix memory leak; pthread_attr_destory
+	  must be called even when pthread_getattr_np is used.
+	  [ruby-core:31269]
+
 Thu Jul 22 16:27:41 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* re.c (rb_reg_expr_str): fix broken Regexp#inspect when it

@@ -226,9 +226,7 @@ get_stack(void **addr, size_t *size)
 # endif
     CHECK_ERR(pthread_attr_getguardsize(&attr, &guard));
     *size -= guard;
-# ifndef HAVE_PTHREAD_GETATTR_NP
     pthread_attr_destroy(&attr);
-# endif
 #elif defined HAVE_PTHREAD_GET_STACKADDR_NP && defined HAVE_PTHREAD_GET_STACKSIZE_NP
     pthread_t th = pthread_self();
     *addr = pthread_get_stackaddr_np(th);
