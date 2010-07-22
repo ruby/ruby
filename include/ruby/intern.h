@@ -54,6 +54,7 @@ VALUE rb_ary_aref(int, VALUE*, VALUE);
 VALUE rb_ary_subseq(VALUE, long, long);
 void rb_ary_store(VALUE, long, VALUE);
 VALUE rb_ary_dup(VALUE);
+VALUE rb_ary_resurrect(VALUE ary);
 VALUE rb_ary_to_ary(VALUE);
 VALUE rb_ary_to_s(VALUE);
 VALUE rb_ary_push(VALUE, VALUE);
@@ -99,6 +100,7 @@ SIGNED_VALUE rb_big2long(VALUE);
 #define rb_big2int(x) rb_big2long(x)
 VALUE rb_big2ulong(VALUE);
 #define rb_big2uint(x) rb_big2ulong(x)
+VALUE rb_big2ulong_pack(VALUE x);
 #if HAVE_LONG_LONG
 VALUE rb_ll2inum(LONG_LONG);
 VALUE rb_ull2inum(unsigned LONG_LONG);
@@ -635,6 +637,7 @@ VALUE rb_str_buf_cat_ascii(VALUE, const char*);
 VALUE rb_obj_as_string(VALUE);
 VALUE rb_check_string_type(VALUE);
 VALUE rb_str_dup(VALUE);
+VALUE rb_str_resurrect(VALUE str);
 VALUE rb_str_locktmp(VALUE);
 VALUE rb_str_unlocktmp(VALUE);
 VALUE rb_str_dup_frozen(VALUE);

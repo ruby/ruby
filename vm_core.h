@@ -645,9 +645,6 @@ NOINLINE(void rb_gc_save_machine_context(rb_thread_t *));
 
 #define sysstack_error GET_VM()->special_exceptions[ruby_error_sysstack]
 
-VALUE rb_str_resurrect(VALUE str);
-VALUE rb_ary_resurrect(VALUE ary);
-
 /* for thread */
 
 #if RUBY_VM_THREAD_MODEL == 2
