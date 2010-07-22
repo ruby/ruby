@@ -1,3 +1,8 @@
+Wed Jul 21 12:39:15 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/cmath.rb (CMath#cbrt): cbrt should accept a negative real
+	  numbers.  [ruby-core:31234]
+
 Thu Jul 15 21:43:35 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* numeric.c (fix_divide): must not use rb_rational_new1 for coercion
