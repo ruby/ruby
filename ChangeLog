@@ -2,6 +2,13 @@ Thu Jul 22 20:58:55 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_EXTERN): unnecessary after all.
 
+Thu Jul 22 17:33:47 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* complex.c (nucomp_to_i): allow complex with imaginary zero to be
+	  converted.
+
+	* complex.c (nucomp_to_f, nucomp_to_r): ditto.
+
 Thu Jul 22 20:12:56 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* thread_pthread.c (get_stack): fix memory leak; pthread_attr_destory
