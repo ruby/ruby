@@ -269,7 +269,6 @@ if test "$GCC" = yes; then
     linker_flag=-Wl,
     : ${optflags=-O3}
     AS_CASE(["$target_os"], [linux*|darwin*], [: ${debugflags=-ggdb}])
-    RUBY_APPEND_OPTIONS(XCFLAGS, ["-include ruby/config.h" "-include ruby/missing.h"])
 else
     linker_flag=
 fi
@@ -747,18 +746,6 @@ if test "$GCC" = yes; then
 			   [RUBY_ALIAS_FUNCTION_TYPE(void, prot, name, args)])
     fi
 fi
-
-AC_CACHE_CHECK([for RUBY_EXTERN], rb_cv_ruby_extern,
-[rb_cv_ruby_extern=no
-RUBY_WERROR_FLAG([
-for mac in "__attribute__((dllimport))" "__declspec(dllimport)"; do
-  AC_TRY_COMPILE(
-    [extern $mac void conftest(void);],
-    [conftest();],
-    [rb_cv_ruby_extern="extern $mac"; break])
-done])
-])
-test "x$rb_cv_ruby_extern" = xno || AC_DEFINE_UNQUOTED(RUBY_EXTERN, $rb_cv_ruby_extern)
 
 RUBY_APPEND_OPTION(XCFLAGS, -DRUBY_EXPORT)
 
