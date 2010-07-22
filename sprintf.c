@@ -420,6 +420,15 @@ get_hash(volatile VALUE *hash, int argc, const VALUE *argv)
  *     sprintf("%1$*2$s %2$d", "hello", -8)       #=> "hello    -8"
  *     sprintf("%+g:% g:%-g", 1.23, 1.23, 1.23)   #=> "+1.23: 1.23:1.23"
  *     sprintf("%u", -123)                        #=> "-123"
+ *
+ *  For more complex formatting, Ruby supports a reference by name.
+ *  %<name>s style uses format style, but ${name} style doesn't.
+ *
+ *  Exapmles:
+ *    sprintf("%<foo>d : %<bar>f" % { :foo => 1, :bar => 2 })
+ *      #=> 1 : 2.000000
+ *    sprintf("%d %{foo}" % { :foo => 'bar' })
+ *      # => "%d bar"
  */
 
 VALUE

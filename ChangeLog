@@ -1,3 +1,8 @@
+Thu Jul 22 22:38:32 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* sprintf.c: add short documentation about named reference.
+	  [ruby-core:31294]
+
 Thu Jul 22 22:14:59 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regexec.c (onig_search): don't skip non-ANYCHARs when
