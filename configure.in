@@ -416,7 +416,7 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
     RUBY_TRY_CFLAGS($wflag, [warnflags="$wflag${warnflags+ $warnflags}"])
 fi
 if test "$GCC" = yes; then
-    RUBY_TRY_CFLAGS(-fvisibility=hidden, RUBY_APPEND_OPTION(XCFLAGS, -fvisibility=hidden))
+    RUBY_TRY_CFLAGS(-fvisibility=hidden, [RUBY_APPEND_OPTION(XCFLAGS, -fvisibility=hidden)])
 fi
 
 test -z "${ac_env_CFLAGS_set}" -a -n "${cflags+set}" && eval CFLAGS="\"$cflags $ARCH_FLAG\""
