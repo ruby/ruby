@@ -6,8 +6,6 @@
 #include <errno.h>
 #include "dl.h"
 
-VALUE rb_big2ulong_pack(VALUE x);
-
 VALUE rb_cDLCFunc;
 
 static ID id_last_error;

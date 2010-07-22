@@ -9,7 +9,7 @@
 #include <ruby.h>
 #include <zlib.h>
 #include <time.h>
-#include <ruby/encoding.h>
+#include <ruby/io.h>
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 # include <valgrind/memcheck.h>
@@ -208,9 +208,6 @@ static VALUE rb_gzreader_readlines(int, VALUE*, VALUE);
 
 
 void Init_zlib(void);
-
-int rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p);
-VALUE rb_str_conv_enc_opts(VALUE, rb_encoding*, rb_encoding*, int, VALUE);
 
 /*--------- Exceptions --------*/
 
@@ -2794,7 +2791,7 @@ static void
 rb_gzfile_ecopts(struct gzfile *gz, VALUE opts)
 {
     if (!NIL_P(opts)) {
-	rb_io_extract_encoding_option(opts, &gz->enc, &gz->enc2);
+	rb_io_extract_encoding_option(opts, &gz->enc, &gz->enc2, NULL);
     }
     if (gz->enc2) {
 	gz->ecflags = rb_econv_prepare_opts(opts, &opts);

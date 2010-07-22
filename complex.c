@@ -359,11 +359,19 @@ f_complex_new_bang2(VALUE klass, VALUE x, VALUE y)
 #ifdef CANON
 static int canonicalization = 0;
 
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility push(default)
+#endif
+
 void
 nucomp_canonicalization(int f)
 {
     canonicalization = f;
 }
+
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility pop
+#endif
 #endif
 
 inline static void
