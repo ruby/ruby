@@ -155,8 +155,8 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal('/\/x/i', /\/x/i.inspect)
     assert_equal('/\x00/i', /#{"\0"}/i.inspect)
     assert_equal("/\n/i", /#{"\n"}/i.inspect)
-    s = [0xff].pack("C")
-    assert_equal('/\/\xFF/i', /\/#{s}/i.inspect)
+    s = [0xf1, 0xf2, 0xf3].pack("C*")
+    assert_equal('/\/\xF1\xF2\xF3/i', /\/#{s}/i.inspect)
   end
 
   def test_char_to_option
