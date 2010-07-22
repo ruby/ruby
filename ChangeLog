@@ -1,3 +1,9 @@
+Thu Jul 22 22:13:48 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* thread_pthread.c (get_stack): fix memory leak; pthread_attr_destory
+	  must be called even when pthread_getattr_np is used.
+	  [ruby-core:31269]
+
 Wed Jul 21 12:39:15 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/cmath.rb (CMath#cbrt): cbrt should accept a negative real
