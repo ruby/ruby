@@ -1,4 +1,6 @@
-Thu Jul 22 12:30:52 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Jul 22 12:58:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_EXTERN): ignore invalid attribute.
 
 	* configure.in: fix for older autoconf.
 
