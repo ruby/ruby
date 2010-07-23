@@ -1,4 +1,6 @@
-Fri Jul 23 15:05:42 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jul 23 15:09:22 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_MINGW32): ignore msvc suffix.
 
 	* configure.in (RUBY_TRY_CFLAGS): try with werror turned on.
 
