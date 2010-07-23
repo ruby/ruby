@@ -1,3 +1,7 @@
+Fri Jul 23 15:05:42 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_TRY_CFLAGS): try with werror turned on.
+
 Fri Jul 23 09:02:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (rb_reg_expr_str): fixed out-of-boundary access at invalid
