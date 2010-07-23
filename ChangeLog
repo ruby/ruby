@@ -1,3 +1,8 @@
+Fri Jul 23 16:07:32 2010  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/mutex_m.rb (sleep): added Mutex_m#sleep to support
+	  ConditionVariable.
+
 Fri Jul 23 15:09:22 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_MINGW32): ignore msvc suffix.

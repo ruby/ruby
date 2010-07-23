@@ -78,6 +78,10 @@ module Mutex_m
     @_mutex.unlock
   end
 
+  def sleep(timeout = nil)
+    @_mutex.sleep(timeout)
+  end
+
   private
 
   def mu_initialize
