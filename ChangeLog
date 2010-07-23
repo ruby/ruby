@@ -1,3 +1,10 @@
+Fri Jul 23 09:00:05 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (XCFLAGS): reverted mistakenly removed option.
+	  [ruby-dev:41872]
+
+	* include/ruby/missing.h: needs ruby/config.h.
+
 Thu Jul 22 20:58:55 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_EXTERN): unnecessary after all.
