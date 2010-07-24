@@ -1,3 +1,8 @@
+Tue Jul 20 12:50:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (io_flush_buffer): write and buffer operations should be
+	  monolithic.  [ruby-core:31348]
+
 Tue Jul 20 12:27:56 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/fileutils.rb (FileUtils::Entry_#copy): check file name
