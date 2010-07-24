@@ -1,3 +1,10 @@
+Thu Jul 22 16:27:41 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* re.c (rb_reg_expr_str): fix broken Regexp#inspect when it
+	  is ASCII-8BIT and non-ASCII character.
+	  The length of character should be from original byte string.
+	  [ruby-core:31431]
+
 Thu Jul 22 03:02:55 2010  Eric Hodel  <drbrain@segment7.net>
 
 	* README.EXT: fix signature of rb_ensure and rb_rescue to match

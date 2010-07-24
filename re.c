@@ -373,7 +373,8 @@ rb_reg_expr_str(VALUE str, const char *s, long len,
                 int l;
 		if (resenc) {
 		    unsigned int c = rb_enc_mbc_to_codepoint(p, pend, enc);
-		    l = rb_str_buf_cat_escaped_char(str, c, unicode_p);
+		    l = rb_enc_codelen(c, enc);
+		    rb_str_buf_cat_escaped_char(str, c, unicode_p);
 		}
 		else {
 		    l = mbclen(p, pend, enc);
