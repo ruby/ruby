@@ -1,3 +1,8 @@
+Sat Jul 24 15:44:29 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (fev_initialize): initialize pTypeInfo.
+	  [ruby-core:31304][Bug #3576].
+
 Tue Jul 13 21:46:38 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* ext/openssl/ossl_config.c, ext/openssl/lib/openssl/config.rb,
