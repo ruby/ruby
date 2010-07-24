@@ -1,3 +1,7 @@
+Fri Jul 16 12:06:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/rbinstall.rb (ext-arch): prune directories start with '-'.
+
 Wed Jul 14 18:18:05 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regexec.c (match_at): add end point to enclen's argument.
