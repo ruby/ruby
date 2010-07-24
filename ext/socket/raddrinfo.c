@@ -152,6 +152,7 @@ rb_getaddrinfo(const char *node, const char *service,
 #else
     struct getaddrinfo_arg arg;
     int ret;
+    MEMZERO(&arg, sizeof arg, 1);
     arg.node = node;
     arg.service = service;
     arg.hints = hints;
