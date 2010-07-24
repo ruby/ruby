@@ -1,3 +1,8 @@
+Thu Jul 22 03:02:55 2010  Eric Hodel  <drbrain@segment7.net>
+
+	* README.EXT: fix signature of rb_ensure and rb_rescue to match
+	  implementation.
+
 Tue Jul 20 12:42:06 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* ext/socket/raddrinfo.c (rb_getaddrinfo): according to my
