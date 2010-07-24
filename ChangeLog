@@ -1,4 +1,7 @@
-Sun Jul 25 05:26:23 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Jul 25 05:37:20 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (flo_cmp): honor the result of infinite? method of the
+	  other.  [ruby-core:31470]
 
 	* test/ruby/envutil.rb (EnvUtil#.suppress_warning): added.
 
