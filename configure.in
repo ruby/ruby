@@ -34,6 +34,9 @@ AC_CACHE_CHECK(for mingw32 environment, rb_cv_mingw32,
 ], rb_cv_mingw32=yes,rb_cv_mingw32=no)
 rm -f conftest*])
 test "$rb_cv_mingw32" = yes && target_os="mingw32"
+  ])
+AS_CASE(["$target_os"], [mingw*msvc], [
+target_os="`echo ${target_os} | sed 's/msvc$//'`"
   ])])
 
 AC_DEFUN([RUBY_CPPOUTFILE],
