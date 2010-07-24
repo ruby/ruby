@@ -1,3 +1,8 @@
+Tue Jul 13 20:46:00 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/handle.c (rb_dlhandle_close): should not pass a dynamic
+	          string to rb_raise directly.
+
 Sun Jul 11 21:20:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* README.EXT{,.ja} (rb_block_call): fixed about third/fourth
