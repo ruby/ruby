@@ -1,3 +1,9 @@
+Sun Jul 11 21:20:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* README.EXT{,.ja} (rb_block_call): fixed about third/fourth
+	  arguments to the block.  based on [ruby-core:31192] by Asher
+	  Haig.  [Bug #3558]
+
 Thu Jul 22 14:30:17 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* include/ruby/missing.h: add prototype for ruby_close().

@@ -1167,9 +1167,13 @@ Sets the value of the instance variable.
 		     VALUE (*func) (ANYARGS), VALUE data2)
 
 Calls a method on the recv, with the method name specified by the
-symbol mid, supplying func as the block.  func will receive the
-value from yield as the first argument, data2 as the second, and
-argc/argv as the third/fourth arguments.
+symbol mid, with argc arguments in argv, supplying func as the
+block. When func is called as the block, it will receive the value
+from yield as the first argument, and data2 as the second argument.
+When yielded with multiple values (in C, rb_yield_values(),
+rb_yield_values2() and rb_yield_splat()), data2 is packed as an Array,
+whereas yielded values can be gotten via argc/argv of the third/fourth
+arguments.
 
  [OBSOLETE] VALUE rb_iterate(VALUE (*func1)(), void *arg1, VALUE (*func2)(), void *arg2)
 
