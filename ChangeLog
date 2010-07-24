@@ -1,3 +1,8 @@
+Tue Jul 20 12:27:56 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/fileutils.rb (FileUtils::Entry_#copy): check file name
+	  spearator boundary.  [ruby-core:31360]
+
 Mon Jul 19 09:00:58 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* NEWS (Kernel#instance_eval): add an incompatible change since
