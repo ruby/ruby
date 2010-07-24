@@ -100,6 +100,14 @@ module EnvUtil
   end
   module_function :verbose_warning
 
+  def suppress_warning
+    verbose, $VERBOSE = $VERBOSE, nil
+    yield
+  ensure
+    $VERBOSE = verbose
+  end
+  module_function :suppress_warning
+
   def under_gc_stress
     stress, GC.stress = GC.stress, true
     yield
@@ -114,7 +122,7 @@ module Test
     module Assertions
       public
       def assert_normal_exit(testsrc, message = '', opt = {})
-        stdout, stderr, status = EnvUtil.invoke_ruby(%W'-W0', testsrc, true, true, opt)
+        _, _, status = EnvUtil.invoke_ruby(%W'-W0', testsrc, true, true, opt)
         pid = status.pid
         faildesc = proc do
           signo = status.termsig
@@ -161,7 +169,7 @@ module Test
       end
 
       def assert_ruby_status(args, test_stdin="", message=nil, opt={})
-        stdout, stderr, status = EnvUtil.invoke_ruby(args, test_stdin, false, false, opt)
+        _, _, status = EnvUtil.invoke_ruby(args, test_stdin, false, false, opt)
         m = message ? "#{message} (#{status.inspect})" : "ruby exit status is not success: #{status.inspect}"
         assert(status.success?, m)
       end

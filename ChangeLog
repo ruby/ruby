@@ -1,3 +1,10 @@
+Sun Jul 25 05:26:23 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/envutil.rb (EnvUtil#.suppress_warning): added.
+
+	* test/ruby/test_float.rb (TestFloat#test_Float): suppress
+	  warnings under --verbose.
+
 Fri Jul 23 16:07:32 2010  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/mutex_m.rb (sleep): added Mutex_m#sleep to support
