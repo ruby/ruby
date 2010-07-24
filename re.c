@@ -370,18 +370,20 @@ rb_reg_expr_str(VALUE str, const char *s, long len,
 		rb_str_buf_cat(str, p, clen);
 	    }
 	    else if (c == -1) {
-                int l;
+		clen = rb_enc_precise_mbclen(p, pend, enc);
+		if (!MBCLEN_CHARFOUND_P(clen)) {
+		    c = (unsigned char)*p;
+		    clen = 1;
+		    goto hex;
+		}
 		if (resenc) {
 		    unsigned int c = rb_enc_mbc_to_codepoint(p, pend, enc);
-		    l = rb_enc_codelen(c, enc);
 		    rb_str_buf_cat_escaped_char(str, c, unicode_p);
 		}
 		else {
-		    l = mbclen(p, pend, enc);
-		    rb_str_buf_cat(str, p, l);
+		    clen = MBCLEN_CHARFOUND_LEN(clen);
+		    rb_str_buf_cat(str, p, clen);
 		}
-		p += l;
-		continue;
 	    }
 	    else if (rb_enc_isprint(c, enc)) {
 		rb_str_buf_cat(str, p, clen);
@@ -389,6 +391,7 @@ rb_reg_expr_str(VALUE str, const char *s, long len,
 	    else if (!rb_enc_isspace(c, enc)) {
 		char b[8];
 
+	      hex:
 		snprintf(b, sizeof(b), "\\x%02X", c);
 		rb_str_buf_cat(str, b, 4);
 	    }
