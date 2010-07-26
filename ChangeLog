@@ -1,3 +1,9 @@
+Mon Jul 26 18:18:09 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (config.h): add include guard.
+
+	* win32/Makefile.sub, bcc32/Makefile.sub (config.h): ditto.
+
 Sat Jul 24 15:44:29 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (fev_initialize): initialize pTypeInfo.

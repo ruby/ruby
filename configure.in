@@ -1983,11 +1983,19 @@ if test -z "$MANTYPE"; then
 fi
 AC_SUBST(MANTYPE)
 
-if test -f config.h && tr -d '\015' < confdefs.h | cmp -s config.h -; then
+guard=INCLUDE_RUBY_CONFIG_H
+{
+  echo "#ifndef $guard"
+  echo "#define $guard 1"
+  cat confdefs.h
+  echo "#endif /* $guard */"
+} | tr -d '\015' > config.h.tmp
+if test -f config.h && cmp -s config.h config.h.tmp; then
   echo "config.h unchanged"
+  rm config.h.tmp
 else
   echo "creating config.h"
-  tr -d '\015' < confdefs.h > config.h
+  mv config.h.tmp config.h
 fi
 tr -d '\015' < largefile.h > confdefs.h
 rm largefile.h

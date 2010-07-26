@@ -228,8 +228,12 @@ config: config.status
 
 config.status: $(CONFIG_H)
 
+guard = INCLUDE_RUBY_CONFIG_H
+
 $(CONFIG_H): $(MKFILES) $(srcdir)/bcc32/Makefile.sub
 	@$(IFCHANGE) config.h &&|
+\#ifndef $(guard)
+\#define $(guard) 1
 \#define HAVE_SYS_TYPES_H 1
 \#define HAVE_SYS_STAT_H 1
 \#define HAVE_STDLIB_H 1
@@ -313,6 +317,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/bcc32/Makefile.sub
 \#define RUBY_ARCHLIB "/lib/ruby/$(ruby_version)/$(ARCH)-$(OS)"
 \#define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/$(ruby_version)/$(ARCH)-$(OS)"
 \#define RUBY_VENDOR_ARCHLIB "/lib/ruby/vendor_ruby/$(ruby_version)/$(ARCH)-$(OS)"
+\#endif /* $(guard) */
 |
 	@exit > $@
 

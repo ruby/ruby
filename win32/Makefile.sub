@@ -292,9 +292,13 @@ BANG = !
 !include config.h
 !endif
 
+guard = INCLUDE_RUBY_CONFIG_H
+
 $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 	@echo Creating config.h
 	@$(IFCHANGE) config.h <<
+#ifndef $(guard)
+#define $(guard) 1
 #if _MSC_VER != $(MSC_VER)
 #error MSC version unmatch: _MSC_VER: $(MSC_VER) is expected.
 #endif
@@ -451,6 +455,7 @@ $(BANG)endif
   #define isxdigit(c) ( ((c>=0&&c<=9)||(c>='A'&&c<='F')||(c>='a'&&c<='f'))?1:0 )
 #endif
 !endif
+#endif /* $(guard) */
 <<
 	@exit > $(@:/=\)
 
