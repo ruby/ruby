@@ -385,6 +385,8 @@ BANG = !
 !include config.h
 !endif
 
+guard = INCLUDE_RUBY_CONFIG_H
+
 $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 	@echo Creating config.h
 !if !exist("$(arch_hdrdir)")
@@ -394,6 +396,8 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 	@md $(arch_hdrdir:/=\)\ruby
 !endif
 	@$(IFCHANGE) $(RUBY_CONFIG_H:/=\) <<
+#ifndef $(guard)
+#define $(guard) 1
 #if _MSC_VER != $(MSC_VER)
 #error MSC version unmatch: _MSC_VER: $(MSC_VER) is expected.
 #endif
@@ -601,6 +605,7 @@ $(BANG)if "$(RUBY_SO_NAME)"!="$$(RUBY_SO_NAME)" || "$(ARCH)-$(PLATFORM)"!="$$(AR
 config.h: nul
 $(BANG)endif
 #endif
+#endif /* $(guard) */
 <<
 	@exit > $(@:/=\)
 

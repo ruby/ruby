@@ -1,3 +1,9 @@
+Mon Jul 26 18:18:09 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (config.h): add include guard.
+
+	* win32/Makefile.sub, bcc32/Makefile.sub (config.h): ditto.
+
 Mon Jul 26 14:38:06 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (XCFLAGS): missing.h needs config.h.
