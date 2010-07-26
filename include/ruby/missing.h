@@ -175,7 +175,7 @@ RUBY_EXTERN int signbit(double x);
 RUBY_EXTERN int ffs(int);
 #endif
 
-#ifndef HAVE_CLOSE
+#ifdef BROKEN_CLOSE
 #include <sys/types.h>
 #include <sys/socket.h>
 RUBY_EXTERN int ruby_getpeername(int, struct sockaddr *, socklen_t *);

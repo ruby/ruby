@@ -1440,7 +1440,7 @@ int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
 #define snprintf ruby_snprintf
 #define vsnprintf ruby_vsnprintf
 
-#ifdef __FreeBSD__
+#ifdef BROKEN_CLOSE
 #undef getpeername
 #define getpeername ruby_getpeername
 #undef getsockname

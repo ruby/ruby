@@ -1,3 +1,11 @@
+Mon Jul 26 11:51:01 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: define BROKEN_CLOSE on FreeBSD.
+	  This fixes build failure on MSVC. [ruby-core:31481]
+
+	* include/ruby/ruby.h, include/ruby/missing.h:
+	  use BROKEN_CLOSE for replacing close(2).
+
 Mon Jul 26 09:51:20 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (rb_thread_mark): mark only self of normal iseqs, not
