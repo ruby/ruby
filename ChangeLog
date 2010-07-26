@@ -1,3 +1,8 @@
+Mon Jul 26 22:34:37 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/pathname.c (path_taint): Pathname#taint translated from
+	  pathname.rb.
+
 Mon Jul 26 18:18:09 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (config.h): add include guard.
