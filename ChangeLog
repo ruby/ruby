@@ -1,3 +1,8 @@
+Mon Jul 26 13:01:25 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (rb_thread_mark): should mark iseq itself other than normal
+	  iseq.  [ruby-dev:41880]
+
 Mon Jul 26 11:51:01 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: define BROKEN_CLOSE on FreeBSD.
