@@ -248,10 +248,14 @@ config: config.status
 
 config.status: $(CONFIG_H)
 
+guard = INCLUDE_RUBY_CONFIG_H
+
 $(CONFIG_H): $(MKFILES) $(srcdir)/bcc32/Makefile.sub
 	@if not exist $(arch_hdrdir:/=\) md $(arch_hdrdir:/=\)
 	@if not exist $(arch_hdrdir:/=\)\ruby md $(arch_hdrdir:/=\)\ruby
 	@$(IFCHANGE) $(RUBY_CONFIG_H:/=\) &&|
+\#ifndef $(guard)
+\#define $(guard) 1
 \#define NO_BIG_INLINE 1
 \#define HAVE_SYS_TYPES_H 1
 \#define HAVE_SYS_STAT_H 1
@@ -364,6 +368,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/bcc32/Makefile.sub
 \#define DLEXT ".so"
 \#define RUBY_LIB_PREFIX "/lib/ruby"
 \#define RUBY_PLATFORM "$(ARCH)-$(OS)"
+\#endif /* $(guard) */
 |
 	@exit > $(@:/=\)
 

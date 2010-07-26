@@ -2627,7 +2627,13 @@ AC_SUBST(MANTYPE)
 arch_hdrdir="${EXTOUT}/include/${arch}/ruby"
 AS_MKDIR_P("${arch_hdrdir}")
 config_h="${arch_hdrdir}/config.h"
-tr -d '\015' < confdefs.h | grep -v "^#define PACKAGE_" |
+guard=INCLUDE_RUBY_CONFIG_H
+{
+  echo "#ifndef $guard"
+  echo "#define $guard 1"
+  grep -v "^#define PACKAGE_" confdefs.h
+  echo "#endif /* $guard */"
+} | tr -d '\015' |
 ${srcdir}/tool/ifchange "${config_h}" -
 tr -d '\015' < largefile.h > confdefs.h
 rm largefile.h
