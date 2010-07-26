@@ -1,3 +1,8 @@
+Mon Jul 26 09:51:20 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (rb_thread_mark): mark only self of normal iseqs, not
+	  nodes.  [ruby-dev:41874]
+
 Sun Jul 25 05:37:20 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (flo_cmp): honor the result of infinite? method of the
