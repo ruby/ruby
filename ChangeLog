@@ -1,3 +1,7 @@
+Mon Jul 26 14:38:06 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (XCFLAGS): missing.h needs config.h.
+
 Mon Jul 26 14:08:47 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* include/ruby/missing.h: revert a part of r28727.  config.h is expected

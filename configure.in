@@ -272,7 +272,7 @@ if test "$GCC" = yes; then
     linker_flag=-Wl,
     : ${optflags=-O3}
     AS_CASE(["$target_os"], [linux*|darwin*], [: ${debugflags=-ggdb}])
-    RUBY_APPEND_OPTIONS(XCFLAGS, ["-include ruby/missing.h"])
+    RUBY_APPEND_OPTIONS(XCFLAGS, ["-include ruby/config.h" "-include ruby/missing.h"])
 else
     linker_flag=
 fi
