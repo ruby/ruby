@@ -208,7 +208,6 @@ class Pathname
 
   # :startdoc:
 
-  def taint() super; @path.taint; self end
   def untaint() super; @path.untaint; self end
 
   #

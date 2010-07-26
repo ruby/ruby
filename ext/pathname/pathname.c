@@ -53,6 +53,14 @@ path_freeze(VALUE self)
     return self;
 }
 
+static VALUE
+path_taint(VALUE self)
+{
+    rb_call_super(0, 0);
+    OBJ_TAINT(get_strpath(self));
+    return self;
+}
+
 void
 Init_pathname()
 {
@@ -62,4 +70,5 @@ Init_pathname()
     rb_cPathname = rb_define_class("Pathname", rb_cObject);
     rb_define_method(rb_cPathname, "initialize", path_initialize, 1);
     rb_define_method(rb_cPathname, "freeze", path_freeze, 0);
+    rb_define_method(rb_cPathname, "taint", path_taint, 0);
 }
