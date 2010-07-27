@@ -1,3 +1,7 @@
+Tue Jul 27 18:59:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (have_framework): added.
+
 Tue Jul 27 18:33:42 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* defines.h, intern.h, missing.h, ruby.h, st.h, util.h: include

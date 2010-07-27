@@ -839,6 +839,26 @@ def have_header(header, preheaders = nil, &b)
   end
 end
 
+# Returns whether or not the given +framework+ can be found on your system.
+# If found, a macro is passed as a preprocessor constant to the compiler using
+# the framework name, in uppercase, prepended with 'HAVE_FRAMEWORK_'.
+#
+# For example, if have_framework('Ruby') returned true, then the HAVE_FRAMEWORK_RUBY
+# preprocessor macro would be passed to the compiler.
+#
+def have_framework(fw, &b)
+  checking_for fw do
+    src = cpp_include("#{fw}/#{fw}.h") << "\n" "int main(void){return 0;}"
+    if try_link(src, opt = "-framework #{fw}", &b)
+      $defs.push(format("-DHAVE_FRAMEWORK_%s", fw.tr_cpp))
+      $LDFLAGS << " " << opt
+      true
+    else
+      false
+    end
+  end
+end
+
 # Instructs mkmf to search for the given +header+ in any of the +paths+
 # provided, and returns whether or not it was found in those paths.
 #
@@ -1875,6 +1895,12 @@ site-install-rb: install-rb
       mfile.printf("\n\t%s\n\n", COMPILE_C)
     end
   end
+  %w[m].each do |e|
+    COMPILE_RULES.each do |rule|
+      mfile.printf(rule, e, $OBJEXT)
+      mfile.printf("\n\t%s\n\n", COMPILE_OBJC)
+    end
+  end
 
   mfile.print "$(RUBYARCHDIR)/" if $extout
   mfile.print "$(DLLIB): "
@@ -2037,6 +2063,7 @@ COMPILE_RULES = config_string('COMPILE_RULES', &split) || %w[.%s.%s:]
 RULE_SUBST = config_string('RULE_SUBST')
 COMPILE_C = config_string('COMPILE_C') || '$(CC) $(INCFLAGS) $(CPPFLAGS) $(CFLAGS) $(COUTFLAG)$@ -c $<'
 COMPILE_CXX = config_string('COMPILE_CXX') || '$(CXX) $(INCFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(COUTFLAG)$@ -c $<'
+COMPILE_OBJC = config_string('COMPILE_OBJC') || COMPILE_C
 TRY_LINK = config_string('TRY_LINK') ||
   "$(CC) #{OUTFLAG}conftest $(INCFLAGS) $(CPPFLAGS) " \
   "$(CFLAGS) $(src) $(LIBPATH) $(LDFLAGS) $(ARCH_FLAG) $(LOCAL_LIBS) $(LIBS)"
