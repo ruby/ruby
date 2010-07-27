@@ -17,6 +17,11 @@ extern "C" {
 #endif
 #endif
 
+#include "ruby/config.h"
+#ifdef RUBY_EXTCONF_H
+#include RUBY_EXTCONF_H
+#endif
+
 #define RUBY
 
 #include <stdlib.h>

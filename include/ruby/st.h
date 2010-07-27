@@ -12,13 +12,7 @@ extern "C" {
 #endif
 #endif
 
-#ifndef RUBY_LIB_PREFIX
-#include "ruby/config.h"
 #include "ruby/defines.h"
-#ifdef RUBY_EXTCONF_H
-#include RUBY_EXTCONF_H
-#endif
-#endif
 
 #if   defined STDC_HEADERS
 #include <stddef.h>

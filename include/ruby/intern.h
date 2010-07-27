@@ -21,6 +21,11 @@ extern "C" {
 #endif
 #endif
 
+#include "ruby/defines.h"
+#ifdef RUBY_EXTCONF_H
+#include RUBY_EXTCONF_H
+#endif
+
 #ifdef HAVE_STDARG_PROTOTYPES
 # include <stdarg.h>
 #else
