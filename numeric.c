@@ -1016,7 +1016,8 @@ rb_dbl_cmp(double a, double b)
 static VALUE
 flo_cmp(VALUE x, VALUE y)
 {
-    double a, b, i;
+    double a, b;
+    VALUE i;
 
     a = RFLOAT_VALUE(x);
     if (isnan(a)) return Qnil;
