@@ -352,8 +352,8 @@ static VALUE dir_close(VALUE);
 #define GlobPathValue(str, safe) \
     /* can contain null bytes as separators */	\
     (!RB_TYPE_P(str, T_STRING) ?		\
-     FilePathValue(str) :			\
-     (check_safe_glob(str, safe),		\
+     (void)FilePathValue(str) :			\
+     (void)(check_safe_glob(str, safe),		\
       check_glob_encoding(str), (str)))
 #define check_safe_glob(str, safe) ((safe) ? rb_check_safe_obj(str) : (void)0)
 #define check_glob_encoding(str) rb_enc_check((str), rb_enc_from_encoding(rb_usascii_encoding()))

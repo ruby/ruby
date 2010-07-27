@@ -1274,7 +1274,7 @@ rb_singleton_class(VALUE obj)
     VALUE klass = singleton_class_of(obj);
 
     /* ensures an exposed class belongs to its own eigenclass */
-    if (TYPE(obj) == T_CLASS) ENSURE_EIGENCLASS(klass);
+    if (TYPE(obj) == T_CLASS) (void)ENSURE_EIGENCLASS(klass);
 
     return klass;
 }

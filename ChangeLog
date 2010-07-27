@@ -1,3 +1,10 @@
+Tue Jul 27 16:09:12 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* class.c, compile.c, dir.c, file.c, iseq.c, parse.y, random.c:
+	  clean unused-value warnings.
+
+	* cont.c, process.c, vm_exec.h: clean cast warnings.
+
 Mon Jul 26 22:34:37 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pathname/pathname.c (path_taint): Pathname#taint translated from

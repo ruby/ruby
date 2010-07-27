@@ -564,7 +564,7 @@ fiber_initialize_machine_stack_context(rb_fiber_t *fib, size_t size)
     getcontext(context);
     ptr = fiber_machine_stack_alloc(size);
     context->uc_link = NULL;
-    context->uc_stack.ss_sp = ptr;
+    context->uc_stack.ss_sp = (char *)ptr;
     context->uc_stack.ss_size = size;
     makecontext(context, rb_fiber_start, 0);
     sth->machine_stack_start = ptr + STACK_DIR_UPPER(0, size / sizeof(VALUE));

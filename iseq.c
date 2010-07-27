@@ -436,7 +436,7 @@ rb_iseq_new_with_bopt(NODE *node, VALUE name, VALUE filename, VALUE filepath, VA
 #define CHECK_ARRAY(v)   rb_convert_type(v, T_ARRAY, "Array", "to_ary")
 #define CHECK_STRING(v)  rb_convert_type(v, T_STRING, "String", "to_str")
 #define CHECK_SYMBOL(v)  rb_convert_type(v, T_SYMBOL, "Symbol", "to_sym")
-static inline VALUE CHECK_INTEGER(VALUE v) {NUM2LONG(v); return v;}
+static inline VALUE CHECK_INTEGER(VALUE v) {(void)NUM2LONG(v); return v;}
 static VALUE
 iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
 {
