@@ -3119,7 +3119,7 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
 
 #define check_expand_path_args(fname, dname) \
     ((fname = rb_get_path(fname)), \
-     (NIL_P(dname) ? dname : (dname = rb_get_path(dname))))
+     (void)(NIL_P(dname) ? dname : (dname = rb_get_path(dname))))
 
 static VALUE
 file_expand_path_1(VALUE fname)

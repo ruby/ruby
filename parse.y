@@ -6307,9 +6307,9 @@ parser_magic_comment(struct parser_params *parser, const char *str, long len)
     VALUE name = 0, val = 0;
     const char *beg, *end, *vbeg, *vend;
 #define str_copy(_s, _p, _n) ((_s) \
-	? (rb_str_resize((_s), (_n)), \
+	? (void)(rb_str_resize((_s), (_n)), \
 	   MEMCPY(RSTRING_PTR(_s), (_p), char, (_n)), (_s)) \
-	: ((_s) = STR_NEW((_p), (_n))))
+	: (void)((_s) = STR_NEW((_p), (_n))))
 
     if (len <= 7) return FALSE;
     if (!(beg = magic_comment_marker(str, len))) return FALSE;
@@ -6474,12 +6474,12 @@ parser_prepare(struct parser_params *parser)
 #else
 #define ambiguous_operator(op, syn) dispatch2(operator_ambiguous, ripper_intern(op), rb_str_new_cstr(syn))
 #endif
-#define warn_balanced(op, syn) \
+#define warn_balanced(op, syn) ((void) \
     (last_state != EXPR_CLASS && last_state != EXPR_DOT && \
      last_state != EXPR_FNAME && last_state != EXPR_ENDFN && \
      last_state != EXPR_ENDARG && \
      space_seen && !ISSPACE(c) && \
-     (ambiguous_operator(op, syn), 0))
+     (ambiguous_operator(op, syn), 0)))
 
 static int
 parser_yylex(struct parser_params *parser)
@@ -7291,7 +7291,7 @@ parser_yylex(struct parser_params *parser)
 	}
 	pushback(c);
 	if (IS_SPCARG(c)) {
-	    arg_ambiguous();
+	    (void)arg_ambiguous();
 	    lex_strterm = NEW_STRTERM(str_regexp, '/', 0);
 	    return tREGEXP_BEG;
 	}

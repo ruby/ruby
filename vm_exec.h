@@ -112,7 +112,7 @@ error !
 /* for GCC 3.4.x */
 #define TC_DISPATCH(insn) \
   INSN_DISPATCH_SIG(insn); \
-  goto *GET_CURRENT_INSN(); \
+  goto *(void const *)GET_CURRENT_INSN(); \
   ;
 
 #else

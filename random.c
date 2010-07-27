@@ -1066,7 +1066,7 @@ random_rand(int argc, VALUE *argv, VALUE obj)
     }
     else {
 	v = Qnil;
-	NUM2LONG(vmax);
+	(void)NUM2LONG(vmax);
     }
     if (NIL_P(v)) {
 	VALUE mesg = rb_str_new_cstr("invalid argument - ");
