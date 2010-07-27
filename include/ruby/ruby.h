@@ -21,11 +21,9 @@ extern "C" {
 #endif
 #endif
 
-#ifndef RUBY_LIB_PREFIX
 #include "ruby/config.h"
 #ifdef RUBY_EXTCONF_H
 #include RUBY_EXTCONF_H
-#endif
 #endif
 
 #define NORETURN_STYLE_NEW 1
