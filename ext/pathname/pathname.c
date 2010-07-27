@@ -57,7 +57,15 @@ static VALUE
 path_taint(VALUE self)
 {
     rb_call_super(0, 0);
-    OBJ_TAINT(get_strpath(self));
+    rb_obj_taint(get_strpath(self));
+    return self;
+}
+
+static VALUE
+path_untaint(VALUE self)
+{
+    rb_call_super(0, 0);
+    rb_obj_untaint(get_strpath(self));
     return self;
 }
 
@@ -71,4 +79,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "initialize", path_initialize, 1);
     rb_define_method(rb_cPathname, "freeze", path_freeze, 0);
     rb_define_method(rb_cPathname, "taint", path_taint, 0);
+    rb_define_method(rb_cPathname, "untaint", path_untaint, 0);
 }

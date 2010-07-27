@@ -1,3 +1,9 @@
+Tue Jul 27 23:09:09 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/pathname.c (path_taint): use rb_obj_taint.
+	  (path_untaint): Pathname#untaint translated from
+	  pathname.rb.
+
 Tue Jul 27 18:59:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (have_framework): added.
