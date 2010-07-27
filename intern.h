@@ -11,6 +11,13 @@
   Copyright (C) 2000  Information-technology Promotion Agency, Japan
 
 **********************************************************************/
+#ifndef INTERN_H
+#define INTERN_H
+
+#include "defines.h"
+#ifdef RUBY_EXTCONF_H
+#include RUBY_EXTCONF_H
+#endif
 
 /*
  * Functions and variables that are used by more than one source file of
@@ -538,3 +545,5 @@ VALUE rb_mod_remove_cvar _((VALUE, VALUE));
 /* version.c */
 void ruby_show_version _((void));
 void ruby_show_copyright _((void));
+
+#endif

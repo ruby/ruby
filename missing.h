@@ -12,6 +12,11 @@
 #ifndef MISSING_H
 #define MISSING_H
 
+#include "config.h"
+#ifdef RUBY_EXTCONF_H
+#include RUBY_EXTCONF_H
+#endif
+
 #if defined(HAVE_SYS_TIME_H)
 #  include <sys/time.h>
 #elif !defined(_WIN32)

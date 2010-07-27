@@ -10,6 +10,11 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
+#include "config.h"
+#ifdef RUBY_EXTCONF_H
+#include RUBY_EXTCONF_H
+#endif
+
 #define RUBY
 
 #ifdef __cplusplus
