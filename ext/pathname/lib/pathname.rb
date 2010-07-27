@@ -208,8 +208,6 @@ class Pathname
 
   # :startdoc:
 
-  def untaint() super; @path.untaint; self end
-
   #
   # Compare this pathname with +other+.  The comparison is string-based.
   # Be aware that two different paths (<tt>foo.txt</tt> and <tt>./foo.txt</tt>)
