@@ -1,3 +1,7 @@
+Tue Jul 27 16:27:38 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* numeric.c (flo_cmp): typo.
+
 Tue Jul 27 16:09:12 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* class.c, compile.c, dir.c, file.c, iseq.c, parse.y, random.c:
