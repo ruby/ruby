@@ -41,7 +41,7 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <ucontext.h>
-# clean cast warnings.endif
+#endif
 #define RB_PAGE_SIZE (pagesize)
 #define RB_PAGE_MASK (~(RB_PAGE_SIZE - 1))
 static long pagesize;
@@ -498,7 +498,7 @@ fiber_set_stack_location(void)
     VALUE *ptr;
 
     SET_MACHINE_STACK_END(&ptr);
-    th->machine_stack_start = (void*)(((VALUE)ptr & PAGE_MASK) + STACK_UPPER(&ptr, 0, RB_PAGE_SIZE));
+    th->machine_stack_start = (void*)(((VALUE)ptr & RB_PAGE_MASK) + STACK_UPPER(&ptr, 0, RB_PAGE_SIZE));
 }
 
 static VOID CALLBACK

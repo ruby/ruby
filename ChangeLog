@@ -1,3 +1,7 @@
+Wed Jul 28 09:38:03 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* cont.c: typos.
+
 Wed Jul 28 09:24:43 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* cont.c: (RB_PAGE_SIZE): renamed from PAGE_SIZE. [ruby-dev:41870]
