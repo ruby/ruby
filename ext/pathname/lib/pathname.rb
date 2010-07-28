@@ -208,18 +208,6 @@ class Pathname
 
   # :startdoc:
 
-  #
-  # Compare this pathname with +other+.  The comparison is string-based.
-  # Be aware that two different paths (<tt>foo.txt</tt> and <tt>./foo.txt</tt>)
-  # can refer to the same file.
-  #
-  def ==(other)
-    return false unless Pathname === other
-    other.to_s == @path
-  end
-  alias === ==
-  alias eql? ==
-
   # Provides for comparing pathnames, case-sensitively.
   def <=>(other)
     return nil unless Pathname === other

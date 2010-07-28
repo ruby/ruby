@@ -69,6 +69,19 @@ path_untaint(VALUE self)
     return self;
 }
 
+/*
+ *  Compare this pathname with +other+.  The comparison is string-based.
+ *  Be aware that two different paths (<tt>foo.txt</tt> and <tt>./foo.txt</tt>)
+ *  can refer to the same file.
+ */
+static VALUE
+path_eq(VALUE self, VALUE other)
+{
+    if (!rb_obj_is_kind_of(other, rb_cPathname))
+        return Qfalse;
+    return rb_str_equal(get_strpath(self), get_strpath(other));
+}
+
 void
 Init_pathname()
 {
@@ -80,4 +93,7 @@ Init_pathname()
     rb_define_method(rb_cPathname, "freeze", path_freeze, 0);
     rb_define_method(rb_cPathname, "taint", path_taint, 0);
     rb_define_method(rb_cPathname, "untaint", path_untaint, 0);
+    rb_define_method(rb_cPathname, "==", path_eq, 1);
+    rb_define_method(rb_cPathname, "===", path_eq, 1);
+    rb_define_method(rb_cPathname, "eql?", path_eq, 1);
 }
