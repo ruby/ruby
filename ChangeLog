@@ -1,3 +1,7 @@
+Thu Jul 29 05:52:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_s_basename): pass baselen to rmext.
+
 Thu Jul 29 02:38:09 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: not [freebsd] but [freebsd*] for AS_CASE.
