@@ -19,6 +19,9 @@ extern "C" {
 #endif
 
 #include "ruby/config.h"
+#if defined(HAVE_STDDEF_H)
+#  include <stddef.h>
+#endif
 #ifdef RUBY_EXTCONF_H
 #include RUBY_EXTCONF_H
 #endif
@@ -50,6 +53,9 @@ struct timezone {
 };
 #endif
 
+#ifdef RUBY_EXPORT
+#undef RUBY_EXTERN
+#endif
 #ifndef RUBY_EXTERN
 #define RUBY_EXTERN extern
 #endif
