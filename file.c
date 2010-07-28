@@ -3398,15 +3398,12 @@ rb_file_s_realdirpath(int argc, VALUE *argv, VALUE klass)
 }
 
 static size_t
-rmext(const char *p, long l1, const char *e)
+rmext(const char *p, long l0, long l1, const char *e)
 {
-    long l0, l2;
+    long l2;
 
     if (!e) return 0;
 
-    for (l0 = 0; l0 < l1; ++l0) {
-	if (p[l0] != '.') break;
-    }
     l2 = strlen(e);
     if (l2 == 2 && e[1] == '*') {
 	unsigned char c = *e;
@@ -3527,7 +3524,7 @@ rb_file_s_basename(int argc, VALUE *argv)
 
     p = ruby_find_basename(name, &f, &n);
     if (n >= 0) {
-	if (NIL_P(fext) || !(f = rmext(p, n, StringValueCStr(fext)))) {
+	if (NIL_P(fext) || !(f = rmext(p, f, n, StringValueCStr(fext)))) {
 	    f = n;
 	}
 	if (f == RSTRING_LEN(fname)) return rb_str_new_shared(fname);
