@@ -1,5 +1,7 @@
 /* public domain rewrite of strstr(3) */
 
+#include "ruby/missing.h"
+
 char *
 strstr(const char *haystack, const char *needle)
 {

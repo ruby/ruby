@@ -1,4 +1,5 @@
 /* Ignore ECONNRESET of FreeBSD */
+#include "ruby/missing.h"
 #include <errno.h>
 #include <unistd.h>
 #include <sys/types.h>

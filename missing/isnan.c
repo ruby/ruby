@@ -1,5 +1,7 @@
 /* public domain rewrite of isnan(3) */
 
+#include "ruby/missing.h"
+
 static int double_ne(double n1, double n2);
 
 int

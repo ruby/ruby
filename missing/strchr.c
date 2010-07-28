@@ -1,5 +1,7 @@
 /* public domain rewrite of strchr(3) and strrchr(3) */
 
+#include "ruby/missing.h"
+
 char *
 strchr(const char *s, int c)
 {

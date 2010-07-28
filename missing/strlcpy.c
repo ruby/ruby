@@ -31,6 +31,7 @@
 static char *rcsid = "$OpenBSD: strlcpy.c,v 1.5 2001/05/13 15:40:16 deraadt Exp $";
 #endif /* LIBC_SCCS and not lint */
 
+#include "ruby/missing.h"
 #include <sys/types.h>
 #include <string.h>
 

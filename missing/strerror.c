@@ -1,5 +1,7 @@
 /* public domain rewrite of strerror(3) */
 
+#include "ruby/missing.h"
+
 extern int sys_nerr;
 extern char *sys_errlist[];
 
