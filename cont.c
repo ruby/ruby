@@ -41,9 +41,9 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <ucontext.h>
-#endif
-#define PAGE_SIZE (pagesize)
-#define PAGE_MASK (~(PAGE_SIZE - 1))
+# clean cast warnings.endif
+#define RB_PAGE_SIZE (pagesize)
+#define RB_PAGE_MASK (~(RB_PAGE_SIZE - 1))
 static long pagesize;
 #define FIBER_MACHINE_STACK_ALLOCATION_SIZE  (0x10000 / sizeof(VALUE))
 #endif
@@ -498,7 +498,7 @@ fiber_set_stack_location(void)
     VALUE *ptr;
 
     SET_MACHINE_STACK_END(&ptr);
-    th->machine_stack_start = (void*)(((VALUE)ptr & PAGE_MASK) + STACK_UPPER(&ptr, 0, PAGE_SIZE));
+    th->machine_stack_start = (void*)(((VALUE)ptr & PAGE_MASK) + STACK_UPPER(&ptr, 0, RB_PAGE_SIZE));
 }
 
 static VOID CALLBACK
@@ -531,8 +531,8 @@ fiber_machine_stack_alloc(size_t size)
 	if (ptr == (VALUE*)(SIGNED_VALUE)-1) {
 	    rb_raise(rb_eFiberError, "can't alloc machine stack to fiber");
 	}
-	if (mprotect(ptr + STACK_DIR_UPPER((size - PAGE_SIZE) / sizeof(VALUE), 0),
-		     PAGE_SIZE, PROT_READ | PROT_WRITE) < 0) {
+	if (mprotect(ptr + STACK_DIR_UPPER((size - RB_PAGE_SIZE) / sizeof(VALUE), 0),
+		     RB_PAGE_SIZE, PROT_READ | PROT_WRITE) < 0) {
 	    rb_raise(rb_eFiberError, "mprotect failed");
 	}
     }
