@@ -548,6 +548,20 @@ class TestPathname < Test::Unit::TestCase
     assert_equal(false, Pathname.new("a".freeze).freeze.to_s.frozen?)
   end
 
+  def test_freeze_and_taint
+    obj = Pathname.new("a")
+    obj.freeze
+    assert_equal(false, obj.tainted?)
+    assert_raise(RuntimeError) { obj.taint }
+
+    obj = Pathname.new("a")
+    obj.taint
+    assert_equal(true, obj.tainted?)
+    obj.freeze
+    assert_equal(true, obj.tainted?)
+    assert_nothing_raised { obj.taint }
+  end
+
   def test_to_s
     str = "a"
     obj = Pathname.new(str)
