@@ -8,6 +8,7 @@ reference - Haruhiko Okumura: C-gengo niyoru saishin algorithm jiten
             http://oku.edu.mie-u.ac.jp/~okumura/algo/
 */
 
+#include "ruby/missing.h"
 /***********************************************************
     gamma.c -- Gamma function
 ***********************************************************/

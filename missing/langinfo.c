@@ -32,6 +32,7 @@
  *   http://www.cl.cam.ac.uk/~mgk25/ucs/langinfo.c
  */
 
+#include "ruby/missing.h"
 #include <stdlib.h>
 #include <string.h>
 #if defined _WIN32 || defined __CYGWIN__

@@ -1,3 +1,4 @@
+#include "ruby/missing.h"
 #include <math.h>
 
 double cbrt(double x)

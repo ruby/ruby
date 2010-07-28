@@ -1,5 +1,6 @@
 /* public domain rewrite of memcmp(3) */
 
+#include "ruby/missing.h"
 #include <stddef.h>
 
 int

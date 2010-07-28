@@ -1,3 +1,7 @@
+Wed Jul 28 17:11:48 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* missing/*.c: include missing.h
+
 Wed Jul 28 09:38:03 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* cont.c: typos.
