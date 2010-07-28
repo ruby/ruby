@@ -1,3 +1,12 @@
+Wed Jul 28 19:37:33 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (config.h): VC6 or later have stddef.h.
+
+	* include/ruby/missing.h: need to include stddef.h for size_t.
+
+	* include/ruby/missing.h: shouldn't declare as dllimport when building
+	  ruby itself (for Windows).
+
 Wed Jul 28 17:11:48 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* missing/*.c: include missing.h
