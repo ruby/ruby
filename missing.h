@@ -65,6 +65,9 @@ struct timezone {
 };
 #endif
 
+#ifdef RUBY_EXPORT
+#undef RUBY_EXTERN
+#endif
 #ifndef RUBY_EXTERN
 #define RUBY_EXTERN extern
 #endif

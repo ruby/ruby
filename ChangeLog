@@ -1,3 +1,8 @@
+Wed Jul 28 19:41:37 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* include/ruby/missing.h: shouldn't declare as dllimport when building
+	  ruby itself (for Windows).
+
 Wed Jul 28 17:11:48 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* missing/*.c: include missing.h
