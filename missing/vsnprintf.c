@@ -60,6 +60,7 @@
 #define	FLOATING_POINT
 */
 
+#include "missing.h"
 #include <sys/types.h>
 #define u_long unsigned long
 #define u_short unsigned short

@@ -1,5 +1,7 @@
 /* public domain rewrite of strstr(3) */
 
+#include "missing.h"
+
 char *
 strstr(haystack, needle)
     char *haystack, *needle;

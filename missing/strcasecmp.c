@@ -1,5 +1,6 @@
 /* public domain rewrite of strcasecmp(3) */
 
+#include "missing.h"
 #include <ctype.h>
 
 int

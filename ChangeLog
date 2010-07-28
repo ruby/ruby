@@ -1,3 +1,7 @@
+Wed Jul 28 17:11:48 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* missing/*.c: include missing.h
+
 Tue Jul 27 18:33:42 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* defines.h, intern.h, missing.h, ruby.h, st.h, util.h: include

@@ -3,6 +3,7 @@
 reference - Haruhiko Okumura: C-gengo niyoru saishin algorithm jiten
             (New Algorithm handbook in C language) (Gijyutsu hyouron
             sha, Tokyo, 1991) p.227 [in Japanese]                 */
+#include "missing.h"
 #include <stdio.h>
 #include <math.h>
 

@@ -16,6 +16,34 @@
 #ifdef RUBY_EXTCONF_H
 #include RUBY_EXTCONF_H
 #endif
+#ifdef __cplusplus
+# ifndef  HAVE_PROTOTYPES
+#  define HAVE_PROTOTYPES 1
+# endif
+# ifndef  HAVE_STDARG_PROTOTYPES
+#  define HAVE_STDARG_PROTOTYPES 1
+# endif
+#endif
+
+#undef _
+#ifdef HAVE_PROTOTYPES
+# define _(args) args
+#else
+# define _(args) ()
+#endif
+
+#undef __
+#ifdef HAVE_STDARG_PROTOTYPES
+# define __(args) args
+#else
+# define __(args) ()
+#endif
+
+#ifdef __cplusplus
+#define ANYARGS ...
+#else
+#define ANYARGS
+#endif
 
 #if defined(HAVE_SYS_TIME_H)
 #  include <sys/time.h>

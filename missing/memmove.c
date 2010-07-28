@@ -1,5 +1,7 @@
 /* public domain rewrite of memcmp(3) */
 
+#include "missing.h"
+
 void *
 memmove (d, s, n)
     void *d, *s;

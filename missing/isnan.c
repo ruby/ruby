@@ -1,5 +1,7 @@
 /* public domain rewrite of isnan(3) */
 
+#include "missing.h"
+
 static int double_ne();
 
 int

@@ -1,5 +1,6 @@
 /* public domain rewrite of strtol(3) */
 
+#include "missing.h"
 #include <ctype.h>
 
 long

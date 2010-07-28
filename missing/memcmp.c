@@ -1,5 +1,7 @@
 /* public domain rewrite of memcmp(3) */
 
+#include "missing.h"
+
 int
 memcmp(s1,s2,len)
     char *s1;

@@ -1,5 +1,6 @@
 /* public domain rewrite of hypot */
 
+#include "missing.h"
 #include <math.h>
 
 double hypot(x,y)

@@ -10,6 +10,7 @@
 
 **********************************************************************/
 
+#include "missing.h"
 #include <errno.h>
 #include <float.h>
 #include <math.h>

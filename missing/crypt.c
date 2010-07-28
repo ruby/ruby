@@ -34,6 +34,7 @@
 static char sccsid[] = "@(#)crypt.c	8.1 (Berkeley) 6/4/93";
 #endif /* LIBC_SCCS and not lint */
 
+#include "missing.h"
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif

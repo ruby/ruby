@@ -13,6 +13,7 @@
  * express or implied warranty.
  */
 
+#include "missing.h"
 #include <ctype.h>
 
 /*

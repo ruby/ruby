@@ -1,5 +1,7 @@
 /* public domain rewrite of strchr(3) and strrchr(3) */
 
+#include "missing.h"
+
 char *
 strchr(s, c)
     char *s;
