@@ -702,7 +702,7 @@ INSNS2VMOPT = --srcdir="$(srcdir)"
 
 srcs: {$(VPATH)}parse.c {$(VPATH)}lex.c {$(VPATH)}newline.c srcs-ext srcs-enc
 
-EXT_SRCS = $(srcdir)/ext/ripper/ripper.c
+EXT_SRCS = $(srcdir)/ext/ripper/ripper.c $(srcdir)/ext/json/parser/parser.c
 
 srcs-ext: $(EXT_SRCS)
 
@@ -753,8 +753,11 @@ $(REVISION_H): $(srcdir)/version.h $(srcdir)/ChangeLog $(srcdir)/tool/file2lastr
 	@-$(BASERUBY) $(srcdir)/tool/file2lastrev.rb --revision.h "$(srcdir)" > "$(srcdir)/revision.tmp"
 	@$(IFCHANGE) "--timestamp=$@" "$(srcdir)/revision.h" "$(srcdir)/revision.tmp"
 
-$(EXT_SRCS):
+$(srcdir)/ext/ripper/ripper.c:
 	$(CHDIR) $(@D) && $(exec) $(MAKE) -f depend $(MFLAGS) top_srcdir=../.. srcdir=.
+
+$(srcdir)/ext/json/parser/parser.c:
+	$(CHDIR) $(@D) && $(exec) $(MAKE) -f prereq.mk $(MFLAGS) top_srcdir=../../.. srcdir=.
 
 ##
 

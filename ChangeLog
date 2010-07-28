@@ -1,3 +1,7 @@
+Thu Jul 29 06:51:30 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (EXT_SRCS): add ext/json/parser/parser.c.
+
 Thu Jul 29 05:52:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_s_basename): pass baselen to rmext.
