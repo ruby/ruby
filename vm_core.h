@@ -697,4 +697,14 @@ rb_threadptr_exec_event_hooks(rb_thread_t *th, rb_event_flag_t flag, VALUE self,
     } \
 } while (0)
 
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility push(default)
+#endif
+
+int rb_thread_check_trap_pending(void);
+
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility pop
+#endif
+
 #endif /* RUBY_VM_CORE_H */
