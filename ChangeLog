@@ -1,3 +1,8 @@
+Fri Jul 30 07:47:21 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* instruby.rb (ext-arch): prune directories start with '-'.
+	  backported r28654 from the trunk.
+
 Thu Jul 29 22:43:57 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/webrick/ssl.rb (WEBrick::Utils.create_self_signed_cert): wrongly
