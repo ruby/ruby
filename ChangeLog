@@ -1,3 +1,20 @@
+Wed Jul 21 15:22:17 2010  Evan Phoenix <evan@fallingsnow.net>
+
+	* lib/rubygems/custom_require.rb, gem_prelude.rb: Load code from
+	  from gems properly.
+
+Tue Jul 20 11:35:11 2010  Evan Phoenix  <evan@ruby-lang.org>
+
+	* lib/rubygems.rb: Load the custom require if --disable-rubygems
+	  was used.
+
+Tue Jul 20 11:27:18 2010  Evan Phoenix  <evan@ruby-lang.org>
+
+	* gem_prelude.rb: Pull in rubygem's custom require
+	  [ruby-core:30846]
+
+	* lib/rubygems.rb: Handle always having custom require available
+
 Tue Jul 13 20:58:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_DEFAULT_ARCH): adjust for target

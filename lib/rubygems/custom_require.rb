@@ -4,8 +4,6 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems'
-
 module Kernel
 
   ##
@@ -30,17 +28,17 @@ module Kernel
   def require(path) # :doc:
     gem_original_require path
   rescue LoadError => load_error
-    if load_error.message.end_with?(path) and
-       spec = Gem.searcher.find(path) then
-      Gem.activate(spec.name, "= #{spec.version}")
-      gem_original_require path
-    else
-      raise load_error
+    if load_error.message.end_with?(path)
+      if Gem.try_activate(path)
+        return gem_original_require(path)
+      end
     end
+
+    raise load_error
   end
 
   private :require
   private :gem_original_require
 
-end
+end unless Kernel.private_method_defined?(:gem_original_require)
 

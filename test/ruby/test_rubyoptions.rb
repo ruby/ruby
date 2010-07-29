@@ -322,8 +322,8 @@ class TestRubyOptions < Test::Unit::TestCase
     pat = Regexp.quote(notexist)
     bug1573 = '[ruby-core:23717]'
     assert_equal(false, File.exist?(notexist))
-    assert_in_out_err(["-r", notexist, "-ep"], "", [], /\A-e:.* -- #{pat} \(LoadError\)\Z/, bug1573)
-    assert_in_out_err([notexist], "", [], /\A#{rubybin}:.* -- #{pat} \(LoadError\)\Z/, bug1573)
+    assert_in_out_err(["-r", notexist, "-ep"], "", [], /.* -- #{pat} \(LoadError\)/, bug1573)
+    assert_in_out_err([notexist], "", [], /#{rubybin}:.* -- #{pat} \(LoadError\)/, bug1573)
   end
 
   def test_program_name
