@@ -381,6 +381,8 @@ char *rb_path_end(const char *);
 VALUE rb_file_directory_p(VALUE,VALUE);
 VALUE rb_str_encode_ospath(VALUE);
 int rb_is_absolute_path(const char *);
+const char *ruby_find_basename(const char *name, long *baselen, long *alllen);
+const char *ruby_find_extname(const char *name, long *len);
 /* gc.c */
 void ruby_set_stack_size(size_t);
 NORETURN(void rb_memerror(void));
