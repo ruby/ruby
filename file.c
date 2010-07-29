@@ -2554,6 +2554,8 @@ file_expand_path(fname, dname, result)
 	    strcpy(buf, pwPtr->pw_dir);
 	    p = buf + strlen(pwPtr->pw_dir);
 	    endpwent();
+#else
+	    rb_raise(rb_eArgError, "can't find user %s", buf);
 #endif
 	}
     }
