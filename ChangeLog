@@ -1,3 +1,8 @@
+Thu Jul 29 22:28:35 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/pathname.c (path_cmp): Pathname#<=> translated
+	  from pathname.rb.
+	
 Thu Jul 29 06:51:30 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (EXT_SRCS): add ext/json/parser/parser.c.
