@@ -1,6 +1,6 @@
 ##############################################################
 # extconf.rb for tcltklib
-# release date: 2010-05-31
+# release date: 2010-07-30
 ##############################################################
 require 'mkmf'
 
@@ -1224,11 +1224,11 @@ def search_X_libraries
       puts("Can't find X11 libraries. So, can't make tcltklib.so which is required by Ruby/Tk.")
       exit
     end
+  end
 
-    if TkConfig_Info['TK_XINCLUDES'] &&
-        !TkConfig_Info['TK_XINCLUDES'].strip.empty?
-      $INCFLAGS << " " << TkConfig_Info['TK_XINCLUDES'].strip
-    end
+  if TkConfig_Info['TK_XINCLUDES'] &&
+      !TkConfig_Info['TK_XINCLUDES'].strip.empty?
+    $INCFLAGS << " " << TkConfig_Info['TK_XINCLUDES'].strip
   end
 
   use_X
