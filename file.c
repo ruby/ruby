@@ -2851,6 +2851,7 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
     tainted = OBJ_TAINTED(fname);
 
     if (s[0] == '~' && abs_mode == 0) {      /* execute only if NOT absolute_path() */
+	long userlen = 0;
 	tainted = 1;
 	if (isdirsep(s[1]) || s[1] == '\0') {
 	    buf = 0;
@@ -2859,14 +2860,23 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
 	}
 	else {
 	    s = nextdirsep(b = s);
-	    BUFCHECK(bdiff + (s-b) >= buflen);
-	    memcpy(p, b, s-b);
-	    rb_str_set_len(result, s-b);
+	    userlen = s - b;
+	    BUFCHECK(bdiff + userlen >= buflen);
+	    memcpy(p, b, userlen);
+	    rb_str_set_len(result, userlen);
 	    buf = p + 1;
-	    p += s-b;
+	    p += userlen;
 	}
 	if (NIL_P(rb_home_dir(buf, result))) {
 	    rb_raise(rb_eArgError, "can't find user %s", buf);
+	}
+	if (!rb_is_absolute_path(RSTRING_PTR(result))) {
+	    if (userlen) {
+		rb_raise(rb_eArgError, "non-absolute home of %.*s", (int)userlen, b);
+	    }
+	    else {
+		rb_raise(rb_eArgError, "non-absolute home");
+	    }
 	}
 	BUFINIT();
 	p = pend;
