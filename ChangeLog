@@ -1,3 +1,9 @@
+Thu Jul 29 22:43:57 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/webrick/ssl.rb (WEBrick::Utils.create_self_signed_cert): wrongly
+	  created dummy SSL certificate with version == 3 (no such version) and
+	  serial == 0 (must be >0).
+
 Wed Jul 28 19:41:37 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* include/ruby/missing.h: shouldn't declare as dllimport when building
