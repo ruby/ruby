@@ -2512,6 +2512,7 @@ file_expand_path(fname, dname, result)
     tainted = OBJ_TAINTED(fname);
 
     if (s[0] == '~') {
+	long userlen = 0;
 	if (isdirsep(s[1]) || s[1] == '\0') {
 	    const char *dir = getenv("HOME");
 
@@ -2539,9 +2540,10 @@ file_expand_path(fname, dname, result)
 	    s++;
 #endif
 	    s = nextdirsep(b = s);
-	    BUFCHECK(bdiff + (s-b) >= buflen);
-	    memcpy(p, b, s-b);
-	    p += s-b;
+	    userlen = s - b;
+	    BUFCHECK(bdiff + userlen >= buflen);
+	    memcpy(p, b, userlen);
+	    p += userlen;
 	    *p = '\0';
 #ifdef HAVE_PWD_H
 	    pwPtr = getpwnam(buf);
@@ -2557,6 +2559,14 @@ file_expand_path(fname, dname, result)
 #else
 	    rb_raise(rb_eArgError, "can't find user %s", buf);
 #endif
+	}
+	if (!is_absolute_path(RSTRING_PTR(result))) {
+	    if (userlen) {
+		rb_raise(rb_eArgError, "non-absolute home of %.*s", userlen, s);
+	    }
+	    else {
+		rb_raise(rb_eArgError, "non-absolute home");
+	    }
 	}
     }
 #ifdef DOSISH_DRIVE_LETTER
