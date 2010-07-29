@@ -1,0 +1,1 @@
+bug.o: $(hdrdir)/util.h $(top_srcdir)/util.c io.h

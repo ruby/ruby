@@ -163,9 +163,8 @@ extern const char *ruby_find_extname(const char *, long *);
 void
 ruby_add_suffix(VALUE str, const char *suffix)
 {
-    int baselen;
-    int extlen = strlen(suffix);
-    char *p, *q;
+    long baselen;
+    long extlen = strlen(suffix);
     long slen;
     char buf[1024];
     const char *name;
@@ -189,26 +188,31 @@ ruby_add_suffix(VALUE str, const char *suffix)
 
     if (*suffix == '.') {        /* Style 1 */
 	if (ext) {
-	    if (strEQ(ext, suffix)) goto fallback;
+	    if (strEQ(ext, suffix)) {
+		extlen = sizeof(suffix1) - 1; /* suffix2 must be same length */
+		suffix = strEQ(suffix, suffix1) ? suffix2 : suffix1;
+	    }
 	    slen = ext - name;
 	}
 	rb_str_resize(str, slen);
 	rb_str_cat(str, suffix, extlen);
     }
     else {
+	char *p = buf, *q;
 	strncpy(buf, name, slen);
 	if (ext)
-	    p = buf + (ext - name);
+	    p += (ext - name);
 	else
-	    p = buf + slen;
+	    p += slen;
 	p[len] = '\0';
 	if (suffix[1] == '\0') {  /* Style 2 */
+	    q = (char *)ruby_find_basename(buf, &baselen, 0);
 	    if (len <= 3) {
+		if (len == 0 && baselen >= 8 && p + 3 <= buf + sizeof(buf)) p[len++] = '.'; /* DOSISH */
 		p[len] = *suffix;
 		p[++len] = '\0';
 	    }
-	    else if ((q = (char *)ruby_find_basename(buf, &baselen, 0)) &&
-		     baselen < 8) {
+	    else if (q && baselen < 8) {
 		q += baselen;
 		*q++ = *suffix;
 		if (ext) {
@@ -229,9 +233,9 @@ ruby_add_suffix(VALUE str, const char *suffix)
 	  fallback:
 	    (void)memcpy(p, !ext || strEQ(ext, suffix1) ? suffix2 : suffix1, 5);
 	}
+	rb_str_resize(str, strlen(buf));
+	memcpy(RSTRING_PTR(str), buf, RSTRING_LEN(str));
     }
-    rb_str_resize(str, strlen(buf));
-    memcpy(RSTRING_PTR(str), buf, RSTRING_LEN(str));
 }
 
 #if defined(__CYGWIN32__) || defined(_WIN32)
