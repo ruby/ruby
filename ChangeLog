@@ -1,3 +1,8 @@
+Fri Jul 30 07:48:04 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/extconf.rb: use TK_XINCLUDES on tkConfig.sh when not empty,
+	  even if MacOS X Aqua version [ruby-dev:41883].
+
 Fri Jul 30 07:47:21 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* instruby.rb (ext-arch): prune directories start with '-'.
