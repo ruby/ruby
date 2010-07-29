@@ -82,6 +82,43 @@ path_eq(VALUE self, VALUE other)
     return rb_str_equal(get_strpath(self), get_strpath(other));
 }
 
+/*
+ *  Provides for comparing pathnames, case-sensitively.
+ */
+static VALUE
+path_cmp(VALUE self, VALUE other)
+{
+    VALUE s1, s2;
+    char *p1, *p2;
+    char *e1, *e2;
+    if (!rb_obj_is_kind_of(other, rb_cPathname))
+        return Qnil;
+    s1 = get_strpath(self);
+    s2 = get_strpath(other);
+    p1 = RSTRING_PTR(s1);
+    p2 = RSTRING_PTR(s2);
+    e1 = p1 + RSTRING_LEN(s1);
+    e2 = p2 + RSTRING_LEN(s2);
+    while (p1 < e1 && p2 < e2) {
+        int c1, c2;
+        c1 = (unsigned char)*p1++;
+        c2 = (unsigned char)*p2++;
+        if (c1 == '/') c1 = '\0';
+        if (c2 == '/') c2 = '\0';
+        if (c1 != c2) {
+            if (c1 < c2)
+                return INT2FIX(-1);
+            else
+                return INT2FIX(1);
+        }
+    }
+    if (p1 < e1)
+        return INT2FIX(1);
+    if (p2 < e2)
+        return INT2FIX(-1);
+    return INT2FIX(0);
+}
+
 void
 Init_pathname()
 {
@@ -96,4 +133,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "==", path_eq, 1);
     rb_define_method(rb_cPathname, "===", path_eq, 1);
     rb_define_method(rb_cPathname, "eql?", path_eq, 1);
+    rb_define_method(rb_cPathname, "<=>", path_cmp, 1);
 }

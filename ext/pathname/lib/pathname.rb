@@ -208,12 +208,6 @@ class Pathname
 
   # :startdoc:
 
-  # Provides for comparing pathnames, case-sensitively.
-  def <=>(other)
-    return nil unless Pathname === other
-    @path.tr('/', "\0") <=> other.to_s.tr('/', "\0")
-  end
-
   def hash # :nodoc:
     @path.hash
   end
