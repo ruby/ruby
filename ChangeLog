@@ -1,3 +1,8 @@
+Fri Jul 30 08:33:20 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (file_expand_path): should check if could find user.
+	  [ruby-core:31538]
+
 Fri Jul 30 07:59:53 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (ruby_add_suffix): fixed a bug returning uninitialized

@@ -2865,7 +2865,9 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
 	    buf = p + 1;
 	    p += s-b;
 	}
-	rb_home_dir(buf, result);
+	if (NIL_P(rb_home_dir(buf, result))) {
+	    rb_raise(rb_eArgError, "can't find user %s", buf);
+	}
 	BUFINIT();
 	p = pend;
     }
