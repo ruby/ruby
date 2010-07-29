@@ -139,9 +139,20 @@ AC_ARG_WITH(arch,
 			  target platform]),
        [target_archs="$withval"], [unset target_archs])
 
+AC_DEFUN([RUBY_DEFAULT_ARCH], [
+AC_MSG_CHECKING([arch option])
+AS_CASE([$1],
+	[*64],        [ARCH_FLAG=-m64],
+	[[i[3-6]86]], [ARCH_FLAG=-m32],
+	[AC_MSG_ERROR(unknown target architecture: $target_archs)]
+	)
+AC_MSG_RESULT([$ARCH_FLAG])
+])
+
 AC_DEFUN([RUBY_UNIVERSAL_ARCH], [
-test ${CFLAGS+set} && CFLAGS=`echo "$CFLAGS" | sed 's/ *-arch  *[^ ]*//g'`
-test ${LDFLAGS+set} && LDFLAGS=`echo "$LDFLAGS" | sed 's/ *-arch  *[^ ]*//g'`
+# RUBY_UNIVERSAL_ARCH begin
+test ${CFLAGS+set} && CFLAGS=`echo "$CFLAGS" | sed -e 's/ *-arch  *[^ ]*//g' -e 's/ *-m32//g' -e 's/ *-m64//g'`
+test ${LDFLAGS+set} && LDFLAGS=`echo "$LDFLAGS" | sed 's/ *-arch  *[^ ]*//g' -e 's/ *-m32//g' -e 's/ *-m64//g'`
 unset ARCH_FLAG universal_binary universal_archnames
 if test ${target_archs+set}; then
     AC_MSG_CHECKING([target architectures])
@@ -175,6 +186,14 @@ if test ${target_archs+set}; then
 	target_cpu=universal
 	real_cross_compiling=$cross_compiling
     else
+	if test x"$target_cpu" != x"${target_archs}"; then
+	    echo 'int main(){return 0;}' > conftest.c
+	    if $CC $CFLAGS $ARCH_FLAG conftest.c > /dev/null 2>&1; then
+		rm -f conftest.* a.out
+	    else
+		RUBY_DEFAULT_ARCH("$target_archs")
+	    fi
+	fi
 	target_cpu=${target_archs}
     fi
     AS_CASE(["$target"], [-*], [ target="$target_cpu${target}"])
@@ -213,6 +232,7 @@ if test "${target_archs}" != "${rb_cv_target_archs-${target_archs}}"; then
 else
     rb_cv_target_archs=${target_archs}
 fi
+# RUBY_UNIVERSAL_ARCH end
 ])
 
 AC_ARG_ENABLE(load-relative,
@@ -267,6 +287,9 @@ AC_SUBST(COUTFLAG)
 
 RUBY_MINGW32
 RUBY_UNIVERSAL_ARCH
+if test "$target_cpu" != "$host_cpu" -a "$GCC" = yes -a "$cross_compiling" = no; then
+    RUBY_DEFAULT_ARCH("$target_cpu")
+fi
 
 AC_CHECK_TOOL(RANLIB, ranlib, :)
 AC_CHECK_TOOL(AR, ar)

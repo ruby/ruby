@@ -1,3 +1,8 @@
+Tue Jul 13 20:58:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_DEFAULT_ARCH): adjust for target
+	  cpu. [ruby-core:31243]
+
 Fri Jul 23 15:09:22 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_MINGW32): ignore msvc suffix.
