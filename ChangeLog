@@ -1,3 +1,8 @@
+Fri Jul 30 21:43:55 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/pathname.c (path_hash): Pathname#hash translated
+	  from pathname.rb.
+
 Fri Jul 30 12:42:02 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/net/imap.rb (example): use IO#noecho to read password if
@@ -30,7 +35,7 @@ Thu Jul 29 22:28:35 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pathname/pathname.c (path_cmp): Pathname#<=> translated
 	  from pathname.rb.
-	
+
 Thu Jul 29 06:51:30 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (EXT_SRCS): add ext/json/parser/parser.c.

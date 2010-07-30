@@ -31,10 +31,6 @@ class Pathname
 
   # :startdoc:
 
-  def hash # :nodoc:
-    @path.hash
-  end
-
   # Return the path as a String.
   def to_s
     @path.dup

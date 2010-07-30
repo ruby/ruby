@@ -119,6 +119,13 @@ path_cmp(VALUE self, VALUE other)
     return INT2FIX(0);
 }
 
+/* :nodoc: */
+static VALUE
+path_hash(VALUE self)
+{
+    return INT2FIX(rb_str_hash(get_strpath(self)));
+}
+
 /*
  * == Pathname
  *
@@ -311,4 +318,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "===", path_eq, 1);
     rb_define_method(rb_cPathname, "eql?", path_eq, 1);
     rb_define_method(rb_cPathname, "<=>", path_cmp, 1);
+    rb_define_method(rb_cPathname, "hash", path_hash, 0);
 }
