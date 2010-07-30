@@ -1,4 +1,7 @@
-Fri Jul 30 12:38:22 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jul 30 12:42:02 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/net/imap.rb (example): use IO#noecho to read password if
+	  possible, and defer until needed.  [ruby-dev:41889]
 
 	* lib/net/imap.rb (example): support starttls option.
 	  [ruby-dev:41888]

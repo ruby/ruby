@@ -3488,12 +3488,10 @@ EOF
 
   def get_password
     print "password: "
-    system("stty", "-echo")
     begin
-      return gets.chop
+      return _noecho(&:gets).chomp
     ensure
-      system("stty", "echo")
-      print "\n"
+      puts
     end
   end
 
@@ -3546,7 +3544,9 @@ EOF
   imap = Net::IMAP.new($host, :port => $port, :ssl => $ssl)
   begin
     imap.starttls if $starttls
-    password = get_password
+    class << password = method(:get_password)
+      alias to_str call
+    end
     imap.authenticate($auth, $user, password)
     while true
       cmd, *args = get_command
