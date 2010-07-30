@@ -2855,6 +2855,7 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
 	tainted = 1;
 	if (isdirsep(s[1]) || s[1] == '\0') {
 	    buf = 0;
+	    b = 0;
 	    rb_str_set_len(result, 0);
 	    if (*++s) ++s;
 	}
