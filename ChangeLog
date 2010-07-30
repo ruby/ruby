@@ -1,3 +1,7 @@
+Fri Jul 30 17:51:20 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/-test-/add_suffix/bug.c: typo.
+
 Fri Jul 30 08:51:51 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (file_expand_path): home directory must be absolute.
