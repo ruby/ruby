@@ -1,3 +1,8 @@
+Fri Jul 30 12:38:22 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/net/imap.rb (example): support starttls option.
+	  [ruby-dev:41888]
+
 Fri Jul 30 08:51:51 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (file_expand_path): home directory must be absolute.
