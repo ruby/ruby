@@ -141,6 +141,15 @@ path_to_s(VALUE self)
     return rb_obj_dup(get_strpath(self));
 }
 
+/* :nodoc: */
+static VALUE
+path_inspect(VALUE self)
+{
+    const char *c = rb_obj_classname(self);
+    VALUE str = get_strpath(self);
+    return rb_sprintf("#<%s:%s>", c, RSTRING_PTR(str));
+}
+
 /*
  * == Pathname
  *
@@ -336,4 +345,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "hash", path_hash, 0);
     rb_define_method(rb_cPathname, "to_s", path_to_s, 0);
     rb_define_method(rb_cPathname, "to_path", path_to_s, 0);
+    rb_define_method(rb_cPathname, "inspect", path_inspect, 0);
 }
