@@ -31,11 +31,6 @@ class Pathname
 
   # :startdoc:
 
-  # Return the path as a String.
-  def to_s
-    @path.dup
-  end
-
   # to_path is implemented so Pathname objects are usable with File.open, etc.
   alias_method TO_PATH, :to_s
 

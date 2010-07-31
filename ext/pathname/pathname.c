@@ -127,6 +127,15 @@ path_hash(VALUE self)
 }
 
 /*
+ *  Return the path as a String.
+ */
+static VALUE
+path_to_s(VALUE self)
+{
+    return rb_obj_dup(get_strpath(self));
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -319,4 +328,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "eql?", path_eq, 1);
     rb_define_method(rb_cPathname, "<=>", path_cmp, 1);
     rb_define_method(rb_cPathname, "hash", path_hash, 0);
+    rb_define_method(rb_cPathname, "to_s", path_to_s, 0);
 }
