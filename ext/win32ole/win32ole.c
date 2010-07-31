@@ -64,7 +64,7 @@
 #define V_I1REF(X) V_UNION(X, pcVal)
 #endif
 
-#ifndef U_UI2REF
+#ifndef V_UI2REF
 #define V_UI2REF(X) V_UNION(X, puiVal)
 #endif
 
@@ -130,7 +130,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.4.9"
+#define WIN32OLE_VERSION "1.5.0"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
