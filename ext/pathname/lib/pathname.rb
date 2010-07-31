@@ -31,10 +31,6 @@ class Pathname
 
   # :startdoc:
 
-  def inspect # :nodoc:
-    "#<#{self.class}:#{@path}>"
-  end
-
   # Return a pathname which is substituted by String#sub.
   def sub(pattern, *rest, &block)
     if block
