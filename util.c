@@ -277,7 +277,7 @@ ruby_add_suffix(VALUE str, const char *suffix)
 
     name = StringValueCStr(str);
     slen = strlen(name);
-    if (slen > sizeof(buf) - 1)
+    if (slen > (long)(sizeof(buf) - 1))
 	rb_fatal("Cannot do inplace edit on long filename (%ld characters)",
 		 slen);
 
