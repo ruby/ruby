@@ -127,7 +127,13 @@ path_hash(VALUE self)
 }
 
 /*
+ *  call-seq:
+ *    pathname.to_s             => string
+ *    pathname.to_path          => string
+ *
  *  Return the path as a String.
+ *
+ *  to_path is implemented so Pathname objects are usable with File.open, etc.
  */
 static VALUE
 path_to_s(VALUE self)
@@ -329,4 +335,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "<=>", path_cmp, 1);
     rb_define_method(rb_cPathname, "hash", path_hash, 0);
     rb_define_method(rb_cPathname, "to_s", path_to_s, 0);
+    rb_define_method(rb_cPathname, "to_path", path_to_s, 0);
 }

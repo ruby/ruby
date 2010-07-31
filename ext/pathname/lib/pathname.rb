@@ -31,9 +31,6 @@ class Pathname
 
   # :startdoc:
 
-  # to_path is implemented so Pathname objects are usable with File.open, etc.
-  alias_method TO_PATH, :to_s
-
   def inspect # :nodoc:
     "#<#{self.class}:#{@path}>"
   end
