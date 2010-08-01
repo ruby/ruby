@@ -1,3 +1,8 @@
+Sun Aug  1 23:04:35 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_modify_expand, rb_str_resize): get rid of
+	  repeating malloc and realloc.
+
 Sun Aug  1 22:16:30 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_hash): use rb_memhash and
