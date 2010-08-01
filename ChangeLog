@@ -1,3 +1,8 @@
+Sun Aug  1 09:35:35 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* bignum.c (big_op): comparison of bignum and infinity has returned 1
+	  or -1, but it must return boolean.
+
 Sun Aug  1 09:44:25 2010  Tanaka Akira  <akr@fsij.org>
 
 	* class.c (rb_include_module): don't clear the method cache if the
