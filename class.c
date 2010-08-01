@@ -659,7 +659,8 @@ rb_include_module(VALUE klass, VALUE module)
 	    }
 	}
 	c = RCLASS_SUPER(c) = include_class_new(module, RCLASS_SUPER(c));
-	changed = 1;
+	if (RMODULE_M_TBL(module) && RMODULE_M_TBL(module)->num_entries)
+	    changed = 1;
       skip:
 	module = RCLASS_SUPER(module);
     }
