@@ -185,6 +185,8 @@ class TestBignum < Test::Unit::TestCase
     assert(T31P < T64P)
     assert(T64P > T31P)
     assert_raise(ArgumentError) { T31P < "foo" }
+    assert(T64 < (1.0/0.0))
+    assert(!(T64 > (1.0/0.0)))
   end
 
   def test_eq
