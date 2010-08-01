@@ -396,7 +396,7 @@ class Range
   end
 end
 
-class File
+class File < IO
   class Stat
     def pretty_print(q)
       require 'etc.so'
@@ -503,7 +503,7 @@ class MatchData
   end
 end
 
-class Object
+class Object < BasicObject
   include PP::ObjectMixin
 end
 

@@ -1,3 +1,7 @@
+Sun Aug  1 23:04:49 2010  Tanaka Akira  <akr@fsij.org>
+
+	* lib/pp.rb: describe superclasses explicitly.
+
 Sun Aug  1 23:04:35 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_modify_expand, rb_str_resize): get rid of
@@ -270,7 +274,7 @@ Thu Jul 22 17:33:47 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Thu Jul 22 20:12:56 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
-	* thread_pthread.c (get_stack): fix memory leak; pthread_attr_destory
+	* thread_pthread.c (get_stack): fix memory leak; pthread_attr_destroy
 	  must be called even when pthread_getattr_np is used.
 	  [ruby-core:31269]
 
@@ -310,7 +314,7 @@ Thu Jul 22 03:02:55 2010  Eric Hodel  <drbrain@segment7.net>
 
 Wed Jul 21 23:07:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* template/fake.rb.in: get rid of embeding an absolute path.
+	* template/fake.rb.in: get rid of embedding an absolute path.
 
 Wed Jul 21 15:22:17 2010  Evan Phoenix <evan@fallingsnow.net>
 
@@ -396,7 +400,7 @@ Tue Jul 20 12:50:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Tue Jul 20 12:27:56 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/fileutils.rb (FileUtils::Entry_#copy): check file name
-	  spearator boundary.  [ruby-core:31360]
+	  separator boundary.  [ruby-core:31360]
 
 Mon Jul 19 18:34:12 2010  Tanaka Akira  <akr@fsij.org>
 
@@ -537,7 +541,7 @@ Wed Jul 14 20:23:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Wed Jul 14 18:18:05 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regexec.c (match_at): add end point to enclen's argument.
-	  This only effect on compilinig with -DONIG_DEBUG_MATCH.
+	  This only effect on compiling with -DONIG_DEBUG_MATCH.
 
 Tue Jul 13 21:34:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
