@@ -292,7 +292,10 @@ ruby_add_suffix(VALUE str, const char *suffix)
 
     if (*suffix == '.') {        /* Style 1 */
 	if (ext) {
-	    if (strEQ(ext, suffix)) goto fallback;
+	    if (strEQ(ext, suffix)) {
+		extlen = sizeof(suffix1) - 1; /* suffix2 must be same length */
+		suffix = strEQ(suffix, suffix1) ? suffix2 : suffix1;
+	    }
 	    slen = ext - name;
 	}
 	rb_str_resize(str, slen);
@@ -332,9 +335,9 @@ ruby_add_suffix(VALUE str, const char *suffix)
 	  fallback:
 	    (void)memcpy(p, !ext || strEQ(ext, suffix1) ? suffix2 : suffix1, 5);
 	}
+	rb_str_resize(str, strlen(buf));
+	memcpy(RSTRING_PTR(str), buf, RSTRING_LEN(str));
     }
-    rb_str_resize(str, strlen(buf));
-    memcpy(RSTRING_PTR(str), buf, RSTRING_LEN(str));
 }
 
 static int

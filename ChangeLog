@@ -1,3 +1,8 @@
+Mon Aug  2 00:03:18 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* util.c (ruby_add_suffix): fixed a bug returning uninitialized value.
+	  This is the essential part from r28794 of trunk.
+
 Mon Jul 26 13:01:25 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (rb_thread_mark): should mark iseq itself other than normal
