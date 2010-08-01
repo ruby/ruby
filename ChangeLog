@@ -1,3 +1,8 @@
+Mon Aug  2 05:34:48 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/pathname.c (path_realdirpath): Pathname#realdirpath
+	  translated from pathname.rb.
+
 Sun Aug  1 23:04:49 2010  Tanaka Akira  <akr@fsij.org>
 
 	* lib/pp.rb: describe superclasses explicitly.
