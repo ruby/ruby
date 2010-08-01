@@ -180,17 +180,6 @@ class Pathname
   private :cleanpath_conservative
 
   #
-  # Returns the real (absolute) pathname of +self+ in the actual
-  # filesystem not containing symlinks or useless dots.
-  #
-  # All components of the pathname must exist when this method is
-  # called.
-  #
-  def realpath(basedir=nil)
-    self.class.new(File.realpath(@path, basedir))
-  end
-
-  #
   # Returns the real (absolute) pathname of +self+ in the actual filesystem.
   # The real pathname doesn't contain symlinks or useless dots.
   #

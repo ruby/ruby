@@ -199,6 +199,23 @@ path_sub_ext(VALUE self, VALUE repl)
 }
 
 /*
+ * Returns the real (absolute) pathname of +self+ in the actual
+ * filesystem not containing symlinks or useless dots.
+ *
+ * All components of the pathname must exist when this method is
+ * called.
+ *
+ */
+static VALUE
+path_realpath(int argc, VALUE *argv, VALUE self)
+{
+    VALUE basedir, str;
+    rb_scan_args(argc, argv, "01", &basedir);
+    str = rb_funcall(rb_cFile, rb_intern("realpath"), 2, get_strpath(self), basedir);
+    return rb_class_new_instance(1, &str, rb_obj_class(self));
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -396,4 +413,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "inspect", path_inspect, 0);
     rb_define_method(rb_cPathname, "sub", path_sub, -1);
     rb_define_method(rb_cPathname, "sub_ext", path_sub_ext, 1);
+    rb_define_method(rb_cPathname, "realpath", path_realpath, -1);
 }
