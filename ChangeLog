@@ -2,6 +2,7 @@ Sun Aug  1 22:16:30 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_hash): use rb_memhash and
 	  take care of negative finite numbers properly.
+	  [ruby-core:31582][Bug #3640]
 
 Sun Aug  1 20:57:22 2010  Tanaka Akira  <akr@fsij.org>
 
