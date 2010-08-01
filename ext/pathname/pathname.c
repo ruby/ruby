@@ -168,6 +168,37 @@ path_sub(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ * Return a pathname which the extension of the basename is substituted by
+ * <i>repl</i>.
+ * 
+ * If self has no extension part, <i>repl</i> is appended.
+ */
+static VALUE
+path_sub_ext(VALUE self, VALUE repl)
+{
+    VALUE str = get_strpath(self);
+    VALUE str2;
+    long extlen;
+    const char *ext;
+    const char *p;
+
+    StringValue(repl);
+    p = RSTRING_PTR(str);
+    ext = ruby_find_extname(p, &extlen);
+    if (ext == NULL) {
+        ext = p + RSTRING_LEN(str);
+    }
+    else if (extlen <= 1) {
+        ext += extlen;
+    }
+    str2 = rb_str_dup(str);
+    rb_str_set_len(str2, ext-p);
+    rb_str_append(str2, repl);
+    OBJ_INFECT(str2, str);
+    return rb_class_new_instance(1, &str2, rb_obj_class(self));
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -364,4 +395,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "to_path", path_to_s, 0);
     rb_define_method(rb_cPathname, "inspect", path_inspect, 0);
     rb_define_method(rb_cPathname, "sub", path_sub, -1);
+    rb_define_method(rb_cPathname, "sub_ext", path_sub_ext, 1);
 }
