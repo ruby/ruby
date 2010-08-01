@@ -1,3 +1,8 @@
+Sun Aug  1 17:27:32 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub: needs stddef.h for size_t.  a patch from
+	  Akio Tajima at [ruby-dev:41905].
+
 Sun Aug  1 14:59:04 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pathname/pathname.c (path_sub_ext): Pathname#sub_ext translated
