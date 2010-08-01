@@ -2,6 +2,7 @@ Sun Aug  1 09:44:25 2010  Tanaka Akira  <akr@fsij.org>
 
 	* class.c (rb_include_module): don't clear the method cache if the
 	  included module has no method.
+	  reported by Eric Wong.  [ruby-core:31559]
 
 Sun Aug  1 09:21:32 2010  Tanaka Akira  <akr@fsij.org>
 
