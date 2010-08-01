@@ -183,7 +183,9 @@ extern DWORD rb_w32_osid(void);
 #define stati64(path, st) rb_w32_stati64(path, st)
 #elif !defined(_MSC_VER) || RT_VER < 80
 #define stati64 _stati64
+#ifndef _stati64
 #define _stati64(path, st) rb_w32_stati64(path, st)
+#endif
 #else
 #define stati64 _stat64
 #define _stat64(path, st) rb_w32_stati64(path, st)

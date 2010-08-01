@@ -1,3 +1,8 @@
+Sun Aug  1 09:12:50 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/win32.h: latest x86_64 mingw defines stati64.
+	  [ruby-core:27516]
+
 Sun Aug  1 08:51:52 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: fix typo. [ruby-core:31564][Bug #3636]
