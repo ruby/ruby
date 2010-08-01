@@ -1646,8 +1646,11 @@ rb_thread_mark(void *ptr)
 	    rb_gc_mark_locations(p, p + th->mark_stack_len);
 
 	    while (cfp != limit_cfp) {
+		rb_iseq_t *iseq = cfp->iseq;
 		rb_gc_mark(cfp->proc);
-		if (cfp->iseq) rb_gc_mark(cfp->iseq->self);
+		if (iseq) {
+		    rb_gc_mark(RUBY_VM_NORMAL_ISEQ_P(iseq) ? iseq->self : (VALUE)iseq);
+		}
 		if (cfp->me) ((rb_method_entry_t *)cfp->me)->mark = 1;
 		cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 	    }
