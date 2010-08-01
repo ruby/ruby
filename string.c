@@ -1264,12 +1264,12 @@ str_independent(VALUE str)
 }
 
 static void
-str_make_independent(VALUE str)
+str_make_independent_expand(VALUE str, long expand)
 {
     char *ptr;
     long len = RSTRING_LEN(str);
 
-    ptr = ALLOC_N(char, len+1);
+    ptr = ALLOC_N(char, len+expand+1);
     if (RSTRING_PTR(str)) {
 	memcpy(ptr, RSTRING_PTR(str), len);
     }
@@ -1281,11 +1281,28 @@ str_make_independent(VALUE str)
     STR_UNSET_NOCAPA(str);
 }
 
+#define str_make_independent(str) str_make_independent_expand(str, 0L)
+
 void
 rb_str_modify(VALUE str)
 {
     if (!str_independent(str))
 	str_make_independent(str);
+    ENC_CODERANGE_CLEAR(str);
+}
+
+void
+rb_str_modify_expand(VALUE str, long expand)
+{
+    if (expand < 0) {
+	rb_raise(rb_eArgError, "negative expanding string size");
+    }
+    if (!str_independent(str) ||
+	(expand > 0 &&
+	 (!STR_EMBED_P(str) ||
+	  RSTRING_LEN(str) + expand > RSTRING_EMBED_LEN_MAX))) {
+	str_make_independent_expand(str, expand);
+    }
     ENC_CODERANGE_CLEAR(str);
 }
 
@@ -1684,24 +1701,23 @@ VALUE
 rb_str_resize(VALUE str, long len)
 {
     long slen;
+    int independent;
 
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative string size (or size too big)");
     }
 
-    rb_str_modify(str);
+    independent = str_independent(str);
+    ENC_CODERANGE_CLEAR(str);
     slen = RSTRING_LEN(str);
     if (len != slen) {
 	if (STR_EMBED_P(str)) {
-	    char *ptr;
 	    if (len <= RSTRING_EMBED_LEN_MAX) {
 		STR_SET_EMBED_LEN(str, len);
 		RSTRING(str)->as.ary[len] = '\0';
 		return str;
 	    }
-	    ptr = ALLOC_N(char,len+1);
-	    MEMCPY(ptr, RSTRING(str)->as.ary, char, slen);
-	    RSTRING(str)->as.heap.ptr = ptr;
+	    str_make_independent_expand(str, len - slen);
 	    STR_SET_NOEMBED(str);
 	}
 	else if (len <= RSTRING_EMBED_LEN_MAX) {
@@ -1710,8 +1726,11 @@ rb_str_resize(VALUE str, long len)
 	    if (slen > 0) MEMCPY(RSTRING(str)->as.ary, ptr, char, len);
 	    RSTRING(str)->as.ary[len] = '\0';
 	    STR_SET_EMBED_LEN(str, len);
-	    xfree(ptr);
+	    if (independent) xfree(ptr);
 	    return str;
+	}
+	else if (!independent) {
+	    str_make_independent_expand(str, len - slen);
 	}
 	else if (slen < len || slen - len > 1024) {
 	    REALLOC_N(RSTRING(str)->as.heap.ptr, char, len+1);
@@ -1794,12 +1813,12 @@ rb_str_cat(VALUE str, const char *ptr, long len)
 	rb_raise(rb_eArgError, "negative string size (or size too big)");
     }
     if (STR_ASSOC_P(str)) {
-	rb_str_modify(str);
-	if (STR_EMBED_P(str)) str_make_independent(str);
-	REALLOC_N(RSTRING(str)->as.heap.ptr, char, RSTRING(str)->as.heap.len+len+1);
-	memcpy(RSTRING(str)->as.heap.ptr + RSTRING(str)->as.heap.len, ptr, len);
-	RSTRING(str)->as.heap.len += len;
-	RSTRING(str)->as.heap.ptr[RSTRING(str)->as.heap.len] = '\0'; /* sentinel */
+	char *p;
+	rb_str_modify_expand(str, len);
+	p = RSTRING(str)->as.heap.ptr;
+	memcpy(p + RSTRING(str)->as.heap.len, ptr, len);
+	len = RSTRING(str)->as.heap.len += len;
+	p[len] = '\0'; /* sentinel */
 	return str;
     }
 
@@ -1951,17 +1970,17 @@ rb_str_append(VALUE str, VALUE str2)
 {
     rb_encoding *enc;
     int cr, cr2;
+    long len2;
 
     StringValue(str2);
-    if (RSTRING_LEN(str2) > 0 && STR_ASSOC_P(str)) {
-        long len = RSTRING_LEN(str)+RSTRING_LEN(str2);
+    if ((len2 = RSTRING_LEN(str2)) > 0 && STR_ASSOC_P(str)) {
+        long len = RSTRING_LEN(str) + len2;
         enc = rb_enc_check(str, str2);
         cr = ENC_CODERANGE(str);
         if ((cr2 = ENC_CODERANGE(str2)) > cr) cr = cr2;
-        rb_str_modify(str);
-        REALLOC_N(RSTRING(str)->as.heap.ptr, char, len+1);
+        rb_str_modify_expand(str, len2);
         memcpy(RSTRING(str)->as.heap.ptr + RSTRING(str)->as.heap.len,
-               RSTRING_PTR(str2), RSTRING_LEN(str2)+1);
+               RSTRING_PTR(str2), len2+1);
         RSTRING(str)->as.heap.len = len;
         rb_enc_associate(str, enc);
         ENC_CODERANGE_SET(str, cr);
