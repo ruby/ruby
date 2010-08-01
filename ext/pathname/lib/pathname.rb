@@ -179,16 +179,6 @@ class Pathname
   end
   private :cleanpath_conservative
 
-  #
-  # Returns the real (absolute) pathname of +self+ in the actual filesystem.
-  # The real pathname doesn't contain symlinks or useless dots.
-  #
-  # The last component of the real pathname can be nonexistent.
-  #
-  def realdirpath(basedir=nil)
-    self.class.new(File.realdirpath(@path, basedir))
-  end
-
   # #parent returns the parent directory.
   #
   # This is same as <tt>self + '..'</tt>.
