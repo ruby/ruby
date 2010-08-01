@@ -1016,7 +1016,7 @@ rb_dbl_cmp(double a, double b)
 static VALUE
 flo_cmp(VALUE x, VALUE y)
 {
-    double a, b, i;
+    double a, b;
 
     a = RFLOAT_VALUE(x);
     if (isnan(a)) return Qnil;
@@ -1038,12 +1038,8 @@ flo_cmp(VALUE x, VALUE y)
 	break;
 
       default:
-	if (isinf(a) && (i = rb_check_funcall(y, rb_intern("infinite?"), 0, 0)) != Qundef) {
-	    if (RTEST(i)) {
-		int j = rb_cmpint(i, x, y);
-		j = (a > 0.0) ? (j > 0 ? 0 : +1) : (j < 0 ? 0 : -1);
-		return INT2FIX(j);
-	    }
+	if (isinf(a) && (!rb_respond_to(y, rb_intern("infinite?")) ||
+			 !RTEST(rb_funcall(y, rb_intern("infinite?"), 0, 0)))) {
 	    if (a > 0.0) return INT2FIX(1);
 	    return INT2FIX(-1);
 	}

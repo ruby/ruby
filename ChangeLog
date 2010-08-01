@@ -19,11 +19,6 @@ Sun Aug  1 09:35:35 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 	* bignum.c (big_op): comparison of bignum and infinity has returned 1
 	  or -1, but it must return boolean.
 
-Sun Jul 25 05:37:20 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* numeric.c (flo_cmp): honor the result of infinite? method of the
-	  other.  [ruby-core:31470]
-
 Wed Jul 21 15:22:17 2010  Evan Phoenix <evan@fallingsnow.net>
 
 	* lib/rubygems/custom_require.rb, gem_prelude.rb: Load code from

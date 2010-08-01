@@ -239,20 +239,6 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(-1, (Float::MAX.to_i*2) <=> inf)
     assert_equal(1, (-Float::MAX.to_i*2) <=> -inf)
 
-    bug3609 = '[ruby-core:31470]'
-    def (pinf = Object.new).infinite?; +1 end
-    def (ninf = Object.new).infinite?; -1 end
-    def (fin = Object.new).infinite?; nil end
-    nonum = Object.new
-    assert_equal(0, inf <=> pinf, bug3609)
-    assert_equal(1, inf <=> fin, bug3609)
-    assert_equal(1, inf <=> ninf, bug3609)
-    assert_nil(inf <=> nonum, bug3609)
-    assert_equal(-1, -inf <=> pinf, bug3609)
-    assert_equal(-1, -inf <=> fin, bug3609)
-    assert_equal(0, -inf <=> ninf, bug3609)
-    assert_nil(-inf <=> nonum, bug3609)
-
     assert_raise(ArgumentError) { 1.0 > nil }
     assert_raise(ArgumentError) { 1.0 >= nil }
     assert_raise(ArgumentError) { 1.0 < nil }
