@@ -135,6 +135,7 @@ module IRB
 	@CONF[:MATH_MODE] = true
       when "-d"
 	$DEBUG = true
+	$VERBOSE = true
       when "-w"
 	$VERBOSE = true
       when /^-W(.+)?/
