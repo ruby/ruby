@@ -151,6 +151,23 @@ path_inspect(VALUE self)
 }
 
 /*
+ * Return a pathname which is substituted by String#sub.
+ */
+static VALUE
+path_sub(int argc, VALUE *argv, VALUE self)
+{
+    VALUE str = get_strpath(self);
+
+    if (rb_block_given_p()) {
+        str = rb_block_call(str, rb_intern("sub"), argc, argv, 0, 0);
+    }
+    else {
+        str = rb_funcall2(str, rb_intern("sub"), argc, argv);
+    }
+    return rb_class_new_instance(1, &str, rb_obj_class(self));
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -346,4 +363,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "to_s", path_to_s, 0);
     rb_define_method(rb_cPathname, "to_path", path_to_s, 0);
     rb_define_method(rb_cPathname, "inspect", path_inspect, 0);
+    rb_define_method(rb_cPathname, "sub", path_sub, -1);
 }
