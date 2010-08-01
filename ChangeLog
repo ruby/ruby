@@ -1,3 +1,9 @@
+Sun Aug  1 10:23:48 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/irb/init.rb (IRB.parse_opts): set VERBOSE to true when debug
+	  switch called in irb.  a patch from Andrew Grimm in
+	  [ruby-core:31558].
+
 Sun Aug  1 09:35:35 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* bignum.c (big_op): comparison of bignum and infinity has returned 1
