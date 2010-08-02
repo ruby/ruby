@@ -15,7 +15,7 @@
 
   instruction form:
     DEFINE_INSN
-    instrunction_name
+    instruction_name
     (instruction_operands, ..)
     (pop_values, ..)
     (return value)
