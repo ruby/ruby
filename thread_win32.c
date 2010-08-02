@@ -507,7 +507,7 @@ native_thread_create(rb_thread_t *th)
 static void
 native_thread_join(HANDLE th)
 {
-    w32_wait_events(&th, 1, 0, 0);
+    w32_wait_events(&th, 1, INFINITE, 0);
 }
 
 #if USE_NATIVE_THREAD_PRIORITY
