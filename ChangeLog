@@ -1,3 +1,9 @@
+Mon Aug  2 21:16:03 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: NONAMELESSUNION defined only if gcc
+	  version is older than 3.4.4. [ruby-core:31567] [Bug #3637]
+	* ext/win32ole/extconf.rb: ditto.
+
 Mon Aug  2 16:34:32 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* thread_win32.c (native_thread_join): need to wait thread, of course.
