@@ -2052,7 +2052,7 @@ if test x"$cross_compiling" = xyes; then
   TEST_RUNNABLE=no
 else
   MINIRUBY='./miniruby$(EXEEXT) -I$(srcdir)/lib'
-  MINIRUBY="$MINIRUBY"' -I$(EXTOUT)/common -I./- -r$(srcdir)/ext/purelib.rb'
+  MINIRUBY="$MINIRUBY"' -I$(EXTOUT)/common'
   PREP='miniruby$(EXEEXT)'
   RUNRUBY='$(MINIRUBY) $(srcdir)/tool/runruby.rb --extout=$(EXTOUT)'
   XRUBY='$(RUNRUBY)'
