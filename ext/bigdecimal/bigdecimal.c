@@ -223,12 +223,12 @@ BigDecimal_hash(VALUE self)
 {
     ENTER(1);
     Real *p;
-    U_LONG hash,i;
+    st_index_t hash;
 
     GUARD_OBJ(p,GetVpValue(self,1));
     hash = (U_LONG)p->sign;
     /* hash!=2: the case for 0(1),NaN(0) or +-Infinity(3) is sign itself */
-    if(hash == 2 || hash == -2) {
+    if(hash == 2 || hash == (st_index_t)-2) {
 	hash ^= rb_memhash(p->frac, sizeof(U_LONG)*p->Prec);
 	hash += p->exponent;
     }
