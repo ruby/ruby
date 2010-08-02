@@ -1,5 +1,6 @@
 #include "ruby.h"
 #include "ruby/defines.h"
+#include "ruby/util.h"
 #ifndef HAVE_RUBY_ADD_SUFFIX
 #define _WIN32 1
 #include "util.c"
