@@ -1,3 +1,8 @@
+Tue Aug  3 07:52:20 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/purelib.rb: no longer used since the default load path of
+	  miniruby is empty.
+
 Tue Aug  3 00:53:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* insns.def, vm_core.h: fixed typo.  reported by Rocky Bernstein
