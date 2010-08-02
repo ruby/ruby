@@ -34,7 +34,7 @@
 #ifndef ENABLE_VM_OBJSPACE
 #ifdef _WIN32
 /*
- * TODO: object space indenpendent st_table.
+ * TODO: object space independent st_table.
  * socklist needs st_table in rb_w32_sysinit(), before object space
  * initialization.
  * It is too early now to change st_hash_type, since it breaks binary
@@ -166,7 +166,7 @@ struct rb_iseq_struct {
     VALUE name;	         /* String: iseq name */
     VALUE filename;      /* file information where this sequence from */
     VALUE filepath;      /* real file path or nil */
-    VALUE *iseq;         /* iseq (insn number and openrads) */
+    VALUE *iseq;         /* iseq (insn number and operands) */
     VALUE *iseq_encoded; /* encoded iseq */
     unsigned long iseq_size;
     VALUE mark_ary;	/* Array: includes operands which should be GC marked */
@@ -190,7 +190,7 @@ struct rb_iseq_struct {
      * argument information
      *
      *  def m(a1, a2, ..., aM,                    # mandatory
-     *        b1=(...), b2=(...), ..., bN=(...),  # optinal
+     *        b1=(...), b2=(...), ..., bN=(...),  # optional
      *        *c,                                 # rest
      *        d1, d2, ..., dO,                    # post
      *        &e)                                 # block
