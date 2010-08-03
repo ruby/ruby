@@ -1,6 +1,5 @@
 #!./miniruby
 
-pure = true
 show = false
 precommand = []
 while arg = ARGV[0]
@@ -18,7 +17,7 @@ while arg = ARGV[0]
   when re =~ "extout"
     extout = value
   when re =~ "pure"
-    pure = (value != "no")
+    # obsolete switch do nothing
   when re =~ "debugger"
     require 'shellwords'
     precommand.concat(value ? (Shellwords.shellwords(value) unless value == "no") : %w"gdb --args")
@@ -62,9 +61,7 @@ env = {}
 env["RUBY"] = File.expand_path(ruby)
 env["PATH"] = [abs_archdir, ENV["PATH"]].compact.join(File::PATH_SEPARATOR)
 
-if pure
-  libs << File.expand_path("ext", srcdir) << "-"
-elsif e = ENV["RUBYLIB"]
+if e = ENV["RUBYLIB"]
   libs |= e.split(File::PATH_SEPARATOR)
 end
 env["RUBYLIB"] = $:.replace(libs).join(File::PATH_SEPARATOR)
@@ -82,7 +79,6 @@ end
 ENV.update env
 
 cmd = [ruby]
-cmd << "-rpurelib.rb" if pure
 cmd.concat(ARGV)
 cmd.unshift(*precommand) unless precommand.empty?
 

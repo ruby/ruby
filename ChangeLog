@@ -1,3 +1,7 @@
+Tue Aug  3 12:03:57 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* tool/runruby.rb: no purelib.
+
 Tue Aug  3 07:52:20 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/purelib.rb: no longer used since the default load path of
