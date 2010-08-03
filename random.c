@@ -329,7 +329,12 @@ random_mark(void *ptr)
     rb_gc_mark(((rb_random_t *)ptr)->seed);
 }
 
-#define random_free RUBY_TYPED_DEFAULT_FREE
+static void
+random_free(void *ptr)
+{
+    if (ptr != &default_rand)
+	xfree(ptr);
+}
 
 static size_t
 random_memsize(const void *ptr)
@@ -1232,6 +1237,8 @@ Init_Random(void)
     rb_define_private_method(rb_cRandom, "state", random_state, 0);
     rb_define_private_method(rb_cRandom, "left", random_left, 0);
     rb_define_method(rb_cRandom, "==", random_equal, 1);
+    rb_define_const(rb_cRandom, "DEFAULT",
+		    TypedData_Wrap_Struct(rb_cRandom, &random_data_type, &default_rand));
 
     rb_define_singleton_method(rb_cRandom, "srand", rb_f_srand, -1);
     rb_define_singleton_method(rb_cRandom, "rand", rb_f_rand, -1);

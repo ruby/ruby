@@ -415,4 +415,16 @@ END
       assert_equal(r1, r2)
     }
   end
+
+  def test_default
+    r1 = Random::DEFAULT.dup
+    r2 = Random::DEFAULT.dup
+    3.times do
+      x0 = rand
+      x1 = r1.rand
+      x2 = r2.rand
+      assert_equal(x0, x1)
+      assert_equal(x0, x2)
+    end
+  end
 end
