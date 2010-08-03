@@ -193,6 +193,7 @@ class TestBignum < Test::Unit::TestCase
     assert(T31P != 1)
     assert(T31P == 2147483647.0)
     assert(T31P != "foo")
+    assert(2**77889 != (1.0/0.0), '[ruby-core:31603]')
   end
 
   def test_eql

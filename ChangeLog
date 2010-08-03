@@ -1,3 +1,10 @@
+Tue Aug  3 20:30:16 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_big_eq): never equal to infinity.
+	  [ruby-core:31603]
+
+	* rational.c (nurat_div): hack for integral float divisor.
+
 Tue Aug  3 14:42:12 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/mkext.rb: remove purelib, fixes a bug in r28440, r28441.
