@@ -1,3 +1,7 @@
+Tue Aug  3 21:01:10 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_check_hash_type): added.
+
 Tue Aug  3 20:30:16 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (rb_big_eq): never equal to infinity.

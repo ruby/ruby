@@ -406,6 +406,7 @@ VALUE rb_gc_start(void);
 #define Init_stack(addr) ruby_init_stack(addr)
 /* hash.c */
 void st_foreach_safe(struct st_table *, int (*)(ANYARGS), st_data_t);
+VALUE rb_check_hash_type(VALUE);
 void rb_hash_foreach(VALUE, int (*)(ANYARGS), VALUE);
 VALUE rb_hash(VALUE);
 VALUE rb_hash_new(void);
