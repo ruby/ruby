@@ -418,6 +418,12 @@ to_hash(VALUE hash)
     return rb_convert_type(hash, T_HASH, "Hash", "to_hash");
 }
 
+VALUE
+rb_check_hash_type(VALUE hash)
+{
+    return rb_check_convert_type(hash, T_HASH, "Hash", "to_hash");
+}
+
 /*
  *  call-seq:
  *     Hash.try_convert(obj) -> hash or nil
@@ -432,7 +438,7 @@ to_hash(VALUE hash)
 static VALUE
 rb_hash_s_try_convert(VALUE dummy, VALUE hash)
 {
-    return rb_check_convert_type(hash, T_HASH, "Hash", "to_hash");
+    return rb_check_hash_type(hash);
 }
 
 static int
