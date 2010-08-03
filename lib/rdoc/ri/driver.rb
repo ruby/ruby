@@ -1034,7 +1034,7 @@ Options may also be set in the 'RI' environment variable.
     pagers = [ENV['RI_PAGER'], ENV['PAGER'], 'pager', 'less', 'more']
 
     pagers.compact.uniq.each do |pager|
-      next unless File.exist? pager
+      next unless pager
 
       io = IO.popen pager, "w" rescue next
 
