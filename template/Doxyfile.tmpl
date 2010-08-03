@@ -9,7 +9,7 @@ end
 srcdir ||= File.dirname(File.dirname(__FILE__))
 load 'rbconfig.rb'
 unless miniruby
-  miniruby = './miniruby$(EXEEXT) -I$(srcdir)/lib -I$(EXTOUT)/common -I./- -r$(srcdir)/ext/purelib.rb'
+  miniruby = './miniruby$(EXEEXT) -I$(srcdir)/lib -I$(EXTOUT)/common -I./-'
   RbConfig.expand(miniruby, RbConfig::CONFIG.merge("srcdir"=>srcdir))
 end
 dot = RbConfig::CONFIG['DOT'] || ""
