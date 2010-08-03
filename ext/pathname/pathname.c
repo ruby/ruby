@@ -231,6 +231,15 @@ path_realdirpath(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ * See <tt>File.atime</tt>.  Returns last access time.
+ */
+static VALUE
+path_atime(VALUE self)
+{
+    return rb_funcall(rb_cFile, rb_intern("atime"), 1, get_strpath(self));
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -430,4 +439,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "sub_ext", path_sub_ext, 1);
     rb_define_method(rb_cPathname, "realpath", path_realpath, -1);
     rb_define_method(rb_cPathname, "realdirpath", path_realdirpath, -1);
+    rb_define_method(rb_cPathname, "atime", path_atime, 0);
 }
