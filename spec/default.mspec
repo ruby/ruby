@@ -16,7 +16,6 @@ class MSpecScript
     -I#{srcdir}/lib
     -I#{srcdir}/#{config['EXTOUT']}/common
     -I#{srcdir}/-
-    -r#{srcdir}/ext/purelib.rb
     #{srcdir}/tool/runruby.rb --extout=#{config['EXTOUT']}
   ]
 end

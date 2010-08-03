@@ -352,7 +352,6 @@ unless CROSS_COMPILING
   $ruby << " -I'$(top_srcdir)/lib'"
   $ruby << " -I'$(extout)/$(arch)' -I'$(extout)/common'" if $extout
   ENV["RUBYLIB"] = "-"
-  ENV["RUBYOPT"] = "-r#{File.expand_path('ext/purelib.rb', $top_srcdir)}"
 end
 $mflags << "ruby=#$ruby"
 
