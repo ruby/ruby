@@ -1,3 +1,7 @@
+Tue Aug  3 21:16:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (Init_Random): add Random::DEFAULT.
+
 Tue Aug  3 21:01:10 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_check_hash_type): added.
