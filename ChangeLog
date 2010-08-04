@@ -3,11 +3,6 @@ Wed Aug  4 19:37:00 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* string.c (rb_str_set_len): rb_str_modify cannot work before the
 	  length is set, which is a precondition for rb_str_modify.
 
-Wed Aug  4 16:09:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* string.c (rb_str_resize): should copy the content properly.  a
-	  patch from Jeremy Evans at [ruby-core:31615].
-
 Wed Aug  4 15:47:21 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): no need to create the directory
