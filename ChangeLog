@@ -1,3 +1,8 @@
+Mon Aug  2 16:34:32 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* thread_win32.c (native_thread_join): need to wait thread, of course.
+	  [ruby-dev:41911]
+
 Mon Aug  2 12:22:22 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* file.c (file_expand_path): wrong condition. [ruby-core:31591]
