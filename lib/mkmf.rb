@@ -1844,8 +1844,8 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
       end
       for f in files
 	dest = "#{dir}/#{File.basename(f)}"
-	mfile.print("install-rb#{sfx}: #{dest}\n")
-	mfile.print("#{dest}: #{f}\n\t@-$(MAKEDIRS) $(@D#{sep})\n")
+	mfile.print("install-rb#{sfx}: #{dest} #{dir}\n")
+	mfile.print("#{dest}: #{f}\n")
 	mfile.print("\t$(#{$extout ? 'COPY' : 'INSTALL_DATA'}) #{f} $(@D#{sep})\n")
 	if defined?($installed_list) and !$extout
 	  mfile.print("\t@echo #{dest}>>$(INSTALLED_LIST)\n")
