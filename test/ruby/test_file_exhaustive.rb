@@ -393,6 +393,7 @@ class TestFileExhaustive < Test::Unit::TestCase
       assert_equal(@file, File.expand_path(@file + " "))
       assert_equal(@file, File.expand_path(@file + "."))
       assert_equal(@file, File.expand_path(@file + "::$DATA"))
+      assert_match(/\Ac:\//i, File.expand_path('c:'), '[ruby-core:31591]')
     end
     assert_kind_of(String, File.expand_path("~"))
     unless /mingw|mswin/ =~ RUBY_PLATFORM

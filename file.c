@@ -2884,7 +2884,7 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
 	else {
 	    /* specified drive, but not full path */
 	    int same = 0;
-	    if (!NIL_P(dname) || !not_same_drive(dname, s[0])) {
+	    if (!NIL_P(dname) && !not_same_drive(dname, s[0])) {
 		file_expand_path(dname, Qnil, abs_mode, result);
 		BUFINIT();
 		if (has_drive_letter(p) && TOLOWER(p[0]) == TOLOWER(s[0])) {
