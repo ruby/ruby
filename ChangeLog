@@ -1,3 +1,8 @@
+Wed Aug  4 16:09:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_resize): should copy the content properly.  a
+	  patch from Jeremy Evans at [ruby-core:31615].
+
 Wed Aug  4 15:47:21 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): no need to create the directory
