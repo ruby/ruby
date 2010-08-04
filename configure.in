@@ -1144,7 +1144,10 @@ main()
 	rb_cv_broken_glibc_ia64_erfc=no)])
 AS_CASE([$rb_cv_broken_glibc_ia64_erfc],[yes],[ac_cv_func_erf=no])
 
-AS_CASE(["$target_os"],[freebsd],[],[AC_REPLACE_FUNCS(close)])
+AS_CASE(["$target_os"],[freebsd*],[
+	 AC_DEFINE(BROKEN_CLOSE)
+	 AC_REPLACE_FUNCS(close)
+	 ])
 AC_REPLACE_FUNCS(dup2 memmove strerror\
 		 strchr strstr crypt flock\
 		 isnan finite isinf hypot acosh erf tgamma lgamma_r cbrt \

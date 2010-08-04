@@ -1,3 +1,20 @@
+Thu Jul 29 02:38:09 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: not [freebsd] but [freebsd*] for AS_CASE.
+
+Mon Jul 26 13:52:25 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: define BROKEN_CLOSE only on FreeBSD.
+	  This needs to merge to 1.9.2.
+
+Mon Jul 26 11:51:01 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: define BROKEN_CLOSE on FreeBSD.
+	  This fixes build failure on MSVC. [ruby-core:31481]
+
+	* include/ruby/ruby.h, include/ruby/missing.h:
+	  use BROKEN_CLOSE for replacing close(2).
+
 Mon Aug  2 00:03:18 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* util.c (ruby_add_suffix): fixed a bug returning uninitialized value.
