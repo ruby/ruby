@@ -633,6 +633,11 @@ class Complex_Test < Test::Unit::TestCase
       assert_equal(c, c2)
       assert_instance_of(Complex, c2)
     end
+
+    bug3656 = '[ruby-core:31622]'
+    assert_raise(TypeError, bug3656) {
+      Complex(1,2).marshal_load(0)
+    }
   end
 
   def test_parse

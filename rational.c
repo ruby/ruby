@@ -1602,6 +1602,7 @@ static VALUE
 nurat_marshal_load(VALUE self, VALUE a)
 {
     get_dat1(self);
+    Check_Type(a, T_ARRAY);
     dat->num = RARRAY_PTR(a)[0];
     dat->den = RARRAY_PTR(a)[1];
     rb_copy_generic_ivar(self, a);

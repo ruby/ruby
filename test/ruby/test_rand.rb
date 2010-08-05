@@ -427,4 +427,11 @@ END
       assert_equal(x0, x2)
     end
   end
+
+  def test_marshal
+    bug3656 = '[ruby-core:31622]'
+    assert_raise(TypeError, bug3656) {
+      Random.new.marshal_load(0)
+    }
+  end
 end
