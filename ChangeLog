@@ -1,3 +1,10 @@
+Thu Aug  5 20:30:39 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): to_a method should be called.
+	  [Bug #3658]
+
+	* compile.c (iseq_compile_each): ditto for ARGSPUSH.
+
 Thu Aug  5 20:13:49 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* README.EXT, README.EXT.ja (String functions): mention
