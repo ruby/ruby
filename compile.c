@@ -4521,24 +4521,14 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       case NODE_ARGSCAT:{
-	COMPILE_(ret, "argscat head", node->nd_head, poped);
+	COMPILE(ret, "argscat head", node->nd_head);
 	COMPILE(ret, "argscat body", node->nd_body);
-	if (poped) {
-	    ADD_INSN1(ret, nd_line(node), splatarray, Qfalse);
-	    ADD_INSN(ret, nd_line(node), pop);
-	    break;
-	}
 	ADD_INSN(ret, nd_line(node), concatarray);
 	break;
       }
       case NODE_ARGSPUSH:{
-	COMPILE_(ret, "arsgpush head", node->nd_head, poped);
+	COMPILE(ret, "arsgpush head", node->nd_head);
 	COMPILE(ret, "argspush body", node->nd_body);
-	if (poped) {
-	    ADD_INSN1(ret, nd_line(node), splatarray, Qfalse);
-	    ADD_INSN(ret, nd_line(node), pop);
-	    break;
-	}
 	ADD_INSN1(ret, nd_line(node), newarray, INT2FIX(1));
 	ADD_INSN(ret, nd_line(node), concatarray);
 	break;
