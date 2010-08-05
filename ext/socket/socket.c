@@ -234,7 +234,7 @@ ruby_getnameinfo__aix(sa, salen, host, hostlen, serv, servlen, flags)
 #endif
 #endif
 
-static int str_isnumber __P((const char *));
+static int str_isnumber _((const char *));
 
 #if defined(__APPLE__)
 /* fix [ruby-core:29427] */

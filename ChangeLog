@@ -1,3 +1,9 @@
+Thu Aug  5 11:55:17 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/socket.c: use _() macro instead of __P(), because the
+	  former is provided by ruby's defines.h but the latter is offered
+	  by some systems only by chance.  this fixes build failure with VC.
+
 Fri Jul 30 17:51:20 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/-test-/add_suffix/bug.c: typo.
