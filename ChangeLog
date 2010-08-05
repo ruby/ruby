@@ -1,3 +1,7 @@
+Thu Aug  5 14:12:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (ruby_init_loadpath_safe): ensure sopath to be modifiable
+
 Thu Aug  5 12:39:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (str_make_independent_expand): fix buffer overflow

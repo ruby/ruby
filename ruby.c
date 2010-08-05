@@ -426,7 +426,7 @@ ruby_init_loadpath_safe(int safe_level)
 #define PREFIX_PATH() rb_str_new(libpath, baselen)
 #else
     baselen = p - libpath;
-    rb_str_set_len(sopath, baselen);
+    rb_str_resize(sopath, baselen);
     libpath = RSTRING_PTR(sopath);
 #define PREFIX_PATH() sopath
 #endif
