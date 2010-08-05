@@ -1,3 +1,8 @@
+Thu Aug  5 20:13:49 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* README.EXT, README.EXT.ja (String functions): mention
+	  rb_str_resize and rb_str_set_len.
+
 Thu Aug  5 19:59:55 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_set_len): bail out when buffer overflowed
