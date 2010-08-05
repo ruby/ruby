@@ -797,6 +797,11 @@ class Rational_Test < Test::Unit::TestCase
     assert_raise(ZeroDivisionError){
       Marshal.load("\x04\bU:\rRational[\ai\x06i\x05")
     }
+
+    bug3656 = '[ruby-core:31622]'
+    assert_raise(TypeError, bug3656) {
+      Rational(1,2).marshal_load(0)
+    }
   end
 
   def test_parse

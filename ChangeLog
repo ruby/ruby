@@ -1,4 +1,9 @@
-Thu Aug  5 18:25:33 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Aug  5 18:36:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* complex.c (nucomp_marshal_load): should check the argument.
+	  [ruby-core:31622]
+
+	* rational.c (nurat_marshal_load): ditto
 
 	* marshal.c (w_float): should not append a dot if no fractal part
 	  exists.  [ruby-dev:41936]
