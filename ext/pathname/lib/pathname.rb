@@ -512,9 +512,6 @@ end
 
 class Pathname    # * File *
 
-  # See <tt>File.ctime</tt>.  Returns last (directory entry, not file) change time.
-  def ctime() File.ctime(@path) end
-
   # See <tt>File.mtime</tt>.  Returns last modification time.
   def mtime() File.mtime(@path) end
 

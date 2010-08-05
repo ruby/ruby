@@ -198,6 +198,8 @@ path_sub_ext(VALUE self, VALUE repl)
     return rb_class_new_instance(1, &str2, rb_obj_class(self));
 }
 
+/* Facade for File */
+
 /*
  * Returns the real (absolute) pathname of +self+ in the actual
  * filesystem not containing symlinks or useless dots.
@@ -237,6 +239,15 @@ static VALUE
 path_atime(VALUE self)
 {
     return rb_funcall(rb_cFile, rb_intern("atime"), 1, get_strpath(self));
+}
+
+/*
+ * See <tt>File.ctime</tt>.  Returns last (directory entry, not file) change time.
+ */
+static VALUE
+path_ctime(VALUE self)
+{
+    return rb_funcall(rb_cFile, rb_intern("ctime"), 1, get_strpath(self));
 }
 
 /*
@@ -440,4 +451,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "realpath", path_realpath, -1);
     rb_define_method(rb_cPathname, "realdirpath", path_realdirpath, -1);
     rb_define_method(rb_cPathname, "atime", path_atime, 0);
+    rb_define_method(rb_cPathname, "ctime", path_ctime, 0);
 }
