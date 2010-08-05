@@ -40,6 +40,11 @@ class TestMarshal < Test::Unit::TestCase
       obj = (x.to_f + y.to_f / z.to_f) * Math.exp(w.to_f / (x.to_f + y.to_f / z.to_f))
       assert_equal obj, Marshal.load(Marshal.dump(obj))
     }
+
+    bug3659 = '[ruby-dev:41936]'
+    [1.0, 10.0, 100.0, 110.0].each {|x|
+      assert_equal(x, Marshal.load(Marshal.dump(x)), bug3659)
+    }
   end
 
   StrClone = String.clone
