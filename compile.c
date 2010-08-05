@@ -4521,8 +4521,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       case NODE_ARGSCAT:{
-	COMPILE(ret, "argscat head", node->nd_head);
-	COMPILE(ret, "argscat body", node->nd_body);
+	COMPILE_(ret, "argscat head", node->nd_head, poped);
+	COMPILE_(ret, "argscat body", node->nd_body, poped);
+	if (poped) break;
 	ADD_INSN(ret, nd_line(node), concatarray);
 	break;
       }

@@ -1,3 +1,8 @@
+Thu Aug  5 19:51:21 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): drop unused ARGSCAT results.
+	  fix [ruby-dev:41933], [Bug #3658]
+
 Thu Aug  5 18:36:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* complex.c (nucomp_marshal_load): should check the argument.
