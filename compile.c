@@ -4521,16 +4521,34 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       case NODE_ARGSCAT:{
-	COMPILE(ret, "argscat head", node->nd_head);
-	COMPILE(ret, "argscat body", node->nd_body);
-	ADD_INSN(ret, nd_line(node), concatarray);
+	if (poped) {
+	    COMPILE(ret, "argscat head", node->nd_head);
+	    ADD_INSN1(ret, nd_line(node), splatarray, Qfalse);
+	    ADD_INSN(ret, nd_line(node), pop);
+	    COMPILE(ret, "argscat body", node->nd_body);
+	    ADD_INSN1(ret, nd_line(node), splatarray, Qfalse);
+	    ADD_INSN(ret, nd_line(node), pop);
+	}
+	else {
+	    COMPILE(ret, "argscat head", node->nd_head);
+	    COMPILE(ret, "argscat body", node->nd_body);
+	    ADD_INSN(ret, nd_line(node), concatarray);
+	}
 	break;
       }
       case NODE_ARGSPUSH:{
-	COMPILE(ret, "arsgpush head", node->nd_head);
-	COMPILE(ret, "argspush body", node->nd_body);
-	ADD_INSN1(ret, nd_line(node), newarray, INT2FIX(1));
-	ADD_INSN(ret, nd_line(node), concatarray);
+	if (poped) {
+	    COMPILE(ret, "arsgpush head", node->nd_head);
+	    ADD_INSN1(ret, nd_line(node), splatarray, Qfalse);
+	    ADD_INSN(ret, nd_line(node), pop);
+	    COMPILE_(ret, "argspush body", node->nd_body, poped);
+	}
+	else {
+	    COMPILE(ret, "arsgpush head", node->nd_head);
+	    COMPILE_(ret, "argspush body", node->nd_body, poped);
+	    ADD_INSN1(ret, nd_line(node), newarray, INT2FIX(1));
+	    ADD_INSN(ret, nd_line(node), concatarray);
+	}
 	break;
       }
       case NODE_SPLAT:{
