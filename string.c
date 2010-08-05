@@ -1271,8 +1271,9 @@ str_make_independent_expand(VALUE str, long expand)
 
     ptr = ALLOC_N(char, len+expand+1);
     if (RSTRING_PTR(str)) {
-	memcpy(ptr, RSTRING_PTR(str), len);
+	memcpy(ptr, RSTRING_PTR(str), expand < 0 ? len + expand : len);
     }
+    len += expand;
     STR_SET_NOEMBED(str);
     ptr[len] = 0;
     RSTRING(str)->as.heap.ptr = ptr;
