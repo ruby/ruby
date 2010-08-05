@@ -8537,7 +8537,7 @@ void_expr_gen(struct parser_params *parser, NODE *node)
 	int line = ruby_sourceline;
 
 	ruby_sourceline = nd_line(node);
-	rb_warnS("useless use of %s in void context", useless);
+	rb_warnS("possibly useless use of %s in void context", useless);
 	ruby_sourceline = line;
     }
 }
