@@ -1694,6 +1694,9 @@ void
 rb_str_set_len(VALUE str, long len)
 {
     str_modifiable(str);
+    if (STR_SHARED_P(str)) {
+	rb_raise(rb_eRuntimeError, "can't set length of shared string");
+    }
     STR_SET_LEN(str, len);
     RSTRING_PTR(str)[len] = '\0';
 }

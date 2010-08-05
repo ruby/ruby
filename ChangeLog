@@ -1,3 +1,7 @@
+Thu Aug  5 16:42:41 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_set_len): should fail to modify shared string.
+
 Thu Aug  5 14:12:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (ruby_init_loadpath_safe): ensure sopath to be modifiable
