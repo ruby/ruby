@@ -223,6 +223,23 @@ listed below:
 
     Creates a new Ruby string with encoding US-ASCII.
 
+  rb_str_resize(VALUE str, long len)
+
+    Resizes Ruby string to len bytes.  If str is not modifiable, this
+    function raises an exception.  The length of str must be set in
+    advance.  If len is less than the old length the content beyond
+    len bytes is discarded, else if len is greater than the old length
+    the content beyond the old length bytes will not be preserved but
+    will be garbage.  Note that RSTRING_PTR(str) may change by calling
+    this function.
+
+  rb_str_set_len(VALUE str, long len)
+
+    Sets the length of Ruby string.  If str is not modifiable, this
+    function raises an exception.  This function preserves the content
+    upto len bytes, regardless RSTRING_LEN(str).  len must not exceed
+    the capacity of str.
+
  Array functions
 
   rb_ary_new()
