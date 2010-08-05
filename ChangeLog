@@ -1,3 +1,8 @@
+Fri Aug  6 05:53:32 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/pathname.c (path_mtime): Pathname#mtime translated from
+	  pathname.rb.
+
 Thu Aug  5 22:09:30 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pathname/pathname.c (path_ctime): Pathname#ctime translated from

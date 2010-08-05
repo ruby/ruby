@@ -251,6 +251,15 @@ path_ctime(VALUE self)
 }
 
 /*
+ * See <tt>File.mtime</tt>.  Returns last modification time.
+ */
+static VALUE
+path_mtime(VALUE self)
+{
+    return rb_funcall(rb_cFile, rb_intern("mtime"), 1, get_strpath(self));
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -452,4 +461,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "realdirpath", path_realdirpath, -1);
     rb_define_method(rb_cPathname, "atime", path_atime, 0);
     rb_define_method(rb_cPathname, "ctime", path_ctime, 0);
+    rb_define_method(rb_cPathname, "mtime", path_mtime, 0);
 }

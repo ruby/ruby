@@ -512,9 +512,6 @@ end
 
 class Pathname    # * File *
 
-  # See <tt>File.mtime</tt>.  Returns last modification time.
-  def mtime() File.mtime(@path) end
-
   # See <tt>File.chmod</tt>.  Changes permissions.
   def chmod(mode) File.chmod(mode, @path) end
 
