@@ -1,3 +1,10 @@
+Thu Aug  5 18:36:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* complex.c (nucomp_marshal_load): should check the argument.
+	  [ruby-core:31622]
+
+	* rational.c (nurat_marshal_load): ditto
+
 Mon Aug  2 16:34:32 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* thread_win32.c (native_thread_join): need to wait thread, of course.

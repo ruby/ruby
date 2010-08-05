@@ -1239,6 +1239,7 @@ static VALUE
 nucomp_marshal_load(VALUE self, VALUE a)
 {
     get_dat1(self);
+    Check_Type(a, T_ARRAY);
     dat->real = RARRAY_PTR(a)[0];
     dat->imag = RARRAY_PTR(a)[1];
     rb_copy_generic_ivar(self, a);
