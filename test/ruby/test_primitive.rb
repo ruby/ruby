@@ -273,7 +273,6 @@ class TestRubyPrimitive < Test::Unit::TestCase
     assert_equal 'abcd', $&
     assert_equal 'xyz', $`
     assert_equal 'efgabcdefg', $'
-    # '
     assert_equal 'c', $+
 
     /(?!)/ =~ 'xyzabcdefgabcdefg'
@@ -401,24 +400,4 @@ class TestRubyPrimitive < Test::Unit::TestCase
     #assert_equal [0,1,2,3,4], [0, *a, 4]
   end
 
-  def test_concatarray_ruby_dev_41933
-    bug3658 = '[ruby-dev:41933]'
-    [0, *x=1]
-    assert_equal(1, x, bug3658)
-    [0, *x=1, 2]
-    assert_equal(1, x, bug3658)
-    class << (x = Object.new)
-      attr_accessor :to_a_called
-      def to_a
-        @to_a_called = true
-        [self]
-      end
-    end
-    x.to_a_called = false
-    [0, *x]
-    assert(x.to_a_called, bug3658)
-    x.to_a_called = false
-    [0, *x, 2]
-    assert(x.to_a_called, bug3658)
-  end
 end
