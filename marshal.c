@@ -376,8 +376,8 @@ w_float(double d, struct dump_arg *arg)
 	digs = (int)(e - p);
 	if (decpt < -3 || decpt > digs) {
 	    buf[len++] = p[0];
-	    buf[len++] = '.';
-	    memcpy(buf + len, p + 1, --digs);
+	    if (--digs > 0) buf[len++] = '.';
+	    memcpy(buf + len, p + 1, digs);
 	    len += digs;
 	    len += snprintf(buf + len, sizeof(buf) - len, "e%d", decpt - 1);
 	}

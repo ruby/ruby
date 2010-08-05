@@ -1,3 +1,8 @@
+Thu Aug  5 18:25:33 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (w_float): should not append a dot if no fractal part
+	  exists.  [ruby-dev:41936]
+
 Thu Aug  5 17:11:43 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (void_expr_gen): add 'possibly' to warning message.
