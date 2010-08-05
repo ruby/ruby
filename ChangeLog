@@ -1,3 +1,8 @@
+Thu Aug  5 17:11:43 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (void_expr_gen): add 'possibly' to warning message.
+	  [ruby-core:31611]
+
 Thu Aug  5 16:57:20 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (glob_make_pattern): fold continuous PLAINs to get rid of
