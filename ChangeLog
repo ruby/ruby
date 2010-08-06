@@ -1,3 +1,7 @@
+Fri Aug  6 18:56:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (clean-ext): fixed directories to be removed.
+
 Fri Aug  6 17:42:12 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/depend: add space at the begginig of @ignore_error.
