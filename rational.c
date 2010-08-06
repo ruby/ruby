@@ -882,7 +882,7 @@ nurat_div(VALUE self, VALUE other)
 		    return DBL2NUM(-INFINITY);
 		}
 	    }
-	    if (modf(x, &den) == 0.0) {
+	    if (x != 0.0 && modf(x, &den) == 0.0) {
 		return rb_rational_raw2(dat->num, f_mul(rb_dbl2big(den), dat->den));
 	    }
 	}
