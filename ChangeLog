@@ -1,4 +1,6 @@
-Fri Aug  6 20:12:28 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Aug  6 20:13:42 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* rational.c (nurat_div): divided by infinity should be zero.
 
 	* rational.c (nurat_div): divided by float zero should be
 	  infinity.  [ruby-core:31626]

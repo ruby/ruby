@@ -298,6 +298,7 @@ class Rational_Test < Test::Unit::TestCase
     assert_raise(ZeroDivisionError){Rational(1, 3) / 0}
     assert_raise(ZeroDivisionError){Rational(1, 3) / Rational(0)}
 
+    assert_equal(0, Rational(1, 3) / Float::INFINITY)
     assert((Rational(1, 3) / 0.0).infinite?, '[ruby-core:31626]')
   end
 
@@ -548,6 +549,7 @@ class Rational_Test < Test::Unit::TestCase
 
     assert_equal(0.25, c.fdiv(2))
     assert_equal(0.25, c.fdiv(2.0))
+    assert_equal(0, c.fdiv(Float::INFINITY))
     assert(c.fdiv(0).infinite?, '[ruby-core:31626]')
   end
 
@@ -1070,6 +1072,7 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(Rational(5000000000), 10000000000.quo(2))
     assert_equal(0.5, 1.0.quo(2))
     assert_equal(Rational(1,4), Rational(1,2).quo(2))
+    assert_equal(0, Rational(1,2).quo(Float::INFINITY))
     assert(Rational(1,2).quo(0.0).infinite?, '[ruby-core:31626]')
 
     assert_equal(0.5, 1.fdiv(2))
