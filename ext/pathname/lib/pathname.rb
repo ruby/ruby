@@ -512,9 +512,6 @@ end
 
 class Pathname    # * File *
 
-  # See <tt>File.chmod</tt>.  Changes permissions.
-  def chmod(mode) File.chmod(mode, @path) end
-
   # See <tt>File.lchmod</tt>.
   def lchmod(mode) File.lchmod(mode, @path) end
 

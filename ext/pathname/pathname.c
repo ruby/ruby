@@ -260,6 +260,15 @@ path_mtime(VALUE self)
 }
 
 /*
+ * See <tt>File.chmod</tt>.  Changes permissions.
+ */
+static VALUE
+path_chmod(VALUE self, VALUE mode)
+{
+    return rb_funcall(rb_cFile, rb_intern("chmod"), 2, mode, get_strpath(self));
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -462,4 +471,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "atime", path_atime, 0);
     rb_define_method(rb_cPathname, "ctime", path_ctime, 0);
     rb_define_method(rb_cPathname, "mtime", path_mtime, 0);
+    rb_define_method(rb_cPathname, "chmod", path_chmod, 1);
 }
