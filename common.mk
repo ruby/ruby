@@ -374,7 +374,7 @@ clean: clean-ext clean-local clean-enc clean-golf clean-rdoc clean-extout
 clean-local:: PHONY
 	@$(RM) $(OBJS) $(MINIOBJS) $(MAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
 	@$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) $(ARCHFILE) .*.time
-	@$(RM) *.inc y.tab.c y.output encdb.h transdb.h
+	@$(RM) *.inc y.tab.c y.output encdb.h transdb.h prelude.c config.log rbconfig.rb
 clean-ext:: PHONY
 clean-golf: PHONY
 	@$(RM) $(GORUBY)$(EXEEXT) $(GOLFOBJS)
@@ -383,8 +383,8 @@ clean-extout: PHONY
 
 distclean: distclean-ext distclean-local distclean-enc distclean-golf distclean-extout
 distclean-local:: clean-local
-	@$(RM) $(MKFILES) rbconfig.rb yasmdata.rb encdb.h
-	@$(RM) config.cache config.log config.status config.status.lineno $(PRELUDES)
+	@$(RM) $(MKFILES) yasmdata.rb
+	@$(RM) config.cache config.status config.status.lineno $(PRELUDES)
 	@$(RM) *~ *.bak *.stackdump core *.core gmon.out $(PREP)
 distclean-ext:: PHONY
 distclean-golf: clean-golf
