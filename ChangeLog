@@ -1,3 +1,8 @@
+Fri Aug  6 18:59:23 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (realpath_rec): rb_str_modify depends on the length, so
+	  resize instead.
+
 Fri Aug  6 18:56:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (clean-ext): fixed directories to be removed.
