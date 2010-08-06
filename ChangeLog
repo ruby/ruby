@@ -1,3 +1,9 @@
+Fri Aug  6 17:38:33 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* common.mk (clean): add  prelude.c, config.log, and rbconfig.rb.
+
+	* common.mk (distclean): remove encdb.h, config.log, and rbconfig.rb.
+
 Fri Aug  6 17:35:24 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* Makefile.in: ignore error from RMDIRS.
