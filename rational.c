@@ -874,14 +874,7 @@ nurat_div(VALUE self, VALUE other)
 	    get_dat1(self);
 
 	    if (isnan(x)) return DBL2NUM(NAN);
-	    if (isinf(x)) {
-		if (RTEST(f_negative_p(dat->num)) == (x < 0)) {
-		    return DBL2NUM(INFINITY);
-		}
-		else {
-		    return DBL2NUM(-INFINITY);
-		}
-	    }
+	    if (isinf(x)) return INT2FIX(0);
 	    if (x != 0.0 && modf(x, &den) == 0.0) {
 		return rb_rational_raw2(dat->num, f_mul(rb_dbl2big(den), dat->den));
 	    }
