@@ -261,16 +261,16 @@ distclean-rdoc:
 clean-ext distclean-ext realclean-ext::
 	@cd ext 2>/dev/null || exit 0; set dummy `echo "${EXTS}" | tr , ' '`; shift; \
 	test "$$#" = 0 && set .; \
-	set dummy `for dir do \
-	    find $$dir -name Makefile | sed 's:^\./::;s:/Makefile$$:~:' | sort | sed 's:~$$::'; \
-	done`; shift; \
+	set dummy `\
+	    find "$$@" -name Makefile -print | sed 's:^\./::;s:/Makefile$$:~:' | sort | sed 's:~$$::'; \
+	`; shift; \
 	cd ..; \
 	for dir do \
 	    echo $(@:-ext=)ing "$$dir"; \
 	    (cd "ext/$$dir" && exec $(MAKE) $(MFLAGS) $(@:-ext=)) && \
 	    case "$@" in \
 	    *distclean-ext*|*realclean-ext*) \
-		$(RMDIRS) "$$dir" 2> /dev/null || true;; \
+		$(RMDIRS) "ext/$$dir" 2> /dev/null || true;; \
 	    esac; \
 	done
 
