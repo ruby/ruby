@@ -512,9 +512,6 @@ end
 
 class Pathname    # * File *
 
-  # See <tt>File.chown</tt>.  Change owner and group of file.
-  def chown(owner, group) File.chown(owner, group, @path) end
-
   # See <tt>File.lchown</tt>.
   def lchown(owner, group) File.lchown(owner, group, @path) end
 
