@@ -1813,6 +1813,7 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
   mfile.print "install: install-so install-rb\n\n"
   sodir = (dir = "$(RUBYARCHDIR)").dup
   mfile.print("install-so: ")
+  @ignore_error = $nmake ? '' : '2> /dev/null || true'
   if target
     f = "$(DLLIB)"
     dest = "#{dir}/#{f}"
@@ -1820,7 +1821,7 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
     if $extout
       mfile.print "clean-so::\n"
       mfile.print "\t@-$(RM) #{fseprepl[dest]}\n"
-      mfile.print "\t@-$(RMDIRS) #{fseprepl[dir]}\n"
+      mfile.print "\t@-$(RMDIRS) #{fseprepl[dir]}#{@ignore_error}\n"
     else
       mfile.print "#{dest}: #{f}\n\t@-$(MAKEDIRS) $(@D#{sep})\n"
       mfile.print "\t$(INSTALL_PROG) #{fseprepl[f]} $(@D#{sep})\n"
@@ -1861,7 +1862,7 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
       unless dirs.empty?
         mfile.print("clean-rb#{sfx}::\n")
         for dir in dirs.sort_by {|d| -d.count('/')}
-          mfile.print("\t@-$(RMDIRS) #{fseprepl[dir]}\n")
+          mfile.print("\t@-$(RMDIRS) #{fseprepl[dir]}#{@ignore_error}\n")
         end
       end
     end
@@ -2095,7 +2096,7 @@ distclean-so::
 distclean: clean distclean-so distclean-rb-default distclean-rb
 \t\t@-$(RM) Makefile $(RUBY_EXTCONF_H) conftest.* mkmf.log
 \t\t@-$(RM) core ruby$(EXEEXT) *~ $(DISTCLEANFILES#{sep})
-\t\t@-$(RMDIRS) $(DISTCLEANDIRS#{sep})
+\t\t@-$(RMDIRS) $(DISTCLEANDIRS#{sep})#{@ignore_error}
 
 realclean: distclean
 "
