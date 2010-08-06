@@ -1,3 +1,8 @@
+Fri Aug  6 20:12:28 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* rational.c (nurat_div): divided by float zero should be
+	  infinity.  [ruby-core:31626]
+
 Fri Aug  6 18:59:23 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (realpath_rec): rb_str_modify depends on the length, so
