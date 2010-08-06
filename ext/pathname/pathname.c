@@ -269,6 +269,15 @@ path_chmod(VALUE self, VALUE mode)
 }
 
 /*
+ * See <tt>File.lchmod</tt>.
+ */
+static VALUE
+path_lchmod(VALUE self, VALUE mode)
+{
+    return rb_funcall(rb_cFile, rb_intern("lchmod"), 2, mode, get_strpath(self));
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -472,4 +481,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "ctime", path_ctime, 0);
     rb_define_method(rb_cPathname, "mtime", path_mtime, 0);
     rb_define_method(rb_cPathname, "chmod", path_chmod, 1);
+    rb_define_method(rb_cPathname, "lchmod", path_lchmod, 1);
 }
