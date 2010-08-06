@@ -1,3 +1,9 @@
+Fri Aug  6 17:42:12 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/depend: add space at the begginig of @ignore_error.
+
+	* lib/mkmf.rb: ditto.
+
 Fri Aug  6 17:38:33 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* common.mk (clean): add  prelude.c, config.log, and rbconfig.rb.

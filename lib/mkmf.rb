@@ -1813,7 +1813,7 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
   mfile.print "install: install-so install-rb\n\n"
   sodir = (dir = "$(RUBYARCHDIR)").dup
   mfile.print("install-so: ")
-  @ignore_error = $nmake ? '' : '2> /dev/null || true'
+  @ignore_error = $nmake ? '' : ' 2> /dev/null || true'
   if target
     f = "$(DLLIB)"
     dest = "#{dir}/#{f}"

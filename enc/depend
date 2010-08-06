@@ -132,7 +132,7 @@ clean:
 % %w[$(ENCSOS) $(ENCOBJS) $(ENCCLEANOBJS) $(ENCCLEANLIBS) $(TRANSSOS) $(TRANSOBJS) $(TRANSCLEANOBJS) $(TRANSCLEANLIBS)].each do |clean|
 	@$(RM) <%=pathrep[clean]%>
 % end
-% @ignore_error = $nmake ? '' : '2> /dev/null || true'
+% @ignore_error = $nmake ? '' : ' 2> /dev/null || true'
 % %w[$(TRANSSODIR) $(ENCSODIR)].each do|dir|
 	@-$(RMDIR) <%=pathrep[dir]%><%=@ignore_error%>
 % end
