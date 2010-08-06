@@ -132,12 +132,14 @@ clean:
 % %w[$(ENCSOS) $(ENCOBJS) $(ENCCLEANOBJS) $(ENCCLEANLIBS) $(TRANSSOS) $(TRANSOBJS) $(TRANSCLEANOBJS) $(TRANSCLEANLIBS)].each do |clean|
 	@$(RM) <%=pathrep[clean]%>
 % end
+% @ignore_error = $nmake ? '' : '2> /dev/null || true'
 % %w[$(TRANSSODIR) $(ENCSODIR)].each do|dir|
-	@-$(RMDIR) <%=pathrep[dir]%>
+	@-$(RMDIR) <%=pathrep[dir]%><%=@ignore_error%>
 % end
 
 clean-srcs:
 	@$(RM) <%=pathrep['$(TRANSCSRCS)']%>
-% %w[enc/trans enc].each do|dir|
-	@-$(RMDIR) <%=pathrep[dir]%>
-% end
+	@-$(RMDIR) <%=pathrep['enc/trans']%><%=@ignore_error%>
+	@$(RM) enc/unicode/name2ctype.h
+	@-$(RMDIR) <%=pathrep['enc/unicode']%><%=@ignore_error%>
+	@-$(RMDIR) <%=pathrep['enc']%><%=@ignore_error%>

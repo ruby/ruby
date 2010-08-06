@@ -253,7 +253,7 @@ distclean-local::
 	@$(RM) ext/config.cache $(RBCONFIG) Doxyfile
 	@-$(RM) run.gdb
 	@-$(RM) $(INSTALLED_LIST) $(arch_hdrdir)/ruby/config.h
-	@-$(RMDIRS) $(arch_hdrdir)/ruby
+	@-$(RMDIRS) $(arch_hdrdir)/ruby 2> /dev/null || true
 
 distclean-rdoc:
 	@$(RMALL) $(RDOCOUT:/=\)
@@ -270,7 +270,7 @@ clean-ext distclean-ext realclean-ext::
 	    (cd "ext/$$dir" && exec $(MAKE) $(MFLAGS) $(@:-ext=)) && \
 	    case "$@" in \
 	    *distclean-ext*|*realclean-ext*) \
-		$(RMDIRS) "$$dir";; \
+		$(RMDIRS) "$$dir" 2> /dev/null || true;; \
 	    esac; \
 	done
 
