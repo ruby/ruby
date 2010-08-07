@@ -66,6 +66,7 @@ vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
 	val = vm_exec(th);
 	break;
       }
+      case VM_METHOD_TYPE_NOTIMPLEMENTED:
       case VM_METHOD_TYPE_CFUNC: {
 	EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, id, klass);
 	{
