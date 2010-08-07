@@ -138,15 +138,15 @@ module Test
           if !message.empty?
             full_message << message << "\n"
           end
-          if msg.empty?
+          if message.empty?
             full_message << "pid #{pid} killed by #{sigdesc}"
           else
-            msg << "\n" if /\n\z/ !~ msg
-            full_message << "pid #{pid} killed by #{sigdesc}\n#{msg.gsub(/^/, '| ')}"
+            message << "\n" if /\n\z/ !~ message
+            full_message << "pid #{pid} killed by #{sigdesc}\n#{message.gsub(/^/, '| ')}"
           end
           full_message
         end
-        assert_block(faildesc) { !status.signaled? }
+        assert !status.signaled?, faildesc
       end
 
       def assert_in_out_err(args, test_stdin = "", test_stdout = [], test_stderr = [], message = nil, opt={})
