@@ -1,3 +1,8 @@
+Sat Aug  7 17:49:10 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/missing.h: moved BROKEN_CLOSE replacements from
+	  include/ruby/ruby.h.
+
 Sat Aug  7 17:40:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* mkconfig.rb, lib/rbconfig/obsolete.rb: warn obsolete and
