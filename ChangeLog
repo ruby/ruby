@@ -1,7 +1,6 @@
 Sun Aug  8 08:55:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* include/ruby/missing.h, include/ruby/ruby.h (namespace ruby):
-	  get rid of name clash on C++.
+	* include/ruby/ruby.h (ruby_snprintf): printf attribute. 
 
 Sun Aug  8 07:47:29 2010  Tanaka Akira  <akr@fsij.org>
 
