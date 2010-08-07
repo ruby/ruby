@@ -1,3 +1,8 @@
+Sat Aug  7 17:40:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* mkconfig.rb, lib/rbconfig/obsolete.rb: warn obsolete and
+	  deprecated Config.
+
 Sat Aug  7 17:18:34 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extract_makefile): follow the change of
