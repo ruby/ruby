@@ -788,6 +788,8 @@ class TestPathname < Test::Unit::TestCase
     path = Pathname("a")
     assert_equal(true, path.fnmatch("*"))
     assert_equal(false, path.fnmatch("*.*"))
+    assert_equal(false, Pathname(".foo").fnmatch("*"))
+    assert_equal(true, Pathname(".foo").fnmatch("*", File::FNM_DOTMATCH))
   end
 
   def test_fnmatch?
