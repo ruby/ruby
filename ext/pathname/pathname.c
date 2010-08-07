@@ -287,6 +287,15 @@ path_chown(VALUE self, VALUE owner, VALUE group)
 }
 
 /*
+ * See <tt>File.lchown</tt>.
+ */
+static VALUE
+path_lchown(VALUE self, VALUE owner, VALUE group)
+{
+    return rb_funcall(rb_cFile, rb_intern("lchown"), 3, owner, group, get_strpath(self));
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -492,4 +501,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "chmod", path_chmod, 1);
     rb_define_method(rb_cPathname, "lchmod", path_lchmod, 1);
     rb_define_method(rb_cPathname, "chown", path_chown, 2);
+    rb_define_method(rb_cPathname, "lchown", path_lchown, 2);
 }
