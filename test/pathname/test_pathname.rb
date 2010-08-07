@@ -7,6 +7,8 @@ require 'fileutils'
 require 'tmpdir'
 require 'enumerator'
 
+require_relative '../ruby/envutil'
+
 class TestPathname < Test::Unit::TestCase
   def self.define_assertion(name, &block)
     @defassert_num ||= {}
@@ -732,6 +734,7 @@ class TestPathname < Test::Unit::TestCase
       File.symlink("a", "l")
       path = Pathname("l")
       old = path.lstat.mode
+      assert_normal_exit %{ require "pathname"; Pathname("foo").lchmod(nil) }
       begin
         path.lchmod(0444)
       rescue NotImplementedError
