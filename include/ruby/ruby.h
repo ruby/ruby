@@ -1438,17 +1438,6 @@ int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
 #define snprintf ruby_snprintf
 #define vsnprintf ruby_vsnprintf
 
-#ifdef BROKEN_CLOSE
-#undef getpeername
-#define getpeername ruby_getpeername
-#undef getsockname
-#define getsockname ruby_getsockname
-#undef shutdown
-#define shutdown ruby_shutdown
-#undef close
-#define close ruby_close
-#endif
-
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility pop
 #endif
