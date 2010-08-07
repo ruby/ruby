@@ -191,14 +191,6 @@ RUBY_EXTERN int ruby_getpeername(int, struct sockaddr *, socklen_t *);
 RUBY_EXTERN int ruby_getsockname(int, struct sockaddr *, socklen_t *);
 RUBY_EXTERN int ruby_shutdown(int, int);
 RUBY_EXTERN int ruby_close(int);
-#undef getpeername
-#define getpeername ruby_getpeername
-#undef getsockname
-#define getsockname ruby_getsockname
-#undef shutdown
-#define shutdown ruby_shutdown
-#undef close
-#define close ruby_close
 #endif
 
 #if defined __GNUC__ && __GNUC__ >= 4

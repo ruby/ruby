@@ -1442,6 +1442,10 @@ int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
 #pragma GCC visibility pop
 #endif
 
+#ifndef RUBY_DONT_SUBST
+#include "ruby/subst.h"
+#endif
+
 #if defined(__cplusplus)
 #if 0
 { /* satisfy cc-mode */
