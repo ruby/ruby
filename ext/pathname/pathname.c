@@ -128,8 +128,8 @@ path_hash(VALUE self)
 
 /*
  *  call-seq:
- *    pathname.to_s             => string
- *    pathname.to_path          => string
+ *    pathname.to_s             -> string
+ *    pathname.to_path          -> string
  *
  *  Return the path as a String.
  *
@@ -293,6 +293,25 @@ static VALUE
 path_lchown(VALUE self, VALUE owner, VALUE group)
 {
     return rb_funcall(rb_cFile, rb_intern("lchown"), 3, owner, group, get_strpath(self));
+}
+
+/*
+ * call-seq:
+ *    pathname.fnmatch(pattern, [flags])        -> string
+ *    pathname.fnmatch?(pattern, [flags])       -> string
+ *   
+ * See <tt>File.fnmatch</tt>.  Return +true+ if the receiver matches the given
+ * pattern.
+ */
+static VALUE
+path_fnmatch(int argc, VALUE *argv, VALUE self)
+{
+    VALUE str = get_strpath(self);
+    VALUE pattern, flags;
+    if (rb_scan_args(argc, argv, "11", &pattern, &flags) == 1)
+        return rb_funcall(rb_cFile, rb_intern("fnmatch"), 2, pattern, str);
+    else
+        return rb_funcall(rb_cFile, rb_intern("fnmatch"), 3, pattern, str, flags);
 }
 
 /*
@@ -502,4 +521,6 @@ Init_pathname()
     rb_define_method(rb_cPathname, "lchmod", path_lchmod, 1);
     rb_define_method(rb_cPathname, "chown", path_chown, 2);
     rb_define_method(rb_cPathname, "lchown", path_lchown, 2);
+    rb_define_method(rb_cPathname, "fnmatch", path_fnmatch, -1);
+    rb_define_method(rb_cPathname, "fnmatch?", path_fnmatch, -1);
 }

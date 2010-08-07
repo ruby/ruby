@@ -512,13 +512,6 @@ end
 
 class Pathname    # * File *
 
-  # See <tt>File.fnmatch</tt>.  Return +true+ if the receiver matches the given
-  # pattern.
-  def fnmatch(pattern, *args) File.fnmatch(pattern, @path, *args) end
-
-  # See <tt>File.fnmatch?</tt> (same as #fnmatch).
-  def fnmatch?(pattern, *args) File.fnmatch?(pattern, @path, *args) end
-
   # See <tt>File.ftype</tt>.  Returns "type" of file ("file", "directory",
   # etc).
   def ftype() File.ftype(@path) end
