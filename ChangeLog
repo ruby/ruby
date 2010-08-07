@@ -1,3 +1,9 @@
+Sat Aug  7 19:51:10 2010  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/envutil.rb (EnvUtil.invoke_ruby): merge stdout and stderr
+	  if capture_stderr is :merge_to_stdout.
+	  (assert_normal_exit): print abnormal output propery.
+
 Sat Aug  7 19:04:49 2010  Tanaka Akira  <akr@fsij.org>
 
 	* missing/close.c: undef the macros "getpeername", "getsockname" and

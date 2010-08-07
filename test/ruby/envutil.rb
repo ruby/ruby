@@ -33,11 +33,11 @@ module EnvUtil
   def invoke_ruby(args, stdin_data="", capture_stdout=false, capture_stderr=false, opt={})
     in_c, in_p = IO.pipe
     out_p, out_c = IO.pipe if capture_stdout
-    err_p, err_c = IO.pipe if capture_stderr
+    err_p, err_c = IO.pipe if capture_stderr && capture_stderr != :merge_to_stdout
     opt = opt.dup
     opt[:in] = in_c
     opt[:out] = out_c if capture_stdout
-    opt[:err] = err_c if capture_stderr
+    opt[:err] = capture_stderr == :merge_to_stdout ? out_c : err_c if capture_stderr
     if enc = opt.delete(:encoding)
       out_p.set_encoding(enc) if out_p
       err_p.set_encoding(enc) if err_p
@@ -52,23 +52,23 @@ module EnvUtil
     pid = spawn(child_env, EnvUtil.rubybin, *args, opt)
     in_c.close
     out_c.close if capture_stdout
-    err_c.close if capture_stderr
+    err_c.close if capture_stderr && capture_stderr != :merge_to_stdout
     if block_given?
       return yield in_p, out_p, err_p
     else
       th_stdout = Thread.new { out_p.read } if capture_stdout
-      th_stderr = Thread.new { err_p.read } if capture_stderr
+      th_stderr = Thread.new { err_p.read } if capture_stderr && capture_stderr != :merge_to_stdout
       in_p.write stdin_data.to_str
       in_p.close
       timeout = opt.fetch(:timeout, 10)
-      if (!capture_stdout || th_stdout.join(timeout)) && (!capture_stderr || th_stderr.join(timeout))
+      if (!th_stdout || th_stdout.join(timeout)) && (!th_stderr || th_stderr.join(timeout))
         stdout = th_stdout.value if capture_stdout
-        stderr = th_stderr.value if capture_stderr
+        stderr = th_stderr.value if capture_stderr && capture_stderr != :merge_to_stdout
       else
         raise Timeout::Error
       end
       out_p.close if capture_stdout
-      err_p.close if capture_stderr
+      err_p.close if capture_stderr && capture_stderr != :merge_to_stdout
       Process.wait pid
       status = $?
       return stdout, stderr, status
@@ -122,7 +122,7 @@ module Test
     module Assertions
       public
       def assert_normal_exit(testsrc, message = '', opt = {})
-        _, _, status = EnvUtil.invoke_ruby(%W'-W0', testsrc, true, true, opt)
+        out, _, status = EnvUtil.invoke_ruby(%W'-W0', testsrc, true, :merge_to_stdout, opt)
         pid = status.pid
         faildesc = proc do
           signo = status.termsig
@@ -138,11 +138,10 @@ module Test
           if !message.empty?
             full_message << message << "\n"
           end
-          if message.empty?
-            full_message << "pid #{pid} killed by #{sigdesc}"
-          else
-            message << "\n" if /\n\z/ !~ message
-            full_message << "pid #{pid} killed by #{sigdesc}\n#{message.gsub(/^/, '| ')}"
+          full_message << "pid #{pid} killed by #{sigdesc}"
+          if !out.empty?
+            out << "\n" if /\n\z/ !~ out
+            full_message << "\n#{out.gsub(/^/, '| ')}"
           end
           full_message
         end
