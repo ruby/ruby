@@ -57,6 +57,7 @@ ruby_close(int s)
 {
     int err = errno;
     errno = 0;
+#undef close
     s = close(s);
     if (errno == ECONNRESET) {
 	errno = 0;
