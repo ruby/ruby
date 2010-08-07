@@ -27,7 +27,7 @@ print %[
 # This file was created by #{mkconfig} when ruby was built.  Any
 # changes made to this file will be lost the next time ruby is built.
 
-module Config
+module RbConfig
   RUBY_VERSION == "#{version}" or
     raise "ruby lib version (#{version}) doesn't match executable version (\#{RUBY_VERSION})"
 
@@ -177,7 +177,7 @@ print <<EOS
     Config::expand(val)
   end
 end
-RbConfig = Config # compatibility for ruby-1.9
+autoload :Config, "rbconfig/obsolete.rb" # compatibility for ruby-1.8.4 and older.
 CROSS_COMPILING = nil unless defined? CROSS_COMPILING
 EOS
 
