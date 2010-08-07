@@ -1,3 +1,8 @@
+Sat Aug  7 19:04:49 2010  Tanaka Akira  <akr@fsij.org>
+
+	* missing/close.c: undef the macros "getpeername", "getsockname" and
+	  "shutdown" to prevent infinite recursion.
+
 Sat Aug  7 18:37:39 2010  Tanaka Akira  <akr@fsij.org>
 
 	* missing/close.c: undef the macro "close" to prevent infinite
