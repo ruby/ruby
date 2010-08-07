@@ -512,9 +512,6 @@ end
 
 class Pathname    # * File *
 
-  # See <tt>File.lchown</tt>.
-  def lchown(owner, group) File.lchown(owner, group, @path) end
-
   # See <tt>File.fnmatch</tt>.  Return +true+ if the receiver matches the given
   # pattern.
   def fnmatch(pattern, *args) File.fnmatch(pattern, @path, *args) end
