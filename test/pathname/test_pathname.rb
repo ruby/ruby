@@ -19,7 +19,10 @@ class TestPathname < Test::Unit::TestCase
 
   def self.defassert(name, result, *args)
     define_assertion(name) {
-      assert_equal(result, self.send(name, *args), "#{name}(#{args.map {|a| a.inspect }.join(', ')})")
+      mesg = "#{name}(#{args.map {|a| a.inspect }.join(', ')})"
+      assert_nothing_raised(mesg) {
+        assert_equal(result, self.send(name, *args), mesg)
+      }
     }
   end
 
@@ -506,6 +509,7 @@ class TestPathname < Test::Unit::TestCase
   defassert(:pathsubext, 'lex.yy.o', 'lex.yy.c', '.o')
   defassert(:pathsubext, 'fooaa.o', 'fooaa', '.o')
   defassert(:pathsubext, 'd.e/aa.o', 'd.e/aa', '.o')
+  defassert(:pathsubext, 'long_enough.bug-3664', 'long_enough.not_to_be_embeded[ruby-core:31640]', '.bug-3664')
 
   def test_sub_matchdata
     result = Pathname("abc.gif").sub(/\..*/) {

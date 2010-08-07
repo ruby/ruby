@@ -192,7 +192,7 @@ path_sub_ext(VALUE self, VALUE repl)
         ext += extlen;
     }
     str2 = rb_str_dup(str);
-    rb_str_set_len(str2, ext-p);
+    rb_str_resize(str2, ext-p);
     rb_str_append(str2, repl);
     OBJ_INFECT(str2, str);
     return rb_class_new_instance(1, &str2, rb_obj_class(self));
