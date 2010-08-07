@@ -3850,10 +3850,10 @@ rb_io_syswrite(VALUE io, VALUE str)
 
 /*
  *  call-seq:
- *     ios.sysread(integer[, outbuf])    -> string
+ *     ios.sysread(maxlen[, outbuf])    -> string
  *
- *  Reads <i>integer</i> bytes from <em>ios</em> using a low-level
- *  read and returns them as a string. Do not mix with other methods
+ *  Reads <i>maxlen</i> bytes from <em>ios</em> using a low-level
+ *  read and returns them as a string.  Do not mix with other methods
  *  that read from <em>ios</em> or you may get unpredictable results.
  *  If the optional <i>outbuf</i> argument is present, it must reference
  *  a String, which will receive the data.
