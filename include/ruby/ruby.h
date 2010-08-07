@@ -1431,7 +1431,7 @@ unsigned long ruby_strtoul(const char *str, char **endptr, int base);
 
 #define InitVM(ext) {void InitVM_##ext(void);InitVM_##ext();}
 
-int ruby_snprintf(char *str, size_t n, char const *fmt, ...);
+PRINTF_ARGS(int ruby_snprintf(char *str, size_t n, char const *fmt, ...), 3, 4);
 int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
 
 #if defined __GNUC__ && __GNUC__ >= 4
