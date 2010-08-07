@@ -1,3 +1,8 @@
+Sat Aug  7 09:31:48 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/pathname.c (Init_pathname): fix number of arguments for
+	  Pathname#chown.
+
 Sat Aug  7 09:28:12 2010  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/envutil.rb (assert_normal_exit): use assert.  fix

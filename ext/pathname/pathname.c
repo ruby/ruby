@@ -491,5 +491,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "mtime", path_mtime, 0);
     rb_define_method(rb_cPathname, "chmod", path_chmod, 1);
     rb_define_method(rb_cPathname, "lchmod", path_lchmod, 1);
-    rb_define_method(rb_cPathname, "chown", path_chown, 1);
+    rb_define_method(rb_cPathname, "chown", path_chown, 2);
 }
