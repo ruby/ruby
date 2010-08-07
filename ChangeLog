@@ -1,3 +1,7 @@
+Sun Aug  8 08:58:42 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (RUBY_H_INCLUDES): add subst.h.
+
 Sun Aug  8 08:55:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (ruby_snprintf): printf attribute. 
