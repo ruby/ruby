@@ -1,6 +1,11 @@
 #ifndef RUBY_SUBST_H
 #define RUBY_SUBST_H 1
 
+#undef snprintf
+#undef vsnprintf
+#define snprintf ruby_snprintf
+#define vsnprintf ruby_vsnprintf
+
 #ifdef BROKEN_CLOSE
 #undef getpeername
 #define getpeername ruby_getpeername

@@ -1433,10 +1433,6 @@ unsigned long ruby_strtoul(const char *str, char **endptr, int base);
 
 int ruby_snprintf(char *str, size_t n, char const *fmt, ...);
 int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
-#undef snprintf
-#undef vsnprintf
-#define snprintf ruby_snprintf
-#define vsnprintf ruby_vsnprintf
 
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility pop
