@@ -476,9 +476,9 @@ module Gem
     load_path_files = suffixes.map do |sfx|
       base = path + sfx
       $LOAD_PATH.map {|load_path|
-        File.expand_path(base, load_path)
-      }.select {|f| File.file?(f.untaint)}
-    end.flatten
+        Dir[File.expand_path(base, load_path)]
+      }
+    end.flatten.select {|f| File.file?(f.untaint)}
 
     specs = searcher.find_all path
 
