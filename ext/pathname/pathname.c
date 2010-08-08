@@ -315,6 +315,16 @@ path_fnmatch(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ * See <tt>File.ftype</tt>.  Returns "type" of file ("file", "directory",
+ * etc).
+ */
+static VALUE
+path_ftype(VALUE self)
+{
+    return rb_funcall(rb_cFile, rb_intern("ftype"), 1, get_strpath(self));
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -523,4 +533,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "lchown", path_lchown, 2);
     rb_define_method(rb_cPathname, "fnmatch", path_fnmatch, -1);
     rb_define_method(rb_cPathname, "fnmatch?", path_fnmatch, -1);
+    rb_define_method(rb_cPathname, "ftype", path_ftype, 0);
 }
