@@ -1,3 +1,7 @@
+Mon Aug  9 06:52:59 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (sys_warning_1): show error message.
+
 Mon Aug  9 06:50:28 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_require.rb (test_require_too_long_filename):
