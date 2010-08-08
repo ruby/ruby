@@ -1,3 +1,8 @@
+Fri Jul 30 07:48:04 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/extconf.rb: use TK_XINCLUDES on tkConfig.sh when not empty,
+	  even if MacOS X Aqua version [ruby-dev:41883].
+
 Thu Aug  5 18:36:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* complex.c (nucomp_marshal_load): should check the argument.
