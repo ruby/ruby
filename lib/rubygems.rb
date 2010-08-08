@@ -473,12 +473,11 @@ module Gem
   # versions of the same gem.
 
   def self.find_files(path)
-    load_path_files = $LOAD_PATH.map do |load_path|
-      files = Dir["#{File.expand_path path, load_path}#{Gem.suffix_pattern}"]
-
-      files.select do |load_path_file|
-        File.file? load_path_file.untaint
-      end
+    suffixes.map do |sfx|
+      base = path + sfx
+      load_path_files = $LOAD_PATH.map {|load_path|
+        File.expand_path(base, load_path)
+      }.select {|f| File.file?(f.untaint)}
     end.flatten
 
     specs = searcher.find_all path
