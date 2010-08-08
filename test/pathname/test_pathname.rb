@@ -807,7 +807,7 @@ class TestPathname < Test::Unit::TestCase
     }
   end
 
-  def test_link
+  def test_make_link
     with_tmpchdir('rubytest-pathname') {|dir|
       open("a", "w") {|f| f.write "abc" }
       Pathname("l").make_link(Pathname("a"))
