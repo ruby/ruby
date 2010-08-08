@@ -38,7 +38,5 @@ end
 case RUBY_PLATFORM
 when /mswin/
   $CFLAGS += ' /W3'
-when /cygwin/, /mingw/
-  $defs << '-DNONAMELESSUNION'
 end
 create_win32ole_makefile

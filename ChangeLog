@@ -1,3 +1,9 @@
+Mon Aug  2 21:16:03 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: NONAMELESSUNION defined only if gcc
+	  version is older than 3.4.4. [ruby-core:31567] [Bug #3637]
+	* ext/win32ole/extconf.rb: ditto.
+
 Fri Jul 30 07:48:04 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/extconf.rb: use TK_XINCLUDES on tkConfig.sh when not empty,
