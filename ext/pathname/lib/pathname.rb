@@ -512,9 +512,6 @@ end
 
 class Pathname    # * File *
 
-  # See <tt>File.link</tt>.  Creates a hard link.
-  def make_link(old) File.link(old, @path) end
-
   # See <tt>File.open</tt>.  Opens the file for reading or writing.
   def open(*args, &block) # :yield: file
     File.open(@path, *args, &block)
