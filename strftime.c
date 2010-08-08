@@ -482,13 +482,13 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, const str
                         off = off % 3600;
                         if (1 <= colons)
                             *s++ = ':';
-			i = snprintf(s, endp - s, "%02d", off / 60);
+			i = snprintf(s, endp - s, "%02d", (int)(off / 60));
 			if (i < 0) goto err;
 			s += i;
                         off = off % 60;
                         if (2 <= colons) {
                             *s++ = ':';
-                            i = snprintf(s, endp - s, "%02d", off);
+                            i = snprintf(s, endp - s, "%02d", (int)off);
                             if (i < 0) goto err;
                             s += i;
                         }
