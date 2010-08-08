@@ -1,3 +1,8 @@
+Mon Aug  9 06:50:28 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_require.rb (test_require_too_long_filename):
+	  clear -w option.
+
 Mon Aug  9 00:18:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb ($ignore_error): initialize after $nmake.
