@@ -903,8 +903,8 @@ module Gem
   # Suffixes for require-able paths.
 
   def self.suffixes
-    ['', '.rb', '.rbw', '.so', '.bundle', '.dll', '.sl', '.jar']
-  end
+    ['.rb', ".#{RbConfig::CONFIG["DLEXT"]}"]
+  end unless defined?(suffixes)
 
   ##
   # Prints the amount of time the supplied block takes to run using the debug

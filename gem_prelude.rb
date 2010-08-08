@@ -34,6 +34,10 @@ if defined?(Gem) then
       :sitelibdir        => RbConfig::CONFIG["sitelibdir"],
     }
 
+    def self.suffixes
+      ['.rb', ".#{RbConfig::CONFIG["DLEXT"]}"]
+    end
+
     def self.dir
       @gem_home ||= nil
       set_home(ENV['GEM_HOME'] || default_dir) unless @gem_home
