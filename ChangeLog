@@ -1,3 +1,8 @@
+Mon Aug  2 21:51:16 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (ruby_init_loadpath_safe): rb_str_set_len modifies ptr
+	  since r26303.
+
 Mon Aug  2 21:16:03 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: NONAMELESSUNION defined only if gcc

@@ -419,13 +419,15 @@ ruby_init_loadpath_safe(int safe_level)
 	strlcpy(libpath, ".", sizeof(libpath));
 	p = libpath + 1;
     }
+    baselen = p - libpath;
 #define PREFIX_PATH() rb_str_new(libpath, baselen)
 #else
-    rb_str_set_len(sopath, p - libpath);
+    baselen = p - libpath;
+    rb_str_set_len(sopath, baselen);
+    libpath = RSTRING_PTR(sopath);
 #define PREFIX_PATH() sopath
 #endif
 
-    baselen = p - libpath;
 #define BASEPATH() rb_str_buf_cat(rb_str_buf_new(baselen+len), libpath, baselen)
 
 #define RUBY_RELATIVE(path, len) rb_str_buf_cat(BASEPATH(), path, len)
