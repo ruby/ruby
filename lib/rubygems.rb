@@ -473,9 +473,9 @@ module Gem
   # versions of the same gem.
 
   def self.find_files(path)
-    suffixes.map do |sfx|
+    load_path_files = suffixes.map do |sfx|
       base = path + sfx
-      load_path_files = $LOAD_PATH.map {|load_path|
+      $LOAD_PATH.map {|load_path|
         File.expand_path(base, load_path)
       }.select {|f| File.file?(f.untaint)}
     end.flatten
