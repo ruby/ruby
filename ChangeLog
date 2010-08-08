@@ -1,10 +1,9 @@
-Sun Aug  8 16:22:04 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Aug  8 16:42:48 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems.rb (Gem.find_files): reverted to use globbing.
 
 	* lib/rubygems.rb (Gem.find_files): fixed search order same as
 	  default behavior.
-
-	* lib/rubygems/gem_path_searcher.rb (matching_files): check if
-	  exist, not globbing.
 
 	* gem_prelude.rb, lib/rubygems.rb (Gem.suffixes): return truely
 	  require-able suffixes only.
