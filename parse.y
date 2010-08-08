@@ -5653,7 +5653,7 @@ parser_tokadd_escape(struct parser_params *parser, rb_encoding **encp)
       case 'x':	/* hex constant */
 	{
 	    tok_hex(&numlen);
-	    if (numlen == 0) goto eof;
+	    if (numlen == 0) return -1;
 	    tokcopy((int)numlen + 2);
 	}
 	return 0;

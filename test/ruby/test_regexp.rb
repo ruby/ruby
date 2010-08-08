@@ -834,4 +834,11 @@ class TestRegexp < Test::Unit::TestCase
   def test_property_warn
     assert_in_out_err('-w', 'x=/\p%s/', [], %r"warning: invalid Unicode Property \\p: /\\p%s/")
   end
+
+  def test_invalid_escape_error
+    bug3539 = '[ruby-core:31048]'
+    error = assert_raise(SyntaxError) {eval('/\x/', nil, bug3539)}
+    assert_match(/invalid hex escape/, error.message)
+    assert_equal(1, error.message.scan(/.*invalid .*escape.*/i).size, bug3539)
+  end
 end
