@@ -325,6 +325,18 @@ path_ftype(VALUE self)
 }
 
 /*
+ * call-seq:
+ *   pathname.make_link(old)
+ *
+ * See <tt>File.link</tt>.  Creates a hard link at _pathname_.
+ */
+static VALUE
+path_make_link(VALUE self, VALUE old)
+{
+    return rb_funcall(rb_cFile, rb_intern("link"), 2, old, get_strpath(self));
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -534,4 +546,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "fnmatch", path_fnmatch, -1);
     rb_define_method(rb_cPathname, "fnmatch?", path_fnmatch, -1);
     rb_define_method(rb_cPathname, "ftype", path_ftype, 0);
+    rb_define_method(rb_cPathname, "make_link", path_make_link, 1);
 }
