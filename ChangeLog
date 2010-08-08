@@ -1,3 +1,8 @@
+Sun Aug  8 13:20:57 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/pathname.c (path_ftype): Pathname#ftype translated
+	  from pathname.rb.
+
 Sun Aug  8 12:41:19 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_tokadd_escape): no similar messages twice.

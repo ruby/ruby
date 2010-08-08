@@ -512,10 +512,6 @@ end
 
 class Pathname    # * File *
 
-  # See <tt>File.ftype</tt>.  Returns "type" of file ("file", "directory",
-  # etc).
-  def ftype() File.ftype(@path) end
-
   # See <tt>File.link</tt>.  Creates a hard link.
   def make_link(old) File.link(old, @path) end
 
