@@ -20,7 +20,7 @@ class TestRequire < Test::Unit::TestCase
   end
 
   def test_require_too_long_filename
-    assert_in_out_err([], <<-INPUT, %w(:ok), [])
+    assert_in_out_err(["RUBYOPT"=>nil], <<-INPUT, %w(:ok), [])
       begin
         require '#{ "foo/" * 10000 }foo'
       rescue LoadError
