@@ -1,3 +1,7 @@
+Mon Aug  9 00:18:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb ($ignore_error): initialize after $nmake.
+
 Sun Aug  8 19:16:26 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pathname/pathname.c (path_make_link): Pathname#make_link
