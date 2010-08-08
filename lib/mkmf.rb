@@ -17,7 +17,6 @@ SRC_EXT = %w[c m].concat(CXX_EXT)
 $static = nil
 $config_h = '$(arch_hdrdir)/ruby/config.h'
 $default_static = $static
-$ignore_error = $nmake ? '' : ' 2> /dev/null || true'
 
 unless defined? $configure_args
   $configure_args = {}
@@ -2028,6 +2027,7 @@ when $mswin
 when $bccwin
   $nmake = ?b if /Borland/i =~ `#{make} -h`
 end
+$ignore_error = $nmake ? '' : ' 2> /dev/null || true'
 
 RbConfig::CONFIG["srcdir"] = CONFIG["srcdir"] =
   $srcdir = arg_config("--srcdir", File.dirname($0))
