@@ -671,7 +671,7 @@ class Gem::Specification
   private :same_attributes?
 
   def hash # :nodoc:
-    @@attributes.inject(0) { |hash_code, (name, default_value)|
+    @@attributes.inject(0) { |hash_code, (name, _)|
       n = self.send(name).hash
       hash_code + n
     }
@@ -703,7 +703,7 @@ class Gem::Specification
   def to_yaml(opts = {}) # :nodoc:
     return super if YAML.const_defined?(:ENGINE) && !YAML::ENGINE.syck?
 
-    yaml = YAML.quick_emit object_id, opts do |out|
+    YAML.quick_emit object_id, opts do |out|
       out.map taguri, to_yaml_style do |map|
         encode_with map
       end
