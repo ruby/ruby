@@ -21,7 +21,7 @@
  * 3. This notice may not be removed or altered from any source distribution.
  */
 #define NKF_VERSION "2.1.1"
-#define NKF_RELEASE_DATE "2010-04-28"
+#define NKF_RELEASE_DATE "2010-08-08"
 #define COPY_RIGHT \
     "Copyright (C) 1987, FUJITSU LTD. (I.Ichikawa).\n" \
     "Copyright (C) 1996-2010, The nkf Project."
@@ -4635,7 +4635,7 @@ static const char basis_64[] =
 
 #define MIMEOUT_BUF_LENGTH 74
 static struct {
-    char buf[MIMEOUT_BUF_LENGTH+1];
+    unsigned char buf[MIMEOUT_BUF_LENGTH+1];
     int count;
 } mimeout_state;
 
@@ -4947,7 +4947,7 @@ mime_putc(nkf_char c)
 		    i = 0;
 
 		    for (; i < mimeout_state.count - len; ++i) {
-			if (!strncmp(mimeout_state.buf+i, str, len)) {
+			if (!strncmp((char *)(mimeout_state.buf+i), str, len)) {
 			    i += len - 2;
 			    break;
 			}
