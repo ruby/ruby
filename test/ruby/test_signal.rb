@@ -1,5 +1,6 @@
 require 'test/unit'
 require 'timeout'
+require_relative 'envutil'
 
 class TestSignal < Test::Unit::TestCase
   def have_fork?
@@ -40,13 +41,14 @@ class TestSignal < Test::Unit::TestCase
     begin
       r, w = IO.pipe
       r0, w0 = IO.pipe
-      pid = Process.fork {
+      pid = Process.spawn(EnvUtil.rubybin, '-e', <<-'End', 3=>w, 4=>r0)
+        w = IO.new(3, "w")
+        r0 = IO.new(4, "r")
         Signal.trap(:USR1, "EXIT")
-        w0.close
         w.syswrite("a")
         Thread.start { sleep(2) }
         r0.sysread(4096)
-      }
+      End
       r.sysread(1)
       sleep 0.1
       assert_nothing_raised("[ruby-dev:26128]") {
