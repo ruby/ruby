@@ -1,3 +1,8 @@
+Sat Aug  7 13:33:25 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (vm_call0): fix for VM_METHOD_TYPE_NOTIMPLEMENTED.
+	  [ruby-dev:41953]
+
 Fri Aug  6 18:59:23 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (realpath_rec): rb_str_modify depends on the length, so
