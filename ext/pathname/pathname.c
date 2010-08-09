@@ -356,6 +356,17 @@ path_open(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ * See <tt>File.readlink</tt>.  Read symbolic link.
+ */
+static VALUE
+path_readlink(VALUE self)
+{
+    VALUE str;
+    str = rb_funcall(rb_cFile, rb_intern("readlink"), 1, get_strpath(self));
+    return rb_class_new_instance(1, &str, rb_obj_class(self));
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -567,4 +578,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "ftype", path_ftype, 0);
     rb_define_method(rb_cPathname, "make_link", path_make_link, 1);
     rb_define_method(rb_cPathname, "open", path_open, -1);
+    rb_define_method(rb_cPathname, "readlink", path_readlink, 0);
 }
