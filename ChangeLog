@@ -1,3 +1,8 @@
+Mon Aug  9 22:11:09 2010  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_signal.rb (TestSignal#test_exit_action): use
+	  Process.spawn instead of Process.fork.
+
 Mon Aug  9 15:59:02 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/rubygems/source_index.rb: rename unused variable.
