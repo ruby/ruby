@@ -1,3 +1,11 @@
+Mon Aug  9 15:59:02 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/rubygems/source_index.rb: rename unused variable.
+
+	* lib/rubygems/specification.rb: rename unused variable.
+
+	* lib/rubygems/specification.rb: remove unused variable.
+
 Mon Aug  9 14:10:06 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c: Fix type of mimeout_state.buf.

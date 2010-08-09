@@ -357,7 +357,7 @@ class Gem::SourceIndex
       begin
         fetcher = Gem::SpecFetcher.fetcher
         remotes = fetcher.find_matching dependency
-        remotes = remotes.map { |(name, version,_),_| version }
+        remotes = remotes.map { |(_,version,_),_| version }
       rescue Gem::RemoteFetcher::FetchError => e
         raise unless fetcher.warn_legacy e do
           require 'rubygems/source_info_cache'
