@@ -512,9 +512,6 @@ end
 
 class Pathname    # * File *
 
-  # See <tt>File.readlink</tt>.  Read symbolic link.
-  def readlink() self.class.new(File.readlink(@path)) end
-
   # See <tt>File.rename</tt>.  Rename the file.
   def rename(to) File.rename(@path, to) end
 
