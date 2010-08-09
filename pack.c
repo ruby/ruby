@@ -320,15 +320,15 @@ static unsigned long utf8_to_uv(const char*,long*);
  *   Integer      | Array   |
  *   Directive    | Element | Meaning
  *   ---------------------------------------------------------------------------
- *      C         | Integer | 8-bit unsigned integer (unsigned char)
- *      S         | Integer | 16-bit unsigned integer, native endian (uint16_t)
- *      L         | Integer | 32-bit unsigned integer, native endian (uint32_t)
- *      Q         | Integer | 64-bit unsigned integer, native endian (uint64_t)
+ *      C         | Integer | 8-bit unsigned (unsigned char)
+ *      S         | Integer | 16-bit unsigned, native endian (uint16_t)
+ *      L         | Integer | 32-bit unsigned, native endian (uint32_t)
+ *      Q         | Integer | 64-bit unsigned, native endian (uint64_t)
  *                |         |
- *      c         | Integer | 8-bit signed integer (char)
- *      s         | Integer | 16-bit signed integer, native endian (int16_t)
- *      l         | Integer | 32-bit signed integer, native endian (int32_t)
- *      q         | Integer | 64-bit signed integer, native endian (int64_t)
+ *      c         | Integer | 8-bit signed (char)
+ *      s         | Integer | 16-bit signed, native endian (int16_t)
+ *      l         | Integer | 32-bit signed, native endian (int32_t)
+ *      q         | Integer | 64-bit signed, native endian (int64_t)
  *                |         |
  *      S_, S!    | Integer | unsigned short, native endian
  *      I, I_, I! | Integer | unsigned int, native endian
@@ -338,10 +338,10 @@ static unsigned long utf8_to_uv(const char*,long*);
  *      i, i_, i! | Integer | signed int, native endian
  *      l_, l!    | Integer | signed long, native endian
  *                |         |
- *      n         | Integer | 16-bit unsigned integer, network (big-endian) byte order
- *      N         | Integer | 32-bit unsigned integer, network (big-endian) byte order
- *      v         | Integer | 16-bit unsigned integer, VAX (little-endian) byte order
- *      V         | Integer | 32-bit unsigned integer, VAX (little-endian) byte order
+ *      n         | Integer | 16-bit unsigned, network (big-endian) byte order
+ *      N         | Integer | 32-bit unsigned, network (big-endian) byte order
+ *      v         | Integer | 16-bit unsigned, VAX (little-endian) byte order
+ *      V         | Integer | 32-bit unsigned, VAX (little-endian) byte order
  *                |         |
  *      U         | Integer | UTF-8 character
  *      w         | Integer | BER-compressed integer
@@ -349,12 +349,12 @@ static unsigned long utf8_to_uv(const char*,long*);
  *   Float        |         |
  *   Directive    |         | Meaning
  *   ---------------------------------------------------------------------------
- *      D, d      | Float   | double-precision float, native format
- *      F, f      | Float   | single-precision float, native format
- *      E         | Float   | double-precision float, little-endian byte order
- *      e         | Float   | single-precision float, little-endian byte order
- *      G         | Float   | double-precision float, network (big-endian) byte order
- *      g         | Float   | single-precision float, network (big-endian) byte order
+ *      D, d      | Float   | double-precision, native format
+ *      F, f      | Float   | single-precision, native format
+ *      E         | Float   | double-precision, little-endian byte order
+ *      e         | Float   | single-precision, little-endian byte order
+ *      G         | Float   | double-precision, network (big-endian) byte order
+ *      g         | Float   | single-precision, network (big-endian) byte order
  *                
  *   String       |         |
  *   Directive    |         | Meaning
@@ -1233,15 +1233,15 @@ infected_str_new(const char *ptr, long len, VALUE str)
  *   Integer      |         |
  *   Directive    | Returns | Meaning
  *   -----------------------------------------------------------------
- *      C         | Integer | 8-bit unsigned integer (unsigned char)
- *      S         | Integer | 16-bit unsigned integer, native endian (uint16_t)
- *      L         | Integer | 32-bit unsigned integer, native endian (uint32_t)
- *      Q         | Integer | 64-bit unsigned integer, native endian (uint64_t)
+ *      C         | Integer | 8-bit unsigned (unsigned char)
+ *      S         | Integer | 16-bit unsigned, native endian (uint16_t)
+ *      L         | Integer | 32-bit unsigned, native endian (uint32_t)
+ *      Q         | Integer | 64-bit unsigned, native endian (uint64_t)
  *                |         |
- *      c         | Integer | 8-bit signed integer (signed char)
- *      s         | Integer | 16-bit signed integer, native endian (int16_t)
- *      l         | Integer | 32-bit signed integer, native endian (int32_t)
- *      q         | Integer | 64-bit signed integer, native endian (int64_t)
+ *      c         | Integer | 8-bit signed (signed char)
+ *      s         | Integer | 16-bit signed, native endian (int16_t)
+ *      l         | Integer | 32-bit signed, native endian (int32_t)
+ *      q         | Integer | 64-bit signed, native endian (int64_t)
  *                |         |
  *      S_, S!    | Integer | unsigned short, native endian
  *      I, I_, I! | Integer | unsigned int, native endian
@@ -1251,10 +1251,10 @@ infected_str_new(const char *ptr, long len, VALUE str)
  *      i, i_, i! | Integer | signed int, native endian
  *      l_, l!    | Integer | signed long, native endian
  *                |         |
- *      n         | Integer | 16-bit unsigned integer, network (big-endian) byte order
- *      N         | Integer | 32-bit unsigned integer, network (big-endian) byte order
- *      v         | Integer | 16-bit unsigned integer, VAX (little-endian) byte order
- *      V         | Integer | 32-bit unsigned integer, VAX (little-endian) byte order
+ *      n         | Integer | 16-bit unsigned, network (big-endian) byte order
+ *      N         | Integer | 32-bit unsigned, network (big-endian) byte order
+ *      v         | Integer | 16-bit unsigned, VAX (little-endian) byte order
+ *      V         | Integer | 32-bit unsigned, VAX (little-endian) byte order
  *                |         |
  *      U         | Integer | UTF-8 character
  *      w         | Integer | BER-compressed integer (see Array.pack)
@@ -1262,12 +1262,12 @@ infected_str_new(const char *ptr, long len, VALUE str)
  *   Float        |         |
  *   Directive    | Returns | Meaning
  *   -----------------------------------------------------------------
- *      D, d      | Float   | double-precision float, native format
- *      F, f      | Float   | single-precision float, native format
- *      E         | Float   | double-precision float, little-endian byte order
- *      e         | Float   | single-precision float, little-endian byte order
- *      G         | Float   | double-precision float, network (big-endian) byte order
- *      g         | Float   | single-precision float, network (big-endian) byte order
+ *      D, d      | Float   | double-precision, native format
+ *      F, f      | Float   | single-precision, native format
+ *      E         | Float   | double-precision, little-endian byte order
+ *      e         | Float   | single-precision, little-endian byte order
+ *      G         | Float   | double-precision, network (big-endian) byte order
+ *      g         | Float   | single-precision, network (big-endian) byte order
  *                
  *   String       |         |
  *   Directive    | Returns | Meaning
