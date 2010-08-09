@@ -337,6 +337,25 @@ path_make_link(VALUE self, VALUE old)
 }
 
 /*
+ * See <tt>File.open</tt>.  Opens the file for reading or writing.
+ */
+static VALUE
+path_open(int argc, VALUE *argv, VALUE self)
+{
+    VALUE args[4];
+    int n;
+
+    args[0] = get_strpath(self);
+    n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
+    if (rb_block_given_p()) {
+        return rb_block_call(rb_cFile, rb_intern("open"), 1+n, args, 0, 0);
+    }
+    else {
+        return rb_funcall2(rb_cFile, rb_intern("open"), 1+n, args);
+    }
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -547,4 +566,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "fnmatch?", path_fnmatch, -1);
     rb_define_method(rb_cPathname, "ftype", path_ftype, 0);
     rb_define_method(rb_cPathname, "make_link", path_make_link, 1);
+    rb_define_method(rb_cPathname, "open", path_open, -1);
 }

@@ -818,9 +818,27 @@ class TestPathname < Test::Unit::TestCase
   def test_open
     with_tmpchdir('rubytest-pathname') {|dir|
       open("a", "w") {|f| f.write "abc" }
-      Pathname("a").open {|f|
+      path = Pathname("a")
+
+      path.open {|f|
         assert_equal("abc", f.read)
       }
+
+      path.open("r") {|f|
+        assert_equal("abc", f.read)
+      }
+
+      Pathname("b").open("w", 0444) {|f| f.write "def" }
+      assert_equal(0444, File.stat("b").mode & 0777)
+      assert_equal("def", File.read("b"))
+
+      Pathname("c").open("w", 0444, {}) {|f| f.write "ghi" }
+      assert_equal(0444, File.stat("c").mode & 0777)
+      assert_equal("ghi", File.read("c"))
+
+      g = path.open
+      assert_equal("abc", g.read)
+      g.close
     }
   end
 
