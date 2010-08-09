@@ -1,3 +1,8 @@
+Mon Aug  9 22:15:19 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/pathname.c (path_open): Pathname#open
+	  translated from pathname.rb.
+
 Mon Aug  9 22:11:09 2010  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_signal.rb (TestSignal#test_exit_action): use
