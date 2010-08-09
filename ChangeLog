@@ -1,3 +1,8 @@
+Thu Aug  5 16:57:20 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (glob_make_pattern): fold continuous PLAINs to get rid of
+	  snail at too deep path.  [ruby-dev:41871]
+
 Sat Aug  7 09:47:06 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: fix checking version of GCC.

@@ -1045,16 +1045,14 @@ do_opendir(const char *path, int flags)
 
 /* Return nonzero if S has any special globbing chars in it.  */
 static int
-has_magic(const char *s, int flags, rb_encoding *enc)
+has_magic(const char *p, const char *pend, int flags, rb_encoding *enc)
 {
     const int escape = !(flags & FNM_NOESCAPE);
     const int nocase = flags & FNM_CASEFOLD;
 
-    register const char *p = s;
-    register const char *pend = p + strlen(p);
     register char c;
 
-    while ((c = *p++) != 0) {
+    while (p < pend && (c = *p++) != 0) {
 	switch (c) {
 	  case '*':
 	  case '?':
@@ -1079,12 +1077,10 @@ has_magic(const char *s, int flags, rb_encoding *enc)
 
 /* Find separator in globbing pattern. */
 static char *
-find_dirsep(const char *s, int flags, rb_encoding *enc)
+find_dirsep(const char *p, const char *pend, int flags, rb_encoding *enc)
 {
     const int escape = !(flags & FNM_NOESCAPE);
 
-    register const char *p = s;
-    register const char *pend = p + strlen(p);
     register char c;
     int open = 0;
 
@@ -1151,31 +1147,41 @@ struct glob_pattern {
 static void glob_free_pattern(struct glob_pattern *list);
 
 static struct glob_pattern *
-glob_make_pattern(const char *p, int flags, rb_encoding *enc)
+glob_make_pattern(const char *p, const char *e, int flags, rb_encoding *enc)
 {
     struct glob_pattern *list, *tmp, **tail = &list;
     int dirsep = 0; /* pattern is terminated with '/' */
 
-    while (*p) {
+    while (p < e && *p) {
 	tmp = GLOB_ALLOC(struct glob_pattern);
 	if (!tmp) goto error;
 	if (p[0] == '*' && p[1] == '*' && p[2] == '/') {
 	    /* fold continuous RECURSIVEs (needed in glob_helper) */
-	    do { p += 3; } while (p[0] == '*' && p[1] == '*' && p[2] == '/');
+	    do { p += 3; while (*p == '/') p++; } while (p[0] == '*' && p[1] == '*' && p[2] == '/');
 	    tmp->type = RECURSIVE;
 	    tmp->str = 0;
 	    dirsep = 1;
 	}
 	else {
-	    const char *m = find_dirsep(p, flags, enc);
-	    char *buf = GLOB_ALLOC_N(char, m-p+1);
+	    const char *m = find_dirsep(p, e, flags, enc);
+	    int magic = has_magic(p, m, flags, enc);
+	    char *buf;
+
+	    if (!magic && *m) {
+		const char *m2;
+		while (!has_magic(m+1, m2 = find_dirsep(m+1, e, flags, enc), flags, enc) &&
+		       *m2) {
+		    m = m2;
+		}
+	    }
+	    buf = GLOB_ALLOC_N(char, m-p+1);
 	    if (!buf) {
 		GLOB_FREE(tmp);
 		goto error;
 	    }
 	    memcpy(buf, p, m-p);
 	    buf[m-p] = '\0';
-	    tmp->type = has_magic(buf, flags, enc) ? MAGICAL : PLAIN;
+	    tmp->type = magic ? MAGICAL : PLAIN;
 	    tmp->str = buf;
 	    if (*m) {
 		dirsep = 1;
@@ -1480,7 +1486,7 @@ ruby_glob0(const char *path, int flags, ruby_glob_func *func, VALUE arg, rb_enco
     MEMCPY(buf, start, char, n);
     buf[n] = '\0';
 
-    list = glob_make_pattern(root, flags, enc);
+    list = glob_make_pattern(root, root + strlen(root), flags, enc);
     if (!list) {
 	GLOB_FREE(buf);
 	return -1;
