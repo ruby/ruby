@@ -1,3 +1,9 @@
+Thu Aug  5 21:20:31 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* compile.c (NODE_ARGSCAT, NODE_ARGSPUSH): drop unused ARGSCAT
+	  results when poped is true.  [ruby-dev:41933], [Bug #3658]
+	  This is retry of r28870 and r28873 which were reverted.
+
 Thu Aug  5 16:57:20 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (glob_make_pattern): fold continuous PLAINs to get rid of
