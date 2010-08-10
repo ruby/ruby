@@ -1,4 +1,4 @@
-# format.rb: Written by Tadayoshi Funaba 1999-2009
+# format.rb: Written by Tadayoshi Funaba 1999-2010
 # $Id: format.rb,v 2.43 2008-01-17 20:16:31+09 tadf Exp $
 
 class Date
@@ -109,28 +109,26 @@ class Date
       x.freeze
     end
 
-    class Bag # :nodoc:
-
-      def initialize
-	@elem = {}
-      end
-
-      def method_missing(t, *args, &block)
-	t = t.to_s
-	set = t.chomp!('=')
-	t = t.intern
-	if set
-	  @elem[t] = args[0]
-	else
-	  @elem[t]
-	end
-      end
+    class BagStruct < Struct # :nodoc:
 
       def to_hash
-	@elem.reject{|k, v| /\A_/ =~ k.to_s || v.nil?}
+	h = {}
+	members.each do |k|
+	  unless /\A_/ =~ k.to_s || self[k].nil?
+	    h[k] = self[k]
+	  end
+	end
+	h
       end
 
     end
+
+    Bag = BagStruct.new(:year, :mon, :yday, :mday, :wday,
+			:cwyear, :cweek, :cwday,
+			:hour, :min, :sec, :sec_fraction,
+			:wnum0, :wnum1, :seconds,
+			:zone, :offset, :leftover,
+			:_cent, :_merid, :_comp)
 
   end
 
