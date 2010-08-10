@@ -1,3 +1,9 @@
+Tue Aug 10 20:56:31 2010  Tanaka Akira  <akr@fsij.org>
+
+	* lib/optparse.rb: suppress a warning.
+
+	* test/test_mutex_m.rb: ditto.
+
 Tue Aug 10 20:56:13 2010  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date/format.rb (Date::Format::Bag): use Struct.
