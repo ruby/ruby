@@ -356,7 +356,7 @@ class Date
 
   def jisx0301
     if jd < 2405160
-      iso8601
+      strftime('%F')
     else
       case jd
       when 2405160...2419614

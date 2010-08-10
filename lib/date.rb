@@ -470,7 +470,7 @@ class Date
     end
 
     def jd_to_weeknum(jd, f=0, sg=GREGORIAN) # :nodoc:
-      y, _, d = jd_to_civil(jd, sg)
+      y, m, d = jd_to_civil(jd, sg)
       a = find_fdoy(y, sg) + 6
       w, d = (jd - (a - ((a - f) + 1) % 7) + 7).divmod(7)
       return y, w, d
@@ -486,7 +486,7 @@ class Date
     end
 
     def jd_to_nth_kday(jd, sg=GREGORIAN) # :nodoc:
-      y, m, = jd_to_civil(jd, sg)
+      y, m, d = jd_to_civil(jd, sg)
       j = find_fdom(y, m, sg)
       return y, m, ((jd - j) / 7).floor + 1, jd_to_wday(jd)
     end
@@ -645,7 +645,7 @@ class Date
 	d += 8
       end
       if w < 0
-	ny, nw, =
+	ny, nw, nd =
 	  jd_to_commercial(commercial_to_jd(y + 1, 1, 1, sg) + w * 7, sg)
 	return unless ny == y
 	w = nw
@@ -660,7 +660,7 @@ class Date
 	d += 7
       end
       if w < 0
-	ny, nw, =
+	ny, nw, nd, nf =
 	  jd_to_weeknum(weeknum_to_jd(y + 1, 1, f, f, sg) + w * 7, f, sg)
 	return unless ny == y
 	w = nw
@@ -677,7 +677,7 @@ class Date
       if n < 0
 	ny, nm = (y * 12 + m).divmod(12)
 	nm,    = (nm + 1)    .divmod(1)
-	ny, nm, nn, =
+	ny, nm, nn, nk =
 	  jd_to_nth_kday(nth_kday_to_jd(ny, nm, 1, k, sg) + n * 7, sg)
 	return unless [ny, nm] == [y, m]
 	n = nn
