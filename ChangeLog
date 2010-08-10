@@ -1,3 +1,8 @@
+Tue Aug 10 15:19:45 2010  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.h, ext/bigdecimal/bigdecimal.c:
+	  add extern declaration of rb_cBigDecimal.
+
 Tue Aug 10 14:09:31 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/webrick/httprequest.rb (WEBrick::HTTPRequest::parse_uri):
