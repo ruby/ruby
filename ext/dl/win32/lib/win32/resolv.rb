@@ -73,7 +73,7 @@ if info.unpack('V5')[4] == 2  # VER_PLATFORM_WIN32_NT
               unless nvdom.empty?
                 @search = [ nvdom ]
                 if reg.read_i('UseDomainNameDevolution') != 0
-                  if /^[\w\d]+\./ =~ nvdom
+                  if /^\w+\./ =~ nvdom
                     devo = $'
                   end
                 end
