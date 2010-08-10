@@ -273,6 +273,7 @@ module WEBrick
       if @config[:Escape8bitURI]
         str = HTTPUtils::escape8bit(str)
       end
+      str.sub!(%r{\A/+}o, '/')
       uri = URI::parse(str)
       return uri if uri.absolute?
       if @forwarded_host

@@ -1,3 +1,12 @@
+Tue Aug 10 14:09:31 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/webrick/httprequest.rb (WEBrick::HTTPRequest::parse_uri):
+	  rollup leading slashes. [ruby-core:31657]
+	  patched by Jamison Wilde
+	  NOTE: //authority/path is valid relative URI both RFC2396 and
+	  RFC3986. So when give a relative URI-like string to URI lib,
+	  users must care leading slashes.
+
 Tue Aug 10 11:26:33 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/un.rb (httpd): SIGQUIT and SIGHUP are not guaranteed to exist.
