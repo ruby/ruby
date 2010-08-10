@@ -317,9 +317,9 @@ def httpd
     s = WEBrick::HTTPServer.new(options)
     shut = proc {s.shutdown}
     Signal.trap("TERM", shut)
-    Signal.trap("QUIT", shut)
+    Signal.trap("QUIT", shut) if Signal.list.has_key?("QUIT")
     if STDIN.tty?
-      Signal.trap("HUP", shut)
+      Signal.trap("HUP", shut) if Signal.list.has_key?("HUP")
       Signal.trap("INT", shut)
     end
     s.start
