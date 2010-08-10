@@ -1,3 +1,8 @@
+Tue Aug 10 17:24:56 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* README.EXT.ja: rb_tainted_str_new_cstr() is an alias of
+	  rb_tainted_str_new2().
+
 Tue Aug 10 15:24:30 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c, ext/bigdecimal/bigdecimal.h,

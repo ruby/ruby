@@ -208,13 +208,13 @@ Rubyが用意している関数を用いてください．
     rb_str_new(ptr, strlen(ptr))と同等である．
 
   rb_tainted_str_new(const char *ptr, long len)
-  rb_tainted_str_new_cstr(const char *ptr)
 
     汚染マークが付加された新しいRubyの文字列を生成する．外部
     からのデータに基づく文字列には汚染マークが付加されるべき
     である．
 
   rb_tainted_str_new2(const char *ptr)
+  rb_tainted_str_new_cstr(const char *ptr)
 
     Cの文字列から汚染マークが付加されたRubyの文字列を生成する．
 
