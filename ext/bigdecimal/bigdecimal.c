@@ -13,7 +13,8 @@
  *
  */
 
-#include "ruby/ruby.h"
+#include "bigdecimal.h"
+
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,8 +31,6 @@
 /* #define ENABLE_NUMERIC_STRING */
 
 VALUE rb_cBigDecimal;
-
-#include "bigdecimal.h"
 
 /* MACRO's to guard objects from GC by keeping them in stack */
 #define ENTER(n) volatile VALUE vStack[n];int iStack=0

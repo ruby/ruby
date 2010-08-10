@@ -16,9 +16,13 @@
 #ifndef  ____BIG_DECIMAL__H____
 #define  ____BIG_DECIMAL__H____
 
+#include "ruby/ruby.h"
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
+
+extern VALUE rb_cBigDecimal;
 
 /*
  *  NaN & Infinity
