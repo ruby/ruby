@@ -1,3 +1,12 @@
+Tue Aug 10 17:35:49 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/webrick/httprequest.rb (WEBrick::HTTPRequest::parse_uri):
+	  rollup leading slashes. [ruby-core:31657]
+	  patched by Jamison Wilde
+	  NOTE: //authority/path is valid relative URI both RFC2396 and
+	  RFC3986. So when give a relative URI-like string to URI lib,
+	  users must care leading slashes.
+
 Sat Aug  7 17:40:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* mkconfig.rb, lib/rbconfig/obsolete.rb: warn obsolete and
