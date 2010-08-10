@@ -13,6 +13,7 @@
  *
  */
 
+//#define BIGDECIMAL_DEBUG 1
 #include "bigdecimal.h"
 
 #include <ctype.h>
@@ -20,7 +21,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <float.h>
 #include <math.h>
 #include "math.h"
 
@@ -38,20 +38,12 @@ VALUE rb_cBigDecimal;
 #define SAVE(p)  PUSH(p->obj);
 #define GUARD_OBJ(p,y) {p=y;SAVE(p);}
 
-#ifndef BASE_FIG
-static U_LONG BASE_FIG = 4;     /* =log10(BASE)  */
-static U_LONG BASE = 10000L;    /* Base value(value must be 10**BASE_FIG) */
-                /* The value of BASE**2 + BASE must be represented */
-                /* within one U_LONG. */
-static U_LONG HALF_BASE = 5000L;/* =BASE/2  */
-static U_LONG BASE1 = 1000L;    /* =BASE/10  */
-#else
-#ifndef BASE
-#error BASE_FIG is defined but BASE is not
-#endif
+#define BASE_FIG  RMPD_COMPONENT_FIGURES
+#define BASE      RMPD_BASE
+
 #define HALF_BASE (BASE/2)
 #define BASE1 (BASE/10)
-#endif
+
 #ifndef DBLE_FIG
 #define DBLE_FIG (DBL_DIG+1)    /* figure of double */
 #endif
@@ -82,8 +74,8 @@ BigDecimal_version(VALUE self)
  */
 static unsigned short VpGetException(void);
 static void  VpSetException(unsigned short f);
-static void  VpInternalRound(Real *c,U_LONG ixDigit,U_LONG vPrev,U_LONG v);
-static int   VpLimitRound(Real *c,U_LONG ixDigit);
+static void  VpInternalRound(Real *c, U_LONG ixDigit, BDIGIT vPrev, BDIGIT v);
+static int   VpLimitRound(Real *c, U_LONG ixDigit);
 
 /*
  *  **** BigDecimal part ****
@@ -99,7 +91,7 @@ static size_t
 BigDecimal_memsize(const void *ptr)
 {
     const Real *pv = ptr;
-    return pv ? (sizeof(*pv) + pv->MaxPrec * sizeof(U_LONG)) : 0;
+    return pv ? (sizeof(*pv) + pv->MaxPrec * sizeof(BDIGIT)) : 0;
 }
 
 static const rb_data_type_t BigDecimal_data_type = {
@@ -225,10 +217,10 @@ BigDecimal_hash(VALUE self)
     st_index_t hash;
 
     GUARD_OBJ(p,GetVpValue(self,1));
-    hash = (U_LONG)p->sign;
+    hash = (st_index_t)p->sign;
     /* hash!=2: the case for 0(1),NaN(0) or +-Infinity(3) is sign itself */
     if(hash == 2 || hash == (st_index_t)-2) {
-	hash ^= rb_memhash(p->frac, sizeof(U_LONG)*p->Prec);
+	hash ^= rb_memhash(p->frac, sizeof(BDIGIT)*p->Prec);
 	hash += p->exponent;
     }
     return INT2FIX(hash);
@@ -479,7 +471,8 @@ static VALUE
 BigDecimal_to_i(VALUE self)
 {
     ENTER(5);
-    S_LONG e,nf;
+    S_LONG e;
+    S_LONG nf;
     Real *p;
 
     GUARD_OBJ(p,GetVpValue(self,1));
@@ -489,8 +482,7 @@ BigDecimal_to_i(VALUE self)
     if(e<=0) return INT2FIX(0);
     nf = VpBaseFig();
     if(e<=nf) {
-        e = VpGetSign(p)*p->frac[0];
-        return INT2FIX(e);
+        return LONG2NUM(VpGetSign(p)*(BDIGIT_DBL_SIGNED)p->frac[0]);
     }
     else {
 	VALUE a = BigDecimal_split(self);
@@ -911,7 +903,7 @@ BigDecimal_div(VALUE self, VALUE r)
      */
     /* Round */
     if(VpHasVal(div)) { /* frac[0] must be zero for NaN,INF,Zero */
-	VpInternalRound(c,0,c->frac[c->Prec-1],(VpBaseVal()*res->frac[0])/div->frac[0]);
+	VpInternalRound(c, 0, c->frac[c->Prec-1], (BDIGIT)(VpBaseVal()*(BDIGIT_DBL)res->frac[0]/div->frac[0]));
     }
     return ToValue(c);
 }
@@ -1413,6 +1405,9 @@ BigDecimal_floor(int argc, VALUE *argv, VALUE self)
     GUARD_OBJ(c,VpCreateRbObject(mx, "0"));
     VpSetPrecLimit(pl);
     VpActiveRound(c,a,VP_ROUND_FLOOR,iLoc);
+#ifdef BIGDECIMAL_DEBUG
+    VPrint(stderr, "floor: c=%\n", c);
+#endif
     if (argc == 0) {
 	return BigDecimal_to_i(ToValue(c));
     }
@@ -2113,9 +2108,9 @@ static Real *VpPt5;        /* constant 0.5 */
 
 static int VpIsDefOP(Real *c,Real *a,Real *b,int sw);
 static int AddExponent(Real *a,S_INT n);
-static U_LONG VpAddAbs(Real *a,Real *b,Real *c);
-static U_LONG VpSubAbs(Real *a,Real *b,Real *c);
-static U_LONG VpSetPTR(Real *a,Real *b,Real *c,U_LONG *a_pos,U_LONG *b_pos,U_LONG *c_pos,U_LONG *av,U_LONG *bv);
+static BDIGIT VpAddAbs(Real *a,Real *b,Real *c);
+static BDIGIT VpSubAbs(Real *a,Real *b,Real *c);
+static U_LONG VpSetPTR(Real *a,Real *b,Real *c,U_LONG *a_pos,U_LONG *b_pos,U_LONG *c_pos, BDIGIT *av, BDIGIT *bv);
 static int VpNmlz(Real *a);
 static void VpFormatSt(char *psz,S_INT fFmt);
 static int VpRdup(Real *m,U_LONG ind_m);
@@ -2233,24 +2228,6 @@ static double
 One(void)
 {
     return gOne_ABCED9B4_CE73__00400511F31D;
-}
-
-VP_EXPORT U_LONG
-VpBaseFig(void)
-{
-    return BASE_FIG;
-}
-
-VP_EXPORT U_LONG
-VpDblFig(void)
-{
-    return DBLE_FIG;
-}
-
-VP_EXPORT U_LONG
-VpBaseVal(void)
-{
-    return BASE;
 }
 
 /*
@@ -2485,37 +2462,16 @@ VpNumOfChars(Real *vp,const char *pszFmt)
  *   by one U_LONG word(LONG) in the computer used.
  *
  * [Returns]
- * DBLE_FIG   ... OK
+ * 1+DBL_DIG   ... OK
  */
-VP_EXPORT U_LONG
-VpInit(U_LONG BaseVal)
+VP_EXPORT size_t
+VpInit(BDIGIT BaseVal)
 {
     /* Setup +/- Inf  NaN -0 */
     VpGetDoubleNaN();
     VpGetDoublePosInf();
     VpGetDoubleNegInf();
     VpGetDoubleNegZero();
-
-#ifndef BASE_FIG
-    if(BaseVal <= 0) {
-        U_LONG w;
-        /* Base <= 0, then determine Base by calcuration. */
-        BASE = 1;
-        while(
-               (BASE > 0) &&
-               ((w = BASE *(BASE + 1)) > BASE) &&((w / BASE) ==(BASE + 1))
-            ) {
-            BaseVal = BASE;
-            BASE = BaseVal * 10L;
-        }
-    }
-    /* Set Base Values */
-    BASE = BaseVal;
-    HALF_BASE = BASE / 2;
-    BASE1 = BASE / 10;
-    BASE_FIG = 0;
-    while(BaseVal /= 10) ++BASE_FIG;
-#endif
 
     /* Allocates Vp constants. */
     VpConstOne = VpAlloc((U_LONG)1, "1");
@@ -2531,12 +2487,12 @@ VpInit(U_LONG BaseVal)
         printf("  BASE   = %lu\n", BASE);
         printf("  HALF_BASE = %lu\n", HALF_BASE);
         printf("  BASE1  = %lu\n", BASE1);
-        printf("  BASE_FIG  = %d\n", BASE_FIG);
+        printf("  BASE_FIG  = %u\n", BASE_FIG);
         printf("  DBLE_FIG  = %d\n", DBLE_FIG);
     }
 #endif /* BIGDECIMAL_DEBUG */
 
-    return DBLE_FIG;
+    return rmpd_double_figures();
 }
 
 VP_EXPORT Real *
@@ -2554,13 +2510,13 @@ AddExponent(Real *a,S_INT n)
     S_INT eb,mb;
     if(e>0) {
         if(n>0) {
-            mb = m*BASE_FIG;
-            eb = e*BASE_FIG;
+            mb = m*(S_INT)BASE_FIG;
+            eb = e*(S_INT)BASE_FIG;
             if(mb<eb) goto overflow;
         }
     } else if(n<0) {
-        mb = m*BASE_FIG;
-        eb = e*BASE_FIG;
+        mb = m*(S_INT)BASE_FIG;
+        eb = e*(S_INT)BASE_FIG;
         if(mb>eb) goto underflow;
     }
     a->exponent = m;
@@ -2600,23 +2556,25 @@ VpAlloc(U_LONG mx, const char *szVal)
     VALUE buf;
 
     mx = (mx + BASE_FIG - 1) / BASE_FIG + 1;    /* Determine allocation unit. */
-    if(szVal) {
-        while(ISSPACE(*szVal)) szVal++;
-        if(*szVal!='#') {
-             if(mf) {
+    if (szVal) {
+        while (ISSPACE(*szVal)) szVal++;
+        if (*szVal != '#') {
+             if (mf) {
                 mf = (mf + BASE_FIG - 1) / BASE_FIG + 2; /* Needs 1 more for div */
-                if(mx>mf) {
+                if (mx > mf) {
                     mx = mf;
                 }
             }
-        } else {
+        }
+	else {
             ++szVal;
         }
-    } else {
+    }
+    else {
        /* necessary to be able to store */
        /* at least mx digits. */
        /* szVal==NULL ==> allocate zero value. */
-       vp = (Real *) VpMemAlloc(sizeof(Real) + mx * sizeof(U_LONG));
+       vp = (Real *) VpMemAlloc(sizeof(Real) + mx * sizeof(BDIGIT));
        /* xmalloc() alway returns(or throw interruption) */
        vp->MaxPrec = mx;    /* set max precision */
        VpSetZero(vp,1);    /* initialize vp to zero. */
@@ -2629,38 +2587,39 @@ VpAlloc(U_LONG mx, const char *szVal)
     psz = RSTRING_PTR(buf);
     i   = 0;
     ipn = 0;
-    while((psz[i]=szVal[ipn])!=0) {
-        if(ISDIGIT(psz[i])) ++ni;
-        if(psz[i]=='_') {
-            if(ni>0) {ipn++;continue;}
-            psz[i]=0;
+    while ((psz[i]=szVal[ipn]) != 0) {
+        if (ISDIGIT(psz[i])) ++ni;
+        if (psz[i] == '_') {
+            if (ni > 0) { ipn++; continue; }
+            psz[i] = 0;
             break;
         }
-        ++i; ++ipn;
+        ++i;
+	++ipn;
     }
     /* Skip trailing spaces */
-    while((--i)>0) {
-        if(ISSPACE(psz[i])) psz[i] = 0;
-        else                break;
+    while (--i > 0) {
+        if (ISSPACE(psz[i])) psz[i] = 0;
+        else break;
     }
     szVal = psz;
 
     /* Check on Inf & NaN */
-    if(StrCmp(szVal,SZ_PINF)==0 ||
-       StrCmp(szVal,SZ_INF)==0 ) {
-        vp = (Real *) VpMemAlloc(sizeof(Real) + sizeof(U_LONG));
+    if (StrCmp(szVal, SZ_PINF) == 0 ||
+        StrCmp(szVal, SZ_INF)  == 0 ) {
+        vp = (Real *) VpMemAlloc(sizeof(Real) + sizeof(BDIGIT));
         vp->MaxPrec = 1;    /* set max precision */
         VpSetPosInf(vp);
         return vp;
     }
-    if(StrCmp(szVal,SZ_NINF)==0) {
-        vp = (Real *) VpMemAlloc(sizeof(Real) + sizeof(U_LONG));
+    if (StrCmp(szVal, SZ_NINF) == 0) {
+        vp = (Real *) VpMemAlloc(sizeof(Real) + sizeof(BDIGIT));
         vp->MaxPrec = 1;    /* set max precision */
         VpSetNegInf(vp);
         return vp;
     }
-    if(StrCmp(szVal,SZ_NaN)==0) {
-        vp = (Real *) VpMemAlloc(sizeof(Real) + sizeof(U_LONG));
+    if (StrCmp(szVal, SZ_NaN) == 0) {
+        vp = (Real *) VpMemAlloc(sizeof(Real) + sizeof(BDIGIT));
         vp->MaxPrec = 1;    /* set max precision */
         VpSetNaN(vp);
         return vp;
@@ -2668,12 +2627,12 @@ VpAlloc(U_LONG mx, const char *szVal)
 
     /* check on number szVal[] */
     ipn = i = 0;
-    if     (szVal[i] == '-') {sign=-1;++i;}
-    else if(szVal[i] == '+')          ++i;
+    if      (szVal[i] == '-') { sign=-1; ++i; }
+    else if (szVal[i] == '+')            ++i;
     /* Skip digits */
     ni = 0;            /* digits in mantissa */
-    while((v = szVal[i]) != 0) {
-        if(!ISDIGIT(v)) break;
+    while ((v = szVal[i]) != 0) {
+        if (!ISDIGIT(v)) break;
         ++i;
         ++ni;
     }
@@ -2681,31 +2640,30 @@ VpAlloc(U_LONG mx, const char *szVal)
     ipf = 0;
     ipe = 0;
     ne  = 0;
-    if(v) {
+    if (v) {
         /* other than digit nor \0 */
-        if(szVal[i] == '.') {    /* xxx. */
+        if (szVal[i] == '.') {    /* xxx. */
             ++i;
             ipf = i;
-            while((v = szVal[i]) != 0) {    /* get fraction part. */
-                if(!ISDIGIT(v)) break;
+            while ((v = szVal[i]) != 0) {    /* get fraction part. */
+                if (!ISDIGIT(v)) break;
                 ++i;
                 ++nf;
             }
         }
         ipe = 0;        /* Exponent */
 
-        switch(szVal[i]) {
-        case '\0': break;
-        case 'e':
-        case 'E':
-        case 'd':
-        case 'D':
+        switch (szVal[i]) {
+        case '\0':
+	    break;
+        case 'e': case 'E':
+        case 'd': case 'D':
             ++i;
             ipe = i;
             v = szVal[i];
-            if((v == '-') ||(v == '+')) ++i;
-            while((v=szVal[i])!=0) {
-                if(!ISDIGIT(v)) break;
+            if ((v == '-') || (v == '+')) ++i;
+            while ((v=szVal[i]) != 0) {
+                if (!ISDIGIT(v)) break;
                 ++i;
                 ++ne;
             }
@@ -2714,16 +2672,16 @@ VpAlloc(U_LONG mx, const char *szVal)
             break;
         }
     }
-    nalloc =(ni + nf + BASE_FIG - 1) / BASE_FIG + 1;    /* set effective allocation  */
+    nalloc = (ni + nf + BASE_FIG - 1) / BASE_FIG + 1;    /* set effective allocation  */
     /* units for szVal[]  */
-    if(mx <= 0) mx = 1;
+    if (mx <= 0) mx = 1;
     nalloc = Max(nalloc, mx);
     mx = nalloc;
-    vp =(Real *) VpMemAlloc(sizeof(Real) + mx * sizeof(U_LONG));
+    vp = (Real *) VpMemAlloc(sizeof(Real) + mx * sizeof(BDIGIT));
     /* xmalloc() alway returns(or throw interruption) */
     vp->MaxPrec = mx;        /* set max precision */
-    VpSetZero(vp,sign);
-    VpCtoV(vp, &(szVal[ipn]), ni, &(szVal[ipf]), nf, &(szVal[ipe]), ne);
+    VpSetZero(vp, sign);
+    VpCtoV(vp, &szVal[ipn], ni, &szVal[ipf], nf, &szVal[ipe], ne);
     rb_str_resize(buf, 0);
     return vp;
 }
@@ -2759,7 +2717,7 @@ VpAsgn(Real *c, Real *a, int isw)
         VpSetSign(c,(isw*VpGetSign(a)));    /* set sign */
         n =(a->Prec < c->MaxPrec) ?(a->Prec) :(c->MaxPrec);
         c->Prec = n;
-        memcpy(c->frac, a->frac, n * sizeof(U_LONG));
+        memcpy(c->frac, a->frac, n * sizeof(BDIGIT));
         /* Needs round ? */
         if(isw!=10) {
             /* Not in ActiveRound */
@@ -2788,7 +2746,7 @@ VpAddSub(Real *c, Real *a, Real *b, int operation)
     S_INT sw, isw;
     Real *a_ptr, *b_ptr;
     U_LONG n, na, nb, i;
-    U_LONG mrv;
+    BDIGIT mrv;
 
 #ifdef BIGDECIMAL_DEBUG
     if(gfDebug) {
@@ -2910,18 +2868,17 @@ end_if:
  * a and b assuming abs(a)>abs(b).
  *   c = abs(a) + abs(b) ; where |a|>=|b|
  */
-static U_LONG
+static BDIGIT
 VpAddAbs(Real *a, Real *b, Real *c)
 {
     U_LONG word_shift;
-    U_LONG carry;
     U_LONG ap;
     U_LONG bp;
     U_LONG cp;
     U_LONG a_pos;
-    U_LONG b_pos;
+    U_LONG b_pos, b_pos_with_word_shift;
     U_LONG c_pos;
-    U_LONG av, bv, mrv;
+    BDIGIT av, bv, carry, mrv;
 
 #ifdef BIGDECIMAL_DEBUG
     if(gfDebug) {
@@ -2953,8 +2910,8 @@ VpAddAbs(Real *a, Real *b, Real *c)
 
     /* Just assign the last few digits of a to c because b has no */
     /* corresponding digits to be added. */
-    bv = b_pos + word_shift;
-    while(a_pos > bv) {
+    b_pos_with_word_shift = b_pos + word_shift;
+    while(a_pos > b_pos_with_word_shift) {
         c->frac[--c_pos] = a->frac[--a_pos];
     }
     carry = 0;    /* set first carry be zero */
@@ -3002,19 +2959,17 @@ Exit:
 /*
  * c = abs(a) - abs(b)
  */
-static U_LONG
+static BDIGIT
 VpSubAbs(Real *a, Real *b, Real *c)
 {
     U_LONG word_shift;
-    U_LONG mrv;
-    U_LONG borrow;
     U_LONG ap;
     U_LONG bp;
     U_LONG cp;
     U_LONG a_pos;
-    U_LONG b_pos;
+    U_LONG b_pos, b_pos_with_word_shift;
     U_LONG c_pos;
-    U_LONG av, bv;
+    BDIGIT av, bv, borrow, mrv;
 
 #ifdef BIGDECIMAL_DEBUG
     if(gfDebug) {
@@ -3056,8 +3011,8 @@ VpSubAbs(Real *a, Real *b, Real *c)
     /* Just assign the last few digits of a to c because b has no */
     /* corresponding digits to subtract. */
 
-    bv = b_pos + word_shift;
-    while(a_pos > bv) {
+    b_pos_with_word_shift = b_pos + word_shift;
+    while(a_pos > b_pos_with_word_shift) {
         c->frac[--c_pos] = a->frac[--a_pos];
     }
 
@@ -3117,7 +3072,7 @@ Exit:
  *      c_pos      =      |
  */
 static U_LONG
-VpSetPTR(Real *a, Real *b, Real *c, U_LONG *a_pos, U_LONG *b_pos, U_LONG *c_pos, U_LONG *av, U_LONG *bv)
+VpSetPTR(Real *a, Real *b, Real *c, U_LONG *a_pos, U_LONG *b_pos, U_LONG *c_pos, BDIGIT *av, BDIGIT *bv)
 {
     U_LONG left_word, right_word, word_shift;
     c->frac[0] = 0;
@@ -3217,7 +3172,8 @@ VpMult(Real *c, Real *a, Real *b)
     U_LONG MxIndA, MxIndB, MxIndAB, MxIndC;
     U_LONG ind_c, i, ii, nc;
     U_LONG ind_as, ind_ae, ind_bs, ind_be;
-    U_LONG Carry, s;
+    BDIGIT carry;
+    BDIGIT_DBL s;
     Real *w;
 
 #ifdef BIGDECIMAL_DEBUG
@@ -3269,9 +3225,9 @@ VpMult(Real *c, Real *a, Real *b)
 	return 0;
     }
     VpSetSign(c,VpGetSign(a)*VpGetSign(b));    /* set sign  */
-    Carry = 0;
+    carry = 0;
     nc = ind_c = MxIndAB;
-    memset(c->frac, 0, (nc + 1) * sizeof(U_LONG));        /* Initialize c  */
+    memset(c->frac, 0, (nc + 1) * sizeof(BDIGIT));        /* Initialize c  */
     c->Prec = nc + 1;        /* set precision */
     for(nc = 0; nc < MxIndAB; ++nc, --ind_c) {
         if(nc < MxIndB) {    /* The left triangle of the Fig. */
@@ -3292,22 +3248,22 @@ VpMult(Real *c, Real *a, Real *b)
         }
 
         for(i = ind_as; i <= ind_ae; ++i) {
-            s =((a->frac[i]) *(b->frac[ind_bs--]));
-            Carry = s / BASE;
-            s = s -(Carry * BASE);
-            c->frac[ind_c] += s;
+            s = (BDIGIT_DBL)a->frac[i] * b->frac[ind_bs--];
+            carry = (BDIGIT)(s / BASE);
+            s -= (BDIGIT_DBL)carry * BASE;
+            c->frac[ind_c] += (BDIGIT)s;
             if(c->frac[ind_c] >= BASE) {
                 s = c->frac[ind_c] / BASE;
-                Carry += s;
-                c->frac[ind_c] -= (s * BASE);
+                carry += (BDIGIT)s;
+                c->frac[ind_c] -= (BDIGIT)(s * BASE);
             }
-            if(Carry) {
+            if(carry) {
                 ii = ind_c;
                 while(ii-- > 0) {
-                    c->frac[ii] += Carry;
+                    c->frac[ii] += carry;
                     if(c->frac[ii] >= BASE) {
-                        Carry = c->frac[ii] / BASE;
-                        c->frac[ii] -=(Carry * BASE);
+                        carry = c->frac[ii] / BASE;
+                        c->frac[ii] -= (carry * BASE);
                     } else {
                         break;
                     }
@@ -3344,8 +3300,9 @@ VpDivd(Real *c, Real *r, Real *a, Real *b)
     U_LONG word_a, word_b, word_c, word_r;
     U_LONG i, n, ind_a, ind_b, ind_c, ind_r;
     U_LONG nLoop;
-    U_LONG q, b1, b1p1, b1b2, b1b2p1, r1r2;
-    U_LONG borrow, borrow1, borrow2, qb;
+    BDIGIT_DBL q, b1, b1p1, b1b2, b1b2p1, r1r2;
+    BDIGIT borrow, borrow1, borrow2;
+    BDIGIT_DBL qb;
 
 #ifdef BIGDECIMAL_DEBUG
     if(gfDebug) {
@@ -3416,7 +3373,7 @@ VpDivd(Real *c, Real *r, Real *a, Real *b)
             ++ind_c;
             continue;
         }
-        r1r2 = r->frac[ind_c] * BASE + r->frac[ind_c + 1];
+        r1r2 = (BDIGIT_DBL)r->frac[ind_c] * BASE + r->frac[ind_c + 1];
         if(r1r2 == b1b2) {
             /* The first two word digits is the same */
             ind_b = 2;
@@ -3437,7 +3394,7 @@ VpDivd(Real *c, Real *r, Real *a, Real *b)
             n = ind_b;
             for(i = 0; i <= n; ++i) {
                 if(r->frac[ind_r] < b->frac[ind_b] + borrow) {
-                    r->frac[ind_r] +=(BASE -(b->frac[ind_b] + borrow));
+                    r->frac[ind_r] += (BASE - (b->frac[ind_b] + borrow));
                     borrow = 1;
                 } else {
                     r->frac[ind_r] = r->frac[ind_r] - b->frac[ind_b] - borrow;
@@ -3446,22 +3403,22 @@ VpDivd(Real *c, Real *r, Real *a, Real *b)
                 --ind_r;
                 --ind_b;
             }
-            ++(c->frac[ind_c]);
+            ++c->frac[ind_c];
             goto carry;
         }
         /* The first two word digits is not the same, */
         /* then compare magnitude, and divide actually. */
         if(r1r2 >= b1b2p1) {
-            q = r1r2 / b1b2p1;
-            c->frac[ind_c] += q;
+            q = r1r2 / b1b2p1;  /* q == (BDIGIT)q  */
+            c->frac[ind_c] += (BDIGIT)q;
             ind_r = b->Prec + ind_c - 1;
             goto sub_mult;
         }
 
 div_b1p1:
         if(ind_c + 1 >= word_c) goto out_side;
-        q = r1r2 / b1p1;
-        c->frac[ind_c + 1] += q;
+        q = r1r2 / b1p1;  /* q == (BDIGIT)q */
+        c->frac[ind_c + 1] += (BDIGIT)q;
         ind_r = b->Prec + ind_c;
 
 sub_mult:
@@ -3471,22 +3428,22 @@ sub_mult:
         n = ind_b;
         for(i = 0; i <= n; ++i) {
             /* now, perform r = r - q * b */
-            qb = q *(b->frac[ind_b]);
-            if(qb < BASE) borrow1 = 0;
+            qb = q * b->frac[ind_b];
+            if (qb < BASE) borrow1 = 0;
             else {
-                borrow1 = qb / BASE;
-                qb = qb - borrow1 * BASE;
+                borrow1 = (BDIGIT)(qb / BASE);
+                qb -= (BDIGIT_DBL)borrow1 * BASE;	/* get qb < BASE */
             }
             if(r->frac[ind_r] < qb) {
-                r->frac[ind_r] +=(BASE - qb);
+                r->frac[ind_r] += (BDIGIT)(BASE - qb);
                 borrow2 = borrow2 + borrow1 + 1;
             } else {
-                r->frac[ind_r] -= qb;
+                r->frac[ind_r] -= (BDIGIT)qb;
                 borrow2 += borrow1;
             }
             if(borrow2) {
                 if(r->frac[ind_r - 1] < borrow2) {
-                    r->frac[ind_r - 1] +=(BASE - borrow2);
+                    r->frac[ind_r - 1] += (BASE - borrow2);
                     borrow2 = 1;
                 } else {
                     r->frac[ind_r - 1] -= borrow2;
@@ -3503,7 +3460,7 @@ carry:
         while(c->frac[ind_r] >= BASE) {
             c->frac[ind_r] -= BASE;
             --ind_r;
-            ++(c->frac[ind_r]);
+            ++c->frac[ind_r];
         }
     }
     /* End of operation, now final arrangement */
@@ -3553,30 +3510,30 @@ VpNmlz(Real *a)
 {
     U_LONG ind_a, i;
 
-    if(!VpIsDef(a)) goto NoVal;
-    if(VpIsZero(a)) goto NoVal;
+    if (!VpIsDef(a)) goto NoVal;
+    if (VpIsZero(a)) goto NoVal;
 
     ind_a = a->Prec;
-    while(ind_a--) {
-        if(a->frac[ind_a]) {
+    while (ind_a--) {
+        if (a->frac[ind_a]) {
             a->Prec = ind_a + 1;
             i = 0;
-            while(a->frac[i] == 0) ++i;        /* skip the first few zeros */
-            if(i) {
+            while (a->frac[i] == 0) ++i;        /* skip the first few zeros */
+            if (i) {
                 a->Prec -= i;
-                if(!AddExponent(a,-((S_INT)i))) return 0;
-                memmove(&(a->frac[0]),&(a->frac[i]),(a->Prec)*sizeof(U_LONG));
+                if (!AddExponent(a, -(S_INT)i)) return 0;
+                memmove(&a->frac[0], &a->frac[i], a->Prec*sizeof(BDIGIT));
             }
             return 1;
         }
     }
     /* a is zero(no non-zero digit) */
-    VpSetZero(a,VpGetSign(a));
+    VpSetZero(a, VpGetSign(a));
     return 0;
 
 NoVal:
     a->frac[0] = 0;
-    a->Prec=1;
+    a->Prec = 1;
     return 0;
 }
 
@@ -3671,7 +3628,6 @@ Exit:
     return (int)val;
 }
 
-#ifdef BIGDECIMAL_DEBUG
 /*
  *    cntl_chr ... ASCIIZ Character, print control characters
  *     Available control codes:
@@ -3686,7 +3642,7 @@ VP_EXPORT int
 VPrint(FILE *fp, const char *cntl_chr, Real *a)
 {
     U_LONG i, j, nc, nd, ZeroSup;
-    U_LONG n, m, e, nn;
+    BDIGIT n, m, e, nn;
 
     /* Check if NaN & Inf. */
     if(VpIsNaN(a)) {
@@ -3727,7 +3683,7 @@ VPrint(FILE *fp, const char *cntl_chr, Real *a)
                     while(m) {
                         nn = e / m;
                         if((!ZeroSup) || nn) {
-                            nc += fprintf(fp, "%lu", nn);    /* The leading zero(s) */
+                            nc += fprintf(fp, "%lu", (unsigned long)nn);    /* The leading zero(s) */
                             /* as 0.00xx will not */
                             /* be printed. */
                             ++nd;
@@ -3774,7 +3730,6 @@ VPrint(FILE *fp, const char *cntl_chr, Real *a)
     }
     return (int)nc;
 }
-#endif /* BIGDECIMAL_DEBUG */
 
 static void
 VpFormatSt(char *psz,S_INT fFmt)
@@ -3811,7 +3766,7 @@ VpExponent10(Real *a)
 
     if(!VpHasVal(a)) return 0;
 
-    ex =(a->exponent) * BASE_FIG;
+    ex = a->exponent * (S_LONG)BASE_FIG;
     n = BASE1;
     while((a->frac[0] / n) == 0) {
          --ex;
@@ -3823,8 +3778,8 @@ VpExponent10(Real *a)
 VP_EXPORT void
 VpSzMantissa(Real *a,char *psz)
 {
-    U_LONG i, ZeroSup;
-    U_LONG n, m, e, nn;
+    U_LONG i, n, ZeroSup;
+    BDIGIT_DBL m, e, nn;
 
     if(VpIsNaN(a)) {
         sprintf(psz,SZ_NaN);
@@ -3843,13 +3798,13 @@ VpSzMantissa(Real *a,char *psz)
     if(!VpIsZero(a)) {
         if(VpGetSign(a) < 0) *psz++ = '-';
         n = a->Prec;
-        for(i=0;i < n;++i) {
+        for (i=0; i < n; ++i) {
             m = BASE1;
             e = a->frac[i];
-            while(m) {
+            while (m) {
                 nn = e / m;
                 if((!ZeroSup) || nn) {
-                    sprintf(psz, "%lu", nn);    /* The leading zero(s) */
+                    sprintf(psz, "%lu", (unsigned long)nn);    /* The leading zero(s) */
                     psz += strlen(psz);
                     /* as 0.00xx will be ignored. */
                     ZeroSup = 0;    /* Set to print succeeding zeros */
@@ -3903,18 +3858,18 @@ VP_EXPORT void
 VpToString(Real *a,char *psz,int fFmt,int fPlus)
 /* fPlus =0:default, =1: set ' ' before digits , =2:set '+' before digits. */
 {
-    U_LONG i, ZeroSup;
-    U_LONG n, m, e, nn;
+    U_LONG i, n, ZeroSup;
+    BDIGIT shift, m, e, nn;
     char *pszSav = psz;
     S_LONG ex;
 
-    if(VpToSpecialString(a,psz,fPlus)) return;
+    if (VpToSpecialString(a, psz, fPlus)) return;
 
     ZeroSup = 1;    /* Flag not to print the leading zeros as 0.00xxxxEnn */
 
-    if(VpGetSign(a) < 0) *psz++ = '-';
-    else if(fPlus==1)    *psz++ = ' ';
-    else if(fPlus==2)    *psz++ = '+';
+    if (VpGetSign(a) < 0) *psz++ = '-';
+    else if (fPlus == 1)  *psz++ = ' ';
+    else if (fPlus == 2)  *psz++ = '+';
 
     *psz++ = '0';
     *psz++ = '.';
@@ -3925,7 +3880,7 @@ VpToString(Real *a,char *psz,int fFmt,int fPlus)
         while(m) {
             nn = e / m;
             if((!ZeroSup) || nn) {
-                sprintf(psz, "%lu", nn);    /* The reading zero(s) */
+                sprintf(psz, "%lu", (unsigned long)nn);    /* The reading zero(s) */
                 psz += strlen(psz);
                 /* as 0.00xx will be ignored. */
                 ZeroSup = 0;    /* Set to print succeeding zeros */
@@ -3934,11 +3889,11 @@ VpToString(Real *a,char *psz,int fFmt,int fPlus)
             m /= 10;
         }
     }
-    ex =(a->exponent) * BASE_FIG;
-    n = BASE1;
-    while((a->frac[0] / n) == 0) {
+    ex = a->exponent * (S_LONG)BASE_FIG;
+    shift = BASE1;
+    while(a->frac[0] / shift == 0) {
         --ex;
-        n /= 10;
+        shift /= 10;
     }
     while(psz[-1]=='0') *(--psz) = 0;
     sprintf(psz, "E%ld", ex);
@@ -3949,8 +3904,8 @@ VP_EXPORT void
 VpToFString(Real *a,char *psz,int fFmt,int fPlus)
 /* fPlus =0:default,=1: set ' ' before digits ,set '+' before digits. */
 {
-    U_LONG i;
-    U_LONG n, m, e, nn;
+    U_LONG i, n;
+    BDIGIT m, e, nn;
     char *pszSav = psz;
     S_LONG ex;
 
@@ -3974,7 +3929,7 @@ VpToFString(Real *a,char *psz,int fFmt,int fPlus)
     for(i=0;i < n;++i) {
        --ex;
        if(i==0 && ex >= 0) {
-           sprintf(psz, "%lu", a->frac[i]);
+           sprintf(psz, "%lu", (unsigned long)a->frac[i]);
            psz += strlen(psz);
        } else {
            m = BASE1;
@@ -4015,7 +3970,7 @@ VpCtoV(Real *a, const char *int_chr, U_LONG ni, const char *frac, U_LONG nf, con
 {
     U_LONG i, j, ind_a, ma, mi, me;
     U_LONG loc;
-    S_LONG  e,es, eb, ef;
+    S_LONG  e, es, eb, ef;
     S_INT  sign, signe, exponent_overflow;
     /* get exponent part */
     e = 0;
@@ -4024,21 +3979,22 @@ VpCtoV(Real *a, const char *int_chr, U_LONG ni, const char *frac, U_LONG nf, con
     me = ne;
     signe = 1;
     exponent_overflow = 0;
-    memset(a->frac, 0, ma * sizeof(U_LONG));
-    if(ne > 0) {
+    memset(a->frac, 0, ma * sizeof(BDIGIT));
+    if (ne > 0) {
         i = 0;
-        if(exp_chr[0] == '-') {
+        if (exp_chr[0] == '-') {
             signe = -1;
             ++i;
             ++me;
-        } else if(exp_chr[0] == '+') {
+        }
+	else if (exp_chr[0] == '+') {
             ++i;
             ++me;
         }
-        while(i < me) {
-            es = e*((S_INT)BASE_FIG);
+        while (i < me) {
+            es = e * (S_LONG)BASE_FIG;
             e = e * 10 + exp_chr[i] - '0';
-            if(es > (S_INT)(e*BASE_FIG)) {
+            if (es > (S_INT)(e*(S_LONG)BASE_FIG)) {
 		exponent_overflow = 1;
 		e = es; /* keep sign */
 		break;
@@ -4064,48 +4020,48 @@ VpCtoV(Real *a, const char *int_chr, U_LONG ni, const char *frac, U_LONG nf, con
     e = signe * e;        /* e: The value of exponent part. */
     e = e + ni;        /* set actual exponent size. */
 
-    if(e > 0)    signe = 1;
-    else        signe = -1;
+    if (e > 0) signe = 1;
+    else       signe = -1;
 
     /* Adjust the exponent so that it is the multiple of BASE_FIG. */
     j = 0;
     ef = 1;
-    while(ef) {
-        if(e>=0) eb =  e;
-        else  eb = -e;
-        ef = eb / ((S_INT)BASE_FIG);
-        ef = eb - ef * ((S_INT)BASE_FIG);
-        if(ef) {
+    while (ef) {
+        if (e >= 0) eb =  e;
+        else        eb = -e;
+        ef = eb / (S_LONG)BASE_FIG;
+        ef = eb - ef * (S_LONG)BASE_FIG;
+        if (ef) {
             ++j;        /* Means to add one more preceeding zero */
             ++e;
         }
     }
 
-    eb = e / ((S_INT)BASE_FIG);
+    eb = e / (S_LONG)BASE_FIG;
 
-    if(exponent_overflow) {
+    if (exponent_overflow) {
 	int zero = 1;
-	for(     ; i < mi && zero; i++) zero = int_chr[i] == '0';
-	for(i = 0; i < nf && zero; i++) zero = frac[i] == '0';
-	if(!zero && signe > 0) {
+	for (     ; i < mi && zero; i++) zero = int_chr[i] == '0';
+	for (i = 0; i < nf && zero; i++) zero = frac[i] == '0';
+	if (!zero && signe > 0) {
 	    VpSetInf(a, sign);
-	    VpException(VP_EXCEPTION_INFINITY,"exponent overflow",0);
+	    VpException(VP_EXCEPTION_INFINITY, "exponent overflow",0);
 	}
 	else VpSetZero(a, sign);
 	return 1;
     }
 
     ind_a = 0;
-    while(i < mi) {
+    while (i < mi) {
         a->frac[ind_a] = 0;
-        while((j < (U_LONG)BASE_FIG) &&(i < mi)) {
+        while ((j < BASE_FIG) && (i < mi)) {
             a->frac[ind_a] = a->frac[ind_a] * 10 + int_chr[i] - '0';
             ++j;
             ++i;
         }
-        if(i < mi) {
+        if (i < mi) {
             ++ind_a;
-            if(ind_a >= ma) goto over_flow;
+            if (ind_a >= ma) goto over_flow;
             j = 0;
         }
     }
@@ -4115,7 +4071,7 @@ VpCtoV(Real *a, const char *int_chr, U_LONG ni, const char *frac, U_LONG nf, con
 
     i = 0;
     while(i < nf) {
-        while((j < (U_LONG)BASE_FIG) &&(i < nf)) {
+        while((j < BASE_FIG) && (i < nf)) {
             a->frac[ind_a] = a->frac[ind_a] * 10 + frac[i] - '0';
             ++j;
             ++i;
@@ -4132,8 +4088,8 @@ over_flow:
     rb_warn("Conversion from String to BigDecimal overflow (last few digits discarded).");
 
 Final:
-    if(ind_a >= ma) ind_a = ma - 1;
-    while(j < (U_LONG)BASE_FIG) {
+    if (ind_a >= ma) ind_a = ma - 1;
+    while (j < BASE_FIG) {
         a->frac[ind_a] = a->frac[ind_a] * 10;
         ++j;
     }
@@ -4206,7 +4162,7 @@ VpVtoD(double *d, S_LONG *e, Real *m)
         div /=(double)((S_INT)BASE);
         *d = *d +((double) ((S_INT)m->frac[ind_m++])) * div;
     }
-    *e = m->exponent * ((S_INT)BASE_FIG);
+    *e = m->exponent * (S_INT)BASE_FIG;
     *d *= VpGetSign(m);
 
 Exit:
@@ -4226,8 +4182,9 @@ Exit:
 VP_EXPORT void
 VpDtoV(Real *m, double d)
 {
-    U_LONG i, ind_m, mm;
+    U_LONG ind_m, mm;
     S_INT ne;
+    BDIGIT i;
     double  val, val2;
 
     if(isnan(d)) {
@@ -4261,11 +4218,11 @@ VpDtoV(Real *m, double d)
     /* Now val = 0.xxxxx*BASE**ne */
 
     mm = m->MaxPrec;
-    memset(m->frac, 0, mm * sizeof(U_LONG));
+    memset(m->frac, 0, mm * sizeof(BDIGIT));
     for(ind_m = 0;val > 0.0 && ind_m < mm;ind_m++) {
-        val *=(double)((S_INT)BASE);
-        i =(U_LONG) val;
-        val -=(double)((S_INT)i);
+        val *= (double)BASE;
+        i = (BDIGIT)val;
+        val -= (double)(S_INT)i;
         m->frac[ind_m] = i;
     }
     if(ind_m >= mm) ind_m = mm - 1;
@@ -4278,7 +4235,7 @@ VpDtoV(Real *m, double d)
     m->exponent = ne;
 
     VpInternalRound(m,0,(m->Prec>0)?m->frac[m->Prec-1]:0,
-                      (U_LONG)(val*((double)((S_INT)BASE))));
+                      (BDIGIT)(val*((double)((S_INT)BASE))));
 
 Exit:
 #ifdef BIGDECIMAL_DEBUG
@@ -4406,7 +4363,7 @@ VpSqrt(Real *y, Real *x)
     else            --prec;
     prec = prec - (S_LONG)y->MaxPrec;
     VpVtoD(&val, &e, x);    /* val <- x  */
-    e /= ((S_LONG)BASE_FIG);
+    e /= (S_LONG)BASE_FIG;
     n = e / 2;
     if(e - n * 2 != 0) {
         val /=(double)((S_INT)BASE);
@@ -4417,7 +4374,7 @@ VpSqrt(Real *y, Real *x)
     n = (DBLE_FIG + BASE_FIG - 1) / BASE_FIG;
     y->MaxPrec = (U_LONG)Min(n , y_prec);
     f->MaxPrec = y->MaxPrec + 1;
-    n = y_prec*((S_LONG)BASE_FIG);
+    n = y_prec * (S_LONG)BASE_FIG;
     if((U_LONG)n<maxnr) n = (U_LONG)maxnr;
     do {
         y->MaxPrec *= 2;
@@ -4477,10 +4434,10 @@ VpMidRound(Real *y, int f, S_LONG nf)
     /* exptoadd: number of digits needed to compensate negative nf */
     int fracf;
     S_LONG n,i,ix,ioffset,exptoadd;
-    U_LONG v,shifter;
-    U_LONG div;
+    BDIGIT v, shifter;
+    BDIGIT div;
 
-    nf += y->exponent*((int)BASE_FIG);
+    nf += y->exponent * (S_LONG)BASE_FIG;
     exptoadd=0;
     if (nf < 0) {
 	/* rounding position too left(large). */
@@ -4493,59 +4450,60 @@ VpMidRound(Real *y, int f, S_LONG nf)
     }
 
     /* ix: x->fraq[ix] contains round position */
-    ix = nf/(int)BASE_FIG;
-    if(((U_LONG)ix)>=y->Prec) return 0;  /* rounding position too right(small). */
-    ioffset = nf - ix*((int)BASE_FIG);
+    ix = nf / (S_LONG)BASE_FIG;
+    if ((U_LONG)ix >= y->Prec) return 0;  /* rounding position too right(small). */
+    ioffset = nf - ix*(S_LONG)BASE_FIG;
 
     v = y->frac[ix];
 
     /* drop digits after pointed digit */
-    n = BASE_FIG - ioffset - 1;
-    for(shifter=1,i=0;i<n;++i) shifter *= 10;
-    fracf = (v%(shifter*10) > 0);
+    n = (S_LONG)BASE_FIG - ioffset - 1;
+    for (shifter=1,i=0; i<n; ++i) shifter *= 10;
+    fracf = (v % (shifter * 10) > 0);
     v /= shifter;
-    div = v/10;
+    div = v / 10;
     v = v - div*10;
     if (fracf == 0) {
-        for(i=ix+1;(U_LONG)i<y->Prec;i++) {
-            if (y->frac[i]%BASE) {
+        for (i=ix+1; (U_LONG)i < y->Prec; i++) {
+            if (y->frac[i] % BASE) {
                 fracf = 1;
                 break;
             }
         }
     }
-    memset(y->frac+ix+1, 0, (y->Prec - (ix+1)) * sizeof(U_LONG));
+    memset(y->frac+ix+1, 0, (y->Prec - (ix+1)) * sizeof(BDIGIT));
     switch(f) {
     case VP_ROUND_DOWN: /* Truncate */
          break;
     case VP_ROUND_UP:   /* Roundup */
-        if(fracf) ++div;
+        if (fracf) ++div;
          break;
     case VP_ROUND_HALF_UP:   /* Round half up  */
-        if(v>=5) ++div;
+        if (v>=5) ++div;
         break;
     case VP_ROUND_HALF_DOWN: /* Round half down  */
-        if(v>=6) ++div;
+        if (v>=6) ++div;
         break;
     case VP_ROUND_CEIL: /* ceil */
-        if(fracf && (VpGetSign(y)>0)) ++div;
+        if (fracf && (VpGetSign(y)>0)) ++div;
         break;
     case VP_ROUND_FLOOR: /* floor */
-        if(fracf && (VpGetSign(y)<0)) ++div;
+        if (fracf && (VpGetSign(y)<0)) ++div;
         break;
     case VP_ROUND_HALF_EVEN: /* Banker's rounding */
-        if(v>5) ++div;
-        else if(v==5) {
-            if((U_LONG)i==(BASE_FIG-1)) {
-                if(ix && (y->frac[ix-1]%2)) ++div;
-            } else {
-                if(div%2) ++div;
+        if (v>5) ++div;
+        else if (v==5) {
+            if ((U_LONG)i == (BASE_FIG-1)) {
+                if (ix && (y->frac[ix-1]%2)) ++div;
+            }
+	    else {
+                if (div%2) ++div;
             }
         }
         break;
     }
-    for(i=0;i<=n;++i) div *= 10;
-    if(div>=BASE) {
+    for (i=0; i<=n; ++i) div *= 10;
+    if (div>=BASE) {
         if(ix) {
             y->frac[ix] = 0;
             VpRdup(y,ix);
@@ -4561,8 +4519,8 @@ VpMidRound(Real *y, int f, S_LONG nf)
         VpNmlz(y);
     }
     if (exptoadd > 0) {
-        y->exponent += (S_INT)(exptoadd/BASE_FIG);
-        exptoadd %= BASE_FIG;
+        y->exponent += (S_INT)(exptoadd/(S_LONG)BASE_FIG);
+        exptoadd %= (S_LONG)BASE_FIG;
         for(i=0;i<exptoadd;i++) {
             y->frac[0] *= 10;
             if (y->frac[0] >= BASE) {
@@ -4580,12 +4538,12 @@ VpLeftRound(Real *y, int f, S_LONG nf)
  * Round from the left hand side of the digits.
  */
 {
-    U_LONG v;
-    if(!VpHasVal(y)) return 0; /* Unable to round */
+    BDIGIT v;
+    if (!VpHasVal(y)) return 0; /* Unable to round */
     v = y->frac[0];
-    nf -= VpExponent(y)*BASE_FIG;
-    while((v /= 10) != 0) nf--;
-    nf += (BASE_FIG-1);
+    nf -= VpExponent(y)*(S_LONG)BASE_FIG;
+    while ((v /= 10) != 0) nf--;
+    nf += (S_LONG)BASE_FIG-1;
     return VpMidRound(y,f,nf);
 }
 
@@ -4593,12 +4551,12 @@ VP_EXPORT int
 VpActiveRound(Real *y, Real *x, int f, S_LONG nf)
 {
     /* First,assign whole value in truncation mode */
-    if(VpAsgn(y, x, 10)<=1) return 0; /* Zero,NaN,or Infinity */
+    if (VpAsgn(y, x, 10) <= 1) return 0; /* Zero,NaN,or Infinity */
     return VpMidRound(y,f,nf);
 }
 
 static int
-VpLimitRound(Real *c,U_LONG ixDigit)
+VpLimitRound(Real *c, U_LONG ixDigit)
 {
     U_LONG ix = VpGetPrecLimit();
     if(!VpNmlz(c))    return -1;
@@ -4609,7 +4567,7 @@ VpLimitRound(Real *c,U_LONG ixDigit)
 }
 
 static void
-VpInternalRound(Real *c,U_LONG ixDigit,U_LONG vPrev,U_LONG v)
+VpInternalRound(Real *c, U_LONG ixDigit, BDIGIT vPrev, BDIGIT v)
 {
     int f = 0;
 
@@ -4650,20 +4608,20 @@ VpInternalRound(Real *c,U_LONG ixDigit,U_LONG vPrev,U_LONG v)
  *  Rounds up m(plus one to final digit of m).
  */
 static int
-VpRdup(Real *m,U_LONG ind_m)
+VpRdup(Real *m, U_LONG ind_m)
 {
-    U_LONG carry;
+    BDIGIT carry;
 
-    if(!ind_m) ind_m = m->Prec;
+    if (!ind_m) ind_m = m->Prec;
 
     carry = 1;
-    while(carry > 0 && (ind_m--)) {
+    while (carry > 0 && (ind_m--)) {
         m->frac[ind_m] += carry;
-        if(m->frac[ind_m] >= BASE) m->frac[ind_m] -= BASE;
-        else                       carry = 0;
+        if (m->frac[ind_m] >= BASE) m->frac[ind_m] -= BASE;
+        else                        carry = 0;
     }
     if(carry > 0) {        /* Overflow,count exponent and set fraction part be 1  */
-        if(!AddExponent(m,1)) return 0;
+        if (!AddExponent(m, 1)) return 0;
         m->Prec = m->frac[0] = 1;
     } else {
         VpNmlz(m);

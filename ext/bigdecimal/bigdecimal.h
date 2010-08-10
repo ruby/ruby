@@ -13,16 +13,35 @@
  *
  */
 
-#ifndef  ____BIG_DECIMAL__H____
-#define  ____BIG_DECIMAL__H____
+#ifndef  RUBY_BIG_DECIMAL_H
+#define  RUBY_BIG_DECIMAL_H 1
 
 #include "ruby/ruby.h"
+#include <float.h>
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
 extern VALUE rb_cBigDecimal;
+
+#if 0 || SIZEOF_BDIGITS >= 16
+# define RMPD_COMPONENT_FIGURES 38
+# define RMPD_BASE ((BDIGIT)100000000000000000000000000000000000000U)
+#elif SIZEOF_BDIGITS >= 8
+# define RMPD_COMPONENT_FIGURES 19
+# define RMPD_BASE ((BDIGIT)10000000000000000000U)
+#elif SIZEOF_BDIGITS >= 4
+# define RMPD_COMPONENT_FIGURES 9
+# define RMPD_BASE ((BDIGIT)1000000000U)
+#elif SIZEOF_BDIGITS >= 2
+# define RMPD_COMPONENT_FIGURES 4
+# define RMPD_BASE ((BDIGIT)10000U)
+#else
+# define RMPD_COMPONENT_FIGURES 2
+# define RMPD_BASE ((BDIGIT)100U)
+#endif
+
 
 /*
  *  NaN & Infinity
@@ -97,7 +116,7 @@ typedef struct {
                      *         -3 : Negative infinite number
                      */
     short  flag;    /* Not used in vp_routines,space for user.  */
-    U_LONG frac[1]; /* Pointer to array of fraction part.       */
+    BDIGIT frac[1]; /* Pointer to array of fraction part.       */
 } Real;
 
 /*
@@ -107,13 +126,20 @@ typedef struct {
  */
 
 VP_EXPORT  Real *
-VpNewRbClass(U_LONG mx,char *str,VALUE klass);
+VpNewRbClass(U_LONG mx, char *str, VALUE klass);
 
 VP_EXPORT  Real *VpCreateRbObject(U_LONG mx,const char *str);
 
-VP_EXPORT U_LONG VpBaseFig(void);
-VP_EXPORT U_LONG VpDblFig(void);
-VP_EXPORT U_LONG VpBaseVal(void);
+static inline BDIGIT
+rmpd_base_value(void) { return RMPD_BASE; }
+static inline size_t
+rmpd_component_figures(void) { return RMPD_COMPONENT_FIGURES; }
+static inline size_t
+rmpd_double_figures(void) { return 1+DBL_DIG; }
+
+#define VpBaseFig() rmpd_component_figures()
+#define VpDblFig() rmpd_double_figures()
+#define VpBaseVal() rmpd_base_value()
 
 /* Zero,Inf,NaN (isinf(),isnan() used to check) */
 VP_EXPORT double VpGetDoubleNaN(void);
@@ -135,7 +161,7 @@ VP_EXPORT int VpException(unsigned short f,const char *str,int always);
 VP_EXPORT int VpIsNegDoubleZero(double v);
 #endif
 VP_EXPORT U_LONG VpNumOfChars(Real *vp,const char *pszFmt);
-VP_EXPORT U_LONG VpInit(U_LONG BaseVal);
+VP_EXPORT size_t VpInit(BDIGIT BaseVal);
 VP_EXPORT void *VpMemAlloc(U_LONG mb);
 VP_EXPORT void VpFree(Real *pv);
 VP_EXPORT Real *VpAlloc(U_LONG mx, const char *szVal);
@@ -188,7 +214,7 @@ VP_EXPORT Real *VpOne(void);
 #define VpSetSign(a,s)    {if((s)>0) (a)->sign=(short)VP_SIGN_POSITIVE_FINITE;else (a)->sign=(short)VP_SIGN_NEGATIVE_FINITE;}
 
 /* 1 */
-#define VpSetOne(a)       {(a)->frac[0]=(a)->Prec=(a)->exponent=1;(a)->sign=VP_SIGN_POSITIVE_FINITE;}
+#define VpSetOne(a)       {(a)->Prec=(a)->exponent=(a)->frac[0]=1;(a)->sign=VP_SIGN_POSITIVE_FINITE;}
 
 /* ZEROs */
 #define VpIsPosZero(a)  ((a)->sign==VP_SIGN_POSITIVE_ZERO)
@@ -215,10 +241,11 @@ VP_EXPORT Real *VpOne(void);
 #define VpExponent(a)   (a->exponent)
 #ifdef BIGDECIMAL_DEBUG
 int VpVarCheck(Real * v);
-VP_EXPORT int VPrint(FILE *fp,const char *cntl_chr,Real *a);
 #endif /* BIGDECIMAL_DEBUG */
+VP_EXPORT int VPrint(FILE *fp,const char *cntl_chr,Real *a);
 
 #if defined(__cplusplus)
 }  /* extern "C" { */
 #endif
-#endif /* ____BIG_DECIMAL__H____ */
+
+#endif /* RUBY_BIG_DECIMAL_H */
