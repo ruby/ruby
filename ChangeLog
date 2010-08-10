@@ -1,3 +1,12 @@
+Tue Aug 10 15:24:30 2010  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c, ext/bigdecimal/bigdecimal.h,
+	  ext/bigdecimal/extconf.rb: BASE and BASE_FIG are defined
+	  based on the size of BDIGIT.
+
+        * ext/bigdecimal/bigdecimal.c, ext/bigdecimal/bigdecimal.h:
+	  use BDIGIT for Real#frac.
+
 Tue Aug 10 15:19:45 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.h, ext/bigdecimal/bigdecimal.c:
