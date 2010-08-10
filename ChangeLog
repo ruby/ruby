@@ -1,3 +1,7 @@
+Tue Aug 10 19:56:13 2010  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date/format.rb: [ruby-core:31658]
+
 Tue Aug 10 17:24:56 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* README.EXT.ja: rb_tainted_str_new_cstr() is an alias of
