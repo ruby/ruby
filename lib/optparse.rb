@@ -1072,7 +1072,7 @@ class OptionParser
     default_style = Switch::NoArgument
     default_pattern = nil
     klass = nil
-    n, q, a = nil
+    q, a = nil
 
     opts.each do |o|
       # argument class

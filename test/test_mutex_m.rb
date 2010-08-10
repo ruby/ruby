@@ -5,6 +5,7 @@ require 'mutex_m'
 class TestMutexM < Test::Unit::TestCase
   def test_cv_wait
     o = Object.new
+    o.instance_variable_set(:@foo, nil)
     o.extend(Mutex_m)
     c = ConditionVariable.new
     t = Thread.start {
