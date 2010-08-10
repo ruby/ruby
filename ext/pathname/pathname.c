@@ -367,6 +367,15 @@ path_readlink(VALUE self)
 }
 
 /*
+ * See <tt>File.rename</tt>.  Rename the file.
+ */
+static VALUE
+path_rename(VALUE self, VALUE to)
+{
+    return rb_funcall(rb_cFile, rb_intern("rename"), 2, get_strpath(self), to);
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -579,4 +588,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "make_link", path_make_link, 1);
     rb_define_method(rb_cPathname, "open", path_open, -1);
     rb_define_method(rb_cPathname, "readlink", path_readlink, 0);
+    rb_define_method(rb_cPathname, "rename", path_rename, 1);
 }
