@@ -376,6 +376,15 @@ path_rename(VALUE self, VALUE to)
 }
 
 /*
+ * See <tt>File.stat</tt>.  Returns a <tt>File::Stat</tt> object.
+ */
+static VALUE
+path_stat(VALUE self)
+{
+    return rb_funcall(rb_cFile, rb_intern("stat"), 1, get_strpath(self));
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -589,4 +598,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "open", path_open, -1);
     rb_define_method(rb_cPathname, "readlink", path_readlink, 0);
     rb_define_method(rb_cPathname, "rename", path_rename, 1);
+    rb_define_method(rb_cPathname, "stat", path_stat, 0);
 }
