@@ -512,9 +512,6 @@ end
 
 class Pathname    # * File *
 
-  # See <tt>File.stat</tt>.  Returns a <tt>File::Stat</tt> object.
-  def stat() File.stat(@path) end
-
   # See <tt>File.lstat</tt>.
   def lstat() File.lstat(@path) end
 
