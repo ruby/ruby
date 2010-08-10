@@ -512,9 +512,6 @@ end
 
 class Pathname    # * File *
 
-  # See <tt>File.rename</tt>.  Rename the file.
-  def rename(to) File.rename(@path, to) end
-
   # See <tt>File.stat</tt>.  Returns a <tt>File::Stat</tt> object.
   def stat() File.stat(@path) end
 
