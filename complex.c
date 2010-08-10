@@ -1296,7 +1296,7 @@ nucomp_to_i(VALUE self)
 {
     get_dat1(self);
 
-    if (f_nonzero_p(dat->imag)) {
+    if (k_inexact_p(dat->imag) || f_nonzero_p(dat->imag)) {
 	VALUE s = f_to_s(self);
 	rb_raise(rb_eRangeError, "can't convert %s into Integer",
 		 StringValuePtr(s));
@@ -1315,7 +1315,7 @@ nucomp_to_f(VALUE self)
 {
     get_dat1(self);
 
-    if (f_nonzero_p(dat->imag)) {
+    if (k_inexact_p(dat->imag) || f_nonzero_p(dat->imag)) {
 	VALUE s = f_to_s(self);
 	rb_raise(rb_eRangeError, "can't convert %s into Float",
 		 StringValuePtr(s));
@@ -1334,7 +1334,7 @@ nucomp_to_r(VALUE self)
 {
     get_dat1(self);
 
-    if (f_nonzero_p(dat->imag)) {
+    if (k_inexact_p(dat->imag) || f_nonzero_p(dat->imag)) {
 	VALUE s = f_to_s(self);
 	rb_raise(rb_eRangeError, "can't convert %s into Rational",
 		 StringValuePtr(s));
