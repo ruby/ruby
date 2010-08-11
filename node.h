@@ -448,15 +448,9 @@ typedef struct RNode {
 #define NEW_PRELUDE(p,b) NEW_NODE(NODE_PRELUDE,p,b,0)
 #define NEW_OPTBLOCK(a) NEW_NODE(NODE_OPTBLOCK,a,0,0)
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
-
 VALUE rb_parser_new(void);
 VALUE rb_parser_end_seen_p(VALUE);
 VALUE rb_parser_encoding(VALUE);
-VALUE rb_parser_get_yydebug(VALUE);
-VALUE rb_parser_set_yydebug(VALUE, VALUE);
 
 NODE *rb_parser_compile_cstr(volatile VALUE, const char*, const char*, int, int);
 NODE *rb_parser_compile_string(volatile VALUE, const char*, VALUE, int);
@@ -478,10 +472,6 @@ struct rb_global_entry *rb_global_entry(ID);
 VALUE rb_gvar_get(struct rb_global_entry *);
 VALUE rb_gvar_set(struct rb_global_entry *, VALUE);
 VALUE rb_gvar_defined(struct rb_global_entry *);
-
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
 
 #if defined(__cplusplus)
 #if 0
