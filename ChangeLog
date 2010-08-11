@@ -1,7 +1,3 @@
-Wed Aug 11 12:18:00 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* node.h (rb_parser_{get,set}_yydebug): used in ripper.
-
 Wed Aug 11 11:01:15 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c: don't use // comment.
