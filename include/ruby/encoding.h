@@ -79,6 +79,8 @@ extern "C" {
 
 typedef OnigEncodingType rb_encoding;
 
+int rb_char_to_option_kcode(int c, int *option, int *kcode);
+
 int rb_enc_replicate(const char *, rb_encoding *);
 int rb_define_dummy_encoding(const char *);
 #define rb_enc_to_index(enc) ((enc) ? ENC_TO_ENCINDEX(enc) : 0)
