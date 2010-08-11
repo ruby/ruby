@@ -5701,8 +5701,6 @@ parser_tokadd_escape(struct parser_params *parser, rb_encoding **encp)
     return 0;
 }
 
-extern int rb_char_to_option_kcode(int c, int *option, int *kcode);
-
 static int
 parser_regx_options(struct parser_params *parser)
 {
