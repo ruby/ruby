@@ -1,3 +1,10 @@
+Wed Aug 11 23:28:22 2010  Kenta Murata  <mrkn@mrkn.jp>
+
+	* lib/cmath.rb (CMath.sqrt): use floating-point value.
+	[ruby-core:31672] [Bug #3678]
+
+	* test/test_cmath.rb: added for testing lib/cmath.rb.
+
 Wed Aug 11 20:57:25 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* NEWS: merge from branches/ruby_1_9_2, and move io/console.
