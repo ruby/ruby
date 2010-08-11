@@ -1,3 +1,9 @@
+Wed Aug 11 10:53:28 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* mkconfig.rb: should use RbConfig instead of Config, because the name
+	  of module was changed at r28900.  this change solves the build
+	  failure.
+
 Tue Aug 10 17:35:49 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/webrick/httprequest.rb (WEBrick::HTTPRequest::parse_uri):
