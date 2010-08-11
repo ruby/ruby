@@ -17,6 +17,17 @@ with all sufficient information, see the ChangeLog file.
 
     * Kernel#respond_to? now returns false for protected methods.
 
+* io/console
+  * new methods:
+    * IO#noecho {|io| }
+    * IO#echo=
+    * IO#echo?
+    * IO#raw {|io| }
+    * IO#raw!
+    * IO#getch
+    * IO#winsize
+    * IO.console
+
 === Compatibility issues (excluding feature bug fixes)
 
 * Kernel#respond_to?
@@ -233,6 +244,20 @@ with all sufficient information, see the ChangeLog file.
   * RSS::Maker: item.guid.permanent_link=
     * new alias of item.guid.isPermaLink=
 
+* DL
+  * Now uses libffi as a backend if avaiable.
+    It means DL works fine on more platforms.
+
+* Fiddle
+  * A lightweight wrapper for libffi.
+
+* YAML
+  * Now uses libyaml as a backend if available.
+    It means YAML library supports new standards for YAML.
+
+* Psych
+  * A wrapper for libyaml.
+
 * JSON
   * Update to JSON 1.1.9
 
@@ -442,17 +467,6 @@ with all sufficient information, see the ChangeLog file.
 * rbconfig
   * new methods:
     * RbConfig.ruby
-
-* io/console
-  * new methods:
-    * IO#noecho {|io| }
-    * IO#echo=
-    * IO#echo?
-    * IO#raw {|io| }
-    * IO#raw!
-    * IO#getch
-    * IO#winsize
-    * IO.console
 
 === Language changes
 
