@@ -13,7 +13,7 @@
  *
  */
 
-//#define BIGDECIMAL_DEBUG 1
+/* #define BIGDECIMAL_DEBUG 1 */
 #include "bigdecimal.h"
 
 #include <ctype.h>
