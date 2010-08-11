@@ -456,6 +456,7 @@ class TestRubyOptions < Test::Unit::TestCase
 	m.print("abc\n\C-d")
 	m.print("zzz\n")
 	result = r.read
+	Process.wait pid
       }
     }
     assert_equal("\"zzz\\n\"\n", result, '[ruby-core:30910]')
