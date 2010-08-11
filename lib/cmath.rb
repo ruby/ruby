@@ -79,7 +79,7 @@ module CMath
       else
 	r = z.abs
 	x = z.real
-	Complex(sqrt!((r + x) / 2), sqrt!((r - x) / 2))
+	Complex(sqrt!((r + x) / 2.0), sqrt!((r - x) / 2.0))
       end
     end
   end
