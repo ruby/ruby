@@ -6,7 +6,7 @@ Thu Aug 12 00:19:53 2010  Tanaka Akira  <akr@fsij.org>
 Wed Aug 11 23:28:22 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* lib/cmath.rb (CMath.sqrt): use floating-point value.
-	[ruby-core:31672] [Bug #3678]
+	  [ruby-core:31672] [Bug #3678]
 
 	* test/test_cmath.rb: added for testing lib/cmath.rb.
 
@@ -772,7 +772,7 @@ Wed Jul 21 23:07:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Wed Jul 21 15:22:17 2010  Evan Phoenix <evan@fallingsnow.net>
 
 	* lib/rubygems/custom_require.rb, gem_prelude.rb: Load code from
-		from gems properly.
+	  from gems properly.
 
 Wed Jul 21 15:15:02 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
@@ -1032,21 +1032,21 @@ Mon Jul 12 01:58:56 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/csv.rb: Fix unused variable warnings.
 	  Patch by Run Paint [ruby-core:30991]
-	
+
 	* lib/date.rb: ditto
-	
+
 	* lib/debug.rb: ditto
-	
+
 	* lib/drb/drb.rb: ditto
-	
+
 	* lib/drb/invokemethod.rb: ditto
-	
+
 	* lib/irb/ruby-lex.rb: ditto
-	
+
 	* lib/irb/slex.rb: ditto
-	
+
 	* lib/logger.rb: ditto
-	
+
 	* lib/pathname.rb: ditto
 
 Sun Jul 11 21:20:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -1095,7 +1095,7 @@ Fri Jul  9 01:08:46 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/emitter.rb (initialize): line_width is
 	  a valid option passed to the emitter.
-	
+
 	* test/psych/test_psych.rb: corresponding tests.
 
 Fri Jul  9 00:49:46 2010  Aaron Patterson <aaron@tenderlovemaking.com>
@@ -2196,7 +2196,7 @@ Sat May 29 08:46:29 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Fri May 28 20:35:21 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (blocking_region_begin): avoid RUBY_VM_CHECK_INTS()
-	call during GVL state transition. [Bug#3354] [ruby-dev:41435]
+	  call during GVL state transition. [Bug#3354] [ruby-dev:41435]
 
 Fri May 28 19:37:47 2010  Narihiro Nakamura  <authorNari@gmail.com>
 
@@ -2386,7 +2386,7 @@ Sun May 23 07:08:34 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 Sat May 22 03:53:05 2010  Satoshi Shiba  <shiba@rvm.jp>
 
 	* cont.c (fiber_setcontext): Use swapcontext() instead longjmp().
-	[ruby-dev:41316] [Bug #3295]
+	  [ruby-dev:41316] [Bug #3295]
 
 Fri May 21 19:11:42 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -4204,7 +4204,7 @@ Fri Apr  9 20:05:05 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 Fri Apr  9 10:53:00 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* compile.c (iseq_compile_each): stop hiding, and freeze unpopped
-	string nodes to allow method redefinition.  [ruby-dev:40641]
+	  string nodes to allow method redefinition.  [ruby-dev:40641]
 
 Fri Apr  9 01:26:54 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -4538,13 +4538,13 @@ Fri Apr  2 02:56:56 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 	* lib/matrix.rb: New instance methods:
 	  empty? [ruby-core:26284], each, each_with_index [ruby-core:28400],
 	  conjugate, conj, imaginary, imag, real, real?, rectangular, rect
-		[ruby-core:26285]
+	  [ruby-core:26285]
 
-	Removed compare_by*, inspect_org, cf [ruby-core:26268]
+	  Removed compare_by*, inspect_org, cf [ruby-core:26268]
 
-	Matrix.empty: raise on negative sizes
+	  Matrix.empty: raise on negative sizes
 
-	Matrix.determinant: raise on rectangular matrices [ruby-core:28271]
+	  Matrix.determinant: raise on rectangular matrices [ruby-core:28271]
 
 Thu Apr  1 17:17:00 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
@@ -4738,7 +4738,7 @@ Mon Mar 29 21:47:44 2010  Akinori MUSHA  <knu@iDaemons.org>
 Mon Mar 29 20:23:05 2010  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* lib/matrix.rb(Vector#each2, Vector#collect2): add type check for
-	Integer[Bug #2495].
+	  Integer[Bug #2495].
 
 Mon Mar 29 19:45:09 2010  Tanaka Akira  <akr@fsij.org>
 
@@ -7127,7 +7127,7 @@ Wed Jan 13 00:33:09 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 Tue Jan 12 23:48:29 2010  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker/base.rb, test/rss/test_maker_0.9.rb:
-	accept any time format in maker. [ruby-core:26923]
+	  accept any time format in maker. [ruby-core:26923]
 
 Tue Jan 12 21:56:00 2010  Tanaka Akira  <akr@fsij.org>
 
@@ -11323,8 +11323,8 @@ Tue Aug 25 02:16:37 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Mon Aug 24 21:31:37 2009  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker/base.rb, test/rss/test_maker_2.0.rb: fix a bug
-	that RSS Maker doesn't accept 'false' as guid's isPermaLink.
-	Reported by Joe Holt. Thanks!!!
+	  that RSS Maker doesn't accept 'false' as guid's isPermaLink.
+	  Reported by Joe Holt. Thanks!!!
 
 Mon Aug 24 18:58:56 2009  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -13566,7 +13566,7 @@ Sat Jun 27 16:45:10 2009  Tadayoshi Funaba  <tadf@dotrb.org>
 Sat Jun 27 13:44:48 2009  Kouhei Sutou  <kou@cozmixng.org>
 
 	* NEWS, lib/rss/maker/base.rb, test/rss/test_maker_2.0.rb: add
-	item.guid.permanent_link? and item.guid.permanent_link=.
+	  item.guid.permanent_link? and item.guid.permanent_link=.
 
 Sat Jun 27 13:41:00 2009  Kouhei Sutou  <kou@cozmixng.org>
 
@@ -14760,23 +14760,23 @@ Sat May 16 18:33:15 2009  Kouhei Sutou  <kou@cozmixng.org>
 Sat May 16 18:26:42 2009  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/parser.rb, test/test_parser_1.0.rb: fix foaf:Image
-	element causes parse error even if ignore_unknown_element mode.
+	  element causes parse error even if ignore_unknown_element mode.
 
 Sat May 16 18:14:19 2009  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker.rb, lib/rss/maker/0.9.rb,
-	test/test_maker_*.rb: add RSS::Maker.supported?
+	  test/test_maker_*.rb: add RSS::Maker.supported?
 
 Sat May 16 18:12:39 2009  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/content/*, lib/rss/dublincore/*: fix circular require.
 	* test/test_maker_atom_feed.rb,
-	test/test_maker_atom_entry.rb: suppress warnings.
+	  test/test_maker_atom_entry.rb: suppress warnings.
 
 Sat May 16 18:07:17 2009  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker/feed.rb, test/test_maker_atom_feed.rb:
-	remove needless codes.
+	  remove needless codes.
 
 Sat May 16 18:05:07 2009  Kouhei Sutou  <kou@cozmixng.org>
 
@@ -14785,15 +14785,15 @@ Sat May 16 18:05:07 2009  Kouhei Sutou  <kou@cozmixng.org>
 Sat May 16 18:02:57 2009  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker/feed.rb, test/test_maker_atom_entry.rb,
-	test/test_maker_atom_feed.rb: fix duplicated dc:date.
-	Reported by Kazuhiro NISHIYAMA. Thanks!!! [ruby-list:46014]
+	  test/test_maker_atom_feed.rb: fix duplicated dc:date.
+	  Reported by Kazuhiro NISHIYAMA. Thanks!!! [ruby-list:46014]
 
 Sat May 16 18:02:16 2009  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker/base.rb, lib/rss/maker/1.0.rb, lib/rss/maker/feed.rb,
-	test/rss/test_maker_1.0.rb, test/rss/test_maker_atom_feed.rb:
-	RSS 1.0 and Atom feed maker treat maker.channel.language as
-	maker.channel.dc_language.
+	  test/rss/test_maker_1.0.rb, test/rss/test_maker_atom_feed.rb:
+	  RSS 1.0 and Atom feed maker treat maker.channel.language as
+	  maker.channel.dc_language.
 
 Sat May 16 17:57:39 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -14803,12 +14803,12 @@ Sat May 16 17:57:39 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Sat May 16 17:51:11 2009  Kouhei Sutou  <kou@cozmixng.org>
 
 	* sample/rss/rss_recent.rb, sample/rss/list_description.rb: use
-	UTF-8.
+	  UTF-8.
 
 Sat May 16 17:47:55 2009  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb, test/rss/test_version.rb (RSS::VERSION):
-	0.2.5 -> 0.2.6.
+	  0.2.5 -> 0.2.6.
 
 Sat May 16 17:26:04 2009  Narihiro Nakamura  <authorNari@gmail.com>
 
@@ -25252,7 +25252,7 @@ Thu Oct  2 21:22:43 2008  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi/core.rb (CGI::QueryExtension): delete MorphingBody
 	  and replace like as 1.8's in multipart reading.
-		see [ruby-dev:36443],
+	  see [ruby-dev:36443],
 	  reference from CGIAlt http://cgialt.rubyforge.org/
 
 	* test/cgi/test_cgi_multipart.rb : fixed multipart test.
