@@ -1,3 +1,8 @@
+Thu Aug 12 00:19:53 2010  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_rubyoptions.rb (test_script_from_stdin): disable
+	  echo.  [ruby-dev:41966]
+
 Wed Aug 11 23:28:22 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* lib/cmath.rb (CMath.sqrt): use floating-point value.
