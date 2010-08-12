@@ -394,6 +394,18 @@ path_lstat(VALUE self)
 }
 
 /*
+ * call-seq:
+ *   pathname.make_symlink(old)
+ *
+ * See <tt>File.symlink</tt>.  Creates a symbolic link.
+ */
+static VALUE
+path_make_symlink(VALUE self, VALUE old)
+{
+    return rb_funcall(rb_cFile, rb_intern("symlink"), 2, old, get_strpath(self));
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -609,4 +621,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "rename", path_rename, 1);
     rb_define_method(rb_cPathname, "stat", path_stat, 0);
     rb_define_method(rb_cPathname, "lstat", path_lstat, 0);
+    rb_define_method(rb_cPathname, "make_symlink", path_make_symlink, 1);
 }
