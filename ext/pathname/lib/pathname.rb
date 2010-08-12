@@ -512,9 +512,6 @@ end
 
 class Pathname    # * File *
 
-  # See <tt>File.lstat</tt>.
-  def lstat() File.lstat(@path) end
-
   # See <tt>File.symlink</tt>.  Creates a symbolic link.
   def make_symlink(old) File.symlink(old, @path) end
 
