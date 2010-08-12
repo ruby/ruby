@@ -385,6 +385,15 @@ path_stat(VALUE self)
 }
 
 /*
+ * See <tt>File.lstat</tt>.
+ */
+static VALUE
+path_lstat(VALUE self)
+{
+    return rb_funcall(rb_cFile, rb_intern("lstat"), 1, get_strpath(self));
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -599,4 +608,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "readlink", path_readlink, 0);
     rb_define_method(rb_cPathname, "rename", path_rename, 1);
     rb_define_method(rb_cPathname, "stat", path_stat, 0);
+    rb_define_method(rb_cPathname, "lstat", path_lstat, 0);
 }

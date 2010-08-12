@@ -1,3 +1,8 @@
+Thu Aug 12 21:18:27 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/pathname.c (path_lstat): Pathname#lstat translated
+	  from pathname.rb.
+
 Thu Aug 12 05:58:09 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/encoding.h (rb_char_to_option_kcode): used in
