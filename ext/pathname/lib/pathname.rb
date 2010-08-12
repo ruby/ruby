@@ -512,9 +512,6 @@ end
 
 class Pathname    # * File *
 
-  # See <tt>File.symlink</tt>.  Creates a symbolic link.
-  def make_symlink(old) File.symlink(old, @path) end
-
   # See <tt>File.truncate</tt>.  Truncate the file to +length+ bytes.
   def truncate(length) File.truncate(@path, length) end
 
