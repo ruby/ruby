@@ -512,9 +512,6 @@ end
 
 class Pathname    # * File *
 
-  # See <tt>File.truncate</tt>.  Truncate the file to +length+ bytes.
-  def truncate(length) File.truncate(@path, length) end
-
   # See <tt>File.utime</tt>.  Update the access and modification times.
   def utime(atime, mtime) File.utime(atime, mtime, @path) end
 
