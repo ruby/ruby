@@ -151,16 +151,20 @@ module Test
 end
 
 class MiniTest::Unit
-  def self.new(*)
-    super
+  def self.new(*args, &block)
+    obj = allocate
       .extend(Test::Unit::RunCount)
       .extend(Test::Unit::Options)
+    obj.__send__(:initialize, *args, &block)
+    obj
   end
 
   class << self; undef autorun; end
   def self.autorun
     at_exit {
-      Test::Unit::RunCount.run_once {exit(new.run(ARGV) || true)}
+      Test::Unit::RunCount.run_once {
+        exit(Test::Unit::Mini.new.run(ARGV) || true)
+      }
     } unless @@installed_at_exit
     @@installed_at_exit = true
   end
