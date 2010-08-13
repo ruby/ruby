@@ -406,6 +406,15 @@ path_make_symlink(VALUE self, VALUE old)
 }
 
 /*
+ * See <tt>File.truncate</tt>.  Truncate the file to +length+ bytes.
+ */
+static VALUE
+path_truncate(VALUE self, VALUE length)
+{
+    return rb_funcall(rb_cFile, rb_intern("truncate"), 2, get_strpath(self), length);
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -622,4 +631,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "stat", path_stat, 0);
     rb_define_method(rb_cPathname, "lstat", path_lstat, 0);
     rb_define_method(rb_cPathname, "make_symlink", path_make_symlink, 1);
+    rb_define_method(rb_cPathname, "truncate", path_truncate, 1);
 }

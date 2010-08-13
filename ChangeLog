@@ -1,3 +1,8 @@
+Fri Aug 13 22:48:39 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/pathname.c (path_truncate): Pathname#truncate translated
+	  from pathname.rb.
+
 Fri Aug 13 16:11:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit.rb (MiniTest::Unit.new): extend before initialize.
