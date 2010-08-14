@@ -855,6 +855,8 @@ VALUE rb_str_succ(VALUE);
 VALUE rb_time_succ(VALUE);
 void rb_frame_pop(void);
 int rb_frame_method_id_and_class(ID *idp, VALUE *klassp);
+VALUE rb_make_backtrace(void);
+VALUE rb_make_exception(int, VALUE*);
 
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility pop

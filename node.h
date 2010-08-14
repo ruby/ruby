@@ -480,6 +480,12 @@ VALUE rb_gvar_set(struct rb_global_entry *, VALUE);
 VALUE rb_gvar_defined(struct rb_global_entry *);
 const struct kwtable *rb_reserved_word(const char *, unsigned int);
 
+struct parser_params;
+void *rb_parser_malloc(struct parser_params *, size_t);
+void *rb_parser_realloc(struct parser_params *, void *, size_t);
+void *rb_parser_calloc(struct parser_params *, size_t, size_t);
+void rb_parser_free(struct parser_params *, void *);
+
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility pop
 #endif
