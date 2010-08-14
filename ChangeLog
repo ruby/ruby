@@ -1,4 +1,6 @@
-Sat Aug 14 13:23:29 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Aug 14 14:58:13 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_core.h (rb_{get,set,reset}_coverages): used in coverage.
 
 	* include/ruby/intern.h (rb_time_interval): used in io/wait.
 
