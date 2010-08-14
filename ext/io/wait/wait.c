@@ -40,8 +40,6 @@ static VALUE io_ready_p _((VALUE io));
 static VALUE io_wait _((int argc, VALUE *argv, VALUE io));
 void Init_wait _((void));
 
-EXTERN struct timeval rb_time_interval _((VALUE time));
-
 /*
  * call-seq:
  *   io.nread -> int
