@@ -386,7 +386,7 @@ rb_ary_free(VALUE ary)
     }
 }
 
-size_t
+RUBY_FUNC_EXPORTED size_t
 rb_ary_memsize(VALUE ary)
 {
     if (ARY_OWNS_HEAP_P(ary)) {

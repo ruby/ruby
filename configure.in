@@ -753,6 +753,19 @@ if test "$GCC" = yes; then
     fi
 fi
 
+AC_CACHE_CHECK(for exported function attribute, rb_cv_func_exported, [
+rb_cv_func_exported=no
+RUBY_WERROR_FLAG([
+for mac in '__attribute__ ((visibility("default")))' '__declspec(dllexport)'; do
+  AC_TRY_COMPILE([@%:@define RUBY_FUNC_EXPORTED $mac extern
+    RUBY_FUNC_EXPORTED void conftest_attribute_check(void);], [],
+    [rb_cv_func_exported="$mac"; break])
+done
+])])
+if test "$rb_cv_func_exported" != no; then
+    AC_DEFINE_UNQUOTED(RUBY_FUNC_EXPORTED, [$rb_cv_func_exported extern])
+fi
+
 RUBY_APPEND_OPTION(XCFLAGS, -DRUBY_EXPORT)
 
 dnl }

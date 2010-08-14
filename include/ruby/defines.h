@@ -241,6 +241,10 @@ extern const unsigned char rb_nan[];
 
 #endif
 
+#ifndef RUBY_FUNC_EXPORTED
+#define RUBY_FUNC_EXPORTED
+#endif
+
 #ifndef RUBY_EXTERN
 #define RUBY_EXTERN extern
 #endif

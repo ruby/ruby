@@ -944,7 +944,7 @@ rb_free_generic_ivar(VALUE obj)
 	st_free_table((st_table *)tbl);
 }
 
-size_t
+RUBY_FUNC_EXPORTED size_t
 rb_generic_ivar_memsize(VALUE obj)
 {
     st_data_t tbl;
