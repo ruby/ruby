@@ -512,9 +512,6 @@ end
 
 class Pathname    # * File *
 
-  # See <tt>File.utime</tt>.  Update the access and modification times.
-  def utime(atime, mtime) File.utime(atime, mtime, @path) end
-
   # See <tt>File.basename</tt>.  Returns the last component of the path.
   def basename(*args) self.class.new(File.basename(@path, *args)) end
 
