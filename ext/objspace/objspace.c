@@ -28,6 +28,7 @@
 #include <ruby/io.h>
 #include <ruby/re.h>
 #include <../../node.h>
+#include <../../gc.h>
 
 size_t rb_str_memsize(VALUE);
 size_t rb_ary_memsize(VALUE);
@@ -35,10 +36,6 @@ size_t rb_io_memsize(rb_io_t *);
 size_t onig_memsize(regex_t *);
 size_t rb_generic_ivar_memsize(VALUE);
 size_t rb_objspace_data_type_memsize(VALUE obj);
-
-void rb_objspace_each_objects(
-    int (*callback)(void *start, void *end, size_t stride, void *data),
-    void *data);
 
 static size_t
 memsize_of(VALUE obj)

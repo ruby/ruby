@@ -21,13 +21,13 @@ NOINLINE(void rb_gc_set_stack_end(VALUE **stack_end_p));
 #if RUBY_MARK_FREE_DEBUG
 extern int ruby_gc_debug_indent;
 
-static void
+static inline void
 rb_gc_debug_indent(void)
 {
     printf("%*s", ruby_gc_debug_indent, "");
 }
 
-static void
+static inline void
 rb_gc_debug_body(const char *mode, const char *msg, int st, void *ptr)
 {
     if (st == 0) {
@@ -80,6 +80,19 @@ int ruby_get_stack_grow_direction(volatile VALUE *addr);
 #else
 #define STACK_GROW_DIR_DETECTION VALUE stack_grow_dir_detection
 #define STACK_DIR_UPPER(a,b) STACK_UPPER(&stack_grow_dir_detection, a, b)
+#endif
+
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility push(default)
+#endif
+
+size_t rb_objspace_data_type_memsize(VALUE obj);
+void rb_objspace_each_objects(
+    int (*callback)(void *start, void *end, size_t stride, void *data),
+    void *data);
+
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility pop
 #endif
 
 #endif /* RUBY_GC_H */

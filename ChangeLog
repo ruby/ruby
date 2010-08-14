@@ -1,4 +1,6 @@
-Sat Aug 14 14:58:13 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Aug 14 15:11:01 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.h (rb_objspace_each_objects): used in objspace.
 
 	* vm_core.h (rb_{get,set,reset}_coverages): used in coverage.
 
