@@ -1,3 +1,15 @@
+Sat Aug 15 00:22:00 2010  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/extconf.rb, ext/bigdecimal/bigdecimal.h
+	  (labs, llabs): support environments missing labs and llabs.
+
+	* ext/bigdecimal/bigdecimal.h (vabs): added.
+
+	* ext/bigdecimal/extconf.rb, ext/bigdecimal/bigdecimal.h,
+	  ext/bigdecimal/bigdecimal.c, test/bigdecimal/test_bigdecimal.rb
+	  (TestBigDecimal#test_new): replace U_LONG, S_LONG, S_INT, and U_INT
+	  with appropreate standard or ruby-provided types.
+
 Sun Aug 15 00:15:45 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pathname/pathname.c (path_utime): Pathname#utime translated
