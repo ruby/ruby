@@ -1,4 +1,11 @@
-Sat Aug 14 15:19:55 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Aug 14 15:33:02 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in, include/ruby/defines.h (RUBY_FUNC_EXPORTED): macro
+	  to declare exported function.
+
+	* array.c (rb_ary_memsize), string.c (rb_str_memsize),
+	  variable.c (rb_objspace_data_type_memsize): used in
+	  objspace.  [ruby-dev:42022]
 
 	* io.c (rb_io_memsize): constified.
 

@@ -781,7 +781,7 @@ rb_str_free(VALUE str)
     }
 }
 
-size_t
+RUBY_FUNC_EXPORTED size_t
 rb_str_memsize(VALUE str)
 {
     if (!STR_EMBED_P(str) && !STR_SHARED_P(str)) {
