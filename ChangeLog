@@ -1,3 +1,13 @@
+Fri Jul 30 08:51:51 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (file_expand_path): home directory must be absolute.
+	  [ruby-core:31537]
+
+Fri Jul 30 08:33:20 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (file_expand_path): should check if could find user.
+	  [ruby-core:31538]
+
 Sat Aug  7 13:33:25 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (vm_call0): fix for VM_METHOD_TYPE_NOTIMPLEMENTED.
