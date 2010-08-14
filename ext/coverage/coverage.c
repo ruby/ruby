@@ -9,7 +9,7 @@
 ************************************************/
 
 #include "ruby.h"
-#include "../../vm_core.h"
+#include "vm_core.h"
 
 /*
  * call-seq:

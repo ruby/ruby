@@ -27,9 +27,9 @@
 #include <ruby/st.h>
 #include <ruby/io.h>
 #include <ruby/re.h>
-#include <../../node.h>
-#include <../../gc.h>
-#include <../../regint.h>
+#include "node.h"
+#include "gc.h"
+#include "regint.h"
 
 size_t rb_str_memsize(VALUE);
 size_t rb_ary_memsize(VALUE);
