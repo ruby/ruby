@@ -1,4 +1,6 @@
-Sat Aug 14 15:17:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Aug 14 15:19:55 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_memsize): constified.
 
 	* regcomp.c (onig_memsize): constified.
 
