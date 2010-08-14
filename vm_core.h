@@ -703,6 +703,10 @@ rb_threadptr_exec_event_hooks(rb_thread_t *th, rb_event_flag_t flag, VALUE self,
 
 int rb_thread_check_trap_pending(void);
 
+extern VALUE rb_get_coverages(void);
+extern void rb_set_coverages(VALUE);
+extern void rb_reset_coverages(void);
+
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility pop
 #endif

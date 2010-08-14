@@ -9,10 +9,7 @@
 ************************************************/
 
 #include "ruby.h"
-
-extern VALUE rb_get_coverages(void);
-extern void rb_set_coverages(VALUE);
-extern void rb_reset_coverages(void);
+#include "../../vm_core.h"
 
 /*
  * call-seq:
