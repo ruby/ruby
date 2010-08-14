@@ -2347,7 +2347,6 @@ gc_marks(rb_objspace_t *objspace)
 
     mark_current_machine_context(objspace, th);
 
-    rb_gc_mark_threads();
     rb_gc_mark_symbols();
     rb_gc_mark_encodings();
 

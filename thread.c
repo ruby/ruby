@@ -1326,7 +1326,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th)
 void
 rb_gc_mark_threads(void)
 {
-    /* TODO: remove */
+    rb_bug("deprecated function rb_gc_mark_threads is called");
 }
 
 /*****************************************************/
