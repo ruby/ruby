@@ -287,7 +287,7 @@ AC_SUBST(COUTFLAG)
 
 RUBY_MINGW32
 RUBY_UNIVERSAL_ARCH
-if test "$target_cpu" != "$host_cpu" -a "$GCC" = yes -a "$cross_compiling" = no; then
+if test "$target_cpu" != "$host_cpu" -a "$GCC" = yes -a "$cross_compiling" = no -a "$universal_binary" = no; then
     RUBY_DEFAULT_ARCH("$target_cpu")
 fi
 
