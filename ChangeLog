@@ -1,4 +1,6 @@
-Sat Aug 14 13:20:58 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Aug 14 13:23:29 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (rb_time_interval): used in io/wait.
 
 	* include/ruby/intern.h (rb_make_backtrace, rb_make_exception):
 	  used in ripper.
