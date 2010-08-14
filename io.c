@@ -3536,7 +3536,7 @@ rb_io_fptr_finalize(rb_io_t *fptr)
 size_t rb_econv_memsize(rb_econv_t *);
 
 size_t
-rb_io_memsize(rb_io_t *fptr)
+rb_io_memsize(const rb_io_t *fptr)
 {
     size_t size = sizeof(rb_io_t);
     size += fptr->rbuf_capa;
