@@ -415,6 +415,15 @@ path_truncate(VALUE self, VALUE length)
 }
 
 /*
+ * See <tt>File.utime</tt>.  Update the access and modification times.
+ */
+static VALUE
+path_utime(VALUE self, VALUE atime, VALUE mtime)
+{
+    return rb_funcall(rb_cFile, rb_intern("utime"), 3, atime, mtime, get_strpath(self));
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -632,4 +641,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "lstat", path_lstat, 0);
     rb_define_method(rb_cPathname, "make_symlink", path_make_symlink, 1);
     rb_define_method(rb_cPathname, "truncate", path_truncate, 1);
+    rb_define_method(rb_cPathname, "utime", path_utime, 2);
 }
