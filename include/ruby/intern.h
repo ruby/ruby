@@ -333,7 +333,7 @@ void rb_exec_end_proc(void);
 void ruby_finalize(void);
 NORETURN(void ruby_stop(int));
 int ruby_cleanup(volatile int);
-void rb_gc_mark_threads(void);
+DEPRECATED(void rb_gc_mark_threads(void));
 void rb_thread_schedule(void);
 void rb_thread_wait_fd(int);
 int rb_thread_fd_writable(int);
