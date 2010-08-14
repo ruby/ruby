@@ -842,6 +842,8 @@ typedef int (*ONIGENC_INIT_PROPERTY_LIST_FUNC_TYPE)(void);
 
 extern int onigenc_property_list_init P_((ONIGENC_INIT_PROPERTY_LIST_FUNC_TYPE));
 
+extern size_t onig_memsize P_((const regex_t *reg));
+
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility pop
 #endif

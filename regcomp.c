@@ -5249,7 +5249,7 @@ onig_free(regex_t* reg)
 }
 
 size_t
-onig_memsize(regex_t *reg)
+onig_memsize(const regex_t *reg)
 {
     size_t size = sizeof(regex_t);
     if (IS_NOT_NULL(reg->p))                size += reg->alloc;

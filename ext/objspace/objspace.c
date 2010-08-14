@@ -29,11 +29,11 @@
 #include <ruby/re.h>
 #include <../../node.h>
 #include <../../gc.h>
+#include <../../regint.h>
 
 size_t rb_str_memsize(VALUE);
 size_t rb_ary_memsize(VALUE);
 size_t rb_io_memsize(rb_io_t *);
-size_t onig_memsize(regex_t *);
 size_t rb_generic_ivar_memsize(VALUE);
 size_t rb_objspace_data_type_memsize(VALUE obj);
 
