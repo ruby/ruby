@@ -138,6 +138,9 @@ memsize_of(VALUE obj)
 	}
 	break;
 
+      case T_ZOMBIE:
+	break;
+
       default:
 	rb_bug("objspace/memsize_of(): unknown data type 0x%x(%p)",
 	       BUILTIN_TYPE(obj), (void*)obj);
