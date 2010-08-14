@@ -1,4 +1,6 @@
-Sat Aug 14 15:11:01 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Aug 14 15:17:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* regcomp.c (onig_memsize): constified.
 
 	* gc.h (rb_objspace_each_objects): used in objspace.
 
