@@ -272,13 +272,6 @@ struct parser_params {
 #define ENC_SINGLE(cr) ((cr)==ENC_CODERANGE_7BIT)
 #define TOK_INTERN(mb) rb_intern3(tok(), toklen(), parser->enc)
 
-#ifdef YYMALLOC
-void *rb_parser_malloc(struct parser_params *, size_t);
-void *rb_parser_realloc(struct parser_params *, void *, size_t);
-void *rb_parser_calloc(struct parser_params *, size_t, size_t);
-void rb_parser_free(struct parser_params *, void *);
-#endif
-
 static int parser_yyerror(struct parser_params*, const char*);
 #define yyerror(msg) parser_yyerror(parser, msg)
 
@@ -6211,9 +6204,6 @@ parser_set_encode(struct parser_params *parser, const char *name)
     VALUE excargs[3];
 
     if (idx < 0) {
-	VALUE rb_make_backtrace(void);
-	VALUE rb_make_exception(int, VALUE*);
-
 	excargs[1] = rb_sprintf("unknown encoding name: %s", name);
       error:
 	excargs[0] = rb_eArgError;

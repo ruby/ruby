@@ -1,3 +1,10 @@
+Sat Aug 14 13:20:58 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (rb_make_backtrace, rb_make_exception):
+	  used in ripper.
+
+	* node.h (rb_parser_{malloc,realloc,calloc,free}): ditto.
+
 Fri Aug 13 22:48:39 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pathname/pathname.c (path_truncate): Pathname#truncate translated
