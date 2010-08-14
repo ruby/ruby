@@ -1,3 +1,11 @@
+Sat Aug 14 17:48:41 2010  Narihiro Nakamura  <authorNari@gmail.com>
+
+	* test/objspace/test_objspace.rb: added test for objspace.
+
+	* ext/objspace/objspace.c: considers T_ZOMBIE by lazy sweep GC.
+
+	* gc.c: considers that dsize was 0. [ruby-dev:42022]
+
 Sat Aug 14 15:33:02 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in, include/ruby/defines.h (RUBY_FUNC_EXPORTED): macro
