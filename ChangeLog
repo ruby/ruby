@@ -1,3 +1,8 @@
+Sat Aug 14 19:12:10 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/{coverage,objspace}/extconf.rb ($INCFLAGS): explicitly add
+	  topdir and top_srcdir.  [ruby-dev:42031]
+
 Sat Aug 14 17:48:41 2010  Narihiro Nakamura  <authorNari@gmail.com>
 
 	* test/objspace/test_objspace.rb: added test for objspace.
