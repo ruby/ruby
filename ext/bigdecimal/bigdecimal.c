@@ -239,7 +239,7 @@ BigDecimal_dump(int argc, VALUE *argv, VALUE self)
     GUARD_OBJ(vp,GetVpValue(self,1));
     dump = rb_str_new(0,VpNumOfChars(vp,"E")+50);
     psz = RSTRING_PTR(dump);
-    sprintf(psz,"%zu:",VpMaxPrec(vp)*VpBaseFig());
+    sprintf(psz, "%"PRIuSIZE":", VpMaxPrec(vp)*VpBaseFig());
     VpToString(vp, psz+strlen(psz), 0, 0);
     rb_str_resize(dump, strlen(psz));
     return dump;
@@ -1635,11 +1635,11 @@ BigDecimal_inspect(VALUE self)
 
     obj = rb_str_new(0, nc+256);
     psz = RSTRING_PTR(obj);
-    sprintf(psz,"#<BigDecimal:%lx,'",self);
+    sprintf(psz,"#<BigDecimal:%"PRIxVALUE",'",self);
     tmp = psz + strlen(psz);
     VpToString(vp, tmp, 10, 0);
     tmp += strlen(tmp);
-    sprintf(tmp, "',%zu(%zu)>", VpPrec(vp)*VpBaseFig(), VpMaxPrec(vp)*VpBaseFig());
+    sprintf(tmp, "',%"PRIuSIZE"(%"PRIuSIZE")>", VpPrec(vp)*VpBaseFig(), VpMaxPrec(vp)*VpBaseFig());
     rb_str_resize(obj, strlen(psz));
     return obj;
 }
@@ -3692,7 +3692,7 @@ VPrint(FILE *fp, const char *cntl_chr, Real *a)
                         m /= 10;
                     }
                 }
-                nc += fprintf(fp, "E%zi", VpExponent10(a));
+                nc += fprintf(fp, "E%"PRIdVALUE, VpExponent10(a));
             } else {
                 nc += fprintf(fp, "0.0");
             }
@@ -3889,7 +3889,7 @@ VpToString(Real *a, char *psz, size_t fFmt, int fPlus)
         shift /= 10;
     }
     while(psz[-1]=='0') *(--psz) = 0;
-    sprintf(psz, "E%ld", ex);
+    sprintf(psz, "E%"PRIdVALUE, ex);
     if(fFmt) VpFormatSt(pszSav, fFmt);
 }
 
@@ -4394,7 +4394,7 @@ converge:
     if(gfDebug) {
         VpMult(r, y, y);
         VpAddSub(f, x, r, -1);
-        printf("VpSqrt: iterations = %lu\n", nr);
+        printf("VpSqrt: iterations = %"PRIdSIZE"\n", nr);
         VPrint(stdout, "  y =% \n", y);
         VPrint(stdout, "  x =% \n", x);
         VPrint(stdout, "  x-y*y = % \n", f);
@@ -4779,24 +4779,24 @@ VpVarCheck(Real * v)
  *   other ... error
  */
 {
-    U_LONG i;
+    size_t i;
 
     if(v->MaxPrec <= 0) {
-        printf("ERROR(VpVarCheck): Illegal Max. Precision(=%lu)\n",
+        printf("ERROR(VpVarCheck): Illegal Max. Precision(=%"PRIuSIZE")\n",
             v->MaxPrec);
         return 1;
     }
     if((v->Prec <= 0) ||((v->Prec) >(v->MaxPrec))) {
-        printf("ERROR(VpVarCheck): Illegal Precision(=%lu)\n", v->Prec);
-        printf("       Max. Prec.=%lu\n", v->MaxPrec);
+        printf("ERROR(VpVarCheck): Illegal Precision(=%"PRIuSIZE")\n", v->Prec);
+        printf("       Max. Prec.=%"PRIuSIZE"\n", v->MaxPrec);
         return 2;
     }
     for(i = 0; i < v->Prec; ++i) {
         if((v->frac[i] >= BASE)) {
             printf("ERROR(VpVarCheck): Illegal fraction\n");
-            printf("       Frac[%ld]=%lu\n", i, v->frac[i]);
-            printf("       Prec.   =%lu\n", v->Prec);
-            printf("       Exp. =%d\n", v->exponent);
+            printf("       Frac[%"PRIuSIZE"]=%lu\n", i, v->frac[i]);
+            printf("       Prec.   =%"PRIuSIZE"\n", v->Prec);
+            printf("       Exp. =%"PRIdVALUE"\n", v->exponent);
             printf("       BASE =%lu\n", BASE);
             return 3;
         }
