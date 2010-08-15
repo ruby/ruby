@@ -1,3 +1,7 @@
+Sun Aug 15 16:14:31 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/mkmf.rb (Logging.postpone): close @log only when it's available.
+
 Sun Aug 15 13:30:35 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.h (VpVtoD): fix a type of e.
