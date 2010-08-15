@@ -8,7 +8,7 @@ Sat Aug 15 00:22:00 2010  Kenta Murata  <mrkn@mrkn.jp>
 	* ext/bigdecimal/extconf.rb, ext/bigdecimal/bigdecimal.h,
 	  ext/bigdecimal/bigdecimal.c, test/bigdecimal/test_bigdecimal.rb
 	  (TestBigDecimal#test_new): replace U_LONG, S_LONG, S_INT, and U_INT
-	  with appropreate standard or ruby-provided types.
+	  with appropriate standard or ruby-provided types.
 
 Sun Aug 15 00:15:45 2010  Tanaka Akira  <akr@fsij.org>
 
@@ -225,7 +225,7 @@ Sun Aug  8 16:42:48 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* lib/rubygems.rb (Gem.find_files): fixed search order same as
 	  default behavior.
 
-	* gem_prelude.rb, lib/rubygems.rb (Gem.suffixes): return truely
+	* gem_prelude.rb, lib/rubygems.rb (Gem.suffixes): return truly
 	  require-able suffixes only.
 
 Sun Aug  8 13:20:57 2010  Tanaka Akira  <akr@fsij.org>
@@ -271,13 +271,13 @@ Sun Aug  8 00:41:42 2010  Tanaka Akira  <akr@fsij.org>
 	* include/ruby/missing.h: don't substitute "close", etc. here.
 
 	* include/ruby/ruby.h: include ruby/subst.h at last.
-	  This prevents substituting "close" in unitstd.h.
+	  This prevents substituting "close" in unistd.h.
 
 Sat Aug  7 19:51:10 2010  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/envutil.rb (EnvUtil.invoke_ruby): merge stdout and stderr
 	  if capture_stderr is :merge_to_stdout.
-	  (assert_normal_exit): print abnormal output propery.
+	  (assert_normal_exit): print abnormal output properly.
 
 Sat Aug  7 19:04:49 2010  Tanaka Akira  <akr@fsij.org>
 
@@ -374,7 +374,7 @@ Fri Aug  6 18:56:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri Aug  6 17:42:12 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* enc/depend: add space at the begginig of @ignore_error.
+	* enc/depend: add space at the beginning of @ignore_error.
 
 	* lib/mkmf.rb: ditto.
 
@@ -487,7 +487,7 @@ Tue Aug  3 20:30:16 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Aug  3 14:42:12 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* ext/mkext.rb: remove purelib, fixes a bug in r28440, r28441.
+	* ext/extmk.rb: remove purelib, fixes a bug in r28440, r28441.
 
 	* spec/default.mspec: ditto.
 
