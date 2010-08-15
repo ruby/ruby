@@ -1,3 +1,9 @@
+Sun Aug 15 18:14:20 2010  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_dump, BigDecimal_inspect,
+	  VPrint, VpToString, VpVarCheck): use PRIuSIZE, PRIdSIZE, PRIdVALUE,
+	  and PRIxVALUE.
+
 Sun Aug 15 16:14:31 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/mkmf.rb (Logging.postpone): close @log only when it's available.
