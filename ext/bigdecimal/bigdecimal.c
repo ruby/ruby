@@ -239,7 +239,7 @@ BigDecimal_dump(int argc, VALUE *argv, VALUE self)
     GUARD_OBJ(vp,GetVpValue(self,1));
     dump = rb_str_new(0,VpNumOfChars(vp,"E")+50);
     psz = RSTRING_PTR(dump);
-    sprintf(psz,"%lu:",VpMaxPrec(vp)*VpBaseFig());
+    sprintf(psz,"%zu:",VpMaxPrec(vp)*VpBaseFig());
     VpToString(vp, psz+strlen(psz), 0, 0);
     rb_str_resize(dump, strlen(psz));
     return dump;
@@ -1639,7 +1639,7 @@ BigDecimal_inspect(VALUE self)
     tmp = psz + strlen(psz);
     VpToString(vp, tmp, 10, 0);
     tmp += strlen(tmp);
-    sprintf(tmp,"',%lu(%lu)>",VpPrec(vp)*VpBaseFig(),VpMaxPrec(vp)*VpBaseFig());
+    sprintf(tmp, "',%zu(%zu)>", VpPrec(vp)*VpBaseFig(), VpMaxPrec(vp)*VpBaseFig());
     rb_str_resize(obj, strlen(psz));
     return obj;
 }
