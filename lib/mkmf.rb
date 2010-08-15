@@ -278,7 +278,7 @@ module Logging
       begin
         log.print(open {yield})
       ensure
-        @log.close
+        @log.close if @log
         File::open(tmplog) {|t| FileUtils.copy_stream(t, log)}
         @log, @logfile, @orgout, @orgerr = log, *save
         @postpone -= 1
