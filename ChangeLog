@@ -1,4 +1,11 @@
-Sat Aug 15 00:22:00 2010  Kenta Murata  <mrkn@mrkn.jp>
+Sun Aug 15 13:30:35 2010  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.h (VpVtoD): fix a type of e.
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_dump, BigDecimal_inspect):
+	  fix format for size_t.
+
+Sun Aug 15 00:22:00 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/extconf.rb, ext/bigdecimal/bigdecimal.h
 	  (labs, llabs): support environments missing labs and llabs.

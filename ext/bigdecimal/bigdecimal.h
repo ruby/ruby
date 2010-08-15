@@ -200,7 +200,7 @@ VP_EXPORT int VpToSpecialString(Real *a,char *psz,int fPlus);
 VP_EXPORT void VpToString(Real *a, char *psz, size_t fFmt, int fPlus);
 VP_EXPORT void VpToFString(Real *a, char *psz, size_t fFmt, int fPlus);
 VP_EXPORT int VpCtoV(Real *a, const char *int_chr, size_t ni, const char *frac, size_t nf, const char *exp_chr, size_t ne);
-VP_EXPORT int VpVtoD(double *d, ssize_t *e, Real *m);
+VP_EXPORT int VpVtoD(double *d, SIGNED_VALUE *e, Real *m);
 VP_EXPORT void VpDtoV(Real *m,double d);
 #if 0  /* unused */
 VP_EXPORT void VpItoV(Real *m,S_INT ival);
