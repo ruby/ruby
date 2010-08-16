@@ -915,6 +915,7 @@ class TestPathname < Test::Unit::TestCase
 
   def test_basename
     assert_equal(Pathname("basename"), Pathname("dirname/basename").basename)
+    assert_equal(Pathname("bar"), Pathname("foo/bar.x").basename(".x"))
   end
 
   def test_dirname
