@@ -481,7 +481,7 @@ BigDecimal_to_i(VALUE self)
     if(e<=0) return INT2FIX(0);
     nf = VpBaseFig();
     if(e<=nf) {
-        return LONG2NUM(VpGetSign(p)*(BDIGIT_DBL_SIGNED)p->frac[0]);
+        return LONG2NUM((long)(VpGetSign(p)*(BDIGIT_DBL_SIGNED)p->frac[0]));
     }
     else {
 	VALUE a = BigDecimal_split(self);

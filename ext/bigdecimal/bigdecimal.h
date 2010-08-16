@@ -33,8 +33,8 @@ labs(long const x)
 #endif
 
 #ifndef HAVE_LLABS
-static inline long long
-llabs(long long const x)
+static inline LONG_LONG
+llabs(LONG_LONG const x)
 {
     if (x < 0) return -x;
     return x;

@@ -1,3 +1,10 @@
+Mon Aug 16 10:00:45 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.h (llabs): never never never never never
+	  use "long long".
+
+	* ext/bigdecimal.bigdecimal.c (BigDecimal_to_i): get rid of a warning.
+
 Sun Aug 15 18:14:20 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_dump, BigDecimal_inspect,
