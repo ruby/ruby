@@ -424,6 +424,22 @@ path_utime(VALUE self, VALUE atime, VALUE mtime)
 }
 
 /*
+ * See <tt>File.basename</tt>.  Returns the last component of the path.
+ */
+static VALUE
+path_basename(int argc, VALUE *argv, VALUE self)
+{
+    VALUE str = get_strpath(self);
+    VALUE fext;
+    int n;
+    if (rb_scan_args(argc, argv, "01", &fext) == 0)
+        str = rb_funcall(rb_cFile, rb_intern("basename"), 1, str);
+    else
+        str = rb_funcall(rb_cFile, rb_intern("basename"), 2, str, fext);
+    return rb_class_new_instance(1, &str, rb_obj_class(self));
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -642,4 +658,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "make_symlink", path_make_symlink, 1);
     rb_define_method(rb_cPathname, "truncate", path_truncate, 1);
     rb_define_method(rb_cPathname, "utime", path_utime, 2);
+    rb_define_method(rb_cPathname, "basename", path_basename, -1);
 }
