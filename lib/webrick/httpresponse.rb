@@ -209,7 +209,7 @@ module WEBrick
         @keep_alive = false
         self.status = HTTPStatus::RC_INTERNAL_SERVER_ERROR
       end
-      @header['content-type'] = "text/html"
+      @header['content-type'] = "text/html; charset=ISO-8859-1"
 
       if respond_to?(:create_error_page)
         create_error_page()
