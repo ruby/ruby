@@ -1,3 +1,7 @@
+Mon Aug 16 20:26:13 2010  Narihiro Nakamura  <narihiro@netlab.jp>
+
+	* gc.c (gc_profile_result): Index begins with 1.
+
 Mon Aug 16 20:21:17 2010  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c (gc_profile_result): use size_t. based on patches from
