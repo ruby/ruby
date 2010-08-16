@@ -375,6 +375,10 @@ with all sufficient information, see the ChangeLog file.
       * socket option name
       * shutdown's argument
 
+* stringio
+  * new methods:
+    * StringIO#read_nonblock
+    * StringIO#write_nonblock
 * pathname
   * new methods:
     * Pathname#binread
@@ -431,6 +435,8 @@ with all sufficient information, see the ChangeLog file.
 * zlib
   * new methods:
     * Zlib::GzipFile#path
+    * Zlib.#adler32_combine
+    * Zlib.#crc32_combine
 
 * rbconfig
   * new methods:
