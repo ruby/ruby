@@ -902,7 +902,7 @@ module Gem
   # Suffixes for require-able paths.
 
   def self.suffixes
-    ['.rb', ".#{RbConfig::CONFIG["DLEXT"]}"]
+    ['', '.rb', ".#{RbConfig::CONFIG["DLEXT"]}"]
   end unless defined?(suffixes)
 
   ##

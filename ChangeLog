@@ -1,3 +1,8 @@
+Tue Aug 17 07:38:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gem_prelude.rb, lib/rubygems.rb (Gem.suffixes): include empty
+	  suffix.  [ruby-core:31730]
+
 Mon Aug 16 22:16:12 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pathname/pathname.c (path_basename): unused variable removed.

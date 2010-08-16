@@ -291,6 +291,8 @@ class TestGem < RubyGemTestCase
     ]
 
     assert_equal expected, Gem.find_files('foo/discover')
+    bug3701 = '[ruby-core:31730]'
+    assert_equal expected, Gem.find_files('foo/**.rb'), bug3701
   ensure
     assert_equal cwd, $LOAD_PATH.shift
   end
