@@ -35,7 +35,7 @@ if defined?(Gem) then
     }
 
     def self.suffixes
-      ['.rb', ".#{RbConfig::CONFIG["DLEXT"]}"]
+      ['', '.rb', ".#{RbConfig::CONFIG["DLEXT"]}"]
     end
 
     def self.dir
