@@ -3145,6 +3145,10 @@ freedtoa(char *s)
 }
 #endif
 
+static const char INFSTR[] = "Infinity";
+static const char NANSTR[] = "NaN";
+static const char ZEROSTR[] = "0";
+
 /* dtoa for IEEE arithmetic (dmg): convert double to ASCII string.
  *
  * Inspired by "How to Print Floating-Point Numbers Accurately" by
@@ -3263,9 +3267,9 @@ ruby_dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve)
         *decpt = 9999;
 #ifdef IEEE_Arith
         if (!word1(d) && !(word0(d) & 0xfffff))
-            return rv_strdup("Infinity", rve);
+            return rv_strdup(INFSTR, rve);
 #endif
-        return rv_strdup("NaN", rve);
+        return rv_strdup(NANSTR, rve);
     }
 #endif
 #ifdef IBM
@@ -3273,7 +3277,7 @@ ruby_dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve)
 #endif
     if (!dval(d)) {
         *decpt = 1;
-        return rv_strdup("0", rve);
+        return rv_strdup(ZEROSTR, rve);
     }
 
 #ifdef SET_INEXACT
@@ -3897,8 +3901,6 @@ ruby_each_words(const char *str, void (*func)(const char*, int, void*), void *ar
 
 #define	DBL_MANH_SIZE	20
 #define	DBL_MANL_SIZE	32
-#define	INFSTR	"Infinity"
-#define	NANSTR	"NaN"
 #define	DBL_ADJ	(DBL_MAX_EXP - 2)
 #define	SIGFIGS	((DBL_MANT_DIG + 3) / 4 + 1)
 #define dexp_get(u) ((int)(word0(u) >> Exp_shift) & ~Exp_msk1)
@@ -3959,7 +3961,7 @@ ruby_hdtoa(double d, const char *xdigs, int ndigits, int *decpt, int *sign,
 	}
 	else if (d == 0.0) { /* FP_ZERO */
 	    *decpt = 1;
-	    return rv_strdup("0", rve);
+	    return rv_strdup(ZEROSTR, rve);
 	}
 	else if (dexp_get(u)) { /* FP_NORMAL */
 	    *decpt = dexp_get(u) - DBL_ADJ;

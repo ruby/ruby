@@ -1,4 +1,8 @@
-Mon Aug 16 19:22:31 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Aug 16 19:23:19 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* util.c (ruby_dtoa, ruby_hdtoa): use same representations for
+	  Infinity and NaN.  a part of a patch from Peter Weldon at
+	  [ruby-core:31725].
 
 	* util.c (ruby_hdtoa): fixed buffer overrun.  based on a patch
 	  from Peter Weldon at [ruby-core:31725].
