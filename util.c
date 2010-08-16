@@ -3951,15 +3951,15 @@ ruby_hdtoa(double d, const char *xdigs, int ndigits, int *decpt, int *sign,
 
 	if (isinf(d)) { /* FP_INFINITE */
 	    *decpt = INT_MAX;
-	    return (nrv_alloc(INFSTR, rve, sizeof(INFSTR) - 1));
+	    return rv_strdup(INFSTR, rve);
 	}
 	else if (isnan(d)) { /* FP_NAN */
 	    *decpt = INT_MAX;
-	    return (nrv_alloc(NANSTR, rve, sizeof(NANSTR) - 1));
+	    return rv_strdup(NANSTR, rve);
 	}
 	else if (d == 0.0) { /* FP_ZERO */
 	    *decpt = 1;
-	    return (nrv_alloc("0", rve, 1));
+	    return rv_strdup("0", rve);
 	}
 	else if (dexp_get(u)) { /* FP_NORMAL */
 	    *decpt = dexp_get(u) - DBL_ADJ;
