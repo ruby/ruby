@@ -1,3 +1,8 @@
+Tue Aug 17 07:50:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/readline/extconf.rb: check functions more.
+	  [ruby-core:31722]
+
 Tue Aug 17 07:42:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (str_make_independent_expand): set capacity properly. a

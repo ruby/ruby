@@ -108,8 +108,8 @@ static char **readline_attempted_completion_function(const char *text,
 static VALUE readline_instream;
 static ID id_getbyte;
 
-#ifdef HAVE_EDITLINE_READLINE_H
-extern int rl_getc(FILE *);
+#ifndef HAVE_RL_GETC
+#define rl_getc(f) EOF
 #endif
 
 static int readline_getc(FILE *);
@@ -260,7 +260,9 @@ readline_readline(int argc, VALUE *argv, VALUE self)
     if (status) {
 #if defined HAVE_RL_CLEANUP_AFTER_SIGNAL
         /* restore terminal mode and signal handler*/
+#if defined HAVE_RL_FREE_LINE_STATE
         rl_free_line_state();
+#endif
         rl_cleanup_after_signal();
 #elif defined HAVE_RL_DEPREP_TERM_FUNCTION
         /* restore terminal mode */
