@@ -1,3 +1,9 @@
+Mon Aug 16 20:21:17 2010  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c (gc_profile_result): use size_t. based on patches from
+	Tomoaki NISHIYAMA <tomoakin@kenroku.kanazawa-u.ac.jp> at
+	[ruby-dev:42042].
+
 Mon Aug 16 19:23:19 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (ruby_dtoa, ruby_hdtoa): use same representations for
