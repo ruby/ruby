@@ -52,6 +52,7 @@ else
   end
 end
 
+have_readline_func("rl_getc")
 have_readline_func("rl_getc_function")
 have_readline_func("rl_filename_completion_function")
 have_readline_func("rl_username_completion_function")
@@ -74,6 +75,7 @@ have_readline_var("rl_point")
 /mswin|bccwin|mingw/ !~ RUBY_PLATFORM && have_readline_var("rl_catch_sigwinch")
 /mswin|bccwin|mingw/ !~ RUBY_PLATFORM && have_readline_var("rl_catch_signals")
 have_readline_func("rl_cleanup_after_signal")
+have_readline_func("rl_free_line_state")
 have_readline_func("rl_clear_signals")
 have_readline_func("rl_set_screen_size")
 have_readline_func("rl_get_screen_size")
