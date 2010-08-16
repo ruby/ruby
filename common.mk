@@ -150,7 +150,7 @@ golf: $(LIBRUBY) $(GOLFOBJS) PHONY
 	$(MAKE) $(MFLAGS) MAINOBJ="$(GOLFOBJS)" PROGRAM=$(GORUBY)$(EXEEXT) program
 capi: Doxyfile PHONY $(PREP)
 	@$(MAKEDIRS) doc/capi
-	@$(DOXYGEN)
+	@$(DOXYGEN) -b
 
 Doxyfile: $(srcdir)/template/Doxyfile.tmpl $(PREP) $(srcdir)/tool/generic_erb.rb $(RBCONFIG)
 	$(MINIRUBY) $(srcdir)/tool/generic_erb.rb -o $@ $(srcdir)/template/Doxyfile.tmpl \

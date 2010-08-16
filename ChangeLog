@@ -1,3 +1,9 @@
+Mon Aug 16 17:44:55 2010  Tanaka Akira  <akr@fsij.org>
+
+	* common.mk (capi): use -b option for doxygen.  It disables stdout
+	  buffering and prevents wrong reordering between stdout and stderr
+	  even when the output of "make" is redirected.
+
 Sun Aug 15 19:59:58 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/webrick/httpresponse.rb (WEBrick::HTTPResponse#set_error):
