@@ -7,7 +7,7 @@ Mon Aug 16 17:44:55 2010  Tanaka Akira  <akr@fsij.org>
 Sun Aug 15 19:59:58 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/webrick/httpresponse.rb (WEBrick::HTTPResponse#set_error):
-	  Fix for possible cross-site scripting (CVE-2010-0541). 
+	  Fix for possible cross-site scripting (CVE-2010-0541).
 	  Found by Apple, reported by Hideki Yamane.
 	  Patch by Hirokazu Nishio <nishio.hirokazu AT gmail.com>.
 
@@ -292,7 +292,7 @@ Sun Aug  8 08:58:42 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sun Aug  8 08:55:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* include/ruby/ruby.h (ruby_snprintf): printf attribute. 
+	* include/ruby/ruby.h (ruby_snprintf): printf attribute.
 
 Sun Aug  8 07:47:29 2010  Tanaka Akira  <akr@fsij.org>
 
