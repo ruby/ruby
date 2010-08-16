@@ -431,7 +431,6 @@ path_basename(int argc, VALUE *argv, VALUE self)
 {
     VALUE str = get_strpath(self);
     VALUE fext;
-    int n;
     if (rb_scan_args(argc, argv, "01", &fext) == 0)
         str = rb_funcall(rb_cFile, rb_intern("basename"), 1, str);
     else
