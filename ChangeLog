@@ -1,3 +1,10 @@
+Sun Aug 15 19:59:58 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* lib/webrick/httpresponse.rb (WEBrick::HTTPResponse#set_error):
+	  Fix for possible cross-site scripting (CVE-2010-0541). 
+	  Found by Apple, reported by Hideki Yamane.
+	  Patch by Hirokazu Nishio <nishio.hirokazu AT gmail.com>.
+
 Mon Aug 16 12:29:06 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, win32/Makefile.sub (test-rubyspec-precheck): split
