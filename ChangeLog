@@ -1,3 +1,8 @@
+Tue Aug 17 07:42:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (str_make_independent_expand): set capacity properly. a
+	  patch from Peter Weldon at [ruby-core:31734].  [ruby-core:31653]
+
 Tue Aug 17 07:38:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gem_prelude.rb, lib/rubygems.rb (Gem.suffixes): include empty

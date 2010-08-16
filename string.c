@@ -1268,18 +1268,19 @@ str_make_independent_expand(VALUE str, long expand)
 {
     char *ptr;
     long len = RSTRING_LEN(str);
+    long capa = len + expand;
 
-    ptr = ALLOC_N(char, len+expand+1);
+    if (len > capa) len = capa;
+    ptr = ALLOC_N(char, capa + 1);
     if (RSTRING_PTR(str)) {
-	memcpy(ptr, RSTRING_PTR(str), expand < 0 ? len + expand : len);
+	memcpy(ptr, RSTRING_PTR(str), len);
     }
-    len += expand;
     STR_SET_NOEMBED(str);
+    STR_UNSET_NOCAPA(str);
     ptr[len] = 0;
     RSTRING(str)->as.heap.ptr = ptr;
     RSTRING(str)->as.heap.len = len;
-    RSTRING(str)->as.heap.aux.capa = len;
-    STR_UNSET_NOCAPA(str);
+    RSTRING(str)->as.heap.aux.capa = capa;
 }
 
 #define str_make_independent(str) str_make_independent_expand(str, 0L)
