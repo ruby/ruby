@@ -446,6 +446,11 @@ $(RBCONFIG): $(srcdir)/tool/mkconfig.rb config.status $(PREP)
 		-install_name=$(RUBY_INSTALL_NAME) \
 		-so_name=$(RUBY_SO_NAME) rbconfig.rb
 
+test-rubyspec-precheck:
+
+test-rubyspec: test-rubyspec-precheck
+	$(RUNRUBY) $(srcdir)/spec/mspec/bin/mspec run -B $(srcdir)/spec/default.mspec $(MSPECOPT)
+
 encs: enc trans
 encs enc trans: $(ENC_MK) $(LIBRUBY) $(PREP)
 	$(MAKE) -f $(ENC_MK) RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(MFLAGS) $@

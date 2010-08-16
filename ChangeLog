@@ -1,3 +1,10 @@
+Mon Aug 16 12:29:06 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, win32/Makefile.sub (test-rubyspec-precheck): split
+	  from test-rubyspec.
+
+	* common.mk (test-rubyspec): moved from Makefile.in.
+
 Mon Aug 16 10:00:45 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.h (llabs): never never never never never
