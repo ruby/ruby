@@ -1619,7 +1619,9 @@ End
     }.gsub(/^\s+/, '')
     10.times.map do
       Thread.start do
-        assert_in_out_err([], src, [%q["hi!"]])
+        assert_in_out_err([], src) {|stdout, stderr|
+          assert_no_match(/hi.*hi/, stderr.join)
+        }
       end
     end.each {|th| th.join}
   end
