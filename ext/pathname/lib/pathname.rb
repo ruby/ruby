@@ -512,9 +512,6 @@ end
 
 class Pathname    # * File *
 
-  # See <tt>File.dirname</tt>.  Returns all but the last component of the path.
-  def dirname() self.class.new(File.dirname(@path)) end
-
   # See <tt>File.extname</tt>.  Returns the file's extension.
   def extname() File.extname(@path) end
 

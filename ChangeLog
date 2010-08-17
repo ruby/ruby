@@ -1,3 +1,8 @@
+Tue Aug 17 13:00:07 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/pathname.c (path_dirname): Pathname#dirname translated
+	  from pathname.rb.
+
 Tue Aug 17 07:50:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/readline/extconf.rb: check functions more.
