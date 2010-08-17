@@ -816,6 +816,7 @@ class TestRegexp < Test::Unit::TestCase
     assert_nothing_raised { s.match(/(\d) (.*)/) }
     assert_equal("1", $1)
     assert_equal(" " * 4999999, $2)
+    assert_match(/(?:A.+){2}/, 'AbAb')
   end
 
   def test_invalid_fragment
