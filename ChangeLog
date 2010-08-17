@@ -1,3 +1,8 @@
+Tue Aug 17 20:05:29 2010  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_io.rb (test_threaded_flush): test "hi" is not output
+	  twice.
+
 Tue Aug 17 15:13:28 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/date.rb: Re-revert the part of r28950.
