@@ -1,10 +1,14 @@
+Tue Aug 18 03:34:00 Kirk Haines <khaines@ruby-lang.org>
+
+	* lib/webrick/httpresponse.rb: CVE-2010-0541; Fix a potential XSS vulnerabilty. See the CVE report for more information.
+
 Tue Aug 18 03:27:00 Kirk Haines <khaines@ruby-lang.org>
 
-	* ext/bigdecimal/bigdecimal.c: Backport #2349 [ruby-core:26646]; fix comparisons. Also fix a bunch of bugs that lead to broken-ness and failing tests.
+	* ext/bigdecimal/bigdecimal.c: Backport #2349 [ruby-core:26646]; fix comparisons. Also fix a bunch of bugs that lead to broken-ness and failing tests. r29025
 
-	* test/bigdecimal/test_bigdecimal.rb: Backport #2349 [ruby-core:26646]; added a test suite.
+	* test/bigdecimal/test_bigdecimal.rb: Backport #2349 [ruby-core:26646]; added a test suite. r29025
 
-	* test/ruby/test_exception.rb: The test suite was breaking ZeroDivisionError, which in turn would break bigdecimal/test_bigdecimal.rb. Made a simple fix that keeps that test but does so non-destructively.
+	* test/ruby/test_exception.rb: The test suite was breaking ZeroDivisionError, which in turn would break bigdecimal/test_bigdecimal.rb. Made a simple fix that keeps that test but does so non-destructively. r29025
 
 Wed Jun 23 04:26:00 Kirk Haines <khaines@ruby-lang.org>
 
