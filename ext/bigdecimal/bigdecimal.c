@@ -414,9 +414,20 @@ BigDecimal_mode(int argc, VALUE *argv, VALUE self)
             VpSetException((unsigned short)((val==Qtrue)?(fo|VP_EXCEPTION_INFINITY):
                            (fo&(~VP_EXCEPTION_INFINITY))));
         }
+        fo = VpGetException();
         if(f&VP_EXCEPTION_NaN) {
             VpSetException((unsigned short)((val==Qtrue)?(fo|VP_EXCEPTION_NaN):
                            (fo&(~VP_EXCEPTION_NaN))));
+        }
+        fo = VpGetException();
+        if(f&VP_EXCEPTION_UNDERFLOW) {
+            VpSetException((unsigned short)((val==Qtrue)?(fo|VP_EXCEPTION_UNDERFLOW):
+                           (fo&(~VP_EXCEPTION_UNDERFLOW))));
+        }
+        fo = VpGetException();
+        if(f&VP_EXCEPTION_ZERODIVIDE) {
+            VpSetException((unsigned short)((val==Qtrue)?(fo|VP_EXCEPTION_ZERODIVIDE):
+                           (fo&(~VP_EXCEPTION_ZERODIVIDE))));
         }
         fo = VpGetException();
         return INT2FIX(fo);
@@ -533,14 +544,11 @@ BigDecimal_to_i(VALUE self)
 
     /* Infinity or NaN not converted. */
     if(VpIsNaN(p)) {
-       VpException(VP_EXCEPTION_NaN,"Computation results to 'NaN'(Not a Number)",0);
-       return Qnil;
+       VpException(VP_EXCEPTION_NaN,"Computation results to 'NaN'(Not a Number)",1);
     } else if(VpIsPosInf(p)) {
-       VpException(VP_EXCEPTION_INFINITY,"Computation results to 'Infinity'",0);
-       return Qnil;
+       VpException(VP_EXCEPTION_INFINITY,"Computation results to 'Infinity'",1);
     } else if(VpIsNegInf(p)) {
-       VpException(VP_EXCEPTION_INFINITY,"Computation results to '-Infinity'",0);
-       return Qnil; 
+       VpException(VP_EXCEPTION_INFINITY,"Computation results to '-Infinity'",1);
     }
 
     e = VpExponent10(p);
@@ -732,6 +740,7 @@ BigDecimal_sub(VALUE self, VALUE r)
     return ToValue(c);
 }
 
+/*
 static VALUE
 BigDecimalCmp(VALUE self, VALUE r,char op)
 {
@@ -746,7 +755,7 @@ BigDecimalCmp(VALUE self, VALUE r,char op)
     if(e==999) return Qnil;
     switch(op)
     {
-    case '*': return   INT2FIX(e); /* any op */
+    case '*': return   INT2FIX(e);
     case '=': if(e==0) return Qtrue ; return Qfalse;
     case '!': if(e!=0) return Qtrue ; return Qfalse;
     case 'G': if(e>=0) return Qtrue ; return Qfalse;
@@ -756,6 +765,48 @@ BigDecimalCmp(VALUE self, VALUE r,char op)
     }
     rb_bug("Undefined operation in BigDecimalCmp()");
 }
+*/
+
+
+static VALUE
+BigDecimalCmp(VALUE self, VALUE r,char op)
+{
+    ENTER(5);
+    S_INT e;
+    Real *a, *b;
+    GUARD_OBJ(a,GetVpValue(self,1));
+    b = GetVpValue(r,0);
+    if(!b) {
+	ID f = 0;
+
+	switch(op)
+	{
+	  /* case '*': return rb_num_coerce_cmp(self,r,rb_intern("<=>")); */
+	  case '*': return rb_num_coerce_cmp(self,r);
+	  /* case '=': return RTEST(rb_num_coerce_cmp(self,r,rb_intern("=="))) ? Qtrue : Qfalse; */
+	  case '=': return RTEST(rb_num_coerce_cmp(self,r)) ? Qtrue : Qfalse;
+	  case 'G': f = rb_intern(">="); break;
+	  case 'L': f = rb_intern("<="); break;
+	  case '>': case '<': f = (ID)op; break;
+	}
+	/* return rb_num_coerce_relop(self,r,f); */
+	return rb_num_coerce_relop(self,r);
+    }
+    SAVE(b);
+    e = VpComp(a, b);
+    if(e==999) return (op == '*') ? Qnil : Qfalse;
+    switch(op)
+    {
+    case '*': return   INT2FIX(e); /* any op */
+    case '=': if(e==0) return Qtrue ; return Qfalse;
+    case 'G': if(e>=0) return Qtrue ; return Qfalse;
+    case '>': if(e> 0) return Qtrue ; return Qfalse;
+    case 'L': if(e<=0) return Qtrue ; return Qfalse;
+    case '<': if(e< 0) return Qtrue ; return Qfalse;
+    }
+    rb_bug("Undefined operation in BigDecimalCmp()");
+}
+
 
 /* Returns True if the value is zero. */
 static VALUE
@@ -962,7 +1013,9 @@ BigDecimal_DoDivmod(VALUE self, VALUE r, Real **div, Real **mod)
 
     if(VpIsNaN(a) || VpIsNaN(b)) goto NaN;
     if(VpIsInf(a) || VpIsInf(b)) goto NaN;
-    if(VpIsZero(b))              goto NaN;
+    if(VpIsZero(b)) {
+        rb_raise(rb_eZeroDivError, "divided by 0");
+    }
     if(VpIsZero(a)) {
        GUARD_OBJ(c,VpCreateRbObject(1, "0"));
        GUARD_OBJ(d,VpCreateRbObject(1, "0"));
@@ -2105,9 +2158,9 @@ VpGetRoundMode(void)
 VP_EXPORT int
 VpIsRoundMode(unsigned long n)
 {
-    if(n==VP_ROUND_UP      || n!=VP_ROUND_DOWN      ||
-       n==VP_ROUND_HALF_UP || n!=VP_ROUND_HALF_DOWN ||
-       n==VP_ROUND_CEIL    || n!=VP_ROUND_FLOOR     ||
+    if(n==VP_ROUND_UP      || n==VP_ROUND_DOWN      ||
+       n==VP_ROUND_HALF_UP || n==VP_ROUND_HALF_DOWN ||
+       n==VP_ROUND_CEIL    || n==VP_ROUND_FLOOR     ||
        n==VP_ROUND_HALF_EVEN
       ) return 1;
     return 0;
@@ -2225,18 +2278,12 @@ VpException(unsigned short f, const char *str,int always)
         switch(f)
         {
         /*
-        case VP_EXCEPTION_ZERODIVIDE:
         case VP_EXCEPTION_OVERFLOW:
         */
+        case VP_EXCEPTION_ZERODIVIDE:
         case VP_EXCEPTION_INFINITY:
-             exc = rb_eFloatDomainError;
-             goto raise;
         case VP_EXCEPTION_NaN:
-             exc = rb_eFloatDomainError;
-             goto raise;
         case VP_EXCEPTION_UNDERFLOW:
-             exc = rb_eFloatDomainError;
-             goto raise;
         case VP_EXCEPTION_OP:
              exc = rb_eFloatDomainError;
              goto raise;
@@ -3924,14 +3971,15 @@ VpCtoV(Real *a, const char *int_chr, U_LONG ni, const char *frac, U_LONG nf, con
 {
     U_LONG i, j, ind_a, ma, mi, me;
     U_LONG loc;
-    S_INT  e,es, eb, ef;
-    S_INT  sign, signe;
+    S_LONG  e,es, eb, ef;
+    S_INT  sign, signe, exponent_overflow;
     /* get exponent part */
     e = 0;
     ma = a->MaxPrec;
     mi = ni;
     me = ne;
     signe = 1;
+    exponent_overflow = 0;
     memset(a->frac, 0, ma * sizeof(U_LONG));
     if(ne > 0) {
         i = 0;
@@ -3946,8 +3994,10 @@ VpCtoV(Real *a, const char *int_chr, U_LONG ni, const char *frac, U_LONG nf, con
         while(i < me) {
             es = e*((S_INT)BASE_FIG);
             e = e * 10 + exp_chr[i] - '0';
-            if(es>e*((S_INT)BASE_FIG)) {
-                return VpException(VP_EXCEPTION_INFINITY,"exponent overflow",0);
+            if(es > (S_INT)(e*BASE_FIG)) {
+		exponent_overflow = 1;
+		e = es; /* keep sign */
+		break;
             }
             ++i;
         }
@@ -3956,7 +4006,7 @@ VpCtoV(Real *a, const char *int_chr, U_LONG ni, const char *frac, U_LONG nf, con
     /* get integer part */
     i = 0;
     sign = 1;
-    if(ni >= 0) {
+    if(1 /*ni >= 0*/) {
         if(int_chr[0] == '-') {
             sign = -1;
             ++i;
@@ -3988,6 +4038,18 @@ VpCtoV(Real *a, const char *int_chr, U_LONG ni, const char *frac, U_LONG nf, con
     }
 
     eb = e / ((S_INT)BASE_FIG);
+
+    if(exponent_overflow) {
+	int zero = 1;
+	for(     ; i < mi && zero; i++) zero = int_chr[i] == '0';
+	for(i = 0; i < nf && zero; i++) zero = frac[i] == '0';
+	if(!zero && signe > 0) {
+	    VpSetInf(a, sign);
+	    VpException(VP_EXCEPTION_INFINITY,"exponent overflow",0);
+	}
+	else VpSetZero(a, sign);
+	return 1;
+    }
 
     ind_a = 0;
     while(i < mi) {
@@ -4032,7 +4094,7 @@ Final:
         ++j;
     }
     a->Prec = ind_a + 1;
-    a->exponent = eb;
+    a->exponent = (S_INT)eb;
     VpSetSign(a,sign);
     VpNmlz(a);
     return 1;
@@ -4633,8 +4695,20 @@ VpPower(Real *y, Real *x, S_INT n)
         }
         goto Exit;
     }
-    if(!VpIsDef(x)) {
-        VpSetNaN(y); /* Not sure !!! */
+    if(VpIsNaN(x)) {
+        VpSetNaN(y);
+        goto Exit;
+    }
+    if(VpIsInf(x)) {
+        if(n==0) {
+            VpSetOne(y);
+            goto Exit;
+        }
+        if(n>0) {
+            VpSetInf(y, (n%2==0 || VpIsPosInf(x)) ? 1 : -1);
+            goto Exit;
+        }
+        VpSetZero(y, (n%2==0 || VpIsPosInf(x)) ? 1 : -1);
         goto Exit;
     }
 

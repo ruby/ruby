@@ -1,6 +1,6 @@
 require 'test/unit'
 
-class ZeroDivisionError
+class JunkError < ZeroDivisionError
   def self.new(message)
     42
   end
@@ -27,7 +27,7 @@ class TestException < Test::Unit::TestCase
     end
     assert(true)
 
-    e = assert_raise(TypeError) { 1/0 }
+    e = assert_raise(TypeError) { raise JunkError.new("abc") }
     assert_equal('exception class/object expected', e.message)
 
     # exception in rescue clause

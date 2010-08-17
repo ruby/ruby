@@ -1,7 +1,15 @@
+Tue Aug 18 03:27:00 Kirk Haines <khaines@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c: Backport #2349 [ruby-core:26646]; fix comparisons. Also fix a bunch of bugs that lead to broken-ness and failing tests.
+
+	* test/bigdecimal/test_bigdecimal.rb: Backport #2349 [ruby-core:26646]; added a test suite.
+
+	* test/ruby/test_exception.rb: The test suite was breaking ZeroDivisionError, which in turn would break bigdecimal/test_bigdecimal.rb. Made a simple fix that keeps that test but does so non-destructively.
+
 Wed Jun 23 04:26:00 Kirk Haines <khaines@ruby-lang.org>
 
-	* io.c: Backport #2267 [ruby-core:26300]; Fix problem with IO so that the file position is correct after a direct write on BSDish platforms like OS X.
-	* test/ruby/test_io.rb: Added a test for the fix.
+	* io.c: Backport #2267 [ruby-core:26300]; Fix problem with IO so that the file position is correct after a direct write on BSDish platforms like OS X. r28393
+	* test/ruby/test_io.rb: Added a test for the fix. r28393
 
 Wed Jun 23 02:07:00 Kirk Haines <khaines@ruby-lang.org>
 
