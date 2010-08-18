@@ -1,3 +1,8 @@
+Wed Aug 18 01:37:49 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regcomp.c: revert r26701; it introduces Bug #3681.
+	  [ruby-core:31677]
+
 Mon Aug 16 23:16:21 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* NEWS: updated.  a patch from Kazuhiro NISHIYAMA in [ruby-dev:42001].

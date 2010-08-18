@@ -3671,7 +3671,6 @@ setup_comb_exp_check(Node* node, int state, ScanEnv* env)
 #define IN_NOT        (1<<1)
 #define IN_REPEAT     (1<<2)
 #define IN_VAR_REPEAT (1<<3)
-#define IN_LAST	      (1<<4)
 
 /* setup_tree does the following work.
  1. check empty loop. (set qn->target_empty_info)
@@ -3693,8 +3692,7 @@ setup_tree(Node* node, regex_t* reg, int state, ScanEnv* env)
     {
       Node* prev = NULL_NODE;
       do {
-	int s = IS_NOT_NULL(NCDR(node)) ? (state & ~IN_LAST) : state;
-	r = setup_tree(NCAR(node), reg, s, env);
+	r = setup_tree(NCAR(node), reg, state, env);
 	if (IS_NOT_NULL(prev) && r == 0) {
 	  r = next_setup(prev, NCAR(node), reg);
 	}
@@ -3825,20 +3823,6 @@ setup_tree(Node* node, regex_t* reg, int state, ScanEnv* env)
 	}
       }
 #endif
-
-      if ((state & IN_LAST) != 0 && qn->greedy && IS_REPEAT_INFINITE(qn->upper)) {
-	/* automatic posseivation a* (at last) ==> (?>a*) */
-	if (qn->lower <= 1) {
-	  int ttype = NTYPE(qn->target);
-	  if (IS_NODE_TYPE_SIMPLE(ttype)) {
-	    Node* en = onig_node_new_enclose(ENCLOSE_STOP_BACKTRACK);
-	    CHECK_NULL_RETURN_MEMERR(en);
-	    SET_ENCLOSE_STATUS(en, NST_STOP_BT_SIMPLE_REPEAT);
-	    swap_node(node, en);
-	    NENCLOSE(node)->target = en;
-	  }
-	}
-      }
     }
     break;
 
@@ -5393,7 +5377,7 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
     reg->num_call = 0;
 #endif
 
-  r = setup_tree(root, reg, IN_LAST, &scan_env);
+  r = setup_tree(root, reg, 0, &scan_env);
   if (r != 0) goto err_unset;
 
 #ifdef ONIG_DEBUG_PARSE_TREE
