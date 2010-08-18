@@ -1,3 +1,8 @@
+Wed Aug 18 19:08:17 2010  Kenta Murata  <mrkn@mrkn.jp>
+
+	* array.c (ary_make_shared): revert r29037, it occurs SEGV some
+	  situations.
+
 Wed Aug 18 18:36:32 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* array.c (ary_make_shared),
