@@ -1,3 +1,10 @@
+Wed Aug 18 18:36:32 2010  Kenta Murata  <mrkn@mrkn.jp>
+
+	* array.c (ary_make_shared),
+	  test/ruby/test_array.rb (test_permutation):
+	  always return the original array when it is shared.
+	  [ruby-dev:42067] [Bug #3708]
+
 Wed Aug 18 01:37:49 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regcomp.c: revert r26701; it introduces Bug #3681.

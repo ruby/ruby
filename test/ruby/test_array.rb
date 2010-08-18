@@ -1549,6 +1549,9 @@ class TestArray < Test::Unit::TestCase
     a.permutation {|x| b << x; a.replace(@cls[9, 8, 7, 6]) }
     assert_equal(@cls[9, 8, 7, 6], a)
     assert_equal(@cls[1, 2, 3, 4].permutation.to_a, b)
+
+    bug3708 = '[ruby-dev:42067]'
+    assert_equal(b, @cls[0, 1, 2, 3, 4][1, 4].permutation.to_a, bug3708)
   end
 
   def test_repeated_permutation
