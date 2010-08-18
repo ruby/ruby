@@ -409,7 +409,10 @@ static VALUE
 ary_make_shared(VALUE ary)
 {
     assert(!ARY_EMBED_P(ary));
-    if (ARY_SHARED_P(ary) || ARY_SHARED_ROOT_P(ary)) {
+    if (ARY_SHARED_P(ary)) {
+	return ARY_SHARED(ary);
+    }
+    else if (ARY_SHARED_ROOT_P(ary)) {
 	return ary;
     }
     else if (OBJ_FROZEN(ary)) {
