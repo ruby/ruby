@@ -1,3 +1,8 @@
+Thu Aug 19 06:03:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_push_frame): initialize block_iseq.  a patch
+	  from Peter Weldon at [ruby-core:31757].
+
 Wed Aug 18 19:08:17 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* array.c (ary_make_shared): revert r29037, it occurs SEGV some
