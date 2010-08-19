@@ -1,3 +1,7 @@
+Thu Aug 19 22:34:32 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/make-snapshot (package): accept revision as BRANCH@REV.
+
 Thu Aug 19 19:53:26 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (ancillary_timestamp): fix a constant type.
