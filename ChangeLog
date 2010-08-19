@@ -1,3 +1,8 @@
+Thu Aug 19 22:57:43 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/openssl/{test_x509cert.rb,test_ssl.rb,test_x509req.rb}: added
+	  tests for SSL and wrong signature algorithm combination.
+
 Thu Aug 19 17:00:21 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/openssl/test_ssl.rb: removed unnecessary free port scanning of

@@ -152,6 +152,7 @@ class OpenSSL::TestX509Certificate < Test::Unit::TestCase
   def test_sign_and_verify
     cert = issue_cert(@ca, @rsa2048, 1, Time.now, Time.now+3600, [],
                       nil, nil, OpenSSL::Digest::SHA1.new)
+    assert_equal("sha1WithRSAEncryption", cert.signature_algorithm)
     assert_equal(false, cert.verify(@rsa1024))
     assert_equal(true,  cert.verify(@rsa2048))
     cert.serial = 2
@@ -159,6 +160,7 @@ class OpenSSL::TestX509Certificate < Test::Unit::TestCase
 
     cert = issue_cert(@ca, @rsa2048, 1, Time.now, Time.now+3600, [],
                       nil, nil, OpenSSL::Digest::MD5.new)
+    assert_equal("md5WithRSAEncryption", cert.signature_algorithm)
     assert_equal(false, cert.verify(@rsa1024))
     assert_equal(true,  cert.verify(@rsa2048))
     cert.subject = @ee1
@@ -166,10 +168,20 @@ class OpenSSL::TestX509Certificate < Test::Unit::TestCase
 
     cert = issue_cert(@ca, @dsa512, 1, Time.now, Time.now+3600, [],
                       nil, nil, OpenSSL::Digest::DSS1.new)
+    assert_equal("dsaWithSHA1", cert.signature_algorithm)
     assert_equal(false, cert.verify(@dsa256))
     assert_equal(true,  cert.verify(@dsa512))
     cert.not_after = Time.now
     assert_equal(false, cert.verify(@dsa512))
+
+    assert_raise(OpenSSL::X509::CertificateError){
+      cert = issue_cert(@ca, @rsa2048, 1, Time.now, Time.now+3600, [],
+                        nil, nil, OpenSSL::Digest::DSS1.new)
+    }
+    assert_raise(OpenSSL::X509::CertificateError){
+      cert = issue_cert(@ca, @dsa512, 1, Time.now, Time.now+3600, [],
+                        nil, nil, OpenSSL::Digest::MD5.new)
+    }
   end
 
   def test_dsig_algorithm_mismatch

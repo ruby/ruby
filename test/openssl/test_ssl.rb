@@ -239,6 +239,65 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
     }
   end
 
+  def test_sysread_chunks
+    args = {}
+    args[:server_proc] = proc { |ctx, ssl|
+      while line = ssl.gets
+        if line =~ /^STARTTLS$/
+          ssl.accept
+          next
+        end
+        ssl.write("0" * 800)
+        ssl.write("1" * 200)
+        ssl.close
+        break
+      end
+    }
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true, args){|server, port|
+      sock = TCPSocket.new("127.0.0.1", port)
+      ssl = OpenSSL::SSL::SSLSocket.new(sock)
+      ssl.sync_close = true
+      ssl.connect
+      ssl.syswrite("hello\n")
+      assert_equal("0" * 200, ssl.sysread(200))
+      assert_equal("0" * 200, ssl.sysread(200))
+      assert_equal("0" * 200, ssl.sysread(200))
+      assert_equal("0" * 200, ssl.sysread(200))
+      assert_equal("1" * 200, ssl.sysread(200))
+      ssl.close
+    }
+  end
+
+  def test_sysread_buffer
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){|server, port|
+      sock = TCPSocket.new("127.0.0.1", port)
+      ssl = OpenSSL::SSL::SSLSocket.new(sock)
+      ssl.sync_close = true
+      ssl.connect
+      ITERATIONS.times{|i|
+        # the given buffer is cleared before concatenating.
+        # NB: SSLSocket#readpartial depends sysread.
+        str = "x" * i * 100 + "\n"
+        ssl.syswrite(str)
+        buf = "asdf"
+        assert_equal(buf.object_id, ssl.sysread(0, buf).object_id)
+        assert_equal("", buf)
+
+        buf = "asdf"
+        read = ssl.sysread(str.size, buf)
+        assert(!read.empty?)
+        assert_equal(buf.object_id, read.object_id)
+        assert_equal(str, buf)
+
+        ssl.syswrite(str)
+        read = ssl.sysread(str.size, nil)
+        assert(!read.empty?)
+        assert_equal(str, read)
+      }
+      ssl.close
+    }
+  end
+
   def test_client_auth
     vflag = OpenSSL::SSL::VERIFY_PEER|OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT
     start_server(PORT, vflag, true){|server, port|
@@ -432,6 +491,193 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
     }
   end
 
+  def test_extra_chain_cert
+    start_server(PORT, OpenSSL::SSL::VERIFY_PEER, true){|server, port|
+      sock = TCPSocket.new("127.0.0.1", port)
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.set_params
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+      assert_raise(OpenSSL::SSL::SSLError){ ssl.connect }
+      assert_equal(OpenSSL::X509::V_ERR_SELF_SIGNED_CERT_IN_CHAIN, ssl.verify_result)
+    }
+    # server returns a chain w/o root cert so the client verification fails
+    # with UNABLE_TO_GET_ISSUER_CERT_LOCALLY not SELF_SIGNED_CERT_IN_CHAIN.
+    args = {}
+    args[:ctx_proc] = proc { |server_ctx|
+      server_ctx.cert = @svr_cert
+      server_ctx.key = @svr_key
+      server_ctx.extra_chain_cert = [@svr_cert]
+    }
+    start_server(PORT, OpenSSL::SSL::VERIFY_PEER, true, args){|server, port|
+      sock = TCPSocket.new("127.0.0.1", port)
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.set_params
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+      assert_raise(OpenSSL::SSL::SSLError){ ssl.connect }
+      assert_equal(OpenSSL::X509::V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY, ssl.verify_result)
+    }
+  end
+
+  def test_client_ca
+    args = {}
+    vflag = OpenSSL::SSL::VERIFY_PEER|OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT
+
+    # client_ca as a cert
+    args[:ctx_proc] = proc { |server_ctx|
+      server_ctx.cert = @svr_cert
+      server_ctx.key = @svr_key
+      server_ctx.client_ca = @ca_cert
+    }
+    start_server(PORT, vflag, true, args){|server, port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.key = @cli_key
+      ctx.cert = @cli_cert
+      sock = TCPSocket.new("127.0.0.1", port)
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+      ssl.sync_close = true
+      ssl.connect
+      ssl.puts("foo")
+      assert_equal("foo\n", ssl.gets)
+    }
+
+    # client_ca as an array
+    args[:ctx_proc] = proc { |server_ctx|
+      server_ctx.cert = @svr_cert
+      server_ctx.key = @svr_key
+      server_ctx.client_ca = [@ca_cert, @svr_cert]
+    }
+    start_server(PORT, vflag, true, args){|server, port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.key = @cli_key
+      ctx.cert = @cli_cert
+      sock = TCPSocket.new("127.0.0.1", port)
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+      ssl.sync_close = true
+      ssl.connect
+      ssl.puts("foo")
+      assert_equal("foo\n", ssl.gets)
+    }
+  end
+
+  def test_sslctx_ssl_version_client
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){|server, port|
+      sock = TCPSocket.new("127.0.0.1", port)
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.set_params
+      ctx.verify_mode = OpenSSL::SSL::VERIFY_NONE
+      ctx.ssl_version = "TLSv1"
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+      assert_nothing_raised do
+        ssl.connect
+      end
+      ssl.puts("hello TLSv1")
+      ssl.close
+      sock.close
+      #
+      sock = TCPSocket.new("127.0.0.1", port)
+      ctx.ssl_version = "SSLv3"
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+      assert_nothing_raised do
+        ssl.connect
+      end
+      ssl.puts("hello SSLv3")
+      ssl.close
+      sock.close
+      #
+      sock = TCPSocket.new("127.0.0.1", port)
+      ctx.ssl_version = "SSLv3_server"
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+      assert_raise(OpenSSL::SSL::SSLError) do
+        ssl.connect
+      end
+      sock.close
+      #
+      sock = TCPSocket.new("127.0.0.1", port)
+      ctx.ssl_version = "TLSv1_client"
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+      assert_nothing_raised do
+        ssl.connect
+      end
+      ssl.puts("hello TLSv1_client")
+      ssl.close
+      sock.close
+    }
+  end
+
+  def test_sslctx_ssl_version
+    args = {}
+    args[:ctx_proc] = proc { |server_ctx|
+      server_ctx.ssl_version = "TLSv1"
+    }
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true, args){|server, port|
+      sock = TCPSocket.new("127.0.0.1", port)
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.verify_mode = OpenSSL::SSL::VERIFY_NONE
+      ctx.ssl_version = "TLSv1"
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+      assert_nothing_raised do
+        ssl.connect
+      end
+      ssl.puts("hello TLSv1")
+      ssl.close
+      sock.close
+      #
+      sock = TCPSocket.new("127.0.0.1", port)
+      ctx.ssl_version = "SSLv3"
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+      assert_raise(OpenSSL::SSL::SSLError) do
+        ssl.connect
+      end
+    }
+  end
+
+  def test_verify_depth
+    vflag = OpenSSL::SSL::VERIFY_PEER|OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT
+    args = {}
+    # depth == 1 => OK
+    args[:ctx_proc] = proc { |server_ctx|
+      server_ctx.cert = @svr_cert
+      server_ctx.key = @svr_key
+      server_ctx.verify_mode = vflag
+      server_ctx.verify_depth = 1
+    }
+    start_server(PORT, vflag, true, args){|server, port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.key = @cli_key
+      ctx.cert = @cli_cert
+      sock = TCPSocket.new("127.0.0.1", port)
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+      assert_nothing_raised do
+        ssl.connect
+      end
+      ssl.close
+    }
+    # depth == 0 => error
+    error = nil
+    args[:ctx_proc] = proc { |server_ctx|
+      server_ctx.cert = @svr_cert
+      server_ctx.key = @svr_key
+      server_ctx.verify_mode = vflag
+      server_ctx.verify_depth = 0
+      server_ctx.verify_callback = proc { |preverify_ok, store_ctx|
+        error = store_ctx.error
+        preverify_ok
+      }
+    }
+    start_server(PORT, vflag, true, args){|server, port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.key = @cli_key
+      ctx.cert = @cli_cert
+      sock = TCPSocket.new("127.0.0.1", port)
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+      assert_raises(OpenSSL::SSL::SSLError) do
+        ssl.connect
+      end
+      ssl.close
+    }
+    assert_equal OpenSSL::X509::V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY, error
+  end
+
   def test_sslctx_set_params
     start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){|server, port|
       sock = TCPSocket.new("127.0.0.1", port)
@@ -447,6 +693,111 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
       ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
       assert_raise(OpenSSL::SSL::SSLError){ ssl.connect }
       assert_equal(OpenSSL::X509::V_ERR_SELF_SIGNED_CERT_IN_CHAIN, ssl.verify_result)
+    }
+  end
+
+  def test_sslctx_ciphers
+    c = OpenSSL::SSL::SSLContext.new
+
+    c.ciphers = 'DEFAULT'
+    default = c.ciphers
+    assert(default.size > 0)
+
+    c.ciphers = 'ALL'
+    all = c.ciphers
+    assert(all.size > 0)
+
+    c.ciphers = 'LOW'
+    low = c.ciphers
+    assert(low.size > 0)
+
+    c.ciphers = 'MEDIUM'
+    medium = c.ciphers
+    assert(medium.size > 0)
+
+    c.ciphers = 'HIGH'
+    high = c.ciphers
+    assert(high.size > 0)
+
+    c.ciphers = 'EXP'
+    exp = c.ciphers
+    assert(exp.size > 0)
+
+    # -
+    c.ciphers = 'ALL:-LOW'
+    assert_equal(all - low, c.ciphers)
+    c.ciphers = 'ALL:-MEDIUM'
+    assert_equal(all - medium, c.ciphers)
+    c.ciphers = 'ALL:-HIGH'
+    assert_equal(all - high, c.ciphers)
+    c.ciphers = 'ALL:-EXP'
+    assert_equal(all - exp, c.ciphers)
+    c.ciphers = 'ALL:-LOW:-MEDIUM'
+    assert_equal(all - low - medium, c.ciphers)
+    c.ciphers = 'ALL:-LOW:-MEDIUM:-HIGH'
+    assert_equal(all - low - medium - high, c.ciphers)
+    assert_raise(OpenSSL::SSL::SSLError) do
+      # should be empty for OpenSSL/0.9.8l. check OpenSSL changes if this test fail.
+      c.ciphers = 'ALL:-LOW:-MEDIUM:-HIGH:-EXP'
+    end
+
+    # !
+    c.ciphers = 'ALL:-LOW:LOW'
+    assert_equal(all.sort, c.ciphers.sort)
+    c.ciphers = 'ALL:!LOW:LOW'
+    assert_equal(all - low, c.ciphers)
+    c.ciphers = 'ALL:!LOW:+LOW'
+    assert_equal(all - low, c.ciphers)
+
+    # +
+    c.ciphers = 'HIGH:LOW:+LOW'
+    assert_equal(high + low, c.ciphers)
+    c.ciphers = 'HIGH:LOW:+HIGH'
+    assert_equal(low + high, c.ciphers)
+
+    # name+name
+    c.ciphers = 'RC4'
+    rc4 = c.ciphers
+    c.ciphers = 'RSA'
+    rsa = c.ciphers
+    c.ciphers = 'RC4+RSA'
+    assert_equal(rc4&rsa, c.ciphers) 
+    c.ciphers = 'RSA+RC4'
+    assert_equal(rc4&rsa, c.ciphers) 
+    c.ciphers = 'ALL:RSA+RC4'
+    assert_equal(all + ((rc4&rsa) - all), c.ciphers) 
+  end
+
+  def test_sslctx_options
+    args = {}
+    args[:ctx_proc] = proc { |server_ctx|
+      # TLSv1 only
+      server_ctx.options = OpenSSL::SSL::OP_NO_SSLv2|OpenSSL::SSL::OP_NO_SSLv3
+    }
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true, args){|server, port|
+      sock = TCPSocket.new("127.0.0.1", port)
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.set_params
+      ctx.verify_mode = OpenSSL::SSL::VERIFY_NONE
+      ctx.options = OpenSSL::SSL::OP_NO_TLSv1
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+      assert_raise(OpenSSL::SSL::SSLError, Errno::ECONNRESET) do
+        ssl.connect
+      end
+      ssl.close
+      sock.close
+      #
+      sock = TCPSocket.new("127.0.0.1", port)
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.set_params
+      ctx.verify_mode = OpenSSL::SSL::VERIFY_NONE
+      ctx.options = OpenSSL::SSL::OP_NO_SSLv3
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+      assert_nothing_raised do
+        ssl.connect
+      end
+      ssl.close
+      sock.close
     }
   end
 

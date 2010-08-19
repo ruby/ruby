@@ -139,6 +139,11 @@ class OpenSSL::TestX509Request < Test::Unit::TestCase
     assert_equal(true,  req.verify(@dsa512))
     req.public_key = @rsa1024.public_key
     assert_equal(false, req.verify(@dsa512))
+
+    assert_raise(OpenSSL::X509::RequestError){
+      issue_csr(0, @dn, @rsa1024, OpenSSL::Digest::DSS1.new) }
+    assert_raise(OpenSSL::X509::RequestError){
+      issue_csr(0, @dn, @dsa512, OpenSSL::Digest::MD5.new) }
   end
 
   def test_dsig_algorithm_mismatch
@@ -183,8 +188,7 @@ qL7M4i48FXHn
 -----END CERTIFICATE REQUEST-----
 END
     req = OpenSSL::X509::Request.new(req_s)
-
-    assert_equal(req_s, req.to_pem)
+    assert_equal(req_s.gsub(/[\r\n]/, ''), req.to_pem.gsub(/[\r\n]/, ''))
   end
 end
 
