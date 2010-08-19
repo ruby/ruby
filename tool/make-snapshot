@@ -15,10 +15,14 @@ $patch_file ||= nil
 def usage
   <<USAGE
 usage: #{File.basename $0} [option...] new-directory-to-save [version ...]
+options:
   -exported=PATH        make snapshot from already exported working directory
   -archname=NAME        make the basename of snapshots NAME
   -keep_temp            keep temporary working directory
   -patch_file=PATCH     apply PATCH file after export
+version:
+  trunk, stable, branches/*, tags/*, X.Y.Z, X.Y.Z-pL
+each versions may be followed by optional @revision.
 USAGE
 end
 
