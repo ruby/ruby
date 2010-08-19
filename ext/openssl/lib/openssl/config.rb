@@ -284,7 +284,7 @@ module OpenSSL
     def each
       @data.each do |section, hash|
         hash.each do |key, value|
-          yield(section, key, value)
+          yield [section, key, value]
         end
       end
     end

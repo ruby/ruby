@@ -1,3 +1,8 @@
+Thu Aug 19 16:47:51 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* ext/openssl/lib/openssl/config.rb, test/openssl/test_config.rb:
+	  cosmetic changes for 1.9 compatibility; let it run on 1.9 as-is.
+
 Sun Aug 15 19:59:58 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/webrick/httpresponse.rb (WEBrick::HTTPResponse#set_error):

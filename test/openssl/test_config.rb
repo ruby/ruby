@@ -19,7 +19,7 @@ __EOD__
   end
 
   def test_constants
-    assert(OpenSSL::Config.constants.include?('DEFAULT_CONFIG_FILE'))
+    assert(defined?(OpenSSL::Config::DEFAULT_CONFIG_FILE))
     assert_nothing_raised do
       OpenSSL::Config.load(OpenSSL::Config::DEFAULT_CONFIG_FILE)
     end
