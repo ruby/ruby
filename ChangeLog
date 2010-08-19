@@ -1,3 +1,8 @@
+Thu Aug 19 11:11:24 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enum.c (enum_inject): fix typo of rdoc.
+	  patched by Andrei Kulakov [ruby-core:31768]
+
 Thu Aug 19 10:06:08 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pathname/pathname.c (path_extname): Pathname#extname translated
