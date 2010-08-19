@@ -1,3 +1,9 @@
+Thu Aug 19 19:53:26 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (ancillary_timestamp): fix a constant type.
+
+	* ext/socket/raddrinfo.c (get_afamily): suppress a warning.
+
 Thu Aug 19 19:28:47 2010  Tanaka Akira  <akr@fsij.org>
 
 	* thread_pthread.c (native_sleep): suppress a warning for platforms

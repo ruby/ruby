@@ -908,7 +908,7 @@ addrinfo_initialize(int argc, VALUE *argv, VALUE self)
 static int
 get_afamily(struct sockaddr *addr, socklen_t len)
 {
-    if ((char*)&addr->sa_family + sizeof(addr->sa_family) - (char*)addr <= len)
+    if ((socklen_t)((char*)&addr->sa_family + sizeof(addr->sa_family) - (char*)addr) <= len)
         return addr->sa_family;
     else
         return AF_UNSPEC;
