@@ -1,3 +1,13 @@
+Thu Aug 19 12:04:39 2010  Kenta Murata  <mrkn@mrkn.jp>
+
+	* array.c (rb_ary_permutation, rb_ary_repeated_permutation,
+	  rb_ary_repeated_combination, rb_ary_product):
+	  use ary_make_shared_copy instead of ary_make_substitution.
+	  [ruby-dev:42067] [Bug #3708]
+
+	* test/ruby/test_array.rb (test_product, test_repeated_permutation,
+	  test_repeated_combination): append assertions against [Bug #3708].
+
 Thu Aug 19 11:11:24 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enum.c (enum_inject): fix typo of rdoc.
