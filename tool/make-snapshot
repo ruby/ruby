@@ -9,6 +9,18 @@ STDOUT.sync = true
 
 $exported = nil if $exported == ""
 $archname = nil if $archname == ""
+$keep_temp ||= nil
+$patch_file ||= nil
+
+def usage
+  <<USAGE
+usage: #{File.basename $0} [option...] new-directory-to-save [version ...]
+  -exported=PATH        make snapshot from already exported working directory
+  -archname=NAME        make the basename of snapshots NAME
+  -keep_temp            keep temporary working directory
+  -patch_file=PATCH     apply PATCH file after export
+USAGE
+end
 
 ENV["LC_ALL"] = ENV["LANG"] = "C"
 SVNURL = URI.parse("http://svn.ruby-lang.org/repos/ruby/")
@@ -53,8 +65,12 @@ path = ENV["PATH"].split(File::PATH_SEPARATOR)
   end
 end
 
+if $help or $_help
+  puts usage
+  exit
+end
 unless destdir = ARGV.shift
-  abort "usage: #{File.basename $0} new-directory-to-save [version ...]"
+  abort usage
 end
 revisions = ARGV.empty? ? ["trunk"] : ARGV
 unless tmp = $exported

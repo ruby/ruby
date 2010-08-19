@@ -1,4 +1,6 @@
-Thu Aug 19 22:34:32 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Aug 19 22:44:56 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/make-snapshot (usage): add usage.
 
 	* tool/make-snapshot (package): accept revision as BRANCH@REV.
 
