@@ -1,3 +1,8 @@
+Thu Aug 19 19:28:47 2010  Tanaka Akira  <akr@fsij.org>
+
+	* thread_pthread.c (native_sleep): suppress a warning for platforms
+	  which time_t is int.
+
 Thu Aug 19 18:15:50 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/merger.rb: Add a tool to merge commits between branches.

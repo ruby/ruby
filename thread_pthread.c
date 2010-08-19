@@ -612,7 +612,7 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
 	}
     }
 
-    thread_debug("native_sleep %ld\n", tv ? tv->tv_sec : -1);
+    thread_debug("native_sleep %ld\n", (long)(tv ? tv->tv_sec : -1));
     GVL_UNLOCK_BEGIN();
     {
 	pthread_mutex_lock(&th->interrupt_lock);
