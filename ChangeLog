@@ -1,3 +1,8 @@
+Thu Aug 19 18:15:50 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/merger.rb: Add a tool to merge commits between branches.
+	  developed by URABE Shyouhei
+
 Thu Aug 19 17:19:09 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* backport r28621 and r28632 from ruby_1_8;
