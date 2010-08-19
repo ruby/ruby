@@ -1,3 +1,8 @@
+Thu Aug 19 17:00:21 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/openssl/test_ssl.rb: removed unnecessary free port scanning of
+	  test_ssl.rb.
+
 Thu Aug 19 16:47:51 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* ext/openssl/lib/openssl/config.rb, test/openssl/test_config.rb:

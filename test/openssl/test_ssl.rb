@@ -123,12 +123,6 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
 
     Socket.do_not_reverse_lookup = true
     tcps, port = choose_port(port0)
-    begin
-      tcps = TCPServer.new("127.0.0.1", port)
-    rescue Errno::EADDRINUSE
-      port += 1
-      retry
-    end
 
     ssls = OpenSSL::SSL::SSLServer.new(tcps, ctx)
     ssls.start_immediately = start_immediately
