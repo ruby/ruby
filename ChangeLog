@@ -1,3 +1,8 @@
+Thu Aug 19 10:06:08 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/pathname.c (path_extname): Pathname#extname translated
+	  from pathname.rb.
+
 Thu Aug 19 06:03:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_push_frame): initialize block_iseq.  a patch

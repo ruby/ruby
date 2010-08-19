@@ -512,9 +512,6 @@ end
 
 class Pathname    # * File *
 
-  # See <tt>File.extname</tt>.  Returns the file's extension.
-  def extname() File.extname(@path) end
-
   # See <tt>File.expand_path</tt>.
   def expand_path(*args) self.class.new(File.expand_path(@path, *args)) end
 

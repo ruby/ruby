@@ -450,6 +450,16 @@ path_dirname(VALUE self)
 }
 
 /*
+ * See <tt>File.extname</tt>.  Returns the file's extension.
+ */
+static VALUE
+path_extname(VALUE self)
+{
+    VALUE str = get_strpath(self);
+    return rb_funcall(rb_cFile, rb_intern("extname"), 1, str);
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -670,4 +680,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "utime", path_utime, 2);
     rb_define_method(rb_cPathname, "basename", path_basename, -1);
     rb_define_method(rb_cPathname, "dirname", path_dirname, 0);
+    rb_define_method(rb_cPathname, "extname", path_extname, 0);
 }
