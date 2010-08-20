@@ -1160,7 +1160,12 @@ rb_obj_not_match(VALUE obj1, VALUE obj2)
 }
 
 
-/* :nodoc: */
+/*
+ *  call-seq:
+ *     obj <=> other -> 0 or nil
+ *
+ *  Returns 0 if obj === other, otherwise nil.
+ */
 static VALUE
 rb_obj_cmp(VALUE obj1, VALUE obj2)
 {
