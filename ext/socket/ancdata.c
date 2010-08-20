@@ -333,7 +333,7 @@ ancillary_timestamp(VALUE self)
         struct bintime bt;
 	VALUE d, timev;
         memcpy((char*)&bt, RSTRING_PTR(data), sizeof(bt));
-	d = ULL2NUM(0x100000000UL);
+	d = ULL2NUM(0x100000000ULL);
 	d = mul(d,d);
 	timev = add(TIMET2NUM(bt.sec), quo(ULL2NUM(bt.frac), d));
         result = rb_time_num_new(timev, Qnil);
