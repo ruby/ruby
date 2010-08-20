@@ -926,6 +926,14 @@ class TestPathname < Test::Unit::TestCase
     assert_equal(".ext", Pathname("basename.ext").extname)
   end
 
+  def test_expand_path
+    assert_equal(Pathname("/a"), Pathname("/a").expand_path)
+    assert_equal(Pathname("/a"), Pathname("a").expand_path("/"))
+    assert_equal(Pathname("/a"), Pathname("a").expand_path(Pathname("/")))
+    assert_equal(Pathname("/b"), Pathname("/b").expand_path(Pathname("/a")))
+    assert_equal(Pathname("/a/b"), Pathname("b").expand_path(Pathname("/a")))
+  end
+
   def test_split
     assert_equal([Pathname("dirname"), Pathname("basename")], Pathname("dirname/basename").split)
   end

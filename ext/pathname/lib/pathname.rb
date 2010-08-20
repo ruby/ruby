@@ -512,9 +512,6 @@ end
 
 class Pathname    # * File *
 
-  # See <tt>File.expand_path</tt>.
-  def expand_path(*args) self.class.new(File.expand_path(@path, *args)) end
-
   # See <tt>File.split</tt>.  Returns the #dirname and the #basename in an
   # Array.
   def split() File.split(@path).map {|f| self.class.new(f) } end

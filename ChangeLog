@@ -1,3 +1,8 @@
+Fri Aug 20 10:40:04 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/pathname.c (path_expand_path): Pathname#expand_path
+	  translated from pathname.rb.
+
 Thu Aug 19 22:44:56 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/make-snapshot (usage): add usage.
