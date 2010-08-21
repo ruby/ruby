@@ -1835,6 +1835,8 @@ rb_thread_alloc(VALUE klass)
     return self;
 }
 
+VALUE rb_iseq_clone(VALUE iseqval, VALUE newcbase);
+
 static void
 vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
 		 rb_num_t is_singleton, NODE *cref)
