@@ -3730,6 +3730,8 @@ rb_ary_flatten(int argc, VALUE *argv, VALUE ary)
     return result;
 }
 
+#define RAND_UPTO(max) (long)(rb_genrand_real()*(max))
+
 /*
  *  call-seq:
  *     ary.shuffle!        -> ary
@@ -3747,7 +3749,7 @@ rb_ary_shuffle_bang(VALUE ary)
     rb_ary_modify(ary);
     ptr = RARRAY_PTR(ary);
     while (i) {
-	long j = (long)(rb_genrand_real()*i);
+	long j = RAND_UPTO(i);
 	VALUE tmp = ptr[--i];
 	ptr[i] = ptr[j];
 	ptr[j] = tmp;
@@ -3798,7 +3800,7 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
     len = RARRAY_LEN(ary);
     if (argc == 0) {
 	if (len == 0) return Qnil;
-	i = len == 1 ? 0 : (long)(rb_genrand_real()*len);
+	i = len == 1 ? 0 : RAND_UPTO(len);
 	return RARRAY_PTR(ary)[i];
     }
     rb_scan_args(argc, argv, "1", &nv);
@@ -3810,16 +3812,16 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
     switch (n) {
       case 0: return rb_ary_new2(0);
       case 1:
-	return rb_ary_new4(1, &ptr[(long)(rb_genrand_real()*len)]);
+	return rb_ary_new4(1, &ptr[RAND_UPTO(len)]);
       case 2:
-	i = (long)(rb_genrand_real()*len);
-	j = (long)(rb_genrand_real()*(len-1));
+	i = RAND_UPTO(len);
+	j = RAND_UPTO(len-1);
 	if (j >= i) j++;
 	return rb_ary_new3(2, ptr[i], ptr[j]);
       case 3:
-	i = (long)(rb_genrand_real()*len);
-	j = (long)(rb_genrand_real()*(len-1));
-	k = (long)(rb_genrand_real()*(len-2));
+	i = RAND_UPTO(len);
+	j = RAND_UPTO(len-1);
+	k = RAND_UPTO(len-2);
 	{
 	    long l = j, g = i;
 	    if (j >= i) l = i, g = ++j;
@@ -3830,9 +3832,9 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
     if ((size_t)n < sizeof(idx)/sizeof(idx[0])) {
 	VALUE *ptr_result;
 	long sorted[sizeof(idx)/sizeof(idx[0])];
-	sorted[0] = idx[0] = (long)(rb_genrand_real()*len);
+	sorted[0] = idx[0] = RAND_UPTO(len);
 	for (i=1; i<n; i++) {
-	    k = (long)(rb_genrand_real()*--len);
+	    k = RAND_UPTO(--len);
 	    for (j = 0; j < i; ++j) {
 		if (k < sorted[j]) break;
 		++k;
@@ -3852,7 +3854,7 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
 	ptr_result = RARRAY_PTR(result);
 	RB_GC_GUARD(ary);
 	for (i=0; i<n; i++) {
-	    j = (long)(rb_genrand_real()*(len-i)) + i;
+	    j = RAND_UPTO(len-i) + i;
 	    nv = ptr_result[j];
 	    ptr_result[j] = ptr_result[i];
 	    ptr_result[i] = nv;
