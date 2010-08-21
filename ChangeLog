@@ -1,3 +1,8 @@
+Sun Aug 22 05:55:01 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: fix typo.  a patch from Eric Wong at
+	  [ruby-core:31810].
+
 Sat Aug 21 20:09:43 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vm.c: add missing prototype of rb_iseq_clone for r29063.
