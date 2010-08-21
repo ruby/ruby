@@ -475,6 +475,23 @@ path_expand_path(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ * See <tt>File.split</tt>.  Returns the #dirname and the #basename in an Array.
+ */
+static VALUE
+path_split(VALUE self)
+{
+    VALUE str = get_strpath(self);
+    VALUE ary, dirname, basename;
+    ary = rb_funcall(rb_cFile, rb_intern("split"), 1, str);
+    ary = rb_check_array_type(ary);
+    dirname = rb_ary_entry(ary, 0);
+    basename = rb_ary_entry(ary, 1);
+    dirname = rb_class_new_instance(1, &dirname, rb_obj_class(self));
+    basename = rb_class_new_instance(1, &basename, rb_obj_class(self));
+    return rb_ary_new3(2, dirname, basename);
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -697,4 +714,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "dirname", path_dirname, 0);
     rb_define_method(rb_cPathname, "extname", path_extname, 0);
     rb_define_method(rb_cPathname, "expand_path", path_expand_path, -1);
+    rb_define_method(rb_cPathname, "split", path_split, 0);
 }

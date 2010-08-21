@@ -510,14 +510,6 @@ class Pathname    # * IO *
 end
 
 
-class Pathname    # * File *
-
-  # See <tt>File.split</tt>.  Returns the #dirname and the #basename in an
-  # Array.
-  def split() File.split(@path).map {|f| self.class.new(f) } end
-end
-
-
 class Pathname    # * FileTest *
 
   # See <tt>FileTest.blockdev?</tt>.
