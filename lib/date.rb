@@ -1738,11 +1738,6 @@ class DateTime < Date
     new_by_frags(elem, sg)
   end
 
-  def self.rfc3339(str='-4712-01-01T00:00:00+00:00', sg=ITALY) # :nodoc:
-    elem = _rfc3339(str)
-    new_by_frags(elem, sg)
-  end
-
   def self.xmlschema(str='-4712-01-01T00:00:00+00:00', sg=ITALY) # :nodoc:
     elem = _xmlschema(str)
     new_by_frags(elem, sg)
