@@ -194,4 +194,18 @@ class  OpenSSL::TestASN1 < Test::Unit::TestCase
     cululated_sig = key.sign(OpenSSL::Digest::SHA1.new, tbs_cert.to_der)
     assert_equal(cululated_sig, sig_val.value)
   end
+
+  def test_encode_boolean
+    encode_decode_test(OpenSSL::ASN1::Boolean, [true, false])
+  end
+
+  def test_encode_integer
+    encode_decode_test(OpenSSL::ASN1::Integer, [72, -127, -128, 128, -1, 0, 1, -(2**12345), 2**12345])
+  end
+
+  def encode_decode_test(type, values)
+    values.each do |v|
+      assert_equal(v, OpenSSL::ASN1.decode(type.new(v).to_der).value)
+    end
+  end
 end if defined?(OpenSSL)

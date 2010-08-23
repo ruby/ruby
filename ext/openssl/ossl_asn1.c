@@ -196,7 +196,11 @@ static ID sUNIVERSAL, sAPPLICATION, sCONTEXT_SPECIFIC, sPRIVATE;
 static ASN1_BOOLEAN
 obj_to_asn1bool(VALUE obj)
 {
+#if OPENSSL_VERSION_NUMBER < 0x00907000L
      return RTEST(obj) ? 0xff : 0x100;
+#else
+     return RTEST(obj) ? 0xff : 0x0;
+#endif
 }
 
 static ASN1_INTEGER*
