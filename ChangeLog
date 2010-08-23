@@ -1,3 +1,8 @@
+Mon Aug 23 22:30:58 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (version.o): depends on both of version.h and
+	  include/ruby/version.h.   [ruby-dev:42063]
+
 Mon Aug 23 13:09:27 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* backport r29071 from ruby_1_8;
