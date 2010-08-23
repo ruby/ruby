@@ -343,6 +343,16 @@ class TestBigDecimal < Test::Unit::TestCase
     BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, false)
     assert_kind_of(Float,   x .to_f)
     assert_kind_of(Float, (-x).to_f)
+
+    BigDecimal.mode(BigDecimal::EXCEPTION_UNDERFLOW, true)
+    assert_raise(FloatDomainError) {
+      BigDecimal("1e#{Float::MIN_10_EXP - 2*Float::DIG}").to_f }
+    assert_raise(FloatDomainError) {
+      BigDecimal("-1e#{Float::MIN_10_EXP - 2*Float::DIG}").to_f }
+
+    BigDecimal.mode(BigDecimal::EXCEPTION_UNDERFLOW, false)
+    assert_equal( 0.0, BigDecimal("1e#{Float::MIN_10_EXP - 2*Float::DIG}").to_f)
+    assert_equal(-0.0, BigDecimal("-1e#{Float::MIN_10_EXP - 2*Float::DIG}").to_f)
   end
 
   def test_coerce

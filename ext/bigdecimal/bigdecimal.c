@@ -513,25 +513,40 @@ BigDecimal_to_f(VALUE self)
     ENTER(1);
     Real *p;
     double d;
-    ssize_t e;
+    SIGNED_VALUE e;
     char *buf;
     volatile VALUE str;
 
     GUARD_OBJ(p, GetVpValue(self, 1));
-    if (VpVtoD(&d, &e, p) != 1) return rb_float_new(d);
-    if (e > (ssize_t)(DBL_MAX_10_EXP+BASE_FIG)) goto erange;
+    if (VpVtoD(&d, &e, p) != 1)
+	return rb_float_new(d);
+    if (e > (SIGNED_VALUE)(DBL_MAX_10_EXP+BASE_FIG))
+	goto overflow;
+    if (e < (SIGNED_VALUE)(DBL_MIN_10_EXP-BASE_FIG))
+	goto underflow;
+
     str = rb_str_new(0, VpNumOfChars(p,"E"));
     buf = RSTRING_PTR(str);
     VpToString(p, buf, 0, 0);
     errno = 0;
     d = strtod(buf, 0);
-    if (errno == ERANGE) {
-      erange:
-	VpException(VP_EXCEPTION_OVERFLOW,"BigDecimal to Float conversion",0);
-	if (d > 0.0) d = VpGetDoublePosInf();
-	else         d = VpGetDoubleNegInf();
-    }
+    if (errno == ERANGE)
+	goto overflow;
     return rb_float_new(d);
+
+overflow:
+    VpException(VP_EXCEPTION_OVERFLOW, "BigDecimal to Float conversion", 0);
+    if (d > 0.0)
+	return rb_float_new(VpGetDoublePosInf());
+    else
+	return rb_float_new(VpGetDoubleNegInf());
+
+underflow:
+    VpException(VP_EXCEPTION_UNDERFLOW, "BigDecimal to Float conversion", 0);
+    if (d > 0.0)
+	return rb_float_new(0.0);
+    else
+	return rb_float_new(-0.0);
 }
 
 
