@@ -670,6 +670,23 @@ class TestPathname < Test::Unit::TestCase
       a = []
       Pathname("a").each_line {|line| a << line }
       assert_equal(["1\n", "2\n"], a)
+
+      a = []
+      Pathname("a").each_line("2") {|line| a << line }
+      assert_equal(["1\n2", "\n"], a)
+
+      a = []
+      Pathname("a").each_line(1) {|line| a << line }
+      assert_equal(["1", "\n", "2", "\n"], a)
+
+      a = []
+      Pathname("a").each_line("2", 1) {|line| a << line }
+      assert_equal(["1", "\n", "2", "\n"], a)
+
+      a = []
+      enum = Pathname("a").each_line
+      enum.each {|line| a << line }
+      assert_equal(["1\n", "2\n"], a)
     }
   end
 

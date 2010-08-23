@@ -233,6 +233,35 @@ path_realdirpath(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ * call-seq:
+ *   pathname.each_line {|line| ... }
+ *   pathname.each_line(sep=$/ [, open_args]) {|line| block }     -> nil
+ *   pathname.each_line(limit [, open_args]) {|line| block }      -> nil
+ *   pathname.each_line(sep, limit [, open_args]) {|line| block } -> nil
+ *   pathname.each_line(...)                                      -> an_enumerator
+ *        
+ * #each_line iterates over the line in the file.  It yields a String object
+ * for each line.
+ * 
+ * This method is availabel since 1.8.1.
+ */
+static VALUE
+path_each_line(int argc, VALUE *argv, VALUE self)
+{
+    VALUE args[4];
+    int n;
+
+    args[0] = get_strpath(self);
+    n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
+    if (rb_block_given_p()) {
+        return rb_block_call(rb_cIO, rb_intern("foreach"), 1+n, args, 0, 0);
+    }
+    else {
+        return rb_funcall2(rb_cIO, rb_intern("foreach"), 1+n, args);
+    }
+}
+
+/*
  * See <tt>File.atime</tt>.  Returns last access time.
  */
 static VALUE
@@ -691,6 +720,7 @@ Init_pathname()
     rb_define_method(rb_cPathname, "sub_ext", path_sub_ext, 1);
     rb_define_method(rb_cPathname, "realpath", path_realpath, -1);
     rb_define_method(rb_cPathname, "realdirpath", path_realdirpath, -1);
+    rb_define_method(rb_cPathname, "each_line", path_each_line, -1);
     rb_define_method(rb_cPathname, "atime", path_atime, 0);
     rb_define_method(rb_cPathname, "ctime", path_ctime, 0);
     rb_define_method(rb_cPathname, "mtime", path_mtime, 0);

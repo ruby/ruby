@@ -1,3 +1,8 @@
+Mon Aug 23 23:14:21 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/pathname.c (path_each_line): Pathname#each_line
+	  translated from pathname.rb.
+
 Mon Aug 23 22:30:58 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (version.o): depends on both of version.h and

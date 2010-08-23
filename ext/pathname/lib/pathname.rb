@@ -484,16 +484,6 @@ class Pathname
 end
 
 class Pathname    # * IO *
-  #
-  # #each_line iterates over the line in the file.  It yields a String object
-  # for each line.
-  #
-  # This method has existed since 1.8.1.
-  #
-  def each_line(*args, &block) # :yield: line
-    IO.foreach(@path, *args, &block)
-  end
-
   # See <tt>IO.read</tt>.  Returns all data from the file, or the first +N+ bytes
   # if specified.
   def read(*args) IO.read(@path, *args) end
