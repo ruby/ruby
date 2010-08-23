@@ -50,6 +50,11 @@
 #define RUBY_VENDOR_THIN_ARCHLIB    RUBY_VENDOR_LIB2 "/"RUBY_THINARCH
 #endif
 
+const int ruby_api_version[] = {
+    RUBY_API_VERSION_MAJOR,
+    RUBY_API_VERSION_MINOR,
+    RUBY_API_VERSION_TEENY,
+};
 const char ruby_version[] = RUBY_VERSION;
 const char ruby_release_date[] = RUBY_RELEASE_DATE;
 const char ruby_platform[] = RUBY_PLATFORM;

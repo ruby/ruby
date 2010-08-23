@@ -1,3 +1,8 @@
+Tue Aug 24 06:08:10 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/version.h (RUBY_API_VERSION_*): renamed and moved
+	  from version.h.  [ruby-dev:42103]
+
 Tue Aug 24 05:58:18 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ChangeLog: flushed.  [ruby-dev:42050]

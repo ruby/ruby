@@ -144,9 +144,16 @@ print "  CONFIG[\"DESTDIR\"] = DESTDIR\n"
 
 versions = {}
 IO.foreach(File.join(srcdir, "version.h")) do |l|
-  m = /^\s*#\s*define\s+RUBY_(VERSION_(MAJOR|MINOR|TEENY)|PATCHLEVEL)\s+(-?\d+)/.match(l)
+  m = /^\s*#\s*define\s+RUBY_(PATCHLEVEL)\s+(-?\d+)/.match(l)
   if m
-    versions[m[2]||m[1]] = m[3]
+    versions[m[1]] = m[2]
+    break
+  end
+end
+IO.foreach(File.join(srcdir, "include/ruby/version.h")) do |l|
+  m = /^\s*#\s*define\s+RUBY_API_VERSION_(MAJOR|MINOR|TEENY)\s+(-?\d+)/.match(l)
+  if m
+    versions[m[1]] = m[2]
     break if versions.size == 4
   end
 end
