@@ -2,7 +2,7 @@ Tue Aug 24 05:58:18 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ChangeLog: flushed.  [ruby-dev:42050]
 
-For the changes before 1.9.2, see doc/ChangeLog-1.9.2
+For the changes before 1.9.3, see doc/ChangeLog-1.9.3
 For the changes before 1.8.0, see doc/ChangeLog-1.8.0
 
 Local variables:
