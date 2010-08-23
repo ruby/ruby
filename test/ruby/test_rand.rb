@@ -171,6 +171,7 @@ class TestRand < Test::Unit::TestCase
   def test_shuffle
     srand(0)
     assert_equal([1,4,2,5,3], [1,2,3,4,5].shuffle)
+    assert_equal([1,4,2,5,3], [1,2,3,4,5].shuffle(random: Random.new(0)))
   end
 
   def test_big_seed

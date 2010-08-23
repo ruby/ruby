@@ -321,6 +321,7 @@ int_pair_to_real_inclusive(unsigned int a, unsigned int b)
 VALUE rb_cRandom;
 #define id_minus '-'
 #define id_plus  '+'
+static ID id_rand, id_bytes;
 
 /* :nodoc: */
 static void
@@ -357,6 +358,13 @@ get_rnd(VALUE obj)
     rb_random_t *ptr;
     TypedData_Get_Struct(obj, rb_random_t, &random_data_type, ptr);
     return ptr;
+}
+
+static rb_random_t *
+try_get_rnd(VALUE obj)
+{
+    if (!rb_typeddata_is_kind_of(obj, &random_data_type)) return NULL;
+    return DATA_PTR(obj);
 }
 
 /* :nodoc: */
@@ -869,14 +877,22 @@ rb_rand_internal(unsigned long i)
 unsigned int
 rb_random_int32(VALUE obj)
 {
-    rb_random_t *rnd = get_rnd(obj);
+    rb_random_t *rnd = try_get_rnd(obj);
+    if (!rnd) {
+	VALUE lim = ULONG2NUM(0xffffffff);
+	return NUM2ULONG(rb_funcall2(obj, id_rand, 1, &lim));
+    }
     return genrand_int32(&rnd->mt);
 }
 
 double
 rb_random_real(VALUE obj)
 {
-    rb_random_t *rnd = get_rnd(obj);
+    rb_random_t *rnd = try_get_rnd(obj);
+    if (!rnd) {
+	VALUE v = rb_funcall2(obj, id_rand, 0, 0);
+	return NUM2DBL(v);
+    }
     return genrand_real(&rnd->mt);
 }
 
@@ -895,11 +911,17 @@ random_bytes(VALUE obj, VALUE len)
 VALUE
 rb_random_bytes(VALUE obj, long n)
 {
-    rb_random_t *rnd = get_rnd(obj);
-    VALUE bytes = rb_str_new(0, n);
-    char *ptr = RSTRING_PTR(bytes);
+    rb_random_t *rnd = try_get_rnd(obj);
+    VALUE bytes;
+    char *ptr;
     unsigned int r, i;
 
+    if (!rnd) {
+	VALUE len = LONG2NUM(n);
+	return rb_funcall2(obj, id_bytes, 1, &len);
+    }
+    bytes = rb_str_new(0, n);
+    ptr = RSTRING_PTR(bytes);
     for (; n >= SIZEOF_INT32; n -= SIZEOF_INT32) {
 	r = genrand_int32(&rnd->mt);
 	i = SIZEOF_INT32;
@@ -1245,4 +1267,7 @@ Init_Random(void)
     rb_define_singleton_method(rb_cRandom, "new_seed", random_seed, 0);
     rb_define_private_method(CLASS_OF(rb_cRandom), "state", random_s_state, 0);
     rb_define_private_method(CLASS_OF(rb_cRandom), "left", random_s_left, 0);
+
+    id_rand = rb_intern("rand");
+    id_bytes = rb_intern("bytes");
 }

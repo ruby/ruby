@@ -1891,6 +1891,12 @@ class TestArray < Test::Unit::TestCase
     100.times do
       assert_equal([0, 1, 2], [2, 1, 0].shuffle.sort)
     end
+
+    gen = Random.new(0)
+    srand(0)
+    100.times do
+      assert_equal([0, 1, 2].shuffle, [0, 1, 2].shuffle(random: gen))
+    end
   end
 
   def test_sample
@@ -1907,7 +1913,7 @@ class TestArray < Test::Unit::TestCase
     (0..20).each do |n|
       100.times do
         b = a.sample(n)
-        assert_equal([n, 18].min, b.uniq.size)
+        assert_equal([n, 18].min, b.size)
         assert_equal(a, (a | b).sort)
         assert_equal(b.sort, (a & b).sort)
       end
@@ -1920,6 +1926,15 @@ class TestArray < Test::Unit::TestCase
     end
 
     assert_raise(ArgumentError, '[ruby-core:23374]') {[1, 2].sample(-1)}
+
+    gen = Random.new(0)
+    srand(0)
+    a = (1..18).to_a
+    (0..20).each do |n|
+      100.times do |i|
+        assert_equal(a.sample(n), a.sample(n, random: gen), "#{i}/#{n}")
+      end
+    end
   end
 
   def test_cycle

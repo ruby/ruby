@@ -1,3 +1,11 @@
+Tue Aug 24 07:07:28 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_shuffle_bang, rb_ary_sample): add optional
+	  argument random.  [ruby-dev:41923] [EXPERIMENTAL]
+
+	* random.c (rb_random_{int32,real,bytes}): fallback to normal
+	  method invocation.
+
 Tue Aug 24 06:08:10 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/version.h (RUBY_API_VERSION_*): renamed and moved
