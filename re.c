@@ -1395,7 +1395,7 @@ rb_reg_search(VALUE re, VALUE str, long pos, int reverse)
 	else {
 	    onig_errmsg_buffer err = "";
 	    onig_error_code_to_str((UChar*)err, (int)result);
-	    rb_reg_raise(RREGEXP_SRC_PTR(re), RREGEXP_SRC_LEN(re), err, 0);
+	    rb_reg_raise(RREGEXP_SRC_PTR(re), RREGEXP_SRC_LEN(re), err, re);
 	}
     }
 
