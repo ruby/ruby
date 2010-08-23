@@ -446,6 +446,8 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(1, suppress_warning {Float(([1] * 10000).join)}.infinite?)
     assert(!Float(([1] * 10000).join("_")).infinite?) # is it really OK?
     assert_raise(ArgumentError) { Float("1.0\x001") }
+    assert_equal(15.9375, Float('0xf.fp0'))
+    assert_raise(ArgumentError) { Float('0xf.fp') }
     assert_equal(1, suppress_warning {Float("1e10_00")}.infinite?)
     assert_raise(TypeError) { Float(nil) }
     o = Object.new

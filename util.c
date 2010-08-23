@@ -2141,11 +2141,15 @@ break2:
 		if (abs(dsign) == 1) s++;
 		else dsign = 1;
 
-		for (nd = 0; (c = *s) >= '0' && c <= '9'; s++) {
+               nd = 0;
+               c = *s;
+               if (c < '0' || '9' < c) goto ret0;
+               do {
 		    nd *= 10;
 		    nd += c;
 		    nd -= '0';
-		}
+                   c = *++s;
+               } while ('0' <= c && c <= '9');
 		dval(rv) = ldexp(adj, nd * dsign);
 	    }
 	    else {

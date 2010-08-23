@@ -1,3 +1,8 @@
+Mon Aug 23 02:23:05 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* util.c (ruby_strtod): make sure to have digit-sequence after 'p'
+	  for hexadecimal-floating-constant. [ruby-dev:42105]
+
 Mon Aug 23 00:23:07 2010  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb, lib/date/format.rb: [ruby-core:31695]
