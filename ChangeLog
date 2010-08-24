@@ -1,3 +1,11 @@
+Tue Aug 24 10:11:04 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: read API version from include/ruby/version.h.
+
+	* {bcc,win}32/setup.mak (-version-): ditto.
+
+	* version.h (RUBY_LIB_VERSION): use API version numbers.
+
 Tue Aug 24 07:07:28 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_shuffle_bang, rb_ary_sample): add optional
