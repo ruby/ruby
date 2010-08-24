@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2010-05-31"
+#define TCLTKLIB_RELEASE_DATE "2010-08-25"
 /* #define CREATE_RUBYTK_KIT */
 
 #include "ruby.h"
@@ -856,12 +856,59 @@ create_ip_exc(interp, exc, fmt, va_alist)
     return einfo;
 }
 
-/*-------------------------------------------------------*/
+
+/*####################################################################*/
 #if defined CREATE_RUBYTK_KIT || defined CREATE_RUBYKIT
 
+/*--------------------------------------------------------*/
+
+#if 10 * TCL_MAJOR_VERSION + TCL_MINOR_VERSION < 84
+#error Ruby/Tk-Kit requires Tcl/Tk8.4 or later.
+#endif
+
+/*--------------------------------------------------------*/
+
+/* Many part of code to support Ruby/Tk-Kit is quoted from Tclkit.       */
+/* But, never ask Tclkit community about Ruby/Tk-Kit.                    */
+/* Please ask Ruby (Ruby/Tk) community (e.g. "ruby-dev" mailing list).   */
+/*
+----<< license terms of TclKit (from kitgen's "README" file) >>---------------
+The Tclkit-specific sources are license free, they just have a copyright. Hold
+the author(s) harmless and any lawful use is permitted.
+
+This does *not* apply to any of the sources of the other major Open Source
+Software used in Tclkit, which each have very liberal BSD/MIT-like licenses:
+
+  * Tcl/Tk, TclVFS, Thread, Vlerq, Zlib
+------------------------------------------------------------------------------
+ */
 /* Tcl/Tk stubs may work, but probably it is meaningless. */
 #if defined USE_TCL_STUBS || defined USE_TK_STUBS
 #  error Not support Tcl/Tk stubs with Ruby/Tk-Kit or Rubykit.
+#endif
+
+#ifndef KIT_INCLUDES_ZLIB
+#if 10 * TCL_MAJOR_VERSION + TCL_MINOR_VERSION < 86
+#define KIT_INCLUDES_ZLIB 1
+#else
+#define KIT_INCLUDES_ZLIB 0
+#endif
+#endif
+
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#undef WIN32_LEAN_AND_MEAN
+#endif
+
+#if 10 * TCL_MAJOR_VERSION + TCL_MINOR_VERSION < 86
+EXTERN Tcl_Obj* TclGetStartupScriptPath();
+EXTERN void TclSetStartupScriptPath _((Tcl_Obj*));
+#define Tcl_GetStartupScript(encPtr) TclGetStartupScriptPath()
+#define Tcl_SetStartupScript(path,enc) TclSetStartupScriptPath(path)
+#endif
+#if !defined(TclSetPreInitScript) && !defined(TclSetPreInitScript_TCL_DECLARED)
+EXTERN char* TclSetPreInitScript _((char *));
 #endif
 
 #ifndef KIT_INCLUDES_TK
@@ -870,148 +917,255 @@ create_ip_exc(interp, exc, fmt, va_alist)
 /* #define KIT_INCLUDES_ITCL 1 */
 /* #define KIT_INCLUDES_THREAD  1 */
 
-#ifdef KIT_INCLUDES_ITCL
-Tcl_AppInitProc Itcl_Init;
-#endif
-Tcl_AppInitProc Mk4tcl_Init, Vfs_Init, Rechan_Init, Zlib_Init;
+Tcl_AppInitProc Vfs_Init, Rechan_Init;
 #if 10 * TCL_MAJOR_VERSION + TCL_MINOR_VERSION < 85
 Tcl_AppInitProc Pwb_Init;
 #endif
+
+#ifdef KIT_LITE
+Tcl_AppInitProc Vlerq_Init, Vlerq_SafeInit;
+#else
+Tcl_AppInitProc Mk4tcl_Init;
+#endif
+
 #if defined TCL_THREADS && defined KIT_INCLUDES_THREAD
 Tcl_AppInitProc Thread_Init;
 #endif
+
+#if KIT_INCLUDES_ZLIB
+Tcl_AppInitProc Zlib_Init;
+#endif
+
+#ifdef KIT_INCLUDES_ITCL
+Tcl_AppInitProc Itcl_Init;
+#endif
+
 #ifdef _WIN32
-Tcl_AppInitProc Dde_Init, Registry_Init;
+Tcl_AppInitProc Dde_Init, Dde_SafeInit, Registry_Init;
 #endif
 
-static const char *tcltklib_filepath = "[info nameofexecutable]";
-static char *rubytkkit_preInitCmd = (char *)NULL;
-static const char *rubytkkit_preInitCmd_head = "set ::rubytkkit_exe [list ";
-static const char *rubytkkit_preInitCmd_tail =
-"]\n"
-/*=== following init scripts are quoted from kitInit.c of Tclkit ===*/
-/* Tclkit license terms ---
- LICENSE
+/*--------------------------------------------------------*/
 
-   The Tclkit-specific sources are license free, they just have a copyright.
-   Hold the author(s) harmless and any lawful use is permitted.
+#define RUBYTK_KITPATH_CONST_NAME "RUBYTK_KITPATH"
 
-   This does *not* apply to any of the sources of the other major Open Source
-   Software used in Tclkit, which each have very liberal BSD/MIT-like licenses:
-         Tcl/Tk, Incrtcl, Metakit, TclVFS, Zlib
-*/
-#ifdef _WIN32_WCE
-/* silly hack to get wince port to launch, some sort of std{in,out,err} problem
-*/
-"open /kitout.txt a; open /kitout.txt a; open /kitout.txt a\n"
-/* this too seems to be needed on wince - it appears to be related to the above
-*/
-"catch {rename source ::tcl::source}\n"
-"proc source file {\n"
-    "set old [info script]\n"
-    "info script $file\n"
-    "set fid [open $file]\n"
-    "set data [read $fid]\n"
-    "close $fid\n"
-    "set code [catch {uplevel 1 $data} res]\n"
-    "info script $old\n"
-    "if {$code == 2} { set code 0 }\n"
-    "return -code $code $res\n"
-"}\n"
+static char *rubytk_kitpath = NULL;
+
+static char rubytkkit_preInitCmd[] = 
+"proc tclKitPreInit {} {\n"
+    "rename tclKitPreInit {}\n"
+    "load {} rubytk_kitpath\n"
+#if KIT_INCLUDES_ZLIB
+    "catch {load {} zlib}\n"
 #endif
-"proc tclKitInit {} {\n"
-    "rename tclKitInit {}\n"
+#ifdef KIT_LITE
+    "load {} vlerq\n"
+    "namespace eval ::vlerq {}\n"
+    "if {[catch { vlerq open $::tcl::kitpath } ::vlerq::starkit_root]} {\n"
+      "set n -1\n"
+    "} else {\n"
+      "set files [vlerq get $::vlerq::starkit_root 0 dirs 0 files]\n"
+      "set n [lsearch [vlerq get $files * name] boot.tcl]\n"
+    "}\n"
+    "if {$n >= 0} {\n"
+        "array set a [vlerq get $files $n]\n"
+#else
     "load {} Mk4tcl\n"
 #if defined KIT_VFS_WRITABLE && !defined CREATE_RUBYKIT
     /* running command cannot open itself for writing */
-    "mk::file open exe $::rubytkkit_exe\n"
+    "mk::file open exe $::tcl::kitpath\n"
 #else
-    "mk::file open exe $::rubytkkit_exe -readonly\n"
+    "mk::file open exe $::tcl::kitpath -readonly\n"
 #endif
     "set n [mk::select exe.dirs!0.files name boot.tcl]\n"
-    "if {$n != \"\"} {\n"
-        "set s [mk::get exe.dirs!0.files!$n contents]\n"
-        "if {![string length $s]} { error \"empty boot.tcl\" }\n"
-        "catch {load {} zlib}\n"
-        "if {[mk::get exe.dirs!0.files!$n size] != [string length $s]} {\n"
-            "set s [zlib decompress $s]\n"
-        "}\n"
-    "} else {\n"
-        "set f [open setup.tcl]\n"
-        "set s [read $f]\n"
-        "close $f\n"
-    "}\n"
-    "uplevel #0 $s\n"
-#ifdef _WIN32
-    "package ifneeded dde 1.3.1 {load {} dde}\n"
-    "package ifneeded registry 1.1.5 {load {} registry}\n"
+    "if {[llength $n] == 1} {\n"
+        "array set a [mk::get exe.dirs!0.files!$n]\n"
 #endif
+        "if {![info exists a(contents)]} { error {no boot.tcl file} }\n"
+        "if {$a(size) != [string length $a(contents)]} {\n"
+                "set a(contents) [zlib decompress $a(contents)]\n"
+        "}\n"
+        "if {$a(contents) eq \"\"} { error {empty boot.tcl} }\n"
+        "uplevel #0 $a(contents)\n"
+#if 0
+    "} elseif {[lindex $::argv 0] eq \"-init-\"} {\n"
+        "uplevel #0 { source [lindex $::argv 1] }\n"
+        "exit\n"
+#endif
+    "} else {\n"
+        /* When cannot find VFS data, try to use a real directory */
+        "set vfsdir \"[file rootname $::tcl::kitpath].vfs\"\n"
+        "if {[file isdirectory $vfsdir]} {\n"
+           "set ::tcl_library [file join $vfsdir lib tcl$::tcl_version]\n"
+           "set ::tcl_libPath [list $::tcl_library [file join $vfsdir lib]]\n"
+           "catch {uplevel #0 [list source [file join $vfsdir config.tcl]]}\n"
+           "uplevel #0 [list source [file join $::tcl_library init.tcl]]\n"
+           "set ::auto_path $::tcl_libPath\n"
+        "} else {\n"
+           "error \"\n  $::tcl::kitpath has no VFS data to start up\"\n"
+        "}\n"
+    "}\n"
 "}\n"
-"tclKitInit"
+"tclKitPreInit"
 ;
 
 #if 0
 /* Not use this script. 
    It's a memo to support an initScript for Tcl interpreters in the future. */
 static const char initScript[] =
-"if {[file isfile [file join $::rubytkkit_exe main.tcl]]} {\n"
+"if {[file isfile [file join $::tcl::kitpath main.tcl]]} {\n"
     "if {[info commands console] != {}} { console hide }\n"
     "set tcl_interactive 0\n"
     "incr argc\n"
     "set argv [linsert $argv 0 $argv0]\n"
-    "set argv0 [file join $::rubytkkit_exe main.tcl]\n"
+    "set argv0 [file join $::tcl::kitpath main.tcl]\n"
 "} else continue\n"
 ;
 #endif
 
-#if !defined(TclSetPreInitScript) && !defined(TclSetPreInitScript_TCL_DECLARED)
-EXTERN char* TclSetPreInitScript _((char *));
-#endif
+/*--------------------------------------------------------*/
+
 static char*
-setup_preInitCmd(const char *path)
+set_rubytk_kitpath(const char *kitpath)
 {
-  int head_len, path_len, tail_len;
-  char *ptr;
+  if (kitpath) {
+    int len = (int)strlen(kitpath);
+    if (rubytk_kitpath) {
+      ckfree(rubytk_kitpath);
+    }
 
-  head_len = strlen(rubytkkit_preInitCmd_head);
-  path_len = strlen(path);
-  tail_len = strlen(rubytkkit_preInitCmd_tail);
-
-  rubytkkit_preInitCmd = ALLOC_N(char, head_len + path_len + tail_len + 1);
-
-  ptr = rubytkkit_preInitCmd;
-  memcpy(ptr, rubytkkit_preInitCmd_head, head_len);
-
-  ptr += head_len;
-  memcpy(ptr, path, path_len);
-
-  ptr += path_len;
-  memcpy(ptr, rubytkkit_preInitCmd_tail, tail_len);
-
-  ptr += tail_len;
-  *ptr = '\0';
-
-  return TclSetPreInitScript(rubytkkit_preInitCmd);
+    rubytk_kitpath = (char *)ckalloc(len + 1);
+    memcpy(rubytk_kitpath, kitpath, len);
+    rubytk_kitpath[len] = '\0';
+  }
+  return rubytk_kitpath;
 }
+
+/*--------------------------------------------------------*/
+
+#ifdef WIN32
+#define DEV_NULL "NUL"
+#else
+#define DEV_NULL "/dev/null"
+#endif
+
+static void
+check_tclkit_std_channels()
+{
+    Tcl_Channel chan;
+
+    /*
+     * We need to verify if we have the standard channels and create them if
+     * not.  Otherwise internals channels may get used as standard channels
+     * (like for encodings) and panic.
+     */
+    chan = Tcl_GetStdChannel(TCL_STDIN);
+    if (chan == NULL) {
+      	chan = Tcl_OpenFileChannel(NULL, DEV_NULL, "r", 0);
+      	if (chan != NULL) {
+      	    Tcl_SetChannelOption(NULL, chan, "-encoding", "utf-8");
+      	}
+      	Tcl_SetStdChannel(chan, TCL_STDIN);
+    }
+    chan = Tcl_GetStdChannel(TCL_STDOUT);
+    if (chan == NULL) {
+      	chan = Tcl_OpenFileChannel(NULL, DEV_NULL, "w", 0);
+      	if (chan != NULL) {
+      	    Tcl_SetChannelOption(NULL, chan, "-encoding", "utf-8");
+      	}
+      	Tcl_SetStdChannel(chan, TCL_STDOUT);
+    }
+    chan = Tcl_GetStdChannel(TCL_STDERR);
+    if (chan == NULL) {
+      	chan = Tcl_OpenFileChannel(NULL, DEV_NULL, "w", 0);
+      	if (chan != NULL) {
+      	    Tcl_SetChannelOption(NULL, chan, "-encoding", "utf-8");
+      	}
+      	Tcl_SetStdChannel(chan, TCL_STDERR);
+    }
+}
+
+/*--------------------------------------------------------*/
+
+static int
+rubytk_kitpathObjCmd(ClientData dummy, Tcl_Interp *interp, int objc, Tcl_Obj *const objv[])
+{
+    const char* str;
+    if (objc == 2) {
+	set_rubytk_kitpath(Tcl_GetString(objv[1]));
+    } else if (objc > 2) {
+	Tcl_WrongNumArgs(interp, 1, objv, "?path?");
+    }
+    str = rubytk_kitpath ? rubytk_kitpath : Tcl_GetNameOfExecutable();
+    Tcl_SetObjResult(interp, Tcl_NewStringObj(str, -1));
+    return TCL_OK;
+}
+
+/*
+ * Public entry point for ::tcl::kitpath.
+ * Creates both link variable name and Tcl command ::tcl::kitpath.
+ */
+static int
+rubytk_kitpath_init(Tcl_Interp *interp)
+{
+    Tcl_CreateObjCommand(interp, "::tcl::kitpath", rubytk_kitpathObjCmd, 0, 0);
+    if (Tcl_LinkVar(interp, "::tcl::kitpath", (char *) &rubytk_kitpath,
+		TCL_LINK_STRING | TCL_LINK_READ_ONLY) != TCL_OK) {
+	Tcl_ResetResult(interp);
+    }
+
+    Tcl_CreateObjCommand(interp, "::tcl::rubytk_kitpath", rubytk_kitpathObjCmd, 0, 0);
+    if (Tcl_LinkVar(interp, "::tcl::rubytk_kitpath", (char *) &rubytk_kitpath,
+		TCL_LINK_STRING | TCL_LINK_READ_ONLY) != TCL_OK) {
+	Tcl_ResetResult(interp);
+    }
+
+    if (rubytk_kitpath == NULL) {
+	/*
+	 * XXX: We may want to avoid doing this to allow tcl::kitpath calls
+	 * XXX: to obtain changes in nameofexe, if they occur.
+	 */
+	set_rubytk_kitpath(Tcl_GetNameOfExecutable());
+    }
+
+    return Tcl_PkgProvide(interp, "rubytk_kitpath", "1.0");
+}
+
+/*--------------------------------------------------------*/
 
 static void
 init_static_tcltk_packages()
 {
+    /*
+     * Ensure that std channels exist (creating them if necessary)
+     */
+    check_tclkit_std_channels();
+
 #ifdef KIT_INCLUDES_ITCL
     Tcl_StaticPackage(0, "Itcl", Itcl_Init, NULL);
 #endif
+#ifdef KIT_LITE
+    Tcl_StaticPackage(0, "Vlerq", Vlerq_Init, Vlerq_SafeInit);
+#else
     Tcl_StaticPackage(0, "Mk4tcl", Mk4tcl_Init, NULL);
+#endif
 #if 10 * TCL_MAJOR_VERSION + TCL_MINOR_VERSION < 85
     Tcl_StaticPackage(0, "pwb", Pwb_Init, NULL);
 #endif
+    Tcl_StaticPackage(0, "rubytk_kitpath", rubytk_kitpath_init, NULL);
     Tcl_StaticPackage(0, "rechan", Rechan_Init, NULL);
     Tcl_StaticPackage(0, "vfs", Vfs_Init, NULL);
+#if KIT_INCLUDES_ZLIB
     Tcl_StaticPackage(0, "zlib", Zlib_Init, NULL);
+#endif
 #if defined TCL_THREADS && defined KIT_INCLUDES_THREAD
-    Tcl_StaticPackage(0, "Thread", Thread_Init, NULL);
+    Tcl_StaticPackage(0, "Thread", Thread_Init, Thread_SafeInit);
 #endif
 #ifdef _WIN32
+#if 10 * TCL_MAJOR_VERSION + TCL_MINOR_VERSION > 84
+    Tcl_StaticPackage(0, "dde", Dde_Init, Dde_SafeInit);
+#else
     Tcl_StaticPackage(0, "dde", Dde_Init, NULL);
+#endif
     Tcl_StaticPackage(0, "registry", Registry_Init, NULL);
 #endif
 #ifdef KIT_INCLUDES_TK
@@ -1019,29 +1173,100 @@ init_static_tcltk_packages()
 #endif
 }
 
-/* SetExecName --  Hack to get around Tcl bug 1224888. */
-void SetExecName(Tcl_Interp *interp) {
-  /* dummy */
-}
-#endif /* defined CREATE_RUBYTK_KIT || defined CREATE_RUBYKIT */
+/*--------------------------------------------------------*/
 
 static int
 call_tclkit_init_script(Tcl_Interp  *interp)
 {
 #if 0
-  /* Currently, nothing do in this function. 
+  /* Currently, do nothing in this function. 
      It's a memo (quoted from kitInit.c of Tclkit) 
      to support an initScript for Tcl interpreters in the future. */
-  if (Tcl_Eval(interp, initScript) == TCL_OK) {
-    Tcl_Obj* path = TclGetStartupScriptPath();
-    TclSetStartupScriptPath(Tcl_GetObjResult(interp));
-    if (path == NULL)
+  if (Tcl_EvalEx(interp, initScript, -1, TCL_EVAL_GLOBAL) == TCL_OK) {
+    const char *encoding = NULL;
+    Tcl_Obj* path = Tcl_GetStartupScript(&encoding);
+    Tcl_SetStartupScript(Tcl_GetObjResult(interp), encoding);
+    if (path == NULL) {
       Tcl_Eval(interp, "incr argc -1; set argv [lrange $argv 1 end]");
+    }
   }
 #endif
 
   return 1;
 }
+
+/*--------------------------------------------------------*/
+
+#ifdef __WIN32__
+/* #include <tkWinInt.h> *//* conflict definition of struct timezone */
+/* #include <tkIntPlatDecls.h> */
+/* #include <windows.h> */
+EXTERN void TkWinSetHINSTANCE(HINSTANCE hInstance);
+void rbtk_win32_SetHINSTANCE(const char *module_name)
+{
+  /* TCHAR szBuf[256]; */
+  HINSTANCE hInst;
+
+  /* hInst = GetModuleHandle(NULL); */
+  /* hInst = GetModuleHandle("tcltklib.so"); */
+  hInst = GetModuleHandle(module_name);
+  TkWinSetHINSTANCE(hInst);
+
+  /* GetModuleFileName(hInst, szBuf, sizeof(szBuf) / sizeof(TCHAR)); */
+  /* MessageBox(NULL, szBuf, TEXT("OK"), MB_OK); */
+}
+#endif
+
+/*--------------------------------------------------------*/
+
+static void
+setup_rubytkkit()
+{
+  init_static_tcltk_packages();
+
+  {
+    ID const_id;
+    const_id = rb_intern(RUBYTK_KITPATH_CONST_NAME);
+
+    if (rb_const_defined(rb_cObject, const_id)) {
+      volatile VALUE pathobj;
+      pathobj = rb_const_get(rb_cObject, const_id);
+
+      if (rb_obj_is_kind_of(pathobj, rb_cString)) {
+#ifdef HAVE_RUBY_ENCODING_H
+	pathobj = rb_str_export_to_enc(pathobj, rb_utf8_encoding());
+#endif
+	set_rubytk_kitpath(RSTRING_PTR(pathobj));
+      }
+    }
+  }
+
+#ifdef CREATE_RUBYTK_KIT
+  if (rubytk_kitpath == NULL) {
+#ifdef __WIN32__
+    /* rbtk_win32_SetHINSTANCE("tcltklib.so"); */
+    {
+      volatile VALUE basename;
+      basename = rb_funcall(rb_cFile, rb_intern("basename"), 1, 
+			    rb_str_new2(rb_sourcefile()));
+      rbtk_win32_SetHINSTANCE(RSTRING_PTR(basename));
+    }
+#endif
+    set_rubytk_kitpath(rb_sourcefile());
+  }
+#endif
+
+  if (rubytk_kitpath == NULL) {
+    set_rubytk_kitpath(Tcl_GetNameOfExecutable());
+  }
+
+  TclSetPreInitScript(rubytkkit_preInitCmd);
+}
+
+/*--------------------------------------------------------*/
+
+#endif /* defined CREATE_RUBYTK_KIT || defined CREATE_RUBYKIT */
+/*####################################################################*/
 
 
 /**********************************************************************/
@@ -5878,28 +6103,6 @@ ip_CallWhenDeleted(clientData, ip)
 
 /*--------------------------------------------------------*/
 
-#ifdef __WIN32__
-/* #include <tkWinInt.h> *//* conflict definition of struct timezone */
-/* #include <tkIntPlatDecls.h> */
-/* #include <windows.h> */
-EXTERN void TkWinSetHINSTANCE(HINSTANCE hInstance);
-void rbtk_win32_SetHINSTANCE(const char *module_name)
-{
-  /* TCHAR szBuf[256]; */
-  HINSTANCE hInst;
-
-  /* hInst = GetModuleHandle(NULL); */
-  /* hInst = GetModuleHandle("tcltklib.so"); */
-  hInst = GetModuleHandle(module_name);
-  TkWinSetHINSTANCE(hInst);
-
-  /* GetModuleFileName(hInst, szBuf, sizeof(szBuf) / sizeof(TCHAR)); */
-  /* MessageBox(NULL, szBuf, TEXT("OK"), MB_OK); */
-}
-#endif
-
-/*--------------------------------------------------------*/
-
 /* initialize interpreter */
 static VALUE
 ip_init(argc, argv, self)
@@ -5971,18 +6174,29 @@ ip_init(argc, argv, self)
     DUMP2("IP ref_count = %d", ptr->ref_count);
     current_interp = ptr->ip;
 
-    call_tclkit_init_script(current_interp);
-
     ptr->has_orig_exit
         = Tcl_GetCommandInfo(ptr->ip, "exit", &(ptr->orig_exit_info));
 
-    /* from Tcl_AppInit() */
-    DUMP1("Tcl_Init");
-    if (Tcl_Init(ptr->ip) == TCL_ERROR) {
-        rb_raise(rb_eRuntimeError, "%s", Tcl_GetStringResult(ptr->ip));
+#if defined CREATE_RUBYTK_KIT || defined CREATE_RUBYKIT
+    call_tclkit_init_script(current_interp);
+
+# if 10 * TCL_MAJOR_VERSION + TCL_MINOR_VERSION > 84
+    {
+      Tcl_DString encodingName;
+      Tcl_GetEncodingNameFromEnvironment(&encodingName);
+      if (strcmp(Tcl_DStringValue(&encodingName), Tcl_GetEncodingName(NULL))) {
+	/* fails, so we set a variable and do it in the boot.tcl script */
+	Tcl_SetSystemEncoding(NULL, Tcl_DStringValue(&encodingName));
+      }
+      Tcl_SetVar(current_interp, "tclkit_system_encoding", Tcl_DStringValue(&encodingName), 0);
+      Tcl_DStringFree(&encodingName);
     }
+# endif
+#endif
 
     /* set variables */
+    Tcl_Eval(ptr->ip, "set argc 0; set argv {}; set argv0 tcltklib.so");
+
     cnt = rb_scan_args(argc, argv, "02", &argv0, &opts);
     switch(cnt) {
     case 2:
@@ -5993,6 +6207,7 @@ ip_init(argc, argv, self)
         } else {
             /* Tcl_SetVar(ptr->ip, "argv", StringValuePtr(opts), 0); */
             Tcl_SetVar(ptr->ip, "argv", StringValuePtr(opts), TCL_GLOBAL_ONLY);
+	    Tcl_Eval(ptr->ip, "set argc [llength $argv]");
         }
     case 1:
         /* argv0 */
@@ -6010,6 +6225,26 @@ ip_init(argc, argv, self)
         /* no args */
         ;
     }
+
+    /* from Tcl_AppInit() */
+    DUMP1("Tcl_Init");
+#if (defined CREATE_RUBYTK_KIT || defined CREATE_RUBYKIT) && (!defined KIT_LITE) && (10 * TCL_MAJOR_VERSION + TCL_MINOR_VERSION == 85)
+    /*************************************************************************/
+    /*  FIX ME (2010/06/28)                                                  */
+    /*    Don't use ::chan command for Mk4tcl + tclvfs-1.4 on Tcl8.5.        */
+    /*    It fails to access VFS files because of vfs::zstream.              */
+    /*    So, force to use ::rechan by temporaly hiding ::chan.              */
+    /*************************************************************************/
+    Tcl_Eval(ptr->ip, "catch {rename ::chan ::_tmp_chan}");
+    if (Tcl_Init(ptr->ip) == TCL_ERROR) {
+        rb_raise(rb_eRuntimeError, "%s", Tcl_GetStringResult(ptr->ip));
+    }
+    Tcl_Eval(ptr->ip, "catch {rename ::_tmp_chan ::chan}");
+#else
+    if (Tcl_Init(ptr->ip) == TCL_ERROR) {
+        rb_raise(rb_eRuntimeError, "%s", Tcl_GetStringResult(ptr->ip));
+    }
+#endif
 
     st = ruby_tcl_stubs_init();
     /* from Tcl_AppInit() */
@@ -10815,15 +11050,8 @@ Init_tcltklib()
 
     /* --------------------------------------------------------------- */
 
-#if defined CREATE_RUBYTK_KIT
-#ifdef __WIN32__
-    rbtk_win32_SetHINSTANCE("tcltklib.so");
-#endif
-    tcltklib_filepath = strdup(rb_sourcefile());
-#endif
 #if defined CREATE_RUBYTK_KIT || defined CREATE_RUBYKIT
-    init_static_tcltk_packages();
-    setup_preInitCmd(tcltklib_filepath);
+    setup_rubytkkit();
 #endif
 
     /* --------------------------------------------------------------- */
