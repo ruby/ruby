@@ -262,6 +262,26 @@ path_each_line(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ * call-seq:
+ *   pathname.read([length [, offset]]) -> string
+ *   pathname.read([length [, offset]], open_args) -> string
+ *        
+ * See <tt>IO.read</tt>.  Returns all data from the file, or the first +N+ bytes
+ * if specified.
+ *
+ */
+static VALUE
+path_read(int argc, VALUE *argv, VALUE self)
+{
+    VALUE args[4];
+    int n;
+
+    args[0] = get_strpath(self);
+    n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
+    return rb_funcall2(rb_cIO, rb_intern("read"), 1+n, args);
+}
+
+/*
  * See <tt>File.atime</tt>.  Returns last access time.
  */
 static VALUE
@@ -721,6 +741,7 @@ Init_pathname()
     rb_define_method(rb_cPathname, "realpath", path_realpath, -1);
     rb_define_method(rb_cPathname, "realdirpath", path_realdirpath, -1);
     rb_define_method(rb_cPathname, "each_line", path_each_line, -1);
+    rb_define_method(rb_cPathname, "read", path_read, -1);
     rb_define_method(rb_cPathname, "atime", path_atime, 0);
     rb_define_method(rb_cPathname, "ctime", path_ctime, 0);
     rb_define_method(rb_cPathname, "mtime", path_mtime, 0);

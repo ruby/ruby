@@ -484,9 +484,6 @@ class Pathname
 end
 
 class Pathname    # * IO *
-  # See <tt>IO.read</tt>.  Returns all data from the file, or the first +N+ bytes
-  # if specified.
-  def read(*args) IO.read(@path, *args) end
 
   # See <tt>IO.binread</tt>.  Returns all the bytes from the file, or the first +N+
   # if specified.
