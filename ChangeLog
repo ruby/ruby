@@ -1,3 +1,7 @@
+Tue Aug 24 23:28:50 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* .gitignore: updated.
+
 Tue Aug 24 22:07:28 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pathname/pathname.c (path_read): Pathname#read translated from

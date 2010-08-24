@@ -91,6 +91,11 @@
 /ext/extinit.c
 /ext/*.log
 
+# /ext/-test-/
+/ext/-test-/*/Makefile
+/ext/-test-/*/extconf.h
+/ext/-test-/*/mkmf.log
+
 # /ext/bigdecimal/
 /ext/bigdecimal/*.def
 /ext/bigdecimal/Makefile
@@ -308,6 +313,13 @@
 /ext/openssl/mkmf.log
 /ext/openssl/openssl.a
 /ext/openssl/conftest.dSYM
+
+# /ext/pathname/
+/ext/pathname/*.def
+/ext/pathname/Makefile
+/ext/pathname/extconf.h
+/ext/pathname/mkmf.log
+/ext/pathname/pathname.a
 
 # /ext/psych/
 /ext/psych/Makefile
