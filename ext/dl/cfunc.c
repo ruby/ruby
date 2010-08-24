@@ -314,6 +314,9 @@ rb_dlcfunc_inspect(VALUE self)
 }
 
 
+#if defined(_MSC_VER) && defined(_M_AMD64) && _MSC_VER == 1500
+# pragma optimize("", off)
+#endif
 /*
  * call-seq:
  *    dlcfunc.call(ary)   => some_value
@@ -579,6 +582,9 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 
     return result;
 }
+#if defined(_MSC_VER) && defined(_M_AMD64) && _MSC_VER == 1500
+# pragma optimize("", on)
+#endif
 
 /*
  * call-seq:

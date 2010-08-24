@@ -1,3 +1,8 @@
+Wed Aug 25 03:42:43 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/dl/cfunc.c (rb_dlcfunc_call): workaround for VC9 for x64.
+	  reported by kuwamoto shintaro in [ruby-dev:42125].
+
 Tue Aug 24 23:28:50 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* .gitignore: updated.
