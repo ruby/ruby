@@ -282,6 +282,25 @@ path_read(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ * call-seq:
+ *   pathname.binread([length [, offset]]) -> string
+ *        
+ * See <tt>IO.binread</tt>.  Returns all the bytes from the file, or the first +N+
+ * if specified.
+ *
+ */
+static VALUE
+path_binread(int argc, VALUE *argv, VALUE self)
+{
+    VALUE args[3];
+    int n;
+
+    args[0] = get_strpath(self);
+    n = rb_scan_args(argc, argv, "02", &args[1], &args[2]);
+    return rb_funcall2(rb_cIO, rb_intern("binread"), 1+n, args);
+}
+
+/*
  * See <tt>File.atime</tt>.  Returns last access time.
  */
 static VALUE
@@ -742,6 +761,7 @@ Init_pathname()
     rb_define_method(rb_cPathname, "realdirpath", path_realdirpath, -1);
     rb_define_method(rb_cPathname, "each_line", path_each_line, -1);
     rb_define_method(rb_cPathname, "read", path_read, -1);
+    rb_define_method(rb_cPathname, "binread", path_binread, -1);
     rb_define_method(rb_cPathname, "atime", path_atime, 0);
     rb_define_method(rb_cPathname, "ctime", path_ctime, 0);
     rb_define_method(rb_cPathname, "mtime", path_mtime, 0);
