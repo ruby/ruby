@@ -887,7 +887,7 @@ rb_random_int32(VALUE obj)
 {
     rb_random_t *rnd = try_get_rnd(obj);
     if (!rnd) {
-#if SIZEOF_LONG > 32
+#if SIZEOF_LONG * CHAR_BIT > 32
 	VALUE lim = ULONG2NUM(0x100000000);
 #elif defined HAVE_LONG_LONG
 	VALUE lim = ULL2NUM((LONG_LONG)0xffffffff+1);
