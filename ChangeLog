@@ -1,3 +1,12 @@
+Thu Aug 26 07:29:54 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_{shuffle_bang,sample}): use Random class object.
+
+	* random.c (try_get_rnd): use default_rand for Random as same as
+	  singleton methods.
+
+	* random.c (rb_random_real): check the range of result.
+
 Wed Aug 25 22:11:11 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pathname/pathname.c (path_binread): Pathname#binread translated
