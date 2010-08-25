@@ -1,4 +1,9 @@
-Wed Aug 25 17:56:40 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Aug 25 17:59:50 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_{shuffle_bang,sample}): use Random class object.
+
+	* random.c (try_get_rnd): use default_rand for Random as same as
+	  singleton methods.
 
 	* array.c (rb_ary_sample): use frozen shared array to get rid of
 	  reallocation.

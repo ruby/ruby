@@ -229,15 +229,20 @@ static rb_random_t default_rand;
 static VALUE rand_init(struct MT *mt, VALUE vseed);
 static VALUE random_seed(void);
 
-static struct MT *
-default_mt(void)
+static rb_random_t *
+rand_start(rb_random_t *r)
 {
-    rb_random_t *r = &default_rand;
     struct MT *mt = &r->mt;
     if (!genrand_initialized(mt)) {
 	r->seed = rand_init(mt, random_seed());
     }
-    return mt;
+    return r;
+}
+
+static struct MT *
+default_mt(void)
+{
+    return &rand_start(&default_rand)->mt;
 }
 
 unsigned int
@@ -363,6 +368,9 @@ get_rnd(VALUE obj)
 static rb_random_t *
 try_get_rnd(VALUE obj)
 {
+    if (obj == rb_cRandom) {
+	return rand_start(&default_rand);
+    }
     if (!rb_typeddata_is_kind_of(obj, &random_data_type)) return NULL;
     return DATA_PTR(obj);
 }

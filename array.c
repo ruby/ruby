@@ -3748,7 +3748,7 @@ static VALUE sym_random;
 static VALUE
 rb_ary_shuffle_bang(int argc, VALUE *argv, VALUE ary)
 {
-    VALUE *ptr, opts, randgen = Qnil;
+    VALUE *ptr, opts, randgen = rb_cRandom;
     long i = RARRAY_LEN(ary);
 
     if (OPTHASH_GIVEN_P(opts)) {
@@ -3811,7 +3811,7 @@ static VALUE
 rb_ary_sample(int argc, VALUE *argv, VALUE ary)
 {
     VALUE nv, result, *ptr;
-    VALUE opts, randgen = Qnil;
+    VALUE opts, randgen = rb_cRandom;
     long n, len, i, j, k, idx[10];
 
     len = RARRAY_LEN(ary);
