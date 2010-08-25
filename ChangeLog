@@ -1,4 +1,6 @@
-Wed Aug 25 17:59:50 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Aug 25 18:31:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (rb_random_real): check the range of result.
 
 	* array.c (rb_ary_{shuffle_bang,sample}): use Random class object.
 

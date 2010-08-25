@@ -887,7 +887,13 @@ rb_random_int32(VALUE obj)
 {
     rb_random_t *rnd = try_get_rnd(obj);
     if (!rnd) {
-	VALUE lim = ULONG2NUM(0xffffffff);
+#if SIZEOF_LONG > 32
+	VALUE lim = ULONG2NUM(0x100000000);
+#elif defined HAVE_LONG_LONG
+	VALUE lim = ULL2NUM((LONG_LONG)0xffffffff+1);
+#else
+	VALUE lim = rb_big_plus(ULONG2NUM(0xffffffff), INT2FIX(1));
+#endif
 	return NUM2ULONG(rb_funcall2(obj, id_rand, 1, &lim));
     }
     return genrand_int32(&rnd->mt);
@@ -899,7 +905,11 @@ rb_random_real(VALUE obj)
     rb_random_t *rnd = try_get_rnd(obj);
     if (!rnd) {
 	VALUE v = rb_funcall2(obj, id_rand, 0, 0);
-	return NUM2DBL(v);
+	double d = NUM2DBL(v);
+	if (d < 0.0 || d >= 1.0) {
+	    rb_raise(rb_eRangeError, "random number too big %g", d);
+	}
+	return d;
     }
     return genrand_real(&rnd->mt);
 }
