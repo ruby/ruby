@@ -229,20 +229,15 @@ static rb_random_t default_rand;
 static VALUE rand_init(struct MT *mt, VALUE vseed);
 static VALUE random_seed(void);
 
-static rb_random_t *
-rand_start(rb_random_t *r)
+static struct MT *
+default_mt(void)
 {
+    rb_random_t *r = &default_rand;
     struct MT *mt = &r->mt;
     if (!genrand_initialized(mt)) {
 	r->seed = rand_init(mt, random_seed());
     }
-    return r;
-}
-
-static struct MT *
-default_mt(void)
-{
-    return &rand_start(&default_rand)->mt;
+    return mt;
 }
 
 unsigned int
@@ -368,9 +363,6 @@ get_rnd(VALUE obj)
 static rb_random_t *
 try_get_rnd(VALUE obj)
 {
-    if (obj == rb_cRandom) {
-	return rand_start(&default_rand);
-    }
     if (!rb_typeddata_is_kind_of(obj, &random_data_type)) return NULL;
     return DATA_PTR(obj);
 }
@@ -887,13 +879,7 @@ rb_random_int32(VALUE obj)
 {
     rb_random_t *rnd = try_get_rnd(obj);
     if (!rnd) {
-#if SIZEOF_LONG * CHAR_BIT > 32
-	VALUE lim = ULONG2NUM(0x100000000);
-#elif defined HAVE_LONG_LONG
-	VALUE lim = ULL2NUM((LONG_LONG)0xffffffff+1);
-#else
-	VALUE lim = rb_big_plus(ULONG2NUM(0xffffffff), INT2FIX(1));
-#endif
+	VALUE lim = ULONG2NUM(0xffffffff);
 	return NUM2ULONG(rb_funcall2(obj, id_rand, 1, &lim));
     }
     return genrand_int32(&rnd->mt);
@@ -905,11 +891,7 @@ rb_random_real(VALUE obj)
     rb_random_t *rnd = try_get_rnd(obj);
     if (!rnd) {
 	VALUE v = rb_funcall2(obj, id_rand, 0, 0);
-	double d = NUM2DBL(v);
-	if (d < 0.0 || d >= 1.0) {
-	    rb_raise(rb_eRangeError, "random number too big %g", d);
-	}
-	return d;
+	return NUM2DBL(v);
     }
     return genrand_real(&rnd->mt);
 }

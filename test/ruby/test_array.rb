@@ -1899,19 +1899,6 @@ class TestArray < Test::Unit::TestCase
     end
   end
 
-  def test_shuffle_random
-    cc = nil
-    gen = proc do
-      10000000
-    end
-    class << gen
-      alias rand call
-    end
-    assert_raise(RangeError) {
-      [*0..2].shuffle(random: gen)
-    }
-  end
-
   def test_sample
     100.times do
       assert([0, 1, 2].include?([2, 1, 0].sample))
