@@ -3826,6 +3826,7 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
     rb_scan_args(argc, argv, "1", &nv);
     n = NUM2LONG(nv);
     if (n < 0) rb_raise(rb_eArgError, "negative sample number");
+    RB_GC_GUARD(ary) = ary_make_shared(ary);
     ptr = RARRAY_PTR(ary);
     len = RARRAY_LEN(ary);
     if (n > len) n = len;
@@ -3872,7 +3873,6 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
 	VALUE *ptr_result;
 	result = rb_ary_new4(len, ptr);
 	ptr_result = RARRAY_PTR(result);
-	RB_GC_GUARD(ary);
 	for (i=0; i<n; i++) {
 	    j = RAND_UPTO(len-i) + i;
 	    nv = ptr_result[j];
