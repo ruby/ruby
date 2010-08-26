@@ -32,6 +32,10 @@
 
 VALUE rb_cBigDecimal;
 
+static ID id_BigDecimal_exception_mode;
+static ID id_BigDecimal_rounding_mode;
+static ID id_BigDecimal_precision_limit;
+
 /* MACRO's to guard objects from GC by keeping them in stack */
 #define ENTER(n) volatile VALUE vStack[n];int iStack=0
 #define PUSH(x)  vStack[iStack++] = (unsigned long)(x);
@@ -358,11 +362,11 @@ BigDecimal_mode(int argc, VALUE *argv, VALUE self)
         fo = VpGetRoundMode();
         if(val==Qnil) return INT2FIX(fo);
         Check_Type(val, T_FIXNUM);
-        if(!VpIsRoundMode(FIX2INT(val))) {
+        if(!VpIsRoundMode((unsigned short)FIX2INT(val))) {
             rb_raise(rb_eTypeError, "invalid rounding mode");
             return Qnil;
         }
-        fo = VpSetRoundMode((unsigned long)FIX2INT(val));
+        fo = VpSetRoundMode((unsigned short)FIX2INT(val));
         return INT2FIX(fo);
     }
     rb_raise(rb_eTypeError, "first argument for BigDecimal#mode invalid");
@@ -1279,7 +1283,7 @@ BigDecimal_round(int argc, VALUE *argv, VALUE self)
     VALUE  vRound;
     size_t mx, pl;
 
-    int    sw = (int)VpGetRoundMode();
+    unsigned short sw = VpGetRoundMode();
 
     int na = rb_scan_args(argc,argv,"02",&vLoc,&vRound);
     switch(na) {
@@ -1294,7 +1298,7 @@ BigDecimal_round(int argc, VALUE *argv, VALUE self)
         Check_Type(vLoc, T_FIXNUM);
         iLoc = FIX2INT(vLoc);
         Check_Type(vRound, T_FIXNUM);
-        sw   = FIX2INT(vRound);
+        sw   = (unsigned short)FIX2INT(vRound);
         if(!VpIsRoundMode(sw)) {
             rb_raise(rb_eTypeError, "invalid rounding mode");
             return Qnil;
@@ -2086,6 +2090,10 @@ Init_bigdecimal(void)
     rb_define_method(rb_cBigDecimal, "finite?",   BigDecimal_IsFinite, 0);
     rb_define_method(rb_cBigDecimal, "truncate",  BigDecimal_truncate, -1);
     rb_define_method(rb_cBigDecimal, "_dump", BigDecimal_dump, -1);
+
+    id_BigDecimal_exception_mode = rb_intern_const("BigDecimal.exception_mode");
+    id_BigDecimal_rounding_mode = rb_intern_const("BigDecimal.rounding_mode");
+    id_BigDecimal_precision_limit = rb_intern_const("BigDecimal.precision_limit");
 }
 
 /*
@@ -2103,9 +2111,6 @@ static int gfDebug = 1;         /* Debug switch */
 static int gfCheckVal = 1;      /* Value checking flag in VpNmlz()  */
 #endif
 #endif /* BIGDECIMAL_DEBUG */
-
-static size_t gnPrecLimit = 0;  /* Global upper limit of the precision newly allocated */
-static size_t gfRoundMode = VP_ROUND_HALF_UP; /* Mode for general rounding operation   */
 
 static Real *VpConstOne;    /* constant 1.0 */
 static Real *VpPt5;        /* constant 0.5 */
@@ -2165,57 +2170,127 @@ VpFree(Real *pv)
 /*
  * EXCEPTION Handling.
  */
-static unsigned short gfDoException = 0; /* Exception flag */
+
+#define rmpd_set_thread_local_exception_mode(mode) \
+    rb_thread_local_aset( \
+	rb_thread_current(), \
+	id_BigDecimal_exception_mode, \
+	INT2FIX((int)(mode)) \
+    )
 
 static unsigned short
 VpGetException (void)
 {
-    return gfDoException;
+    VALUE const vmode = rb_thread_local_aref(
+	rb_thread_current(),
+	id_BigDecimal_exception_mode
+    );
+
+    if (NIL_P(vmode)) {
+	rmpd_set_thread_local_exception_mode(RMPD_EXCEPTION_MODE_DEFAULT);
+	return RMPD_EXCEPTION_MODE_DEFAULT;
+    }
+
+    return (unsigned short)FIX2UINT(vmode);
 }
 
 static void
 VpSetException(unsigned short f)
 {
-    gfDoException = f;
+    rmpd_set_thread_local_exception_mode(f);
 }
+
+/*
+ * Precision limit.
+ */
+
+#define rmpd_set_thread_local_precision_limit(limit) \
+    rb_thread_local_aset( \
+	rb_thread_current(), \
+	id_BigDecimal_precision_limit, \
+	SIZET2NUM(limit) \
+    )
+#define RMPD_PRECISION_LIMIT_DEFAULT ((size_t)0)
 
 /* These 2 functions added at v1.1.7 */
 VP_EXPORT size_t
 VpGetPrecLimit(void)
 {
-    return gnPrecLimit;
+    VALUE const vlimit = rb_thread_local_aref(
+	rb_thread_current(),
+	id_BigDecimal_precision_limit
+    );
+
+    if (NIL_P(vlimit)) {
+	rmpd_set_thread_local_precision_limit(RMPD_PRECISION_LIMIT_DEFAULT);
+	return RMPD_PRECISION_LIMIT_DEFAULT;
+    }
+
+    return NUM2SIZET(vlimit);
 }
 
 VP_EXPORT size_t
 VpSetPrecLimit(size_t n)
 {
-    size_t s = gnPrecLimit;
-    gnPrecLimit = n;
+    size_t const s = VpGetPrecLimit();
+    rmpd_set_thread_local_precision_limit(n);
     return s;
 }
 
-VP_EXPORT unsigned long
+/*
+ * Rounding mode.
+ */
+
+#define rmpd_set_thread_local_rounding_mode(mode) \
+    rb_thread_local_aset( \
+	rb_thread_current(), \
+	id_BigDecimal_rounding_mode, \
+	INT2FIX((int)(mode)) \
+    )
+
+VP_EXPORT unsigned short
 VpGetRoundMode(void)
 {
-    return gfRoundMode;
+    VALUE const vmode = rb_thread_local_aref(
+	rb_thread_current(),
+	id_BigDecimal_rounding_mode
+    );
+
+    if (NIL_P(vmode)) {
+	rmpd_set_thread_local_rounding_mode(RMPD_ROUNDING_MODE_DEFAULT);
+	return RMPD_ROUNDING_MODE_DEFAULT;
+    }
+
+    return (unsigned short)FIX2INT(vmode);
 }
 
 VP_EXPORT int
-VpIsRoundMode(unsigned long n)
+VpIsRoundMode(unsigned short n)
 {
-    if(n==VP_ROUND_UP      || n==VP_ROUND_DOWN      ||
-       n==VP_ROUND_HALF_UP || n==VP_ROUND_HALF_DOWN ||
-       n==VP_ROUND_CEIL    || n==VP_ROUND_FLOOR     ||
-       n==VP_ROUND_HALF_EVEN
-      ) return 1;
-    return 0;
+    switch (n) {
+      case VP_ROUND_UP:
+      case VP_ROUND_DOWN:
+      case VP_ROUND_HALF_UP:
+      case VP_ROUND_HALF_DOWN:
+      case VP_ROUND_CEIL:
+      case VP_ROUND_FLOOR:
+      case VP_ROUND_HALF_EVEN:
+	return 1;
+
+      default:
+	return 0;
+    }
 }
 
-VP_EXPORT unsigned long
-VpSetRoundMode(unsigned long n)
+VP_EXPORT unsigned short
+VpSetRoundMode(unsigned short n)
 {
-    if(VpIsRoundMode(n)) gfRoundMode = n;
-    return gfRoundMode;
+    if (VpIsRoundMode(n)) {
+	rmpd_set_thread_local_rounding_mode(n);
+	return n;
+    }
+
+    return VpGetRoundMode();
 }
 
 /*
@@ -2300,10 +2375,11 @@ VpException(unsigned short f, const char *str,int always)
 {
     VALUE exc;
     int   fatal=0;
+    unsigned short const exception_mode = VpGetException();
 
     if(f==VP_EXCEPTION_OP || f==VP_EXCEPTION_MEMORY) always = 1;
 
-    if(always||(gfDoException&f)) {
+    if (always || (exception_mode & f)) {
         switch(f)
         {
         /*
@@ -4429,7 +4505,7 @@ Exit:
  *
  */
 VP_EXPORT int
-VpMidRound(Real *y, int f, ssize_t nf)
+VpMidRound(Real *y, unsigned short f, ssize_t nf)
 /*
  * Round reletively from the decimal point.
  *    f: rounding mode
@@ -4539,7 +4615,7 @@ VpMidRound(Real *y, int f, ssize_t nf)
 }
 
 VP_EXPORT int
-VpLeftRound(Real *y, int f, ssize_t nf)
+VpLeftRound(Real *y, unsigned short f, ssize_t nf)
 /*
  * Round from the left hand side of the digits.
  */
@@ -4554,7 +4630,7 @@ VpLeftRound(Real *y, int f, ssize_t nf)
 }
 
 VP_EXPORT int
-VpActiveRound(Real *y, Real *x, int f, ssize_t nf)
+VpActiveRound(Real *y, Real *x, unsigned short f, ssize_t nf)
 {
     /* First,assign whole value in truncation mode */
     if (VpAsgn(y, x, 10) <= 1) return 0; /* Zero,NaN,or Infinity */
@@ -4577,11 +4653,13 @@ VpInternalRound(Real *c, size_t ixDigit, BDIGIT vPrev, BDIGIT v)
 {
     int f = 0;
 
+    unsigned short const rounding_mode = VpGetRoundMode();
+
     if(VpLimitRound(c,ixDigit)) return;
     if(!v)                      return;
 
     v /= BASE1;
-    switch(gfRoundMode) {
+    switch (rounding_mode) {
     case VP_ROUND_DOWN:
         break;
     case VP_ROUND_UP:

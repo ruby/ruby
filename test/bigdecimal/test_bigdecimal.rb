@@ -1,5 +1,7 @@
 require_relative "testbase"
 
+require 'thread'
+
 class TestBigDecimal < Test::Unit::TestCase
   include TestBigDecimalBase
 
@@ -40,6 +42,39 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_raise(TypeError) { BigDecimal.mode(BigDecimal::EXCEPTION_ALL, 1) }
     assert_raise(TypeError) { BigDecimal.mode(BigDecimal::ROUND_MODE, 256) }
     assert_raise(TypeError) { BigDecimal.mode(0xf000, true) }
+
+    begin
+      saved_mode = BigDecimal.mode(BigDecimal::ROUND_MODE)
+
+      [ BigDecimal::ROUND_UP,
+        BigDecimal::ROUND_DOWN,
+        BigDecimal::ROUND_HALF_UP,
+        BigDecimal::ROUND_HALF_DOWN,
+        BigDecimal::ROUND_CEILING,
+        BigDecimal::ROUND_FLOOR,
+        BigDecimal::ROUND_HALF_EVEN,
+      ].each do |mode|
+        BigDecimal.mode(BigDecimal::ROUND_MODE, mode)
+        assert_equal(mode, BigDecimal.mode(BigDecimal::ROUND_MODE))
+      end
+    ensure
+      BigDecimal.mode(BigDecimal::ROUND_MODE, saved_mode)
+    end
+  end
+
+  def test_thread_local_mode
+    begin
+      saved_mode = BigDecimal.mode(BigDecimal::ROUND_MODE)
+
+      BigDecimal.mode(BigDecimal::ROUND_MODE, BigDecimal::ROUND_UP)
+      Thread.start {
+        BigDecimal.mode(BigDecimal::ROUND_MODE, BigDecimal::ROUND_HALF_EVEN)
+        assert_equal(BigDecimal::ROUND_HALF_EVEN, BigDecimal.mode(BigDecimal::ROUND_MODE))
+      }.join
+      assert_equal(BigDecimal::ROUND_UP, BigDecimal.mode(BigDecimal::ROUND_MODE))
+    ensure
+      BigDecimal.mode(BigDecimal::ROUND_MODE, saved_mode)
+    end
   end
 
   def test_exception_nan

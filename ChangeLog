@@ -1,3 +1,29 @@
+Tue Aug 26 09:11:40 2010  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (Init_bigdecimal,
+	  rmpd_set_thread_local_exception_mode, VpGetException,
+	  VpSetException): thread-local exception mode.
+
+	* ext/bigdecimal/bigdecimal.c (Init_bigdecimal,
+	  rmpd_set_thread_local_precision_limit, VpGetPrecLimit,
+	  VpSetPrecLimit): thread-local precision limit.
+
+	* ext/bigdecimal/bigdecimal.c (Init_bigdecimal,
+	  rmpd_set_thread_local_rounding_mode, VpGetRoundMode,
+	  VpSetRoundMode, VpException, VpInternalRound):
+	  thread-local rounding mode.
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_mode, BigDecimal_round,
+	  VpIsRoundMode, VpGetRoundMode, VpSetRoundMode, VpActiveRound,
+	  VpMidRound, VpLeftRound), ext/bigdecimal/bigdecimal.h:
+	  use unsigned short for rounding mode.
+
+	* test/bigdecimal/test_bigdecimal.rb (test_mode): add test for
+	  setting rounding mode.
+
+	* test/bigdecimal/test_bigdecimal.rb (test_thread_local_mode):
+	  add test for setting mode thread-locally.
+
 Thu Aug 26 07:29:54 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_{shuffle_bang,sample}): use Random class object.
