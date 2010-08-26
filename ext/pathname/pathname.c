@@ -301,6 +301,26 @@ path_binread(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ * call-seq:
+ *   pathname.readlines(sep=$/ [, open_args])     -> array
+ *   pathname.readlines(limit [, open_args])      -> array
+ *   pathname.readlines(sep, limit [, open_args]) -> array
+ *        
+ * See <tt>IO.readlines</tt>.  Returns all the lines from the file.
+ *
+ */
+static VALUE
+path_readlines(int argc, VALUE *argv, VALUE self)
+{
+    VALUE args[4];
+    int n;
+
+    args[0] = get_strpath(self);
+    n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
+    return rb_funcall2(rb_cIO, rb_intern("readlines"), 1+n, args);
+}
+
+/*
  * See <tt>File.atime</tt>.  Returns last access time.
  */
 static VALUE
@@ -762,6 +782,7 @@ Init_pathname()
     rb_define_method(rb_cPathname, "each_line", path_each_line, -1);
     rb_define_method(rb_cPathname, "read", path_read, -1);
     rb_define_method(rb_cPathname, "binread", path_binread, -1);
+    rb_define_method(rb_cPathname, "readlines", path_readlines, -1);
     rb_define_method(rb_cPathname, "atime", path_atime, 0);
     rb_define_method(rb_cPathname, "ctime", path_ctime, 0);
     rb_define_method(rb_cPathname, "mtime", path_mtime, 0);

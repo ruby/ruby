@@ -1,3 +1,8 @@
+Thu Aug 26 21:49:46 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/pathname.c (path_readlines): Pathname#readlines
+	  translated from pathname.rb.
+
 Thu Aug 26 10:37:00 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regint.h (OnigStackIndex): the type should be intptr_t.

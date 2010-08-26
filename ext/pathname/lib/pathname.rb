@@ -485,9 +485,6 @@ end
 
 class Pathname    # * IO *
 
-  # See <tt>IO.readlines</tt>.  Returns all the lines from the file.
-  def readlines(*args) IO.readlines(@path, *args) end
-
   # See <tt>IO.sysopen</tt>.
   def sysopen(*args) IO.sysopen(@path, *args) end
 end
