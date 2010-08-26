@@ -894,7 +894,7 @@ rb_random_int32(VALUE obj)
 #else
 	VALUE lim = rb_big_plus(ULONG2NUM(0xffffffff), INT2FIX(1));
 #endif
-	return NUM2ULONG(rb_funcall2(obj, id_rand, 1, &lim));
+	return (unsigned int)NUM2ULONG(rb_funcall2(obj, id_rand, 1, &lim));
     }
     return genrand_int32(&rnd->mt);
 }
