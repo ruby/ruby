@@ -1,3 +1,7 @@
+Thu Aug 26 09:49:50 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_shuffle_bang): check number of argument.
+
 Tue Aug 26 09:11:40 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (Init_bigdecimal,

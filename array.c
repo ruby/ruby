@@ -3754,6 +3754,9 @@ rb_ary_shuffle_bang(int argc, VALUE *argv, VALUE ary)
     if (OPTHASH_GIVEN_P(opts)) {
 	randgen = rb_hash_lookup2(opts, sym_random, randgen);
     }
+    if (argc > 0) {
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
+    }
     rb_ary_modify(ary);
     ptr = RARRAY_PTR(ary);
     while (i) {
