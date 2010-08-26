@@ -1,3 +1,10 @@
+Fri Aug 27 07:57:34 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_shuffle_bang): bail out from modification during
+	  shuffle.
+
+	* array.c (rb_ary_sample): ditto.
+
 Fri Aug 27 05:11:51 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pathname/pathname.c (path_sysopen): Pathname#sysopen translated

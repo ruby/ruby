@@ -1901,7 +1901,6 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_shuffle_random
-    cc = nil
     gen = proc do
       10000000
     end
@@ -1911,6 +1910,16 @@ class TestArray < Test::Unit::TestCase
     assert_raise(RangeError) {
       [*0..2].shuffle(random: gen)
     }
+
+    ary = (0...10000).to_a
+    gen = proc do
+      ary.replace([])
+      0.5
+    end
+    class << gen
+      alias rand call
+    end
+    assert_raise(RuntimeError) {ary.shuffle!(random: gen)}
   end
 
   def test_sample
@@ -1949,6 +1958,51 @@ class TestArray < Test::Unit::TestCase
         assert_equal(a.sample(n), a.sample(n, random: gen), "#{i}/#{n}")
       end
     end
+  end
+
+  def test_sample_random
+    ary = (0...10000).to_a
+    assert_raise(ArgumentError) {ary.sample(1, 2, random: nil)}
+    gen0 = proc do
+      0.5
+    end
+    class << gen0
+      alias rand call
+    end
+    gen1 = proc do
+      ary.replace([])
+      0.5
+    end
+    class << gen1
+      alias rand call
+    end
+    assert_equal(5000, ary.sample(random: gen0))
+    assert_nil(ary.sample(random: gen1))
+    assert_equal([], ary)
+    ary = (0...10000).to_a
+    assert_equal([5000], ary.sample(1, random: gen0))
+    assert_equal([], ary.sample(1, random: gen1))
+    assert_equal([], ary)
+    ary = (0...10000).to_a
+    assert_equal([5000, 4999], ary.sample(2, random: gen0))
+    assert_equal([], ary.sample(2, random: gen1))
+    assert_equal([], ary)
+    ary = (0...10000).to_a
+    assert_equal([5000, 4999, 5001], ary.sample(3, random: gen0))
+    assert_equal([], ary.sample(3, random: gen1))
+    assert_equal([], ary)
+    ary = (0...10000).to_a
+    assert_equal([5000, 4999, 5001, 4998], ary.sample(4, random: gen0))
+    assert_equal([], ary.sample(4, random: gen1))
+    assert_equal([], ary)
+    ary = (0...10000).to_a
+    assert_equal([5000, 4999, 5001, 4998, 5002, 4997, 5003, 4996, 5004, 4995], ary.sample(10, random: gen0))
+    assert_equal([], ary.sample(10, random: gen1))
+    assert_equal([], ary)
+    ary = (0...10000).to_a
+    assert_equal([5000, 0, 5001, 2, 5002, 4, 5003, 6, 5004, 8, 5005], ary.sample(11, random: gen0))
+    ary.sample(11, random: gen1) # implementation detail, may change in the future
+    assert_equal([], ary)
   end
 
   def test_cycle
