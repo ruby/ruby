@@ -1,3 +1,9 @@
+Thu Aug 26 10:38:11 2010  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
+
+	* test/dl/test_base.rb: AIX does not have dynamically loadable lib[cm].
+
+	* test/fiddle/helper.rb: AIX does not have dynamically loadable lib[cm].
+
 Thu Aug 26 09:49:50 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_shuffle_bang): check number of argument.
