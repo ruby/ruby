@@ -483,12 +483,6 @@ class Pathname
   end
 end
 
-class Pathname    # * IO *
-
-  # See <tt>IO.sysopen</tt>.
-  def sysopen(*args) IO.sysopen(@path, *args) end
-end
-
 
 class Pathname    # * FileTest *
 

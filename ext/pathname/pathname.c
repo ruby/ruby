@@ -321,6 +321,24 @@ path_readlines(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ * call-seq:
+ *   pathname.sysopen([mode, [perm]])  -> fixnum
+ *        
+ * See <tt>IO.sysopen</tt>.
+ *
+ */
+static VALUE
+path_sysopen(int argc, VALUE *argv, VALUE self)
+{
+    VALUE args[3];
+    int n;
+
+    args[0] = get_strpath(self);
+    n = rb_scan_args(argc, argv, "02", &args[1], &args[2]);
+    return rb_funcall2(rb_cIO, rb_intern("sysopen"), 1+n, args);
+}
+
+/*
  * See <tt>File.atime</tt>.  Returns last access time.
  */
 static VALUE
@@ -783,6 +801,7 @@ Init_pathname()
     rb_define_method(rb_cPathname, "read", path_read, -1);
     rb_define_method(rb_cPathname, "binread", path_binread, -1);
     rb_define_method(rb_cPathname, "readlines", path_readlines, -1);
+    rb_define_method(rb_cPathname, "sysopen", path_sysopen, -1);
     rb_define_method(rb_cPathname, "atime", path_atime, 0);
     rb_define_method(rb_cPathname, "ctime", path_ctime, 0);
     rb_define_method(rb_cPathname, "mtime", path_mtime, 0);
