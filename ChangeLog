@@ -1,3 +1,8 @@
+Thu Aug 26 22:53:56 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_shuffle): rdoc fix.  argument name was missing.
+	  a patch from Run Paint Run Run at [ruby-core:31848].
+
 Thu Aug 26 21:49:46 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pathname/pathname.c (path_readlines): Pathname#readlines

@@ -3781,7 +3781,7 @@ rb_ary_shuffle_bang(int argc, VALUE *argv, VALUE ary)
  *
  *  If +rng+ is given, it will be used as the random number generator.
  *
- *     a.shuffle(Random.new(1))  #=> [1, 3, 2]
+ *     a.shuffle(random: Random.new(1))  #=> [1, 3, 2]
  */
 
 static VALUE
