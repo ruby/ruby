@@ -1,3 +1,10 @@
+Thu Aug 26 10:37:00 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regint.h (OnigStackIndex): the type should be intptr_t.
+	  Original Oniguruma assumes the size of long and that of void *
+	  are equal, but it's not true on LLP64 platform: mswin64.
+	  originally patched by shintaro kuwamoto [ruby-dev:42133]
+
 Thu Aug 26 10:38:11 2010  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
 
 	* test/dl/test_base.rb: AIX does not have dynamically loadable lib[cm].
