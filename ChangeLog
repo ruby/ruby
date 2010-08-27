@@ -1,6 +1,7 @@
 Fri Aug 27 12:47:44 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* math.c (math_atan2): change the behavior when x and y are zero.
+	  [ruby-dev:42090] [Bug #3736] [ruby-dev:42116]
 
 	* test/ruby/test_math.rb (test_atan2): add tests for the above
 	  changes.
