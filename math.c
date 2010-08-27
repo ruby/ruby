@@ -51,6 +51,9 @@ extern VALUE rb_to_float(VALUE val);
 static VALUE
 math_atan2(VALUE obj, VALUE y, VALUE x)
 {
+#ifndef M_PI
+# define M_PI 3.14159265358979323846
+#endif
     double dx, dy;
     Need_Float2(y, x);
     dx = RFLOAT_VALUE(x);

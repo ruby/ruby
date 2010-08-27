@@ -1,3 +1,9 @@
+Fri Aug 27 15:24:20 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* math.c (math_atan2): you should know that M_PI is not the feature
+	  of C90.
+	  fixed build failure caused by r29115.
+
 Fri Aug 27 15:26:33 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (null_device): move from io.c.
