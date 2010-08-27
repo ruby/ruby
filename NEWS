@@ -19,7 +19,7 @@ with all sufficient information, see the ChangeLog file.
 
   * Float
     * new constants:
-      * IO::NULL
+      * File::NULL
         name of NULL device.
 
 * io/console

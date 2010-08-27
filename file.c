@@ -5191,6 +5191,17 @@ define_filetest_function(const char *name, VALUE (*func)(ANYARGS), int argc)
     rb_define_singleton_method(rb_cFile, name, func, argc);
 }
 
+static const char null_device[] =
+#if defined DOSISH
+    "NUL"
+#elif defined AMIGA || defined __amigaos__
+    "NIL"
+#elif defined __VMS
+    "NL:"
+#else
+    "/dev/null"
+#endif
+    ;
 
 /*
  *  A <code>File</code> is an abstraction of any file object accessible
@@ -5326,6 +5337,8 @@ Init_File(void)
     rb_file_const("LOCK_EX", INT2FIX(LOCK_EX));
     rb_file_const("LOCK_UN", INT2FIX(LOCK_UN));
     rb_file_const("LOCK_NB", INT2FIX(LOCK_NB));
+
+    rb_file_const("NULL", rb_obj_freeze(rb_usascii_str_new2(null_device)));
 
     rb_define_method(rb_cFile, "path",  rb_file_path, 0);
     rb_define_method(rb_cFile, "to_path",  rb_file_path, 0);
