@@ -146,9 +146,7 @@ rb_class_real(VALUE cl)
  *  call-seq:
  *     obj.class    -> class
  *
- *  Returns the class of <i>obj</i>, now preferred over
- *  <code>Object#type</code>, as an object's type in Ruby is only
- *  loosely tied to that object's class. This method must always be
+ *  Returns the class of <i>obj</i>. This method must always be
  *  called with an explicit receiver, as <code>class</code> is also a
  *  reserved word in Ruby.
  *

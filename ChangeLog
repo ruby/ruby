@@ -1,3 +1,8 @@
+Fri Aug 27 12:26:23 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* object.c (rb_obj_class): remove mention of obsolete method.
+	  a patch from Run Paint Run Run at [ruby-core:31842].
+
 Fri Aug 27 12:25:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (null_device): the name of null device.  [ruby-dev:41791]
