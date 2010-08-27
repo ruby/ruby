@@ -3823,7 +3823,7 @@ static VALUE
 rb_ary_sample(int argc, VALUE *argv, VALUE ary)
 {
     VALUE nv, result, *ptr;
-    VALUE opts, snap, randgen = rb_cRandom;
+    VALUE opts, randgen = rb_cRandom;
     long n, len, i, j, k, idx[10];
     double rnds[numberof(idx)];
 
