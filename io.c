@@ -9639,6 +9639,18 @@ rb_get_argv(void)
     return ARGF.argv;
 }
 
+static const char null_device[] =
+#if defined DOSISH
+    "NUL"
+#elif defined AMIGA || defined __amigaos__
+    "NIL"
+#elif defined __VMS
+    "NL:"
+#else
+    "/dev/null"
+#endif
+    ;
+
 /*
  * Document-class: IOError
  *
@@ -9971,6 +9983,8 @@ Init_IO(void)
 
     rb_define_method(rb_cIO, "autoclose?", rb_io_autoclose_p, 0);
     rb_define_method(rb_cIO, "autoclose=", rb_io_set_autoclose, 1);
+
+    rb_define_const(rb_cIO, "NULL", rb_obj_freeze(rb_usascii_str_new2(null_device)));
 
     rb_define_variable("$stdin", &rb_stdin);
     rb_stdin = prep_stdio(stdin, FMODE_READABLE, rb_cIO, "<STDIN>");

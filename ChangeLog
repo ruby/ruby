@@ -1,3 +1,7 @@
+Fri Aug 27 12:25:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (null_device): the name of null device.  [ruby-dev:41791]
+
 Fri Aug 27 07:57:34 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_shuffle_bang): bail out from modification during
