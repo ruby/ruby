@@ -1,3 +1,8 @@
+Fri Aug 27 12:24:21 2010  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (initialize): sets sync_close to true.
+	  Thanks, Hiroshi NAKAMURA.  [ruby-core:31753]
+
 Mon Aug 23 11:42:41 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* ext/openssl/ossl_asn1.c (obj_to_asn1bool): fixed ASN1::Boolean

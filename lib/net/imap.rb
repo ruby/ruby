@@ -912,6 +912,7 @@ module Net
           context.verify_callback = VerifyCallbackProc
         end
         @sock = SSLSocket.new(@sock, context)
+        @sock.sync_close = true
         @sock.connect   # start ssl session.
         @sock.post_connection_check(@host) if verify
       else
