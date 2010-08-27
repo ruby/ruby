@@ -486,9 +486,6 @@ end
 
 class Pathname    # * FileTest *
 
-  # See <tt>FileTest.blockdev?</tt>.
-  def blockdev?() FileTest.blockdev?(@path) end
-
   # See <tt>FileTest.chardev?</tt>.
   def chardev?() FileTest.chardev?(@path) end
 

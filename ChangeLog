@@ -1,3 +1,8 @@
+Sat Aug 28 08:11:05 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/pathname.c (path_blockdev_p): Pathname#blockdev?
+	  translated from pathname.rb.
+
 Fri Aug 27 16:20:01 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* string.c (rb_str_prepend): new method by Shota Fukumori (sora_h)
