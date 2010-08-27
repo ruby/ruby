@@ -55,7 +55,13 @@ math_atan2(VALUE obj, VALUE y, VALUE x)
     Need_Float2(y, x);
     dx = RFLOAT_VALUE(x);
     dy = RFLOAT_VALUE(y);
-    if (dx == 0.0 && dy == 0.0) domain_error("atan2");
+    if (dx == 0.0 && dy == 0.0) {
+	if (!signbit(dx))
+	    return DBL2NUM(dy);
+        if (!signbit(dy))
+	    return DBL2NUM(M_PI);
+	return DBL2NUM(-M_PI);
+    }
     if (isinf(dx) && isinf(dy)) domain_error("atan2");
     return DBL2NUM(atan2(dy, dx));
 }
