@@ -17,6 +17,11 @@ with all sufficient information, see the ChangeLog file.
 
     * Kernel#respond_to? now returns false for protected methods.
 
+  * Float
+    * new constants:
+      * IO::NULL
+        name of NULL device.
+
 * io/console
   * new methods:
     * IO#noecho {|io| }
