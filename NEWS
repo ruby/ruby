@@ -22,6 +22,10 @@ with all sufficient information, see the ChangeLog file.
       * File::NULL
         name of NULL device.
 
+  * String
+    * new methods:
+      * String#prepend
+
 * io/console
   * new methods:
     * IO#noecho {|io| }
