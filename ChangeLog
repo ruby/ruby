@@ -1,6 +1,6 @@
 Fri Aug 27 16:20:01 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
-	* string.c (rb_str_prepend): new method by Sora Harakami
+	* string.c (rb_str_prepend): new method by Shota Fukumori (sora_h)
 	 [Feature #3765]
 
 Fri Aug 27 15:24:20 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
