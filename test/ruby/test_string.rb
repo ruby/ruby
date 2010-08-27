@@ -1882,4 +1882,20 @@ class TestString < Test::Unit::TestCase
       assert_equal('"\\u3042\\u3044\\u3046"', "\u3042\u3044\u3046".encode(e).inspect)
     end
   end
+
+  def test_prepend
+    assert_equal(S("hello world!"), "world!".prepend("hello "))
+
+    foo = Object.new
+    def foo.to_str
+      "b"
+    end
+    assert_equal(S("ba"), "a".prepend(foo))
+
+    a = S("world")
+    b = S("hello ")
+    a.prepend(b)
+    assert_equal(S("hello world"), a)
+    assert_equal(S("hello "), b)
+  end
 end
