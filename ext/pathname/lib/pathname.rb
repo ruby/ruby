@@ -486,9 +486,6 @@ end
 
 class Pathname    # * FileTest *
 
-  # See <tt>FileTest.chardev?</tt>.
-  def chardev?() FileTest.chardev?(@path) end
-
   # See <tt>FileTest.executable?</tt>.
   def executable?() FileTest.executable?(@path) end
 

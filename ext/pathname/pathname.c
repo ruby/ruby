@@ -607,6 +607,15 @@ path_blockdev_p(VALUE self)
 }
 
 /*
+ * See <tt>FileTest.chardev?</tt>.
+ */
+static VALUE
+path_chardev_p(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("chardev?"), 1, get_strpath(self));
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -836,4 +845,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "expand_path", path_expand_path, -1);
     rb_define_method(rb_cPathname, "split", path_split, 0);
     rb_define_method(rb_cPathname, "blockdev?", path_blockdev_p, 0);
+    rb_define_method(rb_cPathname, "chardev?", path_chardev_p, 0);
 }
