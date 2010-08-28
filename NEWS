@@ -15,13 +15,6 @@ with all sufficient information, see the ChangeLog file.
 
   Empty symbol (:"") is allowed.
 
-* looser splat opetator
-
-  You can write things like:
-    x, *y, z = a, *b, c
-    def foo(a, b=1, *c, d); end
-  But when you evaluate them, you will get exceptions.
-
 * new hash immediates
 
   Ruby 1.9 style hash syntax e.g. { key: value } is now also supported
