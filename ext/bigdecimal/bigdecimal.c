@@ -1800,6 +1800,48 @@ BigDecimal_sign(VALUE self)
     return INT2FIX(s);
 }
 
+/* call-seq:
+ * BigDecimal.save_exception_mode { ... }
+ */
+static VALUE
+BigDecimal_save_exception_mode(VALUE self)
+{
+    unsigned short const exception_mode = VpGetException();
+    int state;
+    VALUE ret = rb_protect(rb_yield, Qnil, &state);
+    VpSetException(exception_mode);
+    if (state) rb_jump_tag(state);
+    return ret;
+}
+
+/* call-seq:
+ * BigDecimal.save_rounding_mode { ... }
+ */
+static VALUE
+BigDecimal_save_rounding_mode(VALUE self)
+{
+    unsigned short const round_mode = VpGetRoundMode();
+    int state;
+    VALUE ret = rb_protect(rb_yield, Qnil, &state);
+    VpSetRoundMode(round_mode);
+    if (state) rb_jump_tag(state);
+    return Qnil;
+}
+
+/* call-seq:
+ * BigDecimal.save_limit { ... }
+ */
+static VALUE
+BigDecimal_save_limit(VALUE self)
+{
+    size_t const limit = VpGetPrecLimit();
+    int state;
+    VALUE ret = rb_protect(rb_yield, Qnil, &state);
+    VpSetPrecLimit(limit);
+    if (state) rb_jump_tag(state);
+    return Qnil;
+}
+
 /* Document-class: BigDecimal
  * BigDecimal provides arbitrary-precision floating point decimal arithmetic.
  *
@@ -1925,6 +1967,10 @@ Init_bigdecimal(void)
     rb_define_singleton_method(rb_cBigDecimal, "double_fig", BigDecimal_double_fig, 0);
     rb_define_singleton_method(rb_cBigDecimal, "_load", BigDecimal_load, 1);
     rb_define_singleton_method(rb_cBigDecimal, "ver", BigDecimal_version, 0);
+
+    rb_define_singleton_method(rb_cBigDecimal, "save_exception_mode", BigDecimal_save_exception_mode, 0);
+    rb_define_singleton_method(rb_cBigDecimal, "save_rounding_mode", BigDecimal_save_rounding_mode, 0);
+    rb_define_singleton_method(rb_cBigDecimal, "save_limit", BigDecimal_save_limit, 0);
 
     /* Constants definition */
 

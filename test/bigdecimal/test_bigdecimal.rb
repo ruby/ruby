@@ -77,6 +77,42 @@ class TestBigDecimal < Test::Unit::TestCase
     end
   end
 
+  def test_save_exception_mode
+    BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, false)
+    mode = BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW)
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, true)
+    end
+    assert_equal(mode, BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW))
+
+    BigDecimal.mode(BigDecimal::ROUND_MODE, BigDecimal::ROUND_FLOOR)
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::ROUND_MODE, BigDecimal::ROUND_HALF_EVEN)
+    end
+    assert_equal(BigDecimal::ROUND_HALF_EVEN, BigDecimal.mode(BigDecimal::ROUND_MODE))
+  end
+
+  def test_save_rounding_mode
+    BigDecimal.mode(BigDecimal::ROUND_MODE, BigDecimal::ROUND_FLOOR)
+    BigDecimal.save_rounding_mode do
+      BigDecimal.mode(BigDecimal::ROUND_MODE, BigDecimal::ROUND_HALF_EVEN)
+    end
+    assert_equal(BigDecimal::ROUND_FLOOR, BigDecimal.mode(BigDecimal::ROUND_MODE))
+  end
+
+  def test_save_limit
+    begin
+      old = BigDecimal.limit
+      BigDecimal.limit(100)
+      BigDecimal.save_limit do
+        BigDecimal.limit(200)
+      end
+      assert_equal(100, BigDecimal.limit);
+    ensure
+      BigDecimal.limit(old)
+    end
+  end
+
   def test_exception_nan
     _test_mode(BigDecimal::EXCEPTION_NaN) { BigDecimal.new("NaN") }
   end
