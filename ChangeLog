@@ -1,3 +1,11 @@
+Sun Aug 29 16:02:54 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* common.mk (node_name.inc): remove command option -n and give
+	  file as stdin, because IronRuby 1.1 still doesn't support it.
+	  So now we can use ir.exe as BASERUBY.
+
+	* tool/node_name.rb: read stdin with while gets.
+
 Sun Aug 29 13:22:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (rb_thread_method_id_and_class): curried proc has no
