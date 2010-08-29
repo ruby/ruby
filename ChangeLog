@@ -1,3 +1,8 @@
+Mon Aug 30 07:32:41 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/pathname.c (path_.executable_p): Pathname#.executable?
+	  translated from pathname.rb.
+
 Sun Aug 29 23:54:10 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/parser/ruby.rb (RDoc#parse_call_parameters): don't
