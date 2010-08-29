@@ -374,7 +374,7 @@ clean: clean-ext clean-local clean-enc clean-golf clean-rdoc clean-extout
 clean-local:: PHONY
 	@$(RM) $(OBJS) $(MINIOBJS) $(MAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
 	@$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) $(ARCHFILE) .*.time
-	@$(RM) *.inc y.tab.c y.output encdb.h transdb.h prelude.c config.log rbconfig.rb
+	@$(RM) y.tab.c y.output encdb.h transdb.h prelude.c config.log rbconfig.rb
 clean-ext:: PHONY
 clean-golf: PHONY
 	@$(RM) $(GORUBY)$(EXEEXT) $(GOLFOBJS)
@@ -383,7 +383,7 @@ clean-extout: PHONY
 
 distclean: distclean-ext distclean-local distclean-enc distclean-golf distclean-extout
 distclean-local:: clean-local
-	@$(RM) $(MKFILES) yasmdata.rb
+	@$(RM) $(MKFILES) yasmdata.rb *.inc
 	@$(RM) config.cache config.status config.status.lineno $(PRELUDES)
 	@$(RM) *~ *.bak *.stackdump core *.core gmon.out $(PREP)
 distclean-ext:: PHONY
@@ -851,7 +851,8 @@ help: PHONY
 	@echo "  benchmark        benchmark this ruby and COMPARE_RUBY"
 	@echo "  install:         install all ruby distributions"
 	@echo "  install-nodoc:   install without rdoc"
-	@echo "  clean:           clean built objects"
+	@echo "  clean:           clean for tarball"
+	@echo "  distclean:       clean for repo"
 	@echo "  change:          make change log template"
 	@echo "  golf:            for golfers"
 	@echo ""
