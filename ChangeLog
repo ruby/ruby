@@ -1,3 +1,8 @@
+Sun Aug 29 23:25:18 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_get_path_check): clarify error message for
+	  ASCII-incompatible path name.
+
 Sun Aug 29 16:02:54 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* common.mk (node_name.inc): remove command option -n and give

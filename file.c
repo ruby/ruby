@@ -148,6 +148,7 @@ rb_get_path_check(VALUE obj, int level)
 {
     VALUE tmp;
     ID to_path;
+    rb_encoding *enc;
 
     if (insecure_obj_p(obj, level)) {
 	rb_insecure_operation();
@@ -161,11 +162,15 @@ rb_get_path_check(VALUE obj, int level)
     StringValue(tmp);
 
     tmp = file_path_convert(tmp);
-    StringValueCStr(tmp);
     if (obj != tmp && insecure_obj_p(tmp, level)) {
 	rb_insecure_operation();
     }
-    rb_enc_check(tmp, rb_enc_from_encoding(rb_usascii_encoding()));
+    enc = rb_enc_get(tmp);
+    if (!rb_enc_asciicompat(enc)) {
+	tmp = rb_str_inspect(tmp);
+	rb_raise(rb_eEncCompatError, "path name must be ASCII-compatible (%s): %s",
+		 rb_enc_name(enc), RSTRING_PTR(tmp));
+    }
     return rb_str_new4(tmp);
 }
 
