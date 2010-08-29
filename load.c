@@ -250,6 +250,10 @@ rb_feature_provided(const char *feature, const char **loading)
 static void
 rb_provide_feature(VALUE feature)
 {
+    if (OBJ_FROZEN(get_loaded_features())) {
+	rb_raise(rb_eRuntimeError,
+		 "$LOADED_FEATURES is frozen; cannot append feature");
+    }
     rb_ary_push(get_loaded_features(), feature);
 }
 

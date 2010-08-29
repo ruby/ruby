@@ -1,3 +1,9 @@
+Sun Aug 29 12:51:33 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (rb_provide_feature): clarify error message for frozen
+	  $LOADED_FEATURES.  based on a patch from Run Paint Run Run at
+	  [ruby-core:31913].
+
 Sun Aug 29 12:19:58 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (load_failed): should honor encoding.  [ruby-core:31915]

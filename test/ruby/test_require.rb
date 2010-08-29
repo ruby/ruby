@@ -310,4 +310,11 @@ class TestRequire < Test::Unit::TestCase
       }
     }
   end
+
+  def test_frozen_loaded_features
+    bug3756 = '[ruby-core:31913]'
+    assert_in_out_err(['-e', '$LOADED_FEATURES.freeze; require "ostruct"'], "",
+                      [], /\$LOADED_FEATURES is frozen; cannot append feature \(RuntimeError\)$/,
+                      bug3756)
+  end
 end
