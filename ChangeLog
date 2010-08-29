@@ -1,3 +1,8 @@
+Sun Aug 29 13:22:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (rb_thread_method_id_and_class): curried proc has no
+	  method.  [ruby-core:31871]
+
 Sun Aug 29 12:51:33 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (rb_provide_feature): clarify error message for frozen

@@ -792,4 +792,12 @@ class TestProc < Test::Unit::TestCase
       assert_equal([obj, nil], [a, b], '[ruby-core:24139]')
     end
   end
+
+  def test_curry_with_trace
+    bug3751 = '[ruby-core:31871]'
+    set_trace_func(proc {})
+    test_curry
+  ensure
+    set_trace_func(nil)
+  end
 end
