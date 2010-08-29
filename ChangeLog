@@ -21,7 +21,7 @@ Sun Aug 29 09:35:10 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* common.mk (help): change description about clean and distclean.
 
-Sat Aug 28 08:11:05 2010  Tanaka Akira  <akr@fsij.org>
+Sat Aug 29 06:34:52 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pathname/pathname.c (path_chardev_p): Pathname#chardev?
 	  translated from pathname.rb.
