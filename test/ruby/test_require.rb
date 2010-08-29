@@ -40,6 +40,12 @@ class TestRequire < Test::Unit::TestCase
     end
   end
 
+  def test_require_nonascii
+    bug3758 = '[ruby-core:31915]'
+    e = assert_raise(LoadError, bug3758) {require "\u{221e}"}
+    assert_match(/\u{221e}\z/, e.message, bug3758)
+  end
+
   def test_require_path_home
     env_rubypath, env_home = ENV["RUBYPATH"], ENV["HOME"]
 

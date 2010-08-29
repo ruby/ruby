@@ -551,8 +551,9 @@ search_required(VALUE fname, volatile VALUE *path, int safe_level)
 static void
 load_failed(VALUE fname)
 {
-    rb_raise(rb_eLoadError, "cannot load such file -- %s",
-	     RSTRING_PTR(fname));
+    VALUE mesg = rb_str_buf_new_cstr("cannot load such file -- ");
+    rb_str_append(mesg, fname);	/* should be ASCII compatible */
+    rb_exc_raise(rb_exc_new3(rb_eLoadError, mesg));
 }
 
 static VALUE

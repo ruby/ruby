@@ -1,3 +1,7 @@
+Sun Aug 29 12:19:58 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (load_failed): should honor encoding.  [ruby-core:31915]
+
 Sun Aug 29 09:35:10 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* common.mk (clean): exclude *.inc. [ruby-dev:41931]
