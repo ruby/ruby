@@ -33,7 +33,9 @@ with all sufficient information, see the ChangeLog file.
 
 * global functions
 
-  * Return an enumerator if no block is given.
+  * loop
+
+    Return an enumerator if no block is given.
 
 * builtin classes
 
