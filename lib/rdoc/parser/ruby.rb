@@ -526,7 +526,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
         else
           break unless @scanner.continue
         end
-      when TkCOMMENT
+      when TkCOMMENT, TkASSIGN, TkOPASGN
         unget_tk(tk)
         break
       when nil then
