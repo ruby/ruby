@@ -1,3 +1,8 @@
+Sun Aug 29 23:46:54 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/parser/ruby.rb (RDoc#parse_class): ignore non-constant
+	  name signleton class.  [Bug #3759], [ruby-dev:42154]
+
 Sun Aug 29 23:25:18 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_get_path_check): clarify error message for
