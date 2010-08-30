@@ -1,3 +1,8 @@
+Mon Aug 30 21:29:21 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/pathname.c (path_executable_real_p):
+	  Pathname#executable_real? translated from pathname.rb.
+
 Mon Aug 30 15:00:13 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (tr_setup_table): initialize negating table when
@@ -10,7 +15,7 @@ Mon Aug 30 15:00:13 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Mon Aug 30 07:32:41 2010  Tanaka Akira  <akr@fsij.org>
 
-	* ext/pathname/pathname.c (path_.executable_p): Pathname#.executable?
+	* ext/pathname/pathname.c (path_executable_p): Pathname#executable?
 	  translated from pathname.rb.
 
 Sun Aug 29 23:54:10 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>

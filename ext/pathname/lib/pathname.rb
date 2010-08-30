@@ -486,9 +486,6 @@ end
 
 class Pathname    # * FileTest *
 
-  # See <tt>FileTest.executable_real?</tt>.
-  def executable_real?() FileTest.executable_real?(@path) end
-
   # See <tt>FileTest.exist?</tt>.
   def exist?() FileTest.exist?(@path) end
 
