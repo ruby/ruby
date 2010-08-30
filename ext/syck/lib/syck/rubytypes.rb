@@ -148,7 +148,7 @@ class String
         to_yaml_style or not to_yaml_properties.empty? or self =~ /\n.+/
     end
     def is_binary_data?
-        self.count("^ -~\t\r\n").fdiv(self.size) > 0.3 || self.index("\x00") unless self.empty?
+        self.count("\x00-\x7F", "^ -~\t\r\n").fdiv(self.size) > 0.3 || self.index("\x00") unless self.empty?
     end
     def String.yaml_new( klass, tag, val )
         val = val.unpack("m")[0] if tag == "tag:yaml.org,2002:binary"

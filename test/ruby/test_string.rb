@@ -502,6 +502,7 @@ class TestString < Test::Unit::TestCase
     assert_equal(false, "a\u3041\u3042".tr("\u3041", "a").ascii_only?)
 
     assert_equal("a", "abc\u{3042 3044 3046}".delete("^a"))
+    assert_equal("bc\u{3042 3044 3046}", "abc\u{3042 3044 3046}".delete("a"))
     assert_equal("\u3042", "abc\u{3042 3044 3046}".delete("^\u3042"))
   end
 

@@ -1,3 +1,12 @@
+Tue Aug 31 03:42:14 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (tr_setup_table): fix bug in r29146.
+	  Initialize table even if cflag is 0; tr_find see whether
+	  del is empty or not.
+
+	* string.c (tr_find): nodel can't be NULL; if NULL, it means
+	  it is not specified.
+
 Mon Aug 30 21:29:21 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pathname/pathname.c (path_executable_real_p):

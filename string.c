@@ -5095,6 +5095,11 @@ tr_setup_table(VALUE str, char stable[256], int first,
 	ptable = *ctablep;
 	*ctablep = table;
     }
+    else {
+	table = rb_hash_new();
+	ptable = *tablep;
+	*tablep = table;
+    }
     if (first) {
 	for (i=0; i<256; i++) {
 	    stable[i] = 1;
@@ -5113,10 +5118,8 @@ tr_setup_table(VALUE str, char stable[256], int first,
 
 	    if (!table) {
 		table = rb_hash_new();
-		if (!cflag) {
-		    ptable = *tablep;
-		    *tablep = table;
-		}
+		ptable = *tablep;
+		*tablep = table;
 	    }
 	    if (!ptable || !NIL_P(rb_hash_aref(ptable, key))) {
 		rb_hash_aset(table, key, Qtrue);
@@ -5144,7 +5147,7 @@ tr_find(unsigned int c, char table[256], VALUE del, VALUE nodel)
 		return TRUE;
 	    }
 	}
-	else if (!nodel || NIL_P(rb_hash_lookup(nodel, v))) {
+	else if (nodel && NIL_P(rb_hash_lookup(nodel, v))) {
 	    return TRUE;
 	}
 	return FALSE;

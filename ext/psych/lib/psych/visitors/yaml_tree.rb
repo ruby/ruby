@@ -205,7 +205,7 @@ module Psych
         quote = false
         style = Nodes::Scalar::ANY
 
-        if o.index("\x00") || o.count("^ -~\t\r\n").fdiv(o.length) > 0.3
+        if o.index("\x00") || o.count("\x00-\x7F", "^ -~\t\r\n").fdiv(o.length) > 0.3
           str   = [o].pack('m').chomp
           tag   = '!binary' # FIXME: change to below when syck is removed
           #tag   = 'tag:yaml.org,2002:binary'
