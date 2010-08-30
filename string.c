@@ -5090,6 +5090,10 @@ tr_setup_table(VALUE str, char stable[256], int first,
     if (RSTRING_LEN(str) > 1 && rb_enc_ascget(tr.p, tr.pend, &l, enc) == '^') {
 	cflag = 1;
 	tr.p += l;
+
+	table = rb_hash_new();
+	ptable = *ctablep;
+	*ctablep = table;
     }
     if (first) {
 	for (i=0; i<256; i++) {
@@ -5109,11 +5113,7 @@ tr_setup_table(VALUE str, char stable[256], int first,
 
 	    if (!table) {
 		table = rb_hash_new();
-		if (cflag) {
-		    ptable = *ctablep;
-		    *ctablep = table;
-		}
-		else {
+		if (!cflag) {
 		    ptable = *tablep;
 		    *tablep = table;
 		}
@@ -5138,10 +5138,14 @@ tr_find(unsigned int c, char table[256], VALUE del, VALUE nodel)
     else {
 	VALUE v = UINT2NUM(c);
 
-	if (del && !NIL_P(rb_hash_lookup(del, v))) {
-	    if (!nodel || NIL_P(rb_hash_lookup(nodel, v))) {
+	if (del) {
+	    if (!NIL_P(rb_hash_lookup(del, v)) &&
+		    (!nodel || NIL_P(rb_hash_lookup(nodel, v)))) {
 		return TRUE;
 	    }
+	}
+	else if (!nodel || NIL_P(rb_hash_lookup(nodel, v))) {
+	    return TRUE;
 	}
 	return FALSE;
     }
@@ -5443,16 +5447,15 @@ rb_str_count(int argc, VALUE *argv, VALUE str)
     i = 0;
     while (s < send) {
 	unsigned int c;
-	int clen;
 
 	if (ascompat && (c = *(unsigned char*)s) < 0x80) {
-	    clen = 1;
 	    if (table[c]) {
 		i++;
 	    }
 	    s++;
 	}
 	else {
+	    int clen;
 	    c = rb_enc_codepoint_len(s, send, &clen, enc);
 	    if (tr_find(c, table, del, nodel)) {
 		i++;
