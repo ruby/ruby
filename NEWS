@@ -26,6 +26,10 @@ with all sufficient information, see the ChangeLog file.
     * new methods:
       * String#prepend
 
+  * Time
+    * extended methods:
+      * Time#strftime supports %:z and %::z.
+
 * io/console
   * new methods:
     * IO#noecho {|io| }
