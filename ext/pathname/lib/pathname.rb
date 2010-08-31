@@ -486,9 +486,6 @@ end
 
 class Pathname    # * FileTest *
 
-  # See <tt>FileTest.exist?</tt>.
-  def exist?() FileTest.exist?(@path) end
-
   # See <tt>FileTest.grpowned?</tt>.
   def grpowned?() FileTest.grpowned?(@path) end
 
