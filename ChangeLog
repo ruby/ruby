@@ -1,3 +1,8 @@
+Tue Aug 31 17:32:34 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/stubs.c: fix [Bug #3771] "VC++ can't make ext/tk with enabling
+	  stubs". Thanks, Akio Tajima [ruby-dev:42159].
+
 Tue Aug 31 03:42:14 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (tr_setup_table): fix bug in r29146.
