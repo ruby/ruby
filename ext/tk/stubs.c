@@ -72,7 +72,11 @@ _nativethread_consistency_check(ip)
 #if defined USE_TCL_STUBS && defined USE_TK_STUBS
 
 #if defined _WIN32 || defined __CYGWIN__
-# include "util.h"
+#  ifdef HAVE_RUBY_RUBY_H
+#    include "ruby/util.h"
+#  else
+#    include "util.h"
+#  endif
 # include <windows.h>
   typedef HINSTANCE DL_HANDLE;
 # define DL_OPEN LoadLibrary
