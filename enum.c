@@ -1911,7 +1911,7 @@ zip_i(VALUE val, NODE *memo, int argc, VALUE *argv)
  *  elements from each <i>args</i>.  This generates a sequence of
  *  <em>n</em>-element arrays, where <em>n</em> is one more than the
  *  count of arguments.  The length of the resulting sequence will be
- *  <code>enum#size</code.  If the size of any argument is less than
+ *  <code>enum#size</code>.  If the size of any argument is less than
  *  <code>enum#size</code>, <code>nil</code> values are supplied. If
  *  a block is given, it is invoked for each output array, otherwise
  *  an array of arrays is returned.

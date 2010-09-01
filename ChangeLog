@@ -1,3 +1,8 @@
+Wed Sep  1 14:33:36 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enum.c (enum_zip): fix typo of rdoc.
+	  patched by Andrei Kulakov [ruby-core:31974]
+
 Wed Sep  1 12:56:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (ruby_suppress_tracing): restore the state and invoke
