@@ -1,3 +1,10 @@
+Wed Sep  1 16:50:42 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (tr_setup_table): optimized. don't create hash objects
+	  when given pattern is ASCII only.
+
+	* string.c (tr_find): ditto.
+
 Wed Sep  1 14:35:29 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* array.c (rb_ary_rotate_m): fix typo of rdoc.

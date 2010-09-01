@@ -5073,8 +5073,9 @@ rb_str_tr(VALUE str, VALUE src, VALUE repl)
     return str;
 }
 
+#define TR_TABLE_SIZE 257
 static void
-tr_setup_table(VALUE str, char stable[256], int first,
+tr_setup_table(VALUE str, char stable[TR_TABLE_SIZE], int first,
 	       VALUE *tablep, VALUE *ctablep, rb_encoding *enc)
 {
     const unsigned int errc = -1;
@@ -5090,20 +5091,15 @@ tr_setup_table(VALUE str, char stable[256], int first,
     if (RSTRING_LEN(str) > 1 && rb_enc_ascget(tr.p, tr.pend, &l, enc) == '^') {
 	cflag = 1;
 	tr.p += l;
-
-	table = rb_hash_new();
-	ptable = *ctablep;
-	*ctablep = table;
-    }
-    else {
-	table = rb_hash_new();
-	ptable = *tablep;
-	*tablep = table;
     }
     if (first) {
 	for (i=0; i<256; i++) {
 	    stable[i] = 1;
 	}
+	stable[256] = cflag;
+    }
+    else if (stable[256] && !cflag) {
+	stable[256] = 0;
     }
     for (i=0; i<256; i++) {
 	buf[i] = cflag;
@@ -5118,8 +5114,14 @@ tr_setup_table(VALUE str, char stable[256], int first,
 
 	    if (!table) {
 		table = rb_hash_new();
-		ptable = *tablep;
-		*tablep = table;
+		if (cflag) {
+		    ptable = *ctablep;
+		    *ctablep = table;
+		}
+		else {
+		    ptable = *tablep;
+		    *tablep = table;
+		}
 	    }
 	    if (!ptable || !NIL_P(rb_hash_aref(ptable, key))) {
 		rb_hash_aset(table, key, Qtrue);
@@ -5133,7 +5135,7 @@ tr_setup_table(VALUE str, char stable[256], int first,
 
 
 static int
-tr_find(unsigned int c, char table[256], VALUE del, VALUE nodel)
+tr_find(unsigned int c, char table[TR_TABLE_SIZE], VALUE del, VALUE nodel)
 {
     if (c < 256) {
 	return table[c] != 0;
@@ -5147,10 +5149,10 @@ tr_find(unsigned int c, char table[256], VALUE del, VALUE nodel)
 		return TRUE;
 	    }
 	}
-	else if (nodel && NIL_P(rb_hash_lookup(nodel, v))) {
-	    return TRUE;
+	else if (nodel && !NIL_P(rb_hash_lookup(nodel, v))) {
+	    return FALSE;
 	}
-	return FALSE;
+	return table[256] ? TRUE : FALSE;
     }
 }
 
@@ -5165,7 +5167,7 @@ tr_find(unsigned int c, char table[256], VALUE del, VALUE nodel)
 static VALUE
 rb_str_delete_bang(int argc, VALUE *argv, VALUE str)
 {
-    char squeez[256];
+    char squeez[TR_TABLE_SIZE];
     rb_encoding *enc = 0;
     char *s, *send, *t;
     VALUE del = 0, nodel = 0;
@@ -5260,7 +5262,7 @@ rb_str_delete(int argc, VALUE *argv, VALUE str)
 static VALUE
 rb_str_squeeze_bang(int argc, VALUE *argv, VALUE str)
 {
-    char squeez[256];
+    char squeez[TR_TABLE_SIZE];
     rb_encoding *enc = 0;
     VALUE del = 0, nodel = 0;
     char *s, *send, *t;
@@ -5412,7 +5414,7 @@ rb_str_tr_s(VALUE str, VALUE src, VALUE repl)
 static VALUE
 rb_str_count(int argc, VALUE *argv, VALUE str)
 {
-    char table[256];
+    char table[TR_TABLE_SIZE];
     rb_encoding *enc = 0;
     VALUE del = 0, nodel = 0;
     char *s, *send;

@@ -481,6 +481,7 @@ class TestString < Test::Unit::TestCase
     assert_equal(0, S("y").count(S("a\\-z")))
     assert_equal(5, "abc\u{3042 3044 3046}".count("^a"))
     assert_equal(5, "abc\u{3042 3044 3046}".count("^\u3042"))
+    assert_equal(2, "abc\u{3042 3044 3046}".count("a-z", "^a"))
 
     assert_raise(ArgumentError) { "foo".count }
   end
