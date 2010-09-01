@@ -14,6 +14,37 @@ module M; end
 class E < StandardError; include M; end
 
 class TestMiniTest < MiniTest::Unit::TestCase
+  pwd = Pathname.new(File.expand_path(Dir.pwd))
+  basedir = Pathname.new(File.expand_path(MiniTest::MINI_DIR)) + 'mini'
+  basedir = basedir.relative_path_from(pwd).to_s
+  MINITEST_BASE_DIR = basedir[/\A\./] ? basedir : "./#{basedir}"
+  BT_MIDDLE = ["#{MINITEST_BASE_DIR}/test.rb:165:in `run_test_suites'",
+               "#{MINITEST_BASE_DIR}/test.rb:161:in `each'",
+               "#{MINITEST_BASE_DIR}/test.rb:161:in `run_test_suites'",
+               "#{MINITEST_BASE_DIR}/test.rb:158:in `each'",
+               "#{MINITEST_BASE_DIR}/test.rb:158:in `run_test_suites'",
+               "#{MINITEST_BASE_DIR}/test.rb:139:in `run'",
+               "#{MINITEST_BASE_DIR}/test.rb:106:in `run'"]
+
+  def assert_report expected = nil
+    expected ||= "Test run options: --seed 42
+
+Loaded suite blah
+Started
+.
+Finished in 0.00
+
+1 tests, 1 assertions, 0 failures, 0 errors, 0 skips
+
+Test run options: --seed 42
+"
+    output = @output.string.sub(/Finished in .*/, "Finished in 0.00")
+    output.sub!(/Loaded suite .*/, 'Loaded suite blah')
+    output.sub!(/^(\s+)(?:#{Regexp.union(__FILE__, File.expand_path(__FILE__))}):\d+:/o, '\1FILE:LINE:')
+    output.sub!(/\[(?:#{Regexp.union(__FILE__, File.expand_path(__FILE__))}):\d+\]/o, '[FILE:LINE]')
+    assert_equal(expected, output)
+  end
+
   def setup
     srand 42
     MiniTest::Unit::TestCase.reset
@@ -28,68 +59,6 @@ class TestMiniTest < MiniTest::Unit::TestCase
     Object.send :remove_const, :ATestCase if defined? ATestCase
   end
 
-  pwd = Pathname.new(File.expand_path(Dir.pwd))
-  basedir = Pathname.new(File.expand_path(MiniTest::MINI_DIR)) + 'mini'
-  basedir = basedir.relative_path_from(pwd).to_s
-  MINITEST_BASE_DIR = basedir[/\A\./] ? basedir : "./#{basedir}"
-  BT_MIDDLE = ["#{MINITEST_BASE_DIR}/test.rb:165:in `run_test_suites'",
-               "#{MINITEST_BASE_DIR}/test.rb:161:in `each'",
-               "#{MINITEST_BASE_DIR}/test.rb:161:in `run_test_suites'",
-               "#{MINITEST_BASE_DIR}/test.rb:158:in `each'",
-               "#{MINITEST_BASE_DIR}/test.rb:158:in `run_test_suites'",
-               "#{MINITEST_BASE_DIR}/test.rb:139:in `run'",
-               "#{MINITEST_BASE_DIR}/test.rb:106:in `run'"]
-
-  def test_filter_backtrace
-    # this is a semi-lame mix of relative paths.
-    # I cheated by making the autotest parts not have ./
-    bt = (["lib/autotest.rb:571:in `add_exception'",
-           "test/test_autotest.rb:62:in `test_add_exception'",
-           "#{MINITEST_BASE_DIR}/test.rb:165:in `__send__'"] +
-          BT_MIDDLE +
-          ["#{MINITEST_BASE_DIR}/test.rb:29",
-           "test/test_autotest.rb:422"])
-    bt = util_expand_bt bt
-
-    ex = ["lib/autotest.rb:571:in `add_exception'",
-          "test/test_autotest.rb:62:in `test_add_exception'"]
-    ex = util_expand_bt ex
-
-    fu = MiniTest::filter_backtrace(bt)
-
-    assert_equal ex, fu
-  end
-
-  def util_expand_bt bt
-    if RUBY_VERSION =~ /^1\.9/ then
-      bt.map { |f| (f =~ /^\./) ? File.expand_path(f) : f }
-    else
-      bt
-    end
-  end
-
-  def test_filter_backtrace_all_unit
-    bt = (["#{MINITEST_BASE_DIR}/test.rb:165:in `__send__'"] +
-          BT_MIDDLE +
-          ["#{MINITEST_BASE_DIR}/test.rb:29"])
-    ex = bt.clone
-    fu = MiniTest::filter_backtrace(bt)
-    assert_equal ex, fu
-  end
-
-  def test_filter_backtrace_unit_starts
-    bt = (["#{MINITEST_BASE_DIR}/test.rb:165:in `__send__'"] +
-          BT_MIDDLE +
-          ["#{MINITEST_BASE_DIR}/mini/test.rb:29",
-           "-e:1"])
-
-    bt = util_expand_bt bt
-
-    ex = ["-e:1"]
-    fu = MiniTest::filter_backtrace(bt)
-    assert_equal ex, fu
-  end
-
   def test_class_puke_with_assertion_failed
     exception = MiniTest::Assertion.new "Oh no!"
     exception.set_backtrace ["unhappy"]
@@ -97,16 +66,6 @@ class TestMiniTest < MiniTest::Unit::TestCase
     assert_equal 1, @tu.failures
     assert_match(/^Failure.*Oh no!/m, @tu.report.first)
     assert_match("method_name(SomeClass) [unhappy]", @tu.report.first)
-  end
-
-  def test_class_puke_with_failure_and_flunk_in_backtrace
-    exception = begin
-                  MiniTest::Unit::TestCase.new('fake tc').flunk
-                rescue MiniTest::Assertion => failure
-                  failure
-                end
-    assert_equal 'F', @tu.puke('SomeClass', 'method_name', exception)
-    refute @tu.report.any?{|line| line =~ /in .flunk/}
   end
 
   def test_class_puke_with_assertion_failed_and_long_backtrace
@@ -152,6 +111,16 @@ class TestMiniTest < MiniTest::Unit::TestCase
     assert_match("test_method_name(TestSomeClass) [#{ex_location}]", @tu.report.first)
   end
 
+  def test_class_puke_with_failure_and_flunk_in_backtrace
+    exception = begin
+                  MiniTest::Unit::TestCase.new('fake tc').flunk
+                rescue MiniTest::Assertion => failure
+                  failure
+                end
+    assert_equal 'F', @tu.puke('SomeClass', 'method_name', exception)
+    refute @tu.report.any?{|line| line =~ /in .flunk/}
+  end
+
   def test_class_puke_with_flunk_and_user_defined_assertions
     bt = (["lib/test/my/util.rb:16:in `flunk'",
            "#{MINITEST_BASE_DIR}/unit.rb:140:in `assert_raises'",
@@ -194,35 +163,46 @@ class TestMiniTest < MiniTest::Unit::TestCase
     assert_equal [1, 1], @tu.run_test_suites
   end
 
-  def test_run_failing # TODO: add error test
-    tc = Class.new(MiniTest::Unit::TestCase) do
-      def test_something
-        assert true
-      end
+  def test_filter_backtrace
+    # this is a semi-lame mix of relative paths.
+    # I cheated by making the autotest parts not have ./
+    bt = (["lib/autotest.rb:571:in `add_exception'",
+           "test/test_autotest.rb:62:in `test_add_exception'",
+           "#{MINITEST_BASE_DIR}/test.rb:165:in `__send__'"] +
+          BT_MIDDLE +
+          ["#{MINITEST_BASE_DIR}/test.rb:29",
+           "test/test_autotest.rb:422"])
+    bt = util_expand_bt bt
 
-      def test_failure
-        assert false
-      end
-    end
+    ex = ["lib/autotest.rb:571:in `add_exception'",
+          "test/test_autotest.rb:62:in `test_add_exception'"]
+    ex = util_expand_bt ex
 
-    Object.const_set(:ATestCase, tc)
+    fu = MiniTest::filter_backtrace(bt)
 
-    @tu.run %w[-s 42]
+    assert_equal ex, fu
+  end
 
-    expected = "Loaded suite blah
-Started
-F.
-Finished in 0.00
+  def test_filter_backtrace_all_unit
+    bt = (["#{MINITEST_BASE_DIR}/test.rb:165:in `__send__'"] +
+          BT_MIDDLE +
+          ["#{MINITEST_BASE_DIR}/test.rb:29"])
+    ex = bt.clone
+    fu = MiniTest::filter_backtrace(bt)
+    assert_equal ex, fu
+  end
 
-  1) Failure:
-test_failure(ATestCase) [FILE:LINE]:
-Failed assertion, no message given.
+  def test_filter_backtrace_unit_starts
+    bt = (["#{MINITEST_BASE_DIR}/test.rb:165:in `__send__'"] +
+          BT_MIDDLE +
+          ["#{MINITEST_BASE_DIR}/mini/test.rb:29",
+           "-e:1"])
 
-2 tests, 2 assertions, 1 failures, 0 errors, 0 skips
+    bt = util_expand_bt bt
 
-Test run options: --seed 42
-"
-    util_assert_report expected
+    ex = ["-e:1"]
+    fu = MiniTest::filter_backtrace(bt)
+    assert_equal ex, fu
   end
 
   def test_run_error
@@ -240,7 +220,9 @@ Test run options: --seed 42
 
     @tu.run %w[-s 42]
 
-    expected = "Loaded suite blah
+    expected = "Test run options: --seed 42
+
+Loaded suite blah
 Started
 E.
 Finished in 0.00
@@ -254,7 +236,7 @@ RuntimeError: unhandled exception
 
 Test run options: --seed 42
 "
-    util_assert_report expected
+    assert_report expected
   end
 
   def test_run_error_teardown
@@ -272,7 +254,9 @@ Test run options: --seed 42
 
     @tu.run %w[-s 42]
 
-    expected = "Loaded suite blah
+    expected = "Test run options: --seed 42
+
+Loaded suite blah
 Started
 E
 Finished in 0.00
@@ -286,17 +270,17 @@ RuntimeError: unhandled exception
 
 Test run options: --seed 42
 "
-    util_assert_report expected
+    assert_report expected
   end
 
-  def test_run_skip
+  def test_run_failing # TODO: add error test
     tc = Class.new(MiniTest::Unit::TestCase) do
       def test_something
         assert true
       end
 
-      def test_skip
-        skip "not yet"
+      def test_failure
+        assert false
       end
     end
 
@@ -304,37 +288,22 @@ Test run options: --seed 42
 
     @tu.run %w[-s 42]
 
-    expected = "Loaded suite blah
+    expected = "Test run options: --seed 42
+
+Loaded suite blah
 Started
-S.
+F.
 Finished in 0.00
 
-  1) Skipped:
-test_skip(ATestCase) [FILE:LINE]:
-not yet
+  1) Failure:
+test_failure(ATestCase) [FILE:LINE]:
+Failed assertion, no message given.
 
-2 tests, 1 assertions, 0 failures, 0 errors, 1 skips
+2 tests, 2 assertions, 1 failures, 0 errors, 0 skips
 
 Test run options: --seed 42
 "
-    util_assert_report expected
-  end
-
-  def util_assert_report expected = nil
-    expected ||= "Loaded suite blah
-Started
-.
-Finished in 0.00
-
-1 tests, 1 assertions, 0 failures, 0 errors, 0 skips
-
-Test run options: --seed 42
-"
-    output = @output.string.sub(/Finished in .*/, "Finished in 0.00")
-    output.sub!(/Loaded suite .*/, 'Loaded suite blah')
-    output.sub!(/^(\s+)(?:#{Regexp.union(__FILE__, File.expand_path(__FILE__))}):\d+:/o, '\1FILE:LINE:')
-    output.sub!(/\[(?:#{Regexp.union(__FILE__, File.expand_path(__FILE__))}):\d+\]/o, '[FILE:LINE]')
-    assert_equal(expected, output)
+    assert_report expected
   end
 
   def test_run_failing_filtered
@@ -352,7 +321,9 @@ Test run options: --seed 42
 
     @tu.run %w[-n /something/ -s 42]
 
-    expected = "Loaded suite blah
+    expected = "Test run options: --seed 42 --name \"/something/\"
+
+Loaded suite blah
 Started
 .
 Finished in 0.00
@@ -361,7 +332,7 @@ Finished in 0.00
 
 Test run options: --seed 42 --name \"/something/\"
 "
-    util_assert_report expected
+    assert_report expected
   end
 
   def test_run_passing
@@ -375,7 +346,48 @@ Test run options: --seed 42 --name \"/something/\"
 
     @tu.run %w[-s 42]
 
-    util_assert_report
+    assert_report
+  end
+
+  def test_run_skip
+    tc = Class.new(MiniTest::Unit::TestCase) do
+      def test_something
+        assert true
+      end
+
+      def test_skip
+        skip "not yet"
+      end
+    end
+
+    Object.const_set(:ATestCase, tc)
+
+    @tu.run %w[-s 42]
+
+    expected = "Test run options: --seed 42
+
+Loaded suite blah
+Started
+S.
+Finished in 0.00
+
+  1) Skipped:
+test_skip(ATestCase) [FILE:LINE]:
+not yet
+
+2 tests, 1 assertions, 0 failures, 0 errors, 1 skips
+
+Test run options: --seed 42
+"
+    assert_report expected
+  end
+
+  def util_expand_bt bt
+    if RUBY_VERSION =~ /^1\.9/ then
+      bt.map { |f| (f =~ /^\./) ? File.expand_path(f) : f }
+    else
+      bt
+    end
   end
 end
 
@@ -392,39 +404,6 @@ class TestMiniTestTestCase < MiniTest::Unit::TestCase
     assert_equal(@assertion_count, @tc._assertions,
                  "expected #{@assertion_count} assertions to be fired during the test, not #{@tc._assertions}") if @tc._assertions
     Object.send :remove_const, :ATestCase if defined? ATestCase
-  end
-
-  def test_class_inherited
-    @assertion_count = 0
-
-    Object.const_set(:ATestCase, Class.new(MiniTest::Unit::TestCase))
-
-    assert_equal [ATestCase], MiniTest::Unit::TestCase.test_suites
-  end
-
-  def test_class_test_suites
-    @assertion_count = 0
-
-    Object.const_set(:ATestCase, Class.new(MiniTest::Unit::TestCase))
-
-    assert_equal 1, MiniTest::Unit::TestCase.test_suites.size
-    assert_equal [ATestCase], MiniTest::Unit::TestCase.test_suites
-  end
-
-  def test_class_asserts_match_refutes
-    @assertion_count = 0
-
-    methods = MiniTest::Assertions.public_instance_methods
-    methods.map! { |m| m.to_s } if Symbol === methods.first
-
-    ignores = %w(assert_block assert_no_match assert_not_equal assert_not_nil
-                 assert_not_same assert_nothing_thrown assert_raise
-                 assert_nothing_raised assert_raises assert_throws assert_send)
-    asserts = methods.grep(/^assert/).sort - ignores
-    refutes = methods.grep(/^refute/).sort - ignores
-
-    assert_empty refutes.map { |n| n.sub(/^refute/, 'assert') } - asserts
-    assert_empty asserts.map { |n| n.sub(/^assert/, 'refute') } - refutes
   end
 
   def test_assert
@@ -603,6 +582,60 @@ class TestMiniTestTestCase < MiniTest::Unit::TestCase
     end
   end
 
+  def test_assert_output_both
+    @assertion_count = 2
+
+    @tc.assert_output "yay", "blah" do
+      print "yay"
+      $stderr.print "blah"
+    end
+  end
+
+  def test_assert_output_err
+    @tc.assert_output nil, "blah" do
+      $stderr.print "blah"
+    end
+  end
+
+  def test_assert_output_neither
+    @assertion_count = 0
+
+    @tc.assert_output do
+      # do nothing
+    end
+  end
+
+  def test_assert_output_out
+    @tc.assert_output "blah" do
+      print "blah"
+    end
+  end
+
+  def test_assert_output_triggered_both
+    util_assert_triggered "In stdout.\nExpected \"yay\", not \"boo\"." do
+      @tc.assert_output "yay", "blah" do
+        print "boo"
+        $stderr.print "blah blah"
+      end
+    end
+  end
+
+  def test_assert_output_triggered_err
+    util_assert_triggered "In stderr.\nExpected \"blah\", not \"blah blah\"." do
+      @tc.assert_output nil, "blah" do
+        $stderr.print "blah blah"
+      end
+    end
+  end
+
+  def test_assert_output_triggered_out
+    util_assert_triggered "In stdout.\nExpected \"blah\", not \"blah blah\"." do
+      @tc.assert_output "blah" do
+        print "blah blah"
+      end
+    end
+  end
+
   def test_assert_raises
     @tc.assert_raises RuntimeError do
       raise "blah"
@@ -744,6 +777,32 @@ FILE:LINE:in `test_assert_raises_triggered_subclass'
     end
   end
 
+  def test_assert_silent
+    @assertion_count = 2
+
+    @tc.assert_silent do
+      # do nothing
+    end
+  end
+
+  def test_assert_silent_triggered_err
+    @assertion_count = 2
+
+    util_assert_triggered "In stderr.\nExpected \"\", not \"blah blah\"." do
+      @tc.assert_silent do
+        $stderr.print "blah blah"
+      end
+    end
+  end
+
+  def test_assert_silent_triggered_out
+    util_assert_triggered "In stdout.\nExpected \"\", not \"blah blah\"." do
+      @tc.assert_silent do
+        print "blah blah"
+      end
+    end
+  end
+
   def test_assert_throws
     @tc.assert_throws(:blah) do
       throw :blah
@@ -778,6 +837,41 @@ FILE:LINE:in `test_assert_raises_triggered_subclass'
     assert_equal "bye!\n", err
   end
 
+  def test_class_asserts_match_refutes
+    @assertion_count = 0
+
+    methods = MiniTest::Assertions.public_instance_methods
+    methods.map! { |m| m.to_s } if Symbol === methods.first
+
+    ignores = %w(assert_block assert_no_match assert_not_equal
+                 assert_not_nil assert_not_same assert_nothing_raised
+                 assert_nothing_thrown assert_output assert_raise
+                 assert_raises assert_send assert_silent assert_throws)
+
+    asserts = methods.grep(/^assert/).sort - ignores
+    refutes = methods.grep(/^refute/).sort - ignores
+
+    assert_empty refutes.map { |n| n.sub(/^refute/, 'assert') } - asserts
+    assert_empty asserts.map { |n| n.sub(/^assert/, 'refute') } - refutes
+  end
+
+  def test_class_inherited
+    @assertion_count = 0
+
+    Object.const_set(:ATestCase, Class.new(MiniTest::Unit::TestCase))
+
+    assert_equal [ATestCase], MiniTest::Unit::TestCase.test_suites
+  end
+
+  def test_class_test_suites
+    @assertion_count = 0
+
+    Object.const_set(:ATestCase, Class.new(MiniTest::Unit::TestCase))
+
+    assert_equal 1, MiniTest::Unit::TestCase.test_suites.size
+    assert_equal [ATestCase], MiniTest::Unit::TestCase.test_suites
+  end
+
   def test_flunk
     util_assert_triggered 'Epic Fail!' do
       @tc.flunk
@@ -800,34 +894,6 @@ FILE:LINE:in `test_assert_raises_triggered_subclass'
 
   def test_pass
     @tc.pass
-  end
-
-  def test_test_methods_sorted
-    @assertion_count = 0
-
-    sample_test_case = Class.new(MiniTest::Unit::TestCase) do
-      def self.test_order; :sorted end
-      def test_test3; assert "does not matter" end
-      def test_test2; assert "does not matter" end
-      def test_test1; assert "does not matter" end
-    end
-
-    expected = %w(test_test1 test_test2 test_test3)
-    assert_equal expected, sample_test_case.test_methods
-  end
-
-  def test_test_methods_random
-    @assertion_count = 0
-
-    sample_test_case = Class.new(MiniTest::Unit::TestCase) do
-      def test_test1; assert "does not matter" end
-      def test_test2; assert "does not matter" end
-      def test_test3; assert "does not matter" end
-    end
-
-    srand 42
-    expected = %w(test_test2 test_test1 test_test3)
-    assert_equal expected, sample_test_case.test_methods
   end
 
   def test_refute
@@ -928,18 +994,6 @@ FILE:LINE:in `test_assert_raises_triggered_subclass'
     @tc.refute_match Object.new, 5 # default #=~ returns false
   end
 
-  def test_assert_object_triggered
-    @assertion_count = 2
-
-    pattern = Object.new
-    def pattern.=~(other) false end
-    def pattern.inspect; "<<Object>>" end
-
-    util_assert_triggered 'Expected <<Object>> to match 5.' do
-      @tc.assert_match pattern, 5
-    end
-  end
-
   def test_refute_match_object_triggered
     @assertion_count = 2
 
@@ -1005,6 +1059,34 @@ FILE:LINE:in `test_assert_raises_triggered_subclass'
     util_assert_triggered "haha!", MiniTest::Skip do
       @tc.skip "haha!"
     end
+  end
+
+  def test_test_methods_random
+    @assertion_count = 0
+
+    sample_test_case = Class.new(MiniTest::Unit::TestCase) do
+      def test_test1; assert "does not matter" end
+      def test_test2; assert "does not matter" end
+      def test_test3; assert "does not matter" end
+    end
+
+    srand 42
+    expected = %w(test_test2 test_test1 test_test3)
+    assert_equal expected, sample_test_case.test_methods
+  end
+
+  def test_test_methods_sorted
+    @assertion_count = 0
+
+    sample_test_case = Class.new(MiniTest::Unit::TestCase) do
+      def self.test_order; :sorted end
+      def test_test3; assert "does not matter" end
+      def test_test2; assert "does not matter" end
+      def test_test1; assert "does not matter" end
+    end
+
+    expected = %w(test_test1 test_test2 test_test3)
+    assert_equal expected, sample_test_case.test_methods
   end
 
   def util_assert_triggered expected, klass = MiniTest::Assertion

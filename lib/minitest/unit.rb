@@ -195,6 +195,24 @@ module MiniTest
     end
 
     ##
+    # Fails if stdout or stderr do not output the expected results.
+    # Pass in nil if you don't care about that streams output. Pass in
+    # "" if you require it to be silent.
+    #
+    # See also: #assert_silent
+
+    def assert_output stdout = nil, stderr = nil
+      out, err = capture_io do
+        yield
+      end
+
+      x = assert_equal stdout, out, "In stdout" if stdout
+      y = assert_equal stderr, err, "In stderr" if stderr
+
+      (!stdout || x) && (!stderr || y)
+    end
+
+    ##
     # Fails unless the block raises one of +exp+
 
     def assert_raises *exp
@@ -249,6 +267,17 @@ module MiniTest
       m = message(m) {
         "Expected #{mu_pp(recv)}.#{msg}(*#{mu_pp(args)}) to return true" }
       assert recv.__send__(msg, *args), m
+    end
+
+    ##
+    # Fails if the block outputs anything to stderr or stdout.
+    #
+    # See also: #assert_output
+
+    def assert_silent
+      assert_output "", "" do
+        yield
+      end
     end
 
     ##
@@ -474,7 +503,7 @@ module MiniTest
   end
 
   class Unit
-    VERSION = "1.6.0" # :nodoc:
+    VERSION = "1.7.1" # :nodoc:
 
     attr_accessor :report, :failures, :errors, :skips # :nodoc:
     attr_accessor :test_count, :assertion_count       # :nodoc:
@@ -588,6 +617,12 @@ module MiniTest
 
       srand seed
 
+      help = ["--seed", seed]
+      help.push "--verbose" if @verbose
+      help.push("--name", options[:filter].inspect) if options[:filter]
+
+      @@out.puts "Test run options: #{help.join(" ")}"
+      @@out.puts
       @@out.puts "Loaded suite #{$0.sub(/\.rb$/, '')}\nStarted"
 
       start = Time.now
@@ -605,10 +640,6 @@ module MiniTest
       status
 
       @@out.puts
-
-      help = ["--seed", seed]
-      help.push "--verbose" if @verbose
-      help.push("--name", options[:filter].inspect) if options[:filter]
 
       @@out.puts "Test run options: #{help.join(" ")}"
 

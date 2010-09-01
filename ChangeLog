@@ -1,3 +1,8 @@
+Wed Sep  1 17:39:02 2010  Ryan Davis  <ryand-ruby@zenspider.com>
+
+	* lib/minitest/*.rb: Imported minitest 1.7.1 r5835.
+	* test/minitest/*.rb: ditto.
+
 Wed Sep  1 16:50:42 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (tr_setup_table): optimized. don't create hash objects

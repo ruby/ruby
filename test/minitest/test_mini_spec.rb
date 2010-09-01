@@ -35,18 +35,22 @@ describe MiniTest::Spec do
                         must_be_kind_of
                         must_be_nil
                         must_be_same_as
+                        must_be_silent
                         must_be_within_delta
                         must_be_within_epsilon
                         must_equal
                         must_include
                         must_match
+                        must_output
                         must_raise
                         must_respond_to
                         must_send
                         must_throw)
 
+    bad = %w[not raise throw send output be_silent]
+
     expected_wonts = expected_musts.map { |m| m.sub(/^must/, 'wont') }
-    expected_wonts.reject! { |m| m =~ /wont_(not|raise|throw|send)/ }
+    expected_wonts.reject! { |m| m =~ /wont_#{Regexp.union(*bad)}/ }
 
     musts.must_equal expected_musts
     wonts.must_equal expected_wonts
@@ -158,6 +162,32 @@ describe MiniTest::Spec do
     proc { 1.wont_be_same_as 1 }.must_raise MiniTest::Assertion
   end
 
+  it "needs to verify output in stdout" do
+    proc { print "blah" }.must_output("blah").must_equal true
+
+    proc {
+      proc { print "xxx" }.must_output("blah")
+    }.must_raise MiniTest::Assertion
+  end
+
+  it "needs to verify output in stderr" do
+    proc { $stderr.print "blah" }.must_output(nil, "blah").must_equal true
+
+    proc {
+      proc { $stderr.print "xxx" }.must_output(nil, "blah")
+    }.must_raise MiniTest::Assertion
+  end
+
+  it "needs to ensure silence" do
+    @assertion_count = 5
+
+    proc {  }.must_be_silent.must_equal true
+
+    proc {
+      proc { print "xxx" }.must_be_silent
+    }.must_raise MiniTest::Assertion
+  end
+
   it "needs to be sensible about must_include order" do
     @assertion_count = 6
     [1, 2, 3].must_include(2).must_equal true
@@ -168,5 +198,28 @@ describe MiniTest::Spec do
     @assertion_count = 6
     [1, 2, 3].wont_include(5).must_equal false
     proc { [1, 2, 3].wont_include 2 }.must_raise MiniTest::Assertion
+  end
+end
+
+class TestMeta < MiniTest::Unit::TestCase
+  def test_structure
+    x = y = nil
+    x = describe "top-level thingy" do
+      before {}
+      after  {}
+
+      it "top-level-it" do end
+
+      y = describe "inner thingy" do
+        before {}
+        it "inner-it" do end
+      end
+    end
+
+    top_methods = %w(setup teardown test_0001_top_level_it)
+    inner_methods = %w(setup test_0001_inner_it)
+
+    assert_equal top_methods, x.instance_methods(false).sort.map   {|o| o.to_s }
+    assert_equal inner_methods, y.instance_methods(false).sort.map {|o| o.to_s }
   end
 end
