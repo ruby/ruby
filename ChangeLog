@@ -1,6 +1,6 @@
 Tue Aug 18 03:34:00 Kirk Haines <khaines@ruby-lang.org>
 
-	* lib/webrick/httpresponse.rb: CVE-2010-0541; Fix a potential XSS vulnerabilty. See the CVE report for more information.
+	* lib/webrick/httpresponse.rb: CVE-2010-0541; Fix a potential XSS vulnerabilty. See the CVE report for more information. r29026
 
 Tue Aug 18 03:27:00 Kirk Haines <khaines@ruby-lang.org>
 
