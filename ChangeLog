@@ -1,3 +1,8 @@
+Wed Sep  1 14:35:29 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* array.c (rb_ary_rotate_m): fix typo of rdoc.
+	  patched by Andrei Kulakov [ruby-core:31975]
+
 Wed Sep  1 14:33:36 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enum.c (enum_zip): fix typo of rdoc.

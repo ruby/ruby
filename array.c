@@ -1899,7 +1899,7 @@ rb_ary_rotate_bang(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *     ary.rotate([n = 1]) -> new_ary
+ *     ary.rotate([cnt = 1]) -> new_ary
  *
  *  Returns new array by rotating +self+, whose first element is the
  *  element at +cnt+ in +self+.  If +cnt+ is negative then it rotates
