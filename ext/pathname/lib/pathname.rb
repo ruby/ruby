@@ -486,9 +486,6 @@ end
 
 class Pathname    # * FileTest *
 
-  # See <tt>FileTest.grpowned?</tt>.
-  def grpowned?() FileTest.grpowned?(@path) end
-
   # See <tt>FileTest.directory?</tt>.
   def directory?() FileTest.directory?(@path) end
 

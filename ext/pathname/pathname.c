@@ -643,6 +643,15 @@ path_exist_p(VALUE self)
 }
 
 /*
+ * See <tt>FileTest.grpowned?</tt>.
+ */
+static VALUE
+path_grpowned_p(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("grpowned?"), 1, get_strpath(self));
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -876,4 +885,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "executable?", path_executable_p, 0);
     rb_define_method(rb_cPathname, "executable_real?", path_executable_real_p, 0);
     rb_define_method(rb_cPathname, "exist?", path_exist_p, 0);
+    rb_define_method(rb_cPathname, "grpowned?", path_grpowned_p, 0);
 }
