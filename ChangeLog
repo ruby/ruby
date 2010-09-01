@@ -1,3 +1,9 @@
+Wed Sep  1 12:56:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (ruby_suppress_tracing): restore the state and invoke
+	  the func with normal state.  a patch from Satoshi Shiba <shiba
+	  AT rvm.jp> at [ruby-dev:42162].  [ruby-core:31783]
+
 Tue Aug 31 21:10:23 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pathname/pathname.c (path_exist_p): Pathname#exist? translated

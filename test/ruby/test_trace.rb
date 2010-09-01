@@ -46,4 +46,16 @@ class TestTrace < Test::Unit::TestCase
   ensure
     untrace_var :$x
   end
+
+  def test_trace_break
+    bug2722 = '[ruby-core:31783]'
+    a = Object.new.extend(Enumerable)
+    def a.each
+      yield
+    end
+    assert(Thread.start {
+             Thread.current.add_trace_func(proc{})
+             a.any? {true}
+           }.value, bug2722)
+  end
 end

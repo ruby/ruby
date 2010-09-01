@@ -4099,6 +4099,7 @@ ruby_suppress_tracing(VALUE (*func)(VALUE, int), VALUE arg, int always)
     rb_thread_t *th = GET_THREAD();
     int state, tracing;
     volatile int raised;
+    volatile int outer_state;
     VALUE result = Qnil;
 
     if ((tracing = th->tracing) != 0 && !always) {
@@ -4109,6 +4110,8 @@ ruby_suppress_tracing(VALUE (*func)(VALUE, int), VALUE arg, int always)
     }
 
     raised = rb_threadptr_reset_raised(th);
+    outer_state = th->state;
+    th->state = 0;
 
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
@@ -4124,6 +4127,7 @@ ruby_suppress_tracing(VALUE (*func)(VALUE, int), VALUE arg, int always)
     if (state) {
 	JUMP_TAG(state);
     }
+    th->state = outer_state;
 
     return result;
 }
