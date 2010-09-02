@@ -670,6 +670,15 @@ path_file_p(VALUE self)
 }
 
 /*
+ * See <tt>FileTest.pipe?</tt>.
+ */
+static VALUE
+path_pipe_p(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("pipe?"), 1, get_strpath(self));
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -906,4 +915,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "grpowned?", path_grpowned_p, 0);
     rb_define_method(rb_cPathname, "directory?", path_directory_p, 0);
     rb_define_method(rb_cPathname, "file?", path_file_p, 0);
+    rb_define_method(rb_cPathname, "pipe?", path_pipe_p, 0);
 }
