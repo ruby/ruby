@@ -486,9 +486,6 @@ end
 
 class Pathname    # * FileTest *
 
-  # See <tt>FileTest.file?</tt>.
-  def file?() FileTest.file?(@path) end
-
   # See <tt>FileTest.pipe?</tt>.
   def pipe?() FileTest.pipe?(@path) end
 
