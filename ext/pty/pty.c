@@ -135,18 +135,6 @@ struct pty_info {
 
 static void getDevice(int*, int*, char [DEVICELEN], int);
 
-struct exec_info {
-    int argc;
-    VALUE *argv;
-};
-
-static VALUE
-pty_exec(VALUE v)
-{
-    struct exec_info *arg = (struct exec_info *)v;
-    return rb_f_exec(arg->argc, arg->argv);
-}
-
 struct child_info {
     int master, slave;
     char *slavename;
@@ -162,10 +150,7 @@ chfunc(void *data, char *errbuf, size_t errbuf_len)
     int slave = carg->slave;
     int argc = carg->argc;
     VALUE *argv = carg->argv;
-    VALUE exc;
 
-    struct exec_info arg;
-    int status;
 #define ERROR_EXIT(str) do { \
 	strlcpy(errbuf, str, errbuf_len); \
 	return -1; \
@@ -218,16 +203,7 @@ chfunc(void *data, char *errbuf, size_t errbuf_len)
     seteuid(getuid());
 #endif
 
-    arg.argc = argc;
-    arg.argv = argv;
-    rb_protect(pty_exec, (VALUE)&arg, &status);
-    sleep(1);
-    errno = ENOENT;		/* last resort */
-    exc = rb_errinfo();
-    if (!NIL_P(exc)) {
-	errno = NUM2INT(rb_attr_get(exc, rb_intern("errno")));
-    }
-    ERROR_EXIT(StringValueCStr(argv[0]));
+    return rb_f_exec(argc, argv);
 #undef ERROR_EXIT
 }
 

@@ -556,30 +556,36 @@ wsplit_p(rb_io_t *fptr)
     return fptr->mode & FMODE_WSPLIT;
 }
 
-struct io_internal_struct {
+struct io_internal_read_struct {
     int fd;
     void *buf;
+    size_t capa;
+};
+
+struct io_internal_write_struct {
+    int fd;
+    const void *buf;
     size_t capa;
 };
 
 static VALUE
 internal_read_func(void *ptr)
 {
-    struct io_internal_struct *iis = (struct io_internal_struct*)ptr;
+    struct io_internal_read_struct *iis = ptr;
     return read(iis->fd, iis->buf, iis->capa);
 }
 
 static VALUE
 internal_write_func(void *ptr)
 {
-    struct io_internal_struct *iis = (struct io_internal_struct*)ptr;
+    struct io_internal_write_struct *iis = ptr;
     return write(iis->fd, iis->buf, iis->capa);
 }
 
 static ssize_t
 rb_read_internal(int fd, void *buf, size_t count)
 {
-    struct io_internal_struct iis;
+    struct io_internal_read_struct iis;
     iis.fd = fd;
     iis.buf = buf;
     iis.capa = count;
@@ -588,9 +594,9 @@ rb_read_internal(int fd, void *buf, size_t count)
 }
 
 static ssize_t
-rb_write_internal(int fd, void *buf, size_t count)
+rb_write_internal(int fd, const void *buf, size_t count)
 {
-    struct io_internal_struct iis;
+    struct io_internal_write_struct iis;
     iis.fd = fd;
     iis.buf = buf;
     iis.capa = count;
@@ -816,7 +822,7 @@ make_writeconv(rb_io_t *fptr)
 struct binwrite_arg {
     rb_io_t *fptr;
     VALUE str;
-    long offset;
+    const char *ptr;
     long length;
 };
 
@@ -825,15 +831,14 @@ io_binwrite_string(VALUE arg)
 {
     struct binwrite_arg *p = (struct binwrite_arg *)arg;
     long l = io_writable_length(p->fptr, p->length);
-    return rb_write_internal(p->fptr->fd, RSTRING_PTR(p->str)+p->offset, l);
+    return rb_write_internal(p->fptr->fd, p->ptr, l);
 }
 
 static long
-io_binwrite(VALUE str, rb_io_t *fptr, int nosync)
+io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
 {
-    long len, n, r, offset = 0;
+    long n, r, offset = 0;
 
-    len = RSTRING_LEN(str);
     if ((n = len) <= 0) return n;
     if (fptr->wbuf == NULL && !(!nosync && (fptr->mode & FMODE_SYNC))) {
         fptr->wbuf_off = 0;
@@ -852,7 +857,7 @@ io_binwrite(VALUE str, rb_io_t *fptr, int nosync)
                 MEMMOVE(fptr->wbuf, fptr->wbuf+fptr->wbuf_off, char, fptr->wbuf_len);
                 fptr->wbuf_off = 0;
             }
-            MEMMOVE(fptr->wbuf+fptr->wbuf_off+fptr->wbuf_len, RSTRING_PTR(str)+offset, char, len);
+            MEMMOVE(fptr->wbuf+fptr->wbuf_off+fptr->wbuf_len, ptr+offset, char, len);
             fptr->wbuf_len += (int)len;
             n = 0;
         }
@@ -868,14 +873,14 @@ io_binwrite(VALUE str, rb_io_t *fptr, int nosync)
 	arg.fptr = fptr;
 	arg.str = str;
       retry:
-	arg.offset = offset;
+	arg.ptr = ptr + offset;
 	arg.length = n;
 	if (fptr->write_lock) {
 	    r = rb_mutex_synchronize(fptr->write_lock, io_binwrite_string, (VALUE)&arg);
 	}
 	else {
 	    long l = io_writable_length(fptr, n);
-	    r = rb_write_internal(fptr->fd, RSTRING_PTR(str)+offset, l);
+	    r = rb_write_internal(fptr->fd, ptr+offset, l);
 	}
 	/* xxx: other threads may modify given string. */
         if (r == n) return len;
@@ -886,7 +891,7 @@ io_binwrite(VALUE str, rb_io_t *fptr, int nosync)
         }
         if (rb_io_wait_writable(fptr->fd)) {
             rb_io_check_closed(fptr);
-	    if (offset < RSTRING_LEN(str))
+	    if (offset < len)
 		goto retry;
         }
         return -1L;
@@ -897,7 +902,7 @@ io_binwrite(VALUE str, rb_io_t *fptr, int nosync)
             MEMMOVE(fptr->wbuf, fptr->wbuf+fptr->wbuf_off, char, fptr->wbuf_len);
         fptr->wbuf_off = 0;
     }
-    MEMMOVE(fptr->wbuf+fptr->wbuf_off+fptr->wbuf_len, RSTRING_PTR(str)+offset, char, len);
+    MEMMOVE(fptr->wbuf+fptr->wbuf_off+fptr->wbuf_len, ptr+offset, char, len);
     fptr->wbuf_len += (int)len;
     return len;
 }
@@ -941,7 +946,18 @@ static long
 io_fwrite(VALUE str, rb_io_t *fptr, int nosync)
 {
     str = do_writeconv(str, fptr);
-    return io_binwrite(str, fptr, nosync);
+    return io_binwrite(str, RSTRING_PTR(str), RSTRING_LEN(str),
+		       fptr, nosync);
+}
+
+ssize_t
+rb_io_bufwrite(VALUE io, const void *buf, size_t size)
+{
+    rb_io_t *fptr;
+
+    GetOpenFile(io, fptr);
+    rb_io_check_writable(fptr);
+    return (ssize_t)io_binwrite(0, buf, (long)size, fptr, 0);
 }
 
 static VALUE
@@ -1520,33 +1536,31 @@ read_buffered_data(char *ptr, long len, rb_io_t *fptr)
 }
 
 static long
-io_fread(VALUE str, long offset, rb_io_t *fptr)
+io_bufread(char *ptr, long len, rb_io_t *fptr)
 {
-    long len = RSTRING_LEN(str) - offset;
+    long offset = 0;
     long n = len;
     long c;
 
-    rb_str_locktmp(str);
     if (READ_DATA_PENDING(fptr) == 0) {
 	while (n > 0) {
           again:
-	    c = rb_read_internal(fptr->fd, RSTRING_PTR(str)+offset, n);
+	    c = rb_read_internal(fptr->fd, ptr+offset, n);
 	    if (c == 0) break;
 	    if (c < 0) {
                 if (rb_io_wait_readable(fptr->fd))
                     goto again;
-		rb_sys_fail_path(fptr->pathv);
+		return -1;
 	    }
 	    offset += c;
 	    if ((n -= c) <= 0) break;
 	    rb_thread_wait_fd(fptr->fd);
 	}
-	rb_str_unlocktmp(str);
 	return len - n;
     }
 
     while (n > 0) {
-	c = read_buffered_data(RSTRING_PTR(str)+offset, n, fptr);
+	c = read_buffered_data(ptr+offset, n, fptr);
 	if (c > 0) {
 	    offset += c;
 	    if ((n -= c) <= 0) break;
@@ -1557,8 +1571,30 @@ io_fread(VALUE str, long offset, rb_io_t *fptr)
 	    break;
 	}
     }
-    rb_str_unlocktmp(str);
     return len - n;
+}
+
+static long
+io_fread(VALUE str, long offset, rb_io_t *fptr)
+{
+    long len;
+
+    rb_str_locktmp(str);
+    len = io_bufread(RSTRING_PTR(str) + offset, RSTRING_LEN(str) - offset,
+		     fptr);
+    rb_str_unlocktmp(str);
+    if (len < 0) rb_sys_fail_path(fptr->pathv);
+    return len;
+}
+
+ssize_t
+rb_io_bufread(VALUE io, void *buf, size_t size)
+{
+    rb_io_t *fptr;
+
+    GetOpenFile(io, fptr);
+    rb_io_check_readable(fptr);
+    return (ssize_t)io_bufread(buf, (long)size, fptr);
 }
 
 #define SMALLBUF 100
@@ -8475,7 +8511,7 @@ copy_stream_body(VALUE arg)
         rb_str_resize(str,len);
         read_buffered_data(RSTRING_PTR(str), len, src_fptr);
         if (dst_fptr) { /* IO or filename */
-            if (io_binwrite(str, dst_fptr, 0) < 0)
+            if (io_binwrite(str, RSTRING_PTR(str), RSTRING_LEN(str), dst_fptr, 0) < 0)
                 rb_sys_fail(0);
         }
         else /* others such as StringIO */

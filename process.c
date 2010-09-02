@@ -137,6 +137,9 @@ static VALUE rb_cProcessTms;
 	do {int saved_errno = errno; stmts; errno = saved_errno;} while (0)
 
 
+ssize_t rb_io_bufwrite(VALUE io, const void *buf, size_t size);
+ssize_t rb_io_bufread(VALUE io, void *buf, size_t size);
+
 /*
  *  call-seq:
  *     Process.pid   -> fixnum
@@ -2430,6 +2433,25 @@ pipe_nocrash(int filedes[2], VALUE fds)
     return ret;
 }
 
+struct chfunc_protect_t {
+    int (*chfunc)(void*, char *, size_t);
+    void *arg;
+    char *errmsg;
+    size_t buflen;
+};
+
+static VALUE
+chfunc_protect(VALUE arg)
+{
+    struct chfunc_protect_t *p = (struct chfunc_protect_t *)arg;
+
+    return (VALUE)(*p->chfunc)(p->arg, p->errmsg, p->buflen);
+}
+
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+
 /*
  * Forks child process, and returns the process ID in the parent
  * process.
@@ -2461,6 +2483,7 @@ rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALU
     int err, state = 0;
 #ifdef FD_CLOEXEC
     int ep[2];
+    VALUE io = Qnil;
 #endif
 
 #define prefork() (		\
@@ -2507,19 +2530,30 @@ rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALU
     if (!pid) {
         forked_child = 1;
 	if (chfunc) {
+	    struct chfunc_protect_t arg;
+	    arg.chfunc = chfunc;
+	    arg.arg = charg;
+	    arg.errmsg = errmsg;
+	    arg.buflen = errmsg_buflen;
 #ifdef FD_CLOEXEC
 	    close(ep[0]);
 #endif
-	    if (!(*chfunc)(charg, errmsg, errmsg_buflen)) _exit(EXIT_SUCCESS);
+	    if (!(int)rb_protect(chfunc_protect, (VALUE)&arg, &state)) _exit(EXIT_SUCCESS);
 #ifdef FD_CLOEXEC
+	    if (write(ep[1], &state, sizeof(state)) == sizeof(state) && state) {
+		io = rb_io_fdopen(ep[1], O_WRONLY|O_BINARY, NULL);
+		rb_marshal_dump(rb_errinfo(), io);
+		rb_io_flush(io);
+	    }
 	    err = errno;
 	    if (write(ep[1], &err, sizeof(err)) < 0) err = errno;
             if (errmsg && 0 < errmsg_buflen) {
                 errmsg[errmsg_buflen-1] = '\0';
                 errmsg_buflen = strlen(errmsg);
 		if (errmsg_buflen > 0 &&write(ep[1], errmsg, errmsg_buflen) < 0)
-                  err = errno;
+		    err = errno;
             }
+	    if (!NIL_P(io)) rb_io_close(io);
 #endif
 #if EXIT_SUCCESS == 127
 	    _exit(EXIT_FAILURE);
@@ -2532,25 +2566,37 @@ rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALU
 #ifdef FD_CLOEXEC
     if (pid && chfunc) {
 	ssize_t size;
+	VALUE exc = Qnil;
 	close(ep[1]);
-	if ((size = read(ep[0], &err, sizeof(err))) < 0) {
+	if ((read(ep[0], &state, sizeof(state))) == sizeof(state) && state) {
+	    io = rb_io_fdopen(ep[0], O_RDONLY|O_BINARY, NULL);
+	    exc = rb_marshal_load(io);
+	    rb_set_errinfo(exc);
+	}
+#define READ_FROM_CHILD(ptr, len) \
+	(NIL_P(io) ? read(ep[0], ptr, len) : rb_io_bufread(io, ptr, len))
+	if ((size = READ_FROM_CHILD(&err, sizeof(err))) < 0) {
 	    err = errno;
 	}
         if (size == sizeof(err) &&
             errmsg && 0 < errmsg_buflen) {
-            ssize_t ret;
-            ret = read(ep[0], errmsg, errmsg_buflen-1);
+	    ssize_t ret = READ_FROM_CHILD(errmsg, errmsg_buflen-1);
             if (0 <= ret) {
                 errmsg[ret] = '\0';
             }
         }
-	close(ep[0]);
-	if (size) {
+	if (NIL_P(io))
+	    close(ep[0]);
+	else
+	    rb_io_close(io);
+	if (state || size) {
 	    if (status) {
+		*status = state;
 		rb_protect(proc_syswait, (VALUE)pid, status);
 	    }
 	    else {
 		rb_syswait(pid);
+		if (state) rb_exc_raise(exc);
 	    }
 	    errno = err;
 	    return -1;
