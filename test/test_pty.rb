@@ -1,6 +1,7 @@
 require 'test/unit'
 require_relative 'ruby/envutil'
 require 'shellwords'
+require 'tmpdir'
 
 begin
   require 'pty'
@@ -122,6 +123,13 @@ class TestPTY < Test::Unit::TestCase
         Errno::EIO      # GNU/Linux
       ) { master.readpartial(10) }
     }
+  end
+
+  def test_getpty_nonexistent
+    bug3672 = '[ruby-dev:41965]'
+    Dir.mktmpdir do |tmpdir|
+      assert_raise(Errno::ENOENT, bug3672) {PTY.getpty(File.join(tmpdir, "no-such-command"))}
+    end
   end
 end if defined? PTY
 

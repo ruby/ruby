@@ -162,6 +162,7 @@ chfunc(void *data, char *errbuf, size_t errbuf_len)
     int slave = carg->slave;
     int argc = carg->argc;
     VALUE *argv = carg->argv;
+    VALUE exc;
 
     struct exec_info arg;
     int status;
@@ -221,7 +222,12 @@ chfunc(void *data, char *errbuf, size_t errbuf_len)
     arg.argv = argv;
     rb_protect(pty_exec, (VALUE)&arg, &status);
     sleep(1);
-    return -1;
+    errno = ENOENT;		/* last resort */
+    exc = rb_errinfo();
+    if (!NIL_P(exc)) {
+	errno = NUM2INT(rb_attr_get(exc, rb_intern("errno")));
+    }
+    ERROR_EXIT(StringValueCStr(argv[0]));
 #undef ERROR_EXIT
 }
 
