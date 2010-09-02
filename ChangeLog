@@ -1,3 +1,8 @@
+Thu Sep  2 09:12:02 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_spawn, rb_w32_aspawn): don't forget to free
+	  memory.
+
 Thu Sep  2 09:01:13 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (CreateChild): unicodize.

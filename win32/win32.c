@@ -1085,7 +1085,8 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
     char fbuf[MAXPATHLEN];
     char *p = NULL;
     const char *shell = NULL;
-    const WCHAR *wcmd, *wshell;
+    WCHAR *wcmd, *wshell;
+    rb_pid_t ret;
 
     if (check_spawn_mode(mode)) return -1;
 
@@ -1171,7 +1172,10 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
     wcmd = cmd ? acp_to_wstr(cmd, NULL) : NULL;
     wshell = shell ? acp_to_wstr(shell, NULL) : NULL;
 
-    return child_result(CreateChild(wcmd, wshell, NULL, NULL, NULL, NULL), mode);
+    ret = child_result(CreateChild(wcmd, wshell, NULL, NULL, NULL, NULL), mode);
+    free(wshell);
+    free(wcmd);
+    return ret;
 }
 
 rb_pid_t
@@ -1182,7 +1186,8 @@ rb_w32_aspawn(int mode, const char *prog, char *const *argv)
     BOOL ntcmd = FALSE, tmpnt;
     const char *shell;
     char *cmd, fbuf[MAXPATHLEN];
-    const WCHAR *wcmd, *wprog;
+    WCHAR *wcmd, *wprog;
+    rb_pid_t ret;
 
     if (check_spawn_mode(mode)) return -1;
 
@@ -1231,7 +1236,10 @@ rb_w32_aspawn(int mode, const char *prog, char *const *argv)
     wcmd = cmd ? acp_to_wstr(cmd, NULL) : NULL;
     wprog = prog ? acp_to_wstr(prog, NULL) : NULL;
 
-    return child_result(CreateChild(wcmd, wprog, NULL, NULL, NULL, NULL), mode);
+    ret = child_result(CreateChild(wcmd, wprog, NULL, NULL, NULL, NULL), mode);
+    free(wprog);
+    free(wcmd);
+    return ret;
 }
 
 typedef struct _NtCmdLineElement {
