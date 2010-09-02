@@ -63,7 +63,7 @@
 
 #define TO_SOCKET(x)	_get_osfhandle(x)
 
-static struct ChildRecord *CreateChild(const char *, const char *, SECURITY_ATTRIBUTES *, HANDLE, HANDLE, HANDLE);
+static struct ChildRecord *CreateChild(const WCHAR *, const WCHAR *, SECURITY_ATTRIBUTES *, HANDLE, HANDLE, HANDLE);
 static int has_redirection(const char *);
 int rb_w32_wait_events(HANDLE *events, int num, DWORD timeout);
 static int rb_w32_open_osfhandle(intptr_t osfhandle, int flags);
@@ -987,12 +987,12 @@ child_result(struct ChildRecord *child, int mode)
 }
 
 static struct ChildRecord *
-CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa,
+CreateChild(const WCHAR *cmd, const WCHAR *prog, SECURITY_ATTRIBUTES *psa,
 	    HANDLE hInput, HANDLE hOutput, HANDLE hError)
 {
     BOOL fRet;
     DWORD  dwCreationFlags;
-    STARTUPINFO aStartupInfo;
+    STARTUPINFOW aStartupInfo;
     PROCESS_INFORMATION aProcessInformation;
     SECURITY_ATTRIBUTES sa;
     struct ChildRecord *child;
@@ -1015,9 +1015,9 @@ CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa,
 	psa = &sa;
     }
 
-    memset(&aStartupInfo, 0, sizeof (STARTUPINFO));
-    memset(&aProcessInformation, 0, sizeof (PROCESS_INFORMATION));
-    aStartupInfo.cb = sizeof (STARTUPINFO);
+    memset(&aStartupInfo, 0, sizeof(aStartupInfo));
+    memset(&aProcessInformation, 0, sizeof(aProcessInformation));
+    aStartupInfo.cb = sizeof(aStartupInfo);
     aStartupInfo.dwFlags = STARTF_USESTDHANDLES;
     if (hInput) {
 	aStartupInfo.hStdInput  = hInput;
@@ -1041,9 +1041,9 @@ CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa,
     dwCreationFlags = (NORMAL_PRIORITY_CLASS);
 
     RUBY_CRITICAL({
-	fRet = CreateProcess(prog, (char *)cmd, psa, psa,
-			     psa->bInheritHandle, dwCreationFlags, NULL, NULL,
-			     &aStartupInfo, &aProcessInformation);
+	fRet = CreateProcessW(prog, (WCHAR *)cmd, psa, psa,
+			      psa->bInheritHandle, dwCreationFlags, NULL, NULL,
+			      &aStartupInfo, &aProcessInformation);
 	errno = map_errno(GetLastError());
     });
 
@@ -1077,12 +1077,15 @@ is_batch(const char *cmd)
     return 0;
 }
 
+static WCHAR *acp_to_wstr(const char *, long *);
+
 rb_pid_t
 rb_w32_spawn(int mode, const char *cmd, const char *prog)
 {
     char fbuf[MAXPATHLEN];
     char *p = NULL;
     const char *shell = NULL;
+    const WCHAR *wcmd, *wshell;
 
     if (check_spawn_mode(mode)) return -1;
 
@@ -1164,7 +1167,11 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
 	}
     }
 
-    return child_result(CreateChild(cmd, shell, NULL, NULL, NULL, NULL), mode);
+    /* assume ACP */
+    wcmd = cmd ? acp_to_wstr(cmd, NULL) : NULL;
+    wshell = shell ? acp_to_wstr(shell, NULL) : NULL;
+
+    return child_result(CreateChild(wcmd, wshell, NULL, NULL, NULL, NULL), mode);
 }
 
 rb_pid_t
@@ -1175,6 +1182,7 @@ rb_w32_aspawn(int mode, const char *prog, char *const *argv)
     BOOL ntcmd = FALSE, tmpnt;
     const char *shell;
     char *cmd, fbuf[MAXPATHLEN];
+    const WCHAR *wcmd, *wprog;
 
     if (check_spawn_mode(mode)) return -1;
 
@@ -1219,7 +1227,11 @@ rb_w32_aspawn(int mode, const char *prog, char *const *argv)
 	join_argv(cmd, argv, FALSE);
     }
 
-    return child_result(CreateChild(cmd, prog, NULL, NULL, NULL, NULL), mode);
+    /* assume ACP */
+    wcmd = cmd ? acp_to_wstr(cmd, NULL) : NULL;
+    wprog = prog ? acp_to_wstr(prog, NULL) : NULL;
+
+    return child_result(CreateChild(wcmd, wprog, NULL, NULL, NULL, NULL), mode);
 }
 
 typedef struct _NtCmdLineElement {
@@ -1694,6 +1706,17 @@ opendir_internal(HANDLE fh, WIN32_FIND_DATAW *fd)
     p->size = idx;
     p->curr = p->start;
     return p;
+}
+
+static WCHAR *
+acp_to_wstr(const char *str, long *plen)
+{
+    WCHAR *ptr;
+    int len = MultiByteToWideChar(CP_ACP, 0, str, -1, NULL, 0) - 1;
+    if (!(ptr = malloc(sizeof(WCHAR) * (len + 1)))) return 0;
+    MultiByteToWideChar(CP_ACP, 0, str, -1, ptr, len + 1);
+    if (plen) *plen = len;
+    return ptr;
 }
 
 static char *
