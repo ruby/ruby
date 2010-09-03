@@ -17,8 +17,16 @@ with all sufficient information, see the ChangeLog file.
 
 * new hash immediates
 
-  Ruby 1.9 style hash syntax e.g. { key: value } is now also supported
-  in 1.8.  You can also write a method invocation syntax foo bar: baz.
+  Ruby 1.9 style hash syntax e.g. { key: value } is now supported.
+  Just like the normal hash syntax, you can put key-value pairs
+  without enclosing parentheses at the end of a method argument list.
+  e.g. some_method foo: 1, bar: 2
+
+* new method invocation syntax
+
+  Ruby 1.9 style special method invocation syntax f.(x), which is
+  equivalent to f.call(x), is supported.  This is mainly for use
+  in invoking a Proc.
 
 === Configuration changes
 

@@ -1900,6 +1900,16 @@ method_call	: operation paren_args
 		    {
 			$$ = new_call($1, $3, 0);
 		    }
+		| primary_value '.' paren_args
+		    {
+			$$ = new_call($1, rb_intern("call"), $3);
+			fixpos($$, $1);
+		    }
+		| primary_value tCOLON2 paren_args
+		    {
+			$$ = new_call($1, rb_intern("call"), $3);
+			fixpos($$, $1);
+		    }
 		| kSUPER paren_args
 		    {
 			$$ = new_super($2);
