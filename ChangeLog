@@ -13,8 +13,8 @@ Mon Aug 23 11:42:41 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 	* ext/openssl/ossl_asn1.c (obj_to_asn1bool): fixed ASN1::Boolean
 	  encoding issue for OpenSSL 1.0.0 compatibility.
 	  ASN1::Boolean.new(false).to_der wrongly generated "\1\1\377" which
-	  means 'true'.  [BUG:3735] 
-	  
+	  means 'true'.  [BUG:3735]
+
 	  ASN1_TYPE_set of OpenSSL <= 0.9.8 treats value 0x100 as 'false' but
 	  OpenSSL >= 1.0.0 treats it as 'true'.  ruby-ossl was using 0x100 for
 	  'false' for backward compatibility.  Just use 0x0 for the case
@@ -40,7 +40,7 @@ Thu Aug 19 16:47:51 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 Sun Aug 15 19:59:58 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/webrick/httpresponse.rb (WEBrick::HTTPResponse#set_error):
-	  Fix for possible cross-site scripting (CVE-2010-0541). 
+	  Fix for possible cross-site scripting (CVE-2010-0541).
 	  Found by Apple, reported by Hideki Yamane.
 	  Patch by Hirokazu Nishio <nishio.hirokazu AT gmail.com>.
 
@@ -150,7 +150,7 @@ Mon Jul 12 22:26:00 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 Sat Jul 10 10:51:29 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: fix use_context condition inversion.
-	[Bug #2553][ruby-core:31164]. Thanks, Andre Nathan. 
+	  [Bug #2553][ruby-core:31164]. Thanks, Andre Nathan.
 
 Fri Jul  9 23:31:26 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
@@ -164,7 +164,7 @@ Thu Jul  8 23:12:30 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 Thu Jul  8 21:10:36 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
-	* test/openssl/test_config.rb: added tests for class methods, 
+	* test/openssl/test_config.rb: added tests for class methods,
 	  constants and parse format of OpenSSL itself.
 
 Thu Jul  8 13:43:13 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
@@ -203,8 +203,8 @@ Fri Jun 25 11:37:34 2010  Akinori MUSHA  <knu@iDaemons.org>
 Wed Jun 23 21:36:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: avoid getcontext() overhead if possible.
-	[ruby-core:27380][Bug #2553]
-	Thanks, Joe Damato, Dan Peterson and Patrick Mohr.
+	  [ruby-core:27380][Bug #2553]
+	  Thanks, Joe Damato, Dan Peterson and Patrick Mohr.
 
 Tue Jun 22 21:33:23 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -277,7 +277,7 @@ Mon May 31 23:44:22 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/stubs.c: dirty hack for frameworks and stubs on MacOS X.
 
-	* ext/tk/lib/tk.rb: stop creating a dummy Tcl/Tk interpreter. 
+	* ext/tk/lib/tk.rb: stop creating a dummy Tcl/Tk interpreter.
 	  And hide a root window before starting eventloop. (for ruby 1.9)
 
 	* ext/tk/tcltklib.c: add codes to support Ruby/Tk-Kit (Rubykit).
