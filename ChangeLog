@@ -1,3 +1,8 @@
+Fri Jun 18 01:33:21 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* enc/Makefile.in (realclean): has been missing. necessary
+	  for make realclean-enc.
+
 Fri Sep  3 23:51:26 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pathname/pathname.c (path_socket_p): Pathname#socket?
