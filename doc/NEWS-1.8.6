@@ -1,0 +1,139 @@
+= NEWS-1.8.6
+
+This document is a list of user visible feature changes made between
+releases except for bug fixes.
+
+Note that each entry is kept so brief that no reason behind or
+reference information is supplied with.  For a full list of changes
+with all sufficient information, see the ChangeLog file.
+
+== Changes since the 1.8.5 release
+
+=== New platforms/build tools support
+
+* IA64 HP-UX
+
+* Visual C++ 8 SP1
+
+* autoconf 2.6x
+
+=== Global constants
+
+* RUBY_PATCHLEVEL
+
+  New constant since 1.8.5-p1.
+
+=== Library updates (outstanding ones only)
+
+* builtin classes
+
+  * New method: Kernel#instance_variable_defined?
+
+  * New method: Module#class_variable_defined?
+
+  * New feature: Dir::glob() can now take an array of glob patterns.
+
+* date
+
+  * Updated based on date2 4.0.3.
+
+* digest
+
+  * New internal APIs for C and Ruby.
+
+  * Support for autoloading.
+
+      require 'digest'
+
+      # autoloads digest/md5
+      md = Digest::MD5.digest("string")
+
+  * New digest class methods: file
+
+  * New digest instance methods: clone, reset, new, inspect,
+    digest_length (alias size or length), block_length()
+
+  * New library: digest/bubblebabble
+
+  * New function: Digest(name)
+
+* fileutils
+
+  * New option for FileUtils.cp_r(): :remove_destination
+
+* nkf
+
+  * Updated based on nkf as of 2007-01-28.
+
+* thread
+
+  * Replaced with much faster mutex implementation in C.  The former
+    implementation, which is slow but considered to be stable, is
+    available with a configure option `--disable-fastthread'.
+
+* tk
+
+  * Updated Tile extension support based on Tile 0.7.8.
+
+  * Support --without-X11 configure option for non-X11 versions of
+    Tcl/Tk (e.g. Tcl/Tk Aqua).
+
+  * New sample script: irbtkw.rbw -- IRB on Ruby/Tk. It has no trouble
+    about STDIN blocking on Windows.
+
+* webrick
+
+  * New method: WEBrick::Cookie.parse_set_cookies()
+
+=== Compatibility issues (excluding feature bug fixes)
+
+* builtin classes
+
+  * String#intern now raises SecurityError when $SAFE level is greater
+    than zero.
+
+* date
+
+  * Time#to_date and Time#to_datetime are added as private methods.
+    They cause name conflict error in ActiveSupport 1.4.1 and prior,
+    which comes with Rails 1.2.2 and prior.  Updating ActiveSupport
+    and/or Rails to the latest versions fixes the problem.
+
+* digest
+
+  * The constructor does no longer take an initial string to feed.
+    The following examples show how to migrate:
+
+      # Before
+      md = Digest::MD5.new("string")
+      # After (works with any version)
+      md = Digest::MD5.new.update("string")
+        
+      # Before
+      hd = Digest::MD5.new("string").hexdigest
+      # After (works with any version)
+      hd = Digest::MD5.hexdigest("string")
+
+  * Digest::Base#==
+
+    * self == string
+
+      Automatic detection between binary digest values and hexadecimal
+      digest values has been dropped.  It is always assumed that a
+      hexadecimal digest value is given for comparison.
+
+    * self == md
+
+      Digest objects are compared by the resulting digest values, not
+      by the exact vector states.
+
+* fileutils
+
+  * A minor implementation change breaks Rake <=0.7.1.
+    Updating Rake to 0.7.2 or higher fixes the problem.
+
+* tk
+
+  * Tk::X_Scrollable (Y_Scrollable) is renamed to Tk::XScrollable
+    (YScrollable). Tk::X_Scrollable (Y_Scrollable) is still available,
+    but it is an alias name.
