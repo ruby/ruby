@@ -450,6 +450,9 @@ VALUE rb_str_tmp_new _((long));
 VALUE rb_str_buf_append _((VALUE, VALUE));
 VALUE rb_str_buf_cat _((VALUE, const char*, long));
 VALUE rb_str_buf_cat2 _((VALUE, const char*));
+#define rb_usascii_str_new rb_str_new
+#define rb_usascii_str_new_cstr rb_str_new_cstr
+#define rb_usascii_str_new2 rb_str_new2
 VALUE rb_obj_as_string _((VALUE));
 VALUE rb_check_string_type _((VALUE));
 VALUE rb_str_dup _((VALUE));
