@@ -486,9 +486,6 @@ end
 
 class Pathname    # * FileTest *
 
-  # See <tt>FileTest.socket?</tt>.
-  def socket?() FileTest.socket?(@path) end
-
   # See <tt>FileTest.owned?</tt>.
   def owned?() FileTest.owned?(@path) end
 
