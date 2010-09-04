@@ -1,3 +1,9 @@
+Sat Sep  4 10:40:50 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (ruby_init_ext): export for golfers.
+
+	* vm_core.h (rb_iseq_eval, rb_iseq_compile_with_option): ditto.
+
 Sun May 23 17:29:41 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* common.mk (capi): uses a timestamp file to get rid of 

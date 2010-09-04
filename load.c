@@ -644,7 +644,7 @@ init_ext_call(VALUE arg)
     return Qnil;
 }
 
-void
+RUBY_FUNC_EXPORTED void
 ruby_init_ext(const char *name, void (*init)(void))
 {
     if (load_lock(name)) {
