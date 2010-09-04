@@ -1,3 +1,8 @@
+Sat Sep  4 23:48:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_s_readlink): symlink target should be in
+	  filesystem encoding.
+
 Sat Sep  4 10:40:50 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (ruby_init_ext): export for golfers.
