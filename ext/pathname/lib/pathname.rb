@@ -486,9 +486,6 @@ end
 
 class Pathname    # * FileTest *
 
-  # See <tt>FileTest.owned?</tt>.
-  def owned?() FileTest.owned?(@path) end
-
   # See <tt>FileTest.readable?</tt>.
   def readable?() FileTest.readable?(@path) end
 

@@ -688,6 +688,15 @@ path_socket_p(VALUE self)
 }
 
 /*
+ * See <tt>FileTest.owned?</tt>.
+ */
+static VALUE
+path_owned_p(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("owned?"), 1, get_strpath(self));
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -926,4 +935,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "file?", path_file_p, 0);
     rb_define_method(rb_cPathname, "pipe?", path_pipe_p, 0);
     rb_define_method(rb_cPathname, "socket?", path_socket_p, 0);
+    rb_define_method(rb_cPathname, "owned?", path_owned_p, 0);
 }
