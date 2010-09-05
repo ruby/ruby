@@ -486,9 +486,6 @@ end
 
 class Pathname    # * FileTest *
 
-  # See <tt>FileTest.readable?</tt>.
-  def readable?() FileTest.readable?(@path) end
-
   # See <tt>FileTest.world_readable?</tt>.
   def world_readable?() FileTest.world_readable?(@path) end
 
