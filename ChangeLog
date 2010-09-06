@@ -1,3 +1,8 @@
+Mon Sep  6 09:44:50 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* util.c (ruby_strtod): check integr overflow.
+	  [ruby-dev:42180] #3789
+
 Mon Sep  6 06:17:21 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pathname/pathname.c (path_readable_p): Pathname#readable?
