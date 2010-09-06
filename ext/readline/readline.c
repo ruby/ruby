@@ -426,7 +426,7 @@ readline_s_get_line_buffer(VALUE self)
     rb_secure(4);
     if (rl_line_buffer == NULL)
 	return Qnil;
-    return rb_tainted_str_new2(rl_line_buffer);
+    return rb_locale_str_new_cstr(rl_line_buffer);
 }
 #else
 #define readline_s_get_line_buffer rb_f_notimplement
