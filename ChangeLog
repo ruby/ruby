@@ -1,3 +1,8 @@
+Mon Sep  6 23:07:25 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/pathname.c (path_world_readable_p):
+	  Pathname#world_readable?  translated from pathname.rb.
+
 Mon Sep  6 11:03:13 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* Fixed wrong check of missing functions. Patch by Adrian Quark.
