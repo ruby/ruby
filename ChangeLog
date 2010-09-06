@@ -1,3 +1,8 @@
+Mon Sep  6 10:46:55 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* Fixed exception message for SSL post connection check failure. Patch
+	  by Paul Betteridge. ref [Bug #3704]
+
 Mon Sep  6 10:31:59 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/readline/readline.c (readline_s_get_line_buffer):
