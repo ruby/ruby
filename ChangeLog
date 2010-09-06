@@ -1,3 +1,8 @@
+Mon Sep  6 09:47:24 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* util.c (ruby_strtod): check there is at least 1 digit after
+	  "0x" before ".". [ruby-dev:42183] #3790
+
 Mon Sep  6 09:44:50 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* util.c (ruby_strtod): check integr overflow.

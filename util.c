@@ -2123,10 +2123,11 @@ break2:
 	    s0 = ++s;
 	    adj = 0;
 
-	    while (*++s && (s1 = strchr(hexdigit, *s))) {
+	    if (!*++s || !(s1 = strchr(hexdigit, *s))) goto ret0;
+	    do {
 		adj *= 16;
 		adj += (s1 - hexdigit) & 15;
-	    }
+	    } while (*++s && (s1 = strchr(hexdigit, *s)));
 
 	    if (*s == '.') {
 		aadj = 1.;
