@@ -1,3 +1,8 @@
+Wed Sep  8 06:25:41 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/pathname.c (path_setuid_p): Pathname#setuid? translated
+	  from pathname.rb.
+
 Tue Sep  7 21:03:35 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pathname/pathname.c (path_readable_real_p):

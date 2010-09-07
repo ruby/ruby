@@ -486,9 +486,6 @@ end
 
 class Pathname    # * FileTest *
 
-  # See <tt>FileTest.setuid?</tt>.
-  def setuid?() FileTest.setuid?(@path) end
-
   # See <tt>FileTest.setgid?</tt>.
   def setgid?() FileTest.setgid?(@path) end
 
