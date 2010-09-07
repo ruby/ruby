@@ -486,9 +486,6 @@ end
 
 class Pathname    # * FileTest *
 
-  # See <tt>FileTest.readable_real?</tt>.
-  def readable_real?() FileTest.readable_real?(@path) end
-
   # See <tt>FileTest.setuid?</tt>.
   def setuid?() FileTest.setuid?(@path) end
 
