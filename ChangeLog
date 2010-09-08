@@ -51,7 +51,7 @@ Mon Sep  6 09:47:24 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Mon Sep  6 09:44:50 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* util.c (ruby_strtod): check integr overflow.
+	* util.c (ruby_strtod): check integer overflow.
 	  [ruby-dev:42180] #3789
 
 Mon Sep  6 06:17:21 2010  Tanaka Akira  <akr@fsij.org>
@@ -208,7 +208,7 @@ Sun Aug 29 23:54:10 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  include assignment.  [Bug #3759], [ruby-dev:42154]
 
 	* lib/rdoc/parser/ruby.rb (RDoc#parse_class): ignore non-constant
-	  name signleton class.  [Bug #3759], [ruby-dev:42154]
+	  name singleton class.  [Bug #3759], [ruby-dev:42154]
 
 Sun Aug 29 23:25:18 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
