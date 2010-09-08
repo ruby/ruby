@@ -733,6 +733,15 @@ path_setuid_p(VALUE self)
 }
 
 /*
+ * See <tt>FileTest.setgid?</tt>.
+ */
+static VALUE
+path_setgid_p(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("setgid?"), 1, get_strpath(self));
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -976,4 +985,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "world_readable?", path_world_readable_p, 0);
     rb_define_method(rb_cPathname, "readable_real?", path_readable_real_p, 0);
     rb_define_method(rb_cPathname, "setuid?", path_setuid_p, 0);
+    rb_define_method(rb_cPathname, "setgid?", path_setgid_p, 0);
 }
