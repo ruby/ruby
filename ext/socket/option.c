@@ -396,13 +396,18 @@ inspect_timeval_as_interval(int level, int optname, VALUE data, VALUE ret)
     }
 }
 
-#if defined(SOL_SOCKET) && defined(SO_PEERCRED) /* GNU/Linux */
+#if defined(SOL_SOCKET) && defined(SO_PEERCRED) /* GNU/Linux, OpenBSD */
+#if defined(__OpenBSD__)
+#define RUBY_SOCK_PEERCRED struct sockpeercred
+#else
+#define RUBY_SOCK_PEERCRED struct ucred
+#endif
 static int
 inspect_peercred(int level, int optname, VALUE data, VALUE ret)
 {
-    if (RSTRING_LEN(data) == sizeof(struct ucred)) {
-        struct ucred cred;
-        memcpy(&cred, RSTRING_PTR(data), sizeof(struct ucred));
+    if (RSTRING_LEN(data) == sizeof(RUBY_SOCK_PEERCRED)) {
+        RUBY_SOCK_PEERCRED cred;
+        memcpy(&cred, RSTRING_PTR(data), sizeof(RUBY_SOCK_PEERCRED));
         rb_str_catf(ret, " pid=%u euid=%u egid=%u",
 		    (unsigned)cred.pid, (unsigned)cred.uid, (unsigned)cred.gid);
         rb_str_cat2(ret, " (ucred)");
@@ -569,7 +574,7 @@ sockopt_inspect(VALUE self)
 #            if defined(SO_SNDTIMEO) /* POSIX */
               case SO_SNDTIMEO: inspected = inspect_timeval_as_interval(level, optname, data, ret); break;
 #            endif
-#            if defined(SO_PEERCRED) /* GNU/Linux */
+#            if defined(SO_PEERCRED) /* GNU/Linux, OpenBSD */
               case SO_PEERCRED: inspected = inspect_peercred(level, optname, data, ret); break;
 #            endif
             }

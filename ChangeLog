@@ -1,3 +1,8 @@
+Fri Sep 10 02:15:29 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/option.c (inspect_peercred): support OpenBSD-current.
+	  patch by Jeremy Evans.  [ruby-core:32240]
+
 Thu Sep  9 23:25:53 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (vm_backtrace_each): skip allocator frames which have no
