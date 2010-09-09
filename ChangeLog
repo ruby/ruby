@@ -1,3 +1,8 @@
+Thu Sep  9 09:02:01 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/rbinstall.rb (install?): gemspec filename should include
+	  its version. patched by Luis Lavena [ruby-core:32165]
+
 Wed Sep  8 22:46:31 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c (ssl_get_error): Thread context switch was
