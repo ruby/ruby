@@ -125,4 +125,11 @@ module TestDigest
       Data2 => "12a053384a9c0c88e405a06c27dcf49ada62eb2b",
     }
   end if defined?(Digest::RMD160)
+
+  class TestBase < Test::Unit::TestCase
+    def test_base
+      bug3810 = '[ruby-core:32231]'
+      assert_raise(NotImplementedError, bug3810) {Digest::Base.new}
+    end
+  end
 end
