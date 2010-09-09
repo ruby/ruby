@@ -742,6 +742,15 @@ path_setgid_p(VALUE self)
 }
 
 /*
+ * See <tt>FileTest.size</tt>.
+ */
+static VALUE
+path_size(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("size"), 1, get_strpath(self));
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -986,4 +995,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "readable_real?", path_readable_real_p, 0);
     rb_define_method(rb_cPathname, "setuid?", path_setuid_p, 0);
     rb_define_method(rb_cPathname, "setgid?", path_setgid_p, 0);
+    rb_define_method(rb_cPathname, "size", path_size, 0);
 }
