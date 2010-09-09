@@ -1,3 +1,8 @@
+Fri Sep 10 07:29:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/etc/etc.c (etc_systmpdir): assume system default tmpdir
+	  safe.  [ruby-dev:42089]
+
 Fri Sep 10 07:03:23 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pathname/pathname.c (path_size_p): Pathname#size? translated from

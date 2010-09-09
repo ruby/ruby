@@ -584,14 +584,17 @@ etc_sysconfdir(VALUE obj)
 static VALUE
 etc_systmpdir(void)
 {
+    VALUE tmpdir;
 #ifdef _WIN32
     WCHAR path[_MAX_PATH];
     UINT len = rb_w32_system_tmpdir(path, numberof(path));
     if (!len) return Qnil;
-    return rb_w32_conv_from_wchar(path, rb_filesystem_encoding());
+    tmpdir = rb_w32_conv_from_wchar(path, rb_filesystem_encoding());
 #else
-    return rb_filesystem_str_new_cstr("/tmp");
+    tmpdir = rb_filesystem_str_new_cstr("/tmp");
 #endif
+    FL_UNSET(tmpdir, FL_TAINT|FL_UNTRUSTED);
+    return tmpdir;
 }
 
 /*
