@@ -84,4 +84,23 @@ class TestCase < Test::Unit::TestCase
       class Fixnum; undef ===; def ===(o); p 42; true; end; end; case 1; when 1; end
     EOS
   end
+
+  def test_optimization
+    case 1
+    when 0.9, 1.1
+      assert(false)
+    when 1.0
+      assert(true)
+    else
+      assert(false)
+    end
+    case 536870912
+    when 536870911.9, 536870912.1
+      assert(false)
+    when 536870912.0
+      assert(true)
+    else
+      assert(false)
+    end
+  end
 end

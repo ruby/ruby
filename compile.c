@@ -2303,6 +2303,11 @@ case_when_optimizable_literal(NODE * node)
     switch (nd_type(node)) {
       case NODE_LIT: {
 	VALUE v = node->nd_lit;
+	double ival;
+	if (TYPE(v) == T_FLOAT &&
+	    modf(RFLOAT_VALUE(v), &ival) == 0.0) {
+	    return FIXABLE(ival) ? LONG2FIX((long)ival) : rb_dbl2big(ival);
+	}
 	if (SYMBOL_P(v) || rb_obj_is_kind_of(v, rb_cNumeric)) {
 	    return v;
 	}

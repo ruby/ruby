@@ -1260,16 +1260,28 @@ opt_case_dispatch
 (..., VALUE key)
 () // inc += -1;
 {
-    if (BASIC_OP_UNREDEFINED_P(BOP_EQQ)) {
-	VALUE val;
-	if (st_lookup(RHASH_TBL(hash), key, &val)) {
-	    JUMP(FIX2INT(val));
+    switch(TYPE(key)) {
+      case T_FLOAT: {
+	double ival;
+	if (modf(RFLOAT_VALUE(key), &ival) == 0.0) {
+	    key = FIXABLE(ival) ? LONG2FIX((long)ival) : rb_dbl2big(ival);
 	}
-	else {
-	    JUMP(else_offset);
+      }
+      case T_SYMBOL: /* fall through */
+      case T_FIXNUM:
+      case T_BIGNUM:
+      case T_STRING:
+	if (BASIC_OP_UNREDEFINED_P(BOP_EQQ)) {
+	    VALUE val;
+	    if (st_lookup(RHASH_TBL(hash), key, &val)) {
+		JUMP(FIX2INT(val));
+	    }
+	    else {
+		JUMP(else_offset);
+	    }
+	    break;
 	}
-    }
-    else {
+      default: { /* fall through (else) */
 	struct opt_case_dispatch_i_arg arg;
 
 	arg.obj = key;
@@ -1282,6 +1294,7 @@ opt_case_dispatch
 	else {
 	    JUMP(else_offset);
 	}
+      }
     }
 }
 
