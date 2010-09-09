@@ -92,6 +92,6 @@ class TestNetHTTPS < Test::Unit::TestCase
     ex = assert_raise(OpenSSL::SSL::SSLError){
       http.request_get("/") {|res| }
     }
-    assert_match(/hostname was not match/, ex.message)
+    assert_match(/hostname does not match/, ex.message)
   end
 end if defined?(OpenSSL)
