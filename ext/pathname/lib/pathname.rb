@@ -486,9 +486,6 @@ end
 
 class Pathname    # * FileTest *
 
-  # See <tt>FileTest.size?</tt>.
-  def size?() FileTest.size?(@path) end
-
   # See <tt>FileTest.sticky?</tt>.
   def sticky?() FileTest.sticky?(@path) end
 
