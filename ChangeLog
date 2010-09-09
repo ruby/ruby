@@ -1,3 +1,9 @@
+Thu Sep  9 10:44:46 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/ruby/test_env.rb (test_aset): OpenBSD acts like NetBSD in
+	  that it ignores characters after = in ENV.
+	  patched by Jeremy Evans [ruby-core:32184]
+
 Thu Sep  9 09:02:01 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/rbinstall.rb (install?): gemspec filename should include

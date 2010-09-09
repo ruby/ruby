@@ -123,7 +123,7 @@ class TestEnv < Test::Unit::TestCase
     assert_equal(nil, ENV["test"])
     assert_raise(ArgumentError) { ENV["foo\0bar"] = "test" }
     assert_raise(ArgumentError) { ENV["test"] = "foo\0bar" }
-    if /netbsd/ =~ RUBY_PLATFORM
+    if /netbsd|openbsd/ =~ RUBY_PLATFORM
       ENV["foo=bar"] = "test"
       assert_equal("test", ENV["foo=bar"])
       assert_equal("test", ENV["foo"])
