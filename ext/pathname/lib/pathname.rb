@@ -486,9 +486,6 @@ end
 
 class Pathname    # * FileTest *
 
-  # See <tt>FileTest.symlink?</tt>.
-  def symlink?() FileTest.symlink?(@path) end
-
   # See <tt>FileTest.writable?</tt>.
   def writable?() FileTest.writable?(@path) end
 
