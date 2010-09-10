@@ -305,6 +305,37 @@ class TestWEBrickHTTPRequest < Test::Unit::TestCase
     assert(req.ssl?)
   end
 
+  def test_continue_sent
+    msg = <<-_end_of_message_
+      POST /path HTTP/1.1
+      Expect: 100-continue
+      
+    _end_of_message_
+    msg.gsub!(/^ {6}/, "")
+    req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+    req.parse(StringIO.new(msg))
+    assert req['expect']
+    l = msg.size
+    req.continue
+    assert_not_equal l, msg.size
+    assert_match /HTTP\/1.1 100 continue\r\n\r\n\z/, msg
+    assert !req['expect']
+  end
+
+  def test_continue_not_sent
+    msg = <<-_end_of_message_
+      POST /path HTTP/1.1
+      
+    _end_of_message_
+    msg.gsub!(/^ {6}/, "")
+    req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+    req.parse(StringIO.new(msg))
+    assert !req['expect']
+    l = msg.size
+    req.continue
+    assert_equal l, msg.size
+  end
+
   def test_bad_messages
     param = "foo=1;foo=2;foo=3;bar=x"
     msg = <<-_end_of_message_

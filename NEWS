@@ -46,6 +46,10 @@ with all sufficient information, see the ChangeLog file.
     * IO#winsize
     * IO.console
 
+* webrick
+  * new method:
+    * WEBrick::HTTPRequest#continue for generating '100 continue' response.
+
 === Compatibility issues (excluding feature bug fixes)
 
 * Kernel#respond_to?

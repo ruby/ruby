@@ -122,6 +122,15 @@ module WEBrick
       end
     end
 
+    # Generate HTTP/1.1 100 continue response if the client expects it,
+    # otherwise does nothing.
+    def continue
+      if self['expect'] == '100-continue' && @config[:HTTPVersion] >= "1.1"
+        @socket << "HTTP/#{@config[:HTTPVersion]} 100 continue#{CRLF}#{CRLF}"
+        @header.delete('expect')
+      end
+    end
+
     def body(&block)
       block ||= Proc.new{|chunk| @body << chunk }
       read_body(@socket, block)
