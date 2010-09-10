@@ -1,3 +1,8 @@
+Fri Sep 10 13:07:22 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* ext/digest/lib/digest.rb: removed unused exception variable
+	  assignment to avoid a warning.
+
 Fri Sep 10 07:29:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/etc/etc.c (etc_systmpdir): assume system default tmpdir

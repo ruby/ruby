@@ -11,7 +11,7 @@ module Digest
 
     begin
       require lib
-    rescue LoadError => e
+    rescue LoadError
       raise LoadError, "library not found for class Digest::#{name} -- #{lib}", caller(1)
     end
     unless Digest.const_defined?(name)
