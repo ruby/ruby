@@ -2666,12 +2666,9 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
     int ecflags = 0;
     VALUE ecopts = Qnil;
 
-    if (0 < argc) {
-        opt = rb_check_convert_type(argv[argc-1], T_HASH, "Hash", "to_hash");
-        if (!NIL_P(opt)) {
-            argc--;
-            ecflags = rb_econv_prepare_opts(opt, &ecopts);
-        }
+    argc = rb_scan_args(argc, argv, "02:", NULL, NULL, &opt);
+    if (!NIL_P(opt)) {
+	ecflags = rb_econv_prepare_opts(opt, &ecopts);
     }
     return str_transcode0(argc, argv, self, ecflags, ecopts);
 }
@@ -2908,25 +2905,28 @@ econv_args(int argc, VALUE *argv,
     int *ecflags_p,
     VALUE *ecopts_p)
 {
-    VALUE opt, opthash, flags_v, ecopts;
+    VALUE opt, flags_v, ecopts;
     int sidx, didx;
     const char *sname, *dname;
     rb_encoding *senc, *denc;
     int ecflags;
 
-    rb_scan_args(argc, argv, "21", snamev_p, dnamev_p, &opt);
+    argc = rb_scan_args(argc, argv, "21:", snamev_p, dnamev_p, &flags_v, &opt);
 
-    if (NIL_P(opt)) {
-        ecflags = 0;
+    if (!NIL_P(flags_v)) {
+	if (!NIL_P(opt)) {
+	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 2..3)",
+		argc + 1);
+	}
+        ecflags = NUM2INT(rb_to_int(flags_v));
         ecopts = Qnil;
     }
-    else if (!NIL_P(flags_v = rb_check_to_integer(opt, "to_int"))) {
-        ecflags = NUM2INT(flags_v);
-        ecopts = Qnil;
+    else if (!NIL_P(opt)) {
+        ecflags = rb_econv_prepare_opts(opt, &ecopts);
     }
     else {
-        opthash = rb_convert_type(opt, T_HASH, "Hash", "to_hash");
-        ecflags = rb_econv_prepare_opts(opthash, &ecopts);
+        ecflags = 0;
+        ecopts = Qnil;
     }
 
     senc = NULL;
@@ -3543,7 +3543,7 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
     unsigned long output_byteend;
     int flags;
 
-    rb_scan_args(argc, argv, "23", &input, &output, &output_byteoffset_v, &output_bytesize_v, &opt);
+    argc = rb_scan_args(argc, argv, "23:", &input, &output, &output_byteoffset_v, &output_bytesize_v, &flags_v, &opt);
 
     if (NIL_P(output_byteoffset_v))
         output_byteoffset = 0; /* dummy */
@@ -3555,15 +3555,15 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
     else
         output_bytesize = NUM2LONG(output_bytesize_v);
 
-    if (NIL_P(opt)) {
-        flags = 0;
+    if (!NIL_P(flags_v)) {
+	if (!NIL_P(opt)) {
+	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 2..5)",
+		argc + 1);
+	}
+	flags = NUM2INT(rb_to_int(flags_v));
     }
-    else if (!NIL_P(flags_v = rb_check_to_integer(opt, "to_int"))) {
-        flags = NUM2INT(flags_v);
-    }
-    else {
+    else if (!NIL_P(opt)) {
         VALUE v;
-        opt = rb_convert_type(opt, T_HASH, "Hash", "to_hash");
         flags = 0;
         v = rb_hash_aref(opt, sym_partial_input);
         if (RTEST(v))
@@ -3571,6 +3571,9 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
         v = rb_hash_aref(opt, sym_after_output);
         if (RTEST(v))
             flags |= ECONV_AFTER_OUTPUT;
+    }
+    else {
+        flags = 0;
     }
 
     StringValue(output);

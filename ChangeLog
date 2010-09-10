@@ -1,3 +1,22 @@
+Fri Sep 10 16:49:20 2010  Akinori MUSHA  <knu@iDaemons.org>
+
+	* class.c (rb_scan_args): Add support for optional keyword
+	  argument hash.
+
+	* README.EXT, README.EXT.ja: Update documentation accordingly.
+
+	* dir.c (dir_initialize): Make use of the new rb_scan_args()
+	  feature.
+
+	* io.c (rb_io_s_popen, rb_scan_open_args, rb_io_initialize)
+	  (rb_io_s_pipe, open_key_args, io_s_foreach, io_s_readlines)
+	  (rb_io_s_read, rb_io_set_encoding): Ditto.
+
+	* transcode.c (str_transcode, econv_args)
+	  (econv_primitive_convert): Ditto.
+
+	* ext/zlib/zlib.c (rb_gzreader_initialize): Ditto.
+
 Fri Sep 10 10:33:18 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* random.c (rb_genrand_ulong_limited): renamed from

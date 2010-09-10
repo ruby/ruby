@@ -1376,9 +1376,10 @@ rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
     const char *p = fmt;
     VALUE *var;
     va_list vargs;
-    int f_var = 0, f_block = 0;
+    int f_var = 0, f_hash = 0, f_block = 0;
     int n_lead = 0, n_opt = 0, n_trail = 0, n_mand;
     int argi = 0;
+    VALUE hash = Qnil;
 
     if (ISDIGIT(*p)) {
 	n_lead = *p - '0';
@@ -1402,6 +1403,10 @@ rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
 	}
     }
   block_arg:
+    if (*p == ':') {
+	f_hash = 1;
+	p++;
+    }
     if (*p == '&') {
 	f_block = 1;
 	p++;
@@ -1416,6 +1421,23 @@ rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
 
     va_start(vargs, fmt);
 
+    /* capture an option hash - phase 1: pop */
+    if (f_hash && n_mand < argc) {
+	VALUE last = argv[argc - 1];
+
+	if (NIL_P(last)) {
+	    /* nil is taken as an empty option hash only if it is not
+	       ambiguous; i.e. '*' is not specified and arguments are
+	       given more than sufficient */
+	    if (!f_var && n_mand + n_opt < argc)
+		argc--;
+	}
+	else {
+	    hash = rb_check_convert_type(last, T_HASH, "Hash", "to_hash");
+	    if (!NIL_P(hash))
+		argc--;
+	}
+    }
     /* capture leading mandatory arguments */
     for (i = n_lead; i-- > 0; ) {
 	var = va_arg(vargs, VALUE *);
@@ -1451,6 +1473,11 @@ rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
 	var = va_arg(vargs, VALUE *);
 	if (var) *var = argv[argi];
 	argi++;
+    }
+    /* capture an option hash - phase 2: assignment */
+    if (f_hash) {
+	var = va_arg(vargs, VALUE *);
+	if (var) *var = hash;
     }
     /* capture iterator block */
     if (f_block) {

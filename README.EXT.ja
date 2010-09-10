@@ -1198,12 +1198,13 @@ rb_scan_args(int argc, VALUE *argv, const char *fmt, ...)
   トは，ABNFで記述すると以下の通りです．
 
 --
-scan-arg-spec  := param-arg-spec [block-arg-spec]
+scan-arg-spec  := param-arg-spec [option-hash-arg-spec] [block-arg-spec]
 
 param-arg-spec := pre-arg-spec [post-arg-spec] / post-arg-spec / pre-opt-post-arg-spec
 pre-arg-spec   := num-of-leading-mandatory-args [num-of-optional-args]
 post-arg-spec  := sym-for-variable-length-args [num-of-trailing-mandatory-args]
 pre-opt-post-arg-spec := num-of-leading-mandatory-args num-of-optional-args num-of-trailing-mandatory-args
+option-hash-arg-spec := sym-for-option-hash-arg
 block-arg-spec := sym-for-block-arg
 
 num-of-leading-mandatory-args  := DIGIT ; 先頭に置かれる省略不能な引数の数
@@ -1211,6 +1212,15 @@ num-of-optional-args           := DIGIT ; 続いて置かれる省略可能な引数の数
 sym-for-variable-length-args   := "*"   ; 続いて置かれる可変長引数を
                                         ; Rubyの配列で取得するための指定
 num-of-trailing-mandatory-args := DIGIT ; 終端に置かれる省略不能な引数の数
+sym-for-option-hash-arg        := ":"   ; オプションハッシュを取得する
+                                        ; ための指定; 省略不能な引数の
+                                        ; 数よりも多くの引数が指定され，
+                                        ; 最後の引数がハッシュ（または
+                                        ; #to_hashで変換可能）の場合に
+                                        ; 取得される．最後の引数がnilの
+                                        ; 場合，可変長引数指定がなく，
+                                        ; 省略不能引数の数よりも多くの
+                                        ; 引数が指定された場合に取得される
 sym-for-block-arg              := "&"   ; イテレータブロックを取得するための
                                         ; 指定
 --
@@ -1223,8 +1233,8 @@ sym-for-block-arg              := "&"   ; イテレータブロックを取得するための
   省略可能引数が省略された時の変数の値はnil(C言語のレベルでは
   Qnil)になります．
 
-  返り値は与えられた引数の数です．イテレータブロックは数えま
-  せん．
+  返り値は与えられた引数の数です．オプションハッシュおよびイ
+  テレータブロックは数えません．
 
 ** Rubyメソッド呼び出し
 

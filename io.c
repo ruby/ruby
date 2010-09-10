@@ -5238,21 +5238,6 @@ pipe_open_s(VALUE prog, const char *modestr, int fmode, convconfig_t *convconfig
     return pipe_open(&earg, prog, modestr, fmode, convconfig);
 }
 
-static VALUE
-pop_last_hash(int *argc_p, VALUE *argv)
-{
-    VALUE last, tmp;
-    if (*argc_p == 0)
-        return Qnil;
-    last = argv[*argc_p-1];
-    if (NIL_P(last)) return Qnil;
-    tmp = rb_check_convert_type(last, T_HASH, "Hash", "to_hash");
-    if (NIL_P(tmp))
-        return Qnil;
-    (*argc_p)--;
-    return tmp;
-}
-
 /*
  *  call-seq:
  *     IO.popen(cmd, mode="r" [, opt])               -> io
@@ -5344,8 +5329,7 @@ rb_io_s_popen(int argc, VALUE *argv, VALUE klass)
     int oflags, fmode;
     convconfig_t convconfig;
 
-    opt = pop_last_hash(&argc, argv);
-    rb_scan_args(argc, argv, "11", &pname, &pmode);
+    argc = rb_scan_args(argc, argv, "11:", &pname, &pmode, &opt);
 
     rb_io_extract_modeenc(&pmode, 0, opt, &oflags, &fmode, &convconfig);
     modestr = rb_io_oflags_modestr(oflags);
@@ -5389,12 +5373,11 @@ rb_scan_open_args(int argc, VALUE *argv,
         VALUE *fname_p, int *oflags_p, int *fmode_p,
         convconfig_t *convconfig_p, mode_t *perm_p)
 {
-    VALUE opt=Qnil, fname, vmode, vperm;
+    VALUE opt, fname, vmode, vperm;
     int oflags, fmode;
     mode_t perm;
 
-    opt = pop_last_hash(&argc, argv);
-    rb_scan_args(argc, argv, "12", &fname, &vmode, &vperm);
+    argc = rb_scan_args(argc, argv, "12:", &fname, &vmode, &vperm, &opt);
     FilePathValue(fname);
 
     rb_io_extract_modeenc(&vmode, &vperm, opt, &oflags, &fmode, convconfig_p);
@@ -6462,8 +6445,7 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
 
     rb_secure(4);
 
-    opt = pop_last_hash(&argc, argv);
-    rb_scan_args(argc, argv, "11", &fnum, &vmode);
+    argc = rb_scan_args(argc, argv, "11:", &fnum, &vmode, &opt);
     rb_io_extract_modeenc(&vmode, 0, opt, &oflags, &fmode, &convconfig);
 
     fd = NUM2INT(fnum);
@@ -7776,8 +7758,7 @@ rb_io_s_pipe(int argc, VALUE *argv, VALUE klass)
     int fmode = 0;
     VALUE ret;
 
-    opt = pop_last_hash(&argc, argv);
-    rb_scan_args(argc, argv, "02", &v1, &v2);
+    argc = rb_scan_args(argc, argv, "02:", &v1, &v2, &opt);
     if (rb_pipe(pipes) == -1)
         rb_sys_fail(0);
 
@@ -7824,22 +7805,20 @@ struct foreach_arg {
 };
 
 static void
-open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
+open_key_args(int argc, VALUE *argv, VALUE opt, struct foreach_arg *arg)
 {
-    VALUE opt, v;
+    VALUE path, v;
 
-    FilePathValue(argv[0]);
+    path = *argv++;
+    argc--;
+    FilePathValue(path);
     arg->io = 0;
-    arg->argc = argc - 1;
-    arg->argv = argv + 1;
-    if (argc == 1) {
-      no_key:
-	arg->io = rb_io_open(argv[0], INT2NUM(O_RDONLY), INT2FIX(0666), Qnil);
+    arg->argc = argc;
+    arg->argv = argv;
+    if (NIL_P(opt)) {
+	arg->io = rb_io_open(path, INT2NUM(O_RDONLY), INT2FIX(0666), Qnil);
 	return;
     }
-    opt = pop_last_hash(&arg->argc, arg->argv);
-    if (NIL_P(opt)) goto no_key;
-
     v = rb_hash_aref(opt, sym_open_args);
     if (!NIL_P(v)) {
 	VALUE args;
@@ -7853,13 +7832,13 @@ open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
 	}
 #endif
 	args = rb_ary_tmp_new(n);
-	rb_ary_push(args, argv[0]);
+	rb_ary_push(args, path);
 	rb_ary_concat(args, v);
 	arg->io = rb_io_open_with_args((int)n, RARRAY_PTR(args));
 	rb_ary_clear(args);	/* prevent from GC */
 	return;
     }
-    arg->io = rb_io_open(argv[0], Qnil, Qnil, opt);
+    arg->io = rb_io_open(path, Qnil, Qnil, opt);
 }
 
 static VALUE
@@ -7902,11 +7881,12 @@ io_s_foreach(struct foreach_arg *arg)
 static VALUE
 rb_io_s_foreach(int argc, VALUE *argv, VALUE self)
 {
+    VALUE opt;
     struct foreach_arg arg;
 
-    rb_scan_args(argc, argv, "13", NULL, NULL, NULL, NULL);
+    argc = rb_scan_args(argc, argv, "13:", NULL, NULL, NULL, NULL, &opt);
     RETURN_ENUMERATOR(self, argc, argv);
-    open_key_args(argc, argv, &arg);
+    open_key_args(argc, argv, opt, &arg);
     if (NIL_P(arg.io)) return Qnil;
     return rb_ensure(io_s_foreach, (VALUE)&arg, rb_io_close, arg.io);
 }
@@ -7938,10 +7918,11 @@ io_s_readlines(struct foreach_arg *arg)
 static VALUE
 rb_io_s_readlines(int argc, VALUE *argv, VALUE io)
 {
+    VALUE opt;
     struct foreach_arg arg;
 
-    rb_scan_args(argc, argv, "13", NULL, NULL, NULL, NULL);
-    open_key_args(argc, argv, &arg);
+    argc = rb_scan_args(argc, argv, "13:", NULL, NULL, NULL, NULL, &opt);
+    open_key_args(argc, argv, opt, &arg);
     if (NIL_P(arg.io)) return Qnil;
     return rb_ensure(io_s_readlines, (VALUE)&arg, rb_io_close, arg.io);
 }
@@ -8001,11 +7982,11 @@ seek_before_access(VALUE argp)
 static VALUE
 rb_io_s_read(int argc, VALUE *argv, VALUE io)
 {
-    VALUE offset;
+    VALUE opt, offset;
     struct foreach_arg arg;
 
-    rb_scan_args(argc, argv, "13", NULL, NULL, &offset, NULL);
-    open_key_args(argc, argv, &arg);
+    argc = rb_scan_args(argc, argv, "13:", NULL, NULL, &offset, NULL, &opt);
+    open_key_args(argc, argv, opt, &arg);
     if (NIL_P(arg.io)) return Qnil;
     if (!NIL_P(offset)) {
 	struct seek_arg sarg;
@@ -8684,8 +8665,7 @@ rb_io_set_encoding(int argc, VALUE *argv, VALUE io)
     rb_io_t *fptr;
     VALUE v1, v2, opt;
 
-    opt = pop_last_hash(&argc, argv);
-    rb_scan_args(argc, argv, "11", &v1, &v2);
+    argc = rb_scan_args(argc, argv, "11:", &v1, &v2, &opt);
     GetOpenFile(io, fptr);
     io_encoding_set(fptr, v1, v2, opt);
     return io;
