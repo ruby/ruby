@@ -1,7 +1,7 @@
 Fri Sep 10 16:49:20 2010  Akinori MUSHA  <knu@iDaemons.org>
 
 	* class.c (rb_scan_args): Add support for optional keyword
-	  argument hash.
+	  argument hash. [ruby-dev:42221] [ruby-dev:38048]
 
 	* README.EXT, README.EXT.ja: Update documentation accordingly.
 
