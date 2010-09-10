@@ -875,11 +875,16 @@ limited_big_rand(struct MT *mt, struct RBignum *limit)
     return rb_big_norm((VALUE)val);
 }
 
+/*
+ * Returns random unsigned long value in [0, _limit_].
+ *
+ * Note that _limit_ is included, and the range of the argument and the
+ * return value depends on environments.
+ */
 unsigned long
-rb_rand_internal(unsigned long i)
+rb_genrand_ulong_limited(unsigned long limit)
 {
-    struct MT *mt = default_mt();
-    return limited_rand(mt, i);
+    return limited_rand(default_mt(), limit);
 }
 
 unsigned int

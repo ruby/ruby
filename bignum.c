@@ -2214,11 +2214,10 @@ static inline VALUE
 big_sparse_p(VALUE x)
 {
     long c = 0, n = RBIGNUM_LEN(x);
-    unsigned long rb_rand_internal(unsigned long i);
 
-    if (          BDIGITS(x)[rb_rand_internal(n / 2) + n / 4]) c++;
-    if (c <= 1 && BDIGITS(x)[rb_rand_internal(n / 2) + n / 4]) c++;
-    if (c <= 1 && BDIGITS(x)[rb_rand_internal(n / 2) + n / 4]) c++;
+    if (          BDIGITS(x)[rb_genrand_ulong_limited(n / 2) + n / 4]) c++;
+    if (c <= 1 && BDIGITS(x)[rb_genrand_ulong_limited(n / 2) + n / 4]) c++;
+    if (c <= 1 && BDIGITS(x)[rb_genrand_ulong_limited(n / 2) + n / 4]) c++;
 
     return (c <= 1) ? Qtrue : Qfalse;
 }

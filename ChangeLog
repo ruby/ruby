@@ -1,3 +1,12 @@
+Fri Sep 10 10:33:18 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* random.c (rb_genrand_ulong_limited): renamed from
+	  rb_rand_internal and now this is public API.
+
+	* include/ruby/ruby.h (rb_genrand_ulong_limited): added.
+
+	* bignum.c (big_sparse_p): use rb_genrand_ulong_limited.
+
 Fri Sep 10 13:07:22 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* ext/digest/lib/digest.rb: removed unused exception variable
