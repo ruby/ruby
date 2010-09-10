@@ -15,7 +15,7 @@ Ruby"
 
   def test_ruby_dev_36909
     assert_nothing_raised do
-      1000.times { NKF.nkf("--oc=eucJP-nkf", "foo") }
+      100.times { NKF.nkf("--oc=eucJP-nkf", "foo") }
     end
   end
 
