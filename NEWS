@@ -9,6 +9,11 @@ reference information is supplied with.  For a full list of changes
 with all sufficient information, see the ChangeLog file.
 
 == Changes since the 1.9.2 release
+=== C API updates
+
+* rb_scan_args() is enhanced with support for option hash argument
+  extraction.
+
 === Library updates (outstanding ones only)
 
 * builtin classes
