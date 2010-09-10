@@ -486,9 +486,6 @@ end
 
 class Pathname    # * FileTest *
 
-  # See <tt>FileTest.sticky?</tt>.
-  def sticky?() FileTest.sticky?(@path) end
-
   # See <tt>FileTest.symlink?</tt>.
   def symlink?() FileTest.symlink?(@path) end
 

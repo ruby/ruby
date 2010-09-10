@@ -760,6 +760,15 @@ path_size_p(VALUE self)
 }
 
 /*
+ * See <tt>FileTest.sticky?</tt>.
+ */
+static VALUE
+path_sticky_p(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("sticky?"), 1, get_strpath(self));
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -1006,4 +1015,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "setgid?", path_setgid_p, 0);
     rb_define_method(rb_cPathname, "size", path_size, 0);
     rb_define_method(rb_cPathname, "size?", path_size_p, 0);
+    rb_define_method(rb_cPathname, "sticky?", path_sticky_p, 0);
 }
