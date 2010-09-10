@@ -195,7 +195,6 @@ class OpenSSL::TestPair < Test::Unit::TestCase
     ctx = OpenSSL::SSL::SSLContext.new()
     ctx.ciphers = "ADH"
     serv = TCPServer.new(host, port)
-    ssls = OpenSSL::SSL::SSLServer.new(serv, ctx)
 
     port = serv.connect_address.ip_port
 
