@@ -29,7 +29,7 @@ class TestRequire < Test::Unit::TestCase
     INPUT
 
     begin
-      assert_in_out_err(["-S", "foo/" * 10000 + "foo"], "") do |r, e|
+      assert_in_out_err(["-S", "foo/" * 2500 + "foo"], "") do |r, e|
         assert_equal([], r)
         assert_operator(2, :<=, e.size)
         assert_equal("openpath: pathname too long (ignored)", e.first)
@@ -48,19 +48,24 @@ class TestRequire < Test::Unit::TestCase
 
   def test_require_path_home
     env_rubypath, env_home = ENV["RUBYPATH"], ENV["HOME"]
+    pathname_too_long = /pathname too long \(ignored\).*\(LoadError\)/m
 
     ENV["RUBYPATH"] = "~"
-    ENV["HOME"] = "/foo" * 10000
-    assert_in_out_err(%w(-S test_ruby_test_require), "", [], /^.+$/)
+    ENV["HOME"] = "/foo" * 2500
+    assert_in_out_err(%w(-S test_ruby_test_require), "", [], pathname_too_long)
 
-    ENV["RUBYPATH"] = "~" + "/foo" * 10000
+    ENV["RUBYPATH"] = "~" + "/foo" * 2500
     ENV["HOME"] = "/foo"
-    assert_in_out_err(%w(-S test_ruby_test_require), "", [], /^.+$/)
+    assert_in_out_err(%w(-S test_ruby_test_require), "", [], pathname_too_long)
 
     t = Tempfile.new(["test_ruby_test_require", ".rb"])
     t.puts "p :ok"
     t.close
+
     ENV["RUBYPATH"] = "~"
+    ENV["HOME"] = t.path
+    assert_in_out_err(%w(-S test_ruby_test_require), "", [], /\(LoadError\)/)
+
     ENV["HOME"], name = File.split(t.path)
     assert_in_out_err(["-S", name], "", %w(:ok), [])
 

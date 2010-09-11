@@ -1,3 +1,10 @@
+Sat Sep 11 16:47:41 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (ruby_setenv): raise if putenv and SetEnvironmentVariable
+	  failed, because of the restriction of the size on Windows.
+	  based on a patch from Peter Weldon at [ruby-core:32304].  fix:
+	  Bug#3812, [ruby-core:32250]
+
 Sat Sep 11 15:19:57 2010  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/webrick/httpauth/digestauth.rb (WEBrick::Config::DigestAuth):

@@ -2139,29 +2139,28 @@ void
 ruby_setenv(const char *name, const char *value)
 {
 #if defined(_WIN32)
-    int len;
-    char *buf;
+    VALUE buf;
+    int failed = 0;
     if (strchr(name, '=')) {
+      fail:
 	errno = EINVAL;
 	rb_sys_fail("ruby_setenv");
     }
     if (value) {
-	len = strlen(name) + 1 + strlen(value) + 1;
-	buf = ALLOCA_N(char, len);
-	snprintf(buf, len, "%s=%s", name, value);
-	putenv(buf);
-
-	/* putenv() doesn't handle empty value */
-	if (!*value)
-	    SetEnvironmentVariable(name,value);
+	buf = rb_sprintf("%s=%s", name, value);
     }
     else {
-	len = strlen(name) + 1 + 1;
-	buf = ALLOCA_N(char, len);
-	snprintf(buf, len, "%s=", name);
-	putenv(buf);
-	SetEnvironmentVariable(name, 0);
+	buf = rb_sprintf("%s=", name);
     }
+    failed = putenv(RSTRING_PTR(buf));
+    /* even if putenv() failed, clean up and try to delete the
+     * variable from the system area. */
+    rb_str_resize(buf, 0);
+    if (!value || !*value) {
+	/* putenv() doesn't handle empty value */
+	if (!SetEnvironmentVariable(name,value)) goto fail;
+    }
+    if (failed) goto fail;
 #elif defined(HAVE_SETENV) && defined(HAVE_UNSETENV)
 #undef setenv
 #undef unsetenv
