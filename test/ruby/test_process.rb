@@ -88,11 +88,16 @@ class TestProcess < Test::Unit::TestCase
       :DATA, "DATA",
       :FSIZE, "FSIZE",
       :MEMLOCK, "MEMLOCK",
+      :MSGQUEUE, "MSGQUEUE",
+      :NICE, "NICE",
       :NOFILE, "NOFILE",
       :NPROC, "NPROC",
       :RSS, "RSS",
-      :STACK, "STACK",
+      :RTPRIO, "RTPRIO",
+      :RTTIME, "RTTIME",
       :SBSIZE, "SBSIZE",
+      :SIGPENDING, "SIGPENDING",
+      :STACK, "STACK",
     ].each {|name|
       if Process.const_defined? "RLIMIT_#{name}"
         assert_nothing_raised { Process.getrlimit(name) }

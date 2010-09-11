@@ -3620,6 +3620,9 @@ rlimit_resource_name2int(const char *name, int casetype)
 #ifdef RLIMIT_MEMLOCK
         RESCHECK(MEMLOCK);
 #endif
+#ifdef RLIMIT_MSGQUEUE
+        RESCHECK(MSGQUEUE);
+#endif
         break;
 
       case 'N':
@@ -3629,11 +3632,20 @@ rlimit_resource_name2int(const char *name, int casetype)
 #ifdef RLIMIT_NPROC
         RESCHECK(NPROC);
 #endif
+#ifdef RLIMIT_NICE
+        RESCHECK(NICE);
+#endif
         break;
 
       case 'R':
 #ifdef RLIMIT_RSS
         RESCHECK(RSS);
+#endif
+#ifdef RLIMIT_RTPRIO
+        RESCHECK(RTPRIO);
+#endif
+#ifdef RLIMIT_RTTIME
+        RESCHECK(RTTIME);
 #endif
         break;
 
@@ -3643,6 +3655,9 @@ rlimit_resource_name2int(const char *name, int casetype)
 #endif
 #ifdef RLIMIT_SBSIZE
         RESCHECK(SBSIZE);
+#endif
+#ifdef RLIMIT_SIGPENDING
+        RESCHECK(SIGPENDING);
 #endif
         break;
     }
@@ -3810,17 +3825,22 @@ proc_getrlimit(VALUE obj, VALUE resource)
  *  The available resources are OS dependent.
  *  Ruby may support following resources.
  *
+ *  [AS] total available memory (bytes) (SUSv3, NetBSD, FreeBSD, OpenBSD but 4.4BSD-Lite)
  *  [CORE] core size (bytes) (SUSv3)
  *  [CPU] CPU time (seconds) (SUSv3)
  *  [DATA] data segment (bytes) (SUSv3)
  *  [FSIZE] file size (bytes) (SUSv3)
- *  [NOFILE] file descriptors (number) (SUSv3)
- *  [STACK] stack size (bytes) (SUSv3)
- *  [AS] total available memory (bytes) (SUSv3, NetBSD, FreeBSD, OpenBSD but 4.4BSD-Lite)
  *  [MEMLOCK] total size for mlock(2) (bytes) (4.4BSD, GNU/Linux)
+ *  [MSGQUEUE] allocation for POSIX message queues (bytes) (GNU/Linux)
+ *  [NICE] ceiling on process's nice(2) value (number) (GNU/Linux)
+ *  [NOFILE] file descriptors (number) (SUSv3)
  *  [NPROC] number of processes for the user (number) (4.4BSD, GNU/Linux)
  *  [RSS] resident memory size (bytes) (4.2BSD, GNU/Linux)
+ *  [RTPRIO] ceiling on the process's real-time priority (number) (GNU/Linux)
+ *  [RTTIME] CPU time for real-time process (us) (GNU/Linux)
  *  [SBSIZE] all socket buffers (bytes) (NetBSD, FreeBSD)
+ *  [SIGPENDING] number of queued signals allowed (signals) (GNU/Linux)
+ *  [STACK] stack size (bytes) (SUSv3)
  *
  *  _cur_limit_ and _max_limit_ may be
  *  <code>:INFINITY</code>, <code>"INFINITY"</code> or
@@ -3831,7 +3851,7 @@ proc_getrlimit(VALUE obj, VALUE resource)
  *  corresponding symbols and strings too.
  *  See system setrlimit(2) manual for details.
  *
- *  The following example raise the soft limit of core size to
+ *  The following example raises the soft limit of core size to
  *  the hard limit to try to make core dump possible.
  *
  *    Process.setrlimit(:CORE, Process.getrlimit(:CORE)[1])
@@ -5601,6 +5621,9 @@ Init_process(void)
 	}
 #endif
     }
+#ifdef RLIMIT_AS
+    rb_define_const(rb_mProcess, "RLIMIT_AS", INT2FIX(RLIMIT_AS));
+#endif
 #ifdef RLIMIT_CORE
     rb_define_const(rb_mProcess, "RLIMIT_CORE", INT2FIX(RLIMIT_CORE));
 #endif
@@ -5613,17 +5636,17 @@ Init_process(void)
 #ifdef RLIMIT_FSIZE
     rb_define_const(rb_mProcess, "RLIMIT_FSIZE", INT2FIX(RLIMIT_FSIZE));
 #endif
-#ifdef RLIMIT_NOFILE
-    rb_define_const(rb_mProcess, "RLIMIT_NOFILE", INT2FIX(RLIMIT_NOFILE));
-#endif
-#ifdef RLIMIT_STACK
-    rb_define_const(rb_mProcess, "RLIMIT_STACK", INT2FIX(RLIMIT_STACK));
-#endif
-#ifdef RLIMIT_AS
-    rb_define_const(rb_mProcess, "RLIMIT_AS", INT2FIX(RLIMIT_AS));
-#endif
 #ifdef RLIMIT_MEMLOCK
     rb_define_const(rb_mProcess, "RLIMIT_MEMLOCK", INT2FIX(RLIMIT_MEMLOCK));
+#endif
+#ifdef RLIMIT_MSGQUEUE
+    rb_define_const(rb_mProcess, "RLIMIT_MSGQUEUE", INT2FIX(RLIMIT_MSGQUEUE));
+#endif
+#ifdef RLIMIT_NICE
+    rb_define_const(rb_mProcess, "RLIMIT_NICE", INT2FIX(RLIMIT_NICE));
+#endif
+#ifdef RLIMIT_NOFILE
+    rb_define_const(rb_mProcess, "RLIMIT_NOFILE", INT2FIX(RLIMIT_NOFILE));
 #endif
 #ifdef RLIMIT_NPROC
     rb_define_const(rb_mProcess, "RLIMIT_NPROC", INT2FIX(RLIMIT_NPROC));
@@ -5631,8 +5654,20 @@ Init_process(void)
 #ifdef RLIMIT_RSS
     rb_define_const(rb_mProcess, "RLIMIT_RSS", INT2FIX(RLIMIT_RSS));
 #endif
+#ifdef RLIMIT_RTPRIO
+    rb_define_const(rb_mProcess, "RLIMIT_RTPRIO", INT2FIX(RLIMIT_RTPRIO));
+#endif
+#ifdef RLIMIT_RTTIME
+    rb_define_const(rb_mProcess, "RLIMIT_RTTIME", INT2FIX(RLIMIT_RTTIME));
+#endif
 #ifdef RLIMIT_SBSIZE
     rb_define_const(rb_mProcess, "RLIMIT_SBSIZE", INT2FIX(RLIMIT_SBSIZE));
+#endif
+#ifdef RLIMIT_SIGPENDING
+    rb_define_const(rb_mProcess, "RLIMIT_SIGPENDING", INT2FIX(RLIMIT_SIGPENDING));
+#endif
+#ifdef RLIMIT_STACK
+    rb_define_const(rb_mProcess, "RLIMIT_STACK", INT2FIX(RLIMIT_STACK));
 #endif
 #endif
 

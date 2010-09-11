@@ -1,3 +1,11 @@
+Sun Sep 12 08:36:15 2010  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rlimit_resource_name2int): support more limits:
+	  RLIMIT_MSGQUEUE, RLIMIT_NICE, RLIMIT_RTPRIO, RLIMIT_RTTIME and
+	  RLIMIT_SIGPENDING.
+	  (Init_process): ditto.
+	  patch by Run Paint Run Run.  [ruby-core:32262]
+
 Sun Sep 12 04:27:13 2010  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rlimit_resource_name2int): use STRCASECMP to avoid
