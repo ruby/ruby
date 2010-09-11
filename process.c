@@ -3578,79 +3578,95 @@ proc_setpriority(VALUE obj, VALUE which, VALUE who, VALUE prio)
 static int
 rlimit_resource_name2int(const char *name, int casetype)
 {
-    size_t len = strlen(name);
-    if (16 < len) return -1;
-    if (casetype == 1) {
-        size_t i;
-        char *name2 = ALLOCA_N(char, len+1);
-        for (i = 0; i < len; i++) {
-            if (!ISLOWER(name[i]))
-                return -1;
-            name2[i] = TOUPPER(name[i]);
-        }
-        name2[len] = '\0';
-        name = name2;
-    }
+    int resource;
+    const char *p;
+#define RESCHECK(r) \
+    do { \
+        if (STRCASECMP(name, #r) == 0) { \
+            resource = RLIMIT_##r; \
+            goto found; \
+        } \
+    } while (0)
 
-    switch (*name) {
+    switch (TOUPPER(*name)) {
       case 'A':
 #ifdef RLIMIT_AS
-        if (strcmp(name, "AS") == 0) return RLIMIT_AS;
+        RESCHECK(AS);
 #endif
         break;
 
       case 'C':
 #ifdef RLIMIT_CORE
-        if (strcmp(name, "CORE") == 0) return RLIMIT_CORE;
+        RESCHECK(CORE);
 #endif
 #ifdef RLIMIT_CPU
-        if (strcmp(name, "CPU") == 0) return RLIMIT_CPU;
+        RESCHECK(CPU);
 #endif
         break;
 
       case 'D':
 #ifdef RLIMIT_DATA
-        if (strcmp(name, "DATA") == 0) return RLIMIT_DATA;
+        RESCHECK(DATA);
 #endif
         break;
 
       case 'F':
 #ifdef RLIMIT_FSIZE
-        if (strcmp(name, "FSIZE") == 0) return RLIMIT_FSIZE;
+        RESCHECK(FSIZE);
 #endif
         break;
 
       case 'M':
 #ifdef RLIMIT_MEMLOCK
-        if (strcmp(name, "MEMLOCK") == 0) return RLIMIT_MEMLOCK;
+        RESCHECK(MEMLOCK);
 #endif
         break;
 
       case 'N':
 #ifdef RLIMIT_NOFILE
-        if (strcmp(name, "NOFILE") == 0) return RLIMIT_NOFILE;
+        RESCHECK(NOFILE);
 #endif
 #ifdef RLIMIT_NPROC
-        if (strcmp(name, "NPROC") == 0) return RLIMIT_NPROC;
+        RESCHECK(NPROC);
 #endif
         break;
 
       case 'R':
 #ifdef RLIMIT_RSS
-        if (strcmp(name, "RSS") == 0) return RLIMIT_RSS;
+        RESCHECK(RSS);
 #endif
         break;
 
       case 'S':
 #ifdef RLIMIT_STACK
-        if (strcmp(name, "STACK") == 0) return RLIMIT_STACK;
+        RESCHECK(STACK);
 #endif
 #ifdef RLIMIT_SBSIZE
-        if (strcmp(name, "SBSIZE") == 0) return RLIMIT_SBSIZE;
+        RESCHECK(SBSIZE);
 #endif
         break;
     }
     return -1;
+
+  found:
+    switch (casetype) {
+      case 0:
+        for (p = name; *p; p++)
+            if (!ISUPPER(*p))
+                return -1;
+        break;
+
+      case 1:
+        for (p = name; *p; p++)
+            if (!ISLOWER(*p))
+                return -1;
+        break;
+
+      default:
+        rb_bug("unexpected casetype");
+    }
+    return resource;
+#undef RESCHECK
 }
 
 static int
