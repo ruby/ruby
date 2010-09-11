@@ -41,9 +41,9 @@ end
 module SecureRandom
   # SecureRandom.random_bytes generates a random binary string.
   #
-  # The argument n specifies the length of the result string.
+  # The argument _n_ specifies the length of the result string.
   #
-  # If n is not specified, 16 is assumed.
+  # If _n_ is not specified, 16 is assumed.
   # It may be larger in future.
   #
   # The result may contain any byte: "\x00" - "\xff".
@@ -115,10 +115,10 @@ module SecureRandom
 
   # SecureRandom.hex generates a random hex string.
   #
-  # The argument n specifies the length of the random length.
+  # The argument _n_ specifies the length of the random length.
   # The length of the result string is twice of n.
   #
-  # If n is not specified, 16 is assumed.
+  # If _n_ is not specified, 16 is assumed.
   # It may be larger in future.
   #
   # The result may contain 0-9 and a-f.
@@ -134,10 +134,10 @@ module SecureRandom
 
   # SecureRandom.base64 generates a random base64 string.
   #
-  # The argument n specifies the length of the random length.
+  # The argument _n_ specifies the length of the random length.
   # The length of the result string is about 4/3 of n.
   #
-  # If n is not specified, 16 is assumed.
+  # If _n_ is not specified, 16 is assumed.
   # It may be larger in future.
   #
   # The result may contain A-Z, a-z, 0-9, "+", "/" and "=".
@@ -148,7 +148,7 @@ module SecureRandom
   # If secure random number generator is not available,
   # NotImplementedError is raised.
   #
-  # See RFC 3548 for base64.
+  # See RFC 3548 for the definition of base64.
   def self.base64(n=nil)
     [random_bytes(n)].pack("m*").delete("\n")
   end
@@ -178,7 +178,7 @@ module SecureRandom
   # If secure random number generator is not available,
   # NotImplementedError is raised.
   #
-  # See RFC 3548 for URL-safe base64.
+  # See RFC 3548 for the definition of URL-safe base64.
   def self.urlsafe_base64(n=nil, padding=false)
     s = [random_bytes(n)].pack("m*")
     s.delete!("\n")
@@ -189,7 +189,7 @@ module SecureRandom
 
   # SecureRandom.random_number generates a random number.
   #
-  # If an positive integer is given as n,
+  # If a positive integer is given as _n_,
   # SecureRandom.random_number returns an integer:
   # 0 <= SecureRandom.random_number(n) < n.
   #
@@ -197,7 +197,7 @@ module SecureRandom
   #   p SecureRandom.random_number(100) #=> 88
   #
   # If 0 is given or an argument is not given,
-  # SecureRandom.random_number returns an float:
+  # SecureRandom.random_number returns a float:
   # 0.0 <= SecureRandom.random_number() < 1.0.
   #
   #   p SecureRandom.random_number #=> 0.596506046187744
