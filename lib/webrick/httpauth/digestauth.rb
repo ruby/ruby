@@ -19,6 +19,30 @@ require 'digest/sha1'
 
 module WEBrick
   module HTTPAuth
+
+    ##
+    # RFC 2617 Digest Access Authentication for WEBrick
+    #
+    # Use this class to add digest authentication to a WEBrick servlet.
+    #
+    # Here is an example of how to set up DigestAuth:
+    #
+    #   config = { :Realm => 'DigestAuth example realm' }
+    #
+    #   htpasswd = WEBrick::HTTPAuth::Htpasswd.new 'my_password_file'
+    #   htpasswd.auth_type = WEBrick::HTTPAuth::DigestAuth
+    #   htpasswd.set_passwd config[:Realm], 'username', 'password'
+    #   htpasswd.flush
+    #
+    #   config[:UserDB] = htpasswd
+    #
+    #   digest_auth = WEBrick::HTTPAuth::DigestAuth.new config
+    #
+    # When using this as with a servlet be sure not to create a new DigestAuth
+    # object in the servlet's #initialize.  By default WEBrick creates a new
+    # servlet instance for every request and the DigestAuth object must be
+    # used across requests.
+
     class DigestAuth
       include Authenticator
 
@@ -26,10 +50,26 @@ module WEBrick
       OpaqueInfo = Struct.new(:time, :nonce, :nc)
       attr_reader :algorithm, :qop
 
+      ##
+      # Used by UserDB to create a password entry
+
       def self.make_passwd(realm, user, pass)
         pass ||= ""
         Digest::MD5::hexdigest([user, realm, pass].join(":"))
       end
+
+      ##
+      # Creates a new DigestAuth instance.  Be sure to use the same DigestAuth
+      # instance for multiple requests as it saves state between requests in
+      # order to perform authentication.
+      #
+      # See WEBrick::Config::DigestAuth for default configuration entries
+      #
+      # You must supply the following configuration entries:
+      #
+      # :Realm:: The name of the realm being protected.
+      # :UserDB:: A database of usernames and passwords.  See Htpasswd,
+      #           Htdigest, Htgroup
 
       def initialize(config, default=Config::DigestAuth)
         check_init(config)
@@ -62,6 +102,10 @@ module WEBrick
         @mutex = Mutex.new
       end
 
+      ##
+      # Authenticates a +req+ and returns a 401 Unauthorized using +res+ if
+      # the authentication was not correct.
+
       def authenticate(req, res)
         unless result = @mutex.synchronize{ _authenticate(req, res) }
           challenge(req, res)
@@ -71,6 +115,10 @@ module WEBrick
         end
         return true
       end
+
+      ##
+      # Returns a challenge response which asks for for authentication
+      # information
 
       def challenge(req, res, stale=false)
         nonce = generate_next_nonce(req)

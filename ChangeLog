@@ -1,3 +1,11 @@
+Sat Sep 11 15:19:57 2010  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/webrick/httpauth/digestauth.rb (WEBrick::Config::DigestAuth):
+	  Add documentation
+
+	* lib/webrick/config.rb (WEBrick::Config::DigestAuth): Add
+	  documentation
+
 Sat Sep 11 12:32:05 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/intern.h (rb_set_kcode, rb_get_kcode): removed
