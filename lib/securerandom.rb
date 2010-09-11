@@ -116,7 +116,7 @@ module SecureRandom
   # SecureRandom.hex generates a random hex string.
   #
   # The argument _n_ specifies the length of the random length.
-  # The length of the result string is twice of n.
+  # The length of the result string is twice of _n_.
   #
   # If _n_ is not specified, 16 is assumed.
   # It may be larger in future.
@@ -135,7 +135,7 @@ module SecureRandom
   # SecureRandom.base64 generates a random base64 string.
   #
   # The argument _n_ specifies the length of the random length.
-  # The length of the result string is about 4/3 of n.
+  # The length of the result string is about 4/3 of _n_.
   #
   # If _n_ is not specified, 16 is assumed.
   # It may be larger in future.
