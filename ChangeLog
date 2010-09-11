@@ -88,7 +88,7 @@ Thu Sep  9 22:34:48 2010  wanabe  <s.wanabe@gmail.com>
 	  treated as integer, add to table hash of case that way.
 	  based on a patch from Ikuo KOBORI. [ruby-dev:42038]
 
-	* insnf.def (opt_case_dispatch): ditto.
+	* insns.def (opt_case_dispatch): ditto.
 
 	* test/ruby/test_case.rb: add tests.
 
