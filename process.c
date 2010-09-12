@@ -313,6 +313,10 @@ pst_message(VALUE str, rb_pid_t pid, int status)
  *     stat.to_s   -> string
  *
  *  Show pid and exit status as a string.
+ *
+ *    system("false")
+ *    p $?.to_s         #=> "pid 12766 exit 1"
+ *
  */
 
 static VALUE
@@ -336,6 +340,10 @@ pst_to_s(VALUE st)
  *     stat.inspect   -> string
  *
  *  Override the inspection method.
+ *
+ *    system("false")
+ *    p $?.inspect #=> "#<Process::Status: pid 12861 exit 1>"
+ *
  */
 
 static VALUE
