@@ -486,9 +486,6 @@ end
 
 class Pathname    # * FileTest *
 
-  # See <tt>FileTest.writable_real?</tt>.
-  def writable_real?() FileTest.writable_real?(@path) end
-
   # See <tt>FileTest.zero?</tt>.
   def zero?() FileTest.zero?(@path) end
 end
