@@ -486,9 +486,6 @@ end
 
 class Pathname    # * FileTest *
 
-  # See <tt>FileTest.world_writable?</tt>.
-  def world_writable?() FileTest.world_writable?(@path) end
-
   # See <tt>FileTest.writable_real?</tt>.
   def writable_real?() FileTest.writable_real?(@path) end
 
