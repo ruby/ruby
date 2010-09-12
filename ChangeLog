@@ -1,3 +1,8 @@
+Sun Sep 12 09:16:06 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/pathname.c (path_writable_p): Pathname#writable?
+	  translated from pathname.rb.
+
 Sun Sep 12 08:36:15 2010  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rlimit_resource_name2int): support more limits:

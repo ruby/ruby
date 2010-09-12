@@ -778,6 +778,15 @@ path_symlink_p(VALUE self)
 }
 
 /*
+ * See <tt>FileTest.writable?</tt>.
+ */
+static VALUE
+path_writable_p(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("writable?"), 1, get_strpath(self));
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -1026,4 +1035,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "size?", path_size_p, 0);
     rb_define_method(rb_cPathname, "sticky?", path_sticky_p, 0);
     rb_define_method(rb_cPathname, "symlink?", path_symlink_p, 0);
+    rb_define_method(rb_cPathname, "writable?", path_writable_p, 0);
 }
