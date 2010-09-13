@@ -805,6 +805,15 @@ path_writable_real_p(VALUE self)
 }
 
 /*
+ * See <tt>FileTest.zero?</tt>.
+ */
+static VALUE
+path_zero_p(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("zero?"), 1, get_strpath(self));
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -1056,4 +1065,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "writable?", path_writable_p, 0);
     rb_define_method(rb_cPathname, "world_writable?", path_world_writable_p, 0);
     rb_define_method(rb_cPathname, "writable_real?", path_writable_real_p, 0);
+    rb_define_method(rb_cPathname, "zero?", path_zero_p, 0);
 }

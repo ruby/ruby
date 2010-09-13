@@ -484,13 +484,6 @@ class Pathname
 end
 
 
-class Pathname    # * FileTest *
-
-  # See <tt>FileTest.zero?</tt>.
-  def zero?() FileTest.zero?(@path) end
-end
-
-
 class Pathname    # * Dir *
   # See <tt>Dir.glob</tt>.  Returns or yields Pathname objects.
   def Pathname.glob(*args) # :yield: pathname
