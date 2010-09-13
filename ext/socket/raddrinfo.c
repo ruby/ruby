@@ -56,7 +56,7 @@ ruby_getaddrinfo(const char *nodename, const char *servname,
 #if defined(_AIX)
 static int
 ruby_getaddrinfo__aix(const char *nodename, const char *servname,
-		      struct addrinfo *hints, struct addrinfo **res)
+		      const struct addrinfo *hints, struct addrinfo **res)
 {
     int error = getaddrinfo(nodename, servname, hints, res);
     struct addrinfo *r;
