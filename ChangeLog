@@ -1,3 +1,8 @@
+Mon Sep 13 10:12:09 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* util.c (ruby_strtod): reject Float('0x0.').
+	  [ruby-dev:42239] Bug #3820
+
 Mon Sep 13 09:23:58 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/openssl/ossl_bn.c (ossl_bn_is_prime): fix comparison

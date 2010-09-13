@@ -2122,6 +2122,7 @@ break2:
 	    static const char hexdigit[] = "0123456789abcdef0123456789ABCDEF";
 	    s0 = ++s;
 	    adj = 0;
+	    aadj = -1;
 
 	    if (!*++s || !(s1 = strchr(hexdigit, *s))) goto ret0;
 	    do {
@@ -2159,6 +2160,7 @@ break2:
 		dval(rv) = ldexp(adj, nd * dsign);
 	    }
 	    else {
+		if (aadj != -1) goto ret0;
 		dval(rv) = adj;
 	    }
 	    goto ret;
