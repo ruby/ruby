@@ -1,3 +1,8 @@
+Mon Sep 13 19:56:50 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/rubysocket.h (__DARWIN_ALIGNBYTES): workaround of a
+	  bug in system header of darwin 9.  [ruby-core:32341]
+
 Mon Sep 13 18:11:55 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (try_do): fix typo.  a patch from Peter Weldon
