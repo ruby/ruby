@@ -1,3 +1,8 @@
+Mon Sep 13 18:11:55 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (try_do): fix typo.  a patch from Peter Weldon
+	  at [ruby-core:32327].
+
 Mon Sep 13 10:12:09 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* util.c (ruby_strtod): reject Float('0x0.').

@@ -362,7 +362,7 @@ end
 def try_do(src, command, &b)
   unless have_devel?
     raise <<MSG
-The complier failed to generate an executable file.
+The compiler failed to generate an executable file.
 You have to install development tools first.
 MSG
   end
