@@ -1,3 +1,8 @@
+Tue Sep 14 05:13:04 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/pathname.c (path_s_glob): Pathname.glob translated
+	  from pathname.rb.
+
 Tue Sep 14 01:24:51 2010  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
 
 	* ext/socket/raddrinfo.c (ruby_getaddrinfo__aix): suppress a

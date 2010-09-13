@@ -1152,6 +1152,10 @@ class TestPathname < Test::Unit::TestCase
       open("f", "w") {|f| f.write "abc" }
       Dir.mkdir("d")
       assert_equal([Pathname("d"), Pathname("f")], Pathname.glob("*").sort)
+      a = []
+      Pathname.glob("*") {|path| a << path }
+      a.sort!
+      assert_equal([Pathname("d"), Pathname("f")], a)
     }
   end
 

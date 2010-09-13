@@ -485,15 +485,6 @@ end
 
 
 class Pathname    # * Dir *
-  # See <tt>Dir.glob</tt>.  Returns or yields Pathname objects.
-  def Pathname.glob(*args) # :yield: pathname
-    if block_given?
-      Dir.glob(*args) {|f| yield self.new(f) }
-    else
-      Dir.glob(*args).map {|f| self.new(f) }
-    end
-  end
-
   # See <tt>Dir.getwd</tt>.  Returns the current working directory as a Pathname.
   def Pathname.getwd() self.new(Dir.getwd) end
   class << self; alias pwd getwd end

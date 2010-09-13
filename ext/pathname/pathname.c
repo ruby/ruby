@@ -813,6 +813,39 @@ path_zero_p(VALUE self)
     return rb_funcall(rb_mFileTest, rb_intern("zero?"), 1, get_strpath(self));
 }
 
+static VALUE
+glob_i(VALUE elt, VALUE klass, int argc, VALUE *argv)
+{
+    return rb_yield(rb_class_new_instance(1, &elt, klass));
+}
+
+/*
+ * See <tt>Dir.glob</tt>.  Returns or yields Pathname objects.
+ */
+static VALUE
+path_s_glob(int argc, VALUE *argv, VALUE klass)
+{
+    VALUE args[2];
+    int n;
+
+    n = rb_scan_args(argc, argv, "11", &args[0], &args[1]);
+    if (rb_block_given_p()) {
+        return rb_block_call(rb_cDir, rb_intern("glob"), n, args, glob_i, klass);
+    }
+    else {
+        VALUE ary;
+        long i;
+        ary = rb_funcall2(rb_cDir, rb_intern("glob"), n, args);
+        ary = rb_convert_type(ary, T_ARRAY, "Array", "to_ary");
+        for (i = 0; i < RARRAY_LEN(ary); i++) {
+            VALUE elt = RARRAY_PTR(ary)[i];
+            elt = rb_class_new_instance(1, &elt, klass);
+            rb_ary_store(ary, i, elt);
+        }
+        return ary;
+    }
+}
+
 /*
  * == Pathname
  *
@@ -1066,4 +1099,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "world_writable?", path_world_writable_p, 0);
     rb_define_method(rb_cPathname, "writable_real?", path_writable_real_p, 0);
     rb_define_method(rb_cPathname, "zero?", path_zero_p, 0);
+    rb_define_singleton_method(rb_cPathname, "glob", path_s_glob, -1);
 }
