@@ -102,11 +102,13 @@ static int str_is_number(const char *);
 #if defined(__APPLE__)
 static int
 ruby_getaddrinfo__darwin(const char *nodename, const char *servname,
-			 struct addrinfo *hints, struct addrinfo **res)
+			 const struct addrinfo *hints, struct addrinfo **res)
 {
     /* fix [ruby-core:29427] */
     const char *tmp_servname;
     struct addrinfo tmp_hints;
+    int error;
+
     tmp_servname = servname;
     MEMCPY(&tmp_hints, hints, struct addrinfo, 1);
     if (nodename && servname) {
@@ -117,10 +119,9 @@ ruby_getaddrinfo__darwin(const char *nodename, const char *servname,
 #endif
 	}
     }
-    int error = getaddrinfo(nodename, tmp_servname, &tmp_hints, res);
 
-    if (error == 0)
-    {
+    error = getaddrinfo(nodename, tmp_servname, &tmp_hints, res);
+    if (error == 0) {
         /* [ruby-dev:23164] */
         struct addrinfo *r;
         r = *res;
