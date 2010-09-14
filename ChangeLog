@@ -1,3 +1,8 @@
+Wed Sep 15 02:13:44 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/fiddle/closure.c : Don't use FFI closure alloc on OpenBSD.
+	  Thanks Jeremy Evans! [ruby-core:32384]
+
 Wed Aug 18 01:37:49 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regcomp.c: revert r26701; it introduces Bug #3681.
