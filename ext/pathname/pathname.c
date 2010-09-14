@@ -858,6 +858,30 @@ path_s_getwd(VALUE klass)
 }
 
 /*
+ * Return the entries (files and subdirectories) in the directory, each as a
+ * Pathname object.
+ *
+ * The result may contain the current directory #<Pathname:.> and the parent
+ * directory #<Pathname:..>.
+ */
+static VALUE
+path_entries(VALUE self)
+{
+    VALUE klass, str, ary;
+    long i;
+    klass = rb_obj_class(self);
+    str = get_strpath(self);
+    ary = rb_funcall(rb_cDir, rb_intern("entries"), 1, str);
+    ary = rb_convert_type(ary, T_ARRAY, "Array", "to_ary");
+    for (i = 0; i < RARRAY_LEN(ary); i++) {
+        VALUE elt = RARRAY_PTR(ary)[i];
+        elt = rb_class_new_instance(1, &elt, klass);
+        rb_ary_store(ary, i, elt);
+    }
+    return ary;
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -1113,4 +1137,5 @@ Init_pathname()
     rb_define_singleton_method(rb_cPathname, "glob", path_s_glob, -1);
     rb_define_singleton_method(rb_cPathname, "getwd", path_s_getwd, 0);
     rb_define_singleton_method(rb_cPathname, "pwd", path_s_getwd, 0);
+    rb_define_method(rb_cPathname, "entries", path_entries, 0);
 }

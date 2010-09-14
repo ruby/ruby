@@ -486,10 +486,6 @@ end
 
 class Pathname    # * Dir *
 
-  # Return the entries (files and subdirectories) in the directory, each as a
-  # Pathname object.
-  def entries() Dir.entries(@path).map {|f| self.class.new(f) } end
-
   # Iterates over the entries (files and subdirectories) in the directory.  It
   # yields a Pathname object for each entry.
   #
