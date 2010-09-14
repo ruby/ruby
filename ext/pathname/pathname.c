@@ -847,6 +847,17 @@ path_s_glob(int argc, VALUE *argv, VALUE klass)
 }
 
 /*
+ * See <tt>Dir.getwd</tt>.  Returns the current working directory as a Pathname.
+ */
+static VALUE
+path_s_getwd(VALUE klass)
+{
+    VALUE str;
+    str = rb_funcall(rb_cDir, rb_intern("getwd"), 0);
+    return rb_class_new_instance(1, &str, klass);
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -1100,4 +1111,6 @@ Init_pathname()
     rb_define_method(rb_cPathname, "writable_real?", path_writable_real_p, 0);
     rb_define_method(rb_cPathname, "zero?", path_zero_p, 0);
     rb_define_singleton_method(rb_cPathname, "glob", path_s_glob, -1);
+    rb_define_singleton_method(rb_cPathname, "getwd", path_s_getwd, 0);
+    rb_define_singleton_method(rb_cPathname, "pwd", path_s_getwd, 0);
 }

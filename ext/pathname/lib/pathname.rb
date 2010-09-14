@@ -485,9 +485,6 @@ end
 
 
 class Pathname    # * Dir *
-  # See <tt>Dir.getwd</tt>.  Returns the current working directory as a Pathname.
-  def Pathname.getwd() self.new(Dir.getwd) end
-  class << self; alias pwd getwd end
 
   # Return the entries (files and subdirectories) in the directory, each as a
   # Pathname object.

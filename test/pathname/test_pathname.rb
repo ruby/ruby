@@ -1164,6 +1164,11 @@ class TestPathname < Test::Unit::TestCase
     assert_kind_of(Pathname, wd)
   end
 
+  def test_s_pwd
+    wd = Pathname.pwd
+    assert_kind_of(Pathname, wd)
+  end
+
   def test_entries
     with_tmpchdir('rubytest-pathname') {|dir|
       open("a", "w") {}
