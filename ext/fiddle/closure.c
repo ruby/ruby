@@ -10,7 +10,7 @@ typedef struct {
     ffi_type **argv;
 } fiddle_closure;
 
-#if defined(MACOSX) || defined(__linux)
+#if defined(MACOSX) || defined(__linux) || defined(__OpenBSD__)
 #define DONT_USE_FFI_CLOSURE_ALLOC
 #endif
 

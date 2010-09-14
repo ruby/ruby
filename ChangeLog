@@ -1,3 +1,8 @@
+Wed Sep 15 02:13:44 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/fiddle/closure.c : Don't use FFI closure alloc on OpenBSD.
+	  Thanks Jeremy Evans! [ruby-core:32384]
+
 Tue Sep 14 20:17:48 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pathname/pathname.c (path_s_getwd): Pathname.getwd and
