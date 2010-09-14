@@ -1224,12 +1224,13 @@ rb_str_times(VALUE str, VALUE times)
  *
  *  Format---Uses <i>str</i> as a format specification, and returns the result
  *  of applying it to <i>arg</i>. If the format specification contains more than
- *  one substitution, then <i>arg</i> must be an <code>Array</code> containing
- *  the values to be substituted. See <code>Kernel::sprintf</code> for details
- *  of the format string.
+ *  one substitution, then <i>arg</i> must be an <code>Array</code> or <code>Hash</code>
+ *  containing the values to be substituted. See <code>Kernel::sprintf</code> for
+ *  details of the format string.
  *
  *     "%05d" % 123                              #=> "00123"
  *     "%-5s: %08x" % [ "ID", self.object_id ]   #=> "ID   : 200e14d6"
+ *     "foo = %{foo}" % { :foo => 'bar' }        #=> "foo = bar"
  */
 
 static VALUE
