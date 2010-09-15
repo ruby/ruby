@@ -222,8 +222,6 @@ module MiniTest
       begin
         yield
         should_raise = true
-      rescue MiniTest::Skip
-        raise
       rescue Exception => e
         details = "#{msg}#{mu_pp(exp)} exception expected, not"
         assert(exp.any? { |ex|
