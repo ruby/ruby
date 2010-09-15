@@ -1,3 +1,17 @@
+Wed Sep 15 13:37:00 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* test/net/imap/test_imap.rb: "localhost" not guaranteed to
+	  resolve to "127.0.0.1".  On my machine it is "::1" instead.
+	  The problem is, you have to connect to the imaps server via
+	  the canonical name written in a server certificate, and that
+	  of the server.cert is "localhost".  So you have to listen to
+	  the address of what "localhost" resolves to.  I think this
+	  situation cannot be resolved in a handy manner because the
+	  test "test_imaps_post_connection_check" is actually
+	  expecting to connect to a server via an address other than
+	  the CN.  On my machine several assertions won't pass because
+	  the test cannot connect to the server.
+
 Wed Sep 15 09:12:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_puts): fix for wide char encoding strings.
