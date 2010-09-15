@@ -882,6 +882,20 @@ path_entries(VALUE self)
 }
 
 /*
+ * See <tt>Dir.mkdir</tt>.  Create the referenced directory.
+ */
+static VALUE
+path_mkdir(int argc, VALUE *argv, VALUE self)
+{
+    VALUE str = get_strpath(self);
+    VALUE vmode;
+    if (rb_scan_args(argc, argv, "01", &vmode) == 0)
+        return rb_funcall(rb_cDir, rb_intern("mkdir"), 1, str);
+    else
+        return rb_funcall(rb_cDir, rb_intern("mkdir"), 2, str, vmode);
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -1138,4 +1152,5 @@ Init_pathname()
     rb_define_singleton_method(rb_cPathname, "getwd", path_s_getwd, 0);
     rb_define_singleton_method(rb_cPathname, "pwd", path_s_getwd, 0);
     rb_define_method(rb_cPathname, "entries", path_entries, 0);
+    rb_define_method(rb_cPathname, "mkdir", path_mkdir, -1);
 }

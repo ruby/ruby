@@ -494,9 +494,6 @@ class Pathname    # * Dir *
     Dir.foreach(@path) {|f| yield self.class.new(f) }
   end
 
-  # See <tt>Dir.mkdir</tt>.  Create the referenced directory.
-  def mkdir(*args) Dir.mkdir(@path, *args) end
-
   # See <tt>Dir.rmdir</tt>.  Remove the referenced directory.
   def rmdir() Dir.rmdir(@path) end
 

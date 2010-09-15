@@ -1191,6 +1191,8 @@ class TestPathname < Test::Unit::TestCase
     with_tmpchdir('rubytest-pathname') {|dir|
       Pathname("d").mkdir
       assert(File.directory?("d"))
+      Pathname("e").mkdir(0770)
+      assert(File.directory?("d"))
     }
   end
 
