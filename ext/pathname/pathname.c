@@ -896,6 +896,15 @@ path_mkdir(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ * See <tt>Dir.rmdir</tt>.  Remove the referenced directory.
+ */
+static VALUE
+path_rmdir(VALUE self)
+{
+    return rb_funcall(rb_cDir, rb_intern("rmdir"), 1, get_strpath(self));
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -1153,4 +1162,5 @@ Init_pathname()
     rb_define_singleton_method(rb_cPathname, "pwd", path_s_getwd, 0);
     rb_define_method(rb_cPathname, "entries", path_entries, 0);
     rb_define_method(rb_cPathname, "mkdir", path_mkdir, -1);
+    rb_define_method(rb_cPathname, "rmdir", path_rmdir, 0);
 }
