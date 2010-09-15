@@ -6074,6 +6074,22 @@ rb_f_putc(VALUE recv, VALUE ch)
     return rb_funcall2(rb_stdout, rb_intern("putc"), 1, &ch);
 }
 
+
+static int
+str_end_with_asciichar(VALUE str, int c)
+{
+    long len = RSTRING_LEN(str);
+    const char *ptr = RSTRING_PTR(str);
+    rb_encoding *enc = rb_enc_from_index(ENCODING_GET(str));
+    int n;
+
+    if (len == 0) return 0;
+    if ((n = rb_enc_mbminlen(enc)) == 1) {
+	return ptr[len - 1] == c;
+    }
+    return rb_enc_ascget(ptr + ((len - 1) / n) * n, ptr + len, &n, enc) == c;
+}
+
 static VALUE
 io_puts_ary(VALUE ary, VALUE out, int recur)
 {
@@ -6137,7 +6153,7 @@ rb_io_puts(int argc, VALUE *argv, VALUE out)
       string:
 	rb_io_write(out, line);
 	if (RSTRING_LEN(line) == 0 ||
-            RSTRING_PTR(line)[RSTRING_LEN(line)-1] != '\n') {
+            !str_end_with_asciichar(line, '\n')) {
 	    rb_io_write(out, rb_default_rs);
 	}
     }
