@@ -1,3 +1,8 @@
+Thu Sep 16 08:27:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/etc/extconf.rb: use expanded sysconfdir with empty DESTDIR.
+	  [ruby-core:32394]
+
 Thu Sep 16 06:07:24 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pathname/pathname.c (path_rmdir): Pathname#rmdir translated
