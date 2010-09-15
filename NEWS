@@ -9,6 +9,11 @@ reference information is supplied with.  For a full list of changes
 with all sufficient information, see the ChangeLog file.
 
 == Changes since the 1.9.2 release
+=== License
+
+* Ruby's License is changed from a dual license with GPLv2
+  to a dual license with 2-clause BSDL.
+
 === C API updates
 
 * rb_scan_args() is enhanced with support for option hash argument
