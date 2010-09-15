@@ -1,3 +1,14 @@
+Wed Sep 15 14:59:49 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* lib/test/unit/assertions.rb (Test::Unit::Assertions::assert_nothing_raised):
+	  should properly ignore MiniTest::Skip
+
+	* lib/minitest/unit.rb (MiniTest::Assertions::assert_raises):
+	  ditto.
+
+	* test/net/imap/test_imap.rb: Properly skip SSL tests when
+	  localhost is not 127.0.0.1.
+
 Wed Sep 15 13:37:00 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* test/net/imap/test_imap.rb: "localhost" not guaranteed to

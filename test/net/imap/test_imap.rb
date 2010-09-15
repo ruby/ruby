@@ -49,9 +49,13 @@ class IMAPTest < Test::Unit::TestCase
     if defined?(OpenSSL)
       assert_raise(OpenSSL::SSL::SSLError) do
         imaps_test do |port|
-          Net::IMAP.new("localhost",
-                        :port => port,
-                        :ssl => true)
+          begin
+            Net::IMAP.new("localhost",
+                          :port => port,
+                          :ssl => true)
+          rescue SystemCallError
+            skip $!
+          end
         end
       end
     end
@@ -61,9 +65,13 @@ class IMAPTest < Test::Unit::TestCase
     if defined?(OpenSSL)
       assert_nothing_raised do
         imaps_test do |port|
-          Net::IMAP.new("localhost",
-                        :port => port,
-                        :ssl => { :ca_file => CA_FILE })
+          begin
+            Net::IMAP.new("localhost",
+                          :port => port,
+                          :ssl => { :ca_file => CA_FILE })
+          rescue SystemCallError
+            skip $!
+          end
         end
       end
     end
@@ -104,6 +112,8 @@ class IMAPTest < Test::Unit::TestCase
         imap
       end
     end
+  rescue SystemCallError
+    skip $!
   ensure
     if imap && !imap.disconnected?
       imap.disconnect
