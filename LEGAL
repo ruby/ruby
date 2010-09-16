@@ -1,9 +1,11 @@
 LEGAL NOTICE INFORMATION
 ------------------------
 
-All the files in this distribution are covered under either the Ruby's
-license (see the file COPYING) or public-domain except some files
-mentioned below.
+All files in this distribution are, unless specifically noted
+otherwise, covered under a dual license between the 2-clause BSDL and
+original license terms (see BSDL and COPYING).
+
+Below is the list of exceptional files that need caution.
 
 include/ruby/oniguruma.h:
 regcomp.c:
