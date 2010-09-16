@@ -16,14 +16,6 @@ Thu Sep 16 21:02:30 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* lib/rdoc/ri/paths.rb (RDoc::RI::Paths.each): HOMEDIR can be nil
 	  if $HOME is unset.
 
-Thu Sep 16 20:16:07 2010  Akinori MUSHA  <knu@iDaemons.org>
-
-	* LEGAL: Rephrase the leading sentences for clarification.  Avoid
-	  using the context dependent, ambiguous term "the Ruby's
-	  license", and omit the "or public domain" part because it is not
-	  our default license and the files under public domain are
-	  already specifically listed.
-
 Thu Sep 16 14:50:42 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* test/ruby/test_file_exhaustive.rb (TestFileExhaustive::test_expand_path):
