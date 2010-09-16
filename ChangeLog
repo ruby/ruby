@@ -1,3 +1,10 @@
+Fri Sep 17 02:18:41 2010  Akinori MUSHA  <knu@iDaemons.org>
+
+	* tool/mkconfig.rb: Fix build with m4 1.4.15 generating duplicate
+	  lines in config.status.  According to nobu, the mswin32 port may
+	  depend on the piece of code in question, so the behavior is left
+	  unchanged on mswin32.
+
 Thu Sep 16 23:47:59 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pathname/pathname.c (path_opendir): Pathname#opendir translated
