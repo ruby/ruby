@@ -1,3 +1,10 @@
+Thu Sep 16 14:50:42 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* test/ruby/test_file_exhaustive.rb (TestFileExhaustive::test_expand_path):
+	  ENV["HOME"] might not be set.  On those cases without it an
+	  exception raises here, which effectively disables later
+	  tests on this method.
+
 Thu Sep 16 08:30:28 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_f_sprintf): fix rdoc.  pointed out by Tomoyuki
