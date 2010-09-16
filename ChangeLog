@@ -1,3 +1,9 @@
+Thu Sep 16 21:40:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::GlobOption): merged RejectOption.
+
+	* test/runner.rb: utilize GlobOption.
+
 Thu Sep 16 21:31:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/ri/driver.rb (RDoc::RI::Driver.setup_options)

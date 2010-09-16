@@ -87,25 +87,6 @@ module Test
     module GlobOption
       include Options
 
-      def non_options(files, options)
-        files.map! {|f|
-          f = f.tr(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
-          if File.directory? f
-            Dir["#{f}/**/test_*.rb"]
-          elsif File.file? f
-            f
-          else
-            raise ArgumentError, "file not found: #{f}"
-          end
-        }
-        files.flatten!
-        super(files, options)
-      end
-    end
-
-    module RejectOption
-      include Options
-
       def setup_options(parser, options)
         super
         parser.on '-x', '--exclude PATTERN' do |pattern|
@@ -114,10 +95,29 @@ module Test
       end
 
       def non_options(files, options)
+        paths = [options.delete(:base_directory), nil].compact
         if reject = options.delete(:reject)
           reject_pat = Regexp.union(reject.map {|r| /#{r}/ })
-          files.reject! {|f| reject_pat =~ f }
         end
+        files.map! {|f|
+          f = f.tr(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
+          [*paths, nil].any? do |prefix|
+            path = prefix ? "#{prefix}/#{f}" : f
+            if !(match = Dir["#{path}/**/test_*.rb"]).empty?
+              if reject
+                match.reject! {|n|
+                  n[(prefix.length+1)..-1] if prefix
+                  reject_pat =~ n
+                }
+              end
+              break match
+            elsif !reject or reject_pat !~ f and File.exist? path
+              break path
+            end
+          end or
+            raise ArgumentError, "file not found: #{f}"
+        }
+        files.flatten!
         super(files, options)
       end
     end
@@ -133,18 +133,12 @@ module Test
       end
     end
 
-    def self.new
-      Mini.new do |files, options|
-        if block_given?
-          files = yield files
-        end
-        files
-      end
+    def self.new(*args, &block)
+      Mini.new(*args, &block)
     end
 
     class Mini < MiniTest::Unit
       include Test::Unit::GlobOption
-      include Test::Unit::RejectOption
       include Test::Unit::LoadPathOption
     end
   end
