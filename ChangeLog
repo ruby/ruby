@@ -81,7 +81,7 @@ Wed Sep 15 09:12:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Wed Sep 15 07:27:52 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* string.c (rb_str_times): mentioned about Hash argument.  a patch
+	* string.c (rb_str_format_m): mentioned about Hash argument.  a patch
 	  from Daniel Bovensiepen at [ruby-core:32386].
 
 	* sprintf.c (get_hash): ditto, and fix typo.
