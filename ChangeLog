@@ -1,3 +1,10 @@
+Thu Sep 16 21:31:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/ri/driver.rb (RDoc::RI::Driver.setup_options)
+	  (RDoc::RI::Driver.fixup_options): split from process_args.
+	  libraries should not parse ARGV inside, since it's a task of
+	  applications, not libraries.
+
 Thu Sep 16 21:02:30 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/ri/paths.rb (RDoc::RI::Paths.each): HOMEDIR can be nil

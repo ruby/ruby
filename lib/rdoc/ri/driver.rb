@@ -97,10 +97,23 @@ class RDoc::RI::Driver
   ##
   # Parses +argv+ and returns a Hash of options
 
-  def self.process_args argv
+  def self.process_args argv = []
     options = default_options
+    opts = OptionParser.new
+    setup_options(opts, options)
 
-    opts = OptionParser.new do |opt|
+    argv = ENV['RI'].to_s.split.concat argv
+    opts.parse!(argv)
+
+    fixup_options(options, argv)
+
+  rescue OptionParser::ParseError => e
+    puts opts, nil, e
+    abort
+  end
+
+  def self.setup_options(opt, options)
+    begin
       opt.accept File do |file,|
         File.readable?(file) and not File.directory?(file) and file
       end
@@ -274,11 +287,9 @@ Options may also be set in the 'RI' environment variable.
         options[:dump_path] = value
       end
     end
+  end
 
-    argv = ENV['RI'].to_s.split.concat argv
-
-    opts.parse! argv
-
+  def self.fixup_options(options, argv)
     options[:names] = argv
 
     options[:use_stdout] ||= !$stdout.tty?
@@ -286,12 +297,6 @@ Options may also be set in the 'RI' environment variable.
     options[:width] ||= 72
 
     options
-
-  rescue OptionParser::InvalidArgument, OptionParser::InvalidOption => e
-    puts opts
-    puts
-    puts e
-    exit 1
   end
 
   ##
