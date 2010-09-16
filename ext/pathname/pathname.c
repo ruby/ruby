@@ -905,6 +905,18 @@ path_rmdir(VALUE self)
 }
 
 /*
+ * See <tt>Dir.open</tt>.
+ */
+static VALUE
+path_opendir(VALUE self)
+{
+    VALUE args[1];
+
+    args[0] = get_strpath(self);
+    return rb_block_call(rb_cDir, rb_intern("open"), 1, args, 0, 0);
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -1163,4 +1175,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "entries", path_entries, 0);
     rb_define_method(rb_cPathname, "mkdir", path_mkdir, -1);
     rb_define_method(rb_cPathname, "rmdir", path_rmdir, 0);
+    rb_define_method(rb_cPathname, "opendir", path_opendir, 0);
 }

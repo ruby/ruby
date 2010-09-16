@@ -494,10 +494,6 @@ class Pathname    # * Dir *
     Dir.foreach(@path) {|f| yield self.class.new(f) }
   end
 
-  # See <tt>Dir.open</tt>.
-  def opendir(&block) # :yield: dir
-    Dir.open(@path, &block)
-  end
 end
 
 
