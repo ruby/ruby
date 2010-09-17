@@ -221,29 +221,22 @@ class SAX2Tester < Test::Unit::TestCase
   def test_socket
     require 'socket'
 
-    $port = 12345
+    port = 12345
 
-    Thread.new{
-      server = TCPServer.new('127.0.0.1', $port)
-      while (session = server.accept)
-        session << '<foo>'
-        Thread.stop
+    server = TCPServer.new('127.0.0.1', port)
+    socket = TCPSocket.new('127.0.0.1', port)
+
+    ok = false
+    session = server.accept
+    session << '<foo>'
+    parser = REXML::Parsers::SAX2Parser.new(socket)
+    Fiber.new do
+      parser.listen(:start_element) do
+        ok = true
+        Fiber.yield
       end
-    }
-    sleep 1 #to be sure that server is running
-    @socket = TCPSocket.new('127.0.0.1',$port)
-
-    ok = false  
-
-    test = Thread.new{
-      parser = REXML::Parsers::SAX2Parser.new @socket
-      parser.listen( :start_element ) {
-        ok = true 
-      }
       parser.parse
-      Thread.stop
-    }
-    sleep 1 #to be sure that server is running
+    end.resume
     assert(ok)
   end
 
