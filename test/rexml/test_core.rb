@@ -1104,9 +1104,9 @@ EOL
   end
   
   def test_transitive
-	doc = REXML::Document.new( "<a/>")
-	s = ""
-	doc.write( s, 0, true )
+  doc = REXML::Document.new( "<a/>")
+  s = ""
+  doc.write( s, 0, true )
   end
 
   # This is issue #40
@@ -1145,25 +1145,25 @@ EOL
   end
 
 
-	def test_ticket_58
-		doc = REXML::Document.new
-		doc << REXML::XMLDecl.default
-		doc << REXML::Element.new("a")
-		
-		str = ""
-		doc.write(str)
-		
-		assert_equal("<a/>", str)
+  def test_ticket_58
+    doc = REXML::Document.new
+    doc << REXML::XMLDecl.default
+    doc << REXML::Element.new("a")
+    
+    str = ""
+    doc.write(str)
+    
+    assert_equal("<a/>", str)
 
-		doc = REXML::Document.new
-		doc << REXML::XMLDecl.new("1.0", "UTF-8")
-		doc << REXML::Element.new("a")
-		
-		str = ""
-		doc.write(str)
-		
-		assert_equal("<?xml version='1.0' encoding='UTF-8'?><a/>", str)
-	end
+    doc = REXML::Document.new
+    doc << REXML::XMLDecl.new("1.0", "UTF-8")
+    doc << REXML::Element.new("a")
+    
+    str = ""
+    doc.write(str)
+    
+    assert_equal("<?xml version='1.0' encoding='UTF-8'?><a/>", str)
+  end
 
   # Incomplete tags should generate an error
   def test_ticket_53
@@ -1251,9 +1251,9 @@ EOL
   def test_ticket_85
     xml = <<ENDXML
 <foo>
-	<bar>
-		<bob name='jimmy'/>
-	</bar>
+  <bar>
+    <bob name='jimmy'/>
+  </bar>
 </foo>
 ENDXML
 
@@ -1276,7 +1276,7 @@ ENDXML
     # Output directives should override whitespace directives.
     assert_equal( output1, output2 )
 
-    # The base case.	
+    # The base case.
     d = Document.new(yml)
     f.write( d, output3="" )
     
@@ -1286,7 +1286,7 @@ ENDXML
     f.write( d, output4="" )
 
     assert_equal( output3.strip, output4.strip )
-  end  	
+  end
 
   def test_ticket_91
     source="<root>

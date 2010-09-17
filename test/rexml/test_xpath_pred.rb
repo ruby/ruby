@@ -4,7 +4,7 @@ require "rexml/xpath"
 require "rexml/parsers/xpathparser"
 
 class XPathPredicateTester < Test::Unit::TestCase
-	include REXML
+  include REXML
   SRC=<<-EOL
   <article>
      <section role="subdivision" id="1">

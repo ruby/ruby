@@ -53,8 +53,8 @@ class XpathTestCase < Test::Unit::TestCase
     # why isn't the text's parent node2?
     # Also look at Comment, etc.
     assert_same(node2, textnode.parent)
-		comment = REXML::Comment.new('Test comment', node2)
-		assert_same(node2, comment.parent)
+    comment = REXML::Comment.new('Test comment', node2)
+    assert_same(node2, comment.parent)
   end
 
   def test_ancestors
@@ -62,7 +62,7 @@ class XpathTestCase < Test::Unit::TestCase
     node2 = REXML::Element.new('b', node1)
     textnode = REXML::Text.new('test', false, node2)
     #textnode.parent = node2   # should be unnecessary
-		assert_same node2, textnode.parent
+    assert_same node2, textnode.parent
     nodes = @doc.get_elements('//b/ancestor::*')
     assert_equal(1, nodes.size, "<b> has one element ancestor")
     nodes = @doc.get_elements('//b/ancestor::node()')

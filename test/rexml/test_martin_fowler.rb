@@ -2,6 +2,20 @@ require 'test/unit'
 require 'rexml/document'
 
 class OrderTester < Test::Unit::TestCase
+  DOC = <<END
+<paper>
+<title>Remove this element and figs order differently</title>
+<figure src="fig1"/>
+<figure src="fig2"/>
+<p>Para of text</p>
+<p>Remove this and figs order differently</p>
+<section>
+<figure src="fig3"/>
+</section>
+<figure src="fig4"/>
+</paper>
+END
+
   def initialize n
     @doc = REXML::Document.new(DOC)
     @figs = REXML::XPath.match(@doc,'//figure')
@@ -21,18 +35,3 @@ class OrderTester < Test::Unit::TestCase
     assert_equal 'fig4', @figs[3].attributes['src']
   end
 end
-
-
-DOC = <<END
-<paper>
-<title>Remove this element and figs order differently</title>
-<figure src="fig1"/>
-<figure src="fig2"/>
-<p>Para of text</p>
-<p>Remove this and figs order differently</p>
-<section>
-<figure src="fig3"/>
-</section>
-<figure src="fig4"/>
-</paper>
-END

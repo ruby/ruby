@@ -5,7 +5,6 @@ require 'test/unit'
 require 'rexml/document'
 
 class TestAttributes < Test::Unit::TestCase
-
   def setup
     @ns_a = "urn:x-test:a"
     @ns_b = "urn:x-test:b"
@@ -21,7 +20,7 @@ class TestAttributes < Test::Unit::TestCase
     XMLEND
     @attributes = REXML::Document.new(element_string).root.attributes
   end
-  
+
   def test_get_attribute_ns
     assert_equal("1", @attributes.get_attribute_ns("", "a").value)
     assert_equal("2", @attributes.get_attribute_ns("", "b").value)
@@ -30,5 +29,4 @@ class TestAttributes < Test::Unit::TestCase
     assert_equal("5", @attributes.get_attribute_ns(@ns_a, "e").value)
     assert_equal("6", @attributes.get_attribute_ns(@ns_b, "f").value)
   end
-  
 end

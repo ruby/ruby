@@ -1,10 +1,9 @@
 require "test/unit/testcase"
-require "test/unit/ui/console/testrunner"
 require "rexml/document"
 
 class XPathAxesTester < Test::Unit::TestCase
-	include REXML
-	SOURCE = <<-EOF
+  include REXML
+  SOURCE = <<-EOF
     <a id='1'>
       <e id='2'>
         <f id='3'/>
@@ -15,9 +14,9 @@ class XPathAxesTester < Test::Unit::TestCase
     </a>
     EOF
 
-	def setup
-	  @@doc = Document.new(SOURCE) unless defined? @@doc
-	end
+  def setup
+    @@doc = Document.new(SOURCE) unless defined? @@doc
+  end
 
   def test_preceding_sibling_axis
     context = XPath.first(@@doc,"/a/e/f[last()]")
@@ -36,7 +35,4 @@ class XPathAxesTester < Test::Unit::TestCase
     assert_equal "3", prev.attributes["id"]
   end
 end
-
-
-#Test::Unit::UI::Console::TestRunner.run(XPathAxesTester.suite)
 

@@ -4,8 +4,8 @@ require "rexml/document"
 
 class XPathTester < Test::Unit::TestCase
   include REXMLTestUtils
-	include REXML
-	SOURCE = <<-EOF
+  include REXML
+  SOURCE = <<-EOF
     <a id='1'>
       <b id='2' x='y'>
         <c id='3'/>
@@ -34,370 +34,370 @@ class XPathTester < Test::Unit::TestCase
       </m>
     </a>
     EOF
-	JENI_TENNISON = <<-EOJT
-	<a>
-		<b>
-			<c>
-				<d>
-					<e id='x'>
-						<f/>
-					</e>
-				</d>
-			</c>
-			<c>
-				<d>
-					<e id='y'/>
-				</d>
-			</c>
-		</b>
-		<b>
-			<c>
-				<d>
-					<e id='z'/>
-				</d>
-			</c>
-		</b>
-	</a>
-	EOJT
+  JENI_TENNISON = <<-EOJT
+  <a>
+    <b>
+      <c>
+        <d>
+          <e id='x'>
+            <f/>
+          </e>
+        </d>
+      </c>
+      <c>
+        <d>
+          <e id='y'/>
+        </d>
+      </c>
+    </b>
+    <b>
+      <c>
+        <d>
+          <e id='z'/>
+        </d>
+      </c>
+    </b>
+  </a>
+  EOJT
 
-	def setup
-	  @@doc = Document.new(SOURCE) unless defined? @@doc
-		@@jeni = Document.new( JENI_TENNISON ) unless defined? @@jeni
-	end
+  def setup
+    @@doc = Document.new(SOURCE) unless defined? @@doc
+    @@jeni = Document.new( JENI_TENNISON ) unless defined? @@jeni
+  end
 
-	def each_test( element, xpath )
-		count = 0
-		XPath::each( element, xpath ) { |child|
-			count += 1
-			yield child if block_given?
-		}
-		count
-	end
+  def each_test( element, xpath )
+    count = 0
+    XPath::each( element, xpath ) { |child|
+      count += 1
+      yield child if block_given?
+    }
+    count
+  end
 
-	def test_descendant
-		doc = Document.new("<a><b><c id='1'/></b><d><b><c id='2'/></b></d></a>")
-		p = XPath.match( doc, "//c" )
-		assert_equal( 2, p.size )
-		p = XPath.first( @@doc, "//p" )
-		assert_equal "p", p.name
-		c = each_test( @@doc, "//c" ) { |child| assert_equal "c", child.name }
-		assert_equal 5, c
-		c = each_test( @@doc.root, "b//c" ) { |child|
-				assert_equal "c", child.name
-		}
-		assert_equal 2, c
+  def test_descendant
+    doc = Document.new("<a><b><c id='1'/></b><d><b><c id='2'/></b></d></a>")
+    p = XPath.match( doc, "//c" )
+    assert_equal( 2, p.size )
+    p = XPath.first( @@doc, "//p" )
+    assert_equal "p", p.name
+    c = each_test( @@doc, "//c" ) { |child| assert_equal "c", child.name }
+    assert_equal 5, c
+    c = each_test( @@doc.root, "b//c" ) { |child|
+        assert_equal "c", child.name
+    }
+    assert_equal 2, c
 
-		doc = Document.new( "<a><z id='1'/><b><z id='11'/><z id='12'/></b><c><z id='21'/><z id='22'/><d><z id='31'/><z id='32'/></d></c></a>" )
-		# //para[1] : all descendants which are the first para child of their parent
-		assert_equal( 4, XPath.match( doc, "//z[1]" ).size )
-		# /descendant::para[1] : the first descendant para element
-		assert_equal( 1, XPath.match( doc, "/descendant::z[1]" ).size )
-	end
+    doc = Document.new( "<a><z id='1'/><b><z id='11'/><z id='12'/></b><c><z id='21'/><z id='22'/><d><z id='31'/><z id='32'/></d></c></a>" )
+    # //para[1] : all descendants which are the first para child of their parent
+    assert_equal( 4, XPath.match( doc, "//z[1]" ).size )
+    # /descendant::para[1] : the first descendant para element
+    assert_equal( 1, XPath.match( doc, "/descendant::z[1]" ).size )
+  end
 
-	def test_root
-		source = "<a><b/></a>"
-		doc = Document.new( source )
-		assert_equal doc, doc.root_node
-		assert_equal "a", XPath::first( doc, "/" ).elements[1].name
-	end
+  def test_root
+    source = "<a><b/></a>"
+    doc = Document.new( source )
+    assert_equal doc, doc.root_node
+    assert_equal "a", XPath::first( doc, "/" ).elements[1].name
+  end
 
-	def test_abbreviated_simple_child
-		assert_equal "a", XPath::first(@@doc, "a").name
-	end
+  def test_abbreviated_simple_child
+    assert_equal "a", XPath::first(@@doc, "a").name
+  end
 
-	def test_child
-		c = XPath::first( @@doc, "a/b/c" )
-		assert_equal "c", c.name
-		assert_equal "3", XPath::first(@@doc, "a/b/c").attributes["id"]
-	end
+  def test_child
+    c = XPath::first( @@doc, "a/b/c" )
+    assert_equal "c", c.name
+    assert_equal "3", XPath::first(@@doc, "a/b/c").attributes["id"]
+  end
 
-	def test_root_child
-		assert_equal "a", XPath::first(@@doc, "/a").name
-		c = XPath::first( @@doc, "a/b/c" )
-		assert_equal "a", XPath::first(c, "/a").name
-	end
+  def test_root_child
+    assert_equal "a", XPath::first(@@doc, "/a").name
+    c = XPath::first( @@doc, "a/b/c" )
+    assert_equal "a", XPath::first(c, "/a").name
+  end
 
-	def test_root_children
-		c = XPath::first( @@doc, "a/b/c" )
-		assert_equal "2", XPath::first(c, "/a/b").attributes["id"]
-	end
+  def test_root_children
+    c = XPath::first( @@doc, "a/b/c" )
+    assert_equal "2", XPath::first(c, "/a/b").attributes["id"]
+  end
 
-	def test_abbreviated_step
-		c = XPath::first( @@doc, "a/b/c" )
+  def test_abbreviated_step
+    c = XPath::first( @@doc, "a/b/c" )
     assert_equal("c", c.name)
-		assert_equal("a", XPath::first(@@doc.root, ".").name)
-		assert_equal("b", XPath::first(c, "..").name)
-		assert_equal("a", XPath::first(@@doc, "a/b/..").name)
+    assert_equal("a", XPath::first(@@doc.root, ".").name)
+    assert_equal("b", XPath::first(c, "..").name)
+    assert_equal("a", XPath::first(@@doc, "a/b/..").name)
 
-		doc = REXML::Document.new(File.new(fixture_path("project.xml")))
-		c = each_test(doc.root, "./Description" ) { |child|
-			assert_equal("Description",child.name)
-		}
-		assert_equal 1, c
-	end
+    doc = REXML::Document.new(File.new(fixture_path("project.xml")))
+    c = each_test(doc.root, "./Description" ) { |child|
+      assert_equal("Description",child.name)
+    }
+    assert_equal 1, c
+  end
 
-	# Things that aren't tested elsewhere
-	def test_predicates
-		assert_equal "12", XPath::first(@@doc, "a/e/f[3]").attributes["id"]
-		assert_equal "13", XPath::first(@@doc, "a/e/f[3]/g").attributes["id"]
-		assert_equal "14", XPath::first(@@doc, "a/e/f[@a='d'][2]").attributes["id"]
-		assert_equal "14", XPath::first(@@doc, "a/e/f[@a='d'][@id='14']").attributes["id"]
-		assert_equal "a", XPath::first( @@doc, "*[name()='a' and @id='1']" ).name
-		c=each_test( @@doc, "//*[name()='f' and @a='d']") { |i|
-			assert_equal "f", i.name
-		}
-		assert_equal 2, c
-		c=each_test( @@doc, "//*[name()='m' or @a='d']") { |i|
-			assert ["m","f"].include?(i.name)
-		}
-		assert_equal 3, c
+  # Things that aren't tested elsewhere
+  def test_predicates
+    assert_equal "12", XPath::first(@@doc, "a/e/f[3]").attributes["id"]
+    assert_equal "13", XPath::first(@@doc, "a/e/f[3]/g").attributes["id"]
+    assert_equal "14", XPath::first(@@doc, "a/e/f[@a='d'][2]").attributes["id"]
+    assert_equal "14", XPath::first(@@doc, "a/e/f[@a='d'][@id='14']").attributes["id"]
+    assert_equal "a", XPath::first( @@doc, "*[name()='a' and @id='1']" ).name
+    c=each_test( @@doc, "//*[name()='f' and @a='d']") { |i|
+      assert_equal "f", i.name
+    }
+    assert_equal 2, c
+    c=each_test( @@doc, "//*[name()='m' or @a='d']") { |i|
+      assert ["m","f"].include?(i.name)
+    }
+    assert_equal 3, c
 
-		assert_equal "b", XPath::first( @@doc, "//b[@x]" ).name
-	end
+    assert_equal "b", XPath::first( @@doc, "//b[@x]" ).name
+  end
 
-	def test_node_type
-		doc = Document.new "<a><?foo bar?><!--comment-->text</a>"
+  def test_node_type
+    doc = Document.new "<a><?foo bar?><!--comment-->text</a>"
     #res = XPath::first(doc.root, "text()")
     #assert_equal "text", res.to_s
 
     #res = XPath::first(doc, "*")
     #assert_equal "a", res.name
 
-		assert_equal( :processing_instruction, 
+    assert_equal( :processing_instruction, 
     XPath::first(doc.root, "processing-instruction()").node_type)
-		assert_equal( :comment, XPath::first(doc.root, "comment()").node_type)
-	end
+    assert_equal( :comment, XPath::first(doc.root, "comment()").node_type)
+  end
 
-	def test_functions
-		# trivial text() test
-		# confuse-a-function
-		source = "<a>more <b id='1'/><b id='2'>dumb</b><b id='3'/><c/> text</a>"
-		doc = Document.new source
-		res = ""
-		#XPath::each(doc.root, "text()") {|val| res << val.to_s}
-		#assert_equal "more  text", res
+  def test_functions
+    # trivial text() test
+    # confuse-a-function
+    source = "<a>more <b id='1'/><b id='2'>dumb</b><b id='3'/><c/> text</a>"
+    doc = Document.new source
+    res = ""
+    #XPath::each(doc.root, "text()") {|val| res << val.to_s}
+    #assert_equal "more  text", res
 
-		#res = XPath::first(doc.root, "b[last()]")
-		#assert_equal '3', res.attributes['id']
-		res = XPath::first(doc.root, "b[position()=2]")
-		assert_equal '2', res.attributes['id']
-		res = XPath::first(doc.root, "*[name()='c']")
-		assert_equal "c", res.name
-	end
+    #res = XPath::first(doc.root, "b[last()]")
+    #assert_equal '3', res.attributes['id']
+    res = XPath::first(doc.root, "b[position()=2]")
+    assert_equal '2', res.attributes['id']
+    res = XPath::first(doc.root, "*[name()='c']")
+    assert_equal "c", res.name
+  end
 
-	def no_test_ancestor
-		doc = REXML::Document.new(File.new(fixture_path("testsrc.xml")))
-		doc.elements.each("//item") { |el| print el.name
-			if el.attributes['x']
-				puts " -- "+el.attributes['x']
-			else
-				puts
-			end
-		}
-		doc.elements.each("//item/ancestor::") { |el| print el.name
-			if el.attributes['x']
-				puts " -- "+el.attributes['x']
-			else
-				puts
-			end
-		}
-	end
+  def no_test_ancestor
+    doc = REXML::Document.new(File.new(fixture_path("testsrc.xml")))
+    doc.elements.each("//item") { |el| print el.name
+      if el.attributes['x']
+        puts " -- "+el.attributes['x']
+      else
+        puts
+      end
+    }
+    doc.elements.each("//item/ancestor::") { |el| print el.name
+      if el.attributes['x']
+        puts " -- "+el.attributes['x']
+      else
+        puts
+      end
+    }
+  end
 
-	# Here are some XPath tests that were originally submitted by ...
-	# The code has changed some, but the logic and the source documents are the
-	# same.
-	# This method reads a document from a file, and then a series of xpaths, 
-	# also from a file.  It then checks each xpath against the source file.
-	def test_more
+  # Here are some XPath tests that were originally submitted by ...
+  # The code has changed some, but the logic and the source documents are the
+  # same.
+  # This method reads a document from a file, and then a series of xpaths, 
+  # also from a file.  It then checks each xpath against the source file.
+  def test_more
     xmlsource   = fixture_path("testsrc.xml")
     xpathtests  = fixture_path("xp.tst")
 
-		doc = REXML::Document.new(File.new(xmlsource))
-		#results = ""
-		results = REXML::Document.new
-		results.add_element "test-results"
-		for line in File.new(xpathtests)
-			line.strip!
-			begin
-				rt = doc.root
-				#puts "#"*80
-				#print "\nDoing #{line} " ; $stdout.flush
-				doc.elements.each(line) do |el| 
-					#print "." ; $stdout.flush
-					results.root << el.clone
-					#results << el.to_s
-				end
-				#ObjectSpace.garbage_collect
-				GC::start
-			rescue Exception => z
-				#puts "\n'#{line}' failed"
-				fail("Error on line #{line}:\n#{z.message}\n"+z.backtrace[0,10].join("\n"))
-				#results.root.add_element( "error", {"path"=>line}).text = z.message+"\n"+z.backtrace[0,10].join("\n")
-				#results << "<error path='"+line+"'>"+z.message+"</error>"
-			end
-		end
-	end
+    doc = REXML::Document.new(File.new(xmlsource))
+    #results = ""
+    results = REXML::Document.new
+    results.add_element "test-results"
+    for line in File.new(xpathtests)
+      line.strip!
+      begin
+        rt = doc.root
+        #puts "#"*80
+        #print "\nDoing #{line} " ; $stdout.flush
+        doc.elements.each(line) do |el| 
+          #print "." ; $stdout.flush
+          results.root << el.clone
+          #results << el.to_s
+        end
+        #ObjectSpace.garbage_collect
+        GC::start
+      rescue Exception => z
+        #puts "\n'#{line}' failed"
+        fail("Error on line #{line}:\n#{z.message}\n"+z.backtrace[0,10].join("\n"))
+        #results.root.add_element( "error", {"path"=>line}).text = z.message+"\n"+z.backtrace[0,10].join("\n")
+        #results << "<error path='"+line+"'>"+z.message+"</error>"
+      end
+    end
+  end
 
-	def test_axe_descendant
-		assert_equal "f", XPath::first( @@doc, "descendant::f").name
-	end
+  def test_axe_descendant
+    assert_equal "f", XPath::first( @@doc, "descendant::f").name
+  end
 
-	def test_axe_parent
-		q = XPath.first( @@doc, "a/d/c/parent::*/q" )
-		assert_equal 19, q.attributes["id"].to_i
-	end
+  def test_axe_parent
+    q = XPath.first( @@doc, "a/d/c/parent::*/q" )
+    assert_equal 19, q.attributes["id"].to_i
+  end
 
-	def test_abbreviated_attribute
-		assert_equal 'a', XPath::first( @@doc, "a[@id='1']" ).name
-		c = XPath::first( @@doc, "a/b/c[@id='4']" )
-		assert_equal 'c', c.name
-		assert_equal '4', c.attributes['id']
+  def test_abbreviated_attribute
+    assert_equal 'a', XPath::first( @@doc, "a[@id='1']" ).name
+    c = XPath::first( @@doc, "a/b/c[@id='4']" )
+    assert_equal 'c', c.name
+    assert_equal '4', c.attributes['id']
 
-		result = XPath::first( @@doc, "descendant::f[@a='c']")
-		assert_equal "11", result.attributes['id']
-		
-		assert_equal "11", XPath::first(@@doc, "a/e/f[@a='c']").attributes["id"]
-		assert_equal "11", XPath::first(@@doc, "a/e/*[@a='c']").attributes["id"]
-	end
+    result = XPath::first( @@doc, "descendant::f[@a='c']")
+    assert_equal "11", result.attributes['id']
+    
+    assert_equal "11", XPath::first(@@doc, "a/e/f[@a='c']").attributes["id"]
+    assert_equal "11", XPath::first(@@doc, "a/e/*[@a='c']").attributes["id"]
+  end
 
-	def test_axe_self
-		c = XPath::first( @@doc, "a/b/c" )
-		assert c
-		assert_equal "c", c.name
-		assert_equal "c", XPath::first( c, "self::node()" ).name
-	end
+  def test_axe_self
+    c = XPath::first( @@doc, "a/b/c" )
+    assert c
+    assert_equal "c", c.name
+    assert_equal "c", XPath::first( c, "self::node()" ).name
+  end
 
-	def test_axe_ancestor
-		doc = REXML::Document.new "
-		<a>
-			<b id='1'>
-				<c>
-					<b id='2'>
-						<d/>
-					</b>
-				</c>
-			</b>
-		</a>"
+  def test_axe_ancestor
+    doc = REXML::Document.new "
+    <a>
+      <b id='1'>
+        <c>
+          <b id='2'>
+            <d/>
+          </b>
+        </c>
+      </b>
+    </a>"
 
-		d = XPath.first( doc, "//d" )
-		assert_equal "d", d.name
-		b = each_test( d, "ancestor::b" ) { |el|
-			assert((1..2) === el.attributes['id'].to_i, 
-				"Expected #{el.attributes['id']} to be either 1 or 2"
-			) 
-		}
-		assert_equal 2, b
-	end
+    d = XPath.first( doc, "//d" )
+    assert_equal "d", d.name
+    b = each_test( d, "ancestor::b" ) { |el|
+      assert((1..2) === el.attributes['id'].to_i, 
+        "Expected #{el.attributes['id']} to be either 1 or 2"
+      ) 
+    }
+    assert_equal 2, b
+  end
 
-	def test_axe_child
-		m = XPath.first( @@doc, "a/child::m" )
-		assert_equal 15, m.attributes['id'].to_i
-	end
+  def test_axe_child
+    m = XPath.first( @@doc, "a/child::m" )
+    assert_equal 15, m.attributes['id'].to_i
+  end
 
-	def test_axe_attribute
-		a = XPath.first( @@doc, "a/attribute::id" )
-		assert_equal "1", a.value
-		a = XPath.first( @@doc, "a/e/f[@id='14']/attribute::a" )
-		assert_equal "d", a.value
-	end
+  def test_axe_attribute
+    a = XPath.first( @@doc, "a/attribute::id" )
+    assert_equal "1", a.value
+    a = XPath.first( @@doc, "a/e/f[@id='14']/attribute::a" )
+    assert_equal "d", a.value
+  end
 
-	def test_axe_sibling
-		doc = Document.new "<a><b><c/></b><e><f id='10'/><f id='11'/><f id='12'/></e></a>"
-		first_f = XPath.first( doc, "a/e/f" )
-		assert first_f
-		assert_equal '10', first_f.attributes['id']
-		next_f = XPath.first( doc, "a/e/f/following-sibling::node()" )
-		assert_equal '11', next_f.attributes['id']
+  def test_axe_sibling
+    doc = Document.new "<a><b><c/></b><e><f id='10'/><f id='11'/><f id='12'/></e></a>"
+    first_f = XPath.first( doc, "a/e/f" )
+    assert first_f
+    assert_equal '10', first_f.attributes['id']
+    next_f = XPath.first( doc, "a/e/f/following-sibling::node()" )
+    assert_equal '11', next_f.attributes['id']
 
-		b = XPath.first( doc, "a/e/preceding-sibling::node()" )
-		assert_equal 'b', b.name
-	end
+    b = XPath.first( doc, "a/e/preceding-sibling::node()" )
+    assert_equal 'b', b.name
+  end
 
-	def test_lang
-		doc = Document.new(File.new(fixture_path("lang0.xml")))
-		#puts IO.read( "test/lang.xml" )
-	  
-		#puts XPath.match( doc, "//language/*" ).size
-		c = each_test( doc, "//language/*" ) { |element|
-			#puts "#{element.name}: #{element.text}"
-		}
-		assert_equal 4, c
-	end
+  def test_lang
+    doc = Document.new(File.new(fixture_path("lang0.xml")))
+    #puts IO.read( "test/lang.xml" )
+    
+    #puts XPath.match( doc, "//language/*" ).size
+    c = each_test( doc, "//language/*" ) { |element|
+      #puts "#{element.name}: #{element.text}"
+    }
+    assert_equal 4, c
+  end
 
-	def test_namespaces_1
-		source = <<-EOF
-			<foo xmlns:ts="this" xmlns:tt="that">
-				<ts:bar>this bar</ts:bar>
-				<tt:bar>that bar</tt:bar>
-			</foo>
-		EOF
-		doc = Document.new source
-		result = XPath.each( doc, "//bar" ) {
-			fail "'bar' should match nothing in this case"
-		}
+  def test_namespaces_1
+    source = <<-EOF
+      <foo xmlns:ts="this" xmlns:tt="that">
+        <ts:bar>this bar</ts:bar>
+        <tt:bar>that bar</tt:bar>
+      </foo>
+    EOF
+    doc = Document.new source
+    result = XPath.each( doc, "//bar" ) {
+      fail "'bar' should match nothing in this case"
+    }
 
-		namespace = {"t"=>"this"}
-		results = XPath.first( doc, "//t:bar", namespace )
-		assert_equal "this bar", results.text
-	end
+    namespace = {"t"=>"this"}
+    results = XPath.first( doc, "//t:bar", namespace )
+    assert_equal "this bar", results.text
+  end
 
-	def test_namespaces_2
-		source = <<-EOF
-			<foo xmlns:ts="this" xmlns:tt="that">
-				<ts:bar>this bar</ts:bar>
-				<tt:bar>that bar</tt:bar>
-			</foo>
-		EOF
-		doc = Document.new source
-		res = XPath::first(doc, "//*[local_name()='bar']")
-		assert res, "looking for //*[name()='bar']"
-		assert_equal 'this', res.namespace
-		res = XPath::first(doc.root, "*[namespace_uri()='that']")
-		assert_equal 'that bar', res.text
-	end
+  def test_namespaces_2
+    source = <<-EOF
+      <foo xmlns:ts="this" xmlns:tt="that">
+        <ts:bar>this bar</ts:bar>
+        <tt:bar>that bar</tt:bar>
+      </foo>
+    EOF
+    doc = Document.new source
+    res = XPath::first(doc, "//*[local_name()='bar']")
+    assert res, "looking for //*[name()='bar']"
+    assert_equal 'this', res.namespace
+    res = XPath::first(doc.root, "*[namespace_uri()='that']")
+    assert_equal 'that bar', res.text
+  end
 
-	def test_complex
-		next_f = XPath.first( @@doc, "a/e/f[@id='11']/following-sibling::*" )
-		assert_equal 12, next_f.attributes['id'].to_i
-		prev_f = XPath.first( @@doc, "a/e/f[@id='11']/preceding-sibling::*" )
-		assert_equal 10, prev_f.attributes['id'].to_i
-		c = each_test( @@doc, "descendant-or-self::*[@x='y']" )
-		assert_equal 2, c
-	end
+  def test_complex
+    next_f = XPath.first( @@doc, "a/e/f[@id='11']/following-sibling::*" )
+    assert_equal 12, next_f.attributes['id'].to_i
+    prev_f = XPath.first( @@doc, "a/e/f[@id='11']/preceding-sibling::*" )
+    assert_equal 10, prev_f.attributes['id'].to_i
+    c = each_test( @@doc, "descendant-or-self::*[@x='y']" )
+    assert_equal 2, c
+  end
 
-	def test_grouping
+  def test_grouping
     t = XPath.first( @@doc, "a/d/*[name()='d' and (name()='f' or name()='q')]" )
     assert_nil t
-		t = XPath.first( @@doc, "a/d/*[(name()='d' and name()='f') or name()='q']" )
-		assert_equal 'q', t.name
-	end
+    t = XPath.first( @@doc, "a/d/*[(name()='d' and name()='f') or name()='q']" )
+    assert_equal 'q', t.name
+  end
 
-	def test_preceding
+  def test_preceding
     d = Document.new "<a><b id='0'/><b id='2'/><b><c id='0'/><c id='1'/><c id='2'/></b><b id='1'/></a>"
-		start = XPath.first( d, "/a/b[@id='1']" )
+    start = XPath.first( d, "/a/b[@id='1']" )
     assert_equal 'b', start.name
-		c = XPath.first( start, "preceding::c" )
-		assert_equal '2', c.attributes['id']
+    c = XPath.first( start, "preceding::c" )
+    assert_equal '2', c.attributes['id']
 
-		c1, c0 = XPath.match( d, "/a/b/c[@id='2']/preceding::node()" )
-		assert_equal '1', c1.attributes['id']
-		assert_equal '0', c0.attributes['id']
+    c1, c0 = XPath.match( d, "/a/b/c[@id='2']/preceding::node()" )
+    assert_equal '1', c1.attributes['id']
+    assert_equal '0', c0.attributes['id']
 
     c2, c1, c0, b, b2, b0 = XPath.match( start, "preceding::node()" )
 
-		assert_equal 'c', c2.name
-		assert_equal 'c', c1.name
-		assert_equal 'c', c0.name
-		assert_equal 'b', b.name
-		assert_equal 'b', b2.name
-		assert_equal 'b', b0.name
+    assert_equal 'c', c2.name
+    assert_equal 'c', c1.name
+    assert_equal 'c', c0.name
+    assert_equal 'b', b.name
+    assert_equal 'b', b2.name
+    assert_equal 'b', b0.name
 
-		assert_equal '2', c2.attributes['id']
-		assert_equal '1', c1.attributes['id']
-		assert_equal '0', c0.attributes['id']
-		assert b.attributes.empty?
-		assert_equal '2', b2.attributes['id']
-		assert_equal '0', b0.attributes['id']
+    assert_equal '2', c2.attributes['id']
+    assert_equal '1', c1.attributes['id']
+    assert_equal '0', c0.attributes['id']
+    assert b.attributes.empty?
+    assert_equal '2', b2.attributes['id']
+    assert_equal '0', b0.attributes['id']
 
     d = REXML::Document.new("<a><b/><c/><d/></a>")
     matches = REXML::XPath.match(d, "/a/d/preceding::node()")
@@ -409,9 +409,9 @@ class XPathTester < Test::Unit::TestCase
     c = REXML::XPath.match( d, "//c[@id = '5']")
     cs = REXML::XPath.match( c, "preceding::c" )
     assert_equal( 4, cs.length )
-	end
+  end
 
-	def test_following
+  def test_following
     d = Document.new "<a><b id='0'/><b/><b><c id='1'/><c id='2'/></b><b id='1'/></a>"
     start = XPath.first( d, "/a/b[@id='0']" )
     assert_equal 'b', start.name
@@ -426,118 +426,118 @@ class XPathTester < Test::Unit::TestCase
     assert_equal 6, res.size
     res = XPath.match( c, 'following::i' )
     assert_equal 2, res.size
-	end
+  end
 
-	# The following three paths were provided by 
-	# Jeni Tennison <jeni@jenitennison.com>
-	# a consultant who is also an XSL and XPath expert 
-	#def test_child_cubed
-	#	els = @@jeni.elements.to_a("*****")
-	#	assert_equal 3, els.size
-	#end
+  # The following three paths were provided by 
+  # Jeni Tennison <jeni@jenitennison.com>
+  # a consultant who is also an XSL and XPath expert 
+  #def test_child_cubed
+  #  els = @@jeni.elements.to_a("*****")
+  #  assert_equal 3, els.size
+  #end
 
-	#def test_div_2
-	#	results = doc.elements.to_a("/ div 2")
-	#end
+  #def test_div_2
+  #  results = doc.elements.to_a("/ div 2")
+  #end
 
-	#def test_nested_predicates
-	#	puts @@jeni.root.elements[1].elements[1].name
-	#	results = @@jeni.root.elements[1].elements[1].elements.to_a("../following-sibling::*[*[name() = name(current())]]")
-	#	puts results
-	#end
+  #def test_nested_predicates
+  #  puts @@jeni.root.elements[1].elements[1].name
+  #  results = @@jeni.root.elements[1].elements[1].elements.to_a("../following-sibling::*[*[name() = name(current())]]")
+  #  puts results
+  #end
  
-	# Contributed by Mike Stok
-	def test_starts_with
-		source = <<-EOF
-			<foo>
-			<a href="mailto:a@b.c">a@b.c</a>
-			<a href="http://www.foo.com">http://www.foo.com</a>
-			</foo>
-		EOF
-		doc = Document.new source
-		mailtos = doc.elements.to_a("//a[starts-with(@href, 'mailto:')]")
-		assert_equal 1, mailtos.size
-		assert_equal "mailto:a@b.c", mailtos[0].attributes['href']
+  # Contributed by Mike Stok
+  def test_starts_with
+    source = <<-EOF
+      <foo>
+      <a href="mailto:a@b.c">a@b.c</a>
+      <a href="http://www.foo.com">http://www.foo.com</a>
+      </foo>
+    EOF
+    doc = Document.new source
+    mailtos = doc.elements.to_a("//a[starts-with(@href, 'mailto:')]")
+    assert_equal 1, mailtos.size
+    assert_equal "mailto:a@b.c", mailtos[0].attributes['href']
 
-		ailtos = doc.elements.to_a("//a[starts-with(@href, 'ailto:')]")
-		assert_equal 0, ailtos.size
-	end
+    ailtos = doc.elements.to_a("//a[starts-with(@href, 'ailto:')]")
+    assert_equal 0, ailtos.size
+  end
 
-	def test_toms_text_node
-		file = "<a>A<b>B</b><c>C<d>D</d>E</c>F</a>"
-		doc = Document.new(file)
+  def test_toms_text_node
+    file = "<a>A<b>B</b><c>C<d>D</d>E</c>F</a>"
+    doc = Document.new(file)
     assert_equal 'A', XPath.first(doc[0], 'text()').to_s
-		assert_equal 'AF', XPath.match(doc[0], 'text()').collect { |n|
-			n.to_s
-		}.join('')
-		assert_equal 'B', XPath.first(doc[0], 'b/text()').to_s
-		assert_equal 'D', XPath.first(doc[0], '//d/text()').to_s
-		assert_equal 'ABCDEF', XPath.match(doc[0], '//text()').collect {|n|
-			n.to_s
-		}.join('')
-	end
+    assert_equal 'AF', XPath.match(doc[0], 'text()').collect { |n|
+      n.to_s
+    }.join('')
+    assert_equal 'B', XPath.first(doc[0], 'b/text()').to_s
+    assert_equal 'D', XPath.first(doc[0], '//d/text()').to_s
+    assert_equal 'ABCDEF', XPath.match(doc[0], '//text()').collect {|n|
+      n.to_s
+    }.join('')
+  end
 
   def test_string_length
-		doc = Document.new <<-EOF
-			<AAA>
-			<Q/>
-			<SSSS/>
-			<BB/>
-			<CCC/>
-			<DDDDDDDD/>
-			<EEEE/>
-			</AAA>
-		EOF
-		assert doc, "create doc"
+    doc = Document.new <<-EOF
+      <AAA>
+      <Q/>
+      <SSSS/>
+      <BB/>
+      <CCC/>
+      <DDDDDDDD/>
+      <EEEE/>
+      </AAA>
+    EOF
+    assert doc, "create doc"
 
-		set = doc.elements.to_a("//*[string-length(name()) = 3]")
-		assert_equal 2, set.size, "nodes with names length = 3"
+    set = doc.elements.to_a("//*[string-length(name()) = 3]")
+    assert_equal 2, set.size, "nodes with names length = 3"
 
-		set = doc.elements.to_a("//*[string-length(name()) < 3]")
-		assert_equal 2, set.size, "nodes with names length < 3"
+    set = doc.elements.to_a("//*[string-length(name()) < 3]")
+    assert_equal 2, set.size, "nodes with names length < 3"
 
-		set = doc.elements.to_a("//*[string-length(name()) > 3]")
-		assert_equal 3, set.size, "nodes with names length > 3"
-	end
+    set = doc.elements.to_a("//*[string-length(name()) > 3]")
+    assert_equal 3, set.size, "nodes with names length > 3"
+  end
 
-	# Test provided by Mike Stok
-	def test_contains
-		source = <<-EOF
-			<foo>
-			<a href="mailto:a@b.c">a@b.c</a>
-			<a href="http://www.foo.com">http://www.foo.com</a>
-			</foo>
-		EOF
-		doc = Document.new source
+  # Test provided by Mike Stok
+  def test_contains
+    source = <<-EOF
+      <foo>
+      <a href="mailto:a@b.c">a@b.c</a>
+      <a href="http://www.foo.com">http://www.foo.com</a>
+      </foo>
+    EOF
+    doc = Document.new source
 
-		[
+    [
     #['o', 2], 
     ['foo', 1], ['bar', 0]].each { |search, expected|
-			set = doc.elements.to_a("//a[contains(@href, '#{search}')]")
-			assert_equal expected, set.size
-		}
-	end
+      set = doc.elements.to_a("//a[contains(@href, '#{search}')]")
+      assert_equal expected, set.size
+    }
+  end
 
-	# Mike Stok and Sean Russell
-	def test_substring
-		# examples from http://www.w3.org/TR/xpath#function-substring
-		doc = Document.new('<test string="12345" />')
+  # Mike Stok and Sean Russell
+  def test_substring
+    # examples from http://www.w3.org/TR/xpath#function-substring
+    doc = Document.new('<test string="12345" />')
 
-		d = Document.new("<a b='1'/>")
-		#puts XPath.first(d, 'node()[0 + 1]')
-		#d = Document.new("<a b='1'/>")
-		#puts XPath.first(d, 'a[0 mod 0]')
-		[ [1.5, 2.6, '234'],
-			[0, 3, '12'],
-			[0, '0 div 0', ''],
-			[1, '0 div 0', ''],
-			['-42', '1 div 0', '12345'],
-			['-1 div 0', '1 div 0', '']
-		].each { |start, length, expected|
-			set = doc.elements.to_a("//test[substring(@string, #{start}, #{length}) = '#{expected}']")
-			assert_equal 1, set.size, "#{start}, #{length}, '#{expected}'"
-		}
-	end
+    d = Document.new("<a b='1'/>")
+    #puts XPath.first(d, 'node()[0 + 1]')
+    #d = Document.new("<a b='1'/>")
+    #puts XPath.first(d, 'a[0 mod 0]')
+    [ [1.5, 2.6, '234'],
+      [0, 3, '12'],
+      [0, '0 div 0', ''],
+      [1, '0 div 0', ''],
+      ['-42', '1 div 0', '12345'],
+      ['-1 div 0', '1 div 0', '']
+    ].each { |start, length, expected|
+      set = doc.elements.to_a("//test[substring(@string, #{start}, #{length}) = '#{expected}']")
+      assert_equal 1, set.size, "#{start}, #{length}, '#{expected}'"
+    }
+  end
 
   def test_translate
     source = <<-EOF
@@ -565,138 +565,138 @@ class XPathTester < Test::Unit::TestCase
     }
   end
 
-	def test_math
-		d = Document.new( '<a><b/><c/></a>' )
+  def test_math
+    d = Document.new( '<a><b/><c/></a>' )
     assert XPath.first( d.root, 'node()[1]' )
-		assert_equal 'b', XPath.first( d.root, 'node()[1]' ).name
-		assert XPath.first( d.root, 'node()[0 + 1]' )
-		assert_equal 'b', XPath.first( d.root, './node()[0 + 1]' ).name
-		assert XPath.first( d.root, 'node()[1 + 1]' )
-		assert_equal 'c', XPath.first( d.root, './node()[1 + 1]' ).name
-		assert XPath.first( d.root, 'node()[4 div 2]' )
-		assert_equal 'c', XPath.first( d.root, './node()[4 div 2]' ).name
-		assert XPath.first( d.root, 'node()[2 - 1]' )
-		assert_equal 'b', XPath.first( d.root, './node()[2 - 1]' ).name
-		assert XPath.first( d.root, 'node()[5 mod 2]' )
-		assert_equal 'b', XPath.first( d.root, './node()[5 mod 2]' ).name
-		assert XPath.first( d.root, 'node()[8 mod 3]' )
-		assert_equal 'c', XPath.first( d.root, './node()[8 mod 3]' ).name
-		assert XPath.first( d.root, 'node()[1 * 2]' )
-		assert_equal 'c', XPath.first( d.root, './node()[1 * 2]' ).name
-		assert XPath.first( d.root, 'node()[2 + -1]' )
-		assert_equal 'b', XPath.first( d.root, './node()[2 + -1]' ).name
-	end
+    assert_equal 'b', XPath.first( d.root, 'node()[1]' ).name
+    assert XPath.first( d.root, 'node()[0 + 1]' )
+    assert_equal 'b', XPath.first( d.root, './node()[0 + 1]' ).name
+    assert XPath.first( d.root, 'node()[1 + 1]' )
+    assert_equal 'c', XPath.first( d.root, './node()[1 + 1]' ).name
+    assert XPath.first( d.root, 'node()[4 div 2]' )
+    assert_equal 'c', XPath.first( d.root, './node()[4 div 2]' ).name
+    assert XPath.first( d.root, 'node()[2 - 1]' )
+    assert_equal 'b', XPath.first( d.root, './node()[2 - 1]' ).name
+    assert XPath.first( d.root, 'node()[5 mod 2]' )
+    assert_equal 'b', XPath.first( d.root, './node()[5 mod 2]' ).name
+    assert XPath.first( d.root, 'node()[8 mod 3]' )
+    assert_equal 'c', XPath.first( d.root, './node()[8 mod 3]' ).name
+    assert XPath.first( d.root, 'node()[1 * 2]' )
+    assert_equal 'c', XPath.first( d.root, './node()[1 * 2]' ).name
+    assert XPath.first( d.root, 'node()[2 + -1]' )
+    assert_equal 'b', XPath.first( d.root, './node()[2 + -1]' ).name
+  end
 
-	def test_name
+  def test_name
     assert_raise( UndefinedNamespaceException, "x should be undefined" ) {
       d = REXML::Document.new("<a x='foo'><b/><x:b/></a>")
     }
-		d = REXML::Document.new("<a xmlns:x='foo'><b/><x:b/></a>")
-		assert_equal 1, d.root.elements.to_a('*[name() = "b"]').size
-		assert_equal 1, d.elements.to_a('//*[name() = "x:b"]').size
-	end
+    d = REXML::Document.new("<a xmlns:x='foo'><b/><x:b/></a>")
+    assert_equal 1, d.root.elements.to_a('*[name() = "b"]').size
+    assert_equal 1, d.elements.to_a('//*[name() = "x:b"]').size
+  end
 
-	def test_local_name
-		d = REXML::Document.new("<a xmlns:x='foo'><b/><x:b/></a>")
-		assert_equal 2, d.root.elements.to_a('*[local_name() = "b"]').size
-		assert_equal 2, d.elements.to_a('//*[local_name() = "b"]').size
-	end
+  def test_local_name
+    d = REXML::Document.new("<a xmlns:x='foo'><b/><x:b/></a>")
+    assert_equal 2, d.root.elements.to_a('*[local_name() = "b"]').size
+    assert_equal 2, d.elements.to_a('//*[local_name() = "b"]').size
+  end
 
-	def test_comparisons
-		source = "<a><b id='1'/><b id='2'/><b id='3'/></a>"
-		doc = REXML::Document.new(source)
+  def test_comparisons
+    source = "<a><b id='1'/><b id='2'/><b id='3'/></a>"
+    doc = REXML::Document.new(source)
 
-		# NOTE TO SER: check that number() is required
-		assert_equal 2, REXML::XPath.match(doc, "//b[number(@id) > 1]").size
-		assert_equal 3, REXML::XPath.match(doc, "//b[number(@id) >= 1]").size
-		assert_equal 1, REXML::XPath.match(doc, "//b[number(@id) <= 1]").size
-		assert_equal 1, REXML::XPath.match(doc, "//b[number(@id) = (1 * 1)]").size
-		assert_equal 1, REXML::XPath.match(doc, "//b[number(@id) = (1 mod 2)]").size
-		assert_equal 1, REXML::XPath.match(doc, "//b[number(@id) = (4 div 2)]").size
-	end
-	
-	# Contributed by Kouhei
-	def test_substring_before
-		doc = Document.new("<r><a/><b/><c/></r>")
-		assert_equal("a", doc.root.elements.to_a("*[name()=substring-before('abc', 'b')]")[0].name)
-		assert_equal("c", doc.root.elements.to_a("*[name()=substring-after('abc', 'b')]")[0].name)
-	end
+    # NOTE TO SER: check that number() is required
+    assert_equal 2, REXML::XPath.match(doc, "//b[number(@id) > 1]").size
+    assert_equal 3, REXML::XPath.match(doc, "//b[number(@id) >= 1]").size
+    assert_equal 1, REXML::XPath.match(doc, "//b[number(@id) <= 1]").size
+    assert_equal 1, REXML::XPath.match(doc, "//b[number(@id) = (1 * 1)]").size
+    assert_equal 1, REXML::XPath.match(doc, "//b[number(@id) = (1 mod 2)]").size
+    assert_equal 1, REXML::XPath.match(doc, "//b[number(@id) = (4 div 2)]").size
+  end
+  
+  # Contributed by Kouhei
+  def test_substring_before
+    doc = Document.new("<r><a/><b/><c/></r>")
+    assert_equal("a", doc.root.elements.to_a("*[name()=substring-before('abc', 'b')]")[0].name)
+    assert_equal("c", doc.root.elements.to_a("*[name()=substring-after('abc', 'b')]")[0].name)
+  end
 
-	def test_spaces
-		doc = Document.new("<a>
-			<b>
-				<c id='a'/>
-			</b>
-			<c id='b'/>
-		</a>")
+  def test_spaces
+    doc = Document.new("<a>
+      <b>
+        <c id='a'/>
+      </b>
+      <c id='b'/>
+    </a>")
     assert_equal( 1, REXML::XPath.match(doc, 
-			"//*[local-name()='c' and @id='b']").size )
-		assert_equal( 1, REXML::XPath.match(doc, 
-			"//*[ local-name()='c' and @id='b' ]").size )
-		assert_equal( 1, REXML::XPath.match(doc, 
-			"//*[ local-name() = 'c' and @id = 'b' ]").size )
-		assert_equal( 1, 
-			REXML::XPath.match(doc, '/a/c[@id]').size )
-		assert_equal( 1,
-			REXML::XPath.match(doc, '/a/c[(@id)]').size )
-		assert_equal( 1, 
-			REXML::XPath.match(doc, '/a/c[ @id ]').size )
-		assert_equal( 1, 
-			REXML::XPath.match(doc, '/a/c[ (@id) ]').size )
-		assert_equal( 1, 
-			REXML::XPath.match(doc, '/a/c[( @id )]').size )
-		assert_equal( 1, REXML::XPath.match(doc.root, 
-			'/a/c[ ( @id ) ]').size )
-		assert_equal( 1, REXML::XPath.match(doc, 
-			'/a/c [ ( @id ) ] ').size )
-		assert_equal( 1, REXML::XPath.match(doc, 
-			' / a / c [ ( @id ) ] ').size )
-	end
+      "//*[local-name()='c' and @id='b']").size )
+    assert_equal( 1, REXML::XPath.match(doc, 
+      "//*[ local-name()='c' and @id='b' ]").size )
+    assert_equal( 1, REXML::XPath.match(doc, 
+      "//*[ local-name() = 'c' and @id = 'b' ]").size )
+    assert_equal( 1, 
+      REXML::XPath.match(doc, '/a/c[@id]').size )
+    assert_equal( 1,
+      REXML::XPath.match(doc, '/a/c[(@id)]').size )
+    assert_equal( 1, 
+      REXML::XPath.match(doc, '/a/c[ @id ]').size )
+    assert_equal( 1, 
+      REXML::XPath.match(doc, '/a/c[ (@id) ]').size )
+    assert_equal( 1, 
+      REXML::XPath.match(doc, '/a/c[( @id )]').size )
+    assert_equal( 1, REXML::XPath.match(doc.root, 
+      '/a/c[ ( @id ) ]').size )
+    assert_equal( 1, REXML::XPath.match(doc, 
+      '/a/c [ ( @id ) ] ').size )
+    assert_equal( 1, REXML::XPath.match(doc, 
+      ' / a / c [ ( @id ) ] ').size )
+  end
 
-	def test_text_nodes
-		#	source = "<root>
-		#<child/>
-		#<child>test</child>
-		#</root>"
-		source = "<root><child>test</child></root>"
-		d = REXML::Document.new( source )
-		r = REXML::XPath.match( d, %q{/root/child[text()="test"]} )
-		assert_equal( 1, r.size )
-		assert_equal( "child", r[0].name )
-		assert_equal( "test", r[0].text )
-	end
+  def test_text_nodes
+    #  source = "<root>
+    #<child/>
+    #<child>test</child>
+    #</root>"
+    source = "<root><child>test</child></root>"
+    d = REXML::Document.new( source )
+    r = REXML::XPath.match( d, %q{/root/child[text()="test"]} )
+    assert_equal( 1, r.size )
+    assert_equal( "child", r[0].name )
+    assert_equal( "test", r[0].text )
+  end
 
-	def test_auto_string_value
-		source = "<root><foo/><title>Introduction</title></root>"
-		d = REXML::Document.new( source )
-		#r = REXML::XPath.match( d, %q{/root[title="Introduction"]} )
-		#assert_equal( 1, r.size )
-		source = "<a><b/><c/><c>test</c></a>"
-		d = REXML::Document.new( source )
-		r = REXML::XPath.match( d, %q{/a[c='test']} )
-		assert_equal( 1, r.size )
-		r = REXML::XPath.match( d, %q{a[c='test']} )
-		assert_equal( 1, r.size )
-		r = d.elements["/a[c='test']"]
-		assert_not_nil( r )
-		r = d.elements["a[c='test']"]
-		assert_not_nil( r )
+  def test_auto_string_value
+    source = "<root><foo/><title>Introduction</title></root>"
+    d = REXML::Document.new( source )
+    #r = REXML::XPath.match( d, %q{/root[title="Introduction"]} )
+    #assert_equal( 1, r.size )
+    source = "<a><b/><c/><c>test</c></a>"
+    d = REXML::Document.new( source )
+    r = REXML::XPath.match( d, %q{/a[c='test']} )
+    assert_equal( 1, r.size )
+    r = REXML::XPath.match( d, %q{a[c='test']} )
+    assert_equal( 1, r.size )
+    r = d.elements["/a[c='test']"]
+    assert_not_nil( r )
+    r = d.elements["a[c='test']"]
+    assert_not_nil( r )
     r = d.elements["a[c='xtest']"]
     assert_nil( r )
     r = REXML::XPath.match( d, %q{a[c='xtest']} )
     assert_equal( 0, r.size )
-	end
+  end
 
-	def test_ordering
-		source = "<a><b><c id='1'/><c id='2'/></b><b><d id='1'/><d id='2'/></b></a>"
-		d = REXML::Document.new( source )
-		r = REXML::XPath.match( d, %q{/a/*/*[1]} )
-		assert_equal( 1, r.size )
-		r.each { |el| assert_equal( '1', el.attribute('id').value ) }
-	end
+  def test_ordering
+    source = "<a><b><c id='1'/><c id='2'/></b><b><d id='1'/><d id='2'/></b></a>"
+    d = REXML::Document.new( source )
+    r = REXML::XPath.match( d, %q{/a/*/*[1]} )
+    assert_equal( 1, r.size )
+    r.each { |el| assert_equal( '1', el.attribute('id').value ) }
+  end
 
   def test_descendant_or_self_ordering
-		source = "<a>
+    source = "<a>
     <b>
       <c id='1'/>
       <c id='2'/>

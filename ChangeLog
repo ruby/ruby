@@ -1,3 +1,7 @@
+Fri Sep 17 22:46:02 2010  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/: untabify.
+
 Fri Sep 17 22:29:56 2010  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/: fix fixture data path. All REXML tests are worked.

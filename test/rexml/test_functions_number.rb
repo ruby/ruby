@@ -28,5 +28,5 @@ class TC_Rexml_Functions_Number < Test::Unit::TestCase
   #  telem = REXML::Element.new("elem")
   #  telem.text="9.13E12"
   #  assert_equal(9.13E12, REXML::Functions::number(telem))
-	#end 
+  #end
 end

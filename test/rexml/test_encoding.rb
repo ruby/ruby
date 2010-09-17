@@ -15,7 +15,7 @@ class EncodingTester < Test::Unit::TestCase
   end
 
   # Given an encoded document, try to write out to that encoding
-	def test_encoded_in_encoded_out
+  def test_encoded_in_encoded_out
     doc = Document.new( @encoded )
     doc.write( out="" )
     out.force_encoding('binary') if out.respond_to? :force_encoding

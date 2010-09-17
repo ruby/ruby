@@ -32,7 +32,7 @@ class StreamTester < Test::Unit::TestCase
     <!DOCTYPE foo [
       <!ENTITY ent "replace">
       <!ATTLIST a
-	     xmlns:human CDATA #FIXED "http://www.foo.com/human">
+       xmlns:human CDATA #FIXED "http://www.foo.com/human">
       <!ELEMENT bar (#PCDATA)>
       <!NOTATION n1 PUBLIC "-//HM//NOTATION TEST1//EN" 'urn:x-henrikmartensson.org:test5'>
     ]>

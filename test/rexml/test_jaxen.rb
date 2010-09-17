@@ -47,16 +47,16 @@ class JaxenTester < Test::Unit::TestCase
 
   # processes a tests/document/context node 
   def handleContext( testDoc, ctxElement)
-	testCtx = XPath.match( testDoc, ctxElement.attributes["select"] )[0]
-	namespaces = {} 
-	if testCtx.class == Element
-		testCtx.prefixes.each { |pre| handleNamespace( testCtx, pre, namespaces ) } 
-	end
-	variables = {} 
-	XPath.each( ctxElement, "@*[namespace-uri() = 'http://jaxen.org/test-harness/var']") { |attrib| handleVariable(testCtx, variables, attrib) }
-	XPath.each( ctxElement, "valueOf") { |e| handleValueOf(testCtx, variables, namespaces, e) }
-	XPath.each( ctxElement, "test[not(@exception) or (@exception != 'true') ]") { |e| handleNominalTest(testCtx,variables, namespaces, e) }
-	XPath.each( ctxElement, "test[@exception = 'true']") { |e| handleExceptionalTest(testCtx,variables, namespaces, e) }
+    testCtx = XPath.match( testDoc, ctxElement.attributes["select"] )[0]
+    namespaces = {} 
+    if testCtx.class == Element
+      testCtx.prefixes.each { |pre| handleNamespace( testCtx, pre, namespaces ) } 
+    end
+    variables = {} 
+    XPath.each( ctxElement, "@*[namespace-uri() = 'http://jaxen.org/test-harness/var']") { |attrib| handleVariable(testCtx, variables, attrib) }
+    XPath.each( ctxElement, "valueOf") { |e| handleValueOf(testCtx, variables, namespaces, e) }
+    XPath.each( ctxElement, "test[not(@exception) or (@exception != 'true') ]") { |e| handleNominalTest(testCtx,variables, namespaces, e) }
+    XPath.each( ctxElement, "test[@exception = 'true']") { |e| handleExceptionalTest(testCtx,variables, namespaces, e) }
   end
 
   # processes a tests/document/context/valueOf or tests/document/context/test/valueOf node
@@ -99,28 +99,28 @@ class JaxenTester < Test::Unit::TestCase
   # processes a tests/document/context/test node ( where @exception is true ) 
   def handleExceptionalTest(ctx, variables, namespaces, testElement)
     assert_raise( Exception ) {
-  		XPath.match( ctx, testElement.attributes["select"], namespaces, variables )
+      XPath.match( ctx, testElement.attributes["select"], namespaces, variables )
     }
   end
 
   # processes a tests/document node 
   def handleDocument(docElement)
-  	puts "- Processing document: #{docElement.attributes['url']}"
-  	testFile = File.new( docElement.attributes["url"] )
-  	testDoc = Document.new testFile
-  	XPath.each( docElement, "context") { |e| handleContext(testDoc, e) }
+    puts "- Processing document: #{docElement.attributes['url']}"
+    testFile = File.new( docElement.attributes["url"] )
+    testDoc = Document.new testFile
+    XPath.each( docElement, "context") { |e| handleContext(testDoc, e) }
   end
   
   # processes a variable definition in a namespace like <test var:foo="bar"> 
   def handleVariable( ctx, variables, attrib )
-  	puts "--- Found attribute: #{attrib.name}"
-  	variables[attrib.name] = attrib.value
+    puts "--- Found attribute: #{attrib.name}"
+    variables[attrib.name] = attrib.value
   end
   
   # processes a namespace definition like <test xmlns:foo="fiz:bang:bam"> 
   def handleNamespace( ctx, prefix, namespaces )
-  	puts "--- Found namespace: #{prefix}"
-  	namespaces[prefix] = ctx.namespaces[prefix] 
+    puts "--- Found namespace: #{prefix}"
+    namespaces[prefix] = ctx.namespaces[prefix] 
   end
   
 end
