@@ -1,3 +1,7 @@
+Fri Sep 17 23:10:44 2010  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/test_core.rb: enable.
+
 Fri Sep 17 22:46:02 2010  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/: untabify.
