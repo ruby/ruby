@@ -1,3 +1,9 @@
+Fri Sep 17 22:12:23 2010  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/: import REXML tests from
+	http://www.germane-software.com/repos/rexml/trunk/test/.
+	Many tests are failed temporary. I'll fix them quickly. Sorry.
+
 Fri Sep 17 16:48:49 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* test/io/console/test_io_console.rb (TestIO_Console::helper):
