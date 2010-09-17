@@ -1,3 +1,7 @@
+Fri Sep 17 22:15:15 2010  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/test_listener.rb: remove needless codes.
+
 Fri Sep 17 22:12:23 2010  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/: import REXML tests from

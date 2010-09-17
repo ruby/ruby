@@ -1,5 +1,5 @@
 # coding: binary
-require 'test/unit/testcase'
+
 require 'rexml/document'
 require 'rexml/streamlistener'
 
@@ -96,76 +96,6 @@ class BaseTester < Test::Unit::TestCase
 	end
 end
 
-#########################################################
-# Other parsers commented out because they cause failures
-# in the unit tests, which aren't REXMLs problems
-# #######################################################
-=begin
-begin
-	require 'xmlparser'
-	class MyXMLParser
-		class Listener < XML::Parser
-			# Dummy handler to get XML::Parser::XML_DECL event.
-			def xmlDecl; end
-		end
-
-		def parse( stringOrReadable )
-			text = ""
-			Listener.new.parse( stringOrReadable ) do | type, name, data |
-				case type
-				when XML::Parser::CDATA
-		text << data
-				end
-			end
-			text
-		end
-	end
-
-	class XMLParserTester < BaseTester
-		def setup
-			@listener = MyXMLParser.new
-		end
-	end
-rescue LoadError
-	#puts "XMLParser not available"
-end
-
-begin
-	require 'nqxml/tokenizer'
-	class MyNQXMLLightWeightListener
-		def parse( stringOrReadable )
-			text = ""
-			isText = false
-			tokenizer = NQXML::Tokenizer.new( stringOrReadable )
-			tokenizer.each do | entity |
-				case entity
-				when NQXML::Tag
-		if !entity.isTagEnd
-			isText = true
-		else
-			isText = false
-		end
-				when NQXML::Text
-		if isText
-			text << entity.text
-			isText = false
-		end
-				end
-			end
-			text
-		end
-	end
-
-	class NQXMLTester < BaseTester
-		def setup
-			@listener = MyNQXMLLightWeightListener.new
-		end
-	end
-rescue LoadError
-	#puts "NQXML not available"
-end
-=end
-
 class MyREXMLListener
   include REXML::StreamListener
 
@@ -192,16 +122,5 @@ class REXMLTester < BaseTester
 	def test_character_reference_2
 		t6 = %Q{<string>&#xd;</string>}
 		assert_equal( t6.strip, REXML::Document.new(t6).to_s )
-	end
-end
-
-if __FILE__ == $0
-	case ARGV[0]
-	when 'NQXML'
-		RUNIT::CUI::TestRunner.run( NQXMLTester.suite )
-	when 'XMLParser'
-		RUNIT::CUI::TestRunner.run( XMLParserTester.suite )
-	else
-		RUNIT::CUI::TestRunner.run( REXMLTester.suite )
 	end
 end
