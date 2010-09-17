@@ -4,7 +4,7 @@ require 'test/unit'
 
 class TestIO_Console < Test::Unit::TestCase
   def test_raw
-    PTY.open {|m, s|
+    helper {|m, s|
       s.print "abc\n"
       assert_equal("abc\r\n", m.gets)
       s.raw {
@@ -17,7 +17,7 @@ class TestIO_Console < Test::Unit::TestCase
   end
 
   def test_echo
-    PTY.open {|m, s|
+    helper {|m, s|
       assert(s.echo?)
       m.print "a"
       assert_equal("a", m.readpartial(10))
@@ -25,7 +25,7 @@ class TestIO_Console < Test::Unit::TestCase
   end
 
   def test_noecho
-    PTY.open {|m, s|
+    helper {|m, s|
       s.noecho {
 	assert(!s.echo?)
 	m.print "a"
@@ -37,7 +37,7 @@ class TestIO_Console < Test::Unit::TestCase
   end
 
   def test_noecho2
-    PTY.open {|m, s|
+    helper {|m, s|
       assert(s.echo?)
       m.print "a\n"
       sleep 0.1
@@ -63,7 +63,7 @@ class TestIO_Console < Test::Unit::TestCase
   end
 
   def test_setecho
-    PTY.open {|m, s|
+    helper {|m, s|
       assert(s.echo?)
       s.echo = false
       m.print "a"
@@ -75,7 +75,7 @@ class TestIO_Console < Test::Unit::TestCase
   end
 
   def test_setecho2
-    PTY.open {|m, s|
+    helper {|m, s|
       assert(s.echo?)
       m.print "a\n"
       sleep 0.1
@@ -101,7 +101,7 @@ class TestIO_Console < Test::Unit::TestCase
   end
 
   def test_iflush
-    PTY.open {|m, s|
+    helper {|m, s|
       m.print "a"
       s.iflush
       m.print "b\n"
@@ -110,7 +110,7 @@ class TestIO_Console < Test::Unit::TestCase
   end
 
   def test_oflush
-    PTY.open {|m, s|
+    helper {|m, s|
       s.print "a"
       s.oflush # oflush may be issued after "a" is already sent.
       s.print "b"
@@ -119,7 +119,7 @@ class TestIO_Console < Test::Unit::TestCase
   end
 
   def test_ioflush
-    PTY.open {|m, s|
+    helper {|m, s|
       m.print "a"
       s.ioflush
       m.print "b\n"
@@ -128,7 +128,7 @@ class TestIO_Console < Test::Unit::TestCase
   end
 
   def test_ioflush2
-    PTY.open {|m, s|
+    helper {|m, s|
       s.print "a"
       s.ioflush # ioflush may be issued after "a" is already sent.
       s.print "b"
@@ -137,11 +137,23 @@ class TestIO_Console < Test::Unit::TestCase
   end
 
   def test_winsize
-    PTY.open {|m, s|
+    helper {|m, s|
       begin
         assert_equal([0, 0], s.winsize)
       rescue Errno::EINVAL # OpenSolaris 2009.06 TIOCGWINSZ causes Errno::EINVAL before TIOCSWINSZ.
       end
     }
+  end
+
+  private
+  def helper
+    m, s = PTY.open
+  rescue RuntimeError
+    skip $!
+  else
+    yield m, s
+  ensure
+    m.close if m
+    s.close if s
   end
 end
