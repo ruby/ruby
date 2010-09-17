@@ -1,8 +1,9 @@
-require "test/unit/testcase"
+require "rexml_test_utils"
 require 'rexml/sax2listener'
 require 'rexml/parsers/sax2parser'
 
 class SAX2Tester < Test::Unit::TestCase
+  include REXMLTestUtils
   include REXML
   def test_characters
     d = Document.new( "<A>@blah@</A>" )
@@ -29,7 +30,7 @@ class SAX2Tester < Test::Unit::TestCase
   end
 
   def test_sax2
-    f = File.new("test/data/documentation.xml")
+    f = File.new(fixture_path("documentation.xml"))
     parser = Parsers::SAX2Parser.new( f )
     # Listen to all events on the following elements
     count = 0
@@ -267,7 +268,7 @@ class SAX2Tester < Test::Unit::TestCase
     include REXML::SAX2Listener 
   end  
   def test_ticket_68
-    parser = REXML::Parsers::SAX2Parser.new( File.new('test/data/ticket_68.xml') ) 
+    parser = REXML::Parsers::SAX2Parser.new(File.new(fixture_path('ticket_68.xml')))
     parser.listen( Ticket68.new ) 
     begin
       parser.parse

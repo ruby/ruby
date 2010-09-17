@@ -1,8 +1,22 @@
-require 'test/unit'
+require 'rexml_test_utils'
 require 'rexml/document'
 require 'zlib'
 
 class OrderTester < Test::Unit::TestCase
+  include REXMLTestUtils
+
+  TESTDOC = <<END
+<a>
+  <b/>
+  <x id='1'/>
+  <c/>
+  <d>
+    <x id='2'/>
+  </d>
+  <x id='3'/>
+</a>
+END
+
    def setup
      @doc = REXML::Document.new(TESTDOC)
      @items = REXML::XPath.match(@doc,'//x')
@@ -29,7 +43,7 @@ class OrderTester < Test::Unit::TestCase
    end
    # Provided by Tom Talbott
    def test_more_ordering
-     doc = REXML::Document.new( Zlib::GzipReader.new( File.new( 'test/data/LostineRiver.kml.gz' ) ) )
+     doc = REXML::Document.new(Zlib::GzipReader.new(File.new(fixture_path('LostineRiver.kml.gz'))))
      actual = [
         "Head south from Phinney Ave N",
         "Turn left at N 36th St",
@@ -86,16 +100,3 @@ class OrderTester < Test::Unit::TestCase
      }
    end
 end
-
-TESTDOC = <<END
-<a>
-  <b/>
-  <x id='1'/>
-  <c/>
-  <d>
-    <x id='2'/>
-  </d>
-  <x id='3'/>
-</a>
-END
-

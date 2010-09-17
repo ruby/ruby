@@ -1,12 +1,13 @@
-require "test/unit/testcase"
+require "rexml_test_utils"
 require "rexml/light/node"
 require "rexml/parsers/lightparser"
 
-include REXML::Light
-
 class LightTester < Test::Unit::TestCase
+  include REXMLTestUtils
+  include REXML::Light
+
 	def test_parse_large 
-		parser = REXML::Parsers::LightParser.new( File.new( "test/data/documentation.xml" ) )
+		parser = REXML::Parsers::LightParser.new(fixture_path("documentation.xml"))
 		root = parser.parse
 	end
 	

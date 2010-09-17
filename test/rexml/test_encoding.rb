@@ -1,12 +1,12 @@
 # coding: binary
-require "test/unit/testcase"
+
+require "rexml_test_utils"
 
 require 'rexml/source'
 
 class EncodingTester < Test::Unit::TestCase
+  include REXMLTestUtils
   include REXML
-
-  TEST_DIR="test/data"
 
   def setup
     @encoded = "<?xml version='1.0' encoding='ISO-8859-3'?>"+
@@ -85,7 +85,7 @@ class EncodingTester < Test::Unit::TestCase
   end
 
   def test_ticket_110
-    utf16 = REXML::Document.new(File.new(File.join(TEST_DIR,"ticket_110_utf16.xml")))
+    utf16 = REXML::Document.new(File.new(fixture_path("ticket_110_utf16.xml")))
     assert_equal( "UTF-16", utf16.encoding )
     assert( utf16[0].kind_of?(REXML::XMLDecl))
   end

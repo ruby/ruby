@@ -1,8 +1,9 @@
-require "test/unit/testcase"
+require "rexml_test_utils"
 
 require "rexml/document"
 
 class XPathTester < Test::Unit::TestCase
+  include REXMLTestUtils
 	include REXML
 	SOURCE = <<-EOF
     <a id='1'>
@@ -128,7 +129,7 @@ class XPathTester < Test::Unit::TestCase
 		assert_equal("b", XPath::first(c, "..").name)
 		assert_equal("a", XPath::first(@@doc, "a/b/..").name)
 
-		doc = REXML::Document.new(File.new("test/data/project.xml"))
+		doc = REXML::Document.new(File.new(fixture_path("project.xml")))
 		c = each_test(doc.root, "./Description" ) { |child|
 			assert_equal("Description",child.name)
 		}
@@ -185,7 +186,7 @@ class XPathTester < Test::Unit::TestCase
 	end
 
 	def no_test_ancestor
-		doc = REXML::Document.new(File.new("test/data/testsrc.xml"))
+		doc = REXML::Document.new(File.new(fixture_path("testsrc.xml")))
 		doc.elements.each("//item") { |el| print el.name
 			if el.attributes['x']
 				puts " -- "+el.attributes['x']
@@ -208,8 +209,8 @@ class XPathTester < Test::Unit::TestCase
 	# This method reads a document from a file, and then a series of xpaths, 
 	# also from a file.  It then checks each xpath against the source file.
 	def test_more
-    xmlsource   = "test/data/testsrc.xml"
-    xpathtests  = "test/data/xp.tst"
+    xmlsource   = fixture_path("testsrc.xml")
+    xpathtests  = fixture_path("xp.tst")
 
 		doc = REXML::Document.new(File.new(xmlsource))
 		#results = ""
@@ -313,7 +314,7 @@ class XPathTester < Test::Unit::TestCase
 	end
 
 	def test_lang
-		doc = Document.new(File.new("test/data/lang0.xml"))
+		doc = Document.new(File.new(fixture_path("lang0.xml")))
 		#puts IO.read( "test/lang.xml" )
 	  
 		#puts XPath.match( doc, "//language/*" ).size
@@ -646,9 +647,9 @@ class XPathTester < Test::Unit::TestCase
 			REXML::XPath.match(doc, '/a/c[( @id )]').size )
 		assert_equal( 1, REXML::XPath.match(doc.root, 
 			'/a/c[ ( @id ) ]').size )
-		assert( 1, REXML::XPath.match(doc, 
+		assert_equal( 1, REXML::XPath.match(doc, 
 			'/a/c [ ( @id ) ] ').size )
-		assert( 1, REXML::XPath.match(doc, 
+		assert_equal( 1, REXML::XPath.match(doc, 
 			' / a / c [ ( @id ) ] ').size )
 	end
 
@@ -895,7 +896,7 @@ class XPathTester < Test::Unit::TestCase
   def test_ticket_56
     namespaces = {'h' => 'http://www.w3.org/1999/xhtml'}
 
-    finaldoc = REXML::Document.new(File.read('test/data/google.2.xml'))
+    finaldoc = REXML::Document.new(File.read(fixture_path('google.2.xml')))
 
     column_headers = []
 
@@ -934,10 +935,10 @@ EOF
   def test_ticket_43
     #url = http://news.search.yahoo.com/news/rss?p=market&ei=UTF-8&fl=0&x=wrt 
 
-    sum = Document.new(File.new("test/data/yahoo.xml")).elements.to_a("//item").size
+    sum = Document.new(File.new(fixture_path("yahoo.xml"))).elements.to_a("//item").size
     assert_equal( 10, sum )
 
-    text = Document.new(File.new("test/data/yahoo.xml")).elements.to_a(%Q{//title[contains(text(), "'")]}).collect{|e| e.text}.join
+    text = Document.new(File.new(fixture_path("yahoo.xml"))).elements.to_a(%Q{//title[contains(text(), "'")]}).collect{|e| e.text}.join
     assert_equal( "Broward labor market's a solid performer (Miami Herald)", text )
   end
 
@@ -995,13 +996,13 @@ EOF
   end  
 
   def test_ticket_61_text
-    file = File.open( "test/data/ticket_61.xml" )
+    file = File.open(fixture_path("ticket_61.xml"))
     doc = REXML::Document.new file
     ticket_61_fixture( doc, "//div[text()='Add' and @class='ButtonText']" )
   end
 
   def test_ticket_61_contains
-    file = File.open( "test/data/ticket_61.xml" )
+    file = File.open(fixture_path("ticket_61.xml"))
     doc = REXML::Document.new file
     ticket_61_fixture( doc, "//div[contains(.,'Add') and @class='ButtonText']" )
   end

@@ -1,9 +1,12 @@
 # coding: binary
 
+require 'rexml_test_utils'
+
 require 'rexml/document'
 require 'rexml/streamlistener'
 
 class BaseTester < Test::Unit::TestCase
+  include REXMLTestUtils
 	def test_empty
 		return unless defined? @listener
 		# Empty.
@@ -90,7 +93,7 @@ class BaseTester < Test::Unit::TestCase
                 end
 		assert_equal( 'é', a.value)
 		doc = REXML::Document.parse_stream(
-			File::new("test/data/stream_accents.xml"),
+			File::new(fixture_path("stream_accents.xml")),
 			AccentListener::new
 			)
 	end

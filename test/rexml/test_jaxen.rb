@@ -1,11 +1,13 @@
+require 'rexml_test_utils'
+
 require "rexml/document"
 require "rexml/xpath"
-require 'test/unit/testcase'
 
 # Harness to test REXML's capabilities against the test suite from Jaxen
 # ryan.a.cox@gmail.com
 
 class JaxenTester < Test::Unit::TestCase
+  include REXMLTestUtils
   include REXML
 
   def test_axis ; test("axis") ; end
@@ -32,18 +34,16 @@ class JaxenTester < Test::Unit::TestCase
   def test_web ; test("web") ; end
   def test_web2 ; test("web2") ; end
 
+  private
   def test( fname )
-    xml_dir = "test/data"
 #    Dir.entries( xml_dir ).each { |fname|
 #      if fname =~ /\.xml$/
-        file = File.new( File.join( xml_dir, fname+".xml" ))
+        file = File.new(fixture_path(fname+".xml"))
         doc = Document.new( file )
         XPath.each( doc, "/tests/document" ) {|e| handleDocument(e)}
 #      end 
 #    }
   end
-
-  private
 
   # processes a tests/document/context node 
   def handleContext( testDoc, ctxElement)

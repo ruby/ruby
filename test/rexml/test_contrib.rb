@@ -1,11 +1,13 @@
 # coding: binary
-require "test/unit/testcase"
+
+require "rexml_test_utils"
 
 require "rexml/document"
 require "rexml/parseexception"
 require "rexml/formatters/default"
 
 class ContribTester < Test::Unit::TestCase
+  include REXMLTestUtils
 	include REXML
 
 XML_STRING_01 = <<DELIMITER
@@ -275,7 +277,7 @@ EOF
     f.write( tn, Output.new(o = "", "ISO-8859-1") )
 		assert_equal(expected_iso, o.strip)
 
-		doc = Document.new File.new('test/data/xmlfile-bug.xml')
+		doc = Document.new File.new(fixture_path('xmlfile-bug.xml'))
 		tn = XPath.first(doc, "//nebenspalte/text()[2]")
 		assert_equal(expected_utf, tn.to_s.strip)
     f.write( tn, Output.new(o = "", "ISO-8859-1") )
@@ -295,7 +297,7 @@ EOF
 	end
 
 	def test_namespaces_in_attlist_tobias
-		in_string = File.open('test/data/foo.xml', 'r') do |file|
+		in_string = File.open(fixture_path('foo.xml'), 'r') do |file|
 			 file.read
 		end
 
@@ -309,7 +311,7 @@ EOF
 
 	#  Alun ap Rhisiart
 	def test_less_than_in_element_content
-		source = File.new('test/data/ProductionSupport.xml')
+		source = File.new(fixture_path('ProductionSupport.xml'))
 		h = Hash.new
 		doc = REXML::Document.new source
 		doc.elements.each("//CommonError") { |el| 
@@ -450,8 +452,8 @@ EOL
 	def test_external_entity
 		xp = '//channel/title'
 
-		%w{data/working.rss data/broken.rss}.each do |path|
-			File.open(File.join( "test", path )) do |file|
+		%w{working.rss broken.rss}.each do |path|
+			File.open(File.join(fixture_path(path))) do |file|
 				doc = REXML::Document.new file.readlines.join('')
 
 				# check to make sure everything is kosher
