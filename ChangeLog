@@ -1,3 +1,9 @@
+Fri Sep 17 23:44:07 2010  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/xpath_parser.rb, test/rexml/test_xpath.rb:
+	add missing method availability check. [ruby-core:32447]
+	Reported by Wiebe Cazemier. Thanks!!!
+
 Fri Sep 17 23:23:26 2010  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/test_sax.rb: don't use thread and sleep to avoid slow test.

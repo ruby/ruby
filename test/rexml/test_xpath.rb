@@ -1053,4 +1053,27 @@ EOF
     r = REXML::XPath.match( d, %q{/a/b[c='3']} )
     assert_equal(1, r.size())
   end
+
+  def test_or_and
+    doc = "
+<html>
+  <head>
+    <title>test</title>
+  </head>
+  <body>
+    <p>
+      A <a rel=\"sub\" href=\"/\">link</a>.
+    </p>
+  </body>
+</html>
+"
+
+    xmldoc = REXML::Document.new(doc)
+    xpath = "descendant::node()[(local-name()='link' or local-name()='a') and @rel='sub']"
+    hrefs = []
+    xmldoc.elements.each(xpath) do |element|
+      hrefs << element.attributes["href"]
+    end
+    assert_equal(["/"], hrefs, "Bug #3842 [ruby-core:32447]")
+  end
 end
