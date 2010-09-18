@@ -308,9 +308,9 @@ BigDecimal_load(VALUE self, VALUE str)
   *
   * ROUND_UP:: round away from zero
   * ROUND_DOWN:: round towards zero (truncate)
-  * ROUND_HALF_UP:: round up if the appropriate digit >= 5, otherwise truncate (default)
-  * ROUND_HALF_DOWN:: round up if the appropriate digit >= 6, otherwise truncate
-  * ROUND_HALF_EVEN:: round towards the even neighbor (Banker's rounding)
+  * ROUND_HALF_UP:: round towards the nearest neighbor, unless both neighbors are equidistant, in which case round away from zero. (default)
+  * ROUND_HALF_DOWN:: round towards the nearest neighbor, unless both neighbors are equidistant, in which case round towards zero.
+  * ROUND_HALF_EVEN:: round towards the nearest neighbor, unless both neighbors are equidistant, in which case round towards the even neighbor (Banker's rounding)
   * ROUND_CEILING:: round towards positive infinity (ceil)
   * ROUND_FLOOR:: round towards negative infinity (floor)
   *
@@ -4559,8 +4559,9 @@ VpMidRound(Real *y, unsigned short f, ssize_t nf)
  */
 {
     /* fracf: any positive digit under rounding position? */
+    /* fracf_1further: any positive digits under one further than the rounding position? */
     /* exptoadd: number of digits needed to compensate negative nf */
-    int fracf;
+    int fracf, fracf_1further;
     ssize_t n,i,ix,ioffset, exptoadd;
     BDIGIT v, shifter;
     BDIGIT div;
@@ -4573,62 +4574,111 @@ VpMidRound(Real *y, unsigned short f, ssize_t nf)
 	    VpSetZero(y,VpGetSign(y)); /* truncate everything */
 	    return 0;
 	}
-        exptoadd = -nf;
-        nf = 0;
+	exptoadd = -nf;
+	nf = 0;
     }
 
-    /* ix: x->fraq[ix] contains round position */
     ix = nf / (ssize_t)BASE_FIG;
     if ((size_t)ix >= y->Prec) return 0;  /* rounding position too right(small). */
-    ioffset = nf - ix*(ssize_t)BASE_FIG;
-
     v = y->frac[ix];
 
-    /* drop digits after pointed digit */
+    ioffset = nf - ix*(ssize_t)BASE_FIG;
     n = (ssize_t)BASE_FIG - ioffset - 1;
     for (shifter=1,i=0; i<n; ++i) shifter *= 10;
+
+    /* so the representation used (in y->frac) is an array of BDIGIT, where
+       each BDIGIT contains a value between 0 and BASE-1, consisting of BASE_FIG
+       decimal places.
+       
+       (that numbers of decimal places are typed as ssize_t is somewhat confusing)
+       
+       nf is now position (in decimal places) of the digit from the start of
+          the array.
+       ix is the position (in BDIGITS) of the BDIGIT containing the decimal digit,
+          from the start of the array.
+       v is the value of this BDIGIT
+       ioffset is the number of extra decimal places along of this decimal digit
+          within v.
+       n is the number of decimal digits remaining within v after this decimal digit
+       shifter is 10**n,
+       v % shifter are the remaining digits within v
+       v % (shifter * 10) are the digit together with the remaining digits within v
+       v / shifter are the digit's predecessors together with the digit
+       div = v / shifter / 10 is just the digit's precessors
+       (v / shifter) - div*10 is just the digit, which is what v ends up being reassigned to.
+    */
+
     fracf = (v % (shifter * 10) > 0);
+    fracf_1further = ((v % shifter) > 0);
+    
     v /= shifter;
     div = v / 10;
     v = v - div*10;
-    if (fracf == 0) {
-        for (i=ix+1; (size_t)i < y->Prec; i++) {
-            if (y->frac[i] % BASE) {
-                fracf = 1;
-                break;
-            }
-        }
+    /* now v is just the digit required.
+       now fracf is whether the digit or any of the remaining digits within v are non-zero
+       now fracf_1further is whether any of the remaining digits within v are non-zero
+    */
+
+    /* now check all the remaining BDIGITS for zero-ness a whole BDIGIT at a time.
+       if we spot any non-zeroness, that means that we foudn a positive digit under
+       rounding position, and we also found a positive digit under one further than
+       the rounding position, so both searches (to see if any such non-zero digit exists)
+       can stop */
+
+    for (i=ix+1; (size_t)i < y->Prec; i++) {
+	if (y->frac[i] % BASE) {
+	    fracf = fracf_1further = 1;
+	    break;
+	}
     }
+    
+    /* now fracf = does any positive digit exist under the rounding position?
+       now fracf_1further = does any positive digit exist under one further than the
+       rounding position?
+       now v = the first digit under the rounding position */
+    
+    /* drop digits after pointed digit */
     memset(y->frac+ix+1, 0, (y->Prec - (ix+1)) * sizeof(BDIGIT));
+
     switch(f) {
     case VP_ROUND_DOWN: /* Truncate */
          break;
     case VP_ROUND_UP:   /* Roundup */
         if (fracf) ++div;
-         break;
-    case VP_ROUND_HALF_UP:   /* Round half up  */
+	break;
+    case VP_ROUND_HALF_UP:
         if (v>=5) ++div;
         break;
-    case VP_ROUND_HALF_DOWN: /* Round half down  */
-        if (v>=6) ++div;
+    case VP_ROUND_HALF_DOWN:
+	if (v > 5 || (v == 5 && fracf_1further)) ++div;
         break;
-    case VP_ROUND_CEIL: /* ceil */
+    case VP_ROUND_CEIL:
         if (fracf && (VpGetSign(y)>0)) ++div;
         break;
-    case VP_ROUND_FLOOR: /* floor */
+    case VP_ROUND_FLOOR:
         if (fracf && (VpGetSign(y)<0)) ++div;
         break;
     case VP_ROUND_HALF_EVEN: /* Banker's rounding */
-        if (v>5) ++div;
-        else if (v==5) {
-            if ((size_t)i == (BASE_FIG-1)) {
-                if (ix && (y->frac[ix-1]%2)) ++div;
-            }
+	if (v > 5) ++div;
+	else if (v == 5) {
+	    if (fracf_1further) {
+	      ++div;
+	    }
 	    else {
-                if (div%2) ++div;
-            }
-        }
-        break;
+		if (ioffset == 0) {
+		    /* v is the first decimal digit of its BDIGIT;
+		       need to grab the previous BDIGIT if present
+		       to check for evenness of the previous decimal
+		       digit (which is same as that of the BDIGIT since
+		       base 10 has a factor of 2) */
+		    if (ix && (y->frac[ix-1] % 2)) ++div;
+		}
+		else {
+		    if (div % 2) ++div;
+		}
+	    }
+	}
+	break;
     }
     for (i=0; i<=n; ++i) div *= 10;
     if (div>=BASE) {
@@ -4694,6 +4744,8 @@ VpLimitRound(Real *c, size_t ixDigit)
     return VpLeftRound(c, (int)VpGetRoundMode(), (ssize_t)ix);
 }
 
+/* If I understand correctly, this is only ever used to round off the final decimal
+   digit of precision */
 static void
 VpInternalRound(Real *c, size_t ixDigit, BDIGIT vPrev, BDIGIT v)
 {
@@ -4701,36 +4753,41 @@ VpInternalRound(Real *c, size_t ixDigit, BDIGIT vPrev, BDIGIT v)
 
     unsigned short const rounding_mode = VpGetRoundMode();
 
-    if(VpLimitRound(c,ixDigit)) return;
-    if(!v)                      return;
+    if (VpLimitRound(c, ixDigit)) return;
+    if (!v) return;
 
     v /= BASE1;
     switch (rounding_mode) {
     case VP_ROUND_DOWN:
-        break;
+	break;
     case VP_ROUND_UP:
-        if(v)                    f = 1;
-        break;
+	if (v) f = 1;
+	break;
     case VP_ROUND_HALF_UP:
-        if(v >= 5)               f = 1;
-        break;
+	if (v >= 5) f = 1;
+	break;
     case VP_ROUND_HALF_DOWN:
-        if(v >= 6)               f = 1;
-        break;
-    case VP_ROUND_CEIL:  /* ceil */
-        if(v && (VpGetSign(c)>0)) f = 1;
-        break;
-    case VP_ROUND_FLOOR: /* floor */
-        if(v && (VpGetSign(c)<0)) f = 1;
-        break;
+	/* this is ok - because this is the last digit of precision,
+	   the case where v == 5 and some further digits are nonzero
+	   will never occur */
+	if (v >= 6) f = 1;
+	break;
+    case VP_ROUND_CEIL:
+	if (v && (VpGetSign(c) > 0)) f = 1;
+	break;
+    case VP_ROUND_FLOOR:
+	if (v && (VpGetSign(c) < 0)) f = 1;
+	break;
     case VP_ROUND_HALF_EVEN:  /* Banker's rounding */
-        if(v>5) f = 1;
-        else if(v==5 && vPrev%2)  f = 1;
-        break;
+	/* as per VP_ROUND_HALF_DOWN, because this is the last digit of precision,
+	   there is no case to worry about where v == 5 and some further digits are nonzero */
+	if (v > 5) f = 1;
+	else if (v == 5 && vPrev % 2) f = 1;
+	break;
     }
-    if(f) {
-        VpRdup(c,ixDigit);    /* round up */
-        VpNmlz(c);
+    if (f) {
+	VpRdup(c, ixDigit);
+	VpNmlz(c);
     }
 }
 

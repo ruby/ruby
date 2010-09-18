@@ -612,6 +612,18 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(3, x.round(0, BigDecimal::ROUND_CEILING))
     assert_equal(2, x.round(0, BigDecimal::ROUND_FLOOR))
     assert_raise(TypeError) { x.round(0, 256) }
+
+    15.times do |n|
+      x = BigDecimal.new("5#{'0'*n}1")
+      assert_equal(10**(n+2), x.round(-(n+2), BigDecimal::ROUND_HALF_DOWN))
+      assert_equal(10**(n+2), x.round(-(n+2), BigDecimal::ROUND_HALF_EVEN))
+      x = BigDecimal.new("0.5#{'0'*n}1")
+      assert_equal(1, x.round(0, BigDecimal::ROUND_HALF_DOWN))
+      assert_equal(1, x.round(0, BigDecimal::ROUND_HALF_EVEN))
+      x = BigDecimal.new("-0.5#{'0'*n}1")
+      assert_equal(-1, x.round(0, BigDecimal::ROUND_HALF_DOWN))
+      assert_equal(-1, x.round(0, BigDecimal::ROUND_HALF_EVEN))
+    end
   end
 
   def test_truncate

@@ -1,3 +1,11 @@
+Sun Sep 19 05:14:35 2010  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c: fix rounding algorithms for half-down
+	  and half-even.  This change is based on the patch created by Matthew
+	  Willson, the reporter of this bug.  [Bug #3803] [ruby-core:32136]
+
+	* test/bigdecimal/test_bigdecimal.rb: add tests for above changes.
+
 Sat Sep 18 20:09:51 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pathname/pathname.c (path_each_entry): Pathname#each_entry
