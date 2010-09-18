@@ -937,6 +937,30 @@ path_each_entry(VALUE self)
     return rb_block_call(rb_cDir, rb_intern("foreach"), 1, args, each_entry_i, rb_obj_class(self));
 }
 
+static VALUE
+unlink_body(VALUE str)
+{
+    return rb_funcall(rb_cDir, rb_intern("unlink"), 1, str);
+}
+
+static VALUE
+unlink_rescue(VALUE str, VALUE errinfo)
+{
+    return rb_funcall(rb_cFile, rb_intern("unlink"), 1, str);
+}
+
+/*
+ * Removes a file or directory, using <tt>File.unlink</tt> or
+ * <tt>Dir.unlink</tt> as necessary.
+ */
+static VALUE
+path_unlink(VALUE self)
+{
+    VALUE eENOTDIR = rb_const_get_at(rb_mErrno, rb_intern("ENOTDIR"));
+    VALUE str = get_strpath(self);
+    return rb_rescue2(unlink_body, str, unlink_rescue, str, eENOTDIR, (VALUE)0);
+}
+
 /*
  * == Pathname
  *
@@ -1198,4 +1222,6 @@ Init_pathname()
     rb_define_method(rb_cPathname, "rmdir", path_rmdir, 0);
     rb_define_method(rb_cPathname, "opendir", path_opendir, 0);
     rb_define_method(rb_cPathname, "each_entry", path_each_entry, 0);
+    rb_define_method(rb_cPathname, "unlink", path_unlink, 0);
+    rb_define_method(rb_cPathname, "delete", path_unlink, 0);
 }

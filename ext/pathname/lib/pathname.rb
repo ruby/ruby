@@ -526,19 +526,6 @@ class Pathname    # * FileUtils *
 end
 
 
-class Pathname    # * mixed *
-  # Removes a file or directory, using <tt>File.unlink</tt> or
-  # <tt>Dir.unlink</tt> as necessary.
-  def unlink()
-    begin
-      Dir.unlink @path
-    rescue Errno::ENOTDIR
-      File.unlink @path
-    end
-  end
-  alias delete unlink
-end
-
 class Pathname
   undef =~
 end

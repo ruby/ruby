@@ -1,3 +1,8 @@
+Sun Sep 19 07:48:20 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/pathname.c (path_unlink): Pathname#unlink and
+	  Pathname#delete translated from pathname.rb.
+
 Sun Sep 19 06:06:07 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (check_rounding_mode): added for
