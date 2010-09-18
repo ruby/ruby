@@ -1,3 +1,14 @@
+Sun Sep 19 06:06:07 2010  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (check_rounding_mode): added for
+	  converting symbol to rounding mode number.
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_mode, BigDecimal_round):
+	  support to specify rounding mode by symbol.
+
+	* test/bigdecimal/test_bigdecimal.rb (test_mode, test_round):
+	  add tests for avobe changes.
+
 Sun Sep 19 05:14:35 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c: fix rounding algorithms for half-down

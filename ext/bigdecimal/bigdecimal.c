@@ -36,6 +36,18 @@ static ID id_BigDecimal_exception_mode;
 static ID id_BigDecimal_rounding_mode;
 static ID id_BigDecimal_precision_limit;
 
+static ID id_up;
+static ID id_down;
+static ID id_truncate;
+static ID id_half_up;
+static ID id_default;
+static ID id_half_down;
+static ID id_half_even;
+static ID id_banker;
+static ID id_ceiling;
+static ID id_ceil;
+static ID id_floor;
+
 /* MACRO's to guard objects from GC by keeping them in stack */
 #define ENTER(n) volatile VALUE vStack[n];int iStack=0
 #define PUSH(x)  vStack[iStack++] = (unsigned long)(x);
@@ -277,44 +289,80 @@ BigDecimal_load(VALUE self, VALUE str)
     return ToValue(pv);
 }
 
- /* call-seq:
-  * BigDecimal.mode(mode, value)
-  *
-  * Controls handling of arithmetic exceptions and rounding. If no value
-  * is supplied, the current value is returned.
-  *
-  * Six values of the mode parameter control the handling of arithmetic
-  * exceptions:
-  *
-  * BigDecimal::EXCEPTION_NaN
-  * BigDecimal::EXCEPTION_INFINITY
-  * BigDecimal::EXCEPTION_UNDERFLOW
-  * BigDecimal::EXCEPTION_OVERFLOW
-  * BigDecimal::EXCEPTION_ZERODIVIDE
-  * BigDecimal::EXCEPTION_ALL
-  *
-  * For each mode parameter above, if the value set is false, computation
-  * continues after an arithmetic exception of the appropriate type.
-  * When computation continues, results are as follows:
-  *
-  * EXCEPTION_NaN:: NaN
-  * EXCEPTION_INFINITY:: +infinity or -infinity
-  * EXCEPTION_UNDERFLOW:: 0
-  * EXCEPTION_OVERFLOW:: +infinity or -infinity
-  * EXCEPTION_ZERODIVIDE:: +infinity or -infinity
-  *
-  * One value of the mode parameter controls the rounding of numeric values:
-  * BigDecimal::ROUND_MODE. The values it can take are:
-  *
-  * ROUND_UP:: round away from zero
-  * ROUND_DOWN:: round towards zero (truncate)
-  * ROUND_HALF_UP:: round towards the nearest neighbor, unless both neighbors are equidistant, in which case round away from zero. (default)
-  * ROUND_HALF_DOWN:: round towards the nearest neighbor, unless both neighbors are equidistant, in which case round towards zero.
-  * ROUND_HALF_EVEN:: round towards the nearest neighbor, unless both neighbors are equidistant, in which case round towards the even neighbor (Banker's rounding)
-  * ROUND_CEILING:: round towards positive infinity (ceil)
-  * ROUND_FLOOR:: round towards negative infinity (floor)
-  *
-  */
+static unsigned short
+check_rounding_mode(VALUE const v)
+{
+    unsigned short sw;
+    ID id;
+    switch (TYPE(v)) {
+      case T_SYMBOL:
+	id = SYM2ID(v);
+	if (id == id_up)
+	    return VP_ROUND_UP;
+	if (id == id_down || id == id_truncate)
+	    return VP_ROUND_DOWN;
+	if (id == id_half_up || id == id_default)
+	    return VP_ROUND_HALF_UP;
+	if (id == id_half_down)
+	    return VP_ROUND_HALF_DOWN;
+	if (id == id_half_even || id == id_banker)
+	    return VP_ROUND_HALF_EVEN;
+	if (id == id_ceiling || id == id_ceil)
+	    return VP_ROUND_CEIL;
+	if (id == id_floor)
+	    return VP_ROUND_FLOOR;
+	break;
+
+      default:
+	break;
+    }
+
+    Check_Type(v, T_FIXNUM);
+    sw = (unsigned short)FIX2UINT(v);
+    if (!VpIsRoundMode(sw)) {
+	rb_raise(rb_eTypeError, "invalid rounding mode");
+    }
+    return sw;
+}
+
+/* call-seq:
+ * BigDecimal.mode(mode, value)
+ *
+ * Controls handling of arithmetic exceptions and rounding. If no value
+ * is supplied, the current value is returned.
+ *
+ * Six values of the mode parameter control the handling of arithmetic
+ * exceptions:
+ *
+ * BigDecimal::EXCEPTION_NaN
+ * BigDecimal::EXCEPTION_INFINITY
+ * BigDecimal::EXCEPTION_UNDERFLOW
+ * BigDecimal::EXCEPTION_OVERFLOW
+ * BigDecimal::EXCEPTION_ZERODIVIDE
+ * BigDecimal::EXCEPTION_ALL
+ *
+ * For each mode parameter above, if the value set is false, computation
+ * continues after an arithmetic exception of the appropriate type.
+ * When computation continues, results are as follows:
+ *
+ * EXCEPTION_NaN:: NaN
+ * EXCEPTION_INFINITY:: +infinity or -infinity
+ * EXCEPTION_UNDERFLOW:: 0
+ * EXCEPTION_OVERFLOW:: +infinity or -infinity
+ * EXCEPTION_ZERODIVIDE:: +infinity or -infinity
+ *
+ * One value of the mode parameter controls the rounding of numeric values:
+ * BigDecimal::ROUND_MODE. The values it can take are:
+ *
+ * ROUND_UP, :up:: round away from zero
+ * ROUND_DOWN, :down, :truncate:: round towards zero (truncate)
+ * ROUND_HALF_UP, :half_up, :default:: round towards the nearest neighbor, unless both neighbors are equidistant, in which case round away from zero. (default)
+ * ROUND_HALF_DOWN, :half_down:: round towards the nearest neighbor, unless both neighbors are equidistant, in which case round towards zero.
+ * ROUND_HALF_EVEN, :half_even, :banker:: round towards the nearest neighbor, unless both neighbors are equidistant, in which case round towards the even neighbor (Banker's rounding)
+ * ROUND_CEILING, :ceiling, :ceil:: round towards positive infinity (ceil)
+ * ROUND_FLOOR, :floor:: round towards negative infinity (floor)
+ *
+ */
 static VALUE
 BigDecimal_mode(int argc, VALUE *argv, VALUE self)
 {
@@ -357,17 +405,14 @@ BigDecimal_mode(int argc, VALUE *argv, VALUE self)
         fo = VpGetException();
         return INT2FIX(fo);
     }
-    if(VP_ROUND_MODE==f) {
-        /* Rounding mode setting */
-        fo = VpGetRoundMode();
-        if(val==Qnil) return INT2FIX(fo);
-        Check_Type(val, T_FIXNUM);
-        if(!VpIsRoundMode((unsigned short)FIX2INT(val))) {
-            rb_raise(rb_eTypeError, "invalid rounding mode");
-            return Qnil;
-        }
-        fo = VpSetRoundMode((unsigned short)FIX2INT(val));
-        return INT2FIX(fo);
+    if (VP_ROUND_MODE == f) {
+	/* Rounding mode setting */
+	unsigned short sw;
+	fo = VpGetRoundMode();
+	if (NIL_P(val)) return INT2FIX(fo);
+	sw = check_rounding_mode(val);
+	fo = VpSetRoundMode(sw);
+	return INT2FIX(fo);
     }
     rb_raise(rb_eTypeError, "first argument for BigDecimal#mode invalid");
     return Qnil;
@@ -1252,7 +1297,7 @@ BigDecimal_fix(VALUE self)
 }
 
 /* call-seq:
- * round(n,mode)
+ * round(n, mode)
  *
  * Round to the nearest 1 (by default), returning the result as a BigDecimal.
  *
@@ -1285,8 +1330,7 @@ BigDecimal_round(int argc, VALUE *argv, VALUE self)
 
     unsigned short sw = VpGetRoundMode();
 
-    int na = rb_scan_args(argc,argv,"02",&vLoc,&vRound);
-    switch(na) {
+    switch (rb_scan_args(argc, argv, "02", &vLoc, &vRound)) {
     case 0:
         iLoc = 0;
         break;
@@ -1295,15 +1339,10 @@ BigDecimal_round(int argc, VALUE *argv, VALUE self)
         iLoc = FIX2INT(vLoc);
         break;
     case 2:
-        Check_Type(vLoc, T_FIXNUM);
-        iLoc = FIX2INT(vLoc);
-        Check_Type(vRound, T_FIXNUM);
-        sw   = (unsigned short)FIX2INT(vRound);
-        if(!VpIsRoundMode(sw)) {
-            rb_raise(rb_eTypeError, "invalid rounding mode");
-            return Qnil;
-        }
-        break;
+	Check_Type(vLoc, T_FIXNUM);
+	iLoc = FIX2INT(vLoc);
+	sw = check_rounding_mode(vRound);
+	break;
     }
 
     pl = VpSetPrecLimit(0);
@@ -2140,6 +2179,18 @@ Init_bigdecimal(void)
     id_BigDecimal_exception_mode = rb_intern_const("BigDecimal.exception_mode");
     id_BigDecimal_rounding_mode = rb_intern_const("BigDecimal.rounding_mode");
     id_BigDecimal_precision_limit = rb_intern_const("BigDecimal.precision_limit");
+
+    id_up = rb_intern_const("up");
+    id_down = rb_intern_const("down");
+    id_truncate = rb_intern_const("truncate");
+    id_half_up = rb_intern_const("half_up");
+    id_default = rb_intern_const("default");
+    id_half_down = rb_intern_const("half_down");
+    id_half_even = rb_intern_const("half_even");
+    id_banker = rb_intern_const("banker");
+    id_ceiling = rb_intern_const("ceiling");
+    id_ceil = rb_intern_const("ceil");
+    id_floor = rb_intern_const("floor");
 }
 
 /*

@@ -5,6 +5,20 @@ require 'thread'
 class TestBigDecimal < Test::Unit::TestCase
   include TestBigDecimalBase
 
+  ROUNDING_MODE_MAP = [
+    [ BigDecimal::ROUND_UP,        :up],
+    [ BigDecimal::ROUND_DOWN,      :down],
+    [ BigDecimal::ROUND_DOWN,      :truncate],
+    [ BigDecimal::ROUND_HALF_UP,   :half_up],
+    [ BigDecimal::ROUND_HALF_UP,   :default],
+    [ BigDecimal::ROUND_HALF_DOWN, :half_down],
+    [ BigDecimal::ROUND_HALF_EVEN, :half_even],
+    [ BigDecimal::ROUND_HALF_EVEN, :banker],
+    [ BigDecimal::ROUND_CEILING,   :ceiling],
+    [ BigDecimal::ROUND_CEILING,   :ceil],
+    [ BigDecimal::ROUND_FLOOR,     :floor],
+  ]
+
   def test_version
     assert_equal("1.0.1", BigDecimal.ver)
   end
@@ -59,6 +73,13 @@ class TestBigDecimal < Test::Unit::TestCase
       end
     ensure
       BigDecimal.mode(BigDecimal::ROUND_MODE, saved_mode)
+    end
+
+    BigDecimal.save_rounding_mode do
+      ROUNDING_MODE_MAP.each do |const, sym|
+        BigDecimal.mode(BigDecimal::ROUND_MODE, sym)
+        assert_equal(const, BigDecimal.mode(BigDecimal::ROUND_MODE))
+      end
     end
   end
 
@@ -613,16 +634,21 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(2, x.round(0, BigDecimal::ROUND_FLOOR))
     assert_raise(TypeError) { x.round(0, 256) }
 
+    ROUNDING_MODE_MAP.each do |const, sym|
+      assert_equal(x.round(0, const), x.round(0, sym))
+    end
+
+    bug3803 = '[ruby-core:32136]'
     15.times do |n|
       x = BigDecimal.new("5#{'0'*n}1")
-      assert_equal(10**(n+2), x.round(-(n+2), BigDecimal::ROUND_HALF_DOWN))
-      assert_equal(10**(n+2), x.round(-(n+2), BigDecimal::ROUND_HALF_EVEN))
+      assert_equal(10**(n+2), x.round(-(n+2), BigDecimal::ROUND_HALF_DOWN), bug3803)
+      assert_equal(10**(n+2), x.round(-(n+2), BigDecimal::ROUND_HALF_EVEN), bug3803)
       x = BigDecimal.new("0.5#{'0'*n}1")
-      assert_equal(1, x.round(0, BigDecimal::ROUND_HALF_DOWN))
-      assert_equal(1, x.round(0, BigDecimal::ROUND_HALF_EVEN))
+      assert_equal(1, x.round(0, BigDecimal::ROUND_HALF_DOWN), bug3803)
+      assert_equal(1, x.round(0, BigDecimal::ROUND_HALF_EVEN), bug3803)
       x = BigDecimal.new("-0.5#{'0'*n}1")
-      assert_equal(-1, x.round(0, BigDecimal::ROUND_HALF_DOWN))
-      assert_equal(-1, x.round(0, BigDecimal::ROUND_HALF_EVEN))
+      assert_equal(-1, x.round(0, BigDecimal::ROUND_HALF_DOWN), bug3803)
+      assert_equal(-1, x.round(0, BigDecimal::ROUND_HALF_EVEN), bug3803)
     end
   end
 
