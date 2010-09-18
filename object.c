@@ -1423,7 +1423,7 @@ rb_class_s_alloc(VALUE klass)
  *  the module object, and the block is evaluated in the context of this
  *  module using <code>module_eval</code>.
  *
- *     Fred = Module.new do
+ *     fred = Module.new do
  *       def meth1
  *         "hello"
  *       end
@@ -1432,9 +1432,12 @@ rb_class_s_alloc(VALUE klass)
  *       end
  *     end
  *     a = "my string"
- *     a.extend(Fred)   #=> "my string"
+ *     a.extend(fred)   #=> "my string"
  *     a.meth1          #=> "hello"
  *     a.meth2          #=> "bye"
+ *
+ *  Assign the module to a constant (name starting uppercase) if you
+ *  want to treat it like a regular module.
  */
 
 static VALUE
@@ -1450,12 +1453,32 @@ rb_mod_initialize(VALUE module)
 
 /*
  *  call-seq:
- *     Class.new(super_class=Object)   ->    a_class
+ *     Class.new(super_class=Object)               -> a_class
+ *     Class.new(super_class=Object) { |mod| ... } -> a_class
  *
  *  Creates a new anonymous (unnamed) class with the given superclass
  *  (or <code>Object</code> if no parameter is given). You can give a
  *  class a name by assigning the class object to a constant.
  *
+ *  If a block is given, it is passed the class object, and the block
+ *  is evaluated in the context of this class using
+ *  <code>class_eval</code>.
+ *
+ *     fred = Class.new do
+ *       def meth1
+ *         "hello"
+ *       end
+ *       def meth2
+ *         "bye"
+ *       end
+ *     end
+ *
+ *     a = fred.new     #=> #<#<Class:0x100381890>:0x100376b98>
+ *     a.meth1          #=> "hello"
+ *     a.meth2          #=> "bye"
+ *
+ *  Assign the class to a constant (name starting uppercase) if you
+ *  want to treat it like a regular class.
  */
 
 static VALUE
