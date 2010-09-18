@@ -916,6 +916,27 @@ path_opendir(VALUE self)
     return rb_block_call(rb_cDir, rb_intern("open"), 1, args, 0, 0);
 }
 
+static VALUE
+each_entry_i(VALUE elt, VALUE klass, int argc, VALUE *argv)
+{
+    return rb_yield(rb_class_new_instance(1, &elt, klass));
+}
+
+/*
+ * Iterates over the entries (files and subdirectories) in the directory.  It
+ * yields a Pathname object for each entry.
+ *
+ * This method has available since 1.8.1.
+ */
+static VALUE
+path_each_entry(VALUE self)
+{
+    VALUE args[1];
+
+    args[0] = get_strpath(self);
+    return rb_block_call(rb_cDir, rb_intern("foreach"), 1, args, each_entry_i, rb_obj_class(self));
+}
+
 /*
  * == Pathname
  *
@@ -1176,4 +1197,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "mkdir", path_mkdir, -1);
     rb_define_method(rb_cPathname, "rmdir", path_rmdir, 0);
     rb_define_method(rb_cPathname, "opendir", path_opendir, 0);
+    rb_define_method(rb_cPathname, "each_entry", path_each_entry, 0);
 }

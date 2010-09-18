@@ -484,19 +484,6 @@ class Pathname
 end
 
 
-class Pathname    # * Dir *
-
-  # Iterates over the entries (files and subdirectories) in the directory.  It
-  # yields a Pathname object for each entry.
-  #
-  # This method has existed since 1.8.1.
-  def each_entry(&block) # :yield: pathname
-    Dir.foreach(@path) {|f| yield self.class.new(f) }
-  end
-
-end
-
-
 class Pathname    # * Find *
   #
   # Pathname#find is an iterator to traverse a directory tree in a depth first
