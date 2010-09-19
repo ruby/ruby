@@ -1,3 +1,10 @@
+Sun Sep 19 20:43:33 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* configure.in (--disable-install-doc): disables capi too, in addition
+	  to rdoc.
+	  (--disable-install-rdoc): a new option for disabling only rdoc.
+	  (--disable-install-capi): a new option for disabling only capi.
+
 Sun Sep 19 20:37:45 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* common.mk (clean): removes all documents on cleaning.o

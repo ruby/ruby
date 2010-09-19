@@ -352,12 +352,6 @@ AC_SUBST(MAKEDIRS)
 
 AC_CHECK_TOOL(DOT, dot)
 AC_CHECK_TOOL(DOXYGEN, doxygen)
-if test x"$DOXYGEN" = x; then
-    CAPITARGET=nodoc
-else
-    CAPITARGET=capi
-fi
-AC_SUBST(CAPITARGET)
 
 # checks for UNIX variants that set C preprocessor variables
 AC_USE_SYSTEM_EXTENSIONS
@@ -2211,16 +2205,35 @@ dnl build section {
 
 dnl build rdoc index if requested
 RDOCTARGET=""
+CAPITARGET=""
 AC_ARG_ENABLE(install-doc,
-       AS_HELP_STRING([--disable-install-doc], [do not install rdoc indexes during install]),
+       AS_HELP_STRING([--disable-install-doc], [do not install neither rdoc indexes nor C API documents during install]),
        [install_doc=$enableval], [install_doc=yes])
+AC_ARG_ENABLE(install-rdoc,
+      AS_HELP_STRING([--disable-install-rdoc], [do not install rdoc indexes during install]),
+      [install_rdoc=$enableval], [install_rdoc=yes])
+AC_ARG_ENABLE(install-capi,
+      AS_HELP_STRING([--disable-install-capi], [do not install C API documents during install]),
+      [install_capi=$enableval], [install_capi=yes])
+
 if test "$install_doc" != no; then
-    RDOCTARGET="rdoc"
+    if test "$install_rdoc" != no; then
+	RDOCTARGET="rdoc"
+    else
+	RDOCTARGET="nodoc"
+    fi
+    if test "$install_capi" != no -a -n "$DOXYGEN"; then
+	CAPITARGET="capi"
+    else
+	CAPITARGET="nodoc"
+    fi
 else
     RDOCTARGET="nodoc"
     CAPITARGET="nodoc"
 fi
+
 AC_SUBST(RDOCTARGET)
+AC_SUBST(CAPITARGET)
 
 AS_CASE(["$RDOCTARGET:$CAPITARGET"],[nodoc:nodoc],[INSTALLDOC=nodoc],[INSTALLDOC=all])
 AC_SUBST(INSTALLDOC)
