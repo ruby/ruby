@@ -1,3 +1,14 @@
+Sun Sep 19 20:37:45 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* common.mk (clean): removes all documents on cleaning.o
+	  (CAPIOUT): new variable.
+	  (clean-capi, distclean-capi, realclean-capi): new targets
+
+	* Makefile.in (clean-capi, distclean-capi, realclean-capi): ditto.
+
+	* win32/Makefile.sub (clean-capi, distclean-capi, realclean-capi): 
+	  ditto.
+
 Sun Sep 19 13:44:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (LIBRUBY_SO): fix an oversight of replace

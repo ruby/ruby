@@ -255,9 +255,6 @@ distclean-local::
 	@-$(RM) $(INSTALLED_LIST) $(arch_hdrdir)/ruby/config.h
 	@-$(RMDIRS) $(arch_hdrdir)/ruby 2> /dev/null || true
 
-distclean-rdoc:
-	@$(RMALL) $(RDOCOUT:/=\)
-
 clean-ext distclean-ext realclean-ext::
 	@cd ext 2>/dev/null || exit 0; set dummy `echo "${EXTS}" | tr , ' '`; shift; \
 	test "$$#" = 0 && set .; \
@@ -284,6 +281,14 @@ clean-enc distclean-enc realclean-enc:
 	@test -f "$(ENC_MK)" || exit 0; \
 	echo $(@:-enc=ing) encodings; \
 	exec $(MAKE) -f $(ENC_MK) $(MFLAGS) $(@:-enc=)
+
+clean-rdoc distclean-rdoc realclean-rdoc:
+	@echo $(@:-rdoc=ing) rdoc; \
+	$(RMALL) $(RDOCOUT:/=\)
+clean-capi distclean-capi realclean-capi:
+	@echo $(@:-capi=ing) capi; \
+	$(RMALL) $(CAPIOUT:/=\)
+
 
 ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c ext/extinit.c

@@ -18,6 +18,7 @@ RBCONFIG      = ./.rbconfig.time
 LIBRUBY_EXTS  = ./.libruby-with-ext.time
 REVISION_H    = ./.revision.time
 RDOCOUT       = $(EXTOUT)/rdoc
+CAPIOUT       = doc/capi
 ID_H_TARGET   = -id.h-
 
 DMYEXT	      = dmyext.$(OBJEXT)
@@ -148,11 +149,11 @@ miniruby$(EXEEXT): config.status $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DM
 GORUBY = go$(RUBY_INSTALL_NAME)
 golf: $(LIBRUBY) $(GOLFOBJS) PHONY
 	$(MAKE) $(MFLAGS) MAINOBJ="$(GOLFOBJS)" PROGRAM=$(GORUBY)$(EXEEXT) program
-capi: doc/capi/.timestamp PHONY
+capi: $(CAPIOUT)/.timestamp PHONY
 doc/capi/.timestamp: Doxyfile $(PREP) 
 	@$(MAKEDIRS) doc/capi
 	@$(DOXYGEN) -b
-	$(MINIRUBY) -e 'File.open("doc/capi/.timestamp", "w"){|f| f.puts(Time.now)}'
+	$(MINIRUBY) -e 'File.open("$(CAPIOUT)/.timestamp", "w"){|f| f.puts(Time.now)}'
 
 Doxyfile: $(srcdir)/template/Doxyfile.tmpl $(PREP) $(srcdir)/tool/generic_erb.rb $(RBCONFIG)
 	$(MINIRUBY) $(srcdir)/tool/generic_erb.rb -o $@ $(srcdir)/template/Doxyfile.tmpl \
@@ -372,7 +373,7 @@ install-prereq: $(CLEAR_INSTALLED_LIST) PHONY
 clear-installed-list: PHONY
 	@> $(INSTALLED_LIST) set MAKE="$(MAKE)"
 
-clean: clean-ext clean-local clean-enc clean-golf clean-rdoc clean-extout
+clean: clean-ext clean-local clean-enc clean-golf clean-rdoc clean-capi clean-extout
 clean-local:: PHONY
 	@$(RM) $(OBJS) $(MINIOBJS) $(MAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
 	@$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) $(ARCHFILE) .*.time
@@ -381,7 +382,9 @@ clean-ext:: PHONY
 clean-golf: PHONY
 	@$(RM) $(GORUBY)$(EXEEXT) $(GOLFOBJS)
 clean-rdoc: PHONY
+clean-capi: PHONY
 clean-extout: PHONY
+clean-docs: clean-rdoc clean-capi
 
 distclean: distclean-ext distclean-local distclean-enc distclean-golf distclean-extout
 distclean-local:: clean-local
@@ -392,6 +395,7 @@ distclean-ext:: PHONY
 distclean-golf: clean-golf
 	@$(RM) $(GOLFPRELUDES)
 distclean-rdoc: PHONY
+distclean-capi: PHONY
 distclean-extout: clean-extout
 
 realclean:: realclean-ext realclean-local realclean-enc realclean-golf realclean-extout
@@ -399,6 +403,7 @@ realclean-local:: distclean-local
 	@$(RM) parse.c parse.h lex.c newline.c revision.h
 realclean-ext::
 realclean-golf: distclean-golf
+realclean-capi: PHONY
 realclean-extout: distclean-extout
 
 clean-enc distclean-enc realclean-enc: PHONY

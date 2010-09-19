@@ -840,8 +840,10 @@ distclean-local::
 		@-$(RM) $(INSTALLED_LIST:/=\) $(arch_hdrdir:/=\)\ruby\config.h
 		@-$(RMDIRS) $(arch_hdrdir:/=\)\ruby
 
-distclean-rdoc:
+clean-rdoc distclean-rdoc realclean-rdoc:
 		@-$(RMALL) $(RDOCOUT:/=\)
+clean-capi distclean-capi realclean-capi:
+		@-$(RMALL) $(CAPIOUT:/=\)
 
 clean-ext distclean-ext realclean-ext::
 !if "$(EXTS)" != ""
