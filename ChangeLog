@@ -1,3 +1,13 @@
+Sun Sep 19 22:08:39 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* lib/mkmf.rb (try_link): rdoc
+	  (try_compile): ditto
+	  (try_cpp): ditto
+	  (try_func): ditto
+	  (try_var): ditto
+	  (try_run): ditto
+	  (egrep_cpp): ditto
+
 Sun Sep 19 20:43:33 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* configure.in (--disable-install-doc): disables capi too, in addition

@@ -418,6 +418,7 @@ def libpathflag(libpath=$DEFLIBPATH|$LIBPATH)
   }.join
 end
 
+# :nodoc:
 def try_link0(src, opt="", &b)
   cmd = link_command("", opt)
   if $universal
@@ -435,18 +436,46 @@ def try_link0(src, opt="", &b)
   end
 end
 
+# Returns whether or not the +src+ can be compiled as a C source and
+# linked with its depending libraries successfully.
+# +opt+ is passed to the linker as options. Note that +$CFLAGS+ and +$LDFLAGS+
+# are also passed to the linker.
+#
+# If a block given, it is called with the source before compilation. You can
+# modify the source in the block.
+#
+# [+src+] a String which contains a C source
+# [+opt+] a String which contains linker options
 def try_link(src, opt="", &b)
   try_link0(src, opt, &b)
 ensure
   rm_f "conftest*", "c0x32*"
 end
 
+# Returns whether or not the +src+ can be compiled as a C source.
+# +opt+ is passed to the C compiler as options. Note that +$CFLAGS+ is
+# also passed to the compiler.
+#
+# If a block given, it is called with the source before compilation. You can
+# modify the source in the block.
+#
+# [+src+] a String which contains a C source
+# [+opt+] a String which contains compiler options
 def try_compile(src, opt="", &b)
   try_do(src, cc_command(opt), &b)
 ensure
   rm_f "conftest*"
 end
 
+# Returns whether or not the +src+ can be preprocessed with the C preprocessor.
+# +opt+ is passed to the preprocessor as options. Note that +$CFLAGS+ is
+# also passed to the preprocessor.
+#
+# If a block given, it is called with the source before preprocessing. You can
+# modify the source in the block.
+#
+# [+src+] a String which contains a C source
+# [+opt+] a String which contains preprocessor options
 def try_cpp(src, opt="", &b)
   try_do(src, cpp_command(CPPOUTFILE, opt), &b)
 ensure
@@ -546,6 +575,12 @@ int main() {printf("%d\\n", conftest_const); return 0;}
   nil
 end
 
+# You should use +have_func+ rather than +try_func+.
+# 
+# [+func+] a String which contains a symbol name
+# [+libs+] a String which contains library names.
+# [+headers+] a String or an Array of strings which contains
+#             names of header files.
 def try_func(func, libs, headers = nil, &b)
   headers = cpp_include(headers)
   try_link(<<"SRC", libs, &b) or
@@ -562,6 +597,7 @@ int t() { #{func}(); return 0; }
 SRC
 end
 
+# You should use +have_var+ rather than +try_var+.
 def try_var(var, headers = nil, &b)
   headers = cpp_include(headers)
   try_compile(<<"SRC", &b)
@@ -572,6 +608,19 @@ int t() { const volatile void *volatile p; p = &(&#{var})[0]; return 0; }
 SRC
 end
 
+# Returns whether or not the +src+ can be preprocessed with the C preprocessor and
+# matches with +pat+.
+#
+# If a block given, it is called with the source before compilation. You can
+# modify the source in the block.
+#
+# [+pat+] a Regexp or a String
+# [+src+] a String which contains a C source
+# [+opt+] a String which contains preprocessor options
+#
+# Note:
+#   When pat is a Regexp the matching will be checked in process,
+#   otherwise egrep(1) will be invoked to check it.
 def egrep_cpp(pat, src, opt = "", &b)
   src = create_tmpsrc(src, &b)
   xpopen(cpp_command('', opt)) do |f|
@@ -610,6 +659,22 @@ def macro_defined?(macro, src, opt = "", &b)
 SRC
 end
 
+# Returns whether or not 
+# * the +src+ can be compiled as a C source,
+# * the result object can be linked with its depending libraries successfully,
+# * the linked file can be invoked as an executable
+# * and the executable exits successfully
+# +opt+ is passed to the linker as options. Note that +$CFLAGS+ and +$LDFLAGS+
+# are also passed to the linker.
+#
+# If a block given, it is called with the source before compilation. You can
+# modify the source in the block.
+#
+# [+src+] a String which contains a C source
+# [+opt+] a String which contains linker options
+#
+# @return true when the executable exits successfully, false when it fails, or
+#         nil when preprocessing, compilation or link fails.
 def try_run(src, opt = "", &b)
   if try_link0(src, opt, &b)
     xsystem("./conftest")
