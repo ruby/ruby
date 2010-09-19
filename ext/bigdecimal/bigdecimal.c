@@ -311,7 +311,7 @@ check_rounding_mode(VALUE const v)
 	    return VP_ROUND_CEIL;
 	if (id == id_floor)
 	    return VP_ROUND_FLOOR;
-	break;
+	rb_raise(rb_eArgError, "invalid rounding mode");
 
       default:
 	break;
@@ -320,7 +320,7 @@ check_rounding_mode(VALUE const v)
     Check_Type(v, T_FIXNUM);
     sw = (unsigned short)FIX2UINT(v);
     if (!VpIsRoundMode(sw)) {
-	rb_raise(rb_eTypeError, "invalid rounding mode");
+	rb_raise(rb_eArgError, "invalid rounding mode");
     }
     return sw;
 }
@@ -380,7 +380,7 @@ BigDecimal_mode(int argc, VALUE *argv, VALUE self)
         fo = VpGetException();
         if(val==Qnil) return INT2FIX(fo);
         if(val!=Qfalse && val!=Qtrue) {
-            rb_raise(rb_eTypeError, "second argument must be true or false");
+            rb_raise(rb_eArgError, "second argument must be true or false");
             return Qnil; /* Not reached */
         }
         if(f&VP_EXCEPTION_INFINITY) {

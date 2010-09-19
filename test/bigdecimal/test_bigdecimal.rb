@@ -53,8 +53,9 @@ class TestBigDecimal < Test::Unit::TestCase
   end
 
   def test_mode
-    assert_raise(TypeError) { BigDecimal.mode(BigDecimal::EXCEPTION_ALL, 1) }
-    assert_raise(TypeError) { BigDecimal.mode(BigDecimal::ROUND_MODE, 256) }
+    assert_raise(ArgumentError) { BigDecimal.mode(BigDecimal::EXCEPTION_ALL, 1) }
+    assert_raise(ArgumentError) { BigDecimal.mode(BigDecimal::ROUND_MODE, 256) }
+    assert_raise(ArgumentError) { BigDecimal.mode(BigDecimal::ROUND_MODE, :xyzzy) }
     assert_raise(TypeError) { BigDecimal.mode(0xf000, true) }
 
     begin
@@ -632,7 +633,7 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(2, x.round(0, BigDecimal::ROUND_HALF_EVEN))
     assert_equal(3, x.round(0, BigDecimal::ROUND_CEILING))
     assert_equal(2, x.round(0, BigDecimal::ROUND_FLOOR))
-    assert_raise(TypeError) { x.round(0, 256) }
+    assert_raise(ArgumentError) { x.round(0, 256) }
 
     ROUNDING_MODE_MAP.each do |const, sym|
       assert_equal(x.round(0, const), x.round(0, sym))

@@ -1,3 +1,11 @@
+Mon Sep 20 02:34:11 2010  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (check_rounding_mode, BigDecimal_mode):
+	  raise ArgumentError instead of TypeError passing invalid modes.
+
+	* test/bigdecimal/test_bigdecimal.rb (test_mode, test_round):
+	  change against the above modifications.
+
 Sun Sep 19 22:08:39 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/mkmf.rb (try_link): rdoc
