@@ -1192,7 +1192,7 @@ class TestPathname < Test::Unit::TestCase
       Pathname("d").mkdir
       assert(File.directory?("d"))
       Pathname("e").mkdir(0770)
-      assert(File.directory?("d"))
+      assert(File.directory?("e"))
     }
   end
 
