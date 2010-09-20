@@ -1,3 +1,8 @@
+Mon Sep 20 11:25:49 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/pathname.c (Init_pathname): Pathname#=~ undefinition
+	  translated from pathname.rb.
+
 Mon Sep 20 02:34:11 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (check_rounding_mode, BigDecimal_mode):

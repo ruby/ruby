@@ -526,10 +526,6 @@ class Pathname    # * FileUtils *
 end
 
 
-class Pathname
-  undef =~
-end
-
 module Kernel
   # create a pathname object.
   #

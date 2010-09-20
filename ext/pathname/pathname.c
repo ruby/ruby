@@ -1224,4 +1224,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "each_entry", path_each_entry, 0);
     rb_define_method(rb_cPathname, "unlink", path_unlink, 0);
     rb_define_method(rb_cPathname, "delete", path_unlink, 0);
+    rb_undef_method(rb_cPathname, "=~");
 }
