@@ -461,4 +461,15 @@ class TestRubyOptions < Test::Unit::TestCase
     }
     assert_equal("\"zzz\\n\"\n", result, '[ruby-core:30910]')
   end
+
+  def test_unmatching_glob
+    bug3851 = '[ruby-core:32478]'
+    a = "a[foo"
+    Dir.mktmpdir do |dir|
+      open(File.join(dir, a), "w") {|f| f.puts("p 42")}
+      assert_in_out_err(["-C", dir, a], "", ["42"], [], bug3851)
+      File.unlink(File.join(dir, a))
+      assert_in_out_err(["-C", dir, a], "", [], /LoadError/, bug3851)
+    end
+  end
 end

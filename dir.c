@@ -108,6 +108,7 @@ bracket(
     int r;
     int ok = 0, not = 0;
 
+    if (p >= pend) return NULL;
     if (*p == '!' || *p == '^') {
 	not = 1;
 	p++;
@@ -120,6 +121,7 @@ bracket(
 	if (!*t1)
 	    return NULL;
 	p = t1 + (r = rb_enc_mbclen(t1, pend, enc));
+	if (p >= pend) return NULL;
 	if (p[0] == '-' && p[1] != ']') {
 	    const char *t2 = p + 1;
 	    int r2;
