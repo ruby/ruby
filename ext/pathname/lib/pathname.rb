@@ -525,13 +525,3 @@ class Pathname    # * FileUtils *
   end
 end
 
-
-module Kernel
-  # create a pathname object.
-  #
-  # This method is available since 1.8.5.
-  def Pathname(path) # :doc:
-    Pathname.new(path)
-  end
-  private :Pathname
-end

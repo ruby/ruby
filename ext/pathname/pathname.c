@@ -962,6 +962,17 @@ path_unlink(VALUE self)
 }
 
 /*
+ * create a pathname object.
+ *
+ * This method is available since 1.8.5.
+ */
+static VALUE
+path_f_pathname(VALUE self, VALUE str)
+{
+    return rb_class_new_instance(1, &str, rb_cPathname);
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -1225,4 +1236,5 @@ Init_pathname()
     rb_define_method(rb_cPathname, "unlink", path_unlink, 0);
     rb_define_method(rb_cPathname, "delete", path_unlink, 0);
     rb_undef_method(rb_cPathname, "=~");
+    rb_define_global_function("Pathname", path_f_pathname, 1);
 }
