@@ -1,3 +1,7 @@
+Wed Sep 22 01:49:52 2010  Koichi Sasada  <ko1@atdot.net>
+
+	* bootstraptest/test_method.rb: add a test for [ruby-core:30534].
+
 Wed Sep 22 00:52:44 2010  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/rdoc/ri/store.rb (save_cache): remove duplicate entries.
