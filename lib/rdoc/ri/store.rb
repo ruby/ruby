@@ -172,9 +172,11 @@ class RDoc::RI::Store
 
   def save_cache
     # HACK mongrel-1.1.5 documents its files twice
+    @cache[:ancestors].       each do |_, m| m.uniq!; m.sort! end
     @cache[:attributes].      each do |_, m| m.uniq!; m.sort! end
     @cache[:class_methods].   each do |_, m| m.uniq!; m.sort! end
     @cache[:instance_methods].each do |_, m| m.uniq!; m.sort! end
+    @cache[:modules].uniq!; @cache[:modules].sort!
 
     open cache_path, 'wb' do |io|
       Marshal.dump @cache, io
