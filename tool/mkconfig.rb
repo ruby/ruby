@@ -35,7 +35,7 @@ module RbConfig
 ]
 
 arch = RUBY_PLATFORM
-win32 = /mswin32/ =~ arch
+win32 = /mswin/ =~ arch
 v_fast = []
 v_others = []
 vars = {}

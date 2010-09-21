@@ -1,3 +1,7 @@
+Tue Sep 21 22:18:30 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* tool/mkconfig.rb: fixed build problem on mswin64 introduced in r29278.
+
 Tue Sep 21 02:42:35 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/pathname/test_pathname.rb (TestPathname#test_mkdir): fix typo.
