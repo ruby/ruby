@@ -1,3 +1,8 @@
+Wed Sep 22 17:12:01 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/openssl/utils.rb (OpenSSL#silent): always restore $VERBOSE.
+	  [ruby-dev:42285]
+
 Wed Sep 22 16:59:40 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/test_prime.rb (TestPrime#test_new): the warning expected have
