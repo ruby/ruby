@@ -9,7 +9,7 @@
 require 'minitest/unit'
 
 class Module
-  def infect_an_assertion meth, new_name, dont_flip = false
+  def infect_an_assertion meth, new_name, dont_flip = false # :nodoc:
     # warn "%-22p -> %p %p" % [meth, new_name, dont_flip]
     self.class_eval <<-EOM
       def #{new_name} *args, &block
@@ -22,11 +22,17 @@ class Module
     EOM
   end
 
+  ##
+  # Create your own expectations from MiniTest::Assertions using a
+  # flexible set of rules. If you don't like must/wont, then this
+  # method is your friend. For an example of its usage see the bottom
+  # of minitest/spec.rb.
+
   def infect_with_assertions(pos_prefix, neg_prefix,
                              skip_re,
                              dont_flip_re = /\c0/,
                              map = {})
-    MiniTest::Assertions.public_instance_methods(false).each do |meth|
+    MiniTest::Assertions.public_instance_methods(false).sort.each do |meth|
       meth = meth.to_s
 
       new_name = case meth
@@ -41,26 +47,12 @@ class Module
       regexp, replacement = map.find { |re, _| new_name =~ re }
       new_name.sub! regexp, replacement if replacement
 
+      puts "\n##\n# :method: #{new_name}\n# See MiniTest::Assertions##{meth}" if
+        $0 == __FILE__
+
       infect_an_assertion meth, new_name, new_name =~ dont_flip_re
     end
   end
-end
-
-Object.infect_with_assertions(:must, :wont,
-                              /^(must|wont)$|wont_(throw)|
-                                 must_(block|not?_|nothing|raise$)/x,
-                              /(must|wont)_(include|respond_to)/,
-                              /(must_throw)s/                 => '\1',
-                              /(?!not)_same/                  => '_be_same_as',
-                              /_in_/                          => '_be_within_',
-                              /_operator/                     => '_be',
-                              /_includes/                     => '_include',
-                       /(must|wont)_(.*_of|nil|silent|empty)/ => '\1_be_\2',
-                              /must_raises/                   => 'must_raise')
-
-class Object
-  alias :must_be_close_to :must_be_within_delta
-  alias :wont_be_close_to :wont_be_within_delta
 end
 
 module Kernel
@@ -96,6 +88,12 @@ class Module
     } - [self]
   end
 end
+
+##
+# MiniTest::Spec -- The faster, better, less-magical spec framework!
+#
+# For a list of expectations, see Object.
+
 
 class MiniTest::Spec < MiniTest::Unit::TestCase
   @@describe_stack = [MiniTest::Spec]
@@ -174,10 +172,36 @@ class MiniTest::Spec < MiniTest::Unit::TestCase
       mod.send :undef_method, name if mod.respond_to? name
     end
   end
+end
+
+Object.infect_with_assertions(:must, :wont,
+                              /^(must|wont)$|wont_(throw)|
+                                 must_(block|not?_|nothing|raise$)/x,
+                              /(must|wont)_(include|respond_to)/,
+                              /(must_throw)s/                 => '\1',
+                              /(?!not)_same/                  => '_be_same_as',
+                              /_in_/                          => '_be_within_',
+                              /_operator/                     => '_be',
+                              /_includes/                     => '_include',
+                       /(must|wont)_(.*_of|nil|silent|empty)/ => '\1_be_\2',
+                              /must_raises/                   => 'must_raise')
+
+class Object
+  alias :must_be_close_to :must_be_within_delta
+  alias :wont_be_close_to :wont_be_within_delta
+
+  if $0 == __FILE__ then
+    { "must" => "assert", "wont" => "refute" }.each do |a, b|
+      puts "\n"
+      puts "##"
+      puts "# :method: #{a}_be_close_to"
+      puts "# See MiniTest::Assertions##{b}_in_delta"
+    end
+  end
 
   ##
   # :method: must_be
-  # See MiniTest::Assertions#assert
+  # See MiniTest::Assertions#assert_operator
 
   ##
   # :method: must_be_close_to
@@ -245,11 +269,11 @@ class MiniTest::Spec < MiniTest::Unit::TestCase
 
   ##
   # :method: must_throw
-  # See MiniTest::Assertions#assert_throw
+  # See MiniTest::Assertions#assert_throws
 
   ##
   # :method: wont_be
-  # See MiniTest::Assertions#refute
+  # See MiniTest::Assertions#refute_operator
 
   ##
   # :method: wont_be_close_to
@@ -274,10 +298,6 @@ class MiniTest::Spec < MiniTest::Unit::TestCase
   ##
   # :method: wont_be_same_as
   # See MiniTest::Assertions#refute_same
-
-  ##
-  # :method: wont_be_within_delta
-  # See MiniTest::Assertions#refute_in_delta
 
   ##
   # :method: wont_be_within_delta
