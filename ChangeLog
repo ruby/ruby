@@ -1,3 +1,11 @@
+Thu Sep 23 18:54:39 2010  wanabe  <s.wanabe@gmail.com>
+
+	* tool/config.sub: add mingw64.
+
+	* win32/mkexports.rb (Exports::Mingw64): added.
+
+	* win32/mkexports.rb (Exports::Mingw32): renamed from Exports::Mingw.
+  
 Thu Sep 23 09:01:28 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_cref_push): no outer cref is needed for proc

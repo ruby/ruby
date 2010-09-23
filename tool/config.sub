@@ -723,6 +723,10 @@ case $basic_machine in
 		basic_machine=i386-pc
 		os=-mingw32
 		;;
+	mingw64)
+		basic_machine=i386-pc
+		os=-mingw64
+		;;
 	mingw32ce)
 		basic_machine=arm-unknown
 		os=-mingw32ce
@@ -1276,7 +1280,7 @@ case $os in
 	      | -chorusos* | -chorusrdb* | -cegcc* \
 	      | -cygwin* | -pe* | -psos* | -moss* | -proelf* | -rtems* \
 	      | -mingw32* | -linux-gnu* | -linux-newlib* | -linux-uclibc* \
-	      | -uxpv* | -beos* | -mpeix* | -udk* \
+	      | -uxpv* | -beos* | -mpeix* | -udk* | -mingw64* \
 	      | -interix* | -uwin* | -mks* | -rhapsody* | -darwin* | -opened* \
 	      | -openstep* | -oskit* | -conix* | -pw32* | -nonstopux* \
 	      | -storm-chaos* | -tops10* | -tenex* | -tops20* | -its* \
