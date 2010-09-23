@@ -1,3 +1,7 @@
+Thu Sep 23 23:08:41 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/config.sub: mingw64 should use x86_64.  [ruby-core:32514]
+
 Thu Sep 23 21:40:40 2010  wanabe  <s.wanabe@gmail.com>
 
 	* ext/socket/raddrinfo.c (init_addrinfo, inspect_sockaddr): suppress
@@ -15,7 +19,7 @@ Thu Sep 23 18:54:39 2010  wanabe  <s.wanabe@gmail.com>
 	* win32/mkexports.rb (Exports::Mingw64): added.
 
 	* win32/mkexports.rb (Exports::Mingw32): renamed from Exports::Mingw.
-  
+
 Thu Sep 23 09:01:28 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_cref_push): no outer cref is needed for proc

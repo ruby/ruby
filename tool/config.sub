@@ -4,7 +4,7 @@
 #   2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008
 #   Free Software Foundation, Inc.
 
-timestamp='2009-04-17'
+timestamp='2010-09-23'
 
 # This file is (in principle) common to ALL GNU software.
 # The presence of a machine in this file suggests that SOME GNU software
@@ -724,7 +724,7 @@ case $basic_machine in
 		os=-mingw32
 		;;
 	mingw64)
-		basic_machine=i386-pc
+		basic_machine=x86_64-pc
 		os=-mingw64
 		;;
 	mingw32ce)
