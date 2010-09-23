@@ -1,3 +1,10 @@
+Fri Sep 24 03:00:26 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_add_threadswitch_hook): wrapper for unofficial APIs
+	  in Mac OS X port.  the use of them is strongly discouraged.
+
+	* eval.c (rb_remove_threadswitch_hook): ditto.
+
 Fri Sep  3 16:42:59 2010  Akinori MUSHA  <knu@iDaemons.org>
 
 	* parse.y (method_call): Add support for Ruby 1.9 style method

@@ -384,6 +384,21 @@ void rb_add_event_hook _((rb_event_hook_func_t,rb_event_t));
 int rb_remove_event_hook _((rb_event_hook_func_t));
 extern const rb_event_t rb_event_all;
 
+#if defined RUBY_ENABLE_MACOSX_UNOFFICIAL_THREADSWITCH
+typedef rb_event_t rb_threadswitch_event_t;
+
+#define RUBY_THREADSWITCH_SHIFT 8
+#define RUBY_THREADSWITCH_INIT    (RUBY_EVENT_THREAD_INIT>>RUBY_THREADSWITCH_SHIFT)
+#define RUBY_THREADSWITCH_FREE    (RUBY_EVENT_THREAD_FREE>>RUBY_THREADSWITCH_SHIFT)
+#define RUBY_THREADSWITCH_SAVE    (RUBY_EVENT_THREAD_SAVE>>RUBY_THREADSWITCH_SHIFT)
+#define RUBY_THREADSWITCH_RESTORE (RUBY_EVENT_THREAD_RESTORE>>RUBY_THREADSWITCH_SHIFT)
+
+typedef void (*rb_threadswitch_hook_func_t) _((rb_threadswitch_event_t,VALUE));
+
+DEPRECATED(void *rb_add_threadswitch_hook _((rb_threadswitch_hook_func_t func)));
+DEPRECATED(void rb_remove_threadswitch_hook _((void *handle)));
+#endif
+
 #if defined(HAVE_GETCONTEXT) && defined(HAVE_SETCONTEXT)
 #include <ucontext.h>
 #define USE_CONTEXT

@@ -2663,6 +2663,70 @@ rb_remove_event_hook(func)
     return -1;
 }
 
+#if defined __APPLE__ && defined __MACH__ && defined RUBY_ENABLE_MACOSX_UNOFFICIAL_THREADSWITCH
+typedef struct threadswitch_hook {
+    rb_threadswitch_hook_func_t func;
+    struct threadswitch_hook *next;
+} rb_threadswitch_hook_t;
+
+static rb_threadswitch_hook_t *threadswitch_hooks;
+
+static void
+call_threadswitch_hook(event, node, thread, mid, klass)
+    rb_event_t event;
+    NODE *node;
+    VALUE thread;
+    ID mid;
+    VALUE klass;
+{
+    rb_threadswitch_hook_t *hook = threadswitch_hooks;
+    rb_threadswitch_event_t thevent = event >> RUBY_THREADSWITCH_SHIFT;
+
+    for (; hook; hook = hook->next) {
+	(*hook->func)(thevent, thread);
+    }
+}
+
+void *
+rb_add_threadswitch_hook(func)
+    rb_threadswitch_hook_func_t func;
+{
+    rb_threadswitch_hook_t *hook;
+    int new_hook = !threadswitch_hooks;
+
+    rb_warn("rb_add_threadswitch_hook is not an official API; use rb_add_event_hook");
+
+    hook = ALLOC(rb_threadswitch_hook_t);
+    hook->func = func;
+    hook->next = threadswitch_hooks;
+    threadswitch_hooks = hook;
+    if (new_hook) {
+	rb_add_event_hook(call_threadswitch_hook, RUBY_EVENT_THREAD_ALL);
+    }
+
+    return hook;
+}
+
+void
+rb_remove_threadswitch_hook(handle)
+    void *handle;
+{
+    rb_threadswitch_hook_t **hook_p, *hook;
+
+    for (hook_p = &threadswitch_hooks; *hook_p; hook_p = &hook->next) {
+	hook = *hook_p;
+	if (hook == (rb_threadswitch_hook_t*)handle) {
+	    *hook_p = hook->next;
+	    xfree(hook);
+	    if (!threadswitch_hooks) {
+		rb_remove_event_hook(call_threadswitch_hook);
+	    }
+	    break;
+	}
+    }
+}
+#endif
+
 /*
  *  call-seq:
  *     set_trace_func(proc)    => proc

@@ -145,6 +145,20 @@ if test $frame_address = yes; then
     AC_DEFINE(USE_BUILTIN_FRAME_ADDRESS)
 fi
 
+threadswitch_hook=no
+AC_ARG_ENABLE(macosx-unofficial-threadswitch-hook,
+	AS_HELP_STRING([--enable-macosx-unofficial-threadswitch-hook],
+		[enable Mac OS X unofficial thread switch hook, the use of this option is discouraged.]),
+	[threadswitch_hook=$enableval])
+AS_CASE($threadswitch_hook:$target_os,
+[yes:darwin*], [
+    AC_MSG_WARN([enabled Mac OS X unofficial thread switch hook])
+    AC_DEFINE(RUBY_ENABLE_MACOSX_UNOFFICIAL_THREADSWITCH)
+],
+[yes:*], [
+    AC_MSG_ERROR([--enable-macosx-unofficial-threadswitch-hook is valid only for Mac OS X.])
+])
+
 AC_ARG_PROGRAM
 
 dnl Checks for programs.

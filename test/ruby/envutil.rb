@@ -25,6 +25,18 @@ module EnvUtil
     end
   end
   module_function :rubybin
+
+  def verbose_warning
+    class << (stderr = "")
+      alias write <<
+    end
+    stderr, $stderr, verbose, $VERBOSE = $stderr, stderr, $VERBOSE, true
+    yield stderr
+  ensure
+    stderr, $stderr, $VERBOSE = $stderr, stderr, verbose
+    return stderr
+  end
+  module_function :verbose_warning
 end
 
 begin
