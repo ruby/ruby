@@ -415,4 +415,19 @@ class TestEval < Test::Unit::TestCase
     assert_raise(ArgumentError) {eval("__ENCODING__".encode("utf-32be"))}
     assert_raise(ArgumentError) {eval("__ENCODING__".encode("utf-32le"))}
   end
+
+  def test_instance_eval_method_proc
+    bug3860 = Class.new do
+      def initialize(a);
+        @a=a
+      end
+      def get(*args)
+        @a
+      end
+    end
+    foo = bug3860.new 1
+    foo_pr = foo.method(:get).to_proc
+    result = foo.instance_eval(&foo_pr)
+    assert_equal(1, result, 'Bug #3786, Bug #3860, [ruby-core:32501]')
+  end
 end
