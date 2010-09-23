@@ -1057,6 +1057,7 @@ vm_get_cref0(const rb_iseq_t *iseq, const VALUE *lfp, const VALUE *dfp)
 {
     while (1) {
 	if (lfp == dfp) {
+	    if (!RUBY_VM_NORMAL_ISEQ_P(iseq)) return NULL;
 	    return iseq->cref_stack;
 	}
 	else if (dfp[-1] != Qnil) {

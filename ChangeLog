@@ -1,3 +1,8 @@
+Thu Sep 23 23:09:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_get_cref0): cref is stacked only in normal
+	  iseqs, so check if it is the case first.
+
 Thu Sep 23 23:08:41 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/config.sub: mingw64 should use x86_64.  [ruby-core:32514]
