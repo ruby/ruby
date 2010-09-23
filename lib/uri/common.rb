@@ -643,8 +643,21 @@ module URI
   #
   #   require 'uri'
   #
-  #   p URI.join("http://localhost/","main.rbx")
+  #   p URI.join("http://example.com/","main.rbx")
   #   # => #<URI::HTTP:0x2022ac02 URL:http://localhost/main.rbx>
+  #
+  #   p URI.join('http://example.com', 'foo')
+  #   # => #<URI::HTTP:0x01ab80a0 URL:http://example.com/foo>
+  #
+  #   p URI.join('http://example.com', '/foo', '/bar')
+  #   # => #<URI::HTTP:0x01aaf0b0 URL:http://example.com/bar>
+  #
+  #   p URI.join('http://example.com', '/foo', 'bar')
+  #   # => #<URI::HTTP:0x801a92af0 URL:http://example.com/bar>
+  #
+  #   p URI.join('http://example.com', '/foo/', 'bar')
+  #   # => #<URI::HTTP:0x80135a3a0 URL:http://example.com/foo/bar>
+  #
   #
   def self.join(*str)
     DEFAULT_PARSER.join(*str)
