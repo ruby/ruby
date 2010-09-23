@@ -1,3 +1,8 @@
+Thu Sep 23 21:40:40 2010  wanabe  <s.wanabe@gmail.com>
+
+	* ext/socket/raddrinfo.c (init_addrinfo, inspect_sockaddr): suppress
+	  warnings.  see [ruby-core:31932].
+
 Thu Sep 23 19:27:57 2010  wanabe  <s.wanabe@gmail.com>
 
 	* thread_win32.c (w32_wait_events, w32_close_handle): suppress warnings.
