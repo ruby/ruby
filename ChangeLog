@@ -1,3 +1,8 @@
+Thu Sep 23 19:27:57 2010  wanabe  <s.wanabe@gmail.com>
+
+	* thread_win32.c (w32_wait_events, w32_close_handle): suppress warnings.
+	  see [ruby-core:31932].
+
 Thu Sep 23 18:54:39 2010  wanabe  <s.wanabe@gmail.com>
 
 	* tool/config.sub: add mingw64.

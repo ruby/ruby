@@ -123,10 +123,10 @@ w32_wait_events(HANDLE *events, int count, DWORD timeout, rb_thread_t *th)
     ret = WaitForMultipleObjects(count, targets, FALSE, timeout);
     thread_debug("  WaitForMultipleObjects end (ret: %lu)\n", ret);
 
-    if (ret == WAIT_OBJECT_0 + count - 1 && th) {
+    if (ret == (DWORD)(WAIT_OBJECT_0 + count - 1) && th) {
 	errno = EINTR;
     }
-    if (ret == -1 && THREAD_DEBUG) {
+    if (ret == WAIT_FAILED && THREAD_DEBUG) {
 	int i;
 	DWORD dmy;
 	for (i = 0; i < count; i++) {
@@ -167,7 +167,7 @@ w32_close_handle(HANDLE handle)
 static void
 w32_resume_thread(HANDLE handle)
 {
-    if (ResumeThread(handle) == -1) {
+    if (ResumeThread(handle) == (DWORD)-1) {
 	w32_error("w32_resume_thread");
     }
 }
