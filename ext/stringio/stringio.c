@@ -1366,6 +1366,8 @@ Init_stringio()
     rb_define_method(StringIO, "readlines", strio_readlines, -1);
     rb_define_method(StringIO, "read", strio_read, -1);
     rb_define_method(StringIO, "sysread", strio_sysread, -1);
+    rb_define_method(StringIO, "readpartial", strio_sysread, -1);
+    rb_define_method(StringIO, "read_nonblock", strio_sysread, -1);
 
     rb_define_method(StringIO, "write", strio_write, 1);
     rb_define_method(StringIO, "<<", strio_addstr, 1);
@@ -1374,6 +1376,7 @@ Init_stringio()
     rb_define_method(StringIO, "putc", strio_putc, 1);
     rb_define_method(StringIO, "puts", strio_puts, -1);
     rb_define_method(StringIO, "syswrite", strio_syswrite, 1);
+    rb_define_method(StringIO, "write_nonblock", strio_syswrite, 1);
 
     rb_define_method(StringIO, "isatty", strio_isatty, 0);
     rb_define_method(StringIO, "tty?", strio_isatty, 0);

@@ -1,3 +1,8 @@
+Sat Sep 25 01:17:39 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (Init_stringio): added readpartial,
+	  read_nonblock and write_nonblock aliases.  [ruby-core:27024]
+
 Fri Sep 24 16:22:40 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/pathname.rb (relative_path_from): backport r23093 and r25440

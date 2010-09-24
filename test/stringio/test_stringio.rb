@@ -102,7 +102,7 @@ class TestStringIO < Test::Unit::TestCase
     f.close unless f.closed?
   end
 
-  def FOR_1_9_test_write_nonblock
+  def test_write_nonblock
     s = ""
     f = StringIO.new(s, "w")
     f.write_nonblock("foo")
@@ -437,7 +437,7 @@ class TestStringIO < Test::Unit::TestCase
     end
   end
 
-  def FOR_1_9_test_readpartial
+  def test_readpartial
     f = StringIO.new("\u3042\u3044")
     assert_raise(ArgumentError) { f.readpartial(-1) }
     assert_raise(ArgumentError) { f.readpartial(1, 2, 3) }
@@ -450,13 +450,17 @@ class TestStringIO < Test::Unit::TestCase
     end
   end
 
-  def FOR_1_9_test_read_nonblock
+  def test_read_nonblock
     f = StringIO.new("\u3042\u3044")
     assert_raise(ArgumentError) { f.read_nonblock(-1) }
     assert_raise(ArgumentError) { f.read_nonblock(1, 2, 3) }
     assert_equal("\u3042\u3044", f.read_nonblock)
     f.rewind
-    assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.read_nonblock(f.size))
+    if false # FOR_1_9
+      assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.read_nonblock(f.size))
+    else
+      assert_equal("\u3042\u3044", f.read_nonblock(f.size))
+    end
   end
 
   def test_size
