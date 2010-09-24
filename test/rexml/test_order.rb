@@ -43,7 +43,7 @@ END
    end
    # Provided by Tom Talbott
    def test_more_ordering
-     doc = REXML::Document.new(Zlib::GzipReader.new(File.new(fixture_path('LostineRiver.kml.gz'),'r:utf-8')))
+     doc = REXML::Document.new(Zlib::GzipReader.new(File.new(fixture_path('LostineRiver.kml.gz')), encoding: 'utf-8'))
      actual = [
         "Head south from Phinney Ave N",
         "Turn left at N 36th St",
