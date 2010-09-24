@@ -722,6 +722,9 @@ vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block,
 		  self, (VALUE)block->dfp,
 		  0, th->cfp->sp, block->lfp, 1);
 
+    if (blockargptr) {
+	th->cfp->lfp[0] = GC_GUARDED_PTR((VALUE)blockargptr);
+    }
     val = (*ifunc->nd_cfnc) (arg, ifunc->nd_tval, argc, argv, blockarg);
 
     th->cfp++;
