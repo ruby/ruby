@@ -158,7 +158,7 @@ Sun Sep 19 06:06:07 2010  Kenta Murata  <mrkn@mrkn.jp>
 	  support to specify rounding mode by symbol.
 
 	* test/bigdecimal/test_bigdecimal.rb (test_mode, test_round):
-	  add tests for avobe changes.
+	  add tests for above changes.
 
 Sun Sep 19 05:14:35 2010  Kenta Murata  <mrkn@mrkn.jp>
 
