@@ -154,7 +154,13 @@ class TestPTY < Test::Unit::TestCase
   def test_getpty_nonexistent
     bug3672 = '[ruby-dev:41965]'
     Dir.mktmpdir do |tmpdir|
-      assert_raise(Errno::ENOENT, bug3672) {PTY.getpty(File.join(tmpdir, "no-such-command"))}
+      assert_raise(Errno::ENOENT, bug3672) {
+        begin
+          PTY.getpty(File.join(tmpdir, "no-such-command"))
+        rescue RuntimeError
+          skip $!
+        end
+      }
     end
   end
 end if defined? PTY
