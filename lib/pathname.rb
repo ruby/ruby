@@ -194,6 +194,13 @@ class Pathname
     # to_path is implemented so Pathname objects are usable with File.open, etc.
     TO_PATH = :to_path
   end
+
+  SAME_PATHS = if File::FNM_SYSCASE.nonzero?
+    proc {|a, b| a.casecmp(b).zero?}
+  else
+    proc {|a, b| a == b}
+  end
+
   # :startdoc:
 
   #
@@ -719,12 +726,12 @@ class Pathname
       base_prefix, basename = r
       base_names.unshift basename if basename != '.'
     end
-    if dest_prefix != base_prefix
+    unless SAME_PATHS[dest_prefix, base_prefix]
       raise ArgumentError, "different prefix: #{dest_prefix.inspect} and #{base_directory.inspect}"
     end
     while !dest_names.empty? &&
           !base_names.empty? &&
-          dest_names.first == base_names.first
+          SAME_PATHS[dest_names.first, base_names.first]
       dest_names.shift
       base_names.shift
     end

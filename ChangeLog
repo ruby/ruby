@@ -1,3 +1,8 @@
+Fri Sep 24 16:22:40 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/pathname.rb (relative_path_from): backport r23093 and r25440
+	  from ruby_1_9_2.  [ruby-core:32415]
+
 Fri Sep 24 03:00:26 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_add_threadswitch_hook): wrapper for unofficial APIs
