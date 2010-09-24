@@ -13,6 +13,9 @@ class TestPTY < Test::Unit::TestCase
 
   def test_spawn_without_block
     r, w, pid = PTY.spawn(RUBY, '-e', 'puts "a"')
+  rescue RuntimeError
+    skip $!
+  else
     assert_equal("a\r\n", r.gets)
   ensure
     Process.wait pid if pid
@@ -23,6 +26,8 @@ class TestPTY < Test::Unit::TestCase
       assert_equal("b\r\n", r.gets)
       Process.wait(pid)
     }
+  rescue RuntimeError
+    skip $!
   end
 
   def test_commandline
@@ -31,6 +36,8 @@ class TestPTY < Test::Unit::TestCase
       assert_equal("foo\r\n", r.gets)
       Process.wait(pid)
     }
+  rescue RuntimeError
+    skip $!
   end
 
   def test_argv0
@@ -38,10 +45,15 @@ class TestPTY < Test::Unit::TestCase
       assert_equal("bar\r\n", r.gets)
       Process.wait(pid)
     }
+  rescue RuntimeError
+    skip $!
   end
 
   def test_open_without_block
     ret = PTY.open
+  rescue RuntimeError
+    skip $!
+  else
     assert_kind_of(Array, ret)
     assert_equal(2, ret.length)
     assert_equal(IO, ret[0].class)
@@ -70,6 +82,9 @@ class TestPTY < Test::Unit::TestCase
       assert(File.chardev?(slave.path))
       x
     }
+  rescue RuntimeError
+    skip $!
+  else
     assert(r[0].closed?)
     assert(r[1].closed?)
     assert_equal(y, x)
@@ -82,6 +97,9 @@ class TestPTY < Test::Unit::TestCase
       assert(slave.closed?)
       assert(master.closed?)
     }
+  rescue RuntimeError
+    skip $!
+  else
     assert_nothing_raised {
       PTY.open {|master, slave|
         slave.close
@@ -97,6 +115,8 @@ class TestPTY < Test::Unit::TestCase
       master.puts "bar"
       assert_equal("bar", slave.gets.chomp)
     }
+  rescue RuntimeError
+    skip $!
   end
 
   def test_stat_slave
@@ -105,6 +125,8 @@ class TestPTY < Test::Unit::TestCase
       assert_equal(Process.uid, s.uid)
       assert_equal(0600, s.mode & 0777)
     }
+  rescue RuntimeError
+    skip $!
   end
 
   def test_close_master
@@ -112,6 +134,8 @@ class TestPTY < Test::Unit::TestCase
       master.close
       assert_raise(EOFError) { slave.readpartial(10) }
     }
+  rescue RuntimeError
+    skip $!
   end
 
   def test_close_slave
@@ -123,6 +147,8 @@ class TestPTY < Test::Unit::TestCase
         Errno::EIO      # GNU/Linux
       ) { master.readpartial(10) }
     }
+  rescue RuntimeError
+    skip $!
   end
 
   def test_getpty_nonexistent

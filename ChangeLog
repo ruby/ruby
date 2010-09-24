@@ -1,3 +1,8 @@
+Fri Sep 24 14:19:12 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* test/test_pty.rb: Same as 229281; existence of PTY class do not
+	  guarantee a successful pty operation.
+
 Thu Sep 23 23:09:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_get_cref0): cref is stacked only in normal
