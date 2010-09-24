@@ -79,6 +79,13 @@ MINIRUBY = @MINIRUBY@\
 	$(MINIRUBYOPT)
 RUNRUBY = @RUNRUBY@ $(RUNRUBYOPT) --
 XRUBY = @XRUBY@
+INSTALL = @INSTALL@
+INSTALL_DATA = @INSTALL_DATA@
+INSTALL_SCRIPT = @INSTALL_SCRIPT@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+XRUBY_LIBDIR = @XRUBY_LIBDIR@
+XRUBY_RUBYLIBDIR = @XRUBY_RUBYLIBDIR@
+XRUBY_RUBYHDRDIR = @XRUBY_RUBYHDRDIR@
 
 #### End of system configuration section. ####
 
@@ -169,6 +176,22 @@ fake: $(arch)-fake.rb
 $(arch)-fake.rb: config.status $(srcdir)/template/fake.rb.in
 		@./config.status --file=$@:$(srcdir)/template/fake.rb.in
 		@chmod +x $@
+
+install-cross: $(arch)-fake.rb $(RBCONFIG) rbconfig.rb $(arch_hdrdir)/ruby/config.h \
+	$(LIBRUBY_A) $(LIBRUBY_SO) $(ARCHFILE)
+	$(MAKEDIRS) $(XRUBY_RUBYLIBDIR)/$(arch) $(XRUBY_RUBYHDRDIR)/$(arch)/ruby
+	sed '/^\$$:\.unshift/q' $(arch)-fake.rb > fake.rb
+	$(BASERUBY) -p \
+	-e '~/^\s*CONFIG\["LDFLAGS"\]/ and' \
+	-e '$$_[/(?=\s*"$$)/] = %q[ #{(CONFIG["LIBPATHFLAG"]%File.dirname(__FILE__)).strip}]' \
+	rbconfig.rb > fake-rbconfig.rb
+	$(INSTALL_SCRIPT) fake.rb $(XRUBY_RUBYLIBDIR)/$(arch)/fake.rb
+	$(INSTALL_SCRIPT) fake-rbconfig.rb $(XRUBY_RUBYLIBDIR)/$(arch)/rbconfig.rb
+	@$(RM) fake.rb fake-rbconfig.rb
+	$(INSTALL_DATA) $(arch_hdrdir)/ruby/config.h $(XRUBY_RUBYHDRDIR)/$(arch)/ruby
+	$(INSTALL_DATA) $(top_srcdir)/include/ruby/win32.h $(XRUBY_RUBYHDRDIR)/ruby
+	$(INSTALL_DATA) $(LIBRUBY) $(LIBRUBY_A) $(XRUBY_RUBYLIBDIR)/$(arch)
+	$(INSTALL_PROGRAM) $(LIBRUBY_SO) $(XRUBY_RUBYLIBDIR)/$(arch)
 
 Makefile:	$(srcdir)/Makefile.in $(srcdir)/enc/Makefile.in
 

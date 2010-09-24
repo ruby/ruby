@@ -858,6 +858,7 @@ help: PHONY
 	@echo "  benchmark        benchmark this ruby and COMPARE_RUBY"
 	@echo "  install:         install all ruby distributions"
 	@echo "  install-nodoc:   install without rdoc"
+	@echo "  install-cross:   install cross compiling staff"
 	@echo "  clean:           clean for tarball"
 	@echo "  distclean:       clean for repo"
 	@echo "  change:          make change log template"
