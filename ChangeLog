@@ -1,3 +1,8 @@
+2010-09-24  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_rindex): use rb_enc_prev_char instead of repeated str_nth.
+	  patched by Michael Selig [ruby-core:32498]
+
 Fri Sep 24 14:19:12 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* test/test_pty.rb: Same as 229281; existence of PTY class do not

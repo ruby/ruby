@@ -2488,14 +2488,14 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
     e = RSTRING_END(str);
     t = RSTRING_PTR(sub);
     slen = RSTRING_LEN(sub);
-    for (;;) {
-	s = str_nth(sbeg, e, pos, enc, singlebyte);
-	if (!s) return -1;
+    s = str_nth(sbeg, e, pos, enc, singlebyte);
+    while (s) {
 	if (memcmp(s, t, slen) == 0) {
 	    return pos;
 	}
 	if (pos == 0) break;
 	pos--;
+	s = rb_enc_prev_char(sbeg, s, e, enc);
     }
     return -1;
 }
