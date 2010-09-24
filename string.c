@@ -4070,7 +4070,7 @@ rb_str_include(VALUE str, VALUE arg)
  *  integer base <i>base</i> (between 2 and 36). Extraneous characters past the
  *  end of a valid number are ignored. If there is not a valid number at the
  *  start of <i>str</i>, <code>0</code> is returned. This method never raises an
- *  exception.
+ *  exception when <i>base</i> is valid.
  *
  *     "12345".to_i             #=> 12345
  *     "99 red balloons".to_i   #=> 99

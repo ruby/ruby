@@ -1,4 +1,9 @@
-2010-09-24  NARUSE, Yui  <naruse@ruby-lang.org>
+Fri Sep 24 15:50:43 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_to_i): fix rdoc: String#to_i raises an
+	  exception when base is invalid. [ruby-core:31685]
+
+Fri Sep 24 15:28:35 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_str_rindex): use rb_enc_prev_char instead of repeated str_nth.
 	  patched by Michael Selig [ruby-core:32498]
