@@ -1,3 +1,8 @@
+Sat Sep 25 10:30:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (LIBRUBY_DLDFLAGS): use -unexported_symbol only
+	  when available.  http://trac.macports.org/ticket/26341
+
 Sat Sep 25 10:05:49 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: Always add -mieee for Renesas SH4.
