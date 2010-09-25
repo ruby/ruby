@@ -991,7 +991,7 @@ if test "${enable_win95}" = yes; then
 fi
 
 AS_CASE(["$target_cpu"],
-[alpha*], [AS_CASE(["$target_os"::"$GCC"],
+[alpha*|sh4|sh4el|sh4eb], [AS_CASE(["$target_os"::"$GCC"],
 		[*::yes],  # gcc
 			[CFLAGS="-mieee $CFLAGS"],
 		[osf*],    # ccc
