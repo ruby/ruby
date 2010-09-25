@@ -1,3 +1,7 @@
+Sat Sep 25 22:48:30 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (LIBRUBY_DLDFLAGS): fix quoting.
+
 Sat Sep 25 10:30:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (LIBRUBY_DLDFLAGS): use -unexported_symbol only

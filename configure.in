@@ -422,7 +422,7 @@ AC_DEFUN(RUBY_TRY_CFLAGS, [
 AC_DEFUN(RUBY_TRY_LDFLAGS, [
     save_LDFLAGS="$LDFLAGS"
     LDFLAGS="[$]LDFLAGS $1"
-    AC_MSG_CHECKING([whether ]$1[ is accepted])
+    AC_MSG_CHECKING([whether $1 is accepted])
     RUBY_WERROR_FLAG([
     AC_TRY_LINK([$4], [$5],
 	[$2
@@ -450,7 +450,7 @@ if test "$GCC" = yes; then
     if test "$visibility_option" = yes; then
 	RUBY_APPEND_OPTION(XCFLAGS, -fvisibility=hidden)
     else
-	RUBY_TRY_LDFLAGS(['-Wl,-unexported_symbol,_Init_*'], [visibility_option=ld], [visibility_option=no])
+	RUBY_TRY_LDFLAGS([-Wl,-unexported_symbol,_Init_*], [visibility_option=ld], [visibility_option=no])
     fi
     test "$visibility_option" = no || OBJCOPY=:
 fi
