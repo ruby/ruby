@@ -1,3 +1,8 @@
+Sat Sep 25 21:56:25 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: Always add -mieee for Renesas SH4.
+	Thanks, Nobuhiro Iwamatsu. [Feature #3874] [ruby-core:32548]
+
 Sat Sep 25 01:17:39 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (Init_stringio): added readpartial,

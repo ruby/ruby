@@ -586,12 +586,13 @@ AC_CHECK_LIB(dl, dlopen)	# Dynamic linking for SunOS/Solaris and SYSV
 AC_CHECK_LIB(dld, shl_load)	# Dynamic linking for HP-UX
 AC_CHECK_LIB(rt, clock_gettime)	# GNU/Linux
 
-case "$target_cpu" in
-alpha*)		case "$target_os"::"$GCC" in
-		*::yes)	CFLAGS="-mieee $CFLAGS" ;;   # gcc
-		osf*)   CFLAGS="-ieee $CFLAGS" ;;    # ccc
-		esac ;;
-esac
+AS_CASE(["$target_cpu"],
+[alpha*|sh4|sh4el|sh4eb], [AS_CASE(["$target_os"::"$GCC"],
+		[*::yes],  # gcc
+			[CFLAGS="-mieee $CFLAGS"],
+		[osf*],    # ccc
+			[CFLAGS="-ieee $CFLAGS"],
+		)])
 
 dnl Checks for header files.
 AC_HEADER_DIRENT
