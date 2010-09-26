@@ -205,7 +205,7 @@ static VALUE ossl_ssl_session_to_der(VALUE self)
 
 	if (len <= 0)
 		ossl_raise(eSSLSession, "i2d_SSL_SESSION");
-	else if (len >= sizeof(buf))
+	else if (len >= (int)sizeof(buf))
 		ossl_raise(eSSLSession, "i2d_SSL_SESSION too large");
 
 	return rb_str_new((const char *) p, len);

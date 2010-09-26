@@ -1,3 +1,11 @@
+Sun Sep 26 22:21:07 2010  wanabe  <s.wanabe@gmail.com>
+
+	* ext/openssl/ossl_hmac.c (ossl_hmac_hexdigest, ossl_hmac_s_hexdigest),
+	  ext/openssl/ossl_pkey_ec.c (ossl_ec_group_set_seed),
+	  ext/openssl/ossl_ssl_session.c (ossl_ssl_session_to_der),
+	  ext/openssl/ossl_pkcs7.c (numberof): suppress warnings.
+	  [ruby-core:31932]
+
 Sun Sep 26 10:25:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/config.{guess,sub}: updated to automake-1.11.1.

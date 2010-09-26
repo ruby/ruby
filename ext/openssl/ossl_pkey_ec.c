@@ -1107,7 +1107,7 @@ static VALUE ossl_ec_group_set_seed(VALUE self, VALUE seed)
     Require_EC_GROUP(self, group);
     StringValue(seed);
 
-    if (EC_GROUP_set_seed(group, (unsigned char *)RSTRING_PTR(seed), RSTRING_LEN(seed)) != RSTRING_LEN(seed))
+    if (EC_GROUP_set_seed(group, (unsigned char *)RSTRING_PTR(seed), RSTRING_LEN(seed)) != (size_t)RSTRING_LEN(seed))
         ossl_raise(eEC_GROUP, "EC_GROUP_set_seed");
 
     return seed;

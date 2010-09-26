@@ -61,7 +61,7 @@
     GetPKCS7ri(obj, p7ri); \
 } while (0)
 
-#define numberof(ary) (sizeof(ary)/sizeof(ary[0]))
+#define numberof(ary) (int)(sizeof(ary)/sizeof(ary[0]))
 
 #define ossl_pkcs7_set_data(o,v)       rb_iv_set((o), "@data", (v))
 #define ossl_pkcs7_get_data(o)         rb_iv_get((o), "@data")
