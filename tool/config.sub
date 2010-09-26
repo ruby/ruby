@@ -319,6 +319,9 @@ case $basic_machine in
 	i*86 | x86_64)
 	  basic_machine=$basic_machine-pc
 	  ;;
+	i?86-w64)
+	  basic_machine=x86_64-pc
+	  ;;
 	# Object if more than one company name word.
 	*-*-*)
 		echo Invalid configuration \`$1\': machine \`$basic_machine\' not recognized 1>&2
@@ -1299,7 +1302,7 @@ case $os in
 	      | -chorusos* | -chorusrdb* | -cegcc* \
 	      | -cygwin* | -pe* | -psos* | -moss* | -proelf* | -rtems* \
 	      | -mingw32* | -linux-gnu* | -linux-newlib* | -linux-uclibc* \
-	      | -uxpv* | -beos* | -mpeix* | -udk* | -mingw64* \
+	      | -uxpv* | -beos* | -mpeix* | -udk* \
 	      | -interix* | -uwin* | -mks* | -rhapsody* | -darwin* | -opened* \
 	      | -openstep* | -oskit* | -conix* | -pw32* | -nonstopux* \
 	      | -storm-chaos* | -tops10* | -tenex* | -tops20* | -its* \
@@ -1308,6 +1311,13 @@ case $os in
 	      | -powermax* | -dnix* | -nx6 | -nx7 | -sei* | -dragonfly* \
 	      | -skyos* | -haiku* | -rdos* | -toppers* | -drops* | -es*)
 	# Remember, each alternative MUST END IN *, to match a version number.
+		;;
+	-mingw64*)
+		case $basic_machine in
+		    x86-* | i*86-*)
+			basic_machine=x86_64-pc
+			;;
+		esac
 		;;
 	-qnx*)
 		case $basic_machine in
@@ -1695,6 +1705,9 @@ case $basic_machine in
 				;;
 		esac
 		basic_machine=`echo $basic_machine | sed "s/unknown/$vendor/"`
+		;;
+	x86_64*)
+		os=`echo $os | sed 's/32/64/'`
 		;;
 esac
 

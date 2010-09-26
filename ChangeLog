@@ -1,3 +1,7 @@
+Sun Sep 26 22:59:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/config.sub (x86_64-pc-mingw64): regularize.
+
 Sun Sep 26 22:21:07 2010  wanabe  <s.wanabe@gmail.com>
 
 	* ext/openssl/ossl_hmac.c (ossl_hmac_hexdigest, ossl_hmac_s_hexdigest),
