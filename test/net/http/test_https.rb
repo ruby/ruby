@@ -40,6 +40,8 @@ class TestNetHTTPS < Test::Unit::TestCase
     http.request_get("/") {|res|
       assert_equal($test_net_http_data, res.body)
     }
+  rescue SystemCallError
+    skip $!
   end
 
   def test_post
@@ -52,6 +54,8 @@ class TestNetHTTPS < Test::Unit::TestCase
     http.request_post("/", data) {|res|
       assert_equal(data, res.body)
     }
+  rescue SystemCallError
+    skip $!
   end
 
   if ENV["RUBY_OPENSSL_TEST_ALL"]
@@ -72,13 +76,19 @@ class TestNetHTTPS < Test::Unit::TestCase
     http.request_get("/") {|res|
       assert_equal($test_net_http_data, res.body)
     }
+  rescue SystemCallError
+    skip $!
   end
 
   def test_certificate_verify_failure
     http = Net::HTTP.new("localhost", config("port"))
     http.use_ssl = true
     ex = assert_raise(OpenSSL::SSL::SSLError){
-      http.request_get("/") {|res| }
+      begin
+        http.request_get("/") {|res| }
+      rescue SystemCallError
+        skip $!
+      end
     }
     assert_match(/certificate verify failed/, ex.message)
   end

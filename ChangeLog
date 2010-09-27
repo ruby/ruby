@@ -1,3 +1,11 @@
+Mon Sep 27 15:54:03 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* test/net/http/test_https.rb: As always, localhost is not
+          guaranteed to be resolved as 127.0.0.1.  But a SSL
+          certificate needs a socket to listen on a specific address
+          where a CN resolves to.  On situations where localhost is
+          not 127.0.0.1, these tests are not possible.
+
 Mon Sep 27 15:25:05 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* test/net/imap/test_imap.rb: resurrection of r29259.
