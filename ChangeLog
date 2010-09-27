@@ -1,3 +1,10 @@
+Mon Sep 27 15:25:05 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* test/net/imap/test_imap.rb: resurrection of r29259.
+	  this change depends on minitest 1.7.1.
+
+	* lib/test/unit/assertions.rb: ditto.
+
 Sun Sep 26 22:59:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/config.sub (x86_64-pc-mingw64): regularize.

@@ -32,6 +32,8 @@ module Test
         end
         begin
           line = __LINE__; yield
+        rescue MiniTest::Skip
+          raise
         rescue Exception => e
           bt = e.backtrace
           as = e.instance_of?(MiniTest::Assertion)
