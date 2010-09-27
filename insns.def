@@ -1281,20 +1281,8 @@ opt_case_dispatch
 	    }
 	    break;
 	}
-      default: { /* fall through (else) */
-	struct opt_case_dispatch_i_arg arg;
-
-	arg.obj = key;
-	arg.label = -1;
-	st_foreach(RHASH_TBL(hash), opt_case_dispatch_i, (st_data_t)&arg);
-
-	if (arg.label != -1) {
-	    JUMP(arg.label);
-	}
-	else {
-	    JUMP(else_offset);
-	}
-      }
+      default:
+	break;
     }
 }
 

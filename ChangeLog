@@ -1,3 +1,10 @@
+Mon Sep 27 23:30:34 2010  Koichi Sasada  <ko1@atdot.net>
+
+	* insns.def (opt_case_dispatch), vm_insnhelper.c: 
+	  execute the procedures of "when" clauses by bytecode
+	  instead of st_foreach() when the object does not hit
+	  prepared hash.  [ruby-dev:42304]
+
 Mon Sep 27 15:54:03 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* test/net/http/test_https.rb: As always, localhost is not

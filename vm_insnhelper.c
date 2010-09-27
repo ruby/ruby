@@ -1699,22 +1699,3 @@ opt_eq_func(VALUE recv, VALUE obj, IC ic)
     return Qundef;
 }
 
-struct opt_case_dispatch_i_arg {
-    VALUE obj;
-    int label;
-};
-
-static int
-opt_case_dispatch_i(st_data_t key, st_data_t data, st_data_t p)
-{
-    struct opt_case_dispatch_i_arg *arg = (void *)p;
-
-    if (RTEST(rb_funcall((VALUE)key, idEqq, 1, arg->obj))) {
-	arg->label = FIX2INT((VALUE)data);
-	return ST_STOP;
-    }
-    else {
-	return ST_CONTINUE;
-    }
-}
-
