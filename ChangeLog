@@ -1,3 +1,7 @@
+Tue Sep 28 20:50:23 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/config.sub (x64): regularize same as mswin.
+
 Tue Sep 28 20:06:14 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* vm_dump.c (rb_vm_bugreport): add windows support.
