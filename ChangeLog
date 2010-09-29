@@ -1,3 +1,7 @@
+Wed Sep 29 12:35:13 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (VPrint, VpToString): fix format.
+
 Wed Sep 29 12:31:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/known_classes.rb (RDoc::KNOWN_CLASSES): add Encoding.

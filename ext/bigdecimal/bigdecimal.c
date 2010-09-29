@@ -3880,7 +3880,7 @@ VPrint(FILE *fp, const char *cntl_chr, Real *a)
                         m /= 10;
                     }
                 }
-                nc += fprintf(fp, "E%"PRIdVALUE, VpExponent10(a));
+                nc += fprintf(fp, "E%"PRIdSIZE, VpExponent10(a));
             } else {
                 nc += fprintf(fp, "0.0");
             }
@@ -4077,7 +4077,7 @@ VpToString(Real *a, char *psz, size_t fFmt, int fPlus)
         shift /= 10;
     }
     while(psz[-1]=='0') *(--psz) = 0;
-    sprintf(psz, "E%"PRIdVALUE, ex);
+    sprintf(psz, "E%"PRIdSIZE, ex);
     if(fFmt) VpFormatSt(pszSav, fFmt);
 }
 
