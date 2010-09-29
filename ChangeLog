@@ -1,3 +1,8 @@
+Wed Sep 29 21:04:05 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* test/ruby/test_rubyoptions.rb (TestRubyOptions::test_script_from_stdin):
+	  As usual, PTY is not always available.
+
 Wed Sep 29 18:38:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/config.sub (x64): regularize only for pc vendor, and strip

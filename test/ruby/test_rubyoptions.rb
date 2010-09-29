@@ -435,16 +435,20 @@ class TestRubyOptions < Test::Unit::TestCase
     require 'timeout'
     result = nil
     IO.pipe {|r, w|
-      PTY.open {|m, s|
-	m.echo = false
-	m.print("\C-d")
-	pid = spawn(EnvUtil.rubybin, :in => s, :out => w)
-	w.close
-	assert_nothing_raised('[ruby-dev:37798]') do
-	  result = Timeout.timeout(3) {r.read}
-	end
-	Process.wait pid
-      }
+      begin
+        PTY.open {|m, s|
+          m.echo = false
+          m.print("\C-d")
+          pid = spawn(EnvUtil.rubybin, :in => s, :out => w)
+          w.close
+          assert_nothing_raised('[ruby-dev:37798]') do
+            result = Timeout.timeout(3) {r.read}
+          end
+          Process.wait pid
+        }
+      rescue RuntimeError
+        skip $!
+      end
     }
     assert_equal("", result, '[ruby-dev:37798]')
     IO.pipe {|r, w|
