@@ -1878,7 +1878,7 @@ BigDecimal_save_limit(VALUE self)
     VALUE ret = rb_protect(rb_yield, Qnil, &state);
     VpSetPrecLimit(limit);
     if (state) rb_jump_tag(state);
-    return Qnil;
+    return ret;
 }
 
 /* Document-class: BigDecimal

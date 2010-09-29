@@ -137,6 +137,8 @@ class TestBigDecimal < Test::Unit::TestCase
     ensure
       BigDecimal.limit(old)
     end
+
+    assert_equal(42, BigDecimal.save_limit { 42 })
   end
 
   def test_exception_nan
