@@ -527,7 +527,7 @@ inject_op_i(VALUE i, VALUE p, int argc, VALUE *argv)
  *  operation, specified by a block or a symbol that names a
  *  method or operator.
  *
- *  If you specify a block, then for each element in <i>enum<i>
+ *  If you specify a block, then for each element in <i>enum</i>
  *  the block is passed an accumulator value (<i>memo</i>) and the element.
  *  If you specify a symbol instead, then each element in the collection
  *  will be passed to the named method of <i>memo</i>.

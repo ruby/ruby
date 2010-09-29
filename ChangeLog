@@ -1,3 +1,8 @@
+Thu Aug 19 11:11:24 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enum.c (enum_inject): fix typo of rdoc.
+	  patched by Andrei Kulakov [ruby-core:31768]
+
 Thu Aug 19 06:03:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_push_frame): initialize block_iseq.  a patch
