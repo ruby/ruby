@@ -21,8 +21,6 @@ VALUE eConfigError;
  * Public
  */
 
-static CONF *parse_config(VALUE, CONF*);
-
 /*
  * GetConfigPtr is a public C-level function for getting OpenSSL CONF struct
  * from an OpenSSL::Config(eConfig) instance.  We decided to implement
