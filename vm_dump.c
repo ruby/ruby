@@ -725,8 +725,6 @@ dump_thread(void *arg)
 		    while (pStackWalk64(mac, ph, th, &frame, &context, NULL,
 					NULL, NULL, NULL)) {
 			DWORD64 addr = frame.AddrPC.Offset;
-			DWORD64 displace64;
-			DWORD displace;
 			IMAGEHLP_LINE64 line;
 
 			if (addr == frame.AddrReturn.Offset ||
@@ -737,7 +735,7 @@ dump_thread(void *arg)
 			memset(buf, 0, sizeof(buf));
 			info->SizeOfStruct = sizeof(SYMBOL_INFO);
 			info->MaxNameLen = MAX_SYM_NAME;
-			if (pSymFromAddr(ph, addr, &displace64, info)) {
+			if (pSymFromAddr(ph, addr, NULL, info)) {
 			    if (GetModuleFileName((HANDLE)pSymGetModuleBase64(ph, addr), libpath, sizeof(libpath)))
 				fprintf(stderr, "%s", libpath);
 			    fprintf(stderr, "(%s)", info->Name);
@@ -745,7 +743,7 @@ dump_thread(void *arg)
 
 			memset(&line, 0, sizeof(line));
 			line.SizeOfStruct = sizeof(line);
-			if (pSymGetLineFromAddr64(ph, addr, &displace, &line))
+			if (pSymGetLineFromAddr64(ph, addr, NULL, &line))
 			    fprintf(stderr, " %s:%lu", line.FileName, line.LineNumber);
 			fprintf(stderr, " [0x%"PRIxVALUE"]\n", addr);
 		    }
