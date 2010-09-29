@@ -1528,6 +1528,10 @@ class TestArray < Test::Unit::TestCase
     acc = [1,2].product(*[o]*10)
     assert_equal([1,2].product([3,4], [3,4], [3,4], [3,4], [3,4], [3,4], [3,4], [3,4], [3,4], [3,4]),
                  acc)
+
+    a = []
+    [1, 2].product([0, 1, 2, 3, 4][1, 4]) {|x| a << x }
+    assert(a.all?{|x| !x.include?(0) })
   end
 
   def test_permutation
@@ -1571,6 +1575,9 @@ class TestArray < Test::Unit::TestCase
     a.repeated_permutation(4) {|x| b << x; a.replace(@cls[9, 8, 7, 6]) }
     assert_equal(@cls[9, 8, 7, 6], a)
     assert_equal(@cls[1, 2, 3, 4].repeated_permutation(4).to_a, b)
+
+    a = @cls[0, 1, 2, 3, 4][1, 4].repeated_permutation(2)
+    assert(a.all?{|x| !x.include?(0) })
   end
 
   def test_repeated_combination
@@ -1597,6 +1604,9 @@ class TestArray < Test::Unit::TestCase
     a.repeated_combination(4) {|x| b << x; a.replace(@cls[9, 8, 7, 6]) }
     assert_equal(@cls[9, 8, 7, 6], a)
     assert_equal(@cls[1, 2, 3, 4].repeated_combination(4).to_a, b)
+
+    a = @cls[0, 1, 2, 3, 4][1, 4].repeated_combination(2)
+    assert(a.all?{|x| !x.include?(0) })
   end
 
   def test_take

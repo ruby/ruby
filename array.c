@@ -4004,7 +4004,7 @@ rb_ary_permutation(int argc, VALUE *argv, VALUE ary)
 	long *p = (long*)RSTRING_PTR(t0);
 	volatile VALUE t1 = tmpbuf(n,sizeof(char));
 	char *used = (char*)RSTRING_PTR(t1);
-	VALUE ary0 = ary_make_substitution(ary); /* private defensive copy of ary */
+	VALUE ary0 = ary_make_shared_copy(ary); /* private defensive copy of ary */
 	RBASIC(ary0)->klass = 0;
 
 	MEMZERO(used, char, n); /* initialize array */
@@ -4174,7 +4174,7 @@ rb_ary_repeated_permutation(VALUE ary, VALUE num)
     else {             /* this is the general case */
 	volatile VALUE t0 = tmpbuf(r, sizeof(long));
 	long *p = (long*)RSTRING_PTR(t0);
-	VALUE ary0 = ary_make_substitution(ary); /* private defensive copy of ary */
+	VALUE ary0 = ary_make_shared_copy(ary); /* private defensive copy of ary */
 	RBASIC(ary0)->klass = 0;
 
 	rpermute0(n, r, p, 0, ary0); /* compute and yield repeated permutations */
@@ -4260,7 +4260,7 @@ rb_ary_repeated_combination(VALUE ary, VALUE num)
     else {
 	volatile VALUE t0 = tmpbuf(n, sizeof(long));
 	long *p = (long*)RSTRING_PTR(t0);
-	VALUE ary0 = ary_make_substitution(ary); /* private defensive copy of ary */
+	VALUE ary0 = ary_make_shared_copy(ary); /* private defensive copy of ary */
 	RBASIC(ary0)->klass = 0;
 
 	rcombinate0(len, n, p, 0, n, ary0); /* compute and yield repeated combinations */
@@ -4319,7 +4319,7 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
 	/* Make defensive copies of arrays; exit if any is empty */
 	for (i = 0; i < n; i++) {
 	    if (RARRAY_LEN(arrays[i]) == 0) goto done;
-	    arrays[i] = ary_make_substitution(arrays[i]);
+	    arrays[i] = ary_make_shared_copy(arrays[i]);
 	}
     }
     else {
