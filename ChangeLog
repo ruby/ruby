@@ -1,3 +1,8 @@
+Mon Aug 23 02:23:05 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* util.c (ruby_strtod): make sure to have digit-sequence after 'p'
+	  for hexadecimal-floating-constant. [ruby-dev:42105]
+
 Sun Aug 22 09:08:02 2010  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/ruby.h (UINT2NUM): fix ifdef condition for LLP64.
