@@ -1864,7 +1864,7 @@ BigDecimal_save_rounding_mode(VALUE self)
     VALUE ret = rb_protect(rb_yield, Qnil, &state);
     VpSetRoundMode(round_mode);
     if (state) rb_jump_tag(state);
-    return Qnil;
+    return ret;
 }
 
 /* call-seq:

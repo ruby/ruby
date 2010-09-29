@@ -112,6 +112,8 @@ class TestBigDecimal < Test::Unit::TestCase
       BigDecimal.mode(BigDecimal::ROUND_MODE, BigDecimal::ROUND_HALF_EVEN)
     end
     assert_equal(BigDecimal::ROUND_HALF_EVEN, BigDecimal.mode(BigDecimal::ROUND_MODE))
+
+    assert_equal(42, BigDecimal.save_exception_mode { 42 })
   end
 
   def test_save_rounding_mode
@@ -120,6 +122,8 @@ class TestBigDecimal < Test::Unit::TestCase
       BigDecimal.mode(BigDecimal::ROUND_MODE, BigDecimal::ROUND_HALF_EVEN)
     end
     assert_equal(BigDecimal::ROUND_FLOOR, BigDecimal.mode(BigDecimal::ROUND_MODE))
+
+    assert_equal(42, BigDecimal.save_rounding_mode { 42 })
   end
 
   def test_save_limit
