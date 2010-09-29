@@ -936,7 +936,7 @@ struct RBignum {
 #define OBJ_FROZEN(x) (!!FL_TEST((x), FL_FREEZE))
 #define OBJ_FREEZE(x) FL_SET((x), FL_FREEZE)
 
-#if SIZEOF_INT < SIZEOF_VALUE
+#if SIZEOF_INT < SIZEOF_LONG
 # define INT2NUM(v) INT2FIX((int)(v))
 # define UINT2NUM(v) LONG2FIX((unsigned int)(v))
 #else
