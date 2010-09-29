@@ -1,3 +1,8 @@
+Wed Sep 29 18:38:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/config.sub (x64): regularize only for pc vendor, and strip
+	  useless 64 suffix.
+
 Wed Sep 29 17:53:02 2010  Kenta Murata <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BIGDECIMAL_ENABLE_VPRINT):
@@ -51,7 +56,7 @@ Tue Sep 28 20:06:14 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Mon Sep 27 23:30:34 2010  Koichi Sasada  <ko1@atdot.net>
 
-	* insns.def (opt_case_dispatch), vm_insnhelper.c: 
+	* insns.def (opt_case_dispatch), vm_insnhelper.c:
 	  execute the procedures of "when" clauses by bytecode
 	  instead of st_foreach() when the object does not hit
 	  prepared hash.  [ruby-dev:42304]

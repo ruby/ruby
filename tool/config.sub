@@ -4,7 +4,7 @@
 #   2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
 #   Free Software Foundation, Inc.
 
-timestamp='2010-09-28'
+timestamp='2010-09-29'
 
 # This file is (in principle) common to ALL GNU software.
 # The presence of a machine in this file suggests that SOME GNU software
@@ -1706,9 +1706,9 @@ case $basic_machine in
 		esac
 		basic_machine=`echo $basic_machine | sed "s/unknown/$vendor/"`
 		;;
-	x86_64*)
+	x86_64-pc)
 		basic_machine=`echo $basic_machine | sed 's/^x86_/x/'`
-		os=`echo $os | sed 's/32/64/'`
+		os=`echo $os | sed '/[a-z]32$/s/32$//;/[a-z]64/s/64$//'`
 		;;
 esac
 
