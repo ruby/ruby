@@ -1,3 +1,8 @@
+Thu Aug 19 06:03:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_push_frame): initialize block_iseq.  a patch
+	  from Peter Weldon at [ruby-core:31757].
+
 Wed Sep 15 02:13:44 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/fiddle/closure.c : Don't use FFI closure alloc on OpenBSD.

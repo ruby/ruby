@@ -58,6 +58,7 @@ vm_push_frame(rb_thread_t * th, const rb_iseq_t * iseq,
     cfp->self = self;
     cfp->lfp = lfp;
     cfp->dfp = sp;
+    cfp->block_iseq = 0;
     cfp->proc = 0;
     cfp->me = 0;
 
