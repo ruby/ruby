@@ -1,3 +1,8 @@
+Wed Sep 29 17:53:02 2010  Kenta Murata <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BIGDECIMAL_ENABLE_VPRINT):
+	  VPrint is usually disabled.  It's only used in debugging.
+
 Wed Sep 29 17:41:34 2010  Kenta Murata <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_save_limit):

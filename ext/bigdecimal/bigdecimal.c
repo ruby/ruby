@@ -14,6 +14,9 @@
  */
 
 /* #define BIGDECIMAL_DEBUG 1 */
+#ifdef BIGDECIMAL_DEBUG
+# define BIGDECIMAL_ENABLE_VPRINT 1
+#endif
 #include "bigdecimal.h"
 
 #include <ctype.h>
@@ -3812,6 +3815,7 @@ Exit:
     return (int)val;
 }
 
+#ifdef BIGDECIMAL_ENABLE_VPRINT
 /*
  *    cntl_chr ... ASCIIZ Character, print control characters
  *     Available control codes:
@@ -3913,6 +3917,7 @@ VPrint(FILE *fp, const char *cntl_chr, Real *a)
     }
     return (int)nc;
 }
+#endif /* BIGDECIMAL_ENABLE_VPRINT */
 
 static void
 VpFormatSt(char *psz, size_t fFmt)
