@@ -1178,7 +1178,7 @@ BigDecimal_div2(int argc, VALUE *argv, VALUE self)
           GUARD_OBJ(res,VpCreateRbObject((mx * 2  + 2)*VpBaseFig(), "#0"));
           VpDivd(cv,res,av,bv);
           VpSetPrecLimit(pl);
-          VpLeftRound(cv,(int)VpGetRoundMode(),ix);
+          VpLeftRound(cv,VpGetRoundMode(),ix);
           return ToValue(cv);
        }
     }
@@ -1196,7 +1196,7 @@ BigDecimal_add2(VALUE self, VALUE b, VALUE n)
        VALUE   c = BigDecimal_add(self,b);
        VpSetPrecLimit(pl);
        GUARD_OBJ(cv,GetVpValue(c,1));
-       VpLeftRound(cv,(int)VpGetRoundMode(),mx);
+       VpLeftRound(cv,VpGetRoundMode(),mx);
        return ToValue(cv);
     }
 }
@@ -1213,7 +1213,7 @@ BigDecimal_sub2(VALUE self, VALUE b, VALUE n)
        VALUE   c = BigDecimal_sub(self,b);
        VpSetPrecLimit(pl);
        GUARD_OBJ(cv,GetVpValue(c,1));
-       VpLeftRound(cv,(int)VpGetRoundMode(),mx);
+       VpLeftRound(cv,VpGetRoundMode(),mx);
        return ToValue(cv);
     }
 }
@@ -1230,7 +1230,7 @@ BigDecimal_mult2(VALUE self, VALUE b, VALUE n)
        VALUE   c = BigDecimal_mult(self,b);
        VpSetPrecLimit(pl);
        GUARD_OBJ(cv,GetVpValue(c,1));
-       VpLeftRound(cv,(int)VpGetRoundMode(),mx);
+       VpLeftRound(cv,VpGetRoundMode(),mx);
        return ToValue(cv);
     }
 }
@@ -4792,7 +4792,7 @@ VpLimitRound(Real *c, size_t ixDigit)
     if(!ix)           return 0;
     if(!ixDigit) ixDigit = c->Prec-1;
     if((ix+BASE_FIG-1)/BASE_FIG > ixDigit+1) return 0;
-    return VpLeftRound(c, (int)VpGetRoundMode(), (ssize_t)ix);
+    return VpLeftRound(c, VpGetRoundMode(), (ssize_t)ix);
 }
 
 /* If I understand correctly, this is only ever used to round off the final decimal

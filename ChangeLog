@@ -1,3 +1,9 @@
+Wed Sep 29 12:45:30 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_div2, BigDecimal_add2,
+	  BigDecimal_sub2, BigDecimal_mult2, VpLimitRound): remove meaningless
+	  casts to get rid of compiler warnings.
+
 Wed Sep 29 12:35:13 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (VPrint, VpToString): fix format.
