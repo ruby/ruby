@@ -1,3 +1,8 @@
+Sun Aug 22 05:55:01 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: fix typo.  a patch from Eric Wong at
+	  [ruby-core:31810].
+
 Thu Aug 19 12:04:39 2010  Kenta Murata  <mrkn@mrkn.jp>
 
 	* array.c (rb_ary_permutation, rb_ary_repeated_permutation,

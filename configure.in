@@ -152,7 +152,7 @@ AC_MSG_RESULT([$ARCH_FLAG])
 AC_DEFUN([RUBY_UNIVERSAL_ARCH], [
 # RUBY_UNIVERSAL_ARCH begin
 test ${CFLAGS+set} && CFLAGS=`echo "$CFLAGS" | sed -e 's/ *-arch  *[^ ]*//g' -e 's/ *-m32//g' -e 's/ *-m64//g'`
-test ${LDFLAGS+set} && LDFLAGS=`echo "$LDFLAGS" | sed 's/ *-arch  *[^ ]*//g' -e 's/ *-m32//g' -e 's/ *-m64//g'`
+test ${LDFLAGS+set} && LDFLAGS=`echo "$LDFLAGS" | sed -e 's/ *-arch  *[^ ]*//g' -e 's/ *-m32//g' -e 's/ *-m64//g'`
 unset ARCH_FLAG universal_binary universal_archnames
 if test ${target_archs+set}; then
     AC_MSG_CHECKING([target architectures])
