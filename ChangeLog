@@ -1,3 +1,10 @@
+Thu Sep 30 09:29:06 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/common.rb (URI.encode_www_form): change treatment of
+	  undefined value in given array as latest internet draft for
+	  application/www-form-urlencoded.
+	  http://tools.ietf.org/html/draft-hoehrmann-urlencoded-01
+
 Thu Sep 30 09:34:03 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* vm_dump.c (dump_thread): fixed wrong type of return value of
@@ -74,10 +81,10 @@ Mon Sep 27 23:30:34 2010  Koichi Sasada  <ko1@atdot.net>
 Mon Sep 27 15:54:03 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* test/net/http/test_https.rb: As always, localhost is not
-          guaranteed to be resolved as 127.0.0.1.  But a SSL
-          certificate needs a socket to listen on a specific address
-          where a CN resolves to.  On situations where localhost is
-          not 127.0.0.1, these tests are not possible.
+	  guaranteed to be resolved as 127.0.0.1.  But a SSL
+	  certificate needs a socket to listen on a specific address
+	  where a CN resolves to.  On situations where localhost is
+	  not 127.0.0.1, these tests are not possible.
 
 Mon Sep 27 15:25:05 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
@@ -258,7 +265,7 @@ Sun Sep 19 20:37:45 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* Makefile.in (clean-capi, distclean-capi, realclean-capi): ditto.
 
-	* win32/Makefile.sub (clean-capi, distclean-capi, realclean-capi): 
+	* win32/Makefile.sub (clean-capi, distclean-capi, realclean-capi):
 	  ditto.
 
 Sun Sep 19 13:44:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -734,7 +741,7 @@ Sat Sep  4 10:40:50 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sun May 23 17:29:41 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
-	* common.mk (capi): uses a timestamp file to get rid of 
+	* common.mk (capi): uses a timestamp file to get rid of
 	  generating twice.
 
 Fri Jun 18 01:33:21 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
