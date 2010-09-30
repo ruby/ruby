@@ -2158,7 +2158,8 @@ ruby_setenv(const char *name, const char *value)
     rb_str_resize(buf, 0);
     if (!value || !*value) {
 	/* putenv() doesn't handle empty value */
-	if (!SetEnvironmentVariable(name,value)) goto fail;
+	if (!SetEnvironmentVariable(name, value) &&
+	    GetLastError() != ERROR_ENVVAR_NOT_FOUND) goto fail;
     }
     if (failed) goto fail;
 #elif defined(HAVE_SETENV) && defined(HAVE_UNSETENV)

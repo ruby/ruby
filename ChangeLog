@@ -1,3 +1,8 @@
+Thu Sep 30 10:55:38 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* hash.c (ruby_setenv): workaround for old Windows. a patch from
+	  Heesob Park. [ruby-core:32353]
+
 Thu Sep 30 09:29:06 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/common.rb (URI.encode_www_form): change treatment of
