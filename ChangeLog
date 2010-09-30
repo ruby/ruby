@@ -1,3 +1,8 @@
+Thu Sep 30 16:11:08 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_getenv): should return NULL if specified name
+	  is empty. a patch from Heesob Park at [ruby-core:32650]
+
 Thu Sep 30 10:55:38 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* hash.c (ruby_setenv): workaround for old Windows. a patch from

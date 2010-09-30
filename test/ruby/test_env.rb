@@ -96,6 +96,7 @@ class TestEnv < Test::Unit::TestCase
     assert_raise(ArgumentError) { ENV["foo\0bar"] }
     ENV[PATH_ENV] = ""
     assert_equal("", ENV[PATH_ENV])
+    assert_nil(ENV[""])
   end
 
   def test_fetch
