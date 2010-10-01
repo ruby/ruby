@@ -1,3 +1,11 @@
+Fri Oct  1 15:07:30 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/-test-/threadswitch/threadswitch_hook.c (event_hook,
+	  threadswitch_event_hook, restore_hook, threadswitch_hook): use
+	  rb_thread_current() instead of rb_curr_thread->thread, because
+	  the latter is not a public interface. this change fixes build
+	  problem on Windows.
+
 Sat Sep 25 21:56:25 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: Always add -mieee for Renesas SH4.

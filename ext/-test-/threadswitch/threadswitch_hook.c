@@ -45,7 +45,7 @@ event_hook(event, node, obj, mid, klass)
     ID mid;
     VALUE klass;
 {
-    VALUE block = rb_thread_local_aref(rb_curr_thread->thread, event_callback);
+    VALUE block = rb_thread_local_aref(rb_thread_current(), event_callback);
     if (!NIL_P(block)) {
 	VALUE args = rb_ary_new();
 	rb_ary_push(args, rb_str_new2(get_event_name(event)));
@@ -72,7 +72,7 @@ threadswitch_event_hook(event, thread)
     rb_threadswitch_event_t event;
     VALUE thread;
 {
-    VALUE block = rb_thread_local_aref(rb_curr_thread->thread, event_callback);
+    VALUE block = rb_thread_local_aref(rb_thread_current(), event_callback);
     if (!NIL_P(block)) {
 	VALUE args = rb_ary_new();
 	rb_ary_push(args, rb_str_new2(get_threadswitch_event_name(event)));
@@ -109,7 +109,7 @@ restore_hook(arg)
 {
     VALUE *save = (VALUE *)arg;
     threadswitch_remove_event_hook(save[0]);
-    rb_thread_local_aset(rb_curr_thread->thread, event_callback, save[1]);
+    rb_thread_local_aset(rb_thread_current(), event_callback, save[1]);
     return Qnil;
 }
 
@@ -118,8 +118,8 @@ threadswitch_hook(klass)
     VALUE klass;
 {
     VALUE save[2];
-    save[1] = rb_thread_local_aref(rb_curr_thread->thread, event_callback);
-    rb_thread_local_aset(rb_curr_thread->thread, event_callback, rb_block_proc());
+    save[1] = rb_thread_local_aref(rb_thread_current(), event_callback);
+    rb_thread_local_aset(rb_thread_current(), event_callback, rb_block_proc());
     save[0] = threadswitch_add_event_hook(klass);
     return rb_ensure(rb_yield, save[0], restore_hook, (VALUE)save);
 }
