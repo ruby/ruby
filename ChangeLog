@@ -1,3 +1,8 @@
+Fri Oct  1 17:03:00 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* test/webrick/test_httpproxy.rb (TestWEBrickHTTPProxy::test_upstream_proxy):
+	  My machine fails this test at this line, saying 503 service unavailable.
+
 Thu Sep 30 16:11:08 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_getenv): should return NULL if specified name
