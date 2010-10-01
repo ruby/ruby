@@ -26,9 +26,9 @@ module RI
 
     DOC_DIR  = "doc/rdoc"
 
-    version = Config::CONFIG['ruby_version']
+    version = RbConfig::CONFIG['ruby_version']
 
-    base    = File.join(Config::CONFIG['datadir'], "ri", version)
+    base    = File.join(RbConfig::CONFIG['datadir'], "ri", version)
     SYSDIR  = File.join(base, "system")
     SITEDIR = File.join(base, "site")
     homedir = ENV['HOME'] || ENV['USERPROFILE'] || ENV['HOMEPATH']

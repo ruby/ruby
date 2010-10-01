@@ -1,3 +1,8 @@
+Fri Oct  1 16:54:19 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/ri/ri_paths.rb (RI::Paths): use RbConfig instead of
+	  obsolete and deprecated Config.
+
 Fri Oct  1 15:12:05 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (init_stdhandle): redirect unopened IOs to NUL.
