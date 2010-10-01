@@ -1909,15 +1909,33 @@ rb_w32_open_osfhandle(long osfhandle, int flags)
 static void
 init_stdhandle(void)
 {
+    int nullfd = -1;
+    int keep = 0;
+#define open_null(fd)						\
+    (((nullfd < 0) ?						\
+      (nullfd = open("NUL", O_RDWR|O_BINARY)) : 0),		\
+     ((nullfd == (fd)) ? (keep = 1) : dup2(nullfd, fd)),	\
+     (fd))
+
     if (fileno(stdin) < 0) {
-	stdin->_file = 0;
+	stdin->_file = open_null(0);
+    }
+    else {
+	setmode(fileno(stdin), O_BINARY);
     }
     if (fileno(stdout) < 0) {
-	stdout->_file = 1;
+	stdout->_file = open_null(1);
+    }
+    else {
+	setmode(fileno(stdout), O_BINARY);
     }
     if (fileno(stderr) < 0) {
-	stderr->_file = 2;
+	stderr->_file = open_null(2);
     }
+    else {
+	setmode(fileno(stderr), O_BINARY);
+    }
+    if (nullfd >= 0 && !keep) close(nullfd);
     setvbuf(stderr, NULL, _IONBF, 0);
 }
 #else

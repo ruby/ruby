@@ -1,3 +1,8 @@
+Fri Oct  1 15:12:05 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (init_stdhandle): redirect unopened IOs to NUL.
+	  backport r11362 from trunk. [ruby-core:31445]
+
 Fri Oct  1 15:07:30 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/-test-/threadswitch/threadswitch_hook.c (event_hook,
