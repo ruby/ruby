@@ -1,3 +1,8 @@
+Fri Aug 27 12:26:23 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* object.c (rb_obj_class): remove mention of obsolete method.
+	  a patch from Run Paint Run Run at [ruby-core:31842].
+
 Thu Aug 26 10:37:00 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regint.h (OnigStackIndex): the type should be intptr_t.
