@@ -1,3 +1,7 @@
+Sat Oct  2 22:59:32 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* test/win32ole/test_thread.rb: add for win32ole with Thread.
+
 Fri Oct  1 17:03:00 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* test/webrick/test_httpproxy.rb (TestWEBrickHTTPProxy::test_upstream_proxy):
