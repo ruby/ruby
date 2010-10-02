@@ -1,3 +1,19 @@
+Mon Aug 23 13:09:27 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* backport r29071 from ruby_1_8;
+
+	  * ext/openssl/ossl_asn1.c (obj_to_asn1bool): fixed ASN1::Boolean
+	    encoding issue for OpenSSL 1.0.0 compatibility.
+	    ASN1::Boolean.new(false).to_der wrongly generated "\1\1\377" which
+	    means 'true'.
+
+	    ASN1_TYPE_set of OpenSSL <= 0.9.8 treats value 0x100 as 'false'
+	    but OpenSSL >= 1.0.0 treats it as 'true'.  ruby-ossl was using
+	    0x100 for 'false' for backward compatibility.  Just use 0x0 for
+	    the case OpenSSL >= OpenSSL 0.9.7.
+
+	  * test/openssl/test_asn1.rb: test added.
+
 Mon Aug 23 22:30:58 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (version.o): depends on both of version.h and
