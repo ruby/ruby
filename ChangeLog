@@ -1,3 +1,8 @@
+Wed Aug 25 03:42:43 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/dl/cfunc.c (rb_dlcfunc_call): workaround for VC9 for x64.
+	  reported by kuwamoto shintaro in [ruby-dev:42125].
+
 Mon Aug 23 13:09:27 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* backport r29071 from ruby_1_8;
