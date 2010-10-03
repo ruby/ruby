@@ -1,3 +1,8 @@
+Sun Oct  3 18:30:23 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_intern): should check symbol table overflow.
+	 #3900 [ruby-dev:42330]
+
 Fri Oct  1 16:54:19 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/ri/ri_paths.rb (RI::Paths): use RbConfig instead of

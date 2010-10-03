@@ -6227,6 +6227,16 @@ rb_intern(name)
     }
     if (*m) id = ID_JUNK;
   new_id:
+    if (last_id >= SYM2ID(~(VALUE)0) >> ID_SCOPE_SHIFT) {
+	if (last > 20) {
+	    rb_raise(rb_eRuntimeError, "symbol table overflow (symbol %.20s...)",
+		     name);
+	}
+	else {
+	    rb_raise(rb_eRuntimeError, "symbol table overflow (symbol %.*s)",
+		     last, name);
+	}
+    }
     id |= ++last_id << ID_SCOPE_SHIFT;
   id_regist:
     name = strdup(name);
