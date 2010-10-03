@@ -1,3 +1,11 @@
+Mon Oct  4 00:01:53 2010  wanabe  <s.wanabe@gmail.com>
+
+	* tool/config.sub: revert r29320, r29324, r29347, r29354, r29365
+	  to automake-1.11.1. [ruby-core:32634]
+
+	* win32/mkexports.rb: no longer use 'mingw64'. a patch from Luis Lavena
+	  at [ruby-core:32678].
+
 Sun Oct  3 20:36:37 2010 Akio Tajima (arton) <artonx@yahoo.co.jp>
 
 	* test/win32ole/test_folderitem2_invokeverb.rb: Change creating shortcut verb to 'Link' [Bug #3339]

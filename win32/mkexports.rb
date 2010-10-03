@@ -149,19 +149,11 @@ class Exports::Cygwin < Exports
   end
 end
 
-class Exports::Mingw32 < Exports::Cygwin
-  def each_export(objs)
-    super
-    yield "strcasecmp", "_stricmp"
-    yield "strncasecmp", "_strnicmp"
-  end
-end
-
-class Exports::Mingw64 < Exports::Cygwin
+class Exports::Mingw < Exports::Cygwin
   def each_export(objs)
     objdump(objs) do |l|
       next if /@.*@/ =~ l
-      yield $2, !$1 if /\s(?:(T)|[[:upper:]])\s_?((?!Init_|.*_threadptr_|DllMain[@\n]).*)$/ =~ l
+      yield $2, !$1 if /\s(?:(T)|[[:upper:]])\s_?((?!_?Init_|_?.*_threadptr_|_?DllMain[@\n]).*)$/ =~ l
     end
     yield "strcasecmp", "_stricmp"
     yield "strncasecmp", "_strnicmp"

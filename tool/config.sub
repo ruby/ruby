@@ -4,7 +4,7 @@
 #   2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
 #   Free Software Foundation, Inc.
 
-timestamp='2010-09-29'
+timestamp='2009-11-20'
 
 # This file is (in principle) common to ALL GNU software.
 # The presence of a machine in this file suggests that SOME GNU software
@@ -318,9 +318,6 @@ case $basic_machine in
 	# (2) the word "unknown" tends to confuse beginning users.
 	i*86 | x86_64)
 	  basic_machine=$basic_machine-pc
-	  ;;
-	i?86-w64 | x86_64-w64)
-	  basic_machine=x86_64-pc
 	  ;;
 	# Object if more than one company name word.
 	*-*-*)
@@ -741,10 +738,6 @@ case $basic_machine in
 	mingw32)
 		basic_machine=i386-pc
 		os=-mingw32
-		;;
-	mingw64)
-		basic_machine=x86_64-pc
-		os=-mingw64
 		;;
 	mingw32ce)
 		basic_machine=arm-unknown
@@ -1312,13 +1305,6 @@ case $os in
 	      | -skyos* | -haiku* | -rdos* | -toppers* | -drops* | -es*)
 	# Remember, each alternative MUST END IN *, to match a version number.
 		;;
-	-mingw64*)
-		case $basic_machine in
-		    x86-* | i*86-*)
-			basic_machine=x86_64-pc
-			;;
-		esac
-		;;
 	-qnx*)
 		case $basic_machine in
 		    x86-* | i*86-*)
@@ -1705,10 +1691,6 @@ case $basic_machine in
 				;;
 		esac
 		basic_machine=`echo $basic_machine | sed "s/unknown/$vendor/"`
-		;;
-	x86_64-pc)
-		basic_machine=`echo $basic_machine | sed 's/^x86_/x/'`
-		os=`echo $os | sed '/[a-z]32$/s/32$//;/[a-z]64/s/64$//'`
 		;;
 esac
 
