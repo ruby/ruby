@@ -1,6 +1,6 @@
 Sun Oct  3 20:36:37 2010 Akio Tajima (arton) <artonx@yahoo.co.jp>
 
-	* Change creating shortcut verb to 'Link' [Bug #3339]
+	* test/win32ole/test_folderitem2_invokeverb.rb: Change creating shortcut verb to 'Link' [Bug #3339]
 
 Sun Oct  3 19:44:23 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
