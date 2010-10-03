@@ -1,3 +1,7 @@
+Sun Oct  3 20:36:37 2010 Akio Tajima (arton) <artonx@yahoo.co.jp>
+
+	* Change creating shortcut verb to 'Link' [Bug #3339]
+
 Sun Oct  3 19:44:23 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (Makefile): get rid of duplicated ruby target when
