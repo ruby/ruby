@@ -1204,7 +1204,7 @@ rb_ivar_count(VALUE obj)
     switch (TYPE(obj)) {
       case T_OBJECT:
 	if ((tbl = ROBJECT_IV_INDEX_TBL(obj)) != 0) {
-	    st_index_t i, num = tbl->num_entries, count = 0;
+	    st_index_t i, count, num = tbl->num_entries;
 	    const VALUE *const ivptr = ROBJECT_IVPTR(obj);
 	    for (i = count = 0; i < num; ++i) {
 		if (ivptr[i] != Qundef) {

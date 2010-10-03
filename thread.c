@@ -1387,7 +1387,6 @@ ruby_thread_stack_overflow(rb_thread_t *th)
 {
     th->raised_flag = 0;
 #ifdef USE_SIGALTSTACK
-    th->raised_flag = 0;
     rb_exc_raise(sysstack_error);
 #else
     th->errinfo = sysstack_error;

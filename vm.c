@@ -453,16 +453,10 @@ rb_vm_stack_to_heap(rb_thread_t * const th)
 static VALUE
 vm_make_proc_from_block(rb_thread_t *th, rb_block_t *block)
 {
-    VALUE proc = block->proc;
-
-    if (block->proc) {
-	return block->proc;
+    if (!block->proc) {
+	block->proc = rb_vm_make_proc(th, block, rb_cProc);
     }
-
-    proc = rb_vm_make_proc(th, block, rb_cProc);
-    block->proc = proc;
-
-    return proc;
+    return block->proc;
 }
 
 VALUE
