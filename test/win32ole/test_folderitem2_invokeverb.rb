@@ -62,7 +62,12 @@ if defined?(WIN32OLE)
     def test_invokeverb
       # this test should run only when "Create Shortcut (&S)" 
       # is found in context menu,
+      
+      # in Windows Vista (not tested), Windows 7
+      # The verb must be in English.
+      # Creating Shortcut is "Link"
       if @shortcut
+        @shortcut = "Link"
         links = find_link(@dummy_path)
         assert_equal(0, links.size)
 
