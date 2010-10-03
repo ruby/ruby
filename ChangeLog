@@ -1,3 +1,8 @@
+Mon Oct  4 06:40:24 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* Makefile.in (clean-rdoc): Don't use \ in variable expantion.
+	  BSD make treats it as an escape character.
+
 Mon Oct  4 00:01:53 2010  wanabe  <s.wanabe@gmail.com>
 
 	* tool/config.sub: revert r29320, r29324, r29347, r29354, r29365
