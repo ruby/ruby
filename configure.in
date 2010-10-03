@@ -2746,6 +2746,7 @@ AC_CONFIG_FILES(Makefile, [{
 	    echo 'distclean-local::; @$(RM) GNUmakefile uncommon.mk'
 	fi
     } > confmk$$.tmp && mv -f confmk$$.tmp Makefile &&
+	grep '^ruby:' Makefile > /dev/null ||
 	${MAKE-make} info-program | grep '^PROGRAM=ruby$' > /dev/null ||
 	echo 'ruby: $(PROGRAM);' >> Makefile],
 [EXEEXT='$EXEEXT' gnumake='$gnumake'])
