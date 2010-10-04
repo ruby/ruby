@@ -859,7 +859,7 @@ update_char_offset(VALUE match)
     struct re_registers *regs;
     int i, num_regs, num_pos;
     long c;
-    char *s, *p, *q, *e;
+    char *s, *p, *q;
     rb_encoding *enc;
     pair_t *pairs;
 
@@ -895,7 +895,6 @@ update_char_offset(VALUE match)
     qsort(pairs, num_pos, sizeof(pair_t), pair_byte_cmp);
 
     s = p = RSTRING_PTR(RMATCH(match)->str);
-    e = s + RSTRING_LEN(RMATCH(match)->str);
     c = 0;
     for (i = 0; i < num_pos; i++) {
         q = s + pairs[i].byte_pos;
@@ -1899,9 +1898,7 @@ read_escaped_byte(const char **pp, const char *end, onig_errmsg_buffer err)
     int code;
     int meta_prefix = 0, ctrl_prefix = 0;
     size_t len;
-    int retbyte;
 
-    retbyte = -1;
     if (p == end || *p++ != '\\') {
         errcpy(err, "too short escaped multibyte character");
         return -1;

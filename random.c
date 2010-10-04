@@ -415,7 +415,7 @@ rand_init(struct MT *mt, VALUE vseed)
 	}
 	else {
 	    if (blen > MT_MAX_STATE * SIZEOF_INT32 / SIZEOF_BDIGITS)
-		blen = (len = MT_MAX_STATE) * SIZEOF_INT32 / SIZEOF_BDIGITS;
+		blen = MT_MAX_STATE * SIZEOF_INT32 / SIZEOF_BDIGITS;
 	    len = roomof((int)blen * SIZEOF_BDIGITS, SIZEOF_INT32);
 	}
 	/* allocate ints for init_by_array */
@@ -1066,7 +1066,7 @@ random_rand(int argc, VALUE *argv, VALUE obj)
 	v = Qnil;
     }
     else if (TYPE(vmax) != T_FLOAT && (v = rb_check_to_integer(vmax, "to_int"), !NIL_P(v))) {
-	v = rand_int(&rnd->mt, vmax = v, 1);
+	v = rand_int(&rnd->mt, v, 1);
     }
     else if (v = rb_check_to_float(vmax), !NIL_P(v)) {
 	double max = float_value(v);

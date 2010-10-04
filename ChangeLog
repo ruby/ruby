@@ -1,3 +1,11 @@
+Mon Oct  4 09:47:39 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* random.c (rand_init): remove useless assignment.
+
+	* re.c (update_char_offset): remove unused variable.
+
+	* re.c (read_escaped_byte): ditto.
+
 Mon Oct  4 09:30:42 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/openssl/lib/openssl/bn.rb (Integer#to_bn): OpenSSL::BN.new
