@@ -403,7 +403,7 @@ rand_init(struct MT *mt, VALUE vseed)
             fixnum_seed = -fixnum_seed;
 	buf[0] = (unsigned int)(fixnum_seed & 0xffffffff);
 #if SIZEOF_LONG > SIZEOF_INT32
-	if ((long)(int)fixnum_seed != fixnum_seed) {
+	if ((long)(int32_t)fixnum_seed != fixnum_seed) {
 	    if ((buf[1] = (unsigned int)(fixnum_seed >> 32)) != 0) ++len;
 	}
 #endif

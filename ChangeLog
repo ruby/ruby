@@ -1,3 +1,8 @@
+Mon Oct  4 10:22:21 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* random.c (rand_init): This checks the value is in 32bit or not,
+	  so use int32_t, not int.
+
 Mon Oct  4 09:47:39 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* random.c (rand_init): remove useless assignment.
