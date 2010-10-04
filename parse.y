@@ -3897,7 +3897,8 @@ regexp		: tREGEXP_BEG regexp_contents tREGEXP_END
 				if (nd_type(list->nd_head) == NODE_STR) {
 				    VALUE tail = list->nd_head->nd_lit;
 				    if (reg_fragment_check(tail, options) && prev && !NIL_P(prev->nd_lit)) {
-					if (!literal_concat0(parser, prev->nd_lit, tail)) {
+					VALUE lit = prev == node ? prev->nd_lit : prev->nd_head->nd_lit;
+					if (!literal_concat0(parser, lit, tail)) {
 					    node = 0;
 					    break;
 					}

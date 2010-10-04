@@ -1,3 +1,8 @@
+Mon Oct  4 12:43:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (regexp): dregexp has literal string only at the head
+	  and successors are array.  [ruby-core:32682]
+
 Mon Oct  4 10:22:21 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* random.c (rand_init): This checks the value is in 32bit or not,
