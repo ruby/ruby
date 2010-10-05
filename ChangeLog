@@ -1,3 +1,7 @@
+Tue Oct  5 22:17:02 2010  wanabe  <s.wanabe@gmail.com>
+
+	* win32/mkexports.rb: revert r29320 and r29402.
+
 Mon Oct  4 12:43:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (regexp): dregexp has literal string only at the head

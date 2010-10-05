@@ -151,10 +151,7 @@ end
 
 class Exports::Mingw < Exports::Cygwin
   def each_export(objs)
-    objdump(objs) do |l|
-      next if /@.*@/ =~ l
-      yield $2, !$1 if /\s(?:(T)|[[:upper:]])\s_?((?!_?Init_|_?.*_threadptr_|_?DllMain[@\n]).*)$/ =~ l
-    end
+    super
     yield "strcasecmp", "_stricmp"
     yield "strncasecmp", "_strnicmp"
   end
