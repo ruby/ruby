@@ -55,6 +55,11 @@ with all sufficient information, see the ChangeLog file.
   * new method:
     * WEBrick::HTTPRequest#continue for generating '100 continue' response.
 
+* uri
+  * new methods:
+    * URI::Generic#hostname
+    * URI::Generic#hostname=
+
 === Compatibility issues (excluding feature bug fixes)
 
 * Kernel#respond_to?
