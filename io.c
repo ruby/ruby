@@ -3459,7 +3459,7 @@ fptr_finalize(rb_io_t *fptr, int noraise)
 {
     VALUE err = Qnil;
     if (fptr->writeconv) {
-	if (fptr->write_lock) {
+	if (fptr->write_lock && !noraise) {
             struct finish_writeconv_arg arg;
             arg.fptr = fptr;
             arg.noalloc = noraise;
@@ -3470,8 +3470,14 @@ fptr_finalize(rb_io_t *fptr, int noraise)
 	}
     }
     if (fptr->wbuf_len) {
-        if (io_fflush(fptr) < 0 && NIL_P(err))
-            err = noraise ? Qtrue : INT2NUM(errno);
+	if (noraise) {
+	    if ((int)io_flush_buffer_sync(fptr) < 0 && NIL_P(err))
+		err = Qtrue;
+	}
+	else {
+	    if (io_fflush(fptr) < 0 && NIL_P(err))
+		err = INT2NUM(errno);
+	}
     }
     if (IS_PREP_STDIO(fptr) || fptr->fd <= 2) {
         goto skip_fd_close;

@@ -1,3 +1,10 @@
+Wed Oct  6 11:52:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (fptr_finalize): write_mutex might have been destroyed
+	  already in finalization phase, as the order of finalizers is not
+	  guaranteed.  rb_mutex_t should be used in place of Mutex object
+	  in the future.
+
 Tue Oct  5 22:17:02 2010  wanabe  <s.wanabe@gmail.com>
 
 	* win32/mkexports.rb: revert r29320 and r29402.
