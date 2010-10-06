@@ -695,4 +695,14 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_raise(URI::InvalidURIError) { uri.path = 'bar' }
     assert_raise(URI::InvalidURIError) { uri.query = 'bar' }
   end
+
+  def test_ipv6
+    assert_equal("[::1]", URI("http://[::1]/bar/baz").host)
+    assert_equal("::1", URI("http://[::1]/bar/baz").hostname)
+
+    u = URI("http://foo/bar")
+    assert_equal("http://foo/bar", u.to_s)
+    u.hostname = "::1"
+    assert_equal("http://[::1]/bar", u.to_s)
+  end
 end

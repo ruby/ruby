@@ -263,17 +263,17 @@ module OpenURI
       # HTTP or HTTPS
       if proxy
         if proxy_user && proxy_pass
-          klass = Net::HTTP::Proxy(proxy_uri.host, proxy_uri.port, proxy_user, proxy_pass)
+          klass = Net::HTTP::Proxy(proxy_uri.hostname, proxy_uri.port, proxy_user, proxy_pass)
         else
-          klass = Net::HTTP::Proxy(proxy_uri.host, proxy_uri.port)
+          klass = Net::HTTP::Proxy(proxy_uri.hostname, proxy_uri.port)
         end
       end
-      target_host = target.host
+      target_host = target.hostname
       target_port = target.port
       request_uri = target.request_uri
     else
       # FTP over HTTP proxy
-      target_host = proxy_uri.host
+      target_host = proxy_uri.hostname
       target_port = proxy_uri.port
       request_uri = target.to_s
       if proxy_user && proxy_pass
@@ -736,10 +736,10 @@ module URI
         proxy_uri = ENV[name] || ENV[name.upcase]
       end
 
-      if proxy_uri && self.host
+      if proxy_uri && self.hostname
         require 'socket'
         begin
-          addr = IPSocket.getaddress(self.host)
+          addr = IPSocket.getaddress(self.hostname)
           proxy_uri = nil if /\A127\.|\A::1\z/ =~ addr
         rescue SocketError
         end
@@ -804,7 +804,7 @@ module URI
 
       # The access sequence is defined by RFC 1738
       ftp = Net::FTP.new
-      ftp.connect(self.host, self.port)
+      ftp.connect(self.hostname, self.port)
       ftp.passive = true if !options[:ftp_active_mode]
       # todo: extract user/passwd from .netrc.
       user = 'anonymous'
