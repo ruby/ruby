@@ -1,3 +1,7 @@
+Fri Oct  8 00:24:54 2010  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	* lib/csv.rb: Fixing documentation typos.  [ruby-core:32712]
+
 Thu Oct  7 18:10:35 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cygwin/GNUmakefile.in, win32/Makefile.sub (RCFILES): depend on

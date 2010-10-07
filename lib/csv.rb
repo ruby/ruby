@@ -1197,7 +1197,7 @@ class CSV
   # also understands an additional <tt>:encoding</tt> parameter that you can use
   # to specify the Encoding of the data in the file to be read. You must provide
   # this unless your data is in Encoding::default_external().  CSV will use this
-  # to deterime how to parse the data.  You may provide a second Encoding to
+  # to determine how to parse the data.  You may provide a second Encoding to
   # have the data transcoded as it is read.  For example,
   # <tt>encoding: "UTF-32BE:UTF-8"</tt> would read UTF-32BE data from the file
   # but transcode it to UTF-8 before CSV parses it.
@@ -1293,7 +1293,7 @@ class CSV
   #
   # You must provide a +mode+ with an embedded Encoding designator unless your
   # data is in Encoding::default_external().  CSV will check the Encoding of the
-  # underlying IO object (set by the +mode+ you pass) to deterime how to parse
+  # underlying IO object (set by the +mode+ you pass) to determine how to parse
   # the data.   You may provide a second Encoding to have the data transcoded as
   # it is read just as you can with a normal call to IO::open().  For example,
   # <tt>"rb:UTF-32BE:UTF-8"</tt> would read UTF-32BE data from the file but
@@ -1395,7 +1395,7 @@ class CSV
   # file and any +options+ CSV::new() understands.  This method also understands
   # an additional <tt>:encoding</tt> parameter that you can use to specify the
   # Encoding of the data in the file to be read. You must provide this unless
-  # your data is in Encoding::default_external().  CSV will use this to deterime
+  # your data is in Encoding::default_external().  CSV will use this to determine
   # how to parse the data.  You may provide a second Encoding to have the data
   # transcoded as it is read.  For example,
   # <tt>encoding: "UTF-32BE:UTF-8"</tt> would read UTF-32BE data from the file
@@ -1936,7 +1936,7 @@ class CSV
   alias_method :readline, :shift
 
   #
-  # Returns a simplified description of the key FasterCSV attributes in an
+  # Returns a simplified description of the key CSV attributes in an
   # ASCII compatible String.
   #
   def inspect
