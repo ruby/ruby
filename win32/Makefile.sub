@@ -187,6 +187,7 @@ CPPFLAGS = $(CRTDEFFLAGS) $(DEFS) $(ARCHDEFS) $(CPPFLAGS)
 
 DLDFLAGS = $(LDFLAGS) -dll
 SOLIBS = 
+RCFILES = $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc
 
 LIBRUBY_LDSHARED = $(LDSHARED)
 LIBRUBY_DLDFLAGS = $(EXTLDFLAGS) -def:$(RUBYDEF)
@@ -648,7 +649,7 @@ clean-ext distclean-ext realclean-ext::
 		    cd %CD% \
 		)
 
-$(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc: $(RBCONFIG) $(srcdir)/revision.h $(srcdir)/win32/resource.rb
+$(RCFILES): $(RBCONFIG) config.rb $(srcdir)/revision.h $(srcdir)/win32/resource.rb
 		@$(MINIRUBY) $(srcdir)/win32/resource.rb \
 			-ruby_name=$(RUBY_INSTALL_NAME) \
 			-rubyw_name=$(RUBYW_INSTALL_NAME) \
