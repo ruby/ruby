@@ -1,3 +1,8 @@
+Thu Oct  7 09:14:28 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vm_exec.c (vm_exec_core):  Treat clang as non gcc on this
+	  context: It has __asm__ but doesn't works well.
+
 Wed Oct  6 12:28:22 2010  Tanaka Akira  <akr@fsij.org>
 
 	* lib/uri/generic.rb (URI::Generic#hostname): new method.
