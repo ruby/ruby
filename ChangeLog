@@ -1,3 +1,8 @@
+Thu Oct  7 18:10:35 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cygwin/GNUmakefile.in, win32/Makefile.sub (RCFILES): depend on
+	  real config.rb file.  [ruby-core:32709]
+
 Thu Oct  7 09:14:28 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vm_exec.c (vm_exec_core):  Treat clang as non gcc on this
