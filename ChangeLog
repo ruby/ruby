@@ -1,3 +1,7 @@
+Sat Oct  9 08:16:01 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_threadptr_remove_event_hook): fix typo.
+
 Fri Oct  8 10:52:25 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (RBCONFIG): depends on version.h due to

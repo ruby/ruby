@@ -3847,7 +3847,7 @@ remove_event_hook(rb_event_hook_t **root, rb_event_hook_func_t func)
 }
 
 static int
-rb_threadptr_revmove_event_hook(rb_thread_t *th, rb_event_hook_func_t func)
+rb_threadptr_remove_event_hook(rb_thread_t *th, rb_event_hook_func_t func)
 {
     int ret = remove_event_hook(&th->event_hooks, func);
     thread_reset_event_flags(th);
@@ -3857,7 +3857,7 @@ rb_threadptr_revmove_event_hook(rb_thread_t *th, rb_event_hook_func_t func)
 int
 rb_thread_remove_event_hook(VALUE thval, rb_event_hook_func_t func)
 {
-    return rb_threadptr_revmove_event_hook(thval2thread_t(thval), func);
+    return rb_threadptr_remove_event_hook(thval2thread_t(thval), func);
 }
 
 int
@@ -3879,7 +3879,7 @@ clear_trace_func_i(st_data_t key, st_data_t val, st_data_t flag)
 {
     rb_thread_t *th;
     GetThreadPtr((VALUE)key, th);
-    rb_threadptr_revmove_event_hook(th, 0);
+    rb_threadptr_remove_event_hook(th, 0);
     return ST_CONTINUE;
 }
 
@@ -3994,7 +3994,7 @@ thread_set_trace_func_m(VALUE obj, VALUE trace)
 {
     rb_thread_t *th;
     GetThreadPtr(obj, th);
-    rb_threadptr_revmove_event_hook(th, call_trace_func);
+    rb_threadptr_remove_event_hook(th, call_trace_func);
 
     if (NIL_P(trace)) {
 	return Qnil;
