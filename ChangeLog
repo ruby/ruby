@@ -1,5 +1,7 @@
 Fri Oct  8 10:52:25 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
+	* common.mk (RBCONFIG): depends on version.h due to
+	  RUBY_PATCHLEVEL.  [ruby-core:32709]
 
 Fri Oct  8 00:24:54 2010  James Edward Gray II  <jeg2@ruby-lang.org>
 
