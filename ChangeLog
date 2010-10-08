@@ -1,3 +1,8 @@
+Fri Oct  8 10:51:56 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (RBCONFIG): depends on version.h due to
+	  RUBY_PATCHLEVEL.  [ruby-core:32709]
+
 Thu Oct  7 18:10:35 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cygwin/GNUmakefile.in, win32/Makefile.sub (RCFILES): depend on
