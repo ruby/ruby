@@ -1475,7 +1475,7 @@ if test x"$target_cpu" = xia64; then
 fi
 
 AC_CACHE_CHECK(whether right shift preserve sign bit, rb_cv_rshift_sign,
-    [AC_COMPILE_IFELSE(AC_LANG_BOOL_COMPILE_TRY([], [(-1==(-1>>1))]),
+    [AC_COMPILE_IFELSE([AC_LANG_BOOL_COMPILE_TRY([], [(-1==(-1>>1))])],
 	rb_cv_rshift_sign=yes,
 	rb_cv_rshift_sign=no)])
 if test "$rb_cv_rshift_sign" = yes; then

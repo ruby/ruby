@@ -1,3 +1,8 @@
+Sat Oct  9 16:54:28 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RSHIFT): quote to get rid of argument expansion
+	  for autoconf 2.68.
+
 Sat Oct  9 11:00:06 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (thread_reset_event_flags, exec_event_hooks): ignore
