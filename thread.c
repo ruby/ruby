@@ -69,11 +69,6 @@ static int rb_threadptr_dead(rb_thread_t *th);
 
 static void rb_check_deadlock(rb_vm_t *vm);
 
-int rb_signal_buff_size(void);
-void rb_signal_exec(rb_thread_t *th, int sig);
-void rb_disable_interrupt(void);
-void rb_thread_stop_timer_thread(void);
-
 static const VALUE eKillSignal = INT2FIX(0);
 static const VALUE eTerminateSignal = INT2FIX(1);
 static volatile int system_working = 1;

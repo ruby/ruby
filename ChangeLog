@@ -1,3 +1,8 @@
+Sun Oct 10 05:33:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_core.h (rb_signal_buff_size, rb_signal_exec): moved
+	  declarations from thread.c.
+
 Sat Oct  9 16:54:28 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RSHIFT): quote to get rid of argument expansion
