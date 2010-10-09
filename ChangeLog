@@ -1,3 +1,11 @@
+Sat Oct  9 10:51:00 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_threadptr_exec_event_hooks): suppress each event
+	  hooks separately.
+
+	* thread.c (thread_suppress_tracing): split from
+	  ruby_suppress_tracing, accepting thread pointer and event mask.
+
 Sat Oct  9 08:16:01 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_threadptr_remove_event_hook): fix typo.

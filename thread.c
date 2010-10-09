@@ -3708,6 +3708,25 @@ rb_exec_recursive_outer(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE arg)
 }
 
 /* tracer */
+enum {
+    EVENT_RUNNING_NOTHING,
+    EVENT_RUNNING_TRACE = 1,
+    EVENT_RUNNING_THREAD = 2,
+    EVENT_RUNNING_VM = 4,
+    EVENT_RUNNING_EVENT_MASK = EVENT_RUNNING_VM|EVENT_RUNNING_THREAD
+};
+
+static VALUE thread_suppress_tracing(rb_thread_t *th, int ev, VALUE (*func)(VALUE, int), VALUE arg, int always);
+VALUE ruby_suppress_tracing(VALUE (*func)(VALUE, int), VALUE arg, int always);
+
+struct event_call_args {
+    rb_thread_t *th;
+    VALUE klass;
+    VALUE self;
+    VALUE proc;
+    ID id;
+    rb_event_flag_t event;
+};
 
 static rb_event_hook_t *
 alloc_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data)
@@ -3789,24 +3808,49 @@ exec_event_hooks(const rb_event_hook_t *hook, rb_event_flag_t flag, VALUE self, 
     }
 }
 
-void
-rb_threadptr_exec_event_hooks(rb_thread_t *th, rb_event_flag_t flag, VALUE self, ID id, VALUE klass)
+static VALUE
+thread_exec_event_hooks(VALUE args, int running)
 {
-    const VALUE errinfo = th->errinfo;
+    struct event_call_args *argp = (struct event_call_args *)args;
+    rb_thread_t *th = argp->th;
+    rb_event_flag_t flag = argp->event;
+    VALUE self = argp->self;
+    ID id = argp->id;
+    VALUE klass = argp->klass;
     const rb_event_flag_t wait_event = th->event_flags;
 
-    if (self == rb_mRubyVMFrozenCore) return;
-    if (wait_event & flag) {
+    if (self == rb_mRubyVMFrozenCore) return 0;
+
+    if ((wait_event & flag) && !(running & EVENT_RUNNING_THREAD)) {
+	th->tracing |= EVENT_RUNNING_THREAD;
 	exec_event_hooks(th->event_hooks, flag, self, id, klass);
+	th->tracing &= ~EVENT_RUNNING_THREAD;
     }
     if (wait_event & RUBY_EVENT_VM) {
 	if (th->vm->event_hooks == NULL) {
 	    th->event_flags &= (~RUBY_EVENT_VM);
 	}
-	else {
+	else if (!(running & EVENT_RUNNING_VM)) {
+	    th->tracing |= EVENT_RUNNING_VM;
 	    exec_event_hooks(th->vm->event_hooks, flag, self, id, klass);
+	    th->tracing &= ~EVENT_RUNNING_VM;
 	}
     }
+    return 0;
+}
+
+void
+rb_threadptr_exec_event_hooks(rb_thread_t *th, rb_event_flag_t flag, VALUE self, ID id, VALUE klass)
+{
+    const VALUE errinfo = th->errinfo;
+    struct event_call_args args;
+    args.th = th;
+    args.event = flag;
+    args.self = self;
+    args.id = id;
+    args.klass = klass;
+    args.proc = 0;
+    thread_suppress_tracing(th, EVENT_RUNNING_EVENT_MASK, thread_exec_event_hooks, (VALUE)&args, FALSE);
     th->errinfo = errinfo;
 }
 
@@ -4028,20 +4072,10 @@ get_event_name(rb_event_flag_t event)
     }
 }
 
-VALUE ruby_suppress_tracing(VALUE (*func)(VALUE, int), VALUE arg, int always);
-
-struct call_trace_func_args {
-    rb_event_flag_t event;
-    VALUE proc;
-    VALUE self;
-    ID id;
-    VALUE klass;
-};
-
 static VALUE
 call_trace_proc(VALUE args, int tracing)
 {
-    struct call_trace_func_args *p = (struct call_trace_func_args *)args;
+    struct event_call_args *p = (struct event_call_args *)args;
     const char *srcfile = rb_sourcefile();
     VALUE eventname = rb_str_new2(get_event_name(p->event));
     VALUE filename = srcfile ? rb_str_new2(srcfile) : Qnil;
@@ -4056,7 +4090,7 @@ call_trace_proc(VALUE args, int tracing)
 	klass = p->klass;
     }
     else {
-	rb_thread_method_id_and_class(GET_THREAD(), &id, &klass);
+	rb_thread_method_id_and_class(p->th, &id, &klass);
     }
     if (id == ID_ALLOCATOR)
       return Qnil;
@@ -4082,8 +4116,9 @@ call_trace_proc(VALUE args, int tracing)
 static void
 call_trace_func(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klass)
 {
-    struct call_trace_func_args args;
+    struct event_call_args args;
 
+    args.th = GET_THREAD();
     args.event = event;
     args.proc = proc;
     args.self = self;
@@ -4096,16 +4131,22 @@ VALUE
 ruby_suppress_tracing(VALUE (*func)(VALUE, int), VALUE arg, int always)
 {
     rb_thread_t *th = GET_THREAD();
-    int state, tracing;
+    return thread_suppress_tracing(th, EVENT_RUNNING_TRACE, func, arg, always);
+}
+
+static VALUE
+thread_suppress_tracing(rb_thread_t *th, int ev, VALUE (*func)(VALUE, int), VALUE arg, int always)
+{
+    int state, tracing = th->tracing, running = tracing & ev;
     volatile int raised;
     volatile int outer_state;
     VALUE result = Qnil;
 
-    if ((tracing = th->tracing) != 0 && !always) {
+    if (running == ev && !always) {
 	return Qnil;
     }
     else {
-	th->tracing = 1;
+	th->tracing |= ev;
     }
 
     raised = rb_threadptr_reset_raised(th);
@@ -4114,7 +4155,7 @@ ruby_suppress_tracing(VALUE (*func)(VALUE, int), VALUE arg, int always)
 
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
-	result = (*func)(arg, tracing);
+	result = (*func)(arg, running);
     }
 
     if (raised) {
