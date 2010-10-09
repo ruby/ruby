@@ -3708,6 +3708,8 @@ rb_exec_recursive_outer(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE arg)
 }
 
 /* tracer */
+#define RUBY_EVENT_REMOVED 0x1000000
+
 enum {
     EVENT_RUNNING_NOTHING,
     EVENT_RUNNING_TRACE = 1,
@@ -3745,7 +3747,8 @@ thread_reset_event_flags(rb_thread_t *th)
     rb_event_flag_t flag = th->event_flags & RUBY_EVENT_VM;
 
     while (hook) {
-	flag |= hook->flag;
+	if (!(flag & RUBY_EVENT_REMOVED))
+	    flag |= hook->flag;
 	hook = hook->next;
     }
     th->event_flags = flag;
@@ -3798,15 +3801,23 @@ set_threads_event_flags(int flag)
     st_foreach(GET_VM()->living_threads, set_threads_event_flags_i, (st_data_t) flag);
 }
 
-static inline void
+static inline int
 exec_event_hooks(const rb_event_hook_t *hook, rb_event_flag_t flag, VALUE self, ID id, VALUE klass)
 {
+    int removed = 0;
     for (; hook; hook = hook->next) {
+	if (hook->flag & RUBY_EVENT_REMOVED) {
+	    removed++;
+	    continue;
+	}
 	if (flag & hook->flag) {
 	    (*hook->func)(flag, hook->data, self, id, klass);
 	}
     }
+    return removed;
 }
+
+static int remove_defered_event_hook(rb_event_hook_t **root);
 
 static VALUE
 thread_exec_event_hooks(VALUE args, int running)
@@ -3818,13 +3829,17 @@ thread_exec_event_hooks(VALUE args, int running)
     ID id = argp->id;
     VALUE klass = argp->klass;
     const rb_event_flag_t wait_event = th->event_flags;
+    int removed;
 
     if (self == rb_mRubyVMFrozenCore) return 0;
 
     if ((wait_event & flag) && !(running & EVENT_RUNNING_THREAD)) {
 	th->tracing |= EVENT_RUNNING_THREAD;
-	exec_event_hooks(th->event_hooks, flag, self, id, klass);
+	removed = exec_event_hooks(th->event_hooks, flag, self, id, klass);
 	th->tracing &= ~EVENT_RUNNING_THREAD;
+	if (removed) {
+	    remove_defered_event_hook(&th->event_hooks);
+	}
     }
     if (wait_event & RUBY_EVENT_VM) {
 	if (th->vm->event_hooks == NULL) {
@@ -3832,8 +3847,11 @@ thread_exec_event_hooks(VALUE args, int running)
 	}
 	else if (!(running & EVENT_RUNNING_VM)) {
 	    th->tracing |= EVENT_RUNNING_VM;
-	    exec_event_hooks(th->vm->event_hooks, flag, self, id, klass);
+	    removed = exec_event_hooks(th->vm->event_hooks, flag, self, id, klass);
 	    th->tracing &= ~EVENT_RUNNING_VM;
+	    if (removed) {
+		remove_defered_event_hook(&th->vm->event_hooks);
+	    }
 	}
     }
     return 0;
@@ -3867,23 +3885,49 @@ rb_add_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data)
 }
 
 static int
+defer_remove_event_hook(rb_event_hook_t *hook, rb_event_hook_func_t func)
+{
+    while (hook) {
+	if (func == 0 || hook->func == func) {
+	    hook->flag |= RUBY_EVENT_REMOVED;
+	}
+	hook = hook->next;
+    }
+    return -1;
+}
+
+static int
 remove_event_hook(rb_event_hook_t **root, rb_event_hook_func_t func)
 {
-    rb_event_hook_t *prev = NULL, *hook = *root, *next;
+    rb_event_hook_t *hook = *root, *next;
 
     while (hook) {
 	next = hook->next;
-	if (func == 0 || hook->func == func) {
-	    if (prev) {
-		prev->next = hook->next;
-	    }
-	    else {
-		*root = hook->next;
-	    }
+	if (func == 0 || hook->func == func || (hook->flag & RUBY_EVENT_REMOVED)) {
+	    *root = next;
 	    xfree(hook);
 	}
 	else {
-	    prev = hook;
+	    root = &hook->next;
+	}
+	hook = next;
+    }
+    return -1;
+}
+
+static int
+remove_defered_event_hook(rb_event_hook_t **root)
+{
+    rb_event_hook_t *hook = *root, *next;
+
+    while (hook) {
+	next = hook->next;
+	if (hook->flag & RUBY_EVENT_REMOVED) {
+	    *root = next;
+	    xfree(hook);
+	}
+	else {
+	    root = &hook->next;
 	}
 	hook = next;
     }
@@ -3893,7 +3937,13 @@ remove_event_hook(rb_event_hook_t **root, rb_event_hook_func_t func)
 static int
 rb_threadptr_remove_event_hook(rb_thread_t *th, rb_event_hook_func_t func)
 {
-    int ret = remove_event_hook(&th->event_hooks, func);
+    int ret;
+    if (th->tracing & EVENT_RUNNING_THREAD) {
+	ret = defer_remove_event_hook(th->event_hooks, func);
+    }
+    else {
+	ret = remove_event_hook(&th->event_hooks, func);
+    }
     thread_reset_event_flags(th);
     return ret;
 }
@@ -3904,14 +3954,49 @@ rb_thread_remove_event_hook(VALUE thval, rb_event_hook_func_t func)
     return rb_threadptr_remove_event_hook(thval2thread_t(thval), func);
 }
 
+static rb_event_hook_t *
+search_live_hook(rb_event_hook_t *hook)
+{
+    while (hook) {
+	if (!(hook->flag & RUBY_EVENT_REMOVED))
+	    return hook;
+	hook = hook->next;
+    }
+    return NULL;
+}
+
+static int
+running_vm_event_hooks(st_data_t key, st_data_t val, st_data_t data)
+{
+    rb_thread_t *th = thval2thread_t((VALUE)key);
+    if (!(th->tracing & EVENT_RUNNING_VM)) return ST_CONTINUE;
+    *(rb_thread_t **)data = th;
+    return ST_STOP;
+}
+
+static rb_thread_t *
+vm_event_hooks_running_thread(rb_vm_t *vm)
+{
+    rb_thread_t *found = NULL;
+    st_foreach(vm->living_threads, running_vm_event_hooks, (st_data_t)&found);
+    return found;
+}
+
 int
 rb_remove_event_hook(rb_event_hook_func_t func)
 {
     rb_vm_t *vm = GET_VM();
-    rb_event_hook_t *hook = vm->event_hooks;
-    int ret = remove_event_hook(&vm->event_hooks, func);
+    rb_event_hook_t *hook = search_live_hook(vm->event_hooks);
+    int ret;
 
-    if (hook != NULL && vm->event_hooks == NULL) {
+    if (vm_event_hooks_running_thread(vm)) {
+	ret = defer_remove_event_hook(vm->event_hooks, func);
+    }
+    else {
+	ret = remove_event_hook(&vm->event_hooks, func);
+    }
+
+    if (hook && !search_live_hook(vm->event_hooks)) {
 	set_threads_event_flags(0);
     }
 

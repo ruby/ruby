@@ -1,3 +1,13 @@
+Sat Oct  9 11:00:06 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (thread_reset_event_flags, exec_event_hooks): ignore
+	  hooks marked as removed.
+
+	* thread.c (thread_exec_event_hooks): remove hooks to be removed.
+
+	* thread.c (rb_threadptr_remove_event_hook, rb_remove_event_hook):
+	  defer removing hooks if running the hooks.  [ruby-dev:42350]
+
 Sat Oct  9 10:51:00 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_threadptr_exec_event_hooks): suppress each event

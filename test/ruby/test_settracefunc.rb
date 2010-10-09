@@ -354,4 +354,16 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_equal([], events[:set])
     assert_equal([], events[:add])
   end
+
+  def test_remove_in_trace
+    bug3921 = '[ruby-dev:42350]'
+    ok = false
+    func = lambda{|e, f, l, i, b, k|
+      set_trace_func(nil)
+      ok = eval("self", b)
+    }
+
+    set_trace_func(func)
+    assert_equal(self, ok, bug3921)
+  end
 end
