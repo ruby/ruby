@@ -1,3 +1,8 @@
+Mon Oct 11 06:11:30 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (rb_io_set_encoding): use rb_funcall2 when the io is not
+	  a T_FILE. [ruby-dev:42356]
+
 Sun Oct 10 18:42:23 2010  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/set.rb (Set#replace): Apply a bit of optimization.

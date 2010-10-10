@@ -137,7 +137,7 @@ VALUE rb_default_rs;
 
 static VALUE argf;
 
-static ID id_write, id_read, id_getc, id_flush, id_readpartial;
+static ID id_write, id_read, id_getc, id_flush, id_readpartial, id_set_encoding;
 static VALUE sym_mode, sym_perm, sym_extenc, sym_intenc, sym_encoding, sym_open_args;
 static VALUE sym_textmode, sym_binmode, sym_autoclose;
 
@@ -8687,6 +8687,10 @@ rb_io_set_encoding(int argc, VALUE *argv, VALUE io)
     rb_io_t *fptr;
     VALUE v1, v2, opt;
 
+    if (TYPE(io) != T_FILE) {
+        return rb_funcall2(io, id_set_encoding, argc, argv);
+    }
+
     argc = rb_scan_args(argc, argv, "11:", &v1, &v2, &opt);
     GetOpenFile(io, fptr);
     io_encoding_set(fptr, v1, v2, opt);
@@ -9863,6 +9867,7 @@ Init_IO(void)
     id_getc = rb_intern("getc");
     id_flush = rb_intern("flush");
     id_readpartial = rb_intern("readpartial");
+    id_set_encoding = rb_intern("set_encoding");
 
     rb_define_global_function("syscall", rb_f_syscall, -1);
 
