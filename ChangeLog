@@ -1,3 +1,7 @@
+Sun Oct 10 18:42:23 2010  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/set.rb (Set#replace): Apply a bit of optimization.
+
 Sun Oct 10 10:20:07 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_MINGW32): canonicalize as like mswin version.
