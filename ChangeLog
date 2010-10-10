@@ -1,3 +1,7 @@
+Sun Oct 10 10:20:07 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_MINGW32): canonicalize as like mswin version.
+
 Sun Oct 10 05:33:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_core.h (rb_signal_buff_size, rb_signal_exec): moved

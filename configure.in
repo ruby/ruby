@@ -34,10 +34,16 @@ AC_CACHE_CHECK(for mingw32 environment, rb_cv_mingw32,
 ], rb_cv_mingw32=yes,rb_cv_mingw32=no)
 rm -f conftest*])
 test "$rb_cv_mingw32" = yes && target_os="mingw32"
-  ])
+])
 AS_CASE(["$target_os"], [mingw*msvc], [
 target_os="`echo ${target_os} | sed 's/msvc$//'`"
-  ])])
+])
+AS_CASE(["$target_cpu"], [x86_64], [
+# canonicalize as like mswin version.  see win32/setup.mak.
+target_cpu=x64
+target_os="`echo ${target_os} | sed 's/32$/64/'`"
+])
+])
 
 AC_DEFUN([RUBY_CPPOUTFILE],
 [AC_CACHE_CHECK(whether ${CPP} accepts -o, rb_cv_cppoutfile,
@@ -1561,7 +1567,7 @@ fi
 AC_DEFUN(RUBY_STACK_GROW_DIRECTION, [
     AC_CACHE_CHECK(stack growing direction on $1, rb_cv_stack_grow_dir_$1, [
 AS_CASE(["$1"],
-[m68*|x86*|i?86|ia64|ppc*|sparc*|alpha*], [ $2=-1],
+[m68*|x86*|x64|i?86|ia64|ppc*|sparc*|alpha*], [ $2=-1],
 [hppa*], [ $2=+1],
 [
   AC_TRY_RUN([
