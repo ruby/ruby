@@ -60,6 +60,10 @@ with all sufficient information, see the ChangeLog file.
     * URI::Generic#hostname
     * URI::Generic#hostname=
 
+* stringio
+  * extended methods:
+    * StringIO#set_encoding can get 2nd argument and optional hash.
+
 === Compatibility issues (excluding feature bug fixes)
 
 * Kernel#respond_to?

@@ -1365,17 +1365,29 @@ strio_internal_encoding(VALUE self)
 
 /*
  *  call-seq:
- *     strio.set_encoding(ext_enc)                => strio
+ *     strio.set_encoding(ext_enc, [int_enc[, opt]])  => strio
  *
- *  Tagged with the encoding specified.
+ *  Specify the encoding of the StringIO as <i>ext_enc</i>.
+ *  Use the default external encoding if <i>ext_enc</i> is nil.
+ *  2nd argument <i>int_enc</i> and optional hash <i>opt</i> argument
+ *  are ignored; they are for API compatibility to IO.
  */
 
 static VALUE
-strio_set_encoding(VALUE self, VALUE ext_enc)
+strio_set_encoding(int argc, VALUE *argv, VALUE self)
 {
     rb_encoding* enc;
     VALUE str = StringIO(self)->string;
-    enc = rb_to_encoding(ext_enc);
+    VALUE ext_enc, int_enc, opt;
+
+    argc = rb_scan_args(argc, argv, "11:", &ext_enc, &int_enc, &opt);
+
+    if (NIL_P(ext_enc)) {
+	enc = rb_default_external_encoding();
+    }
+    else {
+	enc = rb_to_encoding(ext_enc);
+    }
     rb_enc_associate(str, enc);
     return self;
 }
@@ -1462,5 +1474,5 @@ Init_stringio()
 
     rb_define_method(StringIO, "external_encoding", strio_external_encoding, 0);
     rb_define_method(StringIO, "internal_encoding", strio_internal_encoding, 0);
-    rb_define_method(StringIO, "set_encoding", strio_set_encoding, 1);
+    rb_define_method(StringIO, "set_encoding", strio_set_encoding, -1);
 }

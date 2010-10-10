@@ -1,3 +1,9 @@
+Mon Oct 11 06:38:27 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_set_encoding):
+	  StringIO#set_encoding can get 2nd argument and optional hash
+	  for API compatibility to IO. [ruby-dev:42356]
+
 Mon Oct 11 06:11:30 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (rb_io_set_encoding): use rb_funcall2 when the io is not
@@ -130,9 +136,10 @@ Mon Oct  4 00:01:53 2010  wanabe  <s.wanabe@gmail.com>
 	* win32/mkexports.rb: no longer use 'mingw64'. a patch from Luis Lavena
 	  at [ruby-core:32678].
 
-Sun Oct  3 20:36:37 2010 Akio Tajima (arton) <artonx@yahoo.co.jp>
+Sun Oct  3 20:36:37 2010  Akio Tajima (arton)  <artonx@yahoo.co.jp>
 
-	* test/win32ole/test_folderitem2_invokeverb.rb: Change creating shortcut verb to 'Link' [Bug #3339]
+	* test/win32ole/test_folderitem2_invokeverb.rb: Change creating
+	  shortcut verb to 'Link' [Bug #3339]
 
 Sun Oct  3 19:44:23 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
