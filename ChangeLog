@@ -1,3 +1,8 @@
+Mon Oct 11 14:03:54 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* error.c (syserr_initialize): set the encoding of Errno::*#message
+	  as locale. [ruby-dev:42358]
+
 Mon Oct 11 06:38:27 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_set_encoding):
