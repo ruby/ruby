@@ -1423,6 +1423,10 @@ opt_block_arg	: ',' block_arg
 		    {
 			$$ = $2;
 		    }
+		| ','
+		    {
+			$$ = 0;
+		    }
 		| none
 		;
 

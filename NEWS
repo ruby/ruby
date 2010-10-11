@@ -28,6 +28,17 @@ with all sufficient information, see the ChangeLog file.
   equivalent to f.call(x), is supported.  This is mainly for use
   in invoking a Proc.
 
+* trailing comma in argument list
+
+  A trailing comma can be put at the end of an argument list.
+  e.g.
+    MyStruct = Struct.new(
+      :id,
+      :name,
+      :created_at,
+      :description,
+    )
+
 === Configuration changes
 
 * version specific directories
