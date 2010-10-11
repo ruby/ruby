@@ -1,3 +1,9 @@
+Mon Oct 11 17:42:54 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* error.c (syserr_initialize): use mesg's encoding when locale
+	  encoding is US-ASCII. If locale encoding is not US-ASCII,
+	  assume err has non ASCII characters. [ruby-dev:42358]
+
 Mon Oct 11 14:03:54 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* error.c (syserr_initialize): set the encoding of Errno::*#message
