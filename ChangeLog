@@ -1,3 +1,11 @@
+Tue Oct 12 15:10:31 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* numeric.c (rb_enc_uint_chr): split from int_chr.
+
+	* numeric.c (int_chr): use rb_enc_uint_chr.
+
+	* include/ruby/encoding.h (rb_enc_uint_chr): added.
+
 Tue Oct 12 14:04:41 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* numeric.c (int_chr): a codepoint of Ruby M17N must be 32bit
