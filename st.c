@@ -1003,13 +1003,15 @@ strhash(st_data_t arg)
 #define MURMUR 2
 #endif
 
+#define MurmurMagic_1 (st_index_t)0xc6a4a793
+#define MurmurMagic_2 (st_index_t)0x5bd1e995
 #if MURMUR == 1
-#define MurmurMagic 0xc6a4a793
+#define MurmurMagic MurmurMagic_1
 #elif MURMUR == 2
 #if SIZEOF_ST_INDEX_T > 4
-#define MurmurMagic 0xc6a4a7935bd1e995
+#define MurmurMagic ((MurmurMagic_1 << 32) | MurmurMagic_2)
 #else
-#define MurmurMagic 0x5bd1e995
+#define MurmurMagic MurmurMagic_2
 #endif
 #endif
 

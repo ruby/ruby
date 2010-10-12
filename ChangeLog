@@ -1,4 +1,6 @@
-Wed Oct 13 00:03:46 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Oct 13 00:18:18 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* st.c (MurmurMagic): get rid of literal overflow.
 
 	* configure.in (RUBY_CHECK_PRINTF_PREFIX): check for printf format
 	  specifier if possible.
