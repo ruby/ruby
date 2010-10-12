@@ -454,7 +454,7 @@ rb_method_entry(VALUE klass, ID id)
 static void
 remove_method(VALUE klass, ID mid)
 {
-    st_data_t data;
+    st_data_t key, data;
     rb_method_entry_t *me = 0;
 
     if (klass == rb_cObject) {
@@ -475,7 +475,8 @@ remove_method(VALUE klass, ID mid)
 	rb_name_error(mid, "method `%s' not defined in %s",
 		      rb_id2name(mid), rb_class2name(klass));
     }
-    st_delete(RCLASS_M_TBL(klass), &mid, &data);
+    key = (st_data_t)mid;
+    st_delete(RCLASS_M_TBL(klass), &key, &data);
 
     rb_vm_check_redefinition_opt_method(me);
     rb_clear_cache_for_undef(klass, mid);

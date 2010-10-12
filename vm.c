@@ -948,7 +948,7 @@ static st_table *vm_opt_method_table = 0;
 static void
 rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me)
 {
-    VALUE bop;
+    st_data_t bop;
     if (!me->def || me->def->type == VM_METHOD_TYPE_CFUNC) {
 	if (st_lookup(vm_opt_method_table, (st_data_t)me, &bop)) {
 	    ruby_vm_redefined_flag[bop] = 1;

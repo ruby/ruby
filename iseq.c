@@ -446,7 +446,7 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
     VALUE name, filename, filepath, line_no;
     VALUE type, body, locals, args, exception;
 
-    VALUE iseq_type;
+    st_data_t iseq_type;
     struct st_table *type_map = 0;
     rb_iseq_t *iseq;
     rb_compile_option_t option;
@@ -1304,7 +1304,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 
     for (i=0, pos=0; i<RARRAY_LEN(nbody); i++) {
 	VALUE ary = RARRAY_PTR(nbody)[i];
-	VALUE label;
+	st_data_t label;
 
 	if (st_lookup(labels_table, pos, &label)) {
 	    rb_ary_push(body, (VALUE)label);

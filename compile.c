@@ -5257,11 +5257,11 @@ iseq_build_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 	else if (TYPE(obj) == T_ARRAY) {
 	    VALUE *argv = 0;
 	    int argc = RARRAY_LENINT(obj) - 1;
-	    VALUE insn_id;
+	    st_data_t insn_id;
 	    VALUE insn;
 
 	    insn = (argc < 0) ? Qnil : RARRAY_PTR(obj)[0];
-	    if (st_lookup(insn_table, insn, &insn_id) == 0) {
+	    if (st_lookup(insn_table, (st_data_t)insn, &insn_id) == 0) {
 		/* TODO: exception */
 		RB_GC_GUARD(insn) = rb_inspect(insn);
 		rb_compile_error(RSTRING_PTR(iseq->filename), line_no,

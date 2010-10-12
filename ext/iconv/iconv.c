@@ -164,10 +164,11 @@ map_charset(VALUE *code)
     VALUE val = StringValue(*code);
 
     if (RHASH_SIZE(charset_map)) {
+	st_data_t data;
 	VALUE key = rb_funcall2(val, rb_intern("downcase"), 0, 0);
 	StringValuePtr(key);
-	if (st_lookup(RHASH_TBL(charset_map), key, &val)) {
-	    *code = val;
+	if (st_lookup(RHASH_TBL(charset_map), key, &data)) {
+	    *code = (VALUE)data;
 	}
     }
     return StringValuePtr(*code);

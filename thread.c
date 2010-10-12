@@ -1986,7 +1986,7 @@ VALUE
 rb_thread_local_aref(VALUE thread, ID id)
 {
     rb_thread_t *th;
-    VALUE val;
+    st_data_t val;
 
     GetThreadPtr(thread, th);
     if (rb_safe_level() >= 4 && th != GET_THREAD()) {
@@ -1996,7 +1996,7 @@ rb_thread_local_aref(VALUE thread, ID id)
 	return Qnil;
     }
     if (st_lookup(th->local_storage, id, &val)) {
-	return val;
+	return (VALUE)val;
     }
     return Qnil;
 }

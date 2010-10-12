@@ -506,23 +506,23 @@ rb_hash_rehash(VALUE hash)
 VALUE
 rb_hash_aref(VALUE hash, VALUE key)
 {
-    VALUE val;
+    st_data_t val;
 
     if (!RHASH(hash)->ntbl || !st_lookup(RHASH(hash)->ntbl, key, &val)) {
 	return rb_funcall(hash, id_default, 1, key);
     }
-    return val;
+    return (VALUE)val;
 }
 
 VALUE
 rb_hash_lookup2(VALUE hash, VALUE key, VALUE def)
 {
-    VALUE val;
+    st_data_t val;
 
     if (!RHASH(hash)->ntbl || !st_lookup(RHASH(hash)->ntbl, key, &val)) {
 	return def; /* without Hash#default */
     }
-    return val;
+    return (VALUE)val;
 }
 
 VALUE
@@ -564,7 +564,7 @@ static VALUE
 rb_hash_fetch_m(int argc, VALUE *argv, VALUE hash)
 {
     VALUE key, if_none;
-    VALUE val;
+    st_data_t val;
     long block_given;
 
     rb_scan_args(argc, argv, "11", &key, &if_none);
@@ -584,7 +584,7 @@ rb_hash_fetch_m(int argc, VALUE *argv, VALUE hash)
 	}
 	return if_none;
     }
-    return val;
+    return (VALUE)val;
 }
 
 VALUE
@@ -1094,6 +1094,12 @@ rb_hash_clear(VALUE hash)
     return hash;
 }
 
+static st_data_t
+copy_str_key(st_data_t str)
+{
+    return (st_data_t)rb_str_new4((VALUE)str);
+}
+
 /*
  *  call-seq:
  *     hsh[key] = value        -> value
@@ -1121,7 +1127,7 @@ rb_hash_aset(VALUE hash, VALUE key, VALUE val)
 	st_insert(RHASH(hash)->ntbl, key, val);
     }
     else {
-	st_insert2(RHASH(hash)->ntbl, key, val, rb_str_new4);
+	st_insert2(RHASH(hash)->ntbl, key, val, copy_str_key);
     }
     return val;
 }
@@ -1548,14 +1554,14 @@ static int
 eql_i(VALUE key, VALUE val1, VALUE arg)
 {
     struct equal_data *data = (struct equal_data *)arg;
-    VALUE val2;
+    st_data_t val2;
 
     if (key == Qundef) return ST_CONTINUE;
     if (!st_lookup(data->tbl, key, &val2)) {
 	data->result = Qfalse;
 	return ST_STOP;
     }
-    if (!(data->eql ? rb_eql(val1, val2) : (int)rb_equal(val1, val2))) {
+    if (!(data->eql ? rb_eql(val1, (VALUE)val2) : (int)rb_equal(val1, (VALUE)val2))) {
 	data->result = Qfalse;
 	return ST_STOP;
     }

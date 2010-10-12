@@ -885,15 +885,16 @@ static int
 generic_ivar_remove(VALUE obj, ID id, st_data_t *valp)
 {
     st_table *tbl;
-    st_data_t data;
+    st_data_t data, key = (st_data_t)id;
     int status;
 
     if (!generic_iv_tbl) return 0;
     if (!st_lookup(generic_iv_tbl, (st_data_t)obj, &data)) return 0;
     tbl = (st_table *)data;
-    status = st_delete(tbl, &id, valp);
+    status = st_delete(tbl, &key, valp);
     if (tbl->num_entries == 0) {
-	st_delete(generic_iv_tbl, &obj, &data);
+	key = (st_data_t)obj;
+	st_delete(generic_iv_tbl, &key, &data);
 	st_free_table((st_table *)data);
     }
     return status;
@@ -1006,8 +1007,8 @@ ivar_get(VALUE obj, ID id, int warn)
 	break;
       case T_CLASS:
       case T_MODULE:
-	if (RCLASS_IV_TBL(obj) && st_lookup(RCLASS_IV_TBL(obj), (st_data_t)id, &val))
-	    return val;
+	if (RCLASS_IV_TBL(obj) && st_lookup(RCLASS_IV_TBL(obj), (st_data_t)id, &index))
+	    return (VALUE)index;
 	break;
       default:
 	if (FL_TEST(obj, FL_EXIVAR) || rb_special_const_p(obj))
@@ -1575,7 +1576,9 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse)
   retry:
     while (RTEST(tmp)) {
 	VALUE am = 0;
-	while (RCLASS_IV_TBL(tmp) && st_lookup(RCLASS_IV_TBL(tmp), (st_data_t)id, &value)) {
+	st_data_t data;
+	while (RCLASS_IV_TBL(tmp) && st_lookup(RCLASS_IV_TBL(tmp), (st_data_t)id, &data)) {
+	    value = (VALUE)data;
 	    if (value == Qundef) {
 		if (am == tmp) break;
 		am = tmp;
@@ -1937,7 +1940,8 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
 VALUE
 rb_cvar_get(VALUE klass, ID id)
 {
-    VALUE value, tmp, front = 0, target = 0;
+    VALUE tmp, front = 0, target = 0;
+    st_data_t value;
 
     tmp = klass;
     CVAR_LOOKUP(&value, {if (!front) front = klass; target = klass;});
@@ -1957,7 +1961,7 @@ rb_cvar_get(VALUE klass, ID id)
 	    st_delete(RCLASS_IV_TBL(front),&did,0);
 	}
     }
-    return value;
+    return (VALUE)value;
 }
 
 VALUE

@@ -1137,11 +1137,11 @@ id2encidx(ID id, VALUE val)
 static ID
 r_symlink(struct load_arg *arg)
 {
-    ID id;
+    st_data_t id;
     long num = r_long(arg);
 
     if (st_lookup(arg->symbols, num, &id)) {
-	return id;
+	return (ID)id;
     }
     rb_raise(rb_eArgError, "bad symbol");
 }

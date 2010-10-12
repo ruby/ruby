@@ -980,7 +980,7 @@ static st_table *syserr_tbl;
 static VALUE
 set_syserr(int n, const char *name)
 {
-    VALUE error;
+    st_data_t error;
 
     if (!st_lookup(syserr_tbl, n, &error)) {
 	error = rb_define_class_under(rb_mErrno, name, rb_eSystemCallError);
@@ -996,7 +996,7 @@ set_syserr(int n, const char *name)
 static VALUE
 get_syserr(int n)
 {
-    VALUE error;
+    st_data_t error;
 
     if (!st_lookup(syserr_tbl, n, &error)) {
 	char name[8];	/* some Windows' errno have 5 digits. */
@@ -1029,11 +1029,13 @@ syserr_initialize(int argc, VALUE *argv, VALUE self)
     VALUE klass = rb_obj_class(self);
 
     if (klass == rb_eSystemCallError) {
+	st_data_t data = (st_data_t)klass;
 	rb_scan_args(argc, argv, "11", &mesg, &error);
 	if (argc == 1 && FIXNUM_P(mesg)) {
 	    error = mesg; mesg = Qnil;
 	}
-	if (!NIL_P(error) && st_lookup(syserr_tbl, NUM2LONG(error), &klass)) {
+	if (!NIL_P(error) && st_lookup(syserr_tbl, NUM2LONG(error), &data)) {
+	    klass = (VALUE)data;
 	    /* change class */
 	    if (TYPE(self) != T_OBJECT) { /* insurance to avoid type crash */
 		rb_raise(rb_eTypeError, "invalid instance type");

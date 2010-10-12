@@ -1,4 +1,15 @@
-Tue Oct 12 23:35:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Oct 12 23:47:18 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_build_body), error.c (set_syserr, get_syserr),
+	  (syserr_initialize), gc.c (define_final, rb_gc_copy_finalizer),
+	  (run_final), hash.c (rb_hash_aref, rb_hash_lookup2),
+	  (rb_hash_fetch_m, rb_hash_clear, rb_hash_aset, eql_i),
+	  iseq.c (iseq_load, iseq_data_to_ary), marshal.c (r_symlink),
+	  thread.c (rb_thread_local_aref),
+	  variable.c (generic_ivar_remove, ivar_get, rb_const_get_0),
+	  (rb_cvar_get), vm.c (rb_vm_check_redefinition_opt_method),
+	  vm_insnhelper.c (vm_get_ev_const), vm_method.c (remove_method),
+	  ext/iconv/iconv.c (map_charset): use st_data_t.
 
 	* compile.c (iseq_build_body), insns.def (getglobal, setglobal),
 	  iseq.c (iseq_load, iseq_data_to_ary), util.c (valid_filename):

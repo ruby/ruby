@@ -1167,9 +1167,11 @@ vm_get_ev_const(rb_thread_t *th, const rb_iseq_t *iseq,
 
 	    if (!NIL_P(klass)) {
 		VALUE am = 0;
+		st_data_t data;
 	      search_continue:
 		if (RCLASS_IV_TBL(klass) &&
-		    st_lookup(RCLASS_IV_TBL(klass), id, &val)) {
+		    st_lookup(RCLASS_IV_TBL(klass), id, &data)) {
+		    val = (st_data_t)data;
 		    if (val == Qundef) {
 			if (am == klass) break;
 			am = klass;

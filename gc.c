@@ -2699,6 +2699,7 @@ define_final(int argc, VALUE *argv, VALUE os)
 {
     rb_objspace_t *objspace = &rb_objspace;
     VALUE obj, block, table;
+    st_data_t data;
 
     rb_scan_args(argc, argv, "11", &obj, &block);
     if (OBJ_FROZEN(obj)) rb_error_frozen("object");
@@ -2721,7 +2722,8 @@ define_final(int argc, VALUE *argv, VALUE os)
     if (!finalizer_table) {
 	finalizer_table = st_init_numtable();
     }
-    if (st_lookup(finalizer_table, obj, &table)) {
+    if (st_lookup(finalizer_table, obj, &data)) {
+	table = (VALUE)data;
 	rb_ary_push(table, block);
     }
     else {
@@ -2737,10 +2739,12 @@ rb_gc_copy_finalizer(VALUE dest, VALUE obj)
 {
     rb_objspace_t *objspace = &rb_objspace;
     VALUE table;
+    st_data_t data;
 
     if (!finalizer_table) return;
     if (!FL_TEST(obj, FL_FINALIZE)) return;
-    if (st_lookup(finalizer_table, obj, &table)) {
+    if (st_lookup(finalizer_table, obj, &data)) {
+	table = (VALUE)data;
 	st_insert(finalizer_table, dest, table);
     }
     FL_SET(dest, FL_FINALIZE);
@@ -2777,8 +2781,9 @@ run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE objid, VALUE table)
 static void
 run_final(rb_objspace_t *objspace, VALUE obj)
 {
-    VALUE table, objid;
+    VALUE objid;
     RUBY_DATA_FUNC free_func = 0;
+    st_data_t key, table;
 
     objid = rb_obj_id(obj);	/* make obj into id */
     RBASIC(obj)->klass = 0;
@@ -2793,9 +2798,10 @@ run_final(rb_objspace_t *objspace, VALUE obj)
 	(*free_func)(DATA_PTR(obj));
     }
 
+    key = (st_data_t)obj;
     if (finalizer_table &&
-	st_delete(finalizer_table, (st_data_t*)&obj, &table)) {
-	run_finalizer(objspace, obj, objid, table);
+	st_delete(finalizer_table, &key, &table)) {
+	run_finalizer(objspace, obj, objid, (VALUE)table);
     }
 }
 
