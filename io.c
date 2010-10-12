@@ -7456,7 +7456,7 @@ rb_io_ctl(VALUE io, VALUE req, VALUE arg, int io_p)
 		rb_str_resize(arg, len+1);
 	    }
 	    RSTRING_PTR(arg)[len] = 17;	/* a little sanity check here */
-	    narg = (long)RSTRING_PTR(arg);
+	    narg = (long)(SIGNED_VALUE)RSTRING_PTR(arg);
 	}
     }
     GetOpenFile(io, fptr);

@@ -8921,7 +8921,7 @@ new_args_gen(struct parser_params *parser, NODE *m, NODE *o, ID r, NODE *p, ID b
 }
 #endif /* !RIPPER */
 
-#define LVAR_USED (1UL << (sizeof(ID) * CHAR_BIT - 1))
+#define LVAR_USED ((ID)1 << (sizeof(ID) * CHAR_BIT - 1))
 
 static void
 warn_unused_var(struct parser_params *parser, struct local_vars *local)
