@@ -1,4 +1,6 @@
-Tue Oct 12 22:41:07 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Oct 12 23:03:20 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (mark_current_machine_context): suppress warnings.
 
 	* compile.c (iseq_compile_each): fix truncating cast.
 

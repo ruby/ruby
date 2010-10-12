@@ -2272,22 +2272,25 @@ void rb_vm_mark(void *ptr);
      (start = STACK_END, end = STACK_START) : (start = STACK_START, end = STACK_END+appendix))
 #endif
 
+#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
+
 static void
 mark_current_machine_context(rb_objspace_t *objspace, rb_thread_t *th)
 {
-    rb_jmp_buf save_regs_gc_mark;
+    union {
+	rb_jmp_buf j;
+	VALUE v[sizeof(rb_jmp_buf) / sizeof(VALUE)];
+    } save_regs_gc_mark;
     VALUE *stack_start, *stack_end;
 
     FLUSH_REGISTER_WINDOWS;
     /* This assumes that all registers are saved into the jmp_buf (and stack) */
-    rb_setjmp(save_regs_gc_mark);
+    rb_setjmp(save_regs_gc_mark.j);
 
     SET_STACK_END;
     GET_STACK_BOUNDS(stack_start, stack_end, 1);
 
-    mark_locations_array(objspace,
-			 (VALUE*)save_regs_gc_mark,
-			 sizeof(save_regs_gc_mark) / sizeof(VALUE));
+    mark_locations_array(objspace, save_regs_gc_mark.v, numberof(save_regs_gc_mark.v));
 
     rb_gc_mark_locations(stack_start, stack_end);
 #ifdef __ia64
