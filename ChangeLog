@@ -1,3 +1,7 @@
+Tue Oct 12 15:36:09 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (rb_io_ungetc): use unsigned int for GB18030.
+
 Tue Oct 12 15:14:21 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (rb_io_putc): support multibyte characters.

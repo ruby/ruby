@@ -3229,12 +3229,13 @@ rb_io_ungetc(VALUE io, VALUE c)
     rb_io_check_char_readable(fptr);
     if (NIL_P(c)) return Qnil;
     if (FIXNUM_P(c)) {
-	int cc = FIX2INT(c);
-	rb_encoding *enc = io_read_encoding(fptr);
-	char buf[16];
-
-	c = rb_str_new(buf, rb_enc_mbcput(cc, buf, enc));
+	c = rb_enc_uint_chr(FIX2UINT(c), io_read_encoding(fptr));
     }
+#if SIZEOF_LONG > SIZEOF_INT
+    else if (TYPE(c) == T_BIGNUM) {
+	c = rb_enc_uint_chr(NUM2UINT(c), io_read_encoding(fptr));
+    }
+#endif
     else {
 	SafeStringValue(c);
     }
