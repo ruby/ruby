@@ -1,4 +1,6 @@
-Tue Oct 12 23:47:18 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Oct 12 23:53:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (rb_num2fix): result of rb_num2long is SIGNED_VALUE.
 
 	* compile.c (iseq_build_body), error.c (set_syserr, get_syserr),
 	  (syserr_initialize), gc.c (define_final, rb_gc_copy_finalizer),

@@ -1858,7 +1858,7 @@ rb_fix2int(VALUE val)
 VALUE
 rb_num2fix(VALUE val)
 {
-    long v;
+    SIGNED_VALUE v;
 
     if (FIXNUM_P(val)) return val;
 
