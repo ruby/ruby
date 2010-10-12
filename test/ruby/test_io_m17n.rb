@@ -1026,6 +1026,16 @@ EOT
     }
   end
 
+  def test_open_pipe_r_enc2
+    open("|#{EnvUtil.rubybin} -e 'putc ?\u3042'", "r:UTF-8") {|f|
+      assert_equal(Encoding::UTF_8, f.external_encoding)
+      assert_equal(nil, f.internal_encoding)
+      s = f.read
+      assert_equal(Encoding::UTF_8, s.encoding)
+      assert_equal("\u3042", s)
+    }
+  end
+
   def test_s_foreach_enc
     with_tmpdir {
       generate_file("t", "\xff")

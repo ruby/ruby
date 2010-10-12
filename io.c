@@ -6053,9 +6053,15 @@ rb_f_print(int argc, VALUE *argv)
 static VALUE
 rb_io_putc(VALUE io, VALUE ch)
 {
-    char c = NUM2CHR(ch);
-
-    rb_io_write(io, rb_str_new(&c, 1));
+    VALUE str;
+    if (TYPE(ch) == T_STRING) {
+	str = rb_str_substr(ch, 0, 1);
+    }
+    else {
+	char c = NUM2CHR(ch);
+	str = rb_str_new(&c, 1);
+    }
+    rb_io_write(io, str);
     return ch;
 }
 

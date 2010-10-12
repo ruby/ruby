@@ -40,6 +40,10 @@ with all sufficient information, see the ChangeLog file.
     * extended methods:
       * Time#strftime supports %:z and %::z.
 
+  * IO
+    * extended methods:
+      * IO#putc supports multibyte characters
+
 * io/console
   * new methods:
     * IO#noecho {|io| }
