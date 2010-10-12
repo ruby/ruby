@@ -1,4 +1,7 @@
-Tue Oct 12 23:03:20 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Oct 12 23:09:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (obj_free, rb_objspace_call_finalizer): fix truncating
+	  cast.
 
 	* gc.c (mark_current_machine_context): suppress warnings.
 

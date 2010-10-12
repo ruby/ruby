@@ -2190,7 +2190,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	    if (RTYPEDDATA_P(obj)) {
 		RDATA(obj)->dfree = RANY(obj)->as.typeddata.type->function.dfree;
 	    }
-	    if ((long)RANY(obj)->as.data.dfree == -1) {
+	    if (RANY(obj)->as.data.dfree == (RUBY_DATA_FUNC)-1) {
 		xfree(DATA_PTR(obj));
 	    }
 	    else if (RANY(obj)->as.data.dfree) {
@@ -2908,7 +2908,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 		if (RTYPEDDATA_P(p)) {
 		    RDATA(p)->dfree = RANY(p)->as.typeddata.type->function.dfree;
 		}
-		if ((long)RANY(p)->as.data.dfree == -1) {
+		if (RANY(p)->as.data.dfree == (RUBY_DATA_FUNC)-1) {
 		    xfree(DATA_PTR(p));
 		}
 		else if (RANY(p)->as.data.dfree) {
