@@ -258,7 +258,7 @@ getglobal
 ()
 (VALUE val)
 {
-    val = GET_GLOBAL(entry);
+    val = GET_GLOBAL((VALUE)entry);
 }
 
 /**
@@ -272,7 +272,7 @@ setglobal
 (VALUE val)
 ()
 {
-    SET_GLOBAL(entry, val);
+    SET_GLOBAL((VALUE)entry, val);
 }
 
 

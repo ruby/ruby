@@ -5268,7 +5268,7 @@ iseq_build_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 				 "unknown instruction: %s", RSTRING_PTR(insn));
 	    }
 
-	    if (argc != insn_len(insn_id)-1) {
+	    if (argc != insn_len((VALUE)insn_id)-1) {
 		rb_compile_error(RSTRING_PTR(iseq->filename), line_no,
 				 "operand size mismatch");
 	    }
@@ -5277,7 +5277,7 @@ iseq_build_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 		argv = compile_data_alloc(iseq, sizeof(VALUE) * argc);
 		for (j=0; j<argc; j++) {
 		    VALUE op = rb_ary_entry(obj, j+1);
-		    switch (insn_op_type(insn_id, j)) {
+		    switch (insn_op_type((VALUE)insn_id, j)) {
 		      case TS_OFFSET: {
 			LABEL *label = register_label(iseq, labels_table, op);
 			argv[j] = (VALUE)label;
@@ -5341,7 +5341,7 @@ iseq_build_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 			}
 			break;
 		      default:
-			rb_raise(rb_eSyntaxError, "unknown operand: %c", insn_op_type(insn_id, j));
+			rb_raise(rb_eSyntaxError, "unknown operand: %c", insn_op_type((VALUE)insn_id, j));
 		    }
 		}
 	    }

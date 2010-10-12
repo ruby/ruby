@@ -512,7 +512,7 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
 
     make_compile_option(&option, opt);
     prepare_iseq_build(iseq, name, filename, filepath, line_no,
-		       parent, iseq_type, 0, &option);
+		       parent, (VALUE)iseq_type, 0, &option);
 
     rb_iseq_build_from_ary(iseq, locals, args, exception, body);
 
@@ -1307,7 +1307,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 	VALUE label;
 
 	if (st_lookup(labels_table, pos, &label)) {
-	    rb_ary_push(body, label);
+	    rb_ary_push(body, (VALUE)label);
 	}
 
 	if (iseq->insn_info_table[i].line_no != line) {

@@ -373,7 +373,7 @@ valid_filename(const char *s)
 #define D ((int*)d)
 
 #define mmprepare(base, size) do {\
- if (((long)base & (0x3)) == 0)\
+ if (((VALUE)base & (0x3)) == 0)\
    if (size >= 16) mmkind = 1;\
    else            mmkind = 0;\
  else              mmkind = -1;\

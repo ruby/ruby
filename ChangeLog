@@ -1,4 +1,8 @@
-Tue Oct 12 23:09:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Oct 12 23:35:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_build_body), insns.def (getglobal, setglobal),
+	  iseq.c (iseq_load, iseq_data_to_ary), util.c (valid_filename):
+	  use VALUE.
 
 	* gc.c (obj_free, rb_objspace_call_finalizer): fix truncating
 	  cast.
