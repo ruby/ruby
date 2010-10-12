@@ -1,3 +1,8 @@
+Tue Oct 12 19:07:55 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* error.c (syserr_initialize): taint message if mesg is given
+	  and it is tainted.
+
 Tue Oct 12 18:25:43 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (rb_io_ungetc): always see Bignum. On 32bit valid value

@@ -1059,6 +1059,7 @@ syserr_initialize(int argc, VALUE *argv, VALUE self)
 	    if (le != me && rb_enc_asciicompat(me))
 		le = me;
 	}/* else assume err is non ASCII string. */
+	if (OBJ_TAINTED(str)) OBJ_TAINT(mesg);
 	rb_enc_associate(mesg, le);
     }
     else {
