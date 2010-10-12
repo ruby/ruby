@@ -501,7 +501,7 @@ exc_to_s(VALUE exc)
     VALUE mesg = rb_attr_get(exc, rb_intern("mesg"));
 
     if (NIL_P(mesg)) return rb_class_name(CLASS_OF(exc));
-    if (OBJ_TAINTED(exc)) OBJ_TAINT(mesg);
+    OBJ_INFECT(mesg, exc);
     return mesg;
 }
 
@@ -782,7 +782,7 @@ name_err_to_s(VALUE exc)
     if (str != mesg) {
 	rb_iv_set(exc, "mesg", mesg = str);
     }
-    if (OBJ_TAINTED(exc)) OBJ_TAINT(mesg);
+    OBJ_INFECT(mesg, exc);
     return mesg;
 }
 
@@ -911,7 +911,7 @@ name_err_mesg_to_str(VALUE obj)
 	args[2] = d;
 	mesg = rb_f_sprintf(NAME_ERR_MESG_COUNT, args);
     }
-    if (OBJ_TAINTED(obj)) OBJ_TAINT(mesg);
+    OBJ_INFECT(mesg, obj);
     return mesg;
 }
 
@@ -1059,7 +1059,7 @@ syserr_initialize(int argc, VALUE *argv, VALUE self)
 	    if (le != me && rb_enc_asciicompat(me))
 		le = me;
 	}/* else assume err is non ASCII string. */
-	if (OBJ_TAINTED(str)) OBJ_TAINT(mesg);
+	OBJ_INFECT(mesg, str);
 	rb_enc_associate(mesg, le);
     }
     else {

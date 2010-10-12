@@ -1,3 +1,13 @@
+Tue Oct 12 19:25:13 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* error.c (exc_to_s): use OBJ_INFECT.
+
+	* error.c (name_err_to_s): ditto.
+
+	* error.c (name_err_mesg_to_str): ditto.
+
+	* error.c (syserr_initialize): ditto.
+
 Tue Oct 12 19:07:55 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* error.c (syserr_initialize): taint message if mesg is given
