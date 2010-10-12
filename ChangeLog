@@ -1,3 +1,9 @@
+Tue Oct 12 14:04:41 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* numeric.c (int_chr): a codepoint of Ruby M17N must be 32bit
+	  unsigned int; GB18030 uses MSB. Also note that OnigCodePoint
+	  is defined as uisigned int.
+
 Tue Oct 12 12:20:54 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* vm_dump.c (dump_thread): foolish mistake.

@@ -1139,6 +1139,7 @@ class TestM17N < Test::Unit::TestCase
     0.upto(255) {|b|
       assert_equal([b].pack("C"), b.chr)
     }
+    assert_equal("\x84\x31\xA4\x39".force_encoding("GB18030"), 0x8431A439.chr("GB18030"))
   end
 
   def test_marshal

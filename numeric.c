@@ -2074,7 +2074,7 @@ int_chr(int argc, VALUE *argv, VALUE num)
 {
     char c;
     int n;
-    SIGNED_VALUE i = NUM2LONG(num);
+    uint32_t i = NUM2UINT(num);
     rb_encoding *enc;
     VALUE str;
 
@@ -2108,9 +2108,9 @@ int_chr(int argc, VALUE *argv, VALUE num)
 #if SIZEOF_INT < SIZEOF_VALUE
     if (i > UINT_MAX) goto out_of_range;
 #endif
-    if (i < 0 || (n = rb_enc_codelen((int)i, enc)) <= 0) goto out_of_range;
+    if (i < 0 || (n = rb_enc_codelen(i, enc)) <= 0) goto out_of_range;
     str = rb_enc_str_new(0, n, enc);
-    rb_enc_mbcput((int)i, RSTRING_PTR(str), enc);
+    rb_enc_mbcput(i, RSTRING_PTR(str), enc);
     return str;
 }
 
