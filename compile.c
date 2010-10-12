@@ -3700,7 +3700,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    ADD_INSN(ret, nd_line(node), dup);
 	}
 	ADD_INSN1(ret, nd_line(node), setglobal,
-		  (((long)node->nd_entry) | 1));
+		  ((VALUE)node->nd_entry | 1));
 	break;
       }
       case NODE_IASGN:
@@ -4338,7 +4338,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       }
       case NODE_GVAR:{
 	ADD_INSN1(ret, nd_line(node), getglobal,
-		  (((long)node->nd_entry) | 1));
+		  ((VALUE)node->nd_entry | 1));
 	if (poped) {
 	    ADD_INSN(ret, nd_line(node), pop);
 	}
