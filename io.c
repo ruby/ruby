@@ -3231,11 +3231,9 @@ rb_io_ungetc(VALUE io, VALUE c)
     if (FIXNUM_P(c)) {
 	c = rb_enc_uint_chr(FIX2UINT(c), io_read_encoding(fptr));
     }
-#if SIZEOF_LONG > SIZEOF_INT
     else if (TYPE(c) == T_BIGNUM) {
 	c = rb_enc_uint_chr(NUM2UINT(c), io_read_encoding(fptr));
     }
-#endif
     else {
 	SafeStringValue(c);
     }
