@@ -2198,6 +2198,21 @@ rb_w32_strerror(int e)
     if (e < 0 || e > sys_nerr) {
 	if (e < 0)
 	    e = GetLastError();
+#if WSAEWOULDBLOCK != EWOULDBLOCK
+	else if (e >= EADDRINUSE && e <= EWOULDBLOCK) {
+	    static int s = -1;
+	    int i;
+	    if (s < 0)
+		for (s = 0; s < (int)(sizeof(errmap)/sizeof(*errmap)); s++)
+		    if (errmap[s].winerr == WSAEWOULDBLOCK)
+			break;
+	    for (i = s; i < (int)(sizeof(errmap)/sizeof(*errmap)); i++)
+		if (errmap[i].err == e) {
+		    e = errmap[i].winerr;
+		    break;
+		}
+	}
+#endif
 	if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM |
 			  FORMAT_MESSAGE_IGNORE_INSERTS, &source, e, 0,
 			  buffer, sizeof(buffer), NULL) == 0)
