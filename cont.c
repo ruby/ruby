@@ -498,7 +498,7 @@ fiber_set_stack_location(void)
     VALUE *ptr;
 
     SET_MACHINE_STACK_END(&ptr);
-    th->machine_stack_start = (void*)(((VALUE)ptr & RB_PAGE_MASK) + STACK_UPPER(&ptr, 0, RB_PAGE_SIZE));
+    th->machine_stack_start = (void*)(((VALUE)ptr & RB_PAGE_MASK) + STACK_UPPER((void *)&ptr, 0, RB_PAGE_SIZE));
 }
 
 static VOID CALLBACK
@@ -596,6 +596,7 @@ fiber_setcontext(rb_fiber_t *newfib, rb_fiber_t *oldfib)
 
     /* save  oldfib's machine stack */
     if (oldfib->status != TERMINATED) {
+	STACK_GROW_DIR_DETECTION;
 	SET_MACHINE_STACK_END(&th->machine_stack_end);
 	if (STACK_DIR_UPPER(0, 1)) {
 	    oldfib->cont.machine_stack_size = th->machine_stack_start - th->machine_stack_end;

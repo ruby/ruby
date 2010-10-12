@@ -1,3 +1,7 @@
+Tue Oct 12 22:18:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cont.c (fiber_setcontext): missing variable definition.
+
 Tue Oct 12 19:25:13 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* error.c (exc_to_s): use OBJ_INFECT.
