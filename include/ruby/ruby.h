@@ -83,7 +83,7 @@ extern "C" {
 #  endif
 #endif
 
-#if defined HAVE_UINTPTR_T && 0
+#if defined HAVE_UINTPTR_T
 typedef uintptr_t VALUE;
 typedef uintptr_t ID;
 # define SIGNED_VALUE intptr_t
@@ -142,7 +142,8 @@ typedef char ruby_check_sizeof_voidp[SIZEOF_VOIDP == sizeof(void*) ? 1 : -1];
 # endif
 #endif
 
-#if defined PRIdPTR
+#if defined PRI_PTRDIFF_PREFIX
+#elif defined PRIdPTR
 # define PRI_PTRDIFF_PREFIX "t"
 #elif SIZEOF_PTRDIFF_T == SIZEOF_INT
 # define PRI_PTRDIFF_PREFIX
@@ -158,7 +159,8 @@ typedef char ruby_check_sizeof_voidp[SIZEOF_VOIDP == sizeof(void*) ? 1 : -1];
 #define PRIxPTRDIFF PRI_PTRDIFF_PREFIX"x"
 #define PRIXPTRDIFF PRI_PTRDIFF_PREFIX"X"
 
-#if defined PRIdPTR
+#if defined PRI_SIZE_PREFIX
+#elif defined PRIdPTR
 # define PRI_SIZE_PREFIX "z"
 #elif SIZEOF_SIZE_T == SIZEOF_INT
 # define PRI_SIZE_PREFIX

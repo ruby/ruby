@@ -1063,9 +1063,23 @@ RUBY_CHECK_SIZEOF(rlim_t, [int long "long long"], [], [
   #include <stdio.h>
 ])
 
+AC_DEFUN([RUBY_CHECK_PRINTF_PREFIX], [
+AC_CACHE_CHECK([printf prefix for $1], rb_cv_pri_prefix_[$1],
+  RUBY_WERROR_FLAG(AC_TRY_COMPILE(
+    [@%:@include <stdio.h>],
+    [printf("%]$2[d", sizeof(long));],
+    [rb_cv_pri_prefix_[$1]=[$2]],
+    [rb_cv_pri_prefix_[$1]=[NONE]])))
+if test "$rb_cv_pri_prefix_[$1]" != NONE; then
+    AC_DEFINE_UNQUOTED([PRI_]AS_TR_CPP(m4_bpatsubst([$1],[_t$]))[_PREFIX], "$rb_cv_pri_prefix_[$1]")
+fi
+])
+
 AC_TYPE_SIZE_T
 RUBY_CHECK_SIZEOF(size_t, [int long void*], [], [@%:@include <sys/types.h>])
 RUBY_CHECK_SIZEOF(ptrdiff_t, size_t, [], [@%:@include <stddef.h>])
+RUBY_CHECK_PRINTF_PREFIX(size_t, z)
+RUBY_CHECK_PRINTF_PREFIX(ptrdiff_t, t)
 AC_STRUCT_ST_BLKSIZE
 AC_STRUCT_ST_BLOCKS
 AC_STRUCT_ST_RDEV

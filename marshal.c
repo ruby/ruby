@@ -419,7 +419,7 @@ w_symbol(ID id, struct dump_arg *arg)
     else {
 	sym = rb_id2str(id);
 	if (!sym) {
-	    rb_raise(rb_eTypeError, "can't dump anonymous ID %ld", id);
+	    rb_raise(rb_eTypeError, "can't dump anonymous ID %"PRIdVALUE, id);
 	}
 	encidx = rb_enc_get_index(sym);
 	if (encidx == rb_usascii_encindex() ||

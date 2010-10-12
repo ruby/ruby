@@ -566,13 +566,15 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
     }
 #endif
     else{
-	rb_raise(rb_eDLError,
-#ifndef LONG_LONG_VALUE
-		 "unsupported call type: %lx",
-#else
-		 "unsupported call type: %llx",
-#endif
-		 cfunc->calltype);
+	const char *name = rb_id2name(cfunc->calltype);
+	if( name ){
+	    rb_raise(rb_eDLError, "unsupported call type: %s",
+		     name);
+	}
+	else{
+	    rb_raise(rb_eDLError, "unsupported call type: %"PRIxVALUE,
+		     cfunc->calltype);
+	}
     }
 
     rb_dl_set_last_error(self, INT2NUM(errno));

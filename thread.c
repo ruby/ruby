@@ -1274,7 +1274,7 @@ rb_threadptr_execute_interrupts_rec(rb_thread_t *th, int sched_depth)
 	if (th->thrown_errinfo) {
 	    VALUE err = th->thrown_errinfo;
 	    th->thrown_errinfo = 0;
-	    thread_debug("rb_thread_execute_interrupts: %ld\n", err);
+	    thread_debug("rb_thread_execute_interrupts: %"PRIdVALUE"\n", err);
 
 	    if (err == eKillSignal || err == eTerminateSignal) {
 		th->errinfo = INT2FIX(TAG_FATAL);

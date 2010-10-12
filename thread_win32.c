@@ -497,7 +497,7 @@ native_thread_create(rb_thread_t *th)
 
     if (THREAD_DEBUG) {
 	Sleep(0);
-	thread_debug("create: (th: %p, thid: %p, intr: %p), stack size: %d\n",
+	thread_debug("create: (th: %p, thid: %p, intr: %p), stack size: %"PRIdSIZE"\n",
 		     th, th->thread_id,
 		     th->native_thread_data.interrupt_event, stack_size);
     }

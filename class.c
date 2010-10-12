@@ -1223,7 +1223,7 @@ singleton_class_of(VALUE obj)
 	SPECIAL_SINGLETON(Qnil, rb_cNilClass);
 	SPECIAL_SINGLETON(Qfalse, rb_cFalseClass);
 	SPECIAL_SINGLETON(Qtrue, rb_cTrueClass);
-	rb_bug("unknown immediate %ld", obj);
+	rb_bug("unknown immediate %p", (void *)obj);
     }
 
     if (FL_TEST(RBASIC(obj)->klass, FL_SINGLETON) &&
