@@ -1051,7 +1051,7 @@ EOT
   end
 
   def test_open_pipe_r_enc2
-    open("|#{EnvUtil.rubybin} -e 'putc ?\u3042'", "r:UTF-8") {|f|
+    open("|#{EnvUtil.rubybin} -e 'putc \"\\u3042\"'", "r:UTF-8") {|f|
       assert_equal(Encoding::UTF_8, f.external_encoding)
       assert_equal(nil, f.internal_encoding)
       s = f.read
