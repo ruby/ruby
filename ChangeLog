@@ -1,3 +1,9 @@
+Tue Oct 12 16:04:37 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_strerror): get English message first, instead
+	  of system default. see [ruby-dev:42358].
+	  [experimental]
+
 Tue Oct 12 15:52:35 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_strerror): unmap some range of errno for

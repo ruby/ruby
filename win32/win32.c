@@ -2214,6 +2214,10 @@ rb_w32_strerror(int e)
 	}
 #endif
 	if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM |
+			  FORMAT_MESSAGE_IGNORE_INSERTS, &source, e,
+			  MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
+			  buffer, sizeof(buffer), NULL) == 0 &&
+	    FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM |
 			  FORMAT_MESSAGE_IGNORE_INSERTS, &source, e, 0,
 			  buffer, sizeof(buffer), NULL) == 0)
 	    strlcpy(buffer, "Unknown Error", sizeof(buffer));
