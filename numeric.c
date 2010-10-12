@@ -1791,7 +1791,8 @@ check_uint(VALUE num, VALUE sign)
     if (RTEST(sign)) {
 	/* minus */
 	if ((num & mask) != mask || (num & ~mask) <= INT_MAX + 1UL)
-	    rb_raise(rb_eRangeError, "integer %"PRIdVALUE " too small to convert to `unsigned int'", num);
+#define MSBMASK   (1L << ((sizeof(long) * CHAR_BIT) - 1))
+	    rb_raise(rb_eRangeError, "integer %"PRIdVALUE " too small to convert to `unsigned int'", num|MSBMASK);
     }
     else {
 	/* plus */
@@ -1821,10 +1822,10 @@ rb_fix2int(VALUE val)
 unsigned long
 rb_num2uint(VALUE val)
 {
-    unsigned long num = rb_num2ulong(val);
+    VALUE num = rb_num2ulong(val);
 
     check_uint(num, rb_funcall(val, '<', 1, INT2FIX(0)));
-    return num;
+    return (unsigned long)num;
 }
 
 unsigned long
@@ -2091,13 +2092,11 @@ int_chr(int argc, VALUE *argv, VALUE num)
 
     switch (argc) {
       case 0:
-	if (i < 0) {
-	  out_of_range:
-	    rb_raise(rb_eRangeError, "%d out of char range", i);
-	}
 	if (0xff < i) {
 	    enc = rb_default_internal_encoding();
-	    if (!enc) goto out_of_range;
+	    if (!enc) {
+		rb_raise(rb_eRangeError, "%d out of char range", i);
+	    }
 	    goto decode;
 	}
 	c = (char)i;
