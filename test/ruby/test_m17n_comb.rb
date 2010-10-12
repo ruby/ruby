@@ -346,6 +346,9 @@ class TestM17NComb < Test::Unit::TestCase
         assert_raise(Encoding::CompatibilityError) { s << s2 }
       end
     }
+
+    assert_equal("A\x84\x31\xA4\x39".force_encoding("GB18030"),
+                 "A".force_encoding("GB18030") << 0x8431A439)
   end
 
   def test_str_aref
