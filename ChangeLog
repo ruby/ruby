@@ -1,3 +1,7 @@
+Tue Oct 12 12:20:54 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* vm_dump.c (dump_thread): foolish mistake.
+
 Tue Oct 12 10:39:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_MINGW32): canonicalize only on mingw.
