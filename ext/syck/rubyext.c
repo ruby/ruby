@@ -208,17 +208,18 @@ syck_get_hash_aref(VALUE hsh, VALUE key)
  * creating timestamps
  */
 struct mktime_arg {
-    char *str;
+    const char *str;
     long len;
 };
 
-SYMID
-mktime_do(struct mktime_arg *arg)
+VALUE
+mktime_do(VALUE varg)
 {
+    struct mktime_arg *arg = (struct mktime_arg *)varg;
     VALUE time;
-    char *str = arg->str;
+    const char *str = arg->str;
     long len = arg->len;
-    char *ptr = str;
+    const char *ptr = str;
     VALUE year = INT2FIX(0);
     VALUE mon = INT2FIX(0);
     VALUE day = INT2FIX(0);
@@ -272,8 +273,8 @@ mktime_do(struct mktime_arg *arg)
     if ( len > ptr - str && *ptr == '.' )
     {
         char padded[] = "000000";
-        char *end = ptr + 1;
-        char *p = end;
+        const char *end = ptr + 1;
+        const char *p = end;
         while ( isdigit( *end ) ) end++;
         if (end - p < (int)sizeof(padded)) {
             MEMCPY(padded, ptr + 1, char, end - (ptr + 1));
@@ -320,9 +321,11 @@ mktime_do(struct mktime_arg *arg)
     }
 }
 
-SYMID
-mktime_r(struct mktime_arg *arg)
+VALUE
+mktime_r(VALUE varg)
 {
+    struct mktime_arg *arg = (struct mktime_arg *)varg;
+
     if (!cDateTime) {
         /*
          * Load Date module
@@ -333,8 +336,8 @@ mktime_r(struct mktime_arg *arg)
     return rb_funcall(cDateTime, s_parse, 1, rb_str_new(arg->str, arg->len));
 }
 
-SYMID
-rb_syck_mktime(char *str, long len)
+VALUE
+rb_syck_mktime(const char *str, long len)
 {
     struct mktime_arg a;
 

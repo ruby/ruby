@@ -1,3 +1,10 @@
+Wed Oct 13 00:21:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/syck/rubyext.c (struct mktime_arg): constified.
+
+	* ext/syck/rubyext.c (mktime_do, mktime_r, rb_syck_mktime): fix
+	  function signatures.
+
 Wed Oct 13 00:18:18 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* st.c (MurmurMagic): get rid of literal overflow.
