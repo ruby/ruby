@@ -175,9 +175,11 @@ class TestString < Test::Unit::TestCase
     def o.<=>(x); nil; end
     assert_nil("foo" <=> o)
 
+    class<<o;undef <=>;end
     def o.<=>(x); 1; end
     assert_equal(-1, "foo" <=> o)
 
+    class<<o;undef <=>;end
     def o.<=>(x); 2**100; end
     assert_equal(-(2**100), "foo" <=> o)
   end
@@ -200,6 +202,7 @@ class TestString < Test::Unit::TestCase
     def o.to_str; end
     def o.==(x); false; end
     assert_equal(false, "foo" == o)
+    class<<o;undef ==;end
     def o.==(x); true; end
     assert_equal(true, "foo" == o)
   end
@@ -1815,6 +1818,7 @@ class TestString < Test::Unit::TestCase
       c.class_eval { attr 1 }
     end
 
+    class<<o;undef to_str;end
     def o.to_str; "foo"; end
     assert_nothing_raised do
       c.class_eval { attr o }
@@ -1839,11 +1843,13 @@ class TestString < Test::Unit::TestCase
     assert_equal("\u3042", ("\u3042" * 100)[-1])
   end
 
+=begin
   def test_compare_different_encoding_string
     s1 = "\xff".force_encoding("UTF-8")
     s2 = "\xff".force_encoding("ISO-2022-JP")
-    #assert_equal([-1, 1], [s1 <=> s2, s2 <=> s1].sort)
+    assert_equal([-1, 1], [s1 <=> s2, s2 <=> s1].sort)
   end
+=end
 
   def test_casecmp
     assert_equal(1, "\u3042B".casecmp("\u3042a"))
@@ -1862,12 +1868,13 @@ class TestString < Test::Unit::TestCase
     assert_raise(Encoding::CompatibilityError) { "\u3042".encode("ISO-2022-JP").rstrip }
   end
 
+=begin
   def test_symbol_table_overflow
-    return
     assert_in_out_err([], <<-INPUT, [], /symbol table overflow \(symbol [a-z]{8}\) \(RuntimeError\)/)
       ("aaaaaaaa".."zzzzzzzz").each {|s| s.to_sym }
     INPUT
   end
+=end
 
   def test_shared_force_encoding
     s = "\u{3066}\u{3059}\u{3068}".gsub(//, '')
