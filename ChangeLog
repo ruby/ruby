@@ -1,3 +1,7 @@
+Tue Oct 12 17:53:49 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* numeric (check_uint): the mask must refer to VALUE.
+
 Tue Oct 12 17:47:10 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* numeric (check_uint): set MSB for negative value.
