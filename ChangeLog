@@ -1,4 +1,6 @@
-Tue Oct 12 23:53:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Oct 12 23:55:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vsnprintf.c (BSD_vfprintf): fix cast.
 
 	* numeric.c (rb_num2fix): result of rb_num2long is SIGNED_VALUE.
 
