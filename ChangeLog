@@ -1,3 +1,7 @@
+Wed Oct 13 14:58:09 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* numeric.c (rb_num_to_uint): fix 32bit logic.
+
 Wed Oct 13 12:53:43 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* numeric.c (rb_num_to_uint): added to check the range of arguments.

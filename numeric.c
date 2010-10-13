@@ -122,7 +122,9 @@ rb_num_to_uint(VALUE val, unsigned int *ret)
 #define NUMERR_TOOLARGE 3
     if (FIXNUM_P(val)) {
 	long v = FIX2LONG(val);
-	if (v > UINT_MAX) return NUMERR_TOOLARGE;
+#if SIZEOF_INT < SIZEOF_LONG
+	if (v > (long)UINT_MAX) return NUMERR_TOOLARGE;
+#endif
 	if (v < 0) return NUMERR_NEGATIVE;
 	*ret = (unsigned int)v;
 	return 0;
@@ -136,7 +138,8 @@ rb_num_to_uint(VALUE val, unsigned int *ret)
 	return NUMERR_TOOLARGE;
 #else
 	/* long is 32bit */
-	if (RBIGNUM_LEN(x) > DIGSPERLONG) return NUMERR_TOOLARGE;
+#define DIGSPERLONG (SIZEOF_LONG/SIZEOF_BDIGITS)
+	if (RBIGNUM_LEN(val) > DIGSPERLONG) return NUMERR_TOOLARGE;
 	*ret = (unsigned int)rb_big2ulong((VALUE)val);
 	return 0;
 #endif
