@@ -9,6 +9,7 @@
 **********************************************************************/
 
 #include "ruby/ruby.h"
+#include "ruby/vm.h"
 #include "ruby/st.h"
 #include "ruby/encoding.h"
 
@@ -1519,11 +1520,10 @@ rb_vm_mark(void *ptr)
 #define vm_free 0
 
 int
-ruby_vm_destruct(void *ptr)
+ruby_vm_destruct(rb_vm_t *vm)
 {
     RUBY_FREE_ENTER("vm");
-    if (ptr) {
-	rb_vm_t *vm = ptr;
+    if (vm) {
 	rb_thread_t *th = vm->main_thread;
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 	struct rb_objspace *objspace = vm->objspace;
