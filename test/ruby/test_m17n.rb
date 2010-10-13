@@ -1093,6 +1093,11 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(a, s.each_char.to_a, "[ruby-dev:33211] #{encdump s}.each_char.to_a")
   end
 
+  def test_str_concat
+    assert_equal("A\x84\x31\xA4\x39".force_encoding("GB18030"),
+                 "A".force_encoding("GB18030") << 0x8431A439)
+  end
+
   def test_regexp_match
     assert_equal([0,0], //.match("\xa1\xa1".force_encoding("euc-jp"),-1).offset(0))
     assert_equal(0, // =~ :a)
