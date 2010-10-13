@@ -2120,8 +2120,17 @@ static VALUE
 int_chr(int argc, VALUE *argv, VALUE num)
 {
     char c;
-    unsigned int i = NUM2UINT(num);
+    unsigned int i;
     rb_encoding *enc;
+
+    if (rb_num_to_uint(num, &i) == 0) {
+    }
+    else if (FIXNUM_P(num)) {
+	rb_raise(rb_eRangeError, "%ld out of char range", FIX2LONG(num));
+    }
+    else {
+	rb_raise(rb_eRangeError, "bignum out of char range");
+    }
 
     switch (argc) {
       case 0:

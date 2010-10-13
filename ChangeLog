@@ -1,3 +1,7 @@
+Wed Oct 13 21:13:00 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* numeric.c (int_chr): raise error when the value is negative.
+
 Wed Oct 13 19:24:08 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* vm.c (ruby_vm_destruct): This function type was wrong; correct to the prototype.
