@@ -1272,9 +1272,9 @@ opt_case_dispatch
       case T_BIGNUM:
       case T_STRING:
 	if (BASIC_OP_UNREDEFINED_P(BOP_EQQ)) {
-	    VALUE val;
+	    st_data_t val;
 	    if (st_lookup(RHASH_TBL(hash), key, &val)) {
-		JUMP(FIX2INT(val));
+		JUMP(FIX2INT((VALUE)val));
 	    }
 	    else {
 		JUMP(else_offset);

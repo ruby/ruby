@@ -1,3 +1,7 @@
+Wed Oct 13 22:51:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* insns.def (opt_case_dispatch): use st_data_t.
+
 Wed Oct 13 22:32:34 2010  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi/util.rb (CGI::unescape): bugfix to unescape the multibyte
