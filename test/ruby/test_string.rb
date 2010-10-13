@@ -175,11 +175,11 @@ class TestString < Test::Unit::TestCase
     def o.<=>(x); nil; end
     assert_nil("foo" <=> o)
 
-    class<<o;undef <=>;end
+    class << o;undef <=>;end
     def o.<=>(x); 1; end
     assert_equal(-1, "foo" <=> o)
 
-    class<<o;undef <=>;end
+    class << o;undef <=>;end
     def o.<=>(x); 2**100; end
     assert_equal(-(2**100), "foo" <=> o)
   end
@@ -202,7 +202,7 @@ class TestString < Test::Unit::TestCase
     def o.to_str; end
     def o.==(x); false; end
     assert_equal(false, "foo" == o)
-    class<<o;undef ==;end
+    class << o;undef ==;end
     def o.==(x); true; end
     assert_equal(true, "foo" == o)
   end
@@ -1818,7 +1818,7 @@ class TestString < Test::Unit::TestCase
       c.class_eval { attr 1 }
     end
 
-    class<<o;undef to_str;end
+    class << o;undef to_str;end
     def o.to_str; "foo"; end
     assert_nothing_raised do
       c.class_eval { attr o }
