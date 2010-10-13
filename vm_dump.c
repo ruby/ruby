@@ -735,7 +735,7 @@ dump_thread(void *arg)
 			info->SizeOfStruct = sizeof(SYMBOL_INFO);
 			info->MaxNameLen = MAX_SYM_NAME;
 			if (pSymFromAddr(ph, addr, NULL, info)) {
-			    if (GetModuleFileName((HANDLE)pSymGetModuleBase64(ph, addr), libpath, sizeof(libpath)))
+			    if (GetModuleFileName((HANDLE)(uintptr_t)pSymGetModuleBase64(ph, addr), libpath, sizeof(libpath)))
 				fprintf(stderr, "%s", libpath);
 			    fprintf(stderr, "(%s)", info->Name);
 			}
