@@ -739,11 +739,11 @@ insn_operand_intern(rb_iseq_t *iseq,
 
     switch (type) {
       case TS_OFFSET:		/* LONG */
-	ret = rb_sprintf("%ld", pos + len + op);
+	ret = rb_sprintf("%"PRIdSIZE, pos + len + op);
 	break;
 
       case TS_NUM:		/* ULONG */
-	ret = rb_sprintf("%lu", op);
+	ret = rb_sprintf("%"PRIuVALUE, op);
 	break;
 
       case TS_LINDEX:
@@ -985,7 +985,7 @@ rb_iseq_disasm(VALUE self)
 		int argc = iseqdat->argc;
 		int opts = iseqdat->arg_opts;
 		if (i >= argc && i < argc + opts - 1) {
-		    snprintf(opti, sizeof(opti), "Opt=%ld",
+		    snprintf(opti, sizeof(opti), "Opt=%"PRIdVALUE,
 			     iseqdat->arg_opt_table[i - argc]);
 		}
 	    }

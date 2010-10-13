@@ -1,4 +1,8 @@
-Wed Oct 13 22:53:19 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Oct 13 23:07:19 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (insn_operand_intern, rb_iseq_disasm): fix format specifiers.
+
+	* vm.c (thread_free): ditto.
 
 	* numeric.c (check_uint): get rid of overflow on LLP64 platforms.
 
