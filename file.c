@@ -316,6 +316,14 @@ rb_stat_cmp(VALUE self, VALUE other)
 
 #define ST2UINT(val) ((val) & ~(~1UL << (sizeof(val) * CHAR_BIT - 1)))
 
+#if SIZEOF_DEV_T > SIZEOF_LONG && defined(HAVE_LONG_LONG)
+# define DEVT2NUM(v) LL2NUM(v)
+#elif SIZEOF_DEV_T == SIZEOF_LONG
+# define DEVT2NUM(v) LONG2NUM(v)
+#else
+# define DEVT2NUM(v) INT2NUM(v)
+#endif
+
 /*
  *  call-seq:
  *     stat.dev    -> fixnum
@@ -329,7 +337,7 @@ rb_stat_cmp(VALUE self, VALUE other)
 static VALUE
 rb_stat_dev(VALUE self)
 {
-    return INT2NUM(get_stat(self)->st_dev);
+    return DEVT2NUM(get_stat(self)->st_dev);
 }
 
 /*
@@ -347,8 +355,7 @@ static VALUE
 rb_stat_dev_major(VALUE self)
 {
 #if defined(major)
-    long dev = get_stat(self)->st_dev;
-    return ULONG2NUM(major(dev));
+    return INT2NUM(major(get_stat(self)->st_dev));
 #else
     return Qnil;
 #endif
@@ -369,8 +376,7 @@ static VALUE
 rb_stat_dev_minor(VALUE self)
 {
 #if defined(minor)
-    long dev = get_stat(self)->st_dev;
-    return ULONG2NUM(minor(dev));
+    return INT2NUM(minor(get_stat(self)->st_dev));
 #else
     return Qnil;
 #endif
