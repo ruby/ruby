@@ -1,3 +1,7 @@
+Wed Oct 13 10:52:51 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (ruby_executable_node): missing prototype.
+
 Wed Oct 13 05:23:04 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* missing/strchr.c: add strlen's prototype.
