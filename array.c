@@ -3341,7 +3341,8 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
 static VALUE
 rb_ary_and(VALUE ary1, VALUE ary2)
 {
-    VALUE hash, ary3, v, vv;
+    VALUE hash, ary3, v;
+    st_data_t vv;
     long i;
 
     ary2 = to_ary(ary2);
@@ -3353,8 +3354,8 @@ rb_ary_and(VALUE ary1, VALUE ary2)
         return ary3;
 
     for (i=0; i<RARRAY_LEN(ary1); i++) {
-	v = vv = rb_ary_elt(ary1, i);
-	if (st_delete(RHASH_TBL(hash), (st_data_t*)&vv, 0)) {
+	vv = (st_data_t)(v = rb_ary_elt(ary1, i));
+	if (st_delete(RHASH_TBL(hash), &vv, 0)) {
 	    rb_ary_push(ary3, v);
 	}
     }
@@ -3377,8 +3378,8 @@ rb_ary_and(VALUE ary1, VALUE ary2)
 static VALUE
 rb_ary_or(VALUE ary1, VALUE ary2)
 {
-    VALUE hash, ary3;
-    VALUE v, vv;
+    VALUE hash, ary3, v;
+    st_data_t vv;
     long i;
 
     ary2 = to_ary(ary2);
@@ -3386,14 +3387,14 @@ rb_ary_or(VALUE ary1, VALUE ary2)
     hash = ary_add_hash(ary_make_hash(ary1), ary2);
 
     for (i=0; i<RARRAY_LEN(ary1); i++) {
-	v = vv = rb_ary_elt(ary1, i);
-	if (st_delete(RHASH_TBL(hash), (st_data_t*)&vv, 0)) {
+	vv = (st_data_t)(v = rb_ary_elt(ary1, i));
+	if (st_delete(RHASH_TBL(hash), &vv, 0)) {
 	    rb_ary_push(ary3, v);
 	}
     }
     for (i=0; i<RARRAY_LEN(ary2); i++) {
-	v = vv = rb_ary_elt(ary2, i);
-	if (st_delete(RHASH_TBL(hash), (st_data_t*)&vv, 0)) {
+	vv = (st_data_t)(v = rb_ary_elt(ary2, i));
+	if (st_delete(RHASH_TBL(hash), &vv, 0)) {
 	    rb_ary_push(ary3, v);
 	}
     }

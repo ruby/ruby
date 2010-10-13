@@ -1,3 +1,9 @@
+Thu Oct 14 07:22:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_and, rb_ary_or), class.c (rb_mod_init_copy),
+	  gc.c (undefine_final), time.c (time_mload): get rid of
+	  type-punning casts.
+
 Thu Oct 14 04:16:41 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* numeric.c (ruby_float_step): fix Numeric#step with infinity unit

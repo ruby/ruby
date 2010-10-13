@@ -150,16 +150,16 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
     }
     RCLASS_SUPER(clone) = RCLASS_SUPER(orig);
     if (RCLASS_IV_TBL(orig)) {
-	ID id;
+	st_data_t id;
 
 	if (RCLASS_IV_TBL(clone)) {
 	    st_free_table(RCLASS_IV_TBL(clone));
 	}
 	RCLASS_IV_TBL(clone) = st_copy(RCLASS_IV_TBL(orig));
 	CONST_ID(id, "__classpath__");
-	st_delete(RCLASS_IV_TBL(clone), (st_data_t*)&id, 0);
+	st_delete(RCLASS_IV_TBL(clone), &id, 0);
 	CONST_ID(id, "__classid__");
-	st_delete(RCLASS_IV_TBL(clone), (st_data_t*)&id, 0);
+	st_delete(RCLASS_IV_TBL(clone), &id, 0);
     }
     if (RCLASS_M_TBL(orig)) {
 	struct clone_method_data data;

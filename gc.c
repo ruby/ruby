@@ -2679,7 +2679,8 @@ undefine_final(VALUE os, VALUE obj)
     rb_objspace_t *objspace = &rb_objspace;
     if (OBJ_FROZEN(obj)) rb_error_frozen("object");
     if (finalizer_table) {
-	st_delete(finalizer_table, (st_data_t*)&obj, 0);
+	st_data_t data = obj;
+	st_delete(finalizer_table, &data, 0);
     }
     FL_UNSET(obj, FL_FINALIZE);
     return obj;
