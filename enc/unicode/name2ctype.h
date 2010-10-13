@@ -34,6 +34,7 @@ error "gperf generated tables don't work with this execution character set. Plea
 #endif
 
 
+#define long size_t
 
 #ifdef USE_UNICODE_PROPERTIES
 #ifdef USE_UNICODE_PROPERTIES

@@ -1,4 +1,6 @@
-Wed Oct 13 23:07:19 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Oct 13 23:16:46 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/enc-unicode.rb: get rid of lots of warnings.
 
 	* iseq.c (insn_operand_intern, rb_iseq_disasm): fix format specifiers.
 

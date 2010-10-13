@@ -1,4 +1,5 @@
 %{
+#define long size_t
 
 #ifdef USE_UNICODE_PROPERTIES
 /* 'Any': - */

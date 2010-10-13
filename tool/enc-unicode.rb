@@ -205,6 +205,7 @@ end
 
 # Write Data
 puts '%{'
+puts '#define long size_t'
 props, data = parse_unicode_data(get_file('UnicodeData.txt'))
 print "\n#ifdef USE_UNICODE_PROPERTIES"
 props.each do |name|
