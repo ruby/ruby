@@ -1,4 +1,6 @@
-Wed Oct 13 22:51:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Oct 13 22:53:19 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (check_uint): get rid of overflow on LLP64 platforms.
 
 	* insns.def (opt_case_dispatch): use st_data_t.
 
