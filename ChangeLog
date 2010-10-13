@@ -1,3 +1,9 @@
+Wed Oct 13 12:10:02 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* thread_win32.c (w32_error): get English message first, instead
+	  of system default. see [ruby-core:32765].
+	  [experimental]
+
 Wed Oct 13 11:04:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* debug.c (ruby_set_debug_option): define always for binary
