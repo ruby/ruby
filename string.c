@@ -2001,6 +2001,7 @@ rb_str_append(VALUE str, VALUE str2)
     return rb_str_buf_append(str, str2);
 }
 
+int rb_num_to_uint(VALUE val, unsigned int *ret);
 
 /*
  *  call-seq:
@@ -2023,11 +2024,15 @@ rb_str_concat(VALUE str1, VALUE str2)
 {
     unsigned int lc;
 
-    if (FIXNUM_P(str2)) {
-	lc = FIX2UINT(str2);
-    }
-    else if (TYPE(str2) == T_BIGNUM) {
-	lc = NUM2UINT(str2);
+    if (FIXNUM_P(str2) || TYPE(str2) == T_BIGNUM) {
+	if (rb_num_to_uint(str2, &lc) == 0) {
+	}
+	else if (FIXNUM_P(str2)) {
+	    rb_raise(rb_eRangeError, "%ld out of char range", FIX2LONG(str2));
+	}
+	else {
+	    rb_raise(rb_eRangeError, "bignum out of char range");
+	}
     }
     else {
 	return rb_str_append(str1, str2);

@@ -113,6 +113,36 @@ rb_num_zerodiv(void)
     rb_raise(rb_eZeroDivError, "divided by 0");
 }
 
+/* experimental API */
+int
+rb_num_to_uint(VALUE val, unsigned int *ret)
+{
+#define NUMERR_TYPE     1
+#define NUMERR_NEGATIVE 2
+#define NUMERR_TOOLARGE 3
+    if (FIXNUM_P(val)) {
+	long v = FIX2LONG(val);
+	if (v > UINT_MAX) return NUMERR_TOOLARGE;
+	if (v < 0) return NUMERR_NEGATIVE;
+	*ret = (unsigned int)v;
+	return 0;
+    }
+
+    switch (TYPE(val)) {
+      case T_BIGNUM:
+	if (RBIGNUM_NEGATIVE_P(val)) return NUMERR_NEGATIVE;
+#if SIZEOF_INT < SIZEOF_LONG
+	/* long is 64bit */
+	return NUMERR_TOOLARGE;
+#else
+	/* long is 32bit */
+	if (RBIGNUM_LEN(x) > DIGSPERLONG) return NUMERR_TOOLARGE;
+	*ret = (unsigned int)rb_big2ulong((VALUE)val);
+	return 0;
+#endif
+    }
+    return NUMERR_TYPE;
+}
 
 /*
  *  call-seq:

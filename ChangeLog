@@ -1,3 +1,10 @@
+Wed Oct 13 12:53:43 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* numeric.c (rb_num_to_uint): added to check the range of arguments.
+	  Mainly for negative value with NUM2UINT on 32bit environment.
+
+	* string.c (rb_str_concat): use rb_num_to_uint.
+
 Wed Oct 13 12:10:02 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* thread_win32.c (w32_error): get English message first, instead
