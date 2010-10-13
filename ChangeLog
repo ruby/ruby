@@ -1,3 +1,10 @@
+Wed Oct 13 11:04:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* debug.c (ruby_set_debug_option): define always for binary
+	  compatibility with debug env enabled binary.
+
+	* signal.c (ruby_enable_coredump): ditto.
+
 Wed Oct 13 10:52:51 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (ruby_executable_node): missing prototype.

@@ -32,10 +32,7 @@ NODE *ruby_debug_print_node(int level, int debug_level, const char *header, cons
 int   ruby_debug_print_indent(int level, int debug_level, int indent_level);
 void  ruby_debug_breakpoint(void);
 void  ruby_debug_gc_check_func(void);
-
-#ifdef RUBY_DEBUG_ENV
 void ruby_set_debug_option(const char *str);
-#endif
 
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility pop

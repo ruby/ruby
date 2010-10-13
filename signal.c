@@ -1041,8 +1041,9 @@ ruby_sig_finalize(void)
 }
 
 
-#ifdef RUBY_DEBUG_ENV
 int ruby_enable_coredump = 0;
+#ifndef RUBY_DEBUG_ENV
+#define ruby_enable_coredump 0
 #endif
 
 /*
@@ -1116,18 +1117,15 @@ Init_signal(void)
     install_sighandler(SIGUSR2, sighandler);
 #endif
 
-#ifdef RUBY_DEBUG_ENV
-    if (!ruby_enable_coredump)
-#endif
-    {
+    if (!ruby_enable_coredump) {
 #ifdef SIGBUS
-    install_sighandler(SIGBUS, sigbus);
+	install_sighandler(SIGBUS, sigbus);
 #endif
 #ifdef SIGSEGV
 # ifdef USE_SIGALTSTACK
-    rb_register_sigaltstack(GET_THREAD());
+	rb_register_sigaltstack(GET_THREAD());
 # endif
-    install_sighandler(SIGSEGV, (sighandler_t)sigsegv);
+	install_sighandler(SIGSEGV, (sighandler_t)sigsegv);
 #endif
     }
 #ifdef SIGPIPE
