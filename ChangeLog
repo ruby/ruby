@@ -1,3 +1,7 @@
+Thu Oct 14 23:20:42 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* test/win32ole/test_folderitem2_invokeverb.rb: refactoring.
+
 Thu Oct 14 22:18:29 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def, iseq.c, vm_insnhelper.c: rename variable name
