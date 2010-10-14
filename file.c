@@ -317,11 +317,11 @@ rb_stat_cmp(VALUE self, VALUE other)
 #define ST2UINT(val) ((val) & ~(~1UL << (sizeof(val) * CHAR_BIT - 1)))
 
 #if SIZEOF_DEV_T > SIZEOF_LONG && defined(HAVE_LONG_LONG)
-# define DEVT2NUM(v) LL2NUM(v)
+# define DEVT2NUM(v) ULL2NUM(v)
 #elif SIZEOF_DEV_T == SIZEOF_LONG
-# define DEVT2NUM(v) LONG2NUM(v)
+# define DEVT2NUM(v) ULONG2NUM(v)
 #else
-# define DEVT2NUM(v) INT2NUM(v)
+# define DEVT2NUM(v) UINT2NUM(v)
 #endif
 
 /*
