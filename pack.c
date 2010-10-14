@@ -330,14 +330,6 @@ static unsigned long utf8_to_uv(const char*,long*);
  *      l         | Integer | 32-bit signed, native endian (int32_t)
  *      q         | Integer | 64-bit signed, native endian (int64_t)
  *                |         |
- *      S_, S!    | Integer | unsigned short, native endian
- *      I, I_, I! | Integer | unsigned int, native endian
- *      L_, L!    | Integer | unsigned long, native endian
- *                |         |
- *      s_, s!    | Integer | signed short, native endian
- *      i, i_, i! | Integer | signed int, native endian
- *      l_, l!    | Integer | signed long, native endian
- *                |         |
  *      n         | Integer | 16-bit unsigned, network (big-endian) byte order
  *      N         | Integer | 32-bit unsigned, network (big-endian) byte order
  *      v         | Integer | 16-bit unsigned, VAX (little-endian) byte order
@@ -379,6 +371,14 @@ static unsigned long utf8_to_uv(const char*,long*);
  *      @         | ---     | moves to absolute position
  *      X         | ---     | back up a byte
  *      x         | ---     | null byte
+ *
+ *                | Target    |
+ *   Modifier     | Directive | Meaning
+ *   ---------------------------------------------------------------------------
+ *      _, !      | sSiIlL    | Force native size of the related type:
+ *                |           | short, int, long, and long long
+ *      >         | sSiIlLqQ  | Force big-endian byte order
+ *      <         | sSiIlLqQ  | Force little-endian byte order
  */
 
 static VALUE
@@ -396,6 +396,7 @@ pack_pack(VALUE ary, VALUE fmt)
     int natint;		/* native integer */
 #endif
     int signed_p, integer_size, bigendian_p;
+    int explicit_endian = 0;
 
     StringValue(fmt);
     p = RSTRING_PTR(fmt);
@@ -425,19 +426,39 @@ pack_pack(VALUE ary, VALUE fmt)
 	    }
 	    continue;
 	}
-        if (*p == '_' || *p == '!') {
-	    static const char natstr[] = "sSiIlL";
 
-	    if (strchr(natstr, type)) {
+	{
+	    static const char natstr[] = "sSiIlL";
+	    static const char endstr[] = "sSiIlLqQ";
+
+          modifiers:
+	    switch (*p) {
+	      case '_':
+	      case '!':
+		if (strchr(natstr, type)) {
 #ifdef NATINT_PACK
-		natint = 1;
+		    natint = 1;
 #endif
-		p++;
-	    }
-	    else {
-		rb_raise(rb_eArgError, "'%c' allowed only after types %s", *p, natstr);
+		    p++;
+		}
+		else {
+		    rb_raise(rb_eArgError, "'%c' allowed only after types %s", *p, natstr);
+		}
+		goto modifiers;
+
+	      case '<':
+	      case '>':
+		if (!strchr(endstr, type)) {
+		    rb_raise(rb_eArgError, "'%c' allowed only after types %s", *p, endstr);
+		}
+		if (explicit_endian) {
+		    rb_raise(rb_eRangeError, "Can't use both '<' and '>'");
+		}
+		explicit_endian = *p++;
+		goto modifiers;
 	    }
 	}
+
 	if (*p == '*') {	/* set data length */
 	    len = strchr("@Xxu", type) ? 0
                 : strchr("PMm", type) ? 1
@@ -716,6 +737,10 @@ pack_pack(VALUE ary, VALUE fmt)
             goto pack_integer;
 
           pack_integer:
+	    if (explicit_endian) {
+		bigendian_p = ((explicit_endian - '<') != 0);
+	    }
+
             switch (integer_size) {
 #if defined(HAVE_INT16_T) && !defined(FORCE_BIG_PACK)
               case SIZEOF_INT16_T:
@@ -1309,6 +1334,7 @@ pack_unpack(VALUE str, VALUE fmt)
 #endif
     int block_p = rb_block_given_p();
     int signed_p, integer_size, bigendian_p;
+    int explicit_endian = 0;
 #define UNPACK_PUSH(item) do {\
 	VALUE item_val = (item);\
 	if (block_p) {\
@@ -1340,20 +1366,41 @@ pack_unpack(VALUE str, VALUE fmt)
 	    }
 	    continue;
 	}
-	star = 0;
-	if (*p == '_' || *p == '!') {
-	    static const char natstr[] = "sSiIlL";
 
-	    if (strchr(natstr, type)) {
+	star = 0;
+	{
+	    static const char natstr[] = "sSiIlL";
+	    static const char endstr[] = "sSiIlLqQ";
+
+          modifiers:
+	    switch (*p) {
+	      case '_':
+	      case '!':
+
+		if (strchr(natstr, type)) {
 #ifdef NATINT_PACK
-		natint = 1;
+		    natint = 1;
 #endif
-		p++;
-	    }
-	    else {
-		rb_raise(rb_eArgError, "'%c' allowed only after types %s", *p, natstr);
+		    p++;
+		}
+		else {
+		    rb_raise(rb_eArgError, "'%c' allowed only after types %s", *p, natstr);
+		}
+		goto modifiers;
+
+	      case '<':
+	      case '>':
+		if (!strchr(endstr, type)) {
+		    rb_raise(rb_eArgError, "'%c' allowed only after types %s", *p, endstr);
+		}
+		if (explicit_endian) {
+		    rb_raise(rb_eRangeError, "Can't use both '<' and '>'");
+		}
+		explicit_endian = *p++;
+		goto modifiers;
 	    }
 	}
+
 	if (p >= pend)
 	    len = 1;
 	else if (*p == '*') {
@@ -1586,6 +1633,10 @@ pack_unpack(VALUE str, VALUE fmt)
 	    goto unpack_integer;
 
 	  unpack_integer:
+	    if (explicit_endian) {
+		bigendian_p = ((explicit_endian - '<') != 0);
+	    }
+
 	    switch (integer_size) {
 #if defined(HAVE_INT16_T) && !defined(FORCE_BIG_PACK)
 	      case SIZEOF_INT16_T:

@@ -1,3 +1,10 @@
+Thu Oct 14 20:41:27 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* pack.c (pack_pack): support endian modifiers: < and >.
+	  [ruby-dev:42376] Feature #3491
+
+	* pack.c (pack_unpack): ditto.
+
 Thu Oct 14 20:50:51 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (reg_get_val): expand environment in 

@@ -31,6 +31,8 @@ with all sufficient information, see the ChangeLog file.
     * new constants:
       * File::NULL
         name of NULL device.
+    * extended methods:
+      * String#unpack supports endian modifiers
 
   * String
     * new methods:
@@ -43,6 +45,10 @@ with all sufficient information, see the ChangeLog file.
   * IO
     * extended methods:
       * IO#putc supports multibyte characters
+
+  * Array
+    * extended methods:
+      * Array#pack supports endian modifiers
 
 * io/console
   * new methods:

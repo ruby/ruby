@@ -70,73 +70,86 @@ class TestPack < Test::Unit::TestCase
     assert_equal [1,1,1], "\000\000\000\001\000\000\000\001\000\000\000\001".unpack('N*')
   end
 
+  def _integer_big_endian(mod='')
+    assert_equal("\x01\x02", [0x0102].pack("s"+mod))
+    assert_equal("\x01\x02", [0x0102].pack("S"+mod))
+    assert_equal("\x01\x02\x03\x04", [0x01020304].pack("l"+mod))
+    assert_equal("\x01\x02\x03\x04", [0x01020304].pack("L"+mod))
+    assert_equal("\x01\x02\x03\x04\x05\x06\x07\x08", [0x0102030405060708].pack("q"+mod))
+    assert_equal("\x01\x02\x03\x04\x05\x06\x07\x08", [0x0102030405060708].pack("Q"+mod))
+    assert_match(/\A\x00*\x01\x02\z/, [0x0102].pack("s!"+mod))
+    assert_match(/\A\x00*\x01\x02\z/, [0x0102].pack("S!"+mod))
+    assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("i"+mod))
+    assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("I"+mod))
+    assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("i!"+mod))
+    assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("I!"+mod))
+    assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("l!"+mod))
+    assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("L!"+mod))
+    %w[s S l L q Q s! S! i I i! I! l! L!].each {|fmt|
+      fmt += mod
+      nuls = [0].pack(fmt)
+      v = 0
+      s = "".force_encoding("ascii-8bit")
+      nuls.bytesize.times {|i|
+        j = i + 40
+        v = v * 256 + j
+        s << [j].pack("C")
+      }
+      assert_equal(s, [v].pack(fmt), "[#{v}].pack(#{fmt.dump})")
+      assert_equal([v], s.unpack(fmt), "#{s.dump}.unpack(#{fmt.dump})")
+      s2 = s+s
+      fmt2 = fmt+"*"
+      assert_equal([v,v], s2.unpack(fmt2), "#{s2.dump}.unpack(#{fmt2.dump})")
+    }
+  end
+
+  def _integer_little_endian(mod='')
+    assert_equal("\x02\x01", [0x0102].pack("s"+mod))
+    assert_equal("\x02\x01", [0x0102].pack("S"+mod))
+    assert_equal("\x04\x03\x02\x01", [0x01020304].pack("l"+mod))
+    assert_equal("\x04\x03\x02\x01", [0x01020304].pack("L"+mod))
+    assert_equal("\x08\x07\x06\x05\x04\x03\x02\x01", [0x0102030405060708].pack("q"+mod))
+    assert_equal("\x08\x07\x06\x05\x04\x03\x02\x01", [0x0102030405060708].pack("Q"+mod))
+    assert_match(/\A\x02\x01\x00*\z/, [0x0102].pack("s!"+mod))
+    assert_match(/\A\x02\x01\x00*\z/, [0x0102].pack("S!"+mod))
+    assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("i"+mod))
+    assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("I"+mod))
+    assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("i!"+mod))
+    assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("I!"+mod))
+    assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("l!"+mod))
+    assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("L!"+mod))
+    %w[s S l L q Q s! S! i I i! I! l! L!].each {|fmt|
+      fmt += mod
+      nuls = [0].pack(fmt)
+      v = 0
+      s = "".force_encoding("ascii-8bit")
+      nuls.bytesize.times {|i|
+        j = i+40
+        v = v * 256 + j
+        s << [j].pack("C")
+      }
+      s.reverse!
+      assert_equal(s, [v].pack(fmt), "[#{v}].pack(#{fmt.dump})")
+      assert_equal([v], s.unpack(fmt), "#{s.dump}.unpack(#{fmt.dump})")
+      s2 = s+s
+      fmt2 = fmt+"*"
+      assert_equal([v,v], s2.unpack(fmt2), "#{s2.dump}.unpack(#{fmt2.dump})")
+    }
+  end
+
   def test_integer_endian
     s = [1].pack("s")
     assert_includes(["\0\1", "\1\0"], s)
     if s == "\0\1"
-      # big endian
-      assert_equal("\x01\x02", [0x0102].pack("s"))
-      assert_equal("\x01\x02", [0x0102].pack("S"))
-      assert_equal("\x01\x02\x03\x04", [0x01020304].pack("l"))
-      assert_equal("\x01\x02\x03\x04", [0x01020304].pack("L"))
-      assert_equal("\x01\x02\x03\x04\x05\x06\x07\x08", [0x0102030405060708].pack("q"))
-      assert_equal("\x01\x02\x03\x04\x05\x06\x07\x08", [0x0102030405060708].pack("Q"))
-      assert_match(/\A\x00*\x01\x02\z/, [0x0102].pack("s!"))
-      assert_match(/\A\x00*\x01\x02\z/, [0x0102].pack("S!"))
-      assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("i"))
-      assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("I"))
-      assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("i!"))
-      assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("I!"))
-      assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("l!"))
-      assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("L!"))
-      %w[s S l L q Q s! S! i I i! I! l! L!].each {|fmt|
-        nuls = [0].pack(fmt)
-        v = 0
-        s = "".force_encoding("ascii-8bit")
-        nuls.bytesize.times {|i|
-          j = i + 40
-          v = v * 256 + j
-          s << [j].pack("C")
-        }
-        assert_equal(s, [v].pack(fmt), "[#{v}].pack(#{fmt.dump})")
-        assert_equal([v], s.unpack(fmt), "#{s.dump}.unpack(#{fmt.dump})")
-        s2 = s+s
-        fmt2 = fmt+"*"
-        assert_equal([v,v], s2.unpack(fmt2), "#{s2.dump}.unpack(#{fmt2.dump})")
-      }
+      _integer_big_endian()
     else
-      # little endian
-      assert_equal("\x02\x01", [0x0102].pack("s"))
-      assert_equal("\x02\x01", [0x0102].pack("S"))
-      assert_equal("\x04\x03\x02\x01", [0x01020304].pack("l"))
-      assert_equal("\x04\x03\x02\x01", [0x01020304].pack("L"))
-      assert_equal("\x08\x07\x06\x05\x04\x03\x02\x01", [0x0102030405060708].pack("q"))
-      assert_equal("\x08\x07\x06\x05\x04\x03\x02\x01", [0x0102030405060708].pack("Q"))
-      assert_match(/\A\x02\x01\x00*\z/, [0x0102].pack("s!"))
-      assert_match(/\A\x02\x01\x00*\z/, [0x0102].pack("S!"))
-      assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("i"))
-      assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("I"))
-      assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("i!"))
-      assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("I!"))
-      assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("l!"))
-      assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("L!"))
-      %w[s S l L q Q s! S! i I i! I! l! L!].each {|fmt|
-        nuls = [0].pack(fmt)
-        v = 0
-        s = "".force_encoding("ascii-8bit")
-        nuls.bytesize.times {|i|
-          j = i+40
-          v = v * 256 + j
-          s << [j].pack("C")
-        }
-        s.reverse!
-        assert_equal(s, [v].pack(fmt), "[#{v}].pack(#{fmt.dump})")
-        assert_equal([v], s.unpack(fmt), "#{s.dump}.unpack(#{fmt.dump})")
-        s2 = s+s
-        fmt2 = fmt+"*"
-        assert_equal([v,v], s2.unpack(fmt2), "#{s2.dump}.unpack(#{fmt2.dump})")
-      }
+      _integer_little_endian()
     end
+  end
+
+  def test_integer_endian_explicit
+      _integer_big_endian('>')
+      _integer_little_endian('<')
   end
 
   def test_pack_U
