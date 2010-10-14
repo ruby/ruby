@@ -46,6 +46,12 @@ if defined?(WIN32OLE_TYPELIB)
       }
     end
 
+    # #Bug:3907 [ruby-dev:42338]
+    def test_initialize_with_REG_EXPAND_SZ
+      tlib = WIN32OLE_TYPELIB.new("Disk Management Snap-In Object Library")
+      assert_instance_of(WIN32OLE_TYPELIB, tlib)
+    end
+
     def test_guid
       tlib = WIN32OLE_TYPELIB.new("Microsoft Shell Controls And Automation")
       assert_equal("{50A7E9B0-70EF-11D1-B75A-00A0C90564FE}", tlib.guid)

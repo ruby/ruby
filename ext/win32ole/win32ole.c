@@ -143,7 +143,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.5.0"
+#define WIN32OLE_VERSION "1.5.1"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -2338,6 +2338,13 @@ reg_get_val(HKEY hkey, const char *subkey)
         err = RegQueryValueEx(hkey, subkey, NULL, &dwtype, pbuf, &size);
         if (err == ERROR_SUCCESS) {
             pbuf[size] = '\0';
+            if (dwtype == REG_EXPAND_SZ) {
+                 char* pbuf2 = pbuf;
+                 DWORD len = ExpandEnvironmentStrings(pbuf2, NULL, 0);
+                 pbuf = ALLOC_N(char, len + 1);
+                 ExpandEnvironmentStrings(pbuf2, pbuf, len + 1);
+                 free(pbuf2);
+            }
             val = rb_str_new2(pbuf);
         }
         free(pbuf);
