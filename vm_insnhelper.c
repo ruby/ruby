@@ -1375,24 +1375,24 @@ vm_search_normal_superclass(VALUE klass, VALUE recv)
 }
 
 static void
-vm_search_superclass(rb_control_frame_t *reg_cfp, rb_iseq_t *ip,
+vm_search_superclass(rb_control_frame_t *reg_cfp, rb_iseq_t *iseq,
 		     VALUE recv, VALUE sigval,
 		     ID *idp, VALUE *klassp)
 {
     ID id;
     VALUE klass;
 
-    while (ip && !ip->klass) {
-	ip = ip->parent_iseq;
+    while (iseq && !iseq->klass) {
+	iseq = iseq->parent_iseq;
     }
 
-    if (ip == 0) {
+    if (iseq == 0) {
 	rb_raise(rb_eNoMethodError, "super called outside of method");
     }
 
-    id = ip->defined_method_id;
+    id = iseq->defined_method_id;
 
-    if (ip != ip->local_iseq) {
+    if (iseq != iseq->local_iseq) {
 	/* defined by Module#define_method() */
 	rb_control_frame_t *lcfp = GET_CFP();
 
@@ -1401,7 +1401,7 @@ vm_search_superclass(rb_control_frame_t *reg_cfp, rb_iseq_t *ip,
 	    rb_raise(rb_eRuntimeError, "implicit argument passing of super from method defined by define_method() is not supported. Specify all arguments explicitly.");
 	}
 
-	while (lcfp->iseq != ip) {
+	while (lcfp->iseq != iseq) {
 	    VALUE *tdfp = GET_PREV_DFP(lcfp->dfp);
 	    while (1) {
 		lcfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(lcfp);
@@ -1420,7 +1420,7 @@ vm_search_superclass(rb_control_frame_t *reg_cfp, rb_iseq_t *ip,
 	klass = vm_search_normal_superclass(lcfp->me->klass, recv);
     }
     else {
-	klass = vm_search_normal_superclass(ip->klass, recv);
+	klass = vm_search_normal_superclass(iseq->klass, recv);
     }
 
     *idp = id;

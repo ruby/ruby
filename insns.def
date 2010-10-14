@@ -816,16 +816,16 @@ defined
 	}
 	break;
       case DEFINED_ZSUPER:{
-	rb_iseq_t *ip = GET_ISEQ();
-	while (ip) {
-	    if (ip->defined_method_id) {
+	rb_iseq_t *iseq = GET_ISEQ();
+	while (iseq) {
+	    if (iseq->defined_method_id) {
 		break;
 	    }
-	    ip = ip->parent_iseq;
+	    iseq = iseq->parent_iseq;
 	}
-	if (ip) {
-	    VALUE klass = vm_search_normal_superclass(ip->klass, GET_SELF());
-	    if (rb_method_boundp(klass, ip->defined_method_id, 0)) {
+	if (iseq) {
+	    VALUE klass = vm_search_normal_superclass(iseq->klass, GET_SELF());
+	    if (rb_method_boundp(klass, iseq->defined_method_id, 0)) {
 		expr_type = "super";
 	    }
 	}

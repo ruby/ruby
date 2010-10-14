@@ -1,3 +1,8 @@
+Thu Oct 14 22:18:29 2010  Koichi Sasada  <ko1@atdot.net>
+
+	* insns.def, iseq.c, vm_insnhelper.c: rename variable name
+	  (ip -> iseq).
+
 Thu Oct 14 20:41:27 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* pack.c (pack_pack): support endian modifiers: < and >.

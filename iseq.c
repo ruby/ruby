@@ -748,9 +748,9 @@ insn_operand_intern(rb_iseq_t *iseq,
 
       case TS_LINDEX:
 	{
-	    rb_iseq_t *ip = iseq->local_iseq;
-	    int lidx = ip->local_size - (int)op;
-	    const char *name = rb_id2name(ip->local_table[lidx]);
+	    rb_iseq_t *liseq = iseq->local_iseq;
+	    int lidx = liseq->local_size - (int)op;
+	    const char *name = rb_id2name(liseq->local_table[lidx]);
 
 	    if (name) {
 		ret = rb_str_new2(name);
@@ -762,13 +762,13 @@ insn_operand_intern(rb_iseq_t *iseq,
 	}
       case TS_DINDEX:{
 	if (insn == BIN(getdynamic) || insn == BIN(setdynamic)) {
-	    rb_iseq_t *ip = iseq;
+	    rb_iseq_t *diseq = iseq;
 	    VALUE level = *pnop, i;
 	    const char *name;
 	    for (i = 0; i < level; i++) {
-		ip = ip->parent_iseq;
+		diseq = diseq->parent_iseq;
 	    }
-	    name = rb_id2name(ip->local_table[ip->local_size - op]);
+	    name = rb_id2name(diseq->local_table[diseq->local_size - op]);
 
 	    if (!name) {
 		name = "*";
