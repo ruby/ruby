@@ -316,14 +316,6 @@ rb_stat_cmp(VALUE self, VALUE other)
 
 #define ST2UINT(val) ((val) & ~(~1UL << (sizeof(val) * CHAR_BIT - 1)))
 
-#if SIZEOF_DEV_T > SIZEOF_LONG && defined(HAVE_LONG_LONG)
-# define DEVT2NUM(v) ULL2NUM(v)
-#elif SIZEOF_DEV_T == SIZEOF_LONG
-# define DEVT2NUM(v) ULONG2NUM(v)
-#else
-# define DEVT2NUM(v) UINT2NUM(v)
-#endif
-
 /*
  *  call-seq:
  *     stat.dev    -> fixnum
@@ -779,10 +771,10 @@ rb_stat_inspect(VALUE self)
 	rb_str_buf_cat2(str, "=");
 	v = (*member[i].func)(self);
 	if (i == 2) {		/* mode */
-	    rb_str_catf(str, "0%lo", NUM2ULONG(v));
+	    rb_str_catf(str, "0%lo", (unsigned long)NUM2ULONG(v));
 	}
 	else if (i == 0 || i == 6) { /* dev/rdev */
-	    rb_str_catf(str, "0x%lx", NUM2ULONG(v));
+	    rb_str_catf(str, "0x%"PRI_DEVT_PREFIX"x", NUM2DEVT(v));
 	}
 	else {
 	    rb_str_append(str, rb_inspect(v));

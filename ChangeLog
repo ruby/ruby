@@ -1,3 +1,9 @@
+Fri Oct 15 20:30:30 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (dev_t): use RUBY_REPLACE_TYPE.
+
+	* file.c (rb_stat_inspect): use PRI_DEVT_PREFIX.
+
 Fri Oct 15 17:26:57 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* pack.c (pack_pack): simplify comparison of explicit_endian
