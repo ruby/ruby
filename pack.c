@@ -770,7 +770,7 @@ pack_pack(VALUE ary, VALUE fmt)
 
           pack_integer:
 	    if (explicit_endian) {
-		bigendian_p = ((explicit_endian - '<') != 0);
+		bigendian_p = explicit_endian == '>';
 	    }
 
             switch (integer_size) {
@@ -1666,7 +1666,7 @@ pack_unpack(VALUE str, VALUE fmt)
 
 	  unpack_integer:
 	    if (explicit_endian) {
-		bigendian_p = ((explicit_endian - '<') != 0);
+		bigendian_p = explicit_endian == '>';
 	    }
 
 	    switch (integer_size) {
