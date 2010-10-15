@@ -1127,10 +1127,12 @@ dln_strerror(char *message, size_t size)
     char *p = message;
     size_t len = snprintf(message, size, "%d: ", error);
 
-    FormatMessage(
-	FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-	NULL, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-	message + len, size - len, NULL);
+#define format_message(sublang) FormatMessage(\
+	FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,	\
+	NULL, error, MAKELANGID(LANG_NEUTRAL, sublang),			\
+	message + len, size - len, NULL)
+    if (format_message(SUBLANG_ENGLISH_US) == 0)
+	format_message(SUBLANG_DEFAULT);
     for (p = message + len; *p; p++) {
 	if (*p == '\n' || *p == '\r')
 	    *p = ' ';

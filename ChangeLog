@@ -1,3 +1,8 @@
+Sat Oct 16 08:39:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dln.c (dln_strerror): get English message first, instead of
+	  system default. see [ruby-dev:42358].
+
 Sat Oct 16 00:08:00 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* hash.c (rb_hash_aref): skip calling "default" method
