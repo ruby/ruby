@@ -24,12 +24,12 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal("0000", sprintf("%.4b", 0))
     assert_equal("0001", sprintf("%.4b", 1))
     assert_equal("0010", sprintf("%.4b", 2))
-    assert_equal("..11", sprintf("%.4b", -1))
+    assert_equal("1111", sprintf("%.4b", -1))
 
     assert_equal("  0000", sprintf("%6.4b", 0))
     assert_equal("  0001", sprintf("%6.4b", 1))
     assert_equal("  0010", sprintf("%6.4b", 2))
-    assert_equal("  ..11", sprintf("%6.4b", -1))
+    assert_equal("  1111", sprintf("%6.4b", -1))
 
     assert_equal("   0", sprintf("%#4b", 0))
     assert_equal(" 0b1", sprintf("%#4b", 1))
@@ -44,12 +44,12 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal("0000", sprintf("%#.4b", 0))
     assert_equal("0b0001", sprintf("%#.4b", 1))
     assert_equal("0b0010", sprintf("%#.4b", 2))
-    assert_equal("0b..11", sprintf("%#.4b", -1))
+    assert_equal("0b1111", sprintf("%#.4b", -1))
 
     assert_equal("  0000", sprintf("%#6.4b", 0))
     assert_equal("0b0001", sprintf("%#6.4b", 1))
     assert_equal("0b0010", sprintf("%#6.4b", 2))
-    assert_equal("0b..11", sprintf("%#6.4b", -1))
+    assert_equal("0b1111", sprintf("%#6.4b", -1))
 
     assert_equal("+0", sprintf("%+b", 0))
     assert_equal("+1", sprintf("%+b", 1))
@@ -288,6 +288,8 @@ class TestSprintf < Test::Unit::TestCase
     b1 = (/\.\./ =~ s1) != nil
     b2 = (/\.\./ =~ s2) != nil
     assert(b1 == b2, "[ruby-dev:33224]")
+
+    assert_equal("ffffffff", sprintf("%.8x", -1))
   end
 
   def test_named

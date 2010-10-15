@@ -1,3 +1,8 @@
+Thu Oct 14 09:46:28 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* sprintf.c (rb_str_format): fix: sprintf with hex format and
+	  precision includes wrong dots.
+
 Fri Oct 15 16:40:37 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* pack.c (pack_pack): fix more than one modifiers appear in the
