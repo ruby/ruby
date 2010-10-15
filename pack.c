@@ -428,7 +428,6 @@ pack_pack(VALUE ary, VALUE fmt)
     int natint;		/* native integer */
 #endif
     int signed_p, integer_size, bigendian_p;
-    int explicit_endian = 0;
 
     StringValue(fmt);
     p = RSTRING_PTR(fmt);
@@ -443,6 +442,7 @@ pack_pack(VALUE ary, VALUE fmt)
 #define NEXTFROM (items-- > 0 ? RARRAY_PTR(ary)[idx++] : TOO_FEW)
 
     while (p < pend) {
+	int explicit_endian = 0;
 	if (RSTRING_PTR(fmt) + RSTRING_LEN(fmt) != pend) {
 	    rb_raise(rb_eRuntimeError, "format string modified");
 	}
@@ -1366,7 +1366,6 @@ pack_unpack(VALUE str, VALUE fmt)
 #endif
     int block_p = rb_block_given_p();
     int signed_p, integer_size, bigendian_p;
-    int explicit_endian = 0;
 #define UNPACK_PUSH(item) do {\
 	VALUE item_val = (item);\
 	if (block_p) {\
@@ -1386,6 +1385,7 @@ pack_unpack(VALUE str, VALUE fmt)
 
     ary = block_p ? Qnil : rb_ary_new();
     while (p < pend) {
+	int explicit_endian = 0;
 	type = *p++;
 #ifdef NATINT_PACK
 	natint = 0;

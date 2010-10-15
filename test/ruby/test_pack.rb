@@ -145,6 +145,8 @@ class TestPack < Test::Unit::TestCase
     else
       _integer_little_endian()
     end
+    assert_equal("\x01\x02\x02\x01", [0x0102,0x0102].pack("s>s<"))
+    assert_equal([0x0102,0x0102], "\x01\x02\x02\x01".unpack("s>s<"))
   end
 
   def test_integer_endian_explicit

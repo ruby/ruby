@@ -1,3 +1,10 @@
+Fri Oct 15 16:40:37 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* pack.c (pack_pack): fix more than one modifiers appear in the
+	  format string. [ruby-core:32793]
+
+	* pack.c (pack_unpack): ditto.
+
 Thu Oct 14 23:20:42 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_folderitem2_invokeverb.rb: refactoring.
