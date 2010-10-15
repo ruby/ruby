@@ -42,6 +42,7 @@
 /config.status
 /config.status.lineno
 /configure
+/doc/capi
 /enc.mk
 /enc/trans/*.c
 /encdb.h
