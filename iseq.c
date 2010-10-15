@@ -739,7 +739,7 @@ insn_operand_intern(rb_iseq_t *iseq,
 
     switch (type) {
       case TS_OFFSET:		/* LONG */
-	ret = rb_sprintf("%"PRIdSIZE, pos + len + op);
+	ret = rb_sprintf("%"PRIdVALUE, (VALUE)(pos + len + op));
 	break;
 
       case TS_NUM:		/* ULONG */
