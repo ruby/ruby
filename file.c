@@ -316,6 +316,16 @@ rb_stat_cmp(VALUE self, VALUE other)
 
 #define ST2UINT(val) ((val) & ~(~1UL << (sizeof(val) * CHAR_BIT - 1)))
 
+#ifndef NUM2DEVT
+# define NUM2DEVT(v) NUM2UINT(v)
+#endif
+#ifndef DEVT2NUM
+# define DEVT2NUM(v) UINT2NUM(v)
+#endif
+#ifndef PRI_DEVT_PREFIX
+# define PRI_DEVT_PREFIX ""
+#endif
+
 /*
  *  call-seq:
  *     stat.dev    -> fixnum

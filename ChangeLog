@@ -1,3 +1,8 @@
+Fri Oct 15 23:36:25 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (NUM2DEVT, DEVT2NUM, PRI_DEVT_PREFIX): fallback to
+	  unsigned int.
+
 Fri Oct 15 22:54:46 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_hresult2msg): get English message first, 
