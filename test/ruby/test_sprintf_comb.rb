@@ -190,7 +190,7 @@ class TestSprintfComb < Test::Unit::TestCase
         if digits.last != radix-1
           digits << (radix-1)
         end
-        sign = '..' unless precision
+        sign = '..'
       else
         sign = '-'
       end
@@ -222,8 +222,8 @@ class TestSprintfComb < Test::Unit::TestCase
       end
     end
     if type == 'o' && hs
-      if digits.empty? || digits.last != 0
-        prefix = '0'
+      if digits.empty? || digits.last != d
+        digits << d
       end
     end
 

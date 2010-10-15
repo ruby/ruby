@@ -844,7 +844,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    }
 		    else {
 			s = nbuf;
-			if (v < 0 && !(flags & FPREC0)) {
+			if (v < 0) {
 			    dots = 1;
 			}
 			snprintf(fbuf, sizeof(fbuf), "%%l%c", *p == 'X' ? 'x' : *p);
@@ -892,8 +892,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 			tmp1 = tmp = rb_big2str0(val, base, RBIGNUM_SIGN(val));
 			s = RSTRING_PTR(tmp);
 			if (*s == '-') {
-			    if (!(flags & FPREC0))
-				dots = 1;
+			    dots = 1;
 			    if (base == 10) {
 				rb_warning("negative number for %%u specifier");
 			    }
@@ -926,11 +925,14 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    }
 		}
 		if (prefix && !prefix[1]) { /* octal */
-		    if (len == 1 && *s == '0') {
+		    if (dots) {
+			prefix = 0;
+		    }
+		    else if (len == 1 && *s == '0') {
 			len = 0;
 			if (flags & FPREC) prec--;
 		    }
-		    else if ((flags & FPREC) && (prec > len) && v >= 0) {
+		    else if ((flags & FPREC) && (prec > len)) {
 			prefix = 0;
 		    }
 		}
