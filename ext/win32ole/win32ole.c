@@ -143,7 +143,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.5.1"
+#define WIN32OLE_VERSION "1.5.2"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -1102,12 +1102,19 @@ ole_hresult2msg(HRESULT hr)
     char strhr[100];
     sprintf(strhr, "    HRESULT error code:0x%08x\n      ", (unsigned)hr);
     msg = rb_str_new2(strhr);
-
     dwCount = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
                             FORMAT_MESSAGE_FROM_SYSTEM |
                             FORMAT_MESSAGE_IGNORE_INSERTS,
-                            NULL, hr, cWIN32OLE_lcid,
+                            NULL, hr, 
+                            MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
                             (LPTSTR)&p_msg, 0, NULL);
+    if (dwCount == 0) {
+        dwCount = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                                FORMAT_MESSAGE_FROM_SYSTEM |
+                                FORMAT_MESSAGE_IGNORE_INSERTS,
+                                NULL, hr, cWIN32OLE_lcid,
+                                (LPTSTR)&p_msg, 0, NULL);
+    }
     if (dwCount > 0) {
 	term = p_msg + strlen(p_msg);
 	while (p_msg < term) {
