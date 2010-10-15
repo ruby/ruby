@@ -330,6 +330,46 @@ static unsigned long utf8_to_uv(const char*,long*);
  *      l         | Integer | 32-bit signed, native endian (int32_t)
  *      q         | Integer | 64-bit signed, native endian (int64_t)
  *                |         |
+ *      S_, S!    | Integer | unsigned short, native endian
+ *      I, I_, I! | Integer | unsigned int, native endian
+ *      L_, L!    | Integer | unsigned long, native endian
+ *                |         |
+ *      s_, s!    | Integer | signed short, native endian
+ *      i, i_, i! | Integer | signed int, native endian
+ *      l_, l!    | Integer | signed long, native endian
+ *                |         |
+ *      S>        | Integer | 16-bit unsigned, big endian
+ *      L>        | Integer | 32-bit unsigned, big endian
+ *      Q>        | Integer | 64-bit unsigned, big endian
+ *      s>        | Integer | 16-bit signed, big endian
+ *      l>        | Integer | 32-bit signed, big endian
+ *      q>        | Integer | 64-bit signed, big endian
+ *                |         |
+ *      S<        | Integer | 16-bit unsigned, little endian
+ *      L<        | Integer | 32-bit unsigned, little endian
+ *      Q<        | Integer | 64-bit unsigned, little endian
+ *      s<        | Integer | 16-bit signed, little endian
+ *      l<        | Integer | 32-bit signed, little endian
+ *      q<        | Integer | 64-bit signed, little endian
+ *                |         |
+ *      S!>       | Integer | unsigned short, big endian
+ *      I!>       | Integer | unsigned int, big endian
+ *      L!>       | Integer | unsigned long, big endian
+ *      Q!>       | Integer | unsigned long long, big endian
+ *      s!>       | Integer | signed, big endian
+ *      i!>       | Integer | signed int, big endian
+ *      l!>       | Integer | signed, big endian
+ *      q!>       | Integer | signed, big endian
+ *                |         |
+ *      S!<       | Integer | unsigned short, little endian
+ *      I!<       | Integer | unsigned int, little endian
+ *      L!<       | Integer | unsigned long, little endian
+ *      Q!<       | Integer | unsigned long long, little endian
+ *      s!<       | Integer | signed short, little endian
+ *      i!<       | Integer | signed int, little endian
+ *      l!<       | Integer | signed long, little endian
+ *      q!<       | Integer | signed long long, little endian
+ *                |         |
  *      n         | Integer | 16-bit unsigned, network (big-endian) byte order
  *      N         | Integer | 32-bit unsigned, network (big-endian) byte order
  *      v         | Integer | 16-bit unsigned, VAX (little-endian) byte order
@@ -371,14 +411,6 @@ static unsigned long utf8_to_uv(const char*,long*);
  *      @         | ---     | moves to absolute position
  *      X         | ---     | back up a byte
  *      x         | ---     | null byte
- *
- *                | Target    |
- *   Modifier     | Directive | Meaning
- *   ---------------------------------------------------------------------------
- *      _, !      | sSiIlL    | Force native size of the related type:
- *                |           | short, int, long, and long long
- *      >         | sSiIlLqQ  | Force big-endian byte order
- *      <         | sSiIlLqQ  | Force little-endian byte order
  */
 
 static VALUE
