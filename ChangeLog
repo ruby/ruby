@@ -1,7 +1,7 @@
 Sat Oct 16 00:08:00 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* hash.c (rb_hash_aref): skip calling "default" method
-	  if it is not neede for speed-up.
+	  if it is not needed, for speed-up.
 
 Fri Oct 15 23:36:25 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -10,7 +10,7 @@ Fri Oct 15 23:36:25 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri Oct 15 22:54:46 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c (ole_hresult2msg): get English message first, 
+	* ext/win32ole/win32ole.c (ole_hresult2msg): get English message first,
 	  instead of system default. [ruby-core:32765]
 
 Fri Oct 15 22:47:31 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -58,7 +58,7 @@ Thu Oct 14 20:41:27 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Thu Oct 14 20:50:51 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c (reg_get_val): expand environment in 
+	* ext/win32ole/win32ole.c (reg_get_val): expand environment in
 	  the pathname. [Bug #3907]
 
 Thu Oct 14 07:35:07 2010  NARUSE, Yui  <naruse@ruby-lang.org>
