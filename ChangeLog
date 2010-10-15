@@ -1,3 +1,10 @@
+Fri Oct 15 22:47:31 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (VALUE): prefer long over uintptr_t,
+	  FIX2LONG expects VALUE to be long at least.
+
+	* include/ruby/ruby.h (FIX2LONG): parenthesize the argument.
+
 Fri Oct 15 20:30:30 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (dev_t): use RUBY_REPLACE_TYPE.

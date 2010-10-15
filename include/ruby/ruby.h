@@ -83,7 +83,7 @@ extern "C" {
 #  endif
 #endif
 
-#if defined HAVE_UINTPTR_T
+#if defined HAVE_UINTPTR_T && 0
 typedef uintptr_t VALUE;
 typedef uintptr_t ID;
 # define SIGNED_VALUE intptr_t
@@ -313,7 +313,7 @@ rb_long2int(long n) {rb_long2int_internal(n, i); return i;}
 #define NUM2GIDT(v) NUM2LONG(v)
 #endif
 
-#define FIX2LONG(x) RSHIFT((SIGNED_VALUE)x,1)
+#define FIX2LONG(x) RSHIFT((SIGNED_VALUE)(x),1)
 #define FIX2ULONG(x) ((((VALUE)(x))>>1)&LONG_MAX)
 #define FIXNUM_P(f) (((SIGNED_VALUE)(f))&FIXNUM_FLAG)
 #define POSFIXABLE(f) ((f) < FIXNUM_MAX+1)
