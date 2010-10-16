@@ -1,3 +1,13 @@
+Sat Oct 16 10:06:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/sdbm/_sdbm.c (SEEDUPS, BADMESS): make settable using command
+	  line options.
+
+	* ext/sdbm/_sdbm.c (makroom): suppress unused result warning.
+
+	* ext/sdbm/extconf.rb: disable BADMESS, a library should not emit
+	  messages directly.
+
 Sat Oct 16 08:39:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dln.c (dln_strerror): get English message first, instead of
