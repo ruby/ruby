@@ -2,7 +2,8 @@ include Makefile
 -include uncommon.mk
 
 ENABLE_SHARED=@ENABLE_SHARED@
-DLLWRAP = @DLLWRAP@ --target=@target_os@
+DLLWRAP = @DLLWRAP@ --target=@target_os@ --driver-name="$(CC)"
+WINDRES = @WINDRES@ --preprocessor="$(CPP) -xc" -DRC_INVOKED
 
 ifeq (@target_os@,cygwin)
   DLL_BASE_NAME := $(LIBRUBY_SO:.dll=)
@@ -38,7 +39,7 @@ $(LIBRUBY): $(RUBY_EXP) $(LIBRUBY_SO)
 $(RUBY_EXP) $(LIBRUBY_SO): $(DLL_BASE_NAME).res.@OBJEXT@
 
 %.res.@OBJEXT@: %.rc
-	@WINDRES@ --include-dir . --include-dir $(<D) --include-dir $(srcdir)/win32 $< $@
+	$(WINDRES) --include-dir . --include-dir $(<D) --include-dir $(srcdir)/win32 $< $@
 
 $(RCFILES): $(RBCONFIG) $(srcdir)/revision.h $(srcdir)/win32/resource.rb
 	@$(MINIRUBY) $(srcdir)/win32/resource.rb \

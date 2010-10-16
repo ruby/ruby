@@ -1,3 +1,10 @@
+Sat Oct 16 10:54:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (CPP): already used in .c.i rule.
+
+	* cygwin/GNUmakefile.in (DLLWRAP, WINDRES): add --driver-name and
+	  --preprocessor options explicitly.  [ruby-core:32776]
+
 Sat Oct 16 10:06:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/sdbm/_sdbm.c (SEEDUPS, BADMESS): make settable using command
