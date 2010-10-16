@@ -143,7 +143,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.5.2"
+#define WIN32OLE_VERSION "1.5.3"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -868,7 +868,7 @@ static UINT ole_encoding2cp(rb_encoding *enc)
     ENC_MACHING_CP(enc, "EUC-KR", 51949);
     ENC_MACHING_CP(enc, "EUC-TW", 51950);
     ENC_MACHING_CP(enc, "GB18030", 54936);
-    ENC_MACHING_CP(enc, "GB2312", 51936);
+    ENC_MACHING_CP(enc, "GB2312", 20936);
     ENC_MACHING_CP(enc, "GBK", 936);
     ENC_MACHING_CP(enc, "IBM437", 437);
     ENC_MACHING_CP(enc, "IBM737", 737);

@@ -1,3 +1,8 @@
+Sat Oct 16 11:10:55 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_encoding2cp): set codepage 20936
+	  according to GB2312. [Bug #3937] [ruby-core:32758]
+
 Sat Oct 16 10:54:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (CPP): already used in .c.i rule.
