@@ -236,4 +236,8 @@ class TestClass < Test::Unit::TestCase
     copy.send(:include, mod)
     assert_equal("mod#foo", copy.new.foo)
   end
+
+  def test_nested_class_removal
+    assert_normal_exit('File.__send__(:remove_const, :Stat); at_exit{File.stat(".")}; GC.start')
+  end
 end
