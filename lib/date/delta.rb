@@ -1,11 +1,11 @@
-# delta.rb: Written by Tadayoshi Funaba 2004-2009
+# delta.rb: Written by Tadayoshi Funaba 2004-2010
 
 require 'date'
 require 'date/delta/parser'
 
 class Date
 
-  class Delta
+  class Delta # :nodoc:
 
     include Comparable
 

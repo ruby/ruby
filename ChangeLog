@@ -1,3 +1,7 @@
+Sun Oct 17 22:36:33 2010  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date/delta.rb: added an rdoc tag.
+
 Sun Oct 17 10:47:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (rb_mod_remove_const): update rdoc.
