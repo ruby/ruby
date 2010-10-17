@@ -1628,8 +1628,10 @@ rb_const_get_at(VALUE klass, ID id)
  *     remove_const(sym)   -> obj
  *
  *  Removes the definition of the given constant, returning that
- *  constant's value. Predefined classes and singleton objects (such as
- *  <i>true</i>) cannot be removed.
+ *  constant's value.  Although predefined classes/modules also can be
+ *  removed, they just can't be refered with the names but still
+ *  exist.  It could cause very severe confusion.
+ *  Feel Free to Shoot Your Own Foot.
  */
 
 VALUE

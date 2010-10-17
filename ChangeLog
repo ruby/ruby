@@ -1,3 +1,8 @@
+Sun Oct 17 10:47:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (rb_mod_remove_const): update rdoc.
+	  [ruby-core:31957]
+
 Sun Oct 17 10:40:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (rb_define_{class,module}_id_under): register to be
