@@ -1,3 +1,8 @@
+Tue Oct 19 03:08:52 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vsnprintf.c (BSD_vfprintf): use HEXPREFIX flag for prefix of %a.
+	  [ruby-core:32841]
+
 Mon Oct 18 13:18:01 2010  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/digest.c (rb_digest_class_init): Define

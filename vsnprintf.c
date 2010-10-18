@@ -826,8 +826,10 @@ fp_begin:		_double = va_arg(ap, double);
 					ch = 'g';
 			}
 			if (ch == 'a' || ch == 'A') {
+				flags |= HEXPREFIX;
 				--expt;
 				expsize = exponent(expstr, expt, ch + 'p' - 'a');
+				ch += 'x' - 'a';
 				size = expsize + ndig;
 				size += 2; /* 0x */
 				if (ndig > 1)
@@ -1037,7 +1039,8 @@ long_len:
 		/* prefix */
 		if (sign) {
 			PRINT(&sign, 1);
-		} else if (flags & HEXPREFIX) {
+		}
+		if (flags & HEXPREFIX) {
 			ox[0] = '0';
 			ox[1] = ch;
 			PRINT(ox, 2);
@@ -1051,7 +1054,7 @@ long_len:
 		PAD_L(dprec - fieldsz, zeroes);
 		if (sign)
 			fieldsz--;
-		else if (flags & HEXPREFIX)
+		if (flags & HEXPREFIX)
 			fieldsz -= 2;
 
 		/* the string or number proper */
@@ -1059,10 +1062,7 @@ long_len:
 		if ((flags & FPT) == 0) {
 			PRINT(cp, fieldsz);
 		} else {	/* glue together f_p fragments */
-			if (ch == 'a' || ch == 'A') {
-				ox[0] = '0';
-				ox[1] = ch + ('x' - 'a');
-				PRINT(ox, 2);
+			if (flags & HEXPREFIX) {
 				if (ndig > 1 || flags & ALT) {
 					ox[2] = *cp++;
 					ox[3] = '.';
