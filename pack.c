@@ -338,37 +338,19 @@ static unsigned long utf8_to_uv(const char*,long*);
  *      i, i_, i! | Integer | signed int, native endian
  *      l_, l!    | Integer | signed long, native endian
  *                |         |
- *      S>        | Integer | 16-bit unsigned, big endian
- *      L>        | Integer | 32-bit unsigned, big endian
- *      Q>        | Integer | 64-bit unsigned, big endian
- *      s>        | Integer | 16-bit signed, big endian
- *      l>        | Integer | 32-bit signed, big endian
- *      q>        | Integer | 64-bit signed, big endian
+ *      S> L> Q>  | Integer | same as the directives without ">" except
+ *      s> l> q>  |         | big endian
+ *      S!> I!>   |         | (available since Ruby 1.9.3)
+ *      L!> Q!>   |         | "S>" is same as "n"
+ *      s!> i!>   |         | "L>" is same as "N"
+ *      l!> q!>   |         |
  *                |         |
- *      S<        | Integer | 16-bit unsigned, little endian
- *      L<        | Integer | 32-bit unsigned, little endian
- *      Q<        | Integer | 64-bit unsigned, little endian
- *      s<        | Integer | 16-bit signed, little endian
- *      l<        | Integer | 32-bit signed, little endian
- *      q<        | Integer | 64-bit signed, little endian
- *                |         |
- *      S!>       | Integer | unsigned short, big endian
- *      I!>       | Integer | unsigned int, big endian
- *      L!>       | Integer | unsigned long, big endian
- *      Q!>       | Integer | unsigned long long, big endian
- *      s!>       | Integer | signed, big endian
- *      i!>       | Integer | signed int, big endian
- *      l!>       | Integer | signed, big endian
- *      q!>       | Integer | signed, big endian
- *                |         |
- *      S!<       | Integer | unsigned short, little endian
- *      I!<       | Integer | unsigned int, little endian
- *      L!<       | Integer | unsigned long, little endian
- *      Q!<       | Integer | unsigned long long, little endian
- *      s!<       | Integer | signed short, little endian
- *      i!<       | Integer | signed int, little endian
- *      l!<       | Integer | signed long, little endian
- *      q!<       | Integer | signed long long, little endian
+ *      S< L< Q<  | Integer | same as the directives without "<" except
+ *      s< l< q<  |         | little endian
+ *      S!< I!<   |         | (available since Ruby 1.9.3)
+ *      L!< Q!<   |         | "S<" is same as "v"
+ *      s!< i!<   |         | "L<" is same as "V"
+ *      l!< q!<   |         |
  *                |         |
  *      n         | Integer | 16-bit unsigned, network (big-endian) byte order
  *      N         | Integer | 32-bit unsigned, network (big-endian) byte order
@@ -1307,6 +1289,20 @@ infected_str_new(const char *ptr, long len, VALUE str)
  *      s_, s!    | Integer | signed short, native endian
  *      i, i_, i! | Integer | signed int, native endian
  *      l_, l!    | Integer | signed long, native endian
+ *                |         |
+ *      S> L> Q>  | Integer | same as the directives without ">" except
+ *      s> l> q>  |         | big endian
+ *      S!> I!>   |         | (available since Ruby 1.9.3)
+ *      L!> Q!>   |         | "S>" is same as "n"
+ *      s!> i!>   |         | "L>" is same as "N"
+ *      l!> q!>   |         |
+ *                |         |
+ *      S< L< Q<  | Integer | same as the directives without "<" except
+ *      s< l< q<  |         | little endian
+ *      S!< I!<   |         | (available since Ruby 1.9.3)
+ *      L!< Q!<   |         | "S<" is same as "v"
+ *      s!< i!<   |         | "L<" is same as "V"
+ *      l!< q!<   |         |
  *                |         |
  *      n         | Integer | 16-bit unsigned, network (big-endian) byte order
  *      N         | Integer | 32-bit unsigned, network (big-endian) byte order

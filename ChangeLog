@@ -1,3 +1,8 @@
+Mon Oct 18 12:58:40 2010  Tanaka Akira  <akr@fsij.org>
+
+	* pack.c (pack_pack): refine the document.  [ruby-dev:42397]
+	  (pack_unpack): ditto.
+
 Mon Oct 18 10:19:00 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http.rb (transport_request): @socket may be nil.
