@@ -210,7 +210,7 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal(" -0x1.4p+0", sprintf("%10a", -1.25))
     assert_equal(" -0x1.2p+0", sprintf("%10a", -1.125))
     assert_equal(" -0x1.1p+0", sprintf("%10a", -1.0625))
-    assert_equal("-0x1.05p+0", sprintf("%10a", -1.03125))
+    assert_equal("-0x1.08p+0", sprintf("%10a", -1.03125))
   end
 
   BSIZ = 120
