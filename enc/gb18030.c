@@ -575,6 +575,11 @@ gb18030_is_allowed_reverse_match(const UChar* s, const UChar* end ARG_UNUSED, On
   return GB18030_MAP[*s] == C1 ? TRUE : FALSE;
 }
 
+/*
+ * Name: GB18030
+ * MIBenum: 114
+ * Link: http://www.iana.org/assignments/charset-reg/GB18030
+ */
 OnigEncodingDefine(gb18030, GB18030) = {
   gb18030_mbc_enc_len,
   "GB18030",   /* name */
