@@ -20,10 +20,6 @@
    ((__GNUC__ > (major)) ||  \
     (__GNUC__ == (major) && __GNUC_MINOR__ > (minor)) || \
     (__GNUC__ == (major) && __GNUC_MINOR__ == (minor) && __GNUC_PATCHLEVEL__ >= (patchlevel))))
-
-#define SIZE16 2
-#define SIZE32 4
-
 #if SIZEOF_SHORT != 2 || SIZEOF_LONG != 4
 # define NATINT_PACK
 #endif
@@ -52,8 +48,15 @@
 
 #ifdef NATINT_PACK
 # define NATINT_LEN(type,len) (natint?(int)sizeof(type):(int)(len))
+# ifdef LONG_LONG_
+#  define NATLL_LEN() NATINT_LEN(LONG_LONG, 8);
+# else
+#  define NATLL_LEN() natint ? \
+    rb_raise(rb_eNotImpError,"this machine doesn't have long long"),0 : 8
+# endif
 #else
 # define NATINT_LEN(type,len) ((int)sizeof(type))
+# define NATLL_LEN() 8
 #endif
 
 #if SIZEOF_LONG == 8
@@ -280,7 +283,6 @@ num2i32(VALUE x)
     return 0;			/* not reached */
 }
 
-#define QUAD_SIZE 8
 #define MAX_INTEGER_PACK_SIZE 8
 /* #define FORCE_BIG_PACK */
 
@@ -333,10 +335,12 @@ static unsigned long utf8_to_uv(const char*,long*);
  *      S_, S!    | Integer | unsigned short, native endian
  *      I, I_, I! | Integer | unsigned int, native endian
  *      L_, L!    | Integer | unsigned long, native endian
+ *      Q_, Q!    | Integer | unsigned long long, native endian
  *                |         |
  *      s_, s!    | Integer | signed short, native endian
  *      i, i_, i! | Integer | signed int, native endian
  *      l_, l!    | Integer | signed long, native endian
+ *      q_, q!    | Integer | signed long long, native endian
  *                |         |
  *      S> L> Q>  | Integer | same as the directives without ">" except
  *      s> l> q>  |         | big endian
@@ -442,7 +446,7 @@ pack_pack(VALUE ary, VALUE fmt)
 	}
 
 	{
-	    static const char natstr[] = "sSiIlL";
+	    static const char natstr[] = "sSiIlLqQ";
 	    static const char endstr[] = "sSiIlLqQ";
 
           modifiers:
@@ -716,13 +720,13 @@ pack_pack(VALUE ary, VALUE fmt)
 
 	  case 'q':		/* signed quad (64bit) int */
             signed_p = 1;
-            integer_size = 8;
+	    integer_size = NATLL_LEN();
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
 
 	  case 'Q':		/* unsigned quad (64bit) int */
             signed_p = 0;
-            integer_size = 8;
+	    integer_size = NATLL_LEN();
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
 
@@ -1397,7 +1401,7 @@ pack_unpack(VALUE str, VALUE fmt)
 
 	star = 0;
 	{
-	    static const char natstr[] = "sSiIlL";
+	    static const char natstr[] = "sSiIlLqQ";
 	    static const char endstr[] = "sSiIlLqQ";
 
           modifiers:
@@ -1626,13 +1630,13 @@ pack_unpack(VALUE str, VALUE fmt)
 
 	  case 'q':
 	    signed_p = 1;
-	    integer_size = QUAD_SIZE;
+	    integer_size = NATLL_LEN();
 	    bigendian_p = BIGENDIAN_P();
 	    goto unpack_integer;
 
 	  case 'Q':
 	    signed_p = 0;
-	    integer_size = QUAD_SIZE;
+	    integer_size = NATLL_LEN();
 	    bigendian_p = BIGENDIAN_P();
 	    goto unpack_integer;
 
