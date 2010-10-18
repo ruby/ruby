@@ -48,15 +48,8 @@
 
 #ifdef NATINT_PACK
 # define NATINT_LEN(type,len) (natint?(int)sizeof(type):(int)(len))
-# ifdef LONG_LONG_
-#  define NATLL_LEN() NATINT_LEN(LONG_LONG, 8);
-# else
-#  define NATLL_LEN() natint ? \
-    rb_raise(rb_eNotImpError,"this machine doesn't have long long"),0 : 8
-# endif
 #else
 # define NATINT_LEN(type,len) ((int)sizeof(type))
-# define NATLL_LEN() 8
 #endif
 
 #if SIZEOF_LONG == 8
@@ -335,26 +328,24 @@ static unsigned long utf8_to_uv(const char*,long*);
  *      S_, S!    | Integer | unsigned short, native endian
  *      I, I_, I! | Integer | unsigned int, native endian
  *      L_, L!    | Integer | unsigned long, native endian
- *      Q_, Q!    | Integer | unsigned long long, native endian
  *                |         |
  *      s_, s!    | Integer | signed short, native endian
  *      i, i_, i! | Integer | signed int, native endian
  *      l_, l!    | Integer | signed long, native endian
- *      q_, q!    | Integer | signed long long, native endian
  *                |         |
  *      S> L> Q>  | Integer | same as the directives without ">" except
  *      s> l> q>  |         | big endian
  *      S!> I!>   |         | (available since Ruby 1.9.3)
- *      L!> Q!>   |         | "S>" is same as "n"
+ *      L!>       |         | "S>" is same as "n"
  *      s!> i!>   |         | "L>" is same as "N"
- *      l!> q!>   |         |
+ *      l!>       |         |
  *                |         |
  *      S< L< Q<  | Integer | same as the directives without "<" except
  *      s< l< q<  |         | little endian
  *      S!< I!<   |         | (available since Ruby 1.9.3)
- *      L!< Q!<   |         | "S<" is same as "v"
+ *      L!<       |         | "S<" is same as "v"
  *      s!< i!<   |         | "L<" is same as "V"
- *      l!< q!<   |         |
+ *      l!<       |         |
  *                |         |
  *      n         | Integer | 16-bit unsigned, network (big-endian) byte order
  *      N         | Integer | 32-bit unsigned, network (big-endian) byte order
@@ -446,7 +437,7 @@ pack_pack(VALUE ary, VALUE fmt)
 	}
 
 	{
-	    static const char natstr[] = "sSiIlLqQ";
+	    static const char natstr[] = "sSiIlL";
 	    static const char endstr[] = "sSiIlLqQ";
 
           modifiers:
@@ -720,13 +711,13 @@ pack_pack(VALUE ary, VALUE fmt)
 
 	  case 'q':		/* signed quad (64bit) int */
             signed_p = 1;
-	    integer_size = NATLL_LEN();
+	    integer_size = 8;
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
 
 	  case 'Q':		/* unsigned quad (64bit) int */
             signed_p = 0;
-	    integer_size = NATLL_LEN();
+	    integer_size = 8;
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
 
@@ -1401,7 +1392,7 @@ pack_unpack(VALUE str, VALUE fmt)
 
 	star = 0;
 	{
-	    static const char natstr[] = "sSiIlLqQ";
+	    static const char natstr[] = "sSiIlL";
 	    static const char endstr[] = "sSiIlLqQ";
 
           modifiers:
@@ -1630,13 +1621,13 @@ pack_unpack(VALUE str, VALUE fmt)
 
 	  case 'q':
 	    signed_p = 1;
-	    integer_size = NATLL_LEN();
+	    integer_size = 8;
 	    bigendian_p = BIGENDIAN_P();
 	    goto unpack_integer;
 
 	  case 'Q':
 	    signed_p = 0;
-	    integer_size = NATLL_LEN();
+	    integer_size = 8;
 	    bigendian_p = BIGENDIAN_P();
 	    goto unpack_integer;
 

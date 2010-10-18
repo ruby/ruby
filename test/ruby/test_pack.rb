@@ -85,9 +85,7 @@ class TestPack < Test::Unit::TestCase
     assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("I!"+mod))
     assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("l!"+mod))
     assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("L!"+mod))
-    assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("q!"+mod))
-    assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("Q!"+mod))
-    %w[s S l L q Q s! S! i I i! I! l! L! q! Q!].each {|fmt|
+    %w[s S l L q Q s! S! i I i! I! l! L!].each {|fmt|
       fmt += mod
       nuls = [0].pack(fmt)
       v = 0
@@ -120,9 +118,7 @@ class TestPack < Test::Unit::TestCase
     assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("I!"+mod))
     assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("l!"+mod))
     assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("L!"+mod))
-    assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("q!"+mod))
-    assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("Q!"+mod))
-    %w[s S l L q Q s! S! i I i! I! l! L! q! Q!].each {|fmt|
+    %w[s S l L q Q s! S! i I i! I! l! L!].each {|fmt|
       fmt += mod
       nuls = [0].pack(fmt)
       v = 0

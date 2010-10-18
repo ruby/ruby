@@ -3,13 +3,6 @@ Mon Oct 18 13:18:01 2010  Akinori MUSHA  <knu@iDaemons.org>
 	* ext/digest/digest.c (rb_digest_class_init): Define
 	  Digest::Class.new(). [Feature #3954]
 
-Mon Oct 18 12:00:12 2010  NARUSE, Yui  <naruse@ruby-lang.org>
-
-	* pack.c (pack_pack): Add native size option ! to q and Q.
-	  [ruby-dev:42375]
-
-	* pack.c (pack_unpack): ditto.
-
 Mon Oct 18 12:58:40 2010  Tanaka Akira  <akr@fsij.org>
 
 	* pack.c (pack_pack): refine the document.  [ruby-dev:42397]
