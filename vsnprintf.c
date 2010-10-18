@@ -829,6 +829,9 @@ fp_begin:		_double = va_arg(ap, double);
 				--expt;
 				expsize = exponent(expstr, expt, ch + 'p' - 'a');
 				size = expsize + ndig;
+				size += 2; /* 0x */
+				if (ndig > 1)
+					++size; /* floating point */
 			}
 			else if (ch <= 'e') {	/* 'e' or 'E' fmt */
 				--expt;

@@ -1,3 +1,8 @@
+Mon Oct 18 09:57:28 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* sprintf.c (BSD_vfprintf): wrong padding arround prefix and
+	  floating point with %a. [ruby-dev:42403] Bug #3956
+
 Sun Oct 17 22:36:33 2010  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date/delta.rb: added an rdoc tag.

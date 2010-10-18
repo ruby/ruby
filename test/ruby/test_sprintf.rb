@@ -204,6 +204,13 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal("Inf", sprintf("%E", Float::INFINITY))
     assert_equal("NaN", sprintf("%e", Float::NAN))
     assert_equal("NaN", sprintf("%E", Float::NAN))
+
+    assert_equal("   -0x1p+0", sprintf("%10a", -1))
+    assert_equal(" -0x1.8p+0", sprintf("%10a", -1.5))
+    assert_equal(" -0x1.4p+0", sprintf("%10a", -1.25))
+    assert_equal(" -0x1.2p+0", sprintf("%10a", -1.125))
+    assert_equal(" -0x1.1p+0", sprintf("%10a", -1.0625))
+    assert_equal("-0x1.05p+0", sprintf("%10a", -1.03125))
   end
 
   BSIZ = 120
