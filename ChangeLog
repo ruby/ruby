@@ -1,3 +1,8 @@
+Mon Oct 18 10:21:01 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http.rb (transport_request): @socket may be nil.
+	  patched by Egbert Eich [ruby-core:32829]
+
 Mon Oct 11 18:06:57 2010  Akinori MUSHA  <knu@iDaemons.org>
 
 	* parse.y (opt_block_arg): Allow a trailing comma at the end of
