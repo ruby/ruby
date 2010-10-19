@@ -1858,10 +1858,7 @@ vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
 		     rb_id2name(id), rb_obj_classname(obj));
 	}
 
-	if (OBJ_FROZEN(obj)) {
-	    rb_error_frozen("object");
-	}
-
+	rb_check_frozen(obj);
 	klass = rb_singleton_class(obj);
 	noex = NOEX_PUBLIC;
     }

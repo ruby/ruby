@@ -211,10 +211,8 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 		rb_class2name(rb_ivar_get(klass, attached)));
 	mid = ID_ALLOCATOR;
     }
-    if (OBJ_FROZEN(klass)) {
-	rb_error_frozen("class/module");
-    }
 
+    rb_check_frozen(klass);
     mtbl = RCLASS_M_TBL(klass);
 
     /* check re-definition */
@@ -463,8 +461,7 @@ remove_method(VALUE klass, ID mid)
     if (rb_safe_level() >= 4 && !OBJ_UNTRUSTED(klass)) {
 	rb_raise(rb_eSecurityError, "Insecure: can't remove method");
     }
-    if (OBJ_FROZEN(klass))
-	rb_error_frozen("class/module");
+    rb_check_frozen(klass);
     if (mid == object_id || mid == id__send__ || mid == idInitialize) {
 	rb_warn("removing `%s' may cause serious problems", rb_id2name(mid));
     }

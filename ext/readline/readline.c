@@ -43,10 +43,20 @@
 static VALUE mReadline;
 
 #define EDIT_LINE_LIBRARY_VERSION "EditLine wrapper"
+#ifndef USE_INSERT_IGNORE_ESCAPE
+# ifndef HAVE_EDITLINE_READLINE_H
+#  define USE_INSERT_IGNORE_ESCAPE 1
+# else
+#  define USE_INSERT_IGNORE_ESCAPE 0
+# endif
+#endif
 
 #define COMPLETION_PROC "completion_proc"
 #define COMPLETION_CASE_FOLD "completion_case_fold"
 static ID completion_proc, completion_case_fold;
+#if USE_INSERT_IGNORE_ESCAPE
+static ID id_orig_prompt, id_last_prompt, id_ignore_escape;
+#endif
 
 #ifndef HAVE_RL_FILENAME_COMPLETION_FUNCTION
 # define rl_filename_completion_function filename_completion_function
@@ -142,6 +152,81 @@ readline_event(void)
     rb_thread_select(fileno(rl_instream) + 1, &rset, NULL, NULL, NULL);
     return 0;
 #endif
+}
+#endif
+
+#if USE_INSERT_IGNORE_ESCAPE
+static VALUE
+insert_ignore_escape(VALUE self, VALUE prompt)
+{
+    VALUE last_prompt, orig_prompt = rb_attr_get(self, id_orig_prompt);
+    int ignoring = 0;
+    const char *s0, *s, *e;
+    long len;
+    static const char ignore_code[2] = {RL_PROMPT_START_IGNORE, RL_PROMPT_END_IGNORE};
+
+    prompt = rb_str_new_shared(prompt);
+    last_prompt = rb_attr_get(self, id_last_prompt);
+    if (orig_prompt == prompt) return last_prompt;
+    len = RSTRING_LEN(prompt);
+    if (NIL_P(last_prompt)) {
+	last_prompt = rb_str_tmp_new(len);
+    }
+
+    s = s0 = RSTRING_PTR(prompt);
+    e = s0 + len;
+    rb_str_set_len(last_prompt, 0);
+    while (s < e && *s) {
+	switch (*s) {
+	  case RL_PROMPT_START_IGNORE:
+	    ignoring = -1;
+	    rb_str_cat(last_prompt, s0, ++s - s0);
+	    s0 = s;
+	    break;
+	  case RL_PROMPT_END_IGNORE:
+	    ignoring = 0;
+	    rb_str_cat(last_prompt, s0, ++s - s0);
+	    s0 = s;
+	    break;
+	  case '\033':
+	    if (++s < e && *s == '[') {
+		rb_str_cat(last_prompt, s0, s - s0 - 1);
+		s0 = s - 1;
+		while (++s < e && *s) {
+		    if (ISALPHA(*s)) {
+			if (!ignoring) {
+			    ignoring = 1;
+			    rb_str_cat(last_prompt, ignore_code+0, 1);
+			}
+			rb_str_cat(last_prompt, s0, ++s - s0);
+			s0 = s;
+			break;
+		    }
+		    else if (!('0' <= *s && *s <= '9' || *s == ';')) {
+			break;
+		    }
+		}
+	    }
+	    break;
+	  default:
+	    if (ignoring > 0) {
+		ignoring = 0;
+		rb_str_cat(last_prompt, ignore_code+1, 1);
+	    }
+	    s++;
+	    break;
+	}
+    }
+    if (ignoring > 0) {
+	ignoring = 0;
+	rb_str_cat(last_prompt, ignore_code+1, 1);
+    }
+    rb_str_cat(last_prompt, s0, s - s0);
+
+    rb_ivar_set(self, id_orig_prompt, prompt);
+    rb_ivar_set(self, id_last_prompt, last_prompt);
+
+    return last_prompt;
 }
 #endif
 
@@ -244,10 +329,18 @@ readline_readline(int argc, VALUE *argv, VALUE self)
     char *prompt = NULL;
     char *buff;
     int status;
+    int ignore_escape = 0;
 
     rb_secure(4);
     if (rb_scan_args(argc, argv, "02", &tmp, &add_hist) > 0) {
 	OutputStringValue(tmp);
+#if USE_INSERT_IGNORE_ESCAPE
+	ignore_escape = RTEST(rb_attr_get(mReadline, id_ignore_escape));
+	if (ignore_escape) {
+	    tmp = insert_ignore_escape(self, tmp);
+	    rb_str_locktmp(tmp);
+	}
+#endif
 	prompt = RSTRING_PTR(tmp);
     }
 
@@ -257,6 +350,11 @@ readline_readline(int argc, VALUE *argv, VALUE self)
     rl_prep_terminal(1);
 #endif
     buff = (char*)rb_protect(readline_get, (VALUE)prompt, &status);
+#if USE_INSERT_IGNORE_ESCAPE
+    if (prompt && ignore_escape) {
+	rb_str_unlocktmp(tmp);
+    }
+#endif
     if (status) {
 #if defined HAVE_RL_CLEANUP_AFTER_SIGNAL
         /* restore terminal mode and signal handler*/
@@ -1312,6 +1410,27 @@ username_completion_proc_call(VALUE self, VALUE str)
     return result;
 }
 
+static VALUE
+readline_s_ignore_escape(VALUE self)
+{
+#if USE_INSERT_IGNORE_ESCAPE
+    return RTEST(rb_attr_get(mReadline, id_ignore_escape)) ? Qtrue : Qfalse;
+#elif defined HAVE_EDITLINE_READLINE_H
+    return Qtrue;
+#else
+    return Qfalse;
+#endif
+}
+
+static VALUE
+readline_s_ignore_escape_set(VALUE self, VALUE flag)
+{
+#if USE_INSERT_IGNORE_ESCAPE
+    rb_ivar_set(mReadline, id_ignore_escape, RTEST(flag) ? Qtrue : Qfalse);
+#endif
+    return flag;
+}
+
 void
 Init_readline()
 {
@@ -1382,6 +1501,18 @@ Init_readline()
 			       readline_s_get_filename_quote_characters, 0);
     rb_define_singleton_method(mReadline, "refresh_line",
 			       readline_s_refresh_line, 0);
+
+#if USE_INSERT_IGNORE_ESCAPE
+    rb_define_singleton_method(mReadline, "ignore_escape",
+			       readline_s_ignore_escape, 0);
+    rb_define_singleton_method(mReadline, "ignore_escape=",
+			       readline_s_ignore_escape_set, 1);
+
+    CONST_ID(id_orig_prompt, "orig_prompt");
+    CONST_ID(id_last_prompt, "last_prompt");
+    CONST_ID(id_ignore_escape, "ignore_escape");
+    rb_ivar_set(mReadline, id_ignore_escape, Qtrue);
+#endif
 
     history = rb_obj_alloc(rb_cObject);
     rb_extend_object(history, rb_mEnumerable);

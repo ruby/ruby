@@ -2677,7 +2677,7 @@ static VALUE
 undefine_final(VALUE os, VALUE obj)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    if (OBJ_FROZEN(obj)) rb_error_frozen("object");
+    rb_check_frozen(obj);
     if (finalizer_table) {
 	st_data_t data = obj;
 	st_delete(finalizer_table, &data, 0);
@@ -2703,7 +2703,7 @@ define_final(int argc, VALUE *argv, VALUE os)
     st_data_t data;
 
     rb_scan_args(argc, argv, "11", &obj, &block);
-    if (OBJ_FROZEN(obj)) rb_error_frozen("object");
+    rb_check_frozen(obj);
     if (argc == 1) {
 	block = rb_block_proc();
     }

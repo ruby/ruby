@@ -1043,7 +1043,7 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
 
     if (!OBJ_UNTRUSTED(obj) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify instance variable");
-    if (OBJ_FROZEN(obj)) rb_error_frozen("object");
+    rb_check_frozen(obj);
     switch (TYPE(obj)) {
       case T_OBJECT:
         iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
@@ -1305,7 +1305,7 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
 
     if (!OBJ_UNTRUSTED(obj) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify instance variable");
-    if (OBJ_FROZEN(obj)) rb_error_frozen("object");
+    rb_check_frozen(obj);
     if (!rb_is_instance_id(id)) {
 	rb_name_error(id, "`%s' is not allowed as an instance variable name", rb_id2name(id));
     }
@@ -1653,8 +1653,7 @@ rb_const_remove(VALUE mod, ID id)
 
     if (!OBJ_UNTRUSTED(mod) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't remove constant");
-    if (OBJ_FROZEN(mod)) rb_error_frozen("class/module");
-
+    rb_check_frozen(mod);
     if (!RCLASS_IV_TBL(mod) || !st_delete(RCLASS_IV_TBL(mod), &n, &v)) {
 	if (rb_const_defined_at(mod, id)) {
 	    rb_name_error(id, "cannot remove %s::%s",
@@ -1819,14 +1818,7 @@ mod_av_set(VALUE klass, ID id, VALUE val, int isconst)
 
     if (!OBJ_UNTRUSTED(klass) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't set %s", dest);
-    if (OBJ_FROZEN(klass)) {
-	if (BUILTIN_TYPE(klass) == T_MODULE) {
-	    rb_error_frozen("module");
-	}
-	else {
-	    rb_error_frozen("class");
-	}
-    }
+    rb_check_frozen(klass);
     if (!RCLASS_IV_TBL(klass)) {
 	RCLASS_IV_TBL(klass) = st_init_numtable();
     }
@@ -2075,8 +2067,7 @@ rb_mod_remove_cvar(VALUE mod, VALUE name)
     }
     if (!OBJ_UNTRUSTED(mod) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't remove class variable");
-    if (OBJ_FROZEN(mod)) rb_error_frozen("class/module");
-
+    rb_check_frozen(mod);
     if (RCLASS_IV_TBL(mod) && st_delete(RCLASS_IV_TBL(mod), &n, &val)) {
 	return (VALUE)val;
     }
