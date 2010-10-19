@@ -1,3 +1,8 @@
+Tue Oct 19 19:30:11 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vsnprintf.c (BSD_vfprintf): clear ALT flag for %a.
+	  [ruby-core:32841] [ruby-core:32848]
+
 Tue Oct 19 12:19:25 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vsnprintf.c (BSD_vfprintf): fix over-count of field size.

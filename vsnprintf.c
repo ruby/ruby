@@ -784,6 +784,7 @@ reswitch:	switch (ch) {
 #ifdef FLOATING_POINT
 		case 'a':
 		case 'A':
+			flags &= ~ALT;
 			if (prec >= 0)
 				prec++;
 			goto fp_begin;
