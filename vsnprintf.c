@@ -831,7 +831,6 @@ fp_begin:		_double = va_arg(ap, double);
 				expsize = exponent(expstr, expt, ch + 'p' - 'a');
 				ch += 'x' - 'a';
 				size = expsize + ndig;
-				size += 2; /* 0x */
 				if (ndig > 1)
 					++size; /* floating point */
 			}
@@ -1028,7 +1027,7 @@ number:			if ((dprec = prec) >= 0)
 long_len:
 		if (sign)
 			fieldsz++;
-		else if (flags & HEXPREFIX)
+		if (flags & HEXPREFIX)
 			fieldsz += 2;
 		realsz = dprec > fieldsz ? dprec : fieldsz;
 

@@ -1,3 +1,7 @@
+Tue Oct 19 12:19:25 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vsnprintf.c (BSD_vfprintf): fix over-count of field size.
+
 Tue Oct 19 03:08:52 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vsnprintf.c (BSD_vfprintf): use HEXPREFIX flag for prefix of %a.
