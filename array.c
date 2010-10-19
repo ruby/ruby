@@ -242,7 +242,7 @@ rb_ary_set_shared(VALUE ary, VALUE shared)
 static inline void
 rb_ary_modify_check(VALUE ary)
 {
-    rb_check_frozen(ary);
+    if (OBJ_FROZEN(ary)) rb_error_frozen("array");
     if (!OBJ_UNTRUSTED(ary) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify array");
 }

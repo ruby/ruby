@@ -1298,8 +1298,9 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic)
     if (!OBJ_UNTRUSTED(obj) && rb_safe_level() >= 4) {
 	rb_raise(rb_eSecurityError, "Insecure: can't modify instance variable");
     }
-    
-    rb_check_frozen(obj);
+    if (OBJ_FROZEN(obj)) {
+	rb_error_frozen("object");
+    }
 
     if (TYPE(obj) == T_OBJECT) {
 	VALUE klass = RBASIC(obj)->klass;

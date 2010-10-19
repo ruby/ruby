@@ -712,7 +712,9 @@ rb_obj_taint(VALUE obj)
 {
     rb_secure(4);
     if (!OBJ_TAINTED(obj)) {
-	rb_check_frozen(obj);
+	if (OBJ_FROZEN(obj)) {
+	    rb_error_frozen("object");
+	}
 	OBJ_TAINT(obj);
     }
     return obj;
@@ -731,7 +733,9 @@ rb_obj_untaint(VALUE obj)
 {
     rb_secure(3);
     if (OBJ_TAINTED(obj)) {
-	rb_check_frozen(obj);
+	if (OBJ_FROZEN(obj)) {
+	    rb_error_frozen("object");
+	}
 	FL_UNSET(obj, FL_TAINT);
     }
     return obj;
@@ -764,7 +768,9 @@ rb_obj_untrust(VALUE obj)
 {
     rb_secure(4);
     if (!OBJ_UNTRUSTED(obj)) {
-	rb_check_frozen(obj);
+	if (OBJ_FROZEN(obj)) {
+	    rb_error_frozen("object");
+	}
 	OBJ_UNTRUST(obj);
     }
     return obj;
@@ -783,7 +789,9 @@ rb_obj_trust(VALUE obj)
 {
     rb_secure(3);
     if (OBJ_UNTRUSTED(obj)) {
-	rb_check_frozen(obj);
+	if (OBJ_FROZEN(obj)) {
+	    rb_error_frozen("object");
+	}
 	FL_UNSET(obj, FL_UNTRUSTED);
     }
     return obj;
