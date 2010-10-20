@@ -718,6 +718,11 @@ Fri Sep 24 14:19:12 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 	* test/test_pty.rb: Same as 229281; existence of PTY class do not
 	  guarantee a successful pty operation.
 
+Fri Sep 24 06:25:55 2010  Ryan Davis  <ryand-ruby@zenspider.com>
+
+	* lib/minitest/*.rb: Imported minitest 1.7.2 r5879.
+	* test/minitest/*.rb: ditto.
+
 Thu Sep 23 23:09:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_get_cref0): cref is stacked only in normal
