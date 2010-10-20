@@ -784,7 +784,6 @@ reswitch:	switch (ch) {
 #ifdef FLOATING_POINT
 		case 'a':
 		case 'A':
-			flags &= ~ALT;
 			if (prec >= 0)
 				prec++;
 			goto fp_begin;
@@ -832,7 +831,7 @@ fp_begin:		_double = va_arg(ap, double);
 				expsize = exponent(expstr, expt, ch + 'p' - 'a');
 				ch += 'x' - 'a';
 				size = expsize + ndig;
-				if (ndig > 1)
+				if (ndig > 1 || flags & ALT)
 					++size; /* floating point */
 			}
 			else if (ch <= 'e') {	/* 'e' or 'E' fmt */
@@ -1067,7 +1066,7 @@ long_len:
 					ox[2] = *cp++;
 					ox[3] = '.';
 					PRINT(ox+2, 2);
-					PRINT(cp, ndig-1);
+					if (ndig > 0) PRINT(cp, ndig-1);
 				} else	/* XpYYY */
 					PRINT(cp, 1);
 				PRINT(expstr, expsize);
@@ -1179,8 +1178,6 @@ cvt(value, ndigits, flags, sign, decpt, ch, length, buf)
 				*decpt = -ndigits + 1;
 			bp += *decpt;
 		}
-		if (value == 0)	/* kludge for __dtoa irregularity */
-			rve = bp;
 		while (rve < bp)
 			*rve++ = '0';
 	}

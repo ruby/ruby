@@ -1,3 +1,8 @@
+Wed Oct 20 10:00:57 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vsnprintf.c (BSD_vfprintf): print floating point on "%#a".
+	  [ruby-dev:42431] Bug#3965
+
 Tue Oct 19 19:30:11 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vsnprintf.c (BSD_vfprintf): clear ALT flag for %a.
