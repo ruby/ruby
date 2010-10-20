@@ -1,3 +1,10 @@
+Thu Oct 21 00:05:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_io.rb (TestIO#pipe): get rid of deadlock on pipe.
+	  a patch from Tomoyuki Chikanaga at [ruby-dev:42435].  #3970
+
+	* test/ruby/test_io_m17n.rb (TestIO_M17N#pipe): ditto.
+
 Wed Oct 20 23:54:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dbm/dbm.c: rdoc based on a patch by mathew meta AT
