@@ -1,3 +1,7 @@
+Wed Oct 20 10:47:21 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* util.c (ruby_strtod): reject 0x1.p+0. [ruby-dev:42432] #3966
+
 Wed Oct 20 10:00:57 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vsnprintf.c (BSD_vfprintf): print floating point on "%#a".

@@ -88,13 +88,15 @@ class TestFloat < Test::Unit::TestCase
     assert_raise(ArgumentError){Float("-.")}
     assert_raise(ArgumentError){Float("1e")}
     assert_raise(ArgumentError){Float("1__1")}
+    assert_raise(ArgumentError){Float("1.")}
+    assert_raise(ArgumentError){Float("1.e+00")}
+    assert_raise(ArgumentError){Float("0x1.p+0")}
     # add expected behaviour here.
     assert_equal(10, Float("1_0"))
 
     assert_equal([ 0.0].pack('G'), [Float(" 0x0p+0").to_f].pack('G'))
     assert_equal([-0.0].pack('G'), [Float("-0x0p+0").to_f].pack('G'))
     assert_equal(255.0,     Float("0Xff"))
-    assert_equal(1.0,       Float("0X1.P+0"))
     assert_equal(1024.0,    Float("0x1p10"))
     assert_equal(1024.0,    Float("0x1p+10"))
     assert_equal(0.0009765625, Float("0x1p-10"))
@@ -452,7 +454,7 @@ class TestFloat < Test::Unit::TestCase
     assert_raise(ArgumentError) { Float('0xfp') }
     assert_raise(ArgumentError) { Float('0xf.') }
     assert_raise(ArgumentError) { Float('0xf.p') }
-    assert_equal(15, Float('0xf.p0'))
+    assert_raise(ArgumentError) { Float('0xf.p0') }
     assert_raise(ArgumentError) { Float('0xf.f') }
     assert_raise(ArgumentError) { Float('0xf.fp') }
     assert_equal(Float::INFINITY, Float('0xf.fp1000000000000000'))

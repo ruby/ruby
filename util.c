@@ -2132,10 +2132,11 @@ break2:
 
 	    if (*s == '.') {
 		aadj = 1.;
-		while (*++s && (s1 = strchr(hexdigit, *s))) {
+		if (!*++s || !(s1 = strchr(hexdigit, *s))) goto ret0;
+		do {
 		    aadj /= 16;
 		    adj += aadj * ((s1 - hexdigit) & 15);
-		}
+		} while (*++s && (s1 = strchr(hexdigit, *s)));
 	    }
 
 	    if (*s == 'P' || *s == 'p') {
