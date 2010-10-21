@@ -7347,22 +7347,53 @@ select_end(VALUE arg)
 
 /*
  *  call-seq:
- *	[IO.]select(read_array [, write_array [, error_array [, timeout ]]]) -> array | nil
+ *     IO.select(read_array
+ *               [, write_array
+ *               [, error_array
+ *               [, timeout]]]) -> array  or  nil
  *
- *	Performs a low-level <methodname>select</methodname> call, which waits for data
- *      to become available from input/output devices. The first three
- *      parameters are arrays of +IO+ objects or +nil+. The last is a
- *      timeout in seconds, which should be an +Integer+ or a +Float+.
- *      The call waits for data to become available for any of the +IO+
- *	objects in _read_array_, for buffers to have cleared sufficiently to
- *      enable writing to any of the devices in _write_array_, or for an error
- *      to occur on the devices in _error_array_. If one or more of these
- *	conditions are met, the call returns a three-element array containing
- *      arrays of the +IO+ objects that were ready.  Otherwise, if there is no
- *      change in status for _timeout_ seconds, the call returns +nil+. If all
- *      parameters are +nil+, the current thread sleeps forever.
+ *  Calls select(2) system call.
+ *  It monitors given arrays of <code>IO</code> objects, waits one or more
+ *  of <code>IO</code> objects ready for reading, are ready for writing,
+ *  and have pending exceptions respectably, and returns an array that
+ *  contains arrays of those IO objects.  It will return <code>nil</code>
+ *  if optional <i>timeout</i> value is given and no <code>IO</code> object
+ *  is ready in <i>timeout</i> seconds.
  *
- *	    select( [STDIN], nil, nil, 1.5 )
+ *  === Parameters
+ *  read_array:: an array of <code>IO</code> objects that wait until ready for read
+ *  write_array:: an array of <code>IO</code> objects that wait until ready for write
+ *  error_array:: an array of <code>IO</code> objects that wait for exceptions
+ *  timeout:: a numeric value in second
+ *
+ *  === Example
+ *
+ *      rp, wp = IO.pipe
+ *      mesg = "ping "
+ *      100.times {
+ *        rs, ws, = IO.select([rp], [wp])
+ *        if r = rs[0]
+ *          ret = r.read(5)
+ *          print ret
+ *          case ret
+ *          when /ping/
+ *            mesg = "pong\n"
+ *          when /pong/
+ *            mesg = "ping "
+ *          end
+ *        end
+ *        if w = ws[0]
+ *          w.write(mesg)
+ *        end
+ *      }
+ *
+ *  <em>produces:</em>
+ *
+ *      ping pong
+ *      ping pong
+ *      ping pong
+ *      (snipped)
+ *      ping
  */
 
 static VALUE

@@ -1,3 +1,8 @@
+Thu Oct 21 16:07:20 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (rb_f_select): change rdoc.
+	  patched by Eito Katagiri [ruby-core:31805]
+
 Thu Oct 21 15:55:21 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/webrick/httpauth/digestauth.rb
