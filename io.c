@@ -6071,7 +6071,7 @@ rb_io_putc(VALUE io, VALUE ch)
  *  Equivalent to:
  *
  *    $stdout.putc(int)
- * 
+ *
  * Refer to the documentation for IO#putc for important information regarding
  * multi-byte characters.
  */
@@ -7347,12 +7347,22 @@ select_end(VALUE arg)
 
 /*
  *  call-seq:
- *     IO.select(read_array
- *               [, write_array
- *               [, error_array
- *               [, timeout]]] )-> array  or  nil
+ *	[IO.]select(read_array [, write_array [, error_array [, timeout ]]]) -> array | nil
  *
- *  See <code>Kernel#select</code>.
+ *	Performs a low-level <methodname>select</methodname> call, which waits for data
+ *      to become available from input/output devices. The first three
+ *      parameters are arrays of +IO+ objects or +nil+. The last is a
+ *      timeout in seconds, which should be an +Integer+ or a +Float+.
+ *      The call waits for data to become available for any of the +IO+
+ *	objects in _read_array_, for buffers to have cleared sufficiently to
+ *      enable writing to any of the devices in _write_array_, or for an error
+ *      to occur on the devices in _error_array_. If one or more of these
+ *	conditions are met, the call returns a three-element array containing
+ *      arrays of the +IO+ objects that were ready.  Otherwise, if there is no
+ *      change in status for _timeout_ seconds, the call returns +nil+. If all
+ *      parameters are +nil+, the current thread sleeps forever.
+ *
+ *	    select( [STDIN], nil, nil, 1.5 )
  */
 
 static VALUE

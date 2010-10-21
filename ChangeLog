@@ -1,3 +1,8 @@
+Thu Oct 21 15:50:25 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (rb_f_select): add correct rdoc.
+	  patched by Dave Thomas [ruby-core:32467]
+
 Thu Oct 21 15:42:01 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/telnet.rb (Net::Telnet#close): added.
