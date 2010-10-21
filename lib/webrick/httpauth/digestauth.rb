@@ -384,6 +384,7 @@ module WEBrick
     class ProxyDigestAuth < DigestAuth
       include ProxyAuthenticator
 
+      private
       def check_uri(req, auth_req)
         return true
       end
