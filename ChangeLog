@@ -1,3 +1,7 @@
+Thu Oct 21 23:47:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (dir_initialize): remove useless intermediate variable.
+
 Thu Oct 21 16:07:20 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (rb_f_select): change rdoc.
