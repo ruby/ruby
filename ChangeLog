@@ -1,3 +1,8 @@
+Thu Oct 21 15:42:01 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/telnet.rb (Net::Telnet#close): added.
+	  patched by Erik Hollensbe [ruby-dev:42260] #3830
+
 Thu Oct 21 13:08:00 2010  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c (rb_objspace_each_objects): don't lazy sweep in
