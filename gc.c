@@ -2058,11 +2058,11 @@ static int
 gc_lazy_sweep(rb_objspace_t *objspace)
 {
     int res;
+    INIT_GC_PROF_PARAMS;
 
     if (objspace->flags.dont_lazy_sweep)
         return garbage_collect(objspace);
 
-    INIT_GC_PROF_PARAMS;
 
     if (!ready_to_gc(objspace)) return TRUE;
 

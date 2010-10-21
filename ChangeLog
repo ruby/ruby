@@ -1,3 +1,8 @@
+Thu Oct 21 23:58:14 2010  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_lazy_sweep): Variable declarations should be at
+	  the head of block.
+
 Thu Oct 21 23:56:54 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (objspace_each_objects, rb_objspace_each_objects): use
