@@ -1,4 +1,7 @@
-Thu Oct 21 23:52:00 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Oct 21 23:56:54 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (objspace_each_objects, rb_objspace_each_objects): use
+	  struct.
 
 	* gc.c (objspace_each_objects): fix return with no value.
 

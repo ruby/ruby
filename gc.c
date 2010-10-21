@@ -2514,6 +2514,13 @@ lazy_sweep_enable(void)
     return Qnil;
 }
 
+typedef int each_obj_callback(void *, void *, size_t, void *);
+
+struct each_obj_args {
+    each_obj_callback *callback;
+    void *data;
+};
+
 static VALUE
 objspace_each_objects(VALUE arg)
 {
@@ -2521,7 +2528,7 @@ objspace_each_objects(VALUE arg)
     RVALUE *membase = 0;
     RVALUE *pstart, *pend;
     rb_objspace_t *objspace = &rb_objspace;
-    VALUE *args = (VALUE *)arg;
+    struct each_obj_args *args = (struct each_obj_args *)arg;
     volatile VALUE v;
 
     i = 0;
@@ -2544,7 +2551,7 @@ objspace_each_objects(VALUE arg)
 	    }
 	}
 	if (pstart != pend) {
-	    if ((*(int (*)(void *, void *, size_t, void *))args[0])(pstart, pend, sizeof(RVALUE), (void *)args[1])) {
+	    if ((*args->callback)(pstart, pend, sizeof(RVALUE), args->data)) {
 		break;
 	    }
 	}
@@ -2590,19 +2597,17 @@ objspace_each_objects(VALUE arg)
  *       use some constant value in the iteration.
  */
 void
-rb_objspace_each_objects(int (*callback)(void *vstart, void *vend,
-					 size_t stride, void *d),
-			 void *data)
+rb_objspace_each_objects(each_obj_callback *callback, void *data)
 {
-    VALUE args[2];
+    struct each_obj_args args;
     rb_objspace_t *objspace = &rb_objspace;
 
     rest_sweep(objspace);
     objspace->flags.dont_lazy_sweep = TRUE;
 
-    args[0] = (VALUE)callback;
-    args[1] = (VALUE)data;
-    rb_ensure(objspace_each_objects, (VALUE)args, lazy_sweep_enable, Qnil);
+    args.callback = callback;
+    args.data = data;
+    rb_ensure(objspace_each_objects, (VALUE)&args, lazy_sweep_enable, Qnil);
 }
 
 struct os_each_struct {
