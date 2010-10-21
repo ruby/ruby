@@ -1,3 +1,8 @@
+Thu Oct 21 13:08:00 2010  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c (rb_objspace_each_objects): don't lazy sweep in
+	  rb_objspace_each_objects. [Bug #3940] [ruby-dev:42369]
+
 Thu Oct 21 00:05:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_io.rb (TestIO#pipe): get rid of deadlock on pipe.

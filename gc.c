@@ -332,6 +332,7 @@ typedef struct rb_objspace {
     } heap;
     struct {
 	int dont_gc;
+	int dont_lazy_sweep;
 	int during_gc;
     } flags;
     struct {
@@ -2040,12 +2041,26 @@ lazy_sweep(rb_objspace_t *objspace)
     return FALSE;
 }
 
+static void
+rest_sweep(rb_objspace_t *objspace)
+{
+    if (objspace->heap.sweep_slots) {
+       while (objspace->heap.sweep_slots) {
+           lazy_sweep(objspace);
+       }
+       after_gc_sweep(objspace);
+    }
+}
+
 static void gc_marks(rb_objspace_t *objspace);
 
 static int
 gc_lazy_sweep(rb_objspace_t *objspace)
 {
     int res;
+
+    if (objspace->flags.dont_lazy_sweep)
+        return garbage_collect(objspace);
 
     INIT_GC_PROF_PARAMS;
 
@@ -2489,6 +2504,55 @@ Init_heap(void)
     init_heap(&rb_objspace);
 }
 
+
+static VALUE
+lazy_sweep_enable(void)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+
+    objspace->flags.dont_lazy_sweep = FALSE;
+    return Qnil;
+}
+
+static VALUE
+objspace_each_objects(VALUE arg)
+{
+    size_t i;
+    RVALUE *membase = 0;
+    RVALUE *pstart, *pend;
+    rb_objspace_t *objspace = &rb_objspace;
+    VALUE *args = (VALUE *)arg;
+    volatile VALUE v;
+
+    i = 0;
+    while (i < heaps_used) {
+	while (0 < i && (uintptr_t)membase < (uintptr_t)objspace->heap.sorted[i-1].slot->membase)
+	    i--;
+	while (i < heaps_used && (uintptr_t)objspace->heap.sorted[i].slot->membase <= (uintptr_t)membase )
+	    i++;
+	if (heaps_used <= i)
+	  break;
+	membase = objspace->heap.sorted[i].slot->membase;
+
+	pstart = objspace->heap.sorted[i].slot->slot;
+	pend = pstart + objspace->heap.sorted[i].slot->limit;
+
+	for (; pstart != pend; pstart++) {
+	    if (pstart->as.basic.flags) {
+		v = (VALUE)pstart; /* acquire to save this object */
+		break;
+	    }
+	}
+	if (pstart != pend) {
+	    if ((*(int (*)(void *, void *, size_t, void *))args[0])(pstart, pend, sizeof(RVALUE), (void *)args[1])) {
+		return;
+	    }
+	}
+    }
+
+    return Qnil;
+}
+
 /*
  * rb_objspace_each_objects() is special C API to walk through
  * Ruby object space.  This C API is too difficult to use it.
@@ -2530,39 +2594,15 @@ rb_objspace_each_objects(int (*callback)(void *vstart, void *vend,
 					 size_t stride, void *d),
 			 void *data)
 {
-    size_t i;
-    RVALUE *membase = 0;
-    RVALUE *pstart, *pend;
+    VALUE args[2];
     rb_objspace_t *objspace = &rb_objspace;
-    volatile VALUE v;
 
-    i = 0;
-    while (i < heaps_used) {
-	while (0 < i && (uintptr_t)membase < (uintptr_t)objspace->heap.sorted[i-1].slot->membase)
-	    i--;
-	while (i < heaps_used && (uintptr_t)objspace->heap.sorted[i].slot->membase <= (uintptr_t)membase )
-	    i++;
-	if (heaps_used <= i)
-	  break;
-	membase = objspace->heap.sorted[i].slot->membase;
+    rest_sweep(objspace);
+    objspace->flags.dont_lazy_sweep = TRUE;
 
-	pstart = objspace->heap.sorted[i].slot->slot;
-	pend = pstart + objspace->heap.sorted[i].slot->limit;
-
-	for (; pstart != pend; pstart++) {
-	    if (pstart->as.basic.flags) {
-		v = (VALUE)pstart; /* acquire to save this object */
-		break;
-	    }
-	}
-	if (pstart != pend) {
-	    if ((*callback)(pstart, pend, sizeof(RVALUE), data)) {
-		return;
-	    }
-	}
-    }
-
-    return;
+    args[0] = (VALUE)callback;
+    args[1] = (VALUE)data;
+    rb_ensure(objspace_each_objects, (VALUE)args, lazy_sweep_enable, Qnil);
 }
 
 struct os_each_struct {
