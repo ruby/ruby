@@ -1,3 +1,7 @@
+Thu Oct 21 23:52:00 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (objspace_each_objects): fix return with no value.
+
 Thu Oct 21 23:47:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (dir_initialize): remove useless intermediate variable.

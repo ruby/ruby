@@ -2545,7 +2545,7 @@ objspace_each_objects(VALUE arg)
 	}
 	if (pstart != pend) {
 	    if ((*(int (*)(void *, void *, size_t, void *))args[0])(pstart, pend, sizeof(RVALUE), (void *)args[1])) {
-		return;
+		break;
 	    }
 	}
     }
