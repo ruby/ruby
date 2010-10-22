@@ -13,8 +13,11 @@ module Test
       UNASSIGNED = Object.new # :nodoc:
 
       def assert(test, msg = UNASSIGNED)
-        msg = nil if msg == UNASSIGNED
-        unless String === msg or Proc === msg or msg.nil? then
+        case msg
+        when UNASSIGNED
+          msg = nil
+        when String, Proc
+        else
           bt = caller.reject { |s| s.rindex(MiniTest::MINI_DIR, 0) }
           raise ArgumentError, "assertion message must be String or Proc, but #{msg.class} was given.", bt
         end

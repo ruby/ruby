@@ -1,3 +1,8 @@
+Fri Oct 22 14:50:13 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit/assertions.rb (Test::Unit::Assertions#assert):
+	  assertion message must not be nil.
+
 Fri Oct 22 13:59:50 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/test/unit/assertions.rb (Test::Unit::Assertions#assert):
