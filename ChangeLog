@@ -1,3 +1,8 @@
+Fri Oct 22 13:59:50 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/test/unit/assertions.rb (Test::Unit::Assertions#assert):
+	  treat nil case. Please run test-all before commit such change.
+
 Thu Oct 21 23:58:14 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_lazy_sweep): Variable declarations should be at
