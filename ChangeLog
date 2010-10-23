@@ -1,3 +1,9 @@
+Sun Sep 19 13:44:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (LIBRUBY_SO): fix an oversight of replace
+	  RUBY_INSTALL_NAME with RUBY_SO_NAME.  a patch from Jeremy Evans
+	  at [ruby-core:32474].
+
 Sun Aug 29 12:19:58 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (load_failed): should honor encoding.  [ruby-core:31915]

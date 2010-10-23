@@ -2119,7 +2119,7 @@ if test "$enable_shared" = 'yes'; then
 	],
     [openbsd*], [
 	SOLIBS='$(LIBS)'
-	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).'`expr ${MINOR} \* 10 + ${TEENY}`
+	LIBRUBY_SO='lib$(RUBY_SO_NAME).so.$(MAJOR).'`expr ${MINOR} \* 10 + ${TEENY}`
 	],
     [solaris*], [
 	SOLIBS='$(LIBS)'
