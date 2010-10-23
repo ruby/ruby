@@ -1,3 +1,7 @@
+Sat Oct 23 14:39:58 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb: $extmk should be true for test/runner.
+
 Sat Oct 23 10:55:37 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_dump.c (rb_vm_bugreport): fix to add bug outputs.
