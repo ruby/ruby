@@ -526,7 +526,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
         else
           break unless @scanner.continue
         end
-      when TkCOMMENT
+      when TkCOMMENT, TkASSIGN, TkOPASGN
         unget_tk(tk)
         break
       when nil then
@@ -568,7 +568,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
       case name = get_class_specification
       when "self", container.name
         parse_statements container, SINGLE
-      else
+      when /\A[A-Z]/
         other = RDoc::TopLevel.find_class_named name
 
         unless other then
