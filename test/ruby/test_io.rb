@@ -1623,4 +1623,33 @@ End
       end
     end.each {|th| th.join}
   end
+
+  def test_flush_in_finalizer1
+    require 'tempfile'
+    bug3910 = '[ruby-dev:42341]'
+    path = Tempfile.new("bug3910").path
+    fds = []
+    assert_nothing_raised(TypeError, bug3910) do
+      500.times {
+        f = File.open(path, "w")
+        fds << f.fileno
+        f.print "hoge"
+      }
+    end
+  ensure
+    fds.each {|fd| IO.for_fd(fd).close rescue next}
+  end
+
+  def test_flush_in_finalizer2
+    require 'tempfile'
+    bug3910 = '[ruby-dev:42341]'
+    path = Tempfile.new("bug3910").path
+    1.times do
+      io = open(path,"w")
+      io.print "hoge"
+    end
+    assert_nothing_raised(TypeError, bug3910) do
+      GC.start
+    end
+  end
 end
