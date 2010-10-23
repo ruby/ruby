@@ -378,9 +378,8 @@ class TestRubyOptions < Test::Unit::TestCase
       %r(\A
       -e:(?:1:)?\s\[BUG\]\sSegmentation\sfault\n
       #{ Regexp.quote(RUBY_DESCRIPTION) }\n\n
-      --\scontrol\sframe\s----------\n
+      --\sControl\sframe\sinformation\s-+\n
       (?:c:.*\n)*
-      ---------------------------\n
       (?:
       --\sRuby\slevel\sbacktrace\sinformation\s----------------------------------------\n
       -e:1:in\s\`<main>\'\n
@@ -391,6 +390,7 @@ class TestRubyOptions < Test::Unit::TestCase
         --\sC\slevel\sbacktrace\sinformation\s-------------------------------------------\n
         (?:(?:.*\s)?\[0x\h+\]\n)*\n
       )?
+      (?m:.*)
       \[NOTE\]\n
       You\smay\shave\sencountered\sa\sbug\sin\sthe\sRuby\sinterpreter\sor\sextension\slibraries.\n
       Bug\sreports\sare\swelcome.\n
