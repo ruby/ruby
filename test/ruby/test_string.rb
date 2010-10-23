@@ -479,6 +479,8 @@ class TestString < Test::Unit::TestCase
     assert_equal(4, a.count(S("hello"), S("^l")))
     assert_equal(4, a.count(S("ej-m")))
     assert_equal(0, S("y").count(S("a\\-z")))
+    assert_equal(5, "abc\u{3042 3044 3046}".count("^a"))
+    assert_equal(5, "abc\u{3042 3044 3046}".count("^\u3042"))
 
     assert_raise(ArgumentError) { "foo".count }
   end
@@ -498,6 +500,10 @@ class TestString < Test::Unit::TestCase
     assert_equal(true, "a\u0101".delete("\u0101").ascii_only?)
     assert_equal(true, "a\u3041".delete("\u3041").ascii_only?)
     assert_equal(false, "a\u3041\u3042".tr("\u3041", "a").ascii_only?)
+
+    assert_equal("a", "abc\u{3042 3044 3046}".delete("^a"))
+    assert_equal("bc\u{3042 3044 3046}", "abc\u{3042 3044 3046}".delete("a"))
+    assert_equal("\u3042", "abc\u{3042 3044 3046}".delete("^\u3042"))
   end
 
   def test_delete!
