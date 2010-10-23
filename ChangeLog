@@ -1,3 +1,8 @@
+Tue Aug 31 17:32:34 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/stubs.c: fix [Bug #3771] "VC++ can't make ext/tk with enabling
+	  stubs". Thanks, Akio Tajima [ruby-dev:42159].
+
 Mon Oct  4 12:43:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (regexp): dregexp has literal string only at the head
