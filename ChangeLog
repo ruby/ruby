@@ -1,3 +1,10 @@
+Sat Oct 16 10:54:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (CPP): already used in .c.i rule.
+
+	* cygwin/GNUmakefile.in (DLLWRAP, WINDRES): add --driver-name and
+	  --preprocessor options explicitly.  [ruby-core:32776]
+
 Thu Sep 23 09:01:28 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_cref_push): no outer cref is needed for proc

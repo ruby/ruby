@@ -11,6 +11,7 @@ top_srcdir = $(srcdir)
 hdrdir = $(srcdir)/include
 
 CC = @CC@
+CPP = @CPP@
 YACC = bison
 PURIFY =
 AUTOCONF = autoconf
