@@ -1,3 +1,7 @@
+Tue Aug 10 11:26:33 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/un.rb (httpd): SIGQUIT and SIGHUP are not guaranteed to exist.
+
 Sat Aug 14 17:48:41 2010  Narihiro Nakamura  <authorNari@gmail.com>
 
 	* test/objspace/test_objspace.rb: added test for objspace.
