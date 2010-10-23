@@ -301,7 +301,7 @@ AC_CHECK_TOOL(AS, as)
 ASFLAGS=$ASFLAGS
 AC_SUBST(ASFLAGS)
 
-AS_CASE(["$target_os"],[cygwin*|mingw*|darwin*], [ac_cv_prog_ac_ct_OBJCOPY=":"])
+AS_CASE(["$target_os"],[cygwin*|mingw*], [ac_cv_prog_ac_ct_OBJCOPY=":"])
 
 # BSD's ports and MacPorts prefix GNU binutils with 'g'
 AC_CHECK_TOOLS(OBJDUMP, [objdump gobjdump])
@@ -399,6 +399,19 @@ AC_DEFUN(RUBY_TRY_CFLAGS, [
     save_CFLAGS=
 ])
 
+AC_DEFUN(RUBY_TRY_LDFLAGS, [
+    save_LDFLAGS="$LDFLAGS"
+    LDFLAGS="[$]LDFLAGS $1"
+    AC_MSG_CHECKING([whether $1 is accepted])
+    AC_TRY_LINK([$4], [$5],
+	[$2
+	AC_MSG_RESULT(yes)],
+	[$3
+	AC_MSG_RESULT(no)])
+    LDFLAGS="$save_LDFLAGS"
+    save_LDFLAGS=
+])
+
 if test "$GCC:${warnflags+set}:no" = yes::no; then
     for wflag in -Wno-unused-parameter -Wno-parentheses -Wpointer-arith -Wwrite-strings \
 		 -Wno-missing-field-initializers -Wshorten-64-to-32 -Wno-long-long; do
@@ -407,6 +420,14 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
     AS_CASE([" $warnflags "],[*" -Wno-missing-field-initializers "*], [wflag=-Wextra],
                              [wflag=-Wall])
     RUBY_TRY_CFLAGS($wflag, [warnflags="$wflag${warnflags+ $warnflags}"])
+fi
+if test "$GCC" = yes; then
+    if test "$visibility_option" = yes; then
+	RUBY_APPEND_OPTION(XCFLAGS, -fvisibility=hidden)
+    else
+	RUBY_TRY_LDFLAGS([-Wl,-unexported_symbol,_Init_*], [visibility_option=ld], [visibility_option=no])
+    fi
+    test "$visibility_option" = no || OBJCOPY=:
 fi
 
 test -z "${ac_env_CFLAGS_set}" -a -n "${cflags+set}" && eval CFLAGS="\"$cflags $ARCH_FLAG\""
@@ -2157,8 +2178,10 @@ if test "$enable_shared" = 'yes'; then
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-install_name '${libprefix}'/$(LIBRUBY_SO)'
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-current_version $(MAJOR).$(MINOR).$(TEENY)'
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-compatibility_version $(ruby_version)'
-	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-Wl,-unexported_symbol,_Init_*'
-	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-Wl,-unexported_symbol,*_threadptr_*'
+	if test "$visibility_option" = ld; then
+	    LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-Wl,-unexported_symbol,_Init_*'
+	    LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-Wl,-unexported_symbol,*_threadptr_*'
+	fi
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "' $(XLDFLAGS)'
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).dylib'
 	LIBRUBY_ALIASES='lib$(RUBY_BASE_NAME).$(MAJOR).$(MINOR).dylib lib$(RUBY_INSTALL_NAME).dylib'
