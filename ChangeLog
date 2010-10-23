@@ -1,3 +1,8 @@
+Mon Oct  4 12:43:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (regexp): dregexp has literal string only at the head
+	  and successors are array.  [ruby-core:32682]
+
 Tue Aug 10 11:26:33 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/un.rb (httpd): SIGQUIT and SIGHUP are not guaranteed to exist.
