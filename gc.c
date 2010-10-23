@@ -1145,7 +1145,7 @@ rb_data_typed_object_alloc(VALUE klass, void *datap, const rb_data_type_t *type)
 size_t
 rb_objspace_data_type_memsize(VALUE obj)
 {
-    if (RTYPEDDATA_P(obj)) {
+    if (RTYPEDDATA_P(obj) && RTYPEDDATA_TYPE(obj)->dsize) {
 	return RTYPEDDATA_TYPE(obj)->dsize(RTYPEDDATA_DATA(obj));
     }
     else {

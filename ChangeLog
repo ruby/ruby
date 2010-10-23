@@ -1,3 +1,11 @@
+Sat Aug 14 17:48:41 2010  Narihiro Nakamura  <authorNari@gmail.com>
+
+	* test/objspace/test_objspace.rb: added test for objspace.
+
+	* ext/objspace/objspace.c: considers T_ZOMBIE by lazy sweep GC.
+
+	* gc.c: considers that dsize was 0. [ruby-dev:42022]
+
 Tue Aug 31 03:42:14 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (tr_setup_table): fix bug in r29146.
