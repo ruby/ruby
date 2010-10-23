@@ -1,3 +1,8 @@
+Thu Sep 23 09:01:28 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_cref_push): no outer cref is needed for proc
+	  from method.  Bug #3786, Bug #3860, [ruby-core:32501]
+
 Wed Oct  6 11:52:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (fptr_finalize): write_mutex might have been destroyed
