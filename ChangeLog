@@ -1,3 +1,12 @@
+Sat Oct 23 10:55:37 2010  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_dump.c (rb_vm_bugreport): fix to add bug outputs.
+	  - loaded script ($0)
+	  - loaded features ($")
+	  - process memory map on Linux (/proc/self/maps)
+
+	* vm_dump.c (rb_vmdebug_stack_dump_raw): fix header message.
+
 Fri Oct 22 14:50:13 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/assertions.rb (Test::Unit::Assertions#assert):

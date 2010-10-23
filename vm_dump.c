@@ -170,12 +170,13 @@ rb_vmdebug_stack_dump_raw(rb_thread_t *th, rb_control_frame_t *cfp)
     }
 #endif
 
-    fprintf(stderr, "-- control frame ----------\n");
+    fprintf(stderr, "-- Control frame information "
+	    "-----------------------------------------------\n");
     while ((void *)cfp < (void *)(th->stack + th->stack_size)) {
 	control_frame_dump(th, cfp);
 	cfp++;
     }
-    fprintf(stderr, "---------------------------\n");
+    fprintf(stderr, "\n");
 }
 
 void
@@ -761,7 +762,8 @@ dump_thread(void *arg)
 void
 rb_vm_bugreport(void)
 {
-    if (GET_THREAD()->vm) {
+    rb_vm_t *vm = GET_VM();
+    if (vm) {
 	int i = 0;
 	SDR();
 
@@ -797,5 +799,37 @@ rb_vm_bugreport(void)
     }
 
     fprintf(stderr, "\n");
-#endif
+#endif /* HAVE_BACKTRACE */
+
+    fprintf(stderr, "-- Other runtime information "
+	    "-----------------------------------------------\n\n");
+    {
+	int i;
+
+	fprintf(stderr, "* Loaded script: %s\n", StringValueCStr(vm->progname));
+	fprintf(stderr, "\n");
+	fprintf(stderr, "* Loaded features:\n\n");
+	for (i=0; i<RARRAY_LEN(vm->loaded_features); i++) {
+	    fprintf(stderr, " %4d %s\n", i, StringValueCStr(RARRAY_PTR(vm->loaded_features)[i]));
+	}
+	fprintf(stderr, "\n");
+
+#if __linux__
+	{
+	    FILE *fp = fopen("/proc/self/maps", "r");
+	    if (fp) {
+		fprintf(stderr, "* Process memory map:\n\n");
+
+		while (!feof(fp)) {
+		    char buff[0x100];
+		    size_t rn = fread(buff, 1, 0x100, fp);
+		    fwrite(buff, 1, rn, stderr);
+		}
+
+		fclose(fp);
+		fprintf(stderr, "\n\n");
+	    }
+	}
+#endif /* __linux__ */
+    }
 }
