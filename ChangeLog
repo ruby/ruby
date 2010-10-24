@@ -1,3 +1,9 @@
+Sun Oct 24 14:11:16 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (vm_define_method): defined method is run with the default
+	  public visibility regardless the visibility context of definition.
+	  [ruby-core:30638]
+
 Sun Oct 24 12:08:54 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* lib/test/unit.rb: make test/unit play nicely with the rake test

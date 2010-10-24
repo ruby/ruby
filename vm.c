@@ -1868,6 +1868,7 @@ vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
 
     /* dup */
     COPY_CREF(miseq->cref_stack, cref);
+    miseq->cref_stack->nd_visi = NOEX_PUBLIC;
     miseq->klass = klass;
     miseq->defined_method_id = id;
     rb_add_method(klass, id, VM_METHOD_TYPE_ISEQ, miseq, noex);

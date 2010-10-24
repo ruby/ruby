@@ -929,7 +929,6 @@ class TestModule < Test::Unit::TestCase
 
   def test_attr_inherited_visibility
     bug3406 = '[ruby-core:30638]'
-    skip(bug3406)
     c = Class.new do
       class << self
         private
