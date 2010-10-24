@@ -68,12 +68,11 @@
 # Julian Day Number (and unlike the Astronomical Julian
 # Day Number), it counts from midnight.
 #
-# Alternative calendars such as the Chinese Lunar Calendar,
-# the Islamic Calendar, or the French Revolutionary Calendar
+# Alternative calendars such as the Ethiopic Solar Calendar,
+# the Islamic Lunar Calendar, or the French Revolutionary Calendar
 # are not supported by the Date class; nor are calendars that
 # are based on an Era different from the Common Era, such as
-# the Japanese Imperial Calendar or the Republic of China
-# Calendar.
+# the Japanese Era.
 #
 # === Calendar Reform
 #
@@ -142,19 +141,19 @@
 # Note: in the Julian Calendar, New Years Day was March 25.  The
 # Date class does not follow this convention.
 #
-# === Time Zones
+# === Offsets
 #
 # DateTime objects support a simple representation
-# of time zones.  Time zones are represented as an offset
-# from UTC, as a fraction of a day.  This offset is the
+# of offsets.  Offsets are represented as an offset
+# from UTC (UTC is not identical GMT; GMT is a historical term),
+# as a fraction of a day.  This offset is the
 # how much local time is later (or earlier) than UTC.
-# UTC offset 0 is centred on England (also known as GMT).
 # As you travel east, the offset increases until you
 # reach the dateline in the middle of the Pacific Ocean;
 # as you travel west, the offset decreases.  This offset
 # is abbreviated as +of+ in the Date class.
 #
-# This simple representation of time zones does not take
+# This simple representation of offsets does not take
 # into account the common practice of Daylight Savings
 # Time or Summer Time.
 #
@@ -163,35 +162,21 @@
 # #ajd() and #amjd(), which return the date and time
 # in UTC time, including fractional days.
 #
-# The Date class does not support time zone offsets, in that
-# there is no way to create a Date object with a time zone.
-# However, methods of the Date class when used by a
-# DateTime instance will use the time zone offset of this
-# instance.
+# The Date class does not support offsets, in that
+# there is no way to create a Date object with non-utc offset.
 #
 # == Examples of use
 #
 # === Print out the date of every Sunday between two dates.
 #
 #     def print_sundays(d1, d2)
-#         d1 +=1 while (d1.wday != 0)
-#         d1.step(d2, 7) do |date|
-#             puts "#{Date::MONTHNAMES[date.mon]} #{date.day}"
+#         d1 += 1 until d1.sunday?
+#         d1.step(d2, 7) do |d|
+#             puts d.strftime('%B %-d')
 #         end
 #     end
 #
-#     print_sundays(Date::civil(2003, 4, 8), Date::civil(2003, 5, 23))
-#
-# === Calculate how many seconds to go till midnight on New Year's Day.
-#
-#     def secs_to_new_year(now = DateTime::now())
-#         new_year = DateTime.new(now.year + 1, 1, 1)
-#         dif = new_year - now
-#         hours, mins, secs, ignore_fractions = Date::day_fraction_to_time(dif)
-#         return hours * 60 * 60 + mins * 60 + secs
-#     end
-#
-#     puts secs_to_new_year()
+#     print_sundays(Date.new(2003, 4, 8), Date.new(2003, 5, 23))
 
 require 'date/format'
 
@@ -1051,7 +1036,7 @@ class Date
   #
   # +str+ is a String holding a date representation.
   # +comp+ specifies whether to interpret 2-digit years
-  # as 19XX (>= 69) or 20XX (< 69); the default is not to.
+  # as 19XX (>= 69) or 20XX (< 69); the default is to.
   # The method will attempt to parse a date from the String
   # using various heuristics; see #_parse in date/format.rb
   # for more details.  If parsing fails, an ArgumentError
@@ -1363,7 +1348,7 @@ class Date
   #
   # Comparison is by Astronomical Julian Day Number, including
   # fractional days.  This means that both the time and the
-  # timezone offset are taken into account when comparing
+  # offset are taken into account when comparing
   # two DateTime instances.  When comparing a DateTime instance
   # with a Date instance, the time of the latter will be
   # considered as falling on midnight UTC.
@@ -1537,7 +1522,7 @@ end
 # === zone()
 #
 # Get the time zone as a String.  This is representation of the
-# time offset such as "+1000", not the true time-zone name.
+# time offset such as "+10:00".
 #
 # === offset()
 #
@@ -1718,7 +1703,7 @@ class DateTime < Date
   #
   # +str+ is a String holding a date-time representation.
   # +comp+ specifies whether to interpret 2-digit years
-  # as 19XX (>= 69) or 20XX (< 69); the default is not to.
+  # as 19XX (>= 69) or 20XX (< 69); the default is to.
   # The method will attempt to parse a date-time from the String
   # using various heuristics; see #_parse in date/format.rb
   # for more details.  If parsing fails, an ArgumentError
