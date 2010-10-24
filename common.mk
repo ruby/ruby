@@ -809,7 +809,12 @@ run.gdb:
 	echo '# b rb_longjmp'                 >> run.gdb
 	echo source $(srcdir)/breakpoints.gdb >> run.gdb
 	echo source $(srcdir)/.gdbinit        >> run.gdb
+	echo 'set $$_exitcode = -999'         >> run.gdb
 	echo run                              >> run.gdb
+	echo 'if $$_exitcode != -999'         >> run.gdb
+	echo '  quit'                         >> run.gdb
+	echo end                              >> run.gdb
+
 
 gdb: miniruby$(EXEEXT) run.gdb PHONY
 	gdb -x run.gdb --quiet --args $(MINIRUBY) $(TESTRUN_SCRIPT)
