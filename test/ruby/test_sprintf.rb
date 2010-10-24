@@ -230,6 +230,10 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal("0x1.p+0", sprintf("%#.0a",  1), bug3965)
     assert_equal("0x00000000000000.p+0", sprintf("%#020a",  0), bug3965)
     assert_equal("0x0000.0000000000p+0", sprintf("%#020.10a",  0), bug3965)
+
+    bug3979 = '[ruby-dev:42453]'
+    assert_equal("          0x0.000p+0", sprintf("%20.3a",  0), bug3979)
+    assert_equal("          0x1.000p+0", sprintf("%20.3a",  1), bug3979)
   end
 
   BSIZ = 120
