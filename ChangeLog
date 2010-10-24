@@ -1,4 +1,6 @@
-Sun Oct 24 14:17:58 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Oct 24 15:16:30 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::Mini#run): abort if interrupted.
 
 	* lib/test/unit.rb (Test::Unit::Mini#run_test_suites): show the
 	  result even when interrupted on the way.

@@ -162,10 +162,18 @@ module Test
         @@installed_at_exit = true
       end
 
+      def run(*args)
+        result = super
+        abort if @interrupt
+        result
+      end
+
       def run_test_suites(*args)
         old_sync = @@out.sync if @@out.respond_to?(:sync=)
+        @interrupt = false
         super
       rescue Interrupt
+        @interrupt = true
         [@test_count, @assertion_count]
       ensure
         @@out.sync = old_sync if @@out.respond_to?(:sync=)
