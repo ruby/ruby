@@ -165,6 +165,8 @@ module Test
       def run_test_suites(*args)
         old_sync = @@out.sync if @@out.respond_to?(:sync=)
         super
+      rescue Interrupt
+        [@test_count, @assertion_count]
       ensure
         @@out.sync = old_sync if @@out.respond_to?(:sync=)
       end

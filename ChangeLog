@@ -1,4 +1,7 @@
-Sun Oct 24 14:13:50 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Oct 24 14:17:58 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::Mini#run_test_suites): show the
+	  result even when interrupted on the way.
 
 	* lib/test/unit.rb (Test::Unit::Mini#run_test_suites): ensure
 	  output sync mode to be restored.
