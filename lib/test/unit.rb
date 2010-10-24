@@ -156,10 +156,17 @@ module Test
       def self.autorun
         at_exit {
           Test::Unit::RunCount.run_once {
-          exit(Test::Unit::Mini.new.run(ARGV) || true)
-        }
+            exit(Test::Unit::Mini.new.run(ARGV) || true)
+          }
         } unless @@installed_at_exit
         @@installed_at_exit = true
+      end
+
+      def run_test_suites(*args)
+        old_sync = @@out.sync if @@out.respond_to?(:sync=)
+        super
+      ensure
+        @@out.sync = old_sync if @@out.respond_to?(:sync=)
       end
     end
   end

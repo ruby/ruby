@@ -1,3 +1,8 @@
+Sun Oct 24 14:13:50 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::Mini#run_test_suites): ensure
+	  output sync mode to be restored.
+
 Sun Oct 24 14:11:16 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (vm_define_method): defined method is run with the default
