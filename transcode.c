@@ -2711,9 +2711,7 @@ str_encode_bang(int argc, VALUE *argv, VALUE str)
     VALUE newstr;
     int encidx;
 
-    if (OBJ_FROZEN(str)) { /* in future, may use str_frozen_check from string.c, but that's currently static */
-	rb_raise(rb_eRuntimeError, "string frozen");
-    }
+    rb_check_frozen(str);
 
     newstr = str;
     encidx = str_transcode(argc, argv, &newstr);

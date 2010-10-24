@@ -350,14 +350,6 @@ str_mod_check(VALUE s, const char *p, long len)
     }
 }
 
-static inline void
-str_frozen_check(VALUE s)
-{
-    if (OBJ_FROZEN(s)) {
-	rb_raise(rb_eRuntimeError, "string frozen");
-    }
-}
-
 size_t
 rb_str_capacity(VALUE str)
 {
@@ -1250,7 +1242,7 @@ str_modifiable(VALUE str)
     if (FL_TEST(str, STR_TMPLOCK)) {
 	rb_raise(rb_eRuntimeError, "can't modify string; temporarily locked");
     }
-    if (OBJ_FROZEN(str)) rb_error_frozen("string");
+    rb_check_frozen(str);
     if (!OBJ_UNTRUSTED(str) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify string");
 }
@@ -1335,7 +1327,7 @@ void
 rb_str_associate(VALUE str, VALUE add)
 {
     /* sanity check */
-    if (OBJ_FROZEN(str)) rb_error_frozen("string");
+    rb_check_frozen(str);
     if (STR_ASSOC_P(str)) {
 	/* already associated */
 	rb_ary_concat(RSTRING(str)->as.heap.aux.shared, add);
@@ -3546,7 +3538,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
                 repl = rb_obj_as_string(repl);
             }
 	    str_mod_check(str, p, len);
-	    str_frozen_check(str);
+	    rb_check_frozen(str);
 	}
 	else {
 	    repl = rb_reg_regsub(repl, str, regs, pat);

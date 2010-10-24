@@ -248,7 +248,7 @@ rb_hash_dup(VALUE hash)
 static void
 rb_hash_modify_check(VALUE hash)
 {
-    if (OBJ_FROZEN(hash)) rb_error_frozen("hash");
+    rb_check_frozen(hash);
     if (!OBJ_UNTRUSTED(hash) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify hash");
 }

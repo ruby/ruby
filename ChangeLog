@@ -1,4 +1,9 @@
-Sun Oct 24 17:05:51 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Oct 24 17:14:00 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c, gc.c, hash.c, object.c, string.c, struct.c,
+	  transcode.c, variable.c, vm.c, vm_insnhelper.c, vm_method.c:
+	  replace calls to rb_error_frozen() with rb_check_frozen().  a
+	  patch from Run Paint Run Run at [ruby-core:32014]
 
 	* include/ruby/intern.h (rb_check_frozen): optimize.
 	  [ruby-core:32878]
