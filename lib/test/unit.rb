@@ -70,17 +70,6 @@ module Test
       end
 
       def non_options(files, options)
-        files.each {|f|
-          d = File.dirname(path = File.expand_path(f))
-          unless $:.include? d
-            $: << d
-          end
-          begin
-            require path
-          rescue LoadError
-            puts "#{f}: #{$!}"
-          end
-        }
       end
     end
 
@@ -133,35 +122,47 @@ module Test
       end
     end
 
+    module RequireFiles
+      def non_options(files, options)
+        super
+        files.each {|f|
+          d = File.dirname(path = File.expand_path(f))
+          unless $:.include? d
+            $: << d
+          end
+          begin
+            require path
+          rescue LoadError
+            puts "#{f}: #{$!}"
+          end
+        }
+      end
+    end
+
     def self.new(*args, &block)
+      Mini.class_eval do
+        include Test::Unit::RequireFiles
+      end
       Mini.new(*args, &block)
     end
 
     class Mini < MiniTest::Unit
       include Test::Unit::GlobOption
       include Test::Unit::LoadPathOption
+      include Test::Unit::RunCount
+      include Test::Unit::Options
+
+      class << self; undef autorun; end
+      def self.autorun
+        at_exit {
+          Test::Unit::RunCount.run_once {
+          exit(Test::Unit::Mini.new.run(ARGV) || true)
+        }
+        } unless @@installed_at_exit
+        @@installed_at_exit = true
+      end
     end
   end
 end
 
-class MiniTest::Unit
-  def self.new(*args, &block)
-    obj = allocate
-      .extend(Test::Unit::RunCount)
-      .extend(Test::Unit::Options)
-    obj.__send__(:initialize, *args, &block)
-    obj
-  end
-
-  class << self; undef autorun; end
-  def self.autorun
-    at_exit {
-      Test::Unit::RunCount.run_once {
-        exit(Test::Unit::Mini.new.run(ARGV) || true)
-      }
-    } unless @@installed_at_exit
-    @@installed_at_exit = true
-  end
-end
-
-MiniTest::Unit.autorun
+Test::Unit::Mini.autorun

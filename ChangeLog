@@ -1,3 +1,8 @@
+Sun Oct 24 12:08:54 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* lib/test/unit.rb: make test/unit play nicely with the rake test
+	  loader. [ruby-core:32864]
+
 Sun Oct 24 00:25:13 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_rubyoptions.rb (test_segv_test): follow up the
