@@ -213,6 +213,23 @@ PRINTF_ARGS(void rb_compile_error_append(const char*, ...), 1, 2);
 NORETURN(void rb_load_fail(const char*));
 NORETURN(void rb_error_frozen(const char*));
 void rb_check_frozen(VALUE);
+#define rb_check_frozen_internal(obj) do { \
+	VALUE frozen_obj = (obj); \
+	if (OBJ_FROZEN(frozen_obj)) { \
+	    rb_error_frozen(rb_obj_classname(frozen_obj)); \
+	} \
+    } while (0)
+#ifdef __GNUC__
+#define rb_check_frozen(obj) __extension__({rb_check_frozen_internal(obj);})
+#else
+static inline void
+rb_check_frozen_inline(VALUE obj)
+{
+    rb_check_frozen_internal(obj);
+}
+#define rb_check_frozen(obj) rb_check_frozen_inline(obj)
+#endif
+
 /* eval.c */
 int rb_sourceline(void);
 const char *rb_sourcefile(void);

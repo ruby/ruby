@@ -1,3 +1,8 @@
+Sun Oct 24 17:05:51 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (rb_check_frozen): optimize.
+	  [ruby-core:32878]
+
 Sun Oct 24 15:16:30 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit.rb (Test::Unit::Mini#run): abort if interrupted.
