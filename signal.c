@@ -25,7 +25,7 @@ typedef LONG rb_atomic_t;
 # define ATOMIC_INC(var) InterlockedIncrement(&(var))
 # define ATOMIC_DEC(var) InterlockedDecrement(&(var))
 
-#elsif __GNUC__ >= 4
+#elif __GNUC__ >= 4
 /* @shyouhei hack to support atomic operations in case of gcc. Gcc
  * has its own pseudo-insns to support them.  See info, or
  * http://gcc.gnu.org/onlinedocs/gcc/Atomic-Builtins.html */
