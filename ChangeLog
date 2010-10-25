@@ -1,3 +1,14 @@
+Mon Oct 25 16:38:07 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* signal.c  (rb_atomic_t): GCC (of  at least  recent versions)
+	  has  ubiquitos  support  for  atomic  operations.   On  that
+	  compiler a C  program can isse a memory  barrier using these
+	  dedicated  instructions.  According to  the GCC  manual they
+	  cargo culted  this feature form  the Itanium ABI  so chances
+	  are that  other compilers  could also support  this feature.
+	  But so far GCC is the  only compiler that I know to have it.
+	  Also note that this works on non-Itanium machines.
+
 Mon Oct 25 06:21:35 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vsnprintf.c (BSD_vfprintf): prec digits fractal part should be
