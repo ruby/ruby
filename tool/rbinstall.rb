@@ -300,6 +300,8 @@ enable_shared = CONFIG["ENABLE_SHARED"] == 'yes'
 dll = CONFIG["LIBRUBY_SO"]
 lib = CONFIG["LIBRUBY"]
 arc = CONFIG["LIBRUBY_A"]
+major = CONFIG["MAJOR"]
+minor = CONFIG["MINOR"]
 
 install?(:local, :arch, :bin, :'bin-arch') do
   prepare "binary commands", bindir
@@ -333,6 +335,14 @@ install?(:local, :arch, :lib) do
     for file in CONFIG["ARCHFILE"].split
       install file, archlibdir, :mode => $data_mode
     end
+  end
+end
+
+install?(:local, :arch, :data) do
+  pc = CONFIG["ruby_pc"]
+  if File.exist?(pc)
+    prepare "pkgconfig data", pkgconfigdir = File.join(libdir, "pkgconfig")
+    install pc, pkgconfigdir, :mode => $data_mode
   end
 end
 

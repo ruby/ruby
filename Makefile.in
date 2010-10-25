@@ -178,6 +178,11 @@ $(arch)-fake.rb: config.status $(srcdir)/template/fake.rb.in
 		@./config.status --file=$@:$(srcdir)/template/fake.rb.in
 		@chmod +x $@
 
+ruby_pc = @ruby_pc@
+pkgconfig-data: $(ruby_pc)
+$(ruby_pc): $(srcdir)/template/ruby.pc.in config.status
+		@./config.status --file=$@:$(srcdir)/template/ruby.pc.in
+
 install-cross: $(arch)-fake.rb $(RBCONFIG) rbconfig.rb $(arch_hdrdir)/ruby/config.h \
 	$(LIBRUBY_A) $(LIBRUBY_SO) $(ARCHFILE)
 	$(MAKEDIRS) $(XRUBY_RUBYLIBDIR)/$(arch) $(XRUBY_RUBYHDRDIR)/$(arch)/ruby
@@ -272,6 +277,7 @@ enc/unicode/name2ctype.h: enc/unicode/name2ctype.kwd
 
 clean-local::
 	@$(RM) ext/extinit.c ext/extinit.$(OBJEXT) ext/ripper/y.output
+	@-$(RM) $(pkgconfig_DATA)
 
 distclean-local::
 	@$(RM) ext/config.cache $(RBCONFIG) Doxyfile

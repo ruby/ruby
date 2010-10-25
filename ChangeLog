@@ -1,3 +1,11 @@
+Tue Oct 26 00:29:26 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (pkgconfig-data): create pkg-config metadata file.
+
+	* tool/rbinstall.rb: install pkg-config metadata file.
+
+	* template/ruby.pc.in: template of pkg-config metadata file.
+
 Mon Oct 25 16:38:07 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* signal.c  (rb_atomic_t): GCC (of  at least  recent versions)

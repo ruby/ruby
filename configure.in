@@ -2657,6 +2657,7 @@ fi
 unset sitearch
 AS_CASE(["$target_os"],[mingw*],[sitearch="$target_cpu-$rb_cv_msvcrt"])
 test ${sitearch+set} && AC_DEFINE_UNQUOTED(RUBY_SITEARCH, "${sitearch}")
+: ${sitearch='${arch}'}
 
 AC_ARG_WITH(search-path,
 		AS_HELP_STRING([--with-search-path=DIR], [specify the additional search path]),
@@ -2771,6 +2772,16 @@ AC_CONFIG_FILES(Makefile, [{
 	${MAKE-make} info-program | grep '^PROGRAM=ruby$' > /dev/null ||
 	echo 'ruby: $(PROGRAM);' >> Makefile],
 [EXEEXT='$EXEEXT' gnumake='$gnumake'])
+
+ruby_pc="${RUBY_BASE_NAME}-${MAJOR}.${MINOR}.pc"
+AC_SUBST(ruby_pc)
+AC_CONFIG_FILES($ruby_pc:template/ruby.pc.in,
+    [
+    sed ['s/\$(\([A-Za-z_][A-Za-z0-9_]*\))/${\1}/g'] $ruby_pc > ruby.pc.tmp &&
+    mv -f ruby.pc.tmp $ruby_pc
+    ],
+    [ruby_pc='$ruby_pc'])
+
 AC_OUTPUT
 dnl }
 dnl }
