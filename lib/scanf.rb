@@ -321,6 +321,8 @@ module Scanf
           end
         end
         (sign == ?- ? -1 : 1) * Math.ldexp(f, exp.to_i)
+      elsif /\A([-+]?\d+)\.([eE][-+]\d+)/ =~ s
+        ($1 << $2).to_f
       else
         s.to_f
       end
