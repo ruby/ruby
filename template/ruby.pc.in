@@ -15,6 +15,7 @@ LIBRUBYARG_SHARED=@LIBRUBYARG_SHARED@
 LIBRUBYARG_STATIC=@LIBRUBYARG_STATIC@
 LIBRUBYARG=@LIBRUBYARG@
 LIBS=@LIBS@
+DLDFLAGS=@DLDFLAGS@
 ruby=${bindir}/${RUBY_INSTALL_NAME}@EXEEXT@
 rubyhdrdir=@rubyhdrdir@
 vendorhdrdir=@vendorhdrdir@
@@ -26,5 +27,5 @@ Name: Ruby
 Description: Object Oriented Script Language
 Version: ${ruby_version}
 Cflags: -I${rubyhdrdir}/${arch} -I${rubyhdrdir}
-Libs: ${LIBRUBYARG_SHARED} ${LIBS}
+Libs: ${DLDFLAGS} ${LIBRUBYARG_SHARED} ${LIBS}
 Requires:
