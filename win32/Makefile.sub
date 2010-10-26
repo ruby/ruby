@@ -339,6 +339,7 @@ VCSUP = $(VCS) rebase $(GITSVNREBASEOPTIONS)
 VCS = git
 VCSUP = $(VCS) pull $(GITPULLOPTIONS)
 !endif
+ruby_pc = $(RUBY_BASE_NAME)-$(MAJOR).$(MINOR).pc
 
 all: $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub $(srcdir)/common.mk
 
@@ -772,6 +773,7 @@ s,@configure_input@,$$configure_input,;t t
 s,@srcdir@,$(srcdir),;t t
 s,@top_srcdir@,$(srcdir),;t t
 s,@try_header@,try_compile,;t t
+s,@ruby_pc@,$(ruby_pc),;t t
 <<KEEP
 
 miniruby: miniruby$(EXEEXT)
@@ -895,6 +897,13 @@ class File
   ALT_SEPARATOR = "\\"
 end
 <<KEEP
+
+$(ruby_pc): $(RBCONFIG)
+	@$(MINIRUBY) -rrbconfig -p \
+	-e '$$_.gsub!(/@([a-z_]\w*)@/i) {' \
+	-e 'RbConfig::MAKEFILE_CONFIG[$$1].gsub(/\$$\((.+?)\)/, %Q[$${\1}])'
+	-e '}' \
+	$(srcdir)/template/ruby.pc.in > $@
 
 {$(srcdir)/enc}.c.obj:
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c -Tc$(<:\=/)

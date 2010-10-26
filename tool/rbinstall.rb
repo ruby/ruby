@@ -340,7 +340,7 @@ end
 
 install?(:local, :arch, :data) do
   pc = CONFIG["ruby_pc"]
-  if File.exist?(pc)
+  if pc and File.file?(pc) and File.size?(pc)
     prepare "pkgconfig data", pkgconfigdir = File.join(libdir, "pkgconfig")
     install pc, pkgconfigdir, :mode => $data_mode
   end

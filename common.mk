@@ -181,6 +181,8 @@ ruby.imp: $(EXPORTOBJS)
 
 install: install-$(INSTALLDOC)
 docs: $(DOCTARGETS)
+pkgconfig-data: $(ruby_pc)
+$(ruby_pc): $(srcdir)/template/ruby.pc.in config.status
 
 install-all: docs pre-install-all do-install-all post-install-all
 pre-install-all:: pre-install-local pre-install-ext pre-install-doc

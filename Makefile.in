@@ -179,8 +179,7 @@ $(arch)-fake.rb: config.status $(srcdir)/template/fake.rb.in
 		@chmod +x $@
 
 ruby_pc = @ruby_pc@
-pkgconfig-data: $(ruby_pc)
-$(ruby_pc): $(srcdir)/template/ruby.pc.in config.status
+$(ruby_pc):
 		@./config.status --file=$@:$(srcdir)/template/ruby.pc.in
 
 install-cross: $(arch)-fake.rb $(RBCONFIG) rbconfig.rb $(arch_hdrdir)/ruby/config.h \

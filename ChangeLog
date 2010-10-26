@@ -1,3 +1,12 @@
+Tue Oct 26 12:47:10 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (pkgconfig-data): moved from Makefile.in.
+
+	* tool/rbinstall.rb: install pc file only if non-empty.
+	  [ruby-core:32901] #3983
+
+	* win32/Makefile.sub (ruby_pc): create pc file.
+
 Tue Oct 26 09:13:34 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (rb_cv_gcc_atomic_builtins): check for atomic
