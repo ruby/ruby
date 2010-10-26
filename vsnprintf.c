@@ -127,6 +127,12 @@
 # include <errno.h>
 #endif
 
+#if __GNUC__ >= 3
+#define UNINITIALIZED_VAR(x) x = x
+#else
+#define UNINITIALIZED_VAR(x) x
+#endif
+
 /*
  * NB: to fit things in six character monocase externals, the stdio
  * code uses the prefix `__s' for stdio objects, typically followed
@@ -543,9 +549,9 @@ BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 	int ndig = 0;		/* actual number of digits returned by cvt */
 	char expstr[7];		/* buffer for exponent string */
 #endif
-	u_long	ulval;		/* integer arguments %[diouxX] */
+	u_long UNINITIALIZED_VAR(ulval); /* integer arguments %[diouxX] */
 #ifdef _HAVE_SANE_QUAD_
-	u_quad_t uqval;		/* %q integers */
+	u_quad_t UNINITIALIZED_VAR(uqval); /* %q integers */
 #endif /* _HAVE_SANE_QUAD_ */
 	int base;		/* base for [diouxX] conversion */
 	int dprec;		/* a copy of prec if [diouxX], 0 otherwise */
