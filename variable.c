@@ -82,7 +82,7 @@ fc_i(ID key, VALUE value, struct fc_result *res)
     switch (TYPE(value)) {
       case T_MODULE:
       case T_CLASS:
-	if (!RCLASS_IV_TBL(value)) return ST_CONTINUE;
+	if (!RCLASS_CONST_TBL(value)) return ST_CONTINUE;
 	else {
 	    struct fc_result arg;
 	    struct fc_result *list;
@@ -98,7 +98,7 @@ fc_i(ID key, VALUE value, struct fc_result *res)
 	    arg.klass = res->klass;
 	    arg.track = value;
 	    arg.prev = res;
-	    st_foreach(RCLASS_IV_TBL(value), fc_i, (st_data_t)&arg);
+	    st_foreach(RCLASS_CONST_TBL(value), fc_i, (st_data_t)&arg);
 	    if (arg.path) {
 		res->path = arg.path;
 		return ST_STOP;
@@ -122,8 +122,8 @@ find_class_path(VALUE klass)
     arg.klass = klass;
     arg.track = rb_cObject;
     arg.prev = 0;
-    if (RCLASS_IV_TBL(rb_cObject)) {
-	st_foreach_safe(RCLASS_IV_TBL(rb_cObject), fc_i, (st_data_t)&arg);
+    if (RCLASS_CONST_TBL(rb_cObject)) {
+	st_foreach_safe(RCLASS_CONST_TBL(rb_cObject), fc_i, (st_data_t)&arg);
     }
     if (arg.path == 0) {
 	st_foreach_safe(rb_class_tbl, fc_i, (st_data_t)&arg);
@@ -1439,15 +1439,16 @@ rb_autoload(VALUE mod, ID id, const char *file)
 	rb_raise(rb_eArgError, "empty file name");
     }
 
-    if ((tbl = RCLASS_IV_TBL(mod)) && st_lookup(tbl, (st_data_t)id, &av) && (VALUE)av != Qundef)
+    if ((tbl = RCLASS_CONST_TBL(mod)) && st_lookup(tbl, (st_data_t)id, &av) && (VALUE)av != Qundef)
 	return;
 
     rb_const_set(mod, id, Qundef);
     tbl = RCLASS_IV_TBL(mod);
-    if (st_lookup(tbl, (st_data_t)autoload, &av)) {
+    if (tbl && st_lookup(tbl, (st_data_t)autoload, &av)) {
 	tbl = check_autoload_table((VALUE)av);
     }
     else {
+	if (!tbl) tbl = RCLASS_IV_TBL(mod) = st_init_numtable();
 	av = (st_data_t)TypedData_Wrap_Struct(0, &autoload_data_type, 0);
 	st_add_direct(tbl, (st_data_t)autoload, av);
 	DATA_PTR(av) = tbl = st_init_numtable();
@@ -1463,7 +1464,7 @@ autoload_delete(VALUE mod, ID id)
 {
     st_data_t val, load = 0, n = id;
 
-    st_delete(RCLASS_IV_TBL(mod), &n, 0);
+    st_delete(RCLASS_CONST_TBL(mod), &n, 0);
     if (st_lookup(RCLASS_IV_TBL(mod), (st_data_t)autoload, &val)) {
 	struct st_table *tbl = check_autoload_table((VALUE)val);
 
@@ -1471,7 +1472,7 @@ autoload_delete(VALUE mod, ID id)
 
 	if (tbl->num_entries == 0) {
 	    n = autoload;
-	    st_delete(RCLASS_IV_TBL(mod), &n, &val);
+	    st_delete(RCLASS_CONST_TBL(mod), &n, &val);
 	}
     }
 
@@ -1528,7 +1529,7 @@ autoload_node(VALUE mod, ID id, const char **loadingpath)
 static int
 autoload_node_id(VALUE mod, ID id)
 {
-    struct st_table *tbl = RCLASS_IV_TBL(mod);
+    struct st_table *tbl = RCLASS_CONST_TBL(mod);
     st_data_t val;
 
     if (!tbl || !st_lookup(tbl, (st_data_t)id, &val) || (VALUE)val != Qundef) {
@@ -1577,7 +1578,7 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse)
     while (RTEST(tmp)) {
 	VALUE am = 0;
 	st_data_t data;
-	while (RCLASS_IV_TBL(tmp) && st_lookup(RCLASS_IV_TBL(tmp), (st_data_t)id, &data)) {
+	while (RCLASS_CONST_TBL(tmp) && st_lookup(RCLASS_CONST_TBL(tmp), (st_data_t)id, &data)) {
 	    value = (VALUE)data;
 	    if (value == Qundef) {
 		if (am == tmp) break;
@@ -1654,7 +1655,7 @@ rb_const_remove(VALUE mod, ID id)
     if (!OBJ_UNTRUSTED(mod) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't remove constant");
     rb_check_frozen(mod);
-    if (!RCLASS_IV_TBL(mod) || !st_delete(RCLASS_IV_TBL(mod), &n, &v)) {
+    if (!RCLASS_CONST_TBL(mod) || !st_delete(RCLASS_CONST_TBL(mod), &n, &v)) {
 	if (rb_const_defined_at(mod, id)) {
 	    rb_name_error(id, "cannot remove %s::%s",
 			  rb_class2name(mod), rb_id2name(id));
@@ -1691,8 +1692,8 @@ rb_mod_const_at(VALUE mod, void *data)
     if (!tbl) {
 	tbl = st_init_numtable();
     }
-    if (RCLASS_IV_TBL(mod)) {
-	st_foreach_safe(RCLASS_IV_TBL(mod), sv_i, (st_data_t)tbl);
+    if (RCLASS_CONST_TBL(mod)) {
+	st_foreach_safe(RCLASS_CONST_TBL(mod), sv_i, (st_data_t)tbl);
     }
     return tbl;
 }
@@ -1777,7 +1778,7 @@ rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse)
     tmp = klass;
   retry:
     while (tmp) {
-	if (RCLASS_IV_TBL(tmp) && st_lookup(RCLASS_IV_TBL(tmp), (st_data_t)id, &value)) {
+	if (RCLASS_CONST_TBL(tmp) && st_lookup(RCLASS_CONST_TBL(tmp), (st_data_t)id, &value)) {
 	    if ((VALUE)value == Qundef && !autoload_node((VALUE)klass, id, 0))
 		return (int)Qfalse;
 	    return (int)Qtrue;
@@ -1811,32 +1812,12 @@ rb_const_defined_at(VALUE klass, ID id)
     return rb_const_defined_0(klass, id, TRUE, FALSE);
 }
 
-static void
-mod_av_set(VALUE klass, ID id, VALUE val, int isconst)
+void
+check_before_mod_set(VALUE klass, ID id, VALUE val, const char *dest)
 {
-    const char *dest = isconst ? "constant" : "class variable";
-
     if (!OBJ_UNTRUSTED(klass) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't set %s", dest);
     rb_check_frozen(klass);
-    if (!RCLASS_IV_TBL(klass)) {
-	RCLASS_IV_TBL(klass) = st_init_numtable();
-    }
-    else if (isconst) {
-	st_data_t value;
-
-	if (st_lookup(RCLASS_IV_TBL(klass), (st_data_t)id, &value)) {
-	    if ((VALUE)value == Qundef)
-		autoload_delete(klass, id);
-	    else
-		rb_warn("already initialized %s %s", dest, rb_id2name(id));
-	}
-    }
-
-    if (isconst){
-	rb_vm_change_state();
-    }
-    st_insert(RCLASS_IV_TBL(klass), (st_data_t)id, (st_data_t)val);
 }
 
 void
@@ -1846,7 +1827,24 @@ rb_const_set(VALUE klass, ID id, VALUE val)
 	rb_raise(rb_eTypeError, "no class/module to define constant %s",
 		 rb_id2name(id));
     }
-    mod_av_set(klass, id, val, TRUE);
+
+    check_before_mod_set(klass, id, val, "constant");
+    if (!RCLASS_CONST_TBL(klass)) {
+	RCLASS_CONST_TBL(klass) = st_init_numtable();
+    }
+    else {
+	st_data_t value;
+
+	if (st_lookup(RCLASS_CONST_TBL(klass), (st_data_t)id, &value)) {
+	    if ((VALUE)value == Qundef)
+		autoload_delete(klass, id);
+	    else
+		rb_warn("already initialized constant %s", rb_id2name(id));
+	}
+    }
+
+    rb_vm_change_state();
+    st_insert(RCLASS_CONST_TBL(klass), (st_data_t)id, (st_data_t)val);
 }
 
 void
@@ -1928,7 +1926,13 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
     else {
 	target = tmp;
     }
-    mod_av_set(target, id, val, FALSE);
+
+    check_before_mod_set(target, id, val, "class variable");
+    if (!RCLASS_IV_TBL(target)) {
+	RCLASS_IV_TBL(target) = st_init_numtable();
+    }
+
+    st_insert(RCLASS_IV_TBL(target), (st_data_t)id, (st_data_t)val);
 }
 
 VALUE

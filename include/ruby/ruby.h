@@ -608,6 +608,7 @@ struct RObject {
 typedef struct {
     VALUE super;
     struct st_table *iv_tbl;
+    struct st_table *const_tbl;
 } rb_classext_t;
 
 struct RClass {
@@ -617,10 +618,12 @@ struct RClass {
     struct st_table *iv_index_tbl;
 };
 #define RCLASS_IV_TBL(c) (RCLASS(c)->ptr->iv_tbl)
+#define RCLASS_CONST_TBL(c) (RCLASS(c)->ptr->const_tbl)
 #define RCLASS_M_TBL(c) (RCLASS(c)->m_tbl)
 #define RCLASS_SUPER(c) (RCLASS(c)->ptr->super)
 #define RCLASS_IV_INDEX_TBL(c) (RCLASS(c)->iv_index_tbl)
 #define RMODULE_IV_TBL(m) RCLASS_IV_TBL(m)
+#define RMODULE_CONST_TBL(m) RCLASS_CONST_TBL(m)
 #define RMODULE_M_TBL(m) RCLASS_M_TBL(m)
 #define RMODULE_SUPER(m) RCLASS_SUPER(m)
 

@@ -1718,6 +1718,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
       case T_MODULE:
 	mark_m_tbl(objspace, RCLASS_M_TBL(obj), lev);
 	mark_tbl(objspace, RCLASS_IV_TBL(obj), lev);
+	mark_tbl(objspace, RCLASS_CONST_TBL(obj), lev);
 	ptr = RCLASS_SUPER(obj);
 	goto again;
 
@@ -2178,6 +2179,9 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	rb_free_m_table(RCLASS_M_TBL(obj));
 	if (RCLASS_IV_TBL(obj)) {
 	    st_free_table(RCLASS_IV_TBL(obj));
+	}
+	if (RCLASS_CONST_TBL(obj)) {
+	    st_free_table(RCLASS_CONST_TBL(obj));
 	}
 	if (RCLASS_IV_INDEX_TBL(obj)) {
 	    st_free_table(RCLASS_IV_INDEX_TBL(obj));

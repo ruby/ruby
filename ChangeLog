@@ -1,3 +1,12 @@
+Wed Oct 27 01:56:34 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* class.c, gc.c, object.c, variable.c, vm_insnhelper.c,
+	  include/ruby/ruby.h: separate RCLASS_CONST_TBL from RCLASS_IV_TBL.
+	  RCLASS_IV_TBL has contained not only instance variable table but
+	  also constant table.  Now the two table are separated to
+	  RCLASS_CONST_TBL and RCLASS_IV_TBL.  This is a preparation for
+	  private constant (see [ruby-dev:39685][ruby-core:32698]).
+
 Tue Oct 26 18:51:00 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/scanf.rb (extract_float): allow 2.e+2 style.

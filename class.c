@@ -52,6 +52,7 @@ class_alloc(VALUE flags, VALUE klass)
     OBJSETUP(obj, klass, flags);
     obj->ptr = ext;
     RCLASS_IV_TBL(obj) = 0;
+    RCLASS_CONST_TBL(obj) = 0;
     RCLASS_M_TBL(obj) = 0;
     RCLASS_SUPER(obj) = 0;
     RCLASS_IV_INDEX_TBL(obj) = 0;
@@ -161,6 +162,12 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
 	CONST_ID(id, "__classid__");
 	st_delete(RCLASS_IV_TBL(clone), &id, 0);
     }
+    if (RCLASS_CONST_TBL(orig)) {
+	if (RCLASS_CONST_TBL(clone)) {
+	    st_free_table(RCLASS_CONST_TBL(clone));
+	}
+	RCLASS_CONST_TBL(clone) = st_copy(RCLASS_CONST_TBL(orig));
+    }
     if (RCLASS_M_TBL(orig)) {
 	struct clone_method_data data;
 
@@ -215,6 +222,9 @@ rb_singleton_class_clone(VALUE obj)
 	RCLASS_SUPER(clone) = RCLASS_SUPER(klass);
 	if (RCLASS_IV_TBL(klass)) {
 	    RCLASS_IV_TBL(clone) = st_copy(RCLASS_IV_TBL(klass));
+	}
+	if (RCLASS_CONST_TBL(klass)) {
+	    RCLASS_CONST_TBL(clone) = st_copy(RCLASS_CONST_TBL(klass));
 	}
 	RCLASS_M_TBL(clone) = st_init_numtable();
 	data.tbl = RCLASS_M_TBL(clone);
@@ -607,7 +617,11 @@ include_class_new(VALUE module, VALUE super)
     if (!RCLASS_IV_TBL(module)) {
 	RCLASS_IV_TBL(module) = st_init_numtable();
     }
+    if (!RCLASS_CONST_TBL(module)) {
+	RCLASS_CONST_TBL(module) = st_init_numtable();
+    }
     RCLASS_IV_TBL(klass) = RCLASS_IV_TBL(module);
+    RCLASS_CONST_TBL(klass) = RCLASS_CONST_TBL(module);
     RCLASS_M_TBL(klass) = RCLASS_M_TBL(module);
     RCLASS_SUPER(klass) = super;
     if (TYPE(module) == T_ICLASS) {

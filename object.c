@@ -221,6 +221,10 @@ init_copy(VALUE dest, VALUE obj)
 	    st_free_table(RCLASS_IV_TBL(dest));
 	    RCLASS_IV_TBL(dest) = 0;
 	}
+	if (RCLASS_CONST_TBL(dest)) {
+	    st_free_table(RCLASS_CONST_TBL(dest));
+	    RCLASS_CONST_TBL(dest) = 0;
+	}
 	if (RCLASS_IV_TBL(obj)) {
 	    RCLASS_IV_TBL(dest) = st_copy(RCLASS_IV_TBL(obj));
 	}
