@@ -775,6 +775,19 @@ if test "$GCC" = yes; then
 	AC_DEFINE_UNQUOTED([RUBY_ALIAS_FUNCTION_VOID(prot, name, args)],
 			   [RUBY_ALIAS_FUNCTION_TYPE(void, prot, name, args)])
     fi
+    AC_CACHE_CHECK([for atomic builtins], [rb_cv_gcc_atomic_builtins], [
+	AC_TRY_LINK([unsigned char atomic_var;],
+		    [
+			__sync_lock_test_and_set(&atomic_var, 0);
+			__sync_lock_test_and_set(&atomic_var, 1);
+			__sync_fetch_and_add(&atomic_var, 1);
+			__sync_fetch_and_sub(&atomic_var, 1);
+		    ],
+		    [rb_cv_gcc_atomic_builtins=yes],
+		    [rb_cv_gcc_atomic_builtins=no])])
+    if test "$rb_cv_gcc_atomic_builtins" = yes; then
+	AC_DEFINE(HAVE_GCC_ATOMIC_BUILTINS)
+    fi
 fi
 
 AC_CACHE_CHECK(for exported function attribute, rb_cv_func_exported, [
