@@ -1586,7 +1586,11 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse)
 	VALUE am = 0;
 	st_data_t data;
 	while (RCLASS_CONST_TBL(tmp) && st_lookup(RCLASS_CONST_TBL(tmp), (st_data_t)id, &data)) {
-	    value = ((rb_const_entry_t*)data)->value;
+	    rb_const_entry_t *ce = (rb_const_entry_t *)data;
+	    if (ce->flag == CONST_PRIVATE) {
+		rb_name_error(id, "private constant %s::%s referenced", rb_class2name(klass), rb_id2name(id));
+	    }
+	    value = ce->value;
 	    if (value == Qundef) {
 		if (am == tmp) break;
 		am = tmp;
@@ -1880,6 +1884,57 @@ void
 rb_define_global_const(const char *name, VALUE val)
 {
     rb_define_const(rb_cObject, name, val);
+}
+
+static void
+set_const_visibility(VALUE mod, int argc, VALUE *argv, rb_const_flag_t flag)
+{
+    int i;
+    st_data_t v;
+    ID id;
+
+    if (rb_safe_level() >= 4 && !OBJ_UNTRUSTED(mod)) {
+	rb_raise(rb_eSecurityError,
+		 "Insecure: can't change method visibility");
+    }
+
+    for (i = 0; i < argc; i++) {
+	id = rb_to_id(argv[i]);
+	if (RCLASS_CONST_TBL(mod) && st_lookup(RCLASS_CONST_TBL(mod), (st_data_t)id, &v)) {
+	    ((rb_const_entry_t*)v)->flag = flag;
+	    return;
+	}
+	rb_name_error(id, "constant %s::%s not defined", rb_class2name(mod), rb_id2name(id));
+    }
+    rb_clear_cache_by_class(mod);
+}
+
+/*
+ *  call-seq:
+ *     mod.private_constant(symbol, ...)    => mod
+ *
+ *  Makes a list of existing constants private.
+ */
+
+VALUE
+rb_mod_private_constant(int argc, VALUE *argv, VALUE obj)
+{
+    set_const_visibility(obj, argc, argv, CONST_PRIVATE);
+    return obj;
+}
+
+/*
+ *  call-seq:
+ *     mod.public_constant(symbol, ...)    => mod
+ *
+ *  Makes a list of existing constants public.
+ */
+
+VALUE
+rb_mod_public_constant(int argc, VALUE *argv, VALUE obj)
+{
+    set_const_visibility(obj, argc, argv, CONST_PUBLIC);
+    return obj;
 }
 
 static VALUE

@@ -2648,6 +2648,8 @@ Init_Object(void)
     rb_define_method(rb_cModule, "class_variable_get", rb_mod_cvar_get, 1);
     rb_define_method(rb_cModule, "class_variable_set", rb_mod_cvar_set, 2);
     rb_define_method(rb_cModule, "class_variable_defined?", rb_mod_cvar_defined, 1);
+    rb_define_method(rb_cModule, "public_constant", rb_mod_public_constant, -1);
+    rb_define_method(rb_cModule, "private_constant", rb_mod_private_constant, -1);
 
     rb_define_method(rb_cClass, "allocate", rb_obj_alloc, 0);
     rb_define_method(rb_cClass, "new", rb_class_new_instance, -1);

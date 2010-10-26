@@ -21,6 +21,8 @@ typedef struct rb_const_entry_struct {
     VALUE value;            /* should be mark */
 } rb_const_entry_t;
 
+VALUE rb_mod_private_constant(int argc, VALUE *argv, VALUE obj);
+VALUE rb_mod_public_constant(int argc, VALUE *argv, VALUE obj);
 void rb_free_const_table(st_table *tbl);
 
 #endif /* CONSTANT_H */

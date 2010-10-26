@@ -939,4 +939,24 @@ class TestModule < Test::Unit::TestCase
     assert_nothing_raised(bug3406) {c.x = 1}
     assert_equal(1, c.x, bug3406)
   end
+
+  def test_private_constant
+    c = Class.new
+    c.const_set(:FOO, "foo")
+    assert_equal("foo", c::FOO)
+    c.private_constant(:FOO)
+    assert_raise(NameError) { c::FOO }
+    assert_equal("foo", c.class_eval("FOO"))
+  end
+
+  def test_public_constant
+    c = Class.new
+    c.const_set(:FOO, "foo")
+    assert_equal("foo", c::FOO)
+    c.private_constant(:FOO)
+    assert_raise(NameError) { c::FOO }
+    assert_equal("foo", c.class_eval("FOO"))
+    c.public_constant(:FOO)
+    assert_equal("foo", c::FOO)
+  end
 end

@@ -1,3 +1,12 @@
+Wed Oct 27 02:12:10 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* object.c (Init_Object), constant.h, variable.c
+	  (rb_mod_private_constant, rb_mod_public_constant,
+	  set_const_visibility, rb_const_get_0): add Module#public_constant
+	  and private_constant.  [ruby-dev:39685][ruby-core:32698]
+
+	* test/ruby/test_module.rb: add tests for above.
+
 Wed Oct 27 02:02:54 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* class.c, constant.h, gc.c, method.h, object.c, variable.c,
