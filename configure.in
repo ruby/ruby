@@ -1199,6 +1199,27 @@ AS_CASE(["${target_cpu}-${target_os}:${target_archs}"],
 [
   AC_FUNC_ALLOCA
   ])
+if test "x$ALLOCA" = "x"; then
+    AC_CACHE_CHECK([for dynamic size alloca], rb_cv_dynamic_alloca, [
+    for chk in ok __chkstk; do
+	AC_TRY_LINK([
+	    @%:@ifdef HAVE_ALLOCA_H
+	    @%:@include <alloca.h>
+	    @%:@endif
+	    void $chk() {}
+	    int dynamic_alloca_test;
+	    int dynamic_alloca_result;],
+	    [dynamic_alloca_result = alloca(dynamic_alloca_test) != 0;],
+	    [rb_cv_dynamic_alloca=$chk; break])
+    done])
+    if test "x$rb_cv_dynamic_alloca" = "x__chkstk"; then
+	AC_DEFINE_UNQUOTED(RUBY_ALLOCA_CHKSTK, _$rb_cv_dynamic_alloca)
+	AS_CASE("$target_cpu",
+	[x64|x86_64], [
+	    AC_SUBST([ALLOCA], [\${LIBOBJDIR}x86_64-chkstk.${ac_objext}])
+	],)
+    fi
+fi
 AC_FUNC_MEMCMP
 
 # http://sources.redhat.com/ml/libc-hacker/2005-08/msg00008.html

@@ -597,4 +597,17 @@ native_reset_timer_thread(void)
     }
 }
 
+#ifdef RUBY_ALLOCA_CHKSTK
+void
+ruby_alloca_chkstk(size_t len, void *sp)
+{
+    if (ruby_stack_length(NULL) * sizeof(VALUE) >= len) {
+	rb_thread_t *th = GET_THREAD();
+	if (!rb_thread_raised_p(th, RAISED_STACKOVERFLOW)) {
+	    rb_thread_raised_set(th, RAISED_STACKOVERFLOW);
+	    rb_exc_raise(sysstack_error);
+	}
+    }
+}
+#endif
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */
