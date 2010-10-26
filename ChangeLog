@@ -1,3 +1,14 @@
+Wed Oct 27 02:02:54 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* class.c, constant.h, gc.c, method.h, object.c, variable.c,
+	  vm_insnhelper.c: use struct rb_constant_entry_t as entry of
+	  RCLASS_CONST_TBL.  RCLASS_CONST_TBL has contained VALUE of constant
+	  directly.  Now instead rb_const_entry_t is contained in
+	  RCLASS_CONST_TBL,  rb_const_entry_t is managed by malloc, and
+	  have not only the value itself but also visibility flag.
+	  This is another preparation for private constant (see
+	  [ruby-dev:39685][ruby-core:32698]).
+
 Wed Oct 27 01:56:34 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* class.c, gc.c, object.c, variable.c, vm_insnhelper.c,

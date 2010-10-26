@@ -26,6 +26,7 @@
 #include "ruby/ruby.h"
 #include "ruby/st.h"
 #include "method.h"
+#include "constant.h"
 #include "vm_core.h"
 #include <ctype.h>
 
@@ -140,6 +141,14 @@ clone_method(ID mid, const rb_method_entry_t *me, struct clone_method_data *data
     return ST_CONTINUE;
 }
 
+static int
+clone_const(ID key, const rb_const_entry_t *ce, st_table *tbl)
+{
+    rb_const_entry_t *nce = ALLOC(rb_const_entry_t);
+    *nce = *ce;
+    st_insert(tbl, key, (st_data_t)nce);
+}
+
 /* :nodoc: */
 VALUE
 rb_mod_init_copy(VALUE clone, VALUE orig)
@@ -164,15 +173,15 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
     }
     if (RCLASS_CONST_TBL(orig)) {
 	if (RCLASS_CONST_TBL(clone)) {
-	    st_free_table(RCLASS_CONST_TBL(clone));
+	    rb_free_const_table(RCLASS_CONST_TBL(clone));
 	}
-	RCLASS_CONST_TBL(clone) = st_copy(RCLASS_CONST_TBL(orig));
+	RCLASS_CONST_TBL(clone) = st_init_numtable();
+	st_foreach(RCLASS_CONST_TBL(orig), clone_const, (st_data_t)RCLASS_CONST_TBL(clone));
     }
     if (RCLASS_M_TBL(orig)) {
 	struct clone_method_data data;
 
 	if (RCLASS_M_TBL(clone)) {
-	    extern void rb_free_m_table(st_table *tbl);
 	    rb_free_m_table(RCLASS_M_TBL(clone));
 	}
 	data.tbl = RCLASS_M_TBL(clone) = st_init_numtable();
@@ -224,7 +233,8 @@ rb_singleton_class_clone(VALUE obj)
 	    RCLASS_IV_TBL(clone) = st_copy(RCLASS_IV_TBL(klass));
 	}
 	if (RCLASS_CONST_TBL(klass)) {
-	    RCLASS_CONST_TBL(clone) = st_copy(RCLASS_CONST_TBL(klass));
+	    RCLASS_CONST_TBL(clone) = st_init_numtable();
+	    st_foreach(RCLASS_CONST_TBL(klass), clone_const, (st_data_t)RCLASS_CONST_TBL(clone));
 	}
 	RCLASS_M_TBL(clone) = st_init_numtable();
 	data.tbl = RCLASS_M_TBL(clone);

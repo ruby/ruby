@@ -16,6 +16,7 @@
 #include "ruby/util.h"
 #include "ruby/encoding.h"
 #include "node.h"
+#include "constant.h"
 
 void rb_vm_change_state(void);
 void rb_vm_inc_const_missing_count(void);
@@ -71,8 +72,9 @@ fc_path(struct fc_result *fc, ID name)
 }
 
 static int
-fc_i(ID key, VALUE value, struct fc_result *res)
+fc_i(ID key, rb_const_entry_t *ce, struct fc_result *res)
 {
+    VALUE value = ce->value;
     if (!rb_is_const_id(key)) return ST_CONTINUE;
 
     if (value == res->klass) {
@@ -1439,7 +1441,7 @@ rb_autoload(VALUE mod, ID id, const char *file)
 	rb_raise(rb_eArgError, "empty file name");
     }
 
-    if ((tbl = RCLASS_CONST_TBL(mod)) && st_lookup(tbl, (st_data_t)id, &av) && (VALUE)av != Qundef)
+    if ((tbl = RCLASS_CONST_TBL(mod)) && st_lookup(tbl, (st_data_t)id, &av) && ((rb_const_entry_t*)av)->value != Qundef)
 	return;
 
     rb_const_set(mod, id, Qundef);
@@ -1463,8 +1465,11 @@ static NODE*
 autoload_delete(VALUE mod, ID id)
 {
     st_data_t val, load = 0, n = id;
+    rb_const_entry_t *ce;
 
-    st_delete(RCLASS_CONST_TBL(mod), &n, 0);
+    st_delete(RCLASS_CONST_TBL(mod), &n, &val);
+    ce = (rb_const_entry_t*)val;
+    if (ce) xfree(ce);
     if (st_lookup(RCLASS_IV_TBL(mod), (st_data_t)autoload, &val)) {
 	struct st_table *tbl = check_autoload_table((VALUE)val);
 
@@ -1473,6 +1478,8 @@ autoload_delete(VALUE mod, ID id)
 	if (tbl->num_entries == 0) {
 	    n = autoload;
 	    st_delete(RCLASS_CONST_TBL(mod), &n, &val);
+	    ce = (rb_const_entry_t*)val;
+	    if (ce) xfree(ce);
 	}
     }
 
@@ -1532,7 +1539,7 @@ autoload_node_id(VALUE mod, ID id)
     struct st_table *tbl = RCLASS_CONST_TBL(mod);
     st_data_t val;
 
-    if (!tbl || !st_lookup(tbl, (st_data_t)id, &val) || (VALUE)val != Qundef) {
+    if (!tbl || !st_lookup(tbl, (st_data_t)id, &val) || ((rb_const_entry_t*)val)->value != Qundef) {
 	return 0;
     }
     return 1;
@@ -1579,7 +1586,7 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse)
 	VALUE am = 0;
 	st_data_t data;
 	while (RCLASS_CONST_TBL(tmp) && st_lookup(RCLASS_CONST_TBL(tmp), (st_data_t)id, &data)) {
-	    value = (VALUE)data;
+	    value = ((rb_const_entry_t*)data)->value;
 	    if (value == Qundef) {
 		if (am == tmp) break;
 		am = tmp;
@@ -1666,16 +1673,17 @@ rb_const_remove(VALUE mod, ID id)
 
     rb_vm_change_state();
 
-    val = (VALUE)v;
+    val = ((rb_const_entry_t*)v)->value;
     if (val == Qundef) {
 	autoload_delete(mod, id);
 	val = Qnil;
     }
+    xfree((rb_const_entry_t*)v);
     return val;
 }
 
 static int
-sv_i(ID key, VALUE value, st_table *tbl)
+sv_i(ID key, rb_const_entry_t *ce, st_table *tbl)
 {
     if (rb_is_const_id(key)) {
 	if (!st_lookup(tbl, (st_data_t)key, 0)) {
@@ -1779,7 +1787,7 @@ rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse)
   retry:
     while (tmp) {
 	if (RCLASS_CONST_TBL(tmp) && st_lookup(RCLASS_CONST_TBL(tmp), (st_data_t)id, &value)) {
-	    if ((VALUE)value == Qundef && !autoload_node((VALUE)klass, id, 0))
+	    if (((rb_const_entry_t*)value)->value == Qundef && !autoload_node((VALUE)klass, id, 0))
 		return (int)Qfalse;
 	    return (int)Qtrue;
 	}
@@ -1823,6 +1831,8 @@ check_before_mod_set(VALUE klass, ID id, VALUE val, const char *dest)
 void
 rb_const_set(VALUE klass, ID id, VALUE val)
 {
+    rb_const_entry_t *ce;
+
     if (NIL_P(klass)) {
 	rb_raise(rb_eTypeError, "no class/module to define constant %s",
 		 rb_id2name(id));
@@ -1836,7 +1846,7 @@ rb_const_set(VALUE klass, ID id, VALUE val)
 	st_data_t value;
 
 	if (st_lookup(RCLASS_CONST_TBL(klass), (st_data_t)id, &value)) {
-	    if ((VALUE)value == Qundef)
+	    if (((rb_const_entry_t*)value)->value == Qundef)
 		autoload_delete(klass, id);
 	    else
 		rb_warn("already initialized constant %s", rb_id2name(id));
@@ -1844,7 +1854,12 @@ rb_const_set(VALUE klass, ID id, VALUE val)
     }
 
     rb_vm_change_state();
-    st_insert(RCLASS_CONST_TBL(klass), (st_data_t)id, (st_data_t)val);
+
+    ce = ALLOC(rb_const_entry_t);
+    ce->flag = CONST_PUBLIC;
+    ce->value = val;
+
+    st_insert(RCLASS_CONST_TBL(klass), (st_data_t)id, (st_data_t)ce);
 }
 
 void

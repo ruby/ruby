@@ -11,6 +11,7 @@
 /* finish iseq array */
 #include "insns.inc"
 #include <math.h>
+#include "constant.h"
 
 /* control stack frame */
 
@@ -1171,7 +1172,7 @@ vm_get_ev_const(rb_thread_t *th, const rb_iseq_t *iseq,
 	      search_continue:
 		if (RCLASS_CONST_TBL(klass) &&
 		    st_lookup(RCLASS_CONST_TBL(klass), id, &data)) {
-		    val = (st_data_t)data;
+		    val = ((rb_const_entry_t*)data)->value;
 		    if (val == Qundef) {
 			if (am == klass) break;
 			am = klass;

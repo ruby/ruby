@@ -19,6 +19,7 @@
 #include <ctype.h>
 #include <math.h>
 #include <float.h>
+#include "constant.h"
 
 VALUE rb_cBasicObject;
 VALUE rb_mKernel;
@@ -222,7 +223,7 @@ init_copy(VALUE dest, VALUE obj)
 	    RCLASS_IV_TBL(dest) = 0;
 	}
 	if (RCLASS_CONST_TBL(dest)) {
-	    st_free_table(RCLASS_CONST_TBL(dest));
+	    rb_free_const_table(RCLASS_CONST_TBL(dest));
 	    RCLASS_CONST_TBL(dest) = 0;
 	}
 	if (RCLASS_IV_TBL(obj)) {

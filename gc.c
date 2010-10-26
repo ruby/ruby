@@ -19,6 +19,7 @@
 #include "eval_intern.h"
 #include "vm_core.h"
 #include "gc.h"
+#include "constant.h"
 #include <stdio.h>
 #include <setjmp.h>
 #include <sys/types.h>
@@ -1504,6 +1505,38 @@ rb_free_m_table(st_table *tbl)
     st_free_table(tbl);
 }
 
+static int
+mark_const_entry_i(ID key, const rb_const_entry_t *ce, st_data_t data)
+{
+    struct mark_tbl_arg *arg = (void*)data;
+    gc_mark(arg->objspace, ce->value, arg->lev);
+    return ST_CONTINUE;
+}
+
+static void
+mark_const_tbl(rb_objspace_t *objspace, st_table *tbl, int lev)
+{
+    struct mark_tbl_arg arg;
+    if (!tbl) return;
+    arg.objspace = objspace;
+    arg.lev = lev;
+    st_foreach(tbl, mark_const_entry_i, (st_data_t)&arg);
+}
+
+static int
+free_const_entry_i(ID key, rb_const_entry_t *ce, st_data_t data)
+{
+    xfree(ce);
+    return ST_CONTINUE;
+}
+
+void
+rb_free_const_table(st_table *tbl)
+{
+    st_foreach(tbl, free_const_entry_i, 0);
+    st_free_table(tbl);
+}
+
 void
 rb_mark_tbl(st_table *tbl)
 {
@@ -1718,7 +1751,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
       case T_MODULE:
 	mark_m_tbl(objspace, RCLASS_M_TBL(obj), lev);
 	mark_tbl(objspace, RCLASS_IV_TBL(obj), lev);
-	mark_tbl(objspace, RCLASS_CONST_TBL(obj), lev);
+	mark_const_tbl(objspace, RCLASS_CONST_TBL(obj), lev);
 	ptr = RCLASS_SUPER(obj);
 	goto again;
 
@@ -2181,7 +2214,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	    st_free_table(RCLASS_IV_TBL(obj));
 	}
 	if (RCLASS_CONST_TBL(obj)) {
-	    st_free_table(RCLASS_CONST_TBL(obj));
+	    rb_free_const_table(RCLASS_CONST_TBL(obj));
 	}
 	if (RCLASS_IV_INDEX_TBL(obj)) {
 	    st_free_table(RCLASS_IV_INDEX_TBL(obj));
