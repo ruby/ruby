@@ -19,9 +19,9 @@ class TestIO_M17N < Test::Unit::TestCase
     }
   end
 
-  def pipe(wp, rp)
+  def pipe(*args, wp, rp)
     re, we = nil, nil
-    r, w = IO.pipe
+    r, w = IO.pipe(*args)
     rt = Thread.new do
       begin
         rp.call(r)
