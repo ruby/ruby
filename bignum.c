@@ -1176,7 +1176,7 @@ rb_big2ulong(VALUE x)
     VALUE num = big2ulong(x, "unsigned long", TRUE);
 
     if (!RBIGNUM_SIGN(x)) {
-	if ((SIGNED_VALUE)num < 0) {
+	if ((long)num < 0) {
 	    rb_raise(rb_eRangeError, "bignum out of range of unsigned long");
 	}
 	return (VALUE)(-(SIGNED_VALUE)num);
@@ -1189,8 +1189,8 @@ rb_big2long(VALUE x)
 {
     VALUE num = big2ulong(x, "long", TRUE);
 
-    if ((SIGNED_VALUE)num < 0 &&
-	(RBIGNUM_SIGN(x) || (SIGNED_VALUE)num != LONG_MIN)) {
+    if ((long)num < 0 &&
+	(RBIGNUM_SIGN(x) || (long)num != LONG_MIN)) {
 	rb_raise(rb_eRangeError, "bignum too big to convert into `long'");
     }
     if (!RBIGNUM_SIGN(x)) return -(SIGNED_VALUE)num;

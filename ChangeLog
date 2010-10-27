@@ -1,3 +1,11 @@
+Wed Oct 27 18:50:17 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* bignum.c (rb_big2long, rb_big2ulong): rb2ulong() returns VALUE, but
+	  its real range is ulong. So, if the size of VALUE is bigger than
+	  ulong, upper bits are always zero even if the actual value is
+	  negative.
+	  fixed #3490
+
 Wed Oct 27 18:27:17 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_io.rb (TestIO#pipe): should close write end of pipe
