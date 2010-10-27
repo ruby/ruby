@@ -4711,10 +4711,10 @@ rb_w32_getppid(void)
 	    struct {
 		long ExitStatus;
 		void* PebBaseAddress;
-		ULONG AffinityMask;
-		ULONG BasePriority;
-		ULONG UniqueProcessId;
-		ULONG ParentProcessId;
+		uintptr_t AffinityMask;
+		uintptr_t BasePriority;
+		uintptr_t UniqueProcessId;
+		uintptr_t ParentProcessId;
 	    } pbi;
 	    ULONG len;
 	    long ret = pNtQueryInformationProcess(GetCurrentProcess(), 0, &pbi, sizeof(pbi), &len);
