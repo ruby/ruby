@@ -481,7 +481,7 @@ void rb_set_errinfo(VALUE);
 
 SIGNED_VALUE rb_num2long(VALUE);
 VALUE rb_num2ulong(VALUE);
-#define NUM2LONG_internal(x) (FIXNUM_P(x) ? FIX2LONG(x) : rb_num2long(x))
+#define NUM2LONG_internal(x) ((long)(FIXNUM_P(x) ? FIX2LONG(x) : rb_num2long(x)))
 #ifdef __GNUC__
 #define NUM2LONG(x) \
     __extension__ ({VALUE num2long_x = (x); NUM2LONG_internal(num2long_x);})
