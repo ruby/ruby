@@ -1,3 +1,7 @@
+Wed Oct 27 23:55:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/iconv.c (Init_iconv): warn deprecated use.
+
 Wed Oct 27 18:50:17 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* bignum.c (rb_big2long, rb_big2ulong): rb2ulong() returns VALUE, but

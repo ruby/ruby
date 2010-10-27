@@ -1184,6 +1184,7 @@ Init_iconv(void)
 {
     VALUE rb_cIconv = rb_define_class("Iconv", rb_cData);
 
+    rb_warn("iconv will be deprecated in the future, use String#encode instead.");
     rb_define_alloc_func(rb_cIconv, iconv_s_allocate);
     rb_define_singleton_method(rb_cIconv, "open", iconv_s_open, -1);
     rb_define_singleton_method(rb_cIconv, "iconv", iconv_s_iconv, -1);
