@@ -155,9 +155,9 @@ memsize_of(VALUE obj)
  *
  *  Return consuming memory size of obj.
  *
- *  Note that this information is incomplete.  You need to deal with
+ *  Note that the return size is incomplete.  You need to deal with
  *  this information as only a *HINT*.  Especaially, the size of
- *  T_DATA may not right size.
+ *  T_DATA may not be correct.
  *
  *  This method is not expected to work except C Ruby.
  */
@@ -166,6 +166,53 @@ static VALUE
 memsize_of_m(VALUE self, VALUE obj)
 {
     return SIZET2NUM(memsize_of(obj));
+}
+
+static int
+total_i(void *vstart, void *vend, size_t stride, void *data)
+{
+    size_t *total_storage = (size_t *)data, total = 0;
+    VALUE v;
+
+    for (v = (VALUE)vstart; v != (VALUE)vend; v += stride) {
+	if (RBASIC(v)->flags) {
+	    total += memsize_of(v);
+	}
+    }
+    *total_storage += total;
+
+    return 0;
+}
+
+/*
+ *  call-seq:
+ *    ObjectSpace.total_memsize_of_all_objects() -> Integer
+ *
+ *  Return consuming memory size of all living objects.
+ *
+ *  Note that the returned size is incomplete.  You need to deal with
+ *  this information as only a *HINT*.  Especaially, the size of
+ *  T_DATA may not be correct.
+ *
+ *  Note that this method does *NOT* return total malloc'ed memory size.
+ *
+ *  This method can be defined by the following Ruby code:
+ *
+ *  def total_memsize_of_all_objects
+ *    total = 0
+ *    ObjectSpace.each_objects{|e| total += ObjectSpace.memsize_of(e)}
+ *    total
+ *  end
+ *
+ *  This method is not expected to work except C Ruby.
+ */
+
+static VALUE
+total_memsize_of_all_objects_m(VALUE self)
+{
+    size_t total;
+    rb_objspace_each_objects(total_i, &total);
+    return SIZET2NUM(total);
 }
 
 static int
@@ -544,8 +591,11 @@ Init_objspace(void)
 {
     VALUE rb_mObjSpace = rb_const_get(rb_cObject, rb_intern("ObjectSpace"));
 
-    rb_define_module_function(rb_mObjSpace, "count_objects_size", count_objects_size, -1);
     rb_define_module_function(rb_mObjSpace, "memsize_of", memsize_of_m, 1);
+    rb_define_module_function(rb_mObjSpace, "total_memsize_of_all_objects",
+			      total_memsize_of_all_objects_m, 0);
+
+    rb_define_module_function(rb_mObjSpace, "count_objects_size", count_objects_size, -1);
     rb_define_module_function(rb_mObjSpace, "count_nodes", count_nodes, -1);
     rb_define_module_function(rb_mObjSpace, "count_tdata_objects", count_tdata_objects, -1);
 }

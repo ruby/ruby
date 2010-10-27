@@ -4,6 +4,8 @@ require "objspace"
 class TestObjSpace < Test::Unit::TestCase
   def test_memsize_of
     assert_equal(0, ObjectSpace.memsize_of(true))
+    assert_equal(0, ObjectSpace.memsize_of(nil))
+    assert_equal(0, ObjectSpace.memsize_of(1))
     assert_kind_of(Integer, ObjectSpace.memsize_of(Object.new))
     assert_kind_of(Integer, ObjectSpace.memsize_of(Class))
     assert_kind_of(Integer, ObjectSpace.memsize_of(""))
@@ -15,6 +17,10 @@ class TestObjSpace < Test::Unit::TestCase
     f.close
     assert_kind_of(Integer, ObjectSpace.memsize_of(/a/.match("a")))
     assert_kind_of(Integer, ObjectSpace.memsize_of(Struct.new(:a)))
+  end
+
+  def test_total_memsize_of_all_objects
+    assert_kind_of(Integer, ObjectSpace.total_memsize_of_all_objects)
   end
 
   def test_count_objects_size

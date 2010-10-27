@@ -1,3 +1,13 @@
+Thu Oct 28 03:13:06 2010  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/objspace.c (memsize_of): fix rdoc.
+
+	* ext/objspace/objspace.c (total_memsize_of_all_objects): added.
+
+	* test/objspace/test_objspace.rb:
+	  - add a test for ObjectSpace.total_memsize_of_all_objects.
+	  - add two tests for ObjectSpace.memsize_of (for nil and Fixnum).
+
 Wed Oct 27 23:55:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (Init_iconv): warn deprecated use.
