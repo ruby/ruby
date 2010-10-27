@@ -147,6 +147,7 @@ clone_const(ID key, const rb_const_entry_t *ce, st_table *tbl)
     rb_const_entry_t *nce = ALLOC(rb_const_entry_t);
     *nce = *ce;
     st_insert(tbl, key, (st_data_t)nce);
+    return ST_CONTINUE;
 }
 
 /* :nodoc: */
