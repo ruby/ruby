@@ -19,16 +19,33 @@ class TestIO_M17N < Test::Unit::TestCase
     }
   end
 
-  def pipe(*args, wp, rp)
-    r, w = IO.pipe(*args)
-    rt = Thread.new { rp.call(r) }
-    wt = Thread.new { wp.call(w) }
+  def pipe(wp, rp)
+    re, we = nil, nil
+    r, w = IO.pipe
+    rt = Thread.new do
+      begin
+        rp.call(r)
+      rescue Exception
+        r.close
+        re = $!
+      end
+    end
+    wt = Thread.new do
+      begin
+        wp.call(w)
+      rescue Exception
+        w.close
+        we = $!
+      end
+    end
     flunk("timeout") unless rt.join(10) && wt.join(10)
   ensure
     r.close unless !r || r.closed?
-    w.close unless !w || r.closed?
+    w.close unless !w || w.closed?
     (rt.kill; rt.join) if rt
     (wt.kill; wt.join) if wt
+    raise re if re
+    raise we if we
   end
 
   def with_pipe(*args)

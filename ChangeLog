@@ -1,3 +1,10 @@
+Wed Oct 27 13:51:25 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_io.rb (TestIO#pipe): need to propagate exceptions
+	  in read/write thread. fix r29541.
+
+	* test/ruby/test_io_m17n.rb (TestIO_M17N#pipe): ditto.
+
 Wed Oct 27 12:05:40 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* class.c (clone_const): need to return value. fix r29602.
