@@ -1,3 +1,9 @@
+Wed Oct 27 15:07:19 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* thread_win32.c (w32_error): should get error no only once, because
+	  the result of the second getting will indicate the error of the
+	  first FormatMessage() call.
+
 Wed Oct 27 13:51:25 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_io.rb (TestIO#pipe): need to propagate exceptions

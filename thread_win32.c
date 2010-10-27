@@ -67,18 +67,19 @@ static void
 w32_error(const char *func)
 {
     LPVOID lpMsgBuf;
+    DWORD err = GetLastError();
     if (FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
 		      FORMAT_MESSAGE_FROM_SYSTEM |
 		      FORMAT_MESSAGE_IGNORE_INSERTS,
 		      NULL,
-		      GetLastError(),
+		      err,
 		      MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
 		      (LPTSTR) & lpMsgBuf, 0, NULL) == 0)
 	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
 		      FORMAT_MESSAGE_FROM_SYSTEM |
 		      FORMAT_MESSAGE_IGNORE_INSERTS,
 		      NULL,
-		      GetLastError(),
+		      err,
 		      MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
 		      (LPTSTR) & lpMsgBuf, 0, NULL);
     rb_bug("%s: %s", func, (char*)lpMsgBuf);
