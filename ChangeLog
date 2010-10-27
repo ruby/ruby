@@ -1,3 +1,9 @@
+Thu Oct 28 04:00:08 2010  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (GC.stat): added.  [ruby-dev:38607]
+
+	* test/ruby/test_gc.rb: add a test for above.
+
 Thu Oct 28 03:13:06 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/objspace/objspace.c (memsize_of): fix rdoc.

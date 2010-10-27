@@ -329,6 +329,7 @@ typedef struct rb_objspace {
 	size_t live_num;
 	size_t free_num;
 	size_t free_min;
+	size_t final_num;
 	size_t do_heap_free;
     } heap;
     struct {
@@ -353,7 +354,7 @@ typedef struct rb_objspace {
 	double invoke_time;
     } profile;
     struct gc_list *global_list;
-    unsigned int count;
+    size_t count;
     int gc_stress;
 } rb_objspace_t;
 
@@ -1995,6 +1996,7 @@ slot_sweep(rb_objspace_t *objspace, struct heaps_slot *sweep_slot)
     else {
         objspace->heap.free_num += free_num;
     }
+    objspace->heap.final_num += final_num;
 }
 
 static int
@@ -2024,6 +2026,7 @@ before_gc_sweep(rb_objspace_t *objspace)
     }
     objspace->heap.sweep_slots = heaps;
     objspace->heap.free_num = 0;
+    objspace->heap.final_num = 0;
 }
 
 static void
@@ -3276,6 +3279,52 @@ gc_count(VALUE self)
     return UINT2NUM((&rb_objspace)->count);
 }
 
+/*
+ *  call-seq:
+ *     GC.stat -> Hash
+ *
+ *  Return information about GC.
+ *
+ *  It returns the hash includes information about internal statistisc
+ *  about GC such as: {:count => 42, ...}
+ *
+ *  The contents of the returned hash is implementation defined.
+ *  It may be changed in future.
+ *
+ *  This method is not expected to work except C Ruby.
+ *
+ */
+
+static VALUE
+gc_stat(int argc, VALUE *argv, VALUE self)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    VALUE hash;
+
+    if (rb_scan_args(argc, argv, "01", &hash) == 1) {
+        if (TYPE(hash) != T_HASH)
+            rb_raise(rb_eTypeError, "non-hash given");
+    }
+
+    if (hash == Qnil) {
+        hash = rb_hash_new();
+    }
+
+    rest_sweep(objspace);
+
+    rb_hash_aset(hash, ID2SYM(rb_intern("count")), SIZET2NUM(objspace->count));
+
+    /* implementation dependent counters */
+    rb_hash_aset(hash, ID2SYM(rb_intern("heap_used")), SIZET2NUM(objspace->heap.used));
+    rb_hash_aset(hash, ID2SYM(rb_intern("heap_length")), SIZET2NUM(objspace->heap.length));
+    rb_hash_aset(hash, ID2SYM(rb_intern("heap_increment")), SIZET2NUM(objspace->heap.increment));
+    rb_hash_aset(hash, ID2SYM(rb_intern("heap_live_num")), SIZET2NUM(objspace->heap.live_num));
+    rb_hash_aset(hash, ID2SYM(rb_intern("heap_free_num")), SIZET2NUM(objspace->heap.free_num));
+    rb_hash_aset(hash, ID2SYM(rb_intern("heap_final_num")), SIZET2NUM(objspace->heap.final_num));
+    return hash;
+}
+
+
 #if CALC_EXACT_MALLOC_SIZE
 /*
  *  call-seq:
@@ -3474,6 +3523,7 @@ Init_GC(void)
     rb_define_singleton_method(rb_mGC, "stress", gc_stress_get, 0);
     rb_define_singleton_method(rb_mGC, "stress=", gc_stress_set, 1);
     rb_define_singleton_method(rb_mGC, "count", gc_count, 0);
+    rb_define_singleton_method(rb_mGC, "stat", gc_stat, -1);
     rb_define_method(rb_mGC, "garbage_collect", rb_gc_start, 0);
 
     rb_mProfiler = rb_define_module_under(rb_mGC, "Profiler");
