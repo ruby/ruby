@@ -41,14 +41,14 @@ class TestIO < Test::Unit::TestCase
         we = $!
       end
     end
-    flunk("timeout") unless rt.join(10) && wt.join(10)
+    flunk("timeout") unless wt.join(10) && rt.join(10)
   ensure
-    r.close unless !r || r.closed?
     w.close unless !w || w.closed?
-    (rt.kill; rt.join) if rt
+    r.close unless !r || r.closed?
     (wt.kill; wt.join) if wt
-    raise re if re
+    (rt.kill; rt.join) if rt
     raise we if we
+    raise re if re
   end
 
   def with_pipe

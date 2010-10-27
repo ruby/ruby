@@ -1,3 +1,10 @@
+Wed Oct 27 18:27:17 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_io.rb (TestIO#pipe): should close write end of pipe
+	  before closing read end, to get rid of timing problem.
+
+	* test/ruby/test_io_m17n.rb (TestIO_M17N#pipe): ditto.
+
 Wed Oct 27 18:14:27 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_getppid): support Win64.
