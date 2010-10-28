@@ -142,7 +142,7 @@ Tue Oct 26 18:09:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  dynamic size alloca.
 
 	* missing/x86_64-chkstk.s (___chkstk): necessary for alloca of
-	  amd64-mingw32msvc-gcc on Ubutu.
+	  amd64-mingw32msvc-gcc on Ubuntu.
 
 	* thread_win32.c (ruby_alloca_chkstk): check stack overflow
 
@@ -350,7 +350,7 @@ Mon Oct 18 10:19:00 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Mon Oct 18 09:57:28 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* sprintf.c (BSD_vfprintf): wrong padding arround prefix and
+	* sprintf.c (BSD_vfprintf): wrong padding around prefix and
 	  floating point with %a. [ruby-dev:42403] Bug #3956
 
 Sun Oct 17 22:36:33 2010  Tadayoshi Funaba  <tadf@dotrb.org>
@@ -542,7 +542,7 @@ Wed Oct 13 05:23:04 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* missing/strchr.c: add strlen's prototype.
 
-	* missing/strtrr.c: ditto.
+	* missing/strstr.c: ditto.
 
 Wed Oct 13 00:21:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -665,7 +665,7 @@ Tue Oct 12 14:04:41 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* numeric.c (int_chr): a codepoint of Ruby M17N must be 32bit
 	  unsigned int; GB18030 uses MSB. Also note that OnigCodePoint
-	  is defined as uisigned int.
+	  is defined as unsigned int.
 
 Tue Oct 12 12:20:54 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
