@@ -74,6 +74,10 @@ with all sufficient information, see the ChangeLog file.
   * extended methods:
     * StringIO#set_encoding can get 2nd argument and optional hash.
 
+=== Language changes
+
+* Regexps now support Unicode 6.0 (new characters and scripts)
+
 === Compatibility issues (excluding feature bug fixes)
 
 * Kernel#respond_to?

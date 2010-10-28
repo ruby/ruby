@@ -1,3 +1,11 @@
+Thu Oct 28 20:11:30 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/enc-unicode.rb,
+	  enc/unicode/name2ctype.h, enc/unicode/name2ctype.h.blt,
+	  enc/unicode/name2ctype.kwd, enc/unicode/name2ctype.src:
+	  Update Oniguruma for Unicode 6.
+	  patched by Run Paint Run Run. [ruby-core:32923] #3989
+
 Thu Oct 28 20:06:25 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* include/ruby/oniguruma.h (ONIGENC_CTYPE_SPECIAL_MASK):

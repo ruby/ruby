@@ -3,12 +3,12 @@
 # Creates the data structures needed by Onigurma to map Unicode codepoints to
 # property names and POSIX character classes
 #
-# To use this, get UnicodeData.txt, Scripts.txt, PropList.txt from unicode.org.
-# (http://unicode.org/Public/UNIDATA/)
-# And run following command.
-#   ruby1.9 tool/enc-unicode.rb data_dir > enc/unicode/name2ctype.kwd
-# You can get source file for gperf.
-# After this, simply make ruby.
+# To use this, get UnicodeData.txt, Scripts.txt, PropList.txt,
+# PropertyAliases.txt, PropertyValueAliases.txt, and
+# DerivedCoreProperties.txt from unicode.org.
+# (http://unicode.org/Public/UNIDATA/) And run following command.
+# ruby1.9 tool/enc-unicode.rb data_dir > enc/unicode/name2ctype.kwd
+# You can get source file for gperf.  After this, simply make ruby.
 
 unless ARGV.size == 1
   $stderr.puts "Usage: #{$0} data_directory"
