@@ -58,7 +58,7 @@ class TestWEBrickHTTPRequest < Test::Unit::TestCase
 
   def test_request_uri_too_large
     msg = <<-_end_of_message_
-      GET /#{"a"*1024} HTTP/1.1
+      GET /#{"a"*2084} HTTP/1.1
     _end_of_message_
     req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
     assert_raise(WEBrick::HTTPStatus::RequestURITooLarge){
