@@ -19,8 +19,13 @@ class TestObjSpace < Test::Unit::TestCase
     assert_kind_of(Integer, ObjectSpace.memsize_of(Struct.new(:a)))
   end
 
-  def test_total_memsize_of_all_objects
-    assert_kind_of(Integer, ObjectSpace.total_memsize_of_all_objects)
+  def test_memsize_of_all
+    assert_kind_of(Integer, a = ObjectSpace.memsize_of_all)
+    assert_kind_of(Integer, b = ObjectSpace.memsize_of_all(String))
+    assert(a > b)
+    assert(a > 0)
+    assert(b > 0)
+    assert_raise(TypeError) {ObjectSpace.memsize_of_all('error')}
   end
 
   def test_count_objects_size

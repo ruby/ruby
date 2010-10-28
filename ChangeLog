@@ -1,3 +1,12 @@
+Fri Oct 29 05:13:34 2010  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/objspace.c (ObjectSpace.memsize_of_all): rename 
+	  ObjectSpace.total_memsize_of_all_objects() to
+	  ObjectSpace.memsize_of_all([klass]).
+	  Accept Class object to filter the objects.
+
+	* test/objspace/test_objspace.rb: fix test for above change.
+
 Fri Oct 29 03:04:16 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_dump): fix expected length. [ruby-core:32935]

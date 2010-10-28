@@ -168,27 +168,35 @@ memsize_of_m(VALUE self, VALUE obj)
     return SIZET2NUM(memsize_of(obj));
 }
 
+struct total_data {
+    size_t total;
+    VALUE klass;
+};
+
 static int
-total_i(void *vstart, void *vend, size_t stride, void *data)
+total_i(void *vstart, void *vend, size_t stride, void *ptr)
 {
-    size_t *total_storage = (size_t *)data, total = 0;
     VALUE v;
+    struct total_data *data = (struct total_data *)ptr;
 
     for (v = (VALUE)vstart; v != (VALUE)vend; v += stride) {
 	if (RBASIC(v)->flags) {
-	    total += memsize_of(v);
+	    if (data->klass == 0 || rb_obj_is_kind_of(v, data->klass)) {
+		data->total += memsize_of(v);
+	    }
 	}
     }
-    *total_storage += total;
 
     return 0;
 }
 
 /*
  *  call-seq:
- *    ObjectSpace.total_memsize_of_all_objects() -> Integer
+ *    ObjectSpace.memsize_of_all([klass]) -> Integer
  *
  *  Return consuming memory size of all living objects.
+ *  If klass (should be Class object) is given, return the total
+ *  memory size of instances of the given class.
  *
  *  Note that the returned size is incomplete.  You need to deal with
  *  this information as only a *HINT*.  Especaially, the size of
@@ -198,9 +206,11 @@ total_i(void *vstart, void *vend, size_t stride, void *data)
  *
  *  This method can be defined by the following Ruby code:
  *
- *  def total_memsize_of_all_objects
+ *  def memsize_of_all klass = false
  *    total = 0
- *    ObjectSpace.each_objects{|e| total += ObjectSpace.memsize_of(e)}
+ *    ObjectSpace.each_objects{|e|
+ *      total += ObjectSpace.memsize_of(e) if klass == false || e.kind_of?(klass)
+ *    }
  *    total
  *  end
  *
@@ -208,11 +218,16 @@ total_i(void *vstart, void *vend, size_t stride, void *data)
  */
 
 static VALUE
-total_memsize_of_all_objects_m(VALUE self)
+memsize_of_all_m(int argc, VALUE *argv, VALUE self)
 {
-    size_t total;
-    rb_objspace_each_objects(total_i, &total);
-    return SIZET2NUM(total);
+    struct total_data data = {0, 0};
+
+    if (argc > 0) {
+	rb_scan_args(argc, argv, "01", &data.klass);
+    }
+
+    rb_objspace_each_objects(total_i, &data);
+    return SIZET2NUM(data.total);
 }
 
 static int
@@ -592,8 +607,8 @@ Init_objspace(void)
     VALUE rb_mObjSpace = rb_const_get(rb_cObject, rb_intern("ObjectSpace"));
 
     rb_define_module_function(rb_mObjSpace, "memsize_of", memsize_of_m, 1);
-    rb_define_module_function(rb_mObjSpace, "total_memsize_of_all_objects",
-			      total_memsize_of_all_objects_m, 0);
+    rb_define_module_function(rb_mObjSpace, "memsize_of_all",
+			      memsize_of_all_m, -1);
 
     rb_define_module_function(rb_mObjSpace, "count_objects_size", count_objects_size, -1);
     rb_define_module_function(rb_mObjSpace, "count_nodes", count_nodes, -1);
