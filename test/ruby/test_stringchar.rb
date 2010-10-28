@@ -163,4 +163,19 @@ EOS
     s.delete!("a-z")
     assert_equal("BB", s)
   end
+
+  def test_dump
+    bug3996 = '[ruby-core:32935]'
+    Encoding.list.find_all {|enc| enc.ascii_compatible?}.each do |enc|
+      (0..256).map do |c|
+        begin
+          s = c.chr(enc)
+        rescue RangeError, ArgumentError
+          break
+        else
+          assert_not_match(/\0/, s.dump, bug3996)
+        end
+      end
+    end
+  end
 end

@@ -1,3 +1,7 @@
+Fri Oct 29 03:04:16 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_dump): fix expected length. [ruby-core:32935]
+
 Thu Oct 28 23:31:39 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (before_gc_sweep, run_final): fix decrement timing of final_num.
