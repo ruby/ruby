@@ -251,9 +251,11 @@ module WEBrick
 
     private
 
+    MAX_URI_LENGTH = 2083 # :nodoc:
+
     def read_request_line(socket)
-      @request_line = read_line(socket, 1024) if socket
-      if @request_line.bytesize >= 1024 and @request_line[-1, 1] != LF
+      @request_line = read_line(socket, MAX_URI_LENGTH) if socket
+      if @request_line.bytesize >= MAX_URI_LENGTH and @request_line[-1, 1] != LF
         raise HTTPStatus::RequestURITooLarge
       end
       @request_time = Time.now

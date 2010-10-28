@@ -1,3 +1,9 @@
+Thu Oct 28 12:06:54 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/webrick/httprequest.rb (read_request_line): extend max
+	  length to 2083. This is from Internet Explorer's max uri
+	  length. http://support.microsoft.com/kb/208427 [ruby-core:32924]
+
 Thu Oct 28 04:00:08 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (GC.stat): added.  [ruby-dev:38607]
