@@ -1,3 +1,7 @@
+Thu Oct 28 23:31:39 2010  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (before_gc_sweep, run_final): fix decrement timing of final_num.
+
 Thu Oct 28 20:11:30 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/enc-unicode.rb,

@@ -2026,7 +2026,6 @@ before_gc_sweep(rb_objspace_t *objspace)
     }
     objspace->heap.sweep_slots = heaps;
     objspace->heap.free_num = 0;
-    objspace->heap.final_num = 0;
 }
 
 static void
@@ -2870,6 +2869,8 @@ run_final(rb_objspace_t *objspace, VALUE obj)
     VALUE objid;
     RUBY_DATA_FUNC free_func = 0;
     st_data_t key, table;
+
+    objspace->heap.final_num--;
 
     objid = rb_obj_id(obj);	/* make obj into id */
     RBASIC(obj)->klass = 0;
