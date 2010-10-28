@@ -204,7 +204,7 @@ ONIG_EXTERN OnigEncodingType OnigEncodingASCII;
 #define ONIGENC_CTYPE_ALNUM    13  /* alpha || digit */
 #define ONIGENC_CTYPE_ASCII    14
 #define ONIGENC_MAX_STD_CTYPE  ONIGENC_CTYPE_ASCII
-#define ONIGENC_CTYPE_SPECIAL_MASK        128
+#define ONIGENC_CTYPE_SPECIAL_MASK        256
 #define ONIGENC_CTYPE_S            /* [\t\n\v\f\r\s] */ \
     ONIGENC_CTYPE_SPECIAL_MASK | ONIGENC_CTYPE_SPACE
 #define ONIGENC_CTYPE_D            /* [0-9] */ \

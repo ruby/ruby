@@ -1,3 +1,8 @@
+Thu Oct 28 20:06:25 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* include/ruby/oniguruma.h (ONIGENC_CTYPE_SPECIAL_MASK):
+	  change mask from 128 to 256. [ruby-core:32931]
+
 Thu Oct 28 12:06:54 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/webrick/httprequest.rb (read_request_line): extend max
