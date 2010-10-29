@@ -1,3 +1,9 @@
+Sat Oct 30 00:24:42 2010  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/objspace.c (memsize_of): take care of
+	  T_CLASS/const_tbl.
+	  a patch from nagachika <nagachika00@gmail.com> [ruby-dev:42490]
+
 Fri Oct 29 23:32:36 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* test/profile_test_all.rb: added.

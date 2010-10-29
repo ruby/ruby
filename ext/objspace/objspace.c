@@ -69,6 +69,9 @@ memsize_of(VALUE obj)
 	if (RCLASS(obj)->ptr->iv_tbl) {
 	    size += st_memsize(RCLASS(obj)->ptr->iv_tbl);
 	}
+	if (RCLASS(obj)->ptr->const_tbl) {
+	    size += st_memsize(RCLASS(obj)->ptr->const_tbl);
+	}
 	size += sizeof(rb_classext_t);
 	break;
       case T_STRING:
