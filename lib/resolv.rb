@@ -492,7 +492,7 @@ class Resolv
 
     def each_resource(name, typeclass, &proc)
       lazy_initialize
-      requester = make_requester
+      requester = make_udp_requester
       senders = {}
       begin
         @config.resolv(name) {|candidate, tout, nameserver, port|
@@ -506,7 +506,19 @@ class Resolv
           reply, reply_name = requester.request(sender, tout)
           case reply.rcode
           when RCode::NoError
-            extract_resources(reply, reply_name, typeclass, &proc)
+            if reply.tc == 1 and not Requester::TCP === requester
+              requester.close
+              # Retry via TCP:
+              requester = make_tcp_requester
+              senders = {}
+              # This will use TCP for all remaining candidates (assuming the
+              # current candidate does not already respond successfully via
+              # TCP).  This makes sense because we already know the full
+              # response will not fit in an untruncated UDP packet.
+              redo
+            else
+              extract_resources(reply, reply_name, typeclass, &proc)
+            end
             return
           when RCode::NXDomain
             raise Config::NXDomain.new(reply_name.to_s)
@@ -519,13 +531,18 @@ class Resolv
       end
     end
 
-    def make_requester # :nodoc:
+    def make_udp_requester # :nodoc:
       nameserver_port = @config.nameserver_port
       if nameserver_port.length == 1
         Requester::ConnectedUDP.new(*nameserver_port[0])
       else
         Requester::UnconnectedUDP.new(*nameserver_port)
       end
+    end
+
+    def make_tcp_requester # :nodoc:
+      nameserver_port = @config.nameserver_port
+      return Requester::TCP.new(*nameserver_port[0])
     end
 
     def extract_resources(msg, name, typeclass) # :nodoc:
