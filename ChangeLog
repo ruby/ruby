@@ -1,3 +1,13 @@
+Fri Oct 29 23:32:36 2010  Koichi Sasada  <ko1@atdot.net>
+
+	* test/profile_test_all.rb: added.
+	  You can use test-all profiler with the following command:
+	    RUBY_TEST_ALL_PROFILE=true make test-all
+	  This command generates ./test_all_profile and you can analyse
+	  which tests consume memories.
+
+	* test/runner.rb: ditto.
+
 Fri Oct 29 10:02:03 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/enc-unicode.rb,
