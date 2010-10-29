@@ -1,3 +1,11 @@
+Sat Oct 30 06:32:52 2010  Tanaka Akira  <akr@fsij.org>
+
+	* test/pathname/test_pathname.rb (TestPathname#test_grpowned?): the
+	  group of the created file is inherited from the parent
+	  directory on BSDs and MacOS X.  Linux also inherit the group if
+	  the setgid bit of the directory is set.  It causes the test fail.
+	  fixed by Shota Fukumori.  [ruby-dev:42458]
+
 Sat Oct 30 05:58:54 2010  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb: retry via TCP if UDP reply is truncated.

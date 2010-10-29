@@ -995,6 +995,7 @@ class TestPathname < Test::Unit::TestCase
     skip "Unix file owner test" if DOSISH
     with_tmpchdir('rubytest-pathname') {|dir|
       open("f", "w") {|f| f.write "abc" }
+      File.chown(-1, Process.gid, "f")
       assert_equal(true, Pathname("f").grpowned?)
     }
   end
