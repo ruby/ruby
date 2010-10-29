@@ -126,7 +126,7 @@ module OpenURI
 
   def OpenURI.open_uri(name, *rest) # :nodoc:
     uri = URI::Generic === name ? name : URI.parse(name)
-    mode, perm, rest = OpenURI.scan_open_optional_arguments(*rest)
+    mode, _, rest = OpenURI.scan_open_optional_arguments(*rest)
     options = rest.shift if !rest.empty? && Hash === rest.first
     raise ArgumentError.new("extra arguments") if !rest.empty?
     options ||= {}
@@ -480,7 +480,7 @@ module OpenURI
     # It is downcased for canonicalization.
     # Content-Type parameters are stripped.
     def content_type
-      type, *parameters = content_type_parse
+      type, *_ = content_type_parse
       type || 'application/octet-stream'
     end
 
@@ -712,7 +712,7 @@ module URI
         when 0 # no proxy setting anyway.
           proxy_uri = nil
         when 1
-          k, v = pairs.shift
+          k, _ = pairs.shift
           if k == 'http_proxy' && ENV[k.upcase] == nil
             # http_proxy is safe to use because ENV is case sensitive.
             proxy_uri = ENV[name]
