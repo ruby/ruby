@@ -1,6 +1,14 @@
+Fri Oct 29 10:02:03 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/enc-unicode.rb,
+	  enc/unicode/name2ctype.h, enc/unicode/name2ctype.h.blt,
+	  enc/unicode/name2ctype.kwd, enc/unicode/name2ctype.src:
+	  Add 'Unknown' Script.
+	  patched by Run Paint Run Run. [ruby-core:32937] #3998
+
 Fri Oct 29 05:13:34 2010  Koichi Sasada  <ko1@atdot.net>
 
-	* ext/objspace/objspace.c (ObjectSpace.memsize_of_all): rename 
+	* ext/objspace/objspace.c (ObjectSpace.memsize_of_all): rename
 	  ObjectSpace.total_memsize_of_all_objects() to
 	  ObjectSpace.memsize_of_all([klass]).
 	  Accept Class object to filter the objects.

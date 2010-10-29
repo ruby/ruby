@@ -129,13 +129,13 @@ def parse_scripts(data)
   ]
   current = nil
   cps = []
-  names = []
+  names = {}
   files.each do |file|
     IO.foreach(get_file(file[:fn])) do |line|
       if /^# Total code points: / =~ line
         data[current] = cps
         make_const(current, cps, file[:title])
-        names << current
+        (names[file[:title]] ||= []) << current
         cps = []
       elsif /^(\h+)(?:..(\h+))?\s*;\s*(\w+)/ =~ line
         current = $3
@@ -143,7 +143,11 @@ def parse_scripts(data)
       end
     end
   end
-  names
+  #  All code points not explicitly listed for Script
+  #  have the value Unknown (Zzzz).
+  data['Unknown'] =  (0..0x10ffff).to_a - data.values_at(*names['Script']).flatten
+  make_const('Unknown', data['Unknown'], 'Script')
+  names.values.flatten << 'Unknown'
 end
 
 def parse_aliases(data)
