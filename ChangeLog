@@ -1,3 +1,8 @@
+Sat Oct 30 00:35:13 2010  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (iseq_s_compile): fix optional argument.
+	  a patch from Yutaka HARA [ruby-core:32953] [Ruby 1.9-Bug#4001]
+
 Sat Oct 30 00:24:42 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/objspace/objspace.c (memsize_of): take care of
