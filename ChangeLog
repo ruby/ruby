@@ -1,3 +1,8 @@
+Sat Oct 30 11:26:07 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* object.c: Make BasicObject.new accept no parameter.
+	      Revert of r26136 [ruby-core:27080], as per [ruby-core:32952].
+
 Mon Oct 18 10:21:01 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http.rb (transport_request): @socket may be nil.
