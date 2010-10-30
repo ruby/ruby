@@ -5,7 +5,7 @@ VALUE cFiddleClosure;
 typedef struct {
     void * code;
     ffi_closure *pcl;
-    ffi_cif * cif;
+    ffi_cif cif;
     int argc;
     ffi_type **argv;
 } fiddle_closure;
@@ -23,7 +23,6 @@ dealloc(void * ptr)
 #else
     munmap(cls->pcl, sizeof(cls->pcl));
 #endif
-    xfree(cls->cif);
     if (cls->argv) xfree(cls->argv);
     xfree(cls);
 }
@@ -37,7 +36,7 @@ closure_memsize(const void * ptr)
     if (ptr) {
 	size += sizeof(*cls);
 #if !defined(FFI_NO_RAW_API) || !FFI_NO_RAW_API
-	size += ffi_raw_size(cls->cif);
+	size += ffi_raw_size(&cls->cif);
 #endif
 	size += sizeof(*cls->argv);
 	size += sizeof(ffi_closure);
@@ -148,7 +147,6 @@ allocate(VALUE klass)
     closure->pcl = mmap(NULL, sizeof(ffi_closure), PROT_READ | PROT_WRITE,
         MAP_ANON | MAP_PRIVATE, -1, 0);
 #endif
-    closure->cif = xmalloc(sizeof(ffi_cif));
 
     return i;
 }
@@ -185,7 +183,7 @@ initialize(int rbargc, VALUE argv[], VALUE self)
     rb_iv_set(self, "@ctype", ret);
     rb_iv_set(self, "@args", args);
 
-    cif = cl->cif;
+    cif = &cl->cif;
     pcl = cl->pcl;
 
     result = ffi_prep_cif(cif, NUM2INT(abi), argc,
