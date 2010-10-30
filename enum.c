@@ -12,9 +12,13 @@
 #include "ruby/ruby.h"
 #include "ruby/util.h"
 #include "node.h"
+#include "id.h"
 
 VALUE rb_mEnumerable;
-static ID id_each, id_eqq, id_cmp, id_next, id_size;
+static ID id_next;
+#define id_each idEach
+#define id_eqq  idEqq
+#define id_cmp  idCmp
 
 static VALUE
 enum_values_pack(int argc, VALUE *argv)
@@ -2659,10 +2663,5 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "chunk", enum_chunk, -1);
     rb_define_method(rb_mEnumerable, "slice_before", enum_slice_before, -1);
 
-    id_eqq  = rb_intern("===");
-    id_each = rb_intern("each");
-    id_cmp  = rb_intern("<=>");
     id_next = rb_intern("next");
-    id_size = rb_intern("size");
 }
-

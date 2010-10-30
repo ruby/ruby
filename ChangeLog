@@ -1,3 +1,7 @@
+Sat Oct 30 09:40:54 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enum.c: use constants in id.h.
+
 Sat Oct 30 09:08:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/fiddle/closure.c (fiddle_closure): embed cif not reference
