@@ -2144,20 +2144,20 @@ break2:
 		if (abs(dsign) == 1) s++;
 		else dsign = 1;
 
-               nd = 0;
-               c = *s;
-	       if (c < '0' || '9' < c) goto ret0;
-	       do {
-		   nd *= 10;
-		   nd += c;
-		   nd -= '0';
-		   c = *++s;
-		   /* Float("0x0."+("0"*267)+"1fp2095") */
-		   if (abs(nd) > 2095) {
-		       while ('0' <= c && c <= '9') c = *++s;
-		       break;
-		   }
-               } while ('0' <= c && c <= '9');
+		nd = 0;
+		c = *s;
+		if (c < '0' || '9' < c) goto ret0;
+		do {
+		    nd *= 10;
+		    nd += c;
+		    nd -= '0';
+		    c = *++s;
+		    /* Float("0x0."+("0"*267)+"1fp2095") */
+		    if (abs(nd) > 2095) {
+			while ('0' <= c && c <= '9') c = *++s;
+			break;
+		    }
+		} while ('0' <= c && c <= '9');
 		dval(rv) = ldexp(adj, nd * dsign);
 	    }
 	    else {
