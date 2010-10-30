@@ -433,6 +433,11 @@ class Tester < Test::Unit::TestCase
     assert_equal source, decl2.to_s
   end
 
+  def test_xmldecl_utf_16be_encoding_name
+    assert_equal("<?xml version='1.0' encoding='UTF-16'?>",
+                 XMLDecl.new("1.0", "UTF-16").to_s)
+  end
+
   def each_test( element, xpath, num_children )
     count = 0
     element.each_element( xpath ) { |child|
@@ -1123,7 +1128,6 @@ EOL
   end
 
   def test_repeated_writes
-    require 'iconv'
     a = IO.read(fixture_path("iso8859-1.xml"))
     f = REXML::Formatters::Pretty.new
 
@@ -1246,9 +1250,9 @@ EOL
   
   def test_ticket_88
     doc = REXML::Document.new("<?xml version=\"1.0\" encoding=\"shift_jis\"?>")
-    assert_equal("<?xml version='1.0' encoding='SHIFT_JIS'?>", doc.to_s)
+    assert_equal("<?xml version='1.0' encoding='Shift_JIS'?>", doc.to_s)
     doc = REXML::Document.new("<?xml version = \"1.0\" encoding = \"shift_jis\"?>")
-    assert_equal("<?xml version='1.0' encoding='SHIFT_JIS'?>", doc.to_s)
+    assert_equal("<?xml version='1.0' encoding='Shift_JIS'?>", doc.to_s)
   end
   
   def test_ticket_85

@@ -74,6 +74,13 @@ with all sufficient information, see the ChangeLog file.
   * extended methods:
     * StringIO#set_encoding can get 2nd argument and optional hash.
 
+* rexml
+  * [incompatible] support Ruby native encoding mechanism
+    and iconv dependency is droped. This means encoding
+    methods (Document#encoding, XMLDecl#encoding,
+    Output#encoding and Source#encoding) return an Encoding
+    object instead of an encoding name.
+
 === Language changes
 
 * Regexps now support Unicode 6.0 (new characters and scripts)
@@ -83,3 +90,8 @@ with all sufficient information, see the ChangeLog file.
 * Kernel#respond_to?
 
   See above.
+
+* REXML::Document#encoding, REXML::XMLdecl#encoding,
+  REXML::Output#encoding and REXML::Source#encoding
+
+  Return an Encoding object not encoding name as a String.

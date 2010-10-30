@@ -69,9 +69,8 @@ module RSS
       doc = REXML::Document.new(feed.to_s)
       xmldecl = doc.xml_decl
 
-      %w(version encoding).each do |x|
-        assert_equal(instance_eval(x), xmldecl.__send__(x))
-      end
+      assert_equal(version, xmldecl.version)
+      assert_equal(encoding, xmldecl.encoding.to_s)
       assert_equal(standalone, !xmldecl.standalone.nil?)
 
       assert_equal(@uri, doc.root.namespace)
@@ -96,9 +95,8 @@ module RSS
       doc = REXML::Document.new(entry.to_s)
       xmldecl = doc.xml_decl
 
-      %w(version encoding).each do |x|
-        assert_equal(instance_eval(x), xmldecl.__send__(x))
-      end
+      assert_equal(version, xmldecl.version)
+      assert_equal(encoding, xmldecl.encoding.to_s)
       assert_equal(standalone, !xmldecl.standalone.nil?)
 
       assert_equal(@uri, doc.root.namespace)

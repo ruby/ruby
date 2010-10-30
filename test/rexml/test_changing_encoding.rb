@@ -1,15 +1,13 @@
 #!/usr/bin/ruby -Ku
 # -*- coding: utf-8 -*-
 
-require 'kconv'
-require 'iconv'
 require 'rexml/encoding'
 
 
 class ChangingEncodings < Test::Unit::TestCase
   def initialize a
     @u = 'テスト ほげ ふが 美しい'
-    @e = Kconv.toeuc(@u)
+    @e = @u.encode("EUC-JP")
     @f = Foo.new
     super
   end

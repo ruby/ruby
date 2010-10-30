@@ -241,7 +241,7 @@ DELIMITER
     end
 
     doc = REXML::Document.new(source_iso)
-    assert_equal('ISO-8859-1', doc.xml_decl.encoding)
+    assert_equal('ISO-8859-1', doc.xml_decl.encoding.to_s)
     assert_equal(koln_utf, doc.root.text)
     doc.write(out="")
     assert_equal(source_iso, out )
@@ -270,7 +270,7 @@ EOF
                 expected_utf = expected_iso.unpack('C*').pack('U*')
                 if expected_utf.respond_to? :encode
       expected_iso.force_encoding("iso-8859-1")
-      expected_utf.force_encoding(Encoding::UTF_8)
+      expected_utf.force_encoding(::Encoding::UTF_8)
                 end
     assert_equal(expected_utf, tn.to_s.strip)
     f = REXML::Formatters::Default.new

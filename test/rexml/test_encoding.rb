@@ -26,7 +26,7 @@ class EncodingTester < Test::Unit::TestCase
   def test_encoded_in_change_out
     doc = Document.new( @encoded )
     doc.xml_decl.encoding = "UTF-8"
-    assert_equal( doc.encoding, "UTF-8" )
+    assert_equal( ::Encoding::UTF_8, doc.encoding )
     REXML::Formatters::Default.new.write( doc.root, out="" )
     out.force_encoding('binary') if out.respond_to? :force_encoding
     assert_equal( @not_encoded, out )
@@ -47,7 +47,7 @@ class EncodingTester < Test::Unit::TestCase
   def test_in_change_out
     doc = Document.new( @not_encoded )
     doc.xml_decl.encoding = "ISO-8859-3"
-    assert_equal( doc.encoding, "ISO-8859-3" )
+    assert_equal( ::Encoding::ISO_8859_3, doc.encoding )
     doc.write( out="" )
     out.force_encoding('binary') if out.respond_to? :force_encoding
     assert_equal( @encoded, out )
@@ -86,7 +86,7 @@ class EncodingTester < Test::Unit::TestCase
 
   def test_ticket_110
     utf16 = REXML::Document.new(File.new(fixture_path("ticket_110_utf16.xml")))
-    assert_equal( "UTF-16", utf16.encoding )
+    assert_equal( ::Encoding::UTF_16BE, utf16.encoding )
     assert( utf16[0].kind_of?(REXML::XMLDecl))
   end
 end

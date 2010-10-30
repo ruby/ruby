@@ -1,3 +1,18 @@
+Sat Oct 30 21:06:37 2010  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/encoding.rb: use Ruby native encoding mechnism.
+	[ruby-dev:42464]
+	* lib/rexml/encodings/: remove.
+
+	* lib/rexml/document.rb, lib/rexml/formatters/default.rb,
+	lib/rexml/output.rb, lib/rexml/parseexception.rb,
+	lib/rexml/parsers/baseparser.rb, lib/rexml/source.rb,
+	lib/rexml/xmldecl.rb: use Ruby's native Encoding object.
+
+	* test/rexml/, test/rss/: follow the above encoding chagnes.
+
+	* NEWS: add REXML's incompatible change about encoding.
+
 Sat Oct 30 17:23:19 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (ruby_strtod): get rid of overflow/underflow as possible.
