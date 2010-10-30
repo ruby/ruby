@@ -1,3 +1,8 @@
+Sat Oct 30 10:24:35 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* object.c: Make BasicObject.new accept no parameter.
+	  Revert of r26135 [ruby-core:27080], as per [ruby-core:32952].
+
 Sat Oct 30 09:40:54 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enum.c: use constants in id.h.

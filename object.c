@@ -673,9 +673,9 @@ rb_obj_tap(VALUE obj)
  * Document-method: initialize
  *
  * call-seq:
- *    BasicObject.new( *args )
+ *    BasicObject.new
  *
- * Returns a new BasicObject. Arguments are ignored.
+ * Returns a new BasicObject.
  */
 
 /*
@@ -2515,7 +2515,7 @@ Init_Object(void)
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
 
-    rb_define_private_method(rb_cBasicObject, "initialize", rb_obj_dummy, -1);
+    rb_define_private_method(rb_cBasicObject, "initialize", rb_obj_dummy, 0);
     rb_define_alloc_func(rb_cBasicObject, rb_class_allocate_instance);
     rb_define_method(rb_cBasicObject, "==", rb_obj_equal, 1);
     rb_define_method(rb_cBasicObject, "equal?", rb_obj_equal, 1);
