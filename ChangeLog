@@ -1,3 +1,9 @@
+Sat Oct 30 11:33:54 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub (ruby_pc): ignore missing variables.
+
+	* template/ruby.pc.in: add missing variables for mswin.
+
 Sat Oct 30 10:24:35 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* object.c: Make BasicObject.new accept no parameter.

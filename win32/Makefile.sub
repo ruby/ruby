@@ -899,9 +899,10 @@ end
 <<KEEP
 
 $(ruby_pc): $(RBCONFIG)
-	@$(MINIRUBY) -rrbconfig -p \
+	@$(MINIRUBY) -r./rbconfig -p \
+	-e 'STDOUT.binmode' \
 	-e '$$_.gsub!(/@([a-z_]\w*)@/i) {' \
-	-e 'RbConfig::MAKEFILE_CONFIG[$$1].gsub(/\$$\((.+?)\)/, %Q[$${\1}])'
+	-e '(RbConfig::MAKEFILE_CONFIG[$$1] or "").gsub(/\$$\((.+?)\)/, %Q[$${\\1}])' \
 	-e '}' \
 	$(srcdir)/template/ruby.pc.in > $@
 
