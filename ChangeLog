@@ -1,3 +1,12 @@
+Sat Oct 30 14:37:39 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (ruby_pc): erase runtime-defined variables and
+	  check if generated pc file is valid.
+
+	* template/ruby.pc.in (DEFFILE): need for mingw.
+
+	* template/ruby.pc.in (LIBRUBY): fix the order.
+
 Sat Oct 30 11:33:54 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/Makefile.sub (ruby_pc): ignore missing variables.

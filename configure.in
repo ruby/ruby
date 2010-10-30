@@ -359,6 +359,11 @@ AC_SUBST(MAKEDIRS)
 AC_CHECK_TOOL(DOT, dot)
 AC_CHECK_TOOL(DOXYGEN, doxygen)
 
+AC_CHECK_TOOL(PKG_CONFIG, pkg-config)
+if test -n "$PKG_CONFIG"; then
+    $PKG_CONFIG --print-errors --version > /dev/null 2>&1 || PKG_CONFIG=
+fi
+
 # checks for UNIX variants that set C preprocessor variables
 AC_USE_SYSTEM_EXTENSIONS
 
@@ -2811,10 +2816,19 @@ ruby_pc="${RUBY_BASE_NAME}-${MAJOR}.${MINOR}.pc"
 AC_SUBST(ruby_pc)
 AC_CONFIG_FILES($ruby_pc:template/ruby.pc.in,
     [
-    sed ['s/\$(\([A-Za-z_][A-Za-z0-9_]*\))/${\1}/g'] $ruby_pc > ruby.pc.tmp &&
-    mv -f ruby.pc.tmp $ruby_pc
+    if sed ['s/\$(\([A-Za-z_][A-Za-z0-9_]*\))/${\1}/g;s/@[A-Za-z_][A-Za-z0-9_]*@//'] $ruby_pc > ruby.tmp.pc &&
+	{
+	    test -z "$PKG_CONFIG" ||
+	    PKG_CONFIG_PATH=. $PKG_CONFIG --print-errors ruby.tmp
+	}
+    then
+	mv -f ruby.tmp.pc $ruby_pc
+    else
+	rm ruby.tmp.pc $ruby_pc
+	exit 1
+    fi
     ],
-    [ruby_pc='$ruby_pc'])
+    [ruby_pc='$ruby_pc' PKG_CONFIG='$PKG_CONFIG'])
 
 AC_OUTPUT
 dnl }
