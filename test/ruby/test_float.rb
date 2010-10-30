@@ -102,7 +102,14 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(0.0009765625, Float("0x1p-10"))
     assert_equal(2.6881171418161356e+43, Float("0x1.3494a9b171bf5p+144"))
     assert_equal(-3.720075976020836e-44, Float("-0x1.a8c1f14e2af5dp-145"))
- 
+    assert_equal(31.0*2**1019, Float("0x0."+("0"*268)+"1fp2099"))
+    assert_equal(31.0*2**1019, Float("0x0."+("0"*600)+"1fp3427"))
+    assert_equal(-31.0*2**1019, Float("-0x0."+("0"*268)+"1fp2099"))
+    assert_equal(-31.0*2**1019, Float("-0x0."+("0"*600)+"1fp3427"))
+    assert_equal(31.0*2**-1027, Float("0x1f"+("0"*268)+".0p-2099"))
+    assert_equal(31.0*2**-1027, Float("0x1f"+("0"*600)+".0p-3427"))
+    assert_equal(-31.0*2**-1027, Float("-0x1f"+("0"*268)+".0p-2099"))
+    assert_equal(-31.0*2**-1027, Float("-0x1f"+("0"*600)+".0p-3427"))
   end
 
   def test_divmod

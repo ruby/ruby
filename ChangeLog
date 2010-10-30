@@ -1,3 +1,7 @@
+Sat Oct 30 17:23:19 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* util.c (ruby_strtod): get rid of overflow/underflow as possible.
+
 Sat Oct 30 14:37:39 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (ruby_pc): erase runtime-defined variables and

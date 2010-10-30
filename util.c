@@ -2122,21 +2122,38 @@ break2:
 	    static const char hexdigit[] = "0123456789abcdef0123456789ABCDEF";
 	    s0 = ++s;
 	    adj = 0;
-	    aadj = -1;
+	    aadj = 1.0;
+	    nd0 = -4;
 
 	    if (!*++s || !(s1 = strchr(hexdigit, *s))) goto ret0;
-	    do {
-		adj *= 16;
-		adj += (s1 - hexdigit) & 15;
-	    } while (*++s && (s1 = strchr(hexdigit, *s)));
+	    while (*s == '0') s++;
+	    if ((s1 = strchr(hexdigit, *s)) != NULL) {
+		do {
+		    adj += aadj * ((s1 - hexdigit) & 15);
+		    nd0 += 4;
+		    aadj /= 16;
+		} while (*++s && (s1 = strchr(hexdigit, *s)));
+	    }
 
 	    if (*s == '.') {
-		aadj = 1.;
+		dsign = 1;
 		if (!*++s || !(s1 = strchr(hexdigit, *s))) goto ret0;
-		do {
-		    aadj /= 16;
+		if (nd0 < 0) {
+		    while (*s == '0') {
+			s++;
+			nd0 -= 4;
+		    }
+		}
+		for (; *s && (s1 = strchr(hexdigit, *s)); ++s) {
 		    adj += aadj * ((s1 - hexdigit) & 15);
-		} while (*++s && (s1 = strchr(hexdigit, *s)));
+		    if ((aadj /= 16) == 0.0) {
+			while (strchr(hexdigit, *++s));
+			break;
+		    }
+		}
+	    }
+	    else {
+		dsign = 0;
 	    }
 
 	    if (*s == 'P' || *s == 'p') {
@@ -2153,17 +2170,16 @@ break2:
 		    nd -= '0';
 		    c = *++s;
 		    /* Float("0x0."+("0"*267)+"1fp2095") */
-		    if (abs(nd) > 2095) {
+		    if (nd + dsign * nd0 > 2095) {
 			while ('0' <= c && c <= '9') c = *++s;
 			break;
 		    }
 		} while ('0' <= c && c <= '9');
-		dval(rv) = ldexp(adj, nd * dsign);
 	    }
 	    else {
-		if (aadj != -1) goto ret0;
-		dval(rv) = adj;
+		if (dsign) goto ret0;
 	    }
+	    dval(rv) = ldexp(adj, nd * dsign + nd0);
 	    goto ret;
 	}
         nz0 = 1;
