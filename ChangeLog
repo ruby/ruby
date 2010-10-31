@@ -1,3 +1,8 @@
+Sun Oct 31 22:24:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (ruby_cleanup): free current VM and its objspace even
+	  when exiting by SystemExit.
+
 Sun Oct 31 22:10:56 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (new_child_iseq): adjust argument types.

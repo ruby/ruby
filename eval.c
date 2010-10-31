@@ -162,6 +162,17 @@ ruby_cleanup(volatile int ex)
     POP_TAG();
     rb_thread_stop_timer_thread();
 
+#if EXIT_SUCCESS != 0 || EXIT_FAILURE != 1
+    switch (ex) {
+#if EXIT_SUCCESS != 0
+      case 0: ex = EXIT_SUCCESS; break;
+#endif
+#if EXIT_FAILURE != 1
+      case 1: ex = EXIT_FAILURE; break;
+#endif
+    }
+#endif
+
     state = 0;
     for (nerr = 0; nerr < numberof(errs); ++nerr) {
 	VALUE err = errs[nerr];
@@ -172,30 +183,20 @@ ruby_cleanup(volatile int ex)
 	if (TYPE(err) == T_NODE) continue;
 
 	if (rb_obj_is_kind_of(err, rb_eSystemExit)) {
-	    return sysexit_status(err);
+	    ex = sysexit_status(err);
+	    break;
 	}
 	else if (rb_obj_is_kind_of(err, rb_eSignal)) {
 	    VALUE sig = rb_iv_get(err, "signo");
 	    state = NUM2INT(sig);
 	    break;
 	}
-	else if (ex == 0) {
-	    ex = 1;
+	else if (ex == EXIT_SUCCESS) {
+	    ex = EXIT_FAILURE;
 	}
     }
     ruby_vm_destruct(GET_VM());
     if (state) ruby_default_signal(state);
-
-#if EXIT_SUCCESS != 0 || EXIT_FAILURE != 1
-    switch (ex) {
-#if EXIT_SUCCESS != 0
-      case 0: return EXIT_SUCCESS;
-#endif
-#if EXIT_FAILURE != 1
-      case 1: return EXIT_FAILURE;
-#endif
-    }
-#endif
 
     return ex;
 }
