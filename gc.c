@@ -405,7 +405,6 @@ rb_objspace_alloc(void)
 void
 rb_objspace_free(rb_objspace_t *objspace)
 {
-    rb_objspace_call_finalizer(objspace);
     if (objspace->profile.record) {
 	free(objspace->profile.record);
 	objspace->profile.record = 0;

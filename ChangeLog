@@ -1,3 +1,8 @@
+Sun Oct 31 22:32:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (rb_objspace_free): finalizers should be called separately
+	  from freeing objspace.  [ruby-dev:42479]
+
 Sun Oct 31 22:24:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (ruby_cleanup): free current VM and its objspace even
