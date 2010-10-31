@@ -336,7 +336,9 @@ putspecialobject
 ()
 (VALUE val)
 {
-    switch (value_type) {
+    enum vm_special_object_type type = value_type;
+
+    switch (type) {
       case VM_SPECIAL_OBJECT_VMCORE:
 	val = rb_mRubyVMFrozenCore;
 	break;
@@ -746,12 +748,14 @@ adjuststack
  */
 DEFINE_INSN
 defined
-(rb_num_t type, VALUE obj, VALUE needstr)
+(rb_num_t op_type, VALUE obj, VALUE needstr)
 (VALUE v)
 (VALUE val)
 {
     VALUE klass;
     const char *expr_type = 0;
+    enum defined_type type = op_type;
+
     val = Qnil;
 
     switch (type) {
@@ -994,9 +998,9 @@ send
     const rb_method_entry_t *me;
     VALUE recv, klass;
     rb_block_t *blockptr = 0;
-    int num = caller_setup_args(th, GET_CFP(), op_flag, (int)op_argc,
+    VALUE flag = op_flag;
+    int num = caller_setup_args(th, GET_CFP(), flag, (int)op_argc,
 				(rb_iseq_t *)blockiseq, &blockptr);
-    rb_num_t flag = op_flag;
     ID id = op_id;
 
     /* get receiver */
@@ -1020,12 +1024,14 @@ invokesuper
 (VALUE val) // inc += - (int)(op_argc + ((op_flag & VM_CALL_ARGS_BLOCKARG_BIT) ? 1 : 0));
 {
     rb_block_t *blockptr = !(op_flag & VM_CALL_ARGS_BLOCKARG_BIT) ? GET_BLOCK_PTR() : 0;
-    int num = caller_setup_args(th, GET_CFP(), op_flag,
+    VALUE flag = op_flag;
+    int num = caller_setup_args(th, GET_CFP(), flag,
 				(int)op_argc, blockiseq, &blockptr);
     VALUE recv, klass;
     ID id;
-    VALUE flag = VM_CALL_SUPER_BIT | VM_CALL_FCALL_BIT;
     const rb_method_entry_t *me;
+
+    flag = VM_CALL_SUPER_BIT | VM_CALL_FCALL_BIT;
 
     recv = GET_SELF();
     vm_search_superclass(GET_CFP(), GET_ISEQ(), recv, TOPN(num), &id, &klass);

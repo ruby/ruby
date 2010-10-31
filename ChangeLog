@@ -1,3 +1,24 @@
+Sun Oct 31 09:30:51 2010  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: some refactoring.
+	  - move decl. of rb_compile_option_struct to iseq.h.
+	  - define enum iseq_type.
+	  - define enum vm_special_object_type.
+
+	* compile.c: some refactoring.
+	  - apply above changes.
+	  - (struct iseq_link_element): change value of type.
+	  - remove unused decl.
+	  - fix comment.
+	  - rename iseq_build_body and iseq_build_exception to
+	    iseq_build_from_ary_body and iseq_build_from_ary_exception.
+
+	* iseq.h: define enum catch_type and enum defined_type.
+
+	* insns.def: apply above changes.
+
+	* iseq.c: define ISEQ_MAJOR_VERSION and ISEQ_MINOR_VERSION.
+
 Sat Oct 30 23:38:59 2010  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/encoding.rb: untabify.

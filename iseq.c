@@ -19,6 +19,9 @@
 #include "insns.inc"
 #include "insns_info.inc"
 
+#define ISEQ_MAJOR_VERSION 1
+#define ISEQ_MINOR_VERSION 2
+
 VALUE rb_cISeq;
 
 #define hidden_obj_p(obj) (!SPECIAL_CONST_P(obj) && !RBASIC(obj)->klass)
@@ -1331,8 +1334,8 @@ iseq_data_to_ary(rb_iseq_t *iseq)
      *  :catch_table, :bytecode]
      */
     rb_ary_push(val, rb_str_new2("YARVInstructionSequence/SimpleDataFormat"));
-    rb_ary_push(val, INT2FIX(1)); /* major */
-    rb_ary_push(val, INT2FIX(2)); /* minor */
+    rb_ary_push(val, INT2FIX(ISEQ_MAJOR_VERSION)); /* major */
+    rb_ary_push(val, INT2FIX(ISEQ_MINOR_VERSION)); /* minor */
     rb_ary_push(val, INT2FIX(1));
     rb_ary_push(val, misc);
     rb_ary_push(val, iseq->name);
@@ -1507,6 +1510,11 @@ Init_ISeq(void)
     rb_define_method(rb_cISeq, "disassemble", rb_iseq_disasm, 0);
     rb_define_method(rb_cISeq, "to_a", iseq_to_a, 0);
     rb_define_method(rb_cISeq, "eval", iseq_eval, 0);
+
+#if 0 /* TBD */
+    rb_define_method(rb_cISeq, "marshal_dump", iseq_marshal_dump, 0);
+    rb_define_method(rb_cISeq, "marshal_load", iseq_marshal_load, 1);
+#endif
 
     /* disable this feature because there is no verifier. */
     /* rb_define_singleton_method(rb_cISeq, "load", iseq_s_load, -1); */

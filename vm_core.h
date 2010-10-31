@@ -122,17 +122,7 @@ typedef unsigned long rb_num_t;
 
 struct iseq_compile_data_ensure_node_stack;
 
-typedef struct rb_compile_option_struct {
-    int inline_const_cache;
-    int peephole_optimization;
-    int tailcall_optimization;
-    int specialized_instruction;
-    int operands_unification;
-    int instructions_unification;
-    int stack_caching;
-    int trace_instruction;
-    int debug_level;
-} rb_compile_option_t;
+typedef struct rb_compile_option_struct rb_compile_option_t;
 
 struct iseq_inline_cache_entry {
     VALUE ic_vmstat;
@@ -162,7 +152,18 @@ struct rb_iseq_struct {
     /* static data */
     /***************/
 
-    VALUE type;          /* instruction sequence type */
+    enum iseq_type {
+	ISEQ_TYPE_TOP,
+	ISEQ_TYPE_METHOD,
+	ISEQ_TYPE_BLOCK,
+	ISEQ_TYPE_CLASS,
+	ISEQ_TYPE_RESCUE,
+	ISEQ_TYPE_ENSURE,
+	ISEQ_TYPE_EVAL,
+	ISEQ_TYPE_MAIN,
+	ISEQ_TYPE_DEFINED_GUARD,
+    } type;              /* instruction sequence type */
+
     VALUE name;	         /* String: iseq name */
     VALUE filename;      /* file information where this sequence from */
     VALUE filepath;      /* real file path or nil */
@@ -374,8 +375,7 @@ struct rb_unblock_callback {
 
 struct rb_mutex_struct;
 
-typedef struct rb_thread_struct
-{
+typedef struct rb_thread_struct {
     VALUE self;
     rb_vm_t *vm;
 
@@ -552,9 +552,11 @@ typedef struct {
 #define VM_CALL_SUPER_BIT          (0x01 << 7)
 #define VM_CALL_OPT_SEND_BIT       (0x01 << 8)
 
-#define VM_SPECIAL_OBJECT_VMCORE       0x01
-#define VM_SPECIAL_OBJECT_CBASE        0x02
-#define VM_SPECIAL_OBJECT_CONST_BASE  0x03
+enum vm_special_object_type {
+    VM_SPECIAL_OBJECT_VMCORE = 1,
+    VM_SPECIAL_OBJECT_CBASE,
+    VM_SPECIAL_OBJECT_CONST_BASE,
+};
 
 #define VM_FRAME_MAGIC_METHOD 0x11
 #define VM_FRAME_MAGIC_BLOCK  0x21
