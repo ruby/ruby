@@ -386,8 +386,6 @@ int *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define global_List		objspace->global_list
 #define ruby_gc_stress		objspace->gc_stress
 
-#define need_call_final 	(finalizer_table && finalizer_table->num_entries)
-
 static void rb_objspace_call_finalizer(rb_objspace_t *objspace);
 
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
@@ -1005,6 +1003,7 @@ init_heap(rb_objspace_t *objspace)
     }
     heaps_inc = 0;
     objspace->profile.invoke_time = getrusage_time();
+    finalizer_table = st_init_numtable();
 }
 
 
@@ -1389,7 +1388,7 @@ static void
 mark_tbl(rb_objspace_t *objspace, st_table *tbl, int lev)
 {
     struct mark_tbl_arg arg;
-    if (!tbl) return;
+    if (!tbl || tbl->num_entries == 0) return;
     arg.objspace = objspace;
     arg.lev = lev;
     st_foreach(tbl, mark_entry, (st_data_t)&arg);
@@ -1956,7 +1955,7 @@ slot_sweep(rb_objspace_t *objspace, struct heaps_slot *sweep_slot)
         if (!(p->as.basic.flags & FL_MARK)) {
             if (p->as.basic.flags &&
                 ((deferred = obj_free(objspace, (VALUE)p)) ||
-                 ((FL_TEST(p, FL_FINALIZE)) && need_call_final))) {
+		 (FL_TEST(p, FL_FINALIZE)))) {
                 if (!deferred) {
                     p->as.free.flags = T_ZOMBIE;
                     RDATA(p)->dfree = 0;
@@ -2397,10 +2396,7 @@ gc_marks(rb_objspace_t *objspace)
 
     th->vm->self ? rb_gc_mark(th->vm->self) : rb_vm_mark(th->vm);
 
-    if (finalizer_table) {
-	mark_tbl(objspace, finalizer_table, 0);
-    }
-
+    mark_tbl(objspace, finalizer_table, 0);
     mark_current_machine_context(objspace, th);
 
     rb_gc_mark_symbols();
@@ -2760,11 +2756,9 @@ static VALUE
 undefine_final(VALUE os, VALUE obj)
 {
     rb_objspace_t *objspace = &rb_objspace;
+    st_data_t data = obj;
     rb_check_frozen(obj);
-    if (finalizer_table) {
-	st_data_t data = obj;
-	st_delete(finalizer_table, &data, 0);
-    }
+    st_delete(finalizer_table, &data, 0);
     FL_UNSET(obj, FL_FINALIZE);
     return obj;
 }
@@ -2803,9 +2797,6 @@ define_final(int argc, VALUE *argv, VALUE os)
     block = rb_ary_new3(2, INT2FIX(rb_safe_level()), block);
     OBJ_FREEZE(block);
 
-    if (!finalizer_table) {
-	finalizer_table = st_init_numtable();
-    }
     if (st_lookup(finalizer_table, obj, &data)) {
 	table = (VALUE)data;
 	rb_ary_push(table, block);
@@ -2825,7 +2816,6 @@ rb_gc_copy_finalizer(VALUE dest, VALUE obj)
     VALUE table;
     st_data_t data;
 
-    if (!finalizer_table) return;
     if (!FL_TEST(obj, FL_FINALIZE)) return;
     if (st_lookup(finalizer_table, obj, &data)) {
 	table = (VALUE)data;
@@ -2885,8 +2875,7 @@ run_final(rb_objspace_t *objspace, VALUE obj)
     }
 
     key = (st_data_t)obj;
-    if (finalizer_table &&
-	st_delete(finalizer_table, &key, &table)) {
+    if (st_delete(finalizer_table, &key, &table)) {
 	run_finalizer(objspace, obj, objid, (VALUE)table);
     }
 }
@@ -2954,7 +2943,7 @@ rb_gc_call_finalizer_at_exit(void)
     rb_objspace_call_finalizer(&rb_objspace);
 }
 
-void
+static void
 rb_objspace_call_finalizer(rb_objspace_t *objspace)
 {
     RVALUE *p, *pend;
@@ -2962,33 +2951,32 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     size_t i;
 
     /* run finalizers */
-    if (finalizer_table) {
-        gc_clear_mark_on_sweep_slots(objspace);
-	do {
-	    /* XXX: this loop will make no sense */
-	    /* because mark will not be removed */
-	    finalize_deferred(objspace);
-	    mark_tbl(objspace, finalizer_table, 0);
-	    st_foreach(finalizer_table, chain_finalized_object,
-		       (st_data_t)&deferred_final_list);
-	} while (deferred_final_list);
-	/* force to run finalizer */
-	while (finalizer_table->num_entries) {
-	    struct force_finalize_list *list = 0;
-	    st_foreach(finalizer_table, force_chain_object, (st_data_t)&list);
-	    while (list) {
-		struct force_finalize_list *curr = list;
-		run_finalizer(objspace, curr->obj, rb_obj_id(curr->obj), curr->table);
-		st_delete(finalizer_table, (st_data_t*)&curr->obj, 0);
-		list = curr->next;
-		xfree(curr);
-	    }
+    gc_clear_mark_on_sweep_slots(objspace);
+
+    do {
+	/* XXX: this loop will make no sense */
+	/* because mark will not be removed */
+	finalize_deferred(objspace);
+	mark_tbl(objspace, finalizer_table, 0);
+	st_foreach(finalizer_table, chain_finalized_object,
+		   (st_data_t)&deferred_final_list);
+    } while (deferred_final_list);
+    /* force to run finalizer */
+    while (finalizer_table->num_entries) {
+	struct force_finalize_list *list = 0;
+	st_foreach(finalizer_table, force_chain_object, (st_data_t)&list);
+	while (list) {
+	    struct force_finalize_list *curr = list;
+	    run_finalizer(objspace, curr->obj, rb_obj_id(curr->obj), curr->table);
+	    st_delete(finalizer_table, (st_data_t*)&curr->obj, 0);
+	    list = curr->next;
+	    xfree(curr);
 	}
-	st_free_table(finalizer_table);
-	finalizer_table = 0;
     }
+
     /* finalizers are part of garbage collection */
     during_gc++;
+
     /* run data object's finalizers */
     for (i = 0; i < heaps_used; i++) {
 	p = objspace->heap.sorted[i].start; pend = objspace->heap.sorted[i].end;
@@ -3023,6 +3011,9 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     if (final_list) {
 	finalize_list(objspace, final_list);
     }
+
+    st_free_table(finalizer_table);
+    finalizer_table = 0;
 }
 
 void

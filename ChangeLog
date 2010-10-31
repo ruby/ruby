@@ -1,3 +1,13 @@
+Sun Oct 31 23:27:09 2010  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (finalizer_table, objspace->final.table):
+	  Create finalizer_table at Init_heap().
+	  Remove all null checks of finalizer_table.
+
+	* gc.c (mark_tbl): skip if no table entries.
+
+	* gc.c (slot_swee): remove useless need_call_final check.
+
 Sun Oct 31 22:32:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (rb_objspace_free): finalizers should be called separately
