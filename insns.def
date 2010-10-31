@@ -336,7 +336,7 @@ putspecialobject
 ()
 (VALUE val)
 {
-    enum vm_special_object_type type = value_type;
+    enum vm_special_object_type type = (enum vm_special_object_type)value_type;
 
     switch (type) {
       case VM_SPECIAL_OBJECT_VMCORE:
@@ -754,7 +754,7 @@ defined
 {
     VALUE klass;
     const char *expr_type = 0;
-    enum defined_type type = op_type;
+    enum defined_type type = (enum defined_type)op_type;
 
     val = Qnil;
 

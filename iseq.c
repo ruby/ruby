@@ -225,7 +225,7 @@ VALUE rb_realpath_internal(VALUE basedir, VALUE path, int strict);
 static VALUE
 prepare_iseq_build(rb_iseq_t *iseq,
 		   VALUE name, VALUE filename, VALUE filepath, VALUE line_no,
-		   VALUE parent, VALUE type, VALUE block_opt,
+		   VALUE parent, enum iseq_type type, VALUE block_opt,
 		   const rb_compile_option_t *option)
 {
     OBJ_FREEZE(name);
@@ -378,7 +378,7 @@ make_compile_option_value(rb_compile_option_t *option)
 
 VALUE
 rb_iseq_new(NODE *node, VALUE name, VALUE filename, VALUE filepath,
-	      VALUE parent, VALUE type)
+	    VALUE parent, enum iseq_type type)
 {
     return rb_iseq_new_with_opt(node, name, filename, filepath, INT2FIX(0), parent, type,
 				&COMPILE_OPTION_DEFAULT);
@@ -402,7 +402,7 @@ rb_iseq_new_main(NODE *node, VALUE filename, VALUE filepath)
 
 static VALUE
 rb_iseq_new_with_bopt_and_opt(NODE *node, VALUE name, VALUE filename, VALUE filepath, VALUE line_no,
-				VALUE parent, VALUE type, VALUE bopt,
+				VALUE parent, enum iseq_type type, VALUE bopt,
 				const rb_compile_option_t *option)
 {
     rb_iseq_t *iseq;
@@ -419,7 +419,7 @@ rb_iseq_new_with_bopt_and_opt(NODE *node, VALUE name, VALUE filename, VALUE file
 
 VALUE
 rb_iseq_new_with_opt(NODE *node, VALUE name, VALUE filename, VALUE filepath, VALUE line_no,
-		     VALUE parent, VALUE type,
+		     VALUE parent, enum iseq_type type,
 		     const rb_compile_option_t *option)
 {
     /* TODO: argument check */
@@ -429,7 +429,7 @@ rb_iseq_new_with_opt(NODE *node, VALUE name, VALUE filename, VALUE filepath, VAL
 
 VALUE
 rb_iseq_new_with_bopt(NODE *node, VALUE name, VALUE filename, VALUE filepath, VALUE line_no,
-		       VALUE parent, VALUE type, VALUE bopt)
+		       VALUE parent, enum iseq_type type, VALUE bopt)
 {
     /* TODO: argument check */
     return rb_iseq_new_with_bopt_and_opt(node, name, filename, filepath, line_no, parent, type,
@@ -515,7 +515,7 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
 
     make_compile_option(&option, opt);
     prepare_iseq_build(iseq, name, filename, filepath, line_no,
-		       parent, (VALUE)iseq_type, 0, &option);
+		       parent, (enum iseq_type)iseq_type, 0, &option);
 
     rb_iseq_build_from_ary(iseq, locals, args, exception, body);
 

@@ -910,7 +910,7 @@ new_insn_send(rb_iseq_t *iseq, int line_no,
 
 static VALUE
 new_child_iseq(rb_iseq_t *iseq, NODE *node,
-	       VALUE name, VALUE parent, VALUE type, int line_no)
+	       VALUE name, VALUE parent, enum iseq_type type, int line_no)
 {
     VALUE ret;
 
@@ -1559,7 +1559,7 @@ iseq_set_exception_table(rb_iseq_t *iseq)
     for (i = 0; i < tlen; i++) {
 	ptr = RARRAY_PTR(tptr[i]);
 	entry = &iseq->catch_table[i];
-	entry->type = ptr[0] & 0xffff;
+	entry->type = (enum catch_type)(ptr[0] & 0xffff);
 	entry->start = label_get_position((LABEL *)(ptr[1] & ~1));
 	entry->end = label_get_position((LABEL *)(ptr[2] & ~1));
 	entry->iseq = ptr[3];

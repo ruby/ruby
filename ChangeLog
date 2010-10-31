@@ -1,3 +1,17 @@
+Sun Oct 31 22:10:56 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (new_child_iseq): adjust argument types.
+
+	* iseq.c (prepare_iseq_build, rb_iseq_new),
+	  (rb_iseq_new_with_bopt_and_opt, rb_iseq_new_with_opt),
+	  (rb_iseq_new_with_bopt): ditto.
+
+	* compile.c (iseq_set_exception_table): suppress warnings.
+
+	* insns.def (putspecialobject, defined): ditto.
+
+	* iseq.c (iseq_load): ditto.
+
 Sun Oct 31 09:30:51 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: some refactoring.
