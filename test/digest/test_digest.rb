@@ -17,6 +17,12 @@ module TestDigest
   Data1 = "abc"
   Data2 = "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"
 
+  def test_s_new
+    self.class::DATA.each do |str, hexdigest|
+      assert_raise(ArgumentError) { self.class::ALGO.new("") }
+    end
+  end
+
   def test_s_hexdigest
     self.class::DATA.each do |str, hexdigest|
       assert_equal(hexdigest, self.class::ALGO.hexdigest(str))

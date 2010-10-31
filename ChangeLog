@@ -1,3 +1,8 @@
+Mon Nov  1 00:58:00 2010  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/digest.c (rb_digest_class_init): Define
+	  Digest::Class.new(). [Feature #3954]
+
 Sat Oct 30 11:26:07 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* object.c: Make BasicObject.new accept no parameter.
