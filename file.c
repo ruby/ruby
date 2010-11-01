@@ -2446,7 +2446,7 @@ rb_file_s_readlink(VALUE klass, VALUE path)
 	xfree(buf);
 	rb_sys_fail_path(path);
     }
-    v = rb_tainted_str_new(buf, rv);
+    v = rb_filesystem_str_new(buf, rv);
     xfree(buf);
 
     return v;

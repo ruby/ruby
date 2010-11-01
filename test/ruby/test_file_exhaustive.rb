@@ -354,11 +354,14 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_raise(Errno::EEXIST) { File.link(@file, @file) }
   end
 
-  def test_symlink2
+  def test_readlink
     return unless @symlinkfile
     assert_equal(@file, File.readlink(@symlinkfile))
     assert_raise(Errno::EINVAL) { File.readlink(@file) }
     assert_raise(Errno::ENOENT) { File.readlink(@nofile) }
+    if fs = Encoding.find("filesystem")
+      assert_equal(fs, File.readlink(@symlinkfile).encoding)
+    end
   rescue NotImplementedError
   end
 
