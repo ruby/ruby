@@ -1,7 +1,7 @@
 require 'mkmf'
 
 case RUBY_PLATFORM
-when /(ms|bcc)win32|mingw/
+when /(ms|bcc)win(32|64)|mingw/
   test_func = "WSACleanup"
   have_library("ws2_32", "WSACleanup")
   $defs << "-DHAVE_SOCKETPAIR"
