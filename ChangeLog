@@ -1,3 +1,11 @@
+Mon Sep  6 11:03:13 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* Fixed wrong check of missing functions. Patch by Adrian Quark.
+	  ref #3400
+	  The patch contains following comment:
+	    This patch should avoid unnecessary incompatibility with future
+	    versions of Openssl.  Changes suggested by bmaher_at_amazon.com.
+
 Mon Sep  6 10:31:59 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/readline/readline.c (readline_s_get_line_buffer):

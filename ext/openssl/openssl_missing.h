@@ -63,7 +63,7 @@ typedef int i2d_of_void();
 	(d2i_of_void *)d2i_PKCS7_RECIP_INFO, (char *)ri)
 #endif
 
-#if !defined(HAVE_EVP_MD_CTX_INIT)
+#if !defined(HAVE_HMAC_CTX_INIT)
 void HMAC_CTX_init(HMAC_CTX *ctx);
 #endif
 
@@ -133,8 +133,11 @@ int EVP_CIPHER_CTX_copy(EVP_CIPHER_CTX *out, EVP_CIPHER_CTX *in);
 #define OPENSSL_cleanse(p, l) memset(p, 0, l)
 #endif
 
-#if !defined(HAVE_X509_STORE_SET_EX_DATA)
+#if !defined(HAVE_X509_STORE_GET_EX_DATA)
 void *X509_STORE_get_ex_data(X509_STORE *str, int idx);
+#endif
+
+#if !defined(HAVE_X509_STORE_SET_EX_DATA)
 int X509_STORE_set_ex_data(X509_STORE *str, int idx, void *data);
 #endif
 
