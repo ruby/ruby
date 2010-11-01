@@ -1,3 +1,8 @@
+Thu Sep  9 09:02:01 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/rbinstall.rb (install?): gemspec filename should include
+	  its version. patched by Luis Lavena [ruby-core:32165]
+
 Mon Sep  6 11:03:13 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* Fixed wrong check of missing functions. Patch by Adrian Quark.
