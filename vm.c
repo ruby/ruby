@@ -741,7 +741,8 @@ vm_backtrace_each(rb_thread_t *th, int lev, void (*init)(void *), rb_backtrace_i
 		id = cfp->me->def->original_id;
 	    else
 		id = cfp->me->called_id;
-	    if ((*iter)(arg, file, line_no, rb_id2str(id))) break;
+	    if (id != ID_ALLOCATOR && (*iter)(arg, file, line_no, rb_id2str(id)))
+		break;
 	}
 	cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp);
     }

@@ -1,3 +1,8 @@
+Thu Sep  9 23:25:53 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (vm_backtrace_each): skip allocator frames which have no
+	  name.  [ruby-core:32231]
+
 Thu Sep  9 10:44:46 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/ruby/test_env.rb (test_aset): OpenBSD acts like NetBSD in
