@@ -1068,7 +1068,7 @@ class RubyLex
 	end
       end
       if @ltype == "/"
-	if peek(0) =~ /i|m|x|o|e|s|u|n/
+       while peek(0) =~ /i|m|x|o|e|s|u|n/
 	  getc
 	end
       end
