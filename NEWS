@@ -91,7 +91,7 @@ with all sufficient information, see the ChangeLog file.
 
   See above.
 
-* REXML::Document#encoding, REXML::XMLdecl#encoding,
+* REXML::Document#encoding, REXML::XMLDecl#encoding,
   REXML::Output#encoding and REXML::Source#encoding
 
   Return an Encoding object not encoding name as a String.
