@@ -1,3 +1,8 @@
+Tue Nov  2 22:47:08 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/visitor.rb (accept): switch to
+	  a dispatch cache rather than case / when statement.
+
 Tue Nov  2 21:46:52 2010  Kouhei Sutou  <kou@cozmixng.org>
 
 	* NEWS: fix a typo.
