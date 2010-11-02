@@ -8,8 +8,14 @@ module Psych
     #   builder.tree # => #<Psych::Nodes::Stream .. }
     #
     class YAMLTree < Psych::Visitors::Visitor
+      attr_reader :started, :finished
+      alias :finished? :finished
+      alias :started? :started
+
       def initialize options = {}, emitter = Psych::TreeBuilder.new
         super()
+        @started  = false
+        @finished = false
         @emitter  = emitter
         @st       = {}
         @ss       = ScalarScanner.new

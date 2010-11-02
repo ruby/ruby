@@ -1,3 +1,8 @@
+Tue Nov  2 22:50:25 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/visitor.rb (initialize): push accessor
+	  methods to subclass that actually uses them.
+
 Tue Nov  2 22:47:08 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/visitor.rb (accept): switch to

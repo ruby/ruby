@@ -1,15 +1,6 @@
 module Psych
   module Visitors
     class Visitor
-      attr_reader :started, :finished
-      alias :finished? :finished
-      alias :started? :started
-
-      def initialize
-        @started  = false
-        @finished = false
-      end
-
       def accept target
         visit target
       end
