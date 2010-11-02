@@ -1,3 +1,8 @@
+Tue Nov  2 20:10:32 2010  Tajima Akio <artonx@yahoo.co.jp>
+
+	* test/rake/test_tasks.rb: clear env var which is used by the test.
+	  [ruby-dev:42508]
+
 Tue Nov  2 00:25:54 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/extconf.rb: win64 is just same with win32 about socket.
