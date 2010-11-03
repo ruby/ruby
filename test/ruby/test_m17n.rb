@@ -1299,6 +1299,16 @@ class TestM17N < Test::Unit::TestCase
     s = "\xa1\xa1\x8f".force_encoding("euc-jp")
     assert_equal(false, s.valid_encoding?)
     assert_equal(true, s.reverse.valid_encoding?)
+
+    bug4018 = '[ruby-core:33027]'
+    s = "\xa1\xa1".force_encoding("euc-jp")
+    assert_equal(true, s.valid_encoding?)
+    s << "\x8f".force_encoding("euc-jp")
+    assert_equal(false, s.valid_encoding?, bug4018)
+    s = "aa".force_encoding("utf-16be")
+    assert_equal(true, s.valid_encoding?)
+    s << "\xff".force_encoding("utf-16be")
+    assert_equal(false, s.valid_encoding?, bug4018)
   end
 
   def test_getbyte
