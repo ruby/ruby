@@ -1,3 +1,8 @@
+Thu Nov  4 02:06:16 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* cont.c (fiber_t_alloc): raise an error when fiber is going to be
+	  initialized twice.  [ruby-dev:42524]
+
 Thu Nov  4 02:04:25 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* cont.c (rb_fiber_resume): raise an "double resume" error when root

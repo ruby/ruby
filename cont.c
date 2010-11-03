@@ -971,6 +971,10 @@ fiber_t_alloc(VALUE fibval)
     rb_fiber_t *fib;
     rb_thread_t *th = GET_THREAD();
 
+    if (DATA_PTR(fibval) != 0) {
+	rb_raise(rb_eRuntimeError, "cannot initialize twice");
+    }
+
     THREAD_MUST_BE_RUNNING(th);
     fib = ALLOC(rb_fiber_t);
     memset(fib, 0, sizeof(rb_fiber_t));
