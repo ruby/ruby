@@ -1,3 +1,7 @@
+Wed Nov  3 08:58:59 2010  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c, vm.c, vm_core.h: remove USE_VALUE_CACHE option.
+
 Wed Nov  3 07:47:25 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/irb/ruby-lex.rb (RubyLex#identify_string): parse multiple

@@ -365,9 +365,6 @@ struct rb_vm_protect_tag {
     struct rb_vm_protect_tag *prev;
 };
 
-#define RUBY_VM_VALUE_CACHE_SIZE 0x1000
-#define USE_VALUE_CACHE 0
-
 struct rb_unblock_callback {
     rb_unblock_function_t *func;
     void *arg;
@@ -437,10 +434,6 @@ typedef struct rb_thread_struct {
 
     /* storage */
     st_table *local_storage;
-#if USE_VALUE_CACHE
-    VALUE value_cache[RUBY_VM_VALUE_CACHE_SIZE + 1];
-    VALUE *value_cache_ptr;
-#endif
 
     struct rb_thread_struct *join_list_next;
     struct rb_thread_struct *join_list_head;

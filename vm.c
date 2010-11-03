@@ -1709,18 +1709,6 @@ thread_free(void *ptr)
 	    st_free_table(th->local_storage);
 	}
 
-#if USE_VALUE_CACHE
-	{
-	    VALUE *ptr = th->value_cache_ptr;
-	    while (*ptr) {
-		VALUE v = *ptr;
-		RBASIC(v)->flags = 0;
-		RBASIC(v)->klass = 0;
-		ptr++;
-	    }
-	}
-#endif
-
 	if (th->vm && th->vm->main_thread == th) {
 	    RUBY_GC_INFO("main thread\n");
 	}
@@ -1796,10 +1784,6 @@ th_init2(rb_thread_t *th, VALUE self)
     th->status = THREAD_RUNNABLE;
     th->errinfo = Qnil;
     th->last_status = Qnil;
-
-#if USE_VALUE_CACHE
-    th->value_cache_ptr = &th->value_cache[0];
-#endif
 }
 
 static void

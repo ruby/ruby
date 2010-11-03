@@ -1034,6 +1034,13 @@ heaps_increment(rb_objspace_t *objspace)
     return FALSE;
 }
 
+int
+rb_during_gc(void)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    return during_gc;
+}
+
 #define RANY(o) ((RVALUE*)(o))
 
 static VALUE
@@ -1061,49 +1068,10 @@ rb_newobj_from_heap(rb_objspace_t *objspace)
     return obj;
 }
 
-#if USE_VALUE_CACHE
-static VALUE
-rb_fill_value_cache(rb_thread_t *th)
-{
-    rb_objspace_t *objspace = &rb_objspace;
-    int i;
-    VALUE rv;
-
-    /* LOCK */
-    for (i=0; i<RUBY_VM_VALUE_CACHE_SIZE; i++) {
-	VALUE v = rb_newobj_from_heap(objspace);
-
-	th->value_cache[i] = v;
-	RBASIC(v)->flags = FL_MARK;
-    }
-    th->value_cache_ptr = &th->value_cache[0];
-    rv = rb_newobj_from_heap(objspace);
-    /* UNLOCK */
-    return rv;
-}
-#endif
-
-int
-rb_during_gc(void)
-{
-    rb_objspace_t *objspace = &rb_objspace;
-    return during_gc;
-}
-
 VALUE
 rb_newobj(void)
 {
-#if USE_VALUE_CACHE || (defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE)
-    rb_thread_t *th = GET_THREAD();
-#endif
-#if USE_VALUE_CACHE
-    VALUE v = *th->value_cache_ptr;
-#endif
-#if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
-    rb_objspace_t *objspace = th->vm->objspace;
-#else
     rb_objspace_t *objspace = &rb_objspace;
-#endif
 
     if (during_gc) {
 	dont_gc = 1;
@@ -1111,23 +1079,7 @@ rb_newobj(void)
 	rb_bug("object allocation during garbage collection phase");
     }
 
-#if USE_VALUE_CACHE
-    if (v) {
-	RBASIC(v)->flags = 0;
-	th->value_cache_ptr++;
-    }
-    else {
-	v = rb_fill_value_cache(th);
-    }
-
-#if defined(GC_DEBUG)
-    printf("cache index: %d, v: %p, th: %p\n",
-	   th->value_cache_ptr - th->value_cache, v, th);
-#endif
-    return v;
-#else
     return rb_newobj_from_heap(objspace);
-#endif
 }
 
 NODE*
