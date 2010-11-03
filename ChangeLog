@@ -1,3 +1,8 @@
+Thu Nov  4 02:04:25 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* cont.c (rb_fiber_resume): raise an "double resume" error when root
+	  fiber is going to be resumed.  [ruby-dev:42523]
+
 Wed Nov  3 14:17:18 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/ostruct.rb (OpenStruct#delete_field): also undefine

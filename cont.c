@@ -1292,7 +1292,7 @@ rb_fiber_resume(VALUE fibval, int argc, VALUE *argv)
     rb_fiber_t *fib;
     GetFiberPtr(fibval, fib);
 
-    if (fib->prev != Qnil) {
+    if (fib->prev != Qnil || fib->cont.type == ROOT_FIBER_CONTEXT) {
 	rb_raise(rb_eFiberError, "double resume");
     }
 
