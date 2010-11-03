@@ -148,7 +148,7 @@ class RubyLex
     end
     c = c2 unless c
     @rests.unshift c #c =
-      @seek -= 1
+    @seek -= 1
     if c == "\n"
       @line_no -= 1
       if idx = @readed.reverse.index("\n")
@@ -239,7 +239,7 @@ class RubyLex
 	    end
 	  end
 	  if @line != "\n"
-      @line.force_encoding(@io.encoding)
+            @line.force_encoding(@io.encoding)
 	    yield @line, @exp_line_no
 	  end
 	  break unless l
@@ -1068,7 +1068,7 @@ class RubyLex
 	end
       end
       if @ltype == "/"
-       while peek(0) =~ /i|m|x|o|e|s|u|n/
+        while /[imxoesun]/ =~ peek(0)
 	  getc
 	end
       end
