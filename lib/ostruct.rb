@@ -107,7 +107,9 @@ class OpenStruct
   # Remove the named field from the object.
   #
   def delete_field(name)
-    @table.delete name.to_sym
+    sym = name.to_sym
+    @table.delete sym
+    singleton_class.__send__(:remove_method, sym, "#{name}=")
   end
 
   InspectKey = :__inspect_key__ # :nodoc:

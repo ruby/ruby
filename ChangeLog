@@ -1,3 +1,8 @@
+Wed Nov  3 14:17:18 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/ostruct.rb (OpenStruct#delete_field): also undefine
+	  accessor methods.  [ruby-core:33010]
+
 Wed Nov  3 14:13:46 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_enc_cr_str_buf_cat): concatenation of valid
