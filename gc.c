@@ -1981,8 +1981,8 @@ before_gc_sweep(rb_objspace_t *objspace)
     objspace->heap.free_num = 0;
 
     /* sweep unlinked method entries */
-    if (th->vm->unlinked_method_entry_list) {
-	rb_sweep_method_entry(th->vm);
+    if (GET_VM()->unlinked_method_entry_list) {
+	rb_sweep_method_entry(GET_VM());
     }
 }
 

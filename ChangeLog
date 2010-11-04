@@ -1,3 +1,7 @@
+Thu Nov  4 19:26:10 2010  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (before_gc_sweep): fix commit miss.
+
 Thu Nov  4 19:20:46 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (after_gc_sweep, before_gc_sweep):
