@@ -2782,17 +2782,20 @@ run_single_final(VALUE arg)
 }
 
 static void
-run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE objid, VALUE table)
+run_finalizer(rb_objspace_t *objspace, VALUE objid, VALUE table)
 {
     long i;
     int status;
     VALUE args[3];
 
-    args[1] = 0;
-    args[2] = (VALUE)rb_safe_level();
-    if (!args[1] && RARRAY_LEN(table) > 0) {
+    if (RARRAY_LEN(table) > 0) {
 	args[1] = rb_obj_freeze(rb_ary_new3(1, objid));
     }
+    else {
+	args[1] = 0;
+    }
+
+    args[2] = (VALUE)rb_safe_level();
     for (i=0; i<RARRAY_LEN(table); i++) {
 	VALUE final = RARRAY_PTR(table)[i];
 	args[0] = RARRAY_PTR(final)[1];
@@ -2825,7 +2828,7 @@ run_final(rb_objspace_t *objspace, VALUE obj)
 
     key = (st_data_t)obj;
     if (st_delete(finalizer_table, &key, &table)) {
-	run_finalizer(objspace, obj, objid, (VALUE)table);
+	run_finalizer(objspace, objid, (VALUE)table);
     }
 }
 
@@ -2916,7 +2919,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 	st_foreach(finalizer_table, force_chain_object, (st_data_t)&list);
 	while (list) {
 	    struct force_finalize_list *curr = list;
-	    run_finalizer(objspace, curr->obj, rb_obj_id(curr->obj), curr->table);
+	    run_finalizer(objspace, rb_obj_id(curr->obj), curr->table);
 	    st_delete(finalizer_table, (st_data_t*)&curr->obj, 0);
 	    list = curr->next;
 	    xfree(curr);

@@ -1,3 +1,7 @@
+Thu Nov  4 19:45:27 2010  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (run_final): do not need argument obj.
+
 Thu Nov  4 19:26:10 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (before_gc_sweep): fix commit miss.
