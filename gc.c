@@ -1979,6 +1979,11 @@ before_gc_sweep(rb_objspace_t *objspace)
     }
     objspace->heap.sweep_slots = heaps;
     objspace->heap.free_num = 0;
+
+    /* sweep unlinked method entries */
+    if (th->vm->unlinked_method_entry_list) {
+	rb_sweep_method_entry(th->vm);
+    }
 }
 
 static void
@@ -1999,11 +2004,6 @@ after_gc_sweep(rb_objspace_t *objspace)
     malloc_increase = 0;
 
     free_unused_heaps(objspace);
-
-    /* sweep unlinked method entries */
-    if (th->vm->unlinked_method_entry_list) {
-	rb_sweep_method_entry(th->vm);
-    }
 }
 
 static int

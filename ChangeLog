@@ -1,3 +1,8 @@
+Thu Nov  4 19:20:46 2010  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (after_gc_sweep, before_gc_sweep):
+	  invoke rb_sweep_method_entry() as soon as possilbe.
+
 Thu Nov  4 19:13:58 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (after_gc_sweep, slot_sweep): finalizers should be invoked
