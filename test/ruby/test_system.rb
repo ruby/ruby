@@ -91,4 +91,15 @@ class TestSystem < Test::Unit::TestCase
   def test_empty_evstr
     assert_equal("", eval('"#{}"', nil, __FILE__, __LINE__), "[ruby-dev:25113]")
   end
+
+  def test_fallback_to_sh
+    Dir.mktmpdir("ruby_script_tmp") {|tmpdir|
+      tmpfilename = "#{tmpdir}/ruby_script_tmp.#{$$}"
+      open(tmpfilename, "w") {|f|
+        f.puts ": ;"
+        f.chmod(0755)
+      }
+      assert_equal(true, system(tmpfilename), '[ruby-core:32745]')
+    }
+  end
 end

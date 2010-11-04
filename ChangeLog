@@ -1,3 +1,8 @@
+Fri Nov  5 01:21:31 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (proc_exec_v, proc_spawn_v): try to execute with sh if
+	  no shebang.  [ruby-core:32745] [EXPERIMENTAL]
+
 Fri Nov  5 00:39:00 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_readlines, rb_io_each_line): limit must not be zero.

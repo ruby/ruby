@@ -1220,4 +1220,18 @@ class TestProcess < Test::Unit::TestCase
       assert(status.success?, "[ruby-dev:38105]")
     }
   end
+
+  def test_fallback_to_sh
+    feature = '[ruby-core:32745]'
+    with_tmpchdir do |d|
+      open("tmp_script.#{$$}", "w") {|f| f.puts ": ;"; f.chmod(0755)}
+      assert_not_nil(pid = Process.spawn("./tmp_script.#{$$}"), feature)
+      wpid, st = Process.waitpid2(pid)
+      assert_equal([pid, true], [wpid, st.success?], feature)
+
+      open("tmp_script.#{$$}", "w") {|f| f.puts "echo $#: $@"; f.chmod(0755)}
+      result = IO.popen(["./tmp_script.#{$$}", "a b", "c"]) {|f| f.read}
+      assert_equal("2: a b c\n", result, feature)
+    end
+  end
 end

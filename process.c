@@ -1014,6 +1014,21 @@ security(const char *str)
     }
 }
 
+#ifdef HAVE_FORK
+#define try_with_sh(prog, argv) ((saved_errno == ENOEXEC) ? exec_with_sh(prog, argv) : (void)0)
+static void
+exec_with_sh(const char *prog, char **argv)
+{
+    *argv = (char *)prog;
+    *--argv = (char *)"sh";
+    execv("/bin/sh", argv);
+}
+#define ALLOCA_ARGV(n) ALLOCA_N(char*, (n)+1)
+#else
+#define try_with_sh(prog, argv) (void)0
+#define ALLOCA_ARGV(n) ALLOCA_N(char*, n)
+#endif
+
 static int
 proc_exec_v(char **argv, const char *prog)
 {
@@ -1058,7 +1073,7 @@ proc_exec_v(char **argv, const char *prog)
 #endif /* __EMX__ */
     before_exec();
     execv(prog, argv);
-    preserving_errno(after_exec());
+    preserving_errno(try_with_sh(prog, argv); after_exec());
     return -1;
 }
 
@@ -1068,7 +1083,7 @@ rb_proc_exec_n(int argc, VALUE *argv, const char *prog)
     char **args;
     int i;
 
-    args = ALLOCA_N(char*, argc+1);
+    args = ALLOCA_ARGV(argc+1);
     for (i=0; i<argc; i++) {
 	args[i] = RSTRING_PTR(argv[i]);
     }
@@ -1126,7 +1141,7 @@ rb_proc_exec(const char *str)
 	    return -1;
 	}
     }
-    a = argv = ALLOCA_N(char*, (s-str)/2+2);
+    a = argv = ALLOCA_ARGV((s-str)/2+2);
     ss = ALLOCA_N(char, s-str+1);
     memcpy(ss, str, s-str);
     ss[s-str] = '\0';
@@ -1167,8 +1182,11 @@ proc_spawn_v(char **argv, char *prog)
 
     before_exec();
     status = spawnv(P_WAIT, prog, argv);
-    rb_last_status_set(status == -1 ? 127 : status, 0);
-    after_exec();
+    preserving_errno({
+	rb_last_status_set(status == -1 ? 127 : status, 0);
+	try_with_sh(prog, argv);
+	after_exec();
+    });
     return status;
 }
 #endif
@@ -1179,7 +1197,7 @@ proc_spawn_n(int argc, VALUE *argv, VALUE prog)
     char **args;
     int i;
 
-    args = ALLOCA_N(char*, argc + 1);
+    args = ALLOCA_ARGV(argc + 1);
     for (i = 0; i < argc; i++) {
 	args[i] = RSTRING_PTR(argv[i]);
     }
@@ -1210,7 +1228,7 @@ proc_spawn(char *str)
 	    return status;
 	}
     }
-    a = argv = ALLOCA_N(char*, (s - str) / 2 + 2);
+    a = argv = ALLOCA_ARGV((s - str) / 2 + 2);
     s = ALLOCA_N(char, s - str + 1);
     strcpy(s, str);
     if (*a++ = strtok(s, " \t")) {
