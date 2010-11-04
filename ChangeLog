@@ -1,3 +1,8 @@
+Fri Nov  5 00:14:15 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/fiddle/extconf.rb: fixing ffi library location on windows.
+	  Thanks Usa! [ruby-core:32930]
+
 Thu Nov  4 20:04:44 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rb_newobj): force garbage_collect() if GC.stress == true.
