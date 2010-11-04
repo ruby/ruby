@@ -1,3 +1,9 @@
+Thu Nov  4 10:30:40 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* configure.in (--with-valgrind): Now this option is default on.
+	  You can still explicitly disable this feature by specifying
+	  --without-valgrind.
+
 Thu Nov  4 02:06:16 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* cont.c (fiber_t_alloc): raise an error when fiber is going to be
