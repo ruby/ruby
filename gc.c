@@ -2843,17 +2843,10 @@ finalize_deferred(rb_objspace_t *objspace)
     }
 }
 
-static void
-gc_finalize_deferred(rb_objspace_t *objspace)
-{
-    finalize_deferred(objspace);
-    free_unused_heaps(objspace);
-}
-
 void
 rb_gc_finalize_deferred(void)
 {
-    gc_finalize_deferred(&rb_objspace);
+    finalize_deferred(&rb_objspace);
 }
 
 static int
@@ -2973,7 +2966,8 @@ rb_gc(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
     garbage_collect(objspace);
-    gc_finalize_deferred(objspace);
+    finalize_deferred(objspace);
+    free_unused_heaps(objspace);
 }
 
 /*
