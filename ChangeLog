@@ -1,3 +1,7 @@
+Thu Nov  4 20:04:44 2010  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rb_newobj): force garbage_collect() if GC.stress == true.
+
 Thu Nov  4 19:48:22 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* ChangeLog: missed to write a last ChangeLog.

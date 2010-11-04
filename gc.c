@@ -1042,12 +1042,26 @@ rb_during_gc(void)
 
 #define RANY(o) ((RVALUE*)(o))
 
-static VALUE
-rb_newobj_from_heap(rb_objspace_t *objspace)
+VALUE
+rb_newobj(void)
 {
+    rb_objspace_t *objspace = &rb_objspace;
     VALUE obj;
 
-    if ((ruby_gc_stress && !ruby_disable_gc_stress) || !freelist) {
+    if (UNLIKELY(during_gc)) {
+	dont_gc = 1;
+	during_gc = 0;
+	rb_bug("object allocation during garbage collection phase");
+    }
+
+    if (UNLIKELY(ruby_gc_stress) && UNLIKELY(!ruby_disable_gc_stress)) {
+	if (!garbage_collect(objspace)) {
+	    during_gc = 0;
+	    rb_memerror();
+	}
+    }
+
+    if (UNLIKELY(!freelist)) {
 	if (!gc_lazy_sweep(objspace)) {
 	    during_gc = 0;
 	    rb_memerror();
@@ -1065,20 +1079,6 @@ rb_newobj_from_heap(rb_objspace_t *objspace)
     GC_PROF_INC_LIVE_NUM;
 
     return obj;
-}
-
-VALUE
-rb_newobj(void)
-{
-    rb_objspace_t *objspace = &rb_objspace;
-
-    if (during_gc) {
-	dont_gc = 1;
-	during_gc = 0;
-	rb_bug("object allocation during garbage collection phase");
-    }
-
-    return rb_newobj_from_heap(objspace);
 }
 
 NODE*
