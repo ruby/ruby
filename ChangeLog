@@ -1,3 +1,8 @@
+Thu Nov  4 19:13:58 2010  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (after_gc_sweep, slot_sweep): finalizers should be invoked
+	  as soon as possible.
+
 Thu Nov  4 10:30:40 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* configure.in (--with-valgrind): Now this option is default on.

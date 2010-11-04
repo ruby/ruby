@@ -1006,7 +1006,6 @@ init_heap(rb_objspace_t *objspace)
     finalizer_table = st_init_numtable();
 }
 
-
 static void
 set_heaps_increment(rb_objspace_t *objspace)
 {
@@ -1947,6 +1946,10 @@ slot_sweep(rb_objspace_t *objspace, struct heaps_slot *sweep_slot)
         objspace->heap.free_num += free_num;
     }
     objspace->heap.final_num += final_num;
+
+    if (deferred_final_list) {
+	RUBY_VM_SET_FINALIZER_INTERRUPT(GET_THREAD());
+    }
 }
 
 static int
@@ -1995,13 +1998,7 @@ after_gc_sweep(rb_objspace_t *objspace)
     }
     malloc_increase = 0;
 
-    if (deferred_final_list) {
-        /* clear finalization list */
-	RUBY_VM_SET_FINALIZER_INTERRUPT(GET_THREAD());
-    }
-    else{
-	free_unused_heaps(objspace);
-    }
+    free_unused_heaps(objspace);
 
     /* sweep unlinked method entries */
     if (th->vm->unlinked_method_entry_list) {
