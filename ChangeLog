@@ -1,3 +1,11 @@
+Thu Nov  4 19:48:22 2010  Koichi Sasada  <ko1@atdot.net>
+
+	* ChangeLog: missed to write a last ChangeLog.
+
+	* gc.c (gc_finalize_deferred): removed.
+
+	* gc.c (rb_gc_finalize_deferred): Do not invoke a free_unused_heaps().
+
 Thu Nov  4 19:45:27 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (run_final): do not need argument obj.
