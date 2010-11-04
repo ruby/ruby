@@ -1702,4 +1702,24 @@ End
       GC.start
     end
   end
+
+  def test_readlines_limit_0
+    bug4024 = '[ruby-dev:42538]'
+    t = make_tempfile
+    open(t.path, "r") do |io|
+      assert_raise(ArgumentError, bug4024) do
+        io.readlines(0)
+      end
+    end
+  end
+
+  def test_each_line_limit_0
+    bug4024 = '[ruby-dev:42538]'
+    t = make_tempfile
+    open(t.path, "r") do |io|
+      assert_raise(ArgumentError, bug4024) do
+        io.each_line(0).next
+      end
+    end
+  end
 end

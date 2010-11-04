@@ -2724,6 +2724,8 @@ rb_io_readlines(int argc, VALUE *argv, VALUE io)
     long limit;
 
     prepare_getline_args(argc, argv, &rs, &limit, io);
+    if (limit == 0)
+	rb_raise(rb_eArgError, "invalid limit: 0 for readlines");
     ary = rb_ary_new();
     while (!NIL_P(line = rb_io_getline_1(rs, limit, io))) {
 	rb_ary_push(ary, line);
@@ -2773,6 +2775,8 @@ rb_io_each_line(int argc, VALUE *argv, VALUE io)
 
     RETURN_ENUMERATOR(io, argc, argv);
     prepare_getline_args(argc, argv, &rs, &limit, io);
+    if (limit == 0)
+	rb_raise(rb_eArgError, "invalid limit: 0 for each_line");
     while (!NIL_P(str = rb_io_getline_1(rs, limit, io))) {
 	rb_yield(str);
     }

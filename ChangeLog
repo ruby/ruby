@@ -1,3 +1,8 @@
+Fri Nov  5 00:39:00 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_readlines, rb_io_each_line): limit must not be zero.
+	  a patch from Tomoyuki Chikanaga at [ruby-dev:42538].  #4024
+
 Fri Nov  5 00:14:15 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/fiddle/extconf.rb: fixing ffi library location on windows.
