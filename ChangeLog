@@ -36,7 +36,7 @@ Thu Nov  4 19:26:10 2010  Koichi Sasada  <ko1@atdot.net>
 Thu Nov  4 19:20:46 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (after_gc_sweep, before_gc_sweep):
-	  invoke rb_sweep_method_entry() as soon as possilbe.
+	  invoke rb_sweep_method_entry() as soon as possible.
 
 Thu Nov  4 19:13:58 2010  Koichi Sasada  <ko1@atdot.net>
 
@@ -117,7 +117,7 @@ Mon Nov  1 21:25:57 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
           sizeof(char*) differs.  On such environment a return value
           of getenv(3), which is in fact a char*, might first casted
           into a int (loses data here), and then casted back to char*
-          by automatic integral promotion fo fit to the prototype of
+          by automatic integral promotion to fit to the prototype of
           ruby_set_debug_option().
 
 Sun Oct 31 23:27:09 2010  Koichi Sasada  <ko1@atdot.net>
@@ -181,7 +181,7 @@ Sat Oct 30 23:38:59 2010  Kouhei Sutou  <kou@cozmixng.org>
 
 Sat Oct 30 21:06:37 2010  Kouhei Sutou  <kou@cozmixng.org>
 
-	* lib/rexml/encoding.rb: use Ruby native encoding mechnism.
+	* lib/rexml/encoding.rb: use Ruby native encoding mechanism.
 	[ruby-dev:42464]
 	* lib/rexml/encodings/: remove.
 
@@ -190,7 +190,7 @@ Sat Oct 30 21:06:37 2010  Kouhei Sutou  <kou@cozmixng.org>
 	lib/rexml/parsers/baseparser.rb, lib/rexml/source.rb,
 	lib/rexml/xmldecl.rb: use Ruby's native Encoding object.
 
-	* test/rexml/, test/rss/: follow the above encoding chagnes.
+	* test/rexml/, test/rss/: follow the above encoding changes.
 
 	* NEWS: add REXML's incompatible change about encoding.
 
@@ -262,7 +262,7 @@ Fri Oct 29 23:32:36 2010  Koichi Sasada  <ko1@atdot.net>
 	* test/profile_test_all.rb: added.
 	  You can use test-all profiler with the following command:
 	    RUBY_TEST_ALL_PROFILE=true make test-all
-	  This command generates ./test_all_profile and you can analyse
+	  This command generates ./test_all_profile and you can analyze
 	  which tests consume memories.
 
 	* test/runner.rb: ditto.
