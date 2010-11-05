@@ -1,3 +1,9 @@
+Sat Nov  6 00:43:58 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/openssl/ossl_ocsp.c (ossl_ocspcid_initialize): an optional
+	  parameter may be used to specify the OpenSSL::OCSP::CertificateId on
+	  initialization.  Thanks Elise Huard! [ruby-core:32460]
+
 Fri Nov  5 12:23:01 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_{process,system}.rb (test_fallback_to_sh):
