@@ -1,3 +1,7 @@
+Sat Nov  6 07:28:39 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (LIBRUBY_RELATIVE): use rpath token expansion.
+
 Sat Nov  6 07:24:01 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* template/ruby.pc.in (arch, sitearch): reordered.
