@@ -1,4 +1,7 @@
-Sat Nov  6 07:28:39 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Nov  6 07:30:07 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/rbinstall.rb (bin-comm): prepend prolog shell script if
+	  necessary.
 
 	* configure.in (LIBRUBY_RELATIVE): use rpath token expansion.
 

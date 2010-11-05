@@ -302,6 +302,7 @@ lib = CONFIG["LIBRUBY"]
 arc = CONFIG["LIBRUBY_A"]
 major = CONFIG["MAJOR"]
 minor = CONFIG["MINOR"]
+load_relative = configure_args.include?("--enable-load-relative")
 
 install?(:local, :arch, :bin, :'bin-arch') do
   prepare "binary commands", bindir
@@ -381,6 +382,23 @@ install?(:doc, :capi) do
   install_recursive "doc/capi", capidir, :mode => $data_mode
 end
 
+if load_relative
+  PROLOG_SCRIPT = <<EOS
+#!/bin/sh\n# -*- ruby -*-
+bindir=`#{CONFIG["CHDIR"]} "${0%/*}" 2>/dev/null; pwd`
+EOS
+  if CONFIG["LIBRUBY_RELATIVE"] != 'yes' and libpathenv = CONFIG["LIBPATHENV"]
+    pathsep = File::PATH_SEPARATOR
+    PROLOG_SCRIPT << <<EOS
+prefix="${bindir%/bin}"
+export #{libpathenv}="$prefix/lib${#{libpathenv}#{pathsep}+#{pathsep}$#{libpathenv}}"
+EOS
+  end
+  PROLOG_SCRIPT << %Q[exec "$bindir/#{ruby_install_name}" -x "$0" "$@"\n]
+else
+  PROLOG_SCRIPT = nil
+end
+
 install?(:local, :comm, :bin, :'bin-comm') do
   prepare "command scripts", bindir
 
@@ -426,7 +444,11 @@ install?(:local, :comm, :bin, :'bin-comm') do
       shebang = f.gets
       body = f.read
     end
-    shebang.sub!(/^\#!.*?ruby\b/) {"#!" + ruby_shebang}
+    if PROLOG_SCRIPT
+      shebang.sub!(/\A(\#!.*?ruby\b)?/) {PROLOG_SCRIPT + ($1 || "#!ruby\n")}
+    else
+      shebang.sub!(/\A\#!.*?ruby\b/) {"#!" + ruby_shebang}
+    end
     shebang.sub!(/\r$/, '')
     body.gsub!(/\r$/, '')
 
