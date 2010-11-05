@@ -1,4 +1,7 @@
-Sat Nov  6 07:30:07 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Nov  6 07:33:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (rb_cv_export_prefix): check for prefixed
+	  underscore of exported symbols
 
 	* tool/rbinstall.rb (bin-comm): prepend prolog shell script if
 	  necessary.
