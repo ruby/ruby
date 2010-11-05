@@ -2826,7 +2826,6 @@ AC_CONFIG_FILES($ruby_pc:template/ruby.pc.in,
     then
 	mv -f ruby.tmp.pc $ruby_pc
     else
-	rm ruby.tmp.pc $ruby_pc
 	exit 1
     fi
     ],

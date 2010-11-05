@@ -1,3 +1,9 @@
+Sat Nov  6 07:24:01 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* template/ruby.pc.in (arch, sitearch): reordered.
+
+	* configure.in: keep failed file.
+
 Sat Nov  6 07:03:49 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_fork_err): save errinfo before fdopen.
