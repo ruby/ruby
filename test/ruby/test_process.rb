@@ -1233,5 +1233,5 @@ class TestProcess < Test::Unit::TestCase
       result = IO.popen(["./tmp_script.#{$$}", "a b", "c"]) {|f| f.read}
       assert_equal("2: a b c\n", result, feature)
     end
-  end
+  end if File.executable?("/bin/sh")
 end

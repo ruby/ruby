@@ -101,5 +101,5 @@ class TestSystem < Test::Unit::TestCase
       }
       assert_equal(true, system(tmpfilename), '[ruby-core:32745]')
     }
-  end
+  end if File.executable?("/bin/sh")
 end

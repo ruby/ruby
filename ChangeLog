@@ -1,4 +1,7 @@
-Fri Nov  5 12:17:59 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Nov  5 12:23:01 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_{process,system}.rb (test_fallback_to_sh):
+	  meaningless and wrong tests where /bin/sh does not exist.
 
 	* process.c (proc_spawn_v): should spawn, not exec.
 
