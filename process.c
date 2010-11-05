@@ -2569,8 +2569,9 @@ rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALU
 	    if (!(int)rb_protect(chfunc_protect, (VALUE)&arg, &state)) _exit(EXIT_SUCCESS);
 #ifdef FD_CLOEXEC
 	    if (write(ep[1], &state, sizeof(state)) == sizeof(state) && state) {
+		VALUE errinfo = rb_errinfo();
 		io = rb_io_fdopen(ep[1], O_WRONLY|O_BINARY, NULL);
-		rb_marshal_dump(rb_errinfo(), io);
+		rb_marshal_dump(errinfo, io);
 		rb_io_flush(io);
 	    }
 	    err = errno;

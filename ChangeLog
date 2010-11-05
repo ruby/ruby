@@ -1,3 +1,7 @@
+Sat Nov  6 07:03:49 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_fork_err): save errinfo before fdopen.
+
 Sat Nov  6 00:43:58 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/openssl/ossl_ocsp.c (ossl_ocspcid_initialize): an optional
