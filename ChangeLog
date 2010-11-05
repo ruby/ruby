@@ -1,3 +1,7 @@
+Fri Nov  5 12:17:59 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (proc_spawn_v): should spawn, not exec.
+
 Fri Nov  5 01:21:31 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (proc_exec_v, proc_spawn_v): try to execute with sh if

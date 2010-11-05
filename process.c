@@ -1184,7 +1184,9 @@ proc_spawn_v(char **argv, char *prog)
     status = spawnv(P_WAIT, prog, argv);
     preserving_errno({
 	rb_last_status_set(status == -1 ? 127 : status, 0);
-	try_with_sh(prog, argv);
+	*argv = (char *)prog;
+	*--argv = (char *)"sh";
+	status = spawnv("/bin/sh", argv);
 	after_exec();
     });
     return status;
