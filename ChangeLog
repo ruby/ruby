@@ -1,3 +1,7 @@
+Sun Nov  7 10:13:30 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (NM): check on all platforms.  #4031
+
 Sun Nov  7 06:16:33 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* test/openssl/test_ocsp.rb: adding test for r29699.  Thanks Elise
