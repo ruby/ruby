@@ -2347,7 +2347,7 @@ fi
 AC_CACHE_CHECK([for prefixed underscore of exported symbols], rb_cv_export_prefix, [
     AC_TRY_COMPILE([extern void conftest_exported(void) {}], [], [
 	rb_cv_export_prefix=`$NM conftest.$ac_objext |
-			     sed -n ['s/.*\(_\)conftest_exported.*/\1/p']`
+			     sed -n ['/.*\(_\)conftest_exported.*/!d;s//\1/p;q']`
 	],
 	[rb_cv_export_prefix=''])
 ])

@@ -1,3 +1,8 @@
+Mon Nov  8 07:26:20 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: check only the first symbol to get rid of
+	  duplication.  [ruby-core:33084] #4031
+
 Sun Nov  7 10:13:30 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (NM): check on all platforms.  #4031
