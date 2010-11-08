@@ -2859,6 +2859,44 @@ rb_w32_listen(int s, int backlog)
 #undef sendto
 
 static int
+finish_overlapped_socket(SOCKET s, WSAOVERLAPPED *wol, int result, DWORD *len, DWORD size)
+{
+    DWORD flg;
+    int err;
+
+    if (result != SOCKET_ERROR)
+	*len = size;
+    else if ((err = WSAGetLastError()) == WSA_IO_PENDING) {
+	switch (rb_w32_wait_events_blocking(&wol->hEvent, 1, INFINITE)) {
+	  case WAIT_OBJECT_0:
+	    RUBY_CRITICAL(
+		result = WSAGetOverlappedResult(s, wol, &size, TRUE, &flg)
+		);
+	    if (result) {
+		*len = size;
+		break;
+	    }
+	    /* thru */
+	  default:
+	    errno = map_errno(WSAGetLastError());
+	    /* thru */
+	  case WAIT_OBJECT_0 + 1:
+	    /* interrupted */
+	    *len = -1;
+	    cancel_io((HANDLE)s);
+	    break;
+	}
+    }
+    else {
+	errno = map_errno(err);
+	*len = -1;
+    }
+    CloseHandle(wol->hEvent);
+
+    return result;
+}
+
+static int
 overlapped_socket_io(BOOL input, int fd, char *buf, int len, int flags,
 		     struct sockaddr *addr, int *addrlen)
 {
@@ -2869,7 +2907,6 @@ overlapped_socket_io(BOOL input, int fd, char *buf, int len, int flags,
     DWORD flg;
     WSAOVERLAPPED wol;
     WSABUF wbuf;
-    int err;
     SOCKET s;
 
     if (!NtSocketsInitialized)
@@ -2920,35 +2957,7 @@ overlapped_socket_io(BOOL input, int fd, char *buf, int len, int flags,
 	    }
 	});
 
-	if (ret != SOCKET_ERROR) {
-	    r = size;
-	}
-	else if ((err = WSAGetLastError()) == WSA_IO_PENDING) {
-	    switch (rb_w32_wait_events_blocking(&wol.hEvent, 1, INFINITE)) {
-	      case WAIT_OBJECT_0:
-		RUBY_CRITICAL(
-		    ret = WSAGetOverlappedResult(s, &wol, &size, TRUE, &flg)
-		    );
-		if (ret) {
-		    r = size;
-		    break;
-		}
-		/* thru */
-	      default:
-		errno = map_errno(WSAGetLastError());
-		/* thru */
-	      case WAIT_OBJECT_0 + 1:
-		/* interrupted */
-		r = -1;
-		cancel_io((HANDLE)s);
-		break;
-	    }
-	}
-	else {
-	    errno = map_errno(err);
-	    r = -1;
-	}
-	CloseHandle(wol.hEvent);
+	finish_overlapped_socket(s, &wol, ret, &r, size);
     }
 
     return r;
@@ -3053,44 +3062,14 @@ recvmsg(int fd, struct msghdr *msg, int flags)
     }
     else {
 	DWORD size;
-	int err;
 	WSAOVERLAPPED wol;
 	memset(&wol, 0, sizeof(wol));
 	RUBY_CRITICAL({
 	    wol.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-	    ret = pWSARecvMsg(s, &wsamsg, &len, &wol, NULL);
+	    ret = pWSARecvMsg(s, &wsamsg, &size, &wol, NULL);
 	});
 
-	if (ret != SOCKET_ERROR) {
-	    /* nothing to do */
-	}
-	else if ((err = WSAGetLastError()) == WSA_IO_PENDING) {
-	    DWORD flg;
-	    switch (rb_w32_wait_events_blocking(&wol.hEvent, 1, INFINITE)) {
-	      case WAIT_OBJECT_0:
-		RUBY_CRITICAL(
-		    ret = WSAGetOverlappedResult(s, &wol, &size, TRUE, &flg)
-		    );
-		if (ret) {
-		    len = size;
-		    break;
-		}
-		/* thru */
-	      default:
-		errno = map_errno(WSAGetLastError());
-		/* thru */
-	      case WAIT_OBJECT_0 + 1:
-		/* interrupted */
-		len = -1;
-		cancel_io((HANDLE)s);
-		break;
-	    }
-	}
-	else {
-	    errno = map_errno(err);
-	    len = -1;
-	}
-	CloseHandle(wol.hEvent);
+	ret = finish_overlapped_socket(s, &wol, ret, &len, size);
     }
     if (ret == SOCKET_ERROR)
 	return -1;
@@ -3141,44 +3120,14 @@ sendmsg(int fd, const struct msghdr *msg, int flags)
     }
     else {
 	DWORD size;
-	int err;
 	WSAOVERLAPPED wol;
 	memset(&wol, 0, sizeof(wol));
 	RUBY_CRITICAL({
 	    wol.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-	    ret = pWSASendMsg(s, &wsamsg, flags, &len, &wol, NULL);
+	    ret = pWSASendMsg(s, &wsamsg, flags, &size, &wol, NULL);
 	});
 
-	if (ret != SOCKET_ERROR) {
-	    /* nothing to do */
-	}
-	else if ((err = WSAGetLastError()) == WSA_IO_PENDING) {
-	    DWORD flg;
-	    switch (rb_w32_wait_events_blocking(&wol.hEvent, 1, INFINITE)) {
-	      case WAIT_OBJECT_0:
-		RUBY_CRITICAL(
-		    ret = WSAGetOverlappedResult(s, &wol, &size, TRUE, &flg)
-		    );
-		if (ret) {
-		    len = size;
-		    break;
-		}
-		/* thru */
-	      default:
-		errno = map_errno(WSAGetLastError());
-		/* thru */
-	      case WAIT_OBJECT_0 + 1:
-		/* interrupted */
-		len = -1;
-		cancel_io((HANDLE)s);
-		break;
-	    }
-	}
-	else {
-	    errno = map_errno(err);
-	    len = -1;
-	}
-	CloseHandle(wol.hEvent);
+	finish_overlapped_socket(s, &wol, ret, &len, size);
     }
 
     return len;

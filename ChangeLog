@@ -1,3 +1,7 @@
+Mon Nov  8 11:47:39 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (finish_overlapped_socket): refactoring.
+
 Mon Nov  8 11:02:21 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (get_proc_address): refactoring.
