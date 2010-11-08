@@ -2682,7 +2682,7 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 }
 
 static FARPROC
-get_wsa_exetinsion_function(SOCKET s, GUID *guid)
+get_wsa_extension_function(SOCKET s, GUID *guid)
 {
     DWORD dmy;
     FARPROC ptr = NULL;
@@ -3042,7 +3042,7 @@ recvmsg(int fd, struct msghdr *msg, int flags)
 
     if (!pWSARecvMsg) {
 	static GUID guid = WSAID_WSARECVMSG;
-	pWSARecvMsg = (WSARecvMsg_t)get_wsa_exetinsion_function(s, &guid);
+	pWSARecvMsg = (WSARecvMsg_t)get_wsa_extension_function(s, &guid);
 	if (!pWSARecvMsg)
 	    return -1;
     }
@@ -3101,7 +3101,7 @@ sendmsg(int fd, const struct msghdr *msg, int flags)
 
     if (!pWSASendMsg) {
 	static GUID guid = WSAID_WSASENDMSG;
-	pWSASendMsg = (WSASendMsg_t)get_wsa_exetinsion_function(s, &guid);
+	pWSASendMsg = (WSASendMsg_t)get_wsa_extension_function(s, &guid);
 	if (!pWSASendMsg)
 	    return -1;
     }

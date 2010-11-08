@@ -1,3 +1,7 @@
+Mon Nov  8 14:41:40 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (get_wsa_extension_function): typos.
+
 Mon Nov  8 13:41:33 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/enc-unicode.rb,
