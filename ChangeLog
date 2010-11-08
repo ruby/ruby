@@ -1,3 +1,7 @@
+Mon Nov  8 12:16:39 2010  Ben Walton  <bwalton@artsci.utoronto.ca>
+
+	* configure.in: support -h for solaris linker when gcc not used
+
 Mon Nov  8 11:47:39 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (finish_overlapped_socket): refactoring.
