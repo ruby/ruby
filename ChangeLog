@@ -1,3 +1,10 @@
+Tue Nov  9 07:30:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_syserr_new): new function to make SystemCallError
+	  instance without errno.  [EXPERIMENTAL]
+
+	* error.c (rb_syserr_fail, rb_mod_syserr_fail): ditto.
+
 Tue Nov  9 05:54:57 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/*.rb: Remove unused variable warnings.

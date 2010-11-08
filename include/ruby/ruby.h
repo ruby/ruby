@@ -1152,6 +1152,9 @@ NORETURN(void rb_mod_sys_fail(VALUE, const char*));
 NORETURN(void rb_iter_break(void));
 NORETURN(void rb_exit(int));
 NORETURN(void rb_notimplement(void));
+VALUE rb_syserr_new(int, const char *);
+NORETURN(void rb_syserr_fail(int, const char*));
+NORETURN(void rb_mod_syserr_fail(VALUE, int, const char*));
 
 /* reports if `-W' specified */
 PRINTF_ARGS(void rb_warning(const char*, ...), 1, 2);
