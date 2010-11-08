@@ -265,7 +265,6 @@ class RDoc::Markup::AttributeManager
   def split_into_flow
     res = []
     current_attr = 0
-    str = ""
 
     str_len = @str.length
 

@@ -452,7 +452,8 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
   def parse_attr_accessor(context, single, tk, comment)
     args = parse_symbol_arg
-    read = get_tkread
+    get_tkread
+
     rw = "?"
 
     # TODO If nodoc is given, don't document any of them
@@ -758,7 +759,8 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
   def parse_meta_attr(context, single, tk, comment)
     args = parse_symbol_arg
-    read = get_tkread
+    get_tkread
+
     rw = "?"
 
     # If nodoc is given, don't document any of them

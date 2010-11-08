@@ -284,7 +284,6 @@ class RDoc::Parser::C < RDoc::Parser
             \s*(\([^)]*\))([^;]|$))"xm
       comment = $1
       body_text = $2
-      params = $3
 
       remove_private_comments comment if comment
 
@@ -304,7 +303,6 @@ class RDoc::Parser::C < RDoc::Parser
 
       find_modifiers comment, meth_obj if comment
 
-      #meth_obj.params = params
       meth_obj.start_collecting_tokens
       tk = RDoc::RubyToken::Token.new nil, 1, 1
       tk.set_text body_text

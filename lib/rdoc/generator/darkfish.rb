@@ -277,7 +277,6 @@ class RDoc::Generator::Darkfish
 			outfile     = @outputdir + file.path
 			debug_msg "  working on %s (%s)" % [ file.full_name, outfile ]
 			rel_prefix  = @outputdir.relative_path_from( outfile.dirname )
-			context     = binding()
 
 			debug_msg "  rendering #{outfile}"
 			self.render_template( template_file, binding(), outfile )

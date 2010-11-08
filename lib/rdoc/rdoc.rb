@@ -383,8 +383,6 @@ The internal error was:
 
       @generator = gen_klass.for @options
 
-      pwd = Dir.pwd
-
       Dir.chdir @options.op_dir do
         begin
           self.class.current = self

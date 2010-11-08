@@ -387,7 +387,7 @@ class RDoc::Markup::Parser
   # Skips a token of +token_type+, optionally raising an error.
 
   def skip token_type, error = true
-    type, data, = get
+    type, = get
 
     return unless type # end of stream
 
