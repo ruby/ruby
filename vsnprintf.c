@@ -855,6 +855,8 @@ fp_begin:		_double = va_arg(ap, double);
 						size += prec + 1;
 				} else if (!prec) { /* "0" */
 					size = 1;
+					if (flags & ALT)
+						size += 1;
 				} else	/* "0.X" */
 					size = prec + 2;
 			} else if (expt >= ndig) {	/* fixed g fmt */

@@ -189,6 +189,7 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal("36893488147419111424",
                  sprintf("%20.0f", 36893488147419107329.0))
     assert_equal(" Inf", sprintf("% 0e", 1.0/0.0), "moved from btest/knownbug")
+    assert_equal("       -0.", sprintf("%#10.0f", -0.5), "[ruby-dev:42552]")
   end
 
   def test_float_hex
