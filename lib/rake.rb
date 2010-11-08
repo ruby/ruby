@@ -1038,7 +1038,7 @@ module FileUtils
     else
       begin
         ln(*args)
-      rescue StandardError, NotImplementedError => ex
+      rescue StandardError, NotImplementedError
         LN_SUPPORTED[0] = false
         cp(*args)
       end
@@ -1687,7 +1687,7 @@ module Rake
     end
 
     def create_rule(*args, &block)
-      pattern, arg_names, deps = resolve_args(args)
+      pattern, _, deps = resolve_args(args)
       pattern = Regexp.new(Regexp.quote(pattern) + '$') if String === pattern
       @rules << [pattern, deps, block]
     end
@@ -1795,7 +1795,7 @@ module Rake
       fail Rake::RuleRecursionOverflowError,
         "Rule Recursion Too Deep" if level >= 16
       @rules.each do |pattern, extensions, block|
-        if md = pattern.match(task_name)
+        if pattern.match(task_name)
           task = attempt_rule(task_name, extensions, block, level)
           return task if task
         end
@@ -2245,7 +2245,7 @@ module Rake
             rescue LoadError => ex
               begin
                 rake_require value
-              rescue LoadError => ex2
+              rescue LoadError
                 raise ex
               end
             end
