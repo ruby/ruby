@@ -20,10 +20,6 @@
    ((__GNUC__ > (major)) ||  \
     (__GNUC__ == (major) && __GNUC_MINOR__ > (minor)) || \
     (__GNUC__ == (major) && __GNUC_MINOR__ == (minor) && __GNUC_PATCHLEVEL__ >= (patchlevel))))
-
-#define SIZE16 2
-#define SIZE32 4
-
 #if SIZEOF_SHORT != 2 || SIZEOF_LONG != 4
 # define NATINT_PACK
 #endif
@@ -280,7 +276,6 @@ num2i32(VALUE x)
     return 0;			/* not reached */
 }
 
-#define QUAD_SIZE 8
 #define MAX_INTEGER_PACK_SIZE 8
 /* #define FORCE_BIG_PACK */
 
@@ -337,6 +332,20 @@ static unsigned long utf8_to_uv(const char*,long*);
  *      s_, s!    | Integer | signed short, native endian
  *      i, i_, i! | Integer | signed int, native endian
  *      l_, l!    | Integer | signed long, native endian
+ *                |         |
+ *      S> L> Q>  | Integer | same as the directives without ">" except
+ *      s> l> q>  |         | big endian
+ *      S!> I!>   |         | (available since Ruby 1.9.3)
+ *      L!>       |         | "S>" is same as "n"
+ *      s!> i!>   |         | "L>" is same as "N"
+ *      l!>       |         |
+ *                |         |
+ *      S< L< Q<  | Integer | same as the directives without "<" except
+ *      s< l< q<  |         | little endian
+ *      S!< I!<   |         | (available since Ruby 1.9.3)
+ *      L!<       |         | "S<" is same as "v"
+ *      s!< i!<   |         | "L<" is same as "V"
+ *      l!<       |         |
  *                |         |
  *      n         | Integer | 16-bit unsigned, network (big-endian) byte order
  *      N         | Integer | 32-bit unsigned, network (big-endian) byte order
@@ -410,6 +419,7 @@ pack_pack(VALUE ary, VALUE fmt)
 #define NEXTFROM (items-- > 0 ? RARRAY_PTR(ary)[idx++] : TOO_FEW)
 
     while (p < pend) {
+	int explicit_endian = 0;
 	if (RSTRING_PTR(fmt) + RSTRING_LEN(fmt) != pend) {
 	    rb_raise(rb_eRuntimeError, "format string modified");
 	}
@@ -425,19 +435,39 @@ pack_pack(VALUE ary, VALUE fmt)
 	    }
 	    continue;
 	}
-        if (*p == '_' || *p == '!') {
-	    static const char natstr[] = "sSiIlL";
 
-	    if (strchr(natstr, type)) {
+	{
+	    static const char natstr[] = "sSiIlL";
+	    static const char endstr[] = "sSiIlLqQ";
+
+          modifiers:
+	    switch (*p) {
+	      case '_':
+	      case '!':
+		if (strchr(natstr, type)) {
 #ifdef NATINT_PACK
-		natint = 1;
+		    natint = 1;
 #endif
-		p++;
-	    }
-	    else {
-		rb_raise(rb_eArgError, "'%c' allowed only after types %s", *p, natstr);
+		    p++;
+		}
+		else {
+		    rb_raise(rb_eArgError, "'%c' allowed only after types %s", *p, natstr);
+		}
+		goto modifiers;
+
+	      case '<':
+	      case '>':
+		if (!strchr(endstr, type)) {
+		    rb_raise(rb_eArgError, "'%c' allowed only after types %s", *p, endstr);
+		}
+		if (explicit_endian) {
+		    rb_raise(rb_eRangeError, "Can't use both '<' and '>'");
+		}
+		explicit_endian = *p++;
+		goto modifiers;
 	    }
 	}
+
 	if (*p == '*') {	/* set data length */
 	    len = strchr("@Xxu", type) ? 0
                 : strchr("PMm", type) ? 1
@@ -681,13 +711,13 @@ pack_pack(VALUE ary, VALUE fmt)
 
 	  case 'q':		/* signed quad (64bit) int */
             signed_p = 1;
-            integer_size = 8;
+	    integer_size = 8;
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
 
 	  case 'Q':		/* unsigned quad (64bit) int */
             signed_p = 0;
-            integer_size = 8;
+	    integer_size = 8;
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
 
@@ -716,6 +746,10 @@ pack_pack(VALUE ary, VALUE fmt)
             goto pack_integer;
 
           pack_integer:
+	    if (explicit_endian) {
+		bigendian_p = explicit_endian == '>';
+	    }
+
             switch (integer_size) {
 #if defined(HAVE_INT16_T) && !defined(FORCE_BIG_PACK)
               case SIZEOF_INT16_T:
@@ -1251,6 +1285,20 @@ infected_str_new(const char *ptr, long len, VALUE str)
  *      i, i_, i! | Integer | signed int, native endian
  *      l_, l!    | Integer | signed long, native endian
  *                |         |
+ *      S> L> Q>  | Integer | same as the directives without ">" except
+ *      s> l> q>  |         | big endian
+ *      S!> I!>   |         | (available since Ruby 1.9.3)
+ *      L!> Q!>   |         | "S>" is same as "n"
+ *      s!> i!>   |         | "L>" is same as "N"
+ *      l!> q!>   |         |
+ *                |         |
+ *      S< L< Q<  | Integer | same as the directives without "<" except
+ *      s< l< q<  |         | little endian
+ *      S!< I!<   |         | (available since Ruby 1.9.3)
+ *      L!< Q!<   |         | "S<" is same as "v"
+ *      s!< i!<   |         | "L<" is same as "V"
+ *      l!< q!<   |         |
+ *                |         |
  *      n         | Integer | 16-bit unsigned, network (big-endian) byte order
  *      N         | Integer | 32-bit unsigned, network (big-endian) byte order
  *      v         | Integer | 16-bit unsigned, VAX (little-endian) byte order
@@ -1328,6 +1376,7 @@ pack_unpack(VALUE str, VALUE fmt)
 
     ary = block_p ? Qnil : rb_ary_new();
     while (p < pend) {
+	int explicit_endian = 0;
 	type = *p++;
 #ifdef NATINT_PACK
 	natint = 0;
@@ -1340,20 +1389,41 @@ pack_unpack(VALUE str, VALUE fmt)
 	    }
 	    continue;
 	}
-	star = 0;
-	if (*p == '_' || *p == '!') {
-	    static const char natstr[] = "sSiIlL";
 
-	    if (strchr(natstr, type)) {
+	star = 0;
+	{
+	    static const char natstr[] = "sSiIlL";
+	    static const char endstr[] = "sSiIlLqQ";
+
+          modifiers:
+	    switch (*p) {
+	      case '_':
+	      case '!':
+
+		if (strchr(natstr, type)) {
 #ifdef NATINT_PACK
-		natint = 1;
+		    natint = 1;
 #endif
-		p++;
-	    }
-	    else {
-		rb_raise(rb_eArgError, "'%c' allowed only after types %s", *p, natstr);
+		    p++;
+		}
+		else {
+		    rb_raise(rb_eArgError, "'%c' allowed only after types %s", *p, natstr);
+		}
+		goto modifiers;
+
+	      case '<':
+	      case '>':
+		if (!strchr(endstr, type)) {
+		    rb_raise(rb_eArgError, "'%c' allowed only after types %s", *p, endstr);
+		}
+		if (explicit_endian) {
+		    rb_raise(rb_eRangeError, "Can't use both '<' and '>'");
+		}
+		explicit_endian = *p++;
+		goto modifiers;
 	    }
 	}
+
 	if (p >= pend)
 	    len = 1;
 	else if (*p == '*') {
@@ -1551,13 +1621,13 @@ pack_unpack(VALUE str, VALUE fmt)
 
 	  case 'q':
 	    signed_p = 1;
-	    integer_size = QUAD_SIZE;
+	    integer_size = 8;
 	    bigendian_p = BIGENDIAN_P();
 	    goto unpack_integer;
 
 	  case 'Q':
 	    signed_p = 0;
-	    integer_size = QUAD_SIZE;
+	    integer_size = 8;
 	    bigendian_p = BIGENDIAN_P();
 	    goto unpack_integer;
 
@@ -1586,6 +1656,10 @@ pack_unpack(VALUE str, VALUE fmt)
 	    goto unpack_integer;
 
 	  unpack_integer:
+	    if (explicit_endian) {
+		bigendian_p = explicit_endian == '>';
+	    }
+
 	    switch (integer_size) {
 #if defined(HAVE_INT16_T) && !defined(FORCE_BIG_PACK)
 	      case SIZEOF_INT16_T:

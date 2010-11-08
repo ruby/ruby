@@ -82,6 +82,21 @@ class TestCommon < Test::Unit::TestCase
     assert_equal(expected, URI.encode_www_form(a: 1, :"\u3042" => "\u6F22"))
     assert_equal(expected, URI.encode_www_form([["a", "1"], ["\u3042", "\u6F22"]]))
     assert_equal(expected, URI.encode_www_form([[:a, 1], [:"\u3042", "\u6F22"]]))
+
+    assert_equal('+a+=+1+', URI.encode_www_form([[' a ', ' 1 ']]))
+    assert_equal('text=x%0Ay', URI.encode_www_form([['text', "x\u000Ay"]]))
+    assert_equal('constellation=Bo%C3%B6tes', URI.encode_www_form([['constellation', "Bo\u00F6tes"]]))
+    assert_equal('name=%00value', URI.encode_www_form([['name', "\u0000value"]]))
+    assert_equal('Cipher=c%3D%28m%5Ee%29%25n', URI.encode_www_form([['Cipher', 'c=(m^e)%n']]))
+    assert_equal('&', URI.encode_www_form([['', nil], ['', nil]]))
+    assert_equal('&=', URI.encode_www_form([['', nil], ['', '']]))
+    assert_equal('=&', URI.encode_www_form([['', ''], ['', nil]]))
+    assert_equal('=&=', URI.encode_www_form([['', ''], ['', '']]))
+    assert_equal('', URI.encode_www_form([['', nil]]))
+    assert_equal('', URI.encode_www_form([]))
+    assert_equal('=', URI.encode_www_form([['', '']]))
+    assert_equal('a%26b=1&c=2%3B3&e=4', URI.encode_www_form([['a&b', '1'], ['c', '2;3'], ['e', '4']]))
+    assert_equal('image&title&price', URI.encode_www_form([['image', nil], ['title', nil], ['price', nil]]))
   end
 
   def test_decode_www_form

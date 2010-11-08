@@ -670,6 +670,23 @@ class TestPathname < Test::Unit::TestCase
       a = []
       Pathname("a").each_line {|line| a << line }
       assert_equal(["1\n", "2\n"], a)
+
+      a = []
+      Pathname("a").each_line("2") {|line| a << line }
+      assert_equal(["1\n2", "\n"], a)
+
+      a = []
+      Pathname("a").each_line(1) {|line| a << line }
+      assert_equal(["1", "\n", "2", "\n"], a)
+
+      a = []
+      Pathname("a").each_line("2", 1) {|line| a << line }
+      assert_equal(["1", "\n", "2", "\n"], a)
+
+      a = []
+      enum = Pathname("a").each_line
+      enum.each {|line| a << line }
+      assert_equal(["1\n", "2\n"], a)
     }
   end
 
@@ -927,11 +944,12 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_expand_path
-    assert_equal(Pathname("/a"), Pathname("/a").expand_path)
-    assert_equal(Pathname("/a"), Pathname("a").expand_path("/"))
-    assert_equal(Pathname("/a"), Pathname("a").expand_path(Pathname("/")))
-    assert_equal(Pathname("/b"), Pathname("/b").expand_path(Pathname("/a")))
-    assert_equal(Pathname("/a/b"), Pathname("b").expand_path(Pathname("/a")))
+    drv = DOSISH_DRIVE_LETTER ? Dir.pwd.sub(%r(/.*), '') : ""
+    assert_equal(Pathname(drv + "/a"), Pathname("/a").expand_path)
+    assert_equal(Pathname(drv + "/a"), Pathname("a").expand_path("/"))
+    assert_equal(Pathname(drv + "/a"), Pathname("a").expand_path(Pathname("/")))
+    assert_equal(Pathname(drv + "/b"), Pathname("/b").expand_path(Pathname("/a")))
+    assert_equal(Pathname(drv + "/a/b"), Pathname("b").expand_path(Pathname("/a")))
   end
 
   def test_split
@@ -974,8 +992,10 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_grpowned?
+    skip "Unix file owner test" if DOSISH
     with_tmpchdir('rubytest-pathname') {|dir|
       open("f", "w") {|f| f.write "abc" }
+      File.chown(-1, Process.gid, "f")
       assert_equal(true, Pathname("f").grpowned?)
     }
   end
@@ -1027,6 +1047,7 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_world_readable?
+    skip "Unix file mode bit test" if DOSISH
     with_tmpchdir('rubytest-pathname') {|dir|
       open("f", "w") {|f| f.write "abc" }
       File.chmod(0400, "f")
@@ -1078,6 +1099,7 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_sticky?
+    skip "Unix file mode bit test" if DOSISH
     with_tmpchdir('rubytest-pathname') {|dir|
       open("f", "w") {|f| f.write "abc" }
       assert_equal(false, Pathname("f").sticky?)
@@ -1099,6 +1121,7 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_world_writable?
+    skip "Unix file mode bit test" if DOSISH
     with_tmpchdir('rubytest-pathname') {|dir|
       open("f", "w") {|f| f.write "abc" }
       File.chmod(0600, "f")
@@ -1130,11 +1153,20 @@ class TestPathname < Test::Unit::TestCase
       open("f", "w") {|f| f.write "abc" }
       Dir.mkdir("d")
       assert_equal([Pathname("d"), Pathname("f")], Pathname.glob("*").sort)
+      a = []
+      Pathname.glob("*") {|path| a << path }
+      a.sort!
+      assert_equal([Pathname("d"), Pathname("f")], a)
     }
   end
 
   def test_s_getwd
     wd = Pathname.getwd
+    assert_kind_of(Pathname, wd)
+  end
+
+  def test_s_pwd
+    wd = Pathname.pwd
     assert_kind_of(Pathname, wd)
   end
 
@@ -1160,6 +1192,8 @@ class TestPathname < Test::Unit::TestCase
     with_tmpchdir('rubytest-pathname') {|dir|
       Pathname("d").mkdir
       assert(File.directory?("d"))
+      Pathname("e").mkdir(0770)
+      assert(File.directory?("e"))
     }
   end
 

@@ -286,12 +286,13 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
       ssl.sync_close = true
       str = "x" * 1000 + "\n"
 
-      ITERATIONS.times{
-        ssl.puts(str)
-        assert_equal(str, ssl.gets)
-      }
-
-      starttls(ssl)
+      OpenSSL::TestUtils.silent do
+        ITERATIONS.times{
+          ssl.puts(str)
+          assert_equal(str, ssl.gets)
+        }
+        starttls(ssl)
+      end
 
       ITERATIONS.times{
         ssl.puts(str)

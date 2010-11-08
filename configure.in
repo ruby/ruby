@@ -34,10 +34,16 @@ AC_CACHE_CHECK(for mingw32 environment, rb_cv_mingw32,
 ], rb_cv_mingw32=yes,rb_cv_mingw32=no)
 rm -f conftest*])
 test "$rb_cv_mingw32" = yes && target_os="mingw32"
-  ])
+])
 AS_CASE(["$target_os"], [mingw*msvc], [
 target_os="`echo ${target_os} | sed 's/msvc$//'`"
-  ])])
+])
+AS_CASE(["$target_cpu-$target_os"], [x86_64-mingw*], [
+# canonicalize as like mswin version.  see win32/setup.mak.
+target_cpu=x64
+target_os="`echo ${target_os} | sed 's/32$/64/'`"
+])
+])
 
 AC_DEFUN([RUBY_CPPOUTFILE],
 [AC_CACHE_CHECK(whether ${CPP} accepts -o, rb_cv_cppoutfile,
@@ -66,7 +72,7 @@ fi
 GNU_LD=$rb_cv_prog_gnu_ld
 AC_SUBST(GNU_LD)])
 
-eval `sed -n 's/^#define RUBY_VERSION_\([A-Z][A-Z_0-9]*\) \([0-9][0-9]*\)/\1=\2/p' $srcdir/version.h`
+eval `sed -n 's/^#define RUBY_API_VERSION_\([A-Z][A-Z_0-9]*\) \([0-9][0-9]*\)/\1=\2/p' $srcdir/include/ruby/version.h`
 for v in MAJOR MINOR TEENY; do
     if eval "test \"\$$v\" = ''"; then
 	AC_MSG_ERROR(could not determine $v number from version.h)
@@ -152,7 +158,7 @@ AC_MSG_RESULT([$ARCH_FLAG])
 AC_DEFUN([RUBY_UNIVERSAL_ARCH], [
 # RUBY_UNIVERSAL_ARCH begin
 test ${CFLAGS+set} && CFLAGS=`echo "$CFLAGS" | sed -e 's/ *-arch  *[^ ]*//g' -e 's/ *-m32//g' -e 's/ *-m64//g'`
-test ${LDFLAGS+set} && LDFLAGS=`echo "$LDFLAGS" | sed 's/ *-arch  *[^ ]*//g' -e 's/ *-m32//g' -e 's/ *-m64//g'`
+test ${LDFLAGS+set} && LDFLAGS=`echo "$LDFLAGS" | sed -e 's/ *-arch  *[^ ]*//g' -e 's/ *-m32//g' -e 's/ *-m64//g'`
 unset ARCH_FLAG universal_binary universal_archnames
 if test ${target_archs+set}; then
     AC_MSG_CHECKING([target architectures])
@@ -302,7 +308,7 @@ AC_CHECK_TOOL(AS, as)
 ASFLAGS=$ASFLAGS
 AC_SUBST(ASFLAGS)
 
-AS_CASE(["$target_os"],[cygwin*|mingw*|darwin*], [ac_cv_prog_ac_ct_OBJCOPY=":"])
+AS_CASE(["$target_os"],[cygwin*|mingw*], [ac_cv_prog_ac_ct_OBJCOPY=":"])
 
 # BSD's ports and MacPorts prefix GNU binutils with 'g'
 AC_CHECK_TOOLS(OBJDUMP, [objdump gobjdump])
@@ -310,7 +316,6 @@ AC_CHECK_TOOLS(OBJCOPY, [objcopy gobjcopy])
 
 AS_CASE(["$target_os"],
 [cygwin*|mingw*], [
-    AC_CHECK_TOOL(NM, nm)
     AC_CHECK_TOOL(WINDRES, windres)
     AC_CHECK_TOOL(DLLWRAP, dllwrap)
     target=`echo $target | sed "s/^$target_cpu-/-/"`
@@ -334,6 +339,7 @@ AS_CASE(["$target_os"],
     ],
 [aix*],     [AC_CHECK_TOOL(NM, nm, /usr/ccs/bin/nm, /usr/ccs/bin:$PATH)],
 [hiuxmpp*], [AC_DEFINE(__HIUX_MPP__)])    # by TOYODA Eizi <toyoda@npd.kishou.go.jp>
+AC_CHECK_TOOL(NM, nm)
 
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
@@ -352,12 +358,11 @@ AC_SUBST(MAKEDIRS)
 
 AC_CHECK_TOOL(DOT, dot)
 AC_CHECK_TOOL(DOXYGEN, doxygen)
-if test x"$DOXYGEN" = x; then
-    CAPITARGET=nodoc
-else
-    CAPITARGET=capi
+
+AC_CHECK_TOOL(PKG_CONFIG, pkg-config)
+if test -n "$PKG_CONFIG"; then
+    $PKG_CONFIG --print-errors --version > /dev/null 2>&1 || PKG_CONFIG=
 fi
-AC_SUBST(CAPITARGET)
 
 # checks for UNIX variants that set C preprocessor variables
 AC_USE_SYSTEM_EXTENSIONS
@@ -425,6 +430,21 @@ AC_DEFUN(RUBY_TRY_CFLAGS, [
     save_CFLAGS=
 ])
 
+AC_DEFUN(RUBY_TRY_LDFLAGS, [
+    save_LDFLAGS="$LDFLAGS"
+    LDFLAGS="[$]LDFLAGS $1"
+    AC_MSG_CHECKING([whether $1 is accepted])
+    RUBY_WERROR_FLAG([
+    AC_TRY_LINK([$4], [$5],
+	[$2
+	AC_MSG_RESULT(yes)],
+	[$3
+	AC_MSG_RESULT(no)])
+    ])
+    LDFLAGS="$save_LDFLAGS"
+    save_LDFLAGS=
+])
+
 if test "$GCC:${warnflags+set}:no" = yes::no; then
     for wflag in -Wno-unused-parameter -Wno-parentheses -Wpointer-arith -Wwrite-strings \
 		 -Wno-missing-field-initializers -Wshorten-64-to-32 -Wno-long-long; do
@@ -436,6 +456,14 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
 fi
 if test "$GCC" = yes; then
     RUBY_TRY_CFLAGS(-fvisibility=hidden, [RUBY_APPEND_OPTION(XCFLAGS, -fvisibility=hidden)])
+fi
+if test "$GCC" = yes; then
+    if test "$visibility_option" = yes; then
+	RUBY_APPEND_OPTION(XCFLAGS, -fvisibility=hidden)
+    else
+	RUBY_TRY_LDFLAGS([-Wl,-unexported_symbol,_Init_*], [visibility_option=ld], [visibility_option=no])
+    fi
+    test "$visibility_option" = no || OBJCOPY=:
 fi
 
 test -z "${ac_env_CFLAGS_set}" -a -n "${cflags+set}" && eval CFLAGS="\"$cflags $ARCH_FLAG\""
@@ -601,6 +629,7 @@ RUBY_REPLACE_TYPE(pid_t, int, PIDT)
 RUBY_REPLACE_TYPE(uid_t, int, UIDT)
 RUBY_REPLACE_TYPE(gid_t, int, GIDT)
 RUBY_REPLACE_TYPE(time_t, [], TIMET, [@%:@include <time.h>])
+RUBY_REPLACE_TYPE(dev_t, [int long "long long"], DEVT)
 
 AC_CACHE_CHECK(for prototypes, rb_cv_have_prototypes,
   [AC_TRY_COMPILE([int foo(int x) { return 0; }], [return foo(10);],
@@ -750,6 +779,19 @@ if test "$GCC" = yes; then
 			   [type prot __attribute__(($rb_cv_gcc_function_alias(@%:@name)));])
 	AC_DEFINE_UNQUOTED([RUBY_ALIAS_FUNCTION_VOID(prot, name, args)],
 			   [RUBY_ALIAS_FUNCTION_TYPE(void, prot, name, args)])
+    fi
+    AC_CACHE_CHECK([for atomic builtins], [rb_cv_gcc_atomic_builtins], [
+	AC_TRY_LINK([unsigned char atomic_var;],
+		    [
+			__sync_lock_test_and_set(&atomic_var, 0);
+			__sync_lock_test_and_set(&atomic_var, 1);
+			__sync_fetch_and_add(&atomic_var, 1);
+			__sync_fetch_and_sub(&atomic_var, 1);
+		    ],
+		    [rb_cv_gcc_atomic_builtins=yes],
+		    [rb_cv_gcc_atomic_builtins=no])])
+    if test "$rb_cv_gcc_atomic_builtins" = yes; then
+	AC_DEFINE(HAVE_GCC_ATOMIC_BUILTINS)
     fi
 fi
 
@@ -997,7 +1039,7 @@ if test "${enable_win95}" = yes; then
 fi
 
 AS_CASE(["$target_cpu"],
-[alpha*], [AS_CASE(["$target_os"::"$GCC"],
+[alpha*|sh4|sh4el|sh4eb], [AS_CASE(["$target_os"::"$GCC"],
 		[*::yes],  # gcc
 			[CFLAGS="-mieee $CFLAGS"],
 		[osf*],    # ccc
@@ -1040,9 +1082,23 @@ RUBY_CHECK_SIZEOF(rlim_t, [int long "long long"], [], [
   #include <stdio.h>
 ])
 
+AC_DEFUN([RUBY_CHECK_PRINTF_PREFIX], [
+AC_CACHE_CHECK([printf prefix for $1], rb_cv_pri_prefix_[$1],
+  RUBY_WERROR_FLAG(AC_TRY_COMPILE(
+    [@%:@include <stdio.h>],
+    [printf("%]$2[d", sizeof(long));],
+    [rb_cv_pri_prefix_[$1]=[$2]],
+    [rb_cv_pri_prefix_[$1]=[NONE]])))
+if test "$rb_cv_pri_prefix_[$1]" != NONE; then
+    AC_DEFINE_UNQUOTED([PRI_]AS_TR_CPP(m4_bpatsubst([$1],[_t$]))[_PREFIX], "$rb_cv_pri_prefix_[$1]")
+fi
+])
+
 AC_TYPE_SIZE_T
 RUBY_CHECK_SIZEOF(size_t, [int long void*], [], [@%:@include <sys/types.h>])
 RUBY_CHECK_SIZEOF(ptrdiff_t, size_t, [], [@%:@include <stddef.h>])
+RUBY_CHECK_PRINTF_PREFIX(size_t, z)
+RUBY_CHECK_PRINTF_PREFIX(ptrdiff_t, t)
 AC_STRUCT_ST_BLKSIZE
 AC_STRUCT_ST_BLOCKS
 AC_STRUCT_ST_RDEV
@@ -1148,6 +1204,27 @@ AS_CASE(["${target_cpu}-${target_os}:${target_archs}"],
 [
   AC_FUNC_ALLOCA
   ])
+if test "x$ALLOCA" = "x"; then
+    AC_CACHE_CHECK([for dynamic size alloca], rb_cv_dynamic_alloca, [
+    for chk in ok __chkstk; do
+	AC_TRY_LINK([
+	    @%:@ifdef HAVE_ALLOCA_H
+	    @%:@include <alloca.h>
+	    @%:@endif
+	    void $chk() {}
+	    int dynamic_alloca_test;
+	    int dynamic_alloca_result;],
+	    [dynamic_alloca_result = alloca(dynamic_alloca_test) != 0;],
+	    [rb_cv_dynamic_alloca=$chk; break])
+    done])
+    if test "x$rb_cv_dynamic_alloca" = "x__chkstk"; then
+	AC_DEFINE_UNQUOTED(RUBY_ALLOCA_CHKSTK, _$rb_cv_dynamic_alloca)
+	AS_CASE("$target_cpu",
+	[x64|x86_64], [
+	    AC_SUBST([ALLOCA], [\${LIBOBJDIR}x86_64-chkstk.${ac_objext}])
+	],)
+    fi
+fi
 AC_FUNC_MEMCMP
 
 # http://sources.redhat.com/ml/libc-hacker/2005-08/msg00008.html
@@ -1458,7 +1535,7 @@ if test x"$target_cpu" = xia64; then
 fi
 
 AC_CACHE_CHECK(whether right shift preserve sign bit, rb_cv_rshift_sign,
-    [AC_COMPILE_IFELSE(AC_LANG_BOOL_COMPILE_TRY([], [(-1==(-1>>1))]),
+    [AC_COMPILE_IFELSE([AC_LANG_BOOL_COMPILE_TRY([], [(-1==(-1>>1))])],
 	rb_cv_rshift_sign=yes,
 	rb_cv_rshift_sign=no)])
 if test "$rb_cv_rshift_sign" = yes; then
@@ -1544,7 +1621,7 @@ fi
 AC_DEFUN(RUBY_STACK_GROW_DIRECTION, [
     AC_CACHE_CHECK(stack growing direction on $1, rb_cv_stack_grow_dir_$1, [
 AS_CASE(["$1"],
-[m68*|x86*|i?86|ia64|ppc*|sparc*|alpha*], [ $2=-1],
+[m68*|x86*|x64|i?86|ia64|ppc*|sparc*|alpha*], [ $2=-1],
 [hppa*], [ $2=+1],
 [
   AC_TRY_RUN([
@@ -1704,6 +1781,8 @@ AC_CHECK_FUNCS(backtrace)
 
 AC_ARG_WITH(valgrind,
         AS_HELP_STRING([--with-valgrind],[enable valgrind memcheck support]),
+        ruby_cv_with_valgrind=yes,ruby_cv_with_valgrind=no)
+AS_IF([test x$ruby_cv_with_valgrind != xno],
         [AC_CHECK_HEADERS(valgrind/memcheck.h)])
 
 dnl }
@@ -2059,6 +2138,12 @@ fi
 
 if test x"$cross_compiling" = xyes; then
   test x"$MINIRUBY" = x && MINIRUBY="${RUBY-$BASERUBY} -I`pwd` "-r'$(arch)-fake'
+  XRUBY_LIBDIR=`${RUBY-$BASERUBY} -rrbconfig -e ['puts RbConfig::CONFIG["libdir"]']`
+  XRUBY_RUBYLIBDIR=`${RUBY-$BASERUBY} -rrbconfig -e ['puts RbConfig::CONFIG["rubylibdir"]']`
+  XRUBY_RUBYHDRDIR=`${RUBY-$BASERUBY} -rrbconfig -e ['puts RbConfig::CONFIG["rubyhdrdir"]']`
+  AC_SUBST(XRUBY_LIBDIR)
+  AC_SUBST(XRUBY_RUBYLIBDIR)
+  AC_SUBST(XRUBY_RUBYHDRDIR)
   PREP='$(arch)-fake.rb'
   RUNRUBY='$(MINIRUBY) -I`cd $(srcdir)/lib; pwd`'
   XRUBY='$(MINIRUBY)'
@@ -2107,6 +2192,7 @@ AC_ARG_ENABLE(shared,
        AS_HELP_STRING([--enable-shared], [build a shared library for Ruby]),
        [enable_shared=$enableval])
 libprefix='$(libdir)'
+LIBRUBY_RELATIVE=no
 AS_CASE("$enable_shared", [yes], [
   LIBRUBY='$(LIBRUBY_SO)'
   LIBRUBYARG_SHARED='-l$(RUBY_SO_NAME)'
@@ -2123,6 +2209,10 @@ AS_CASE("$enable_shared", [yes], [
     [linux* | gnu* | k*bsd*-gnu | atheos* | kopensolaris*-gnu], [
 	LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR)'
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).so'
+	if test "$load_relative" = yes; then
+	    LIBRUBY_RPATHFLAGS="'-Wl,-rpath,\$\${ORIGIN}/../lib'"
+	    LIBRUBY_RELATIVE=yes
+	fi
 	],
     [freebsd*|dragonfly*], [
 	SOLIBS='$(LIBS)'
@@ -2144,7 +2234,7 @@ AS_CASE("$enable_shared", [yes], [
 	],
     [openbsd*], [
 	SOLIBS='$(LIBS)'
-	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).'`expr ${MINOR} \* 10 + ${TEENY}`
+	LIBRUBY_SO='lib$(RUBY_SO_NAME).so.$(MAJOR).'`expr ${MINOR} \* 10 + ${TEENY}`
 	],
     [solaris*], [
 	SOLIBS='$(LIBS)'
@@ -2176,10 +2266,15 @@ AS_CASE("$enable_shared", [yes], [
 	LIBRUBY_LDSHARED='$(CC) -dynamiclib'
 	if test "$load_relative" = yes; then
 	    libprefix='@executable_path/../lib'
+	    LIBRUBY_RELATIVE=yes
 	fi
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-install_name '${libprefix}'/$(LIBRUBY_SO)'
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-current_version $(MAJOR).$(MINOR).$(TEENY)'
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-compatibility_version $(ruby_version)'
+	if test "$visibility_option" = ld; then
+	    LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-Wl,-unexported_symbol,_Init_*'
+	    LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-Wl,-unexported_symbol,*_threadptr_*'
+	fi
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "' $(XLDFLAGS)'
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).dylib'
 	LIBRUBY_ALIASES='lib$(RUBY_BASE_NAME).$(MAJOR).$(MINOR).dylib lib$(RUBY_INSTALL_NAME).dylib'
@@ -2191,10 +2286,12 @@ AS_CASE("$enable_shared", [yes], [
   LIBRUBYARG_SHARED=
 ])
 if test "$enable_rpath" = yes; then
-    LIBRUBY_RPATHFLAGS="${linker_flag}-R ${linker_flag}${libprefix} -L\$(libdir)"
+    test -z "$LIBRUBY_RPATHFLAGS" || LIBRUBY_RPATHFLAGS="$LIBRUBY_RPATHFLAGS "
+    LIBRUBY_RPATHFLAGS="$LIBRUBY_RPATHFLAGS${linker_flag}-R ${linker_flag}${libprefix} -L\$(libdir)"
     LIBRUBYARG_SHARED="$LIBRUBY_RPATHFLAGS $LIBRUBYARG_SHARED"
     LIBRUBYARG_STATIC="$LIBRUBY_RPATHFLAGS $LIBRUBYARG_STATIC"
 fi
+AC_SUBST(LIBRUBY_RELATIVE)
 
 LDFLAGS="-L. $LDFLAGS"
 AC_SUBST(ARCHFILE)
@@ -2211,16 +2308,35 @@ dnl build section {
 
 dnl build rdoc index if requested
 RDOCTARGET=""
+CAPITARGET=""
 AC_ARG_ENABLE(install-doc,
-       AS_HELP_STRING([--disable-install-doc], [do not install rdoc indexes during install]),
+       AS_HELP_STRING([--disable-install-doc], [do not install neither rdoc indexes nor C API documents during install]),
        [install_doc=$enableval], [install_doc=yes])
+AC_ARG_ENABLE(install-rdoc,
+      AS_HELP_STRING([--disable-install-rdoc], [do not install rdoc indexes during install]),
+      [install_rdoc=$enableval], [install_rdoc=yes])
+AC_ARG_ENABLE(install-capi,
+      AS_HELP_STRING([--disable-install-capi], [do not install C API documents during install]),
+      [install_capi=$enableval], [install_capi=yes])
+
 if test "$install_doc" != no; then
-    RDOCTARGET="rdoc"
+    if test "$install_rdoc" != no; then
+	RDOCTARGET="rdoc"
+    else
+	RDOCTARGET="nodoc"
+    fi
+    if test "$install_capi" != no -a -n "$DOXYGEN"; then
+	CAPITARGET="capi"
+    else
+	CAPITARGET="nodoc"
+    fi
 else
     RDOCTARGET="nodoc"
     CAPITARGET="nodoc"
 fi
+
 AC_SUBST(RDOCTARGET)
+AC_SUBST(CAPITARGET)
 
 AS_CASE(["$RDOCTARGET:$CAPITARGET"],[nodoc:nodoc],[INSTALLDOC=nodoc],[INSTALLDOC=all])
 AC_SUBST(INSTALLDOC)
@@ -2228,6 +2344,13 @@ AC_SUBST(INSTALLDOC)
 if test "$rb_with_pthread" = "yes"; then
     THREAD_MODEL=pthread
 fi
+AC_CACHE_CHECK([for prefixed underscore of exported symbols], rb_cv_export_prefix, [
+    AC_TRY_COMPILE([extern void conftest_exported(void) {}], [], [
+	rb_cv_export_prefix=`$NM conftest.$ac_objext |
+			     sed -n ['/.*\(_\)conftest_exported.*/!d;s//\1/p;q']`
+	],
+	[rb_cv_export_prefix=''])
+])
 MINIDLNOBJ=dmydln.o
 AS_CASE(["$target_os"],
     [linux*], [
@@ -2293,7 +2416,8 @@ AS_CASE(["$target_os"],
 		LIBRUBY_SO='$(RUBY_SO_NAME)'.dll
 		LIBRUBY_DLDFLAGS="${LIBRUBY_DLDFLAGS}"' $(RUBYDEF)'
 	    fi
-	    EXPORT_PREFIX=' '
+	    test -z "$rb_cv_export_prefix" && rb_cv_export_prefix=' '
+	    EXPORT_PREFIX="$rb_cv_export_prefix"
 	    DLDFLAGS="${DLDFLAGS}"' $(DEFFILE)'
 	    AC_LIBOBJ([win32])
 	    COMMON_LIBS=m
@@ -2590,6 +2714,7 @@ fi
 unset sitearch
 AS_CASE(["$target_os"],[mingw*],[sitearch="$target_cpu-$rb_cv_msvcrt"])
 test ${sitearch+set} && AC_DEFINE_UNQUOTED(RUBY_SITEARCH, "${sitearch}")
+: ${sitearch='${arch}'}
 
 AC_ARG_WITH(search-path,
 		AS_HELP_STRING([--with-search-path=DIR], [specify the additional search path]),
@@ -2700,9 +2825,28 @@ AC_CONFIG_FILES(Makefile, [{
 	    echo 'distclean-local::; @$(RM) GNUmakefile uncommon.mk'
 	fi
     } > confmk$$.tmp && mv -f confmk$$.tmp Makefile &&
+	grep '^ruby:' Makefile > /dev/null ||
 	${MAKE-make} info-program | grep '^PROGRAM=ruby$' > /dev/null ||
 	echo 'ruby: $(PROGRAM);' >> Makefile],
 [EXEEXT='$EXEEXT' gnumake='$gnumake'])
+
+ruby_pc="${RUBY_BASE_NAME}-${MAJOR}.${MINOR}.pc"
+AC_SUBST(ruby_pc)
+AC_CONFIG_FILES($ruby_pc:template/ruby.pc.in,
+    [
+    if sed ['s/\$(\([A-Za-z_][A-Za-z0-9_]*\))/${\1}/g;s/@[A-Za-z_][A-Za-z0-9_]*@//'] $ruby_pc > ruby.tmp.pc &&
+	{
+	    test -z "$PKG_CONFIG" ||
+	    PKG_CONFIG_PATH=. $PKG_CONFIG --print-errors ruby.tmp
+	}
+    then
+	mv -f ruby.tmp.pc $ruby_pc
+    else
+	exit 1
+    fi
+    ],
+    [ruby_pc='$ruby_pc' PKG_CONFIG='$PKG_CONFIG'])
+
 AC_OUTPUT
 dnl }
 dnl }

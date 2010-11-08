@@ -99,5 +99,6 @@ int rb_method_entry_arity(const rb_method_entry_t *me);
 void rb_mark_method_entry(const rb_method_entry_t *me);
 void rb_free_method_entry(rb_method_entry_t *me);
 void rb_sweep_method_entry(void *vm);
+void rb_free_m_table(st_table *tbl);
 
 #endif /* METHOD_H */

@@ -63,3 +63,4 @@ clean:
 
 distclean: clean clean-srcs
 	@$(RM) enc.mk
+realclean: distclean

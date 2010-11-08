@@ -346,7 +346,7 @@ module URI
       ret[:REL_URI] = rel_uri = "(?:#{net_path}|#{abs_path}|#{rel_path})(?:\\?#{query})?"
 
       # URI-reference = [ absoluteURI | relativeURI ] [ "#" fragment ]
-      ret[:URI_REF] = uri_ref = "(?:#{abs_uri}|#{rel_uri})?(?:##{fragment})?"
+      ret[:URI_REF] = "(?:#{abs_uri}|#{rel_uri})?(?:##{fragment})?"
 
       ret[:X_ABS_URI] = "
         (#{scheme}):                           (?# 1: scheme)
@@ -643,8 +643,21 @@ module URI
   #
   #   require 'uri'
   #
-  #   p URI.join("http://localhost/","main.rbx")
+  #   p URI.join("http://example.com/","main.rbx")
   #   # => #<URI::HTTP:0x2022ac02 URL:http://localhost/main.rbx>
+  #
+  #   p URI.join('http://example.com', 'foo')
+  #   # => #<URI::HTTP:0x01ab80a0 URL:http://example.com/foo>
+  #
+  #   p URI.join('http://example.com', '/foo', '/bar')
+  #   # => #<URI::HTTP:0x01aaf0b0 URL:http://example.com/bar>
+  #
+  #   p URI.join('http://example.com', '/foo', 'bar')
+  #   # => #<URI::HTTP:0x801a92af0 URL:http://example.com/bar>
+  #
+  #   p URI.join('http://example.com', '/foo/', 'bar')
+  #   # => #<URI::HTTP:0x80135a3a0 URL:http://example.com/foo/bar>
+  #
   #
   def self.join(*str)
     DEFAULT_PARSER.join(*str)
@@ -784,18 +797,14 @@ module URI
   #
   # See URI.encode_www_form_component, URI.decode_www_form
   def self.encode_www_form(enum)
-    str = nil
-    enum.each do |k,v|
-      if str
-        str << '&'
-      else
-        str = nil.to_s
+    enum.map do |k,v|
+      str = encode_www_form_component(k)
+      if v
+        str << '='
+        str << encode_www_form_component(v)
       end
-      str << encode_www_form_component(k)
-      str << '='
-      str << encode_www_form_component(v)
-    end
-    str
+      str
+    end.join('&')
   end
 
   WFKV_ = '(?:%\h\h|[^%#=;&]+)' # :nodoc:

@@ -305,6 +305,7 @@ class Rake::TestTaskWithArguments < Test::Unit::TestCase
   end
 
   def test_extra_parameters_are_ignored
+    ENV['b'] = nil
     t = task(:t, :a) { |tt, args|
       assert_equal 1, args.a
       assert_nil args.b

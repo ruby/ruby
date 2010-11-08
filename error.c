@@ -501,7 +501,7 @@ exc_to_s(VALUE exc)
     VALUE mesg = rb_attr_get(exc, rb_intern("mesg"));
 
     if (NIL_P(mesg)) return rb_class_name(CLASS_OF(exc));
-    if (OBJ_TAINTED(exc)) OBJ_TAINT(mesg);
+    OBJ_INFECT(mesg, exc);
     return mesg;
 }
 
@@ -782,7 +782,7 @@ name_err_to_s(VALUE exc)
     if (str != mesg) {
 	rb_iv_set(exc, "mesg", mesg = str);
     }
-    if (OBJ_TAINTED(exc)) OBJ_TAINT(mesg);
+    OBJ_INFECT(mesg, exc);
     return mesg;
 }
 
@@ -911,7 +911,7 @@ name_err_mesg_to_str(VALUE obj)
 	args[2] = d;
 	mesg = rb_f_sprintf(NAME_ERR_MESG_COUNT, args);
     }
-    if (OBJ_TAINTED(obj)) OBJ_TAINT(mesg);
+    OBJ_INFECT(mesg, obj);
     return mesg;
 }
 
@@ -980,7 +980,7 @@ static st_table *syserr_tbl;
 static VALUE
 set_syserr(int n, const char *name)
 {
-    VALUE error;
+    st_data_t error;
 
     if (!st_lookup(syserr_tbl, n, &error)) {
 	error = rb_define_class_under(rb_mErrno, name, rb_eSystemCallError);
@@ -996,7 +996,7 @@ set_syserr(int n, const char *name)
 static VALUE
 get_syserr(int n)
 {
-    VALUE error;
+    st_data_t error;
 
     if (!st_lookup(syserr_tbl, n, &error)) {
 	char name[8];	/* some Windows' errno have 5 digits. */
@@ -1029,11 +1029,13 @@ syserr_initialize(int argc, VALUE *argv, VALUE self)
     VALUE klass = rb_obj_class(self);
 
     if (klass == rb_eSystemCallError) {
+	st_data_t data = (st_data_t)klass;
 	rb_scan_args(argc, argv, "11", &mesg, &error);
 	if (argc == 1 && FIXNUM_P(mesg)) {
 	    error = mesg; mesg = Qnil;
 	}
-	if (!NIL_P(error) && st_lookup(syserr_tbl, NUM2LONG(error), &klass)) {
+	if (!NIL_P(error) && st_lookup(syserr_tbl, NUM2LONG(error), &data)) {
+	    klass = (VALUE)data;
 	    /* change class */
 	    if (TYPE(self) != T_OBJECT) { /* insurance to avoid type crash */
 		rb_raise(rb_eTypeError, "invalid instance type");
@@ -1048,14 +1050,23 @@ syserr_initialize(int argc, VALUE *argv, VALUE self)
     if (!NIL_P(error)) err = strerror(NUM2INT(error));
     else err = "unknown error";
     if (!NIL_P(mesg)) {
+	rb_encoding *le = rb_locale_encoding();
 	VALUE str = mesg;
 
 	StringValue(str);
 	mesg = rb_sprintf("%s - %.*s", err,
 			  (int)RSTRING_LEN(str), RSTRING_PTR(str));
+	if (le == rb_usascii_encoding()) {
+	    rb_encoding *me = rb_enc_get(mesg);
+	    if (le != me && rb_enc_asciicompat(me))
+		le = me;
+	}/* else assume err is non ASCII string. */
+	OBJ_INFECT(mesg, str);
+	rb_enc_associate(mesg, le);
     }
     else {
 	mesg = rb_str_new2(err);
+	rb_enc_associate(mesg, rb_locale_encoding());
     }
     rb_call_super(1, &mesg);
     rb_iv_set(self, "errno", error);
@@ -1578,10 +1589,11 @@ rb_error_frozen(const char *what)
     rb_raise(rb_eRuntimeError, "can't modify frozen %s", what);
 }
 
+#undef rb_check_frozen
 void
 rb_check_frozen(VALUE obj)
 {
-    if (OBJ_FROZEN(obj)) rb_error_frozen(rb_obj_classname(obj));
+    rb_check_frozen_internal(obj);
 }
 
 void

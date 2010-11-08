@@ -204,6 +204,36 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal("Inf", sprintf("%E", Float::INFINITY))
     assert_equal("NaN", sprintf("%e", Float::NAN))
     assert_equal("NaN", sprintf("%E", Float::NAN))
+
+    assert_equal("   -0x1p+0", sprintf("%10a", -1))
+    assert_equal(" -0x1.8p+0", sprintf("%10a", -1.5))
+    assert_equal(" -0x1.4p+0", sprintf("%10a", -1.25))
+    assert_equal(" -0x1.2p+0", sprintf("%10a", -1.125))
+    assert_equal(" -0x1.1p+0", sprintf("%10a", -1.0625))
+    assert_equal("-0x1.08p+0", sprintf("%10a", -1.03125))
+
+    bug3962 = '[ruby-core:32841]'
+    assert_equal("-0x0001p+0", sprintf("%010a", -1), bug3962)
+    assert_equal("-0x01.8p+0", sprintf("%010a", -1.5), bug3962)
+    assert_equal("-0x01.4p+0", sprintf("%010a", -1.25), bug3962)
+    assert_equal("-0x01.2p+0", sprintf("%010a", -1.125), bug3962)
+    assert_equal("-0x01.1p+0", sprintf("%010a", -1.0625), bug3962)
+    assert_equal("-0x1.08p+0", sprintf("%010a", -1.03125), bug3962)
+
+    bug3964 = '[ruby-core:32848]'
+    assert_equal("0x000000000000000p+0", sprintf("%020a",  0), bug3964)
+    assert_equal("0x000000000000001p+0", sprintf("%020a", 1), bug3964)
+    assert_equal("-0x00000000000001p+0", sprintf("%020a", -1), bug3964)
+    assert_equal("0x00000000000000.p+0", sprintf("%#020a",  0), bug3964)
+
+    bug3965 = '[ruby-dev:42431]'
+    assert_equal("0x1.p+0", sprintf("%#.0a",  1), bug3965)
+    assert_equal("0x00000000000000.p+0", sprintf("%#020a",  0), bug3965)
+    assert_equal("0x0000.0000000000p+0", sprintf("%#020.10a",  0), bug3965)
+
+    bug3979 = '[ruby-dev:42453]'
+    assert_equal("          0x0.000p+0", sprintf("%20.3a",  0), bug3979)
+    assert_equal("          0x1.000p+0", sprintf("%20.3a",  1), bug3979)
   end
 
   BSIZ = 120

@@ -18,6 +18,7 @@ RBCONFIG      = ./.rbconfig.time
 LIBRUBY_EXTS  = ./.libruby-with-ext.time
 REVISION_H    = ./.revision.time
 RDOCOUT       = $(EXTOUT)/rdoc
+CAPIOUT       = doc/capi
 ID_H_TARGET   = -id.h-
 
 DMYEXT	      = dmyext.$(OBJEXT)
@@ -106,7 +107,7 @@ SCRIPT_ARGS   =	--dest-dir="$(DESTDIR)" \
 		--make-flags="$(MAKEFLAGS)"
 EXTMK_ARGS    =	$(SCRIPT_ARGS) --extension $(EXTS) --extstatic $(EXTSTATIC) \
 		--make-flags="MINIRUBY='$(MINIRUBY)'" --
-INSTRUBY      =	$(MINIRUBY) $(srcdir)/tool/rbinstall.rb
+INSTRUBY      =	$(SUDO) $(MINIRUBY) $(srcdir)/tool/rbinstall.rb
 INSTRUBY_ARGS =	$(SCRIPT_ARGS) \
 		--data-mode=$(INSTALL_DATA_MODE) \
 		--prog-mode=$(INSTALL_PROG_MODE) \
@@ -148,9 +149,11 @@ miniruby$(EXEEXT): config.status $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DM
 GORUBY = go$(RUBY_INSTALL_NAME)
 golf: $(LIBRUBY) $(GOLFOBJS) PHONY
 	$(MAKE) $(MFLAGS) MAINOBJ="$(GOLFOBJS)" PROGRAM=$(GORUBY)$(EXEEXT) program
-capi: Doxyfile PHONY $(PREP)
+capi: $(CAPIOUT)/.timestamp PHONY
+doc/capi/.timestamp: Doxyfile $(PREP) 
 	@$(MAKEDIRS) doc/capi
 	@$(DOXYGEN) -b
+	$(MINIRUBY) -e 'File.open("$(CAPIOUT)/.timestamp", "w"){|f| f.puts(Time.now)}'
 
 Doxyfile: $(srcdir)/template/Doxyfile.tmpl $(PREP) $(srcdir)/tool/generic_erb.rb $(RBCONFIG)
 	$(MINIRUBY) $(srcdir)/tool/generic_erb.rb -o $@ $(srcdir)/template/Doxyfile.tmpl \
@@ -178,6 +181,8 @@ ruby.imp: $(EXPORTOBJS)
 
 install: install-$(INSTALLDOC)
 docs: $(DOCTARGETS)
+pkgconfig-data: $(ruby_pc)
+$(ruby_pc): $(srcdir)/template/ruby.pc.in config.status
 
 install-all: docs pre-install-all do-install-all post-install-all
 pre-install-all:: pre-install-local pre-install-ext pre-install-doc
@@ -370,26 +375,29 @@ install-prereq: $(CLEAR_INSTALLED_LIST) PHONY
 clear-installed-list: PHONY
 	@> $(INSTALLED_LIST) set MAKE="$(MAKE)"
 
-clean: clean-ext clean-local clean-enc clean-golf clean-rdoc clean-extout
+clean: clean-ext clean-local clean-enc clean-golf clean-rdoc clean-capi clean-extout
 clean-local:: PHONY
 	@$(RM) $(OBJS) $(MINIOBJS) $(MAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
 	@$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) $(ARCHFILE) .*.time
-	@$(RM) *.inc y.tab.c y.output encdb.h transdb.h prelude.c config.log rbconfig.rb
+	@$(RM) y.tab.c y.output encdb.h transdb.h prelude.c config.log rbconfig.rb
 clean-ext:: PHONY
 clean-golf: PHONY
 	@$(RM) $(GORUBY)$(EXEEXT) $(GOLFOBJS)
 clean-rdoc: PHONY
+clean-capi: PHONY
 clean-extout: PHONY
+clean-docs: clean-rdoc clean-capi
 
 distclean: distclean-ext distclean-local distclean-enc distclean-golf distclean-extout
 distclean-local:: clean-local
-	@$(RM) $(MKFILES) yasmdata.rb
+	@$(RM) $(MKFILES) yasmdata.rb *.inc
 	@$(RM) config.cache config.status config.status.lineno $(PRELUDES)
 	@$(RM) *~ *.bak *.stackdump core *.core gmon.out $(PREP)
 distclean-ext:: PHONY
 distclean-golf: clean-golf
 	@$(RM) $(GOLFPRELUDES)
 distclean-rdoc: PHONY
+distclean-capi: PHONY
 distclean-extout: clean-extout
 
 realclean:: realclean-ext realclean-local realclean-enc realclean-golf realclean-extout
@@ -397,6 +405,7 @@ realclean-local:: distclean-local
 	@$(RM) parse.c parse.h lex.c newline.c revision.h
 realclean-ext::
 realclean-golf: distclean-golf
+realclean-capi: PHONY
 realclean-extout: distclean-extout
 
 clean-enc distclean-enc realclean-enc: PHONY
@@ -441,7 +450,7 @@ extconf: $(PREP)
 	$(MAKEDIRS) "$(EXTCONFDIR)"
 	$(RUNRUBY) -C "$(EXTCONFDIR)" $(EXTCONF) $(EXTCONFARGS)
 
-$(RBCONFIG): $(srcdir)/tool/mkconfig.rb config.status $(PREP)
+$(RBCONFIG): $(srcdir)/tool/mkconfig.rb config.status $(srcdir)/version.h $(PREP)
 	@$(MINIRUBY) $(srcdir)/tool/mkconfig.rb -timestamp=$@ \
 		-install_name=$(RUBY_INSTALL_NAME) \
 		-so_name=$(RUBY_SO_NAME) rbconfig.rb
@@ -540,7 +549,7 @@ dmyencoding.$(OBJEXT): {$(VPATH)}dmyencoding.c $(RUBY_H_INCLUDES) \
 encoding.$(OBJEXT): {$(VPATH)}encoding.c $(RUBY_H_INCLUDES) \
   $(ENCODING_H_INCLUDES) {$(VPATH)}regenc.h {$(VPATH)}util.h
 enum.$(OBJEXT): {$(VPATH)}enum.c $(RUBY_H_INCLUDES) {$(VPATH)}node.h \
-  {$(VPATH)}util.h
+  {$(VPATH)}util.h $(ID_H_INCLUDES)
 enumerator.$(OBJEXT): {$(VPATH)}enumerator.c $(RUBY_H_INCLUDES)
 error.$(OBJEXT): {$(VPATH)}error.c {$(VPATH)}known_errors.inc \
   $(RUBY_H_INCLUDES) $(VM_CORE_H_INCLUDES) $(ENCODING_H_INCLUDES) \
@@ -637,7 +646,7 @@ variable.$(OBJEXT): {$(VPATH)}variable.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}node.h {$(VPATH)}util.h {$(VPATH)}encoding.h \
   {$(VPATH)}oniguruma.h
 version.$(OBJEXT): {$(VPATH)}version.c $(RUBY_H_INCLUDES) \
-  {$(VPATH)}version.h $(srcdir)/revision.h {$(VPATH)}config.h
+  {$(VPATH)}version.h $(srcdir)/version.h $(srcdir)/revision.h {$(VPATH)}config.h
 dmyversion.$(OBJEXT): {$(VPATH)}dmyversion.c version.$(OBJEXT)
 
 compile.$(OBJEXT): {$(VPATH)}compile.c {$(VPATH)}iseq.h \
@@ -725,7 +734,7 @@ id.h: parse.h $(srcdir)/tool/generic_erb.rb $(srcdir)/template/id.h.tmpl
 		$(srcdir)/template/id.h.tmpl --vpath=$(VPATH) parse.h
 
 node_name.inc: {$(VPATH)}node.h
-	$(BASERUBY) -n $(srcdir)/tool/node_name.rb $? > $@
+	$(BASERUBY) -n $(srcdir)/tool/node_name.rb < $? > $@
 
 encdb.h: $(PREP) $(srcdir)/tool/generic_erb.rb $(srcdir)/template/encdb.h.tmpl
 	$(MINIRUBY) $(srcdir)/tool/generic_erb.rb -c -o $@ $(srcdir)/template/encdb.h.tmpl $(srcdir)/enc enc
@@ -760,7 +769,7 @@ $(REVISION_H): $(srcdir)/version.h $(srcdir)/ChangeLog $(srcdir)/tool/file2lastr
 	@$(IFCHANGE) "--timestamp=$@" "$(srcdir)/revision.h" "$(srcdir)/revision.tmp"
 
 $(srcdir)/ext/ripper/ripper.c:
-	$(CHDIR) $(@D) && $(exec) $(MAKE) -f depend $(MFLAGS) top_srcdir=../.. srcdir=.
+	$(CHDIR) $(@D) && $(exec) $(MAKE) -f depend $(MFLAGS) top_srcdir=../.. srcdir=. RUBY=$(BASERUBY)
 
 $(srcdir)/ext/json/parser/parser.c:
 	$(CHDIR) $(@D) && $(exec) $(MAKE) -f prereq.mk $(MFLAGS) top_srcdir=../../.. srcdir=.
@@ -802,7 +811,12 @@ run.gdb:
 	echo '# b rb_longjmp'                 >> run.gdb
 	echo source $(srcdir)/breakpoints.gdb >> run.gdb
 	echo source $(srcdir)/.gdbinit        >> run.gdb
+	echo 'set $$_exitcode = -999'         >> run.gdb
 	echo run                              >> run.gdb
+	echo 'if $$_exitcode != -999'         >> run.gdb
+	echo '  quit'                         >> run.gdb
+	echo end                              >> run.gdb
+
 
 gdb: miniruby$(EXEEXT) run.gdb PHONY
 	gdb -x run.gdb --quiet --args $(MINIRUBY) $(TESTRUN_SCRIPT)
@@ -851,7 +865,9 @@ help: PHONY
 	@echo "  benchmark        benchmark this ruby and COMPARE_RUBY"
 	@echo "  install:         install all ruby distributions"
 	@echo "  install-nodoc:   install without rdoc"
-	@echo "  clean:           clean built objects"
+	@echo "  install-cross:   install cross compiling staff"
+	@echo "  clean:           clean for tarball"
+	@echo "  distclean:       clean for repo"
 	@echo "  change:          make change log template"
 	@echo "  golf:            for golfers"
 	@echo ""

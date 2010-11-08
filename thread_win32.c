@@ -67,13 +67,21 @@ static void
 w32_error(const char *func)
 {
     LPVOID lpMsgBuf;
-    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-		  FORMAT_MESSAGE_FROM_SYSTEM |
-		  FORMAT_MESSAGE_IGNORE_INSERTS,
-		  NULL,
-		  GetLastError(),
-		  MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-		  (LPTSTR) & lpMsgBuf, 0, NULL);
+    DWORD err = GetLastError();
+    if (FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+		      FORMAT_MESSAGE_FROM_SYSTEM |
+		      FORMAT_MESSAGE_IGNORE_INSERTS,
+		      NULL,
+		      err,
+		      MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
+		      (LPTSTR) & lpMsgBuf, 0, NULL) == 0)
+	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+		      FORMAT_MESSAGE_FROM_SYSTEM |
+		      FORMAT_MESSAGE_IGNORE_INSERTS,
+		      NULL,
+		      err,
+		      MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+		      (LPTSTR) & lpMsgBuf, 0, NULL);
     rb_bug("%s: %s", func, (char*)lpMsgBuf);
 }
 
@@ -123,10 +131,10 @@ w32_wait_events(HANDLE *events, int count, DWORD timeout, rb_thread_t *th)
     ret = WaitForMultipleObjects(count, targets, FALSE, timeout);
     thread_debug("  WaitForMultipleObjects end (ret: %lu)\n", ret);
 
-    if (ret == WAIT_OBJECT_0 + count - 1 && th) {
+    if (ret == (DWORD)(WAIT_OBJECT_0 + count - 1) && th) {
 	errno = EINTR;
     }
-    if (ret == -1 && THREAD_DEBUG) {
+    if (ret == WAIT_FAILED && THREAD_DEBUG) {
 	int i;
 	DWORD dmy;
 	for (i = 0; i < count; i++) {
@@ -167,7 +175,7 @@ w32_close_handle(HANDLE handle)
 static void
 w32_resume_thread(HANDLE handle)
 {
-    if (ResumeThread(handle) == -1) {
+    if (ResumeThread(handle) == (DWORD)-1) {
 	w32_error("w32_resume_thread");
     }
 }
@@ -497,7 +505,7 @@ native_thread_create(rb_thread_t *th)
 
     if (THREAD_DEBUG) {
 	Sleep(0);
-	thread_debug("create: (th: %p, thid: %p, intr: %p), stack size: %d\n",
+	thread_debug("create: (th: %p, thid: %p, intr: %p), stack size: %"PRIdSIZE"\n",
 		     th, th->thread_id,
 		     th->native_thread_data.interrupt_event, stack_size);
     }
@@ -590,4 +598,17 @@ native_reset_timer_thread(void)
     }
 }
 
+#ifdef RUBY_ALLOCA_CHKSTK
+void
+ruby_alloca_chkstk(size_t len, void *sp)
+{
+    if (ruby_stack_length(NULL) * sizeof(VALUE) >= len) {
+	rb_thread_t *th = GET_THREAD();
+	if (!rb_thread_raised_p(th, RAISED_STACKOVERFLOW)) {
+	    rb_thread_raised_set(th, RAISED_STACKOVERFLOW);
+	    rb_exc_raise(sysstack_error);
+	}
+    }
+}
+#endif
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */

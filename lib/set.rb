@@ -130,8 +130,8 @@ class Set
   # Replaces the contents of the set with the contents of the given
   # enumerable object and returns self.
   def replace(enum)
-    if enum.class == self.class
-      @hash.replace(enum.instance_eval { @hash })
+    if enum.instance_of?(self.class)
+      @hash.replace(enum.instance_variable_get(:@hash))
     else
       clear
       merge(enum)

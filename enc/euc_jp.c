@@ -367,6 +367,7 @@ OnigEncodingDefine(euc_jp, EUC_JP) = {
  * MIBenum: 18
  * Link: http://www.iana.org/assignments/character-sets
  * Link: http://home.m05.itscom.net/numa/cde/sjis-euc/sjis-euc.html
+ * Link: http://home.m05.itscom.net/numa/uocjleE.pdf
  */
 ENC_ALIAS("eucJP", "EUC-JP") /* UI-OSF Application Platform Profile for Japanese Environment Version 1.1 */
 
@@ -381,6 +382,8 @@ ENC_ALIAS("euc-jp-ms", "eucJP-ms")
 
 /*
  * Name: CP51932
+ * MIBenum: 2108
+ * Link: http://www.iana.org/assignments/charset-reg/CP51932
  * Link: http://search.cpan.org/src/NARUSE/Encode-EUCJPMS-0.07/ucm/cp51932.ucm
  * Link: http://legacy-encoding.sourceforge.jp/wiki/index.php?cp51932
  * Link: http://msyk.at.webry.info/200511/article_2.html

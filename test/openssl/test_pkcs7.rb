@@ -22,16 +22,16 @@ class OpenSSL::TestPKCS7 < Test::Unit::TestCase
       ["subjectKeyIdentifier","hash",false],
       ["authorityKeyIdentifier","keyid:always",false],
     ]
-    @ca_cert = issue_cert(ca, @rsa2048, 1, Time.now, Time.now+3600, ca_exts,
+    @ca_cert = issue_cert(ca, @rsa2048, 1, now, now+3600, ca_exts,
                            nil, nil, OpenSSL::Digest::SHA1.new)
     ee_exts = [
       ["keyUsage","Non Repudiation, Digital Signature, Key Encipherment",true],
       ["authorityKeyIdentifier","keyid:always",false],
       ["extendedKeyUsage","clientAuth, emailProtection, codeSigning",false],
     ]
-    @ee1_cert = issue_cert(ee1, @rsa1024, 2, Time.now, Time.now+1800, ee_exts,
+    @ee1_cert = issue_cert(ee1, @rsa1024, 2, now, now+1800, ee_exts,
                            @ca_cert, @rsa2048, OpenSSL::Digest::SHA1.new)
-    @ee2_cert = issue_cert(ee2, @rsa1024, 3, Time.now, Time.now+1800, ee_exts,
+    @ee2_cert = issue_cert(ee2, @rsa1024, 3, now, now+1800, ee_exts,
                            @ca_cert, @rsa2048, OpenSSL::Digest::SHA1.new)
   end
 
@@ -109,7 +109,9 @@ class OpenSSL::TestPKCS7 < Test::Unit::TestCase
     flag = OpenSSL::PKCS7::BINARY|OpenSSL::PKCS7::DETACHED
     tmp = OpenSSL::PKCS7.sign(@ee1_cert, @rsa1024, data, ca_certs, flag)
     p7 = OpenSSL::PKCS7.new(tmp.to_der)
-    a1 = OpenSSL::ASN1.decode(p7)
+    assert_nothing_raised do
+      OpenSSL::ASN1.decode(p7)
+    end
 
     certs = p7.certificates
     signers = p7.signers

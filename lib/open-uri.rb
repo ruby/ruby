@@ -126,7 +126,7 @@ module OpenURI
 
   def OpenURI.open_uri(name, *rest) # :nodoc:
     uri = URI::Generic === name ? name : URI.parse(name)
-    mode, perm, rest = OpenURI.scan_open_optional_arguments(*rest)
+    mode, _, rest = OpenURI.scan_open_optional_arguments(*rest)
     options = rest.shift if !rest.empty? && Hash === rest.first
     raise ArgumentError.new("extra arguments") if !rest.empty?
     options ||= {}
@@ -263,17 +263,17 @@ module OpenURI
       # HTTP or HTTPS
       if proxy
         if proxy_user && proxy_pass
-          klass = Net::HTTP::Proxy(proxy_uri.host, proxy_uri.port, proxy_user, proxy_pass)
+          klass = Net::HTTP::Proxy(proxy_uri.hostname, proxy_uri.port, proxy_user, proxy_pass)
         else
-          klass = Net::HTTP::Proxy(proxy_uri.host, proxy_uri.port)
+          klass = Net::HTTP::Proxy(proxy_uri.hostname, proxy_uri.port)
         end
       end
-      target_host = target.host
+      target_host = target.hostname
       target_port = target.port
       request_uri = target.request_uri
     else
       # FTP over HTTP proxy
-      target_host = proxy_uri.host
+      target_host = proxy_uri.hostname
       target_port = proxy_uri.port
       request_uri = target.to_s
       if proxy_user && proxy_pass
@@ -480,7 +480,7 @@ module OpenURI
     # It is downcased for canonicalization.
     # Content-Type parameters are stripped.
     def content_type
-      type, *parameters = content_type_parse
+      type, *_ = content_type_parse
       type || 'application/octet-stream'
     end
 
@@ -712,7 +712,7 @@ module URI
         when 0 # no proxy setting anyway.
           proxy_uri = nil
         when 1
-          k, v = pairs.shift
+          k, _ = pairs.shift
           if k == 'http_proxy' && ENV[k.upcase] == nil
             # http_proxy is safe to use because ENV is case sensitive.
             proxy_uri = ENV[name]
@@ -736,10 +736,10 @@ module URI
         proxy_uri = ENV[name] || ENV[name.upcase]
       end
 
-      if proxy_uri && self.host
+      if proxy_uri && self.hostname
         require 'socket'
         begin
-          addr = IPSocket.getaddress(self.host)
+          addr = IPSocket.getaddress(self.hostname)
           proxy_uri = nil if /\A127\.|\A::1\z/ =~ addr
         rescue SocketError
         end
@@ -804,7 +804,7 @@ module URI
 
       # The access sequence is defined by RFC 1738
       ftp = Net::FTP.new
-      ftp.connect(self.host, self.port)
+      ftp.connect(self.hostname, self.port)
       ftp.passive = true if !options[:ftp_active_mode]
       # todo: extract user/passwd from .netrc.
       user = 'anonymous'

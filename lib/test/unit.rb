@@ -70,40 +70,10 @@ module Test
       end
 
       def non_options(files, options)
-        files.each {|f|
-          d = File.dirname(path = File.expand_path(f))
-          unless $:.include? d
-            $: << d
-          end
-          begin
-            require path
-          rescue LoadError
-            puts "#{f}: #{$!}"
-          end
-        }
       end
     end
 
     module GlobOption
-      include Options
-
-      def non_options(files, options)
-        files.map! {|f|
-          f = f.tr(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
-          if File.directory? f
-            Dir["#{f}/**/test_*.rb"]
-          elsif File.file? f
-            f
-          else
-            raise ArgumentError, "file not found: #{f}"
-          end
-        }
-        files.flatten!
-        super(files, options)
-      end
-    end
-
-    module RejectOption
       include Options
 
       def setup_options(parser, options)
@@ -114,10 +84,29 @@ module Test
       end
 
       def non_options(files, options)
+        paths = [options.delete(:base_directory), nil].compact
         if reject = options.delete(:reject)
           reject_pat = Regexp.union(reject.map {|r| /#{r}/ })
-          files.reject! {|f| reject_pat =~ f }
         end
+        files.map! {|f|
+          f = f.tr(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
+          [*paths, nil].any? do |prefix|
+            path = prefix ? "#{prefix}/#{f}" : f
+            if !(match = Dir["#{path}/**/test_*.rb"]).empty?
+              if reject
+                match.reject! {|n|
+                  n[(prefix.length+1)..-1] if prefix
+                  reject_pat =~ n
+                }
+              end
+              break match
+            elsif !reject or reject_pat !~ f and File.exist? path
+              break path
+            end
+          end or
+            raise ArgumentError, "file not found: #{f}"
+        }
+        files.flatten!
         super(files, options)
       end
     end
@@ -133,41 +122,64 @@ module Test
       end
     end
 
-    def self.new
-      Mini.new do |files, options|
-        if block_given?
-          files = yield files
-        end
-        files
+    module RequireFiles
+      def non_options(files, options)
+        super
+        files.each {|f|
+          d = File.dirname(path = File.expand_path(f))
+          unless $:.include? d
+            $: << d
+          end
+          begin
+            require path
+          rescue LoadError
+            puts "#{f}: #{$!}"
+          end
+        }
       end
+    end
+
+    def self.new(*args, &block)
+      Mini.class_eval do
+        include Test::Unit::RequireFiles
+      end
+      Mini.new(*args, &block)
     end
 
     class Mini < MiniTest::Unit
       include Test::Unit::GlobOption
-      include Test::Unit::RejectOption
       include Test::Unit::LoadPathOption
+      include Test::Unit::RunCount
+      include Test::Unit::Options
+
+      class << self; undef autorun; end
+      def self.autorun
+        at_exit {
+          Test::Unit::RunCount.run_once {
+            exit(Test::Unit::Mini.new.run(ARGV) || true)
+          }
+        } unless @@installed_at_exit
+        @@installed_at_exit = true
+      end
+
+      def run(*args)
+        result = super
+        abort if @interrupt
+        result
+      end
+
+      def run_test_suites(*args)
+        old_sync = @@out.sync if @@out.respond_to?(:sync=)
+        @interrupt = false
+        super
+      rescue Interrupt
+        @interrupt = true
+        [@test_count, @assertion_count]
+      ensure
+        @@out.sync = old_sync if @@out.respond_to?(:sync=)
+      end
     end
   end
 end
 
-class MiniTest::Unit
-  def self.new(*args, &block)
-    obj = allocate
-      .extend(Test::Unit::RunCount)
-      .extend(Test::Unit::Options)
-    obj.__send__(:initialize, *args, &block)
-    obj
-  end
-
-  class << self; undef autorun; end
-  def self.autorun
-    at_exit {
-      Test::Unit::RunCount.run_once {
-        exit(Test::Unit::Mini.new.run(ARGV) || true)
-      }
-    } unless @@installed_at_exit
-    @@installed_at_exit = true
-  end
-end
-
-MiniTest::Unit.autorun
+Test::Unit::Mini.autorun

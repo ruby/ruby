@@ -137,6 +137,9 @@ static VALUE rb_cProcessTms;
 	do {int saved_errno = errno; stmts; errno = saved_errno;} while (0)
 
 
+ssize_t rb_io_bufwrite(VALUE io, const void *buf, size_t size);
+ssize_t rb_io_bufread(VALUE io, void *buf, size_t size);
+
 /*
  *  call-seq:
  *     Process.pid   -> fixnum
@@ -310,6 +313,10 @@ pst_message(VALUE str, rb_pid_t pid, int status)
  *     stat.to_s   -> string
  *
  *  Show pid and exit status as a string.
+ *
+ *    system("false")
+ *    p $?.to_s         #=> "pid 12766 exit 1"
+ *
  */
 
 static VALUE
@@ -333,6 +340,10 @@ pst_to_s(VALUE st)
  *     stat.inspect   -> string
  *
  *  Override the inspection method.
+ *
+ *    system("false")
+ *    p $?.inspect #=> "#<Process::Status: pid 12861 exit 1>"
+ *
  */
 
 static VALUE
@@ -1003,6 +1014,21 @@ security(const char *str)
     }
 }
 
+#ifdef HAVE_FORK
+#define try_with_sh(prog, argv) ((saved_errno == ENOEXEC) ? exec_with_sh(prog, argv) : (void)0)
+static void
+exec_with_sh(const char *prog, char **argv)
+{
+    *argv = (char *)prog;
+    *--argv = (char *)"sh";
+    execv("/bin/sh", argv);
+}
+#define ALLOCA_ARGV(n) ALLOCA_N(char*, (n)+1)
+#else
+#define try_with_sh(prog, argv) (void)0
+#define ALLOCA_ARGV(n) ALLOCA_N(char*, n)
+#endif
+
 static int
 proc_exec_v(char **argv, const char *prog)
 {
@@ -1047,7 +1073,7 @@ proc_exec_v(char **argv, const char *prog)
 #endif /* __EMX__ */
     before_exec();
     execv(prog, argv);
-    preserving_errno(after_exec());
+    preserving_errno(try_with_sh(prog, argv); after_exec());
     return -1;
 }
 
@@ -1057,7 +1083,7 @@ rb_proc_exec_n(int argc, VALUE *argv, const char *prog)
     char **args;
     int i;
 
-    args = ALLOCA_N(char*, argc+1);
+    args = ALLOCA_ARGV(argc+1);
     for (i=0; i<argc; i++) {
 	args[i] = RSTRING_PTR(argv[i]);
     }
@@ -1115,7 +1141,7 @@ rb_proc_exec(const char *str)
 	    return -1;
 	}
     }
-    a = argv = ALLOCA_N(char*, (s-str)/2+2);
+    a = argv = ALLOCA_ARGV((s-str)/2+2);
     ss = ALLOCA_N(char, s-str+1);
     memcpy(ss, str, s-str);
     ss[s-str] = '\0';
@@ -1156,8 +1182,13 @@ proc_spawn_v(char **argv, char *prog)
 
     before_exec();
     status = spawnv(P_WAIT, prog, argv);
-    rb_last_status_set(status == -1 ? 127 : status, 0);
-    after_exec();
+    preserving_errno({
+	rb_last_status_set(status == -1 ? 127 : status, 0);
+	*argv = (char *)prog;
+	*--argv = (char *)"sh";
+	status = spawnv("/bin/sh", argv);
+	after_exec();
+    });
     return status;
 }
 #endif
@@ -1168,7 +1199,7 @@ proc_spawn_n(int argc, VALUE *argv, VALUE prog)
     char **args;
     int i;
 
-    args = ALLOCA_N(char*, argc + 1);
+    args = ALLOCA_ARGV(argc + 1);
     for (i = 0; i < argc; i++) {
 	args[i] = RSTRING_PTR(argv[i]);
     }
@@ -1199,7 +1230,7 @@ proc_spawn(char *str)
 	    return status;
 	}
     }
-    a = argv = ALLOCA_N(char*, (s - str) / 2 + 2);
+    a = argv = ALLOCA_ARGV((s - str) / 2 + 2);
     s = ALLOCA_N(char, s - str + 1);
     strcpy(s, str);
     if (*a++ = strtok(s, " \t")) {
@@ -2430,6 +2461,25 @@ pipe_nocrash(int filedes[2], VALUE fds)
     return ret;
 }
 
+struct chfunc_protect_t {
+    int (*chfunc)(void*, char *, size_t);
+    void *arg;
+    char *errmsg;
+    size_t buflen;
+};
+
+static VALUE
+chfunc_protect(VALUE arg)
+{
+    struct chfunc_protect_t *p = (struct chfunc_protect_t *)arg;
+
+    return (VALUE)(*p->chfunc)(p->arg, p->errmsg, p->buflen);
+}
+
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+
 /*
  * Forks child process, and returns the process ID in the parent
  * process.
@@ -2461,6 +2511,7 @@ rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALU
     int err, state = 0;
 #ifdef FD_CLOEXEC
     int ep[2];
+    VALUE io = Qnil;
 #endif
 
 #define prefork() (		\
@@ -2507,19 +2558,31 @@ rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALU
     if (!pid) {
         forked_child = 1;
 	if (chfunc) {
+	    struct chfunc_protect_t arg;
+	    arg.chfunc = chfunc;
+	    arg.arg = charg;
+	    arg.errmsg = errmsg;
+	    arg.buflen = errmsg_buflen;
 #ifdef FD_CLOEXEC
 	    close(ep[0]);
 #endif
-	    if (!(*chfunc)(charg, errmsg, errmsg_buflen)) _exit(EXIT_SUCCESS);
+	    if (!(int)rb_protect(chfunc_protect, (VALUE)&arg, &state)) _exit(EXIT_SUCCESS);
 #ifdef FD_CLOEXEC
+	    if (write(ep[1], &state, sizeof(state)) == sizeof(state) && state) {
+		VALUE errinfo = rb_errinfo();
+		io = rb_io_fdopen(ep[1], O_WRONLY|O_BINARY, NULL);
+		rb_marshal_dump(errinfo, io);
+		rb_io_flush(io);
+	    }
 	    err = errno;
 	    if (write(ep[1], &err, sizeof(err)) < 0) err = errno;
             if (errmsg && 0 < errmsg_buflen) {
                 errmsg[errmsg_buflen-1] = '\0';
                 errmsg_buflen = strlen(errmsg);
 		if (errmsg_buflen > 0 &&write(ep[1], errmsg, errmsg_buflen) < 0)
-                  err = errno;
+		    err = errno;
             }
+	    if (!NIL_P(io)) rb_io_close(io);
 #endif
 #if EXIT_SUCCESS == 127
 	    _exit(EXIT_FAILURE);
@@ -2532,25 +2595,37 @@ rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALU
 #ifdef FD_CLOEXEC
     if (pid && chfunc) {
 	ssize_t size;
+	VALUE exc = Qnil;
 	close(ep[1]);
-	if ((size = read(ep[0], &err, sizeof(err))) < 0) {
+	if ((read(ep[0], &state, sizeof(state))) == sizeof(state) && state) {
+	    io = rb_io_fdopen(ep[0], O_RDONLY|O_BINARY, NULL);
+	    exc = rb_marshal_load(io);
+	    rb_set_errinfo(exc);
+	}
+#define READ_FROM_CHILD(ptr, len) \
+	(NIL_P(io) ? read(ep[0], ptr, len) : rb_io_bufread(io, ptr, len))
+	if ((size = READ_FROM_CHILD(&err, sizeof(err))) < 0) {
 	    err = errno;
 	}
         if (size == sizeof(err) &&
             errmsg && 0 < errmsg_buflen) {
-            ssize_t ret;
-            ret = read(ep[0], errmsg, errmsg_buflen-1);
+	    ssize_t ret = READ_FROM_CHILD(errmsg, errmsg_buflen-1);
             if (0 <= ret) {
                 errmsg[ret] = '\0';
             }
         }
-	close(ep[0]);
-	if (size) {
+	if (NIL_P(io))
+	    close(ep[0]);
+	else
+	    rb_io_close(io);
+	if (state || size) {
 	    if (status) {
+		*status = state;
 		rb_protect(proc_syswait, (VALUE)pid, status);
 	    }
 	    else {
 		rb_syswait(pid);
+		if (state) rb_exc_raise(exc);
 	    }
 	    errno = err;
 	    return -1;
@@ -3532,79 +3607,110 @@ proc_setpriority(VALUE obj, VALUE which, VALUE who, VALUE prio)
 static int
 rlimit_resource_name2int(const char *name, int casetype)
 {
-    size_t len = strlen(name);
-    if (16 < len) return -1;
-    if (casetype == 1) {
-        size_t i;
-        char *name2 = ALLOCA_N(char, len+1);
-        for (i = 0; i < len; i++) {
-            if (!ISLOWER(name[i]))
-                return -1;
-            name2[i] = TOUPPER(name[i]);
-        }
-        name2[len] = '\0';
-        name = name2;
-    }
+    int resource;
+    const char *p;
+#define RESCHECK(r) \
+    do { \
+        if (STRCASECMP(name, #r) == 0) { \
+            resource = RLIMIT_##r; \
+            goto found; \
+        } \
+    } while (0)
 
-    switch (*name) {
+    switch (TOUPPER(*name)) {
       case 'A':
 #ifdef RLIMIT_AS
-        if (strcmp(name, "AS") == 0) return RLIMIT_AS;
+        RESCHECK(AS);
 #endif
         break;
 
       case 'C':
 #ifdef RLIMIT_CORE
-        if (strcmp(name, "CORE") == 0) return RLIMIT_CORE;
+        RESCHECK(CORE);
 #endif
 #ifdef RLIMIT_CPU
-        if (strcmp(name, "CPU") == 0) return RLIMIT_CPU;
+        RESCHECK(CPU);
 #endif
         break;
 
       case 'D':
 #ifdef RLIMIT_DATA
-        if (strcmp(name, "DATA") == 0) return RLIMIT_DATA;
+        RESCHECK(DATA);
 #endif
         break;
 
       case 'F':
 #ifdef RLIMIT_FSIZE
-        if (strcmp(name, "FSIZE") == 0) return RLIMIT_FSIZE;
+        RESCHECK(FSIZE);
 #endif
         break;
 
       case 'M':
 #ifdef RLIMIT_MEMLOCK
-        if (strcmp(name, "MEMLOCK") == 0) return RLIMIT_MEMLOCK;
+        RESCHECK(MEMLOCK);
+#endif
+#ifdef RLIMIT_MSGQUEUE
+        RESCHECK(MSGQUEUE);
 #endif
         break;
 
       case 'N':
 #ifdef RLIMIT_NOFILE
-        if (strcmp(name, "NOFILE") == 0) return RLIMIT_NOFILE;
+        RESCHECK(NOFILE);
 #endif
 #ifdef RLIMIT_NPROC
-        if (strcmp(name, "NPROC") == 0) return RLIMIT_NPROC;
+        RESCHECK(NPROC);
+#endif
+#ifdef RLIMIT_NICE
+        RESCHECK(NICE);
 #endif
         break;
 
       case 'R':
 #ifdef RLIMIT_RSS
-        if (strcmp(name, "RSS") == 0) return RLIMIT_RSS;
+        RESCHECK(RSS);
+#endif
+#ifdef RLIMIT_RTPRIO
+        RESCHECK(RTPRIO);
+#endif
+#ifdef RLIMIT_RTTIME
+        RESCHECK(RTTIME);
 #endif
         break;
 
       case 'S':
 #ifdef RLIMIT_STACK
-        if (strcmp(name, "STACK") == 0) return RLIMIT_STACK;
+        RESCHECK(STACK);
 #endif
 #ifdef RLIMIT_SBSIZE
-        if (strcmp(name, "SBSIZE") == 0) return RLIMIT_SBSIZE;
+        RESCHECK(SBSIZE);
+#endif
+#ifdef RLIMIT_SIGPENDING
+        RESCHECK(SIGPENDING);
 #endif
         break;
     }
     return -1;
+
+  found:
+    switch (casetype) {
+      case 0:
+        for (p = name; *p; p++)
+            if (!ISUPPER(*p))
+                return -1;
+        break;
+
+      case 1:
+        for (p = name; *p; p++)
+            if (!ISLOWER(*p))
+                return -1;
+        break;
+
+      default:
+        rb_bug("unexpected casetype");
+    }
+    return resource;
+#undef RESCHECK
 }
 
 static int
@@ -3748,17 +3854,22 @@ proc_getrlimit(VALUE obj, VALUE resource)
  *  The available resources are OS dependent.
  *  Ruby may support following resources.
  *
+ *  [AS] total available memory (bytes) (SUSv3, NetBSD, FreeBSD, OpenBSD but 4.4BSD-Lite)
  *  [CORE] core size (bytes) (SUSv3)
  *  [CPU] CPU time (seconds) (SUSv3)
  *  [DATA] data segment (bytes) (SUSv3)
  *  [FSIZE] file size (bytes) (SUSv3)
- *  [NOFILE] file descriptors (number) (SUSv3)
- *  [STACK] stack size (bytes) (SUSv3)
- *  [AS] total available memory (bytes) (SUSv3, NetBSD, FreeBSD, OpenBSD but 4.4BSD-Lite)
  *  [MEMLOCK] total size for mlock(2) (bytes) (4.4BSD, GNU/Linux)
+ *  [MSGQUEUE] allocation for POSIX message queues (bytes) (GNU/Linux)
+ *  [NICE] ceiling on process's nice(2) value (number) (GNU/Linux)
+ *  [NOFILE] file descriptors (number) (SUSv3)
  *  [NPROC] number of processes for the user (number) (4.4BSD, GNU/Linux)
  *  [RSS] resident memory size (bytes) (4.2BSD, GNU/Linux)
+ *  [RTPRIO] ceiling on the process's real-time priority (number) (GNU/Linux)
+ *  [RTTIME] CPU time for real-time process (us) (GNU/Linux)
  *  [SBSIZE] all socket buffers (bytes) (NetBSD, FreeBSD)
+ *  [SIGPENDING] number of queued signals allowed (signals) (GNU/Linux)
+ *  [STACK] stack size (bytes) (SUSv3)
  *
  *  _cur_limit_ and _max_limit_ may be
  *  <code>:INFINITY</code>, <code>"INFINITY"</code> or
@@ -3769,7 +3880,7 @@ proc_getrlimit(VALUE obj, VALUE resource)
  *  corresponding symbols and strings too.
  *  See system setrlimit(2) manual for details.
  *
- *  The following example raise the soft limit of core size to
+ *  The following example raises the soft limit of core size to
  *  the hard limit to try to make core dump possible.
  *
  *    Process.setrlimit(:CORE, Process.getrlimit(:CORE)[1])
@@ -4116,10 +4227,12 @@ p_uid_change_privilege(VALUE obj, VALUE id)
 	SAVED_USER_ID = uid;
 #elif defined(HAVE_SETREUID) && !defined(OBSOLETE_SETREUID)
 	if (SAVED_USER_ID == uid) {
-	    if (setreuid((getuid() == uid)? -1: uid,
-			 (geteuid() == uid)? -1: uid) < 0) rb_sys_fail(0);
+	    if (setreuid((getuid() == uid)? (rb_uid_t)-1: uid,
+			 (geteuid() == uid)? (rb_uid_t)-1: uid) < 0)
+		rb_sys_fail(0);
 	} else if (getuid() != uid) {
-	    if (setreuid(uid, (geteuid() == uid)? -1: uid) < 0) rb_sys_fail(0);
+	    if (setreuid(uid, (geteuid() == uid)? (rb_uid_t)-1: uid) < 0)
+		rb_sys_fail(0);
 	    SAVED_USER_ID = uid;
 	} else if (/* getuid() == uid && */ geteuid() != uid) {
 	    if (setreuid(geteuid(), uid) < 0) rb_sys_fail(0);
@@ -4746,10 +4859,12 @@ p_gid_change_privilege(VALUE obj, VALUE id)
 	SAVED_GROUP_ID = gid;
 #elif defined(HAVE_SETREGID) && !defined(OBSOLETE_SETREGID)
 	if (SAVED_GROUP_ID == gid) {
-	    if (setregid((getgid() == gid)? -1: gid,
-			 (getegid() == gid)? -1: gid) < 0) rb_sys_fail(0);
+	    if (setregid((getgid() == gid)? (rb_uid_t)-1: gid,
+			 (getegid() == gid)? (rb_uid_t)-1: gid) < 0)
+		rb_sys_fail(0);
 	} else if (getgid() != gid) {
-	    if (setregid(gid, (getegid() == gid)? -1: gid) < 0) rb_sys_fail(0);
+	    if (setregid(gid, (getegid() == gid)? (rb_uid_t)-1: gid) < 0)
+		rb_sys_fail(0);
 	    SAVED_GROUP_ID = gid;
 	} else if (/* getgid() == gid && */ getegid() != gid) {
 	    if (setregid(getegid(), gid) < 0) rb_sys_fail(0);
@@ -5539,6 +5654,9 @@ Init_process(void)
 	}
 #endif
     }
+#ifdef RLIMIT_AS
+    rb_define_const(rb_mProcess, "RLIMIT_AS", INT2FIX(RLIMIT_AS));
+#endif
 #ifdef RLIMIT_CORE
     rb_define_const(rb_mProcess, "RLIMIT_CORE", INT2FIX(RLIMIT_CORE));
 #endif
@@ -5551,17 +5669,17 @@ Init_process(void)
 #ifdef RLIMIT_FSIZE
     rb_define_const(rb_mProcess, "RLIMIT_FSIZE", INT2FIX(RLIMIT_FSIZE));
 #endif
-#ifdef RLIMIT_NOFILE
-    rb_define_const(rb_mProcess, "RLIMIT_NOFILE", INT2FIX(RLIMIT_NOFILE));
-#endif
-#ifdef RLIMIT_STACK
-    rb_define_const(rb_mProcess, "RLIMIT_STACK", INT2FIX(RLIMIT_STACK));
-#endif
-#ifdef RLIMIT_AS
-    rb_define_const(rb_mProcess, "RLIMIT_AS", INT2FIX(RLIMIT_AS));
-#endif
 #ifdef RLIMIT_MEMLOCK
     rb_define_const(rb_mProcess, "RLIMIT_MEMLOCK", INT2FIX(RLIMIT_MEMLOCK));
+#endif
+#ifdef RLIMIT_MSGQUEUE
+    rb_define_const(rb_mProcess, "RLIMIT_MSGQUEUE", INT2FIX(RLIMIT_MSGQUEUE));
+#endif
+#ifdef RLIMIT_NICE
+    rb_define_const(rb_mProcess, "RLIMIT_NICE", INT2FIX(RLIMIT_NICE));
+#endif
+#ifdef RLIMIT_NOFILE
+    rb_define_const(rb_mProcess, "RLIMIT_NOFILE", INT2FIX(RLIMIT_NOFILE));
 #endif
 #ifdef RLIMIT_NPROC
     rb_define_const(rb_mProcess, "RLIMIT_NPROC", INT2FIX(RLIMIT_NPROC));
@@ -5569,8 +5687,20 @@ Init_process(void)
 #ifdef RLIMIT_RSS
     rb_define_const(rb_mProcess, "RLIMIT_RSS", INT2FIX(RLIMIT_RSS));
 #endif
+#ifdef RLIMIT_RTPRIO
+    rb_define_const(rb_mProcess, "RLIMIT_RTPRIO", INT2FIX(RLIMIT_RTPRIO));
+#endif
+#ifdef RLIMIT_RTTIME
+    rb_define_const(rb_mProcess, "RLIMIT_RTTIME", INT2FIX(RLIMIT_RTTIME));
+#endif
 #ifdef RLIMIT_SBSIZE
     rb_define_const(rb_mProcess, "RLIMIT_SBSIZE", INT2FIX(RLIMIT_SBSIZE));
+#endif
+#ifdef RLIMIT_SIGPENDING
+    rb_define_const(rb_mProcess, "RLIMIT_SIGPENDING", INT2FIX(RLIMIT_SIGPENDING));
+#endif
+#ifdef RLIMIT_STACK
+    rb_define_const(rb_mProcess, "RLIMIT_STACK", INT2FIX(RLIMIT_STACK));
 #endif
 #endif
 

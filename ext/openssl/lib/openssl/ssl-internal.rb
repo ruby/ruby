@@ -118,7 +118,7 @@ module OpenSSL
 
       def post_connection_check(hostname)
         unless OpenSSL::SSL.verify_certificate_identity(peer_cert, hostname)
-          raise SSLError, "hostname was not match with the server certificate"
+          raise SSLError, "hostname does not match the server certificate"
         end
         return true
       end

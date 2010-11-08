@@ -56,6 +56,12 @@ free_dbm(struct dbmdata *dbmp)
     }
 }
 
+/*
+ * call-seq:
+ *   dbm.close
+ *
+ * Closes the database.
+ */
 static VALUE
 fdbm_close(VALUE obj)
 {
@@ -68,6 +74,12 @@ fdbm_close(VALUE obj)
     return Qnil;
 }
 
+/*
+ * call-seq:
+ *   dbm.closed? -> true or false
+ *
+ * Returns true if the database is closed, false otherwise.
+ */
 static VALUE
 fdbm_closed(VALUE obj)
 {
@@ -88,6 +100,19 @@ fdbm_alloc(VALUE klass)
     return Data_Wrap_Struct(klass, 0, free_dbm, 0);
 }
 
+/*
+ * call-seq:
+ *   DBM.new(filename[, mode[, flags]]) -> dbm
+ *
+ * Open a dbm database with the specified name, which can include a directory
+ * path. Any file extensions needed will be supplied automatically by the dbm
+ * library. For example, Berkeley DB appends '.db', and GNU gdbm uses two
+ * physical files with extensions '.dir' and '.pag'.
+ *
+ * The mode should be an integer, as for Unix chmod.
+ *
+ * Flags should be one of READER, WRITER, WRCREAT or NEWDB.
+ */
 static VALUE
 fdbm_initialize(int argc, VALUE *argv, VALUE obj)
 {
@@ -142,6 +167,14 @@ fdbm_initialize(int argc, VALUE *argv, VALUE obj)
     return obj;
 }
 
+/*
+ * call-seq:
+ *   DBM.open(filename[, mode[, flags]]) -> dbm
+ *   DBM.open(filename[, mode[, flags]]) {|dbm| block}
+ *
+ * Open a dbm database and yields it if a block is given. See also
+ * <code>DBM.new</code>.
+ */
 static VALUE
 fdbm_s_open(int argc, VALUE *argv, VALUE klass)
 {
@@ -179,12 +212,27 @@ fdbm_fetch(VALUE obj, VALUE keystr, VALUE ifnone)
     return rb_tainted_str_new(value.dptr, value.dsize);
 }
 
+/*
+ * call-seq:
+ *   dbm[key] -> string value or nil
+ *
+ * Return a value from the database by locating the key string
+ * provided.  If the key is not found, returns nil.
+ */
 static VALUE
 fdbm_aref(VALUE obj, VALUE keystr)
 {
     return fdbm_fetch(obj, keystr, Qnil);
 }
 
+/*
+ * call-seq:
+ *   dbm.fetch(key[, ifnone]) -> value
+ *
+ * Return a value from the database by locating the key string
+ * provided.  If the key is not found, returns +ifnone+. If +ifnone+
+ * is not given, raises IndexError.
+ */
 static VALUE
 fdbm_fetch_m(int argc, VALUE *argv, VALUE obj)
 {
@@ -198,6 +246,12 @@ fdbm_fetch_m(int argc, VALUE *argv, VALUE obj)
     return valstr;
 }
 
+/*
+ * call-seq:
+ *   dbm.key(value) -> string
+ *
+ * Returns the key for the specified value.
+ */
 static VALUE
 fdbm_key(VALUE obj, VALUE valstr)
 {
@@ -220,6 +274,7 @@ fdbm_key(VALUE obj, VALUE valstr)
     return Qnil;
 }
 
+/* :nodoc: */
 static VALUE
 fdbm_index(VALUE hash, VALUE value)
 {
@@ -227,6 +282,13 @@ fdbm_index(VALUE hash, VALUE value)
     return fdbm_key(hash, value);
 }
 
+/*
+ * call-seq:
+ *   dbm.select {|key, value| block} -> array
+ *
+ * Returns a new array consisting of the [key, value] pairs for which the code
+ * block returns true.
+ */
 static VALUE
 fdbm_select(VALUE obj)
 {
@@ -251,6 +313,12 @@ fdbm_select(VALUE obj)
     return new;
 }
 
+/*
+ * call-seq:
+ *   dbm.values_at(key, ...) -> Array
+ *
+ * Returns an array containing the values associated with the given keys.
+ */
 static VALUE
 fdbm_values_at(int argc, VALUE *argv, VALUE obj)
 {
@@ -271,6 +339,12 @@ fdbm_modify(VALUE obj)
     if (OBJ_FROZEN(obj)) rb_error_frozen("DBM");
 }
 
+/*
+ * call-seq:
+ *   dbm.delete(key)
+ *
+ * Deletes an entry from the database.
+ */
 static VALUE
 fdbm_delete(VALUE obj, VALUE keystr)
 {
@@ -305,6 +379,14 @@ fdbm_delete(VALUE obj, VALUE keystr)
     return valstr;
 }
 
+/*
+ * call-seq:
+ *   dbm.shift() -> [key, value]
+ *
+ * Removes a [key, value] pair from the database, and returns it.
+ * If the database is empty, returns nil.
+ * The order in which values are removed/returned is not guaranteed.
+ */
 static VALUE
 fdbm_shift(VALUE obj)
 {
@@ -327,6 +409,14 @@ fdbm_shift(VALUE obj)
     return rb_assoc_new(keystr, valstr);
 }
 
+/*
+ * call-seq:
+ *   dbm.reject! {|key, value| block} -> self
+ *   dbm.delete_if {|key, value| block} -> self
+ *
+ * Deletes all entries for which the code block returns true.
+ * Returns self.
+ */
 static VALUE
 fdbm_delete_if(VALUE obj)
 {
@@ -368,6 +458,12 @@ fdbm_delete_if(VALUE obj)
     return obj;
 }
 
+/*
+ * call-seq:
+ *   dbm.clear
+ *
+ * Deletes all data from the database.
+ */
 static VALUE
 fdbm_clear(VALUE obj)
 {
@@ -388,6 +484,13 @@ fdbm_clear(VALUE obj)
     return obj;
 }
 
+/*
+ * call-seq:
+ *   dbm.invert -> hash
+ *
+ * Returns a Hash (not a DBM database) created by using each value in the
+ * database as a key, with the corresponding key as its value.
+ */
 static VALUE
 fdbm_invert(VALUE obj)
 {
@@ -420,6 +523,14 @@ update_i(VALUE pair, VALUE dbm)
     return Qnil;
 }
 
+/*
+ * call-seq:
+ *   dbm.update(obj)
+ *
+ * Updates the database with multiple values from the specified object.
+ * Takes any object which implements the each_pair method, including
+ * Hash and DBM objects.
+ */
 static VALUE
 fdbm_update(VALUE obj, VALUE other)
 {
@@ -427,6 +538,14 @@ fdbm_update(VALUE obj, VALUE other)
     return obj;
 }
 
+/*
+ * call-seq:
+ *   dbm.replace(obj)
+ *
+ * Replaces the contents of the database with the contents of the specified
+ * object. Takes any object which implements the each_pair method, including
+ * Hash and DBM objects.
+ */
 static VALUE
 fdbm_replace(VALUE obj, VALUE other)
 {
@@ -435,6 +554,14 @@ fdbm_replace(VALUE obj, VALUE other)
     return obj;
 }
 
+/*
+ * call-seq:
+ *   dbm.store(key, value) -> value
+ *   dbm[key] = value
+ *
+ * Stores the specified string value in the database, indexed via the
+ * string key provided.
+ */
 static VALUE
 fdbm_store(VALUE obj, VALUE keystr, VALUE valstr)
 {
@@ -465,6 +592,12 @@ fdbm_store(VALUE obj, VALUE keystr, VALUE valstr)
     return valstr;
 }
 
+/*
+ * call-seq:
+ *   dbm.length -> integer
+ *
+ * Returns the number of entries in the database.
+ */
 static VALUE
 fdbm_length(VALUE obj)
 {
@@ -484,6 +617,12 @@ fdbm_length(VALUE obj)
     return INT2FIX(i);
 }
 
+/*
+ * call-seq:
+ *   dbm.empty?
+ *
+ * Returns true if the database is empty, false otherwise.
+ */
 static VALUE
 fdbm_empty_p(VALUE obj)
 {
@@ -507,6 +646,12 @@ fdbm_empty_p(VALUE obj)
     return Qfalse;
 }
 
+/*
+ * call-seq:
+ *   dbm.each_value {|value| block} -> self
+ *
+ * Calls the block once for each value string in the database. Returns self.
+ */
 static VALUE
 fdbm_each_value(VALUE obj)
 {
@@ -525,6 +670,12 @@ fdbm_each_value(VALUE obj)
     return obj;
 }
 
+/*
+ * call-seq:
+ *   dbm.each_key {|key| block} -> self
+ *
+ * Calls the block once for each key string in the database. Returns self.
+ */
 static VALUE
 fdbm_each_key(VALUE obj)
 {
@@ -542,6 +693,13 @@ fdbm_each_key(VALUE obj)
     return obj;
 }
 
+/*
+ * call-seq:
+ *   dbm.each_pair {|key,value| block} -> self
+ *
+ * Calls the block once for each [key, value] pair in the database.
+ * Returns self.
+ */
 static VALUE
 fdbm_each_pair(VALUE obj)
 {
@@ -565,6 +723,12 @@ fdbm_each_pair(VALUE obj)
     return obj;
 }
 
+/*
+ * call-seq:
+ *   dbm.keys -> array
+ *
+ * Returns an array of all the string keys in the database.
+ */
 static VALUE
 fdbm_keys(VALUE obj)
 {
@@ -583,6 +747,12 @@ fdbm_keys(VALUE obj)
     return ary;
 }
 
+/*
+ * call-seq:
+ *   dbm.values -> array
+ *
+ * Returns an array of all the string values in the database.
+ */
 static VALUE
 fdbm_values(VALUE obj)
 {
@@ -601,6 +771,12 @@ fdbm_values(VALUE obj)
     return ary;
 }
 
+/*
+ * call-seq:
+ *   dbm.has_key?(key) -> boolean
+ *
+ * Returns true if the database contains the specified key, false otherwise.
+ */
 static VALUE
 fdbm_has_key(VALUE obj, VALUE keystr)
 {
@@ -618,6 +794,13 @@ fdbm_has_key(VALUE obj, VALUE keystr)
     return Qfalse;
 }
 
+/*
+ * call-seq:
+ *   dbm.has_value?(value) -> boolean
+ *
+ * Returns true if the database contains the specified string value, false
+ * otherwise.
+ */
 static VALUE
 fdbm_has_value(VALUE obj, VALUE valstr)
 {
@@ -639,6 +822,13 @@ fdbm_has_value(VALUE obj, VALUE valstr)
     return Qfalse;
 }
 
+/*
+ * call-seq:
+ *   dbm.to_a -> array
+ *
+ * Converts the contents of the database to an array of [key, value] arrays,
+ * and returns it.
+ */
 static VALUE
 fdbm_to_a(VALUE obj)
 {
@@ -658,6 +848,13 @@ fdbm_to_a(VALUE obj)
     return ary;
 }
 
+/*
+ * call-seq:
+ *   dbm.to_hash -> hash
+ *
+ * Converts the contents of the database to an in-memory Hash object, and
+ * returns it.
+ */
 static VALUE
 fdbm_to_hash(VALUE obj)
 {
@@ -677,16 +874,85 @@ fdbm_to_hash(VALUE obj)
     return hash;
 }
 
+/*
+ * call-seq:
+ *   dbm.reject {|key,value| block} -> Hash
+ *
+ * Converts the contents of the database to an in-memory Hash, then calls
+ * Hash#reject with the specified code block, returning a new Hash.
+ */
 static VALUE
 fdbm_reject(VALUE obj)
 {
     return rb_hash_delete_if(fdbm_to_hash(obj));
 }
 
+/*
+ * Documented by mathew meta@pobox.com.
+ * = Introduction
+ *
+ * The DBM class provides a wrapper to a Unix-style
+ * {dbm}[http://en.wikipedia.org/wiki/Dbm] or Database Manager library.
+ *
+ * Dbm databases do not have tables or columns; they are simple key-value
+ * data stores, like a Ruby Hash except not resident in RAM. Keys and values
+ * must be strings.
+ *
+ * The exact library used depends on how Ruby was compiled. It could be any
+ * of the following:
+ *
+ * - {Berkeley DB}[http://en.wikipedia.org/wiki/Berkeley_DB] versions
+ *   1 thru 5, also known as BDB and Sleepycat DB, now owned by Oracle
+ *   Corporation.
+ * - ndbm, aka Berkeley DB 1.x, still found in FreeBSD and OpenBSD.
+ * - {gdbm}[http://www.gnu.org/software/gdbm/], the GNU implementation of dbm.
+ * - {qdbm}[http://fallabs.com/qdbm/index.html], another open source
+ *   reimplementation of dbm.
+ *
+ * All of these dbm implementations have their own Ruby interfaces
+ * available, which provide richer (but varying) APIs.
+ *
+ * = Cautions
+ *
+ * Before you decide to use DBM, there are some issues you should consider:
+ *
+ * - Each implementation of dbm has its own file format. Generally, dbm
+ *   libraries will not read each other's files. This makes dbm files
+ *   a bad choice for data exchange.
+ *
+ * - Even running the same OS and the same dbm implementation, the database
+ *   file format may depend on the CPU architecture. For example, files may
+ *   not be portable between PowerPC and 386, or between 32 and 64 bit Linux.
+ *
+ * - Different versions of Berkeley DB use different file formats. A change to
+ *   the OS may therefore break DBM access to existing files.
+ *
+ * - Data size limits vary between implementations. Original Berkeley DB was
+ *   limited to 2GB of data. Dbm libraries also sometimes limit the total
+ *   size of a key/value pair, and the total size of all the keys that hash
+ *   to the same value. These limits can be as little as 512 bytes. That said,
+ *   gdbm and recent versions of Berkeley DB do away with these limits.
+ *
+ * Given the above cautions, DBM is not a good choice for long term storage of
+ * important data. It is probably best used as a fast and easy alternative
+ * to a Hash for processing large amounts of data.
+ *
+ * = Example
+ *
+ *  require 'dbm'
+ *  db = DBM.open('rfcs', 666, DBM::CREATRW)
+ *  db['822'] = 'Standard for the Format of ARPA Internet Text Messages'
+ *  db['1123'] = 'Requirements for Internet Hosts - Application and Support'
+ *  db['3068'] = 'An Anycast Prefix for 6to4 Relay Routers'
+ *  puts db['822']
+ */
 void
 Init_dbm(void)
 {
     rb_cDBM = rb_define_class("DBM", rb_cObject);
+    /* Document-class: DBMError
+     * Exception class used to return errors from the dbm library.
+     */
     rb_eDBMError = rb_define_class("DBMError", rb_eStandardError);
     rb_include_module(rb_cDBM, rb_mEnumerable);
 
@@ -733,13 +999,25 @@ Init_dbm(void)
     rb_define_method(rb_cDBM, "to_a", fdbm_to_a, 0);
     rb_define_method(rb_cDBM, "to_hash", fdbm_to_hash, 0);
 
-    /* flags for dbm_open() */
+    /* Indicates that dbm_open() should open the database in read-only mode */
     rb_define_const(rb_cDBM, "READER",  INT2FIX(O_RDONLY|RUBY_DBM_RW_BIT));
+
+    /* Indicates that dbm_open() should open the database in read/write mode */
     rb_define_const(rb_cDBM, "WRITER",  INT2FIX(O_RDWR|RUBY_DBM_RW_BIT));
+
+    /* Indicates that dbm_open() should open the database in read/write mode,
+     * and create it if it does not already exist
+     */
     rb_define_const(rb_cDBM, "WRCREAT", INT2FIX(O_RDWR|O_CREAT|RUBY_DBM_RW_BIT));
+
+    /* Indicates that dbm_open() should open the database in read/write mode,
+     * create it if it does not already exist, and delete all contents if it
+     * does already exist.
+     */
     rb_define_const(rb_cDBM, "NEWDB",   INT2FIX(O_RDWR|O_CREAT|O_TRUNC|RUBY_DBM_RW_BIT));
 
 #ifdef DB_VERSION_STRING
+    /* The version of the dbm library, if using Berkeley DB */
     rb_define_const(rb_cDBM, "VERSION",  rb_str_new2(DB_VERSION_STRING));
 #else
     rb_define_const(rb_cDBM, "VERSION",  rb_str_new2("unknown"));

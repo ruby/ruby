@@ -51,4 +51,16 @@ class TestGc < Test::Unit::TestCase
     GC.start
     assert_operator(c, :<, GC.count)
   end
+
+  def test_stat
+    res = GC.stat
+    assert_equal(false, res.empty?)
+    assert_kind_of(Integer, res[:count])
+
+    arg = Hash.new
+    res = GC.stat(arg)
+    assert_equal(arg, res)
+    assert_equal(false, res.empty?)
+    assert_kind_of(Integer, res[:count])
+  end
 end

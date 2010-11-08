@@ -9,6 +9,7 @@
 **********************************************************************/
 
 #include "ruby/ruby.h"
+#include "ruby/vm.h"
 #include "ruby/st.h"
 #include "ruby/encoding.h"
 
@@ -453,16 +454,10 @@ rb_vm_stack_to_heap(rb_thread_t * const th)
 static VALUE
 vm_make_proc_from_block(rb_thread_t *th, rb_block_t *block)
 {
-    VALUE proc = block->proc;
-
-    if (block->proc) {
-	return block->proc;
+    if (!block->proc) {
+	block->proc = rb_vm_make_proc(th, block, rb_cProc);
     }
-
-    proc = rb_vm_make_proc(th, block, rb_cProc);
-    block->proc = proc;
-
-    return proc;
+    return block->proc;
 }
 
 VALUE
@@ -549,6 +544,7 @@ invoke_block_from_c(rb_thread_t *th, const rb_block_t *block,
 			     iseq->local_size - arg_size);
 	ncfp->me = th->passed_me;
 	th->passed_me = 0;
+	th->passed_block = blockptr;
 
 	if (cref) {
 	    th->cfp->dfp[-1] = (VALUE)cref;
@@ -741,7 +737,8 @@ vm_backtrace_each(rb_thread_t *th, int lev, void (*init)(void *), rb_backtrace_i
 		id = cfp->me->def->original_id;
 	    else
 		id = cfp->me->called_id;
-	    if ((*iter)(arg, file, line_no, rb_id2str(id))) break;
+	    if (id != ID_ALLOCATOR && (*iter)(arg, file, line_no, rb_id2str(id)))
+		break;
 	}
 	cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp);
     }
@@ -952,7 +949,7 @@ static st_table *vm_opt_method_table = 0;
 static void
 rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me)
 {
-    VALUE bop;
+    st_data_t bop;
     if (!me->def || me->def->type == VM_METHOD_TYPE_CFUNC) {
 	if (st_lookup(vm_opt_method_table, (st_data_t)me, &bop)) {
 	    ruby_vm_redefined_flag[bop] = 1;
@@ -1394,7 +1391,7 @@ rb_thread_method_id_and_class(rb_thread_t *th,
 {
     rb_control_frame_t *cfp = th->cfp;
     rb_iseq_t *iseq = cfp->iseq;
-    if (!iseq) {
+    if (!iseq && cfp->me) {
 	if (idp) *idp = cfp->me->def->original_id;
 	if (klassp) *klassp = cfp->me->klass;
 	return 1;
@@ -1523,11 +1520,10 @@ rb_vm_mark(void *ptr)
 #define vm_free 0
 
 int
-ruby_vm_destruct(void *ptr)
+ruby_vm_destruct(rb_vm_t *vm)
 {
     RUBY_FREE_ENTER("vm");
-    if (ptr) {
-	rb_vm_t *vm = ptr;
+    if (vm) {
 	rb_thread_t *th = vm->main_thread;
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 	struct rb_objspace *objspace = vm->objspace;
@@ -1703,7 +1699,7 @@ thread_free(void *ptr)
 	}
 
 	if (th->locking_mutex != Qfalse) {
-	    rb_bug("thread_free: locking_mutex must be NULL (%p:%ld)", (void *)th, th->locking_mutex);
+	    rb_bug("thread_free: locking_mutex must be NULL (%p:%p)", (void *)th, (void *)th->locking_mutex);
 	}
 	if (th->keeping_mutexes != NULL) {
 	    rb_bug("thread_free: keeping_mutexes must be NULL (%p:%p)", (void *)th, (void *)th->keeping_mutexes);
@@ -1712,18 +1708,6 @@ thread_free(void *ptr)
 	if (th->local_storage) {
 	    st_free_table(th->local_storage);
 	}
-
-#if USE_VALUE_CACHE
-	{
-	    VALUE *ptr = th->value_cache_ptr;
-	    while (*ptr) {
-		VALUE v = *ptr;
-		RBASIC(v)->flags = 0;
-		RBASIC(v)->klass = 0;
-		ptr++;
-	    }
-	}
-#endif
 
 	if (th->vm && th->vm->main_thread == th) {
 	    RUBY_GC_INFO("main thread\n");
@@ -1800,10 +1784,6 @@ th_init2(rb_thread_t *th, VALUE self)
     th->status = THREAD_RUNNABLE;
     th->errinfo = Qnil;
     th->last_status = Qnil;
-
-#if USE_VALUE_CACHE
-    th->value_cache_ptr = &th->value_cache[0];
-#endif
 }
 
 static void
@@ -1835,6 +1815,8 @@ rb_thread_alloc(VALUE klass)
     return self;
 }
 
+VALUE rb_iseq_clone(VALUE iseqval, VALUE newcbase);
+
 static void
 vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
 		 rb_num_t is_singleton, NODE *cref)
@@ -1843,6 +1825,11 @@ vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
     int noex = (int)cref->nd_visi;
     rb_iseq_t *miseq;
     GetISeqPtr(iseqval, miseq);
+
+    if (miseq->klass) {
+       iseqval = rb_iseq_clone(iseqval, 0);
+       GetISeqPtr(iseqval, miseq);
+    }
 
     if (NIL_P(klass)) {
 	rb_raise(rb_eTypeError, "no class/module to add method");
@@ -1855,16 +1842,14 @@ vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
 		     rb_id2name(id), rb_obj_classname(obj));
 	}
 
-	if (OBJ_FROZEN(obj)) {
-	    rb_error_frozen("object");
-	}
-
+	rb_check_frozen(obj);
 	klass = rb_singleton_class(obj);
 	noex = NOEX_PUBLIC;
     }
 
     /* dup */
     COPY_CREF(miseq->cref_stack, cref);
+    miseq->cref_stack->nd_visi = NOEX_PUBLIC;
     miseq->klass = klass;
     miseq->defined_method_id = id;
     rb_add_method(klass, id, VM_METHOD_TYPE_ISEQ, miseq, noex);

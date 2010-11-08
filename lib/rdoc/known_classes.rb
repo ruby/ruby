@@ -10,6 +10,7 @@ module RDoc
     "rb_cClass"            => "Class",
     "rb_cData"             => "Data",
     "rb_cDir"              => "Dir",
+    "rb_cEncoding"         => "Encoding",
     "rb_cFalseClass"       => "FalseClass",
     "rb_cFile"             => "File",
     "rb_cFixnum"           => "Fixnum",

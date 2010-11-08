@@ -229,15 +229,20 @@ static rb_random_t default_rand;
 static VALUE rand_init(struct MT *mt, VALUE vseed);
 static VALUE random_seed(void);
 
-static struct MT *
-default_mt(void)
+static rb_random_t *
+rand_start(rb_random_t *r)
 {
-    rb_random_t *r = &default_rand;
     struct MT *mt = &r->mt;
     if (!genrand_initialized(mt)) {
 	r->seed = rand_init(mt, random_seed());
     }
-    return mt;
+    return r;
+}
+
+static struct MT *
+default_mt(void)
+{
+    return &rand_start(&default_rand)->mt;
 }
 
 unsigned int
@@ -321,6 +326,7 @@ int_pair_to_real_inclusive(unsigned int a, unsigned int b)
 VALUE rb_cRandom;
 #define id_minus '-'
 #define id_plus  '+'
+static ID id_rand, id_bytes;
 
 /* :nodoc: */
 static void
@@ -359,6 +365,16 @@ get_rnd(VALUE obj)
     return ptr;
 }
 
+static rb_random_t *
+try_get_rnd(VALUE obj)
+{
+    if (obj == rb_cRandom) {
+	return rand_start(&default_rand);
+    }
+    if (!rb_typeddata_is_kind_of(obj, &random_data_type)) return NULL;
+    return DATA_PTR(obj);
+}
+
 /* :nodoc: */
 static VALUE
 random_alloc(VALUE klass)
@@ -387,7 +403,7 @@ rand_init(struct MT *mt, VALUE vseed)
             fixnum_seed = -fixnum_seed;
 	buf[0] = (unsigned int)(fixnum_seed & 0xffffffff);
 #if SIZEOF_LONG > SIZEOF_INT32
-	if ((long)(int)fixnum_seed != fixnum_seed) {
+	if ((long)(int32_t)fixnum_seed != fixnum_seed) {
 	    if ((buf[1] = (unsigned int)(fixnum_seed >> 32)) != 0) ++len;
 	}
 #endif
@@ -399,7 +415,7 @@ rand_init(struct MT *mt, VALUE vseed)
 	}
 	else {
 	    if (blen > MT_MAX_STATE * SIZEOF_INT32 / SIZEOF_BDIGITS)
-		blen = (len = MT_MAX_STATE) * SIZEOF_INT32 / SIZEOF_BDIGITS;
+		blen = MT_MAX_STATE * SIZEOF_INT32 / SIZEOF_BDIGITS;
 	    len = roomof((int)blen * SIZEOF_BDIGITS, SIZEOF_INT32);
 	}
 	/* allocate ints for init_by_array */
@@ -859,24 +875,47 @@ limited_big_rand(struct MT *mt, struct RBignum *limit)
     return rb_big_norm((VALUE)val);
 }
 
+/*
+ * Returns random unsigned long value in [0, _limit_].
+ *
+ * Note that _limit_ is included, and the range of the argument and the
+ * return value depends on environments.
+ */
 unsigned long
-rb_rand_internal(unsigned long i)
+rb_genrand_ulong_limited(unsigned long limit)
 {
-    struct MT *mt = default_mt();
-    return limited_rand(mt, i);
+    return limited_rand(default_mt(), limit);
 }
 
 unsigned int
 rb_random_int32(VALUE obj)
 {
-    rb_random_t *rnd = get_rnd(obj);
+    rb_random_t *rnd = try_get_rnd(obj);
+    if (!rnd) {
+#if SIZEOF_LONG * CHAR_BIT > 32
+	VALUE lim = ULONG2NUM(0x100000000);
+#elif defined HAVE_LONG_LONG
+	VALUE lim = ULL2NUM((LONG_LONG)0xffffffff+1);
+#else
+	VALUE lim = rb_big_plus(ULONG2NUM(0xffffffff), INT2FIX(1));
+#endif
+	return (unsigned int)NUM2ULONG(rb_funcall2(obj, id_rand, 1, &lim));
+    }
     return genrand_int32(&rnd->mt);
 }
 
 double
 rb_random_real(VALUE obj)
 {
-    rb_random_t *rnd = get_rnd(obj);
+    rb_random_t *rnd = try_get_rnd(obj);
+    if (!rnd) {
+	VALUE v = rb_funcall2(obj, id_rand, 0, 0);
+	double d = NUM2DBL(v);
+	if (d < 0.0 || d >= 1.0) {
+	    rb_raise(rb_eRangeError, "random number too big %g", d);
+	}
+	return d;
+    }
     return genrand_real(&rnd->mt);
 }
 
@@ -895,11 +934,17 @@ random_bytes(VALUE obj, VALUE len)
 VALUE
 rb_random_bytes(VALUE obj, long n)
 {
-    rb_random_t *rnd = get_rnd(obj);
-    VALUE bytes = rb_str_new(0, n);
-    char *ptr = RSTRING_PTR(bytes);
+    rb_random_t *rnd = try_get_rnd(obj);
+    VALUE bytes;
+    char *ptr;
     unsigned int r, i;
 
+    if (!rnd) {
+	VALUE len = LONG2NUM(n);
+	return rb_funcall2(obj, id_bytes, 1, &len);
+    }
+    bytes = rb_str_new(0, n);
+    ptr = RSTRING_PTR(bytes);
     for (; n >= SIZEOF_INT32; n -= SIZEOF_INT32) {
 	r = genrand_int32(&rnd->mt);
 	i = SIZEOF_INT32;
@@ -1021,7 +1066,7 @@ random_rand(int argc, VALUE *argv, VALUE obj)
 	v = Qnil;
     }
     else if (TYPE(vmax) != T_FLOAT && (v = rb_check_to_integer(vmax, "to_int"), !NIL_P(v))) {
-	v = rand_int(&rnd->mt, vmax = v, 1);
+	v = rand_int(&rnd->mt, v, 1);
     }
     else if (v = rb_check_to_float(vmax), !NIL_P(v)) {
 	double max = float_value(v);
@@ -1245,4 +1290,7 @@ Init_Random(void)
     rb_define_singleton_method(rb_cRandom, "new_seed", random_seed, 0);
     rb_define_private_method(CLASS_OF(rb_cRandom), "state", random_s_state, 0);
     rb_define_private_method(CLASS_OF(rb_cRandom), "left", random_s_left, 0);
+
+    id_rand = rb_intern("rand");
+    id_bytes = rb_intern("bytes");
 }

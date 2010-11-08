@@ -205,8 +205,31 @@ module URI
       self.set_path('') if !@path && !@opaque # (see RFC2396 Section 5.2)
       self.set_port(self.default_port) if self.default_port && !@port
     end
+
     attr_reader :scheme
+
+    # returns the host component of the URI.
+    #
+    #   URI("http://foo/bar/baz").host #=> "foo"
+    #
+    # It returns nil if no host component.
+    #
+    #   URI("mailto:foo@example.org").host #=> nil
+    #
+    # The component doesn't contains the port number.
+    #
+    #   URI("http://foo:8080/bar/baz").host #=> "foo"
+    #
+    # Since IPv6 addresses are wrapped by brackets in URIs,
+    # this method returns IPv6 addresses wrapped by brackets.
+    # This form is not appropriate to pass socket methods such as TCPSocket.open.
+    # If unwrapped host names are required, use "hostname" method.
+    #
+    #   URI("http://[::1]/bar/baz").host #=> "[::1]"
+    #   URI("http://[::1]/bar/baz").hostname #=> "::1"
+    #
     attr_reader :host
+
     attr_reader :port
     attr_reader :registry
     attr_reader :path
@@ -410,6 +433,38 @@ module URI
       check_host(v)
       set_host(v)
       v
+    end
+
+    # extract the host part of the URI and unwrap brackets for IPv6 addresses.
+    #
+    # This method is same as URI::Generic#host except
+    # brackets for IPv6 (andn future IP) addresses are removed.
+    #
+    # u = URI("http://[::1]/bar")
+    # p u.hostname      #=> "::1"
+    # p u.host          #=> "[::1]"
+    #
+    def hostname
+      v = self.host
+      /\A\[(.*)\]\z/ =~ v ? $1 : v
+    end
+
+    # set the host part of the URI as the argument with brackets for IPv6 addresses.
+    #
+    # This method is same as URI::Generic#host= except
+    # the argument can be bare IPv6 address.
+    #
+    # u = URI("http://foo/bar")
+    # p u.to_s                  #=> "http://foo/bar"
+    # u.hostname = "::1"
+    # p u.to_s                  #=> "http://[::1]/bar"
+    #
+    # If the arugument seems IPv6 address,
+    # it is wrapped by brackets.
+    #
+    def hostname=(v)
+      v = "[#{v}]" if /\A\[.*\]\z/ !~ v && /:/ =~ v
+      self.host = v
     end
 
     def check_port(v)

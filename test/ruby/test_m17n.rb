@@ -1093,6 +1093,11 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(a, s.each_char.to_a, "[ruby-dev:33211] #{encdump s}.each_char.to_a")
   end
 
+  def test_str_concat
+    assert_equal("A\x84\x31\xA4\x39".force_encoding("GB18030"),
+                 "A".force_encoding("GB18030") << 0x8431A439)
+  end
+
   def test_regexp_match
     assert_equal([0,0], //.match("\xa1\xa1".force_encoding("euc-jp"),-1).offset(0))
     assert_equal(0, // =~ :a)
@@ -1139,6 +1144,7 @@ class TestM17N < Test::Unit::TestCase
     0.upto(255) {|b|
       assert_equal([b].pack("C"), b.chr)
     }
+    assert_equal("\x84\x31\xA4\x39".force_encoding("GB18030"), 0x8431A439.chr("GB18030"))
   end
 
   def test_marshal
@@ -1293,6 +1299,16 @@ class TestM17N < Test::Unit::TestCase
     s = "\xa1\xa1\x8f".force_encoding("euc-jp")
     assert_equal(false, s.valid_encoding?)
     assert_equal(true, s.reverse.valid_encoding?)
+
+    bug4018 = '[ruby-core:33027]'
+    s = "\xa1\xa1".force_encoding("euc-jp")
+    assert_equal(true, s.valid_encoding?)
+    s << "\x8f".force_encoding("euc-jp")
+    assert_equal(false, s.valid_encoding?, bug4018)
+    s = "aa".force_encoding("utf-16be")
+    assert_equal(true, s.valid_encoding?)
+    s << "\xff".force_encoding("utf-16be")
+    assert_equal(false, s.valid_encoding?, bug4018)
   end
 
   def test_getbyte

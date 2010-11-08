@@ -378,9 +378,8 @@ class TestRubyOptions < Test::Unit::TestCase
       %r(\A
       -e:(?:1:)?\s\[BUG\]\sSegmentation\sfault\n
       #{ Regexp.quote(RUBY_DESCRIPTION) }\n\n
-      --\scontrol\sframe\s----------\n
+      --\sControl\sframe\sinformation\s-+\n
       (?:c:.*\n)*
-      ---------------------------\n
       (?:
       --\sRuby\slevel\sbacktrace\sinformation\s----------------------------------------\n
       -e:1:in\s\`<main>\'\n
@@ -391,6 +390,7 @@ class TestRubyOptions < Test::Unit::TestCase
         --\sC\slevel\sbacktrace\sinformation\s-------------------------------------------\n
         (?:(?:.*\s)?\[0x\h+\]\n)*\n
       )?
+      (?m:.*)
       \[NOTE\]\n
       You\smay\shave\sencountered\sa\sbug\sin\sthe\sRuby\sinterpreter\sor\sextension\slibraries.\n
       Bug\sreports\sare\swelcome.\n
@@ -435,16 +435,20 @@ class TestRubyOptions < Test::Unit::TestCase
     require 'timeout'
     result = nil
     IO.pipe {|r, w|
-      PTY.open {|m, s|
-	m.echo = false
-	m.print("\C-d")
-	pid = spawn(EnvUtil.rubybin, :in => s, :out => w)
-	w.close
-	assert_nothing_raised('[ruby-dev:37798]') do
-	  result = Timeout.timeout(3) {r.read}
-	end
-	Process.wait pid
-      }
+      begin
+        PTY.open {|m, s|
+          m.echo = false
+          m.print("\C-d")
+          pid = spawn(EnvUtil.rubybin, :in => s, :out => w)
+          w.close
+          assert_nothing_raised('[ruby-dev:37798]') do
+            result = Timeout.timeout(3) {r.read}
+          end
+          Process.wait pid
+        }
+      rescue RuntimeError
+        skip $!
+      end
     }
     assert_equal("", result, '[ruby-dev:37798]')
     IO.pipe {|r, w|
@@ -460,5 +464,16 @@ class TestRubyOptions < Test::Unit::TestCase
       }
     }
     assert_equal("\"zzz\\n\"\n", result, '[ruby-core:30910]')
+  end
+
+  def test_unmatching_glob
+    bug3851 = '[ruby-core:32478]'
+    a = "a[foo"
+    Dir.mktmpdir do |dir|
+      open(File.join(dir, a), "w") {|f| f.puts("p 42")}
+      assert_in_out_err(["-C", dir, a], "", ["42"], [], bug3851)
+      File.unlink(File.join(dir, a))
+      assert_in_out_err(["-C", dir, a], "", [], /LoadError/, bug3851)
+    end
   end
 end

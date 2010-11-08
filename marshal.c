@@ -419,7 +419,7 @@ w_symbol(ID id, struct dump_arg *arg)
     else {
 	sym = rb_id2str(id);
 	if (!sym) {
-	    rb_raise(rb_eTypeError, "can't dump anonymous ID %ld", id);
+	    rb_raise(rb_eTypeError, "can't dump anonymous ID %"PRIdVALUE, id);
 	}
 	encidx = rb_enc_get_index(sym);
 	if (encidx == rb_usascii_encindex() ||
@@ -1137,11 +1137,11 @@ id2encidx(ID id, VALUE val)
 static ID
 r_symlink(struct load_arg *arg)
 {
-    ID id;
+    st_data_t id;
     long num = r_long(arg);
 
     if (st_lookup(arg->symbols, num, &id)) {
-	return id;
+	return (ID)id;
     }
     rb_raise(rb_eArgError, "bad symbol");
 }

@@ -127,6 +127,12 @@
 # include <errno.h>
 #endif
 
+#if __GNUC__ >= 3
+#define UNINITIALIZED_VAR(x) x = x
+#else
+#define UNINITIALIZED_VAR(x) x
+#endif
+
 /*
  * NB: to fit things in six character monocase externals, the stdio
  * code uses the prefix `__s' for stdio objects, typically followed
@@ -543,9 +549,9 @@ BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 	int ndig = 0;		/* actual number of digits returned by cvt */
 	char expstr[7];		/* buffer for exponent string */
 #endif
-	u_long	ulval;		/* integer arguments %[diouxX] */
+	u_long UNINITIALIZED_VAR(ulval); /* integer arguments %[diouxX] */
 #ifdef _HAVE_SANE_QUAD_
-	u_quad_t uqval;		/* %q integers */
+	u_quad_t UNINITIALIZED_VAR(uqval); /* %q integers */
 #endif /* _HAVE_SANE_QUAD_ */
 	int base;		/* base for [diouxX] conversion */
 	int dprec;		/* a copy of prec if [diouxX], 0 otherwise */
@@ -784,8 +790,10 @@ reswitch:	switch (ch) {
 #ifdef FLOATING_POINT
 		case 'a':
 		case 'A':
-			if (prec >= 0)
+			if (prec >= 0) {
+				flags |= ALT;
 				prec++;
+			}
 			goto fp_begin;
 		case 'e':		/* anomalous precision */
 		case 'E':
@@ -826,9 +834,13 @@ fp_begin:		_double = va_arg(ap, double);
 					ch = 'g';
 			}
 			if (ch == 'a' || ch == 'A') {
+				flags |= HEXPREFIX;
 				--expt;
 				expsize = exponent(expstr, expt, ch + 'p' - 'a');
+				ch += 'x' - 'a';
 				size = expsize + ndig;
+				if (ndig > 1 || flags & ALT)
+					++size; /* floating point */
 			}
 			else if (ch <= 'e') {	/* 'e' or 'E' fmt */
 				--expt;
@@ -893,7 +905,7 @@ fp_begin:		_double = va_arg(ap, double);
 			 */
 			prec = (int)(sizeof(void*)*CHAR_BIT/4);
 #ifdef _HAVE_LLP64_
-			uqval = (u_long)va_arg(ap, void *);
+			uqval = (u_quad_t)va_arg(ap, void *);
 			flags = (flags) | QUADINT | HEXPREFIX;
 #else
 			ulval = (u_long)va_arg(ap, void *);
@@ -1023,7 +1035,7 @@ number:			if ((dprec = prec) >= 0)
 long_len:
 		if (sign)
 			fieldsz++;
-		else if (flags & HEXPREFIX)
+		if (flags & HEXPREFIX)
 			fieldsz += 2;
 		realsz = dprec > fieldsz ? dprec : fieldsz;
 
@@ -1034,7 +1046,8 @@ long_len:
 		/* prefix */
 		if (sign) {
 			PRINT(&sign, 1);
-		} else if (flags & HEXPREFIX) {
+		}
+		if (flags & HEXPREFIX) {
 			ox[0] = '0';
 			ox[1] = ch;
 			PRINT(ox, 2);
@@ -1048,7 +1061,7 @@ long_len:
 		PAD_L(dprec - fieldsz, zeroes);
 		if (sign)
 			fieldsz--;
-		else if (flags & HEXPREFIX)
+		if (flags & HEXPREFIX)
 			fieldsz -= 2;
 
 		/* the string or number proper */
@@ -1056,15 +1069,12 @@ long_len:
 		if ((flags & FPT) == 0) {
 			PRINT(cp, fieldsz);
 		} else {	/* glue together f_p fragments */
-			if (ch == 'a' || ch == 'A') {
-				ox[0] = '0';
-				ox[1] = ch + ('x' - 'a');
-				PRINT(ox, 2);
+			if (flags & HEXPREFIX) {
 				if (ndig > 1 || flags & ALT) {
 					ox[2] = *cp++;
 					ox[3] = '.';
 					PRINT(ox+2, 2);
-					PRINT(cp, ndig-1);
+					if (ndig > 0) PRINT(cp, ndig-1);
 				} else	/* XpYYY */
 					PRINT(cp, 1);
 				PRINT(expstr, expsize);
@@ -1176,8 +1186,6 @@ cvt(value, ndigits, flags, sign, decpt, ch, length, buf)
 				*decpt = -ndigits + 1;
 			bp += *decpt;
 		}
-		if (value == 0)	/* kludge for __dtoa irregularity */
-			rve = bp;
 		while (rve < bp)
 			*rve++ = '0';
 	}

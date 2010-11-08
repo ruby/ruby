@@ -96,6 +96,7 @@ class TestEnv < Test::Unit::TestCase
     assert_raise(ArgumentError) { ENV["foo\0bar"] }
     ENV[PATH_ENV] = ""
     assert_equal("", ENV[PATH_ENV])
+    assert_nil(ENV[""])
   end
 
   def test_fetch
@@ -123,7 +124,7 @@ class TestEnv < Test::Unit::TestCase
     assert_equal(nil, ENV["test"])
     assert_raise(ArgumentError) { ENV["foo\0bar"] = "test" }
     assert_raise(ArgumentError) { ENV["test"] = "foo\0bar" }
-    if /netbsd/ =~ RUBY_PLATFORM
+    if /netbsd|openbsd/ =~ RUBY_PLATFORM
       ENV["foo=bar"] = "test"
       assert_equal("test", ENV["foo=bar"])
       assert_equal("test", ENV["foo"])
@@ -373,5 +374,17 @@ class TestEnv < Test::Unit::TestCase
     ENV["baz"] = "qux"
     ENV.update({"baz"=>"quux","a"=>"b"}) {|k, v1, v2| v1 ? k + "_" + v1 + "_" + v2 : v2 }
     check(ENV.to_hash.to_a, [%w(foo bar), %w(baz baz_qux_quux), %w(a b)])
+  end
+
+  def test_huge_value
+    huge_value = "bar" * 40960
+    ENV["foo"] = "bar"
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      assert_raise(Errno::EINVAL) { ENV["foo"] = huge_value }
+      assert_equal("bar", ENV["foo"])
+    else
+      assert_nothing_raised { ENV["foo"] = huge_value }
+      assert_equal(huge_value, ENV["foo"])
+    end
   end
 end

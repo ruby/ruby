@@ -415,6 +415,13 @@ rb_digest_class_s_hexdigest(int argc, VALUE *argv, VALUE klass)
     return hexencode_str_new(rb_funcall2(klass, id_digest, argc, argv));
 }
 
+/* :nodoc: */
+static VALUE
+rb_digest_class_init(VALUE self)
+{
+    return self;
+}
+
 /*
  * Document-class: Digest::Base
  *
@@ -622,6 +629,7 @@ Init_digest(void)
      * class Digest::Class
      */
     rb_cDigest_Class = rb_define_class_under(rb_mDigest, "Class", rb_cObject);
+    rb_define_method(rb_cDigest_Class, "initialize",  rb_digest_class_init, 0);
     rb_include_module(rb_cDigest_Class, rb_mDigest_Instance);
 
     /* class methods */

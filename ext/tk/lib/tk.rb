@@ -1205,6 +1205,18 @@ module TkCore
             #  module TkCore; RUN_EVENTLOOP_ON_MAIN_THREAD = true; end
             #  ----------------------------------------------------------
             #
+            # *** ADD (2010/07/05) ***
+            #  The value of TclTkLib::WINDOWING_SYSTEM is defined at compiling.
+            #  If it is inconsistent with linked DLL, please call the following
+            #  before "require 'tk'".
+            #  ----------------------------------------------------------
+            #  require 'tcltklib'
+            #  module TclTkLib
+            #    remove_const :WINDOWING_SYSTEM
+            #    WINDOWING_SYSTEM = 'x11' # or 'aqua'
+            #  end
+            #  ----------------------------------------------------------
+            #
             RUN_EVENTLOOP_ON_MAIN_THREAD = true
           else
             RUN_EVENTLOOP_ON_MAIN_THREAD = false

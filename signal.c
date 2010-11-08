@@ -25,6 +25,17 @@ typedef LONG rb_atomic_t;
 # define ATOMIC_INC(var) InterlockedIncrement(&(var))
 # define ATOMIC_DEC(var) InterlockedDecrement(&(var))
 
+#elif defined HAVE_GCC_ATOMIC_BUILTINS
+/* @shyouhei hack to support atomic operations in case of gcc. Gcc
+ * has its own pseudo-insns to support them.  See info, or
+ * http://gcc.gnu.org/onlinedocs/gcc/Atomic-Builtins.html */
+
+typedef unsigned char rb_atomic_t; /* Anything OK */
+# define ATOMIC_TEST(var) __sync_lock_test_and_set(&(var), 0)
+# define ATOMIC_SET(var, val)  __sync_lock_test_and_set(&(var), (val))
+# define ATOMIC_INC(var) __sync_fetch_and_add(&(var), 1)
+# define ATOMIC_DEC(var) __sync_fetch_and_sub(&(var), 1)
+
 #else
 typedef int rb_atomic_t;
 
@@ -1041,8 +1052,9 @@ ruby_sig_finalize(void)
 }
 
 
-#ifdef RUBY_DEBUG_ENV
 int ruby_enable_coredump = 0;
+#ifndef RUBY_DEBUG_ENV
+#define ruby_enable_coredump 0
 #endif
 
 /*
@@ -1116,18 +1128,15 @@ Init_signal(void)
     install_sighandler(SIGUSR2, sighandler);
 #endif
 
-#ifdef RUBY_DEBUG_ENV
-    if (!ruby_enable_coredump)
-#endif
-    {
+    if (!ruby_enable_coredump) {
 #ifdef SIGBUS
-    install_sighandler(SIGBUS, sigbus);
+	install_sighandler(SIGBUS, sigbus);
 #endif
 #ifdef SIGSEGV
 # ifdef USE_SIGALTSTACK
-    rb_register_sigaltstack(GET_THREAD());
+	rb_register_sigaltstack(GET_THREAD());
 # endif
-    install_sighandler(SIGSEGV, (sighandler_t)sigsegv);
+	install_sighandler(SIGSEGV, (sighandler_t)sigsegv);
 #endif
     }
 #ifdef SIGPIPE

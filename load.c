@@ -250,6 +250,10 @@ rb_feature_provided(const char *feature, const char **loading)
 static void
 rb_provide_feature(VALUE feature)
 {
+    if (OBJ_FROZEN(get_loaded_features())) {
+	rb_raise(rb_eRuntimeError,
+		 "$LOADED_FEATURES is frozen; cannot append feature");
+    }
     rb_ary_push(get_loaded_features(), feature);
 }
 
@@ -551,8 +555,9 @@ search_required(VALUE fname, volatile VALUE *path, int safe_level)
 static void
 load_failed(VALUE fname)
 {
-    rb_raise(rb_eLoadError, "cannot load such file -- %s",
-	     RSTRING_PTR(fname));
+    VALUE mesg = rb_str_buf_new_cstr("cannot load such file -- ");
+    rb_str_append(mesg, fname);	/* should be ASCII compatible */
+    rb_exc_raise(rb_exc_new3(rb_eLoadError, mesg));
 }
 
 static VALUE
@@ -639,7 +644,7 @@ init_ext_call(VALUE arg)
     return Qnil;
 }
 
-void
+RUBY_FUNC_EXPORTED void
 ruby_init_ext(const char *name, void (*init)(void))
 {
     if (load_lock(name)) {

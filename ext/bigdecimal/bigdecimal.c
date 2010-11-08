@@ -14,6 +14,9 @@
  */
 
 /* #define BIGDECIMAL_DEBUG 1 */
+#ifdef BIGDECIMAL_DEBUG
+# define BIGDECIMAL_ENABLE_VPRINT 1
+#endif
 #include "bigdecimal.h"
 
 #include <ctype.h>
@@ -31,6 +34,22 @@
 /* #define ENABLE_NUMERIC_STRING */
 
 VALUE rb_cBigDecimal;
+
+static ID id_BigDecimal_exception_mode;
+static ID id_BigDecimal_rounding_mode;
+static ID id_BigDecimal_precision_limit;
+
+static ID id_up;
+static ID id_down;
+static ID id_truncate;
+static ID id_half_up;
+static ID id_default;
+static ID id_half_down;
+static ID id_half_even;
+static ID id_banker;
+static ID id_ceiling;
+static ID id_ceil;
+static ID id_floor;
 
 /* MACRO's to guard objects from GC by keeping them in stack */
 #define ENTER(n) volatile VALUE vStack[n];int iStack=0
@@ -273,44 +292,80 @@ BigDecimal_load(VALUE self, VALUE str)
     return ToValue(pv);
 }
 
- /* call-seq:
-  * BigDecimal.mode(mode, value)
-  *
-  * Controls handling of arithmetic exceptions and rounding. If no value
-  * is supplied, the current value is returned.
-  *
-  * Six values of the mode parameter control the handling of arithmetic
-  * exceptions:
-  *
-  * BigDecimal::EXCEPTION_NaN
-  * BigDecimal::EXCEPTION_INFINITY
-  * BigDecimal::EXCEPTION_UNDERFLOW
-  * BigDecimal::EXCEPTION_OVERFLOW
-  * BigDecimal::EXCEPTION_ZERODIVIDE
-  * BigDecimal::EXCEPTION_ALL
-  *
-  * For each mode parameter above, if the value set is false, computation
-  * continues after an arithmetic exception of the appropriate type.
-  * When computation continues, results are as follows:
-  *
-  * EXCEPTION_NaN:: NaN
-  * EXCEPTION_INFINITY:: +infinity or -infinity
-  * EXCEPTION_UNDERFLOW:: 0
-  * EXCEPTION_OVERFLOW:: +infinity or -infinity
-  * EXCEPTION_ZERODIVIDE:: +infinity or -infinity
-  *
-  * One value of the mode parameter controls the rounding of numeric values:
-  * BigDecimal::ROUND_MODE. The values it can take are:
-  *
-  * ROUND_UP:: round away from zero
-  * ROUND_DOWN:: round towards zero (truncate)
-  * ROUND_HALF_UP:: round up if the appropriate digit >= 5, otherwise truncate (default)
-  * ROUND_HALF_DOWN:: round up if the appropriate digit >= 6, otherwise truncate
-  * ROUND_HALF_EVEN:: round towards the even neighbor (Banker's rounding)
-  * ROUND_CEILING:: round towards positive infinity (ceil)
-  * ROUND_FLOOR:: round towards negative infinity (floor)
-  *
-  */
+static unsigned short
+check_rounding_mode(VALUE const v)
+{
+    unsigned short sw;
+    ID id;
+    switch (TYPE(v)) {
+      case T_SYMBOL:
+	id = SYM2ID(v);
+	if (id == id_up)
+	    return VP_ROUND_UP;
+	if (id == id_down || id == id_truncate)
+	    return VP_ROUND_DOWN;
+	if (id == id_half_up || id == id_default)
+	    return VP_ROUND_HALF_UP;
+	if (id == id_half_down)
+	    return VP_ROUND_HALF_DOWN;
+	if (id == id_half_even || id == id_banker)
+	    return VP_ROUND_HALF_EVEN;
+	if (id == id_ceiling || id == id_ceil)
+	    return VP_ROUND_CEIL;
+	if (id == id_floor)
+	    return VP_ROUND_FLOOR;
+	rb_raise(rb_eArgError, "invalid rounding mode");
+
+      default:
+	break;
+    }
+
+    Check_Type(v, T_FIXNUM);
+    sw = (unsigned short)FIX2UINT(v);
+    if (!VpIsRoundMode(sw)) {
+	rb_raise(rb_eArgError, "invalid rounding mode");
+    }
+    return sw;
+}
+
+/* call-seq:
+ * BigDecimal.mode(mode, value)
+ *
+ * Controls handling of arithmetic exceptions and rounding. If no value
+ * is supplied, the current value is returned.
+ *
+ * Six values of the mode parameter control the handling of arithmetic
+ * exceptions:
+ *
+ * BigDecimal::EXCEPTION_NaN
+ * BigDecimal::EXCEPTION_INFINITY
+ * BigDecimal::EXCEPTION_UNDERFLOW
+ * BigDecimal::EXCEPTION_OVERFLOW
+ * BigDecimal::EXCEPTION_ZERODIVIDE
+ * BigDecimal::EXCEPTION_ALL
+ *
+ * For each mode parameter above, if the value set is false, computation
+ * continues after an arithmetic exception of the appropriate type.
+ * When computation continues, results are as follows:
+ *
+ * EXCEPTION_NaN:: NaN
+ * EXCEPTION_INFINITY:: +infinity or -infinity
+ * EXCEPTION_UNDERFLOW:: 0
+ * EXCEPTION_OVERFLOW:: +infinity or -infinity
+ * EXCEPTION_ZERODIVIDE:: +infinity or -infinity
+ *
+ * One value of the mode parameter controls the rounding of numeric values:
+ * BigDecimal::ROUND_MODE. The values it can take are:
+ *
+ * ROUND_UP, :up:: round away from zero
+ * ROUND_DOWN, :down, :truncate:: round towards zero (truncate)
+ * ROUND_HALF_UP, :half_up, :default:: round towards the nearest neighbor, unless both neighbors are equidistant, in which case round away from zero. (default)
+ * ROUND_HALF_DOWN, :half_down:: round towards the nearest neighbor, unless both neighbors are equidistant, in which case round towards zero.
+ * ROUND_HALF_EVEN, :half_even, :banker:: round towards the nearest neighbor, unless both neighbors are equidistant, in which case round towards the even neighbor (Banker's rounding)
+ * ROUND_CEILING, :ceiling, :ceil:: round towards positive infinity (ceil)
+ * ROUND_FLOOR, :floor:: round towards negative infinity (floor)
+ *
+ */
 static VALUE
 BigDecimal_mode(int argc, VALUE *argv, VALUE self)
 {
@@ -328,7 +383,7 @@ BigDecimal_mode(int argc, VALUE *argv, VALUE self)
         fo = VpGetException();
         if(val==Qnil) return INT2FIX(fo);
         if(val!=Qfalse && val!=Qtrue) {
-            rb_raise(rb_eTypeError, "second argument must be true or false");
+            rb_raise(rb_eArgError, "second argument must be true or false");
             return Qnil; /* Not reached */
         }
         if(f&VP_EXCEPTION_INFINITY) {
@@ -353,17 +408,14 @@ BigDecimal_mode(int argc, VALUE *argv, VALUE self)
         fo = VpGetException();
         return INT2FIX(fo);
     }
-    if(VP_ROUND_MODE==f) {
-        /* Rounding mode setting */
-        fo = VpGetRoundMode();
-        if(val==Qnil) return INT2FIX(fo);
-        Check_Type(val, T_FIXNUM);
-        if(!VpIsRoundMode(FIX2INT(val))) {
-            rb_raise(rb_eTypeError, "invalid rounding mode");
-            return Qnil;
-        }
-        fo = VpSetRoundMode((unsigned long)FIX2INT(val));
-        return INT2FIX(fo);
+    if (VP_ROUND_MODE == f) {
+	/* Rounding mode setting */
+	unsigned short sw;
+	fo = VpGetRoundMode();
+	if (NIL_P(val)) return INT2FIX(fo);
+	sw = check_rounding_mode(val);
+	fo = VpSetRoundMode(sw);
+	return INT2FIX(fo);
     }
     rb_raise(rb_eTypeError, "first argument for BigDecimal#mode invalid");
     return Qnil;
@@ -513,25 +565,40 @@ BigDecimal_to_f(VALUE self)
     ENTER(1);
     Real *p;
     double d;
-    ssize_t e;
+    SIGNED_VALUE e;
     char *buf;
     volatile VALUE str;
 
     GUARD_OBJ(p, GetVpValue(self, 1));
-    if (VpVtoD(&d, &e, p) != 1) return rb_float_new(d);
-    if (e > (ssize_t)(DBL_MAX_10_EXP+BASE_FIG)) goto erange;
+    if (VpVtoD(&d, &e, p) != 1)
+	return rb_float_new(d);
+    if (e > (SIGNED_VALUE)(DBL_MAX_10_EXP+BASE_FIG))
+	goto overflow;
+    if (e < (SIGNED_VALUE)(DBL_MIN_10_EXP-BASE_FIG))
+	goto underflow;
+
     str = rb_str_new(0, VpNumOfChars(p,"E"));
     buf = RSTRING_PTR(str);
     VpToString(p, buf, 0, 0);
     errno = 0;
     d = strtod(buf, 0);
-    if (errno == ERANGE) {
-      erange:
-	VpException(VP_EXCEPTION_OVERFLOW,"BigDecimal to Float conversion",0);
-	if (d > 0.0) d = VpGetDoublePosInf();
-	else         d = VpGetDoubleNegInf();
-    }
+    if (errno == ERANGE)
+	goto overflow;
     return rb_float_new(d);
+
+overflow:
+    VpException(VP_EXCEPTION_OVERFLOW, "BigDecimal to Float conversion", 0);
+    if (d > 0.0)
+	return rb_float_new(VpGetDoublePosInf());
+    else
+	return rb_float_new(VpGetDoubleNegInf());
+
+underflow:
+    VpException(VP_EXCEPTION_UNDERFLOW, "BigDecimal to Float conversion", 0);
+    if (d > 0.0)
+	return rb_float_new(0.0);
+    else
+	return rb_float_new(-0.0);
 }
 
 
@@ -1114,7 +1181,7 @@ BigDecimal_div2(int argc, VALUE *argv, VALUE self)
           GUARD_OBJ(res,VpCreateRbObject((mx * 2  + 2)*VpBaseFig(), "#0"));
           VpDivd(cv,res,av,bv);
           VpSetPrecLimit(pl);
-          VpLeftRound(cv,(int)VpGetRoundMode(),ix);
+          VpLeftRound(cv,VpGetRoundMode(),ix);
           return ToValue(cv);
        }
     }
@@ -1132,7 +1199,7 @@ BigDecimal_add2(VALUE self, VALUE b, VALUE n)
        VALUE   c = BigDecimal_add(self,b);
        VpSetPrecLimit(pl);
        GUARD_OBJ(cv,GetVpValue(c,1));
-       VpLeftRound(cv,(int)VpGetRoundMode(),mx);
+       VpLeftRound(cv,VpGetRoundMode(),mx);
        return ToValue(cv);
     }
 }
@@ -1149,7 +1216,7 @@ BigDecimal_sub2(VALUE self, VALUE b, VALUE n)
        VALUE   c = BigDecimal_sub(self,b);
        VpSetPrecLimit(pl);
        GUARD_OBJ(cv,GetVpValue(c,1));
-       VpLeftRound(cv,(int)VpGetRoundMode(),mx);
+       VpLeftRound(cv,VpGetRoundMode(),mx);
        return ToValue(cv);
     }
 }
@@ -1166,7 +1233,7 @@ BigDecimal_mult2(VALUE self, VALUE b, VALUE n)
        VALUE   c = BigDecimal_mult(self,b);
        VpSetPrecLimit(pl);
        GUARD_OBJ(cv,GetVpValue(c,1));
-       VpLeftRound(cv,(int)VpGetRoundMode(),mx);
+       VpLeftRound(cv,VpGetRoundMode(),mx);
        return ToValue(cv);
     }
 }
@@ -1233,7 +1300,7 @@ BigDecimal_fix(VALUE self)
 }
 
 /* call-seq:
- * round(n,mode)
+ * round(n, mode)
  *
  * Round to the nearest 1 (by default), returning the result as a BigDecimal.
  *
@@ -1264,10 +1331,9 @@ BigDecimal_round(int argc, VALUE *argv, VALUE self)
     VALUE  vRound;
     size_t mx, pl;
 
-    int    sw = (int)VpGetRoundMode();
+    unsigned short sw = VpGetRoundMode();
 
-    int na = rb_scan_args(argc,argv,"02",&vLoc,&vRound);
-    switch(na) {
+    switch (rb_scan_args(argc, argv, "02", &vLoc, &vRound)) {
     case 0:
         iLoc = 0;
         break;
@@ -1276,15 +1342,10 @@ BigDecimal_round(int argc, VALUE *argv, VALUE self)
         iLoc = FIX2INT(vLoc);
         break;
     case 2:
-        Check_Type(vLoc, T_FIXNUM);
-        iLoc = FIX2INT(vLoc);
-        Check_Type(vRound, T_FIXNUM);
-        sw   = FIX2INT(vRound);
-        if(!VpIsRoundMode(sw)) {
-            rb_raise(rb_eTypeError, "invalid rounding mode");
-            return Qnil;
-        }
-        break;
+	Check_Type(vLoc, T_FIXNUM);
+	iLoc = FIX2INT(vLoc);
+	sw = check_rounding_mode(vRound);
+	break;
     }
 
     pl = VpSetPrecLimit(0);
@@ -1781,6 +1842,48 @@ BigDecimal_sign(VALUE self)
     return INT2FIX(s);
 }
 
+/* call-seq:
+ * BigDecimal.save_exception_mode { ... }
+ */
+static VALUE
+BigDecimal_save_exception_mode(VALUE self)
+{
+    unsigned short const exception_mode = VpGetException();
+    int state;
+    VALUE ret = rb_protect(rb_yield, Qnil, &state);
+    VpSetException(exception_mode);
+    if (state) rb_jump_tag(state);
+    return ret;
+}
+
+/* call-seq:
+ * BigDecimal.save_rounding_mode { ... }
+ */
+static VALUE
+BigDecimal_save_rounding_mode(VALUE self)
+{
+    unsigned short const round_mode = VpGetRoundMode();
+    int state;
+    VALUE ret = rb_protect(rb_yield, Qnil, &state);
+    VpSetRoundMode(round_mode);
+    if (state) rb_jump_tag(state);
+    return ret;
+}
+
+/* call-seq:
+ * BigDecimal.save_limit { ... }
+ */
+static VALUE
+BigDecimal_save_limit(VALUE self)
+{
+    size_t const limit = VpGetPrecLimit();
+    int state;
+    VALUE ret = rb_protect(rb_yield, Qnil, &state);
+    VpSetPrecLimit(limit);
+    if (state) rb_jump_tag(state);
+    return ret;
+}
+
 /* Document-class: BigDecimal
  * BigDecimal provides arbitrary-precision floating point decimal arithmetic.
  *
@@ -1906,6 +2009,10 @@ Init_bigdecimal(void)
     rb_define_singleton_method(rb_cBigDecimal, "double_fig", BigDecimal_double_fig, 0);
     rb_define_singleton_method(rb_cBigDecimal, "_load", BigDecimal_load, 1);
     rb_define_singleton_method(rb_cBigDecimal, "ver", BigDecimal_version, 0);
+
+    rb_define_singleton_method(rb_cBigDecimal, "save_exception_mode", BigDecimal_save_exception_mode, 0);
+    rb_define_singleton_method(rb_cBigDecimal, "save_rounding_mode", BigDecimal_save_rounding_mode, 0);
+    rb_define_singleton_method(rb_cBigDecimal, "save_limit", BigDecimal_save_limit, 0);
 
     /* Constants definition */
 
@@ -2071,6 +2178,22 @@ Init_bigdecimal(void)
     rb_define_method(rb_cBigDecimal, "finite?",   BigDecimal_IsFinite, 0);
     rb_define_method(rb_cBigDecimal, "truncate",  BigDecimal_truncate, -1);
     rb_define_method(rb_cBigDecimal, "_dump", BigDecimal_dump, -1);
+
+    id_BigDecimal_exception_mode = rb_intern_const("BigDecimal.exception_mode");
+    id_BigDecimal_rounding_mode = rb_intern_const("BigDecimal.rounding_mode");
+    id_BigDecimal_precision_limit = rb_intern_const("BigDecimal.precision_limit");
+
+    id_up = rb_intern_const("up");
+    id_down = rb_intern_const("down");
+    id_truncate = rb_intern_const("truncate");
+    id_half_up = rb_intern_const("half_up");
+    id_default = rb_intern_const("default");
+    id_half_down = rb_intern_const("half_down");
+    id_half_even = rb_intern_const("half_even");
+    id_banker = rb_intern_const("banker");
+    id_ceiling = rb_intern_const("ceiling");
+    id_ceil = rb_intern_const("ceil");
+    id_floor = rb_intern_const("floor");
 }
 
 /*
@@ -2088,9 +2211,6 @@ static int gfDebug = 1;         /* Debug switch */
 static int gfCheckVal = 1;      /* Value checking flag in VpNmlz()  */
 #endif
 #endif /* BIGDECIMAL_DEBUG */
-
-static size_t gnPrecLimit = 0;  /* Global upper limit of the precision newly allocated */
-static size_t gfRoundMode = VP_ROUND_HALF_UP; /* Mode for general rounding operation   */
 
 static Real *VpConstOne;    /* constant 1.0 */
 static Real *VpPt5;        /* constant 0.5 */
@@ -2150,57 +2270,127 @@ VpFree(Real *pv)
 /*
  * EXCEPTION Handling.
  */
-static unsigned short gfDoException = 0; /* Exception flag */
+
+#define rmpd_set_thread_local_exception_mode(mode) \
+    rb_thread_local_aset( \
+	rb_thread_current(), \
+	id_BigDecimal_exception_mode, \
+	INT2FIX((int)(mode)) \
+    )
 
 static unsigned short
 VpGetException (void)
 {
-    return gfDoException;
+    VALUE const vmode = rb_thread_local_aref(
+	rb_thread_current(),
+	id_BigDecimal_exception_mode
+    );
+
+    if (NIL_P(vmode)) {
+	rmpd_set_thread_local_exception_mode(RMPD_EXCEPTION_MODE_DEFAULT);
+	return RMPD_EXCEPTION_MODE_DEFAULT;
+    }
+
+    return (unsigned short)FIX2UINT(vmode);
 }
 
 static void
 VpSetException(unsigned short f)
 {
-    gfDoException = f;
+    rmpd_set_thread_local_exception_mode(f);
 }
+
+/*
+ * Precision limit.
+ */
+
+#define rmpd_set_thread_local_precision_limit(limit) \
+    rb_thread_local_aset( \
+	rb_thread_current(), \
+	id_BigDecimal_precision_limit, \
+	SIZET2NUM(limit) \
+    )
+#define RMPD_PRECISION_LIMIT_DEFAULT ((size_t)0)
 
 /* These 2 functions added at v1.1.7 */
 VP_EXPORT size_t
 VpGetPrecLimit(void)
 {
-    return gnPrecLimit;
+    VALUE const vlimit = rb_thread_local_aref(
+	rb_thread_current(),
+	id_BigDecimal_precision_limit
+    );
+
+    if (NIL_P(vlimit)) {
+	rmpd_set_thread_local_precision_limit(RMPD_PRECISION_LIMIT_DEFAULT);
+	return RMPD_PRECISION_LIMIT_DEFAULT;
+    }
+
+    return NUM2SIZET(vlimit);
 }
 
 VP_EXPORT size_t
 VpSetPrecLimit(size_t n)
 {
-    size_t s = gnPrecLimit;
-    gnPrecLimit = n;
+    size_t const s = VpGetPrecLimit();
+    rmpd_set_thread_local_precision_limit(n);
     return s;
 }
 
-VP_EXPORT unsigned long
+/*
+ * Rounding mode.
+ */
+
+#define rmpd_set_thread_local_rounding_mode(mode) \
+    rb_thread_local_aset( \
+	rb_thread_current(), \
+	id_BigDecimal_rounding_mode, \
+	INT2FIX((int)(mode)) \
+    )
+
+VP_EXPORT unsigned short
 VpGetRoundMode(void)
 {
-    return gfRoundMode;
+    VALUE const vmode = rb_thread_local_aref(
+	rb_thread_current(),
+	id_BigDecimal_rounding_mode
+    );
+
+    if (NIL_P(vmode)) {
+	rmpd_set_thread_local_rounding_mode(RMPD_ROUNDING_MODE_DEFAULT);
+	return RMPD_ROUNDING_MODE_DEFAULT;
+    }
+
+    return (unsigned short)FIX2INT(vmode);
 }
 
 VP_EXPORT int
-VpIsRoundMode(unsigned long n)
+VpIsRoundMode(unsigned short n)
 {
-    if(n==VP_ROUND_UP      || n==VP_ROUND_DOWN      ||
-       n==VP_ROUND_HALF_UP || n==VP_ROUND_HALF_DOWN ||
-       n==VP_ROUND_CEIL    || n==VP_ROUND_FLOOR     ||
-       n==VP_ROUND_HALF_EVEN
-      ) return 1;
-    return 0;
+    switch (n) {
+      case VP_ROUND_UP:
+      case VP_ROUND_DOWN:
+      case VP_ROUND_HALF_UP:
+      case VP_ROUND_HALF_DOWN:
+      case VP_ROUND_CEIL:
+      case VP_ROUND_FLOOR:
+      case VP_ROUND_HALF_EVEN:
+	return 1;
+
+      default:
+	return 0;
+    }
 }
 
-VP_EXPORT unsigned long
-VpSetRoundMode(unsigned long n)
+VP_EXPORT unsigned short
+VpSetRoundMode(unsigned short n)
 {
-    if(VpIsRoundMode(n)) gfRoundMode = n;
-    return gfRoundMode;
+    if (VpIsRoundMode(n)) {
+	rmpd_set_thread_local_rounding_mode(n);
+	return n;
+    }
+
+    return VpGetRoundMode();
 }
 
 /*
@@ -2285,10 +2475,11 @@ VpException(unsigned short f, const char *str,int always)
 {
     VALUE exc;
     int   fatal=0;
+    unsigned short const exception_mode = VpGetException();
 
     if(f==VP_EXCEPTION_OP || f==VP_EXCEPTION_MEMORY) always = 1;
 
-    if(always||(gfDoException&f)) {
+    if (always || (exception_mode & f)) {
         switch(f)
         {
         /*
@@ -3624,6 +3815,7 @@ Exit:
     return (int)val;
 }
 
+#ifdef BIGDECIMAL_ENABLE_VPRINT
 /*
  *    cntl_chr ... ASCIIZ Character, print control characters
  *     Available control codes:
@@ -3692,7 +3884,7 @@ VPrint(FILE *fp, const char *cntl_chr, Real *a)
                         m /= 10;
                     }
                 }
-                nc += fprintf(fp, "E%"PRIdVALUE, VpExponent10(a));
+                nc += fprintf(fp, "E%"PRIdSIZE, VpExponent10(a));
             } else {
                 nc += fprintf(fp, "0.0");
             }
@@ -3725,6 +3917,7 @@ VPrint(FILE *fp, const char *cntl_chr, Real *a)
     }
     return (int)nc;
 }
+#endif /* BIGDECIMAL_ENABLE_VPRINT */
 
 static void
 VpFormatSt(char *psz, size_t fFmt)
@@ -3889,7 +4082,7 @@ VpToString(Real *a, char *psz, size_t fFmt, int fPlus)
         shift /= 10;
     }
     while(psz[-1]=='0') *(--psz) = 0;
-    sprintf(psz, "E%"PRIdVALUE, ex);
+    sprintf(psz, "E%"PRIdSIZE, ex);
     if(fFmt) VpFormatSt(pszSav, fFmt);
 }
 
@@ -4414,7 +4607,7 @@ Exit:
  *
  */
 VP_EXPORT int
-VpMidRound(Real *y, int f, ssize_t nf)
+VpMidRound(Real *y, unsigned short f, ssize_t nf)
 /*
  * Round reletively from the decimal point.
  *    f: rounding mode
@@ -4422,8 +4615,9 @@ VpMidRound(Real *y, int f, ssize_t nf)
  */
 {
     /* fracf: any positive digit under rounding position? */
+    /* fracf_1further: any positive digits under one further than the rounding position? */
     /* exptoadd: number of digits needed to compensate negative nf */
-    int fracf;
+    int fracf, fracf_1further;
     ssize_t n,i,ix,ioffset, exptoadd;
     BDIGIT v, shifter;
     BDIGIT div;
@@ -4436,62 +4630,111 @@ VpMidRound(Real *y, int f, ssize_t nf)
 	    VpSetZero(y,VpGetSign(y)); /* truncate everything */
 	    return 0;
 	}
-        exptoadd = -nf;
-        nf = 0;
+	exptoadd = -nf;
+	nf = 0;
     }
 
-    /* ix: x->fraq[ix] contains round position */
     ix = nf / (ssize_t)BASE_FIG;
     if ((size_t)ix >= y->Prec) return 0;  /* rounding position too right(small). */
-    ioffset = nf - ix*(ssize_t)BASE_FIG;
-
     v = y->frac[ix];
 
-    /* drop digits after pointed digit */
+    ioffset = nf - ix*(ssize_t)BASE_FIG;
     n = (ssize_t)BASE_FIG - ioffset - 1;
     for (shifter=1,i=0; i<n; ++i) shifter *= 10;
+
+    /* so the representation used (in y->frac) is an array of BDIGIT, where
+       each BDIGIT contains a value between 0 and BASE-1, consisting of BASE_FIG
+       decimal places.
+       
+       (that numbers of decimal places are typed as ssize_t is somewhat confusing)
+       
+       nf is now position (in decimal places) of the digit from the start of
+          the array.
+       ix is the position (in BDIGITS) of the BDIGIT containing the decimal digit,
+          from the start of the array.
+       v is the value of this BDIGIT
+       ioffset is the number of extra decimal places along of this decimal digit
+          within v.
+       n is the number of decimal digits remaining within v after this decimal digit
+       shifter is 10**n,
+       v % shifter are the remaining digits within v
+       v % (shifter * 10) are the digit together with the remaining digits within v
+       v / shifter are the digit's predecessors together with the digit
+       div = v / shifter / 10 is just the digit's precessors
+       (v / shifter) - div*10 is just the digit, which is what v ends up being reassigned to.
+    */
+
     fracf = (v % (shifter * 10) > 0);
+    fracf_1further = ((v % shifter) > 0);
+    
     v /= shifter;
     div = v / 10;
     v = v - div*10;
-    if (fracf == 0) {
-        for (i=ix+1; (size_t)i < y->Prec; i++) {
-            if (y->frac[i] % BASE) {
-                fracf = 1;
-                break;
-            }
-        }
+    /* now v is just the digit required.
+       now fracf is whether the digit or any of the remaining digits within v are non-zero
+       now fracf_1further is whether any of the remaining digits within v are non-zero
+    */
+
+    /* now check all the remaining BDIGITS for zero-ness a whole BDIGIT at a time.
+       if we spot any non-zeroness, that means that we foudn a positive digit under
+       rounding position, and we also found a positive digit under one further than
+       the rounding position, so both searches (to see if any such non-zero digit exists)
+       can stop */
+
+    for (i=ix+1; (size_t)i < y->Prec; i++) {
+	if (y->frac[i] % BASE) {
+	    fracf = fracf_1further = 1;
+	    break;
+	}
     }
+    
+    /* now fracf = does any positive digit exist under the rounding position?
+       now fracf_1further = does any positive digit exist under one further than the
+       rounding position?
+       now v = the first digit under the rounding position */
+    
+    /* drop digits after pointed digit */
     memset(y->frac+ix+1, 0, (y->Prec - (ix+1)) * sizeof(BDIGIT));
+
     switch(f) {
     case VP_ROUND_DOWN: /* Truncate */
          break;
     case VP_ROUND_UP:   /* Roundup */
         if (fracf) ++div;
-         break;
-    case VP_ROUND_HALF_UP:   /* Round half up  */
+	break;
+    case VP_ROUND_HALF_UP:
         if (v>=5) ++div;
         break;
-    case VP_ROUND_HALF_DOWN: /* Round half down  */
-        if (v>=6) ++div;
+    case VP_ROUND_HALF_DOWN:
+	if (v > 5 || (v == 5 && fracf_1further)) ++div;
         break;
-    case VP_ROUND_CEIL: /* ceil */
+    case VP_ROUND_CEIL:
         if (fracf && (VpGetSign(y)>0)) ++div;
         break;
-    case VP_ROUND_FLOOR: /* floor */
+    case VP_ROUND_FLOOR:
         if (fracf && (VpGetSign(y)<0)) ++div;
         break;
     case VP_ROUND_HALF_EVEN: /* Banker's rounding */
-        if (v>5) ++div;
-        else if (v==5) {
-            if ((size_t)i == (BASE_FIG-1)) {
-                if (ix && (y->frac[ix-1]%2)) ++div;
-            }
+	if (v > 5) ++div;
+	else if (v == 5) {
+	    if (fracf_1further) {
+	      ++div;
+	    }
 	    else {
-                if (div%2) ++div;
-            }
-        }
-        break;
+		if (ioffset == 0) {
+		    /* v is the first decimal digit of its BDIGIT;
+		       need to grab the previous BDIGIT if present
+		       to check for evenness of the previous decimal
+		       digit (which is same as that of the BDIGIT since
+		       base 10 has a factor of 2) */
+		    if (ix && (y->frac[ix-1] % 2)) ++div;
+		}
+		else {
+		    if (div % 2) ++div;
+		}
+	    }
+	}
+	break;
     }
     for (i=0; i<=n; ++i) div *= 10;
     if (div>=BASE) {
@@ -4524,7 +4767,7 @@ VpMidRound(Real *y, int f, ssize_t nf)
 }
 
 VP_EXPORT int
-VpLeftRound(Real *y, int f, ssize_t nf)
+VpLeftRound(Real *y, unsigned short f, ssize_t nf)
 /*
  * Round from the left hand side of the digits.
  */
@@ -4539,7 +4782,7 @@ VpLeftRound(Real *y, int f, ssize_t nf)
 }
 
 VP_EXPORT int
-VpActiveRound(Real *y, Real *x, int f, ssize_t nf)
+VpActiveRound(Real *y, Real *x, unsigned short f, ssize_t nf)
 {
     /* First,assign whole value in truncation mode */
     if (VpAsgn(y, x, 10) <= 1) return 0; /* Zero,NaN,or Infinity */
@@ -4554,44 +4797,53 @@ VpLimitRound(Real *c, size_t ixDigit)
     if(!ix)           return 0;
     if(!ixDigit) ixDigit = c->Prec-1;
     if((ix+BASE_FIG-1)/BASE_FIG > ixDigit+1) return 0;
-    return VpLeftRound(c, (int)VpGetRoundMode(), (ssize_t)ix);
+    return VpLeftRound(c, VpGetRoundMode(), (ssize_t)ix);
 }
 
+/* If I understand correctly, this is only ever used to round off the final decimal
+   digit of precision */
 static void
 VpInternalRound(Real *c, size_t ixDigit, BDIGIT vPrev, BDIGIT v)
 {
     int f = 0;
 
-    if(VpLimitRound(c,ixDigit)) return;
-    if(!v)                      return;
+    unsigned short const rounding_mode = VpGetRoundMode();
+
+    if (VpLimitRound(c, ixDigit)) return;
+    if (!v) return;
 
     v /= BASE1;
-    switch(gfRoundMode) {
+    switch (rounding_mode) {
     case VP_ROUND_DOWN:
-        break;
+	break;
     case VP_ROUND_UP:
-        if(v)                    f = 1;
-        break;
+	if (v) f = 1;
+	break;
     case VP_ROUND_HALF_UP:
-        if(v >= 5)               f = 1;
-        break;
+	if (v >= 5) f = 1;
+	break;
     case VP_ROUND_HALF_DOWN:
-        if(v >= 6)               f = 1;
-        break;
-    case VP_ROUND_CEIL:  /* ceil */
-        if(v && (VpGetSign(c)>0)) f = 1;
-        break;
-    case VP_ROUND_FLOOR: /* floor */
-        if(v && (VpGetSign(c)<0)) f = 1;
-        break;
+	/* this is ok - because this is the last digit of precision,
+	   the case where v == 5 and some further digits are nonzero
+	   will never occur */
+	if (v >= 6) f = 1;
+	break;
+    case VP_ROUND_CEIL:
+	if (v && (VpGetSign(c) > 0)) f = 1;
+	break;
+    case VP_ROUND_FLOOR:
+	if (v && (VpGetSign(c) < 0)) f = 1;
+	break;
     case VP_ROUND_HALF_EVEN:  /* Banker's rounding */
-        if(v>5) f = 1;
-        else if(v==5 && vPrev%2)  f = 1;
-        break;
+	/* as per VP_ROUND_HALF_DOWN, because this is the last digit of precision,
+	   there is no case to worry about where v == 5 and some further digits are nonzero */
+	if (v > 5) f = 1;
+	else if (v == 5 && vPrev % 2) f = 1;
+	break;
     }
-    if(f) {
-        VpRdup(c,ixDigit);    /* round up */
-        VpNmlz(c);
+    if (f) {
+	VpRdup(c, ixDigit);
+	VpNmlz(c);
     }
 }
 

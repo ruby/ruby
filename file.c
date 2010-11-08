@@ -148,6 +148,7 @@ rb_get_path_check(VALUE obj, int level)
 {
     VALUE tmp;
     ID to_path;
+    rb_encoding *enc;
 
     if (insecure_obj_p(obj, level)) {
 	rb_insecure_operation();
@@ -161,11 +162,15 @@ rb_get_path_check(VALUE obj, int level)
     StringValue(tmp);
 
     tmp = file_path_convert(tmp);
-    StringValueCStr(tmp);
     if (obj != tmp && insecure_obj_p(tmp, level)) {
 	rb_insecure_operation();
     }
-    rb_enc_check(tmp, rb_enc_from_encoding(rb_usascii_encoding()));
+    enc = rb_enc_get(tmp);
+    if (!rb_enc_asciicompat(enc)) {
+	tmp = rb_str_inspect(tmp);
+	rb_raise(rb_eEncCompatError, "path name must be ASCII-compatible (%s): %s",
+		 rb_enc_name(enc), RSTRING_PTR(tmp));
+    }
     return rb_str_new4(tmp);
 }
 
@@ -311,6 +316,16 @@ rb_stat_cmp(VALUE self, VALUE other)
 
 #define ST2UINT(val) ((val) & ~(~1UL << (sizeof(val) * CHAR_BIT - 1)))
 
+#ifndef NUM2DEVT
+# define NUM2DEVT(v) NUM2UINT(v)
+#endif
+#ifndef DEVT2NUM
+# define DEVT2NUM(v) UINT2NUM(v)
+#endif
+#ifndef PRI_DEVT_PREFIX
+# define PRI_DEVT_PREFIX ""
+#endif
+
 /*
  *  call-seq:
  *     stat.dev    -> fixnum
@@ -324,7 +339,7 @@ rb_stat_cmp(VALUE self, VALUE other)
 static VALUE
 rb_stat_dev(VALUE self)
 {
-    return INT2NUM(get_stat(self)->st_dev);
+    return DEVT2NUM(get_stat(self)->st_dev);
 }
 
 /*
@@ -342,8 +357,7 @@ static VALUE
 rb_stat_dev_major(VALUE self)
 {
 #if defined(major)
-    long dev = get_stat(self)->st_dev;
-    return ULONG2NUM(major(dev));
+    return INT2NUM(major(get_stat(self)->st_dev));
 #else
     return Qnil;
 #endif
@@ -364,8 +378,7 @@ static VALUE
 rb_stat_dev_minor(VALUE self)
 {
 #if defined(minor)
-    long dev = get_stat(self)->st_dev;
-    return ULONG2NUM(minor(dev));
+    return INT2NUM(minor(get_stat(self)->st_dev));
 #else
     return Qnil;
 #endif
@@ -768,10 +781,10 @@ rb_stat_inspect(VALUE self)
 	rb_str_buf_cat2(str, "=");
 	v = (*member[i].func)(self);
 	if (i == 2) {		/* mode */
-	    rb_str_catf(str, "0%lo", NUM2ULONG(v));
+	    rb_str_catf(str, "0%lo", (unsigned long)NUM2ULONG(v));
 	}
 	else if (i == 0 || i == 6) { /* dev/rdev */
-	    rb_str_catf(str, "0x%lx", NUM2ULONG(v));
+	    rb_str_catf(str, "0x%"PRI_DEVT_PREFIX"x", NUM2DEVT(v));
 	}
 	else {
 	    rb_str_append(str, rb_inspect(v));
@@ -2446,7 +2459,7 @@ rb_file_s_readlink(VALUE klass, VALUE path)
 	xfree(buf);
 	rb_sys_fail_path(path);
     }
-    v = rb_tainted_str_new(buf, rv);
+    v = rb_filesystem_str_new(buf, rv);
     xfree(buf);
 
     return v;
@@ -5191,6 +5204,17 @@ define_filetest_function(const char *name, VALUE (*func)(ANYARGS), int argc)
     rb_define_singleton_method(rb_cFile, name, func, argc);
 }
 
+static const char null_device[] =
+#if defined DOSISH
+    "NUL"
+#elif defined AMIGA || defined __amigaos__
+    "NIL"
+#elif defined __VMS
+    "NL:"
+#else
+    "/dev/null"
+#endif
+    ;
 
 /*
  *  A <code>File</code> is an abstraction of any file object accessible
@@ -5326,6 +5350,8 @@ Init_File(void)
     rb_file_const("LOCK_EX", INT2FIX(LOCK_EX));
     rb_file_const("LOCK_UN", INT2FIX(LOCK_UN));
     rb_file_const("LOCK_NB", INT2FIX(LOCK_NB));
+
+    rb_file_const("NULL", rb_obj_freeze(rb_usascii_str_new2(null_device)));
 
     rb_define_method(rb_cFile, "path",  rb_file_path, 0);
     rb_define_method(rb_cFile, "to_path",  rb_file_path, 0);

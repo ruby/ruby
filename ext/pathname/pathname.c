@@ -233,6 +233,112 @@ path_realdirpath(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ * call-seq:
+ *   pathname.each_line {|line| ... }
+ *   pathname.each_line(sep=$/ [, open_args]) {|line| block }     -> nil
+ *   pathname.each_line(limit [, open_args]) {|line| block }      -> nil
+ *   pathname.each_line(sep, limit [, open_args]) {|line| block } -> nil
+ *   pathname.each_line(...)                                      -> an_enumerator
+ *        
+ * #each_line iterates over the line in the file.  It yields a String object
+ * for each line.
+ * 
+ * This method is availabel since 1.8.1.
+ */
+static VALUE
+path_each_line(int argc, VALUE *argv, VALUE self)
+{
+    VALUE args[4];
+    int n;
+
+    args[0] = get_strpath(self);
+    n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
+    if (rb_block_given_p()) {
+        return rb_block_call(rb_cIO, rb_intern("foreach"), 1+n, args, 0, 0);
+    }
+    else {
+        return rb_funcall2(rb_cIO, rb_intern("foreach"), 1+n, args);
+    }
+}
+
+/*
+ * call-seq:
+ *   pathname.read([length [, offset]]) -> string
+ *   pathname.read([length [, offset]], open_args) -> string
+ *        
+ * See <tt>IO.read</tt>.  Returns all data from the file, or the first +N+ bytes
+ * if specified.
+ *
+ */
+static VALUE
+path_read(int argc, VALUE *argv, VALUE self)
+{
+    VALUE args[4];
+    int n;
+
+    args[0] = get_strpath(self);
+    n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
+    return rb_funcall2(rb_cIO, rb_intern("read"), 1+n, args);
+}
+
+/*
+ * call-seq:
+ *   pathname.binread([length [, offset]]) -> string
+ *        
+ * See <tt>IO.binread</tt>.  Returns all the bytes from the file, or the first +N+
+ * if specified.
+ *
+ */
+static VALUE
+path_binread(int argc, VALUE *argv, VALUE self)
+{
+    VALUE args[3];
+    int n;
+
+    args[0] = get_strpath(self);
+    n = rb_scan_args(argc, argv, "02", &args[1], &args[2]);
+    return rb_funcall2(rb_cIO, rb_intern("binread"), 1+n, args);
+}
+
+/*
+ * call-seq:
+ *   pathname.readlines(sep=$/ [, open_args])     -> array
+ *   pathname.readlines(limit [, open_args])      -> array
+ *   pathname.readlines(sep, limit [, open_args]) -> array
+ *        
+ * See <tt>IO.readlines</tt>.  Returns all the lines from the file.
+ *
+ */
+static VALUE
+path_readlines(int argc, VALUE *argv, VALUE self)
+{
+    VALUE args[4];
+    int n;
+
+    args[0] = get_strpath(self);
+    n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
+    return rb_funcall2(rb_cIO, rb_intern("readlines"), 1+n, args);
+}
+
+/*
+ * call-seq:
+ *   pathname.sysopen([mode, [perm]])  -> fixnum
+ *        
+ * See <tt>IO.sysopen</tt>.
+ *
+ */
+static VALUE
+path_sysopen(int argc, VALUE *argv, VALUE self)
+{
+    VALUE args[3];
+    int n;
+
+    args[0] = get_strpath(self);
+    n = rb_scan_args(argc, argv, "02", &args[1], &args[2]);
+    return rb_funcall2(rb_cIO, rb_intern("sysopen"), 1+n, args);
+}
+
+/*
  * See <tt>File.atime</tt>.  Returns last access time.
  */
 static VALUE
@@ -475,6 +581,398 @@ path_expand_path(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ * See <tt>File.split</tt>.  Returns the #dirname and the #basename in an Array.
+ */
+static VALUE
+path_split(VALUE self)
+{
+    VALUE str = get_strpath(self);
+    VALUE ary, dirname, basename;
+    ary = rb_funcall(rb_cFile, rb_intern("split"), 1, str);
+    ary = rb_check_array_type(ary);
+    dirname = rb_ary_entry(ary, 0);
+    basename = rb_ary_entry(ary, 1);
+    dirname = rb_class_new_instance(1, &dirname, rb_obj_class(self));
+    basename = rb_class_new_instance(1, &basename, rb_obj_class(self));
+    return rb_ary_new3(2, dirname, basename);
+}
+
+/*
+ * See <tt>FileTest.blockdev?</tt>.
+ */
+static VALUE
+path_blockdev_p(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("blockdev?"), 1, get_strpath(self));
+}
+
+/*
+ * See <tt>FileTest.chardev?</tt>.
+ */
+static VALUE
+path_chardev_p(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("chardev?"), 1, get_strpath(self));
+}
+
+/*
+ * See <tt>FileTest.executable?</tt>.
+ */
+static VALUE
+path_executable_p(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("executable?"), 1, get_strpath(self));
+}
+
+/*
+ * See <tt>FileTest.executable_real?</tt>.
+ */
+static VALUE
+path_executable_real_p(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("executable_real?"), 1, get_strpath(self));
+}
+
+/*
+ * See <tt>FileTest.exist?</tt>.
+ */
+static VALUE
+path_exist_p(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("exist?"), 1, get_strpath(self));
+}
+
+/*
+ * See <tt>FileTest.grpowned?</tt>.
+ */
+static VALUE
+path_grpowned_p(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("grpowned?"), 1, get_strpath(self));
+}
+
+/*
+ * See <tt>FileTest.directory?</tt>.
+ */
+static VALUE
+path_directory_p(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("directory?"), 1, get_strpath(self));
+}
+
+/*
+ * See <tt>FileTest.file?</tt>.
+ */
+static VALUE
+path_file_p(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("file?"), 1, get_strpath(self));
+}
+
+/*
+ * See <tt>FileTest.pipe?</tt>.
+ */
+static VALUE
+path_pipe_p(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("pipe?"), 1, get_strpath(self));
+}
+
+/*
+ * See <tt>FileTest.socket?</tt>.
+ */
+static VALUE
+path_socket_p(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("socket?"), 1, get_strpath(self));
+}
+
+/*
+ * See <tt>FileTest.owned?</tt>.
+ */
+static VALUE
+path_owned_p(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("owned?"), 1, get_strpath(self));
+}
+
+/*
+ * See <tt>FileTest.readable?</tt>.
+ */
+static VALUE
+path_readable_p(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("readable?"), 1, get_strpath(self));
+}
+
+/*
+ * See <tt>FileTest.world_readable?</tt>.
+ */
+static VALUE
+path_world_readable_p(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("world_readable?"), 1, get_strpath(self));
+}
+
+/*
+ * See <tt>FileTest.readable_real?</tt>.
+ */
+static VALUE
+path_readable_real_p(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("readable_real?"), 1, get_strpath(self));
+}
+
+/*
+ * See <tt>FileTest.setuid?</tt>.
+ */
+static VALUE
+path_setuid_p(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("setuid?"), 1, get_strpath(self));
+}
+
+/*
+ * See <tt>FileTest.setgid?</tt>.
+ */
+static VALUE
+path_setgid_p(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("setgid?"), 1, get_strpath(self));
+}
+
+/*
+ * See <tt>FileTest.size</tt>.
+ */
+static VALUE
+path_size(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("size"), 1, get_strpath(self));
+}
+
+/*
+ * See <tt>FileTest.size?</tt>.
+ */
+static VALUE
+path_size_p(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("size?"), 1, get_strpath(self));
+}
+
+/*
+ * See <tt>FileTest.sticky?</tt>.
+ */
+static VALUE
+path_sticky_p(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("sticky?"), 1, get_strpath(self));
+}
+
+/*
+ * See <tt>FileTest.symlink?</tt>.
+ */
+static VALUE
+path_symlink_p(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("symlink?"), 1, get_strpath(self));
+}
+
+/*
+ * See <tt>FileTest.writable?</tt>.
+ */
+static VALUE
+path_writable_p(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("writable?"), 1, get_strpath(self));
+}
+
+/*
+ * See <tt>FileTest.world_writable?</tt>.
+ */
+static VALUE
+path_world_writable_p(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("world_writable?"), 1, get_strpath(self));
+}
+
+/*
+ * See <tt>FileTest.writable_real?</tt>.
+ */
+static VALUE
+path_writable_real_p(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("writable_real?"), 1, get_strpath(self));
+}
+
+/*
+ * See <tt>FileTest.zero?</tt>.
+ */
+static VALUE
+path_zero_p(VALUE self)
+{
+    return rb_funcall(rb_mFileTest, rb_intern("zero?"), 1, get_strpath(self));
+}
+
+static VALUE
+glob_i(VALUE elt, VALUE klass, int argc, VALUE *argv)
+{
+    return rb_yield(rb_class_new_instance(1, &elt, klass));
+}
+
+/*
+ * See <tt>Dir.glob</tt>.  Returns or yields Pathname objects.
+ */
+static VALUE
+path_s_glob(int argc, VALUE *argv, VALUE klass)
+{
+    VALUE args[2];
+    int n;
+
+    n = rb_scan_args(argc, argv, "11", &args[0], &args[1]);
+    if (rb_block_given_p()) {
+        return rb_block_call(rb_cDir, rb_intern("glob"), n, args, glob_i, klass);
+    }
+    else {
+        VALUE ary;
+        long i;
+        ary = rb_funcall2(rb_cDir, rb_intern("glob"), n, args);
+        ary = rb_convert_type(ary, T_ARRAY, "Array", "to_ary");
+        for (i = 0; i < RARRAY_LEN(ary); i++) {
+            VALUE elt = RARRAY_PTR(ary)[i];
+            elt = rb_class_new_instance(1, &elt, klass);
+            rb_ary_store(ary, i, elt);
+        }
+        return ary;
+    }
+}
+
+/*
+ * See <tt>Dir.getwd</tt>.  Returns the current working directory as a Pathname.
+ */
+static VALUE
+path_s_getwd(VALUE klass)
+{
+    VALUE str;
+    str = rb_funcall(rb_cDir, rb_intern("getwd"), 0);
+    return rb_class_new_instance(1, &str, klass);
+}
+
+/*
+ * Return the entries (files and subdirectories) in the directory, each as a
+ * Pathname object.
+ *
+ * The result may contain the current directory #<Pathname:.> and the parent
+ * directory #<Pathname:..>.
+ */
+static VALUE
+path_entries(VALUE self)
+{
+    VALUE klass, str, ary;
+    long i;
+    klass = rb_obj_class(self);
+    str = get_strpath(self);
+    ary = rb_funcall(rb_cDir, rb_intern("entries"), 1, str);
+    ary = rb_convert_type(ary, T_ARRAY, "Array", "to_ary");
+    for (i = 0; i < RARRAY_LEN(ary); i++) {
+        VALUE elt = RARRAY_PTR(ary)[i];
+        elt = rb_class_new_instance(1, &elt, klass);
+        rb_ary_store(ary, i, elt);
+    }
+    return ary;
+}
+
+/*
+ * See <tt>Dir.mkdir</tt>.  Create the referenced directory.
+ */
+static VALUE
+path_mkdir(int argc, VALUE *argv, VALUE self)
+{
+    VALUE str = get_strpath(self);
+    VALUE vmode;
+    if (rb_scan_args(argc, argv, "01", &vmode) == 0)
+        return rb_funcall(rb_cDir, rb_intern("mkdir"), 1, str);
+    else
+        return rb_funcall(rb_cDir, rb_intern("mkdir"), 2, str, vmode);
+}
+
+/*
+ * See <tt>Dir.rmdir</tt>.  Remove the referenced directory.
+ */
+static VALUE
+path_rmdir(VALUE self)
+{
+    return rb_funcall(rb_cDir, rb_intern("rmdir"), 1, get_strpath(self));
+}
+
+/*
+ * See <tt>Dir.open</tt>.
+ */
+static VALUE
+path_opendir(VALUE self)
+{
+    VALUE args[1];
+
+    args[0] = get_strpath(self);
+    return rb_block_call(rb_cDir, rb_intern("open"), 1, args, 0, 0);
+}
+
+static VALUE
+each_entry_i(VALUE elt, VALUE klass, int argc, VALUE *argv)
+{
+    return rb_yield(rb_class_new_instance(1, &elt, klass));
+}
+
+/*
+ * Iterates over the entries (files and subdirectories) in the directory.  It
+ * yields a Pathname object for each entry.
+ *
+ * This method has available since 1.8.1.
+ */
+static VALUE
+path_each_entry(VALUE self)
+{
+    VALUE args[1];
+
+    args[0] = get_strpath(self);
+    return rb_block_call(rb_cDir, rb_intern("foreach"), 1, args, each_entry_i, rb_obj_class(self));
+}
+
+static VALUE
+unlink_body(VALUE str)
+{
+    return rb_funcall(rb_cDir, rb_intern("unlink"), 1, str);
+}
+
+static VALUE
+unlink_rescue(VALUE str, VALUE errinfo)
+{
+    return rb_funcall(rb_cFile, rb_intern("unlink"), 1, str);
+}
+
+/*
+ * Removes a file or directory, using <tt>File.unlink</tt> or
+ * <tt>Dir.unlink</tt> as necessary.
+ */
+static VALUE
+path_unlink(VALUE self)
+{
+    VALUE eENOTDIR = rb_const_get_at(rb_mErrno, rb_intern("ENOTDIR"));
+    VALUE str = get_strpath(self);
+    return rb_rescue2(unlink_body, str, unlink_rescue, str, eENOTDIR, (VALUE)0);
+}
+
+/*
+ * create a pathname object.
+ *
+ * This method is available since 1.8.5.
+ */
+static VALUE
+path_f_pathname(VALUE self, VALUE str)
+{
+    return rb_class_new_instance(1, &str, rb_cPathname);
+}
+
+/*
  * == Pathname
  *
  * Pathname represents a pathname which locates a file in a filesystem.
@@ -674,6 +1172,11 @@ Init_pathname()
     rb_define_method(rb_cPathname, "sub_ext", path_sub_ext, 1);
     rb_define_method(rb_cPathname, "realpath", path_realpath, -1);
     rb_define_method(rb_cPathname, "realdirpath", path_realdirpath, -1);
+    rb_define_method(rb_cPathname, "each_line", path_each_line, -1);
+    rb_define_method(rb_cPathname, "read", path_read, -1);
+    rb_define_method(rb_cPathname, "binread", path_binread, -1);
+    rb_define_method(rb_cPathname, "readlines", path_readlines, -1);
+    rb_define_method(rb_cPathname, "sysopen", path_sysopen, -1);
     rb_define_method(rb_cPathname, "atime", path_atime, 0);
     rb_define_method(rb_cPathname, "ctime", path_ctime, 0);
     rb_define_method(rb_cPathname, "mtime", path_mtime, 0);
@@ -697,4 +1200,41 @@ Init_pathname()
     rb_define_method(rb_cPathname, "dirname", path_dirname, 0);
     rb_define_method(rb_cPathname, "extname", path_extname, 0);
     rb_define_method(rb_cPathname, "expand_path", path_expand_path, -1);
+    rb_define_method(rb_cPathname, "split", path_split, 0);
+    rb_define_method(rb_cPathname, "blockdev?", path_blockdev_p, 0);
+    rb_define_method(rb_cPathname, "chardev?", path_chardev_p, 0);
+    rb_define_method(rb_cPathname, "executable?", path_executable_p, 0);
+    rb_define_method(rb_cPathname, "executable_real?", path_executable_real_p, 0);
+    rb_define_method(rb_cPathname, "exist?", path_exist_p, 0);
+    rb_define_method(rb_cPathname, "grpowned?", path_grpowned_p, 0);
+    rb_define_method(rb_cPathname, "directory?", path_directory_p, 0);
+    rb_define_method(rb_cPathname, "file?", path_file_p, 0);
+    rb_define_method(rb_cPathname, "pipe?", path_pipe_p, 0);
+    rb_define_method(rb_cPathname, "socket?", path_socket_p, 0);
+    rb_define_method(rb_cPathname, "owned?", path_owned_p, 0);
+    rb_define_method(rb_cPathname, "readable?", path_readable_p, 0);
+    rb_define_method(rb_cPathname, "world_readable?", path_world_readable_p, 0);
+    rb_define_method(rb_cPathname, "readable_real?", path_readable_real_p, 0);
+    rb_define_method(rb_cPathname, "setuid?", path_setuid_p, 0);
+    rb_define_method(rb_cPathname, "setgid?", path_setgid_p, 0);
+    rb_define_method(rb_cPathname, "size", path_size, 0);
+    rb_define_method(rb_cPathname, "size?", path_size_p, 0);
+    rb_define_method(rb_cPathname, "sticky?", path_sticky_p, 0);
+    rb_define_method(rb_cPathname, "symlink?", path_symlink_p, 0);
+    rb_define_method(rb_cPathname, "writable?", path_writable_p, 0);
+    rb_define_method(rb_cPathname, "world_writable?", path_world_writable_p, 0);
+    rb_define_method(rb_cPathname, "writable_real?", path_writable_real_p, 0);
+    rb_define_method(rb_cPathname, "zero?", path_zero_p, 0);
+    rb_define_singleton_method(rb_cPathname, "glob", path_s_glob, -1);
+    rb_define_singleton_method(rb_cPathname, "getwd", path_s_getwd, 0);
+    rb_define_singleton_method(rb_cPathname, "pwd", path_s_getwd, 0);
+    rb_define_method(rb_cPathname, "entries", path_entries, 0);
+    rb_define_method(rb_cPathname, "mkdir", path_mkdir, -1);
+    rb_define_method(rb_cPathname, "rmdir", path_rmdir, 0);
+    rb_define_method(rb_cPathname, "opendir", path_opendir, 0);
+    rb_define_method(rb_cPathname, "each_entry", path_each_entry, 0);
+    rb_define_method(rb_cPathname, "unlink", path_unlink, 0);
+    rb_define_method(rb_cPathname, "delete", path_unlink, 0);
+    rb_undef_method(rb_cPathname, "=~");
+    rb_define_global_function("Pathname", path_f_pathname, 1);
 }

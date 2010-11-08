@@ -2091,7 +2091,6 @@ onigenc_unicode_property_name_to_ctype(OnigEncoding enc, UChar* name, UChar* end
   UChar *p;
   OnigCodePoint code;
 
-  p = name;
   len = 0;
   for (p = name; p < end; p += enclen(enc, p, end)) {
     code = ONIGENC_MBC_TO_CODE(enc, p, end);

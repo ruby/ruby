@@ -138,7 +138,7 @@ Q1VB8qkJN7rA7/2HrCR3gTsWNb1YhAsnFsoeRscC+LxXoXi9OAIUBG98h4tilg6S
       back, $VERBOSE = $VERBOSE, nil
       yield
     ensure
-      $VERBOSE = back if back
+      $VERBOSE = back
     end
   end
 end

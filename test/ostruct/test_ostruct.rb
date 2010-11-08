@@ -48,4 +48,17 @@ class TC_OpenStruct < Test::Unit::TestCase
     o.freeze
     assert_raise(TypeError, '[ruby-core:22559]') {o.a = 1764}
   end
+
+  def test_delete_field
+    bug = '[ruby-core:33010]'
+    o = OpenStruct.new
+    assert_not_respond_to(o, :a)
+    assert_not_respond_to(o, :a=)
+    o.a = 'a'
+    assert_respond_to(o, :a)
+    assert_respond_to(o, :a=)
+    o.delete_field :a
+    assert_not_respond_to(o, :a, bug)
+    assert_not_respond_to(o, :a=, bug)
+  end
 end

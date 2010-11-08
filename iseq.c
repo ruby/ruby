@@ -19,6 +19,9 @@
 #include "insns.inc"
 #include "insns_info.inc"
 
+#define ISEQ_MAJOR_VERSION 1
+#define ISEQ_MINOR_VERSION 2
+
 VALUE rb_cISeq;
 
 #define hidden_obj_p(obj) (!SPECIAL_CONST_P(obj) && !RBASIC(obj)->klass)
@@ -222,7 +225,7 @@ VALUE rb_realpath_internal(VALUE basedir, VALUE path, int strict);
 static VALUE
 prepare_iseq_build(rb_iseq_t *iseq,
 		   VALUE name, VALUE filename, VALUE filepath, VALUE line_no,
-		   VALUE parent, VALUE type, VALUE block_opt,
+		   VALUE parent, enum iseq_type type, VALUE block_opt,
 		   const rb_compile_option_t *option)
 {
     OBJ_FREEZE(name);
@@ -375,7 +378,7 @@ make_compile_option_value(rb_compile_option_t *option)
 
 VALUE
 rb_iseq_new(NODE *node, VALUE name, VALUE filename, VALUE filepath,
-	      VALUE parent, VALUE type)
+	    VALUE parent, enum iseq_type type)
 {
     return rb_iseq_new_with_opt(node, name, filename, filepath, INT2FIX(0), parent, type,
 				&COMPILE_OPTION_DEFAULT);
@@ -399,7 +402,7 @@ rb_iseq_new_main(NODE *node, VALUE filename, VALUE filepath)
 
 static VALUE
 rb_iseq_new_with_bopt_and_opt(NODE *node, VALUE name, VALUE filename, VALUE filepath, VALUE line_no,
-				VALUE parent, VALUE type, VALUE bopt,
+				VALUE parent, enum iseq_type type, VALUE bopt,
 				const rb_compile_option_t *option)
 {
     rb_iseq_t *iseq;
@@ -416,7 +419,7 @@ rb_iseq_new_with_bopt_and_opt(NODE *node, VALUE name, VALUE filename, VALUE file
 
 VALUE
 rb_iseq_new_with_opt(NODE *node, VALUE name, VALUE filename, VALUE filepath, VALUE line_no,
-		     VALUE parent, VALUE type,
+		     VALUE parent, enum iseq_type type,
 		     const rb_compile_option_t *option)
 {
     /* TODO: argument check */
@@ -426,7 +429,7 @@ rb_iseq_new_with_opt(NODE *node, VALUE name, VALUE filename, VALUE filepath, VAL
 
 VALUE
 rb_iseq_new_with_bopt(NODE *node, VALUE name, VALUE filename, VALUE filepath, VALUE line_no,
-		       VALUE parent, VALUE type, VALUE bopt)
+		       VALUE parent, enum iseq_type type, VALUE bopt)
 {
     /* TODO: argument check */
     return rb_iseq_new_with_bopt_and_opt(node, name, filename, filepath, line_no, parent, type,
@@ -446,7 +449,7 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
     VALUE name, filename, filepath, line_no;
     VALUE type, body, locals, args, exception;
 
-    VALUE iseq_type;
+    st_data_t iseq_type;
     struct st_table *type_map = 0;
     rb_iseq_t *iseq;
     rb_compile_option_t option;
@@ -512,7 +515,7 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
 
     make_compile_option(&option, opt);
     prepare_iseq_build(iseq, name, filename, filepath, line_no,
-		       parent, iseq_type, 0, &option);
+		       parent, (enum iseq_type)iseq_type, 0, &option);
 
     rb_iseq_build_from_ary(iseq, locals, args, exception, body);
 
@@ -581,7 +584,7 @@ iseq_s_compile(int argc, VALUE *argv, VALUE self)
 
     rb_secure(1);
 
-    rb_scan_args(argc, argv, "13", &src, &file, &path, &line, &opt);
+    rb_scan_args(argc, argv, "14", &src, &file, &path, &line, &opt);
     if (NIL_P(file)) file = rb_str_new2("<compiled>");
     if (NIL_P(line)) line = INT2FIX(1);
 
@@ -739,18 +742,18 @@ insn_operand_intern(rb_iseq_t *iseq,
 
     switch (type) {
       case TS_OFFSET:		/* LONG */
-	ret = rb_sprintf("%ld", pos + len + op);
+	ret = rb_sprintf("%"PRIdVALUE, (VALUE)(pos + len + op));
 	break;
 
       case TS_NUM:		/* ULONG */
-	ret = rb_sprintf("%lu", op);
+	ret = rb_sprintf("%"PRIuVALUE, op);
 	break;
 
       case TS_LINDEX:
 	{
-	    rb_iseq_t *ip = iseq->local_iseq;
-	    int lidx = ip->local_size - (int)op;
-	    const char *name = rb_id2name(ip->local_table[lidx]);
+	    rb_iseq_t *liseq = iseq->local_iseq;
+	    int lidx = liseq->local_size - (int)op;
+	    const char *name = rb_id2name(liseq->local_table[lidx]);
 
 	    if (name) {
 		ret = rb_str_new2(name);
@@ -762,13 +765,13 @@ insn_operand_intern(rb_iseq_t *iseq,
 	}
       case TS_DINDEX:{
 	if (insn == BIN(getdynamic) || insn == BIN(setdynamic)) {
-	    rb_iseq_t *ip = iseq;
+	    rb_iseq_t *diseq = iseq;
 	    VALUE level = *pnop, i;
 	    const char *name;
 	    for (i = 0; i < level; i++) {
-		ip = ip->parent_iseq;
+		diseq = diseq->parent_iseq;
 	    }
-	    name = rb_id2name(ip->local_table[ip->local_size - op]);
+	    name = rb_id2name(diseq->local_table[diseq->local_size - op]);
 
 	    if (!name) {
 		name = "*";
@@ -985,7 +988,7 @@ rb_iseq_disasm(VALUE self)
 		int argc = iseqdat->argc;
 		int opts = iseqdat->arg_opts;
 		if (i >= argc && i < argc + opts - 1) {
-		    snprintf(opti, sizeof(opti), "Opt=%ld",
+		    snprintf(opti, sizeof(opti), "Opt=%"PRIdVALUE,
 			     iseqdat->arg_opt_table[i - argc]);
 		}
 	    }
@@ -1304,10 +1307,10 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 
     for (i=0, pos=0; i<RARRAY_LEN(nbody); i++) {
 	VALUE ary = RARRAY_PTR(nbody)[i];
-	VALUE label;
+	st_data_t label;
 
 	if (st_lookup(labels_table, pos, &label)) {
-	    rb_ary_push(body, label);
+	    rb_ary_push(body, (VALUE)label);
 	}
 
 	if (iseq->insn_info_table[i].line_no != line) {
@@ -1331,8 +1334,8 @@ iseq_data_to_ary(rb_iseq_t *iseq)
      *  :catch_table, :bytecode]
      */
     rb_ary_push(val, rb_str_new2("YARVInstructionSequence/SimpleDataFormat"));
-    rb_ary_push(val, INT2FIX(1)); /* major */
-    rb_ary_push(val, INT2FIX(2)); /* minor */
+    rb_ary_push(val, INT2FIX(ISEQ_MAJOR_VERSION)); /* major */
+    rb_ary_push(val, INT2FIX(ISEQ_MINOR_VERSION)); /* minor */
     rb_ary_push(val, INT2FIX(1));
     rb_ary_push(val, misc);
     rb_ary_push(val, iseq->name);
@@ -1507,6 +1510,11 @@ Init_ISeq(void)
     rb_define_method(rb_cISeq, "disassemble", rb_iseq_disasm, 0);
     rb_define_method(rb_cISeq, "to_a", iseq_to_a, 0);
     rb_define_method(rb_cISeq, "eval", iseq_eval, 0);
+
+#if 0 /* TBD */
+    rb_define_method(rb_cISeq, "marshal_dump", iseq_marshal_dump, 0);
+    rb_define_method(rb_cISeq, "marshal_load", iseq_marshal_load, 1);
+#endif
 
     /* disable this feature because there is no verifier. */
     /* rb_define_singleton_method(rb_cISeq, "load", iseq_s_load, -1); */

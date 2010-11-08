@@ -137,7 +137,7 @@ VALUE rb_default_rs;
 
 static VALUE argf;
 
-static ID id_write, id_read, id_getc, id_flush, id_readpartial;
+static ID id_write, id_read, id_getc, id_flush, id_readpartial, id_set_encoding;
 static VALUE sym_mode, sym_perm, sym_extenc, sym_intenc, sym_encoding, sym_open_args;
 static VALUE sym_textmode, sym_binmode, sym_autoclose;
 
@@ -556,30 +556,36 @@ wsplit_p(rb_io_t *fptr)
     return fptr->mode & FMODE_WSPLIT;
 }
 
-struct io_internal_struct {
+struct io_internal_read_struct {
     int fd;
     void *buf;
+    size_t capa;
+};
+
+struct io_internal_write_struct {
+    int fd;
+    const void *buf;
     size_t capa;
 };
 
 static VALUE
 internal_read_func(void *ptr)
 {
-    struct io_internal_struct *iis = (struct io_internal_struct*)ptr;
+    struct io_internal_read_struct *iis = ptr;
     return read(iis->fd, iis->buf, iis->capa);
 }
 
 static VALUE
 internal_write_func(void *ptr)
 {
-    struct io_internal_struct *iis = (struct io_internal_struct*)ptr;
+    struct io_internal_write_struct *iis = ptr;
     return write(iis->fd, iis->buf, iis->capa);
 }
 
 static ssize_t
 rb_read_internal(int fd, void *buf, size_t count)
 {
-    struct io_internal_struct iis;
+    struct io_internal_read_struct iis;
     iis.fd = fd;
     iis.buf = buf;
     iis.capa = count;
@@ -588,9 +594,9 @@ rb_read_internal(int fd, void *buf, size_t count)
 }
 
 static ssize_t
-rb_write_internal(int fd, void *buf, size_t count)
+rb_write_internal(int fd, const void *buf, size_t count)
 {
-    struct io_internal_struct iis;
+    struct io_internal_write_struct iis;
     iis.fd = fd;
     iis.buf = buf;
     iis.capa = count;
@@ -816,7 +822,7 @@ make_writeconv(rb_io_t *fptr)
 struct binwrite_arg {
     rb_io_t *fptr;
     VALUE str;
-    long offset;
+    const char *ptr;
     long length;
 };
 
@@ -825,15 +831,14 @@ io_binwrite_string(VALUE arg)
 {
     struct binwrite_arg *p = (struct binwrite_arg *)arg;
     long l = io_writable_length(p->fptr, p->length);
-    return rb_write_internal(p->fptr->fd, RSTRING_PTR(p->str)+p->offset, l);
+    return rb_write_internal(p->fptr->fd, p->ptr, l);
 }
 
 static long
-io_binwrite(VALUE str, rb_io_t *fptr, int nosync)
+io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
 {
-    long len, n, r, offset = 0;
+    long n, r, offset = 0;
 
-    len = RSTRING_LEN(str);
     if ((n = len) <= 0) return n;
     if (fptr->wbuf == NULL && !(!nosync && (fptr->mode & FMODE_SYNC))) {
         fptr->wbuf_off = 0;
@@ -852,7 +857,7 @@ io_binwrite(VALUE str, rb_io_t *fptr, int nosync)
                 MEMMOVE(fptr->wbuf, fptr->wbuf+fptr->wbuf_off, char, fptr->wbuf_len);
                 fptr->wbuf_off = 0;
             }
-            MEMMOVE(fptr->wbuf+fptr->wbuf_off+fptr->wbuf_len, RSTRING_PTR(str)+offset, char, len);
+            MEMMOVE(fptr->wbuf+fptr->wbuf_off+fptr->wbuf_len, ptr+offset, char, len);
             fptr->wbuf_len += (int)len;
             n = 0;
         }
@@ -868,14 +873,14 @@ io_binwrite(VALUE str, rb_io_t *fptr, int nosync)
 	arg.fptr = fptr;
 	arg.str = str;
       retry:
-	arg.offset = offset;
+	arg.ptr = ptr + offset;
 	arg.length = n;
 	if (fptr->write_lock) {
 	    r = rb_mutex_synchronize(fptr->write_lock, io_binwrite_string, (VALUE)&arg);
 	}
 	else {
 	    long l = io_writable_length(fptr, n);
-	    r = rb_write_internal(fptr->fd, RSTRING_PTR(str)+offset, l);
+	    r = rb_write_internal(fptr->fd, ptr+offset, l);
 	}
 	/* xxx: other threads may modify given string. */
         if (r == n) return len;
@@ -886,7 +891,7 @@ io_binwrite(VALUE str, rb_io_t *fptr, int nosync)
         }
         if (rb_io_wait_writable(fptr->fd)) {
             rb_io_check_closed(fptr);
-	    if (offset < RSTRING_LEN(str))
+	    if (offset < len)
 		goto retry;
         }
         return -1L;
@@ -897,7 +902,7 @@ io_binwrite(VALUE str, rb_io_t *fptr, int nosync)
             MEMMOVE(fptr->wbuf, fptr->wbuf+fptr->wbuf_off, char, fptr->wbuf_len);
         fptr->wbuf_off = 0;
     }
-    MEMMOVE(fptr->wbuf+fptr->wbuf_off+fptr->wbuf_len, RSTRING_PTR(str)+offset, char, len);
+    MEMMOVE(fptr->wbuf+fptr->wbuf_off+fptr->wbuf_len, ptr+offset, char, len);
     fptr->wbuf_len += (int)len;
     return len;
 }
@@ -941,7 +946,18 @@ static long
 io_fwrite(VALUE str, rb_io_t *fptr, int nosync)
 {
     str = do_writeconv(str, fptr);
-    return io_binwrite(str, fptr, nosync);
+    return io_binwrite(str, RSTRING_PTR(str), RSTRING_LEN(str),
+		       fptr, nosync);
+}
+
+ssize_t
+rb_io_bufwrite(VALUE io, const void *buf, size_t size)
+{
+    rb_io_t *fptr;
+
+    GetOpenFile(io, fptr);
+    rb_io_check_writable(fptr);
+    return (ssize_t)io_binwrite(0, buf, (long)size, fptr, 0);
 }
 
 static VALUE
@@ -1520,33 +1536,31 @@ read_buffered_data(char *ptr, long len, rb_io_t *fptr)
 }
 
 static long
-io_fread(VALUE str, long offset, rb_io_t *fptr)
+io_bufread(char *ptr, long len, rb_io_t *fptr)
 {
-    long len = RSTRING_LEN(str) - offset;
+    long offset = 0;
     long n = len;
     long c;
 
-    rb_str_locktmp(str);
     if (READ_DATA_PENDING(fptr) == 0) {
 	while (n > 0) {
           again:
-	    c = rb_read_internal(fptr->fd, RSTRING_PTR(str)+offset, n);
+	    c = rb_read_internal(fptr->fd, ptr+offset, n);
 	    if (c == 0) break;
 	    if (c < 0) {
                 if (rb_io_wait_readable(fptr->fd))
                     goto again;
-		rb_sys_fail_path(fptr->pathv);
+		return -1;
 	    }
 	    offset += c;
 	    if ((n -= c) <= 0) break;
 	    rb_thread_wait_fd(fptr->fd);
 	}
-	rb_str_unlocktmp(str);
 	return len - n;
     }
 
     while (n > 0) {
-	c = read_buffered_data(RSTRING_PTR(str)+offset, n, fptr);
+	c = read_buffered_data(ptr+offset, n, fptr);
 	if (c > 0) {
 	    offset += c;
 	    if ((n -= c) <= 0) break;
@@ -1557,8 +1571,30 @@ io_fread(VALUE str, long offset, rb_io_t *fptr)
 	    break;
 	}
     }
-    rb_str_unlocktmp(str);
     return len - n;
+}
+
+static long
+io_fread(VALUE str, long offset, rb_io_t *fptr)
+{
+    long len;
+
+    rb_str_locktmp(str);
+    len = io_bufread(RSTRING_PTR(str) + offset, RSTRING_LEN(str) - offset,
+		     fptr);
+    rb_str_unlocktmp(str);
+    if (len < 0) rb_sys_fail_path(fptr->pathv);
+    return len;
+}
+
+ssize_t
+rb_io_bufread(VALUE io, void *buf, size_t size)
+{
+    rb_io_t *fptr;
+
+    GetOpenFile(io, fptr);
+    rb_io_check_readable(fptr);
+    return (ssize_t)io_bufread(buf, (long)size, fptr);
 }
 
 #define SMALLBUF 100
@@ -2688,6 +2724,8 @@ rb_io_readlines(int argc, VALUE *argv, VALUE io)
     long limit;
 
     prepare_getline_args(argc, argv, &rs, &limit, io);
+    if (limit == 0)
+	rb_raise(rb_eArgError, "invalid limit: 0 for readlines");
     ary = rb_ary_new();
     while (!NIL_P(line = rb_io_getline_1(rs, limit, io))) {
 	rb_ary_push(ary, line);
@@ -2737,6 +2775,8 @@ rb_io_each_line(int argc, VALUE *argv, VALUE io)
 
     RETURN_ENUMERATOR(io, argc, argv);
     prepare_getline_args(argc, argv, &rs, &limit, io);
+    if (limit == 0)
+	rb_raise(rb_eArgError, "invalid limit: 0 for each_line");
     while (!NIL_P(str = rb_io_getline_1(rs, limit, io))) {
 	rb_yield(str);
     }
@@ -3193,11 +3233,10 @@ rb_io_ungetc(VALUE io, VALUE c)
     rb_io_check_char_readable(fptr);
     if (NIL_P(c)) return Qnil;
     if (FIXNUM_P(c)) {
-	int cc = FIX2INT(c);
-	rb_encoding *enc = io_read_encoding(fptr);
-	char buf[16];
-
-	c = rb_str_new(buf, rb_enc_mbcput(cc, buf, enc));
+	c = rb_enc_uint_chr(FIX2UINT(c), io_read_encoding(fptr));
+    }
+    else if (TYPE(c) == T_BIGNUM) {
+	c = rb_enc_uint_chr(NUM2UINT(c), io_read_encoding(fptr));
     }
     else {
 	SafeStringValue(c);
@@ -3423,7 +3462,7 @@ fptr_finalize(rb_io_t *fptr, int noraise)
 {
     VALUE err = Qnil;
     if (fptr->writeconv) {
-	if (fptr->write_lock) {
+	if (fptr->write_lock && !noraise) {
             struct finish_writeconv_arg arg;
             arg.fptr = fptr;
             arg.noalloc = noraise;
@@ -3434,8 +3473,14 @@ fptr_finalize(rb_io_t *fptr, int noraise)
 	}
     }
     if (fptr->wbuf_len) {
-        if (io_fflush(fptr) < 0 && NIL_P(err))
-            err = noraise ? Qtrue : INT2NUM(errno);
+	if (noraise) {
+	    if ((int)io_flush_buffer_sync(fptr) < 0 && NIL_P(err))
+		err = Qtrue;
+	}
+	else {
+	    if (io_fflush(fptr) < 0 && NIL_P(err))
+		err = INT2NUM(errno);
+	}
     }
     if (IS_PREP_STDIO(fptr) || fptr->fd <= 2) {
         goto skip_fd_close;
@@ -5202,21 +5247,6 @@ pipe_open_s(VALUE prog, const char *modestr, int fmode, convconfig_t *convconfig
     return pipe_open(&earg, prog, modestr, fmode, convconfig);
 }
 
-static VALUE
-pop_last_hash(int *argc_p, VALUE *argv)
-{
-    VALUE last, tmp;
-    if (*argc_p == 0)
-        return Qnil;
-    last = argv[*argc_p-1];
-    if (NIL_P(last)) return Qnil;
-    tmp = rb_check_convert_type(last, T_HASH, "Hash", "to_hash");
-    if (NIL_P(tmp))
-        return Qnil;
-    (*argc_p)--;
-    return tmp;
-}
-
 /*
  *  call-seq:
  *     IO.popen(cmd, mode="r" [, opt])               -> io
@@ -5308,8 +5338,7 @@ rb_io_s_popen(int argc, VALUE *argv, VALUE klass)
     int oflags, fmode;
     convconfig_t convconfig;
 
-    opt = pop_last_hash(&argc, argv);
-    rb_scan_args(argc, argv, "11", &pname, &pmode);
+    argc = rb_scan_args(argc, argv, "11:", &pname, &pmode, &opt);
 
     rb_io_extract_modeenc(&pmode, 0, opt, &oflags, &fmode, &convconfig);
     modestr = rb_io_oflags_modestr(oflags);
@@ -5353,12 +5382,11 @@ rb_scan_open_args(int argc, VALUE *argv,
         VALUE *fname_p, int *oflags_p, int *fmode_p,
         convconfig_t *convconfig_p, mode_t *perm_p)
 {
-    VALUE opt=Qnil, fname, vmode, vperm;
+    VALUE opt, fname, vmode, vperm;
     int oflags, fmode;
     mode_t perm;
 
-    opt = pop_last_hash(&argc, argv);
-    rb_scan_args(argc, argv, "12", &fname, &vmode, &vperm);
+    argc = rb_scan_args(argc, argv, "12:", &fname, &vmode, &vperm, &opt);
     FilePathValue(fname);
 
     rb_io_extract_modeenc(&vmode, &vperm, opt, &oflags, &fmode, convconfig_p);
@@ -6028,9 +6056,15 @@ rb_f_print(int argc, VALUE *argv)
 static VALUE
 rb_io_putc(VALUE io, VALUE ch)
 {
-    char c = NUM2CHR(ch);
-
-    rb_io_write(io, rb_str_new(&c, 1));
+    VALUE str;
+    if (TYPE(ch) == T_STRING) {
+	str = rb_str_substr(ch, 0, 1);
+    }
+    else {
+	char c = NUM2CHR(ch);
+	str = rb_str_new(&c, 1);
+    }
+    rb_io_write(io, str);
     return ch;
 }
 
@@ -6041,7 +6075,7 @@ rb_io_putc(VALUE io, VALUE ch)
  *  Equivalent to:
  *
  *    $stdout.putc(int)
- * 
+ *
  * Refer to the documentation for IO#putc for important information regarding
  * multi-byte characters.
  */
@@ -6053,6 +6087,22 @@ rb_f_putc(VALUE recv, VALUE ch)
 	return rb_io_putc(recv, ch);
     }
     return rb_funcall2(rb_stdout, rb_intern("putc"), 1, &ch);
+}
+
+
+static int
+str_end_with_asciichar(VALUE str, int c)
+{
+    long len = RSTRING_LEN(str);
+    const char *ptr = RSTRING_PTR(str);
+    rb_encoding *enc = rb_enc_from_index(ENCODING_GET(str));
+    int n;
+
+    if (len == 0) return 0;
+    if ((n = rb_enc_mbminlen(enc)) == 1) {
+	return ptr[len - 1] == c;
+    }
+    return rb_enc_ascget(ptr + ((len - 1) / n) * n, ptr + len, &n, enc) == c;
 }
 
 static VALUE
@@ -6118,7 +6168,7 @@ rb_io_puts(int argc, VALUE *argv, VALUE out)
       string:
 	rb_io_write(out, line);
 	if (RSTRING_LEN(line) == 0 ||
-            RSTRING_PTR(line)[RSTRING_LEN(line)-1] != '\n') {
+            !str_end_with_asciichar(line, '\n')) {
 	    rb_io_write(out, rb_default_rs);
 	}
     }
@@ -6426,8 +6476,7 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
 
     rb_secure(4);
 
-    opt = pop_last_hash(&argc, argv);
-    rb_scan_args(argc, argv, "11", &fnum, &vmode);
+    argc = rb_scan_args(argc, argv, "11:", &fnum, &vmode, &opt);
     rb_io_extract_modeenc(&vmode, 0, opt, &oflags, &fmode, &convconfig);
 
     fd = NUM2INT(fnum);
@@ -7305,9 +7354,50 @@ select_end(VALUE arg)
  *     IO.select(read_array
  *               [, write_array
  *               [, error_array
- *               [, timeout]]] )-> array  or  nil
+ *               [, timeout]]]) -> array  or  nil
  *
- *  See <code>Kernel#select</code>.
+ *  Calls select(2) system call.
+ *  It monitors given arrays of <code>IO</code> objects, waits one or more
+ *  of <code>IO</code> objects ready for reading, are ready for writing,
+ *  and have pending exceptions respectably, and returns an array that
+ *  contains arrays of those IO objects.  It will return <code>nil</code>
+ *  if optional <i>timeout</i> value is given and no <code>IO</code> object
+ *  is ready in <i>timeout</i> seconds.
+ *
+ *  === Parameters
+ *  read_array:: an array of <code>IO</code> objects that wait until ready for read
+ *  write_array:: an array of <code>IO</code> objects that wait until ready for write
+ *  error_array:: an array of <code>IO</code> objects that wait for exceptions
+ *  timeout:: a numeric value in second
+ *
+ *  === Example
+ *
+ *      rp, wp = IO.pipe
+ *      mesg = "ping "
+ *      100.times {
+ *        rs, ws, = IO.select([rp], [wp])
+ *        if r = rs[0]
+ *          ret = r.read(5)
+ *          print ret
+ *          case ret
+ *          when /ping/
+ *            mesg = "pong\n"
+ *          when /pong/
+ *            mesg = "ping "
+ *          end
+ *        end
+ *        if w = ws[0]
+ *          w.write(mesg)
+ *        end
+ *      }
+ *
+ *  <em>produces:</em>
+ *
+ *      ping pong
+ *      ping pong
+ *      ping pong
+ *      (snipped)
+ *      ping
  */
 
 static VALUE
@@ -7411,7 +7501,7 @@ rb_io_ctl(VALUE io, VALUE req, VALUE arg, int io_p)
 		rb_str_resize(arg, len+1);
 	    }
 	    RSTRING_PTR(arg)[len] = 17;	/* a little sanity check here */
-	    narg = (long)RSTRING_PTR(arg);
+	    narg = (long)(SIGNED_VALUE)RSTRING_PTR(arg);
 	}
     }
     GetOpenFile(io, fptr);
@@ -7740,8 +7830,7 @@ rb_io_s_pipe(int argc, VALUE *argv, VALUE klass)
     int fmode = 0;
     VALUE ret;
 
-    opt = pop_last_hash(&argc, argv);
-    rb_scan_args(argc, argv, "02", &v1, &v2);
+    argc = rb_scan_args(argc, argv, "02:", &v1, &v2, &opt);
     if (rb_pipe(pipes) == -1)
         rb_sys_fail(0);
 
@@ -7788,22 +7877,20 @@ struct foreach_arg {
 };
 
 static void
-open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
+open_key_args(int argc, VALUE *argv, VALUE opt, struct foreach_arg *arg)
 {
-    VALUE opt, v;
+    VALUE path, v;
 
-    FilePathValue(argv[0]);
+    path = *argv++;
+    argc--;
+    FilePathValue(path);
     arg->io = 0;
-    arg->argc = argc - 1;
-    arg->argv = argv + 1;
-    if (argc == 1) {
-      no_key:
-	arg->io = rb_io_open(argv[0], INT2NUM(O_RDONLY), INT2FIX(0666), Qnil);
+    arg->argc = argc;
+    arg->argv = argv;
+    if (NIL_P(opt)) {
+	arg->io = rb_io_open(path, INT2NUM(O_RDONLY), INT2FIX(0666), Qnil);
 	return;
     }
-    opt = pop_last_hash(&arg->argc, arg->argv);
-    if (NIL_P(opt)) goto no_key;
-
     v = rb_hash_aref(opt, sym_open_args);
     if (!NIL_P(v)) {
 	VALUE args;
@@ -7817,13 +7904,13 @@ open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
 	}
 #endif
 	args = rb_ary_tmp_new(n);
-	rb_ary_push(args, argv[0]);
+	rb_ary_push(args, path);
 	rb_ary_concat(args, v);
 	arg->io = rb_io_open_with_args((int)n, RARRAY_PTR(args));
 	rb_ary_clear(args);	/* prevent from GC */
 	return;
     }
-    arg->io = rb_io_open(argv[0], Qnil, Qnil, opt);
+    arg->io = rb_io_open(path, Qnil, Qnil, opt);
 }
 
 static VALUE
@@ -7866,11 +7953,12 @@ io_s_foreach(struct foreach_arg *arg)
 static VALUE
 rb_io_s_foreach(int argc, VALUE *argv, VALUE self)
 {
+    VALUE opt;
     struct foreach_arg arg;
 
-    rb_scan_args(argc, argv, "13", NULL, NULL, NULL, NULL);
+    argc = rb_scan_args(argc, argv, "13:", NULL, NULL, NULL, NULL, &opt);
     RETURN_ENUMERATOR(self, argc, argv);
-    open_key_args(argc, argv, &arg);
+    open_key_args(argc, argv, opt, &arg);
     if (NIL_P(arg.io)) return Qnil;
     return rb_ensure(io_s_foreach, (VALUE)&arg, rb_io_close, arg.io);
 }
@@ -7902,10 +7990,11 @@ io_s_readlines(struct foreach_arg *arg)
 static VALUE
 rb_io_s_readlines(int argc, VALUE *argv, VALUE io)
 {
+    VALUE opt;
     struct foreach_arg arg;
 
-    rb_scan_args(argc, argv, "13", NULL, NULL, NULL, NULL);
-    open_key_args(argc, argv, &arg);
+    argc = rb_scan_args(argc, argv, "13:", NULL, NULL, NULL, NULL, &opt);
+    open_key_args(argc, argv, opt, &arg);
     if (NIL_P(arg.io)) return Qnil;
     return rb_ensure(io_s_readlines, (VALUE)&arg, rb_io_close, arg.io);
 }
@@ -7965,11 +8054,11 @@ seek_before_access(VALUE argp)
 static VALUE
 rb_io_s_read(int argc, VALUE *argv, VALUE io)
 {
-    VALUE offset;
+    VALUE opt, offset;
     struct foreach_arg arg;
 
-    rb_scan_args(argc, argv, "13", NULL, NULL, &offset, NULL);
-    open_key_args(argc, argv, &arg);
+    argc = rb_scan_args(argc, argv, "13:", NULL, NULL, &offset, NULL, &opt);
+    open_key_args(argc, argv, opt, &arg);
     if (NIL_P(arg.io)) return Qnil;
     if (!NIL_P(offset)) {
 	struct seek_arg sarg;
@@ -8475,7 +8564,7 @@ copy_stream_body(VALUE arg)
         rb_str_resize(str,len);
         read_buffered_data(RSTRING_PTR(str), len, src_fptr);
         if (dst_fptr) { /* IO or filename */
-            if (io_binwrite(str, dst_fptr, 0) < 0)
+            if (io_binwrite(str, RSTRING_PTR(str), RSTRING_LEN(str), dst_fptr, 0) < 0)
                 rb_sys_fail(0);
         }
         else /* others such as StringIO */
@@ -8648,8 +8737,11 @@ rb_io_set_encoding(int argc, VALUE *argv, VALUE io)
     rb_io_t *fptr;
     VALUE v1, v2, opt;
 
-    opt = pop_last_hash(&argc, argv);
-    rb_scan_args(argc, argv, "11", &v1, &v2);
+    if (TYPE(io) != T_FILE) {
+        return rb_funcall2(io, id_set_encoding, argc, argv);
+    }
+
+    argc = rb_scan_args(argc, argv, "11:", &v1, &v2, &opt);
     GetOpenFile(io, fptr);
     io_encoding_set(fptr, v1, v2, opt);
     return io;
@@ -9825,6 +9917,7 @@ Init_IO(void)
     id_getc = rb_intern("getc");
     id_flush = rb_intern("flush");
     id_readpartial = rb_intern("readpartial");
+    id_set_encoding = rb_intern("set_encoding");
 
     rb_define_global_function("syscall", rb_f_syscall, -1);
 

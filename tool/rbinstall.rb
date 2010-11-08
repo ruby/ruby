@@ -300,6 +300,9 @@ enable_shared = CONFIG["ENABLE_SHARED"] == 'yes'
 dll = CONFIG["LIBRUBY_SO"]
 lib = CONFIG["LIBRUBY"]
 arc = CONFIG["LIBRUBY_A"]
+major = CONFIG["MAJOR"]
+minor = CONFIG["MINOR"]
+load_relative = configure_args.include?("--enable-load-relative")
 
 install?(:local, :arch, :bin, :'bin-arch') do
   prepare "binary commands", bindir
@@ -336,6 +339,14 @@ install?(:local, :arch, :lib) do
   end
 end
 
+install?(:local, :arch, :data) do
+  pc = CONFIG["ruby_pc"]
+  if pc and File.file?(pc) and File.size?(pc)
+    prepare "pkgconfig data", pkgconfigdir = File.join(libdir, "pkgconfig")
+    install pc, pkgconfigdir, :mode => $data_mode
+  end
+end
+
 install?(:ext, :arch, :'ext-arch') do
   prepare "extension objects", archlibdir
   noinst = %w[-* -*/] | (CONFIG["no_install_files"] || "").split
@@ -369,6 +380,23 @@ end
 install?(:doc, :capi) do
   prepare "capi-docs", capidir
   install_recursive "doc/capi", capidir, :mode => $data_mode
+end
+
+if load_relative
+  PROLOG_SCRIPT = <<EOS
+#!/bin/sh\n# -*- ruby -*-
+bindir=`#{CONFIG["CHDIR"]} "${0%/*}" 2>/dev/null; pwd`
+EOS
+  if CONFIG["LIBRUBY_RELATIVE"] != 'yes' and libpathenv = CONFIG["LIBPATHENV"]
+    pathsep = File::PATH_SEPARATOR
+    PROLOG_SCRIPT << <<EOS
+prefix="${bindir%/bin}"
+export #{libpathenv}="$prefix/lib${#{libpathenv}#{pathsep}+#{pathsep}$#{libpathenv}}"
+EOS
+  end
+  PROLOG_SCRIPT << %Q[exec "$bindir/#{ruby_install_name}" -x "$0" "$@"\n]
+else
+  PROLOG_SCRIPT = nil
 end
 
 install?(:local, :comm, :bin, :'bin-comm') do
@@ -416,7 +444,11 @@ install?(:local, :comm, :bin, :'bin-comm') do
       shebang = f.gets
       body = f.read
     end
-    shebang.sub!(/^\#!.*?ruby\b/) {"#!" + ruby_shebang}
+    if PROLOG_SCRIPT
+      shebang.sub!(/\A(\#!.*?ruby\b)?/) {PROLOG_SCRIPT + ($1 || "#!ruby\n")}
+    else
+      shebang.sub!(/\A\#!.*?ruby\b/) {"#!" + ruby_shebang}
+    end
     shebang.sub!(/\r$/, '')
     body.gsub!(/\r$/, '')
 
@@ -515,7 +547,7 @@ install?(:ext, :comm, :gem) do
     version = open(src) {|f| f.find {|s| /^\s*\w*VERSION\s*=(?!=)/ =~ s}} or next
     version = version.split(%r"=\s*", 2)[1].strip[/\A([\'\"])(.*?)\1/, 2]
     puts "#{" "*30}#{name} #{version}"
-    open_for_install(File.join(destdir, "#{name}.gemspec"), $data_mode) do
+    open_for_install(File.join(destdir, "#{name}-#{version}.gemspec"), $data_mode) do
       <<-GEMSPEC
 Gem::Specification.new do |s|
   s.name = #{name.dump}

@@ -239,4 +239,12 @@ class TestPath < Test::Unit::TestCase
     assert_equal('', File.extname('.x'))
     assert_equal('', File.extname('..x'))
   end
+
+  def test_ascii_incompatible_path
+    s = "\u{221e}\u{2603}"
+    assert_raise(Encoding::CompatibilityError) {open(s.encode("utf-16be"))}
+    assert_raise(Encoding::CompatibilityError) {open(s.encode("utf-16le"))}
+    assert_raise(Encoding::CompatibilityError) {open(s.encode("utf-32be"))}
+    assert_raise(Encoding::CompatibilityError) {open(s.encode("utf-32le"))}
+  end
 end

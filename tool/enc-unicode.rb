@@ -3,12 +3,12 @@
 # Creates the data structures needed by Onigurma to map Unicode codepoints to
 # property names and POSIX character classes
 #
-# To use this, get UnicodeData.txt, Scripts.txt, PropList.txt from unicode.org.
-# (http://unicode.org/Public/UNIDATA/)
-# And run following command.
-#   ruby1.9 tool/enc-unicode.rb data_dir > enc/unicode/name2ctype.kwd
-# You can get source file for gperf.
-# After this, simply make ruby.
+# To use this, get UnicodeData.txt, Scripts.txt, PropList.txt,
+# PropertyAliases.txt, PropertyValueAliases.txt, and
+# DerivedCoreProperties.txt from unicode.org.
+# (http://unicode.org/Public/UNIDATA/) And run following command.
+# ruby1.9 tool/enc-unicode.rb data_dir > enc/unicode/name2ctype.kwd
+# You can get source file for gperf.  After this, simply make ruby.
 
 unless ARGV.size == 1
   $stderr.puts "Usage: #{$0} data_directory"
@@ -129,13 +129,13 @@ def parse_scripts(data)
   ]
   current = nil
   cps = []
-  names = []
+  names = {}
   files.each do |file|
     IO.foreach(get_file(file[:fn])) do |line|
       if /^# Total code points: / =~ line
         data[current] = cps
         make_const(current, cps, file[:title])
-        names << current
+        (names[file[:title]] ||= []) << current
         cps = []
       elsif /^(\h+)(?:..(\h+))?\s*;\s*(\w+)/ =~ line
         current = $3
@@ -143,7 +143,11 @@ def parse_scripts(data)
       end
     end
   end
-  names
+  #  All code points not explicitly listed for Script
+  #  have the value Unknown (Zzzz).
+  data['Unknown'] =  (0..0x10ffff).to_a - data.values_at(*names['Script']).flatten
+  make_const('Unknown', data['Unknown'], 'Script')
+  names.values.flatten << 'Unknown'
 end
 
 def parse_aliases(data)
@@ -205,6 +209,7 @@ end
 
 # Write Data
 puts '%{'
+puts '#define long size_t'
 props, data = parse_unicode_data(get_file('UnicodeData.txt'))
 print "\n#ifdef USE_UNICODE_PROPERTIES"
 props.each do |name|

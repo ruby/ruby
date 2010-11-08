@@ -1127,10 +1127,12 @@ dln_strerror(char *message, size_t size)
     char *p = message;
     size_t len = snprintf(message, size, "%d: ", error);
 
-    FormatMessage(
-	FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-	NULL, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-	message + len, size - len, NULL);
+#define format_message(sublang) FormatMessage(\
+	FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,	\
+	NULL, error, MAKELANGID(LANG_NEUTRAL, sublang),			\
+	message + len, size - len, NULL)
+    if (format_message(SUBLANG_ENGLISH_US) == 0)
+	format_message(SUBLANG_DEFAULT);
     for (p = message + len; *p; p++) {
 	if (*p == '\n' || *p == '\r')
 	    *p = ' ';
@@ -1212,8 +1214,9 @@ rb_w32_check_imported(HMODULE ext, HMODULE mine)
 	while (piat->u1.Function) {
 	    PIMAGE_IMPORT_BY_NAME pii = (PIMAGE_IMPORT_BY_NAME)((char *)ext + (size_t)pint->u1.AddressOfData);
 	    static const char prefix[] = "rb_";
-	    if (strncmp(pii->Name, prefix, sizeof(prefix) - 1) == 0) {
-		FARPROC addr = GetProcAddress(mine, pii->Name);
+	    const char *name = (const char *)pii->Name;
+	    if (strncmp(name, prefix, sizeof(prefix) - 1) == 0) {
+		FARPROC addr = GetProcAddress(mine, name);
 		if (addr) return (FARPROC)piat->u1.Function == addr;
 	    }
 	    piat++;

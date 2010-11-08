@@ -1,10 +1,10 @@
 #! /bin/sh
 # Configuration validation subroutine script.
 #   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
-#   2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008
+#   2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
 #   Free Software Foundation, Inc.
 
-timestamp='2009-04-17'
+timestamp='2009-11-20'
 
 # This file is (in principle) common to ALL GNU software.
 # The presence of a machine in this file suggests that SOME GNU software
@@ -32,12 +32,15 @@ timestamp='2009-04-17'
 
 
 # Please send patches to <config-patches@gnu.org>.  Submit a context
-# diff and a properly formatted ChangeLog entry.
+# diff and a properly formatted GNU ChangeLog entry.
 #
 # Configuration subroutine to validate and canonicalize a configuration type.
 # Supply the specified configuration type as an argument.
 # If it is invalid, we print an error message on stderr and exit with code 1.
 # Otherwise, we print the canonical config type on stdout and succeed.
+
+# You can get the latest version of this script from:
+# http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.sub;hb=HEAD
 
 # This file is supposed to be the same for all GNU packages
 # and recognize all the CPU types, system types and aliases
@@ -149,9 +152,12 @@ case $os in
 	-convergent* | -ncr* | -news | -32* | -3600* | -3100* | -hitachi* |\
 	-c[123]* | -convex* | -sun | -crds | -omron* | -dg | -ultra | -tti* | \
 	-harris | -dolphin | -highlevel | -gould | -cbm | -ns | -masscomp | \
-	-apple | -axis | -knuth | -cray)
+	-apple | -axis | -knuth | -cray | -microblaze)
 		os=
 		basic_machine=$1
+		;;
+        -bluegene*)
+	        os=-cnk
 		;;
 	-sim | -cisco | -oki | -wec | -winbond)
 		os=
@@ -281,6 +287,7 @@ case $basic_machine in
 	| pdp10 | pdp11 | pj | pjl \
 	| powerpc | powerpc64 | powerpc64le | powerpcle | ppcbe \
 	| pyramid \
+	| rx \
 	| score \
 	| sh | sh[1234] | sh[24]a | sh[24]aeb | sh[23]e | sh[34]eb | sheb | shbe | shle | sh[1234]le | sh3ele \
 	| sh64 | sh64le \
@@ -288,13 +295,14 @@ case $basic_machine in
 	| sparcv8 | sparcv9 | sparcv9b | sparcv9v \
 	| spu | strongarm \
 	| tahoe | thumb | tic4x | tic80 | tron \
+	| ubicom32 \
 	| v850 | v850e \
 	| we32k \
 	| x86 | xc16x | xscale | xscalee[bl] | xstormy16 | xtensa \
 	| z8k | z80)
 		basic_machine=$basic_machine-unknown
 		;;
-	m6811 | m68hc11 | m6812 | m68hc12)
+	m6811 | m68hc11 | m6812 | m68hc12 | picochip)
 		# Motorola 68HC11/12.
 		basic_machine=$basic_machine-unknown
 		os=-none
@@ -337,7 +345,7 @@ case $basic_machine in
 	| lm32-* \
 	| m32c-* | m32r-* | m32rle-* \
 	| m68000-* | m680[012346]0-* | m68360-* | m683?2-* | m68k-* \
-	| m88110-* | m88k-* | maxq-* | mcore-* | metag-* \
+	| m88110-* | m88k-* | maxq-* | mcore-* | metag-* | microblaze-* \
 	| mips-* | mipsbe-* | mipseb-* | mipsel-* | mipsle-* \
 	| mips16-* \
 	| mips64-* | mips64el-* \
@@ -365,7 +373,7 @@ case $basic_machine in
 	| pdp10-* | pdp11-* | pj-* | pjl-* | pn-* | power-* \
 	| powerpc-* | powerpc64-* | powerpc64le-* | powerpcle-* | ppcbe-* \
 	| pyramid-* \
-	| romp-* | rs6000-* \
+	| romp-* | rs6000-* | rx-* \
 	| sh-* | sh[1234]-* | sh[24]a-* | sh[24]aeb-* | sh[23]e-* | sh[34]eb-* | sheb-* | shbe-* \
 	| shle-* | sh[1234]le-* | sh3ele-* | sh64-* | sh64le-* \
 	| sparc-* | sparc64-* | sparc64b-* | sparc64v-* | sparc86x-* | sparclet-* \
@@ -374,6 +382,7 @@ case $basic_machine in
 	| tahoe-* | thumb-* \
 	| tic30-* | tic4x-* | tic54x-* | tic55x-* | tic6x-* | tic80-* | tile-* \
 	| tron-* \
+	| ubicom32-* \
 	| v850-* | v850e-* | vax-* \
 	| we32k-* \
 	| x86-* | x86_64-* | xc16x-* | xps100-* | xscale-* | xscalee[bl]-* \
@@ -466,6 +475,10 @@ case $basic_machine in
 	blackfin-*)
 		basic_machine=bfin-`echo $basic_machine | sed 's/^[^-]*-//'`
 		os=-linux
+		;;
+	bluegene*)
+		basic_machine=powerpc-ibm
+		os=-cnk
 		;;
 	c90)
 		basic_machine=c90-cray
@@ -718,6 +731,9 @@ case $basic_machine in
 	merlin)
 		basic_machine=ns32k-utek
 		os=-sysv
+		;;
+        microblaze)
+		basic_machine=microblaze-xilinx
 		;;
 	mingw32)
 		basic_machine=i386-pc
@@ -1240,6 +1256,9 @@ case $os in
         # First match some system type aliases
         # that might get confused with valid system types.
 	# -solaris* is a basic system type, with this one exception.
+        -auroraux)
+	        os=-auroraux
+		;;
 	-solaris1 | -solaris1.*)
 		os=`echo $os | sed -e 's|solaris1|sunos4|'`
 		;;
@@ -1260,9 +1279,9 @@ case $os in
 	# Each alternative MUST END IN A *, to match a version number.
 	# -sysv* is not here because it comes later, after sysvr4.
 	-gnu* | -bsd* | -mach* | -minix* | -genix* | -ultrix* | -irix* \
-	      | -*vms* | -sco* | -esix* | -isc* | -aix* | -sunos | -sunos[34]*\
-	      | -hpux* | -unos* | -osf* | -luna* | -dgux* | -solaris* | -sym* \
-	      | -kopensolaris* \
+	      | -*vms* | -sco* | -esix* | -isc* | -aix* | -cnk* | -sunos | -sunos[34]*\
+	      | -hpux* | -unos* | -osf* | -luna* | -dgux* | -auroraux* | -solaris* \
+	      | -sym* | -kopensolaris* \
 	      | -amigaos* | -amigados* | -msdos* | -newsos* | -unicos* | -aof* \
 	      | -aos* | -aros* \
 	      | -nindy* | -vxsim* | -vxworks* | -ebmon* | -hms* | -mvs* \
@@ -1283,7 +1302,7 @@ case $os in
 	      | -os2* | -vos* | -palmos* | -uclinux* | -nucleus* \
 	      | -morphos* | -superux* | -rtmk* | -rtmk-nova* | -windiss* \
 	      | -powermax* | -dnix* | -nx6 | -nx7 | -sei* | -dragonfly* \
-	      | -skyos* | -haiku* | -rdos* | -toppers* | -drops*)
+	      | -skyos* | -haiku* | -rdos* | -toppers* | -drops* | -es*)
 	# Remember, each alternative MUST END IN *, to match a version number.
 		;;
 	-qnx*)
@@ -1613,7 +1632,7 @@ case $basic_machine in
 			-sunos*)
 				vendor=sun
 				;;
-			-aix*)
+			-cnk*|-aix*)
 				vendor=ibm
 				;;
 			-beos*)

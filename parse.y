@@ -690,7 +690,7 @@ static void token_info_pop(struct parser_params*, const char *token);
 %type <node> args call_args opt_call_args
 %type <node> paren_args opt_paren_args
 %type <node> command_args aref_args opt_block_arg block_arg var_ref var_lhs
-%type <node> mrhs superclass block_call block_command
+%type <node> command_asgn mrhs superclass block_call block_command
 %type <node> f_block_optarg f_block_opt
 %type <node> f_arglist f_args f_arg f_arg_item f_optarg f_marg f_marg_list f_margs
 %type <node> assoc_list assocs assoc undef_list backref string_dvar for_var
@@ -1060,15 +1060,7 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 			$$ = dispatch1(END, $3);
 		    %*/
 		    }
-		| lhs '=' command_call
-		    {
-		    /*%%%*/
-			value_expr($3);
-			$$ = node_assign($1, $3);
-		    /*%
-			$$ = dispatch2(assign, $1, $3);
-		    %*/
-		    }
+		| command_asgn
 		| mlhs '=' command_call
 		    {
 		    /*%%%*/
@@ -1224,6 +1216,27 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| expr
 		;
+
+command_asgn	: lhs '=' command_call
+		    {
+		    /*%%%*/
+			value_expr($3);
+			$$ = node_assign($1, $3);
+		    /*%
+			$$ = dispatch2(assign, $1, $3);
+		    %*/
+		    }
+		| lhs '=' command_asgn
+		    {
+		    /*%%%*/
+			value_expr($3);
+			$$ = node_assign($1, $3);
+		    /*%
+			$$ = dispatch2(assign, $1, $3);
+		    %*/
+		    }
+		;
+
 
 expr		: command_call
 		| expr keyword_and expr
@@ -3884,7 +3897,8 @@ regexp		: tREGEXP_BEG regexp_contents tREGEXP_END
 				if (nd_type(list->nd_head) == NODE_STR) {
 				    VALUE tail = list->nd_head->nd_lit;
 				    if (reg_fragment_check(tail, options) && prev && !NIL_P(prev->nd_lit)) {
-					if (!literal_concat0(parser, prev->nd_lit, tail)) {
+					VALUE lit = prev == node ? prev->nd_lit : prev->nd_head->nd_lit;
+					if (!literal_concat0(parser, lit, tail)) {
 					    node = 0;
 					    break;
 					}
@@ -8907,7 +8921,7 @@ new_args_gen(struct parser_params *parser, NODE *m, NODE *o, ID r, NODE *p, ID b
 }
 #endif /* !RIPPER */
 
-#define LVAR_USED (1UL << (sizeof(ID) * CHAR_BIT - 1))
+#define LVAR_USED ((ID)1 << (sizeof(ID) * CHAR_BIT - 1))
 
 static void
 warn_unused_var(struct parser_params *parser, struct local_vars *local)

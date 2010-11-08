@@ -109,7 +109,6 @@ module OpenSSL
           ary = []
           while true
             if md = TypeAndValue.match(str)
-              matched = md.to_s
               remain = md.post_match
               type = md[1]
               value, tag = expand_value(md[2], md[3], md[4]) rescue nil

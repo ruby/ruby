@@ -164,10 +164,11 @@ map_charset(VALUE *code)
     VALUE val = StringValue(*code);
 
     if (RHASH_SIZE(charset_map)) {
+	st_data_t data;
 	VALUE key = rb_funcall2(val, rb_intern("downcase"), 0, 0);
 	StringValuePtr(key);
-	if (st_lookup(RHASH_TBL(charset_map), key, &val)) {
-	    *code = val;
+	if (st_lookup(RHASH_TBL(charset_map), key, &data)) {
+	    *code = (VALUE)data;
 	}
     }
     return StringValuePtr(*code);
@@ -1183,6 +1184,7 @@ Init_iconv(void)
 {
     VALUE rb_cIconv = rb_define_class("Iconv", rb_cData);
 
+    rb_warn("iconv will be deprecated in the future, use String#encode instead.");
     rb_define_alloc_func(rb_cIconv, iconv_s_allocate);
     rb_define_singleton_method(rb_cIconv, "open", iconv_s_open, -1);
     rb_define_singleton_method(rb_cIconv, "iconv", iconv_s_iconv, -1);

@@ -85,6 +85,9 @@ rb_clear_cache_by_class(VALUE klass)
 {
     struct cache_entry *ent, *end;
 
+    if (RCLASS_M_TBL(klass)->num_entries == 0)
+        return;
+
     rb_vm_change_state();
 
     if (!ruby_running)
@@ -211,10 +214,8 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 		rb_class2name(rb_ivar_get(klass, attached)));
 	mid = ID_ALLOCATOR;
     }
-    if (OBJ_FROZEN(klass)) {
-	rb_error_frozen("class/module");
-    }
 
+    rb_check_frozen(klass);
     mtbl = RCLASS_M_TBL(klass);
 
     /* check re-definition */
@@ -454,7 +455,7 @@ rb_method_entry(VALUE klass, ID id)
 static void
 remove_method(VALUE klass, ID mid)
 {
-    st_data_t data;
+    st_data_t key, data;
     rb_method_entry_t *me = 0;
 
     if (klass == rb_cObject) {
@@ -463,8 +464,7 @@ remove_method(VALUE klass, ID mid)
     if (rb_safe_level() >= 4 && !OBJ_UNTRUSTED(klass)) {
 	rb_raise(rb_eSecurityError, "Insecure: can't remove method");
     }
-    if (OBJ_FROZEN(klass))
-	rb_error_frozen("class/module");
+    rb_check_frozen(klass);
     if (mid == object_id || mid == id__send__ || mid == idInitialize) {
 	rb_warn("removing `%s' may cause serious problems", rb_id2name(mid));
     }
@@ -475,7 +475,8 @@ remove_method(VALUE klass, ID mid)
 	rb_name_error(mid, "method `%s' not defined in %s",
 		      rb_id2name(mid), rb_class2name(klass));
     }
-    st_delete(RCLASS_M_TBL(klass), &mid, &data);
+    key = (st_data_t)mid;
+    st_delete(RCLASS_M_TBL(klass), &key, &data);
 
     rb_vm_check_redefinition_opt_method(me);
     rb_clear_cache_for_undef(klass, mid);

@@ -108,6 +108,7 @@ bracket(
     int r;
     int ok = 0, not = 0;
 
+    if (p >= pend) return NULL;
     if (*p == '!' || *p == '^') {
 	not = 1;
 	p++;
@@ -120,6 +121,7 @@ bracket(
 	if (!*t1)
 	    return NULL;
 	p = t1 + (r = rb_enc_mbclen(t1, pend, enc));
+	if (p >= pend) return NULL;
 	if (p[0] == '-' && p[1] != ']') {
 	    const char *t2 = p + 1;
 	    int r2;
@@ -390,15 +392,10 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
     }
     fsenc = rb_filesystem_encoding();
 
-    rb_scan_args(argc, argv, "11", &dirname, &opt);
+    argc = rb_scan_args(argc, argv, "1:", &dirname, &opt);
 
     if (!NIL_P(opt)) {
-        VALUE v, enc=Qnil;
-        opt = rb_convert_type(opt, T_HASH, "Hash", "to_hash");
-
-        v = rb_hash_aref(opt, sym_enc);
-        if (!NIL_P(v)) enc = v;
-
+	VALUE enc = rb_hash_aref(opt, sym_enc);
 	if (!NIL_P(enc)) {
 	    fsenc = rb_to_encoding(enc);
 	}

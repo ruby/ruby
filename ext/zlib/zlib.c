@@ -3067,11 +3067,7 @@ rb_gzreader_initialize(int argc, VALUE *argv, VALUE obj)
     int err;
 
     Data_Get_Struct(obj, struct gzfile, gz);
-    if (argc > 1) {
-	opt = rb_check_convert_type(argv[argc-1], T_HASH, "Hash", "to_hash");
-	if (!NIL_P(opt)) argc--;
-    }
-    rb_scan_args(argc, argv, "1", &io);
+    rb_scan_args(argc, argv, "1:", &io, &opt);
 
     /* this is undocumented feature of zlib */
     err = inflateInit2(&gz->z.stream, -MAX_WBITS);

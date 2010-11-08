@@ -143,7 +143,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.5.0"
+#define WIN32OLE_VERSION "1.5.3"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -868,7 +868,7 @@ static UINT ole_encoding2cp(rb_encoding *enc)
     ENC_MACHING_CP(enc, "EUC-KR", 51949);
     ENC_MACHING_CP(enc, "EUC-TW", 51950);
     ENC_MACHING_CP(enc, "GB18030", 54936);
-    ENC_MACHING_CP(enc, "GB2312", 51936);
+    ENC_MACHING_CP(enc, "GB2312", 20936);
     ENC_MACHING_CP(enc, "GBK", 936);
     ENC_MACHING_CP(enc, "IBM437", 437);
     ENC_MACHING_CP(enc, "IBM737", 737);
@@ -1102,12 +1102,19 @@ ole_hresult2msg(HRESULT hr)
     char strhr[100];
     sprintf(strhr, "    HRESULT error code:0x%08x\n      ", (unsigned)hr);
     msg = rb_str_new2(strhr);
-
     dwCount = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
                             FORMAT_MESSAGE_FROM_SYSTEM |
                             FORMAT_MESSAGE_IGNORE_INSERTS,
-                            NULL, hr, cWIN32OLE_lcid,
+                            NULL, hr, 
+                            MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
                             (LPTSTR)&p_msg, 0, NULL);
+    if (dwCount == 0) {
+        dwCount = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                                FORMAT_MESSAGE_FROM_SYSTEM |
+                                FORMAT_MESSAGE_IGNORE_INSERTS,
+                                NULL, hr, cWIN32OLE_lcid,
+                                (LPTSTR)&p_msg, 0, NULL);
+    }
     if (dwCount > 0) {
 	term = p_msg + strlen(p_msg);
 	while (p_msg < term) {
@@ -2338,6 +2345,13 @@ reg_get_val(HKEY hkey, const char *subkey)
         err = RegQueryValueEx(hkey, subkey, NULL, &dwtype, pbuf, &size);
         if (err == ERROR_SUCCESS) {
             pbuf[size] = '\0';
+            if (dwtype == REG_EXPAND_SZ) {
+                 char* pbuf2 = pbuf;
+                 DWORD len = ExpandEnvironmentStrings(pbuf2, NULL, 0);
+                 pbuf = ALLOC_N(char, len + 1);
+                 ExpandEnvironmentStrings(pbuf2, pbuf, len + 1);
+                 free(pbuf2);
+            }
             val = rb_str_new2(pbuf);
         }
         free(pbuf);

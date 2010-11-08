@@ -175,9 +175,11 @@ class TestString < Test::Unit::TestCase
     def o.<=>(x); nil; end
     assert_nil("foo" <=> o)
 
+    class << o;remove_method :<=>;end
     def o.<=>(x); 1; end
     assert_equal(-1, "foo" <=> o)
 
+    class << o;remove_method :<=>;end
     def o.<=>(x); 2**100; end
     assert_equal(-(2**100), "foo" <=> o)
   end
@@ -200,6 +202,7 @@ class TestString < Test::Unit::TestCase
     def o.to_str; end
     def o.==(x); false; end
     assert_equal(false, "foo" == o)
+    class << o;remove_method :==;end
     def o.==(x); true; end
     assert_equal(true, "foo" == o)
   end
@@ -479,6 +482,9 @@ class TestString < Test::Unit::TestCase
     assert_equal(4, a.count(S("hello"), S("^l")))
     assert_equal(4, a.count(S("ej-m")))
     assert_equal(0, S("y").count(S("a\\-z")))
+    assert_equal(5, "abc\u{3042 3044 3046}".count("^a"))
+    assert_equal(5, "abc\u{3042 3044 3046}".count("^\u3042"))
+    assert_equal(2, "abc\u{3042 3044 3046}".count("a-z", "^a"))
 
     assert_raise(ArgumentError) { "foo".count }
   end
@@ -498,6 +504,10 @@ class TestString < Test::Unit::TestCase
     assert_equal(true, "a\u0101".delete("\u0101").ascii_only?)
     assert_equal(true, "a\u3041".delete("\u3041").ascii_only?)
     assert_equal(false, "a\u3041\u3042".tr("\u3041", "a").ascii_only?)
+
+    assert_equal("a", "abc\u{3042 3044 3046}".delete("^a"))
+    assert_equal("bc\u{3042 3044 3046}", "abc\u{3042 3044 3046}".delete("a"))
+    assert_equal("\u3042", "abc\u{3042 3044 3046}".delete("^\u3042"))
   end
 
   def test_delete!
@@ -1808,6 +1818,7 @@ class TestString < Test::Unit::TestCase
       c.class_eval { attr 1 }
     end
 
+    class << o;remove_method :to_str;end
     def o.to_str; "foo"; end
     assert_nothing_raised do
       c.class_eval { attr o }
@@ -1832,11 +1843,13 @@ class TestString < Test::Unit::TestCase
     assert_equal("\u3042", ("\u3042" * 100)[-1])
   end
 
+=begin
   def test_compare_different_encoding_string
     s1 = "\xff".force_encoding("UTF-8")
     s2 = "\xff".force_encoding("ISO-2022-JP")
-    #assert_equal([-1, 1], [s1 <=> s2, s2 <=> s1].sort)
+    assert_equal([-1, 1], [s1 <=> s2, s2 <=> s1].sort)
   end
+=end
 
   def test_casecmp
     assert_equal(1, "\u3042B".casecmp("\u3042a"))
@@ -1855,12 +1868,13 @@ class TestString < Test::Unit::TestCase
     assert_raise(Encoding::CompatibilityError) { "\u3042".encode("ISO-2022-JP").rstrip }
   end
 
+=begin
   def test_symbol_table_overflow
-    return
     assert_in_out_err([], <<-INPUT, [], /symbol table overflow \(symbol [a-z]{8}\) \(RuntimeError\)/)
       ("aaaaaaaa".."zzzzzzzz").each {|s| s.to_sym }
     INPUT
   end
+=end
 
   def test_shared_force_encoding
     s = "\u{3066}\u{3059}\u{3068}".gsub(//, '')
@@ -1881,5 +1895,21 @@ class TestString < Test::Unit::TestCase
       assert_equal('"abc"', "abc".encode(e).inspect)
       assert_equal('"\\u3042\\u3044\\u3046"', "\u3042\u3044\u3046".encode(e).inspect)
     end
+  end
+
+  def test_prepend
+    assert_equal(S("hello world!"), "world!".prepend("hello "))
+
+    foo = Object.new
+    def foo.to_str
+      "b"
+    end
+    assert_equal(S("ba"), "a".prepend(foo))
+
+    a = S("world")
+    b = S("hello ")
+    a.prepend(b)
+    assert_equal(S("hello world"), a)
+    assert_equal(S("hello "), b)
   end
 end

@@ -109,9 +109,20 @@ module REXML
     end
 
     private
+    def normalized_encoding_name(_encoding)
+      if _encoding == ::Encoding::UTF_16BE
+        "UTF-16"
+      else
+        return _encoding.name
+      end
+    end
+
     def content(enc)
       rv = "version='#@version'"
-      rv << " encoding='#{enc}'" if @writeencoding || enc !~ /utf-8/i
+      if @writeencoding || enc.to_s !~ /\Autf-8\z/i
+        encoding_name = normalized_encoding_name(enc)
+        rv << " encoding='#{encoding_name}'"
+      end
       rv << " standalone='#@standalone'" if @standalone
       rv
     end

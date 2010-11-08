@@ -142,7 +142,8 @@ typedef char ruby_check_sizeof_voidp[SIZEOF_VOIDP == sizeof(void*) ? 1 : -1];
 # endif
 #endif
 
-#if defined PRIdPTR
+#if defined PRI_PTRDIFF_PREFIX
+#elif defined PRIdPTR
 # define PRI_PTRDIFF_PREFIX "t"
 #elif SIZEOF_PTRDIFF_T == SIZEOF_INT
 # define PRI_PTRDIFF_PREFIX
@@ -158,7 +159,8 @@ typedef char ruby_check_sizeof_voidp[SIZEOF_VOIDP == sizeof(void*) ? 1 : -1];
 #define PRIxPTRDIFF PRI_PTRDIFF_PREFIX"x"
 #define PRIXPTRDIFF PRI_PTRDIFF_PREFIX"X"
 
-#if defined PRIdPTR
+#if defined PRI_SIZE_PREFIX
+#elif defined PRIdPTR
 # define PRI_SIZE_PREFIX "z"
 #elif SIZEOF_SIZE_T == SIZEOF_INT
 # define PRI_SIZE_PREFIX
@@ -311,7 +313,7 @@ rb_long2int(long n) {rb_long2int_internal(n, i); return i;}
 #define NUM2GIDT(v) NUM2LONG(v)
 #endif
 
-#define FIX2LONG(x) RSHIFT((SIGNED_VALUE)x,1)
+#define FIX2LONG(x) RSHIFT((SIGNED_VALUE)(x),1)
 #define FIX2ULONG(x) ((((VALUE)(x))>>1)&LONG_MAX)
 #define FIXNUM_P(f) (((SIGNED_VALUE)(f))&FIXNUM_FLAG)
 #define POSFIXABLE(f) ((f) < FIXNUM_MAX+1)
@@ -479,7 +481,7 @@ void rb_set_errinfo(VALUE);
 
 SIGNED_VALUE rb_num2long(VALUE);
 VALUE rb_num2ulong(VALUE);
-#define NUM2LONG_internal(x) (FIXNUM_P(x) ? FIX2LONG(x) : rb_num2long(x))
+#define NUM2LONG_internal(x) ((long)(FIXNUM_P(x) ? FIX2LONG(x) : rb_num2long(x)))
 #ifdef __GNUC__
 #define NUM2LONG(x) \
     __extension__ ({VALUE num2long_x = (x); NUM2LONG_internal(num2long_x);})
@@ -606,6 +608,7 @@ struct RObject {
 typedef struct {
     VALUE super;
     struct st_table *iv_tbl;
+    struct st_table *const_tbl;
 } rb_classext_t;
 
 struct RClass {
@@ -615,10 +618,12 @@ struct RClass {
     struct st_table *iv_index_tbl;
 };
 #define RCLASS_IV_TBL(c) (RCLASS(c)->ptr->iv_tbl)
+#define RCLASS_CONST_TBL(c) (RCLASS(c)->ptr->const_tbl)
 #define RCLASS_M_TBL(c) (RCLASS(c)->m_tbl)
 #define RCLASS_SUPER(c) (RCLASS(c)->ptr->super)
 #define RCLASS_IV_INDEX_TBL(c) (RCLASS(c)->iv_index_tbl)
 #define RMODULE_IV_TBL(m) RCLASS_IV_TBL(m)
+#define RMODULE_CONST_TBL(m) RCLASS_CONST_TBL(m)
 #define RMODULE_M_TBL(m) RCLASS_M_TBL(m)
 #define RMODULE_SUPER(m) RCLASS_SUPER(m)
 
@@ -952,7 +957,7 @@ struct RBignum {
 #define OBJ_FROZEN(x) (!!FL_TEST((x), FL_FREEZE))
 #define OBJ_FREEZE(x) FL_SET((x), FL_FREEZE)
 
-#if SIZEOF_INT < SIZEOF_VALUE
+#if SIZEOF_INT < SIZEOF_LONG
 # define INT2NUM(v) INT2FIX((int)(v))
 # define UINT2NUM(v) LONG2FIX((unsigned int)(v))
 #else
@@ -1190,6 +1195,7 @@ void ruby_init(void);
 void *ruby_options(int, char**);
 int ruby_run_node(void *);
 int ruby_exec_node(void *);
+int ruby_executable_node(void *n, int *status);
 
 RUBY_EXTERN VALUE rb_mKernel;
 RUBY_EXTERN VALUE rb_mComparable;

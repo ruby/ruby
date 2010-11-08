@@ -98,6 +98,8 @@ extern VALUE rb_cBigDecimal;
 #define VP_EXCEPTION_OP         ((unsigned short)0x0020)
 #define VP_EXCEPTION_MEMORY     ((unsigned short)0x0040)
 
+#define RMPD_EXCEPTION_MODE_DEFAULT 0U
+
 /* Computation mode */
 #define VP_ROUND_MODE            ((unsigned short)0x0100)
 #define VP_ROUND_UP         1
@@ -107,6 +109,8 @@ extern VALUE rb_cBigDecimal;
 #define VP_ROUND_CEIL       5
 #define VP_ROUND_FLOOR      6
 #define VP_ROUND_HALF_EVEN  7
+
+#define RMPD_ROUNDING_MODE_DEFAULT  VP_ROUND_HALF_UP
 
 #define VP_SIGN_NaN                0 /* NaN                      */
 #define VP_SIGN_POSITIVE_ZERO      1 /* Positive zero            */
@@ -176,9 +180,9 @@ VP_EXPORT size_t VpGetPrecLimit(void);
 VP_EXPORT size_t VpSetPrecLimit(size_t n);
 
 /* Round mode */
-VP_EXPORT int           VpIsRoundMode(unsigned long n);
-VP_EXPORT unsigned long VpGetRoundMode(void);
-VP_EXPORT unsigned long VpSetRoundMode(unsigned long n);
+VP_EXPORT int            VpIsRoundMode(unsigned short n);
+VP_EXPORT unsigned short VpGetRoundMode(void);
+VP_EXPORT unsigned short VpSetRoundMode(unsigned short n);
 
 VP_EXPORT int VpException(unsigned short f,const char *str,int always);
 #if 0  /* unused */
@@ -206,9 +210,9 @@ VP_EXPORT void VpDtoV(Real *m,double d);
 VP_EXPORT void VpItoV(Real *m,S_INT ival);
 #endif
 VP_EXPORT int VpSqrt(Real *y,Real *x);
-VP_EXPORT int VpActiveRound(Real *y, Real *x, int f, ssize_t il);
-VP_EXPORT int VpMidRound(Real *y, int f, ssize_t nf);
-VP_EXPORT int VpLeftRound(Real *y, int f, ssize_t nf);
+VP_EXPORT int VpActiveRound(Real *y, Real *x, unsigned short f, ssize_t il);
+VP_EXPORT int VpMidRound(Real *y, unsigned short f, ssize_t nf);
+VP_EXPORT int VpLeftRound(Real *y, unsigned short f, ssize_t nf);
 VP_EXPORT void VpFrac(Real *y, Real *x);
 VP_EXPORT int VpPower(Real *y, Real *x, SIGNED_VALUE n);
 

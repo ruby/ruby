@@ -153,6 +153,8 @@ class TestReadline < Test::Unit::TestCase
         assert_equal("first second", actual_line_buffer)
         assert_equal(12, actual_point)
         assert_equal("first complete finish", Readline.line_buffer)
+        assert_equal(Encoding.find("locale"), Readline.line_buffer.encoding)
+        assert_equal(true, Readline.line_buffer.tainted?)
         assert_equal(21, Readline.point)
       ensure
         stdin.close(true)

@@ -29,7 +29,7 @@ end # OpenSSL
 #
 class Integer
   def to_bn
-    OpenSSL::BN::new(self)
+    OpenSSL::BN::new(self.to_s(16), 16)
   end
 end # Integer
 

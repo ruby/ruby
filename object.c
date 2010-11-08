@@ -19,6 +19,7 @@
 #include <ctype.h>
 #include <math.h>
 #include <float.h>
+#include "constant.h"
 
 VALUE rb_cBasicObject;
 VALUE rb_mKernel;
@@ -146,9 +147,7 @@ rb_class_real(VALUE cl)
  *  call-seq:
  *     obj.class    -> class
  *
- *  Returns the class of <i>obj</i>, now preferred over
- *  <code>Object#type</code>, as an object's type in Ruby is only
- *  loosely tied to that object's class. This method must always be
+ *  Returns the class of <i>obj</i>. This method must always be
  *  called with an explicit receiver, as <code>class</code> is also a
  *  reserved word in Ruby.
  *
@@ -222,6 +221,10 @@ init_copy(VALUE dest, VALUE obj)
 	if (RCLASS_IV_TBL(dest)) {
 	    st_free_table(RCLASS_IV_TBL(dest));
 	    RCLASS_IV_TBL(dest) = 0;
+	}
+	if (RCLASS_CONST_TBL(dest)) {
+	    rb_free_const_table(RCLASS_CONST_TBL(dest));
+	    RCLASS_CONST_TBL(dest) = 0;
 	}
 	if (RCLASS_IV_TBL(obj)) {
 	    RCLASS_IV_TBL(dest) = st_copy(RCLASS_IV_TBL(obj));
@@ -670,9 +673,9 @@ rb_obj_tap(VALUE obj)
  * Document-method: initialize
  *
  * call-seq:
- *    BasicObject.new( *args )
+ *    BasicObject.new
  *
- * Returns a new BasicObject. Arguments are ignored.
+ * Returns a new BasicObject.
  */
 
 /*
@@ -714,9 +717,7 @@ rb_obj_taint(VALUE obj)
 {
     rb_secure(4);
     if (!OBJ_TAINTED(obj)) {
-	if (OBJ_FROZEN(obj)) {
-	    rb_error_frozen("object");
-	}
+	rb_check_frozen(obj);
 	OBJ_TAINT(obj);
     }
     return obj;
@@ -735,9 +736,7 @@ rb_obj_untaint(VALUE obj)
 {
     rb_secure(3);
     if (OBJ_TAINTED(obj)) {
-	if (OBJ_FROZEN(obj)) {
-	    rb_error_frozen("object");
-	}
+	rb_check_frozen(obj);
 	FL_UNSET(obj, FL_TAINT);
     }
     return obj;
@@ -770,9 +769,7 @@ rb_obj_untrust(VALUE obj)
 {
     rb_secure(4);
     if (!OBJ_UNTRUSTED(obj)) {
-	if (OBJ_FROZEN(obj)) {
-	    rb_error_frozen("object");
-	}
+	rb_check_frozen(obj);
 	OBJ_UNTRUST(obj);
     }
     return obj;
@@ -791,9 +788,7 @@ rb_obj_trust(VALUE obj)
 {
     rb_secure(3);
     if (OBJ_UNTRUSTED(obj)) {
-	if (OBJ_FROZEN(obj)) {
-	    rb_error_frozen("object");
-	}
+	rb_check_frozen(obj);
 	FL_UNSET(obj, FL_UNTRUSTED);
     }
     return obj;
@@ -1425,7 +1420,7 @@ rb_class_s_alloc(VALUE klass)
  *  the module object, and the block is evaluated in the context of this
  *  module using <code>module_eval</code>.
  *
- *     Fred = Module.new do
+ *     fred = Module.new do
  *       def meth1
  *         "hello"
  *       end
@@ -1434,9 +1429,12 @@ rb_class_s_alloc(VALUE klass)
  *       end
  *     end
  *     a = "my string"
- *     a.extend(Fred)   #=> "my string"
+ *     a.extend(fred)   #=> "my string"
  *     a.meth1          #=> "hello"
  *     a.meth2          #=> "bye"
+ *
+ *  Assign the module to a constant (name starting uppercase) if you
+ *  want to treat it like a regular module.
  */
 
 static VALUE
@@ -1452,12 +1450,32 @@ rb_mod_initialize(VALUE module)
 
 /*
  *  call-seq:
- *     Class.new(super_class=Object)   ->    a_class
+ *     Class.new(super_class=Object)               -> a_class
+ *     Class.new(super_class=Object) { |mod| ... } -> a_class
  *
  *  Creates a new anonymous (unnamed) class with the given superclass
  *  (or <code>Object</code> if no parameter is given). You can give a
  *  class a name by assigning the class object to a constant.
  *
+ *  If a block is given, it is passed the class object, and the block
+ *  is evaluated in the context of this class using
+ *  <code>class_eval</code>.
+ *
+ *     fred = Class.new do
+ *       def meth1
+ *         "hello"
+ *       end
+ *       def meth2
+ *         "bye"
+ *       end
+ *     end
+ *
+ *     a = fred.new     #=> #<#<Class:0x100381890>:0x100376b98>
+ *     a.meth1          #=> "hello"
+ *     a.meth2          #=> "bye"
+ *
+ *  Assign the class to a constant (name starting uppercase) if you
+ *  want to treat it like a regular class.
  */
 
 static VALUE
@@ -2497,7 +2515,7 @@ Init_Object(void)
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
 
-    rb_define_private_method(rb_cBasicObject, "initialize", rb_obj_dummy, -1);
+    rb_define_private_method(rb_cBasicObject, "initialize", rb_obj_dummy, 0);
     rb_define_alloc_func(rb_cBasicObject, rb_class_allocate_instance);
     rb_define_method(rb_cBasicObject, "==", rb_obj_equal, 1);
     rb_define_method(rb_cBasicObject, "equal?", rb_obj_equal, 1);
@@ -2630,6 +2648,8 @@ Init_Object(void)
     rb_define_method(rb_cModule, "class_variable_get", rb_mod_cvar_get, 1);
     rb_define_method(rb_cModule, "class_variable_set", rb_mod_cvar_set, 2);
     rb_define_method(rb_cModule, "class_variable_defined?", rb_mod_cvar_defined, 1);
+    rb_define_method(rb_cModule, "public_constant", rb_mod_public_constant, -1);
+    rb_define_method(rb_cModule, "private_constant", rb_mod_private_constant, -1);
 
     rb_define_method(rb_cClass, "allocate", rb_obj_alloc, 0);
     rb_define_method(rb_cClass, "new", rb_class_new_instance, -1);

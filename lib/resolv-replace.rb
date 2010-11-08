@@ -51,7 +51,6 @@ class UDPSocket < IPSocket
       rescue Resolv::ResolvError
         raise SocketError, "Hostname not known: #{host}"
       end
-      err = nil
       addrs[0...-1].each {|addr|
         begin
           return original_resolv_send(mesg, flags, addr, port)

@@ -350,14 +350,6 @@ str_mod_check(VALUE s, const char *p, long len)
     }
 }
 
-static inline void
-str_frozen_check(VALUE s)
-{
-    if (OBJ_FROZEN(s)) {
-	rb_raise(rb_eRuntimeError, "string frozen");
-    }
-}
-
 size_t
 rb_str_capacity(VALUE str)
 {
@@ -1224,12 +1216,13 @@ rb_str_times(VALUE str, VALUE times)
  *
  *  Format---Uses <i>str</i> as a format specification, and returns the result
  *  of applying it to <i>arg</i>. If the format specification contains more than
- *  one substitution, then <i>arg</i> must be an <code>Array</code> containing
- *  the values to be substituted. See <code>Kernel::sprintf</code> for details
- *  of the format string.
+ *  one substitution, then <i>arg</i> must be an <code>Array</code> or <code>Hash</code>
+ *  containing the values to be substituted. See <code>Kernel::sprintf</code> for
+ *  details of the format string.
  *
  *     "%05d" % 123                              #=> "00123"
  *     "%-5s: %08x" % [ "ID", self.object_id ]   #=> "ID   : 200e14d6"
+ *     "foo = %{foo}" % { :foo => 'bar' }        #=> "foo = bar"
  */
 
 static VALUE
@@ -1249,7 +1242,7 @@ str_modifiable(VALUE str)
     if (FL_TEST(str, STR_TMPLOCK)) {
 	rb_raise(rb_eRuntimeError, "can't modify string; temporarily locked");
     }
-    if (OBJ_FROZEN(str)) rb_error_frozen("string");
+    rb_check_frozen(str);
     if (!OBJ_UNTRUSTED(str) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify string");
 }
@@ -1334,7 +1327,7 @@ void
 rb_str_associate(VALUE str, VALUE add)
 {
     /* sanity check */
-    if (OBJ_FROZEN(str)) rb_error_frozen("string");
+    rb_check_frozen(str);
     if (STR_ASSOC_P(str)) {
 	/* already associated */
 	rb_ary_concat(RSTRING(str)->as.heap.aux.shared, add);
@@ -1912,7 +1905,10 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
     }
     else if (str_cr == ENC_CODERANGE_VALID) {
         res_encindex = str_encindex;
-        res_cr = str_cr;
+	if (ptr_cr == ENC_CODERANGE_7BIT || ptr_cr == ENC_CODERANGE_VALID)
+	    res_cr = str_cr;
+	else
+	    res_cr = ptr_cr;
     }
     else { /* str_cr == ENC_CODERANGE_BROKEN */
         res_encindex = str_encindex;
@@ -2000,6 +1996,7 @@ rb_str_append(VALUE str, VALUE str2)
     return rb_str_buf_append(str, str2);
 }
 
+int rb_num_to_uint(VALUE val, unsigned int *ret);
 
 /*
  *  call-seq:
@@ -2020,40 +2017,55 @@ rb_str_append(VALUE str, VALUE str2)
 VALUE
 rb_str_concat(VALUE str1, VALUE str2)
 {
-    SIGNED_VALUE lc;
+    unsigned int lc;
 
-    if (FIXNUM_P(str2)) {
-	lc = FIX2LONG(str2);
-	if (lc < 0)
-	    rb_raise(rb_eRangeError, "negative argument");
-    }
-    else if (TYPE(str2) == T_BIGNUM) {
-	if (!RBIGNUM_SIGN(str2))
-	    rb_raise(rb_eRangeError, "negative argument");
-	lc = rb_big2ulong(str2);
+    if (FIXNUM_P(str2) || TYPE(str2) == T_BIGNUM) {
+	if (rb_num_to_uint(str2, &lc) == 0) {
+	}
+	else if (FIXNUM_P(str2)) {
+	    rb_raise(rb_eRangeError, "%ld out of char range", FIX2LONG(str2));
+	}
+	else {
+	    rb_raise(rb_eRangeError, "bignum out of char range");
+	}
     }
     else {
 	return rb_str_append(str1, str2);
     }
-#if SIZEOF_INT < SIZEOF_VALUE
-    if ((VALUE)lc > UINT_MAX) {
-	rb_raise(rb_eRangeError, "%"PRIuVALUE" out of char range", lc);
-    }
-#endif
     {
 	rb_encoding *enc = STR_ENC_GET(str1);
 	long pos = RSTRING_LEN(str1);
 	int cr = ENC_CODERANGE(str1);
-	int c, len;
+	int len;
 
-	if ((len = rb_enc_codelen(c = (int)lc, enc)) <= 0) {
-	    rb_raise(rb_eRangeError, "%u invalid char", c);
+	if ((len = rb_enc_codelen(lc, enc)) <= 0) {
+	    rb_raise(rb_eRangeError, "%u invalid char", lc);
 	}
 	rb_str_resize(str1, pos+len);
-	rb_enc_mbcput(c, RSTRING_PTR(str1)+pos, enc);
+	rb_enc_mbcput(lc, RSTRING_PTR(str1)+pos, enc);
 	ENC_CODERANGE_SET(str1, cr);
 	return str1;
     }
+}
+
+/*
+ *  call-seq:
+ *     str.prepend(other_str)  -> str
+ *
+ *  Prepend---Prepend the given string to <i>str</i>.
+ *
+ *  a = "world"
+ *  a.prepend("hello ") #=> "hello world"
+ *  a                   #=> "hello world"
+ */
+
+static VALUE
+rb_str_prepend(VALUE str, VALUE str2)
+{
+    StringValue(str2);
+    StringValue(str);
+    rb_str_update(str, 0L, 0L, str2);
+    return str;
 }
 
 st_index_t
@@ -2467,14 +2479,14 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
     e = RSTRING_END(str);
     t = RSTRING_PTR(sub);
     slen = RSTRING_LEN(sub);
-    for (;;) {
-	s = str_nth(sbeg, e, pos, enc, singlebyte);
-	if (!s) return -1;
+    s = str_nth(sbeg, e, pos, enc, singlebyte);
+    while (s) {
 	if (memcmp(s, t, slen) == 0) {
 	    return pos;
 	}
 	if (pos == 0) break;
 	pos--;
+	s = rb_enc_prev_char(sbeg, s, e, enc);
     }
     return -1;
 }
@@ -3529,7 +3541,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
                 repl = rb_obj_as_string(repl);
             }
 	    str_mod_check(str, p, len);
-	    str_frozen_check(str);
+	    rb_check_frozen(str);
 	}
 	else {
 	    repl = rb_reg_regsub(repl, str, regs, pat);
@@ -4049,7 +4061,7 @@ rb_str_include(VALUE str, VALUE arg)
  *  integer base <i>base</i> (between 2 and 36). Extraneous characters past the
  *  end of a valid number are ignored. If there is not a valid number at the
  *  start of <i>str</i>, <code>0</code> is returned. This method never raises an
- *  exception.
+ *  exception when <i>base</i> is valid.
  *
  *     "12345".to_i             #=> 12345
  *     "99 red balloons".to_i   #=> 99
@@ -4306,12 +4318,11 @@ rb_str_dump(VALUE str)
 	    }
 	    else {
 		if (u8) {	/* \u{NN} */
-		    char buf[32];
 		    int n = rb_enc_precise_mbclen(p-1, pend, enc);
-		    if (MBCLEN_CHARFOUND_P(n)) {
-			int cc = rb_enc_mbc_to_codepoint(p-1, pend, enc);
-			sprintf(buf, "%x", cc);
-			len += strlen(buf)+4;
+		    if (MBCLEN_CHARFOUND_P(n-1)) {
+			unsigned int cc = rb_enc_mbc_to_codepoint(p-1, pend, enc);
+			while (cc >>= 4) len++;
+			len += 5;
 			p += MBCLEN_CHARFOUND_LEN(n)-1;
 			break;
 		    }
@@ -5053,8 +5064,9 @@ rb_str_tr(VALUE str, VALUE src, VALUE repl)
     return str;
 }
 
+#define TR_TABLE_SIZE 257
 static void
-tr_setup_table(VALUE str, char stable[256], int first,
+tr_setup_table(VALUE str, char stable[TR_TABLE_SIZE], int first,
 	       VALUE *tablep, VALUE *ctablep, rb_encoding *enc)
 {
     const unsigned int errc = -1;
@@ -5075,6 +5087,10 @@ tr_setup_table(VALUE str, char stable[256], int first,
 	for (i=0; i<256; i++) {
 	    stable[i] = 1;
 	}
+	stable[256] = cflag;
+    }
+    else if (stable[256] && !cflag) {
+	stable[256] = 0;
     }
     for (i=0; i<256; i++) {
 	buf[i] = cflag;
@@ -5110,7 +5126,7 @@ tr_setup_table(VALUE str, char stable[256], int first,
 
 
 static int
-tr_find(unsigned int c, char table[256], VALUE del, VALUE nodel)
+tr_find(unsigned int c, char table[TR_TABLE_SIZE], VALUE del, VALUE nodel)
 {
     if (c < 256) {
 	return table[c] != 0;
@@ -5118,12 +5134,16 @@ tr_find(unsigned int c, char table[256], VALUE del, VALUE nodel)
     else {
 	VALUE v = UINT2NUM(c);
 
-	if (del && !NIL_P(rb_hash_lookup(del, v))) {
-	    if (!nodel || NIL_P(rb_hash_lookup(nodel, v))) {
+	if (del) {
+	    if (!NIL_P(rb_hash_lookup(del, v)) &&
+		    (!nodel || NIL_P(rb_hash_lookup(nodel, v)))) {
 		return TRUE;
 	    }
 	}
-	return FALSE;
+	else if (nodel && !NIL_P(rb_hash_lookup(nodel, v))) {
+	    return FALSE;
+	}
+	return table[256] ? TRUE : FALSE;
     }
 }
 
@@ -5138,7 +5158,7 @@ tr_find(unsigned int c, char table[256], VALUE del, VALUE nodel)
 static VALUE
 rb_str_delete_bang(int argc, VALUE *argv, VALUE str)
 {
-    char squeez[256];
+    char squeez[TR_TABLE_SIZE];
     rb_encoding *enc = 0;
     char *s, *send, *t;
     VALUE del = 0, nodel = 0;
@@ -5233,7 +5253,7 @@ rb_str_delete(int argc, VALUE *argv, VALUE str)
 static VALUE
 rb_str_squeeze_bang(int argc, VALUE *argv, VALUE str)
 {
-    char squeez[256];
+    char squeez[TR_TABLE_SIZE];
     rb_encoding *enc = 0;
     VALUE del = 0, nodel = 0;
     char *s, *send, *t;
@@ -5385,7 +5405,7 @@ rb_str_tr_s(VALUE str, VALUE src, VALUE repl)
 static VALUE
 rb_str_count(int argc, VALUE *argv, VALUE str)
 {
-    char table[256];
+    char table[TR_TABLE_SIZE];
     rb_encoding *enc = 0;
     VALUE del = 0, nodel = 0;
     char *s, *send;
@@ -5423,16 +5443,15 @@ rb_str_count(int argc, VALUE *argv, VALUE str)
     i = 0;
     while (s < send) {
 	unsigned int c;
-	int clen;
 
 	if (ascompat && (c = *(unsigned char*)s) < 0x80) {
-	    clen = 1;
 	    if (table[c]) {
 		i++;
 	    }
 	    s++;
 	}
 	else {
+	    int clen;
 	    c = rb_enc_codepoint_len(s, send, &clen, enc);
 	    if (tr_find(c, table, del, nodel)) {
 		i++;
@@ -7199,6 +7218,8 @@ sym_to_sym(VALUE sym)
     return sym;
 }
 
+VALUE rb_funcall_passing_block(VALUE recv, ID mid, int argc, const VALUE *argv);
+
 static VALUE
 sym_call(VALUE args, VALUE sym, int argc, VALUE *argv)
 {
@@ -7208,7 +7229,7 @@ sym_call(VALUE args, VALUE sym, int argc, VALUE *argv)
 	rb_raise(rb_eArgError, "no receiver given");
     }
     obj = argv[0];
-    return rb_funcall3(obj, (ID)sym, argc - 1, argv + 1);
+    return rb_funcall_passing_block(obj, (ID)sym, argc - 1, argv + 1);
 }
 
 /*
@@ -7525,6 +7546,7 @@ Init_String(void)
     rb_define_method(rb_cString, "reverse!", rb_str_reverse_bang, 0);
     rb_define_method(rb_cString, "concat", rb_str_concat, 1);
     rb_define_method(rb_cString, "<<", rb_str_concat, 1);
+    rb_define_method(rb_cString, "prepend", rb_str_prepend, 1);
     rb_define_method(rb_cString, "crypt", rb_str_crypt, 1);
     rb_define_method(rb_cString, "intern", rb_str_intern, 0);
     rb_define_method(rb_cString, "to_sym", rb_str_intern, 0);

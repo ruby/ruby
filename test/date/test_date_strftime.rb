@@ -332,7 +332,6 @@ class TestDateStrftime < Test::Unit::TestCase
     assert_equal(d.ctime, d.asctime)
 
     assert_equal('2001-02-03', d.iso8601)
-    assert_equal(d.rfc3339, d.iso8601)
     assert_equal(d.xmlschema, d.iso8601)
     assert_equal('Sat, 3 Feb 2001 00:00:00 +0000', d.rfc2822)
     assert_equal(d.rfc822, d.rfc2822)

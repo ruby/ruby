@@ -213,6 +213,23 @@ PRINTF_ARGS(void rb_compile_error_append(const char*, ...), 1, 2);
 NORETURN(void rb_load_fail(const char*));
 NORETURN(void rb_error_frozen(const char*));
 void rb_check_frozen(VALUE);
+#define rb_check_frozen_internal(obj) do { \
+	VALUE frozen_obj = (obj); \
+	if (OBJ_FROZEN(frozen_obj)) { \
+	    rb_error_frozen(rb_obj_classname(frozen_obj)); \
+	} \
+    } while (0)
+#ifdef __GNUC__
+#define rb_check_frozen(obj) __extension__({rb_check_frozen_internal(obj);})
+#else
+static inline void
+rb_check_frozen_inline(VALUE obj)
+{
+    rb_check_frozen_internal(obj);
+}
+#define rb_check_frozen(obj) rb_check_frozen_inline(obj)
+#endif
+
 /* eval.c */
 int rb_sourceline(void);
 const char *rb_sourcefile(void);
@@ -559,6 +576,7 @@ VALUE rb_random_bytes(VALUE rnd, long n);
 VALUE rb_random_int(VALUE rnd, VALUE max);
 unsigned int rb_random_int32(VALUE rnd);
 double rb_random_real(VALUE rnd);
+unsigned long rb_genrand_ulong_limited(unsigned long i);
 /* re.c */
 #define rb_memcmp memcmp
 int rb_memcicmp(const void*,const void*,long);
@@ -578,8 +596,6 @@ VALUE rb_reg_init_str(VALUE re, VALUE s, int options);
 VALUE rb_reg_match(VALUE, VALUE);
 VALUE rb_reg_match2(VALUE);
 int rb_reg_options(VALUE);
-void rb_set_kcode(const char*);
-const char* rb_get_kcode(void);
 /* ruby.c */
 #define rb_argv rb_get_argv()
 RUBY_EXTERN VALUE rb_argv0;

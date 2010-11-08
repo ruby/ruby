@@ -110,6 +110,8 @@ class TestRubyLiteral < Test::Unit::TestCase
   def test_dregexp
     assert_instance_of Regexp, /re#{'ge'}xp/
     assert_equal(/regexp/, /re#{'ge'}xp/)
+    bug3903 = '[ruby-core:32682]'
+    assert_raise(SyntaxError, bug3903) {eval('/[#{"\x80"}]/')}
   end
 
   def test_array

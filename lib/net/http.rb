@@ -64,7 +64,7 @@ module Net   #:nodoc:
   #     require 'uri'
   #
   #     url = URI.parse('http://www.example.com/index.html')
-  #     res = Net::HTTP.start(url.host, url.port) {|http|
+  #     res = Net::HTTP.start(url.hostname, url.port) {|http|
   #       http.get('/index.html')
   #     }
   #     puts res.body
@@ -75,7 +75,7 @@ module Net   #:nodoc:
   #
   #     url = URI.parse('http://www.example.com/index.html')
   #     req = Net::HTTP::Get.new(url.path)
-  #     res = Net::HTTP.start(url.host, url.port) {|http|
+  #     res = Net::HTTP.start(url.hostname, url.port) {|http|
   #       http.request(req)
   #     }
   #     puts res.body
@@ -101,7 +101,7 @@ module Net   #:nodoc:
   #     req = Net::HTTP::Post.new(url.path)
   #     req.basic_auth 'jack', 'pass'
   #     req.set_form_data({'from' => '2005-01-01', 'to' => '2005-03-31'}, ';')
-  #     res = Net::HTTP.new(url.host, url.port).start {|http| http.request(req) }
+  #     res = Net::HTTP.new(url.hostname, url.port).start {|http| http.request(req) }
   #     case res
   #     when Net::HTTPSuccess, Net::HTTPRedirection
   #       # OK
@@ -390,7 +390,7 @@ module Net   #:nodoc:
         }
       else
         uri = uri_or_host
-        new(uri.host, uri.port).start {|http|
+        new(uri.hostname, uri.port).start {|http|
           return http.request_get(uri.request_uri, &block)
         }
       end
@@ -415,7 +415,7 @@ module Net   #:nodoc:
       req = Post.new(url.path)
       req.form_data = params
       req.basic_auth url.user, url.password if url.user
-      new(url.host, url.port).start {|http|
+      new(url.hostname, url.port).start {|http|
         http.request(req)
       }
     end
@@ -883,7 +883,7 @@ module Net   #:nodoc:
           the_body = r.read_body dest, &block
           case r["content-encoding"]
           when "gzip"
-            r.body= Zlib::GzipReader.new(StringIO.new(the_body)).read
+            r.body= Zlib::GzipReader.new(StringIO.new(the_body), encoding: "ASCII-8BIT").read
             r.delete("content-encoding")
           when "deflate"
             r.body= Zlib::Inflate.inflate(the_body);
@@ -1201,7 +1201,7 @@ module Net   #:nodoc:
       res
     rescue => exception
       D "Conn close because of error #{exception}"
-      @socket.close unless @socket.closed?
+      @socket.close if @socket and not @socket.closed?
       raise exception
     end
 

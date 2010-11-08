@@ -136,7 +136,7 @@ error !
   {
 
 #define END_INSNS_DISPATCH()    \
-      rb_bug("unknown insn: %ld", GET_CURRENT_INSN());   \
+      rb_bug("unknown insn: %"PRIdVALUE, GET_CURRENT_INSN());   \
   }   /* end of while loop */   \
 
 #define NEXT_INSN() TC_DISPATCH(__NEXT_INSN__)

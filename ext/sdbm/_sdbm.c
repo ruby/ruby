@@ -39,9 +39,14 @@
  * important tuning parms (hah)
  */
 
-#define SEEDUPS		/* always detect duplicates */
-#define BADMESS		/* generate a message for worst case:
+#ifndef SEEDUPS
+#define SEEDUPS 1	/* always detect duplicates */
+#endif
+#ifndef BADMESS
+#define BADMESS 1	/* generate a message for worst case:
 			   cannot make room after SPLTMAX splits */
+#endif
+
 /*
  * misc
  */
@@ -67,7 +72,7 @@ static int   delpair proto((char *, datum));
 static int   chkpage proto((char *));
 static datum getnkey proto((char *, int));
 static void  splpage proto((char *, char *, long));
-#ifdef SEEDUPS
+#if SEEDUPS
 static int   duppair proto((char *, datum));
 #endif
 
@@ -302,7 +307,7 @@ sdbm_store(register DBM *db, datum key, datum val, int flags)
  */
 		if (flags == DBM_REPLACE)
 			(void) delpair(db->pagbuf, key);
-#ifdef SEEDUPS
+#if SEEDUPS
 		else if (duppair(db->pagbuf, key))
 			return 1;
 #endif
@@ -421,8 +426,8 @@ makroom(register DBM *db, long int hash, int need)
  * if we are here, this is real bad news. After SPLTMAX splits,
  * we still cannot fit the key. say goodnight.
  */
-#ifdef BADMESS
-	(void) write(2, "sdbm: cannot insert after SPLTMAX attempts.\n", 44);
+#if BADMESS
+	(void) (write(2, "sdbm: cannot insert after SPLTMAX attempts.\n", 44) < 0);
 #endif
 	return 0;
 
@@ -698,7 +703,7 @@ getpair(char *pag, datum key)
 	return val;
 }
 
-#ifdef SEEDUPS
+#if SEEDUPS
 static int
 duppair(char *pag, datum key)
 {

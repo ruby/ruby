@@ -136,7 +136,6 @@ ruby_debug_breakpoint(void)
     /* */
 }
 
-#ifdef RUBY_DEBUG_ENV
 static void
 set_debug_option(const char *str, int len, void *arg)
 {
@@ -161,4 +160,3 @@ ruby_set_debug_option(const char *str)
 {
     ruby_each_words(str, set_debug_option, 0);
 }
-#endif

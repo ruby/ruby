@@ -13,7 +13,7 @@ unless have_header('ffi.h')
   end
 end
 
-unless have_library('ffi')
+unless have_library('ffi') || have_library('libffi')
   abort "libffi is missing. Please install libffi."
 end
 

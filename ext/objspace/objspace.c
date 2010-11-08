@@ -69,6 +69,9 @@ memsize_of(VALUE obj)
 	if (RCLASS(obj)->ptr->iv_tbl) {
 	    size += st_memsize(RCLASS(obj)->ptr->iv_tbl);
 	}
+	if (RCLASS(obj)->ptr->const_tbl) {
+	    size += st_memsize(RCLASS(obj)->ptr->const_tbl);
+	}
 	size += sizeof(rb_classext_t);
 	break;
       case T_STRING:
@@ -155,9 +158,9 @@ memsize_of(VALUE obj)
  *
  *  Return consuming memory size of obj.
  *
- *  Note that this information is incomplete.  You need to deal with
+ *  Note that the return size is incomplete.  You need to deal with
  *  this information as only a *HINT*.  Especaially, the size of
- *  T_DATA may not right size.
+ *  T_DATA may not be correct.
  *
  *  This method is not expected to work except C Ruby.
  */
@@ -166,6 +169,68 @@ static VALUE
 memsize_of_m(VALUE self, VALUE obj)
 {
     return SIZET2NUM(memsize_of(obj));
+}
+
+struct total_data {
+    size_t total;
+    VALUE klass;
+};
+
+static int
+total_i(void *vstart, void *vend, size_t stride, void *ptr)
+{
+    VALUE v;
+    struct total_data *data = (struct total_data *)ptr;
+
+    for (v = (VALUE)vstart; v != (VALUE)vend; v += stride) {
+	if (RBASIC(v)->flags) {
+	    if (data->klass == 0 || rb_obj_is_kind_of(v, data->klass)) {
+		data->total += memsize_of(v);
+	    }
+	}
+    }
+
+    return 0;
+}
+
+/*
+ *  call-seq:
+ *    ObjectSpace.memsize_of_all([klass]) -> Integer
+ *
+ *  Return consuming memory size of all living objects.
+ *  If klass (should be Class object) is given, return the total
+ *  memory size of instances of the given class.
+ *
+ *  Note that the returned size is incomplete.  You need to deal with
+ *  this information as only a *HINT*.  Especaially, the size of
+ *  T_DATA may not be correct.
+ *
+ *  Note that this method does *NOT* return total malloc'ed memory size.
+ *
+ *  This method can be defined by the following Ruby code:
+ *
+ *  def memsize_of_all klass = false
+ *    total = 0
+ *    ObjectSpace.each_objects{|e|
+ *      total += ObjectSpace.memsize_of(e) if klass == false || e.kind_of?(klass)
+ *    }
+ *    total
+ *  end
+ *
+ *  This method is not expected to work except C Ruby.
+ */
+
+static VALUE
+memsize_of_all_m(int argc, VALUE *argv, VALUE self)
+{
+    struct total_data data = {0, 0};
+
+    if (argc > 0) {
+	rb_scan_args(argc, argv, "01", &data.klass);
+    }
+
+    rb_objspace_each_objects(total_i, &data);
+    return SIZET2NUM(data.total);
 }
 
 static int
@@ -544,8 +609,11 @@ Init_objspace(void)
 {
     VALUE rb_mObjSpace = rb_const_get(rb_cObject, rb_intern("ObjectSpace"));
 
-    rb_define_module_function(rb_mObjSpace, "count_objects_size", count_objects_size, -1);
     rb_define_module_function(rb_mObjSpace, "memsize_of", memsize_of_m, 1);
+    rb_define_module_function(rb_mObjSpace, "memsize_of_all",
+			      memsize_of_all_m, -1);
+
+    rb_define_module_function(rb_mObjSpace, "count_objects_size", count_objects_size, -1);
     rb_define_module_function(rb_mObjSpace, "count_nodes", count_nodes, -1);
     rb_define_module_function(rb_mObjSpace, "count_tdata_objects", count_tdata_objects, -1);
 }

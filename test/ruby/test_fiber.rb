@@ -189,5 +189,13 @@ class TestFiber < Test::Unit::TestCase
       f1.transfer
     }, '[ruby-dev:40833]'
   end
+
+  def test_resume_root_fiber
+    assert_raise(FiberError) do
+      Thread.new do
+        Fiber.current.resume
+      end.join
+    end
+  end
 end
 

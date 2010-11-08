@@ -12,9 +12,13 @@
 #include "ruby/ruby.h"
 #include "ruby/util.h"
 #include "node.h"
+#include "id.h"
 
 VALUE rb_mEnumerable;
-static ID id_each, id_eqq, id_cmp, id_next, id_size;
+static ID id_next;
+#define id_each idEach
+#define id_eqq  idEqq
+#define id_cmp  idCmp
 
 static VALUE
 enum_values_pack(int argc, VALUE *argv)
@@ -1911,7 +1915,7 @@ zip_i(VALUE val, NODE *memo, int argc, VALUE *argv)
  *  elements from each <i>args</i>.  This generates a sequence of
  *  <em>n</em>-element arrays, where <em>n</em> is one more than the
  *  count of arguments.  The length of the resulting sequence will be
- *  <code>enum#size</code.  If the size of any argument is less than
+ *  <code>enum#size</code>.  If the size of any argument is less than
  *  <code>enum#size</code>, <code>nil</code> values are supplied. If
  *  a block is given, it is invoked for each output array, otherwise
  *  an array of arrays is returned.
@@ -2659,10 +2663,5 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "chunk", enum_chunk, -1);
     rb_define_method(rb_mEnumerable, "slice_before", enum_slice_before, -1);
 
-    id_eqq  = rb_intern("===");
-    id_each = rb_intern("each");
-    id_cmp  = rb_intern("<=>");
     id_next = rb_intern("next");
-    id_size = rb_intern("size");
 }
-

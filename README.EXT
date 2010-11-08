@@ -1105,12 +1105,13 @@ according to the format string.  The format can be described in ABNF
 as follows:
 
 --
-scan-arg-spec  := param-arg-spec [block-arg-spec]
+scan-arg-spec  := param-arg-spec [option-hash-arg-spec] [block-arg-spec]
 
 param-arg-spec := pre-arg-spec [post-arg-spec] / post-arg-spec / pre-opt-post-arg-spec
 pre-arg-spec   := num-of-leading-mandatory-args [num-of-optional-args]
 post-arg-spec  := sym-for-variable-length-args [num-of-trailing-mandatory-args]
 pre-opt-post-arg-spec := num-of-leading-mandatory-args num-of-optional-args num-of-trailing-mandatory-args
+option-hash-arg-spec := sym-for-option-hash-arg
 block-arg-spec := sym-for-block-arg
 
 num-of-leading-mandatory-args  := DIGIT ; The number of leading
@@ -1122,6 +1123,18 @@ sym-for-variable-length-args   := "*"   ; Indicates that variable
                                         ; captured as a ruby array
 num-of-trailing-mandatory-args := DIGIT ; The number of trailing
                                         ; mandatory arguments
+sym-for-option-hash-arg        := ":"   ; Indicates that an option
+                                        ; hash is captured if the last
+                                        ; argument is a hash or can be
+                                        ; converted to a hash with
+                                        ; #to_hash.  When the last
+                                        ; argument is nil, it is
+                                        ; captured if it is not
+                                        ; ambiguous to take it as
+                                        ; empty option hash; i.e. '*'
+                                        ; is not specified and
+                                        ; arguments are given more
+                                        ; than sufficient.
 sym-for-block-arg              := "&"   ; Indicates that an iterator
                                         ; block should be captured if
                                         ; given
@@ -1134,8 +1147,8 @@ assigned to captured arguments.  For omitted arguments, variables are
 set to Qnil.  NULL can be put in place of a variable reference, which
 means the corresponding captured argument(s) should be just dropped.
 
-The number of given arguments, excluding an iterator block, is
-returned.
+The number of given arguments, excluding an option hash or iterator
+block, is returned.
 
 ** Invoking Ruby method
 

@@ -113,6 +113,39 @@ rb_num_zerodiv(void)
     rb_raise(rb_eZeroDivError, "divided by 0");
 }
 
+/* experimental API */
+int
+rb_num_to_uint(VALUE val, unsigned int *ret)
+{
+#define NUMERR_TYPE     1
+#define NUMERR_NEGATIVE 2
+#define NUMERR_TOOLARGE 3
+    if (FIXNUM_P(val)) {
+	long v = FIX2LONG(val);
+#if SIZEOF_INT < SIZEOF_LONG
+	if (v > (long)UINT_MAX) return NUMERR_TOOLARGE;
+#endif
+	if (v < 0) return NUMERR_NEGATIVE;
+	*ret = (unsigned int)v;
+	return 0;
+    }
+
+    switch (TYPE(val)) {
+      case T_BIGNUM:
+	if (RBIGNUM_NEGATIVE_P(val)) return NUMERR_NEGATIVE;
+#if SIZEOF_INT < SIZEOF_LONG
+	/* long is 64bit */
+	return NUMERR_TOOLARGE;
+#else
+	/* long is 32bit */
+#define DIGSPERLONG (SIZEOF_LONG/SIZEOF_BDIGITS)
+	if (RBIGNUM_LEN(val) > DIGSPERLONG) return NUMERR_TOOLARGE;
+	*ret = (unsigned int)rb_big2ulong((VALUE)val);
+	return 0;
+#endif
+    }
+    return NUMERR_TYPE;
+}
 
 /*
  *  call-seq:
@@ -533,6 +566,13 @@ num_to_int(VALUE num)
  *  <code>Float</code> objects represent inexact real numbers using
  *  the native architecture's double-precision floating point
  *  representation.
+ *
+ *  Floating point has a different arithmetic and is a inexact number.
+ *  So you should know its esoteric system. see following:
+ *  
+ *  - http://docs.sun.com/source/806-3568/ncg_goldberg.html
+ *  - http://wiki.github.com/rdp/ruby_tutorials_core/ruby-talk-faq#floats_imprecise
+ *  - http://en.wikipedia.org/wiki/Floating_point#Accuracy_problems
  */
 
 VALUE
@@ -1581,7 +1621,7 @@ ruby_float_step(VALUE from, VALUE to, VALUE step, int excl)
 	long i;
 
 	if (isinf(unit)) {
-	    if (unit > 0) rb_yield(DBL2NUM(beg));
+	    if (unit > 0 ? beg <= end : beg >= end) rb_yield(DBL2NUM(beg));
 	}
 	else {
 	    if (err>0.5) err=0.5;
@@ -1784,7 +1824,8 @@ check_uint(VALUE num, VALUE sign)
     if (RTEST(sign)) {
 	/* minus */
 	if ((num & mask) != mask || (num & ~mask) <= INT_MAX + 1UL)
-	    rb_raise(rb_eRangeError, "integer %"PRIdVALUE " too small to convert to `unsigned int'", num);
+#define VALUE_MSBMASK   ((VALUE)1 << ((sizeof(VALUE) * CHAR_BIT) - 1))
+	    rb_raise(rb_eRangeError, "integer %"PRIdVALUE " too small to convert to `unsigned int'", num|VALUE_MSBMASK);
     }
     else {
 	/* plus */
@@ -1814,10 +1855,10 @@ rb_fix2int(VALUE val)
 unsigned long
 rb_num2uint(VALUE val)
 {
-    unsigned long num = rb_num2ulong(val);
+    VALUE num = rb_num2ulong(val);
 
     check_uint(num, rb_funcall(val, '<', 1, INT2FIX(0)));
-    return num;
+    return (unsigned long)num;
 }
 
 unsigned long
@@ -1850,7 +1891,7 @@ rb_fix2int(VALUE val)
 VALUE
 rb_num2fix(VALUE val)
 {
-    long v;
+    SIGNED_VALUE v;
 
     if (FIXNUM_P(val)) return val;
 
@@ -2050,6 +2091,19 @@ int_pred(VALUE num)
     return rb_funcall(num, '-', 1, INT2FIX(1));
 }
 
+VALUE
+rb_enc_uint_chr(unsigned int code, rb_encoding *enc)
+{
+    int n;
+    VALUE str;
+    if ((n = rb_enc_codelen(code, enc)) <= 0) {
+	rb_raise(rb_eRangeError, "%d out of char range", code);
+    }
+    str = rb_enc_str_new(0, n, enc);
+    rb_enc_mbcput(code, RSTRING_PTR(str), enc);
+    return str;
+}
+
 /*
  *  call-seq:
  *     int.chr([encoding])  ->  string
@@ -2066,20 +2120,25 @@ static VALUE
 int_chr(int argc, VALUE *argv, VALUE num)
 {
     char c;
-    int n;
-    SIGNED_VALUE i = NUM2LONG(num);
+    unsigned int i;
     rb_encoding *enc;
-    VALUE str;
+
+    if (rb_num_to_uint(num, &i) == 0) {
+    }
+    else if (FIXNUM_P(num)) {
+	rb_raise(rb_eRangeError, "%ld out of char range", FIX2LONG(num));
+    }
+    else {
+	rb_raise(rb_eRangeError, "bignum out of char range");
+    }
 
     switch (argc) {
       case 0:
-	if (i < 0) {
-	  out_of_range:
-	    rb_raise(rb_eRangeError, "%"PRIdVALUE " out of char range", i);
-	}
 	if (0xff < i) {
 	    enc = rb_default_internal_encoding();
-	    if (!enc) goto out_of_range;
+	    if (!enc) {
+		rb_raise(rb_eRangeError, "%d out of char range", i);
+	    }
 	    goto decode;
 	}
 	c = (char)i;
@@ -2098,13 +2157,7 @@ int_chr(int argc, VALUE *argv, VALUE num)
     enc = rb_to_encoding(argv[0]);
     if (!enc) enc = rb_ascii8bit_encoding();
   decode:
-#if SIZEOF_INT < SIZEOF_VALUE
-    if (i > UINT_MAX) goto out_of_range;
-#endif
-    if (i < 0 || (n = rb_enc_codelen((int)i, enc)) <= 0) goto out_of_range;
-    str = rb_enc_str_new(0, n, enc);
-    rb_enc_mbcput((int)i, RSTRING_PTR(str), enc);
-    return str;
+    return rb_enc_uint_chr(i, enc);
 }
 
 /*

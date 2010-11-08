@@ -202,6 +202,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
 
         req = Net::HTTP::Get.new("/")
         http.request(req){|res|
+          skip res.message unless res.code == '200'
           via = res["via"].split(/,\s+/)
           assert(via.include?("1.1 localhost.localdomain:#{up_port}"), up_log.call + log.call)
           assert(via.include?("1.1 localhost.localdomain:#{port}"), up_log.call + log.call)

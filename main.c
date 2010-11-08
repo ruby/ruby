@@ -15,6 +15,9 @@
 #ifdef HAVE_LOCALE_H
 #include <locale.h>
 #endif
+#ifdef RUBY_DEBUG_ENV
+#include <stdlib.h>
+#endif
 
 RUBY_GLOBAL_SETUP
 

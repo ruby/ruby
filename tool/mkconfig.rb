@@ -35,6 +35,7 @@ module RbConfig
 ]
 
 arch = RUBY_PLATFORM
+win32 = /mswin/ =~ arch
 v_fast = []
 v_others = []
 vars = {}
@@ -51,19 +52,17 @@ File.foreach "config.status" do |line|
     name = $1
     val = $2
     if $3
-      continued_line = []
-      continued_line << val
+      continued_line = [val]
       continued_name = name
       next
     end
   when /^"(.*)"\s*(\\)?$/
-    if continued_line
-      continued_line <<  $1
-      next if $2
-      val = continued_line.join("")
-      name = continued_name
-      continued_line = nil
-    end
+    next if !continued_line
+    continued_line << $1
+    next if $2
+    val = continued_line.join
+    name = continued_name
+    continued_line = nil
   when /^(?:ac_given_)?INSTALL=(.*)/
     v_fast << "  CONFIG[\"INSTALL\"] = " + $1 + "\n"
   end
@@ -112,14 +111,14 @@ File.foreach "config.status" do |line|
       end
     end
     if name == "configure_args"
-      val.gsub!(/ +(?!-)/, "=") if /mswin32/ =~ RUBY_PLATFORM
+      val.gsub!(/ +(?!-)/, "=") if win32
       val.gsub!(/--with-out-ext/, "--without-ext")
     end
     val = val.gsub(/\$(?:\$|\{?(\w+)\}?)/) {$1 ? "$(#{$1})" : $&}.dump
     if /^prefix$/ =~ name
       val = "(TOPDIR || DESTDIR + #{val})"
     end
-    v = "  CONFIG[\"#{name}\"] #{vars[name] ? '<< "\n"' : '='} #{val}\n"
+    v = "  CONFIG[\"#{name}\"] #{win32 && vars[name] ? '<< "\n"' : '='} #{val}\n"
     vars[name] = true
     if fast[name]
       v_fast << v
@@ -144,9 +143,16 @@ print "  CONFIG[\"DESTDIR\"] = DESTDIR\n"
 
 versions = {}
 IO.foreach(File.join(srcdir, "version.h")) do |l|
-  m = /^\s*#\s*define\s+RUBY_(VERSION_(MAJOR|MINOR|TEENY)|PATCHLEVEL)\s+(-?\d+)/.match(l)
+  m = /^\s*#\s*define\s+RUBY_(PATCHLEVEL)\s+(-?\d+)/.match(l)
   if m
-    versions[m[2]||m[1]] = m[3]
+    versions[m[1]] = m[2]
+    break
+  end
+end
+IO.foreach(File.join(srcdir, "include/ruby/version.h")) do |l|
+  m = /^\s*#\s*define\s+RUBY_API_VERSION_(MAJOR|MINOR|TEENY)\s+(-?\d+)/.match(l)
+  if m
+    versions[m[1]] = m[2]
     break if versions.size == 4
   end
 end

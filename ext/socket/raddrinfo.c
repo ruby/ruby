@@ -56,7 +56,7 @@ ruby_getaddrinfo(const char *nodename, const char *servname,
 #if defined(_AIX)
 static int
 ruby_getaddrinfo__aix(const char *nodename, const char *servname,
-		      struct addrinfo *hints, struct addrinfo **res)
+		      const struct addrinfo *hints, struct addrinfo **res)
 {
     int error = getaddrinfo(nodename, servname, hints, res);
     struct addrinfo *r;
@@ -102,11 +102,13 @@ static int str_is_number(const char *);
 #if defined(__APPLE__)
 static int
 ruby_getaddrinfo__darwin(const char *nodename, const char *servname,
-			 struct addrinfo *hints, struct addrinfo **res)
+			 const struct addrinfo *hints, struct addrinfo **res)
 {
     /* fix [ruby-core:29427] */
     const char *tmp_servname;
     struct addrinfo tmp_hints;
+    int error;
+
     tmp_servname = servname;
     MEMCPY(&tmp_hints, hints, struct addrinfo, 1);
     if (nodename && servname) {
@@ -117,10 +119,9 @@ ruby_getaddrinfo__darwin(const char *nodename, const char *servname,
 #endif
 	}
     }
-    int error = getaddrinfo(nodename, tmp_servname, &tmp_hints, res);
 
-    if (error == 0)
-    {
+    error = getaddrinfo(nodename, tmp_servname, &tmp_hints, res);
+    if (error == 0) {
         /* [ruby-dev:23164] */
         struct addrinfo *r;
         r = *res;
@@ -578,7 +579,7 @@ init_addrinfo(rb_addrinfo_t *rai, struct sockaddr *sa, socklen_t len,
               int pfamily, int socktype, int protocol,
               VALUE canonname, VALUE inspectname)
 {
-    if (sizeof(rai->addr) < len)
+    if ((socklen_t)sizeof(rai->addr) < len)
         rb_raise(rb_eArgError, "sockaddr string too big");
     memcpy((void *)&rai->addr, (void *)sa, len);
     rai->sockaddr_len = len;
@@ -936,7 +937,7 @@ inspect_sockaddr(VALUE addrinfo, VALUE ret)
           {
             struct sockaddr_in *addr;
             int port;
-            if (rai->sockaddr_len < sizeof(struct sockaddr_in)) {
+            if (rai->sockaddr_len < (socklen_t)sizeof(struct sockaddr_in)) {
                 rb_str_cat2(ret, "too-short-AF_INET-sockaddr");
             }
             else {
@@ -949,7 +950,7 @@ inspect_sockaddr(VALUE addrinfo, VALUE ret)
                 port = ntohs(addr->sin_port);
                 if (port)
                     rb_str_catf(ret, ":%d", port);
-                if (sizeof(struct sockaddr_in) < rai->sockaddr_len)
+                if ((socklen_t)sizeof(struct sockaddr_in) < rai->sockaddr_len)
                     rb_str_catf(ret, "(sockaddr %d bytes too long)", (int)(rai->sockaddr_len - sizeof(struct sockaddr_in)));
             }
             break;
@@ -962,7 +963,7 @@ inspect_sockaddr(VALUE addrinfo, VALUE ret)
             char hbuf[1024];
             int port;
             int error;
-            if (rai->sockaddr_len < sizeof(struct sockaddr_in6)) {
+            if (rai->sockaddr_len < (socklen_t)sizeof(struct sockaddr_in6)) {
                 rb_str_cat2(ret, "too-short-AF_INET6-sockaddr");
             }
             else {
@@ -984,7 +985,7 @@ inspect_sockaddr(VALUE addrinfo, VALUE ret)
                     port = ntohs(addr->sin6_port);
                     rb_str_catf(ret, "[%s]:%d", hbuf, port);
                 }
-                if (sizeof(struct sockaddr_in6) < rai->sockaddr_len)
+                if ((socklen_t)sizeof(struct sockaddr_in6) < rai->sockaddr_len)
                     rb_str_catf(ret, "(sockaddr %d bytes too long)", (int)(rai->sockaddr_len - sizeof(struct sockaddr_in6)));
             }
             break;

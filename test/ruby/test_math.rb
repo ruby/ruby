@@ -17,7 +17,10 @@ class TestMath < Test::Unit::TestCase
   end
 
   def test_atan2
-    assert_raise(Math::DomainError) { Math.atan2(0, 0) }
+    check(+0.0, Math.atan2(+0.0, +0.0))
+    check(-0.0, Math.atan2(-0.0, +0.0))
+    check(+Math::PI, Math.atan2(+0.0, -0.0))
+    check(-Math::PI, Math.atan2(-0.0, -0.0))
     assert_raise(Math::DomainError) { Math.atan2(Float::INFINITY, Float::INFINITY) }
     assert_raise(Math::DomainError) { Math.atan2(Float::INFINITY, -Float::INFINITY) }
     assert_raise(Math::DomainError) { Math.atan2(-Float::INFINITY, Float::INFINITY) }

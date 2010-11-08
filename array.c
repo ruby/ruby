@@ -20,6 +20,8 @@
 #endif
 #include <assert.h>
 
+#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
+
 VALUE rb_cArray;
 
 static ID id_cmp;
@@ -240,7 +242,7 @@ rb_ary_set_shared(VALUE ary, VALUE shared)
 static inline void
 rb_ary_modify_check(VALUE ary)
 {
-    if (OBJ_FROZEN(ary)) rb_error_frozen("array");
+    rb_check_frozen(ary);
     if (!OBJ_UNTRUSTED(ary) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify array");
 }
@@ -1897,7 +1899,7 @@ rb_ary_rotate_bang(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *     ary.rotate([n = 1]) -> new_ary
+ *     ary.rotate([cnt = 1]) -> new_ary
  *
  *  Returns new array by rotating +self+, whose first element is the
  *  element at +cnt+ in +self+.  If +cnt+ is negative then it rotates
@@ -3339,7 +3341,8 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
 static VALUE
 rb_ary_and(VALUE ary1, VALUE ary2)
 {
-    VALUE hash, ary3, v, vv;
+    VALUE hash, ary3, v;
+    st_data_t vv;
     long i;
 
     ary2 = to_ary(ary2);
@@ -3351,8 +3354,8 @@ rb_ary_and(VALUE ary1, VALUE ary2)
         return ary3;
 
     for (i=0; i<RARRAY_LEN(ary1); i++) {
-	v = vv = rb_ary_elt(ary1, i);
-	if (st_delete(RHASH_TBL(hash), (st_data_t*)&vv, 0)) {
+	vv = (st_data_t)(v = rb_ary_elt(ary1, i));
+	if (st_delete(RHASH_TBL(hash), &vv, 0)) {
 	    rb_ary_push(ary3, v);
 	}
     }
@@ -3375,8 +3378,8 @@ rb_ary_and(VALUE ary1, VALUE ary2)
 static VALUE
 rb_ary_or(VALUE ary1, VALUE ary2)
 {
-    VALUE hash, ary3;
-    VALUE v, vv;
+    VALUE hash, ary3, v;
+    st_data_t vv;
     long i;
 
     ary2 = to_ary(ary2);
@@ -3384,14 +3387,14 @@ rb_ary_or(VALUE ary1, VALUE ary2)
     hash = ary_add_hash(ary_make_hash(ary1), ary2);
 
     for (i=0; i<RARRAY_LEN(ary1); i++) {
-	v = vv = rb_ary_elt(ary1, i);
-	if (st_delete(RHASH_TBL(hash), (st_data_t*)&vv, 0)) {
+	vv = (st_data_t)(v = rb_ary_elt(ary1, i));
+	if (st_delete(RHASH_TBL(hash), &vv, 0)) {
 	    rb_ary_push(ary3, v);
 	}
     }
     for (i=0; i<RARRAY_LEN(ary2); i++) {
-	v = vv = rb_ary_elt(ary2, i);
-	if (st_delete(RHASH_TBL(hash), (st_data_t*)&vv, 0)) {
+	vv = (st_data_t)(v = rb_ary_elt(ary2, i));
+	if (st_delete(RHASH_TBL(hash), &vv, 0)) {
 	    rb_ary_push(ary3, v);
 	}
     }
@@ -3730,25 +3733,45 @@ rb_ary_flatten(int argc, VALUE *argv, VALUE ary)
     return result;
 }
 
+#define OPTHASH_GIVEN_P(opts) \
+    (argc > 0 && !NIL_P(opts = rb_check_hash_type(argv[argc-1])) && (--argc, 1))
+static VALUE sym_random;
+
+#define RAND_UPTO(max) (long)(rb_random_real(randgen)*(max))
+
 /*
  *  call-seq:
- *     ary.shuffle!        -> ary
+ *     ary.shuffle!              -> ary
+ *     ary.shuffle!(random: rng) -> ary
  *
  *  Shuffles elements in +self+ in place.
+ *  If +rng+ is given, it will be used as the random number generator.
  */
 
-
 static VALUE
-rb_ary_shuffle_bang(VALUE ary)
+rb_ary_shuffle_bang(int argc, VALUE *argv, VALUE ary)
 {
-    VALUE *ptr;
-    long i = RARRAY_LEN(ary);
+    VALUE *ptr, opts, *snap_ptr, randgen = rb_cRandom;
+    long i, snap_len;
 
+    if (OPTHASH_GIVEN_P(opts)) {
+	randgen = rb_hash_lookup2(opts, sym_random, randgen);
+    }
+    if (argc > 0) {
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
+    }
     rb_ary_modify(ary);
+    i = RARRAY_LEN(ary);
     ptr = RARRAY_PTR(ary);
+    snap_len = i;
+    snap_ptr = ptr;
     while (i) {
-	long j = (long)(rb_genrand_real()*i);
-	VALUE tmp = ptr[--i];
+	long j = RAND_UPTO(i);
+	VALUE tmp;
+	if (snap_len != RARRAY_LEN(ary) || snap_ptr != RARRAY_PTR(ary)) {
+	    rb_raise(rb_eRuntimeError, "modified during shuffle");
+	}
+	tmp = ptr[--i];
 	ptr[i] = ptr[j];
 	ptr[j] = tmp;
     }
@@ -3758,27 +3781,34 @@ rb_ary_shuffle_bang(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.shuffle -> new_ary
+ *     ary.shuffle              -> new_ary
+ *     ary.shuffle(random: rng) -> new_ary
  *
  *  Returns a new array with elements of this array shuffled.
  *
  *     a = [ 1, 2, 3 ]           #=> [1, 2, 3]
  *     a.shuffle                 #=> [2, 3, 1]
+ *
+ *  If +rng+ is given, it will be used as the random number generator.
+ *
+ *     a.shuffle(random: Random.new(1))  #=> [1, 3, 2]
  */
 
 static VALUE
-rb_ary_shuffle(VALUE ary)
+rb_ary_shuffle(int argc, VALUE *argv, VALUE ary)
 {
     ary = rb_ary_dup(ary);
-    rb_ary_shuffle_bang(ary);
+    rb_ary_shuffle_bang(argc, argv, ary);
     return ary;
 }
 
 
 /*
  *  call-seq:
- *     ary.sample        -> obj
- *     ary.sample(n)     -> new_ary
+ *     ary.sample                  -> obj
+ *     ary.sample(random: rng)     -> obj
+ *     ary.sample(n)               -> new_ary
+ *     ary.sample(n, random: rng)  -> new_ary
  *
  *  Choose a random element or +n+ random elements from the array. The elements
  *  are chosen by using random and unique indices into the array in order to
@@ -3786,6 +3816,7 @@ rb_ary_shuffle(VALUE ary)
  *  contained duplicate elements. If the array is empty the first form returns
  *  <code>nil</code> and the second form returns an empty array.
  *
+ *  If +rng+ is given, it will be used as the random number generator.
  */
 
 
@@ -3793,33 +3824,54 @@ static VALUE
 rb_ary_sample(int argc, VALUE *argv, VALUE ary)
 {
     VALUE nv, result, *ptr;
+    VALUE opts, randgen = rb_cRandom;
     long n, len, i, j, k, idx[10];
+    double rnds[numberof(idx)];
 
+    if (OPTHASH_GIVEN_P(opts)) {
+	randgen = rb_hash_lookup2(opts, sym_random, randgen);
+    }
+    ptr = RARRAY_PTR(ary);
     len = RARRAY_LEN(ary);
     if (argc == 0) {
 	if (len == 0) return Qnil;
-	i = len == 1 ? 0 : (long)(rb_genrand_real()*len);
+	if (len == 1) {
+	    i = 0;
+	}
+	else {
+	    double x = rb_random_real(randgen);
+	    if ((len = RARRAY_LEN(ary)) == 0) return Qnil;
+	    i = (long)(x * len);
+	}
 	return RARRAY_PTR(ary)[i];
     }
     rb_scan_args(argc, argv, "1", &nv);
     n = NUM2LONG(nv);
     if (n < 0) rb_raise(rb_eArgError, "negative sample number");
-    ptr = RARRAY_PTR(ary);
+    if (n > len) n = len;
+    if (n <= numberof(idx)) {
+	for (i = 0; i < n; ++i) {
+	    rnds[i] = rb_random_real(randgen);
+	}
+    }
     len = RARRAY_LEN(ary);
+    ptr = RARRAY_PTR(ary);
     if (n > len) n = len;
     switch (n) {
-      case 0: return rb_ary_new2(0);
+      case 0:
+	return rb_ary_new2(0);
       case 1:
-	return rb_ary_new4(1, &ptr[(long)(rb_genrand_real()*len)]);
+	i = (long)(rnds[0] * len);
+	return rb_ary_new4(1, &ptr[i]);
       case 2:
-	i = (long)(rb_genrand_real()*len);
-	j = (long)(rb_genrand_real()*(len-1));
+	i = (long)(rnds[0] * len);
+	j = (long)(rnds[1] * (len-1));
 	if (j >= i) j++;
 	return rb_ary_new3(2, ptr[i], ptr[j]);
       case 3:
-	i = (long)(rb_genrand_real()*len);
-	j = (long)(rb_genrand_real()*(len-1));
-	k = (long)(rb_genrand_real()*(len-2));
+	i = (long)(rnds[0] * len);
+	j = (long)(rnds[1] * (len-1));
+	k = (long)(rnds[2] * (len-2));
 	{
 	    long l = j, g = i;
 	    if (j >= i) l = i, g = ++j;
@@ -3827,12 +3879,12 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
 	}
 	return rb_ary_new3(3, ptr[i], ptr[j], ptr[k]);
     }
-    if ((size_t)n < sizeof(idx)/sizeof(idx[0])) {
+    if (n <= numberof(idx)) {
 	VALUE *ptr_result;
-	long sorted[sizeof(idx)/sizeof(idx[0])];
-	sorted[0] = idx[0] = (long)(rb_genrand_real()*len);
+	long sorted[numberof(idx)];
+	sorted[0] = idx[0] = (long)(rnds[0] * len);
 	for (i=1; i<n; i++) {
-	    k = (long)(rb_genrand_real()*--len);
+	    k = (long)(rnds[i] * --len);
 	    for (j = 0; j < i; ++j) {
 		if (k < sorted[j]) break;
 		++k;
@@ -3849,14 +3901,16 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
     else {
 	VALUE *ptr_result;
 	result = rb_ary_new4(len, ptr);
+	RBASIC(result)->klass = 0;
 	ptr_result = RARRAY_PTR(result);
 	RB_GC_GUARD(ary);
 	for (i=0; i<n; i++) {
-	    j = (long)(rb_genrand_real()*(len-i)) + i;
+	    j = RAND_UPTO(len-i) + i;
 	    nv = ptr_result[j];
 	    ptr_result[j] = ptr_result[i];
 	    ptr_result[i] = nv;
 	}
+	RBASIC(result)->klass = rb_cArray;
     }
     ARY_SET_LEN(result, n);
 
@@ -4593,8 +4647,8 @@ Init_Array(void)
     rb_define_method(rb_cArray, "flatten", rb_ary_flatten, -1);
     rb_define_method(rb_cArray, "flatten!", rb_ary_flatten_bang, -1);
     rb_define_method(rb_cArray, "count", rb_ary_count, -1);
-    rb_define_method(rb_cArray, "shuffle!", rb_ary_shuffle_bang, 0);
-    rb_define_method(rb_cArray, "shuffle", rb_ary_shuffle, 0);
+    rb_define_method(rb_cArray, "shuffle!", rb_ary_shuffle_bang, -1);
+    rb_define_method(rb_cArray, "shuffle", rb_ary_shuffle, -1);
     rb_define_method(rb_cArray, "sample", rb_ary_sample, -1);
     rb_define_method(rb_cArray, "cycle", rb_ary_cycle, -1);
     rb_define_method(rb_cArray, "permutation", rb_ary_permutation, -1);
@@ -4609,4 +4663,5 @@ Init_Array(void)
     rb_define_method(rb_cArray, "drop_while", rb_ary_drop_while, 0);
 
     id_cmp = rb_intern("<=>");
+    sym_random = ID2SYM(rb_intern("random"));
 }

@@ -628,14 +628,27 @@ ossl_ocspcid_alloc(VALUE klass)
 }
 
 static VALUE
-ossl_ocspcid_initialize(VALUE self, VALUE subject, VALUE issuer)
+ossl_ocspcid_initialize(int argc, VALUE *argv, VALUE self)
 {
     OCSP_CERTID *id, *newid;
     X509 *x509s, *x509i;
+    VALUE subject, issuer, digest;
+    const EVP_MD *md;
+
+    if (rb_scan_args(argc, argv, "21", &subject, &issuer, &digest) == 0) {
+	return self;
+    }
 
     x509s = GetX509CertPtr(subject); /* NO NEED TO DUP */
     x509i = GetX509CertPtr(issuer); /* NO NEED TO DUP */
-    if(!(newid = OCSP_cert_to_id(NULL, x509s, x509i)))
+
+    if (!NIL_P(digest)) {
+	md = GetDigestPtr(digest);
+	newid = OCSP_cert_to_id(md, x509s, x509i);
+    } else {
+	newid = OCSP_cert_to_id(NULL, x509s, x509i);
+    }
+    if(!newid)
 	ossl_raise(eOCSPError, NULL);
     GetOCSPCertId(self, id);
     OCSP_CERTID_free(id);
@@ -719,7 +732,7 @@ Init_ossl_ocsp()
 
     cOCSPCertId = rb_define_class_under(mOCSP, "CertificateId", rb_cObject);
     rb_define_alloc_func(cOCSPCertId, ossl_ocspcid_alloc);
-    rb_define_method(cOCSPCertId, "initialize", ossl_ocspcid_initialize, 2);
+    rb_define_method(cOCSPCertId, "initialize", ossl_ocspcid_initialize, -1);
     rb_define_method(cOCSPCertId, "cmp", ossl_ocspcid_cmp, 1);
     rb_define_method(cOCSPCertId, "cmp_issuer", ossl_ocspcid_cmp_issuer, 1);
     rb_define_method(cOCSPCertId, "serial", ossl_ocspcid_get_serial, 0);

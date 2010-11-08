@@ -159,7 +159,7 @@ ossl_hmac_hexdigest(VALUE self)
 
     GetHMAC(self, ctx);
     hmac_final(ctx, &buf, &buf_len);
-    if (string2hex(buf, buf_len, &hexbuf, NULL) != 2 * buf_len) {
+    if (string2hex(buf, buf_len, &hexbuf, NULL) != 2 * (int)buf_len) {
 	OPENSSL_free(buf);
 	ossl_raise(eHMACError, "Memory alloc error");
     }
@@ -222,7 +222,7 @@ ossl_hmac_s_hexdigest(VALUE klass, VALUE digest, VALUE key, VALUE data)
 
     buf = HMAC(GetDigestPtr(digest), RSTRING_PTR(key), RSTRING_LEN(key),
 	       (unsigned char *)RSTRING_PTR(data), RSTRING_LEN(data), NULL, &buf_len);
-    if (string2hex(buf, buf_len, &hexbuf, NULL) != 2 * buf_len) {
+    if (string2hex(buf, buf_len, &hexbuf, NULL) != 2 * (int)buf_len) {
 	ossl_raise(eHMACError, "Cannot convert buf to hexbuf");
     }
     hexdigest = ossl_buf2str(hexbuf, 2 * buf_len);

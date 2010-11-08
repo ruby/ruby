@@ -139,4 +139,49 @@ class TestSuper < Test::Unit::TestCase
     }
     assert_match(/implicit argument passing of super from method defined by define_method/, e.message)
   end
+
+  class SubSeq
+    def initialize
+      @first=11
+      @first or fail
+    end
+
+    def subseq 
+      @first or fail
+    end
+  end
+
+  class Indexed
+    def subseq
+      SubSeq.new
+    end
+  end
+
+  Overlaid = proc do
+    class << self
+      def subseq
+        super.instance_eval(& Overlaid)
+      end
+    end
+  end
+
+  def test_overlaid
+    assert_nothing_raised('[ruby-dev:40959]') do
+      overlaid = proc do |obj|
+        def obj.reverse
+          super
+        end
+      end
+      overlaid.call(str = "123")
+      overlaid.call(ary = [1,2,3])
+      str.reverse
+    end
+
+    assert_nothing_raised('[ruby-core:27230]') do
+      mid=Indexed.new
+      mid.instance_eval(&Overlaid)
+      mid.subseq
+      mid.subseq
+    end
+  end
 end

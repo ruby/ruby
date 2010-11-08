@@ -4683,26 +4683,24 @@ time_mload(VALUE time, VALUE str)
     long nsec;
     VALUE submicro, nano_num, nano_den, offset;
     wideval_t timew;
+    st_data_t data;
 
     time_modify(time);
 
-    nano_num = rb_attr_get(str, id_nano_num);
-    if (nano_num != Qnil) {
-        st_delete(rb_generic_ivar_table(str), (st_data_t*)&id_nano_num, 0);
+#define get_attr(attr, iffound) \
+    attr = rb_attr_get(str, id_##attr); \
+    if (!NIL_P(attr)) { \
+	data = id_##attr; \
+	iffound; \
+        st_delete(rb_generic_ivar_table(str), &data, 0); \
     }
-    nano_den = rb_attr_get(str, id_nano_den);
-    if (nano_den != Qnil) {
-        st_delete(rb_generic_ivar_table(str), (st_data_t*)&id_nano_den, 0);
-    }
-    submicro = rb_attr_get(str, id_submicro);
-    if (submicro != Qnil) {
-        st_delete(rb_generic_ivar_table(str), (st_data_t*)&id_submicro, 0);
-    }
-    offset = rb_attr_get(str, id_offset);
-    if (offset != Qnil) {
-        validate_utc_offset(offset);
-        st_delete(rb_generic_ivar_table(str), (st_data_t*)&id_offset, 0);
-    }
+
+    get_attr(nano_num, {});
+    get_attr(nano_den, {});
+    get_attr(submicro, {});
+    get_attr(offset, validate_utc_offset(offset));
+#undef get_attr
+
     rb_copy_generic_ivar(time, str);
 
     StringValue(str);

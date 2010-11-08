@@ -248,7 +248,7 @@ rb_hash_dup(VALUE hash)
 static void
 rb_hash_modify_check(VALUE hash)
 {
-    if (OBJ_FROZEN(hash)) rb_error_frozen("hash");
+    rb_check_frozen(hash);
     if (!OBJ_UNTRUSTED(hash) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify hash");
 }
@@ -506,23 +506,30 @@ rb_hash_rehash(VALUE hash)
 VALUE
 rb_hash_aref(VALUE hash, VALUE key)
 {
-    VALUE val;
+    st_data_t val;
 
     if (!RHASH(hash)->ntbl || !st_lookup(RHASH(hash)->ntbl, key, &val)) {
-	return rb_funcall(hash, id_default, 1, key);
+	int rb_method_basic_definition_p(VALUE klass, ID id);
+	if (!FL_TEST(hash, HASH_PROC_DEFAULT) &&
+	    rb_method_basic_definition_p(CLASS_OF(hash), id_default)) {
+	    return RHASH_IFNONE(hash);
+	}
+	else {
+	    return rb_funcall(hash, id_default, 1, key);
+	}
     }
-    return val;
+    return (VALUE)val;
 }
 
 VALUE
 rb_hash_lookup2(VALUE hash, VALUE key, VALUE def)
 {
-    VALUE val;
+    st_data_t val;
 
     if (!RHASH(hash)->ntbl || !st_lookup(RHASH(hash)->ntbl, key, &val)) {
 	return def; /* without Hash#default */
     }
-    return val;
+    return (VALUE)val;
 }
 
 VALUE
@@ -564,7 +571,7 @@ static VALUE
 rb_hash_fetch_m(int argc, VALUE *argv, VALUE hash)
 {
     VALUE key, if_none;
-    VALUE val;
+    st_data_t val;
     long block_given;
 
     rb_scan_args(argc, argv, "11", &key, &if_none);
@@ -584,7 +591,7 @@ rb_hash_fetch_m(int argc, VALUE *argv, VALUE hash)
 	}
 	return if_none;
     }
-    return val;
+    return (VALUE)val;
 }
 
 VALUE
@@ -1094,6 +1101,12 @@ rb_hash_clear(VALUE hash)
     return hash;
 }
 
+static st_data_t
+copy_str_key(st_data_t str)
+{
+    return (st_data_t)rb_str_new4((VALUE)str);
+}
+
 /*
  *  call-seq:
  *     hsh[key] = value        -> value
@@ -1121,7 +1134,7 @@ rb_hash_aset(VALUE hash, VALUE key, VALUE val)
 	st_insert(RHASH(hash)->ntbl, key, val);
     }
     else {
-	st_insert2(RHASH(hash)->ntbl, key, val, rb_str_new4);
+	st_insert2(RHASH(hash)->ntbl, key, val, copy_str_key);
     }
     return val;
 }
@@ -1548,14 +1561,14 @@ static int
 eql_i(VALUE key, VALUE val1, VALUE arg)
 {
     struct equal_data *data = (struct equal_data *)arg;
-    VALUE val2;
+    st_data_t val2;
 
     if (key == Qundef) return ST_CONTINUE;
     if (!st_lookup(data->tbl, key, &val2)) {
 	data->result = Qfalse;
 	return ST_STOP;
     }
-    if (!(data->eql ? rb_eql(val1, val2) : (int)rb_equal(val1, val2))) {
+    if (!(data->eql ? rb_eql(val1, (VALUE)val2) : (int)rb_equal(val1, (VALUE)val2))) {
 	data->result = Qfalse;
 	return ST_STOP;
     }
@@ -2139,29 +2152,29 @@ void
 ruby_setenv(const char *name, const char *value)
 {
 #if defined(_WIN32)
-    int len;
-    char *buf;
+    VALUE buf;
+    int failed = 0;
     if (strchr(name, '=')) {
+      fail:
 	errno = EINVAL;
 	rb_sys_fail("ruby_setenv");
     }
     if (value) {
-	len = strlen(name) + 1 + strlen(value) + 1;
-	buf = ALLOCA_N(char, len);
-	snprintf(buf, len, "%s=%s", name, value);
-	putenv(buf);
-
-	/* putenv() doesn't handle empty value */
-	if (!*value)
-	    SetEnvironmentVariable(name,value);
+	buf = rb_sprintf("%s=%s", name, value);
     }
     else {
-	len = strlen(name) + 1 + 1;
-	buf = ALLOCA_N(char, len);
-	snprintf(buf, len, "%s=", name);
-	putenv(buf);
-	SetEnvironmentVariable(name, 0);
+	buf = rb_sprintf("%s=", name);
     }
+    failed = putenv(RSTRING_PTR(buf));
+    /* even if putenv() failed, clean up and try to delete the
+     * variable from the system area. */
+    rb_str_resize(buf, 0);
+    if (!value || !*value) {
+	/* putenv() doesn't handle empty value */
+	if (!SetEnvironmentVariable(name, value) &&
+	    GetLastError() != ERROR_ENVVAR_NOT_FOUND) goto fail;
+    }
+    if (failed) goto fail;
 #elif defined(HAVE_SETENV) && defined(HAVE_UNSETENV)
 #undef setenv
 #undef unsetenv
