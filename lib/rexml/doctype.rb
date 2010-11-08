@@ -115,7 +115,6 @@ module REXML
       output << " #{@long_name.inspect}" if @long_name
       output << " #{@uri.inspect}" if @uri
       unless @children.empty?
-        next_indent = indent + 1
         output << ' ['
         @children.each { |child|
           output << "\n"

@@ -170,7 +170,6 @@ module REXML
     # Kouhei fixed this too
     def Functions::substring_after( string, test )
       ruby_string = string(string)
-      test_string = string(test)
       return $1 if ruby_string =~ /#{test}(.*)/
       ""
     end

@@ -19,14 +19,14 @@ module DRb
     end
 
     def self.open(uri, config)
-      filename, option = parse_uri(uri)
+      filename, = parse_uri(uri)
       filename.untaint
       soc = UNIXSocket.open(filename)
       self.new(uri, soc, config)
     end
 
     def self.open_server(uri, config)
-      filename, option = parse_uri(uri)
+      filename, = parse_uri(uri)
       if filename.size == 0
 	soc = temp_server
         filename = soc.path

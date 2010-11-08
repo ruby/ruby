@@ -33,7 +33,7 @@ module REXML
             sattr = [:start_attribute, nil]
             eattr = [:end_attribute]
             text = [:text, nil]
-            k,v = event[2].find { |key,value|
+            k, = event[2].find { |key,value|
               sattr[1] = key
               #puts "Looking for #{sattr.inspect}"
               m = @current.next( sattr )

@@ -84,7 +84,7 @@ class Shell
       notify "Job(%id) start imp-pipe.", @shell.debug?
       rs = @shell.record_separator unless rs
       _eop = true
-      th = Thread.start {
+      Thread.start {
 	begin
 	  while l = @pipe_in.gets
 	    @input_queue.push l
@@ -109,7 +109,7 @@ class Shell
     def start_export
       notify "job(%id) start exp-pipe.", @shell.debug?
       _eop = true
-      th = Thread.start{
+      Thread.start{
 	begin
 	  @input.each do |l|
 	    ProcessController::block_output_synchronize do

@@ -170,7 +170,7 @@ private
     io << http_resp(response.status, response.status_message,
                     response.header, response.body)
 
-  rescue Exception => e
+  rescue Exception
     io << http_resp(500, "Internal Server Error")
   end
 

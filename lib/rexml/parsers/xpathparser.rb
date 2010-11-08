@@ -282,7 +282,6 @@ module REXML
       PI        = /^processing-instruction\(/
       def NodeTest path, parsed
         #puts "NodeTest with #{path}"
-        res = nil
         case path
         when /^\*/
           path = $'
@@ -578,7 +577,6 @@ module REXML
       NUMBER              = /^(\d*\.?\d+)/
       NT        = /^comment|text|processing-instruction|node$/
       def PrimaryExpr path, parsed
-        arry = []
         case path
         when VARIABLE_REFERENCE
           varname = $1

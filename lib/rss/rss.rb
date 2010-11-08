@@ -1093,9 +1093,8 @@ EOC
         tags = tags.sort_by {|x| element_names.index(x) || tags_size}
       end
 
-      _tags = tags.dup if tags
       models.each_with_index do |model, i|
-        name, model_uri, occurs, getter = model
+        name, _, occurs, = model
 
         if DEBUG
           p "before"

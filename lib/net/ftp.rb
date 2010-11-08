@@ -322,7 +322,7 @@ module Net
       sock = TCPServer.open(@sock.addr[3], 0)
       port = sock.addr[1]
       host = sock.addr[3]
-      resp = sendport(host, port)
+      sendport(host, port)
       return sock
     end
     private :makeport

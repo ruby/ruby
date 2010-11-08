@@ -2680,7 +2680,6 @@ module Net
         token = match(T_ATOM)
         name = token.value.upcase
         match(T_SPACE)
-        mailbox = astring
         data = []
         token = lookahead
         if token.symbol == T_SPACE

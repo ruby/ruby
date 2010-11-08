@@ -1,3 +1,10 @@
+Tue Nov  9 05:54:57 2010  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/*.rb: Remove unused variable warnings.
+	  Patch by Run Paint [ruby-core:30991]
+
+	* lib/rubygems/*, lib/rdoc/*.rb, lib/rake/*.rb: ditto
+
 Mon Nov  8 18:26:03 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* util.c (ruby_hdtoa): fix type cast and bufsize.

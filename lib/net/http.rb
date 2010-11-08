@@ -1563,7 +1563,7 @@ module Net   #:nodoc:
     # or sub-type is not given (e.g. "Content-Type: text").
     def sub_type
       return nil unless @header['content-type']
-      main, sub = *self['Content-Type'].split(';').first.to_s.split('/')
+      _, sub = *self['Content-Type'].split(';').first.to_s.split('/')
       return nil unless sub
       sub.strip
     end

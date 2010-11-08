@@ -280,7 +280,7 @@ module WEBrick
       if @request_method == "HEAD"
         # do nothing
       elsif chunked?
-        remain = body ? @body.bytesize : 0
+        body ? @body.bytesize : 0
         while buf = @body[@sent_size, @buffer_size]
           break if buf.empty?
           data = ""

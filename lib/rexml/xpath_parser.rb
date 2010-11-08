@@ -687,7 +687,7 @@ module REXML
           return rv
         else
           res = []
-          enum = SyncEnumerator.new( set1, set2 ).each { |i1, i2|
+          SyncEnumerator.new( set1, set2 ).each { |i1, i2|
             #puts "i1 = #{i1.inspect} (#{i1.class.name})"
             #puts "i2 = #{i2.inspect} (#{i2.class.name})"
             i1 = norm( i1 )
