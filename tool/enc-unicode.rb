@@ -4,8 +4,8 @@
 # property names and POSIX character classes
 #
 # To use this, get UnicodeData.txt, Scripts.txt, PropList.txt,
-# PropertyAliases.txt, PropertyValueAliases.txt, and
-# DerivedCoreProperties.txt from unicode.org.
+# PropertyAliases.txt, PropertyValueAliases.txt, DerivedCoreProperties.txt,
+# and DerivedAge.txt  from unicode.org.
 # (http://unicode.org/Public/UNIDATA/) And run following command.
 # ruby1.9 tool/enc-unicode.rb data_dir > enc/unicode/name2ctype.kwd
 # You can get source file for gperf.  After this, simply make ruby.
@@ -174,6 +174,32 @@ def parse_aliases(data)
   kv
 end
 
+# According to Unicode6.0.0/ch03.pdf, Section 3.1, "An update version
+# never involves any additions to the character repertoire." Versions
+# in DerivedAge.txt should always be /\d+\.\d+/
+def parse_age(data)
+  current = nil
+  last_constname = nil
+  cps = []
+  ages = []
+  IO.foreach(get_file('DerivedAge.txt')) do |line|
+    if /^# Total code points: / =~ line
+      constname = constantize_agename(current)
+			# each version matches all previous versions
+      cps.concat(data[last_constname]) if last_constname
+      data[constname] = cps
+      make_const(constname, cps, "Derived Age #{current}")
+      ages << current
+      last_constname = constname
+      cps = []
+    elsif /^(\h+)(?:..(\h+))?\s*;\s*(\d+\.\d+)/ =~ line
+      current = $3
+      $2 ? cps.concat(($1.to_i(16)..$2.to_i(16)).to_a) : cps.push($1.to_i(16))
+    end
+  end
+  ages
+end
+
 $const_cache = {}
 # make_const(property, pairs, name): Prints a 'static const' structure for a
 # given property, group of paired codepoints, and a human-friendly name for
@@ -202,6 +228,10 @@ def normalize_propname(name)
   name
 end
 
+def constantize_agename(name)
+  "Age_#{name.sub(/\./, '_')}"
+end
+
 def get_file(name)
   File.join(ARGV[0], name)
 end
@@ -224,6 +254,7 @@ end
 props.concat parse_scripts(data)
 puts '#endif /* USE_UNICODE_PROPERTIES */'
 aliases = parse_aliases(data)
+ages = parse_age(data)
 define_posix_props(data)
 POSIX_NAMES.each do |name|
   make_const(name, data[name], "[[:#{name}:]]")
@@ -235,6 +266,7 @@ __HEREDOC
 POSIX_NAMES.each{|name|puts"  CR_#{name},"}
 puts "#ifdef USE_UNICODE_PROPERTIES"
 props.each{|name|puts"  CR_#{name},"}
+ages.each{|name| puts"  CR_#{constantize_agename(name)},"}
 
 puts(<<'__HEREDOC')
 #endif /* USE_UNICODE_PROPERTIES */
@@ -267,6 +299,12 @@ aliases.each_pair do |k, v|
   next if name_to_index[k]
   next unless v = name_to_index[v]
   puts "%-40s %3d" % [k + ',', v]
+end
+ages.each do |name|
+  i += 1
+  name = "age=#{name}"
+  name_to_index[name] = i
+  puts "%-40s %3d" % [name + ',', i]
 end
 puts(<<'__HEREDOC')
 #endif /* USE_UNICODE_PROPERTIES */

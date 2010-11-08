@@ -1,3 +1,11 @@
+Mon Nov  8 13:41:33 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/enc-unicode.rb,
+	  enc/unicode/name2ctype.h, enc/unicode/name2ctype.h.blt,
+	  enc/unicode/name2ctype.kwd, enc/unicode/name2ctype.src:
+	  Add Age property to regexp. [ruby-core:33019]
+	  patched by Ammar Ali, tested by Run Paint Run Run
+
 Mon Nov  8 12:16:39 2010  Ben Walton  <bwalton@artsci.utoronto.ca>
 
 	* configure.in: support -h for solaris linker when gcc not used

@@ -798,6 +798,25 @@ class TestRegexp < Test::Unit::TestCase
     assert_nothing_raised { 0x7fffffff.chr("utf-8").size }
   end
 
+  def test_unicode_age
+    assert_match(/^\p{Age=6.0}$/u, "\u261c")
+    assert_match(/^\p{Age=1.1}$/u, "\u261c")
+    assert_no_match(/^\P{age=6.0}$/u, "\u261c")
+
+    assert_match(/^\p{age=6.0}$/u, "\u31f6")
+    assert_match(/^\p{age=3.2}$/u, "\u31f6")
+    assert_no_match(/^\p{age=3.1}$/u, "\u31f6")
+    assert_no_match(/^\p{age=3.0}$/u, "\u31f6")
+    assert_no_match(/^\p{age=1.1}$/u, "\u31f6")
+
+    assert_match(/^\p{age=6.0}$/u, "\u2754")
+    assert_no_match(/^\p{age=5.0}$/u, "\u2754")
+    assert_no_match(/^\p{age=4.0}$/u, "\u2754")
+    assert_no_match(/^\p{age=3.0}$/u, "\u2754")
+    assert_no_match(/^\p{age=2.0}$/u, "\u2754")
+    assert_no_match(/^\p{age=1.1}$/u, "\u2754")
+  end
+
   def test_matchdata
     a = "haystack".match(/hay/)
     b = "haystack".match(/hay/)

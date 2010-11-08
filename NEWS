@@ -83,7 +83,12 @@ with all sufficient information, see the ChangeLog file.
 
 === Language changes
 
-* Regexps now support Unicode 6.0 (new characters and scripts)
+* Regexps now support Unicode 6.0. (new characters and scripts)
+
+* [experimental] Regexps now support Age property.
+  Unlike Perl, current implementation takes interpretation of the
+  interpretation of UTS #18.
+  http://www.unicode.org/reports/tr18/
 
 === Compatibility issues (excluding feature bug fixes)
 
