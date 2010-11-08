@@ -2242,6 +2242,8 @@ AS_CASE("$enable_shared", [yes], [
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR).$(TEENY) lib$(RUBY_SO_NAME).so'
 	if test "$GCC" = yes; then
 	    LIBRUBY_DLDFLAGS="$DLDFLAGS "'-Wl,-h,$(@F)'
+	else
+	    LIBRUBY_DLDFLAGS="$DLDFLAGS "'-h $(@F)'
 	fi
 	XLDFLAGS="$XLDFLAGS "'-R${libdir}'
 	],
