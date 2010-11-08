@@ -77,7 +77,7 @@ class Gem::DocManager
       :formatter => RDoc::RI::Formatter,
     }
 
-    driver = RDoc::RI::Driver.new(options).class_cache
+    RDoc::RI::Driver.new(options).class_cache
   end
 
   ##

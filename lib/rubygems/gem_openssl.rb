@@ -42,7 +42,7 @@ begin
   # Reference a constant defined in the .rb portion of ssl (just to
   # make sure that part is loaded too).
 
-  dummy = OpenSSL::Digest::SHA1
+  OpenSSL::Digest::SHA1
 
   Gem.ssl_available = true
 

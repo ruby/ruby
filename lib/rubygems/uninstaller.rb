@@ -82,7 +82,7 @@ class Gem::Uninstaller
       gem_names = list.collect {|gem| gem.full_name} + ["All versions"]
 
       say
-      gem_name, index = choose_from_list "Select gem to uninstall:", gem_names
+      _, index = choose_from_list "Select gem to uninstall:", gem_names
 
       if index == list.size then
         remove_all list.dup

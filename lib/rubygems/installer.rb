@@ -318,7 +318,7 @@ class Gem::Installer
   def generate_bin_script(filename, bindir)
     bin_script_path = File.join bindir, formatted_program_filename(filename)
 
-    exec_path = File.join @gem_dir, @spec.bindir, filename
+    File.join @gem_dir, @spec.bindir, filename
 
     # HACK some gems don't have #! in their executables, restore 2008/06
     #if File.read(exec_path, 2) == '#!' then
@@ -466,7 +466,7 @@ TEXT
 
         say results.join("\n") if Gem.configuration.really_verbose
 
-      rescue => ex
+      rescue
         results = results.join "\n"
 
         File.open('gem_make.out', 'wb') { |f| f.puts results }

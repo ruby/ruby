@@ -181,11 +181,11 @@ class Gem::Commands::UpdateCommand < Gem::Command
         end
       end
 
-      matching_gems = spec_tuples.select do |(name, version, platform),|
+      matching_gems = spec_tuples.select do |(name, _, platform),|
         name == l_name and Gem::Platform.match platform
       end
 
-      highest_remote_gem = matching_gems.sort_by do |(name, version),|
+      highest_remote_gem = matching_gems.sort_by do |(_, version),|
         version
       end.last
 

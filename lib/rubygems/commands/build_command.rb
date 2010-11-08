@@ -35,7 +35,7 @@ class Gem::Commands::BuildCommand < Gem::Command
           while not f.eof? and spec = Gem::Specification.from_yaml(f)
             result << spec
           end
-        rescue Gem::EndOfYAMLException => e
+        rescue Gem::EndOfYAMLException
           # OK
         end
       end

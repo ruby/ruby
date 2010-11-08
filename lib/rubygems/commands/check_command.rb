@@ -71,7 +71,7 @@ class Gem::Commands::CheckCommand < Gem::Command
       say "Verifying gem: '#{gem_name}'"
       begin
         Gem::Validator.new.verify_gem_file(gem_name)
-      rescue Exception => e
+      rescue Exception
         alert_error "#{gem_name} is invalid."
       end
     end

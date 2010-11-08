@@ -161,19 +161,19 @@ class Gem::Commands::QueryCommand < Gem::Command
     end
 
     versions.each do |gem_name, matching_tuples|
-      matching_tuples = matching_tuples.sort_by do |(name, version,_),_|
+      matching_tuples = matching_tuples.sort_by do |(_, version,_),_|
         version
       end.reverse
 
       platforms = Hash.new { |h,version| h[version] = [] }
 
-      matching_tuples.map do |(name, version, platform,_),_|
+      matching_tuples.map do |(_, version, platform,_),_|
         platforms[version] << platform if platform
       end
 
       seen = {}
 
-      matching_tuples.delete_if do |(name, version,_),_|
+      matching_tuples.delete_if do |(_, version,_),_|
         if seen[version] then
           true
         else
@@ -186,7 +186,7 @@ class Gem::Commands::QueryCommand < Gem::Command
 
       if options[:versions] then
         list = if platforms.empty? or options[:details] then
-                 matching_tuples.map { |(name, version,_),_| version }.uniq
+                 matching_tuples.map { |(_, version,_),_| version }.uniq
                else
                  platforms.sort.reverse.map do |version, pls|
                    if pls == [Gem::Platform::RUBY] then

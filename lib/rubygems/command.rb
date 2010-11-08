@@ -168,7 +168,7 @@ class Gem::Command
             "Please specify at least one gem name (e.g. gem build GEMNAME)"
     end
 
-    gem_names = args.select { |arg| arg !~ /^-/ }
+    args.select { |arg| arg !~ /^-/ }
   end
 
   ##
@@ -430,7 +430,7 @@ class Gem::Command
     @parser.separator "  #{header}Options:"
 
     option_list.each do |args, handler|
-      dashes = args.select { |arg| arg =~ /^-/ }
+      args.select { |arg| arg =~ /^-/ }
       @parser.on(*args) do |value|
         handler.call(value, @options)
       end

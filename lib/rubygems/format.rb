@@ -32,8 +32,6 @@ class Gem::Format
   # representing the data in the gem
 
   def self.from_file_by_path(file_path, security_policy = nil)
-    format = nil
-
     unless File.exist?(file_path)
       raise Gem::Exception, "Cannot load gem at [#{file_path}] in #{Dir.pwd}"
     end

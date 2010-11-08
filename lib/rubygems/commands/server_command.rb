@@ -17,7 +17,7 @@ class Gem::Commands::ServerCommand < Gem::Command
       else
         begin
           Socket.getservbyname port
-        rescue SocketError => e
+        rescue SocketError
           raise OptionParser::InvalidArgument, "#{port}: no such named service"
         end
       end

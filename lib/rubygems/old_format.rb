@@ -143,7 +143,7 @@ class Gem::OldFormat
         end
         yield [entry, Zlib::Inflate.inflate(file_data.strip.unpack("m")[0])]
       end
-    rescue Zlib::DataError => e
+    rescue Zlib::DataError
       raise Gem::Exception, errstr
     end
   end
