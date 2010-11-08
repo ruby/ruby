@@ -450,18 +450,37 @@ regulate_path(WCHAR *path)
     }
 }
 
+static FARPROC
+get_proc_address(const char *module, const char *func, HANDLE *mh)
+{
+    HANDLE h;
+    FARPROC ptr;
+
+    if (mh)
+	h = LoadLibrary(module);
+    else
+	h = GetModuleHandle(module);
+    if (!h)
+	return NULL;
+
+    ptr = GetProcAddress(h, func);
+    if (mh) {
+	if (ptr)
+	    *mh = h;
+	else
+	    FreeLibrary(h);
+    }
+    return ptr;
+}
+
 static UINT
 get_system_directory(WCHAR *path, UINT len)
 {
-    HANDLE hKernel = GetModuleHandle("kernel32.dll");
-
-    if (hKernel) {
-	typedef UINT WINAPI wgetdir_func(WCHAR*, UINT);
-	FARPROC ptr = GetProcAddress(hKernel, "GetSystemWindowsDirectoryW");
-	if (ptr) {
-	    return (*(wgetdir_func *)ptr)(path, len);
-	}
-    }
+    typedef UINT WINAPI wgetdir_func(WCHAR*, UINT);
+    FARPROC ptr =
+	get_proc_address("kernel32", "GetSystemWindowsDirectoryW", NULL);
+    if (ptr)
+	return (*(wgetdir_func *)ptr)(path, len);
     return GetWindowsDirectoryW(path, len);
 }
 
@@ -569,8 +588,7 @@ static void
 init_func(void)
 {
     if (!cancel_io)
-	cancel_io = (cancel_io_t)GetProcAddress(GetModuleHandle("kernel32"),
-						"CancelIo");
+	cancel_io = (cancel_io_t)get_proc_address("kernel32", "CancelIo", NULL);
 }
 
 static void init_stdhandle(void);
@@ -2663,6 +2681,19 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     return r;
 }
 
+static FARPROC
+get_wsa_exetinsion_function(SOCKET s, GUID *guid)
+{
+    DWORD dmy;
+    FARPROC ptr = NULL;
+
+    WSAIoctl(s, SIO_GET_EXTENSION_FUNCTION_POINTER, guid, sizeof(*guid),
+	     &ptr, sizeof(ptr), &dmy, NULL, NULL);
+    if (!ptr)
+	errno = ENOSYS;
+    return ptr;
+}
+
 #undef accept
 
 int WSAAPI
@@ -3002,13 +3033,9 @@ recvmsg(int fd, struct msghdr *msg, int flags)
 
     if (!pWSARecvMsg) {
 	static GUID guid = WSAID_WSARECVMSG;
-	DWORD dmy;
-	WSAIoctl(s, SIO_GET_EXTENSION_FUNCTION_POINTER, &guid, sizeof(guid),
-		 &pWSARecvMsg, sizeof(pWSARecvMsg), &dmy, NULL, NULL);
-	if (!pWSARecvMsg) {
-	    errno = ENOSYS;
+	pWSARecvMsg = (WSARecvMsg_t)get_wsa_exetinsion_function(s, &guid);
+	if (!pWSARecvMsg)
 	    return -1;
-	}
     }
 
     msghdr_to_wsamsg(msg, &wsamsg);
@@ -3095,13 +3122,9 @@ sendmsg(int fd, const struct msghdr *msg, int flags)
 
     if (!pWSASendMsg) {
 	static GUID guid = WSAID_WSASENDMSG;
-	DWORD dmy;
-	WSAIoctl(s, SIO_GET_EXTENSION_FUNCTION_POINTER, &guid, sizeof(guid),
-		 &pWSASendMsg, sizeof(pWSASendMsg), &dmy, NULL, NULL);
-	if (!pWSASendMsg) {
-	    errno = ENOSYS;
+	pWSASendMsg = (WSASendMsg_t)get_wsa_exetinsion_function(s, &guid);
+	if (!pWSASendMsg)
 	    return -1;
-	}
     }
 
     msghdr_to_wsamsg(msg, &wsamsg);
@@ -3847,16 +3870,9 @@ wlink(const WCHAR *from, const WCHAR *to)
     if (!pCreateHardLinkW && !myerrno) {
 	HANDLE hKernel;
 
-	hKernel = GetModuleHandle("kernel32.dll");
-	if (hKernel) {
-	    pCreateHardLinkW = (BOOL (WINAPI *)(LPCWSTR, LPCWSTR, LPSECURITY_ATTRIBUTES))GetProcAddress(hKernel, "CreateHardLinkW");
-	    if (!pCreateHardLinkW) {
-		myerrno = ENOSYS;
-	    }
-	}
-	else {
-	    myerrno = map_errno(GetLastError());
-	}
+	pCreateHardLinkW = (BOOL (WINAPI *)(LPCWSTR, LPCWSTR, LPSECURITY_ATTRIBUTES))get_proc_address("kernel32", "CreateHardLinkW", NULL);
+	if (!pCreateHardLinkW)
+	    myerrno = ENOSYS;
     }
     if (!pCreateHardLinkW) {
 	errno = myerrno;
@@ -4701,12 +4717,8 @@ rb_w32_getppid(void)
     rb_pid_t ppid = 0;
 
     if (!IsWin95() && rb_w32_osver() >= 5) {
-	if (!pNtQueryInformationProcess) {
-	    HANDLE hNtDll = GetModuleHandle("ntdll.dll");
-	    if (hNtDll) {
-		pNtQueryInformationProcess = (long (WINAPI *)(HANDLE, int, void *, ULONG, ULONG *))GetProcAddress(hNtDll, "NtQueryInformationProcess");
-	    }
-	}
+	if (!pNtQueryInformationProcess)
+	    pNtQueryInformationProcess = (long (WINAPI *)(HANDLE, int, void *, ULONG, ULONG *))get_proc_address("ntdll.dll", "NtQueryInformationProcess", NULL);
 	if (pNtQueryInformationProcess) {
 	    struct {
 		long ExitStatus;
