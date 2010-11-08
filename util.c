@@ -3934,8 +3934,8 @@ ruby_each_words(const char *str, void (*func)(const char*, int, void*), void *ar
 #define	SIGFIGS	((DBL_MANT_DIG + 3) / 4 + 1)
 #define dexp_get(u) ((int)(word0(u) >> Exp_shift) & ~Exp_msk1)
 #define dexp_set(u,v) (word0(u) = (((int)(word0(u)) & ~Exp_mask) | (v << Exp_shift)))
-#define dmanh_get(u) ((int)(word0(u) & Frac_mask))
-#define dmanl_get(u) ((int)word1(u))
+#define dmanh_get(u) ((uint32_t)(word0(u) & Frac_mask))
+#define dmanl_get(u) ((uint32_t)word1(u))
 
 
 /*
@@ -4008,7 +4008,7 @@ ruby_hdtoa(double d, const char *xdigs, int ndigits, int *decpt, int *sign,
 	 * enough space for all the digits.
 	 */
 	bufsize = (ndigits > 0) ? ndigits : SIGFIGS;
-	s0 = rv_alloc(bufsize);
+	s0 = rv_alloc(bufsize+1);
 
 	/* Round to the desired number of digits. */
 	if (SIGFIGS > ndigits && ndigits > 0) {
