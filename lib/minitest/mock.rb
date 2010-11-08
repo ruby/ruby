@@ -14,7 +14,7 @@ module MiniTest
     end
 
     def expect(name, retval, args=[])
-      n, r, a = name, retval, args # for the closure below
+      n, r = name, retval # for the closure below
       @expected_calls[name] = { :retval => retval, :args => args }
       self.class.__send__ :remove_method, name if respond_to? name
       self.class.__send__(:define_method, name) { |*x|
