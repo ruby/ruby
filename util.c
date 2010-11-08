@@ -2175,11 +2175,12 @@ break2:
 			break;
 		    }
 		} while ('0' <= c && c <= '9');
+		nd0 += nd * dsign;
 	    }
 	    else {
 		if (dsign) goto ret0;
 	    }
-	    dval(rv) = ldexp(adj, nd * dsign + nd0);
+	    dval(rv) = ldexp(adj, nd0);
 	    goto ret;
 	}
         nz0 = 1;
