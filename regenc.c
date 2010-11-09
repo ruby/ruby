@@ -811,7 +811,7 @@ onigenc_minimum_property_name_to_ctype(OnigEncoding enc, UChar* p, UChar* end)
   len = onigenc_strlen(enc, p, end);
   for (pbe = (pb = PBS) + sizeof(PBS)/sizeof(PBS[0]); pb < pbe; ++pb) {
     if (len == pb->len &&
-        STRNCASECMP(p, pb->name, len) == 0)
+        STRNCASECMP((char *)p, (char *)pb->name, len) == 0)
       return pb->ctype;
   }
 
