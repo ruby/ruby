@@ -1,3 +1,8 @@
+Tue Nov  9 21:57:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dln.c (init_funcname): allocate and build initialization
+	  funciton name at once.
+
 Tue Nov  9 21:14:54 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (AC_FUNC_GETPGRP, AC_FUNC_SETPGRP): no need when
