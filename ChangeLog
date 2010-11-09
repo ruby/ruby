@@ -1,4 +1,7 @@
-Tue Nov  9 21:13:02 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Nov  9 21:14:54 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (AC_FUNC_GETPGRP, AC_FUNC_SETPGRP): no need when
+	  not used.
 
 	* configure.in (EXPORT_PREFIX): check generic prefix.
 

@@ -986,7 +986,6 @@ main()
 		ac_cv_func_ftello=yes
 		ac_cv_lib_crypt_crypt=no
 		ac_cv_func_getpgrp_void=no
-		ac_cv_func_setpgrp_void=yes
 		ac_cv_func_memcmp_working=yes
 		ac_cv_lib_dl_dlopen=no
 		rb_cv_binary_elf=no
@@ -1510,8 +1509,12 @@ main()
   fi
 fi
 
+if test "$ac_cv_func_getpgid" = no; then
 AC_FUNC_GETPGRP
+fi
+if test "$ac_cv_func_setpgid:$ac_cv_func_setpgrp" = no:yes; then
 AC_FUNC_SETPGRP
+fi
 
 AC_C_BIGENDIAN
 AC_C_CONST
