@@ -1,3 +1,12 @@
+Tue Nov  9 10:44:19 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* util.c (ruby_strtod): this code uses FPU's rounding system.
+	  But x86's FPU calculates double precision floating-point
+	  numbers in 80bit precision, so it fails to round the value.
+	  So ensure the value is assigned a variable. [ruby-dev:42551]
+	  see also [ruby-math:00802]
+	  http://www.shudo.net/java-grandprix99/strictfp/
+
 Tue Nov  9 07:30:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (rb_syserr_new): new function to make SystemCallError

@@ -4014,10 +4014,13 @@ ruby_hdtoa(double d, const char *xdigs, int ndigits, int *decpt, int *sign,
 	/* Round to the desired number of digits. */
 	if (SIGFIGS > ndigits && ndigits > 0) {
 		float redux = 1.0f;
+		volatile double d;
 		int offset = 4 * ndigits + DBL_MAX_EXP - 4 - DBL_MANT_DIG;
 		dexp_set(u, offset);
-		u.d += redux;
-		u.d -= redux;
+		d = u.d;
+		d += redux;
+		d -= redux;
+		u.d = d;
 		*decpt += dexp_get(u) - offset;
 	}
 
