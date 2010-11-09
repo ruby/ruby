@@ -2935,6 +2935,7 @@ overlapped_socket_io(BOOL input, int fd, char *buf, int len, int flags,
     }
     else {
 	DWORD size;
+	DWORD rlen;
 	wbuf.len = len;
 	wbuf.buf = buf;
 	memset(&wol, 0, sizeof(wol));
@@ -2957,7 +2958,8 @@ overlapped_socket_io(BOOL input, int fd, char *buf, int len, int flags,
 	    }
 	});
 
-	finish_overlapped_socket(s, &wol, ret, &r, size);
+	finish_overlapped_socket(s, &wol, ret, &rlen, size);
+	r = (int)rlen;
     }
 
     return r;
