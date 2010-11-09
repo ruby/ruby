@@ -538,6 +538,14 @@ class TestM17N < Test::Unit::TestCase
     assert(r.fixed_encoding?)
     assert_match(r, "\xa4\xa2".force_encoding("euc-jp"))
 
+    r = /\p{AsciI}/e
+    assert(r.fixed_encoding?)
+    assert_match(r, "a".force_encoding("euc-jp"))
+
+    r = /\p{hiraganA}/e
+    assert(r.fixed_encoding?)
+    assert_match(r, "\xa4\xa2".force_encoding("euc-jp"))
+
     r = eval('/\u{3042}\p{Hiragana}/'.force_encoding("euc-jp"))
     assert(r.fixed_encoding?)
     assert_equal(Encoding::UTF_8, r.encoding)
