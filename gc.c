@@ -1989,7 +1989,6 @@ before_gc_sweep(rb_objspace_t *objspace)
 static void
 after_gc_sweep(rb_objspace_t *objspace)
 {
-    rb_thread_t *th = GET_THREAD();
     GC_PROF_SET_MALLOC_INFO;
 
     if (objspace->heap.free_num < objspace->heap.free_min) {
