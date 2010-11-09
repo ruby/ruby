@@ -36,7 +36,9 @@ def parse_args(argv = ARGV)
   $dir_mode = nil
   $script_mode = nil
   $strip = false
-  $cmdtype = ('bat' if File::ALT_SEPARATOR == '\\')
+  $cmdtype = (if File::ALT_SEPARATOR == '\\'
+                File.exist?("rubystub.exe") ? 'exe' : 'bat'
+              end)
   mflags = []
   opt = OptionParser.new
   opt.on('-n', '--dry-run') {$dryrun = true}
@@ -405,6 +407,9 @@ install?(:local, :comm, :bin, :'bin-comm') do
   ruby_shebang = File.join(bindir, ruby_install_name)
   if File::ALT_SEPARATOR
     ruby_bin = ruby_shebang.tr(File::SEPARATOR, File::ALT_SEPARATOR)
+    if $cmdtype == 'exe'
+      stub = File.open("rubystub.exe", "rb") {|f| f.read} << "\n" rescue nil
+    end
   end
   if trans = CONFIG["program_transform_name"]
     exp = []
@@ -456,6 +461,8 @@ install?(:local, :comm, :bin, :'bin-comm') do
     cmd << ".#{$cmdtype}" if $cmdtype
     open_for_install(cmd, $script_mode) do
       case $cmdtype
+      when "exe"
+        stub + shebang + body
       when "bat"
         [<<-"EOH".gsub(/^\s+/, ''), shebang, body, "__END__\n:endofruby\n"].join.gsub(/$/, "\r")
           @echo off

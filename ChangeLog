@@ -1,3 +1,18 @@
+Wed Nov 10 07:20:10 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cygwin/GNUmakefile.in (scriptbin): make executable file from
+	  scripts with stub.
+
+	* ruby.c (load_file_internal): assume xflag for exe file as well
+	  as no-shebang file.
+
+	* tool/rbinstall.rb: install script programs.
+
+	* win32/mkexports.rb (Exports#initialize): alias ruby_sysinit for
+	  stub.
+
+	* win32/stub.c: stub for scripts.  [EXPERIMENTAL]
+
 Tue Nov  9 21:57:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dln.c (init_funcname): allocate and build initialization

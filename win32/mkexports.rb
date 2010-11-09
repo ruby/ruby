@@ -36,6 +36,7 @@ class Exports
   def initialize(objs)
     syms = {}
     winapis = {}
+    syms["ruby_sysinit_real"] = "ruby_sysinit"
     each_export(objs) do |internal, export|
       syms[internal] = export
       winapis[$1] = internal if /^_?(rb_w32_\w+)(?:@\d+)?$/ =~ internal

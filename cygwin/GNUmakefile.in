@@ -31,9 +31,16 @@ SOLIBS := $(DLL_BASE_NAME).res.@OBJEXT@ $(SOLIBS)
 EXTOBJS += $(if $(filter-out $(RUBYW_INSTALL_NAME),$(@:$(EXEEXT)=)),$(RUBY_INSTALL_NAME),$(@:$(EXEEXT)=)).res.$(OBJEXT)
 RCFILES = $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(DLL_BASE_NAME).rc
 RUBYDEF = $(DLL_BASE_NAME).def
+STUBPROGRAM = rubystub$(EXEEXT)
+SCRIPTPROGRAMS = $(addsuffix $(EXEEXT),$(notdir $(wildcard $(srcdir)/bin/*)))
 
 ruby: $(PROGRAM)
 rubyw: $(WPROGRAM)
+stub: $(STUBPROGRAM)
+scriptbin: $(SCRIPTPROGRAMS)
+
+%$(EXEEXT): bin/% $(STUBPROGRAM)
+	{ cat $(STUBPROGRAM); echo; sed -e '1{' -e '/^#!.*ruby/!i\' -e '#!/bin/ruby' -e '}' $<; } > $@
 
 $(LIBRUBY): $(RUBY_EXP) $(LIBRUBY_SO)
 $(RUBY_EXP) $(LIBRUBY_SO): $(DLL_BASE_NAME).res.@OBJEXT@
@@ -52,6 +59,10 @@ $(WPROGRAM): $(RUBYW_INSTALL_NAME).res.@OBJEXT@
 	@rm -f $@
 	$(PURIFY) $(CC) -mwindows -e _mainCRTStartup $(LDFLAGS) $(XLDFLAGS) \
 	  $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
+$(STUBPROGRAM): $(RUBY_INSTALL_NAME).res.@OBJEXT@ stub.@OBJEXT@
+	@rm -f $@
+	$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) \
+	  stub.@OBJEXT@ $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
 
 $(RUBY_EXP): $(LIBRUBY_A)
 	$(DLLWRAP) \

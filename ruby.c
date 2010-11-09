@@ -1506,6 +1506,7 @@ load_file_internal(VALUE arg)
     NODE *tree = 0;
     rb_encoding *enc;
     ID set_encoding;
+    int xflag = 0;
 
     if (!fname)
 	rb_load_fail(fname);
@@ -1517,8 +1518,10 @@ load_file_internal(VALUE arg)
 #if defined DOSISH || defined __CYGWIN__
 	{
 	    const char *ext = strrchr(fname, '.');
-	    if (ext && STRCASECMP(ext, ".exe") == 0)
+	    if (ext && STRCASECMP(ext, ".exe") == 0) {
 		mode |= O_BINARY;
+		xflag = 1;
+	    }
 	}
 #endif
 	if ((fd = open(fname, mode)) < 0) {
@@ -1540,7 +1543,7 @@ load_file_internal(VALUE arg)
 	enc = rb_ascii8bit_encoding();
 	rb_funcall(f, set_encoding, 1, rb_enc_from_encoding(enc));
 
-	if (opt->xflag) {
+	if (xflag || opt->xflag) {
 	  search_shebang:
 	    forbid_setid("-x");
 	    opt->xflag = FALSE;
@@ -1852,7 +1855,7 @@ ruby_set_argv(int argc, char **argv)
 #endif
     rb_ary_clear(av);
     for (i = 0; i < argc; i++) {
-	VALUE arg = rb_external_str_new(argv[i], strlen(argv[i]));
+	VALUE arg = rb_external_str_new_cstr(argv[i]);
 
 	OBJ_FREEZE(arg);
 	rb_ary_push(av, arg);
