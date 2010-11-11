@@ -135,6 +135,7 @@ OBJEXT        = @OBJEXT@
 ASMEXT        = S
 DLEXT         = @DLEXT@
 MANTYPE	      = @MANTYPE@
+SYMBOL_PREFIX = @SYMBOL_PREFIX@
 
 INSTALLED_LIST= .installed.list
 
@@ -169,7 +170,7 @@ $(LIBRUBY_A):
 $(LIBRUBY_SO):
 		@-$(PRE_LIBRUBY_UPDATE)
 		$(LDSHARED) $(DLDFLAGS) $(OBJS) $(DLDOBJS) $(SOLIBS) $(OUTFLAG)$@
-		-$(OBJCOPY) -w -L '@EXPORT_PREFIX@Init_*' -L '@EXPORT_PREFIX@*_threadptr_*' $@
+		-$(OBJCOPY) -w -L '$(SYMBOL_PREFIX)Init_*' -L '$(SYMBOL_PREFIX)*_threadptr_*' $@
 		@-$(MINIRUBY) -e 'ARGV.each{|link| File.delete link if File.exist? link; \
 						  File.symlink "$(LIBRUBY_SO)", link}' \
 				$(LIBRUBY_ALIASES) || true

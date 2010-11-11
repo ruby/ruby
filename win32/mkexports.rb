@@ -143,9 +143,12 @@ class Exports::Cygwin < Exports
   end
 
   def each_export(objs)
+    symprefix = RbConfig::CONFIG["SYMBOL_PREFIX"]
+    symprefix.strip! if symprefix
+    re = /\s(?:(T)|[[:upper:]])\s#{symprefix}((?!Init_|.*_threadptr_|DllMain@).*)$/
     objdump(objs) do |l|
       next if /@.*@/ =~ l
-      yield $2, !$1 if /\s(?:(T)|[[:upper:]])\s_((?!Init_|.*_threadptr_|DllMain@).*)$/ =~ l
+      yield $2, !$1 if re =~ l
     end
   end
 end

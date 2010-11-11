@@ -1,3 +1,9 @@
+Thu Nov 11 20:45:23 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (SYMBOL_PREFIX): separate from EXPORT_PREFIX.
+
+	* win32/mkexports.rb (Exports#each_export): use SYMBOL_PREFIX.
+
 Wed Nov 10 07:20:10 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cygwin/GNUmakefile.in (scriptbin): make executable file from

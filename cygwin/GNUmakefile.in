@@ -57,7 +57,7 @@ $(RCFILES): $(RBCONFIG) $(srcdir)/revision.h $(srcdir)/win32/resource.rb
 $(PROGRAM): $(RUBY_INSTALL_NAME).res.@OBJEXT@
 $(WPROGRAM): $(RUBYW_INSTALL_NAME).res.@OBJEXT@
 	@rm -f $@
-	$(PURIFY) $(CC) -mwindows -e _mainCRTStartup $(LDFLAGS) $(XLDFLAGS) \
+	$(PURIFY) $(CC) -mwindows -e $(SYMBOL_PREFIX)mainCRTStartup $(LDFLAGS) $(XLDFLAGS) \
 	  $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
 $(STUBPROGRAM): $(RUBY_INSTALL_NAME).res.@OBJEXT@ stub.@OBJEXT@
 	@rm -f $@

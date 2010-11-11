@@ -2349,16 +2349,16 @@ AC_SUBST(INSTALLDOC)
 if test "$rb_with_pthread" = "yes"; then
     THREAD_MODEL=pthread
 fi
-AC_CACHE_CHECK([for prefix of exported symbols], rb_cv_export_prefix, [
-    AC_TRY_COMPILE([extern void conftest_exported(void) {}], [], [
-	rb_cv_export_prefix=`$NM conftest.$ac_objext |
-			     sed -n ['/.*[ 	]\([^ 	]*\)conftest_exported.*/!d;s//\1/p;q']`
+AC_CACHE_CHECK([for prefix of external symbols], rb_cv_symbol_prefix, [
+    AC_TRY_COMPILE([extern void conftest_external(void) {}], [], [
+	rb_cv_symbol_prefix=`$NM conftest.$ac_objext |
+			     sed -n ['/.*[ 	]\([^ 	]*\)conftest_external.*/!d;s//\1/p;q']`
 	],
-	[rb_cv_export_prefix=''])
-    test -n "$rb_cv_export_prefix" || rb_cv_export_prefix=NONE
+	[rb_cv_symbol_prefix=''])
+    test -n "$rb_cv_symbol_prefix" || rb_cv_symbol_prefix=NONE
 ])
-EXPORT_PREFIX="$rb_cv_export_prefix"
-test "x$EXPORT_PREFIX" = xNONE && EXPORT_PREFIX=''
+SYMBOL_PREFIX="$rb_cv_symbol_prefix"
+test "x$SYMBOL_PREFIX" = xNONE && SYMBOL_PREFIX=''
 MINIDLNOBJ=dmydln.o
 AS_CASE(["$target_os"],
     [linux*], [
@@ -2424,7 +2424,7 @@ AS_CASE(["$target_os"],
 		LIBRUBY_SO='$(RUBY_SO_NAME)'.dll
 		LIBRUBY_DLDFLAGS="${LIBRUBY_DLDFLAGS}"' $(RUBYDEF)'
 	    fi
-	    test -z "$EXPORT_PREFIX" && EXPORT_PREFIX=' '
+	    EXPORT_PREFIX=' '
 	    DLDFLAGS="${DLDFLAGS}"' $(DEFFILE)'
 	    AC_LIBOBJ([win32])
 	    COMMON_LIBS=m
@@ -2557,6 +2557,7 @@ AC_SUBST(COMMON_LIBS)
 AC_SUBST(COMMON_MACROS)
 AC_SUBST(COMMON_HEADERS)
 AC_SUBST(EXPORT_PREFIX)
+AC_SUBST(SYMBOL_PREFIX)
 AC_SUBST(MINIOBJS)
 AC_SUBST(THREAD_MODEL)
 
