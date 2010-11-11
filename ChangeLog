@@ -1,3 +1,7 @@
+Thu Nov 11 21:49:06 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/stats.rb (RDoc#print): get rid of NaN.
+
 Thu Nov 11 21:47:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (SHOWFLAGS): show compile flags.

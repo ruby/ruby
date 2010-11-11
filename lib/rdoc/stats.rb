@@ -89,7 +89,7 @@ class RDoc::Stats
     doc_items = items -
       nodoc_classes - @nodoc_constants - nodoc_modules - @nodoc_methods
 
-    percent_doc = doc_items.to_f / items * 100
+    percent_doc = doc_items.to_f / items * 100 if items.nonzero?
 
     puts "Files:     %5d" % @num_files
     puts "Classes:   %5d (%5d undocumented)" % [num_classes, nodoc_classes]
@@ -97,7 +97,7 @@ class RDoc::Stats
       [@num_constants, @nodoc_constants]
     puts "Modules:   %5d (%5d undocumented)" % [num_modules, nodoc_modules]
     puts "Methods:   %5d (%5d undocumented)" % [@num_methods, @nodoc_methods]
-    puts "%6.2f%% documented" % percent_doc
+    puts "%6.2f%% documented" % percent_doc if percent_doc
     puts
     puts "Elapsed: %0.1fs" % (Time.now - @start)
   end
