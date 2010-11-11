@@ -485,6 +485,9 @@ AC_C_CHAR_UNSIGNED
 AC_C_INLINE
 AC_C_VOLATILE
 
+AS_CASE(":$ac_cv_c_const:$ac_cv_c_volatile:",
+    [*:no:*], [AC_MSG_ERROR(ANSI C-conforming const and volatile are mandatory)])
+
 AC_CHECK_TYPES([long long, off_t])
 
 AC_CACHE_CHECK([char bit], [rb_cv_char_bit],

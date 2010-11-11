@@ -1,4 +1,6 @@
-Thu Nov 11 23:32:10 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Nov 11 23:38:32 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: ANSI C-conforming const and volatile are mandatory
 
 	* configure.in (AC_C_CONST, AC_C_INLINE, AC_C_VOLATILE): check
 	  before used in other checks.
