@@ -153,10 +153,14 @@ all:
 
 miniruby$(EXEEXT):
 		@-if test -f $@; then $(MV) -f $@ $@.old; $(RM) $@.old; fi
+		$(ECHO) linking $@
+		$(Q) \
 		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINLIBS) $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT) $(LIBS) $(OUTFLAG)$@
 
 $(PROGRAM):
 		@$(RM) $@
+		$(ECHO) linking $@
+		$(Q) \
 		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINLIBS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) $(OUTFLAG)$@
 
 # We must `rm' the library each time this rule is invoked because "updating" a
@@ -164,13 +168,18 @@ $(PROGRAM):
 # supported.
 $(LIBRUBY_A):
 		@$(RM) $@
+		$(ECHO) linking static-library $@
+		$(Q) \
 		$(AR) $(ARFLAGS) $@ $(OBJS) $(DMYEXT)
 		@-$(RANLIB) $@ 2> /dev/null || true
 
 $(LIBRUBY_SO):
 		@-$(PRE_LIBRUBY_UPDATE)
+		$(ECHO) linking shared-library $@
+		$(Q) \
 		$(LDSHARED) $(DLDFLAGS) $(OBJS) $(DLDOBJS) $(SOLIBS) $(OUTFLAG)$@
-		-$(OBJCOPY) -w -L '$(SYMBOL_PREFIX)Init_*' -L '$(SYMBOL_PREFIX)*_threadptr_*' $@
+		-$(Q) \
+		$(OBJCOPY) -w -L '$(SYMBOL_PREFIX)Init_*' -L '$(SYMBOL_PREFIX)*_threadptr_*' $@
 		@-$(MINIRUBY) -e 'ARGV.each{|link| File.delete link if File.exist? link; \
 						  File.symlink "$(LIBRUBY_SO)", link}' \
 				$(LIBRUBY_ALIASES) || true
@@ -265,15 +274,23 @@ enc/unicode/name2ctype.h: enc/unicode/name2ctype.kwd
 	fi
 
 .c.@OBJEXT@:
+	@$(ECHO) compiling $<
+	$(Q) \
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $<
 
 .s.@OBJEXT@:
+	@$(ECHO) assembling $<
+	$(Q) \
 	$(AS) $(ASFLAGS) -o $@ $<
 
 .c.S:
+	@$(ECHO) translating $<
+	$(Q) \
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -S $<
 
 .c.i:
+	@$(ECHO) preprocessing $<
+	$(Q) \
 	$(CPP) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -E $< > $@
 
 clean-local::

@@ -4,6 +4,13 @@ dll: $(LIBRUBY_SO)
 
 .SUFFIXES: .inc .h .c .y .i
 
+# V=0 quiet, V=1 verbose.  other values don't work.
+V = 0
+Q1 = $(V:1=)
+Q = $(Q1:0=@)
+ECHO1 = $(V:1=@:)
+ECHO = $(ECHO1:0=@echo)
+
 RUBYLIB       = -
 RUBYOPT       = -
 
@@ -462,6 +469,8 @@ test-rubyspec: test-rubyspec-precheck
 
 encs: enc trans
 encs enc trans: $(ENC_MK) $(LIBRUBY) $(PREP)
+	$(ECHO) making $@
+	$(Q) \
 	$(MAKE) -f $(ENC_MK) RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(MFLAGS) $@
 
 enc: {$(VPATH)}encdb.h
@@ -469,6 +478,8 @@ trans: {$(VPATH)}transdb.h
 
 $(ENC_MK): $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc/depend \
 	$(srcdir)/lib/mkmf.rb $(RBCONFIG)
+	$(ECHO) generating $@
+	$(Q) \
 	$(MINIRUBY) $(srcdir)/enc/make_encmake.rb --builtin-encs="$(BUILTIN_ENCOBJS)" --builtin-transes="$(BUILTIN_TRANSOBJS)" $@ $(ENCS)
 
 .PRECIOUS: $(MKFILES)
@@ -722,6 +733,8 @@ EXT_SRCS = $(srcdir)/ext/ripper/ripper.c $(srcdir)/ext/json/parser/parser.c
 srcs-ext: $(EXT_SRCS)
 
 srcs-enc: $(ENC_MK)
+	$(ECHO) making srcs under enc
+	$(Q) \
 	$(MAKE) -f $(ENC_MK) RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(MFLAGS) srcs
 
 incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}encdb.h {$(VPATH)}transdb.h {$(VPATH)}known_errors.inc \
@@ -737,23 +750,35 @@ node_name.inc: {$(VPATH)}node.h
 	$(BASERUBY) -n $(srcdir)/tool/node_name.rb < $? > $@
 
 encdb.h: $(PREP) $(srcdir)/tool/generic_erb.rb $(srcdir)/template/encdb.h.tmpl
+	$(ECHO) generating $@
+	$(Q) \
 	$(MINIRUBY) $(srcdir)/tool/generic_erb.rb -c -o $@ $(srcdir)/template/encdb.h.tmpl $(srcdir)/enc enc
 
 transdb.h: $(PREP) srcs-enc $(srcdir)/tool/generic_erb.rb $(srcdir)/template/transdb.h.tmpl
+	$(ECHO) generating $@
+	$(Q) \
 	$(MINIRUBY) $(srcdir)/tool/generic_erb.rb -c -o $@ $(srcdir)/template/transdb.h.tmpl $(srcdir)/enc/trans enc/trans
 
 known_errors.inc: $(srcdir)/template/known_errors.inc.tmpl $(srcdir)/defs/known_errors.def
+	$(ECHO) generating $@
+	$(Q) \
 	$(BASERUBY) $(srcdir)/tool/generic_erb.rb -c -o $@ $(srcdir)/template/known_errors.inc.tmpl $(srcdir)/defs/known_errors.def
 
 miniprelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
+	$(ECHO) generating $@
+	$(Q) \
 	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $@
 
 prelude.c: $(srcdir)/tool/compile_prelude.rb $(RBCONFIG) \
 	   $(srcdir)/lib/rubygems/defaults.rb $(srcdir)/lib/rubygems/custom_require.rb \
 	   $(PRELUDE_SCRIPTS) $(PREP)
+	$(ECHO) generating $@
+	$(Q) \
 	$(COMPILE_PRELUDE) $(PRELUDE_SCRIPTS) $@
 
 golf_prelude.c: $(srcdir)/tool/compile_prelude.rb $(RBCONFIG) $(srcdir)/prelude.rb $(srcdir)/golf_prelude.rb $(PREP)
+	$(ECHO) generating $@
+	$(Q) \
 	$(COMPILE_PRELUDE) $(srcdir)/golf_prelude.rb $@
 
 prereq: incs srcs preludes PHONY

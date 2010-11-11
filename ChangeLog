@@ -1,3 +1,9 @@
+Thu Nov 11 21:46:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk: hide long command lines by default.  verbose-mode is
+	  turned on by V=1 as before.
+	  http://jarp.does.notwork.org/diary/200605b.html#200605121
+
 Thu Nov 11 21:32:09 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (try_func): accept variable address.

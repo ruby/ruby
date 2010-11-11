@@ -1543,6 +1543,13 @@ def configuration(srcdir)
   mk << %{
 SHELL = /bin/sh
 
+# V=0 quiet, V=1 verbose.  other values don't work.
+V = 0
+Q1 = $(V:1=)
+Q = $(Q1:0=@)
+ECHO1 = $(V:1=@:)
+ECHO = $(ECHO1:0=@echo)
+
 #### Start of system configuration section. ####
 #{"top_srcdir = " + $top_srcdir.sub(%r"\A#{Regexp.quote($topdir)}/", "$(topdir)/") if $extmk}
 srcdir = #{srcdir.gsub(/\$\((srcdir)\)|\$\{(srcdir)\}/) {mkintpath(CONFIG[$1||$2])}.quote}
@@ -1955,22 +1962,23 @@ site-install-rb: install-rb
   mfile.print ".SUFFIXES: .#{SRC_EXT.join(' .')} .#{$OBJEXT}\n"
   mfile.print "\n"
 
+  compile_command = "\n\t$(ECHO) compiling $<\n\t$(Q) %s\n\n"
   CXX_EXT.each do |e|
     COMPILE_RULES.each do |rule|
       mfile.printf(rule, e, $OBJEXT)
-      mfile.printf("\n\t%s\n\n", COMPILE_CXX)
+      mfile.printf(compile_command, COMPILE_CXX)
     end
   end
   %w[c].each do |e|
     COMPILE_RULES.each do |rule|
       mfile.printf(rule, e, $OBJEXT)
-      mfile.printf("\n\t%s\n\n", COMPILE_C)
+      mfile.printf(compile_command, COMPILE_C)
     end
   end
   %w[m].each do |e|
     COMPILE_RULES.each do |rule|
       mfile.printf(rule, e, $OBJEXT)
-      mfile.printf("\n\t%s\n\n", COMPILE_OBJC)
+      mfile.printf(compile_command, COMPILE_OBJC)
     end
   end
 
@@ -1978,15 +1986,17 @@ site-install-rb: install-rb
   mfile.print "$(DLLIB): "
   mfile.print "$(DEFFILE) " if makedef
   mfile.print "$(OBJS) Makefile\n"
+  mfile.print "\t$(ECHO) linking shared-object #{target_prefix.sub(/\A\/(.*)/, '\1/')}$(DLLIB)\n"
   mfile.print "\t@-$(RM) $(@#{sep})\n"
   mfile.print "\t@-$(MAKEDIRS) $(@D)\n" if $extout
-  link_so = LINK_SO.gsub(/^/, "\t")
+  link_so = LINK_SO.gsub(/^/, "\t$(Q) ")
   if srcs.any?(&%r"\.(?:#{CXX_EXT.join('|')})\z".method(:===))
     link_so = link_so.sub(/\bLDSHARED\b/, '\&XX')
   end
   mfile.print link_so, "\n\n"
   unless $static.nil?
     mfile.print "$(STATIC_LIB): $(OBJS)\n\t@-$(RM) $(@#{sep})\n\t"
+    mfile.print "$(ECHO) linking static-library $(@)\n\t$(Q) "
     mfile.print "$(AR) #{config_string('ARFLAGS') || 'cru '}$@ $(OBJS)"
     config_string('RANLIB') do |ranlib|
       mfile.print "\n\t@-#{ranlib} $(DLLIB) 2> /dev/null || true"
@@ -1995,6 +2005,7 @@ site-install-rb: install-rb
   mfile.print "\n\n"
   if makedef
     mfile.print "$(DEFFILE): #{origdef}\n"
+    mfile.print "\t$(ECHO) generating $@\n\t$(Q) \\"
     mfile.print "\t$(RUBY) #{makedef} #{origdef} > $@\n\n"
   end
 
