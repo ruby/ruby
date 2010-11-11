@@ -479,6 +479,12 @@ cat largefile.h >> confdefs.h
 
 AS_CASE(["$target_os"],[mingw*], [ac_cv_type_off_t=yes;ac_cv_sizeof_off_t=8])
 
+AC_C_BIGENDIAN
+AC_C_CONST
+AC_C_CHAR_UNSIGNED
+AC_C_INLINE
+AC_C_VOLATILE
+
 AC_CHECK_TYPES([long long, off_t])
 
 AC_CACHE_CHECK([char bit], [rb_cv_char_bit],
@@ -1534,12 +1540,6 @@ fi
 if test "$ac_cv_func_setpgid:$ac_cv_func_setpgrp" = no:yes; then
 AC_FUNC_SETPGRP
 fi
-
-AC_C_BIGENDIAN
-AC_C_CONST
-AC_C_CHAR_UNSIGNED
-AC_C_INLINE
-AC_C_VOLATILE
 
 if test x"$target_cpu" = xia64; then
     AC_LIBOBJ([ia64])

@@ -1,4 +1,7 @@
-Thu Nov 11 23:29:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Nov 11 23:32:10 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (AC_C_CONST, AC_C_INLINE, AC_C_VOLATILE): check
+	  before used in other checks.
 
 	* configure.in (RUBY_CHECK_PRINTF_PREFIX): should not break from
 	  RUBY_WERROR_FLAG, so that ac_c_werror_flag gets restored.
