@@ -315,10 +315,15 @@ rb_io_set_write_io(VALUE io, VALUE w)
 {
     VALUE write_io;
     rb_io_check_initialized(RFILE(io)->fptr);
-    GetWriteIO(w);
+    if (!RTEST(w)) {
+	w = 0;
+    }
+    else {
+	GetWriteIO(w);
+    }
     write_io = RFILE(io)->fptr->tied_io_for_writing;
     RFILE(io)->fptr->tied_io_for_writing = w;
-    return write_io;
+    return write_io ? write_io : Qnil;
 }
 
 /*
@@ -6781,6 +6786,9 @@ argf_forward(int argc, VALUE *argv, VALUE argf)
 static void
 argf_close(VALUE file)
 {
+    if (RB_TYPE_P(file, T_FILE)) {
+	rb_io_set_write_io(file, Qnil);
+    }
     rb_funcall3(file, rb_intern("close"), 0, 0);
 }
 

@@ -1,4 +1,6 @@
-Thu Nov 11 21:56:10 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Nov 11 23:03:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (argf_close): untie tied io before closing.
 
 	* io.c (argf_write): add ARGF.write and so on.
 
