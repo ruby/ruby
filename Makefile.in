@@ -195,8 +195,12 @@ $(ruby_pc):
 
 install-cross: $(arch)-fake.rb $(RBCONFIG) rbconfig.rb $(arch_hdrdir)/ruby/config.h \
 	$(LIBRUBY_A) $(LIBRUBY_SO) $(ARCHFILE)
+	$(ECHO) installing cross-compiling stuff
+	$(Q) \
 	$(MAKEDIRS) $(XRUBY_RUBYLIBDIR)/$(arch) $(XRUBY_RUBYHDRDIR)/$(arch)/ruby
+	$(Q) \
 	sed '/^\$$:\.unshift/q' $(arch)-fake.rb > fake.rb
+	$(Q) \
 	$(BASERUBY) -p \
 	-e '~/^\s*CONFIG\["LDFLAGS"\]/ and' \
 	-e '$$_[/(?=\s*"$$)/] = %q[ #{(CONFIG["LIBPATHFLAG"]%File.dirname(__FILE__)).strip}]' \
@@ -339,6 +343,8 @@ clean-capi distclean-capi realclean-capi:
 
 
 ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
+	$(ECHO) compiling $@
+	$(Q) \
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c ext/extinit.c
 
 up::
