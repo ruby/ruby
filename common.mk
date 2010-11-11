@@ -165,14 +165,20 @@ miniruby$(EXEEXT): config.status $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DM
 
 GORUBY = go$(RUBY_INSTALL_NAME)
 golf: $(LIBRUBY) $(GOLFOBJS) PHONY
+	$(Q) \
 	$(MAKE) $(MFLAGS) MAINOBJ="$(GOLFOBJS)" PROGRAM=$(GORUBY)$(EXEEXT) program
 capi: $(CAPIOUT)/.timestamp PHONY
 doc/capi/.timestamp: Doxyfile $(PREP) 
 	@$(MAKEDIRS) doc/capi
-	@$(DOXYGEN) -b
+	$(ECHO) generating capi
+	$(Q) \
+	$(DOXYGEN) -b
+	$(Q) \
 	$(MINIRUBY) -e 'File.open("$(CAPIOUT)/.timestamp", "w"){|f| f.puts(Time.now)}'
 
 Doxyfile: $(srcdir)/template/Doxyfile.tmpl $(PREP) $(srcdir)/tool/generic_erb.rb $(RBCONFIG)
+	$(ECHO) generating $@
+	$(Q) \
 	$(MINIRUBY) $(srcdir)/tool/generic_erb.rb -o $@ $(srcdir)/template/Doxyfile.tmpl \
 	--srcdir="$(srcdir)" --miniruby="$(MINIRUBY)"
 
@@ -374,6 +380,7 @@ post-install-doc::
 
 rdoc: PHONY main
 	@echo Generating RDoc documentation
+	$(Q) \
 	$(XRUBY) "$(srcdir)/bin/rdoc" --no-force-update --all --ri --op "$(RDOCOUT)" $(RDOCFLAGS) "$(srcdir)"
 nodoc: PHONY
 
@@ -753,6 +760,8 @@ incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}encdb.h {$(VPATH)}transdb.h {$(
 insns: $(INSNS)
 
 id.h: parse.h $(srcdir)/tool/generic_erb.rb $(srcdir)/template/id.h.tmpl
+	$(ECHO) generating $@
+	$(Q) \
 	$(BASERUBY) $(srcdir)/tool/generic_erb.rb --output=$@ \
 		$(srcdir)/template/id.h.tmpl --vpath=$(VPATH) parse.h
 
