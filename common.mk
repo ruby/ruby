@@ -139,10 +139,9 @@ all: showflags main docs
 main: showflags encs exts
 	@$(RUNCMD) $(MKMAIN_CMD) $(MAKE)
 
-.PHONY: showflags SHOWFLAGS
+.PHONY: showflags
 exts enc trans: showflags
-showflags: SHOWFLAGS
-SHOWFLAGS:
+showflags:
 	@echo "	CFLAGS = $(CFLAGS)"
 	@echo "	XCFLAGS = $(XCFLAGS)"
 	@echo "	CPPFLAGS = $(CPPFLAGS)"
