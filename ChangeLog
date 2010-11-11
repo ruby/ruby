@@ -1,3 +1,8 @@
+Thu Nov 11 20:49:48 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (PRI_LL_PREFIX): format type specifier for
+	  LONG_LONG may vary on platforms.
+
 Thu Nov 11 20:45:23 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (SYMBOL_PREFIX): separate from EXPORT_PREFIX.

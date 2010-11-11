@@ -582,6 +582,36 @@ RUBY_CHECK_SIZEOF(float)
 RUBY_CHECK_SIZEOF(double)
 RUBY_CHECK_SIZEOF(time_t, [long "long long"], [], [@%:@include <time.h>])
 
+AC_DEFUN([RUBY_CHECK_PRINTF_PREFIX], [
+AC_CACHE_CHECK([for printf prefix for $1], [rb_cv_pri_prefix_]AS_TR_SH($1),
+    [rb_cv_pri_prefix_]AS_TR_SH($1)=[NONE]
+    for pri in $2; do
+        RUBY_WERROR_FLAG(AC_TRY_COMPILE(
+            [@%:@include <stdio.h>
+	    @%:@include <stddef.h>
+            @%:@ifdef __GNUC__
+            @%:@define PRINTF_ARGS(decl, string_index, first_to_check) \
+              decl __attribute__((format(printf, string_index, first_to_check)))
+            @%:@else
+            @%:@define PRINTF_ARGS(decl, string_index, first_to_check) decl
+            @%:@endif
+	    PRINTF_ARGS(void test_sprintf(const char*, ...), 1, 2);],
+            [printf("%]${pri}[d", (]$1[)42);
+            test_sprintf("%]${pri}[d", (]$1[)42);],
+            [rb_cv_pri_prefix_]AS_TR_SH($1)[=[$pri]; break]))
+    done)
+if test "[$rb_cv_pri_prefix_]AS_TR_SH($1)" != NONE; then
+    AC_DEFINE_UNQUOTED([PRI_]m4_ifval($3,$3,AS_TR_CPP(m4_bpatsubst([$1],[_t$])))[_PREFIX],
+        "[$rb_cv_pri_prefix_]AS_TR_SH($1)")
+fi
+])
+
+if test "x$ac_cv_type_long_long" = xyes; then
+    RUBY_CHECK_PRINTF_PREFIX(long long, ll I64, LL)
+elif test "x$ac_cv_type___int64" = xyes; then
+    RUBY_CHECK_PRINTF_PREFIX(__int64, ll I64, LL)
+fi
+
 dnl RUBY_REPLACE_TYPE [typename] [default type] [macro type] [included]
 AC_DEFUN([RUBY_REPLACE_TYPE], [dnl
     AC_CHECK_TYPE([$1], [n=[$1]], [n=[$2]], [$4])
@@ -623,7 +653,7 @@ AC_DEFUN([RUBY_REPLACE_TYPE], [dnl
     AC_DEFINE_UNQUOTED([$3]2NUM[(v)], [${rb_cv_[$1]_convertible}2NUM(v)])
     AC_DEFINE_UNQUOTED(NUM2[$3][(v)], [NUM2${rb_cv_[$1]_convertible}(v)])
     AC_DEFINE_UNQUOTED(PRI_[$3]_PREFIX,
-	["`echo ${rb_cv_[$1]_convertible} | sed ['s/^U//;s/[^L].*//;y/L/l/']`"])
+	[PRI_`echo ${rb_cv_[$1]_convertible} | sed ['s/^U//']`_PREFIX])
 ])
 RUBY_REPLACE_TYPE(pid_t, int, PIDT)
 RUBY_REPLACE_TYPE(uid_t, int, UIDT)
@@ -1079,18 +1109,6 @@ RUBY_CHECK_SIZEOF(rlim_t, [int long "long long"], [], [
   # include <unistd.h>
   #endif
   #include <stdio.h>
-])
-
-AC_DEFUN([RUBY_CHECK_PRINTF_PREFIX], [
-AC_CACHE_CHECK([printf prefix for $1], rb_cv_pri_prefix_[$1],
-  RUBY_WERROR_FLAG(AC_TRY_COMPILE(
-    [@%:@include <stdio.h>],
-    [printf("%]$2[d", sizeof(long));],
-    [rb_cv_pri_prefix_[$1]=[$2]],
-    [rb_cv_pri_prefix_[$1]=[NONE]])))
-if test "$rb_cv_pri_prefix_[$1]" != NONE; then
-    AC_DEFINE_UNQUOTED([PRI_]AS_TR_CPP(m4_bpatsubst([$1],[_t$]))[_PREFIX], "$rb_cv_pri_prefix_[$1]")
-fi
 ])
 
 AC_TYPE_SIZE_T

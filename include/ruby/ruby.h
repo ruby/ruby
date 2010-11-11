@@ -101,7 +101,7 @@ typedef unsigned LONG_LONG ID;
 # define SIGNED_VALUE LONG_LONG
 # define LONG_LONG_VALUE 1
 # define SIZEOF_VALUE SIZEOF_LONG_LONG
-# define PRI_VALUE_PREFIX "ll"
+# define PRI_VALUE_PREFIX PRI_LL_PREFIX
 #else
 # error ---->> ruby requires sizeof(void*) == sizeof(long) to be compiled. <<----
 #endif
@@ -112,6 +112,13 @@ typedef char ruby_check_sizeof_long[SIZEOF_LONG == sizeof(long) ? 1 : -1];
 typedef char ruby_check_sizeof_long_long[SIZEOF_LONG_LONG == sizeof(LONG_LONG) ? 1 : -1];
 #endif
 typedef char ruby_check_sizeof_voidp[SIZEOF_VOIDP == sizeof(void*) ? 1 : -1];
+
+#ifndef PRI_INT_PREFIX
+#define PRI_INT_PREFIX ""
+#endif
+#ifndef PRI_LONG_PREFIX
+#define PRI_LONG_PREFIX "l"
+#endif
 
 #if defined PRIdPTR && !defined PRI_VALUE_PREFIX
 #define PRIdVALUE PRIdPTR
@@ -138,19 +145,17 @@ typedef char ruby_check_sizeof_voidp[SIZEOF_VOIDP == sizeof(void*) ? 1 : -1];
 # elif SIZEOF_TIME_T == SIZEOF_LONG
 #  define PRI_TIMET_PREFIX "l"
 # elif SIZEOF_TIME_T == SIZEOF_LONG_LONG
-#  define PRI_TIMET_PREFIX "ll"
+#  define PRI_TIMET_PREFIX PRI_LL_PREFIX
 # endif
 #endif
 
 #if defined PRI_PTRDIFF_PREFIX
-#elif defined PRIdPTR
-# define PRI_PTRDIFF_PREFIX "t"
 #elif SIZEOF_PTRDIFF_T == SIZEOF_INT
-# define PRI_PTRDIFF_PREFIX
+# define PRI_PTRDIFF_PREFIX ""
 #elif SIZEOF_PTRDIFF_T == SIZEOF_LONG
 # define PRI_PTRDIFF_PREFIX "l"
 #elif SIZEOF_PTRDIFF_T == SIZEOF_LONG_LONG
-# define PRI_PTRDIFF_PREFIX "ll"
+# define PRI_PTRDIFF_PREFIX PRI_LL_PREFIX
 #endif
 #define PRIdPTRDIFF PRI_PTRDIFF_PREFIX"d"
 #define PRIiPTRDIFF PRI_PTRDIFF_PREFIX"i"
@@ -160,14 +165,12 @@ typedef char ruby_check_sizeof_voidp[SIZEOF_VOIDP == sizeof(void*) ? 1 : -1];
 #define PRIXPTRDIFF PRI_PTRDIFF_PREFIX"X"
 
 #if defined PRI_SIZE_PREFIX
-#elif defined PRIdPTR
-# define PRI_SIZE_PREFIX "z"
 #elif SIZEOF_SIZE_T == SIZEOF_INT
-# define PRI_SIZE_PREFIX
+# define PRI_SIZE_PREFIX ""
 #elif SIZEOF_SIZE_T == SIZEOF_LONG
 # define PRI_SIZE_PREFIX "l"
 #elif SIZEOF_SIZE_T == SIZEOF_LONG_LONG
-# define PRI_SIZE_PREFIX "ll"
+# define PRI_SIZE_PREFIX PRI_LL_PREFIX
 #endif
 #define PRIdSIZE PRI_SIZE_PREFIX"d"
 #define PRIiSIZE PRI_SIZE_PREFIX"i"
