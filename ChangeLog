@@ -1,3 +1,7 @@
+Fri Nov 12 00:30:19 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub (config.h): need PRI_LL_PREFIX.
+
 Thu Nov 11 23:38:32 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: ANSI C-conforming const and volatile are mandatory
