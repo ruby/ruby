@@ -1,3 +1,8 @@
+Thu Nov 11 23:29:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_CHECK_PRINTF_PREFIX): should not break from
+	  RUBY_WERROR_FLAG, so that ac_c_werror_flag gets restored.
+
 Thu Nov 11 23:04:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (warn_deprecated): show caller position.

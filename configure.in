@@ -583,10 +583,10 @@ RUBY_CHECK_SIZEOF(double)
 RUBY_CHECK_SIZEOF(time_t, [long "long long"], [], [@%:@include <time.h>])
 
 AC_DEFUN([RUBY_CHECK_PRINTF_PREFIX], [
-AC_CACHE_CHECK([for printf prefix for $1], [rb_cv_pri_prefix_]AS_TR_SH($1),
+AC_CACHE_CHECK([for printf prefix for $1], [rb_cv_pri_prefix_]AS_TR_SH($1),[
     [rb_cv_pri_prefix_]AS_TR_SH($1)=[NONE]
-    for pri in $2; do
-        RUBY_WERROR_FLAG(AC_TRY_COMPILE(
+    RUBY_WERROR_FLAG(for pri in $2; do
+        AC_TRY_COMPILE(
             [@%:@include <stdio.h>
 	    @%:@include <stddef.h>
             @%:@ifdef __GNUC__
@@ -598,8 +598,8 @@ AC_CACHE_CHECK([for printf prefix for $1], [rb_cv_pri_prefix_]AS_TR_SH($1),
 	    PRINTF_ARGS(void test_sprintf(const char*, ...), 1, 2);],
             [printf("%]${pri}[d", (]$1[)42);
             test_sprintf("%]${pri}[d", (]$1[)42);],
-            [rb_cv_pri_prefix_]AS_TR_SH($1)[=[$pri]; break]))
-    done)
+            [rb_cv_pri_prefix_]AS_TR_SH($1)[=[$pri]; break])
+    done)])
 if test "[$rb_cv_pri_prefix_]AS_TR_SH($1)" != NONE; then
     AC_DEFINE_UNQUOTED([PRI_]m4_ifval($3,$3,AS_TR_CPP(m4_bpatsubst([$1],[_t$])))[_PREFIX],
         "[$rb_cv_pri_prefix_]AS_TR_SH($1)")
