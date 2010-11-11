@@ -1,3 +1,7 @@
+Thu Nov 11 21:52:13 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (argf_read_nonblock): add ARGF.read_nonblock.
+
 Thu Nov 11 21:49:06 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/stats.rb (RDoc#print): get rid of NaN.

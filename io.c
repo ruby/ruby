@@ -9101,6 +9101,8 @@ argf_forward_call(VALUE arg)
     return Qnil;
 }
 
+static VALUE argf_getpartial(int argc, VALUE *argv, VALUE argf, int nonblock);
+
 /*
  *  call-seq:
  *     ARGF.readpartial(maxlen)              -> string
@@ -9132,6 +9134,26 @@ argf_forward_call(VALUE arg)
 static VALUE
 argf_readpartial(int argc, VALUE *argv, VALUE argf)
 {
+    return argf_getpartial(argc, argv, argf, 0);
+}
+
+/*
+ *  call-seq:
+ *     ARGF.read_nonblock(maxlen)              -> string
+ *     ARGF.read_nonblock(maxlen, outbuf)      -> outbuf
+ *
+ *  Reads at most _maxlen_ bytes from the ARGF stream in non-blocking mode.
+ */
+
+static VALUE
+argf_read_nonblock(int argc, VALUE *argv, VALUE argf)
+{
+    return argf_getpartial(argc, argv, argf, 1);
+}
+
+static VALUE
+argf_getpartial(int argc, VALUE *argv, VALUE argf, int nonblock)
+{
     VALUE tmp, str, length;
 
     rb_scan_args(argc, argv, "11", &length, &str);
@@ -9153,7 +9175,7 @@ argf_readpartial(int argc, VALUE *argv, VALUE argf)
 			 RUBY_METHOD_FUNC(0), Qnil, rb_eEOFError, (VALUE)0);
     }
     else {
-        tmp = io_getpartial(argc, argv, ARGF.current_file, 0);
+        tmp = io_getpartial(argc, argv, ARGF.current_file, nonblock);
     }
     if (NIL_P(tmp)) {
         if (ARGF.next_p == -1) {
@@ -10108,6 +10130,7 @@ Init_IO(void)
 
     rb_define_method(rb_cARGF, "read",  argf_read, -1);
     rb_define_method(rb_cARGF, "readpartial",  argf_readpartial, -1);
+    rb_define_method(rb_cARGF, "read_nonblock",  argf_read_nonblock, -1);
     rb_define_method(rb_cARGF, "readlines", argf_readlines, -1);
     rb_define_method(rb_cARGF, "to_a", argf_readlines, -1);
     rb_define_method(rb_cARGF, "gets", argf_gets, -1);
