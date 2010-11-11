@@ -339,7 +339,7 @@ unix_recv_io(int argc, VALUE *argv, VALUE sock)
 	rb_sys_fail("recvmsg(2)");
 
 #if FD_PASSING_BY_MSG_CONTROL
-    if (arg.msg.msg_controllen < sizeof(struct cmsghdr)) {
+    if (arg.msg.msg_controllen < (socklen_t)sizeof(struct cmsghdr)) {
 	rb_raise(rb_eSocket,
 		 "file descriptor was not passed (msg_controllen=%d smaller than sizeof(struct cmsghdr)=%d)",
 		 (int)arg.msg.msg_controllen, (int)sizeof(struct cmsghdr));
@@ -354,12 +354,12 @@ unix_recv_io(int argc, VALUE *argv, VALUE sock)
 		 "file descriptor was not passed (cmsg_type=%d, %d expected)",
 		 cmsg.hdr.cmsg_type, SCM_RIGHTS);
     }
-    if (arg.msg.msg_controllen < CMSG_LEN(sizeof(int))) {
+    if (arg.msg.msg_controllen < (socklen_t)CMSG_LEN(sizeof(int))) {
 	rb_raise(rb_eSocket,
 		 "file descriptor was not passed (msg_controllen=%d smaller than CMSG_LEN(sizeof(int))=%d)",
 		 (int)arg.msg.msg_controllen, (int)CMSG_LEN(sizeof(int)));
     }
-    if (CMSG_SPACE(sizeof(int)) < arg.msg.msg_controllen) {
+    if ((socklen_t)CMSG_SPACE(sizeof(int)) < arg.msg.msg_controllen) {
 	rb_raise(rb_eSocket,
 		 "file descriptor was not passed (msg_controllen=%d bigger than CMSG_SPACE(sizeof(int))=%d)",
 		 (int)arg.msg.msg_controllen, (int)CMSG_SPACE(sizeof(int)));

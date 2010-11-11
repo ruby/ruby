@@ -114,7 +114,7 @@ rb_syck_compile(VALUE self, VALUE port)
     syck_parser_taguri_expansion( parser, 0 );
     oid = syck_parse( parser );
     if (!syck_lookup_sym( parser, oid, &data )) {
-	rb_raise(rb_eSyntaxError, "root node <%lx> not found", oid);
+	rb_raise(rb_eSyntaxError, "root node <%p> not found", (void *)oid);
     }
     sav = data;
 

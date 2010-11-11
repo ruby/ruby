@@ -3819,8 +3819,6 @@ wlink(const WCHAR *from, const WCHAR *to)
     static int myerrno = 0;
 
     if (!pCreateHardLinkW && !myerrno) {
-	HANDLE hKernel;
-
 	pCreateHardLinkW = (BOOL (WINAPI *)(LPCWSTR, LPCWSTR, LPSECURITY_ATTRIBUTES))get_proc_address("kernel32", "CreateHardLinkW", NULL);
 	if (!pCreateHardLinkW)
 	    myerrno = ENOSYS;
@@ -4936,7 +4934,7 @@ rb_w32_pipe(int fds[2])
 	return _pipe(fds, 65536L, _O_NOINHERIT);
 
     p = strchr(name, '0');
-    snprintf(p, strlen(p) + 1, "%x-%lx", rb_w32_getpid(), serial++);
+    snprintf(p, strlen(p) + 1, "%"PRI_PIDT_PREFIX"x-%lx", rb_w32_getpid(), serial++);
 
     sec.nLength = sizeof(sec);
     sec.lpSecurityDescriptor = NULL;

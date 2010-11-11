@@ -1597,7 +1597,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
         if (NIL_P(vmaxctllen) && (mh.msg_flags & MSG_CTRUNC)) {
 #define BIG_ENOUGH_SPACE 65536
             if (BIG_ENOUGH_SPACE < maxctllen &&
-                mh.msg_controllen < maxctllen - BIG_ENOUGH_SPACE) {
+                mh.msg_controllen < (socklen_t)(maxctllen - BIG_ENOUGH_SPACE)) {
                 /* there are big space bug truncated.
                  * file descriptors limit? */
                 if (!gc_done) {

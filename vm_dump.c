@@ -745,7 +745,7 @@ dump_thread(void *arg)
 			line.SizeOfStruct = sizeof(line);
 			if (pSymGetLineFromAddr64(ph, addr, NULL, &line))
 			    fprintf(stderr, " %s:%lu", line.FileName, line.LineNumber);
-			fprintf(stderr, " [0x%"PRIxVALUE"]\n", addr);
+			fprintf(stderr, " [%p]\n", (void *)(VALUE)addr);
 		    }
 		}
 

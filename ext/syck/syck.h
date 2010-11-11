@@ -69,7 +69,7 @@ void syck_assert( const char *, unsigned, const char * );
 typedef long st_data_t;
 #endif
 
-#define SYMID unsigned long
+#define SYMID st_data_t
 
 typedef struct _syck_node SyckNode;
 
