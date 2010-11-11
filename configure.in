@@ -989,6 +989,7 @@ main()
 		LIBS="$LIBS" # m lib is include in root under BeOS/Haiku
 		],
 [cygwin*], [	ac_cv_header_langinfo_h=yes
+		AC_CHECK_FUNCS(cygwin_conv_path)
 		AC_LIBOBJ([langinfo])
 		],
 [mingw*], [	LIBS="-lshell32 -lws2_32 -limagehlp $LIBS"

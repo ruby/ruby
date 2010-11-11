@@ -255,7 +255,14 @@ push_include_cygwin(const char *path, VALUE (*filter)(VALUE))
 		p = strncpy(RSTRING_PTR(buf), p, len);
 	    }
 	}
-	if (cygwin_conv_to_posix_path(p, rubylib) == 0)
+#ifdef HAVE_CYGWIN_CONV_PATH
+#define CONV_TO_POSIX_PATH(p, lib) \
+	cygwin_conv_path(CCP_WIN_A_TO_POSIX|CCP_RELATIVE, p, lib, sizeof(lib))
+#else
+#define CONV_TO_POSIX_PATH(p, lib) \
+	cygwin_conv_to_posix_path(p, lib)
+#endif
+	if (CONV_TO_POSIX_PATH(p, rubylib) == 0)
 	    p = rubylib;
 	push_include(p, filter);
 	if (!*s) break;
@@ -343,7 +350,7 @@ ruby_init_loadpath_safe(int safe_level)
     extern const char ruby_initial_load_paths[];
     const char *paths = ruby_initial_load_paths;
 #if defined LOAD_RELATIVE
-# if defined HAVE_DLADDR || (defined __CYGWIN__ && defined CCP_WIN_A_TO_POSIX)
+# if defined HAVE_DLADDR || defined HAVE_CYGWIN_CONV_PATH
 #   define VARIABLE_LIBPATH 1
 # else
 #   define VARIABLE_LIBPATH 0

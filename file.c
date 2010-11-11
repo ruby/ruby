@@ -3088,25 +3088,46 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
 	size_t len;
 	WIN32_FIND_DATA wfd;
 #ifdef __CYGWIN__
+	ssize_t bufsize;
 	int lnk_added = 0, is_symlink = 0;
 	struct stat st;
-	char w32buf[MAXPATHLEN];
 	p = (char *)s;
+	len = strlen(p);
 	if (lstat(buf, &st) == 0 && S_ISLNK(st.st_mode)) {
 	    is_symlink = 1;
-	    *p = '\0';
-	}
-	if (cygwin_conv_to_win32_path((*buf ? buf : "/"), w32buf) == 0) {
-	    b = w32buf;
-	}
-	if (is_symlink && b == w32buf) {
-	    *p = '\\';
-	    strlcat(w32buf, p, sizeof(w32buf));
-	    len = strlen(p);
 	    if (len > 4 && STRCASECMP(p + len - 4, ".lnk") != 0) {
 		lnk_added = 1;
-		strlcat(w32buf, ".lnk", sizeof(w32buf));
 	    }
+	}
+	const char *path = *buf ? buf : "/";
+#ifdef HAVE_CYGWIN_CONV_PATH
+	char *w32buf = NULL;
+	const int flags = CCP_POSIX_TO_WIN_A | CCP_RELATIVE;
+	bufsize = cygwin_conv_path(flags, path, NULL, 0);
+	if (bufsize > 0) {
+	    bufsize += len;
+	    if (lnk_added) bufsize += 4;
+	    w32buf = ALLOCA_N(char, bufsize);
+	    if (cygwin_conv_path(flags, path, w32buf, bufsize) == 0) {
+		b = w32buf;
+	    }
+	}
+#else
+	char w32buf[MAXPATHLEN];
+	bufsize = MAXPATHLEN;
+	if (cygwin_conv_to_win32_path(path, w32buf) == 0) {
+	    b = w32buf;
+	}
+#endif
+	if (is_symlink && b == w32buf) {
+	    *p = '\\';
+	    strlcat(w32buf, p, bufsize);
+	    if (lnk_added) {
+		strlcat(w32buf, ".lnk", bufsize);
+	    }
+	}
+	else {
+	    lnk_added = 0;
 	}
 	*p = '/';
 #endif

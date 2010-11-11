@@ -1,3 +1,10 @@
+Thu Nov 11 21:24:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (file_expand_path): use cygwin_conv_path on cygwin 1.7 or
+	  later.
+
+	* ruby.c (push_include_cygwin): ditto.
+
 Thu Nov 11 20:49:48 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (PRI_LL_PREFIX): format type specifier for
