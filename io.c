@@ -4833,7 +4833,7 @@ static void
 pipe_finalize(rb_io_t *fptr, int noraise)
 {
 #if !defined(HAVE_FORK) && !defined(_WIN32)
-    int status;
+    int status = 0;
     if (fptr->stdio_file) {
 	status = pclose(fptr->stdio_file);
     }
