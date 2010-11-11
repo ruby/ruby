@@ -356,13 +356,11 @@ fi
 MAKEDIRS="$MKDIR_P"
 AC_SUBST(MAKEDIRS)
 
-AC_CHECK_TOOL(DOT, dot)
-AC_CHECK_TOOL(DOXYGEN, doxygen)
+AC_CHECK_PROG(DOT, dot)
+AC_CHECK_PROG(DOXYGEN, doxygen)
 
-AC_CHECK_TOOL(PKG_CONFIG, pkg-config)
-if test -n "$PKG_CONFIG"; then
-    $PKG_CONFIG --print-errors --version > /dev/null 2>&1 || PKG_CONFIG=
-fi
+AC_CHECK_PROG(PKG_CONFIG, pkg-config, [], [], [],
+    [`$as_dir/$ac_word$ac_exec_ext --print-errors --version > /dev/null 2>&1 || continue`])
 
 # checks for UNIX variants that set C preprocessor variables
 AC_USE_SYSTEM_EXTENSIONS
