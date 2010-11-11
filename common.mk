@@ -139,6 +139,16 @@ all: main docs
 main: encs exts
 	@$(RUNCMD) $(MKMAIN_CMD) $(MAKE)
 
+.PHONY: showflags SHOWFLAGS
+exts enc trans: showflags
+showflags: SHOWFLAGS
+SHOWFLAGS:
+	@echo "	CFLAGS = $(CFLAGS)"
+	@echo "	XCFLAGS = $(XCFLAGS)"
+	@echo "	CPPFLAGS = $(CPPFLAGS)"
+	@echo "	DLDFLAGS = $(DLDFLAGS)"
+	@echo "	SOLIBS = $(SOLIBS)"
+
 exts: $(MKMAIN_CMD)
 
 $(MKMAIN_CMD): $(MKFILES) incs $(PREP) $(RBCONFIG) $(LIBRUBY)

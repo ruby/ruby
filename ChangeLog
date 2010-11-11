@@ -1,4 +1,6 @@
-Thu Nov 11 21:46:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Nov 11 21:47:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (SHOWFLAGS): show compile flags.
 
 	* common.mk: hide long command lines by default.  verbose-mode is
 	  turned on by V=1 as before.
