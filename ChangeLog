@@ -1,3 +1,9 @@
+Thu Nov 11 21:32:09 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (try_func): accept variable address.
+
+	* ext/win32ole/extconf.rb: libuuid is needed on cygwin.
+
 Thu Nov 11 21:24:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (file_expand_path): use cygwin_conv_path on cygwin 1.7 or

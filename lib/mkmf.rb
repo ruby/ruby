@@ -583,13 +583,20 @@ end
 #             names of header files.
 def try_func(func, libs, headers = nil, &b)
   headers = cpp_include(headers)
+  case func
+  when /^&/
+    decltype = proc {|x|"const volatile void *#{x}"}
+  else
+    call = true
+    decltype = proc {|x| "void ((*#{x})())"}
+  end
   try_link(<<"SRC", libs, &b) or
 #{headers}
 /*top*/
 #{MAIN_DOES_NOTHING}
-int t() { void ((*volatile p)()); p = (void ((*)()))#{func}; return 0; }
+int t() { #{decltype["volatile p"]}; p = (#{decltype[]})#{func}; return 0; }
 SRC
-  try_link(<<"SRC", libs, &b)
+  call && try_link(<<"SRC", libs, &b)
 #{headers}
 /*top*/
 #{MAIN_DOES_NOTHING}
