@@ -310,6 +310,17 @@ rb_io_get_write_io(VALUE io)
     return io;
 }
 
+VALUE
+rb_io_set_write_io(VALUE io, VALUE w)
+{
+    VALUE write_io;
+    rb_io_check_initialized(RFILE(io)->fptr);
+    GetWriteIO(w);
+    write_io = RFILE(io)->fptr->tied_io_for_writing;
+    RFILE(io)->fptr->tied_io_for_writing = w;
+    return write_io;
+}
+
 /*
  *  call-seq:
  *     IO.try_convert(obj)  ->  io or nil
@@ -6810,6 +6821,7 @@ argf_next_argv(VALUE argf)
 		}
 	    }
 	    else {
+		VALUE write_io = Qnil;
 		int fr = rb_sysopen(ARGF.filename, O_RDONLY, 0);
 
 		if (ARGF.inplace) {
@@ -6883,10 +6895,14 @@ argf_next_argv(VALUE argf)
 			}
 		    }
 #endif
-		    rb_stdout = prep_io(fw, FMODE_WRITABLE, rb_cFile, fn);
+		    write_io = prep_io(fw, FMODE_WRITABLE, rb_cFile, fn);
+		    rb_stdout = write_io;
 		    if (stdout_binmode) rb_io_binmode(rb_stdout);
 		}
 		ARGF.current_file = prep_io(fr, FMODE_READABLE, rb_cFile, fn);
+		if (!NIL_P(write_io)) {
+		    rb_io_set_write_io(ARGF.current_file, write_io);
+		}
 	    }
 	    if (ARGF.binmode) rb_io_ascii8bit_binmode(ARGF.current_file);
 	    if (ARGF.encs.enc) {
@@ -9754,6 +9770,34 @@ rb_get_argv(void)
 }
 
 /*
+ *  call-seq:
+ *     ARGF.to_write_io  -> io
+ *
+ *  Returns IO instance tied to _ARGF_ for writing if inplace mode is
+ *  enabled.
+ */
+static VALUE
+argf_write_io(VALUE argf)
+{
+    if (!RTEST(ARGF.current_file)) {
+	rb_raise(rb_eIOError, "not opened for writing");
+    }
+    return GetWriteIO(ARGF.current_file);
+}
+
+/*
+ *  call-seq:
+ *     ARGG.write(string)   -> integer
+ *
+ *  Writes _string_ if inplace mode.
+ */
+static VALUE
+argf_write(VALUE argf, VALUE str)
+{
+    return rb_io_write(argf_write_io(argf), str);
+}
+
+/*
  * Document-class: IOError
  *
  * Raised when an IO operation fails.
@@ -10120,6 +10164,7 @@ Init_IO(void)
     rb_define_method(rb_cARGF, "fileno", argf_fileno, 0);
     rb_define_method(rb_cARGF, "to_i", argf_fileno, 0);
     rb_define_method(rb_cARGF, "to_io", argf_to_io, 0);
+    rb_define_method(rb_cARGF, "to_write_io", argf_write_io, 0);
     rb_define_method(rb_cARGF, "each",  argf_each_line, -1);
     rb_define_method(rb_cARGF, "each_line",  argf_each_line, -1);
     rb_define_method(rb_cARGF, "each_byte",  argf_each_byte, 0);
@@ -10148,6 +10193,12 @@ Init_IO(void)
     rb_define_method(rb_cARGF, "eof?", argf_eof, 0);
     rb_define_method(rb_cARGF, "binmode", argf_binmode_m, 0);
     rb_define_method(rb_cARGF, "binmode?", argf_binmode_p, 0);
+
+    rb_define_method(rb_cARGF, "write", argf_write, 1);
+    rb_define_method(rb_cARGF, "print", rb_io_print, -1);
+    rb_define_method(rb_cARGF, "putc", rb_io_putc, 1);
+    rb_define_method(rb_cARGF, "puts", rb_io_puts, -1);
+    rb_define_method(rb_cARGF, "printf", rb_io_printf, -1);
 
     rb_define_method(rb_cARGF, "filename", argf_filename, 0);
     rb_define_method(rb_cARGF, "path", argf_filename, 0);

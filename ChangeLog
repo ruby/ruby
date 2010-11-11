@@ -1,4 +1,6 @@
-Thu Nov 11 21:52:13 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Nov 11 21:56:10 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (argf_write): add ARGF.write and so on.
 
 	* io.c (argf_read_nonblock): add ARGF.read_nonblock.
 
