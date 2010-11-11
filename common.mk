@@ -134,9 +134,9 @@ BOOTSTRAPRUBY = $(BASERUBY)
 
 COMPILE_PRELUDE = $(MINIRUBY) -I$(srcdir) $(srcdir)/tool/compile_prelude.rb
 
-all: main docs
+all: showflags main docs
 
-main: encs exts
+main: showflags encs exts
 	@$(RUNCMD) $(MKMAIN_CMD) $(MAKE)
 
 .PHONY: showflags SHOWFLAGS
@@ -485,7 +485,7 @@ test-rubyspec: test-rubyspec-precheck
 	$(RUNRUBY) $(srcdir)/spec/mspec/bin/mspec run -B $(srcdir)/spec/default.mspec $(MSPECOPT)
 
 encs: enc trans
-encs enc trans: $(ENC_MK) $(LIBRUBY) $(PREP)
+encs enc trans: showflags $(ENC_MK) $(LIBRUBY) $(PREP)
 	$(ECHO) making $@
 	$(Q) \
 	$(MAKE) -f $(ENC_MK) RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(MFLAGS) $@
