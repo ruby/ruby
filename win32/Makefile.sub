@@ -782,10 +782,15 @@ miniruby: miniruby$(EXEEXT)
 
 miniruby$(EXEEXT):
 		@echo $(LIBS)
+		$(ECHO) linking $@
+		$(Q) \
 		$(PURIFY) $(CC) $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT) $(LIBS) -Fe$@ -link $(LDFLAGS)
 		@$(RM) miniruby.lib miniruby.exp
+		$(Q) \
 		miniruby.exe -v
+		$(Q) \
 		$(LDSHARED_1)
+		$(Q) \
 		$(LDSHARED_2)
 
 miniruby.rc:
@@ -793,38 +798,57 @@ miniruby.rc:
 
 !if "$(PROGRAM)" != ""
 $(PROGRAM):	$(MAINOBJ) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
+		$(ECHO) linking $@
+		$(Q) \
 		$(PURIFY) $(CC) $(MAINOBJ) $(RUBY_INSTALL_NAME).res \
 			$(OUTFLAG)$@ $(LIBRUBYARG) -link $(LDFLAGS) $(XLDFLAGS)
+		$(Q) \
 		$(LDSHARED_0)
+		$(Q) \
 		$(LDSHARED_1)
+		$(Q) \
 		$(LDSHARED_2)
 !endif
 
 !if "$(WPROGRAM)" != ""
 $(WPROGRAM):	$(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_SO) $(RUBYW_INSTALL_NAME).res
+		$(ECHO) linking $@
+		$(Q) \
 		$(PURIFY) $(CC) $(MAINOBJ) $(WINMAINOBJ) \
 			$(RUBYW_INSTALL_NAME).res $(OUTFLAG)$@ $(LIBRUBYARG) \
 			-link $(LDFLAGS) $(XLDFLAGS) -subsystem:Windows
+		$(Q) \
 		$(LDSHARED_0)
+		$(Q) \
 		$(LDSHARED_1)
+		$(Q) \
 		$(LDSHARED_2)
 !endif
 
 $(LIBRUBY_A):	$(OBJS) $(DMYEXT)
+		$(ECHO) linking static-library $@
+		$(Q) \
 		$(AR) $(ARFLAGS)$@ $(OBJS) $(DMYEXT)
 
 $(LIBRUBY):	$(RUBYDEF)
+		$(ECHO) linking import-library $@
+		$(Q) \
 		$(AR) $(ARFLAGS)$@ -def:$(RUBYDEF)
 
 $(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 		@echo $(DLDOBJS)
 		@-$(PRE_LIBRUBY_UPDATE)
+		$(ECHO) linking shared-library $@
+		$(Q) \
 		$(LDSHARED) $(MAINOBJ) $(DLDOBJS) $(LIBRUBY_A) \
 			$(RUBY_SO_NAME).res $(LIBS) -Fe$@ -link $(LDFLAGS) \
 			$(LIBRUBY_DLDFLAGS)
 		@$(RM) dummy.lib dummy.exp
+		$(Q) \
 		$(LDSHARED_0)
+		$(Q) \
 		$(LDSHARED_1)
+		$(Q) \
 		$(LDSHARED_2)
 
 $(RUBYDEF):	$(LIBRUBY_A) $(PREP)
@@ -909,39 +933,71 @@ $(ruby_pc): $(RBCONFIG)
 	$(srcdir)/template/ruby.pc.in > $@
 
 {$(srcdir)/enc}.c.obj:
+	$(ECHO) compiling $(<:\=/)
+	$(Q) \
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c -Tc$(<:\=/)
 {$(srcdir)/missing}.c.obj:
+	$(ECHO) compiling $(<:\=/)
+	$(Q) \
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c -Tc$(<:\=/)
 {$(srcdir)/win32}.c.obj:
+	$(ECHO) compiling $(<:\=/)
+	$(Q) \
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c -Tc$(<:\=/)
 {$(win_srcdir)}.c.obj:
+	$(ECHO) compiling $(<:\=/)
+	$(Q) \
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c -Tc$(<:\=/)
 {$(win_srcdir)/sys}.c.obj:
+	$(ECHO) compiling $(<:\=/)
+	$(Q) \
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c -Tc$(<:\=/)
 {$(srcdir)}.c.obj:
+	$(ECHO) compiling $(<:\=/)
+	$(Q) \
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c -Tc$(<:\=/)
 .c.obj:
+	$(ECHO) compiling $(<:\=/)
+	$(Q) \
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c -Tc$(<:\=/)
 
 {$(srcdir)/missing}.c.asm:
+	$(ECHO) translating $(<:\=/)
+	$(Q) \
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fa$@ -c -Tc$(<:\=/)
 {$(srcdir)/win32}.c.asm:
+	$(ECHO) translating $(<:\=/)
+	$(Q) \
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fa$@ -c -Tc$(<:\=/)
 {$(srcdir)}.c.asm:
+	$(ECHO) translating $(<:\=/)
+	$(Q) \
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fa$@ -c -Tc$(<:\=/)
 .c.asm:
+	$(ECHO) translating $(<:\=/)
+	$(Q) \
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fa$@ -c -Tc$(<:\=/)
 
 {$(srcdir)/missing}.c.i:
+	$(ECHO) preprocessing $(<:\=/)
+	$(Q) \
 	$(CC) $(XCFLAGS) $(CPPFLAGS) -P -Tc$(<:\=/) > $@
 {$(srcdir)/win32}.c.i:
+	$(ECHO) preprocessing $(<:\=/)
+	$(Q) \
 	$(CC) $(XCFLAGS) $(CPPFLAGS) -P -Tc$(<:\=/)
 {$(srcdir)}.c.i:
+	$(ECHO) preprocessing $(<:\=/)
+	$(Q) \
 	$(CC) $(XCFLAGS) $(CPPFLAGS) -P -Tc$(<:\=/)
 .c.i:
+	$(ECHO) preprocessing $(<:\=/)
+	$(Q) \
 	$(CC) $(XCFLAGS) $(CPPFLAGS) -P -Tc$(<:\=/)
 
 .rc.res:
+	$(ECHO) compiling $(<:\=/)
+	$(Q) \
 	$(RC) -I. -I$(<D) $(iconinc) -I$(srcdir)/win32 $(RFLAGS) -fo$@ $(<:\=/)
 
 lex.c: {$(srcdir)}lex.c.blt
@@ -956,6 +1012,8 @@ $(OBJS): {$(hdrdir)/ruby}win32.h
 dir.$(OBJEXT) win32.$(OBJEXT): {$(srcdir)}win32/dir.h
 
 ext/extinit.obj: ext/extinit.c $(SETUP)
+	$(ECHO) compiling ext/extinit.c
+	$(Q) \
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c ext/extinit.c
 
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
