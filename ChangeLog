@@ -1,3 +1,7 @@
+Thu Nov 11 23:04:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/iconv.c (warn_deprecated): show caller position.
+
 Thu Nov 11 23:03:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (argf_close): untie tied io before closing.

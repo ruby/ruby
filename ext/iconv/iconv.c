@@ -1179,12 +1179,36 @@ iconv_failure_inspect(VALUE self)
  * * returns an error without setting errno properly
  */
 
+static void
+warn_deprecated(void)
+{
+    static const char message[] =
+	": iconv will be deprecated in the future, use String#encode instead.\n";
+    VALUE msg = Qnil, caller = rb_make_backtrace();
+    long i;
+
+    for (i = 1; i < RARRAY_LEN(caller); ++i) {
+	VALUE s = RARRAY_PTR(caller)[i];
+	if (strncmp(RSTRING_PTR(s), "<internal:", 10) != 0) {
+	    msg = s;
+	    break;
+	}
+    }
+    if (NIL_P(msg)) {
+	msg = rb_str_new_cstr(message + 2);
+    }
+    else {
+	rb_str_cat(msg, message, sizeof(message) - 1);
+    }
+    rb_io_puts(1, &msg, rb_stderr);
+}
+
 void
 Init_iconv(void)
 {
     VALUE rb_cIconv = rb_define_class("Iconv", rb_cData);
 
-    rb_warn("iconv will be deprecated in the future, use String#encode instead.");
+    warn_deprecated();
     rb_define_alloc_func(rb_cIconv, iconv_s_allocate);
     rb_define_singleton_method(rb_cIconv, "open", iconv_s_open, -1);
     rb_define_singleton_method(rb_cIconv, "iconv", iconv_s_iconv, -1);
