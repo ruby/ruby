@@ -1,3 +1,8 @@
+Fri Nov 12 20:51:29 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, common.mk, cygwin/GNUmakefile.in, enc/depend,
+	  ext/ripper/depend, lib/mkmf.rb, win32/Makefile.sub: caddle up.
+
 Fri Nov 12 16:35:31 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: support C level backtrace information on FreeBSD.

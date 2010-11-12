@@ -81,8 +81,7 @@ srcs: $(TRANSCSRCS)
 
 <%=transvpath_prefix%>.trans<%=transvpath_prefix%>.c:
 	$(ECHO) generating table from $@
-	$(Q) \
-	$(MINIRUBY) "$(srcdir)/tool/transcode-tblgen.rb" -vo "$@" "$<"
+	$(Q) $(MINIRUBY) "$(srcdir)/tool/transcode-tblgen.rb" -vo "$@" "$<"
 
 % unless encs.empty? or trans.empty?
 
@@ -119,24 +118,20 @@ $(TRANSOBJS): ruby.h intern.h config.h defines.h missing.h encoding.h oniguruma.
 %   base = File.basename(e)
 %   cmd.sub!(/(?=\$\(DLDFLAGS\))/) {dldflags.sub(/\$\(TARGET\)/) {base} + " "} if dldflags
 %   if df
-	$(Q) \
-	echo> <%=df%> EXPORTS
-	$(Q) \
-	echo>> <%=df%> <%=EXPORT_PREFIX%>Init_<%=base%>
+	$(Q) echo> <%=df%> EXPORTS
+	$(Q) echo>> <%=df%> <%=EXPORT_PREFIX%>Init_<%=base%>
 %     cmd.sub!(/\$\(DEFFILE\)/) {df}
 %     cmd.gsub!(/-(?:implib|pdb):/) {|s|"#{s}enc/#{e.sub(/[^\/]+\z/, '')}"}
 %   end
 	@$(MAKEDIRS) "$(@D)"
-	$(Q) \
-	<%=cmd%>
+	$(Q) <%=cmd%>
 
 % end
 % dependencies.each do |e|
 <%="enc/#{e}.$(OBJEXT)"%>: <%="$(encsrcdir)/#{e}.c"%>
 	-@$(MAKEDIRS) "$(@D)"
 	$(ECHO) compiling <%= "#{e}.c"%>
-	$(Q) \
-	<%=COMPILE_C.gsub(/\$(\()?<(\:[^)]+)?(\))?/){"$(encsrcdir)/#{e}.c"}%>
+	$(Q) <%=COMPILE_C.gsub(/\$(\()?<(\:[^)]+)?(\))?/){"$(encsrcdir)/#{e}.c"}%>
 
 % end
 

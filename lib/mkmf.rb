@@ -2005,8 +2005,8 @@ site-install-rb: install-rb
   mfile.print "\n\n"
   if makedef
     mfile.print "$(DEFFILE): #{origdef}\n"
-    mfile.print "\t$(ECHO) generating $@\n\t$(Q) \\\n"
-    mfile.print "\t$(RUBY) #{makedef} #{origdef} > $@\n\n"
+    mfile.print "\t$(ECHO) generating $@\n"
+    mfile.print "\t$(Q) $(RUBY) #{makedef} #{origdef} > $@\n\n"
   end
 
   depend = File.join(srcdir, "depend")
