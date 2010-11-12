@@ -1800,6 +1800,15 @@ main(int argc, char *argv[])
     test x$rb_cv_fork_with_pthread = xyes || AC_DEFINE(CANNOT_FORK_WITH_PTHREAD)
 fi
 
+AS_CASE(["$target_os"],
+[freebsd*], [
+    AC_CHECK_HEADERS([/usr/local/include/execinfo.h])
+    if test "x$ac_cv_header__usr_local_include_execinfo_h" = xyes; then :
+	RUBY_APPEND_OPTION(CPPFLAGS, -I/usr/local/include)
+	LDFLAGS="${LDFLAGS:+$LDFLAGS }-L/usr/local/lib"
+	DLDFLAGS="${DLDFLAGS:+$DLDFLAGS }-L/usr/local/lib"
+	AC_CHECK_LIB([execinfo], [backtrace])
+    fi])
 AC_CHECK_FUNCS(backtrace)
 
 AC_ARG_WITH(valgrind,
