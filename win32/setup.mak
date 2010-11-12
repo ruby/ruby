@@ -164,7 +164,7 @@ int main()
 
 -version-: nul
 	@$(APPEND)
-	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(MAKEFILE)" | find "=" >>$(MAKEFILE)
+	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(MAKEFILE)" | findstr "=" >>$(MAKEFILE)
 #define RUBY_REVISION 0
 #include "version.h"
 MAJOR = RUBY_API_VERSION_MAJOR

@@ -1,3 +1,9 @@
+Fri Nov 12 09:58:30 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/setup.mak: use findstr.exe instead of find.exe, because all
+	  target build platforms should have findstr.exe, and, find.exe often
+	  means another command such as cygwin's.
+
 Fri Nov 12 00:30:19 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/Makefile.sub (config.h): need PRI_LL_PREFIX.
