@@ -1,3 +1,7 @@
+Sat Nov 13 01:31:30 2010  Akio Tajima <artonx@yahoo.co.jp>
+
+	* win32/Makefile.sub: reorder variable End Of Message (don't display it)
+	
 Fri Nov 12 20:52:34 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (showflags, help): use caret to quote leading spaces on Windows.
