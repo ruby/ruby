@@ -142,11 +142,11 @@ main: showflags encs exts
 .PHONY: showflags
 exts enc trans: showflags
 showflags:
-	@echo "	CFLAGS = $(CFLAGS)"
-	@echo "	XCFLAGS = $(XCFLAGS)"
-	@echo "	CPPFLAGS = $(CPPFLAGS)"
-	@echo "	DLDFLAGS = $(DLDFLAGS)"
-	@echo "	SOLIBS = $(SOLIBS)"
+	$(MSG)	CFLAGS = $(CFLAGS)$(EOM)
+	$(MSG)	XCFLAGS = $(XCFLAGS)$(EOM)
+	$(MSG)	CPPFLAGS = $(CPPFLAGS)$(EOM)
+	$(MSG)	DLDFLAGS = $(DLDFLAGS)$(EOM)
+	$(MSG)	SOLIBS = $(SOLIBS)$(EOM)
 
 exts: $(MKMAIN_CMD)
 
@@ -872,32 +872,32 @@ change: PHONY
 	$(BASERUBY) -C "$(srcdir)" ./tool/change_maker.rb $(CHANGES) > change.log
 
 help: PHONY
-	@echo "                Makefile of Ruby"
-	@echo ""
-	@echo "targets:"
-	@echo "  all (default):   builds all of below"
-	@echo "  miniruby:        builds only miniruby"
-	@echo "  encs:            builds encodings"
-	@echo "  exts:            builds extensions"
-	@echo "  main:            builds encodings, extensions and ruby"
-	@echo "  docs:            builds documents"
-	@echo "  run:             runs test.rb by miniruby"
-	@echo "  runruby:         runs test.rb by ruby you just built"
-	@echo "  gdb:             runs test.rb by miniruby under gdb"
-	@echo "  gdb-ruby:        runs test.rb by ruby under gdb"
-	@echo "  check:           equals make test test-all"
-	@echo "  test:            ruby core tests"
-	@echo "  test-all:        all ruby tests"
-	@echo "  test-rubyspec    run RubySpec test suite"
-	@echo "  update-rubyspec  update local copy of RubySpec"
-	@echo "  benchmark        benchmark this ruby and COMPARE_RUBY"
-	@echo "  install:         install all ruby distributions"
-	@echo "  install-nodoc:   install without rdoc"
-	@echo "  install-cross:   install cross compiling staff"
-	@echo "  clean:           clean for tarball"
-	@echo "  distclean:       clean for repo"
-	@echo "  change:          make change log template"
-	@echo "  golf:            for golfers"
-	@echo ""
-	@echo "see DeveloperHowto for more detail: "
-	@echo "  http://redmine.ruby-lang.org/wiki/ruby/DeveloperHowto"
+	$(MSG)                Makefile of Ruby$(EOM)
+	$(MSG)$(EOM)
+	$(MSG)targets:$(EOM)
+	$(MSG)  all (default):   builds all of below$(EOM)
+	$(MSG)  miniruby:        builds only miniruby$(EOM)
+	$(MSG)  encs:            builds encodings$(EOM)
+	$(MSG)  exts:            builds extensions$(EOM)
+	$(MSG)  main:            builds encodings, extensions and ruby$(EOM)
+	$(MSG)  docs:            builds documents$(EOM)
+	$(MSG)  run:             runs test.rb by miniruby$(EOM)
+	$(MSG)  runruby:         runs test.rb by ruby you just built$(EOM)
+	$(MSG)  gdb:             runs test.rb by miniruby under gdb$(EOM)
+	$(MSG)  gdb-ruby:        runs test.rb by ruby under gdb$(EOM)
+	$(MSG)  check:           equals make test test-all$(EOM)
+	$(MSG)  test:            ruby core tests$(EOM)
+	$(MSG)  test-all:        all ruby tests$(EOM)
+	$(MSG)  test-rubyspec    run RubySpec test suite$(EOM)
+	$(MSG)  update-rubyspec  update local copy of RubySpec$(EOM)
+	$(MSG)  benchmark        benchmark this ruby and COMPARE_RUBY$(EOM)
+	$(MSG)  install:         install all ruby distributions$(EOM)
+	$(MSG)  install-nodoc:   install without rdoc$(EOM)
+	$(MSG)  install-cross:   install cross compiling staff$(EOM)
+	$(MSG)  clean:           clean for tarball$(EOM)
+	$(MSG)  distclean:       clean for repo$(EOM)
+	$(MSG)  change:          make change log template$(EOM)
+	$(MSG)  golf:            for golfers$(EOM)
+	$(MSG)$(EOM)
+	$(MSG)see DeveloperHowto for more detail: $(EOM)
+	$(MSG)  http://redmine.ruby-lang.org/wiki/ruby/DeveloperHowto$(EOM)

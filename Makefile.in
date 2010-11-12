@@ -142,6 +142,8 @@ INSTALLED_LIST= .installed.list
 MKMAIN_CMD    = mkmain.sh
 
 SRC_FILE      = $<
+MSG = @echo "
+EOM = "
 #### End of variables
 
 all:

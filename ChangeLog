@@ -1,4 +1,6 @@
-Fri Nov 12 20:51:29 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Nov 12 20:52:34 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (showflags, help): use caret to quote leading spaces on Windows.
 
 	* Makefile.in, common.mk, cygwin/GNUmakefile.in, enc/depend,
 	  ext/ripper/depend, lib/mkmf.rb, win32/Makefile.sub: caddle up.
