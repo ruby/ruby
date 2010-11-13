@@ -1,3 +1,9 @@
+Sun Nov 14 04:22:32 2010  Alexander Zavorine  <alexandre.zavorine@nokia.com>
+
+	* symbian/setup (config.h): Added HAVE_LABS and HAVE_LLABS to config.h.
+
+	* symbian/configure.bat: Changed packaging version in line with API style 3 versioning.
+
 Sat Nov 13 16:37:56 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (showflags, help): emit messages at once.
