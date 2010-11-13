@@ -341,8 +341,8 @@ VCSUP = $(VCS) pull $(GITPULLOPTIONS)
 !endif
 ruby_pc = $(RUBY_BASE_NAME)-$(MAJOR).$(MINOR).pc
 
-MSG = @for %I in ("#"
-EOM = ") do @echo.%~I#"
+MESSAGE_BEGIN = @for %I in (
+MESSAGE_END = ) do @echo.%~I
 
 all: $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub $(srcdir)/common.mk
 

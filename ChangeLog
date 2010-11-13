@@ -1,4 +1,6 @@
-Sat Nov 13 16:26:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Nov 13 16:37:56 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (showflags, help): emit messages at once.
 
 	* win32/Makefile.sub (MSG, EOM): remove surrounding quotes by %~I.
 

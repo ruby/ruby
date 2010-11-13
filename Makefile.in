@@ -142,8 +142,9 @@ INSTALLED_LIST= .installed.list
 MKMAIN_CMD    = mkmain.sh
 
 SRC_FILE      = $<
-MSG = @echo "
-EOM = "
+
+MESSAGE_BEGIN = @for line in
+MESSAGE_END = ; do echo "$$line"; done
 #### End of variables
 
 all:

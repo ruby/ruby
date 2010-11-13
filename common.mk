@@ -142,11 +142,13 @@ main: showflags encs exts
 .PHONY: showflags
 exts enc trans: showflags
 showflags:
-	$(MSG)	CFLAGS = $(CFLAGS)$(EOM)
-	$(MSG)	XCFLAGS = $(XCFLAGS)$(EOM)
-	$(MSG)	CPPFLAGS = $(CPPFLAGS)$(EOM)
-	$(MSG)	DLDFLAGS = $(DLDFLAGS)$(EOM)
-	$(MSG)	SOLIBS = $(SOLIBS)$(EOM)
+	$(MESSAGE_BEGIN) \
+	"	CFLAGS = $(CFLAGS)" \
+	"	XCFLAGS = $(XCFLAGS)" \
+	"	CPPFLAGS = $(CPPFLAGS)" \
+	"	DLDFLAGS = $(DLDFLAGS)" \
+	"	SOLIBS = $(SOLIBS)" \
+	$(MESSAGE_END)
 
 exts: $(MKMAIN_CMD)
 
@@ -872,32 +874,34 @@ change: PHONY
 	$(BASERUBY) -C "$(srcdir)" ./tool/change_maker.rb $(CHANGES) > change.log
 
 help: PHONY
-	$(MSG)                Makefile of Ruby$(EOM)
-	$(MSG)$(EOM)
-	$(MSG)targets:$(EOM)
-	$(MSG)  all (default):   builds all of below$(EOM)
-	$(MSG)  miniruby:        builds only miniruby$(EOM)
-	$(MSG)  encs:            builds encodings$(EOM)
-	$(MSG)  exts:            builds extensions$(EOM)
-	$(MSG)  main:            builds encodings, extensions and ruby$(EOM)
-	$(MSG)  docs:            builds documents$(EOM)
-	$(MSG)  run:             runs test.rb by miniruby$(EOM)
-	$(MSG)  runruby:         runs test.rb by ruby you just built$(EOM)
-	$(MSG)  gdb:             runs test.rb by miniruby under gdb$(EOM)
-	$(MSG)  gdb-ruby:        runs test.rb by ruby under gdb$(EOM)
-	$(MSG)  check:           equals make test test-all$(EOM)
-	$(MSG)  test:            ruby core tests$(EOM)
-	$(MSG)  test-all:        all ruby tests$(EOM)
-	$(MSG)  test-rubyspec    run RubySpec test suite$(EOM)
-	$(MSG)  update-rubyspec  update local copy of RubySpec$(EOM)
-	$(MSG)  benchmark        benchmark this ruby and COMPARE_RUBY$(EOM)
-	$(MSG)  install:         install all ruby distributions$(EOM)
-	$(MSG)  install-nodoc:   install without rdoc$(EOM)
-	$(MSG)  install-cross:   install cross compiling staff$(EOM)
-	$(MSG)  clean:           clean for tarball$(EOM)
-	$(MSG)  distclean:       clean for repo$(EOM)
-	$(MSG)  change:          make change log template$(EOM)
-	$(MSG)  golf:            for golfers$(EOM)
-	$(MSG)$(EOM)
-	$(MSG)see DeveloperHowto for more detail: $(EOM)
-	$(MSG)  http://redmine.ruby-lang.org/wiki/ruby/DeveloperHowto$(EOM)
+	$(MESSAGE_BEGIN) \
+	"                Makefile of Ruby" \
+	"" \
+	"targets:" \
+	"  all (default):   builds all of below" \
+	"  miniruby:        builds only miniruby" \
+	"  encs:            builds encodings" \
+	"  exts:            builds extensions" \
+	"  main:            builds encodings, extensions and ruby" \
+	"  docs:            builds documents" \
+	"  run:             runs test.rb by miniruby" \
+	"  runruby:         runs test.rb by ruby you just built" \
+	"  gdb:             runs test.rb by miniruby under gdb" \
+	"  gdb-ruby:        runs test.rb by ruby under gdb" \
+	"  check:           equals make test test-all" \
+	"  test:            ruby core tests" \
+	"  test-all:        all ruby tests" \
+	"  test-rubyspec:   run RubySpec test suite" \
+	"  update-rubyspec: update local copy of RubySpec" \
+	"  benchmark:       benchmark this ruby and COMPARE_RUBY" \
+	"  install:         install all ruby distributions" \
+	"  install-nodoc:   install without rdoc" \
+	"  install-cross:   install cross compiling staff" \
+	"  clean:           clean for tarball" \
+	"  distclean:       clean for repo" \
+	"  change:          make change log template" \
+	"  golf:            for golfers" \
+	"" \
+	"see DeveloperHowto for more detail: " \
+	"  http://redmine.ruby-lang.org/wiki/ruby/DeveloperHowto" \
+	$(MESSAGE_END)
