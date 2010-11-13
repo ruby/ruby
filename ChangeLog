@@ -1,3 +1,7 @@
+Sat Nov 13 16:26:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub (MSG, EOM): remove surrounding quotes by %~I.
+
 Sat Nov 13 01:31:30 2010  Akio Tajima <artonx@yahoo.co.jp>
 
 	* win32/Makefile.sub: reorder variable End Of Message (don't display it)
