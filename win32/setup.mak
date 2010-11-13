@@ -60,7 +60,7 @@ NTVER = $(NTVER)
 !endif
 <<
 !if !defined(BASERUBY)
-	@for %I in (ruby.exe) do @echo BASERUBY = %~s$$PATH:I >> $(MAKEFILE)
+	@for %I in (ruby.exe) do @echo BASERUBY = %~s$$PATH:I>> $(MAKEFILE)
 !endif
 
 -system-vars-: -runtime- -unicows-
@@ -76,7 +76,7 @@ NTVER = $(NTVER)
 	@echo TARGET_OS = mswin64 >>$(MAKEFILE)
 
 -runtime-: nul
-	$(CC) -MD <<rtname.c user32.lib -link > nul
+	@$(CC) -MD <<rtname.c user32.lib -link > nul
 #include <windows.h>
 #include <memory.h>
 #include <string.h>

@@ -1,3 +1,8 @@
+Sun Nov 14 08:48:06 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/setup.mak (-basic-vars-, -runtime-): suppress trailing
+	  space and compiler command line.
+
 Sun Nov 14 04:22:32 2010  Alexander Zavorine  <alexandre.zavorine@nokia.com>
 
 	* symbian/setup (config.h): Added HAVE_LABS and HAVE_LLABS to config.h.
