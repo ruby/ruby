@@ -1337,7 +1337,7 @@ ossl_ssl_get_cert(VALUE self)
     X509 *cert = NULL;
 
     Data_Get_Struct(self, SSL, ssl);
-    if (ssl) {
+    if (!ssl) {
         rb_warning("SSL session is not started yet.");
         return Qnil;
     }
