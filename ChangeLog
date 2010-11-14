@@ -1,3 +1,8 @@
+Sun Nov 14 17:57:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/Makefile.in (distclean): should not remove sources which are
+	  distributed in tarball.
+
 Sun Nov 14 16:48:56 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_set_token_info): turn on/off with directives.

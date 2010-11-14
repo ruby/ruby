@@ -67,6 +67,6 @@ make-workdir:
 
 clean:
 
-distclean: clean clean-srcs
+distclean: clean
 	@$(RM) enc.mk
-realclean: distclean
+realclean: distclean clean-srcs
