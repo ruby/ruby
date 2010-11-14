@@ -313,6 +313,31 @@ class TestRubyOptions < Test::Unit::TestCase
     err = ["#{t.path}:2: warning: mismatched indentations at 'end' with 'begin' at 1"]
     assert_in_out_err(["-w", t.path], "", [], err)
     assert_in_out_err(["-wr", t.path, "-e", ""], "", [], err)
+
+    t.open
+    t.puts "# -*- warn-indent: false -*-"
+    t.puts "begin"
+    t.puts " end"
+    t.close
+    assert_in_out_err(["-w", t.path], "", [], [], '[ruby-core:25442]')
+
+    err = ["#{t.path}:4: warning: mismatched indentations at 'end' with 'begin' at 3"]
+    t.open
+    t.puts "# -*- warn-indent: false -*-"
+    t.puts "# -*- warn-indent: true -*-"
+    t.puts "begin"
+    t.puts " end"
+    t.close
+    assert_in_out_err(["-w", t.path], "", [], err, '[ruby-core:25442]')
+
+    err = ["#{t.path}:4: warning: mismatched indentations at 'end' with 'begin' at 2"]
+    t.open
+    t.puts "# -*- warn-indent: true -*-"
+    t.puts "begin"
+    t.puts "# -*- warn-indent: false -*-"
+    t.puts " end"
+    t.close
+    assert_in_out_err(["-w", t.path], "", [], [], '[ruby-core:25442]')
   ensure
     t.close(true) if t
   end

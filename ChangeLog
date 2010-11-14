@@ -1,3 +1,8 @@
+Sun Nov 14 16:48:56 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_set_token_info): turn on/off with directives.
+	  [ruby-core:25442]
+
 Sun Nov 14 12:05:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (argf_readlines): forward to current_file for arguments

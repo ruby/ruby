@@ -247,6 +247,7 @@ struct parser_params {
     VALUE coverage;
     int nerr;
 
+    int parser_token_info_enabled;
     token_info *parser_token_info;
 #else
     /* Ripper only */
@@ -4966,7 +4967,7 @@ token_info_push(struct parser_params *parser, const char *token)
 {
     token_info *ptinfo;
 
-    if (compile_for_eval) return;
+    if (!parser->parser_token_info_enabled) return;
     ptinfo = ALLOC(token_info);
     ptinfo->token = token;
     ptinfo->linenum = ruby_sourceline;
@@ -4996,9 +4997,11 @@ token_info_pop(struct parser_params *parser, const char *token)
     if (token_info_has_nonspaces(parser, token) || ptinfo->nonspc) { /* SKIP */
 	goto finish;
     }
-    rb_compile_warning(ruby_sourcefile, linenum,
-               "mismatched indentations at '%s' with '%s' at %d",
-	       token, ptinfo->token, ptinfo->linenum);
+    if (parser->parser_token_info_enabled) {
+	rb_compile_warn(ruby_sourcefile, linenum,
+			"mismatched indentations at '%s' with '%s' at %d",
+			token, ptinfo->token, ptinfo->linenum);
+    }
 
   finish:
     xfree(ptinfo);
@@ -5137,6 +5140,9 @@ yycompile0(VALUE arg, int tracing)
 
     parser_prepare(parser);
     deferred_nodes = 0;
+#ifndef RIPPER
+    parser->parser_token_info_enabled = !compile_for_eval && RTEST(ruby_verbose);
+#endif
     n = yyparse((void*)parser);
     ruby_debug_lines = 0;
     ruby_coverage = 0;
@@ -6258,6 +6264,28 @@ magic_comment_encoding(struct parser_params *parser, const char *name, const cha
     parser_set_encode(parser, val);
 }
 
+static void
+parser_set_token_info(struct parser_params *parser, const char *name, const char *val)
+{
+    int *p = &parser->parser_token_info_enabled;
+
+    switch (*val) {
+      case 't': case 'T':
+	if (strcasecmp(val, "true") == 0) {
+	    *p = TRUE;
+	    return;
+	}
+	break;
+      case 'f': case 'F':
+	if (strcasecmp(val, "false") == 0) {
+	    *p = FALSE;
+	    return;
+	}
+	break;
+    }
+    rb_compile_warning(ruby_sourcefile, ruby_sourceline, "invalid value for %s: %s", name, val);
+}
+
 struct magic_comment {
     const char *name;
     rb_magic_comment_setter_t func;
@@ -6267,6 +6295,7 @@ struct magic_comment {
 static const struct magic_comment magic_comments[] = {
     {"coding", magic_comment_encoding, parser_encode_length},
     {"encoding", magic_comment_encoding, parser_encode_length},
+    {"warn_indent", parser_set_token_info},
 };
 #endif
 
