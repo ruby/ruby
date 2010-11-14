@@ -694,4 +694,22 @@ class TestArgf < Test::Unit::TestCase
       assert_equal([@t1.path, @t2.path, @t3.path].inspect, f.gets.chomp)
     end
   end
+
+  def test_readlines_limit_0
+    bug4024 = '[ruby-dev:42538]'
+    t = make_tempfile
+    argf = ARGF.class.new(t.path)
+    assert_raise(ArgumentError, bug4024) do
+      argf.readlines(0)
+    end
+  end
+
+  def test_each_line_limit_0
+    bug4024 = '[ruby-dev:42538]'
+    t = make_tempfile
+    argf = ARGF.class.new(t.path)
+    assert_raise(ArgumentError, bug4024) do
+      argf.each_line(0).next
+    end
+  end
 end

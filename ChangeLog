@@ -1,3 +1,8 @@
+Sun Nov 14 12:05:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (argf_readlines): forward to current_file for arguments
+	  check.  http://twitter.com/nagachika/status/3634254856589312
+
 Sun Nov 14 08:48:06 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/setup.mak (-basic-vars-, -runtime-): suppress trailing

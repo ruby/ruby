@@ -7172,13 +7172,23 @@ rb_f_readlines(int argc, VALUE *argv, VALUE recv)
 static VALUE
 argf_readlines(int argc, VALUE *argv, VALUE argf)
 {
-    VALUE line, ary;
+    int lineno = ARGF.lineno;
+    VALUE lines, ary;
 
     ary = rb_ary_new();
-    while (!NIL_P(line = argf_getline(argc, argv, argf))) {
-	rb_ary_push(ary, line);
+    while (next_argv()) {
+	if (ARGF_GENERIC_INPUT_P()) {
+	    lines = rb_funcall3(ARGF.current_file, rb_intern("readlines"), argc, argv);
+	}
+	else {
+	    lines = rb_io_readlines(argc, argv, ARGF.current_file);
+	    argf_close(ARGF.current_file);
+	}
+	ARGF.next_p = 1;
+	rb_ary_concat(ary, lines);
+	ARGF.lineno = lineno + RARRAY_LEN(ary);
+	ARGF.last_lineno = ARGF.lineno;
     }
-
     return ary;
 }
 
