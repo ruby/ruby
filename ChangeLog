@@ -1,3 +1,10 @@
+Mon Nov 15 23:41:21 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* compile.c (iseq_set_exception_local_table, iseq_set_local_table,
+	  rb_iseq_build_from_ary): fix type inconsistency (which is benign
+	  because sizeof(ID) == sizeof(ID*), though).  Coverity Scan found
+	  these bugs.
+
 Mon Nov 15 22:47:27 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm_eval.c (rb_funcall): ensure va_end after va_init_list.  Coverity
