@@ -134,6 +134,7 @@ class CGIHeaderTest < Test::Unit::TestCase
     ## 'nph' is true
     ENV['SERVER_SOFTWARE'] = 'Apache 2.2.0'
     actual1 = cgi.header('nph'=>true)
+    now = Time.now
     ## when old IIS, NPH-mode is forced
     ENV['SERVER_SOFTWARE'] = 'IIS/4.0'
     actual2 = cgi.header
@@ -143,7 +144,6 @@ class CGIHeaderTest < Test::Unit::TestCase
     actual4 = cgi.header
     actual5 = cgi.header('status'=>'REDIRECT', 'location'=>'http://www.example.com/')
     ## assertion
-    now = Time.now
     expected =  "HTTP/1.1 200 OK\r\n"
     expected << "Date: #{CGI.rfc1123_date(now)}\r\n"
     expected << "Server: Apache 2.2.0\r\n"
