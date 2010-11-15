@@ -1,3 +1,8 @@
+Tue Nov 16 00:21:20 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* regparse.c (and_cclass, or_cclass): fix memory leak.  Coverity Scan
+	  found this bug.  [ruby-dev:42579]
+
 Tue Nov 16 00:07:32 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* gc.c (assign_heap_slot): fix fear of memory leak and memory
