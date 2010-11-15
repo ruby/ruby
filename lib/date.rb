@@ -589,7 +589,7 @@ class Date
     # +sg+ specifies the Day of Calendar Reform.
     def _valid_ordinal? (y, d, sg=GREGORIAN) # :nodoc:
       if d < 0
-	j = find_ldoy(y, sg)
+	return unless j = find_ldoy(y, sg)
 	ny, nd = jd_to_ordinal(j + d + 1, sg)
 	return unless ny == y
 	d = nd
@@ -616,7 +616,7 @@ class Date
 	m += 13
       end
       if d < 0
-	j = find_ldom(y, m, sg)
+	return unless j = find_ldom(y, m, sg)
 	ny, nm, nd = jd_to_civil(j + d + 1, sg)
 	return unless [ny, nm] == [y, m]
 	d = nd
