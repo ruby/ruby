@@ -162,7 +162,7 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
 
   def test_not_started_session
     open(__FILE__) do |f|
-      OpenSSL::SSL::SSLSocket.new(f).cert
+      assert_nil OpenSSL::SSL::SSLSocket.new(f).cert
     end
   end
 
