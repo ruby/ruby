@@ -117,8 +117,7 @@ if !have_macro("IPPROTO_IPV6", headers) && have_const("IPPROTO_IPV6", headers)
   }
 end
 
-if (have_func("sendmsg") | have_func("recvmsg")) && /64-darwin/ !~ RUBY_PLATFORM
-  # CMSG_ macros are broken on 64bit darwin, because of use of __DARWIN_ALIGN.
+if have_func("sendmsg") | have_func("recvmsg")
   have_struct_member('struct msghdr', 'msg_control', ['sys/types.h', 'sys/socket.h'])
   have_struct_member('struct msghdr', 'msg_accrights', ['sys/types.h', 'sys/socket.h'])
 end
