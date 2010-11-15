@@ -1,3 +1,9 @@
+Mon Sep 13 09:23:58 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/openssl/ossl_bn.c (ossl_bn_is_prime): fix comparison
+	  with rb_scan_args. Before this fix, OpenSSL::BN#prime?
+	  is fully broken. [ruby-dev:42225]
+
 Sun Sep 12 21:21:50 2010  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb: [ruby-core:32096]  Thanks Colin Bartlett.
