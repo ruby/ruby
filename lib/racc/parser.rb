@@ -30,10 +30,10 @@ module Racc
 
   class Parser
 
-    Racc_Runtime_Version = '1.4.5'
+    Racc_Runtime_Version = '1.4.6'
     Racc_Runtime_Revision = %w$originalRevision: 1.8 $[1]
 
-    Racc_Runtime_Core_Version_R = '1.4.5'
+    Racc_Runtime_Core_Version_R = '1.4.6'
     Racc_Runtime_Core_Revision_R = %w$originalRevision: 1.8 $[1]
     begin
       require 'racc/cparse'
@@ -95,9 +95,11 @@ module Racc
     ### do_parse
     ###
 
+    class_eval %{
     def do_parse
-      __send__(Racc_Main_Parsing_Routine, _racc_setup(), false)
+      #{Racc_Main_Parsing_Routine}(_racc_setup(), false)
     end
+    }
 
     def next_token
       raise NotImplementedError, "#{self.class}\#next_token is not defined"
@@ -147,9 +149,11 @@ module Racc
     ### yyparse
     ###
 
+    class_eval %{
     def yyparse(recv, mid)
-      __send__(Racc_YY_Parse_Method, recv, mid, _racc_setup(), true)
+      #{Racc_YY_Parse_Method}(recv, mid, _racc_setup(), true)
     end
+    }
 
     def _racc_yyparse_rb(recv, mid, arg, c_debug)
       action_table, action_check, action_default, action_pointer,
