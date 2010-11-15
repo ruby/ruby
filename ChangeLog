@@ -1,3 +1,8 @@
+Mon Nov 15 23:54:45 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* eval_intern.h (CHECK_STACK_OVERFLOW): it was not intended to add
+	  size_t to a pointer typed VALUE*.  Coverity Scan found this defect.
+
 Mon Nov 15 23:41:21 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* compile.c (iseq_set_exception_local_table, iseq_set_local_table,
