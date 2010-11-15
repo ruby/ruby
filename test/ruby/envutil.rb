@@ -208,6 +208,11 @@ module Test
         assert(status.success?, m)
       end
 
+      def assert_warn(msg)
+        stderr = EnvUtil.verbose_warning { yield }
+        assert(msg === stderr, "warning message #{stderr.inspect} is expected to match #{msg.inspect}")
+      end
+
     end
   end
 end

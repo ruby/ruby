@@ -1,4 +1,5 @@
 require 'test/unit'
+require_relative 'envutil'
 
 class TestFloat < Test::Unit::TestCase
   def test_float
@@ -91,7 +92,6 @@ class TestFloat < Test::Unit::TestCase
     assert_equal([ 0.0].pack('G'), [Float(" 0x0p+0").to_f].pack('G'))
     assert_equal([-0.0].pack('G'), [Float("-0x0p+0").to_f].pack('G'))
     assert_equal(255.0,     Float("0Xff"))
-    assert_equal(255.5,     Float("0Xff.8"))
     assert_equal(1.0,       Float("0X1.P+0"))
     assert_equal(1024.0,    Float("0x1p10"))
     assert_equal(1024.0,    Float("0x1p+10"))
@@ -430,7 +430,11 @@ class TestFloat < Test::Unit::TestCase
     assert(!Float(([1] * 10000).join("_")).infinite?) # is it really OK?
     assert_raise(ArgumentError) { Float("1.0\x001") }
     assert_equal(15.9375, Float('0xf.fp0'))
-    assert_raise(ArgumentError) { Float('0xf.fp') }
+    assert_warn(/malformed value for Float\(\).*?Ruby 1\.9\.3/) { Float('0x') }
+    assert_equal(15.0, Float('0xf'))
+    assert_equal(15.0, Float('0xfp0'))
+    assert_equal(15.0, Float('0xf.p0'))
+    assert_warn(/malformed value for Float\(\).*?Ruby 1\.9\.3/) { Float('0xf.f') }
     assert_equal(1, Float("1e10_00").infinite?)
     assert_raise(TypeError) { Float(nil) }
     o = Object.new
