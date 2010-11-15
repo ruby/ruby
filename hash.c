@@ -2135,6 +2135,7 @@ ruby_setenv(const char *name, const char *value)
 #if defined(_WIN32)
     int len;
     char *buf;
+    int failed = 0;
     if (strchr(name, '=')) {
 	errno = EINVAL;
 	rb_sys_fail("ruby_setenv");
@@ -2143,18 +2144,21 @@ ruby_setenv(const char *name, const char *value)
 	len = strlen(name) + 1 + strlen(value) + 1;
 	buf = ALLOCA_N(char, len);
 	snprintf(buf, len, "%s=%s", name, value);
-	putenv(buf);
+	failed = putenv(buf);
 
 	/* putenv() doesn't handle empty value */
 	if (!*value)
-	    SetEnvironmentVariable(name,value);
+	    failed = !SetEnvironmentVariable(name,value);
     }
     else {
 	len = strlen(name) + 1 + 1;
 	buf = ALLOCA_N(char, len);
 	snprintf(buf, len, "%s=", name);
 	putenv(buf);
-	SetEnvironmentVariable(name, 0);
+	failed = !SetEnvironmentVariable(name, 0);
+    }
+    if (failed) {
+        rb_warn("failed to set environment variable. Ruby 1.9.3 will raise SystemCallError in this case.");
     }
 #elif defined(HAVE_SETENV) && defined(HAVE_UNSETENV)
 #undef setenv

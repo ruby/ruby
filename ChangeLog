@@ -1,3 +1,15 @@
+Tue Nov  2 21:33:43 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* hash.c (ruby_setenv): merged r29225 but just warning
+	  instead of raising an exception. c.f. [ruby-core:32250].
+
+Sep 11 16:47:41 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (ruby_setenv): raise if putenv and SetEnvironmentVariable
+	  failed, because of the restriction of the size on Windows.
+	  based on a patch from Peter Weldon at [ruby-core:32304].  fix:
+	  Bug#3812, [ruby-core:32250]
+
 Sat Sep 11 12:32:05 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/intern.h (rb_set_kcode, rb_get_kcode): removed

@@ -374,4 +374,18 @@ class TestEnv < Test::Unit::TestCase
     ENV.update({"baz"=>"quux","a"=>"b"}) {|k, v1, v2| v1 ? k + "_" + v1 + "_" + v2 : v2 }
     check(ENV.to_hash.to_a, [%w(foo bar), %w(baz baz_qux_quux), %w(a b)])
   end
+
+  def test_huge_value
+    huge_value = "bar" * 40960
+    ENV["foo"] = "bar"
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      warning = verbose_warning { ENV["foo"] = huge_value }
+      assert_match(/failed to set environment variable/, warning)
+      assert_match(/Ruby 1\.9\.3/, warning)
+      assert_equal("bar", ENV["foo"])
+    else
+      assert_nothing_raised { ENV["foo"] = huge_value }
+      assert_equal(huge_value, ENV["foo"])
+    end
+  end
 end
