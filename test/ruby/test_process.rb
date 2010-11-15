@@ -1187,13 +1187,9 @@ class TestProcess < Test::Unit::TestCase
   def test_wait_and_sigchild
     signal_received = []
     Signal.trap(:CHLD)  { signal_received << true }
-    pid = fork { sleep 1; exit }
+    pid = fork { sleep 2; exit }
     Thread.start { raise }
     Process.wait pid
-    5.times do
-      sleep 1
-      break unless signal_received.empty?
-    end
     assert_equal [true], signal_received, " [ruby-core:19744]"
   rescue NotImplementedError, ArgumentError
   ensure
