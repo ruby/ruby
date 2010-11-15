@@ -1,3 +1,8 @@
+Mon Nov 15 22:47:27 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* vm_eval.c (rb_funcall): ensure va_end after va_init_list.  Coverity
+	  Scan found this bug.
+
 Mon Nov 15 08:36:12 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* lib/racc/parser.rb (do_parse, yyparse): using class eval to define

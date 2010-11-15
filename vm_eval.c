@@ -619,10 +619,11 @@ rb_funcall(VALUE recv, ID mid, int n, ...)
 {
     VALUE *argv;
     va_list ar;
-    va_init_list(ar, n);
 
     if (n > 0) {
 	long i;
+
+	va_init_list(ar, n);
 
 	argv = ALLOCA_N(VALUE, n);
 
