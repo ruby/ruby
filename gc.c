@@ -924,13 +924,17 @@ assign_heap_slot(rb_objspace_t *objspace)
 
     objs = HEAP_OBJ_LIMIT;
     p = (RVALUE*)malloc(HEAP_SIZE);
-    slot = (struct heaps_slot *)malloc(sizeof(struct heaps_slot));
-    MEMZERO((void*)slot, struct heaps_slot, 1);
-
-    if (p == 0 || slot == 0) {
+    if (p == 0) {
 	during_gc = 0;
 	rb_memerror();
     }
+    slot = (struct heaps_slot *)malloc(sizeof(struct heaps_slot));
+    if (slot == 0) {
+	xfree(p);
+	during_gc = 0;
+	rb_memerror();
+    }
+    MEMZERO((void*)slot, struct heaps_slot, 1);
 
     slot->next = heaps;
     if (heaps) heaps->prev = slot;

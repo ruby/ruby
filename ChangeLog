@@ -1,3 +1,8 @@
+Tue Nov 16 00:07:32 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* gc.c (assign_heap_slot): fix fear of memory leak and memory
+	  violation.  Coverity Scan found this bug.
+
 Mon Nov 15 23:54:45 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* eval_intern.h (CHECK_STACK_OVERFLOW): it was not intended to add
