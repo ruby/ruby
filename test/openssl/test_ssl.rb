@@ -161,7 +161,9 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
   end
 
   def test_not_started_session
-    OpenSSL::SSL::SSLSocket.new(STDIN).cert
+    open(__FILE__) do |f|
+      OpenSSL::SSL::SSLSocket.new(f).cert
+    end
   end
 
   def test_ssl_read_nonblock
