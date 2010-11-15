@@ -1,3 +1,10 @@
+Wed Sep 15 07:27:52 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_times): mentioned about Hash argument.  a patch
+	  from Daniel Bovensiepen at [ruby-core:32386].
+
+	* sprintf.c (get_hash): ditto, and fix typo.
+
 Mon Sep 13 19:56:50 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/rubysocket.h (__DARWIN_ALIGNBYTES): workaround of a
