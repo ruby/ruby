@@ -1477,7 +1477,7 @@ vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 
 		    while ((VALUE *)cfp < th->stack + th->stack_size) {
 			if (cfp->dfp == dfp) {
-			    VALUE epc = epc = cfp->pc - cfp->iseq->iseq_encoded;
+			    VALUE epc = cfp->pc - cfp->iseq->iseq_encoded;
 			    rb_iseq_t *iseq = cfp->iseq;
 			    int i;
 

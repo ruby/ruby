@@ -1,3 +1,8 @@
+Tue Nov 16 22:30:39 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* vm_insnhelper.c (vm_throw): remove fear of undefined behavior :-)
+	  Coverity Scan found this bug.
+
 Tue Nov 16 09:33:00 2010  Kenta Murata <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/lib/bigdecimal/util.rb (to_digits): avoid unused
