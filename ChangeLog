@@ -1,3 +1,8 @@
+Tue Nov 16 09:33:00 2010  Kenta Murata <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/lib/bigdecimal/util.rb (to_digits): avoid unused
+	variables warning, reported by Aaron Patterson.
+
 Tue Nov 16 06:39:31 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* pack.c (PACK_ITEM_ADJUST): return nil not result array and yield
