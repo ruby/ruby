@@ -1,3 +1,7 @@
+Tue Nov 17 08:54:04 2010  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	* lib/csv.rb: Upgrading output encoding as needed.  [ruby-core:33135]
+
 Tue Nov 16 22:30:39 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm_insnhelper.c (vm_throw): remove fear of undefined behavior :-)

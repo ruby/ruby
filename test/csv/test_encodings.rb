@@ -15,43 +15,43 @@ class TestEncodings < Test::Unit::TestCase
   def setup
     @temp_csv_path = File.join(File.dirname(__FILE__), "temp.csv")
   end
-
+  
   def teardown
     File.unlink(@temp_csv_path) if File.exist? @temp_csv_path
   end
-
+  
   ########################################
   ### Hand Test Some Popular Encodings ###
   ########################################
-
+  
   def test_parses_utf8_encoding
     assert_parses( [ %w[ one two … ],
                      %w[ 1   …   3 ],
                      %w[ …   5   6 ] ], "UTF-8" )
   end
-
+  
   def test_parses_latin1_encoding
     assert_parses( [ %w[ one    two    Résumé ],
                      %w[ 1      Résumé 3      ],
                      %w[ Résumé 5      6      ] ], "ISO-8859-1" )
   end
-
+  
   def test_parses_utf16be_encoding
     assert_parses( [ %w[ one two … ],
                      %w[ 1   …   3 ],
                      %w[ …   5   6 ] ], "UTF-16BE" )
   end
-
+  
   def test_parses_shift_jis_encoding
     assert_parses( [ %w[ 一 二 三 ],
                      %w[ 四 五 六 ],
                      %w[ 七 八 九 ] ], "Shift_JIS" )
   end
-
+  
   ###########################################################
   ### Try Simple Reading for All Non-dummy Ruby Encodings ###
   ###########################################################
-
+  
   def test_reading_with_most_encodings
     each_encoding do |encoding|
       begin
@@ -62,7 +62,7 @@ class TestEncodings < Test::Unit::TestCase
       end
     end
   end
-
+  
   def test_regular_expression_escaping
     each_encoding do |encoding|
       begin
@@ -73,18 +73,18 @@ class TestEncodings < Test::Unit::TestCase
       end
     end
   end
-
+  
   #######################################################################
   ### Stress Test ASCII Compatible and Non-ASCII Compatible Encodings ###
   #######################################################################
-
+  
   def test_auto_line_ending_detection
     # arrange data to place a \r at the end of CSV's read ahead point
     encode_for_tests([["a" * 509]], row_sep: "\r\n") do |data|
       assert_equal("\r\n".encode(data.encoding), CSV.new(data).row_sep)
     end
   end
-
+  
   def test_csv_chars_are_transcoded
     encode_for_tests([%w[abc def]]) do |data|
       %w[col_sep row_sep quote_char].each do |csv_char|
@@ -93,7 +93,7 @@ class TestEncodings < Test::Unit::TestCase
       end
     end
   end
-
+  
   def test_parser_works_with_encoded_headers
     encode_for_tests([%w[one two three], %w[1 2 3]]) do |data|
       parsed = CSV.parse(data, headers: true)
@@ -105,7 +105,7 @@ class TestEncodings < Test::Unit::TestCase
       end
     end
   end
-
+  
   def test_built_in_converters_transcode_to_utf_8_then_convert
     encode_for_tests([%w[one two three], %w[1 2 3]]) do |data|
       parsed = CSV.parse(data, converters: :integer)
@@ -114,7 +114,7 @@ class TestEncodings < Test::Unit::TestCase
       assert_equal([1, 2, 3], parsed[1])
     end
   end
-
+  
   def test_built_in_header_converters_transcode_to_utf_8_then_convert
     encode_for_tests([%w[one two three], %w[1 2 3]]) do |data|
       parsed = CSV.parse( data, headers:           true,
@@ -125,7 +125,7 @@ class TestEncodings < Test::Unit::TestCase
               "Wrong data encoding." )
     end
   end
-
+  
   def test_open_allows_you_to_set_encodings
     encode_for_tests([%w[abc def]]) do |data|
       # read and write in encoding
@@ -136,7 +136,7 @@ class TestEncodings < Test::Unit::TestCase
                   "Wrong data encoding." )
         end
       end
-
+  
       # read and write with transcoding
       File.open(@temp_csv_path, "wb:UTF-32BE:#{data.encoding.name}") do |f|
         f << data
@@ -149,7 +149,7 @@ class TestEncodings < Test::Unit::TestCase
       end
     end
   end
-
+  
   def test_foreach_allows_you_to_set_encodings
     encode_for_tests([%w[abc def]]) do |data|
       # read and write in encoding
@@ -158,7 +158,7 @@ class TestEncodings < Test::Unit::TestCase
         assert( row.all? { |f| f.encoding == data.encoding },
                 "Wrong data encoding." )
       end
-
+  
       # read and write with transcoding
       File.open(@temp_csv_path, "wb:UTF-32BE:#{data.encoding.name}") do |f|
         f << data
@@ -170,7 +170,7 @@ class TestEncodings < Test::Unit::TestCase
       end
     end
   end
-
+  
   def test_read_allows_you_to_set_encodings
     encode_for_tests([%w[abc def]]) do |data|
       # read and write in encoding
@@ -178,7 +178,7 @@ class TestEncodings < Test::Unit::TestCase
       rows = CSV.read(@temp_csv_path, encoding: data.encoding.name)
       assert( rows.flatten.all? { |f| f.encoding == data.encoding },
               "Wrong data encoding." )
-
+  
       # read and write with transcoding
       File.open(@temp_csv_path, "wb:UTF-32BE:#{data.encoding.name}") do |f|
         f << data
@@ -189,11 +189,11 @@ class TestEncodings < Test::Unit::TestCase
               "Wrong data encoding." )
     end
   end
-
+  
   #################################
   ### Write CSV in any Encoding ###
   #################################
-
+  
   def test_can_write_csv_in_any_encoding
     each_encoding do |encoding|
       # test generate_line with encoding hint
@@ -204,11 +204,11 @@ class TestEncodings < Test::Unit::TestCase
         next
       end
       assert_equal(encoding, csv.encoding)
-
+  
       # test generate_line with encoding guessing from fields
       csv = %w[abc d|ef].map { |f| f.encode(encoding) }.to_csv(col_sep: "|")
       assert_equal(encoding, csv.encoding)
-
+  
       # writing to files
       data = encode_ary([%w[abc d,ef], %w[123 456 ]], encoding)
       CSV.open(@temp_csv_path, "wb:#{encoding.name}") do |f|
@@ -217,9 +217,17 @@ class TestEncodings < Test::Unit::TestCase
       assert_equal(data, CSV.read(@temp_csv_path, encoding: encoding.name))
     end
   end
+  
+  def test_encoding_is_upgraded_during_writing_as_needed
+    data = ["foo".force_encoding("US-ASCII"), "\u3042"]
+    assert_equal("US-ASCII", data.first.encoding.name)
+    assert_equal("UTF-8",    data.last.encoding.name)
+    assert_equal("UTF-8",    data.join.encoding.name)
+    assert_equal("UTF-8",    data.to_csv.encoding.name)
+  end
 
   private
-
+  
   def assert_parses(fields, encoding, options = { })
     encoding = Encoding.find(encoding) unless encoding.is_a? Encoding
     fields   = encode_ary(fields, encoding)
@@ -229,11 +237,11 @@ class TestEncodings < Test::Unit::TestCase
       assert_equal(encoding, field.encoding, "Field[#{i + 1}] was transcoded.")
     end
   end
-
+  
   def encode_ary(ary, encoding)
     ary.map { |row| row.map { |field| field.encode(encoding) } }
   end
-
+  
   def ary_to_data(ary, options = { })
     encoding   = ary.flatten.first.encoding
     quote_char = (options[:quote_char] || '"').encode(encoding)
@@ -245,12 +253,12 @@ class TestEncodings < Test::Unit::TestCase
       }.join(col_sep) + row_sep
     }.join.encode(encoding)
   end
-
+  
   def encode_for_tests(data, options = { })
     yield ary_to_data(encode_ary(data, "UTF-8"),    options)
     yield ary_to_data(encode_ary(data, "UTF-16BE"), options)
   end
-
+  
   def each_encoding
     Encoding.list.each do |encoding|
       next if encoding.dummy?  # skip "dummy" encodings
