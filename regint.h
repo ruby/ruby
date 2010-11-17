@@ -786,7 +786,7 @@ typedef struct {
 
 typedef struct {
   short int opcode;
-  char*     name;
+  const char* name;
   short int arg_type;
 } OnigOpInfoType;
 

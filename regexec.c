@@ -1289,8 +1289,8 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
   }
 
 #ifdef ONIG_DEBUG_MATCH
-  fprintf(stderr, "match_at: str: %d, end: %d, start: %d, sprev: %d\n",
-	  (int )str, (int )end, (int )sstart, (int )sprev);
+  fprintf(stderr, "match_at: str: %"PRIdPTR", end: %"PRIdPTR", start: %"PRIdPTR", sprev: %"PRIdPTR"\n",
+	  (intptr_t)str, (intptr_t)end, (intptr_t)sstart, (intptr_t)sprev);
   fprintf(stderr, "size: %d, start offset: %d\n",
 	  (int )(end - str), (int )(sstart - str));
 #endif
@@ -2345,8 +2345,8 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	STACK_NULL_CHECK(isnull, mem, s);
 	if (isnull) {
 #ifdef ONIG_DEBUG_MATCH
-	  fprintf(stderr, "NULL_CHECK_END: skip  id:%d, s:%d\n",
-		  (int )mem, (int )s);
+	  fprintf(stderr, "NULL_CHECK_END: skip  id:%d, s:%"PRIdPTR"\n",
+		  (int )mem, (intptr_t )s);
 #endif
 	null_check_found:
 	  /* empty loop founded, skip next instruction */
@@ -2380,8 +2380,8 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	STACK_NULL_CHECK_MEMST(isnull, mem, s, reg);
 	if (isnull) {
 #ifdef ONIG_DEBUG_MATCH
-	  fprintf(stderr, "NULL_CHECK_END_MEMST: skip  id:%d, s:%d\n",
-		  (int )mem, (int )s);
+	  fprintf(stderr, "NULL_CHECK_END_MEMST: skip  id:%d, s:%"PRIdPTR"\n",
+		  (int )mem, (intptr_t )s);
 #endif
 	  if (isnull == -1) goto fail;
 	  goto 	null_check_found;
@@ -2406,8 +2406,8 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 #endif
 	if (isnull) {
 #ifdef ONIG_DEBUG_MATCH
-	  fprintf(stderr, "NULL_CHECK_END_MEMST_PUSH: skip  id:%d, s:%d\n",
-		  (int )mem, (int )s);
+	  fprintf(stderr, "NULL_CHECK_END_MEMST_PUSH: skip  id:%d, s:%"PRIdPTR"\n",
+		  (int )mem, (intptr_t )s);
 #endif
 	  if (isnull == -1) goto fail;
 	  goto 	null_check_found;

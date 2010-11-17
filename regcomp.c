@@ -5808,7 +5808,7 @@ OnigOpInfoType OnigOpInfo[] = {
   { -1, "", ARG_NON }
 };
 
-static char*
+static const char*
 op2name(int opcode)
 {
   int i;
@@ -6009,7 +6009,7 @@ onig_print_compiled_byte_code(FILE* f, UChar* bp, UChar* bpend, UChar** nextp,
 
         GET_POINTER_INC(cc, bp);
         n = bitset_on_num(cc->bs);
-        fprintf(f, ":%u:%d", (unsigned int )cc, n);
+        fprintf(f, ":%"PRIuPTR":%d", (uintptr_t)cc, n);
       }
       break;
 
@@ -6141,9 +6141,9 @@ print_indent_tree(FILE* f, Node* node, int indent)
   case NT_LIST:
   case NT_ALT:
     if (NTYPE(node) == NT_LIST)
-      fprintf(f, "<list:%x>\n", (int )node);
+      fprintf(f, "<list:%"PRIxPTR">\n", (intptr_t)node);
     else
-      fprintf(f, "<alt:%x>\n", (int )node);
+      fprintf(f, "<alt:%"PRIxPTR">\n", (intptr_t)node);
 
     print_indent_tree(f, NCAR(node), indent + add);
     while (IS_NOT_NULL(node = NCDR(node))) {
@@ -6156,8 +6156,8 @@ print_indent_tree(FILE* f, Node* node, int indent)
     break;
 
   case NT_STR:
-    fprintf(f, "<string%s:%x>",
-	    (NSTRING_IS_RAW(node) ? "-raw" : ""), (int )node);
+    fprintf(f, "<string%s:%"PRIxPTR">",
+	    (NSTRING_IS_RAW(node) ? "-raw" : ""), (intptr_t)node);
     for (p = NSTR(node)->s; p < NSTR(node)->end; p++) {
       if (*p >= 0x20 && *p < 0x7f)
 	fputc(*p, f);
@@ -6168,11 +6168,11 @@ print_indent_tree(FILE* f, Node* node, int indent)
     break;
 
   case NT_CCLASS:
-    fprintf(f, "<cclass:%x>", (int )node);
+    fprintf(f, "<cclass:%"PRIxPTR">", (intptr_t)node);
     if (IS_NCCLASS_NOT(NCCLASS(node))) fputs(" not", f);
     if (NCCLASS(node)->mbuf) {
       BBuf* bbuf = NCCLASS(node)->mbuf;
-      for (i = 0; i < bbuf->used; i++) {
+      for (i = 0; i < (int)bbuf->used; i++) {
 	if (i > 0) fprintf(f, ",");
 	fprintf(f, "%0x", bbuf->p[i]);
       }
@@ -6180,7 +6180,7 @@ print_indent_tree(FILE* f, Node* node, int indent)
     break;
 
   case NT_CTYPE:
-    fprintf(f, "<ctype:%x> ", (int )node);
+    fprintf(f, "<ctype:%"PRIxPTR"> ", (intptr_t)node);
     switch (NCTYPE(node)->ctype) {
     case ONIGENC_CTYPE_WORD:
       if (NCTYPE(node)->not != 0)
@@ -6196,11 +6196,11 @@ print_indent_tree(FILE* f, Node* node, int indent)
     break;
 
   case NT_CANY:
-    fprintf(f, "<anychar:%x>", (int )node);
+    fprintf(f, "<anychar:%"PRIxPTR">", (intptr_t)node);
     break;
 
   case NT_ANCHOR:
-    fprintf(f, "<anchor:%x> ", (int )node);
+    fprintf(f, "<anchor:%"PRIxPTR"> ", (intptr_t)node);
     switch (NANCHOR(node)->type) {
     case ANCHOR_BEGIN_BUF:      fputs("begin buf",      f); break;
     case ANCHOR_END_BUF:        fputs("end buf",        f); break;
@@ -6231,7 +6231,7 @@ print_indent_tree(FILE* f, Node* node, int indent)
       int* p;
       BRefNode* br = NBREF(node);
       p = BACKREFS_P(br);
-      fprintf(f, "<backref:%x>", (int )node);
+      fprintf(f, "<backref:%"PRIxPTR">", (intptr_t)node);
       for (i = 0; i < br->back_num; i++) {
 	if (i > 0) fputs(", ", f);
 	fprintf(f, "%d", p[i]);
@@ -6243,21 +6243,21 @@ print_indent_tree(FILE* f, Node* node, int indent)
   case NT_CALL:
     {
       CallNode* cn = NCALL(node);
-      fprintf(f, "<call:%x>", (int )node);
+      fprintf(f, "<call:%"PRIxPTR">", (intptr_t)node);
       p_string(f, cn->name_end - cn->name, cn->name);
     }
     break;
 #endif
 
   case NT_QTFR:
-    fprintf(f, "<quantifier:%x>{%d,%d}%s\n", (int )node,
+    fprintf(f, "<quantifier:%"PRIxPTR">{%d,%d}%s\n", (intptr_t)node,
 	    NQTFR(node)->lower, NQTFR(node)->upper,
 	    (NQTFR(node)->greedy ? "" : "?"));
     print_indent_tree(f, NQTFR(node)->target, indent + add);
     break;
 
   case NT_ENCLOSE:
-    fprintf(f, "<enclose:%x> ", (int )node);
+    fprintf(f, "<enclose:%"PRIxPTR"> ", (intptr_t)node);
     switch (NENCLOSE(node)->type) {
     case ENCLOSE_OPTION:
       fprintf(f, "option:%d\n", NENCLOSE(node)->option);
