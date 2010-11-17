@@ -1,3 +1,9 @@
+Wed Nov 17 09:49:10 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/shift_jis.c (property_name_to_ctype): fix memory leak.
+
+	* enc/euc_jp.c (property_name_to_ctype): ditto.
+
 Tue Nov 17 08:54:04 2010  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	* lib/csv.rb: Upgrading output encoding as needed.  [ruby-core:33135]

@@ -290,7 +290,7 @@ property_name_to_ctype(OnigEncoding enc, UChar* p, UChar* end)
 
   PROPERTY_LIST_INIT_CHECK;
 
-  s = e = ALLOC_N(UChar, end-p+1);
+  s = e = ALLOCA_N(UChar, end-p+1);
   for (; p < end; p++) {
     *e++ = ONIGENC_ASCII_CODE_TO_LOWER_CASE(*p);
   }
