@@ -9,7 +9,7 @@ if $".grep(/mkmf/).empty?
 end
 require 'erb'
 
-CONFIG["MAKEDIRS"] ||= '@$(MINIRUBY) -run -e mkdir -- -p'
+CONFIG["MAKEDIRS"] ||= '$(MINIRUBY) -run -e mkdir -- -p'
 
 BUILTIN_ENCS = []
 BUILTIN_TRANSES = []

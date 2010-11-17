@@ -268,7 +268,7 @@ XRUBY = $(RUNRUBY)
 !ifndef RUBY
 RUBY = ruby
 !endif
-MAKEDIRS = @$(MINIRUBY) -run -e mkdir -- -p
+MAKEDIRS = $(MINIRUBY) -run -e mkdir -- -p
 
 !if !defined(STACK)
 !if "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
@@ -837,11 +837,12 @@ $(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 		$(Q) $(LDSHARED_2)
 
 $(RUBYDEF):	$(LIBRUBY_A) $(PREP)
-		$(MINIRUBY) $(srcdir)/win32/mkexports.rb \
+		$(ECHO) generating $@
+		$(Q) $(MINIRUBY) $(srcdir)/win32/mkexports.rb \
 		  -output=$@ -arch=$(ARCH) $(LIBRUBY_A)
 
 {$(win_srcdir)}.def.lib:
-		$(AR) $(ARFLAGS)$@ -def:$<
+		$(Q) $(AR) $(ARFLAGS)$@ -def:$<
 
 clean-local::
 		@$(RM) $(WINMAINOBJ) ext\extinit.c ext\extinit.$(OBJEXT) ext\vc*.pdb miniruby.lib
@@ -974,7 +975,8 @@ lex.c: {$(srcdir)}lex.c.blt
 
 enc/unicode/name2ctype.h: {$(srcdir)}enc/unicode/name2ctype.h.blt
 	@if not exist $(@D:/=\) md $(@D:/=\)
-	copy $(?:/=\) $(@:/=\)
+	$(ECHO) copying $@
+	$(Q) copy $(?:/=\) $(@:/=\) > nul
 
 $(OBJS): {$(hdrdir)/ruby}win32.h
 

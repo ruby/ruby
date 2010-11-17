@@ -1,4 +1,6 @@
-Wed Nov 17 18:22:21 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Nov 17 18:38:35 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub (MAKEDIRS): should not include silent flag.
 
 	* common.mk (ext/ripper/ripper.c, ext/json/parser/parser.c): pass
 	  Q and ECHO.  [ruby-core:33226]

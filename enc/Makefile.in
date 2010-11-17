@@ -63,7 +63,7 @@ MAKEDIRS = @MAKEDIRS@
 all: make-workdir
 
 make-workdir:
-	$(MAKEDIRS) $(WORKDIRS)
+	$(Q) $(MAKEDIRS) $(WORKDIRS)
 
 clean:
 
