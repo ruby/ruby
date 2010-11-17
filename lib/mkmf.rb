@@ -1925,7 +1925,7 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
 	dest = "#{dir}/#{File.basename(f)}"
 	mfile.print("install-rb#{sfx}: #{dest} #{dir}\n")
 	mfile.print("#{dest}: #{f}\n")
-	mfile.print("\t$(#{$extout ? 'COPY' : 'INSTALL_DATA'}) #{f} $(@D#{sep})\n")
+	mfile.print("\t$(Q) $(#{$extout ? 'COPY' : 'INSTALL_DATA'}) #{f} $(@D#{sep})\n")
 	if defined?($installed_list) and !$extout
 	  mfile.print("\t@echo #{dest}>>$(INSTALLED_LIST)\n")
 	end
@@ -1935,6 +1935,8 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
         end
       end
     end
+    mfile.print "pre-install-rb#{sfx}:\n"
+    mfile.print("\t$(ECHO) installing#{sfx.sub(/^-/, " ")} #{target} libraries\n")
     if $extout
       dirs.uniq!
       unless dirs.empty?
@@ -1946,7 +1948,7 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
     end
   end
   dirs.unshift(sodir) if target and !dirs.include?(sodir)
-  dirs.each {|d| mfile.print "#{d}:\n\t$(MAKEDIRS) $@\n"}
+  dirs.each {|d| mfile.print "#{d}:\n\t$(Q) $(MAKEDIRS) $@\n"}
 
   mfile.print <<-SITEINSTALL
 

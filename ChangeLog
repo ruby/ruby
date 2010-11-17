@@ -1,4 +1,7 @@
-Wed Nov 17 18:38:35 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Nov 17 19:13:22 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile): make extension libraries messages
+	  brief.
 
 	* win32/Makefile.sub (MAKEDIRS): should not include silent flag.
 
@@ -13,7 +16,7 @@ Wed Nov 17 16:09:52 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 Wed Nov 17 16:04:23 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/ruby/envutil.rb (Test::Unit::Assersions#assert_warn):
-	  new assersion to assert that a particular warning message is 
+	  new assersion to assert that a particular warning message is
 	  displayed.
 	  forwardport from branches/ruby_1_9_2@29795.
 
