@@ -1,3 +1,7 @@
+Thu Nov 18 07:16:49 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* missing/langinfo.c (strncasecmp): get rid of redefinition.
+
 Thu Nov 18 00:02:17 2010  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	* lib/csv.rb: Upgrading output encoding with ASCII content 
