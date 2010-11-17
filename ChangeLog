@@ -1,3 +1,10 @@
+Wed Nov 17 16:04:23 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/ruby/envutil.rb (Test::Unit::Assersions#assert_warn):
+	  new assersion to assert that a particular warning message is 
+	  displayed.
+	  forwardport from branches/ruby_1_9_2@29795.
+
 Wed Nov 17 15:16:48 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regint.h (OnigOpInfoType): constify name.
