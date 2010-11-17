@@ -1334,4 +1334,10 @@ class TestArray < Test::Unit::TestCase
       end
       )
   end
+
+  def test_sort_by!
+    a = [1,3,5,2,4]
+    a.sort_by! {|x| -x }
+    assert_equal([5,4,3,2,1], a)
+  end
 end

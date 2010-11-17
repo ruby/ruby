@@ -1,3 +1,7 @@
+Wed Nov 17 18:28:27 2010  Akinori MUSHA  <knu@iDaemons.org>
+
+	* array.c (rb_ary_sort_by_bang): Add Array#sort_by!.
+
 Mon Nov  1 00:58:00 2010  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/digest.c (rb_digest_class_init): Define

@@ -70,6 +70,10 @@ with all sufficient information, see the ChangeLog file.
 
     New method which replaces #choice.
 
+  * Array#sort_by!
+
+    New method.
+
   * Enumerable#each_entry
 
     New method.
