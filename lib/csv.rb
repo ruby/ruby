@@ -1715,8 +1715,7 @@ class CSV
     output = row.map(&@quote).join(@col_sep) + @row_sep  # quote and separate
     if @io.is_a?(StringIO)             and
        output.encoding != raw_encoding and
-       ( compatible_encoding = Encoding.compatible?( @io.string.encoding,
-                                                     output.encoding ) )
+       (compatible_encoding = Encoding.compatible?(@io.string, output))
       @io = StringIO.new(@io.string.force_encoding(compatible_encoding))
       @io.seek(0, IO::SEEK_END)
     end

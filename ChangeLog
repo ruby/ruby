@@ -1,3 +1,8 @@
+Thu Nov 18 00:02:17 2010  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	* lib/csv.rb: Upgrading output encoding with ASCII content 
+	  as needed.  [ruby-core:33229]
+
 Wed Nov 17 23:19:21 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/configure.bat: remove quotes from arguments to be quoted.
@@ -43,7 +48,7 @@ Wed Nov 17 09:49:10 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/euc_jp.c (property_name_to_ctype): ditto.
 
-Tue Nov 17 08:54:04 2010  James Edward Gray II  <jeg2@ruby-lang.org>
+Wed Nov 17 08:54:04 2010  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	* lib/csv.rb: Upgrading output encoding as needed.  [ruby-core:33135]
 
