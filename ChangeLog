@@ -1,3 +1,8 @@
+Wed Nov 17 16:09:52 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/test_tracer.rb: new test case.
+	  mimimal regression test for r29280.
+
 Wed Nov 17 16:04:23 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/ruby/envutil.rb (Test::Unit::Assersions#assert_warn):
