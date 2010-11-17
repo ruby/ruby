@@ -1,3 +1,8 @@
+Wed Nov 17 18:22:21 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (ext/ripper/ripper.c, ext/json/parser/parser.c): pass
+	  Q and ECHO.  [ruby-core:33226]
+
 Wed Nov 17 16:09:52 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/test_tracer.rb: new test case.

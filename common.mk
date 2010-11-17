@@ -799,10 +799,14 @@ $(REVISION_H): $(srcdir)/version.h $(srcdir)/ChangeLog $(srcdir)/tool/file2lastr
 	@$(IFCHANGE) "--timestamp=$@" "$(srcdir)/revision.h" "$(srcdir)/revision.tmp"
 
 $(srcdir)/ext/ripper/ripper.c:
-	$(CHDIR) $(@D) && $(exec) $(MAKE) -f depend $(MFLAGS) top_srcdir=../.. srcdir=. RUBY=$(BASERUBY)
+	$(ECHO) generating $@
+	$(Q) $(CHDIR) $(@D) && $(exec) $(MAKE) -f depend $(MFLAGS) \
+		Q=$(Q) ECHO=$(ECHO) top_srcdir=../.. srcdir=. RUBY=$(BASERUBY)
 
 $(srcdir)/ext/json/parser/parser.c:
-	$(CHDIR) $(@D) && $(exec) $(MAKE) -f prereq.mk $(MFLAGS) top_srcdir=../../.. srcdir=.
+	$(ECHO) generating $@
+	$(Q) $(CHDIR) $(@D) && $(exec) $(MAKE) -f prereq.mk $(MFLAGS) \
+		Q=$(Q) ECHO=$(ECHO) top_srcdir=../../.. srcdir=.
 
 ##
 
