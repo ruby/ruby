@@ -1,4 +1,6 @@
-Wed Nov 17 19:13:22 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Nov 17 23:17:22 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile): use forward slashes in messages.
 
 	* lib/mkmf.rb (create_makefile): make extension libraries messages
 	  brief.

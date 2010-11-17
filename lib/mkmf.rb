@@ -1884,9 +1884,11 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
       s = s.gsub(/(\$\(\w+)(\))/) {$1+sep+$2}
       s = s.gsub(/(\$\{\w+)(\})/) {$1+sep+$2}
     }
+    rsep = ":#{fsep}=/"
   else
     fseprepl = proc {|s| s}
     sep = ""
+    rsep = ""
   end
   dirs = []
   mfile.print "install: install-so install-rb\n\n"
@@ -1964,7 +1966,7 @@ site-install-rb: install-rb
   mfile.print ".SUFFIXES: .#{SRC_EXT.join(' .')} .#{$OBJEXT}\n"
   mfile.print "\n"
 
-  compile_command = "\n\t$(ECHO) compiling $<\n\t$(Q) %s\n\n"
+  compile_command = "\n\t$(ECHO) compiling $(<#{rsep})\n\t$(Q) %s\n\n"
   CXX_EXT.each do |e|
     COMPILE_RULES.each do |rule|
       mfile.printf(rule, e, $OBJEXT)
@@ -1998,7 +2000,7 @@ site-install-rb: install-rb
   mfile.print link_so, "\n\n"
   unless $static.nil?
     mfile.print "$(STATIC_LIB): $(OBJS)\n\t@-$(RM) $(@#{sep})\n\t"
-    mfile.print "$(ECHO) linking static-library $(@)\n\t$(Q) "
+    mfile.print "$(ECHO) linking static-library $(@#{rsep})\n\t$(Q) "
     mfile.print "$(AR) #{config_string('ARFLAGS') || 'cru '}$@ $(OBJS)"
     config_string('RANLIB') do |ranlib|
       mfile.print "\n\t@-#{ranlib} $(DLLIB) 2> /dev/null || true"
@@ -2007,7 +2009,7 @@ site-install-rb: install-rb
   mfile.print "\n\n"
   if makedef
     mfile.print "$(DEFFILE): #{origdef}\n"
-    mfile.print "\t$(ECHO) generating $@\n"
+    mfile.print "\t$(ECHO) generating $(@#{rsep})\n"
     mfile.print "\t$(Q) $(RUBY) #{makedef} #{origdef} > $@\n\n"
   end
 
