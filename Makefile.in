@@ -243,10 +243,10 @@ incs: id.h
 lex.c: defs/keywords
 	@\
 	if cmp -s $(srcdir)/defs/lex.c.src $?; then \
-	  set -x; \
+	  [ $(Q) ] && echo copying $@ || set -x; \
 	  $(CP) $(srcdir)/lex.c.blt $@; \
 	else \
-	  set -x; \
+	  [ $(Q) ] && echo generating $@ || set -x; \
 	  gperf -C -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ $? > $@.tmp && \
 	  $(MV) $@.tmp $@ && \
 	  $(CP) $? $(srcdir)/defs/lex.c.src && \
