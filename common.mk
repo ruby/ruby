@@ -150,6 +150,12 @@ showflags:
 	"	SOLIBS = $(SOLIBS)" \
 	$(MESSAGE_END)
 
+.PHONY: showconfig
+showconfig:
+	@$(MESSAGE_BEGIN) \
+	"$(configure_args)" \
+	$(MESSAGE_END)
+
 exts: $(MKMAIN_CMD)
 
 $(MKMAIN_CMD): $(MKFILES) incs $(PREP) $(RBCONFIG) $(LIBRUBY)

@@ -145,6 +145,8 @@ SRC_FILE      = $<
 
 MESSAGE_BEGIN = @for line in
 MESSAGE_END = ; do echo "$$line"; done
+
+configure_args = @configure_args@
 #### End of variables
 
 all:
@@ -223,10 +225,15 @@ $(MKFILES): config.status
 uncommon.mk: $(srcdir)/common.mk
 		sed 's/{\$$([^(){}]*)[^{}]*}//g' $< > $@
 
-config.status:	$(srcdir)/configure $(srcdir)/enc/Makefile.in
+.PHONY: reconfig
+reconfig-args = $(srcdir)/configure $(configure_args)
+config.status-args = ./config.status --recheck
+reconfig-exec-0 = exec 3>&1; exit `exec 4>&1; { "$$@" 3>&- 4>&-; echo $$? 1>&4; } | fgrep -v '(cached)' 1>&3`
+reconfig-exec-1 = set -x; "$$@"
+
+reconfig config.status:	$(srcdir)/configure $(srcdir)/enc/Makefile.in
 	@PWD= MINIRUBY="$(MINIRUBY)"; export MINIRUBY; \
-	set $(SHELL) ./config.status --recheck; \
-	exec 3>&1; exit `exec 4>&1; { "$$@" 3>&- 4>&-; echo $$? 1>&4; } | fgrep -v '(cached)' 1>&3`
+	set $(SHELL) $($@-args); $(reconfig-exec-$(V))
 
 $(srcdir)/configure: $(srcdir)/configure.in
 	$(CHDIR) $(srcdir) && exec $(AUTOCONF)
