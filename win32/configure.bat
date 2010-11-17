@@ -45,46 +45,46 @@ if "%1" == "--help" goto :help
   shift
 goto :loop
 :srcdir
-  echo>> ~tmp~.mak 	"srcdir=%2" \
+  echo>> ~tmp~.mak 	"srcdir=%~2" \
   echo>>confargs.tmp --srcdir=%2 \
   shift
   shift
 goto :loop
 :prefix
-  echo>> ~tmp~.mak 	"prefix=%2" \
+  echo>> ~tmp~.mak 	"prefix=%~2" \
   echo>>confargs.tmp %1=%2 \
   shift
   shift
 goto :loop
 :pprefix
-  echo>> ~tmp~.mak 	"RUBY_PREFIX=%2" \
+  echo>> ~tmp~.mak 	"RUBY_PREFIX=%~2" \
   echo>>confargs.tmp %1=%2 \
   shift
   shift
 goto :loop
 :suffix
-  echo>> ~tmp~.mak 	"RUBY_SUFFIX=%2" \
+  echo>> ~tmp~.mak 	"RUBY_SUFFIX=%~2" \
   echo>>confargs.tmp %1=%2 \
   shift
   shift
 goto :loop
 :installname
-  echo>> ~tmp~.mak 	"RUBY_INSTALL_NAME=%2" \
+  echo>> ~tmp~.mak 	"RUBY_INSTALL_NAME=%~2" \
   echo>>confargs.tmp %1=%2 \
   shift
   shift
 goto :loop
 :soname
-  echo>> ~tmp~.mak 	"RUBY_SO_NAME=%2" \
+  echo>> ~tmp~.mak 	"RUBY_SO_NAME=%~2" \
   echo>>confargs.tmp %1=%2 \
   shift
   shift
 goto :loop
 :target
-  echo>> ~tmp~.mak 	"%2" \
+  echo>> ~tmp~.mak 	"%~2" \
   echo>>confargs.tmp --target=%2 \
-  if "%2" == "x64-mswin64" goto target2
-  if NOT "%2" == "ia64-mswin64" goto target3
+  if "%~2" == "x64-mswin64" goto target2
+  if NOT "%~2" == "ia64-mswin64" goto target3
 :target2
   echo>> ~tmp~.mak 	"TARGET_OS=mswin64" \
 :target3
@@ -127,25 +127,25 @@ goto :loop
   shift
 goto :loop
 :ntver
-  echo>> ~tmp~.mak 	"NTVER=%2" \
+  echo>> ~tmp~.mak 	"NTVER=%~2" \
   echo>>confargs.tmp %1=%2 \
   shift
   shift
 goto :loop
 :extout
-  echo>> ~tmp~.mak 	"EXTOUT=%2" \
+  echo>> ~tmp~.mak 	"EXTOUT=%~2" \
   echo>>confargs.tmp %1=%2 \
   shift
   shift
 goto :loop
 :path
-  echo>>pathlist.tmp %2;\
+  echo>>pathlist.tmp %~2;\
   echo>>confargs.tmp %1=%2 \
   shift
   shift
 goto :loop
 :baseruby
-  echo>> ~tmp~.mak 	"BASERUBY=%2" \
+  echo>> ~tmp~.mak 	"BASERUBY=%~2" \
   echo>>confargs.tmp %1=%2 \
   shift
   shift

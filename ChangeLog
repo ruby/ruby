@@ -1,4 +1,6 @@
-Wed Nov 17 23:17:22 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Nov 17 23:19:21 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/configure.bat: remove quotes from arguments to be quoted.
 
 	* lib/mkmf.rb (create_makefile): use forward slashes in messages.
 
