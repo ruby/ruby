@@ -181,14 +181,14 @@ static int max_file_descriptor = NOFILE;
 
 #define GetWriteIO(io) rb_io_get_write_io(io)
 
-#define READ_DATA_PENDING(fptr) ((fptr)->rbuf_len)
-#define READ_DATA_PENDING_COUNT(fptr) ((fptr)->rbuf_len)
-#define READ_DATA_PENDING_PTR(fptr) ((fptr)->rbuf+(fptr)->rbuf_off)
+#define READ_DATA_PENDING(fptr) ((fptr)->rbuf.len)
+#define READ_DATA_PENDING_COUNT(fptr) ((fptr)->rbuf.len)
+#define READ_DATA_PENDING_PTR(fptr) ((fptr)->rbuf.ptr+(fptr)->rbuf.off)
 #define READ_DATA_BUFFERED(fptr) READ_DATA_PENDING(fptr)
 
-#define READ_CHAR_PENDING(fptr) ((fptr)->cbuf_len)
-#define READ_CHAR_PENDING_COUNT(fptr) ((fptr)->cbuf_len)
-#define READ_CHAR_PENDING_PTR(fptr) ((fptr)->cbuf+(fptr)->cbuf_off)
+#define READ_CHAR_PENDING(fptr) ((fptr)->cbuf.len)
+#define READ_CHAR_PENDING_COUNT(fptr) ((fptr)->cbuf.len)
+#define READ_CHAR_PENDING_PTR(fptr) ((fptr)->cbuf.ptr+(fptr)->cbuf.off)
 
 #if defined(_WIN32)
 #define WAIT_FD_IN_WIN32(fptr) \
@@ -354,18 +354,18 @@ io_unread(rb_io_t *fptr)
 {
     off_t r;
     rb_io_check_closed(fptr);
-    if (fptr->rbuf_len == 0 || fptr->mode & FMODE_DUPLEX)
+    if (fptr->rbuf.len == 0 || fptr->mode & FMODE_DUPLEX)
         return;
     /* xxx: target position may be negative if buffer is filled by ungetc */
     errno = 0;
-    r = lseek(fptr->fd, -fptr->rbuf_len, SEEK_CUR);
+    r = lseek(fptr->fd, -fptr->rbuf.len, SEEK_CUR);
     if (r < 0 && errno) {
         if (errno == ESPIPE)
             fptr->mode |= FMODE_DUPLEX;
         return;
     }
-    fptr->rbuf_off = 0;
-    fptr->rbuf_len = 0;
+    fptr->rbuf.off = 0;
+    fptr->rbuf.len = 0;
     return;
 }
 
@@ -376,32 +376,32 @@ io_ungetbyte(VALUE str, rb_io_t *fptr)
 {
     long len = RSTRING_LEN(str);
 
-    if (fptr->rbuf == NULL) {
+    if (fptr->rbuf.ptr == NULL) {
         const int min_capa = IO_RBUF_CAPA_FOR(fptr);
-        fptr->rbuf_off = 0;
-        fptr->rbuf_len = 0;
+        fptr->rbuf.off = 0;
+        fptr->rbuf.len = 0;
 #if SIZEOF_LONG > SIZEOF_INT
 	if (len > INT_MAX)
 	    rb_raise(rb_eIOError, "ungetbyte failed");
 #endif
 	if (len > min_capa)
-	    fptr->rbuf_capa = (int)len;
+	    fptr->rbuf.capa = (int)len;
 	else
-	    fptr->rbuf_capa = min_capa;
-        fptr->rbuf = ALLOC_N(char, fptr->rbuf_capa);
+	    fptr->rbuf.capa = min_capa;
+        fptr->rbuf.ptr = ALLOC_N(char, fptr->rbuf.capa);
     }
-    if (fptr->rbuf_capa < len + fptr->rbuf_len) {
+    if (fptr->rbuf.capa < len + fptr->rbuf.len) {
 	rb_raise(rb_eIOError, "ungetbyte failed");
     }
-    if (fptr->rbuf_off < len) {
-        MEMMOVE(fptr->rbuf+fptr->rbuf_capa-fptr->rbuf_len,
-                fptr->rbuf+fptr->rbuf_off,
-                char, fptr->rbuf_len);
-        fptr->rbuf_off = fptr->rbuf_capa-fptr->rbuf_len;
+    if (fptr->rbuf.off < len) {
+        MEMMOVE(fptr->rbuf.ptr+fptr->rbuf.capa-fptr->rbuf.len,
+                fptr->rbuf.ptr+fptr->rbuf.off,
+                char, fptr->rbuf.len);
+        fptr->rbuf.off = fptr->rbuf.capa-fptr->rbuf.len;
     }
-    fptr->rbuf_off-=(int)len;
-    fptr->rbuf_len+=(int)len;
-    MEMMOVE(fptr->rbuf+fptr->rbuf_off, RSTRING_PTR(str), char, len);
+    fptr->rbuf.off-=(int)len;
+    fptr->rbuf.len+=(int)len;
+    MEMMOVE(fptr->rbuf.ptr+fptr->rbuf.off, RSTRING_PTR(str), char, len);
 }
 
 static rb_io_t *
@@ -432,7 +432,7 @@ rb_io_check_char_readable(rb_io_t *fptr)
     if (!(fptr->mode & FMODE_READABLE)) {
 	rb_raise(rb_eIOError, "not opened for reading");
     }
-    if (fptr->wbuf_len) {
+    if (fptr->wbuf.len) {
         if (io_fflush(fptr) < 0)
             rb_sys_fail(0);
     }
@@ -484,7 +484,7 @@ rb_io_check_writable(rb_io_t *fptr)
     if (!(fptr->mode & FMODE_WRITABLE)) {
 	rb_raise(rb_eIOError, "not opened for writing");
     }
-    if (fptr->rbuf_len) {
+    if (fptr->rbuf.len) {
         io_unread(fptr);
     }
 }
@@ -635,17 +635,17 @@ static VALUE
 io_flush_buffer_sync(void *arg)
 {
     rb_io_t *fptr = arg;
-    long l = io_writable_length(fptr, fptr->wbuf_len);
-    ssize_t r = write(fptr->fd, fptr->wbuf+fptr->wbuf_off, (size_t)l);
+    long l = io_writable_length(fptr, fptr->wbuf.len);
+    ssize_t r = write(fptr->fd, fptr->wbuf.ptr+fptr->wbuf.off, (size_t)l);
 
-    if (fptr->wbuf_len <= r) {
-	fptr->wbuf_off = 0;
-	fptr->wbuf_len = 0;
+    if (fptr->wbuf.len <= r) {
+	fptr->wbuf.off = 0;
+	fptr->wbuf.len = 0;
 	return 0;
     }
     if (0 <= r) {
-	fptr->wbuf_off += (int)r;
-	fptr->wbuf_len -= (int)r;
+	fptr->wbuf.off += (int)r;
+	fptr->wbuf.len -= (int)r;
 	errno = EAGAIN;
     }
     return (VALUE)-1;
@@ -672,12 +672,12 @@ static int
 io_fflush(rb_io_t *fptr)
 {
     rb_io_check_closed(fptr);
-    if (fptr->wbuf_len == 0)
+    if (fptr->wbuf.len == 0)
         return 0;
     if (!rb_thread_fd_writable(fptr->fd)) {
         rb_io_check_closed(fptr);
     }
-    while (fptr->wbuf_len > 0 && io_flush_buffer(fptr) != 0) {
+    while (fptr->wbuf.len > 0 && io_flush_buffer(fptr) != 0) {
 	if (!rb_io_wait_writable(fptr->fd))
 	    return -1;
         rb_io_check_closed(fptr);
@@ -856,25 +856,25 @@ io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
     long n, r, offset = 0;
 
     if ((n = len) <= 0) return n;
-    if (fptr->wbuf == NULL && !(!nosync && (fptr->mode & FMODE_SYNC))) {
-        fptr->wbuf_off = 0;
-        fptr->wbuf_len = 0;
-        fptr->wbuf_capa = IO_WBUF_CAPA_MIN;
-        fptr->wbuf = ALLOC_N(char, fptr->wbuf_capa);
+    if (fptr->wbuf.ptr == NULL && !(!nosync && (fptr->mode & FMODE_SYNC))) {
+        fptr->wbuf.off = 0;
+        fptr->wbuf.len = 0;
+        fptr->wbuf.capa = IO_WBUF_CAPA_MIN;
+        fptr->wbuf.ptr = ALLOC_N(char, fptr->wbuf.capa);
 	fptr->write_lock = rb_mutex_new();
     }
     if ((!nosync && (fptr->mode & (FMODE_SYNC|FMODE_TTY))) ||
-        (fptr->wbuf && fptr->wbuf_capa <= fptr->wbuf_len + len)) {
+        (fptr->wbuf.ptr && fptr->wbuf.capa <= fptr->wbuf.len + len)) {
 	struct binwrite_arg arg;
 
         /* xxx: use writev to avoid double write if available */
-        if (fptr->wbuf_len && fptr->wbuf_len+len <= fptr->wbuf_capa) {
-            if (fptr->wbuf_capa < fptr->wbuf_off+fptr->wbuf_len+len) {
-                MEMMOVE(fptr->wbuf, fptr->wbuf+fptr->wbuf_off, char, fptr->wbuf_len);
-                fptr->wbuf_off = 0;
+        if (fptr->wbuf.len && fptr->wbuf.len+len <= fptr->wbuf.capa) {
+            if (fptr->wbuf.capa < fptr->wbuf.off+fptr->wbuf.len+len) {
+                MEMMOVE(fptr->wbuf.ptr, fptr->wbuf.ptr+fptr->wbuf.off, char, fptr->wbuf.len);
+                fptr->wbuf.off = 0;
             }
-            MEMMOVE(fptr->wbuf+fptr->wbuf_off+fptr->wbuf_len, ptr+offset, char, len);
-            fptr->wbuf_len += (int)len;
+            MEMMOVE(fptr->wbuf.ptr+fptr->wbuf.off+fptr->wbuf.len, ptr+offset, char, len);
+            fptr->wbuf.len += (int)len;
             n = 0;
         }
         if (io_fflush(fptr) < 0)
@@ -913,13 +913,13 @@ io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
         return -1L;
     }
 
-    if (fptr->wbuf_off) {
-        if (fptr->wbuf_len)
-            MEMMOVE(fptr->wbuf, fptr->wbuf+fptr->wbuf_off, char, fptr->wbuf_len);
-        fptr->wbuf_off = 0;
+    if (fptr->wbuf.off) {
+        if (fptr->wbuf.len)
+            MEMMOVE(fptr->wbuf.ptr, fptr->wbuf.ptr+fptr->wbuf.off, char, fptr->wbuf.len);
+        fptr->wbuf.off = 0;
     }
-    MEMMOVE(fptr->wbuf+fptr->wbuf_off+fptr->wbuf_len, ptr+offset, char, len);
-    fptr->wbuf_len += (int)len;
+    MEMMOVE(fptr->wbuf.ptr+fptr->wbuf.off+fptr->wbuf.len, ptr+offset, char, len);
+    fptr->wbuf.len += (int)len;
     return len;
 }
 
@@ -1120,7 +1120,7 @@ rb_io_tell(VALUE io)
     GetOpenFile(io, fptr);
     pos = io_tell(fptr);
     if (pos < 0 && errno) rb_sys_fail_path(fptr->pathv);
-    pos -= fptr->rbuf_len;
+    pos -= fptr->rbuf.len;
     return OFFT2NUM(pos);
 }
 
@@ -1238,24 +1238,24 @@ io_fillbuf(rb_io_t *fptr)
 {
     ssize_t r;
 
-    if (fptr->rbuf == NULL) {
-        fptr->rbuf_off = 0;
-        fptr->rbuf_len = 0;
-        fptr->rbuf_capa = IO_RBUF_CAPA_FOR(fptr);
-        fptr->rbuf = ALLOC_N(char, fptr->rbuf_capa);
+    if (fptr->rbuf.ptr == NULL) {
+        fptr->rbuf.off = 0;
+        fptr->rbuf.len = 0;
+        fptr->rbuf.capa = IO_RBUF_CAPA_FOR(fptr);
+        fptr->rbuf.ptr = ALLOC_N(char, fptr->rbuf.capa);
     }
-    if (fptr->rbuf_len == 0) {
+    if (fptr->rbuf.len == 0) {
       retry:
 	{
-	    r = rb_read_internal(fptr->fd, fptr->rbuf, fptr->rbuf_capa);
+	    r = rb_read_internal(fptr->fd, fptr->rbuf.ptr, fptr->rbuf.capa);
 	}
         if (r < 0) {
             if (rb_io_wait_readable(fptr->fd))
                 goto retry;
             rb_sys_fail_path(fptr->pathv);
         }
-        fptr->rbuf_off = 0;
-        fptr->rbuf_len = (int)r; /* r should be <= rbuf_capa */
+        fptr->rbuf.off = 0;
+        fptr->rbuf.len = (int)r; /* r should be <= rbuf_capa */
         if (r == 0)
             return -1; /* EOF */
     }
@@ -1545,9 +1545,9 @@ read_buffered_data(char *ptr, long len, rb_io_t *fptr)
     n = READ_DATA_PENDING_COUNT(fptr);
     if (n <= 0) return 0;
     if (n > len) n = (int)len;
-    MEMMOVE(ptr, fptr->rbuf+fptr->rbuf_off, char, n);
-    fptr->rbuf_off += n;
-    fptr->rbuf_len -= n;
+    MEMMOVE(ptr, fptr->rbuf.ptr+fptr->rbuf.off, char, n);
+    fptr->rbuf.off += n;
+    fptr->rbuf.len -= n;
     return n;
 }
 
@@ -1673,11 +1673,11 @@ make_readconv(rb_io_t *fptr, int size)
         fptr->readconv = rb_econv_open_opts(sname, dname, ecflags, ecopts);
         if (!fptr->readconv)
             rb_exc_raise(rb_econv_open_exc(sname, dname, ecflags));
-        fptr->cbuf_off = 0;
-        fptr->cbuf_len = 0;
+        fptr->cbuf.off = 0;
+        fptr->cbuf.len = 0;
 	if (size < IO_CBUF_CAPA_MIN) size = IO_CBUF_CAPA_MIN;
-        fptr->cbuf_capa = size;
-        fptr->cbuf = ALLOC_N(char, fptr->cbuf_capa);
+        fptr->cbuf.capa = size;
+        fptr->cbuf.ptr = ALLOC_N(char, fptr->cbuf.capa);
     }
 }
 
@@ -1695,39 +1695,39 @@ fill_cbuf(rb_io_t *fptr, int ec_flags)
 
     ec_flags |= ECONV_PARTIAL_INPUT;
 
-    if (fptr->cbuf_len == fptr->cbuf_capa)
+    if (fptr->cbuf.len == fptr->cbuf.capa)
         return MORE_CHAR_SUSPENDED; /* cbuf full */
-    if (fptr->cbuf_len == 0)
-        fptr->cbuf_off = 0;
-    else if (fptr->cbuf_off + fptr->cbuf_len == fptr->cbuf_capa) {
-        memmove(fptr->cbuf, fptr->cbuf+fptr->cbuf_off, fptr->cbuf_len);
-        fptr->cbuf_off = 0;
+    if (fptr->cbuf.len == 0)
+        fptr->cbuf.off = 0;
+    else if (fptr->cbuf.off + fptr->cbuf.len == fptr->cbuf.capa) {
+        memmove(fptr->cbuf.ptr, fptr->cbuf.ptr+fptr->cbuf.off, fptr->cbuf.len);
+        fptr->cbuf.off = 0;
     }
 
-    cbuf_len0 = fptr->cbuf_len;
+    cbuf_len0 = fptr->cbuf.len;
 
     while (1) {
-        ss = sp = (const unsigned char *)fptr->rbuf + fptr->rbuf_off;
-        se = sp + fptr->rbuf_len;
-        ds = dp = (unsigned char *)fptr->cbuf + fptr->cbuf_off + fptr->cbuf_len;
-        de = (unsigned char *)fptr->cbuf + fptr->cbuf_capa;
+        ss = sp = (const unsigned char *)fptr->rbuf.ptr + fptr->rbuf.off;
+        se = sp + fptr->rbuf.len;
+        ds = dp = (unsigned char *)fptr->cbuf.ptr + fptr->cbuf.off + fptr->cbuf.len;
+        de = (unsigned char *)fptr->cbuf.ptr + fptr->cbuf.capa;
         res = rb_econv_convert(fptr->readconv, &sp, se, &dp, de, ec_flags);
-        fptr->rbuf_off += (int)(sp - ss);
-        fptr->rbuf_len -= (int)(sp - ss);
-        fptr->cbuf_len += (int)(dp - ds);
+        fptr->rbuf.off += (int)(sp - ss);
+        fptr->rbuf.len -= (int)(sp - ss);
+        fptr->cbuf.len += (int)(dp - ds);
 
         putbackable = rb_econv_putbackable(fptr->readconv);
         if (putbackable) {
-            rb_econv_putback(fptr->readconv, (unsigned char *)fptr->rbuf + fptr->rbuf_off - putbackable, putbackable);
-            fptr->rbuf_off -= putbackable;
-            fptr->rbuf_len += putbackable;
+            rb_econv_putback(fptr->readconv, (unsigned char *)fptr->rbuf.ptr + fptr->rbuf.off - putbackable, putbackable);
+            fptr->rbuf.off -= putbackable;
+            fptr->rbuf.len += putbackable;
         }
 
         exc = rb_econv_make_exception(fptr->readconv);
         if (!NIL_P(exc))
             return exc;
 
-        if (cbuf_len0 != fptr->cbuf_len)
+        if (cbuf_len0 != fptr->cbuf.len)
             return MORE_CHAR_SUSPENDED;
 
         if (res == econv_finished) {
@@ -1735,13 +1735,13 @@ fill_cbuf(rb_io_t *fptr, int ec_flags)
 	}
 
         if (res == econv_source_buffer_empty) {
-            if (fptr->rbuf_len == 0) {
+            if (fptr->rbuf.len == 0) {
 		READ_CHECK(fptr);
                 if (io_fillbuf(fptr) == -1) {
-                    ds = dp = (unsigned char *)fptr->cbuf + fptr->cbuf_off + fptr->cbuf_len;
-                    de = (unsigned char *)fptr->cbuf + fptr->cbuf_capa;
+                    ds = dp = (unsigned char *)fptr->cbuf.ptr + fptr->cbuf.off + fptr->cbuf.len;
+                    de = (unsigned char *)fptr->cbuf.ptr + fptr->cbuf.capa;
                     res = rb_econv_convert(fptr->readconv, NULL, NULL, &dp, de, 0);
-                    fptr->cbuf_len += (int)(dp - ds);
+                    fptr->cbuf.len += (int)(dp - ds);
                     rb_econv_check_error(fptr->readconv);
                 }
             }
@@ -1766,22 +1766,22 @@ io_shift_cbuf(rb_io_t *fptr, int len, VALUE *strp)
     if (strp) {
 	str = *strp;
 	if (NIL_P(str)) {
-	    *strp = str = rb_str_new(fptr->cbuf+fptr->cbuf_off, len);
+	    *strp = str = rb_str_new(fptr->cbuf.ptr+fptr->cbuf.off, len);
 	}
 	else {
-	    rb_str_cat(str, fptr->cbuf+fptr->cbuf_off, len);
+	    rb_str_cat(str, fptr->cbuf.ptr+fptr->cbuf.off, len);
 	}
 	OBJ_TAINT(str);
 	rb_enc_associate(str, fptr->encs.enc);
     }
-    fptr->cbuf_off += len;
-    fptr->cbuf_len -= len;
+    fptr->cbuf.off += len;
+    fptr->cbuf.len -= len;
     /* xxx: set coderange */
-    if (fptr->cbuf_len == 0)
-        fptr->cbuf_off = 0;
-    else if (fptr->cbuf_capa/2 < fptr->cbuf_off) {
-        memmove(fptr->cbuf, fptr->cbuf+fptr->cbuf_off, fptr->cbuf_len);
-        fptr->cbuf_off = 0;
+    if (fptr->cbuf.len == 0)
+        fptr->cbuf.off = 0;
+    else if (fptr->cbuf.capa/2 < fptr->cbuf.off) {
+        memmove(fptr->cbuf.ptr, fptr->cbuf.ptr+fptr->cbuf.off, fptr->cbuf.len);
+        fptr->cbuf.off = 0;
     }
     return str;
 }
@@ -1801,13 +1801,13 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
         make_readconv(fptr, 0);
         while (1) {
             VALUE v;
-            if (fptr->cbuf_len) {
-                io_shift_cbuf(fptr, fptr->cbuf_len, &str);
+            if (fptr->cbuf.len) {
+                io_shift_cbuf(fptr, fptr->cbuf.len, &str);
             }
             v = fill_cbuf(fptr, 0);
             if (v != MORE_CHAR_SUSPENDED && v != MORE_CHAR_FINISHED) {
-                if (fptr->cbuf_len) {
-                    io_shift_cbuf(fptr, fptr->cbuf_len, &str);
+                if (fptr->cbuf.len) {
+                    io_shift_cbuf(fptr, fptr->cbuf.len, &str);
                 }
                 rb_exc_raise(v);
             }
@@ -2264,9 +2264,9 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp)
         do {
             const char *p, *e;
             int searchlen;
-            if (fptr->cbuf_len) {
-                p = fptr->cbuf+fptr->cbuf_off;
-                searchlen = fptr->cbuf_len;
+            if (fptr->cbuf.len) {
+                p = fptr->cbuf.ptr+fptr->cbuf.off;
+                searchlen = fptr->cbuf.len;
                 if (0 < limit && limit < searchlen)
                     searchlen = (int)limit;
                 e = memchr(p, delim, searchlen);
@@ -2276,8 +2276,8 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp)
                         *strp = str = rb_str_new(p, len);
                     else
                         rb_str_buf_cat(str, p, len);
-                    fptr->cbuf_off += len;
-                    fptr->cbuf_len -= len;
+                    fptr->cbuf.off += len;
+                    fptr->cbuf.len -= len;
                     limit -= len;
                     *lp = limit;
                     return delim;
@@ -2287,8 +2287,8 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp)
                     *strp = str = rb_str_new(p, searchlen);
                 else
                     rb_str_buf_cat(str, p, searchlen);
-                fptr->cbuf_off += searchlen;
-                fptr->cbuf_len -= searchlen;
+                fptr->cbuf.off += searchlen;
+                fptr->cbuf.len -= searchlen;
                 limit -= searchlen;
 
                 if (limit == 0) {
@@ -2402,8 +2402,8 @@ rb_io_getline_fast(rb_io_t *fptr, rb_encoding *enc, VALUE io)
 	    }
 	    if (NIL_P(str)) {
 		str = rb_str_new(p, pending);
-		fptr->rbuf_off += pending;
-		fptr->rbuf_len -= pending;
+		fptr->rbuf.off += pending;
+		fptr->rbuf.len -= pending;
 	    }
 	    else {
 		rb_str_resize(str, len + pending);
@@ -2829,11 +2829,11 @@ rb_io_each_byte(VALUE io)
     GetOpenFile(io, fptr);
 
     for (;;) {
-	p = fptr->rbuf+fptr->rbuf_off;
-	e = p + fptr->rbuf_len;
+	p = fptr->rbuf.ptr+fptr->rbuf.off;
+	e = p + fptr->rbuf.len;
 	while (p < e) {
-	    fptr->rbuf_off++;
-	    fptr->rbuf_len--;
+	    fptr->rbuf.off++;
+	    fptr->rbuf.len--;
 	    rb_yield(INT2FIX(*p & 0xff));
 	    p++;
 	    errno = 0;
@@ -2860,34 +2860,34 @@ io_getc(rb_io_t *fptr, rb_encoding *enc)
         make_readconv(fptr, 0);
 
         while (1) {
-            if (fptr->cbuf_len) {
-		r = rb_enc_precise_mbclen(fptr->cbuf+fptr->cbuf_off,
-			fptr->cbuf+fptr->cbuf_off+fptr->cbuf_len,
+            if (fptr->cbuf.len) {
+		r = rb_enc_precise_mbclen(fptr->cbuf.ptr+fptr->cbuf.off,
+			fptr->cbuf.ptr+fptr->cbuf.off+fptr->cbuf.len,
 			read_enc);
                 if (!MBCLEN_NEEDMORE_P(r))
                     break;
-                if (fptr->cbuf_len == fptr->cbuf_capa) {
+                if (fptr->cbuf.len == fptr->cbuf.capa) {
                     rb_raise(rb_eIOError, "too long character");
                 }
             }
 
             if (more_char(fptr) == MORE_CHAR_FINISHED) {
-                if (fptr->cbuf_len == 0) {
+                if (fptr->cbuf.len == 0) {
 		    clear_readconv(fptr);
 		    return Qnil;
 		}
                 /* return an unit of an incomplete character just before EOF */
-		str = rb_enc_str_new(fptr->cbuf+fptr->cbuf_off, 1, read_enc);
-		fptr->cbuf_off += 1;
-		fptr->cbuf_len -= 1;
-                if (fptr->cbuf_len == 0) clear_readconv(fptr);
+		str = rb_enc_str_new(fptr->cbuf.ptr+fptr->cbuf.off, 1, read_enc);
+		fptr->cbuf.off += 1;
+		fptr->cbuf.len -= 1;
+                if (fptr->cbuf.len == 0) clear_readconv(fptr);
 		ENC_CODERANGE_SET(str, ENC_CODERANGE_BROKEN);
 		return str;
             }
         }
         if (MBCLEN_INVALID_P(r)) {
-            r = rb_enc_mbclen(fptr->cbuf+fptr->cbuf_off,
-                              fptr->cbuf+fptr->cbuf_off+fptr->cbuf_len,
+            r = rb_enc_mbclen(fptr->cbuf.ptr+fptr->cbuf.off,
+                              fptr->cbuf.ptr+fptr->cbuf.off+fptr->cbuf.len,
                               read_enc);
             io_shift_cbuf(fptr, r, &str);
 	    cr = ENC_CODERANGE_BROKEN;
@@ -2904,29 +2904,29 @@ io_getc(rb_io_t *fptr, rb_encoding *enc)
     if (io_fillbuf(fptr) < 0) {
 	return Qnil;
     }
-    if (rb_enc_asciicompat(enc) && ISASCII(fptr->rbuf[fptr->rbuf_off])) {
-	str = rb_str_new(fptr->rbuf+fptr->rbuf_off, 1);
-	fptr->rbuf_off += 1;
-	fptr->rbuf_len -= 1;
+    if (rb_enc_asciicompat(enc) && ISASCII(fptr->rbuf.ptr[fptr->rbuf.off])) {
+	str = rb_str_new(fptr->rbuf.ptr+fptr->rbuf.off, 1);
+	fptr->rbuf.off += 1;
+	fptr->rbuf.len -= 1;
 	cr = ENC_CODERANGE_7BIT;
     }
     else {
-	r = rb_enc_precise_mbclen(fptr->rbuf+fptr->rbuf_off, fptr->rbuf+fptr->rbuf_off+fptr->rbuf_len, enc);
+	r = rb_enc_precise_mbclen(fptr->rbuf.ptr+fptr->rbuf.off, fptr->rbuf.ptr+fptr->rbuf.off+fptr->rbuf.len, enc);
 	if (MBCLEN_CHARFOUND_P(r) &&
-	    (n = MBCLEN_CHARFOUND_LEN(r)) <= fptr->rbuf_len) {
-	    str = rb_str_new(fptr->rbuf+fptr->rbuf_off, n);
-	    fptr->rbuf_off += n;
-	    fptr->rbuf_len -= n;
+	    (n = MBCLEN_CHARFOUND_LEN(r)) <= fptr->rbuf.len) {
+	    str = rb_str_new(fptr->rbuf.ptr+fptr->rbuf.off, n);
+	    fptr->rbuf.off += n;
+	    fptr->rbuf.len -= n;
 	    cr = ENC_CODERANGE_VALID;
 	}
 	else if (MBCLEN_NEEDMORE_P(r)) {
-	    str = rb_str_new(fptr->rbuf+fptr->rbuf_off, fptr->rbuf_len);
-	    fptr->rbuf_len = 0;
+	    str = rb_str_new(fptr->rbuf.ptr+fptr->rbuf.off, fptr->rbuf.len);
+	    fptr->rbuf.len = 0;
 	  getc_needmore:
 	    if (io_fillbuf(fptr) != -1) {
-		rb_str_cat(str, fptr->rbuf+fptr->rbuf_off, 1);
-		fptr->rbuf_off++;
-		fptr->rbuf_len--;
+		rb_str_cat(str, fptr->rbuf.ptr+fptr->rbuf.off, 1);
+		fptr->rbuf.off++;
+		fptr->rbuf.len--;
 		r = rb_enc_precise_mbclen(RSTRING_PTR(str), RSTRING_PTR(str)+RSTRING_LEN(str), enc);
 		if (MBCLEN_NEEDMORE_P(r)) {
 		    goto getc_needmore;
@@ -2937,9 +2937,9 @@ io_getc(rb_io_t *fptr, rb_encoding *enc)
 	    }
 	}
 	else {
-	    str = rb_str_new(fptr->rbuf+fptr->rbuf_off, 1);
-	    fptr->rbuf_off++;
-	    fptr->rbuf_len--;
+	    str = rb_str_new(fptr->rbuf.ptr+fptr->rbuf.off, 1);
+	    fptr->rbuf.off++;
+	    fptr->rbuf.len--;
 	}
     }
     if (!cr) cr = ENC_CODERANGE_BROKEN;
@@ -3018,16 +3018,16 @@ rb_io_each_codepoint(VALUE io)
 	for (;;) {
 	    make_readconv(fptr, 0);
 	    for (;;) {
-		if (fptr->cbuf_len) {
+		if (fptr->cbuf.len) {
 		    if (fptr->encs.enc)
-			r = rb_enc_precise_mbclen(fptr->cbuf+fptr->cbuf_off,
-						  fptr->cbuf+fptr->cbuf_off+fptr->cbuf_len,
+			r = rb_enc_precise_mbclen(fptr->cbuf.ptr+fptr->cbuf.off,
+						  fptr->cbuf.ptr+fptr->cbuf.off+fptr->cbuf.len,
 						  fptr->encs.enc);
 		    else
 			r = ONIGENC_CONSTRUCT_MBCLEN_CHARFOUND(1);
 		    if (!MBCLEN_NEEDMORE_P(r))
 			break;
-		    if (fptr->cbuf_len == fptr->cbuf_capa) {
+		    if (fptr->cbuf.len == fptr->cbuf.capa) {
 			rb_raise(rb_eIOError, "too long character");
 		    }
 		}
@@ -3043,15 +3043,15 @@ rb_io_each_codepoint(VALUE io)
 	    }
 	    n = MBCLEN_CHARFOUND_LEN(r);
 	    if (fptr->encs.enc) {
-		c = rb_enc_codepoint(fptr->cbuf+fptr->cbuf_off,
-				     fptr->cbuf+fptr->cbuf_off+fptr->cbuf_len,
+		c = rb_enc_codepoint(fptr->cbuf.ptr+fptr->cbuf.off,
+				     fptr->cbuf.ptr+fptr->cbuf.off+fptr->cbuf.len,
 				     fptr->encs.enc);
 	    }
 	    else {
-		c = (unsigned char)fptr->cbuf[fptr->cbuf_off];
+		c = (unsigned char)fptr->cbuf.ptr[fptr->cbuf.off];
 	    }
-	    fptr->cbuf_off += n;
-	    fptr->cbuf_len -= n;
+	    fptr->cbuf.off += n;
+	    fptr->cbuf.len -= n;
 	    rb_yield(UINT2NUM(c));
 	}
     }
@@ -3060,14 +3060,14 @@ rb_io_each_codepoint(VALUE io)
 	if (io_fillbuf(fptr) < 0) {
 	    return io;
 	}
-	r = rb_enc_precise_mbclen(fptr->rbuf+fptr->rbuf_off,
-				  fptr->rbuf+fptr->rbuf_off+fptr->rbuf_len, enc);
+	r = rb_enc_precise_mbclen(fptr->rbuf.ptr+fptr->rbuf.off,
+				  fptr->rbuf.ptr+fptr->rbuf.off+fptr->rbuf.len, enc);
 	if (MBCLEN_CHARFOUND_P(r) &&
-	    (n = MBCLEN_CHARFOUND_LEN(r)) <= fptr->rbuf_len) {
-	    c = rb_enc_codepoint(fptr->rbuf+fptr->rbuf_off,
-				 fptr->rbuf+fptr->rbuf_off+fptr->rbuf_len, enc);
-	    fptr->rbuf_off += n;
-	    fptr->rbuf_len -= n;
+	    (n = MBCLEN_CHARFOUND_LEN(r)) <= fptr->rbuf.len) {
+	    c = rb_enc_codepoint(fptr->rbuf.ptr+fptr->rbuf.off,
+				 fptr->rbuf.ptr+fptr->rbuf.off+fptr->rbuf.len, enc);
+	    fptr->rbuf.off += n;
+	    fptr->rbuf.len -= n;
 	    rb_yield(UINT2NUM(c));
 	}
 	else if (MBCLEN_INVALID_P(r)) {
@@ -3162,9 +3162,9 @@ rb_io_getbyte(VALUE io)
     if (io_fillbuf(fptr) < 0) {
 	return Qnil;
     }
-    fptr->rbuf_off++;
-    fptr->rbuf_len--;
-    c = (unsigned char)fptr->rbuf[fptr->rbuf_off-1];
+    fptr->rbuf.off++;
+    fptr->rbuf.len--;
+    c = (unsigned char)fptr->rbuf.ptr[fptr->rbuf.off-1];
     return INT2FIX(c & 0xff);
 }
 
@@ -3264,17 +3264,17 @@ rb_io_ungetc(VALUE io, VALUE c)
 	    rb_raise(rb_eIOError, "ungetc failed");
 #endif
         make_readconv(fptr, (int)len);
-        if (fptr->cbuf_capa - fptr->cbuf_len < len)
+        if (fptr->cbuf.capa - fptr->cbuf.len < len)
             rb_raise(rb_eIOError, "ungetc failed");
-        if (fptr->cbuf_off < len) {
-            MEMMOVE(fptr->cbuf+fptr->cbuf_capa-fptr->cbuf_len,
-                    fptr->cbuf+fptr->cbuf_off,
-                    char, fptr->cbuf_len);
-            fptr->cbuf_off = fptr->cbuf_capa-fptr->cbuf_len;
+        if (fptr->cbuf.off < len) {
+            MEMMOVE(fptr->cbuf.ptr+fptr->cbuf.capa-fptr->cbuf.len,
+                    fptr->cbuf.ptr+fptr->cbuf.off,
+                    char, fptr->cbuf.len);
+            fptr->cbuf.off = fptr->cbuf.capa-fptr->cbuf.len;
         }
-        fptr->cbuf_off -= (int)len;
-        fptr->cbuf_len += (int)len;
-        MEMMOVE(fptr->cbuf+fptr->cbuf_off, RSTRING_PTR(c), char, len);
+        fptr->cbuf.off -= (int)len;
+        fptr->cbuf.len += (int)len;
+        MEMMOVE(fptr->cbuf.ptr+fptr->cbuf.off, RSTRING_PTR(c), char, len);
     }
     else {
         io_ungetbyte(c, fptr);
@@ -3407,7 +3407,7 @@ finish_writeconv(rb_io_t *fptr, int noalloc)
     unsigned char *ds, *dp, *de;
     rb_econv_result_t res;
 
-    if (!fptr->wbuf) {
+    if (!fptr->wbuf.ptr) {
         unsigned char buf[1024];
         long r;
 
@@ -3443,15 +3443,15 @@ finish_writeconv(rb_io_t *fptr, int noalloc)
 
     res = econv_destination_buffer_full;
     while (res == econv_destination_buffer_full) {
-        if (fptr->wbuf_len == fptr->wbuf_capa) {
+        if (fptr->wbuf.len == fptr->wbuf.capa) {
             if (io_fflush(fptr) < 0)
                 return noalloc ? Qtrue : INT2NUM(errno);
         }
 
-        ds = dp = (unsigned char *)fptr->wbuf + fptr->wbuf_off + fptr->wbuf_len;
-        de = (unsigned char *)fptr->wbuf + fptr->wbuf_capa;
+        ds = dp = (unsigned char *)fptr->wbuf.ptr + fptr->wbuf.off + fptr->wbuf.len;
+        de = (unsigned char *)fptr->wbuf.ptr + fptr->wbuf.capa;
         res = rb_econv_convert(fptr->writeconv, NULL, NULL, &dp, de, 0);
-        fptr->wbuf_len += (int)(dp - ds);
+        fptr->wbuf.len += (int)(dp - ds);
         if (res == econv_invalid_byte_sequence ||
             res == econv_incomplete_input ||
             res == econv_undefined_conversion) {
@@ -3488,7 +3488,7 @@ fptr_finalize(rb_io_t *fptr, int noraise)
 	    err = finish_writeconv(fptr, noraise);
 	}
     }
-    if (fptr->wbuf_len) {
+    if (fptr->wbuf.len) {
 	if (noraise) {
 	    if ((int)io_flush_buffer_sync(fptr) < 0 && NIL_P(err))
 		err = Qtrue;
@@ -3550,9 +3550,9 @@ clear_readconv(rb_io_t *fptr)
         rb_econv_close(fptr->readconv);
         fptr->readconv = NULL;
     }
-    if (fptr->cbuf) {
-        free(fptr->cbuf);
-        fptr->cbuf = NULL;
+    if (fptr->cbuf.ptr) {
+        free(fptr->cbuf.ptr);
+        fptr->cbuf.ptr = NULL;
     }
 }
 
@@ -3581,13 +3581,13 @@ rb_io_fptr_finalize(rb_io_t *fptr)
     if (0 <= fptr->fd)
 	rb_io_fptr_cleanup(fptr, TRUE);
     fptr->write_lock = 0;
-    if (fptr->rbuf) {
-        free(fptr->rbuf);
-        fptr->rbuf = 0;
+    if (fptr->rbuf.ptr) {
+        free(fptr->rbuf.ptr);
+        fptr->rbuf.ptr = 0;
     }
-    if (fptr->wbuf) {
-        free(fptr->wbuf);
-        fptr->wbuf = 0;
+    if (fptr->wbuf.ptr) {
+        free(fptr->wbuf.ptr);
+        fptr->wbuf.ptr = 0;
     }
     clear_codeconv(fptr);
     free(fptr);
@@ -3600,9 +3600,9 @@ RUBY_FUNC_EXPORTED size_t
 rb_io_memsize(const rb_io_t *fptr)
 {
     size_t size = sizeof(rb_io_t);
-    size += fptr->rbuf_capa;
-    size += fptr->wbuf_capa;
-    size += fptr->cbuf_capa;
+    size += fptr->rbuf.capa;
+    size += fptr->wbuf.capa;
+    size += fptr->cbuf.capa;
     if (fptr->readconv) size += rb_econv_memsize(fptr->readconv);
     if (fptr->writeconv) size += rb_econv_memsize(fptr->writeconv);
     return size;
@@ -3858,7 +3858,7 @@ rb_io_sysseek(int argc, VALUE *argv, VALUE io)
         (READ_DATA_BUFFERED(fptr) || READ_CHAR_PENDING(fptr))) {
 	rb_raise(rb_eIOError, "sysseek for buffered IO");
     }
-    if ((fptr->mode & FMODE_WRITABLE) && fptr->wbuf_len) {
+    if ((fptr->mode & FMODE_WRITABLE) && fptr->wbuf.len) {
 	rb_warn("sysseek for buffered IO");
     }
     errno = 0;
@@ -3895,7 +3895,7 @@ rb_io_syswrite(VALUE io, VALUE str)
     GetOpenFile(io, fptr);
     rb_io_check_writable(fptr);
 
-    if (fptr->wbuf_len) {
+    if (fptr->wbuf.len) {
 	rb_warn("syswrite for buffered IO");
     }
     if (!rb_thread_fd_writable(fptr->fd)) {
@@ -5859,7 +5859,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
         if (io_fflush(fptr) < 0)
             rb_sys_fail(0);
     }
-    fptr->rbuf_off = fptr->rbuf_len = 0;
+    fptr->rbuf.off = fptr->rbuf.len = 0;
 
     if (fptr->stdio_file) {
         if (freopen(RSTRING_PTR(fptr->pathv), rb_io_oflags_modestr(oflags), fptr->stdio_file) == 0) {
@@ -8588,8 +8588,8 @@ copy_stream_body(VALUE arg)
     }
     stp->dst_fd = dst_fd;
 
-    if (stp->src_offset == (off_t)-1 && src_fptr && src_fptr->rbuf_len) {
-        size_t len = src_fptr->rbuf_len;
+    if (stp->src_offset == (off_t)-1 && src_fptr && src_fptr->rbuf.len) {
+        size_t len = src_fptr->rbuf.len;
         VALUE str;
         if (stp->copy_length != (off_t)-1 && stp->copy_length < (off_t)len) {
             len = (size_t)stp->copy_length;

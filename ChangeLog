@@ -1,3 +1,7 @@
+Thu Nov 18 22:58:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/io.h (rb_io_buffer_t): extract from rb_io_t.
+
 Thu Nov 18 07:37:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (reconfig): force reconfigure with previous options.
