@@ -44,6 +44,7 @@ RUBYW_INSTALL_NAME = $(RUBY_INSTALL_NAME:ruby=rubyw)
 !if "$(RUBYW_INSTALL_NAME)" == "$(RUBY_INSTALL_NAME)"
 RUBYW_INSTALL_NAME = $(RUBY_INSTALL_NAME)w
 !endif
+STUBPROGRAM = rubystub$(EXEEXT)
 !if !defined(icondirs) && defined(ICONDIRS)
 icondirs=$(ICONDIRS)
 !endif
@@ -348,6 +349,31 @@ all: $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub $(srcdir)/common.mk
 
 ruby: $(PROGRAM)
 rubyw: $(WPROGRAM)
+stub: $(STUBPROGRAM)
+
+!ifdef SCRIPTPROGRAMS
+!else if [echo>scriptbin.mk SCRIPTPROGRAMS = \]
+!else if [for %I in ($(srcdir:/=\)\bin\*) do @echo>>scriptbin.mk %~nI.exe \]
+!else if [echo.>>scriptbin.mk]
+!else if [echo.>>scriptbin.mk]
+!else
+!include scriptbin.mk
+!endif
+!if [for %I in ($(srcdir:/=\)\bin\*) do @for %J in (\
+"%~nI.exe: $$(srcdir)/bin/%~nI" \
+"	@echo generating $$@" \
+"	@copy /b $$(STUBPROGRAM) +<< +$$(srcdir:/=\)\bin\%~nI $$@ > nul" \
+"" "<<" "" \
+) do @echo.%~J>>scriptbin.mk]
+!else
+! include scriptbin.mk
+! if [del scriptbin.mk > nul]
+! endif
+!endif
+
+scriptbin: $(SCRIPTPROGRAMS)
+
+$(SCRIPTPROGRAMS): $(STUBPROGRAM)
 
 up::
 	@cd "$(srcdir:/=\)" && set LC_TIME=C && $(VCSUP)
@@ -816,6 +842,16 @@ $(WPROGRAM):	$(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_SO) $(RUBYW_INSTALL_NAME).res
 		$(Q) $(LDSHARED_2)
 !endif
 
+!if "$(STUBPROGRAM)" != ""
+$(STUBPROGRAM):	stub.$(OBJEXT) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
+		$(ECHO) linking $(@:\=/)
+		$(Q) $(PURIFY) $(CC) stub.$(OBJEXT) $(RUBY_INSTALL_NAME).res \
+			$(OUTFLAG)$@ $(LIBRUBYARG) -link $(LDFLAGS) $(XLDFLAGS)
+		$(Q) $(LDSHARED_0)
+		$(Q) $(LDSHARED_1)
+		$(Q) $(LDSHARED_2)
+!endif
+
 $(LIBRUBY_A):	$(OBJS) $(DMYEXT)
 		$(ECHO) linking static-library $(@:\=/)
 		$(Q) $(AR) $(ARFLAGS)$@ $(OBJS) $(DMYEXT)
@@ -989,18 +1025,16 @@ ext/extinit.obj: ext/extinit.c $(SETUP)
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 	  vmtc.inc vm.inc
 
-!ifdef insns
-make_insns_rules:
-	@type <<
-$(insns): $$(srcdir)/insns.def {$$(VPATH)}vm_opts.h \
-	  $$(srcdir)/defs/opt_operand.def $$(srcdir)/defs/opt_insn_unif.def \
-	  $$(srcdir)/tool/instruction.rb $$(srcdir)/tool/insns2vm.rb
-	@$$(RM) $$(PROGRAM)
-	$$(BASERUBY) -Ks $$(srcdir)/tool/insns2vm.rb $$(INSNS2VMOPT) $(insns)
-
-<<
-!else if [exit > insns_rules.mk]
-!else if [for %I in ($(INSNS)) do @$(MAKE) -l insns=%I make_insns_rules >> insns_rules.mk]
+!if [exit > insns_rules.mk]
+!else if [for %I in ($(INSNS)) do \
+	@for %J in (\
+"%I: $$(srcdir)/insns.def {$$(VPATH)}vm_opts.h \\" \
+"	  $$(srcdir)/defs/opt_operand.def $$(srcdir)/defs/opt_insn_unif.def \\" \
+"	  $$(srcdir)/tool/instruction.rb $$(srcdir)/tool/insns2vm.rb" \
+"	@$$(RM) $$(PROGRAM)" \
+"	$$(BASERUBY) -Ks $$(srcdir)/tool/insns2vm.rb $$(INSNS2VMOPT) %I" \
+"" \
+) do @echo.%~J>>insns_rules.mk]
 !else
 ! include insns_rules.mk
 ! if [del insns_rules.mk > nul]

@@ -1,3 +1,7 @@
+Thu Nov 18 23:56:32 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub (scriptbin): create script binaries.
+
 Thu Nov 18 23:21:23 2010  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/formatters/pretty.rb (REXML::Formatters::Pretty#wrap):
