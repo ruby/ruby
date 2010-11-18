@@ -1,4 +1,6 @@
-Thu Nov 18 23:56:32 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Nov 19 00:00:00 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cygwin/GNUmakefile.in (SCRIPTPROGRAMS): no needs on cygwin.
 
 	* win32/Makefile.sub (scriptbin): create script binaries.
 

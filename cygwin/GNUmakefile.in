@@ -11,6 +11,8 @@ else
   DLL_BASE_NAME := $(RUBY_SO_NAME)
   DLLWRAP += -mno-cygwin
   VPATH := $(VPATH):$(srcdir)/win32
+  STUBPROGRAM = rubystub$(EXEEXT)
+  SCRIPTPROGRAMS = $(addsuffix $(EXEEXT),$(notdir $(wildcard $(srcdir)/bin/*)))
 endif
 
 ifneq ($(ENABLE_SHARED),yes)
@@ -31,8 +33,6 @@ SOLIBS := $(DLL_BASE_NAME).res.@OBJEXT@ $(SOLIBS)
 EXTOBJS += $(if $(filter-out $(RUBYW_INSTALL_NAME),$(@:$(EXEEXT)=)),$(RUBY_INSTALL_NAME),$(@:$(EXEEXT)=)).res.$(OBJEXT)
 RCFILES = $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(DLL_BASE_NAME).rc
 RUBYDEF = $(DLL_BASE_NAME).def
-STUBPROGRAM = rubystub$(EXEEXT)
-SCRIPTPROGRAMS = $(addsuffix $(EXEEXT),$(notdir $(wildcard $(srcdir)/bin/*)))
 
 ruby: $(PROGRAM)
 rubyw: $(WPROGRAM)
