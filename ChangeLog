@@ -1,3 +1,13 @@
+Thu Nov 18 23:21:23 2010  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/formatters/pretty.rb (REXML::Formatters::Pretty#wrap):
+	REXML::Formatters::Pretty#wrap used a recursive method call to
+	format text.  This switches it to use an iterative approach.
+	[ruby-core:33245]
+	Patch by Jeremy Evans. Thanks!!!
+
+	* test/rexml/test_core.rb: add a test for it.
+
 Thu Nov 18 22:58:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/io.h (rb_io_buffer_t): extract from rb_io_t.

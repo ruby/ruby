@@ -126,11 +126,13 @@ module REXML
       end
 
       def wrap(string, width)
-        # Recursively wrap string at width.
-        return string if string.length <= width
-        place = string.rindex(' ', width) # Position in string with last ' ' before cutoff
-        return string if place.nil?
-        return string[0,place] + "\n" + wrap(string[place+1..-1], width)
+        parts = []
+        while string.length > width and place = string.rindex(' ', width)
+          parts << string[0...place]
+          string = string[place+1..-1]
+        end
+        parts << string
+        parts.join("\n")
       end
 
     end

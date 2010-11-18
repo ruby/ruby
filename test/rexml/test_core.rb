@@ -1151,6 +1151,22 @@ EOL
     assert_not_equal( c, d )
   end
 
+  def test_pretty_format_long_text_finite
+    n = 1_000_000
+    long_text = 'aaaa ' * n
+    xml = "<doc>#{long_text}</doc>"
+    formatter = REXML::Formatters::Pretty.new
+    document = REXML::Document.new(xml)
+    output = ""
+    assert_nothing_raised do
+      formatter.write(document, output)
+    end
+    assert_equal("<doc>\n" +
+                 ((" " + (" aaaa" * 15) + "\n") * (n / 15)) +
+                 "  " + ("aaaa " * (n % 15)) + "\n" +
+                 "</doc>",
+                 output)
+  end
 
   def test_ticket_58
     doc = REXML::Document.new
