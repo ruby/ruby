@@ -1,3 +1,8 @@
+Fri Nov 19 22:44:04 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cygwin/GNUmakefile.in, win32/Makefile.sub (clean): rc files are
+	  made at compile time, so should be removed by clean.
+
 Fri Nov 19 22:09:46 2010  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/test_core.rb

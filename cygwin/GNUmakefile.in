@@ -102,6 +102,4 @@ endif
 
 clean-local::
 	@$(RM) $(RUBY_EXP) $(RCFILES:.rc=.res.@OBJEXT@)
-
-distclean-local::
 	@$(RM) $(RCFILES)

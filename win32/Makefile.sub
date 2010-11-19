@@ -883,11 +883,11 @@ $(RUBYDEF):	$(LIBRUBY_A) $(PREP)
 clean-local::
 		@$(RM) $(WINMAINOBJ) ext\extinit.c ext\extinit.$(OBJEXT) ext\vc*.pdb miniruby.lib
 		@$(RM) $(RUBY_INSTALL_NAME).res $(RUBYW_INSTALL_NAME).res $(RUBY_SO_NAME).res
+		@$(RM) miniruby.rc $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc
 		@$(RM) *.map *.pdb *.ilk *.exp $(RUBYDEF) ext\ripper\y.output
 
 distclean-local::
 		@$(RM) ext\config.cache $(RBCONFIG:/=\) $(CONFIG_H:/=\)
-		@$(RM) miniruby.rc $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc
 		@-$(RM) $(INSTALLED_LIST:/=\) $(arch_hdrdir:/=\)\ruby\config.h
 		@-$(RMDIRS) $(arch_hdrdir:/=\)\ruby
 
