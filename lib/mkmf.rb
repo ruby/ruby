@@ -9,7 +9,7 @@ require 'shellwords'
 CONFIG = RbConfig::MAKEFILE_CONFIG
 ORIG_LIBPATH = ENV['LIB']
 
-CXX_EXT = %w[cc cxx cpp]
+CXX_EXT = %w[cc mm cxx cpp]
 if File::FNM_SYSCASE.zero?
   CXX_EXT.concat(%w[C])
 end
@@ -1973,16 +1973,10 @@ site-install-rb: install-rb
       mfile.printf(compile_command, COMPILE_CXX)
     end
   end
-  %w[c].each do |e|
+  SRC_EXT.each do |e|
     COMPILE_RULES.each do |rule|
       mfile.printf(rule, e, $OBJEXT)
       mfile.printf(compile_command, COMPILE_C)
-    end
-  end
-  %w[m].each do |e|
-    COMPILE_RULES.each do |rule|
-      mfile.printf(rule, e, $OBJEXT)
-      mfile.printf(compile_command, COMPILE_OBJC)
     end
   end
 
@@ -2151,7 +2145,6 @@ COMPILE_RULES = config_string('COMPILE_RULES', &split) || %w[.%s.%s:]
 RULE_SUBST = config_string('RULE_SUBST')
 COMPILE_C = config_string('COMPILE_C') || '$(CC) $(INCFLAGS) $(CPPFLAGS) $(CFLAGS) $(COUTFLAG)$@ -c $<'
 COMPILE_CXX = config_string('COMPILE_CXX') || '$(CXX) $(INCFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(COUTFLAG)$@ -c $<'
-COMPILE_OBJC = config_string('COMPILE_OBJC') || COMPILE_C
 TRY_LINK = config_string('TRY_LINK') ||
   "$(CC) #{OUTFLAG}conftest $(INCFLAGS) $(CPPFLAGS) " \
   "$(CFLAGS) $(src) $(LIBPATH) $(LDFLAGS) $(ARCH_FLAG) $(LOCAL_LIBS) $(LIBS)"

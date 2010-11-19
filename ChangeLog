@@ -1,3 +1,8 @@
+Sat Nov 20 07:45:50 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* lib/mkmf.rb: adding compilation support for ObjC/ObjC++ extensions.
+	  Thanks Scott Gonyea! [ruby-core:33260]
+
 Sat Nov 20 01:57:55 2010  Akio Tajima  <artonx@yahoo.co.jp>
 
 	* common.mk: add dependency(insns.inc) to compile.obj
