@@ -1,3 +1,7 @@
+Sat Nov 20 01:57:55 2010  Akio Tajima  <artonx@yahoo.co.jp>
+
+	* common.mk: add dependency(insns.inc) to compile.obj
+
 Fri Nov 19 23:05:48 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/Makefile.sub (insns_rules.mk): remove extra backslash.
