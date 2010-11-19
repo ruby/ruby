@@ -1156,7 +1156,16 @@ EOL
     long_text = 'aaaa ' * n
     xml = "<doc>#{long_text}</doc>"
     formatter = REXML::Formatters::Pretty.new
-    document = REXML::Document.new(xml)
+    document = nil
+    begin
+      document = REXML::Document.new(xml)
+    rescue REXML::ParseException
+      skip_message = "skip this test because we can't check Pretty#wrap " +
+        "works without #<SystemStackError: stack level too deep> on " +
+        "small memory system. #<RegexpError: failed to allocate memory> " +
+        "will be raised on the system. See also [ruby-dev:42599]."
+      return skip_message
+    end
     output = ""
     assert_nothing_raised do
       formatter.write(document, output)

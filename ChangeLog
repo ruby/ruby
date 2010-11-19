@@ -1,3 +1,9 @@
+Fri Nov 19 22:09:46 2010  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/test_core.rb
+	(Tester#test_pretty_format_long_text_finite): skip a test that
+	uses long string on small memory system. [ruby-dev:42599]
+
 Fri Nov 19 21:07:06 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb: shell completion support for zsh.  based on
