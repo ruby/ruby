@@ -830,14 +830,6 @@ class TestRegexp < Test::Unit::TestCase
     assert_nothing_raised { eval("a = 1; /\#{ a }/o; a") }
   end
 
-  def test_optimize_last_anycharstar
-    s = "1" + " " * 5000000
-    assert_nothing_raised { s.match(/(\d) (.*)/) }
-    assert_equal("1", $1)
-    assert_equal(" " * 4999999, $2)
-    assert_match(/(?:A.+){2}/, 'AbAb')
-  end
-
   def test_invalid_fragment
     bug2547 = '[ruby-core:27374]'
     assert_raise(SyntaxError, bug2547) {eval('/#{"\\\\"}y/')}
