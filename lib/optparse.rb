@@ -195,6 +195,11 @@
 #   options = OptparseExample.parse(ARGV)
 #   pp options
 #
+# === Shell Completion
+#
+# For modern shells (e.g. bash, zsh, etc.), you can use shell
+# completion for command line options.
+#
 # === Further documentation
 #
 # The above examples should be enough to learn how to use this class.  If you
@@ -218,12 +223,15 @@ class OptionParser
   # and resolved against a list of acceptable values.
   #
   module Completion
-    def complete(key, icase = false, pat = nil)
-      pat ||= Regexp.new('\A' + Regexp.quote(key).gsub(/\w+\b/, '\&\w*'),
-                         icase)
+    def self.regexp(key, icase)
+      Regexp.new('\A' + Regexp.quote(key).gsub(/\w+\b/, '\&\w*'), icase)
+    end
+
+    def self.candidate(key, icase = false, pat = nil, &block)
+      pat ||= Completion.regexp(key, icase)
       canon, sw, cn = nil
       candidates = []
-      each do |k, *v|
+      block.call do |k, *v|
         (if Regexp === k
            kn = nil
            k === key
@@ -234,7 +242,16 @@ class OptionParser
         v << k if v.empty?
         candidates << [k, v, kn]
       end
-      candidates = candidates.sort_by {|k, v, kn| kn.size}
+      candidates
+    end
+
+    def candidate(key, icase = false, pat = nil)
+      Completion.candidate(key, icase, pat, &method(:each))
+    end
+
+    public
+    def complete(key, icase = false, pat = nil)
+      candidates = candidate(key, icase, pat, &method(:each)).sort_by {|k, v, kn| kn.size}
       if candidates.size == 1
         canon, sw, * = candidates[0]
       elsif candidates.size > 1
@@ -717,9 +734,17 @@ class OptionParser
   # --help
   # Shows option summary.
   #
+  # --help=complete=WORD
+  # Shows candidates for command line completion.
+  #
   Officious['help'] = proc do |parser|
-    Switch::NoArgument.new do
-      puts parser.help
+    Switch::OptionalArgument.new do |arg|
+      case arg
+      when /\Acomplete=(.*)/
+        puts parser.candidate($1)
+      else
+        puts parser.help
+      end
       exit
     end
   end
@@ -1461,6 +1486,35 @@ class OptionParser
   end
   private :complete
 
+  def candidate(word)
+    list = []
+    case word
+    when /\A--/
+      word, arg = word.split(/=/, 2)
+      argpat = Completion.regexp(arg, false) if arg and !arg.empty?
+      long = true
+    when /\A-(!-)/
+      short = true
+    when /\A-/
+      long = short = true
+    end
+    pat = Completion.regexp(word, true)
+    visit(:each_option) do |opt|
+      opts = [*(opt.long if long), *(opt.short if short)]
+      opts = Completion.candidate(word, true, pat, &opts.method(:each)).map(&:first) if pat
+      if /\A=/ =~ opt.arg
+        opts = opts.map {|sw| sw + "="}
+        if arg and CompletingHash === opt.pattern
+          if opts = opt.pattern.candidate(arg, false, argpat)
+            opts.map!(&:last)
+          end
+        end
+      end
+      list.concat(opts)
+    end
+    list
+  end
+
   #
   # Loads options from file names as +filename+. Does nothing when the file
   # is not present. Returns whether successfully loaded.
@@ -1818,6 +1872,6 @@ ARGV.extend(OptionParser::Arguable)
 if $0 == __FILE__
   Version = OptionParser::Version
   ARGV.options {|q|
-    q.parse!.empty? or puts "what's #{ARGV.join(' ')}?"
+    q.parse!.empty? or print "what's #{ARGV.join(' ')}?\n"
   } or abort(ARGV.options.to_s)
 end
