@@ -6,8 +6,8 @@ Fri Nov 19 22:44:04 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Fri Nov 19 22:09:46 2010  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/test_core.rb
-	  Tester#test_pretty_format_long_text_finite): skip a test that
-	  ses long string on small memory system. [ruby-dev:42599]
+	  (Tester#test_pretty_format_long_text_finite): skip a test that
+	  uses long string on small memory system. [ruby-dev:42599]
 
 Fri Nov 19 21:07:06 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -25,10 +25,10 @@ Fri Nov 19 00:00:00 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Thu Nov 18 23:21:23 2010  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/formatters/pretty.rb (REXML::Formatters::Pretty#wrap):
-	  EXML::Formatters::Pretty#wrap used a recursive method call to
-	  ormat text.  This switches it to use an iterative approach.
-	  ruby-core:33245]
-	  atch by Jeremy Evans. Thanks!!!
+	  REXML::Formatters::Pretty#wrap used a recursive method call to
+	  format text.  This switches it to use an iterative approach.
+	  [ruby-core:33245]
+	  Patch by Jeremy Evans. Thanks!!!
 
 	* test/rexml/test_core.rb: add a test for it.
 
@@ -109,7 +109,7 @@ Tue Nov 16 22:30:39 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 Tue Nov 16 09:33:00 2010  Kenta Murata <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/lib/bigdecimal/util.rb (to_digits): avoid unused
-	  ariables warning, reported by Aaron Patterson.
+	  variables warning, reported by Aaron Patterson.
 
 Tue Nov 16 06:39:31 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -612,13 +612,13 @@ Sat Oct 30 23:38:59 2010  Kouhei Sutou  <kou@cozmixng.org>
 Sat Oct 30 21:06:37 2010  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/encoding.rb: use Ruby native encoding mechanism.
-	  ruby-dev:42464]
+	  [ruby-dev:42464]
 	* lib/rexml/encodings/: remove.
 
 	* lib/rexml/document.rb, lib/rexml/formatters/default.rb,
-	  ib/rexml/output.rb, lib/rexml/parseexception.rb,
-	  ib/rexml/parsers/baseparser.rb, lib/rexml/source.rb,
-	  ib/rexml/xmldecl.rb: use Ruby's native Encoding object.
+	  lib/rexml/output.rb, lib/rexml/parseexception.rb,
+	  lib/rexml/parsers/baseparser.rb, lib/rexml/source.rb,
+	  lib/rexml/xmldecl.rb: use Ruby's native Encoding object.
 
 	* test/rexml/, test/rss/: follow the above encoding changes.
 
@@ -1694,7 +1694,7 @@ Sat Sep 25 10:30:37 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Sat Sep 25 10:05:49 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: Always add -mieee for Renesas SH4.
-	  hanks, Nobuhiro Iwamatsu. [Feature #3874] [ruby-core:32548]
+	  Thanks, Nobuhiro Iwamatsu. [Feature #3874] [ruby-core:32548]
 
 Sat Sep 25 01:34:41 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -1884,8 +1884,8 @@ Sat Sep 18 20:09:51 2010  Tanaka Akira  <akr@fsij.org>
 Fri Sep 17 23:44:07 2010  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/xpath_parser.rb, test/rexml/test_xpath.rb:
-	  dd missing method availability check. [ruby-core:32447]
-	  eported by Wiebe Cazemier. Thanks!!!
+	  add missing method availability check. [ruby-core:32447]
+	  Reported by Wiebe Cazemier. Thanks!!!
 
 Fri Sep 17 23:23:26 2010  Kouhei Sutou  <kou@cozmixng.org>
 
@@ -1910,8 +1910,8 @@ Fri Sep 17 22:15:15 2010  Kouhei Sutou  <kou@cozmixng.org>
 Fri Sep 17 22:12:23 2010  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/: import REXML tests from
-	  ttp://www.germane-software.com/repos/rexml/trunk/test/.
-	  any tests are failed temporary. I'll fix them quickly. Sorry.
+	  http://www.germane-software.com/repos/rexml/trunk/test/.
+	  Many tests are failed temporary. I'll fix them quickly. Sorry.
 
 Fri Sep 17 16:48:49 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
