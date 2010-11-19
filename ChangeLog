@@ -1,3 +1,7 @@
+Fri Nov 19 20:26:51 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb: shell completion support for bash.
+
 Fri Nov 19 00:00:00 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cygwin/GNUmakefile.in (SCRIPTPROGRAMS): no needs on cygwin.
