@@ -1,4 +1,6 @@
-Fri Nov 19 22:44:04 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Nov 19 23:05:48 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub (insns_rules.mk): remove extra backslash.
 
 	* cygwin/GNUmakefile.in, win32/Makefile.sub (clean): rc files are
 	  made at compile time, so should be removed by clean.

@@ -1028,8 +1028,8 @@ INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 !if [exit > insns_rules.mk]
 !else if [for %I in ($(INSNS)) do \
 	@for %J in (\
-"%I: $$(srcdir)/insns.def {$$(VPATH)}vm_opts.h \\" \
-"	  $$(srcdir)/defs/opt_operand.def $$(srcdir)/defs/opt_insn_unif.def \\" \
+"%I: $$(srcdir)/insns.def {$$(VPATH)}vm_opts.h \" \
+"	  $$(srcdir)/defs/opt_operand.def $$(srcdir)/defs/opt_insn_unif.def \" \
 "	  $$(srcdir)/tool/instruction.rb $$(srcdir)/tool/insns2vm.rb" \
 "	@$$(RM) $$(PROGRAM)" \
 "	$$(BASERUBY) -Ks $$(srcdir)/tool/insns2vm.rb $$(INSNS2VMOPT) %I" \
