@@ -441,6 +441,24 @@ class OptionParser
       (long.first || short.first).sub(/\A-+(?:\[no-\])?/, '')
     end
 
+    def compsys(sdone, ldone)   # :nodoc:
+      sopts, lopts, s = [], [], nil
+      @short.each {|s| sdone.fetch(s) {sopts << s}; sdone[s] = true} if @short
+      @long.each {|s| ldone.fetch(s) {lopts << s}; ldone[s] = true} if @long
+      return if sopts.empty? and lopts.empty? # completely hidden
+
+      (sopts+lopts).each do |opt|
+        # "(-x -c -r)-l[left justify]" \
+        if opt =~ /^--\[no-\](.+)$/
+          o = $1
+          yield("--#{o}", desc.join(""))
+          yield("--no-#{o}", desc.join(""))
+        else
+          yield("#{opt}", desc.join(""))
+        end
+      end
+    end
+
     #
     # Switch that takes no arguments.
     #
@@ -679,6 +697,14 @@ class OptionParser
       end
       to
     end
+
+    def compsys(*args, &block)  # :nodoc:
+      list.each do |opt|
+        if opt.respond_to?(:compsys)
+          opt.compsys(*args, &block)
+        end
+      end
+    end
   end
 
   #
@@ -725,6 +751,24 @@ class OptionParser
   DefaultList.short['-'] = Switch::NoArgument.new {}
   DefaultList.long[''] = Switch::NoArgument.new {throw :terminate}
 
+
+  COMPSYS_HEADER = <<'XXX'      # :nodoc:
+
+typeset -A opt_args
+local context state line
+
+_arguments -s -S \
+XXX
+
+  def compsys(to, name = File.basename($0)) # :nodoc:
+    to << "#compdef #{name}\n"
+    to << COMPSYS_HEADER
+    visit(:compsys, {}, {}) {|o, d|
+      to << %Q[  "#{o}[#{d.gsub(/\"/, '\"')}]" \\\n]
+    }
+    to << "  '*:file:_files' && return 0\n"
+  end
+
   #
   # Default options for ARGV, which never appear in option summary.
   #
@@ -737,11 +781,16 @@ class OptionParser
   # --help=complete=WORD
   # Shows candidates for command line completion.
   #
+  # --help=zshcomplete[=NAME:FILE]
+  # Creates zsh completion file.
+  #
   Officious['help'] = proc do |parser|
     Switch::OptionalArgument.new do |arg|
       case arg
       when /\Acomplete=(.*)/
         puts parser.candidate($1)
+      when /\Azshcomplete(?:=(.+))?/
+        parser.compsys(STDOUT, $1)
       else
         puts parser.help
       end

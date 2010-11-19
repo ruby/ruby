@@ -1,4 +1,7 @@
-Fri Nov 19 20:26:51 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Nov 19 21:07:06 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb: shell completion support for zsh.  based on
+	  <http://d.hatena.ne.jp/rubikitch/20071002/zshcomplete>
 
 	* lib/optparse.rb: shell completion support for bash.
 
