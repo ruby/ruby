@@ -964,11 +964,12 @@ rb_random_bytes(VALUE obj, long n)
 }
 
 static VALUE
-range_values(VALUE vmax, VALUE *begp, int *exclp)
+range_values(VALUE vmax, VALUE *begp, VALUE *endp, int *exclp)
 {
     VALUE end, r;
 
     if (!rb_range_values(vmax, begp, &end, exclp)) return Qfalse;
+    if (endp) *endp = end;
     if (!rb_respond_to(end, id_minus)) return Qfalse;
     r = rb_funcall2(end, id_minus, 1, begp);
     if (NIL_P(r)) return Qfalse;
@@ -1052,7 +1053,7 @@ static VALUE
 random_rand(int argc, VALUE *argv, VALUE obj)
 {
     rb_random_t *rnd = get_rnd(obj);
-    VALUE vmax, beg = Qundef, v;
+    VALUE vmax, beg = Qundef, end, v;
     int excl = 0;
 
     if (argc == 0) {
@@ -1075,7 +1076,7 @@ random_rand(int argc, VALUE *argv, VALUE obj)
 	else
 	    v = Qnil;
     }
-    else if ((v = range_values(vmax, &beg, &excl)) != Qfalse) {
+    else if ((v = range_values(vmax, &beg, &end, &excl)) != Qfalse) {
 	vmax = v;
 	if (TYPE(vmax) != T_FLOAT && (v = rb_check_to_integer(vmax, "to_int"), !NIL_P(v))) {
 	    long max;
@@ -1098,7 +1099,18 @@ random_rand(int argc, VALUE *argv, VALUE obj)
 	    }
 	}
 	else if (v = rb_check_to_float(vmax), !NIL_P(v)) {
-	    double max = float_value(v), r;
+	    int scale = 1;
+	    double max = RFLOAT_VALUE(v), mid = 0.5, r;
+	    if (isinf(max)) {
+		double min = float_value(rb_to_float(beg)) / 2.0;
+		max = float_value(rb_to_float(end)) / 2.0;
+		scale = 2;
+		mid = max + min;
+		max -= min;
+	    }
+	    else {
+		float_value(v);
+	    }
 	    v = Qnil;
 	    if (max > 0.0) {
 		if (excl) {
@@ -1106,6 +1118,9 @@ random_rand(int argc, VALUE *argv, VALUE obj)
 		}
 		else {
 		    r = genrand_real2(&rnd->mt);
+		}
+		if (scale > 1) {
+		    return rb_float_new(+(+(+(r - 0.5) * max) * scale) + mid);
 		}
 		v = rb_float_new(r * max);
 	    }

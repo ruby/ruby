@@ -379,6 +379,8 @@ END
     assert_in_delta(1.7151893663724195, r.rand(1.0...2.0), 0.0001, '[ruby-core:24655]')
     assert_in_delta(7.027633760716439, r.rand(1.0...11.0), 0.0001, '[ruby-core:24655]')
     assert_in_delta(3.0897663659937937, r.rand(2.0...4.0), 0.0001, '[ruby-core:24655]')
+
+    assert_nothing_raised {r.rand(-Float::MAX..Float::MAX)}
   end
 
   def test_random_equal
