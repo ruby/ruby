@@ -713,6 +713,8 @@ rb_stat_mtime(VALUE self)
  *  directory information about the file was changed, not the file
  *  itself).
  *
+ *  Note that on Windows (NTFS), returns creation time (birth time).
+ *
  *     File.stat("testfile").ctime   #=> Wed Apr 09 08:53:14 CDT 2003
  *
  */
@@ -1869,6 +1871,8 @@ rb_file_mtime(VALUE obj)
  *  directory information about the file was changed, not the file
  *  itself).
  *
+ *  Note that onn Windows (NTFS), returns creation time (birth time).
+ *
  *     File.ctime("testfile")   #=> Wed Apr 09 08:53:13 CDT 2003
  *
  */
@@ -1891,6 +1895,8 @@ rb_file_s_ctime(VALUE klass, VALUE fname)
  *
  *  Returns the change time for <i>file</i> (that is, the time directory
  *  information about the file was changed, not the file itself).
+ *
+ *  Note that onn Windows (NTFS), returns creation time (birth time).
  *
  *     File.new("testfile").ctime   #=> Wed Apr 09 08:53:14 CDT 2003
  *
