@@ -237,6 +237,7 @@ class Date
     xs.each{|x| x.freeze unless x.nil?}.freeze
   end
 
+  # now only for marshal dumped
   class Infinity < Numeric # :nodoc:
 
     include Comparable
@@ -291,11 +292,11 @@ class Date
 
   # A constant used to indicate that a Date should always use the
   # Julian calendar.
-  JULIAN    =  Infinity.new
+  JULIAN    =  Float::INFINITY
 
   # A constant used to indicate that a Date should always use the
   # Gregorian calendar.
-  GREGORIAN = -Infinity.new
+  GREGORIAN = -Float::INFINITY
 
   HALF_DAYS_IN_DAY       = Rational(1, 2) # :nodoc:
   HOURS_IN_DAY           = Rational(1, 24) # :nodoc:
@@ -504,6 +505,13 @@ class Date
       h,   ss = ss.divmod(3600)
       min, s  = ss.divmod(60)
       return h, min, s, fr * 86400
+    end
+
+    def day_fraction_to_time_wo_sf(fr) # :nodoc:
+      ss      = fr.div(SECONDS_IN_DAY) # 4p
+      h,   ss = ss.divmod(3600)
+      min, s  = ss.divmod(60)
+      return h, min, s
     end
 
     # Convert an +h+ hour, +min+ minutes, +s+ seconds period
@@ -1133,11 +1141,15 @@ class Date
 
   once :amjd
 
+  def daynum() ajd_to_jd(@ajd, @of) end
+
+  once :daynum
+
   # Get the date as a Julian Day Number.
-  def jd() ajd_to_jd(@ajd, @of)[0] end
+  def jd() daynum[0] end
 
   # Get any fractional day part of the date.
-  def day_fraction() ajd_to_jd(@ajd, @of)[1] end
+  def day_fraction() daynum[1] end
 
   # Get the date as a Modified Julian Day Number.
   def mjd() jd_to_mjd(jd) end
@@ -1190,21 +1202,23 @@ class Date
   # Get the time of this date as [hours, minutes, seconds,
   # fraction_of_a_second]
   def time() day_fraction_to_time(day_fraction) end # :nodoc:
+  def time_wo_sf() day_fraction_to_time_wo_sf(day_fraction) end # :nodoc:
+  def time_sf() day_fraction % SECONDS_IN_DAY * 86400 end # :nodoc:
 
-  once :time
-  private :time
+  once :time, :time_wo_sf, :time_sf
+  private :time, :time_wo_sf, :time_sf
 
   # Get the hour of this date.
-  def hour() time[0] end
+  def hour() time_wo_sf[0] end # 4p
 
   # Get the minute of this date.
-  def min() time[1] end
+  def min() time_wo_sf[1] end # 4p
 
   # Get the second of this date.
-  def sec() time[2] end
+  def sec() time_wo_sf[2] end # 4p
 
   # Get the fraction-of-a-second of this date.
-  def sec_fraction() time[3] end
+  def sec_fraction() time_sf end # 4p
 
   alias_method :minute, :min
   alias_method :second, :sec
@@ -1213,7 +1227,14 @@ class Date
   private :hour, :min, :sec, :sec_fraction,
 	  :minute, :second, :second_fraction
 
-  def zone() strftime('%:z') end
+  def zone # 4p - strftime('%:z')
+    sign = if offset < 0 then '-' else '+' end
+    fr = offset.abs
+    ss = fr.div(SECONDS_IN_DAY)
+    hh, ss = ss.divmod(3600)
+    mm     = ss.div(60)
+    format('%s%02d:%02d', sign, hh, mm)
+  end
 
   private :zone
 

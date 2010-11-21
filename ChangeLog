@@ -1,3 +1,7 @@
+Mon Nov 22 01:48:58 2010  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb: some improvements for performance.
+
 Sat Nov 20 07:45:50 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* lib/mkmf.rb: adding compilation support for ObjC/ObjC++ extensions.
