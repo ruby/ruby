@@ -137,6 +137,11 @@ fake.rb:	Makefile
 		    ALT_SEPARATOR = "\\\\"; \
 		  end; \
 		end; \
+		prehook = proc do |e|; \
+		  Config::MAKEFILE_CONFIG["top_srcdir"] = $$top_srcdir = "@top_srcdir@" unless e; \
+		  untrace_var(:$$extmk, prehook); \
+		end; \
+		trace_var(:$$extmk, prehook); \
 		' > $@
 
 Makefile:	$(srcdir)/Makefile.in
