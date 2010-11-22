@@ -1,3 +1,16 @@
+Wed Jul  7 13:24:24 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* file.c (ruby_find_basename): set correct baselen.
+
+Fri Jul  2 23:34:45 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* file.c (ruby_find_basename, ruby_find_extname): split from
+	  rb_file_s_basename() and rb_file_s_extname().
+
+	* util.c (ruby_add_suffix): support arbitrary length of the suffix
+	  to get rid of the potential buffer overflow.
+	  reported by tarui.
+
 Sat Jul 10 10:51:29 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: fix use_context condition inversion.
