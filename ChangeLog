@@ -1,3 +1,8 @@
+Mon Nov 22 18:33:30 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_inspect): append for each chars instead of bulk
+	  copy if encoding conversion is needed.  [ruby-core:33283]
+
 Mon Nov 22 14:22:45 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* time.c (time_zone): use rb_locale_str_new_cstr to set encoding
