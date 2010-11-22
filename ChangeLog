@@ -1,3 +1,14 @@
+Sat Jul 10 10:51:29 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: fix use_context condition inversion.
+	[Bug #2553][ruby-core:31164]. Thanks, Andre Nathan. 
+
+Wed Jun 23 21:36:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: avoid getcontext() overhead if possible.
+	[ruby-core:27380][Bug #2553]
+	Thanks, Joe Damato, Dan Peterson and Patrick Mohr.
+
 Wed Jan 13 06:54:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: check for if struct timezone is defined.
