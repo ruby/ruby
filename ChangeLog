@@ -1,3 +1,7 @@
+Tue Nov 23 07:22:54 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ChangeLog (change-log-indent-text): hunging indent.
+
 Tue Nov 23 06:30:51 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (SITE_DIR, VENDOR_DIR),
@@ -5,10 +9,6 @@ Tue Nov 23 06:30:51 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  are configured without them from $LOAD_PATH. [ruby-core:33267]
 
 	* configure.in (rubylibprefix): No ruby, No libprefix.
-
-Tue Nov 23 06:26:26 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* ChangeLog (change-log-indent-text): hunging indent.
 
 Tue Nov 23 01:05:27 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
@@ -2740,4 +2740,5 @@ add-log-time-format: (lambda ()
   (format-time-string "%a %b %e %H:%M:%S %Y" (list hi lo) t)))
 indent-tabs-mode: t
 tab-width: 8
+change-log-indent-text: 2
 end:
