@@ -1,3 +1,9 @@
+Mon Nov 22 14:22:45 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* time.c (time_zone): use rb_locale_str_new_cstr to set encoding
+	  as locale and convert its content to internal encoding.
+	  [ruby-core:33278]
+
 Mon Nov 22 11:58:11 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_str_concat): set ENC_CODERANGE_VALID when the
