@@ -1,3 +1,8 @@
+Mon Nov 22 18:45:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile): should not duplicate rules.
+	  bug fix of r29842.
+
 Mon Nov 22 18:04:40 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/big5.c: split CP950 from Big5.

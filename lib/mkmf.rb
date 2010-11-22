@@ -9,11 +9,12 @@ require 'shellwords'
 CONFIG = RbConfig::MAKEFILE_CONFIG
 ORIG_LIBPATH = ENV['LIB']
 
+C_EXT = %w[c m]
 CXX_EXT = %w[cc mm cxx cpp]
 if File::FNM_SYSCASE.zero?
   CXX_EXT.concat(%w[C])
 end
-SRC_EXT = %w[c m].concat(CXX_EXT)
+SRC_EXT = C_EXT + CXX_EXT
 $static = nil
 $config_h = '$(arch_hdrdir)/ruby/config.h'
 $default_static = $static
@@ -1973,7 +1974,7 @@ site-install-rb: install-rb
       mfile.printf(compile_command, COMPILE_CXX)
     end
   end
-  SRC_EXT.each do |e|
+  C_EXT.each do |e|
     COMPILE_RULES.each do |rule|
       mfile.printf(rule, e, $OBJEXT)
       mfile.printf(compile_command, COMPILE_C)
