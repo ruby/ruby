@@ -1897,6 +1897,14 @@ class TestString < Test::Unit::TestCase
       assert_equal('"\\u3042\\u3044\\u3046"', "\u3042\u3044\u3046".encode(e).inspect)
       assert_equal('"ab\\"c"', "ab\"c".encode(e).inspect, bug4081)
     end
+    begin
+      ext = Encoding.default_external
+      Encoding.default_external = "us-ascii"
+      i = "abc\"\\".force_encoding("utf-8").inspect
+    ensure
+      Encoding.default_external = ext
+    end
+    assert_equal('"abc\\"\\\\"', i, bug4081)
   end
 
   def test_prepend

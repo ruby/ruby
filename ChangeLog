@@ -1,3 +1,8 @@
+Mon Nov 22 21:30:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_inspect): fix for ascii-compatible external
+	  encoding and different encoding string.  [ruby-core:33283]
+
 Mon Nov 22 18:45:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): should not duplicate rules.

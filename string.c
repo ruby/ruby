@@ -4238,7 +4238,7 @@ rb_str_inspect(VALUE str)
               (cc == '$' || cc == '@' || cc == '{')))) {
 	    if (p - n > prev) str_buf_cat(result, prev, p - n - prev);
 	    str_buf_cat2(result, "\\");
-	    if (enc == resenc) {
+	    if (asciicompat || enc == resenc) {
 		prev = p - n;
 		continue;
 	    }
