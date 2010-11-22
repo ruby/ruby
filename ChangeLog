@@ -1,3 +1,13 @@
+Fri Jul 30 08:51:51 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (file_expand_path): home directory must be absolute.
+	  [ruby-core:31537]
+
+Fri Jul 30 08:33:20 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (file_expand_path): should check if could find user.
+	  [ruby-core:31538]
+
 Thu Jul 29 22:43:57 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/webrick/ssl.rb (WEBrick::Utils.create_self_signed_cert): wrongly
