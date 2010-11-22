@@ -1,3 +1,12 @@
+Tue Aug 10 17:35:49 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/webrick/httprequest.rb (WEBrick::HTTPRequest::parse_uri):
+	  rollup leading slashes. [ruby-core:31657]
+	  patched by Jamison Wilde
+	  NOTE: //authority/path is valid relative URI both RFC2396 and
+	  RFC3986. So when give a relative URI-like string to URI lib,
+	  users must care leading slashes.
+
 Fri Jul 30 08:51:51 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (file_expand_path): home directory must be absolute.
