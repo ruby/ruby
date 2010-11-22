@@ -69,19 +69,23 @@ const char ruby_initial_load_paths[] =
 #ifdef RUBY_SEARCH_PATH
     RUBY_SEARCH_PATH "\0"
 #endif
+#ifndef NO_RUBY_SITE_LIB
     RUBY_SITE_LIB2 "\0"
 #ifdef RUBY_SITE_THIN_ARCHLIB
     RUBY_SITE_THIN_ARCHLIB "\0"
 #endif
     RUBY_SITE_ARCHLIB "\0"
     RUBY_SITE_LIB "\0"
+#endif
 
+#ifndef NO_RUBY_VENDOR_LIB
     RUBY_VENDOR_LIB2 "\0"
 #ifdef RUBY_VENDOR_THIN_ARCHLIB
     RUBY_VENDOR_THIN_ARCHLIB "\0"
 #endif
     RUBY_VENDOR_ARCHLIB "\0"
     RUBY_VENDOR_LIB "\0"
+#endif
 
     RUBY_LIB "\0"
 #ifdef RUBY_THIN_ARCHLIB

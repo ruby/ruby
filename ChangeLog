@@ -1,4 +1,8 @@
-Tue Nov 23 06:30:18 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Nov 23 06:30:51 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (SITE_DIR, VENDOR_DIR),
+	  version.c (ruby_initial_load_paths): exclude directories that
+	  are configured without them from $LOAD_PATH. [ruby-core:33267]
 
 	* configure.in (rubylibprefix): No ruby, No libprefix.
 
