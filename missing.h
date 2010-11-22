@@ -25,6 +25,13 @@ struct timeval {
 #  include <sys/types.h>
 #endif
 
+#if !defined(HAVE_STRUCT_TIMEZONE)
+struct timezone {
+    int tz_minuteswest;
+    int tz_dsttime;
+};
+#endif
+
 #ifndef HAVE_ACOSH
 extern double acosh _((double));
 extern double asinh _((double));

@@ -1,3 +1,12 @@
+Wed Jan 13 06:54:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: check for if struct timezone is defined.
+
+	* missing.h (struct timezone): define if not defined.
+
+	* win32/win32.h (struct timezone): defined in the newer w32api.
+	  [ruby-core:27515]
+
 Sun Aug 15 19:59:58 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/webrick/httpresponse.rb (WEBrick::HTTPResponse#set_error):

@@ -150,11 +150,9 @@ extern DWORD rb_w32_osid(void);
 #undef unlink
 #define unlink(p)		rb_w32_unlink(p)
 
+struct timezone;
+
 #ifdef __MINGW32__
-struct timezone {
-  int tz_minuteswest;
-  int tz_dsttime;
-};
 #undef isascii
 #define isascii __isascii
 #endif

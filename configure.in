@@ -522,7 +522,7 @@ AC_CHECK_HEADERS(stdlib.h string.h unistd.h limits.h sys/file.h sys/ioctl.h sys/
 		 fcntl.h sys/fcntl.h sys/select.h sys/time.h sys/times.h sys/param.h\
 		 syscall.h pwd.h grp.h a.out.h utime.h memory.h direct.h sys/resource.h \
 		 sys/mkdev.h sys/utime.h netinet/in_systm.h float.h ieeefp.h pthread.h \
-		 ucontext.h intrinsics.h)
+		 ucontext.h intrinsics.h time.h)
 
 dnl Check additional types.
 AC_CHECK_SIZEOF(rlim_t, 0, [
@@ -583,6 +583,12 @@ RUBY_DEFINT(int64_t, 8)
 RUBY_DEFINT(uint64_t, 8, unsigned)
 RUBY_DEFINT(int128_t, 16)
 RUBY_DEFINT(uint128_t, 16, unsigned)
+AC_CHECK_TYPES([struct timezone], [], [], [@%:@ifdef HAVE_TIME_H
+@%:@ include <time.h>
+@%:@endif
+@%:@ifdef HAVE_SYS_TIME_H
+@%:@ include <sys/time.h>
+@%:@endif])
 
 dnl Checks for library functions.
 AC_TYPE_GETGROUPS
