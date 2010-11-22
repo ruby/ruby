@@ -1,3 +1,8 @@
+Mon Nov 22 11:58:11 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_concat): set ENC_CODERANGE_VALID when the
+	  receiver is 7BIT and the argument is non ASCII.
+
 Mon Nov 22 01:48:58 2010  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb: some improvements for performance.

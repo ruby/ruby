@@ -1102,6 +1102,7 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_str_concat
+    assert_equal(1, "".concat(0xA2))
     assert_equal("A\x84\x31\xA4\x39".force_encoding("GB18030"),
                  "A".force_encoding("GB18030") << 0x8431A439)
   end
