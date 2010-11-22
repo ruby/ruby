@@ -314,6 +314,7 @@ class TestDateBase < Test::Unit::TestCase
 		 Date.__send__(valid_civil_p, 2001,1,-31))
     assert_nil(Date.__send__(valid_civil_p, 2001,1,-32))
     assert_equal(2452348, Date.__send__(valid_civil_p, 2002,3,14))
+    assert_nil(Date.__send__(valid_civil_p, 2010,-13,-1))
   end
 
   def test_valid_civil__edge
