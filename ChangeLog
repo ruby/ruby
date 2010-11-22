@@ -1,3 +1,7 @@
+Tue Nov 23 06:30:18 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (rubylibprefix): No ruby, No libprefix.
+
 Tue Nov 23 06:26:26 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ChangeLog (change-log-indent-text): hunging indent.

@@ -2612,7 +2612,10 @@ AS_CASE(["$target_os"],
 rubylibprefix='${libdir}/${RUBY_BASE_NAME}'
 AC_ARG_WITH(rubylibprefix,
 	    AS_HELP_STRING([--with-rubylibprefix=DIR], [prefix for ruby libraries [[LIBDIR/RUBY_BASE_NAME]]]),
-	    [rubylibprefix=$withval])
+	    [if test "x$withval" = xno; then
+		AC_MSG_ERROR([No ruby, No libprefix])
+	    fi
+	    rubylibprefix"=$withval"])
 RUBY_LIB_PREFIX=`eval echo \\"${rubylibprefix}\\"`
 AC_SUBST(rubylibprefix)
 
