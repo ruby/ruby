@@ -1,3 +1,9 @@
+Thu Jul 29 22:43:57 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/webrick/ssl.rb (WEBrick::Utils.create_self_signed_cert): wrongly
+	  created dummy SSL certificate with version == 3 (no such version) and
+	  serial == 0 (must be >0).
+
 Sat Jul 24 15:44:29 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (fev_initialize): initialize pTypeInfo.
