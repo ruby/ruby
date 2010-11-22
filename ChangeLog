@@ -1,3 +1,7 @@
+Tue Nov 23 06:26:26 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ChangeLog (change-log-indent-text): hunging indent.
+
 Tue Nov 23 01:05:27 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vsnprintf.c (BSD_vfprintf): don't output floating point
