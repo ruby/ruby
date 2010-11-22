@@ -723,6 +723,26 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal([Rational(2),Rational(1)], Rational(1).coerce(Rational(2)))
   end
 
+  class ObjectX
+    def + (x) Rational(1) end
+    alias - +
+    alias * +
+    alias / +
+    alias quo +
+    alias div +
+    alias % +
+    alias remainder +
+    alias ** +
+    def coerce(x) [x, Rational(1)] end
+  end
+
+  def test_coerce2
+    x = ObjectX.new
+    %w(+ - * / quo div % remainder **).each do |op|
+      assert_kind_of(Numeric, Rational(1).__send__(op, x))
+    end
+  end
+
   def test_unify
     if @unify
       assert_instance_of(Fixnum, Rational(1,2) + Rational(1,2))
