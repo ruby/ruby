@@ -1,5 +1,5 @@
 /*
-  rational.c: Coded by Tadayoshi Funaba 2008,2009
+  rational.c: Coded by Tadayoshi Funaba 2008-2010
 
   This implementation is based on Keiju Ishitsuka's Rational library
   which is written in ruby.
@@ -929,7 +929,7 @@ nurat_fdiv(VALUE self, VALUE other)
 static VALUE
 nurat_expt(VALUE self, VALUE other)
 {
-    if (k_exact_zero_p(other))
+    if (k_numeric_p(other) && k_exact_zero_p(other))
 	return f_rational_new_bang1(CLASS_OF(self), ONE);
 
     if (k_rational_p(other)) {

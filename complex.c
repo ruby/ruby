@@ -1,5 +1,5 @@
 /*
-  complex.c: Coded by Tadayoshi Funaba 2008,2009
+  complex.c: Coded by Tadayoshi Funaba 2008-2010
 
   This implementation is based on Keiju Ishitsuka's Complex library
   which is written in ruby.
@@ -824,7 +824,7 @@ f_reciprocal(VALUE x)
 static VALUE
 nucomp_expt(VALUE self, VALUE other)
 {
-    if (k_exact_zero_p(other))
+    if (k_numeric_p(other) && k_exact_zero_p(other))
 	return f_complex_new_bang1(CLASS_OF(self), ONE);
 
     if (k_rational_p(other) && f_one_p(f_denominator(other)))
