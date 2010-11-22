@@ -78,7 +78,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.7.8"
+#define WIN32OLE_VERSION "0.7.9"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -6113,7 +6113,6 @@ find_default_source(ole, piid, ppTypeInfo)
 
     OLE_RELEASE_TYPEATTR(pTypeInfo, pTypeAttr);
     OLE_RELEASE(pTypeInfo);
-
     /* Now that would be a bad surprise, if we didn't find it, wouldn't it? */
     if (!*ppTypeInfo) {
         if (SUCCEEDED(hr))
@@ -6209,6 +6208,7 @@ fev_initialize(argc, argv, self)
         rb_raise(rb_eTypeError, "1st parameter must be WIN32OLE object");
     }
 
+    pTypeInfo = NULL;
     if(TYPE(itf) != T_NIL) {
         if (ruby_safe_level > 0 && OBJ_TAINTED(itf)) {
             rb_raise(rb_eSecurityError, "Insecure Event Creation - %s",
