@@ -13,7 +13,7 @@ class Date
 
     class Parser < Racc::Parser
 
-module_eval <<'..end parser.ry modeval..id43bff5dec9', 'parser.ry', 42
+module_eval <<'..end parser.ry modeval..idf2987de166', 'parser.ry', 42
 
   def lookup(str)
     t = str.downcase
@@ -28,7 +28,8 @@ module_eval <<'..end parser.ry modeval..id43bff5dec9', 'parser.ry', 42
     until str.empty?
       case str
       when /\A\s+/
-      when /\AP(\d+y)?(\d+m)?(\d+d)?t?(\d+h)?(\d+m)?(\d+s)?(\d+w)?/i
+      when /\Ap\d+[ymdhsw]/i
+	/\Ap(\d+y)?(\d+m)?(\d+d)?t?(\d+h)?(\d+m)?(\d+s)?(\d+w)?/i =~ str
 	y, m, d, h, min, s, w =
 	  [$1, $2, $3, $4, $5, $6, $7].collect{|x| x.to_i}
 	y *= UNITS4KEY['years']
@@ -56,7 +57,7 @@ module_eval <<'..end parser.ry modeval..id43bff5dec9', 'parser.ry', 42
     @q.shift
   end
 
-..end parser.ry modeval..id43bff5dec9
+..end parser.ry modeval..idf2987de166
 
 ##### racc 1.4.5 generates ###
 

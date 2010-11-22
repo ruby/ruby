@@ -1,3 +1,7 @@
+Tue Nov 23 07:57:31 2010  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date/delta/parser.{ry,rb}: fixed a bug of token scanner.
+
 Tue Nov 23 07:29:24 2010  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c, rational.c ({nucomp,nurat}_expt): added a check.
