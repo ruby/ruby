@@ -1144,6 +1144,7 @@ class Date
   def daynum() ajd_to_jd(@ajd, @of) end
 
   once :daynum
+  private :daynum
 
   # Get the date as a Julian Day Number.
   def jd() daynum[0] end
