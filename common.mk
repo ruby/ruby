@@ -312,7 +312,7 @@ extconf:
 	$(MINIRUBY) -run -e mkdir -- -p "$(EXTCONFDIR)"
 	$(RUNRUBY) -C "$(EXTCONFDIR)" $(EXTCONF) $(EXTCONFARGS)
 
-$(RBCONFIG): $(srcdir)/mkconfig.rb config.status $(PREP)
+$(RBCONFIG): $(srcdir)/mkconfig.rb config.status $(srcdir)/version.h $(PREP)
 	@$(MINIRUBY) $(srcdir)/mkconfig.rb -timestamp=$@ \
 		-install_name=$(RUBY_INSTALL_NAME) \
 		-so_name=$(RUBY_SO_NAME) rbconfig.rb
