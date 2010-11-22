@@ -1,3 +1,13 @@
+Mon Nov 22 14:13:45 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: fix checking version of GCC.
+
+Mon Nov 22 14:13:45 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: NONAMELESSUNION defined only if gcc
+	  version is older than 3.4.4. [ruby-core:31567] [Bug #3637]
+	* ext/win32ole/extconf.rb: ditto.
+
 Fri Nov 19 19:28:00 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* Makefile.in (fake.rb): hook needed to fake mkmf.rb.
