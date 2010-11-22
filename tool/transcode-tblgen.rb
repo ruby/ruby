@@ -748,6 +748,27 @@ def citrus_decode_mapsrc(ces, csid, mapsrcs)
   return table
 end
 
+def import_ucm(path)
+  to_ucs = []
+  from_ucs = []
+  File.foreach(File.join($srcdir, "ucm", path)) do |line|
+    uc, bs, fb = nil
+    if /^<U(\h+)>\s*([\+\hx\\]+)\s*\|(\d)/ =~ line
+      uc = $1.hex
+      bs = $2.delete('x\\')
+      fb = $3.to_i
+      next if uc < 128 && uc == bs.hex
+    elsif /^([<U\h>+]+)\s*([\+\hx\\]+)\s*\|(\d)/ =~ line
+      uc = $1.scan(/\h+>/).map(&:hex).pack("U*").unpack("H*")[0]
+      bs = $2.delete('x\\')
+      fb = $3.to_i
+    end
+    to_ucs << [bs, uc] if fb == 0 || fb == 3
+    from_ucs << [uc, bs] if fb == 0 || fb == 1
+  end
+  [to_ucs, from_ucs]
+end
+
 def encode_utf8(map)
   r = []
   map.each {|k, v|

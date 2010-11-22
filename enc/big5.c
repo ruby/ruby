@@ -301,7 +301,12 @@ OnigEncodingDefine(big5, BIG5) = {
   big5_left_adjust_char_head,
   big5_is_allowed_reverse_match
 };
-ENC_ALIAS("CP950", "Big5")
+
+/*
+ * Name: CP950
+ * Source: http://msdn.microsoft.com/en-us/goglobal/cc305155.aspx
+ */
+ENC_REPLICATE("CP950", "Big5")
 
 /*
  * Name: Big5-HKSCS
@@ -327,7 +332,14 @@ OnigEncodingDefine(big5_hkscs, BIG5_HKSCS) = {
   big5_left_adjust_char_head,
   big5_is_allowed_reverse_match
 };
-ENC_ALIAS("CP951", "Big5-HKSCS")
+
+/*
+ * Name: CP951
+ * Source: http://www.microsoft.com/hk/hkscs/default.aspx
+ * Source: http://www.microsoft.com/downloads/en/details.aspx?FamilyID=0e6f5ac8-7baa-4571-b8e8-78b3b776afd7&DisplayLang=en
+ * Source: http://blogs.msdn.com/b/shawnste/archive/2007/03/12/cp-951-hkscs.aspx
+ */
+ENC_REPLICATE("CP951", "Big5-HKSCS")
 
 /*
  * Name: Big5-UAO [NOT registered by IANA!]

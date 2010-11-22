@@ -1,3 +1,16 @@
+Mon Nov 22 18:04:40 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/big5.c: split CP950 from Big5.
+
+	* enc/big5.c: split CP951 from Big5-HKSCS.
+
+	* enc/trans/big5.trans: import conversion table of Big5, Big5-HKSCS,
+	  CP950, and CP951 from ICU. they need fallback conversions.
+	  ref [ruby-core:33256]
+	  http://source.icu-project.org/repos/icu/data/trunk/charset/data/ucm/
+
+	* tool/transcode-tblgen.rb (import_ucm): add to import ucm files.
+
 Mon Nov 22 18:33:30 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_inspect): append for each chars instead of bulk
