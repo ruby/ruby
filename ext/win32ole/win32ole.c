@@ -17,6 +17,20 @@
 
 #include "ruby.h"
 #include "st.h"
+
+#define GNUC_OLDER_3_4_4 \
+    ((__GNUC__ < 3) || \
+     ((__GNUC__ <= 3) && (__GNUC_MINOR__ < 4)) || \
+     ((__GNUC__ <= 3) && (__GNUC_MINOR__ <= 4) && (__GNUC_PATCHLEVEL__ <= 4)))
+
+#if (defined(__GNUC__)) && (GNUC_OLDER_3_4_4) 
+#ifndef NONAMELESSUNION
+#define NONAMELESSUNION 1
+#endif
+#endif
+
+#include <ctype.h>
+
 #include <windows.h>
 #include <ocidl.h>
 #include <olectl.h>
@@ -37,13 +51,13 @@
 #define DOUTI(x) fprintf(stderr, "[%ld]:" #x "=%d\n",__LINE__,x)
 #define DOUTD(x) fprintf(stderr, "[%d]:" #x "=%f\n",__LINE__,x)
 
-#if defined NONAMELESSUNION && __GNUC__
+#if (defined(__GNUC__)) && (GNUC_OLDER_3_4_4) 
 #define V_UNION1(X, Y) ((X)->u.Y)
 #else
 #define V_UNION1(X, Y) ((X)->Y)
 #endif
 
-#if defined NONAMELESSUNION && __GNUC__
+#if (defined(__GNUC__)) && (GNUC_OLDER_3_4_4) 
 #undef V_UNION
 #define V_UNION(X,Y) ((X)->n1.n2.n3.Y)
 

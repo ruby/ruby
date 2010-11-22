@@ -1,3 +1,13 @@
+Mon Nov 22 14:13:45 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: fix checking version of GCC.
+
+Mon Nov 22 14:13:45 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: NONAMELESSUNION defined only if gcc
+	  version is older than 3.4.4. [ruby-core:31567] [Bug #3637]
+	* ext/win32ole/extconf.rb: ditto.
+
 Wed Nov 17 18:28:27 2010  Akinori MUSHA  <knu@iDaemons.org>
 
 	* array.c (rb_ary_sort_by_bang): Add Array#sort_by!.
