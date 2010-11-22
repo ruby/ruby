@@ -1,3 +1,8 @@
+Tue Nov 23 01:05:27 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vsnprintf.c (BSD_vfprintf): don't output floating point
+	  when the precision is 0. [ruby-dev:42615]
+
 Mon Nov 22 21:30:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_inspect): fix for ascii-compatible external

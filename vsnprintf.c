@@ -790,7 +790,7 @@ reswitch:	switch (ch) {
 #ifdef FLOATING_POINT
 		case 'a':
 		case 'A':
-			if (prec >= 0) {
+			if (prec > 0) {
 				flags |= ALT;
 				prec++;
 			}
