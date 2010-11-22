@@ -132,4 +132,13 @@ Q1VB8qkJN7rA7/2HrCR3gTsWNb1YhAsnFsoeRscC+LxXoXi9OAIUBG98h4tilg6S
     pkvalue   = publickey.value
     OpenSSL::Digest::SHA1.hexdigest(pkvalue).scan(/../).join(":").upcase
   end
+
+  def silent
+    begin
+      back, $VERBOSE = $VERBOSE, nil
+      yield
+    ensure
+      $VERBOSE = back if back
+    end
+  end
 end

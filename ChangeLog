@@ -1,3 +1,24 @@
+Tue Jul 13 21:46:38 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* ext/openssl/ossl_config.c, ext/openssl/lib/openssl/config.rb,
+	  ext/openssl/lib/openssl.rb: reimplement OpenSSL::Config in Ruby. Now
+	  it should work on windows.
+
+	* test/openssl/test_config.rb: added tests for OpenSSL::Config#dup.
+
+Mon Jul 12 22:26:00 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* ext/openssl/ossl_config.c (ossl_config_copy): wrongly updating the
+	  given object with uninitialized CONF data.  now
+	  OpenSSL::Config#clone works as expected; cloning the config instead of
+	  SEGV or empty definition.
+
+	* test/openssl/test_config.rb: added tests for Config#clone.
+
+Thu Jul  8 13:43:13 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/openssl/test_config.c: added tests for all Config methods.
+
 Wed Jul  7 13:24:24 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* file.c (ruby_find_basename): set correct baselen.
