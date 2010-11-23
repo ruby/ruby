@@ -1095,7 +1095,15 @@ is_batch(const char *cmd)
     return 0;
 }
 
-static WCHAR *acp_to_wstr(const char *, long *);
+static UINT filecp(void);
+static WCHAR *mbstr_to_wstr(UINT, const char *, int, long *);
+static char *wstr_to_mbstr(UINT, const WCHAR *, int, long *);
+#define acp_to_wstr(str, plen) mbstr_to_wstr(CP_ACP, str, -1, plen)
+#define wstr_to_acp(str, plen) wstr_to_mbstr(CP_ACP, str, -1, plen)
+#define filecp_to_wstr(str, plen) mbstr_to_wstr(filecp(), str, -1, plen)
+#define wstr_to_filecp(str, plen) wstr_to_mbstr(filecp(), str, -1, plen)
+#define utf8_to_wstr(str, plen) mbstr_to_wstr(CP_UTF8, str, -1, plen)
+#define wstr_to_utf8(str, plen) wstr_to_mbstr(CP_UTF8, str, -1, plen)
 
 rb_pid_t
 rb_w32_spawn(int mode, const char *cmd, const char *prog)
@@ -1734,59 +1742,31 @@ opendir_internal(HANDLE fh, WIN32_FIND_DATAW *fd)
     return p;
 }
 
-static WCHAR *
-acp_to_wstr(const char *str, long *plen)
+static inline UINT
+filecp(void)
 {
-    WCHAR *ptr;
-    int len = MultiByteToWideChar(CP_ACP, 0, str, -1, NULL, 0) - 1;
-    if (!(ptr = malloc(sizeof(WCHAR) * (len + 1)))) return 0;
-    MultiByteToWideChar(CP_ACP, 0, str, -1, ptr, len + 1);
-    if (plen) *plen = len;
-    return ptr;
+    UINT cp = AreFileApisANSI() ? CP_ACP : CP_OEMCP;
+    return cp;
 }
 
 static char *
-wstr_to_filecp(const WCHAR *wstr, long *plen)
+wstr_to_mbstr(UINT cp, const WCHAR *wstr, int clen, long *plen)
 {
-    UINT cp = AreFileApisANSI() ? CP_ACP : CP_OEMCP;
     char *ptr;
-    int len = WideCharToMultiByte(cp, 0, wstr, -1, NULL, 0, NULL, NULL) - 1;
+    int len = WideCharToMultiByte(cp, 0, wstr, clen, NULL, 0, NULL, NULL) - 1;
     if (!(ptr = malloc(len + 1))) return 0;
-    WideCharToMultiByte(cp, 0, wstr, -1, ptr, len + 1, NULL, NULL);
+    WideCharToMultiByte(cp, 0, wstr, clen, ptr, len + 1, NULL, NULL);
     if (plen) *plen = len;
     return ptr;
 }
 
 static WCHAR *
-filecp_to_wstr(const char *str, long *plen)
-{
-    UINT cp = AreFileApisANSI() ? CP_ACP : CP_OEMCP;
-    WCHAR *ptr;
-    int len = MultiByteToWideChar(cp, 0, str, -1, NULL, 0) - 1;
-    if (!(ptr = malloc(sizeof(WCHAR) * (len + 1)))) return 0;
-    MultiByteToWideChar(cp, 0, str, -1, ptr, len + 1);
-    if (plen) *plen = len;
-    return ptr;
-}
-
-static char *
-wstr_to_utf8(const WCHAR *wstr, long *plen)
-{
-    char *ptr;
-    int len = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, NULL, 0, NULL, NULL) - 1;
-    if (!(ptr = malloc(len + 1))) return 0;
-    WideCharToMultiByte(CP_UTF8, 0, wstr, -1, ptr, len + 1, NULL, NULL);
-    if (plen) *plen = len;
-    return ptr;
-}
-
-static WCHAR *
-utf8_to_wstr(const char *str, long *plen)
+mbstr_to_wstr(UINT cp, const char *str, int clen, long *plen)
 {
     WCHAR *ptr;
-    int len = MultiByteToWideChar(CP_UTF8, 0, str, -1, NULL, 0) - 1;
+    int len = MultiByteToWideChar(cp, 0, str, clen, NULL, 0) - 1;
     if (!(ptr = malloc(sizeof(WCHAR) * (len + 1)))) return 0;
-    MultiByteToWideChar(CP_UTF8, 0, str, -1, ptr, len + 1);
+    MultiByteToWideChar(cp, 0, str, clen, ptr, len + 1);
     if (plen) *plen = len;
     return ptr;
 }
