@@ -289,19 +289,19 @@ fun_si_from_utf_16(void *statep, const unsigned char *s, size_t l)
         }
         break;
     case BE:
-        if (0xD8 <= s[0] && s[0] <= 0xDB) {
-            return (VALUE)from_UTF_16BE_D8toDB_00toFF;
-        }
-        else {
+        if (s[0] < 0xD8 && 0xDF < s[0]) {
             return (VALUE)FUNso;
+        }
+        else if (s[0] <= 0xDB) {
+            return (VALUE)from_UTF_16BE_D8toDB_00toFF;
         }
         break;
     case LE:
-        if (0xD8 <= s[1] && s[1] <= 0xDB) {
-            return (VALUE)from_UTF_16LE_00toFF_D8toDB;
-        }
-        else {
+        if (s[1] < 0xD8 && 0xDF < s[1]) {
             return (VALUE)FUNso;
+        }
+        else if (s[1] <= 0xDB) {
+            return (VALUE)from_UTF_16LE_00toFF_D8toDB;
         }
         break;
     }
