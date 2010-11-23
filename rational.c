@@ -667,7 +667,7 @@ f_addsub(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
 
 /*
  * call-seq:
- *    rat + numeric  ->  numeric_result
+ *    rat + numeric  ->  numeric
  *
  * Performs addition.
  *
@@ -709,7 +709,7 @@ nurat_add(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    rat - numeric  ->  numeric_result
+ *    rat - numeric  ->  numeric
  *
  * Performs subtraction.
  *
@@ -790,7 +790,7 @@ f_muldiv(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
 
 /*
  * call-seq:
- *    rat * numeric  ->  numeric_result
+ *    rat * numeric  ->  numeric
  *
  * Performs multiplication.
  *
@@ -832,8 +832,8 @@ nurat_mul(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    rat / numeric     ->  numeric_result
- *    rat.quo(numeric)  ->  numeric_result
+ *    rat / numeric     ->  numeric
+ *    rat.quo(numeric)  ->  numeric
  *
  * Performs division.
  *
@@ -913,7 +913,7 @@ nurat_fdiv(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    rat ** numeric  ->  numeric_result
+ *    rat ** numeric  ->  numeric
  *
  * Performs exponentiation.
  *
@@ -1144,7 +1144,6 @@ nurat_ceil(VALUE self)
     get_dat1(self);
     return f_negate(f_idiv(f_negate(dat->num), dat->den));
 }
-
 
 /*
  * call-seq:
@@ -2224,8 +2223,8 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
  * a/b (b>0).  Where a is numerator and b is denominator.  Integer a
  * equals rational a/1 mathematically.
  *
- * In ruby, you can create rational object with Rational or to_r
- * method.  The return values will be irreducible.
+ * In ruby, you can create rational object with Rational, to_r or
+ * rationalize method.  The return values will be irreducible.
  *
  *    Rational(1)      #=> (1/1)
  *    Rational(2, 3)   #=> (2/3)
@@ -2242,6 +2241,7 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
  *    0.3.to_r         #=> (5404319552844595/18014398509481984)
  *    '0.3'.to_r       #=> (3/10)
  *    '2/3'.to_r       #=> (2/3)
+ *    0.3.rationalize  #=> (3/10)
  *
  * A rational object is an exact number, which helps you to write
  * program without any rounding errors.

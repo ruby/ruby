@@ -1077,7 +1077,7 @@ extern VALUE rb_lcm(VALUE x, VALUE y);
  * call-seq:
  *    cmp.denominator  ->  integer
  *
- * Returns the denominator (lcm of both denominator, real and imag).
+ * Returns the denominator (lcm of both denominator - real and imag).
  *
  * See numerator.
  */
@@ -1646,7 +1646,7 @@ nucomp_s_convert(int argc, VALUE *argv, VALUE klass)
     if (argc == 1) {
 	if (k_numeric_p(a1) && !f_real_p(a1))
 	    return a1;
-	/* expect raise exception for consistency */
+	/* should raise exception for consistency */
 	if (!k_numeric_p(a1))
 	    return rb_convert_type(a1, T_COMPLEX, "Complex", "to_c");
     }
