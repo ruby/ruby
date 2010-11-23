@@ -289,7 +289,7 @@ fun_si_from_utf_16(void *statep, const unsigned char *s, size_t l)
         }
         break;
     case BE:
-        if (s[0] < 0xD8 && 0xDF < s[0]) {
+        if (s[0] < 0xD8 || 0xDF < s[0]) {
             return (VALUE)FUNso;
         }
         else if (s[0] <= 0xDB) {
@@ -297,7 +297,7 @@ fun_si_from_utf_16(void *statep, const unsigned char *s, size_t l)
         }
         break;
     case LE:
-        if (s[1] < 0xD8 && 0xDF < s[1]) {
+        if (s[1] < 0xD8 || 0xDF < s[1]) {
             return (VALUE)FUNso;
         }
         else if (s[1] <= 0xDB) {
@@ -319,6 +319,19 @@ fun_so_from_utf_16(void *statep, const unsigned char *s, size_t l, unsigned char
         return fun_so_from_utf_16le(statep, s, l, o, osize);
     }
     return 0;
+}
+
+static ssize_t
+fun_so_to_utf_16(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
+{
+    unsigned char *sp = statep;
+    if (*sp == 0) {
+        *o++ = 0xFE;
+        *o++ = 0xFF;
+        *sp = 1;
+        return 2 + fun_so_to_utf_16be(statep, s, l, o, osize);
+    }
+    return fun_so_to_utf_16be(statep, s, l, o, osize);
 }
 
 static const rb_transcoder
@@ -429,6 +442,18 @@ rb_from_UTF_16 = {
     NULL, fun_si_from_utf_16, NULL, fun_so_from_utf_16
 };
 
+static const rb_transcoder
+rb_to_UTF_16 = {
+    "UTF-8", "UTF-16", from_UTF_8,
+    TRANSCODE_TABLE_INFO,
+    1, /* input_unit_length */
+    4, /* max_input */
+    4, /* max_output */
+    asciicompat_encoder, /* asciicompat_type */
+    1, state_init, NULL, /* state_size, state_init, state_fini */
+    NULL, NULL, NULL, fun_so_to_utf_16
+};
+
 void
 Init_utf_16_32(void)
 {
@@ -441,4 +466,5 @@ Init_utf_16_32(void)
     rb_register_transcoder(&rb_from_UTF_32LE);
     rb_register_transcoder(&rb_to_UTF_32LE);
     rb_register_transcoder(&rb_from_UTF_16);
+    rb_register_transcoder(&rb_to_UTF_16);
 }
