@@ -1,3 +1,8 @@
+Tue Nov 23 17:09:14 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/pathname.rb (relative_path_from): backport r23093 and r25440
+	  from ruby_1_9_2.  [ruby-core:32415]
+
 Mon Nov 22 14:13:45 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: fix checking version of GCC.
