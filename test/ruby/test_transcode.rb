@@ -1019,6 +1019,12 @@ class TestTranscode < Test::Unit::TestCase
     check_utf_16_both_ways("\u{F00FF}", "\xDB\x80\xDC\xFF")
   end
 
+  def test_utf_16_bom
+    expected = "\u{3042}\u{3044}\u{20bb7}"
+    assert_equal(expected, %w/fffe4230443042d8b7df/.pack("H*").encode("UTF-8","UTF-16"))
+    assert_equal(expected, %w/feff30423044d842dfb7/.pack("H*").encode("UTF-8","UTF-16"))
+  end
+
   def check_utf_32_both_ways(utf8, raw)
     copy = raw.dup
     0.step(copy.length-1, 4) do |i|
