@@ -3815,11 +3815,12 @@ kill(int pid, int sig)
 static int
 wlink(const WCHAR *from, const WCHAR *to)
 {
-    static BOOL (WINAPI *pCreateHardLinkW)(LPCWSTR, LPCWSTR, LPSECURITY_ATTRIBUTES) = NULL;
+    typedef BOOL (WINAPI link_func)(LPCWSTR, LPCWSTR, LPSECURITY_ATTRIBUTES);
+    static link_func *pCreateHardLinkW = NULL;
     static int myerrno = 0;
 
     if (!pCreateHardLinkW && !myerrno) {
-	pCreateHardLinkW = (BOOL (WINAPI *)(LPCWSTR, LPCWSTR, LPSECURITY_ATTRIBUTES))get_proc_address("kernel32", "CreateHardLinkW", NULL);
+	pCreateHardLinkW = (link_func *)get_proc_address("kernel32", "CreateHardLinkW", NULL);
 	if (!pCreateHardLinkW)
 	    myerrno = ENOSYS;
     }
@@ -4662,12 +4663,13 @@ rb_w32_getpid(void)
 rb_pid_t
 rb_w32_getppid(void)
 {
-    static long (WINAPI *pNtQueryInformationProcess)(HANDLE, int, void *, ULONG, ULONG *) = NULL;
+    typedef long (WINAPI query_func)(HANDLE, int, void *, ULONG, ULONG *);
+    static query_func *pNtQueryInformationProcess = NULL;
     rb_pid_t ppid = 0;
 
     if (!IsWin95() && rb_w32_osver() >= 5) {
 	if (!pNtQueryInformationProcess)
-	    pNtQueryInformationProcess = (long (WINAPI *)(HANDLE, int, void *, ULONG, ULONG *))get_proc_address("ntdll.dll", "NtQueryInformationProcess", NULL);
+	    pNtQueryInformationProcess = (query_func *)get_proc_address("ntdll.dll", "NtQueryInformationProcess", NULL);
 	if (pNtQueryInformationProcess) {
 	    struct {
 		long ExitStatus;

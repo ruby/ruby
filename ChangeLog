@@ -1,3 +1,8 @@
+Tue Nov 23 21:59:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (wlink, rb_w32_getppid): use typedef instead of
+	  repeating compilcated function prototypes.
+
 Tue Nov 23 18:54:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (rb_thread_mark): should mark self in conrol
