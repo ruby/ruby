@@ -1,3 +1,8 @@
+Tue Nov 23 18:54:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (rb_thread_mark): should mark self in conrol
+	  frames.  [ruby-core:33289]
+
 Tue Nov 23 07:57:31 2010  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date/delta/parser.{ry,rb}: fixed a bug of token scanner.
