@@ -1,3 +1,8 @@
+Fri Sep 17 08:30:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/tracer.rb: count only non-internal libraries in stack trace,
+	  ignoring custom_require.  [ruby-core:31858]
+
 Thu Sep 16 08:30:28 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_f_sprintf): fix rdoc.  pointed out by Tomoyuki
