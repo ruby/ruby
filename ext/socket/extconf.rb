@@ -142,6 +142,11 @@ main()
   int passive, gaierr, inet4 = 0, inet6 = 0;
   struct addrinfo hints, *ai, *aitop;
   char straddr[INET6_ADDRSTRLEN], strport[16];
+#ifdef _WIN32
+  WSADATA retdata;
+
+  WSAStartup(MAKEWORD(2, 0), &retdata);
+#endif
 
   for (passive = 0; passive <= 1; passive++) {
     memset(&hints, 0, sizeof(hints));
