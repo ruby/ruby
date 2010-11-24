@@ -1,3 +1,8 @@
+Tue Nov 23 20:48:10 2010  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (initialize): sets sync_close to true.
+	  Thanks, Hiroshi NAKAMURA.  [ruby-core:31753]
+
 Tue Nov 23 17:09:14 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/pathname.rb (relative_path_from): backport r23093 and r25440
