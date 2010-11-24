@@ -1,3 +1,8 @@
+Wed Nov 24 12:47:16 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* vsnprintf (BSD_vfprintf): added VC++ compatible size specifications
+	  (I, I32, I64).
+
 Wed Nov 24 11:19:13 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_str_inspect): treat UTF-16 and UTF-32 as BE or LE.

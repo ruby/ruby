@@ -758,6 +758,24 @@ reswitch:	switch (ch) {
 			flags |= QUADINT;
 			goto rflag;
 #endif /* _HAVE_SANE_QUAD_ */
+#if _WIN32
+		case 'I':
+			if (*fmt == '3' && *(fmt + 1) == '2') {
+			    fmt += 2;
+			    flags |= LONGINT;
+			}
+			else if (*fmt == '6' && *(fmt + 1) == '4') {
+			    fmt += 2;
+			    flags |= QUADINT;
+			}
+			else
+#if SIZEOF_SIZE_T == SIZEOF_LONG_LONG
+			    flags |= QUADINT;
+#else
+			    flags |= LONGINT;
+#endif
+			goto rflag;
+#endif
 		case 'c':
 			cp = buf;
 			*buf = (char)va_arg(ap, int);
