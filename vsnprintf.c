@@ -764,12 +764,14 @@ reswitch:	switch (ch) {
 			    fmt += 2;
 			    flags |= LONGINT;
 			}
+#ifdef _HAVE_SANE_QUAD_
 			else if (*fmt == '6' && *(fmt + 1) == '4') {
 			    fmt += 2;
 			    flags |= QUADINT;
 			}
+#endif
 			else
-#if SIZEOF_SIZE_T == SIZEOF_LONG_LONG
+#if defined(_HAVE_SANE_QUAD_) && SIZEOF_SIZE_T == SIZEOF_LONG_LONG
 			    flags |= QUADINT;
 #else
 			    flags |= LONGINT;

@@ -1,3 +1,8 @@
+Wed Nov 24 15:18:07 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* vsnprintf (BSD_vfprintf): use QUADINT macro only when _HAVE_SANE_QUAD_
+	  macro is defined.
+
 Wed Nov 24 12:47:16 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* vsnprintf (BSD_vfprintf): added VC++ compatible size specifications
