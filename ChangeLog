@@ -1,3 +1,9 @@
+Thu Sep 16 08:30:28 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (rb_f_sprintf): fix rdoc.  pointed out by Tomoyuki
+	  Chikanaga at [ruby-core:32395], and a patch from Daniel
+	  Bovensiepen at [ruby-core:32403].
+
 Thu Sep 16 08:27:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/etc/extconf.rb: use expanded sysconfdir with empty DESTDIR.

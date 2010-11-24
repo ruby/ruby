@@ -425,9 +425,9 @@ get_hash(volatile VALUE *hash, int argc, const VALUE *argv)
  *  %<name>s style uses format style, but %{name} style doesn't.
  *
  *  Exapmles:
- *    sprintf("%<foo>d : %<bar>f" % { :foo => 1, :bar => 2 })
+ *    sprintf("%<foo>d : %<bar>f", { :foo => 1, :bar => 2 })
  *      #=> 1 : 2.000000
- *    sprintf("%{foo}f" % { :foo => 1 })
+ *    sprintf("%{foo}f", { :foo => 1 })
  *      # => "1f"
  */
 
