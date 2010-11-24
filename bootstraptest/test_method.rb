@@ -1176,7 +1176,7 @@ assert_equal 'ok', %q{
   end
 }
 assert_equal 'ok', %q{
-  p [0][0, &proc{}] += 21
+  [0][0, &proc{}] += 21
   'ok'
 }, '[ruby-core:30534]'
 

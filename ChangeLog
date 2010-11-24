@@ -1,3 +1,11 @@
+Wed Sep 22 01:55:48 2010  Koichi Sasada  <ko1@atdot.net>
+
+	* bootstraptest/test_method.rb: fix last commit.
+
+Wed Sep 22 01:49:52 2010  Koichi Sasada  <ko1@atdot.net>
+
+	* bootstraptest/test_method.rb: add a test for [ruby-core:30534].
+
 Wed Sep 22 01:49:52 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* bootstraptest/test_method.rb: add a test for [ruby-core:30534].
