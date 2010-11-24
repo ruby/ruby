@@ -123,7 +123,7 @@ with all sufficient information, see the ChangeLog file.
       * Integer#rationalize
 
   * Kernel
-    * new method:
+    * new methods:
       * Kernel#respond_to_missing?
       * Kernel#singleton_class
       * Kernel#require_relative
@@ -134,6 +134,16 @@ with all sufficient information, see the ChangeLog file.
 
     * incompatible changes:
       * Kernel#instance_eval yields the receiver.
+
+      * Kernel#exec
+      * Kernel#spawn
+      * Kernel#system
+      * Kernel#` (`...`)
+        ..etc.
+
+        On Windows, the current directory is no longer implicitly
+        prepended to the default command search path, just like other
+        platforms.
 
   * MatchData
     * New method:
