@@ -1,3 +1,10 @@
+Thu Nov 25 01:38:25 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/trans/big5-hkscs-tbl.rb: Update table as HKSCS-2008.
+	  patched by oCameLo oTnTh [ruby-core:33256]
+
+	* enc/big5.c: add alias Big5-HKSCS:2008 to Big5-HKSCS.
+
 Wed Nov 24 15:18:07 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* vsnprintf (BSD_vfprintf): use QUADINT macro only when _HAVE_SANE_QUAD_

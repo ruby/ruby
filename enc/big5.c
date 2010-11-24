@@ -311,7 +311,8 @@ ENC_REPLICATE("CP950", "Big5")
 /*
  * Name: Big5-HKSCS
  * MIBenum: 2101
- * Source:   See (http://www.iana.org/assignments/charset-reg/Big5-HKSCS)
+ * Source: http://www.iana.org/assignments/charset-reg/Big5-HKSCS
+ * Source: http://www.ogcio.gov.hk/ccli/eng/hkscs/mapping_table_2008.html
  * Alias: None
  */
 OnigEncodingDefine(big5_hkscs, BIG5_HKSCS) = {
@@ -332,6 +333,7 @@ OnigEncodingDefine(big5_hkscs, BIG5_HKSCS) = {
   big5_left_adjust_char_head,
   big5_is_allowed_reverse_match
 };
+ENC_ALIAS("Big5-HKSCS:2008", "Big5-HKSCS")
 
 /*
  * Name: CP951
