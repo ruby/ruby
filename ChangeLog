@@ -1,3 +1,8 @@
+Wed Nov 24 18:24:26 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/extconf.rb: backrorted entirely from ruby_1_8, with small
+	  modifications for the difference of mkmf.rb.
+
 Wed Nov 24 16:24:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* mkconfig.rb (patchlevel): config.status may not contain
