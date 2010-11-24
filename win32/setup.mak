@@ -119,7 +119,7 @@ int main(int argc, char **argv)
 
 -version-: nul
 	@$(APPEND)
-	@$(CPP) -I$(srcdir) <<"Creating $(MAKEFILE)" | find "=" >>$(MAKEFILE)
+	@$(CPP) -I$(srcdir) <<"Creating $(MAKEFILE)" | findstr "=" >>$(MAKEFILE)
 #define RUBY_REVISION 0
 #include "version.h"
 MAJOR = RUBY_VERSION_MAJOR

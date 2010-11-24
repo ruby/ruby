@@ -1,3 +1,9 @@
+Wed Nov 24 13:55:21 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/setup.mak: use findstr.exe instead of find.exe, because all
+	  target build platforms should have findstr.exe, and, find.exe often
+	  means another command such as cygwin's.
+
 Mon Nov 22 14:13:45 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: fix checking version of GCC.
