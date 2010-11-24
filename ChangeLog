@@ -1,3 +1,9 @@
+Mon Sep 20 23:23:05 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (bracket): get rid of scanning at the end of the pattern
+	  string, not to raise an exception while globbing command line.
+	  [ruby-core:32478]
+
 Fri Sep 17 23:44:07 2010  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/xpath_parser.rb, test/rexml/test_xpath.rb:
