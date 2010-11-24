@@ -1,3 +1,10 @@
+Wed Sep 22 16:59:40 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/test_prime.rb (TestPrime#test_new): the warning expected have
+	  not been displayed when $VERBOSE == nil. Patch by Shota Fukumori
+	  a.k.a. sora_h. [ruby-dev:42272]
+	  Recovers $stderr even if StringIO.new fails. Reported by unak.
+
 Wed Sep 22 01:55:48 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* bootstraptest/test_method.rb: fix last commit.

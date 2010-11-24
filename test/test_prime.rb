@@ -55,12 +55,13 @@ class TestPrime < Test::Unit::TestCase
   end
 
   def test_new
-    buf = StringIO.new('', 'w')
-    orig, $stderr = $stderr, buf
+    orig_stderr, orig_verbose = $stderr, $VERBOSE
+
+    $stderr = buf = StringIO.new('', 'w')
+    $VERBOSE = false
 
     enum = Prime.new
-    assert !buf.string.empty?
-    $stderr = orig
+    assert_match("obsolete", buf.string)
 
     assert enum.respond_to?(:each)
     assert enum.kind_of?(Enumerable)
@@ -68,7 +69,8 @@ class TestPrime < Test::Unit::TestCase
 
     assert Prime === enum
   ensure
-    $stderr = orig
+    $stderr = orig_stderr
+    $VERBOSE = orig_verbose
   end
 
   def test_enumerator_succ
