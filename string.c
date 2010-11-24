@@ -4202,7 +4202,10 @@ rb_str_inspect(VALUE str)
     rb_encoding *resenc = rb_default_internal_encoding();
     int unicode_p = rb_enc_unicode_p(enc);
     int asciicompat = rb_enc_asciicompat(enc);
+    static rb_encoding *utf16, *utf32;
 
+    if (!utf16) utf16 = rb_enc_find("UTF-16");
+    if (!utf32) utf32 = rb_enc_find("UTF-32");
     if (resenc == NULL) resenc = rb_default_external_encoding();
     if (!rb_enc_asciicompat(resenc)) resenc = rb_usascii_encoding();
     rb_enc_associate(result, resenc);
@@ -4210,6 +4213,12 @@ rb_str_inspect(VALUE str)
 
     p = RSTRING_PTR(str); pend = RSTRING_END(str);
     prev = p;
+    if (enc == utf16) {
+	enc = *p == (char)0xFF ? rb_enc_find("UTF-16LE") : rb_enc_find("UTF-16BE");
+    }
+    else if (enc == utf32) {
+	enc = *p == (char)0xFF ? rb_enc_find("UTF-32LE") : rb_enc_find("UTF-32BE");
+    }
     while (p < pend) {
 	unsigned int c, cc;
 	int n;
