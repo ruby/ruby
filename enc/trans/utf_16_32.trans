@@ -26,6 +26,10 @@
   transcode_generate_node(ActionMap.parse(map), "from_UTF_16")
 
   map = {}
+  map["{00-ff}{00-ff}{00-ff}{00-ff}"] = :func_si
+  transcode_generate_node(ActionMap.parse(map), "from_UTF_32")
+
+  map = {}
   map["{00-7f}"] = :func_so
   map["{c2-df}{80-bf}"] = :func_so
   map["e0{a0-bf}{80-bf}"] = :func_so
@@ -321,6 +325,48 @@ fun_so_from_utf_16(void *statep, const unsigned char *s, size_t l, unsigned char
     return 0;
 }
 
+static VALUE
+fun_si_from_utf_32(void *statep, const unsigned char *s, size_t l)
+{
+    unsigned char *sp = statep;
+    switch (*sp) {
+    case 0:
+        if (s[0] == 0 && s[1] == 0 && s[2] == 0xFE && s[3] == 0xFF) {
+            *sp = BE;
+            return ZERObt;
+        }
+        else if (s[0] == 0xFF && s[1] == 0xFE && s[2] == 0 && s[3] == 0) {
+            *sp = LE;
+            return ZERObt;
+        }
+        break;
+    case BE:
+        if (s[0] == 0 && ((0 < s[1] && s[1] <= 0x10) ||
+              (s[1] == 0 && (s[2] < 0xD8 || 0xDF < s[2]))))
+            return (VALUE)FUNso;
+        break;
+    case LE:
+        if (s[3] == 0 && ((0 < s[2] && s[2] <= 0x10) ||
+              (s[2] == 0 && (s[1] < 0xD8 || 0xDF < s[1]))))
+            return (VALUE)FUNso;
+        break;
+    }
+    return (VALUE)INVALID;
+}
+
+static ssize_t
+fun_so_from_utf_32(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
+{
+    unsigned char *sp = statep;
+    switch (*sp) {
+    case BE:
+        return fun_so_from_utf_32be(statep, s, l, o, osize);
+    case LE:
+        return fun_so_from_utf_32le(statep, s, l, o, osize);
+    }
+    return 0;
+}
+
 static ssize_t
 fun_so_to_utf_16(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
 {
@@ -332,6 +378,21 @@ fun_so_to_utf_16(void *statep, const unsigned char *s, size_t l, unsigned char *
         return 2 + fun_so_to_utf_16be(statep, s, l, o, osize);
     }
     return fun_so_to_utf_16be(statep, s, l, o, osize);
+}
+
+static ssize_t
+fun_so_to_utf_32(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
+{
+    unsigned char *sp = statep;
+    if (*sp == 0) {
+        *o++ = 0x00;
+        *o++ = 0x00;
+        *o++ = 0xFE;
+        *o++ = 0xFF;
+        *sp = 1;
+        return 4 + fun_so_to_utf_32be(statep, s, l, o, osize);
+    }
+    return fun_so_to_utf_32be(statep, s, l, o, osize);
 }
 
 static const rb_transcoder
@@ -443,6 +504,18 @@ rb_from_UTF_16 = {
 };
 
 static const rb_transcoder
+rb_from_UTF_32 = {
+    "UTF-32", "UTF-8", from_UTF_32,
+    TRANSCODE_TABLE_INFO,
+    4, /* input_unit_length */
+    4, /* max_input */
+    4, /* max_output */
+    asciicompat_decoder, /* asciicompat_type */
+    1, state_init, NULL, /* state_size, state_init, state_fini */
+    NULL, fun_si_from_utf_32, NULL, fun_so_from_utf_32
+};
+
+static const rb_transcoder
 rb_to_UTF_16 = {
     "UTF-8", "UTF-16", from_UTF_8,
     TRANSCODE_TABLE_INFO,
@@ -452,6 +525,18 @@ rb_to_UTF_16 = {
     asciicompat_encoder, /* asciicompat_type */
     1, state_init, NULL, /* state_size, state_init, state_fini */
     NULL, NULL, NULL, fun_so_to_utf_16
+};
+
+static const rb_transcoder
+rb_to_UTF_32 = {
+    "UTF-8", "UTF-32", from_UTF_8,
+    TRANSCODE_TABLE_INFO,
+    1, /* input_unit_length */
+    4, /* max_input */
+    4, /* max_output */
+    asciicompat_encoder, /* asciicompat_type */
+    1, state_init, NULL, /* state_size, state_init, state_fini */
+    NULL, NULL, NULL, fun_so_to_utf_32
 };
 
 void
@@ -467,4 +552,6 @@ Init_utf_16_32(void)
     rb_register_transcoder(&rb_to_UTF_32LE);
     rb_register_transcoder(&rb_from_UTF_16);
     rb_register_transcoder(&rb_to_UTF_16);
+    rb_register_transcoder(&rb_from_UTF_32);
+    rb_register_transcoder(&rb_to_UTF_32);
 }

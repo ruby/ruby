@@ -1027,6 +1027,13 @@ class TestTranscode < Test::Unit::TestCase
     assert_raise(Encoding::InvalidByteSequenceError){%w/fffeb7df/.pack("H*").encode("UTF-8","UTF-16")}
   end
 
+  def test_utf_32_bom
+    expected = "\u{3042}\u{3044}\u{20bb7}"
+    assert_equal(expected, %w/fffe00004230000044300000b70b0200/.pack("H*").encode("UTF-8","UTF-32"))
+    check_both_ways(expected, %w/0000feff000030420000304400020bb7/.pack("H*"), "UTF-32")
+    assert_raise(Encoding::InvalidByteSequenceError){%w/0000feff00110000/.pack("H*").encode("UTF-8","UTF-32")}
+  end
+
   def check_utf_32_both_ways(utf8, raw)
     copy = raw.dup
     0.step(copy.length-1, 4) do |i|
