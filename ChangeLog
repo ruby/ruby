@@ -1,3 +1,9 @@
+Wed Nov 24 13:55:21 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/setup.mak: use findstr.exe instead of find.exe, because all
+	  target build platforms should have findstr.exe, and, find.exe often
+	  means another command such as cygwin's.
+
 Wed Nov 24 13:27:34 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_getline): fix for "" as separator.
