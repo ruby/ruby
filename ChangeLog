@@ -1,4 +1,9 @@
-Thu Jun 19 20:37:00 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+Wed Nov 24 13:27:34 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_getline): fix for "" as separator.
+	  [ruby-dev:34591] (Backport r17739 by Yusuke Endoh from trunk).
+
+Wed Nov 24 13:27:20 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* lib/net/pop.rb (Net::POP3#set_all_uids): speed
 	  up. a patch from <m-sumi AT techfirm.co.jp> [ruby-list:45047]
