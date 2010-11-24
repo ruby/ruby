@@ -1,3 +1,8 @@
+Wed Sep 15 09:12:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_puts): fix for wide char encoding strings.
+	  [ruby-dev:42212]
+
 Wed Sep 15 07:27:52 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_times): mentioned about Hash argument.  a patch
