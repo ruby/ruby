@@ -73,7 +73,7 @@ class IMAPTest < Test::Unit::TestCase
     if defined?(OpenSSL)
       assert_nothing_raised do
         imaps_test do |port|
-          Net::IMAP.new("localhost",
+          Net::IMAP.new(SERVER_ADDR,
                         :port => port,
                         :ssl => { :verify_mode => OpenSSL::SSL::VERIFY_NONE })
         end
@@ -129,7 +129,7 @@ class IMAPTest < Test::Unit::TestCase
     end
     begin
       begin
-        imap = Net::IMAP.new("localhost", :port => port)
+        imap = Net::IMAP.new(SERVER_ADDR, :port => port)
         assert_raise(EOFError) do
           imap.logout
         end
@@ -167,7 +167,7 @@ class IMAPTest < Test::Unit::TestCase
     end
     begin
       begin
-        imap = Net::IMAP.new("localhost", :port => port)
+        imap = Net::IMAP.new(SERVER_ADDR, :port => port)
         responses = []
         imap.idle do |res|
           responses.push(res)
@@ -219,7 +219,7 @@ class IMAPTest < Test::Unit::TestCase
     end
     begin
       begin
-        imap = Net::IMAP.new("localhost", :port => port)
+        imap = Net::IMAP.new(SERVER_ADDR, :port => port)
         begin
           th = Thread.current
           m = Monitor.new
@@ -275,7 +275,7 @@ class IMAPTest < Test::Unit::TestCase
     end
     begin
       begin
-        imap = Net::IMAP.new("localhost", :port => port)
+        imap = Net::IMAP.new(SERVER_ADDR, :port => port)
         assert_raise(Net::IMAP::Error) do
           imap.idle_done
         end
@@ -305,7 +305,7 @@ class IMAPTest < Test::Unit::TestCase
     end
     begin
       begin
-        imap = Net::IMAP.new("localhost", :port => port)
+        imap = Net::IMAP.new(SERVER_ADDR, :port => port)
         assert_raise(Net::IMAP::ByeResponseError) do
           imap.login("user", "password")
         end
@@ -334,7 +334,7 @@ class IMAPTest < Test::Unit::TestCase
     end
     begin
       begin
-        imap = Net::IMAP.new("localhost", :port => port)
+        imap = Net::IMAP.new(SERVER_ADDR, :port => port)
         imap.instance_eval do
           def @sock.shutdown(*args)
             super
