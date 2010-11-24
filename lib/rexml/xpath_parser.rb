@@ -434,7 +434,8 @@ module REXML
         when :and
           left = expr( path_stack.shift, nodeset.dup, context )
           #puts "LEFT => #{left.inspect} (#{left.class.name})"
-          if left == false || left.nil? || !left.inject(false) {|a,b| a | b}
+          return [] unless left
+          if left.respond_to?(:inject) and !left.inject(false) {|a,b| a | b}
             return []
           end
           right = expr( path_stack.shift, nodeset.dup, context )
