@@ -1,3 +1,8 @@
+Thu Nov 25 10:29:55 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/dl/callback/mkcallback.rb (gencallback): shouldn't assume that
+	  VALUE is the same size with long.
+
 Thu Nov 25 10:03:14 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/win32ole/test_err_in_callback.rb (teardown): remove tmp file

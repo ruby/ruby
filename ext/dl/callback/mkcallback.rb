@@ -128,8 +128,16 @@ FUNC_#{calltype.upcase}(#{func_name(ty,argc,n,calltype)})(#{(0...argc).collect{|
 {
     VALUE ret, cb#{argc > 0 ? ", args[#{argc}]" : ""};
 #{
+      sizeof_voidp = [""].pack('p').size
+      sizeof_long = [0].pack('l!').size
       (0...argc).collect{|i|
-	"    args[%d] = LONG2NUM(stack%d);" % [i,i]
+        if sizeof_voidp == sizeof_long
+          "    args[%d] = LONG2NUM(stack%d);" % [i,i]
+        elsif sizeof_voidp == 8 # should get sizeof_long_long...
+          "    args[%d] = LL2NUM(stack%d);" % [i,i]
+        else
+          raise "unknown size of void*"
+        end
       }.join("\n")
 }
     cb = rb_ary_entry(rb_ary_entry(#{proc_entry}, #{ty}), #{(n * DLSTACK_SIZE) + argc});
