@@ -2615,7 +2615,7 @@ AC_ARG_WITH(rubylibprefix,
 	    [if test "x$withval" = xno; then
 		AC_MSG_ERROR([No ruby, No libprefix])
 	    fi
-	    rubylibprefix"=$withval"])
+	    rubylibprefix="$withval"])
 RUBY_LIB_PREFIX=`eval echo \\"${rubylibprefix}\\"`
 AC_SUBST(rubylibprefix)
 

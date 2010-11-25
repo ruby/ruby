@@ -1,6 +1,6 @@
 # encoding: ASCII-8BIT   # make sure this runs in binary mode
 # some of the comments are in UTF-8
-p __ENCODING__
+
 require 'test/unit'
 class TestTranscode < Test::Unit::TestCase
   def test_errors
