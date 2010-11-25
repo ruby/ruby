@@ -5093,14 +5093,14 @@ print_distance_range(FILE* f, OnigDistance a, OnigDistance b)
   if (a == ONIG_INFINITE_DISTANCE)
     fputs("inf", f);
   else
-    fprintf(f, "(%u)", a);
+    fprintf(f, "(%"PRIuSIZE")", a);
 
   fputs("-", f);
 
   if (b == ONIG_INFINITE_DISTANCE)
     fputs("inf", f);
   else
-    fprintf(f, "(%u)", b);
+    fprintf(f, "(%"PRIuSIZE")", b);
 }
 
 static void
@@ -5176,7 +5176,7 @@ print_optimize_info(FILE* f, regex_t* reg)
     for (p = reg->exact; p < reg->exact_end; p++) {
       fputc(*p, f);
     }
-    fprintf(f, "]: length: %d\n", (reg->exact_end - reg->exact));
+    fprintf(f, "]: length: %ld\n", (reg->exact_end - reg->exact));
   }
   else if (reg->optimize & ONIG_OPTIMIZE_MAP) {
     int c, i, n = 0;

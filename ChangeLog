@@ -1,3 +1,14 @@
+Thu Nov 25 23:10:49 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regcomp.c (print_distance_range): use PRIuSIZE.
+
+	* regcomp.c (print_optimize_info): use %ld because the type of
+	  calcutated value of integers is long.
+
+	* regexec.c (onig_print_compiled_byte_code): add prototype.
+
+	* regexec.c (match_at): add 2nd argument.
+
 Thu Nov 25 10:29:55 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/dl/callback/mkcallback.rb (gencallback): shouldn't assume that

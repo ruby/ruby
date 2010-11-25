@@ -1240,6 +1240,9 @@ typedef struct {
   regoff_t  rm_eo;
 } posix_regmatch_t;
 
+void onig_print_compiled_byte_code(FILE* f, UChar* bp, UChar* bpend, UChar** nextp,
+                              OnigEncoding enc);
+
 /* match data(str - end) from position (sstart). */
 /* if sstart == str then set sprev to NULL. */
 static long
@@ -1314,7 +1317,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       *bp = 0;
       fputs((char* )buf, stderr);
       for (i = 0; i < 20 - (bp - buf); i++) fputc(' ', stderr);
-      onig_print_compiled_byte_code(stderr, p, NULL, encode);
+      onig_print_compiled_byte_code(stderr, p, p + strlen((char *)p), NULL, encode);
       fprintf(stderr, "\n");
     }
 #endif
