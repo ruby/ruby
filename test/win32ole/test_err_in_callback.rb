@@ -7,7 +7,6 @@ begin
   require 'win32ole'
 rescue LoadError
 end
-require 'rbconfig'
 if defined?(WIN32OLE)
   require 'mkmf'
   require 'test/unit'
@@ -20,7 +19,7 @@ if defined?(WIN32OLE)
         @iopt = $:.map {|e|
           " -I " + e
         }.join("")
-        @script = File.dirname(__FILE__) + "/err_in_callback.rb"
+        @script = File.join(File.dirname(__FILE__), "err_in_callback.rb")
       end
     end
 
@@ -37,8 +36,7 @@ if defined?(WIN32OLE)
     end
 
     def teardown
-      File.unlink("test_err_in_callback.log")
+      File.unlink("test_err_in_callback.log") if File.exist?("test_err_in_callback.log")
     end
-
   end
 end
