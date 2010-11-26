@@ -123,6 +123,12 @@ bitset_is_empty(BitSetRef bs)
 
 #ifdef ONIG_DEBUG
 static int
+onig_is_prelude(void)
+{
+    return !rb_const_defined(rb_cThread, rb_intern_const("MUTEX_FOR_THREAD_EXCLUSIVE"));
+}
+
+static int
 bitset_on_num(BitSetRef bs)
 {
   int i, n;
@@ -4897,7 +4903,7 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
 
   default:
 #ifdef ONIG_DEBUG
-    fprintf(stderr, "optimize_node_left: undefined node type %d\n",
+    if (!onig_is_prelude()) fprintf(stderr, "optimize_node_left: undefined node type %d\n",
 	    NTYPE(node));
 #endif
     r = ONIGERR_TYPE_BUG;
@@ -5032,7 +5038,7 @@ set_optimize_info_from_tree(Node* node, regex_t* reg, ScanEnv* scan_env)
   }
 
 #if defined(ONIG_DEBUG_COMPILE) || defined(ONIG_DEBUG_MATCH)
-  print_optimize_info(stderr, reg);
+  if (!onig_is_prelude()) print_optimize_info(stderr, reg);
 #endif
   return r;
 }
@@ -5321,7 +5327,7 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
   reg->state = ONIG_STATE_COMPILING;
 
 #ifdef ONIG_DEBUG
-  print_enc_string(stderr, reg->enc, pattern, pattern_end);
+  if (!onig_is_prelude()) print_enc_string(stderr, reg->enc, pattern, pattern_end);
 #endif
 
   if (reg->alloc == 0) {
@@ -5381,7 +5387,7 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
   if (r != 0) goto err_unset;
 
 #ifdef ONIG_DEBUG_PARSE_TREE
-  print_tree(stderr, root);
+  if (!onig_is_prelude()) print_tree(stderr, root);
 #endif
 
   reg->capture_history  = scan_env.capture_history;
@@ -5461,9 +5467,9 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
 
 #ifdef ONIG_DEBUG_COMPILE
 #ifdef USE_NAMED_GROUP
-  onig_print_names(stderr, reg);
+  if (!onig_is_prelude()) onig_print_names(stderr, reg);
 #endif
-  print_compiled_byte_code_list(stderr, reg);
+  if (!onig_is_prelude()) print_compiled_byte_code_list(stderr, reg);
 #endif
 
  end:
@@ -5626,7 +5632,7 @@ onig_end(void)
   THREAD_ATOMIC_START;
 
 #ifdef ONIG_DEBUG_STATISTICS
-  onig_print_statistics(stderr);
+  if (!onig_is_prelude()) onig_print_statistics(stderr);
 #endif
 
 #ifdef USE_SHARED_CCLASS_TABLE
@@ -6108,14 +6114,14 @@ print_compiled_byte_code_list(FILE* f, regex_t* reg)
 
   fprintf(f, "code length: %d\n", reg->used);
 
-  ncode = 0;
+  ncode = -1;
   while (bp < end) {
     ncode++;
     if (bp > reg->p) {
       if (ncode % 5 == 0)
-	fprintf(f, "\n");
+	fprintf(f, "\n%ld:", bp-reg->p);
       else
-	fputs(" ", f);
+	fprintf(f, " %ld:", bp-reg->p);
     }
     onig_print_compiled_byte_code(f, bp, end, &bp, reg->enc);
   }
@@ -6126,7 +6132,7 @@ print_compiled_byte_code_list(FILE* f, regex_t* reg)
 static void
 print_indent_tree(FILE* f, Node* node, int indent)
 {
-  int i, type;
+  int i, type, container_p = 0;
   int add = 3;
   UChar* p;
 
@@ -6215,10 +6221,10 @@ print_indent_tree(FILE* f, Node* node, int indent)
     case ANCHOR_WORD_BEGIN:      fputs("word begin", f);     break;
     case ANCHOR_WORD_END:        fputs("word end", f);       break;
 #endif
-    case ANCHOR_PREC_READ:       fputs("prec read",      f); break;
-    case ANCHOR_PREC_READ_NOT:   fputs("prec read not",  f); break;
-    case ANCHOR_LOOK_BEHIND:     fputs("look_behind",    f); break;
-    case ANCHOR_LOOK_BEHIND_NOT: fputs("look_behind_not",f); break;
+    case ANCHOR_PREC_READ:       fputs("prec read",      f); container_p = TRUE; break;
+    case ANCHOR_PREC_READ_NOT:   fputs("prec read not",  f); container_p = TRUE; break;
+    case ANCHOR_LOOK_BEHIND:     fputs("look_behind",    f); container_p = TRUE; break;
+    case ANCHOR_LOOK_BEHIND_NOT: fputs("look_behind_not",f); container_p = TRUE; break;
 
     default:
       fprintf(f, "ERROR: undefined anchor type.\n");
@@ -6285,6 +6291,9 @@ print_indent_tree(FILE* f, Node* node, int indent)
   if (type != NT_LIST && type != NT_ALT && type != NT_QTFR &&
       type != NT_ENCLOSE)
     fprintf(f, "\n");
+
+  if (container_p) print_indent_tree(f, NANCHOR(node)->target, indent + add);
+
   fflush(f);
 }
 #endif /* ONIG_DEBUG */

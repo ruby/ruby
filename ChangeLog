@@ -1,3 +1,19 @@
+Fri Nov 26 09:03:38 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regcomp.c (onig_is_prelude): added to check whether ruby is still
+	  in prelude (or other boot processes) or not.
+
+	* regcomp.c (optimize_node_left): use onig_is_prelude for printing.
+
+	* regcomp.c (set_optimize_info_from_tree): ditto.
+
+	* regcomp.c (onig_compile): ditto.
+
+	* regcomp.c (print_compiled_byte_code_list): print its address.
+
+	* regcomp.c (print_indent_tree): print its contents tree of
+	    ANCHOR_PREC_READ(_NOT) and ANCHOR_PREC_BEHIND(_NOT).
+
 Thu Nov 25 23:10:49 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regcomp.c (print_distance_range): use PRIuSIZE.
