@@ -2,7 +2,7 @@
 
 require 'rbconfig'
 
-CONFIG = Config::MAKEFILE_CONFIG
+CONFIG = RbConfig::MAKEFILE_CONFIG
 
 version = %w'MAJOR MINOR TEENY'.map{|v| CONFIG[v] || '0'}
 patch = CONFIG['PATCHLEVEL']

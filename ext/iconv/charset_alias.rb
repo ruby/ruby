@@ -6,8 +6,8 @@ require 'optparse'
 # http://www.ctan.org/get/macros/texinfo/texinfo/gnulib/lib/config.charset
 # Tue, 25 Dec 2007 00:00:00 GMT
 
-OS = Config::CONFIG["target_os"]
-SHELL = Config::CONFIG['SHELL']
+OS = RbConfig::CONFIG["target_os"]
+SHELL = RbConfig::CONFIG['SHELL']
 
 class Hash::Ordered < Hash
   def [](key)

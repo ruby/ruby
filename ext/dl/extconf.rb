@@ -22,7 +22,7 @@ end
 
 ($CPPFLAGS || $CFLAGS) << " -I."
 
-if (Config::CONFIG['CC'] =~ /gcc/)  # from Win32API
+if (RbConfig::CONFIG['CC'] =~ /gcc/)  # from Win32API
   $CFLAGS << " -fno-defer-pop -fno-omit-frame-pointer"
 end
 
