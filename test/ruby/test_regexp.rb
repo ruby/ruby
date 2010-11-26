@@ -583,6 +583,9 @@ class TestRegexp < Test::Unit::TestCase
     failcheck('(?<!.*)')
     check(/(?<=A|B.)C/, [%w(C AC), %w(C BXC)], %w(C BC))
     check(/(?<!A|B.)C/, [%w(C C), %w(C BC)], %w(AC BXC))
+
+    assert_not_match(/(?<!aa|b)c/i, "Aac")
+    assert_not_match(/(?<!b|aa)c/i, "Aac")
   end
 
   def test_parse_kg
