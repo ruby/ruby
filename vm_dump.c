@@ -741,12 +741,12 @@ dump_thread(void *arg)
 				fprintf(stderr, "%s", libpath);
 			    fprintf(stderr, "(%s)", info->Name);
 			}
-
+			fprintf(stderr, " [0x%p]", (void *)(VALUE)addr);
 			memset(&line, 0, sizeof(line));
 			line.SizeOfStruct = sizeof(line);
 			if (pSymGetLineFromAddr64(ph, addr, &tmp, &line))
 			    fprintf(stderr, " %s:%lu", line.FileName, line.LineNumber);
-			fprintf(stderr, " [%p]\n", (void *)(VALUE)addr);
+			fprintf(stderr, "\n");
 		    }
 		}
 

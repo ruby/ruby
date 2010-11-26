@@ -1,3 +1,8 @@
+Fri Nov 26 10:48:23 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* vm_dump.c (dump_thread): follow the output of glibc.
+	  see [ruby-dev:42627]
+
 Fri Nov 26 09:48:45 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* re.c (rb_reg_initialize_str): should succeed the taint status from
