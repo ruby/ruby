@@ -2443,6 +2443,7 @@ rb_reg_initialize_str(VALUE obj, VALUE str, int options, onig_errmsg_buffer err,
     }
     ret = rb_reg_initialize(obj, RSTRING_PTR(str), RSTRING_LEN(str), enc,
 			    options, err, sourcefile, sourceline);
+    OBJ_INFECT(obj, str);
     RB_GC_GUARD(str);
     return ret;
 }

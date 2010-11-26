@@ -1,3 +1,8 @@
+Fri Nov 26 09:48:45 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* re.c (rb_reg_initialize_str): should succeed the taint status from
+	  the origin. [ruby-core:33338]
+
 Fri Nov 26 09:32:37 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* vm_dump.c (dump_thread): seems to be necessary the 3rd argument of
