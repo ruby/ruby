@@ -727,6 +727,7 @@ dump_thread(void *arg)
 					NULL, NULL, NULL)) {
 			DWORD64 addr = frame.AddrPC.Offset;
 			IMAGEHLP_LINE64 line;
+			DWORD64 displacement;
 			DWORD tmp;
 
 			if (addr == frame.AddrReturn.Offset || addr == 0 ||
@@ -736,10 +737,11 @@ dump_thread(void *arg)
 			memset(buf, 0, sizeof(buf));
 			info->SizeOfStruct = sizeof(SYMBOL_INFO);
 			info->MaxNameLen = MAX_SYM_NAME;
-			if (pSymFromAddr(ph, addr, NULL, info)) {
+			if (pSymFromAddr(ph, addr, &displacement, info)) {
 			    if (GetModuleFileName((HANDLE)(uintptr_t)pSymGetModuleBase64(ph, addr), libpath, sizeof(libpath)))
 				fprintf(stderr, "%s", libpath);
-			    fprintf(stderr, "(%s)", info->Name);
+			    fprintf(stderr, "(%s+0x%I64x)",
+				    info->Name, displacement);
 			}
 			fprintf(stderr, " [0x%p]", (void *)(VALUE)addr);
 			memset(&line, 0, sizeof(line));

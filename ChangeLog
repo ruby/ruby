@@ -1,3 +1,8 @@
+Fri Nov 26 11:09:07 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* vm_dump.c (dump_thread): show the displacement from the beginning
+	  of the symbol.
+
 Fri Nov 26 10:48:23 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* vm_dump.c (dump_thread): follow the output of glibc.
