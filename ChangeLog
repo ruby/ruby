@@ -1,3 +1,8 @@
+Sat Nov 27 08:16:21 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* addr2line.c (rb_dump_backtrace_with_lines): should close fd on
+	  edge case.
+
 Fri Nov 26 13:33:24 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* addr2line.c: apply a patch from shinichiro.h.

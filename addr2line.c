@@ -499,7 +499,9 @@ rb_dump_backtrace_with_lines(int num_traces, void **trace, char **syms)
 	/* async-signal unsafe */
 	file = (char *)mmap(NULL, filesize, PROT_READ, MAP_SHARED, fd, 0);
 	if (file == MAP_FAILED) {
-	    perror("mmap");
+	    int e = errno;
+	    close(fd);
+	    fprintf(stderr, "mmap: %s\n", strerror(e));
 	    continue;
 	}
 
