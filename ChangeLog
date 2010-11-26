@@ -1,3 +1,8 @@
+Fri Nov 26 10:09:09 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (WARNFLAGS): shut up the meaningless warnings of
+	  Japanese version of VC.
+
 Fri Nov 26 10:08:24 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* re.c (rb_reg_regcomp): should succeed the taint status from the

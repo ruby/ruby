@@ -179,6 +179,7 @@ XCFLAGS = -DRUBY_EXPORT -I. -I$(srcdir) -I$(srcdir)/missing $(XCFLAGS)
 !if $(MSC_VER) >= 1400
 # Prevents VC++ 2005 (cl ver 14) warnings
 CRTDEFFLAGS = -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE
+WARNFLAGS = $(WARNFLAGS) -wd4819
 MANIFESTTOOL = mt -nologo
 LDSHARED_1 = @if exist $(@).manifest $(MANIFESTTOOL) -manifest $(@).manifest -outputresource:$(@);2
 LDSHARED_2 = @if exist $(@).manifest $(RM) $(@:/=\).manifest
