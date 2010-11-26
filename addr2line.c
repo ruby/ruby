@@ -51,11 +51,13 @@
 #define DW_LNE_define_file              0x03
 #define DW_LNE_set_discriminator        0x04  /* DWARF4 */
 
+#ifndef ElfW
 # if SIZEOF_VOIDP == 8
 #  define ElfW(x) Elf64##_##x
 # else
 #  define ElfW(x) Elf32##_##x
 # endif
+#endif
 
 typedef struct {
     const char *dirname;
@@ -210,7 +212,7 @@ parse_debug_line_cu(int num_traces, void **traces,
     unsigned int file = 1;
     unsigned int line = 1;
     unsigned int column = 0;
-    int is_stmt = default_is_stmt;
+    int is_stmt;
     int basic_block = 0;
     int end_sequence = 0;
     int prologue_end = 0;
@@ -239,7 +241,7 @@ parse_debug_line_cu(int num_traces, void **traces,
     minimum_instruction_length = *(unsigned char *)p;
     p++;
 
-    default_is_stmt = *(unsigned char *)p;
+    is_stmt = default_is_stmt = *(unsigned char *)p;
     p++;
 
     line_base = *(char *)p;
@@ -489,10 +491,17 @@ rb_dump_backtrace_with_lines(int num_traces, void **trace, char **syms)
 	binary_filename[len] = '\0';
 
 	fd = open(binary_filename, O_RDONLY);
+	if (fd < 0) {
+	    continue;
+	}
 	filesize = lseek(fd, 0, SEEK_END);
 	lseek(fd, 0, SEEK_SET);
 	/* async-signal unsafe */
 	file = (char *)mmap(NULL, filesize, PROT_READ, MAP_SHARED, fd, 0);
+	if (file == MAP_FAILED) {
+	    perror("mmap");
+	    continue;
+	}
 
 	lines[i].fd = fd;
 	lines[i].mapped = file;
