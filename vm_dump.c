@@ -727,6 +727,7 @@ dump_thread(void *arg)
 					NULL, NULL, NULL)) {
 			DWORD64 addr = frame.AddrPC.Offset;
 			IMAGEHLP_LINE64 line;
+			DWORD tmp;
 
 			if (addr == frame.AddrReturn.Offset || addr == 0 ||
 			    frame.AddrReturn.Offset == 0)
@@ -743,7 +744,7 @@ dump_thread(void *arg)
 
 			memset(&line, 0, sizeof(line));
 			line.SizeOfStruct = sizeof(line);
-			if (pSymGetLineFromAddr64(ph, addr, NULL, &line))
+			if (pSymGetLineFromAddr64(ph, addr, &tmp, &line))
 			    fprintf(stderr, " %s:%lu", line.FileName, line.LineNumber);
 			fprintf(stderr, " [%p]\n", (void *)(VALUE)addr);
 		    }
