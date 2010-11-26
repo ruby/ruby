@@ -10,6 +10,7 @@
 
 
 #include "ruby/ruby.h"
+#include "addr2line.h"
 #include "vm_core.h"
 
 #define MAX_POSBUF 128
@@ -788,9 +789,13 @@ rb_vm_bugreport(void)
 	int i;
 
 	if (syms) {
+#ifdef __ELF__
+	    rb_dump_backtrace_with_lines(n, trace, syms);
+#else
 	    for (i=0; i<n; i++) {
 		fprintf(stderr, "%s\n", syms[i]);
 	    }
+#endif
 	    free(syms);
 	}
 #elif defined(_WIN32)

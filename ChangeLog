@@ -1,3 +1,18 @@
+Fri Nov 26 12:21:20 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* addr2line.c: added to show source filename and line number of
+	  functions in backtrace. [ruby-dev:42625]
+	  a patch from shinichiro.h <shinichiro.hamaji AT gmail.com>
+
+	* addr2line.h: ditto.
+
+	* common.mk: add addr2line.$(OBJEXT).
+
+	* configure.in: check dl_iterate_phdr.
+
+	* vm_dump.c (rb_vm_bugreport): use rb_dump_backtrace_with_lines in
+	  addr2line.c when the binary is ELF.
+
 Fri Nov 26 12:12:50 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regcomp.c (setup_tree): restart setup_tree() for a node whose

@@ -1300,7 +1300,7 @@ AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall chroot getcwd eacce
 	      setsid telldir seekdir fchmod cosh sinh tanh log2 round\
 	      setuid setgid daemon select_large_fdset setenv unsetenv\
               mktime timegm gmtime_r clock_gettime gettimeofday\
-              pread sendfile shutdown sigaltstack)
+              pread sendfile shutdown sigaltstack dl_iterate_phdr)
 
 AC_CACHE_CHECK(for unsetenv returns a value, rb_cv_unsetenv_return_value,
   [AC_TRY_COMPILE([
