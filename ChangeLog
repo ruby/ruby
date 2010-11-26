@@ -1,3 +1,9 @@
+Fri Nov 26 11:40:11 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* vm_dump.c (dump_thread): get only required rights of the target
+	  thread because THREAD_ALL_ACCESS causes an access error on XP.
+	  reported by Masaya TARUI via IRC.
+
 Fri Nov 26 11:09:07 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* vm_dump.c (dump_thread): show the displacement from the beginning

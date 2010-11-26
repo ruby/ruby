@@ -684,7 +684,7 @@ dump_thread(void *arg)
 	SymSetOptions(SYMOPT_UNDNAME | SYMOPT_DEFERRED_LOADS | SYMOPT_DEBUG | SYMOPT_LOAD_LINES);
 	ph = GetCurrentProcess();
 	pSymInitialize(ph, NULL, TRUE);
-	th = pOpenThread(THREAD_ALL_ACCESS, FALSE, tid);
+	th = pOpenThread(THREAD_SUSPEND_RESUME|THREAD_GET_CONTEXT, FALSE, tid);
 	if (th) {
 	    if (SuspendThread(th) != (DWORD)-1) {
 		CONTEXT context;
