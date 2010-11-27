@@ -44,16 +44,16 @@ module Net   #:nodoc:
   #
   # === Fetching Documents
   #
-  # Simple GET
+  # Simple GET and print response body to stdout
   #
   #     require 'net/http'
-  #     Net::HTTP.get('www.example.com', '/index.html') => String
+  #     Net::HTTP.get_print('www.example.com', '/index.html')
   #
-  # Simple GET by URL
+  # Simple GET by URI
   #
   #     require 'net/http'
   #     require 'uri'
-  #     Net::HTTP.get(URI.parse('http://www.example.com/index.html?count=10')) => String
+  #     body = Net::HTTP.get(URI.parse('http://www.example.com/index.html?count=10'))
   #
   # More generic GET with dynamic parameters
   #
