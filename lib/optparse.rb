@@ -1549,7 +1549,7 @@ XXX
     end
     pat = Completion.regexp(word, true)
     visit(:each_option) do |opt|
-      opts = (long ? opt.long : []) + (short ? opt.short [])
+      opts = (long ? opt.long : []) + (short ? opt.short : [])
       opts = Completion.candidate(word, true, pat, &opts.method(:each)).map(&:first) if pat
       if /\A=/ =~ opt.arg
         opts.map! {|sw| sw + "="}

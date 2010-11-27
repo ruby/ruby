@@ -1,3 +1,8 @@
+Sat Nov 27 13:58:55 2010  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser#candidate): : was missing.  Thanks,
+	  Shota Fukumori.  [ruby-dev:42634]
+
 Sat Nov 27 12:07:05 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* man/ruby.1: Ruby man page from Arthur Gunn in [ruby-core:33412]
