@@ -18,7 +18,7 @@
 #
 # See Net::HTTP for an overview and examples.
 #
-# NOTE: You can find Japanese version of this document here:
+# NOTE: You can find a Japanese version of this document here:
 # http://www.ruby-lang.org/ja/man/html/net_http.html
 #
 #--
@@ -36,48 +36,61 @@ module Net   #:nodoc:
   class HTTPHeaderSyntaxError < StandardError; end
   # :startdoc:
 
-  # == What Is This Library?
+  # == An HTTP 1.1 client API for Ruby.
   #
-  # This library provides your program functions to access WWW
-  # documents via HTTP, Hyper Text Transfer Protocol version 1.1.
-  # For details of HTTP, refer to [RFC2616]
-  # (http://www.ietf.org/rfc/rfc2616.txt).
+  # For more details about HTTP, see [RFC2616](http://www.ietf.org/rfc/rfc2616.txt).
   #
   # == Examples
   #
-  # === Getting Document From WWW Server
+  # === Fetching Documents
   #
-  # Example #1: Simple GET+print
-  #
-  #     require 'net/http'
-  #     Net::HTTP.get_print 'www.example.com', '/index.html'
-  #
-  # Example #2: Simple GET+print by URL
+  # Simple GET
   #
   #     require 'net/http'
-  #     require 'uri'
-  #     Net::HTTP.get_print URI.parse('http://www.example.com/index.html')
+  #     Net::HTTP.get('www.example.com', '/index.html') => String
   #
-  # Example #3: More generic GET+print
+  # Simple GET by URL
   #
   #     require 'net/http'
   #     require 'uri'
+  #     Net::HTTP.get(URI.parse('http://www.example.com/index.html?count=10')) => String
   #
-  #     url = URI.parse('http://www.example.com/index.html')
-  #     res = Net::HTTP.start(url.hostname, url.port) {|http|
-  #       http.get('/index.html')
-  #     }
-  #     puts res.body
+  # More generic GET with dynamic parameters
   #
-  # Example #4: More generic GET+print
+  #    require 'net/http'
+  #    require 'uri'
+  #    require 'cgi'
   #
-  #     require 'net/http'
+  #    url = URI.parse('http://www.example.com/index.html')
+  #    params = { :limit => 10, :page => 3 }
+  #    url.query = params.inject([]) { |memo, (k, v)| memo << "#{k}=#{CGI::escape(v.to_s)}"; memo }.join("&")
+  #    res = Net::HTTP.get_response(url)
+  #    puts res.body if res.is_a?(Net::HTTPSuccess)
   #
-  #     url = URI.parse('http://www.example.com/index.html')
-  #     req = Net::HTTP::Get.new(url.path)
-  #     res = Net::HTTP.start(url.hostname, url.port) {|http|
-  #       http.request(req)
-  #     }
+  # Even more generic GET with Basic Auth and custom header
+  #
+  #    require 'net/http'
+  #
+  #    url = URI.parse('http://www.example.com/index.html?key=value')
+  #    req = Net::HTTP::Get.new(url.request_uri)
+  #    req.basic_auth 'user', 'pass'
+  #    req['X-Custom-Header'] = Time.now.to_i
+  #    res = Net::HTTP.start(url.host, url.port) {|http|
+  #      http.request(req)
+  #    }
+  #    puts res.body
+  #
+  # Accessing Response data:
+  #
+  #     res = Net::HTTP.get_response(URI.parse('http://www.example.com/index.html'))
+  #     # Headers
+  #     res['Set-Cookie'] => String
+  #     res.to_hash['set-cookie'] => Array
+  #     puts "Headers: #{res.to_hash.inspect}"
+  #     # Status
+  #     puts res.code => '200'
+  #     puts res.message => 'OK'
+  #     puts res.class.name => 'HTTPOK'
   #     puts res.body
   #
   # === Posting Form Data
@@ -101,7 +114,7 @@ module Net   #:nodoc:
   #     req = Net::HTTP::Post.new(url.path)
   #     req.basic_auth 'jack', 'pass'
   #     req.set_form_data({'from' => '2005-01-01', 'to' => '2005-03-31'}, ';')
-  #     res = Net::HTTP.new(url.hostname, url.port).start {|http| http.request(req) }
+  #     res = Net::HTTP.new(url.host, url.port).start {|http| http.request(req) }
   #     case res
   #     when Net::HTTPSuccess, Net::HTTPRedirection
   #       # OK
@@ -116,27 +129,26 @@ module Net   #:nodoc:
   #
   # === Accessing via Proxy
   #
-  # Net::HTTP.Proxy creates http proxy class. It has same
-  # methods of Net::HTTP but its instances always connect to
-  # proxy, instead of given host.
+  # Net::HTTP.Proxy has the same methods as Net::HTTP but its instances always
+  # connect via the proxy, instead of given host.
   #
   #     require 'net/http'
   #
   #     proxy_addr = 'your.proxy.host'
   #     proxy_port = 8080
   #             :
-  #     Net::HTTP::Proxy(proxy_addr, proxy_port).start('www.example.com') {|http|
+  #     Net::HTTP.Proxy(proxy_addr, proxy_port).start('www.example.com') {|http|
   #       # always connect to your.proxy.addr:8080
   #             :
   #     }
   #
   # Since Net::HTTP.Proxy returns Net::HTTP itself when proxy_addr is nil,
-  # there's no need to change code if there's proxy or not.
+  # there's no need to change code if there's a proxy or not.
   #
-  # There are two additional parameters in Net::HTTP.Proxy which allow to
-  # specify proxy user name and password:
+  # There are two additional parameters in Net::HTTP.Proxy which you can use to
+  # specify a proxy username and password:
   #
-  #     Net::HTTP::Proxy(proxy_addr, proxy_port, proxy_user = nil, proxy_pass = nil)
+  #     Net::HTTP.Proxy(proxy_addr, proxy_port, proxy_user = nil, proxy_pass = nil)
   #
   # You may use them to work with authorization-enabled proxies:
   #
@@ -147,14 +159,14 @@ module Net   #:nodoc:
   #     proxy_port = 8080
   #     uri = URI.parse(ENV['http_proxy'])
   #     proxy_user, proxy_pass = uri.userinfo.split(/:/) if uri.userinfo
-  #     Net::HTTP::Proxy(proxy_host, proxy_port,
+  #     Net::HTTP.Proxy(proxy_host, proxy_port,
   #                      proxy_user, proxy_pass).start('www.example.com') {|http|
   #       # always connect to your.proxy.addr:8080 using specified username and password
   #             :
   #     }
   #
-  # Note that net/http never rely on HTTP_PROXY environment variable.
-  # If you want to use proxy, set it explicitly.
+  # Note that net/http does not use the HTTP_PROXY environment variable.
+  # If you want to use a proxy, you must set it explicitly.
   #
   # === Following Redirection
   #
@@ -176,21 +188,9 @@ module Net   #:nodoc:
   #
   #     print fetch('http://www.ruby-lang.org')
   #
-  # Net::HTTPSuccess and Net::HTTPRedirection is a HTTPResponse class.
-  # All HTTPResponse objects belong to its own response class which
-  # indicate HTTP result status. For details of response classes,
-  # see section "HTTP Response Classes".
-  #
-  # === Basic Authentication
-  #
-  #     require 'net/http'
-  #
-  #     Net::HTTP.start('www.example.com') {|http|
-  #       req = Net::HTTP::Get.new('/secret-page.html')
-  #       req.basic_auth 'account', 'password'
-  #       response = http.request(req)
-  #       print response.body
-  #     }
+  # Net::HTTPSuccess and Net::HTTPRedirection are HTTPResponse subclasses.
+  # All HTTPResponse objects belong to their own response class which
+  # indicates the HTTP result status.
   #
   # === HTTP Request Classes
   #
@@ -280,7 +280,7 @@ module Net   #:nodoc:
   #     Net::HTTP.version_1_2
   #     Net::HTTP.start {|http3| ...(http3 has 1.2 features)... }
   #
-  # This function is NOT thread-safe.
+  # Switching versions is NOT thread-safe.
   #
   class HTTP < Protocol
 
