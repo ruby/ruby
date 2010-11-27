@@ -853,7 +853,7 @@ static const char *find_time_t(struct tm *tptr, int utc_p, time_t *tp);
 static struct vtm *localtimew(wideval_t timew, struct vtm *result);
 
 static int leap_year_p(long y);
-#define leap_year_v_p(y) leap_year_p(NUM2LONG(mod(v, INT2FIX(400))))
+#define leap_year_v_p(y) leap_year_p(NUM2LONG(mod((y), INT2FIX(400))))
 
 #ifdef HAVE_GMTIME_R
 #define rb_gmtime_r(t, tm) gmtime_r(t, tm)

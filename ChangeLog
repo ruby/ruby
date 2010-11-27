@@ -1,3 +1,7 @@
+Sat Nov 27 18:08:18 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* time.c (leap_year_v_p): fixed typo.  [ruby-dev:42631]
+
 Sat Nov 27 17:57:08 2010  Tanaka Akira  <akr@fsij.org>
 
 	* resolv.rb (Resolv::DNS): use the same DNS server when retry using
