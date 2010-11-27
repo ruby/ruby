@@ -1,4 +1,6 @@
-Sat Nov 27 15:43:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Nov 27 15:45:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_dump.c (rb_vm_bugreport): see CrashReport log on Mac OS X.
 
 	* configure.in: link addr2line only for ELF.
 

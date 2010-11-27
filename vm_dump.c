@@ -776,12 +776,19 @@ rb_vm_bugreport(void)
 	}
     }
 
+#if defined __MACH__ && defined __APPLE__
+    fprintf(stderr, "-- See Crash Report log file under "
+	    "~/Library/Logs/CrashReport or -----------\n");
+    fprintf(stderr, "-- /Library/Logs/CrashReport, for "
+	    "the more detail of -----------------------\n");
+#endif
 #if HAVE_BACKTRACE || defined(_WIN32)
     fprintf(stderr, "-- C level backtrace information "
 	    "-------------------------------------------\n");
 
     {
-#if HAVE_BACKTRACE
+#if defined __MACH__ && defined __APPLE__
+#elif HAVE_BACKTRACE
 #define MAX_NATIVE_TRACE 1024
 	static void *trace[MAX_NATIVE_TRACE];
 	int n = backtrace(trace, MAX_NATIVE_TRACE);
