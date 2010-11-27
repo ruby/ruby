@@ -1,3 +1,8 @@
+Sat Nov 27 17:57:08 2010  Tanaka Akira  <akr@fsij.org>
+
+	* resolv.rb (Resolv::DNS): use the same DNS server when retry using
+	  TCP.  reported by Julian Mehnle.  [ruby-core:32970]
+
 Sat Nov 27 15:45:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_dump.c (rb_vm_bugreport): see CrashReport log on Mac OS X.

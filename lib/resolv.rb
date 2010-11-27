@@ -509,7 +509,7 @@ class Resolv
             if reply.tc == 1 and not Requester::TCP === requester
               requester.close
               # Retry via TCP:
-              requester = make_tcp_requester
+              requester = make_tcp_requester(nameserver, port)
               senders = {}
               # This will use TCP for all remaining candidates (assuming the
               # current candidate does not already respond successfully via
@@ -540,9 +540,8 @@ class Resolv
       end
     end
 
-    def make_tcp_requester # :nodoc:
-      nameserver_port = @config.nameserver_port
-      return Requester::TCP.new(*nameserver_port[0])
+    def make_tcp_requester(host, port) # :nodoc:
+      return Requester::TCP.new(host, port)
     end
 
     def extract_resources(msg, name, typeclass) # :nodoc:
