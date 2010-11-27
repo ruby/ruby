@@ -29,10 +29,158 @@ static void native_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex);
 static void native_cond_initialize(pthread_cond_t *cond);
 static void native_cond_destroy(pthread_cond_t *cond);
 
+static void native_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(void)); 
+
+#define native_mutex_reinitialize_atfork(lock) (\
+	native_mutex_unlock(lock), \
+	native_mutex_initialize(lock), \
+	native_mutex_lock(lock))
+
+#define GVL_SIMPLE_LOCK 0
+#define GVL_DEBUG 0
+
+static void
+gvl_show_waiting_threads(rb_vm_t *vm)
+{
+    rb_thread_t *th = vm->gvl.waiting_threads;
+    int i = 0;
+    while (th) {
+	fprintf(stderr, "waiting (%d): %p\n", i++, th);
+	th = th->native_thread_data.gvl_next;
+    }
+}
+
+static void
+gvl_waiting_push(rb_vm_t *vm, rb_thread_t *th)
+{
+    th->native_thread_data.gvl_next = 0;
+
+    if (vm->gvl.waiting_threads) {
+	vm->gvl.waiting_last_thread->native_thread_data.gvl_next = th;
+	vm->gvl.waiting_last_thread = th;
+    }
+    else {
+	vm->gvl.waiting_threads = th;
+	vm->gvl.waiting_last_thread = th;
+    }
+    th = vm->gvl.waiting_threads;
+    vm->gvl.waiting++;
+}
+
+static void
+gvl_waiting_shift(rb_vm_t *vm, rb_thread_t *th)
+{
+    vm->gvl.waiting_threads = vm->gvl.waiting_threads->native_thread_data.gvl_next;
+    vm->gvl.waiting--;
+}
+
+static void
+gvl_acquire(rb_vm_t *vm, rb_thread_t *th)
+{
+#if GVL_SIMPLE_LOCK
+    native_mutex_lock(&vm->gvl.lock);
+#else
+    native_mutex_lock(&vm->gvl.lock);
+    if (vm->gvl.waiting > 0 || vm->gvl.acquired != 0) {
+	if (GVL_DEBUG) fprintf(stderr, "gvl acquire (%p): sleep\n", th);
+	gvl_waiting_push(vm, th);
+        if (GVL_DEBUG) gvl_show_waiting_threads(vm);
+
+	while (vm->gvl.acquired != 0 || vm->gvl.waiting_threads != th) {
+	    native_cond_wait(&th->native_thread_data.gvl_cond, &vm->gvl.lock);
+	}
+	gvl_waiting_shift(vm, th);
+    }
+    else {
+	/* do nothing */
+    }
+    vm->gvl.acquired = 1;
+    native_mutex_unlock(&vm->gvl.lock);
+#endif
+    if (GVL_DEBUG) gvl_show_waiting_threads(vm);
+    if (GVL_DEBUG) fprintf(stderr, "gvl acquire (%p): acquire\n", th);
+}
+
+static void
+gvl_release(rb_vm_t *vm)
+{
+#if GVL_SIMPLE_LOCK
+    native_mutex_unlock(&vm->gvl.lock);
+#else
+    native_mutex_lock(&vm->gvl.lock);
+    if (vm->gvl.waiting > 0) {
+	rb_thread_t *th = vm->gvl.waiting_threads;
+	if (GVL_DEBUG) fprintf(stderr, "gvl release (%p): wakeup: %p\n", GET_THREAD(), th);
+	native_cond_signal(&th->native_thread_data.gvl_cond);
+    }
+    else {
+	if (GVL_DEBUG) fprintf(stderr, "gvl release (%p): wakeup: %p\n", GET_THREAD(), 0);
+	/* do nothing */
+    }
+    vm->gvl.acquired = 0;
+    native_mutex_unlock(&vm->gvl.lock);
+#endif
+}
+
+static void
+gvl_atfork(rb_vm_t *vm)
+{
+#if GVL_SIMPLE_LOCK
+    native_mutex_reinitialize_atfork(&vm->gvl.lock);
+#else
+    /* do nothing */
+#endif
+}
+
+static void gvl_init(rb_vm_t *vm);
+
+static void
+gvl_atfork_child(void)
+{
+    gvl_init(GET_VM());
+}
+
+static void
+gvl_init(rb_vm_t *vm)
+{
+    int r;
+    if (GVL_DEBUG) fprintf(stderr, "gvl init\n");
+    native_mutex_initialize(&vm->gvl.lock);
+    native_atfork(0, 0, gvl_atfork_child);
+
+    vm->gvl.waiting_threads = 0;
+    vm->gvl.waiting_last_thread = 0;
+    vm->gvl.waiting = 0;
+    vm->gvl.acquired = 0;
+}
+
+static void
+gvl_destroy(rb_vm_t *vm)
+{
+    if (GVL_DEBUG) fprintf(stderr, "gvl destroy\n");
+    native_mutex_destroy(&vm->gvl.lock);
+}
+
+static void
+mutex_debug(const char *msg, pthread_mutex_t *lock)
+{
+    if (0) {
+	int r;
+	static pthread_mutex_t dbglock = PTHREAD_MUTEX_INITIALIZER;
+
+	if ((r = pthread_mutex_lock(&dbglock)) != 0) {exit(1);}
+	fprintf(stdout, "%s: %p\n", msg, lock);
+	if ((r = pthread_mutex_unlock(&dbglock)) != 0) {exit(1);}
+    }
+}
+
+#define NATIVE_MUTEX_LOCK_DEBUG 1
+
 static void
 native_mutex_lock(pthread_mutex_t *lock)
 {
     int r;
+    mutex_debug("lock", lock);
     if ((r = pthread_mutex_lock(lock)) != 0) {
 	rb_bug_errno("pthread_mutex_lock", r);
     }
@@ -42,6 +190,7 @@ static void
 native_mutex_unlock(pthread_mutex_t *lock)
 {
     int r;
+    mutex_debug("unlock", lock);
     if ((r = pthread_mutex_unlock(lock)) != 0) {
 	rb_bug_errno("pthread_mutex_unlock", r);
     }
@@ -51,6 +200,7 @@ static inline int
 native_mutex_trylock(pthread_mutex_t *lock)
 {
     int r;
+    mutex_debug("trylock", lock);
     if ((r = pthread_mutex_trylock(lock)) != 0) {
 	if (r == EBUSY) {
 	    return EBUSY;
@@ -66,20 +216,17 @@ static void
 native_mutex_initialize(pthread_mutex_t *lock)
 {
     int r = pthread_mutex_init(lock, 0);
+    mutex_debug("init", lock);
     if (r != 0) {
 	rb_bug_errno("pthread_mutex_init", r);
     }
 }
 
-#define native_mutex_reinitialize_atfork(lock) (\
-	native_mutex_unlock(lock), \
-	native_mutex_initialize(lock), \
-	native_mutex_lock(lock))
-
 static void
 native_mutex_destroy(pthread_mutex_t *lock)
 {
     int r = pthread_mutex_destroy(lock);
+    mutex_debug("destroy", lock);
     if (r != 0) {
 	rb_bug_errno("pthread_mutex_destroy", r);
     }
@@ -127,6 +274,14 @@ native_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, struct times
     return pthread_cond_timedwait(cond, mutex, ts);
 }
 
+static void
+native_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(void))
+{
+    int r = pthread_atfork(prepare, parent, child);
+    if (r != 0) {
+	rb_bug_errno("native_atfork", r);
+    }
+}
 
 #define native_cleanup_push pthread_cleanup_push
 #define native_cleanup_pop  pthread_cleanup_pop
@@ -171,6 +326,7 @@ Init_native_thread(void)
     pthread_key_create(&ruby_native_thread_key, NULL);
     th->thread_id = pthread_self();
     native_cond_initialize(&th->native_thread_data.sleep_cond);
+    native_cond_initialize(&th->native_thread_data.gvl_cond);
     ruby_thread_set_native(th);
     native_mutex_initialize(&signal_thread_list_lock);
     posix_signal(SIGVTALRM, null_func);

@@ -1537,8 +1537,7 @@ ruby_vm_destruct(rb_vm_t *vm)
 	    st_free_table(vm->living_threads);
 	    vm->living_threads = 0;
 	}
-	rb_thread_lock_unlock(&vm->global_vm_lock);
-	rb_thread_lock_destroy(&vm->global_vm_lock);
+	rb_vm_gvl_destroy(vm);
 	ruby_xfree(vm);
 	ruby_current_vm = 0;
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE

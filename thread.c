@@ -103,10 +103,10 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
 #define GVL_UNLOCK_BEGIN() do { \
   rb_thread_t *_th_stored = GET_THREAD(); \
   RB_GC_SAVE_MACHINE_CONTEXT(_th_stored); \
-  native_mutex_unlock(&_th_stored->vm->global_vm_lock)
+  gvl_release(_th_stored->vm);
 
 #define GVL_UNLOCK_END() \
-  native_mutex_lock(&_th_stored->vm->global_vm_lock); \
+  gvl_acquire(_th_stored->vm, _th_stored); \
   rb_thread_set_current(_th_stored); \
 } while(0)
 
@@ -125,7 +125,7 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
     (th)->status = THREAD_STOPPED; \
     thread_debug("enter blocking region (%p)\n", (void *)(th)); \
     RB_GC_SAVE_MACHINE_CONTEXT(th); \
-    native_mutex_unlock(&(th)->vm->global_vm_lock); \
+    gvl_release((th)->vm); \
   } while (0)
 
 #define BLOCKING_REGION(exec, ubf, ubfarg) do { \
@@ -245,6 +245,13 @@ rb_thread_debug(
     DEBUG_OUT();
 }
 #endif
+
+void
+rb_vm_gvl_destroy(rb_vm_t *vm)
+{
+    gvl_release(vm);
+    gvl_destroy(vm);
+}
 
 void
 rb_thread_lock_unlock(rb_thread_lock_t *lock)
@@ -426,7 +433,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 #endif
     thread_debug("thread start: %p\n", (void *)th);
 
-    native_mutex_lock(&th->vm->global_vm_lock);
+    gvl_acquire(th->vm, th);
     {
 	thread_debug("thread start (get lock): %p\n", (void *)th);
 	rb_thread_set_current(th);
@@ -519,7 +526,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
     }
     else {
 	thread_cleanup_func(th);
-	native_mutex_unlock(&th->vm->global_vm_lock);
+	gvl_release(th->vm);
     }
 
     return 0;
@@ -1002,11 +1009,11 @@ rb_thread_schedule_rec(int sched_depth)
 	thread_debug("rb_thread_schedule/switch start\n");
 
 	RB_GC_SAVE_MACHINE_CONTEXT(th);
-	native_mutex_unlock(&th->vm->global_vm_lock);
+	gvl_release(th->vm);
 	{
 	    native_thread_yield();
 	}
-	native_mutex_lock(&th->vm->global_vm_lock);
+	gvl_acquire(th->vm, th);
 
 	rb_thread_set_current(th);
 	thread_debug("rb_thread_schedule/switch done\n");
@@ -1028,7 +1035,7 @@ rb_thread_schedule(void)
 static inline void
 blocking_region_end(rb_thread_t *th, struct rb_blocking_region_buffer *region)
 {
-    native_mutex_lock(&th->vm->global_vm_lock);
+    gvl_acquire(th->vm, th);
     rb_thread_set_current(th);
     thread_debug("leave blocking region (%p)\n", (void *)th);
     remove_signal_thread_list(th);
@@ -2753,7 +2760,7 @@ rb_thread_atfork_internal(int (*atfork)(st_data_t, st_data_t, st_data_t))
     VALUE thval = th->self;
     vm->main_thread = th;
 
-    native_mutex_reinitialize_atfork(&th->vm->global_vm_lock);
+    gvl_atfork(th->vm);
     st_foreach(vm->living_threads, atfork, (st_data_t)th);
     st_clear(vm->living_threads);
     st_insert(vm->living_threads, thval, (st_data_t)th->thread_id);
@@ -4297,6 +4304,7 @@ Init_Thread(void)
 #define rb_intern(str) rb_intern_const(str)
 
     VALUE cThGroup;
+    rb_thread_t *th = GET_THREAD();
 
     rb_define_singleton_method(rb_cThread, "new", thread_s_new, -1);
     rb_define_singleton_method(rb_cThread, "start", thread_start, -2);
@@ -4349,7 +4357,6 @@ Init_Thread(void)
     rb_define_method(cThGroup, "add", thgroup_add, 1);
 
     {
-	rb_thread_t *th = GET_THREAD();
 	th->thgroup = th->vm->thgroup_default = rb_obj_alloc(cThGroup);
 	rb_define_const(cThGroup, "Default", th->thgroup);
     }
@@ -4376,10 +4383,9 @@ Init_Thread(void)
 	/* main thread setting */
 	{
 	    /* acquire global vm lock */
-	    rb_thread_lock_t *lp = &GET_THREAD()->vm->global_vm_lock;
-	    native_mutex_initialize(lp);
-	    native_mutex_lock(lp);
-	    native_mutex_initialize(&GET_THREAD()->interrupt_lock);
+	    gvl_init(th->vm);
+	    gvl_acquire(th->vm, th);
+	    native_mutex_initialize(&th->interrupt_lock);
 	}
     }
 
@@ -4502,3 +4508,4 @@ rb_reset_coverages(void)
     GET_VM()->coverages = Qfalse;
     rb_remove_event_hook(update_coverage);
 }
+

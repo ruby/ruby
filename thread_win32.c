@@ -25,12 +25,112 @@ static int native_mutex_lock(rb_thread_lock_t *);
 static int native_mutex_unlock(rb_thread_lock_t *);
 static int native_mutex_trylock(rb_thread_lock_t *);
 static void native_mutex_initialize(rb_thread_lock_t *);
+static void native_mutex_destroy(rb_thread_lock_t *);
 
 static void native_cond_signal(rb_thread_cond_t *cond);
 static void native_cond_broadcast(rb_thread_cond_t *cond);
 static void native_cond_wait(rb_thread_cond_t *cond, rb_thread_lock_t *mutex);
 static void native_cond_initialize(rb_thread_cond_t *cond);
 static void native_cond_destroy(rb_thread_cond_t *cond);
+
+static void
+w32_error(const char *func)
+{
+    LPVOID lpMsgBuf;
+    DWORD err = GetLastError();
+    if (FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+		      FORMAT_MESSAGE_FROM_SYSTEM |
+		      FORMAT_MESSAGE_IGNORE_INSERTS,
+		      NULL,
+		      err,
+		      MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
+		      (LPTSTR) & lpMsgBuf, 0, NULL) == 0)
+	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+		      FORMAT_MESSAGE_FROM_SYSTEM |
+		      FORMAT_MESSAGE_IGNORE_INSERTS,
+		      NULL,
+		      err,
+		      MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+		      (LPTSTR) & lpMsgBuf, 0, NULL);
+    rb_bug("%s: %s", func, (char*)lpMsgBuf);
+}
+
+static int
+w32_mutex_lock(HANDLE lock)
+{
+    DWORD result;
+    while (1) {
+	thread_debug("native_mutex_lock: %p\n", lock);
+	result = w32_wait_events(&lock, 1, INFINITE, 0);
+	switch (result) {
+	  case WAIT_OBJECT_0:
+	    /* get mutex object */
+	    thread_debug("acquire mutex: %p\n", lock);
+	    return 0;
+	  case WAIT_OBJECT_0 + 1:
+	    /* interrupt */
+	    errno = EINTR;
+	    thread_debug("acquire mutex interrupted: %p\n", lock);
+	    return 0;
+	  case WAIT_TIMEOUT:
+	    thread_debug("timeout mutex: %p\n", lock);
+	    break;
+	  case WAIT_ABANDONED:
+	    rb_bug("win32_mutex_lock: WAIT_ABANDONED");
+	    break;
+	  default:
+	    rb_bug("win32_mutex_lock: unknown result (%d)", result);
+	    break;
+	}
+    }
+    return 0;
+}
+
+static HANDLE
+w32_mutex_create(void)
+{
+    HANDLE lock = CreateMutex(NULL, FALSE, NULL);
+    if (lock == NULL) {
+	w32_error("native_mutex_initialize");
+    }
+    return lock;
+}
+
+#define GVL_DEBUG 0
+
+static void
+gvl_acquire(rb_vm_t *vm, rb_thread_t *th)
+{
+    w32_mutex_lock(vm->gvl.lock);
+    if (GVL_DEBUG) fprintf(stderr, "gvl acquire (%p): acquire\n", th);
+}
+
+static void
+gvl_release(rb_vm_t *vm)
+{
+    ReleaseMutex(vm->gvl.lock);
+}
+
+static void
+gvl_atfork(rb_vm_t *vm)
+{
+    rb_bug("gvl_atfork() is called on win32");
+}
+
+static void
+gvl_init(rb_vm_t *vm)
+{
+    int r;
+    if (GVL_DEBUG) fprintf(stderr, "gvl init\n");
+    vm->gvl.lock = w32_mutex_create();
+}
+
+static void
+gvl_destroy(rb_vm_t *vm)
+{
+    if (GVL_DEBUG) fprintf(stderr, "gvl destroy\n");
+    CloseHandle(vm->gvl.lock);
+}
 
 static rb_thread_t *
 ruby_thread_from_native(void)
@@ -64,28 +164,6 @@ Init_native_thread(void)
 }
 
 static void
-w32_error(const char *func)
-{
-    LPVOID lpMsgBuf;
-    DWORD err = GetLastError();
-    if (FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-		      FORMAT_MESSAGE_FROM_SYSTEM |
-		      FORMAT_MESSAGE_IGNORE_INSERTS,
-		      NULL,
-		      err,
-		      MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
-		      (LPTSTR) & lpMsgBuf, 0, NULL) == 0)
-	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-		      FORMAT_MESSAGE_FROM_SYSTEM |
-		      FORMAT_MESSAGE_IGNORE_INSERTS,
-		      NULL,
-		      err,
-		      MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-		      (LPTSTR) & lpMsgBuf, 0, NULL);
-    rb_bug("%s: %s", func, (char*)lpMsgBuf);
-}
-
-static void
 w32_set_event(HANDLE handle)
 {
     if (SetEvent(handle) == 0) {
@@ -111,7 +189,7 @@ w32_wait_events(HANDLE *events, int count, DWORD timeout, rb_thread_t *th)
     thread_debug("  w32_wait_events events:%p, count:%d, timeout:%ld, th:%p\n",
 		 events, count, timeout, th);
     if (th && (intr = th->native_thread_data.interrupt_event)) {
-	native_mutex_lock(&th->vm->global_vm_lock);
+	gvl_acquire(th->vm, th);
 	if (intr == th->native_thread_data.interrupt_event) {
 	    w32_reset_event(intr);
 	    if (RUBY_VM_INTERRUPTED(th)) {
@@ -124,7 +202,7 @@ w32_wait_events(HANDLE *events, int count, DWORD timeout, rb_thread_t *th)
 	    targets[count++] = intr;
 	    thread_debug("  * handle: %p (count: %d, intr)\n", intr, count);
 	}
-	native_mutex_unlock(&th->vm->global_vm_lock);
+	gvl_release(th->vm);
     }
 
     thread_debug("  WaitForMultipleObjects start (count: %d)\n", count);
@@ -260,32 +338,7 @@ static int
 native_mutex_lock(rb_thread_lock_t *lock)
 {
 #if USE_WIN32_MUTEX
-    DWORD result;
-    while (1) {
-	thread_debug("native_mutex_lock: %p\n", *lock);
-	result = w32_wait_events(&*lock, 1, INFINITE, 0);
-	switch (result) {
-	  case WAIT_OBJECT_0:
-	    /* get mutex object */
-	    thread_debug("acquire mutex: %p\n", *lock);
-	    return 0;
-	  case WAIT_OBJECT_0 + 1:
-	    /* interrupt */
-	    errno = EINTR;
-	    thread_debug("acquire mutex interrupted: %p\n", *lock);
-	    return 0;
-	  case WAIT_TIMEOUT:
-	    thread_debug("timeout mutex: %p\n", *lock);
-	    break;
-	  case WAIT_ABANDONED:
-	    rb_bug("win32_mutex_lock: WAIT_ABANDONED");
-	    break;
-	  default:
-	    rb_bug("win32_mutex_lock: unknown result (%d)", result);
-	    break;
-	}
-    }
-    return 0;
+    w32_mutex_lock(*lock);
 #else
     EnterCriticalSection(lock);
     return 0;
@@ -328,10 +381,7 @@ static void
 native_mutex_initialize(rb_thread_lock_t *lock)
 {
 #if USE_WIN32_MUTEX
-    *lock = CreateMutex(NULL, FALSE, NULL);
-    if (*lock == NULL) {
-	w32_error("native_mutex_initialize");
-    }
+    *lock = w32_mutex_create();
     /* thread_debug("initialize mutex: %p\n", *lock); */
 #else
     InitializeCriticalSection(lock);
@@ -353,11 +403,6 @@ native_mutex_destroy(rb_thread_lock_t *lock)
 struct cond_event_entry {
     struct cond_event_entry* next;
     HANDLE event;
-};
-
-struct rb_thread_cond_struct {
-    struct cond_event_entry *next;
-    struct cond_event_entry *last;
 };
 
 static void
