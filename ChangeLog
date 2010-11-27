@@ -1,3 +1,8 @@
+Sat Nov 27 11:29:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser#candidate): get rid of 1.9 syntax
+	  so that BASERUBY can be 1.8.
+
 Sat Nov 27 08:16:21 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* addr2line.c (rb_dump_backtrace_with_lines): should close fd on

@@ -1549,10 +1549,10 @@ XXX
     end
     pat = Completion.regexp(word, true)
     visit(:each_option) do |opt|
-      opts = [*(opt.long if long), *(opt.short if short)]
+      opts = (long ? opt.long : []) + (short ? opt.short [])
       opts = Completion.candidate(word, true, pat, &opts.method(:each)).map(&:first) if pat
       if /\A=/ =~ opt.arg
-        opts = opts.map {|sw| sw + "="}
+        opts.map! {|sw| sw + "="}
         if arg and CompletingHash === opt.pattern
           if opts = opt.pattern.candidate(arg, false, argpat)
             opts.map!(&:last)
