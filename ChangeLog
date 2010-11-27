@@ -1,3 +1,8 @@
+Sun Nov 28 03:58:47 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http.rb: improve rdoc.
+	  patched by Mike Perham [ruby-core:33433]
+
 Sat Nov 27 19:12:10 2010  Tanaka Akira  <akr@fsij.org>
 
 	* time.c: parenthesize macro arguments.
