@@ -1,3 +1,10 @@
+Sun Nov 28 04:40:00 2010  Luis Lavena  <luislavena@gmail.com>
+
+	* io.c (io_fwrite): use rb_w32_write_console under Windows.
+
+	* win32/win32.c (rb_w32_write_console): added to write to write
+	  Unicode using WriteConsoleW for stdout/stderr. [ruby-core:33166]
+
 Sun Nov 28 03:58:47 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http.rb: improve rdoc.
