@@ -1844,6 +1844,7 @@ if test "$rb_cv_binary_elf" = yes; then
   if test "$with_dln_a_out" = yes; then
     AC_MSG_ERROR(dln_a_out does not work with ELF)
   fi
+  AC_LIBOBJ([addr2line])
 fi
 
 AS_CASE(["$target_os"],

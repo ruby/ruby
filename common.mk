@@ -91,7 +91,6 @@ COMMONOBJS    = array.$(OBJEXT) \
 		vm_dump.$(OBJEXT) \
 		thread.$(OBJEXT) \
 		cont.$(OBJEXT) \
-		addr2line.$(OBJEXT) \
 		$(BUILTIN_ENCOBJS) \
 		$(BUILTIN_TRANSOBJS) \
 		$(MISSING)

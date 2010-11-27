@@ -1,3 +1,7 @@
+Sat Nov 27 15:43:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: link addr2line only for ELF.
+
 Sat Nov 27 13:58:55 2010  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser#candidate): : was missing.  Thanks,
