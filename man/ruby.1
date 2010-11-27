@@ -37,7 +37,7 @@ straight-forward, and extensible.
 .Pp
 If you want a language for easy object-oriented programming, or you
 don't like the Perl ugliness, or you do like the concept of LISP, but
-don't like too much parentheses, Ruby may be the language of your
+don't like too many parentheses, Ruby might be your language of
 choice.
 .Sh FEATURES
 Ruby's features are as follows:
@@ -53,7 +53,7 @@ time check.
 .Pp
 .It Sy "No declaration needed"
 You can use variables in your Ruby programs without any declarations.
-Variable names denote their scope, local, global, instance, etc.
+Variable names denote their scope - global, class, instance, or local.
 .Pp
 .It Sy "Simple syntax"
 Ruby has a simple syntax influenced slightly from Eiffel.
@@ -64,11 +64,11 @@ from anywhere are automatically collected by the garbage collector
 built into the interpreter.
 .Pp
 .It Sy "Everything is an object"
-Ruby is the purely object-oriented language, and was so since its
+Ruby is a purely object-oriented language, and was so since its
 creation.  Even such basic data as integers are seen as objects.
 .Pp
 .It Sy "Class, inheritance, and methods"
-Of course, as an object-oriented language, Ruby has such basic
+Being an object-oriented language, Ruby naturally has basic
 features like classes, inheritance, and methods.
 .Pp
 .It Sy "Singleton methods"
@@ -81,7 +81,7 @@ to.
 .It Sy "Mix-in by modules"
 Ruby intentionally does not have the multiple inheritance as it is a
 source of confusion.  Instead, Ruby has the ability to share
-implementations across the inheritance tree.  This is often called
+implementations across the inheritance tree.  This is often called a
 .Sq Mix-in .
 .Pp
 .It Sy "Iterators"
@@ -90,7 +90,7 @@ Ruby has iterators for loop abstraction.
 .It Sy "Closures"
 In Ruby, you can objectify the procedure.
 .Pp
-.It Sy "Text processing and regular expression"
+.It Sy "Text processing and regular expressions"
 Ruby has a bunch of text processing features like in Perl.
 .Pp
 .It Sy "M17N, character set independent"
@@ -102,8 +102,8 @@ different character encodings, without dependence on Unicode.
 With built-in bignums, you can for example calculate factorial(400).
 .Pp
 .It Sy "Reflection and domain specific languages"
-Class is also an instance of Class class. Definition of classes and methods
-is just an expression as 1+1 is. So your programs can even write and modify programs.
+Class is also an instance of the Class class. Definition of classes and methods
+is an expression just as 1+1 is. So your programs can even write and modify programs.
 Thus you can write your application in your own programming language on top of Ruby.
 .Pp
 .It Sy "Exception handling"
@@ -209,7 +209,7 @@ on machines that don't support it, in the following manner:
 Turns on taint checks at the specified level (default 1).
 .Pp
 .It Fl U
-Sets the defalut value for internal encodings
+Sets the default value for internal encodings
 .Pf ( Li "Encoding.default_internal" ) to UTF-8.
 .Pp
 .It Fl W Ns Op Ar level=2
@@ -259,7 +259,7 @@ will be set to true.
 .Pp
 .It Fl e Ar command
 Specifies script from command-line while telling Ruby not to search
-the rest of arguments for a script file name.
+the rest of the arguments for a script file name.
 .Pp
 .It Fl h
 .It Fl -help
@@ -367,7 +367,7 @@ must be specified with either
 .Li EOF ,
 .Li "^D" ( Li "control-D" ) ,
 .Li "^Z" ( Li "control-Z" ) ,
-or reserved word
+or the reserved word
 .Li __END__ .
 If the directory name is specified, Ruby will switch to that directory
 before executing script.
@@ -474,7 +474,7 @@ environment variable on calling Kernel#system.
 This variable is obsolete.
 .El
 .Pp
-And Ruby depends on some RubyGems related environment variables unless disabled RubyGems.
+And Ruby depends on some RubyGems related environment variables unless RubyGems is disabled.
 See the help of
 .Xr gem 1
 as bellow.
@@ -497,7 +497,7 @@ Ruby Application Archive.
 .Li Security vulnerabilities should be reported via an email to
 .Aq security@ruby-lang.org Ns
 .Li .
-Reported problems will be published after fixed.
+Reported problems will be published after they've been fixed.
 .Pp
 .Li And you can report other bugs and feature requests via the
 Ruby Issue Tracking System (http://redmine.ruby-lang.org).

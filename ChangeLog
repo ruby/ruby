@@ -1,3 +1,7 @@
+Sat Nov 27 12:07:05 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* man/ruby.1: Ruby man page from Arthur Gunn in [ruby-core:33412]
+
 Sat Nov 27 11:29:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser#candidate): get rid of 1.9 syntax
