@@ -11,6 +11,7 @@
 #include "addr2line.h"
 
 #include <stdio.h>
+#include <errno.h>
 
 #ifdef __ELF__
 
