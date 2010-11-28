@@ -1,8 +1,11 @@
 begin
+  verbose, $VERBOSE = $VERBOSE, nil
   require 'iconv'
 rescue LoadError
 else
   require 'test/unit'
+ensure
+  $VERBOSE = verbose
 end
 
 class TestIconv < ::Test::Unit::TestCase
