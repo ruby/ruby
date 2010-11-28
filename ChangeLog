@@ -1,3 +1,7 @@
+Sun Nov 28 14:55:42 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_win32.c (gvl_release, gvl_init): suppress warnings.
+
 Sun Nov 28 14:48:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.c (gvl_release, gvl_init): suppress warnings.

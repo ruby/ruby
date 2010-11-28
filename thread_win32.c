@@ -32,6 +32,7 @@ static void native_cond_broadcast(rb_thread_cond_t *cond);
 static void native_cond_wait(rb_thread_cond_t *cond, rb_thread_lock_t *mutex);
 static void native_cond_initialize(rb_thread_cond_t *cond);
 static void native_cond_destroy(rb_thread_cond_t *cond);
+static int w32_wait_events(HANDLE *events, int count, DWORD timeout, rb_thread_t *th);
 
 static void
 w32_error(const char *func)
@@ -79,7 +80,7 @@ w32_mutex_lock(HANDLE lock)
 	    rb_bug("win32_mutex_lock: WAIT_ABANDONED");
 	    break;
 	  default:
-	    rb_bug("win32_mutex_lock: unknown result (%d)", result);
+	    rb_bug("win32_mutex_lock: unknown result (%ld)", result);
 	    break;
 	}
     }
@@ -120,7 +121,6 @@ gvl_atfork(rb_vm_t *vm)
 static void
 gvl_init(rb_vm_t *vm)
 {
-    int r;
     if (GVL_DEBUG) fprintf(stderr, "gvl init\n");
     vm->gvl.lock = w32_mutex_create();
 }
