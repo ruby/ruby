@@ -1,3 +1,8 @@
+Mon Nov 29 05:54:22 2010  Koichi Sasada  <ko1@atdot.net>
+
+	* thread_pthread.c (native_cond_*): Check return code.
+	  (Some OSs except Linux return error code).
+
 Sun Nov 28 21:46:21 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.c (thread_start_func_1): initialize native thread
