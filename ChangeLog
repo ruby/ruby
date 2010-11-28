@@ -1,3 +1,7 @@
+Sun Nov 28 14:56:32 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (struct argf): make lineno long, and reorder members.
+
 Sun Nov 28 14:55:42 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_win32.c (gvl_release, gvl_init): suppress warnings.

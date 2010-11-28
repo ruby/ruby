@@ -145,13 +145,12 @@ struct timeval rb_time_interval(VALUE);
 
 struct argf {
     VALUE filename, current_file;
-    int last_lineno;		/* $. */
-    int lineno;
-    int init_p, next_p;
+    long last_lineno;		/* $. */
+    long lineno;
     VALUE argv;
     char *inplace;
-    int binmode;
     struct rb_io_enc_t encs;
+    char init_p, next_p, binmode;
 };
 
 static int max_file_descriptor = NOFILE;
@@ -6945,7 +6944,7 @@ static VALUE
 argf_getline(int argc, VALUE *argv, VALUE argf)
 {
     VALUE line;
-    int lineno = ARGF.lineno;
+    long lineno = ARGF.lineno;
 
   retry:
     if (!next_argv()) return Qnil;
@@ -7176,7 +7175,7 @@ rb_f_readlines(int argc, VALUE *argv, VALUE recv)
 static VALUE
 argf_readlines(int argc, VALUE *argv, VALUE argf)
 {
-    int lineno = ARGF.lineno;
+    long lineno = ARGF.lineno;
     VALUE lines, ary;
 
     ary = rb_ary_new();
