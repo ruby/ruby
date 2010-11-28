@@ -29,8 +29,6 @@ static void native_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex);
 static void native_cond_initialize(pthread_cond_t *cond);
 static void native_cond_destroy(pthread_cond_t *cond);
 
-static void native_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(void));
-
 #define native_mutex_reinitialize_atfork(lock) (\
 	native_mutex_unlock(lock), \
 	native_mutex_initialize(lock), \
@@ -125,39 +123,19 @@ gvl_release(rb_vm_t *vm)
 }
 
 static void
-gvl_atfork(rb_vm_t *vm)
-{
-#if GVL_SIMPLE_LOCK
-    native_mutex_reinitialize_atfork(&vm->gvl.lock);
-#else
-    /* do nothing */
-#endif
-}
-
-static void gvl_reinit(rb_vm_t *vm);
-
-static void
-gvl_atfork_child(void)
-{
-    gvl_reinit(GET_VM());
-}
-
-static void
 gvl_init(rb_vm_t *vm)
 {
     if (GVL_DEBUG) fprintf(stderr, "gvl init\n");
-    native_atfork(0, 0, gvl_atfork_child);
-    gvl_reinit(vm);
-}
 
-static void
-gvl_reinit(rb_vm_t *vm)
-{
+#if GVL_SIMPLE_LOCK
+    native_mutex_reinitialize_atfork(&vm->gvl.lock);
+#else
     native_mutex_initialize(&vm->gvl.lock);
     vm->gvl.waiting_threads = 0;
     vm->gvl.waiting_last_thread = 0;
     vm->gvl.waiting = 0;
     vm->gvl.acquired = 0;
+#endif
 }
 
 static void
@@ -165,6 +143,14 @@ gvl_destroy(rb_vm_t *vm)
 {
     if (GVL_DEBUG) fprintf(stderr, "gvl destroy\n");
     native_mutex_destroy(&vm->gvl.lock);
+}
+
+static void
+gvl_atfork(rb_vm_t *vm)
+{
+    if (GVL_DEBUG) fprintf(stderr, "gvl atfork\n");
+    gvl_init(vm);
+    gvl_acquire(vm, GET_THREAD());
 }
 
 static void
@@ -291,15 +277,6 @@ native_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, struct times
 	rb_bug_errno("pthread_cond_timedwait", r);
     }
     return r;
-}
-
-static void
-native_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(void))
-{
-    int r = pthread_atfork(prepare, parent, child);
-    if (r != 0) {
-	rb_bug_errno("native_atfork", r);
-    }
 }
 
 #define native_cleanup_push pthread_cleanup_push

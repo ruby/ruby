@@ -1,3 +1,7 @@
+Mon Nov 29 05:58:58 2010  Koichi Sasada  <ko1@atdot.net>
+
+	* thread_pthread.c: remove pthread_atfork().
+
 Mon Nov 29 05:54:22 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_pthread.c (native_cond_*): Check return code.
