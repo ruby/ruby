@@ -153,10 +153,12 @@ gvl_atfork(rb_vm_t *vm)
     gvl_acquire(vm, GET_THREAD());
 }
 
+#define NATIVE_MUTEX_LOCK_DEBUG 0
+
 static void
 mutex_debug(const char *msg, pthread_mutex_t *lock)
 {
-    if (0) {
+    if (NATIVE_MUTEX_LOCK_DEBUG) {
 	int r;
 	static pthread_mutex_t dbglock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -165,8 +167,6 @@ mutex_debug(const char *msg, pthread_mutex_t *lock)
 	if ((r = pthread_mutex_unlock(&dbglock)) != 0) {exit(1);}
     }
 }
-
-#define NATIVE_MUTEX_LOCK_DEBUG 1
 
 static void
 native_mutex_lock(pthread_mutex_t *lock)

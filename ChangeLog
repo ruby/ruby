@@ -1,8 +1,14 @@
-Mon Nov 29 05:58:58 2010  Koichi Sasada  <ko1@atdot.net>
+Sun Nov 28 22:13:39 2010  Koichi Sasada  <ko1@atdot.net>
+
+	* thread_pthread.c (NATIVE_MUTEX_LOCK_DEBUG): move and use it.
+
+	* ChangeLog: fix my timezone.
+
+Mon Nov 28 21:58:58 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_pthread.c: remove pthread_atfork().
 
-Mon Nov 29 05:54:22 2010  Koichi Sasada  <ko1@atdot.net>
+Mon Nov 28 21:54:22 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_pthread.c (native_cond_*): Check return code.
 	  (Some OSs except Linux return error code).
