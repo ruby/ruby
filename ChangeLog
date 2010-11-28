@@ -1,3 +1,8 @@
+Sun Nov 28 14:46:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (gvl_reinit): register atfork hander only in
+	  the parent process, to get rid of dead lock.
+
 Sun Nov 28 12:23:57 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c, vm_core.h: make gvl_acquire/release/init/destruct

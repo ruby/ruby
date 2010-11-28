@@ -132,22 +132,26 @@ gvl_atfork(rb_vm_t *vm)
 #endif
 }
 
-static void gvl_init(rb_vm_t *vm);
+static void gvl_reinit(rb_vm_t *vm);
 
 static void
 gvl_atfork_child(void)
 {
-    gvl_init(GET_VM());
+    gvl_reinit(GET_VM());
 }
 
 static void
 gvl_init(rb_vm_t *vm)
 {
-    int r;
     if (GVL_DEBUG) fprintf(stderr, "gvl init\n");
-    native_mutex_initialize(&vm->gvl.lock);
     native_atfork(0, 0, gvl_atfork_child);
+    gvl_reinit(vm);
+}
 
+static void
+gvl_reinit(rb_vm_t *vm)
+{
+    native_mutex_initialize(&vm->gvl.lock);
     vm->gvl.waiting_threads = 0;
     vm->gvl.waiting_last_thread = 0;
     vm->gvl.waiting = 0;
