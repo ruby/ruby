@@ -29,7 +29,7 @@ static void native_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex);
 static void native_cond_initialize(pthread_cond_t *cond);
 static void native_cond_destroy(pthread_cond_t *cond);
 
-static void native_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(void)); 
+static void native_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(void));
 
 #define native_mutex_reinitialize_atfork(lock) (\
 	native_mutex_unlock(lock), \
@@ -50,6 +50,7 @@ gvl_show_waiting_threads(rb_vm_t *vm)
     }
 }
 
+#if !GVL_SIMPLE_LOCK
 static void
 gvl_waiting_push(rb_vm_t *vm, rb_thread_t *th)
 {
@@ -73,6 +74,7 @@ gvl_waiting_shift(rb_vm_t *vm, rb_thread_t *th)
     vm->gvl.waiting_threads = vm->gvl.waiting_threads->native_thread_data.gvl_next;
     vm->gvl.waiting--;
 }
+#endif
 
 static void
 gvl_acquire(rb_vm_t *vm, rb_thread_t *th)
@@ -114,7 +116,7 @@ gvl_release(rb_vm_t *vm)
 	native_cond_signal(&th->native_thread_data.gvl_cond);
     }
     else {
-	if (GVL_DEBUG) fprintf(stderr, "gvl release (%p): wakeup: %p\n", GET_THREAD(), 0);
+	if (GVL_DEBUG) fprintf(stderr, "gvl release (%p): wakeup: %p\n", GET_THREAD(), NULL);
 	/* do nothing */
     }
     vm->gvl.acquired = 0;

@@ -1,3 +1,9 @@
+Sun Nov 28 14:48:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (gvl_release, gvl_init): suppress warnings.
+
+	* vm_core.h (rb_vm_gvl_destroy): add prototype.
+
 Sun Nov 28 14:46:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.c (gvl_reinit): register atfork hander only in
@@ -15,7 +21,7 @@ Sun Nov 28 12:23:57 2010  Koichi Sasada  <ko1@atdot.net>
 	      this causes some issues such as priority inversion and so on.)
 	      This impl. prevents spin-loop (*1) caused on SMP environemnts.
 	  *1: Only one Ruby thread acqures GVL again and again.
-	      Bug #2359 [ruby-core:26694] 
+	      Bug #2359 [ruby-core:26694]
 
 	* thread_win32.c, thread_win32.h: Using simple lock
 	  not by CRITICAL_SECTION but by Mutex.
