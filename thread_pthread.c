@@ -324,6 +324,8 @@ ruby_thread_set_native(rb_thread_t *th)
     return pthread_setspecific(ruby_native_thread_key, th) == 0;
 }
 
+static void native_thread_init(rb_thread_t *th);
+
 void
 Init_native_thread(void)
 {
@@ -331,11 +333,17 @@ Init_native_thread(void)
 
     pthread_key_create(&ruby_native_thread_key, NULL);
     th->thread_id = pthread_self();
+    native_thread_init(th);
+    native_mutex_initialize(&signal_thread_list_lock);
+    posix_signal(SIGVTALRM, null_func);
+}
+
+static void
+native_thread_init(rb_thread_t *th)
+{
     native_cond_initialize(&th->native_thread_data.sleep_cond);
     native_cond_initialize(&th->native_thread_data.gvl_cond);
     ruby_thread_set_native(th);
-    native_mutex_initialize(&signal_thread_list_lock);
-    posix_signal(SIGVTALRM, null_func);
 }
 
 static void
@@ -519,6 +527,7 @@ thread_start_func_1(void *th_ptr)
 #ifndef __CYGWIN__
 	native_thread_init_stack(th);
 #endif
+	native_thread_init(th);
 	/* run */
 	thread_start_func_2(th, &stack_start, rb_ia64_bsp());
     }
@@ -679,10 +688,6 @@ native_thread_create(rb_thread_t *th)
 	err = pthread_create(&th->thread_id, &attr, thread_start_func_1, th);
 	thread_debug("create: %p (%d)", (void *)th, err);
 	CHECK_ERR(pthread_attr_destroy(&attr));
-
-	if (!err) {
-	    pthread_cond_init(&th->native_thread_data.sleep_cond, 0);
-	}
     }
     return err;
 }

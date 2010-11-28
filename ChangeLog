@@ -1,3 +1,8 @@
+Sun Nov 28 21:46:21 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (thread_start_func_1): initialize native thread
+	  data immediately before starting.
+
 Sun Nov 28 14:56:32 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (struct argf): make lineno long, and reorder members.
