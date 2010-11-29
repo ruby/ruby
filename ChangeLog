@@ -1,3 +1,7 @@
+Mon Nov 29 14:10:55 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_write_console): fixed indentation.
+
 Sun Nov 28 22:13:39 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_pthread.c (NATIVE_MUTEX_LOCK_DEBUG): move and use it.
