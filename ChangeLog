@@ -1,3 +1,9 @@
+Mon Nov 29 18:31:31 2010  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/test_transcode.rb (test_unicode_public_review_issue_121):
+	  - Removed commented-out options that are no longer under discussion.
+	  - Added two more tests for forthcomming clarifications.
+
 Mon Nov 29 14:31:17 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_isatty): use GetConsoleMode() to determine the
