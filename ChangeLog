@@ -1,3 +1,8 @@
+Mon Nov 29 22:55:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/uri/common.rb (URI::WFKV_): get rid of backtrack explosion
+	  by nested repeat operators.  [ruby-core:33464]
+
 Mon Nov 29 22:53:13 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/Makefile.sub (scriptbin.mk): fix generated rules.

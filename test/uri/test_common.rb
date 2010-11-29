@@ -110,6 +110,8 @@ class TestCommon < Test::Unit::TestCase
     assert_raise(ArgumentError){URI.decode_www_form("a=1&%=2")}
     assert_raise(ArgumentError){URI.decode_www_form("a=1&b=%")}
     assert_raise(ArgumentError){URI.decode_www_form("a&b")}
+    bug4098 = '[ruby-core:33464]'
+    assert_raise(ArgumentError, bug4098){URI.decode_www_form("a=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&b")}
   end
 end
 
