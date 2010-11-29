@@ -5576,11 +5576,13 @@ rb_w32_uchmod(const char *path, int mode)
 int
 rb_w32_isatty(int fd)
 {
+    DWORD mode;
+
     // validate fd by using _get_osfhandle() because we cannot access _nhandle
     if (_get_osfhandle(fd) == -1) {
 	return 0;
     }
-    if (!(_osfile(fd) & FDEV)) {
+    if (!GetConsoleMode((HANDLE)_osfhnd(fd), &mode)) {
 	errno = ENOTTY;
 	return 0;
     }
