@@ -1,4 +1,7 @@
-Mon Nov 29 21:11:16 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Nov 29 21:12:51 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-forward-sexp): stop after literal hash
+	  key labels.
 
 	* misc/ruby-mode.el (ruby-font-lock-keywords): highlight literal
 	  hash key labels as symbols.

@@ -973,6 +973,7 @@ An end of a defun is found by moving forward from the beginning of one."
       (condition-case nil
           (while (> i 0)
             (skip-syntax-forward " ")
+            (if (looking-at ",\\s *") (goto-char (match-end 0)))
             (cond ((looking-at "\\?\\(\\\\[CM]-\\)*\\\\?\\S ")
                    (goto-char (match-end 0)))
                   ((progn
