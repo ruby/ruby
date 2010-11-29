@@ -1,4 +1,6 @@
-Mon Nov 29 22:52:23 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Nov 29 22:53:13 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub (scriptbin.mk): fix generated rules.
 
 	* win32/win32.c (rb_w32_write_console): fix argument type.
 

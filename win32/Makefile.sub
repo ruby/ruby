@@ -361,8 +361,8 @@ stub: $(STUBPROGRAM)
 !endif
 !if [for %I in ($(srcdir:/=\)\bin\*) do @for %J in (\
 "%~nI.exe: $$(srcdir)/bin/%~nI" \
-"	@echo generating $$@" \
-"	@copy /b $$(STUBPROGRAM) +<< +$$(srcdir:/=\)\bin\%~nI $$@ > nul" \
+"	@echo generating $$(@)" \
+"	@copy /b $$(STUBPROGRAM) +<< +$$(srcdir:/=\)\bin\%~nI $$(@) > nul" \
 "" "<<" "" \
 ) do @echo.%~J>>scriptbin.mk]
 !else
@@ -404,7 +404,7 @@ test-rubyspec-precheck:
 	@exit 1
 !endif
 
-$(MKFILES): $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub $(win_srcdir)/configure.bat $(win_srcdir)/setup.mak $(win_srcdir)/enc-setup.mak $(srcdir)/enc/Makefile.in
+$(MKFILES): $(win_srcdir)/Makefile.sub $(win_srcdir)/configure.bat $(win_srcdir)/setup.mak $(win_srcdir)/enc-setup.mak $(srcdir)/enc/Makefile.in
 	$(COMSPEC) /C $(win_srcdir:/=\)\configure.bat $(configure_args)
 	@echo $(MKFILES) should be updated, re-run $(MAKE).
 	@exit 1
@@ -843,7 +843,7 @@ $(WPROGRAM):	$(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_SO) $(RUBYW_INSTALL_NAME).res
 !endif
 
 !if "$(STUBPROGRAM)" != ""
-$(STUBPROGRAM):	stub.$(OBJEXT) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
+$(STUBPROGRAM):	stub.$(OBJEXT) $(LIBRUBY) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
 		$(ECHO) linking $(@:\=/)
 		$(Q) $(PURIFY) $(CC) stub.$(OBJEXT) $(RUBY_INSTALL_NAME).res \
 			$(OUTFLAG)$@ $(LIBRUBYARG) -link $(LDFLAGS) $(XLDFLAGS)
