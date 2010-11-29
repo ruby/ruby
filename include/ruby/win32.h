@@ -654,7 +654,7 @@ size_t rb_w32_read(int, void *, size_t);
 size_t rb_w32_write(int, const void *, size_t);
 int  rb_w32_utime(const char *, const struct utimbuf *);
 int  rb_w32_uutime(const char *, const struct utimbuf *);
-long rb_w32_write_console(unsigned long, int);
+long rb_w32_write_console(uintptr_t, int);	/* use uintptr_t instead of VALUE because it's not defined yet here */
 int  WINAPI rb_w32_Sleep(unsigned long msec);
 int  rb_w32_wait_events_blocking(HANDLE *events, int num, DWORD timeout);
 

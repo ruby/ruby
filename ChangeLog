@@ -1,3 +1,7 @@
+Mon Nov 29 14:19:40 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* include/ruby/win32.h (rb_w32_write_console): wrong prototype.
+
 Mon Nov 29 14:10:55 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_write_console): fixed indentation.
