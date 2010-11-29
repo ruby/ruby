@@ -1,3 +1,7 @@
+Mon Nov 29 22:52:23 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_write_console): fix argument type.
+
 Mon Nov 29 21:12:51 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-forward-sexp): stop after literal hash
