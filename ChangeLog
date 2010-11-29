@@ -1,3 +1,11 @@
+Tue Nov 30 05:03:44 2010  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/uri/common.rb (encode_www_form, encode_www_form_component):
+	  Improve english in documentation.
+	
+	* ext/openssl/ossl_ssl.c (ssl_version=, ciphers=): Document
+	  #ssl_version=, add documentation for #ciphers=.
+
 Mon Nov 29 22:55:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/uri/common.rb (URI::WFKV_): get rid of backtrack explosion

@@ -733,10 +733,11 @@ module URI
 
   # Encode given +str+ to URL-encoded form data.
   #
-  # This doesn't convert *, -, ., 0-9, A-Z, _, a-z,
-  # does convert SP to +, and convert others to %XX.
+  # This method doesn't convert *, -, ., 0-9, A-Z, _, a-z, but does convert SP
+  # (ASCII space) to + and converts others to %XX.
   #
-  # This refers http://www.w3.org/TR/html5/forms.html#url-encoded-form-data
+  # This is an implementation of
+  # http://www.w3.org/TR/html5/forms.html#url-encoded-form-data
   #
   # See URI.decode_www_form_component, URI.encode_www_form
   def self.encode_www_form_component(str)
@@ -786,14 +787,16 @@ module URI
   #
   # This internally uses URI.encode_www_form_component(str).
   #
-  # This doesn't convert encodings of give items, so convert them before call
-  # this method if you want to send data as other than original encoding or
-  # mixed encoding data. (strings which is encoded in HTML5 ASCII incompatible
-  # encoding is converted to UTF-8)
+  # This method doesn't convert the encoding of given items, so convert them
+  # before call this method if you want to send data as other than original
+  # encoding or mixed encoding data. (Strings which are encoded in an HTML5
+  # ASCII incompatible encoding are converted to UTF-8.)
   #
-  # This doesn't treat files. When you send a file, use multipart/form-data.
+  # This method doesn't handle files.  When you send a file, use
+  # multipart/form-data.
   #
-  # This refers http://www.w3.org/TR/html5/forms.html#url-encoded-form-data
+  # This is an implementation of
+  # http://www.w3.org/TR/html5/forms.html#url-encoded-form-data
   #
   # See URI.encode_www_form_component, URI.decode_www_form
   def self.encode_www_form(enum)

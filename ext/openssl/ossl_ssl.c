@@ -147,6 +147,13 @@ ossl_sslctx_s_alloc(VALUE klass)
     return Data_Wrap_Struct(klass, 0, ossl_sslctx_free, ctx);
 }
 
+/*
+ * call-seq:
+ *    ctx.ssl_version = :TLSv1
+ *    ctx.ssl_version = "SSLv23_client"
+ *
+ * You can get a list of valid methods with OpenSSL::SSL::SSLContext::METHODS
+ */
 static VALUE
 ossl_sslctx_set_ssl_version(VALUE self, VALUE ssl_method)
 {
@@ -714,6 +721,12 @@ ossl_sslctx_get_ciphers(VALUE self)
  *    ctx.ciphers = "cipher1:cipher2:..."
  *    ctx.ciphers = [name, ...]
  *    ctx.ciphers = [[name, version, bits, alg_bits], ...]
+ *
+ * Sets the list of available ciphers for this context.  Note in a server
+ * context some ciphers require the appropriate certificates.  For example, an
+ * RSA cipher can only be chosen when an RSA certificate is available.
+ *
+ * See also OpenSSL::Cipher and OpenSSL::Cipher::ciphers
  */
 static VALUE
 ossl_sslctx_set_ciphers(VALUE self, VALUE v)
