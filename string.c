@@ -4214,10 +4214,22 @@ rb_str_inspect(VALUE str)
     p = RSTRING_PTR(str); pend = RSTRING_END(str);
     prev = p;
     if (enc == utf16) {
-	enc = *p == (char)0xFF ? rb_enc_find("UTF-16LE") : rb_enc_find("UTF-16BE");
+	const unsigned char *q = (const unsigned char *)p;
+	if (q[0] == 0xFE && q[1] == 0xFF)
+	    enc = rb_enc_find("UTF-16BE");
+	else if (q[0] == 0xFF && q[1] == 0xFD)
+	    enc = rb_enc_find("UTF-16LE");
+	else
+	    unicode_p = 0;
     }
     else if (enc == utf32) {
-	enc = *p == (char)0xFF ? rb_enc_find("UTF-32LE") : rb_enc_find("UTF-32BE");
+	const unsigned char *q = (const unsigned char *)p;
+	if (q[0] == 0 && q[1] == 0 && q[2] == 0xFE && q[3] == 0xFF)
+	    enc = rb_enc_find("UTF-32BE");
+	else if (q[3] == 0 && q[2] == 0 && q[1] == 0xFE && q[0] == 0xFF)
+	    enc = rb_enc_find("UTF-32LE");
+	else
+	    unicode_p = 0;
     }
     while (p < pend) {
 	unsigned int c, cc;
@@ -6004,7 +6016,6 @@ static VALUE
 rb_str_each_codepoint(VALUE str)
 {
     VALUE orig = str;
-    long len;
     int n;
     unsigned int c;
     const char *ptr, *end;
@@ -6014,7 +6025,6 @@ rb_str_each_codepoint(VALUE str)
     RETURN_ENUMERATOR(str, 0, 0);
     str = rb_str_new4(str);
     ptr = RSTRING_PTR(str);
-    len = RSTRING_LEN(str);
     end = RSTRING_END(str);
     enc = STR_ENC_GET(str);
     while (ptr < end) {

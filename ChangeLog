@@ -1,3 +1,14 @@
+Wed Dec  1 01:29:15 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_inspect): inspect as a dummy encoding string
+	  when a UTF-16/32 (not BE/LE) string does not have a BOM.
+	  Unicode and some RFCs say that a string labeld as UTF-16/32
+	  doesn't have a BOM, it should be considered big endian.
+	  But many Windows programs generates little endian UTF-16
+	  strings without a BOM. So String#inspect treats a string
+	  labeled UTF-16/32 withaout a BOM as a dummy encoding string.
+	  patched by Martin Duerst. [ruby-core:33461]
+
 Tue Nov 30 17:04:10 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* addr2line.c (parse_debug_line_cu): ignore DW_LNE_set_discriminator.
