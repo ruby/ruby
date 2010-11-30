@@ -203,7 +203,7 @@ end
 
 class TestMeta < MiniTest::Unit::TestCase
   def test_structure
-    x = y = nil
+    x = y = z = nil
     x = describe "top-level thingy" do
       before {}
       after  {}
@@ -213,13 +213,23 @@ class TestMeta < MiniTest::Unit::TestCase
       y = describe "inner thingy" do
         before {}
         it "inner-it" do end
+
+        z = describe "very inner thingy" do
+          before {}
+          it "inner-it" do end
+        end
       end
     end
+
+    assert_equal "top-level thingy", x.to_s
+    assert_equal "top-level thingy::inner thingy", y.to_s
+    assert_equal "top-level thingy::inner thingy::very inner thingy", z.to_s
 
     top_methods = %w(setup teardown test_0001_top_level_it)
     inner_methods = %w(setup test_0001_inner_it)
 
-    assert_equal top_methods, x.instance_methods(false).sort.map   {|o| o.to_s }
+    assert_equal top_methods,   x.instance_methods(false).sort.map {|o| o.to_s }
     assert_equal inner_methods, y.instance_methods(false).sort.map {|o| o.to_s }
+    assert_equal inner_methods, z.instance_methods(false).sort.map {|o| o.to_s }
   end
 end
