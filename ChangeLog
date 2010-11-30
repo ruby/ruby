@@ -1,3 +1,10 @@
+Tue Nov 30 16:29:19 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vm_dump.c: undef HAVE_BACKTRACE when the OS is FreeBSD (in other
+	  words backtrace() is libexecinfo) and it is optimized.
+	  This temporary hack should be also applied to other libexecinfo
+	  environments.
+
 Tue Nov 30 16:23:23 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http.rb: improve rdoc.

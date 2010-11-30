@@ -585,6 +585,9 @@ bugreport_backtrace(void *arg, VALUE file, int line, VALUE method)
     return 0;
 }
 
+#if defined(__FreeBSD__) && defined(__OPTIMIZE__)
+#undef HAVE_BACKTRACE
+#endif
 #if HAVE_BACKTRACE
 # include <execinfo.h>
 #elif defined(_WIN32)
