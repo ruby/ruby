@@ -346,6 +346,10 @@ parse_debug_line_cu(int num_traces, void **traces,
 		fprintf(stderr, "Unsupported operation in %s\n",
 			binary_filename);
 		break;
+	    case DW_LNE_set_discriminator:
+		/* TODO:currently ignore */
+		uleb128(&p);
+		break;
 	    default:
 		fprintf(stderr, "Unknown extended opcode: %d in %s\n",
 			op, binary_filename);

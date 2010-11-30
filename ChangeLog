@@ -1,3 +1,8 @@
+Tue Nov 30 17:04:10 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* addr2line.c (parse_debug_line_cu): ignore DW_LNE_set_discriminator.
+	  To ignore, it needs to read a sigle unsigned LEB128 integer.
+
 Tue Nov 30 16:29:19 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vm_dump.c: undef HAVE_BACKTRACE when the OS is FreeBSD (in other
