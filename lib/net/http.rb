@@ -659,9 +659,49 @@ module Net   #:nodoc:
       ssl_version key cert ca_file ca_path cert_store ciphers
       verify_mode verify_callback verify_depth ssl_timeout
     )
-    attr_accessor(*SSL_ATTRIBUTES)
 
-    # return the X.509 certificates the server presented.
+    # Sets path of a CA certification file in PEM format.
+    #
+    # The file can contain several CA certificates.
+    attr_accessor :ca_file
+
+    # Sets path of a CA certification directory containing certifications in
+    # PEM format.
+    attr_accessor :ca_path
+
+    # Sets an OpenSSL::X509::Certificate object as client certificate.
+    # (This method is appeared in Michal Rokos's OpenSSL extension).
+    attr_accessor :cert
+
+    # Sets the X509::Store to verify peer certificate.
+    attr_accessor :cert_store
+
+    # Sets the available ciphers.  See OpenSSL::SSL::SSLContext#ciphers=
+    attr_accessor :ciphers
+
+    # Sets an OpenSSL::PKey::RSA or OpenSSL::PKey::DSA object.
+    # (This method is appeared in Michal Rokos's OpenSSL extension.)
+    attr_accessor :key
+
+    # Sets the SSL timeout seconds.
+    attr_accessor :ssl_timeout
+
+    # Sets the SSL version.  See OpenSSL::SSL::SSLContext#ssl_version=
+    attr_accessor :ssl_version
+
+    # Sets the verify callback for the server certification verification.
+    attr_accessor :verify_callback
+
+    # Sets the maximum depth for the certificate chain verification.
+    attr_accessor :verify_depth
+
+    # Sets the flags for server the certification verification at beginning of
+    # SSL/TLS session.
+    #
+    # OpenSSL::SSL::VERIFY_NONE or OpenSSL::SSL::VERIFY_PEER are acceptable.
+    attr_accessor :verify_mode
+
+    # Returns the X.509 certificates the server presented.
     def peer_cert
       if not use_ssl? or not @socket
         return nil
@@ -785,13 +825,28 @@ module Net   #:nodoc:
     #
     # If +p_addr+ is nil, this method returns self (a Net::HTTP object).
     #
-    #     # Example
-    #     proxy_class = Net::HTTP::Proxy('proxy.example.com', 8080)
-    #                     :
-    #     proxy_class.start('www.ruby-lang.org') {|http|
-    #       # connecting proxy.foo.org:8080
-    #                     :
-    #     }
+    #   # Example
+    #   proxy_class = Net::HTTP::Proxy('proxy.example.com', 8080)
+    #
+    #   proxy_class.start('www.ruby-lang.org') {|http|
+    #     # connecting proxy.foo.org:8080
+    #   }
+    #
+    # You may use them to work with authorization-enabled proxies:
+    #
+    #   proxy_host = 'your.proxy.example'
+    #   proxy_port = 8080
+    #   proxy_user = 'user'
+    #   proxy_pass = 'pass'
+    #
+    #   proxy = Net::HTTP::Proxy(proxy_host, proxy_port, proxy_user, proxy_pass)
+    #   proxy.start('www.example.com') { |http|
+    #     # always connect to your.proxy.example:8080 using specified username
+    #     # and password
+    #   }
+    #
+    # Note that net/http does not use the HTTP_PROXY environment variable.
+    # If you want to use a proxy, you must set it explicitly.
     #
     def HTTP.Proxy(p_addr, p_port = nil, p_user = nil, p_pass = nil)
       return self unless p_addr
@@ -2116,7 +2171,7 @@ module Net   #:nodoc:
   #     xxx        HTTPUnknownResponse
   #
   class HTTPResponse
-    # true if the response has body.
+    # true if the response has a body.
     def HTTPResponse.body_permitted?
       self::HAS_BODY
     end

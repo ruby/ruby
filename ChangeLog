@@ -1,3 +1,8 @@
+Tue Nov 30 16:23:23 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http.rb: improve rdoc.
+	  patched by Eric Hodel ref #4100
+
 Tue Nov 30 12:23:52 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_read): read only 1 byte at once on console.
