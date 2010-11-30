@@ -5027,6 +5027,7 @@ rb_w32_read(int fd, void *buf, size_t size)
     size_t len;
     size_t ret;
     OVERLAPPED ol, *pol = NULL;
+    BOOL isconsole;
     int start = 0;
 
     if (is_socket(sock))
@@ -5049,11 +5050,12 @@ rb_w32_read(int fd, void *buf, size_t size)
     }
 
     ret = 0;
+    isconsole = is_console(_osfhnd(fd));
   retry:
     /* get rid of console reading bug */
-    if (is_console(_osfhnd(fd))) {
+    if (isconsole) {
 	if (start)
-	    len = min(16 * 1024, size);
+	    len = 1;
 	else {
 	    len = 0;
 	    start = 1;
