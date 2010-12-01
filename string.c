@@ -4217,7 +4217,7 @@ rb_str_inspect(VALUE str)
 	const unsigned char *q = (const unsigned char *)p;
 	if (q[0] == 0xFE && q[1] == 0xFF)
 	    enc = rb_enc_find("UTF-16BE");
-	else if (q[0] == 0xFF && q[1] == 0xFD)
+	else if (q[0] == 0xFF && q[1] == 0xFE)
 	    enc = rb_enc_find("UTF-16LE");
 	else
 	    unicode_p = 0;

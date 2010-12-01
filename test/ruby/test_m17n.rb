@@ -243,6 +243,17 @@ class TestM17N < Test::Unit::TestCase
                      s.dup.force_encoding(enc).inspect)
       end
     end
+
+    str = "\uFEFF\u3042"
+    %w/UTF-16 UTF-32/.each do |enc|
+      %w/BE LE/.each do |endian|
+        s = str.encode(enc + endian)
+        # When a UTF-16/32 string doesn't have a BOM,
+        # inspect as a dummy encoding string.
+        assert_equal(s.inspect,
+                     s.dup.force_encoding(enc).inspect)
+      end
+    end
   end
 
   def test_str_dump

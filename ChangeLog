@@ -1,3 +1,7 @@
+Wed Dec  1 10:16:41 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_inspect): fix typo (not 0xFD but 0xFE).
+
 Wed Dec  1 09:28:27 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* addr2line.c: Follow .gnu_debuglink section.
