@@ -8,6 +8,8 @@ require 'optparse'
 
 ##
 # Minimal (mostly drop-in) replacement for test-unit.
+#
+# :include: README.txt
 
 module MiniTest
 
@@ -27,7 +29,8 @@ module MiniTest
            require 'pathname'
            pwd = Pathname.new Dir.pwd
            pn = Pathname.new File.expand_path(__FILE__)
-           pn = File.join(".", pn.relative_path_from(pwd)) unless pn.relative?
+           relpath = pn.relative_path_from(pwd) rescue pn
+           pn = File.join ".", relpath unless pn.relative?
            pn.to_s
          else                             # assume both are expanded
            __FILE__
@@ -40,13 +43,19 @@ module MiniTest
     return ["No backtrace"] unless bt
 
     new_bt = []
-    bt.each do |line|
-      break if line.rindex(MINI_DIR, 0)
-      new_bt << line
+
+    unless $DEBUG then
+      bt.each do |line|
+        break if line.rindex MINI_DIR, 0
+        new_bt << line
+      end
+
+      new_bt = bt.reject { |line| line.rindex MINI_DIR, 0 } if new_bt.empty?
+      new_bt = bt.dup if new_bt.empty?
+    else
+      new_bt = bt.dup
     end
 
-    new_bt = bt.reject { |line| line.rindex(MINI_DIR, 0) } if new_bt.empty?
-    new_bt = bt.dup if new_bt.empty?
     new_bt
   end
 
@@ -62,7 +71,7 @@ module MiniTest
 
     def mu_pp obj
       s = obj.inspect
-      s = s.force_encoding(Encoding.default_external) if defined? Encoding
+      s = s.force_encoding Encoding.default_external if defined? Encoding
       s
     end
 
@@ -91,15 +100,14 @@ module MiniTest
     # Fails unless the block returns a true value.
 
     def assert_block msg = nil
-      msg = message(msg) { "Expected block to return true value" }
-      assert yield, msg
+      assert yield, "Expected block to return true value."
     end
 
     ##
     # Fails unless +obj+ is empty.
 
     def assert_empty obj, msg = nil
-      msg = message(msg) { "Expected #{obj.inspect} to be empty" }
+      msg = message(msg) { "Expected #{mu_pp(obj)} to be empty" }
       assert_respond_to obj, :empty?
       assert obj.empty?, msg
     end
@@ -249,8 +257,8 @@ module MiniTest
 
     def assert_respond_to obj, meth, msg = nil
       msg = message(msg) {
-          "Expected #{mu_pp(obj)} (#{obj.class}) to respond to ##{meth}"
-        }
+        "Expected #{mu_pp(obj)} (#{obj.class}) to respond to ##{meth}"
+      }
       assert obj.respond_to?(meth), msg
     end
 
@@ -512,14 +520,31 @@ module MiniTest
   end
 
   class Unit
-    VERSION = "1.7.2" # :nodoc:
+    VERSION = "2.0.0" # :nodoc:
 
     attr_accessor :report, :failures, :errors, :skips # :nodoc:
     attr_accessor :test_count, :assertion_count       # :nodoc:
     attr_accessor :start_time                         # :nodoc:
+    attr_accessor :help                               # :nodoc:
+    attr_accessor :verbose                            # :nodoc:
+    attr_writer   :options                            # :nodoc:
+
+    def options
+      @options ||= {}
+    end
 
     @@installed_at_exit ||= false
     @@out = $stdout
+
+    ##
+    # A simple hook allowing you to run a block of code after the
+    # tests are done. Eg:
+    #
+    #   MiniTest::Unit.after_tests { p $debugging_info }
+
+    def self.after_tests
+      at_exit { at_exit { yield } }
+    end
 
     ##
     # Registers MiniTest::Unit to run tests at process exit
@@ -527,10 +552,27 @@ module MiniTest
     def self.autorun
       at_exit {
         next if $! # don't run if there was an exception
-        exit_code = MiniTest::Unit.new.run(ARGV)
+        exit_code = MiniTest::Unit.new.run ARGV
         exit false if exit_code && exit_code != 0
       } unless @@installed_at_exit
       @@installed_at_exit = true
+    end
+
+    ##
+    # Returns the stream to use for output.
+
+    def self.output
+      @@out
+    end
+
+    ##
+    # Returns the stream to use for output.
+    #
+    # DEPRECATED: use ::output instead.
+
+    def self.out
+      warn "::out deprecated, use ::output instead." if $VERBOSE
+      output
     end
 
     ##
@@ -539,6 +581,93 @@ module MiniTest
 
     def self.output= stream
       @@out = stream
+    end
+
+    ##
+    # Return all plugins' run methods (methods that start with "run_").
+
+    def self.plugins
+      @@plugins ||= (["run_tests"] +
+                     public_instance_methods(false).
+                     grep(/^run_/).map { |s| s.to_s }).uniq
+    end
+
+    def output
+      self.class.output
+    end
+
+    def puts *a  # :nodoc:
+      output.puts(*a)
+    end
+
+    def print *a # :nodoc:
+      output.print(*a)
+    end
+
+    def _run_anything type
+      suites = TestCase.send "#{type}_suites"
+      return if suites.empty?
+
+      start = Time.now
+
+      puts
+      puts "# Running #{type}s:"
+      puts
+
+      @test_count, @assertion_count = 0, 0
+      sync = output.respond_to? :"sync=" # stupid emacs
+      old_sync, output.sync = output.sync, true if sync
+
+      results = _run_suites suites, type
+
+      @test_count      = results.inject(0) { |sum, (tc, ac)| sum + tc }
+      @assertion_count = results.inject(0) { |sum, (tc, ac)| sum + ac }
+
+      output.sync = old_sync if sync
+
+      t = Time.now - start
+
+      puts
+      puts
+      puts "Finished #{type}s in %.6fs, %.4f tests/s, %.4f assertions/s." %
+        [t, test_count / t, assertion_count / t]
+
+      report.each_with_index do |msg, i|
+        puts "\n%3d) %s" % [i + 1, msg]
+      end
+
+      puts
+
+      status
+    end
+
+    def _run_suites suites, type
+      suites.map { |suite| _run_suite suite, type }
+    end
+
+    def _run_suite suite, type
+      header = "#{type}_suite_header"
+      puts send(header, suite) if respond_to? header
+
+      filter = options[:filter] || '/./'
+      filter = Regexp.new $1 if filter =~ /\/(.*)\//
+
+      assertions = suite.send("#{type}_methods").grep(filter).map { |method|
+        inst = suite.new method
+        inst._assertions = 0
+
+        start_time = Time.now
+        result = inst.run self
+        time = Time.now - start_time
+
+        print "#{suite}##{method} = %.2f s = " % time if @verbose
+        print result
+        puts if @verbose
+
+        inst._assertions
+      }
+
+      return assertions.size, assertions.inject(0) { |sum, n| sum + n }
     end
 
     def location e # :nodoc:
@@ -564,7 +693,7 @@ module MiniTest
             "Failure:\n#{meth}(#{klass}) [#{location e}]:\n#{e.message}\n"
           else
             @errors += 1
-            bt = MiniTest::filter_backtrace(e.backtrace).join("\n    ")
+            bt = MiniTest::filter_backtrace(e.backtrace).join "\n    "
             "Error:\n#{meth}(#{klass}):\n#{e.class}: #{e.message}\n    #{bt}\n"
           end
       @report << e
@@ -579,6 +708,7 @@ module MiniTest
 
     def process_args args = []
       options = {}
+      orig_args = args.dup
 
       OptionParser.new do |opts|
         opts.banner  = 'minitest options:'
@@ -601,8 +731,20 @@ module MiniTest
           options[:filter] = a
         end
 
-        opts.parse args
+        opts.parse! args
+        orig_args -= args
       end
+
+      unless options[:seed] then
+        srand
+        options[:seed] = srand % 0xFFFF
+        orig_args << "--seed" << options[:seed].to_s
+      end
+
+      srand options[:seed]
+
+      self.verbose = options[:verbose]
+      @help = orig_args.map { |s| s =~ /[\s|&<>$()]/ ? s.inspect : s }.join " "
 
       options
     end
@@ -611,46 +753,14 @@ module MiniTest
     # Top level driver, controls all output and filtering.
 
     def run args = []
-      options = process_args args
+      self.options = process_args args
 
-      @verbose = options[:verbose]
+      puts "Run options: #{help}"
 
-      filter = options[:filter] || '/./'
-      filter = Regexp.new $1 if filter and filter =~ /\/(.*)\//
-
-      seed = options[:seed]
-      unless seed then
-        srand
-        seed = srand % 0xFFFF
+      self.class.plugins.each do |plugin|
+        send plugin
+        break unless report.empty?
       end
-
-      srand seed
-
-      help = ["--seed", seed]
-      help.push "--verbose" if @verbose
-      help.push("--name", options[:filter].inspect) if options[:filter]
-
-      @@out.puts "Test run options: #{help.join(" ")}"
-      @@out.puts
-      @@out.puts "Loaded suite #{$0.sub(/\.rb$/, '')}\nStarted"
-
-      start = Time.now
-      run_test_suites filter
-
-      @@out.puts
-      @@out.puts "Finished in #{'%.6f' % (Time.now - start)} seconds."
-
-      @report.each_with_index do |msg, i|
-        @@out.puts "\n%3d) %s" % [i + 1, msg]
-      end
-
-      @@out.puts
-
-      status
-
-      @@out.puts
-
-      @@out.puts "Test run options: #{help.join(" ")}"
 
       return failures + errors if @test_count > 0 # or return nil...
     rescue Interrupt
@@ -658,42 +768,25 @@ module MiniTest
     end
 
     ##
+    # Runs test suites matching +filter+.
+
+    def run_tests
+      _run_anything :test
+    end
+
+    ##
     # Writes status to +io+
 
-    def status io = @@out
+    def status io = self.output
       format = "%d tests, %d assertions, %d failures, %d errors, %d skips"
       io.puts format % [test_count, assertion_count, failures, errors, skips]
     end
 
     ##
-    # Runs test suites matching +filter+
-
-    def run_test_suites filter = /./
-      @test_count, @assertion_count = 0, 0
-      old_sync, @@out.sync = @@out.sync, true if @@out.respond_to? :sync=
-      TestCase.test_suites.each do |suite|
-        suite.test_methods.grep(filter).each do |test|
-          inst = suite.new test
-          inst._assertions = 0
-          @@out.print "#{suite}##{test}: " if @verbose
-
-          @start_time = Time.now
-          result = inst.run(self)
-
-          @@out.print "%.2f s: " % (Time.now - @start_time) if @verbose
-          @@out.print result
-          @@out.puts if @verbose
-          @test_count += 1
-          @assertion_count += inst._assertions
-        end
-      end
-      @@out.sync = old_sync if @@out.respond_to? :sync=
-      [@test_count, @assertion_count]
-    end
-
-    ##
-    # Subclass TestCase to create your own tests.  Typically you'll want a
+    # Subclass TestCase to create your own tests. Typically you'll want a
     # TestCase subclass per implementation class.
+    #
+    # See MiniTest::Assertions
 
     class TestCase
       attr_reader :__name__ # :nodoc:
@@ -707,30 +800,31 @@ module MiniTest
       # Runs the tests reporting the status to +runner+
 
       def run runner
-        trap 'INFO' do
-          warn '%s#%s %.2fs' % [self.class, self.__name__,
-            (Time.now - runner.start_time)]
+        trap "INFO" do
+          time = Time.now - runner.start_time
+          warn "%s#%s %.2fs" % [self.class, self.__name__, time]
           runner.status $stderr
         end if SUPPORTS_INFO_SIGNAL
 
-        result = '.'
+        result = ""
         begin
           @passed = nil
           self.setup
           self.__send__ self.__name__
+          result = "." unless io?
           @passed = true
         rescue *PASSTHROUGH_EXCEPTIONS
           raise
         rescue Exception => e
           @passed = false
-          result = runner.puke(self.class, self.__name__, e)
+          result = runner.puke self.class, self.__name__, e
         ensure
           begin
             self.teardown
           rescue *PASSTHROUGH_EXCEPTIONS
             raise
           rescue Exception => e
-            result = runner.puke(self.class, self.__name__, e)
+            result = runner.puke self.class, self.__name__, e
           end
           trap 'INFO', 'DEFAULT' if SUPPORTS_INFO_SIGNAL
         end
@@ -739,7 +833,17 @@ module MiniTest
 
       def initialize name # :nodoc:
         @__name__ = name
+        @__io__ = nil
         @passed = nil
+      end
+
+      def io
+        @__io__ = true
+        MiniTest::Unit.output
+      end
+
+      def io?
+        @__io__
       end
 
       def self.reset # :nodoc:
@@ -762,7 +866,7 @@ module MiniTest
       end
 
       def self.test_suites # :nodoc:
-        @@test_suites.keys.sort_by { |ts| ts.name }
+        @@test_suites.keys.sort_by { |ts| ts.name.to_s }
       end
 
       def self.test_methods # :nodoc:
@@ -771,7 +875,7 @@ module MiniTest
         case self.test_order
         when :random then
           max = methods.size
-          methods.sort.sort_by { rand(max) }
+          methods.sort.sort_by { rand max }
         when :alpha, :sorted then
           methods.sort
         else
@@ -813,4 +917,3 @@ if $DEBUG then
     end
   end
 end
-

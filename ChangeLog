@@ -1,3 +1,9 @@
+Wed Dec  1 14:27:49 2010  Ryan Davis  <ryand-ruby@zenspider.com>
+
+	* lib/minitest/*.rb: Imported minitest 2.0.0 r5952.
+	* test/minitest/*.rb: ditto.
+	* lib/test/unit.rb: Compatibility fix for minitest changes.
+
 Wed Dec  1 10:16:41 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_str_inspect): fix typo (not 0xFD but 0xFE).

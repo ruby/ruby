@@ -62,6 +62,7 @@ module Test
 
         opts.on '-v', '--verbose', "Verbose. Show progress processing files." do
           options[:verbose] = true
+          self.verbose = options[:verbose]
         end
 
         opts.on '-n', '--name PATTERN', "Filter test names on pattern." do |a|
@@ -166,17 +167,6 @@ module Test
         result = super
         abort if @interrupt
         result
-      end
-
-      def run_test_suites(*args)
-        old_sync = @@out.sync if @@out.respond_to?(:sync=)
-        @interrupt = false
-        super
-      rescue Interrupt
-        @interrupt = true
-        [@test_count, @assertion_count]
-      ensure
-        @@out.sync = old_sync if @@out.respond_to?(:sync=)
       end
     end
   end

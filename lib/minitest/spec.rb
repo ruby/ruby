@@ -66,10 +66,13 @@ module Kernel
 
   def describe desc, &block
     stack = MiniTest::Spec.describe_stack
-    name  = desc.to_s.split(/\W+/).map { |s| s.capitalize }.join + "Spec"
-    prev  = stack.last
-    name  = "#{prev == MiniTest::Spec ? nil : prev}::#{name}"
-    cls   = Object.class_eval "class #{name} < #{prev}; end; #{name}"
+    name  = [stack.last, desc].compact.join("::")
+    cls   = Class.new(stack.last || MiniTest::Spec)
+
+    # :stopdoc:
+    # omg this sucks
+    (class << cls; self; end).send(:define_method, :to_s) { name }
+    # :startdoc:
 
     cls.nuke_test_methods!
 
@@ -96,7 +99,7 @@ end
 
 
 class MiniTest::Spec < MiniTest::Unit::TestCase
-  @@describe_stack = [MiniTest::Spec]
+  @@describe_stack = []
   def self.describe_stack # :nodoc:
     @@describe_stack
   end
