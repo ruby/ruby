@@ -84,6 +84,8 @@ EOT
     assert_raise(GeneratorError) { fast_generate(666) }
   end
 
+
+
   def test_states
     json = generate({1=>2}, nil)
     assert_equal('{"1":2}', json)
@@ -102,6 +104,51 @@ EOT
     assert s[:check_circular?]
   end
 
+  def test_pretty_state
+    state = PRETTY_STATE_PROTOTYPE.dup
+    assert_equal({
+      :allow_nan    => false,
+      :array_nl     => "\n",
+      :ascii_only   => false,
+      :depth        => 0,
+      :indent       => "  ",
+      :max_nesting  => 19,
+      :object_nl    => "\n",
+      :space        => " ",
+      :space_before => "",
+    }.sort_by { |n,| n.to_s }, state.to_h.sort_by { |n,| n.to_s })
+  end
+
+  def test_safe_state
+    state = SAFE_STATE_PROTOTYPE.dup
+    assert_equal({
+      :allow_nan    => false,
+      :array_nl     => "",
+      :ascii_only   => false,
+      :depth        => 0,
+      :indent       => "",
+      :max_nesting  => 19,
+      :object_nl    => "",
+      :space        => "",
+      :space_before => "",
+    }.sort_by { |n,| n.to_s }, state.to_h.sort_by { |n,| n.to_s })
+  end
+
+  def test_fast_state
+    state = FAST_STATE_PROTOTYPE.dup
+    assert_equal({
+      :allow_nan    => false,
+      :array_nl     => "",
+      :ascii_only   => false,
+      :depth        => 0,
+      :indent       => "",
+      :max_nesting  => 0,
+      :object_nl    => "",
+      :space        => "",
+      :space_before => "",
+    }.sort_by { |n,| n.to_s }, state.to_h.sort_by { |n,| n.to_s })
+  end
+
   def test_allow_nan
     assert_raises(GeneratorError) { generate([JSON::NaN]) }
     assert_equal '[NaN]', generate([JSON::NaN], :allow_nan => true)
@@ -118,5 +165,19 @@ EOT
     assert_raises(GeneratorError) { fast_generate([JSON::MinusInfinity]) }
     assert_raises(GeneratorError) { pretty_generate([JSON::MinusInfinity]) }
     assert_equal "[\n  -Infinity\n]", pretty_generate([JSON::MinusInfinity], :allow_nan => true)
+  end
+
+  def test_depth
+    ary = []; ary << ary
+    assert_equal 0, JSON::SAFE_STATE_PROTOTYPE.depth
+    assert_raises(JSON::NestingError) { JSON.generate(ary) }
+    assert_equal 0, JSON::SAFE_STATE_PROTOTYPE.depth
+    assert_equal 0, JSON::PRETTY_STATE_PROTOTYPE.depth
+    assert_raises(JSON::NestingError) { JSON.pretty_generate(ary) }
+    assert_equal 0, JSON::PRETTY_STATE_PROTOTYPE.depth
+    s = JSON.state.new
+    assert_equal 0, s.depth
+    assert_raises(JSON::NestingError) { ary.to_json(s) }
+    assert_equal 19, s.depth
   end
 end

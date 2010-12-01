@@ -160,6 +160,20 @@ class TC_JSON < Test::Unit::TestCase
 
   class SubArray < Array; end
 
+  class SubArray2 < Array
+    def to_json(*a)
+      {
+        JSON.create_id => self.class.name,
+        'ary'          => to_a,
+      }.to_json(*a)
+    end
+
+    def self.json_create(o)
+      o.delete JSON.create_id
+      o['ary']
+    end
+  end
+
   def test_parse_array_custom_class
     res = parse('[]', :array_class => SubArray)
     assert_equal([], res)
@@ -173,12 +187,52 @@ class TC_JSON < Test::Unit::TestCase
     assert_equal({'foo'=>'bar'}, parse('    { "foo"  :   "bar"   }   '))
   end
 
-  class SubHash < Hash; end
+  class SubHash < Hash
+  end
+
+  class SubHash2 < Hash
+    def to_json(*a)
+      {
+        JSON.create_id => self.class.name,
+      }.merge(self).to_json(*a)
+    end
+
+    def self.json_create(o)
+      o.delete JSON.create_id
+      self[o]
+    end
+  end
 
   def test_parse_object_custom_class
-    res = parse('{}', :object_class => SubHash)
+    res = parse('{}', :object_class => SubHash2)
     assert_equal({}, res)
-    assert_equal(SubHash, res.class)
+    assert_equal(SubHash2, res.class)
+  end
+
+  def test_generation_of_core_subclasses_with_new_to_json
+    obj = SubHash2["foo" => SubHash2["bar" => true]]
+    obj_json = JSON(obj)
+    obj_again = JSON(obj_json)
+    assert_kind_of SubHash2, obj_again
+    assert_kind_of SubHash2, obj_again['foo']
+    assert obj_again['foo']['bar']
+    assert_equal obj, obj_again
+    assert_equal ["foo"], JSON(JSON(SubArray2["foo"]))
+  end
+
+  def test_generation_of_core_subclasses_with_default_to_json
+    assert_equal '{"foo":"bar"}', JSON(SubHash["foo" => "bar"])
+    assert_equal '["foo"]', JSON(SubArray["foo"])
+  end
+
+  def test_generation_of_core_subclasses
+    obj = SubHash["foo" => SubHash["bar" => true]]
+    obj_json = JSON(obj)
+    obj_again = JSON(obj_json)
+    assert_kind_of Hash, obj_again
+    assert_kind_of Hash, obj_again['foo']
+    assert obj_again['foo']['bar']
+    assert_equal obj, obj_again
   end
 
   def test_parser_reset
