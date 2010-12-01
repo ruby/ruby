@@ -1,3 +1,10 @@
+Thu Dec  2 00:05:44 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http.rb: improve rdoc.
+	  This change the order of chapter because such overview should
+	  begin with simple examples.
+	  patched by Eric Hodel [ruby-core:33469]
+
 Wed Dec  1 22:01:49 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* numeric.c (Init_Numeric): fixed a potential bug when using bccwin32

@@ -32,314 +32,350 @@ module Net   #:nodoc:
 
   # == An HTTP client API for Ruby.
   #
-  # For more details about HTTP, see [RFC2616](http://www.ietf.org/rfc/rfc2616.txt).
+  # Net::HTTP provides a rich library which can be used to build HTTP
+  # user-agents.  For more details about HTTP see
+  # [RFC2616](http://www.ietf.org/rfc/rfc2616.txt)
   #
-  # == Examples
+  # Net::HTTP is designed to work closely with URI.  URI::HTTP#host,
+  # URI::HTTP#port and URI::HTTP#request_uri are designed to work with
+  # Net::HTTP.
   #
-  # === Fetching Documents
+  # If you are only performing a few GET requests you should try OpenURI.
   #
-  # Simple GET
+  # == Simple Examples
   #
-  #     require 'net/http'
-  #     Net::HTTP.get('www.example.com', '/index.html') => String
+  # The Net::HTTP methods in the following examples do not persist
+  # connections.  They are not recommended if you are performing many HTTP
+  # requests.
   #
-  # Simple GET by URI object
+  # === GET
   #
-  #     require 'net/http'
-  #     require 'uri'
-  #     Net::HTTP.get(URI.parse('http://www.example.com/index.html?count=10')) => String
+  #   Net::HTTP.get('example.com', '/index.html') # => String
   #
-  # More generic GET with dynamic parameters
+  # === GET by URI
   #
-  #    require 'net/http'
-  #    require 'uri'
+  #   uri = URI.parse('http://example.com/index.html?count=10')
+  #   Net::HTTP.get(uri) # => String
   #
-  #    uri = URI.parse('http://www.example.com/index.html')
-  #    params = { :limit => 10, :page => 3 }
-  #    uri.query = URI.encode_www_form(params)
-  #    res = Net::HTTP.get_response(uri)
-  #    puts res.body if res.is_a?(Net::HTTPSuccess)
+  # === GET with Dynamic Parameters
   #
-  # Even more generic GET with Basic Auth and custom header
+  #   uri = URI.parse('http://example.com/index.html')
+  #   params = { :limit => 10, :page => 3 }
+  #   uri.query = URI.encode_www_form(params)
   #
-  #    require 'net/http'
+  #   res = Net::HTTP.get_response(uri)
+  #   puts res.body if res.is_a?(Net::HTTPSuccess)
   #
-  #    uri = URI.parse('http://www.example.com/index.html?key=value')
-  #    req = Net::HTTP::Get.new(uri.request_uri)
-  #    req.basic_auth 'user', 'pass'
-  #    req['X-Custom-Header'] = Time.now.to_i
-  #    res = Net::HTTP.start(uri.hostname, uri.port) {|http|
-  #      http.request(req)
-  #    }
-  #    puts res.body
+  # === POST
   #
-  # Accessing Response data:
+  #   uri = URI.parse('http://www.example.com/search.cgi')
+  #   res = Net::HTTP.post_form(uri, 'q' => 'ruby', 'max' => '50')
+  #   puts res.body
   #
-  #     res = Net::HTTP.get_response(URI.parse('http://www.example.com/index.html'))
-  #     # Headers
-  #     res['Set-Cookie']            => String
-  #     res.get_fields('set-cookie') => Array
-  #     res.to_hash['set-cookie']    => Array
-  #     puts "Headers: #{res.to_hash.inspect}"
-  #     # Status
-  #     puts res.code => '200'
-  #     puts res.message => 'OK'
-  #     puts res.class.name => 'HTTPOK'
-  #     puts res.body
+  # === POST with Multiple Values
   #
-  # === Posting Form Data
+  #   uri = URI.parse('http://www.example.com/search.cgi')
+  #   res = Net::HTTP.post_form(uri, 'q' => ['ruby', 'perl'], 'max' => '50')
+  #   puts res.body
   #
-  #     require 'net/http'
-  #     require 'uri'
+  # == How to use Net::HTTP
   #
-  #     #1: Simple POST
-  #     res = Net::HTTP.post_form(URI.parse('http://www.example.com/search.cgi'),
-  #                               {'q' => 'ruby', 'max' => '50'})
-  #     puts res.body
+  # Net::HTTP provides several convenience methods for performing a GET on a
+  # web server which are described below.
   #
-  #     #2: Detailed control of POST with authentication
+  # All examples assume you have loaded Net::HTTP with:
   #
-  #     uri = URI.parse('http://www.example.com/todo.cgi')
-  #     req = Net::HTTP::Post.new(uri.path)
-  #     req.basic_auth 'jack', 'pass'
-  #     req.set_form_data({'from' => '2005-01-01', 'to' => '2005-03-31'}, ';')
-  #     res = Net::HTTP.new(uri.hostname, uri.port).start {|http| http.request(req) }
-  #     case res
-  #     when Net::HTTPSuccess, Net::HTTPRedirection
-  #       # OK
-  #     else
-  #       res.error!
-  #     end
+  #   require 'net/http'
   #
-  #     #3: Multiple values
-  #     res = Net::HTTP.post_form(URI.parse('http://www.example.com/search.cgi'),
-  #                               {'q' => ['ruby', 'perl'], 'max' => '50'})
-  #     puts res.body
+  # This will also require 'uri' so you don't need to require it separately.
   #
-  # === Accessing via Proxy
+  # The following example code can be used as the basis of a HTTP user-agent
+  # which will perform a variety of request types.
   #
-  # Net::HTTP.Proxy is an http proxy class. It has the same
-  # methods as Net::HTTP, but its instances always connect via a proxy,
-  # instead of directly to the given host.
+  #   uri = URI.parse 'http://example.com/some_path?query=string'
   #
-  #     require 'net/http'
+  #   Net::HTTP.start uri.host, uri.port do |http|
+  #     request = Net::HTTP::Get.new uri.request_uri
   #
-  #     proxy_addr = 'your.proxy.host'
-  #     proxy_port = 8080
-  #             :
-  #     Net::HTTP::Proxy(proxy_addr, proxy_port).start('www.example.com') {|http|
-  #       # always connect to your.proxy.addr:8080
-  #             :
-  #     }
+  #     response = http.request request # Net::HTTPResponse object
+  #   end
   #
-  # The top-level Net::HTTP class creates objects which represent
-  # HTTP sessions.
+  # Net::HTTP::start immediately creates a connection to an HTTP server which
+  # is kept open for the duration of the block.  The connection will remain
+  # open for multiple requests in the block if the server indicates it
+  # supports persistent connections.
   #
-  # Since Net::HTTP.Proxy returns Net::HTTP itself when +proxy_addr+ is nil,
-  # there's no need to change your code depending on whether there's a proxy
-  # or not.
+  # The request types Net::HTTP supports are listed below in the section "HTTP
+  # Request Classes".
   #
-  # There are two additional parameters in Net::HTTP.Proxy which allow you to
-  # specify a user name and password for the proxy:
+  # If you wish to re-use a connection across multiple HTTP requests without
+  # automatically closing it you can use ::new instead of ::start.  #request
+  # will automatically open a connection to the server if one is not currently
+  # open.  You can manually close the connection with #close.
   #
-  #     Net::HTTP::Proxy(proxy_addr, proxy_port, proxy_user = nil, proxy_pass = nil)
+  # === Response Data
   #
-  # You can use them to work with authorization-enabled proxies:
+  #   uri = URI.parse('http://example.com/index.html')
+  #   res = Net::HTTP.get_response(uri)
   #
-  #     require 'net/http'
-  #     require 'uri'
+  #   # Headers
+  #   res['Set-Cookie']            # => String
+  #   res.get_fields('set-cookie') # => Array
+  #   res.to_hash['set-cookie']    # => Array
+  #   puts "Headers: #{res.to_hash.inspect}"
   #
-  #     proxy_host = 'your.proxy.host'
-  #     proxy_port = 8080
-  #     uri = URI.parse(ENV['http_proxy'])
-  #     proxy_user, proxy_pass = uri.userinfo.split(/:/) if uri.userinfo
-  #     Net::HTTP::Proxy(proxy_host, proxy_port,
-  #                      proxy_user, proxy_pass).start('www.example.com') {|http|
-  #       # always connect to your.proxy.addr:8080 using specified username and password
-  #             :
-  #     }
+  #   # Status
+  #   puts res.code       # => '200'
+  #   puts res.message    # => 'OK'
+  #   puts res.class.name # => 'HTTPOK'
   #
-  # Note that net/http does not use the HTTP_PROXY environment variable.
-  # If you want to use a proxy, you must do so explicitly.
+  #   # Body
+  #   puts res.body if res.response_body_permitted?
   #
   # === Following Redirection
   #
-  #     require 'net/http'
-  #     require 'uri'
+  # Each Net::HTTPResponse object belongs to a class for its response code.
   #
-  #     def fetch(uri_str, limit = 10)
-  #       # You should choose better exception.
-  #       raise ArgumentError, 'HTTP redirect too deep' if limit == 0
+  # For example, all 2XX responses are instances of a Net::HTTPSuccess
+  # subclass, a 3XX response is an instance of a Net::HTTPRedirection
+  # subclass and a 200 response is an instance of the Net::HTTPOK class.  For
+  # details of response classes, see the section "HTTP Response Classes"
+  # below.
   #
-  #       response = Net::HTTP.get_response(URI.parse(uri_str))
-  #       case response
-  #       when Net::HTTPSuccess     then response
-  #       when Net::HTTPRedirection then fetch(response['location'], limit - 1)
-  #       else
-  #         response.error!
+  # Using a case statement you can handle various types of responses properly:
+  #
+  #   def fetch(uri_str, limit = 10)
+  #     # You should choose a better exception.
+  #     raise ArgumentError, 'too many HTTP redirects' if limit == 0
+  #
+  #     response = Net::HTTP.get_response(URI.parse(uri_str))
+  #
+  #     case response
+  #     when Net::HTTPSuccess then
+  #       response
+  #     when Net::HTTPRedirection then
+  #       location = response['location']
+  #       warn "redirected to #{location}"
+  #       fetch(location, limit - 1)
+  #     else
+  #       response.value
+  #     end
+  #   end
+  #
+  #   print fetch('http://www.ruby-lang.org')
+  #
+  # === POST
+  #
+  # A POST can be made using the Net::HTTP::Post request class.  This example
+  # creates a urlencoded POST body:
+  #
+  #   uri = URI.parse('http://www.example.com/todo.cgi')
+  #   req = Net::HTTP::Post.new(uri.path)
+  #   req.set_form_data('from' => '2005-01-01', 'to' => '2005-03-31')
+  #
+  #   res = Net::HTTP.new(uri.hostname, uri.port).start do |http|
+  #     http.request(req)
+  #   end
+  #
+  #   case res
+  #   when Net::HTTPSuccess, Net::HTTPRedirection
+  #     # OK
+  #   else
+  #     res.value
+  #   end
+  #
+  # At this time Net::HTTP does not support multipart/form-data.  To send
+  # multipart/form-data use Net::HTTPRequest#body= and
+  # Net::HTTPRequest#content_type=:
+  #
+  #   req = Net::HTTP::Post.new(uri.path)
+  #   req.body = multipart_data
+  #   req.content_type = 'multipart/form-data'
+  #
+  # Other requests that can contain a body such as PUT can be created in the
+  # same way using the corresponding request class (Net::HTTP::Put).
+  #
+  # === Setting Headers
+  #
+  # The following example performs a conditional GET using the
+  # If-Modified-Since header.  If the files has not been modified since the
+  # time in the header a Not Modified response will be returned.  See RFC 2616
+  # section 9.3 for further details.
+  #
+  #   uri = URI.parse('http://example.com/cached_response')
+  #   file = File.stat 'cached_response'
+  #
+  #   req = Net::HTTP::Get.new(uri.request_uri)
+  #   req['If-Modified-Since'] = file.mtime.rfc2822
+  #
+  #   res = Net::HTTP.start(uri.hostname, uri.port) {|http|
+  #     http.request(req)
+  #   }
+  #
+  #   open 'cached_response', 'w' do |io|
+  #     io.write res.body
+  #   end if res.is_a?(Net::HTTPSuccess)
+  #
+  # === Basic Authentication
+  #
+  # Basic authentication is performed according to
+  # [RFC2617](http://www.ietf.org/rfc/rfc2617.txt)
+  #
+  #   uri = URI.parse('http://example.com/index.html?key=value')
+  #
+  #   req = Net::HTTP::Get.new(uri.request_uri)
+  #   req.basic_auth 'user', 'pass'
+  #
+  #   res = Net::HTTP.start(uri.hostname, uri.port) {|http|
+  #     http.request(req)
+  #   }
+  #   puts res.body
+  #
+  # === Streaming Response Bodies
+  #
+  # By default Net::HTTP reads an entire response into memory.  If you are
+  # handling large files or wish to implement a progress bar you can instead
+  # stream the body directly to an IO.
+  #
+  #   uri = URI.parse 'http://example.com/large_file'
+  #
+  #   Net::HTTP.start uri.host, uri.port do |http|
+  #     request = Net::HTTP::Get.new uri.request_uri
+  #
+  #     http.request request do |response|
+  #       open 'large_file', 'w' do |io|
+  #         response.read_body do |chunk|
+  #           io.write chunk
+  #         end
   #       end
   #     end
+  #   end
   #
-  #     print fetch('http://www.ruby-lang.org')
+  # === HTTPS
   #
-  # Net::HTTPSuccess and Net::HTTPRedirection are HTTPResponse subclasses.
-  # All HTTPResponse objects belong to their own response class, which
-  # indicates the HTTP result status. For details of the response classes,
-  # see the section "HTTP Response Classes".
+  # HTTPS is enabled for an HTTP connection by Net::HTTP#use_ssl=.
   #
-  # === Full example with retrying and error reporting
+  #   uri = URI.parse 'https://secure.example.com/some_path?query=string'
   #
-  #     require 'uri'
-  #     require 'net/http'
+  #   Net::HTTP.new uri.host, uri.port
+  #   http.use_ssl = uri.scheme == 'https'
   #
-  #     url = "http://www.example.com/"
+  #   http.start do
+  #     request = Net::HTTP::Get.new uri.request_uri
   #
-  #     # Break apart the URL
-  #     uri = URI.parse(url)
-  #     # Reassemble the path for the HTTP request
-  #     if uri.query
-  #       path = uri.path + '?' + uri.query
-  #     else
-  #       path = uri.path
-  #     end
+  #     response = http.request request # Net::HTTPResponse object
+  #   end
   #
-  #     # Create a request object
-  #     request = Net::HTTP::Get.new(path)
+  # In previous versions of ruby you would need to require 'net/https' to use
+  # HTTPS.  This is no longer true.
   #
-  #     # Prepare an HTTP connection object
-  #     http = Net::HTTP.new(uri.host, uri.port)
+  # === Proxies
   #
-  #     # Open the connection and issue the request, retrying up to 3 times if there
-  #     # is a timeout
-  #     attempts = 1
-  #     begin
-  #       response = http.request(request)
-  #     rescue Exception => e
-  #       puts e
-  #       puts "[Retrying]"
-  #       attempts += 1
-  #       retry if attempts <= 3
-  #     end
+  # Net::HTTP::Proxy has the same methods as Net::HTTP but its instances always
+  # connect via the proxy instead of directly to the given host.
   #
-  #     # Report the result
-  #     if response.kind_of? Net::HTTPSuccess
-  #       puts response.body
-  #     else
-  #       raise "Error fetching #{url}: #{response.code} #{response.message}"
-  #     end
+  #   proxy_addr = 'your.proxy.host'
+  #   proxy_port = 8080
   #
-  # === HTTP Request Classes
+  #   Net::HTTP::Proxy(proxy_addr, proxy_port).start('www.example.com') {|http|
+  #     # always connect to your.proxy.addr:8080
+  #   }
   #
-  # Here is HTTP request class hierarchy.
+  # Net::HTTP::Proxy returns a Net::HTTP instance when proxy_addr is nil so
+  # there is no need for conditional code.
   #
-  #   Net::HTTPRequest
-  #       Net::HTTP::Get
-  #       Net::HTTP::Head
-  #       Net::HTTP::Post
-  #       Net::HTTP::Put
-  #       Net::HTTP::Proppatch
-  #       Net::HTTP::Lock
-  #       Net::HTTP::Unlock
-  #       Net::HTTP::Options
-  #       Net::HTTP::Propfind
-  #       Net::HTTP::Delete
-  #       Net::HTTP::Move
-  #       Net::HTTP::Copy
-  #       Net::HTTP::Mkcol
-  #       Net::HTTP::Trace
+  # See Net::HTTP::Proxy for further details and examples such as proxies that
+  # require a username and password.
   #
-  # === HTTP Response Classes
+  # == HTTP Request Classes
   #
-  # The request() method returns a response of a specific class, depending
-  # on the result of the HTTP request.
+  # Here is the HTTP request class hierarchy.
   #
-  # To handle the result, you can use case/when statements. Example:
+  # * Net::HTTPRequest
+  #   * Net::HTTP::Get
+  #   * Net::HTTP::Head
+  #   * Net::HTTP::Post
+  #   * Net::HTTP::Put
+  #   * Net::HTTP::Proppatch
+  #   * Net::HTTP::Lock
+  #   * Net::HTTP::Unlock
+  #   * Net::HTTP::Options
+  #   * Net::HTTP::Propfind
+  #   * Net::HTTP::Delete
+  #   * Net::HTTP::Move
+  #   * Net::HTTP::Copy
+  #   * Net::HTTP::Mkcol
+  #   * Net::HTTP::Trace
   #
-  #     response = http.request(req)
-  #     case response
-  #       when Net::HTTPSuccess
-  #         # Succeeded
-  #       when Net::HTTPInformation
-  #         # Continuing process
-  #       when Net::HTTPRedirection
-  #         # Page has moved, handle redirect
-  #       when Net::HTTPClientError
-  #         # Client is wrong
-  #       when Net::HTTPServerError
-  #         # Site is broken
-  #       else
-  #         # Unknown
-  #     end
+  # == HTTP Response Classes
   #
-  # The HTTPResponse classes all provide +code+ and +message+ accessors to
-  # obtain the 3-digit HTTP result code and the HTTP result message sent by
-  # the server.
+  # Here is HTTP response class hierarchy.  All classes are defined in Net
+  # module and are subclasses of Net::HTTPResponse.
   #
-  # Here is HTTP response class hierarchy.
-  # All classes are defined in Net module.
+  # HTTPUnknownResponse:: For unhandled HTTP extenensions
+  # HTTPInformation::                    1xx
+  #   HTTPContinue::                        100
+  #   HTTPSwitchProtocol::                  101
+  # HTTPSuccess::                        2xx
+  #   HTTPOK::                              200
+  #   HTTPCreated::                         201
+  #   HTTPAccepted::                        202
+  #   HTTPNonAuthoritativeInformation::     203
+  #   HTTPNoContent::                       204
+  #   HTTPResetContent::                    205
+  #   HTTPPartialContent::                  206
+  # HTTPRedirection::                    3xx
+  #   HTTPMultipleChoice::                  300
+  #   HTTPMovedPermanently::                301
+  #   HTTPFound::                           302
+  #   HTTPSeeOther::                        303
+  #   HTTPNotModified::                     304
+  #   HTTPUseProxy::                        305
+  #   HTTPTemporaryRedirect::               307
+  # HTTPClientError::                    4xx
+  #   HTTPBadRequest::                      400
+  #   HTTPUnauthorized::                    401
+  #   HTTPPaymentRequired::                 402
+  #   HTTPForbidden::                       403
+  #   HTTPNotFound::                        404
+  #   HTTPMethodNotAllowed::                405
+  #   HTTPNotAcceptable::                   406
+  #   HTTPProxyAuthenticationRequired::     407
+  #   HTTPRequestTimeOut::                  408
+  #   HTTPConflict::                        409
+  #   HTTPGone::                            410
+  #   HTTPLengthRequired::                  411
+  #   HTTPPreconditionFailed::              412
+  #   HTTPRequestEntityTooLarge::           413
+  #   HTTPRequestURITooLong::               414
+  #   HTTPUnsupportedMediaType::            415
+  #   HTTPRequestedRangeNotSatisfiable::    416
+  #   HTTPExpectationFailed::               417
+  # HTTPServerError::                    5xx
+  #   HTTPInternalServerError::             500
+  #   HTTPNotImplemented::                  501
+  #   HTTPBadGateway::                      502
+  #   HTTPServiceUnavailable::              503
+  #   HTTPGatewayTimeOut::                  504
+  #   HTTPVersionNotSupported::             505
   #
-  #   HTTPResponse
-  #       HTTPUnknownResponse
-  #       HTTPInformation                    # 1xx
-  #           HTTPContinue                       # 100
-  #           HTTPSwitchProtocol                 # 101
-  #       HTTPSuccess                        # 2xx
-  #           HTTPOK                             # 200
-  #           HTTPCreated                        # 201
-  #           HTTPAccepted                       # 202
-  #           HTTPNonAuthoritativeInformation    # 203
-  #           HTTPNoContent                      # 204
-  #           HTTPResetContent                   # 205
-  #           HTTPPartialContent                 # 206
-  #       HTTPRedirection                    # 3xx
-  #           HTTPMultipleChoice                 # 300
-  #           HTTPMovedPermanently               # 301
-  #           HTTPFound                          # 302
-  #           HTTPSeeOther                       # 303
-  #           HTTPNotModified                    # 304
-  #           HTTPUseProxy                       # 305
-  #           HTTPTemporaryRedirect              # 307
-  #       HTTPClientError                    # 4xx
-  #           HTTPBadRequest                     # 400
-  #           HTTPUnauthorized                   # 401
-  #           HTTPPaymentRequired                # 402
-  #           HTTPForbidden                      # 403
-  #           HTTPNotFound                       # 404
-  #           HTTPMethodNotAllowed               # 405
-  #           HTTPNotAcceptable                  # 406
-  #           HTTPProxyAuthenticationRequired    # 407
-  #           HTTPRequestTimeOut                 # 408
-  #           HTTPConflict                       # 409
-  #           HTTPGone                           # 410
-  #           HTTPLengthRequired                 # 411
-  #           HTTPPreconditionFailed             # 412
-  #           HTTPRequestEntityTooLarge          # 413
-  #           HTTPRequestURITooLong              # 414
-  #           HTTPUnsupportedMediaType           # 415
-  #           HTTPRequestedRangeNotSatisfiable   # 416
-  #           HTTPExpectationFailed              # 417
-  #       HTTPServerError                    # 5xx
-  #           HTTPInternalServerError            # 500
-  #           HTTPNotImplemented                 # 501
-  #           HTTPBadGateway                     # 502
-  #           HTTPServiceUnavailable             # 503
-  #           HTTPGatewayTimeOut                 # 504
-  #           HTTPVersionNotSupported            # 505
+  # There is also the Net::HTTPBadResponse exception which is raised when
+  # there is a protocol error.
   #
   # == Switching Net::HTTP versions
   #
-  # You can use net/http.rb 1.1 features (bundled with Ruby 1.6)
-  # by calling HTTP.version_1_1. Calling Net::HTTP.version_1_2
-  # allows you to use 1.2 features again.
+  # You can use net/http.rb 1.1 features (bundled with Ruby 1.6) by calling
+  # HTTP.version_1_1. Calling Net::HTTP.version_1_2 allows you to use 1.2
+  # features again.  Do not confuse this with HTTP protocol features.
   #
-  #     # example
-  #     Net::HTTP.start {|http1| ...(http1 has 1.2 features)... }
+  #   # example
+  #   Net::HTTP.start {|http1| ...(http1 has 1.2 features)... }
   #
-  #     Net::HTTP.version_1_1
-  #     Net::HTTP.start {|http2| ...(http2 has 1.1 features)... }
+  #   Net::HTTP.version_1_1
+  #   Net::HTTP.start {|http2| ...(http2 has 1.1 features)... }
   #
-  #     Net::HTTP.version_1_2
-  #     Net::HTTP.start {|http3| ...(http3 has 1.2 features)... }
+  #   Net::HTTP.version_1_2
+  #   Net::HTTP.start {|http3| ...(http3 has 1.2 features)... }
   #
   # Switching versions is NOT thread-safe.
   #
