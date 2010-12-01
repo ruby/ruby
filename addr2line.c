@@ -386,14 +386,71 @@ parse_debug_line(int num_traces, void **traces,
 
 /* read file and fill lines */
 static void
-fill_lines(int num_traces, void **traces, char **syms,
-	   char *file, line_info_t *lines)
+fill_lines(int num_traces, void **traces, char **syms, int check_debuglink,
+	   line_info_t *current_line, line_info_t *lines);
+
+static void
+follow_debuglink(char *debuglink, int num_traces, void **traces, char **syms,
+		 line_info_t *current_line, line_info_t *lines)
+{
+    /* Ideally we should check 4 paths to follow gnu_debuglink,
+       but we handle only one case for now as this format is used
+       by some linux distributions. See GDB's info for detail. */
+    static const char global_debug_dir[] = "/usr/lib/debug";
+    char *p, *subdir;
+
+    p = strrchr(binary_filename, '/');
+    if (!p) {
+	return;
+    }
+    p[1] = '\0';
+
+    subdir = (char *)alloca(strlen(binary_filename) + 1);
+    strcpy(subdir, binary_filename);
+    strcpy(binary_filename, global_debug_dir);
+    strncat(binary_filename, subdir,
+	    PATH_MAX - strlen(binary_filename) - 1);
+    strncat(binary_filename, debuglink,
+	    PATH_MAX - strlen(binary_filename) - 1);
+
+    munmap(current_line->mapped, current_line->mapped_size);
+    close(current_line->fd);
+    fill_lines(num_traces, traces, syms, 0, current_line, lines);
+}
+
+/* read file and fill lines */
+static void
+fill_lines(int num_traces, void **traces, char **syms, int check_debuglink,
+	   line_info_t *current_line, line_info_t *lines)
 {
     int i;
     char *shstr;
     char *section_name;
     ElfW(Ehdr) *ehdr;
-    ElfW(Shdr) *shdr, *shstr_shdr, *debug_line_shdr = NULL;
+    ElfW(Shdr) *shdr, *shstr_shdr;
+    ElfW(Shdr) *debug_line_shdr = NULL, *gnu_debuglink_shdr = NULL;
+    int fd;
+    off_t filesize;
+    char *file;
+
+    fd = open(binary_filename, O_RDONLY);
+    if (fd < 0) {
+	return;
+    }
+    filesize = lseek(fd, 0, SEEK_END);
+    lseek(fd, 0, SEEK_SET);
+    /* async-signal unsafe */
+    file = (char *)mmap(NULL, filesize, PROT_READ, MAP_SHARED, fd, 0);
+    if (file == MAP_FAILED) {
+	int e = errno;
+	close(fd);
+	fprintf(stderr, "mmap: %s\n", strerror(e));
+	return;
+    }
+
+    current_line->fd = fd;
+    current_line->mapped = file;
+    current_line->mapped_size = filesize;
 
     for (i = 0; i < num_traces; i++) {
 	const char *path;
@@ -415,11 +472,19 @@ fill_lines(int num_traces, void **traces, char **syms,
 	if (!strcmp(section_name, ".debug_line")) {
 	    debug_line_shdr = shdr + i;
 	    break;
+	} else if (!strcmp(section_name, ".gnu_debuglink")) {
+	    gnu_debuglink_shdr = shdr + i;
 	}
     }
 
     if (!debug_line_shdr) {
-	/* this file doesn't have .debug_line section */
+	/* This file doesn't have .debug_line section,
+	   let's check .gnu_debuglink section instead. */
+	if (gnu_debuglink_shdr && check_debuglink) {
+	    follow_debuglink(file + gnu_debuglink_shdr->sh_offset,
+			     num_traces, traces, syms,
+			     current_line, lines);
+	}
 	return;
     }
 
@@ -462,12 +527,9 @@ void
 rb_dump_backtrace_with_lines(int num_traces, void **trace, char **syms)
 {
     int i;
-    int fd;
     /* async-signal unsafe */
     line_info_t *lines = (line_info_t *)calloc(num_traces,
 					       sizeof(line_info_t));
-    off_t filesize;
-    char *file;
 
     /* Note that line info of shared objects might not be shown
        if we don't have dl_iterate_phdr */
@@ -495,26 +557,7 @@ rb_dump_backtrace_with_lines(int num_traces, void **trace, char **syms)
 	strncpy(binary_filename, path, len);
 	binary_filename[len] = '\0';
 
-	fd = open(binary_filename, O_RDONLY);
-	if (fd < 0) {
-	    continue;
-	}
-	filesize = lseek(fd, 0, SEEK_END);
-	lseek(fd, 0, SEEK_SET);
-	/* async-signal unsafe */
-	file = (char *)mmap(NULL, filesize, PROT_READ, MAP_SHARED, fd, 0);
-	if (file == MAP_FAILED) {
-	    int e = errno;
-	    close(fd);
-	    fprintf(stderr, "mmap: %s\n", strerror(e));
-	    continue;
-	}
-
-	lines[i].fd = fd;
-	lines[i].mapped = file;
-	lines[i].mapped_size = filesize;
-
-	fill_lines(num_traces, trace, syms, file, lines);
+	fill_lines(num_traces, trace, syms, 1, &lines[i], lines);
     }
 
     /* fprintf may not be async-signal safe */

@@ -1,3 +1,10 @@
+Wed Dec  1 09:28:27 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* addr2line.c: Follow .gnu_debuglink section.
+	  A user of distribution provided ruby will see line
+	  info if s/he has a debug package for ruby.
+	  patched by Shinichiro Hamaji [ruby-dev:42655]
+
 Wed Dec  1 07:42:42 2010  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* lib/minitest/*.rb: Imported minitest 2.0.0 r5952.
@@ -23,7 +30,7 @@ Tue Nov 30 16:29:19 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vm_dump.c: undef HAVE_BACKTRACE when the OS is FreeBSD (in other
 	  words backtrace() is libexecinfo) and it is optimized.
-	  This temporary hack should be also applied to other libexecinfo
+	  This temporary hack may be also applied to other libexecinfo
 	  environments.
 
 Tue Nov 30 16:23:23 2010  NARUSE, Yui  <naruse@ruby-lang.org>
