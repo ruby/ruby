@@ -163,8 +163,24 @@ module Test
         @@installed_at_exit = true
       end
 
-      def run(*args)
-        super
+      def _run_suites suites, type
+        @interrupt = nil
+        result = []
+        suites.each {|suite|
+          begin
+            result << _run_suite(suite, type)
+          rescue Interrupt => e
+            @interrupt = e
+            break
+          end
+        }
+        result
+      end
+
+      def status(*args)
+        result = super
+        raise @interrupt if @interrupt
+        result
       end
     end
   end

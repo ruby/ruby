@@ -1,3 +1,8 @@
+Thu Dec  2 07:15:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::Mini#_run_suites): show the result
+	  even when interrupted on the way.
+
 Thu Dec  2 07:08:38 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/io/console/console.c (setattr): should retry on EINTR.
