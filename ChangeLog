@@ -1,3 +1,7 @@
+Thu Dec  2 02:30:50 2010  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/http.rb: fixed positional wording to match revised order.
+
 Thu Dec  2 01:24:39 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json/lib/json/common.rb: don't use iconv on 1.9.

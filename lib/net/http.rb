@@ -44,7 +44,13 @@ module Net   #:nodoc:
   #
   # == Simple Examples
   #
-  # The Net::HTTP methods in the following examples do not persist
+  # All examples assume you have loaded Net::HTTP with:
+  #
+  #   require 'net/http'
+  #
+  # This will also require 'uri' so you don't need to require it separately.
+  #
+  # The Net::HTTP methods in the following section do not persist
   # connections.  They are not recommended if you are performing many HTTP
   # requests.
   #
@@ -80,17 +86,9 @@ module Net   #:nodoc:
   #
   # == How to use Net::HTTP
   #
-  # Net::HTTP provides several convenience methods for performing a GET on a
-  # web server which are described below.
-  #
-  # All examples assume you have loaded Net::HTTP with:
-  #
-  #   require 'net/http'
-  #
-  # This will also require 'uri' so you don't need to require it separately.
-  #
   # The following example code can be used as the basis of a HTTP user-agent
-  # which will perform a variety of request types.
+  # which can perform a variety of request types using persistent
+  # connections.
   #
   #   uri = URI('http://example.com/some_path?query=string')
   #
