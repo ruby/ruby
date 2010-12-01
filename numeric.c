@@ -3375,6 +3375,7 @@ Init_Numeric(void)
 #elif defined(__BORLANDC__)
     /* Turn off floating point exceptions for overflow, etc. */
     _control87(MCW_EM, MCW_EM);
+    _control87(_control87(0,0),0x1FFF);
 #endif
     id_coerce = rb_intern("coerce");
     id_to_i = rb_intern("to_i");
