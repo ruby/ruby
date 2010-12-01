@@ -123,6 +123,32 @@ module Test
       end
     end
 
+    module GCStressOption
+      def setup_options(parser, options)
+        super
+        parser.on '--[no-]gc-stress' do |flag|
+          options[:gc_stress] = flag
+        end
+      end
+
+      def non_options(files, options)
+        if options.delete(:gc_stress)
+          MiniTest::Unit::TestCase.class_eval do
+            oldrun = instance_method(:run)
+            define_method(:run) do |runner|
+              begin
+                gc_stress, GC.stress = GC.stress, true
+                oldrun.bind(self).call(runner)
+              ensure
+                GC.stress = gc_stress
+              end
+            end
+          end
+        end
+        super
+      end
+    end
+
     module RequireFiles
       def non_options(files, options)
         super
@@ -150,6 +176,7 @@ module Test
     class Mini < MiniTest::Unit
       include Test::Unit::GlobOption
       include Test::Unit::LoadPathOption
+      include Test::Unit::GCStressOption
       include Test::Unit::RunCount
       include Test::Unit::Options
 

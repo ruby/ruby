@@ -1,4 +1,7 @@
-Thu Dec  2 07:15:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Dec  2 07:20:20 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::GCStressOption): --gc-stress
+	  option.
 
 	* lib/test/unit.rb (Test::Unit::Mini#_run_suites): show the result
 	  even when interrupted on the way.
