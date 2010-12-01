@@ -1,3 +1,8 @@
+Wed Dec  1 15:08:32 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/openssl/test_ssl.rb (test_not_started_session): non socket
+	  argument of SSLSocket.new is not supported on Windows.
+
 Wed Dec  1 14:36:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_memhash): zero-filled strings should return
