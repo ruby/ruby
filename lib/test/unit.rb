@@ -164,9 +164,7 @@ module Test
       end
 
       def run(*args)
-        result = super
-        abort if @interrupt
-        result
+        super
       end
     end
   end
