@@ -10,31 +10,35 @@ require 'minitest/unit'
 
 MiniTest::Unit.autorun
 
-module MyModule; end
-class AnError < StandardError; include MyModule; end
+module M; end
+class E < StandardError; include M; end
 
-class TestMiniTestUnit < MiniTest::Unit::TestCase
+class TestMiniTest < MiniTest::Unit::TestCase
   pwd = Pathname.new(File.expand_path(Dir.pwd))
   basedir = Pathname.new(File.expand_path(MiniTest::MINI_DIR)) + 'mini'
   basedir = basedir.relative_path_from(pwd).to_s
   MINITEST_BASE_DIR = basedir[/\A\./] ? basedir : "./#{basedir}"
-  BT_MIDDLE = ["#{MINITEST_BASE_DIR}/test.rb:161:in `each'",
+  BT_MIDDLE = ["#{MINITEST_BASE_DIR}/test.rb:165:in `run_test_suites'",
+               "#{MINITEST_BASE_DIR}/test.rb:161:in `each'",
+               "#{MINITEST_BASE_DIR}/test.rb:161:in `run_test_suites'",
                "#{MINITEST_BASE_DIR}/test.rb:158:in `each'",
+               "#{MINITEST_BASE_DIR}/test.rb:158:in `run_test_suites'",
                "#{MINITEST_BASE_DIR}/test.rb:139:in `run'",
                "#{MINITEST_BASE_DIR}/test.rb:106:in `run'"]
 
   def assert_report expected = nil
-    expected ||= "Run options: --seed 42
+    expected ||= "Test run options: --seed 42
 
-# Running tests:
-
+Loaded suite blah
+Started
 .
-
-Finished tests in 0.00
+Finished in 0.00
 
 1 tests, 1 assertions, 0 failures, 0 errors, 0 skips
+
+Test run options: --seed 42
 "
-    output = @output.string.sub(/Finished tests in .*/, "Finished tests in 0.00")
+    output = @output.string.sub(/Finished in .*/, "Finished in 0.00")
     output.sub!(/Loaded suite .*/, 'Loaded suite blah')
     output.sub!(/^(\s+)(?:#{Regexp.union(__FILE__, File.expand_path(__FILE__))}):\d+:/o, '\1FILE:LINE:')
     output.sub!(/\[(?:#{Regexp.union(__FILE__, File.expand_path(__FILE__))}):\d+\]/o, '[FILE:LINE]')
@@ -47,6 +51,7 @@ Finished tests in 0.00
     @tu = MiniTest::Unit.new
     @output = StringIO.new("")
     MiniTest::Unit.output = @output
+    assert_equal [0, 0], @tu.run_test_suites
   end
 
   def teardown
@@ -146,6 +151,18 @@ Finished tests in 0.00
     assert_match(/^Exception.*Oh no again!/m, @tu.report.first)
   end
 
+  def test_class_run_test_suites
+    tc = Class.new(MiniTest::Unit::TestCase) do
+      def test_something
+        assert true
+      end
+    end
+
+    Object.const_set(:ATestCase, tc)
+
+    assert_equal [1, 1], @tu.run_test_suites
+  end
+
   def test_filter_backtrace
     # this is a semi-lame mix of relative paths.
     # I cheated by making the autotest parts not have ./
@@ -201,15 +218,14 @@ Finished tests in 0.00
 
     Object.const_set(:ATestCase, tc)
 
-    @tu.run %w[--seed 42]
+    @tu.run %w[-s 42]
 
-    expected = "Run options: --seed 42
+    expected = "Test run options: --seed 42
 
-# Running tests:
-
+Loaded suite blah
+Started
 E.
-
-Finished tests in 0.00
+Finished in 0.00
 
   1) Error:
 test_error(ATestCase):
@@ -217,6 +233,8 @@ RuntimeError: unhandled exception
     FILE:LINE:in `test_error'
 
 2 tests, 1 assertions, 0 failures, 1 errors, 0 skips
+
+Test run options: --seed 42
 "
     assert_report expected
   end
@@ -234,15 +252,14 @@ RuntimeError: unhandled exception
 
     Object.const_set(:ATestCase, tc)
 
-    @tu.run %w[--seed 42]
+    @tu.run %w[-s 42]
 
-    expected = "Run options: --seed 42
+    expected = "Test run options: --seed 42
 
-# Running tests:
-
+Loaded suite blah
+Started
 E
-
-Finished tests in 0.00
+Finished in 0.00
 
   1) Error:
 test_something(ATestCase):
@@ -250,6 +267,8 @@ RuntimeError: unhandled exception
     FILE:LINE:in `teardown'
 
 1 tests, 1 assertions, 0 failures, 1 errors, 0 skips
+
+Test run options: --seed 42
 "
     assert_report expected
   end
@@ -267,21 +286,22 @@ RuntimeError: unhandled exception
 
     Object.const_set(:ATestCase, tc)
 
-    @tu.run %w[--seed 42]
+    @tu.run %w[-s 42]
 
-    expected = "Run options: --seed 42
+    expected = "Test run options: --seed 42
 
-# Running tests:
-
+Loaded suite blah
+Started
 F.
-
-Finished tests in 0.00
+Finished in 0.00
 
   1) Failure:
 test_failure(ATestCase) [FILE:LINE]:
 Failed assertion, no message given.
 
 2 tests, 2 assertions, 1 failures, 0 errors, 0 skips
+
+Test run options: --seed 42
 "
     assert_report expected
   end
@@ -299,17 +319,18 @@ Failed assertion, no message given.
 
     Object.const_set(:ATestCase, tc)
 
-    @tu.run %w[--name /some|thing/ --seed 42]
+    @tu.run %w[-n /something/ -s 42]
 
-    expected = "Run options: --name \"/some|thing/\" --seed 42
+    expected = "Test run options: --seed 42 --name \"/something/\"
 
-# Running tests:
-
+Loaded suite blah
+Started
 .
-
-Finished tests in 0.00
+Finished in 0.00
 
 1 tests, 1 assertions, 0 failures, 0 errors, 0 skips
+
+Test run options: --seed 42 --name \"/something/\"
 "
     assert_report expected
   end
@@ -323,7 +344,7 @@ Finished tests in 0.00
 
     Object.const_set(:ATestCase, tc)
 
-    @tu.run %w[--seed 42]
+    @tu.run %w[-s 42]
 
     assert_report
   end
@@ -341,21 +362,22 @@ Finished tests in 0.00
 
     Object.const_set(:ATestCase, tc)
 
-    @tu.run %w[--seed 42]
+    @tu.run %w[-s 42]
 
-    expected = "Run options: --seed 42
+    expected = "Test run options: --seed 42
 
-# Running tests:
-
+Loaded suite blah
+Started
 S.
-
-Finished tests in 0.00
+Finished in 0.00
 
   1) Skipped:
 test_skip(ATestCase) [FILE:LINE]:
 not yet
 
 2 tests, 1 assertions, 0 failures, 0 errors, 1 skips
+
+Test run options: --seed 42
 "
     assert_report expected
   end
@@ -369,7 +391,7 @@ not yet
   end
 end
 
-class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
+class TestMiniTestTestCase < MiniTest::Unit::TestCase
   def setup
     MiniTest::Unit::TestCase.reset
 
@@ -526,9 +548,9 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
 
     pattern = Object.new
     def pattern.=~(other) false end
-    def pattern.inspect; "[Object]" end
+    def pattern.inspect; "<<Object>>" end
 
-    util_assert_triggered 'Expected [Object] to match 5.' do
+    util_assert_triggered 'Expected <<Object>> to match 5.' do
       @tc.assert_match pattern, 5
     end
   end
@@ -641,8 +663,8 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
   end
 
   def test_assert_raises_module
-    @tc.assert_raises MyModule do
-      raise AnError
+    @tc.assert_raises M do
+      raise E
     end
   end
 
@@ -714,13 +736,13 @@ FILE:LINE:in `test_assert_raises_triggered_different_msg'
   def test_assert_raises_triggered_subclass
     e = assert_raises MiniTest::Assertion do
       @tc.assert_raises StandardError do
-        raise AnError
+        raise E
       end
     end
 
     expected = "[StandardError] exception expected, not
-Class: <AnError>
-Message: <\"AnError\">
+Class: <E>
+Message: <\"E\">
 ---Backtrace---
 FILE:LINE:in `test_assert_raises_triggered_subclass'
 ---------------"
@@ -1001,9 +1023,9 @@ FILE:LINE:in `test_assert_raises_triggered_subclass'
 
     pattern = Object.new
     def pattern.=~(other) true end
-    def pattern.inspect; "[Object]" end
+    def pattern.inspect; "<<Object>>" end
 
-    util_assert_triggered 'Expected [Object] to not match 5.' do
+    util_assert_triggered 'Expected <<Object>> to not match 5.' do
       @tc.refute_match pattern, 5
     end
   end
