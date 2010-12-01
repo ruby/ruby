@@ -29,17 +29,17 @@ Wed Dec  1 01:29:15 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_str_inspect): inspect as a dummy encoding string
 	  when a UTF-16/32 (not BE/LE) string does not have a BOM.
-	  Unicode and some RFCs say that a string labeld as UTF-16/32
+	  Unicode and some RFCs say that a string labeled as UTF-16/32
 	  doesn't have a BOM, it should be considered big endian.
 	  But many Windows programs generates little endian UTF-16
 	  strings without a BOM. So String#inspect treats a string
-	  labeled UTF-16/32 withaout a BOM as a dummy encoding string.
+	  labeled UTF-16/32 without a BOM as a dummy encoding string.
 	  patched by Martin Duerst. [ruby-core:33461]
 
 Tue Nov 30 17:04:10 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* addr2line.c (parse_debug_line_cu): ignore DW_LNE_set_discriminator.
-	  To ignore, it needs to read a sigle unsigned LEB128 integer.
+	  To ignore, it needs to read a single unsigned LEB128 integer.
 
 Tue Nov 30 16:29:19 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
@@ -67,7 +67,7 @@ Tue Nov 30 11:39:13 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 Tue Nov 30 05:03:44 2010  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/uri/common.rb (encode_www_form, encode_www_form_component):
-	  Improve english in documentation.
+	  Improve English in documentation.
 
 	* ext/openssl/ossl_ssl.c (ssl_version=, ciphers=): Document
 	  #ssl_version=, add documentation for #ciphers=.
@@ -123,7 +123,7 @@ Mon Nov 28 21:58:58 2010  Koichi Sasada  <ko1@atdot.net>
 Mon Nov 28 21:54:22 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_pthread.c (native_cond_*): Check return code.
-	  (Some OSs except Linux return error code).
+	  (Some OSes except Linux return error code).
 
 Sun Nov 28 21:46:21 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -146,7 +146,7 @@ Sun Nov 28 14:48:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sun Nov 28 14:46:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* thread_pthread.c (gvl_reinit): register atfork hander only in
+	* thread_pthread.c (gvl_reinit): register atfork handler only in
 	  the parent process, to get rid of dead lock.
 
 Sun Nov 28 12:23:57 2010  Koichi Sasada  <ko1@atdot.net>
@@ -159,8 +159,8 @@ Sun Nov 28 12:23:57 2010  Koichi Sasada  <ko1@atdot.net>
 	  (2) Wake-up queued threads.  The wake-up order is simple FIFO.
 	     (We can make several queues to support exact priorities, however
 	      this causes some issues such as priority inversion and so on.)
-	      This impl. prevents spin-loop (*1) caused on SMP environemnts.
-	  *1: Only one Ruby thread acqures GVL again and again.
+	      This impl. prevents spin-loop (*1) caused on SMP environments.
+	  *1: Only one Ruby thread acquires GVL again and again.
 	      Bug #2359 [ruby-core:26694]
 
 	* thread_win32.c, thread_win32.h: Using simple lock
@@ -292,7 +292,7 @@ Thu Nov 25 23:10:49 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 	* regcomp.c (print_distance_range): use PRIuSIZE.
 
 	* regcomp.c (print_optimize_info): use %ld because the type of
-	  calcutated value of integers is long.
+	  calculated value of integers is long.
 
 	* regexec.c (onig_print_compiled_byte_code): add prototype.
 
@@ -358,11 +358,11 @@ Wed Nov 24 01:40:23 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 Tue Nov 23 21:59:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (wlink, rb_w32_getppid): use typedef instead of
-	  repeating compilcated function prototypes.
+	  repeating complicated function prototypes.
 
 Tue Nov 23 18:54:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* vm.c (rb_thread_mark): should mark self in conrol
+	* vm.c (rb_thread_mark): should mark self in control
 	  frames.  [ruby-core:33289]
 
 Tue Nov 23 07:57:31 2010  Tadayoshi Funaba  <tadf@dotrb.org>
@@ -379,7 +379,7 @@ Tue Nov 23 07:27:27 2010  Tadayoshi Funaba  <tadf@dotrb.org>
 
 Tue Nov 23 07:22:54 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* ChangeLog (change-log-indent-text): hunging indent.
+	* ChangeLog (change-log-indent-text): hanging indent.
 
 Tue Nov 23 06:30:51 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -524,9 +524,9 @@ Wed Nov 17 16:09:52 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 Wed Nov 17 16:04:23 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/ruby/envutil.rb (Test::Unit::Assersions#assert_warn):
-	  new assersion to assert that a particular warning message is
+	  new assertion to assert that a particular warning message is
 	  displayed.
-	  forwardport from branches/ruby_1_9_2@29795.
+	  forward port from branches/ruby_1_9_2@29795.
 
 Wed Nov 17 15:16:48 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
@@ -638,7 +638,7 @@ Sat Nov 13 16:37:56 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Sat Nov 13 01:31:30 2010  Akio Tajima <artonx@yahoo.co.jp>
 
 	* win32/Makefile.sub: reorder variable End Of Message (don't display it)
-	
+
 Fri Nov 12 20:52:34 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (showflags, help): use caret to quote leading spaces on Windows.
