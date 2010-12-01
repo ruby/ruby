@@ -727,6 +727,8 @@ class TestString < Test::Unit::TestCase
   def test_hash
     assert_equal(S("hello").hash, S("hello").hash)
     assert(S("hello").hash != S("helLO").hash)
+    bug4104 = '[ruby-core:33500]'
+    assert_not_equal(S("a").hash, S("a\0").hash, bug4104)
   end
 
   def test_hash_random
