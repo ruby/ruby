@@ -46,11 +46,11 @@ memfill(register VALUE *mem, register long size, register VALUE val)
 }
 
 # define ARY_SHARED_P(ary) \
-    (assert(!FL_TEST(ary, ELTS_SHARED) || !FL_TEST(ary, RARRAY_EMBED_FLAG)), \
-     FL_TEST(ary,ELTS_SHARED)!=0)
+    (assert(!FL_TEST((ary), ELTS_SHARED) || !FL_TEST((ary), RARRAY_EMBED_FLAG)), \
+     FL_TEST((ary),ELTS_SHARED)!=0)
 # define ARY_EMBED_P(ary) \
-    (assert(!FL_TEST(ary, ELTS_SHARED) || !FL_TEST(ary, RARRAY_EMBED_FLAG)), \
-     FL_TEST(ary, RARRAY_EMBED_FLAG)!=0)
+    (assert(!FL_TEST((ary), ELTS_SHARED) || !FL_TEST((ary), RARRAY_EMBED_FLAG)), \
+     FL_TEST((ary), RARRAY_EMBED_FLAG)!=0)
 
 #define ARY_HEAP_PTR(a) (assert(!ARY_EMBED_P(a)), RARRAY(a)->as.heap.ptr)
 #define ARY_HEAP_LEN(a) (assert(!ARY_EMBED_P(a)), RARRAY(a)->as.heap.len)
@@ -60,18 +60,18 @@ memfill(register VALUE *mem, register long size, register VALUE val)
      (long)((RBASIC(a)->flags >> RARRAY_EMBED_LEN_SHIFT) & \
 	 (RARRAY_EMBED_LEN_MASK >> RARRAY_EMBED_LEN_SHIFT)))
 
-#define ARY_OWNS_HEAP_P(a) (!FL_TEST(a, ELTS_SHARED|RARRAY_EMBED_FLAG))
+#define ARY_OWNS_HEAP_P(a) (!FL_TEST((a), ELTS_SHARED|RARRAY_EMBED_FLAG))
 #define FL_SET_EMBED(a) do { \
     assert(!ARY_SHARED_P(a)); \
     assert(!OBJ_FROZEN(a)); \
-    FL_SET(a, RARRAY_EMBED_FLAG); \
+    FL_SET((a), RARRAY_EMBED_FLAG); \
 } while (0)
-#define FL_UNSET_EMBED(ary) FL_UNSET(ary, RARRAY_EMBED_FLAG|RARRAY_EMBED_LEN_MASK)
+#define FL_UNSET_EMBED(ary) FL_UNSET((ary), RARRAY_EMBED_FLAG|RARRAY_EMBED_LEN_MASK)
 #define FL_SET_SHARED(ary) do { \
     assert(!ARY_EMBED_P(ary)); \
-    FL_SET(ary, ELTS_SHARED); \
+    FL_SET((ary), ELTS_SHARED); \
 } while (0)
-#define FL_UNSET_SHARED(ary) FL_UNSET(ary, ELTS_SHARED)
+#define FL_UNSET_SHARED(ary) FL_UNSET((ary), ELTS_SHARED)
 
 #define ARY_SET_PTR(ary, p) do { \
     assert(!ARY_EMBED_P(ary)); \
@@ -79,7 +79,7 @@ memfill(register VALUE *mem, register long size, register VALUE val)
     RARRAY(ary)->as.heap.ptr = (p); \
 } while (0)
 #define ARY_SET_EMBED_LEN(ary, n) do { \
-    long tmp_n = n; \
+    long tmp_n = (n); \
     assert(ARY_EMBED_P(ary)); \
     assert(!OBJ_FROZEN(ary)); \
     RBASIC(ary)->flags &= ~RARRAY_EMBED_LEN_MASK; \
@@ -87,29 +87,29 @@ memfill(register VALUE *mem, register long size, register VALUE val)
 } while (0)
 #define ARY_SET_HEAP_LEN(ary, n) do { \
     assert(!ARY_EMBED_P(ary)); \
-    RARRAY(ary)->as.heap.len = n; \
+    RARRAY(ary)->as.heap.len = (n); \
 } while (0)
 #define ARY_SET_LEN(ary, n) do { \
     if (ARY_EMBED_P(ary)) { \
-        ARY_SET_EMBED_LEN(ary, n); \
+        ARY_SET_EMBED_LEN((ary), (n)); \
     } \
     else { \
-        ARY_SET_HEAP_LEN(ary, n); \
+        ARY_SET_HEAP_LEN((ary), (n)); \
     } \
-    assert(RARRAY_LEN(ary) == n); \
+    assert(RARRAY_LEN(ary) == (n)); \
 } while (0)
 #define ARY_INCREASE_PTR(ary, n) do  { \
     assert(!ARY_EMBED_P(ary)); \
     assert(!OBJ_FROZEN(ary)); \
-    RARRAY(ary)->as.heap.ptr += n; \
+    RARRAY(ary)->as.heap.ptr += (n); \
 } while (0)
 #define ARY_INCREASE_LEN(ary, n) do  { \
     assert(!OBJ_FROZEN(ary)); \
     if (ARY_EMBED_P(ary)) { \
-        ARY_SET_EMBED_LEN(ary, RARRAY_LEN(ary)+n); \
+        ARY_SET_EMBED_LEN((ary), RARRAY_LEN(ary)+(n)); \
     } \
     else { \
-        RARRAY(ary)->as.heap.len += n; \
+        RARRAY(ary)->as.heap.len += (n); \
     } \
 } while (0)
 
@@ -130,7 +130,7 @@ memfill(register VALUE *mem, register long size, register VALUE val)
     RARRAY(ary)->as.heap.aux.shared = (value); \
 } while (0)
 #define RARRAY_SHARED_ROOT_FLAG FL_USER5
-#define ARY_SHARED_ROOT_P(ary) (FL_TEST(ary, RARRAY_SHARED_ROOT_FLAG))
+#define ARY_SHARED_ROOT_P(ary) (FL_TEST((ary), RARRAY_SHARED_ROOT_FLAG))
 #define ARY_SHARED_NUM(ary) \
     (assert(ARY_SHARED_ROOT_P(ary)), RARRAY(ary)->as.heap.aux.capa)
 #define ARY_SET_SHARED_NUM(ary, value) do { \
@@ -139,7 +139,7 @@ memfill(register VALUE *mem, register long size, register VALUE val)
 } while (0)
 #define FL_SET_SHARED_ROOT(ary) do { \
     assert(!ARY_EMBED_P(ary)); \
-    FL_SET(ary, RARRAY_SHARED_ROOT_FLAG); \
+    FL_SET((ary), RARRAY_SHARED_ROOT_FLAG); \
 } while (0)
 
 static void
@@ -1953,11 +1953,11 @@ enum {
 
 #define SORT_OPTIMIZABLE_BIT(type) (1U << TOKEN_PASTE(sort_opt_,type))
 #define SORT_OPTIMIZABLE(data, type) \
-    ((data->opt_inited & SORT_OPTIMIZABLE_BIT(type)) ? \
-     (data->opt_methods & SORT_OPTIMIZABLE_BIT(type)) : \
-     ((data->opt_inited |= SORT_OPTIMIZABLE_BIT(type)), \
+    (((data)->opt_inited & SORT_OPTIMIZABLE_BIT(type)) ? \
+     ((data)->opt_methods & SORT_OPTIMIZABLE_BIT(type)) : \
+     (((data)->opt_inited |= SORT_OPTIMIZABLE_BIT(type)), \
       rb_method_basic_definition_p(TOKEN_PASTE(rb_c,type), id_cmp) && \
-      (data->opt_methods |= SORT_OPTIMIZABLE_BIT(type))))
+      ((data)->opt_methods |= SORT_OPTIMIZABLE_BIT(type))))
 
 static VALUE
 sort_reentered(VALUE ary)
@@ -3734,7 +3734,7 @@ rb_ary_flatten(int argc, VALUE *argv, VALUE ary)
 }
 
 #define OPTHASH_GIVEN_P(opts) \
-    (argc > 0 && !NIL_P(opts = rb_check_hash_type(argv[argc-1])) && (--argc, 1))
+    (argc > 0 && !NIL_P((opts) = rb_check_hash_type(argv[argc-1])) && (--argc, 1))
 static VALUE sym_random;
 
 #define RAND_UPTO(max) (long)(rb_random_real(randgen)*(max))
