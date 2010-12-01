@@ -105,11 +105,15 @@ class TestSocket < Test::Unit::TestCase
     49152 + rand(65535-49152+1)
   end
 
+  def errors_addrinuse
+    [Errno::EADDRINUSE]
+  end
+
   def test_tcp_server_sockets
     port = random_port
     begin
       sockets = Socket.tcp_server_sockets(port)
-    rescue Errno::EADDRINUSE
+    rescue *errors_addrinuse
       return # not test failure
     end
     begin

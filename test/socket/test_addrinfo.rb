@@ -330,6 +330,10 @@ class TestSocketAddrinfo < Test::Unit::TestCase
     49152 + rand(65535-49152+1)
   end
 
+  def errors_addrinuse
+    [Errno::EADDRINUSE]
+  end
+
   def test_connect_from
     TCPServer.open("0.0.0.0", 0) {|serv|
       serv_ai = Addrinfo.new(serv.getsockname, :INET, :STREAM)
@@ -344,7 +348,7 @@ class TestSocketAddrinfo < Test::Unit::TestCase
             s2.close
           end
         }
-      rescue Errno::EADDRINUSE
+      rescue *errors_addrinuse
         # not test failure
       end
     }
@@ -365,7 +369,7 @@ class TestSocketAddrinfo < Test::Unit::TestCase
             s2.close
           end
         }
-      rescue Errno::EADDRINUSE
+      rescue *errors_addrinuse
         # not test failure
       end
     }
@@ -385,7 +389,7 @@ class TestSocketAddrinfo < Test::Unit::TestCase
             s2.close
           end
         }
-      rescue Errno::EADDRINUSE
+      rescue *errors_addrinuse
         # not test failure
       end
     }
@@ -398,7 +402,7 @@ class TestSocketAddrinfo < Test::Unit::TestCase
       client_ai.bind {|s|
         assert_equal(port, s.local_address.ip_port)
       }
-    rescue Errno::EADDRINUSE
+    rescue *errors_addrinuse
       # not test failure
     end
   end
@@ -422,7 +426,7 @@ class TestSocketAddrinfo < Test::Unit::TestCase
           end
         }
       }
-    rescue Errno::EADDRINUSE
+    rescue *errors_addrinuse
       # not test failure
     end
   end
