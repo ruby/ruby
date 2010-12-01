@@ -54,12 +54,12 @@ module Net   #:nodoc:
   #
   # === GET by URI
   #
-  #   uri = URI.parse('http://example.com/index.html?count=10')
+  #   uri = URI('http://example.com/index.html?count=10')
   #   Net::HTTP.get(uri) # => String
   #
   # === GET with Dynamic Parameters
   #
-  #   uri = URI.parse('http://example.com/index.html')
+  #   uri = URI('http://example.com/index.html')
   #   params = { :limit => 10, :page => 3 }
   #   uri.query = URI.encode_www_form(params)
   #
@@ -68,13 +68,13 @@ module Net   #:nodoc:
   #
   # === POST
   #
-  #   uri = URI.parse('http://www.example.com/search.cgi')
+  #   uri = URI('http://www.example.com/search.cgi')
   #   res = Net::HTTP.post_form(uri, 'q' => 'ruby', 'max' => '50')
   #   puts res.body
   #
   # === POST with Multiple Values
   #
-  #   uri = URI.parse('http://www.example.com/search.cgi')
+  #   uri = URI('http://www.example.com/search.cgi')
   #   res = Net::HTTP.post_form(uri, 'q' => ['ruby', 'perl'], 'max' => '50')
   #   puts res.body
   #
@@ -92,9 +92,9 @@ module Net   #:nodoc:
   # The following example code can be used as the basis of a HTTP user-agent
   # which will perform a variety of request types.
   #
-  #   uri = URI.parse 'http://example.com/some_path?query=string'
+  #   uri = URI('http://example.com/some_path?query=string')
   #
-  #   Net::HTTP.start uri.host, uri.port do |http|
+  #   Net::HTTP.start(uri.host, uri.port) do |http|
   #     request = Net::HTTP::Get.new uri.request_uri
   #
   #     response = http.request request # Net::HTTPResponse object
@@ -115,7 +115,7 @@ module Net   #:nodoc:
   #
   # === Response Data
   #
-  #   uri = URI.parse('http://example.com/index.html')
+  #   uri = URI('http://example.com/index.html')
   #   res = Net::HTTP.get_response(uri)
   #
   #   # Headers
@@ -148,7 +148,7 @@ module Net   #:nodoc:
   #     # You should choose a better exception.
   #     raise ArgumentError, 'too many HTTP redirects' if limit == 0
   #
-  #     response = Net::HTTP.get_response(URI.parse(uri_str))
+  #     response = Net::HTTP.get_response(URI(uri_str))
   #
   #     case response
   #     when Net::HTTPSuccess then
@@ -169,11 +169,11 @@ module Net   #:nodoc:
   # A POST can be made using the Net::HTTP::Post request class.  This example
   # creates a urlencoded POST body:
   #
-  #   uri = URI.parse('http://www.example.com/todo.cgi')
+  #   uri = URI('http://www.example.com/todo.cgi')
   #   req = Net::HTTP::Post.new(uri.path)
   #   req.set_form_data('from' => '2005-01-01', 'to' => '2005-03-31')
   #
-  #   res = Net::HTTP.new(uri.hostname, uri.port).start do |http|
+  #   res = Net::HTTP.start(uri.hostname, uri.port) do |http|
   #     http.request(req)
   #   end
   #
@@ -202,7 +202,7 @@ module Net   #:nodoc:
   # time in the header a Not Modified response will be returned.  See RFC 2616
   # section 9.3 for further details.
   #
-  #   uri = URI.parse('http://example.com/cached_response')
+  #   uri = URI('http://example.com/cached_response')
   #   file = File.stat 'cached_response'
   #
   #   req = Net::HTTP::Get.new(uri.request_uri)
@@ -221,7 +221,7 @@ module Net   #:nodoc:
   # Basic authentication is performed according to
   # [RFC2617](http://www.ietf.org/rfc/rfc2617.txt)
   #
-  #   uri = URI.parse('http://example.com/index.html?key=value')
+  #   uri = URI('http://example.com/index.html?key=value')
   #
   #   req = Net::HTTP::Get.new(uri.request_uri)
   #   req.basic_auth 'user', 'pass'
@@ -237,9 +237,9 @@ module Net   #:nodoc:
   # handling large files or wish to implement a progress bar you can instead
   # stream the body directly to an IO.
   #
-  #   uri = URI.parse 'http://example.com/large_file'
+  #   uri = URI('http://example.com/large_file')
   #
-  #   Net::HTTP.start uri.host, uri.port do |http|
+  #   Net::HTTP.start(uri.host, uri.port) do |http|
   #     request = Net::HTTP::Get.new uri.request_uri
   #
   #     http.request request do |response|
@@ -255,12 +255,10 @@ module Net   #:nodoc:
   #
   # HTTPS is enabled for an HTTP connection by Net::HTTP#use_ssl=.
   #
-  #   uri = URI.parse 'https://secure.example.com/some_path?query=string'
+  #   uri = URI('https://secure.example.com/some_path?query=string')
   #
-  #   Net::HTTP.new uri.host, uri.port
-  #   http.use_ssl = uri.scheme == 'https'
-  #
-  #   http.start do
+  #   Net::HTTP.start(uri.host, uri.port,
+  #     :use_ssl => uri.scheme == 'https').start do |http|
   #     request = Net::HTTP::Get.new uri.request_uri
   #
   #     response = http.request request # Net::HTTPResponse object
@@ -412,7 +410,7 @@ module Net   #:nodoc:
       @newimpl
     end
 
-!   # Returns true if net/http is in version 1.1 compatible mode.
+    # Returns true if net/http is in version 1.1 compatible mode.
     # Defaults to true.
     def HTTP.version_1_1?
       not @newimpl
@@ -432,7 +430,7 @@ module Net   #:nodoc:
     # target can either be specified as
     # (+uri+), or as (+host+, +path+, +port+ = 80); so:
     #
-    #    Net::HTTP.get_print URI.parse('http://www.example.com/index.html')
+    #    Net::HTTP.get_print URI('http://www.example.com/index.html')
     #
     # or:
     #
@@ -451,7 +449,7 @@ module Net   #:nodoc:
     # as a string.  The target can either be specified as
     # (+uri+), or as (+host+, +path+, +port+ = 80); so:
     #
-    #    print Net::HTTP.get(URI.parse('http://www.example.com/index.html'))
+    #    print Net::HTTP.get(URI('http://www.example.com/index.html'))
     #
     # or:
     #
@@ -465,7 +463,7 @@ module Net   #:nodoc:
     # as a Net::HTTPResponse object.  The target can either be specified as
     # (+uri+), or as (+host+, +path+, +port+ = 80); so:
     #
-    #    res = Net::HTTP.get_response(URI.parse('http://www.example.com/index.html'))
+    #    res = Net::HTTP.get_response(URI('http://www.example.com/index.html'))
     #    print res.body
     #
     # or:
@@ -500,7 +498,7 @@ module Net   #:nodoc:
     #   require 'net/http'
     #   require 'uri'
     #
-    #   HTTP.post_form URI.parse('http://www.example.com/search.cgi'),
+    #   HTTP.post_form URI('http://www.example.com/search.cgi'),
     #                  { "q" => "ruby", "max" => "50" }
     #
     def HTTP.post_form(url, params)
