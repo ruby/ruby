@@ -26,7 +26,15 @@ typedef OpenFile rb_io_t;
 #if defined HAVE_TERMIOS_H
 # include <termios.h>
 typedef struct termios conmode;
-# define setattr(fd, t) (tcsetattr(fd, TCSAFLUSH, t) == 0)
+
+static int
+setattr(int fd, conmode *t)
+{
+    while (tcsetattr(fd, TCSAFLUSH, t)) {
+	if (errno != EINTR) return 0;
+    }
+    return 1;
+}
 # define getattr(fd, t) (tcgetattr(fd, t) == 0)
 #elif defined HAVE_TERMIO_H
 # include <termio.h>

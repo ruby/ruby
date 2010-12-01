@@ -1,3 +1,8 @@
+Thu Dec  2 07:08:38 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/console/console.c (setattr): should retry on EINTR.
+	  [ruby-dev:42666]
+
 Thu Dec  2 02:30:50 2010  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/net/http.rb: fixed positional wording to match revised order.
