@@ -1,3 +1,8 @@
+Thu Dec  2 01:24:39 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/json/lib/json/common.rb: don't use iconv on 1.9.
+	  patched by Shota Fukumori [ruby-core:33164]
+
 Thu Dec  2 01:02:03 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json: Update github/flori/json from 1.4.2+ to
