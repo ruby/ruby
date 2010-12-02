@@ -1,3 +1,8 @@
+Mon Oct 11 06:11:30 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (rb_io_set_encoding): use rb_funcall2 when the io is not
+	  a T_FILE. [ruby-dev:42356]
+
 Fri Oct  8 00:24:54 2010  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	* lib/csv.rb: Fixing documentation typos.  [ruby-core:32712]
