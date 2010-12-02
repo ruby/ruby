@@ -1,3 +1,8 @@
+Thu Dec  2 13:10:42 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/common.rb (URI.encode_www_form):
+	  split key-value when the value is Array like object.
+
 Thu Dec  2 10:39:39 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http.rb (Net::HTTP#set_form_data):

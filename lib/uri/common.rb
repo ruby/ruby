@@ -798,15 +798,33 @@ module URI
   # This is an implementation of
   # http://www.w3.org/TR/html5/forms.html#url-encoded-form-data
   #
+  #    URI.encode_www_form([["q", "ruby"], ["lang", "en"]])
+  #    #=> "q=ruby&lang=en"
+  #    URI.encode_www_form("q" => "ruby", "lang" => "en")
+  #    #=> "q=ruby&lang=en"
+  #    URI.encode_www_form("q" => ["ruby", "perl"], "lang" => "en")
+  #    #=> "q=ruby&q=perl&lang=en"
+  #    URI.encode_www_form([["q", "ruby"], ["q", "perl"], ["lang", "en"]])
+  #    #=> "q=ruby&q=perl&lang=en"
+  #
   # See URI.encode_www_form_component, URI.decode_www_form
   def self.encode_www_form(enum)
     enum.map do |k,v|
-      str = encode_www_form_component(k)
-      if v
+      if v.nil?
+        encode_www_form_component(k)
+      elsif v.respond_to?(:to_ary)
+        v.to_ary.map do |w|
+          str = encode_www_form_component(k)
+          unless w.nil?
+            str << '='
+            str << encode_www_form_component(w)
+          end
+        end.join('&')
+      else
+        str = encode_www_form_component(k)
         str << '='
         str << encode_www_form_component(v)
       end
-      str
     end.join('&')
   end
 
