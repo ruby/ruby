@@ -5056,7 +5056,7 @@ rb_w32_read(int fd, void *buf, size_t size)
     /* get rid of console reading bug */
     if (isconsole) {
 	if (start)
-	    len = min(16*1024, size);
+	    len = 1;
 	else {
 	    len = 0;
 	    start = 1;
