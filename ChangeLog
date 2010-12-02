@@ -1,3 +1,9 @@
+Tue Oct 12 14:04:41 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* numeric.c (int_chr): a codepoint of Ruby M17N must be 32bit
+	  unsigned int; GB18030 uses MSB. Also note that OnigCodePoint
+	  is defined as uisigned int.
+
 Mon Oct 11 20:20:23 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http.rb (HTTP.get): specify ASCII-8BIT as the result
