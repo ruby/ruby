@@ -1,3 +1,8 @@
+Thu Dec  2 23:05:14 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (RCFLAGS): -nologo switch is only available in
+	  newer versions of rc.exe. fixed the problem of r30012.
+
 Thu Dec  2 21:28:07 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json/lib/json/add/rails.rb: removed.

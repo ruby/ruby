@@ -239,6 +239,11 @@ CPPFLAGS = $(DEFS) $(ARCHDEFS) $(CPPFLAGS)
 DLDFLAGS = $(LDFLAGS) -dll
 SOLIBS = 
 RCFILES = $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc
+!ifndef RCFLAGS
+!if $(MSC_VER) >= 1500
+RCFLAGS=-nologo
+!endif
+!endif
 
 LIBRUBY_LDSHARED = $(LDSHARED)
 LIBRUBY_DLDFLAGS = $(EXTLDFLAGS) -implib:dummy.lib -def:$(RUBYDEF)
@@ -1004,7 +1009,7 @@ $(ruby_pc): $(RBCONFIG)
 
 .rc.res:
 	$(ECHO) compiling $(<:\=/)
-	$(Q) $(RC) -nologo -I. -I$(<D) $(iconinc) -I$(srcdir)/win32 $(RFLAGS) -fo$@ $(<:\=/)
+	$(Q) $(RC) $(RCFLAGS) -I. -I$(<D) $(iconinc) -I$(srcdir)/win32 $(RFLAGS) -fo$@ $(<:\=/)
 
 lex.c: {$(srcdir)}lex.c.blt
 	copy $(?:/=\) $@
