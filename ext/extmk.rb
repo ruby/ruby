@@ -63,7 +63,7 @@ def extract_makefile(makefile, keep = true)
         config = CONFIG.dup
         install_dirs(target_prefix).each {|var, val| config[var] = val}
         FileUtils.rm_f(installrb.values.collect {|f| RbConfig.expand(f, config)},
-                       :verbose => $makeflags.defined?("Q") != "@")
+                       :verbose => $mflags.defined?("Q") != "@")
       end
     end
     return false
@@ -239,7 +239,7 @@ end
 
 def parse_args()
   $mflags = []
-  $makeflags = []
+  $makeflags = [] # for make command to build ruby, so quoted
 
   $optparser ||= OptionParser.new do |opts|
     opts.on('-n') {$dryrun = true}
@@ -296,10 +296,6 @@ def parse_args()
     false
   end
   def $mflags.defined?(var)
-    grep(/\A#{var}=(.*)/) {return $1}
-    false
-  end
-  def $makeflags.defined?(var)
     grep(/\A#{var}=(.*)/) {return $1}
     false
   end
