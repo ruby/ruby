@@ -1,3 +1,8 @@
+Thu Oct 14 20:50:51 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (reg_get_val): expand environment in 
+	  the pathname. [Bug #3907]
+
 Thu Oct 14 04:16:41 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* numeric.c (ruby_float_step): fix Numeric#step with infinity unit
