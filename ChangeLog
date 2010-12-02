@@ -1,3 +1,8 @@
+Thu Dec  2 10:39:39 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http.rb (Net::HTTP#set_form_data):
+	  use URI.encode_www_form for application/x-www-form-urlencoded.
+
 Thu Dec  2 10:38:40 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/extmk.rb: remove $makeflags.defined?, it should be $mflags.

@@ -1784,21 +1784,13 @@ module Net   #:nodoc:
     #    http.set_form_data({"q" => "ruby", "lang" => "en"}, ';')
     #
     def set_form_data(params, sep = '&')
-      self.body = params.map {|k, v| encode_kvpair(k, v) }.flatten.join(sep)
+      query = URI.encode_www_form(params)
+      query.gsub!(/&/, sep) if sep != '&'
+      self.body = query
       self.content_type = 'application/x-www-form-urlencoded'
     end
 
     alias form_data= set_form_data
-
-    def encode_kvpair(k, vs)
-      Array(vs).map {|v| "#{urlencode(k.to_s)}=#{urlencode(v.to_s)}" }
-    end
-    private :encode_kvpair
-
-    def urlencode(str)
-      str.dup.force_encoding('ASCII-8BIT').gsub(/[^a-zA-Z0-9_\.\-]/){'%%%02x' % $&.ord}
-    end
-    private :urlencode
 
     # Set the Authorization: header for "Basic" authorization.
     def basic_auth(account, password)
