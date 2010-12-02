@@ -221,7 +221,7 @@ fiber_memsize(const void *ptr)
 	}
 	size += cont_memsize(&fib->cont);
     }
-    return 0;
+    return size;
 }
 
 static void

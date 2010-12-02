@@ -1,3 +1,8 @@
+Mon Oct  4 07:57:51 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* cont.c (fiber_memsize): Return size.
+	  Before this change, fiber_memsize always returns 0.
+
 Sat Oct  2 22:59:32 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_thread.rb: add for win32ole with Thread.
