@@ -1,3 +1,31 @@
+Fri Oct 15 23:36:25 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (NUM2DEVT, DEVT2NUM, PRI_DEVT_PREFIX): fallback to
+	  unsigned int.
+
+Fri Oct 15 20:30:30 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (dev_t): use RUBY_REPLACE_TYPE.
+
+	* file.c (rb_stat_inspect): use PRI_DEVT_PREFIX.
+
+Thu Oct 14 07:35:07 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* file.c (DEVT2NUM): added. Size of dev_t is depend on the
+	  environment even if POSIX defines dev_t as unsigned integer.
+	  For example, OpenVMS, 64bit Solaris 9, and NetBSD 6 defines
+	  dev_t as 64bit unsigned integer.
+
+	* file.c (rb_stat_dev): use DEVT2NUM.
+
+	* file.c (rb_stat_dev_major): dev_t is not long. major(3)'s return
+	  value is int.
+
+	* file.c (rb_stat_dev_minor): dev_t is not long. minor(3)'s return
+	  value is int.
+
+	* configure.in: check size of dev_t.
+
 Thu Oct 14 20:50:51 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (reg_get_val): expand environment in 

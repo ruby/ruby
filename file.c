@@ -311,6 +311,16 @@ rb_stat_cmp(VALUE self, VALUE other)
 
 #define ST2UINT(val) ((val) & ~(~1UL << (sizeof(val) * CHAR_BIT - 1)))
 
+#ifndef NUM2DEVT
+# define NUM2DEVT(v) NUM2UINT(v)
+#endif
+#ifndef DEVT2NUM
+# define DEVT2NUM(v) UINT2NUM(v)
+#endif
+#ifndef PRI_DEVT_PREFIX
+# define PRI_DEVT_PREFIX ""
+#endif
+
 /*
  *  call-seq:
  *     stat.dev    -> fixnum
@@ -324,7 +334,7 @@ rb_stat_cmp(VALUE self, VALUE other)
 static VALUE
 rb_stat_dev(VALUE self)
 {
-    return INT2NUM(get_stat(self)->st_dev);
+    return DEVT2NUM(get_stat(self)->st_dev);
 }
 
 /*
@@ -342,8 +352,7 @@ static VALUE
 rb_stat_dev_major(VALUE self)
 {
 #if defined(major)
-    long dev = get_stat(self)->st_dev;
-    return ULONG2NUM(major(dev));
+    return INT2NUM(major(get_stat(self)->st_dev));
 #else
     return Qnil;
 #endif
@@ -364,8 +373,7 @@ static VALUE
 rb_stat_dev_minor(VALUE self)
 {
 #if defined(minor)
-    long dev = get_stat(self)->st_dev;
-    return ULONG2NUM(minor(dev));
+    return INT2NUM(minor(get_stat(self)->st_dev));
 #else
     return Qnil;
 #endif
@@ -768,10 +776,10 @@ rb_stat_inspect(VALUE self)
 	rb_str_buf_cat2(str, "=");
 	v = (*member[i].func)(self);
 	if (i == 2) {		/* mode */
-	    rb_str_catf(str, "0%lo", NUM2ULONG(v));
+	    rb_str_catf(str, "0%lo", (unsigned long)NUM2ULONG(v));
 	}
 	else if (i == 0 || i == 6) { /* dev/rdev */
-	    rb_str_catf(str, "0x%lx", NUM2ULONG(v));
+	    rb_str_catf(str, "0x%"PRI_DEVT_PREFIX"x", NUM2DEVT(v));
 	}
 	else {
 	    rb_str_append(str, rb_inspect(v));
