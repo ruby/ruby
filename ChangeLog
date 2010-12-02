@@ -1,3 +1,8 @@
+Thu Sep 30 16:11:08 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_getenv): should return NULL if specified name
+	  is empty. a patch from Heesob Park at [ruby-core:32650]
+
 Sun Aug 29 13:22:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (rb_thread_method_id_and_class): curried proc has no

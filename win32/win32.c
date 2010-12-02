@@ -3876,8 +3876,8 @@ rb_w32_getenv(const char *name)
     int len = strlen(name);
     char *env;
 
-    if (envarea)
-	FreeEnvironmentStrings(envarea);
+    if (len == 0) return NULL;
+    if (envarea) FreeEnvironmentStrings(envarea);
     envarea = GetEnvironmentStrings();
     if (!envarea) {
 	map_errno(GetLastError());
