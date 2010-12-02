@@ -299,6 +299,10 @@ def parse_args()
     grep(/\A#{var}=(.*)/) {return $1}
     false
   end
+  def $makeflags.defined?(var)
+    grep(/\A#{var}=(.*)/) {return $1}
+    false
+  end
 
   if $mflags.set?(?n)
     $dryrun = true

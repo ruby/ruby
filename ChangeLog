@@ -1,3 +1,7 @@
+Thu Dec  2 10:01:59 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/extmk.rb: define $makeflags.defined? like $mflags.
+
 Thu Dec  2 07:20:20 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit.rb (Test::Unit::GCStressOption): --gc-stress
