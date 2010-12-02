@@ -129,7 +129,7 @@ ruby_cleanup(volatile int ex)
     int nerr;
     void rb_threadptr_interrupt(rb_thread_t *th);
     void rb_threadptr_check_signal(rb_thread_t *mth);
-    int i;
+    long i;
     rb_vm_t *vm = GET_VM();
     VALUE ary = (VALUE)&vm->at_exit;
 
