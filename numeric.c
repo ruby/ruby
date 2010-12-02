@@ -1576,7 +1576,7 @@ ruby_float_step(VALUE from, VALUE to, VALUE step, int excl)
 	long i;
 
 	if (isinf(unit)) {
-	    if (unit > 0) rb_yield(DBL2NUM(beg));
+	    if (unit > 0 ? beg <= end : beg >= end) rb_yield(DBL2NUM(beg));
 	}
 	else {
 	    if (err>0.5) err=0.5;

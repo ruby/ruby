@@ -1,3 +1,8 @@
+Thu Oct 14 04:16:41 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* numeric.c (ruby_float_step): fix Numeric#step with infinity unit
+	  doesn't works well. [ruby-core:32779]
+
 Wed Oct 13 22:32:34 2010  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi/util.rb (CGI::unescape): bugfix to unescape the multibyte

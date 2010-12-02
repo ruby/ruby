@@ -27,6 +27,7 @@ class TestNumeric < Test::Unit::TestCase
     assert_raise(ArgumentError) { 1 <= a }
 
     DummyNumeric.class_eval do
+      remove_method :coerce
       def coerce(x); 1.coerce(x); end
     end
     assert_equal(2, 1 + a)
@@ -34,6 +35,7 @@ class TestNumeric < Test::Unit::TestCase
     assert(1 <= a)
 
     DummyNumeric.class_eval do
+      remove_method :coerce
       def coerce(x); [x, 1]; end
     end
     assert_equal(-1, -a)
@@ -95,6 +97,7 @@ class TestNumeric < Test::Unit::TestCase
     assert_equal(:ok, a.abs)
 
     DummyNumeric.class_eval do
+      remove_method :<
       def <(x); false; end
     end
 
@@ -150,6 +153,7 @@ class TestNumeric < Test::Unit::TestCase
     assert_equal(1, a.truncate)
 
     DummyNumeric.class_eval do
+      remove_method :to_f
       def to_f; 1.4; end
     end
 
@@ -160,6 +164,7 @@ class TestNumeric < Test::Unit::TestCase
     assert_equal(1, a.truncate)
 
     DummyNumeric.class_eval do
+      remove_method :to_f
       def to_f; -1.5; end
     end
 
@@ -202,6 +207,14 @@ class TestNumeric < Test::Unit::TestCase
     a = []
     10.step(1, -(2**32)) {|x| a << x }
     assert_equal([10], a)
+
+    a = []
+    1.step(0, Float::INFINITY) {|x| a << x }
+    assert_equal([], a)
+
+    a = []
+    0.step(1, -Float::INFINITY) {|x| a << x }
+    assert_equal([], a)
   end
 
   def test_num2long
