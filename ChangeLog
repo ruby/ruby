@@ -1,3 +1,8 @@
+Mon Oct  4 12:43:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (regexp): dregexp has literal string only at the head
+	  and successors are array.  [ruby-core:32682]
+
 Mon Oct  4 09:30:42 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/openssl/lib/openssl/bn.rb (Integer#to_bn): OpenSSL::BN.new
