@@ -1,3 +1,12 @@
+Fri Sep 24 23:44:59 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (sym_call), vm.c (invoke_block_from_c),
+	  vm_insnhelper.c (vm_yield_with_cfunc): pass given block.
+	  [ruby-core:32075]
+
+	* vm_eval.c (rb_funcall_passing_block): new function to call
+	  method with passing given block.
+
 Fri Sep 24 15:50:43 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_str_to_i): fix rdoc: String#to_i raises an

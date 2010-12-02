@@ -792,4 +792,22 @@ class TestProc < Test::Unit::TestCase
       assert_equal([obj, nil], [a, b], '[ruby-core:24139]')
     end
   end
+
+  def test_block_propagation
+    bug3792 = '[ruby-core:32075]'
+    c = Class.new do
+      def foo
+        yield
+      end
+    end
+
+    o = c.new
+    f = :foo.to_proc
+    assert_nothing_raised(LocalJumpError, bug3792) {
+      assert_equal('bar', f.(o) {'bar'}, bug3792)
+    }
+    assert_nothing_raised(LocalJumpError, bug3792) {
+      assert_equal('zot', o.method(:foo).to_proc.() {'zot'}, bug3792)
+    }
+  end
 end

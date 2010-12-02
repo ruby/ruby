@@ -549,6 +549,7 @@ invoke_block_from_c(rb_thread_t *th, const rb_block_t *block,
 			     iseq->local_size - arg_size);
 	ncfp->me = th->passed_me;
 	th->passed_me = 0;
+	th->passed_block = blockptr;
 
 	if (cref) {
 	    th->cfp->dfp[-1] = (VALUE)cref;
