@@ -1,3 +1,10 @@
+Thu Dec  2 23:52:26 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* NEWS: entry for ruby_vm_at_exit().
+
+	* eval.c (ruby_cleanup): bug fix around at_exit (1) timing was
+	  wrong. (2) execution order was opposite.
+
 Thu Dec  2 23:05:14 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (RCFLAGS): -nologo switch is only available in

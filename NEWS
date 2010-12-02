@@ -19,6 +19,9 @@ with all sufficient information, see the ChangeLog file.
 * rb_scan_args() is enhanced with support for option hash argument
   extraction.
 
+* ruby_vm_at_exit() added.  This enables extension libs to hool a VM
+  termination.
+
 === Library updates (outstanding ones only)
 
 * builtin classes
