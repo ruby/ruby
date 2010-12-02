@@ -1,3 +1,8 @@
+Sun Aug 29 13:22:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (rb_thread_method_id_and_class): curried proc has no
+	  method.  [ruby-core:31871]
+
 Fri Sep 24 23:44:59 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (sym_call), vm.c (invoke_block_from_c),

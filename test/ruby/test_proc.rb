@@ -793,6 +793,14 @@ class TestProc < Test::Unit::TestCase
     end
   end
 
+  def test_curry_with_trace
+    bug3751 = '[ruby-core:31871]'
+    set_trace_func(proc {})
+    test_curry
+  ensure
+    set_trace_func(nil)
+  end
+
   def test_block_propagation
     bug3792 = '[ruby-core:32075]'
     c = Class.new do

@@ -1396,7 +1396,7 @@ rb_thread_method_id_and_class(rb_thread_t *th,
 {
     rb_control_frame_t *cfp = th->cfp;
     rb_iseq_t *iseq = cfp->iseq;
-    if (!iseq) {
+    if (!iseq && cfp->me) {
 	if (idp) *idp = cfp->me->def->original_id;
 	if (klassp) *klassp = cfp->me->klass;
 	return 1;
