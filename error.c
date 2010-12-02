@@ -1045,6 +1045,7 @@ syserr_initialize(int argc, VALUE *argv, VALUE self)
     else {
 	mesg = rb_str_new2(err);
     }
+    rb_enc_associate(mesg, rb_locale_encoding());
     rb_call_super(1, &mesg);
     rb_iv_set(self, "errno", error);
     return self;

@@ -312,4 +312,8 @@ end.join
     e = assert_raise(NoMethodError) {str.__send__(id)}
     assert_equal("undefined method `#{id}' for #{str.inspect}:String", e.message, bug3237)
   end
+
+  def test_errno
+    assert_equal(Encoding.find("locale"), Errno::EINVAL.new.message.encoding)
+  end
 end
