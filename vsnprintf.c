@@ -893,7 +893,7 @@ fp_begin:		_double = va_arg(ap, double);
 			 */
 			prec = (int)(sizeof(void*)*CHAR_BIT/4);
 #ifdef _HAVE_LLP64_
-			uqval = (u_long)va_arg(ap, void *);
+			uqval = (u_quad_t)va_arg(ap, void *);
 			flags = (flags) | QUADINT | HEXPREFIX;
 #else
 			ulval = (u_long)va_arg(ap, void *);
