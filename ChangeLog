@@ -1,6 +1,6 @@
 Thu Dec  2 15:31:14 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* win32/win32.c (rb_w43_read): more fix. [ruby-core:33513]
+	* win32/win32.c (rb_w32_read): more fix. [ruby-core:33513]
 
 Thu Dec  2 13:41:43 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
