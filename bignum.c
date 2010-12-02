@@ -34,7 +34,7 @@ VALUE rb_cBignum;
 # define DIGSPERLL (SIZEOF_LONG_LONG/SIZEOF_BDIGITS)
 #endif
 #define BIGUP(x) ((BDIGIT_DBL)(x) << BITSPERDIG)
-#define BIGDN(x) RSHIFT(x,BITSPERDIG)
+#define BIGDN(x) RSHIFT((x),BITSPERDIG)
 #define BIGLO(x) ((BDIGIT)((x) & (BIGRAD-1)))
 #define BDIGMAX ((BDIGIT)-1)
 
@@ -148,7 +148,7 @@ bignew_1(VALUE klass, long len, int sign)
     return (VALUE)big;
 }
 
-#define bignew(len,sign) bignew_1(rb_cBignum,len,sign)
+#define bignew(len,sign) bignew_1(rb_cBignum,(len),(sign))
 
 VALUE
 rb_big_new(long len, int sign)
@@ -511,7 +511,7 @@ rb_quad_pack(char *buf, VALUE val)
     }
 }
 
-#define BNEG(b) (RSHIFT(((BDIGIT*)b)[QUAD_SIZE/SIZEOF_BDIGITS-1],BITSPERDIG-1) != 0)
+#define BNEG(b) (RSHIFT(((BDIGIT*)(b))[QUAD_SIZE/SIZEOF_BDIGITS-1],BITSPERDIG-1) != 0)
 
 VALUE
 rb_quad_unpack(const char *buf, int sign)
