@@ -1,3 +1,11 @@
+Thu Dec  2 10:09:40 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/json/generator/extconf.rb: remove the lines which set -O3
+	  when -O option is not set.
+	  Note that -O3 doesn't always exist.
+
+	* ext/json/parser/extconf.rb: ditto.
+
 Thu Dec  2 10:01:59 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/extmk.rb: define $makeflags.defined? like $mflags.
