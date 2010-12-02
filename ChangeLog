@@ -1,3 +1,8 @@
+Thu Dec  2 13:41:43 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_read): workaround for console reading troubles.
+	  fixed [ruby-core:33511]
+
 Thu Dec  2 13:10:42 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/common.rb (URI.encode_www_form):

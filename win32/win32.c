@@ -5045,6 +5045,7 @@ rb_w32_read(int fd, void *buf, size_t size)
     MTHREAD_ONLY(EnterCriticalSection(&(_pioinfo(fd)->lock)));
 
     if (!size || _osfile(fd) & FEOFLAG) {
+	_set_osflags(fd, _osfile(fd) & ~FEOFLAG);
 	MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
 	return 0;
     }
@@ -5055,7 +5056,7 @@ rb_w32_read(int fd, void *buf, size_t size)
     /* get rid of console reading bug */
     if (isconsole) {
 	if (start)
-	    len = 1;
+	    len = min(16*1024, size);
 	else {
 	    len = 0;
 	    start = 1;
@@ -5151,11 +5152,14 @@ rb_w32_read(int fd, void *buf, size_t size)
     }
 
     ret += read;
-    if (read == len) {
+    if (read >= len) {
 	buf = (char *)buf + len;
-	if (size > 0)
+	if (!(isconsole && len == 1 && *((char *)buf - 1) == '\n') && size > 0)
 	    goto retry;
     }
+    if (read == 0)
+	_set_osflags(fd, _osfile(fd) | FEOFLAG);
+
 
     MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
 
