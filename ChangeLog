@@ -1,3 +1,8 @@
+Sun Oct 17 10:40:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (rb_define_{class,module}_id_under): register to be
+	  marked, which probably are defined and used internally.
+
 Sat Oct 16 11:10:55 2010  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_encoding2cp): set codepage 20936
