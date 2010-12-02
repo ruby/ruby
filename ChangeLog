@@ -1,3 +1,10 @@
+Wed Oct  6 11:52:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (fptr_finalize): write_mutex might have been destroyed
+	  already in finalization phase, as the order of finalizers is not
+	  guaranteed.  rb_mutex_t should be used in place of Mutex object
+	  in the future.
+
 Mon Oct  4 12:43:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (regexp): dregexp has literal string only at the head
