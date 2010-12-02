@@ -5153,7 +5153,7 @@ rb_w32_read(int fd, void *buf, size_t size)
 
     ret += read;
     if (read >= len) {
-	buf = (char *)buf + len;
+	buf = (char *)buf + read;
 	if (!(isconsole && len == 1 && *((char *)buf - 1) == '\n') && size > 0)
 	    goto retry;
     }
