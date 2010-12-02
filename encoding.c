@@ -440,23 +440,19 @@ rb_enc_unicode_p(rb_encoding *enc)
  * Returns copied alias name when the key is added for st_table,
  * else returns NULL.
  */
-static const char *
+static int
 enc_alias_internal(const char *alias, int idx)
 {
-    char *name = strdup(alias);
-    if (st_insert(enc_table.names, (st_data_t)name, (st_data_t)idx)) {
-	xfree(name);
-	return NULL;
-    }
-    return name;
+    return st_insert2(enc_table.names, (st_data_t)alias, (st_data_t)idx,
+	    (st_data_t(*)(st_data_t))strdup);
 }
 
 static int
 enc_alias(const char *alias, int idx)
 {
     if (!valid_encoding_name_p(alias)) return -1;
-    alias = enc_alias_internal(alias, idx);
-    if (alias) set_encoding_const(alias, rb_enc_from_index(idx));
+    if (!enc_alias_internal(alias, idx))
+	set_encoding_const(alias, rb_enc_from_index(idx));
     return idx;
 }
 
