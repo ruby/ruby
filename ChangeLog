@@ -1,3 +1,8 @@
+Wed Oct 13 22:32:34 2010  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
+
+	* lib/cgi/util.rb (CGI::unescape): bugfix to unescape the multibyte
+	  string. Thanks nobu and tDiary dev members. [Bug #3909]
+
 Tue Oct 12 23:58:19 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_open_osfhandle, rb_w32_wopen, rb_w32_pipe):
