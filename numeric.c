@@ -2038,6 +2038,19 @@ int_pred(VALUE num)
     return rb_funcall(num, '-', 1, INT2FIX(1));
 }
 
+VALUE
+rb_enc_uint_chr(unsigned int code, rb_encoding *enc)
+{
+    int n;
+    VALUE str;
+    if ((n = rb_enc_codelen(code, enc)) <= 0) {
+	rb_raise(rb_eRangeError, "%d out of char range", code);
+    }
+    str = rb_enc_str_new(0, n, enc);
+    rb_enc_mbcput(code, RSTRING_PTR(str), enc);
+    return str;
+}
+
 /*
  *  call-seq:
  *     int.chr([encoding])  ->  string
@@ -2054,16 +2067,14 @@ static VALUE
 int_chr(int argc, VALUE *argv, VALUE num)
 {
     char c;
-    int n;
-    uint32_t i = NUM2UINT(num);
+    unsigned int i = NUM2UINT(num);
     rb_encoding *enc;
-    VALUE str;
 
     switch (argc) {
       case 0:
 	if (i < 0) {
 	  out_of_range:
-	    rb_raise(rb_eRangeError, "%"PRIdVALUE " out of char range", i);
+	    rb_raise(rb_eRangeError, "%d out of char range", i);
 	}
 	if (0xff < i) {
 	    enc = rb_default_internal_encoding();
@@ -2086,13 +2097,7 @@ int_chr(int argc, VALUE *argv, VALUE num)
     enc = rb_to_encoding(argv[0]);
     if (!enc) enc = rb_ascii8bit_encoding();
   decode:
-#if SIZEOF_INT < SIZEOF_VALUE
-    if (i > UINT_MAX) goto out_of_range;
-#endif
-    if (i < 0 || (n = rb_enc_codelen(i, enc)) <= 0) goto out_of_range;
-    str = rb_enc_str_new(0, n, enc);
-    rb_enc_mbcput(i, RSTRING_PTR(str), enc);
-    return str;
+    return rb_enc_uint_chr(i, enc);
 }
 
 /*

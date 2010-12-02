@@ -418,6 +418,30 @@ EOT
     }
   end
 
+  def test_ungetc_int
+    with_tmpdir {
+      generate_file('tmp', "A")
+      s = open("tmp", "r:GB18030") {|f|
+        f.ungetc(0x8431A439)
+        f.read
+      }
+      assert_equal(Encoding::GB18030, s.encoding)
+      assert_str_equal(0x8431A439.chr("GB18030")+"A", s)
+    }
+  end
+
+  def test_ungetc_str
+    with_tmpdir {
+      generate_file('tmp', "A")
+      s = open("tmp", "r:GB18030") {|f|
+        f.ungetc(0x8431A439.chr("GB18030"))
+        f.read
+      }
+      assert_equal(Encoding::GB18030, s.encoding)
+      assert_str_equal(0x8431A439.chr("GB18030")+"A", s)
+    }
+  end
+
   def test_ungetc_stateful_conversion
     with_tmpdir {
       src = "before \e$B\x23\x30\x23\x31\e(B after".force_encoding("iso-2022-jp")
