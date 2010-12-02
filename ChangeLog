@@ -1,3 +1,9 @@
+Fri Dec  3 01:55:19 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* re.c (rb_reg_initialize): don't set US-ASCII to regexp
+	  when parser make initially compile a regexp.
+	  Usually regexp are used for the same of its script encoding.
+
 Fri Dec  3 01:52:43 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c (enc_alias_internal): use xfree instead of free.

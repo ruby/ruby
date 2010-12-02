@@ -2403,9 +2403,6 @@ rb_reg_initialize(VALUE obj, const char *s, long len, rb_encoding *enc,
 	    enc = fixed_enc;
 	}
     }
-    else if (!(options & ARG_ENCODING_FIXED)) {
-       enc = rb_usascii_encoding();
-    }
 
     rb_enc_associate((VALUE)re, enc);
     if ((options & ARG_ENCODING_FIXED) || fixed_enc) {
