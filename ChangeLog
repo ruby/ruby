@@ -1,3 +1,7 @@
+Thu Dec  2 10:19:47 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (rc): suppress meaningless message.
+
 Thu Dec  2 10:09:40 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json/generator/extconf.rb: remove the lines which set -O3

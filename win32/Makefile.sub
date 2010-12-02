@@ -1004,7 +1004,7 @@ $(ruby_pc): $(RBCONFIG)
 
 .rc.res:
 	$(ECHO) compiling $(<:\=/)
-	$(Q) $(RC) -I. -I$(<D) $(iconinc) -I$(srcdir)/win32 $(RFLAGS) -fo$@ $(<:\=/)
+	$(Q) $(RC) -nologo -I. -I$(<D) $(iconinc) -I$(srcdir)/win32 $(RFLAGS) -fo$@ $(<:\=/)
 
 lex.c: {$(srcdir)}lex.c.blt
 	copy $(?:/=\) $@
