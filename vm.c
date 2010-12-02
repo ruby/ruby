@@ -173,6 +173,14 @@ vm_get_ruby_level_caller_cfp(rb_thread_t *th, rb_control_frame_t *cfp)
     return 0;
 }
 
+/* at exit */
+
+void
+ruby_vm_at_exit(void (*func)(rb_vm_t *))
+{
+    rb_ary_push((VALUE)&GET_VM()->at_exit, (VALUE)func);
+}
+
 /* Env */
 
 /*
@@ -1572,6 +1580,8 @@ vm_init2(rb_vm_t *vm)
 {
     MEMZERO(vm, rb_vm_t, 1);
     vm->src_encoding_index = -1;
+    vm->at_exit.basic.flags = (T_ARRAY | RARRAY_EMBED_FLAG) & ~RARRAY_EMBED_LEN_MASK; /* len set 0 */
+    vm->at_exit.basic.klass = 0;
 }
 
 /* Thread */

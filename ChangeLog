@@ -1,3 +1,24 @@
+Thu Dec  2 19:58:24 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* vm.c (ruby_vm_at_exit): new API.  This enables extension libs to
+	  hook a VM termination.  Right now, because the VM we have is
+	  process global, most extensions do not deallocate resources and
+	  leave them to Operating System's reaping userland processes.  But
+	  in a future we plan to have multiple VMs to run simultaneously in
+	  a single process (MVM project).  At that stage we can no longer
+	  rely on OSes and have to manage every resources to be reclaimed
+	  properly.  So it is.  For a forward-compatibility reason this API
+	  is introduced now, encouraging you to be as gentle as you can for
+	  your resources; that is, tidy up your room.
+
+	* include/ruby/vm.h: ditto.
+
+	* vm_core.h (rb_vm_struct): new field.
+
+	* vm.c (vm_init2): initialize above new field.
+
+	* eval.c (ruby_cleanup): trigger those hooks.
+
 Thu Dec  2 17:00:44 2010  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c: parenthesize macro arguments.

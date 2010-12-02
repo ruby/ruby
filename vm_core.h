@@ -317,6 +317,12 @@ typedef struct rb_vm_struct {
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
     struct rb_objspace *objspace;
 #endif
+
+    /*
+     * @shyouhei notes that this is not for storing normal Ruby
+     * objects so do *NOT* mark this when you GC.
+     */
+    struct RArray at_exit;
 } rb_vm_t;
 
 typedef struct {
