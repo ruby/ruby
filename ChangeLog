@@ -1,3 +1,11 @@
+Thu Dec  2 21:22:05 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* encoding.c (enc_alias_internal): free the copied key and
+	  return NULL when given key is already regisitered.
+
+	* encoding.c (enc_alias): call set_encoding_const only when the
+	  alias is not registered yet.
+
 Thu Dec  2 19:58:24 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* vm.c (ruby_vm_at_exit): new API.  This enables extension libs to
