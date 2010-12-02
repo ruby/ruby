@@ -445,7 +445,7 @@ enc_alias_internal(const char *alias, int idx)
 {
     char *name = strdup(alias);
     if (st_insert(enc_table.names, (st_data_t)name, (st_data_t)idx)) {
-	free(name);
+	xfree(name);
 	return NULL;
     }
     return name;
