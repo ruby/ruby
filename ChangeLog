@@ -1,3 +1,8 @@
+Tue Oct 12 23:58:19 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_open_osfhandle, rb_w32_wopen, rb_w32_pipe):
+	  use uintptr_t instead of long for win64.
+
 Tue Oct 12 23:55:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vsnprintf.c (BSD_vfprintf): fix cast.

@@ -2054,7 +2054,7 @@ rb_w32_open_osfhandle(intptr_t osfhandle, int flags)
 
     /* attempt to allocate a C Runtime file handle */
     hF = CreateFile("NUL", 0, 0, NULL, OPEN_ALWAYS, 0, NULL);
-    fh = _open_osfhandle((long)hF, 0);
+    fh = _open_osfhandle((intptr_t)hF, 0);
     CloseHandle(hF);
     if (fh == -1) {
 	errno = EMFILE;		/* too many open files */
@@ -3406,6 +3406,8 @@ socketpair_internal(int af, int type, int protocol, SOCKET *sv)
 	return -1;
     }
 
+    sv[0] = (SOCKET)INVALID_HANDLE_VALUE;
+    sv[1] = (SOCKET)INVALID_HANDLE_VALUE;
     RUBY_CRITICAL({
 	do {
 	    svr = open_ifs_socket(af, type, protocol);
@@ -4353,16 +4355,16 @@ truncate(const char *path, off_t length)
 int
 ftruncate(int fd, off_t length)
 {
-    long h;
+    HANDLE h;
 
 #ifdef WIN95
     if (IsWin95()) {
 	return chsize(fd, (unsigned long)length);
     }
 #endif
-    h = _get_osfhandle(fd);
-    if (h == -1) return -1;
-    return rb_chsize((HANDLE)h, length);
+    h = (HANDLE)_get_osfhandle(fd);
+    if (h == (HANDLE)-1) return -1;
+    return rb_chsize(h, length);
 }
 
 #ifdef __BORLANDC__
@@ -4856,7 +4858,7 @@ rb_w32_wopen(const WCHAR *file, int oflag, ...)
     /* allocate a C Runtime file handle */
     RUBY_CRITICAL({
 	h = CreateFile("NUL", 0, 0, NULL, OPEN_ALWAYS, 0, NULL);
-	fd = _open_osfhandle((long)h, 0);
+	fd = _open_osfhandle((intptr_t)h, 0);
 	CloseHandle(h);
     });
     if (fd == -1) {
@@ -4865,7 +4867,7 @@ rb_w32_wopen(const WCHAR *file, int oflag, ...)
     }
     RUBY_CRITICAL({
 	MTHREAD_ONLY(EnterCriticalSection(&(_pioinfo(fd)->lock)));
-	_set_osfhnd(fd, (long)INVALID_HANDLE_VALUE);
+	_set_osfhnd(fd, (intptr_t)INVALID_HANDLE_VALUE);
 	_set_osflags(fd, 0);
 
 	h = CreateFileW(file, access, FILE_SHARE_READ | FILE_SHARE_WRITE, &sec,
@@ -4894,7 +4896,7 @@ rb_w32_wopen(const WCHAR *file, int oflag, ...)
 	if (!(flags & (FDEV | FPIPE)) && (oflag & O_APPEND))
 	    flags |= FAPPEND;
 
-	_set_osfhnd(fd, (long)h);
+	_set_osfhnd(fd, (intptr_t)h);
 	_osfile(fd) = flags | FOPEN;
 
 	MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
@@ -4975,7 +4977,7 @@ rb_w32_pipe(int fds[2])
     RUBY_CRITICAL(do {
 	ret = 0;
 	h = CreateFile("NUL", 0, 0, NULL, OPEN_ALWAYS, 0, NULL);
-	fdRead = _open_osfhandle((long)h, 0);
+	fdRead = _open_osfhandle((intptr_t)h, 0);
 	CloseHandle(h);
 	if (fdRead == -1) {
 	    errno = EMFILE;
@@ -4986,7 +4988,7 @@ rb_w32_pipe(int fds[2])
 	}
 
 	MTHREAD_ONLY(EnterCriticalSection(&(_pioinfo(fdRead)->lock)));
-	_set_osfhnd(fdRead, (long)hRead);
+	_set_osfhnd(fdRead, (intptr_t)hRead);
 	_set_osflags(fdRead, FOPEN | FPIPE | FNOINHERIT);
 	MTHREAD_ONLY(LeaveCriticalSection(&(_pioinfo(fdRead)->lock)));
     } while (0));
@@ -4995,7 +4997,7 @@ rb_w32_pipe(int fds[2])
 
     RUBY_CRITICAL(do {
 	h = CreateFile("NUL", 0, 0, NULL, OPEN_ALWAYS, 0, NULL);
-	fdWrite = _open_osfhandle((long)h, 0);
+	fdWrite = _open_osfhandle((intptr_t)h, 0);
 	CloseHandle(h);
 	if (fdWrite == -1) {
 	    errno = EMFILE;
@@ -5004,7 +5006,7 @@ rb_w32_pipe(int fds[2])
 	    break;
 	}
 	MTHREAD_ONLY(EnterCriticalSection(&(_pioinfo(fdWrite)->lock)));
-	_set_osfhnd(fdWrite, (long)hWrite);
+	_set_osfhnd(fdWrite, (intptr_t)hWrite);
 	_set_osflags(fdWrite, FOPEN | FPIPE | FNOINHERIT);
 	MTHREAD_ONLY(LeaveCriticalSection(&(_pioinfo(fdWrite)->lock)));
     } while (0));
