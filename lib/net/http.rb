@@ -883,7 +883,7 @@ module Net   #:nodoc:
           the_body = r.read_body dest, &block
           case r["content-encoding"]
           when "gzip"
-            r.body= Zlib::GzipReader.new(StringIO.new(the_body)).read
+            r.body= Zlib::GzipReader.new(StringIO.new(the_body), encoding: "ASCII-8BIT").read
             r.delete("content-encoding")
           when "deflate"
             r.body= Zlib::Inflate.inflate(the_body);
