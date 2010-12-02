@@ -1,3 +1,9 @@
+Tue Oct 12 15:52:35 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_strerror): unmap some range of errno for
+	  workaround of VC10's strerror() and sys_nerr problem.
+	  based on a patch from Akio Tajima, [ruby-dev:42355].
+
 Tue Oct 12 15:36:09 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (rb_io_ungetc): use unsigned int for GB18030.
