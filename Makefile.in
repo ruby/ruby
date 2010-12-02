@@ -138,7 +138,9 @@ fake.rb:	Makefile
 		  end; \
 		end; \
 		prehook = proc do |e|; \
-		  Config::MAKEFILE_CONFIG["top_srcdir"] = $$top_srcdir = "@top_srcdir@" unless e; \
+		  builddir = File.expand_path(File.dirname(__FILE__)); \
+		  Config::MAKEFILE_CONFIG["top_srcdir"] = $$top_srcdir = \
+		    File.expand_path("@top_srcdir@", builddir) unless e; \
 		  untrace_var(:$$extmk, prehook); \
 		end; \
 		trace_var(:$$extmk, prehook); \

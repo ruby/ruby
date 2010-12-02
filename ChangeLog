@@ -1,3 +1,9 @@
+Thu Dec  2 21:13:42 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* Makefile.in (fake.rb): need to expand the topdir in case of it
+	  being relative, a patch from Luis Lavena <luislavena at gmail.com>.
+	  [ruby-core:33466]
+
 Wed Nov 24 18:24:26 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/extconf.rb: backrorted entirely from ruby_1_8, with small
