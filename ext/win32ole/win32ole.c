@@ -868,7 +868,7 @@ static UINT ole_encoding2cp(rb_encoding *enc)
     ENC_MACHING_CP(enc, "EUC-KR", 51949);
     ENC_MACHING_CP(enc, "EUC-TW", 51950);
     ENC_MACHING_CP(enc, "GB18030", 54936);
-    ENC_MACHING_CP(enc, "GB2312", 51936);
+    ENC_MACHING_CP(enc, "GB2312", 20936);
     ENC_MACHING_CP(enc, "GBK", 936);
     ENC_MACHING_CP(enc, "IBM437", 437);
     ENC_MACHING_CP(enc, "IBM737", 737);
