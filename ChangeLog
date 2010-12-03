@@ -1,3 +1,8 @@
+Fri Dec  3 12:17:19 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_call_method): protected singleton methods should
+	  be visible from same real class methods.  [ruby-core:33506]
+
 Fri Dec  3 07:08:42 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_getline): round upto next char

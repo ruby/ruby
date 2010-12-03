@@ -411,4 +411,23 @@ class TestMethod < Test::Unit::TestCase
     assert_nothing_raised { v.instance_eval { mv2 } }
     assert_nothing_raised { v.instance_eval { mv3 } }
   end
+
+  def test_protected_singleton
+    bug4106 = '[ruby-core:33506]'
+    a = Class.new do
+      def meth
+        :called
+      end
+      def test
+        a = dup
+        class << a
+          protected :meth
+        end
+        a.meth
+      end
+    end.new
+    called = nil
+    assert_nothing_raised(NoMethodError, bug4106) {called = a.test}
+    assert_equal(:called, called, bug4106)
+  end
 end
