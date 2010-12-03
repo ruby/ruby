@@ -1,3 +1,7 @@
+Fri Dec  3 19:48:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (check_sizeof): should return integer always.
+
 Wed Dec  1 22:05:32 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* numeric.c (Init_Numeric): fixed a potential bug when using bccwin32
