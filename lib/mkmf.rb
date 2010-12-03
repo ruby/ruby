@@ -1105,14 +1105,7 @@ def check_sizeof(type, headers = nil, opts = "", &b)
   expr = "sizeof((*rbcv_ptr_)#{"." << member if member})"
   fmt = STRING_OR_FAILED_FORMAT
   checking_for checking_message("size of #{type}", headers), fmt do
-    if UNIVERSAL_INTS.include?(type)
-      type
-    elsif size = UNIVERSAL_INTS.find {|t|
-        try_static_assert("#{expr} == sizeof(#{t})", prelude, opts, &b)
-      }
-      $defs.push(format("-DSIZEOF_%s=SIZEOF_%s", type.tr_cpp, size.tr_cpp))
-      size
-    elsif size = try_constant(expr, prelude, opts, &b)
+    if size = try_constant(expr, prelude, opts, &b)
       $defs.push(format("-DSIZEOF_%s=%s", type.tr_cpp, size))
       size
     end
