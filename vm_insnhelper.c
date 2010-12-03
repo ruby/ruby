@@ -629,13 +629,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 	    else if (!(flag & VM_CALL_OPT_SEND_BIT) && (me->flag & NOEX_MASK) & NOEX_PROTECTED) {
 		VALUE defined_class = me->klass;
 
-		if (FL_TEST(defined_class, FL_SINGLETON)) {
-		    defined_class = RCLASS_SUPER(defined_class);
-		}
-		else if (RB_TYPE_P(defined_class, T_ICLASS)) {
-		    defined_class = RBASIC(defined_class)->klass;
-		}
-
+		defined_class = rb_class_real(defined_class);
 		if (!rb_obj_is_kind_of(cfp->self, defined_class)) {
 		    val = vm_method_missing(th, id, recv, num, blockptr, NOEX_PROTECTED);
 		}

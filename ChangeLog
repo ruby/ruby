@@ -1,3 +1,8 @@
+Fri Dec  3 22:36:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_call_method): protected methods should be
+	  checked against the real class.
+
 Fri Dec  3 20:23:31 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (convertible_int): define printf format prefix too.

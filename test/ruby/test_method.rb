@@ -420,6 +420,8 @@ class TestMethod < Test::Unit::TestCase
       end
       def test
         a = dup
+        a.extend(Module.new)
+        a.extend(Module.new)
         class << a
           protected :meth
         end
