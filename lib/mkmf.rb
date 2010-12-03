@@ -184,7 +184,7 @@ class String
 
   # Generates a string used as cpp macro name.
   def tr_cpp
-    strip.upcase.tr_s("^A-Z0-9_", "_")
+    strip.upcase.tr_s("^A-Z0-9_*", "_").tr_s("*", "P")
   end
 end
 class Array

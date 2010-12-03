@@ -1,3 +1,8 @@
+Sat Dec  4 07:46:48 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (String#tr_cpp): substitute * with P like as
+	  autconf.
+
 Fri Dec  3 22:36:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_call_method): protected methods should be
