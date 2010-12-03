@@ -7,7 +7,7 @@ Fri Dec  3 12:41:52 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* gc.c (rb_objspace_free): With our "lazy-sweep" GC engine, it is
 	  possible for an object to survive until its surrounding object
-	  space is about to be freed.  Those objects, if any, remains not
+	  space is about to be freed.  Those objects, if any, remains
 	  leaked for the rest of a process life.  This is problematic
 	  because for instance a T_DATA object may have its own destructor
 	  to terminate something.
