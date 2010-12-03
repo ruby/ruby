@@ -1,3 +1,8 @@
+Fri Dec  3 12:54:48 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (RCFLAGS): VC10 and after only. fixed the problem
+	  of r30015. [ruby-core:33530]
+
 Fri Dec  3 12:41:52 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* gc.c (rb_objspace_free): With our "lazy-sweep" GC engine, it is

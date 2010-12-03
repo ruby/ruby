@@ -240,7 +240,7 @@ DLDFLAGS = $(LDFLAGS) -dll
 SOLIBS = 
 RCFILES = $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc
 !ifndef RCFLAGS
-!if $(MSC_VER) >= 1500
+!if $(MSC_VER) >= 1600
 RCFLAGS=-nologo
 !endif
 !endif
