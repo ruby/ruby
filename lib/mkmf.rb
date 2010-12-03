@@ -1162,18 +1162,18 @@ end
 # compiler using the +type+ name, in uppercase.
 #
 # * 'TYPEOF_', followed by the +type+ name, followed by '=X' where 'X'
-#   is the found _convertible_ type name.
-# * 'TYP2NUM' and 'NUM2TYP, where 'TYP' is the +type+ name in uppercase sans '_t'
-#   suffix, followed by '=X' where 'X' is the macro name to convert
-#   +type+ to +Integer+ object, and vice versa.
+#   is the found _convertible_ type name.  * 'TYP2NUM' and 'NUM2TYP,
+#   where 'TYP' is the +type+ name in uppercase with replacing '_t'
+#   suffix with 'T', followed by '=X' where 'X' is the macro name to
+#   convert +type+ to +Integer+ object, and vice versa.
 #
 # For example, if foobar_t is defined as unsigned long, then
 # convertible_int("foobar_t") would return "unsigned long", and define
 # macros:
 #
 #   #define TYPEOF_FOOBAR_T unsigned long
-#   #define FOOBAR2NUM ULONG2NUM
-#   #define NUM2FOOBAR NUM2ULONG
+#   #define FOOBART2NUM ULONG2NUM
+#   #define NUM2FOOBART NUM2ULONG
 def convertible_int(type, headers = nil, opts = nil, &b)
   type, macname = *type
   checking_for("convertible type of #{type}", STRING_OR_FAILED_FORMAT) do
@@ -1188,10 +1188,12 @@ def convertible_int(type, headers = nil, opts = nil, &b)
 	try_compile([prelude, "extern #{u}#{t} foo();"].join("\n"), opts, &b)
       }
       if compat
-	macname ||= type.chomp("_t").tr_cpp
-	conv = (u ? "U" : "") + (compat == "long long" ? "LL" : compat.upcase)
+	macname ||= type.sub(/_(?=t\z)/, '').tr_cpp
+	conv = (compat == "long long" ? "LL" : compat.upcase)
 	compat = "#{u}#{compat}"
 	$defs.push(format("-DTYPEOF_%s=%s", type.tr_cpp, compat.quote))
+	$defs.push(format("-DPRI_%s_PREFIX=PRI_%s_PREFIX", macname, conv))
+	conv = (u ? "U" : "") + conv
 	$defs.push(format("-D%s2NUM=%s2NUM", macname, conv))
 	$defs.push(format("-DNUM2%s=NUM2%s", macname, conv))
 	compat

@@ -1,4 +1,6 @@
-Fri Dec  3 19:53:50 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Dec  3 20:23:31 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (convertible_int): define printf format prefix too.
 
 	* lib/mkmf.rb (convertible_int): detect convertible integer type.
 	  port RUBY_REPLACE_INT from configure.in.
