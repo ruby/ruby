@@ -1,3 +1,8 @@
+Sat Dec  4 08:25:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_call_method): revert r30064 and r30071,
+	  because of [ruby-core:26761]. Bug#4106 rejected.
+
 Sat Dec  4 07:46:48 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (String#tr_cpp): substitute * with P like as
