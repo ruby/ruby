@@ -400,9 +400,15 @@ rb_objspace_alloc(void)
     return objspace;
 }
 
+static void gc_sweep(rb_objspace_t *);
+static void slot_sweep(rb_objspace_t *, struct heaps_slot *);
+static void gc_clear_mark_on_sweep_slots(rb_objspace_t *);
+
 void
 rb_objspace_free(rb_objspace_t *objspace)
 {
+    gc_clear_mark_on_sweep_slots(objspace);
+    gc_sweep(objspace);
     if (objspace->profile.record) {
 	free(objspace->profile.record);
 	objspace->profile.record = 0;

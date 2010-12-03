@@ -1545,14 +1545,14 @@ ruby_vm_destruct(rb_vm_t *vm)
 	    st_free_table(vm->living_threads);
 	    vm->living_threads = 0;
 	}
-	rb_vm_gvl_destroy(vm);
-	ruby_xfree(vm);
-	ruby_current_vm = 0;
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 	if (objspace) {
 	    rb_objspace_free(objspace);
 	}
 #endif
+	rb_vm_gvl_destroy(vm);
+	ruby_xfree(vm);
+	ruby_current_vm = 0;
     }
     RUBY_FREE_LEAVE("vm");
     return 0;
