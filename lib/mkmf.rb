@@ -1084,6 +1084,23 @@ STRING_OR_FAILED_FORMAT = "%s"
 def STRING_OR_FAILED_FORMAT.%(x)
   x ? super : "failed"
 end
+
+def typedef_expr(type, headers)
+  typename, member = type.split('.', 2)
+  prelude = cpp_include(headers).split(/$/)
+  prelude << "typedef #{typename} rbcv_typedef_;\n"
+  return "rbcv_typedef_", member, prelude
+end
+
+def try_signedness(type, member, headers = nil, opts = nil, &b)
+  raise ArgumentError, "don't know how to tell signedness of members" if member
+  if try_static_assert("(#{type})-1 < 0", headers, opts)
+    return -1
+  elsif try_static_assert("(#{type})-1 > 0", headers, opts)
+    return +1
+  end
+end
+
 # :startdoc:
 
 # Returns the size of the given +type+.  You may optionally specify additional
@@ -1097,10 +1114,8 @@ end
 # SIZEOF_MYSTRUCT=12 preprocessor macro would be passed to the compiler.
 #
 def check_sizeof(type, headers = nil, opts = "", &b)
-  typename, member = type.split('.', 2)
-  prelude = cpp_include(headers).split(/$/)
-  prelude << "typedef #{typename} rbcv_typedef_;\n"
-  prelude << "static rbcv_typedef_ *rbcv_ptr_;\n"
+  typedef, member, prelude = typedef_expr(type, headers)
+  prelude << "static #{typedef} *rbcv_ptr_;\n"
   prelude = [prelude]
   expr = "sizeof((*rbcv_ptr_)#{"." << member if member})"
   fmt = STRING_OR_FAILED_FORMAT
@@ -1127,22 +1142,63 @@ end
 # compiler, and SIGNEDNESS_OF_INT=-1 if check_signedness('int') is
 # done.
 #
-def check_signedness(type, headers = nil)
+def check_signedness(type, headers = nil, opts = nil, &b)
+  typedef, member, prelude = typedef_expr(type, headers)
   signed = nil
   checking_for("signedness of #{type}", STRING_OR_FAILED_FORMAT) do
-    if try_static_assert("(#{type})-1 < 0")
-      signed = -1
-    elsif try_static_assert("(#{type})-1 > 0")
-      signed = +1
-    else
-      next nil
-    end
+    signed = try_signedness(typedef, member, headers, opts, &b) or next nil
     $defs.push("-DSIGNEDNESS_OF_%s=%+d" % [type.tr_cpp, signed])
     signed < 0 ? "signed" : "unsigned"
   end
   signed
 end
 
+# Returns the convertible integer type of the given +type+.  You may
+# optionally specify additional +headers+ to search in for the +type+.
+# _Convertible_ means actually same type, or typedefed from same type.
+#
+# If the +type+ is a integer type and _convertible_ type is found,
+# following macros are passed as preprocessor constants to the
+# compiler using the +type+ name, in uppercase.
+#
+# * 'TYPEOF_', followed by the +type+ name, followed by '=X' where 'X'
+#   is the found _convertible_ type name.
+# * 'TYP2NUM' and 'NUM2TYP, where 'TYP' is the +type+ name in uppercase sans '_t'
+#   suffix, followed by '=X' where 'X' is the macro name to convert
+#   +type+ to +Integer+ object, and vice versa.
+#
+# For example, if foobar_t is defined as unsigned long, then
+# convertible_int("foobar_t") would return "unsigned long", and define
+# macros:
+#
+#   #define TYPEOF_FOOBAR_T unsigned long
+#   #define FOOBAR2NUM ULONG2NUM
+#   #define NUM2FOOBAR NUM2ULONG
+def convertible_int(type, headers = nil, opts = nil, &b)
+  type, macname = *type
+  checking_for("convertible type of #{type}", STRING_OR_FAILED_FORMAT) do
+    if UNIVERSAL_INTS.include?(type)
+      type
+    else
+      typedef, member, prelude = typedef_expr(type, headers, &b)
+      next unless signed = try_signedness(typedef, member, [prelude])
+      u = "unsigned " if signed > 0
+      prelude << "extern rbcv_typedef_ foo();"
+      compat = UNIVERSAL_INTS.find {|t|
+	try_compile([prelude, "extern #{u}#{t} foo();"].join("\n"), opts, &b)
+      }
+      if compat
+	macname ||= type.chomp("_t").tr_cpp
+	conv = (u ? "U" : "") + (compat == "long long" ? "LL" : compat.upcase)
+	compat = "#{u}#{compat}"
+	$defs.push(format("-DTYPEOF_%s=%s", type.tr_cpp, compat.quote))
+	$defs.push(format("-D%s2NUM=%s2NUM", macname, conv))
+	$defs.push(format("-DNUM2%s=NUM2%s", macname, conv))
+	compat
+      end
+    end
+  end
+end
 # :stopdoc:
 
 # Used internally by the what_type? method to determine if +type+ is a scalar
