@@ -1785,6 +1785,43 @@ rb_hash_update(VALUE hash1, VALUE hash2)
     return hash1;
 }
 
+struct update_arg {
+    VALUE hash;
+    rb_hash_update_func *func;
+};
+
+static int
+rb_hash_update_func_i(VALUE key, VALUE value, VALUE arg0)
+{
+    struct update_arg *arg = (struct update_arg *)arg0;
+    VALUE hash = arg->hash;
+
+    if (key == Qundef) return ST_CONTINUE;
+    if (rb_hash_has_key(hash, key)) {
+	value = (*arg->func)(key, rb_hash_aref(hash, key), value);
+    }
+    hash_update(hash, key);
+    st_insert(RHASH(hash)->ntbl, key, value);
+    return ST_CONTINUE;
+}
+
+VALUE
+rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func)
+{
+    rb_hash_modify(hash1);
+    hash2 = to_hash(hash2);
+    if (func) {
+	struct update_arg arg;
+	arg.hash = hash1;
+	arg.func = func;
+	rb_hash_foreach(hash2, rb_hash_update_func_i, (VALUE)&arg);
+    }
+    else {
+	rb_hash_foreach(hash2, rb_hash_update_i, hash1);
+    }
+    return hash1;
+}
+
 /*
  *  call-seq:
  *     hsh.merge(other_hash)                              -> new_hash
