@@ -1,3 +1,7 @@
+Sat Dec  4 11:07:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_core.h (rb_vm_inc_const_missing_count): missing prototype.
+
 Sat Dec  4 08:50:10 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (Init_iconv): no warnings if $VERBOSE is nil.
