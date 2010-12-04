@@ -1506,6 +1506,7 @@ rb_reg_regcomp(str)
     case_cache = ruby_ignorecase;
     kcode_cache = reg_kcode;
     reg_cache = rb_reg_new(RSTRING(str)->ptr, RSTRING(str)->len, ruby_ignorecase);
+    OBJ_INFECT(reg_cache, str);
     RB_GC_GUARD(save_str);
     return reg_cache;
 }

@@ -1,3 +1,8 @@
+Sat Dec  4 11:25:02 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* re.c (rb_reg_regcomp): should succeed the taint status from the
+	  origin. [ruby-core:33338]
+
 Thu Dec  2 21:13:42 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* Makefile.in (fake.rb): need to expand the topdir in case of it
