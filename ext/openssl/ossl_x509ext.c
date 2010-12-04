@@ -270,6 +270,18 @@ ossl_x509ext_alloc(VALUE klass)
     return obj;
 }
 
+/*
+ * call-seq:
+ *    OpenSSL::X509::Extension.new asn1
+ *    OpenSSL::X509::Extension.new name, value
+ *    OpenSSL::X509::Extension.new name, value, critical
+ *
+ * Creates an X509 extension.
+ *
+ * The extension may be created from +asn1+ data or from an extension +name+
+ * and +value+.  The +name+ may be either an OID or an extension name.  If
+ * +critical+ is true the extension is marked critical.
+ */
 static VALUE
 ossl_x509ext_initialize(int argc, VALUE *argv, VALUE self)
 {

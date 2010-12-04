@@ -1,3 +1,7 @@
+Sat Dec  4 11:39:17 2010  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/openssl/ossl_x509ext.c (initialize): add documentation.
+
 Sat Dec  4 11:21:50 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_hash_update_by): new API for Hash#update.
