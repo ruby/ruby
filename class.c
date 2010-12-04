@@ -272,7 +272,7 @@ rb_singleton_class_attached(VALUE klass, VALUE obj)
  * @retval 1 if \a k is a meta^(n)-class of Class class (n >= 0)
  * @retval 0 otherwise
  */
-#define META_CLASS_OF_CLASS_CLASS_P(k)  (METACLASS_OF(k) == k)
+#define META_CLASS_OF_CLASS_CLASS_P(k)  (METACLASS_OF(k) == (k))
 
 
 /*!
@@ -283,7 +283,7 @@ rb_singleton_class_attached(VALUE klass, VALUE obj)
  * @note this macro creates a new eigenclass if necessary.
  */
 #define ENSURE_EIGENCLASS(klass) \
- (rb_ivar_get(METACLASS_OF(klass), id_attached) == klass ? METACLASS_OF(klass) : make_metaclass(klass))
+ (rb_ivar_get(METACLASS_OF(klass), id_attached) == (klass) ? METACLASS_OF(klass) : make_metaclass(klass))
 
 
 /*!
@@ -1224,7 +1224,7 @@ rb_undef_method(VALUE klass, const char *name)
 
 #define SPECIAL_SINGLETON(x,c) do {\
     if (obj == (x)) {\
-	return c;\
+	return (c);\
     }\
 } while (0)
 
