@@ -28,7 +28,7 @@ static ID id_abs, id_abs2, id_arg, id_cmp, id_conj, id_convert,
 inline static VALUE \
 f_##n(VALUE x, VALUE y)\
 {\
-    return rb_funcall(x, op, 1, y);\
+    return rb_funcall(x, (op), 1, y);\
 }
 
 #define fun1(n) \
@@ -493,7 +493,7 @@ imp1(cosh)
 imp1(exp)
 imp2(hypot)
 
-#define m_hypot(x,y) m_hypot_bang(x,y)
+#define m_hypot(x,y) m_hypot_bang((x),(y))
 
 extern VALUE rb_math_log(int argc, VALUE *argv);
 
@@ -1422,25 +1422,25 @@ make_patterns(void)
 }
 
 #define id_match rb_intern("match")
-#define f_match(x,y) rb_funcall(x, id_match, 1, y)
+#define f_match(x,y) rb_funcall((x), id_match, 1, (y))
 
 #define id_aref rb_intern("[]")
-#define f_aref(x,y) rb_funcall(x, id_aref, 1, y)
+#define f_aref(x,y) rb_funcall((x), id_aref, 1, (y))
 
 #define id_post_match rb_intern("post_match")
-#define f_post_match(x) rb_funcall(x, id_post_match, 0)
+#define f_post_match(x) rb_funcall((x), id_post_match, 0)
 
 #define id_split rb_intern("split")
-#define f_split(x,y) rb_funcall(x, id_split, 1, y)
+#define f_split(x,y) rb_funcall((x), id_split, 1, (y))
 
 #define id_include_p rb_intern("include?")
-#define f_include_p(x,y) rb_funcall(x, id_include_p, 1, y)
+#define f_include_p(x,y) rb_funcall((x), id_include_p, 1, (y))
 
 #define id_count rb_intern("count")
-#define f_count(x,y) rb_funcall(x, id_count, 1, y)
+#define f_count(x,y) rb_funcall((x), id_count, 1, (y))
 
 #define id_gsub_bang rb_intern("gsub!")
-#define f_gsub_bang(x,y,z) rb_funcall(x, id_gsub_bang, 2, y, z)
+#define f_gsub_bang(x,y,z) rb_funcall((x), id_gsub_bang, 2, (y), (z))
 
 static VALUE
 string_to_c_internal(VALUE self)
@@ -1539,7 +1539,7 @@ string_to_c_strict(VALUE self)
 }
 
 #define id_gsub rb_intern("gsub")
-#define f_gsub(x,y,z) rb_funcall(x, id_gsub, 2, y, z)
+#define f_gsub(x,y,z) rb_funcall((x), id_gsub, 2, (y), (z))
 
 /*
  * call-seq:
