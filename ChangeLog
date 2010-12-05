@@ -1,3 +1,7 @@
+Sun Dec  5 12:09:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/irb/init.rb (IRB.parse_opts): fix typo. [ruby-core:33574]
+
 Sun Dec  5 11:27:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (load_file_internal): decrement for ungotten line.
