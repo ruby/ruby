@@ -1,3 +1,8 @@
+Sun Dec  5 17:56:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (make_metaclass): fix probable typo.  builtin type flag
+	  cannot be used with FL_TEST.
+
 Sun Dec  5 12:09:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/irb/init.rb (IRB.parse_opts): fix typo. [ruby-core:33574]
