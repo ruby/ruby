@@ -1,3 +1,10 @@
+Mon Dec  6 22:47:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser#candidate): skip separators.
+
+	* sample/optparse/opttest.rb: should not override --help.
+	  [ruby-dev:42690]
+
 Mon Dec  6 19:00:48 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* misc/rb_optparse.zsh: fix typos.

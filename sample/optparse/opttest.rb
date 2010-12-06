@@ -18,7 +18,7 @@ ARGV.options do
   opts.on_tail("common options:")
 
   # no argument, shows at tail
-  opts.on_tail("--help", "show this message") {puts opts; exit}
+  opts.on_tail("--usage", "show this message") {puts opts; exit}
 
   # mandatory argument
   opts.on("-r", "--require=LIBRARY", String,
