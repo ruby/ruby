@@ -143,7 +143,7 @@ Thu Dec  2 21:28:07 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 Thu Dec  2 21:22:05 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c (enc_alias_internal): free the copied key and
-	  return NULL when given key is already regisitered.
+	  return NULL when given key is already registered.
 
 	* encoding.c (enc_alias): call set_encoding_const only when the
 	  alias is not registered yet.

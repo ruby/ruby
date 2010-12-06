@@ -19,7 +19,7 @@ with all sufficient information, see the ChangeLog file.
 * rb_scan_args() is enhanced with support for option hash argument
   extraction.
 
-* ruby_vm_at_exit() added.  This enables extension libs to hool a VM
+* ruby_vm_at_exit() added.  This enables extension libs to hook a VM
   termination.
 
 === Library updates (outstanding ones only)
@@ -79,7 +79,7 @@ with all sufficient information, see the ChangeLog file.
 
 * rexml
   * [incompatible] support Ruby native encoding mechanism
-    and iconv dependency is droped. This means encoding
+    and iconv dependency is dropped. This means encoding
     methods (Document#encoding, XMLDecl#encoding,
     Output#encoding and Source#encoding) return an Encoding
     object instead of an encoding name.
