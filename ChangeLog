@@ -1,3 +1,7 @@
+Mon Dec  6 18:59:04 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* NEWS: add new encodings.
+
 Mon Dec  6 18:56:42 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/ruby/test_string.rb (TestString#test_scan): add a test for

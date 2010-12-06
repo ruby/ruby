@@ -30,6 +30,13 @@ with all sufficient information, see the ChangeLog file.
 
     * Kernel#respond_to? now returns false for protected methods.
 
+  * Encoding
+    * new encodings:
+      * CP950
+      * CP951
+      * UTF-16
+      * UTF-32
+
   * Float
     * new constants:
       * File::NULL
