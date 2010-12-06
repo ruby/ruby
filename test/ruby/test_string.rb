@@ -968,6 +968,14 @@ class TestString < Test::Unit::TestCase
     res = []
     a.scan(/(...)/) { |w| res << w }
     assert_equal([[S("cru")], [S("el ")], [S("wor")]],res)
+
+    a = S("hello")
+    a.taint
+    a.untrust
+    res = []
+    a.scan(/./) { |w| res << w }
+    assert(res[0].tainted?, '[ruby-core:33338] #4087')
+    assert(res[0].untrusted?, '[ruby-core:33338] #4087')
   end
 
   def test_size
