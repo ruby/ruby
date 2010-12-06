@@ -277,9 +277,9 @@ module Logging
       log, *save = @log, @logfile, @orgout, @orgerr
       @log, @logfile, @orgout, @orgerr = nil, tmplog, log, log
       begin
-        log.print(open {yield})
+        log.print(open {yield @log})
       ensure
-        @log.close if @log
+        @log.close if @log and not @log.closed?
         File::open(tmplog) {|t| FileUtils.copy_stream(t, log)}
         @log, @logfile, @orgout, @orgerr = log, *save
         @postpone -= 1
@@ -293,7 +293,7 @@ module Logging
   end
 end
 
-def xsystem command
+def xsystem command, opts = nil
   varpat = /\$\((\w+)\)|\$\{(\w+)\}/
   if varpat =~ command
     vars = Hash.new {|h, k| h[k] = ''; ENV[k]}
@@ -302,7 +302,16 @@ def xsystem command
   end
   Logging::open do
     puts command.quote
-    system(command)
+    if opts and opts[:werror]
+      result = nil
+      Logging.postpone do |log|
+	result = (system(command) and File.zero?(log.path))
+	""
+      end
+      result
+    else
+      system(command)
+    end
   end
 end
 
@@ -360,7 +369,7 @@ def have_devel?
   $have_devel
 end
 
-def try_do(src, command, &b)
+def try_do(src, command, *opts, &b)
   unless have_devel?
     raise <<MSG
 The compiler failed to generate an executable file.
@@ -369,7 +378,7 @@ MSG
   end
   begin
     src = create_tmpsrc(src, &b)
-    xsystem(command)
+    xsystem(command, *opts)
   ensure
     log_src(src)
     rm_rf 'conftest.dSYM'
@@ -419,21 +428,32 @@ def libpathflag(libpath=$DEFLIBPATH|$LIBPATH)
   }.join
 end
 
+def with_werror(opt, opts = nil)
+  if opts
+    if opts[:werror] and config_string("WERRORFLAG") {|flag| opt = opt ? "#{opt} #{flag}" : flag}
+      (opts = opts.dup).delete(:werror)
+    end
+    yield(opt, opts)
+  else
+    yield(opt)
+  end
+end
+
 # :nodoc:
-def try_link0(src, opt="", &b)
+def try_link0(src, opt="", *opts, &b)
   cmd = link_command("", opt)
   if $universal
     require 'tmpdir'
     Dir.mktmpdir("mkmf_", oldtmpdir = ENV["TMPDIR"]) do |tmpdir|
       begin
         ENV["TMPDIR"] = tmpdir
-        try_do(src, cmd, &b)
+        try_do(src, cmd, *opts, &b)
       ensure
         ENV["TMPDIR"] = oldtmpdir
       end
     end
   else
-    try_do(src, cmd, &b)
+    try_do(src, cmd, *opts, &b)
   end
 end
 
@@ -447,8 +467,8 @@ end
 #
 # [+src+] a String which contains a C source
 # [+opt+] a String which contains linker options
-def try_link(src, opt="", &b)
-  try_link0(src, opt, &b)
+def try_link(src, opt="", *opts, &b)
+  try_link0(src, opt, *opts, &b)
 ensure
   rm_f "conftest*", "c0x32*"
 end
@@ -462,8 +482,8 @@ end
 #
 # [+src+] a String which contains a C source
 # [+opt+] a String which contains compiler options
-def try_compile(src, opt="", &b)
-  try_do(src, cc_command(opt), &b)
+def try_compile(src, opt="", *opts, &b)
+  with_werror(opt, *opts) {|_opt, *_opts| try_do(src, cc_command(_opt), *_opts, &b)}
 ensure
   rm_f "conftest*"
 end
@@ -477,8 +497,8 @@ end
 #
 # [+src+] a String which contains a C source
 # [+opt+] a String which contains preprocessor options
-def try_cpp(src, opt="", &b)
-  try_do(src, cpp_command(CPPOUTFILE, opt), &b)
+def try_cpp(src, opt="", *opts, &b)
+  try_do(src, cpp_command(CPPOUTFILE, opt), *opts, &b)
 ensure
   rm_f "conftest*"
 end
@@ -1185,7 +1205,7 @@ def convertible_int(type, headers = nil, opts = nil, &b)
       u = "unsigned " if signed > 0
       prelude << "extern rbcv_typedef_ foo();"
       compat = UNIVERSAL_INTS.find {|t|
-	try_compile([prelude, "extern #{u}#{t} foo();"].join("\n"), opts, &b)
+	try_compile([prelude, "extern #{u}#{t} foo();"].join("\n"), opts, :werror=>true, &b)
       }
       if compat
 	macname ||= type.sub(/_(?=t\z)/, '').tr_cpp
@@ -2184,7 +2204,10 @@ EXPORT_PREFIX = config_string('EXPORT_PREFIX') {|s| s.strip}
 hdr = ['#include "ruby.h"' "\n"]
 config_string('COMMON_MACROS') do |s|
   Shellwords.shellwords(s).each do |w|
-    hdr << "#define " + w.split(/=/, 2).join(" ")
+    w, v = w.split(/=/, 2)
+    hdr << "#ifndef #{w}"
+    hdr << "#define #{[w, v].compact.join(" ")}"
+    hdr << "#endif /* #{w} */"
   end
 end
 config_string('COMMON_HEADERS') do |s|

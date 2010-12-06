@@ -189,11 +189,12 @@ COMPILERFLAG  = -Zm600
 !endif
 !if !defined(WARNFLAGS)
 !if $(MSC_VER) >= 1400
-WARNFLAGS = -W2 -wd4996
+WARNFLAGS = -W2 -wd4996 -we4028 -we4142
 !else
 WARNFLAGS = -W2
 !endif
 !endif
+WERRORFLAG = -WX
 !if !defined(CFLAGS)
 CFLAGS = $(RUNTIMEFLAG) $(DEBUGFLAGS) $(WARNFLAGS) $(OPTFLAGS) $(PROCESSOR_FLAG) $(COMPILERFLAG)
 !endif
@@ -679,6 +680,7 @@ s,@SHELL@,$$(COMSPEC),;t t
 s,@BUILD_FILE_SEPARATOR@,\,;t t
 s,@PATH_SEPARATOR@,;,;t t
 s,@CFLAGS@,$(CFLAGS),;t t
+s,@WERRORFLAG@,$(WERRORFLAG),;t t
 s,@DEFS@,$(DEFS),;t t
 s,@CPPFLAGS@,$(CPPFLAGS),;t t
 s,@CXXFLAGS@,$(CXXFLAGS),;t t
