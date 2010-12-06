@@ -1,3 +1,8 @@
+Mon Dec  6 18:55:36 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/uri/test_common.rb (TestCommon#test_encode_www_form): add
+	  tests for r30015.
+
 Mon Dec  6 10:39:54 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/common.rb (URI::Parser#initialize_pattern):
