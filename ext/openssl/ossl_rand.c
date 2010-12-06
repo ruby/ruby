@@ -181,8 +181,8 @@ ossl_rand_status(VALUE self)
 void
 Init_ossl_rand()
 {
-#if 0 /* let rdoc know about mOSSL */
-    mOSSL = rb_define_module("OpenSSL");
+#if 0
+    mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL */
 #endif
 
     mRandom = rb_define_module_under(mOSSL, "Random");

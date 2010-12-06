@@ -518,8 +518,8 @@ static VALUE ossl_cipher_block_size() { }
 void
 Init_ossl_cipher(void)
 {
-#if 0 /* let rdoc know about mOSSL */
-    mOSSL = rb_define_module("OpenSSL");
+#if 0
+    mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL */
 #endif
     cCipher = rb_define_class_under(mOSSL, "Cipher", rb_cObject);
     eCipherError = rb_define_class_under(cCipher, "CipherError", eOSSLError);

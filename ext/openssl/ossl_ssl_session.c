@@ -278,8 +278,8 @@ static VALUE ossl_ssl_session_to_text(VALUE self)
 
 void Init_ossl_ssl_session(void)
 {
-#if 0 /* let rdoc know about mOSSL */
-	mOSSL = rb_define_module("OpenSSL");
+#if 0
+	mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL */
 	mSSL = rb_define_module_under(mOSSL, "SSL");
 #endif
 	cSSLSession = rb_define_class_under(mSSL, "Session", rb_cObject);

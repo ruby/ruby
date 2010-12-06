@@ -236,8 +236,8 @@ ossl_hmac_s_hexdigest(VALUE klass, VALUE digest, VALUE key, VALUE data)
 void
 Init_ossl_hmac()
 {
-#if 0 /* let rdoc know about mOSSL */
-    mOSSL = rb_define_module("OpenSSL");
+#if 0
+    mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL */
 #endif
 
     eHMACError = rb_define_class_under(mOSSL, "HMACError", eOSSLError);

@@ -407,7 +407,313 @@ ossl_debug_set(VALUE self, VALUE val)
 }
 
 /*
- * OSSL library init
+ * OpenSSL provides SSL, TLS and general purpose cryptography.  It wraps the
+ * OpenSSL[http://www.openssl.org/] library.
+ *
+ * = Examples
+ *
+ * All examples assume you have loaded OpenSSL with:
+ *
+ *   require 'openssl'
+ *
+ * These examples build atop each other.  For example the key created in the
+ * next is used in throughout these examples.
+ *
+ * == Keys
+ *
+ * === Creating a Key
+ *
+ * This example creates a 2048 bit RSA keypair and writes it to the current
+ * directory.
+ *
+ *   key = OpenSSL::PKey::RSA.new 2048
+ *
+ *   open 'private_key.pem', 'w' do |io| io.write key.to_pem end
+ *   open 'public_key.pem', 'w' do |io| io.write key.public_key.to_pem end
+ *
+ * === Exporting a Key
+ *
+ * Keys saved to disk without encryption are not secure as anyone who gets
+ * ahold of the key may use it unless it is encrypted.  In order to securely
+ * export a key you may export it with a pass phrase.
+ *
+ *   cipher = OpenSSL::Cipher::Cipher.new 'AES-128-CBC'
+ *   pass_phrase = 'my secure pass phrase goes here'
+ *
+ *   key_secure = key.export cipher, pass_phrase
+ *
+ *   open 'private.secure.pem', 'w' do |io|
+ *     io.write key_secure
+ *   end
+ *
+ * OpenSSL::Cipher.ciphers returns a list of available ciphers.
+ *
+ * === Loading a Key
+ *
+ * A key can also be loaded from a file.
+ *
+ *   key2 = OpenSSL::PKey::RSA.new File.read 'private_key.pem'
+ *   key2.public? # => true
+ *
+ * or
+ *
+ *   key3 = OpenSSL::PKey::RSA.new File.read 'public_key.pem'
+ *   key3.private? # => false
+ *
+ * === Loading an Encrypted Key
+ *
+ * OpenSSL will prompt you for your pass phrase when loading an encrypted key.
+ * If you will not be able to type in the pass phrase you may provide it when
+ * loading the key:
+ *
+ *   key4_pem = File.read 'private.secure.pem'
+ *   key4 = OpenSSL::PKey::RSA.new key4_pem, pass_phrase
+ *
+ * == X509 Certificates
+ *
+ * === Creating a Certificate
+ *
+ * This example creates a self-signed certificate using an RSA key and a SHA1
+ * signature.
+ *
+ *   name = OpenSSL::X509::Name.parse 'CN=nobody/DC=example'
+ *
+ *   cert = OpenSSL::X509::Certificate.new
+ *   cert.version = 2
+ *   cert.serial = 0
+ *   cert.not_before = Time.now
+ *   cert.not_after = Time.now + 3600
+ *
+ *   cert.public_key = key.public_key
+ *   cert.subject = name
+ *
+ * === Certificate Extensions
+ *
+ * You can add extensions to the certificate with
+ * OpenSSL::SSL::ExtensionFactory to indicate the purpose of the certificate.
+ *
+ *   extension_factory = OpenSSL::X509::ExtensionFactory.new nil, cert
+ *
+ *   extension_factory.create_extension 'basicConstraints', 'CA:FALSE'
+ *   extension_factory.create_extension 'keyUsage',
+ *     'keyEncipherment,dataEncipherment,digitalSignature'
+ *   extension_factory.create_extension 'subjectKeyIdentifier', 'hash'
+ *
+ * === Signing a Certificate
+ *
+ * To sign a certificate set the issuer and use OpenSSL::X509::Certificate#sign
+ * with a digest algorithm.  This creates a self-signed cert because we're using
+ * the same name and key to sign the certificate as was used to create the
+ * certificate.
+ *
+ *   cert.issuer = name
+ *   cert.sign key, OpenSSL::Digest::SHA1.new
+ *
+ *   open 'certificate.pem', 'w' do |io| io.write cert.to_pem end
+ *
+ * === Loading a Certificate
+ *
+ * Like a key, a cert can also be loaded from a file.
+ *
+ *   cert2 = OpenSSL::X509::Certificate.new File.read 'certificate.pem'
+ *
+ * === Verifying a Certificate
+ *
+ * Certificate#verify will return true when a certificate was signed with the
+ * given public key.
+ *
+ *   raise 'certificate can not be verified' unless cert2.verify key
+ *
+ * == Certificate Authority
+ *
+ * A certificate authority (CA) is a trusted third party that allows you to
+ * verify the ownership of unknown certificates.  The CA issues key signatures
+ * that indicate it trusts the user of that key.  A user encountering the key
+ * can verify the signature by using the CA's public key.
+ *
+ * === CA Key
+ *
+ * CA keys are valuable, so we encrypt and save it to disk and make sure it is
+ * not readable by other users.
+ *
+ *   ca_key = OpenSSL::PKey::RSA.new 2048
+ *
+ *   cipher = OpenSSL::Cipher::AES.new 128, :CBC
+ *
+ *   open 'ca_key.pem', 'w', 0400 do |io|
+ *     io.write key.export(cipher, pass_phrase)
+ *   end
+ *
+ * === CA Certificate
+ *
+ * A CA certificate is created the same way we created a certificate above, but
+ * with different extensions.
+ *
+ *   ca_name = OpenSSL::X509::Name.parse 'CN=ca/DC=example'
+ *
+ *   ca_cert = OpenSSL::X509::Certificate.new
+ *   ca_cert.serial = 0
+ *   ca_cert.version = 2
+ *   ca_cert.not_before = Time.now
+ *   ca_cert.not_after = Time.now + 86400
+ *
+ *   ca_cert.public_key = ca_key.public_key
+ *   ca_cert.subject = ca_name
+ *   ca_cert.issuer = ca_name
+ *
+ *   extension_factory = OpenSSL::X509::ExtensionFactory.new
+ *   extension_factory.subject_certificate = ca_cert
+ *   extension_factory.issuer_certificate = ca_cert
+ *
+ *   extension_factory.create_extension 'subjectKeyIdentifier', 'hash'
+ *
+ * This extension indicates the CA's key may be used as a CA.
+ *
+ *   extension_factory.create_extension 'basicConstraints', 'CA:TRUE', true
+ *
+ * This extension indicates the CA's key may be used to verify signatures on
+ * both certificates and certificate revocations.
+ *
+ *   extension_factory.create_extension 'keyUsage', 'cRLSign,keyCertSign', true
+ *
+ * Root CA certificates are self-signed.
+ *
+ *   ca_cert.sign ca_key, OpenSSL::Digest::SHA1.new
+ *
+ * The CA certificate is saved to disk so it may be distributed to all the
+ * users of the keys this CA will sign.
+ *
+ *   open 'ca_cert.pem', 'w' do |io|
+ *     io.write ca_cert.to_pem
+ *   end
+ *
+ * === Certificate Signing Request
+ *
+ * The CA signs keys through a Certificate Signing Request (CSR).  The CSR
+ * contains the information necessary to identify the key.
+ *
+ *   csr = OpenSSL::X509::Request.new
+ *   csr.version = 0
+ *   csr.subject = name
+ *   csr.public_key = key.public_key
+ *   csr.sign key, OpenSSL::Digest::SHA1.new
+ *
+ * A CSR is saved to disk and sent to the CA for signing.
+ *
+ *   open 'csr.pem', 'w' do |io|
+ *     io.write csr.to_pem
+ *   end
+ *
+ * === Creating a Certificate from a CSR
+ *
+ * Upon receiving a CSR the CA will verify it before signing it.  A minimal
+ * verification would be to check the CSR's signature.
+ *
+ *   csr = OpenSSL::X509::Request.new File.read 'csr.pem'
+ *
+ *   raise 'CSR can not be verified' unless csr.verify csr.public_key
+ *
+ * After verification a certificate is created, marked for various usages,
+ * signed with the CA key and returned to the requester.
+ *
+ *   csr_cert = OpenSSL::X509::Certificate.new
+ *   csr_cert.serial = 0
+ *   csr_cert.version = 2
+ *   csr_cert.not_before = Time.now
+ *   csr_cert.not_after = Time.now + 600
+ *
+ *   csr_cert.subject = csr.subject
+ *   csr_cert.public_key = csr.public_key
+ *   csr_cert.issuer = ca_cert.subject
+ *
+ *   extension_factory = OpenSSL::X509::ExtensionFactory.new
+ *   extension_factory.subject_certificate = csr_cert
+ *   extension_factory.issuer_certificate = ca_cert
+ *
+ *   extension_factory.create_extension 'basicConstraints', 'CA:FALSE'
+ *   extension_factory.create_extension 'keyUsage',
+ *     'keyEncipherment,dataEncipherment,digitalSignature'
+ *   extension_factory.create_extension 'subjectKeyIdentifier', 'hash'
+ *
+ *   csr_cert.sign ca_key, OpenSSL::Digest::SHA1.new
+ *
+ *   open 'csr_cert.pem', 'w' do |io|
+ *     io.write csr_cert.to_pem
+ *   end
+ *
+ * == SSL and TLS Connections
+ *
+ * Using our created key and certificate we can create an SSL or TLS connection.
+ * An SSLContext is used to set up an SSL session.
+ *
+ *   context = OpenSSL::SSL::SSLContext.new
+ *
+ * === SSL Server
+ *
+ * An SSL server requires the certificate and private key to communicate
+ * securely with its clients:
+ *
+ *   context.cert = cert
+ *   context.key = key
+ *
+ * Then create an SSLServer with a TCP server socket and the context.  Use the
+ * SSLServer like an ordinary TCP server.
+ *
+ *   require 'socket'
+ *
+ *   tcp_server = TCPServer.new 5000
+ *   ssl_server = OpenSSL::SSL::SSLServer.new tcp_server, context
+ *
+ *   loop do
+ *     ssl_connection = ssl_server.accept
+ *
+ *     data = connection.gets
+ *
+ *     response = "I got #{data.dump}"
+ *     puts response
+ *
+ *     connection.puts "I got #{data.dump}"
+ *     connection.close
+ *   end
+ *
+ * === SSL client
+ *
+ * An SSL client is created with a TCP socket and the context.
+ * SSLSocket#connect must be called to initiate the SSL handshake and start
+ * encryption.  A key and certificate are not required for the client socket.
+ *
+ *   require 'socket'
+ *
+ *   tcp_client = TCPSocket.new 'localhost', 5000
+ *   ssl_client = OpenSSL::SSL::SSLSocket.new client_socket, context
+ *   ssl_client.connect
+ *
+ *   ssl_client.puts "hello server!"
+ *   puts ssl_client.gets
+ *
+ * === Peer Verification
+ *
+ * An unverified SSL connection does not provide much security.  For enhanced
+ * security the client or server can verify the certificate the of its peer.
+ *
+ * The client can be modified to verify the server's certificate against the
+ * certificate authority's certificate:
+ *
+ *   context.ca_file = 'ca_cert.pem'
+ *   context.verify_mode = OpenSSL::SSL::VERIFY_PEER
+ *
+ *   require 'socket'
+ *
+ *   tcp_client = TCPSocket.new 'localhost', 5000
+ *   ssl_client = OpenSSL::SSL::SSLSocket.new client_socket, context
+ *   ssl_client.connect
+ *
+ *   ssl_client.puts "hello server!"
+ *   puts ssl_client.gets
+ *
+ * If the server certificate is invalid or <tt>context.ca_file</tt> is not set
+ * when verifying peers an OpenSSL::SSL::SSLError will be raised.
+ *
  */
 void
 Init_openssl()

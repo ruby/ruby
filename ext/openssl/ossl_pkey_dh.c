@@ -489,8 +489,8 @@ ossl_create_dh(unsigned char *p, size_t plen, unsigned char *g, size_t glen)
 void
 Init_ossl_dh()
 {
-#if 0 /* let rdoc know about mOSSL and mPKey */
-    mOSSL = rb_define_module("OpenSSL");
+#if 0
+    mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL and mPKey */
     mPKey = rb_define_module_under(mOSSL, "PKey");
 #endif
 

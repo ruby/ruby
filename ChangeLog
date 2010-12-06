@@ -1,3 +1,11 @@
+Mon Dec  6 09:45:11 2010  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/openssl (OpenSSL): add toplevel documentation
+	* ext/openssl/ossl_ssl.c (SSLContext, SSLSocket: add additional
+	  documentation
+	* ext/openssl: move "let rdoc know about mOSSL" comments so they don't
+	  show up in output
+
 Mon Dec  6 09:16:46 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/common.rb (URI::Parser#initialize_pattern):

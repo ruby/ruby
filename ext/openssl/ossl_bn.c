@@ -731,8 +731,8 @@ ossl_bn_is_prime_fasttest(int argc, VALUE *argv, VALUE self)
 void
 Init_ossl_bn()
 {
-#if 0 /* let rdoc know about mOSSL */
-    mOSSL = rb_define_module("OpenSSL");
+#if 0
+    mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL */
 #endif
 
     if (!(ossl_bn_ctx = BN_CTX_new())) {

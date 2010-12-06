@@ -235,8 +235,8 @@ Init_ossl_digest()
 {
     rb_require("digest");
 
-#if 0 /* let rdoc know about mOSSL */
-    mOSSL = rb_define_module("OpenSSL");
+#if 0
+    mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL */
 #endif
 
     cDigest = rb_define_class_under(mOSSL, "Digest", rb_path2class("Digest::Class"));
