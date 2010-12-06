@@ -1,3 +1,8 @@
+Mon Dec  6 09:16:46 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/common.rb (URI::Parser#initialize_pattern):
+	  workaround fix pattern of hostname for RFC 3986. [ruby-dev:42672]
+
 Mon Dec  6 09:14:38 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/mkmf.rb (check_signedness): rename unused variable prelude.

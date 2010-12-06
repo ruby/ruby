@@ -31,7 +31,7 @@ module URI
       # mark          = "-" | "_" | "." | "!" | "~" | "*" | "'" |
       #                 "(" | ")"
       # unreserved    = alphanum | mark
-      UNRESERVED = "-_.!~*'()#{ALNUM}"
+      UNRESERVED = "\\-_.!~*'()#{ALNUM}"
       # reserved      = ";" | "/" | "?" | ":" | "@" | "&" | "=" | "+" |
       #                 "$" | ","
       # reserved      = ";" | "/" | "?" | ":" | "@" | "&" | "=" | "+" |
@@ -239,8 +239,8 @@ module URI
       ret[:ESCAPED] = escaped = (opts.delete(:ESCAPED) || PATTERN::ESCAPED)
       ret[:UNRESERVED] = unreserved = opts.delete(:UNRESERVED) || PATTERN::UNRESERVED
       ret[:RESERVED] = reserved = opts.delete(:RESERVED) || PATTERN::RESERVED
-      ret[:DOMLABEL] = domlabel = opts.delete(:DOMLABEL) || PATTERN::DOMLABEL
-      ret[:TOPLABEL] = toplabel = opts.delete(:TOPLABEL) || PATTERN::TOPLABEL
+      ret[:DOMLABEL] = opts.delete(:DOMLABEL) || PATTERN::DOMLABEL
+      ret[:TOPLABEL] = opts.delete(:TOPLABEL) || PATTERN::TOPLABEL
       ret[:HOSTNAME] = hostname = opts.delete(:HOSTNAME)
 
       # RFC 2396 (URI Generic Syntax)
@@ -258,8 +258,9 @@ module URI
       ret[:FRAGMENT] = fragment = "#{uric}*"
 
       # hostname      = *( domainlabel "." ) toplabel [ "." ]
+      # reg-name      = *( unreserved / pct-encoded / sub-delims ) # RFC3986
       unless hostname
-	ret[:HOSTNAME] = hostname = "(?:#{domlabel}\\.)*#{toplabel}\\.?"
+	ret[:HOSTNAME] = hostname = "(?:[a-zA-Z0-9\\-._~!$&'()*+,;=]|%\\h\\h)*"
       end
 
       # RFC 2373, APPENDIX B:
@@ -326,7 +327,7 @@ module URI
       ret[:REL_SEGMENT] = rel_segment = "(?:[#{unreserved};@&=+$,]|#{escaped})+"
 
       # scheme        = alpha *( alpha | digit | "+" | "-" | "." )
-      ret[:SCHEME] = scheme = "[#{PATTERN::ALPHA}][-+.#{PATTERN::ALPHA}\\d]*"
+      ret[:SCHEME] = scheme = "[#{PATTERN::ALPHA}][\\-+.#{PATTERN::ALPHA}\\d]*"
 
       # abs_path      = "/"  path_segments
       ret[:ABS_PATH] = abs_path = "/#{path_segments}"
