@@ -260,7 +260,7 @@ module URI
       # hostname      = *( domainlabel "." ) toplabel [ "." ]
       # reg-name      = *( unreserved / pct-encoded / sub-delims ) # RFC3986
       unless hostname
-	ret[:HOSTNAME] = hostname = "(?:[a-zA-Z0-9\\-._~!$&'()*+,;=]|%\\h\\h)*"
+	ret[:HOSTNAME] = hostname = "(?:[a-zA-Z0-9\\-.]|%\\h\\h)+"
       end
 
       # RFC 2373, APPENDIX B:
