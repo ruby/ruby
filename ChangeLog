@@ -1,3 +1,8 @@
+Tue Dec  7 00:27:14 2010  Masaya Tarui  <tarui@ruby-lnag.org>
+
+	* win32/win32.c (rb_w32_read): fixed more for readline,
+	  and so on. [ruby-core:33511]
+
 Mon Dec  6 23:18:22 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/mkmf/base.rb (TestMkmf#setup): run quietly.

@@ -5028,6 +5028,7 @@ rb_w32_read(int fd, void *buf, size_t size)
     size_t ret;
     OVERLAPPED ol, *pol = NULL;
     BOOL isconsole;
+    BOOL islineinput;
     int start = 0;
 
     if (is_socket(sock))
@@ -5052,6 +5053,11 @@ rb_w32_read(int fd, void *buf, size_t size)
 
     ret = 0;
     isconsole = is_console(_osfhnd(fd));
+    if(isconsole){
+	DWORD mode;
+	GetConsoleMode((HANDLE)_osfhnd(fd),&mode);
+	islineinput = (mode & ENABLE_LINE_INPUT) != 0;
+    }
   retry:
     /* get rid of console reading bug */
     if (isconsole) {
@@ -5154,7 +5160,7 @@ rb_w32_read(int fd, void *buf, size_t size)
     ret += read;
     if (read >= len) {
 	buf = (char *)buf + read;
-	if (!(isconsole && len == 1 && *((char *)buf - 1) == '\n') && size > 0)
+	if (!(isconsole && len == 1 && (!islineinput || *((char *)buf - 1) == '\n')) && size > 0)
 	    goto retry;
     }
     if (read == 0)
