@@ -1,4 +1,6 @@
-Mon Dec  6 23:17:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Dec  6 23:18:22 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/mkmf/base.rb (TestMkmf#setup): run quietly.
 
 	* test/mkmf/test_find_executable.rb (test_find_executable): use
 	  configured results.

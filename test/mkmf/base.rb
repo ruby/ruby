@@ -14,16 +14,11 @@ class TestMkmf < Test::Unit::TestCase
     @curdir = Dir.pwd
     @mkmfobj = Object.new
     Dir.chdir(@tmpdir)
-    class << (@output = "")
-      def flush; end
-      def reopen(*) end
-      alias write <<
-    end
-    $stdout = @output
+    @quiet, Logging.quiet = Logging.quiet, true
   end
 
   def teardown
-    $stdout = STDOUT
+    Logging.quiet = @quiet
     Dir.chdir(@curdir)
     FileUtils.rm_rf(@tmpdir)
   end
