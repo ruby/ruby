@@ -467,6 +467,10 @@ no-test-all: PHONY
 yes-test-all: PHONY
 	$(RUNRUBY) "$(srcdir)/test/runner.rb" $(TESTS)
 
+TESTS_BUILD = mkmf
+test-build: PHONY
+	$(MINIRUBY) -I"$(srcdir)/lib" "$(srcdir)/test/runner.rb" $(TESTS_BUILD)
+
 test-ruby: $(TEST_RUNNABLE)-test-ruby
 no-test-ruby: PHONY
 yes-test-ruby: PHONY
