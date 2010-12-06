@@ -1,3 +1,7 @@
+Mon Dec  6 09:14:38 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/mkmf.rb (check_signedness): rename unused variable prelude.
+
 Sun Dec  5 17:56:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (make_metaclass): fix probable typo.  builtin type flag

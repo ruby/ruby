@@ -1143,7 +1143,7 @@ end
 # done.
 #
 def check_signedness(type, headers = nil, opts = nil, &b)
-  typedef, member, prelude = typedef_expr(type, headers)
+  typedef, member, _ = typedef_expr(type, headers)
   signed = nil
   checking_for("signedness of #{type}", STRING_OR_FAILED_FORMAT) do
     signed = try_signedness(typedef, member, headers, opts, &b) or next nil
