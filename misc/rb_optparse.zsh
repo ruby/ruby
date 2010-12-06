@@ -16,10 +16,10 @@ generate-complete-function/ruby/optparse ()
 {
     local cmpl="_${1:t}"
     mkdir -p "${ZSH_COMPLETION_DIR-$HOME/.zsh.d/Completion}"
-    $1 --help=zshcomplete="${1:t}" > "${ZSH_COMPLETION_DIR-$HOME/.zsh.d/Completion}/$comp"
+    $1 --help=zshcomplete="${1:t}" > "${ZSH_COMPLETION_DIR-$HOME/.zsh.d/Completion}/$cmpl"
     if [[ $(type -w "$cmpl") == "${cmpl}: function" ]]; then
 	unfunction "$cmpl"
-	autoload -U "$cmpl}"
+	autoload -U "$cmpl"
     else
         compinit "$cmpl"
     fi

@@ -1,3 +1,7 @@
+Mon Dec  6 19:00:48 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* misc/rb_optparse.zsh: fix typos.
+
 Mon Dec  6 18:59:04 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* NEWS: add new encodings.
