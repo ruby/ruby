@@ -116,18 +116,18 @@ static VALUE rb_cFiber;
 static VALUE rb_eFiberError;
 
 #define GetContPtr(obj, ptr)  \
-    TypedData_Get_Struct(obj, rb_context_t, &cont_data_type, ptr)
+    TypedData_Get_Struct((obj), rb_context_t, &cont_data_type, (ptr))
 
 #define GetFiberPtr(obj, ptr)  do {\
-    TypedData_Get_Struct(obj, rb_fiber_t, &fiber_data_type, ptr); \
-    if (!ptr) rb_raise(rb_eFiberError, "uninitialized fiber"); \
+    TypedData_Get_Struct((obj), rb_fiber_t, &fiber_data_type, (ptr)); \
+    if (!(ptr)) rb_raise(rb_eFiberError, "uninitialized fiber"); \
 } while(0)
 
 NOINLINE(static VALUE cont_capture(volatile int *stat));
 
 void rb_thread_mark(rb_thread_t *th);
 #define THREAD_MUST_BE_RUNNING(th) do { \
-	if (!th->tag) rb_raise(rb_eThreadError, "not running thread");	\
+	if (!(th)->tag) rb_raise(rb_eThreadError, "not running thread");	\
     } while (0)
 
 static void
@@ -746,7 +746,7 @@ cont_restore_0(rb_context_t *cont, VALUE *addr_in_prev_frame)
     cont_restore_1(cont);
 }
 #ifdef __ia64
-#define cont_restore_0(cont, vp) register_stack_extend(cont, vp, (VALUE*)rb_ia64_bsp());
+#define cont_restore_0(cont, vp) register_stack_extend((cont), (vp), (VALUE*)rb_ia64_bsp());
 #endif
 
 /*
