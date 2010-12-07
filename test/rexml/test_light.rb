@@ -10,7 +10,7 @@ class LightTester < Test::Unit::TestCase
     xml_string = fixture_path("documentation.xml")
     parser = REXML::Parsers::LightParser.new(xml_string)
     tag, content = parser.parse
-    assert_equal(:document, tag)
+    assert_equal([:document, :text], [tag, content.first])
   end
   
   # FIXME INCOMPLETE
