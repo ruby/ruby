@@ -4,7 +4,7 @@
 require 'test/unit'
 require 'rexml/document'
 
-class TestDocType < Test::Unit::TestCase
+class TestDocTypeAccessor < Test::Unit::TestCase
 
   def setup
     @sysid = "urn:x-test:sysid1"

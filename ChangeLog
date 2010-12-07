@@ -1,3 +1,7 @@
+Tue Dec  7 20:32:11 2010  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/test_doctype.rb: add Accessor to test case name.
+
 Tue Dec  7 20:31:02 2010  Kouhei Sutou  <kou@clear-code.com>
 
 	* test/rexml/test_doctype.rb: Doctype -> DocType.
