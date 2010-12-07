@@ -28,7 +28,6 @@ VALUE rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc);
 
 static VALUE bmcall(VALUE, VALUE);
 static int method_arity(VALUE);
-static int rb_obj_is_method(VALUE m);
 rb_iseq_t *rb_method_get_iseq(VALUE method);
 
 /* Proc */
@@ -893,10 +892,15 @@ static const rb_data_type_t method_data_type = {
     },
 };
 
-static inline int
+VALUE
 rb_obj_is_method(VALUE m)
 {
-    return rb_typeddata_is_kind_of(m, &method_data_type);
+    if (rb_typeddata_is_kind_of(m, &method_data_type)) {
+	return Qtrue;
+    }
+    else {
+	return Qfalse;
+    }
 }
 
 static VALUE

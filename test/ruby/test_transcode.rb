@@ -1947,4 +1947,21 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal("[ISU]", "\u{1F4BA}".encode("SJIS-KDDI",
         fallback: {"\u{1F4BA}" => "[ISU]"}))
   end
+
+  def test_fallback_hash_default
+    fallback = Hash.new {|h, x| "U+%.4X" % x.unpack("U")}
+    assert_equal("U+3042", "\u{3042}".encode("US-ASCII", fallback: fallback))
+  end
+
+  def test_fallback_proc
+    fallback = proc {|x| "U+%.4X" % x.unpack("U")}
+    assert_equal("U+3042", "\u{3042}".encode("US-ASCII", fallback: fallback))
+  end
+
+  def test_fallback_method
+    def (fallback = "U+%.4X").escape(x)
+      self % x.unpack("U")
+    end
+    assert_equal("U+3042", "\u{3042}".encode("US-ASCII", fallback: fallback.method(:escape)))
+  end
 end

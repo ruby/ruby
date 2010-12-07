@@ -1,3 +1,8 @@
+Tue Dec  7 22:05:25 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (transcode_loop): call default handler of the given
+	  hash, method, proc or [] method as fallback.  [ruby-dev:42692]
+
 Tue Dec  7 21:59:37 2010  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/light/node.rb: remove circular require.

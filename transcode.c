@@ -21,7 +21,7 @@ VALUE rb_eConverterNotFoundError;
 
 VALUE rb_cEncodingConverter;
 
-static VALUE sym_invalid, sym_undef, sym_replace, sym_fallback;
+static VALUE sym_invalid, sym_undef, sym_replace, sym_fallback, sym_aref;
 static VALUE sym_xml, sym_text, sym_attr;
 static VALUE sym_universal_newline;
 static VALUE sym_crlf_newline;
@@ -2240,6 +2240,26 @@ output_replacement_character(rb_econv_t *ec)
 }
 
 #if 1
+#define hash_fallback rb_hash_aref
+
+static VALUE
+proc_fallback(VALUE fallback, VALUE c)
+{
+    return rb_proc_call(fallback, rb_ary_new4(1, &c));
+}
+
+static VALUE
+method_fallback(VALUE fallback, VALUE c)
+{
+    return rb_method_call(1, &c, fallback);
+}
+
+static VALUE
+aref_fallback(VALUE fallback, VALUE c)
+{
+    return rb_funcall3(fallback, sym_aref, 1, &c);
+}
+
 static void
 transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
 	       const unsigned char *in_stop, unsigned char *out_stop,
@@ -2257,13 +2277,27 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     int max_output;
     VALUE exc;
     VALUE fallback = Qnil;
+    VALUE (*fallback_func)(VALUE, VALUE) = 0;
 
     ec = rb_econv_open_opts(src_encoding, dst_encoding, ecflags, ecopts);
     if (!ec)
         rb_exc_raise(rb_econv_open_exc(src_encoding, dst_encoding, ecflags));
 
-    if (!NIL_P(ecopts) && TYPE(ecopts) == T_HASH)
+    if (!NIL_P(ecopts) && TYPE(ecopts) == T_HASH) {
 	fallback = rb_hash_aref(ecopts, sym_fallback);
+	if (RB_TYPE_P(fallback, T_HASH)) {
+	    fallback_func = hash_fallback;
+	}
+	else if (rb_obj_is_proc(fallback)) {
+	    fallback_func = proc_fallback;
+	}
+	else if (rb_obj_is_method(fallback)) {
+	    fallback_func = method_fallback;
+	}
+	else {
+	    fallback_func = aref_fallback;
+	}
+    }
     last_tc = ec->last_tc;
     max_output = last_tc ? last_tc->transcoder->max_output : 1;
 
@@ -2275,8 +2309,8 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
 		(const char *)ec->last_error.error_bytes_start,
 		ec->last_error.error_bytes_len,
 		rb_enc_find(ec->last_error.source_encoding));
-	rep = rb_hash_lookup2(fallback, rep, Qundef);
-	if (rep != Qundef) {
+	rep = (*fallback_func)(fallback, rep);
+	if (rep != Qundef && !NIL_P(rep)) {
 	    StringValue(rep);
 	    ret = rb_econv_insert_output(ec, (const unsigned char *)RSTRING_PTR(rep),
 		    RSTRING_LEN(rep), rb_enc_name(rb_enc_get(rep)));
@@ -2479,8 +2513,10 @@ rb_econv_prepare_opts(VALUE opthash, VALUE *opts)
 
     v = rb_hash_aref(opthash, sym_fallback);
     if (!NIL_P(v)) {
-	v = rb_convert_type(v, T_HASH, "Hash", "to_hash");
-	if (!NIL_P(v)) {
+	VALUE h = rb_check_hash_type(v);
+	if (NIL_P(h)
+	    ? (rb_obj_is_proc(v) || rb_obj_is_method(v) || rb_respond_to(v, sym_aref))
+	    : (v = h, 1)) {
 	    if (NIL_P(newhash))
 		newhash = rb_hash_new();
 	    rb_hash_aset(newhash, sym_fallback, v);
@@ -4258,6 +4294,7 @@ Init_transcode(void)
     sym_undef = ID2SYM(rb_intern("undef"));
     sym_replace = ID2SYM(rb_intern("replace"));
     sym_fallback = ID2SYM(rb_intern("fallback"));
+    sym_aref = ID2SYM(rb_intern("[]"));
     sym_xml = ID2SYM(rb_intern("xml"));
     sym_text = ID2SYM(rb_intern("text"));
     sym_attr = ID2SYM(rb_intern("attr"));
