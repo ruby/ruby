@@ -1,3 +1,7 @@
+Tue Dec  7 20:31:02 2010  Kouhei Sutou  <kou@clear-code.com>
+
+	* test/rexml/test_doctype.rb: Doctype -> DocType.
+
 Tue Dec  7 20:29:23 2010  Kouhei Sutou  <kou@clear-code.com>
 
 	* test/rexml/test_doctype_mixin.rb: rename to ...
