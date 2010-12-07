@@ -229,7 +229,6 @@ class OptionParser
 
     def self.candidate(key, icase = false, pat = nil, &block)
       pat ||= Completion.regexp(key, icase)
-      canon, sw, cn = nil
       candidates = []
       block.call do |k, *v|
         (if Regexp === k
@@ -442,7 +441,7 @@ class OptionParser
     end
 
     def compsys(sdone, ldone)   # :nodoc:
-      sopts, lopts, s = [], [], nil
+      sopts, lopts = [], []
       @short.each {|s| sdone.fetch(s) {sopts << s}; sdone[s] = true} if @short
       @long.each {|s| ldone.fetch(s) {lopts << s}; ldone[s] = true} if @long
       return if sopts.empty? and lopts.empty? # completely hidden

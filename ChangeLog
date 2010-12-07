@@ -1,3 +1,8 @@
+Tue Dec  7 22:29:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser::Completion#candidate),
+	  (OptionParser::Switch#compsys): remove unused variables.
+
 Tue Dec  7 22:05:25 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (transcode_loop): call default handler of the given
