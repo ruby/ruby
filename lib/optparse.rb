@@ -777,22 +777,30 @@ XXX
   # --help
   # Shows option summary.
   #
-  # --help=complete=WORD
+  Officious['help'] = proc do |parser|
+    Switch::NoArgument.new do |arg|
+      puts parser.help
+      exit
+    end
+  end
+
+  # --*-completion-for-bash=WORD
   # Shows candidates for command line completion.
   #
-  # --help=zshcomplete[=NAME:FILE]
+  Officious['*-completion-bash'] = proc do |parser|
+    Switch::RequiredArgument.new do |arg|
+      puts parser.candidate(arg)
+      exit
+    end
+  end
+
+  #
+  # --*-completion-zsh[=NAME:FILE]
   # Creates zsh completion file.
   #
-  Officious['help'] = proc do |parser|
+  Officious['*-completion-zsh'] = proc do |parser|
     Switch::OptionalArgument.new do |arg|
-      case arg
-      when /\Acomplete=(.*)/
-        puts parser.candidate($1)
-      when /\Azshcomplete(?:=(.+))?/
-        parser.compsys(STDOUT, $1)
-      else
-        puts parser.help
-      end
+      parser.compsys(STDOUT, arg)
       exit
     end
   end

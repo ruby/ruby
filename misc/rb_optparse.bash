@@ -11,7 +11,7 @@
 #      rb_optparse command_using_optparse_2
 
 _rb_optparse() {
-  COMPREPLY=($("${COMP_WORDS[0]}" --help=complete="${COMP_WORDS[COMP_CWORD]}"))
+  COMPREPLY=($("${COMP_WORDS[0]}" "--*-completion-bash=${COMP_WORDS[COMP_CWORD]}"))
   return 0
 }
 
