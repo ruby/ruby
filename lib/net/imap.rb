@@ -528,6 +528,38 @@ module Net
       end
     end
 
+    # Sends a XLIST command, and returns a subset of names from
+    # the complete set of all names available to the client.
+    # +refname+ provides a context (for instance, a base directory
+    # in a directory-based mailbox hierarchy).  +mailbox+ specifies
+    # a mailbox or (via wildcards) mailboxes under that context.
+    # Two wildcards may be used in +mailbox+: '*', which matches
+    # all characters *including* the hierarchy delimiter (for instance,
+    # '/' on a UNIX-hosted directory-based mailbox hierarchy); and '%',
+    # which matches all characters *except* the hierarchy delimiter.
+    #
+    # If +refname+ is empty, +mailbox+ is used directly to determine
+    # which mailboxes to match.  If +mailbox+ is empty, the root
+    # name of +refname+ and the hierarchy delimiter are returned.
+    #
+    # The XLIST command is like the LIST command except that the flags
+    # returned refer to the function of the folder/mailbox, e.g. :Sent
+    #
+    # The return value is an array of +Net::IMAP::MailboxList+. For example:
+    #
+    #   imap.create("foo/bar")
+    #   imap.create("foo/baz")
+    #   p imap.xlist("", "foo/%")
+    #   #=> [#<Net::IMAP::MailboxList attr=[:Noselect], delim="/", name="foo/">, \\
+    #        #<Net::IMAP::MailboxList attr=[:Noinferiors, :Marked], delim="/", name="foo/bar">, \\
+    #        #<Net::IMAP::MailboxList attr=[:Noinferiors], delim="/", name="foo/baz">]
+    def xlist(refname, mailbox)
+      synchronize do
+        send_command("XLIST", refname, mailbox)
+        return @responses.delete("XLIST")
+      end
+    end
+
     # Sends the GETQUOTAROOT command along with specified +mailbox+.
     # This command is generally available to both admin and user.
     # If mailbox exists, returns an array containing objects of
@@ -2071,7 +2103,7 @@ module Net
             return response_cond
           when /\A(?:FLAGS)\z/ni
             return flags_response
-          when /\A(?:LIST|LSUB)\z/ni
+          when /\A(?:LIST|LSUB|XLIST)\z/ni
             return list_response
           when /\A(?:QUOTA)\z/ni
             return getquota_response

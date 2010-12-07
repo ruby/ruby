@@ -56,6 +56,15 @@ EOF
     end
   end
 
+  def test_flag_xlist_inbox
+    parser = Net::IMAP::ResponseParser.new
+	response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
+* XLIST (\\Inbox) "." "INBOX"
+EOF
+    assert_equal [:Inbox], response.attr.data
+  end
+
+
   def test_resp_text_code
     parser = Net::IMAP::ResponseParser.new
     response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)

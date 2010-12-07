@@ -1,3 +1,9 @@
+Tue Dec  7 17:03:16 2010  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (xlist): supported the XLIST command, which is an
+	  extension by Apple and Google.  patch by Geoff Youngs.
+	  [ruby-core:33521]
+
 Tue Dec  7 08:00:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in, win32/Makefile.sub (WERRORFLAG): flag to treat
