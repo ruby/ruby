@@ -10,11 +10,13 @@ require 'socket'
 require_relative '../ruby/ut_eof'
 
 module SSLPair
+  DHParam = OpenSSL::PKey::DH.new(128)
   def server
     host = "127.0.0.1"
     port = 0
     ctx = OpenSSL::SSL::SSLContext.new()
     ctx.ciphers = "ADH"
+    ctx.tmp_dh_callback = proc { DHParam }
     tcps = TCPServer.new(host, port)
     ssls = OpenSSL::SSL::SSLServer.new(tcps, ctx)
     return ssls
@@ -194,6 +196,7 @@ class OpenSSL::TestPair < Test::Unit::TestCase
     port = 0
     ctx = OpenSSL::SSL::SSLContext.new()
     ctx.ciphers = "ADH"
+    ctx.tmp_dh_callback = proc { DHParam }
     serv = TCPServer.new(host, port)
 
     port = serv.connect_address.ip_port
