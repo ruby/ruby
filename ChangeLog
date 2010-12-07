@@ -1,3 +1,8 @@
+Tue Dec  7 20:29:23 2010  Kouhei Sutou  <kou@clear-code.com>
+
+	* test/rexml/test_doctype_mixin.rb: rename to ...
+	* test/rexml/test_doctype.rb: ... this to remove needless name.
+
 Tue Dec  7 17:03:16 2010  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (xlist): supported the XLIST command, which is an
