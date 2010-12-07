@@ -1,3 +1,13 @@
+Wed Dec  8 07:29:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (struct vtable, struct local_vars, vtable_add):
+	  restructued to add declared line.  [ruby-dev:42718]
+
+	* parse.y (shadowing_lvar_gen): should not add dvar to vars.
+
+	* parse.y (local_push_gen, local_id_gen, dvar_defined_gen): check
+	  local variable usage for args and vars respectedly.
+
 Tue Dec  7 22:37:15 2010  Masaya Tarui  <tarui@ruby-lnag.org>
 
 	* io.c (io_read): duplicate string if shared. [ruby-dev:42719]

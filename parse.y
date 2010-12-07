@@ -10,7 +10,10 @@
 **********************************************************************/
 
 %{
+#if 0
+}
 
+#endif
 #define YYDEBUG 1
 #define YYERROR_VERBOSE 1
 #define YYSTACK_USE_ALLOCA 0
@@ -91,6 +94,7 @@ typedef VALUE stack_type;
 
 struct vtable {
     ID *tbl;
+    int *line;
     int pos;
     int capa;
     struct vtable *prev;
@@ -99,7 +103,6 @@ struct vtable {
 struct local_vars {
     struct vtable *args;
     struct vtable *vars;
-    struct vtable *used;
     struct local_vars *prev;
 };
 
@@ -122,12 +125,13 @@ vtable_size(const struct vtable *tbl)
 #define VTBL_DEBUG 0
 
 static struct vtable *
-vtable_alloc(struct vtable *prev)
+vtable_alloc(struct vtable *prev, int usage)
 {
     struct vtable *tbl = ALLOC(struct vtable);
     tbl->pos = 0;
     tbl->capa = 8;
     tbl->tbl = ALLOC_N(ID, tbl->capa);
+    tbl->line = usage ? ALLOC_N(int, tbl->capa) : 0;
     tbl->prev = prev;
     if (VTBL_DEBUG) printf("vtable_alloc: %p\n", (void *)tbl);
     return tbl;
@@ -141,23 +145,35 @@ vtable_free(struct vtable *tbl)
         if (tbl->tbl) {
             xfree(tbl->tbl);
         }
+        if (tbl->line) {
+            xfree(tbl->line);
+        }
         xfree(tbl);
     }
 }
 
-static void
-vtable_add(struct vtable *tbl, ID id)
+static int
+vtable_add(struct vtable *tbl, ID id, int line)
 {
+    int idx;
+
     if (!POINTER_P(tbl)) {
         rb_bug("vtable_add: vtable is not allocated (%p)", (void *)tbl);
     }
-    if (VTBL_DEBUG) printf("vtable_add: %p, %s\n", (void *)tbl, rb_id2name(id));
+    if (VTBL_DEBUG)
+	printf("vtable_add: %p, %s, %d\n", (void *)tbl, rb_id2name(id), line);
 
     if (tbl->pos == tbl->capa) {
         tbl->capa = tbl->capa * 2;
         REALLOC_N(tbl->tbl, ID, tbl->capa);
+	if (tbl->line) REALLOC_N(tbl->line, int, tbl->capa);
     }
-    tbl->tbl[tbl->pos++] = id;
+    idx = tbl->pos++;
+    if (tbl->line) {
+	tbl->line[idx] = line;
+    }
+    tbl->tbl[idx] = id;
+    return idx;
 }
 
 static int
@@ -458,8 +474,9 @@ static void dyna_pop_gen(struct parser_params*, const struct vtable *);
 static int dyna_in_block_gen(struct parser_params*);
 #define dyna_in_block() dyna_in_block_gen(parser)
 #define dyna_var(id) local_var(id)
-static int dvar_defined_gen(struct parser_params*,ID);
-#define dvar_defined(id) dvar_defined_gen(parser, id)
+static int dvar_defined_gen(struct parser_params*,ID,int);
+#define dvar_get_defined(id) dvar_defined_gen(parser, id, 0)
+#define dvar_defined(id) dvar_defined_gen(parser, id, 1)
 static int dvar_curr_gen(struct parser_params*,ID);
 #define dvar_curr(id) dvar_curr_gen(parser, id)
 
@@ -606,6 +623,9 @@ static void token_info_pop(struct parser_params*, const char *token);
 #else
 #define token_info_push(token) /* nothing */
 #define token_info_pop(token) /* nothing */
+#endif
+#if 0
+{
 #endif
 %}
 
@@ -8153,7 +8173,7 @@ gettable_gen(struct parser_params *parser, ID id)
 	return NEW_LIT(rb_enc_from_encoding(parser->enc));
     }
     else if (is_local_id(id)) {
-	if (dyna_in_block() && dvar_defined(id)) return NEW_DVAR(id);
+	if (dyna_in_block() && dvar_get_defined(id)) return NEW_DVAR(id);
 	if (local_id(id)) return NEW_LVAR(id);
 	/* method call without arguments */
 	return NEW_VCALL(id);
@@ -8267,10 +8287,6 @@ shadowing_lvar_gen(struct parser_params *parser, ID name)
 	}
 	else if (dvar_defined(name) || local_id(name)) {
 	    rb_warningS("shadowing outer local variable - %s", rb_id2name(name));
-	    vtable_add(lvtbl->vars, name);
-	    if (lvtbl->used) {
-		vtable_add(lvtbl->used, name);
-	    }
 	}
     }
     else {
@@ -8953,22 +8969,20 @@ new_args_gen(struct parser_params *parser, NODE *m, NODE *o, ID r, NODE *p, ID b
 #define LVAR_USED ((ID)1 << (sizeof(ID) * CHAR_BIT - 1))
 
 static void
-warn_unused_var(struct parser_params *parser, struct local_vars *local)
+warn_unused_var(struct parser_params *parser, struct vtable *tbl)
 {
     int i, cnt;
-    ID *v, *u;
+    ID *v;
+    int *u;
 
-    if (!local->used) return;
-    v = local->vars->tbl;
-    u = local->used->tbl;
-    cnt = local->used->pos;
-    if (cnt != local->vars->pos) {
-	rb_bug("local->used->pos != local->vars->pos");
-    }
+    if (!tbl->line) return;
+    v = tbl->tbl;
+    u = tbl->line;
+    cnt = tbl->pos;
     for (i = 0; i < cnt; ++i) {
 	if (!v[i] || (u[i] & LVAR_USED)) continue;
 	if (idUScore == v[i]) continue;
-	rb_compile_warn(ruby_sourcefile, (int)u[i], "assigned but unused variable - %s", rb_id2name(v[i]));
+	rb_compile_warn(ruby_sourcefile, u[i], "assigned but unused variable - %s", rb_id2name(v[i]));
     }
 }
 
@@ -8976,12 +8990,12 @@ static void
 local_push_gen(struct parser_params *parser, int inherit_dvars)
 {
     struct local_vars *local;
+    int usage = !inherit_dvars && RTEST(ruby_verbose);
 
     local = ALLOC(struct local_vars);
     local->prev = lvtbl;
-    local->args = vtable_alloc(0);
-    local->vars = vtable_alloc(inherit_dvars ? DVARS_INHERIT : DVARS_TOPSCOPE);
-    local->used = !inherit_dvars && RTEST(ruby_verbose) ? vtable_alloc(0) : 0;
+    local->args = vtable_alloc(0, usage);
+    local->vars = vtable_alloc(inherit_dvars ? DVARS_INHERIT : DVARS_TOPSCOPE, usage);
     lvtbl = local;
 }
 
@@ -8989,11 +9003,9 @@ static void
 local_pop_gen(struct parser_params *parser)
 {
     struct local_vars *local = lvtbl->prev;
-    if (lvtbl->used) {
-	warn_unused_var(parser, lvtbl);
-	vtable_free(lvtbl->used);
-    }
+    warn_unused_var(parser, lvtbl->args);
     vtable_free(lvtbl->args);
+    warn_unused_var(parser, lvtbl->vars);
     vtable_free(lvtbl->vars);
     xfree(lvtbl);
     lvtbl = local;
@@ -9033,56 +9045,48 @@ local_tbl_gen(struct parser_params *parser)
 static int
 arg_var_gen(struct parser_params *parser, ID id)
 {
-    vtable_add(lvtbl->args, id);
-    return vtable_size(lvtbl->args) - 1;
+    return vtable_add(lvtbl->args, id, ruby_sourceline);
 }
 
 static int
 local_var_gen(struct parser_params *parser, ID id)
 {
-    vtable_add(lvtbl->vars, id);
-    if (lvtbl->used) {
-	vtable_add(lvtbl->used, (ID)ruby_sourceline);
-    }
-    return vtable_size(lvtbl->vars) - 1;
+    return vtable_add(lvtbl->vars, id, ruby_sourceline);
 }
 
 static int
 local_id_gen(struct parser_params *parser, ID id)
 {
-    struct vtable *vars, *args, *used;
+    struct vtable *vars, *args;
+    int i;
 
     vars = lvtbl->vars;
     args = lvtbl->args;
-    used = lvtbl->used;
 
     while (vars && POINTER_P(vars->prev)) {
 	vars = vars->prev;
 	args = args->prev;
-	if (used) used = used->prev;
     }
 
     if (vars && vars->prev == DVARS_INHERIT) {
 	return rb_local_defined(id);
     }
-    else if (vtable_included(args, id)) {
+    else if ((i = vtable_included(args, id)) != 0) {
+	if (args->line) args->line[i-1] |= LVAR_USED;
 	return 1;
     }
-    else {
-	int i = vtable_included(vars, id);
-	if (i && used) used->tbl[i-1] |= LVAR_USED;
-	return i != 0;
+    else if ((i = vtable_included(vars, id)) != 0) {
+	if (vars->line) vars->line[i-1] |= LVAR_USED;
+	return 1;
     }
+    return 0;
 }
 
 static const struct vtable *
 dyna_push_gen(struct parser_params *parser)
 {
-    lvtbl->args = vtable_alloc(lvtbl->args);
-    lvtbl->vars = vtable_alloc(lvtbl->vars);
-    if (lvtbl->used) {
-	lvtbl->used = vtable_alloc(lvtbl->used);
-    }
+    lvtbl->args = vtable_alloc(lvtbl->args, lvtbl->args->line != 0);
+    lvtbl->vars = vtable_alloc(lvtbl->vars, lvtbl->vars->line != 0);
     return lvtbl->args;
 }
 
@@ -9091,16 +9095,13 @@ dyna_pop_1(struct parser_params *parser)
 {
     struct vtable *tmp;
 
-    if ((tmp = lvtbl->used) != 0) {
-	warn_unused_var(parser, lvtbl);
-	lvtbl->used = lvtbl->used->prev;
-	vtable_free(tmp);
-    }
     tmp = lvtbl->args;
-    lvtbl->args = lvtbl->args->prev;
+    lvtbl->args = tmp->prev;
+    warn_unused_var(parser, tmp);
     vtable_free(tmp);
     tmp = lvtbl->vars;
-    lvtbl->vars = lvtbl->vars->prev;
+    lvtbl->vars = tmp->prev;
+    warn_unused_var(parser, tmp);
     vtable_free(tmp);
 }
 
@@ -9125,26 +9126,26 @@ dyna_in_block_gen(struct parser_params *parser)
 }
 
 static int
-dvar_defined_gen(struct parser_params *parser, ID id)
+dvar_defined_gen(struct parser_params *parser, ID id, int new)
 {
-    struct vtable *vars, *args, *used;
-    int i;
+    struct vtable *vars, *args;
+    int i, usage = 1;
 
     args = lvtbl->args;
     vars = lvtbl->vars;
-    used = lvtbl->used;
 
     while (POINTER_P(vars)) {
-	if (vtable_included(args, id)) {
+	if ((i = vtable_included(args, id)) != 0) {
+	    if (usage && args->line) args->line[i-1] |= LVAR_USED;
 	    return 1;
 	}
-	if ((i = vtable_included(vars, id)) != 0) {
-	    if (used) used->tbl[i-1] |= LVAR_USED;
+	else if ((i = vtable_included(vars, id)) != 0) {
+	    if (usage && vars->line) vars->line[i-1] |= LVAR_USED;
 	    return 1;
 	}
 	args = args->prev;
 	vars = vars->prev;
-	if (used) used = used->prev;
+	if (new) usage = 0;
     }
 
     if (vars == DVARS_INHERIT) {
