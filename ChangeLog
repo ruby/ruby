@@ -1,3 +1,7 @@
+Tue Dec  7 22:37:15 2010  Masaya Tarui  <tarui@ruby-lnag.org>
+
+	* io.c (io_read): duplicate string if shared. [ruby-dev:42719]
+
 Tue Dec  7 22:31:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser::Officious): separate completion

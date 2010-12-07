@@ -2212,7 +2212,10 @@ io_read(int argc, VALUE *argv, VALUE io)
     rb_scan_args(argc, argv, "02", &length, &str);
 
     if (NIL_P(length)) {
-	if (!NIL_P(str)) StringValue(str);
+	if (!NIL_P(str)){
+	    StringValue(str);
+	    rb_str_modify(str);
+	}
 	GetOpenFile(io, fptr);
 	rb_io_check_char_readable(fptr);
 	return read_all(fptr, remain_size(fptr), str);
