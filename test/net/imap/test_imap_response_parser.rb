@@ -61,7 +61,7 @@ EOF
 	response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
 * XLIST (\\Inbox) "." "INBOX"
 EOF
-    assert_equal [:Inbox], response.attr.data
+    assert_equal [:Inbox], response.data.attr
   end
 
 
