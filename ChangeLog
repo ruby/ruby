@@ -1,3 +1,8 @@
+Tue Dec  7 18:56:52 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/lib/kconv.rb (String#kconv): fix typo and update rdoc.
+	  patched by Kouhei Yanagita [ruby-dev:42696]
+
 Tue Dec  7 20:32:11 2010  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/test_doctype.rb: add Accessor to test case name.
