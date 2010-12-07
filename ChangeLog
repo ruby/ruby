@@ -1,3 +1,9 @@
+Tue Dec  7 21:06:38 2010  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/doctype.rb, test/rexml/test_doctype.rb: suppress warnings.
+	  [ruby-core:33305]
+	  Reported by Aaron Patterson. Thanks!!!
+
 Tue Dec  7 18:56:52 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/lib/kconv.rb (String#kconv): fix typo and update rdoc.
