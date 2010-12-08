@@ -1,3 +1,10 @@
+Wed Dec  8 21:38:40 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/dl/lib/dl/struct.rb: clean a warning: assigned but unused
+	  variable. patched by Kouhei Yanagita. [ruby-dev:42722]
+
+	* ext/dl/lib/dl/import.rb: ditto.
+
 Wed Dec  8 21:36:16 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (shadowing_lvar_gen): fix line number.  [ruby-dev:42718]
