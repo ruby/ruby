@@ -1,3 +1,9 @@
+Mon Dec  6 22:53:49 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* cygwin/GNUMakefile.in ($(RCFILES)): fixes [ruby-core:33525].
+	  Patch by Luis Lavena <luislavena AT gmail.com>.
+	  http://groups.google.com/group/rubyinstaller/browse_thread/thread/412abfdcb695aecb
+
 Mon Dec  6 22:28:41 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* string.c (rb_str_concat): partially reverts r30040 because
