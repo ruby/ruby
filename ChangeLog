@@ -1,3 +1,8 @@
+Fri Nov  5 00:14:15 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/fiddle/extconf.rb: fixing ffi library location on windows.
+	  Thanks Usa! [ruby-core:32930]
+
 Wed Nov  3 14:13:46 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_enc_cr_str_buf_cat): concatenation of valid
