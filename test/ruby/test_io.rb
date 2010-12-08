@@ -22,14 +22,76 @@ class TestIO < Test::Unit::TestCase
     IO.method_defined?("nonblock=")
   end
 
+  def pipe(wp, rp)
+    re, we = nil, nil
+    r, w = IO.pipe
+    rt = Thread.new do
+      begin
+        rp.call(r)
+      rescue Exception
+        r.close
+        re = $!
+      end
+    end
+    wt = Thread.new do
+      begin
+        wp.call(w)
+      rescue Exception
+        w.close
+        we = $!
+      end
+    end
+    flunk("timeout") unless wt.join(10) && rt.join(10)
+  ensure
+    w.close unless !w || w.closed?
+    r.close unless !r || r.closed?
+    (wt.kill; wt.join) if wt
+    (rt.kill; rt.join) if rt
+    raise we if we
+    raise re if re
+  end
+
+  def with_pipe
+    r, w = IO.pipe
+    begin
+      yield r, w
+    ensure
+      r.close unless r.closed?
+      w.close unless w.closed?
+    end
+  end
+
+  def with_read_pipe(content)
+    pipe(proc do |w|
+      w << content
+      w.close
+    end, proc do |r|
+      yield r
+    end)
+  end
+
+  def mkcdtmpdir
+    Dir.mktmpdir {|d|
+      Dir.chdir(d) {
+        yield
+      }
+    }
+  end
+
   def test_pipe
     r, w = IO.pipe
     assert_instance_of(IO, r)
     assert_instance_of(IO, w)
-    w.print "abc"
-    w.close
-    assert_equal("abc", r.read)
-    r.close
+    [
+      Thread.start{
+        w.print "abc"
+        w.close
+      },
+      Thread.start{
+        assert_equal("abc", r.read)
+        r.close
+      }
+    ].each{|thr| thr.join}
   end
 
   def test_pipe_block
@@ -38,9 +100,15 @@ class TestIO < Test::Unit::TestCase
       x = [r,w]
       assert_instance_of(IO, r)
       assert_instance_of(IO, w)
-      w.print "abc"
-      w.close
-      assert_equal("abc", r.read)
+      [
+        Thread.start do
+          w.print "abc"
+          w.close
+        end,
+        Thread.start do
+          assert_equal("abc", r.read)
+        end
+      ].each{|thr| thr.join}
       assert(!r.closed?)
       assert(w.closed?)
       :foooo
@@ -65,58 +133,66 @@ class TestIO < Test::Unit::TestCase
 
   def test_gets_rs
     # default_rs
-    r, w = IO.pipe
-    w.print "aaa\nbbb\n"
-    w.close
-    assert_equal "aaa\n", r.gets
-    assert_equal "bbb\n", r.gets
-    assert_nil r.gets
-    r.close
+    pipe(proc do |w|
+      w.print "aaa\nbbb\n"
+      w.close
+    end, proc do |r|
+      assert_equal "aaa\n", r.gets
+      assert_equal "bbb\n", r.gets
+      assert_nil r.gets
+      r.close
+    end)
 
     # nil
-    r, w = IO.pipe
-    w.print "a\n\nb\n\n"
-    w.close
-    assert_equal "a\n\nb\n\n", r.gets(nil)
-    assert_nil r.gets("")
-    r.close
+    pipe(proc do |w|
+      w.print "a\n\nb\n\n"
+      w.close
+    end, proc do |r|
+      assert_equal "a\n\nb\n\n", r.gets(nil)
+      assert_nil r.gets("")
+      r.close
+    end)
 
     # "\377"
-    r, w = IO.pipe('ascii-8bit')
-    w.print "\377xyz"
-    w.close
-    r.binmode
-    assert_equal("\377", r.gets("\377"), "[ruby-dev:24460]")
-    r.close
+    pipe(proc do |w|
+      w.print "\377xyz"
+      w.close
+    end, proc do |r|
+      r.binmode
+      assert_equal("\377", r.gets("\377"), "[ruby-dev:24460]")
+      r.close
+    end)
 
     # ""
-    r, w = IO.pipe
-    w.print "a\n\nb\n\n"
-    w.close
-    assert_equal "a\n\n", r.gets(""), "[ruby-core:03771]"
-    assert_equal "b\n\n", r.gets("")
-    assert_nil r.gets("")
-    r.close
+    pipe(proc do |w|
+      w.print "a\n\nb\n\n"
+      w.close
+    end, proc do |r|
+      assert_equal "a\n\n", r.gets(""), "[ruby-core:03771]"
+      assert_equal "b\n\n", r.gets("")
+      assert_nil r.gets("")
+      r.close
+    end)
   end
 
   def test_gets_limit_extra_arg
-    with_pipe {|r, w|
-      r, w = IO.pipe
+    pipe(proc do |w|
       w << "0123456789\n0123456789"
       w.close
+    end, proc do |r|
       assert_equal("0123456789\n0", r.gets(nil, 12))
       assert_raise(TypeError) { r.gets(3,nil) }
-    }
+    end)
   end
 
   # This test cause SEGV.
   def test_ungetc
-    r, w = IO.pipe
-    w.close
-    s = "a" * 1000
-    assert_raise(IOError, "[ruby-dev:31650]") { 200.times { r.ungetc s } }
-  ensure
-    r.close
+    pipe(proc do |w|
+      w.close
+    end, proc do |r|
+      s = "a" * 1000
+      assert_raise(IOError, "[ruby-dev:31650]") { 200.times { r.ungetc s } }
+    end)
   end
 
   def test_ungetbyte
@@ -142,13 +218,13 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_each_byte
-    r, w = IO.pipe
-    w << "abc def"
-    w.close
-    r.each_byte {|byte| break if byte == 32 }
-    assert_equal("def", r.read, "[ruby-dev:31659]")
-  ensure
-    r.close
+    pipe(proc do |w|
+      w << "abc def"
+      w.close
+    end, proc do |r|
+      r.each_byte {|byte| break if byte == 32 }
+      assert_equal("def", r.read, "[ruby-dev:31659]")
+    end)
   end
 
   def test_each_codepoint
@@ -168,35 +244,6 @@ class TestIO < Test::Unit::TestCase
     assert_raise(Errno::ENOENT, "[ruby-dev:33072]") do
       File.read(path, nil, nil, {})
     end
-  end
-
-  def with_pipe
-    r, w = IO.pipe
-    begin
-      yield r, w
-    ensure
-      r.close unless r.closed?
-      w.close unless w.closed?
-    end
-  end
-
-  def with_read_pipe(content)
-    r, w = IO.pipe
-    w << content
-    w.close
-    begin
-      yield r
-    ensure
-      r.close
-    end
-  end
-
-  def mkcdtmpdir
-    Dir.mktmpdir {|d|
-      Dir.chdir(d) {
-        yield
-      }
-    }
   end
 
   def test_copy_stream
@@ -235,12 +282,13 @@ class TestIO < Test::Unit::TestCase
         IO.copy_stream("src", "nodir/bar")
       }
 
-      with_pipe {|r, w|
+      pipe(proc do |w|
         ret = IO.copy_stream("src", w)
         assert_equal(content.bytesize, ret)
         w.close
+      end, proc do |r|
         assert_equal(content, r.read)
-      }
+      end)
 
       with_pipe {|r, w|
         w.close
@@ -256,77 +304,85 @@ class TestIO < Test::Unit::TestCase
 
       with_read_pipe("abc") {|r1|
         assert_equal("a", r1.getc)
-        with_pipe {|r2, w2|
+        pipe(proc do |w2|
           w2.sync = false
           w2 << "def"
           ret = IO.copy_stream(r1, w2)
           assert_equal(2, ret)
           w2.close
+        end, proc do |r2|
           assert_equal("defbc", r2.read)
-        }
+        end)
       }
 
       with_read_pipe("abc") {|r1|
         assert_equal("a", r1.getc)
-        with_pipe {|r2, w2|
+        pipe(proc do |w2|
           w2.sync = false
           w2 << "def"
           ret = IO.copy_stream(r1, w2, 1)
           assert_equal(1, ret)
           w2.close
+        end, proc do |r2|
           assert_equal("defb", r2.read)
-        }
+        end)
       }
 
       with_read_pipe("abc") {|r1|
         assert_equal("a", r1.getc)
-        with_pipe {|r2, w2|
+        pipe(proc do |w2|
           ret = IO.copy_stream(r1, w2)
           assert_equal(2, ret)
           w2.close
+        end, proc do |r2|
           assert_equal("bc", r2.read)
-        }
+        end)
       }
 
       with_read_pipe("abc") {|r1|
         assert_equal("a", r1.getc)
-        with_pipe {|r2, w2|
+        pipe(proc do |w2|
           ret = IO.copy_stream(r1, w2, 1)
           assert_equal(1, ret)
           w2.close
+        end, proc do |r2|
           assert_equal("b", r2.read)
-        }
+        end)
       }
 
       with_read_pipe("abc") {|r1|
         assert_equal("a", r1.getc)
-        with_pipe {|r2, w2|
+        pipe(proc do |w2|
           ret = IO.copy_stream(r1, w2, 0)
           assert_equal(0, ret)
           w2.close
+        end, proc do |r2|
           assert_equal("", r2.read)
-        }
+        end)
       }
 
-      with_pipe {|r1, w1|
+      pipe(proc do |w1|
         w1 << "abc"
+        w1 << "def"
+        w1.close
+      end, proc do |r1|
         assert_equal("a", r1.getc)
-        with_pipe {|r2, w2|
-          w1 << "def"
-          w1.close
+        pipe(proc do |w2|
           ret = IO.copy_stream(r1, w2)
           assert_equal(5, ret)
           w2.close
+        end, proc do |r2|
           assert_equal("bcdef", r2.read)
-        }
-      }
+        end)
+      end)
 
-      with_pipe {|r, w|
+      pipe(proc do |w|
         ret = IO.copy_stream("src", w, 1, 1)
         assert_equal(1, ret)
         w.close
+      end, proc do |r|
         assert_equal(content[1,1], r.read)
-      }
+      end)
 
       if have_nonblock?
         with_read_pipe("abc") {|r1|
@@ -433,15 +489,16 @@ class TestIO < Test::Unit::TestCase
   def test_copy_stream_rbuf
     mkcdtmpdir {
       begin
-        with_pipe {|r, w|
+        pipe(proc do |w|
           File.open("foo", "w") {|f| f << "abcd" }
           File.open("foo") {|f|
             f.read(1)
             assert_equal(3, IO.copy_stream(f, w, 10, 1))
           }
           w.close
+        end, proc do |r|
           assert_equal("bcd", r.read)
-        }
+        end)
       rescue NotImplementedError
         skip "pread(2) is not implemtented."
       end
@@ -695,19 +752,20 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_copy_stream_strio_rbuf
-    with_pipe {|r, w|
+    pipe(proc do |w|
       w << "abcd"
       w.close
+    end, proc do |r|
       assert_equal("a", r.read(1))
       sio = StringIO.new
       IO.copy_stream(r, sio)
       assert_equal("bcd", sio.string)
-    }
+    end)
   end
 
   def test_copy_stream_src_wbuf
     mkcdtmpdir {
-      with_pipe {|r, w|
+      pipe(proc do |w|
         File.open("foe", "w+") {|f|
           f.write "abcd\n"
           f.rewind
@@ -716,17 +774,19 @@ class TestIO < Test::Unit::TestCase
         }
         assert_equal("xycd\n", File.read("foe"))
         w.close
+      end, proc do |r|
         assert_equal("cd\n", r.read)
         r.close
-      }
+      end)
     }
   end
 
   def test_copy_stream_dst_rbuf
     mkcdtmpdir {
-      with_pipe {|r, w|
+      pipe(proc do |w|
         w << "xyz"
         w.close
+      end, proc do |r|
         File.open("fom", "w+b") {|f|
           f.write "abcd\n"
           f.rewind
@@ -735,7 +795,7 @@ class TestIO < Test::Unit::TestCase
           IO.copy_stream(r, f)
         }
         assert_equal("abxyz", File.read("fom"))
-      }
+      end)
     }
   end
 
@@ -748,18 +808,6 @@ class TestIO < Test::Unit::TestCase
       t.kill
       flunk("timeout in safe_4")
     end
-  end
-
-  def pipe(wp, rp)
-    r, w = IO.pipe
-    rt = Thread.new { rp.call(r) }
-    wt = Thread.new { wp.call(w) }
-    flunk("timeout") unless rt.join(10) && wt.join(10)
-  ensure
-    r.close unless !r || r.closed?
-    w.close unless !w || w.closed?
-    (rt.kill; rt.join) if rt
-    (wt.kill; wt.join) if wt
   end
 
   def ruby(*args)

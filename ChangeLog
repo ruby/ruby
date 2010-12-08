@@ -1,3 +1,24 @@
+Wed Oct 27 18:27:17 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_io.rb (TestIO#pipe): should close write end of pipe
+	  before closing read end, to get rid of timing problem.
+
+	* test/ruby/test_io_m17n.rb (TestIO_M17N#pipe): ditto.
+
+Wed Oct 27 13:51:25 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_io.rb (TestIO#pipe): need to propagate exceptions
+	  in read/write thread. fix r29541.
+
+	* test/ruby/test_io_m17n.rb (TestIO_M17N#pipe): ditto.
+
+Thu Oct 21 00:05:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_io.rb (TestIO#pipe): get rid of deadlock on pipe.
+	  a patch from Tomoyuki Chikanaga at [ruby-dev:42435].  #3970
+
+	* test/ruby/test_io_m17n.rb (TestIO_M17N#pipe): ditto.
+
 Mon Oct 18 10:19:00 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http.rb (transport_request): @socket may be nil.
