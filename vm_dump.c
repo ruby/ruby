@@ -796,12 +796,12 @@ rb_vm_bugreport(void)
 	static void *trace[MAX_NATIVE_TRACE];
 	int n = backtrace(trace, MAX_NATIVE_TRACE);
 	char **syms = backtrace_symbols(trace, n);
-	int i;
 
 	if (syms) {
 #ifdef __ELF__
 	    rb_dump_backtrace_with_lines(n, trace, syms);
 #else
+	    int i;
 	    for (i=0; i<n; i++) {
 		fprintf(stderr, "%s\n", syms[i]);
 	    }
