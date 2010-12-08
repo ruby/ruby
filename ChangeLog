@@ -1,3 +1,8 @@
+Mon Nov 15 22:47:27 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* vm_eval.c (rb_funcall): ensure va_end after va_init_list.  Coverity
+	  Scan found this bug.
+
 Mon Nov 15 06:43:48 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* etc/openssl/ossl_ssl.c (ossl_ssl_get_cert): raise exception if
