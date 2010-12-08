@@ -758,7 +758,7 @@ $(REVISION_H): $(srcdir)/version.h $(srcdir)/ChangeLog $(srcdir)/tool/file2lastr
 	@$(IFCHANGE) "--timestamp=$@" "$(srcdir)/revision.h" "$(srcdir)/revision.tmp"
 
 $(EXT_SRCS):
-	$(CHDIR) $(@D) && $(exec) $(MAKE) -f depend $(MFLAGS) top_srcdir=../.. srcdir=.
+	$(CHDIR) $(@D) && $(exec) $(MAKE) -f depend $(MFLAGS) top_srcdir=../.. srcdir=. RUBY=$(BASERUBY)
 
 ##
 
