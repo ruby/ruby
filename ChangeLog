@@ -1,3 +1,9 @@
+Wed Nov  3 14:13:46 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_enc_cr_str_buf_cat): concatenation of valid
+	  encoding string and invalid encoding string should result
+	  invalid encoding.  [ruby-core:33027]
+
 Wed Nov  3 07:47:25 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/irb/ruby-lex.rb (RubyLex#identify_string): parse multiple

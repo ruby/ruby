@@ -1884,7 +1884,10 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
     }
     else if (str_cr == ENC_CODERANGE_VALID) {
         res_encindex = str_encindex;
-        res_cr = str_cr;
+	if (ptr_cr == ENC_CODERANGE_7BIT || ptr_cr == ENC_CODERANGE_VALID)
+	    res_cr = str_cr;
+	else
+	    res_cr = ptr_cr;
     }
     else { /* str_cr == ENC_CODERANGE_BROKEN */
         res_encindex = str_encindex;
