@@ -1,3 +1,8 @@
+Wed Nov  3 07:47:25 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/irb/ruby-lex.rb (RubyLex#identify_string): parse multiple
+	  regex options.  a patch from Heesob Park in [ruby-core:32988].
+
 Sat Oct 30 06:32:52 2010  Tanaka Akira  <akr@fsij.org>
 
 	* test/pathname/test_pathname.rb (TestPathname#test_grpowned?): the
