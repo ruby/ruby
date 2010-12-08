@@ -1,3 +1,7 @@
+Wed Dec  8 21:36:16 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (shadowing_lvar_gen): fix line number.  [ruby-dev:42718]
+
 Wed Dec  8 20:37:11 2010  Tanaka Akira  <akr@fsij.org>
 
 	* dir.c: parenthesize macro arguments.
