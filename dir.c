@@ -72,7 +72,7 @@ char *strchr(char*,char);
 #undef chdir
 #define chdir(p) rb_w32_uchdir(p)
 #undef mkdir
-#define mkdir(p, m) rb_w32_umkdir(p, m)
+#define mkdir(p, m) rb_w32_umkdir((p), (m))
 #undef rmdir
 #define rmdir(p) rb_w32_urmdir(p)
 #endif
@@ -90,8 +90,8 @@ char *strchr(char*,char);
 #define FNM_NOMATCH	1
 #define FNM_ERROR	2
 
-# define Next(p, e, enc) (p + rb_enc_mbclen(p, e, enc))
-# define Inc(p, e, enc) ((p) = Next(p, e, enc))
+# define Next(p, e, enc) ((p)+ rb_enc_mbclen((p), (e), (enc)))
+# define Inc(p, e, enc) ((p) = Next((p), (e), (enc)))
 
 static char *
 bracket(
@@ -353,9 +353,9 @@ static VALUE dir_close(VALUE);
 
 #define GlobPathValue(str, safe) \
     /* can contain null bytes as separators */	\
-    (!RB_TYPE_P(str, T_STRING) ?		\
+    (!RB_TYPE_P((str), T_STRING) ?		\
      (void)FilePathValue(str) :			\
-     (void)(check_safe_glob(str, safe),		\
+     (void)(check_safe_glob((str), (safe)),		\
       check_glob_encoding(str), (str)))
 #define check_safe_glob(str, safe) ((safe) ? rb_check_safe_obj(str) : (void)0)
 #define check_glob_encoding(str) rb_enc_check((str), rb_enc_from_encoding(rb_usascii_encoding()))
@@ -466,7 +466,7 @@ dir_check(VALUE dir)
     return dirp;
 }
 
-#define GetDIR(obj, dirp) (dirp = dir_check(obj))
+#define GetDIR(obj, dirp) ((dirp) = dir_check(obj))
 
 
 /*
@@ -508,11 +508,11 @@ dir_path(VALUE dir)
 }
 
 #if defined HAVE_READDIR_R
-# define READDIR(dir, enc, entry, dp) (readdir_r(dir, entry, &(dp)) == 0 && dp != 0)
+# define READDIR(dir, enc, entry, dp) (readdir_r((dir), (entry), &(dp)) == 0 && (dp) != 0)
 #elif defined _WIN32
-# define READDIR(dir, enc, entry, dp) ((dp = rb_w32_readdir_with_enc(dir, enc)) != 0)
+# define READDIR(dir, enc, entry, dp) (((dp) = rb_w32_readdir_with_enc((dir), (enc))) != 0)
 #else
-# define READDIR(dir, enc, entry, dp) ((dp = readdir(dir)) != 0)
+# define READDIR(dir, enc, entry, dp) (((dp) = readdir(dir)) != 0)
 #endif
 #if defined HAVE_READDIR_R
 # define IF_HAVE_READDIR_R(something) something
@@ -997,10 +997,10 @@ sys_warning_1(VALUE mesg)
 #define sys_warning(val) \
     (void)((flags & GLOB_VERBOSE) && rb_protect(sys_warning_1, (VALUE)(val), 0))
 
-#define GLOB_ALLOC(type) (type *)malloc(sizeof(type))
-#define GLOB_ALLOC_N(type, n) (type *)malloc(sizeof(type) * (n))
+#define GLOB_ALLOC(type) ((type *)malloc(sizeof(type)))
+#define GLOB_ALLOC_N(type, n) ((type *)malloc(sizeof(type) * (n)))
 #define GLOB_FREE(ptr) free(ptr)
-#define GLOB_JUMP_TAG(status) ((status == -1) ? rb_memerror() : rb_jump_tag(status))
+#define GLOB_JUMP_TAG(status) (((status) == -1) ? rb_memerror() : rb_jump_tag(status))
 
 /*
  * ENOTDIR can be returned by stat(2) if a non-leaf element of the path
@@ -1240,14 +1240,14 @@ join_path(const char *path, int dirsep, const char *name)
 enum answer { YES, NO, UNKNOWN };
 
 #ifndef S_ISDIR
-#   define S_ISDIR(m) ((m & S_IFMT) == S_IFDIR)
+#   define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
 #endif
 
 #ifndef S_ISLNK
 #  ifndef S_IFLNK
 #    define S_ISLNK(m) (0)
 #  else
-#    define S_ISLNK(m) ((m & S_IFMT) == S_IFLNK)
+#    define S_ISLNK(m) (((m) & S_IFMT) == S_IFLNK)
 #  endif
 #endif
 
@@ -1267,7 +1267,7 @@ glob_func_caller(VALUE val)
     return Qnil;
 }
 
-#define glob_call_func(func, path, arg, enc) (*func)(path, arg, enc)
+#define glob_call_func(func, path, arg, enc) (*(func))((path), (arg), (enc))
 
 static int
 glob_helper(

@@ -1,3 +1,7 @@
+Wed Dec  8 20:37:11 2010  Tanaka Akira  <akr@fsij.org>
+
+	* dir.c: parenthesize macro arguments.
+
 Tue Dec  7 22:37:15 2010  Masaya Tarui  <tarui@ruby-lnag.org>
 
 	* io.c (io_read): duplicate string if shared. [ruby-dev:42719]
@@ -80,7 +84,7 @@ Tue Dec  7 08:00:44 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* win32/Makefile.sub (WARNFLAGS): make declaration conflict
 	  warnings errors if possible.
 
-Sun Dec  5 10:32:11 2010  Tanaka Akira  <akr@fsij.org>
+Sun Dec  7 21:16:10 2010  Tanaka Akira  <akr@fsij.org>
 
 	* cont.c: parenthesize macro arguments.
 
