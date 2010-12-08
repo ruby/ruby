@@ -1,3 +1,7 @@
+Fri Oct 29 03:04:16 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_dump): fix expected length. [ruby-core:32935]
+
 Thu Oct 21 15:42:01 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/telnet.rb (Net::Telnet#close): added.

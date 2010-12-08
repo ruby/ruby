@@ -4263,12 +4263,11 @@ rb_str_dump(VALUE str)
 	    }
 	    else {
 		if (u8) {	/* \u{NN} */
-		    char buf[32];
 		    int n = rb_enc_precise_mbclen(p-1, pend, enc);
-		    if (MBCLEN_CHARFOUND_P(n)) {
-			int cc = rb_enc_mbc_to_codepoint(p-1, pend, enc);
-			sprintf(buf, "%x", cc);
-			len += strlen(buf)+4;
+		    if (MBCLEN_CHARFOUND_P(n-1)) {
+			unsigned int cc = rb_enc_mbc_to_codepoint(p-1, pend, enc);
+			while (cc >>= 4) len++;
+			len += 5;
 			p += MBCLEN_CHARFOUND_LEN(n)-1;
 			break;
 		    }
