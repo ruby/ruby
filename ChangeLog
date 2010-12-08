@@ -1,3 +1,8 @@
+Mon Dec  6 22:28:41 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* string.c (rb_str_concat): partially reverts r30040 because
+	  it unpexpectedly changes the behavior of String#<<.
+
 Fri Nov  5 00:14:15 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/fiddle/extconf.rb: fixing ffi library location on windows.

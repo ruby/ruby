@@ -1998,14 +1998,23 @@ rb_str_concat(VALUE str1, VALUE str2)
     unsigned int lc;
 
     if (FIXNUM_P(str2)) {
+	if ((int)str2 < 0)
+	    rb_raise(rb_eRangeError, "negative argument");
 	lc = FIX2UINT(str2);
     }
     else if (TYPE(str2) == T_BIGNUM) {
+	if (!RBIGNUM_SIGN(str2))
+	    rb_raise(rb_eRangeError, "negative argument");
 	lc = NUM2UINT(str2);
     }
     else {
 	return rb_str_append(str1, str2);
     }
+#if SIZEOF_INT < SIZEOF_VALUE
+    if ((VALUE)lc > UINT_MAX) {
+	rb_raise(rb_eRangeError, "%"PRIuVALUE" out of char range", lc);
+    }
+#endif
     {
 	rb_encoding *enc = STR_ENC_GET(str1);
 	long pos = RSTRING_LEN(str1);
