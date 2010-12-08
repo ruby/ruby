@@ -1,3 +1,8 @@
+Mon Oct 18 10:19:00 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http.rb (transport_request): @socket may be nil.
+	  patched by Egbert Eich [ruby-core:32829]
+
 Sun Oct 17 10:40:17 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (rb_define_{class,module}_id_under): register to be

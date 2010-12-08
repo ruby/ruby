@@ -1189,7 +1189,7 @@ module Net   #:nodoc:
       res
     rescue => exception
       D "Conn close because of error #{exception}"
-      @socket.close unless @socket.closed?
+      @socket.close if @socket and not @socket.closed?
       raise exception
     end
 
