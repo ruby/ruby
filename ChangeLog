@@ -1,3 +1,8 @@
+Mon Nov 15 06:43:48 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* etc/openssl/ossl_ssl.c (ossl_ssl_get_cert): raise exception if
+	  pointer is invalid.  Thanks Ippei Obayashi! [ruby-dev:42573]
+
 Mon Dec  6 22:53:49 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* cygwin/GNUMakefile.in ($(RCFILES)): fixes [ruby-core:33525].

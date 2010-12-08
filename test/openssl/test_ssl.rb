@@ -160,6 +160,12 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
     assert_equal(ctx.setup, nil)
   end
 
+  def test_not_started_session
+    open(__FILE__) do |f|
+      assert_nil OpenSSL::SSL::SSLSocket.new(f).cert
+    end
+  end
+
   def test_ssl_read_nonblock
     start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true) { |server, port|
       sock = TCPSocket.new("127.0.0.1", port)
