@@ -511,17 +511,6 @@ ossl_x509stctx_get_curr_crl(VALUE self)
 }
 
 static VALUE
-ossl_x509stctx_cleanup(VALUE self)
-{
-    X509_STORE_CTX *ctx;
-
-    GetX509StCtx(self, ctx);
-    X509_STORE_CTX_cleanup(ctx);
-
-    return self;
-}
-
-static VALUE
 ossl_x509stctx_set_flags(VALUE self, VALUE flags)
 {
     X509_STORE_CTX *store;
@@ -615,7 +604,6 @@ Init_ossl_x509store()
     rb_define_method(x509stctx,"error_depth", ossl_x509stctx_get_err_depth, 0);
     rb_define_method(x509stctx,"current_cert",ossl_x509stctx_get_curr_cert, 0);
     rb_define_method(x509stctx,"current_crl", ossl_x509stctx_get_curr_crl, 0);
-    rb_define_method(x509stctx,"cleanup",     ossl_x509stctx_cleanup, 0);
     rb_define_method(x509stctx,"flags=",      ossl_x509stctx_set_flags, 1);
     rb_define_method(x509stctx,"purpose=",    ossl_x509stctx_set_purpose, 1);
     rb_define_method(x509stctx,"trust=",      ossl_x509stctx_set_trust, 1);

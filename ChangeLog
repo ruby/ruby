@@ -1,3 +1,12 @@
+Fri Dec 10 02:18:02 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/openssl/ossl_x509store.c (ossl_x509stctx_cleanup): removing C
+	  implementation of `cleanup`.
+
+	* ext/openssl/lib/openssl/x509.rb: adding ruby implementation of
+	  `cleanup`.  OpenSSL::X509::StoreContext#cleanup is deprecated since
+	  reusing the underlying struct doesn't make sense. [ruby-dev:42546]
+
 Thu Dec  9 20:14:39 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (lvar_defined_gen, shadowing_lvar_gen, dvar_defined): no

@@ -22,6 +22,14 @@ class OpenSSL::TestX509Store < Test::Unit::TestCase
   def teardown
   end
 
+  def test_nosegv_on_cleanup
+    cert  = OpenSSL::X509::Certificate.new
+    store = OpenSSL::X509::Store.new
+    ctx   = OpenSSL::X509::StoreContext.new(store, cert, [])
+    ctx.cleanup
+    ctx.verify
+  end
+
   def issue_cert(*args)
     OpenSSL::TestUtils.issue_cert(*args)
   end
