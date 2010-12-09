@@ -57,7 +57,7 @@ void *xrealloc();
 #include <sys/stat.h>
 
 #ifndef S_ISDIR
-#   define S_ISDIR(m) ((m & S_IFMT) == S_IFDIR)
+#   define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
 #endif
 
 #ifdef HAVE_SYS_PARAM_H
@@ -137,7 +137,7 @@ init_funcname_len(const char **file)
 static const char funcname_prefix[sizeof(FUNCNAME_PREFIX) - 1] = FUNCNAME_PREFIX;
 
 #define init_funcname(buf, file) do {\
-    const char *base = file;\
+    const char *base = (file);\
     const size_t flen = init_funcname_len(&base);\
     const size_t plen = sizeof(funcname_prefix);\
     char *const tmp = ALLOCA_N(char, plen+flen+1);\
@@ -147,7 +147,7 @@ static const char funcname_prefix[sizeof(FUNCNAME_PREFIX) - 1] = FUNCNAME_PREFIX
     memcpy(tmp, funcname_prefix, plen);\
     memcpy(tmp+plen, base, flen);\
     tmp[plen+flen] = '\0';\
-    *buf = tmp;\
+    *(buf) = tmp;\
 } while (0)
 
 #ifdef USE_DLN_A_OUT
@@ -1132,7 +1132,7 @@ dln_strerror(char *message, size_t size)
 
 #define format_message(sublang) FormatMessage(\
 	FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,	\
-	NULL, error, MAKELANGID(LANG_NEUTRAL, sublang),			\
+	NULL, error, MAKELANGID(LANG_NEUTRAL, (sublang)),		\
 	message + len, size - len, NULL)
     if (format_message(SUBLANG_ENGLISH_US) == 0)
 	format_message(SUBLANG_DEFAULT);
@@ -1180,7 +1180,7 @@ aix_loaderror(const char *pathname)
 {
   char *message[1024], errbuf[1024];
   int i;
-#define ERRBUF_APPEND(s) strncat(errbuf, s, sizeof(errbuf)-strlen(errbuf)-1)
+#define ERRBUF_APPEND(s) strncat(errbuf, (s), sizeof(errbuf)-strlen(errbuf)-1)
   snprintf(errbuf, sizeof(errbuf), "load failed - %s. ", pathname);
 
   if (loadquery(L_GETMESSAGES, &message[0], sizeof(message)) != -1) {
@@ -1237,7 +1237,7 @@ rb_w32_check_imported(HMODULE ext, HMODULE mine)
 	do { \
 	    *p++ = ((c = *file++) == '/') ? DLN_NEEDS_ALT_SEPARATOR : c; \
 	} while (c); \
-	src = tmp; \
+	(src) = tmp; \
     } while (0)
 #else
 #define translit_separator(str) (void)(str)
