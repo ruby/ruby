@@ -458,8 +458,9 @@ static void dyna_pop_gen(struct parser_params*, const struct vtable *);
 static int dyna_in_block_gen(struct parser_params*);
 #define dyna_in_block() dyna_in_block_gen(parser)
 #define dyna_var(id) local_var(id)
-static int dvar_defined_gen(struct parser_params*,ID);
-#define dvar_defined(id) dvar_defined_gen(parser, id)
+static int dvar_defined_gen(struct parser_params*,ID,int);
+#define dvar_defined(id) dvar_defined_gen(parser, id, 0)
+#define dvar_defined_get(id) dvar_defined_gen(parser, id, 1)
 static int dvar_curr_gen(struct parser_params*,ID);
 #define dvar_curr(id) dvar_curr_gen(parser, id)
 
@@ -6194,7 +6195,7 @@ formal_argument_gen(struct parser_params *parser, ID lhs)
 static int
 lvar_defined_gen(struct parser_params *parser, ID id)
 {
-    return (dyna_in_block() && dvar_defined(id)) || local_id(id);
+    return (dyna_in_block() && dvar_defined_get(id)) || local_id(id);
 }
 
 /* emacsen -*- hack */
@@ -8257,6 +8258,8 @@ assignable_gen(struct parser_params *parser, ID id, NODE *val)
 #undef parser_yyerror
 }
 
+#define LVAR_USED ((int)1 << (sizeof(int) * CHAR_BIT - 1))
+
 static ID
 shadowing_lvar_gen(struct parser_params *parser, ID name)
 {
@@ -8265,11 +8268,11 @@ shadowing_lvar_gen(struct parser_params *parser, ID name)
 	if (dvar_curr(name)) {
 	    yyerror("duplicated argument name");
 	}
-	else if (dvar_defined(name) || local_id(name)) {
+	else if (dvar_defined_get(name) || local_id(name)) {
 	    rb_warningS("shadowing outer local variable - %s", rb_id2name(name));
 	    vtable_add(lvtbl->vars, name);
 	    if (lvtbl->used) {
-		vtable_add(lvtbl->used, (ID)ruby_sourceline);
+		vtable_add(lvtbl->used, (ID)ruby_sourceline | LVAR_USED);
 	    }
 	}
     }
@@ -8950,8 +8953,6 @@ new_args_gen(struct parser_params *parser, NODE *m, NODE *o, ID r, NODE *p, ID b
 }
 #endif /* !RIPPER */
 
-#define LVAR_USED ((int)1 << (sizeof(int) * CHAR_BIT - 1))
-
 static void
 warn_unused_var(struct parser_params *parser, struct local_vars *local)
 {
@@ -9125,7 +9126,7 @@ dyna_in_block_gen(struct parser_params *parser)
 }
 
 static int
-dvar_defined_gen(struct parser_params *parser, ID id)
+dvar_defined_gen(struct parser_params *parser, ID id, int get)
 {
     struct vtable *vars, *args, *used;
     int i;
@@ -9144,6 +9145,7 @@ dvar_defined_gen(struct parser_params *parser, ID id)
 	}
 	args = args->prev;
 	vars = vars->prev;
+	if (get) used = 0;
 	if (used) used = used->prev;
     }
 

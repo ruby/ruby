@@ -1,3 +1,9 @@
+Thu Dec  9 20:14:39 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (lvar_defined_gen, shadowing_lvar_gen, dvar_defined): no
+	  warnings for unused method and block arguments.
+	  [ruby-dev:42718] [ruby-dev:42724]
+
 Thu Dec  9 19:25:49 2010  Tanaka Akira  <akr@fsij.org>
 
 	* dln.c: parenthesize macro arguments.
