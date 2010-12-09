@@ -74,6 +74,8 @@ with all sufficient information, see the ChangeLog file.
 * webrick
   * new method:
     * WEBrick::HTTPRequest#continue for generating '100 continue' response.
+  * new logging directive:
+    * %{remote}p for remote (client) port number.
 
 * uri
   * new methods:
