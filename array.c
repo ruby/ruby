@@ -1527,22 +1527,12 @@ rb_ary_empty_p(VALUE ary)
     return Qfalse;
 }
 
-static VALUE
-rb_ary_dup_setup(VALUE ary)
-{
-    VALUE dup = rb_ary_new2(RARRAY_LEN(ary));
-    int is_embed = ARY_EMBED_P(dup);
-    DUPSETUP(dup, ary);
-    if (is_embed) FL_SET_EMBED(dup);
-    ARY_SET_LEN(dup, RARRAY_LEN(ary));
-    return dup;
-}
-
 VALUE
 rb_ary_dup(VALUE ary)
 {
-    VALUE dup = rb_ary_dup_setup(ary);
+    VALUE dup = rb_ary_new2(RARRAY_LEN(ary));
     MEMCPY(RARRAY_PTR(dup), RARRAY_PTR(ary), VALUE, RARRAY_LEN(ary));
+    ARY_SET_LEN(dup, RARRAY_LEN(ary));
     return dup;
 }
 
@@ -1830,14 +1820,15 @@ rb_ary_reverse_bang(VALUE ary)
 static VALUE
 rb_ary_reverse_m(VALUE ary)
 {
-    VALUE dup = rb_ary_dup_setup(ary);
     long len = RARRAY_LEN(ary);
+    VALUE dup = rb_ary_new2(len);
 
     if (len > 0) {
 	VALUE *p1 = RARRAY_PTR(ary);
 	VALUE *p2 = RARRAY_PTR(dup) + len - 1;
 	do *p2-- = *p1++; while (--len > 0);
     }
+    ARY_SET_LEN(dup, RARRAY_LEN(ary));
     return dup;
 }
 
@@ -1925,7 +1916,7 @@ rb_ary_rotate_m(int argc, VALUE *argv, VALUE ary)
     }
 
     len = RARRAY_LEN(ary);
-    rotated = rb_ary_dup_setup(ary);
+    rotated = rb_ary_new2(len);
     if (len > 0) {
 	cnt = rotate_count(cnt, len);
 	ptr = RARRAY_PTR(ary);
@@ -1934,6 +1925,7 @@ rb_ary_rotate_m(int argc, VALUE *argv, VALUE ary)
 	MEMCPY(ptr2, ptr + cnt, VALUE, len);
 	MEMCPY(ptr2 + len, ptr, VALUE, cnt);
     }
+    ARY_SET_LEN(rotated, RARRAY_LEN(ary));
     return rotated;
 }
 

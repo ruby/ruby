@@ -1,3 +1,14 @@
+Thu Dec  9 11:00:30 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_dup): should copy contents only.  no instance
+	  variable, no class would be copied.  it would affect methods
+	  #sort, #reject, #transpose, #uniq, #compact, and #shuffle.
+	  [ruby-core:33640]
+
+	* array.c (rb_ary_reverse_m): ditto.
+
+	* array.c (rb_ary_rotate_m): ditto.
+
 Wed Dec  8 21:38:40 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/dl/lib/dl/struct.rb: clean a warning: assigned but unused
