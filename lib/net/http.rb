@@ -358,29 +358,11 @@ module Net   #:nodoc:
   # There is also the Net::HTTPBadResponse exception which is raised when
   # there is a protocol error.
   #
-  # == Switching Net::HTTP versions
-  #
-  # You can use net/http.rb 1.1 features (bundled with Ruby 1.6) by calling
-  # HTTP.version_1_1. Calling Net::HTTP.version_1_2 allows you to use 1.2
-  # features again.  Do not confuse this with HTTP protocol features.
-  #
-  #   # example
-  #   Net::HTTP.start {|http1| ...(http1 has 1.2 features)... }
-  #
-  #   Net::HTTP.version_1_1
-  #   Net::HTTP.start {|http2| ...(http2 has 1.1 features)... }
-  #
-  #   Net::HTTP.version_1_2
-  #   Net::HTTP.start {|http3| ...(http3 has 1.2 features)... }
-  #
-  # Switching versions is NOT thread-safe.
-  #
   class HTTP < Protocol
 
     # :stopdoc:
     Revision = %q$Revision$.split[1]
     HTTPVersion = '1.1'
-    @newimpl = true
     begin
       require 'zlib'
       require 'stringio'  #for our purposes (unpacking gzip) lump these together
@@ -393,25 +375,18 @@ module Net   #:nodoc:
     # Turns on net/http 1.2 (ruby 1.8) features.
     # Defaults to ON in ruby 1.8 or later.
     def HTTP.version_1_2
-      @newimpl = true
-    end
-
-    # Turns on net/http 1.1 (ruby 1.6) features.
-    # Defaults to OFF in ruby 1.8.
-    def HTTP.version_1_1
-      @newimpl = false
+      true
     end
 
     # Returns true if net/http is in version 1.2 mode.
     # Defaults to true.
     def HTTP.version_1_2?
-      @newimpl
+      true
     end
 
-    # Returns true if net/http is in version 1.1 compatible mode.
-    # Defaults to true.
+    # :nodoc:
     def HTTP.version_1_1?
-      not @newimpl
+      false
     end
 
     class << HTTP
@@ -588,11 +563,7 @@ module Net   #:nodoc:
     # The +address+ should be a DNS hostname or IP address.
     # If +p_addr+ is given, creates a Net::HTTP object with proxy support.
     def HTTP.new(address, port = nil, p_addr = nil, p_port = nil, p_user = nil, p_pass = nil)
-      h = Proxy(p_addr, p_port, p_user, p_pass).newobj(address, port)
-      h.instance_eval {
-        @newimpl = ::Net::HTTP.version_1_2?
-      }
-      h
+      Proxy(p_addr, p_port, p_user, p_pass).newobj(address, port)
     end
 
     # Creates a new Net::HTTP object for the specified server address,
@@ -988,10 +959,7 @@ module Net   #:nodoc:
     # the header as well to prevent confusion.  Otherwise
     # it leaves the body as it found it.
     #
-    # In version 1.1 (ruby 1.6), this method returns a pair of objects,
-    # a Net::HTTPResponse object and the entity body string.
-    # In version 1.2 (ruby 1.8), this method returns a Net::HTTPResponse
-    # object.
+    # This method returns a Net::HTTPResponse object.
     #
     # If called with a block, yields each fragment of the
     # entity body in turn as a string as it is read from
@@ -1001,16 +969,8 @@ module Net   #:nodoc:
     # +dest+ argument is obsolete.
     # It still works but you must not use it.
     #
-    # In version 1.1, this method might raise an exception for
-    # 3xx (redirect). In this case you can get a HTTPResponse object
-    # from "anException.response".
+    # This method never raises an exception.
     #
-    # In version 1.2, this method never raises an exception.
-    #
-    #     # version 1.1 (bundled with Ruby 1.6)
-    #     response, body = http.get('/index.html')
-    #
-    #     # version 1.2 (bundled with Ruby 1.8 or later)
     #     response = http.get('/index.html')
     #
     #     # using block
@@ -1049,11 +1009,6 @@ module Net   #:nodoc:
         end
         res = r
       }
-      unless @newimpl
-        res.value
-        return res, res.body
-      end
-
       res
     end
 
@@ -1062,11 +1017,7 @@ module Net   #:nodoc:
     #
     # This method returns a Net::HTTPResponse object.
     #
-    # In version 1.1, this method might raise an exception for
-    # 3xx (redirect). On the case you can get a HTTPResponse object
-    # as "anException.response".
-    #
-    # In version 1.2, this method never raises an exception.
+    # This method never raises an exception.
     #
     #     response = nil
     #     Net::HTTP.start('some.www.server', 80) {|http|
@@ -1075,17 +1026,13 @@ module Net   #:nodoc:
     #     p response['content-type']
     #
     def head(path, initheader = nil)
-      res = request(Head.new(path, initheader))
-      res.value unless @newimpl
-      res
+      request(Head.new(path, initheader))
     end
 
     # Posts +data+ (must be a String) to +path+. +header+ must be a Hash
     # like { 'Accept' => '*/*', ... }.
     #
-    # In version 1.1 (ruby 1.6), this method returns a pair of objects, a
-    # Net::HTTPResponse object and an entity body string.
-    # In version 1.2 (ruby 1.8), this method returns a Net::HTTPResponse object.
+    # This method returns a Net::HTTPResponse object.
     #
     # If called with a block, yields each fragment of the
     # entity body in turn as a string as it is read from
@@ -1095,15 +1042,8 @@ module Net   #:nodoc:
     # +dest+ argument is obsolete.
     # It still works but you must not use it.
     #
-    # In version 1.1, this method might raise an exception for
-    # 3xx (redirect). In this case you can get an HTTPResponse object
-    # by "anException.response".
-    # In version 1.2, this method never raises exception.
+    # This method never raises exception.
     #
-    #     # version 1.1
-    #     response, body = http.post('/cgi-bin/search.rb', 'query=foo')
-    #
-    #     # version 1.2
     #     response = http.post('/cgi-bin/search.rb', 'query=foo')
     #
     #     # using block
@@ -1128,9 +1068,7 @@ module Net   #:nodoc:
     end
 
     def put(path, data, initheader = nil)   #:nodoc:
-      res = request(Put.new(path, initheader), data)
-      res.value unless @newimpl
-      res
+      request(Put.new(path, initheader), data)
     end
 
     # Sends a PROPPATCH request to the +path+ and gets a response,
@@ -1335,10 +1273,6 @@ module Net   #:nodoc:
         r.read_body dest, &block
         res = r
       }
-      unless @newimpl
-        res.value
-        return res, res.body
-      end
       res
     end
 
@@ -2491,20 +2425,6 @@ module Net   #:nodoc:
 
     def inspect
       "#<#{self.class} #{@code} #{@message} readbody=#{@read}>"
-    end
-
-    # For backward compatibility.
-    # To allow Net::HTTP 1.1 style assignment
-    # e.g.
-    #    response, body = Net::HTTP.get(....)
-    #
-    def to_ary
-      warn "net/http.rb: warning: Net::HTTP v1.1 style assignment found at #{caller(1)[0]}; use `response = http.get(...)' instead." if $VERBOSE
-      res = self.dup
-      class << res
-        undef to_ary
-      end
-      [res, res.body]
     end
 
     #

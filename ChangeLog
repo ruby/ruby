@@ -1,3 +1,7 @@
+Fri Dec 10 10:07:59 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http.rb: remove version 1.1 features.
+
 Fri Dec 10 02:18:02 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/openssl/ossl_x509store.c (ossl_x509stctx_cleanup): removing C

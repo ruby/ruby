@@ -32,27 +32,23 @@ module TestNetHTTP_version_1_1_methods
   end
 
   def _test_get__get(http)
-    res, body = http.get('/')
+    res = http.get('/')
     assert_kind_of Net::HTTPResponse, res
     assert_kind_of String, res.body
-    assert_kind_of String, body
     unless self.is_a?(TestNetHTTP_v1_2_chunked)
       assert_not_nil res['content-length']
       assert_equal $test_net_http_data.size, res['content-length'].to_i
     end
     assert_equal $test_net_http_data_type, res['Content-Type']
-    assert_equal $test_net_http_data.size, body.size
-    assert_equal $test_net_http_data, body
     assert_equal $test_net_http_data.size, res.body.size
     assert_equal $test_net_http_data, res.body
   end
 
   def _test_get__iter(http)
     buf = ''
-    res, body = http.get('/') {|s| buf << s }
+    res = http.get('/') {|s| buf << s }
     assert_kind_of Net::HTTPResponse, res
     # assert_kind_of String, res.body
-    # assert_kind_of String, body
     unless self.is_a?(TestNetHTTP_v1_2_chunked)
       assert_not_nil res['content-length']
       assert_equal $test_net_http_data.size, res['content-length'].to_i
@@ -66,10 +62,9 @@ module TestNetHTTP_version_1_1_methods
 
   def _test_get__chunked(http)
     buf = ''
-    res, body = http.get('/') {|s| buf << s }
+    res = http.get('/') {|s| buf << s }
     assert_kind_of Net::HTTPResponse, res
     # assert_kind_of String, res.body
-    # assert_kind_of String, body
     unless self.is_a?(TestNetHTTP_v1_2_chunked)
       assert_not_nil res['content-length']
       assert_equal $test_net_http_data.size, res['content-length'].to_i
@@ -93,9 +88,8 @@ module TestNetHTTP_version_1_1_methods
   end
 
   def test_get__implicit_start
-    res, body = new().get('/')
+    res = new().get('/')
     assert_kind_of Net::HTTPResponse, res
-    assert_kind_of String, body
     assert_kind_of String, res.body
     unless self.is_a?(TestNetHTTP_v1_2_chunked)
       assert_not_nil res['content-length']
@@ -134,11 +128,9 @@ module TestNetHTTP_version_1_1_methods
     uheader = {}
     uheader['Accept'] = 'application/octet-stream'
     data = 'post data'
-    res, body = http.post('/', data)
+    res = http.post('/', data)
     assert_kind_of Net::HTTPResponse, res
-    assert_kind_of String, body
     assert_kind_of String, res.body
-    assert_equal data, body
     assert_equal data, res.body
     assert_equal data, res.entity
   end
@@ -179,11 +171,9 @@ module TestNetHTTP_version_1_1_methods
     uheader = {}
     uheader['Accept'] = 'application/octet-stream'
     data = 'patch data'
-    res, body = http.patch('/', data)
+    res = http.patch('/', data)
     assert_kind_of Net::HTTPResponse, res
-    assert_kind_of String, body
     assert_kind_of String, res.body
-    assert_equal data, body
     assert_equal data, res.body
     assert_equal data, res.entity
   end
@@ -305,23 +295,6 @@ module TestNetHTTP_version_1_2_methods
   end
 end
 
-class TestNetHTTP_version_1_1 < Test::Unit::TestCase
-  CONFIG = {
-    'host' => '127.0.0.1',
-    'port' => 10081,
-    'proxy_host' => nil,
-    'proxy_port' => nil,
-  }
-
-  include TestNetHTTPUtils
-  include TestNetHTTP_version_1_1_methods
-
-  def new
-    Net::HTTP.version_1_1
-    super
-  end
-end
-
 class TestNetHTTP_v1_2 < Test::Unit::TestCase
   CONFIG = {
     'host' => '127.0.0.1',
@@ -371,23 +344,3 @@ class TestNetHTTP_v1_2_chunked < Test::Unit::TestCase
     }
   end
 end
-
-=begin
-class TestNetHTTP_proxy < Test::Unit::TestCase
-  CONFIG = {
-    'host' => '127.0.0.1',
-    'port' => 10081,
-    'proxy_host' => '127.0.0.1',
-    'proxy_port' => 10082,
-  }
-
-  include TestNetHTTPUtils
-  include TestNetHTTP_version_1_1_methods
-  include TestNetHTTP_version_1_2_methods
-
-  def new
-    Net::HTTP.version_1_2
-    super
-  end
-end
-=end
