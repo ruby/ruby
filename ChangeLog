@@ -1,3 +1,10 @@
+Sat Dec 11 05:48:28 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/multi-tk.rb: infinite loop on method_missing at loading
+	  (backport from Ruby 1.9).
+
+	* ext/tk/lib/multi-tk.rb: when no eventloop is running, ruby freezes at exit.
+
 Fri Dec  3 19:48:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (check_sizeof): should return integer always.
