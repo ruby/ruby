@@ -1,3 +1,8 @@
+Sat Dec 11 08:12:48 2010  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/openssl/ossl.c, ext/openssl/ossl_pkey_rsa.c: Document RSA, RSA
+	  encryption/decryption and PKCS #5 encryption/decryption.
+
 Sat Dec 11 06:23:41 2010  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/openssl/ossl_x509name.c: include Comparable to provide #==.

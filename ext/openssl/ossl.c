@@ -469,6 +469,70 @@ ossl_debug_set(VALUE self, VALUE val)
  *   key4_pem = File.read 'private.secure.pem'
  *   key4 = OpenSSL::PKey::RSA.new key4_pem, pass_phrase
  *
+ * == RSA Encryption
+ *
+ * RSA provides ecryption and decryption using the public and private keys.
+ * You can use a variety of padding methods depending upon the intended use of
+ * encrypted data.
+ *
+ * === Encryption
+ *
+ * Documents encrypted with the public key can only be decrypted with the
+ * private key.
+ *
+ *   public_encrypted = key.public_encrypt 'top secret document'
+ *
+ * Documents encrypted with the private key can only be decrypted with the
+ * public key.
+ *
+ *   private_encrypted = key.private_encrypt 'public release document'
+ *
+ * === Decryption
+ *
+ * Use the opposite key type do decrypt the document
+ *
+ *   top_secret = key.public_decrypt public_encrypted
+ *
+ *   public_release = key.private_decrypt private_encrypted
+ *
+ * == PKCS #5 Password-based Encryption
+ *
+ * PKCS #5 is a password-based encryption standard documented at
+ * RFC2898[http://www.ietf.org/rfc/rfc2898.txt].  It allows a short password or
+ * passphrase to be used to create a secure encryption key.
+ *
+ * PKCS #5 uses a Cipher, a pass phrase and a salt to generate an encryption
+ * key.
+ *
+ *   pass_phrase = 'my secure pass phrase goes here'
+ *   salt = '8 octets'
+ *
+ * === Encryption
+ *
+ * First set up the cipher for encryption
+ *
+ *   encrypter = OpenSSL::Cipher::Cipher.new 'AES-128-CBC'
+ *   encrypter.encrypt
+ *   encrypter.pkcs5_keyivgen pass_phrase, salt
+ *
+ * Then pass the data you want to encrypt through
+ *
+ *   encrypted = encrypter.update 'top secret document'
+ *   encrypted << encrypter.final
+ *
+ * === Decryption
+ *
+ * Use a new Cipher instance set up for decryption
+ *
+ *   decrypter = OpenSSL::Cipher::Cipher.new 'AES-128-CBC'
+ *   decrypter.decrypt
+ *   decrypter.pkcs5_keyivgen pass_phrase, salt
+ *
+ * Then pass the data you want to decrypt through
+ *
+ *   plain = decrypter.update encrypted
+ *   plain << decrypter.final
+ *
  * == X509 Certificates
  *
  * === Creating a Certificate
@@ -538,7 +602,7 @@ ossl_debug_set(VALUE self, VALUE val)
  *
  *   ca_key = OpenSSL::PKey::RSA.new 2048
  *
- *   cipher = OpenSSL::Cipher::AES.new 128, :CBC
+ *   cipher = OpenSSL::Cipher::Cipher.new 'AES-128-CBC'
  *
  *   open 'ca_key.pem', 'w', 0400 do |io|
  *     io.write key.export(cipher, pass_phrase)
