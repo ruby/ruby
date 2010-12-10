@@ -1121,6 +1121,10 @@ fmt_setup(char *buf, size_t size, int c, int flags, int width, int prec)
 #  define quad_t LONG_LONG
 #  define u_quad_t unsigned LONG_LONG
 # endif
+#elif  SIZEOF_LONG_LONG == 8
+#  define _HAVE_SANE_QUAD_
+#  define quad_t LONG_LONG
+#  define u_quad_t unsigned LONG_LONG
 #endif
 #define FLOATING_POINT 1
 #define BSD__dtoa ruby_dtoa
