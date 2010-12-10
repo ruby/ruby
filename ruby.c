@@ -380,7 +380,7 @@ ruby_init_loadpath_safe(int safe_level)
 	VALUE rb_realpath_internal(VALUE basedir, VALUE path, int strict);
 	char fbuf[MAXPATHLEN];
 	char *f = dln_find_file_r(dli.dli_fname, getenv(PATH_ENV), fbuf, sizeof(fbuf));
-	VALUE fname = rb_str_new_cstr(f);
+	VALUE fname = rb_str_new_cstr(f ? f : dli.dli_fname);
 	rb_str_freeze(fname);
 	sopath = rb_realpath_internal(Qnil, fname, 1);
     }

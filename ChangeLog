@@ -1,3 +1,8 @@
+Fri Dec 10 18:29:20 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (ruby_init_loadpath_safe): relatively called non-shared
+	  binary cannot be found in PATH, so use given pathname.
+
 Fri Dec 10 18:28:40 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cygwin/GNUmakefile.in (SCRIPTPROGRAMS): ignore backup files and etc.
