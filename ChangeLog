@@ -1,3 +1,8 @@
+Fri Dec 10 20:05:42 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* template/id.h.tmpl (ruby_method_ids): suppress warnings.
+	  [ruby-dev:42730]
+
 Fri Dec 10 18:29:20 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (ruby_init_loadpath_safe): relatively called non-shared
