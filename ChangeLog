@@ -1,4 +1,10 @@
-Fri Dec 10 18:11:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Dec 10 18:12:31 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/mkmf/base.rb (TestMkmf#config_value): extract macro value from
+	  config.h.
+
+	* test/mkmf/test_sizeof.rb (TestMkmf::TestSizeof#test_sizeof_builtin),
+	 (TestMkmf::TestSizeof#test_sizeof_struct): more tests.
 
 	* lib/mkmf.rb (check_signedness): should use the prelude code.
 	  [ruby-dev:42731]

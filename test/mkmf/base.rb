@@ -39,4 +39,12 @@ class TestMkmf < Test::Unit::TestCase
   def mkmf(*args, &block)
     @mkmfobj.instance_eval(*args, &block)
   end
+
+  def config_value(name)
+    create_tmpsrc("---config-value=#{name}")
+    xpopen(cpp_command('')) do |f|
+      f.grep(/^---config-value=(.*)/) {return $1}
+    end
+    nil
+  end
 end
