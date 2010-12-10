@@ -1,3 +1,8 @@
+Sat Dec 11 02:23:15 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/openssl/extconf.rb: try pkgconfig first, then fall back to
+	  normal have_library, etc.  Thanks Erik Hollensbe. [ruby-core:32406]
+
 Fri Dec 10 22:33:39 2010  Tanaka Akira  <akr@fsij.org>
 
 	* dln_find.c: parenthesize macro arguments.

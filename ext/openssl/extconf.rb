@@ -43,11 +43,14 @@ if $mingw
   have_library("wsock32")
   have_library("gdi32")
 end
-result = have_header("openssl/ssl.h")
-result &&= %w[crypto libeay32].any? {|lib| have_library(lib, "OpenSSL_add_all_digests")}
-result &&= %w[ssl ssleay32].any? {|lib| have_library(lib, "SSL_library_init")}
-if !result
-  unless pkg_config("openssl") and have_header("openssl/ssl.h")
+
+result = pkg_config("openssl") && have_header("openssl/ssl.h")
+
+unless result
+  result = have_header("openssl/ssl.h")
+  result &&= %w[crypto libeay32].any? {|lib| have_library(lib, "OpenSSL_add_all_digests")}
+  result &&= %w[ssl ssleay32].any? {|lib| have_library(lib, "SSL_library_init")}
+  unless result
     message "=== Checking for required stuff failed. ===\n"
     message "Makefile wasn't created. Fix the errors above.\n"
     exit 1
