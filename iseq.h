@@ -51,7 +51,7 @@ struct iseq_catch_table_entry {
 	CATCH_TYPE_RETRY,
 	CATCH_TYPE_BREAK,
 	CATCH_TYPE_REDO,
-	CATCH_TYPE_NEXT,
+	CATCH_TYPE_NEXT
     } type;
     VALUE iseq;
     unsigned long start;
@@ -107,7 +107,7 @@ enum defined_type {
     DEFINED_YIELD,
     DEFINED_REF,
     DEFINED_ZSUPER,
-    DEFINED_FUNC,
+    DEFINED_FUNC
 };
 
 #if defined __GNUC__ && __GNUC__ >= 4

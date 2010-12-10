@@ -1,3 +1,17 @@
+Fri Dec 10 11:36:43 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* compile.c (enum): remove a comma at end of enumerator list.
+
+	* constant.h (rb_const_flag_t): ditto.
+
+	* iseq.h (enum catch_type): ditto.
+
+	* iseq.h (enum defined_type): ditto.
+
+	* vm_core.h (enum iseq_type): ditto.
+
+	* vm_core.h (enum vm_special_object_type): ditto.
+
 Fri Dec 10 10:47:53 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* sprintf.c (_HAVE_SANE_QUAD_): Don't forget LP64, r30156.

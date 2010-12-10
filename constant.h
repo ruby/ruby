@@ -13,7 +13,7 @@
 
 typedef enum {
     CONST_PUBLIC    = 0x00,
-    CONST_PRIVATE   = 0x01,
+    CONST_PRIVATE   = 0x01
 } rb_const_flag_t;
 
 typedef struct rb_const_entry_struct {

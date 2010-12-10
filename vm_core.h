@@ -161,7 +161,7 @@ struct rb_iseq_struct {
 	ISEQ_TYPE_ENSURE,
 	ISEQ_TYPE_EVAL,
 	ISEQ_TYPE_MAIN,
-	ISEQ_TYPE_DEFINED_GUARD,
+	ISEQ_TYPE_DEFINED_GUARD
     } type;              /* instruction sequence type */
 
     VALUE name;	         /* String: iseq name */
@@ -554,7 +554,7 @@ typedef struct {
 enum vm_special_object_type {
     VM_SPECIAL_OBJECT_VMCORE = 1,
     VM_SPECIAL_OBJECT_CBASE,
-    VM_SPECIAL_OBJECT_CONST_BASE,
+    VM_SPECIAL_OBJECT_CONST_BASE
 };
 
 #define VM_FRAME_MAGIC_METHOD 0x11
