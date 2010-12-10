@@ -197,7 +197,8 @@ def install_recursive(srcdir, dest, options = {})
   noinst = opts.delete(:no_install)
   glob = opts.delete(:glob) || "*"
   subpath = (srcdir.size+1)..-1
-  prune = skip = FalseProc
+  prune = []
+  skip = []
   if noinst
     if Array === noinst
       prune = noinst.grep(/#{File::SEPARATOR}/o).map!{|f| f.chomp(File::SEPARATOR)}
@@ -209,10 +210,10 @@ def install_recursive(srcdir, dest, options = {})
         skip = [noinst]
       end
     end
-    skip |= %w"#*# *~ *.old *.bak *.orig *.rej *.diff *.patch *.core"
-    prune = path_matcher(prune)
-    skip = path_matcher(skip)
   end
+  skip |= %w"#*# *~ *.old *.bak *.orig *.rej *.diff *.patch *.core"
+  prune = path_matcher(prune)
+  skip = path_matcher(skip)
   File.directory?(srcdir) or return rescue return
   paths = [[srcdir, dest, true]]
   found = []
@@ -239,7 +240,11 @@ def install_recursive(srcdir, dest, options = {})
       makedirs(d)
     else
       makedirs(File.dirname(d))
-      install src, d, opts
+      if block_given?
+        yield src, d, opts
+      else
+        install src, d, opts
+      end
     end
   end
 end
@@ -435,12 +440,7 @@ install?(:local, :comm, :bin, :'bin-comm') do
   else
     trans = proc {|base| base}
   end
-  for src in Dir[File.join(srcdir, "bin/*")]
-    next unless File.file?(src)
-    s = src.downcase
-    next if %w(old bak orig rej diff patch core).include? File.extname(s)
-    next if /^\.\#|(~|core)$/i =~ File.basename(s)
-
+  install_recursive(File.join(srcdir, "bin"), bindir) do |src, cmd|
     name = RbConfig.expand(trans[File.basename(src)])
 
     shebang = ''
@@ -457,7 +457,6 @@ install?(:local, :comm, :bin, :'bin-comm') do
     shebang.sub!(/\r$/, '')
     body.gsub!(/\r$/, '')
 
-    cmd = File.join(bindir, name)
     cmd << ".#{$cmdtype}" if $cmdtype
     open_for_install(cmd, $script_mode) do
       case $cmdtype

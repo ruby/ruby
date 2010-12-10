@@ -1,3 +1,10 @@
+Fri Dec 10 18:27:49 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/rbinstall.rb (install_recursive): always skip default ignored
+	  files.  if block is given, call it instead of calling install.
+
+	* tool/rbinstall.rb (bin-comm): use install_recursive.
+
 Fri Dec 10 18:12:31 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/mkmf/base.rb (TestMkmf#config_value): extract macro value from
