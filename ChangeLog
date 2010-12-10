@@ -3,6 +3,8 @@ Sat Dec 11 05:48:28 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/lib/multi-tk.rb: infinite loop on method_missing at loading.
 	  [ruby-dev:42716] [Ruby 1.9-Bug#4129]
 
+	* ext/tk/lib/multi-tk.rb: when no eventloop is running, ruby freezes at exit.
+
 Sat Dec 11 02:23:15 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/openssl/extconf.rb: try pkgconfig first, then fall back to
