@@ -57,7 +57,7 @@ void *xrealloc();
 #include <sys/stat.h>
 
 #ifndef S_ISDIR
-#   define S_ISDIR(m) ((m & S_IFMT) == S_IFDIR)
+#   define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
 #endif
 
 #ifdef HAVE_SYS_PARAM_H
