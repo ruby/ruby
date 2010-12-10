@@ -1,3 +1,11 @@
+Fri Dec 10 18:11:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (Logging.log_close): separate from Logging.logfile.
+
+	* test/mkmf/base.rb (TestMkmf::MKMFLOG): show mkmf.log at failures.
+
+	* test/mkmf/base.rb (TestMkmf#teardown): close log file for each tests.
+
 Fri Dec 10 11:36:43 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* compile.c (enum): remove a comma at end of enumerator list.

@@ -9,6 +9,11 @@ $INCFLAGS << " -I."
 $extout_prefix = "$(extout)$(target_prefix)/"
 
 class TestMkmf < Test::Unit::TestCase
+  MKMFLOG = proc {File.read("mkmf.log") rescue ""}
+  class << MKMFLOG
+    alias to_s call
+  end
+
   def setup
     @tmpdir = Dir.mktmpdir
     @curdir = Dir.pwd
@@ -19,6 +24,7 @@ class TestMkmf < Test::Unit::TestCase
 
   def teardown
     Logging.quiet = @quiet
+    Logging.log_close
     Dir.chdir(@curdir)
     FileUtils.rm_rf(@tmpdir)
   end

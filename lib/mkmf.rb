@@ -264,6 +264,10 @@ module Logging
 
   def self::logfile file
     @logfile = file
+    log_close
+  end
+
+  def self::log_close
     if @log and not @log.closed?
       @log.flush
       @log.close

@@ -6,7 +6,7 @@ class TestMkmf
       ["", ["signed ", ""], "unsigned "].each do |signed, prefix|
         %w[short int long].each do |type|
           assert_equal((prefix || signed)+type,
-                       mkmf {convertible_int(signed+type)})
+                       mkmf {convertible_int(signed+type)}, MKMFLOG)
         end
       end
     end
@@ -19,7 +19,7 @@ class TestMkmf
           }
           $defs.clear
           assert_equal((prefix || signed)+type,
-                       mkmf {convertible_int("test1_t", "confdefs.h")})
+                       mkmf {convertible_int("test1_t", "confdefs.h")}, MKMFLOG)
           (u = signed[/^u/]) and u.upcase!
           assert_includes($defs, "-DTYPEOF_TEST1_T="+"#{prefix||signed}#{type}".quote)
           assert_includes($defs, "-DPRI_TEST1T_PREFIX=PRI_#{type.upcase}_PREFIX")
