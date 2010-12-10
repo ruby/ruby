@@ -1,4 +1,8 @@
-Fri Dec 10 18:27:49 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Dec 10 18:28:40 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cygwin/GNUmakefile.in (SCRIPTPROGRAMS): ignore backup files and etc.
+
+	* cygwin/GNUmakefile.in (scriptbin): set executable bit.
 
 	* tool/rbinstall.rb (install_recursive): always skip default ignored
 	  files.  if block is given, call it instead of calling install.

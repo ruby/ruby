@@ -12,7 +12,8 @@ else
   DLLWRAP += -mno-cygwin
   VPATH := $(VPATH):$(srcdir)/win32
   STUBPROGRAM = rubystub$(EXEEXT)
-  SCRIPTPROGRAMS = $(addsuffix $(EXEEXT),$(notdir $(wildcard $(srcdir)/bin/*)))
+  IGNOREDPATTERNS = %~ .% %.orig %.rej \#%\#
+  SCRIPTPROGRAMS = $(addsuffix $(EXEEXT),$(filter-out $(IGNOREDPATTERNS),$(notdir $(wildcard $(srcdir)/bin/*))))
 endif
 
 ifneq ($(ENABLE_SHARED),yes)
@@ -42,6 +43,7 @@ scriptbin: $(SCRIPTPROGRAMS)
 %$(EXEEXT): bin/% $(STUBPROGRAM)
 	$(ECHO) generating $@
 	$(Q) { cat $(STUBPROGRAM); echo; sed -e '1{' -e '/^#!.*ruby/!i\' -e '#!/bin/ruby' -e '}' $<; } > $@
+	$(Q) chmod +x $@
 
 $(LIBRUBY): $(RUBY_EXP) $(LIBRUBY_SO)
 $(RUBY_EXP) $(LIBRUBY_SO): $(DLL_BASE_NAME).res.@OBJEXT@
