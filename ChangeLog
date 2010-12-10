@@ -1,3 +1,8 @@
+Sat Dec 11 06:23:41 2010  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/openssl/ossl_x509name.c: include Comparable to provide #==.
+	  Document OpenSSL::X509::Name#<=>.  [Ruby 1.9-Feature#4116]
+
 Sat Dec 11 05:48:28 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: infinite loop on method_missing at loading.

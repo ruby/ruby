@@ -261,6 +261,20 @@ class OpenSSL::TestX509Name < Test::Unit::TestCase
     assert_equal(OpenSSL::ASN1::IA5STRING, ary[3][2])
     assert_equal(OpenSSL::ASN1::PRINTABLESTRING, ary[4][2])
   end
+
+  def test_equals2
+    n1 = OpenSSL::X509::Name.parse 'CN=a'
+    n2 = OpenSSL::X509::Name.parse 'CN=a'
+
+    assert_equal n1, n2
+  end
+
+  def test_spaceship
+    n1 = OpenSSL::X509::Name.parse 'CN=a'
+    n2 = OpenSSL::X509::Name.parse 'CN=b'
+
+    assert_equal -1, n1 <=> n2
+  end
 end
 
 end
