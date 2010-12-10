@@ -13,6 +13,13 @@ class TestMkmf < Test::Unit::TestCase
   class << MKMFLOG
     alias to_s call
   end
+  def mkmflog(msg)
+    log = proc {MKMFLOG[] << msg}
+    class << log
+      alias to_s call
+    end
+    log
+  end
 
   def setup
     @tmpdir = Dir.mktmpdir

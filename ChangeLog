@@ -1,4 +1,7 @@
-Fri Dec 10 18:11:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Dec 10 18:11:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (check_signedness): should use the prelude code.
+	  [ruby-dev:42731]
 
 	* lib/mkmf.rb (Logging.log_close): separate from Logging.logfile.
 
