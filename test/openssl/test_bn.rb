@@ -1,9 +1,5 @@
-begin
-  require "openssl"
-rescue LoadError
-end
+require_relative 'utils'
 require "digest/md5"
-require "test/unit"
 
 if defined?(OpenSSL)
 

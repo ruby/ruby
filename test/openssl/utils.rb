@@ -1,4 +1,7 @@
-require "openssl"
+begin
+  require "openssl"
+rescue LoadError
+end
 require "test/unit"
 
 module OpenSSL::TestUtils
@@ -141,4 +144,4 @@ Q1VB8qkJN7rA7/2HrCR3gTsWNb1YhAsnFsoeRscC+LxXoXi9OAIUBG98h4tilg6S
       $VERBOSE = back
     end
   end
-end
+end if defined?(OpenSSL)

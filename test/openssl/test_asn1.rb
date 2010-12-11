@@ -1,9 +1,4 @@
-begin
-  require "openssl"
-  require_relative 'utils'
-rescue LoadError
-end
-require 'test/unit'
+require_relative 'utils'
 
 class  OpenSSL::TestASN1 < Test::Unit::TestCase
   def test_decode
