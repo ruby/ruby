@@ -1917,6 +1917,11 @@ class TestString < Test::Unit::TestCase
     assert_equal('"abc\\"\\\\"', i, bug4081)
   end
 
+  def test_dummy_inspect
+    assert_equal('"\e\x24\x42\x22\x4C\x22\x68\e\x28\x42"',
+                 "\u{ffe2}\u{2235}".encode("cp50220").inspect)
+  end
+
   def test_prepend
     assert_equal(S("hello world!"), "world!".prepend("hello "))
 

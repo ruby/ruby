@@ -1,3 +1,8 @@
+Sun Dec 12 04:01:58 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_inspect): fix: extra back slash is added when
+	  the string is dummy encoding and includes \x22 or \x5C.
+
 Sun Dec 12 02:42:24 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/openssl/ossl_asn1.c: indefinite length BER to DER encoding is

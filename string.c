@@ -4251,12 +4251,13 @@ rb_str_inspect(VALUE str)
         n = MBCLEN_CHARFOUND_LEN(n);
 	c = rb_enc_mbc_to_codepoint(p, pend, enc);
 	p += n;
-	if (c == '"'|| c == '\\' ||
+	if ((asciicompat || unicode_p) &&
+	  (c == '"'|| c == '\\' ||
 	    (c == '#' &&
              p < pend &&
              MBCLEN_CHARFOUND_P(rb_enc_precise_mbclen(p,pend,enc)) &&
              (cc = rb_enc_codepoint(p,pend,enc),
-              (cc == '$' || cc == '@' || cc == '{')))) {
+              (cc == '$' || cc == '@' || cc == '{'))))) {
 	    if (p - n > prev) str_buf_cat(result, prev, p - n - prev);
 	    str_buf_cat2(result, "\\");
 	    if (asciicompat || enc == resenc) {
