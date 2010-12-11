@@ -269,8 +269,8 @@ VP_EXPORT Real *VpOne(void);
 #define VpExponent(a)   (a->exponent)
 #ifdef BIGDECIMAL_DEBUG
 int VpVarCheck(Real * v);
-#endif /* BIGDECIMAL_DEBUG */
 VP_EXPORT int VPrint(FILE *fp,const char *cntl_chr,Real *a);
+#endif /* BIGDECIMAL_DEBUG */
 
 #if defined(__cplusplus)
 }  /* extern "C" { */
