@@ -203,4 +203,231 @@ class  OpenSSL::TestASN1 < Test::Unit::TestCase
       assert_equal(v, OpenSSL::ASN1.decode(type.new(v).to_der).value)
     end
   end
+
+  def test_primitive_cannot_set_infinite_length
+    begin
+      prim = OpenSSL::ASN1::Integer.new(50)
+      assert_equal(false, prim.infinite_length)
+      prim.infinite_length = true
+      flunk('Could set infinite length on primitive value')
+    rescue NoMethodError => e
+      #ok
+    end
+  end
+
+  def test_seq_infinite_length
+    begin
+      content = [ OpenSSL::ASN1::Null.new(nil),
+                  OpenSSL::ASN1::EndOfContent.new ]
+      cons = OpenSSL::ASN1::Sequence.new(content)
+      cons.infinite_length = true
+      expected = %w{ 30 80 05 00 00 00 }
+      raw = [expected.join('')].pack('H*')
+      assert_equal(raw, cons.to_der)
+      assert_equal(raw, OpenSSL::ASN1.decode(raw).to_der)
+    end
+  end
+
+  def test_set_infinite_length
+    begin
+      content = [ OpenSSL::ASN1::Null.new(nil),
+                  OpenSSL::ASN1::EndOfContent.new() ]
+      cons = OpenSSL::ASN1::Set.new(content)
+      cons.infinite_length = true
+      expected = %w{ 31 80 05 00 00 00 }
+      raw = [expected.join('')].pack('H*')
+      assert_equal(raw, cons.to_der)
+      assert_equal(raw, OpenSSL::ASN1.decode(raw).to_der)
+    end
+  end
+
+  def test_octet_string_infinite_length
+    begin
+      octets = [ OpenSSL::ASN1::OctetString.new('aaa'),
+                 OpenSSL::ASN1::EndOfContent.new() ]
+      cons = OpenSSL::ASN1::Constructive.new(
+        octets,
+        OpenSSL::ASN1::OCTET_STRING,
+        nil,
+        :UNIVERSAL)
+      cons.infinite_length = true
+      expected = %w{ 24 80 04 03 61 61 61 00 00 }
+      raw = [expected.join('')].pack('H*')
+      assert_equal(raw, cons.to_der)
+      assert_equal(raw, OpenSSL::ASN1.decode(raw).to_der)
+    end
+  end
+
+  def test_prim_explicit_tagging
+    begin
+      oct_str = OpenSSL::ASN1::OctetString.new("a", 0, :EXPLICIT)
+      expected = %w{ A0 03 04 01 61 }
+      raw = [expected.join('')].pack('H*')
+      assert_equal(raw, oct_str.to_der)
+      assert_equal(raw, OpenSSL::ASN1.decode(raw).to_der)
+    end
+  end
+
+  def test_prim_explicit_tagging_tag_class
+    begin
+      oct_str = OpenSSL::ASN1::OctetString.new("a", 0, :EXPLICIT)
+      oct_str2 = OpenSSL::ASN1::OctetString.new(
+        "a",
+        0,
+        :EXPLICIT,
+        :CONTEXT_SPECIFIC)
+      assert_equal(oct_str.to_der, oct_str2.to_der)
+    end
+  end
+
+  def test_prim_implicit_tagging
+    begin
+      int = OpenSSL::ASN1::Integer.new(1, 0, :IMPLICIT)
+      expected = %w{ 80 01 01 }
+      raw = [expected.join('')].pack('H*')
+      assert_equal(raw, int.to_der)
+      assert_equal(raw, OpenSSL::ASN1.decode(raw).to_der)
+    end
+  end
+
+  def test_prim_implicit_tagging_tag_class
+    begin
+      int = OpenSSL::ASN1::Integer.new(1, 0, :IMPLICIT)
+      int2 = OpenSSL::ASN1::Integer.new(1, 0, :IMPLICIT, :CONTEXT_SPECIFIC);
+      assert_equal(int.to_der, int2.to_der)
+    end
+  end
+
+  def test_cons_explicit_tagging
+    begin
+      content = [ OpenSSL::ASN1::PrintableString.new('abc') ]
+      seq = OpenSSL::ASN1::Sequence.new(content, 2, :EXPLICIT)
+      expected = %w{ A2 07 30 05 13 03 61 62 63 }
+      raw = [expected.join('')].pack('H*')
+      assert_equal(raw, seq.to_der)
+      assert_equal(raw, OpenSSL::ASN1.decode(raw).to_der)
+    end
+  end
+
+  def test_cons_explicit_tagging_inf_length
+    begin
+      content = [ OpenSSL::ASN1::PrintableString.new('abc') ,
+                  OpenSSL::ASN1::EndOfContent.new() ]
+      seq = OpenSSL::ASN1::Sequence.new(content, 2, :EXPLICIT)
+      seq.infinite_length = true
+      expected = %w{ A2 80 30 80 13 03 61 62 63 00 00 }
+      raw = [expected.join('')].pack('H*')
+      assert_equal(raw, seq.to_der)
+      assert_equal(raw, OpenSSL::ASN1.decode(raw).to_der)
+    end
+  end
+
+  def test_cons_implicit_tagging
+    begin
+      content = [ OpenSSL::ASN1::Null.new(nil) ]
+      seq = OpenSSL::ASN1::Sequence.new(content, 1, :IMPLICIT)
+      expected = %w{ A1 02 05 00 }
+      raw = [expected.join('')].pack('H*')
+      assert_equal(raw, seq.to_der)
+      assert_equal(raw, OpenSSL::ASN1.decode(raw).to_der)
+    end
+  end
+
+  def test_cons_implicit_tagging_inf_length
+    begin
+      content = [ OpenSSL::ASN1::Null.new(nil),
+                  OpenSSL::ASN1::EndOfContent.new() ]
+      seq = OpenSSL::ASN1::Sequence.new(content, 1, :IMPLICIT)
+      seq.infinite_length = true
+      expected = %w{ A1 80 05 00 00 00 }
+      raw = [expected.join('')].pack('H*')
+      assert_equal(raw, seq.to_der)
+      assert_equal(raw, OpenSSL::ASN1.decode(raw).to_der)
+    end
+  end
+
+  def test_octet_string_infinite_length_explicit_tagging
+    begin
+      octets = [ OpenSSL::ASN1::OctetString.new('aaa'),
+                 OpenSSL::ASN1::EndOfContent.new() ]
+      cons = OpenSSL::ASN1::Constructive.new(
+        octets,
+        1,
+        :EXPLICIT)
+      cons.infinite_length = true
+      expected = %w{ A1 80 24 80 04 03 61 61 61 00 00 }
+      raw = [expected.join('')].pack('H*')
+      assert_equal(raw, cons.to_der)
+      assert_equal(raw, OpenSSL::ASN1.decode(raw).to_der)
+    end
+  end
+
+  def test_octet_string_infinite_length_implicit_tagging
+    begin
+      octets = [ OpenSSL::ASN1::OctetString.new('aaa'),
+                 OpenSSL::ASN1::EndOfContent.new() ]
+      cons = OpenSSL::ASN1::Constructive.new(
+        octets,
+        0,
+        :IMPLICIT)
+      cons.infinite_length = true
+      expected = %w{ A0 80 04 03 61 61 61 00 00 }
+      raw = [expected.join('')].pack('H*')
+      assert_equal(raw, cons.to_der)
+      assert_equal(raw, OpenSSL::ASN1.decode(raw).to_der)
+    end
+  end
+
+  def test_recursive_octet_string_infinite_length
+    begin
+      octets_sub1 = [ OpenSSL::ASN1::OctetString.new("\x01"),
+                      OpenSSL::ASN1::EndOfContent.new() ]
+      octets_sub2 = [ OpenSSL::ASN1::OctetString.new("\x02"),
+                      OpenSSL::ASN1::EndOfContent.new() ]
+      container1 = OpenSSL::ASN1::Constructive.new(
+        octets_sub1,
+        OpenSSL::ASN1::OCTET_STRING,
+        nil,
+        :UNIVERSAL)
+      container1.infinite_length = true
+      container2 = OpenSSL::ASN1::Constructive.new(
+        octets_sub2,
+        OpenSSL::ASN1::OCTET_STRING,
+        nil,
+        :UNIVERSAL)
+      container2.infinite_length = true
+      octets3 = OpenSSL::ASN1::OctetString.new("\x03")
+
+      octets = [ container1, container2, octets3,
+                 OpenSSL::ASN1::EndOfContent.new() ]
+      cons = OpenSSL::ASN1::Constructive.new(
+        octets,
+        OpenSSL::ASN1::OCTET_STRING,
+        nil,
+        :UNIVERSAL)
+      cons.infinite_length = true
+      expected = %w{ 24 80 24 80 04 01 01 00 00 24 80 04 01 02 00 00 04 01 03 00 00 }
+      raw = [expected.join('')].pack('H*')
+      assert_equal(raw, cons.to_der)
+      assert_equal(raw, OpenSSL::ASN1.decode(raw).to_der)
+    end
+  end
+
+  def test_bit_string_infinite_length
+    begin
+      content = [ OpenSSL::ASN1::BitString.new("\x01"),
+                  OpenSSL::ASN1::EndOfContent.new() ]
+      cons = OpenSSL::ASN1::Constructive.new(
+        content,
+        OpenSSL::ASN1::BIT_STRING,
+        nil,
+        :UNIVERSAL)
+      cons.infinite_length = true
+      expected = %w{ 23 80 03 02 00 01 00 00 }
+      raw = [expected.join('')].pack('H*')
+      assert_equal(raw, cons.to_der)
+      assert_equal(raw, OpenSSL::ASN1.decode(raw).to_der)
+    end
+  end
+  
 end if defined?(OpenSSL)

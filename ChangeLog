@@ -1,3 +1,8 @@
+Sun Dec 12 02:42:24 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/openssl/ossl_asn1.c: indefinite length BER to DER encoding is
+	  properly supported.  Thanks Martin Bosslet! [ruby-core:33082]
+
 Sat Dec 11 17:43:34 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* ext/bigdecimal/bigdecimal.h: suppress "warning: 'VPrint' declared
