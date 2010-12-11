@@ -1556,7 +1556,7 @@ Init_Encoding(void)
 /* locale insensitive ctype functions */
 
 #define ctype_test(c, ctype) \
-    (rb_isascii(c) && ONIGENC_IS_ASCII_CODE_CTYPE((c), ctype))
+    (rb_isascii(c) && ONIGENC_IS_ASCII_CODE_CTYPE((c), (ctype)))
 
 int rb_isalnum(int c) { return ctype_test(c, ONIGENC_CTYPE_ALNUM); }
 int rb_isalpha(int c) { return ctype_test(c, ONIGENC_CTYPE_ALPHA); }
