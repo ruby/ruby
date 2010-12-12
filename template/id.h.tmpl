@@ -50,6 +50,8 @@ end
 #include "parse.h"
 #endif
 
+#include "vm_opts.h" /* for SUPPORT_JOKE */
+
 #define symIFUNC ID2SYM(idIFUNC)
 #define symCFUNC ID2SYM(idCFUNC)
 
@@ -101,13 +103,13 @@ enum ruby_method_ids {
     t__send__,
     tInitialize,
     tUScore,
-#if defined SUPPORT_JOKE && SUPPORT_JOKE
+#if SUPPORT_JOKE
     tBitblt,
     tAnswer,
 #endif
     tLAST_ID,
 #define TOKEN2ID(n) id##n = ((t##n<<ID_SCOPE_SHIFT)|ID_LOCAL)
-#if defined SUPPORT_JOKE && SUPPORT_JOKE
+#if SUPPORT_JOKE
     TOKEN2ID(Bitblt),
     TOKEN2ID(Answer),
 #endif

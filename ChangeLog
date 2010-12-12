@@ -1,3 +1,8 @@
+Sun Dec 12 20:42:47 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* template/id.h.tmpl: suppress all warning: "SUPPORT_JOKE" is not
+	  defined.  [ruby-dev:42730]
+
 Sun Dec 12 20:35:07 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* misc/rb_optparse.zsh: update how to install.
