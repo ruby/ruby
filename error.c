@@ -30,7 +30,7 @@ extern const char ruby_description[];
 static const char *
 rb_strerrno(int err)
 {
-#define defined_error(name, num) if (err == num) return name;
+#define defined_error(name, num) if (err == (num)) return (name);
 #define undefined_error(name)
 #include "known_errors.inc"
 #undef defined_error
@@ -1619,8 +1619,8 @@ void
 Init_syserr(void)
 {
     rb_eNOERROR = set_syserr(0, "NOERROR");
-#define defined_error(name, num) set_syserr(num, name);
-#define undefined_error(name) set_syserr(0, name);
+#define defined_error(name, num) set_syserr((num), (name));
+#define undefined_error(name) set_syserr(0, (name));
 #include "known_errors.inc"
 #undef defined_error
 #undef undefined_error
