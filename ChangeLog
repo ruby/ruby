@@ -1,3 +1,8 @@
+Sun Dec 12 23:45:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): fix for __goto__ and __label__
+	  where were totally broken.
+
 Sun Dec 12 22:45:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (ID_H_INCLUDES): now id.h depends on vm_opts.h.

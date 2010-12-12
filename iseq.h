@@ -93,6 +93,9 @@ struct iseq_compile_data {
     int label_no;
     int node_level;
     const rb_compile_option_t *option;
+#if SUPPORT_JOKE
+    st_table *labels_table;
+#endif
 };
 
 /* defined? */

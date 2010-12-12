@@ -418,6 +418,30 @@ iseq_add_mark_object_compile_time(rb_iseq_t *iseq, VALUE v)
     return COMPILE_OK;
 }
 
+static int
+validate_label(st_data_t name, st_data_t label, st_data_t arg)
+{
+    rb_iseq_t *iseq = (rb_iseq_t *)arg;
+    LABEL *lobj = (LABEL *)label;
+    if (!lobj->link.next) {
+	do {
+	    int ret;
+	    COMPILE_ERROR((ruby_sourcefile, lobj->position,
+			   "%s: undefined label", rb_id2name((ID)name)));
+	} while (0);
+    }
+    return ST_CONTINUE;
+}
+
+static void
+validate_labels(rb_iseq_t *iseq, st_table *labels_table)
+{
+    st_foreach(labels_table, validate_label, (st_data_t)iseq);
+    if (!NIL_P(iseq->compile_data->err_info)) {
+	rb_exc_raise(iseq->compile_data->err_info);
+    }
+}
+
 VALUE
 rb_iseq_compile_node(VALUE self, NODE *node)
 {
@@ -503,6 +527,11 @@ rb_iseq_compile_node(VALUE self, NODE *node)
 	ADD_INSN(ret, iseq->compile_data->last_line, leave);
     }
 
+#if SUPPORT_JOKE
+    if (iseq->compile_data->labels_table) {
+	validate_labels(iseq, iseq->compile_data->labels_table);
+    }
+#endif
     return iseq_setup(iseq, ret);
 }
 
@@ -4043,27 +4072,36 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	{
 	    ID goto_id;
 	    ID label_id;
-	    VALUE label;
-	    VALUE label_sym;
 
 	    CONST_ID(goto_id, "__goto__");
 	    CONST_ID(label_id, "__label__");
 
 	    if (nd_type(node) == NODE_FCALL &&
 		(mid == goto_id || mid == label_id)) {
+		LABEL *label;
+		st_data_t data;
+		st_table *labels_table = iseq->compile_data->labels_table;
+		ID label_name;
+
+		if (!labels_table) {
+		    labels_table = st_init_numtable();
+		    iseq->compile_data->labels_table = labels_table;
+		}
 		if (nd_type(node->nd_args->nd_head) == NODE_LIT &&
 		    SYMBOL_P(node->nd_args->nd_head->nd_lit)) {
 
-		    label_sym = label = node->nd_args->nd_head->nd_lit;
-		    if ((label =
-			 rb_hash_aref(iseq->compile_data,
-				      label_sym)) == Qnil) {
-			rb_hash_aset(iseq->compile_data, label_sym,
-				     label = NEW_LABEL(nd_line(node)));
+		    label_name = SYM2ID(node->nd_args->nd_head->nd_lit);
+		    if (!st_lookup(labels_table, (st_data_t)label_name, &data)) {
+			label = NEW_LABEL(nd_line(node));
+			label->position = nd_line(node);
+			st_insert(labels_table, (st_data_t)label_name, (st_data_t)label);
+		    }
+		    else {
+			label = (LABEL *)data;
 		    }
 		}
 		else {
-		    rb_bug("invalid goto/label format");
+		    COMPILE_ERROR((ERROR_ARGS "invalid goto/label format"));
 		}
 
 
@@ -5351,6 +5389,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 	    rb_raise(rb_eTypeError, "unexpected object for instruction");
 	}
     }
+    validate_labels(iseq, labels_table);
     st_free_table(labels_table);
     iseq_setup(iseq, anchor);
     return COMPILE_OK;
