@@ -1,3 +1,7 @@
+Sun Dec 12 22:45:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (ID_H_INCLUDES): now id.h depends on vm_opts.h.
+
 Sun Dec 12 20:42:47 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* template/id.h.tmpl: suppress all warning: "SUPPORT_JOKE" is not
