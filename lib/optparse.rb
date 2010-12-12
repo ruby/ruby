@@ -784,7 +784,8 @@ XXX
     end
   end
 
-  # --*-completion-for-bash=WORD
+  #
+  # --*-completion-bash=WORD
   # Shows candidates for command line completion.
   #
   Officious['*-completion-bash'] = proc do |parser|
