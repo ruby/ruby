@@ -6,10 +6,10 @@
 #      mkdir -p ~/.zsh.d
 #      cp rb_optparse.zsh ~/.zsh.d/rb_optparse.zsh
 #
-# (2) load the script in ~/.zshrc.
+# (2) load the script, and add a directory to fpath before compinit.
 #      echo '. ~/.zsh.d/rb_optparse.zsh' >> ~/.zshrc
-#      echo 'fpath=("${ZSH_COMPLETION_DIR-$HOME/.zsh.d/Completion}" $fpath)' >> ~/.zshrc
-#      echo 'autoload -U ${ZSH_COMPLETION_DIR-$HOME/.zsh.d/Completion}/*(:t)' >> ~/.zshrc
+#      echo 'fpath=(~/.zsh.d/Completion $fpath)' >> ~/.zshrc
+#      echo 'autoload -U compinit; compinit' >> ~/.zshrc
 #
 # (3) restart zsh.
 #
