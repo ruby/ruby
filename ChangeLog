@@ -1,6 +1,10 @@
+Sun Dec 12 13:27:35 2010  Tanaka Akira  <akr@fsij.org>
+
+	* eval_error.c: parenthesize macro arguments.
+
 Sun Dec 12 11:53:24 2010  Tanaka Akira  <akr@fsij.org>
 
-	* encoding.c: parenthesize macro arguments.
+	* error.c: parenthesize macro arguments.
 
 Sun Dec 12 04:01:58 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
