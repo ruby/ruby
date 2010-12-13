@@ -1,3 +1,10 @@
+Mon Dec 13 09:50:09 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http.rb (Net::HTTPRequest#set_form): Added to support
+	  both application/x-www-form-urlencoded and multipart/form-data.
+	  There is a similar API, Net::HTTPRequest#set_form_data, but
+	  to keep its compatibility this is newly added. [ruby-dev:42729]
+
 Sun Dec 12 23:45:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_compile_each): fix for __goto__ and __label__

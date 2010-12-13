@@ -22,6 +22,7 @@
 require 'net/protocol'
 autoload :OpenSSL, 'openssl'
 require 'uri'
+autoload :SecureRandom, 'securerandom'
 
 module Net   #:nodoc:
 
@@ -1708,7 +1709,8 @@ module Net   #:nodoc:
     alias content_type= set_content_type
 
     # Set header fields and a body from HTML form data.
-    # +params+ should be a Hash containing HTML form data.
+    # +params+ should be an Array of Arrays or
+    # a Hash containing HTML form data.
     # Optional argument +sep+ means data record separator.
     #
     # Values are URL encoded as necessary and the content-type is set to
@@ -1727,6 +1729,48 @@ module Net   #:nodoc:
     end
 
     alias form_data= set_form_data
+
+    # Set a HTML form data set.
+    # +params+ is the form data set; it is an Array of Arrays or a Hash
+    # +enctype is the type to encode the form data set.
+    # It is application/x-www-form-urlencoded or multipart/form-data.
+    # +formpot+ is an optional hash to specify the detail.
+    #
+    # boundary:: the boundary of the multipart message
+    # charset::  the charset of the message. All names and the values of
+    #            non-file fields are encoded as the charset.
+    #
+    # Each item of params is an array and contains following items:
+    # +name+::  the name of the field
+    # +value+:: the value of the field, it should be a String or a File
+    # +opt+::   an optional hash to specify additional information
+    #
+    # Each item is a file field or a normal field.
+    # If +value+ is a File object or the +opt+ have a filename key,
+    # the item is treated as a file field.
+    #
+    # If Transfer-Encoding is set as chunked, this send the request in
+    # chunked encoding. Because chunked encoding is HTTP/1.1 feature,
+    # you must confirm the server to support HTTP/1.1 before sending it.
+    #
+    # Example:
+    #    http.set_form([["q", "ruby"], ["lang", "en"]])
+    #
+    # See also RFC 2388, RFC 2616, HTML 4.01, and HTML5
+    #
+    def set_form(params, enctype='application/x-www-form-urlencoded', formopt={})
+      @body_data = params
+      @body = nil
+      @body_stream = nil
+      @form_option = formopt
+      case enctype
+      when /\Aapplication\/x-www-form-urlencoded\z/i,
+        /\Amultipart\/form-data\z/i
+        self.content_type = enctype
+      else
+        raise ArgumentError, "invalid enctype: #{enctype}"
+      end
+    end
 
     # Set the Authorization: header for "Basic" authorization.
     def basic_auth(account, password)
@@ -1785,6 +1829,7 @@ module Net   #:nodoc:
       self['User-Agent'] ||= 'Ruby'
       @body = nil
       @body_stream = nil
+      @body_data = nil
     end
 
     attr_reader :method
@@ -1812,6 +1857,7 @@ module Net   #:nodoc:
     def body=(str)
       @body = str
       @body_stream = nil
+      @body_data = nil
       str
     end
 
@@ -1820,6 +1866,7 @@ module Net   #:nodoc:
     def body_stream=(input)
       @body = nil
       @body_stream = input
+      @body_data = nil
       input
     end
 
@@ -1837,6 +1884,8 @@ module Net   #:nodoc:
         send_request_with_body sock, ver, path, @body
       elsif @body_stream
         send_request_with_body_stream sock, ver, path, @body_stream
+      elsif @body_data
+        send_request_with_body_data sock, ver, path, @body_data
       else
         write_header sock, ver, path
       end
@@ -1869,6 +1918,92 @@ module Net   #:nodoc:
           sock.write s
         end
       end
+    end
+
+    def send_request_with_body_data(sock, ver, path, params)
+      if /\Amultipart\/form-data\z/i !~ self.content_type
+        self.content_type = 'application/x-www-form-urlencoded'
+        return send_request_with_body(sock, ver, path, URI.encode_www_form(params))
+      end
+
+      opt = @form_option.dup
+      opt[:boundary] ||= SecureRandom.urlsafe_base64(40)
+      self.set_content_type(self.content_type, boundary: opt[:boundary])
+      if chunked?
+        write_header sock, ver, path
+        encode_multipart_form_data(sock, params, opt)
+      else
+        require 'tempfile'
+        file = Tempfile.new('multipart')
+        encode_multipart_form_data(file, params, opt)
+        file.rewind
+        self.content_length = file.size
+        write_header sock, ver, path
+        IO.copy_stream(file, sock)
+      end
+    end
+
+    def encode_multipart_form_data(out, params, opt)
+      charset = opt[:charset]
+      boundary = opt[:boundary]
+      boundary ||= SecureRandom.urlsafe_base64(40)
+      chunked_p = chunked?
+
+      buf = ''
+      params.each do |key, value, h={}|
+        key = quote_string(key, charset)
+        filename =
+          h.key?(:filename) ? h[:filename] :
+          value.respond_to?(:to_path) ? File.basename(value.to_path) :
+          nil
+
+        buf << "--#{boundary}\r\n"
+        if filename
+          filename = quote_string(filename, charset)
+          type = h[:content_type] || 'application/octet-stream'
+          buf << "Content-Disposition: form-data; " \
+            "name=\"#{key}\"; filename=\"#{filename}\"\r\n" \
+            "Content-Type: #{type}\r\n\r\n"
+          if !out.respond_to?(:write) || !value.respond_to?(:read)
+            # if +out+ is not an IO or +value+ is not an IO
+            buf << (value.respond_to?(:read) ? value.read : value)
+          elsif value.respond_to?(:size) && chunked_p
+            # if +out+ is an IO and +value+ is a File, use IO.copy_stream
+            flush_buffer(out, buf, chunked_p)
+            out << "%x\r\n" % value.size if chunked_p
+            IO.copy_stream(value, out)
+            out << "\r\n" if chunked_p
+          else
+            # +out+ is an IO, and +value+ is not a File but an IO
+            flush_buffer(out, buf, chunked_p)
+            1 while flush_buffer(out, value.read(4096), chunked_p)
+          end
+        else
+          # non-file field:
+          #   HTML5 says, "The parts of the generated multipart/form-data
+          #   resource that correspond to non-file fields must not have a
+          #   Content-Type header specified."
+          buf << "Content-Disposition: form-data; name=\"#{key}\"\r\n\r\n"
+          buf << (value.respond_to?(:read) ? value.read : value)
+        end
+        buf << "\r\n"
+      end
+      buf << "--#{boundary}--\r\n"
+      flush_buffer(out, buf, chunked_p)
+      out << "0\r\n\r\n" if chunked_p
+    end
+
+    def quote_string(str, charset)
+      str = str.encode(charset, fallback:->(c){'&#%d;'%c.encode("UTF-8").ord}) if charset
+      str = str.gsub(/[\\"]/, '\\\\\&')
+    end
+
+    def flush_buffer(out, buf, chunked_p)
+      return unless buf
+      out << "%x\r\n"%buf.bytesize if chunked_p
+      out << buf
+      out << "\r\n" if chunked_p
+      buf.clear
     end
 
     def supply_default_content_type

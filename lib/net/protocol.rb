@@ -168,6 +168,8 @@ module Net # :nodoc:
       }
     end
 
+    alias << write
+
     def writeline(str)
       writing {
         write0 str + "\r\n"
