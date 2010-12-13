@@ -1,3 +1,8 @@
+Mon Dec 13 21:26:33 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (simple_sendfile): disable the use of sendfile(2) on
+	  FreeBSD. It blocks on TestIO#test_copy_stream_socket.
+
 Mon Dec 13 18:35:33 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c: define USE_SENDFILE on FreeBSD or DragonFly BSD.
