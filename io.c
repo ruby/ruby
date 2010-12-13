@@ -8216,7 +8216,9 @@ simple_sendfile(int out_fd, int in_fd, off_t *offset, off_t count)
     return sendfile(out_fd, in_fd, offset, (size_t)count);
 }
 
-# elif defined(__FreeBSD__) || defined(__DragonFly__) || defined(__APPLE__)
+# elif defined(__FreeBSD__) || defined(__DragonFly__)
+#  define USE_SENDFILE
+
 #  ifdef HAVE_SYS_UIO_H
 #   include <sys/uio.h>
 #  endif
