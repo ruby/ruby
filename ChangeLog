@@ -1,3 +1,7 @@
+Mon Dec 13 11:21:14 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (simple_sendfile): added for BSD version of sendfile(2).
+
 Mon Dec 13 09:50:09 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http.rb (Net::HTTPRequest#set_form): Added to support

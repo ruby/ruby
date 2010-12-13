@@ -8198,25 +8198,45 @@ nogvl_copy_stream_wait_write(struct copy_stream_struct *stp)
 
 #ifdef HAVE_SENDFILE
 
-#ifdef __linux__
-#define USE_SENDFILE
+# ifdef __linux__
+#  define USE_SENDFILE
 
-#ifdef HAVE_SYS_SENDFILE_H
-#include <sys/sendfile.h>
-#endif
+#  ifdef HAVE_SYS_SENDFILE_H
+#   include <sys/sendfile.h>
+#  endif
 
 static ssize_t
 simple_sendfile(int out_fd, int in_fd, off_t *offset, off_t count)
 {
-#if SIZEOF_OFF_T > SIZEOF_SIZE_T
+#  if SIZEOF_OFF_T > SIZEOF_SIZE_T
     /* we are limited by the 32-bit ssize_t return value on 32-bit */
     if (count > (off_t)SSIZE_MAX)
         count = SSIZE_MAX;
-#endif
+#  endif
     return sendfile(out_fd, in_fd, offset, (size_t)count);
 }
 
-#endif
+# elif defined(__FreeBSD__) || defined(__DragonFly__) || defined(__APPLE__)
+#  ifdef HAVE_SYS_UIO_H
+#   include <sys/uio.h>
+#  endif
+
+static ssize_t
+simple_sendfile(int out_fd, int in_fd, off_t *offset, off_t count)
+{
+    int r;
+    size_t sbytes;
+#  if SIZEOF_OFF_T > SIZEOF_SIZE_T
+    /* we are limited by the 32-bit ssize_t return value on 32-bit */
+    if (count > (off_t)SSIZE_MAX)
+        count = SSIZE_MAX;
+#  endif
+    r = sendfile(in_fd, out_fd, *offset, (size_t)count, NULL, &sbytes, 0);
+    if (r != 0) return -1;
+    return (ssize_t)sbytes;
+}
+
+# endif
 
 #endif
 
