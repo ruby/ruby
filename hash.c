@@ -2003,7 +2003,7 @@ static int path_tainted = -1;
 
 static char **origenviron;
 #ifdef _WIN32
-#define GET_ENVIRON(e) (e = rb_w32_get_environ())
+#define GET_ENVIRON(e) ((e) = rb_w32_get_environ())
 #define FREE_ENVIRON(e) rb_w32_free_environ(e)
 static char **my_environ;
 #undef environ
@@ -2019,11 +2019,11 @@ extern char **environ;
 #define FREE_ENVIRON(e)
 #endif
 #ifdef ENV_IGNORECASE
-#define ENVMATCH(s1, s2) (STRCASECMP(s1, s2) == 0)
-#define ENVNMATCH(s1, s2, n) (STRNCASECMP(s1, s2, n) == 0)
+#define ENVMATCH(s1, s2) (STRCASECMP((s1), (s2)) == 0)
+#define ENVNMATCH(s1, s2, n) (STRNCASECMP((s1), (s2), (n)) == 0)
 #else
-#define ENVMATCH(n1, n2) (strcmp(n1, n2) == 0)
-#define ENVNMATCH(s1, s2, n) (memcmp(s1, s2, n) == 0)
+#define ENVMATCH(n1, n2) (strcmp((n1), (n2)) == 0)
+#define ENVNMATCH(s1, s2, n) (memcmp((s1), (s2), (n)) == 0)
 #endif
 
 static VALUE
