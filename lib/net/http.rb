@@ -1935,6 +1935,7 @@ module Net   #:nodoc:
       else
         require 'tempfile'
         file = Tempfile.new('multipart')
+        file.binmode
         encode_multipart_form_data(file, params, opt)
         file.rewind
         self.content_length = file.size

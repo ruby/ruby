@@ -354,6 +354,7 @@ __EOM__
   def test_set_form_with_file
     require 'tempfile'
     file = Tempfile.new('ruby-test')
+    file.binmode
     file << $test_net_http_data
     filename = File.basename(file.to_path)
     data = [['file', file]]
