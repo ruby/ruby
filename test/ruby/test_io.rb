@@ -1417,20 +1417,28 @@ class TestIO < Test::Unit::TestCase
     open(__FILE__) do |f|
       f.gets
       f2 = open(t.path)
-      f2.gets
-      assert_nothing_raised {
-        f.reopen(f2)
-        assert_equal("bar\n", f.gets, '[ruby-core:24240]')
-      }
+      begin
+        f2.gets
+        assert_nothing_raised {
+          f.reopen(f2)
+          assert_equal("bar\n", f.gets, '[ruby-core:24240]')
+        }
+      ensure
+        f2.close
+      end
     end
 
     open(__FILE__) do |f|
       f2 = open(t.path)
-      f.reopen(f2)
-      assert_equal("foo\n", f.gets)
-      assert_equal("bar\n", f.gets)
-      f.reopen(f2)
-      assert_equal("baz\n", f.gets, '[ruby-dev:39479]')
+      begin
+        f.reopen(f2)
+        assert_equal("foo\n", f.gets)
+        assert_equal("bar\n", f.gets)
+        f.reopen(f2)
+        assert_equal("baz\n", f.gets, '[ruby-dev:39479]')
+      ensure
+        f2.close
+      end
     end
   end
 
@@ -1587,8 +1595,12 @@ End
   def test_reinitialize
     t = make_tempfile
     f = open(t.path)
-    assert_raise(RuntimeError) do
-      f.instance_eval { initialize }
+    begin
+      assert_raise(RuntimeError) do
+        f.instance_eval { initialize }
+      end
+    ensure
+      f.close
     end
   end
 
