@@ -1,3 +1,7 @@
+Tue Dec 14 18:19:03 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* common.mk (help): there is no reason to use the abbreviation for here.
+
 Tue Dec 14 15:03:46 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_io.rb (test_reopen, test_reinitialize): should close

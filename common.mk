@@ -909,7 +909,7 @@ help: PHONY
 	"  install-nodoc:   install without rdoc" \
 	"  install-cross:   install cross compiling staff" \
 	"  clean:           clean for tarball" \
-	"  distclean:       clean for repo" \
+	"  distclean:       clean for repository" \
 	"  change:          make change log template" \
 	"  golf:            for golfers" \
 	"" \
