@@ -1,3 +1,9 @@
+Wed Dec 15 03:41:31 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ripper/test_parser_events.rb (TestRipper#test_block_variables):
+	  Limit address space 100MB instead 100KB. Quite frankly, This
+	  margin is too narrow to contain ruby. [ruby-dev:42763] [Bug#4159]
+
 Tue Dec 14 23:53:52 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (simple_sendfile): improve linux compatibility on FreeBSD,
