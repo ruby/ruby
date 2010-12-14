@@ -8217,7 +8217,9 @@ simple_sendfile(int out_fd, int in_fd, off_t *offset, off_t count)
 }
 
 # elif 0 /* defined(__FreeBSD__) || defined(__DragonFly__) */
-/* at least FreeBSD 8.1 + r30193, sendfiles blocks its execution... */
+/* This runs on FreeBSD8.1 r30210, but sendfiles blocks its execution
+ * without cpuset -l 0.
+ */
 #  define USE_SENDFILE
 
 #  ifdef HAVE_SYS_UIO_H
@@ -8228,16 +8230,21 @@ static ssize_t
 simple_sendfile(int out_fd, int in_fd, off_t *offset, off_t count)
 {
     int r;
+    off_t pos = offset ? *offset : lseek(in_fd, 0, SEEK_CUR);
     off_t sbytes;
-    struct sf_hdtr hdtr = {NULL, 0, NULL, 0};
 #  if SIZEOF_OFF_T > SIZEOF_SIZE_T
     /* we are limited by the 32-bit ssize_t return value on 32-bit */
     if (count > (off_t)SSIZE_MAX)
         count = SSIZE_MAX;
 #  endif
-    r = sendfile(in_fd, out_fd, offset ? *offset : 0, (size_t)count, &hdtr, &sbytes, SF_NODISKIO);
-    if (r != 0) return -1;
-    if (offset) *offset = sbytes;
+    r = sendfile(in_fd, out_fd, pos, (size_t)count, NULL, &sbytes, 0);
+    if (offset) {
+	*offset += sbytes;
+    }
+    else {
+	lseek(in_fd, sbytes, SEEK_CUR);
+    }
+    if (r != 0 && sbytes == 0) return -1;
     return (ssize_t)sbytes;
 }
 

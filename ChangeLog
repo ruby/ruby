@@ -1,3 +1,8 @@
+Tue Dec 14 23:53:52 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (simple_sendfile): improve linux compatibility on FreeBSD,
+	  and now it works. But without cpuset -l 0, it still gets stuck.
+
 Tue Dec 14 20:31:33 2010  Tanaka Akira  <akr@fsij.org>
 
 	* gc.c: parenthesize macro arguments.
