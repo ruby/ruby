@@ -656,11 +656,12 @@ module MiniTest
         inst = suite.new method
         inst._assertions = 0
 
+        print "#{suite}##{method} = " % time if @verbose
         start_time = Time.now
         result = inst.run self
         time = Time.now - start_time
 
-        print "#{suite}##{method} = %.2f s = " % time if @verbose
+        print "%.2f s = " % time if @verbose
         print result
         puts if @verbose
 
