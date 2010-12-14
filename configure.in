@@ -445,6 +445,7 @@ AC_DEFUN(RUBY_TRY_LDFLAGS, [
 
 if test "$GCC:${warnflags+set}:no" = yes::no; then
     for wflag in -Wno-unused-parameter -Wno-parentheses -Wpointer-arith -Wwrite-strings \
+		 -Werror=declaration-after-statement \
 		 -Wno-missing-field-initializers -Wshorten-64-to-32 -Wno-long-long; do
 	RUBY_TRY_CFLAGS($wflag, [warnflags="${warnflags+$warnflags }$wflag"])
     done
