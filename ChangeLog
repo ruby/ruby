@@ -1,3 +1,8 @@
+Tue Dec 14 10:25:57 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/openssl/ossl_asn1.c (ossl_asn1_decode0): how many gcc-c99isms
+	  must a man mend; before he can build with VC? r30178
+
 Mon Dec 13 21:26:33 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (simple_sendfile): disable the use of sendfile(2) on

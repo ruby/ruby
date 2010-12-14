@@ -764,8 +764,8 @@ ossl_asn1_decode0(unsigned char **pp, long length, long *offset, long depth,
 	    tag_class = sUNIVERSAL;
 	if(j & V_ASN1_CONSTRUCTED){
 	    if((j == 0x21) && (len == 0)){
-                infinite = 1;
 		long lastoff = off;
+                infinite = 1;
 		value = ossl_asn1_decode0(&p, length, &off, depth+1, 0, yield);
 		len = off - lastoff;
 	    }
