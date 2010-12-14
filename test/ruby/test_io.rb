@@ -1677,7 +1677,9 @@ End
   def test_flush_in_finalizer1
     require 'tempfile'
     bug3910 = '[ruby-dev:42341]'
-    path = Tempfile.new("bug3910").path
+    t = Tempfile.new("bug3910")
+    path = t.path
+    t.close
     fds = []
     assert_nothing_raised(TypeError, bug3910) do
       500.times {
@@ -1693,7 +1695,9 @@ End
   def test_flush_in_finalizer2
     require 'tempfile'
     bug3910 = '[ruby-dev:42341]'
-    path = Tempfile.new("bug3910").path
+    t = Tempfile.new("bug3910")
+    path = t.path
+    t.close
     1.times do
       io = open(path,"w")
       io.print "hoge"
