@@ -1,3 +1,11 @@
+Tue Dec 14 14:24:15 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_io.rb (make_tempfile): change the prefix from 'foo'
+	  to 'test_io' because the old one is meaningless and inconvenient.
+
+	* test/ruby/test_io.rb (test_binmode_after_closed): the temporary file
+	  maked by make_temfile is already closed.
+
 Tue Dec 14 13:52:19 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_io.rb (test_flush_in_finalizer[12]): should close

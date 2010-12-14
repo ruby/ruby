@@ -1065,7 +1065,7 @@ class TestIO < Test::Unit::TestCase
   end
 
   def make_tempfile
-    t = Tempfile.new("foo")
+    t = Tempfile.new("test_io")
     t.binmode
     t.puts "foo"
     t.puts "bar"
@@ -1654,7 +1654,6 @@ End
 
   def test_binmode_after_closed
     t = make_tempfile
-    t.close
     assert_raise(IOError) {t.binmode}
   end
 
