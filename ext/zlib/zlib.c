@@ -2456,6 +2456,19 @@ get_gzfile(VALUE obj)
  */
 
 
+typedef struct {
+    int argc;
+    VALUE *argv;
+    VALUE klass;
+} new_wrap_arg_t;
+
+static VALUE
+new_wrap(VALUE tmp)
+{
+    new_wrap_arg_t *arg = (new_wrap_arg_t *)tmp;
+    return rb_class_new_instance(arg->argc, arg->argv, arg->klass);
+}
+
 static VALUE
 gzfile_ensure_close(VALUE obj)
 {
@@ -2466,6 +2479,35 @@ gzfile_ensure_close(VALUE obj)
 	gzfile_close(gz, 1);
     }
     return Qnil;
+}
+
+static VALUE
+gzfile_wrap(int argc, VALUE *argv, VALUE klass, int close_io_on_error)
+{
+    VALUE obj;
+
+    if (close_io_on_error) {
+	int state = 0;
+	new_wrap_arg_t arg;
+	arg.argc = argc;
+	arg.argv = argv;
+	arg.klass = klass;
+	obj = rb_protect(new_wrap, (VALUE)&arg, &state);
+	if (state) {
+	    rb_io_close(argv[0]);
+	    rb_jump_tag(state);
+	}
+    }
+    else {
+	obj = rb_class_new_instance(argc, argv, klass);
+    }
+
+    if (rb_block_given_p()) {
+	return rb_ensure(rb_yield, obj, gzfile_ensure_close, obj);
+    }
+    else {
+	return obj;
+    }
 }
 
 /*
@@ -2481,14 +2523,7 @@ gzfile_ensure_close(VALUE obj)
 static VALUE
 rb_gzfile_s_wrap(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE obj = rb_class_new_instance(argc, argv, klass);
-
-    if (rb_block_given_p()) {
-	return rb_ensure(rb_yield, obj, gzfile_ensure_close, obj);
-    }
-    else {
-	return obj;
-    }
+    return gzfile_wrap(argc, argv, klass, 0);
 }
 
 /*
@@ -2505,7 +2540,7 @@ gzfile_s_open(int argc, VALUE *argv, VALUE klass, const char *mode)
     filename = argv[0];
     io = rb_file_open_str(filename, mode);
     argv[0] = io;
-    return rb_gzfile_s_wrap(argc, argv, klass);
+    return gzfile_wrap(argc, argv, klass, 1);
 }
 
 /*
