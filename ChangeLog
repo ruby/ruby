@@ -1,3 +1,7 @@
+Tue Dec 14 12:55:46 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/zlib/test_zlib.rb (*): should close files associated with zlib.
+
 Tue Dec 14 11:30:17 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_argf.rb (test_inplace_rename_impossible): unlink
