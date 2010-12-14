@@ -210,6 +210,7 @@ class TestArgf < Test::Unit::TestCase
         assert_equal([], e)
         assert_equal([], r)
         assert_equal("foo.new\nbar.new\nbaz.new\n", File.read(t.path))
+        File.unlink(t.path + ".~~~") rescue nil
       else
         assert_match(/Can't rename .* to .*: .*. skipping file/, e.first) #'
         assert_equal([], r)
@@ -699,8 +700,12 @@ class TestArgf < Test::Unit::TestCase
     bug4024 = '[ruby-dev:42538]'
     t = make_tempfile
     argf = ARGF.class.new(t.path)
-    assert_raise(ArgumentError, bug4024) do
-      argf.readlines(0)
+    begin
+      assert_raise(ArgumentError, bug4024) do
+        argf.readlines(0)
+      end
+    ensure
+      argf.close
     end
   end
 
@@ -708,8 +713,13 @@ class TestArgf < Test::Unit::TestCase
     bug4024 = '[ruby-dev:42538]'
     t = make_tempfile
     argf = ARGF.class.new(t.path)
-    assert_raise(ArgumentError, bug4024) do
-      argf.each_line(0).next
+    begin
+      assert_raise(ArgumentError, bug4024) do
+        argf.each_line(0).next
+      end
+    ensure
+      argf.close
     end
+
   end
 end
