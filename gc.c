@@ -39,10 +39,10 @@
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 # include <valgrind/memcheck.h>
 # ifndef VALGRIND_MAKE_MEM_DEFINED
-#  define VALGRIND_MAKE_MEM_DEFINED(p, n) VALGRIND_MAKE_READABLE(p, n)
+#  define VALGRIND_MAKE_MEM_DEFINED(p, n) VALGRIND_MAKE_READABLE((p), (n))
 # endif
 # ifndef VALGRIND_MAKE_MEM_UNDEFINED
-#  define VALGRIND_MAKE_MEM_UNDEFINED(p, n) VALGRIND_MAKE_WRITABLE(p, n)
+#  define VALGRIND_MAKE_MEM_UNDEFINED(p, n) VALGRIND_MAKE_WRITABLE((p), (n))
 # endif
 #else
 # define VALGRIND_MAKE_MEM_DEFINED(p, n) /* empty */
@@ -215,13 +215,13 @@ getrusage_time(void)
 #define GC_PROF_SET_HEAP_INFO(record) do {\
         live = objspace->heap.live_num;\
         total = heaps_used * HEAP_OBJ_LIMIT;\
-        record.heap_use_slots = heaps_used;\
-        record.heap_live_objects = live;\
-        record.heap_free_objects = total - live;\
-        record.heap_total_objects = total;\
-        record.have_finalize = deferred_final_list ? Qtrue : Qfalse;\
-        record.heap_use_size = live * sizeof(RVALUE);\
-        record.heap_total_size = total * sizeof(RVALUE);\
+        (record).heap_use_slots = heaps_used;\
+        (record).heap_live_objects = live;\
+        (record).heap_free_objects = total - live;\
+        (record).heap_total_objects = total;\
+        (record).have_finalize = deferred_final_list ? Qtrue : Qfalse;\
+        (record).heap_use_size = live * sizeof(RVALUE);\
+        (record).heap_total_size = total * sizeof(RVALUE);\
     } while(0)
 #define GC_PROF_INC_LIVE_NUM objspace->heap.live_num++
 #define GC_PROF_DEC_LIVE_NUM objspace->heap.live_num--
@@ -236,9 +236,9 @@ getrusage_time(void)
 #define GC_PROF_SET_HEAP_INFO(record) do {\
         live = objspace->heap.live_num;\
         total = heaps_used * HEAP_OBJ_LIMIT;\
-        record.heap_total_objects = total;\
-        record.heap_use_size = live * sizeof(RVALUE);\
-        record.heap_total_size = total * sizeof(RVALUE);\
+        (record).heap_total_objects = total;\
+        (record).heap_use_size = live * sizeof(RVALUE);\
+        (record).heap_total_size = total * sizeof(RVALUE);\
     } while(0)
 #define GC_PROF_INC_LIVE_NUM
 #define GC_PROF_DEC_LIVE_NUM
@@ -1330,7 +1330,7 @@ rb_gc_mark_locations(VALUE *start, VALUE *end)
     gc_mark_locations(&rb_objspace, start, end);
 }
 
-#define rb_gc_mark_locations(start, end) gc_mark_locations(objspace, start, end)
+#define rb_gc_mark_locations(start, end) gc_mark_locations(objspace, (start), (end))
 
 struct mark_tbl_arg {
     rb_objspace_t *objspace;
@@ -2273,13 +2273,13 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 void rb_vm_mark(void *ptr);
 
 #if STACK_GROW_DIRECTION < 0
-#define GET_STACK_BOUNDS(start, end, appendix) (start = STACK_END, end = STACK_START)
+#define GET_STACK_BOUNDS(start, end, appendix) ((start) = STACK_END, (end) = STACK_START)
 #elif STACK_GROW_DIRECTION > 0
-#define GET_STACK_BOUNDS(start, end, appendix) (start = STACK_START, end = STACK_END+appendix)
+#define GET_STACK_BOUNDS(start, end, appendix) ((start) = STACK_START, (end) = STACK_END+(appendix))
 #else
 #define GET_STACK_BOUNDS(start, end, appendix) \
     ((STACK_END < STACK_START) ? \
-     (start = STACK_END, end = STACK_START) : (start = STACK_START, end = STACK_END+appendix))
+     ((start) = STACK_END, (end) = STACK_START) : ((start) = STACK_START, (end) = STACK_END+(appendix)))
 #endif
 
 #define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
@@ -3173,7 +3173,7 @@ count_objects(int argc, VALUE *argv, VALUE os)
     for (i = 0; i <= T_MASK; i++) {
         VALUE type;
         switch (i) {
-#define COUNT_TYPE(t) case t: type = ID2SYM(rb_intern(#t)); break;
+#define COUNT_TYPE(t) case (t): type = ID2SYM(rb_intern(#t)); break;
 	    COUNT_TYPE(T_NONE);
 	    COUNT_TYPE(T_OBJECT);
 	    COUNT_TYPE(T_CLASS);
