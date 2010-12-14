@@ -79,7 +79,7 @@ module Test
 
       def setup_options(parser, options)
         super
-        parser.on '-x', '--exclude PATTERN' do |pattern|
+        parser.on '-x', '--exclude PATTERN', 'Exclude test files on pattern.' do |pattern|
           (options[:reject] ||= []) << pattern
         end
       end
@@ -117,7 +117,7 @@ module Test
 
       def setup_options(parser, options)
         super
-        parser.on '-Idirectory' do |dirs|
+        parser.on '-Idirectory', 'Add library load path' do |dirs|
           dirs.split(':').each { |d| $LOAD_PATH.unshift d }
         end
       end
@@ -126,7 +126,7 @@ module Test
     module GCStressOption
       def setup_options(parser, options)
         super
-        parser.on '--[no-]gc-stress' do |flag|
+        parser.on '--[no-]gc-stress', 'Set GC.stress as true' do |flag|
           options[:gc_stress] = flag
         end
       end
