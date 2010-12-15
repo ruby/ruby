@@ -8317,6 +8317,8 @@ nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
 # if SIZEOF_OFF_T > SIZEOF_SIZE_T
     /* we are limited by the 32-bit ssize_t return value on 32-bit */
     ss = (copy_length > (off_t)SSIZE_MAX) ? SSIZE_MAX : (ssize_t)copy_length;
+# else
+    ss = (ssize_t)copy_length;
 # endif
     if (use_pread) {
         ss = simple_sendfile(stp->dst_fd, stp->src_fd, &src_offset, ss);
