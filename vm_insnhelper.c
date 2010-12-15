@@ -1087,7 +1087,6 @@ vm_cref_push(rb_thread_t *th, VALUE klass, int noex, rb_block_t *blockptr)
 {
     rb_control_frame_t *cfp = vm_get_ruby_level_caller_cfp(th, th->cfp);
     NODE *cref = NEW_BLOCK(klass);
-    cref->nd_file = 0;
     cref->nd_visi = noex;
 
     if (blockptr) {

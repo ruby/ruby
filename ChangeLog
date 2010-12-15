@@ -1,3 +1,8 @@
+Thu Dec 16 07:51:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (set_relation), vm_insnhelper.c (vm_cref_push): nd_file
+	  is always zero-cleared.
+
 Wed Dec 15 20:45:02 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/test/unit.rb (process_args): need to setup @help to print options.
