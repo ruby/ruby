@@ -237,8 +237,9 @@ if defined? Zlib
       t.close
       Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo") }
 
-      f = Zlib::GzipReader.open(t.path)
-      assert_kind_of(IO, f.to_io)
+      Zlib::GzipReader.open(t.path) do |f|
+        assert_kind_of(IO, f.to_io)
+      end
     end
 
     def test_crc
