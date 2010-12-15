@@ -1,7 +1,4 @@
-require 'openssl'
-require "test/unit"
-require 'tempfile'
-require File.join(File.dirname(__FILE__), "utils.rb")
+require_relative 'utils'
 
 class OpenSSL::TestConfig < Test::Unit::TestCase
   def setup

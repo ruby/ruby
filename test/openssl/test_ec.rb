@@ -1,9 +1,4 @@
-begin
-  require "openssl"
-  require File.join(File.dirname(__FILE__), "utils.rb")
-rescue LoadError
-end
-require "test/unit"
+require_relative 'utils'
 
 if defined?(OpenSSL::PKey::EC)
 

@@ -1,12 +1,4 @@
-begin
-  require "openssl"
-  require_relative "utils.rb"
-rescue LoadError
-end
-require "rbconfig"
-require "socket"
-require "test/unit"
-require_relative '../ruby/envutil'
+require_relative "utils"
 
 if defined?(OpenSSL)
 

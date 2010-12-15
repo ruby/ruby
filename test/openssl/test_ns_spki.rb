@@ -1,12 +1,6 @@
-begin
-  require "openssl"
-  require_relative 'utils'
-rescue LoadError
-end
-require "test/unit"
+require_relative 'utils'
 
 if defined?(OpenSSL)
-
 
 class OpenSSL::TestNSSPI < Test::Unit::TestCase
   def setup
@@ -18,9 +12,6 @@ class OpenSSL::TestNSSPI < Test::Unit::TestCase
     @b64 << "AQABFhFNb3ppbGxhSXNNeUZyaWVuZDANBgkqhkiG9w0BAQQFAANBAAKv2Eex2n/S"
     @b64 << "r/7iJNroWlSzSMtTiQTEB+ADWHGj9u1xrUrOilq/o2cuQxIfZcNZkYAkWP4DubqW"
     @b64 << "i0//rgBvmco="
-  end
-
-  def teardown
   end
 
   def test_build_data

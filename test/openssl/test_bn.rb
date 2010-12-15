@@ -1,5 +1,4 @@
 require_relative 'utils'
-require "digest/md5"
 
 if defined?(OpenSSL)
 

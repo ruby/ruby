@@ -1,8 +1,4 @@
-begin
-  require "openssl"
-rescue LoadError
-end
-require "test/unit"
+require_relative 'utils'
 
 if defined?(OpenSSL)
 
