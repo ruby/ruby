@@ -1,3 +1,7 @@
+Wed Dec 15 20:45:02 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/test/unit.rb (process_args): need to setup @help to print options.
+
 Wed Dec 15 11:19:33 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/zlib/test_zlib.rb (test_to_io): forgotten to fix with r30201.

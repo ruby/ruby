@@ -36,13 +36,16 @@ module Test
       end
 
       def process_args(args = [])
+        orig_args = args.dup
         options = {}
         OptionParser.new do |opts|
           setup_options(opts, options)
           opts.parse!(args)
+          orig_args -= args
         end
         args = @init_hook.call(args, options) if @init_hook
         non_options(args, options)
+        @help = orig_args.map { |s| s =~ /[\s|&<>$()]/ ? s.inspect : s }.join " "
         options
       end
 
