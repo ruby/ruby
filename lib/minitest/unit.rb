@@ -520,7 +520,7 @@ module MiniTest
   end
 
   class Unit
-    VERSION = "2.0.0" # :nodoc:
+    VERSION = "2.0.1" # :nodoc:
 
     attr_accessor :report, :failures, :errors, :skips # :nodoc:
     attr_accessor :test_count, :assertion_count       # :nodoc:
@@ -552,8 +552,16 @@ module MiniTest
     def self.autorun
       at_exit {
         next if $! # don't run if there was an exception
+
+        # the order here is important. The at_exit handler must be
+        # installed before anyone else gets a chance to install their
+        # own, that way we can be assured that our exit will be last
+        # to run (at_exit stacks).
+        exit_code = nil
+
+        at_exit { exit false if exit_code && exit_code != 0 }
+
         exit_code = MiniTest::Unit.new.run ARGV
-        exit false if exit_code && exit_code != 0
       } unless @@installed_at_exit
       @@installed_at_exit = true
     end
@@ -657,9 +665,10 @@ module MiniTest
         inst._assertions = 0
 
         print "#{suite}##{method} = " if @verbose
-        start_time = Time.now
+
+        @start_time = Time.now
         result = inst.run self
-        time = Time.now - start_time
+        time = Time.now - @start_time
 
         print "%.2f s = " % time if @verbose
         print result
@@ -802,7 +811,7 @@ module MiniTest
 
       def run runner
         trap "INFO" do
-          time = Time.now - runner.start_time
+          time = runner.start_time ? Time.now - runner.start_time : 0
           warn "%s#%s %.2fs" % [self.class, self.__name__, time]
           runner.status $stderr
         end if SUPPORTS_INFO_SIGNAL
