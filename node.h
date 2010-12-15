@@ -233,8 +233,8 @@ enum node_type {
 };
 
 typedef struct RNode {
-    unsigned long flags;
-    char *nd_file;
+    VALUE flags;
+    VALUE nd_reserved;		/* ex nd_file */
     union {
 	struct RNode *node;
 	ID id;

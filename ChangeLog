@@ -1,4 +1,7 @@
-Thu Dec 16 07:51:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Dec 16 08:04:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* node.h (RNode): match the type of flags to RBasic, and renamed
+	  nd_file as nd_reserved.
 
 	* iseq.c (set_relation), vm_insnhelper.c (vm_cref_push): nd_file
 	  is always zero-cleared.
