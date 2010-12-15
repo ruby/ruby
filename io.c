@@ -8196,6 +8196,22 @@ nogvl_copy_stream_wait_write(struct copy_stream_struct *stp)
     return 0;
 }
 
+static int
+maygvl_copy_stream_wait_readwrite(struct copy_stream_struct *stp)
+{
+    int ret;
+    rb_fd_zero(&stp->fds);
+    rb_fd_set(stp->src_fd, &stp->fds);
+    rb_fd_set(stp->dst_fd, &stp->fds);
+    ret = rb_fd_select(rb_fd_max(&stp->fds), &stp->fds, NULL, NULL, NULL);
+    if (ret == -1) {
+        stp->syserr = "select";
+        stp->error_no = errno;
+        return -1;
+    }
+    return 0;
+}
+
 #ifdef HAVE_SENDFILE
 
 # ifdef __linux__
@@ -8208,15 +8224,10 @@ nogvl_copy_stream_wait_write(struct copy_stream_struct *stp)
 static ssize_t
 simple_sendfile(int out_fd, int in_fd, off_t *offset, off_t count)
 {
-#  if SIZEOF_OFF_T > SIZEOF_SIZE_T
-    /* we are limited by the 32-bit ssize_t return value on 32-bit */
-    if (count > (off_t)SSIZE_MAX)
-        count = SSIZE_MAX;
-#  endif
     return sendfile(out_fd, in_fd, offset, (size_t)count);
 }
 
-# elif 0 /* defined(__FreeBSD__) || defined(__DragonFly__) */
+# elif 0 /* defined(__FreeBSD__) || defined(__DragonFly__) */ || defined(__APPLE__)
 /* This runs on FreeBSD8.1 r30210, but sendfiles blocks its execution
  * without cpuset -l 0.
  */
@@ -8232,19 +8243,19 @@ simple_sendfile(int out_fd, int in_fd, off_t *offset, off_t count)
     int r;
     off_t pos = offset ? *offset : lseek(in_fd, 0, SEEK_CUR);
     off_t sbytes;
-#  if SIZEOF_OFF_T > SIZEOF_SIZE_T
-    /* we are limited by the 32-bit ssize_t return value on 32-bit */
-    if (count > (off_t)SSIZE_MAX)
-        count = SSIZE_MAX;
-#  endif
+#  ifdef __APPLE__
+    r = sendfile(in_fd, out_fd, pos, &count, NULL, 0);
+    sbytes = count;
+#  else
     r = sendfile(in_fd, out_fd, pos, (size_t)count, NULL, &sbytes, 0);
+#  endif
+    if (r != 0 && sbytes == 0) return -1;
     if (offset) {
 	*offset += sbytes;
     }
     else {
 	lseek(in_fd, sbytes, SEEK_CUR);
     }
-    if (r != 0 && sbytes == 0) return -1;
     return (ssize_t)sbytes;
 }
 
@@ -8303,11 +8314,15 @@ nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
     }
 
   retry_sendfile:
+# if SIZEOF_OFF_T > SIZEOF_SIZE_T
+    /* we are limited by the 32-bit ssize_t return value on 32-bit */
+    ss = (copy_length > (off_t)SSIZE_MAX) ? SSIZE_MAX : (ssize_t)copy_length;
+# endif
     if (use_pread) {
-        ss = simple_sendfile(stp->dst_fd, stp->src_fd, &src_offset, copy_length);
+        ss = simple_sendfile(stp->dst_fd, stp->src_fd, &src_offset, ss);
     }
     else {
-        ss = simple_sendfile(stp->dst_fd, stp->src_fd, NULL, copy_length);
+        ss = simple_sendfile(stp->dst_fd, stp->src_fd, NULL, ss);
     }
     if (0 < ss) {
         stp->total += ss;
@@ -8327,7 +8342,7 @@ nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
 	  case EWOULDBLOCK:
 #endif
-            if (nogvl_copy_stream_wait_write(stp) == -1)
+            if (maygvl_copy_stream_wait_readwrite(stp) == -1)
                 return -1;
             if (rb_thread_interrupted(stp->th))
                 return -1;
