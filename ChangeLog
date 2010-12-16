@@ -1,3 +1,8 @@
+Thu Dec 16 23:29:20 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/rbinstall.rb (bin-comm): use transformed name.
+	  [ruby-dev:42777]
+
 Thu Dec 16 21:52:07 2010  Tanaka Akira  <akr@fsij.org>
 
 	* io.c: parenthesize macro arguments.

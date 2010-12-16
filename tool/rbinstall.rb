@@ -441,7 +441,7 @@ install?(:local, :comm, :bin, :'bin-comm') do
     trans = proc {|base| base}
   end
   install_recursive(File.join(srcdir, "bin"), bindir) do |src, cmd|
-    name = RbConfig.expand(trans[File.basename(src)])
+    cmd = File.join(File.dirname(cmd), RbConfig.expand(trans[File.basename(cmd)]))
 
     shebang = ''
     body = ''
