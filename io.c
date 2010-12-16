@@ -7411,65 +7411,65 @@ io_advise_internal(void *arg)
 static VALUE io_advise_sym_to_const(VALUE sym)
 {
 #ifdef POSIX_FADV_NORMAL
-  if (sym == sym_normal)
-      return INT2NUM(POSIX_FADV_NORMAL);
+    if (sym == sym_normal)
+	return INT2NUM(POSIX_FADV_NORMAL);
 #endif
 
 #ifdef POSIX_FADV_RANDOM
-  if (sym == sym_random)
-      return INT2NUM(POSIX_FADV_RANDOM);
+    if (sym == sym_random)
+	return INT2NUM(POSIX_FADV_RANDOM);
 #endif
 
 #ifdef POSIX_FADV_SEQUENTIAL
-  if (sym == sym_sequential)
-      return INT2NUM(POSIX_FADV_SEQUENTIAL);
+    if (sym == sym_sequential)
+	return INT2NUM(POSIX_FADV_SEQUENTIAL);
 #endif
 
 #ifdef POSIX_FADV_WILLNEED
-  if (sym == sym_willneed)
-      return INT2NUM(POSIX_FADV_WILLNEED);
+    if (sym == sym_willneed)
+	return INT2NUM(POSIX_FADV_WILLNEED);
 #endif
 
 #ifdef POSIX_FADV_DONTNEED
-  if (sym == sym_dontneed)
-      return INT2NUM(POSIX_FADV_DONTNEED);
+    if (sym == sym_dontneed)
+	return INT2NUM(POSIX_FADV_DONTNEED);
 #endif
 
 #ifdef POSIX_FADV_NOREUSE
-  if (sym == sym_noreuse)
-      return INT2NUM(POSIX_FADV_NOREUSE);
+    if (sym == sym_noreuse)
+	return INT2NUM(POSIX_FADV_NOREUSE);
 #endif
 
-      return Qnil;
+    return Qnil;
 }
 
 static VALUE
 do_io_advise(rb_io_t *fptr, VALUE advice, off_t offset, off_t len)
 {
-  int rv;
-  struct io_advise_struct ias;
-  VALUE num_adv;
+    int rv;
+    struct io_advise_struct ias;
+    VALUE num_adv;
 
-  num_adv = io_advise_sym_to_const(advice);
+    num_adv = io_advise_sym_to_const(advice);
 
-  /*
-   * The platform doesn't support this hint. We don't raise exception, instead
-   * silently ignore it. Because IO::advise is only hint.
-   */
-  if (num_adv == Qnil)
-      return Qnil;
+    /*
+     * The platform doesn't support this hint. We don't raise exception, instead
+     * silently ignore it. Because IO::advise is only hint.
+     */
+    if (num_adv == Qnil)
+	return Qnil;
 
-  ias.fd     = fptr->fd;
-  ias.advice = NUM2INT(num_adv);
-  ias.offset = offset;
-  ias.len    = len;
+    ias.fd     = fptr->fd;
+    ias.advice = NUM2INT(num_adv);
+    ias.offset = offset;
+    ias.len    = len;
 
-  if (rv = (int)rb_thread_blocking_region(io_advise_internal, &ias, RUBY_UBF_IO, 0))
-      /* posix_fadvise(2) doesn't set errno. On success it returns 0; otherwise
-	 it returns the error code. */
-      rb_syserr_fail(rv, RSTRING_PTR(fptr->pathv));
+    if (rv = (int)rb_thread_blocking_region(io_advise_internal, &ias, RUBY_UBF_IO, 0))
+	/* posix_fadvise(2) doesn't set errno. On success it returns 0; otherwise
+	   it returns the error code. */
+	rb_syserr_fail(rv, RSTRING_PTR(fptr->pathv));
 
-  return Qnil;
+    return Qnil;
 }
 
 #endif /* HAVE_POSIX_FADVISE */
