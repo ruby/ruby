@@ -2763,46 +2763,46 @@ str_encode_bang(int argc, VALUE *argv, VALUE str)
  *     str.encode(dst_encoding, src_encoding [, options] )   -> str
  *     str.encode([options])   -> str
  *
- *  The first form returns a copy of <i>str</i> transcoded
+ *  The first form returns a copy of +str+ transcoded
  *  to encoding +encoding+.
- *  The second form returns a copy of <i>str</i> transcoded
+ *  The second form returns a copy of +str+ transcoded
  *  from src_encoding to dst_encoding.
- *  The last form returns a copy of <i>str</i> transcoded to
- *  <code>Encoding.default_internal</code>.
+ *  The last form returns a copy of +str+ transcoded to
+ *  <tt>Encoding.default_internal</tt>.
+ *
  *  By default, the first and second form raise
  *  Encoding::UndefinedConversionError for characters that are
  *  undefined in the destination encoding, and
  *  Encoding::InvalidByteSequenceError for invalid byte sequences
  *  in the source encoding. The last form by default does not raise
  *  exceptions but uses replacement strings.
- *  The <code>options</code> Hash gives details for conversion.
  *
- *  === options
- *  The hash <code>options</code> can have the following keys:
+ *  The +options+ Hash gives details for conversion and can have the following
+ *  keys:
+ *
  *  :invalid ::
- *    If the value is <code>:replace</code>, <code>#encode</code> replaces
- *    invalid byte sequences in <code>str</code> with the replacement character.
- *    The default is to raise the exception
+ *    If the value is +:replace+, #encode replaces invalid byte sequences in
+ *    +str+ with the replacement character.  The default is to raise the
+ *    Encoding::InvalidByteSequenceError exception
  *  :undef ::
- *    If the value is <code>:replace</code>, <code>#encode</code> replaces
- *    characters which are undefined in the destination encoding with
- *    the replacement character.
+ *    If the value is +:replace+, #encode replaces characters which are
+ *    undefined in the destination encoding with the replacement character.
+ *    The default is to raise the Encoding::UndefinedConversionError.
  *  :replace ::
- *    Sets the replacement string to the value. The default replacement
+ *    Sets the replacement string to the given value. The default replacement
  *    string is "\uFFFD" for Unicode encoding forms, and "?" otherwise.
  *  :fallback ::
- *    Sets the replacement string by the hash for undefined character.
- *    Its key is a such undefined character encoded in source encoding
+ *    Sets the replacement string by the given hash for undefined character.
+ *    Its key is an undefined character encoded in the source encoding
  *    of current transcoder. Its value can be any encoding until it
  *    can be converted into the destination encoding of the transcoder.
  *  :xml ::
- *    The value must be <code>:text</code> or <code>:attr</code>.
- *    If the value is <code>:text</code> <code>#encode</code> replaces
- *    undefined characters with their (upper-case hexadecimal) numeric
- *    character references. '&', '<', and '>' are converted to "&amp;",
- *    "&lt;", and "&gt;", respectively.
- *    If the value is <code>:attr</code>, <code>#encode</code> also quotes
- *    the replacement result (using '"'), and replaces '"' with "&quot;".
+ *    The value must be +:text+ or +:attr+.
+ *    If the value is +:text+ #encode replaces undefined characters with their
+ *    (upper-case hexadecimal) numeric character references. '&', '<', and '>'
+ *    are converted to "&amp;", "&lt;", and "&gt;", respectively.
+ *    If the value is +:attr+, #encode also quotes the replacement result
+ *    (using '"'), and replaces '"' with "&quot;".
  *  :cr_newline ::
  *    Replaces LF ("\n") with CR ("\r") if value is true.
  *  :crlf_newline ::

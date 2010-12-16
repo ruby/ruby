@@ -1,3 +1,8 @@
+Fri Dec 17 04:18:37 2010  Eric Hodel  <drbrain@segment7.net>
+
+	* transcode.c (str_encode): Alter comment for better wording and ri
+	  output.
+
 Fri Dec 17 00:05:40 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (rb_io_advise): New API. IO#advise() allows to tell the
