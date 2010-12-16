@@ -36,6 +36,7 @@ module RbConfig
 
 arch = RUBY_PLATFORM
 win32 = /mswin/ =~ arch
+universal = /universal.*darwin/ =~ arch
 v_fast = []
 v_others = []
 vars = {}
@@ -115,8 +116,17 @@ File.foreach "config.status" do |line|
       val.gsub!(/--with-out-ext/, "--without-ext")
     end
     val = val.gsub(/\$(?:\$|\{?(\w+)\}?)/) {$1 ? "$(#{$1})" : $&}.dump
-    if /^prefix$/ =~ name
+    case name
+    when /^prefix$/
       val = "(TOPDIR || DESTDIR + #{val})"
+    when /^ARCH_FLAG$/
+      val = "arch_flag || #{val}" if universal
+    when /^UNIVERSAL_ARCHNAMES$/
+      universal, val = val, 'universal' if universal
+    when /^arch$/
+      if universal
+        val.sub!(/universal/, %q[#{arch && universal[/(?:\A|\s)#{Regexp.quote(arch)}=(\S+)/, 1] || '\&'}])
+      end
     end
     v = "  CONFIG[\"#{name}\"] #{win32 && vars[name] ? '<< "\n"' : '='} #{val}\n"
     vars[name] = true
@@ -138,6 +148,11 @@ drive = File::PATH_SEPARATOR == ';'
 prefix = "/lib/ruby/#{version}/#{arch}"
 print "  TOPDIR = File.dirname(__FILE__).chomp!(#{prefix.dump})\n"
 print "  DESTDIR = ", (drive ? "TOPDIR && TOPDIR[/\\A[a-z]:/i] || " : ""), "'' unless defined? DESTDIR\n"
+print <<'ARCH' if universal
+  arch_flag = ENV['ARCHFLAGS'] || ((e = ENV['RC_ARCHS']) && e.split.uniq.map {|a| "-arch #{a}"}.join(' '))
+  arch = arch_flag && arch_flag[/\A\s*-arch\s+(\S+)\s*\z/, 1]
+ARCH
+print "  universal = #{universal}\n"
 print "  CONFIG = {}\n"
 print "  CONFIG[\"DESTDIR\"] = DESTDIR\n"
 

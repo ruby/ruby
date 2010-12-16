@@ -1,3 +1,8 @@
+Thu Dec 16 21:46:39 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/mkconfig.rb (RbConfig): honor ARCHFLAGS and RC_ARCHS to
+	  override embedded ARCH_FLAG value on universal-darwin.
+
 Thu Dec 16 19:50:12 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/{configure.bat,setup.mak,Makefile.sub} (PROGRAM_PREFIX,
