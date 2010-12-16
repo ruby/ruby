@@ -1,3 +1,7 @@
+Fri Dec 17 07:04:09 2010  Tanaka Akira  <akr@fsij.org>
+
+	* iseq.c: parenthesize macro arguments.
+
 Fri Dec 17 04:18:37 2010  Eric Hodel  <drbrain@segment7.net>
 
 	* transcode.c (str_encode): Alter comment for better wording and ri
