@@ -57,13 +57,13 @@ goto :loop
   shift
 goto :loop
 :pprefix
-  echo>> ~tmp~.mak 	"RUBY_PREFIX=%~2" \
+  echo>> ~tmp~.mak 	"PROGRAM_PREFIX=%~2" \
   echo>>confargs.tmp %1=%2 \
   shift
   shift
 goto :loop
 :suffix
-  echo>> ~tmp~.mak 	"RUBY_SUFFIX=%~2" \
+  echo>> ~tmp~.mak 	"PROGRAM_SUFFIX=%~2" \
   echo>>confargs.tmp %1=%2 \
   shift
   shift

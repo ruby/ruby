@@ -36,7 +36,7 @@ srcdir = ..
 RUBY_BASE_NAME = ruby
 !endif
 !ifndef RUBY_INSTALL_NAME
-RUBY_INSTALL_NAME = $(PROGRAM_PREFIX)$(RUBY_BASE_NAME)$(RUBY_SUFFIX)
+RUBY_INSTALL_NAME = $(PROGRAM_PREFIX)$(RUBY_BASE_NAME)$(PROGRAM_SUFFIX)
 !endif
 !if !defined(RUBYW_INSTALL_NAME) || "$(RUBYW_INSTALL_NAME)" == "$(RUBY_INSTALL_NAME)"
 RUBYW_INSTALL_NAME = $(RUBY_INSTALL_NAME:ruby=rubyw)
@@ -689,7 +689,7 @@ s,@LDFLAGS@,$(LDFLAGS),;t t
 s,@LIBS@,$(LIBS),;t t
 s,@exec_prefix@,$${prefix},;t t
 s,@prefix@,$(prefix),;t t
-s,@program_transform_name@,s,.*,$(RUBY_PREFIX)&$(RUBY_SUFFIX),,;t t
+s,@program_transform_name@,s,.*,$(PROGRAM_PREFIX)&$(PROGRAM_SUFFIX),,;t t
 s,@bindir@,$${exec_prefix}/bin,;t t
 s,@sbindir@,$${exec_prefix}/sbin,;t t
 s,@libexecdir@,$${exec_prefix}/libexec,;t t

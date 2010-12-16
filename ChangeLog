@@ -1,3 +1,10 @@
+Thu Dec 16 19:50:12 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/{configure.bat,setup.mak,Makefile.sub} (PROGRAM_PREFIX,
+	  PROGRAM_SUFFIX): unite the differences of the names of macros of
+	  prefix and suffix.
+	  reported by HANEDA Norikatsu. [ruby-dev:42775]
+
 Thu Dec 16 08:04:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* node.h (RNode): match the type of flags to RBasic, and renamed
