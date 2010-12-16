@@ -7408,7 +7408,8 @@ io_advise_internal(void *arg)
     return posix_fadvise(ptr->fd, ptr->offset, ptr->len, ptr->advice);
 }
 
-static VALUE io_advise_sym_to_const(VALUE sym)
+static VALUE
+io_advise_sym_to_const(VALUE sym)
 {
 #ifdef POSIX_FADV_NORMAL
     if (sym == sym_normal)
@@ -7518,26 +7519,25 @@ do_io_advise(rb_io_t *fptr, VALUE advice, off_t offset, off_t len)
 static VALUE
 rb_io_advise(int argc, VALUE *argv, VALUE io)
 {
-  int rv;
-  VALUE advice, offset, len;
-  off_t off, l;
-  rb_io_t *fptr;
+    VALUE advice, offset, len;
+    off_t off, l;
+    rb_io_t *fptr;
 
-  rb_scan_args(argc, argv, "12", &advice, &offset, &len);
-  if (TYPE(advice) != T_SYMBOL)
-      rb_raise(rb_eTypeError, "advice must be a Symbol");
+    rb_scan_args(argc, argv, "12", &advice, &offset, &len);
+    if (!SYMBOL_P(advice))
+	rb_raise(rb_eTypeError, "advice must be a Symbol");
 
-  io = GetWriteIO(io);
-  GetOpenFile(io, fptr);
+    io = GetWriteIO(io);
+    GetOpenFile(io, fptr);
 
-  off = NIL_P(offset) ? 0 : NUM2OFFT(offset);
-  l   = NIL_P(len)    ? 0 : NUM2OFFT(len);
+    off = NIL_P(offset) ? 0 : NUM2OFFT(offset);
+    l   = NIL_P(len)    ? 0 : NUM2OFFT(len);
 
 #ifdef HAVE_POSIX_FADVISE
-  return do_io_advise(fptr, advice, off, l);
+    return do_io_advise(fptr, advice, off, l);
 #else
-  /* Ignore all hint */
-  return Qnil;
+    /* Ignore all hint */
+    return Qnil;
 #endif
 }
 
