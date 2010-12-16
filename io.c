@@ -1,3 +1,4 @@
+
 /**********************************************************************
 
   io.c -
@@ -7389,6 +7390,157 @@ select_end(VALUE arg)
 }
 #endif
 
+#ifdef HAVE_POSIX_FADVISE
+static VALUE sym_normal,   sym_sequential, sym_random,
+             sym_willneed, sym_dontneed, sym_noreuse;
+
+struct io_advise_struct {
+    int fd;
+    off_t offset;
+    off_t len;
+    int advice;
+};
+
+static VALUE
+io_advise_internal(void *arg)
+{
+    struct io_advise_struct *ptr = arg;
+    return posix_fadvise(ptr->fd, ptr->offset, ptr->len, ptr->advice);
+}
+
+static VALUE io_advise_sym_to_const(VALUE sym)
+{
+#ifdef POSIX_FADV_NORMAL
+  if (sym == sym_normal)
+      return INT2NUM(POSIX_FADV_NORMAL);
+#endif
+
+#ifdef POSIX_FADV_RANDOM
+  if (sym == sym_random)
+      return INT2NUM(POSIX_FADV_RANDOM);
+#endif
+
+#ifdef POSIX_FADV_SEQUENTIAL
+  if (sym == sym_sequential)
+      return INT2NUM(POSIX_FADV_SEQUENTIAL);
+#endif
+
+#ifdef POSIX_FADV_WILLNEED
+  if (sym == sym_willneed)
+      return INT2NUM(POSIX_FADV_WILLNEED);
+#endif
+
+#ifdef POSIX_FADV_DONTNEED
+  if (sym == sym_dontneed)
+      return INT2NUM(POSIX_FADV_DONTNEED);
+#endif
+
+#ifdef POSIX_FADV_NOREUSE
+  if (sym == sym_noreuse)
+      return INT2NUM(POSIX_FADV_NOREUSE);
+#endif
+
+      return Qnil;
+}
+
+static VALUE
+do_io_advise(rb_io_t *fptr, VALUE advice, off_t offset, off_t len)
+{
+  int rv;
+  struct io_advise_struct ias;
+  VALUE num_adv;
+
+  num_adv = io_advise_sym_to_const(advice);
+
+  /*
+   * The platform doesn't support this hint. We don't raise exception, instead
+   * silently ignore it. Because IO::advise is only hint.
+   */
+  if (num_adv == Qnil)
+      return Qnil;
+
+  ias.fd     = fptr->fd;
+  ias.advice = NUM2INT(num_adv);
+  ias.offset = offset;
+  ias.len    = len;
+
+  if (rv = (int)rb_thread_blocking_region(io_advise_internal, &ias, RUBY_UBF_IO, 0))
+      /* posix_fadvise(2) doesn't set errno. On success it returns 0; otherwise
+	 it returns the error code. */
+      rb_syserr_fail(rv, RSTRING_PTR(fptr->pathv));
+
+  return Qnil;
+}
+
+#endif /* HAVE_POSIX_FADVISE */
+
+/*
+ *  call-seq:
+ *     ios.advise(advice, offset=0, len=0) -> nil
+ *
+ *  Announce an intention to access data from the current file in a
+ *  specific pattern. On platforms that do not support the
+ *  <em>posix_fadvise(2)</em> system call, this method is a no-op.
+ *
+ * _advice_ is one of the following symbols:
+ *
+ *  * :normal - No advice to give; the default assumption for an open file.
+ *  * :sequential - The data will be accessed sequentially:
+ *     with lower offsets read before higher ones.
+ *  * :random - The data will be accessed in random order.
+ *  * :willneed - The data will be accessed in the near future.
+ *  * :dontneed - The data will not be accessed in the near future.
+ *  * :noreuse - The data will only be accessed once.
+ *
+ * The semantics of a piece of advice are platform-dependent. See
+ * <em>man 2 posix_fadvise</em> for details.
+ *
+ *  "data" means the region of the current file that begins at
+ *  _offset_ and extends for _len_ bytes. If _len_ is 0, the region
+ *  ends at the last byte of the file. By default, both _offset_ and
+ *  _len_ are 0, meaning that the advice applies to the entire file.
+ *
+ *  If an error occurs, one of the following exceptions will be raised:
+ *
+ *  * <code>IOError</code> - The <code>IO</code> stream is closed.
+ *  * <code>Errno::EBADF</code> - The file descriptor of the current file is
+      invalid.
+ *  * <code>Errno::EINVAL</code> - An invalid value for _advice_ was given.
+ *  * <code>Errno::ESPIPE</code> - The file descriptor of the current
+ *  * file refers to a FIFO or pipe. (Linux raises <code>Errno::EINVAL</code>
+ *  * in this case).
+ *  * <code>TypeError</code> - Either _advice_ was not a Symbol, or one of the
+      other arguments was not an <code>Integer</code>.
+ *  * <code>RangeError</code> - One of the arguments given was too big/small.
+ *
+ * This list is not exhaustive; other Errno:: exceptions are also possible.
+ */
+static VALUE
+rb_io_advise(int argc, VALUE *argv, VALUE io)
+{
+  int rv;
+  VALUE advice, offset, len;
+  off_t off, l;
+  rb_io_t *fptr;
+
+  rb_scan_args(argc, argv, "12", &advice, &offset, &len);
+  if (TYPE(advice) != T_SYMBOL)
+      rb_raise(rb_eTypeError, "advice must be a Symbol");
+
+  io = GetWriteIO(io);
+  GetOpenFile(io, fptr);
+
+  off = NIL_P(offset) ? 0 : NUM2OFFT(offset);
+  l   = NIL_P(len)    ? 0 : NUM2OFFT(len);
+
+#ifdef HAVE_POSIX_FADVISE
+  return do_io_advise(fptr, advice, off, l);
+#else
+  /* Ignore all hint */
+  return Qnil;
+#endif
+}
+
 /*
  *  call-seq:
  *     IO.select(read_array
@@ -10191,6 +10343,7 @@ Init_IO(void)
     rb_define_method(rb_cIO, "binmode",  rb_io_binmode_m, 0);
     rb_define_method(rb_cIO, "binmode?", rb_io_binmode_p, 0);
     rb_define_method(rb_cIO, "sysseek", rb_io_sysseek, -1);
+    rb_define_method(rb_cIO, "advise", rb_io_advise, -1);
 
     rb_define_method(rb_cIO, "ioctl", rb_io_ioctl, -1);
     rb_define_method(rb_cIO, "fcntl", rb_io_fcntl, -1);
@@ -10367,4 +10520,12 @@ Init_IO(void)
     sym_textmode = ID2SYM(rb_intern("textmode"));
     sym_binmode = ID2SYM(rb_intern("binmode"));
     sym_autoclose = ID2SYM(rb_intern("autoclose"));
+#ifdef HAVE_POSIX_FADVISE
+    sym_normal = ID2SYM(rb_intern("normal"));
+    sym_sequential = ID2SYM(rb_intern("sequential"));
+    sym_random = ID2SYM(rb_intern("random"));
+    sym_willneed = ID2SYM(rb_intern("willneed"));
+    sym_dontneed = ID2SYM(rb_intern("dontneed"));
+    sym_noreuse = ID2SYM(rb_intern("noreuse"));
+#endif
 }

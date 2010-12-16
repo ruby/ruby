@@ -1737,4 +1737,38 @@ End
       end
     end
   end
+
+  def test_advise
+    t = make_tempfile
+    assert_raise(ArgumentError, "no arguments") { t.advise }
+    %w{normal random sequential willneed dontneed noreuse}.map(&:to_sym).each do |adv|
+      [[0,0], [0, 20], [400, 2]].each do |offset, len|
+        open(make_tempfile.path) do |t|
+          assert_equal(t.advise(adv, offset, len), nil)
+          assert_raise(ArgumentError, "superfluous arguments") do
+            t.advise(adv, offset, len, offset)
+          end
+          assert_raise(TypeError, "wrong type for first argument") do
+            t.advise(adv.to_s, offset, len)
+          end
+          assert_raise(TypeError, "wrong type for last argument") do
+            t.advise(adv, offset, Array(len))
+          end
+          assert_raise(RangeError, "last argument too big") do
+            t.advise(adv, offset, 9999e99)
+          end
+        end
+        assert_raise(IOError, "closed file") do
+          make_tempfile.advise(adv.to_sym, offset, len)
+        end
+      end
+    end
+    %w{Normal rand glark will_need zzzzzzzzzzzz \u2609}.map(&:to_sym).each do |adv|
+      [[0,0], [0, 20], [400, 2]].each do |offset, len|
+        open(make_tempfile.path) do |t|
+          assert_equal(t.advise(adv, offset, len), nil)
+        end
+      end
+    end
+  end
 end

@@ -1,3 +1,14 @@
+Fri Dec 17 00:05:40 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (rb_io_advise): New API. IO#advise() allows to tell the
+	  ruby runtime how it expects to use a file handle. This feature
+	  can be improved a performance some situations.
+	  Note: This feature is mainly developed by Run Paint Run Run.
+	  Thank you! [ruby-core:33110] [Ruby 1.9-Feature#4038]
+
+	* io.c (do_io_advise): Helper function.
+	* io.c (io_advise_sym_to_const): ditto.
+
 Thu Dec 16 23:29:20 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/rbinstall.rb (bin-comm): use transformed name.
