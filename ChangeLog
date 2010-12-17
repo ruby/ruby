@@ -1,3 +1,10 @@
+Fri Dec 17 19:35:13 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/mkmf/base.rb (TestMkmf::FakeLog): capture output from mkmf.
+
+	* test/mkmf/test_find_executable.rb (test_find_executable):
+	  suppress meaningless diffrences for chkbuild.
+
 Fri Dec 17 13:26:54 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/setup.mak (BASERUBY): quit with an error when BASERUBY was not

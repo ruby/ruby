@@ -8,6 +8,7 @@ class TestMkmf
       ENV["PATH"] = @tmpdir
       name = "foobar#{$$}#{rand(1000)}"
       exts = mkmf {self.class::CONFIG['EXECUTABLE_EXTS']}.split
+      stdout.filter {|s| s.sub(name, "<executable>")}
       exts[0] ||= ""
       exts.each do |ext|
         full = name+ext
