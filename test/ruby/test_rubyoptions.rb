@@ -124,6 +124,8 @@ class TestRubyOptions < Test::Unit::TestCase
     require "pp"
     assert_in_out_err(%w(-r pp -e) + ["pp 1"], "", %w(1), [])
     assert_in_out_err(%w(-rpp -e) + ["pp 1"], "", %w(1), [])
+    assert_in_out_err(%w(-ep\ 1 -r), "", %w(1), [])
+    assert_in_out_err(%w(-r), "", [], [])
   rescue LoadError
   end
 
