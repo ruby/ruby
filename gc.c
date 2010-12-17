@@ -3495,8 +3495,8 @@ Init_GC(void)
     OBJ_TAINT(nomem_error);
     OBJ_FREEZE(nomem_error);
 
-    rb_define_method(rb_mKernel, "__id__", rb_obj_id, 0);
-    rb_define_method(rb_mKernel, "object_id", rb_obj_id, 0);
+    rb_define_method(rb_cBasicObject, "__id__", rb_obj_id, 0);
+    rb_define_method(rb_cBasicObject, "object_id", rb_obj_id, 0);
 
     rb_define_module_function(rb_mObSpace, "count_objects", count_objects, -1);
 

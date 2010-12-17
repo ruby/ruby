@@ -1,3 +1,8 @@
+Fri Dec 17 22:07:16 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (Init_GC): move #__id__ and #object_id to BasicObject.
+	  [ruby-dev:42778]
+
 Fri Dec 17 19:35:13 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/mkmf/base.rb (TestMkmf::FakeLog): capture output from mkmf.
