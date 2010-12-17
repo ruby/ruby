@@ -1,3 +1,8 @@
+Fri Dec 17 13:26:54 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/setup.mak (BASERUBY): quit with an error when BASERUBY was not
+	  able to set, just like configure.in does. [ruby-dev:42782]
+
 Fri Dec 17 07:04:09 2010  Tanaka Akira  <akr@fsij.org>
 
 	* iseq.c: parenthesize macro arguments.

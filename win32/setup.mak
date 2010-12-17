@@ -61,6 +61,9 @@ NTVER = $(NTVER)
 <<
 !if !defined(BASERUBY)
 	@for %I in (ruby.exe) do @echo BASERUBY = %~s$$PATH:I>> $(MAKEFILE)
+	@echo !if "$$(BASERUBY)" == "">> $(MAKEFILE)
+	@echo BASERUBY = echo executable host ruby is required.  use --with-baseruby option.^& exit 1 >> $(MAKEFILE)
+	@echo !endif>> $(MAKEFILE)
 !endif
 
 -system-vars-: -runtime- -unicows-
