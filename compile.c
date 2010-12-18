@@ -2886,7 +2886,7 @@ add_ensure_iseq(LINK_ANCHOR *ret, rb_iseq_t *iseq, int is_return)
 }
 
 static VALUE
-setup_args(rb_iseq_t *iseq, LINK_ANCHOR *args, NODE *argn, VALUE *flag)
+setup_args(rb_iseq_t *iseq, LINK_ANCHOR *args, NODE *argn, VALUE *flag, VALUE *block)
 {
     VALUE argc = INT2FIX(0);
     int nsplat = 0;
@@ -2896,8 +2896,14 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *args, NODE *argn, VALUE *flag)
     INIT_ANCHOR(arg_block);
     INIT_ANCHOR(args_splat);
     if (argn && nd_type(argn) == NODE_BLOCK_PASS) {
-	COMPILE(arg_block, "block", argn->nd_body);
-	*flag |= VM_CALL_ARGS_BLOCKARG_BIT;
+	if (block && nd_type(argn->nd_body) == NODE_LAMBDA) {
+	    NODE *lambda = argn->nd_body;
+	    *block = NEW_CHILD_ISEQVAL(lambda->nd_body, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, nd_line(lambda));
+	}
+	else {
+	    COMPILE(arg_block, "block", argn->nd_body);
+	    *flag |= VM_CALL_ARGS_BLOCKARG_BIT;
+	}
 	argn = argn->nd_head;
     }
 
@@ -3809,7 +3815,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    boff = 1;
 	  default:
 	    INIT_ANCHOR(args);
-	    argc = setup_args(iseq, args, node->nd_args->nd_head, &flag);
+	    argc = setup_args(iseq, args, node->nd_args->nd_head, &flag, NULL);
 	    ADD_SEQ(ret, args);
 	}
 	ADD_INSN1(ret, nd_line(node), dupn, FIXNUM_INC(argc, 1 + boff));
@@ -4125,7 +4131,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	/* args */
 	if (nd_type(node) != NODE_VCALL) {
-	    argc = setup_args(iseq, args, node->nd_args, &flag);
+	    argc = setup_args(iseq, args, node->nd_args, &flag, &parent_block);
 	}
 	else {
 	    argc = INT2FIX(0);
@@ -4163,7 +4169,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	INIT_ANCHOR(args);
 	iseq->compile_data->current_block = Qfalse;
 	if (nd_type(node) == NODE_SUPER) {
-	    argc = setup_args(iseq, args, node->nd_args, &flag);
+	    argc = setup_args(iseq, args, node->nd_args, &flag, &parent_block);
 	}
 	else {
 	    /* NODE_ZSUPER */
@@ -4336,7 +4342,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	}
 
 	if (node->nd_head) {
-	    argc = setup_args(iseq, args, node->nd_head, &flag);
+	    argc = setup_args(iseq, args, node->nd_head, &flag, NULL);
 	}
 	else {
 	    argc = INT2FIX(0);
@@ -4948,7 +4954,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	INIT_ANCHOR(recv);
 	INIT_ANCHOR(args);
-	argc = setup_args(iseq, args, node->nd_args, &flag);
+	argc = setup_args(iseq, args, node->nd_args, &flag, NULL);
 
 	if (node->nd_recv == (NODE *) 1) {
 	    flag |= VM_CALL_FCALL_BIT;

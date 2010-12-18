@@ -1,3 +1,8 @@
+Sat Dec 18 10:07:04 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (setup_args, iseq_compile_each): optimize AMPER LAMBDA
+	  combination as block.
+
 Fri Dec 17 22:07:16 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (Init_GC): move #__id__ and #object_id to BasicObject.
