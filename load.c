@@ -9,12 +9,12 @@
 
 VALUE ruby_dln_librefs;
 
-#define IS_RBEXT(e) (strcmp(e, ".rb") == 0)
-#define IS_SOEXT(e) (strcmp(e, ".so") == 0 || strcmp(e, ".o") == 0)
+#define IS_RBEXT(e) (strcmp((e), ".rb") == 0)
+#define IS_SOEXT(e) (strcmp((e), ".so") == 0 || strcmp((e), ".o") == 0)
 #ifdef DLEXT2
-#define IS_DLEXT(e) (strcmp(e, DLEXT) == 0 || strcmp(e, DLEXT2) == 0)
+#define IS_DLEXT(e) (strcmp((e), DLEXT) == 0 || strcmp((e), DLEXT2) == 0)
 #else
-#define IS_DLEXT(e) (strcmp(e, DLEXT) == 0)
+#define IS_DLEXT(e) (strcmp((e), DLEXT) == 0)
 #endif
 
 
@@ -745,7 +745,7 @@ void
 Init_load()
 {
 #undef rb_intern
-#define rb_intern(str) rb_intern2(str, strlen(str))
+#define rb_intern(str) rb_intern2((str), strlen(str))
     rb_vm_t *vm = GET_VM();
     static const char var_load_path[] = "$:";
     ID id_load_path = rb_intern2(var_load_path, sizeof(var_load_path)-1);

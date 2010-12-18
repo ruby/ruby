@@ -1,3 +1,7 @@
+Sat Dec 18 14:42:29 2010  Tanaka Akira  <akr@fsij.org>
+
+	* load.c: parenthesize macro arguments.
+
 Sat Dec 18 10:07:04 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (setup_args, iseq_compile_each): optimize AMPER LAMBDA
