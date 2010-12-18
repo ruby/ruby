@@ -29,6 +29,7 @@ __END__
     a = 0
     2.times(&->(_){ a += 1 })
     assert_equal(a, 2)
+    assert_raise(ArgumentError) {1.times(&->(){ a += 1 })}
   end
 
   def test_call_rest_args

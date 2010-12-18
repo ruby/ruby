@@ -265,7 +265,7 @@ caller_setup_args(const rb_thread_t *th, rb_control_frame_t *cfp, VALUE flag,
 	else if (blockiseq) {
 	    blockptr = RUBY_VM_GET_BLOCK_PTR_IN_CFP(cfp);
 	    blockptr->iseq = blockiseq;
-	    blockptr->proc = 0;
+	    blockptr->proc = (flag & VM_CALL_BLOCK_LAMBDA_BIT) ? Qtrue : Qfalse;
 	    *block = blockptr;
 	}
     }

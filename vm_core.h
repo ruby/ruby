@@ -550,6 +550,7 @@ typedef struct {
 #define VM_CALL_TAILRECURSION_BIT  (0x01 << 6)
 #define VM_CALL_SUPER_BIT          (0x01 << 7)
 #define VM_CALL_OPT_SEND_BIT       (0x01 << 8)
+#define VM_CALL_BLOCK_LAMBDA_BIT   (0x01 << 9)
 
 enum vm_special_object_type {
     VM_SPECIAL_OBJECT_VMCORE = 1,

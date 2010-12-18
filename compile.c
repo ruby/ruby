@@ -2899,6 +2899,7 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *args, NODE *argn, VALUE *flag, VALUE *b
 	if (block && nd_type(argn->nd_body) == NODE_LAMBDA) {
 	    NODE *lambda = argn->nd_body;
 	    *block = NEW_CHILD_ISEQVAL(lambda->nd_body, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, nd_line(lambda));
+	    *flag |= VM_CALL_BLOCK_LAMBDA_BIT;
 	}
 	else {
 	    COMPILE(arg_block, "block", argn->nd_body);

@@ -531,7 +531,10 @@ invoke_block_from_c(rb_thread_t *th, const rb_block_t *block,
 	const rb_control_frame_t *cfp;
 	rb_control_frame_t *ncfp;
 	int i, opt_pc, arg_size = iseq->arg_size;
-	int type = block_proc_is_lambda(block->proc) ?
+	int type =
+	    block->proc == Qtrue ? VM_FRAME_MAGIC_LAMBDA :
+	    block->proc == Qfalse ? VM_FRAME_MAGIC_BLOCK :
+	    block_proc_is_lambda(block->proc) ?
 	  VM_FRAME_MAGIC_LAMBDA : VM_FRAME_MAGIC_BLOCK;
 
 	rb_vm_set_finish_env(th);
