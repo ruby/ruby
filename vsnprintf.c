@@ -758,7 +758,7 @@ reswitch:	switch (ch) {
 			flags |= QUADINT;
 			goto rflag;
 #endif /* _HAVE_SANE_QUAD_ */
-#if _WIN32
+#ifdef _WIN32
 		case 'I':
 			if (*fmt == '3' && *(fmt + 1) == '2') {
 			    fmt += 2;

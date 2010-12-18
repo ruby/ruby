@@ -1,3 +1,8 @@
+Sat Dec 18 21:52:37 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* vsnprintf.c (BSD_vfprintf): suppress warning: "_WIN32" is not
+	  defined.
+
 Sat Dec 18 16:02:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (setup_args), vm.c (invoke_block_from_c),
