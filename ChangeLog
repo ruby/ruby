@@ -1,3 +1,8 @@
+Mon Dec 20 01:55:03 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (Init_IO): Added O_DIRECT. This feature was propsed by Run Paint Run Run.
+	  [Feature #4015] [ruby-core:33018]
+
 Sun Dec 19 19:15:23 2010  Tanaka Akira  <akr@fsij.org>
 
 	* marshal.c: parenthesize macro arguments.

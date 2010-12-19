@@ -10509,6 +10509,10 @@ Init_IO(void)
     /* do not change atime */
     rb_file_const("NOATIME", INT2FIX(O_NOATIME)); /* Linux */
 #endif
+#ifdef O_DIRECT
+    /*  Try to minimize cache effects of the I/O to and from this file. */
+    rb_file_const("DIRECT", INT2FIX(O_DIRECT));
+#endif
 
     sym_mode = ID2SYM(rb_intern("mode"));
     sym_perm = ID2SYM(rb_intern("perm"));
