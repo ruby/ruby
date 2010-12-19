@@ -1,3 +1,7 @@
+Sun Dec 19 19:15:23 2010  Tanaka Akira  <akr@fsij.org>
+
+	* marshal.c: parenthesize macro arguments.
+
 Sat Dec 18 21:52:37 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* vsnprintf.c (BSD_vfprintf): suppress warning: "_WIN32" is not
