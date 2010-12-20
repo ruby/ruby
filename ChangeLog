@@ -1,3 +1,8 @@
+Tue Nov 23 18:54:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (rb_thread_mark): should mark self in conrol
+	  frames.  [ruby-core:33289]
+
 Sat Oct 30 00:35:13 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c (iseq_s_compile): fix optional argument.
