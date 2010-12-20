@@ -615,4 +615,11 @@ class TestPack < Test::Unit::TestCase
       assert_equal([1,nil], str.unpack("#{fmt}2"))
     }
   end
+
+  def test_short_with_block
+    bug4059 = '[ruby-core:33193]'
+    result = :ok
+    assert_nil("".unpack("i") {|x| result = x}, bug4059)
+    assert_equal(:ok, result)
+  end
 end

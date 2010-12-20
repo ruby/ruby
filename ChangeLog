@@ -1,3 +1,8 @@
+Tue Nov 16 06:39:31 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* pack.c (PACK_ITEM_ADJUST): return nil not result array and yield
+	  values if block is given.  [ruby-core:33193]
+
 Tue Nov 16 00:21:20 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* regparse.c (and_cclass, or_cclass): fix memory leak.  Coverity Scan

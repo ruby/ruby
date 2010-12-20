@@ -1189,7 +1189,7 @@ hex2num(char c)
 } while (0)
 
 #define PACK_ITEM_ADJUST() do { \
-    if (tmp_len > 0) \
+    if (tmp_len > 0 && !block_p) \
 	rb_ary_store(ary, RARRAY_LEN(ary)+tmp_len-1, Qnil); \
 } while (0)
 
