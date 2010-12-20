@@ -1,4 +1,8 @@
-require_relative 'utils'
+begin
+  require "openssl"
+  require File.join(File.dirname(__FILE__), "utils.rb")
+rescue LoadError
+end
 
 if defined?(OpenSSL)
 
