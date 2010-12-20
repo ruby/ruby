@@ -1,3 +1,8 @@
+Sat Oct 30 00:35:13 2010  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (iseq_s_compile): fix optional argument.
+	  a patch from Yutaka HARA [ruby-core:32953] [Ruby 1.9-Bug#4001]
+
 Mon Nov 22 21:30:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_inspect): fix for ascii-compatible external
