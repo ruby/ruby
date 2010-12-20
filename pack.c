@@ -213,22 +213,22 @@ TOKEN_PASTE(swap,x)(xtype z)		\
 
 #ifdef FLOAT_SWAPPER
 # define FLOAT_CONVWITH(y)	FLOAT_SWAPPER y;
-# define HTONF(x,y)	(memcpy(&y,&x,sizeof(float)),	\
-			 y = rb_htonf((FLOAT_SWAPPER)y),	\
-			 memcpy(&x,&y,sizeof(float)),	\
-			 x)
-# define HTOVF(x,y)	(memcpy(&y,&x,sizeof(float)),	\
-			 y = rb_htovf((FLOAT_SWAPPER)y),	\
-			 memcpy(&x,&y,sizeof(float)),	\
-			 x)
-# define NTOHF(x,y)	(memcpy(&y,&x,sizeof(float)),	\
-			 y = rb_ntohf((FLOAT_SWAPPER)y),	\
-			 memcpy(&x,&y,sizeof(float)),	\
-			 x)
-# define VTOHF(x,y)	(memcpy(&y,&x,sizeof(float)),	\
-			 y = rb_vtohf((FLOAT_SWAPPER)y),	\
-			 memcpy(&x,&y,sizeof(float)),	\
-			 x)
+# define HTONF(x,y)	(memcpy(&(y),&(x),sizeof(float)),	\
+			 (y) = rb_htonf((FLOAT_SWAPPER)(y)),	\
+			 memcpy(&(x),&(y),sizeof(float)),	\
+			 (x))
+# define HTOVF(x,y)	(memcpy(&(y),&(x),sizeof(float)),	\
+			 (y) = rb_htovf((FLOAT_SWAPPER)(y)),	\
+			 memcpy(&(x),&(y),sizeof(float)),	\
+			 (x))
+# define NTOHF(x,y)	(memcpy(&(y),&(x),sizeof(float)),	\
+			 (y) = rb_ntohf((FLOAT_SWAPPER)(y)),	\
+			 memcpy(&(x),&(y),sizeof(float)),	\
+			 (x))
+# define VTOHF(x,y)	(memcpy(&(y),&(x),sizeof(float)),	\
+			 (y) = rb_vtohf((FLOAT_SWAPPER)(y)),	\
+			 memcpy(&(x),&(y),sizeof(float)),	\
+			 (x))
 #else
 # define FLOAT_CONVWITH(y)
 # define HTONF(x,y)	rb_htonf(x)
@@ -239,22 +239,22 @@ TOKEN_PASTE(swap,x)(xtype z)		\
 
 #ifdef DOUBLE_SWAPPER
 # define DOUBLE_CONVWITH(y)	DOUBLE_SWAPPER y;
-# define HTOND(x,y)	(memcpy(&y,&x,sizeof(double)),	\
-			 y = rb_htond((DOUBLE_SWAPPER)y),	\
-			 memcpy(&x,&y,sizeof(double)),	\
-			 x)
-# define HTOVD(x,y)	(memcpy(&y,&x,sizeof(double)),	\
-			 y = rb_htovd((DOUBLE_SWAPPER)y),	\
-			 memcpy(&x,&y,sizeof(double)),	\
-			 x)
-# define NTOHD(x,y)	(memcpy(&y,&x,sizeof(double)),	\
-			 y = rb_ntohd((DOUBLE_SWAPPER)y),	\
-			 memcpy(&x,&y,sizeof(double)),	\
-			 x)
-# define VTOHD(x,y)	(memcpy(&y,&x,sizeof(double)),	\
-			 y = rb_vtohd((DOUBLE_SWAPPER)y),	\
-			 memcpy(&x,&y,sizeof(double)),	\
-			 x)
+# define HTOND(x,y)	(memcpy(&(y),&(x),sizeof(double)),	\
+			 (y) = rb_htond((DOUBLE_SWAPPER)(y)),	\
+			 memcpy(&(x),&(y),sizeof(double)),	\
+			 (x))
+# define HTOVD(x,y)	(memcpy(&(y),&(x),sizeof(double)),	\
+			 (y) = rb_htovd((DOUBLE_SWAPPER)(y)),	\
+			 memcpy(&(x),&(y),sizeof(double)),	\
+			 (x))
+# define NTOHD(x,y)	(memcpy(&(y),&(x),sizeof(double)),	\
+			 (y) = rb_ntohd((DOUBLE_SWAPPER)(y)),	\
+			 memcpy(&(x),&(y),sizeof(double)),	\
+			 (x))
+# define VTOHD(x,y)	(memcpy(&(y),&(x),sizeof(double)),	\
+			 (y) = rb_vtohd((DOUBLE_SWAPPER)(y)),	\
+			 memcpy(&(x),&(y),sizeof(double)),	\
+			 (x))
 #else
 # define DOUBLE_CONVWITH(y)
 # define HTOND(x,y)	rb_htond(x)
@@ -1212,11 +1212,11 @@ hex2num(char c)
 
 #define PACK_LENGTH_ADJUST_SIZE(sz) do {	\
     tmp_len = 0;				\
-    if (len > (long)((send-s)/sz)) {		\
+    if (len > (long)((send-s)/(sz))) {		\
         if (!star) {				\
-	    tmp_len = len-(send-s)/sz;		\
+	    tmp_len = len-(send-s)/(sz);		\
         }					\
-	len = (send-s)/sz;			\
+	len = (send-s)/(sz);			\
     }						\
 } while (0)
 
@@ -1855,7 +1855,7 @@ pack_unpack(VALUE str, VALUE fmt)
 	    PACK_LENGTH_ADJUST_SIZE(sizeof(float));
 	    while (len-- > 0) {
 	        float tmp;
-		FLOAT_CONVWITH(ftmp;)
+		FLOAT_CONVWITH(ftmp);
 
 		memcpy(&tmp, s, sizeof(float));
 		s += sizeof(float);
