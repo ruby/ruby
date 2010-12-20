@@ -1,3 +1,9 @@
+Tue Dec 21 00:46:20 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (thread_cleanup_func): Don't touch native threading
+	  resource at fork. Sadly this is purely bandaid. We need to
+	  implement proper fix later. [Bug #4169] [ruby-core:33767]
+
 Tue Dec 21 00:22:44 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* error.c (exit_success_p): Check status code more carefully.

@@ -391,12 +391,21 @@ thread_cleanup_func_before_exec(void *th_ptr)
 }
 
 static void
-thread_cleanup_func(void *th_ptr)
+thread_cleanup_func(void *th_ptr, int atfork)
 {
     rb_thread_t *th = th_ptr;
 
     th->locking_mutex = Qfalse;
     thread_cleanup_func_before_exec(th_ptr);
+
+    /*
+     * Unfortunately, we can't release native threading resource at fork
+     * because libc may have unstable locking state therefore touching
+     * a threading resource may cause a deadlock.
+     */
+    if (atfork)
+	return;
+
     native_thread_destroy(th);
 }
 
@@ -525,7 +534,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	ruby_cleanup(state);
     }
     else {
-	thread_cleanup_func(th);
+	thread_cleanup_func(th, FALSE);
 	gvl_release(th->vm);
     }
 
@@ -2780,7 +2789,7 @@ terminate_atfork_i(st_data_t key, st_data_t val, st_data_t current_th)
 	    rb_mutex_abandon_all(th->keeping_mutexes);
 	}
 	th->keeping_mutexes = NULL;
-	thread_cleanup_func(th);
+	thread_cleanup_func(th, TRUE);
     }
     return ST_CONTINUE;
 }
