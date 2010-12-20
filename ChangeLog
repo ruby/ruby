@@ -1,3 +1,8 @@
+Tue Nov 16 22:30:39 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* vm_insnhelper.c (vm_throw): remove fear of undefined behavior :-)
+	  Coverity Scan found this bug.
+
 Tue Nov 16 06:39:31 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* pack.c (PACK_ITEM_ADJUST): return nil not result array and yield
