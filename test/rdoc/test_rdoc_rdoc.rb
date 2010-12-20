@@ -1,15 +1,21 @@
-require 'tempfile'
-require 'tmpdir'
 require 'rubygems'
 require 'minitest/autorun'
 require 'rdoc/rdoc'
+
+require 'fileutils'
+require 'tempfile'
+require 'tmpdir'
 
 class TestRDocRDoc < MiniTest::Unit::TestCase
 
   def setup
     @rdoc = RDoc::RDoc.new
+    @rdoc.options = RDoc::Options.new
+
+    @stats = RDoc::Stats.new 0, 0
+    @rdoc.instance_variable_set :@stats, @stats
+
     @tempfile = Tempfile.new 'test_rdoc_rdoc'
-    @tempfile.binmode
   end
 
   def teardown
@@ -39,48 +45,6 @@ class TestRDocRDoc < MiniTest::Unit::TestCase
     assert_empty files
   end
 
-  def test_read_file_contents
-    @tempfile.write "hi everybody"
-    @tempfile.flush
-
-    assert_equal "hi everybody", @rdoc.read_file_contents(@tempfile.path)
-  end
-
-  def test_read_file_contents_encoding
-    skip "Encoding not implemented" unless defined? ::Encoding
-
-    @tempfile.write "# coding: utf-8\nhi everybody"
-    @tempfile.flush
-
-    contents = @rdoc.read_file_contents @tempfile.path
-    assert_equal "# coding: utf-8\nhi everybody", contents
-    assert_equal Encoding::UTF_8, contents.encoding
-  end
-
-  def test_read_file_contents_encoding_fancy
-    skip "Encoding not implemented" unless defined? ::Encoding
-
-    @tempfile.write "# -*- coding: utf-8; fill-column: 74 -*-\nhi everybody"
-    @tempfile.flush
-
-    contents = @rdoc.read_file_contents @tempfile.path
-    assert_equal("# -*- coding: utf-8; fill-column: 74 -*-\nhi everybody",
-                 contents)
-    assert_equal Encoding::UTF_8, contents.encoding
-  end
-
-  def test_read_file_contents_encoding_with_signature
-    skip "Encoding not implemented" unless defined? ::Encoding
-
-    @tempfile.write "\xEF\xBB\xBF""hi everybody"
-    @tempfile.flush
-
-    bug3360 = '[ruby-dev:41452]'
-    contents = @rdoc.read_file_contents @tempfile.path
-    assert_equal "hi everybody", contents, bug3360
-    assert_equal Encoding::UTF_8, contents.encoding, bug3360
-  end
-
   def test_remove_unparsable
     file_list = %w[
       blah.class
@@ -106,6 +70,20 @@ class TestRDocRDoc < MiniTest::Unit::TestCase
 
       assert File.directory? path
     }
+  end
+
+  def test_setup_output_dir_dry_run
+    skip "No Dir::mktmpdir, upgrade your ruby" unless Dir.respond_to? :mktmpdir
+
+    @rdoc.options.dry_run = true
+
+    Dir.mktmpdir do |d|
+      path = File.join d, 'testdir'
+
+      @rdoc.setup_output_dir path, false
+
+      refute File.exist? path
+    end
   end
 
   def test_setup_output_dir_exists
@@ -158,6 +136,27 @@ class TestRDocRDoc < MiniTest::Unit::TestCase
       end
 
       assert_match %r%Directory #{Regexp.escape dir} already exists%, e.message
+    end
+  end
+
+  def test_update_output_dir
+    skip "No Dir::mktmpdir, upgrade your ruby" unless Dir.respond_to? :mktmpdir
+
+    Dir.mktmpdir do |d|
+      @rdoc.update_output_dir d, Time.now, {}
+
+      assert File.exist? "#{d}/created.rid"
+    end
+  end
+
+  def test_update_output_dir_dry_run
+    skip "No Dir::mktmpdir, upgrade your ruby" unless Dir.respond_to? :mktmpdir
+
+    Dir.mktmpdir do |d|
+      @rdoc.options.dry_run = true
+      @rdoc.update_output_dir d, Time.now, {}
+
+      refute File.exist? "#{d}/created.rid"
     end
   end
 

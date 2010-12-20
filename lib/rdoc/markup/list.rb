@@ -35,6 +35,9 @@ class RDoc::Markup::List
       @items == other.items
   end
 
+  ##
+  # Runs this list and all its #items through +visitor+
+
   def accept visitor
     visitor.accept_list_start self
 

@@ -178,7 +178,7 @@ module RDoc::RubyToken
   end
 
   class TkUnknownChar < Token
-    def initialize(seek, line_no, char_no, id)
+    def initialize(seek, line_no, char_no, name)
       super(seek, line_no, char_no)
       @name = name
     end
@@ -253,7 +253,7 @@ module RDoc::RubyToken
     [:TkWHILE,      TkKW,  "while",  EXPR_BEG, :TkWHILE_MOD],
     [:TkUNTIL,      TkKW,  "until",  EXPR_BEG, :TkUNTIL_MOD],
     [:TkFOR,        TkKW,  "for",    EXPR_BEG],
-    [:TkBREAK,      TkKW,  "break",  EXPR_END],
+    [:TkBREAK,      TkKW,  "break",  EXPR_MID],
     [:TkNEXT,       TkKW,  "next",   EXPR_END],
     [:TkREDO,       TkKW,  "redo",   EXPR_END],
     [:TkRETRY,      TkKW,  "retry",  EXPR_END],

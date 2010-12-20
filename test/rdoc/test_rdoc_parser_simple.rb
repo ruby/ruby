@@ -41,13 +41,37 @@ contents of a string.
     parser.scan
 
     expected = <<-TEXT.strip
-
 Regular expressions (<i>regexp</i>s) are patterns which describe the
 contents of a string.
     TEXT
 
     assert_equal expected, @top_level.comment
   end
+
+  # RDoc stops processing comments if it finds a comment line CONTAINING
+  # '<tt>#--</tt>'. This can be used to separate external from internal
+  # comments, or to stop a comment being associated with a method,
+  # class, or module. Commenting CAN be turned back on with
+  # a line that STARTS '<tt>#++</tt>'.
+  #
+  # I've seen guys that comment their code like this:
+  #   # This method....
+  #   #-----------------
+  #   def method
+  #
+  # => either we do it only in ruby code, or we require the leading #
+  #    (to avoid conflict with rules).
+  #
+  #   TODO: require the leading #, to provide the feature in simple text files.
+  #   Note: in ruby & C code, we require '#--' & '#++' or '*--' & '*++',
+  #   to allow rules:
+  #
+  #   # this is a comment
+  #   #---
+  #   # private text
+  #   #+++
+  #   # this is a rule:
+  #   # ---
 
   def test_remove_private_comments
     parser = util_parser ''

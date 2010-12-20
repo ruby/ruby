@@ -6,6 +6,11 @@ begin
 rescue LoadError
 end
 
+begin
+  require 'win32console'
+rescue LoadError
+end
+
 require 'rdoc/ri'
 require 'rdoc/ri/paths'
 require 'rdoc/markup'
@@ -55,6 +60,9 @@ class RDoc::RI::Driver
     end
   end
 
+  ##
+  # An RDoc::RI::Store for each entry in the RI path
+
   attr_accessor :stores
 
   ##
@@ -97,23 +105,10 @@ class RDoc::RI::Driver
   ##
   # Parses +argv+ and returns a Hash of options
 
-  def self.process_args argv = []
+  def self.process_args argv
     options = default_options
-    opts = OptionParser.new
-    setup_options(opts, options)
 
-    argv = ENV['RI'].to_s.split.concat argv
-    opts.parse!(argv)
-
-    fixup_options(options, argv)
-
-  rescue OptionParser::ParseError => e
-    puts opts, nil, e
-    abort
-  end
-
-  def self.setup_options(opt, options)
-    begin
+    opts = OptionParser.new do |opt|
       opt.accept File do |file,|
         File.readable?(file) and not File.directory?(file) and file
       end
@@ -133,7 +128,7 @@ Where name can be:
 All class names may be abbreviated to their minimum unambiguous form. If a name
 is ambiguous, all valid options will be listed.
 
-The form '.' method matches either class or instance methods, while #method
+A '.' matches either class or instance methods, while #method
 matches only instance and ::method matches only class methods.
 
 For example:
@@ -143,7 +138,7 @@ For example:
     #{opt.program_name} File.new
     #{opt.program_name} zip
 
-Note that shell quoting may be required for method names containing
+Note that shell quoting or escaping may be required for method names containing
 punctuation:
 
     #{opt.program_name} 'Array.[]'
@@ -287,9 +282,11 @@ Options may also be set in the 'RI' environment variable.
         options[:dump_path] = value
       end
     end
-  end
 
-  def self.fixup_options(options, argv)
+    argv = ENV['RI'].to_s.split.concat argv
+
+    opts.parse! argv
+
     options[:names] = argv
 
     options[:use_stdout] ||= !$stdout.tty?
@@ -297,6 +294,12 @@ Options may also be set in the 'RI' environment variable.
     options[:width] ||= 72
 
     options
+
+  rescue OptionParser::InvalidArgument, OptionParser::InvalidOption => e
+    puts opts
+    puts
+    puts e
+    exit 1
   end
 
   ##
@@ -359,7 +362,7 @@ Options may also be set in the 'RI' environment variable.
 
     paths = RDoc::Markup::Verbatim.new
     also_in.each do |store|
-      paths.parts.push '  ', store.friendly_path, "\n"
+      paths.parts.push store.friendly_path, "\n"
     end
     out << paths
   end
@@ -427,7 +430,7 @@ Options may also be set in the 'RI' environment variable.
           verb = RDoc::Markup::Verbatim.new
 
           wout.each do |incl|
-            verb.push '  ', incl.name, "\n"
+            verb.push incl.name, "\n"
           end
 
           out << verb
@@ -446,7 +449,7 @@ Options may also be set in the 'RI' environment variable.
     out << RDoc::Markup::BlankLine.new
 
     out.push(*methods.map do |method|
-      RDoc::Markup::Verbatim.new '  ', method
+      RDoc::Markup::Verbatim.new method
     end)
 
     out << RDoc::Markup::BlankLine.new
@@ -664,8 +667,8 @@ Options may also be set in the 'RI' environment variable.
 
         if method.arglists then
           arglists = method.arglists.chomp.split "\n"
-          arglists = arglists.map { |line| ['  ', line, "\n"] }
-          out << RDoc::Markup::Verbatim.new(*arglists.flatten)
+          arglists = arglists.map { |line| line + "\n" }
+          out << RDoc::Markup::Verbatim.new(*arglists)
           out << RDoc::Markup::Rule.new(1)
         end
 
@@ -844,6 +847,17 @@ Options may also be set in the 'RI' environment variable.
 
   rescue Interrupt
     exit
+  end
+
+  ##
+  # Is +file+ in ENV['PATH']?
+
+  def in_path? file
+    return true if file =~ %r%\A/% and File.exist? file
+
+    ENV['PATH'].split(File::PATH_SEPARATOR).any? do |path|
+      File.exist? File.join(path, file)
+    end
   end
 
   ##
@@ -1041,7 +1055,11 @@ Options may also be set in the 'RI' environment variable.
     pagers.compact.uniq.each do |pager|
       next unless pager
 
-      io = IO.popen pager, "w" rescue next
+      pager_cmd = pager.split.first
+
+      next unless in_path? pager_cmd
+
+      io = IO.popen(pager, 'w') rescue next
 
       next if $? and $?.exited? # pager didn't work
 

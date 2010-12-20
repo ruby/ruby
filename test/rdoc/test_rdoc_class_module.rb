@@ -92,8 +92,141 @@ class TestRDocClassModule < XrefTestCase
     assert_equal expected, cm1.method_list.sort
   end
 
+  def test_remove_nodoc_children
+    parent = RDoc::ClassModule.new 'A'
+    parent.modules_hash.replace 'B' => true, 'C' => true
+    RDoc::TopLevel.all_modules_hash.replace 'A::B' => true
+
+    parent.classes_hash.replace 'D' => true, 'E' => true
+    RDoc::TopLevel.all_classes_hash.replace 'A::D' => true
+
+    parent.remove_nodoc_children
+
+    assert_equal %w[B], parent.modules_hash.keys
+    assert_equal %w[D], parent.classes_hash.keys
+  end
+
   def test_superclass
     assert_equal @c3_h1, @c3_h2.superclass
+  end
+
+  def test_update_aliases_class
+    n1 = @xref_data.add_module RDoc::NormalClass, 'N1'
+    n1_k2 = n1.add_module RDoc::NormalClass, 'N2'
+
+    n1.add_module_alias n1_k2, 'A1'
+
+    n1_a1_c = n1.constants.find { |c| c.name == 'A1' }
+    refute_nil n1_a1_c
+    assert_equal n1_k2, n1_a1_c.is_alias_for, 'sanity check'
+
+    n1.update_aliases
+
+    n1_a1_k = @xref_data.find_class_or_module 'N1::A1'
+    refute_nil n1_a1_k
+    assert_equal n1_k2, n1_a1_k.is_alias_for
+    refute_equal n1_k2, n1_a1_k
+
+    assert_equal 1, n1_k2.aliases.length
+    assert_equal n1_a1_k, n1_k2.aliases.first
+
+    assert_equal 'N1::N2', n1_k2.full_name
+    assert_equal 'N1::A1', n1_a1_k.full_name
+  end
+
+  def test_update_aliases_module
+    n1 = @xref_data.add_module RDoc::NormalModule, 'N1'
+    n1_n2 = n1.add_module RDoc::NormalModule, 'N2'
+
+    n1.add_module_alias n1_n2, 'A1'
+
+    n1_a1_c = n1.constants.find { |c| c.name == 'A1' }
+    refute_nil n1_a1_c
+    assert_equal n1_n2, n1_a1_c.is_alias_for, 'sanity check'
+
+    n1.update_aliases
+
+    n1_a1_m = @xref_data.find_class_or_module 'N1::A1'
+    refute_nil n1_a1_m
+    assert_equal n1_n2, n1_a1_m.is_alias_for
+    refute_equal n1_n2, n1_a1_m
+
+    assert_equal 1, n1_n2.aliases.length
+    assert_equal n1_a1_m, n1_n2.aliases.first
+
+    assert_equal 'N1::N2', n1_n2.full_name
+    assert_equal 'N1::A1', n1_a1_m.full_name
+  end
+
+  def test_update_aliases_reparent
+    l1 = @xref_data.add_module RDoc::NormalModule, 'L1'
+    l1_l2 = l1.add_module RDoc::NormalModule, 'L2'
+    o1 = @xref_data.add_module RDoc::NormalModule, 'O1'
+
+    o1.add_module_alias l1_l2, 'A1'
+
+    o1_a1_c = o1.constants.find { |c| c.name == 'A1' }
+    refute_nil o1_a1_c
+    assert_equal l1_l2, o1_a1_c.is_alias_for
+    refute_equal l1_l2, o1_a1_c
+
+    o1.update_aliases
+
+    o1_a1_m = @xref_data.find_class_or_module 'O1::A1'
+    refute_nil o1_a1_m
+    assert_equal l1_l2, o1_a1_m.is_alias_for
+
+    assert_equal 1, l1_l2.aliases.length
+    assert_equal o1_a1_m, l1_l2.aliases[0]
+
+    assert_equal 'L1::L2', l1_l2.full_name
+    assert_equal 'O1::A1', o1_a1_m.full_name
+  end
+
+  def test_update_includes
+    a = RDoc::Include.new 'M1', nil
+    b = RDoc::Include.new 'M2', nil
+    c = RDoc::Include.new 'C', nil
+
+    @c1.add_include a
+    @c1.add_include b
+    @c1.add_include c
+    @c1.ancestors # cache included modules
+
+    @m1_m2.document_self = nil
+    assert @m1_m2.remove_from_documentation?
+
+    assert RDoc::TopLevel.all_modules_hash.key? @m1_m2.full_name
+    refute RDoc::TopLevel.all_modules_hash[@m1_m2.full_name].nil?
+    RDoc::TopLevel.remove_nodoc RDoc::TopLevel.all_modules_hash
+    refute RDoc::TopLevel.all_modules_hash.key? @m1_m2.full_name
+
+    @c1.update_includes
+
+    assert_equal [a, c], @c1.includes
+  end
+
+  def test_update_includes_with_colons
+    a = RDoc::Include.new 'M1', nil
+    b = RDoc::Include.new 'M1::M2', nil
+    c = RDoc::Include.new 'C', nil
+
+    @c1.add_include a
+    @c1.add_include b
+    @c1.add_include c
+    @c1.ancestors # cache included modules
+
+    @m1_m2.document_self = nil
+    assert @m1_m2.remove_from_documentation?
+
+    assert RDoc::TopLevel.all_modules_hash.key? @m1_m2.full_name
+    refute RDoc::TopLevel.all_modules_hash[@m1_m2.full_name].nil?
+    RDoc::TopLevel.remove_nodoc RDoc::TopLevel.all_modules_hash
+    refute RDoc::TopLevel.all_modules_hash.key? @m1_m2.full_name
+
+    @c1.update_includes
+
+    assert_equal [a, c], @c1.includes
   end
 
 end

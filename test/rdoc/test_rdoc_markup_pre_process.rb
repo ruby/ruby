@@ -1,7 +1,7 @@
 require 'tempfile'
 require 'rubygems'
 require 'minitest/autorun'
-require 'rdoc/markup/preprocess'
+require 'rdoc/markup/pre_process'
 require 'rdoc/code_objects'
 
 class TestRDocMarkupPreProcess < MiniTest::Unit::TestCase
@@ -10,8 +10,7 @@ class TestRDocMarkupPreProcess < MiniTest::Unit::TestCase
     RDoc::Markup::PreProcess.registered.clear
 
     @tempfile = Tempfile.new 'test_rdoc_markup_pre_process'
-    @tempfile.binmode
-    @name = File.basename @tempfile.path
+    @file_name = File.basename @tempfile.path
     @dir  = File.dirname @tempfile.path
 
     @pp = RDoc::Markup::PreProcess.new __FILE__, [@dir]
@@ -32,12 +31,17 @@ contents of a string.
     @tempfile.flush
     @tempfile.rewind
 
-    content = @pp.include_file @name, ''
+    content = @pp.include_file @file_name, '', nil
 
     expected = <<-EXPECTED
 Regular expressions (<i>regexp</i>s) are patterns which describe the
 contents of a string.
     EXPECTED
+
+    # FIXME 1.9 fix on windoze
+    # preprocessor uses binread, so line endings are \r\n
+    expected.gsub!("\n", "\r\n") if
+      RUBY_VERSION =~ /^1.9/ && RUBY_PLATFORM =~ /mswin|mingw/
 
     assert_equal expected, content
   end

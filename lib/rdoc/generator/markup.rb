@@ -36,8 +36,9 @@ module RDoc::Generator::Markup
     return @formatter if defined? @formatter
 
     show_hash = RDoc::RDoc.current.options.show_hash
+    hyperlink_all = RDoc::RDoc.current.options.hyperlink_all
     this = RDoc::Context === self ? self : @parent
-    @formatter = RDoc::Markup::ToHtmlCrossref.new this.path, this, show_hash
+    @formatter = RDoc::Markup::ToHtmlCrossref.new this.path, this, show_hash, hyperlink_all
   end
 
   ##
@@ -57,36 +58,65 @@ end
 
 class RDoc::AnyMethod
 
+  ##
+  # Maps RDoc::RubyToken classes to CSS class names
+
+  STYLE_MAP = {
+    RDoc::RubyToken::TkCONSTANT => 'ruby-constant',
+    RDoc::RubyToken::TkKW       => 'ruby-keyword',
+    RDoc::RubyToken::TkIVAR     => 'ruby-ivar',
+    RDoc::RubyToken::TkOp       => 'ruby-operator',
+    RDoc::RubyToken::TkId       => 'ruby-identifier',
+    RDoc::RubyToken::TkNode     => 'ruby-node',
+    RDoc::RubyToken::TkCOMMENT  => 'ruby-comment',
+    RDoc::RubyToken::TkREGEXP   => 'ruby-regexp',
+    RDoc::RubyToken::TkSTRING   => 'ruby-string',
+    RDoc::RubyToken::TkVal      => 'ruby-value',
+  }
+
   include RDoc::Generator::Markup
+
+  @add_line_numbers = false
+
+  class << self
+    ##
+    # Allows controlling whether <tt>#markup_code</tt> adds line numbers to
+    # the source code.
+
+    attr_accessor :add_line_numbers
+  end
 
   ##
   # Prepend +src+ with line numbers.  Relies on the first line of a source
   # code listing having:
   #
-  #    # File xxxxx, line dddd
+  #   # File xxxxx, line dddd
+  #
+  # If it has, line numbers are added an ', line dddd' is removed.
 
   def add_line_numbers(src)
-    if src =~ /\A.*, line (\d+)/ then
-      first = $1.to_i - 1
-      last  = first + src.count("\n")
-      size = last.to_s.length
+    return unless src.sub!(/\A(.*)(, line (\d+))/, '\1')
+    first = $3.to_i - 1
+    last  = first + src.count("\n")
+    size = last.to_s.length
 
-      line = first
-      src.gsub!(/^/) do
-        res = if line == first then
-                " " * (size + 2)
-              else
-                "%2$*1$d: " % [size, line]
-              end
+    line = first
+    src.gsub!(/^/) do
+      res = if line == first then
+              " " * (size + 1)
+            else
+              "<span class=\"line-num\">%2$*1$d</span> " % [size, line]
+            end
 
-        line += 1
-        res
-      end
+      line += 1
+      res
     end
   end
 
   ##
-  # Turns the method's token stream into HTML
+  # Turns the method's token stream into HTML.
+  #
+  # Prepends line numbers if +add_line_numbers+ is true.
 
   def markup_code
     return '' unless @token_stream
@@ -95,32 +125,32 @@ class RDoc::AnyMethod
 
     @token_stream.each do |t|
       next unless t
-      #        style = STYLE_MAP[t.class]
-      style = case t
-              when RDoc::RubyToken::TkCONSTANT then "ruby-constant"
-              when RDoc::RubyToken::TkKW       then "ruby-keyword kw"
-              when RDoc::RubyToken::TkIVAR     then "ruby-ivar"
-              when RDoc::RubyToken::TkOp       then "ruby-operator"
-              when RDoc::RubyToken::TkId       then "ruby-identifier"
-              when RDoc::RubyToken::TkNode     then "ruby-node"
-              when RDoc::RubyToken::TkCOMMENT  then "ruby-comment cmt"
-              when RDoc::RubyToken::TkREGEXP   then "ruby-regexp re"
-              when RDoc::RubyToken::TkSTRING   then "ruby-value str"
-              when RDoc::RubyToken::TkVal      then "ruby-value"
-              else
-                nil
-              end
+
+      style = STYLE_MAP[t.class]
 
       text = CGI.escapeHTML t.text
 
-      if style
+      if style then
         src << "<span class=\"#{style}\">#{text}</span>"
       else
         src << text
       end
     end
 
-    add_line_numbers src
+    # dedent the source
+    indent = src.length
+    lines = src.lines.to_a
+    lines.shift if src =~ /\A.*#\ *File/i # remove '# File' comment
+    lines.each do |line|
+      if line =~ /^ *(?=\S)/
+        n = $&.length
+        indent = n if n < indent
+        break if n == 0
+      end
+    end
+    src.gsub!(/^#{' ' * indent}/, '') if indent > 0
+
+    add_line_numbers(src) if self.class.add_line_numbers
 
     src
   end
@@ -128,6 +158,12 @@ class RDoc::AnyMethod
 end
 
 class RDoc::Attr
+
+  include RDoc::Generator::Markup
+
+end
+
+class RDoc::Alias
 
   include RDoc::Generator::Markup
 

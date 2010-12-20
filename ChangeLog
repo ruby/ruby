@@ -1,3 +1,7 @@
+Mon Dec 20 12:15:32 2010  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc: Import RDoc 3.0.
+
 Mon Dec 20 01:55:03 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (Init_IO): Added O_DIRECT. This feature was propsed by Run Paint Run Run.

@@ -11,6 +11,11 @@ require 'fileutils'
 class RDoc::RI::Store
 
   ##
+  # If true this Store will not write any files
+
+  attr_accessor :dry_run
+
+  ##
   # Path this store reads or writes
 
   attr_accessor :path
@@ -21,14 +26,18 @@ class RDoc::RI::Store
 
   attr_accessor :type
 
+  ##
+  # The contents of the Store
+
   attr_reader :cache
 
   ##
   # Creates a new Store of +type+ that will load or save to +path+
 
   def initialize path, type = nil
-    @type = type
-    @path = path
+    @dry_run = false
+    @type    = type
+    @path    = path
 
     @cache = {
       :class_methods    => {},
@@ -178,6 +187,8 @@ class RDoc::RI::Store
     @cache[:instance_methods].each do |_, m| m.uniq!; m.sort! end
     @cache[:modules].uniq!; @cache[:modules].sort!
 
+    return if @dry_run
+
     open cache_path, 'wb' do |io|
       Marshal.dump @cache, io
     end
@@ -187,7 +198,7 @@ class RDoc::RI::Store
   # Writes the ri data for +klass+
 
   def save_class klass
-    FileUtils.mkdir_p class_path(klass.full_name)
+    FileUtils.mkdir_p class_path(klass.full_name) unless @dry_run
 
     @cache[:modules] << klass.full_name
 
@@ -214,13 +225,15 @@ class RDoc::RI::Store
     @cache[:ancestors][klass.full_name].push(*ancestors)
 
     attributes = klass.attributes.map do |attribute|
-      "#{attribute.type} #{attribute.name}"
+      "#{attribute.definition} #{attribute.name}"
     end
 
     unless attributes.empty? then
       @cache[:attributes][klass.full_name] ||= []
       @cache[:attributes][klass.full_name].push(*attributes)
     end
+
+    return if @dry_run
 
     open path, 'wb' do |io|
       Marshal.dump klass, io
@@ -231,7 +244,7 @@ class RDoc::RI::Store
   # Writes the ri data for +method+ on +klass+
 
   def save_method klass, method
-    FileUtils.mkdir_p class_path(klass.full_name)
+    FileUtils.mkdir_p class_path(klass.full_name) unless @dry_run
 
     cache = if method.singleton then
               @cache[:class_methods]
@@ -240,6 +253,8 @@ class RDoc::RI::Store
             end
     cache[klass.full_name] ||= []
     cache[klass.full_name] << method.name
+
+    return if @dry_run
 
     open method_file(klass.full_name, method.full_name), 'wb' do |io|
       Marshal.dump method, io

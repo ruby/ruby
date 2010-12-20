@@ -1,29 +1,12 @@
-require 'rdoc/code_object'
-require 'rdoc/tokenstream'
+require 'rdoc/method_attr'
+require 'rdoc/token_stream'
 
 ##
 # AnyMethod is the base class for objects representing methods
 
-class RDoc::AnyMethod < RDoc::CodeObject
+class RDoc::AnyMethod < RDoc::MethodAttr
 
-  MARSHAL_VERSION = 1 # :nodoc:
-
-  include Comparable
-
-  ##
-  # Method name
-
-  attr_writer :name
-
-  ##
-  # public, protected, private
-
-  attr_accessor :visibility
-
-  ##
-  # Parameters yielded by the called block
-
-  attr_accessor :block_params
+  MARSHAL_VERSION = 0 # :nodoc:
 
   ##
   # Don't rename \#initialize to \::new
@@ -31,76 +14,49 @@ class RDoc::AnyMethod < RDoc::CodeObject
   attr_accessor :dont_rename_initialize
 
   ##
-  # Is this a singleton method?
+  # Different ways to call this method
 
-  attr_accessor :singleton
-
-  ##
-  # Source file token stream
-
-  attr_reader :text
-
-  ##
-  # Array of other names for this method
-
-  attr_reader :aliases
-
-  ##
-  # The method we're aliasing
-
-  attr_accessor :is_alias_for
+  attr_accessor :call_seq
 
   ##
   # Parameters for this method
 
   attr_accessor :params
 
-  ##
-  # Different ways to call this method
-
-  attr_accessor :call_seq
-
   include RDoc::TokenStream
 
-  def initialize(text, name)
-    super()
+  ##
+  # Creates a new AnyMethod with a token stream +text+ and +name+
 
-    @text = text
-    @name = name
+  def initialize text, name
+    super
 
-    @aliases                = []
-    @block_params           = nil
-    @call_seq               = nil
     @dont_rename_initialize = false
-    @is_alias_for           = nil
-    @params                 = nil
-    @parent_name            = nil
-    @singleton              = nil
     @token_stream           = nil
-    @visibility             = :public
   end
 
   ##
-  # Order by #singleton then #name
+  # Adds +an_alias+ as an alias for this method in +context+.
 
-  def <=>(other)
-    [@singleton ? 0 : 1, @name] <=> [other.singleton ? 0 : 1, other.name]
-  end
+  def add_alias(an_alias, context)
+    method = self.class.new an_alias.text, an_alias.new_name
 
-  ##
-  # Adds +method+ as an alias for this method
-
-  def add_alias(method)
+    method.record_location an_alias.file
+    method.singleton = self.singleton
+    method.params = self.params
+    method.visibility = self.visibility
+    method.comment = an_alias.comment
+    method.is_alias_for = self
     @aliases << method
+    context.add_method method
+    method
   end
 
   ##
-  # HTML fragment reference for this method
+  # Prefix for +aref+ is 'method'.
 
-  def aref
-    type = singleton ? 'c' : 'i'
-
-    "method-#{type}-#{CGI.escape name}"
+  def aref_prefix
+    'method'
   end
 
   ##
@@ -114,30 +70,6 @@ class RDoc::AnyMethod < RDoc::CodeObject
     elsif @params then
       "#{name}#{param_seq}"
     end
-  end
-
-  ##
-  # HTML id-friendly method name
-
-  def html_name
-    @name.gsub(/[^a-z]+/, '-')
-  end
-
-  def inspect # :nodoc:
-    alias_for = @is_alias_for ? " (alias for #{@is_alias_for.name})" : nil
-    "#<%s:0x%x %s (%s)%s>" % [
-      self.class, object_id,
-      full_name,
-      visibility,
-      alias_for,
-    ]
-  end
-
-  ##
-  # Full method name including namespace
-
-  def full_name
-    @full_name ||= "#{@parent ? @parent.full_name : '(unknown)'}#{pretty_name}"
   end
 
   ##
@@ -192,12 +124,14 @@ class RDoc::AnyMethod < RDoc::CodeObject
                    end
 
     array[8].each do |new_name, comment|
-      add_alias RDoc::Alias.new(nil, @name, new_name, comment)
+      add_alias RDoc::Alias.new(nil, @name, new_name, comment, @singleton)
     end
   end
 
   ##
   # Method name
+  #
+  # If the method has no assigned name, it extracts it from #call_seq.
 
   def name
     return @name if @name
@@ -227,63 +161,6 @@ class RDoc::AnyMethod < RDoc::CodeObject
     end
 
     params
-  end
-
-  ##
-  # Name of our parent with special handling for un-marshaled methods
-
-  def parent_name
-    @parent_name || super
-  end
-
-  ##
-  # Path to this method
-
-  def path
-    "#{@parent.path}##{aref}"
-  end
-
-  ##
-  # Method name with class/instance indicator
-
-  def pretty_name
-    "#{singleton ? '::' : '#'}#{@name}"
-  end
-
-  def pretty_print q # :nodoc:
-    alias_for = @is_alias_for ? "alias for #{@is_alias_for.name}" : nil
-
-    q.group 2, "[#{self.class.name} #{full_name} #{visibility}", "]" do
-      if alias_for then
-        q.breakable
-        q.text alias_for
-      end
-
-      if text then
-        q.breakable
-        q.text "text:"
-        q.breakable
-        q.pp @text
-      end
-
-      unless comment.empty? then
-        q.breakable
-        q.text "comment:"
-        q.breakable
-        q.pp @comment
-      end
-    end
-  end
-
-  def to_s # :nodoc:
-    "#{self.class.name}: #{full_name} (#{@text})\n#{@comment}"
-  end
-
-  ##
-  # Type of method (class or instance)
-
-  def type
-    singleton ? 'class' : 'instance'
   end
 
 end

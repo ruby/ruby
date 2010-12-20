@@ -31,49 +31,73 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
   end
 
   def accept_heading
-    assert_equal "<h5>Hello</h5>\n", @to.res.join
+    assert_equal "\n<h5>Hello</h5>\n", @to.res.join
+  end
+
+  def accept_heading_1
+    assert_equal "\n<h1>Hello</h1>\n", @to.res.join
+  end
+
+  def accept_heading_2
+    assert_equal "\n<h2>Hello</h2>\n", @to.res.join
+  end
+
+  def accept_heading_3
+    assert_equal "\n<h3>Hello</h3>\n", @to.res.join
+  end
+
+  def accept_heading_4
+    assert_equal "\n<h4>Hello</h4>\n", @to.res.join
+  end
+
+  def accept_heading_b
+    assert_equal "\n<h1><b>Hello</b></h1>\n", @to.res.join
+  end
+
+  def accept_heading_suppressed_crossref
+    assert_equal "\n<h1>Hello</h1>\n", @to.res.join
   end
 
   def accept_list_end_bullet
     assert_equal [], @to.list
     assert_equal [], @to.in_list_entry
 
-    assert_equal "<ul>\n</ul>\n", @to.res.join
+    assert_equal "<ul></ul>\n", @to.res.join
   end
 
   def accept_list_end_label
     assert_equal [], @to.list
     assert_equal [], @to.in_list_entry
 
-    assert_equal "<dl>\n</dl>\n", @to.res.join
+    assert_equal "<dl></dl>\n", @to.res.join
   end
 
   def accept_list_end_lalpha
     assert_equal [], @to.list
     assert_equal [], @to.in_list_entry
 
-    assert_equal "<ol style=\"display: lower-alpha\">\n</ol>\n", @to.res.join
+    assert_equal "<ol style=\"display: lower-alpha\"></ol>\n", @to.res.join
   end
 
   def accept_list_end_number
     assert_equal [], @to.list
     assert_equal [], @to.in_list_entry
 
-    assert_equal "<ol>\n</ol>\n", @to.res.join
+    assert_equal "<ol></ol>\n", @to.res.join
   end
 
   def accept_list_end_note
     assert_equal [], @to.list
     assert_equal [], @to.in_list_entry
 
-    assert_equal "<table>\n</table>\n", @to.res.join
+    assert_equal "<table class=\"rdoc-list\"></table>\n", @to.res.join
   end
 
   def accept_list_end_ualpha
     assert_equal [], @to.list
     assert_equal [], @to.in_list_entry
 
-    assert_equal "<ol style=\"display: upper-alpha\">\n</ol>\n", @to.res.join
+    assert_equal "<ol style=\"display: upper-alpha\"></ol>\n", @to.res.join
   end
 
   def accept_list_item_end_bullet
@@ -101,73 +125,105 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
   end
 
   def accept_list_item_start_bullet
-    assert_equal "<ul>\n<li>", @to.res.join
+    assert_equal "<ul><li>", @to.res.join
   end
 
   def accept_list_item_start_label
-    assert_equal "<dl>\n<dt>cat</dt><dd>", @to.res.join
+    assert_equal "<dl><dt>cat</dt>\n<dd>", @to.res.join
   end
 
   def accept_list_item_start_lalpha
-    assert_equal "<ol style=\"display: lower-alpha\">\n<li>", @to.res.join
+    assert_equal "<ol style=\"display: lower-alpha\"><li>", @to.res.join
   end
 
   def accept_list_item_start_note
-    assert_equal "<table>\n<tr><td valign=\"top\">cat</td><td>", @to.res.join
+    assert_equal "<table class=\"rdoc-list\"><tr><td class=\"rdoc-term\"><p>cat</p></td>\n<td>",
+                 @to.res.join
+  end
+
+  def accept_list_item_start_note_2
+    expected = <<-EXPECTED
+<table class="rdoc-list"><tr><td class="rdoc-term"><p><tt>teletype</tt></p></td>
+<td>
+<p>teletype description</p>
+</td></tr></table>
+    EXPECTED
+
+    assert_equal expected, @to.res.join
   end
 
   def accept_list_item_start_number
-    assert_equal "<ol>\n<li>", @to.res.join
+    assert_equal "<ol><li>", @to.res.join
   end
 
   def accept_list_item_start_ualpha
-    assert_equal "<ol style=\"display: upper-alpha\">\n<li>", @to.res.join
+    assert_equal "<ol style=\"display: upper-alpha\"><li>", @to.res.join
   end
 
   def accept_list_start_bullet
     assert_equal [:BULLET], @to.list
     assert_equal [false], @to.in_list_entry
 
-    assert_equal "<ul>\n", @to.res.join
+    assert_equal "<ul>", @to.res.join
   end
 
   def accept_list_start_label
     assert_equal [:LABEL], @to.list
     assert_equal [false], @to.in_list_entry
 
-    assert_equal "<dl>\n", @to.res.join
+    assert_equal "<dl>", @to.res.join
   end
 
   def accept_list_start_lalpha
     assert_equal [:LALPHA], @to.list
     assert_equal [false], @to.in_list_entry
 
-    assert_equal "<ol style=\"display: lower-alpha\">\n", @to.res.join
+    assert_equal "<ol style=\"display: lower-alpha\">", @to.res.join
   end
 
   def accept_list_start_note
     assert_equal [:NOTE], @to.list
     assert_equal [false], @to.in_list_entry
 
-    assert_equal "<table>\n", @to.res.join
+    assert_equal "<table class=\"rdoc-list\">", @to.res.join
   end
 
   def accept_list_start_number
     assert_equal [:NUMBER], @to.list
     assert_equal [false], @to.in_list_entry
 
-    assert_equal "<ol>\n", @to.res.join
+    assert_equal "<ol>", @to.res.join
   end
 
   def accept_list_start_ualpha
     assert_equal [:UALPHA], @to.list
     assert_equal [false], @to.in_list_entry
 
-    assert_equal "<ol style=\"display: upper-alpha\">\n", @to.res.join
+    assert_equal "<ol style=\"display: upper-alpha\">", @to.res.join
   end
 
   def accept_paragraph
-    assert_equal "<p>\nhi\n</p>\n", @to.res.join
+    assert_equal "\n<p>hi</p>\n", @to.res.join
+  end
+
+  def accept_paragraph_b
+    assert_equal "\n<p>reg <b>bold words</b> reg</p>\n", @to.res.join
+  end
+
+  def accept_paragraph_i
+    assert_equal "\n<p>reg <em>italic words</em> reg</p>\n", @to.res.join
+  end
+
+  def accept_paragraph_plus
+    assert_equal "\n<p>reg <tt>teletype</tt> reg</p>\n", @to.res.join
+  end
+
+  def accept_paragraph_star
+    assert_equal "\n<p>reg <b>bold</b> reg</p>\n", @to.res.join
+  end
+
+  def accept_paragraph_underscore
+    assert_equal "\n<p>reg <em>italic</em> reg</p>\n", @to.res.join
   end
 
   def accept_raw
@@ -183,11 +239,11 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
   end
 
   def accept_rule
-    assert_equal '<hr style="height: 4px"></hr>', @to.res.join
+    assert_equal "<hr style=\"height: 4px\">\n", @to.res.join
   end
 
   def accept_verbatim
-    assert_equal "<pre>\n  hi\n  world\n</pre>\n", @to.res.join
+    assert_equal "\n<pre>hi\n  world</pre>\n", @to.res.join
   end
 
   def end_accepting
@@ -200,54 +256,70 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
     assert_equal [], @to.list
   end
 
-  def test_list_verbatim
+  def list_nested
+    expected = <<-EXPECTED
+<ul><li>
+<p>l1</p>
+<ul><li>
+<p>l1.1</p>
+</li></ul>
+</li><li>
+<p>l2</p>
+</li></ul>
+    EXPECTED
+
+    assert_equal expected, @to.res.join
+  end
+
+  def list_verbatim
+    expected = <<-EXPECTED
+<ul><li>
+<p>list stuff</p>
+
+<pre>* list
+  with
+
+  second
+
+  1. indented
+  2. numbered
+
+  third
+
+* second</pre>
+</li></ul>
+    EXPECTED
+
+    assert_equal expected, @to.end_accepting
+  end
+
+  def test_convert_string
+    assert_equal '&lt;&gt;', @to.convert_string('<>')
+  end
+
+  def test_list_verbatim_2
     str = "* one\n    verb1\n    verb2\n* two\n"
 
     expected = <<-EXPECTED
-<ul>
-<li><p>
-one
-</p>
-<pre>
-  verb1
-  verb2
-</pre>
-</li>
-<li><p>
-two
-</p>
-</li>
-</ul>
+<ul><li>
+<p>one</p>
+
+<pre>verb1
+verb2</pre>
+</li><li>
+<p>two</p>
+</li></ul>
     EXPECTED
 
     assert_equal expected, @m.convert(str, @to)
   end
 
-  def test_tt_formatting
-    assert_equal "<p>\n<tt>--</tt> &#8212; <tt>cats'</tt> cats&#8217;\n</p>\n",
-                 util_format("<tt>--</tt> -- <tt>cats'</tt> cats'")
-
-    assert_equal "<p>\n<b>&#8212;</b>\n</p>\n", util_format("<b>--</b>")
+  def test_to_html
+    assert_equal "\n<p><tt>--</tt></p>\n", util_format("<tt>--</tt>")
   end
 
-  def test_convert_string_fancy
-    #
-    # The HTML typesetting is broken in a number of ways, but I have fixed
-    # the most glaring issues for single and double quotes.  Note that
-    # "strange" symbols (periods or dashes) need to be at the end of the
-    # test case strings in order to suppress cross-references.
-    #
-    assert_equal "<p>\n&#8220;cats&#8221;.\n</p>\n", util_format("\"cats\".")
-    assert_equal "<p>\n&#8216;cats&#8217;.\n</p>\n", util_format("\'cats\'.")
-    assert_equal "<p>\ncat&#8217;s-\n</p>\n", util_format("cat\'s-")
-  end
-
-  def util_paragraph(text)
-    RDoc::Markup::Paragraph.new text
-  end
-
-  def util_format(text)
-    paragraph = util_paragraph text
+  def util_format text
+    paragraph = RDoc::Markup::Paragraph.new text
 
     @to.start_accepting
     @to.accept_paragraph paragraph

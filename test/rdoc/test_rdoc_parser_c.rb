@@ -1,12 +1,52 @@
 require 'stringio'
 require 'tempfile'
 require 'rubygems'
-require 'minitest/unit'
+require 'minitest/autorun'
 require 'rdoc/options'
 require 'rdoc/parser/c'
 
+=begin
+  TODO: test call-seq parsing
+
+/*
+ *  call-seq:
+ *     ARGF.readlines(sep=$/)     -> array
+ *     ARGF.readlines(limit)      -> array
+ *     ARGF.readlines(sep, limit) -> array
+ *
+ *     ARGF.to_a(sep=$/)     -> array
+ *     ARGF.to_a(limit)      -> array
+ *     ARGF.to_a(sep, limit) -> array
+ *
+ *  Reads +ARGF+'s current file in its entirety, returning an +Array+ of its
+ *  lines, one line per element. Lines are assumed to be separated by _sep_.
+ *
+ *     lines = ARGF.readlines
+ *     lines[0]                #=> "This is line one\n"
+ */
+
+assert call-seq did not stop at first empty line
+
+/*
+ * call-seq:
+ *
+ *  flt ** other  ->  float
+ *
+ * Raises <code>float</code> the <code>other</code> power.
+ *
+ *    2.0**3      #=> 8.0
+ */
+
+assert call-seq correct (bug: was empty)
+
+/* call-seq: flt ** other  ->  float */
+
+assert call-seq correct
+
+=end
+
 class RDoc::Parser::C
-  attr_accessor :classes
+  attr_accessor :classes, :singleton_classes
 
   public :do_classes, :do_constants
 end
@@ -28,6 +68,129 @@ class TestRDocParserC < MiniTest::Unit::TestCase
 
   def teardown
     @tempfile.close
+  end
+
+  def test_do_attr_rb_attr
+    content = <<-EOF
+void Init_Blah(void) {
+  cBlah = rb_define_class("Blah", rb_cObject);
+
+  /*
+   * This is an accessor
+   */
+  rb_attr(cBlah, rb_intern("accessor"), 1, 1, Qfalse);
+
+  /*
+   * This is a reader
+   */
+  rb_attr(cBlah, rb_intern("reader"), 1, 0, Qfalse);
+
+  /*
+   * This is a writer
+   */
+  rb_attr(cBlah, rb_intern("writer"), 0, 1, Qfalse);
+}
+    EOF
+
+    klass = util_get_class content, 'cBlah'
+
+    attrs = klass.attributes
+    assert_equal 3, attrs.length, attrs.inspect
+
+    accessor = attrs.shift
+    assert_equal 'accessor',            accessor.name
+    assert_equal 'RW',                  accessor.rw
+    assert_equal 'This is an accessor', accessor.comment
+
+    reader = attrs.shift
+    assert_equal 'reader',           reader.name
+    assert_equal 'R',                reader.rw
+    assert_equal 'This is a reader', reader.comment
+
+    writer = attrs.shift
+    assert_equal 'writer',           writer.name
+    assert_equal 'W',                writer.rw
+    assert_equal 'This is a writer', writer.comment
+  end
+
+  def test_do_attr_rb_define_attr
+    content = <<-EOF
+void Init_Blah(void) {
+  cBlah = rb_define_class("Blah", rb_cObject);
+
+  /*
+   * This is an accessor
+   */
+  rb_define_attr(cBlah, "accessor", 1, 1);
+}
+    EOF
+
+    klass = util_get_class content, 'cBlah'
+
+    attrs = klass.attributes
+    assert_equal 1, attrs.length, attrs.inspect
+
+    accessor = attrs.shift
+    assert_equal 'accessor',            accessor.name
+    assert_equal 'RW',                  accessor.rw
+    assert_equal 'This is an accessor', accessor.comment
+  end
+
+  def test_do_aliases
+    content = <<-EOF
+/*
+ * This should show up as an alias with documentation
+ */
+VALUE blah(VALUE klass, VALUE year) {
+}
+
+void Init_Blah(void) {
+  cDate = rb_define_class("Date", rb_cObject);
+
+  rb_define_method(cDate, "blah", blah, 1);
+
+  rb_define_alias(cDate, "bleh", "blah");
+}
+    EOF
+
+    klass = util_get_class content, 'cDate'
+
+    methods = klass.method_list
+    assert_equal 2,      methods.length
+    assert_equal 'bleh', methods.last.name
+    assert_equal 'blah', methods.last.is_alias_for.name
+  end
+
+  def test_do_aliases_singleton
+    content = <<-EOF
+/*
+ * This should show up as a method with documentation
+ */
+VALUE blah(VALUE klass, VALUE year) {
+}
+
+void Init_Blah(void) {
+  cDate = rb_define_class("Date", rb_cObject);
+  sDate = rb_singleton_class(cDate);
+
+  rb_define_method(sDate, "blah", blah, 1);
+
+  /*
+   * This should show up as an alias
+   */
+  rb_define_alias(sDate, "bleh", "blah");
+}
+    EOF
+
+    klass = util_get_class content, 'cDate'
+
+    methods = klass.method_list
+
+    assert_equal 2,      methods.length
+    assert_equal 'bleh', methods.last.name
+    assert               methods.last.singleton
+    assert_equal 'blah', methods.last.is_alias_for.name
+    assert_equal 'This should show up as an alias', methods.last.comment
   end
 
   def test_do_classes_boot_class
@@ -66,6 +229,17 @@ VALUE cFoo = rb_define_class("Foo", rb_cObject);
 
     klass = util_get_class content, 'cFoo'
     assert_equal "this is the Foo class", klass.comment
+  end
+
+  def test_do_classes_singleton
+    content = <<-EOF
+VALUE cFoo = rb_define_class("Foo", rb_cObject);
+VALUE cFooS = rb_singleton_class(cFoo);
+    EOF
+
+    util_get_class content, 'cFooS'
+
+    assert_equal 'Foo', @parser.singleton_classes['cFooS']
   end
 
   def test_do_classes_class_under
@@ -199,6 +373,26 @@ Multiline comment goes here because this comment spans multiple lines.
     assert_equal ['MULTILINE_NOT_EMPTY', 'INT2FIX(1)', comment], constants.shift
 
     assert constants.empty?, constants.inspect
+  end
+
+  def test_find_alias_comment
+    parser = util_parser ''
+
+    comment = parser.find_alias_comment 'C', '[]', 'index'
+
+    assert_equal '', comment
+
+    parser = util_parser <<-C
+/*
+ * comment
+ */
+
+rb_define_alias(C, "[]", "index");
+    C
+
+    comment = parser.find_alias_comment 'C', '[]', 'index'
+
+    assert_equal "/*\n * comment\n */\n\n", comment
   end
 
   def test_find_class_comment_include
@@ -406,6 +600,113 @@ Init_Foo(void) {
     assert_equal "a comment for bar", bar.comment
   end
 
+  def test_find_modifiers_call_seq
+    comment = <<-COMMENT
+/* call-seq:
+ *   commercial() -> Date <br />
+ *   commercial(cwyear, cweek=41, cwday=5, sg=nil) -> Date [ruby 1.8] <br />
+ *   commercial(cwyear, cweek=1, cwday=1, sg=nil) -> Date [ruby 1.9]
+ *
+ * If no arguments are given:
+ * * ruby 1.8: returns a +Date+ for 1582-10-15 (the Day of Calendar Reform in
+ *   Italy)
+ * * ruby 1.9: returns a +Date+ for julian day 0
+ *
+ * Otherwise, returns a +Date+ for the commercial week year, commercial week,
+ * and commercial week day given. Ignores the 4th argument.
+ */
+
+    COMMENT
+
+    parser = util_parser ''
+    method_obj = RDoc::AnyMethod.new nil, 'blah'
+
+    parser.find_modifiers comment, method_obj
+
+    expected = <<-CALL_SEQ.chomp
+commercial() -> Date <br />
+commercial(cwyear, cweek=41, cwday=5, sg=nil) -> Date [ruby 1.8] <br />
+commercial(cwyear, cweek=1, cwday=1, sg=nil) -> Date [ruby 1.9]
+ 
+    CALL_SEQ
+
+    assert_equal expected, method_obj.call_seq
+  end
+
+  def test_find_modifiers_nodoc
+    comment = <<-COMMENT
+/* :nodoc:
+ *
+ * Blah
+ */
+
+    COMMENT
+
+    parser = util_parser ''
+    method_obj = RDoc::AnyMethod.new nil, 'blah'
+
+    parser.find_modifiers comment, method_obj
+
+    assert_equal nil, method_obj.document_self
+  end
+
+  def test_find_modifiers_yields
+    comment = <<-COMMENT
+/* :yields: a, b
+ *
+ * Blah
+ */
+
+    COMMENT
+
+    parser = util_parser ''
+    method_obj = RDoc::AnyMethod.new nil, 'blah'
+
+    parser.find_modifiers comment, method_obj
+
+    assert_equal 'a, b', method_obj.block_params
+
+    expected = <<-EXPECTED
+/*
+ *
+ * Blah
+ */
+
+    EXPECTED
+
+    assert_equal expected, comment
+  end
+
+  def test_handle_method
+    parser = util_parser "Document-method: BasicObject#==\n blah */"
+
+    parser.handle_method 'method', 'rb_cBasicObject', '==', 'rb_obj_equal', 1
+
+    bo = @top_level.find_module_named 'BasicObject'
+
+    assert_equal 1, bo.method_list.length
+
+    equals2 = bo.method_list.first
+
+    assert_equal '==', equals2.name
+  end
+
+  def test_handle_method_initialize
+    parser = util_parser "Document-method: BasicObject::new\n blah */"
+
+    parser.handle_method('private_method', 'rb_cBasicObject',
+                         'initialize', 'rb_obj_dummy', -1)
+
+    bo = @top_level.find_module_named 'BasicObject'
+
+    assert_equal 1, bo.method_list.length
+
+    new = bo.method_list.first
+
+    assert_equal 'new',   new.name
+    assert_equal :public, new.visibility
+  end
+
   def test_look_for_directives_in
     parser = util_parser ''
 
@@ -442,6 +743,7 @@ Init_IO(void) {
     read_method = klass.method_list.first
     assert_equal "read", read_method.name
     assert_equal "Method Comment!   ", read_method.comment
+    assert read_method.singleton
   end
 
   def test_define_method_private
@@ -472,6 +774,65 @@ Init_IO(void) {
     assert_equal "Method Comment!   ", read_method.comment
   end
 
+  def test_define_method_private_singleton
+    content = <<-EOF
+/*Method Comment! */
+static VALUE
+rb_io_s_read(argc, argv, io)
+    int argc;
+    VALUE *argv;
+    VALUE io;
+{
+}
+
+void
+Init_IO(void) {
+    /*
+     * a comment for class Foo on rb_define_class
+     */
+    VALUE rb_cIO = rb_define_class("IO", rb_cObject);
+    VALUE rb_cIO_s = rb_singleton_class(rb_cIO);
+    rb_define_private_method(rb_cIO_s, "read", rb_io_s_read, -1);
+}
+    EOF
+
+    klass = util_get_class content, 'rb_cIO'
+    read_method = klass.method_list.first
+    assert_equal "read", read_method.name
+    assert_equal "Method Comment!   ", read_method.comment
+    assert_equal :private, read_method.visibility
+    assert read_method.singleton
+  end
+
+  def test_define_method_singleton
+    content = <<-EOF
+/*Method Comment! */
+static VALUE
+rb_io_s_read(argc, argv, io)
+    int argc;
+    VALUE *argv;
+    VALUE io;
+{
+}
+
+void
+Init_IO(void) {
+    /*
+     * a comment for class Foo on rb_define_class
+     */
+    VALUE rb_cIO = rb_define_class("IO", rb_cObject);
+    VALUE rb_cIO_s = rb_singleton_class(rb_cIO);
+    rb_define_method(rb_cIO_s, "read", rb_io_s_read, -1);
+}
+    EOF
+
+    klass = util_get_class content, 'rb_cIO'
+    read_method = klass.method_list.first
+    assert_equal "read", read_method.name
+    assert_equal "Method Comment!   ", read_method.comment
+    assert read_method.singleton
+  end
+
   def util_get_class(content, name)
     @parser = util_parser content
     @parser.scan
@@ -484,4 +845,3 @@ Init_IO(void) {
 
 end
 
-MiniTest::Unit.autorun

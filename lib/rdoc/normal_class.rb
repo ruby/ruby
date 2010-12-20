@@ -6,10 +6,10 @@ require 'rdoc/class_module'
 class RDoc::NormalClass < RDoc::ClassModule
 
   ##
-  # Ancestor ClassModules
+  # Appends the superclass, if any, to the included modules.
 
   def ancestors
-    includes + [superclass]
+    superclass ? super + [superclass] : super
   end
 
   def inspect # :nodoc:
@@ -18,6 +18,15 @@ class RDoc::NormalClass < RDoc::ClassModule
       self.class, object_id,
       full_name, superclass, @includes, @attributes, @method_list, @aliases
     ]
+  end
+
+  def to_s # :nodoc:
+    display = "#{self.class.name} #{self.full_name}"
+    if superclass
+      display << ' < ' << (superclass.is_a?(String) ? superclass : superclass.full_name)
+    end
+    display << ' -> ' << is_alias_for.to_s if is_alias_for
+    display
   end
 
   def pretty_print q # :nodoc:

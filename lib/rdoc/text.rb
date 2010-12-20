@@ -1,7 +1,42 @@
+# coding: utf-8
+
+##
+# For RDoc::Text#to_html
+
+require 'strscan'
+
 ##
 # Methods for manipulating comment text
 
 module RDoc::Text
+
+  ##
+  # Maps an encoding to a Hash of characters properly transcoded for that
+  # encoding.
+  #
+  # See also encode_fallback.
+
+  TO_HTML_CHARACTERS = Hash.new do |h, encoding|
+    h[encoding] = {
+      :close_dquote => encode_fallback('”', encoding, '"'),
+      :close_squote => encode_fallback('’', encoding, '\''),
+      :copyright    => encode_fallback('©', encoding, '(c)'),
+      :ellipsis     => encode_fallback('…', encoding, '...'),
+      :em_dash      => encode_fallback('—', encoding, '---'),
+      :en_dash      => encode_fallback('–', encoding, '--'),
+      :open_dquote  => encode_fallback('“', encoding, '"'),
+      :open_squote  => encode_fallback('‘', encoding, '\''),
+      :trademark    => encode_fallback('®', encoding, '(r)'),
+    }
+  end if Object.const_defined? :Encoding
+
+  ##
+  # Transcodes +character+ to +encoding+ with a +fallback+ character.
+
+  def self.encode_fallback character, encoding, fallback
+    character.encode(encoding, :fallback => { character => fallback },
+                     :undef => :replace, :replace => fallback)
+  end
 
   ##
   # Expands tab characters in +text+ to eight spaces
@@ -43,8 +78,7 @@ module RDoc::Text
   end
 
   ##
-  # Convert a string in markup format into HTML.  Removes the first paragraph
-  # tags if +remove_para+ is true.
+  # Convert a string in markup format into HTML.
   #
   # Requires the including class to implement #formatter
 
@@ -105,7 +139,7 @@ http://rubyforge.org/tracker/?atid=2472&group_id=627&func=browse
 
   def strip_hashes text
     return text if text =~ /^(?>\s*)[^\#]/
-    text.gsub(/^\s*(#+)/) { $1.tr '#',' ' }
+    text.gsub(/^\s*(#+)/) { $1.tr '#',' ' }.gsub(/^\s+$/, '')
   end
 
   ##
@@ -123,7 +157,102 @@ http://rubyforge.org/tracker/?atid=2472&group_id=627&func=browse
     text.sub!  %r%/\*+%       do " " * $&.length end
     text.sub!  %r%\*+/%       do " " * $&.length end
     text.gsub! %r%^[ \t]*\*%m do " " * $&.length end
-    text
+    text.gsub(/^\s+$/, '')
+  end
+
+  ##
+  # Converts ampersand, dashes, ellipsis, quotes, copyright and registered
+  # trademark symbols in +text+ to properly encoded characters.
+
+  def to_html text
+    if Object.const_defined? :Encoding then
+      html = ''.encode text.encoding
+
+      encoded = RDoc::Text::TO_HTML_CHARACTERS[text.encoding]
+    else
+      html = ''
+      encoded = {
+        :close_dquote => '”',
+        :close_squote => '’',
+        :copyright    => '©',
+        :ellipsis     => '…',
+        :em_dash      => '—',
+        :en_dash      => '–',
+        :open_dquote  => '“',
+        :open_squote  => '‘',
+        :trademark    => '®',
+      }
+    end
+
+    s = StringScanner.new text
+    insquotes = false
+    indquotes = false
+    after_word = nil
+
+    until s.eos? do
+      case
+      when s.scan(/<tt>.*?<\/tt>/) then # skip contents of tt
+        html << s.matched.gsub('\\\\', '\\')
+      when s.scan(/<tt>.*?/) then
+        warn 'mismatched <tt> tag' # TODO signal file/line
+        html << s.matched
+      when s.scan(/<[^>]+\/?s*>/) then # skip HTML tags
+        html << s.matched
+      when s.scan(/\\(\S)/) then # unhandled suppressed crossref
+        html << s[1]
+        after_word = nil
+      when s.scan(/\.\.\.(\.?)/) then
+        html << s[1] << encoded[:ellipsis]
+        after_word = nil
+      when s.scan(/\(c\)/) then
+        html << encoded[:copyright]
+        after_word = nil
+      when s.scan(/\(r\)/) then
+        html << encoded[:trademark]
+        after_word = nil
+      when s.scan(/---/) then
+        html << encoded[:em_dash]
+        after_word = nil
+      when s.scan(/--/) then
+        html << encoded[:en_dash]
+        after_word = nil
+      when s.scan(/&quot;|"/) then
+        html << encoded[indquotes ? :close_dquote : :open_dquote]
+        indquotes = !indquotes
+        after_word = nil
+      when s.scan(/``/) then # backtick double quote
+        html << encoded[:open_dquote]
+        after_word = nil
+      when s.scan(/''/) then # tick double quote
+        html << encoded[:close_dquote]
+        after_word = nil
+      when s.scan(/'/) then # single quote
+        if insquotes
+          html << encoded[:close_squote]
+          insquotes = false
+        elsif after_word
+          # Mary's dog, my parents' house: do not start paired quotes
+          html << encoded[:close_squote]
+        else
+          html << encoded[:open_squote]
+          insquotes = true
+        end
+
+        after_word = nil
+      else # advance to the next potentially significant character
+        match = s.scan(/.+?(?=[<\\.("'`&-])/) #"
+
+        if match then
+          html << match
+          after_word = match =~ /\w$/
+        else
+          html << s.rest
+          break
+        end
+      end
+    end
+
+    html
   end
 
 end

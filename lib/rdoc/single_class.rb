@@ -5,8 +5,9 @@ require 'rdoc/class_module'
 
 class RDoc::SingleClass < RDoc::ClassModule
 
+  # Adds the superclass to the included modules.
   def ancestors
-    includes + [superclass]
+    superclass ? super + [superclass] : super
   end
 
 end

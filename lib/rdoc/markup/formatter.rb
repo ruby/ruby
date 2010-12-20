@@ -7,6 +7,10 @@ require 'rdoc/markup'
 
 class RDoc::Markup::Formatter
 
+  ##
+  # Tag for inline markup containing a +bit+ for the bitmask and the +on+ and
+  # +off+ triggers.
+
   InlineTag = Struct.new(:bit, :on, :off)
 
   ##
@@ -101,6 +105,9 @@ class RDoc::Markup::Formatter
     @in_tt > 0
   end
 
+  ##
+  # Turns on tags for +item+ on +res+
+
   def on_tags res, item
     attr_mask = item.turn_on
     return if attr_mask.zero?
@@ -112,6 +119,9 @@ class RDoc::Markup::Formatter
       end
     end
   end
+
+  ##
+  # Turns off tags for +item+ on +res+
 
   def off_tags res, item
     attr_mask = item.turn_off

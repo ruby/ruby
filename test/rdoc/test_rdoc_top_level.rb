@@ -27,6 +27,17 @@ class TestRDocTopLevel < XrefTestCase
     assert_equal expected, RDoc::TopLevel.classes.map { |m| m.full_name }.sort
   end
 
+  def test_class_complete
+    @c2.add_module_alias @c2_c3, 'A1'
+
+    RDoc::TopLevel.complete :public
+
+    a1 = @xref_data.find_class_or_module 'C2::A1'
+
+    assert_equal 'C2::A1', a1.full_name
+    refute_empty a1.aliases
+  end
+
   def test_class_files
     assert_equal %w[path/top_level.rb xref_data.rb],
                  RDoc::TopLevel.files.map { |m| m.full_name }.sort
@@ -94,13 +105,11 @@ class TestRDocTopLevel < XrefTestCase
   end
 
   def test_last_modified
-    assert_equal 'Unknown', @top_level.last_modified
-
+    assert_equal nil, @top_level.last_modified
     stat = Object.new
     def stat.mtime() 0 end
     @top_level.file_stat = stat
-
-    assert_equal '0', @top_level.last_modified
+    assert_equal 0, @top_level.last_modified
   end
 
   def test_name

@@ -14,12 +14,11 @@ class TestRDocMarkupToHtmlCrossref < XrefTestCase
   end
 
   def assert_ref(path, ref)
-    assert_equal "<p>\n<a href=\"#{path}\">#{ref}</a>\n</p>\n",
-                 @xref.convert(ref)
+    assert_equal "\n<p><a href=\"#{path}\">#{ref}</a></p>\n", @xref.convert(ref)
   end
 
   def refute_ref(body, ref)
-    assert_equal "<p>\n#{body}\n</p>\n", @xref.convert(ref)
+    assert_equal "\n<p>#{body}</p>\n", @xref.convert(ref)
   end
 
   def test_handle_special_CROSSREF_C2
@@ -108,16 +107,16 @@ class TestRDocMarkupToHtmlCrossref < XrefTestCase
     assert_ref 'C1.html#method-c-m', '::m'
 
     assert_ref 'C1.html#method-i-m', 'C1#m'
-    assert_ref 'C1.html#method-i-m', 'C1.m'
+    assert_ref 'C1.html#method-c-m', 'C1.m'
     assert_ref 'C1.html#method-c-m', 'C1::m'
 
     assert_ref 'C1.html#method-i-m', 'C1#m'
     assert_ref 'C1.html#method-i-m', 'C1#m()'
     assert_ref 'C1.html#method-i-m', 'C1#m(*)'
 
-    assert_ref 'C1.html#method-i-m', 'C1.m'
-    assert_ref 'C1.html#method-i-m', 'C1.m()'
-    assert_ref 'C1.html#method-i-m', 'C1.m(*)'
+    assert_ref 'C1.html#method-c-m', 'C1.m'
+    assert_ref 'C1.html#method-c-m', 'C1.m()'
+    assert_ref 'C1.html#method-c-m', 'C1.m(*)'
 
     assert_ref 'C1.html#method-c-m', 'C1::m'
     assert_ref 'C1.html#method-c-m', 'C1::m()'
@@ -127,7 +126,8 @@ class TestRDocMarkupToHtmlCrossref < XrefTestCase
 
     assert_ref 'C2/C3.html#method-i-m', 'C2::C3.m'
 
-    assert_ref 'C2/C3/H1.html#method-i-m%3F', 'C2::C3::H1#m?'
+    # TODO stop escaping - HTML5 allows anything but space
+    assert_ref 'C2/C3/H1.html#method-i-m-3F', 'C2::C3::H1#m?'
 
     assert_ref 'C2/C3.html#method-i-m', '::C2::C3#m'
     assert_ref 'C2/C3.html#method-i-m', '::C2::C3#m()'
@@ -153,8 +153,15 @@ class TestRDocMarkupToHtmlCrossref < XrefTestCase
     refute_ref '::C3::H1#n',    '\::C3::H1#n'
   end
 
+  def test_handle_special_CROSSREF_show_hash_false
+    @xref.show_hash = false
+
+    assert_equal "\n<p><a href=\"C1.html#method-i-m\">m</a></p>\n",
+                 @xref.convert('#m')
+  end
+
   def test_handle_special_CROSSREF_special
-    assert_equal "<p>\n<a href=\"C2/C3.html\">C2::C3</a>;method(*)\n</p>\n",
+    assert_equal "\n<p><a href=\"C2/C3.html\">C2::C3</a>;method(*)</p>\n",
                  @xref.convert('C2::C3;method(*)')
   end
 

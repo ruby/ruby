@@ -5,11 +5,6 @@ require 'rdoc/class_module'
 
 class RDoc::NormalModule < RDoc::ClassModule
 
-  ##
-  # Included NormalModules
-
-  alias ancestors includes
-
   def inspect # :nodoc:
     "#<%s:0x%x module %s includes: %p attributes: %p methods: %p aliases: %p>" % [
       self.class, object_id,

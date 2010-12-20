@@ -59,11 +59,476 @@ require 'rdoc'
 #
 #   puts "<body>#{wh.convert ARGF.read}</body>"
 #
+# == Encoding
+#
+# Where Encoding support is available RDoc will automatically convert all
+# documents to the same output encoding.  The output encoding can be set via
+# RDoc::Options#encoding and defaults to Encoding.default_external.
+#
+# = \RDoc Markup Reference
+#
+# == Block Markup
+#
+# === Paragraphs and Verbatim
+#
+# The markup engine looks for a document's natural left margin.  This is
+# used as the initial margin for the document.
+#
+# Consecutive lines starting at this margin are considered to be a
+# paragraph. Empty lines separate paragraphs.
+#
+# Any line that starts to the right of the current margin is treated
+# as verbatim text.  This is useful for code listings:
+#
+#   3.times { puts "Ruby" }
+#
+# In verbatim text, two or more blank lines are collapsed into one,
+# and trailing blank lines are removed:
+#
+#   This is the first line
+#
+#
+#   This is the second non-blank line,
+#   after 2 blank lines in the source markup.
+#
+#
+# There were two trailing blank lines right above this paragraph, that
+# have been removed. In addition, the verbatim text has been shifted
+# left, so the amount of indentation of verbatim text is unimportant.
+#
+# === Headers and Rules
+#
+# A line starting with an equal sign (=) is treated as a
+# heading.  Level one headings have one equals sign, level two headings
+# have two, and so on until level six, which is the maximum
+# (seven hyphens or more result in a level six heading).
+#
+# For example, the above header was obtained with:
+#   == Headers and Rules
+#
+# A line starting with three or more hyphens (at the current indent)
+# generates a horizontal rule.  The more hyphens, the thicker the rule
+# (within reason, and if supported by the output device).
+#
+# In the case of HTML output, three dashes generate a 1-pixel high rule,
+# four dashes result in 2 pixels, and so on. The actual height is limited
+# to 10 pixels:
+#
+#   ---
+#   -----
+#   -----------------------------------------------------
+#
+# produces:
+#
+# ---
+# -----
+# -----------------------------------------------------
+#
+# === Simple Lists
+#
+# If a paragraph starts with a "*", "-", "<digit>." or "<letter>.",
+# then it is taken to be the start of a list.  The margin in increased to be
+# the first non-space following the list start flag.  Subsequent lines
+# should be indented to this new margin until the list ends.  For example:
+#
+#   * this is a list with three paragraphs in
+#     the first item.  This is the first paragraph.
+#
+#     And this is the second paragraph.
+#
+#     1. This is an indented, numbered list.
+#     2. This is the second item in that list
+#
+#     This is the third conventional paragraph in the
+#     first list item.
+#
+#   * This is the second item in the original list
+#
+# produces:
+#
+# * this is a list with three paragraphs in
+#   the first item.  This is the first paragraph.
+#
+#   And this is the second paragraph.
+#
+#   1. This is an indented, numbered list.
+#   2. This is the second item in that list
+#
+#   This is the third conventional paragraph in the
+#   first list item.
+#
+# * This is the second item in the original list
+#
+# === Labeled Lists
+#
+# You can also construct labeled lists, sometimes called description
+# or definition lists.  Do this by putting the label in square brackets
+# and indenting the list body:
+#
+#   [cat]  a small furry mammal
+#          that seems to sleep a lot
+#
+#   [ant]  a little insect that is known
+#          to enjoy picnics
+#
+# produces:
+#
+# [cat]  a small furry mammal
+#        that seems to sleep a lot
+#
+# [ant]  a little insect that is known
+#        to enjoy picnics
+#
+# If you want the list bodies to line up to the left of the labels,
+# use two colons:
+#
+#   cat::  a small furry mammal
+#          that seems to sleep a lot
+#
+#   ant::  a little insect that is known
+#          to enjoy picnics
+#
+# produces:
+#
+# cat::  a small furry mammal
+#        that seems to sleep a lot
+#
+# ant::  a little insect that is known
+#        to enjoy picnics
+#
+# Notice that blank lines right after the label are ignored in labeled lists:
+#
+#   [one]
+#
+#       definition 1
+#
+#   [two]
+#
+#       definition 2
+#
+# produces the same output as
+#
+#   [one]  definition 1
+#   [two]  definition 2
+#
+#
+# === Lists and Verbatim
+#
+# If you want to introduce a verbatim section right after a list, it has to be
+# less indented than the list item bodies, but more indented than the list
+# label, letter, digit or bullet. For instance:
+#
+#   *   point 1
+#
+#   *   point 2, first paragraph
+#
+#       point 2, second paragraph
+#         verbatim text inside point 2
+#       point 2, third paragraph
+#     verbatim text outside of the list (the list is therefore closed)
+#   regular paragraph after the list
+#
+# produces:
+#
+# *   point 1
+#
+# *   point 2, first paragraph
+#
+#     point 2, second paragraph
+#       verbatim text inside point 2
+#     point 2, third paragraph
+#   verbatim text outside of the list (the list is therefore closed)
+# regular paragraph after the list
+#
+#
+# == Text Markup
+#
+# === Bold, Italic, Typewriter Text
+#
+# You can use markup within text (except verbatim) to change the
+# appearance of parts of that text.  Out of the box, RDoc::Markup
+# supports word-based and general markup.
+#
+# Word-based markup uses flag characters around individual words:
+#
+# <tt>\*_word_\*</tt>::  displays _word_ in a *bold* font
+# <tt>\__word_\_</tt>::  displays _word_ in an _emphasized_ font
+# <tt>\+_word_\+</tt>::  displays _word_ in a +code+ font
+#
+# General markup affects text between a start delimiter and an end
+# delimiter.  Not surprisingly, these delimiters look like HTML markup.
+#
+# <tt>\<b>_text_</b></tt>::    displays _text_ in a *bold* font
+# <tt>\<em>_text_</em></tt>::  displays _text_ in an _emphasized_ font
+#                              (alternate tag: <tt>\<i></tt>)
+# <tt>\<tt>_text_\</tt></tt>:: displays _text_ in a +code+ font
+#                              (alternate tag: <tt>\<code></tt>)
+#
+# Unlike conventional Wiki markup, general markup can cross line
+# boundaries.  You can turn off the interpretation of markup by
+# preceding the first character with a backslash (see <i>Escaping
+# Text Markup</i>, below).
+#
+# === Hyperlinks
+#
+# Hyperlinks to the web starting with +http:+, +mailto:+, +ftp:+ or +www.+
+# are recognized.  An HTTP url that references an external image file is
+# converted into an inline <img...>.  Hyperlinks starting with +link:+ are
+# assumed to refer to local files whose path is relative to the <tt>--op</tt>
+# directory.
+#
+# Hyperlinks can also be of the form _label_[_url_], in which
+# case _label_ is used in the displayed text, and _url_ is
+# used as the target.  If _label_ contains multiple words,
+# put it in braces: {<em>multi word label</em>}[url].
+#
+# Example hyperlinks:
+#
+#   link:RDoc.html
+#   http://rdoc.rubyforge.org
+#   mailto:user@example.com
+#   {RDoc Documentation}[http://rdoc.rubyforge.org]
+#   {RDoc Markup}[link:RDoc/Markup.html]
+#
+# === Escaping Text Markup
+#
+# Text markup can be escaped with a backslash, as in \<tt>, which was obtained
+# with "<tt>\\<tt></tt>". Except in verbatim sections and between \<tt> tags,
+# to produce a backslash, you have to double it unless it is followed by a
+# space, tab or newline. Otherwise, the HTML formatter will discard it, as it
+# is used to escape potential hyperlinks:
+#
+#   * The \ must be doubled if not followed by white space: \\.
+#   * But not in \<tt> tags: in a Regexp, <tt>\S</tt> matches non-space.
+#   * This is a link to {ruby-lang}[www.ruby-lang.org].
+#   * This is not a link, however: \{ruby-lang.org}[www.ruby-lang.org].
+#   * This will not be hyperlinked to \RDoc::RDoc#document
+#
+# generates:
+#
+# * The \ must be doubled if not followed by white space: \\.
+# * But not in \<tt> tags: in a Regexp, <tt>\S</tt> matches non-space.
+# * This is a link to {ruby-lang}[www.ruby-lang.org]
+# * This is not a link, however: \{ruby-lang.org}[www.ruby-lang.org]
+# * This will not be hyperlinked to \RDoc::RDoc#document
+#
+# Inside \<tt> tags, more precisely, leading backslashes are removed
+# only if followed by a markup character (<tt><*_+</tt>), a backslash,
+# or a known hyperlink reference (a known class or method). So in the
+# example above, the backslash of <tt>\S</tt> would be removed
+# if there was a class or module named +S+ in the current context.
+#
+# This behavior is inherited from RDoc version 1, and has been kept
+# for compatibility with existing RDoc documentation.
+#
+# === Conversion of characters
+#
+# HTML will convert two/three dashes to an em-dash. Other common characters are
+# converted as well:
+#
+#   em-dash::  -- or ---
+#   ellipsis:: ...
+#
+#   single quotes:: 'text' or `text'
+#   double quotes:: "text" or ``text''
+#
+#   copyright:: (c)
+#   registered trademark:: (r)
+#
+# produces:
+#
+# em-dash::  -- or ---
+# ellipsis:: ...
+#
+# single quotes:: 'text' or `text'
+# double quotes:: "text" or ``text''
+#
+# copyright:: (c)
+# registered trademark:: (r)
+#
+#
+# == Documenting Source Code
+#
+# Comment blocks can be written fairly naturally, either using <tt>#</tt> on
+# successive lines of the comment, or by including the comment in
+# a <tt>=begin</tt>/<tt>=end</tt> block.  If you use the latter form,
+# the <tt>=begin</tt> line _must_ be flagged with an +rdoc+ tag:
+#
+#   =begin rdoc
+#   Documentation to be processed by RDoc.
+#
+#   ...
+#   =end
+#
+# RDoc stops processing comments if it finds a comment line starting
+# with <tt>--</tt> right after the <tt>#</tt> character (otherwise,
+# it will be treated as a rule if it has three dashes or more).
+# This can be used to separate external from internal comments,
+# or to stop a comment being associated with a method, class, or module.
+# Commenting can be turned back on with a line that starts with <tt>++</tt>.
+#
+#   ##
+#   # Extract the age and calculate the date-of-birth.
+#   #--
+#   # FIXME: fails if the birthday falls on February 29th
+#   #++
+#   # The DOB is returned as a Time object.
+#
+#   def get_dob(person)
+#     # ...
+#   end
+#
+# Names of classes, files, and any method names containing an
+# underscore or preceded by a hash character are automatically hyperlinked
+# from comment text to their description. This hyperlinking works inside
+# the current class or module, and with ancestor methods (in included modules
+# or in the superclass).
+#
+# Method parameter lists are extracted and displayed with the method
+# description.  If a method calls +yield+, then the parameters passed to yield
+# will also be displayed:
+#
+#   def fred
+#     ...
+#     yield line, address
+#
+# This will get documented as:
+#
+#   fred() { |line, address| ... }
+#
+# You can override this using a comment containing ':yields: ...' immediately
+# after the method definition
+#
+#   def fred # :yields: index, position
+#     # ...
+#
+#     yield line, address
+#
+# which will get documented as
+#
+#    fred() { |index, position| ... }
+#
+# +:yields:+ is an example of a documentation directive.  These appear
+# immediately after the start of the document element they are modifying.
+#
+# RDoc automatically cross-references words with underscores or camel-case.
+# To suppress cross-references, prefix the word with a \ character.  To
+# include special characters like "<tt>\n</tt>", you'll need to use
+# two \ characters in normal text, but only one in \<tt> text:
+#
+#   "\\n" or "<tt>\n</tt>"
+#
+# produces:
+#
+# "\\n" or "<tt>\n</tt>"
+#
+# == Directives
+#
+# Directives are keywords surrounded by ":" characters.
+#
+# === Controlling what is documented
+#
+# [+:nodoc:+ / <tt>:nodoc: all</tt>]
+#   This directive prevents documentation for the element from
+#   being generated.  For classes and modules, the methods, aliases,
+#   constants, and attributes directly within the affected class or
+#   module also will be omitted.  By default, though, modules and
+#   classes within that class of module _will_ be documented.  This is
+#   turned off by adding the +all+ modifier.
+#
+#     module MyModule # :nodoc:
+#       class Input
+#       end
+#     end
+#
+#     module OtherModule # :nodoc: all
+#       class Output
+#       end
+#     end
+#
+#   In the above code, only class <tt>MyModule::Input</tt> will be documented.
+#
+#   The +:nodoc:+ directive, like +:enddoc:+, +:stopdoc:+ and +:startdoc:+
+#   presented below, is local to the current file: if you do not want to
+#   document a module that appears in several files, specify +:nodoc:+ on each
+#   appearance, at least once per file.
+#
+# [+:stopdoc:+ / +:startdoc:+]
+#   Stop and start adding new documentation elements to the current container.
+#   For example, if a class has a number of constants that you don't want to
+#   document, put a +:stopdoc:+ before the first, and a +:startdoc:+ after the
+#   last.  If you don't specify a +:startdoc:+ by the end of the container,
+#   disables documentation for the rest of the current file.
+#
+# [+:doc:+]
+#   Forces a method or attribute to be documented even if it wouldn't be
+#   otherwise.  Useful if, for example, you want to include documentation of a
+#   particular private method.
+#
+# [+:enddoc:+]
+#   Document nothing further at the current level: directives +:startdoc:+ and
+#   +:doc:+ that appear after this will not be honored for the current container
+#   (file, class or module), in the current file.
+#
+# [+:notnew:+ / +:not_new:+ / +:not-new:+ ]
+#   Only applicable to the +initialize+ instance method.  Normally RDoc
+#   assumes that the documentation and parameters for +initialize+ are
+#   actually for the +new+ method, and so fakes out a +new+ for the class.
+#   The +:notnew:+ directive stops this.  Remember that +initialize+ is private,
+#   so you won't see the documentation unless you use the +-a+ command line
+#   option.
+#
+# === Other directives
+#
+# [+:include:+ _filename_]
+#   Include the contents of the named file at this point. This directive
+#   must appear alone on one line, possibly preceded by spaces. In this
+#   position, it can be escapd with a \ in front of the first colon.
+#
+#   The file will be searched for in the directories listed by the +--include+
+#   option, or in the current directory by default.  The contents of the file
+#   will be shifted to have the same indentation as the ':' at the start of
+#   the +:include:+ directive.
+#
+# [+:title:+ _text_]
+#   Sets the title for the document.  Equivalent to the <tt>--title</tt>
+#   command line parameter.  (The command line parameter overrides any :title:
+#   directive in the source).
+#
+# [+:main:+ _name_]
+#   Equivalent to the <tt>--main</tt> command line parameter.
+#
+# [<tt>:section: title</tt>]
+#   Starts a new section in the output.  The title following +:section:+ is
+#   used as the section heading, and the remainder of the comment containing
+#   the section is used as introductory text.  Subsequent methods, aliases,
+#   attributes, and classes will be documented in this section.  A :section:
+#   comment block may have one or more lines before the :section: directive.
+#   These will be removed, and any identical lines at the end of the block are
+#   also removed.  This allows you to add visual cues such as:
+#
+#     # ----------------------------------------
+#     # :section: My Section
+#     # This is the section that I wrote.
+#     # See it glisten in the noon-day sun.
+#     # ----------------------------------------
+#
+#   <i>Note: Current formatters to not take sections into account.</i>
+#
+# [+:call-seq:+]
+#   Lines up to the next blank line in the comment are treated as the method's
+#   calling sequence, overriding the default parsing of method parameters and
+#   yield arguments.
+#
+# Further directives can be found in RDoc::Parser::Ruby and RDoc::Parser::C.
 #--
-# Author::   Dave Thomas,  dave@pragmaticprogrammer.com
-# License::  Ruby license
+# Original Author:: Dave Thomas,  dave@pragmaticprogrammer.com
+# License:: Ruby license
 
 class RDoc::Markup
+
+  ##
+  # An AttributeManager which handles inline markup.
 
   attr_reader :attribute_manager
 

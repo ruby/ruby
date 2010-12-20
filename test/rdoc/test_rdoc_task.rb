@@ -42,7 +42,7 @@ class TestRDocTask < MiniTest::Unit::TestCase
   end
 
   def test_tasks_creation_with_custom_name_hash_will_use_default_if_an_option_isnt_given
-    rd = RDoc::Task.new(:clobber_rdoc => "rdoc:clean")
+    RDoc::Task.new(:clobber_rdoc => "rdoc:clean")
     assert Rake::Task[:rdoc]
     assert Rake::Task[:"rdoc:clean"]
     assert Rake::Task[:rerdoc]

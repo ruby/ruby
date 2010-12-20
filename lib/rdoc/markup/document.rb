@@ -39,6 +39,9 @@ class RDoc::Markup::Document
     self.class == other.class and @parts == other.parts
   end
 
+  ##
+  # Runs this document and all its #items through +visitor+
+
   def accept visitor
     visitor.start_accepting
 
@@ -48,6 +51,9 @@ class RDoc::Markup::Document
 
     visitor.end_accepting
   end
+
+  ##
+  # Does this document have no parts?
 
   def empty?
     @parts.empty?

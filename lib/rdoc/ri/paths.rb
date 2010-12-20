@@ -10,10 +10,21 @@ module RDoc::RI::Paths
 
   version = RbConfig::CONFIG['ruby_version']
 
-  base    = File.join RbConfig::CONFIG['ridir'], version
+  base    = if RbConfig::CONFIG.key? 'ridir' then
+              File.join RbConfig::CONFIG['ridir'], version
+            else
+              File.join RbConfig::CONFIG['datadir'], 'ri', version
+            end
+
   SYSDIR  = File.join base, "system"
   SITEDIR = File.join base, "site"
-  HOMEDIR = (File.expand_path('~/.rdoc') rescue nil)
+
+  homedir = File.expand_path('~') ||
+            ENV['HOME'] || ENV['USERPROFILE'] || ENV['HOMEPATH']
+
+  HOMEDIR = if homedir then
+              File.join homedir, ".rdoc"
+            end
   #:startdoc:
 
   @gemdirs = nil

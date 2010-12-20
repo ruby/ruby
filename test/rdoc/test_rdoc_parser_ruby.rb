@@ -22,12 +22,38 @@ class TestRDocParserRuby < MiniTest::Unit::TestCase
     util_top_level
     @options = RDoc::Options.new
     @options.quiet = true
+    @options.option_parser = OptionParser.new
+
     @stats = RDoc::Stats.new 0
   end
 
   def teardown
     @tempfile.close
     @tempfile2.close
+  end
+
+  def test_get_symbol_or_name
+    util_parser "* & | + 5 / 4"
+
+    assert_equal '*', @parser.get_symbol_or_name
+
+    @parser.skip_tkspace
+
+    assert_equal '&', @parser.get_symbol_or_name
+
+    @parser.skip_tkspace
+
+    assert_equal '|', @parser.get_symbol_or_name
+
+    @parser.skip_tkspace
+
+    assert_equal '+', @parser.get_symbol_or_name
+
+    @parser.skip_tkspace
+    @parser.get_tk
+    @parser.skip_tkspace
+
+    assert_equal '/', @parser.get_symbol_or_name
   end
 
   def test_look_for_directives_in_attr
@@ -52,6 +78,61 @@ class TestRDocParserRuby < MiniTest::Unit::TestCase
     assert_equal "# :attr_writer: my_method\n", comment
   end
 
+  def test_remove_private_comments
+    util_parser ''
+
+    comment = <<-EOS
+# This is text
+#--
+# this is private
+    EOS
+
+    expected = <<-EOS
+# This is text
+    EOS
+
+    @parser.remove_private_comments(comment)
+
+    assert_equal expected, comment
+  end
+
+  def test_remove_private_comments_rule
+    util_parser ''
+
+    comment = <<-EOS
+# This is text with a rule:
+# ---
+# this is also text
+    EOS
+
+    expected = comment.dup
+
+    @parser.remove_private_comments(comment)
+
+    assert_equal expected, comment
+  end
+
+  def test_remove_private_comments_toggle
+    util_parser ''
+
+    comment = <<-EOS
+# This is text
+#--
+# this is private
+#++
+# This is text again.
+    EOS
+
+    expected = <<-EOS
+# This is text
+# This is text again.
+    EOS
+
+    @parser.remove_private_comments(comment)
+
+    assert_equal expected, comment
+  end
+
   def test_look_for_directives_in_commented
     util_parser ""
 
@@ -70,9 +151,9 @@ class TestRDocParserRuby < MiniTest::Unit::TestCase
   def test_look_for_directives_in_enddoc
     util_parser ""
 
-    assert_throws :enddoc do
-      @parser.look_for_directives_in @top_level, "# :enddoc:\n"
-    end
+    @parser.look_for_directives_in @top_level, "# :enddoc:\n"
+
+    assert @top_level.done_documenting
   end
 
   def test_look_for_directives_in_main
@@ -105,13 +186,11 @@ class TestRDocParserRuby < MiniTest::Unit::TestCase
     @top_level.stop_doc
     assert !@top_level.document_self
     assert !@top_level.document_children
-    assert !@top_level.force_documentation
 
     @parser.look_for_directives_in @top_level, "# :startdoc:\n"
 
     assert @top_level.document_self
     assert @top_level.document_children
-    assert @top_level.force_documentation
   end
 
   def test_look_for_directives_in_stopdoc
@@ -166,10 +245,29 @@ class TestRDocParserRuby < MiniTest::Unit::TestCase
 
     alas = @parser.parse_alias klass, RDoc::Parser::Ruby::NORMAL, tk, 'comment'
 
-    assert_equal 'bar',     alas.old_name
-    assert_equal 'next=',   alas.new_name
-    assert_equal klass,     alas.parent
-    assert_equal 'comment', alas.comment
+    assert_equal 'bar',      alas.old_name
+    assert_equal 'next=',    alas.new_name
+    assert_equal klass,      alas.parent
+    assert_equal 'comment',  alas.comment
+    assert_equal @top_level, alas.file
+  end
+
+  def test_parse_alias_singleton
+    klass = RDoc::NormalClass.new 'Foo'
+    klass.parent = @top_level
+
+    util_parser "alias :next= :bar"
+
+    tk = @parser.get_tk
+
+    alas = @parser.parse_alias klass, RDoc::Parser::Ruby::SINGLE, tk, 'comment'
+
+    assert_equal 'bar',      alas.old_name
+    assert_equal 'next=',    alas.new_name
+    assert_equal klass,      alas.parent
+    assert_equal 'comment',  alas.comment
+    assert_equal @top_level, alas.file
+    assert                   alas.singleton
   end
 
   def test_parse_alias_meta
@@ -202,6 +300,7 @@ class TestRDocParserRuby < MiniTest::Unit::TestCase
     foo = klass.attributes.first
     assert_equal 'foo', foo.name
     assert_equal 'my attr', foo.comment
+    assert_equal @top_level, foo.file
   end
 
   def test_parse_attr_accessor
@@ -222,11 +321,27 @@ class TestRDocParserRuby < MiniTest::Unit::TestCase
     assert_equal 'foo', foo.name
     assert_equal 'RW', foo.rw
     assert_equal 'my attr', foo.comment
+    assert_equal @top_level, foo.file
 
     bar = klass.attributes.last
     assert_equal 'bar', bar.name
     assert_equal 'RW', bar.rw
     assert_equal 'my attr', bar.comment
+  end
+
+  def test_parse_attr_accessor_nodoc
+    klass = RDoc::NormalClass.new 'Foo'
+    klass.parent = @top_level
+
+    comment = "##\n# my attr\n"
+
+    util_parser "attr_accessor :foo, :bar # :nodoc:"
+
+    tk = @parser.get_tk
+
+    @parser.parse_attr_accessor klass, RDoc::Parser::Ruby::NORMAL, tk, comment
+
+    assert_equal 0, klass.attributes.length
   end
 
   def test_parse_attr_accessor_writer
@@ -247,6 +362,7 @@ class TestRDocParserRuby < MiniTest::Unit::TestCase
     assert_equal 'foo', foo.name
     assert_equal 'W', foo.rw
     assert_equal "my attr", foo.comment
+    assert_equal @top_level, foo.file
 
     bar = klass.attributes.last
     assert_equal 'bar', bar.name
@@ -271,6 +387,7 @@ class TestRDocParserRuby < MiniTest::Unit::TestCase
     assert_equal 'foo', foo.name
     assert_equal 'RW', foo.rw
     assert_equal "my method", foo.comment
+    assert_equal @top_level, foo.file
   end
 
   def test_parse_meta_attr_accessor
@@ -290,6 +407,7 @@ class TestRDocParserRuby < MiniTest::Unit::TestCase
     assert_equal 'foo', foo.name
     assert_equal 'RW', foo.rw
     assert_equal 'my method', foo.comment
+    assert_equal @top_level, foo.file
   end
 
   def test_parse_meta_attr_named
@@ -309,6 +427,7 @@ class TestRDocParserRuby < MiniTest::Unit::TestCase
     assert_equal 'foo', foo.name
     assert_equal 'RW', foo.rw
     assert_equal 'my method', foo.comment
+    assert_equal @top_level, foo.file
   end
 
   def test_parse_meta_attr_reader
@@ -327,6 +446,7 @@ class TestRDocParserRuby < MiniTest::Unit::TestCase
     assert_equal 'foo', foo.name
     assert_equal 'R', foo.rw
     assert_equal 'my method', foo.comment
+    assert_equal @top_level, foo.file
   end
 
   def test_parse_meta_attr_writer
@@ -345,12 +465,13 @@ class TestRDocParserRuby < MiniTest::Unit::TestCase
     assert_equal 'foo', foo.name
     assert_equal 'W', foo.rw
     assert_equal "my method", foo.comment
+    assert_equal @top_level, foo.file
   end
 
   def test_parse_class
     comment = "##\n# my method\n"
 
-    util_parser 'class Foo; end'
+    util_parser "class Foo\nend"
 
     tk = @parser.get_tk
 
@@ -379,11 +500,12 @@ end
 
     blah = foo.method_list.first
     assert_equal 'Foo#blah', blah.full_name
+    assert_equal @top_level, blah.file
   end
 
   def test_parse_class_nested_superclass
-    foo = RDoc::NormalModule.new 'Foo'
-    foo.parent = @top_level
+    util_top_level
+    foo = @top_level.add_module RDoc::NormalModule, 'Foo'
 
     util_parser "class Bar < Super\nend"
 
@@ -398,7 +520,7 @@ end
   def test_parse_module
     comment = "##\n# my module\n"
 
-    util_parser 'module Foo; end'
+    util_parser "module Foo\nend"
 
     tk = @parser.get_tk
 
@@ -430,6 +552,8 @@ class A
   class << B
   end
   class << d = Object.new
+    def foo; end
+    alias bar foo
   end
 end
     CODE
@@ -439,7 +563,40 @@ end
     @parser.parse_class @top_level, false, @parser.get_tk, ''
 
     assert_equal %w[A],    RDoc::TopLevel.classes.map { |c| c.full_name }
-    assert_equal %w[A::B], RDoc::TopLevel.modules.map { |c| c.full_name }
+    assert_equal %w[A::B A::d], RDoc::TopLevel.modules.map { |c| c.full_name }
+
+    # make sure method/alias was not added to enclosing class/module
+    a = RDoc::TopLevel.all_classes_hash['A']
+    assert_empty a.method_list
+
+    # make sure non-constant-named module will be removed from documentation
+    d = RDoc::TopLevel.all_modules_hash['A::d']
+    assert d.remove_from_documentation?
+
+  end
+
+  # TODO this is really a Context#add_class test
+  def test_parse_class_object
+    code = <<-CODE
+module A
+  class B
+  end
+  class Object
+  end
+  class C < Object
+  end
+end
+    CODE
+
+    util_parser code
+
+    @parser.parse_module @top_level, false, @parser.get_tk, ''
+
+    assert_equal %w[A],    RDoc::TopLevel.modules.map { |c| c.full_name }
+    assert_equal %w[A::B A::C A::Object], RDoc::TopLevel.classes.map { |c| c.full_name }.sort
+    assert_equal 'Object', RDoc::TopLevel.classes_hash['A::B'].superclass
+    assert_equal 'Object', RDoc::TopLevel.classes_hash['A::Object'].superclass
+    assert_equal 'A::Object', RDoc::TopLevel.classes_hash['A::C'].superclass.full_name
   end
 
   def test_parse_class_mistaken_for_module
@@ -447,7 +604,7 @@ end
     # before Foo::Bar is encountered), but RDoc might encounter Foo::Bar
     # before Foo if they live in different files.
 
-    code = <<-EOF
+    code = <<-RUBY
 class Foo::Bar
 end
 
@@ -456,7 +613,7 @@ end
 
 class Foo
 end
-    EOF
+    RUBY
 
     util_parser code
 
@@ -542,18 +699,20 @@ EOF
     @parser.parse_comment klass, tk, comment
 
     foo = klass.attributes.first
-    assert_equal 'foo',     foo.name
-    assert_equal 'RW',      foo.rw
-    assert_equal 'my attr',   foo.comment
+    assert_equal 'foo',      foo.name
+    assert_equal 'RW',       foo.rw
+    assert_equal 'my attr',  foo.comment
+    assert_equal @top_level, foo.file
 
-    assert_equal nil,       foo.viewer
-    assert_equal true,      foo.document_children
-    assert_equal true,      foo.document_self
-    assert_equal false,     foo.done_documenting
-    assert_equal false,     foo.force_documentation
-    assert_equal klass,     foo.parent
-    assert_equal :public,   foo.visibility
-    assert_equal "\n",      foo.text
+    assert_equal nil,        foo.viewer
+    assert_equal true,       foo.document_children
+    assert_equal true,       foo.document_self
+    assert_equal false,      foo.done_documenting
+    assert_equal false,      foo.force_documentation
+    assert_equal klass,      foo.parent
+    assert_equal :public,    foo.visibility
+    assert_equal "\n",       foo.text
+
     assert_equal klass.current_section, foo.section
   end
 
@@ -570,8 +729,9 @@ EOF
     @parser.parse_comment klass, tk, comment
 
     foo = klass.method_list.first
-    assert_equal 'foo',     foo.name
-    assert_equal 'my method',   foo.comment
+    assert_equal 'foo',       foo.name
+    assert_equal 'my method', foo.comment
+    assert_equal @top_level,  foo.file
 
     assert_equal [],        foo.aliases
     assert_equal nil,       foo.block_params
@@ -599,9 +759,23 @@ EOF
     assert_equal stream, foo.token_stream
   end
 
+  def test_parse_constant_attrasgn
+    util_top_level
+
+    klass = @top_level.add_class RDoc::NormalClass, 'Foo'
+
+    util_parser "A[k] = v"
+
+    tk = @parser.get_tk
+
+    @parser.parse_constant klass, tk, ''
+
+    assert klass.constants.empty?
+  end
+
   def test_parse_constant_alias
-    klass = RDoc::NormalClass.new 'Foo'
-    klass.parent = @top_level
+    util_top_level
+    klass = @top_level.add_class RDoc::NormalClass, 'Foo'
     cB = klass.add_class RDoc::NormalClass, 'B'
 
     util_parser "A = B"
@@ -642,8 +816,9 @@ EOF
     @parser.parse_meta_method klass, RDoc::Parser::Ruby::NORMAL, tk, comment
 
     foo = klass.method_list.first
-    assert_equal 'foo', foo.name
+    assert_equal 'foo',       foo.name
     assert_equal 'my method', foo.comment
+    assert_equal @top_level,  foo.file
 
     assert_equal [],      foo.aliases
     assert_equal nil,     foo.block_params
@@ -691,8 +866,9 @@ EOF
     @parser.parse_meta_method klass, RDoc::Parser::Ruby::NORMAL, tk, comment
 
     foo = klass.method_list.first
-    assert_equal 'woo_hoo!', foo.name
+    assert_equal 'woo_hoo!',  foo.name
     assert_equal 'my method', foo.comment
+    assert_equal @top_level,  foo.file
   end
 
   def test_parse_meta_method_singleton
@@ -711,6 +887,7 @@ EOF
     assert_equal 'foo', foo.name
     assert_equal true, foo.singleton, 'singleton method'
     assert_equal 'my method', foo.comment
+    assert_equal @top_level,  foo.file
   end
 
   def test_parse_meta_method_singleton_name
@@ -729,6 +906,7 @@ EOF
     assert_equal 'woo_hoo!', foo.name
     assert_equal true, foo.singleton, 'singleton method'
     assert_equal 'my method', foo.comment
+    assert_equal @top_level,  foo.file
   end
 
   def test_parse_meta_method_string_name
@@ -744,6 +922,7 @@ EOF
     foo = klass.method_list.first
     assert_equal 'foo', foo.name
     assert_equal 'my method', foo.comment
+    assert_equal @top_level,  foo.file
   end
 
   def test_parse_meta_method_unknown
@@ -759,6 +938,7 @@ EOF
     foo = klass.method_list.first
     assert_equal 'unknown', foo.name
     assert_equal 'my method', foo.comment
+    assert_equal @top_level,  foo.file
   end
 
   def test_parse_method
@@ -774,8 +954,9 @@ EOF
     @parser.parse_method klass, RDoc::Parser::Ruby::NORMAL, tk, comment
 
     foo = klass.method_list.first
-    assert_equal 'foo',     foo.name
-    assert_equal 'my method',   foo.comment
+    assert_equal 'foo',       foo.name
+    assert_equal 'my method', foo.comment
+    assert_equal @top_level,  foo.file
 
     assert_equal [],        foo.aliases
     assert_equal nil,       foo.block_params
@@ -826,39 +1007,53 @@ EOF
     assert klass.aliases.empty?
   end
 
-  def test_parse_method_utf8
-    klass = RDoc::NormalClass.new 'Foo'
-    klass.parent = @top_level
-
-    comment = "##\n# my method\n"
-
-    method = "def ω() end"
-
-    assert_equal Encoding::UTF_8, method.encoding if defined? ::Encoding
-
-    util_parser method
+  def test_parse_method_false
+    util_parser "def false.foo() :bar end"
 
     tk = @parser.get_tk
 
-    @parser.parse_method klass, RDoc::Parser::Ruby::NORMAL, tk, comment
+    @parser.parse_method @top_level, RDoc::Parser::Ruby::NORMAL, tk, ''
 
-    omega = klass.method_list.first
-    assert_equal "def \317\211", omega.text
+    klass = RDoc::TopLevel.find_class_named 'FalseClass'
+
+    foo = klass.method_list.first
+    assert_equal 'foo', foo.name
   end
 
   def test_parse_method_funky
     klass = RDoc::NormalClass.new 'Foo'
     klass.parent = @top_level
 
-    comment = "##\n# my method\n"
-
     util_parser "def (blah).foo() :bar end"
 
     tk = @parser.get_tk
 
-    @parser.parse_method klass, RDoc::Parser::Ruby::NORMAL, tk, comment
+    @parser.parse_method klass, RDoc::Parser::Ruby::NORMAL, tk, ''
 
     assert klass.method_list.empty?
+  end
+
+  def test_parse_method_gvar
+    util_parser "def $stdout.foo() :bar end"
+
+    tk = @parser.get_tk
+
+    @parser.parse_method @top_level, RDoc::Parser::Ruby::NORMAL, tk, ''
+
+    assert @top_level.method_list.empty?
+  end
+
+  def test_parse_method_internal_gvar
+    klass = RDoc::NormalClass.new 'Foo'
+    klass.parent = @top_level
+
+    util_parser "def foo() def $blah.bar() end end"
+
+    tk = @parser.get_tk
+
+    @parser.parse_method klass, RDoc::Parser::Ruby::NORMAL, tk, ''
+
+    assert_equal 1, klass.method_list.length
   end
 
   def test_parse_method_internal_ivar
@@ -887,33 +1082,43 @@ EOF
     assert_equal 1, klass.method_list.length
   end
 
+  def test_parse_method_nil
+    util_parser "def nil.foo() :bar end"
+
+    tk = @parser.get_tk
+
+    @parser.parse_method @top_level, RDoc::Parser::Ruby::NORMAL, tk, ''
+
+    klass = RDoc::TopLevel.find_class_named 'NilClass'
+
+    foo = klass.method_list.first
+    assert_equal 'foo', foo.name
+  end
+
   def test_parse_method_no_parens
     klass = RDoc::NormalClass.new 'Foo'
     klass.parent = @top_level
 
-    comment = "##\n# my method\n"
-
-    util_parser "def foo arg1, arg2\nend"
+    util_parser "def foo arg1, arg2 = {}\nend"
 
     tk = @parser.get_tk
 
-    @parser.parse_method klass, RDoc::Parser::Ruby::NORMAL, tk, comment
+    @parser.parse_method klass, RDoc::Parser::Ruby::NORMAL, tk, ''
 
     foo = klass.method_list.first
-    assert_equal '(arg1, arg2)', foo.params
+    assert_equal '(arg1, arg2 = {})', foo.params
+    assert_equal @top_level, foo.file
   end
 
   def test_parse_method_parameters_comment
     klass = RDoc::NormalClass.new 'Foo'
     klass.parent = @top_level
 
-    comment = "##\n# my method\n"
-
     util_parser "def foo arg1, arg2 # some useful comment\nend"
 
     tk = @parser.get_tk
 
-    @parser.parse_method klass, RDoc::Parser::Ruby::NORMAL, tk, comment
+    @parser.parse_method klass, RDoc::Parser::Ruby::NORMAL, tk, ''
 
     foo = klass.method_list.first
     assert_equal '(arg1, arg2)', foo.params
@@ -923,13 +1128,11 @@ EOF
     klass = RDoc::NormalClass.new 'Foo'
     klass.parent = @top_level
 
-    comment = "##\n# my method\n"
-
     util_parser "def foo arg1, arg2, # some useful comment\narg3\nend"
 
     tk = @parser.get_tk
 
-    @parser.parse_method klass, RDoc::Parser::Ruby::NORMAL, tk, comment
+    @parser.parse_method klass, RDoc::Parser::Ruby::NORMAL, tk, ''
 
     foo = klass.method_list.first
     assert_equal '(arg1, arg2, arg3)', foo.params
@@ -938,18 +1141,17 @@ EOF
   def test_parse_method_toplevel
     klass = @top_level
 
-    comment = "##\n# my method\n"
-
     util_parser "def foo arg1, arg2\nend"
 
     tk = @parser.get_tk
 
-    @parser.parse_method klass, RDoc::Parser::Ruby::NORMAL, tk, comment
+    @parser.parse_method klass, RDoc::Parser::Ruby::NORMAL, tk, ''
 
     object = RDoc::TopLevel.find_class_named 'Object'
 
     foo = object.method_list.first
     assert_equal 'Object#foo', foo.full_name
+    assert_equal @top_level, foo.file
   end
 
   def test_parse_method_toplevel_class
@@ -967,9 +1169,39 @@ EOF
     assert_equal 'Object::foo', foo.full_name
   end
 
-  def test_parse_statements_class_if
-    comment = "##\n# my method\n"
+  def test_parse_method_true
+    util_parser "def true.foo() :bar end"
 
+    tk = @parser.get_tk
+
+    @parser.parse_method @top_level, RDoc::Parser::Ruby::NORMAL, tk, ''
+
+    klass = RDoc::TopLevel.find_class_named 'TrueClass'
+
+    foo = klass.method_list.first
+    assert_equal 'foo', foo.name
+  end
+
+  def test_parse_method_utf8
+    klass = RDoc::NormalClass.new 'Foo'
+    klass.parent = @top_level
+
+    method = "def ω() end"
+
+    assert_equal Encoding::UTF_8, method.encoding if
+      Object.const_defined? :Encoding
+
+    util_parser method
+
+    tk = @parser.get_tk
+
+    @parser.parse_method klass, RDoc::Parser::Ruby::NORMAL, tk, ''
+
+    omega = klass.method_list.first
+    assert_equal "def \317\211", omega.text
+  end
+
+  def test_parse_statements_class_if
     util_parser <<-CODE
 module Foo
   X = if TRUE then
@@ -1024,7 +1256,12 @@ end
   end
 
   def test_parse_statements_identifier_alias_method
-    content = "class Foo def foo() end; alias_method :foo2, :foo end"
+    content = <<-RUBY
+class Foo
+  def foo() end
+  alias_method :foo2, :foo
+end
+    RUBY
 
     util_parser content
 
@@ -1078,10 +1315,25 @@ EOF
     assert_equal 'foo4', foo4.name
     assert_equal 'foo', foo4.is_alias_for.name
 
-    assert_equal 'unknown', @top_level.classes.first.aliases[0].old_name
+    assert_equal 'unknown', @top_level.classes.first.external_aliases[0].old_name
   end
 
   def test_parse_statements_identifier_constant
+
+    sixth_constant = <<-EOF
+Class.new do
+  rule :file do
+    all(x, y, z) {
+      def value
+        find(:require).each {|r| require r.value }
+        find(:grammar).map {|g| g.value }
+      end
+      def min; end
+    }
+  end
+end
+    EOF
+
     content = <<-EOF
 class Foo
   FIRST_CONSTANT = 5
@@ -1103,6 +1355,10 @@ class Foo
   end
 
   FIFTH_CONSTANT = SECOND_CONSTANT.map { |element| element + 1 }
+
+  SIXTH_CONSTANT = #{sixth_constant}
+
+  SEVENTH_CONSTANT = proc { |i| begin i end }
 end
 EOF
 
@@ -1115,26 +1371,43 @@ EOF
     constant = constants[0]
     assert_equal 'FIRST_CONSTANT', constant.name
     assert_equal '5', constant.value
+    assert_equal @top_level, constant.file
 
     constant = constants[1]
     assert_equal 'SECOND_CONSTANT', constant.name
-    assert_equal '[      1,      2,      3   ]', constant.value
+    assert_equal "[\n1,\n2,\n3\n]", constant.value
+    assert_equal @top_level, constant.file
 
     constant = constants[2]
     assert_equal 'THIRD_CONSTANT', constant.name
-    assert_equal "{      :foo => 'bar',      :x => 'y'   }", constant.value
+    assert_equal "{\n:foo => 'bar',\n:x => 'y'\n}", constant.value
+    assert_equal @top_level, constant.file
 
     constant = constants[3]
     assert_equal 'FOURTH_CONSTANT', constant.name
-    assert_equal 'SECOND_CONSTANT.map do |element|     element + 1     element + 2   end', constant.value
+    assert_equal "SECOND_CONSTANT.map do |element|\nelement + 1\nelement + 2\nend", constant.value
+    assert_equal @top_level, constant.file
 
-    constant = constants.last
+    constant = constants[4]
     assert_equal 'FIFTH_CONSTANT', constant.name
     assert_equal 'SECOND_CONSTANT.map { |element| element + 1 }', constant.value
+    assert_equal @top_level, constant.file
+
+    # TODO: parse as class
+    constant = constants[5]
+    assert_equal 'SIXTH_CONSTANT', constant.name
+    assert_equal sixth_constant.lines.map(&:strip).join("\n"), constant.value
+    assert_equal @top_level, constant.file
+
+    # TODO: parse as method
+    constant = constants[6]
+    assert_equal 'SEVENTH_CONSTANT', constant.name
+    assert_equal "proc { |i| begin i end }", constant.value
+    assert_equal @top_level, constant.file
   end
 
   def test_parse_statements_identifier_attr
-    content = "class Foo; attr :foo; end"
+    content = "class Foo\nattr :foo\nend"
 
     util_parser content
 
@@ -1146,7 +1419,7 @@ EOF
   end
 
   def test_parse_statements_identifier_attr_accessor
-    content = "class Foo; attr_accessor :foo; end"
+    content = "class Foo\nattr_accessor :foo\nend"
 
     util_parser content
 
@@ -1158,7 +1431,7 @@ EOF
   end
 
   def test_parse_statements_identifier_include
-    content = "class Foo; include Bar; end"
+    content = "class Foo\ninclude Bar\nend"
 
     util_parser content
 
@@ -1170,24 +1443,24 @@ EOF
   end
 
   def test_parse_statements_identifier_module_function
-    content = "module Foo def foo() end; module_function :foo; end"
+    content = "module Foo\ndef foo() end\nmodule_function :foo\nend"
 
     util_parser content
 
     @parser.parse_statements @top_level, RDoc::Parser::Ruby::NORMAL, nil, ''
 
     foo, s_foo = @top_level.modules.first.method_list
-    assert_equal 'foo', foo.name, 'instance method name'
+    assert_equal 'foo',    foo.name,       'instance method name'
     assert_equal :private, foo.visibility, 'instance method visibility'
-    assert_equal false, foo.singleton, 'instance method singleton'
+    assert_equal false,    foo.singleton,  'instance method singleton'
 
-    assert_equal 'foo', s_foo.name, 'module function name'
+    assert_equal 'foo',   s_foo.name,       'module function name'
     assert_equal :public, s_foo.visibility, 'module function visibility'
-    assert_equal true, s_foo.singleton, 'module function singleton'
+    assert_equal true,    s_foo.singleton,  'module function singleton'
   end
 
   def test_parse_statements_identifier_private
-    content = "class Foo private; def foo() end end"
+    content = "class Foo\nprivate\ndef foo() end\nend"
 
     util_parser content
 
@@ -1235,6 +1508,24 @@ end
     assert_equal 'A#b', m_b.full_name
   end
 
+  def test_parse_symbol_in_arg
+    util_parser ':blah "blah" "#{blah}" blah'
+
+    assert_equal 'blah', @parser.parse_symbol_in_arg
+
+    @parser.skip_tkspace
+
+    assert_equal 'blah', @parser.parse_symbol_in_arg
+
+    @parser.skip_tkspace
+
+    assert_equal nil, @parser.parse_symbol_in_arg
+
+    @parser.skip_tkspace
+
+    assert_equal nil, @parser.parse_symbol_in_arg
+  end
+
   def test_parse_top_level_statements_alias_method
     content = <<-CONTENT
 class A
@@ -1250,6 +1541,20 @@ end
     util_parser content
 
     @parser.parse_statements @top_level
+  end
+
+  def test_parse_yield_in_braces_with_parens
+    klass = RDoc::NormalClass.new 'Foo'
+    klass.parent = @top_level
+
+    util_parser "def foo\nn.times { |i| yield nth(i) }\nend"
+
+    tk = @parser.get_tk
+
+    @parser.parse_method klass, RDoc::Parser::Ruby::NORMAL, tk, ''
+
+    foo = klass.method_list.first
+    assert_equal 'nth(i)', foo.block_params
   end
 
   def test_sanity_integer
@@ -1272,7 +1577,6 @@ end
   # If you're writing code like this you're doing it wrong
 
   def test_sanity_interpolation_crazy
-    last_tk = nil
     util_parser '"#{"#{"a")}" if b}"'
 
     assert_equal '"#{"#{"a")}" if b}"', @parser.get_tk.text
@@ -1280,7 +1584,6 @@ end
   end
 
   def test_sanity_interpolation_curly
-    last_tk = nil
     util_parser '%{ #{} }'
 
     assert_equal '%{ #{} }', @parser.get_tk.text
@@ -1290,13 +1593,39 @@ end
   def test_sanity_interpolation_format
     util_parser '"#{stftime("%m-%d")}"'
 
-    while tk = @parser.get_tk do end
+    while @parser.get_tk do end
   end
 
   def test_sanity_symbol_interpolation
     util_parser ':"#{bar}="'
 
-    while tk = @parser.get_tk do end
+    while @parser.get_tk do end
+  end
+
+  def test_stopdoc_after_comment
+
+    util_parser <<-EOS
+      module Bar
+        # hello
+        module Foo
+          # :stopdoc:
+        end
+        # there
+        class Baz
+          # :stopdoc:
+        end
+      end
+    EOS
+
+    @parser.parse_statements @top_level, RDoc::Parser::Ruby::NORMAL, nil, ''
+
+    foo = @top_level.modules.first.modules.first
+    assert_equal 'Foo', foo.name
+    assert_equal 'hello', foo.comment
+
+    baz = @top_level.modules.first.classes.first
+    assert_equal 'Baz', baz.name
+    assert_equal 'there', baz.comment
   end
 
   def tk(klass, line, char, name, text)
