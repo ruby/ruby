@@ -106,25 +106,38 @@ native_cond_destroy(pthread_cond_t *cond)
 static void
 native_cond_signal(pthread_cond_t *cond)
 {
-    pthread_cond_signal(cond);
+    int r = pthread_cond_signal(cond);
+    if (r != 0) {
+	rb_bug_errno("pthread_cond_signal", r);
+    }
 }
 
 static void
 native_cond_broadcast(pthread_cond_t *cond)
 {
-    pthread_cond_broadcast(cond);
+    int r = pthread_cond_broadcast(cond);
+    if (r != 0) {
+	rb_bug_errno("native_cond_broadcast", r);
+    }
 }
 
 static void
 native_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
 {
-    pthread_cond_wait(cond, mutex);
+    int r = pthread_cond_wait(cond, mutex);
+    if (r != 0) {
+	rb_bug_errno("pthread_cond_wait", r);
+    }
 }
 
 static int
 native_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, struct timespec *ts)
 {
-    return pthread_cond_timedwait(cond, mutex, ts);
+    int r = pthread_cond_timedwait(cond, mutex, ts);
+    if (r != 0 && r != ETIMEDOUT && r != EINTR /* Linux */) {
+	rb_bug_errno("pthread_cond_timedwait", r);
+    }
+    return r;
 }
 
 
