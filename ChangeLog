@@ -1,3 +1,8 @@
+Tue Dec 21 01:18:06 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* error.c: Fix build error for win32. This regression was
+	  introduced by r30271.
+
 Tue Dec 21 00:59:40 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (thread_cleanup_func): Moved interrupted_lock

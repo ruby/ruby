@@ -25,6 +25,14 @@
 #define EXIT_SUCCESS 0
 #endif
 
+#ifndef WIFEXITED
+#define WIFEXITED(status) 1
+#endif
+
+#ifndef WEXITSTATUS
+#define WEXITSTATUS(status) (status)
+#endif
+
 extern const char ruby_description[];
 
 static const char *
