@@ -1,3 +1,8 @@
+Tue Nov 16 00:21:20 2010  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* regparse.c (and_cclass, or_cclass): fix memory leak.  Coverity Scan
+	  found this bug.  [ruby-dev:42579]
+
 Mon Nov 15 23:54:45 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* eval_intern.h (CHECK_STACK_OVERFLOW): it was not intended to add
