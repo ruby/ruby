@@ -16,21 +16,21 @@
 #define AR(str) rb_str_concat(buf, (str))
 
 #define A_INDENT add_indent(buf, indent)
-#define A_ID(id) add_id(buf, id)
+#define A_ID(id) add_id(buf, (id))
 #define A_INT(val) rb_str_catf(buf, "%d", (val));
 #define A_LONG(val) rb_str_catf(buf, "%ld", (val));
 #define A_LIT(lit) AR(rb_inspect(lit))
 #define A_NODE_HEADER(node) \
     rb_str_catf(buf, "@ %s (line: %d)", ruby_node_name(nd_type(node)), nd_line(node))
 #define A_FIELD_HEADER(name) \
-    rb_str_catf(buf, "+- %s:", name)
+    rb_str_catf(buf, "+- %s:", (name))
 
 #define D_NULL_NODE A_INDENT; A("(null node)"); A("\n");
 #define D_NODE_HEADER(node) A_INDENT; A_NODE_HEADER(node); A("\n");
 
 #define COMPOUND_FIELD(name, name2, block) \
     do { \
-	A_INDENT; A_FIELD_HEADER(comment ? name2 : name); A("\n"); \
+	A_INDENT; A_FIELD_HEADER(comment ? (name2) : (name)); A("\n"); \
 	rb_str_cat2(indent, next_indent); \
 	block; \
 	rb_str_resize(indent, RSTRING_LEN(indent) - 4); \
@@ -38,7 +38,7 @@
 
 #define SIMPLE_FIELD(name, name2, block) \
     do { \
-	A_INDENT; A_FIELD_HEADER(comment ? name2 : name); A(" "); block; A("\n"); \
+	A_INDENT; A_FIELD_HEADER(comment ? (name2) : (name)); A(" "); block; A("\n"); \
     } while (0)
 
 #define F_CUSTOM1(name, ann, block) SIMPLE_FIELD(#name, #name " (" ann ")", block)

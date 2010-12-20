@@ -1,3 +1,7 @@
+Mon Dec 20 23:12:37 2010  Tanaka Akira  <akr@fsij.org>
+
+	* node.c: parenthesize macro arguments.
+
 Mon Dec 20 20:04:41 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* NEWS: add #__id__ and #object_id. [ruby-dev:42778]
