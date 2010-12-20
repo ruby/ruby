@@ -517,6 +517,23 @@ class Complex_Test < Test::Unit::TestCase
     assert_equal([Complex(2),Complex(1)], Complex(1).coerce(Complex(2)))
   end
 
+  class ObjectX
+    def + (x) Rational(1) end
+    alias - +
+    alias * +
+    alias / +
+    alias quo +
+    alias ** +
+    def coerce(x) [x, Complex(1)] end
+  end
+
+  def test_coerce2
+    x = ObjectX.new
+    %w(+ - * / quo **).each do |op|
+      assert_kind_of(Numeric, Complex(1).__send__(op, x))
+    end
+  end
+
   def test_unify
     if @unify
       assert_instance_of(Fixnum, Complex(1,2) + Complex(-1,-2))
