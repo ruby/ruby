@@ -1,3 +1,9 @@
+Mon Dec 20 13:49:05 2010  Eric Hodel  <drbrain@segment7.net>
+
+	* NEWS: Add item for RDoc 3.0.1
+
+	* lib/rdoc: Import RDoc 3.0.1, remove require for perl parser.
+
 Mon Dec 20 12:15:32 2010  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc: Import RDoc 3.0.

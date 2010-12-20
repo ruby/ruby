@@ -93,6 +93,10 @@ with all sufficient information, see the ChangeLog file.
     Output#encoding and Source#encoding) return an Encoding
     object instead of an encoding name.
 
+* RDoc
+  * RDoc has been upgraded to RDoc 3.0.1.  For full release notes see
+    http://rdoc.rubyforge.org/History_txt.html
+
 === Language changes
 
 * Regexps now support Unicode 6.0. (new characters and scripts)
