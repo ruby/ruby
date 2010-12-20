@@ -221,10 +221,8 @@ class SAX2Tester < Test::Unit::TestCase
   def test_socket
     require 'socket'
 
-    port = 12345
-
-    server = TCPServer.new('127.0.0.1', port)
-    socket = TCPSocket.new('127.0.0.1', port)
+    server = TCPServer.new('127.0.0.1', 0)
+    socket = TCPSocket.new('127.0.0.1', server.addr[1])
 
     ok = false
     session = server.accept

@@ -1,3 +1,11 @@
+Tue Dec 21 06:25:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/rexml/test_contrib.rb (ContribTester#test_pos): should not
+	  use fixed path name for tests.  [ruby-dev:42827]
+
+	* test/rexml/test_sax.rb (SAX2Tester#test_socket): should not use
+	  fixed port for tests.  [ruby-dev:42828]
+
 Tue Dec 21 06:10:18 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (setup_args), vm.c (invoke_block_from_c),
