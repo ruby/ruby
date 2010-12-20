@@ -406,6 +406,7 @@ thread_cleanup_func(void *th_ptr, int atfork)
     if (atfork)
 	return;
 
+    native_mutex_destroy(&th->interrupt_lock);
     native_thread_destroy(th);
 }
 

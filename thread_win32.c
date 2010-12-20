@@ -511,7 +511,6 @@ static void
 native_thread_destroy(rb_thread_t *th)
 {
     HANDLE intr = InterlockedExchangePointer(&th->native_thread_data.interrupt_event, 0);
-    native_mutex_destroy(&th->interrupt_lock);
     thread_debug("close handle - intr: %p, thid: %p\n", intr, th->thread_id);
     w32_close_handle(intr);
 }

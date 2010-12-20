@@ -339,7 +339,6 @@ native_thread_init(rb_thread_t *th)
 static void
 native_thread_destroy(rb_thread_t *th)
 {
-    pthread_mutex_destroy(&th->interrupt_lock);
     pthread_cond_destroy(&th->native_thread_data.gvl_cond);
     pthread_cond_destroy(&th->native_thread_data.sleep_cond);
 }
