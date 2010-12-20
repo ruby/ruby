@@ -710,9 +710,15 @@ exit_status(VALUE exc)
 static VALUE
 exit_success_p(VALUE exc)
 {
-    VALUE status = rb_attr_get(exc, rb_intern("status"));
-    if (NIL_P(status)) return Qtrue;
-    if (status == INT2FIX(EXIT_SUCCESS)) return Qtrue;
+    VALUE status_val = rb_attr_get(exc, rb_intern("status"));
+    int status;
+
+    if (NIL_P(status_val))
+	return Qtrue;
+    status = NUM2INT(status_val);
+    if (WIFEXITED(status) && WEXITSTATUS(status) == EXIT_SUCCESS)
+	return Qtrue;
+
     return Qfalse;
 }
 
