@@ -1,3 +1,8 @@
+Fri Nov 26 09:48:45 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* re.c (rb_reg_initialize_str): should succeed the taint status from
+	  the origin. [ruby-core:33338]
+
 Tue Nov 23 18:54:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (rb_thread_mark): should mark self in conrol
