@@ -1,3 +1,7 @@
+Sat Nov 20 01:57:55 2010  Akio Tajima  <artonx@yahoo.co.jp>
+
+	* common.mk: add dependency(insns.inc) to compile.obj
+
 Thu Nov 18 00:02:17 2010  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	* lib/csv.rb: Upgrading output encoding with ASCII content 
