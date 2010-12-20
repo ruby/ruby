@@ -1703,7 +1703,14 @@ class CSV
     @headers =  row if header_row?
     @lineno  += 1
 
-    @io << row.map(&@quote).join(@col_sep) + @row_sep  # quote and separate
+    output = row.map(&@quote).join(@col_sep) + @row_sep  # quote and separate
+    if @io.is_a?(StringIO)             and
+       output.encoding != raw_encoding and
+       (compatible_encoding = Encoding.compatible?(@io.string, output))
+      @io = StringIO.new(@io.string.force_encoding(compatible_encoding))
+      @io.seek(0, IO::SEEK_END)
+    end
+    @io << output
 
     self  # for chaining
   end
@@ -2038,11 +2045,13 @@ class CSV
     @row_sep = @row_sep.to_s.encode(@encoding)
 
     # establish quoting rules
-    @force_quotes = options.delete(:force_quotes)
-    do_quote      = lambda do |field|
-      @quote_char                                      +
-      String(field).gsub(@quote_char, @quote_char * 2) +
-      @quote_char
+    @force_quotes   = options.delete(:force_quotes)
+    do_quote        = lambda do |field|
+      field         = String(field)
+      encoded_quote = @quote_char.encode(field.encoding)
+      encoded_quote                                +
+      field.gsub(encoded_quote, encoded_quote * 2) +
+      encoded_quote
     end
     quotable_chars = encode_str("\r\n", @col_sep, @quote_char)
     @quote         = if @force_quotes
