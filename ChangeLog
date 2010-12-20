@@ -1,3 +1,8 @@
+Tue Dec 21 01:43:01 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/webrick/https.rb: uninitialized instance variables.
+	  Backport a part of r20864 for ruby_1_8.
+
 Sat Dec  4 11:35:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (init_mkmf): needs default library path even if
