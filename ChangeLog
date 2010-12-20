@@ -1,3 +1,7 @@
+Mon Dec 20 20:04:41 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* NEWS: add #__id__ and #object_id. [ruby-dev:42778]
+
 Mon Dec 20 20:03:21 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (native_thread_destroy): Fixed gvl_cond leak.
