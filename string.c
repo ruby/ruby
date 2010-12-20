@@ -2026,6 +2026,8 @@ rb_str_concat(VALUE str1, VALUE str2)
 	}
 	rb_str_resize(str1, pos+len);
 	rb_enc_mbcput(lc, RSTRING_PTR(str1)+pos, enc);
+	if (cr == ENC_CODERANGE_7BIT && lc > 127)
+	    cr = ENC_CODERANGE_VALID;
 	ENC_CODERANGE_SET(str1, cr);
 	return str1;
     }

@@ -1,3 +1,8 @@
+Mon Nov 22 11:58:11 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_concat): set ENC_CODERANGE_VALID when the
+	  receiver is 7BIT and the argument is non ASCII.
+
 Sat Nov 20 01:57:55 2010  Akio Tajima  <artonx@yahoo.co.jp>
 
 	* common.mk: add dependency(insns.inc) to compile.obj
