@@ -1,3 +1,7 @@
+Sat Nov 27 19:12:10 2010  Tanaka Akira  <akr@fsij.org>
+
+	* time.c: parenthesize macro arguments.
+
 Sat Nov 27 18:08:18 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* time.c (leap_year_v_p): fixed typo.  [ruby-dev:42631]
