@@ -1,3 +1,13 @@
+Mon Nov 22 21:30:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_inspect): fix for ascii-compatible external
+	  encoding and different encoding string.  [ruby-core:33283]
+
+Mon Nov 22 18:33:30 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_inspect): append for each chars instead of bulk
+	  copy if encoding conversion is needed.  [ruby-core:33283]
+
 Mon Nov 22 11:58:11 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_str_concat): set ENC_CODERANGE_VALID when the
