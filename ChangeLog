@@ -1,3 +1,9 @@
+Tue Dec 21 06:10:18 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (setup_args), vm.c (invoke_block_from_c),
+	  vm_insnhelper.c (caller_setup_args): reverted r30241 and r30243
+	  except for the test.
+
 Tue Dec 21 01:41:42 2010  Masaya Tarui  <tarui@ruby-lnag.org>
 
 	* io.c : add an extra byte to buffer for the specification of read

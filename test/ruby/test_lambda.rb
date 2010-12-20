@@ -22,9 +22,6 @@ class TestLambdaParameters < Test::Unit::TestCase
     assert_raise(ArgumentError) { ->(a,b){ }.call(1,2,3) }
   end
 
-end
-
-__END__
   def test_lambda_as_iterator
     a = 0
     2.times(&->(_){ a += 1 })
