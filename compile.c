@@ -985,7 +985,7 @@ iseq_set_exception_local_table(rb_iseq_t *iseq)
     ID id_dollar_bang;
 
     CONST_ID(id_dollar_bang, "#$!");
-    iseq->local_table = (ID *)ALLOC_N(ID *, 1);
+    iseq->local_table = (ID *)ALLOC_N(ID, 1);
     iseq->local_table_size = 1;
     iseq->local_size = iseq->local_table_size + 1;
     iseq->local_table[0] = id_dollar_bang;
@@ -1204,8 +1204,8 @@ iseq_set_local_table(rb_iseq_t *iseq, ID *tbl)
     }
 
     if (size > 0) {
-	iseq->local_table = (ID *)ALLOC_N(ID *, size);
-	MEMCPY(iseq->local_table, tbl, ID *, size);
+	iseq->local_table = (ID *)ALLOC_N(ID, size);
+	MEMCPY(iseq->local_table, tbl, ID, size);
     }
 
     iseq->local_size = iseq->local_table_size = size;
@@ -5374,7 +5374,7 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE locals, VALUE args,
     INIT_ANCHOR(anchor);
 
     iseq->local_table_size = RARRAY_LENINT(locals);
-    iseq->local_table = tbl = (ID *)ALLOC_N(ID *, iseq->local_table_size);
+    iseq->local_table = tbl = (ID *)ALLOC_N(ID, iseq->local_table_size);
     iseq->local_size = iseq->local_table_size + 1;
 
     for (i=0; i<RARRAY_LEN(locals); i++) {
