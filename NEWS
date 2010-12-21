@@ -54,6 +54,11 @@ with all sufficient information, see the ChangeLog file.
     * Kernel#respond_to? now returns false for protected methods.
     * move #__id__ and #object_id to BasicObject.
 
+  * Module
+    * new methods:
+      * Module#private_constant
+      * Module#public_constant
+
   * String
     * new method:
       * String#prepend
