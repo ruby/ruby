@@ -26,9 +26,9 @@ with all sufficient information, see the ChangeLog file.
 
 * builtin classes
 
-  * Kernel
-    * Kernel#respond_to? now returns false for protected methods.
-    * move #__id__ and #object_id to BasicObject.
+  * Array
+    * extended method:
+      * Array#pack supports endian modifiers
 
   * Encoding
     * new encodings:
@@ -38,29 +38,29 @@ with all sufficient information, see the ChangeLog file.
       * UTF-32
 
   * Float
-    * new constants:
+    * new constant:
       * File::NULL
         name of NULL device.
-    * extended methods:
+    * extended method:
       * String#unpack supports endian modifiers
 
+  * IO
+    * extended method:
+      * IO#putc supports multibyte characters
+    * new method:
+      * IO#advise
+
+  * Kernel
+    * Kernel#respond_to? now returns false for protected methods.
+    * move #__id__ and #object_id to BasicObject.
+
   * String
-    * new methods:
+    * new method:
       * String#prepend
 
   * Time
-    * extended methods:
+    * extended method:
       * Time#strftime supports %:z and %::z.
-
-  * IO
-    * extended methods:
-      * IO#putc supports multibyte characters
-    * new methods:
-      * IO#advise
-
-  * Array
-    * extended methods:
-      * Array#pack supports endian modifiers
 
 * io/console
   * new methods:
@@ -73,20 +73,9 @@ with all sufficient information, see the ChangeLog file.
     * IO#winsize
     * IO.console
 
-* webrick
-  * new method:
-    * WEBrick::HTTPRequest#continue for generating '100 continue' response.
-  * new logging directive:
-    * %{remote}p for remote (client) port number.
-
-* uri
-  * new methods:
-    * URI::Generic#hostname
-    * URI::Generic#hostname=
-
-* stringio
-  * extended methods:
-    * StringIO#set_encoding can get 2nd argument and optional hash.
+* RDoc
+  * RDoc has been upgraded to RDoc 3.0.1.  For full release notes see
+    http://rdoc.rubyforge.org/History_txt.html
 
 * rexml
   * [incompatible] support Ruby native encoding mechanism
@@ -95,9 +84,20 @@ with all sufficient information, see the ChangeLog file.
     Output#encoding and Source#encoding) return an Encoding
     object instead of an encoding name.
 
-* RDoc
-  * RDoc has been upgraded to RDoc 3.0.1.  For full release notes see
-    http://rdoc.rubyforge.org/History_txt.html
+* stringio
+  * extended method:
+    * StringIO#set_encoding can get 2nd argument and optional hash.
+
+* uri
+  * new methods:
+    * URI::Generic#hostname
+    * URI::Generic#hostname=
+
+* webrick
+  * new method:
+    * WEBrick::HTTPRequest#continue for generating '100 continue' response.
+  * new logging directive:
+    * %{remote}p for remote (client) port number.
 
 === Language changes
 
