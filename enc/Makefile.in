@@ -51,7 +51,7 @@ archflag = @ARCH_FLAG@
 DLDFLAGS = $(ldflags) $(dldflags) $(archflag)
 RUBY     = $(MINIRUBY)
 
-WORKDIRS = $(ENCSODIR) $(TRANSSODIR) enc enc/trans
+WORKDIRS = @WORKDIRS@
 
 RM = @RM@
 RMDIR = @RMDIR@

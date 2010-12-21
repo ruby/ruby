@@ -1,3 +1,5 @@
+% workdirs = %w"$(ENCSODIR) $(TRANSSODIR) enc enc/trans"
+% CONFIG["WORKDIRS"] = workdirs.join(' ')
 % CONFIG["DLDFLAGS"].sub!(/(\A|\s)(-\S+(?:\s*\w*)?\$\(TARGET\)\S*)/, '\1')
 % dldflags = $2
 % enable_shared = CONFIG['ENABLE_SHARED'] == 'yes'
@@ -143,7 +145,7 @@ clean:
 	@$(RM) <%=pathrep[clean]%>
 % end
 % @ignore_error = $nmake ? '' : ' 2> /dev/null || true'
-% %w[$(TRANSSODIR) $(ENCSODIR)].each do|dir|
+% workdirs.reverse_each do|dir|
 	@-$(RMDIR) <%=pathrep[dir]%><%=@ignore_error%>
 % end
 

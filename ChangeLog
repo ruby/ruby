@@ -1,3 +1,9 @@
+Tue Dec 21 12:45:16 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (target_archs): remove temporary objects.
+
+	* enc/Makefile.in, enc/depend (clean): remove work directories.
+
 Tue Dec 21 07:39:12 2010  Tanaka Akira  <akr@fsij.org>
 
 	* pack.c: parenthesize macro arguments.

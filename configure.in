@@ -194,8 +194,8 @@ if test ${target_archs+set}; then
     else
 	if test x"$target_cpu" != x"${target_archs}"; then
 	    echo 'int main(){return 0;}' > conftest.c
-	    if $CC $CFLAGS $ARCH_FLAG conftest.c > /dev/null 2>&1; then
-		rm -f conftest.* a.out
+	    if $CC $CFLAGS $ARCH_FLAG -o conftest conftest.c > /dev/null 2>&1; then
+		rm -fr conftest.*
 	    else
 		RUBY_DEFAULT_ARCH("$target_archs")
 	    fi
