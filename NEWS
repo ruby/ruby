@@ -55,6 +55,8 @@ with all sufficient information, see the ChangeLog file.
   * IO
     * extended methods:
       * IO#putc supports multibyte characters
+    * new methods:
+      * IO#advise
 
   * Array
     * extended methods:
