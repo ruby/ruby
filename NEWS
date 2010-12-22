@@ -52,7 +52,7 @@ with all sufficient information, see the ChangeLog file.
 
   * Kernel
     * Kernel#respond_to? now returns false for protected methods.
-    * move #__id__ and #object_id to BasicObject.
+    * move #__id__ to BasicObject.
 
   * Module
     * new methods:

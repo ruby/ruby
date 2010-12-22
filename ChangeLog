@@ -1,3 +1,7 @@
+Thu Dec 23 01:47:58 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* NEWS: remove #object_id. [ruby-dev:42840]
+
 Wed Dec 22 08:56:39 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* NEWS: add Module#private_constant and Module#public_constant.
