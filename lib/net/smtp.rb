@@ -1004,7 +1004,7 @@ module Net
         return {} unless @string[3, 1] == '-'
         h = {}
         @string.lines.drop(1).each do |line|
-          k, *v = line[4..-1].chomp.split(nil)
+          k, *v = line[4..-1].chomp.split
           h[k] = v
         end
         h
