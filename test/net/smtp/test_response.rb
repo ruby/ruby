@@ -58,6 +58,42 @@ module Net
         res = Response.parse("250-ubuntu-desktop\n250-SIZE 1 2 3\n250 DSN\n")
         assert_equal "250-ubuntu-desktop\n", res.message
       end
+
+      def test_server_busy_exception
+        res = Response.parse("400 omg busy")
+        assert_equal Net::SMTPServerBusy, res.exception_class
+        res = Response.parse("410 omg busy")
+        assert_equal Net::SMTPServerBusy, res.exception_class
+      end
+
+      def test_syntax_error_exception
+        res = Response.parse("500 omg syntax error")
+        assert_equal Net::SMTPSyntaxError, res.exception_class
+
+        res = Response.parse("501 omg syntax error")
+        assert_equal Net::SMTPSyntaxError, res.exception_class
+      end
+
+      def test_authentication_exception
+        res = Response.parse("530 omg auth error")
+        assert_equal Net::SMTPAuthenticationError, res.exception_class
+
+        res = Response.parse("531 omg auth error")
+        assert_equal Net::SMTPAuthenticationError, res.exception_class
+      end
+
+      def test_fatal_error
+        res = Response.parse("510 omg fatal error")
+        assert_equal Net::SMTPFatalError, res.exception_class
+
+        res = Response.parse("511 omg fatal error")
+        assert_equal Net::SMTPFatalError, res.exception_class
+      end
+
+      def test_default_exception
+        res = Response.parse("250 omg fatal error")
+        assert_equal Net::SMTPUnknownError, res.exception_class
+      end
     end
   end
 end
