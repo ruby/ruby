@@ -7,6 +7,10 @@ Wed Dec 22 07:59:23 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* NEWS: add IO#advise. [ruby-core:33110] [Ruby 1.9-Feature#4038]
 
+Tue Dec 21 23:45:31 2010  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (Init_GC): move back object_id to Kernel. [ruby-dev:42840]
+
 Tue Dec 21 12:45:16 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (target_archs): remove temporary objects.
