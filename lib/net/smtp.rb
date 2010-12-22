@@ -229,11 +229,6 @@ module Net
       "#<#{self.class} #{@address}:#{@port} started=#{@started}>"
     end
 
-    # +true+ if the SMTP object uses ESMTP (which it does by default).
-    def esmtp?
-      @esmtp
-    end
-
     #
     # Set whether to use ESMTP or not.  This should be done before
     # calling #start.  Note that if #start is called in ESMTP mode,
@@ -241,11 +236,10 @@ module Net
     # object will automatically switch to plain SMTP mode and
     # retry (but not vice versa).
     #
-    def esmtp=(bool)
-      @esmtp = bool
-    end
+    attr_accessor :esmtp
 
-    alias esmtp esmtp?
+    # +true+ if the SMTP object uses ESMTP (which it does by default).
+    alias :esmtp? :esmtp
 
     # true if server advertises STARTTLS.
     # You cannot get valid value before opening SMTP session.
