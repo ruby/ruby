@@ -342,7 +342,7 @@ module FileUtils
   # TODO: Why --remove-destination and not --force?
   def ln_r(src, dest, options = {})
     fu_check_options options, OPT_TABLE['ln_r']
-    fu_output_message "cp -r#{options[:remove_destination] ? ' --remove-destination' : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
+    fu_output_message "ln -r#{options[:remove_destination] ? ' --remove-destination' : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
     return if options[:noop]
     options = options.dup
     options[:dereference_root] = true unless options.key?(:dereference_root)
