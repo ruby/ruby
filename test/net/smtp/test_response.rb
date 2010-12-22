@@ -32,6 +32,32 @@ module Net
         res = Response.parse("badstring")
         assert_equal({}, res.capabilities)
       end
+
+      def test_success?
+        res = Response.parse("250-ubuntu-desktop\n250-SIZE 1 2 3\n250 DSN\n")
+        assert res.success?
+        assert !res.continue?
+      end
+
+      # RFC 2821, Section 4.2.1
+      def test_continue?
+        res = Response.parse("3yz-ubuntu-desktop\n250-SIZE 1 2 3\n250 DSN\n")
+        assert !res.success?
+        assert res.continue?
+      end
+
+      def test_status_type_char
+        res = Response.parse("3yz-ubuntu-desktop\n250-SIZE 1 2 3\n250 DSN\n")
+        assert_equal '3', res.status_type_char
+
+        res = Response.parse("250-ubuntu-desktop\n250-SIZE 1 2 3\n250 DSN\n")
+        assert_equal '2', res.status_type_char
+      end
+
+      def test_message
+        res = Response.parse("250-ubuntu-desktop\n250-SIZE 1 2 3\n250 DSN\n")
+        assert_equal "250-ubuntu-desktop\n", res.message
+      end
     end
   end
 end

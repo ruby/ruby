@@ -968,7 +968,7 @@ module Net
     end
 
     class Response
-      def Response.parse(str)
+      def self.parse(str)
         new(str[0,3], str)
       end
 
