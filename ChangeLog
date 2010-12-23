@@ -1,3 +1,8 @@
+Thu Dec 23 06:35:41 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* lib/net/smtp.rb: Net::SMTP should close the SSL connection if the
+	  connection verification fails.
+
 Tue Dec 21 06:25:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/rexml/test_contrib.rb (ContribTester#test_pos): should not
