@@ -119,7 +119,7 @@ Mon Dec 20 12:15:32 2010  Eric Hodel  <drbrain@segment7.net>
 
 Mon Dec 20 01:55:03 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* io.c (Init_IO): Added O_DIRECT. This feature was propsed by Run Paint Run Run.
+	* io.c (Init_IO): Added O_DIRECT. This feature was proposed by Run Paint Run Run.
 	  [Feature #4015] [ruby-core:33018]
 
 Sun Dec 19 19:15:23 2010  Tanaka Akira  <akr@fsij.org>
@@ -135,7 +135,7 @@ Sat Dec 18 16:02:27 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (setup_args), vm.c (invoke_block_from_c),
 	  vm_insnhelper.c (caller_setup_args): fix of r30241. lambda block
-	  shoud check argument number.
+	  should check argument number.
 
 Sat Dec 18 14:42:29 2010  Tanaka Akira  <akr@fsij.org>
 
@@ -156,7 +156,7 @@ Fri Dec 17 19:35:13 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* test/mkmf/base.rb (TestMkmf::FakeLog): capture output from mkmf.
 
 	* test/mkmf/test_find_executable.rb (test_find_executable):
-	  suppress meaningless diffrences for chkbuild.
+	  suppress meaningless differences for chkbuild.
 
 Fri Dec 17 13:26:54 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -265,7 +265,7 @@ Tue Dec 14 18:19:03 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 Tue Dec 14 15:03:46 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_io.rb (test_reopen, test_reinitialize): should close
-	  the temporay files.
+	  the temporary files.
 
 Tue Dec 14 14:24:15 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -284,7 +284,7 @@ Tue Dec 14 13:52:19 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 Tue Dec 14 13:34:33 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/zlib/zlib.c (gzfile_s_open): should close the IO if some error
-	  occurs in initilizing.
+	  occurs in initializing.
 
 Tue Dec 14 13:04:16 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
@@ -732,7 +732,7 @@ Sat Dec  4 08:25:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Sat Dec  4 07:46:48 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (String#tr_cpp): substitute * with P like as
-	  autconf.
+	  autoconf.
 
 Fri Dec  3 22:36:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -1030,7 +1030,7 @@ Mon Nov 29 18:31:31 2010  Martin Duerst  <duerst@it.aoyama.ac.jp>
 Mon Nov 29 14:31:17 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_isatty): use GetConsoleMode() to determine the
-	  fd is console or not, just like rb_w32_write_console(). [exprimental]
+	  fd is console or not, just like rb_w32_write_console(). [experimental]
 
 Mon Nov 29 14:19:40 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -1449,7 +1449,7 @@ Wed Nov 17 23:19:21 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Wed Nov 17 16:09:52 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/test_tracer.rb: new test case.
-	  mimimal regression test for r29280.
+	  minimal regression test for r29280.
 
 Wed Nov 17 16:04:23 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
