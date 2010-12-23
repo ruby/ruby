@@ -1015,7 +1015,7 @@ security(const char *str)
 }
 
 #ifdef HAVE_FORK
-#define try_with_sh(prog, argv) ((saved_errno == ENOEXEC) ? exec_with_sh(prog, argv) : (void)0)
+#define try_with_sh(prog, argv) ((saved_errno == ENOEXEC) ? exec_with_sh((prog), (argv)) : (void)0)
 static void
 exec_with_sh(const char *prog, char **argv)
 {
@@ -1026,7 +1026,7 @@ exec_with_sh(const char *prog, char **argv)
 #define ALLOCA_ARGV(n) ALLOCA_N(char*, (n)+1)
 #else
 #define try_with_sh(prog, argv) (void)0
-#define ALLOCA_ARGV(n) ALLOCA_N(char*, n)
+#define ALLOCA_ARGV(n) ALLOCA_N(char*, (n))
 #endif
 
 static int
@@ -1165,7 +1165,7 @@ rb_proc_exec(const char *str)
 
 #if !defined(HAVE_FORK) && defined(HAVE_SPAWNV)
 #if defined(_WIN32)
-#define proc_spawn_v(argv, prog) rb_w32_aspawn(P_NOWAIT, prog, argv)
+#define proc_spawn_v(argv, prog) rb_w32_aspawn(P_NOWAIT, (prog), (argv))
 #else
 static rb_pid_t
 proc_spawn_v(char **argv, char *prog)
@@ -1210,7 +1210,7 @@ proc_spawn_n(int argc, VALUE *argv, VALUE prog)
 }
 
 #if defined(_WIN32)
-#define proc_spawn(str) rb_w32_spawn(P_NOWAIT, str, 0)
+#define proc_spawn(str) rb_w32_spawn(P_NOWAIT, (str), 0)
 #else
 static rb_pid_t
 proc_spawn(char *str)
@@ -1882,9 +1882,9 @@ redirect_open(const char *pathname, int flags, mode_t perm)
 
 #else
 #define redirect_dup(oldfd) dup(oldfd)
-#define redirect_dup2(oldfd, newfd) dup2(oldfd, newfd)
+#define redirect_dup2(oldfd, newfd) dup2((oldfd), (newfd))
 #define redirect_close(fd) close(fd)
-#define redirect_open(pathname, flags, perm) open(pathname, flags, perm)
+#define redirect_open(pathname, flags, perm) open((pathname), (flags), (perm))
 #endif
 
 static int
@@ -2603,7 +2603,7 @@ rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALU
 	    rb_set_errinfo(exc);
 	}
 #define READ_FROM_CHILD(ptr, len) \
-	(NIL_P(io) ? read(ep[0], ptr, len) : rb_io_bufread(io, ptr, len))
+	(NIL_P(io) ? read(ep[0], (ptr), (len)) : rb_io_bufread(io, (ptr), (len)))
 	if ((size = READ_FROM_CHILD(&err, sizeof(err))) < 0) {
 	    err = errno;
 	}
@@ -2882,7 +2882,7 @@ rb_f_abort(int argc, VALUE *argv)
 
 
 #if defined(POSIX_SIGNAL)
-# define signal(a,b) posix_signal(a,b)
+# define signal(a,b) posix_signal((a),(b))
 #endif
 
 void
@@ -4669,7 +4669,7 @@ proc_setmaxgroups(VALUE obj, VALUE val)
 #if defined(HAVE_DAEMON) || (defined(HAVE_FORK) && defined(HAVE_SETSID))
 #ifndef HAVE_DAEMON
 static int rb_daemon(int nochdir, int noclose);
-#define daemon(nochdir, noclose) rb_daemon(nochdir, noclose)
+#define daemon(nochdir, noclose) rb_daemon((nochdir), (noclose))
 #endif
 
 /*

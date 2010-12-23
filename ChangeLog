@@ -1,3 +1,7 @@
+Fri Dec 24 08:46:04 2010  Tanaka Akira  <akr@fsij.org>
+
+	* process.c: parenthesize macro arguments.
+
 Thu Dec 23 19:17:14 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/net/imap/cacert.pem: updated because it has been expired.
