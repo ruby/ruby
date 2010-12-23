@@ -28,10 +28,10 @@
 
 #define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
 
-#define YYMALLOC(size)		rb_parser_malloc(parser, size)
-#define YYREALLOC(ptr, size)	rb_parser_realloc(parser, ptr, size)
-#define YYCALLOC(nelem, size)	rb_parser_calloc(parser, nelem, size)
-#define YYFREE(ptr)		rb_parser_free(parser, ptr)
+#define YYMALLOC(size)		rb_parser_malloc(parser, (size))
+#define YYREALLOC(ptr, size)	rb_parser_realloc(parser, (ptr), (size))
+#define YYCALLOC(nelem, size)	rb_parser_calloc(parser, (nelem), (size))
+#define YYFREE(ptr)		rb_parser_free(parser, (ptr))
 #define malloc	YYMALLOC
 #define realloc	YYREALLOC
 #define calloc	YYCALLOC
@@ -39,7 +39,7 @@
 
 #ifndef RIPPER
 static ID register_symid(ID, const char *, long, rb_encoding *);
-#define REGISTER_SYMID(id, name) register_symid(id, name, strlen(name), enc)
+#define REGISTER_SYMID(id, name) register_symid((id), (name), strlen(name), enc)
 #include "id.c"
 #endif
 
@@ -74,17 +74,17 @@ enum lex_state_e {
 
 typedef VALUE stack_type;
 
-# define BITSTACK_PUSH(stack, n)	(stack = (stack<<1)|((n)&1))
-# define BITSTACK_POP(stack)	(stack = stack >> 1)
-# define BITSTACK_LEXPOP(stack)	(stack = (stack >> 1) | (stack & 1))
-# define BITSTACK_SET_P(stack)	(stack&1)
+# define BITSTACK_PUSH(stack, n)	((stack) = ((stack)<<1)|((n)&1))
+# define BITSTACK_POP(stack)	((stack) = (stack) >> 1)
+# define BITSTACK_LEXPOP(stack)	((stack) = ((stack) >> 1) | ((stack) & 1))
+# define BITSTACK_SET_P(stack)	((stack)&1)
 
-#define COND_PUSH(n)	BITSTACK_PUSH(cond_stack, n)
+#define COND_PUSH(n)	BITSTACK_PUSH(cond_stack, (n))
 #define COND_POP()	BITSTACK_POP(cond_stack)
 #define COND_LEXPOP()	BITSTACK_LEXPOP(cond_stack)
 #define COND_P()	BITSTACK_SET_P(cond_stack)
 
-#define CMDARG_PUSH(n)	BITSTACK_PUSH(cmdarg_stack, n)
+#define CMDARG_PUSH(n)	BITSTACK_PUSH(cmdarg_stack, (n))
 #define CMDARG_POP()	BITSTACK_POP(cmdarg_stack)
 #define CMDARG_LEXPOP()	BITSTACK_LEXPOP(cmdarg_stack)
 #define CMDARG_P()	BITSTACK_SET_P(cmdarg_stack)
@@ -274,7 +274,7 @@ struct parser_params {
 #define TOK_INTERN(mb) rb_intern3(tok(), toklen(), parser->enc)
 
 static int parser_yyerror(struct parser_params*, const char*);
-#define yyerror(msg) parser_yyerror(parser, msg)
+#define yyerror(msg) parser_yyerror(parser, (msg))
 
 #define YYLEX_PARAM parser
 
@@ -323,12 +323,12 @@ static int yylex(void*, void*);
 #define yyparse ruby_yyparse
 
 static NODE* node_newnode(struct parser_params *, enum node_type, VALUE, VALUE, VALUE);
-#define rb_node_newnode(type, a1, a2, a3) node_newnode(parser, type, a1, a2, a3)
+#define rb_node_newnode(type, a1, a2, a3) node_newnode(parser, (type), (a1), (a2), (a3))
 
 static NODE *cond_gen(struct parser_params*,NODE*);
-#define cond(node) cond_gen(parser, node)
+#define cond(node) cond_gen(parser, (node))
 static NODE *logop_gen(struct parser_params*,enum node_type,NODE*,NODE*);
-#define logop(type,node1,node2) logop_gen(parser, type, node1, node2)
+#define logop(type,node1,node2) logop_gen(parser, (type), (node1), (node2))
 
 static NODE *newline_node(NODE*);
 static void fixpos(NODE*,NODE*);
@@ -340,63 +340,63 @@ static NODE *remove_begin(NODE*);
 #define void_expr0(node) void_expr_gen(parser, (node))
 #define void_expr(node) void_expr0((node) = remove_begin(node))
 static void void_stmts_gen(struct parser_params*,NODE*);
-#define void_stmts(node) void_stmts_gen(parser, node)
+#define void_stmts(node) void_stmts_gen(parser, (node))
 static void reduce_nodes_gen(struct parser_params*,NODE**);
-#define reduce_nodes(n) reduce_nodes_gen(parser,n)
+#define reduce_nodes(n) reduce_nodes_gen(parser,(n))
 static void block_dup_check_gen(struct parser_params*,NODE*,NODE*);
-#define block_dup_check(n1,n2) block_dup_check_gen(parser,n1,n2)
+#define block_dup_check(n1,n2) block_dup_check_gen(parser,(n1),(n2))
 
 static NODE *block_append_gen(struct parser_params*,NODE*,NODE*);
-#define block_append(h,t) block_append_gen(parser,h,t)
+#define block_append(h,t) block_append_gen(parser,(h),(t))
 static NODE *list_append_gen(struct parser_params*,NODE*,NODE*);
-#define list_append(l,i) list_append_gen(parser,l,i)
+#define list_append(l,i) list_append_gen(parser,(l),(i))
 static NODE *list_concat_gen(struct parser_params*,NODE*,NODE*);
-#define list_concat(h,t) list_concat_gen(parser,h,t)
+#define list_concat(h,t) list_concat_gen(parser,(h),(t))
 static NODE *arg_append_gen(struct parser_params*,NODE*,NODE*);
-#define arg_append(h,t) arg_append_gen(parser,h,t)
+#define arg_append(h,t) arg_append_gen(parser,(h),(t))
 static NODE *arg_concat_gen(struct parser_params*,NODE*,NODE*);
-#define arg_concat(h,t) arg_concat_gen(parser,h,t)
+#define arg_concat(h,t) arg_concat_gen(parser,(h),(t))
 static NODE *literal_concat_gen(struct parser_params*,NODE*,NODE*);
-#define literal_concat(h,t) literal_concat_gen(parser,h,t)
+#define literal_concat(h,t) literal_concat_gen(parser,(h),(t))
 static int literal_concat0(struct parser_params *, VALUE, VALUE);
 static NODE *new_evstr_gen(struct parser_params*,NODE*);
-#define new_evstr(n) new_evstr_gen(parser,n)
+#define new_evstr(n) new_evstr_gen(parser,(n))
 static NODE *evstr2dstr_gen(struct parser_params*,NODE*);
-#define evstr2dstr(n) evstr2dstr_gen(parser,n)
+#define evstr2dstr(n) evstr2dstr_gen(parser,(n))
 static NODE *splat_array(NODE*);
 
 static NODE *call_bin_op_gen(struct parser_params*,NODE*,ID,NODE*);
-#define call_bin_op(recv,id,arg1) call_bin_op_gen(parser, recv,id,arg1)
+#define call_bin_op(recv,id,arg1) call_bin_op_gen(parser, (recv),(id),(arg1))
 static NODE *call_uni_op_gen(struct parser_params*,NODE*,ID);
-#define call_uni_op(recv,id) call_uni_op_gen(parser, recv,id)
+#define call_uni_op(recv,id) call_uni_op_gen(parser, (recv),(id))
 
 static NODE *new_args_gen(struct parser_params*,NODE*,NODE*,ID,NODE*,ID);
-#define new_args(f,o,r,p,b) new_args_gen(parser, f,o,r,p,b)
+#define new_args(f,o,r,p,b) new_args_gen(parser, (f),(o),(r),(p),(b))
 
 static NODE *negate_lit(NODE*);
 static NODE *ret_args_gen(struct parser_params*,NODE*);
-#define ret_args(node) ret_args_gen(parser, node)
+#define ret_args(node) ret_args_gen(parser, (node))
 static NODE *arg_blk_pass(NODE*,NODE*);
 static NODE *new_yield_gen(struct parser_params*,NODE*);
-#define new_yield(node) new_yield_gen(parser, node)
+#define new_yield(node) new_yield_gen(parser, (node))
 
 static NODE *gettable_gen(struct parser_params*,ID);
-#define gettable(id) gettable_gen(parser,id)
+#define gettable(id) gettable_gen(parser,(id))
 static NODE *assignable_gen(struct parser_params*,ID,NODE*);
-#define assignable(id,node) assignable_gen(parser, id, node)
+#define assignable(id,node) assignable_gen(parser, (id), (node))
 
 static NODE *aryset_gen(struct parser_params*,NODE*,NODE*);
-#define aryset(node1,node2) aryset_gen(parser, node1, node2)
+#define aryset(node1,node2) aryset_gen(parser, (node1), (node2))
 static NODE *attrset_gen(struct parser_params*,NODE*,ID);
-#define attrset(node,id) attrset_gen(parser, node, id)
+#define attrset(node,id) attrset_gen(parser, (node), (id))
 
 static void rb_backref_error_gen(struct parser_params*,NODE*);
-#define rb_backref_error(n) rb_backref_error_gen(parser,n)
+#define rb_backref_error(n) rb_backref_error_gen(parser,(n))
 static NODE *node_assign_gen(struct parser_params*,NODE*,NODE*);
-#define node_assign(node1, node2) node_assign_gen(parser, node1, node2)
+#define node_assign(node1, node2) node_assign_gen(parser, (node1), (node2))
 
 static NODE *match_op_gen(struct parser_params*,NODE*,NODE*);
-#define match_op(node1,node2) match_op_gen(parser, node1, node2)
+#define match_op(node1,node2) match_op_gen(parser, (node1), (node2))
 
 static ID  *local_tbl_gen(struct parser_params*);
 #define local_tbl() local_tbl_gen(parser)
@@ -409,13 +409,13 @@ extern int rb_parse_in_eval(void);
 extern int rb_parse_in_main(void);
 
 static VALUE reg_compile_gen(struct parser_params*, VALUE, int);
-#define reg_compile(str,options) reg_compile_gen(parser, str, options)
+#define reg_compile(str,options) reg_compile_gen(parser, (str), (options))
 static void reg_fragment_setenc_gen(struct parser_params*, VALUE, int);
-#define reg_fragment_setenc(str,options) reg_fragment_setenc_gen(parser, str, options)
+#define reg_fragment_setenc(str,options) reg_fragment_setenc_gen(parser, (str), (options))
 static int reg_fragment_check_gen(struct parser_params*, VALUE, int);
-#define reg_fragment_check(str,options) reg_fragment_check_gen(parser, str, options)
+#define reg_fragment_check(str,options) reg_fragment_check_gen(parser, (str), (options))
 static NODE *reg_named_capture_assign_gen(struct parser_params* parser, VALUE regexp, NODE *match);
-#define reg_named_capture_assign(regexp,match) reg_named_capture_assign_gen(parser,regexp,match)
+#define reg_named_capture_assign(regexp,match) reg_named_capture_assign_gen(parser,(regexp),(match))
 
 #define get_id(id) (id)
 #define get_value(val) (val)
@@ -428,44 +428,44 @@ static ID ripper_get_id(VALUE);
 static VALUE ripper_get_value(VALUE);
 #define get_value(val) ripper_get_value(val)
 static VALUE assignable_gen(struct parser_params*,VALUE);
-#define assignable(lhs,node) assignable_gen(parser, lhs)
+#define assignable(lhs,node) assignable_gen(parser, (lhs))
 #endif /* !RIPPER */
 
 static ID formal_argument_gen(struct parser_params*, ID);
-#define formal_argument(id) formal_argument_gen(parser, id)
+#define formal_argument(id) formal_argument_gen(parser, (id))
 static ID shadowing_lvar_gen(struct parser_params*,ID);
-#define shadowing_lvar(name) shadowing_lvar_gen(parser, name)
+#define shadowing_lvar(name) shadowing_lvar_gen(parser, (name))
 static void new_bv_gen(struct parser_params*,ID);
-#define new_bv(id) new_bv_gen(parser, id)
+#define new_bv(id) new_bv_gen(parser, (id))
 
 static void local_push_gen(struct parser_params*,int);
-#define local_push(top) local_push_gen(parser,top)
+#define local_push(top) local_push_gen(parser,(top))
 static void local_pop_gen(struct parser_params*);
 #define local_pop() local_pop_gen(parser)
 static int local_var_gen(struct parser_params*, ID);
-#define local_var(id) local_var_gen(parser, id);
+#define local_var(id) local_var_gen(parser, (id));
 static int arg_var_gen(struct parser_params*, ID);
-#define arg_var(id) arg_var_gen(parser, id)
+#define arg_var(id) arg_var_gen(parser, (id))
 static int  local_id_gen(struct parser_params*, ID);
-#define local_id(id) local_id_gen(parser, id)
+#define local_id(id) local_id_gen(parser, (id))
 static ID   internal_id_gen(struct parser_params*);
 #define internal_id() internal_id_gen(parser)
 
 static const struct vtable *dyna_push_gen(struct parser_params *);
 #define dyna_push() dyna_push_gen(parser)
 static void dyna_pop_gen(struct parser_params*, const struct vtable *);
-#define dyna_pop(node) dyna_pop_gen(parser, node)
+#define dyna_pop(node) dyna_pop_gen(parser, (node))
 static int dyna_in_block_gen(struct parser_params*);
 #define dyna_in_block() dyna_in_block_gen(parser)
 #define dyna_var(id) local_var(id)
 static int dvar_defined_gen(struct parser_params*,ID,int);
-#define dvar_defined(id) dvar_defined_gen(parser, id, 0)
-#define dvar_defined_get(id) dvar_defined_gen(parser, id, 1)
+#define dvar_defined(id) dvar_defined_gen(parser, (id), 0)
+#define dvar_defined_get(id) dvar_defined_gen(parser, (id), 1)
 static int dvar_curr_gen(struct parser_params*,ID);
-#define dvar_curr(id) dvar_curr_gen(parser, id)
+#define dvar_curr(id) dvar_curr_gen(parser, (id))
 
 static int lvar_defined_gen(struct parser_params*, ID);
-#define lvar_defined(id) lvar_defined_gen(parser, id)
+#define lvar_defined(id) lvar_defined_gen(parser, (id))
 
 #define RE_OPTION_ONCE (1<<16)
 #define RE_OPTION_ENCODING_SHIFT 8
@@ -504,11 +504,11 @@ static VALUE ripper_dispatch4(struct parser_params*,ID,VALUE,VALUE,VALUE,VALUE);
 static VALUE ripper_dispatch5(struct parser_params*,ID,VALUE,VALUE,VALUE,VALUE,VALUE);
 
 #define dispatch0(n)            ripper_dispatch0(parser, TOKEN_PASTE(ripper_id_, n))
-#define dispatch1(n,a)          ripper_dispatch1(parser, TOKEN_PASTE(ripper_id_, n), a)
-#define dispatch2(n,a,b)        ripper_dispatch2(parser, TOKEN_PASTE(ripper_id_, n), a, b)
-#define dispatch3(n,a,b,c)      ripper_dispatch3(parser, TOKEN_PASTE(ripper_id_, n), a, b, c)
-#define dispatch4(n,a,b,c,d)    ripper_dispatch4(parser, TOKEN_PASTE(ripper_id_, n), a, b, c, d)
-#define dispatch5(n,a,b,c,d,e)  ripper_dispatch5(parser, TOKEN_PASTE(ripper_id_, n), a, b, c, d, e)
+#define dispatch1(n,a)          ripper_dispatch1(parser, TOKEN_PASTE(ripper_id_, n), (a))
+#define dispatch2(n,a,b)        ripper_dispatch2(parser, TOKEN_PASTE(ripper_id_, n), (a), (b))
+#define dispatch3(n,a,b,c)      ripper_dispatch3(parser, TOKEN_PASTE(ripper_id_, n), (a), (b), (c))
+#define dispatch4(n,a,b,c,d)    ripper_dispatch4(parser, TOKEN_PASTE(ripper_id_, n), (a), (b), (c), (d))
+#define dispatch5(n,a,b,c,d,e)  ripper_dispatch5(parser, TOKEN_PASTE(ripper_id_, n), (a), (b), (c), (d), (e))
 
 #define yyparse ripper_yyparse
 
@@ -520,32 +520,32 @@ static VALUE ripper_id2sym(ID);
 #endif
 
 #define arg_new() dispatch0(args_new)
-#define arg_add(l,a) dispatch2(args_add, l, a)
-#define arg_add_star(l,a) dispatch2(args_add_star, l, a)
-#define arg_add_block(l,b) dispatch2(args_add_block, l, b)
-#define arg_add_optblock(l,b) ((b)==Qundef? l : dispatch2(args_add_block, l, b))
-#define bare_assoc(v) dispatch1(bare_assoc_hash, v)
-#define arg_add_assocs(l,b) arg_add(l, bare_assoc(b))
+#define arg_add(l,a) dispatch2(args_add, (l), (a))
+#define arg_add_star(l,a) dispatch2(args_add_star, (l), (a))
+#define arg_add_block(l,b) dispatch2(args_add_block, (l), (b))
+#define arg_add_optblock(l,b) ((b)==Qundef? (l) : dispatch2(args_add_block, (l), (b)))
+#define bare_assoc(v) dispatch1(bare_assoc_hash, (v))
+#define arg_add_assocs(l,b) arg_add((l), bare_assoc(b))
 
-#define args2mrhs(a) dispatch1(mrhs_new_from_args, a)
+#define args2mrhs(a) dispatch1(mrhs_new_from_args, (a))
 #define mrhs_new() dispatch0(mrhs_new)
-#define mrhs_add(l,a) dispatch2(mrhs_add, l, a)
-#define mrhs_add_star(l,a) dispatch2(mrhs_add_star, l, a)
+#define mrhs_add(l,a) dispatch2(mrhs_add, (l), (a))
+#define mrhs_add_star(l,a) dispatch2(mrhs_add_star, (l), (a))
 
 #define mlhs_new() dispatch0(mlhs_new)
-#define mlhs_add(l,a) dispatch2(mlhs_add, l, a)
-#define mlhs_add_star(l,a) dispatch2(mlhs_add_star, l, a)
+#define mlhs_add(l,a) dispatch2(mlhs_add, (l), (a))
+#define mlhs_add_star(l,a) dispatch2(mlhs_add_star, (l), (a))
 
 #define params_new(pars, opts, rest, pars2, blk) \
-        dispatch5(params, pars, opts, rest, pars2, blk)
+        dispatch5(params, (pars), (opts), (rest), (pars2), (blk))
 
-#define blockvar_new(p,v) dispatch2(block_var, p, v)
-#define blockvar_add_star(l,a) dispatch2(block_var_add_star, l, a)
-#define blockvar_add_block(l,a) dispatch2(block_var_add_block, l, a)
+#define blockvar_new(p,v) dispatch2(block_var, (p), (v))
+#define blockvar_add_star(l,a) dispatch2(block_var_add_star, (l), (a))
+#define blockvar_add_block(l,a) dispatch2(block_var_add_block, (l), (a))
 
-#define method_optarg(m,a) ((a)==Qundef ? m : dispatch2(method_add_arg,m,a))
-#define method_arg(m,a) dispatch2(method_add_arg,m,a)
-#define method_add_block(m,b) dispatch2(method_add_block, m, b)
+#define method_optarg(m,a) ((a)==Qundef ? (m) : dispatch2(method_add_arg,(m),(a)))
+#define method_arg(m,a) dispatch2(method_add_arg,(m),(a))
+#define method_add_block(m,b) dispatch2(method_add_block, (m), (b))
 
 #define escape_Qundef(x) ((x)==Qundef ? Qnil : (x))
 
@@ -554,23 +554,23 @@ static VALUE ripper_id2sym(ID);
 #endif /* RIPPER */
 
 #ifndef RIPPER
-# define ifndef_ripper(x) x
+# define ifndef_ripper(x) (x)
 #else
 # define ifndef_ripper(x)
 #endif
 
 #ifndef RIPPER
-# define rb_warn0(fmt)    rb_compile_warn(ruby_sourcefile, ruby_sourceline, fmt)
-# define rb_warnI(fmt,a)  rb_compile_warn(ruby_sourcefile, ruby_sourceline, fmt, a)
-# define rb_warnS(fmt,a)  rb_compile_warn(ruby_sourcefile, ruby_sourceline, fmt, a)
-# define rb_warning0(fmt) rb_compile_warning(ruby_sourcefile, ruby_sourceline, fmt)
-# define rb_warningS(fmt,a) rb_compile_warning(ruby_sourcefile, ruby_sourceline, fmt, a)
+# define rb_warn0(fmt)    rb_compile_warn(ruby_sourcefile, ruby_sourceline, (fmt))
+# define rb_warnI(fmt,a)  rb_compile_warn(ruby_sourcefile, ruby_sourceline, (fmt), (a))
+# define rb_warnS(fmt,a)  rb_compile_warn(ruby_sourcefile, ruby_sourceline, (fmt), (a))
+# define rb_warning0(fmt) rb_compile_warning(ruby_sourcefile, ruby_sourceline, (fmt))
+# define rb_warningS(fmt,a) rb_compile_warning(ruby_sourcefile, ruby_sourceline, (fmt), (a))
 #else
-# define rb_warn0(fmt)    ripper_warn0(parser, fmt)
-# define rb_warnI(fmt,a)  ripper_warnI(parser, fmt, a)
-# define rb_warnS(fmt,a)  ripper_warnS(parser, fmt, a)
-# define rb_warning0(fmt) ripper_warning0(parser, fmt)
-# define rb_warningS(fmt,a) ripper_warningS(parser, fmt, a)
+# define rb_warn0(fmt)    ripper_warn0(parser, (fmt))
+# define rb_warnI(fmt,a)  ripper_warnI(parser, (fmt), (a))
+# define rb_warnS(fmt,a)  ripper_warnS(parser, (fmt), (a))
+# define rb_warning0(fmt) ripper_warning0(parser, (fmt))
+# define rb_warningS(fmt,a) ripper_warningS(parser, (fmt), (a))
 static void ripper_warn0(struct parser_params*, const char*);
 static void ripper_warnI(struct parser_params*, const char*, int);
 #if 0
@@ -602,8 +602,8 @@ static void ripper_compile_error(struct parser_params*, const char *fmt, ...);
 #ifndef RIPPER
 static void token_info_push(struct parser_params*, const char *token);
 static void token_info_pop(struct parser_params*, const char *token);
-#define token_info_push(token) (RTEST(ruby_verbose) ? token_info_push(parser, token) : (void)0)
-#define token_info_pop(token) (RTEST(ruby_verbose) ? token_info_pop(parser, token) : (void)0)
+#define token_info_push(token) (RTEST(ruby_verbose) ? token_info_push(parser, (token)) : (void)0)
+#define token_info_pop(token) (RTEST(ruby_verbose) ? token_info_pop(parser, (token)) : (void)0)
 #else
 #define token_info_push(token) /* nothing */
 #define token_info_pop(token) /* nothing */
@@ -4820,30 +4820,30 @@ static int parser_here_document(struct parser_params*,NODE*);
 
 
 # define nextc()                   parser_nextc(parser)
-# define pushback(c)               parser_pushback(parser, c)
+# define pushback(c)               parser_pushback(parser, (c))
 # define newtok()                  parser_newtok(parser)
-# define tokspace(n)               parser_tokspace(parser, n)
-# define tokadd(c)                 parser_tokadd(parser, c)
-# define tok_hex(numlen)           parser_tok_hex(parser, numlen)
-# define read_escape(flags,e)      parser_read_escape(parser, flags, e)
-# define tokadd_escape(e)          parser_tokadd_escape(parser, e)
+# define tokspace(n)               parser_tokspace(parser, (n))
+# define tokadd(c)                 parser_tokadd(parser, (c))
+# define tok_hex(numlen)           parser_tok_hex(parser, (numlen))
+# define read_escape(flags,e)      parser_read_escape(parser, (flags), (e))
+# define tokadd_escape(e)          parser_tokadd_escape(parser, (e))
 # define regx_options()            parser_regx_options(parser)
-# define tokadd_string(f,t,p,n,e)  parser_tokadd_string(parser,f,t,p,n,e)
-# define parse_string(n)           parser_parse_string(parser,n)
-# define tokaddmbc(c, enc)         parser_tokaddmbc(parser, c, enc)
-# define here_document(n)          parser_here_document(parser,n)
+# define tokadd_string(f,t,p,n,e)  parser_tokadd_string(parser,(f),(t),(p),(n),(e))
+# define parse_string(n)           parser_parse_string(parser,(n))
+# define tokaddmbc(c, enc)         parser_tokaddmbc(parser, (c), (enc))
+# define here_document(n)          parser_here_document(parser,(n))
 # define heredoc_identifier()      parser_heredoc_identifier(parser)
-# define heredoc_restore(n)        parser_heredoc_restore(parser,n)
-# define whole_match_p(e,l,i)      parser_whole_match_p(parser,e,l,i)
+# define heredoc_restore(n)        parser_heredoc_restore(parser,(n))
+# define whole_match_p(e,l,i)      parser_whole_match_p(parser,(e),(l),(i))
 
 #ifndef RIPPER
-# define set_yylval_str(x) yylval.node = NEW_STR(x)
-# define set_yylval_num(x) yylval.num = x
-# define set_yylval_id(x)  yylval.id = x
-# define set_yylval_name(x)  yylval.id = x
-# define set_yylval_literal(x) yylval.node = NEW_LIT(x)
-# define set_yylval_node(x) yylval.node = x
-# define yylval_id() yylval.id
+# define set_yylval_str(x) (yylval.node = NEW_STR(x))
+# define set_yylval_num(x) (yylval.num = (x))
+# define set_yylval_id(x)  (yylval.id = (x))
+# define set_yylval_name(x)  (yylval.id = (x))
+# define set_yylval_literal(x) (yylval.node = NEW_LIT(x))
+# define set_yylval_node(x) (yylval.node = (x))
+# define yylval_id() (yylval.id)
 #else
 static inline VALUE
 ripper_yylval_id(ID x)
@@ -4862,9 +4862,9 @@ ripper_yylval_id(ID x)
 #ifndef RIPPER
 #define ripper_flush(p) (void)(p)
 #else
-#define ripper_flush(p) (p->tokp = p->parser_lex_p)
+#define ripper_flush(p) ((p)->tokp = (p)->parser_lex_p)
 
-#define yylval_rval *(RB_TYPE_P(yylval.val, T_NODE) ? &yylval.node->nd_rval : &yylval.val)
+#define yylval_rval (*(RB_TYPE_P(yylval.val, T_NODE) ? &yylval.node->nd_rval : &yylval.val))
 
 static int
 ripper_has_scan_event(struct parser_params *parser)
@@ -4930,7 +4930,7 @@ ripper_dispatch_delayed_token(struct parser_params *parser, int t)
 #define parser_encoding_name()  (parser->enc->name)
 #define parser_mbclen()  mbclen((lex_p-1),lex_pend,parser->enc)
 #define parser_precise_mbclen()  rb_enc_precise_mbclen((lex_p-1),lex_pend,parser->enc)
-#define is_identchar(p,e,enc) (rb_enc_isalnum(*p,enc) || (*p) == '_' || !ISASCII(*p))
+#define is_identchar(p,e,enc) (rb_enc_isalnum(*(p),(enc)) || (*(p)) == '_' || !ISASCII(*(p)))
 #define parser_is_identchar() (!parser->eofp && is_identchar((lex_p-1),lex_pend,parser->enc))
 
 #define parser_isascii() ISASCII(*(lex_p-1))
@@ -5341,7 +5341,7 @@ parser_str_new(const char *p, long n, rb_encoding *enc, int func, rb_encoding *e
     return str;
 }
 
-#define lex_goto_eol(parser) (parser->parser_lex_p = parser->parser_lex_pend)
+#define lex_goto_eol(parser) ((parser)->parser_lex_p = (parser)->parser_lex_pend)
 #define peek(c) (lex_p < lex_pend && (c) == *lex_p)
 
 static inline int
@@ -5774,7 +5774,7 @@ parser_tokadd_mbchar(struct parser_params *parser, int c)
     return c;
 }
 
-#define tokadd_mbchar(c) parser_tokadd_mbchar(parser, c)
+#define tokadd_mbchar(c) parser_tokadd_mbchar(parser, (c))
 
 static int
 parser_tokadd_string(struct parser_params *parser,
@@ -5799,8 +5799,8 @@ parser_tokadd_string(struct parser_params *parser,
     }
 #define mixed_escape(beg, enc1, enc2) do {	\
 	const char *pos = lex_p;		\
-	lex_p = beg;				\
-	mixed_error(enc1, enc2);		\
+	lex_p = (beg);				\
+	mixed_error((enc1), (enc2));		\
 	lex_p = pos;				\
     } while (0)
 
@@ -7871,14 +7871,14 @@ parser_warning(struct parser_params *parser, NODE *node, const char *mesg)
 {
     rb_compile_warning(ruby_sourcefile, nd_line(node), "%s", mesg);
 }
-#define parser_warning(node, mesg) parser_warning(parser, node, mesg)
+#define parser_warning(node, mesg) parser_warning(parser, (node), (mesg))
 
 static void
 parser_warn(struct parser_params *parser, NODE *node, const char *mesg)
 {
     rb_compile_warn(ruby_sourcefile, nd_line(node), "%s", mesg);
 }
-#define parser_warn(node, mesg) parser_warn(parser, node, mesg)
+#define parser_warn(node, mesg) parser_warn(parser, (node), (mesg))
 
 static NODE*
 block_append_gen(struct parser_params *parser, NODE *head, NODE *tail)
@@ -8189,7 +8189,7 @@ assignable_gen(struct parser_params *parser, ID id, NODE *val)
 # define assignable_result(x) get_value(lhs)
 # define parser_yyerror(parser, x) dispatch1(assign_error, lhs)
 #else
-# define assignable_result(x) x
+# define assignable_result(x) (x)
 #endif
     if (!id) return assignable_result(0);
     if (id == keyword_self) {
@@ -10261,7 +10261,7 @@ ripper_validate_object(VALUE self, VALUE x)
 }
 #endif
 
-#define validate(x) (x = get_value(x))
+#define validate(x) ((x) = get_value(x))
 
 static VALUE
 ripper_dispatch0(struct parser_params *parser, ID mid)
