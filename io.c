@@ -1212,7 +1212,7 @@ io_fillbuf(rb_io_t *fptr)
         fptr->rbuf_capa = IO_RBUF_CAPA_FOR(fptr);
         fptr->rbuf = ALLOC_N(char, fptr->rbuf_capa);
 #ifdef _WIN32
-	fptr->rbuf.capa--;
+	fptr->rbuf_capa--;
 #endif
     }
     if (fptr->rbuf_len == 0) {

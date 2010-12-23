@@ -1,3 +1,7 @@
+Thu Dec 23 22:29:08 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* io.c (io_fillbuf): fixes a mistake on merging r30280, at r30321.
+
 Thu Dec 23 06:35:41 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* lib/net/smtp.rb: Net::SMTP should close the SSL connection if the
