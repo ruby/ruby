@@ -1,3 +1,8 @@
+Mon Dec  6 18:56:42 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ruby/test_string.rb (TestString#test_scan): add a test for
+	  [ruby-core:33338] #4087.
+
 Thu Dec 23 19:17:14 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/net/imap/cacert.pem: updated because it has been expired.
