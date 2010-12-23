@@ -1,3 +1,8 @@
+Thu Dec 23 11:00:09 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_check_type): check for type from extensions for ruby
+	  1.8.  see [ruby-core:33797].
+
 Thu Dec 23 08:12:59 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* lib/net/smtp.rb: refactoring Net::SMTP#esmtp= to use an

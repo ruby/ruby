@@ -354,7 +354,10 @@ rb_check_type(VALUE x, int t)
 	    }
 	    type++;
 	}
-	rb_bug("unknown type 0x%x (0x%x given)", t, TYPE(x));
+	if (xt > T_MASK && xt <= 0x3f) {
+	    rb_fatal("unknown type 0x%x (0x%x given, probably comes from extension library for ruby 1.8)", t, xt);
+	}
+	rb_bug("unknown type 0x%x (0x%x given)", t, xt);
     }
 }
 
