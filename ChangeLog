@@ -1,3 +1,9 @@
+Mon Nov 29 18:31:31 2010  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/test_transcode.rb (test_unicode_public_review_issue_121):
+	  - Removed commented-out options that are no longer under discussion.
+	  - Added two more tests for forthcomming clarifications.
+
 Mon Nov 29 05:54:22 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_pthread.c (native_cond_*): Check return code.
