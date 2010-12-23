@@ -1,3 +1,10 @@
+Sat Dec 11 05:48:28 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/multi-tk.rb: infinite loop on method_missing at loading.
+	  [ruby-dev:42716] [Ruby 1.9-Bug#4129]
+
+	* ext/tk/lib/multi-tk.rb: when no eventloop is running, ruby freezes at exit.
+
 Tue Dec  7 22:37:15 2010  Masaya Tarui  <tarui@ruby-lnag.org>
 
 	* io.c (io_read): duplicate string if shared. [ruby-dev:42719]
