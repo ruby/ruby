@@ -293,7 +293,7 @@ make_metaclass(VALUE klass)
     }
 
     super = RCLASS_SUPER(klass);
-    while (FL_TEST(super, T_ICLASS)) super = RCLASS_SUPER(super);
+    while (RB_TYPE_P(super, T_ICLASS)) super = RCLASS_SUPER(super);
     RCLASS_SUPER(metaclass) = super ? ENSURE_EIGENCLASS(super) : rb_cClass;
 
     OBJ_INFECT(metaclass, RCLASS_SUPER(metaclass));
