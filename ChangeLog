@@ -1,3 +1,8 @@
+Thu Dec 23 23:29:04 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* common.mk, win32/Makefile.sub: fixes dependencies.
+	  patch by nobu.
+
 Thu Dec 23 22:29:08 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* io.c (io_fillbuf): fixes a mistake on merging r30280, at r30321.
@@ -389,11 +394,6 @@ Mon Oct 11 06:11:30 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 Fri Oct  8 00:24:54 2010  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	* lib/csv.rb: Fixing documentation typos.  [ruby-core:32712]
-
-Thu Oct  7 18:10:35 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* cygwin/GNUmakefile.in, win32/Makefile.sub (RCFILES): depend on
-	  real config.rb file.  [ruby-core:32709]
 
 Wed Oct  6 11:52:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

@@ -846,7 +846,7 @@ clean-ext distclean-ext realclean-ext::
 distclean-ext realclean-ext::
 		@-rmdir ext
 
-$(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc: $(RBCONFIG) config.rb $(srcdir)/revision.h $(srcdir)/win32/resource.rb
+$(RCFILES): $(RBCONFIG) $(srcdir)/revision.h $(srcdir)/win32/resource.rb
 		@$(MINIRUBY) $(srcdir)/win32/resource.rb \
 			-ruby_name=$(RUBY_INSTALL_NAME) \
 			-rubyw_name=$(RUBYW_INSTALL_NAME) \
