@@ -71,4 +71,11 @@ class TestKconv < Test::Unit::TestCase
     assert_equal(@jis_str, @utf8_str.kconv(::NKF::JIS))
     assert_equal(@jis_str, @jis_str.kconv(::NKF::JIS))
   end
+  def test_kconv
+    str = "\xc2\xa1"
+    %w/UTF-8 EUC-JP/.each do |enc|
+      s = str.dup.force_encoding(enc)
+      assert_equal(s, s.kconv(enc))
+    end
+  end
 end
