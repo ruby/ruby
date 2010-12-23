@@ -74,7 +74,7 @@ DELIMITER
     EOF
     doc = REXML::Document.new source
     doc.write(out="")
-    assert(out[/>'>/] != nil, "Couldn't find >'>")
+    assert(out[/>\'>/] != nil, "Couldn't find >'>")
     assert(out[/\]>/] != nil, "Couldn't find ]>")
   end
 
@@ -512,7 +512,8 @@ EOL
   end
 
   def test_pos
-    testfile = "/tmp/tidal#{$$}"
+    require 'tempfile'
+    testfile = Tempfile.new("tidal")
     testdata = %Q{<calibration>
 <section name="parameters">
 <param name="barpress">760</param>
@@ -521,13 +522,12 @@ EOL
 </calibration>
 }
 
-    File.open(testfile, 'w') do |f|
-        f.puts testdata
+    testfile.puts testdata
+    testfile.rewind
+    assert_nothing_raised do
+      d = REXML::Document.new(testfile)
     end
-    File.open(testfile) do |f|
-        d = REXML::Document.new(f)
-    end
-    #File.unlink(testfile)
+    testfile.close(true)
   end
 
   def test_deep_clone
