@@ -801,7 +801,7 @@ module URI
     str
   end
 
-  WFKV_ = '(?:%\h\h|[^%#=;&]+)' # :nodoc:
+  WFKV_ = '(?:%\h\h|[^%#=;&])' # :nodoc:
 
   # Decode URL-encoded form data from given +str+.
   #
