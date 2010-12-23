@@ -271,6 +271,12 @@ class TestRubyOptions < Test::Unit::TestCase
       assert_equal("\"\u3042\"", r.join.force_encoding(Encoding::UTF_8))
       assert_equal([], e)
     end
+
+    bug4118 = '[ruby-dev:42680]'
+    assert_in_out_err(%w[], "#!/bin/sh\n""#!shebang\n""#!ruby\n""puts __LINE__\n",
+                      %w[4], [], bug4118)
+    assert_in_out_err(%w[-x], "#!/bin/sh\n""#!shebang\n""#!ruby\n""puts __LINE__\n",
+                      %w[4], [], bug4118)
   end
 
   def test_sflag

@@ -1,3 +1,8 @@
+Sun Dec  5 11:27:08 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (load_file_internal): decrement for ungotten line.
+	  [ruby-dev:42680]
+
 Fri Dec  3 07:08:42 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_getline): round upto next char

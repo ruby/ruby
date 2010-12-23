@@ -1536,6 +1536,7 @@ load_file_internal(VALUE arg)
 	rb_funcall(f, set_encoding, 1, rb_enc_from_encoding(enc));
 
 	if (opt->xflag) {
+	    line_start--;
 	  search_shebang:
 	    forbid_setid("-x");
 	    opt->xflag = FALSE;
