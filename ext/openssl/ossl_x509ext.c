@@ -178,7 +178,7 @@ ossl_x509extfactory_set_config(VALUE self, VALUE config)
     return config;
 }
 #else
-#define rb_f_fork rb_f_notimplement
+#define ossl_x509extfactory_set_config rb_f_notimplement
 #endif
 
 static VALUE
