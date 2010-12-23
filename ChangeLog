@@ -1,3 +1,9 @@
+Tue Dec 21 01:41:42 2010  Masaya Tarui  <tarui@ruby-lnag.org>
+
+	* io.c : add an extra byte to buffer for the specification of read
+	  in Windows. see [ruby-core:33460] and r29980. and, we have to
+	  discuss how to do this one byte.
+
 Wed Dec 15 04:02:00 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/openssl/ossl_x509ext.c (ossl_x509extfactory_set_config):
