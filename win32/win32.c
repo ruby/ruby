@@ -5056,6 +5056,7 @@ rb_w32_read(int fd, void *buf, size_t size)
     size_t len;
     size_t ret;
     OVERLAPPED ol, *pol = NULL;
+    BOOL isconsole;
     int start = 0;
 
     if (is_socket(sock))
@@ -5073,16 +5074,18 @@ rb_w32_read(int fd, void *buf, size_t size)
     MTHREAD_ONLY(EnterCriticalSection(&(_pioinfo(fd)->lock)));
 
     if (!size || _osfile(fd) & FEOFLAG) {
+	_set_osflags(fd, _osfile(fd) & ~FEOFLAG);
 	MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
 	return 0;
     }
 
     ret = 0;
+    isconsole = is_console(_osfhnd(fd));
   retry:
     /* get rid of console reading bug */
-    if (is_console(_osfhnd(fd))) {
+    if (isconsole) {
 	if (start)
-	    len = min(16 * 1024, size);
+	    len = 1;
 	else {
 	    len = 0;
 	    start = 1;
@@ -5178,11 +5181,14 @@ rb_w32_read(int fd, void *buf, size_t size)
     }
 
     ret += read;
-    if (read == len) {
-	buf = (char *)buf + len;
-	if (size > 0)
+    if (read >= len) {
+	buf = (char *)buf + read;
+	if (!(isconsole && len == 1 && *((char *)buf - 1) == '\n') && size > 0)
 	    goto retry;
     }
+    if (read == 0)
+	_set_osflags(fd, _osfile(fd) | FEOFLAG);
+
 
     MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
 
