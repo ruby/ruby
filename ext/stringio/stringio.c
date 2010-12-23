@@ -952,7 +952,7 @@ strio_getline(int argc, VALUE *argv, struct StringIO *ptr)
     e = s + RSTRING_LEN(ptr->string);
     s += ptr->pos;
     if (limit > 0 && s + limit < e) {
-	e = s + limit;
+	e = rb_enc_right_char_head(s, s + limit, e, rb_enc_get(ptr->string));
     }
     if (NIL_P(str)) {
 	str = strio_substr(ptr, ptr->pos, e - s);

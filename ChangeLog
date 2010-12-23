@@ -1,3 +1,8 @@
+Fri Dec  3 07:08:42 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_getline): round upto next char
+	  boundary.  [ruby-dev:42674]
+
 Thu Dec  2 15:31:14 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_read): more fix. [ruby-core:33513]
