@@ -1,3 +1,9 @@
+Thu Dec 23 19:17:14 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/net/imap/cacert.pem: updated because it has been expired.
+
+	* test/net/imap/server.crt: signed again because CA cert was expired.
+
 Sun Dec  5 17:56:36 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (make_metaclass): fix probable typo.  builtin type flag
