@@ -169,10 +169,6 @@ Tue Nov 17 08:54:04 2010  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	* lib/csv.rb: Upgrading output encoding as needed.  [ruby-core:33135]
 
-Tue Nov 17 08:54:04 2010  James Edward Gray II  <jeg2@ruby-lang.org>
-
-	* lib/csv.rb: Upgrading output encoding as needed.  [ruby-core:33135]
-
 Tue Nov 16 22:30:39 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm_insnhelper.c (vm_throw): remove fear of undefined behavior :-)
@@ -461,10 +457,6 @@ Wed Sep 22 01:49:52 2010  Koichi Sasada  <ko1@atdot.net>
 
 	* bootstraptest/test_method.rb: add a test for [ruby-core:30534].
 
-Wed Sep 22 01:49:52 2010  Koichi Sasada  <ko1@atdot.net>
-
-	* bootstraptest/test_method.rb: add a test for [ruby-core:30534].
-
 Mon Sep 20 23:23:05 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (bracket): get rid of scanning at the end of the pattern
@@ -634,11 +626,6 @@ Tue Aug 31 17:32:34 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/stubs.c: fix [Bug #3771] "VC++ can't make ext/tk with enabling
 	  stubs". Thanks, Akio Tajima [ruby-dev:42159].
 
-Mon Oct  4 12:43:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* parse.y (regexp): dregexp has literal string only at the head
-	  and successors are array.  [ruby-core:32682]
-
 Tue Aug 10 11:26:33 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/un.rb (httpd): SIGQUIT and SIGHUP are not guaranteed to exist.
@@ -698,13 +685,6 @@ Thu Sep 23 09:01:28 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_cref_push): no outer cref is needed for proc
 	  from method.  Bug #3786, Bug #3860, [ruby-core:32501]
-
-Wed Oct  6 11:52:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* io.c (fptr_finalize): write_mutex might have been destroyed
-	  already in finalization phase, as the order of finalizers is not
-	  guaranteed.  rb_mutex_t should be used in place of Mutex object
-	  in the future.
 
 Sun Sep 19 13:44:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -2209,11 +2189,6 @@ Tue May 11 23:07:22 2010  Tanaka Akira  <akr@fsij.org>
 
 	  [ruby-dev:38849]
 
-Wed May 12 09:21:05 2010  NARUSE, Yui  <naruse@ruby-lang.org>
-
-	* re.c (rb_reg_initialize_m): fix wrong index for the lang
-	  option's value 'N'. reported by Masaya TARUI via IRC.
-
 Tue May 11 21:53:18 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/rake/test_task_arguments.rb: makes ENV empty during tests
@@ -2249,38 +2224,6 @@ Sun May 16 14:41:48 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (dln_find.o): fix dependency.
 
-Tue May 11 01:20:43 2010  Aaron Patterson <aaron@tenderlovemaking.com>
-
-	* ext/psych/parser.c (parse): Return strings encoded as
-	  Encoding.default_internal if set.
-
-Mon May 10 06:59:19 2010  NARUSE, Yui  <naruse@ruby-lang.org>
-
-	* common.mk (rdoc): rdoc should depend main. Moreover when XRUBY
-	  is miniruby, it can run after miniruby is built.
-
-Mon May 10 03:36:56 2010  Yusuke Endoh  <mame@tsg.ne.jp>
-
-	* vm_eval.c (eval_string_with_cref): propagative filename and line_no
-	  of binding.  [ruby-dev:38767] [ruby-core:28307]
-
-	* vm_core.h (rb_binding_t), proc.c: add filename and line_no fields to
-	  preserve them.
-
-Mon May 10 02:29:51 2010  Yusuke Endoh  <mame@tsg.ne.jp>
-
-	* cont.c (fiber_switch): raise FiberError when returning to dead
-	  fiber.  [ruby-dev:40833]
-
-Sun May 16 11:39:15 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* include/ruby/missing.h (signbit): add missing prototype.
-
-Sun May 16 10:49:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* ext/iconv/iconv.c (rb_iconv_sys_fail): fix number of arguments.
-	  a patch by Masaya TARUI <tarui AT prx.jp>.
-
 Sun May  9 23:07:53 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* proc.c (proc_dup): copy blockprocval.  proc_dup is used by
@@ -2295,11 +2238,6 @@ Tue May 11 01:20:43 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/parser.c (parse): Return strings encoded as
 	  Encoding.default_internal if set.
-
-Mon May 10 06:59:19 2010  NARUSE, Yui  <naruse@ruby-lang.org>
-
-	* common.mk (rdoc): rdoc should depend main. Moreover when XRUBY
-	  is miniruby, it can run after miniruby is built.
 
 Mon May 10 03:36:56 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
