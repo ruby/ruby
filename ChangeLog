@@ -1,3 +1,10 @@
+Wed Sep  8 22:46:31 2010  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl.c (ssl_get_error): Thread context switch was
+	  blocked on Windows while blocking call for SSLSocket.  Need to
+	  convert errno for letting rb_io_wait_readable detect EWOULDBLOCK.
+	  Patch by arton. ref #3794.
+
 Thu Dec 23 23:29:04 2010  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* common.mk, win32/Makefile.sub: fixes dependencies.
