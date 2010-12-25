@@ -10,11 +10,11 @@ require 'minitest/spec'
 class MiniTest::Unit
   attr_accessor :runner
 
-  def run_benchmarks
+  def run_benchmarks # :nodoc:
     _run_anything :benchmark
   end
 
-  def benchmark_suite_header suite
+  def benchmark_suite_header suite # :nodoc:
     "\n#{suite}\t#{suite.bench_range.join("\t")}"
   end
 
@@ -301,14 +301,32 @@ class MiniTest::Unit
 end
 
 class MiniTest::Spec
+  ##
+  # This is used to define a new benchmark method. You usually don't
+  # use this directly and is intended for those needing to write new
+  # performance curve fits (eg: you need a specific polynomial fit).
+  #
+  # See ::bench_performance_linear for an example of how to use this.
+
   def self.bench name, &block
     define_method "bench_#{name.gsub(/\W+/, '_')}", &block
   end
 
   def self.bench_range &block
+    return super unless block
+
     meta = (class << self; self; end)
     meta.send :define_method, "bench_range", &block
   end
+
+  ##
+  # Create a benchmark that verifies that the performance is linear.
+  #
+  #   describe "my class" do
+  #     bench_performance_linear "fast_algorithm", 0.9999 do
+  #       @obj.fast_algorithm
+  #     end
+  #   end
 
   def self.bench_performance_linear name, threshold = 0.9, &work
     bench name do
@@ -316,11 +334,29 @@ class MiniTest::Spec
     end
   end
 
+  ##
+  # Create a benchmark that verifies that the performance is constant.
+  #
+  #   describe "my class" do
+  #     bench_performance_constant "zoom_algorithm!" do
+  #       @obj.zoom_algorithm!
+  #     end
+  #   end
+
   def self.bench_performance_constant name, threshold = 0.99, &work
     bench name do
       assert_performance_constant threshold, &work
     end
   end
+
+  ##
+  # Create a benchmark that verifies that the performance is exponential.
+  #
+  #   describe "my class" do
+  #     bench_performance_exponential "algorithm" do
+  #       @obj.algorithm
+  #     end
+  #   end
 
   def self.bench_performance_exponential name, threshold = 0.99, &work
     bench name do

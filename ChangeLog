@@ -1,3 +1,7 @@
+Sat Dec 25 13:37:55 2010  Ryan Davis  <ryand-ruby@zenspider.com>
+
+	* lib/minitest/*.rb: Imported minitest 2.0.2 r6093.
+
 Sat Dec 25 13:05:59 2010  Tanaka Akira  <akr@fsij.org>
 
 	* random.c: parenthesize macro arguments.
