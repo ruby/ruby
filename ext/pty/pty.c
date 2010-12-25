@@ -166,6 +166,8 @@ chfunc(void *data)
     struct exec_info arg;
     int status;
 
+    rb_thread_atfork_before_exec();
+
     /*
      * Set free from process group and controlling terminal
      */
