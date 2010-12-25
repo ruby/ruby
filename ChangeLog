@@ -1,3 +1,8 @@
+Sat Dec 25 10:59:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/zlib/zlib.c (gzfile_read, gzfile_readpartial): length should
+	  be long.
+
 Sat Dec 25 10:51:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/json/generator/generator.c (fbuffer_free): unused.

@@ -141,7 +141,7 @@ static void gzfile_check_footer(struct gzfile*);
 static void gzfile_write(struct gzfile*, Bytef*, uInt);
 static long gzfile_read_more(struct gzfile*);
 static void gzfile_calc_crc(struct gzfile*, VALUE);
-static VALUE gzfile_read(struct gzfile*, int);
+static VALUE gzfile_read(struct gzfile*, long);
 static VALUE gzfile_read_all(struct gzfile*);
 static void gzfile_ungets(struct gzfile*, const Bytef*, int);
 static void gzfile_ungetbyte(struct gzfile*, int);
@@ -2205,12 +2205,12 @@ gzfile_newstr(struct gzfile *gz, VALUE str)
 }
 
 static VALUE
-gzfile_read(struct gzfile *gz, int len)
+gzfile_read(struct gzfile *gz, long len)
 {
     VALUE dst;
 
     if (len < 0)
-        rb_raise(rb_eArgError, "negative length %d given", len);
+        rb_raise(rb_eArgError, "negative length %ld given", len);
     if (len == 0)
 	return rb_str_new(0, 0);
     while (!ZSTREAM_IS_FINISHED(&gz->z) && gz->z.buf_filled < len) {
@@ -2229,15 +2229,15 @@ gzfile_read(struct gzfile *gz, int len)
 }
 
 static VALUE
-gzfile_readpartial(struct gzfile *gz, int len, VALUE outbuf)
+gzfile_readpartial(struct gzfile *gz, long len, VALUE outbuf)
 {
     VALUE dst;
 
     if (len < 0)
-        rb_raise(rb_eArgError, "negative length %d given", len);
+        rb_raise(rb_eArgError, "negative length %ld given", len);
 
     if (!NIL_P(outbuf))
-            OBJ_TAINT(outbuf);
+	OBJ_TAINT(outbuf);
 
     if (len == 0) {
         if (NIL_P(outbuf))
@@ -3154,7 +3154,7 @@ rb_gzreader_read(int argc, VALUE *argv, VALUE obj)
 {
     struct gzfile *gz = get_gzfile(obj);
     VALUE vlen;
-    int len;
+    long len;
 
     rb_scan_args(argc, argv, "01", &vlen);
     if (NIL_P(vlen)) {
@@ -3163,7 +3163,7 @@ rb_gzreader_read(int argc, VALUE *argv, VALUE obj)
 
     len = NUM2INT(vlen);
     if (len < 0) {
-	rb_raise(rb_eArgError, "negative length %d given", len);
+	rb_raise(rb_eArgError, "negative length %ld given", len);
     }
     return gzfile_read(gz, len);
 }
@@ -3183,13 +3183,13 @@ rb_gzreader_readpartial(int argc, VALUE *argv, VALUE obj)
 {
     struct gzfile *gz = get_gzfile(obj);
     VALUE vlen, outbuf;
-    int len;
+    long len;
 
     rb_scan_args(argc, argv, "11", &vlen, &outbuf);
 
     len = NUM2INT(vlen);
     if (len < 0) {
-	rb_raise(rb_eArgError, "negative length %d given", len);
+	rb_raise(rb_eArgError, "negative length %ld given", len);
     }
     if (!NIL_P(outbuf))
         Check_Type(outbuf, T_STRING);
