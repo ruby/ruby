@@ -30,7 +30,7 @@ typedef LONG rb_atomic_t;
  * has its own pseudo-insns to support them.  See info, or
  * http://gcc.gnu.org/onlinedocs/gcc/Atomic-Builtins.html */
 
-typedef unsigned char rb_atomic_t; /* Anything OK */
+typedef unsigned int rb_atomic_t; /* Anything OK */
 # define ATOMIC_TEST(var) __sync_lock_test_and_set(&(var), 0)
 # define ATOMIC_SET(var, val)  __sync_lock_test_and_set(&(var), (val))
 # define ATOMIC_INC(var) __sync_fetch_and_add(&(var), 1)
