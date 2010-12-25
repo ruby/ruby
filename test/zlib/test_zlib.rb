@@ -573,8 +573,8 @@ if defined? Zlib
       end
     end
 
-    def test_gets2
-      t = Tempfile.new("test_zlib_gzip_reader_gets2")
+    def test_gets
+      t = Tempfile.new("test_zlib_gzip_reader_gets")
       t.close
       Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo\nbar\nbaz\n") }
 
@@ -590,8 +590,8 @@ if defined? Zlib
       end
     end
 
-    def test_gets
-      t = Tempfile.new("test_zlib_gzip_reader_gets")
+    def test_readline
+      t = Tempfile.new("test_zlib_gzip_reader_readline")
       t.close
       Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo\nbar\nbaz\n") }
 
