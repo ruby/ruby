@@ -6,8 +6,8 @@
 
 #define RUBY_RELEASE_YEAR 2010
 #define RUBY_RELEASE_MONTH 12
-#define RUBY_RELEASE_DAY 24
-#define RUBY_RELEASE_DATE "2010-12-24"
+#define RUBY_RELEASE_DAY 25
+#define RUBY_RELEASE_DATE "2010-12-25"
 
 #include "ruby/version.h"
 
