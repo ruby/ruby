@@ -1,3 +1,13 @@
+Sat Dec 25 18:26:55 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/option.c (inspect_ipv6_mreq): new function to inspect
+	  struct ipv6_mreq for IPV6_JOIN_GROUP and IPV6_LEAVE_GROUP.
+	  Socket::Option.new(:INET6, :IPV6, :JOIN_GROUP,
+	  [0xff12,0,0,0,0,0,0,1, 2].pack("nnnnnnnnI!")).inspect is now:
+	  "#<Socket::Option: INET6 IPV6 JOIN_GROUP ff12::1 eth0>"
+
+	* ext/socket/extconf.rb: check struct ipv6_mreq.
+
 Sat Dec 25 18:04:30 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/csv.rb (CSV.foreach): 'rb' mode is defaulted in open.

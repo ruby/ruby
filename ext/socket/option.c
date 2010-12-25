@@ -396,6 +396,30 @@ inspect_timeval_as_interval(int level, int optname, VALUE data, VALUE ret)
     }
 }
 
+#if defined(IPPROTO_IPV6) && defined(HAVE_TYPE_STRUCT_IPV6_MREQ) /* POSIX, RFC 3493 */
+static int
+inspect_ipv6_mreq(int level, int optname, VALUE data, VALUE ret)
+{
+    if (RSTRING_LEN(data) == sizeof(struct ipv6_mreq)) {
+        struct ipv6_mreq s;
+        char addrbuf[INET6_ADDRSTRLEN], ifbuf[IFNAMSIZ];
+        memcpy((char*)&s, RSTRING_PTR(data), sizeof(s));
+        if (inet_ntop(AF_INET6, &s.ipv6mr_multiaddr, addrbuf, (socklen_t)sizeof(addrbuf)) == NULL)
+            rb_str_cat2(ret, " invalid-address");
+        else
+            rb_str_catf(ret, " %s", addrbuf);
+        if (if_indextoname(s.ipv6mr_interface, ifbuf) == NULL)
+            rb_str_catf(ret, " interface:%u", s.ipv6mr_interface);
+        else
+            rb_str_catf(ret, " %s", ifbuf);
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+#endif
+
 #if defined(SOL_SOCKET) && defined(SO_PEERCRED) /* GNU/Linux, OpenBSD */
 #if defined(__OpenBSD__)
 #define RUBY_SOCK_PEERCRED struct sockpeercred
@@ -590,7 +614,6 @@ sockopt_inspect(VALUE self)
 #        if defined(IPPROTO_IPV6)
           case IPPROTO_IPV6:
             switch (optname) {
-              /* IPV6_JOIN_GROUP ipv6_mreq, IPV6_LEAVE_GROUP ipv6_mreq */
 #            if defined(IPV6_MULTICAST_HOPS) /* POSIX */
               case IPV6_MULTICAST_HOPS: inspected = inspect_int(level, optname, data, ret); break;
 #            endif
@@ -599,6 +622,12 @@ sockopt_inspect(VALUE self)
 #            endif
 #            if defined(IPV6_MULTICAST_LOOP) /* POSIX */
               case IPV6_MULTICAST_LOOP: inspected = inspect_uint(level, optname, data, ret); break;
+#            endif
+#            if defined(IPV6_JOIN_GROUP) /* POSIX */
+              case IPV6_JOIN_GROUP: inspected = inspect_ipv6_mreq(level, optname, data, ret); break;
+#            endif
+#            if defined(IPV6_LEAVE_GROUP) /* POSIX */
+              case IPV6_LEAVE_GROUP: inspected = inspect_ipv6_mreq(level, optname, data, ret); break;
 #            endif
 #            if defined(IPV6_UNICAST_HOPS) /* POSIX */
               case IPV6_UNICAST_HOPS: inspected = inspect_int(level, optname, data, ret); break;
