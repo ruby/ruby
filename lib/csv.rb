@@ -1335,9 +1335,9 @@ class CSV
     # find the +options+ Hash
     options = if args.last.is_a? Hash then args.pop else Hash.new end
     # default to a binary open mode
-    args << "rb" if args.size == 1
+    args << "rb" if args.size == 1 and !options.key?(:mode)
     # wrap a File opened with the remaining +args+
-    csv     = new(File.open(*args), options)
+    csv     = new(File.open(*args, options), options)
 
     # handle blocks like Ruby's open(), not like the CSV library
     if block_given?
@@ -1561,7 +1561,11 @@ class CSV
     # create the IO object we will read from
     @io       = data.is_a?(String) ? StringIO.new(data) : data
     # honor the IO encoding if we can, otherwise default to ASCII-8BIT
-    @encoding = options.delete(:internal_encoding) || options.delete(:encoding) ||
+    @encoding = options.delete(:internal_encoding) ||
+                (case encoding = options.delete(:encoding)
+                 when Encoding; encoding
+                 when /\A[^:]+/; $1
+                 end) ||
                 raw_encoding || Encoding.default_internal ||
                                 Encoding.default_external
     #
@@ -1579,6 +1583,9 @@ class CSV
     init_converters(options)
     init_headers(options)
 
+    options.delete(:encoding)
+    options.delete(:internal_encoding)
+    options.delete(:external_encoding)
     unless options.empty?
       raise ArgumentError, "Unknown options:  #{options.keys.join(', ')}."
     end
