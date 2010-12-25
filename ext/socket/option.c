@@ -433,6 +433,27 @@ inspect_timeval_as_interval(int level, int optname, VALUE data, VALUE ret)
  * it is not distinguishable by the size.
  */
 
+#ifdef __HAIKU__
+#define HAVE_INET_NTOP
+#endif
+#ifndef HAVE_INET_NTOP
+static char *
+inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)
+{
+#ifdef HAVE_INET_NTOA
+    struct in_addr in;
+    memcpy(&in.s_addr, addr, sizeof(in.s_addr));
+    snprintf(numaddr, numaddr_len, "%s", inet_ntoa(in));
+#else
+    unsigned long x = ntohl(*(unsigned long*)addr);
+    snprintf(numaddr, numaddr_len, "%d.%d.%d.%d",
+	     (int) (x>>24) & 0xff, (int) (x>>16) & 0xff,
+	     (int) (x>> 8) & 0xff, (int) (x>> 0) & 0xff);
+#endif
+    return numaddr;
+}
+#endif
+
 #if defined(IPPROTO_IP) && defined(HAVE_TYPE_STRUCT_IP_MREQ) /* 4.4BSD, GNU/Linux */
 static int
 inspect_ipv4_mreq(int level, int optname, VALUE data, VALUE ret)
@@ -457,7 +478,7 @@ inspect_ipv4_mreq(int level, int optname, VALUE data, VALUE ret)
 }
 #endif
 
-#if defined(IPPROTO_IP) && defined(HAVE_TYPE_STRUCT_IP_MREQN) /* GNU/Linux, FreeBSD 7 */
+#if defined(IPPROTO_IP) && defined(HAVE_TYPE_STRUCT_IP_MREQN) && defined(HAVE_IF_INDEXTONAME) /* GNU/Linux, FreeBSD 7 */
 static int
 inspect_ipv4_mreqn(int level, int optname, VALUE data, VALUE ret)
 {
@@ -500,7 +521,7 @@ inspect_ipv4_add_drop_membership(int level, int optname, VALUE data, VALUE ret)
 }
 #endif
 
-#if defined(IPPROTO_IP) && defined(IP_MULTICAST_IF) /* 4.4BSD, GNU/Linux */
+#if defined(IPPROTO_IP) && defined(IP_MULTICAST_IF) && defined(HAVE_TYPE_STRUCT_IP_MREQN) /* 4.4BSD, GNU/Linux */
 static int
 inspect_ipv4_multicast_if(int level, int optname, VALUE data, VALUE ret)
 {
@@ -523,7 +544,7 @@ inspect_ipv4_multicast_if(int level, int optname, VALUE data, VALUE ret)
 }
 #endif
 
-#if defined(IPPROTO_IPV6) && defined(HAVE_TYPE_STRUCT_IPV6_MREQ) /* POSIX, RFC 3493 */
+#if defined(IPPROTO_IPV6) && defined(HAVE_TYPE_STRUCT_IPV6_MREQ) && defined(HAVE_IF_INDEXTONAME) /* POSIX, RFC 3493 */
 static int
 inspect_ipv6_mreq(int level, int optname, VALUE data, VALUE ret)
 {
@@ -741,7 +762,7 @@ sockopt_inspect(VALUE self)
 #        if defined(IPPROTO_IP)
           case IPPROTO_IP:
             switch (optname) {
-#            if defined(IP_MULTICAST_IF) /* 4.4BSD, GNU/Linux */
+#            if defined(IP_MULTICAST_IF) && defined(HAVE_TYPE_STRUCT_IP_MREQN) /* 4.4BSD, GNU/Linux */
               case IP_MULTICAST_IF: inspected = inspect_ipv4_multicast_if(level, optname, data, ret); break;
 #            endif
 #            if defined(IP_ADD_MEMBERSHIP) /* 4.4BSD, GNU/Linux */
@@ -766,10 +787,10 @@ sockopt_inspect(VALUE self)
 #            if defined(IPV6_MULTICAST_LOOP) /* POSIX */
               case IPV6_MULTICAST_LOOP: inspected = inspect_uint(level, optname, data, ret); break;
 #            endif
-#            if defined(IPV6_JOIN_GROUP) /* POSIX */
+#            if defined(IPV6_JOIN_GROUP) && defined(HAVE_IF_INDEXTONAME) /* POSIX */
               case IPV6_JOIN_GROUP: inspected = inspect_ipv6_mreq(level, optname, data, ret); break;
 #            endif
-#            if defined(IPV6_LEAVE_GROUP) /* POSIX */
+#            if defined(IPV6_LEAVE_GROUP) && defined(HAVE_IF_INDEXTONAME) /* POSIX */
               case IPV6_LEAVE_GROUP: inspected = inspect_ipv6_mreq(level, optname, data, ret); break;
 #            endif
 #            if defined(IPV6_UNICAST_HOPS) /* POSIX */
