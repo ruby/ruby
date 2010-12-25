@@ -1,3 +1,7 @@
+Sat Dec 25 12:48:50 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (rb_f_require_relative): don't omit return type.
+
 Sat Dec 25 11:06:00 2010  Eric Hodel  <drbrain@segment7.net>
 
 	* load.c (rb_f_require_relative): Add documentation.

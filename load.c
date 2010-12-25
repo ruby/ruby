@@ -461,7 +461,7 @@ rb_f_require(VALUE obj, VALUE fname)
  * file's path.  If the file's path cannot be determined a LoadError is raised.
  * If a file is loaded +true+ is returned and false otherwise.
  */
-
+VALUE
 rb_f_require_relative(VALUE obj, VALUE fname)
 {
     VALUE rb_current_realfilepath(void);
