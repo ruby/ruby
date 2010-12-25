@@ -433,9 +433,6 @@ inspect_timeval_as_interval(int level, int optname, VALUE data, VALUE ret)
  * it is not distinguishable by the size.
  */
 
-#ifdef __HAIKU__
-#define HAVE_INET_NTOP
-#endif
 #ifndef HAVE_INET_NTOP
 static char *
 inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)
