@@ -1,3 +1,8 @@
+Sat Dec 25 15:04:05 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/csv/test_encodings.rb (TestEncodings#setup): fix evil test
+	  suite writing to the source directory.
+
 Sat Dec 25 15:08:08 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/pty/pty.c (chfunc): Added rb_thread_atfork_before_exec().
