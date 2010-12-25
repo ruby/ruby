@@ -1,4 +1,10 @@
-Sat Dec 25 22:04:41 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Dec 25 22:08:04 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/with_diffent_ofs.rb (DifferentOFS): test suite for test
+	  suites affected by $,.
+
+	* test/digest/test_digest_extend.rb (TestDigestExtend): should not
+	  assume $, invariant.
 
 	* test/csv/test_data_converters.rb, test/csv/test_table.rb: don't
 	  not call setup within tests.

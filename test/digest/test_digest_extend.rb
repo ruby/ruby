@@ -1,7 +1,10 @@
 require 'test/unit'
 require 'digest'
+require_relative '../with_diffent_ofs.rb'
 
 class TestDigestExtend < Test::Unit::TestCase
+  include DifferentOFS
+
   class MyDigest < Digest::Class
     def initialize(*arg)
       super
@@ -20,7 +23,7 @@ class TestDigestExtend < Test::Unit::TestCase
     alias << update
 
     def finish
-      (@buf.join.length % 256).chr
+      (@buf.join('').length % 256).chr
     end
 
     def reset
@@ -39,8 +42,8 @@ class TestDigestExtend < Test::Unit::TestCase
     assert_equal('', Digest.hexencode(''))
     assert_equal('0102', Digest.hexencode("\1\2"))
     assert_equal(
-      (0..0xff).to_a.map { |c| sprintf("%02x", c ) }.join,
-      Digest.hexencode((0..0xff).to_a.map { |c| c.chr }.join)
+      (0..0xff).to_a.map { |c| sprintf("%02x", c ) }.join(''),
+      Digest.hexencode((0..0xff).to_a.map { |c| c.chr }.join(''))
     )
   end
 
