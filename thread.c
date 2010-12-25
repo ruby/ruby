@@ -2800,6 +2800,8 @@ rb_thread_atfork(void)
 {
     rb_thread_atfork_internal(terminate_atfork_i);
     GET_THREAD()->join_list_head = 0;
+
+    /* We don't want reproduce CVE-2003-0900. */
     rb_reset_random_seed();
 }
 

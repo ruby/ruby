@@ -1,3 +1,8 @@
+Sat Dec 25 18:30:34 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_thread_atfork): Add small comment why we need
+	  reset random seed.
+
 Sat Dec 25 17:33:55 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/csv/base.rb (TestCSV.with_diffrent_ofs): give name to
