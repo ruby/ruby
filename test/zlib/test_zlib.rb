@@ -588,6 +588,40 @@ if defined? Zlib
       Zlib::GzipReader.open(t.path) do |f|
         assert_equal("foo\nbar\nbaz\n", f.gets(nil))
       end
+
+      Zlib::GzipReader.open(t.path) do |f|
+        assert_equal("foo\n", f.gets(10))
+        assert_equal("ba", f.gets(2))
+        assert_equal("r\nb", f.gets(nil, 3))
+        assert_equal("az\n", f.gets(nil, 10))
+        assert_nil(f.gets)
+      end
+    end
+
+    def test_gets2
+      t = Tempfile.new("test_zlib_gzip_reader_gets2")
+      t.close
+      ustrs = %W"\u{3042 3044 3046}\n \u{304b 304d 304f}\n \u{3055 3057 3059}\n"
+      Zlib::GzipWriter.open(t.path) {|gz| gz.print(*ustrs) }
+
+      Zlib::GzipReader.open(t.path, encoding: "UTF-8") do |f|
+        assert_equal(ustrs[0], f.gets)
+        assert_equal(ustrs[1], f.gets)
+        assert_equal(ustrs[2], f.gets)
+        assert_nil(f.gets)
+      end
+
+      Zlib::GzipReader.open(t.path, encoding: "UTF-8") do |f|
+        assert_equal(ustrs.join(''), f.gets(nil))
+      end
+
+      Zlib::GzipReader.open(t.path, encoding: "UTF-8") do |f|
+        assert_equal(ustrs[0], f.gets(20))
+        assert_equal(ustrs[1][0,2], f.gets(5))
+        assert_equal(ustrs[1][2..-1]+ustrs[2][0,1], f.gets(nil, 5))
+        assert_equal(ustrs[2][1..-1], f.gets(nil, 20))
+        assert_nil(f.gets)
+      end
     end
 
     def test_readline

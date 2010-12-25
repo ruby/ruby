@@ -1,4 +1,7 @@
-Sat Dec 25 10:59:12 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Dec 25 11:02:52 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/zlib/zlib.c (gzreader_gets): support optional length
+	  parameter.
 
 	* ext/zlib/zlib.c (gzfile_read, gzfile_readpartial): length should
 	  be long.

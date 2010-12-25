@@ -2204,15 +2204,13 @@ gzfile_newstr(struct gzfile *gz, VALUE str)
 				gz->ecflags, gz->ecopts);
 }
 
-static VALUE
-gzfile_read(struct gzfile *gz, long len)
+static long
+gzfile_fill(struct gzfile *gz, long len)
 {
-    VALUE dst;
-
     if (len < 0)
         rb_raise(rb_eArgError, "negative length %ld given", len);
     if (len == 0)
-	return rb_str_new(0, 0);
+	return 0;
     while (!ZSTREAM_IS_FINISHED(&gz->z) && gz->z.buf_filled < len) {
 	gzfile_read_more(gz);
     }
@@ -2220,9 +2218,19 @@ gzfile_read(struct gzfile *gz, long len)
 	if (!(gz->z.flags & GZFILE_FLAG_FOOTER_FINISHED)) {
 	    gzfile_check_footer(gz);
 	}
-	return Qnil;
+	return -1;
     }
+    return len < gz->z.buf_filled ? len : gz->z.buf_filled;
+}
 
+static VALUE
+gzfile_read(struct gzfile *gz, long len)
+{
+    VALUE dst;
+
+    len = gzfile_fill(gz, len);
+    if (len == 0) return rb_str_new(0, 0);
+    if (len < 0) return Qnil;
     dst = zstream_shift_buffer(&gz->z, len);
     gzfile_calc_crc(gz, dst);
     return dst;
@@ -3351,6 +3359,27 @@ rscheck(const char *rsptr, long rslen, VALUE rs)
 	rb_raise(rb_eRuntimeError, "rs modified");
 }
 
+static long
+gzreader_charboundary(struct gzfile *gz, long n)
+{
+    char *s = RSTRING_PTR(gz->z.buf);
+    char *e = s + gz->z.buf_filled;
+    char *p = rb_enc_left_char_head(s, s + n, e, gz->enc);
+    long l = p - s;
+    if (l < n) {
+	n = rb_enc_precise_mbclen(p, e, gz->enc);
+	if (MBCLEN_NEEDMORE_P(n)) {
+	    if ((l = gzfile_fill(gz, l + MBCLEN_NEEDMORE_LEN(n))) > 0) {
+		return l;
+	    }
+	}
+	else if (MBCLEN_CHARFOUND_P(n)) {
+	    return l + MBCLEN_CHARFOUND_LEN(n);
+	}
+    }
+    return n;
+}
+
 static VALUE
 gzreader_gets(int argc, VALUE *argv, VALUE obj)
 {
@@ -3359,24 +3388,57 @@ gzreader_gets(int argc, VALUE *argv, VALUE obj)
     VALUE dst;
     const char *rsptr;
     char *p, *res;
-    long rslen, n;
+    long rslen, n, limit = -1;
     int rspara;
+    rb_encoding *enc = gz->enc;
+    int maxlen = rb_enc_mbmaxlen(enc);
 
     if (argc == 0) {
 	rs = rb_rs;
     }
     else {
-	rb_scan_args(argc, argv, "1", &rs);
-	if (!NIL_P(rs)) {
-	    Check_Type(rs, T_STRING);
+	VALUE lim, tmp;
+
+	rb_scan_args(argc, argv, "11", &rs, &lim);
+	if (!NIL_P(lim)) {
+	    if (!NIL_P(rs)) StringValue(rs);
+	}
+	else if (!NIL_P(rs)) {
+	    tmp = rb_check_string_type(rs);
+	    if (NIL_P(tmp)) {
+		lim = rs;
+		rs = rb_rs;
+	    }
+	    else {
+		rs = tmp;
+	    }
+	}
+	if (!NIL_P(lim)) {
+	    limit = NUM2LONG(lim);
+	    if (limit == 0) return rb_str_new(0,0);
 	}
     }
 
     if (NIL_P(rs)) {
-	dst = gzfile_read_all(gz);
-	if (RSTRING_LEN(dst) != 0) gz->lineno++;
-	else
+	if (limit < 0) {
+	    dst = gzfile_read_all(gz);
+	    if (RSTRING_LEN(dst) == 0) return Qnil;
+	}
+	else if ((n = gzfile_fill(gz, limit)) <= 0) {
 	    return Qnil;
+	}
+	else {
+	    if (maxlen > 1 && n >= limit && !GZFILE_IS_FINISHED(gz)) {
+		n = gzreader_charboundary(gz, n);
+	    }
+	    else {
+		n = limit;
+	    }
+	    dst = zstream_shift_buffer(&gz->z, n);
+	    gzfile_calc_crc(gz, dst);
+	    dst = gzfile_newstr(gz, dst);
+	}
+	gz->lineno++;
 	return dst;
     }
 
@@ -3405,21 +3467,31 @@ gzreader_gets(int argc, VALUE *argv, VALUE obj)
     p = RSTRING_PTR(gz->z.buf);
     n = rslen;
     for (;;) {
+	long filled;
 	if (n > gz->z.buf_filled) {
 	    if (ZSTREAM_IS_FINISHED(&gz->z)) break;
 	    gzfile_read_more(gz);
 	    p = RSTRING_PTR(gz->z.buf) + n - rslen;
 	}
 	if (!rspara) rscheck(rsptr, rslen, rs);
-	res = memchr(p, rsptr[0], (gz->z.buf_filled - n + 1));
+	filled = gz->z.buf_filled;
+	if (limit > 0 && filled >= limit) {
+	    filled = limit;
+	}
+	res = memchr(p, rsptr[0], (filled - n + 1));
 	if (!res) {
-	    n = gz->z.buf_filled + 1;
+	    n = filled;
+	    if (limit > 0 && filled >= limit) break;
+	    n++;
 	} else {
 	    n += (long)(res - p);
 	    p = res;
 	    if (rslen == 1 || memcmp(p, rsptr, rslen) == 0) break;
 	    p++, n++;
 	}
+    }
+    if (maxlen > 1 && n == limit && (gz->z.buf_filled > n || !ZSTREAM_IS_FINISHED(&gz->z))) {
+	n = gzreader_charboundary(gz, n);
     }
 
     gz->lineno++;
