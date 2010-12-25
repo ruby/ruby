@@ -260,6 +260,23 @@ class TestCSV::Encodings < TestCSV
       end unless encoding == __ENCODING__
     rescue Encoding::ConverterNotFoundError
     end
+    options[:encoding] = encoding.name
+    CSV.open(@temp_csv_path, options) do |csv|
+      csv.each_with_index do |row, i|
+        assert_equal(fields[i], row)
+      end
+    end
+    options.delete(:encoding)
+    options[:external_encoding] = encoding.name
+    options[:internal_encoding] = __ENCODING__.name
+    begin
+      CSV.open(@temp_csv_path, options) do |csv|
+        csv.each_with_index do |row, i|
+          assert_equal(orig_fields[i], row)
+        end
+      end unless encoding == __ENCODING__
+    rescue Encoding::ConverterNotFoundError
+    end
   end
   
   def encode_ary(ary, encoding)
