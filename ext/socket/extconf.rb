@@ -340,7 +340,9 @@ have_func("getpeereid")
 have_header("ucred.h", headers)
 have_func("getpeerucred")
 
-have_type("struct ipv6_mreq", headers)
+have_type("struct ip_mreq", headers) # 4.4BSD
+have_type("struct ip_mreqn", headers) # Linux 2.4
+have_type("struct ipv6_mreq", headers) # RFC 3493
 
 # workaround for recent Windows SDK
 $defs << "-DIPPROTO_IPV6=IPPROTO_IPV6" if $defs.include?("-DHAVE_CONST_IPPROTO_IPV6") && !have_macro("IPPROTO_IPV6")
