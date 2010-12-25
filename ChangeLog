@@ -20,7 +20,8 @@ Sat Dec 25 11:02:52 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sat Dec 25 10:51:03 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* ext/json/generator/generator.c (fbuffer_free): unused.
+	* ext/json/generator/generator.{c,h} (fbuffer_free_only_buffer):
+	  unused.
 
 	* ext/openssl/ossl_pkcs5.c (ossl_pkcs5_pbkdf2_hmac): add casts.
 
