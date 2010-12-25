@@ -1,3 +1,8 @@
+Sat Dec 25 20:01:40 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (pipe_open): Added rb_thread_atfork(). We must reinitialize
+	  GVL at new process creation.
+
 Sat Dec 25 18:26:55 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/option.c (inspect_ipv6_mreq): new function to inspect
