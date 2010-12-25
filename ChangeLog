@@ -1,3 +1,7 @@
+Sun Dec 26 03:00:53 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ext/socket/extconf.rb: Fix build error which was introduced r30372.
+
 Sun Dec 26 01:37:10 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/extconf.rb: check the existence of if_indextoname().

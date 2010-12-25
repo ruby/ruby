@@ -301,12 +301,13 @@ if getaddr_info_ok == :wide or
   $objs += ["getaddrinfo.#{$OBJEXT}"]
   $objs += ["getnameinfo.#{$OBJEXT}"]
   $defs << "-DGETADDRINFO_EMU"
-  have_func("inet_ntop") or have_func("inet_ntoa")
-  have_func("inet_pton") or have_func("inet_aton")
-  have_func("getservbyport")
-  have_header("arpa/nameser.h")
-  have_header("resolv.h")
 end
+
+have_func("inet_ntop") or have_func("inet_ntoa")
+have_func("inet_pton") or have_func("inet_aton")
+have_func("getservbyport")
+have_header("arpa/nameser.h")
+have_header("resolv.h")
 
 have_header("ifaddrs.h")
 have_func("getifaddrs")
