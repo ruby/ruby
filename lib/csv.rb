@@ -1573,10 +1573,7 @@ class CSV
     # if we can transcode the needed characters
     #
     @re_esc   =   "\\".encode(@encoding) rescue ""
-    @re_chars =   %w[ \\ .  [  ]  -  ^  $  ?
-                      *  +  {  }  (  )  |  #
-                      \  \r \n \t \f \v ].
-                  map { |s| s.encode(@encoding) rescue nil }.compact
+    @re_chars =   /#{%"[-][\\.^$?*+{}()|# \r\n\t\f\v]".encode(@encoding, fallback: proc{""})}/
 
     init_separators(options)
     init_parsers(options)
@@ -2025,15 +2022,13 @@ class CSV
             # if we run out of data, it's probably a single line
             # (use a sensible default)
             #
-            if @io.eof?
+            unless sample = @io.gets(nil, 1024)
               @row_sep = $INPUT_RECORD_SEPARATOR
               break
             end
 
             # read ahead a bit
-            sample =  read_to_char(1024)
-            sample += read_to_char(1) if sample[-1..-1] == encode_str("\r") and
-                                         not @io.eof?
+            sample << (@io.gets(nil, 1) || "") if sample.end_with?(encode_str("\r"))
             # try to find a standard separator
             if sample =~ encode_re("\r\n?|\n")
               @row_sep = $&
@@ -2267,7 +2262,7 @@ class CSV
   # a backslash cannot be transcoded.
   #
   def escape_re(str)
-    str.chars.map { |c| @re_chars.include?(c) ? @re_esc + c : c }.join('')
+    str.gsub(@re_chars) {|c| @re_esc + c}
   end
 
   #
@@ -2286,31 +2281,6 @@ class CSV
     chunks.map { |chunk| chunk.encode(@encoding.name) }.join('')
   end
 
-  #
-  # Reads at least +bytes+ from <tt>@io</tt>, but will read up 10 bytes ahead if
-  # needed to ensure the data read is valid in the ecoding of that data.  This
-  # should ensure that it is safe to use regular expressions on the read data,
-  # unless it is actually a broken encoding.  The read data will be returned in
-  # <tt>@encoding</tt>.
-  #
-  def read_to_char(bytes)
-    return "" if @io.eof?
-    data = read_io(bytes)
-    begin
-      raise unless data.valid_encoding?
-      encoded = encode_str(data)
-      raise unless encoded.valid_encoding?
-      return encoded
-    rescue  # encoding error or my invalid data raise
-      if @io.eof? or data.size >= bytes + 10
-        return data
-      else
-        data += read_io(1)
-        retry
-      end
-    end
-  end
-
   private
 
   def raw_encoding
@@ -2323,10 +2293,6 @@ class CSV
     else
       Encoding::ASCII_8BIT
     end
-  end
-
-  def read_io(bytes)
-    @io.read(bytes).force_encoding(raw_encoding)
   end
 end
 

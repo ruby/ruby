@@ -1,4 +1,7 @@
-Sat Dec 25 16:04:34 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Dec 25 17:32:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/csv.rb (CSV#init_separators): use IO#gets with length
+	  parameter to get rid of wrong convertion.
 
 	* lib/csv.rb (CSV::foreach, CSV#initialize): directly use encoding
 

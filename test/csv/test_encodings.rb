@@ -238,11 +238,27 @@ class TestCSV::Encodings < TestCSV
   
   def assert_parses(fields, encoding, options = { })
     encoding = Encoding.find(encoding) unless encoding.is_a? Encoding
+    orig_fields = fields
     fields   = encode_ary(fields, encoding)
-    parsed   = CSV.parse(ary_to_data(fields, options), options)
+    data = ary_to_data(fields, options)
+    parsed   = CSV.parse(data, options)
     assert_equal(fields, parsed)
     parsed.flatten.each_with_index do |field, i|
       assert_equal(encoding, field.encoding, "Field[#{i + 1}] was transcoded.")
+    end
+    File.open(@temp_csv_path, "wb") {|f| f.print(data)}
+    CSV.open(@temp_csv_path, "rb:#{encoding}", options) do |csv|
+      csv.each_with_index do |row, i|
+        assert_equal(fields[i], row)
+      end
+    end
+    begin
+      CSV.open(@temp_csv_path, "rb:#{encoding}:#{__ENCODING__}", options) do |csv|
+        csv.each_with_index do |row, i|
+          assert_equal(orig_fields[i], row)
+        end
+      end unless encoding == __ENCODING__
+    rescue Encoding::ConverterNotFoundError
     end
   end
   
