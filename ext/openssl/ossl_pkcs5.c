@@ -36,7 +36,10 @@ ossl_pkcs5_pbkdf2_hmac(VALUE self, VALUE pass, VALUE salt, VALUE iter, VALUE key
 
     str = rb_str_new(0, len);
 
-    if (PKCS5_PBKDF2_HMAC(RSTRING_PTR(pass), RSTRING_LEN(pass), RSTRING_PTR(salt), RSTRING_LEN(salt), NUM2INT(iter), md, len, RSTRING_PTR(str)) != 1)
+    if (PKCS5_PBKDF2_HMAC(RSTRING_PTR(pass), RSTRING_LEN(pass),
+			  (unsigned char *)RSTRING_PTR(salt), RSTRING_LEN(salt),
+			  NUM2INT(iter), md, len,
+			  (unsigned char *)RSTRING_PTR(str)) != 1)
         ossl_raise(ePKCS5, "PKCS5_PBKDF2_HMAC");
 
     return str;
