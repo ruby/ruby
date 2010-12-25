@@ -1,3 +1,8 @@
+Sat Dec 25 22:04:41 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/csv/test_data_converters.rb, test/csv/test_table.rb: don't
+	  not call setup within tests.
+
 Sat Dec 25 20:01:40 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (pipe_open): Added rb_thread_atfork(). We must reinitialize

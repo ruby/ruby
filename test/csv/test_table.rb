@@ -270,7 +270,7 @@ class TestCSV::Table < TestCSV
     assert_equal(CSV::Row.new(%w[A B C], [13, 14, 15]), @table[-1])
   end
 
-  def test_delete
+  def test_delete_mixed
     ##################
     ### Mixed Mode ###
     ##################
@@ -286,11 +286,12 @@ class TestCSV::Table < TestCSV
     2,3
     8,9
     END_RESULT
+  end
 
+  def test_delete_column
     ###################
     ### Column Mode ###
     ###################
-    setup
     @table.by_col!
 
     assert_equal(@rows.map { |row| row[0] }, @table.delete(0))
@@ -303,11 +304,12 @@ class TestCSV::Table < TestCSV
     5
     8
     END_RESULT
+  end
 
+  def test_delete_row
     ################
     ### Row Mode ###
     ################
-    setup
     @table.by_row!
 
     assert_equal(@rows[1], @table.delete(1))
@@ -327,7 +329,7 @@ class TestCSV::Table < TestCSV
     assert_equal(["ra2", nil, "rb2"], table.delete("col2"))
   end
   
-  def test_delete_if
+  def test_delete_if_row
     ######################
     ### Mixed/Row Mode ###
     ######################
@@ -339,11 +341,12 @@ class TestCSV::Table < TestCSV
     A,B,C
     4,5,6
     END_RESULT
+  end
 
+  def test_delete_if_column
     ###################
     ### Column Mode ###
     ###################
-    setup
     @table.by_col!
 
     assert_equal(@table, @table.delete_if { |h, v| h > "A" })
