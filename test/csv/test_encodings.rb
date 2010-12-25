@@ -154,10 +154,9 @@ class TestCSV::Encodings < TestCSV
   def test_foreach_allows_you_to_set_encodings
     encode_for_tests([%w[abc def]]) do |data|
       # read and write in encoding
-      File.open(@temp_csv_path, "wb:#{data.encoding.name}") { |f| f << data }
-      CSV.foreach(@temp_csv_path, encoding: data.encoding.name) do |row|
-        assert( row.all? { |f| f.encoding == data.encoding },
-                "Wrong data encoding." )
+      File.open(@temp_csv_path, "wb", encoding: data.encoding) { |f| f << data }
+      CSV.foreach(@temp_csv_path, encoding: data.encoding) do |row|
+        row.each {|f| assert_equal(f.encoding, data.encoding)}
       end
   
       # read and write with transcoding

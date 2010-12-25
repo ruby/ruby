@@ -1,4 +1,6 @@
-Sat Dec 25 15:58:55 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Dec 25 16:04:34 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/csv.rb (CSV::foreach, CSV#initialize): directly use encoding
 
 	* lib/csv.rb, test/csv: should not assume $, invariant.
 

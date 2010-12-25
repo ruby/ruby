@@ -1203,10 +1203,7 @@ class CSV
   # but transcode it to UTF-8 before CSV parses it.
   #
   def self.foreach(path, options = Hash.new, &block)
-    encoding =  options.delete(:encoding)
-    mode     =  "rb"
-    mode     << ":#{encoding}" if encoding
-    open(path, mode, options) do |csv|
+    open(path, 'rb', options) do |csv|
       csv.each(&block)
     end
   end
@@ -1564,7 +1561,8 @@ class CSV
     # create the IO object we will read from
     @io       = data.is_a?(String) ? StringIO.new(data) : data
     # honor the IO encoding if we can, otherwise default to ASCII-8BIT
-    @encoding = raw_encoding || Encoding.default_internal ||
+    @encoding = options.delete(:internal_encoding) || options.delete(:encoding) ||
+                raw_encoding || Encoding.default_internal ||
                                 Encoding.default_external
     #
     # prepare for building safe regular expressions in the target encoding,
