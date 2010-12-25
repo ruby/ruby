@@ -628,8 +628,8 @@ module MiniTest
 
       results = _run_suites suites, type
 
-      @test_count      = results.inject(0) { |sum, (tc, ac)| sum + tc }
-      @assertion_count = results.inject(0) { |sum, (tc, ac)| sum + ac }
+      @test_count      = results.inject(0) { |sum, (tc, _)| sum + tc }
+      @assertion_count = results.inject(0) { |sum, (_, ac)| sum + ac }
 
       output.sync = old_sync if sync
 
