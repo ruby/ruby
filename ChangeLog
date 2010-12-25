@@ -1,3 +1,7 @@
+Sat Dec 25 11:06:00 2010  Eric Hodel  <drbrain@segment7.net>
+
+	* load.c (rb_f_require_relative): Add documentation.
+
 Sat Dec 25 11:02:52 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/zlib/zlib.c (gzreader_gets): support optional length

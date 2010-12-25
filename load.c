@@ -453,7 +453,15 @@ rb_f_require(VALUE obj, VALUE fname)
     return rb_require_safe(fname, rb_safe_level());
 }
 
-VALUE
+/*
+ * call-seq:
+ *   require_relative(string) -> true or false
+ *
+ * Ruby tries to load the library named _string_ relative to the requiring
+ * file's path.  If the file's path cannot be determined a LoadError is raised.
+ * If a file is loaded +true+ is returned and false otherwise.
+ */
+
 rb_f_require_relative(VALUE obj, VALUE fname)
 {
     VALUE rb_current_realfilepath(void);
