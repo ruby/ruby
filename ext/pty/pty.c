@@ -156,6 +156,8 @@ chfunc(void *data, char *errbuf, size_t errbuf_len)
 	return -1; \
     } while (0)
 
+    rb_thread_atfork_before_exec();
+
     /*
      * Set free from process group and controlling terminal
      */
