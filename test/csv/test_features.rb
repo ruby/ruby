@@ -7,12 +7,11 @@
 #  Copyright 2005 James Edward Gray II. You can redistribute or modify this code
 #  under the terms of Ruby's license.
 
-require "test/unit"
 require "zlib"
 
-require "csv"
+require_relative "base"
 
-class TestCSVFeatures < Test::Unit::TestCase
+class TestCSV::Features < TestCSV
   TEST_CASES = [ [%Q{a,b},               ["a", "b"]],
                  [%Q{a,"""b"""},         ["a", "\"b\""]],
                  [%Q{a,"""b"},           ["a", "\"b"]],
@@ -264,4 +263,6 @@ class TestCSVFeatures < Test::Unit::TestCase
     assert(CSV::VERSION.frozen?)
     assert_match(/\A\d\.\d\.\d\Z/, CSV::VERSION)
   end
+
+  with_diffrent_ofs
 end

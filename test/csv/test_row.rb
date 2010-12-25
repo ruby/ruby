@@ -7,11 +7,9 @@
 #  Copyright 2005 James Edward Gray II. You can redistribute or modify this code
 #  under the terms of Ruby's license.
 
-require "test/unit"
+require_relative "base"
 
-require "csv"
-
-class TestCSVRow < Test::Unit::TestCase
+class TestCSV::Row < TestCSV
   def setup
     @row = CSV::Row.new(%w{A B C A A}, [1, 2, 3, 4])
   end
@@ -309,4 +307,6 @@ class TestCSVRow < Test::Unit::TestCase
               "Header field pair not found." )
     end
   end
+
+  with_diffrent_ofs
 end

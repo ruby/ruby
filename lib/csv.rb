@@ -505,12 +505,12 @@ class CSV
       end
       str << ">"
       begin
-        str.join
+        str.join('')
       rescue  # any encoding error
         str.map do |s|
           e = Encoding::Converter.asciicompat_encoding(s.encoding)
           e ? s.encode(e) : s.force_encoding("ASCII-8BIT")
-        end.join
+        end.join('')
       end
     end
   end
@@ -845,7 +845,7 @@ class CSV
         else
           rows + [row.fields.to_csv(options)]
         end
-      end.join
+      end.join('')
     end
     alias_method :to_s, :to_csv
 
@@ -1973,12 +1973,12 @@ class CSV
     end
     str << ">"
     begin
-      str.join
+      str.join('')
     rescue  # any encoding error
       str.map do |s|
         e = Encoding::Converter.asciicompat_encoding(s.encoding)
         e ? s.encode(e) : s.force_encoding("ASCII-8BIT")
-      end.join
+      end.join('')
     end
   end
 
@@ -2262,7 +2262,7 @@ class CSV
   # a backslash cannot be transcoded.
   #
   def escape_re(str)
-    str.chars.map { |c| @re_chars.include?(c) ? @re_esc + c : c }.join
+    str.chars.map { |c| @re_chars.include?(c) ? @re_esc + c : c }.join('')
   end
 
   #
@@ -2278,7 +2278,7 @@ class CSV
   # that encoding.
   #
   def encode_str(*chunks)
-    chunks.map { |chunk| chunk.encode(@encoding.name) }.join
+    chunks.map { |chunk| chunk.encode(@encoding.name) }.join('')
   end
 
   #

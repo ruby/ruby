@@ -7,11 +7,9 @@
 #  Copyright 2005 James Edward Gray II. You can redistribute or modify this code
 #  under the terms of Ruby's license.
 
-require "test/unit"
+require_relative "base"
 
-require "csv"
-
-class TestDataConverters < Test::Unit::TestCase
+class TestCSV::DataConverters < TestCSV
   def setup
     @data   = "Numbers,:integer,1,:float,3.015"
     @parser = CSV.new(@data)
@@ -258,4 +256,6 @@ class TestDataConverters < Test::Unit::TestCase
     assert_respond_to(row, :unconverted_fields)
     assert_equal(Array.new, row.unconverted_fields)
   end
+
+  with_diffrent_ofs
 end

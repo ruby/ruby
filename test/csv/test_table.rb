@@ -7,11 +7,9 @@
 #  Copyright 2005 James Edward Gray II. You can redistribute or modify this code
 #  under the terms of Ruby's license.
 
-require "test/unit"
+require_relative "base"
 
-require "csv"
-
-class TestCSVTable < Test::Unit::TestCase
+class TestCSV::Table < TestCSV
   def setup
     @rows  = [ CSV::Row.new(%w{A B C}, [1, 2, 3]),
                CSV::Row.new(%w{A B C}, [4, 5, 6]),
@@ -253,7 +251,7 @@ class TestCSVTable < Test::Unit::TestCase
     # with options
     assert_equal( csv.gsub(",", "|").gsub("\n", "\r\n"),
                   @table.to_csv(col_sep: "|", row_sep: "\r\n") )
-    assert_equal( csv.lines.to_a[1..-1].join,
+    assert_equal( csv.lines.to_a[1..-1].join(''),
                   @table.to_csv(:write_headers => false) )
 
     # with headers
@@ -413,4 +411,6 @@ class TestCSVTable < Test::Unit::TestCase
                                   @table.inspect.encoding ),
             "inspect() was not ASCII compatible." )
   end
+
+  with_diffrent_ofs
 end

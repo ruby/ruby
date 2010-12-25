@@ -7,11 +7,9 @@
 #  Copyright 2008 James Edward Gray II. You can redistribute or modify this code
 #  under the terms of Ruby's license.
 
-require "test/unit"
+require_relative "base"
 
-require "csv"
-
-class TestEncodings < Test::Unit::TestCase
+class TestCSV::Encodings < TestCSV
   def setup
     require 'tempfile'
     @temp_csv_file = Tempfile.new(%w"test_csv. .csv")
@@ -225,7 +223,7 @@ class TestEncodings < Test::Unit::TestCase
     data = ["foo".force_encoding("US-ASCII"), "\u3042"]
     assert_equal("US-ASCII", data.first.encoding.name)
     assert_equal("UTF-8",    data.last.encoding.name)
-    assert_equal("UTF-8",    data.join.encoding.name)
+    assert_equal("UTF-8",    data.join('').encoding.name)
     assert_equal("UTF-8",    data.to_csv.encoding.name)
   end
   
@@ -233,7 +231,7 @@ class TestEncodings < Test::Unit::TestCase
     data = ["foo".force_encoding("ISO-8859-1"), "\u3042"]
     assert_equal("ISO-8859-1", data.first.encoding.name)
     assert_equal("UTF-8",      data.last.encoding.name)
-    assert_equal("UTF-8",      data.join.encoding.name)
+    assert_equal("UTF-8",      data.join('').encoding.name)
     assert_equal("UTF-8",      data.to_csv.encoding.name)
   end
 
@@ -260,9 +258,9 @@ class TestEncodings < Test::Unit::TestCase
     row_sep    = (options[:row_sep]    || "\n").encode(encoding)
     ary.map { |row|
       row.map { |field|
-        [quote_char, field.encode(encoding), quote_char].join
+        [quote_char, field.encode(encoding), quote_char].join('')
       }.join(col_sep) + row_sep
-    }.join.encode(encoding)
+    }.join('').encode(encoding)
   end
   
   def encode_for_tests(data, options = { })
@@ -276,4 +274,6 @@ class TestEncodings < Test::Unit::TestCase
       yield encoding
     end
   end
+
+  with_diffrent_ofs
 end

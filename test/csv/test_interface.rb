@@ -7,11 +7,9 @@
 #  Copyright 2005 James Edward Gray II. You can redistribute or modify this code
 #  under the terms of Ruby's license.
 
-require "test/unit"
+require_relative "base"
 
-require "csv"
-
-class TestCSVInterface < Test::Unit::TestCase
+class TestCSV::Interface < TestCSV
   def setup
     @path = File.join(File.dirname(__FILE__), "temp_test_data.csv")
 
@@ -306,4 +304,6 @@ class TestCSVInterface < Test::Unit::TestCase
     assert_equal(STDOUT, CSV.instance.instance_eval { @io })
     assert_equal(STDOUT, CSV { |new_csv| new_csv.instance_eval { @io } })
   end
+
+  with_diffrent_ofs
 end

@@ -7,11 +7,9 @@
 #  Copyright 2005 James Edward Gray II. You can redistribute or modify this code
 #  under the terms of Ruby's license.
 
-require "test/unit"
+require_relative "base"
 
-require "csv"
-
-class TestCSVHeaders < Test::Unit::TestCase
+class TestCSV::Headers < TestCSV
   def setup
     @data = <<-END_CSV.gsub(/^\s+/, "")
     first,second,third
@@ -285,4 +283,6 @@ class TestCSVHeaders < Test::Unit::TestCase
       assert_instance_of(CSV::Row, row)
     end
   end
+
+  with_diffrent_ofs
 end

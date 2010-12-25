@@ -1,3 +1,7 @@
+Sat Dec 25 15:58:55 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/csv.rb, test/csv: should not assume $, invariant.
+
 Sat Dec 25 16:08:06 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* signal.c: change rb_atomic_t definition from uchar to uint.

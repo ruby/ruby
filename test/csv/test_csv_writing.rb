@@ -7,11 +7,9 @@
 #  Copyright 2005 James Edward Gray II. You can redistribute or modify this code
 #  under the terms of Ruby's license.
 
-require "test/unit"
+require_relative "base"
 
-require "csv"
-
-class TestCSVWriting < Test::Unit::TestCase
+class TestCSV::Writing < TestCSV
   def test_writing
     [ ["\t",                      ["\t"]],
       ["foo,\"\"\"\"\"\",baz",    ["foo", "\"\"", "baz"]],
@@ -94,4 +92,6 @@ class TestCSVWriting < Test::Unit::TestCase
                   CSV.generate_line( [1, "b", nil, %Q{already "quoted"}],
                                      force_quotes: true ) )
   end
+
+  with_diffrent_ofs
 end
