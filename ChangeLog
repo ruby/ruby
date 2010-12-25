@@ -1,4 +1,10 @@
-Sat Dec 25 22:08:04 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Dec 25 22:32:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/digest/test_digest_extend.rb (TestDigestExtend#setup):
+	  should not depend on the result of previous tests
+
+	* test/with_diffent_ofs.rb (DifferentOFS::WithDifferentOFS): give
+	  name.
 
 	* test/with_diffent_ofs.rb (DifferentOFS): test suite for test
 	  suites affected by $,.
@@ -7,7 +13,7 @@ Sat Dec 25 22:08:04 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  assume $, invariant.
 
 	* test/csv/test_data_converters.rb, test/csv/test_table.rb: don't
-	  not call setup within tests.
+	  call setup within tests.
 
 Sat Dec 25 20:01:40 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 

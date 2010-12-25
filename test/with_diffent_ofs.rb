@@ -8,15 +8,12 @@ module DifferentOFS
     super
   end
 
-  mod = Module.new do
+  module WithDifferentOFS
     def with_diffrent_ofs
-      const_set(:DifferentOFS, Class.new(self).class_eval {include DifferentOFS}).name
     end
   end
-  class << self; self; end.class_eval do
-    define_method(:included) do |klass|
-      super(klass)
-      klass.extend(mod)
-    end
+  def self.included(klass)
+    super(klass)
+    klass.const_set(:DifferentOFS, Class.new(klass).class_eval {include WithDifferentOFS}).name
   end
 end
