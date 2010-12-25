@@ -1,4 +1,7 @@
-Sat Dec 25 17:32:24 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Dec 25 17:33:55 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/csv/base.rb (TestCSV.with_diffrent_ofs): give name to
+	  anonymous classes.
 
 	* lib/csv.rb (CSV#init_separators): use IO#gets with length
 	  parameter to get rid of wrong convertion.

@@ -15,6 +15,6 @@ class TestCSV < Test::Unit::TestCase
   end
 
   def self.with_diffrent_ofs
-    Class.new(self).class_eval {include DifferentOFS}
+    const_set(:DifferentOFS, Class.new(self).class_eval {include DifferentOFS}).name
   end
 end
