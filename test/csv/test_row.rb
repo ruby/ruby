@@ -10,6 +10,8 @@
 require_relative "base"
 
 class TestCSV::Row < TestCSV
+  include DifferentOFS
+
   def setup
     super
     @row = CSV::Row.new(%w{A B C A A}, [1, 2, 3, 4])

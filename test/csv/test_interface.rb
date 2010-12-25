@@ -10,6 +10,8 @@
 require_relative "base"
 
 class TestCSV::Interface < TestCSV
+  include DifferentOFS
+
   def setup
     super
     @path = File.join(File.dirname(__FILE__), "temp_test_data.csv")

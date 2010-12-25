@@ -10,6 +10,8 @@
 require_relative "base"
 
 class TestCSV::Headers < TestCSV
+  include DifferentOFS
+
   def setup
     super
     @data = <<-END_CSV.gsub(/^\s+/, "")

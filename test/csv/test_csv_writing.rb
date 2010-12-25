@@ -10,6 +10,8 @@
 require_relative "base"
 
 class TestCSV::Writing < TestCSV
+  include DifferentOFS
+
   def test_writing
     [ ["\t",                      ["\t"]],
       ["foo,\"\"\"\"\"\",baz",    ["foo", "\"\"", "baz"]],

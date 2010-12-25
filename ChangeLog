@@ -1,4 +1,6 @@
-Sat Dec 25 22:32:45 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Dec 25 22:49:10 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/csv: DifferentOFS needs to be include in each classes.
 
 	* test/digest/test_digest_extend.rb (TestDigestExtend#setup):
 	  should not depend on the result of previous tests

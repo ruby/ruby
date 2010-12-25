@@ -12,6 +12,8 @@ require "zlib"
 require_relative "base"
 
 class TestCSV::Features < TestCSV
+  include DifferentOFS
+
   TEST_CASES = [ [%Q{a,b},               ["a", "b"]],
                  [%Q{a,"""b"""},         ["a", "\"b\""]],
                  [%Q{a,"""b"},           ["a", "\"b"]],

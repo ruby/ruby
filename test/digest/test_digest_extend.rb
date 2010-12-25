@@ -1,6 +1,6 @@
 require 'test/unit'
 require 'digest'
-require_relative '../with_diffent_ofs.rb'
+require_relative '../with_different_ofs.rb'
 
 class TestDigestExtend < Test::Unit::TestCase
   include DifferentOFS

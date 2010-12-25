@@ -10,6 +10,8 @@
 require_relative "base"
 
 class TestCSV::Encodings < TestCSV
+  include DifferentOFS
+
   def setup
     super
     require 'tempfile'

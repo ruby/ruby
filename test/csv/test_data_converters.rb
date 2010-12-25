@@ -10,6 +10,8 @@
 require_relative "base"
 
 class TestCSV::DataConverters < TestCSV
+  include DifferentOFS
+
   def setup
     super
     @data   = "Numbers,:integer,1,:float,3.015"

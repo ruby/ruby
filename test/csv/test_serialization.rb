@@ -25,6 +25,7 @@ class Hash
 end
 
 class TestCSV::Serialization < TestCSV
+  include DifferentOFS
 
   ### Classes Used to Test Serialization ###
 
