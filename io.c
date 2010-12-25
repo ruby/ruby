@@ -7396,10 +7396,10 @@ select_end(VALUE arg)
 }
 #endif
 
-#ifdef HAVE_POSIX_FADVISE
 static VALUE sym_normal,   sym_sequential, sym_random,
              sym_willneed, sym_dontneed, sym_noreuse;
 
+#ifdef HAVE_POSIX_FADVISE
 struct io_advise_struct {
     int fd;
     off_t offset;
@@ -7481,6 +7481,23 @@ do_io_advise(rb_io_t *fptr, VALUE advice, off_t offset, off_t len)
 
 #endif /* HAVE_POSIX_FADVISE */
 
+static void
+advice_arg_check(VALUE advice)
+{
+    if (!SYMBOL_P(advice))
+	rb_raise(rb_eTypeError, "advice must be a Symbol");
+
+    if (advice != sym_normal &&
+	advice != sym_sequential &&
+	advice != sym_random &&
+	advice != sym_willneed &&
+	advice != sym_dontneed &&
+	advice != sym_noreuse) {
+	rb_raise(rb_eNotImpError, "Unsupported advice: :%s",
+		 RSTRING_PTR(rb_id2str(SYM2ID(advice))));
+    }
+}
+
 /*
  *  call-seq:
  *     ios.advise(advice, offset=0, len=0) -> nil
@@ -7530,8 +7547,7 @@ rb_io_advise(int argc, VALUE *argv, VALUE io)
     rb_io_t *fptr;
 
     rb_scan_args(argc, argv, "12", &advice, &offset, &len);
-    if (!SYMBOL_P(advice))
-	rb_raise(rb_eTypeError, "advice must be a Symbol");
+    advice_arg_check(advice);
 
     io = GetWriteIO(io);
     GetOpenFile(io, fptr);
@@ -10530,12 +10546,10 @@ Init_IO(void)
     sym_textmode = ID2SYM(rb_intern("textmode"));
     sym_binmode = ID2SYM(rb_intern("binmode"));
     sym_autoclose = ID2SYM(rb_intern("autoclose"));
-#ifdef HAVE_POSIX_FADVISE
     sym_normal = ID2SYM(rb_intern("normal"));
     sym_sequential = ID2SYM(rb_intern("sequential"));
     sym_random = ID2SYM(rb_intern("random"));
     sym_willneed = ID2SYM(rb_intern("willneed"));
     sym_dontneed = ID2SYM(rb_intern("dontneed"));
     sym_noreuse = ID2SYM(rb_intern("noreuse"));
-#endif
 }

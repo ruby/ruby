@@ -1763,10 +1763,15 @@ End
         end
       end
     end
+  end
+
+  def test_invalid_advise
+    feature4204 = '[ruby-dev:42887]'
+    t = make_tempfile
     %w{Normal rand glark will_need zzzzzzzzzzzz \u2609}.map(&:to_sym).each do |adv|
       [[0,0], [0, 20], [400, 2]].each do |offset, len|
         open(make_tempfile.path) do |t|
-          assert_equal(t.advise(adv, offset, len), nil)
+          assert_raise(NotImplementedError, feature4204) { t.advise(adv, offset, len) }
         end
       end
     end

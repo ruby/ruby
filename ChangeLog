@@ -1,3 +1,9 @@
+Sun Dec 26 02:31:58 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (advice_arg_check): Change argument check.
+	  Now, an unsupported advice makes NotImplementedError.
+	  [ruby-dev:42887] [Ruby 1.9-Feature#4204]
+
 Sun Dec 26 03:00:53 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/socket/extconf.rb: Fix build error which was introduced r30372.
