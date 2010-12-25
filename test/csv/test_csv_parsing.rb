@@ -216,6 +216,4 @@ class TestCSV::Parsing < TestCSV
       end
     end
   end
-
-  with_diffrent_ofs
 end

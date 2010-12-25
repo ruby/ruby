@@ -31,6 +31,7 @@ class TestCSV::Features < TestCSV
                  [%Q{"\r\n,",},          ["\r\n,", nil]] ]
 
   def setup
+    super
     @sample_data = <<-END_DATA.gsub(/^ +/, "")
     line,1,abc
     line,2,"def\nghi"
@@ -263,6 +264,4 @@ class TestCSV::Features < TestCSV
     assert(CSV::VERSION.frozen?)
     assert_match(/\A\d\.\d\.\d\Z/, CSV::VERSION)
   end
-
-  with_diffrent_ofs
 end

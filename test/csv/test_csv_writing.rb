@@ -92,6 +92,4 @@ class TestCSV::Writing < TestCSV
                   CSV.generate_line( [1, "b", nil, %Q{already "quoted"}],
                                      force_quotes: true ) )
   end
-
-  with_diffrent_ofs
 end

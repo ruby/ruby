@@ -11,6 +11,7 @@ require_relative "base"
 
 class TestCSV::Interface < TestCSV
   def setup
+    super
     @path = File.join(File.dirname(__FILE__), "temp_test_data.csv")
 
     File.open(@path, "wb") do |file|
@@ -23,6 +24,7 @@ class TestCSV::Interface < TestCSV
 
   def teardown
     File.unlink(@path)
+    super
   end
 
   ### Test Read Interface ###
@@ -304,6 +306,4 @@ class TestCSV::Interface < TestCSV
     assert_equal(STDOUT, CSV.instance.instance_eval { @io })
     assert_equal(STDOUT, CSV { |new_csv| new_csv.instance_eval { @io } })
   end
-
-  with_diffrent_ofs
 end

@@ -11,6 +11,7 @@ require_relative "base"
 
 class TestCSV::Headers < TestCSV
   def setup
+    super
     @data = <<-END_CSV.gsub(/^\s+/, "")
     first,second,third
     A,B,C
@@ -283,6 +284,4 @@ class TestCSV::Headers < TestCSV
       assert_instance_of(CSV::Row, row)
     end
   end
-
-  with_diffrent_ofs
 end

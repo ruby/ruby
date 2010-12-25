@@ -11,6 +11,7 @@ require_relative "base"
 
 class TestCSV::Encodings < TestCSV
   def setup
+    super
     require 'tempfile'
     @temp_csv_file = Tempfile.new(%w"test_csv. .csv")
     @temp_csv_path = @temp_csv_file.path
@@ -19,6 +20,7 @@ class TestCSV::Encodings < TestCSV
   
   def teardown
     @temp_csv_file.close!
+    super
   end
   
   ########################################
@@ -306,6 +308,4 @@ class TestCSV::Encodings < TestCSV
       yield encoding
     end
   end
-
-  with_diffrent_ofs
 end

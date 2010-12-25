@@ -11,6 +11,7 @@ require_relative "base"
 
 class TestCSV::DataConverters < TestCSV
   def setup
+    super
     @data   = "Numbers,:integer,1,:float,3.015"
     @parser = CSV.new(@data)
 
@@ -257,6 +258,4 @@ class TestCSV::DataConverters < TestCSV
     assert_respond_to(row, :unconverted_fields)
     assert_equal(Array.new, row.unconverted_fields)
   end
-
-  with_diffrent_ofs
 end

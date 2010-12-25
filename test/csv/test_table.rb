@@ -11,6 +11,7 @@ require_relative "base"
 
 class TestCSV::Table < TestCSV
   def setup
+    super
     @rows  = [ CSV::Row.new(%w{A B C}, [1, 2, 3]),
                CSV::Row.new(%w{A B C}, [4, 5, 6]),
                CSV::Row.new(%w{A B C}, [7, 8, 9]) ]
@@ -414,6 +415,4 @@ class TestCSV::Table < TestCSV
                                   @table.inspect.encoding ),
             "inspect() was not ASCII compatible." )
   end
-
-  with_diffrent_ofs
 end

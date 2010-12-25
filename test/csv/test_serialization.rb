@@ -151,6 +151,4 @@ class TestCSV::Serialization < TestCSV
     obj = {1 => "simple", test: Hash}
     assert_equal(obj, CSV.load(CSV.dump([obj])).first)
   end
-
-  with_diffrent_ofs
 end
