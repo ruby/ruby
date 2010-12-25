@@ -1,3 +1,8 @@
+Sat Dec 25 14:27:09 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_extract_encoding_option): accept Encoding object as
+	  encoding: optional argument.  [ruby-dev:42884]
+
 Sat Dec 25 13:37:55 2010  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* lib/minitest/*.rb: Imported minitest 2.0.2 r6093.
