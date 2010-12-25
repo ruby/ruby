@@ -92,7 +92,7 @@ typedef int int_must_be_32bit_at_least[sizeof(int) * CHAR_BIT < 32 ? -1 : 1];
 #define UMASK 0x80000000U	/* most significant w-r bits */
 #define LMASK 0x7fffffffU	/* least significant r bits */
 #define MIXBITS(u,v) ( ((u) & UMASK) | ((v) & LMASK) )
-#define TWIST(u,v) ((MIXBITS(u,v) >> 1) ^ ((v)&1U ? MATRIX_A : 0U))
+#define TWIST(u,v) ((MIXBITS((u),(v)) >> 1) ^ ((v)&1U ? MATRIX_A : 0U))
 
 enum {MT_MAX_STATE = N};
 
@@ -264,7 +264,7 @@ rb_genrand_real(void)
 #define BIGRAD ((BDIGIT_DBL)1 << BITSPERDIG)
 #define DIGSPERINT (SIZEOF_INT/SIZEOF_BDIGITS)
 #define BIGUP(x) ((BDIGIT_DBL)(x) << BITSPERDIG)
-#define BIGDN(x) RSHIFT(x,BITSPERDIG)
+#define BIGDN(x) RSHIFT((x),BITSPERDIG)
 #define BIGLO(x) ((BDIGIT)((x) & (BIGRAD-1)))
 #define BDIGMAX ((BDIGIT)-1)
 
@@ -849,8 +849,8 @@ limited_big_rand(struct MT *mt, struct RBignum *limit)
       0))
 #else
     /* SIZEOF_BDIGITS == 4 */
-# define BIG_GET32(big,i) (RBIGNUM_DIGITS(big)[i])
-# define BIG_SET32(big,i,d) (RBIGNUM_DIGITS(big)[i] = (d))
+# define BIG_GET32(big,i) (RBIGNUM_DIGITS(big)[(i)])
+# define BIG_SET32(big,i,d) (RBIGNUM_DIGITS(big)[(i)] = (d))
 #endif
   retry:
     mask = 0;
