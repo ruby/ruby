@@ -995,6 +995,10 @@ void rb_thread_reset_timer_thread(void);
 
 static int forked_child = 0;
 
+/*
+ * On old MacOS X, exec() may return ENOTSUPP if the process have multiple threads.
+ * Therefore we have to kill internal threads at once. [ruby-core: 10583]
+ */
 #define before_exec() \
     (rb_enable_interrupt(), (void)(forked_child ? 0 : (rb_thread_stop_timer_thread(), 1)))
 #define after_exec() \

@@ -1,3 +1,7 @@
+Sun Dec 26 20:28:34 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* process.c (before_exec): add small comment.
+
 Sun Dec 26 20:52:21 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb: define INET_ADDRSTRLEN as 16 if not
