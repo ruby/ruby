@@ -1,3 +1,8 @@
+Sun Dec 26 22:24:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (file_expand_path): get rid of warnings caused by
+	  -Wdeclaration-after-statement on cygwin.
+
 Sun Dec 26 20:28:34 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* process.c (before_exec): add small comment.

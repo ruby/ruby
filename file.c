@@ -3093,7 +3093,15 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
     if ((s = strrdirsep(b = buf)) != 0 && !strpbrk(s, "*?")) {
 	size_t len;
 	WIN32_FIND_DATA wfd;
+	HANDLE h;
 #ifdef __CYGWIN__
+#ifdef HAVE_CYGWIN_CONV_PATH
+	char *w32buf = NULL;
+	const int flags = CCP_POSIX_TO_WIN_A | CCP_RELATIVE;
+#else
+	char w32buf[MAXPATHLEN];
+#endif
+	const char *path;
 	ssize_t bufsize;
 	int lnk_added = 0, is_symlink = 0;
 	struct stat st;
@@ -3105,10 +3113,8 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
 		lnk_added = 1;
 	    }
 	}
-	const char *path = *buf ? buf : "/";
+	path = *buf ? buf : "/";
 #ifdef HAVE_CYGWIN_CONV_PATH
-	char *w32buf = NULL;
-	const int flags = CCP_POSIX_TO_WIN_A | CCP_RELATIVE;
 	bufsize = cygwin_conv_path(flags, path, NULL, 0);
 	if (bufsize > 0) {
 	    bufsize += len;
@@ -3119,7 +3125,6 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
 	    }
 	}
 #else
-	char w32buf[MAXPATHLEN];
 	bufsize = MAXPATHLEN;
 	if (cygwin_conv_to_win32_path(path, w32buf) == 0) {
 	    b = w32buf;
@@ -3137,7 +3142,7 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
 	}
 	*p = '/';
 #endif
-	HANDLE h = FindFirstFile(b, &wfd);
+	h = FindFirstFile(b, &wfd);
 	if (h != INVALID_HANDLE_VALUE) {
 	    FindClose(h);
 	    len = strlen(wfd.cFileName);
