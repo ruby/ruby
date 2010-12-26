@@ -1,10 +1,11 @@
 require 'rubygems'
-require 'minitest/autorun'
+require 'test/unit'
 require 'tmpdir'
 require 'fileutils'
 require 'rdoc/ri/paths'
+require_relative '../ruby/envutil'
 
-class TestRDocRIPaths < MiniTest::Unit::TestCase
+class TestRDocRIPaths < Test::Unit::TestCase
 
   def setup
     RDoc::RI::Paths.instance_variable_set :@gemdirs, %w[/nonexistent/gemdir]
@@ -39,5 +40,9 @@ class TestRDocRIPaths < MiniTest::Unit::TestCase
     assert_equal '/nonexistent/gemdir',    path.shift
   end
 
+  def test_homeless
+    bug4202 = '[ruby-core:33867]'
+    assert(assert_in_out_err([{"HOME"=>nil}, *%w"-rrdoc/ri/paths -e;"], bug4202).success?, bug4202)
+  end
 end
 

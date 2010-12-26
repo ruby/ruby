@@ -1,3 +1,8 @@
+Sun Dec 26 12:16:29 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/ri/paths.rb (RDoc::RI::Paths::HOMEDIR): no exception if
+	  HOME is not set.  [ruby-core:33867]
+
 Sun Dec 26 11:39:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (stmt): missing ripper rule.  i.e., `a::B ||= c 1'.
