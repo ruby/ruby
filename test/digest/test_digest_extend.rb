@@ -3,7 +3,7 @@ require 'digest'
 require_relative '../with_different_ofs.rb'
 
 class TestDigestExtend < Test::Unit::TestCase
-  include DifferentOFS
+  extend DifferentOFS
 
   class MyDigest < Digest::Class
     def initialize(*arg)

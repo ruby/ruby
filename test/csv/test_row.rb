@@ -10,7 +10,7 @@
 require_relative "base"
 
 class TestCSV::Row < TestCSV
-  include DifferentOFS
+  extend DifferentOFS
 
   def setup
     super

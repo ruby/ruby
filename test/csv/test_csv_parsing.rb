@@ -18,7 +18,7 @@ require_relative "base"
 # separator <tt>$/</tt>.
 #
 class TestCSV::Parsing < TestCSV
-  include DifferentOFS
+  extend DifferentOFS
 
   BIG_DATA = "123456789\n" * 1024
 

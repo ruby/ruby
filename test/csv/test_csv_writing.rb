@@ -10,7 +10,7 @@
 require_relative "base"
 
 class TestCSV::Writing < TestCSV
-  include DifferentOFS
+  extend DifferentOFS
 
   def test_writing
     [ ["\t",                      ["\t"]],

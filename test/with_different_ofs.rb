@@ -1,18 +1,16 @@
 module DifferentOFS
-  def setup
-    super
-    @ofs, $, = $,, "-"
-  end
-  def teardown
-    $, = @ofs
-    super
-  end
-
   module WithDifferentOFS
-    def with_diffrent_ofs
+    def setup
+      super
+      @ofs, $, = $,, "-"
+    end
+    def teardown
+      $, = @ofs
+      super
     end
   end
-  def self.included(klass)
+
+  def self.extended(klass)
     super(klass)
     klass.const_set(:DifferentOFS, Class.new(klass).class_eval {include WithDifferentOFS}).name
   end

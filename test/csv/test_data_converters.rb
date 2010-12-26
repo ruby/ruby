@@ -10,7 +10,7 @@
 require_relative "base"
 
 class TestCSV::DataConverters < TestCSV
-  include DifferentOFS
+  extend DifferentOFS
 
   def setup
     super
