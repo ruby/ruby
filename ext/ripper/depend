@@ -24,7 +24,7 @@ all: check
 static: check
 
 ripper.y: $(srcdir)/tools/preproc.rb $(top_srcdir)/parse.y
-	$(ECHO) extracting $@ from $<
+	$(ECHO) extracting $@ from $(top_srcdir)/parse.y
 	$(Q) $(RUBY) $(srcdir)/tools/preproc.rb $(top_srcdir)/parse.y --output=$@
 
 check: $(GEN) $(SRC1) $(SRC2)
@@ -43,5 +43,5 @@ eventids2table.c: $(srcdir)/tools/generate.rb $(SRC2)
 
 preproc: ripper.E
 ripper.E: ripper.c
-	$(ECHO) preprocessing $<
+	$(ECHO) preprocessing ripper.c
 	$(Q) $(CC) -E $(CPPFLAGS) ripper.c | $(RUBY) $(srcdir)/tools/strip.rb > $@

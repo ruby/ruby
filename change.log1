@@ -1,2 +1,0 @@
-	* ext/ripper/depend (ripper.y): fix messages with nmake.
-	  [ruby-dev:42896]

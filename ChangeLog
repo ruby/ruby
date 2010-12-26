@@ -1,3 +1,8 @@
+Sun Dec 26 22:25:07 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/ripper/depend (ripper.y): fix messages with nmake.
+	  [ruby-dev:42896]
+
 Sun Dec 26 22:24:14 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (file_expand_path): get rid of warnings caused by
