@@ -429,7 +429,7 @@ inspect_timeval_as_interval(int level, int optname, VALUE data, VALUE ret)
  * NetBSD 4 and FreeBSD 5 documented it.
  * http://cvsweb.netbsd.org/cgi-bin/cvsweb.cgi/src/share/man/man4/ip.4.diff?r1=1.16&r2=1.17
  * http://www.FreeBSD.org/cgi/cvsweb.cgi/src/share/man/man4/ip.4.diff?r1=1.37;r2=1.38
- * FreeBSD 7.0 reomved it.
+ * FreeBSD 7.0 removed it.
  * http://www.FreeBSD.org/cgi/cvsweb.cgi/src/share/man/man4/ip.4.diff?r1=1.49;r2=1.50
  *
  * RFC 1724 hack is not supported by Socket::Option#inspect because
