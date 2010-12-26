@@ -1,3 +1,9 @@
+Sun Dec 26 11:39:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (stmt): missing ripper rule.  i.e., `a::B ||= c 1'.
+	  http://twitter.com/#!/wannabe53/status/18797576396472321
+	  http://twitter.com/#!/wannabe53/status/18798416150663168
+
 Sun Dec 26 11:15:50 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/with_different_ofs.rb (DifferentOFS): should not affect

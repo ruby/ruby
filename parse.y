@@ -1159,8 +1159,14 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| primary_value tCOLON2 tCONSTANT tOP_ASGN command_call
 		    {
+		    /*%%%*/
 			yyerror("constant re-assignment");
 			$$ = 0;
+		    /*%
+			$$ = dispatch2(const_path_field, $1, $3);
+			$$ = dispatch3(opassign, $$, $4, $5);
+			$$ = dispatch1(assign_error, $$);
+		    %*/
 		    }
 		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN command_call
 		    {

@@ -10,7 +10,7 @@ class Node
     @children = nodes
   end
 
-  attr_reader :children
+  attr_reader :name, :children
 
   def to_s
     "#{@name}(#{Node.trim_nil(@children).map {|n| n.to_s }.join(',')})"
@@ -47,12 +47,14 @@ class NodeList
 end
 
 class DummyParser < Ripper
-  def hook(name)
+  def hook(*names)
     class << self; self; end.class_eval do
-      define_method(name) do |*a, &b|
-        result = super(*a, &b)
-        yield(*a)
-        result
+      names.each do |name|
+        define_method(name) do |*a, &b|
+          result = super(*a, &b)
+          yield(name, *a)
+          result
+        end
       end
     end
     self
