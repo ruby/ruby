@@ -1,3 +1,9 @@
+Sun Dec 26 23:49:47 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* win32/Makefile.sub: suppress a strange error message when RMALL
+	  found no such file.
+	* win32/rmall.bat: new.
+
 Sun Dec 26 21:23:23 2010    <kosaki.motohiro@gmail.com>
 
 	* win32/Makefile.sub: fix 'nmake clean-enc' breakage since r28322.

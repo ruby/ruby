@@ -72,7 +72,7 @@ IFCHANGE = $(COMSPEC) /C $(srcdir:/=\)\win32\ifchange.bat
 RM = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat
 RMDIR = $(COMSPEC) /C $(srcdir:/=\)\win32\rmdirs.bat
 RMDIRS = $(COMSPEC) /C $(srcdir:/=\)\win32\rmdirs.bat
-RMALL = $(COMSPEC) /C rmdir /s /q
+RMALL = $(COMSPEC) /C $(srcdir:/=\)\win32\rmall.bat
 CP = copy > nul
 MV = move > nul
 !if !defined(BASERUBY)
