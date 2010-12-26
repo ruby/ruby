@@ -32,7 +32,7 @@ static ID id_abs, id_cmp, id_convert, id_eqeq_p, id_expt, id_fdiv,
 inline static VALUE \
 f_##n(VALUE x, VALUE y)\
 {\
-  return rb_funcall(x, op, 1, y);\
+  return rb_funcall(x, (op), 1, y);\
 }
 
 #define fun1(n) \
@@ -1364,12 +1364,12 @@ nurat_to_r(VALUE self)
 }
 
 #define id_ceil rb_intern("ceil")
-#define f_ceil(x) rb_funcall(x, id_ceil, 0)
+#define f_ceil(x) rb_funcall((x), id_ceil, 0)
 
 #define id_quo rb_intern("quo")
-#define f_quo(x,y) rb_funcall(x, id_quo, 1, y)
+#define f_quo(x,y) rb_funcall((x), id_quo, 1, (y))
 
-#define f_reciprocal(x) f_quo(ONE, x)
+#define f_reciprocal(x) f_quo(ONE, (x))
 
 /*
   The algorithm here is the method described in CLISP.  Bruno Haible has
@@ -1689,13 +1689,13 @@ rb_Rational(VALUE x, VALUE y)
 }
 
 #define id_numerator rb_intern("numerator")
-#define f_numerator(x) rb_funcall(x, id_numerator, 0)
+#define f_numerator(x) rb_funcall((x), id_numerator, 0)
 
 #define id_denominator rb_intern("denominator")
-#define f_denominator(x) rb_funcall(x, id_denominator, 0)
+#define f_denominator(x) rb_funcall((x), id_denominator, 0)
 
 #define id_to_r rb_intern("to_r")
-#define f_to_r(x) rb_funcall(x, id_to_r, 0)
+#define f_to_r(x) rb_funcall((x), id_to_r, 0)
 
 /*
  * call-seq:
@@ -1866,7 +1866,7 @@ float_decode(VALUE self)
 #endif
 
 #define id_lshift rb_intern("<<")
-#define f_lshift(x,n) rb_funcall(x, id_lshift, 1, n)
+#define f_lshift(x,n) rb_funcall((x), id_lshift, 1, (n))
 
 /*
  * call-seq:
@@ -2000,16 +2000,16 @@ make_patterns(void)
 }
 
 #define id_match rb_intern("match")
-#define f_match(x,y) rb_funcall(x, id_match, 1, y)
+#define f_match(x,y) rb_funcall((x), id_match, 1, (y))
 
 #define id_aref rb_intern("[]")
-#define f_aref(x,y) rb_funcall(x, id_aref, 1, y)
+#define f_aref(x,y) rb_funcall((x), id_aref, 1, (y))
 
 #define id_post_match rb_intern("post_match")
-#define f_post_match(x) rb_funcall(x, id_post_match, 0)
+#define f_post_match(x) rb_funcall((x), id_post_match, 0)
 
 #define id_split rb_intern("split")
-#define f_split(x,y) rb_funcall(x, id_split, 1, y)
+#define f_split(x,y) rb_funcall((x), id_split, 1, (y))
 
 #include <ctype.h>
 
@@ -2097,7 +2097,7 @@ string_to_r_strict(VALUE self)
 }
 
 #define id_gsub rb_intern("gsub")
-#define f_gsub(x,y,z) rb_funcall(x, id_gsub, 2, y, z)
+#define f_gsub(x,y,z) rb_funcall((x), id_gsub, 2, (y), (z))
 
 /*
  * call-seq:
@@ -2141,7 +2141,7 @@ string_to_r(VALUE self)
 }
 
 #define id_to_r rb_intern("to_r")
-#define f_to_r(x) rb_funcall(x, id_to_r, 0)
+#define f_to_r(x) rb_funcall((x), id_to_r, 0)
 
 static VALUE
 nurat_s_convert(int argc, VALUE *argv, VALUE klass)

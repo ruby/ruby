@@ -1,3 +1,7 @@
+Sun Dec 26 09:35:07 2010  Tanaka Akira  <akr@fsij.org>
+
+	* rational.c: parenthesize macro arguments.
+
 Sun Dec 26 09:22:19 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/option.c (rb_if_indextoname): new function to abstract
