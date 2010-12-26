@@ -1,3 +1,8 @@
+Mon Dec 27 07:32:07 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* lib/optparse.rb (OptionParser#compsys): escape brackets too.
+	  [ruby-dev:42754]
+
 Mon Dec 27 01:30:08 2010  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb: add IF_NAMESIZE.

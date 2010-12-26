@@ -763,7 +763,7 @@ XXX
     to << "#compdef #{name}\n"
     to << COMPSYS_HEADER
     visit(:compsys, {}, {}) {|o, d|
-      to << %Q[  "#{o}[#{d.gsub(/\"/, '\"')}]" \\\n]
+      to << %Q[  "#{o}[#{d.gsub(/[\"\[\]]/, '\\\\\&')}]" \\\n]
     }
     to << "  '*:file:_files' && return 0\n"
   end
