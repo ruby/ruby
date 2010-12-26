@@ -1,3 +1,8 @@
+Sun Dec 26 19:37:37 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/option.c: define IFNAMSIZ if not available.
+	  fix compilation error on mingw32.  reported by nobu.
+
 Sun Dec 26 12:16:29 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/ri/paths.rb (RDoc::RI::Paths::HOMEDIR): no exception if

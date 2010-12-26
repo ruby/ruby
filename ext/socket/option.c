@@ -465,6 +465,9 @@ rb_if_indextoname(const char *succ_prefix, const char *fail_prefix, unsigned int
     else
         return snprintf(buf, len, "%s%s", succ_prefix, ifbuf);
 #else
+#   ifndef IFNAMSIZ
+#       define IFNAMSIZ (sizeof(unsigned int)*3+1)
+#   endif
     return snprintf(buf, len, "%s%u", fail_prefix, ifindex);
 #endif
 }
