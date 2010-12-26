@@ -1,3 +1,7 @@
+Mon Dec 27 07:38:07 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* misc/rb_optparse.zsh: add compdef for generator.
+
 Mon Dec 27 07:32:07 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* lib/optparse.rb (OptionParser#compsys): escape brackets too.

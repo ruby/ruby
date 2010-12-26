@@ -31,6 +31,8 @@ generate-complete-function/ruby/optparse ()
     fi
 }
 
+compdef _command generate-complete-function/ruby/optparse
+
 for cmd in "$@"; do
     generate-complete-function/ruby/optparse "$cmd"
 done
