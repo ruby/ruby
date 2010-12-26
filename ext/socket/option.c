@@ -324,7 +324,7 @@ inspect_errno(int level, int optname, VALUE data, VALUE ret)
     }
 }
 
-#if defined(IPV6_MULTICAST_IF) || defined(IPV6_MULTICAST_LOOP)
+#if defined(IPV6_MULTICAST_LOOP)
 static int
 inspect_uint(int level, int optname, VALUE data, VALUE ret)
 {
@@ -451,6 +451,21 @@ inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)
 }
 #endif
 
+/* Although the buffer size needed depends on the prefixes, "%u" may generate "4294967295".  */
+static int
+rb_if_indextoname(const char *succ_prefix, const char *fail_prefix, unsigned int ifindex, char *buf, size_t len)
+{
+#if defined(HAVE_IF_INDEXTONAME)
+    char ifbuf[IFNAMSIZ];
+    if (if_indextoname(ifindex, ifbuf) == NULL)
+        return snprintf(buf, len, "%s%u", fail_prefix, ifindex);
+    else
+        return snprintf(buf, len, "%s%s", succ_prefix, ifbuf);
+#else
+    return snprintf(buf, len, "%s%u", fail_prefix, ifindex);
+#endif
+}
+
 #if defined(IPPROTO_IP) && defined(HAVE_TYPE_STRUCT_IP_MREQ) /* 4.4BSD, GNU/Linux */
 static int
 inspect_ipv4_mreq(int level, int optname, VALUE data, VALUE ret)
@@ -475,13 +490,13 @@ inspect_ipv4_mreq(int level, int optname, VALUE data, VALUE ret)
 }
 #endif
 
-#if defined(IPPROTO_IP) && defined(HAVE_TYPE_STRUCT_IP_MREQN) && defined(HAVE_IF_INDEXTONAME) /* GNU/Linux, FreeBSD 7 */
+#if defined(IPPROTO_IP) && defined(HAVE_TYPE_STRUCT_IP_MREQN) /* GNU/Linux, FreeBSD 7 */
 static int
 inspect_ipv4_mreqn(int level, int optname, VALUE data, VALUE ret)
 {
     if (RSTRING_LEN(data) == sizeof(struct ip_mreqn)) {
         struct ip_mreqn s;
-        char addrbuf[INET_ADDRSTRLEN], ifbuf[IFNAMSIZ];
+        char addrbuf[INET_ADDRSTRLEN], ifbuf[32+IFNAMSIZ];
         memcpy((char*)&s, RSTRING_PTR(data), sizeof(s));
         if (inet_ntop(AF_INET, &s.imr_multiaddr, addrbuf, (socklen_t)sizeof(addrbuf)) == NULL)
             rb_str_cat2(ret, " invalid-address");
@@ -491,10 +506,8 @@ inspect_ipv4_mreqn(int level, int optname, VALUE data, VALUE ret)
             rb_str_catf(ret, " invalid-address");
         else
             rb_str_catf(ret, " %s", addrbuf);
-        if (if_indextoname(s.imr_ifindex, ifbuf) == NULL)
-            rb_str_catf(ret, " ifindex:%d", s.imr_ifindex);
-        else
-            rb_str_catf(ret, " %s", ifbuf);
+        rb_if_indextoname(" ", " ifindex:", s.imr_ifindex, ifbuf, sizeof(ifbuf));
+        rb_str_cat2(ret, ifbuf);
         return 1;
     }
     else {
@@ -541,22 +554,38 @@ inspect_ipv4_multicast_if(int level, int optname, VALUE data, VALUE ret)
 }
 #endif
 
-#if defined(IPPROTO_IPV6) && defined(HAVE_TYPE_STRUCT_IPV6_MREQ) && defined(HAVE_IF_INDEXTONAME) /* POSIX, RFC 3493 */
+#if defined(IPV6_MULTICAST_IF) /* POSIX, RFC 3493 */
+static int
+inspect_ipv6_multicast_if(int level, int optname, VALUE data, VALUE ret)
+{
+    if (RSTRING_LEN(data) == sizeof(int)) {
+        char ifbuf[32+IFNAMSIZ];
+        unsigned int ifindex;
+        memcpy((char*)&ifindex, RSTRING_PTR(data), sizeof(unsigned int));
+        rb_if_indextoname(" ", " ", ifindex, ifbuf, sizeof(ifbuf));
+        rb_str_cat2(ret, ifbuf);
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+#endif
+
+#if defined(IPPROTO_IPV6) && defined(HAVE_TYPE_STRUCT_IPV6_MREQ) /* POSIX, RFC 3493 */
 static int
 inspect_ipv6_mreq(int level, int optname, VALUE data, VALUE ret)
 {
     if (RSTRING_LEN(data) == sizeof(struct ipv6_mreq)) {
         struct ipv6_mreq s;
-        char addrbuf[INET6_ADDRSTRLEN], ifbuf[IFNAMSIZ];
+        char addrbuf[INET6_ADDRSTRLEN], ifbuf[32+IFNAMSIZ];
         memcpy((char*)&s, RSTRING_PTR(data), sizeof(s));
         if (inet_ntop(AF_INET6, &s.ipv6mr_multiaddr, addrbuf, (socklen_t)sizeof(addrbuf)) == NULL)
             rb_str_cat2(ret, " invalid-address");
         else
             rb_str_catf(ret, " %s", addrbuf);
-        if (if_indextoname(s.ipv6mr_interface, ifbuf) == NULL)
-            rb_str_catf(ret, " interface:%u", s.ipv6mr_interface);
-        else
-            rb_str_catf(ret, " %s", ifbuf);
+        rb_if_indextoname(" ", " interface:", s.ipv6mr_interface, ifbuf, sizeof(ifbuf));
+        rb_str_cat2(ret, ifbuf);
         return 1;
     }
     else {
@@ -779,15 +808,15 @@ sockopt_inspect(VALUE self)
               case IPV6_MULTICAST_HOPS: inspected = inspect_int(level, optname, data, ret); break;
 #            endif
 #            if defined(IPV6_MULTICAST_IF) /* POSIX */
-              case IPV6_MULTICAST_IF: inspected = inspect_uint(level, optname, data, ret); break;
+              case IPV6_MULTICAST_IF: inspected = inspect_ipv6_multicast_if(level, optname, data, ret); break;
 #            endif
 #            if defined(IPV6_MULTICAST_LOOP) /* POSIX */
               case IPV6_MULTICAST_LOOP: inspected = inspect_uint(level, optname, data, ret); break;
 #            endif
-#            if defined(IPV6_JOIN_GROUP) && defined(HAVE_IF_INDEXTONAME) /* POSIX */
+#            if defined(IPV6_JOIN_GROUP) /* POSIX */
               case IPV6_JOIN_GROUP: inspected = inspect_ipv6_mreq(level, optname, data, ret); break;
 #            endif
-#            if defined(IPV6_LEAVE_GROUP) && defined(HAVE_IF_INDEXTONAME) /* POSIX */
+#            if defined(IPV6_LEAVE_GROUP) /* POSIX */
               case IPV6_LEAVE_GROUP: inspected = inspect_ipv6_mreq(level, optname, data, ret); break;
 #            endif
 #            if defined(IPV6_UNICAST_HOPS) /* POSIX */
