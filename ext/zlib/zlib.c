@@ -1227,12 +1227,13 @@ deflate_run(VALUE args)
 }
 
 /*
- * call-seq: Zlib::Deflate.deflate(string[, level])
+ * call-seq: Zlib.deflate(string[, level])
+ *           Zlib::Deflate.deflate(string[, level])
  *
  * Compresses the given +string+. Valid values of level are
  * <tt>Zlib::NO_COMPRESSION</tt>, <tt>Zlib::BEST_SPEED</tt>,
  * <tt>Zlib::BEST_COMPRESSION</tt>, <tt>Zlib::DEFAULT_COMPRESSION</tt>, and an
- * integer from 0 to 9.
+ * integer from 0 to 9 (the default is 6).
  *
  * This method is almost equivalent to the following code:
  *
@@ -1243,7 +1244,7 @@ deflate_run(VALUE args)
  *     dst
  *   end
  *
- * TODO: what's default value of +level+?
+ * See also Zlib.inflate
  *
  */
 static VALUE
@@ -1478,7 +1479,8 @@ inflate_run(VALUE args)
 }
 
 /*
- * call-seq: Zlib::Inflate.inflate(string)
+ * call-seq: Zlib.inflate(string)
+ *           Zlib::Inflate.inflate(string)
  *
  * Decompresses +string+. Raises a Zlib::NeedDict exception if a preset
  * dictionary is needed for decompression.
@@ -1492,6 +1494,8 @@ inflate_run(VALUE args)
  *     zstream.close
  *     buf
  *   end
+ *
+ * See also Zlib.deflate
  *
  */
 static VALUE
@@ -3705,6 +3709,7 @@ Init_zlib()
 
     cDeflate = rb_define_class_under(mZlib, "Deflate", cZStream);
     rb_define_singleton_method(cDeflate, "deflate", rb_deflate_s_deflate, -1);
+    rb_define_singleton_method(mZlib, "deflate", rb_deflate_s_deflate, -1);
     rb_define_alloc_func(cDeflate, rb_deflate_s_allocate);
     rb_define_method(cDeflate, "initialize", rb_deflate_initialize, -1);
     rb_define_method(cDeflate, "initialize_copy", rb_deflate_init_copy, 1);
@@ -3716,6 +3721,7 @@ Init_zlib()
 
     cInflate = rb_define_class_under(mZlib, "Inflate", cZStream);
     rb_define_singleton_method(cInflate, "inflate", rb_inflate_s_inflate, 1);
+    rb_define_singleton_method(mZlib, "inflate", rb_inflate_s_inflate, 1);
     rb_define_alloc_func(cInflate, rb_inflate_s_allocate);
     rb_define_method(cInflate, "initialize", rb_inflate_initialize, -1);
     rb_define_method(cInflate, "inflate", rb_inflate_inflate, 1);
