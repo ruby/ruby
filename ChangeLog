@@ -1,3 +1,8 @@
+Mon Dec 27 12:14:46 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* common.mk (EXTMK_ARGS): specify to pass macro V, because nmake
+	  doesn't pass it via MAKEFLAGS.
+
 Mon Dec 27 10:33:43 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/zlib/zlib.c (Init_zlib): Add Zlib.defale and Zlib.inflate.
