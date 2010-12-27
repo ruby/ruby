@@ -10034,7 +10034,7 @@ argf_write_io(VALUE argf)
 
 /*
  *  call-seq:
- *     ARGG.write(string)   -> integer
+ *     ARGF.write(string)   -> integer
  *
  *  Writes _string_ if inplace mode.
  */
