@@ -26,6 +26,16 @@ with all sufficient information, see the ChangeLog file.
 
 * builtin classes
 
+  * ARGF
+    * new methods:
+      * ARGF.print
+      * ARGF.printf
+      * ARGF.putc
+      * ARGF.puts
+      * ARGF.read_nonblock
+      * ARGF.to_write_io
+      * ARGF.write
+
   * Array
     * extended method:
       * Array#pack supports endian modifiers

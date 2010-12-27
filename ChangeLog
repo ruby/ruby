@@ -1,3 +1,7 @@
+Tue Dec 28 07:17:11 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* NEWS: add ARGF.write and so on.
+
 Tue Dec 28 07:12:38 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* NEWS: add new magic-comment. (warn-indent) [ruby-core:25442]
