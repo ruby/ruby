@@ -1,3 +1,8 @@
+Tue Dec 28 04:32:37 2010  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/fiddle/extconf.rb: check for windows.h while building fiddle.
+	  Thanks Jon Forums! [ruby-core:33923]
+
 Tue Dec 28 01:45:12 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* NEWS: Add Zlib.deflate and Zlib.inflate.
