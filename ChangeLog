@@ -1,3 +1,7 @@
+Tue Dec 28 07:37:38 2010  Tanaka Akira  <akr@fsij.org>
+
+	* ruby.c: parenthesize macro arguments.
+
 Tue Dec 28 07:17:11 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* NEWS: add ARGF.write and so on.
