@@ -1,7 +1,4 @@
 @echo off
-::: Don't set environment variable in batch file other than autoexec.bat
-::: to avoid "Out of environment space" problem on Windows 95/98.
-::: set TMPMAKE=~tmp~.mak
 
 echo> ~tmp~.mak ####
 echo>> ~tmp~.mak conf = %0
