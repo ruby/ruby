@@ -118,6 +118,9 @@ with all sufficient information, see the ChangeLog file.
   interpretation of UTS #18.
   http://www.unicode.org/reports/tr18/
 
+* Turning on/off indentation warnings with directives.
+  ("# -*- warn-indent: true -*-" / "# -*- warn-indent: false -*-")
+
 === Compatibility issues (excluding feature bug fixes)
 
 * Kernel#respond_to?
