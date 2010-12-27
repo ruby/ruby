@@ -104,6 +104,11 @@ with all sufficient information, see the ChangeLog file.
   * new logging directive:
     * %{remote}p for remote (client) port number.
 
+* zlib
+  * new methods:
+    * Zlib.deflate
+    * Zlib.inflate
+
 === Language changes
 
 * Regexps now support Unicode 6.0. (new characters and scripts)

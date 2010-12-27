@@ -1,3 +1,8 @@
+Tue Dec 28 01:45:12 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* NEWS: Add Zlib.deflate and Zlib.inflate.
+	  [ruby-dev:42833]
+
 Mon Dec 27 21:22:33 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* win32/configure.bat: Remove obsoleted conding rule. Now, we
@@ -18,7 +23,7 @@ Mon Dec 27 12:14:46 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Mon Dec 27 10:33:43 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* ext/zlib/zlib.c (Init_zlib): Add Zlib.defale and Zlib.inflate.
+	* ext/zlib/zlib.c (Init_zlib): Add Zlib.deflate and Zlib.inflate.
 	  [ruby-dev:42833]
 
 Mon Dec 27 07:38:07 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
