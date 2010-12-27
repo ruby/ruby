@@ -4,12 +4,14 @@
 
 == Requirement
 
-(1) Visual C++ 6.0 or later.
+(1) Windows 2000 or later (NT based kernel).
+
+(2) Visual C++ 6.0 or later.
 
     Note: if you want to build x64 or ia64 version, use native compiler for
           x64/ia64.
 
-(2) Please set environment variable (({INCLUDE})), (({LIB})), (({PATH}))
+(3) Please set environment variable (({INCLUDE})), (({LIB})), (({PATH}))
     to run required commands properly from the command line.
 
     Note: building ruby requires following commands.
@@ -18,12 +20,12 @@
      * lib
      * dumpbin
 
-(3) If you want to build from SVN source, following commands are required.
+(4) If you want to build from SVN source, following commands are required.
      * bison
      * sed
      * ruby 1.8
 
-(4) If you want built binaries to run on Windows 95 series (including
+(5) If you want built binaries to run on Windows 95 series (including
     98 and Me), you need unicows.lib at compile time, and unicows.dll
     at run time.
 

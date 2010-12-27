@@ -1,3 +1,7 @@
+Mon Dec 27 15:22:23 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/README.win32: note to need NT based OS to build ruby.
+
 Mon Dec 27 12:14:46 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* common.mk (EXTMK_ARGS): specify to pass macro V, because nmake
