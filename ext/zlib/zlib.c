@@ -2852,7 +2852,7 @@ rb_gzfile_ecopts(struct gzfile *gz, VALUE opts)
  * Zlib::GzipWriter is a class for writing gzipped files.  GzipWriter should
  * be used with an instance of IO, or IO-like, object.
  *
- * For example:
+ * Following two example generate the same result.
  *
  *   Zlib::GzipWriter.open('hoge.gz') do |gz|
  *     gz.write 'jugemu jugemu gokou no surikire...'
@@ -2864,8 +2864,14 @@ rb_gzfile_ecopts(struct gzfile *gz, VALUE opts)
  *     gz.close
  *   end
  *
- *   # TODO: test these.  Are they equivalent?  Can GzipWriter.new take a
- *   # block?
+ * To make like gzip(1) does, run following:
+ *
+ *   orig = 'hoge.txt'
+ *   Zlib::GzipWriter.open('hoge.gz') do |gz|
+ *     gz.mtime = File.mtime(orig)
+ *     gz.orig_name = orig
+ *     gz.write IO.binread(orig)
+ *   end
  *
  * NOTE: Due to the limitation of Ruby's finalizer, you must explicitly close
  * GzipWriter objects by Zlib::GzipWriter#close etc.  Otherwise, GzipWriter
