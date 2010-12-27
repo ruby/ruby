@@ -169,7 +169,13 @@ $(CPU) = $(PROCESSOR_LEVEL)
 	@echo $(CPU) = 6>>$(MAKEFILE)
 
 -epilogue-: nul
+!if exist(confargs.c)
+	@$(APPEND)
+	@$(CPP) confargs.c 2>&1 | findstr "! =" >> $(MAKEFILE)
+	@del confargs.c
+!endif
 	@type << >>$(MAKEFILE)
+
 # OS = $(OS)
 # RUBY_INSTALL_NAME = ruby
 # RUBY_SO_NAME = $$(RT)-$$(RUBY_INSTALL_NAME)$$(MAJOR)$$(MINOR)
