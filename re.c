@@ -21,8 +21,8 @@ VALUE rb_eRegexpError;
 typedef char onig_errmsg_buffer[ONIG_MAX_ERROR_MESSAGE_LEN];
 #define errcpy(err, msg) strlcpy((err), (msg), ONIG_MAX_ERROR_MESSAGE_LEN)
 
-#define BEG(no) regs->beg[no]
-#define END(no) regs->end[no]
+#define BEG(no) (regs->beg[(no)])
+#define END(no) (regs->end[(no)])
 
 #if 'a' == 97   /* it's ascii */
 static const char casetable[] = {
@@ -3282,7 +3282,7 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
     rb_encoding *str_enc = rb_enc_get(str);
     rb_encoding *src_enc = rb_enc_get(src);
     int acompat = rb_enc_asciicompat(str_enc);
-#define ASCGET(s,e,cl) (acompat ? (*cl=1,ISASCII(s[0])?s[0]:-1) : rb_enc_ascget(s, e, cl, str_enc))
+#define ASCGET(s,e,cl) (acompat ? (*(cl)=1,ISASCII((s)[0])?(s)[0]:-1) : rb_enc_ascget((s), (e), (cl), str_enc))
 
     p = s = RSTRING_PTR(str);
     e = s + RSTRING_LEN(str);
