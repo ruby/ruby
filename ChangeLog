@@ -1,3 +1,7 @@
+Wed Dec 29 07:22:15 2010  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rake/rdoctask.rb: Deprecate in favor of rdoc/task.
+
 Wed Dec 29 07:07:06 2010  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc: Import RDoc 3.1
