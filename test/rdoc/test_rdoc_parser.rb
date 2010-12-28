@@ -28,6 +28,11 @@ class TestRDocParser < MiniTest::Unit::TestCase
     refute @RP.binary?(file_name)
   end
 
+  def test_class_binary_large_japanese_rdoc
+    file_name = File.expand_path '../test.ja.large.rdoc', __FILE__
+    assert !@RP.binary?(file_name)
+  end
+
   def test_class_binary_japanese_rdoc
     skip "Encoding not implemented" unless Object.const_defined? :Encoding
 

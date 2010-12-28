@@ -53,6 +53,9 @@ require 'rake/tasklib'
 #
 # Simple Example:
 #
+#   gem 'rdoc'
+#   require 'rdoc/task'
+#
 #   RDoc::Task.new do |rd|
 #     rd.main = "README.rdoc"
 #     rd.rdoc_files.include("README.rdoc", "lib/**/*.rb")
@@ -66,6 +69,9 @@ require 'rake/tasklib'
 # You may wish to give the task a different name, such as if you are
 # generating two sets of documentation.  For instance, if you want to have a
 # development set of documentation including private methods:
+#
+#   gem 'rdoc'
+#   require 'rdoc/task'
 #
 #   RDoc::Task.new :rdoc_dev do |rd|
 #     rd.main = "README.doc"
@@ -81,6 +87,9 @@ require 'rake/tasklib'
 # <tt>:rerdoc</tt> options, you can customize the task names to your liking.
 #
 # For example:
+#
+#   gem 'rdoc'
+#   require 'rdoc/task'
 #
 #   RDoc::Task.new(:rdoc => "rdoc", :clobber_rdoc => "rdoc:clean",
 #                  :rerdoc => "rdoc:force")
@@ -117,6 +126,11 @@ class RDoc::Task < Rake::TaskLib
   attr_accessor :template
 
   ##
+  # Name of format generator (--fmt) used by rdoc. (defaults to rdoc's default)
+
+  attr_accessor :generator
+
+  ##
   # List of files to be included in the rdoc generation. (default is [])
 
   attr_accessor :rdoc_files
@@ -151,9 +165,25 @@ class RDoc::Task < Rake::TaskLib
     @main = nil
     @title = nil
     @template = nil
+    @generator = nil
     @options = []
     yield self if block_given?
     define
+  end
+
+  ##
+  # All source is inline now.  This method is deprecated
+
+  def inline_source() # :nodoc:
+    warn "RDoc::Task#inline_source is deprecated"
+    true
+  end
+
+  ##
+  # All source is inline now.  This method is deprecated
+
+  def inline_source=(value) # :nodoc:
+    warn "RDoc::Task#inline_source is deprecated"
   end
 
   ##
@@ -201,9 +231,10 @@ class RDoc::Task < Rake::TaskLib
   def option_list
     result = @options.dup
     result << "-o"      << @rdoc_dir
-    result << "--main"  << main     if main
-    result << "--title" << title    if title
-    result << "-T"      << template if template
+    result << "--main"  << main      if main
+    result << "--title" << title     if title
+    result << "-T"      << template  if template
+    result << '-f'      << generator if generator
     result
   end
 

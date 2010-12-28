@@ -371,7 +371,7 @@ class RDoc::Parser::C < RDoc::Parser
 
   def find_body(class_name, meth_name, meth_obj, body, quiet = false)
     case body
-    when %r%((?>/\*.*?\*/\s*))
+    when %r%((?>/\*.*?\*/\s*)?)
             ((?:(?:static|SWIGINTERN)\s+)?
              (?:intern\s+)?VALUE\s+#{meth_name}
              \s*(\([^)]*\))([^;]|$))%xm then
@@ -547,7 +547,7 @@ class RDoc::Parser::C < RDoc::Parser
     # with ARGF at the same indent, but that are after the first description
     # paragraph.
 
-    if comment =~ /call-seq:(.*?[^\s\*].*?)^\s*\*?\s*$/m then
+    if comment =~ /call-seq:(.*?(?:\S|\*\/?).*?)^\s*(?:\*\/?)?\s*$/m then
       all_start, all_stop = $~.offset(0)
       seq_start, seq_stop = $~.offset(1)
 

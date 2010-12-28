@@ -9,6 +9,11 @@ class TestRDocOptions < MiniTest::Unit::TestCase
 
   def setup
     @options = RDoc::Options.new
+    @generators = RDoc::RDoc::GENERATORS.dup
+  end
+
+  def teardown
+    RDoc::RDoc::GENERATORS.replace @generators
   end
 
   def test_check_files
@@ -45,6 +50,20 @@ file 'unreadable' not readable
     skip "Encoding not implemented" unless Object.const_defined? :Encoding
 
     assert_equal Encoding.default_external, @options.encoding
+  end
+
+  def test_generator_descriptions
+    # HACK autotest/isolate should take care of this
+    RDoc::RDoc::GENERATORS.clear
+    RDoc::RDoc::GENERATORS['darkfish'] = RDoc::Generator::Darkfish
+    RDoc::RDoc::GENERATORS['ri']       = RDoc::Generator::RI
+
+    expected = <<-EXPECTED.chomp
+  darkfish - HTML generator, written by Michael Granger
+  ri       - creates ri data files
+    EXPECTED
+
+    assert_equal expected, @options.generator_descriptions
   end
 
   def test_parse_dash_p
@@ -178,6 +197,27 @@ file 'unreadable' not readable
     assert_equal 1, out.scan(/ri generator options:/).  length
   end
 
+  def test_parse_help_extra_generator
+    RDoc::RDoc::GENERATORS['test'] = Class.new do
+      def self.setup_options options
+        op = options.option_parser
+
+        op.separator 'test generator options:'
+      end
+    end
+
+    out, = capture_io do
+      begin
+        @options.parse %w[--help]
+      rescue SystemExit
+      end
+    end
+
+    assert_equal 1, out.scan(/HTML generator options:/).length
+    assert_equal 1, out.scan(/ri generator options:/).  length
+    assert_equal 1, out.scan(/test generator options:/).length
+  end
+
   def test_parse_ignore_invalid
     out, err = capture_io do
       @options.parse %w[--ignore-invalid --bogus]
@@ -278,12 +318,13 @@ file 'unreadable' not readable
   end
 
   def test_setup_generator
-    test_generator = Object.new
-    def test_generator.setup_options(op)
-      @op = op
-    end
+    test_generator = Class.new do
+      def self.setup_options op
+        @op = op
+      end
 
-    def test_generator.op() @op end
+      def self.op() @op end
+    end
 
     RDoc::RDoc::GENERATORS['TestGenerator'] = test_generator
 
@@ -293,6 +334,8 @@ file 'unreadable' not readable
     assert_equal [test_generator], @options.generator_options
 
     assert_equal @options, test_generator.op
+  ensure
+    RDoc::RDoc::GENERATORS.delete 'TestGenerator'
   end
 
 end

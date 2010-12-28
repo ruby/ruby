@@ -30,7 +30,7 @@ class TestRDocEncoding < MiniTest::Unit::TestCase
     expected.gsub!("\n", "\r\n") if RUBY_VERSION =~ /^1.9/ && RUBY_PLATFORM =~ /mswin|mingw/
 
     contents = RDoc::Encoding.read_file @tempfile.path, Encoding::UTF_8
-    assert_equal expected, contents
+    assert_equal "hi everybody", contents
     assert_equal Encoding::UTF_8, contents.encoding
   end
 
@@ -46,7 +46,7 @@ class TestRDocEncoding < MiniTest::Unit::TestCase
 
     contents = RDoc::Encoding.read_file @tempfile.path, Encoding::UTF_8
     assert_equal Encoding::UTF_8, contents.encoding
-    assert_equal "# coding: ISO-8859-1\nhi \u00e9verybody", contents.sub("\r", '')
+    assert_equal "hi \u00e9verybody", contents.sub("\r", '')
   end
 
   def test_class_read_file_encoding_fancy
@@ -62,7 +62,7 @@ class TestRDocEncoding < MiniTest::Unit::TestCase
     expected.gsub!("\n", "\r\n") if RUBY_VERSION =~ /^1.9/ && RUBY_PLATFORM =~ /win32|mingw32/
 
     contents = RDoc::Encoding.read_file @tempfile.path, Encoding::UTF_8
-    assert_equal expected, contents
+    assert_equal "hi everybody", contents
     assert_equal Encoding::UTF_8, contents.encoding
   end
 
@@ -115,6 +115,20 @@ class TestRDocEncoding < MiniTest::Unit::TestCase
     assert_equal Encoding::UTF_8, s.encoding
   end
 
+  def test_class_set_encoding_strip
+    s = "# coding: UTF-8\n# more comments"
+
+    RDoc::Encoding.set_encoding s
+
+    assert_equal "# more comments", s
+
+    s = "#!/bin/ruby\n# coding: UTF-8\n# more comments"
+
+    RDoc::Encoding.set_encoding s
+
+    assert_equal "# more comments", s
+  end
+
   def test_class_set_encoding_bad
     skip "Encoding not implemented" unless Object.const_defined? :Encoding
 
@@ -139,6 +153,13 @@ class TestRDocEncoding < MiniTest::Unit::TestCase
     assert_raises ArgumentError do
       RDoc::Encoding.set_encoding "# -*- encoding: undecided -*-\n"
     end
+  end
+
+  def test_sanity
+    skip "Encoding not implemented" unless Object.const_defined? :Encoding
+
+    assert_equal Encoding::US_ASCII, ''.encoding,
+                 'If this file is not ASCII tests may incorrectly pass'
   end
 
 end

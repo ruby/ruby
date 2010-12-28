@@ -610,7 +610,7 @@ Options may also be set in the 'RI' environment variable.
       end
 
       if class_methods or instance_methods or not klass.constants.empty? then
-        out << RDoc::Markup::Rule.new
+        out << RDoc::Markup::Rule.new(1)
       end
 
       unless klass.constants.empty? then

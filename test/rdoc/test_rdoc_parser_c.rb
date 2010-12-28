@@ -532,6 +532,46 @@ Init_Foo(void) {
     assert_equal "VALUE\nother_function() ", code
   end
 
+  def test_find_body_2
+    content = <<-CONTENT
+/* Copyright (C) 2010  Sven Herzberg
+ *
+ * This file is free software; the author(s) gives unlimited
+ * permission to copy and/or distribute it, with or without
+ * modifications, as long as this notice is preserved.
+ */
+
+#include <ruby.h>
+
+static VALUE
+wrap_initialize (VALUE  self)
+{
+  return self;
+}
+
+/* */
+static VALUE
+wrap_shift (VALUE self,
+            VALUE arg)
+{
+  return self;
+}
+
+void
+init_gi_repository (void)
+{
+  VALUE mTest = rb_define_module ("Test");
+  VALUE cTest = rb_define_class_under (mTest, "Test", rb_cObject);
+
+  rb_define_method (cTest, "initialize", wrap_initialize, 0);
+  rb_define_method (cTest, "shift", wrap_shift, 0);
+}
+    CONTENT
+
+    klass = util_get_class content, 'cTest'
+    assert_equal 2, klass.method_list.length
+  end
+
   def test_find_body_define
     content = <<-EOF
 /*
@@ -614,6 +654,31 @@ Init_Foo(void) {
  *
  * Otherwise, returns a +Date+ for the commercial week year, commercial week,
  * and commercial week day given. Ignores the 4th argument.
+ */
+
+    COMMENT
+
+    parser = util_parser ''
+    method_obj = RDoc::AnyMethod.new nil, 'blah'
+
+    parser.find_modifiers comment, method_obj
+
+    expected = <<-CALL_SEQ.chomp
+commercial() -> Date <br />
+commercial(cwyear, cweek=41, cwday=5, sg=nil) -> Date [ruby 1.8] <br />
+commercial(cwyear, cweek=1, cwday=1, sg=nil) -> Date [ruby 1.9]
+ 
+    CALL_SEQ
+
+    assert_equal expected, method_obj.call_seq
+  end
+
+  def test_find_modifiers_call_seq_no_blank
+    comment = <<-COMMENT
+/* call-seq:
+ *   commercial() -> Date <br />
+ *   commercial(cwyear, cweek=41, cwday=5, sg=nil) -> Date [ruby 1.8] <br />
+ *   commercial(cwyear, cweek=1, cwday=1, sg=nil) -> Date [ruby 1.9]
  */
 
     COMMENT

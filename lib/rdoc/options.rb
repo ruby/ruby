@@ -241,6 +241,32 @@ class RDoc::Options
   end
 
   ##
+  # Returns a properly-space list of generators and their descriptions.
+
+  def generator_descriptions
+    lengths = []
+
+    generators = RDoc::RDoc::GENERATORS.map do |name, generator|
+      lengths << name.length
+
+      description = generator::DESCRIPTION if
+        generator.const_defined? :DESCRIPTION
+
+      [name, description]
+    end
+
+    longest = lengths.max
+
+    generators.sort.map do |name, description|
+      if description then
+        "  %-*s - %s" % [longest, name, description]
+      else
+        "  #{name}"
+      end
+    end.join "\n"
+  end
+
+  ##
   # Parse command line options.
 
   def parse(argv)
@@ -274,8 +300,9 @@ Usage: #{opt.program_name} [options] [names...]
   will make rdoc show hashes in method links by default.  Command-line options
   always will override those in RDOCOPT.
 
-  - Darkfish creates frameless HTML output by Michael Granger.
-  - ri creates ri data files
+  Available formatters:
+
+#{generator_descriptions}
 
   RDoc understands the following file formats:
 

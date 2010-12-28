@@ -541,12 +541,12 @@ class RDoc::RubyLex
       catch(:RET) do
         if @lex_state == EXPR_ARG
           if @space_seen and peek(0) =~ /[0-9]/
-            throw :RET, identify_number
+            throw :RET, identify_number(op)
           else
             @lex_state = EXPR_BEG
           end
         elsif @lex_state != EXPR_END and peek(0) =~ /[0-9]/
-          throw :RET, identify_number
+          throw :RET, identify_number(op)
         else
           @lex_state = EXPR_BEG
         end
@@ -1010,10 +1010,10 @@ class RDoc::RubyLex
     identify_string(lt, @quoted)
   end
 
-  def identify_number
+  def identify_number(op = "")
     @lex_state = EXPR_END
 
-    num = ''
+    num = op
 
     if peek(0) == "0" && peek(1) !~ /[.eE]/
       num << getc

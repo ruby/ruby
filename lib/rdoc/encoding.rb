@@ -60,8 +60,6 @@ module RDoc::Encoding
   # Sets the encoding of +string+ based on the magic comment
 
   def self.set_encoding string
-    return unless Object.const_defined? :Encoding
-
     first_line = string[/\A(?:#!.*\n)?.*\n/]
 
     name = case first_line
@@ -69,6 +67,10 @@ module RDoc::Encoding
            when /\b(?:en)?coding[=:]\s*([^\s;]+)/i   then $1
            else                                           return
            end
+
+    string.sub! first_line, ''
+
+    return unless Object.const_defined? :Encoding
 
     enc = Encoding.find name
     string.force_encoding enc if enc

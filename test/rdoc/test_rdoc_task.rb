@@ -8,6 +8,26 @@ class TestRDocTask < MiniTest::Unit::TestCase
     Rake::Task.clear
   end
 
+  def test_inline_source
+    t = RDoc::Task.new
+
+    _, err = capture_io do
+      assert t.inline_source
+    end
+
+    assert_equal "RDoc::Task#inline_source is deprecated\n", err
+
+    _, err = capture_io do
+      t.inline_source = false
+    end
+
+    assert_equal "RDoc::Task#inline_source is deprecated\n", err
+
+    capture_io do
+      assert t.inline_source
+    end
+  end
+
   def test_tasks_creation
     RDoc::Task.new
     assert Rake::Task[:rdoc]
@@ -21,6 +41,14 @@ class TestRDocTask < MiniTest::Unit::TestCase
     assert Rake::Task[:clobber_rdoc_dev]
     assert Rake::Task[:rerdoc_dev]
     assert_equal :rdoc_dev, rd.name
+  end
+
+  def test_generator_option
+    rdoc_task = RDoc::Task.new do |rd|
+      rd.generator = "ri"
+    end
+
+    assert_equal %w[-o html -f ri], rdoc_task.option_list
   end
 
   def test_tasks_creation_with_custom_name_string

@@ -19,7 +19,17 @@ module RDoc::RI::Paths
   SYSDIR  = File.join base, "system"
   SITEDIR = File.join base, "site"
 
-  HOMEDIR = File.expand_path('~/.rdoc') rescue nil
+  homedir = begin
+              File.expand_path('~')
+            rescue ArgumentError
+            end
+
+  homedir ||= ENV['HOME'] ||
+              ENV['USERPROFILE'] || ENV['HOMEPATH'] # for 1.8 compatibility
+
+  HOMEDIR = if homedir then
+              File.join homedir, ".rdoc"
+            end
   #:startdoc:
 
   @gemdirs = nil

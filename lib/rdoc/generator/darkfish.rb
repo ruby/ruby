@@ -64,6 +64,11 @@ class RDoc::Generator::Darkfish
   VERSION = '2'
 
   ##
+  # Description of this generator
+
+  DESCRIPTION = 'HTML generator, written by Michael Granger'
+
+  ##
   # Initialize a few instance variables before we start
 
   def initialize options

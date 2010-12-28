@@ -24,6 +24,7 @@ class RDoc::Stats
     @files_so_far = 0
     @num_files = num_files
     @fully_documented = nil
+    @percent_doc = nil
 
     @start = Time.now
 
@@ -215,7 +216,9 @@ class RDoc::Stats
         report << nil
 
         cm.each_constant do |constant|
-          next if constant.documented?
+          # TODO constant aliases are listed in the summary but not reported
+          # figure out what to do here
+          next if constant.documented? || constant.is_alias_for
           report << "  # in file #{constant.file.full_name}"
           report << "  #{constant.name} = nil"
         end
@@ -255,22 +258,36 @@ class RDoc::Stats
   def summary
     calculate
 
+    num_width = [@num_files, @num_items].max.to_s.length
+    nodoc_width = [
+      @undoc_attributes,
+      @undoc_classes,
+      @undoc_constants,
+      @undoc_items,
+      @undoc_methods,
+      @undoc_modules,
+    ].max.to_s.length
+
     report = []
-    report << 'Files:      %5d' % @num_files
+    report << 'Files:      %*d' % [num_width, @num_files]
+
     report << nil
-    report << 'Classes:    %5d (%5d undocumented)' % [@num_classes,
-                                                      @undoc_classes]
-    report << 'Modules:    %5d (%5d undocumented)' % [@num_modules,
-                                                      @undoc_modules]
-    report << 'Constants:  %5d (%5d undocumented)' % [@num_constants,
-                                                     @undoc_constants]
-    report << 'Attributes: %5d (%5d undocumented)' % [@num_attributes,
-                                                      @undoc_attributes]
-    report << 'Methods:    %5d (%5d undocumented)' % [@num_methods,
-                                                      @undoc_methods]
+
+    report << 'Classes:    %*d (%*d undocumented)' % [
+      num_width, @num_classes, nodoc_width, @undoc_classes]
+    report << 'Modules:    %*d (%*d undocumented)' % [
+      num_width, @num_modules, nodoc_width, @undoc_modules]
+    report << 'Constants:  %*d (%*d undocumented)' % [
+      num_width, @num_constants, nodoc_width, @undoc_constants]
+    report << 'Attributes: %*d (%*d undocumented)' % [
+      num_width, @num_attributes, nodoc_width, @undoc_attributes]
+    report << 'Methods:    %*d (%*d undocumented)' % [
+      num_width, @num_methods, nodoc_width, @undoc_methods]
+
     report << nil
-    report << 'Total:      %5d (%5d undocumented)' % [@num_items,
-                                                      @undoc_items]
+
+    report << 'Total:      %*d (%*d undocumented)' % [
+      num_width, @num_items, nodoc_width, @undoc_items]
 
     report << '%6.2f%% documented' % @percent_doc if @percent_doc
     report << nil

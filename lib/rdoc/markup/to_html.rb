@@ -27,6 +27,11 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   attr_reader :list # :nodoc:
 
   ##
+  # Path to this document for relative links
+
+  attr_accessor :from_path
+
+  ##
   # Converts a target url to one that is relative to a given path
 
   def self.gen_relative_url(path, target)
@@ -59,6 +64,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
     @th = nil
     @in_list_entry = nil
     @list = nil
+    @from_path = ''
 
     # external hyperlinks
     @markup.add_special(/((link:|https?:|mailto:|ftp:|www\.)\S+\w)/, :HYPERLINK)
@@ -79,8 +85,8 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   end
 
   ##
-  # Generate a hyperlink for url, labeled with text. Handle the
-  # special cases for img: and link: described under handle_special_HYPERLINK
+  # Generate a hyperlink for +url+, labeled with +text+.  Handles the special
+  # cases for img: and link: described under handle_special_HYPERLINK
 
   def gen_url(url, text)
     if url =~ /([A-Za-z]+):(.*)/ then

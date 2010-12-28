@@ -297,6 +297,11 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
     assert_equal '&lt;&gt;', @to.convert_string('<>')
   end
 
+  def test_gen_url
+    assert_equal '<a href="example">example</a>',
+                 @to.gen_url('link:example', 'example')
+  end
+
   def test_list_verbatim_2
     str = "* one\n    verb1\n    verb2\n* two\n"
 

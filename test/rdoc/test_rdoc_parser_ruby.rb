@@ -32,6 +32,66 @@ class TestRDocParserRuby < MiniTest::Unit::TestCase
     @tempfile2.close
   end
 
+  def test_extract_call_seq
+    m = RDoc::AnyMethod.new nil, 'm'
+    p = util_parser ''
+
+    comment = <<-COMMENT
+  # call-seq:
+  #   bla => true or false
+  #
+  # moar comment
+    COMMENT
+
+    p.extract_call_seq comment, m
+
+    assert_equal "bla => true or false\n", m.call_seq
+  end
+
+  def test_extract_call_seq_blank
+    m = RDoc::AnyMethod.new nil, 'm'
+    p = util_parser ''
+
+    comment = <<-COMMENT
+  # call-seq:
+  #   bla => true or false
+  #
+    COMMENT
+
+    p.extract_call_seq comment, m
+
+    assert_equal "bla => true or false\n", m.call_seq
+  end
+
+  def test_extract_call_seq_no_blank
+    m = RDoc::AnyMethod.new nil, 'm'
+    p = util_parser ''
+
+    comment = <<-COMMENT
+  # call-seq:
+  #   bla => true or false
+    COMMENT
+
+    p.extract_call_seq comment, m
+
+    assert_equal "bla => true or false\n", m.call_seq
+  end
+
+  def test_extract_call_seq_undent
+    m = RDoc::AnyMethod.new nil, 'm'
+    p = util_parser ''
+
+    comment = <<-COMMENT
+  # call-seq:
+  #   bla => true or false
+  # moar comment
+    COMMENT
+
+    p.extract_call_seq comment, m
+
+    assert_equal "bla => true or false\nmoar comment\n", m.call_seq
+  end
+
   def test_get_symbol_or_name
     util_parser "* & | + 5 / 4"
 
@@ -501,6 +561,35 @@ end
     blah = foo.method_list.first
     assert_equal 'Foo#blah', blah.full_name
     assert_equal @top_level, blah.file
+  end
+
+  def test_parse_class_multi_ghost_methods
+    util_parser <<-'CLASS'
+class Foo
+  ##
+  # :method: one
+  #
+  # my method
+
+  ##
+  # :method: two
+  #
+  # my method
+
+  [:one, :two].each do |t|
+    eval("def #{t}; \"#{t}\"; end")
+  end
+end
+    CLASS
+
+    tk = @parser.get_tk
+
+    @parser.parse_class @top_level, RDoc::Parser::Ruby::NORMAL, tk, ''
+
+    foo = @top_level.classes.first
+    assert_equal 'Foo', foo.full_name
+
+    assert_equal 2, foo.method_list.length
   end
 
   def test_parse_class_nested_superclass

@@ -118,7 +118,8 @@ class RDoc::ClassModule < RDoc::Context
   def comment= comment
     return if comment.empty?
 
-    comment = "#{@comment}\n---\n#{normalize_comment comment}" unless
+    comment = normalize_comment comment
+    comment = "#{@comment}\n---\n#{comment}" unless
       @comment.empty?
 
     super
