@@ -308,6 +308,7 @@ static int parser_yyerror(struct parser_params*, const char*);
 #define ruby__end__seen		(parser->parser_ruby__end__seen)
 #define ruby_sourceline		(parser->parser_ruby_sourceline)
 #define ruby_sourcefile		(parser->parser_ruby_sourcefile)
+#define current_enc		(parser->enc)
 #define yydebug			(parser->parser_yydebug)
 #ifdef RIPPER
 #else
@@ -586,8 +587,9 @@ static void ripper_compile_error(struct parser_params*, const char *fmt, ...);
 # define compile_error ripper_compile_error
 # define PARSER_ARG parser,
 #else
-# define compile_error parser->nerr++,rb_compile_error
-# define PARSER_ARG ruby_sourcefile, ruby_sourceline,
+# define rb_compile_error rb_compile_error_with_enc
+# define compile_error parser->nerr++,rb_compile_error_with_enc
+# define PARSER_ARG ruby_sourcefile, ruby_sourceline, current_enc,
 #endif
 
 /* Older versions of Yacc set YYMAXDEPTH to a very low value by default (150,

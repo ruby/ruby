@@ -88,7 +88,19 @@ compile_snprintf(char *buf, long len, const char *file, int line, const char *fm
     }
 }
 
-static void err_append(const char*);
+static void err_append(const char*, rb_encoding *);
+
+void
+rb_compile_error_with_enc(const char *file, int line, void *enc, const char *fmt, ...)
+{
+    va_list args;
+    char buf[BUFSIZ];
+
+    va_start(args, fmt);
+    compile_snprintf(buf, BUFSIZ, file, line, fmt, args);
+    va_end(args);
+    err_append(buf, (rb_encoding *)enc);
+}
 
 void
 rb_compile_error(const char *file, int line, const char *fmt, ...)
@@ -99,7 +111,7 @@ rb_compile_error(const char *file, int line, const char *fmt, ...)
     va_start(args, fmt);
     compile_snprintf(buf, BUFSIZ, file, line, fmt, args);
     va_end(args);
-    err_append(buf);
+    err_append(buf, NULL);
 }
 
 void
@@ -111,7 +123,7 @@ rb_compile_error_append(const char *fmt, ...)
     va_start(args, fmt);
     vsnprintf(buf, BUFSIZ, fmt, args);
     va_end(args);
-    err_append(buf);
+    err_append(buf, NULL);
 }
 
 static void
@@ -1644,14 +1656,15 @@ Init_syserr(void)
 }
 
 static void
-err_append(const char *s)
+err_append(const char *s, rb_encoding *enc)
 {
     rb_thread_t *th = GET_THREAD();
     VALUE err = th->errinfo;
 
     if (th->mild_compile_error) {
 	if (!RTEST(err)) {
-	    err = rb_exc_new2(rb_eSyntaxError, s);
+	    err = rb_exc_new3(rb_eSyntaxError,
+			      rb_enc_str_new(s, strlen(s), enc));
 	    th->errinfo = err;
 	}
 	else {
