@@ -848,9 +848,9 @@ proc_wait2(int argc, VALUE *argv)
  *
  *  <em>produces</em>:
  *
- *     [[27434, #<Process::Status: pid=27434,exited(0)>],
- *      [27433, #<Process::Status: pid=27433,exited(1)>],
- *      [27432, #<Process::Status: pid=27432,exited(2)>]]
+ *     [[30982, #<Process::Status: pid 30982 exit 0>],
+ *      [30979, #<Process::Status: pid 30979 exit 1>],
+ *      [30976, #<Process::Status: pid 30976 exit 2>]]
  */
 
 static VALUE
