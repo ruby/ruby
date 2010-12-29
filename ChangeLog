@@ -1,4 +1,6 @@
-Wed Dec 29 20:27:32 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Dec 29 20:31:19 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/depend (clean): remove name2ctype.h when out-of-place build.
 
 	* win32/Makefile.sub (clean-enc): pass V to inferior make.
 

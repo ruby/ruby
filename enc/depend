@@ -1,3 +1,4 @@
+% inplace = File.identical?($srcdir, ".")
 % workdirs = %w"$(ENCSODIR) $(TRANSSODIR) enc enc/trans"
 % CONFIG["WORKDIRS"] = workdirs.join(' ')
 % CONFIG["DLDFLAGS"].sub!(/(\A|\s)(-\S+(?:\s*\w*)?\$\(TARGET\)\S*)/, '\1')
@@ -145,6 +146,10 @@ clean:
 	$(Q)$(RM) <%=pathrep[clean]%>
 % end
 % @ignore_error = $nmake ? '' : ' 2> /dev/null || true'
+% unless inplace
+	$(Q)$(RM) enc/unicode/name2ctype.h
+	-$(Q)$(RMDIR) enc/unicode<%=@ignore_error%>
+% end
 % workdirs.reverse_each do|dir|
 	-$(Q)$(RMDIR) <%=pathrep[dir]%><%=@ignore_error%>
 % end
