@@ -321,11 +321,14 @@ rb_reg_expr_str(VALUE str, const char *s, long len,
 	rb_encoding *enc, rb_encoding *resenc)
 {
     const char *p, *pend;
+    int cr = ENC_CODERANGE_UNKNOWN;
     int need_escape = 0;
     int c, clen;
 
     p = s; pend = p + len;
-    if (rb_enc_asciicompat(enc)) {
+    rb_str_coderange_scan_restartable(p, pend, enc, &cr);
+    if (rb_enc_asciicompat(enc) &&
+	(cr == ENC_CODERANGE_VALID || cr == ENC_CODERANGE_7BIT)) {
 	while (p < pend) {
 	    c = rb_enc_ascget(p, pend, &clen, enc);
 	    if (c == -1) {
