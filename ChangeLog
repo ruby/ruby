@@ -1,3 +1,7 @@
+Wed Dec 29 10:06:51 2010  Tanaka Akira  <akr@fsij.org>
+
+	* signal.c: parenthesize macro arguments.
+
 Wed Dec 29 07:22:15 2010  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rake/rdoctask.rb: Deprecate in favor of rdoc/task.

@@ -354,7 +354,7 @@ VALUE
 rb_f_kill(int argc, VALUE *argv)
 {
 #ifndef HAS_KILLPG
-#define killpg(pg, sig) kill(-(pg), sig)
+#define killpg(pg, sig) kill(-(pg), (sig))
 #endif
     int negative = 0;
     int sig;
@@ -508,7 +508,7 @@ posix_signal(int signum, sighandler_t handler)
 }
 
 #else /* !POSIX_SIGNAL */
-#define ruby_signal(sig,handler) (/* rb_trap_accept_nativethreads[sig] = 0,*/ signal((sig),(handler)))
+#define ruby_signal(sig,handler) (/* rb_trap_accept_nativethreads[(sig)] = 0,*/ signal((sig),(handler)))
 #if 0 /* def HAVE_NATIVETHREAD */
 static sighandler_t
 ruby_nativethread_signal(int signum, sighandler_t handler)
