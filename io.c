@@ -8370,22 +8370,6 @@ nogvl_copy_stream_wait_write(struct copy_stream_struct *stp)
     return 0;
 }
 
-static int
-maygvl_copy_stream_wait_readwrite(struct copy_stream_struct *stp)
-{
-    int ret;
-    rb_fd_zero(&stp->fds);
-    rb_fd_set(stp->src_fd, &stp->fds);
-    rb_fd_set(stp->dst_fd, &stp->fds);
-    ret = rb_fd_select(rb_fd_max(&stp->fds), &stp->fds, NULL, NULL, NULL);
-    if (ret == -1) {
-        stp->syserr = "select";
-        stp->error_no = errno;
-        return -1;
-    }
-    return 0;
-}
-
 #ifdef HAVE_SENDFILE
 
 # ifdef __linux__
@@ -8438,6 +8422,22 @@ simple_sendfile(int out_fd, int in_fd, off_t *offset, off_t count)
 #endif
 
 #ifdef USE_SENDFILE
+static int
+maygvl_copy_stream_wait_readwrite(struct copy_stream_struct *stp)
+{
+    int ret;
+    rb_fd_zero(&stp->fds);
+    rb_fd_set(stp->src_fd, &stp->fds);
+    rb_fd_set(stp->dst_fd, &stp->fds);
+    ret = rb_fd_select(rb_fd_max(&stp->fds), &stp->fds, NULL, NULL, NULL);
+    if (ret == -1) {
+        stp->syserr = "select";
+        stp->error_no = errno;
+        return -1;
+    }
+    return 0;
+}
+
 static int
 nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
 {

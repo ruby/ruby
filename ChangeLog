@@ -1,3 +1,7 @@
+Wed Dec 29 21:20:13 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (maygvl_copy_stream_wait_readwrite): define if USE_SENDFILE
+
 Wed Dec 29 20:37:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb: strip current directory prefix.
