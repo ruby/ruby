@@ -930,7 +930,7 @@ clean-extout:
 clean-enc distclean-enc realclean-enc:
 !if exist($(ENC_MK))
 	@echo $(@:-enc=ing) encodings
-	@-$(MAKE) -f $(ENC_MK) $(MFLAGS) $(@:-enc=)
+	@-$(MAKE) -f $(ENC_MK) $(MFLAGS) V=$(V) $(@:-enc=)
 !endif
 
 $(RCFILES): $(RBCONFIG) $(srcdir)/revision.h $(srcdir)/win32/resource.rb

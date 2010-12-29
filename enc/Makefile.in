@@ -63,10 +63,10 @@ MAKEDIRS = @MAKEDIRS@
 all: make-workdir
 
 make-workdir:
-	$(Q) $(MAKEDIRS) $(WORKDIRS)
+	$(Q)$(MAKEDIRS) $(WORKDIRS)
 
 clean:
 
 distclean: clean
-	@$(RM) enc.mk
+	$(Q)$(RM) enc.mk
 realclean: distclean clean-srcs

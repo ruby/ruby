@@ -1,3 +1,7 @@
+Wed Dec 29 20:27:32 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub (clean-enc): pass V to inferior make.
+
 Wed Dec 29 18:23:46 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* re.c (rb_reg_expr_str): need to escape if the coderange is invalid.
