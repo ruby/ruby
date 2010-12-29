@@ -1,4 +1,6 @@
-Wed Dec 29 20:31:19 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Dec 29 20:37:43 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb: strip current directory prefix.
 
 	* enc/depend (clean): remove name2ctype.h when out-of-place build.
 

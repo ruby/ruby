@@ -415,6 +415,7 @@ cond = proc {|ext, *|
   withes.call(cond1) or !withouts.call(cond1)
 }
 ($extension || %w[*]).each do |e|
+  e = e.sub(/\A(?:\.\/)+/, '')
   exts |= Dir.glob("#{ext_prefix}/#{e}/**/extconf.rb").collect {|d|
     d = File.dirname(d)
     d.slice!(0, ext_prefix.length + 1)
