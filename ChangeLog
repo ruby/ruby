@@ -1,3 +1,7 @@
+Fri Dec 31 03:00:34 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* Makefile.in: remove unnecessary semicolons.
+
 Thu Dec 30 23:09:47 2010  wanabe  <s.wanabe@gmail.com>
 
 	* vm.c (vm_define_method): guard iseq from GC while method definition.
