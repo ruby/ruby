@@ -1,3 +1,7 @@
+Thu Dec 30 20:41:50 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* Makefile.in: Kill ugly line continuation.
+
 Thu Dec 30 11:49:40 2010  Tanaka Akira  <akr@fsij.org>
 
 	* sprintf.c: parenthesize macro arguments.
