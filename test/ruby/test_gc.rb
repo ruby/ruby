@@ -63,4 +63,19 @@ class TestGc < Test::Unit::TestCase
     assert_equal(false, res.empty?)
     assert_kind_of(Integer, res[:count])
   end
+
+  def test_singleton_method
+    prev_stress = GC.stress
+    assert_nothing_raised("[ruby-dev:42832]") do
+      GC.stress = true
+      10.times do
+        obj = Object.new
+        def obj.foo() end
+        def obj.bar() raise "obj.foo is called, but this is obj.bar" end
+        obj.foo
+      end
+    end
+  ensure
+    GC.stress = prev_stress
+  end
 end

@@ -1837,8 +1837,9 @@ vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
     GetISeqPtr(iseqval, miseq);
 
     if (miseq->klass) {
-       iseqval = rb_iseq_clone(iseqval, 0);
-       GetISeqPtr(iseqval, miseq);
+	iseqval = rb_iseq_clone(iseqval, 0);
+	RB_GC_GUARD(iseqval);
+	GetISeqPtr(iseqval, miseq);
     }
 
     if (NIL_P(klass)) {

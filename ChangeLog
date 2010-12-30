@@ -1,3 +1,8 @@
+Thu Dec 30 23:09:47 2010  wanabe  <s.wanabe@gmail.com>
+
+	* vm.c (vm_define_method): guard iseq from GC while method definition.
+	  [ruby-dev:42832]
+
 Thu Dec 30 20:18:32 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* win32/Makefile.sub: ditto.
