@@ -1,3 +1,7 @@
+Thu Dec 30 20:18:32 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* win32/Makefile.sub: ditto.
+
 Thu Dec 30 20:57:09 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* Makefile.in: Check V=1 argument if run "make clean" or similar.

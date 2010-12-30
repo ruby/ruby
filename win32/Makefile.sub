@@ -890,20 +890,20 @@ $(RUBYDEF):	$(LIBRUBY_A) $(PREP)
 		$(Q) $(AR) $(ARFLAGS)$@ -def:$<
 
 clean-local::
-		@$(RM) $(WINMAINOBJ) ext\extinit.c ext\extinit.$(OBJEXT) ext\vc*.pdb miniruby.lib
-		@$(RM) $(RUBY_INSTALL_NAME).res $(RUBYW_INSTALL_NAME).res $(RUBY_SO_NAME).res
-		@$(RM) miniruby.rc $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc
-		@$(RM) *.map *.pdb *.ilk *.exp $(RUBYDEF) ext\ripper\y.output
+		$(Q)$(RM) $(WINMAINOBJ) ext\extinit.c ext\extinit.$(OBJEXT) ext\vc*.pdb miniruby.lib
+		$(Q)$(RM) $(RUBY_INSTALL_NAME).res $(RUBYW_INSTALL_NAME).res $(RUBY_SO_NAME).res
+		$(Q)$(RM) miniruby.rc $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc
+		$(Q)$(RM) *.map *.pdb *.ilk *.exp $(RUBYDEF) ext\ripper\y.output
 
 distclean-local::
-		@$(RM) ext\config.cache $(RBCONFIG:/=\) $(CONFIG_H:/=\)
-		@-$(RM) $(INSTALLED_LIST:/=\) $(arch_hdrdir:/=\)\ruby\config.h
-		@-$(RMDIRS) $(arch_hdrdir:/=\)\ruby
+		$(Q)$(RM) ext\config.cache $(RBCONFIG:/=\) $(CONFIG_H:/=\)
+		-$(Q)$(RM) $(INSTALLED_LIST:/=\) $(arch_hdrdir:/=\)\ruby\config.h
+		-$(Q)$(RMDIRS) $(arch_hdrdir:/=\)\ruby
 
 clean-rdoc distclean-rdoc realclean-rdoc:
-		@-$(RMALL) $(RDOCOUT:/=\)
+		-$(Q)$(RMALL) $(RDOCOUT:/=\)
 clean-capi distclean-capi realclean-capi:
-		@-$(RMALL) $(CAPIOUT:/=\)
+		-$(Q)$(RMALL) $(CAPIOUT:/=\)
 
 clean-ext distclean-ext realclean-ext::
 !if "$(EXTS)" != ""
@@ -920,11 +920,11 @@ clean-ext distclean-ext realclean-ext::
 		) )
 
 distclean-ext realclean-ext::
-		@-rmdir ext
+		-$(Q)rmdir ext
 
 clean-extout:
 !if exist($(EXTOUT)/.)
-	@-$(RMDIRS) $(EXTOUT)
+	-$(Q)$(RMDIRS) $(EXTOUT)
 !endif
 
 clean-enc distclean-enc realclean-enc:
