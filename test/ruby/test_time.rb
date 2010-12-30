@@ -634,6 +634,9 @@ class TestTime < Test::Unit::TestCase
                  t.strftime("%m/%d/%Y %l:%M:%S.%9N"))
     assert_equal("03/14/1592  6:53:58.97932384",
                  t.strftime("%m/%d/%Y %l:%M:%S.%8N"))
+
+    # [ruby-core:33985]
+    assert_equal("3000000000", Time.at(3000000000).strftime('%s'))
   end
 
   def test_delegate
