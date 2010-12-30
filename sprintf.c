@@ -94,13 +94,13 @@ sign_bits(int base, const char *p)
 
 #define PUSH(s, l) do { \
     CHECK(l);\
-    memcpy(&buf[blen], s, l);\
+    memcpy(&buf[blen], (s), (l));\
     blen += (l);\
 } while (0)
 
 #define FILL(c, l) do { \
     CHECK(l);\
-    memset(&buf[blen], c, l);\
+    memset(&buf[blen], (c), (l));\
     blen += (l);\
 } while (0)
 
@@ -112,29 +112,29 @@ sign_bits(int base, const char *p)
     (posarg = nextarg++, GETNTHARG(posarg)))
 
 #define GETPOSARG(n) (posarg > 0 ? \
-    (rb_raise(rb_eArgError, "numbered(%d) after unnumbered(%d)", n, posarg), 0) : \
+    (rb_raise(rb_eArgError, "numbered(%d) after unnumbered(%d)", (n), posarg), 0) : \
     posarg == -2 ? \
-    (rb_raise(rb_eArgError, "numbered(%d) after named", n), 0) : \
-    ((n < 1) ? (rb_raise(rb_eArgError, "invalid index - %d$", n), 0) : \
+    (rb_raise(rb_eArgError, "numbered(%d) after named", (n)), 0) : \
+    (((n) < 1) ? (rb_raise(rb_eArgError, "invalid index - %d$", (n)), 0) : \
 	       (posarg = -1, GETNTHARG(n))))
 
 #define GETNTHARG(nth) \
-    ((nth >= argc) ? (rb_raise(rb_eArgError, "too few arguments"), 0) : argv[nth])
+    (((nth) >= argc) ? (rb_raise(rb_eArgError, "too few arguments"), 0) : argv[(nth)])
 
 #define GETNAMEARG(id, name, len) ( \
     posarg > 0 ? \
     (rb_raise(rb_eArgError, "named%.*s after unnumbered(%d)", (len), (name), posarg), 0) : \
     posarg == -1 ? \
     (rb_raise(rb_eArgError, "named%.*s after numbered", (len), (name)), 0) :	\
-    (posarg = -2, rb_hash_lookup2(get_hash(&hash, argc, argv), id, Qundef)))
+    (posarg = -2, rb_hash_lookup2(get_hash(&hash, argc, argv), (id), Qundef)))
 
 #define GETNUM(n, val) \
     for (; p < end && rb_enc_isdigit(*p, enc); p++) {	\
-	int next_n = 10 * n + (*p - '0'); \
-        if (next_n / 10 != n) {\
+	int next_n = 10 * (n) + (*p - '0'); \
+        if (next_n / 10 != (n)) {\
 	    rb_raise(rb_eArgError, #val " too big"); \
 	} \
-	n = next_n; \
+	(n) = next_n; \
     } \
     if (p >= end) { \
 	rb_raise(rb_eArgError, "malformed format string - %%*[0-9]"); \
@@ -143,7 +143,7 @@ sign_bits(int base, const char *p)
 #define GETASTER(val) do { \
     t = p++; \
     n = 0; \
-    GETNUM(n, val); \
+    GETNUM(n, (val)); \
     if (*p == '$') { \
 	tmp = GETPOSARG(n); \
     } \
@@ -151,7 +151,7 @@ sign_bits(int base, const char *p)
 	tmp = GETARG(); \
 	p = t; \
     } \
-    val = NUM2INT(tmp); \
+    (val) = NUM2INT(tmp); \
 } while (0)
 
 static VALUE
