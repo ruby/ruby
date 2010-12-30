@@ -616,7 +616,7 @@ partition_i(VALUE i, VALUE *ary, int argc, VALUE *argv)
  *
  *  If no block is given, an enumerator is returned instead.
  *
- *     (1..6).partition {|i| (i&1).zero?}   #=> [[2, 4, 6], [1, 3, 5]]
+ *     (1..6).partition {|v| v.even? }  #=> [[2, 4, 6], [1, 3, 5]]
  *
  */
 
@@ -713,6 +713,11 @@ first_i(VALUE i, VALUE *params, int argc, VALUE *argv)
  *  Returns the first element, or the first +n+ elements, of the enumerable.
  *  If the enumerable is empty, the first form returns <code>nil</code>, and the
  *  second form returns an empty array.
+ *
+ *    %w[foo bar baz].first     #=> "foo"
+ *    %w[foo bar baz].first(2)  #=> ["foo", "bar"]
+ *    %w[foo bar baz].first(10) #=> ["foo", "bar", "baz"]
+ *    [].first                  #=> nil
  *
  */
 
@@ -1627,6 +1632,13 @@ enum_each_with_index(int argc, VALUE *argv, VALUE obj)
  *
  *  If no block is given, an enumerator is returned instead.
  *
+ *      (1..3).reverse_each {|v| p v }
+ *
+ *    produces:
+ *      
+ *      3
+ *      2
+ *      1
  */
 
 static VALUE
@@ -1671,13 +1683,17 @@ each_val_i(VALUE i, VALUE p, int argc, VALUE *argv)
  *       def each
  *         yield 1
  *         yield 1,2
+ *         yield
  *       end
  *     end
- *     Foo.new.each_entry{|o| print o, " -- "}
+ *     Foo.new.each_entry{|o| p o }
  *
  *  produces:
  *
- *     1 -- [1, 2] --
+ *     1
+ *     [1, 2]
+ *     nil
+ *
  */
 
 static VALUE
