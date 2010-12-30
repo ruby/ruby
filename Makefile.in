@@ -296,14 +296,14 @@ enc/unicode/name2ctype.h: enc/unicode/name2ctype.kwd
 	$(Q) $(CPP) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -E $< > $@
 
 clean-local::
-	@$(RM) ext/extinit.c ext/extinit.$(OBJEXT) ext/ripper/y.output
-	@-$(RM) $(pkgconfig_DATA)
+	$(Q)$(RM) ext/extinit.c ext/extinit.$(OBJEXT) ext/ripper/y.output
+	-$(Q)$(RM) $(pkgconfig_DATA)
 
 distclean-local::
-	@$(RM) ext/config.cache $(RBCONFIG) Doxyfile
-	@-$(RM) run.gdb
-	@-$(RM) $(INSTALLED_LIST) $(arch_hdrdir)/ruby/config.h
-	@-$(RMDIRS) $(arch_hdrdir)/ruby 2> /dev/null || true
+	$(Q)$(RM) ext/config.cache $(RBCONFIG) Doxyfile
+	-$(Q)$(RM) run.gdb
+	-$(Q)$(RM) $(INSTALLED_LIST) $(arch_hdrdir)/ruby/config.h
+	-$(Q)$(RMDIRS) $(arch_hdrdir)/ruby 2> /dev/null || true
 
 clean-ext distclean-ext realclean-ext::
 	@cd ext 2>/dev/null || exit 0; set dummy `echo "${EXTS}" | tr , ' '`; shift; \
@@ -322,10 +322,10 @@ clean-ext distclean-ext realclean-ext::
 	done
 
 distclean-ext realclean-ext::
-	@-$(RMDIR) ext 2> /dev/null || true
+	-$(Q)$(RMDIR) ext 2> /dev/null || true
 
 clean-extout:
-	@-$(RMDIRS) $(EXTOUT) 2> /dev/null || true
+	-$(Q)$(RMDIRS) $(EXTOUT) 2> /dev/null || true
 
 clean-enc distclean-enc realclean-enc:
 	@test -f "$(ENC_MK)" || exit 0; \
@@ -334,10 +334,10 @@ clean-enc distclean-enc realclean-enc:
 
 clean-rdoc distclean-rdoc realclean-rdoc:
 	@echo $(@:-rdoc=ing) rdoc;
-	@$(RMALL) $(RDOCOUT)
+	$(Q)$(RMALL) $(RDOCOUT)
 clean-capi distclean-capi realclean-capi:
 	@echo $(@:-capi=ing) capi;
-	@$(RMALL) $(CAPIOUT)
+	$(Q)$(RMALL) $(CAPIOUT)
 
 
 ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)

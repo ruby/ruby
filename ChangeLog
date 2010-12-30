@@ -1,3 +1,7 @@
+Thu Dec 30 20:57:09 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* Makefile.in: Check V=1 argument if run "make clean" or similar.
+
 Thu Dec 30 20:41:50 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* Makefile.in: Kill ugly line continuation.
