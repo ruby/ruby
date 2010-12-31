@@ -69,11 +69,11 @@ static void rehash(st_table *);
 #define alloc(type) (type*)malloc((size_t)sizeof(type))
 #define Calloc(n,s) (char*)calloc((n),(s))
 
-#define EQUAL(table,x,y) ((x)==(y) || (*table->type->compare)((x),(y)) == 0)
+#define EQUAL(table,x,y) ((x)==(y) || (*(table)->type->compare)((x),(y)) == 0)
 
 /* remove cast to unsigned int in the future */
 #define do_hash(key,table) (unsigned int)(st_index_t)(*(table)->type->hash)((key))
-#define do_hash_bin(key,table) (do_hash(key, table)%(table)->num_bins)
+#define do_hash_bin(key,table) (do_hash((key), (table))%(table)->num_bins)
 
 /*
  * MINSIZE is the minimum size of a dictionary.
@@ -282,7 +282,7 @@ st_memsize(const st_table *table)
 }
 
 #define PTR_NOT_EQUAL(table, ptr, hash_val, key) \
-((ptr) != 0 && (ptr->hash != (hash_val) || !EQUAL((table), (key), (ptr)->key)))
+((ptr) != 0 && ((ptr)->hash != (hash_val) || !EQUAL((table), (key), (ptr)->key)))
 
 #ifdef HASH_LOG
 static void
@@ -307,15 +307,15 @@ count_collision(const struct st_hash_type *type)
 #endif
 
 #define FIND_ENTRY(table, ptr, hash_val, bin_pos) do {\
-    bin_pos = hash_val%(table)->num_bins;\
-    ptr = (table)->bins[bin_pos];\
+    (bin_pos) = (hash_val)%(table)->num_bins;\
+    (ptr) = (table)->bins[(bin_pos)];\
     FOUND_ENTRY;\
-    if (PTR_NOT_EQUAL(table, ptr, hash_val, key)) {\
+    if (PTR_NOT_EQUAL((table), (ptr), (hash_val), key)) {\
 	COLLISION;\
-	while (PTR_NOT_EQUAL(table, ptr->next, hash_val, key)) {\
-	    ptr = ptr->next;\
+	while (PTR_NOT_EQUAL((table), (ptr)->next, (hash_val), key)) {\
+	    (ptr) = (ptr)->next;\
 	}\
-	ptr = ptr->next;\
+	(ptr) = (ptr)->next;\
     }\
 } while (0)
 
@@ -389,28 +389,28 @@ st_get_key(st_table *table, register st_data_t key, st_data_t *result)
 #define ADD_DIRECT(table, key, value, hash_val, bin_pos)\
 do {\
     st_table_entry *entry;\
-    if (table->num_entries > ST_DEFAULT_MAX_DENSITY * table->num_bins) {\
+    if ((table)->num_entries > ST_DEFAULT_MAX_DENSITY * (table)->num_bins) {\
 	rehash(table);\
-        bin_pos = hash_val % table->num_bins;\
+        (bin_pos) = (hash_val) % (table)->num_bins;\
     }\
     \
     entry = alloc(st_table_entry);\
     \
-    entry->hash = hash_val;\
-    entry->key = key;\
-    entry->record = value;\
-    entry->next = table->bins[bin_pos];\
-    if (table->head != 0) {\
+    entry->hash = (hash_val);\
+    entry->key = (key);\
+    entry->record = (value);\
+    entry->next = (table)->bins[(bin_pos)];\
+    if ((table)->head != 0) {\
 	entry->fore = 0;\
-	(entry->back = table->tail)->fore = entry;\
-	table->tail = entry;\
+	(entry->back = (table)->tail)->fore = entry;\
+	(table)->tail = entry;\
     }\
     else {\
-	table->head = table->tail = entry;\
+	(table)->head = (table)->tail = entry;\
 	entry->fore = entry->back = 0;\
     }\
-    table->bins[bin_pos] = entry;\
-    table->num_entries++;\
+    (table)->bins[(bin_pos)] = entry;\
+    (table)->num_entries++;\
 } while (0)
 
 static void
@@ -606,18 +606,18 @@ st_copy(st_table *old_table)
 
 #define REMOVE_ENTRY(table, ptr) do					\
     {									\
-	if (ptr->fore == 0 && ptr->back == 0) {				\
-	    table->head = 0;						\
-	    table->tail = 0;						\
+	if ((ptr)->fore == 0 && (ptr)->back == 0) {			\
+	    (table)->head = 0;						\
+	    (table)->tail = 0;						\
 	}								\
 	else {								\
-	    st_table_entry *fore = ptr->fore, *back = ptr->back;	\
+	    st_table_entry *fore = (ptr)->fore, *back = (ptr)->back;	\
 	    if (fore) fore->back = back;				\
 	    if (back) back->fore = fore;				\
-	    if (ptr == table->head) table->head = fore;			\
-	    if (ptr == table->tail) table->tail = back;			\
+	    if ((ptr) == (table)->head) (table)->head = fore;		\
+	    if ((ptr) == (table)->tail) (table)->tail = back;		\
 	}								\
-	table->num_entries--;						\
+	(table)->num_entries--;						\
     } while (0)
 
 int
@@ -1048,12 +1048,12 @@ murmur_finish(st_index_t h)
     return h;
 }
 
-#define murmur_step(h, k) murmur(h, k, 16)
+#define murmur_step(h, k) murmur((h), (k), 16)
 
 #if MURMUR == 1
-#define murmur1(h) murmur_step(h, 16)
+#define murmur1(h) murmur_step((h), 16)
 #else
-#define murmur1(h) murmur_step(h, 24)
+#define murmur1(h) murmur_step((h), 24)
 #endif
 
 st_index_t
@@ -1064,7 +1064,7 @@ st_hash(const void *ptr, size_t len, st_index_t h)
 
     h += 0xdeadbeef;
 
-#define data_at(n) (st_index_t)((unsigned char)data[n])
+#define data_at(n) (st_index_t)((unsigned char)data[(n)])
 #define UNALIGNED_ADD_4 UNALIGNED_ADD(2); UNALIGNED_ADD(1); UNALIGNED_ADD(0)
 #if SIZEOF_ST_INDEX_T > 4
 #define UNALIGNED_ADD_8 UNALIGNED_ADD(6); UNALIGNED_ADD(5); UNALIGNED_ADD(4); UNALIGNED_ADD(3); UNALIGNED_ADD_4
