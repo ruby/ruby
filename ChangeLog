@@ -1,3 +1,8 @@
+Fri Dec 31 11:15:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/zlib/zlib.c (sizeof): zlib.h mistakenly assumes the result
+	  of sizeof to be int, not size_t.
+
 Fri Dec 31 10:27:34 2010  Tanaka Akira  <akr@fsij.org>
 
 	* st.c: parenthesize macro arguments.

@@ -42,6 +42,7 @@
 #endif
 #endif
 
+#define sizeof(x) ((int)sizeof(x))
 
 /*--------- Prototypes --------*/
 
