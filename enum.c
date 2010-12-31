@@ -770,33 +770,59 @@ enum_sort(VALUE obj)
     return rb_ary_sort(enum_to_a(0, 0, obj));
 }
 
+#define SORT_BY_BUFSIZE 16
+struct sort_by_data {
+    VALUE ary;
+    VALUE buf;
+    int n;
+};
+
 static VALUE
-sort_by_i(VALUE i, VALUE ary, int argc, VALUE *argv)
+sort_by_i(VALUE i, VALUE _data, int argc, VALUE *argv)
 {
-    NODE *memo;
+    struct sort_by_data *data = (struct sort_by_data *)_data;
+    VALUE ary = data->ary;
 
     ENUM_WANT_SVALUE();
 
     if (RBASIC(ary)->klass) {
 	rb_raise(rb_eRuntimeError, "sort_by reentered");
     }
-    /* use NODE_DOT2 as memo(v, v, -) */
-    memo = rb_node_newnode(NODE_DOT2, rb_yield(i), i, 0);
-    rb_ary_push(ary, (VALUE)memo);
+    
+    RARRAY_PTR(data->buf)[data->n*2] = rb_yield(i);
+    RARRAY_PTR(data->buf)[data->n*2+1] = i;
+    data->n++;
+    if (data->n == SORT_BY_BUFSIZE) {
+	rb_ary_concat(ary, data->buf);
+	data->n = 0;
+    }
     return Qnil;
 }
 
 static int
 sort_by_cmp(const void *ap, const void *bp, void *data)
 {
-    VALUE a = (*(NODE *const *)ap)->u1.value;
-    VALUE b = (*(NODE *const *)bp)->u1.value;
+    VALUE a = *(VALUE *)ap;
+    VALUE b = *(VALUE *)bp;
     VALUE ary = (VALUE)data;
 
     if (RBASIC(ary)->klass) {
 	rb_raise(rb_eRuntimeError, "sort_by reentered");
     }
     return rb_cmpint(rb_funcall(a, id_cmp, 1, b), a, b);
+}
+
+static void
+ary_cutoff(VALUE ary, long len)
+{
+    long i;
+    if (RBASIC(ary)->flags & RARRAY_EMBED_FLAG) {
+	for (i=RARRAY_LEN(ary)-len; 0<i; i--)
+	    rb_ary_pop(ary);
+    }
+    else {
+        RARRAY(ary)->as.heap.len = len;
+    }
 }
 
 /*
@@ -875,27 +901,37 @@ enum_sort_by(VALUE obj)
 {
     VALUE ary;
     long i;
+    struct sort_by_data data;
 
     RETURN_ENUMERATOR(obj, 0, 0);
 
-    if (TYPE(obj) == T_ARRAY) {
-	ary  = rb_ary_new2(RARRAY_LEN(obj));
+    if (TYPE(obj) == T_ARRAY && RARRAY_LEN(obj) <= LONG_MAX/2) {
+	ary  = rb_ary_new2(RARRAY_LEN(obj)*2);
     }
     else {
 	ary = rb_ary_new();
     }
     RBASIC(ary)->klass = 0;
-    rb_block_call(obj, id_each, 0, 0, sort_by_i, ary);
-    if (RARRAY_LEN(ary) > 1) {
-	ruby_qsort(RARRAY_PTR(ary), RARRAY_LEN(ary), sizeof(VALUE),
+    data.ary = ary;
+    data.buf = rb_ary_tmp_new(SORT_BY_BUFSIZE*2);
+    data.n = 0;
+    rb_ary_store(data.buf, SORT_BY_BUFSIZE*2-1, Qnil);
+    rb_block_call(obj, id_each, 0, 0, sort_by_i, (VALUE)&data);
+    if (data.n) {
+	ary_cutoff(data.buf, data.n*2);
+	rb_ary_concat(ary, data.buf);
+    }
+    if (RARRAY_LEN(ary) > 2) {
+	ruby_qsort(RARRAY_PTR(ary), RARRAY_LEN(ary)/2, 2*sizeof(VALUE),
 		   sort_by_cmp, (void *)ary);
     }
     if (RBASIC(ary)->klass) {
 	rb_raise(rb_eRuntimeError, "sort_by reentered");
     }
-    for (i=0; i<RARRAY_LEN(ary); i++) {
-	RARRAY_PTR(ary)[i] = RNODE(RARRAY_PTR(ary)[i])->u2.value;
+    for (i=1; i<RARRAY_LEN(ary); i+=2) {
+	RARRAY_PTR(ary)[i/2] = RARRAY_PTR(ary)[i];
     }
+    ary_cutoff(ary, RARRAY_LEN(ary)/2);
     RBASIC(ary)->klass = rb_cArray;
     OBJ_INFECT(ary, obj);
 
