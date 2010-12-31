@@ -1,3 +1,9 @@
+Sat Jan  1 04:20:11 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_write_console): don't raise exception when
+	  the conversion is for writing to console.
+	  Patched by Heesob Park [ruby-core:33999]
+
 Fri Dec 31 12:02:06 2010  Tanaka Akira  <akr@fsij.org>
 
 	* enum.c (enum_sort_by): use less temporary objects.
