@@ -1658,6 +1658,10 @@ VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
   end
   possible_command = (proc {|s| s if /top_srcdir/ !~ s} unless $extmk)
   extconf_h = $extconf_h ? "-DRUBY_EXTCONF_H=\\\"$(RUBY_EXTCONF_H)\\\" " : $defs.join(" ") << " "
+  if warnflags = CONFIG['warnflags'] and CONFIG['GCC'] == 'yes' and !$extmk
+    # turn warnings into errors only for bundled extensions.
+    warnflags = warnflags.gsub(/(?:\A|\s)-Werror=/, '\1-W')
+  end
   mk << %{
 CC = #{CONFIG['CC']}
 CXX = #{CONFIG['CXX']}
@@ -1672,7 +1676,7 @@ RUBY_EXTCONF_H = #{$extconf_h}
 cflags   = #{CONFIG['cflags']}
 optflags = #{CONFIG['optflags']}
 debugflags = #{CONFIG['debugflags']}
-warnflags = #{CONFIG['warnflags']}
+warnflags = #{warnflags}
 CFLAGS   = #{$static ? '' : CONFIG['CCDLFLAGS']} #$CFLAGS #$ARCH_FLAG
 INCFLAGS = -I. #$INCFLAGS
 DEFS     = #{CONFIG['DEFS']}

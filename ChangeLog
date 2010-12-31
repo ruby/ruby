@@ -1,3 +1,9 @@
+Fri Dec 31 11:46:47 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (warnflags), lib/mkmf.rb (configuration): turn
+	  warnings into errors only for bundled extensions.
+	  [ruby-core:33815]
+
 Fri Dec 31 11:15:57 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/zlib/zlib.c (sizeof): zlib.h mistakenly assumes the result

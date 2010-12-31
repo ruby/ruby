@@ -444,10 +444,23 @@ AC_DEFUN(RUBY_TRY_LDFLAGS, [
 ])
 
 if test "$GCC:${warnflags+set}:no" = yes::no; then
-    for wflag in -Wno-unused-parameter -Wno-parentheses -Wpointer-arith -Wwrite-strings \
+    particular_werror_flags=yes
+    for wflag in -Wno-unused-parameter -Wno-parentheses -Wno-long-long \
+		 -Wno-missing-field-initializers \
+		 -Werror=pointer-arith \
+		 -Werror=write-strings \
 		 -Werror=declaration-after-statement \
-		 -Wno-missing-field-initializers -Wshorten-64-to-32 -Wno-long-long; do
-	RUBY_TRY_CFLAGS($wflag, [warnflags="${warnflags+$warnflags }$wflag"])
+		 -Werror=shorten-64-to-32; do
+	test "$particular_werror_flags" = yes || wflag=`echo x$wflag | sed 's/^x-Werror=/-W/'`
+	ok=no
+	RUBY_TRY_CFLAGS($wflag, [warnflags="${warnflags+$warnflags }$wflag" ok=yes])
+	AS_CASE([$ok:$wflag], [no:-Werror=*], [
+	    wflag=`echo x$wflag | sed 's/^x-Werror=/-W/'`
+	    RUBY_TRY_CFLAGS($wflag, [
+		warnflags="${warnflags+$warnflags }$wflag"
+		particular_werror_flags=no
+	    ])
+	])
     done
     AS_CASE([" $warnflags "],[*" -Wno-missing-field-initializers "*], [wflag=-Wextra],
                              [wflag=-Wall])
