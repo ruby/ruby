@@ -102,6 +102,7 @@ class TestEnumerable < Test::Unit::TestCase
 
   def test_sort_by
     assert_equal([3, 2, 2, 1, 1], @obj.sort_by {|x| -x })
+    assert_equal((1..300).to_a.reverse, (1..300).sort_by {|x| -x })
   end
 
   def test_all
