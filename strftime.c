@@ -120,7 +120,7 @@ extern char *getenv();
 extern char *strchr();
 #endif
 
-#define range(low, item, hi)	max(low, min(item, hi))
+#define range(low, item, hi)	max((low), min((item), (hi)))
 
 #undef min	/* just in case */
 
@@ -212,10 +212,10 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, const str
 		} while (0)
 #define NEEDS(n) do if (s + (n) >= endp - 1) goto err; while (0)
 #define FILL_PADDING(i) do { \
-	if (!(flags & BIT_OF(LEFT)) && precision > i) { \
+	if (!(flags & BIT_OF(LEFT)) && precision > (i)) { \
 		NEEDS(precision); \
-		memset(s, padding ? padding : ' ', precision - i); \
-		s += precision - i; \
+		memset(s, padding ? padding : ' ', precision - (i)); \
+		s += precision - (i); \
 	} \
 	else { \
 		NEEDS(i); \
@@ -227,14 +227,14 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, const str
 			if (precision <= 0) precision = (def_prec); \
 			if (flags & BIT_OF(LEFT)) precision = 1; \
 			l = snprintf(s, endp - s, \
-				     ((padding == '0' || (!padding && def_pad == '0')) ? "%0*"fmt : "%*"fmt), \
-				     precision, val); \
+				     ((padding == '0' || (!padding && (def_pad) == '0')) ? "%0*"fmt : "%*"fmt), \
+				     precision, (val)); \
 			if (l < 0) goto err; \
 			s += l; \
 		} while (0)
 #define STRFTIME(fmt) \
 		do { \
-			i = rb_strftime_with_timespec(s, endp - s, fmt, vtm, timev, ts, gmt); \
+			i = rb_strftime_with_timespec(s, endp - s, (fmt), vtm, timev, ts, gmt); \
 			if (!i) return 0; \
 			if (precision > i) {\
 				memmove(s + precision - i, s, i);\
@@ -255,8 +255,8 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, const str
                                 if (precision <= 0) precision = (def_prec); \
                                 if (flags & BIT_OF(LEFT)) precision = 1; \
                                 args[0] = INT2FIX(precision); \
-                                args[1] = val; \
-                                if (padding == '0' || (!padding && def_pad == '0')) \
+                                args[1] = (val); \
+                                if (padding == '0' || (!padding && (def_pad) == '0')) \
                                         result = rb_str_format(2, args, rb_str_new2("%0*"fmt)); \
                                 else \
                                         result = rb_str_format(2, args, rb_str_new2("%*"fmt)); \
