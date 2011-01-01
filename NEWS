@@ -88,6 +88,9 @@ with all sufficient information, see the ChangeLog file.
     * IO#winsize
     * IO.console
 
+* optparse
+  * support for bash/zsh completion.
+
 * RDoc
   * RDoc has been upgraded to RDoc 3.1.  For full release notes see
     http://rdoc.rubyforge.org/History_txt.html

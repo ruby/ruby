@@ -1,4 +1,8 @@
-Sat Jan  1 10:59:11 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Jan  1 11:03:58 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* NEWS (optparse): shell completion support.
+
+	* misc/README (rb_optparse.{bash,zzh}): for shell completion.
 
 	* include/ruby/intern.h (VALUE rb_ary_join): I have never seen
 	  this function anywhere.
