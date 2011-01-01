@@ -1,3 +1,8 @@
+Sat Jan  1 11:10:29 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/zlib/zlib.c: take care of platforms where long is bigger
+	  than int.
+
 Sat Jan  1 11:03:58 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* NEWS (optparse): shell completion support.
