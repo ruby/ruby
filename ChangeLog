@@ -1,3 +1,8 @@
+Sat Jan  1 10:59:11 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (VALUE rb_ary_join): I have never seen
+	  this function anywhere.
+
 Sat Jan  1 04:20:11 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_write_console): don't raise exception when
