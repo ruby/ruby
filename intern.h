@@ -47,7 +47,6 @@ VALUE rb_ary_unshift _((VALUE, VALUE));
 VALUE rb_ary_entry _((VALUE, long));
 VALUE rb_ary_each _((VALUE));
 VALUE rb_ary_join _((VALUE, VALUE));
-VALUE rb_ary_print_on _((VALUE, VALUE));
 VALUE rb_ary_reverse _((VALUE));
 VALUE rb_ary_sort _((VALUE));
 VALUE rb_ary_sort_bang _((VALUE));
