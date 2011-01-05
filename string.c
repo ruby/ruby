@@ -2611,8 +2611,6 @@ static VALUE get_pat(VALUE, int);
  *  then invokes its <code>match</code> method on <i>str</i>.  If the second
  *  parameter is present, it specifies the position in the string to begin the
  *  search.
- *  If the second parameter is present, it specifies the position in the string
- *  to begin the search.
  *
  *     'hello'.match('(.)\1')      #=> #<MatchData "ll" 1:"l">
  *     'hello'.match('(.)\1')[0]   #=> "ll"

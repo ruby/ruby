@@ -1,3 +1,8 @@
+Wed Jan  5 14:21:34 2011  Mark Dodwell  <hi@mkdynamic.co.uk>
+
+	* string.c: fix rdoc typo.
+	  https://github.com/shyouhei/ruby/pull/3
+
 Wed Jan  5 14:06:01 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/rdoc/test_rdoc_options.rb (TestRDocOptions#test_check_files):
