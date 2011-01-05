@@ -4,7 +4,7 @@
 #include <ruby.h>
 #include <errno.h>
 
-#if defined(HAVE_WINDOWS_H)
+#if defined(_WIN32)
 #include <windows.h>
 #endif
 

@@ -18,7 +18,6 @@ unless have_library('ffi') || have_library('libffi')
 end
 
 have_header 'sys/mman.h'
-have_header 'windows.h'
 
 create_makefile 'fiddle'
 

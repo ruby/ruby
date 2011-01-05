@@ -23,7 +23,7 @@ rb_dl_set_last_error(VALUE self, VALUE val)
     return Qnil;
 }
 
-#if defined(HAVE_WINDOWS_H)
+#if defined(_WIN32)
 #include <windows.h>
 static ID id_win32_last_error;
 
@@ -578,7 +578,7 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
     }
 
     rb_dl_set_last_error(self, INT2NUM(errno));
-#if defined(HAVE_WINDOWS_H)
+#if defined(_WIN32)
     rb_dl_set_win32_last_error(self, INT2NUM(GetLastError()));
 #endif
 
@@ -607,13 +607,13 @@ void
 Init_dlcfunc(void)
 {
     id_last_error = rb_intern("__DL2_LAST_ERROR__");
-#if defined(HAVE_WINDOWS_H)
+#if defined(_WIN32)
     id_win32_last_error = rb_intern("__DL2_WIN32_LAST_ERROR__");
 #endif
     rb_cDLCFunc = rb_define_class_under(rb_mDL, "CFunc", rb_cObject);
     rb_define_alloc_func(rb_cDLCFunc, rb_dlcfunc_s_allocate);
     rb_define_module_function(rb_cDLCFunc, "last_error", rb_dl_get_last_error, 0);
-#if defined(HAVE_WINDOWS_H)
+#if defined(_WIN32)
     rb_define_module_function(rb_cDLCFunc, "win32_last_error", rb_dl_get_win32_last_error, 0);
 #endif
     rb_define_method(rb_cDLCFunc, "initialize", rb_dlcfunc_initialize, -1);
