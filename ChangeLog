@@ -1,3 +1,7 @@
+Thu Jan  6 05:10:58 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_resize): new utility function.  [ruby-dev:42912]
+
 Thu Jan  6 05:03:26 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dln.c (init_funcname_len): ignore rest from first dot.
