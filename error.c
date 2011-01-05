@@ -524,8 +524,7 @@ exc_to_s(VALUE exc)
     VALUE mesg = rb_attr_get(exc, rb_intern("mesg"));
 
     if (NIL_P(mesg)) return rb_class_name(CLASS_OF(exc));
-    OBJ_INFECT(mesg, exc);
-    return mesg;
+    return rb_String(mesg);
 }
 
 /*
