@@ -1,3 +1,12 @@
+Sat Jan  1 17:02:50 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* lib/irb/locale.rb (IRB::Locale#search_file): make it possible
+	  to load a localization from a gem.
+	  (IRB::Locale#lc_path): obsoleted because of the change of #search_file
+	  (IRB::Locale#each_localized_path): new private method, based on lc_path
+	  (IRB::Locale#find): follows the change of #search_file.
+	  (IRB::Locale#load): removed duplicate with #find.
+
 Sat Jan  1 11:44:42 2011  Tanaka Akira  <akr@fsij.org>
 
 	* strftime.c: parenthesize macro arguments.
