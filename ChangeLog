@@ -56,7 +56,7 @@ Sat Jan  1 11:03:58 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/README (rb_optparse.{bash,zsh}): for shell completion.
 
-	* include/ruby/intern.h (VALUE rb_ary_join): I have never seen
+	* include/ruby/intern.h (VALUE rb_ary_print_on): I have never seen
 	  this function anywhere.
 
 Sat Jan  1 04:20:11 2011  NARUSE, Yui  <naruse@ruby-lang.org>
@@ -175,8 +175,8 @@ Tue Dec 28 01:45:12 2010  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 Mon Dec 27 21:22:33 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* win32/configure.bat: Remove obsoleted conding rule. Now, we
-	  don't support to build on Windows 95/98.
+	* win32/configure.bat: Remove obsoleted coding rule. Now, we
+	  don't support to build on Windows 95/98 and Me.
 
 Mon Dec 27 18:27:13 2010  Tanaka Akira  <akr@fsij.org>
 
