@@ -1,3 +1,8 @@
+Wed Jan  5 14:06:01 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/rdoc/test_rdoc_options.rb (TestRDocOptions#test_check_files):
+	  skip on Windows because chmod 0 doesn't mean unreadable by owner.
+
 Wed Jan  5 13:56:54 2011  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/net/http.rb (Net::HTTP#get): A header hash given should not

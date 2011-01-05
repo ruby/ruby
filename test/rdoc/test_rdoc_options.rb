@@ -17,6 +17,7 @@ class TestRDocOptions < MiniTest::Unit::TestCase
   end
 
   def test_check_files
+    skip "assumes UNIX permition model" if /mswin|mingw/ =~ RUBY_PLATFORM
     out, err = capture_io do
       Dir.mktmpdir do |dir|
         Dir.chdir dir do
