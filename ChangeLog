@@ -10,12 +10,14 @@ Wed Jan  5 13:56:54 2011  Akinori MUSHA  <knu@iDaemons.org>
 
 Wed Jan  5 13:56:03 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
-	* SSL_shutdown should be called until the return value is non-zero:
+	* ext/openssl/ossl_ssl.c: SSL_shutdown should be called until the
+	  return value is non-zero:
 	  http://www.openssl.org/docs/ssl/SSL_shutdown.html
 
 Wed Jan  5 12:10:08 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
-	* Use _WIN32 rather than checking for windows.h.  Thanks Jon Forums!
+	* ext/dl/{cfunc.c,dl.h,handle.c}, ext/fiddle/fiddle.{h,c}: Use _WIN32
+	  rather than checking for windows.h.  Thanks Jon Forums!
 	  [ruby-core:33977]
 
 Sat Jan  1 17:02:50 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
