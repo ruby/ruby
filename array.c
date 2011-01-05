@@ -1308,6 +1308,51 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
     }
 }
 
+/*!
+ * expands or shrinks \a ary to \a len elements.
+ * expanded region will be filled with Qnil.
+ * \param ary  an arrray
+ * \param len  new size
+ * \return     \a ary
+ * \post       the size of \a ary is \a len.
+ */
+VALUE
+rb_ary_resize(VALUE ary, long len)
+{
+    long olen;
+
+    rb_ary_modify(ary);
+    olen = RARRAY_LEN(ary);
+    if (len == olen) return ary;
+    if (len > ARY_MAX_SIZE) {
+	rb_raise(rb_eIndexError, "index %ld too big", len);
+    }
+    if (len > olen) {
+	if (len >= ARY_CAPA(ary)) {
+	    ary_double_capa(ary, len);
+	}
+	rb_mem_clear(RARRAY_PTR(ary) + olen, len - olen);
+        ARY_SET_HEAP_LEN(ary, len);
+    }
+    else if (ARY_EMBED_P(ary)) {
+        ARY_SET_EMBED_LEN(ary, len);
+    }
+    else if (len <= RARRAY_EMBED_LEN_MAX) {
+	VALUE tmp[RARRAY_EMBED_LEN_MAX];
+	MEMCPY(tmp, ARY_HEAP_PTR(ary), VALUE, len);
+	ary_discard(ary);
+	MEMCPY(ARY_EMBED_PTR(ary), tmp, VALUE, len);
+        ARY_SET_EMBED_LEN(ary, len);
+    }
+    else {
+	if (olen > len + ARY_DEFAULT_SIZE) {
+	    REALLOC_N(RARRAY(ary)->as.heap.ptr, VALUE, len);
+	}
+	ARY_SET_HEAP_LEN(ary, len);
+    }
+    return ary;
+}
+
 /*
  *  call-seq:
  *     ary[index]         = obj                      ->  obj
