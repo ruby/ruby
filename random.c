@@ -1053,7 +1053,7 @@ static VALUE
 random_rand(int argc, VALUE *argv, VALUE obj)
 {
     rb_random_t *rnd = get_rnd(obj);
-    VALUE vmax, beg = Qundef, end, v;
+    VALUE vmax, beg = Qundef, end = Qundef, v;
     int excl = 0;
 
     if (argc == 0) {
