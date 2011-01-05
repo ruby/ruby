@@ -960,8 +960,11 @@ ossl_sslctx_flush_sessions(int argc, VALUE *argv, VALUE self)
 static void
 ossl_ssl_shutdown(SSL *ssl)
 {
+    int dead;
     if (ssl) {
-        SSL_shutdown(ssl);
+	do {
+	    dead = SSL_shutdown(ssl);
+	} while(!dead);
         SSL_clear(ssl);
     }
 }
