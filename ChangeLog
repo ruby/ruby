@@ -1,3 +1,10 @@
+Thu Jan  6 02:55:48 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: use YAML 1.0 output
+	  format for serializing nil values.  Thanks Eric Hodel!
+
+	* test/psych/test_nil.rb: test for nil values
+
 Wed Jan  5 14:21:34 2011  Mark Dodwell  <hi@mkdynamic.co.uk>
 
 	* string.c: fix rdoc typo.

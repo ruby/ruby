@@ -279,7 +279,7 @@ module Psych
       end
 
       def visit_NilClass o
-        @emitter.scalar('', nil, 'tag:yaml.org,2002:null', false, false, Nodes::Scalar::ANY)
+        @emitter.scalar('', nil, 'tag:yaml.org,2002:null', true, false, Nodes::Scalar::ANY)
       end
 
       def visit_Symbol o
