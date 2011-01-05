@@ -264,7 +264,7 @@ code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc)
 
   if (enclen(enc, buf, p) != (p - buf))
     return ONIGERR_INVALID_CODE_POINT_VALUE;
-  return p - buf;
+  return (int)(p - buf);
 }
 
 static int

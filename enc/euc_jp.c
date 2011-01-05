@@ -193,7 +193,7 @@ code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc)
   if (enclen(enc, buf, p) != (p - buf))
     return ONIGERR_INVALID_CODE_POINT_VALUE;
 #endif  
-  return p - buf;
+  return (int)(p - buf);
 }
 
 static int
@@ -299,7 +299,7 @@ property_name_to_ctype(OnigEncoding enc, UChar* p, UChar* end)
     return onigenc_minimum_property_name_to_ctype(enc, s, e);
   }
 
-  return ctype;
+  return (int)ctype;
 }
 
 static int
