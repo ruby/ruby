@@ -1,3 +1,9 @@
+Wed Jan  5 19:06:56 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/socket.c (make_addrinfo): skip IPv6 addresses when ruby
+	  doesn't support IPv6 but system supports it.
+	  [ruby-dev:42944] (#4230)
+
 Sat Jan  1 10:59:11 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* intern.h (VALUE rb_ary_join): I have never seen this function

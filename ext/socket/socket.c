@@ -3278,6 +3278,10 @@ make_addrinfo(res0)
     }
     base = rb_ary_new();
     for (res = res0; res; res = res->ai_next) {
+#if defined(AF_INET6) && !defined(INET6)	/* workaround for Windows */
+	if (res->ai_addr->sa_family == AF_INET6)
+	    continue;
+#endif
 	ary = ipaddr(res->ai_addr);
 	rb_ary_push(ary, INT2FIX(res->ai_family));
 	rb_ary_push(ary, INT2FIX(res->ai_socktype));
