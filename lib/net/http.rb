@@ -987,7 +987,9 @@ module Net   #:nodoc:
       res = nil
       if HAVE_ZLIB
         unless  initheader.keys.any?{|k| k.downcase == "accept-encoding"}
-          initheader["accept-encoding"] = "gzip;q=1.0,deflate;q=0.6,identity;q=0.3"
+          initheader = initheader.merge({
+            "accept-encoding" => "gzip;q=1.0,deflate;q=0.6,identity;q=0.3"
+          })
           @compression = true
         end
       end
