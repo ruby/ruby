@@ -247,7 +247,7 @@ rb_ary_modify_check(VALUE ary)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify array");
 }
 
-static void
+void
 rb_ary_modify(VALUE ary)
 {
     rb_ary_modify_check(ary);
