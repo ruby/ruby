@@ -10,5 +10,5 @@ ary_resize(VALUE ary, VALUE len)
 void
 Init_resize(void)
 {
-    rb_define_method(rb_cArray, "resize", ary_resize, 1);
+    rb_define_method(rb_cArray, "__resize__", ary_resize, 1);
 }
