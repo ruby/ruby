@@ -1,3 +1,8 @@
+Thu Jan  6 05:03:26 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dln.c (init_funcname_len): ignore rest from first dot.
+	  [ruby-dev:41774]
+
 Thu Jan  6 02:55:48 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/yaml_tree.rb: use YAML 1.0 output
