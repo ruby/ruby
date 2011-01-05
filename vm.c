@@ -480,14 +480,14 @@ rb_vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass)
     }
 
     if (GC_GUARDED_PTR_REF(cfp->lfp[0])) {
-	    rb_proc_t *p;
+	rb_proc_t *p;
 
-	    blockprocval = vm_make_proc_from_block(
-		th, (rb_block_t *)GC_GUARDED_PTR_REF(*cfp->lfp));
+	blockprocval = vm_make_proc_from_block(
+	    th, (rb_block_t *)GC_GUARDED_PTR_REF(*cfp->lfp));
 
-	    GetProcPtr(blockprocval, p);
-	    *cfp->lfp = GC_GUARDED_PTR(&p->block);
-	}
+	GetProcPtr(blockprocval, p);
+	*cfp->lfp = GC_GUARDED_PTR(&p->block);
+    }
 
     envval = rb_vm_make_env_object(th, cfp);
 
