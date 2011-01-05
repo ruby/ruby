@@ -471,4 +471,13 @@ class TestStringIO < Test::Unit::TestCase
       expected_pos += 1
     end
   end
+
+  def test_frozen
+    s = StringIO.new
+    s.freeze
+    bug = '[ruby-core:33648]'
+    assert_raise(RuntimeError, bug) {s.puts("foo")}
+    assert_raise(RuntimeError, bug) {s.string = "foo"}
+    assert_raise(RuntimeError, bug) {s.reopen("")}
+  end
 end
