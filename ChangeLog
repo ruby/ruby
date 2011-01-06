@@ -1,3 +1,8 @@
+Thu Jan  6 09:23:33 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* lib/net/protocol.rb (eof?): BufferedIO should proxy eof? to the
+	  underlying IO object.
+
 Thu Jan  6 09:12:31 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* lib/mkmf.rb (configuration): fixing gsub when multiple error flags

@@ -62,6 +62,10 @@ module Net # :nodoc:
       "#<#{self.class} io=#{@io}>"
     end
 
+    def eof?
+      @io.eof?
+    end
+
     def closed?
       @io.closed?
     end
