@@ -1,3 +1,9 @@
+Thu Jan  6 19:28:36 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/{getaddrinfo,getnameinfo}.c: include winsock2.h only when
+	  specified to use winsock2 by user.
+	  this problem is reported by kosaki.
+
 Thu Jan  6 18:12:24 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/README.win32: fix the misunderstanding of previous commit.

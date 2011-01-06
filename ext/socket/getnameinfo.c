@@ -56,7 +56,11 @@
 #endif
 #endif
 #ifdef _WIN32
+#if USE_WINSOCK2
 #include <winsock2.h>
+#else
+#include <winsock.h>
+#endif
 #define snprintf _snprintf
 #endif
 
