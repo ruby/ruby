@@ -1660,7 +1660,9 @@ VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
   extconf_h = $extconf_h ? "-DRUBY_EXTCONF_H=\\\"$(RUBY_EXTCONF_H)\\\" " : $defs.join(" ") << " "
   if warnflags = CONFIG['warnflags'] and CONFIG['GCC'] == 'yes' and !$extmk
     # turn warnings into errors only for bundled extensions.
-    warnflags = warnflags.gsub(/(?:\A|\s)-Werror=/, '\1-W')
+    warnflags = warnflags.split.map { |flag|
+      flag.gsub(/(?:\A|\s)-Werror=/, '\1-W')
+    }.join ' '
   end
   mk << %{
 CC = #{CONFIG['CC']}
