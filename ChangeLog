@@ -1,3 +1,7 @@
+Fri Jan  7 00:37:35 2011  Tanaka Akira  <akr@fsij.org>
+
+	* string.c: parenthesize macro arguments.
+
 Thu Jan  6 20:55:49 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): ignore rest from first dot from
