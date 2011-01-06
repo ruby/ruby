@@ -1,3 +1,9 @@
+Thu Jan  6 20:55:49 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile): ignore rest from first dot from
+	  TARGET to generate init function name.
+	  this is followup of r30464.
+
 Thu Jan  6 11:27:01 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/json/tree_builder.rb (start_mapping): tags

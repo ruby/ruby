@@ -1895,7 +1895,7 @@ def create_makefile(target, srcprefix = nil)
         makedef = %{-pe "$_.sub!(/^(?=\\w)/,'#{EXPORT_PREFIX}') unless 1../^EXPORTS$/i"}
       end
     else
-      makedef = %{-e "puts 'EXPORTS', '#{EXPORT_PREFIX}Init_$(TARGET)'"}
+      makedef = %{-e "puts 'EXPORTS', '#{EXPORT_PREFIX}' + 'Init_$(TARGET)'.sub(/\\..*\\z/,'')"}
     end
     if makedef
       $cleanfiles << '$(DEFFILE)'
