@@ -20,6 +20,8 @@
      * cl
      * lib
      * dumpbin
+     * byacc
+     * sed
 
 == How to compile and install
 
