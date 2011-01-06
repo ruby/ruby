@@ -1,3 +1,8 @@
+Thu Jan  6 11:27:01 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/json/tree_builder.rb (start_mapping): tags
+	  should not be included in JSON mapping
+
 Thu Jan  6 09:23:33 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* lib/net/protocol.rb (eof?): BufferedIO should proxy eof? to the
