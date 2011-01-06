@@ -1,3 +1,7 @@
+Thu Jan  6 18:12:24 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/README.win32: fix the misunderstanding of previous commit.
+
 Thu Jan  6 17:59:24 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* win32/README.win32: Add byacc and sed to required commands list.

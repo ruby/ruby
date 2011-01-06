@@ -20,6 +20,9 @@
      * cl
      * lib
      * dumpbin
+
+(5) If you want to build from SVN source, following commands are required.
+
      * byacc
      * sed
 
