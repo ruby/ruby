@@ -3,7 +3,7 @@
 require 'test/unit'
 require 'net/http'
 require 'stringio'
-require File.expand_path("utils", File.dirname(__FILE__))
+require_relative 'utils'
 
 module TestNetHTTP_version_1_1_methods
 
