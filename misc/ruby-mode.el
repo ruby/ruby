@@ -297,6 +297,7 @@ Also ignores spaces after parenthesis when 'space."
 
 (defun ruby-mode-variables ()
   (set-syntax-table ruby-mode-syntax-table)
+  (setq show-trailing-whitespace t)
   (setq local-abbrev-table ruby-mode-abbrev-table)
   (make-local-variable 'indent-line-function)
   (setq indent-line-function 'ruby-indent-line)
