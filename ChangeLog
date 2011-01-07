@@ -1,3 +1,8 @@
+Fri Jan  7 21:54:04 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-font-lock-syntactic-keywords): highlight
+	  regexp after open bracket.  [ruby-core:34183]
+
 Fri Jan  7 00:37:35 2011  Tanaka Akira  <akr@fsij.org>
 
 	* string.c: parenthesize macro arguments.
