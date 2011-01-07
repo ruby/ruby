@@ -1,3 +1,7 @@
+Fri Jan  7 23:07:40 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (configuration): backref needs to capture.
+
 Fri Jan  7 21:57:22 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-mode-variables), misc/ruby-style.el:
