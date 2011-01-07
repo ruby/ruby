@@ -2,6 +2,12 @@ Fri Jan  7 00:37:35 2011  Tanaka Akira  <akr@fsij.org>
 
 	* string.c: parenthesize macro arguments.
 
+Thu Jan  6 22:42:02 2011  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (bigmul1_karatsuba): avoid overflow that make assertion
+	  fail in certain case.  this patch is contributed from Ray Chason
+	  <chasonr at gmail.com> in personal communication.
+
 Thu Jan  6 20:55:49 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): ignore rest from first dot from
