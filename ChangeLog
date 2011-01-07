@@ -81,12 +81,6 @@ Wed Jan  5 13:56:54 2011  Akinori MUSHA  <knu@iDaemons.org>
 	* lib/net/http.rb (Net::HTTP#get): A header hash given should not
 	  be modified.
 
-Wed Jan  5 13:56:03 2011  Aaron Patterson <aaron@tenderlovemaking.com>
-
-	* ext/openssl/ossl_ssl.c: SSL_shutdown should be called until the
-	  return value is non-zero:
-	  http://www.openssl.org/docs/ssl/SSL_shutdown.html
-
 Wed Jan  5 12:10:08 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/dl/{cfunc.c,dl.h,handle.c}, ext/fiddle/fiddle.{h,c}: Use _WIN32
