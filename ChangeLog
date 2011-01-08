@@ -1,3 +1,7 @@
+Sat Jan  8 20:51:25 2011  Tanaka Akira  <akr@fsij.org>
+
+	* pack.c (swapd): remove duplicated code.
+
 Sat Jan  8 19:28:55 2011  Tanaka Akira  <akr@fsij.org>
 
 	* thread.c: parenthesize macro arguments.

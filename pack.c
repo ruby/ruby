@@ -160,35 +160,19 @@ TOKEN_PASTE(swap,x)(xtype z)		\
 #  define swapd(x)	swap64(x)
 #  define DOUBLE_SWAPPER	uint64_t
 # else
-#  if SIZEOF_LONG == 4	/* SIZEOF_DOUBLE == 8 && 4 == SIZEOF_LONG */
+#  if HAVE_INT32_T /* SIZEOF_DOUBLE == 8 && 4 == SIZEOF_INT32 */
     static double
     swapd(const double d)
     {
 	double dtmp = d;
-	unsigned long utmp[2];
-	unsigned long utmp0;
+	uint32_t utmp[2];
+	uint32_t utmp0;
 
 	utmp[0] = 0; utmp[1] = 0;
 	memcpy(utmp,&dtmp,sizeof(double));
 	utmp0 = utmp[0];
-	utmp[0] = swapl(utmp[1]);
-	utmp[1] = swapl(utmp0);
-	memcpy(&dtmp,utmp,sizeof(double));
-	return dtmp;
-    }
-#  elif SIZEOF_SHORT == 4	/* SIZEOF_DOUBLE == 8 && 4 == SIZEOF_SHORT */
-    static double
-    swapd(const double d)
-    {
-	double dtmp = d;
-	unsigned short utmp[2];
-	unsigned short utmp0;
-
-	utmp[0] = 0; utmp[1] = 0;
-	memcpy(utmp,&dtmp,sizeof(double));
-	utmp0 = utmp[0];
-	utmp[0] = swaps(utmp[1]);
-	utmp[1] = swaps(utmp0);
+	utmp[0] = swap32(utmp[1]);
+	utmp[1] = swap32(utmp0);
 	memcpy(&dtmp,utmp,sizeof(double));
 	return dtmp;
     }
