@@ -10063,8 +10063,8 @@ argf_write(VALUE argf, VALUE str)
  */
 
 /*
-* Document-class: EOFError
-*
+ * Document-class: EOFError
+ *
  * Raised by some IO operations when reaching the end of file. Many IO
  * methods exist in two forms,
  *

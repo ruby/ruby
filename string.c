@@ -4690,7 +4690,7 @@ rb_str_capitalize(VALUE str)
 
 /*
  *  call-seq:
-*     str.swapcase!   -> str or nil
+ *     str.swapcase!   -> str or nil
  *
  *  Equivalent to <code>String#swapcase</code>, but modifies the receiver in
  *  place, returning <i>str</i>, or <code>nil</code> if no changes were made.
