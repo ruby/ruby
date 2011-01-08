@@ -1,3 +1,8 @@
+Sat Jan  8 21:24:17 2011  Tanaka Akira  <akr@fsij.org>
+
+	* pack.c (swapf): compilation condition simplified.
+	  (swapd): ditto.
+
 Sat Jan  8 20:51:25 2011  Tanaka Akira  <akr@fsij.org>
 
 	* pack.c (swapd): remove duplicated code.

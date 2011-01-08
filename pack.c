@@ -144,23 +144,17 @@ TOKEN_PASTE(swap,x)(xtype z)		\
 # endif
 #endif
 
-#if SIZEOF_FLOAT == 4
-# ifdef HAVE_UINT32_T
-#  define swapf(x)	swap32(x)
-#  define FLOAT_SWAPPER	uint32_t
-# else	/* SIZEOF_FLOAT == 4 but undivide by known size of int */
-   define_swapx(f,float)
-# endif
-#else	/* SIZEOF_FLOAT != 4 */
-  define_swapx(f,float)
-#endif	/* #if SIZEOF_FLOAT == 4 */
+#if SIZEOF_FLOAT == 4 && defined(HAVE_INT32_T)
+#   define swapf(x)	swap32(x)
+#   define FLOAT_SWAPPER	uint32_t
+#else
+    define_swapx(f,float)
+#endif
 
-#if SIZEOF_DOUBLE == 8
-# ifdef HAVE_UINT64_T	/* SIZEOF_DOUBLE == 8 == SIZEOF_UINT64_T */
-#  define swapd(x)	swap64(x)
-#  define DOUBLE_SWAPPER	uint64_t
-# else
-#  if HAVE_INT32_T /* SIZEOF_DOUBLE == 8 && 4 == SIZEOF_INT32 */
+#if SIZEOF_DOUBLE == 8 && defined(HAVE_INT64_T)
+#   define swapd(x)	swap64(x)
+#   define DOUBLE_SWAPPER	uint64_t
+#elif SIZEOF_DOUBLE == 8 && defined(HAVE_INT32_T)
     static double
     swapd(const double d)
     {
@@ -176,13 +170,9 @@ TOKEN_PASTE(swap,x)(xtype z)		\
 	memcpy(&dtmp,utmp,sizeof(double));
 	return dtmp;
     }
-#  else	/* SIZEOF_DOUBLE == 8 but undivide by known size of int */
+#else
     define_swapx(d, double)
-#  endif
-# endif	/* #if SIZEOF_LONG == 8 */
-#else	/* SIZEOF_DOUBLE != 8 */
-  define_swapx(d, double)
-#endif	/* #if SIZEOF_DOUBLE == 8 */
+#endif
 
 #undef define_swapx
 
