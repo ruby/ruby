@@ -812,19 +812,6 @@ sort_by_cmp(const void *ap, const void *bp, void *data)
     return rb_cmpint(rb_funcall(a, id_cmp, 1, b), a, b);
 }
 
-static void
-ary_cutoff(VALUE ary, long len)
-{
-    long i;
-    if (RBASIC(ary)->flags & RARRAY_EMBED_FLAG) {
-	for (i=RARRAY_LEN(ary)-len; 0<i; i--)
-	    rb_ary_pop(ary);
-    }
-    else {
-        RARRAY(ary)->as.heap.len = len;
-    }
-}
-
 /*
  *  call-seq:
  *     enum.sort_by {| obj | block }    -> array
@@ -918,7 +905,7 @@ enum_sort_by(VALUE obj)
     rb_ary_store(data.buf, SORT_BY_BUFSIZE*2-1, Qnil);
     rb_block_call(obj, id_each, 0, 0, sort_by_i, (VALUE)&data);
     if (data.n) {
-	ary_cutoff(data.buf, data.n*2);
+	rb_ary_resize(data.buf, data.n*2);
 	rb_ary_concat(ary, data.buf);
     }
     if (RARRAY_LEN(ary) > 2) {
@@ -931,7 +918,7 @@ enum_sort_by(VALUE obj)
     for (i=1; i<RARRAY_LEN(ary); i+=2) {
 	RARRAY_PTR(ary)[i/2] = RARRAY_PTR(ary)[i];
     }
-    ary_cutoff(ary, RARRAY_LEN(ary)/2);
+    rb_ary_resize(ary, RARRAY_LEN(ary)/2);
     RBASIC(ary)->klass = rb_cArray;
     OBJ_INFECT(ary, obj);
 

@@ -1,3 +1,8 @@
+Sat Jan  8 21:47:26 2011  Tanaka Akira  <akr@fsij.org>
+
+	* enum.c (enum_sort_by): use rb_ary_resize.
+	  (ary_cutoff): removed.
+
 Sat Jan  8 21:24:17 2011  Tanaka Akira  <akr@fsij.org>
 
 	* pack.c (swapf): compilation condition simplified.
