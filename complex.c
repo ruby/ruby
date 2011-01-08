@@ -576,6 +576,11 @@ f_complex_polar(VALUE klass, VALUE x, VALUE y)
  *    Complex.polar(abs[, arg])  ->  complex
  *
  * Returns a complex object which denotes the given polar form.
+ *
+ *   Complex.polar(3, 0)           #=> (3.0+0.0i)
+ *   Complex.polar(3, Math::PI/2)  #=> (1.836909530733566e-16+3.0i)
+ *   Complex.polar(3, Math::PI)    #=> (-3.0+3.673819061467132e-16i)
+ *   Complex.polar(3, -Math::PI/2) #=> (1.836909530733566e-16-3.0i)
  */
 static VALUE
 nucomp_s_polar(int argc, VALUE *argv, VALUE klass)
@@ -985,6 +990,9 @@ nucomp_abs2(VALUE self)
  *    cmp.phase  ->  float
  *
  * Returns the angle part of its polar form.
+ *
+ *   Complex.polar(3, Math::PI/2).arg #=> 1.5707963267948966
+ *
  */
 static VALUE
 nucomp_arg(VALUE self)
