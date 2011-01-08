@@ -1,3 +1,7 @@
+Sat Jan  8 19:28:55 2011  Tanaka Akira  <akr@fsij.org>
+
+	* thread.c: parenthesize macro arguments.
+
 Fri Jan  7 23:07:40 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (configuration): backref needs to capture.

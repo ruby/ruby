@@ -131,7 +131,7 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
 #define BLOCKING_REGION(exec, ubf, ubfarg) do { \
     rb_thread_t *__th = GET_THREAD(); \
     struct rb_blocking_region_buffer __region; \
-    blocking_region_begin(__th, &__region, ubf, ubfarg); \
+    blocking_region_begin(__th, &__region, (ubf), (ubfarg)); \
     exec; \
     blocking_region_end(__th, &__region); \
     RUBY_VM_CHECK_INTS(); \
@@ -2368,9 +2368,9 @@ rb_fd_select(int n, rb_fdset_t *readfds, rb_fdset_t *writefds, rb_fdset_t *excep
 #undef FD_ISSET
 
 #define FD_ZERO(f)	rb_fd_zero(f)
-#define FD_SET(i, f)	rb_fd_set(i, f)
-#define FD_CLR(i, f)	rb_fd_clr(i, f)
-#define FD_ISSET(i, f)	rb_fd_isset(i, f)
+#define FD_SET(i, f)	rb_fd_set((i), (f))
+#define FD_CLR(i, f)	rb_fd_clr((i), (f))
+#define FD_ISSET(i, f)	rb_fd_isset((i), (f))
 
 #elif defined(_WIN32)
 
@@ -2414,9 +2414,9 @@ rb_fd_set(int fd, rb_fdset_t *set)
 #undef FD_ISSET
 
 #define FD_ZERO(f)	rb_fd_zero(f)
-#define FD_SET(i, f)	rb_fd_set(i, f)
-#define FD_CLR(i, f)	rb_fd_clr(i, f)
-#define FD_ISSET(i, f)	rb_fd_isset(i, f)
+#define FD_SET(i, f)	rb_fd_set((i), (f))
+#define FD_CLR(i, f)	rb_fd_clr((i), (f))
+#define FD_ISSET(i, f)	rb_fd_isset((i), (f))
 
 #endif
 
@@ -3045,7 +3045,7 @@ thgroup_add(VALUE group, VALUE thread)
  */
 
 #define GetMutexPtr(obj, tobj) \
-    TypedData_Get_Struct(obj, mutex_t, &mutex_data_type, tobj)
+    TypedData_Get_Struct((obj), mutex_t, &mutex_data_type, (tobj))
 
 static const char *mutex_unlock(mutex_t *mutex, rb_thread_t volatile *th);
 
@@ -3455,7 +3455,7 @@ barrier_alloc(VALUE klass)
     return TypedData_Wrap_Struct(klass, &barrier_data_type, (void *)mutex_alloc(0));
 }
 
-#define GetBarrierPtr(obj) (VALUE)rb_check_typeddata(obj, &barrier_data_type)
+#define GetBarrierPtr(obj) ((VALUE)rb_check_typeddata((obj), &barrier_data_type))
 
 VALUE
 rb_barrier_new(void)
