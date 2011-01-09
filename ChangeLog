@@ -1,3 +1,10 @@
+Sun Jan  9 16:31:34 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* lib/irb/locale.rb (IRB::Locale::LOCALE_NAME_RE): 
+	  some platoform has a locale without territory but with 
+	  encoding.
+	  (#each_sub_locale): ditto.
+
 Sun Jan  9 14:47:50 2011  TAKAO Kouji  <kouji@takao7.net>
 
 	* ext/readline/readline.c: apply a patch from Nobuyoshi Nakada.

@@ -13,16 +13,10 @@ module IRB
     @RCS_ID='-$Id$-'
 
     LOCALE_NAME_RE = %r[
-      (?<language>[[:alpha:]]{2})
-      (?:_
-       (?<territory>[[:alpha:]]{2,3})
-       (?:\.
-	(?<codeset>[^@]+)
-       )?
-      )?
-      (?:@
-       (?<modifier>.*)
-      )?
+      (?<language>[[:alpha:]]{2,3})
+      (?:_  (?<territory>[[:alpha:]]{2,3}) )?
+      (?:\. (?<codeset>[^@]+) )?
+      (?:@  (?<modifier>.*) )?
     ]x
     LOCALE_DIR = "/lc/"
 
@@ -175,6 +169,10 @@ module IRB
 	  yield "#{@lang}_#{@territory}@#{@modifier}" if @modifier
 	  yield "#{@lang}_#{@territory}"
 	end
+        if @encoding_name
+          yield "#{@lang}.#{@encoding_name}@#{@modifier}" if @modifier
+          yield "#{@lang}.#{@encoding_name}"
+        end
 	yield "#{@lang}@#{@modifier}" if @modifier
 	yield "#{@lang}"
       end
