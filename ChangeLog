@@ -1,3 +1,9 @@
+Sun Jan  9 14:47:50 2011  TAKAO Kouji  <kouji@takao7.net>
+
+	* ext/readline/readline.c: apply a patch from Nobuyoshi Nakada.
+	  fixed #3616 [ruby-core:31484] IRB + readline incorrectly counts
+	  non-printing characters in prompt
+
 Sat Jan  8 21:47:26 2011  Tanaka Akira  <akr@fsij.org>
 
 	* enum.c (enum_sort_by): use rb_ary_resize.
