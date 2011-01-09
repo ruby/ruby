@@ -1,3 +1,7 @@
+Mon Jan 10 07:41:31 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* misc/README: mention rdoc-mode.el and ruby-style.el.
+
 Sun Jan  9 20:37:21 2011  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c: parenthesize macro arguments.
