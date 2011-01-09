@@ -7786,16 +7786,22 @@ rb_io_fcntl(int argc, VALUE *argv, VALUE io)
 #define rb_io_fcntl rb_f_notimplement
 #endif
 
-#if defined(HAVE_SYSCALL) && SIZEOF_LONG == SIZEOF_INT
+#if defined(HAVE_SYSCALL) || defined(HAVE___SYSCALL)
 /*
  *  call-seq:
- *     syscall(fixnum [, args...])   -> integer
+ *     syscall(num [, args...])   -> integer
  *
- *  Calls the operating system function identified by _fixnum_,
- *  passing in the arguments, which must be either +String+
- *  objects, or +Integer+ objects that ultimately fit within
- *  a native +long+. Up to nine parameters may be passed (14
- *  on the Atari-ST). The function identified by _fixnum_ is system
+ *  Calls the operating system function identified by _num_ and
+ *  returns the result of the function or raises SystemCallError if
+ *  it failed.
+ *
+ *  Arguments for the function can follow _num_. They must be either
+ *  +String+ objects or +Integer+ objects. A +String+ object is passed
+ *  as a pointer to the byte sequence. An +Integer+ object is passed
+ *  as an integer whose bit size is same as a pointer.
+ *  Up to nine parameters may be passed (14 on the Atari-ST). 
+ *
+ *  The function identified by _num_ is system
  *  dependent. On some Unix systems, the numbers may be obtained from a
  *  header file called <code>syscall.h</code>.
  *
@@ -7804,102 +7810,120 @@ rb_io_fcntl(int argc, VALUE *argv, VALUE io)
  *  <em>produces:</em>
  *
  *     hello
+ *
+ *
+ *  Calling +syscall+ on a platform which does not have any way to
+ *  an arbitrary system function just fails with NotImplementedError.
+ *
+ * Note::
+ *   +syscall+ is essentially unsafe and unportable. Feel free to shoot your foot.
+ *   DL (Fiddle) library is preferred for safer and a bit more portable programming.
  */
 
 static VALUE
 rb_f_syscall(int argc, VALUE *argv)
 {
 #ifdef atarist
-    unsigned long arg[14]; /* yes, we really need that many ! */
+    VALUE arg[13]; /* yes, we really need that many ! */
 #else
-    unsigned long arg[8];
+    VALUE arg[8];
 #endif
-    int retval = -1;
-    int i = 1;
-    int items = argc - 1;
-
-    /* This probably won't work on machines where sizeof(long) != sizeof(int)
-     * or where sizeof(long) != sizeof(char*).  But such machines will
-     * not likely have syscall implemented either, so who cares?
-     */
+#if SIZEOF_VOIDP == 8 && HAVE___SYSCALL && SIZEOF_INT != 8 /* mainly *BSD */
+# define SYSCALL __syscall
+# define NUM2SYSCALLID(x) NUM2LONG(x)
+# define RETVAL2NUM(x) LONG2NUM(x)
+# if SIZEOF_LONG == 8
+    long num, retval = -1;
+# elif SIZEOF_LONG_LONG == 8
+    long long num, retval = -1;
+# else
+#  error ---->> it is asserted that __syscall takes the first argument and returns retval in 64bit signed integer. <<----
+# endif
+#else
+# define SYSCALL syscall
+# define NUM2SYSCALLID(x) NUM2INT(x)
+# define RETVAL2NUM(x) INT2NUM(x)
+    int num, retval = -1;
+#endif
+    int i;
 
     rb_secure(2);
     if (argc == 0)
 	rb_raise(rb_eArgError, "too few arguments for syscall");
     if (argc > numberof(arg))
 	rb_raise(rb_eArgError, "too many arguments for syscall");
-    arg[0] = NUM2LONG(argv[0]); argv++;
-    while (items--) {
-	VALUE v = rb_check_string_type(*argv);
+    num = NUM2SYSCALLID(argv[0]); ++argv;
+    for (i = argc - 1; i--; ) {
+	VALUE v = rb_check_string_type(argv[i]);
 
 	if (!NIL_P(v)) {
 	    SafeStringValue(v);
 	    rb_str_modify(v);
-	    arg[i] = (unsigned long)StringValueCStr(v);
+	    arg[i] = (VALUE)StringValueCStr(v);
 	}
 	else {
-	    arg[i] = (unsigned long)NUM2LONG(*argv);
+	    arg[i] = (VALUE)NUM2LONG(argv[i]);
 	}
-	argv++;
-	i++;
     }
 
     switch (argc) {
       case 1:
-	retval = syscall(arg[0]);
+	retval = SYSCALL(num);
 	break;
       case 2:
-	retval = syscall(arg[0],arg[1]);
+	retval = SYSCALL(num, arg[0]);
 	break;
       case 3:
-	retval = syscall(arg[0],arg[1],arg[2]);
+	retval = SYSCALL(num, arg[0],arg[1]);
 	break;
       case 4:
-	retval = syscall(arg[0],arg[1],arg[2],arg[3]);
+	retval = SYSCALL(num, arg[0],arg[1],arg[2]);
 	break;
       case 5:
-	retval = syscall(arg[0],arg[1],arg[2],arg[3],arg[4]);
+	retval = SYSCALL(num, arg[0],arg[1],arg[2],arg[3]);
 	break;
       case 6:
-	retval = syscall(arg[0],arg[1],arg[2],arg[3],arg[4],arg[5]);
+	retval = SYSCALL(num, arg[0],arg[1],arg[2],arg[3],arg[4]);
 	break;
       case 7:
-	retval = syscall(arg[0],arg[1],arg[2],arg[3],arg[4],arg[5],arg[6]);
+	retval = SYSCALL(num, arg[0],arg[1],arg[2],arg[3],arg[4],arg[5]);
 	break;
       case 8:
-	retval = syscall(arg[0],arg[1],arg[2],arg[3],arg[4],arg[5],arg[6],
-	  arg[7]);
+	retval = SYSCALL(num, arg[0],arg[1],arg[2],arg[3],arg[4],arg[5],arg[6]);
 	break;
 #ifdef atarist
       case 9:
-	retval = syscall(arg[0],arg[1],arg[2],arg[3],arg[4],arg[5],arg[6],
-	  arg[7], arg[8]);
+	retval = SYSCALL(num, arg[0],arg[1],arg[2],arg[3],arg[4],arg[5],arg[6],
+	  arg[7]);
 	break;
       case 10:
-	retval = syscall(arg[0],arg[1],arg[2],arg[3],arg[4],arg[5],arg[6],
-	  arg[7], arg[8], arg[9]);
+	retval = SYSCALL(num, arg[0],arg[1],arg[2],arg[3],arg[4],arg[5],arg[6],
+	  arg[7], arg[8]);
 	break;
       case 11:
-	retval = syscall(arg[0],arg[1],arg[2],arg[3],arg[4],arg[5],arg[6],
-	  arg[7], arg[8], arg[9], arg[10]);
+	retval = SYSCALL(num, arg[0],arg[1],arg[2],arg[3],arg[4],arg[5],arg[6],
+	  arg[7], arg[8], arg[9]);
 	break;
       case 12:
-	retval = syscall(arg[0],arg[1],arg[2],arg[3],arg[4],arg[5],arg[6],
-	  arg[7], arg[8], arg[9], arg[10], arg[11]);
+	retval = SYSCALL(num, arg[0],arg[1],arg[2],arg[3],arg[4],arg[5],arg[6],
+	  arg[7], arg[8], arg[9], arg[10]);
 	break;
       case 13:
-	retval = syscall(arg[0],arg[1],arg[2],arg[3],arg[4],arg[5],arg[6],
-	  arg[7], arg[8], arg[9], arg[10], arg[11], arg[12]);
+	retval = SYSCALL(num, arg[0],arg[1],arg[2],arg[3],arg[4],arg[5],arg[6],
+	  arg[7], arg[8], arg[9], arg[10], arg[11]);
 	break;
       case 14:
-	retval = syscall(arg[0],arg[1],arg[2],arg[3],arg[4],arg[5],arg[6],
-	  arg[7], arg[8], arg[9], arg[10], arg[11], arg[12], arg[13]);
-	break;
-#endif /* atarist */
+	retval = SYSCALL(num, arg[0],arg[1],arg[2],arg[3],arg[4],arg[5],arg[6],
+	  arg[7], arg[8], arg[9], arg[10], arg[11], arg[12]);
+        break;
+#endif
     }
 
     if (retval < 0) rb_sys_fail(0);
-    return INT2NUM(retval);
+    return RETVAL2NUM(retval);
+#undef SYSCALL
+#undef NUM2SYSCALLID
+#undef RETVAL2NUM
 }
 #else
 #define rb_f_syscall rb_f_notimplement

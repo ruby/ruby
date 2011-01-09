@@ -1,3 +1,9 @@
+Sun Jan  9 16:31:53 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* io.c (Kernel.#syscall): implemented on LP64/LLP64 environments too.
+	  also uses __syscall if available for *BSD on 64bit architecture.
+	  [ruby-core:34062]
+
 Sun Jan  9 16:31:34 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/irb/locale.rb (IRB::Locale::LOCALE_NAME_RE): 
