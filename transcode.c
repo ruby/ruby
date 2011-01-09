@@ -234,7 +234,7 @@ rb_declare_transcoder(const char *enc1, const char *enc2, const char *lib)
     declare_transcoder(enc1, enc2, lib);
 }
 
-#define encoding_equal(enc1, enc2) (STRCASECMP(enc1, enc2) == 0)
+#define encoding_equal(enc1, enc2) (STRCASECMP((enc1), (enc2)) == 0)
 
 typedef struct search_path_queue_tag {
     struct search_path_queue_tag *next;
@@ -452,7 +452,7 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
             tc->recognized_len -= readagain_len; \
             tc->readagain_len = readagain_len; \
         } \
-        return ret; \
+        return (ret); \
         resume_label ## num:; \
     } while (0)
 #define SUSPEND_OBUF(num) \
