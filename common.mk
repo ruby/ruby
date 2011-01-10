@@ -143,6 +143,9 @@ main: showflags encs exts
 exts enc trans: showflags
 showflags:
 	$(MESSAGE_BEGIN) \
+	"	CC = $(CC)" \
+	"	LD = $(LD)" \
+	"	LDSHARED = $(LDSHARED)" \
 	"	CFLAGS = $(CFLAGS)" \
 	"	XCFLAGS = $(XCFLAGS)" \
 	"	CPPFLAGS = $(CPPFLAGS)" \
@@ -161,7 +164,7 @@ exts: $(MKMAIN_CMD)
 $(MKMAIN_CMD): $(MKFILES) incs $(PREP) $(RBCONFIG) $(LIBRUBY)
 	@$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --command-output=$@ $(EXTMK_ARGS)
 
-prog: $(PROGRAM) $(WPROGRAM)
+prog: program wprogram
 
 loadpath: $(PREP) PHONY
 	$(MINIRUBY) -e 'p $$:'
@@ -185,7 +188,8 @@ Doxyfile: $(srcdir)/template/Doxyfile.tmpl $(PREP) $(srcdir)/tool/generic_erb.rb
 	$(Q) $(MINIRUBY) $(srcdir)/tool/generic_erb.rb -o $@ $(srcdir)/template/Doxyfile.tmpl \
 	--srcdir="$(srcdir)" --miniruby="$(MINIRUBY)"
 
-program: $(PROGRAM)
+program: showflags $(PROGRAM)
+wprogram: showflags $(WPROGRAM)
 
 $(PROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SETUP) $(PREP)
 
