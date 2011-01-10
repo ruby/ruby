@@ -180,7 +180,7 @@ ruby_strtoul(const char *str, char **endptr, int base)
 #endif
 
 #ifndef S_ISDIR
-#   define S_ISDIR(m) ((m & S_IFMT) == S_IFDIR)
+#   define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
 #endif
 
 #if defined(__CYGWIN32__) || defined(_WIN32)
@@ -259,7 +259,7 @@ static int valid_filename(const char *s);
 static const char suffix1[] = ".$$$";
 static const char suffix2[] = ".~~~";
 
-#define strEQ(s1,s2) (strcmp(s1,s2) == 0)
+#define strEQ(s1,s2) (strcmp((s1),(s2)) == 0)
 
 extern const char *ruby_find_basename(const char *, long *, long *);
 extern const char *ruby_find_extname(const char *, long *);
@@ -373,12 +373,12 @@ valid_filename(const char *s)
 #define D ((int*)d)
 
 #define mmprepare(base, size) do {\
- if (((VALUE)base & (0x3)) == 0)\
-   if (size >= 16) mmkind = 1;\
-   else            mmkind = 0;\
- else              mmkind = -1;\
- high = (size & (~0xf));\
- low  = (size &  0x0c);\
+ if (((VALUE)(base) & (0x3)) == 0)\
+   if ((size) >= 16) mmkind = 1;\
+   else              mmkind = 0;\
+ else                mmkind = -1;\
+ high = ((size) & (~0xf));\
+ low  = ((size) &  0x0c);\
 } while (0)\
 
 #define mmarg mmkind, size, high, low
@@ -443,11 +443,11 @@ static void mmrot3_(register char *a, register char *b, register char *c, int mm
 
 typedef struct { char *LL, *RR; } stack_node; /* Stack structure for L,l,R,r */
 #define PUSH(ll,rr) do { top->LL = (ll); top->RR = (rr); ++top; } while (0)  /* Push L,l,R,r */
-#define POP(ll,rr)  do { --top; ll = top->LL; rr = top->RR; } while (0)      /* Pop L,l,R,r */
+#define POP(ll,rr)  do { --top; (ll) = top->LL; (rr) = top->RR; } while (0)      /* Pop L,l,R,r */
 
-#define med3(a,b,c) ((*cmp)(a,b,d)<0 ?                                   \
-                       ((*cmp)(b,c,d)<0 ? b : ((*cmp)(a,c,d)<0 ? c : a)) : \
-                       ((*cmp)(b,c,d)>0 ? b : ((*cmp)(a,c,d)<0 ? a : c)))
+#define med3(a,b,c) ((*cmp)((a),(b),d)<0 ?                                   \
+                       ((*cmp)((b),(c),d)<0 ? (b) : ((*cmp)((a),(c),d)<0 ? (c) : (a))) : \
+                       ((*cmp)((b),(c),d)>0 ? (b) : ((*cmp)((a),(c),d)<0 ? (a) : (c))))
 
 void
 ruby_qsort(void* base, const size_t nel, const size_t size,
@@ -839,7 +839,7 @@ ruby_getcwd(void)
 
 #ifdef DEBUG
 #include "stdio.h"
-#define Bug(x) {fprintf(stderr, "%s\n", x); exit(1);}
+#define Bug(x) {fprintf(stderr, "%s\n", (x)); exit(1);}
 #endif
 
 #include "stdlib.h"
@@ -924,24 +924,24 @@ typedef union { double d; ULong L[2]; } U;
 
 #ifdef YES_ALIAS
 typedef double double_u;
-#  define dval(x) x
+#  define dval(x) (x)
 #  ifdef IEEE_LITTLE_ENDIAN
-#    define word0(x) (((ULong *)&x)[1])
-#    define word1(x) (((ULong *)&x)[0])
+#    define word0(x) (((ULong *)&(x))[1])
+#    define word1(x) (((ULong *)&(x))[0])
 #  else
-#    define word0(x) (((ULong *)&x)[0])
-#    define word1(x) (((ULong *)&x)[1])
+#    define word0(x) (((ULong *)&(x))[0])
+#    define word1(x) (((ULong *)&(x))[1])
 #  endif
 #else
 typedef U double_u;
 #  ifdef IEEE_LITTLE_ENDIAN
-#    define word0(x) (x.L[1])
-#    define word1(x) (x.L[0])
+#    define word0(x) ((x).L[1])
+#    define word1(x) ((x).L[0])
 #  else
-#    define word0(x) (x.L[0])
-#    define word1(x) (x.L[1])
+#    define word0(x) ((x).L[0])
+#    define word1(x) ((x).L[1])
 #  endif
-#  define dval(x) (x.d)
+#  define dval(x) ((x).d)
 #endif
 
 /* The following definition of Storeinc is appropriate for MIPS processors.
@@ -949,11 +949,11 @@ typedef U double_u;
  * #define Storeinc(a,b,c) (*a++ = b << 16 | c & 0xffff)
  */
 #if defined(IEEE_LITTLE_ENDIAN) + defined(VAX) + defined(__arm__)
-#define Storeinc(a,b,c) (((unsigned short *)a)[1] = (unsigned short)b, \
-((unsigned short *)a)[0] = (unsigned short)c, a++)
+#define Storeinc(a,b,c) (((unsigned short *)(a))[1] = (unsigned short)(b), \
+((unsigned short *)(a))[0] = (unsigned short)(c), (a)++)
 #else
-#define Storeinc(a,b,c) (((unsigned short *)a)[0] = (unsigned short)b, \
-((unsigned short *)a)[1] = (unsigned short)c, a++)
+#define Storeinc(a,b,c) (((unsigned short *)(a))[0] = (unsigned short)(b), \
+((unsigned short *)(a))[1] = (unsigned short)(c), (a)++)
 #endif
 
 /* #define P DBL_MANT_DIG */
@@ -1076,12 +1076,12 @@ typedef U double_u;
 #endif
 
 #ifdef RND_PRODQUOT
-#define rounded_product(a,b) a = rnd_prod(a, b)
-#define rounded_quotient(a,b) a = rnd_quot(a, b)
+#define rounded_product(a,b) ((a) = rnd_prod((a), (b)))
+#define rounded_quotient(a,b) ((a) = rnd_quot((a), (b)))
 extern double rnd_prod(double, double), rnd_quot(double, double);
 #else
-#define rounded_product(a,b) a *= b
-#define rounded_quotient(a,b) a /= b
+#define rounded_product(a,b) ((a) *= (b))
+#define rounded_quotient(a,b) ((a) /= (b))
 #endif
 
 #define Big0 (Frac_mask1 | Exp_msk1*(DBL_MAX_EXP+Bias-1))
@@ -1180,8 +1180,8 @@ Bfree(Bigint *v)
     }
 }
 
-#define Bcopy(x,y) memcpy((char *)&x->sign, (char *)&y->sign, \
-y->wds*sizeof(Long) + 2*sizeof(int))
+#define Bcopy(x,y) memcpy((char *)&(x)->sign, (char *)&(y)->sign, \
+(y)->wds*sizeof(Long) + 2*sizeof(int))
 
 static Bigint *
 multadd(Bigint *b, int m, int a)   /* multiply by m and add a */
@@ -3159,7 +3159,7 @@ nrv_alloc(const char *s, char **rve, size_t n)
     return rv;
 }
 
-#define rv_strdup(s, rve) nrv_alloc(s, rve, strlen(s)+1)
+#define rv_strdup(s, rve) nrv_alloc((s), (rve), strlen(s)+1)
 
 #ifndef MULTIPLE_THREADS
 /* freedtoa(s) must be used to free values s returned by dtoa
@@ -3934,7 +3934,7 @@ ruby_each_words(const char *str, void (*func)(const char*, int, void*), void *ar
 #define	DBL_ADJ	(DBL_MAX_EXP - 2)
 #define	SIGFIGS	((DBL_MANT_DIG + 3) / 4 + 1)
 #define dexp_get(u) ((int)(word0(u) >> Exp_shift) & ~Exp_msk1)
-#define dexp_set(u,v) (word0(u) = (((int)(word0(u)) & ~Exp_mask) | (v << Exp_shift)))
+#define dexp_set(u,v) (word0(u) = (((int)(word0(u)) & ~Exp_mask) | ((v) << Exp_shift)))
 #define dmanh_get(u) ((uint32_t)(word0(u) & Frac_mask))
 #define dmanl_get(u) ((uint32_t)word1(u))
 

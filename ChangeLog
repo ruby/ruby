@@ -1,3 +1,7 @@
+Mon Jan 10 11:22:02 2011  Tanaka Akira  <akr@fsij.org>
+
+	* util.c: parenthesize macro arguments.
+
 Mon Jan 10 07:41:31 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* misc/README: mention rdoc-mode.el and ruby-style.el.
