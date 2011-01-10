@@ -1,7 +1,7 @@
 ;;
 ;; rdoc-mode.el
 ;; Major mode for RDoc editing
-;; 
+;;
 
 ;; Created: Fri Sep 18 09:04:49 JST 2009
 
@@ -15,7 +15,7 @@
   (setq paragraph-separate "^\\(=+\\|\\*+\\)\\s \\|^\\s *$")
   (make-local-variable 'paragraph-start)
   (setq paragraph-start paragraph-separate)
-  (make-local-variable 'require-final-newline)  
+  (make-local-variable 'require-final-newline)
   (setq require-final-newline t)
   (make-local-variable 'font-lock-defaults)
   (setq font-lock-defaults '((rdoc-font-lock-keywords) t nil))
@@ -24,6 +24,7 @@
   (make-local-variable 'outline-regexp)
   (setq outline-regexp "^\\(=+\\)\\s ")
   (outline-minor-mode t)
+  (setq show-trailing-whitespace t)
   (rdoc-setup-keys)
   (setq indent-tabs-mode nil)
   (run-hooks 'rdoc-mode-hook)

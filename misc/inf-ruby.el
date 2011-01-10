@@ -10,7 +10,7 @@
 ;;;
 ;;; (0) check ruby-program-name variable that can run your environment.
 ;;;
-;;; (1) modify .emacs to use ruby-mode 
+;;; (1) modify .emacs to use ruby-mode
 ;;;     for example :
 ;;;
 ;;;    (autoload 'ruby-mode "ruby-mode"
@@ -19,7 +19,7 @@
 ;;;          (append '(("\\.rb$" . ruby-mode)) auto-mode-alist))
 ;;;    (setq interpreter-mode-alist (append '(("ruby" . ruby-mode))
 ;;;                                  interpreter-mode-alist))
-;;;    
+;;;
 ;;; (2) set to load inf-ruby and set inf-ruby key definition in ruby-mode.
 ;;;
 ;;;    (autoload 'run-ruby "inf-ruby"
@@ -49,47 +49,47 @@
 ;;;      Revision 1.6  2002/09/07 14:35:46  nobu
 ;;;      * misc/inf-ruby.el (inferior-ruby-error-regexp-alist): regexp
 ;;;        alist for error message from ruby.
-;;;     
+;;;
 ;;;      * misc/inf-ruby.el (inferior-ruby-mode): fixed for Emacs.
-;;;     
+;;;
 ;;;      * misc/inf-ruby.el (ruby-send-region): compilation-parse-errors
 ;;;        doesn't parse first line, so insert separators before each
 ;;;        evaluations.
-;;;     
+;;;
 ;;;      Revision 1.5  2002/08/19 10:05:47  nobu
 ;;;      * misc/inf-ruby.el (inf-ruby-keys): ruby-send-definition
 ;;;        conflicted with ruby-insert-end.
-;;;     
+;;;
 ;;;      * misc/inf-ruby.el (inferior-ruby-mode): compilation-minor-mode.
-;;;     
+;;;
 ;;;      * misc/inf-ruby.el (ruby-send-region): send as here document to
 ;;;        adjust source file/line.  [ruby-talk:47113], [ruby-dev:17965]
-;;;     
+;;;
 ;;;      * misc/inf-ruby.el (ruby-send-terminator): added to make unique
 ;;;        terminator.
-;;;     
+;;;
 ;;;      Revision 1.4  2002/01/29 07:16:09  matz
 ;;;      * file.c (rb_stat_rdev_major): added. [new]
-;;;     
+;;;
 ;;;      * file.c (rb_stat_rdev_minor): added. [new]
-;;;     
+;;;
 ;;;      * file.c (rb_stat_inspect): print mode in octal.
-;;;     
+;;;
 ;;;      Revision 1.3  1999/12/01 09:24:18  matz
 ;;;      19991201
-;;;     
+;;;
 ;;;      Revision 1.2  1999/08/13 05:45:18  matz
 ;;;      1.4.0
-;;;     
+;;;
 ;;;      Revision 1.1.1.1.2.1  1999/07/15 07:59:59  matz
 ;;;      990715
-;;;     
+;;;
 ;;;      Revision 1.1.1.1  1999/01/20 04:59:36  matz
 ;;;      ruby 1.3 cycle
-;;;     
+;;;
 ;;;      Revision 1.1.2.1  1998/12/16 07:30:36  matz
 ;;;      first public release of 1.1d (pre1.2) series
-;;;     
+;;;
 ;;;      Revision 1.4  1998/05/20 02:45:58  senda
 ;;;      default program to irb
 ;;;
@@ -196,7 +196,7 @@ For information on running multiple processes in multiple buffers, see
 documentation for variable ruby-buffer.
 
 Commands:
-Return after the end of the process' output sends the text from the 
+Return after the end of the process' output sends the text from the
     end of process to point.
 Return before the end of the process' output copies the sexp ending at point
     to the end of the process' output, and sends it.
@@ -358,14 +358,14 @@ Then switch to the process buffer."
   (switch-to-ruby t))
 
 (defun ruby-send-definition-and-go ()
-  "Send the current definition to the inferior Ruby. 
+  "Send the current definition to the inferior Ruby.
 Then switch to the process buffer."
   (interactive)
   (ruby-send-definition)
   (switch-to-ruby t))
 
 (defun ruby-send-block-and-go ()
-  "Send the current block to the inferior Ruby. 
+  "Send the current block to the inferior Ruby.
 Then switch to the process buffer."
   (interactive)
   (ruby-send-block)
@@ -380,13 +380,13 @@ Used by these commands to determine defaults.")
 (defvar ruby-prev-l/c-dir/file nil
   "Caches the last (directory . file) pair.
 Caches the last pair used in the last ruby-load-file command.
-Used for determining the default in the 
+Used for determining the default in the
 next one.")
 
 (defun ruby-load-file (file-name)
   "Load a Ruby file into the inferior Ruby process."
   (interactive (comint-get-source "Load Ruby file: " ruby-prev-l/c-dir/file
-                                  ruby-source-modes t)) ; T because LOAD 
+                                  ruby-source-modes t)) ; T because LOAD
                                                           ; needs an exact name
   (comint-check-source file-name) ; Check to see if buffer needs saved.
   (setq ruby-prev-l/c-dir/file (cons (file-name-directory    file-name)
@@ -408,7 +408,7 @@ next one.")
 (defvar inf-ruby-load-hook nil
   "This hook is run when inf-ruby is loaded in.
 This is a good place to put keybindings.")
-        
+
 (run-hooks 'inf-ruby-load-hook)
 
 (provide 'inf-ruby)
