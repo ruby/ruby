@@ -197,6 +197,14 @@ class TestMethod < Test::Unit::TestCase
     assert_raise(TypeError) do
       Class.new.class_eval { define_method(:foo, Object.new) }
     end
+
+    assert_raise(TypeError) do
+      Module.new.module_eval {define_method(:foo, Base.instance_method(:foo))}
+    end
+
+    assert_raise(TypeError) do
+      Class.new.class_eval {define_method(:meth, M.instance_method(:meth))}
+    end
   end
 
   def test_clone

@@ -1,3 +1,8 @@
+Mon Jan 10 14:32:55 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_method.rb (TestMethod#test_define_method): method
+	  transplanting between class and module is impossible.
+
 Mon Jan 10 13:51:17 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/rdoc-mode.el (rdoc-mode): show trailing whitespace.
