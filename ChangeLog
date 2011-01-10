@@ -1,3 +1,12 @@
+Mon Jan 10 22:46:43 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/defines.h (CASEFOLD_FILESYSTEM): HFS+ is case
+	  insensitive.
+
+	* load.c (loaded_feature_path, rb_feature_p, load_lock): on a
+	  case-insensitive filesystem, loaded features search should
+	  ignore case.  [ruby-core:34297]
+
 Mon Jan 10 21:34:12 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (showflags): show LD commands.

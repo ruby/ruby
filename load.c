@@ -9,12 +9,20 @@
 
 VALUE ruby_dln_librefs;
 
-#define IS_RBEXT(e) (strcmp((e), ".rb") == 0)
-#define IS_SOEXT(e) (strcmp((e), ".so") == 0 || strcmp((e), ".o") == 0)
-#ifdef DLEXT2
-#define IS_DLEXT(e) (strcmp((e), DLEXT) == 0 || strcmp((e), DLEXT2) == 0)
+#if CASEFOLD_FILESYSTEM
+#define fncomp strcasecmp
+#define fnncomp strncasecmp
 #else
-#define IS_DLEXT(e) (strcmp((e), DLEXT) == 0)
+#define fncomp strcmp
+#define fnncomp strncmp
+#endif
+
+#define IS_RBEXT(e) (fncomp((e), ".rb") == 0)
+#define IS_SOEXT(e) (fncomp((e), ".so") == 0 || fncomp((e), ".o") == 0)
+#ifdef DLEXT2
+#define IS_DLEXT(e) (fncomp((e), DLEXT) == 0 || fncomp((e), DLEXT2) == 0)
+#else
+#define IS_DLEXT(e) (fncomp((e), DLEXT) == 0)
 #endif
 
 
@@ -88,8 +96,8 @@ loaded_feature_path(const char *name, long vlen, const char *feature, long len,
 	long n = RSTRING_LEN(p);
 
 	if (vlen < n + len + 1) continue;
-	if (n && (strncmp(name, s, n) || name[n] != '/')) continue;
-	if (strncmp(name + n + 1, feature, len)) continue;
+	if (n && (fnncomp(name, s, n) || name[n] != '/')) continue;
+	if (fnncomp(name + n + 1, feature, len)) continue;
 	if (name[n+len+1] && name[n+len+1] != '.') continue;
 	switch (type) {
 	  case 's':
@@ -151,7 +159,7 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
 	v = RARRAY_PTR(features)[i];
 	f = StringValuePtr(v);
 	if ((n = RSTRING_LEN(v)) < len) continue;
-	if (strncmp(f, feature, len) != 0) {
+	if (fnncomp(f, feature, len) != 0) {
 	    if (expanded) continue;
 	    if (!load_path) load_path = rb_get_expanded_load_path();
 	    if (!(p = loaded_feature_path(f, n, feature, len, type, load_path)))
@@ -390,7 +398,8 @@ load_lock(const char *ftptr)
     if (!loading_tbl || !st_lookup(loading_tbl, (st_data_t)ftptr, &data)) {
 	/* loading ruby library should be serialized. */
 	if (!loading_tbl) {
-	    GET_VM()->loading_table = loading_tbl = st_init_strtable();
+	    GET_VM()->loading_table = loading_tbl =
+		(CASEFOLD_FILESYSTEM ? st_init_strcasetable() : st_init_strtable());
 	}
 	/* partial state */
 	ftptr = ruby_strdup(ftptr);
