@@ -1,3 +1,12 @@
+Tue Jan 11 13:06:38 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* array.c (rb_ary_resize): should care of embeded array when extending
+	  the array.
+
+	* array.c (rb_ary_resize): need to set capa when changing the real
+	  size of the array.
+	  these are latent bugs.
+
 Mon Jan 10 22:46:43 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/defines.h (CASEFOLD_FILESYSTEM): HFS+ is case

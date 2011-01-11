@@ -1332,7 +1332,7 @@ rb_ary_resize(VALUE ary, long len)
 	    ary_double_capa(ary, len);
 	}
 	rb_mem_clear(RARRAY_PTR(ary) + olen, len - olen);
-        ARY_SET_HEAP_LEN(ary, len);
+        ARY_SET_LEN(ary, len);
     }
     else if (ARY_EMBED_P(ary)) {
         ARY_SET_EMBED_LEN(ary, len);
@@ -1347,6 +1347,7 @@ rb_ary_resize(VALUE ary, long len)
     else {
 	if (olen > len + ARY_DEFAULT_SIZE) {
 	    REALLOC_N(RARRAY(ary)->as.heap.ptr, VALUE, len);
+	    ARY_SET_CAPA(ary, len);
 	}
 	ARY_SET_HEAP_LEN(ary, len);
     }
