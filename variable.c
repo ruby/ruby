@@ -1425,7 +1425,7 @@ static const rb_data_type_t autoload_data_type = {
 };
 
 #define check_autoload_table(av) \
-    (struct st_table *)rb_check_typeddata(av, &autoload_data_type)
+    (struct st_table *)rb_check_typeddata((av), &autoload_data_type)
 
 void
 rb_autoload(VALUE mod, ID id, const char *file)

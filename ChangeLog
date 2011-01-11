@@ -1,3 +1,7 @@
+Tue Jan 11 20:32:59 2011  Tanaka Akira  <akr@fsij.org>
+
+	* variable.c: parenthesize macro arguments.
+
 Tue Jan 11 13:06:38 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* array.c (rb_ary_resize): should care of embeded array when extending
