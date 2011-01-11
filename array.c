@@ -1311,7 +1311,7 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
 /*!
  * expands or shrinks \a ary to \a len elements.
  * expanded region will be filled with Qnil.
- * \param ary  an arrray
+ * \param ary  an array
  * \param len  new size
  * \return     \a ary
  * \post       the size of \a ary is \a len.
@@ -4466,7 +4466,7 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
 	counters[m]++;
 	while (counters[m] == RARRAY_LEN(arrays[m])) {
 	    counters[m] = 0;
-	    /* If the first counter overlows, we are done */
+	    /* If the first counter overflows, we are done */
 	    if (--m < 0) goto done;
 	    counters[m]++;
 	}
