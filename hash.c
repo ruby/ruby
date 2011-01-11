@@ -1663,9 +1663,12 @@ static int
 hash_i(VALUE key, VALUE val, VALUE arg)
 {
     st_index_t *hval = (st_index_t *)arg;
+    st_index_t hdata[2];
 
     if (key == Qundef) return ST_CONTINUE;
-    *hval ^= rb_hash_end(rb_hash_uint(rb_hash_start(rb_hash(key)), rb_hash(val)));
+    hdata[0] = rb_hash(key);
+    hdata[1] = rb_hash(val);
+    *hval ^= st_hash(hdata, sizeof(hdata), 0);
     return ST_CONTINUE;
 }
 
@@ -1678,9 +1681,10 @@ recursive_hash(VALUE hash, VALUE dummy, int recur)
         return LONG2FIX(0);
     hval = RHASH(hash)->ntbl->num_entries;
     if (recur)
-	hval = rb_hash_end(rb_hash_uint(rb_hash_start(rb_hash(rb_cHash)), hval));
+	hval = rb_hash_uint(rb_hash_start(rb_hash(rb_cHash)), hval);
     else
 	rb_hash_foreach(hash, hash_i, (VALUE)&hval);
+    hval = rb_hash_end(hval);
     return INT2FIX(hval);
 }
 

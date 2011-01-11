@@ -1,3 +1,8 @@
+Wed Jan 12 08:37:07 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (hash_i): return different values for inverse hash.
+	  [ruby-core:34334]
+
 Tue Jan 11 20:32:59 2011  Tanaka Akira  <akr@fsij.org>
 
 	* variable.c: parenthesize macro arguments.

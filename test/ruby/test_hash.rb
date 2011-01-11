@@ -890,7 +890,7 @@ class TestHash < Test::Unit::TestCase
     assert_equal({x=>1}.hash, {x=>1}.hash)
 
     o = Object.new
-    def o.hash; 2<<100; end
+    def o.hash; 2 << 100; end
     assert_equal({x=>1}.hash, {x=>1}.hash)
   end
 
@@ -903,5 +903,12 @@ class TestHash < Test::Unit::TestCase
     assert_nothing_raised { h[h] = :foo }
     h.rehash
     assert_equal(:foo, h[h])
+  end
+
+  def test_inverse_hash
+    feature4262 = '[ruby-core:34334]'
+    [{1=>2}, {123=>"abc"}].each do |h|
+      assert_not_equal(h.hash, h.invert.hash, feature4262)
+    end
   end
 end
