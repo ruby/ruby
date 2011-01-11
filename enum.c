@@ -893,7 +893,7 @@ enum_sort_by(VALUE obj)
     RETURN_ENUMERATOR(obj, 0, 0);
 
     if (TYPE(obj) == T_ARRAY && RARRAY_LEN(obj) <= LONG_MAX/2) {
-	ary  = rb_ary_new2(RARRAY_LEN(obj)*2);
+	ary = rb_ary_new2(RARRAY_LEN(obj)*2);
     }
     else {
 	ary = rb_ary_new();
