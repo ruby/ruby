@@ -7931,7 +7931,8 @@ rb_f_syscall(int argc, VALUE *argv)
 #endif
     }
 
-    if (retval < 0) rb_sys_fail(0);
+    if (retval == -1)
+	rb_sys_fail(0);
     return RETVAL2NUM(retval);
 #undef SYSCALL
 #undef NUM2SYSCALLID
