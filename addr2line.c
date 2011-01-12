@@ -121,7 +121,7 @@ get_nth_dirname(int dir, char *p)
     if (!dir--) {
 	return "";
     }
-    while (dir) {
+    while (dir--) {
 	while (*p) p++;
 	p++;
 	if (!*p) {

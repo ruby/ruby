@@ -1,3 +1,11 @@
+Thu Jan 13 00:32:54 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* addr2line.c (get_nth_dirname): decrement the directory index
+	  because the index specifies the index of given included_directories
+	  which is separated by NUL and its index is begun from 1.
+	  Note that 0 specifies the current directory of the compilation.
+	  see also http://www.dwarfstd.org/doc/dwarf-2.0.0.pdf
+
 Thu Jan 13 00:06:38 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (rb_f_syscall): Add warning messages. [ruby-core:34062]
