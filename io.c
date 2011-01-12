@@ -7839,6 +7839,18 @@ rb_f_syscall(int argc, VALUE *argv)
 # else
 #  error ---->> it is asserted that __syscall takes the first argument and returns retval in 64bit signed integer. <<----
 # endif
+#elif defined linux
+# define SYSCALL syscall
+# define NUM2SYSCALLID(x) NUM2LONG(x)
+# define RETVAL2NUM(x) LONG2NUM(x)
+    /*
+     * Linux man page says, syscall(2) function prototype is below.
+     *
+     *     int syscall(int number, ...);
+     *
+     * But, it's incorrect. Actual one takes and returned long. (see unistd.h)
+     */
+    long num, retval = -1;
 #else
 # define SYSCALL syscall
 # define NUM2SYSCALLID(x) NUM2INT(x)
