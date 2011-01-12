@@ -1,3 +1,12 @@
+Wed Jan 12 16:24:53 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* ext/readline/extconf.rb: new checks for RL_PROMPT_START_IGNORE 
+	  and RL_PROMPT_END_IGNORE. [ruby-core:34331]
+
+	* ext/readline/readline.c: enables USE_INSERT_IGNORE_ESCAPE only if
+	  RL_PROMPT_{START,END}_IGNORE are available to get rid of compilation
+	  error with libedit.
+
 Wed Jan 12 15:53:49 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* README.EXT.ja (rb_ensure): typo.
