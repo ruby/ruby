@@ -1,3 +1,15 @@
+Wed Jan 12 16:25:12 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* lib/net/http.rb (Net::HTTP#connect): makes it timeout during 
+	  SSL handshake too. [ruby-core:34203]
+	  Patch by Marc Slemko.
+
+	* test/net/http/test_http.rb (TestNetHTTP_v1_2#test_timeout_during_HTTP_session):
+	  test for [ruby-core:34203]
+
+	* test/net/http/test_https.rb (TestNetHTTPS#test_timeout_during_SSL_handshake):
+	  ditto.
+
 Wed Jan 12 16:24:53 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* ext/readline/extconf.rb: new checks for RL_PROMPT_START_IGNORE 
