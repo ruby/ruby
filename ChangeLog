@@ -1,3 +1,7 @@
+Wed Jan 12 15:53:49 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* README.EXT.ja (rb_ensure): typo.
+
 Wed Jan 12 11:33:46 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* addr2line.c: OpenBSD uses the elf_abi.h header file instead of the

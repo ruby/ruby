@@ -1314,7 +1314,7 @@ VALUE rb_rescue(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2)
   しなかった時はfunc1の戻り値, 例外が発生した時にはfunc2の戻
   り値である．
 
-VALUE rb_ensure(VALUE (*func1)(), VALUE arg1, void (*func2)(), VALUE arg2)
+VALUE rb_ensure(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2)
 
   関数func1をarg1を引数として実行し, 実行終了後(たとえ例外が
   発生しても) func2をarg2を引数として実行する．戻り値はfunc1
