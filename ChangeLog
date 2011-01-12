@@ -1,3 +1,11 @@
+Wed Jan 12 19:28:23 2011  Tanaka Akira  <akr@fsij.org>
+
+	* vm.c (thread_free): reset ruby_current_thread if it points the
+	  thread to free.
+	* gc.c (slot_sweep): don't call RUBY_VM_SET_FINALIZER_INTERRUPT if
+	  there is no current thread.
+	  [ruby-dev:43000]
+
 Wed Jan 12 19:09:29 2011  Tanaka Akira  <akr@fsij.org>
 
 	* enum.c (sort_by_i): reenter check more strictly.

@@ -1958,7 +1958,10 @@ slot_sweep(rb_objspace_t *objspace, struct heaps_slot *sweep_slot)
     objspace->heap.final_num += final_num;
 
     if (deferred_final_list) {
-	RUBY_VM_SET_FINALIZER_INTERRUPT(GET_THREAD());
+        rb_thread_t *th = GET_THREAD();
+        if (th) {
+            RUBY_VM_SET_FINALIZER_INTERRUPT(th);
+        }
     }
 }
 

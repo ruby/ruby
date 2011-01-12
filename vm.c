@@ -1730,6 +1730,8 @@ thread_free(void *ptr)
 #endif
 	    ruby_xfree(ptr);
 	}
+        if (ruby_current_thread == th)
+            ruby_current_thread = NULL;
     }
     RUBY_FREE_LEAVE("thread");
 }
