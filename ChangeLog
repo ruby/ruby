@@ -1,3 +1,7 @@
+Thu Jan 13 06:27:29 2011  Ryan Davis  <ryand-ruby@zenspider.com>
+
+	* error.c: Exception#to_s should actually call to_s.
+
 Thu Jan 13 00:32:54 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* addr2line.c (get_nth_dirname): decrement the directory index
