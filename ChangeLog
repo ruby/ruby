@@ -1,3 +1,7 @@
+Thu Jan 13 00:06:38 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (rb_f_syscall): Add warning messages. [ruby-core:34062]
+
 Thu Jan 13 00:00:07 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (rb_f_syscall): Some syscall return unsigned or pointer value.
