@@ -16,7 +16,7 @@
 #define MAX_POSBUF 128
 
 #define VM_CFP_CNT(th, cfp) \
-  ((rb_control_frame_t *)(th->stack + th->stack_size) - (rb_control_frame_t *)(cfp))
+  ((rb_control_frame_t *)((th)->stack + (th)->stack_size) - (rb_control_frame_t *)(cfp))
 
 static void
 control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)

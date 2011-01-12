@@ -1,3 +1,7 @@
+Wed Jan 12 19:37:10 2011  Tanaka Akira  <akr@fsij.org>
+
+	* vm_dump.c: parenthesize macro arguments.
+
 Wed Jan 12 19:28:23 2011  Tanaka Akira  <akr@fsij.org>
 
 	* vm.c (thread_free): reset ruby_current_thread if it points the
