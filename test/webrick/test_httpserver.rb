@@ -257,4 +257,22 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
     assert_equal(started, 1)
     assert_equal(stopped, 1)
   end
+
+  def test_request_handler_callback_is_deprecated
+    requested = 0
+    config = {
+      :ServerName => "localhost",
+      :RequestHandler => Proc.new{|req, res| requested += 1 },
+    }
+    TestWEBrick.start_httpserver(config){|server, addr, port, log|
+      true while server.status != :Running
+
+      http = Net::HTTP.new(addr, port)
+      req = Net::HTTP::Get.new("/")
+      req["Host"] = "localhost:#{port}"
+      http.request(req){|res| assert_equal("404", res.code, log.call)}
+      assert_match(%r{:RequestHandler is deprecated, please use :RequestCallback$}, log.call, log.call)
+    }
+    assert_equal(requested, 1)
+  end
 end

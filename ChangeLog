@@ -1,3 +1,14 @@
+Wed Jan 12 03:59:36 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/webrick/test_cgi.rb: Removes usage of deprecated
+	  :RequestHandler option.
+	  patched by Peter Weldon [ruby-core:34010]
+
+	* test/webrick/test_httpproxy.rb: ditto.
+
+	* test/webrick/test_httpserver.rb: Add a test of the deprecation
+	  behaviour.
+
 Wed Jan 12 08:37:07 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (hash_i): return different values for inverse hash.

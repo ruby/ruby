@@ -33,7 +33,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
     config = {
       :ServerName => "localhost.localdomain",
       :ProxyContentHandler => Proc.new{|req, res| proxy_handler_called += 1 },
-      :RequestHandler => Proc.new{|req, res| request_handler_called += 1 }
+      :RequestCallback => Proc.new{|req, res| request_handler_called += 1 }
     }
     TestWEBrick.start_httpproxy(config){|server, addr, port, log|
       server.mount_proc("/"){|req, res|
@@ -78,7 +78,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
     config = {
       :ServerName => "localhost.localdomain",
       :ProxyContentHandler => Proc.new{|req, res| proxy_handler_called += 1 },
-      :RequestHandler => Proc.new{|req, res| request_handler_called += 1 }
+      :RequestCallback => Proc.new{|req, res| request_handler_called += 1 }
     }
     TestWEBrick.start_httpproxy(config){|server, addr, port, log|
       server.mount_proc("/"){|req, res|
@@ -143,7 +143,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
     }
     config = {
       :ServerName => "localhost.localdomain",
-      :RequestHandler => Proc.new{|req, res|
+      :RequestCallback => Proc.new{|req, res|
         assert_equal("CONNECT", req.request_method)
       },
     }
@@ -185,7 +185,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
     up_config = {
       :ServerName => "localhost.localdomain",
       :ProxyContentHandler => Proc.new{|req, res| up_proxy_handler_called += 1},
-      :RequestHandler => Proc.new{|req, res| up_request_handler_called += 1}
+      :RequestCallback => Proc.new{|req, res| up_request_handler_called += 1}
     }
     TestWEBrick.start_httpproxy(up_config){|up_server, up_addr, up_port, up_log|
       up_server.mount_proc("/"){|req, res|
@@ -195,7 +195,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
         :ServerName => "localhost.localdomain",
         :ProxyURI => URI.parse("http://localhost:#{up_port}"),
         :ProxyContentHandler => Proc.new{|req, res| proxy_handler_called += 1},
-        :RequestHandler => Proc.new{|req, res| request_handler_called += 1},
+        :RequestCallback => Proc.new{|req, res| request_handler_called += 1},
       }
       TestWEBrick.start_httpproxy(config){|server, addr, port, log|
         http = Net::HTTP.new(up_addr, up_port, addr, port)
