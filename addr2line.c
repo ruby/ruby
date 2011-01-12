@@ -15,7 +15,11 @@
 
 #ifdef __ELF__
 
+#ifdef __OpenBSD__
+#include <elf_abi.h>
+#else
 #include <elf.h>
+#endif
 #include <fcntl.h>
 #include <limits.h>
 #include <stdio.h>

@@ -1,3 +1,8 @@
+Wed Jan 12 11:33:46 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* addr2line.c: OpenBSD uses the elf_abi.h header file instead of the
+	  elf.h header file. patched by Jeremy Evans [ruby-core:34384]
+
 Wed Jan 12 03:59:36 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/webrick/test_cgi.rb: Removes usage of deprecated
