@@ -19,7 +19,7 @@
 #
 # === Doesn't depend on strftime
 #
-# This library doesn't use +strftime+.  Especially #rfc2822 doesn't depend
+# This library doesn't use +Time#strftime+.  Especially #rfc2822 doesn't depend
 # on +strftime+ because:
 #
 # * %a and %b are locale sensitive
@@ -34,6 +34,10 @@
 #
 #   %z is required to generate zone in date-time of RFC 2822
 #   but it is not portable.
+#
+# Note that +Time#strftime+ doesn't use +strftime()+ function in libc since Ruby 1.9.
+# This means +Time#strftime+ is locale-insensitive since Ruby 1.9.
+# The above statements are not valid now.
 #
 
 require 'date/format'
