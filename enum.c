@@ -782,14 +782,20 @@ sort_by_i(VALUE i, VALUE _data, int argc, VALUE *argv)
 {
     struct sort_by_data *data = (struct sort_by_data *)_data;
     VALUE ary = data->ary;
+    VALUE v;
 
     ENUM_WANT_SVALUE();
+
+    v = rb_yield(i);
 
     if (RBASIC(ary)->klass) {
 	rb_raise(rb_eRuntimeError, "sort_by reentered");
     }
-    
-    RARRAY_PTR(data->buf)[data->n*2] = rb_yield(i);
+    if (RARRAY_LEN(data->buf) != SORT_BY_BUFSIZE*2) {
+	rb_raise(rb_eRuntimeError, "sort_by reentered");
+    }
+
+    RARRAY_PTR(data->buf)[data->n*2] = v;
     RARRAY_PTR(data->buf)[data->n*2+1] = i;
     data->n++;
     if (data->n == SORT_BY_BUFSIZE) {
@@ -802,13 +808,17 @@ sort_by_i(VALUE i, VALUE _data, int argc, VALUE *argv)
 static int
 sort_by_cmp(const void *ap, const void *bp, void *data)
 {
-    VALUE a = *(VALUE *)ap;
-    VALUE b = *(VALUE *)bp;
+    VALUE a;
+    VALUE b;
     VALUE ary = (VALUE)data;
 
     if (RBASIC(ary)->klass) {
 	rb_raise(rb_eRuntimeError, "sort_by reentered");
     }
+
+    a = *(VALUE *)ap;
+    b = *(VALUE *)bp;
+
     return rb_cmpint(rb_funcall(a, id_cmp, 1, b), a, b);
 }
 

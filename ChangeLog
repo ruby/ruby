@@ -1,3 +1,9 @@
+Wed Jan 12 19:09:29 2011  Tanaka Akira  <akr@fsij.org>
+
+	* enum.c (sort_by_i): reenter check more strictly.
+	  (sort_by_cmp): ditto.
+	  [ruby-dev:43003] reported by Usaku NAKAMURA.
+
 Wed Jan 12 16:25:12 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/net/http.rb (Net::HTTP#connect): makes it timeout during 
