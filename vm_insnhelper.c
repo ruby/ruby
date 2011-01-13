@@ -132,15 +132,15 @@ argument_error(const rb_iseq_t *iseq, int miss_argc, int correct_argc)
 }
 
 #define VM_CALLEE_SETUP_ARG(ret, th, iseq, orig_argc, orig_argv, block) \
-    if (LIKELY(iseq->arg_simple & 0x01)) { \
+    if (LIKELY((iseq)->arg_simple & 0x01)) { \
 	/* simple check */ \
-	if (orig_argc != iseq->argc) { \
-	    argument_error(iseq, orig_argc, iseq->argc); \
+	if ((orig_argc) != (iseq)->argc) { \
+	    argument_error((iseq), (orig_argc), (iseq)->argc); \
 	} \
-	ret = 0; \
+	(ret) = 0; \
     } \
     else { \
-	ret = vm_callee_setup_arg_complex(th, iseq, orig_argc, orig_argv, block); \
+	(ret) = vm_callee_setup_arg_complex((th), (iseq), (orig_argc), (orig_argv), (block)); \
     }
 
 static inline int

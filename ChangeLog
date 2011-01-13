@@ -1,3 +1,7 @@
+Thu Jan 13 20:49:19 2011  Tanaka Akira  <akr@fsij.org>
+
+	* vm_insnhelper.c: parenthesize macro arguments.
+
 Thu Jan 13 13:21:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* vm_dump.c: delete dashes to make lines 80 chars, Patched by
