@@ -781,9 +781,9 @@ rb_vm_bugreport(void)
 
 #if defined __MACH__ && defined __APPLE__
     fprintf(stderr, "-- See Crash Report log file under "
-	    "~/Library/Logs/CrashReporter or -----------\n");
+	    "~/Library/Logs/CrashReporter or ---------\n");
     fprintf(stderr, "-- /Library/Logs/CrashReporter, for "
-	    "the more detail of -----------------------\n");
+	    "the more detail of ---------------------\n");
 #endif
 #if HAVE_BACKTRACE || defined(_WIN32)
     fprintf(stderr, "-- C level backtrace information "
