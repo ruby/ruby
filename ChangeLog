@@ -1,3 +1,8 @@
+Thu Jan 13 13:21:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* vm_dump.c: fix misspelling of CrashReporter.
+	  [Bug #4275] [ruby-dev:43021]
+
 Thu Jan 13 06:27:29 2011  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* error.c: Exception#to_s should actually call to_s.
