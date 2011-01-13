@@ -6829,7 +6829,6 @@ argf_next_argv(VALUE argf)
     }
 
     if (ARGF.next_p == 1) {
-	ARGF.next_p = 0;
       retry:
 	if (RARRAY_LEN(ARGF.argv) > 0) {
 	    ARGF.filename = rb_ary_shift(ARGF.argv);
@@ -6933,6 +6932,7 @@ argf_next_argv(VALUE argf)
 		fptr->encs = ARGF.encs;
                 clear_codeconv(fptr);
 	    }
+	    ARGF.next_p = 0;
 	}
 	else {
 	    ARGF.next_p = 1;

@@ -720,6 +720,21 @@ class TestArgf < Test::Unit::TestCase
     ensure
       argf.close
     end
+  end
 
+  def test_unreadable
+    bug4274 = '[ruby-core:34446]'
+    paths = (1..2).map do
+      t = Tempfile.new("bug4274-")
+      path = t.path
+      t.close!
+      path
+    end
+    argf = ARGF.class.new(*paths)
+    paths.each do |path|
+      e = assert_raise(Errno::ENOENT) {argf.gets}
+      assert_match(/- #{Regexp.quote(path)}\z/, e.message)
+    end
+    assert_nil(argf.gets, bug4274)
   end
 end
