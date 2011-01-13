@@ -944,6 +944,8 @@ dir_s_chroot(VALUE dir, VALUE path)
  *  also the discussion of permissions in the class documentation for
  *  <code>File</code>.
  *
+ *    Dir.mkdir(File.join(Dir.home, ".foo"), 0700) #=> 0
+ *
  */
 static VALUE
 dir_s_mkdir(int argc, VALUE *argv, VALUE obj)
