@@ -1,3 +1,9 @@
+Fri Jan 14 13:38:58 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/zlib/zlib.c (gzfile_check_footer): ISIZE (Input SIZE) in
+	  gzip's header is the size of uncompressed input data modulo 2^32.
+	  [ruby-core:34481] http://www.ietf.org/rfc/rfc1952.txt
+
 Fri Jan 14 11:36:25 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* configure.in, win32/Makefile.sub (RUNRUBY): require path should
