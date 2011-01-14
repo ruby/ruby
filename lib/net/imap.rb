@@ -1269,7 +1269,7 @@ module Net
     end
 
     def send_literal(str)
-      put_string("{" + str.length.to_s + "}" + CRLF)
+      put_string("{" + str.bytesize.to_s + "}" + CRLF)
       @continuation_request_arrival.wait
       raise @exception if @exception
       put_string(str)
@@ -2603,7 +2603,7 @@ module Net
           return '""'
         when /[\x80-\xff\r\n]/n
           # literal
-          return "{" + str.length.to_s + "}" + CRLF + str
+          return "{" + str.bytesize.to_s + "}" + CRLF + str
         when /[(){ \x00-\x1f\x7f%*"\\]/n
           # quoted string
           return '"' + str.gsub(/["\\]/n, "\\\\\\&") + '"'

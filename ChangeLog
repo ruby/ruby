@@ -1,3 +1,8 @@
+Fri Jan 14 14:56:57 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/imap.rb: use bytesize for binary strings.
+	  patched by Yoshimasa Niwa. [ruby-core:34222]
+
 Fri Jan 14 14:01:12 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* pack.c (pack_unpack): the resulted string of unpack('M') must have
