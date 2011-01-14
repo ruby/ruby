@@ -1,3 +1,8 @@
+Fri Jan 14 11:36:25 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* configure.in, win32/Makefile.sub (RUNRUBY): require path should
+	  include "." because rbconfig.rb is there.
+
 Fri Jan 14 10:40:11 2011  Ryan Davis  <ryan@lust.local>
 
 	* gem_prelude.rb: Just require rubygems. Fixes rubygems 1.4.
