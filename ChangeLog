@@ -1,3 +1,15 @@
+Fri Jan 14 10:40:11 2011  Ryan Davis  <ryan@lust.local>
+
+	* gem_prelude.rb: Just require rubygems. Fixes rubygems 1.4.
+	* lib/rubygems.rb: removed all Gem::Quickloader code.
+	* ruby.c: renamed ruby_init_gems to ruby_init_prelude. Set
+	  $disable_rubygems since there is no fine grained mechanism to
+	  skip parts of the prelude. Open to suggestions on how to do this
+	  better.
+	* test/*.rb: Load path isn't set up correctly, so add
+	  --disable-gems as needed to failing tests that are explicitly
+	  testing stderr w/ ==.
+
 Fri Jan 14 07:30:47 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (argf_next_argv): go advance when the next file cannot be

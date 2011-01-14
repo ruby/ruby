@@ -241,6 +241,13 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
       :CGIInterpreter => TestWEBrick::RubyBin,
       :DocumentRoot => File.dirname(__FILE__),
       :CGIPathEnv => ENV['PATH'],
+      :RequestCallback => Proc.new{|req, res|
+        def req.meta_vars
+          meta = super
+          meta["RUBYLIB"] = $:.join(File::PATH_SEPARATOR)
+          return meta
+        end
+      },
     }
     TestWEBrick.start_httpserver(config) do |server, addr, port, log|
       http = Net::HTTP.new(addr, port)

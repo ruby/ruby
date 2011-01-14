@@ -2,11 +2,7 @@ at_exit { $SAFE = 1 }
 
 $LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
 
-if RUBY_VERSION > '1.9' then
-  Gem::QuickLoader.load_full_rubygems_library
-else
-  require 'rubygems'
-end
+require 'rubygems'
 require 'fileutils'
 require 'minitest/autorun'
 require 'tmpdir'

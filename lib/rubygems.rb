@@ -5,13 +5,6 @@
 # See LICENSE.txt for permissions.
 #++
 
-gem_disabled = !defined? Gem
-
-unless gem_disabled
-  # Nuke the Quickloader stuff
-  Gem::QuickLoader.remove
-end
-
 require 'rubygems/defaults'
 require 'thread'
 require 'etc'
@@ -584,9 +577,9 @@ module Gem
   end
 
   def self.remove_prelude_paths
-    Gem::QuickLoader::GemLoadPaths.each do |path|
-      $LOAD_PATH.delete(path)
-    end
+    # Gem::QuickLoader::GemLoadPaths.each do |path|
+    # $LOAD_PATH.delete(path)
+    # end
   end
 
   ##
@@ -1120,15 +1113,7 @@ class << Gem
   end
 end
 
-##
-# Enables the require hook for RubyGems.
-#
-# if --disable-rubygems was used, then the prelude wasn't loaded, so
-# we need to load the custom_require now.
-
-if gem_disabled
-  require 'rubygems/custom_require'
-end
+require 'rubygems/custom_require'
 
 Gem.clear_paths
 

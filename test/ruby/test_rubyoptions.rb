@@ -57,13 +57,14 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_debug
-    assert_in_out_err(%w(-de) + ["p $DEBUG"], "", %w(true), [])
+    assert_in_out_err(["--disable-gems", "-de", "p $DEBUG"], "", %w(true), [])
 
-    assert_in_out_err(%w(--debug -e) + ["p $DEBUG"], "", %w(true), [])
+    assert_in_out_err(["--disable-gems", "--debug", "-e", "p $DEBUG"],
+                      "", %w(true), [])
   end
 
   def test_verbose
-    assert_in_out_err(%w(-vve) + [""]) do |r, e|
+    assert_in_out_err(["-vve", ""]) do |r, e|
       assert_match(/^ruby #{RUBY_VERSION}(?:[p ]|dev).*? \[#{RUBY_PLATFORM}\]$/, r.join)
       assert_equal RUBY_DESCRIPTION, r.join.chomp
       assert_equal([], e)
@@ -209,10 +210,10 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err([], "", [], /invalid switch in RUBYOPT: -e \(RuntimeError\)/)
 
     ENV['RUBYOPT'] = '-T1'
-    assert_in_out_err([], "", [], /no program input from stdin allowed in tainted mode \(SecurityError\)/)
+    assert_in_out_err(["--disable-gems"], "", [], /no program input from stdin allowed in tainted mode \(SecurityError\)/)
 
     ENV['RUBYOPT'] = '-T4'
-    assert_in_out_err([], "", [], /no program input from stdin allowed in tainted mode \(SecurityError\)/)
+    assert_in_out_err(["--disable-gems"], "", [], /no program input from stdin allowed in tainted mode \(SecurityError\)/)
 
     ENV['RUBYOPT'] = '-Eus-ascii -KN'
     assert_in_out_err(%w(-Eutf-8 -KU), "p '\u3042'") do |r, e|

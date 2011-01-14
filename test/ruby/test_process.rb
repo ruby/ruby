@@ -1210,8 +1210,8 @@ class TestProcess < Test::Unit::TestCase
       Dir.chdir("vd") {
         dir = "#{d}/vd"
         # OpenSolaris cannot remove the current directory.
-        system(RUBY, "-e", "Dir.chdir '..'; Dir.rmdir #{dir.dump}")
-        system({"RUBYLIB"=>nil}, RUBY, "-e", "exit true")
+        system(RUBY, "--disable-gems", "-e", "Dir.chdir '..'; Dir.rmdir #{dir.dump}")
+        system({"RUBYLIB"=>nil}, RUBY, "--disable-gems", "-e", "exit true")
         status = $?
       }
       assert(status.success?, "[ruby-dev:38105]")
