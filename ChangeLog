@@ -1,3 +1,7 @@
+Fri Jan 14 23:25:55 2011  Tanaka Akira  <akr@fsij.org>
+
+	* vm_method.c: parenthesize macro arguments.
+
 Fri Jan 14 15:32:29 2011  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/net/imap/test_imap.rb: call neither logout nor disconnect
