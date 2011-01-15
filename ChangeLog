@@ -1,4 +1,6 @@
-Sat Jan 15 10:00:07 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Jan 15 10:04:14 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (process_options): autoload rubygems.
 
 	* tool/compile_prelude.rb (Prelude#initialize): ignore empty
 	  preludes.

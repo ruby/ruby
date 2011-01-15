@@ -1365,7 +1365,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	}
     }
     if (!(opt->disable & DISABLE_BIT(gems))) {
-	rb_define_module("Gem");
+	rb_autoload(rb_cObject, rb_intern("Gem"), "rubygems");
     }
     ruby_init_prelude();
     ruby_set_argv(argc, argv);
