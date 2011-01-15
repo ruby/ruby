@@ -1,4 +1,7 @@
-Sat Jan 15 09:48:14 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Jan 15 10:00:07 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/compile_prelude.rb (Prelude#initialize): ignore empty
+	  preludes.
 
 	* ruby.c (ruby_init_prelude): get rid of global namespace
 	  pullution.
