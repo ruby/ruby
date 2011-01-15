@@ -1,1 +1,1 @@
-require 'rubygems' unless $disable_rubygems
+require 'rubygems.rb' if defined?(Gem)

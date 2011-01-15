@@ -1103,9 +1103,8 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 void Init_prelude(void);
 
 static void
-ruby_init_prelude(int enable_gems)
+ruby_init_prelude(void)
 {
-    rb_gv_set("$disable_rubygems", enable_gems ? Qfalse : Qtrue);
     Init_prelude();
     rb_const_remove(rb_cObject, rb_intern_const("TMP_RUBY_PREFIX"));
 }
@@ -1365,7 +1364,10 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	    rb_enc_associate(RARRAY_PTR(load_path)[i], lenc);
 	}
     }
-    ruby_init_prelude(!(opt->disable & DISABLE_BIT(gems)));
+    if (!(opt->disable & DISABLE_BIT(gems))) {
+	rb_define_module("Gem");
+    }
+    ruby_init_prelude();
     ruby_set_argv(argc, argv);
     process_sflag(&opt->sflag);
 

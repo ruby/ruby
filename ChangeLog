@@ -1,3 +1,8 @@
+Sat Jan 15 09:48:14 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (ruby_init_prelude): get rid of global namespace
+	  pullution.
+
 Sat Jan 15 09:42:12 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/io.h: missing prototypes.
