@@ -149,14 +149,20 @@ int rb_io_modestr_oflags(const char *modestr);
 int rb_io_oflags_fmode(int oflags);
 void rb_io_check_writable(rb_io_t*);
 void rb_io_check_readable(rb_io_t*);
+void rb_io_check_char_readable(rb_io_t *fptr);
+void rb_io_check_byte_readable(rb_io_t *fptr);
 int rb_io_fptr_finalize(rb_io_t*);
 void rb_io_synchronized(rb_io_t*);
 void rb_io_check_initialized(rb_io_t*);
 void rb_io_check_closed(rb_io_t*);
+VALUE rb_io_get_io(VALUE io);
+VALUE rb_io_get_write_io(VALUE io);
+VALUE rb_io_set_write_io(VALUE io, VALUE w);
 int rb_io_wait_readable(int);
 int rb_io_wait_writable(int);
 void rb_io_set_nonblock(rb_io_t *fptr);
 int rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p, int *fmode_p);
+ssize_t rb_io_bufwrite(VALUE io, const void *buf, size_t size);
 
 /* compatibility for ruby 1.8 and older */
 #define rb_io_mode_flags(modestr) rb_io_modestr_fmode(modestr)

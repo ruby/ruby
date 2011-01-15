@@ -1,3 +1,7 @@
+Sat Jan 15 09:42:12 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/io.h: missing prototypes.
+
 Fri Jan 14 23:25:55 2011  Tanaka Akira  <akr@fsij.org>
 
 	* vm_method.c: parenthesize macro arguments.
