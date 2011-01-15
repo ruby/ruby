@@ -2090,7 +2090,7 @@ gzfile_check_footer(gz)
     if (gz->crc != crc) {
 	rb_raise(cCRCError, "invalid compressed data -- crc error");
     }
-    if (gz->z.stream.total_out != length) {
+    if ((gz->z.stream.total_out & 0xFFFFFFFFUL) != length) {
 	rb_raise(cLengthError, "invalid compressed data -- length error");
     }
 }
