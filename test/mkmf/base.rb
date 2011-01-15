@@ -58,15 +58,53 @@ class TestMkmf < Test::Unit::TestCase
   end
 
   def setup
+    @rbconfig = rbconfig0 = RbConfig::CONFIG
+    @mkconfig = mkconfig0 = RbConfig::MAKEFILE_CONFIG
+    rbconfig = {
+      "hdrdir" => $hdrdir,
+      "srcdir" => $srcdir,
+      "topdir" => $topdir,
+    }
+    mkconfig = {
+      "hdrdir" => "$(top_srcdir)/include",
+      "srcdir" => "$(top_srcdir)/ext/#{$mdir}",
+      "topdir" => $topdir,
+    }
+    rbconfig0.each_pair {|key, val| rbconfig[key] ||= val.dup}
+    mkconfig0.each_pair {|key, val| mkconfig[key] ||= val.dup}
+    RbConfig.module_eval {
+      remove_const(:CONFIG)
+      const_set(:CONFIG, rbconfig)
+      remove_const(:MAKEFILE_CONFIG)
+      const_set(:MAKEFILE_CONFIG, mkconfig)
+    }
+    Object.class_eval {
+      remove_const(:CONFIG)
+      const_set(:CONFIG, mkconfig)
+    }
     @tmpdir = Dir.mktmpdir
     @curdir = Dir.pwd
     @mkmfobj = Object.new
     @stdout = Capture.new
     Dir.chdir(@tmpdir)
     @quiet, Logging.quiet = Logging.quiet, true
+    init_mkmf
+    $INCFLAGS[0, 0] = "-I. "
   end
 
   def teardown
+    rbconfig0 = @rbconfig
+    mkconfig0 = @mkconfig
+    RbConfig.module_eval {
+      remove_const(:CONFIG)
+      const_set(:CONFIG, rbconfig0)
+      remove_const(:MAKEFILE_CONFIG)
+      const_set(:MAKEFILE_CONFIG, mkconfig0)
+    }
+    Object.class_eval {
+      remove_const(:CONFIG)
+      const_set(:CONFIG, mkconfig0)
+    }
     Logging.quiet = @quiet
     Logging.log_close
     Dir.chdir(@curdir)

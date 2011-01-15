@@ -1658,10 +1658,6 @@ VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
   end
   possible_command = (proc {|s| s if /top_srcdir/ !~ s} unless $extmk)
   extconf_h = $extconf_h ? "-DRUBY_EXTCONF_H=\\\"$(RUBY_EXTCONF_H)\\\" " : $defs.join(" ") << " "
-  if warnflags = CONFIG['warnflags'] and CONFIG['GCC'] == 'yes' and !$extmk
-    # turn warnings into errors only for bundled extensions.
-    warnflags = warnflags.gsub(/(\A|\s)-Werror=/, '\1-W')
-  end
   mk << %{
 CC = #{CONFIG['CC']}
 CXX = #{CONFIG['CXX']}
@@ -1676,7 +1672,7 @@ RUBY_EXTCONF_H = #{$extconf_h}
 cflags   = #{CONFIG['cflags']}
 optflags = #{CONFIG['optflags']}
 debugflags = #{CONFIG['debugflags']}
-warnflags = #{warnflags}
+warnflags = #{$warnflags}
 CFLAGS   = #{$static ? '' : CONFIG['CCDLFLAGS']} #$CFLAGS #$ARCH_FLAG
 INCFLAGS = -I. #$INCFLAGS
 DEFS     = #{CONFIG['DEFS']}
@@ -2107,12 +2103,21 @@ end
 
 # :stopdoc:
 
-def init_mkmf(config = CONFIG)
+def init_mkmf(config = CONFIG, rbconfig = RbConfig::CONFIG)
   $makefile_created = false
   $arg_config = []
   $enable_shared = config['ENABLE_SHARED'] == 'yes'
   $defs = []
   $extconf_h = nil
+  if $warnflags = CONFIG['warnflags'] and CONFIG['GCC'] == 'yes'
+    # turn warnings into errors only for bundled extensions.
+    config['warnflags'] = $warnflags.gsub(/(\A|\s)-Werror[-=]/, '\1-W')
+    RbConfig.expand(rbconfig['warnflags'] = config['warnflags'].dup)
+    config.each do |key, val|
+      RbConfig.expand(rbconfig[key] = val.dup) if /warnflags/ =~ val
+    end
+    $warnflags = config['warnflags'] unless $extmk
+  end
   $CFLAGS = with_config("cflags", arg_config("CFLAGS", config["CFLAGS"])).dup
   $ARCH_FLAG = with_config("arch_flag", arg_config("ARCH_FLAG", config["ARCH_FLAG"])).dup
   $CPPFLAGS = with_config("cppflags", arg_config("CPPFLAGS", config["CPPFLAGS"])).dup

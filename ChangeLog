@@ -1,3 +1,14 @@
+Sat Jan 15 11:57:30 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (warnflags): add -Werror=implicit-function-declaration
+	  if available.
+
+	* lib/mkmf.rb (init_mkmf): ignore warnings in mkmf tests.
+
+	* test/mkmf/base.rb (setup, teardown): restore config values.
+
+	* test/mkmf/test_flags.rb: split from test_find_executable.rb.
+
 Sat Jan 15 10:04:14 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (process_options): autoload rubygems.

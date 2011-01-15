@@ -450,8 +450,14 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
 		 -Werror=pointer-arith \
 		 -Werror=write-strings \
 		 -Werror=declaration-after-statement \
-		 -Werror=shorten-64-to-32; do
-	test "$particular_werror_flags" = yes || wflag=`echo x$wflag | sed 's/^x-Werror=/-W/'`
+		 -Werror=shorten-64-to-32 \
+		 -Werror-implicit-function-declaration \
+		 ; do
+	if test "$particular_werror_flags" = yes; then
+	    wflag=`echo x$wflag | sed 's/^x-Werror-/-Werror=/;s/^x//'`
+	else
+	    wflag=`echo x$wflag | sed 's/^x-Werror=/-W/;s/^x//'`
+	fi
 	ok=no
 	RUBY_TRY_CFLAGS($wflag, [warnflags="${warnflags+$warnflags }$wflag" ok=yes])
 	AS_CASE([$ok:$wflag], [no:-Werror=*], [

@@ -2,22 +2,6 @@ require_relative 'base'
 
 class TestMkmf
   class TestFindExecutable < TestMkmf
-    def test_valid_warnflags
-      val = $extmk
-      begin
-        makefile = mkmf do
-          $extmk = false
-          self.class::CONFIG['warnflags'] = "-Wextra -Wno-unused-parameter -Wno-parentheses -Wno-long-long -Wno-missing-field-initializers -Werror=pointer-arith -Werror=write-strings -Werror=declaration-after-statement -Werror=shorten-64-to-32"
-          self.class::CONFIG['GCC'] = 'yes'
-          configuration '.'
-        end
-        generated_flags = makefile.grep(/warnflags/).first[/^warnflags = .*$/]
-        assert_equal "warnflags = -Wextra -Wno-unused-parameter -Wno-parentheses -Wno-long-long -Wno-missing-field-initializers -Wpointer-arith -Wwrite-strings -Wdeclaration-after-statement -Wshorten-64-to-32", generated_flags
-      ensure
-        $extmk = val
-      end
-    end
-
     def test_find_executable
       bug2669 = '[ruby-core:27912]'
       path, ENV["PATH"] = ENV["PATH"], path
