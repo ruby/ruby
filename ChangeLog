@@ -1,3 +1,9 @@
+Sun Jan 16 22:06:30 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* too/rbinstall.rb (install?(:ext, :comm, :gem)): no longer 
+	  installs no-versioned gempsecs. [ruby-core:34011]
+	  Patch by Luis Lavena.
+
 Fri Jan 14 15:32:29 2011  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/net/imap/test_imap.rb: call neither logout nor disconnect

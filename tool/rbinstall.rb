@@ -521,14 +521,6 @@ Gem::Specification.new do |s|
 end
     GEMSPEC
     open_for_install(File.join(destdir, "#{name}-#{version}.gemspec"), $data_mode) { gemspec }
-    open_for_install(File.join(destdir, "#{name}.gemspec"), $data_mode) {
-      <<-WARNING + gemspec
-# #{name}.gemspec remains just for compatibility with installation
-# before Ruby 1.9.2-p32.
-# This file will no longer exist in Ruby 1.9.3.
-# Refer #{name}-#{version}.gemspec instead.
-      WARNING
-    }
   end
 end
 
