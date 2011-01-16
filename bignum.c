@@ -2157,14 +2157,14 @@ bigmul1_karatsuba(VALUE x, VALUE y)
     t3 = bigmul0(xh, yh);
 
     i = xn + yn - n;
+    /* subtract t1 from t3 */
+    bigsub_core(BDIGITS(t3), big_real_len(t3), BDIGITS(t1), t1n, BDIGITS(t3), big_real_len(t3));
+
+    /* subtract t2 from t3; t3 is now the middle term of the product */
+    if (t2 != Qundef) bigsub_core(BDIGITS(t3), big_real_len(t3), BDIGITS(t2), t2n, BDIGITS(t3), big_real_len(t3));
+
     /* add t3 to middle bytes of the result (z1) */
     bigadd_core(zds + n, i, BDIGITS(t3), big_real_len(t3), zds + n, i);
-
-    /* subtract t1 from middle bytes of the result (z1) */
-    bigsub_core(zds + n, i, BDIGITS(t1), t1n, zds + n, i);
-
-    /* subtract t2 from middle bytes of the result (z1) */
-    if (t2 != Qundef) bigsub_core(zds + n, i, BDIGITS(t2), t2n, zds + n, i);
 
     return z;
 }

@@ -1,3 +1,9 @@
+Thu Jan  6 22:42:02 2011  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (bigmul1_karatsuba): avoid overflow that make assertion
+	  fail in certain case.  this patch is contributed from Ray Chason
+	  <chasonr at gmail.com> in personal communication.
+
 Thu Jan  6 11:27:01 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/json/tree_builder.rb (start_mapping): tags
