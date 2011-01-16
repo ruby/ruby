@@ -1,3 +1,8 @@
+Fri Jan  7 21:54:04 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-font-lock-syntactic-keywords): highlight
+	  regexp after open bracket.  [ruby-core:34183]
+
 Thu Jan  6 22:42:02 2011  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (bigmul1_karatsuba): avoid overflow that make assertion
