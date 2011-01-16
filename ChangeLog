@@ -1,3 +1,7 @@
+Sun Jan 16 20:55:45 2011  Tanaka Akira  <akr@fsij.org>
+
+	* vsnprintf.c: parenthesize macro arguments.
+
 Sat Jan 15 11:57:30 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (warnflags): add -Werror=implicit-function-declaration

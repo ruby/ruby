@@ -597,10 +597,10 @@ BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 #define	PAD(howmany, with) { \
 	if ((n = (howmany)) > 0) { \
 		while (n > PADSIZE) { \
-			PRINT(with, PADSIZE); \
+			PRINT((with), PADSIZE); \
 			n -= PADSIZE; \
 		} \
-		PRINT(with, n); \
+		PRINT((with), n); \
 	} \
 }
 #if SIZEOF_LONG > SIZEOF_INT
@@ -611,10 +611,10 @@ BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 	    errno = ENOMEM; \
 	    goto error; \
 	} \
-	if (ln > 0) PAD((int)ln, with); \
+	if (ln > 0) PAD((int)ln, (with)); \
 }
 #else
-#define PAD_L(howmany, with) PAD(howmany, with)
+#define PAD_L(howmany, with) PAD((howmany), (with))
 #endif
 #define	FLUSH() { \
 	if (uio.uio_resid && BSD__sprint(fp, &uio)) \
