@@ -1,3 +1,8 @@
+Fri Jan 14 07:30:47 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (argf_next_argv): go advance when the next file cannot be
+	  read.  [ruby-core:34446]
+
 Wed Jan 12 23:55:48 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (rb_f_syscall): Add 64bit Linux support. Some syscall takes
