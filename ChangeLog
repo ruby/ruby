@@ -1,3 +1,19 @@
+Sun Jan  9 16:31:34 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* lib/irb/locale.rb (IRB::Locale::LOCALE_NAME_RE): 
+	  some platoform has a locale without territory but with 
+	  encoding.
+	  (#each_sub_locale): ditto.
+
+Sat Jan  1 17:02:50 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* lib/irb/locale.rb (IRB::Locale#search_file): make it possible
+	  to load a localization from a gem.
+	  (IRB::Locale#lc_path): obsoleted because of the change of #search_file
+	  (IRB::Locale#each_localized_path): new private method, based on lc_path
+	  (IRB::Locale#find): follows the change of #search_file.
+	  (IRB::Locale#load): removed duplicate with #find.
+
 Fri Dec 31 03:23:26 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vsnprintf.c (BSD__uqtoa): Fix overflow when long != quad_t.
