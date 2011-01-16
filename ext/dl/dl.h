@@ -20,7 +20,7 @@
 #define RTLD_NOW 0
 #endif
 #else
-# if defined(HAVE_WINDOWS_H)
+# if defined(_WIN32)
 #   include <windows.h>
 #   define dlopen(name,flag) ((void*)LoadLibrary(name))
 #   define dlerror() strerror(rb_w32_map_errno(GetLastError()))

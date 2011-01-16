@@ -125,7 +125,7 @@ function_call(int argc, VALUE argv[], VALUE self)
     ffi_call(cif, NUM2PTR(rb_Integer(cfunc)), &retval, values);
 
     rb_funcall(mFiddle, rb_intern("last_error="), 1, INT2NUM(errno));
-#if defined(HAVE_WINDOWS_H)
+#if defined(_WIN32)
     rb_funcall(mFiddle, rb_intern("win32_last_error="), 1, INT2NUM(errno));
 #endif
 
