@@ -1,3 +1,9 @@
+Fri Jan 14 13:38:58 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/zlib/zlib.c (gzfile_check_footer): ISIZE (Input SIZE) in
+	  gzip's header is the size of uncompressed input data modulo 2^32.
+	  [ruby-core:34481] http://www.ietf.org/rfc/rfc1952.txt
+
 Fri Jan 14 07:30:47 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (argf_next_argv): go advance when the next file cannot be
