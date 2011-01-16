@@ -45,6 +45,10 @@ module TestNetHTTP_version_1_1_methods
     assert_equal $test_net_http_data, body
     assert_equal $test_net_http_data.size, res.body.size
     assert_equal $test_net_http_data, res.body
+
+    assert_nothing_raised {
+      res, body = http.get('/', { 'User-Agent' => 'test' }.freeze)
+    }
   end
 
   def _test_get__iter(http)

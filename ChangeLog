@@ -1,3 +1,8 @@
+Wed Jan  5 13:56:54 2011  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/net/http.rb (Net::HTTP#get): A header hash given should not
+	  be modified.
+
 Sun Jan  9 16:31:34 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/irb/locale.rb (IRB::Locale::LOCALE_NAME_RE): 
