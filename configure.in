@@ -1185,7 +1185,7 @@ if test "$rb_cv_have_signbit" = yes; then
 else
   AC_LIBOBJ([signbit])
 fi
-AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall chroot getcwd eaccess\
+AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall __syscall chroot getcwd eaccess\
 	      truncate ftruncate chsize times utimes utimensat fcntl lockf lstat\
 	      link symlink readlink readdir_r fsync fdatasync fchown\
 	      setitimer setruid seteuid setreuid setresuid setproctitle socketpair\
