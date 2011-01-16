@@ -1,3 +1,12 @@
+Thu Jan 13 00:06:38 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (rb_f_syscall): Add warning messages. [ruby-core:34062]
+
+Thu Jan 13 00:00:07 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (rb_f_syscall): Some syscall return unsigned or pointer value.
+	  Therefore we should only check the result is -1 or not. [ruby-core:34062]
+
 Wed Jan 12 16:25:12 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/net/http.rb (Net::HTTP#connect): makes it timeout during 

@@ -7562,6 +7562,10 @@ rb_f_syscall(int argc, VALUE *argv)
     int num, retval = -1;
 #endif
     int i;
+ 
+    if (RTEST(ruby_verbose)) {
+	rb_warning("We plan to remove a syscall function at future release. DL(Fiddle) provides safer alternative.");
+    }
 
     rb_secure(2);
     if (argc == 0)
@@ -7635,7 +7639,8 @@ rb_f_syscall(int argc, VALUE *argv)
 #endif
     }
 
-    if (retval < 0) rb_sys_fail(0);
+    if (retval == -1)
+	rb_sys_fail(0);
     return RETVAL2NUM(retval);
 #undef SYSCALL
 #undef NUM2SYSCALLID
