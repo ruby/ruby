@@ -13,11 +13,14 @@ require "csv"
 
 class TestEncodings < Test::Unit::TestCase
   def setup
-    @temp_csv_path = File.join(File.dirname(__FILE__), "temp.csv")
+    require 'tempfile'
+    @temp_csv_file = Tempfile.new(%w"test_csv. .csv")
+    @temp_csv_path = @temp_csv_file.path
+    @temp_csv_file.close
   end
 
   def teardown
-    File.unlink(@temp_csv_path) if File.exist? @temp_csv_path
+    @temp_csv_file.close!
   end
 
   ########################################

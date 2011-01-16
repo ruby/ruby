@@ -1,3 +1,8 @@
+Sat Dec 25 15:04:05 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/csv/test_encodings.rb (TestEncodings#setup): fix evil test
+	  suite writing to the source directory.
+
 Sat Dec 25 14:27:09 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_extract_encoding_option): accept Encoding object as
