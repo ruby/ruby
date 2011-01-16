@@ -1,3 +1,9 @@
+Sun Dec 26 11:39:11 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (stmt): missing ripper rule.  i.e., `a::B ||= c 1'.
+	  http://twitter.com/#!/wannabe53/status/18797576396472321
+	  http://twitter.com/#!/wannabe53/status/18798416150663168
+
 Sun Dec 26 04:31:15 2010  Luis Lavena  <luislavena@gmail.com>
 
 	* ext/dl/win32/registry.rb: Corrected RegCreateKeyExA signature.

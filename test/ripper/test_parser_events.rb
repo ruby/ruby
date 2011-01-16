@@ -20,7 +20,7 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
 
   def parse(str, nm = nil, &bl)
     dp = DummyParser.new(str)
-    dp.hook(nm, &bl) if nm
+    dp.hook(*nm, &bl) if nm
     dp.parse.to_s
   end
 
@@ -347,10 +347,10 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal true, thru_heredoc_beg
     assert_match(/string_content\(\),heredoc\n/, tree, bug1921)
     heredoc = nil
-    parse("<<EOS\nheredoc1\nheredoc2\nEOS\n", :on_string_add) {|n, s| heredoc = s}
+    parse("<<EOS\nheredoc1\nheredoc2\nEOS\n", :on_string_add) {|e, n, s| heredoc = s}
     assert_equal("heredoc1\nheredoc2\n", heredoc, bug1921)
     heredoc = nil
-    parse("<<-EOS\nheredoc1\nheredoc2\n\tEOS\n", :on_string_add) {|n, s| heredoc = s}
+    parse("<<-EOS\nheredoc1\nheredoc2\n\tEOS\n", :on_string_add) {|e, n, s| heredoc = s}
     assert_equal("heredoc1\nheredoc2\n", heredoc, bug1921)
   end
 
@@ -674,6 +674,15 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     thru_opassign = false
     parse('a ||= b', :on_opassign) {thru_opassign = true}
     assert_equal true, thru_opassign
+  end
+
+  def test_opassign_error
+    thru_opassign = []
+    events = [:on_opassign, :on_assign_error]
+    parse('a::X ||= c 1', events) {|a,*b|
+      thru_opassign << a
+    }
+    assert_equal events, thru_opassign
   end
 
   def test_param_error
@@ -1104,7 +1113,7 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
 
   def test_unterminated_regexp
     compile_error = false
-    parse('/', :compile_error) {|msg| compile_error = msg}
+    parse('/', :compile_error) {|e, msg| compile_error = msg}
     assert_equal("unterminated regexp meets end of file", compile_error)
   end
 end if ripper_test
