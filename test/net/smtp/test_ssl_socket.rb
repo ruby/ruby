@@ -15,6 +15,7 @@ module Net
       end
     end
 
+    require 'stringio'
     class SSLSocket < StringIO
       attr_accessor :sync_close, :connected, :closed
 
@@ -87,4 +88,4 @@ module Net
       ].join("\r\n") + "\r\n"
     end
   end
-end
+end if defined?(OpenSSL)
