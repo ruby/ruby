@@ -1,3 +1,18 @@
+Wed Jan 12 16:24:53 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* ext/readline/extconf.rb: new checks for RL_PROMPT_START_IGNORE 
+	  and RL_PROMPT_END_IGNORE. [ruby-core:34331]
+
+	* ext/readline/readline.c: enables USE_INSERT_IGNORE_ESCAPE only if
+	  RL_PROMPT_{START,END}_IGNORE are available to get rid of compilation
+	  error with libedit.
+
+Sun Jan  9 14:47:50 2011  TAKAO Kouji  <kouji@takao7.net>
+
+	* ext/readline/readline.c: apply a patch from Nobuyoshi Nakada.
+	  fixed #3616 [ruby-core:31484] IRB + readline incorrectly counts
+	  non-printing characters in prompt
+
 Fri Jan  7 21:54:04 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-font-lock-syntactic-keywords): highlight
