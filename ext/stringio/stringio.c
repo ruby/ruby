@@ -83,7 +83,7 @@ static const rb_data_type_t strio_data_type = {
 static struct StringIO*
 get_strio(VALUE self)
 {
-    struct StringIO *ptr = check_strio(self);
+    struct StringIO *ptr = check_strio(rb_io_taint_check(self));
 
     if (!ptr) {
 	rb_raise(rb_eIOError, "uninitialized stream");
@@ -310,7 +310,7 @@ strio_set_string(VALUE self, VALUE string)
 {
     struct StringIO *ptr = StringIO(self);
 
-    if (!OBJ_TAINTED(self)) rb_secure(4);
+    rb_io_taint_check(self);
     ptr->flags &= ~FMODE_READWRITE;
     StringValue(string);
     ptr->flags = OBJ_FROZEN(string) ? FMODE_READABLE : FMODE_READWRITE;
@@ -502,7 +502,7 @@ strio_set_lineno(VALUE self, VALUE lineno)
 static VALUE
 strio_reopen(int argc, VALUE *argv, VALUE self)
 {
-    if (!OBJ_TAINTED(self)) rb_secure(4);
+    rb_io_taint_check(self);
     if (argc == 1 && TYPE(*argv) != T_STRING) {
 	return strio_copy(self, *argv);
     }

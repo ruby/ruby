@@ -1,3 +1,8 @@
+Thu Jan  6 05:14:41 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (get_strio, strio_set_string)
+	  (strio_reopen): check if frozen.  [ruby-core:33648]
+
 Wed Jan  5 13:56:54 2011  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/net/http.rb (Net::HTTP#get): A header hash given should not
