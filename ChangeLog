@@ -1,3 +1,8 @@
+Sun Dec 26 04:31:15 2010  Luis Lavena  <luislavena@gmail.com>
+
+	* ext/dl/win32/registry.rb: Corrected RegCreateKeyExA signature.
+	  Patch by Rafal Michalski [ruby-core:33874] [Ruby 1.9-Bug#4203]
+
 Sat Dec 25 15:04:05 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/csv/test_encodings.rb (TestEncodings#setup): fix evil test
