@@ -1,3 +1,8 @@
+Thu Jan  6 11:27:01 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/json/tree_builder.rb (start_mapping): tags
+	  should not be included in JSON mapping
+
 Thu Jan  6 05:14:41 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (get_strio, strio_set_string)

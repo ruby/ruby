@@ -89,6 +89,10 @@ module Psych
       end
     end
 
+    def test_json_dump_exclude_tag
+      refute_match('TestCoder::InitApi', Psych.to_json(InitApi.new))
+    end
+
     def test_map_takes_block
       coder = Psych::Coder.new 'foo'
       tag = coder.tag
