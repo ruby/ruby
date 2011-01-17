@@ -1,3 +1,7 @@
+Tue Jan 18 07:53:52 2011  Tanaka Akira  <akr@fsij.org>
+
+	* eval_intern.h: parenthesize macro arguments.
+
 Tue Jan 18 06:49:38 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rubygems/source_index.rb (Gem#load_specification): read in
