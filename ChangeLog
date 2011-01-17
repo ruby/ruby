@@ -1,11 +1,17 @@
+Tue Jan 18 06:49:38 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems/source_index.rb (Gem#load_specification): read in
+	  binary mode to get rid of failures caused by mismatch between
+	  default internal encoding and encoding comments.
+
 Tue Jan 18 04:42:44 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/parser.rb (Mark): Adding a class to wrap
 	  marker information
-	
+
 	* ext/psych/parser.c (mark): Add a method to return the mark object
 	  for the parser
-	
+
 	* test/psych/test_parser.rb: tests for the Mark class.
 
 Tue Jan 18 02:46:55 2011  Aaron Patterson <aaron@tenderlovemaking.com>
@@ -163,7 +169,7 @@ Wed Jan 12 19:09:29 2011  Tanaka Akira  <akr@fsij.org>
 
 Wed Jan 12 16:25:12 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
-	* lib/net/http.rb (Net::HTTP#connect): makes it timeout during 
+	* lib/net/http.rb (Net::HTTP#connect): makes it timeout during
 	  SSL handshake too. [ruby-core:34203]
 	  Patch by Marc Slemko.
 
@@ -175,7 +181,7 @@ Wed Jan 12 16:25:12 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 Wed Jan 12 16:24:53 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
-	* ext/readline/extconf.rb: new checks for RL_PROMPT_START_IGNORE 
+	* ext/readline/extconf.rb: new checks for RL_PROMPT_START_IGNORE
 	  and RL_PROMPT_END_IGNORE. [ruby-core:34331]
 
 	* ext/readline/readline.c: enables USE_INSERT_IGNORE_ESCAPE only if
