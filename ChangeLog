@@ -1,3 +1,7 @@
+Mon Jan 17 23:36:33 2011  Tanaka Akira  <akr@fsij.org>
+
+	* array.c (rb_ary_times): less MEMCPY calls.
+
 Mon Jan 17 22:54:33 2011  Tanaka Akira  <akr@fsij.org>
 
 	* debug.h: parenthesize macro arguments.

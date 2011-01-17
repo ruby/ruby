@@ -2988,7 +2988,7 @@ static VALUE
 rb_ary_times(VALUE ary, VALUE times)
 {
     VALUE ary2, tmp, *ptr, *ptr2;
-    long i, t, len;
+    long t, len;
 
     tmp = rb_check_string_type(times);
     if (!NIL_P(tmp)) {
@@ -3014,8 +3014,15 @@ rb_ary_times(VALUE ary, VALUE times)
     ptr = RARRAY_PTR(ary);
     ptr2 = RARRAY_PTR(ary2);
     t = RARRAY_LEN(ary);
-    for (i=0; i<len; i+=t) {
-	MEMCPY(ptr2+i, ptr, VALUE, t);
+    if (0 < t) {
+        MEMCPY(ptr2, ptr, VALUE, t);
+        while (t <= len/2) {
+            MEMCPY(ptr2+t, ptr2, VALUE, t);
+            t *= 2;
+        }
+        if (t < len) {
+            MEMCPY(ptr2+t, ptr2, VALUE, len-t);
+        }
     }
   out:
     OBJ_INFECT(ary2, ary);
