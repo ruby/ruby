@@ -4362,7 +4362,8 @@ strftimev(const char *fmt, VALUE time)
  *  Format directives:
  *
  *    Date (Year, Month, Day):
- *      %Y - Year with century
+ *      %Y - Year with century (can be negative, 4 digits at least)
+ *              -0001, 0000, 1995, 2009, 14292, etc.
  *      %C - Century (20 in 2009)
  *      %y - Year without a century (00..99)
  *      
@@ -4398,6 +4399,7 @@ strftimev(const char *fmt, VALUE time)
  *              %3N  millisecond (3 digits)
  *              %6N  microsecond (6 digits)
  *              %9N  nanosecond (9 digits)
+ *              %12N picosecond (12 digits)
  *      
  *    Time zone:
  *      %z - Time zone as hour and minute offset from UTC (e.g. +0900)
