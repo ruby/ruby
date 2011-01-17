@@ -1,3 +1,7 @@
+Mon Jan 17 21:40:25 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (process_options): revert r30549.
+
 Sun Jan 16 20:55:45 2011  Tanaka Akira  <akr@fsij.org>
 
 	* vsnprintf.c: parenthesize macro arguments.
