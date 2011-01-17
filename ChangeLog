@@ -1,3 +1,7 @@
+Mon Jan 17 22:54:33 2011  Tanaka Akira  <akr@fsij.org>
+
+	* debug.h: parenthesize macro arguments.
+
 Mon Jan 17 21:40:25 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (process_options): revert r30549.
