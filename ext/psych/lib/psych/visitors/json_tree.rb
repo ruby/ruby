@@ -6,7 +6,7 @@ module Psych
       end
 
       def visit_String o
-        @emitter.scalar o.to_s, nil, nil, false, true, Nodes::Scalar::ANY
+        @emitter.scalar o.to_s, nil, nil, false, true, Nodes::Scalar::DOUBLE_QUOTED
       end
       alias :visit_Symbol :visit_String
     end
