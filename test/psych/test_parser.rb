@@ -5,9 +5,12 @@ require_relative 'helper'
 module Psych
   class TestParser < TestCase
     class EventCatcher < Handler
-      attr_reader :calls
+      attr_accessor :parser
+      attr_reader :calls, :marks
       def initialize
-        @calls = []
+        @parser = nil
+        @calls  = []
+        @marks  = []
       end
 
       (Handler.instance_methods(true) -
@@ -15,6 +18,7 @@ module Psych
         class_eval %{
           def #{m} *args
             super
+            @marks << @parser.mark if @parser
             @calls << [:#{m}, args]
           end
         }
@@ -23,7 +27,57 @@ module Psych
 
     def setup
       super
-      @parser = Psych::Parser.new EventCatcher.new
+      @handler        = EventCatcher.new
+      @parser         = Psych::Parser.new @handler
+      @handler.parser = @parser
+    end
+
+    def test_line_numbers
+      assert_equal 0, @parser.mark.line
+      @parser.parse "---\n- hello\n- world"
+      line_calls = @handler.marks.map(&:line).zip(@handler.calls.map(&:first))
+      assert_equal [[0, :start_stream],
+                    [0, :start_document],
+                    [1, :start_sequence],
+                    [2, :scalar],
+                    [3, :scalar],
+                    [3, :end_sequence],
+                    [3, :end_document],
+                    [3, :end_stream]], line_calls
+
+      assert_equal 3, @parser.mark.line
+    end
+
+    def test_column_numbers
+      assert_equal 0, @parser.mark.column
+      @parser.parse "---\n- hello\n- world"
+      col_calls = @handler.marks.map(&:column).zip(@handler.calls.map(&:first))
+      assert_equal [[0, :start_stream],
+                    [3, :start_document],
+                    [1, :start_sequence],
+                    [0, :scalar],
+                    [0, :scalar],
+                    [0, :end_sequence],
+                    [0, :end_document],
+                    [0, :end_stream]], col_calls
+
+      assert_equal 0, @parser.mark.column
+    end
+
+    def test_index_numbers
+      assert_equal 0, @parser.mark.index
+      @parser.parse "---\n- hello\n- world"
+      idx_calls = @handler.marks.map(&:index).zip(@handler.calls.map(&:first))
+      assert_equal [[0, :start_stream],
+                    [3, :start_document],
+                    [5, :start_sequence],
+                    [12, :scalar],
+                    [19, :scalar],
+                    [19, :end_sequence],
+                    [19, :end_document],
+                    [19, :end_stream]], idx_calls
+
+      assert_equal 19, @parser.mark.index
     end
 
     def test_set_encoding_twice

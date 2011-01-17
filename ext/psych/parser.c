@@ -307,6 +307,28 @@ static VALUE set_external_encoding(VALUE self, VALUE encoding)
     return encoding;
 }
 
+/*
+ * call-seq:
+ *    parser.mark # => #<Psych::Parser::Mark>
+ *
+ * Returns a Psych::Parser::Mark object that contains line, column, and index
+ * information.
+ */
+static VALUE mark(VALUE self)
+{
+    VALUE mark_klass;
+    VALUE args[3];
+    yaml_parser_t * parser;
+
+    Data_Get_Struct(self, yaml_parser_t, parser);
+    mark_klass = rb_const_get_at(cPsychParser, rb_intern("Mark"));
+    args[0] = INT2NUM(parser->mark.index);
+    args[1] = INT2NUM(parser->mark.line);
+    args[2] = INT2NUM(parser->mark.column);
+
+    return rb_class_new_instance(3, args, mark_klass);
+}
+
 void Init_psych_parser()
 {
 #if 0
@@ -331,6 +353,7 @@ void Init_psych_parser()
     ePsychSyntaxError = rb_define_class_under(mPsych, "SyntaxError", rb_eSyntaxError);
 
     rb_define_method(cPsychParser, "parse", parse, 1);
+    rb_define_method(cPsychParser, "mark", mark, 0);
     rb_define_method(cPsychParser, "external_encoding=", set_external_encoding, 1);
 
     id_read           = rb_intern("read");
