@@ -85,7 +85,11 @@ class Gem::SourceIndex
     def load_specification(file_name)
       return nil unless file_name and File.exist? file_name
 
-      spec_code = File.binread(file_name).untaint
+      spec_code = if defined? Encoding then
+                    File.read file_name, :encoding => 'UTF-8'
+                  else
+                    File.read file_name
+                  end.untaint
 
       begin
         gemspec = eval spec_code, binding, file_name

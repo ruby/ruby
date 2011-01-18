@@ -24,12 +24,6 @@ Tue Jan 18 07:53:52 2011  Tanaka Akira  <akr@fsij.org>
 
 	* eval_intern.h: parenthesize macro arguments.
 
-Tue Jan 18 06:49:38 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* lib/rubygems/source_index.rb (Gem#load_specification): read in
-	  binary mode to get rid of failures caused by mismatch between
-	  default internal encoding and encoding comments.
-
 Tue Jan 18 04:42:44 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/parser.rb (Mark): Adding a class to wrap
