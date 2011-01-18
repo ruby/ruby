@@ -1,3 +1,7 @@
+Tue Jan 18 23:31:01 2011  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* parse.y: avoid NULL reference.  [ruby-dev:43067]
+
 Wed Jan 19 02:54:04 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vsnprintf.c (cvt): set first byte of buf to NUL for the case when
