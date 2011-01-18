@@ -1,3 +1,8 @@
+Tue Jan 18 15:05:55 2011  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/logger.rb: added RDoc document for logging message escape
+	  by Hal Brodigan. See #3869
+
 Tue Jan 18 07:53:52 2011  Tanaka Akira  <akr@fsij.org>
 
 	* eval_intern.h: parenthesize macro arguments.
