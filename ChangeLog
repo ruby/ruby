@@ -1,3 +1,7 @@
+Tue Jan 18 18:31:14 2011  Keiju Ishitsuka  <keiju@ishitsuka.com>
+
+	* lib/irb/comletion.rb: Irb tab completion support for XX::method forms.
+
 Tue Jan 18 15:05:55 2011  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/logger.rb: added RDoc document for logging message escape
