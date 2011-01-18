@@ -1,3 +1,8 @@
+Wed Jan 19 02:54:04 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vsnprintf.c (cvt): set first byte of buf to NUL for the case when
+	  no bytes are written to the buf. [ruby-dev:43062]
+
 Tue Jan 18 23:04:51 2011  Tanaka Akira  <akr@fsij.org>
 
 	* gc.h: parenthesize macro arguments.
