@@ -4364,8 +4364,8 @@ strftimev(const char *fmt, VALUE time)
  *    Date (Year, Month, Day):
  *      %Y - Year with century (can be negative, 4 digits at least)
  *              -0001, 0000, 1995, 2009, 14292, etc.
- *      %C - Century (20 in 2009)
- *      %y - Year without a century (00..99)
+ *      %C - year / 100 (round down.  20 in 2009)
+ *      %y - year % 100 (00..99)
  *      
  *      %m - Month of the year, zero-padded (01..12)
  *              %_m  blank-padded ( 1..12)
