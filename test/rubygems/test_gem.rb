@@ -1,4 +1,10 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require "test/rubygems/gemutilities"
 require 'rubygems'
 require 'rubygems/gem_openssl'
 require 'rubygems/installer'
@@ -64,19 +70,19 @@ class TestGem < RubyGemTestCase
     assert_equal @exec_path, Gem.bin_path('a', nil, '4')
   end
 
-  def test_self_bin_path_no_default_bin
+  def test_self_bin_path_nonexistent_binfile
     quick_gem 'a', '2' do |s|
       s.executables = ['exec']
     end
-    assert_raises(Gem::Exception) do
-      Gem.bin_path('a', '2')
+    assert_raises(Gem::GemNotFoundException) do
+      Gem.bin_path('a', 'other', '2')
     end
   end
 
   def test_self_bin_path_no_bin_file
     quick_gem 'a', '1'
     assert_raises(Gem::Exception) do
-      Gem.bin_path('a', '1')
+      Gem.bin_path('a', nil, '1')
     end
   end
 
@@ -84,6 +90,16 @@ class TestGem < RubyGemTestCase
     assert_raises(Gem::GemNotFoundException) do
       Gem.bin_path('non-existent')
     end
+  end
+
+  def test_self_bin_path_bin_file_gone_in_latest
+    util_exec_gem
+    quick_gem 'a', '10' do |s|
+      s.executables = []
+      s.default_executable = nil
+    end
+    # Should not find a-10's non-abin (bug)
+    assert_equal @abin_path, Gem.bin_path('a', 'abin')
   end
 
   def test_self_bindir
@@ -259,15 +275,15 @@ class TestGem < RubyGemTestCase
   end
 
   def test_self_find_files
-    discover_path = File.join 'lib', 'foo', 'discover.rb'
+    discover_path = File.join 'lib', 'sff', 'discover.rb'
     cwd = File.expand_path '..', __FILE__
     $LOAD_PATH.unshift cwd.dup
 
-    foo1 = quick_gem 'foo', '1' do |s|
+    foo1 = quick_gem 'sff', '1' do |s|
       s.files << discover_path
     end
 
-    foo2 = quick_gem 'foo', '2' do |s|
+    foo2 = quick_gem 'sff', '2' do |s|
       s.files << discover_path
     end
 
@@ -285,14 +301,13 @@ class TestGem < RubyGemTestCase
     Gem.searcher = nil
 
     expected = [
-      File.expand_path('../foo/discover.rb', __FILE__),
+      File.expand_path('../sff/discover.rb', __FILE__),
       File.join(foo2.full_gem_path, discover_path),
       File.join(foo1.full_gem_path, discover_path),
     ]
 
-    assert_equal expected, Gem.find_files('foo/discover')
-    bug3701 = '[ruby-core:31730]'
-    assert_equal expected, Gem.find_files('foo/**.rb'), bug3701
+    assert_equal expected, Gem.find_files('sff/discover')
+    assert_equal expected, Gem.find_files('sff/**.rb'), '[ruby-core:31730]'
   ensure
     assert_equal cwd, $LOAD_PATH.shift
   end
@@ -321,11 +336,18 @@ class TestGem < RubyGemTestCase
     assert_equal true, Gem.loaded_specs.keys.include?('foo')
   end
 
+  def util_path
+    ENV.delete "GEM_HOME"
+    ENV.delete "GEM_PATH"
+  end
+
   def test_self_path
     assert_equal [Gem.dir], Gem.path
   end
 
   def test_self_path_default
+    util_path
+
     if defined? APPLE_GEM_HOME
       orig_APPLE_GEM_HOME = APPLE_GEM_HOME
       Object.send :remove_const, :APPLE_GEM_HOME
@@ -339,6 +361,8 @@ class TestGem < RubyGemTestCase
 
   unless win_platform?
     def test_self_path_APPLE_GEM_HOME
+      util_path
+
       Gem.clear_paths
       apple_gem_home = File.join @tempdir, 'apple_gem_home'
       Gem.const_set :APPLE_GEM_HOME, apple_gem_home
@@ -599,42 +623,90 @@ class TestGem < RubyGemTestCase
     end
   end
 
-  def test_self_user_home_user_drive_and_path
-    Gem.clear_paths
+  if Gem.win_platform? then
+    def test_self_user_home_userprofile
+      skip 'Ruby 1.9 properly handles ~ path expansion' unless '1.9' > RUBY_VERSION
 
-    # safe-keep env variables
-    orig_home, orig_user_profile = ENV['HOME'], ENV['USERPROFILE']
-    orig_user_drive, orig_user_path = ENV['HOMEDRIVE'], ENV['HOMEPATH']
+      Gem.clear_paths
 
-    # prepare the environment
-    ENV.delete('HOME')
-    ENV.delete('USERPROFILE')
-    ENV['HOMEDRIVE'] = 'Z:'
-    ENV['HOMEPATH'] = '\\Users\\RubyUser'
+      # safe-keep env variables
+      orig_home, orig_user_profile = ENV['HOME'], ENV['USERPROFILE']
 
-    assert_equal "Z:\\Users\\RubyUser", Gem.user_home
+      # prepare for the test
+      ENV.delete('HOME')
+      ENV['USERPROFILE'] = "W:\\Users\\RubyUser"
 
-  ensure
-    ENV['HOME'] = orig_home
-    ENV['USERPROFILE'] = orig_user_profile
-    ENV['USERDRIVE'] = orig_user_drive
-    ENV['USERPATH'] = orig_user_path
-  end if '1.9' > RUBY_VERSION
+      assert_equal 'W:/Users/RubyUser', Gem.user_home
+
+    ensure
+      ENV['HOME'] = orig_home
+      ENV['USERPROFILE'] = orig_user_profile
+    end
+
+    def test_self_user_home_user_drive_and_path
+      skip 'Ruby 1.9 properly handles ~ path expansion' unless '1.9' > RUBY_VERSION
+
+      Gem.clear_paths
+
+      # safe-keep env variables
+      orig_home, orig_user_profile = ENV['HOME'], ENV['USERPROFILE']
+      orig_home_drive, orig_home_path = ENV['HOMEDRIVE'], ENV['HOMEPATH']
+
+      # prepare the environment
+      ENV.delete('HOME')
+      ENV.delete('USERPROFILE')
+      ENV['HOMEDRIVE'] = 'Z:'
+      ENV['HOMEPATH'] = "\\Users\\RubyUser"
+
+      assert_equal 'Z:/Users/RubyUser', Gem.user_home
+
+    ensure
+      ENV['HOME'] = orig_home
+      ENV['USERPROFILE'] = orig_user_profile
+      ENV['HOMEDRIVE'] = orig_home_drive
+      ENV['HOMEPATH'] = orig_home_path
+    end
+  end
 
   def test_load_plugins
-    with_plugin('load') { Gem.load_plugins }
+    plugin_path = File.join "lib", "rubygems_plugin.rb"
+
+    Dir.chdir @tempdir do
+      FileUtils.mkdir_p 'lib'
+      File.open plugin_path, "w" do |fp|
+        fp.puts "TestGem::TEST_SPEC_PLUGIN_LOAD = :loaded"
+      end
+
+      foo = quick_gem 'foo', '1' do |s|
+        s.files << plugin_path
+      end
+
+      install_gem foo
+    end
+
+    Gem.source_index = nil
+
+    gem 'foo'
+
+    Gem.load_plugins
+
+    assert_equal :loaded, TEST_SPEC_PLUGIN_LOAD
+  end
+
+  def test_load_env_plugins
+    with_plugin('load') { Gem.load_env_plugins }
     assert_equal :loaded, TEST_PLUGIN_LOAD
 
     util_remove_interrupt_command
 
     # Should attempt to cause a StandardError
-    with_plugin('standarderror') { Gem.load_plugins }
+    with_plugin('standarderror') { Gem.load_env_plugins }
     assert_equal :loaded, TEST_PLUGIN_STANDARDERROR
 
     util_remove_interrupt_command
 
     # Should attempt to cause an Exception
-    with_plugin('exception') { Gem.load_plugins }
+    with_plugin('exception') { Gem.load_env_plugins }
     assert_equal :loaded, TEST_PLUGIN_EXCEPTION
   end
 

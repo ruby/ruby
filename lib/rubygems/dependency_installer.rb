@@ -1,3 +1,9 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 require 'rubygems'
 require 'rubygems/dependency_list'
 require 'rubygems/installer'
@@ -132,41 +138,48 @@ class Gem::DependencyInstaller
 
     dependency_list = Gem::DependencyList.new @development
     dependency_list.add(*specs)
+    to_do = specs.dup
 
-    unless @ignore_dependencies then
-      to_do = specs.dup
-      seen = {}
+    add_found_dependencies to_do, dependency_list unless @ignore_dependencies
 
-      until to_do.empty? do
-        spec = to_do.shift
-        next if spec.nil? or seen[spec.name]
-        seen[spec.name] = true
+    @gems_to_install = dependency_list.dependency_order.reverse
+  end
 
-        deps = spec.runtime_dependencies
-        deps |= spec.development_dependencies if @development
+  def add_found_dependencies to_do, dependency_list
+    seen = {}
 
-        deps.each do |dep|
-          results = find_gems_with_sources(dep).reverse
+    until to_do.empty? do
+      spec = to_do.shift
+      next if spec.nil? or seen[spec.name]
+      seen[spec.name] = true
 
-          results.reject! do |dep_spec,|
-            to_do.push dep_spec
+      deps = spec.runtime_dependencies
+      deps |= spec.development_dependencies if @development
 
-            @source_index.any? do |_, installed_spec|
-              dep.name == installed_spec.name and
-                dep.requirement.satisfied_by? installed_spec.version
-            end
+      deps.each do |dep|
+        results = find_gems_with_sources(dep).reverse
+
+        # FIX: throw in everything that satisfies, and let
+        # FIX: dependencylist reduce to the chosen few
+        results.reject! do |dep_spec,|
+          to_do.push dep_spec
+
+          # already locally installed
+          @source_index.any? do |_, installed_spec|
+            dep.name == installed_spec.name and
+              dep.requirement.satisfied_by? installed_spec.version
           end
+        end
 
-          results.each do |dep_spec, source_uri|
-            next if seen[dep_spec.name]
-            @specs_and_sources << [dep_spec, source_uri]
-            dependency_list.add dep_spec
-          end
+        results.each do |dep_spec, source_uri|
+          next if seen[dep_spec.name]
+          @specs_and_sources << [dep_spec, source_uri]
+
+          # FIX: this is the bug
+          dependency_list.add dep_spec
         end
       end
     end
-
-    @gems_to_install = dependency_list.dependency_order.reverse
   end
 
   ##

@@ -1,3 +1,9 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -28,10 +34,8 @@ module Kernel
   def require(path) # :doc:
     gem_original_require path
   rescue LoadError => load_error
-    if load_error.message.end_with?(path)
-      if Gem.try_activate(path)
-        return gem_original_require(path)
-      end
+    if load_error.message.end_with?(path) and Gem.try_activate(path) then
+      return gem_original_require(path)
     end
 
     raise load_error
@@ -40,5 +44,5 @@ module Kernel
   private :require
   private :gem_original_require
 
-end unless Kernel.private_method_defined?(:gem_original_require)
+end
 

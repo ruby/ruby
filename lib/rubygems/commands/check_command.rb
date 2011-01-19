@@ -1,3 +1,9 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 require 'rubygems/command'
 require 'rubygems/version_option'
 require 'rubygems/validator'
@@ -21,25 +27,10 @@ class Gem::Commands::CheckCommand < Gem::Command
       options[:alien] = true
     end
 
-    add_option('-v', '--verbose', "Spew more words") do |value, options|
-      options[:verbose] = true
-    end
-
-    add_option('-t', '--test', "Run unit tests for gem") do |value, options|
-      options[:test] = true
-    end
-
-    add_version_option 'run tests for'
+    add_version_option 'check'
   end
 
   def execute
-    if options[:test]
-      version = options[:version] || Gem::Requirement.default
-      dep = Gem::Dependency.new get_one_gem_name, version
-      gem_spec = Gem::SourceIndex.from_installed_gems.search(dep).first
-      Gem::Validator.new.unit_test(gem_spec)
-    end
-
     if options[:alien]
       say "Performing the 'alien' operation"
       say
@@ -52,7 +43,7 @@ class Gem::Commands::CheckCommand < Gem::Command
             say "    #{error_entry.problem}"
           end
         else
-          say "#{key} is error-free" if options[:verbose]
+          say "#{key} is error-free" if Gem.configuration.verbose
         end
         say
       end

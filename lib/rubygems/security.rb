@@ -1,12 +1,19 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems'
+require 'rubygems/exceptions'
 require 'rubygems/gem_openssl'
 
+#
 # = Signed Gems README
 #
 # == Table of Contents
@@ -265,6 +272,34 @@ require 'rubygems/gem_openssl'
 # A more detailed description of each options is available in the walkthrough
 # above.
 #
+# == Manually verifying signatures
+#
+# In case you don't trust RubyGems you can verify gem signatures manually:
+#
+# 1. Fetch and unpack the gem
+#
+#     gem fetch some_signed_gem
+#     tar -xf some_signed_gem-1.0.gem
+#
+# 2. Grab the public key from the gemspec
+#
+#     gem spec some_signed_gem-1.0.gem cert_chain | \
+#       ruby -pe 'sub(/^ +/, "")' > public_key.crt
+#
+# 3. Generate a SHA1 hash of the data.tar.gz
+#
+#     openssl dgst -sha1 < data.tar.gz > my.hash
+#
+# 4. Verify the signature
+#
+#     openssl rsautl -verify -inkey public_key.crt -certin \
+#       -in data.tar.gz.sig > verified.hash
+#
+# 5. Compare your hash to the verified hash
+#
+#     diff -s verified.hash my.hash
+#
+# 6. Repeat 5 and 6 with metadata.gz
 #
 # == OpenSSL Reference
 #
@@ -319,11 +354,14 @@ require 'rubygems/gem_openssl'
 
 module Gem::Security
 
+  ##
+  # Gem::Security default exception type
+
   class Exception < Gem::Exception; end
 
-  #
-  # default options for most of the methods below
-  #
+  ##
+  # Default options for most of the methods below
+
   OPT = {
     # private key options
     :key_algo   => Gem::SSL::PKEY_RSA,
@@ -338,38 +376,38 @@ module Gem::Security
       'basicConstraints'      => 'CA:FALSE',
       'subjectKeyIdentifier'  => 'hash',
       'keyUsage'              => 'keyEncipherment,dataEncipherment,digitalSignature',
-  },
+    },
 
-  # save the key and cert to a file in build_self_signed_cert()?
-  :save_key   => true,
-  :save_cert  => true,
+    # save the key and cert to a file in build_self_signed_cert()?
+    :save_key   => true,
+    :save_cert  => true,
 
-  # if you define either of these, then they'll be used instead of
-  # the output_fmt macro below
-  :save_key_path => nil,
-  :save_cert_path => nil,
+    # if you define either of these, then they'll be used instead of
+    # the output_fmt macro below
+    :save_key_path => nil,
+    :save_cert_path => nil,
 
-  # output name format for self-signed certs
-  :output_fmt => 'gem-%s.pem',
-  :munge_re   => Regexp.new(/[^a-z0-9_.-]+/),
+    # output name format for self-signed certs
+    :output_fmt => 'gem-%s.pem',
+    :munge_re   => Regexp.new(/[^a-z0-9_.-]+/),
 
-  # output directory for trusted certificate checksums
-  :trust_dir => File::join(Gem.user_home, '.gem', 'trust'),
+    # output directory for trusted certificate checksums
+    :trust_dir => File::join(Gem.user_home, '.gem', 'trust'),
 
-  # default permissions for trust directory and certs
-  :perms => {
-    :trust_dir      => 0700,
-    :trusted_cert   => 0600,
-    :signing_cert   => 0600,
-    :signing_key    => 0600,
-  },
+    # default permissions for trust directory and certs
+    :perms => {
+      :trust_dir      => 0700,
+      :trusted_cert   => 0600,
+      :signing_cert   => 0600,
+      :signing_key    => 0600,
+    },
   }
 
-  #
+  ##
   # A Gem::Security::Policy object encapsulates the settings for verifying
   # signed gem files.  This is the base class.  You can either declare an
   # instance of this or use one of the preset security policies below.
-  #
+
   class Policy
     attr_accessor :verify_data, :verify_signer, :verify_chain,
       :verify_root, :only_trusted, :only_signed
@@ -509,9 +547,9 @@ module Gem::Security
     end
   end
 
-  #
+  ##
   # No security policy: all package signature checks are disabled.
-  #
+
   NoSecurity = Policy.new(
     :verify_data      => false,
     :verify_signer    => false,
@@ -521,14 +559,14 @@ module Gem::Security
     :only_signed      => false
   )
 
-  #
+  ##
   # AlmostNo security policy: only verify that the signing certificate is the
   # one that actually signed the data.  Make no attempt to verify the signing
   # certificate chain.
   #
   # This policy is basically useless. better than nothing, but can still be
   # easily spoofed, and is not recommended.
-  #
+
   AlmostNoSecurity = Policy.new(
     :verify_data      => true,
     :verify_signer    => false,
@@ -538,13 +576,13 @@ module Gem::Security
     :only_signed      => false
   )
 
-  #
+  ##
   # Low security policy: only verify that the signing certificate is actually
   # the gem signer, and that the signing certificate is valid.
   #
   # This policy is better than nothing, but can still be easily spoofed, and
   # is not recommended.
-  #
+
   LowSecurity = Policy.new(
     :verify_data      => true,
     :verify_signer    => true,
@@ -554,7 +592,7 @@ module Gem::Security
     :only_signed      => false
   )
 
-  #
+  ##
   # Medium security policy: verify the signing certificate, verify the signing
   # certificate chain all the way to the root certificate, and only trust root
   # certificates that we have explicitly allowed trust for.
@@ -562,7 +600,7 @@ module Gem::Security
   # This security policy is reasonable, but it allows unsigned packages, so a
   # malicious person could simply delete the package signature and pass the
   # gem off as unsigned.
-  #
+
   MediumSecurity = Policy.new(
     :verify_data      => true,
     :verify_signer    => true,
@@ -572,7 +610,7 @@ module Gem::Security
     :only_signed      => false
   )
 
-  #
+  ##
   # High security policy: only allow signed gems to be installed, verify the
   # signing certificate, verify the signing certificate chain all the way to
   # the root certificate, and only trust root certificates that we have
@@ -580,7 +618,7 @@ module Gem::Security
   #
   # This security policy is significantly more difficult to bypass, and offers
   # a reasonable guarantee that the contents of the gem have not been altered.
-  #
+
   HighSecurity = Policy.new(
     :verify_data      => true,
     :verify_signer    => true,
@@ -590,9 +628,9 @@ module Gem::Security
     :only_signed      => true
   )
 
-  #
+  ##
   # Hash of configured security policies
-  #
+
   Policies = {
     'NoSecurity'       => NoSecurity,
     'AlmostNoSecurity' => AlmostNoSecurity,
@@ -601,25 +639,24 @@ module Gem::Security
     'HighSecurity'     => HighSecurity,
   }
 
-  #
+  ##
   # Sign the cert cert with @signing_key and @signing_cert, using the digest
   # algorithm opt[:dgst_algo]. Returns the newly signed certificate.
-  #
+
   def self.sign_cert(cert, signing_key, signing_cert, opt = {})
     opt = OPT.merge(opt)
 
-    # set up issuer information
     cert.issuer = signing_cert.subject
-    cert.sign(signing_key, opt[:dgst_algo].new)
+    cert.sign signing_key, opt[:dgst_algo].new
 
     cert
   end
 
-  #
+  ##
   # Make sure the trust directory exists.  If it does exist, make sure it's
   # actually a directory.  If not, then create it with the appropriate
   # permissions.
-  #
+
   def self.verify_trust_dir(path, perms)
     # if the directory exists, then make sure it is in fact a directory.  if
     # it doesn't exist, then create it with the appropriate permissions
@@ -636,94 +673,99 @@ module Gem::Security
     end
   end
 
-  #
+  ##
   # Build a certificate from the given DN and private key.
-  #
+
   def self.build_cert(name, key, opt = {})
     Gem.ensure_ssl_available
-    opt = OPT.merge(opt)
+    opt = OPT.merge opt
 
-    # create new cert
-    ret = OpenSSL::X509::Certificate.new
+    cert = OpenSSL::X509::Certificate.new
 
-    # populate cert attributes
-    ret.version = 2
-    ret.serial = 0
-    ret.public_key = key.public_key
-    ret.not_before = Time.now
-    ret.not_after = Time.now + opt[:cert_age]
-    ret.subject = name
+    cert.not_after  = Time.now + opt[:cert_age]
+    cert.not_before = Time.now
+    cert.public_key = key.public_key
+    cert.serial     = 0
+    cert.subject    = name
+    cert.version    = 2
 
-    # add certificate extensions
-    ef = OpenSSL::X509::ExtensionFactory.new(nil, ret)
-    ret.extensions = opt[:cert_exts].map { |k, v| ef.create_extension(k, v) }
+    ef = OpenSSL::X509::ExtensionFactory.new nil, cert
 
-    # sign cert
-    i_key, i_cert = opt[:issuer_key] || key, opt[:issuer_cert] || ret
-    ret = sign_cert(ret, i_key, i_cert, opt)
+    cert.extensions = opt[:cert_exts].map do |ext_name, value|
+      ef.create_extension ext_name, value
+    end
 
-    # return cert
-    ret
+    i_key  = opt[:issuer_key]  || key
+    i_cert = opt[:issuer_cert] || cert
+
+    cert = sign_cert cert, i_key, i_cert, opt
+
+    cert
   end
 
-  #
+  ##
   # Build a self-signed certificate for the given email address.
-  #
+
   def self.build_self_signed_cert(email_addr, opt = {})
     Gem.ensure_ssl_available
     opt = OPT.merge(opt)
     path = { :key => nil, :cert => nil }
 
-    # split email address up
-    cn, dcs = email_addr.split('@')
-    dcs = dcs.split('.')
+    name = email_to_name email_addr, opt[:munge_re]
 
-    # munge email CN and DCs
-    cn = cn.gsub(opt[:munge_re], '_')
-    dcs = dcs.map { |dc| dc.gsub(opt[:munge_re], '_') }
+    key = opt[:key_algo].new opt[:key_size]
 
-    # create DN
-    name = "CN=#{cn}/" << dcs.map { |dc| "DC=#{dc}" }.join('/')
-    name = OpenSSL::X509::Name::parse(name)
+    verify_trust_dir opt[:trust_dir], opt[:perms][:trust_dir]
 
-    # build private key
-    key = opt[:key_algo].new(opt[:key_size])
-
-    # method name pretty much says it all :)
-    verify_trust_dir(opt[:trust_dir], opt[:perms][:trust_dir])
-
-    # if we're saving the key, then write it out
-    if opt[:save_key]
+    if opt[:save_key] then
       path[:key] = opt[:save_key_path] || (opt[:output_fmt] % 'private_key')
-      File.open(path[:key], 'wb') do |file|
-        file.chmod(opt[:perms][:signing_key])
-        file.write(key.to_pem)
+
+      open path[:key], 'wb' do |io|
+        io.chmod opt[:perms][:signing_key]
+        io.write key.to_pem
       end
     end
 
-    # build self-signed public cert from key
-    cert = build_cert(name, key, opt)
+    cert = build_cert name, key, opt
 
-    # if we're saving the cert, then write it out
-    if opt[:save_cert]
+    if opt[:save_cert] then
       path[:cert] = opt[:save_cert_path] || (opt[:output_fmt] % 'public_cert')
-      File.open(path[:cert], 'wb') do |file|
-        file.chmod(opt[:perms][:signing_cert])
-        file.write(cert.to_pem)
+
+      open path[:cert], 'wb' do |file|
+        file.chmod opt[:perms][:signing_cert]
+        file.write cert.to_pem
       end
     end
 
-    # return key, cert, and paths (if applicable)
     { :key => key, :cert => cert,
       :key_path => path[:key], :cert_path => path[:cert] }
   end
 
-  #
+  ##
+  # Turns +email_address+ into an OpenSSL::X509::Name
+
+  def self.email_to_name email_address, munge_re
+    cn, dcs = email_address.split '@'
+
+    dcs = dcs.split '.'
+
+    cn = cn.gsub munge_re, '_'
+
+    dcs = dcs.map do |dc|
+      dc.gsub munge_re, '_'
+    end
+
+    name = "CN=#{cn}/" << dcs.map { |dc| "DC=#{dc}" }.join('/')
+
+    OpenSSL::X509::Name.parse name
+  end
+
+  ##
   # Add certificate to trusted cert list.
   #
   # Note: At the moment these are stored in OPT[:trust_dir], although that
   # directory may change in the future.
-  #
+
   def self.add_trusted_cert(cert, opt = {})
     opt = OPT.merge(opt)
 
@@ -743,11 +785,13 @@ module Gem::Security
     nil
   end
 
-  #
+  ##
   # Basic OpenSSL-based package signing class.
-  #
+
   class Signer
-    attr_accessor :key, :cert_chain
+
+    attr_accessor :cert_chain
+    attr_accessor :key
 
     def initialize(key, cert_chain)
       Gem.ensure_ssl_available
@@ -774,13 +818,14 @@ module Gem::Security
       end
     end
 
-    #
+    ##
     # Sign data with given digest algorithm
-    #
+
     def sign(data)
       @key.sign(@algo.new, data)
     end
 
   end
+
 end
 

@@ -1,4 +1,10 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require "test/rubygems/gemutilities"
 require 'rubygems/commands/owner_command'
 
 class TestGemCommandsOwnerCommand < RubyGemTestCase
@@ -20,7 +26,7 @@ class TestGemCommandsOwnerCommand < RubyGemTestCase
 - email: user2@example.com
 EOF
 
-    @fetcher.data["https://rubygems.org/api/v1/gems/freewill/owners.yaml"] = [response, 200, 'OK']
+    @fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners.yaml"] = [response, 200, 'OK']
 
     use_ui @ui do
       @cmd.show_owners("freewill")
@@ -36,7 +42,7 @@ EOF
 
   def test_show_owners_denied
     response = "You don't have permission to push to this gem"
-    @fetcher.data["https://rubygems.org/api/v1/gems/freewill/owners.yaml"] = [response, 403, 'Forbidden']
+    @fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners.yaml"] = [response, 403, 'Forbidden']
 
     assert_raises MockGemUi::TermError do
       use_ui @ui do
@@ -49,7 +55,7 @@ EOF
 
   def test_add_owners
     response = "Owner added successfully."
-    @fetcher.data["https://rubygems.org/api/v1/gems/freewill/owners"] = [response, 200, 'OK']
+    @fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = [response, 200, 'OK']
 
     use_ui @ui do
       @cmd.add_owners("freewill", ["user-new1@example.com"])
@@ -64,7 +70,7 @@ EOF
 
   def test_add_owners_denied
     response = "You don't have permission to push to this gem"
-    @fetcher.data["https://rubygems.org/api/v1/gems/freewill/owners"] = [response, 403, 'Forbidden']
+    @fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = [response, 403, 'Forbidden']
 
     assert_raises MockGemUi::TermError do
       use_ui @ui do
@@ -77,7 +83,7 @@ EOF
 
   def test_remove_owners
     response = "Owner removed successfully."
-    @fetcher.data["https://rubygems.org/api/v1/gems/freewill/owners"] = [response, 200, 'OK']
+    @fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = [response, 200, 'OK']
 
     use_ui @ui do
       @cmd.remove_owners("freewill", ["user-remove1@example.com"])
@@ -92,7 +98,7 @@ EOF
 
   def test_remove_owners_denied
     response = "You don't have permission to push to this gem"
-    @fetcher.data["https://rubygems.org/api/v1/gems/freewill/owners"] = [response, 403, 'Forbidden']
+    @fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = [response, 403, 'Forbidden']
 
     assert_raises MockGemUi::TermError do
       use_ui @ui do

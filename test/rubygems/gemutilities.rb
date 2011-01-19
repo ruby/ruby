@@ -1,8 +1,18 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 at_exit { $SAFE = 1 }
 
-$LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
+# $LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
 
-require 'rubygems'
+if defined? Gem::QuickLoader
+  Gem::QuickLoader.load_full_rubygems_library
+else
+  require 'rubygems'
+end
 require 'fileutils'
 require 'minitest/autorun'
 require 'tmpdir'
@@ -11,6 +21,8 @@ require 'rubygems/package'
 require 'rubygems/test_utilities'
 require 'pp'
 require 'yaml'
+require 'zlib'
+
 begin
   YAML::ENGINE.yamler = 'psych'
 rescue LoadError
@@ -23,11 +35,11 @@ end
 
 require 'rdoc/rdoc'
 
-require_relative 'mockgemui'
+require "test/rubygems/mockgemui"
 
 module Gem
   def self.searcher=(searcher)
-    MUTEX.synchronize do @searcher = searcher end
+    @searcher = searcher
   end
 
   def self.source_index=(si)
@@ -36,6 +48,10 @@ module Gem
 
   def self.win_platform=(val)
     @@win_platform = val
+  end
+
+  def self.ruby= ruby
+    @ruby = ruby
   end
 
   module DefaultUserInteraction
@@ -53,15 +69,19 @@ class RubyGemTestCase < MiniTest::Unit::TestCase
   def setup
     super
 
+    @orig_gem_home  = ENV['GEM_HOME']
+    @orig_gem_path  = ENV['GEM_PATH']
+
     @ui = MockGemUi.new
     tmpdir = nil
     Dir.chdir Dir.tmpdir do tmpdir = Dir.pwd end # HACK OSX /private/tmp
-    @tempdir = File.join tmpdir, "test_rubygems_#{$$}"
+    if ENV['KEEP_FILES'] then
+      @tempdir = File.join tmpdir, "test_rubygems_#{$$}.#{Time.now.to_i}"
+    else
+      @tempdir = File.join tmpdir, "test_rubygems_#{$$}"
+    end
     @tempdir.untaint
-    @gemhome = File.join @tempdir, "gemhome"
-    @gemcache = File.join(@gemhome, "source_cache")
-    @usrcache = File.join(@gemhome, ".gem", "user_cache")
-    @latest_usrcache = File.join(@gemhome, ".gem", "latest_user_cache")
+    @gemhome  = File.join @tempdir, 'gemhome'
     @userhome = File.join @tempdir, 'userhome'
 
     Gem.ensure_gem_subdirectories @gemhome
@@ -80,7 +100,6 @@ class RubyGemTestCase < MiniTest::Unit::TestCase
     FileUtils.mkdir_p @gemhome
     FileUtils.mkdir_p @userhome
 
-    ENV['GEMCACHE'] = @usrcache
     Gem.use_paths(@gemhome)
     Gem.loaded_specs.clear
 
@@ -131,9 +150,13 @@ class RubyGemTestCase < MiniTest::Unit::TestCase
     Gem.pre_uninstall do |uninstaller|
       @pre_uninstall_hook_arg = uninstaller
     end
+
+    @orig_LOAD_PATH = $LOAD_PATH.dup
   end
 
   def teardown
+    $LOAD_PATH.replace @orig_LOAD_PATH
+
     Gem::ConfigMap[:BASERUBY] = @orig_BASERUBY
     Gem::ConfigMap[:arch] = @orig_arch
 
@@ -141,15 +164,15 @@ class RubyGemTestCase < MiniTest::Unit::TestCase
       Gem::RemoteFetcher.fetcher = nil
     end
 
-    FileUtils.rm_rf @tempdir
+    FileUtils.rm_rf @tempdir unless ENV['KEEP_FILES']
 
-    ENV.delete 'GEMCACHE'
-    ENV.delete 'GEM_HOME'
-    ENV.delete 'GEM_PATH'
+    ENV['GEM_HOME'] = @orig_gem_home
+    ENV['GEM_PATH'] = @orig_gem_path
 
     Gem.clear_paths
 
-    Gem.class_eval { @ruby = ruby } if ruby = @orig_ruby
+    _ = @orig_ruby
+    Gem.class_eval { @ruby = _ } if _
 
     if @orig_ENV_HOME then
       ENV['HOME'] = @orig_ENV_HOME
@@ -169,6 +192,14 @@ class RubyGemTestCase < MiniTest::Unit::TestCase
 
     gem = File.join(@tempdir, gem.file_name).untaint
     Gem::Installer.new(gem, :wrappers => true).install
+  end
+
+  def uninstall_gem gem
+    require 'rubygems/uninstaller'
+
+    uninstaller = Gem::Uninstaller.new gem.name, :executables => true,
+                 :user_install => true
+    uninstaller.uninstall
   end
 
   def mu_pp(obj)
@@ -283,7 +314,15 @@ class RubyGemTestCase < MiniTest::Unit::TestCase
     Gem.source_index.refresh!
   end
 
-  def util_gem(name, version, &block)
+  def util_gem(name, version, deps = nil, &block)
+    if deps then # fuck you eric
+      block = proc do |s|
+        deps.each do |n, req|
+          s.add_dependency n, (req || '>= 0')
+        end
+      end
+    end
+
     spec = quick_gem(name, version, &block)
 
     util_build_gem spec
@@ -500,13 +539,12 @@ Also, a list:
 
   def build_rake_in
     gem_ruby = Gem.ruby
-    ruby = @@ruby
-    Gem.module_eval {@ruby = ruby}
+    Gem.ruby = @@ruby
     env_rake = ENV["rake"]
     ENV["rake"] = @@rake
     yield @@rake
   ensure
-    Gem.module_eval {@ruby = gem_ruby}
+    Gem.ruby = gem_ruby
     if env_rake
       ENV["rake"] = env_rake
     else
@@ -515,11 +553,11 @@ Also, a list:
   end
 
   def self.rubybin
-    if ruby = ENV["RUBY"]
-      return ruby
-    end
+    ruby = ENV["RUBY"]
+    return ruby if ruby
     ruby = "ruby"
-    rubyexe = ruby+".exe"
+    rubyexe = "#{ruby}.exe"
+
     3.times do
       if File.exist? ruby and File.executable? ruby and !File.directory? ruby
         return File.expand_path(ruby)
@@ -529,12 +567,12 @@ Also, a list:
       end
       ruby = File.join("..", ruby)
     end
+
     begin
       require "rbconfig"
-      File.join(
-        RbConfig::CONFIG["bindir"],
-	RbConfig::CONFIG["ruby_install_name"] + RbConfig::CONFIG["EXEEXT"]
-      )
+      File.join(RbConfig::CONFIG["bindir"],
+                RbConfig::CONFIG["ruby_install_name"] +
+                RbConfig::CONFIG["EXEEXT"])
     rescue LoadError
       "ruby"
     end

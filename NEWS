@@ -102,6 +102,10 @@ with all sufficient information, see the ChangeLog file.
     Output#encoding and Source#encoding) return an Encoding
     object instead of an encoding name.
 
+* Rubygems
+  * Rubygems has been upgraded to rubygems 1.5.0. For full release notes see 
+    http://rubygems.rubyforge.org/rubygems-update/History_txt.html
+
 * stringio
   * extended method:
     * StringIO#set_encoding can get 2nd argument and optional hash.

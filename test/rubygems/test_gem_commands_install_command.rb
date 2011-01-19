@@ -1,4 +1,10 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require "test/rubygems/gemutilities"
 require 'rubygems/commands/install_command'
 
 class TestGemCommandsInstallCommand < RubyGemTestCase
@@ -172,6 +178,30 @@ class TestGemCommandsInstallCommand < RubyGemTestCase
     assert_match(/ould not find a valid gem 'nonexistent'/, @ui.error)
   end
 
+  def test_execute_nonexistent_with_hint
+    misspelled = "nonexistent_with_hint"
+    correctly_spelled = "non_existent_with_hint"
+
+    util_setup_fake_fetcher
+    util_setup_spec_fetcher quick_gem(correctly_spelled, '2')
+
+    @cmd.options[:args] = [misspelled]
+
+    use_ui @ui do
+      e = assert_raises Gem::SystemExitException do
+        @cmd.execute
+      end
+
+      assert_equal 2, e.exit_code
+    end
+
+    expected = "ERROR:  Could not find a valid gem 'nonexistent_with_hint' (>= 0) in any repository
+ERROR:  Possible alternatives: non_existent_with_hint
+"
+
+    assert_equal expected, @ui.error
+  end
+
   def test_execute_prerelease
     util_setup_fake_fetcher(:prerelease)
     util_setup_spec_fetcher @a2, @a2_pre
@@ -258,5 +288,36 @@ class TestGemCommandsInstallCommand < RubyGemTestCase
     assert out.empty?, out.inspect
   end
 
+  def test_execute_conservative
+    util_setup_fake_fetcher
+    util_setup_spec_fetcher @b2
+
+    @fetcher.data["#{@gem_repo}gems/#{@b2.file_name}"] =
+      read_binary(File.join(@gemhome, 'cache', @b2.file_name))
+
+    uninstall_gem(@b2)
+
+    @cmd.options[:conservative] = true
+
+    @cmd.options[:args] = [@a2.name, @b2.name]
+
+    use_ui @ui do
+      orig_dir = Dir.pwd
+      begin
+        Dir.chdir @tempdir
+        e = assert_raises Gem::SystemExitException do
+          @cmd.execute
+        end
+        assert_equal 0, e.exit_code
+      ensure
+        Dir.chdir orig_dir
+      end
+    end
+
+    out = @ui.output.split "\n"
+    assert_equal "Successfully installed #{@b2.full_name}", out.shift
+    assert_equal "1 gem installed", out.shift
+    assert out.empty?, out.inspect
+  end
 end
 

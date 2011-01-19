@@ -1,4 +1,10 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require "test/rubygems/gemutilities"
 require 'rubygems/commands/push_command'
 
 class TestGemCommandsPushCommand < RubyGemTestCase
@@ -18,15 +24,12 @@ class TestGemCommandsPushCommand < RubyGemTestCase
     @cmd = Gem::Commands::PushCommand.new
   end
 
-  def test_sending_gem
-    response = "Successfully registered gem: freewill (1.0.0)"
-    @fetcher.data["https://rubygems.org/api/v1/gems"] = [response, 200, 'OK']
-
+  def send_battery
     use_ui @ui do
       @cmd.send_gem(@path)
     end
 
-    assert_match %r{Pushing gem to RubyGems.org...}, @ui.output
+    assert_match %r{Pushing gem to #{Gem.host}...}, @ui.output
 
     assert_equal Net::HTTP::Post, @fetcher.last_request.class
     assert_equal Gem.read_binary(@path), @fetcher.last_request.body
@@ -34,7 +37,30 @@ class TestGemCommandsPushCommand < RubyGemTestCase
     assert_equal "application/octet-stream", @fetcher.last_request["Content-Type"]
     assert_equal Gem.configuration.rubygems_api_key, @fetcher.last_request["Authorization"]
 
-    assert_match response, @ui.output
+    assert_match @response, @ui.output
+  end
+
+  def test_sending_gem_default
+    @response = "Successfully registered gem: freewill (1.0.0)"
+    @fetcher.data["#{Gem.host}/api/v1/gems"]  = [@response, 200, 'OK']
+
+    send_battery
+  end
+
+  def test_sending_gem_host
+    @response = "Successfully registered gem: freewill (1.0.0)"
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = [@response, 200, 'OK']
+    @cmd.options[:host] = "#{Gem.host}"
+
+    send_battery
+  end
+
+  def test_sending_gem_ENV
+    @response = "Successfully registered gem: freewill (1.0.0)"
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = [@response, 200, 'OK']
+    ENV["RUBYGEMS_HOST"] = "#{Gem.host}"
+
+    send_battery
   end
 
   def test_raises_error_with_no_arguments
@@ -46,7 +72,7 @@ class TestGemCommandsPushCommand < RubyGemTestCase
 
   def test_sending_gem_denied
     response = "You don't have permission to push to this gem"
-    @fetcher.data["https://rubygems.org/api/v1/gems"] = [response, 403, 'Forbidden']
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = [response, 403, 'Forbidden']
 
     assert_raises MockGemUi::TermError do
       use_ui @ui do

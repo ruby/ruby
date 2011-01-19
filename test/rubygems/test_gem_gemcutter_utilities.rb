@@ -1,6 +1,11 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require "test/rubygems/gemutilities"
 require 'rubygems'
-require 'rubygems/command'
 require 'rubygems/gemcutter_utilities'
 
 class TestGemGemcutterUtilities < RubyGemTestCase
@@ -86,7 +91,7 @@ class TestGemGemcutterUtilities < RubyGemTestCase
     if host
       ENV['RUBYGEMS_HOST'] = host
     else
-      host = "https://rubygems.org"
+      host = Gem.host
     end
 
     @fetcher = Gem::FakeFetcher.new

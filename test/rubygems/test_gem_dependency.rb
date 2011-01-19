@@ -1,19 +1,13 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require "test/rubygems/gemutilities"
 require 'rubygems/dependency'
 
 class TestGemDependency < RubyGemTestCase
-
-  def test_subclass
-    sc = Class.new Gem::Dependency
-    def sc.requirement() bogus; end
-
-    out, err = capture_io do
-      assert_equal Gem::Requirement.default, sc.new('a').version_requirement
-    end
-
-    assert_match %r%deprecated%, err
-  end
-
   def test_initialize
     d = dep "pkg", "> 1.0"
 
@@ -133,17 +127,5 @@ class TestGemDependency < RubyGemTestCase
 
     assert d.prerelease?
   end
-
-  def test_version_requirements_equals_deprecated
-    d = dep "pkg", "1.0"
-
-    out, err = capture_io do
-      d.version_requirements = '2.0'
-      assert_equal Gem::Requirement.new(%w[2.0]), d.requirement
-    end
-
-    assert_match %r%deprecated%, err
-  end
-
 end
 

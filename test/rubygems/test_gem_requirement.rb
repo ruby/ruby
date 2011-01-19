@@ -1,4 +1,10 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require "test/rubygems/gemutilities"
 require "rubygems/requirement"
 
 class TestGemRequirement < RubyGemTestCase
@@ -216,9 +222,9 @@ class TestGemRequirement < RubyGemTestCase
     refute_satisfied_by "2.0",     "~> 1.4.4"
 
     refute_satisfied_by "1.1.pre", "~> 1.0.0"
-    assert_satisfied_by "1.1.pre", "~> 1.1"
+    refute_satisfied_by "1.1.pre", "~> 1.1"
     refute_satisfied_by "2.0.a",   "~> 1.0"
-    assert_satisfied_by "2.0.a",   "~> 2.0"
+    refute_satisfied_by "2.0.a",   "~> 2.0"
   end
 
   def test_satisfied_by_eh_multiple

@@ -1,4 +1,10 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require "test/rubygems/gemutilities"
 require 'rubygems/config_file'
 
 class TestGemConfigFile < RubyGemTestCase
@@ -46,7 +52,6 @@ class TestGemConfigFile < RubyGemTestCase
       fp.puts ":benchmark: true"
       fp.puts ":bulk_threshold: 10"
       fp.puts ":verbose: false"
-      fp.puts ":rubygems_api_key: 701229f217cdf23b1344c7b4b54ca97"
       fp.puts ":sources:"
       fp.puts "  - http://more-gems.example.com"
       fp.puts "install: --wrappers"
@@ -62,7 +67,6 @@ class TestGemConfigFile < RubyGemTestCase
     assert_equal 10, @cfg.bulk_threshold
     assert_equal false, @cfg.verbose
     assert_equal false, @cfg.update_sources
-    assert_equal "701229f217cdf23b1344c7b4b54ca97", @cfg.rubygems_api_key
     assert_equal %w[http://more-gems.example.com], Gem.sources
     assert_equal '--wrappers', @cfg[:install]
     assert_equal(['/usr/ruby/1.8/lib/ruby/gems/1.8', '/var/ruby/1.8/gem_home'],

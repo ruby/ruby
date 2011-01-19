@@ -1,4 +1,9 @@
-require 'net/http'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 require 'rubygems/remote_fetcher'
 
 module Gem::GemcutterUtilities
@@ -23,8 +28,9 @@ module Gem::GemcutterUtilities
     end
   end
 
-  def rubygems_api_request(method, path, &block)
-    host = ENV['RUBYGEMS_HOST'] || 'https://rubygems.org'
+  def rubygems_api_request(method, path, host = Gem.host, &block)
+    require 'net/http'
+    host = ENV['RUBYGEMS_HOST'] if ENV['RUBYGEMS_HOST']
     uri = URI.parse "#{host}/#{path}"
 
     request_method = Net::HTTP.const_get method.to_s.capitalize

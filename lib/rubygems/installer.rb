@@ -1,13 +1,17 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
 # See LICENSE.txt for permissions.
 #++
 
-require 'fileutils'
-require 'rbconfig'
-
 require 'rubygems/format'
+require 'rubygems/exceptions'
 require 'rubygems/ext'
 require 'rubygems/require_paths_builder'
 
@@ -40,7 +44,7 @@ class Gem::Installer
 
   include Gem::UserInteraction
 
-  include Gem::RequirePathsBuilder
+  include Gem::RequirePathsBuilder if QUICKLOADER_SUCKAGE
 
   ##
   # The directory a gem's executables will be installed into
@@ -91,6 +95,8 @@ class Gem::Installer
   # :wrappers:: Install wrappers if true, symlinks if false.
 
   def initialize(gem, options={})
+    require 'fileutils'
+
     @gem = gem
 
     options = {
@@ -198,7 +204,7 @@ class Gem::Installer
     build_extensions
     write_spec
 
-    write_require_paths_file_if_needed
+    write_require_paths_file_if_needed if QUICKLOADER_SUCKAGE
 
     # HACK remove?  Isn't this done in multiple places?
     cached_gem = File.join @gem_home, "cache", @gem.split(/\//).pop
@@ -318,24 +324,15 @@ class Gem::Installer
   def generate_bin_script(filename, bindir)
     bin_script_path = File.join bindir, formatted_program_filename(filename)
 
-    File.join @gem_dir, @spec.bindir, filename
+    FileUtils.rm_f bin_script_path # prior install may have been --no-wrappers
 
-    # HACK some gems don't have #! in their executables, restore 2008/06
-    #if File.read(exec_path, 2) == '#!' then
-      FileUtils.rm_f bin_script_path # prior install may have been --no-wrappers
+    File.open bin_script_path, 'w', 0755 do |file|
+      file.print app_script_text(filename)
+    end
 
-      File.open bin_script_path, 'w', 0755 do |file|
-        file.print app_script_text(filename)
-      end
+    say bin_script_path if Gem.configuration.really_verbose
 
-      say bin_script_path if Gem.configuration.really_verbose
-
-      generate_windows_script filename, bindir
-    #else
-    #  FileUtils.rm_f bin_script_path
-    #  FileUtils.cp exec_path, bin_script_path,
-    #               :verbose => Gem.configuration.really_verbose
-    #end
+    generate_windows_script filename, bindir
   end
 
   ##
@@ -497,6 +494,8 @@ Results logged to #{File.join(Dir.pwd, 'gem_make.out')}
 
     raise ArgumentError, "format required to extract from" if @format.nil?
 
+    dirs = []
+
     @format.file_entries.each do |entry, file_data|
       path = entry['path'].untaint
 
@@ -514,7 +513,12 @@ Results logged to #{File.join(Dir.pwd, 'gem_make.out')}
       end
 
       FileUtils.rm_rf(path) if File.exists?(path)
-      FileUtils.mkdir_p File.dirname(path)
+
+      dir = File.dirname(path)
+      if !dirs.include?(dir)
+        dirs << dir
+        FileUtils.mkdir_p dir
+      end
 
       File.open(path, "wb") do |out|
         out.write file_data

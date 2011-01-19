@@ -1,5 +1,10 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
 
+require "test/rubygems/gemutilities"
 require 'rubygems/commands/cert_command'
 
 unless defined? OpenSSL then
@@ -73,7 +78,7 @@ class TestGemCommandsCertCommand < RubyGemTestCase
     assert_equal '', @ui.error
 
     assert_equal File.read(@cert_file_name),
-                 Gem::Security::OPT[:issuer_cert].to_s
+                 @cmd.options[:issuer_cert].to_s
   end
 
   def test_execute_list
@@ -94,7 +99,7 @@ class TestGemCommandsCertCommand < RubyGemTestCase
     assert_equal '', @ui.error
 
     assert_equal File.read(@pkey_file_name),
-                 Gem::Security::OPT[:issuer_key].to_s
+                 @cmd.options[:issuer_key].to_s
   end
 
   def test_execute_remove

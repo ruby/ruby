@@ -1,3 +1,9 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -42,9 +48,7 @@ begin
   # Reference a constant defined in the .rb portion of ssl (just to
   # make sure that part is loaded too).
 
-  OpenSSL::Digest::SHA1
-
-  Gem.ssl_available = true
+  Gem.ssl_available = !!OpenSSL::Digest::SHA1
 
   class OpenSSL::X509::Certificate # :nodoc:
     # Check the validity of this certificate.

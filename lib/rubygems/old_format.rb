@@ -1,3 +1,9 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -5,9 +11,6 @@
 #++
 
 require 'rubygems'
-require 'fileutils'
-require 'yaml'
-require 'zlib'
 
 ##
 # The format class knows the guts of the RubyGem .gem file format and provides
@@ -24,6 +27,10 @@ class Gem::OldFormat
   # gem:: [String] The file name of the gem
 
   def initialize(gem_path)
+    require 'fileutils'
+    require 'zlib'
+    Gem.load_yaml
+
     @gem_path = gem_path
   end
 

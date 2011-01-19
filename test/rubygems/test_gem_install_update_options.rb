@@ -1,4 +1,10 @@
-require_relative 'gem_installer_test_case'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require "test/rubygems/gem_installer_test_case"
 require 'rubygems/install_update_options'
 require 'rubygems/command'
 
@@ -13,7 +19,7 @@ class TestGemInstallUpdateOptions < GemInstallerTestCase
   end
 
   def test_add_install_update_options
-    args = %w[-i /install_to --rdoc --ri -E -f -t -w -P HighSecurity
+    args = %w[-i /install_to --rdoc --ri -E -f -w -P HighSecurity
               --ignore-dependencies --format-exec --include-dependencies]
 
     assert @cmd.handles?(args)

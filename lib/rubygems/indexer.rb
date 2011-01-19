@@ -1,6 +1,8 @@
-require 'fileutils'
-require 'tmpdir'
-require 'zlib'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
 
 require 'rubygems'
 require 'rubygems/format'
@@ -57,6 +59,10 @@ class Gem::Indexer
   # Create an indexer that will index the gems in +directory+.
 
   def initialize(directory, options = {})
+    require 'fileutils'
+    require 'tmpdir'
+    require 'zlib'
+
     unless ''.respond_to? :to_xs then
       raise "Gem::Indexer requires that the XML Builder library be installed:" \
            "\n\tgem install builder"
@@ -136,42 +142,6 @@ class Gem::Indexer
   # Builds indicies for RubyGems older than 1.2.x
 
   def build_legacy_indicies(index)
-    progress = ui.progress_reporter index.size,
-                                    "Generating YAML quick index gemspecs for #{index.size} gems",
-                                    "Complete"
-
-    Gem.time 'Generated YAML quick index gemspecs' do
-      index.released_gems.each do |original_name, spec|
-        spec_file_name = "#{original_name}.gemspec.rz"
-        yaml_name = File.join @quick_dir, spec_file_name
-
-        yaml_zipped = Gem.deflate spec.to_yaml
-        open yaml_name, 'wb' do |io| io.write yaml_zipped end
-
-        progress.updated original_name
-      end
-
-      progress.done
-    end
-
-    say "Generating quick index"
-
-    Gem.time 'Generated quick index' do
-      open @quick_index, 'wb' do |io|
-        io.puts index.sort.map { |_, spec| spec.original_name }
-      end
-    end
-
-    say "Generating latest index"
-
-    Gem.time 'Generated latest index' do
-      open @latest_index, 'wb' do |io|
-        io.puts index.latest_specs.sort.map { |spec| spec.original_name }
-      end
-    end
-
-    # Don't need prerelease legacy index
-
     say "Generating Marshal master index"
 
     Gem.time 'Generated Marshal master index' do
@@ -180,32 +150,6 @@ class Gem::Indexer
       end
     end
 
-    progress = ui.progress_reporter index.size,
-                                    "Generating YAML master index for #{index.size} gems (this may take a while)",
-                                    "Complete"
-
-    Gem.time 'Generated YAML master index' do
-      open @master_index, 'wb' do |io|
-        io.puts "--- !ruby/object:#{index.class}"
-        io.puts "gems:"
-
-        gems = index.sort_by { |name, gemspec| gemspec.sort_obj }
-        gems.each do |original_name, gemspec|
-          yaml = gemspec.to_yaml.gsub(/^/, '    ')
-          yaml = yaml.sub(/\A    ---/, '') # there's a needed extra ' ' here
-          io.print "  #{original_name}:"
-          io.puts yaml
-
-          progress.updated original_name
-        end
-      end
-
-      progress.done
-    end
-
-    @files << @quick_dir
-    @files << @master_index
-    @files << "#{@master_index}.Z"
     @files << @marshal_index
     @files << "#{@marshal_index}.Z"
   end
@@ -462,17 +406,8 @@ class Gem::Indexer
 
     Gem.time 'Compressed indicies' do
       if @build_legacy then
-        compress @quick_index, 'rz'
-        paranoid @quick_index, 'rz'
-
-        compress @latest_index, 'rz'
-        paranoid @latest_index, 'rz'
-
         compress @marshal_index, 'Z'
         paranoid @marshal_index, 'Z'
-
-        compress @master_index, 'Z'
-        paranoid @master_index, 'Z'
       end
 
       if @build_modern then

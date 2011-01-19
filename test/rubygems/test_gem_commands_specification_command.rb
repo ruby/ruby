@@ -1,4 +1,10 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require "test/rubygems/gemutilities"
 require 'rubygems/commands/specification_command'
 
 class TestGemCommandsSpecificationCommand < RubyGemTestCase
@@ -25,8 +31,8 @@ class TestGemCommandsSpecificationCommand < RubyGemTestCase
   end
 
   def test_execute_all
-    foo1 = quick_gem 'foo', '0.0.1'
-    foo2 = quick_gem 'foo', '0.0.2'
+    quick_gem 'foo', '0.0.1'
+    quick_gem 'foo', '0.0.2'
 
     @cmd.options[:args] = %w[foo]
     @cmd.options[:all] = true
@@ -56,8 +62,8 @@ class TestGemCommandsSpecificationCommand < RubyGemTestCase
   end
 
   def test_execute_exact_match
-    foo = quick_gem 'foo'
-    foo_bar = quick_gem 'foo_bar'
+    quick_gem 'foo'
+    quick_gem 'foo_bar'
 
     @cmd.options[:args] = %w[foo]
 

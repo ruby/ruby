@@ -1,4 +1,10 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require "test/rubygems/gemutilities"
 require 'rubygems/command_manager'
 
 class TestGemCommandManager < RubyGemTestCase
@@ -10,7 +16,9 @@ class TestGemCommandManager < RubyGemTestCase
   end
 
   def test_run_interrupt
-    Gem.load_plugins
+    old_load_path = $:.dup
+    $: << "test/rubygems"
+    Gem.load_env_plugins
 
     use_ui @ui do
       assert_raises MockGemUi::TermError do
@@ -19,9 +27,14 @@ class TestGemCommandManager < RubyGemTestCase
       assert_equal '', ui.output
       assert_equal "ERROR:  Interrupted\n", ui.error
     end
+  ensure
+    $:.replace old_load_path
   end
 
   def test_run_crash_command
+    old_load_path = $:.dup
+    $: << "test/rubygems"
+
     @command_manager.register_command :crash
     use_ui @ui do
       assert_raises MockGemUi::TermError do
@@ -31,6 +44,8 @@ class TestGemCommandManager < RubyGemTestCase
       err = ui.error.split("\n").first
       assert_equal "ERROR:  Loading command: crash (RuntimeError)", err
     end
+  ensure
+    $:.replace old_load_path
   end
 
   def test_process_args_bad_arg
@@ -54,7 +69,6 @@ class TestGemCommandManager < RubyGemTestCase
 
       #check defaults
       @command_manager.process_args("install")
-      assert_equal false, check_options[:test]
       assert_equal true, check_options[:generate_rdoc]
       assert_equal false, check_options[:force]
       assert_equal :both, check_options[:domain]
@@ -66,7 +80,7 @@ class TestGemCommandManager < RubyGemTestCase
       #check settings
       check_options = nil
       @command_manager.process_args(
-        "install --force --test --local --rdoc --install-dir . --version 3.0 --no-wrapper --bindir . ")
+        "install --force --local --rdoc --install-dir . --version 3.0 --no-wrapper --bindir . ")
       assert_equal true, check_options[:generate_rdoc]
       assert_equal true, check_options[:force]
       assert_equal :local, check_options[:domain]
@@ -195,7 +209,7 @@ class TestGemCommandManager < RubyGemTestCase
 
     #check settings
     check_options = nil
-    @command_manager.process_args("update --force --test --rdoc --install-dir .")
+    @command_manager.process_args("update --force --rdoc --install-dir .")
     assert_equal true, check_options[:generate_rdoc]
     assert_equal true, check_options[:force]
     assert_equal Dir.pwd, check_options[:install_dir]

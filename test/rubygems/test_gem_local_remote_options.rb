@@ -1,4 +1,10 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require "test/rubygems/gemutilities"
 require 'rubygems/local_remote_options'
 require 'rubygems/command'
 
@@ -28,6 +34,21 @@ class TestGemLocalRemoteOptions < RubyGemTestCase
     @cmd.options[:domain] = :both
 
     assert_equal true, @cmd.both?
+  end
+
+  def test_clear_sources_option
+    @cmd.add_local_remote_options
+
+    s = URI.parse "http://only-gems.example.com/"
+
+    @cmd.handle_options %W[--clear-sources --source #{s}]
+    assert_equal [s.to_s], Gem.sources
+  end
+
+  def test_clear_sources_option_idiot_proof
+    @cmd.add_local_remote_options
+    @cmd.handle_options %W[--clear-sources]
+    assert_equal Gem.default_sources, Gem.sources
   end
 
   def test_local_eh
@@ -62,9 +83,11 @@ class TestGemLocalRemoteOptions < RubyGemTestCase
     s3 = URI.parse 'http://other-gems.example.com/some_subdir'
     s4 = URI.parse 'http://more-gems.example.com/' # Intentional duplicate
 
+    original_sources = Gem.sources.dup
     @cmd.handle_options %W[--source #{s1} --source #{s2} --source #{s3} --source #{s4}]
 
-    assert_equal [s1.to_s, s2.to_s, "#{s3}/"], Gem.sources
+    assert_equal [original_sources, s1.to_s, s2.to_s, "#{s3}/"].flatten,
+      Gem.sources
   end
 
   def test_update_sources_option

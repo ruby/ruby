@@ -1,4 +1,10 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require "test/rubygems/gemutilities"
 require 'ostruct'
 require 'webrick'
 require 'rubygems/remote_fetcher'
@@ -372,7 +378,7 @@ gems:
       uri.user, uri.password = 'domain%5Cuser', 'bar'
       fetcher = Gem::RemoteFetcher.new uri.to_s
       proxy = fetcher.instance_variable_get("@proxy_uri")
-      assert_equal 'domain\user', URI.unescape(proxy.user)
+      assert_equal 'domain\user', fetcher.unescape(proxy.user)
       assert_equal 'bar', proxy.password
       assert_data_from_proxy fetcher.fetch_path(@server_uri)
     end
@@ -383,7 +389,7 @@ gems:
       fetcher = Gem::RemoteFetcher.new uri.to_s
       proxy = fetcher.instance_variable_get("@proxy_uri")
       assert_equal 'user', proxy.user
-      assert_equal 'my pass', URI.unescape(proxy.password)
+      assert_equal 'my pass', fetcher.unescape(proxy.password)
       assert_data_from_proxy fetcher.fetch_path(@server_uri)
     end
   end
@@ -406,8 +412,8 @@ gems:
       ENV['http_proxy_pass'] = 'my bar'
       fetcher = Gem::RemoteFetcher.new nil
       proxy = fetcher.instance_variable_get("@proxy_uri")
-      assert_equal 'foo\user', URI.unescape(proxy.user)
-      assert_equal 'my bar', URI.unescape(proxy.password)
+      assert_equal 'foo\user', fetcher.unescape(proxy.user)
+      assert_equal 'my bar', fetcher.unescape(proxy.password)
       assert_data_from_proxy fetcher.fetch_path(@server_uri)
     end
   end
@@ -562,7 +568,7 @@ gems:
       end
     end
 
-    conn = { 'gems.example.com:80' => conn }
+    conn = { "#{Thread.current.object_id}:gems.example.com:80" => conn }
     fetcher.instance_variable_set :@connections, conn
 
     data = fetcher.open_uri_or_path 'http://gems.example.com/redirect'
@@ -581,7 +587,7 @@ gems:
       res
     end
 
-    conn = { 'gems.example.com:80' => conn }
+    conn = { "#{Thread.current.object_id}:gems.example.com:80" => conn }
     fetcher.instance_variable_set :@connections, conn
 
     e = assert_raises Gem::RemoteFetcher::FetchError do
@@ -646,11 +652,13 @@ gems:
 
   def assert_error(exception_class=Exception)
     got_exception = false
+
     begin
       yield
-    rescue exception_class => ex
+    rescue exception_class
       got_exception = true
     end
+
     assert got_exception, "Expected exception conforming to #{exception_class}"
   end
 

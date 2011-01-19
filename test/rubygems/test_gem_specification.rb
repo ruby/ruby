@@ -1,4 +1,10 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require "test/rubygems/gemutilities"
 require 'stringio'
 require 'rubygems/specification'
 
@@ -777,7 +783,6 @@ Gem::Specification.new do |s|
   s.summary = %q{this is a summary}
 
   if s.respond_to? :specification_version then
-    current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION
     s.specification_version = #{Gem::Specification::CURRENT_SPECIFICATION_VERSION}
 
     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
@@ -832,7 +837,6 @@ Gem::Specification.new do |s|
   s.test_files = [\"test/suite.rb\"]
 
   if s.respond_to? :specification_version then
-    current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION
     s.specification_version = 3
 
     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
@@ -1175,21 +1179,6 @@ end
     end
   end
 
-  def test_validate_rubyforge_project
-    util_setup_validate
-
-    Dir.chdir @tempdir do
-      @a1.rubyforge_project = ''
-
-      use_ui @ui do
-        @a1.validate
-      end
-
-      assert_equal "WARNING:  no rubyforge_project specified\n",
-                   @ui.error, 'error'
-    end
-  end
-
   def test_validate_rubygems_version
     util_setup_validate
 
@@ -1258,7 +1247,9 @@ end
     specfile.write "raise 'boom'"
     specfile.close
     begin
-      Gem::Specification.load(specfile.path)
+      capture_io do
+        Gem::Specification.load(specfile.path)
+      end
     rescue => e
       name_rexp = Regexp.new(Regexp.escape(specfile.path))
       assert e.backtrace.grep(name_rexp).any?

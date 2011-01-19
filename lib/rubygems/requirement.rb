@@ -1,3 +1,9 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 require "rubygems/version"
 
 ##
@@ -14,7 +20,7 @@ class Gem::Requirement
     "<"  =>  lambda { |v, r| v < r  },
     ">=" =>  lambda { |v, r| v >= r },
     "<=" =>  lambda { |v, r| v <= r },
-    "~>" =>  lambda { |v, r| v = v.release; v >= r && v < r.bump }
+    "~>" =>  lambda { |v, r| v >= r && v.release < r.bump }
   }
 
   quoted  = OPS.keys.map { |k| Regexp.quote k }.join "|"

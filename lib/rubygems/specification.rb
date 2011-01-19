@@ -1,3 +1,9 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -498,17 +504,37 @@ class Gem::Specification
   end
 
   ##
-  # Loads ruby format gemspec from +filename+
+  # Loads Ruby format gemspec from +file+.
 
-  def self.load(filename)
-    gemspec = nil
-    raise "NESTED Specification.load calls not allowed!" if @@gather
-    @@gather = proc { |gs| gemspec = gs }
-    data = File.read filename
-    eval data, nil, filename
-    gemspec
-  ensure
-    @@gather = nil
+  def self.load file
+    return unless file && File.file?(file)
+
+    file = file.dup.untaint
+
+    code = if defined? Encoding
+             File.read file, :encoding => "UTF-8"
+           else
+             File.read file
+           end
+
+    code.untaint
+
+    begin
+      spec = eval code, binding, file
+
+      if Gem::Specification === spec
+        spec.loaded_from = file
+        return spec
+      end
+
+      warn "[#{file}] isn't a Gem::Specification (#{spec.class} instead)."
+    rescue SignalException, SystemExit
+      raise
+    rescue SyntaxError, Exception => e
+      warn "Invalid gemspec in [#{file}]: #{e}"
+    end
+
+    nil
   end
 
   ##
@@ -672,8 +698,7 @@ class Gem::Specification
 
   def hash # :nodoc:
     @@attributes.inject(0) { |hash_code, (name, _)|
-      n = self.send(name).hash
-      hash_code + n
+      hash_code ^ self.send(name).hash
     }
   end
 
@@ -765,7 +790,6 @@ class Gem::Specification
 
     result << nil
     result << "  if s.respond_to? :specification_version then"
-    result << "    current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION"
     result << "    s.specification_version = #{specification_version}"
     result << nil
 
@@ -909,7 +933,7 @@ class Gem::Specification
 
     # Warnings
 
-    %w[author description email homepage rubyforge_project summary].each do |attribute|
+    %w[author description email homepage summary].each do |attribute|
       value = self.send attribute
       alert_warning "no #{attribute} specified" if value.nil? or value.empty?
     end

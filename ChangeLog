@@ -1,3 +1,8 @@
+Wed Jan 19 08:13:59 2011  Ryan Davis  <ryand-ruby@zenspider.com>
+
+	* lib/rubygems*: Import rubygems 1.5.0 (release candidate)
+	* test/rubygems: Ditto
+
 Tue Jan 18 23:31:01 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* parse.y: avoid NULL reference.  [ruby-dev:43067]

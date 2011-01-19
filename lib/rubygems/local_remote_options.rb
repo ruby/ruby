@@ -1,3 +1,9 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -51,6 +57,7 @@ module Gem::LocalRemoteOptions
     end
 
     add_bulk_threshold_option
+    add_clear_sources_option
     add_source_option
     add_proxy_option
     add_update_sources_option
@@ -65,6 +72,18 @@ module Gem::LocalRemoteOptions
                "synchronization (default #{Gem.configuration.bulk_threshold})") do
       |value, options|
       Gem.configuration.bulk_threshold = value.to_i
+    end
+  end
+
+  ##
+  # Add the --clear-sources option
+
+  def add_clear_sources_option
+    add_option(:"Local/Remote", '--clear-sources',
+               'Clear the gem sources') do |value, options|
+
+      Gem.sources.clear
+      options[:sources_cleared] = true
     end
   end
 
@@ -88,14 +107,14 @@ module Gem::LocalRemoteOptions
     accept_uri_http
 
     add_option(:"Local/Remote", '--source URL', URI::HTTP,
-               'Use URL as the remote source for gems') do |source, options|
+               'Add URL as a remote source for gems') do |source, options|
+
       source << '/' if source !~ /\/\z/
 
-      if options[:added_source] then
-        Gem.sources << source unless Gem.sources.include?(source)
+      if options.delete :sources_cleared then
+        Gem.sources = [source]
       else
-        options[:added_source] = true
-        Gem.sources.replace [source]
+        Gem.sources << source unless Gem.sources.include?(source)
       end
     end
   end

@@ -1,14 +1,14 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 # -*- coding: utf-8 -*-
 #--
 # Copyright (C) 2004 Mauricio Julio Fernández Pradier
 # See LICENSE.txt for additional licensing information.
 #++
-
-require 'fileutils'
-require 'find'
-require 'stringio'
-require 'yaml'
-require 'zlib'
 
 require 'rubygems/security'
 require 'rubygems/specification'
@@ -20,6 +20,7 @@ require 'rubygems/specification'
 class Gem::FileOperations
 
   def initialize(logger = nil)
+    require 'fileutils'
     @logger = logger
   end
 

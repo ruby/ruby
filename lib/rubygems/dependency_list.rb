@@ -1,3 +1,9 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -187,6 +193,7 @@ class Gem::DependencyList
           begin
             yield spec
           rescue TSort::Cyclic
+            # do nothing
           end
           break
         end
@@ -201,13 +208,7 @@ class Gem::DependencyList
   # +ignored+.
 
   def active_count(specs, ignored)
-    result = 0
-
-    specs.each do |spec|
-      result += 1 unless ignored[spec.full_name]
-    end
-
-    result
+    specs.count { |spec| ignored[spec.full_name].nil? }
   end
 
 end

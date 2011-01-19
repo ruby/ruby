@@ -1,3 +1,9 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -5,6 +11,16 @@
 #++
 
 require 'rubygems/user_interaction'
+
+begin
+  require 'psych'
+rescue LoadError
+end
+
+Gem.load_yaml
+
+require 'rubygems/package'
+require 'rubygems/security'
 
 ##
 # The Builder class processes RubyGem specification files
@@ -20,10 +36,6 @@ class Gem::Builder
   # spec:: [Gem::Specification] The specification instance
 
   def initialize(spec)
-    require "yaml"
-    require "rubygems/package"
-    require "rubygems/security"
-
     @spec = spec
   end
 
@@ -72,7 +84,8 @@ EOM
   def write_package
     open @spec.file_name, 'wb' do |gem_io|
       Gem::Package.open gem_io, 'w', @signer do |pkg|
-        pkg.metadata = @spec.to_yaml
+        yaml = @spec.to_yaml
+        pkg.metadata = yaml
 
         @spec.files.each do |file|
           next if File.directory? file

@@ -1,3 +1,9 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 ##
 # GemPathSearcher has the capability to find loadable files inside
 # gems.  It generates data up front to speed up searches later.
@@ -22,7 +28,7 @@ class Gem::GemPathSearcher
   end
 
   ##
-  # Look in all the installed gems until a matching _path_ is found.
+  # Look in all the installed gems until a matching +glob+ is found.
   # Return the _gemspec_ of the gem where it was found.  If no match
   # is found, return nil.
   #
@@ -41,16 +47,18 @@ class Gem::GemPathSearcher
   # This method doesn't care about the full filename that matches;
   # only that there is a match.
 
-  def find(path)
-    @gemspecs.find do |spec| matching_file? spec, path end
+  def find(glob)
+    @gemspecs.find do |spec|
+      matching_file? spec, glob
+    end
   end
 
   ##
-  # Works like #find, but finds all gemspecs matching +path+.
+  # Works like #find, but finds all gemspecs matching +glob+.
 
-  def find_all(path)
+  def find_all(glob)
     @gemspecs.select do |spec|
-      matching_file? spec, path
+      matching_file? spec, glob
     end
   end
 

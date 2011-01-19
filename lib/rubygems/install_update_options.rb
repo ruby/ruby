@@ -1,3 +1,9 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -58,10 +64,6 @@ module Gem::InstallUpdateOptions
       options[:force] = value
     end
 
-    add_option(:"Install/Update", '-t', '--[no-]test',
-               'Ignored; just for compatiblity') do |value, options|
-    end
-
     add_option(:"Install/Update", '-w', '--[no-]wrappers',
                'Use bin wrappers for executables',
                'Not available on dosish platforms') do |value, options|
@@ -102,6 +104,12 @@ module Gem::InstallUpdateOptions
                 "Install any additional development",
                 "dependencies") do |value, options|
       options[:development] = true
+    end
+
+    add_option(:"Install/Update", "--conservative",
+                "Don't attempt to upgrade gems already",
+                "meeting version requirement") do |value, options|
+      options[:conservative] = true
     end
   end
 

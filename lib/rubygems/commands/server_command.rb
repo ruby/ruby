@@ -1,3 +1,9 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 require 'rubygems/command'
 require 'rubygems/server'
 
@@ -42,6 +48,14 @@ class Gem::Commands::ServerCommand < Gem::Command
                'addresses to bind', Array do |address, options|
       options[:addresses] ||= []
       options[:addresses].push(*address)
+    end
+
+    add_option '-l', '--launch[=COMMAND]', 
+               'launches a browser window',
+               "COMMAND defaults to 'start' on Windows",
+               "and 'open' on all other platforms" do |launch, options|
+      launch ||= Gem.win_platform? ? 'start' : 'open'
+      options[:launch] = launch
     end
   end
 

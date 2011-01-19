@@ -1,5 +1,11 @@
-require_relative 'gemutilities'
-require_relative 'simple_gem'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require "test/rubygems/gemutilities"
+require "test/rubygems/simple_gem"
 require 'rubygems/format'
 
 class TestGemFormat < RubyGemTestCase

@@ -1,3 +1,9 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 require 'rubygems/command'
 require 'rubygems/local_remote_options'
 require 'rubygems/version_option'
@@ -52,7 +58,7 @@ class Gem::Commands::FetchCommand < Gem::Command
       spec, source_uri = specs_and_sources.sort_by { |s,| s.version }.last
 
       if spec.nil? then
-        show_lookup_failure gem_name, version, errors
+        show_lookup_failure gem_name, version, errors, options[:domain]
         next
       end
 

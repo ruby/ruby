@@ -1,3 +1,9 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -7,6 +13,11 @@
 require 'rubygems/command_manager'
 require 'rubygems/config_file'
 require 'rubygems/doc_manager'
+
+##
+# Load additional plugins from $LOAD_PATH
+
+Gem.load_env_plugins rescue nil
 
 ##
 # Run an instance of the gem program.
@@ -76,3 +87,4 @@ class Gem::GemRunner
 
 end
 
+Gem.load_plugins

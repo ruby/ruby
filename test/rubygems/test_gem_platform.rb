@@ -1,4 +1,10 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require "test/rubygems/gemutilities"
 require 'rubygems/platform'
 require 'rbconfig'
 
@@ -117,7 +123,6 @@ class TestGemPlatform < RubyGemTestCase
 
   def test_initialize_platform
     platform = Gem::Platform.new 'cpu-my_platform1'
-    expected = Gem::Platform.new platform
 
     assert_equal 'cpu', platform.cpu
     assert_equal 'my_platform', platform.os

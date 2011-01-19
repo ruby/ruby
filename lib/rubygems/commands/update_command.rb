@@ -1,3 +1,9 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 require 'rubygems/command'
 require 'rubygems/command_manager'
 require 'rubygems/install_update_options'
@@ -17,8 +23,7 @@ class Gem::Commands::UpdateCommand < Gem::Command
           'Update the named gems (or all installed gems) in the local repository',
       :generate_rdoc => true,
       :generate_ri   => true,
-      :force         => false,
-      :test          => false
+      :force         => false
 
     add_install_update_options
 
@@ -37,7 +42,7 @@ class Gem::Commands::UpdateCommand < Gem::Command
   end
 
   def defaults_str # :nodoc:
-    "--rdoc --ri --no-force --no-test --install-dir #{Gem.dir}"
+    "--rdoc --ri --no-force --install-dir #{Gem.dir}"
   end
 
   def usage # :nodoc:
@@ -60,6 +65,19 @@ class Gem::Commands::UpdateCommand < Gem::Command
       hig['rubygems-update'] = rubygems_update
 
       options[:user_install] = false
+
+      Gem.source_index.refresh!
+
+      update_gems = Gem.source_index.find_name 'rubygems-update'
+
+      latest_update_gem = update_gems.sort_by { |s| s.version }.last
+
+      say "Updating RubyGems to #{latest_update_gem.version}"
+      installed = do_rubygems_update latest_update_gem.version
+
+      say "RubyGems system software updated" if installed
+
+      return
     else
       say "Updating installed gems"
 
@@ -97,35 +115,22 @@ class Gem::Commands::UpdateCommand < Gem::Command
       end
     end
 
-    if gems_to_update.include? "rubygems-update" then
-      Gem.source_index.refresh!
-
-      update_gems = Gem.source_index.find_name 'rubygems-update'
-
-      latest_update_gem = update_gems.sort_by { |s| s.version }.last
-
-      say "Updating RubyGems to #{latest_update_gem.version}"
-      installed = do_rubygems_update latest_update_gem.version
-
-      say "RubyGems system software updated" if installed
+    if updated.empty? then
+      say "Nothing to update"
     else
-      if updated.empty? then
-        say "Nothing to update"
-      else
-        say "Gems updated: #{updated.map { |spec| spec.name }.join ', '}"
+      say "Gems updated: #{updated.map { |spec| spec.name }.join ', '}"
 
-        if options[:generate_ri] then
-          updated.each do |gem|
-            Gem::DocManager.new(gem, options[:rdoc_args]).generate_ri
-          end
-
-          Gem::DocManager.update_ri_cache
+      if options[:generate_ri] then
+        updated.each do |gem|
+          Gem::DocManager.new(gem, options[:rdoc_args]).generate_ri
         end
 
-        if options[:generate_rdoc] then
-          updated.each do |gem|
-            Gem::DocManager.new(gem, options[:rdoc_args]).generate_rdoc
-          end
+        Gem::DocManager.update_ri_cache
+      end
+
+      if options[:generate_rdoc] then
+        updated.each do |gem|
+          Gem::DocManager.new(gem, options[:rdoc_args]).generate_rdoc
         end
       end
     end
@@ -164,22 +169,8 @@ class Gem::Commands::UpdateCommand < Gem::Command
 
       dependency = Gem::Dependency.new l_spec.name, "> #{l_spec.version}"
 
-      begin
-        fetcher = Gem::SpecFetcher.fetcher
-        spec_tuples = fetcher.find_matching dependency
-      rescue Gem::RemoteFetcher::FetchError => e
-        raise unless fetcher.warn_legacy e do
-          require 'rubygems/source_info_cache'
-
-          dependency.name = '' if dependency.name == //
-
-          specs = Gem::SourceInfoCache.search_with_source dependency
-
-          spec_tuples = specs.map do |spec, source_uri|
-            [[spec.name, spec.version, spec.original_platform], source_uri]
-          end
-        end
-      end
+      fetcher = Gem::SpecFetcher.fetcher
+      spec_tuples = fetcher.find_matching dependency
 
       matching_gems = spec_tuples.select do |(name, _, platform),|
         name == l_name and Gem::Platform.match platform

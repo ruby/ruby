@@ -1,4 +1,10 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require "test/rubygems/gemutilities"
 require 'rubygems/server'
 require 'stringio'
 
@@ -92,7 +98,7 @@ class TestGemServer < RubyGemTestCase
   def test_listen
     util_listen
 
-    out, err = capture_io do
+    capture_io do
       @server.listen
     end
 
@@ -102,109 +108,11 @@ class TestGemServer < RubyGemTestCase
   def test_listen_addresses
     util_listen
 
-    out, err = capture_io do
+    capture_io do
       @server.listen %w[a b]
     end
-    
+
     assert_equal 2, @server.server.listeners.length
-  end
-
-  def test_quick_a_1_gemspec_rz
-    data = StringIO.new "GET /quick/a-1.gemspec.rz HTTP/1.0\r\n\r\n"
-    @req.parse data
-
-    @server.quick @req, @res
-
-    assert_equal 200, @res.status, @res.body
-    assert @res['date']
-    assert_equal 'application/x-deflate', @res['content-type']
-
-    spec = YAML.load Gem.inflate(@res.body)
-    assert_equal 'a', spec.name
-    assert_equal Gem::Version.new(1), spec.version
-  end
-
-  def test_quick_a_1_mswin32_gemspec_rz
-    a1_p = quick_gem 'a', '1' do |s| s.platform = Gem::Platform.local end
-
-    data = StringIO.new "GET /quick/a-1-#{Gem::Platform.local}.gemspec.rz HTTP/1.0\r\n\r\n"
-    @req.parse data
-
-    @server.quick @req, @res
-
-    assert_equal 200, @res.status, @res.body
-    assert @res['date']
-    assert_equal 'application/x-deflate', @res['content-type']
-
-    spec = YAML.load Gem.inflate(@res.body)
-    assert_equal 'a', spec.name
-    assert_equal Gem::Version.new(1), spec.version
-    assert_equal Gem::Platform.local, spec.platform
-  end
-
-  def test_quick_common_substrings
-    ab1 = quick_gem 'ab', '1'
-
-    data = StringIO.new "GET /quick/a-1.gemspec.rz HTTP/1.0\r\n\r\n"
-    @req.parse data
-
-    @server.quick @req, @res
-
-    assert_equal 200, @res.status, @res.body
-    assert @res['date']
-    assert_equal 'application/x-deflate', @res['content-type']
-
-    spec = YAML.load Gem.inflate(@res.body)
-    assert_equal 'a', spec.name
-    assert_equal Gem::Version.new(1), spec.version
-  end
-
-  def test_quick_index
-    data = StringIO.new "GET /quick/index HTTP/1.0\r\n\r\n"
-    @req.parse data
-
-    @server.quick @req, @res
-
-    assert_equal 200, @res.status, @res.body
-    assert_match %r| \d\d:\d\d:\d\d |, @res['date']
-    assert_equal 'text/plain', @res['content-type']
-    assert_equal "a-1\na-2", @res.body
-  end
-
-  def test_quick_index_rz
-    data = StringIO.new "GET /quick/index.rz HTTP/1.0\r\n\r\n"
-    @req.parse data
-
-    @server.quick @req, @res
-
-    assert_equal 200, @res.status, @res.body
-    assert_match %r| \d\d:\d\d:\d\d |, @res['date']
-    assert_equal 'application/x-deflate', @res['content-type']
-    assert_equal "a-1\na-2", Gem.inflate(@res.body)
-  end
-
-  def test_quick_latest_index
-    data = StringIO.new "GET /quick/latest_index HTTP/1.0\r\n\r\n"
-    @req.parse data
-
-    @server.quick @req, @res
-
-    assert_equal 200, @res.status, @res.body
-    assert_match %r| \d\d:\d\d:\d\d |, @res['date']
-    assert_equal 'text/plain', @res['content-type']
-    assert_equal 'a-2', @res.body
-  end
-
-  def test_quick_latest_index_rz
-    data = StringIO.new "GET /quick/latest_index.rz HTTP/1.0\r\n\r\n"
-    @req.parse data
-
-    @server.quick @req, @res
-
-    assert_equal 200, @res.status, @res.body
-    assert_match %r| \d\d:\d\d:\d\d |, @res['date']
-    assert_equal 'application/x-deflate', @res['content-type']
-    assert_equal 'a-2', Gem.inflate(@res.body)
   end
 
   def test_quick_missing
@@ -236,7 +144,7 @@ class TestGemServer < RubyGemTestCase
   end
 
   def test_quick_marshal_a_1_mswin32_gemspec_rz
-    a1_p = quick_gem 'a', '1' do |s| s.platform = Gem::Platform.local end
+    quick_gem 'a', '1' do |s| s.platform = Gem::Platform.local end
 
     data = StringIO.new "GET /quick/Marshal.#{Gem.marshal_version}/a-1-#{Gem::Platform.local}.gemspec.rz HTTP/1.0\r\n\r\n"
     @req.parse data
@@ -303,38 +211,6 @@ class TestGemServer < RubyGemTestCase
     assert_equal [['a', Gem::Version.new(1), Gem::Platform::RUBY],
                   ['a', Gem::Version.new(2), Gem::Platform::RUBY]],
                  Marshal.load(Gem.gunzip(@res.body))
-  end
-
-  def test_yaml
-    data = StringIO.new "GET /yaml.#{Gem.marshal_version} HTTP/1.0\r\n\r\n"
-    @req.parse data
-
-    @server.yaml @req, @res
-
-    assert_equal 200, @res.status, @res.body
-    assert_match %r| \d\d:\d\d:\d\d |, @res['date']
-    assert_equal 'text/plain', @res['content-type']
-
-    si = Gem::SourceIndex.new
-    si.add_specs @a1, @a2
-
-    assert_equal si, YAML.load(@res.body)
-  end
-
-  def test_yaml_Z
-    data = StringIO.new "GET /yaml.#{Gem.marshal_version}.Z HTTP/1.0\r\n\r\n"
-    @req.parse data
-
-    @server.yaml @req, @res
-
-    assert_equal 200, @res.status, @res.body
-    assert_match %r| \d\d:\d\d:\d\d |, @res['date']
-    assert_equal 'application/x-deflate', @res['content-type']
-
-    si = Gem::SourceIndex.new
-    si.add_specs @a1, @a2
-
-    assert_equal si, YAML.load(Gem.inflate(@res.body))
   end
 
   def util_listen
