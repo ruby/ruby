@@ -20,7 +20,6 @@ end
 Gem.load_yaml
 
 require 'rubygems/package'
-require 'rubygems/security'
 
 ##
 # The Builder class processes RubyGem specification files
@@ -73,6 +72,8 @@ EOM
     signer = nil
 
     if @spec.respond_to?(:signing_key) and @spec.signing_key then
+      require 'rubygems/security'
+
       signer = Gem::Security::Signer.new @spec.signing_key, @spec.cert_chain
       @spec.signing_key = nil
       @spec.cert_chain = signer.cert_chain.map { |cert| cert.to_s }

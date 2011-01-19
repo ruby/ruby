@@ -193,6 +193,7 @@ module Gem
   @ruby = nil
   @sources = []
 
+  @post_build_hooks     ||= []
   @post_install_hooks   ||= []
   @post_uninstall_hooks ||= []
   @pre_uninstall_hooks  ||= []
@@ -729,6 +730,17 @@ module Gem
   end
 
   ##
+  # Adds a post-build hook that will be passed an Gem::Installer instance
+  # when Gem::Installer#install is called.  The hook is called after the gem
+  # has been extracted and extensions have been built but before the
+  # executables or gemspec has been written.  If the hook returns +false+ then
+  # the gem's files will be removed and the install will be aborted.
+
+  def self.post_build(&hook)
+    @post_build_hooks << hook
+  end
+
+  ##
   # Adds a post-install hook that will be passed an Gem::Installer instance
   # when Gem::Installer#install is called
 
@@ -747,7 +759,8 @@ module Gem
 
   ##
   # Adds a pre-install hook that will be passed an Gem::Installer instance
-  # when Gem::Installer#install is called
+  # when Gem::Installer#install is called.  If the hook returns +false+ then
+  # the install will be aborted.
 
   def self.pre_install(&hook)
     @pre_install_hooks << hook
@@ -986,7 +999,8 @@ module Gem
                    '.rb',
                    *%w(DLEXT DLEXT2).map { |key|
                      val = RbConfig::CONFIG[key]
-                     ".#{val}" unless val.empty?
+                     next unless val and not val.empty?
+                     ".#{val}"
                    }
                   ].compact.uniq
   end
@@ -1095,6 +1109,12 @@ module Gem
     # Hash of loaded Gem::Specification keyed by name
 
     attr_reader :loaded_specs
+
+    ##
+    # The list of hooks to be run before Gem::Install#install finishes
+    # installation
+
+    attr_reader :post_build_hooks
 
     ##
     # The list of hooks to be run before Gem::Install#install does any work
@@ -1219,9 +1239,6 @@ end
 
 ##
 # Enables the require hook for RubyGems.
-#
-# Ruby 1.9 allows --disable-gems, so we require it when we didn't detect a Gem
-# constant at rubygems.rb load time.
 
 require 'rubygems/custom_require'
 

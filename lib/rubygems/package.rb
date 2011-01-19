@@ -10,7 +10,6 @@
 # See LICENSE.txt for additional licensing information.
 #++
 
-require 'rubygems/security'
 require 'rubygems/specification'
 
 ##

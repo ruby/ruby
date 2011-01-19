@@ -90,7 +90,9 @@ class TestGemCommandsSourcesCommand < RubyGemTestCase
     util_setup_spec_fetcher
 
     use_ui @ui do
-      @cmd.execute
+      assert_raises MockGemUi::TermError do
+        @cmd.execute
+      end
     end
 
     expected = <<-EOF
@@ -108,7 +110,9 @@ Error fetching http://beta-gems.example.com:
     util_setup_spec_fetcher
 
     use_ui @ui do
-      @cmd.execute
+      assert_raises MockGemUi::TermError do
+        @cmd.execute
+      end
     end
 
     assert_equal [@gem_repo], Gem.sources

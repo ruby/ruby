@@ -85,6 +85,7 @@ class Gem::Package::TarOutput
       # if we have a signing key, then sign the data
       # digest and return the signature
       if @signer then
+        require 'rubygems/security'
         digest = Gem::Security::OPT[:dgst_algo].digest sio.string
         @data_signature = @signer.sign digest
         inner.write sio.string
@@ -113,6 +114,7 @@ class Gem::Package::TarOutput
         # if we have a signing key, then sign the metadata digest and return
         # the signature
         if @signer then
+          require 'rubygems/security'
           digest = Gem::Security::OPT[:dgst_algo].digest sio.string
           @meta_signature = @signer.sign digest
           io.write sio.string

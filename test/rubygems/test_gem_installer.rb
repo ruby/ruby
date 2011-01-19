@@ -521,15 +521,27 @@ load Gem.bin_path('a', 'my_exec', version)
   def test_install
     Dir.mkdir util_inst_bindir
     util_setup_gem
+    util_clear_gems
 
+    gemdir     = File.join @gemhome, 'gems', @spec.full_name
     cache_file = File.join @gemhome, 'cache', @spec.file_name
+    stub_exe   = File.join @gemhome, 'bin', 'executable'
+    rakefile   = File.join gemdir, 'ext', 'a', 'Rakefile'
 
     Gem.pre_install do |installer|
-      refute File.exist?(cache_file), 'cache file should not exist yet'
+      refute File.exist?(cache_file), 'cache file must not exist yet'
+      true
+    end
+
+    Gem.post_build do |installer|
+      assert File.exist?(gemdir), 'gem install dir must exist'
+      assert File.exist?(rakefile), 'gem executable must exist'
+      refute File.exist?(stub_exe), 'gem executable must not exist'
+      true
     end
 
     Gem.post_install do |installer|
-      assert File.exist?(cache_file), 'cache file should exist'
+      assert File.exist?(cache_file), 'cache file must exist'
     end
 
     build_rake_in do
@@ -538,25 +550,27 @@ load Gem.bin_path('a', 'my_exec', version)
       end
     end
 
-    gemdir = File.join @gemhome, 'gems', @spec.full_name
-    assert File.exist?(gemdir)
+    assert File.exist? gemdir
+    assert File.exist?(stub_exe), 'gem executable must exist'
 
-    exe = File.join(gemdir, 'bin', 'executable')
-    assert File.exist?(exe)
+    exe = File.join gemdir, 'bin', 'executable'
+    assert File.exist? exe
+
     exe_mode = File.stat(exe).mode & 0111
     assert_equal 0111, exe_mode, "0%o" % exe_mode unless win_platform?
 
     assert File.exist?(File.join(gemdir, 'lib', 'code.rb'))
 
-    assert File.exist?(File.join(gemdir, 'ext', 'a', 'Rakefile'))
+    assert File.exist? rakefile
 
     spec_file = File.join(@gemhome, 'specifications', @spec.spec_name)
 
     assert_equal spec_file, @spec.loaded_from
     assert File.exist?(spec_file)
 
-    assert_same @installer, @pre_install_hook_arg
+    assert_same @installer, @post_build_hook_arg
     assert_same @installer, @post_install_hook_arg
+    assert_same @installer, @pre_install_hook_arg
   end
 
   def test_install_bad_gem
@@ -667,6 +681,84 @@ load Gem.bin_path('a', 'my_exec', version)
 
     assert File.exist?(File.join(@gemhome, 'cache', @spec.file_name))
     assert File.exist?(File.join(@gemhome, 'specifications', @spec.spec_name))
+  end
+
+  def test_install_post_build_false
+    util_clear_gems
+
+    Gem.post_build do
+      false
+    end
+
+    use_ui @ui do
+      e = assert_raises Gem::InstallError do
+        @installer.install
+      end
+
+      location = "#{__FILE__}:#{__LINE__ - 9}"
+
+      assert_equal "post-build hook at #{location} failed for a-2", e.message
+    end
+
+    spec_file = File.join @gemhome, 'specifications', @spec.spec_name
+    refute File.exist? spec_file
+
+    gem_dir = File.join @gemhome, 'gems', @spec.full_name
+    refute File.exist? gem_dir
+  end
+
+  def test_install_post_build_nil
+    util_clear_gems
+
+    Gem.post_build do
+      nil
+    end
+
+    use_ui @ui do
+      @installer.install
+    end
+
+    spec_file = File.join @gemhome, 'specifications', @spec.spec_name
+    assert File.exist? spec_file
+
+    gem_dir = File.join @gemhome, 'gems', @spec.full_name
+    assert File.exist? gem_dir
+  end
+
+  def test_install_pre_install_false
+    util_clear_gems
+
+    Gem.pre_install do
+      false
+    end
+
+    use_ui @ui do
+      e = assert_raises Gem::InstallError do
+        @installer.install
+      end
+
+      location = "#{__FILE__}:#{__LINE__ - 9}"
+
+      assert_equal "pre-install hook at #{location} failed for a-2", e.message
+    end
+
+    spec_file = File.join @gemhome, 'specifications', @spec.spec_name
+    refute File.exist? spec_file
+  end
+
+  def test_install_pre_install_nil
+    util_clear_gems
+
+    Gem.pre_install do
+      nil
+    end
+
+    use_ui @ui do
+      @installer.install
+    end
+
+    spec_file = File.join @gemhome, 'specifications', @spec.spec_name
+    assert File.exist? spec_file
   end
 
   def test_install_with_message
