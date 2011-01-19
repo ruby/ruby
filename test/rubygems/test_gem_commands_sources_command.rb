@@ -137,10 +137,6 @@ beta-gems.example.com is not a URI
 
     expected = <<-EOF
 *** Removed specs cache ***
-*** Removed user source cache ***
-*** Removed latest user source cache ***
-*** Removed system source cache ***
-*** Removed latest system source cache ***
     EOF
 
     assert_equal expected, @ui.output

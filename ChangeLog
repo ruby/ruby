@@ -1,3 +1,8 @@
+Wed Jan 19 13:16:05 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/commands/sources_command.rb: Finish removing code,
+	  (fixes sources command test).
+
 Wed Jan 19 13:04:16 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* proc.c (proc_call): Add gc guard to avoid segfault. The fix

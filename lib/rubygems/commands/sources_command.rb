@@ -64,12 +64,6 @@ class Gem::Commands::SourcesCommand < Gem::Command
       else
         say "*** Unable to remove source cache ***"
       end
-
-      sic = Gem::SourceInfoCache
-      remove_cache_file 'user',          sic.user_cache_file
-      remove_cache_file 'latest user',   sic.latest_user_cache_file
-      remove_cache_file 'system',        sic.system_cache_file
-      remove_cache_file 'latest system', sic.latest_system_cache_file
     end
 
     if options[:add] then
