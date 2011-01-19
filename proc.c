@@ -543,16 +543,16 @@ proc_call(int argc, VALUE *argv, VALUE procval)
     rb_proc_t *proc;
     rb_block_t *blockptr = 0;
     rb_iseq_t *iseq;
+    VALUE passed_procval;
     GetProcPtr(procval, proc);
 
     iseq = proc->block.iseq;
     if (BUILTIN_TYPE(iseq) == T_NODE || iseq->arg_block != -1) {
 	if (rb_block_given_p()) {
-	    rb_proc_t *proc;
-	    VALUE procval;
-	    procval = rb_block_proc();
-	    GetProcPtr(procval, proc);
-	    blockptr = &proc->block;
+	    rb_proc_t *passed_proc;
+	    RB_GC_GUARD(passed_procval) = rb_block_proc();
+	    GetProcPtr(passed_procval, passed_proc);
+	    blockptr = &passed_proc->block;
 	}
     }
 
