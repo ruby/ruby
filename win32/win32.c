@@ -1920,20 +1920,11 @@ init_stdhandle(void)
     if (fileno(stdin) < 0) {
 	stdin->_file = open_null(0);
     }
-    else {
-	setmode(fileno(stdin), O_BINARY);
-    }
     if (fileno(stdout) < 0) {
 	stdout->_file = open_null(1);
     }
-    else {
-	setmode(fileno(stdout), O_BINARY);
-    }
     if (fileno(stderr) < 0) {
 	stderr->_file = open_null(2);
-    }
-    else {
-	setmode(fileno(stderr), O_BINARY);
     }
     if (nullfd >= 0 && !keep) close(nullfd);
     setvbuf(stderr, NULL, _IONBF, 0);

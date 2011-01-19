@@ -1,3 +1,9 @@
+Wed Jan 19 17:38:03 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (init_stdhandle): backport mistake of r29382.
+	  some code are needless in ruby 1.8.
+	  [ruby-core:34579]
+
 Sat Jan 15 06:04:00 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/zlib/zlib.c (gzfile_check_footer): ISIZE (Input SIZE) in gzip's
