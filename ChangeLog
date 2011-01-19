@@ -3,6 +3,11 @@ Wed Jan 19 13:04:16 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 	* proc.c (proc_call): Add gc guard to avoid segfault. The fix
 	  is created by Tomoyuki Chikanaga. [Bug #4238][ruby-dev:42963]
 
+Wed Jan 19 12:31:28 2011  Eric Hodel <drbrain@segment7.net>
+
+	* lib/rubygems.rb: Since gem_prelude requires rubygems, enable
+	  custom_require always.
+
 Wed Jan 19 12:08:08 2011  Eric Hodel <drbrain@segment7.net>
 
 	* lib/rubygems/commands/dependency_command.rb: Remove require of
