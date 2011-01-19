@@ -342,6 +342,8 @@ module Psych
             accept v
           end
           @emitter.end_mapping
+        when :object
+          accept c.object
         end
       end
 

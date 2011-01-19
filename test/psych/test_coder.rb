@@ -89,6 +89,17 @@ module Psych
       end
     end
 
+    class RepresentWithObject
+      def encode_with coder
+        coder.represent_object self.class.name, 20
+      end
+    end
+
+    def test_represent_with_object
+      thing = Psych.load(Psych.dump(RepresentWithObject.new))
+      assert_equal 20, thing
+    end
+
     def test_json_dump_exclude_tag
       refute_match('TestCoder::InitApi', Psych.to_json(InitApi.new))
     end

@@ -1,3 +1,13 @@
+Thu Jan 20 08:02:46 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/coder.rb (represent_object): arbitrary objects
+	  may be passed to the Psych::Coder object.
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: support for visiting
+	  arbitrary objects set on the coder.
+
+	* test/psych/test_coder.rb: supporting test case.
+
 Thu Jan 20 06:03:17 2011  Tanaka Akira  <akr@fsij.org>
 
 	* method.h: parenthesize macro arguments.
