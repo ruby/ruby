@@ -1,3 +1,12 @@
+Wed Jan 19 12:08:08 2011  Eric Hodel <drbrain@segment7.net>
+
+	* lib/rubygems/commands/dependency_command.rb: Remove require of
+	  deleted file.
+	* lib/rubygems/commands/fetch_command.rb: ditto
+	* lib/rubygems/commands/setup_command.rb: ditto
+	* lib/rubygems/commands/sources_command.rb: ditto
+	* lib/rubygems/commands/specification_command.rb: ditto
+
 Wed Jan 19 08:13:59 2011  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* lib/rubygems*: Import rubygems 1.5.0 (release candidate)

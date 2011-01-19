@@ -7,7 +7,6 @@
 require 'rubygems/command'
 require 'rubygems/local_remote_options'
 require 'rubygems/version_option'
-require 'rubygems/source_info_cache'
 require 'rubygems/format'
 
 class Gem::Commands::SpecificationCommand < Gem::Command
