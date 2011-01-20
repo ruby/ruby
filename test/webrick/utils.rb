@@ -14,6 +14,7 @@ module TestWEBrick
   end
 
   RubyBin = "\"#{EnvUtil.rubybin}\""
+  RubyBin << " --disable-gems"
   RubyBin << " \"-I#{File.expand_path("../..", File.dirname(__FILE__))}/lib\""
   RubyBin << " \"-I#{File.dirname(EnvUtil.rubybin)}/.ext/common\""
   RubyBin << " \"-I#{File.dirname(EnvUtil.rubybin)}/.ext/#{RUBY_PLATFORM}\""

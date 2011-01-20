@@ -1,3 +1,9 @@
+Thu Jan 20 11:39:41 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/webrick/utils.rb (TestWEBrick::RubyBin): test CGI does not need
+	  to load rubygems.  if it activated, ruby raises LoadError about
+	  rbconfig.rb.
+
 Thu Jan 20 09:19:42 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/json_tree.rb: Fix JSON emit for
