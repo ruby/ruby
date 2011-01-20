@@ -1,3 +1,9 @@
+Thu Jan 20 23:25:28 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: Add '#include <stdlib.h>' to
+	  rb_cv_localtime_overflow test too. It's reported by Tomoyuki
+	  Chikanaga. Thanks.
+
 Thu Jan 20 16:11:00 2011  Kenta Murata <mrkn@mrkn.jp>
 
 	* README.EXT, README.EXT.ja: You shouldn't choose ``conftest.c'' as a

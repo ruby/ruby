@@ -1485,6 +1485,7 @@ fi
 # http://www.freebsd.org/cgi/query-pr.cgi?pr=145341
 AC_CACHE_CHECK(for localtime(3) overflow correctly, rb_cv_localtime_overflow,
   [AC_TRY_RUN([
+#include <stdlib.h>
 #include <time.h>
 
 void
