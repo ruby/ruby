@@ -1,3 +1,7 @@
+Thu Jan 20 23:58:02 2011  Tanaka Akira  <akr@fsij.org>
+
+	* node.h: parenthesize macro arguments.
+
 Thu Jan 20 23:25:28 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: Add '#include <stdlib.h>' to
