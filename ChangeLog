@@ -1,3 +1,8 @@
+Thu Jan 20 16:11:00 2011  Kenta Murata <mrkn@mrkn.jp>
+
+	* README.EXT, README.EXT.ja: You shouldn't choose ``conftest.c'' as a
+	  name of a source file.
+
 Thu Jan 20 12:15:44 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: Add stdlib.h inclusion into rb_cv_negative_time_t
