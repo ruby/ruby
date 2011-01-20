@@ -1444,6 +1444,7 @@ fi
 
 AC_CACHE_CHECK(for negative time_t for gmtime(3), rb_cv_negative_time_t,
   [AC_TRY_RUN([
+#include <stdlib.h>
 #include <time.h>
 
 void
