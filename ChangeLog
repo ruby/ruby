@@ -6,7 +6,7 @@ Thu Jan 20 16:11:00 2011  Kenta Murata <mrkn@mrkn.jp>
 Thu Jan 20 12:15:44 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: Add stdlib.h inclusion into rb_cv_negative_time_t
-	  test becuase it's required for exit(3). The patch is
+	  test because it's required for exit(3). The patch is
 	  created by Tomoyuki Chikanaga. [Bug #4287] [ruby-dev:43060]
 
 Thu Jan 20 11:39:41 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
@@ -80,7 +80,7 @@ Tue Jan 18 23:04:51 2011  Tanaka Akira  <akr@fsij.org>
 
 Tue Jan 18 18:31:14 2011  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
-	* lib/irb/comletion.rb: Irb tab completion support for XX::method forms.
+	* lib/irb/completion.rb: Irb tab completion support for XX::method forms.
 
 Tue Jan 18 15:05:55 2011  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
@@ -143,7 +143,7 @@ Sat Jan 15 10:04:14 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  preludes.
 
 	* ruby.c (ruby_init_prelude): get rid of global namespace
-	  pullution.
+	  pollution.
 
 Sat Jan 15 09:42:12 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
