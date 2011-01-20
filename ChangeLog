@@ -1,3 +1,10 @@
+Thu Jan 20 09:19:42 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/json_tree.rb: Fix JSON emit for
+	  DateTime and Time classes.
+
+	* test/psych/test_json_tree.rb: test for JSON emit
+
 Thu Jan 20 08:02:46 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/coder.rb (represent_object): arbitrary objects
