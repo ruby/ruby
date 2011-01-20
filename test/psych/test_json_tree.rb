@@ -41,8 +41,8 @@ module Psych
     end
 
     def test_time
-      time = Time.utc(2010, 10, 10).utc
-      assert_equal "{\"a\": \"2010-10-10 00:00:00.000000000Z\"}\n", Psych.to_json({'a' => time })
+      time = Time.new(2010, 10, 10).utc
+      assert_equal "{\"a\": \"2010-10-10 07:00:00.000000000Z\"}\n", Psych.to_json({'a' => time })
     end
 
     def test_datetime
