@@ -760,8 +760,10 @@ if test "$rb_cv_stdarg" = yes; then
 fi
 
 AC_CACHE_CHECK(for variable length macro, rb_cv_va_args_macro,
-  [AC_TRY_COMPILE([@%:@define FOO(a, ...) foo(a, @%:@@%:@__VA_ARGS__)],
-  [FOO(1);FOO(1,2);FOO(1,2,3);],
+  [AC_TRY_COMPILE([
+int foo(int x, ...);
+@%:@define FOO(a, ...) foo(a, @%:@@%:@__VA_ARGS__)
+], [FOO(1);FOO(1,2);FOO(1,2,3);],
   rb_cv_va_args_macro=yes,
   rb_cv_va_args_macro=no)])
 if test "$rb_cv_va_args_macro" = yes; then

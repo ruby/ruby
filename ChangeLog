@@ -1,3 +1,9 @@
+Thu Jan 20 23:44:00 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: Fix rb_cv_va_args_macro was broken. We are using
+	  -Werror=implicit-function-declaration compile option. therefore
+	  we need a function declaration explicitly.
+
 Thu Jan 20 23:58:02 2011  Tanaka Akira  <akr@fsij.org>
 
 	* node.h: parenthesize macro arguments.
