@@ -57,10 +57,10 @@
 
 #ifdef HAVE_STDARG_PROTOTYPES
 #include <stdarg.h>
-#define va_init_list(a,b) va_start(a,b)
+#define va_init_list(a,b) va_start((a),(b))
 #else
 #include <varargs.h>
-#define va_init_list(a,b) va_start(a)
+#define va_init_list(a,b) va_start((a))
 #endif
 
 #if defined(SIGSEGV) && defined(HAVE_SIGALTSTACK) && defined(SA_SIGINFO) && !defined(__NetBSD__)
@@ -136,14 +136,14 @@ struct iseq_inline_cache_entry {
 
 #if 1
 #define GetCoreDataFromValue(obj, type, ptr) do { \
-    ptr = (type*)DATA_PTR(obj); \
+    (ptr) = (type*)DATA_PTR(obj); \
 } while (0)
 #else
-#define GetCoreDataFromValue(obj, type, ptr) Data_Get_Struct(obj, type, ptr)
+#define GetCoreDataFromValue(obj, type, ptr) Data_Get_Struct((obj), type, (ptr))
 #endif
 
 #define GetISeqPtr(obj, ptr) \
-  GetCoreDataFromValue(obj, rb_iseq_t, ptr)
+  GetCoreDataFromValue((obj), rb_iseq_t, (ptr))
 
 struct rb_iseq_struct;
 
@@ -264,7 +264,7 @@ enum ruby_special_exceptions {
 };
 
 #define GetVMPtr(obj, ptr) \
-  GetCoreDataFromValue(obj, rb_vm_t, ptr)
+  GetCoreDataFromValue((obj), rb_vm_t, (ptr))
 
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 struct rb_objspace;
@@ -348,7 +348,7 @@ typedef struct rb_block_struct {
 } rb_block_t;
 
 #define GetThreadPtr(obj, ptr) \
-  GetCoreDataFromValue(obj, rb_thread_t, ptr)
+  GetCoreDataFromValue((obj), rb_thread_t, (ptr))
 
 enum rb_thread_status {
     THREAD_TO_KILL,
@@ -509,7 +509,7 @@ RUBY_EXTERN VALUE rb_mRubyVMFrozenCore;
 #define RUBY_VM_THREAD_STACK_SIZE (128 * 1024)
 
 #define GetProcPtr(obj, ptr) \
-  GetCoreDataFromValue(obj, rb_proc_t, ptr)
+  GetCoreDataFromValue((obj), rb_proc_t, (ptr))
 
 typedef struct {
     rb_block_t block;
@@ -522,7 +522,7 @@ typedef struct {
 } rb_proc_t;
 
 #define GetEnvPtr(obj, ptr) \
-  GetCoreDataFromValue(obj, rb_env_t, ptr)
+  GetCoreDataFromValue((obj), rb_env_t, (ptr))
 
 typedef struct {
     VALUE *env;
@@ -533,7 +533,7 @@ typedef struct {
 } rb_env_t;
 
 #define GetBindingPtr(obj, ptr) \
-  GetCoreDataFromValue(obj, rb_binding_t, ptr)
+  GetCoreDataFromValue((obj), rb_binding_t, (ptr))
 
 typedef struct {
     VALUE env;
@@ -598,11 +598,11 @@ typedef rb_control_frame_t *
   (FUNC_FASTCALL(*rb_insn_func_t))(rb_thread_t *, rb_control_frame_t *);
 
 #define GC_GUARDED_PTR(p)     ((VALUE)((VALUE)(p) | 0x01))
-#define GC_GUARDED_PTR_REF(p) ((void *)(((VALUE)p) & ~0x03))
-#define GC_GUARDED_PTR_P(p)   (((VALUE)p) & 0x01)
+#define GC_GUARDED_PTR_REF(p) ((void *)(((VALUE)(p)) & ~0x03))
+#define GC_GUARDED_PTR_P(p)   (((VALUE)(p)) & 0x01)
 
-#define RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp) (cfp+1)
-#define RUBY_VM_NEXT_CONTROL_FRAME(cfp) (cfp-1)
+#define RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp) ((cfp)+1)
+#define RUBY_VM_NEXT_CONTROL_FRAME(cfp) ((cfp)-1)
 #define RUBY_VM_END_CONTROL_FRAME(th) \
   ((rb_control_frame_t *)((th)->stack + (th)->stack_size))
 #define RUBY_VM_VALID_CONTROL_FRAME_P(cfp, ecfp) \
@@ -612,7 +612,7 @@ typedef rb_control_frame_t *
 
 #define RUBY_VM_IFUNC_P(ptr)        (BUILTIN_TYPE(ptr) == T_NODE)
 #define RUBY_VM_NORMAL_ISEQ_P(ptr) \
-  (ptr && !RUBY_VM_IFUNC_P(ptr))
+  ((ptr) && !RUBY_VM_IFUNC_P(ptr))
 
 #define RUBY_VM_GET_BLOCK_PTR_IN_CFP(cfp) ((rb_block_t *)(&(cfp)->self))
 #define RUBY_VM_GET_CFP_FROM_BLOCK_PTR(b) \
@@ -675,7 +675,7 @@ extern rb_vm_t *ruby_current_vm;
 #define rb_thread_set_current_raw(th) (void)(ruby_current_thread = (th))
 #define rb_thread_set_current(th) do { \
     rb_thread_set_current_raw(th); \
-    th->vm->running_thread = th; \
+    (th)->vm->running_thread = (th); \
 } while (0)
 
 #else
@@ -698,7 +698,7 @@ void rb_thread_lock_unlock(rb_thread_lock_t *);
 void rb_thread_lock_destroy(rb_thread_lock_t *);
 
 #define RUBY_VM_CHECK_INTS_TH(th) do { \
-  if (UNLIKELY(th->interrupt_flag)) { \
+  if (UNLIKELY((th)->interrupt_flag)) { \
     rb_threadptr_execute_interrupts(th); \
   } \
 } while (0)
@@ -711,10 +711,10 @@ void
 rb_threadptr_exec_event_hooks(rb_thread_t *th, rb_event_flag_t flag, VALUE self, ID id, VALUE klass);
 
 #define EXEC_EVENT_HOOK(th, flag, self, id, klass) do { \
-    rb_event_flag_t wait_event__ = th->event_flags; \
+    rb_event_flag_t wait_event__ = (th)->event_flags; \
     if (UNLIKELY(wait_event__)) { \
-	if (wait_event__ & (flag | RUBY_EVENT_VM)) { \
-	    rb_threadptr_exec_event_hooks(th, flag, self, id, klass); \
+	if (wait_event__ & ((flag) | RUBY_EVENT_VM)) { \
+	    rb_threadptr_exec_event_hooks((th), (flag), (self), (id), (klass)); \
 	} \
     } \
 } while (0)
