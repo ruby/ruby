@@ -39,9 +39,7 @@ AS_CASE(["$target_os"], [mingw*msvc], [
 target_os="`echo ${target_os} | sed 's/msvc$//'`"
 ])
 AS_CASE(["$target_cpu-$target_os"], [x86_64-mingw*], [
-# canonicalize as like mswin version.  see win32/setup.mak.
 target_cpu=x64
-target_os="`echo ${target_os} | sed 's/32$/64/'`"
 ])
 ])
 
