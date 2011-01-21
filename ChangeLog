@@ -1,3 +1,7 @@
+Fri Jan 21 18:15:09 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: should not use -Werror=* flags while conftests.
+
 Fri Jan 21 09:17:00 2011  Luis Lavena  <luislavena@gmail.com>
 
 	* configure.in: Fix incorrectly detected x86_64-w64-mingw32 due
