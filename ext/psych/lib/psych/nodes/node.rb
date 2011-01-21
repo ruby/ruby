@@ -6,6 +6,8 @@ module Psych
     # The base class for any Node in a YAML parse tree.  This class should
     # never be instantiated.
     class Node
+      include Enumerable
+
       # The children of this node
       attr_reader :children
 
@@ -15,6 +17,14 @@ module Psych
       # Create a new Psych::Nodes::Node
       def initialize
         @children = []
+      end
+
+      ###
+      # Iterate over each node in the tree. Yields each node to +block+ depth
+      # first.
+      def each &block
+        return enum_for :each unless block_given?
+        Visitors::DepthFirst.new(block).accept self
       end
 
       ###
