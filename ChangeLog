@@ -3,7 +3,7 @@ Sun Jan 23 08:00:09 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* string.c (str_nth_len, str_utf8_nth): return the rest length together.
 
 	* string.c (rb_str_substr): get rid of measure the length always
-	  to improve performance for huge string.
+	  to improve performance for huge string.  [ruby-core:34648]
 
 Sun Jan 23 00:40:10 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
