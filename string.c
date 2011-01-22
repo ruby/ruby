@@ -1420,9 +1420,10 @@ rb_str_s_try_convert(VALUE dummy, VALUE str)
     return rb_check_string_type(str);
 }
 
-char*
-rb_enc_nth(const char *p, const char *e, long nth, rb_encoding *enc)
+static char*
+str_nth_len(const char *p, const char *e, long *nthp, rb_encoding *enc)
 {
+    long nth = *nthp;
     if (rb_enc_mbmaxlen(enc) == 1) {
         p += nth;
     }
@@ -1435,12 +1436,16 @@ rb_enc_nth(const char *p, const char *e, long nth, rb_encoding *enc)
 
         while (p < e && 0 < nth) {
             e2 = p + nth;
-            if (e < e2)
+            if (e < e2) {
+                *nthp = nth;
                 return (char *)e;
+            }
             if (ISASCII(*p)) {
                 p2 = search_nonascii(p, e2);
-                if (!p2)
+                if (!p2) {
+		    *nthp = nth;
                     return (char *)e2;
+                }
                 nth -= p2 - p;
                 p = p2;
             }
@@ -1448,17 +1453,26 @@ rb_enc_nth(const char *p, const char *e, long nth, rb_encoding *enc)
             p += n;
             nth--;
         }
-        if (nth != 0)
+        *nthp = nth;
+        if (nth != 0) {
             return (char *)e;
+        }
         return (char *)p;
     }
     else {
-        while (p<e && nth--) {
+        while (p < e && nth--) {
             p += rb_enc_mbclen(p, e, enc);
         }
     }
     if (p > e) p = e;
+    *nthp = nth;
     return (char*)p;
+}
+
+char*
+rb_enc_nth(const char *p, const char *e, long nth, rb_encoding *enc)
+{
+    return str_nth_len(p, e, &nth, enc);
 }
 
 static char*
@@ -1467,7 +1481,7 @@ str_nth(const char *p, const char *e, long nth, rb_encoding *enc, int singlebyte
     if (singlebyte)
 	p += nth;
     else {
-	p = rb_enc_nth(p, e, nth, enc);
+	p = str_nth_len(p, e, &nth, enc);
     }
     if (!p) return 0;
     if (p > e) p = e;
@@ -1492,8 +1506,9 @@ rb_str_offset(VALUE str, long pos)
 
 #ifdef NONASCII_MASK
 static char *
-str_utf8_nth(const char *p, const char *e, long nth)
+str_utf8_nth(const char *p, const char *e, long *nthp)
 {
+    long nth = *nthp;
     if ((int)SIZEOF_VALUE < e - p && (int)SIZEOF_VALUE * 2 < nth) {
 	const VALUE *s, *t;
 	const VALUE lowbits = sizeof(VALUE) - 1;
@@ -1516,13 +1531,14 @@ str_utf8_nth(const char *p, const char *e, long nth)
 	}
 	p++;
     }
+    *nthp = nth;
     return (char *)p;
 }
 
 static long
 str_utf8_offset(const char *p, const char *e, long nth)
 {
-    const char *pp = str_utf8_nth(p, e, nth);
+    const char *pp = str_utf8_nth(p, e, &nth);
     return pp - p;
 }
 #endif
@@ -1603,16 +1619,18 @@ rb_str_substr(VALUE str, long beg, long len)
 	    if (beg < 0) return Qnil;
 	}
     }
-    else if (beg > 0 && beg > str_strlen(str, enc)) {
+    else if (beg > 0 && beg > RSTRING_LEN(str)) {
 	return Qnil;
     }
     if (len == 0) {
+	if (beg > str_strlen(str, enc)) return Qnil;
 	p = 0;
     }
 #ifdef NONASCII_MASK
     else if (ENC_CODERANGE(str) == ENC_CODERANGE_VALID &&
         enc == rb_utf8_encoding()) {
-        p = str_utf8_nth(s, e, beg);
+        p = str_utf8_nth(s, e, &beg);
+        if (beg > 0) return Qnil;
         len = str_utf8_offset(p, e, len);
     }
 #endif
@@ -1621,15 +1639,15 @@ rb_str_substr(VALUE str, long beg, long len)
 
 	p = s + beg * char_sz;
 	if (p > e) {
-	    p = e;
-	    len = 0;
+	    return Qnil;
 	}
         else if (len * char_sz > e - p)
             len = e - p;
         else
 	    len *= char_sz;
     }
-    else if ((p = str_nth(s, e, beg, enc, 0)) == e) {
+    else if ((p = str_nth_len(s, e, &beg, enc)) == e) {
+	if (beg > 0) return Qnil;
 	len = 0;
     }
     else {
