@@ -95,7 +95,7 @@ static VALUE parse(VALUE self, VALUE yaml)
     while(!done) {
 	if(!yaml_parser_parse(parser, &event)) {
 	    VALUE path;
-	    size_t line   = parser->mark.line + 1;
+	    size_t line   = parser->mark.line;
 	    size_t column = parser->mark.column;
 
 	    if(rb_respond_to(yaml, id_path))
