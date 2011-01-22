@@ -1,3 +1,10 @@
+Sat Jan 22 10:12:30 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/parser.c (parse): fix assertion error when reusing a
+	  parser after an exception has been raised
+	
+	* test/psych/test_parser.rb: test for assertion error
+
 Sat Jan 22 04:09:22 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/nodes/node.rb: Make Psych::Nodes::Node

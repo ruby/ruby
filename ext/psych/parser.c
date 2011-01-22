@@ -96,6 +96,9 @@ static VALUE parse(VALUE self, VALUE yaml)
 	    size_t line   = parser->mark.line;
 	    size_t column = parser->mark.column;
 
+	    yaml_parser_delete(parser);
+	    yaml_parser_initialize(parser);
+
 	    rb_raise(ePsychSyntaxError, "couldn't parse YAML at line %d column %d",
 		    (int)line, (int)column);
 	}

@@ -128,6 +128,16 @@ module Psych
       end
     end
 
+    def test_syntax_error_twice
+      assert_raises(Psych::SyntaxError) do
+        @parser.parse("---\n\"foo\"\n\"bar\"\n")
+      end
+
+      assert_raises(Psych::SyntaxError) do
+        @parser.parse("---\n\"foo\"\n\"bar\"\n")
+      end
+    end
+
     def test_mapping_end
       @parser.parse("---\n!!map { key: value }")
       assert_called :end_mapping
