@@ -6,7 +6,12 @@
 # If in doubt, ask your admin.
 
 require 'test/unit'
-require 'syslog'
+
+begin
+  require 'syslog'
+rescue LoadError
+  # suppress error messages.
+end
 
 class TestSyslog < Test::Unit::TestCase
   def test_new
@@ -159,4 +164,4 @@ class TestSyslog < Test::Unit::TestCase
 
     assert_equal(format('<#%s: opened=false>', Syslog), Syslog.inspect)
   end
-end
+end if defined?(Syslog)
