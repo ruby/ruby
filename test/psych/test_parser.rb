@@ -138,6 +138,23 @@ module Psych
       end
     end
 
+    def test_syntax_error_has_path_for_string
+      e = assert_raises(Psych::SyntaxError) do
+        @parser.parse("---\n\"foo\"\n\"bar\"\n")
+      end
+      assert_match '(<unknown>):', e.message
+    end
+
+    def test_syntax_error_has_path_for_io
+      io = StringIO.new "---\n\"foo\"\n\"bar\"\n"
+      def io.path; "hello!"; end
+
+      e = assert_raises(Psych::SyntaxError) do
+        @parser.parse(io)
+      end
+      assert_match "(#{io.path}):", e.message
+    end
+
     def test_mapping_end
       @parser.parse("---\n!!map { key: value }")
       assert_called :end_mapping

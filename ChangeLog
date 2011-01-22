@@ -1,3 +1,10 @@
+Sat Jan 22 10:25:19 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/parser.c (parse): add the file name to the exception when
+	  parse errors occur.
+
+	* test/psych/test_parser.rb: test for parse error file name
+
 Sat Jan 22 10:12:30 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/parser.c (parse): fix assertion error when reusing a

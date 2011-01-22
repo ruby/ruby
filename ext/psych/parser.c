@@ -4,6 +4,7 @@ VALUE cPsychParser;
 VALUE ePsychSyntaxError;
 
 static ID id_read;
+static ID id_path;
 static ID id_empty;
 static ID id_start_stream;
 static ID id_end_stream;
@@ -93,13 +94,20 @@ static VALUE parse(VALUE self, VALUE yaml)
 
     while(!done) {
 	if(!yaml_parser_parse(parser, &event)) {
+	    VALUE path;
 	    size_t line   = parser->mark.line;
 	    size_t column = parser->mark.column;
+
+	    if(rb_respond_to(yaml, id_path))
+		path = rb_funcall(yaml, id_path, 0);
+	    else
+		path = rb_str_new2("<unknown>");
 
 	    yaml_parser_delete(parser);
 	    yaml_parser_initialize(parser);
 
-	    rb_raise(ePsychSyntaxError, "couldn't parse YAML at line %d column %d",
+	    rb_raise(ePsychSyntaxError, "(%s): couldn't parse YAML at line %d column %d",
+		    StringValuePtr(path),
 		    (int)line, (int)column);
 	}
 
@@ -360,6 +368,7 @@ void Init_psych_parser()
     rb_define_method(cPsychParser, "external_encoding=", set_external_encoding, 1);
 
     id_read           = rb_intern("read");
+    id_path           = rb_intern("path");
     id_empty          = rb_intern("empty");
     id_start_stream   = rb_intern("start_stream");
     id_end_stream     = rb_intern("end_stream");
