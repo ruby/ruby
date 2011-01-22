@@ -1,3 +1,10 @@
+Sat Jan 22 11:49:55 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: fixing merge key support
+	  when multiple merge keys are specified.
+
+	* test/psych/test_merge_keys.rb: tests for multi-merge key support
+	
 Sat Jan 22 11:33:04 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/to_ruby.rb: merge keys are actually
