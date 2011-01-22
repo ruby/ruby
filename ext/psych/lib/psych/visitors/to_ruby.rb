@@ -188,13 +188,7 @@ module Psych
             key = accept(k)
 
             if key == '<<' && Nodes::Alias === v
-              # FIXME: remove this when "<<" syntax is deprecated
-              if $VERBOSE
-                where = caller.find { |x| x !~ /psych/ }
-                warn where
-                warn "\"<<: *#{v.anchor}\" is no longer supported, please switch to \"*#{v.anchor}\""
-              end
-              return accept(v)
+              hash.merge! accept(v)
             else
               hash[key] = accept(v)
             end

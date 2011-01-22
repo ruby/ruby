@@ -1,3 +1,11 @@
+Sat Jan 22 11:33:04 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: merge keys are actually
+	  part of YAML 1.1, so they should be supported.  Remove warning and
+	  merge keys to parent.  [ruby-core:34679]
+
+	* test/psych/test_merge_keys.rb: test for merge keys
+
 Sat Jan 22 11:21:40 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/parser.c (parse): fixing off-by-one error on line numbers
