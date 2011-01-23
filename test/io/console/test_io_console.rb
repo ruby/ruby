@@ -1,6 +1,9 @@
-require 'io/console'
-require 'pty'
-require 'test/unit'
+begin
+  require 'io/console'
+  require 'pty'
+  require 'test/unit'
+rescue LoadError
+end
 
 class TestIO_Console < Test::Unit::TestCase
   def test_raw
@@ -156,4 +159,4 @@ class TestIO_Console < Test::Unit::TestCase
     m.close if m
     s.close if s
   end
-end
+end if defined?(PTY) and defined?(IO::console)
