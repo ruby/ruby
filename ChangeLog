@@ -1,3 +1,7 @@
+Sun Jan 23 11:39:18 2011  Tanaka Akira  <akr@fsij.org>
+
+	* vm_exec.h: parenthesize macro arguments.
+
 Sun Jan 23 10:33:02 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* template/fake.rb.in (ruby): suppress warnings.
