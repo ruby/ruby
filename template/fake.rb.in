@@ -1,7 +1,12 @@
 baseruby="@BASERUBY@"
 ruby="${RUBY-$baseruby}"
-"eval" "{ `expr \"$ruby\" : echo > /dev/null || echo exec` $ruby "'-r"`expr \"$0\" : / > /dev/null || pwd`/${0#/}" "$@";' "}" || "exit" "$?"
+"eval" "{" \
+"`expr \"$ruby\" : echo > /dev/null || echo exec`" \
+"$ruby" '-r"`expr \"$0\" : / > /dev/null || pwd`/${0#/}" "$@";' \
+"}" || "exit" "$?"
+ruby=ruby
 class Object
+  remove_const :CROSS_COMPILING
   CROSS_COMPILING = RUBY_PLATFORM
   remove_const :RUBY_PLATFORM
   remove_const :RUBY_VERSION
@@ -19,7 +24,6 @@ end
 
 $:.unshift(File.expand_path("..", __FILE__))
 posthook = proc do
-  config = RbConfig::CONFIG
   mkconfig = RbConfig::MAKEFILE_CONFIG
   extout = File.expand_path(mkconfig["EXTOUT"], mkconfig["builddir"])
   $arch_hdrdir = "#{extout}/include/$(arch)"

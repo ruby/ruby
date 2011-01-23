@@ -1,3 +1,7 @@
+Sun Jan 23 10:33:02 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* template/fake.rb.in (ruby): suppress warnings.
+
 Sun Jan 23 08:00:09 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (str_nth_len, str_utf8_nth): return the rest length together.
