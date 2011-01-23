@@ -1,4 +1,7 @@
-require_relative 'helper'
+begin
+  require_relative 'helper'
+rescue LoadError
+end
 
 module Fiddle
   class TestClosure < Fiddle::TestCase
@@ -53,4 +56,4 @@ module Fiddle
       assert_equal(n, n.times {ObjectSpace.memsize_of(Closure.allocate)}, bug)
     end
   end
-end
+end if defined?(Fiddle)

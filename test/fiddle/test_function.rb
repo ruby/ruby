@@ -1,4 +1,7 @@
-require_relative 'helper'
+begin
+  require_relative 'helper'
+rescue LoadError
+end
 
 module Fiddle
   class TestFunction < Fiddle::TestCase
@@ -63,4 +66,4 @@ module Fiddle
       assert_equal("123", str.to_s)
     end
   end
-end
+end if defined?(Fiddle)

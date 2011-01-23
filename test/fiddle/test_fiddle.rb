@@ -1,4 +1,7 @@
-require_relative 'helper'
+begin
+  require_relative 'helper'
+rescue LoadError
+end
 
 class TestFiddle < Fiddle::TestCase
   def test_constants_match
@@ -26,4 +29,4 @@ class TestFiddle < Fiddle::TestCase
     end
   end
 
-end
+end if defined?(Fiddle)

@@ -1,3 +1,11 @@
+Sun Jan 23 22:17:07 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/fiddle/test_fiddle.rb: Don't run test if the system don't support
+	  fiddle.
+
+	* test/fiddle/test_function.rb: ditto.
+	* test/fiddle/test_closure.rb: ditto.
+
 Sun Jan 23 11:39:18 2011  Tanaka Akira  <akr@fsij.org>
 
 	* vm_exec.h: parenthesize macro arguments.
