@@ -1,3 +1,8 @@
+Tue Jan 25 07:45:44 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ruby/test_thread.rb (TestThread#test_condvar_nolock_2): get
+	  rid of method redefined.
+
 Tue Jan 25 07:00:52 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_string_value_cstr): rb_str_modify can change

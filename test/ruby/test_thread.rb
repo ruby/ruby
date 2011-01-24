@@ -207,7 +207,7 @@ class TestThread < Test::Unit::TestCase
     end.join
   end
 
-  def test_condvar_nolock_2
+  def test_condvar_nolock_3
     mutex = Mutex.new
     condvar = ConditionVariable.new
 
