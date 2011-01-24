@@ -1,3 +1,7 @@
+Tue Jan 25 03:24:28 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_thread.rb: Added various ConditionVariable tests.
+
 Mon Jan 24 22:26:33 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* object.c (rb_str_to_dbl): Fix again. use rb_str_tmp_new()

@@ -102,6 +102,120 @@ class TestThread < Test::Unit::TestCase
     assert(locked)
   end
 
+  def test_condvar_wait_and_broadcast
+    nr_threads = 3
+    threads = Array.new
+    mutex = Mutex.new
+    condvar = ConditionVariable.new
+    result = []
+
+    nr_threads.times do |i|
+      threads[i] = Thread.new do
+        mutex.synchronize do
+          result << "C1"
+          condvar.wait mutex
+          result << "C2"
+        end
+      end
+    end
+    sleep 0.1
+    mutex.synchronize do
+      result << "P1"
+      condvar.broadcast
+      result << "P2"
+    end
+    nr_threads.times do |i|
+      threads[i].join
+    end
+
+    assert_equal ["C1", "C1", "C1", "P1", "P2", "C2", "C2", "C2"], result
+  end
+
+#  Hmm.. don't we have a way of catch fatal exception?
+#
+#  def test_cv_wait_deadlock
+#    mutex = Mutex.new
+#    cv = ConditionVariable.new
+#
+#    assert_raises(fatal) {
+#      mutex.lock
+#      cv.wait mutex
+#      mutex.unlock
+#    }
+#  end
+
+  def test_condvar_wait_deadlock_2
+    nr_threads = 3
+    threads = Array.new
+    mutex = Mutex.new
+    condvar = ConditionVariable.new
+    result = []
+
+    nr_threads.times do |i|
+      if (i != 0)
+        mutex.unlock
+      end
+      threads[i] = Thread.new do
+        mutex.synchronize do
+          condvar.wait mutex
+        end
+      end
+      mutex.lock
+    end
+
+    assert_raise(Timeout::Error) do
+      Timeout.timeout(0.1) { condvar.wait mutex }
+    end
+    mutex.unlock rescue
+    threads[i].each.join
+  end
+
+  def test_condvar_timed_wait
+    mutex = Mutex.new
+    condvar = ConditionVariable.new
+    timeout = 0.3
+    locked = false
+
+    t0 = Time.now
+    mutex.synchronize do
+      begin
+        condvar.wait(mutex, timeout)
+      ensure
+        locked = mutex.locked?
+      end
+    end
+    t1 = Time.now
+    t = t1-t0
+
+    assert_block { timeout*0.9 < t && t < timeout*1.1 }
+    assert(locked)
+  end
+
+  def test_condvar_nolock
+    mutex = Mutex.new
+    condvar = ConditionVariable.new
+
+    assert_raise(ThreadError) { condvar.wait(mutex) }
+  end
+
+  def test_condvar_nolock_2
+    mutex = Mutex.new
+    condvar = ConditionVariable.new
+
+    thr = Thread.new do
+      assert_raise(ThreadError) {condvar.wait(mutex)}
+    end.join
+  end
+
+  def test_condvar_nolock_2
+    mutex = Mutex.new
+    condvar = ConditionVariable.new
+
+    thr = Thread.new do
+      assert_raise(ThreadError) {condvar.wait(mutex, 0.1)}
+    end.join
+  end
+
   def test_local_barrier
     dir = File.dirname(__FILE__)
     lbtest = File.join(dir, "lbtest.rb")
