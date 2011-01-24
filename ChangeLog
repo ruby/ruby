@@ -1,3 +1,8 @@
+Mon Jan 24 21:04:45 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_invalid_str): prevent intermediate variable from GC.
+	  [ruby-core:34820]
+
 Sun Jan 23 23:01:54 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/io/console/test_io_console.rb: Don't run test if the system
