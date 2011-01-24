@@ -1,3 +1,7 @@
+Tue Jan 25 07:48:22 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ruby/test_thread.rb: remove unused variables.
+
 Tue Jan 25 07:45:44 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/ruby/test_thread.rb (TestThread#test_condvar_nolock_2): get

@@ -149,7 +149,6 @@ class TestThread < Test::Unit::TestCase
     threads = Array.new
     mutex = Mutex.new
     condvar = ConditionVariable.new
-    result = []
 
     nr_threads.times do |i|
       if (i != 0)
@@ -202,7 +201,7 @@ class TestThread < Test::Unit::TestCase
     mutex = Mutex.new
     condvar = ConditionVariable.new
 
-    thr = Thread.new do
+    Thread.new do
       assert_raise(ThreadError) {condvar.wait(mutex)}
     end.join
   end
@@ -211,7 +210,7 @@ class TestThread < Test::Unit::TestCase
     mutex = Mutex.new
     condvar = ConditionVariable.new
 
-    thr = Thread.new do
+    Thread.new do
       assert_raise(ThreadError) {condvar.wait(mutex, 0.1)}
     end.join
   end
