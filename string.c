@@ -1392,7 +1392,11 @@ rb_string_value_cstr(volatile VALUE *ptr)
     if (!s || memchr(s, 0, len)) {
 	rb_raise(rb_eArgError, "string contains null byte");
     }
-    if (s[len]) rb_str_modify(str);
+    if (s[len]) {
+	rb_str_modify(str);
+	s = RSTRING_PTR(str);
+	s[RSTRING_LEN(str)] = 0;
+    }
     return s;
 }
 

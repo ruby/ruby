@@ -1,3 +1,8 @@
+Tue Jan 25 07:00:52 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_string_value_cstr): rb_str_modify can change
+	  RSTRING_PTR.
+
 Tue Jan 25 03:24:28 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_thread.rb: Added various ConditionVariable tests.
