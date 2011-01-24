@@ -47,12 +47,10 @@ with all sufficient information, see the ChangeLog file.
       * UTF-16
       * UTF-32
 
-  * Float
+  * File
     * new constant:
       * File::NULL
         name of NULL device.
-    * extended method:
-      * String#unpack supports endian modifiers
 
   * IO
     * extended method:
@@ -70,6 +68,8 @@ with all sufficient information, see the ChangeLog file.
       * Module#public_constant
 
   * String
+    * extended method:
+      * String#unpack supports endian modifiers
     * new method:
       * String#prepend
 
