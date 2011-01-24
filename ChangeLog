@@ -1,3 +1,7 @@
+Mon Jan 24 21:50:48 2011  Tanaka Akira  <akr@fsij.org>
+
+	* vm_insnhelper.h: parenthesize macro arguments.
+
 Mon Jan 24 21:28:34 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* object.c (rb_str_to_dbl): use ALLOC_N instead ALLOCA_N because
