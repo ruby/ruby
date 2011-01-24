@@ -128,7 +128,7 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
     register const char *ep;
     register char *bp;
     struct stat st;
-    size_t i, fspace;
+    size_t i, fnlen, fspace;
 #ifdef DOSISH
     static const char extension[][5] = {
 	EXECUTABLE_EXTS,
@@ -140,12 +140,17 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
     const char *p = fname;
 
     static const char pathname_too_long[] = "openpath: pathname too long (ignored)\n\
-\tDirectory \"%.*s\"\n\tFile \"%s\"\n";
-#define PATHNAME_TOO_LONG() fprintf(stderr, pathname_too_long, (int)(bp - fbuf), fbuf, fname)
+\tDirectory \"%.*s\"%s\n\tFile \"%.*s\"%s\n";
+#define PATHNAME_TOO_LONG() fprintf(stderr, pathname_too_long, \
+				    ((bp - fbuf) > 100 ? 100 : (int)(bp - fbuf)), fbuf, \
+				    ((bp - fbuf) > 100 ? "..." : ""), \
+				    (fnlen > 100 ? 100 : (int)fnlen), fname, \
+				    (fnlen > 100 ? "..." : ""))
 
 #define RETURN_IF(expr) if (expr) return (char *)fname;
 
     RETURN_IF(!fname);
+    fnlen = strlen(fname);
 #ifdef DOSISH
 # ifndef CharNext
 # define CharNext(p) ((p)+1)
@@ -262,7 +267,7 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
 	}
 
 	/* now append the file name */
-	i = strlen(fname);
+	i = fnlen;
 	if (fspace < i) {
 	  toolong:
 	    PATHNAME_TOO_LONG();

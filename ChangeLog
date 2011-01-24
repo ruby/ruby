@@ -1,3 +1,7 @@
+Tue Jan 25 08:41:58 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dln_find.c (dln_find_1): omit too long pathnames.
+
 Tue Jan 25 08:28:19 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_resize): get rid of out-of-bound access.
