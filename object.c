@@ -2245,6 +2245,8 @@ rb_str_to_dbl(VALUE str, int badcheck)
 {
     char *s;
     long len;
+    double ret;
+    char *alloced = NULL;
 
     StringValue(str);
     s = RSTRING_PTR(str);
@@ -2254,14 +2256,16 @@ rb_str_to_dbl(VALUE str, int badcheck)
 	    rb_raise(rb_eArgError, "string for Float contains null byte");
 	}
 	if (s[len]) {		/* no sentinel somehow */
-	    char *p = ALLOCA_N(char, len+1);
-
+	    char *p = alloced = ALLOC_N(char, len+1);
 	    MEMCPY(p, s, char, len);
 	    p[len] = '\0';
 	    s = p;
 	}
     }
-    return rb_cstr_to_dbl(s, badcheck);
+    ret = rb_cstr_to_dbl(s, badcheck);
+    if (alloced)
+	xfree(alloced);
+    return ret;
 }
 
 VALUE

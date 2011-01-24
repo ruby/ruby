@@ -1,3 +1,8 @@
+Mon Jan 24 21:28:34 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* object.c (rb_str_to_dbl): use ALLOC_N instead ALLOCA_N because
+	  ALLOC_N may cause stack overflow.
+
 Mon Jan 24 21:04:45 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (rb_invalid_str): prevent intermediate variable from GC.
