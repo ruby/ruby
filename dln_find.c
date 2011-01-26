@@ -15,10 +15,14 @@
 #define dln_memerror rb_memerror
 #define dln_exit rb_exit
 #define dln_loaderror rb_loaderror
+#define dln_warning rb_warning
+#define dln_warning_arg
 #else
 #define dln_notimplement --->>> dln not implemented <<<---
 #define dln_memerror abort
 #define dln_exit exit
+#define dln_warning fprintf
+#define dln_warning_arg stderr,
 static void dln_loaderror(const char *format, ...);
 #endif
 #include "dln.h"
@@ -141,16 +145,23 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
 
     static const char pathname_too_long[] = "openpath: pathname too long (ignored)\n\
 \tDirectory \"%.*s\"%s\n\tFile \"%.*s\"%s\n";
-#define PATHNAME_TOO_LONG() fprintf(stderr, pathname_too_long, \
-				    ((bp - fbuf) > 100 ? 100 : (int)(bp - fbuf)), fbuf, \
-				    ((bp - fbuf) > 100 ? "..." : ""), \
-				    (fnlen > 100 ? 100 : (int)fnlen), fname, \
-				    (fnlen > 100 ? "..." : ""))
+#define PATHNAME_TOO_LONG() dln_warning(dln_warning_arg pathname_too_long, \
+					((bp - fbuf) > 100 ? 100 : (int)(bp - fbuf)), fbuf, \
+					((bp - fbuf) > 100 ? "..." : ""), \
+					(fnlen > 100 ? 100 : (int)fnlen), fname, \
+					(fnlen > 100 ? "..." : ""))
 
 #define RETURN_IF(expr) if (expr) return (char *)fname;
 
     RETURN_IF(!fname);
     fnlen = strlen(fname);
+    if (fnlen >= size) {
+	dln_warning(dln_warning_arg
+		    "openpath: pathname too long (ignored)\n\tFile \"%.*s\"%s\n",
+		    (fnlen > 100 ? 100 : (int)fnlen), fname,
+		    (fnlen > 100 ? "..." : ""));
+	return NULL;
+    }
 #ifdef DOSISH
 # ifndef CharNext
 # define CharNext(p) ((p)+1)

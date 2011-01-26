@@ -1,3 +1,8 @@
+Thu Jan 27 08:22:49 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dln_find.c (dln_find_1): use rb_warning and return immediately
+	  if fname is longer than buffer.
+
 Wed Jan 26 22:57:30 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* class.c (clone_method): add GC guard to prevent intermediate
