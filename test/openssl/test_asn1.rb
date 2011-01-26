@@ -430,4 +430,14 @@ class  OpenSSL::TestASN1 < Test::Unit::TestCase
     end
   end
   
+  def test_primitive_inf_length
+    assert_raises(OpenSSL::ASN1::ASN1Error) do
+      spec = %w{ 02 80 02 01 01 00 00 }
+      raw = [spec.join('')].pack('H*')
+      OpenSSL::ASN1.decode(raw)
+      OpenSSL::ASN1.decode_all(raw)
+    end
+  end
+  
 end if defined?(OpenSSL)
+
