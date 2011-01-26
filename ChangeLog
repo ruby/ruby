@@ -1,3 +1,7 @@
+Wed Jan 26 22:45:16 2011  Tanaka Akira  <akr@fsij.org>
+
+	* template/id.h.tmpl: parenthesize macro arguments.
+
 Wed Jan 26 22:28:49 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* vm_eval.c (rb_throw_obj): add GC guard to prevent intermediate
