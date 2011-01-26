@@ -1027,16 +1027,23 @@ exec_with_sh(const char *prog, char **argv)
     *--argv = (char *)"sh";
     execv("/bin/sh", argv);
 }
-#define ALLOCA_ARGV(n) ALLOCA_N(char*, (n)+1)
+#define ARGV_COUNT(n) ((n)+1)
 #else
 #define try_with_sh(prog, argv) (void)0
-#define ALLOCA_ARGV(n) ALLOCA_N(char*, (n))
+#define ARGV_COUNT(n) (n)
 #endif
+#define ARGV_SIZE(n) (sizeof(char*) * ARGV_COUNT(n))
+#define ALLOC_ARGV(n, v) ALLOCV_N(char*, (v), ARGV_COUNT(n))
+#define ALLOC_ARGV_WITH_STR(n, v, s, l) \
+    (char **)(((s) = ALLOCV((v), ARGV_SIZE(n) + (l)) + ARGV_SIZE(n)) - ARGV_SIZE(n))
 
 static int
 proc_exec_v(char **argv, const char *prog)
 {
     char fbuf[MAXPATHLEN];
+#if defined(__EMX__) || defined(OS2)
+    char **new_argv = NULL;
+#endif
 
     if (!prog)
 	prog = argv[0];
@@ -1052,16 +1059,15 @@ proc_exec_v(char **argv, const char *prog)
 	char *extension;
 
 	if ((extension = strrchr(prog, '.')) != NULL && STRCASECMP(extension, ".bat") == 0) {
-	    char **new_argv;
 	    char *p;
 	    int n;
 
 	    for (n = 0; argv[n]; n++)
 		/* no-op */;
-	    new_argv = ALLOCA_N(char*, n + 2);
+	    new_argv = ALLOC_N(char*, n + 2);
 	    for (; n > 0; n--)
 		new_argv[n + 1] = argv[n];
-	    new_argv[1] = strcpy(ALLOCA_N(char, strlen(argv[0]) + 1), argv[0]);
+	    new_argv[1] = strcpy(ALLOC_N(char, strlen(argv[0]) + 1), argv[0]);
 	    for (p = new_argv[1]; *p != '\0'; p++)
 		if (*p == '/')
 		    *p = '\\';
@@ -1078,6 +1084,12 @@ proc_exec_v(char **argv, const char *prog)
     before_exec();
     execv(prog, argv);
     preserving_errno(try_with_sh(prog, argv); after_exec());
+#if defined(__EMX__) || defined(OS2)
+    if (new_argv) {
+	xfree(new_argv[0]);
+	xfree(new_argv);
+    }
+#endif
     return -1;
 }
 
@@ -1086,15 +1098,18 @@ rb_proc_exec_n(int argc, VALUE *argv, const char *prog)
 {
     char **args;
     int i;
+    int ret = -1;
+    VALUE v;
 
-    args = ALLOCA_ARGV(argc+1);
+    args = ALLOC_ARGV(argc+1, v);
     for (i=0; i<argc; i++) {
 	args[i] = RSTRING_PTR(argv[i]);
     }
     args[i] = 0;
     if (args[0]) {
-	return proc_exec_v(args, prog);
+	ret = proc_exec_v(args, prog);
     }
+    ALLOCV_END(v);
     return -1;
 }
 
@@ -1105,6 +1120,8 @@ rb_proc_exec(const char *str)
     const char *s = str;
     char *ss, *t;
     char **argv, **a;
+    VALUE v;
+    int ret = -1;
 #endif
 
     while (*str && ISSPACE(*str))
@@ -1114,6 +1131,7 @@ rb_proc_exec(const char *str)
     before_exec();
     rb_w32_spawn(P_OVERLAY, (char *)str, 0);
     after_exec();
+    return -1;
 #else
     for (s=str; *s; s++) {
 	if (ISSPACE(*s)) {
@@ -1145,8 +1163,7 @@ rb_proc_exec(const char *str)
 	    return -1;
 	}
     }
-    a = argv = ALLOCA_ARGV((s-str)/2+2);
-    ss = ALLOCA_N(char, s-str+1);
+    a = argv = ALLOC_ARGV_WITH_STR((s-str)/2+2, v, ss, s-str+1);
     memcpy(ss, str, s-str);
     ss[s-str] = '\0';
     if ((*a++ = strtok(ss, " \t")) != 0) {
@@ -1156,11 +1173,14 @@ rb_proc_exec(const char *str)
 	*a = NULL;
     }
     if (argv[0]) {
-	return proc_exec_v(argv, 0);
+	ret = proc_exec_v(argv, 0);
     }
-    errno = ENOENT;
+    else {
+	errno = ENOENT;
+    }
+    ALLOCV_END(v);
+    return ret;
 #endif	/* _WIN32 */
-    return -1;
 }
 
 #if defined(_WIN32)
@@ -1202,15 +1222,18 @@ proc_spawn_n(int argc, VALUE *argv, VALUE prog)
 {
     char **args;
     int i;
+    VALUE v;
+    rb_pid_t pid = -1;
 
-    args = ALLOCA_ARGV(argc + 1);
+    args = ALLOC_ARGV(argc + 1, v);
     for (i = 0; i < argc; i++) {
 	args[i] = RSTRING_PTR(argv[i]);
     }
     args[i] = (char*) 0;
     if (args[0])
-	return proc_spawn_v(args, prog ? RSTRING_PTR(prog) : 0);
-    return -1;
+	pid = proc_spawn_v(args, prog ? RSTRING_PTR(prog) : 0);
+    ALLOCV_END(v);
+    return pid;
 }
 
 #if defined(_WIN32)
@@ -1223,6 +1246,7 @@ proc_spawn(char *str)
     char *s, *t;
     char **argv, **a;
     rb_pid_t status;
+    VALUE v;
 
     for (s = str; *s; s++) {
 	if (*s != ' ' && !ISALPHA(*s) && strchr("*?{}[]<>()~&|\\$;'`\"\n",*s)) {
@@ -1234,15 +1258,16 @@ proc_spawn(char *str)
 	    return status;
 	}
     }
-    a = argv = ALLOCA_ARGV((s - str) / 2 + 2);
-    s = ALLOCA_N(char, s - str + 1);
+    a = argv = ALLOC_ARGV_WITH_STR((s - str) / 2 + 2, v, s, s - str + 1);
     strcpy(s, str);
     if (*a++ = strtok(s, " \t")) {
 	while (t = strtok(NULL, " \t"))
 	    *a++ = t;
 	*a = NULL;
     }
-    return argv[0] ? proc_spawn_v(argv, 0) : -1;
+    status = argv[0] ? proc_spawn_v(argv, 0) : -1;
+    ALLOCV_END(v);
+    return status;
 }
 #endif
 #endif

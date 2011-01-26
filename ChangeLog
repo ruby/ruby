@@ -1,3 +1,9 @@
+Thu Jan 27 08:41:40 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (proc_exec_v, rb_proc_exec_n, rb_proc_exec)
+	  (proc_spawn_n, proc_spawn): get rid of too huge alloca().
+	  [ruby-core:34827], [ruby-core:34833]
+
 Thu Jan 27 08:32:17 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (ALLOCV): new API for exception-safe
