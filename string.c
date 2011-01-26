@@ -2600,7 +2600,7 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
  *  against <i>str</i>,and returns the position the match starts, or
  *  <code>nil</code> if there is no match. Otherwise, invokes
  *  <i>obj.=~</i>, passing <i>str</i> as an argument. The default
- *  <code>=~</code> in <code>Object</code> returns <code>false</code>.
+ *  <code>=~</code> in <code>Object</code> returns <code>nil</code>.
  *
  *     "cat o' 9 tails" =~ /\d/   #=> 7
  *     "cat o' 9 tails" =~ 9      #=> nil

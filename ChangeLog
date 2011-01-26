@@ -1,3 +1,8 @@
+Wed Jan 26 10:36:28 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (=~): documentation fix; the return value is nil when
+	  it doesn't match. patched by Andrei Kulakov [ruby-core:34562]
+
 Tue Jan 25 08:41:58 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dln_find.c (dln_find_1): omit too long pathnames.
