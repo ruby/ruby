@@ -1028,6 +1028,18 @@ NUM2CHR(VALUE x)
 
 #define ALLOCA_N(type,n) (type*)alloca(sizeof(type)*(n))
 
+void *rb_alloc_tmp_buffer(volatile VALUE *store, long len);
+void rb_free_tmp_buffer(volatile VALUE *store);
+/* allocates _n_ bytes temporary buffer and stores VALUE including it
+ * in _v_.  _n_ may be evaluated twice. */
+#ifdef C_ALLOCA
+# define ALLOCV(v, n) rb_alloc_tmp_buffer(&(v), (n))
+#else
+# define ALLOCV(v, n) ((n) < 1024 ? (RB_GC_GUARD(v) = 0, alloca(n)) : rb_alloc_tmp_buffer(&(v), (n)))
+#endif
+#define ALLOCV_N(type, v, n) (type*)ALLOCV((v), sizeof(type)*(n))
+#define ALLOCV_END(v) rb_free_tmp_buffer(&(v))
+
 #define MEMZERO(p,type,n) memset((p), 0, sizeof(type)*(n))
 #define MEMCPY(p1,p2,type,n) memcpy((p1), (p2), sizeof(type)*(n))
 #define MEMMOVE(p1,p2,type,n) memmove((p1), (p2), sizeof(type)*(n))

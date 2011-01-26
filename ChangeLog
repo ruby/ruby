@@ -1,3 +1,11 @@
+Thu Jan 27 08:32:17 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (ALLOCV): new API for exception-safe
+	  temporary buffer.  [ruby-core:34844]
+
+	* string.c (rb_alloc_tmp_buffer, rb_free_tmp_buffer):
+	  implementation of the API.
+
 Thu Jan 27 08:22:49 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dln_find.c (dln_find_1): use rb_warning and return immediately
