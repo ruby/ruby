@@ -835,15 +835,18 @@ w32_io_info(VALUE *file, BY_HANDLE_FILE_INFORMATION *st)
 	VALUE tmp;
 	WCHAR *ptr;
 	int len;
+	VALUE v;
+
 	FilePathValue(*file);
 	tmp = rb_str_encode_ospath(*file);
 	len = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(tmp), -1, NULL, 0);
-	ptr = ALLOCA_N(WCHAR, len);
+	ptr = ALLOCV_N(WCHAR, v, len);
 	MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(tmp), -1, ptr, len);
 	f = CreateFileW(ptr, 0,
 			FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
 			rb_w32_iswin95() ? 0 : FILE_FLAG_BACKUP_SEMANTICS,
 			NULL);
+	ALLOCV_END(v);
 	if (f == INVALID_HANDLE_VALUE) return f;
 	ret = f;
     }
