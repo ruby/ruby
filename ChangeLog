@@ -1,3 +1,8 @@
+Thu Jan 27 21:43:29 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* object.c (rb_str_to_dbl): rewrite again. use ALLOCV instead
+	  rb_str_tmp_new().
+
 Thu Jan 27 21:41:47 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* win32/win32.c: get rid of STRNDUPA(). It's dangerous API.
