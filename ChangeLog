@@ -1,3 +1,8 @@
+Fri Jan 28 02:35:41 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* hash.c (rb_hash_fetch_m): add GC guard to prevent intermediate
+	  variable from GC.
+
 Fri Jan 28 01:33:51 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_process.rb (TestProcess#test_too_long_path)
