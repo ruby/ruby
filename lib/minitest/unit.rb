@@ -497,8 +497,15 @@ module MiniTest
     def self.autorun
       at_exit {
         next if $! # don't run if there was an exception
+
+        # the order here is important. The at_exit handler must be
+        # installed before anyone else gets a chance to install their
+        # own, that way we can be assured that our exit will be last
+        # to run (at_exit stacks).
+        exit_code = nil
+
+        at_exit { exit false if exit_code && exit_code != 0 }
         exit_code = MiniTest::Unit.new.run(ARGV)
-        exit false if exit_code && exit_code != 0
       } unless @@installed_at_exit
       @@installed_at_exit = true
     end
