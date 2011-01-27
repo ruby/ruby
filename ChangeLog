@@ -1,3 +1,8 @@
+Thu Jan 27 21:31:57 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* win32/win32.c (rb_w32_aspawn): get rid of too huge alloca().
+	  [Bug #4330] [ruby-core:34898]
+
 Thu Jan 27 20:30:18 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* win32/win32.c (rb_w32_spawn): get rid of too huge alloca().

@@ -1241,7 +1241,7 @@ rb_w32_aspawn(int mode, const char *prog, char *const *argv)
 	if (len < sizeof(fbuf))
 	    strlcpy(cmd = fbuf, prog, sizeof(fbuf));
 	else
-	    STRNDUPA(cmd, prog, len);
+	    STRNDUPV(cmd, v, prog, len);
 	translate_char(cmd, '/', '\\');
 	prog = cmd;
     }
