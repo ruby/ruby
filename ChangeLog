@@ -1,3 +1,7 @@
+Thu Jan 27 21:58:32 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* bignum.c (rb_str_to_inum): get rid of too huge alloca().
+
 Thu Jan 27 21:43:29 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* object.c (rb_str_to_dbl): rewrite again. use ALLOCV instead

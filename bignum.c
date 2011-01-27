@@ -734,6 +734,8 @@ rb_str_to_inum(VALUE str, int base, int badcheck)
 {
     char *s;
     long len;
+    VALUE v = 0;
+    VALUE ret;
 
     StringValue(str);
     if (badcheck) {
@@ -745,14 +747,17 @@ rb_str_to_inum(VALUE str, int base, int badcheck)
     if (s) {
 	len = RSTRING_LEN(str);
 	if (s[len]) {		/* no sentinel somehow */
-	    char *p = ALLOCA_N(char, len+1);
+	    char *p = ALLOCV(v, len+1);
 
 	    MEMCPY(p, s, char, len);
 	    p[len] = '\0';
 	    s = p;
 	}
     }
-    return rb_cstr_to_inum(s, base, badcheck);
+    ret = rb_cstr_to_inum(s, base, badcheck);
+    if (v)
+	ALLOCV_END(v);
+    return ret;
 }
 
 #if HAVE_LONG_LONG
