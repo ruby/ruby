@@ -1,3 +1,9 @@
+Fri Jan 28 01:27:42 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_process.rb (TestProcess#test_too_long_path2):
+	  Factored out from test_too_long_path. A test should only do
+	  one test.
+
 Thu Jan 27 23:29:36 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* st.c (st_foreach): check if unpacked.
