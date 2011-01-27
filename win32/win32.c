@@ -966,9 +966,6 @@ join_argv(char *cmd, char *const *argv, BOOL escape)
 # define MAXPATHLEN 512
 #endif
 
-#define STRNDUPA(ptr, src, len) \
-    (((char *)memcpy(((ptr) = ALLOCA_N(char, (len) + 1)), (src), (len)))[len] = 0)
-
 #define STRNDUPV(ptr, v, src, len)					\
     (((char *)memcpy(((ptr) = ALLOCV((v), (len) + 1)), (src), (len)))[len] = 0)
 
