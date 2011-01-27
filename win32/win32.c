@@ -1654,12 +1654,13 @@ open_dir_handle(const WCHAR *filename, WIN32_FIND_DATAW *fd)
     WCHAR *scanname;
     WCHAR *p;
     int len;
+    VALUE v;
 
     //
     // Create the search pattern
     //
     len = lstrlenW(filename);
-    scanname = ALLOCA_N(WCHAR, len + sizeof(wildcard) / sizeof(WCHAR));
+    scanname = ALLOCV_N(WCHAR, v, len + sizeof(wildcard) / sizeof(WCHAR));
     lstrcpyW(scanname, filename);
     p = CharPrevW(scanname, scanname + len);
     if (*p == L'/' || *p == L'\\' || *p == L':')
@@ -1671,6 +1672,7 @@ open_dir_handle(const WCHAR *filename, WIN32_FIND_DATAW *fd)
     // do the FindFirstFile call
     //
     fh = FindFirstFileW(scanname, fd);
+    ALLOCV_END(v);
     if (fh == INVALID_HANDLE_VALUE) {
 	errno = map_errno(GetLastError());
     }
@@ -1799,7 +1801,6 @@ rb_w32_opendir(const char *filename)
 	errno = ENOTDIR;
 	return NULL;
     }
-
     fh = open_dir_handle(wpath, &fd);
     free(wpath);
     return opendir_internal(fh, &fd);
