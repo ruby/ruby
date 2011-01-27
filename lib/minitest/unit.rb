@@ -91,15 +91,14 @@ module MiniTest
     # Fails unless the block returns a true value.
 
     def assert_block msg = nil
-      msg = message(msg) { "Expected block to return true value" }
-      assert yield, msg
+      assert yield, "Expected block to return true value."
     end
 
     ##
     # Fails unless +obj+ is empty.
 
     def assert_empty obj, msg = nil
-      msg = message(msg) { "Expected #{obj.inspect} to be empty" }
+      msg = message(msg) { "Expected #{mu_pp(obj)} to be empty" }
       assert_respond_to obj, :empty?
       assert obj.empty?, msg
     end
