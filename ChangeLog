@@ -1,3 +1,7 @@
+Thu Jan 27 23:29:36 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* st.c (st_foreach): check if unpacked.
+
 Thu Jan 27 23:14:19 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-mode-map): remove deprecated binding.

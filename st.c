@@ -745,6 +745,7 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
             key = (st_data_t)table->bins[i*2];
             val = (st_data_t)table->bins[i*2+1];
             retval = (*func)(key, val, arg);
+	    if (!table->entries_packed) goto unpacked;
             switch (retval) {
 	      case ST_CHECK:	/* check if hash is modified during iteration */
                 for (j = 0; j < table->num_entries; j++) {
@@ -770,9 +771,17 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
             }
         }
         return 0;
+      unpacked:
+	ptr = table->head;
+	while (i-- > 0) {
+	    if (!(ptr = ptr->fore)) return 0;
+	}
+    }
+    else {
+	ptr = table->head;
     }
 
-    if ((ptr = table->head) != 0) {
+    if (ptr != 0) {
 	do {
 	    i = ptr->hash % table->num_bins;
 	    retval = (*func)(ptr->key, ptr->record, arg);
