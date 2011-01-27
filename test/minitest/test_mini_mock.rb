@@ -75,6 +75,12 @@ class TestMiniMock < MiniTest::Unit::TestCase
     util_verify_bad
   end
 
+  def test_no_method_error_on_unexpected_methods
+    assert_raises NoMethodError do
+      @mock.bar
+    end
+  end
+
   def util_verify_bad
     assert_raises MockExpectationError do
       @mock.verify
