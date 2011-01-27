@@ -1,3 +1,8 @@
+Thu Jan 27 23:14:19 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-mode-map): remove deprecated binding.
+	  use M-; instead.
+
 Thu Jan 27 21:58:32 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* bignum.c (rb_str_to_inum): get rid of too huge alloca().
