@@ -1,3 +1,8 @@
+Thu Jan 27 15:11:52 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_spawn, rb_w32_aspawn): get rid of too huge
+	  alloca(). this is the real fix of [ruby-core:34833].
+
 Thu Jan 27 12:46:25 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (ALLOC_ARGV_WITH_STR): fix void pointer arithmetic.

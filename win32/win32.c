@@ -1113,6 +1113,7 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
     const char *shell = NULL;
     WCHAR *wcmd, *wshell;
     rb_pid_t ret;
+    VALUE tmp = Qnil;
 
     if (check_spawn_mode(mode)) return -1;
 
@@ -1130,18 +1131,19 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
 	int nt;
 	while (ISSPACE(*cmd)) cmd++;
 	if ((shell = getenv("RUBYSHELL")) && (redir = has_redirection(cmd))) {
-	    char *tmp = ALLOCA_N(char, strlen(shell) + strlen(cmd) + sizeof(" -c ") + 2);
-	    sprintf(tmp, "%s -c \"%s\"", shell, cmd);
-	    cmd = tmp;
+	    ALLOCV(tmp, strlen(shell) + strlen(cmd) + sizeof(" -c ") + 2);
+	    sprintf(RSTRING_PTR(tmp), "%s -c \"%s\"", shell, cmd);
+	    cmd = RSTRING_PTR(tmp);
 	}
 	else if ((shell = getenv("COMSPEC")) &&
 		 (nt = !is_command_com(shell),
 		  (redir < 0 ? has_redirection(cmd) : redir) ||
 		  is_internal_cmd(cmd, nt))) {
-	    char *tmp = ALLOCA_N(char, strlen(shell) + strlen(cmd) + sizeof(" /c ")
-				 + (nt ? 2 : 0));
-	    sprintf(tmp, nt ? "%s /c \"%s\"" : "%s /c %s", shell, cmd);
-	    cmd = tmp;
+	    ALLOCV(tmp,
+		   strlen(shell) + strlen(cmd) + sizeof(" /c ") + (nt ? 2 : 0));
+	    sprintf(RSTRING_PTR(tmp),
+		    nt ? "%s /c \"%s\"" : "%s /c %s", shell, cmd);
+	    cmd = RSTRING_PTR(tmp);
 	}
 	else {
 	    int len = 0, quote = (*cmd == '"') ? '"' : (*cmd == '\'') ? '\'' : 0;
@@ -1182,7 +1184,8 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
 		if (p) translate_char(p, '/', '\\');
 		if (is_batch(shell)) {
 		    int alen = strlen(prog);
-		    cmd = p = ALLOCA_N(char, len + alen + (quote ? 2 : 0) + 1);
+		    ALLOCV(tmp, len + alen + (quote ? 2 : 0) + 1);
+		    cmd = p = RSTRING_PTR(tmp);
 		    if (quote) *p++ = '"';
 		    memcpy(p, shell, len);
 		    p += len;
@@ -1196,6 +1199,7 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
 
     /* assume ACP */
     wcmd = cmd ? acp_to_wstr(cmd, NULL) : NULL;
+    if (!NIL_P(tmp)) ALLOCV_END(tmp);
     wshell = shell ? acp_to_wstr(shell, NULL) : NULL;
 
     ret = child_result(CreateChild(wcmd, wshell, NULL, NULL, NULL, NULL), mode);
@@ -1214,6 +1218,7 @@ rb_w32_aspawn(int mode, const char *prog, char *const *argv)
     char *cmd, fbuf[MAXPATHLEN];
     WCHAR *wcmd, *wprog;
     rb_pid_t ret;
+    VALUE tmp = Qnil;
 
     if (check_spawn_mode(mode)) return -1;
 
@@ -1246,7 +1251,8 @@ rb_w32_aspawn(int mode, const char *prog, char *const *argv)
 	if (c_switch) len += 3;
 	else ++argv;
 	if (argv[0]) len += join_argv(NULL, argv, ntcmd);
-	cmd = ALLOCA_N(char, len);
+	ALLOCV(tmp, len);
+	cmd = RSTRING_PTR(tmp);
 	join_argv(cmd, progs, ntcmd);
 	if (c_switch) strlcat(cmd, " /c", len);
 	if (argv[0]) join_argv(cmd + strlcat(cmd, " ", len), argv, ntcmd);
@@ -1254,12 +1260,14 @@ rb_w32_aspawn(int mode, const char *prog, char *const *argv)
     }
     else {
 	len = join_argv(NULL, argv, FALSE);
-	cmd = ALLOCA_N(char, len);
+	ALLOCV(tmp, len);
+	cmd = RSTRING_PTR(tmp);
 	join_argv(cmd, argv, FALSE);
     }
 
     /* assume ACP */
     wcmd = cmd ? acp_to_wstr(cmd, NULL) : NULL;
+    if (!NIL_P(tmp)) ALLOCV_END(tmp);
     wprog = prog ? acp_to_wstr(prog, NULL) : NULL;
 
     ret = child_result(CreateChild(wcmd, wprog, NULL, NULL, NULL, NULL), mode);
