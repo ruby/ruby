@@ -4181,13 +4181,14 @@ wstati64(const WCHAR *path, struct stati64 *st)
     WCHAR *buf1, *s, *end;
     int len, size;
     int ret;
+    VALUE v;
 
     if (!path || !st) {
 	errno = EFAULT;
 	return -1;
     }
     size = lstrlenW(path) + 2;
-    buf1 = ALLOCA_N(WCHAR, size);
+    buf1 = ALLOCV_N(WCHAR, v, size);
     for (p = path, s = buf1; *p; p++, s++) {
 	if (*p == L'/')
 	    *s = L'\\';
@@ -4215,6 +4216,9 @@ wstati64(const WCHAR *path, struct stati64 *st)
     if (ret == 0) {
 	st->st_mode &= ~(S_IWGRP | S_IWOTH);
     }
+    if (v)
+	ALLOCV_END(v);
+
     return ret;
 }
 
