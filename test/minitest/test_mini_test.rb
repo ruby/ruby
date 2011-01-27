@@ -609,6 +609,26 @@ class TestMiniTestTestCase < MiniTest::Unit::TestCase
     end
   end
 
+  ##
+  # *sigh* This is quite an odd scenario, but it is from real (albeit
+  # ugly) test code in ruby-core:
+  #
+  # http://svn.ruby-lang.org/cgi-bin/viewvc.cgi?view=rev&revision=29259
+
+  def test_assert_raises_skip
+    @assertion_count = 0
+
+    util_assert_triggered "skipped", MiniTest::Skip do
+      @tc.assert_raises ArgumentError do
+        begin
+          raise "blah"
+        rescue
+          skip "skipped"
+        end
+      end
+    end
+  end
+
   def test_assert_raises_module
     @tc.assert_raises M do
       raise E

@@ -204,6 +204,14 @@ module MiniTest
       begin
         yield
         should_raise = true
+      rescue MiniTest::Skip => e
+        details = "#{msg}#{mu_pp(exp)} exception expected, not"
+
+        if exp.include? MiniTest::Skip then
+          return e
+        else
+          raise e
+        end
       rescue Exception => e
         details = "#{msg}#{mu_pp(exp)} exception expected, not"
         assert(exp.any? { |ex|
@@ -243,6 +251,7 @@ module MiniTest
     # +send_ary+ is a receiver, message and arguments.
     #
     # Fails unless the call returns a true value
+    # TODO: I should prolly remove this from specs
 
     def assert_send send_ary, m = nil
       recv, msg, *args = send_ary
