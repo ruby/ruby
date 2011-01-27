@@ -1,3 +1,7 @@
+Thu Jan 27 20:30:18 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* win32/win32.c (rb_w32_spawn): get rid of too huge alloca().
+
 Thu Jan 27 18:49:53 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* win32/win32.c (open_dir_handle): get rid of too huge alloca().

@@ -969,6 +969,9 @@ join_argv(char *cmd, char *const *argv, BOOL escape)
 #define STRNDUPA(ptr, src, len) \
     (((char *)memcpy(((ptr) = ALLOCA_N(char, (len) + 1)), (src), (len)))[len] = 0)
 
+#define STRNDUPV(ptr, v, src, len)					\
+    (((char *)memcpy(((ptr) = ALLOCV((v), (len) + 1)), (src), (len)))[len] = 0)
+
 static int
 check_spawn_mode(int mode)
 {
@@ -1114,6 +1117,7 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
     WCHAR *wcmd, *wshell;
     rb_pid_t ret;
     VALUE v = 0;
+    VALUE v2 = 0;
 
     if (check_spawn_mode(mode)) return -1;
 
@@ -1153,14 +1157,14 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
 		}
 		if ((unsigned char)*prog == quote) {
 		    len = prog++ - cmd - 1;
-		    STRNDUPA(p, cmd + 1, len);
+		    STRNDUPV(p, v2, cmd + 1, len);
 		    shell = p;
 		    break;
 		}
 		if (quote) continue;
 		if (ISSPACE(*prog) || strchr("<>|*?\"", *prog)) {
 		    len = prog - cmd;
-		    STRNDUPA(p, cmd, len);
+		    STRNDUPV(p, v2, cmd, len);
 		    shell = p;
 		    break;
 		}
@@ -1176,7 +1180,7 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
 		    p = fbuf;
 		}
 		else if (shell != p && strchr(shell, '/')) {
-		    STRNDUPA(p, shell, len);
+		    STRNDUPV(p, v2, shell, len);
 		    shell = p;
 		}
 		if (p) translate_char(p, '/', '\\');
@@ -1198,6 +1202,7 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
     wcmd = cmd ? acp_to_wstr(cmd, NULL) : NULL;
     if (v) ALLOCV_END(v);
     wshell = shell ? acp_to_wstr(shell, NULL) : NULL;
+    if (v2) ALLOCV_END(v2);
 
     ret = child_result(CreateChild(wcmd, wshell, NULL, NULL, NULL, NULL), mode);
     free(wshell);
