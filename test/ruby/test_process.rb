@@ -1234,11 +1234,11 @@ class TestProcess < Test::Unit::TestCase
 
   def test_too_long_path
     bug4314 = '[ruby-core:34842]'
-    assert_raise(Errno::ENOENT, bug4314) {Process.spawn("a" * 100_000_000)}
+    assert_raise(Errno::ENOENT, bug4314) {Process.spawn("a" * 10_000_000)}
   end
 
   def test_too_long_path2
     bug4315 = '[ruby-core:34833]'
-    assert_raise(Errno::ENOENT, bug4315) {Process.spawn('"a"|'*100_000_000)}
+    assert_raise(Errno::ENOENT, bug4315) {Process.spawn('"a"|'*10_000_000)}
   end
 end

@@ -1,3 +1,9 @@
+Fri Jan 28 01:33:51 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_process.rb (TestProcess#test_too_long_path)
+	  TestProcess#test_too_long_path): Reduced string size from 100MB
+	  to 10MB. 100MB may cause no memory error. It isn't intended.
+
 Fri Jan 28 01:27:42 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_process.rb (TestProcess#test_too_long_path2):
