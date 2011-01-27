@@ -1035,7 +1035,7 @@ exec_with_sh(const char *prog, char **argv)
 #define ARGV_SIZE(n) (sizeof(char*) * ARGV_COUNT(n))
 #define ALLOC_ARGV(n, v) ALLOCV_N(char*, (v), ARGV_COUNT(n))
 #define ALLOC_ARGV_WITH_STR(n, v, s, l) \
-    (char **)(((s) = ALLOCV((v), ARGV_SIZE(n) + (l)) + ARGV_SIZE(n)) - ARGV_SIZE(n))
+    (char **)(((s) = ALLOCV_N(char, (v), ARGV_SIZE(n) + (l)) + ARGV_SIZE(n)) - ARGV_SIZE(n))
 
 static int
 proc_exec_v(char **argv, const char *prog)

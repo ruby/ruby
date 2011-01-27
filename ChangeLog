@@ -1,3 +1,7 @@
+Thu Jan 27 12:46:25 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (ALLOC_ARGV_WITH_STR): fix void pointer arithmetic.
+
 Thu Jan 27 08:41:40 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (proc_exec_v, rb_proc_exec_n, rb_proc_exec)
