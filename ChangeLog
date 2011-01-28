@@ -1,3 +1,8 @@
+Sat Jan 29 00:30:44 2011  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* variable.c (set_const_visibility): fix typo.  a patch from Tomoyuki
+	  Chikanaga in [ruby-core:32919].
+
 Fri Jan 28 23:20:28 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/gdbm/test_gdbm.rb (TestGDBM#test_s_open_no_create,

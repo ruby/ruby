@@ -1895,7 +1895,7 @@ set_const_visibility(VALUE mod, int argc, VALUE *argv, rb_const_flag_t flag)
 
     if (rb_safe_level() >= 4 && !OBJ_UNTRUSTED(mod)) {
 	rb_raise(rb_eSecurityError,
-		 "Insecure: can't change method visibility");
+		 "Insecure: can't change constant visibility");
     }
 
     for (i = 0; i < argc; i++) {
