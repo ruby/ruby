@@ -927,7 +927,7 @@ nometh_err_args(VALUE self)
 void
 rb_invalid_str(const char *str, const char *type)
 {
-    VALUE s = rb_str_inspect(rb_str_new2(str));
+    volatile VALUE s = rb_str_inspect(rb_str_new2(str));
 
     rb_raise(rb_eArgError, "invalid value for %s: %s", type, RSTRING_PTR(s));
 }

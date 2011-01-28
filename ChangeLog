@@ -1,3 +1,8 @@
+Mon Jan 24 21:04:45 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_invalid_str): prevent intermediate variable from GC.
+	  [ruby-core:34820]
+
 Sat Jan 22 11:21:40 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/parser.c (parse): fixing off-by-one error on line numbers

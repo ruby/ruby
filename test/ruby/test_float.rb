@@ -442,6 +442,18 @@ class TestFloat < Test::Unit::TestCase
     assert(Float(o).nan?)
   end
 
+  def test_invalid_str
+    bug4310 = '[ruby-core:34820]'
+    assert_raise(ArgumentError, bug4310) {
+      stress, GC.stress = GC.stress, true
+      begin
+        Float('a'*10000)
+      ensure
+        GC.stress = stress
+      end
+    }
+  end
+
   def test_num2dbl
     assert_raise(TypeError) do
       1.0.step(2.0, "0.5") {}
