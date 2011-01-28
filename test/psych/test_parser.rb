@@ -46,6 +46,21 @@ module Psych
       end
     end
 
+    # ruby-core:34690
+    def test_exception_line
+      e = assert_raises(Psych::SyntaxError) do
+        @parser.parse(<<-eoyaml)
+# based on "SGML/XML character entity reference" at http://www.bitjungle.com/isoent/
+#
+---
+#DOUBLE LOW-9 QUOTATION MARK
+#requires fontenc:T1
+ldquor: ,,
+        eoyaml
+      end
+      assert_match 'line 6', e.message
+    end
+
     def test_mapping_end
       @parser.parse("---\n!!map { key: value }")
       assert_called :end_mapping

@@ -75,7 +75,7 @@ static VALUE parse(VALUE self, VALUE yaml)
 
     while(!done) {
 	if(!yaml_parser_parse(&parser, &event)) {
-	    size_t line   = parser.mark.line;
+	    size_t line   = parser.mark.line + 1;
 	    size_t column = parser.mark.column;
 
 	    yaml_parser_delete(&parser);
