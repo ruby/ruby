@@ -1,3 +1,10 @@
+Tue Jan 18 02:46:55 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/json_tree.rb (visit_String): JSON
+	  strings should be dumped with double quotes. [ruby-core:34186]
+
+	* test/psych/test_json_tree.rb: test for double quotes
+
 Sun Jan 16 22:06:30 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* too/rbinstall.rb (install?(:ext, :comm, :gem)): no longer 
