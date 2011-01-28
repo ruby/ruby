@@ -1,3 +1,8 @@
+Fri Jan 28 11:23:54 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (rb_io_open): Use NUM2MODET() instead NUM2UINT().
+	* io.c (rb_scan_open_args): ditto.
+
 Fri Jan 28 10:58:20 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: Added mode_t type checking.

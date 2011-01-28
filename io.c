@@ -5420,7 +5420,7 @@ rb_scan_open_args(int argc, VALUE *argv,
 
     rb_io_extract_modeenc(&vmode, &vperm, opt, &oflags, &fmode, convconfig_p);
 
-    perm = NIL_P(vperm) ? 0666 :  NUM2UINT(vperm);
+    perm = NIL_P(vperm) ? 0666 :  NUM2MODET(vperm);
 
     *fname_p = fname;
     *oflags_p = oflags;
@@ -5696,7 +5696,7 @@ rb_io_open(VALUE filename, VALUE vmode, VALUE vperm, VALUE opt)
     mode_t perm;
 
     rb_io_extract_modeenc(&vmode, &vperm, opt, &oflags, &fmode, &convconfig);
-    perm = NIL_P(vperm) ? 0666 :  NUM2UINT(vperm);
+    perm = NIL_P(vperm) ? 0666 :  NUM2MODET(vperm);
 
     if (!NIL_P(cmd = check_pipe_command(filename))) {
 	return pipe_open_s(cmd, rb_io_oflags_modestr(oflags), fmode, &convconfig);
