@@ -29,10 +29,10 @@ class TestRequire < Test::Unit::TestCase
     INPUT
 
     begin
-      assert_in_out_err(["-S", "foo/" * 2500 + "foo"], "") do |r, e|
+      assert_in_out_err(["-S", "-w", "foo/" * 2500 + "foo"], "") do |r, e|
         assert_equal([], r)
         assert_operator(2, :<=, e.size)
-        assert_equal("openpath: pathname too long (ignored)", e.first)
+        assert_match(/warning: openpath: pathname too long \(ignored\)/, e.first)
         assert_match(/\(LoadError\)/, e.last)
       end
     rescue Errno::EINVAL

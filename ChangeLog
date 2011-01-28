@@ -1,3 +1,9 @@
+Fri Jan 28 16:30:51 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_require.rb (TestRequire#test_require_too_long_filename):
+	  Added -w option because too long path error don't output a message
+	  by default since r30660. [Bug #4336] [ruby-dev:43134]
+
 Fri Jan 28 16:19:38 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_require.rb (TestRequire#test_require_path_home_{1,2}):
