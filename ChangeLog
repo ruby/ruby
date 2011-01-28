@@ -1,3 +1,7 @@
+Fri Jan 28 21:49:30 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/zlib/zlib.c: parenthesize macro arguments.
+
 Fri Jan 28 17:47:33 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/gdbm/test_gdbm.rb (TestGDBM2#test_writer_open_notexist):

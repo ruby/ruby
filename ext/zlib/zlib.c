@@ -1787,7 +1787,7 @@ struct gzfile {
 #define GZFILE_FLAG_FOOTER_FINISHED  (ZSTREAM_FLAG_UNUSED << 2)
 
 #define GZFILE_IS_FINISHED(gz) \
-    (ZSTREAM_IS_FINISHED(&gz->z) && (gz)->z.buf_filled == 0)
+    (ZSTREAM_IS_FINISHED(&(gz)->z) && (gz)->z.buf_filled == 0)
 
 #define GZFILE_READ_SIZE  2048
 
