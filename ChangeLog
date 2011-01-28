@@ -1,3 +1,9 @@
+Fri Jan 28 11:47:00 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_process.rb (TestProcess#test_too_long_path{,2}):
+	  should handle Errno::E2BIG, because this test checks crash of ruby,
+	  not the error type system.
+
 Fri Jan 28 11:23:54 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (rb_io_open): Use NUM2MODET() instead NUM2UINT().
