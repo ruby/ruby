@@ -1,3 +1,8 @@
+Fri Jan 28 12:05:48 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: Add #include<sys/stat.h> when struct stat is
+	  tested. Otherwise, incomplete type dereference error will occur.
+
 Fri Jan 28 11:53:19 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: redundant variable names made strange conftest
