@@ -1,3 +1,8 @@
+Fri Jan 28 13:04:38 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in (--with-valgrind): Fixed r29683. Now this option
+	  is really default on.
+
 Fri Jan 28 12:05:48 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: Add #include<sys/stat.h> when struct stat is

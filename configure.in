@@ -1836,9 +1836,9 @@ AS_CASE(["$target_os"],
 AC_CHECK_FUNCS(backtrace)
 
 AC_ARG_WITH(valgrind,
-        AS_HELP_STRING([--with-valgrind],[enable valgrind memcheck support]),
-        ruby_cv_with_valgrind=yes,ruby_cv_with_valgrind=no)
-AS_IF([test x$ruby_cv_with_valgrind != xno],
+        AS_HELP_STRING([--without-valgrind],[disable valgrind memcheck support]),
+        [], with_valgrind=yes)
+AS_IF([test x$with_valgrind != xno],
         [AC_CHECK_HEADERS(valgrind/memcheck.h)])
 
 dnl }
