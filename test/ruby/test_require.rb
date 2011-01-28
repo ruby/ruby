@@ -46,7 +46,7 @@ class TestRequire < Test::Unit::TestCase
     assert_match(/\u{221e}\z/, e.message, bug3758)
   end
 
-  def test_require_path_home
+  def test_require_path_home_1
     env_rubypath, env_home = ENV["RUBYPATH"], ENV["HOME"]
     pathname_too_long = /pathname too long \(ignored\).*\(LoadError\)/m
 
@@ -54,9 +54,27 @@ class TestRequire < Test::Unit::TestCase
     ENV["HOME"] = "/foo" * 2500
     assert_in_out_err(%w(-S test_ruby_test_require), "", [], pathname_too_long)
 
+  ensure
+    env_rubypath ? ENV["RUBYPATH"] = env_rubypath : ENV.delete("RUBYPATH")
+    env_home ? ENV["HOME"] = env_home : ENV.delete("HOME")
+  end
+
+  def test_require_path_home_2
+    env_rubypath, env_home = ENV["RUBYPATH"], ENV["HOME"]
+    pathname_too_long = /pathname too long \(ignored\).*\(LoadError\)/m
+
     ENV["RUBYPATH"] = "~" + "/foo" * 2500
     ENV["HOME"] = "/foo"
     assert_in_out_err(%w(-S test_ruby_test_require), "", [], pathname_too_long)
+
+  ensure
+    env_rubypath ? ENV["RUBYPATH"] = env_rubypath : ENV.delete("RUBYPATH")
+    env_home ? ENV["HOME"] = env_home : ENV.delete("HOME")
+  end
+
+  def test_require_path_home_3
+    env_rubypath, env_home = ENV["RUBYPATH"], ENV["HOME"]
+    pathname_too_long = /pathname too long \(ignored\).*\(LoadError\)/m
 
     t = Tempfile.new(["test_ruby_test_require", ".rb"])
     t.puts "p :ok"

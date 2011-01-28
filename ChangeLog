@@ -1,3 +1,8 @@
+Fri Jan 28 16:04:54 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_require.rb (TestRequire#test_require_path_home_{1,2,3}):
+	  split from test_require_path_home.
+
 Fri Jan 28 13:04:38 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in (--with-valgrind): Fixed r29683. Now this option
