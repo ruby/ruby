@@ -1151,7 +1151,7 @@ AC_STRUCT_ST_BLOCKS
 AC_STRUCT_ST_RDEV
 RUBY_CHECK_SIZEOF([struct stat.st_size], [int long "long long"], [], [@%:@include <sys/stat.h>])
 if test "$ac_cv_member_struct_stat_st_blocks" = yes; then
-    RUBY_CHECK_SIZEOF([struct stat.st_blocks], [int long "long long"])
+    RUBY_CHECK_SIZEOF([struct stat.st_blocks], [int long "long long"], [], [@%:@include <sys/stat.h>])
 fi
 AC_CHECK_MEMBERS([struct stat.st_atim])
 AC_CHECK_MEMBERS([struct stat.st_atimespec])
