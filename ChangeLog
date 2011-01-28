@@ -1,3 +1,9 @@
+Fri Jan 28 23:20:28 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/gdbm/test_gdbm.rb (TestGDBM#test_s_open_no_create,
+	TestGDBM2#test_writer_open_notexist): We only need to skip libgdbm 1.8.0,
+	not all 1.8.x. 1.8.1 or later don't have GDBM_WRITER sickness.
+
 Fri Jan 28 21:56:57 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/dbm/extconf.rb: Added new header places for Fedora13.
