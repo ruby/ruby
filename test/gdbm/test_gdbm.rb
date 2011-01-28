@@ -667,9 +667,18 @@ if defined? GDBM
     end
 
     def test_writer_open_notexist
-      assert_raise(Errno::ENOENT) {
-        GDBM.open("#{@tmproot}/a", 0666, GDBM::WRITER)
-      }
+      if /1\.8\./ =~ GDBM::VERSION
+        # 1.8.x are using O_RDWR|O_CREAT.
+        assert_nothing_raised {
+          GDBM.open("#{@tmproot}/a", 0666, GDBM::WRITER)
+        }
+      else
+        # 1.7.x are using O_RDWR.
+        assert_raise(Errno::ENOENT) {
+          GDBM.open("#{@tmproot}/a", 0666, GDBM::WRITER)
+        }
+      end
+
     end
 
     def test_wrcreat_open_notexist

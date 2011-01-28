@@ -1,3 +1,9 @@
+Fri Jan 28 17:47:33 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/gdbm/test_gdbm.rb (TestGDBM2#test_writer_open_notexist):
+	  gdbm 1.8.x changed GDBM::WRITER behavior. Thus our testcase need
+	  to be changed too.
+
 Fri Jan 28 17:33:28 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/gdbm/test_gdbm.rb (TestGDBM#test_s_open_no_create): skip
