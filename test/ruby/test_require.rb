@@ -74,7 +74,6 @@ class TestRequire < Test::Unit::TestCase
 
   def test_require_path_home_3
     env_rubypath, env_home = ENV["RUBYPATH"], ENV["HOME"]
-    pathname_too_long = /pathname too long \(ignored\).*\(LoadError\)/m
 
     t = Tempfile.new(["test_ruby_test_require", ".rb"])
     t.puts "p :ok"
