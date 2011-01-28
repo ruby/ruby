@@ -1,3 +1,15 @@
+Sat Jan 29 01:24:57 2011  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* compile.c (NODE_CLASS, NODE_MODULE), insns.def (defineclass): raise
+	  an exception when "class Foo::Bar" is evaluated and Foo::Bar is
+	  private.  To implement this, define_type of "defineclass" is added
+	  so that the instruction can distinguish whether the class definition
+	  is scoped (class Foo::Bar) or not (class Bar).
+
+	* test/ruby/test_class.rb (test_redefine_private_class),
+	  test/ruby/test_module.rb
+	  (test_define_module_under_private_constant): add tests for above.
+
 Sat Jan 29 01:19:17 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* constant.h, variable.c: to ensure compatibility, rb_const_get_* must

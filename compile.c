@@ -4680,10 +4680,10 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		node->nd_body,
 		rb_sprintf("<class:%s>", rb_id2name(node->nd_cpath->nd_mid)),
 		ISEQ_TYPE_CLASS, nd_line(node));
-	compile_cpath(ret, iseq, node->nd_cpath);
+	VALUE noscope = compile_cpath(ret, iseq, node->nd_cpath);
 	COMPILE(ret, "super", node->nd_super);
 	ADD_INSN3(ret, nd_line(node), defineclass,
-		  ID2SYM(node->nd_cpath->nd_mid), iseqval, INT2FIX(0));
+		  ID2SYM(node->nd_cpath->nd_mid), iseqval, INT2FIX(noscope ? 3 : 0));
 
 	if (poped) {
 	    ADD_INSN(ret, nd_line(node), pop);
@@ -4696,10 +4696,10 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    rb_sprintf("<module:%s>", rb_id2name(node->nd_cpath->nd_mid)),
 	    ISEQ_TYPE_CLASS, nd_line(node));
 
-	compile_cpath(ret, iseq, node->nd_cpath);
+	VALUE noscope = compile_cpath(ret, iseq, node->nd_cpath);
 	ADD_INSN (ret, nd_line(node), putnil); /* dummy */
 	ADD_INSN3(ret, nd_line(node), defineclass,
-		  ID2SYM(node->nd_cpath->nd_mid), iseqval, INT2FIX(2));
+		  ID2SYM(node->nd_cpath->nd_mid), iseqval, INT2FIX(noscope ? 5 : 2));
 	if (poped) {
 	    ADD_INSN(ret, nd_line(node), pop);
 	}
