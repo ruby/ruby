@@ -1876,6 +1876,7 @@ void
 rb_const_set(VALUE klass, ID id, VALUE val)
 {
     rb_const_entry_t *ce;
+    VALUE visibility = CONST_PUBLIC;
 
     if (NIL_P(klass)) {
 	rb_raise(rb_eTypeError, "no class/module to define constant %s",
@@ -1890,17 +1891,20 @@ rb_const_set(VALUE klass, ID id, VALUE val)
 	st_data_t value;
 
 	if (st_lookup(RCLASS_CONST_TBL(klass), (st_data_t)id, &value)) {
-	    if (((rb_const_entry_t*)value)->value == Qundef)
+	    rb_const_entry_t *ce = (rb_const_entry_t*)value;
+	    if (ce->value == Qundef)
 		autoload_delete(klass, id);
-	    else
+	    else {
+		visibility = ce->flag;
 		rb_warn("already initialized constant %s", rb_id2name(id));
+	    }
 	}
     }
 
     rb_vm_change_state();
 
     ce = ALLOC(rb_const_entry_t);
-    ce->flag = CONST_PUBLIC;
+    ce->flag = visibility;
     ce->value = val;
 
     st_insert(RCLASS_CONST_TBL(klass), (st_data_t)id, (st_data_t)ce);

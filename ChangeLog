@@ -1,3 +1,10 @@
+Sat Jan 29 01:36:41 2011  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* variable.c (rb_const_set): const_set shoud preserve constant
+	  visibility.  see [ruby-core:32912].
+
+	* test/ruby/test_module.rb: add a test for above.
+
 Sat Jan 29 01:24:57 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* compile.c (NODE_CLASS, NODE_MODULE), insns.def (defineclass): raise

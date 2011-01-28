@@ -948,6 +948,10 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NameError) { c::FOO }
     assert_equal("foo", c.class_eval("FOO"))
     assert_equal("foo", c.const_get("FOO"))
+    $VERBOSE, verbose = nil, $VERBOSE
+    c.const_set(:FOO, "foo")
+    $VERBOSE = verbose
+    assert_raise(NameError) { c::FOO }
   end
 
   class PrivateClass
