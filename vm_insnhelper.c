@@ -1199,19 +1199,19 @@ vm_get_ev_const(rb_thread_t *th, const rb_iseq_t *iseq,
 	}
 
 	if (is_defined) {
-	    return rb_const_defined(klass, id);
+	    return rb_public_const_defined(klass, id);
 	}
 	else {
-	    return rb_const_get(klass, id);
+	    return rb_public_const_get(klass, id);
 	}
     }
     else {
 	vm_check_if_namespace(orig_klass);
 	if (is_defined) {
-	    return rb_const_defined_from(orig_klass, id);
+	    return rb_public_const_defined_from(orig_klass, id);
 	}
 	else {
-	    return rb_const_get_from(orig_klass, id);
+	    return rb_public_const_get_from(orig_klass, id);
 	}
     }
 }

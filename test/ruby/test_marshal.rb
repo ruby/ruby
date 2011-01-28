@@ -454,5 +454,19 @@ class TestMarshal < Test::Unit::TestCase
     o2 = Marshal.load(m)
     assert_equal(o1, o2)
   end
+
+  class PrivateClass
+    def initialize(foo)
+      @foo = foo
+    end
+    attr_reader :foo
+  end
+  private_constant :PrivateClass
   
+  def test_marshal_private_class
+    o1 = PrivateClass.new("test")
+    o2 = Marshal.load(Marshal.dump(o1))
+    assert_equal(o1.class, o2.class)
+    assert_equal(o1.foo, o2.foo)
+  end
 end

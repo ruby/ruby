@@ -1575,7 +1575,7 @@ rb_autoload_p(VALUE mod, ID id)
 }
 
 static VALUE
-rb_const_get_0(VALUE klass, ID id, int exclude, int recurse)
+rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 {
     VALUE value, tmp;
     int mod_retry = 0;
@@ -1587,7 +1587,7 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse)
 	st_data_t data;
 	while (RCLASS_CONST_TBL(tmp) && st_lookup(RCLASS_CONST_TBL(tmp), (st_data_t)id, &data)) {
 	    rb_const_entry_t *ce = (rb_const_entry_t *)data;
-	    if (ce->flag == CONST_PRIVATE) {
+	    if (visibility && ce->flag == CONST_PRIVATE) {
 		rb_name_error(id, "private constant %s::%s referenced", rb_class2name(klass), rb_id2name(id));
 	    }
 	    value = ce->value;
@@ -1620,19 +1620,37 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse)
 VALUE
 rb_const_get_from(VALUE klass, ID id)
 {
-    return rb_const_get_0(klass, id, TRUE, TRUE);
+    return rb_const_get_0(klass, id, TRUE, TRUE, FALSE);
 }
 
 VALUE
 rb_const_get(VALUE klass, ID id)
 {
-    return rb_const_get_0(klass, id, FALSE, TRUE);
+    return rb_const_get_0(klass, id, FALSE, TRUE, FALSE);
 }
 
 VALUE
 rb_const_get_at(VALUE klass, ID id)
 {
-    return rb_const_get_0(klass, id, TRUE, FALSE);
+    return rb_const_get_0(klass, id, TRUE, FALSE, FALSE);
+}
+
+VALUE
+rb_public_const_get_from(VALUE klass, ID id)
+{
+    return rb_const_get_0(klass, id, TRUE, TRUE, TRUE);
+}
+
+VALUE
+rb_public_const_get(VALUE klass, ID id)
+{
+    return rb_const_get_0(klass, id, FALSE, TRUE, TRUE);
+}
+
+VALUE
+rb_public_const_get_at(VALUE klass, ID id)
+{
+    return rb_const_get_0(klass, id, TRUE, FALSE, TRUE);
 }
 
 /*
@@ -1781,7 +1799,7 @@ rb_mod_constants(int argc, VALUE *argv, VALUE mod)
 }
 
 static int
-rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse)
+rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 {
     st_data_t value;
     VALUE tmp;
@@ -1791,7 +1809,11 @@ rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse)
   retry:
     while (tmp) {
 	if (RCLASS_CONST_TBL(tmp) && st_lookup(RCLASS_CONST_TBL(tmp), (st_data_t)id, &value)) {
-	    if (((rb_const_entry_t*)value)->value == Qundef && !autoload_node((VALUE)klass, id, 0))
+	    rb_const_entry_t *ce = (rb_const_entry_t *)value;
+	    if (visibility && ce->flag == CONST_PRIVATE) {
+		return (int)Qfalse;
+	    }
+	    if (ce->value == Qundef && !autoload_node((VALUE)klass, id, 0))
 		return (int)Qfalse;
 	    return (int)Qtrue;
 	}
@@ -1809,19 +1831,37 @@ rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse)
 int
 rb_const_defined_from(VALUE klass, ID id)
 {
-    return rb_const_defined_0(klass, id, TRUE, TRUE);
+    return rb_const_defined_0(klass, id, TRUE, TRUE, FALSE);
 }
 
 int
 rb_const_defined(VALUE klass, ID id)
 {
-    return rb_const_defined_0(klass, id, FALSE, TRUE);
+    return rb_const_defined_0(klass, id, FALSE, TRUE, FALSE);
 }
 
 int
 rb_const_defined_at(VALUE klass, ID id)
 {
-    return rb_const_defined_0(klass, id, TRUE, FALSE);
+    return rb_const_defined_0(klass, id, TRUE, FALSE, FALSE);
+}
+
+int
+rb_public_const_defined_from(VALUE klass, ID id)
+{
+    return rb_const_defined_0(klass, id, TRUE, TRUE, TRUE);
+}
+
+int
+rb_public_const_defined(VALUE klass, ID id)
+{
+    return rb_const_defined_0(klass, id, FALSE, TRUE, TRUE);
+}
+
+int
+rb_public_const_defined_at(VALUE klass, ID id)
+{
+    return rb_const_defined_0(klass, id, TRUE, FALSE, TRUE);
 }
 
 void

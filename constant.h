@@ -24,5 +24,11 @@ typedef struct rb_const_entry_struct {
 VALUE rb_mod_private_constant(int argc, VALUE *argv, VALUE obj);
 VALUE rb_mod_public_constant(int argc, VALUE *argv, VALUE obj);
 void rb_free_const_table(st_table *tbl);
+VALUE rb_public_const_get(VALUE klass, ID id);
+VALUE rb_public_const_get_at(VALUE klass, ID id);
+VALUE rb_public_const_get_from(VALUE klass, ID id);
+int rb_public_const_defined(VALUE klass, ID id);
+int rb_public_const_defined_at(VALUE klass, ID id);
+int rb_public_const_defined_from(VALUE klass, ID id);
 
 #endif /* CONSTANT_H */
