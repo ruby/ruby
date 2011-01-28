@@ -52,7 +52,7 @@ class TestRequire < Test::Unit::TestCase
 
     ENV["RUBYPATH"] = "~"
     ENV["HOME"] = "/foo" * 2500
-    assert_in_out_err(%w(-S test_ruby_test_require), "", [], pathname_too_long)
+    assert_in_out_err(%w(-S -w test_ruby_test_require), "", [], pathname_too_long)
 
   ensure
     env_rubypath ? ENV["RUBYPATH"] = env_rubypath : ENV.delete("RUBYPATH")
@@ -65,7 +65,7 @@ class TestRequire < Test::Unit::TestCase
 
     ENV["RUBYPATH"] = "~" + "/foo" * 2500
     ENV["HOME"] = "/foo"
-    assert_in_out_err(%w(-S test_ruby_test_require), "", [], pathname_too_long)
+    assert_in_out_err(%w(-S -w test_ruby_test_require), "", [], pathname_too_long)
 
   ensure
     env_rubypath ? ENV["RUBYPATH"] = env_rubypath : ENV.delete("RUBYPATH")
