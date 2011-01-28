@@ -1,3 +1,8 @@
+Wed Jan 19 13:04:16 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* proc.c (proc_call): Add gc guard to avoid segfault. The fix
+	  is created by Tomoyuki Chikanaga. [Bug #4238][ruby-dev:42963]
+
 Tue Jan 18 23:31:01 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* parse.y: avoid NULL reference.  [ruby-dev:43067]
