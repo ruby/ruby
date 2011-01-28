@@ -1,3 +1,8 @@
+Fri Jan 28 11:53:19 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: redundant variable names made strange conftest
+	  error. Fixed it.
+
 Fri Jan 28 11:47:00 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_process.rb (TestProcess#test_too_long_path{,2}):
