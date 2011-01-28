@@ -1516,7 +1516,7 @@ rb_exec_arg_addopt(struct rb_exec_arg *e, VALUE key, VALUE val)
                                   hide_obj(rb_str_dup(val)));
         }
         else if (id == rb_intern("umask")) {
-            mode_t cmask = NUM2LONG(val);
+	    mode_t cmask = NUM2MODET(val);
             if (!NIL_P(rb_ary_entry(options, EXEC_OPTION_UMASK))) {
                 rb_raise(rb_eArgError, "umask option specified twice");
             }
@@ -2335,7 +2335,7 @@ rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char
 
     obj = rb_ary_entry(options, EXEC_OPTION_UMASK);
     if (!NIL_P(obj)) {
-        mode_t mask = NUM2LONG(obj);
+        mode_t mask = NUM2MODET(obj);
         mode_t oldmask = umask(mask); /* never fail */
         if (!NIL_P(soptions))
             rb_ary_store(soptions, EXEC_OPTION_UMASK, LONG2NUM(oldmask));

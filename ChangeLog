@@ -1,3 +1,11 @@
+Fri Jan 28 10:58:20 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: Added mode_t type checking.
+	* process.c (rb_exec_arg_addopt): Use NUM2MODET() instead
+	  NUM2LONG because clang makes compile error by this narrowing
+	  conversion.
+	* process.c (rb_run_exec_options_err): ditto.
+
 Fri Jan 28 02:37:18 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* re.c (rb_reg_raise): add GC guard to prevent intermediate
