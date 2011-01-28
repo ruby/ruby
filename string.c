@@ -1712,7 +1712,8 @@ rb_str_resize(VALUE str, long len)
 	else if (len <= RSTRING_EMBED_LEN_MAX) {
 	    char *ptr = RSTRING(str)->as.heap.ptr;
 	    STR_SET_EMBED(str);
-	    if (slen > 0) MEMCPY(RSTRING(str)->as.ary, ptr, char, len);
+	    if (slen > len) slen = len;
+	    if (slen > 0) MEMCPY(RSTRING(str)->as.ary, ptr, char, slen);
 	    RSTRING(str)->as.ary[len] = '\0';
 	    STR_SET_EMBED_LEN(str, len);
 	    xfree(ptr);

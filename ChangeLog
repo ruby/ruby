@@ -1,3 +1,7 @@
+Tue Jan 25 08:28:19 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_resize): get rid of out-of-bound access.
+
 Tue Jan 25 07:00:52 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_string_value_cstr): rb_str_modify can change
