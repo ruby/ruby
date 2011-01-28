@@ -1,3 +1,11 @@
+Sat Jan 29 02:02:37 2011  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* variable.c (rb_mod_const_of, sv_i): Module#constant should exclude
+	  private constants.  see [ruby-core:32912].
+
+	* test/ruby/test_module.rb (test_constants_with_private_constant): add
+	  a test for above.
+
 Sat Jan 29 01:36:41 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* variable.c (rb_const_set): const_set shoud preserve constant

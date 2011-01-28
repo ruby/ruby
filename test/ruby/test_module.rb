@@ -981,4 +981,8 @@ class TestModule < Test::Unit::TestCase
     c.public_constant(:FOO)
     assert_equal("foo", c::FOO)
   end
+
+  def test_constants_with_private_constant
+    assert(!(::TestModule).constants.include?(:PrivateClass))
+  end
 end

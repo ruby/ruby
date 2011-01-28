@@ -1709,7 +1709,7 @@ sv_i(ID key, rb_const_entry_t *ce, st_table *tbl)
 {
     if (rb_is_const_id(key)) {
 	if (!st_lookup(tbl, (st_data_t)key, 0)) {
-	    st_insert(tbl, (st_data_t)key, (st_data_t)key);
+	    st_insert(tbl, (st_data_t)key, (st_data_t)ce);
 	}
     }
     return ST_CONTINUE;
@@ -1742,9 +1742,11 @@ rb_mod_const_of(VALUE mod, void *data)
 }
 
 static int
-list_i(ID key, ID value, VALUE ary)
+list_i(st_data_t key, st_data_t value, VALUE ary)
 {
-    rb_ary_push(ary, ID2SYM(key));
+    ID sym = (ID)key;
+    rb_const_entry_t *ce = (rb_const_entry_t *)value;
+    if (ce->flag != CONST_PRIVATE) rb_ary_push(ary, ID2SYM(sym));
     return ST_CONTINUE;
 }
 
