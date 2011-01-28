@@ -4,11 +4,11 @@
 # File a patch instead and assign it to Ryan Davis or Eric Hodel.
 ######################################################################
 
-require "test/rubygems/gemutilities"
+require 'rubygems/test_case'
 require 'rubygems/source_index'
 require 'rubygems/config_file'
 
-class TestGemSourceIndex < RubyGemTestCase
+class TestGemSourceIndex < Gem::TestCase
 
   def setup
     super

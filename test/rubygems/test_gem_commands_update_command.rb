@@ -4,10 +4,10 @@
 # File a patch instead and assign it to Ryan Davis or Eric Hodel.
 ######################################################################
 
-require "test/rubygems/gemutilities"
+require 'rubygems/test_case'
 require 'rubygems/commands/update_command'
 
-class TestGemCommandsUpdateCommand < RubyGemTestCase
+class TestGemCommandsUpdateCommand < Gem::TestCase
 
   def setup
     super

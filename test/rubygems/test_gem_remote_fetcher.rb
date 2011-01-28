@@ -4,7 +4,7 @@
 # File a patch instead and assign it to Ryan Davis or Eric Hodel.
 ######################################################################
 
-require "test/rubygems/gemutilities"
+require 'rubygems/test_case'
 require 'ostruct'
 require 'webrick'
 require 'rubygems/remote_fetcher'
@@ -24,7 +24,7 @@ require 'rubygems/format'
 # software doesn't really care, as long as we hit the proxy URL when a
 # proxy is configured.
 
-class TestGemRemoteFetcher < RubyGemTestCase
+class TestGemRemoteFetcher < Gem::TestCase
 
   include Gem::DefaultUserInteraction
 
@@ -617,7 +617,7 @@ gems:
     assert_equal '', response.body
   end
 
-  def test_request_unmodifed
+  def test_request_unmodified
     uri = URI.parse "#{@gem_repo}/specs.#{Gem.marshal_version}"
     conn = util_stub_connection_for :body => '', :code => 304
 

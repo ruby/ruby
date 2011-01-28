@@ -63,7 +63,7 @@ class Gem::Indexer
     require 'tmpdir'
     require 'zlib'
 
-    unless ''.respond_to? :to_xs then
+    unless defined?(Builder::XChar) then
       raise "Gem::Indexer requires that the XML Builder library be installed:" \
            "\n\tgem install builder"
     end
@@ -555,10 +555,18 @@ class Gem::Indexer
   # Sanitize a single string.
 
   def sanitize_string(string)
+    return string unless string
+
     # HACK the #to_s is in here because RSpec has an Array of Arrays of
-    # Strings for authors.  Need a way to disallow bad values on gempsec
+    # Strings for authors.  Need a way to disallow bad values on gemspec
     # generation.  (Probably won't happen.)
-    string ? string.to_s.to_xs : string
+    string = string.to_s
+
+    begin
+      Builder::XChar.encode string
+    rescue NameError, NoMethodError
+      string.to_xs
+    end
   end
 
   ##

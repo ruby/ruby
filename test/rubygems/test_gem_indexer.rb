@@ -4,14 +4,14 @@
 # File a patch instead and assign it to Ryan Davis or Eric Hodel.
 ######################################################################
 
-require "test/rubygems/gemutilities"
+require 'rubygems/test_case'
 require 'rubygems/indexer'
 
-unless ''.respond_to? :to_xs then
+unless defined?(Builder::XChar) then
   warn "Gem::Indexer tests are being skipped.  Install builder gem." if $VERBOSE
 end
 
-class TestGemIndexer < RubyGemTestCase
+class TestGemIndexer < Gem::TestCase
 
   def setup
     super
@@ -558,5 +558,5 @@ eighty characters.&lt;/pre&gt;
     refute File.exist?(file), "#{file} exists"
   end
 
-end if ''.respond_to? :to_xs
+end if defined?(Builder::XChar)
 

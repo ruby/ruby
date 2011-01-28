@@ -127,43 +127,42 @@ class Gem::Uninstaller
   # +gemspec+.
 
   def remove_executables(spec)
-    return if spec.nil?
+    return if spec.nil? or spec.executables.empty?
 
-    unless spec.executables.empty? then
-      bindir = @bin_dir ? @bin_dir : Gem.bindir(spec.installation_path)
+    bindir = @bin_dir ? @bin_dir : Gem.bindir(spec.installation_path)
 
-      list = @source_index.find_name(spec.name).delete_if { |s|
-        s.version == spec.version
-      }
+    list = @source_index.find_name(spec.name).delete_if { |s|
+      s.version == spec.version
+    }
 
-      executables = spec.executables.clone
+    executables = spec.executables.clone
 
-      list.each do |s|
-        s.executables.each do |exe_name|
-          executables.delete exe_name
-        end
+    list.each do |s|
+      s.executables.each do |exe_name|
+        executables.delete exe_name
       end
+    end
 
-      return if executables.empty?
+    return if executables.empty?
 
-      answer = if @force_executables.nil? then
-                 ask_yes_no("Remove executables:\n" \
-                            "\t#{spec.executables.join(", ")}\n\nin addition to the gem?",
-                            true) # " # appease ruby-mode - don't ask
-               else
-                 @force_executables
-               end
+    remove = if @force_executables.nil? then
+               ask_yes_no("Remove executables:\n" \
+                          "\t#{spec.executables.join ', '}\n\n" \
+                          "in addition to the gem?",
+                          true)
+             else
+               @force_executables
+             end
 
-      unless answer then
-        say "Executables and scripts will remain installed."
-      else
-        raise Gem::FilePermissionError, bindir unless File.writable? bindir
+    unless remove then
+      say "Executables and scripts will remain installed."
+    else
+      raise Gem::FilePermissionError, bindir unless File.writable? bindir
 
-        spec.executables.each do |exe_name|
-          say "Removing #{exe_name}"
-          FileUtils.rm_f File.join(bindir, exe_name)
-          FileUtils.rm_f File.join(bindir, "#{exe_name}.bat")
-        end
+      spec.executables.each do |exe_name|
+        say "Removing #{exe_name}"
+        FileUtils.rm_f File.join(bindir, exe_name)
+        FileUtils.rm_f File.join(bindir, "#{exe_name}.bat")
       end
     end
   end

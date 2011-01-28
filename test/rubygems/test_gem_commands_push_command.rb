@@ -4,10 +4,10 @@
 # File a patch instead and assign it to Ryan Davis or Eric Hodel.
 ######################################################################
 
-require "test/rubygems/gemutilities"
+require 'rubygems/test_case'
 require 'rubygems/commands/push_command'
 
-class TestGemCommandsPushCommand < RubyGemTestCase
+class TestGemCommandsPushCommand < Gem::TestCase
 
   def setup
     super
@@ -74,7 +74,7 @@ class TestGemCommandsPushCommand < RubyGemTestCase
     response = "You don't have permission to push to this gem"
     @fetcher.data["#{Gem.host}/api/v1/gems"] = [response, 403, 'Forbidden']
 
-    assert_raises MockGemUi::TermError do
+    assert_raises Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.send_gem(@path)
       end

@@ -4,10 +4,10 @@
 # File a patch instead and assign it to Ryan Davis or Eric Hodel.
 ######################################################################
 
-require "test/rubygems/gemutilities"
+require 'rubygems/test_case'
 require 'rubygems/commands/pristine_command'
 
-class TestGemCommandsPristineCommand < RubyGemTestCase
+class TestGemCommandsPristineCommand < Gem::TestCase
 
   def setup
     super

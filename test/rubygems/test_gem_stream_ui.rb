@@ -4,11 +4,11 @@
 # File a patch instead and assign it to Ryan Davis or Eric Hodel.
 ######################################################################
 
-require "test/rubygems/gemutilities"
+require 'rubygems/test_case'
 require 'rubygems/user_interaction'
 require 'timeout'
 
-class TestGemStreamUI < RubyGemTestCase
+class TestGemStreamUI < Gem::TestCase
 
   module IsTty
     attr_accessor :tty
@@ -197,6 +197,24 @@ class TestGemStreamUI < RubyGemTestCase
     reporter.update 510
     reporter.done
     assert_equal "Fetching: a.gem\rFetching: a.gem ( 50%)\rFetching: a.gem (100%)\n", @out.string
+  end
+
+  def test_verbose_download_reporter_progress_nil_length
+    @cfg.verbose = true
+    reporter = @sui.download_reporter
+    reporter.fetch 'a.gem', nil
+    reporter.update 1024
+    reporter.done
+    assert_equal "Fetching: a.gem\rFetching: a.gem (1024B)\rFetching: a.gem (1024B)\n", @out.string
+  end
+
+  def test_verbose_download_reporter_progress_zero_length
+    @cfg.verbose = true
+    reporter = @sui.download_reporter
+    reporter.fetch 'a.gem', 0
+    reporter.update 1024
+    reporter.done
+    assert_equal "Fetching: a.gem\rFetching: a.gem (1024B)\rFetching: a.gem (1024B)\n", @out.string
   end
 
   def test_verbose_download_reporter_no_tty

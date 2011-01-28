@@ -4,10 +4,10 @@
 # File a patch instead and assign it to Ryan Davis or Eric Hodel.
 ######################################################################
 
-require "test/rubygems/gemutilities"
+require 'rubygems/test_case'
 require 'rubygems/commands/unpack_command'
 
-class TestGemCommandsUnpackCommand < RubyGemTestCase
+class TestGemCommandsUnpackCommand < Gem::TestCase
 
   def setup
     super

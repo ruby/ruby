@@ -4,10 +4,10 @@
 # File a patch instead and assign it to Ryan Davis or Eric Hodel.
 ######################################################################
 
-require "test/rubygems/gemutilities"
+require 'rubygems/test_case'
 require 'rubygems/dependency'
 
-class TestGemDependency < RubyGemTestCase
+class TestGemDependency < Gem::TestCase
   def test_initialize
     d = dep "pkg", "> 1.0"
 
@@ -64,7 +64,7 @@ class TestGemDependency < RubyGemTestCase
   def test_equals_tilde
     d = dep "a", "0"
 
-    assert_match d,                  d,             "matche self"
+    assert_match d,                  d,             "match self"
     assert_match dep("a", ">= 0"),   d,             "match version exact"
     assert_match dep("a", ">= 0"),   dep("a", "1"), "match version"
     assert_match dep(/a/, ">= 0"),   d,             "match simple regexp"

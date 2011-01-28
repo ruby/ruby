@@ -5,7 +5,7 @@
 ######################################################################
 
 SIMPLE_GEM = <<-GEMDATA
-        MD5SUM = "b12a4d48febeb2289c539c2574c4b6f8"
+        MD5SUM = "989bf34a1cbecd52e0ea66b662b3a405"
         if $0 == __FILE__
           require 'optparse'
 
@@ -13,7 +13,7 @@ SIMPLE_GEM = <<-GEMDATA
           ARGV.options do |opts|
             opts.on_tail("--help", "show this message") {puts opts; exit}
             opts.on('--dir=DIRNAME', "Installation directory for the Gem") {|options[:directory]|}
-            opts.on('--force', "Force Gem to intall, bypassing dependency checks") {|options[:force]|}
+            opts.on('--force', "Force Gem to install, bypassing dependency checks") {|options[:force]|}
             opts.on('--gen-rdoc', "Generate RDoc documentation for the Gem") {|options[:gen_rdoc]|}
             opts.parse!
           end

@@ -4,10 +4,10 @@
 # File a patch instead and assign it to Ryan Davis or Eric Hodel.
 ######################################################################
 
-require "test/rubygems/gemutilities"
+require 'rubygems/test_case'
 require "rubygems/version"
 
-class TestGemVersion < RubyGemTestCase
+class TestGemVersion < Gem::TestCase
 
   def test_bump
     assert_bumped_version_equal "5.3", "5.2.4"

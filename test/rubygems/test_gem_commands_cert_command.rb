@@ -4,14 +4,14 @@
 # File a patch instead and assign it to Ryan Davis or Eric Hodel.
 ######################################################################
 
-require "test/rubygems/gemutilities"
+require 'rubygems/test_case'
 require 'rubygems/commands/cert_command'
 
 unless defined? OpenSSL then
   warn "`gem cert` tests are being skipped, module OpenSSL not found"
 end
 
-class TestGemCommandsCertCommand < RubyGemTestCase
+class TestGemCommandsCertCommand < Gem::TestCase
 
   def setup
     super

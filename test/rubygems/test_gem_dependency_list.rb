@@ -4,10 +4,10 @@
 # File a patch instead and assign it to Ryan Davis or Eric Hodel.
 ######################################################################
 
-require "test/rubygems/gemutilities"
+require 'rubygems/test_case'
 require 'rubygems/dependency_list'
 
-class TestGemDependencyList < RubyGemTestCase
+class TestGemDependencyList < Gem::TestCase
 
   def setup
     super
@@ -110,7 +110,7 @@ class TestGemDependencyList < RubyGemTestCase
                  'deps of trimmed specs not included'
   end
 
-  def test_dependency_order_no_dependendencies
+  def test_dependency_order_no_dependencies
     @deplist.add @a1, @c2
 
     order = @deplist.dependency_order

@@ -4,28 +4,67 @@
 # File a patch instead and assign it to Ryan Davis or Eric Hodel.
 ######################################################################
 
-require "test/rubygems/gemutilities"
+require 'rubygems/test_case'
 require 'rubygems/installer'
 
 class Gem::Installer
+
+  ##
+  # Available through requiring rubygems/installer_test_case
+
   attr_accessor :gem_dir
 
+  ##
+  # Available through requiring rubygems/installer_test_case
+
   attr_writer :format
+
+  ##
+  # Available through requiring rubygems/installer_test_case
+
   attr_writer :gem_home
+
+  ##
+  # Available through requiring rubygems/installer_test_case
+
   attr_writer :env_shebang
+
+  ##
+  # Available through requiring rubygems/installer_test_case
+
   attr_writer :ignore_dependencies
+
+  ##
+  # Available through requiring rubygems/installer_test_case
+
   attr_writer :format_executable
+
+  ##
+  # Available through requiring rubygems/installer_test_case
+
   attr_writer :security_policy
+
+  ##
+  # Available through requiring rubygems/installer_test_case
+
   attr_writer :spec
+
+  ##
+  # Available through requiring rubygems/installer_test_case
+
   attr_writer :wrappers
 end
 
-class GemInstallerTestCase < RubyGemTestCase
+##
+# A test case for Gem::Installer.
+
+class Gem::InstallerTestCase < Gem::TestCase
 
   def setup
     super
 
     @spec = quick_gem 'a'
+
     @gem = File.join @tempdir, @spec.file_name
 
     @installer = util_installer @spec, @gem, @gemhome

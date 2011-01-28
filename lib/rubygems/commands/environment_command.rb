@@ -19,7 +19,7 @@ class Gem::Commands::EnvironmentCommand < Gem::Command
           gempath         display path used to search for gems
           version         display the gem format version
           remotesources   display the remote gem servers
-          platform        display the supporte gem platforms
+          platform        display the supported gem platforms
           <omitted>       display everything
     EOF
     return args.gsub(/^\s+/, '')
@@ -48,7 +48,7 @@ Example:
   install: --no-wrappers
   update: --no-wrappers
 
-RubyGems' default local repository can be overriden with the GEM_PATH and
+RubyGems' default local repository can be overridden with the GEM_PATH and
 GEM_HOME environment variables.  GEM_HOME sets the default repository to
 install into.  GEM_PATH allows multiple local repositories to be searched for
 gems.
@@ -126,7 +126,7 @@ lib/rubygems/defaults/operating_system.rb
       end
 
     else
-      raise Gem::CommandLineError, "Unknown enviroment option [#{arg}]"
+      raise Gem::CommandLineError, "Unknown environment option [#{arg}]"
     end
     say out
     true

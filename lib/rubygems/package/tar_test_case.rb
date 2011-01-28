@@ -4,10 +4,13 @@
 # File a patch instead and assign it to Ryan Davis or Eric Hodel.
 ######################################################################
 
-require "test/rubygems/gemutilities"
+require 'rubygems/test_case'
 require 'rubygems/package'
 
-class TarTestCase < RubyGemTestCase
+##
+# A test case for Gem::Package::Tar* classes
+
+class Gem::Package::TarTestCase < Gem::TestCase
 
   def ASCIIZ(str, length)
     str + "\0" * (length - str.length)

@@ -4,10 +4,10 @@
 # File a patch instead and assign it to Ryan Davis or Eric Hodel.
 ######################################################################
 
-require "test/rubygems/gemutilities"
+require 'rubygems/test_case'
 require 'rubygems/builder'
 
-class TestGemBuilder < RubyGemTestCase
+class TestGemBuilder < Gem::TestCase
 
   def test_build
     builder = Gem::Builder.new quick_gem('a')

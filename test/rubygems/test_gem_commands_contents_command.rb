@@ -4,10 +4,10 @@
 # File a patch instead and assign it to Ryan Davis or Eric Hodel.
 ######################################################################
 
-require "test/rubygems/gemutilities"
+require 'rubygems/test_case'
 require 'rubygems/commands/contents_command'
 
-class TestGemCommandsContentsCommand < RubyGemTestCase
+class TestGemCommandsContentsCommand < Gem::TestCase
 
   def setup
     super
@@ -54,7 +54,7 @@ class TestGemCommandsContentsCommand < RubyGemTestCase
   def test_execute_bad_gem
     @cmd.options[:args] = %w[foo]
 
-    assert_raises MockGemUi::TermError do
+    assert_raises Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end

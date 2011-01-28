@@ -20,5 +20,5 @@ module Gem::RequirePathsBuilder
       file.puts spec.bindir if spec.bindir
     end
   end
-end if QUICKLOADER_SUCKAGE
+end if Gem::QUICKLOADER_SUCKAGE
 

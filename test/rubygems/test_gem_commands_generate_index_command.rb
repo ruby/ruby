@@ -4,11 +4,11 @@
 # File a patch instead and assign it to Ryan Davis or Eric Hodel.
 ######################################################################
 
-require "test/rubygems/gemutilities"
+require 'rubygems/test_case'
 require 'rubygems/indexer'
 require 'rubygems/commands/generate_index_command'
 
-class TestGemCommandsGenerateIndexCommand < RubyGemTestCase
+class TestGemCommandsGenerateIndexCommand < Gem::TestCase
 
   def setup
     super
@@ -35,7 +35,7 @@ class TestGemCommandsGenerateIndexCommand < RubyGemTestCase
     @cmd.options[:rss_gems_host] = 'gems.example.com'
 
     use_ui @ui do
-      assert_raises MockGemUi::TermError do
+      assert_raises Gem::MockGemUi::TermError do
         @cmd.execute
       end
     end

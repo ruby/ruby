@@ -4,10 +4,10 @@
 # File a patch instead and assign it to Ryan Davis or Eric Hodel.
 ######################################################################
 
-require "test/rubygems/gem_package_tar_test_case"
+require 'rubygems/package/tar_test_case'
 require 'rubygems/package/tar_writer'
 
-class TestTarWriter < TarTestCase
+class TestTarWriter < Gem::Package::TarTestCase
 
   def setup
     super

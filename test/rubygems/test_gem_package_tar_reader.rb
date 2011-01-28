@@ -4,10 +4,10 @@
 # File a patch instead and assign it to Ryan Davis or Eric Hodel.
 ######################################################################
 
-require "test/rubygems/gem_package_tar_test_case"
+require 'rubygems/package/tar_test_case'
 require 'rubygems/package'
 
-class TestGemPackageTarReader < TarTestCase
+class TestGemPackageTarReader < Gem::Package::TarTestCase
 
   def test_each_entry
     tar = tar_dir_header "foo", "bar", 0

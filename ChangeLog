@@ -1,3 +1,8 @@
+Sat Jan 29 08:43:23 2011  Ryan Davis  <ryand-ruby@zenspider.com>
+
+	* lib/rubygems*: Import rubygems 1.5.0 (release candidate @ 09893d9)
+	* test/rubygems: Ditto
+
 Sat Jan 29 02:02:37 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* variable.c (rb_mod_const_of, sv_i): Module#constant should exclude
@@ -32,7 +37,7 @@ Sat Jan 29 01:19:17 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 	  rb_public_const_get_* and rb_public_const_defined_* are introduced,
 	  which raise an exception when the referring constant is private.
 	  see [ruby-core:32912].
-    
+
 	* vm_insnhelper.c (vm_get_ev_const): use rb_public_const_get_* instead
 	  of rb_const_get_* to follow the constant visibility when user code
 	  refers a constant.

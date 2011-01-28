@@ -7,7 +7,11 @@
 require 'stringio'
 require 'rubygems/user_interaction'
 
-class MockGemUi < Gem::StreamUI
+##
+# This Gem::StreamUI subclass records input and output to StringIO for
+# retrieval during tests.
+
+class Gem::MockGemUi < Gem::StreamUI
   class TermError < RuntimeError; end
 
   module TTY

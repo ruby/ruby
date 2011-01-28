@@ -1,3 +1,9 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 # -*- ruby -*-
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
@@ -5,15 +11,20 @@
 # See LICENSE.txt for permissions.
 #++
 
-# TODO: remove when 1.9.1 no longer supported
-QUICKLOADER_SUCKAGE = RUBY_VERSION >= "1.9.1" and RUBY_VERSION < "1.9.2"
-# TODO: remove when 1.9.2 no longer supported
-GEM_PRELUDE_SUCKAGE = RUBY_VERSION >= "1.9.2" and RUBY_VERSION < "1.9.3"
+module Gem
+  QUICKLOADER_SUCKAGE = RUBY_VERSION =~ /^1\.9\.1/
+  GEM_PRELUDE_SUCKAGE = RUBY_VERSION =~ /^1\.9\.2/
+end
 
-gem_preluded = GEM_PRELUDE_SUCKAGE and defined? Gem
+if Gem::GEM_PRELUDE_SUCKAGE and defined?(Gem::QuickLoader) then
+  Gem::QuickLoader.remove
 
-if GEM_PRELUDE_SUCKAGE and defined?(Gem::QuickLoader) then
-  Gem::QuickLoader.load_full_rubygems_library
+  $LOADED_FEATURES.delete Gem::QuickLoader.path_to_full_rubygems_library
+
+  if $LOADED_FEATURES.any? do |path| path.end_with? '/rubygems.rb' end then
+    # TODO path does not exist here
+    raise LoadError, "another rubygems is already loaded from #{path}"
+  end
 
   class << Gem
     remove_method :try_activate if Gem.respond_to?(:try_activate, true)
@@ -1165,7 +1176,7 @@ end
 
 module Kernel
 
-  remove_method :gem if respond_to? :gem # defined in gem_prelude.rb on 1.9
+  remove_method :gem if 'method' == defined? gem # from gem_prelude.rb on 1.9
 
   ##
   # Use Kernel#gem to activate a specific version of +gem_name+.
@@ -1217,6 +1228,7 @@ end
 
 require 'rubygems/exceptions'
 
+gem_preluded = Gem::GEM_PRELUDE_SUCKAGE and defined? Gem
 unless gem_preluded then # TODO: remove guard after 1.9.2 dropped
   begin
     ##
@@ -1240,7 +1252,7 @@ end
 ##
 # Enables the require hook for RubyGems.
 
-require 'rubygems/custom_require'
+require 'rubygems/custom_require' unless Gem::GEM_PRELUDE_SUCKAGE
 
 Gem.clear_paths
 

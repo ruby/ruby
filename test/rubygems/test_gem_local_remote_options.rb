@@ -4,11 +4,11 @@
 # File a patch instead and assign it to Ryan Davis or Eric Hodel.
 ######################################################################
 
-require "test/rubygems/gemutilities"
+require 'rubygems/test_case'
 require 'rubygems/local_remote_options'
 require 'rubygems/command'
 
-class TestGemLocalRemoteOptions < RubyGemTestCase
+class TestGemLocalRemoteOptions < Gem::TestCase
 
   def setup
     super

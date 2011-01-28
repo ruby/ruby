@@ -56,7 +56,7 @@ class Gem::Dependency
     @type        = type
     @prerelease  = false
 
-    # This is for Marshal backwards compatability. See the comments in
+    # This is for Marshal backwards compatibility. See the comments in
     # +requirement+ for the dirty details.
 
     @version_requirements = @requirement

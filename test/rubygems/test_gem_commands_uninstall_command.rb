@@ -4,20 +4,16 @@
 # File a patch instead and assign it to Ryan Davis or Eric Hodel.
 ######################################################################
 
-require "test/rubygems/gemutilities"
-require "test/rubygems/gem_installer_test_case"
+require 'rubygems/installer_test_case'
 require 'rubygems/commands/uninstall_command'
 
-class TestGemCommandsUninstallCommand < GemInstallerTestCase
+class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
 
   def setup
     super
 
-    ui = MockGemUi.new
-    util_setup_gem ui
-
     build_rake_in do
-      use_ui ui do
+      use_ui @ui do
         @installer.install
       end
     end
@@ -28,15 +24,25 @@ class TestGemCommandsUninstallCommand < GemInstallerTestCase
   end
 
   def test_execute_removes_executable
+    ui = Gem::MockGemUi.new
+    util_setup_gem ui
+
+    build_rake_in do
+      use_ui ui do
+        @installer.install
+      end
+    end
+
     if win_platform?
-      assert_equal true, File.exist?(@executable)
+      assert File.exist?(@executable)
     else
-      assert_equal true, File.symlink?(@executable)
+      assert File.symlink?(@executable)
     end
 
     # Evil hack to prevent false removal success
     FileUtils.rm_f @executable
-    File.open(@executable, "wb+") {|f| f.puts "binary"}
+
+    open(@executable, "wb+") {|f| f.puts "binary"}
 
     @cmd.options[:args] = Array(@spec.name)
     use_ui @ui do

@@ -25,8 +25,16 @@ class Gem::Ext::RakeBuilder < Gem::Ext::Builder
     # Deal with possible spaces in the path, e.g. C:/Program Files
     dest_path = '"' + dest_path + '"' if dest_path.include?(' ')
 
-    cmd = ENV['rake'] || "\"#{Gem.ruby}\" -rubygems #{Gem.bin_path('rake')}" rescue Gem.default_exec_format % 'rake'
-    cmd += " RUBYARCHDIR=#{dest_path} RUBYLIBDIR=#{dest_path}" # ENV is frozen
+    rake = ENV['rake']
+
+    rake ||= begin
+               "\"#{Gem.ruby}\" -rubygems #{Gem.bin_path('rake')}"
+             rescue Gem::Exception
+             end
+
+    rake ||= Gem.default_exec_format % 'rake'
+
+    cmd = "#{rake} RUBYARCHDIR=#{dest_path} RUBYLIBDIR=#{dest_path}" # ENV is frozen
 
     run cmd, results
 

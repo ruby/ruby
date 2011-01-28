@@ -4,10 +4,10 @@
 # File a patch instead and assign it to Ryan Davis or Eric Hodel.
 ######################################################################
 
-require "test/rubygems/gemutilities"
+require 'rubygems/test_case'
 require 'rubygems'
 
-class TestConfig < RubyGemTestCase
+class TestConfig < Gem::TestCase
 
   def test_datadir
     _, err = capture_io do

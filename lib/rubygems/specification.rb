@@ -336,7 +336,7 @@ class Gem::Specification
   end
 
   ##
-  # List of depedencies that will automatically be activated at runtime.
+  # List of dependencies that will automatically be activated at runtime.
 
   def runtime_dependencies
     dependencies.select { |d| d.type == :runtime || d.type == nil }

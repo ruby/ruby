@@ -4,11 +4,11 @@
 # File a patch instead and assign it to Ryan Davis or Eric Hodel.
 ######################################################################
 
-require "test/rubygems/gemutilities"
+require 'rubygems/test_case'
 require 'rubygems/platform'
 require 'rbconfig'
 
-class TestGemPlatform < RubyGemTestCase
+class TestGemPlatform < Gem::TestCase
 
   def test_self_local
     util_set_arch 'i686-darwin8.10.1'
