@@ -1,3 +1,8 @@
+Fri Jan 28 17:33:28 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/gdbm/test_gdbm.rb (TestGDBM#test_s_open_no_create): skip
+	  the test if gdbm version is 1.8.x.
+
 Fri Jan 28 16:30:51 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_require.rb (TestRequire#test_require_too_long_filename):

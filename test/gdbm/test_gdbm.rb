@@ -92,8 +92,8 @@ if defined? GDBM
       end
     end
     def test_s_open_no_create
-      assert_nil(gdbm = GDBM.open("#{@tmpdir}/#{@prefix}", nil),
-                 "this test is failed on libgdbm 1.8.0")
+      skip "this test is failed on libgdbm 1.8.0" if /1\.8\./ =~ GDBM::VERSION
+      assert_nil(gdbm = GDBM.open("#{@tmpdir}/#{@prefix}", nil))
     ensure
       gdbm.close if gdbm
     end
