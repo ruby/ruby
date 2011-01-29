@@ -985,4 +985,19 @@ class TestModule < Test::Unit::TestCase
   def test_constants_with_private_constant
     assert(!(::TestModule).constants.include?(:PrivateClass))
   end
+
+  def test_toplevel_private_constant
+    src = <<-INPUT
+      class Object
+        private_constant :Object
+      end
+      p Object
+      begin
+        p ::Object
+      rescue
+        p :ok
+      end
+    INPUT
+    assert_in_out_err([], src, %w(Object :ok), [])
+  end
 end

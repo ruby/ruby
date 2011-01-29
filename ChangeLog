@@ -1,3 +1,11 @@
+Sat Jan 29 10:53:16 2011  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* vm_insnhelper.c (vm_get_ev_const): no-scope reference to toplevel
+	  private constant has been prohibited incorrectly.
+
+	* test/ruby/test_module.rb (test_toplevel_private_constant): add a
+	  test for above.
+
 Sat Jan 29 08:43:23 2011  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* lib/rubygems*: Import rubygems 1.5.0 (release candidate @ 09893d9)
