@@ -1,3 +1,8 @@
+Sun Jan 30 01:02:28 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* include/ruby/ruby.h: Added NUM2MODET() and MODET2NUM() default definition.
+	  Because r30686 introduced win32 build failure.
+
 Sat Jan 29 22:16:26 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* array.c (rb_ary_join): [].join.encoding must be US-ASCII.

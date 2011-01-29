@@ -315,6 +315,12 @@ rb_long2int(long n) {rb_long2int_internal(n, i); return i;}
 #ifndef NUM2GIDT
 #define NUM2GIDT(v) NUM2LONG(v)
 #endif
+#ifndef NUM2MODET
+#define NUM2MODET(v) NUM2INT(v)
+#endif
+#ifndef MODET2NUM
+#define MODET2NUM(v) INT2NUM(v)
+#endif
 
 #define FIX2LONG(x) (long)RSHIFT((SIGNED_VALUE)(x),1)
 #define FIX2ULONG(x) ((((VALUE)(x))>>1)&LONG_MAX)
