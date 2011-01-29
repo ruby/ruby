@@ -1,3 +1,8 @@
+Sun Jan 30 03:29:47 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/openssl/ossl_bn.c (GetBNPtr): add missing nil case.
+	  patched by Martin Bosslet. [ruby-core:34987]
+
 Sun Jan 30 01:02:28 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* include/ruby/ruby.h: Added NUM2MODET() and MODET2NUM() default definition.

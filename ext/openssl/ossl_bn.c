@@ -70,6 +70,8 @@ GetBNPtr(VALUE obj)
 	}
 	WrapBN(cBN, obj, bn); /* Handle potencial mem leaks */
 	break;
+    case T_NIL:
+	break;
     default:
 	ossl_raise(rb_eTypeError, "Cannot convert into OpenSSL::BN");
     }
