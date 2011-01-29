@@ -1,3 +1,7 @@
+Sun Jan 30 08:02:55 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: Mac OS X wrongly reports it has fdatasync(3).
+
 Sun Jan 30 03:29:47 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/openssl/ossl_bn.c (GetBNPtr): add missing nil case.
