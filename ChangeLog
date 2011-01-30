@@ -1,3 +1,7 @@
+Sun Jan 30 16:09:22 2011  Tanaka Akira  <akr@fsij.org>
+
+	* strftime.c (rb_strftime_with_timespec): %G produces 4 digits.
+
 Sun Jan 30 15:13:19 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/emacs_mule.c (emacsmule_islead): 7bit range is also leading

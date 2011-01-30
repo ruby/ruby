@@ -613,7 +613,13 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, const str
                                         yv = sub(yv, INT2FIX(1));
 
                                 if (*format == 'G') {
-                                        FMTV('0', 1, "d", yv);
+                                        if (FIXNUM_P(yv)) {
+                                                long y = FIX2LONG(yv);
+                                                FMT('0', 0 <= y ? 4 : 5, "ld", y);
+                                        }
+                                        else {
+                                                FMTV('0', 4, "d", yv);
+                                        }
                                 }
                                 else {
                                         yv = mod(yv, INT2FIX(100));
