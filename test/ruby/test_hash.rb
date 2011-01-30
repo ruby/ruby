@@ -373,14 +373,20 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_fetch
-    assert_raise(KeyError) { @cls[].fetch(1) }
-    assert_raise(KeyError) { @h.fetch('gumby') }
     assert_equal('gumbygumby', @h.fetch('gumby') {|k| k * 2 })
     assert_equal('pokey', @h.fetch('gumby', 'pokey'))
 
     assert_equal('one', @h.fetch(1))
     assert_equal(nil, @h.fetch('nil'))
     assert_equal('nil', @h.fetch(nil))
+  end
+
+  def test_fetch_error
+    assert_raise(KeyError) { @cls[].fetch(1) }
+    assert_raise(KeyError) { @h.fetch('gumby') }
+    e = assert_raise(KeyError) { @h.fetch('gumby'*20) }
+    assert_match(/key not found: "gumbygumby/, e.message)
+    assert_match(/\.\.\.\z/, e.message)
   end
 
   def test_key2?

@@ -1,4 +1,7 @@
-Sun Jan 30 13:01:54 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Jan 30 13:03:16 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_hash_fetch_m): use useful message for longer key, not a
+	  nonsense id value.
 
 	* string.c (rb_str_ellipsize): new function to ellipsize a string.
 
