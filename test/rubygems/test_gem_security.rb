@@ -92,5 +92,5 @@ class TestGemSecurity < Gem::TestCase
                  Gem::Security.email_to_name('no+body@example', munger).to_s
   end
 
-end
+end if defined?(OpenSSL)
 
