@@ -1,3 +1,8 @@
+Sun Jan 30 15:13:19 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/emacs_mule.c (emacsmule_islead): 7bit range is also leading
+	  byte.
+
 Sun Jan 30 13:03:16 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_hash_fetch_m): use useful message for longer key, not a
