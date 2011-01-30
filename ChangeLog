@@ -4,7 +4,7 @@ Mon Jan 31 04:45:12 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 	  rb_resize_capa because rb_resize_capa expects resized length is
 	  smaller than current array length. call rb_ary_unshare before
 	  rb_resize_capa because rb_resize_capa losts the reference to
-	  original shared array.
+	  original shared array. [ruby-core:34997]
 
 Sun Jan 30 17:19:46 2011  Tanaka Akira  <akr@fsij.org>
 
