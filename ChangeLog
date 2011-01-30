@@ -1,3 +1,7 @@
+Sun Jan 30 12:53:38 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/emacs_mule.c (emacsmule_islead): fix inverse condition.
+
 Sun Jan 30 09:37:25 2011  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
 
 	* io.c (struct argf): char behaves like an unsigned char

@@ -1106,6 +1106,18 @@ class TestM17N < Test::Unit::TestCase
     s1 = s("\x81\x40")
     s2 = "@"
     assert_equal(false, s1.end_with?(s2), "#{encdump s1}.end_with?(#{encdump s2})")
+    s1orig = "\u3042\u3044"
+    s2orig = "\u3044"
+    Encoding.list.each do |enc|
+      next if enc.dummy?
+      begin
+        s1 = s1orig.encode(enc)
+        s2 = s2orig.encode(enc)
+      rescue
+      else
+        assert_equal(true, s1.end_with?(s2), "#{encdump s1}.end_with?(#{encdump s2})")
+      end
+    end
   end
 
   def test_each_line

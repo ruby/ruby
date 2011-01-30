@@ -30,7 +30,7 @@
 #include "regint.h"
 
 
-#define emacsmule_islead(c)    ((UChar )((c) - 0x81) > 0x9d - 0x81)
+#define emacsmule_islead(c)    ((UChar )((c) - 0x81) < 0x9e - 0x81)
 
 /*
     CHARACTER := ASCII_CHAR | MULTIBYTE_CHAR
