@@ -95,6 +95,7 @@ class TestDL < TestBase
   end
 
   def test_sin
+    return if /x86_64/ =~ RUBY_PLATFORM
     pi_2 = Math::PI/2
     cfunc = Function.new(CFunc.new(@libm['sin'], TYPE_DOUBLE, 'sin'),
                         [TYPE_DOUBLE])

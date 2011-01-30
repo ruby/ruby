@@ -1,3 +1,10 @@
+Sun Jan 30 16:15:20 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/dl/test_dl2.rb (TestDL#test_sin): math functions do not
+	  work on x86_64 due to the design of DL2.
+
+	* test/dl/test_func.rb (DL::TestFunc#test_{sinf,sin): ditto.
+
 Sun Jan 30 16:09:22 2011  Tanaka Akira  <akr@fsij.org>
 
 	* strftime.c (rb_strftime_with_timespec): %G produces 4 digits.
