@@ -150,7 +150,7 @@ struct argf {
     VALUE argv;
     char *inplace;
     struct rb_io_enc_t encs;
-    char init_p, next_p, binmode;
+    int8_t init_p, next_p, binmode;
 };
 
 static int max_file_descriptor = NOFILE;

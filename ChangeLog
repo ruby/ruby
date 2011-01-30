@@ -1,3 +1,8 @@
+Sun Jan 30 09:37:25 2011  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
+
+	* io.c (struct argf): char behaves like an unsigned char
+	  by default on AIX.
+
 Sun Jan 30 08:02:55 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: Mac OS X wrongly reports it has fdatasync(3).
