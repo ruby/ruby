@@ -1,4 +1,6 @@
-Sun Jan 30 12:56:13 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Jan 30 13:01:54 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_ellipsize): new function to ellipsize a string.
 
 	* include/ruby/encoding.h (rb_enc_step_back): new function to step
 	  back n characters.

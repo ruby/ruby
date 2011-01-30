@@ -7137,6 +7137,57 @@ rb_str_is_ascii_only_p(VALUE str)
     return cr == ENC_CODERANGE_7BIT ? Qtrue : Qfalse;
 }
 
+/**
+ * Shortens _str_ and adds three dots, an ellipsis, if it is longer
+ * than _len_ characters.
+ *
+ * \param str	the string to ellipsize.
+ * \param len	the maximum string length.
+ * \return	the ellipsized string.
+ * \pre 	_len_ must not be negative.
+ * \post	the length of the returned string in characters is less than or equal to _len_.
+ * \post	If the length of _str_ is less than or equal _len_, returns _str_ itself.
+ * \post	the encoded of returned string is equal to the encoded of _str_.
+ * \post	the class of returned string is equal to the class of _str_.
+ * \note	the length is counted in characters.
+ */
+VALUE
+rb_str_ellipsize(VALUE str, long len)
+{
+    static const char ellipsis[] = "...";
+    const long ellipsislen = sizeof(ellipsis) - 1;
+    rb_encoding *const enc = rb_enc_get(str);
+    const long blen = RSTRING_LEN(str);
+    const char *const p = RSTRING_PTR(str), *e = p + blen;
+    VALUE estr, ret = 0;
+
+    if (len < 0) rb_raise(rb_eIndexError, "negative length %ld", len);
+    if (len * rb_enc_mbminlen(enc) >= blen ||
+	(e = rb_enc_nth(p, e, len, enc)) - p == blen) {
+	ret = str;
+    }
+    else if (len <= ellipsislen ||
+	     !(e = rb_enc_step_back(p, e, e, len = ellipsislen, enc))) {
+	if (rb_enc_asciicompat(enc)) {
+	    ret = rb_str_new_with_class(str, ellipsis, len);
+	    rb_enc_associate(ret, enc);
+	}
+	else {
+	    estr = rb_usascii_str_new(ellipsis, len);
+	    ret = rb_str_encode(estr, rb_enc_from_encoding(enc), 0, Qnil);
+	}
+    }
+    else if (ret = rb_str_subseq(str, 0, e - p), rb_enc_asciicompat(enc)) {
+	rb_str_cat(ret, ellipsis, ellipsislen);
+    }
+    else {
+	estr = rb_str_encode(rb_usascii_str_new(ellipsis, ellipsislen),
+			     rb_enc_from_encoding(enc), 0, Qnil);
+	rb_str_append(ret, estr);
+    }
+    return ret;
+}
+
 /**********************************************************************
  * Document-class: Symbol
  *
