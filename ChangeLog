@@ -1,3 +1,8 @@
+Sun Jan 30 12:56:13 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/encoding.h (rb_enc_step_back): new function to step
+	  back n characters.
+
 Sun Jan 30 12:53:38 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/emacs_mule.c (emacsmule_islead): fix inverse condition.
