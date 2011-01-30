@@ -1,3 +1,7 @@
+Sun Jan 30 17:19:46 2011  Tanaka Akira  <akr@fsij.org>
+
+	* missing/crypt.c: parenthesize macro arguments.
+
 Sun Jan 30 16:40:27 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/rubygems/test_gem_security.rb (TestGemSecurity): valid only
