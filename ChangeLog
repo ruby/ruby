@@ -1,3 +1,9 @@
+Mon Jan 31 21:32:44 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* thread.c (thread_start_func_2): check deadlock condition before
+	  release thread stack. fix memory violation when deadlock detected.
+	  reported by Max Aller. [Bug #4009] [ruby-core:32982]
+
 Mon Jan 31 14:45:47 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/irb/locale.rb (IRB::Locale::#search_file):
