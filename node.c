@@ -77,7 +77,7 @@ add_id(VALUE buf, ID id)
     else {
 	VALUE str = rb_id2str(id);
 	if (str) {
-	    A(":"); AR(rb_id2str(id));
+	    A(":"); AR(str);
 	}
 	else {
 	    A("(internal variable)");

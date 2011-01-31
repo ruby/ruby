@@ -1,3 +1,7 @@
+Mon Jan 31 23:27:23 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* node.c (add_id): remove duplicated rb_id2str() call.
+
 Sun Jan 30 17:19:46 2011  Tanaka Akira  <akr@fsij.org>
 
 	* missing/langinfo.c: parenthesize macro arguments.
