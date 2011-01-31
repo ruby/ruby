@@ -1,3 +1,35 @@
+Tue Feb  1 00:10:30 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/benchmark.rb: fix benchmarck to work with current ruby.
+	  patched by Benoit Daloze [ruby-core:33846] [ruby-dev:43143]
+	  merged from https://github.com/eregon/ruby/commits/benchmark
+
+	*  lib/benchmark (Report#width): update documentation
+	*  lib/benchmark: document the return value of #benchmark and the
+	   :list attribute in Report
+	*  lib/benchmark (Tms#format): rename variables, use String#%
+	   instead of Kernel.format
+	*  lib/benchmark: remove undocumented Benchmark::times (an alias
+	   of Process::times used twice)
+	*  lib/benchmark (#benchmark): use label_width for the caption
+	*  lib/benchmark (Tms#initialize): rename variables
+	*  lib/benchmark: allow title to not be a String and call #to_s
+	*  lib/benchmark (Benchmark#bm): return an Array of the times with
+	   the labels
+	*  lib/benchmark: correct output for Benchmark#bmbm
+	   (remove the extra space)
+	*  lib/benchmark: add a few tests for Benchmark::Tms output
+	*  lib/benchmark: improve style (enumerators, ljust, unused vars)
+	*  lib/benchmark: add spec about output and return value
+	*  lib/benchmark: improve basic style and consistency
+	   no parenthesis for print and use interpolation instead of printf
+	*  lib/benchmark: remove unnecessary conversions and variables
+	*  lib/benchmark: correct indentation
+	*  lib/benchmark: rename the FMTSTR constant and variable to FORMAT
+	*  lib/benchmark: remove useless exception
+
+	*  test/benchmark: remove unused variable warnings
+
 Mon Jan 31 23:27:23 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* node.c (add_id): remove duplicated rb_id2str() call.
