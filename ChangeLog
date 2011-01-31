@@ -1,3 +1,8 @@
+Mon Jan 31 14:45:47 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* lib/irb/locale.rb (IRB::Locale::#search_file):
+	  Gem might be undefined if --disable-gems. [ruby-core:34990]
+
 Mon Jan 31 12:26:14 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* addr2line.c: suppressed shorten-64-to-32 warnings.
