@@ -1,4 +1,7 @@
-Tue Feb  1 07:56:02 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Feb  1 08:01:39 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/console/console.c (console_set_winsize): new method to set
+	  console size.  [EXPERIMENTAL]
 
 	* ext/io/console/console.c (console_winsize): use GetWriteFD.
 
