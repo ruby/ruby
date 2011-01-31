@@ -44,7 +44,6 @@ onig_set_default_case_fold_flag(OnigCaseFoldType case_fold_flag)
   return 0;
 }
 
-
 #ifndef PLATFORM_UNALIGNED_WORD_ACCESS
 static unsigned char PadBuf[WORD_ALIGNMENT_SIZE];
 #endif
@@ -142,7 +141,7 @@ bitset_on_num(BitSetRef bs)
 #endif
 
 extern int
-onig_bbuf_init(BBuf* buf, int size)
+onig_bbuf_init(BBuf* buf, OnigDistance size)
 {
   if (size <= 0) {
     size   = 0;
@@ -153,7 +152,7 @@ onig_bbuf_init(BBuf* buf, int size)
     if (IS_NULL(buf->p)) return(ONIGERR_MEMORY);
   }
 
-  buf->alloc = size;
+  buf->alloc = (unsigned int)size;
   buf->used  = 0;
   return 0;
 }
@@ -240,7 +239,7 @@ add_abs_addr(regex_t* reg, int addr)
 }
 
 static int
-add_length(regex_t* reg, int len)
+add_length(regex_t* reg, OnigDistance len)
 {
   LengthType l = (LengthType )len;
 
@@ -285,7 +284,7 @@ add_opcode_rel_addr(regex_t* reg, int opcode, int addr)
 }
 
 static int
-add_bytes(regex_t* reg, UChar* bytes, int len)
+add_bytes(regex_t* reg, UChar* bytes, OnigDistance len)
 {
   BBUF_ADD(reg, bytes, len);
   return 0;
@@ -318,7 +317,7 @@ static int compile_tree(Node* node, regex_t* reg);
     (op) == OP_EXACTMB3N || (op) == OP_EXACTMBN  || (op) == OP_EXACTN_IC)
 
 static int
-select_str_opcode(int mb_len, int str_len, int ignore_case)
+select_str_opcode(int mb_len, OnigDistance str_len, int ignore_case)
 {
   int op;
 
@@ -439,7 +438,7 @@ add_compile_string_length(UChar* s ARG_UNUSED, int mb_len, OnigDistance str_len,
 }
 
 static int
-add_compile_string(UChar* s, int mb_len, int str_len,
+add_compile_string(UChar* s, int mb_len, OnigDistance str_len,
                    regex_t* reg, int ignore_case)
 {
   int op = select_str_opcode(mb_len, str_len, ignore_case);
@@ -2311,7 +2310,7 @@ get_char_length_tree1(Node* node, regex_t* reg, int* len, int level)
     do {
       r = get_char_length_tree1(NCAR(node), reg, &tlen, level);
       if (r == 0)
-	*len = distance_add(*len, tlen);
+	*len = (int)distance_add(*len, tlen);
     } while (r == 0 && IS_NOT_NULL(node = NCDR(node)));
     break;
 
@@ -2358,7 +2357,7 @@ get_char_length_tree1(Node* node, regex_t* reg, int* len, int level)
       if (qn->lower == qn->upper) {
 	r = get_char_length_tree1(qn->target, reg, &tlen, level);
 	if (r == 0)
-	  *len = distance_multiply(tlen, qn->lower);
+	  *len = (int)distance_multiply(tlen, qn->lower);
       }
       else
 	r = GET_CHAR_LEN_VARLEN;
@@ -2431,7 +2430,8 @@ get_char_length_tree(Node* node, regex_t* reg, int* len)
 static int
 is_not_included(Node* x, Node* y, regex_t* reg)
 {
-  int i, len;
+  int i;
+  OnigDistance len;
   OnigCodePoint code;
   UChar *p, c;
   int ytype;
@@ -2583,7 +2583,7 @@ is_not_included(Node* x, Node* y, regex_t* reg)
             return 0;
 	  }
 	  else {
-	    for (i = 0, p = ys->s, q = xs->s; i < len; i++, p++, q++) {
+	    for (i = 0, p = ys->s, q = xs->s; (OnigDistance)i < len; i++, p++, q++) {
 	      if (*p != *q) return 1;
 	    }
 	  }
@@ -3225,7 +3225,8 @@ update_string_node_case_fold(regex_t* reg, Node *node)
 {
   UChar *p, *q, *end, buf[ONIGENC_MBC_CASE_FOLD_MAXLEN];
   UChar *sbuf, *ebuf, *sp;
-  int r, i, len, sbuf_size;
+  int r, i, len;
+  OnigDistance sbuf_size;
   StrNode* sn = NSTR(node);
 
   end = sn->end;
@@ -3800,7 +3801,7 @@ restart:
       if (NTYPE(target) == NT_STR) {
 	if (!IS_REPEAT_INFINITE(qn->lower) && qn->lower == qn->upper &&
 	    qn->lower > 1 && qn->lower <= EXPAND_STRING_MAX_LENGTH) {
-	  int len = NSTRING_LEN(target);
+	  OnigDistance len = NSTRING_LEN(target);
 	  StrNode* sn = NSTR(target);
 
 	  if (len * qn->lower <= EXPAND_STRING_MAX_LENGTH) {
@@ -3940,7 +3941,7 @@ static int
 set_bm_skip(UChar* s, UChar* end, OnigEncoding enc ARG_UNUSED,
 	    UChar skip[], int** int_skip)
 {
-  int i, len;
+  OnigDistance i, len;
 
   len = end - s;
   if (len < ONIG_CHAR_TABLE_SIZE) {
@@ -3954,10 +3955,10 @@ set_bm_skip(UChar* s, UChar* end, OnigEncoding enc ARG_UNUSED,
       *int_skip = (int* )xmalloc(sizeof(int) * ONIG_CHAR_TABLE_SIZE);
       if (IS_NULL(*int_skip)) return ONIGERR_MEMORY;
     }
-    for (i = 0; i < ONIG_CHAR_TABLE_SIZE; i++) (*int_skip)[i] = len;
+    for (i = 0; i < ONIG_CHAR_TABLE_SIZE; i++) (*int_skip)[i] = (int)len;
 
     for (i = 0; i < len - 1; i++)
-      (*int_skip)[s[i]] = len - 1 - i;
+      (*int_skip)[s[i]] = (int)(len - 1 - i);
   }
   return 0;
 }
@@ -4053,12 +4054,12 @@ distance_value(MinMaxLen* mm)
       11,   11,   11,   11,   11,   10,   10,   10,   10,   10
   };
 
-  int d;
+  OnigDistance d;
 
   if (mm->max == ONIG_INFINITE_DISTANCE) return 0;
 
   d = mm->max - mm->min;
-  if (d < (int )(sizeof(dist_vals)/sizeof(dist_vals[0])))
+  if (d < sizeof(dist_vals)/sizeof(dist_vals[0]))
     /* return dist_vals[d] * 16 / (mm->min + 12); */
     return (int )dist_vals[d];
   else
@@ -4540,7 +4541,7 @@ concat_left_node_opt_info(OnigEncoding enc, NodeOptInfo* to, NodeOptInfo* add)
   if (to->expr.len > 0) {
     if (add->len.max > 0) {
       if (to->expr.len > (int )add->len.max)
-	to->expr.len = add->len.max;
+	to->expr.len = (int)add->len.max;
 
       if (to->expr.mmd.max == 0)
 	select_opt_exact_info(enc, &to->exb, &to->expr);
@@ -4618,7 +4619,7 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
   case NT_STR:
     {
       StrNode* sn = NSTR(node);
-      int slen = sn->end - sn->s;
+      OnigDistance slen = sn->end - sn->s;
       int is_raw = NSTRING_IS_RAW(node);
 
       if (! NSTRING_IS_AMBIG(node)) {
@@ -4630,7 +4631,7 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
         set_mml(&opt->len, slen, slen);
       }
       else {
-        int max;
+        OnigDistance max;
 
 	if (NSTRING_IS_DONT_GET_OPT_INFO(node)) {
           int n = onigenc_strlen(env->enc, sn->s, sn->end);
@@ -4653,7 +4654,7 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
         set_mml(&opt->len, slen, max);
       }
 
-      if (opt->exb.len == slen)
+      if ((OnigDistance)opt->exb.len == slen)
 	opt->exb.reach_end = 1;
     }
     break;
@@ -4957,7 +4958,7 @@ set_optimize_exact_info(regex_t* reg, OptExactInfo* e)
   reg->dmax = e->mmd.max;
 
   if (reg->dmin != ONIG_INFINITE_DISTANCE) {
-    reg->threshold_len = reg->dmin + (reg->exact_end - reg->exact);
+    reg->threshold_len = (int)(reg->dmin + (reg->exact_end - reg->exact));
   }
 
   return 0;
@@ -4976,7 +4977,7 @@ set_optimize_map_info(regex_t* reg, OptMapInfo* m)
   reg->dmax       = m->mmd.max;
 
   if (reg->dmin != ONIG_INFINITE_DISTANCE) {
-    reg->threshold_len = reg->dmin + 1;
+    reg->threshold_len = (int)(reg->dmin + 1);
   }
 }
 
@@ -5316,7 +5317,8 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
 {
 #define COMPILE_INIT_SIZE  20
 
-  int r, init_size;
+  int r;
+  OnigDistance init_size;
   Node*  root;
   ScanEnv  scan_env = {0};
 #ifdef USE_SUBEXP_CALL

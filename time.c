@@ -885,8 +885,8 @@ rb_localtime_r2(const time_t *t, struct tm *result)
     result = rb_localtime_r(t, result);
 #if defined(HAVE_MKTIME) && defined(LOCALTIME_OVERFLOW_PROBLEM)
     if (result) {
-        int gmtoff1 = 0;
-        int gmtoff2 = 0;
+        long gmtoff1 = 0;
+        long gmtoff2 = 0;
         struct tm tmp = *result;
         time_t t2;
 #  if defined(HAVE_STRUCT_TM_TM_GMTOFF)

@@ -116,7 +116,7 @@ sleb128(char **p) {
 }
 
 static const char *
-get_nth_dirname(int dir, char *p)
+get_nth_dirname(unsigned long dir, char *p)
 {
     if (!dir--) {
 	return "";
@@ -125,7 +125,7 @@ get_nth_dirname(int dir, char *p)
 	while (*p) p++;
 	p++;
 	if (!*p) {
-	    fprintf(stderr, "Unexpected directory number %d in %s\n",
+	    fprintf(stderr, "Unexpected directory number %lu in %s\n",
 		    dir, binary_filename);
 	    return "";
 	}
@@ -298,10 +298,10 @@ parse_debug_line_cu(int num_traces, void **traces,
 	    break;
 	}
 	case DW_LNS_set_file:
-	    file = uleb128(&p);
+	    file = (unsigned int)uleb128(&p);
 	    break;
 	case DW_LNS_set_column:
-	    column = uleb128(&p);
+	    column = (unsigned int)uleb128(&p);
 	    break;
 	case DW_LNS_negate_stmt:
 	    is_stmt = !is_stmt;
@@ -325,7 +325,7 @@ parse_debug_line_cu(int num_traces, void **traces,
 	    epilogue_begin = 1;
 	    break;
 	case DW_LNS_set_isa:
-	    isa = uleb128(&p);
+	    isa = (unsigned int)uleb128(&p);
 	    break;
 	case 0:
 	    a = *(unsigned char *)p++;
@@ -360,13 +360,13 @@ parse_debug_line_cu(int num_traces, void **traces,
 	    }
 	    break;
 	default: {
-	    unsigned int addr_incr;
-	    int line_incr;
+	    unsigned long addr_incr;
+	    unsigned long line_incr;
 	    a = op - opcode_base;
 	    addr_incr = (a / line_range) * minimum_instruction_length;
 	    line_incr = line_base + (a % line_range);
-	    addr += addr_incr;
-	    line += line_incr;
+	    addr += (unsigned int)addr_incr;
+	    line += (unsigned int)line_incr;
 	    FILL_LINE();
 	}
 	}

@@ -1906,7 +1906,7 @@ rb_const_set(VALUE klass, ID id, VALUE val)
     rb_vm_change_state();
 
     ce = ALLOC(rb_const_entry_t);
-    ce->flag = visibility;
+    ce->flag = (rb_const_flag_t)visibility;
     ce->value = val;
 
     st_insert(RCLASS_CONST_TBL(klass), (st_data_t)id, (st_data_t)ce);
