@@ -387,17 +387,7 @@ console_winsize(VALUE io)
     rb_console_size_t ws;
 
     GetOpenFile(io, fptr);
-#ifdef GetWriteFile
-    fd = fileno(GetWriteFile(fptr));
-#else
-# if defined HAVE_RB_IO_GET_WRITE_IO
-    io = fptr->tied_io_for_writing;
-    if (io) {
-	GetOpenFile(io, fptr);
-    }
-# endif
-    fd = fptr->fd;
-#endif
+    fd = GetWriteFD(fptr);
     if (!getwinsize(fd, &ws)) rb_sys_fail(0);
     return rb_assoc_new(INT2NUM(winsize_row(&ws)), INT2NUM(winsize_col(&ws)));
 }
