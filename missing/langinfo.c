@@ -56,7 +56,7 @@
 #endif
 
 #define digit(x) ((x) >= '0' && (x) <= '9')
-#define strstart(s, n) (strncasecmp(s, n, strlen(n)) == 0)
+#define strstart(s, n) (strncasecmp((s), (n), strlen(n)) == 0)
 
 static char buf[16];
 

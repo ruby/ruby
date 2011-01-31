@@ -1,3 +1,7 @@
+Sun Jan 30 17:19:46 2011  Tanaka Akira  <akr@fsij.org>
+
+	* missing/langinfo.c: parenthesize macro arguments.
+
 Mon Jan 31 21:57:39 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: revert r30698.
