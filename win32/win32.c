@@ -5687,3 +5687,19 @@ signbit(double x)
     return *ip < 0;
 }
 #endif
+
+char * WSAAPI
+rb_w32_inet_ntop(int af, void *addr, char *numaddr, size_t numaddr_len)
+{
+    typedef char *(WSAAPI inet_ntop_t)(int, void *, char *, size_t);
+    inet_ntop_t *pInetNtop;
+    pInetNtop = (inet_ntop_t *)get_proc_address("ws2_32", "inet_ntop", NULL);
+    if(pInetNtop){
+       return pInetNtop(af,addr,numaddr,numaddr_len);
+    }else{
+       struct in_addr in;
+       memcpy(&in.s_addr, addr, sizeof(in.s_addr));
+       snprintf(numaddr, numaddr_len, "%s", inet_ntoa(in));
+    }
+    return numaddr;
+}

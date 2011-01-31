@@ -1,3 +1,8 @@
+Tue Feb  1 02:28:14 2011  Masaya Tarui  <tarui@ruby-lnag.org>
+
+	* include/ruby/win32.h, win32/win32.c: add rb_w32_inet_ntop.
+	  inet_ntop's minimum supported client is Vista.
+
 Tue Feb  1 00:10:30 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/benchmark.rb: fix benchmarck to work with current ruby.

@@ -267,6 +267,7 @@ extern int    rb_w32_urename(const char *, const char *);
 extern char **rb_w32_get_environ(void);
 extern void   rb_w32_free_environ(char **);
 extern int    rb_w32_map_errno(DWORD);
+extern char * WSAAPI rb_w32_inet_ntop(int,void *,char *,size_t);
 
 extern int chown(const char *, int, int);
 extern int rb_w32_uchown(const char *, int, int);
@@ -542,6 +543,9 @@ extern char *rb_w32_strerror(int);
 #define FD_ISSET(f, s)		rb_w32_fdisset(f, s)
 
 #ifdef RUBY_EXPORT
+#undef inet_ntop
+#define inet_ntop(f,a,n,l)      rb_w32_inet_ntop(f,a,n,l)
+
 #undef accept
 #define accept(s, a, l)		rb_w32_accept(s, a, l)
 
