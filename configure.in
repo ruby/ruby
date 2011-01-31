@@ -659,9 +659,9 @@ AC_DEFUN([RUBY_REPLACE_TYPE], [dnl
 			[typedef $n rbcv_conftest_target_type;
 			typedef $t rbcv_conftest_replace_type;
 			extern rbcv_conftest_target_type rbcv_conftest_var;
-			extern rbcv_conftest_replace_type rbcv_conftest_var2;
+			extern rbcv_conftest_replace_type rbcv_conftest_var;
 			extern rbcv_conftest_target_type rbcv_conftest_func(void);
-			extern rbcv_conftest_replace_type rbcv_conftest_func2(void);
+			extern rbcv_conftest_replace_type rbcv_conftest_func(void);
 			], [sizeof(rbcv_conftest_target_type) == sizeof(rbcv_conftest_replace_type)])],
 		    [n="$t"; break])
 	    done

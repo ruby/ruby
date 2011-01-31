@@ -1,3 +1,7 @@
+Mon Jan 31 21:57:39 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: revert r30698.
+
 Mon Jan 31 21:32:44 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* thread.c (thread_start_func_2): check deadlock condition before
