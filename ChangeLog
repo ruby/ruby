@@ -1,3 +1,9 @@
+Tue Feb  1 15:12:26 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_require.rb (TestRequire#test_require_with_unc):
+	  use ``127.0.0.1'' instead of ``localhost'' as host name, because
+	  XP or earlier cannot resolv it as NBT hostname.
+
 Tue Feb  1 13:20:39 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/benchmark/test_benchmark.rb (#capture_bench_output):
