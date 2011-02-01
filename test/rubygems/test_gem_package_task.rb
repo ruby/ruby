@@ -48,5 +48,18 @@ class TestGemPackageTask < Gem::TestCase
     assert_equal ["x", "y"], pkg.package_files
   end
 
+  def test_package_dir_path
+    gem = Gem::Specification.new do |g|
+      g.name = 'nokogiri'
+      g.version = '1.5.0'
+      g.platform = 'java'
+    end
+
+    pkg = Gem::PackageTask.new gem
+    pkg.define
+
+    assert_equal 'pkg/nokogiri-1.5.0-java', pkg.package_dir_path
+  end
+
 end
 

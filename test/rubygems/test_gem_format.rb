@@ -4,11 +4,11 @@
 # File a patch instead and assign it to Ryan Davis or Eric Hodel.
 ######################################################################
 
-require 'rubygems/test_case'
-require "test/rubygems/simple_gem"
+require 'rubygems/package/tar_test_case'
+require 'test/rubygems/simple_gem'
 require 'rubygems/format'
 
-class TestGemFormat < Gem::TestCase
+class TestGemFormat < Gem::Package::TarTestCase
 
   def setup
     super
@@ -16,6 +16,7 @@ class TestGemFormat < Gem::TestCase
     @simple_gem = SIMPLE_GEM
   end
 
+  # HACK this test should do less
   def test_class_from_file_by_path
     util_make_gems
 
@@ -31,6 +32,23 @@ class TestGemFormat < Gem::TestCase
       spec = Gem::Format.from_file_by_path(gemfile).spec
 
       assert_equal name, spec.original_name
+    end
+  end
+
+  def test_class_from_file_by_path_corrupt
+    Tempfile.open 'corrupt' do |io|
+      data = Gem.gzip 'a' * 10
+      io.write tar_file_header('metadata.gz', "\000x", 0644, data.length)
+      io.write data
+      io.rewind
+
+      e = assert_raises Gem::Package::FormatError do
+        Gem::Format.from_file_by_path io.path
+      end
+
+      sub_message = 'Gem::Package::TarInvalidError: tar is corrupt, name contains null byte'
+      assert_equal "corrupt gem (#{sub_message}) in #{io.path}", e.message
+      assert_equal io.path, e.path
     end
   end
 
@@ -55,21 +73,21 @@ class TestGemFormat < Gem::TestCase
       Gem::Format.from_io(StringIO.new(@simple_gem.upcase))
     end
 
-    assert_equal 'No metadata found!', e.message
+    assert_equal 'no metadata found', e.message
 
     e = assert_raises Gem::Package::FormatError do
       # Totally bogus input
       Gem::Format.from_io(StringIO.new(@simple_gem.reverse))
     end
 
-    assert_equal 'No metadata found!', e.message
+    assert_equal 'no metadata found', e.message
 
     e = assert_raises Gem::Package::FormatError do
       # This was intentionally screws up YAML parsing.
       Gem::Format.from_io(StringIO.new(@simple_gem.gsub(/:/, "boom")))
     end
 
-    assert_equal 'No metadata found!', e.message
+    assert_equal 'no metadata found', e.message
   end
 
 end

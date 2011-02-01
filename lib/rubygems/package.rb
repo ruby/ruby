@@ -45,7 +45,23 @@ module Gem::Package
   class ClosedIO < Error; end
   class BadCheckSum < Error; end
   class TooLongFileName < Error; end
-  class FormatError < Error; end
+  class FormatError < Error
+    attr_reader :path
+
+    def initialize message, path = nil
+      @path = path
+
+      message << " in #{path}" if path
+
+      super message
+    end
+
+  end
+
+  ##
+  # Raised when a tar file is corrupt
+
+  class TarInvalidError < Error; end
 
   def self.open(io, mode = "r", signer = nil, &block)
     tar_type = case mode

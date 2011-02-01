@@ -59,7 +59,24 @@ class TestGemPackageTarInput < Gem::Package::TarTestCase
     @entry_contents = %w[0123456789 01234]
   end
 
-  def test_each_works
+  def test_initialize_no_metadata_file
+    Tempfile.open 'no_meta' do |io|
+      io.write tar_file_header('a', '', 0644, 1)
+      io.write 'a'
+      io.rewind
+
+      e = assert_raises Gem::Package::FormatError do
+        open io.path, Gem.binary_mode do |file|
+          Gem::Package::TarInput.open file do end
+        end
+      end
+
+      assert_equal "no metadata found in #{io.path}", e.message
+      assert_equal io.path, e.path
+    end
+  end
+
+  def test_each
     open @file, 'rb' do |io|
       Gem::Package::TarInput.open io do |tar_input|
         count = 0
@@ -79,7 +96,7 @@ class TestGemPackageTarInput < Gem::Package::TarTestCase
     end
   end
 
-  def test_extract_entry_works
+  def test_extract_entry
     open @file, 'rb' do |io|
       Gem::Package::TarInput.open io do |tar_input|
         assert_equal @spec, tar_input.metadata

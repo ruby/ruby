@@ -47,8 +47,13 @@ class Gem::Format
 
       Gem::OldFormat.from_file_by_path file_path
     else
-      open file_path, Gem.binary_mode do |io|
-        from_io io, file_path, security_policy
+      begin
+        open file_path, Gem.binary_mode do |io|
+          from_io io, file_path, security_policy
+        end
+      rescue Gem::Package::TarInvalidError => e
+        message = "corrupt gem (#{e.class}: #{e.message})"
+        raise Gem::Package::FormatError.new(message, file_path)
       end
     end
   end

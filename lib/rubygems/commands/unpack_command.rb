@@ -72,6 +72,22 @@ class Gem::Commands::UnpackCommand < Gem::Command
   end
 
   ##
+  #
+  # Find cached filename in Gem.path. Returns nil if the file cannot be found.
+  #
+  #--
+  # TODO: see comments in get_path() about general service.
+
+  def find_in_cache(filename)
+    Gem.path.each do |gem_dir|
+      this_path = File.join gem_dir, 'cache', filename
+      return this_path if File.exist? this_path
+    end
+
+    return nil
+  end
+
+  ##
   # Return the full path to the cached gem file matching the given
   # name and version requirement.  Returns 'nil' if no match.
   #
@@ -101,13 +117,9 @@ class Gem::Commands::UnpackCommand < Gem::Command
 
     # We expect to find (basename).gem in the 'cache' directory.  Furthermore,
     # the name match must be exact (ignoring case).
-    filename = selected.file_name
-    path = nil
-
-    Gem.path.find do |gem_dir|
-      path = File.join gem_dir, 'cache', filename
-      File.exist? path
-    end
+    
+    path = find_in_cache(selected.file_name)
+    return download(dependency) unless path
 
     path
   end

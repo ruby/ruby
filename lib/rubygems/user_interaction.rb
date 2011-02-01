@@ -530,9 +530,21 @@ end
 ##
 # SilentUI is a UI choice that is absolutely silent.
 
-class Gem::SilentUI
-  def method_missing(sym, *args, &block)
-    self
+class Gem::SilentUI < Gem::StreamUI
+
+  def initialize
+
+    reader, writer = nil, nil
+
+    if Gem.win_platform?
+      reader = File.open('nul', 'r')
+      writer = File.open('nul', 'w')
+    else
+      reader = File.open('/dev/null', 'r')
+      writer = File.open('/dev/null', 'w')
+    end
+
+    super reader, writer, writer
   end
 end
 

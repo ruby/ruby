@@ -67,6 +67,16 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
     assert_equal 'lib/foo', @entry.full_name
   end
 
+  def test_full_name_null
+    @entry.header.prefix << "\000"
+
+    e = assert_raises Gem::Package::TarInvalidError do
+      @entry.full_name
+    end
+
+    assert_equal 'tar is corrupt, name contains null byte', e.message
+  end
+
   def test_getc
     assert_equal ?a, @entry.getc
   end

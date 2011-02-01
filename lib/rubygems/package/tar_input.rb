@@ -117,7 +117,11 @@ class Gem::Package::TarInput
     @tarreader.rewind
     @fileops = Gem::FileOperations.new
 
-    raise Gem::Package::FormatError, "No metadata found!" unless has_meta
+    unless has_meta then
+      path = io.path if io.respond_to? :path
+      error = Gem::Package::FormatError.new 'no metadata found', path
+      raise error
+    end
   end
 
   def close
