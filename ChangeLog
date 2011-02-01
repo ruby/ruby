@@ -1,3 +1,10 @@
+Tue Feb  1 13:20:39 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/benchmark/test_benchmark.rb (#capture_bench_output):
+	  Added explict sleep. Windows have imprecise time support.
+	  Thus Tms.new.Add!{} may be or may be not equal 0. The
+	  test failure started since r30747.
+
 Tue Feb  1 11:03:47 2011  Ryan Davis  <ryan@lust.local>
 
 	* lib/rubygems*: Import rubygems 1.5.0 (released version @ 1fb59d0)
