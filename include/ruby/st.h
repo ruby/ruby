@@ -79,6 +79,15 @@ struct st_table {
     st_index_t num_bins;
     unsigned int entries_packed : 1;
 #ifdef __GNUC__
+    /*
+     * C spec says,
+     *   A bit-field shall have a type that is a qualified or unqualified
+     *   version of _Bool, signed int, unsigned int, or some other
+     *   implementation-defined type. It is implementation-defined whether
+     *   atomic types are permitted.
+     * In short, long and long long bit-field are implementation-defined
+     * feature. Therefore we want to supress a warning explicitly.
+     */
     __extension__
 #endif
     st_index_t num_entries : ST_INDEX_BITS - 1;
