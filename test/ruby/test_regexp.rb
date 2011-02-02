@@ -11,6 +11,12 @@ class TestRegexp < Test::Unit::TestCase
     $VERBOSE = @verbose
   end
 
+  def test_has_NOENCODING
+    assert Regexp::NOENCODING
+    re = //n
+    assert_equal Regexp::NOENCODING, re.options
+  end
+
   def test_ruby_dev_999
     assert_match(/(?<=a).*b/, "aab")
     assert_match(/(?<=\u3042).*b/, "\u3042ab")

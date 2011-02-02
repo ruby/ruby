@@ -1,3 +1,10 @@
+Thu Feb  3 07:16:11 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* re.c (Init_Regexp): added a constant for ARG_ENCODING_NONE
+	  [ruby-core:35054]
+
+	* test/ruby/test_regexp.rb: corresponding test.
+
 Thu Feb  3 07:02:16 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/to_ruby.rb: ARG_ENCODING_NONE regular
