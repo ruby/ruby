@@ -13,6 +13,11 @@ class Psych_Unit_Tests < Psych::TestCase
     def teardown
         Psych.domain_types.clear
     end
+
+    # [ruby-core:34969]
+    def test_regexp_with_n
+        assert_cycle(Regexp.new('',0,'n'))
+    end
 	#
 	# Tests modified from 00basic.t in Psych.pm
 	#

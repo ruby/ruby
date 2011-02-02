@@ -60,7 +60,7 @@ module Psych
         when "tag:yaml.org,2002:float", "!float"
           Float(@ss.tokenize(o.value))
         when "!ruby/regexp"
-          o.value =~ /^\/(.*)\/([mix]*)$/
+          o.value =~ /^\/(.*)\/([mixn]*)$/
           source  = $1
           options = 0
           lang    = nil
@@ -69,6 +69,9 @@ module Psych
             when 'x' then options |= Regexp::EXTENDED
             when 'i' then options |= Regexp::IGNORECASE
             when 'm' then options |= Regexp::MULTILINE
+
+            # FIXME: there is no constant for ARG_ENCODING_NONE
+            when 'n' then options |= 32
             else lang = option
             end
           end

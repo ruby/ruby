@@ -261,7 +261,7 @@ end
 class Regexp
     yaml_as "tag:ruby.yaml.org,2002:regexp"
     def Regexp.yaml_new( klass, tag, val )
-        if String === val and val =~ /^\/(.*)\/([mix]*)$/
+        if String === val and val =~ /^\/(.*)\/([mixn]*)$/
             val = { 'regexp' => $1, 'mods' => $2 }
         end
         if Hash === val
@@ -271,6 +271,7 @@ class Regexp
                 mods |= Regexp::EXTENDED if val['mods'].include?( 'x' )
                 mods |= Regexp::IGNORECASE if val['mods'].include?( 'i' )
                 mods |= Regexp::MULTILINE if val['mods'].include?( 'm' )
+                mods |= 32 if val['mods'].include?( 'n' )
             end
             val.delete( 'mods' )
             r = YAML::object_maker( klass, {} )
