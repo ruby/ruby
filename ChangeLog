@@ -1,3 +1,8 @@
+Wed Feb  2 17:09:22 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (rb_io_fdatasync): Use fsync(2) if if the underlying
+	  operating system does not support fdatasync(2).
+
 Wed Feb  2 14:51:08 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/markup/to_tt_only.rb: commit miss

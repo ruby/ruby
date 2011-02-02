@@ -1421,18 +1421,22 @@ static VALUE
 rb_io_fdatasync(VALUE io)
 {
     rb_io_t *fptr;
+    int saved_errno = 0;
 
     io = GetWriteIO(io);
     GetOpenFile(io, fptr);
 
     if (io_fflush(fptr) < 0)
         rb_sys_fail(0);
-    if (fdatasync(fptr->fd) < 0)
-	rb_sys_fail_path(fptr->pathv);
-    return INT2FIX(0);
+
+    if (fdatasync(fptr->fd) == 0)
+	return INT2FIX(0);
+
+    /* fall back */
+    return rb_io_fsync(io);
 }
 #else
-#define rb_io_fdatasync rb_f_notimplement
+#define rb_io_fdatasync rb_io_fsync
 #endif
 
 /*
