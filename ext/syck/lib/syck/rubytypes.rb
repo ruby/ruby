@@ -271,7 +271,7 @@ class Regexp
                 mods |= Regexp::EXTENDED if val['mods'].include?( 'x' )
                 mods |= Regexp::IGNORECASE if val['mods'].include?( 'i' )
                 mods |= Regexp::MULTILINE if val['mods'].include?( 'm' )
-                mods |= 32 if val['mods'].include?( 'n' )
+                mods |= Regexp::NOENCODING if val['mods'].include?( 'n' )
             end
             val.delete( 'mods' )
             r = YAML::object_maker( klass, {} )

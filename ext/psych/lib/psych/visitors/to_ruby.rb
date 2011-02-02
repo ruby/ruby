@@ -69,9 +69,7 @@ module Psych
             when 'x' then options |= Regexp::EXTENDED
             when 'i' then options |= Regexp::IGNORECASE
             when 'm' then options |= Regexp::MULTILINE
-
-            # FIXME: there is no constant for ARG_ENCODING_NONE
-            when 'n' then options |= 32
+            when 'n' then options |= Regexp::NOENCODING
             else lang = option
             end
           end
