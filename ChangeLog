@@ -1,3 +1,9 @@
+Wed Feb  2 14:51:08 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/markup/to_tt_only.rb: commit miss
+	* test/rdoc/test_rdoc_markup_to_tt_only.rb: ditto
+	* test/rdoc/test_rdoc_single_class.rb: ditto
+
 Wed Feb  2 09:27:53 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc: Upgrade to RDoc 3.5.1
