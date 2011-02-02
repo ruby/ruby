@@ -22,7 +22,7 @@ require 'rdoc'
 # use RDoc::Options#option_parser to add command-line options to the +rdoc+
 # tool.  See OptionParser for details on how to add options.
 #
-# You can extend the RDoc::Options instance with additional accesors for your
+# You can extend the RDoc::Options instance with additional accessors for your
 # generator.
 #
 # = Generator Instantiation

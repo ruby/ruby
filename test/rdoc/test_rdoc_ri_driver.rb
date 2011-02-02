@@ -390,6 +390,16 @@ class TestRDocRIDriver < MiniTest::Unit::TestCase
     assert_match %r%^=== Implementation from Foo%, out
   end
 
+  def test_display_method_overriden
+    util_multi_store
+
+    out, = capture_io do
+      @driver.display_method 'Bar#override'
+    end
+
+    refute_match %r%must not be displayed%, out
+  end
+
   def test_display_name_not_found_class
     util_store
 
@@ -495,6 +505,32 @@ Foo::Bar#bother
     assert_equal expected, items
   end
 
+  def test_filter_methods
+    util_multi_store
+
+    name = 'Bar#override'
+
+    found = @driver.load_methods_matching name
+
+    sorted = @driver.filter_methods found, name
+
+    expected = [[@store2, [@override]]]
+
+    assert_equal expected, sorted
+  end
+
+  def test_filter_methods_not_found
+    util_multi_store
+
+    name = 'Bar#inherit'
+
+    found = @driver.load_methods_matching name
+
+    sorted = @driver.filter_methods found, name
+
+    assert_equal found, sorted
+  end
+
   def test_formatter
     tty = Object.new
     def tty.tty?() true; end
@@ -531,6 +567,16 @@ Foo::Bar#bother
     assert_equal :both,     @driver.method_type('.')
     assert_equal :instance, @driver.method_type('#')
     assert_equal :class,    @driver.method_type('::')
+  end
+
+  def test_name_regexp
+    assert_equal %r%^RDoc::AnyMethod#new$%,
+                 @driver.name_regexp('RDoc::AnyMethod#new')
+    assert_equal %r%^RDoc::AnyMethod::new$%,
+                 @driver.name_regexp('RDoc::AnyMethod::new')
+
+    assert_equal %r%^RDoc::AnyMethod(#|::)new$%,
+                 @driver.name_regexp('RDoc::AnyMethod.new')
   end
 
   def test_list_known_classes
@@ -766,6 +812,7 @@ Foo::Bar#bother
     @mAmbiguous = RDoc::NormalModule.new 'Ambiguous'
 
     @cFoo = RDoc::NormalClass.new 'Foo'
+
     @cBar = RDoc::NormalClass.new 'Bar'
     @cBar.superclass = 'Foo'
     @cFoo_Baz = RDoc::NormalClass.new 'Baz'
@@ -774,10 +821,15 @@ Foo::Bar#bother
     @baz = RDoc::AnyMethod.new nil, 'baz'
     @cBar.add_method @baz
 
+    @override = RDoc::AnyMethod.new nil, 'override'
+    @override.comment = 'must be displayed'
+    @cBar.add_method @override
+
     @store2.save_class @mAmbiguous
     @store2.save_class @cBar
     @store2.save_class @cFoo_Baz
 
+    @store2.save_method @cBar, @override
     @store2.save_method @cBar, @baz
 
     @store2.save_cache
@@ -824,6 +876,11 @@ Foo::Bar#bother
     @inherit = RDoc::AnyMethod.new nil, 'inherit'
     @cFoo.add_method @inherit
 
+    # overriden by Bar in multi_store
+    @overriden = RDoc::AnyMethod.new nil, 'override'
+    @overriden.comment = 'must not be displayed'
+    @cFoo.add_method @overriden
+
     @store.save_class @cFoo
     @store.save_class @cFoo_Bar
     @store.save_class @cFoo_Baz
@@ -836,6 +893,7 @@ Foo::Bar#bother
     @store.save_method @cFoo_Bar, @attr
 
     @store.save_method @cFoo, @inherit
+    @store.save_method @cFoo, @overriden
 
     @store.save_cache
 

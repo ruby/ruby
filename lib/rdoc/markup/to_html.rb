@@ -130,7 +130,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   end
 
   ##
-  # Here's a hypedlink where the label is different to the URL
+  # Here's a hyperlink where the label is different to the URL
   # <label>[url] or {long label}[url]
 
   def handle_special_TIDYLINK(special)

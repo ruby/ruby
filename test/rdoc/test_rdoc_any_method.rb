@@ -34,6 +34,12 @@ method(a, b) { |c, d| ... }
     assert_equal call_seq, m.arglists
   end
 
+  def test_c_function
+    @c1_m.c_function = 'my_c1_m'
+
+    assert_equal 'my_c1_m', @c1_m.c_function
+  end
+
   def test_full_name
     assert_equal 'C1::m', @c1.method_list.first.full_name
   end
@@ -97,6 +103,48 @@ method(a, b) { |c, d| ... }
     assert_nil m.name
   end
 
+  def test_param_list_block_params
+    m = RDoc::AnyMethod.new nil, 'method'
+    m.parent = @c1
+
+    m.block_params = 'c, d'
+
+    assert_equal %w[c d], m.param_list
+  end
+
+  def test_param_list_call_seq
+    m = RDoc::AnyMethod.new nil, 'method'
+    m.parent = @c1
+
+    call_seq = <<-SEQ
+method(a) { |c| ... }
+method(a, b) { |c, d| ... }
+    SEQ
+
+    m.call_seq = call_seq
+
+    assert_equal %w[a b c d], m.param_list
+  end
+
+  def test_param_list_params
+    m = RDoc::AnyMethod.new nil, 'method'
+    m.parent = @c1
+
+    m.params = '(a, b)'
+
+    assert_equal %w[a b], m.param_list
+  end
+
+  def test_param_list_params_block_params
+    m = RDoc::AnyMethod.new nil, 'method'
+    m.parent = @c1
+
+    m.params = '(a, b)'
+    m.block_params = 'c, d'
+
+    assert_equal %w[a b c d], m.param_list
+  end
+
   def test_param_seq
     m = RDoc::AnyMethod.new nil, 'method'
     m.parent = @c1
@@ -115,6 +163,21 @@ method(a, b) { |c, d| ... }
     m.block_params = "c,\n  d"
 
     assert_equal '(a, b) { |c, d| ... }', m.param_seq
+  end
+
+  def test_param_seq_call_seq
+    m = RDoc::AnyMethod.new nil, 'method'
+    m.parent = @c1
+
+    call_seq = <<-SEQ
+method(a) { |c| ... }
+method(a, b) { |c, d| ... }
+    SEQ
+
+    m.call_seq = call_seq
+
+    assert_equal '(a, b) { |c, d| }', m.param_seq
+
   end
 
   def test_parent_name

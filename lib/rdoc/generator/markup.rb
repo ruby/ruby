@@ -1,7 +1,11 @@
+# This file is loaded by generators.  It allows RDoc's CodeObject tree to
+# avoid loading generator code to increase startup time (for ri).
+
 require 'rdoc/text'
 require 'rdoc/code_objects'
 require 'rdoc/generator'
 require 'rdoc/markup/to_html_crossref'
+require 'rdoc/ruby_token'
 
 ##
 # Handle common RDoc::Markup tasks for various CodeObjects

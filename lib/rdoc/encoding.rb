@@ -78,4 +78,3 @@ module RDoc::Encoding
 
 end
 
-

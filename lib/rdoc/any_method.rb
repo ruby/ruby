@@ -14,6 +14,11 @@ class RDoc::AnyMethod < RDoc::MethodAttr
   attr_accessor :dont_rename_initialize
 
   ##
+  # The C function that implements this method (if it was defined in a C file)
+
+  attr_accessor :c_function
+
+  ##
   # Different ways to call this method
 
   attr_accessor :call_seq
@@ -31,8 +36,9 @@ class RDoc::AnyMethod < RDoc::MethodAttr
   def initialize text, name
     super
 
+    @c_function = nil
     @dont_rename_initialize = false
-    @token_stream           = nil
+    @token_stream = nil
   end
 
   ##
@@ -140,12 +146,41 @@ class RDoc::AnyMethod < RDoc::MethodAttr
   end
 
   ##
-  # Pretty parameter list for this method
+  # A list of this method's method and yield parameters.  +call-seq+ params
+  # are preferred over parsed method and block params.
+
+  def param_list
+    if @call_seq then
+      params = @call_seq.split("\n").last
+      params = params.sub(/.*?\((.*)\)/, '\1')
+      params = params.sub(/(\{|do)\s*\|([^|]*)\|.*/, ',\2')
+    elsif @params then
+      params = @params.sub(/\((.*)\)/, '\1')
+
+      params << ",#{@block_params}" if @block_params
+    elsif @block_params then
+      params = @block_params
+    else
+      return []
+    end
+
+    params.gsub(/\s+/, '').split ','
+  end
+
+  ##
+  # Pretty parameter list for this method.  If the method's parameters were
+  # given by +call-seq+ it is preferred over the parsed values.
 
   def param_seq
-    params = @params.gsub(/\s*\#.*/, '')
-    params = params.tr("\n", " ").squeeze(" ")
-    params = "(#{params})" unless params[0] == ?(
+    if @call_seq then
+      params = @call_seq.split("\n").last
+      params = params.sub(/[^( ]+/, '')
+      params = params.sub(/(\|[^|]+\|)\s*\.\.\.\s*(end|\})/, '\1 \2')
+    else
+      params = @params.gsub(/\s*\#.*/, '')
+      params = params.tr("\n", " ").squeeze(" ")
+      params = "(#{params})" unless params[0] == ?(
+    end
 
     if @block_params then
       # If this method has explicit block parameters, remove any explicit

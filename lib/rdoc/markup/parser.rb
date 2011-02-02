@@ -321,7 +321,7 @@ class RDoc::Markup::Parser
         next
       end
 
-      # indentation change: break or verbattim
+      # indentation change: break or verbatim
       if column < indent then
         unget
         break

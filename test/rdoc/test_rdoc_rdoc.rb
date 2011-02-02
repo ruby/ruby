@@ -9,6 +9,8 @@ require 'tmpdir'
 class TestRDocRDoc < MiniTest::Unit::TestCase
 
   def setup
+    RDoc::TopLevel.reset
+
     @rdoc = RDoc::RDoc.new
     @rdoc.options = RDoc::Options.new
 
@@ -45,7 +47,7 @@ class TestRDocRDoc < MiniTest::Unit::TestCase
     assert_empty files
   end
 
-  def test_remove_unparsable
+  def test_remove_unparseable
     file_list = %w[
       blah.class
       blah.eps
@@ -62,13 +64,14 @@ class TestRDocRDoc < MiniTest::Unit::TestCase
     skip "No Dir::mktmpdir, upgrade your ruby" unless Dir.respond_to? :mktmpdir
 
     Dir.mktmpdir {|d|
-      path = File.join(d, 'testdir')
+      path = File.join d, 'testdir'
 
       last = @rdoc.setup_output_dir path, false
 
       assert_empty last
 
       assert File.directory? path
+      assert File.exist? @rdoc.output_flag_file path
     }
   end
 
@@ -146,6 +149,17 @@ class TestRDocRDoc < MiniTest::Unit::TestCase
       @rdoc.update_output_dir d, Time.now, {}
 
       assert File.exist? "#{d}/created.rid"
+    end
+  end
+
+  def test_update_output_dir_dont
+    skip "No Dir::mktmpdir, upgrade your ruby" unless Dir.respond_to? :mktmpdir
+
+    Dir.mktmpdir do |d|
+      @rdoc.options.update_output_dir = false
+      @rdoc.update_output_dir d, Time.now, {}
+
+      refute File.exist? "#{d}/created.rid"
     end
   end
 

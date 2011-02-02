@@ -174,9 +174,16 @@ class TestRDocContext < XrefTestCase
   end
 
   def test_add_module_alias
-    c3_c4 = @c2.add_module_alias @c2_c3, 'C4'
+    tl = RDoc::TopLevel.new 'file.rb'
 
-    assert_equal @c2.find_module_named('C4'), c3_c4
+    c3_c4 = @c2.add_module_alias @c2_c3, 'C4', tl
+
+    c4 = @c2.find_module_named('C4')
+
+    alias_constant = @c2.constants.first
+
+    assert_equal c4, c3_c4
+    assert_equal tl, alias_constant.file
   end
 
   def test_add_module_class

@@ -228,7 +228,7 @@
         <% if method.call_seq %>
         <% method.call_seq.strip.split("\n").each_with_index do |call_seq, i| %>
         <div class="method-heading">
-          <span class="method-callseq"><%= call_seq.strip.gsub(/->/, '&rarr;').gsub( /^\w.+\./m, '') %></span>
+          <span class="method-callseq"><%= call_seq.strip.gsub(/->/, '&rarr;').gsub( /^\w+\./m, '') %></span>
           <% if i == 0 %>
           <span class="method-click-advice">click to toggle source</span>
           <% end %>

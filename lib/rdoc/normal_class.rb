@@ -12,6 +12,13 @@ class RDoc::NormalClass < RDoc::ClassModule
     superclass ? super + [superclass] : super
   end
 
+  ##
+  # The definition of this class, <tt>class MyClassName</tt>
+
+  def definition
+    "class #{full_name}"
+  end
+
   def inspect # :nodoc:
     superclass = @superclass ? " < #{@superclass}" : nil
     "<%s:0x%x class %s%s includes: %p attributes: %p methods: %p aliases: %p>" % [

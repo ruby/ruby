@@ -97,6 +97,11 @@ body.file p {
   margin: 1em 0;
 }
 
+.indexpage ol,
+.file #documentation ol {
+  line-height: 160%;
+}
+
 .indexpage ul,
 .file #documentation ul {
   line-height: 160%;
@@ -110,6 +115,20 @@ body.file p {
 .indexpage li,
 .file #documentation li {
   padding-left: 20px;
+}
+
+.indexpage ol,
+.file #documentation ol {
+  margin-left: 20px;
+}
+
+.indexpage ol > li,
+.file #documentation ol > li {
+  padding-left: 0;
+}
+
+.indexpage ul > li,
+.file #documentation ul > li {
   background: url(images/bullet_black.png) no-repeat left 4px;
 }
 .indexpage li.module {
@@ -389,9 +408,14 @@ ul.link-list .type {
 #documentation .method-description,
 #documentation .aliases {
   margin: 0 20px;
-  line-height: 1.2em;
   color: #666;
 }
+
+#documentation .method-description p,
+#documentation .aliases p {
+  line-height: 1.2em;
+}
+
 #documentation .aliases {
   padding-top: 4px;
   font-style: italic;

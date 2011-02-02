@@ -483,7 +483,7 @@ require 'rdoc'
 # [+:include:+ _filename_]
 #   Include the contents of the named file at this point. This directive
 #   must appear alone on one line, possibly preceded by spaces. In this
-#   position, it can be escapd with a \ in front of the first colon.
+#   position, it can be escaped with a \ in front of the first colon.
 #
 #   The file will be searched for in the directories listed by the +--include+
 #   option, or in the current directory by default.  The contents of the file
@@ -537,8 +537,8 @@ class RDoc::Markup
   # structure (paragraphs, lists, and so on).  Invoke an event handler as we
   # identify significant chunks.
 
-  def initialize
-    @attribute_manager = RDoc::Markup::AttributeManager.new
+  def initialize attribute_manager = nil
+    @attribute_manager = attribute_manager || RDoc::Markup::AttributeManager.new
     @output = nil
   end
 

@@ -151,7 +151,7 @@ class RDoc::ClassModule < RDoc::Context
   end
 
   ##
-  # Finds a class or module with +name+ in this namespace or its descendents
+  # Finds a class or module with +name+ in this namespace or its descendants
 
   def find_class_named name
     return self if full_name == name
@@ -308,7 +308,7 @@ class RDoc::ClassModule < RDoc::Context
   ##
   # Name to use to generate the url:
   # modules and classes that are aliases for another
-  # module or classe return the name of the latter.
+  # module or class return the name of the latter.
 
   def name_for_path
     is_alias_for ? is_alias_for.full_name : full_name

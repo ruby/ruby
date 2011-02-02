@@ -34,10 +34,10 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
                       # A::B::C.meth
                       #{CLASS_REGEXP_STR}(?:[.#]|::)#{METHOD_REGEXP_STR}
 
-                      # Stand-alone method (preceeded by a #)
+                      # Stand-alone method (preceded by a #)
                       | \\?\##{METHOD_REGEXP_STR}
 
-                      # Stand-alone method (preceeded by ::)
+                      # Stand-alone method (preceded by ::)
                       | ::#{METHOD_REGEXP_STR}
 
                       # A::B::C
@@ -51,7 +51,7 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
                       # In order that words like "can't" not
                       # be flagged as potential cross-references, only
                       # flag potential class cross-references if the character
-                      # after the cross-referece is a space, sentence
+                      # after the cross-reference is a space, sentence
                       # punctuation, tag start character, or attribute
                       # marker.
                       | #{CLASS_REGEXP_STR}(?=[\s\)\.\?\!\,\;<\000]|\z)

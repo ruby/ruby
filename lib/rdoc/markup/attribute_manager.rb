@@ -74,7 +74,6 @@ class RDoc::Markup::AttributeManager
     add_html "code", :TT
   end
 
-
   ##
   # Return an attribute object with the given turn_on and turn_off bits set
 

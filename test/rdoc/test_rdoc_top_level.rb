@@ -28,7 +28,7 @@ class TestRDocTopLevel < XrefTestCase
   end
 
   def test_class_complete
-    @c2.add_module_alias @c2_c3, 'A1'
+    @c2.add_module_alias @c2_c3, 'A1', @top_level
 
     RDoc::TopLevel.complete :public
 

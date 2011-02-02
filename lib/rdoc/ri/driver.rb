@@ -651,12 +651,14 @@ Options may also be set in the 'RI' environment variable.
 
     raise NotFoundError, name if found.empty?
 
+    filtered = filter_methods found, name
+
     out = RDoc::Markup::Document.new
 
     out << RDoc::Markup::Heading.new(1, name)
     out << RDoc::Markup::BlankLine.new
 
-    found.each do |store, methods|
+    filtered.each do |store, methods|
       methods.each do |method|
         out << RDoc::Markup::Paragraph.new("(from #{store.friendly_path})")
 
@@ -751,6 +753,21 @@ Options may also be set in the 'RI' environment variable.
     return [selector, method].join if klass.empty?
 
     "#{expand_class klass}#{selector}#{method}"
+  end
+
+  ##
+  # Filters the methods in +found+ trying to find a match for +name+.
+
+  def filter_methods found, name
+    regexp = name_regexp name
+
+    filtered = found.find_all do |store, methods|
+      methods.any? { |method| method.full_name =~ regexp }
+    end
+
+    return filtered unless filtered.empty?
+
+    found
   end
 
   ##
@@ -948,10 +965,10 @@ Options may also be set in the 'RI' environment variable.
       methods = []
 
       methods << load_method(store, :class_methods, ancestor, '::',  method) if
-        types == :class or types == :both
+        [:class, :both].include? types
 
       methods << load_method(store, :instance_methods, ancestor, '#',  method) if
-        types == :instance or types == :both
+        [:instance, :both].include? types
 
       found << [store, methods.compact]
     end
@@ -967,6 +984,21 @@ Options may also be set in the 'RI' environment variable.
     when '.', nil then :both
     when '#'      then :instance
     else               :class
+    end
+  end
+
+  ##
+  # Returns a regular expression for +name+ that will match an
+  # RDoc::AnyMethod's name.
+
+  def name_regexp name
+    klass, type, name = parse_name name
+
+    case type
+    when '#', '::' then
+      /^#{klass}#{type}#{name}$/
+    else
+      /^#{klass}(#|::)#{name}$/
     end
   end
 
@@ -996,7 +1028,7 @@ Options may also be set in the 'RI' environment variable.
   end
 
   ##
-  # Extract the class, selector and method name parts from +name+ like
+  # Extracts the class, selector and method name parts from +name+ like
   # Foo::Bar#baz.
   #
   # NOTE: Given Foo::Bar, Bar is considered a class even though it may be a

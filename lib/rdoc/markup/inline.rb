@@ -29,7 +29,7 @@ class RDoc::Markup
     end
 
     ##
-    # Returns a string reperesentation of +bitmap+
+    # Returns a string representation of +bitmap+
 
     def self.as_string(bitmap)
       return "none" if bitmap.zero?

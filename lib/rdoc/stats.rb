@@ -7,6 +7,11 @@ require 'rdoc'
 class RDoc::Stats
 
   ##
+  # Output level for the coverage report
+
+  attr_reader :coverage_level
+
+  ##
   # Count of files parsed during parsing
 
   attr_reader :files_so_far
@@ -23,10 +28,14 @@ class RDoc::Stats
   def initialize num_files, verbosity = 1
     @files_so_far = 0
     @num_files = num_files
-    @fully_documented = nil
-    @percent_doc = nil
 
+    @coverage_level = 0
+    @doc_items = nil
+    @fully_documented = nil
+    @num_params = 0
+    @percent_doc = nil
     @start = Time.now
+    @undoc_params = 0
 
     @display = case verbosity
                when 0 then Quiet.new   num_files
@@ -93,10 +102,11 @@ class RDoc::Stats
   end
 
   ##
-  # Calculates documentation totals and percentages
+  # Calculates documentation totals and percentages for classes, modules,
+  # constants, attributes and methods.
 
   def calculate
-    return if @percent_doc
+    return if @doc_items
 
     ucm = RDoc::TopLevel.unique_classes_and_modules
     constants = []
@@ -119,20 +129,31 @@ class RDoc::Stats
       @num_classes +
       @num_constants +
       @num_methods +
-      @num_modules
+      @num_modules +
+      @num_params
 
     @undoc_items =
       @undoc_attributes +
       @undoc_classes +
       @undoc_constants +
       @undoc_methods +
-      @undoc_modules
+      @undoc_modules +
+      @undoc_params
 
     @doc_items = @num_items - @undoc_items
+  end
 
-    @fully_documented = (@num_items - @doc_items) == 0
+  ##
+  # Sets coverage report level.  Accepted values are:
+  #
+  # false or nil:: No report
+  # 0:: Classes, modules, constants, attributes, methods
+  # 1:: Level 0 + method parameters
 
-    @percent_doc = @doc_items.to_f / @num_items * 100 if @num_items.nonzero?
+  def coverage_level= level
+    level = -1 unless level
+
+    @coverage_level = level
   end
 
   ##
@@ -160,96 +181,185 @@ class RDoc::Stats
   end
 
   ##
+  # A report that says you did a great job!
+
+  def great_job
+    report = []
+    report << '100% documentation!'
+    report << nil
+    report << 'Great Job!'
+
+    report.join "\n"
+  end
+
+  ##
+  # Calculates the percentage of items documented.
+
+  def percent_doc
+    return @percent_doc if @percent_doc
+
+    @fully_documented = (@num_items - @doc_items) == 0
+
+    @percent_doc = @doc_items.to_f / @num_items * 100 if @num_items.nonzero?
+    @percent_doc ||= 0
+
+    @percent_doc
+  end
+
+  ##
   # Returns a report on which items are not documented
 
   def report
-    report = []
-
-    calculate
-
-    if @num_items == @doc_items then
-      report << '100% documentation!'
-      report << nil
-      report << 'Great Job!'
-
-      return report.join "\n"
+    if @coverage_level > 0 then
+      require 'rdoc/markup/to_tt_only'
+      require 'rdoc/generator/markup'
+      require 'rdoc/text'
+      extend RDoc::Text
     end
 
-    report << 'The following items are not documented:'
-    report << nil
+    report = []
+
+    if @coverage_level.zero? then
+      calculate
+
+      return great_job if @num_items == @doc_items
+    end
 
     ucm = RDoc::TopLevel.unique_classes_and_modules
 
     ucm.sort.each do |cm|
-      type = case cm # TODO #definition
-             when RDoc::NormalClass  then 'class'
-             when RDoc::SingleClass  then 'class <<'
-             when RDoc::NormalModule then 'module'
-             end
+      report << report_class_module(cm) {
+        [
+          report_constants(cm),
+          report_attributes(cm),
+          report_methods(cm),
+        ].compact
+      }
+    end
 
-      if cm.fully_documented? then
-        next
-      elsif cm.in_files.empty? or
-            (cm.constants.empty? and cm.method_list.empty?) then
-        report << "# #{type} #{cm.full_name} is referenced but empty."
-        report << '#'
-        report << '# It probably came from another project.  ' \
-                  'I\'m sorry I\'m holding it against you.'
-        report << nil
+    if @coverage_level > 0 then
+      calculate
 
-        next
-      elsif cm.documented? then
-        report << "#{type} #{cm.full_name} # is documented"
-      else
-        report << '# in files:'
+      return great_job if @num_items == @doc_items
+    end
 
-        cm.in_files.each do |file|
-          report << "#   #{file.full_name}"
-        end
+    report.unshift nil
+    report.unshift 'The following items are not documented:'
 
-        report << nil
+    report.join "\n"
+  end
 
-        report << "#{type} #{cm.full_name}"
+  ##
+  # Returns a report on undocumented attributes in ClassModule +cm+
+
+  def report_attributes cm
+    return if cm.attributes.empty?
+
+    report = []
+
+    cm.each_attribute do |attr|
+      next if attr.documented?
+      report << "  #{attr.definition} :#{attr.name} " \
+        "# in file #{attr.file.full_name}"
+    end
+
+    report
+  end
+
+  ##
+  # Returns a report on undocumented items in ClassModule +cm+
+
+  def report_class_module cm
+    return if cm.fully_documented? and @coverage_level.zero?
+
+    report = []
+
+    if cm.in_files.empty? then
+      report << "# #{cm.definition} is referenced but empty."
+      report << '#'
+      report << '# It probably came from another project.  ' \
+        "I'm sorry I'm holding it against you."
+      report << nil
+
+      return report
+    elsif cm.documented? then
+      documented = true
+      report << "#{cm.definition} # is documented"
+    else
+      report << '# in files:'
+
+      cm.in_files.each do |file|
+        report << "#   #{file.full_name}"
       end
 
-      unless cm.constants.empty? then
-        report << nil
+      report << nil
 
-        cm.each_constant do |constant|
-          # TODO constant aliases are listed in the summary but not reported
-          # figure out what to do here
-          next if constant.documented? || constant.is_alias_for
-          report << "  # in file #{constant.file.full_name}"
-          report << "  #{constant.name} = nil"
+      report << "#{cm.definition}"
+    end
+
+    body = yield.flatten # HACK remove #flatten
+
+    return if body.empty? and documented
+
+    report << nil << body unless body.empty?
+
+    report << 'end'
+    report << nil
+
+    report
+  end
+
+  ##
+  # Returns a report on undocumented constants in ClassModule +cm+
+
+  def report_constants cm
+    return if cm.constants.empty?
+
+    report = []
+
+    cm.each_constant do |constant|
+      # TODO constant aliases are listed in the summary but not reported
+      # figure out what to do here
+      next if constant.documented? || constant.is_alias_for
+      report << "  # in file #{constant.file.full_name}"
+      report << "  #{constant.name} = nil"
+    end
+
+    report
+  end
+
+  ##
+  # Returns a report on undocumented methods in ClassModule +cm+
+
+  def report_methods cm
+    return if cm.method_list.empty?
+
+    report = []
+
+    cm.each_method do |method|
+      next if method.documented? and @coverage_level.zero?
+
+      if @coverage_level > 0 then
+        params, undoc = undoc_params method
+
+        @num_params += params
+
+        unless undoc.empty? then
+          @undoc_params += undoc.length
+
+          undoc = undoc.map do |param| "+#{param}+" end
+          param_report = "  # #{undoc.join ', '} is not documented"
         end
       end
 
-      unless cm.attributes.empty? then
-        report << nil
-
-        cm.each_attribute do |attr|
-          next if attr.documented?
-          report << "  #{attr.definition} #{attr.name} " \
-                    "# in file #{attr.file.full_name}"
-        end
-      end
-
-      unless cm.method_list.empty? then
-        report << nil
-
-        cm.each_method do |method|
-          next if method.documented?
-          report << "  # in file #{method.file.full_name}"
-          report << "  def #{method.name}#{method.params}; end"
-          report << nil
-        end
-      end
-
-      report << 'end'
+      next if method.documented? and not param_report
+      report << "  # in file #{method.file.full_name}"
+      report << param_report if param_report
+      report << "  def #{method.name}#{method.params}; end"
       report << nil
     end
 
-    report.join "\n"
+    report
   end
 
   ##
@@ -259,13 +369,14 @@ class RDoc::Stats
     calculate
 
     num_width = [@num_files, @num_items].max.to_s.length
-    nodoc_width = [
+    undoc_width = [
       @undoc_attributes,
       @undoc_classes,
       @undoc_constants,
       @undoc_items,
       @undoc_methods,
       @undoc_modules,
+      @undoc_params,
     ].max.to_s.length
 
     report = []
@@ -274,26 +385,49 @@ class RDoc::Stats
     report << nil
 
     report << 'Classes:    %*d (%*d undocumented)' % [
-      num_width, @num_classes, nodoc_width, @undoc_classes]
+      num_width, @num_classes, undoc_width, @undoc_classes]
     report << 'Modules:    %*d (%*d undocumented)' % [
-      num_width, @num_modules, nodoc_width, @undoc_modules]
+      num_width, @num_modules, undoc_width, @undoc_modules]
     report << 'Constants:  %*d (%*d undocumented)' % [
-      num_width, @num_constants, nodoc_width, @undoc_constants]
+      num_width, @num_constants, undoc_width, @undoc_constants]
     report << 'Attributes: %*d (%*d undocumented)' % [
-      num_width, @num_attributes, nodoc_width, @undoc_attributes]
+      num_width, @num_attributes, undoc_width, @undoc_attributes]
     report << 'Methods:    %*d (%*d undocumented)' % [
-      num_width, @num_methods, nodoc_width, @undoc_methods]
+      num_width, @num_methods, undoc_width, @undoc_methods]
+    report << 'Parameters: %*d (%*d undocumented)' % [
+      num_width, @num_params, undoc_width, @undoc_params] if
+        @coverage_level > 0
 
     report << nil
 
     report << 'Total:      %*d (%*d undocumented)' % [
-      num_width, @num_items, nodoc_width, @undoc_items]
+      num_width, @num_items, undoc_width, @undoc_items]
 
-    report << '%6.2f%% documented' % @percent_doc if @percent_doc
+    report << '%6.2f%% documented' % percent_doc
     report << nil
     report << 'Elapsed: %0.1fs' % (Time.now - @start)
 
     report.join "\n"
+  end
+
+  ##
+  # Determines which parameters in +method+ were not documented.  Returns a
+  # total parameter count and an Array of undocumented methods.
+
+  def undoc_params method
+    @formatter ||= RDoc::Markup::ToTtOnly.new
+
+    params = method.param_list
+
+    return 0, [] if params.empty?
+
+    document = parse method.comment
+
+    tts = document.accept @formatter
+
+    undoc = params - tts
+
+    [params.length, undoc]
   end
 
   autoload :Quiet,   'rdoc/stats/quiet'

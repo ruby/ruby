@@ -17,7 +17,7 @@ class TestRDocOptions < MiniTest::Unit::TestCase
   end
 
   def test_check_files
-    skip "assumes UNIX permition model" if /mswin|mingw/ =~ RUBY_PLATFORM
+    skip "assumes UNIX permission model" if /mswin|mingw/ =~ RUBY_PLATFORM
     out, err = capture_io do
       Dir.mktmpdir do |dir|
         Dir.chdir dir do
@@ -65,6 +65,25 @@ file 'unreadable' not readable
     EXPECTED
 
     assert_equal expected, @options.generator_descriptions
+  end
+
+  def test_parse_coverage
+    @options.parse %w[--dcov]
+
+    assert @options.coverage_report
+    assert @options.force_update
+  end
+
+  def test_parse_coverage_no
+    @options.parse %w[--no-dcov]
+
+    refute @options.coverage_report
+  end
+
+  def test_parse_coverage_level_1
+    @options.parse %w[--dcov=1]
+
+    assert_equal 1, @options.coverage_report
   end
 
   def test_parse_dash_p
@@ -327,16 +346,46 @@ file 'unreadable' not readable
       def self.op() @op end
     end
 
-    RDoc::RDoc::GENERATORS['TestGenerator'] = test_generator
+    RDoc::RDoc::GENERATORS['test'] = test_generator
 
-    @options.setup_generator 'TestGenerator'
+    @options.setup_generator 'test'
 
     assert_equal test_generator, @options.generator
     assert_equal [test_generator], @options.generator_options
 
     assert_equal @options, test_generator.op
   ensure
-    RDoc::RDoc::GENERATORS.delete 'TestGenerator'
+    RDoc::RDoc::GENERATORS.delete 'test'
+  end
+
+  def test_setup_generator_no_option_parser
+    test_generator = Class.new do
+      def self.setup_options op
+        op.option_parser.separator nil
+        @op = op
+      end
+
+      def self.op() @op end
+    end
+
+    RDoc::RDoc::GENERATORS['test'] = test_generator
+
+    @options.setup_generator 'test'
+
+    assert_equal test_generator, @options.generator
+    assert_equal [test_generator], @options.generator_options
+
+    assert_equal @options, test_generator.op
+  ensure
+    RDoc::RDoc::GENERATORS.delete 'test'
+  end
+
+  def test_update_output_dir
+    assert @options.update_output_dir
+
+    @options.update_output_dir = false
+
+    refute @options.update_output_dir
   end
 
 end

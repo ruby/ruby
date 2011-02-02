@@ -188,7 +188,6 @@ class RDoc::Context < RDoc::CodeObject
     @in_files = []
 
     @name    ||= "unknown"
-    @comment ||= ""
     @parent  = nil
     @visibility = :public
 
@@ -440,10 +439,13 @@ class RDoc::Context < RDoc::CodeObject
     # HACK: avoid duplicate 'PI' & 'E' in math.c (1.8.7 source code)
     # (this is a #ifdef: should be handled by the C parser)
     known = @constants_hash[constant.name]
-    if known
-      #$stderr.puts "\nconstant #{constant.name} already registered"
+
+    if known then
       known.comment = constant.comment if known.comment.empty?
-      known.value = constant.value if known.value.nil? or known.value.strip.empty?
+
+      known.value = constant.value if
+        known.value.nil? or known.value.strip.empty?
+
       known.is_alias_for ||= constant.is_alias_for
     else
       @constants_hash[constant.name] = constant
@@ -495,9 +497,10 @@ class RDoc::Context < RDoc::CodeObject
   end
 
   ##
-  # Adds an alias from +from+ (a class or module) to +name+.
+  # Adds an alias from +from+ (a class or module) to +name+ which was defined
+  # in +file+.
 
-  def add_module_alias from, name
+  def add_module_alias from, name, file
     return from if @done_documenting
 
     to_name = child_name(name)
@@ -519,7 +522,8 @@ class RDoc::Context < RDoc::CodeObject
     # HACK: register a constant for this alias:
     # constant value and comment will be updated after,
     # when the Ruby parser adds the constant
-    const = RDoc::Constant.new(name, nil, '')
+    const = RDoc::Constant.new name, nil, ''
+    const.record_location file
     const.is_alias_for = from
     add_constant const
 

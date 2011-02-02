@@ -217,7 +217,7 @@ class RDoc::Markup::ToRdoc < RDoc::Markup::Formatter
   end
 
   ##
-  # Removes preceeding \\ from the suppressed crossref +special+
+  # Removes preceding \\ from the suppressed crossref +special+
 
   def handle_special_SUPPRESSED_CROSSREF special
     text = special.text

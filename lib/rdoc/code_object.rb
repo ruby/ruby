@@ -61,9 +61,21 @@ class RDoc::CodeObject
   attr_reader :force_documentation
 
   ##
+  # Line in #file where this CodeObject was defined
+
+  attr_accessor :line
+
+  ##
   # Hash of arbitrary metadata for this CodeObject
 
   attr_reader :metadata
+
+  ##
+  # Offset in #file where this CodeObject was defined
+  #--
+  # TODO character or byte?
+
+  attr_accessor :offset
 
   ##
   # Our parent CodeObject
@@ -115,6 +127,12 @@ class RDoc::CodeObject
                  if comment and not comment.empty? then
                    normalize_comment comment
                  else
+                   # TODO is this sufficient?
+                   # HACK correct fix is to have #initialize create @comment
+                   #      with the correct encoding
+                   if Object.const_defined? :Encoding and @comment.empty? then
+                     @comment.force_encoding comment.encoding
+                   end
                    @comment
                  end
                end

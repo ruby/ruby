@@ -13,6 +13,13 @@ class RDoc::NormalModule < RDoc::ClassModule
   end
 
   ##
+  # The definition of this module, <tt>module MyModuleName</tt>
+
+  def definition
+    "module #{full_name}"
+  end
+
+  ##
   # This is a module, returns true
 
   def module?

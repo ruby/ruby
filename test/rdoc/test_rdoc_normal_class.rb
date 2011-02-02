@@ -13,5 +13,11 @@ class TestRDocNormalClass < XrefTestCase
     assert_equal [incl.name, klass], sub_klass.ancestors
   end
 
+  def test_definition
+    c = RDoc::NormalClass.new 'C'
+
+    assert_equal 'class C', c.definition
+  end
+
 end
 

@@ -101,6 +101,7 @@ void Init_Blah(void) {
     assert_equal 'accessor',            accessor.name
     assert_equal 'RW',                  accessor.rw
     assert_equal 'This is an accessor', accessor.comment
+    assert_equal @top_level,            accessor.file
 
     reader = attrs.shift
     assert_equal 'reader',           reader.name
@@ -134,6 +135,7 @@ void Init_Blah(void) {
     assert_equal 'accessor',            accessor.name
     assert_equal 'RW',                  accessor.rw
     assert_equal 'This is an accessor', accessor.comment
+    assert_equal @top_level,            accessor.file
   end
 
   def test_do_aliases
@@ -159,6 +161,9 @@ void Init_Blah(void) {
     assert_equal 2,      methods.length
     assert_equal 'bleh', methods.last.name
     assert_equal 'blah', methods.last.is_alias_for.name
+
+    assert_equal @top_level, methods.last.is_alias_for.file
+    assert_equal @top_level, methods.last.file
   end
 
   def test_do_aliases_singleton
@@ -338,6 +343,8 @@ void Init_foo(){
 
     constants = klass.constants
     assert !klass.constants.empty?
+
+    assert_equal @top_level, constants.first.file
 
     constants = constants.map { |c| [c.name, c.value, c.comment] }
 
@@ -529,7 +536,7 @@ Init_Foo(void) {
 
     code = other_function.token_stream.first.text
 
-    assert_equal "VALUE\nother_function() ", code
+    assert_equal "VALUE\nother_function() {\n}", code
   end
 
   def test_find_body_2
@@ -574,6 +581,41 @@ init_gi_repository (void)
 
   def test_find_body_define
     content = <<-EOF
+#define something something_else
+
+#define other_function rb_other_function
+
+/*
+ * a comment for rb_other_function
+ */
+VALUE
+rb_other_function() {
+}
+
+void
+Init_Foo(void) {
+    VALUE foo = rb_define_class("Foo", rb_cObject);
+
+    rb_define_method(foo, "my_method", other_function, 0);
+}
+    EOF
+
+    klass = util_get_class content, 'foo'
+    other_function = klass.method_list.first
+
+    assert_equal 'my_method', other_function.name
+    assert_equal 'a comment for rb_other_function', other_function.comment
+    assert_equal '()', other_function.params
+    assert_equal 118, other_function.offset
+    assert_equal 8, other_function.line
+
+    code = other_function.token_stream.first.text
+
+    assert_equal "VALUE\nrb_other_function() {\n}", code
+  end
+
+  def test_find_body_define_comment
+    content = <<-EOF
 /*
  * a comment for other_function
  */
@@ -596,9 +638,10 @@ Init_Foo(void) {
     other_function = klass.method_list.first
 
     assert_equal 'my_method', other_function.name
-    assert_equal "a comment for other_function",
-                 other_function.comment
+    assert_equal 'a comment for other_function', other_function.comment
     assert_equal '()', other_function.params
+    assert_equal 39, other_function.offset
+    assert_equal 4, other_function.line
 
     code = other_function.token_stream.first.text
 
@@ -742,7 +785,51 @@ commercial(cwyear, cweek=1, cwday=1, sg=nil) -> Date [ruby 1.9]
     assert_equal expected, comment
   end
 
-  def test_handle_method
+  def test_handle_method_args_minus_1
+    parser = util_parser "Document-method: Object#m\n blah */"
+
+    parser.content = <<-BODY
+VALUE
+rb_other(VALUE obj) {
+  rb_funcall(obj, rb_intern("other"), 0);
+  return rb_str_new2("blah, blah, blah");
+}
+
+VALUE
+rb_m(int argc, VALUE *argv, VALUE obj) {
+  VALUE o1, o2;
+  rb_scan_args(argc, argv, "1", &o1, &o2);
+}
+    BODY
+
+    parser.handle_method 'method', 'rb_cObject', 'm', 'rb_m', -1
+
+    m = @top_level.find_module_named('Object').method_list.first
+
+    assert_equal 'm', m.name
+    assert_equal @top_level, m.file
+    assert_equal 115, m.offset
+    assert_equal 7, m.line
+
+    assert_equal '(p1)', m.params
+  end
+
+
+  def test_handle_method_args_0
+    parser = util_parser "Document-method: BasicObject#==\n blah */"
+
+    parser.handle_method 'method', 'rb_cBasicObject', '==', 'rb_obj_equal', 0
+
+    bo = @top_level.find_module_named 'BasicObject'
+
+    assert_equal 1, bo.method_list.length
+
+    equals2 = bo.method_list.first
+
+    assert_equal '()', equals2.params
+  end
+
+  def test_handle_method_args_1
     parser = util_parser "Document-method: BasicObject#==\n blah */"
 
     parser.handle_method 'method', 'rb_cBasicObject', '==', 'rb_obj_equal', 1
@@ -753,7 +840,37 @@ commercial(cwyear, cweek=1, cwday=1, sg=nil) -> Date [ruby 1.9]
 
     equals2 = bo.method_list.first
 
-    assert_equal '==', equals2.name
+    assert_equal '(p1)', equals2.params
+  end
+
+  def test_handle_method_args_2
+    parser = util_parser "Document-method: BasicObject#==\n blah */"
+
+    parser.handle_method 'method', 'rb_cBasicObject', '==', 'rb_obj_equal', 2
+
+    bo = @top_level.find_module_named 'BasicObject'
+
+    assert_equal 1, bo.method_list.length
+
+    equals2 = bo.method_list.first
+
+    assert_equal '(p1, p2)', equals2.params
+  end
+
+  # test_handle_args_minus_1 handled by test_handle_method
+
+  def test_handle_method_args_minus_2
+    parser = util_parser "Document-method: BasicObject#==\n blah */"
+
+    parser.handle_method 'method', 'rb_cBasicObject', '==', 'rb_obj_equal', -2
+
+    bo = @top_level.find_module_named 'BasicObject'
+
+    assert_equal 1, bo.method_list.length
+
+    equals2 = bo.method_list.first
+
+    assert_equal '(*args)', equals2.params
   end
 
   def test_handle_method_initialize
@@ -808,6 +925,7 @@ Init_IO(void) {
     read_method = klass.method_list.first
     assert_equal "read", read_method.name
     assert_equal "Method Comment!   ", read_method.comment
+    assert_equal "rb_io_s_read", read_method.c_function
     assert read_method.singleton
   end
 
@@ -896,6 +1014,65 @@ Init_IO(void) {
     assert_equal "read", read_method.name
     assert_equal "Method Comment!   ", read_method.comment
     assert read_method.singleton
+  end
+
+  def test_rb_scan_args
+    parser = util_parser ''
+
+    assert_equal '(p1)',
+                 parser.rb_scan_args('rb_scan_args(a, b, "1",)')
+    assert_equal '(p1, p2)',
+                 parser.rb_scan_args('rb_scan_args(a, b, "2",)')
+
+    assert_equal '(p1 = v1)',
+                 parser.rb_scan_args('rb_scan_args(a, b, "01",)')
+    assert_equal '(p1 = v1, p2 = v2)',
+                 parser.rb_scan_args('rb_scan_args(a, b, "02",)')
+
+    assert_equal '(p1, p2 = v2)',
+                 parser.rb_scan_args('rb_scan_args(a, b, "11",)')
+
+    assert_equal '(p1, *args)',
+                 parser.rb_scan_args('rb_scan_args(a, b, "1*",)')
+    assert_equal '(p1, p2 = {})',
+                 parser.rb_scan_args('rb_scan_args(a, b, "1:",)')
+    assert_equal '(p1, &block)',
+                 parser.rb_scan_args('rb_scan_args(a, b, "1&",)')
+
+    assert_equal '(p1, p2)',
+                 parser.rb_scan_args('rb_scan_args(a, b, "101",)')
+
+    assert_equal '(p1, p2 = v2, p3)',
+                 parser.rb_scan_args('rb_scan_args(a, b, "111",)')
+
+    assert_equal '(p1, *args, p3)',
+                 parser.rb_scan_args('rb_scan_args(a, b, "1*1",)')
+
+    assert_equal '(p1, p2 = v2, *args)',
+                 parser.rb_scan_args('rb_scan_args(a, b, "11*",)')
+    assert_equal '(p1, p2 = v2, p3 = {})',
+                 parser.rb_scan_args('rb_scan_args(a, b, "11:",)')
+    assert_equal '(p1, p2 = v2, &block)',
+                 parser.rb_scan_args('rb_scan_args(a, b, "11&",)')
+
+    assert_equal '(p1, p2 = v2, *args, p4, p5 = {}, &block)',
+                 parser.rb_scan_args('rb_scan_args(a, b, "11*1:&",)')
+
+    # The following aren't valid according to spec but are according to the
+    # implementation.
+    assert_equal '(*args)',
+                 parser.rb_scan_args('rb_scan_args(a, b, "*",)')
+    assert_equal '(p1 = {})',
+                 parser.rb_scan_args('rb_scan_args(a, b, ":",)')
+    assert_equal '(&block)',
+                 parser.rb_scan_args('rb_scan_args(a, b, "&",)')
+
+    assert_equal '(*args, p2 = {})',
+                 parser.rb_scan_args('rb_scan_args(a, b, "*:",)')
+    assert_equal '(p1 = {}, &block)',
+                 parser.rb_scan_args('rb_scan_args(a, b, ":&",)')
+    assert_equal '(*args, p2 = {}, &block)',
+                 parser.rb_scan_args('rb_scan_args(a, b, "*:&",)')
   end
 
   def util_get_class(content, name)

@@ -1,3 +1,7 @@
+Wed Feb  2 09:27:53 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc: Upgrade to RDoc 3.5.1
+
 Wed Feb  2 00:30:43 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* include/ruby/st.h (st_table): Added comment why we need __extension__.
