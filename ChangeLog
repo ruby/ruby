@@ -4,7 +4,7 @@ Thu Feb  3 20:04:44 2011  Tanaka Akira  <akr@fsij.org>
 
 Thu Feb  3 18:33:26 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	e ext/zlib/zlib.c (gzfile_reader_get_unused): use rb_str_resurrect
+	* ext/zlib/zlib.c (gzfile_reader_get_unused): use rb_str_resurrect
 	  because gz->z.input is hidden string. [ruby-core:35057]
 
 Thu Feb  3 16:34:10 2011  NARUSE, Yui  <naruse@ruby-lang.org>
