@@ -56,7 +56,7 @@ Tue Feb  1 15:12:26 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 Tue Feb  1 13:20:39 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/benchmark/test_benchmark.rb (#capture_bench_output):
-	  Added explict sleep. Windows have imprecise time support.
+	  Added explicit sleep. Windows have imprecise time support.
 	  Thus Tms.new.Add!{} may be or may be not equal 0. The
 	  test failure started since r30747.
 
@@ -79,7 +79,7 @@ Tue Feb  1 02:28:14 2011  Masaya Tarui  <tarui@ruby-lnag.org>
 
 Tue Feb  1 00:10:30 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* lib/benchmark.rb: fix benchmarck to work with current ruby.
+	* lib/benchmark.rb: fix benchmark to work with current ruby.
 	  patched by Benoit Daloze [ruby-core:33846] [ruby-dev:43143]
 	  merged from https://github.com/eregon/ruby/commits/benchmark
 
@@ -148,7 +148,7 @@ Mon Jan 31 04:45:12 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 	* array.c (rb_ary_uniq_bang): call ARY_SET_LEN(ary, 0) before
 	  ary_resize_capa because ary_resize_capa expects resized length is
 	  smaller than current array length. call rb_ary_unshare before
-	  ary_resize_capa because ary_resize_capa losts the reference to
+	  ary_resize_capa because ary_resize_capa lost the reference to
 	  original shared array. [ruby-core:34997]
 
 Sun Jan 30 17:19:46 2011  Tanaka Akira  <akr@fsij.org>
@@ -240,7 +240,7 @@ Sat Jan 29 02:02:37 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 
 Sat Jan 29 01:36:41 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 
-	* variable.c (rb_const_set): const_set shoud preserve constant
+	* variable.c (rb_const_set): const_set should preserve constant
 	  visibility.  see [ruby-core:32912].
 
 	* test/ruby/test_module.rb: add a test for above.
