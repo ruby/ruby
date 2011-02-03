@@ -1,3 +1,8 @@
+Fri Feb  4 01:50:13 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* string.c (count_utf8_lead_bytes_with_word): wrote function
+	  comments.
+
 Fri Feb  4 00:14:55 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/zlib/zlib.c (gzfile_reader_get_unused): no need to dup

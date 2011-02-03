@@ -1038,13 +1038,30 @@ rb_enc_strlen_cr(const char *p, const char *e, rb_encoding *enc, int *cr)
 
 #ifdef NONASCII_MASK
 #define is_utf8_lead_byte(c) (((c)&0xC0) != 0x80)
+
+/*
+ * UTF-8 leading bytes have either 0xxxxxxx or 11xxxxxx
+ * bit represention. (see http://en.wikipedia.org/wiki/UTF-8)
+ * Therefore, following pseudo code can detect UTF-8 leading byte.
+ *
+ * if (!(byte & 0x80))
+ *   byte |= 0x40;          // turn on bit6
+ * return ((byte>>6) & 1);  // bit6 represent it's leading byte or not.
+ *
+ * This function calculate every bytes in the argument word `s'
+ * using the above logic concurrently. and gather every bytes result.
+ */
 static inline VALUE
 count_utf8_lead_bytes_with_word(const VALUE *s)
 {
     VALUE d = *s;
+
+    /* Transform into bit0 represent UTF-8 leading or not. */
     d |= ~(d>>1);
     d >>= 6;
     d &= NONASCII_MASK >> 7;
+
+    /* Gather every bytes. */
     d += (d>>8);
     d += (d>>16);
 #if SIZEOF_VALUE == 8
