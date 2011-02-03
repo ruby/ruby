@@ -19,9 +19,7 @@ extern "C" {
 #endif
 
 #include "ruby/config.h"
-#if defined(HAVE_STDDEF_H)
-#  include <stddef.h>
-#endif
+#include <stddef.h>
 #ifdef RUBY_EXTCONF_H
 #include RUBY_EXTCONF_H
 #endif

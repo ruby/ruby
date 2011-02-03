@@ -44,10 +44,6 @@ extern "C" {
 #define PRINTF_ARGS(decl, string_index, first_to_check) decl
 #endif
 
-#ifdef HAVE_STDLIB_H
-# include <stdlib.h>
-#endif
-
 #ifdef HAVE_STRING_H
 # include <string.h>
 #else
@@ -66,7 +62,6 @@ extern "C" {
 #endif
 
 #include <stdarg.h>
-#include <stddef.h>
 #include <stdio.h>
 
 #include "defines.h"
