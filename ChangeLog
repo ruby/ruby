@@ -1,6 +1,12 @@
+Thu Feb  3 18:33:26 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/zlib/zlib.c (gzfile_reader_get_unused): use rb_str_new_shared
+	  because gz->z.input is hidden string. [ruby-core:35057]
+
 Thu Feb  3 16:34:10 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* enc/shift_jis.c (code_to_mbc): cast as int from the subtraction of pointers.
+	* enc/shift_jis.c (code_to_mbc): cast as int from the subtraction of
+	  pointers.
 
 	* enc/utf_16le.c (utf16le_mbc_enc_len): use ptrdiff_t.
 
