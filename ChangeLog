@@ -1,3 +1,13 @@
+Thu Feb  3 16:34:10 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/shift_jis.c (code_to_mbc): cast as int from the subtraction of pointers.
+
+	* enc/utf_16le.c (utf16le_mbc_enc_len): use ptrdiff_t.
+
+	* enc/utf_32be.c (utf32be_left_adjust_char_head): ditto.
+
+	* enc/utf_32le.c (utf32le_left_adjust_char_head): ditto.
+
 Thu Feb  3 16:31:43 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* include/ruby/missing.h: don't use HAVE_STDDEF_H because it never
