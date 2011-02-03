@@ -86,7 +86,7 @@ if defined? Zlib
     def test_adler
       z = Zlib::Deflate.new
       z << "foo"
-      s = z.finish
+      z.finish
       assert_equal(0x02820145, z.adler)
     end
 
@@ -95,7 +95,7 @@ if defined? Zlib
       assert_equal(false, z.finished?)
       z << "foo"
       assert_equal(false, z.finished?)
-      s = z.finish
+      z.finish
       assert_equal(true, z.finished?)
       z.close
       assert_raise(Zlib::Error) { z.finished? }

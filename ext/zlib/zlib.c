@@ -1998,7 +1998,6 @@ gzfile_raise(struct gzfile *gz, VALUE klass, const char *message)
 {
     VALUE exc = rb_exc_new2(klass, message);
     if (!NIL_P(gz->z.input)) {
-	VALUE rb_str_resurrect(VALUE);
 	rb_ivar_set(exc, id_input, rb_str_resurrect(gz->z.input));
     }
     rb_exc_raise(exc);
@@ -2471,8 +2470,7 @@ gzfile_reader_get_unused(struct gzfile *gz)
     }
     if (NIL_P(gz->z.input)) return Qnil;
 
-    str = rb_str_dup(gz->z.input);
-    str = rb_str_resurrect(str);
+    str = rb_str_resurrect(gz->z.input);
     OBJ_TAINT(str);  /* for safe */
     return str;
 }
