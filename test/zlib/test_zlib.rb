@@ -491,11 +491,39 @@ if defined? Zlib
       Zlib::GzipWriter.open(t.path) {|gz| gz.print("foobar") }
 
       Zlib::GzipReader.open(t.path) do |f|
+        assert_equal(nil, f.unused)
         assert_equal("foo", f.read(3))
-        f.unused
+        assert_equal(nil, f.unused)
         assert_equal("bar", f.read)
-        f.unused
+        assert_equal(nil, f.unused)
       end
+    end
+
+    def test_unused2
+      zio = StringIO.new
+
+      io = Zlib::GzipWriter.new zio
+      io.write 'aaaa'
+      io.finish
+
+      io = Zlib::GzipWriter.new zio
+      io.write 'bbbb'
+      io.finish
+
+      zio.rewind
+
+      io = Zlib::GzipReader.new zio
+      assert_equal('aaaa', io.read)
+      unused = io.unused
+      assert_equal(24, unused.bytesize)
+      io.finish
+
+      zio.pos -= unused.length
+
+      io = Zlib::GzipReader.new zio
+      assert_equal('bbbb', io.read)
+      assert_equal(nil, io.unused)
+      io.finish
     end
 
     def test_read

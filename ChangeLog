@@ -1,6 +1,6 @@
 Thu Feb  3 18:33:26 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* ext/zlib/zlib.c (gzfile_reader_get_unused): use rb_str_new_shared
+	e ext/zlib/zlib.c (gzfile_reader_get_unused): use rb_str_resurrect
 	  because gz->z.input is hidden string. [ruby-core:35057]
 
 Thu Feb  3 16:34:10 2011  NARUSE, Yui  <naruse@ruby-lang.org>
