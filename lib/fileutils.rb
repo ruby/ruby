@@ -1519,6 +1519,12 @@ module FileUtils
     OPT_TABLE.keys.select {|m| OPT_TABLE[m].include?(opt) }
   end
 
+  LOW_METHODS = singleton_methods(false) - collect_method(:noop).map(&:intern)
+  module LowMethods
+    module_eval("private\n" + ::FileUtils::LOW_METHODS.map {|name| "def #{name}(*)end"}.join("\n"),
+                __FILE__, __LINE__)
+  end
+
   METHODS = singleton_methods() - [:private_module_function,
       :commands, :options, :have_option?, :options_of, :collect_method]
 
@@ -1554,6 +1560,7 @@ module FileUtils
   #
   module NoWrite
     include FileUtils
+    include LowMethods
     @fileutils_output  = $stderr
     @fileutils_label   = ''
     ::FileUtils.collect_method(:noop).each do |name|
@@ -1580,6 +1587,7 @@ module FileUtils
   #
   module DryRun
     include FileUtils
+    include LowMethods
     @fileutils_output  = $stderr
     @fileutils_label   = ''
     ::FileUtils.collect_method(:noop).each do |name|
