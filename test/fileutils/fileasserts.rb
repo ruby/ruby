@@ -8,6 +8,10 @@ module Test
         yield
       end
 
+      def assert_block msg = nil
+        assert yield, msg
+      end
+
       def assert_same_file(from, to)
         _wrap_assertion {
           assert_block("file #{from} != #{to}") {
