@@ -1,3 +1,8 @@
+Fri Feb  4 12:11:51 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* string.c (str_utf8_nth): fixed a conditon of optimized lead
+	  byte counting. [Bug #4366][ruby-dev:43170]
+
 Fri Feb  4 01:50:13 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* string.c (count_utf8_lead_bytes_with_word): wrote function
