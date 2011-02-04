@@ -1,3 +1,12 @@
+Sat Feb  5 00:59:54 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* vm_core.h (GetThreadPtr): use TypedData_Get_Struct() instead
+	  CoreDataFromValue() because we need type check. Otherwise,
+	  type mismatch can cause segmentation fault crash.
+	  [ruby-core:35086] [Ruby 1.9-Bug#4367]
+
+	* vm.c (thread_data_type): remove static.
+
 Fri Feb  4 19:14:27 2011  Tanaka Akira  <akr@fsij.org>
 
 	* enc/trans/utf8_mac.trans: parenthesize macro arguments.

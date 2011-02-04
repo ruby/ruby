@@ -1756,7 +1756,7 @@ thread_memsize(const void *ptr)
     }
 }
 
-static const rb_data_type_t thread_data_type = {
+const rb_data_type_t thread_data_type = {
     "VM/thread",
     {
 	rb_thread_mark,
