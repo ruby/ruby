@@ -1,3 +1,8 @@
+Sat Feb  5 02:09:39 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (lex_getline, parser_set_encode): set encoding of lines
+	  in SCRIPT_LINES__ as source encoding.  [ruby-dev:43168]
+
 Sat Feb  5 02:08:37 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (ruby_thread_data_type): add prefix.
