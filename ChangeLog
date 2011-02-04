@@ -1,3 +1,7 @@
+Sat Feb  5 02:08:37 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (ruby_thread_data_type): add prefix.
+
 Sat Feb  5 00:59:54 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* vm_core.h (GetThreadPtr): use TypedData_Get_Struct() instead
