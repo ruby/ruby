@@ -1,3 +1,7 @@
+Fri Feb  4 19:14:27 2011  Tanaka Akira  <akr@fsij.org>
+
+	* enc/trans/utf8_mac.trans: parenthesize macro arguments.
+
 Fri Feb  4 12:11:51 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* string.c (str_utf8_nth): fixed a conditon of optimized lead
