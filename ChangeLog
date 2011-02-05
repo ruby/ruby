@@ -1,3 +1,10 @@
+Sat Feb  5 10:29:52 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/json/parser/parser.h (GET_PARSER): check if initialized.
+	  [ruby-core:35079]
+
+	* ext/json/parser/parser.rl (cParser_initialize): ditto.
+
 Sat Feb  5 10:09:31 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (rb_get_expanded_load_path): always expand load paths.

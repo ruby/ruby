@@ -391,4 +391,11 @@ EOT
     json5 = JSON([orig = 1 << 64])
     assert_equal orig, JSON[json5][0]
   end
+
+  def test_allocate
+    json = JSON::Parser.new("{}")
+    assert_raises(ArgumentError, '[ruby-core:35079]') {json.__send__(:initialize, "{}")}
+    json = JSON::Parser.allocate
+    assert_raises(ArgumentError, '[ruby-core:35079]') {json.source}
+  end
 end

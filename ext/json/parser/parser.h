@@ -44,6 +44,9 @@ typedef struct JSON_ParserStruct {
 } JSON_Parser;
 
 #define GET_PARSER                          \
+    GET_PARSER_INIT;                        \
+    if (!json->Vsource) rb_raise(rb_eArgError, "uninitialized instance")
+#define GET_PARSER_INIT                     \
     JSON_Parser *json;                      \
     Data_Get_Struct(self, JSON_Parser, json)
 
