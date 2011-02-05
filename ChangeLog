@@ -1,3 +1,7 @@
+Sat Feb  5 10:09:31 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (rb_get_expanded_load_path): always expand load paths.
+
 Sat Feb  5 09:38:08 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (encoded_dup): extract.
