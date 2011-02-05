@@ -1,3 +1,8 @@
+Sat Feb  5 16:47:54 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* lib/test/unit/assertions.rb (Test::Unit::Assertions#assert):
+	  msg can be passed nil. [Bug #4371] [ruby-dev:43174]
+
 Sat Feb  5 15:18:25 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc: Upgrade to RDoc 3.5.2

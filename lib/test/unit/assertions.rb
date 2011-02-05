@@ -10,13 +10,10 @@ module Test
         obj.pretty_inspect.chomp
       end
 
-      UNASSIGNED = Object.new # :nodoc:
-
-      def assert(test, msg = UNASSIGNED)
+      def assert(test, msg = nil)
         case msg
-        when UNASSIGNED
-          msg = nil
-        when String, Proc
+        when String, Proc, NilClass
+          # do nothing
         else
           bt = caller.reject { |s| s.rindex(MiniTest::MINI_DIR, 0) }
           raise ArgumentError, "assertion message must be String or Proc, but #{msg.class} was given.", bt
