@@ -1,3 +1,9 @@
+Sat Feb  5 22:01:59 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* lib/test/unit/assertions.rb (Test::Unit::Assertions#assert):
+	  revert r30796. r30797 and r30798 are an alternative fix.
+	  [ruby-dev:43174]
+
 Sat Feb  5 21:47:09 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (mlhs_basic): include mlhs_post for ripper.  a patch
