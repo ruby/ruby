@@ -21,6 +21,10 @@ module Test
         super
       end
 
+      def assert_block(*msgs)
+        assert yield, *msgs
+      end
+
       def assert_raise(*args, &b)
         assert_raises(*args, &b)
       end
