@@ -1,3 +1,13 @@
+Sat Feb  5 11:48:47 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/openssl/ossl_cipher.c (ossl_cipher_alloc): leave data ptr
+	  NULL.
+
+	* ext/openssl/ossl_cipher.c (ossl_cipher_new, ossl_cipher_initialize):
+	  allocate internal structure.  [ruby-core:35094]
+
+	* ext/openssl/ossl_cipher.c (ossl_cipher_copy): ditto.
+
 Sat Feb  5 11:29:10 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/json/parser/parser.h (GET_PARSER): raise TypeError.

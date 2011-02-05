@@ -64,6 +64,11 @@ class OpenSSL::TestCipher < Test::Unit::TestCase
     assert_raise(ArgumentError){ @c1.update("") }
   end
 
+  def test_initialize
+    assert_raise(RuntimeError) {@c1.__send__(:initialize, "DES-EDE3-CBC")}
+    assert_raise(RuntimeError) {OpenSSL::Cipher.allocate.final}
+  end
+
   if OpenSSL::OPENSSL_VERSION_NUMBER > 0x00907000
     def test_ciphers
       OpenSSL::Cipher.ciphers.each{|name|

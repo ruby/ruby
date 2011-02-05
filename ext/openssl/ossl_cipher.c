@@ -10,10 +10,17 @@
  */
 #include "ossl.h"
 
+#define WrapCipher(obj, klass, ctx) \
+    obj = Data_Wrap_Struct(klass, 0, ossl_cipher_free, ctx)
 #define MakeCipher(obj, klass, ctx) \
     obj = Data_Make_Struct(klass, EVP_CIPHER_CTX, 0, ossl_cipher_free, ctx)
-#define GetCipher(obj, ctx) do { \
+#define AllocCipher(obj, ctx) \
+    memset(DATA_PTR(obj) = (ctx) = ALLOC(EVP_CIPHER_CTX), 0, sizeof(EVP_CIPHER_CTX))
+#define GetCipherInit(obj, ctx) do { \
     Data_Get_Struct(obj, EVP_CIPHER_CTX, ctx); \
+} while (0)
+#define GetCipher(obj, ctx) do { \
+    GetCipherInit(obj, ctx); \
     if (!ctx) { \
 	ossl_raise(rb_eRuntimeError, "Cipher not inititalized!"); \
     } \
@@ -51,7 +58,7 @@ ossl_cipher_new(const EVP_CIPHER *cipher)
     EVP_CIPHER_CTX *ctx;
 
     ret = ossl_cipher_alloc(cCipher);
-    GetCipher(ret, ctx);
+    AllocCipher(ret, ctx);
     EVP_CIPHER_CTX_init(ctx);
     if (EVP_CipherInit_ex(ctx, cipher, NULL, NULL, NULL, -1) != 1)
 	ossl_raise(eCipherError, NULL);
@@ -74,11 +81,9 @@ ossl_cipher_free(EVP_CIPHER_CTX *ctx)
 static VALUE
 ossl_cipher_alloc(VALUE klass)
 {
-    EVP_CIPHER_CTX *ctx;
     VALUE obj;
 
-    MakeCipher(obj, klass, ctx);
-    EVP_CIPHER_CTX_init(ctx);
+    WrapCipher(obj, klass, 0);
 
     return obj;
 }
@@ -99,7 +104,12 @@ ossl_cipher_initialize(VALUE self, VALUE str)
     char *name;
 
     name = StringValuePtr(str);
-    GetCipher(self, ctx);
+    GetCipherInit(self, ctx);
+    if (ctx) {
+	ossl_raise(rb_eRuntimeError, "Cipher already inititalized!");
+    }
+    AllocCipher(self, ctx);
+    EVP_CIPHER_CTX_init(ctx);
     if (!(cipher = EVP_get_cipherbyname(name))) {
 	ossl_raise(rb_eRuntimeError, "unsupported cipher algorithm (%s)", name);
     }
@@ -116,7 +126,10 @@ ossl_cipher_copy(VALUE self, VALUE other)
     rb_check_frozen(self);
     if (self == other) return self;
 
-    GetCipher(self, ctx1);
+    GetCipherInit(self, ctx1);
+    if (!ctx1) {
+	AllocCipher(self, ctx1);
+    }
     SafeGetCipher(other, ctx2);
     if (EVP_CIPHER_CTX_copy(ctx1, ctx2) != 1)
 	ossl_raise(eCipherError, NULL);
