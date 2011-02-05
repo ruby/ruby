@@ -23,13 +23,13 @@ $:.unshift(File.expand_path('..', __FILE__)+'/./foo')
 module Foo
   autoload :Bar, 'bar'
 end
-Foo::Bar
+p Foo::Bar
       INPUT
     end
     open(tmpfiles[1], 'w') do |f|
       f.puts 'class Foo::Bar; end'
     end
-    assert_in_out_err([tmpfiles[0]], "", [], [])
+    assert_in_out_err([tmpfiles[0]], "", ["Foo::Bar"], [])
   ensure
     File.unlink(*tmpfiles) rescue nil if tmpfiles
     tmpdirs.each {|dir| Dir.rmdir(dir)}
