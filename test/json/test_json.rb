@@ -394,8 +394,8 @@ EOT
 
   def test_allocate
     json = JSON::Parser.new("{}")
-    assert_raises(ArgumentError, '[ruby-core:35079]') {json.__send__(:initialize, "{}")}
+    assert_raises(TypeError, '[ruby-core:35079]') {json.__send__(:initialize, "{}")}
     json = JSON::Parser.allocate
-    assert_raises(ArgumentError, '[ruby-core:35079]') {json.source}
+    assert_raises(TypeError, '[ruby-core:35079]') {json.source}
   end
 end

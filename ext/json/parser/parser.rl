@@ -611,7 +611,7 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
     GET_PARSER_INIT;
 
     if (json->Vsource) {
-        rb_raise(rb_eArgError, "already initialized instance");
+        rb_raise(rb_eTypeError, "already initialized instance");
     }
     rb_scan_args(argc, argv, "11", &source, &opts);
     source = convert_encoding(StringValue(source));
