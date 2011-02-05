@@ -2757,6 +2757,8 @@ str_encode_bang(int argc, VALUE *argv, VALUE str)
     return str_encode_associate(str, encidx);
 }
 
+static VALUE encoded_dup(VALUE newstr, VALUE str, int encidx);
+
 /*
  *  call-seq:
  *     str.encode(encoding [, options] )   -> str
@@ -2816,15 +2818,7 @@ str_encode(int argc, VALUE *argv, VALUE str)
 {
     VALUE newstr = str;
     int encidx = str_transcode(argc, argv, &newstr);
-
-    if (encidx < 0) return rb_str_dup(str);
-    if (newstr == str) {
-	newstr = rb_str_dup(str);
-    }
-    else {
-	RBASIC(newstr)->klass = rb_obj_class(str);
-    }
-    return str_encode_associate(newstr, encidx);
+    return encoded_dup(newstr, str, encidx);
 }
 
 VALUE
@@ -2834,7 +2828,12 @@ rb_str_encode(VALUE str, VALUE to, int ecflags, VALUE ecopts)
     VALUE *argv = &to;
     VALUE newstr = str;
     int encidx = str_transcode0(argc, argv, &newstr, ecflags, ecopts);
+    return encoded_dup(newstr, str, encidx);
+}
 
+static VALUE
+encoded_dup(VALUE newstr, VALUE str, int encidx)
+{
     if (encidx < 0) return rb_str_dup(str);
     if (newstr == str) {
 	newstr = rb_str_dup(str);
