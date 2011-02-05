@@ -1,3 +1,8 @@
+Sat Feb  5 21:47:09 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (mlhs_basic): include mlhs_post for ripper.  a patch
+	  from Michael Edgar at [ruby-core:35078].
+
 Sat Feb  5 21:22:21 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/assertions.rb (assert_block): move from
