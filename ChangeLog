@@ -1,3 +1,8 @@
+Sat Feb  5 12:05:27 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/syck/rubyext.c (syck_node_init_copy): SyckNode is not
+	  copiable.  [ruby-core:35094]
+
 Sat Feb  5 11:48:47 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/ossl_cipher.c (ossl_cipher_alloc): leave data ptr

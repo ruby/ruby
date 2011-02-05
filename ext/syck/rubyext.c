@@ -1722,6 +1722,7 @@ syck_map_style_set(VALUE self, VALUE style)
     return self;
 }
 
+#if 0
 /*
  * Cloning method for all node types
  */
@@ -1744,6 +1745,7 @@ syck_node_init_copy(VALUE copy, VALUE orig)
     MEMCPY( copy_n, orig_n, SyckNode, 1 );
     return copy;
 }
+#endif
 
 /*
  * YAML::Syck::Node#type_id=
@@ -2225,7 +2227,7 @@ Init_syck()
      * Define YAML::Syck::Node class
      */
     cNode = rb_define_class_under( rb_syck, "Node", rb_cObject );
-    rb_define_method( cNode, "initialize_copy", syck_node_init_copy, 1 );
+    rb_undef( cNode, rb_intern("initialize_copy") );
     rb_define_attr( cNode, "emitter", 1, 1 );
     rb_define_attr( cNode, "resolver", 1, 1 );
     rb_define_attr( cNode, "kind", 1, 0 );
