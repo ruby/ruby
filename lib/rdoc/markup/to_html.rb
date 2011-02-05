@@ -10,6 +10,8 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
 
   include RDoc::Text
 
+  # :section: Utilities
+
   ##
   # Maps RDoc::Markup::Parser::LIST_TOKENS types to HTML tags
 
@@ -55,6 +57,8 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
     File.join(*from)
   end
 
+  # :section:
+
   ##
   # Creates a new formatter that will output HTML
 
@@ -75,54 +79,21 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
     init_tags
   end
 
-  ##
-  # Maps attributes to HTML tags
-
-  def init_tags
-    add_tag :BOLD, "<b>",  "</b>"
-    add_tag :TT,   "<tt>", "</tt>"
-    add_tag :EM,   "<em>", "</em>"
-  end
+  # :section: Special Handling
+  #
+  # These methods handle special markup added by RDoc::Markup#add_special.
 
   ##
-  # Generate a hyperlink for +url+, labeled with +text+.  Handles the special
-  # cases for img: and link: described under handle_special_HYPERLINK
-
-  def gen_url(url, text)
-    if url =~ /([A-Za-z]+):(.*)/ then
-      type = $1
-      path = $2
-    else
-      type = "http"
-      path = url
-      url  = "http://#{url}"
-    end
-
-    if type == "link" then
-      url = if path[0, 1] == '#' then # is this meaningful?
-              path
-            else
-              self.class.gen_relative_url @from_path, path
-            end
-    end
-
-    if (type == "http" or type == "link") and
-       url =~ /\.(gif|png|jpg|jpeg|bmp)$/ then
-      "<img src=\"#{url}\" />"
-    else
-      "<a href=\"#{url}\">#{text.sub(%r{^#{type}:/*}, '')}</a>"
-    end
-  end
-
-  # :section: Special handling
-
-  ##
-  # And we're invoked with a potential external hyperlink. <tt>mailto:</tt>
-  # just gets inserted. <tt>http:</tt> links are checked to see if they
-  # reference an image. If so, that image gets inserted using an
-  # <tt><img></tt> tag. Otherwise a conventional <tt><a href></tt> is used.
-  # We also support a special type of hyperlink, <tt>link:</tt>, which is a
-  # reference to a local file whose path is relative to the --op directory.
+  # +special+ is a potential hyperlink.  The following schemes are handled:
+  #
+  # <tt>mailto:</tt>::
+  #   Inserted as-is.
+  # <tt>http:</tt>::
+  #   Links are checked to see if they reference an image. If so, that image
+  #   gets inserted using an <tt><img></tt> tag. Otherwise a conventional
+  #   <tt><a href></tt> is used.
+  # <tt>link:</tt>::
+  #   Reference to a local file relative to the output directory.
 
   def handle_special_HYPERLINK(special)
     url = special.text
@@ -130,8 +101,8 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   end
 
   ##
-  # Here's a hyperlink where the label is different to the URL
-  # <label>[url] or {long label}[url]
+  # This +special+ is a hyperlink where the label is different from the URL
+  # label[url] or {long label}[url]
 
   def handle_special_TIDYLINK(special)
     text = special.text
@@ -143,41 +114,9 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
     gen_url url, label
   end
 
-  # :section: Utilities
-
-  ##
-  # Wraps +txt+ to +line_len+
-
-  def wrap(txt, line_len = 76)
-    res = []
-    sp = 0
-    ep = txt.length
-
-    while sp < ep
-      # scan back for a space
-      p = sp + line_len - 1
-      if p >= ep
-        p = ep
-      else
-        while p > sp and txt[p] != ?\s
-          p -= 1
-        end
-        if p <= sp
-          p = sp + line_len
-          while p < ep and txt[p] != ?\s
-            p += 1
-          end
-        end
-      end
-      res << txt[sp...p] << "\n"
-      sp = p
-      sp += 1 while sp < ep and txt[sp] == ?\s
-    end
-
-    res.join.strip
-  end
-
   # :section: Visitor
+  #
+  # These methods implement the HTML visitor.
 
   ##
   # Prepares the visitor for HTML generation
@@ -283,11 +222,43 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
     @res << raw.parts.join("\n")
   end
 
+  # :section: Utilities
+
   ##
   # CGI escapes +text+
 
   def convert_string(text)
     CGI.escapeHTML text
+  end
+
+  ##
+  # Generate a hyperlink for +url+, labeled with +text+.  Handles the special
+  # cases for img: and link: described under handle_special_HYPERLINK
+
+  def gen_url(url, text)
+    if url =~ /([A-Za-z]+):(.*)/ then
+      type = $1
+      path = $2
+    else
+      type = "http"
+      path = url
+      url  = "http://#{url}"
+    end
+
+    if type == "link" then
+      url = if path[0, 1] == '#' then # is this meaningful?
+              path
+            else
+              self.class.gen_relative_url @from_path, path
+            end
+    end
+
+    if (type == "http" or type == "link") and
+       url =~ /\.(gif|png|jpg|jpeg|bmp)$/ then
+      "<img src=\"#{url}\" />"
+    else
+      "<a href=\"#{url}\">#{text.sub(%r{^#{type}:/*}, '')}</a>"
+    end
   end
 
   ##
@@ -297,6 +268,15 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
     tags = LIST_TYPE_TO_HTML[list_type]
     raise RDoc::Error, "Invalid list type: #{list_type.inspect}" unless tags
     tags[open_tag ? 0 : 1]
+  end
+
+  ##
+  # Maps attributes to HTML tags
+
+  def init_tags
+    add_tag :BOLD, "<b>",  "</b>"
+    add_tag :TT,   "<tt>", "</tt>"
+    add_tag :EM,   "<em>", "</em>"
   end
 
   ##

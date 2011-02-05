@@ -747,7 +747,7 @@ Usage: #{opt.program_name} [options] [names...]
 
     if @generator.respond_to? :setup_options then
       @option_parser ||= OptionParser.new
-      @generator.setup_options self 
+      @generator.setup_options self
     end
   end
 

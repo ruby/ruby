@@ -62,22 +62,6 @@ end
 
 class RDoc::AnyMethod
 
-  ##
-  # Maps RDoc::RubyToken classes to CSS class names
-
-  STYLE_MAP = {
-    RDoc::RubyToken::TkCONSTANT => 'ruby-constant',
-    RDoc::RubyToken::TkKW       => 'ruby-keyword',
-    RDoc::RubyToken::TkIVAR     => 'ruby-ivar',
-    RDoc::RubyToken::TkOp       => 'ruby-operator',
-    RDoc::RubyToken::TkId       => 'ruby-identifier',
-    RDoc::RubyToken::TkNode     => 'ruby-node',
-    RDoc::RubyToken::TkCOMMENT  => 'ruby-comment',
-    RDoc::RubyToken::TkREGEXP   => 'ruby-regexp',
-    RDoc::RubyToken::TkSTRING   => 'ruby-string',
-    RDoc::RubyToken::TkVal      => 'ruby-value',
-  }
-
   include RDoc::Generator::Markup
 
   @add_line_numbers = false
@@ -130,7 +114,18 @@ class RDoc::AnyMethod
     @token_stream.each do |t|
       next unless t
 
-      style = STYLE_MAP[t.class]
+      style = case t
+              when RDoc::RubyToken::TkCONSTANT then 'ruby-constant'
+              when RDoc::RubyToken::TkKW       then 'ruby-keyword'
+              when RDoc::RubyToken::TkIVAR     then 'ruby-ivar'
+              when RDoc::RubyToken::TkOp       then 'ruby-operator'
+              when RDoc::RubyToken::TkId       then 'ruby-identifier'
+              when RDoc::RubyToken::TkNode     then 'ruby-node'
+              when RDoc::RubyToken::TkCOMMENT  then 'ruby-comment'
+              when RDoc::RubyToken::TkREGEXP   then 'ruby-regexp'
+              when RDoc::RubyToken::TkSTRING   then 'ruby-string'
+              when RDoc::RubyToken::TkVal      then 'ruby-value'
+              end
 
       text = CGI.escapeHTML t.text
 

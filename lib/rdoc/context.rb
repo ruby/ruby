@@ -60,11 +60,6 @@ class RDoc::Context < RDoc::CodeObject
   attr_reader :requires
 
   ##
-  # Sections in this context
-
-  attr_reader :sections
-
-  ##
   # Hash <tt>old_name => [aliases]</tt>, for aliases
   # that haven't (yet) been resolved to a method/attribute.
   # (Not to be confused with the aliases of the context.)
@@ -93,12 +88,17 @@ class RDoc::Context < RDoc::CodeObject
   attr_reader :constants_hash
 
   ##
-  # A per-comment section of documentation like:
+  # A section of documentation like:
   #
   #   # :section: The title
   #   # The body
+  #
+  # Sections can be referenced multiple times and will be collapsed into a
+  # single section.
 
   class Section
+
+    include RDoc::Text
 
     ##
     # Section comment
@@ -111,11 +111,6 @@ class RDoc::Context < RDoc::CodeObject
     attr_reader :parent
 
     ##
-    # Section sequence number (for linking)
-
-    attr_reader :sequence
-
-    ##
     # Section title
 
     attr_reader :title
@@ -125,21 +120,69 @@ class RDoc::Context < RDoc::CodeObject
     ##
     # Creates a new section with +title+ and +comment+
 
-    def initialize(parent, title, comment)
+    def initialize parent, title, comment
       @parent = parent
-      @title = title
+      @title = title ? title.strip : title
 
       @@sequence.succ!
       @sequence = @@sequence.dup
 
-      set_comment comment
+      @comment = extract_comment comment
     end
 
     ##
-    # Sections are equal when they have the same #sequence
+    # Sections are equal when they have the same #title
 
-    def ==(other)
-      self.class === other and @sequence == other.sequence
+    def == other
+      self.class === other and @title == other.title
+    end
+
+    ##
+    # Anchor reference for linking to this section
+
+    def aref
+      title = @title || '[untitled]'
+
+      CGI.escape(title).gsub('%', '-').sub(/^-/, '')
+    end
+
+    ##
+    # Appends +comment+ to the current comment separated by a rule.
+
+    def comment= comment
+      comment = extract_comment comment
+
+      return if comment.empty?
+
+      if @comment then
+        @comment += "\n# ---\n#{comment}"
+      else
+        @comment = comment
+      end
+    end
+
+    ##
+    # Extracts the comment for this section from the original comment block.
+    # If the first line contains :section:, strip it and use the rest.
+    # Otherwise remove lines up to the line containing :section:, and look
+    # for those lines again at the end and remove them. This lets us write
+    #
+    #   # :section: The title
+    #   # The body
+
+    def extract_comment comment
+      if comment =~ /^#[ \t]*:section:.*\n/ then
+        start = $`
+        rest = $'
+
+        if start.empty? then
+          rest
+        else
+          rest.sub(/#{start.chomp}\Z/, '')
+        end
+      else
+        comment
+      end
     end
 
     def inspect # :nodoc:
@@ -150,31 +193,11 @@ class RDoc::Context < RDoc::CodeObject
     end
 
     ##
-    # Set the comment for this section from the original comment block.  If
-    # the first line contains :section:, strip it and use the rest.
-    # Otherwise remove lines up to the line containing :section:, and look
-    # for those lines again at the end and remove them. This lets us write
-    #
-    #   # :section: The title
-    #   # The body
+    # Section sequence number (deprecated)
 
-    def set_comment(comment)
-      return unless comment
-
-      if comment =~ /^#[ \t]*:section:.*\n/ then
-        start = $`
-        rest = $'
-
-        if start.empty?
-          @comment = rest
-        else
-          @comment = rest.sub(/#{start.chomp}\Z/, '')
-        end
-      else
-        @comment = comment
-      end
-
-      @comment = nil if @comment.empty?
+    def sequence
+      warn "RDoc::Context::Section#sequence is deprecated, use #aref"
+      @sequence
     end
 
   end
@@ -192,7 +215,7 @@ class RDoc::Context < RDoc::CodeObject
     @visibility = :public
 
     @current_section = Section.new self, nil, nil
-    @sections = [@current_section]
+    @sections = { nil => @current_section }
 
     @classes = {}
     @modules = {}
@@ -670,6 +693,28 @@ class RDoc::Context < RDoc::CodeObject
   end
 
   ##
+  # Iterator for each section's contents sorted by title.  The +section+, the
+  # section's +constants+ and the sections +attributes+ are yielded.  The
+  # +constants+ and +attributes+ collections are sorted.
+  #
+  # To retrieve methods in a section use #methods_by_type with the optional
+  # +section+ parameter.
+  #
+  # NOTE: Do not edit collections yielded by this method
+
+  def each_section # :yields: section, constants, attributes
+    constants  = @constants.group_by  do |constant|  constant.section end
+    constants.default = []
+
+    attributes = @attributes.group_by do |attribute| attribute.section end
+    attributes.default = []
+
+    @sections.sort_by { |title, _| title.to_s }.each do |_, section|
+      yield section, constants[section].sort, attributes[section].sort
+    end
+  end
+
+  ##
   # Finds an attribute +name+ with singleton value +singleton+.
 
   def find_attribute(name, singleton)
@@ -876,10 +921,13 @@ class RDoc::Context < RDoc::CodeObject
   end
 
   ##
-  # Breaks method_list into a nested hash by type (class or instance) and
-  # visibility (public, protected, private)
+  # Breaks method_list into a nested hash by type (<tt>'class'</tt> or
+  # <tt>'instance'</tt>) and visibility (+:public+, +:protected+, +:private+).
+  #
+  # If +section+ is provided only methods in that RDoc::Context::Section will
+  # be returned.
 
-  def methods_by_type
+  def methods_by_type section = nil
     methods = {}
 
     TYPES.each do |type|
@@ -892,6 +940,7 @@ class RDoc::Context < RDoc::CodeObject
     end
 
     each_method do |method|
+      next if section and not method.section == section
       methods[method.type][method.visibility] << method
     end
 
@@ -997,11 +1046,29 @@ class RDoc::Context < RDoc::CodeObject
   end
 
   ##
+  # Sections in this context
+
+  def sections
+    @sections.values
+  end
+
+  def sections_hash # :nodoc:
+    @sections
+  end
+
+  ##
   # Creates a new section with +title+ and +comment+
 
   def set_current_section(title, comment)
-    @current_section = Section.new self, title, comment
-    @sections << @current_section
+    if @sections.key? title then
+      @current_section = @sections[title]
+      @current_section.comment = comment
+    else
+      @current_section = Section.new self, title, comment
+      @sections[title] = @current_section
+    end
+
+    @current_section
   end
 
   ##

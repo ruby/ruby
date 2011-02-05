@@ -1,3 +1,7 @@
+Sat Feb  5 15:18:25 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc: Upgrade to RDoc 3.5.2
+
 Sat Feb  5 12:05:27 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/syck/rubyext.c (syck_node_init_copy): SyckNode is not

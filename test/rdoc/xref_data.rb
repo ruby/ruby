@@ -2,8 +2,13 @@ XREF_DATA = <<-XREF_DATA
 class C1
 
   attr :attr
+
+  # :section: separate
+
   attr_reader :attr_reader
   attr_writer :attr_writer
+
+  # :section:
   attr_accessor :attr_accessor
 
   CONST = :const

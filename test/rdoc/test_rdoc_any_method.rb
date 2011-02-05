@@ -47,7 +47,7 @@ method(a, b) { |c, d| ... }
   def test_markup_code
     tokens = [
       RDoc::RubyToken::TkCONSTANT. new(0, 0, 0, 'CONSTANT'),
-      RDoc::RubyToken::TkKW.       new(0, 0, 0, 'KW'),
+      RDoc::RubyToken::TkDEF.       new(0, 0, 0, 'KW'),
       RDoc::RubyToken::TkIVAR.     new(0, 0, 0, 'IVAR'),
       RDoc::RubyToken::TkOp.       new(0, 0, 0, 'Op'),
       RDoc::RubyToken::TkId.       new(0, 0, 0, 'Id'),
@@ -89,6 +89,12 @@ method(a, b) { |c, d| ... }
     assert_equal 'C1#m',  instance_method.full_name
     assert_equal 'C1',    instance_method.parent_name
     assert_equal '(foo)', instance_method.params
+
+    aliased_method = Marshal.load Marshal.dump(@c2.method_list.last)
+
+    assert_equal 'C2#a',  aliased_method.full_name
+    assert_equal 'C2',    aliased_method.parent_name
+    assert_equal '()',    aliased_method.params
 
     class_method = Marshal.load Marshal.dump(@c1.method_list.first)
 

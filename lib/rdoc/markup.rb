@@ -502,10 +502,11 @@ require 'rdoc'
 #   Starts a new section in the output.  The title following +:section:+ is
 #   used as the section heading, and the remainder of the comment containing
 #   the section is used as introductory text.  Subsequent methods, aliases,
-#   attributes, and classes will be documented in this section.  A :section:
-#   comment block may have one or more lines before the :section: directive.
-#   These will be removed, and any identical lines at the end of the block are
-#   also removed.  This allows you to add visual cues such as:
+#   attributes, and classes will be documented in this section.
+#
+#   A :section: comment block may have one or more lines before the :section:
+#   directive.  These will be removed, and any identical lines at the end of
+#   the block are also removed.  This allows you to add visual cues such as:
 #
 #     # ----------------------------------------
 #     # :section: My Section
@@ -513,7 +514,10 @@ require 'rdoc'
 #     # See it glisten in the noon-day sun.
 #     # ----------------------------------------
 #
-#   <i>Note: Current formatters to not take sections into account.</i>
+#   Sections may be referenced multiple times in a class or module allowing
+#   methods, attributes and constants to be ordered one way for implementation
+#   ordering but still grouped together in documentation.  If a section has
+#   multiple comments they will be concatenated with a dividing rule.
 #
 # [+:call-seq:+]
 #   Lines up to the next blank line in the comment are treated as the method's

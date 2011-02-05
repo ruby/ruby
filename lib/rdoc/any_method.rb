@@ -44,7 +44,7 @@ class RDoc::AnyMethod < RDoc::MethodAttr
   ##
   # Adds +an_alias+ as an alias for this method in +context+.
 
-  def add_alias(an_alias, context)
+  def add_alias(an_alias, context = nil )
     method = self.class.new an_alias.text, an_alias.new_name
 
     method.record_location an_alias.file
@@ -54,7 +54,7 @@ class RDoc::AnyMethod < RDoc::MethodAttr
     method.comment = an_alias.comment
     method.is_alias_for = self
     @aliases << method
-    context.add_method method
+    context.add_method( method ) if context
     method
   end
 
