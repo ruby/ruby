@@ -1,3 +1,8 @@
+Sat Feb  5 20:40:34 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/fileutils/fileasserts.rb (assert_block): pass arguments
+	  as-is.  [ruby-dev:43174]
+
 Sat Feb  5 16:47:54 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* lib/test/unit/assertions.rb (Test::Unit::Assertions#assert):

@@ -8,8 +8,8 @@ module Test
         yield
       end
 
-      def assert_block msg = nil
-        assert yield, msg
+      def assert_block(*msgs)
+        assert yield, *msgs
       end
 
       def assert_same_file(from, to, message=nil)
