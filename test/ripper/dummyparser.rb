@@ -184,6 +184,14 @@ class DummyParser < Ripper
     Node.new('assocs', *a)
   end
 
+  def on_word_new
+    ""
+  end
+
+  def on_word_add(word, w)
+    word << w
+  end
+
   def on_words_new
     NodeList.new
   end
