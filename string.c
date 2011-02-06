@@ -3745,6 +3745,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     slen = RSTRING_LEN(str);
     cp = sp;
     str_enc = STR_ENC_GET(str);
+    rb_enc_associate(dest, str_enc);
 
     do {
 	n++;

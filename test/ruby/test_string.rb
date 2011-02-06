@@ -674,6 +674,21 @@ class TestString < Test::Unit::TestCase
     assert_raise(ArgumentError) { "foo".gsub }
   end
 
+  def test_gsub_encoding
+    a = S("hello world")
+    a.force_encoding Encoding::UTF_8
+
+    b = S("hi")
+    b.force_encoding Encoding::US_ASCII
+
+    assert_equal Encoding::UTF_8, a.gsub(/hello/, b).encoding
+
+    c = S("everybody")
+    c.force_encoding Encoding::US_ASCII
+
+    assert_equal Encoding::UTF_8, a.gsub(/world/, c).encoding
+  end
+
   def test_gsub!
     a = S("hello")
     b = a.dup
