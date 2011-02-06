@@ -348,7 +348,7 @@ module JSON
   else
     require 'iconv'
     def self.iconv(to, from, string)
-      Iconv.iconv(to, from, string).first
+      Iconv.conv(to, from, string)
     end
   end
 end

@@ -1,3 +1,8 @@
+Sun Feb  6 13:48:29 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/json/lib/json/common.rb (JSON::MissingUnicodeSupport.iconv):
+	  should not drop rest of the result.  use Iconv.conv instead.
+
 Sun Feb  6 12:46:02 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* string.c (gsub): Ensure result encoding is the same as input
