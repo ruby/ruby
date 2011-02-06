@@ -345,6 +345,10 @@ native_thread_destroy(rb_thread_t *th)
 
 #define USE_THREAD_CACHE 0
 
+#if USE_THREAD_CACHE
+static rb_thread_t *register_cached_thread_and_wait(void);
+#endif
+
 #if defined HAVE_PTHREAD_GETATTR_NP || defined HAVE_PTHREAD_ATTR_GET_NP
 #define STACKADDR_AVAILABLE 1
 #elif defined HAVE_PTHREAD_GET_STACKADDR_NP && defined HAVE_PTHREAD_GET_STACKSIZE_NP
@@ -525,7 +529,6 @@ thread_start_func_1(void *th_ptr)
     if (1) {
 	/* cache thread */
 	rb_thread_t *th;
-	static rb_thread_t *register_cached_thread_and_wait(void);
 	if ((th = register_cached_thread_and_wait()) != 0) {
 	    th_ptr = (void *)th;
 	    th->thread_id = pthread_self();
