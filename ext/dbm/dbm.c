@@ -37,13 +37,13 @@ closed_dbm(void)
 }
 
 #define GetDBM(obj, dbmp) {\
-    Data_Get_Struct(obj, struct dbmdata, dbmp);\
-    if (dbmp == 0) closed_dbm();\
-    if (dbmp->di_dbm == 0) closed_dbm();\
+    Data_Get_Struct((obj), struct dbmdata, (dbmp));\
+    if ((dbmp) == 0) closed_dbm();\
+    if ((dbmp)->di_dbm == 0) closed_dbm();\
 }
 
 #define GetDBM2(obj, data, dbm) {\
-    GetDBM(obj, data);\
+    GetDBM((obj), (data));\
     (dbm) = dbmp->di_dbm;\
 }
 

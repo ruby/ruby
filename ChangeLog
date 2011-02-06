@@ -1,3 +1,7 @@
+Sun Feb  6 11:29:23 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dbm/dbm.c: parenthesize macro arguments.
+
 Sat Feb  5 22:01:59 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* lib/test/unit/assertions.rb (Test::Unit::Assertions#assert):
