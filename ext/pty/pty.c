@@ -205,7 +205,8 @@ chfunc(void *data, char *errbuf, size_t errbuf_len)
     seteuid(getuid());
 #endif
 
-    return rb_f_exec(argc, argv);
+    rb_f_exec(argc, argv);
+    return 0;
 #undef ERROR_EXIT
 }
 
