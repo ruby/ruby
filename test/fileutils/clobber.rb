@@ -7,6 +7,8 @@ class TestFileUtils < Test::Unit::TestCase
 end
 
 module TestFileUtils::Clobber
+  include Test::Unit::FileAssertions
+
   def my_rm_rf(path)
     if File.exist?('/bin/rm')
       system %Q[/bin/rm -rf "#{path}"]

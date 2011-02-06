@@ -8,6 +8,7 @@ require 'test/unit'
 
 class TestFileUtils < Test::Unit::TestCase
   TMPROOT = "#{Dir.tmpdir}/fileutils.rb.#{$$}"
+  include Test::Unit::FileAssertions
 end
 
 prevdir = Dir.pwd

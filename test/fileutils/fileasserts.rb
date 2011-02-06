@@ -2,7 +2,7 @@
 
 module Test
   module Unit
-    module Assertions   # redefine
+    module FileAssertions
 
       def _wrap_assertion
         yield
