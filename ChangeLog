@@ -1,3 +1,9 @@
+Mon Feb  7 10:21:50 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/rdoc/test_rdoc_options.rb (TestRDocOptions#test_check_files):
+	  there is no easy way to create owner unreadable file on Windows.
+	  So, skip the test.
+
 Sun Feb  6 13:48:29 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/json/lib/json/common.rb (JSON::MissingUnicodeSupport.iconv):

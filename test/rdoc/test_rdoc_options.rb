@@ -17,38 +17,34 @@ class TestRDocOptions < MiniTest::Unit::TestCase
   end
 
   def test_check_files
+    expected = ''
     out, err = capture_io do
       Dir.mktmpdir do |dir|
-        begin
-          unreadable = nil # variable for windows
+        if RUBY_PLATFORM =~ /mswin|mingw/ then
+          @options.files = %w[nonexistent]
 
-          Dir.chdir dir do
-            if RUBY_PLATFORM =~ /mswin|mingw/ then
-              unreadable = open 'unreadable'
-              File.delete 'unreadable'
-            else
-              FileUtils.touch 'unreadable'
-              FileUtils.chmod 0, 'unreadable'
-            end
+          expected = <<-EXPECTED
+file 'nonexistent' not found
+          EXPECTED
+        else
+          FileUtils.touch 'unreadable'
+          FileUtils.chmod 0, 'unreadable'
 
-            @options.files = %w[nonexistent unreadable]
+          @options.files = %w[nonexistent unreadable]
 
-            @options.check_files
-          end
-        ensure
-          unreadable.close if unreadable
+          expected = <<-EXPECTED
+file 'nonexistent' not found
+file 'unreadable' not readable
+          EXPECTED
         end
+
+        @options.check_files
       end
     end
 
     assert_empty @options.files
 
     assert_equal '', out
-
-    expected = <<-EXPECTED
-file 'nonexistent' not found
-file 'unreadable' not readable
-    EXPECTED
 
     assert_equal expected, err
   end
