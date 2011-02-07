@@ -1185,6 +1185,9 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_wait_and_sigchild
+    if /freebsd/ =~ RUBY_PLATFORM
+      skip "this randomly fails on FreeBSD"
+    end
     signal_received = []
     Signal.trap(:CHLD)  { signal_received << true }
     pid = fork { sleep 0.1; exit }
