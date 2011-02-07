@@ -438,6 +438,12 @@ The variable ruby-indent-level controls the amount of indentation.
           ((and (eq c ?:) (or (not b) (eq (char-syntax b) ? ))))
           ((eq c ?\\) (eq b ??)))))
 
+(defun ruby-singleton-class-p ()
+  (save-excursion
+    (forward-word -1)
+    (and (or (bolp) (not (eq (char-before (point)) ?_)))
+	      (looking-at "class\\s *<<"))))
+
 (defun ruby-expr-beg (&optional option)
   (save-excursion
     (store-match-data nil)
@@ -451,7 +457,9 @@ The variable ruby-indent-level controls the amount of indentation.
                (or (eq (char-syntax (char-before (point))) ?w)
                    (ruby-special-char-p))))
         nil)
-       ((and (eq option 'heredoc) (< space 0)) t)
+       ((and (progn (goto-char start) (eq option 'heredoc))
+	     (not (ruby-singleton-class-p)))
+	t)
        ((or (looking-at ruby-operator-re)
             (looking-at "[\\[({,;]")
             (and (looking-at "[!?]")
@@ -1229,7 +1237,8 @@ balanced expression is found."
       (let ((old-point (point)) (case-fold-search nil))
         (beginning-of-line)
         (catch 'found-beg
-          (while (re-search-backward ruby-here-doc-beg-re nil t)
+          (while (and (re-search-backward ruby-here-doc-beg-re nil t)
+		      (not (ruby-singleton-class-p)))
             (if (not (or (ruby-in-ppss-context-p 'anything)
                          (ruby-here-doc-find-end old-point)))
                 (throw 'found-beg t)))))))

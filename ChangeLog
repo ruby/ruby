@@ -1,4 +1,7 @@
-Tue Feb  8 00:53:14 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Feb  8 00:56:33 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-expr-beg, ruby-in-here-doc-p): tell
+	  singleton class definitions from here documents.
 
 	* misc/ruby-mode.el (ruby-expr-beg, ruby-parse-partial): keyword
 	  followed by colon is label.
