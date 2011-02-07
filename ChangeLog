@@ -1,3 +1,8 @@
+Tue Feb  8 00:53:14 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-expr-beg, ruby-parse-partial): keyword
+	  followed by colon is label.
+
 Mon Feb  7 22:56:16 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* lib/benchmark.rb (Benchmark#bmbm): use ensure clause instead of
