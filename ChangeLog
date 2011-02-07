@@ -1,3 +1,8 @@
+Mon Feb  7 22:56:16 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* lib/benchmark.rb (Benchmark#bmbm): use ensure clause instead of
+	  Object#tap to restore STDOUT.sync.
+
 Mon Feb  7 22:34:20 2011  Tanaka Akira  <akr@fsij.org>
 
 	* lib/net/http.rb (Net::HTTP#connect): support SNI (Server Name

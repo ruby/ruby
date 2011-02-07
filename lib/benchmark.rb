@@ -266,9 +266,9 @@ module Benchmark
       GC.start
       print label.ljust(width)
       Benchmark.measure(&item).tap { |res| print res.format }
-    }.tap {
-      STDOUT.sync = sync
     }
+  ensure
+    STDOUT.sync = sync unless sync.nil?
   end
 
   #
