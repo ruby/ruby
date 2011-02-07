@@ -1,3 +1,7 @@
+Mon Feb  7 11:46:59 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* common.mk (rdoc): add --encoding=UTF-8; ruby's rdoc must be UTF-8.
+
 Mon Feb  7 10:21:50 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/rdoc/test_rdoc_options.rb (TestRDocOptions#test_check_files):
