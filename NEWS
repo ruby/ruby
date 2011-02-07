@@ -88,6 +88,9 @@ with all sufficient information, see the ChangeLog file.
     * IO#winsize
     * IO.console
 
+* net/http
+  * SNI (Server Name Indication) supported for HTTPS. 
+
 * optparse
   * support for bash/zsh completion.
 

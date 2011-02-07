@@ -1,3 +1,9 @@
+Mon Feb  7 22:34:20 2011  Tanaka Akira  <akr@fsij.org>
+
+	* lib/net/http.rb (Net::HTTP#connect): support SNI (Server Name
+	  Indication) for HTTPS.  [ruby-dev:43164]
+	  http://stackoverflow.com/questions/4685736/openssl-server-name-indication-support-in-ruby
+
 Mon Feb  7 16:05:32 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc: Upgrade to RDoc 3.5.3  Fixes [Bug #4376]
