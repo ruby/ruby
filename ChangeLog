@@ -1,3 +1,8 @@
+Tue Feb  8 01:00:21 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* process.c (proc_setgroups): add GC guard to prevent intermediate
+	  variable from GC.
+
 Tue Feb  8 00:56:33 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-expr-beg, ruby-in-here-doc-p): tell
