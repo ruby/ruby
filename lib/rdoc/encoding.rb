@@ -12,8 +12,11 @@ module RDoc::Encoding
   #
   # The content will be converted to the +encoding+.  If the file cannot be
   # converted a warning will be printed and nil will be returned.
+  #
+  # If +force_transcode+ is true the document will be transcoded and any
+  # unknown character in the target encoding will be replaced with '?'
 
-  def self.read_file filename, encoding
+  def self.read_file filename, encoding, force_transcode = false
     content = open filename, "rb" do |f| f.read end
 
     utf8 = content.sub!(/\A\xef\xbb\xbf/, '')
@@ -50,8 +53,14 @@ module RDoc::Encoding
     warn "unknown encoding name \"#{$1}\" for #{filename}, skipping"
     nil
   rescue Encoding::UndefinedConversionError => e
-    warn "unable to convert #{e.message} for #{filename}, skipping"
-    nil
+    if force_transcode then
+      content.force_encoding orig_encoding
+      content.encode! encoding, :undef => :replace, :replace => '?'
+      content
+    else
+      warn "unable to convert #{e.message} for #{filename}, skipping"
+      nil
+    end
   rescue Errno::EISDIR, Errno::ENOENT
     nil
   end

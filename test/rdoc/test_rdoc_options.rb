@@ -17,34 +17,28 @@ class TestRDocOptions < MiniTest::Unit::TestCase
   end
 
   def test_check_files
-    expected = ''
+    skip "assumes UNIX permission model" if /mswin|mingw/ =~ RUBY_PLATFORM
     out, err = capture_io do
       Dir.mktmpdir do |dir|
-        if RUBY_PLATFORM =~ /mswin|mingw/ then
-          @options.files = %w[nonexistent]
-
-          expected = <<-EXPECTED
-file 'nonexistent' not found
-          EXPECTED
-        else
+        Dir.chdir dir do
           FileUtils.touch 'unreadable'
           FileUtils.chmod 0, 'unreadable'
 
           @options.files = %w[nonexistent unreadable]
 
-          expected = <<-EXPECTED
-file 'nonexistent' not found
-file 'unreadable' not readable
-          EXPECTED
+          @options.check_files
         end
-
-        @options.check_files
       end
     end
 
     assert_empty @options.files
 
     assert_equal '', out
+
+    expected = <<-EXPECTED
+file 'nonexistent' not found
+file 'unreadable' not readable
+    EXPECTED
 
     assert_equal expected, err
   end

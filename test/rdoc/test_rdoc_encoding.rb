@@ -49,6 +49,26 @@ class TestRDocEncoding < MiniTest::Unit::TestCase
     assert_equal "hi \u00e9verybody", contents.sub("\r", '')
   end
 
+  def test_class_read_file_encoding_fail
+    skip "Encoding not implemented" unless Object.const_defined? :Encoding
+
+    @tempfile.write "# coding: utf-8\n\317\200" # pi
+    @tempfile.flush
+
+    # FIXME 1.9 fix on windoze
+    expected.gsub!("\n", "\r\n") if RUBY_VERSION =~ /^1.9/ && RUBY_PLATFORM =~ /mswin|mingw/
+
+    contents = :junk
+
+    _, err = capture_io do
+      contents = RDoc::Encoding.read_file @tempfile.path, Encoding::US_ASCII
+    end
+
+    assert_nil contents
+
+    assert_match %r%^unable to convert%, err
+  end
+
   def test_class_read_file_encoding_fancy
     skip "Encoding not implemented" unless Object.const_defined? :Encoding
 
@@ -64,6 +84,21 @@ class TestRDocEncoding < MiniTest::Unit::TestCase
     contents = RDoc::Encoding.read_file @tempfile.path, Encoding::UTF_8
     assert_equal "hi everybody", contents
     assert_equal Encoding::UTF_8, contents.encoding
+  end
+
+  def test_class_read_file_encoding_force_transcode
+    skip "Encoding not implemented" unless Object.const_defined? :Encoding
+
+    @tempfile.write "# coding: utf-8\n\317\200" # pi
+    @tempfile.flush
+
+    # FIXME 1.9 fix on windoze
+    expected.gsub!("\n", "\r\n") if RUBY_VERSION =~ /^1.9/ && RUBY_PLATFORM =~ /mswin|mingw/
+
+    contents = RDoc::Encoding.read_file @tempfile.path, Encoding::US_ASCII, true
+
+    assert_equal '?', contents
+    assert_equal Encoding::US_ASCII, contents.encoding
   end
 
   def test_class_read_file_encoding_guess

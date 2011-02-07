@@ -120,7 +120,7 @@ class RDoc::Markup::PreProcess
       return ''
     end
 
-    content = RDoc::Encoding.read_file full_name, encoding
+    content = RDoc::Encoding.read_file full_name, encoding, true
 
     # strip magic comment
     content = content.sub(/\A# .*coding[=:].*$/, '').lstrip

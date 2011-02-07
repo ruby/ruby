@@ -1,3 +1,5 @@
+# coding: utf-8
+
 require 'tempfile'
 require 'rubygems'
 require 'minitest/autorun'
@@ -37,6 +39,30 @@ contents of a string.
 Regular expressions (<i>regexp</i>s) are patterns which describe the
 contents of a string.
     EXPECTED
+
+    # FIXME 1.9 fix on windoze
+    # preprocessor uses binread, so line endings are \r\n
+    expected.gsub!("\n", "\r\n") if
+      RUBY_VERSION =~ /^1.9/ && RUBY_PLATFORM =~ /mswin|mingw/
+
+    assert_equal expected, content
+  end
+
+  def test_include_file_encoding_incompatible
+    skip "Encoding not implemented" unless Object.const_defined? :Encoding
+
+    @tempfile.write <<-INCLUDE
+# -*- mode: rdoc; coding: utf-8; fill-column: 74; -*-
+
+π
+    INCLUDE
+
+    @tempfile.flush
+    @tempfile.rewind
+
+    content = @pp.include_file @file_name, '', Encoding::US_ASCII
+
+    expected = "?\n"
 
     # FIXME 1.9 fix on windoze
     # preprocessor uses binread, so line endings are \r\n
