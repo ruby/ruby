@@ -1,3 +1,7 @@
+Tue Feb  8 19:38:00 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-expr-beg): fix for invalid nest errors.
+
 Tue Feb  8 19:22:59 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in (AC_MSG_CHECKING): fixed typo. the patch is
