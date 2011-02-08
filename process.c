@@ -2338,7 +2338,7 @@ rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char
         mode_t mask = NUM2MODET(obj);
         mode_t oldmask = umask(mask); /* never fail */
         if (!NIL_P(soptions))
-            rb_ary_store(soptions, EXEC_OPTION_UMASK, LONG2NUM(oldmask));
+            rb_ary_store(soptions, EXEC_OPTION_UMASK, MODET2NUM(oldmask));
     }
 
     obj = rb_ary_entry(options, EXEC_OPTION_DUP2);

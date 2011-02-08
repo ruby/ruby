@@ -1,3 +1,7 @@
+Tue Feb  8 15:59:23 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* process.c (rb_run_exec_options_err): use MODET2NUM() instead LONG2NUM().
+
 Tue Feb  8 13:59:56 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: revert r30725. Now we have proper runtime fallback.
