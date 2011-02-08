@@ -1,3 +1,8 @@
+Tue Feb  8 13:59:56 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: revert r30725. Now we have proper runtime fallback.
+	  Therefore, no need compile time disabling. (see r30762).
+
 Tue Feb  8 01:00:21 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* process.c (proc_setgroups): add GC guard to prevent intermediate
