@@ -181,7 +181,7 @@ Fri Feb  4 19:14:27 2011  Tanaka Akira  <akr@fsij.org>
 
 Fri Feb  4 12:11:51 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* string.c (str_utf8_nth): fixed a conditon of optimized lead
+	* string.c (str_utf8_nth): fixed a condition of optimized lead
 	  byte counting. [Bug #4366][ruby-dev:43170]
 
 Fri Feb  4 01:50:13 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
@@ -257,7 +257,7 @@ Thu Feb  3 07:02:16 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 Wed Feb  2 17:09:22 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* io.c (rb_io_fdatasync): Use fsync(2) if if the underlying
+	* io.c (rb_io_fdatasync): Use fsync(2) if the underlying
 	  operating system does not support fdatasync(2).
 
 Wed Feb  2 14:51:08 2011  Eric Hodel  <drbrain@segment7.net>
