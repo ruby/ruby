@@ -1,3 +1,7 @@
+Wed Feb  9 00:47:18 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/etc/etc.c: parenthesize macro arguments.
+
 Tue Feb  8 19:38:00 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-expr-beg): fix for invalid nest errors.
