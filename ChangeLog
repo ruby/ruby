@@ -1,3 +1,7 @@
+Tue Feb  8 16:04:03 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (rb_io_s_sysopen): use NUM2MODET() instead NUM2UINT().
+
 Tue Feb  8 15:59:23 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* process.c (rb_run_exec_options_err): use MODET2NUM() instead LONG2NUM().

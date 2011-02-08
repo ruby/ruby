@@ -5521,7 +5521,7 @@ rb_io_s_sysopen(int argc, VALUE *argv)
 	oflags = rb_io_modestr_oflags(StringValueCStr(vmode));
     }
     if (NIL_P(vperm)) perm = 0666;
-    else              perm = NUM2UINT(vperm);
+    else              perm = NUM2MODET(vperm);
 
     RB_GC_GUARD(fname) = rb_str_new4(fname);
     fd = rb_sysopen(fname, oflags, perm);
