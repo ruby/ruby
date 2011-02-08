@@ -1,3 +1,8 @@
+Tue Feb  8 19:22:59 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in (AC_MSG_CHECKING): fixed typo. the patch is
+	  created by Benoit Daloze. Thanks a lot. [Bug #4384][ruby-core:35148]
+
 Tue Feb  8 16:04:03 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (rb_io_s_sysopen): use NUM2MODET() instead NUM2UINT().

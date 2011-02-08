@@ -377,7 +377,7 @@ AC_SUBST(RMDIR)
 AC_SUBST(RMDIRS)
 AC_SUBST(RMALL, ['rm -fr'])
 
-AC_MSG_CHECKING([for cd using phisical directory])
+AC_MSG_CHECKING([for cd using physical directory])
 rm -fr conf$$.dir
 mkdir conf$$.dir &&
 (cd conf$$.dir && mkdir src build && cd src &&
