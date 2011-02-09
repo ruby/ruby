@@ -1,3 +1,7 @@
+Wed Feb  9 23:11:27 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pty/pty.c: parenthesize macro arguments.
+
 Tue Feb  8 11:47:11 2011  Loren Sands-Ramshaw  <lorensr@gmail.com>
 
 	* array.c: documentation clarification in rotate, rotate!,

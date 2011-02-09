@@ -152,7 +152,7 @@ chfunc(void *data, char *errbuf, size_t errbuf_len)
     VALUE *argv = carg->argv;
 
 #define ERROR_EXIT(str) do { \
-	strlcpy(errbuf, str, errbuf_len); \
+	strlcpy(errbuf, (str), errbuf_len); \
 	return -1; \
     } while (0)
 
