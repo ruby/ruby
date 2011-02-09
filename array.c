@@ -1149,9 +1149,9 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
  *     ary.index {|item| block} ->  int or nil
  *     ary.index                ->  an_enumerator
  *
- *  Returns the index of the first object in +self+ such that is
+ *  Returns the index of the first object in +self+ such that the object is
  *  <code>==</code> to <i>obj</i>. If a block is given instead of an
- *  argument, returns first object for which <em>block</em> is true.
+ *  argument, returns index of first object for which <em>block</em> is true.
  *  Returns <code>nil</code> if no match is found.
  *  See also <code>Array#rindex</code>.
  *
@@ -1198,7 +1198,7 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
  *
  *  Returns the index of the last object in +self+
  *  <code>==</code> to <i>obj</i>. If a block is given instead of an
- *  argument, returns first object for which <em>block</em> is
+ *  argument, returns index of first object for which <em>block</em> is
  *  true, starting from the last object.
  *  Returns <code>nil</code> if no match is found.
  *  See also <code>Array#index</code>.
@@ -1911,7 +1911,7 @@ rb_ary_rotate(VALUE ary, long cnt)
  *
  *  Rotates +self+ in place so that the element at +cnt+ comes first,
  *  and returns +self+.  If +cnt+ is negative then it rotates in
- *  counter direction.
+ *  the opposite direction.
  *
  *     a = [ "a", "b", "c", "d" ]
  *     a.rotate!        #=> ["b", "c", "d", "a"]
@@ -1936,11 +1936,11 @@ rb_ary_rotate_bang(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *     ary.rotate([cnt = 1]) -> new_ary
+ *     ary.rotate(cnt=1) -> new_ary
  *
- *  Returns new array by rotating +self+, whose first element is the
- *  element at +cnt+ in +self+.  If +cnt+ is negative then it rotates
- *  in counter direction.
+ *  Returns new array by rotating +self+ so that the element at
+ *  +cnt+ in +self+ is the first element of the new array. If +cnt+
+ *  is negative then it rotates in the opposite direction.
  *
  *     a = [ "a", "b", "c", "d" ]
  *     a.rotate         #=> ["b", "c", "d", "a"]

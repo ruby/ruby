@@ -1,3 +1,8 @@
+Tue Feb  8 11:47:11 2011  Loren Sands-Ramshaw  <lorensr@gmail.com>
+
+	* array.c: documentation clarification in rotate, rotate!,
+	index, and rindex. [ruby-core:35144]
+
 Wed Feb  9 09:45:43 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/rdoc/test_rdoc_encoding.rb: remove unnecessary (and wrong)
