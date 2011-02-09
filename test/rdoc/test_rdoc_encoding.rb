@@ -26,9 +26,6 @@ class TestRDocEncoding < MiniTest::Unit::TestCase
     @tempfile.write expected
     @tempfile.flush
 
-    # FIXME 1.9 fix on windoze
-    expected.gsub!("\n", "\r\n") if RUBY_VERSION =~ /^1.9/ && RUBY_PLATFORM =~ /mswin|mingw/
-
     contents = RDoc::Encoding.read_file @tempfile.path, Encoding::UTF_8
     assert_equal "hi everybody", contents
     assert_equal Encoding::UTF_8, contents.encoding
@@ -55,9 +52,6 @@ class TestRDocEncoding < MiniTest::Unit::TestCase
     @tempfile.write "# coding: utf-8\n\317\200" # pi
     @tempfile.flush
 
-    # FIXME 1.9 fix on windoze
-    expected.gsub!("\n", "\r\n") if RUBY_VERSION =~ /^1.9/ && RUBY_PLATFORM =~ /mswin|mingw/
-
     contents = :junk
 
     _, err = capture_io do
@@ -78,9 +72,6 @@ class TestRDocEncoding < MiniTest::Unit::TestCase
     @tempfile.write expected
     @tempfile.flush
 
-    # FIXME 1.9 fix on windoze
-    expected.gsub!("\n", "\r\n") if RUBY_VERSION =~ /^1.9/ && RUBY_PLATFORM =~ /win32|mingw32/
-
     contents = RDoc::Encoding.read_file @tempfile.path, Encoding::UTF_8
     assert_equal "hi everybody", contents
     assert_equal Encoding::UTF_8, contents.encoding
@@ -91,9 +82,6 @@ class TestRDocEncoding < MiniTest::Unit::TestCase
 
     @tempfile.write "# coding: utf-8\n\317\200" # pi
     @tempfile.flush
-
-    # FIXME 1.9 fix on windoze
-    expected.gsub!("\n", "\r\n") if RUBY_VERSION =~ /^1.9/ && RUBY_PLATFORM =~ /mswin|mingw/
 
     contents = RDoc::Encoding.read_file @tempfile.path, Encoding::US_ASCII, true
 

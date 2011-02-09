@@ -1,3 +1,8 @@
+Wed Feb  9 09:45:43 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/rdoc/test_rdoc_encoding.rb: remove unnecessary (and wrong)
+	  platform-dependent hacks.
+
 Wed Feb  9 00:47:18 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/etc/etc.c: parenthesize macro arguments.
