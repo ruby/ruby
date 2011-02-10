@@ -24,7 +24,7 @@
 #   include <windows.h>
 #   define dlopen(name,flag) ((void*)LoadLibrary(name))
 #   define dlerror() strerror(rb_w32_map_errno(GetLastError()))
-#   define dlsym(handle,name) ((void*)GetProcAddress(handle,name))
+#   define dlsym(handle,name) ((void*)GetProcAddress((handle),(name)))
 #   define RTLD_LAZY -1
 #   define RTLD_NOW  -1
 #   define RTLD_GLOBAL -1
@@ -40,10 +40,10 @@
     DLSTACK_TYPE,DLSTACK_TYPE,DLSTACK_TYPE,DLSTACK_TYPE,DLSTACK_TYPE,\
     DLSTACK_TYPE,DLSTACK_TYPE,DLSTACK_TYPE,DLSTACK_TYPE,DLSTACK_TYPE
 #define DLSTACK_ARGS(stack) \
-    stack[0],stack[1],stack[2],stack[3],stack[4],\
-    stack[5],stack[6],stack[7],stack[8],stack[9],\
-    stack[10],stack[11],stack[12],stack[13],stack[14],\
-    stack[15],stack[16],stack[17],stack[18],stack[19]
+    (stack)[0],(stack)[1],(stack)[2],(stack)[3],(stack)[4],\
+    (stack)[5],(stack)[6],(stack)[7],(stack)[8],(stack)[9],\
+    (stack)[10],(stack)[11],(stack)[12],(stack)[13],(stack)[14],\
+    (stack)[15],(stack)[16],(stack)[17],(stack)[18],(stack)[19]
 
 #define DLSTACK_PROTO0_ void
 #define DLSTACK_PROTO1_ DLSTACK_TYPE
@@ -107,26 +107,26 @@
 #define DLSTACK_PROTO20 DLSTACK_PROTO20_, ...
 
 #define DLSTACK_ARGS0(stack)
-#define DLSTACK_ARGS1(stack) stack[0]
-#define DLSTACK_ARGS2(stack) DLSTACK_ARGS1(stack), stack[1]
-#define DLSTACK_ARGS3(stack) DLSTACK_ARGS2(stack), stack[2]
-#define DLSTACK_ARGS4(stack) DLSTACK_ARGS3(stack), stack[3]
-#define DLSTACK_ARGS5(stack) DLSTACK_ARGS4(stack), stack[4]
-#define DLSTACK_ARGS6(stack) DLSTACK_ARGS5(stack), stack[5]
-#define DLSTACK_ARGS7(stack) DLSTACK_ARGS6(stack), stack[6]
-#define DLSTACK_ARGS8(stack) DLSTACK_ARGS7(stack), stack[7]
-#define DLSTACK_ARGS9(stack) DLSTACK_ARGS8(stack), stack[8]
-#define DLSTACK_ARGS10(stack) DLSTACK_ARGS9(stack), stack[9]
-#define DLSTACK_ARGS11(stack) DLSTACK_ARGS10(stack), stack[10]
-#define DLSTACK_ARGS12(stack) DLSTACK_ARGS11(stack), stack[11]
-#define DLSTACK_ARGS13(stack) DLSTACK_ARGS12(stack), stack[12]
-#define DLSTACK_ARGS14(stack) DLSTACK_ARGS13(stack), stack[13]
-#define DLSTACK_ARGS15(stack) DLSTACK_ARGS14(stack), stack[14]
-#define DLSTACK_ARGS16(stack) DLSTACK_ARGS15(stack), stack[15]
-#define DLSTACK_ARGS17(stack) DLSTACK_ARGS16(stack), stack[16]
-#define DLSTACK_ARGS18(stack) DLSTACK_ARGS17(stack), stack[17]
-#define DLSTACK_ARGS19(stack) DLSTACK_ARGS18(stack), stack[18]
-#define DLSTACK_ARGS20(stack) DLSTACK_ARGS19(stack), stack[19]
+#define DLSTACK_ARGS1(stack) (stack)[0]
+#define DLSTACK_ARGS2(stack) DLSTACK_ARGS1(stack), (stack)[1]
+#define DLSTACK_ARGS3(stack) DLSTACK_ARGS2(stack), (stack)[2]
+#define DLSTACK_ARGS4(stack) DLSTACK_ARGS3(stack), (stack)[3]
+#define DLSTACK_ARGS5(stack) DLSTACK_ARGS4(stack), (stack)[4]
+#define DLSTACK_ARGS6(stack) DLSTACK_ARGS5(stack), (stack)[5]
+#define DLSTACK_ARGS7(stack) DLSTACK_ARGS6(stack), (stack)[6]
+#define DLSTACK_ARGS8(stack) DLSTACK_ARGS7(stack), (stack)[7]
+#define DLSTACK_ARGS9(stack) DLSTACK_ARGS8(stack), (stack)[8]
+#define DLSTACK_ARGS10(stack) DLSTACK_ARGS9(stack), (stack)[9]
+#define DLSTACK_ARGS11(stack) DLSTACK_ARGS10(stack), (stack)[10]
+#define DLSTACK_ARGS12(stack) DLSTACK_ARGS11(stack), (stack)[11]
+#define DLSTACK_ARGS13(stack) DLSTACK_ARGS12(stack), (stack)[12]
+#define DLSTACK_ARGS14(stack) DLSTACK_ARGS13(stack), (stack)[13]
+#define DLSTACK_ARGS15(stack) DLSTACK_ARGS14(stack), (stack)[14]
+#define DLSTACK_ARGS16(stack) DLSTACK_ARGS15(stack), (stack)[15]
+#define DLSTACK_ARGS17(stack) DLSTACK_ARGS16(stack), (stack)[16]
+#define DLSTACK_ARGS18(stack) DLSTACK_ARGS17(stack), (stack)[17]
+#define DLSTACK_ARGS19(stack) DLSTACK_ARGS18(stack), (stack)[18]
+#define DLSTACK_ARGS20(stack) DLSTACK_ARGS19(stack), (stack)[19]
 
 extern VALUE rb_mDL;
 extern VALUE rb_cDLHandle;
@@ -156,7 +156,7 @@ typedef struct { char c; LONG_LONG x; } s_long_long;
 #define ALIGN_DOUBLE (sizeof(s_double) - sizeof(double))
 
 #define DLALIGN(ptr,offset,align) {\
-  while( (((unsigned long)((char *)ptr + offset)) % align) != 0 ) offset++;\
+  while( (((unsigned long)((char *)(ptr) + (offset))) % (align)) != 0 ) (offset)++;\
 }
 
 
@@ -182,8 +182,8 @@ typedef struct { char c; LONG_LONG x; } s_long_long;
 # define NUM2PTR(x)   ((void*)(NUM2ULL(x)))
 #endif
 
-#define BOOL2INT(x)  ((x == Qtrue)?1:0)
-#define INT2BOOL(x)  (x?Qtrue:Qfalse)
+#define BOOL2INT(x)  (((x) == Qtrue)?1:0)
+#define INT2BOOL(x)  ((x)?Qtrue:Qfalse)
 
 typedef void (*freefunc_t)(void*);
 
