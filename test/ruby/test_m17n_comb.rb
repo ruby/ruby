@@ -1095,7 +1095,7 @@ class TestM17NComb < Test::Unit::TestCase
         if s1.valid_encoding?
           assert_raise(Encoding::CompatibilityError) { s1.scan(s2) }
         else
-          assert_raise(ArgumentError, /invalid byte sequence/) { s1.scan(s2) }
+          assert_match(/invalid byte sequence/, assert_raise(ArgumentError) { s1.scan(s2) }.message)
         end
         next
       end
