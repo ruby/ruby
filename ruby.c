@@ -1079,6 +1079,7 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
                     opt->disable &= ~DISABLE_BIT(gems);
                 }
                 else {
+                    opt->disable &= ~DISABLE_BIT(gems);
                     add_gems(&opt->req_list, s);
                 }
 	    }
@@ -1414,7 +1415,11 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	}
     }
     if (!(opt->disable & DISABLE_BIT(gems))) {
+#if defined DISABLE_RUBYGEMS && DISABLE_RUBYGEMS
+	rb_require("rubygems");
+#else
 	rb_define_module("Gem");
+#endif
     }
     ruby_init_prelude();
     ruby_set_argv(argc, argv);

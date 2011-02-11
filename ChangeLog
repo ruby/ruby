@@ -1,3 +1,10 @@
+Sat Feb 12 01:04:02 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (proc_options): enable rubygems if --gem option is given.
+
+	* ruby.c (process_options): load rubygems if it is disabled but
+	  --gem option is given.
+
 Fri Feb 11 23:27:50 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* ruby.c (proc_options): add --gem=enabled as an alias of
