@@ -1,3 +1,10 @@
+Fri Feb 11 23:27:50 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* ruby.c (proc_options): add --gem=enabled as an alias of
+	  --enable=gems and --gem=disabled as an alias of --disable=gems.
+	  Gem named "enabled" or "disabled" has already been reserved
+	  legitimately for this purpose.
+
 Fri Feb 11 23:17:04 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/dl/cfunc.c: parenthesize macro arguments.

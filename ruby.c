@@ -1072,7 +1072,15 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 		add_modules(&opt->req_list, s);
 	    }
 	    else if (is_option_with_arg("gem", Qfalse, Qtrue)) {
-		add_gems(&opt->req_list, s);
+                if (strcmp("disabled", s) == 0) {
+                    opt->disable |= DISABLE_BIT(gems);
+                }
+                else if (strcmp("enabled", s) == 0) {
+                    opt->disable &= ~DISABLE_BIT(gems);
+                }
+                else {
+                    add_gems(&opt->req_list, s);
+                }
 	    }
 	    else if (strcmp("version", s) == 0) {
 		if (envopt) goto noenvopt_long;
