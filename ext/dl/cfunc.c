@@ -298,10 +298,10 @@ rb_dlcfunc_inspect(VALUE self)
 
 
 # define DECL_FUNC_CDECL(f,ret,args,val) \
-    ret (FUNC_CDECL(*f))(args) = (ret (FUNC_CDECL(*))(args))(VALUE)(val)
+    ret (FUNC_CDECL(*(f)))(args) = (ret (FUNC_CDECL(*))(args))(VALUE)(val)
 #ifdef FUNC_STDCALL
 # define DECL_FUNC_STDCALL(f,ret,args,val) \
-    ret (FUNC_STDCALL(*f))(args) = (ret (FUNC_STDCALL(*))(args))(VALUE)(val)
+    ret (FUNC_STDCALL(*(f)))(args) = (ret (FUNC_STDCALL(*))(args))(VALUE)(val)
 #endif
 
 #define CALL_CASE switch( RARRAY_LEN(ary) ){ \

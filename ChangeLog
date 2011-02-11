@@ -1,3 +1,7 @@
+Fri Feb 11 23:17:04 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dl/cfunc.c: parenthesize macro arguments.
+
 Fri Feb 11 21:41:53 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bin/testrb, test/runner.rb, lib/test/unit.rb: improve backward
