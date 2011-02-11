@@ -362,9 +362,9 @@ class TkPhotoImage<TkImage
     bool(tk_send('transparency', 'get', x, y))
   end
 	
-	# Makes the pixel at (x,y) transparent if <tt>st</tt> is true, and makes that pixel opaque otherwise. 
-  def set_transparency(x, y, st)
-    tk_send('transparency', 'set', x, y, st)
+	# Makes the pixel at (x,y) transparent if <tt>state</tt> is true, and makes that pixel opaque otherwise. 
+  def set_transparency(x, y, state)
+    tk_send('transparency', 'set', x, y, state)
     self
   end
 
