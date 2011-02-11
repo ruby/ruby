@@ -1,3 +1,8 @@
+Fri Feb 11 16:57:03 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_transcode.rb (test_from_cp50221): fix wrong
+	  assertion and move back.
+
 Fri Feb 11 14:33:18 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/assertions.rb (assert_no_match): alias for

@@ -1388,10 +1388,11 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal("\u5fde", "\e$B\x7A\x21".encode("utf-8", "cp50221"))
     assert_equal("\u72be", "\e$B\x7B\x21".encode("utf-8", "cp50221"))
     assert_equal("\u91d7", "\e$B\x7C\x21".encode("utf-8", "cp50221"))
+    assert_equal("\xA1\xDF".force_encoding("sjis"),
+                 "\e(I!_\e(B".encode("sjis","cp50220"))
   end
 
   def test_to_cp50221
-    assert_equal("\e(I!_\e(B", "\xA1\xDF".encode("cp50220","sjis"))
     assert_equal("\e$B!#!,\e(B".force_encoding("cp50220"),
                  "\xA1\xDF".encode("cp50220","sjis"))
     assert_equal("\e$B%*!+%,%I%J!+%N!+%P%\\%^!+%Q%]%\"\e(B".force_encoding("cp50220"),
