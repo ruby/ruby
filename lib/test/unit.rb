@@ -30,28 +30,32 @@ module Test
     end
 
     module Options
-      def initialize(&block)
+      def initialize(*, &block)
         @init_hook = block
         super(&nil)
       end
 
+      def option_parser
+        @option_parser ||= OptionParser.new
+      end
+
       def process_args(args = [])
+        return @options if @options
         orig_args = args.dup
         options = {}
-        OptionParser.new do |opts|
-          setup_options(opts, options)
-          opts.parse!(args)
-          orig_args -= args
-        end
+        opts = option_parser
+        setup_options(opts, options)
+        opts.parse!(args)
+        orig_args -= args
         args = @init_hook.call(args, options) if @init_hook
-        non_options(args, options)
+        non_options(args, options) or return nil
         @help = orig_args.map { |s| s =~ /[\s|&<>$()]/ ? s.inspect : s }.join " "
-        options
+        @options = options
       end
 
       private
       def setup_options(opts, options)
-        opts.banner  = 'minitest options:'
+        opts.separator 'minitest options:'
         opts.version = MiniTest::Unit::VERSION
 
         opts.on '-h', '--help', 'Display this help.' do
@@ -74,6 +78,7 @@ module Test
       end
 
       def non_options(files, options)
+        true
       end
     end
 
@@ -82,6 +87,9 @@ module Test
 
       def setup_options(parser, options)
         super
+        parser.on '-b', '--basedir=DIR', 'Base directory of test suites.' do |dir|
+          options[:base_directory] = dir
+        end
         parser.on '-x', '--exclude PATTERN', 'Exclude test files on pattern.' do |pattern|
           (options[:reject] ||= []) << pattern
         end
@@ -94,8 +102,13 @@ module Test
         end
         files.map! {|f|
           f = f.tr(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
-          [*paths, nil].any? do |prefix|
-            path = prefix ? "#{prefix}/#{f}" : f
+          [*(paths if /\A\.\.?(?:\z|\/)/ !~ f), nil].uniq.any? do |prefix|
+            if prefix
+              path = f.empty? ? prefix : "#{prefix}/#{f}"
+            else
+              next if f.empty?
+              path = f
+            end
             if !(match = Dir["#{path}/**/test_*.rb"]).empty?
               if reject
                 match.reject! {|n|
@@ -154,7 +167,7 @@ module Test
 
     module RequireFiles
       def non_options(files, options)
-        super
+        return false if !super or files.empty?
         files.each {|f|
           d = File.dirname(path = File.expand_path(f))
           unless $:.include? d
@@ -167,13 +180,6 @@ module Test
           end
         }
       end
-    end
-
-    def self.new(*args, &block)
-      Mini.class_eval do
-        include Test::Unit::RequireFiles
-      end
-      Mini.new(*args, &block)
     end
 
     class Mini < MiniTest::Unit
@@ -211,6 +217,37 @@ module Test
         result = super
         raise @interrupt if @interrupt
         result
+      end
+    end
+
+    class AutoRunner
+      class Runner < Mini
+        include Test::Unit::RequireFiles
+      end
+
+      attr_accessor :to_run, :options
+
+      def initialize(force_standalone = false, default_dir = nil, argv = ARGV)
+        @runner = Runner.new do |files, options|
+          options[:base_directory] ||= default_dir
+          @to_run = files
+          yield self if block_given?
+          files
+        end
+        @options = @runner.option_parser
+        @argv = argv
+      end
+
+      def process_args(*args)
+        @runner.process_args(*args)
+      end
+
+      def run
+        @runner.run(@argv) || true
+      end
+
+      def self.run(*args)
+        new(*args).run
       end
     end
   end

@@ -1,3 +1,8 @@
+Fri Feb 11 21:41:53 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bin/testrb, test/runner.rb, lib/test/unit.rb: improve backward
+	  compatibility.
+
 Fri Feb 11 19:45:26 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (ruby_cleanup): use rb_ary_free to free internal object.
