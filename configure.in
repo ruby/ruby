@@ -2836,6 +2836,17 @@ if test -z "$MANTYPE"; then
 fi
 AC_SUBST(MANTYPE)
 
+AC_ARG_ENABLE(rubygems,
+	AS_HELP_STRING([--disable-rubygems], [disable rubygems by default]),
+	[enable_rubygems="$enableval"], [enable_rubygems=yes])
+if test x"$enable_rubygems" = xno; then
+    AC_DEFINE(DISABLE_RUBYGEMS, 1)
+    USE_RUBYGEMS=NO
+else
+    USE_RUBYGEMS=YES
+fi
+AC_SUBST(USE_RUBYGEMS)
+
 arch_hdrdir="${EXTOUT}/include/${arch}/ruby"
 AS_MKDIR_P("${arch_hdrdir}")
 config_h="${arch_hdrdir}/config.h"

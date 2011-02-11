@@ -26,6 +26,8 @@ if "%1" == "--enable-win95" goto :enable-win95
 if "%1" == "--disable-win95" goto :disable-win95
 if "%1" == "--enable-debug-env" goto :enable-debug-env
 if "%1" == "--disable-debug-env" goto :disable-debug-env
+if "%1" == "--enable-rubygems" goto :enable-rubygems
+if "%1" == "--disable-rubygems" goto :disable-rubygems
 if "%1" == "--extout" goto :extout
 if "%1" == "--path" goto :path
 if "%1" == "--with-baseruby" goto :baseruby
@@ -120,6 +122,16 @@ goto :loop
 goto :loop
 :disable-debug-env
   echo>> ~tmp~.mak 	"ENABLE_DEBUG_ENV=no" \
+  echo>>confargs.tmp %1 \
+  shift
+goto :loop
+:enable-rubygems
+  echo>> ~tmp~.mak 	"USE_RUBYGEMS=YES" \
+  echo>>confargs.tmp %1 \
+  shift
+goto :loop
+:disable-rubygems
+  echo>> ~tmp~.mak 	"USE_RUBYGEMS=NO" \
   echo>>confargs.tmp %1 \
   shift
 goto :loop

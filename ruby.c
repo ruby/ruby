@@ -111,6 +111,9 @@ cmdline_options_init(struct cmdline_options *opt)
     opt->src.enc.index = src_encoding_index;
     opt->ext.enc.index = -1;
     opt->intern.enc.index = -1;
+#if defined DISABLE_RUBYGEMS && DISABLE_RUBYGEMS
+    opt->disable |= DISABLE_BIT(gems);
+#endif
     return opt;
 }
 

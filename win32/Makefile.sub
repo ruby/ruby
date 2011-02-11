@@ -276,6 +276,12 @@ XRUBY = $(RUNRUBY)
 !ifndef RUBY
 RUBY = ruby
 !endif
+!if "$(USE_RUBYGEMS)" == "NO"
+DEFAULT_PRELUDES = $(NO_GEM_PRELUDE)
+!else
+DEFAULT_PRELUDES = $(YES_GEM_PRELUDE)
+!endif
+
 MAKEDIRS = $(MINIRUBY) -run -e mkdir -- -p
 
 !if !defined(STACK)

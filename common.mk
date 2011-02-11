@@ -104,7 +104,10 @@ OBJS          = $(EXPORTOBJS) prelude.$(OBJEXT)
 
 GOLFOBJS      = goruby.$(OBJEXT) golf_prelude.$(OBJEXT)
 
-PRELUDE_SCRIPTS = $(srcdir)/prelude.rb $(srcdir)/enc/prelude.rb $(srcdir)/gem_prelude.rb
+PRELUDE_SCRIPTS = $(srcdir)/prelude.rb $(srcdir)/enc/prelude.rb $(DEFAULT_PRELUDES)
+GEM_PRELUDE = $(srcdir)/gem_prelude.rb
+YES_GEM_PRELUDE = $(GEM_PRELUDE)
+NO_GEM_PRELUDE =
 PRELUDES      = prelude.c miniprelude.c
 GOLFPRELUDES = golf_prelude.c
 

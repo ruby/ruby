@@ -1,3 +1,7 @@
+Fri Feb 11 12:03:24 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (rubygems): add --disable-rubygems option.
+
 Fri Feb 11 11:39:03 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* template/fake.rb.in (CROSS_COMPILING): get rid of NameError.
