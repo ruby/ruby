@@ -155,6 +155,7 @@ EOT
         mname = ('assert_not_' << m.to_s[/.*?_(.*)/, 1])
         alias_method(mname, m) unless ms.include? mname
       end
+      alias assert_no_match assert_not_match
 
       def build_message(head, template=nil, *arguments)
         template &&= template.chomp
