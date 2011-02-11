@@ -6,7 +6,7 @@ ruby="${RUBY-$baseruby}"
 "}" || "exit" "$?"
 ruby=ruby
 class Object
-  remove_const :CROSS_COMPILING
+  remove_const :CROSS_COMPILING if defined?(CROSS_COMPILING)
   CROSS_COMPILING = RUBY_PLATFORM
   remove_const :RUBY_PLATFORM
   remove_const :RUBY_VERSION
