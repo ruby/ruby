@@ -170,7 +170,7 @@ ruby_cleanup(volatile int ex)
     for (i=RARRAY_LEN(ary) - 1; i>=0; i--) {
        ((void(*)(rb_vm_t*))RARRAY_PTR(ary)[i])(vm);
     }
-    rb_ary_clear(ary);
+    rb_ary_free(ary);
 
 #if EXIT_SUCCESS != 0 || EXIT_FAILURE != 1
     switch (ex) {

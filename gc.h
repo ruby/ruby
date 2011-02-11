@@ -58,7 +58,7 @@ rb_gc_debug_body(const char *mode, const char *msg, int st, void *ptr)
 #endif
 
 #define RUBY_MARK_UNLESS_NULL(ptr) if(RTEST(ptr)){rb_gc_mark(ptr);}
-#define RUBY_FREE_UNLESS_NULL(ptr) if(ptr){ruby_xfree(ptr);}
+#define RUBY_FREE_UNLESS_NULL(ptr) if(ptr){ruby_xfree(ptr);(ptr)=NULL;}
 
 #if STACK_GROW_DIRECTION > 0
 # define STACK_UPPER(x, a, b) (a)
