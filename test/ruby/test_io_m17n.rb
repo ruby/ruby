@@ -184,7 +184,7 @@ EOT
     }
   end
 
-  def test_open_r_encname_encname_in_opt
+  def test_open_r_externalencname_internalencname_in_opt
     with_tmpdir {
       generate_file('tmp', "")
       open("tmp", "r", external_encoding: "euc-jp", internal_encoding: "utf-8") {|f|
