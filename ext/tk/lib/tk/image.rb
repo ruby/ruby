@@ -72,7 +72,6 @@ class TkImage<TkObject
     end
     unless @path
       Tk_Image_ID.mutex.synchronize{
-        # @path = Tk_Image_ID.join('')
         @path = Tk_Image_ID.join(TkCore::INTERP._ip_id_)
         Tk_Image_ID[1].succ!
       }
@@ -313,7 +312,6 @@ class TkPhotoImage<TkImage
 	#   If this options is specified, the data will not contain color information. 
 	#   All pixel data will be transformed into grayscale. 
   def data(keys={})
-    #tk_send('data', *_photo_hash_kv(keys))
     tk_split_list(tk_send('data', *_photo_hash_kv(keys)))
   end
 
