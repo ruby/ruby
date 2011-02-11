@@ -1,3 +1,8 @@
+Sat Feb 12 08:03:12 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_settracefunc.rb (TestSetTraceFunc): ensure to use
+	  method_added hook defined in Module.
+
 Sat Feb 12 01:04:02 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (proc_options): enable rubygems if --gem option is given.

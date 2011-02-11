@@ -54,9 +54,9 @@ class TestSetTraceFunc < Test::Unit::TestCase
                  events.shift)
     assert_equal(["line", 4, __method__, self.class],
                  events.shift)
-    assert_equal(["c-call", 4, :method_added, Module],
+    assert_equal(["c-call", 4, :method_added, self.class],
                  events.shift)
-    assert_equal(["c-return", 4, :method_added, Module],
+    assert_equal(["c-return", 4, :method_added, self.class],
                  events.shift)
     assert_equal(["line", 7, __method__, self.class],
                  events.shift)
@@ -147,9 +147,9 @@ class TestSetTraceFunc < Test::Unit::TestCase
                  events.shift)
     assert_equal(["line", 4, __method__, self.class],
                  events.shift)
-    assert_equal(["c-call", 4, :method_added, Module],
+    assert_equal(["c-call", 4, :method_added, self.class],
                  events.shift)
-    assert_equal(["c-return", 4, :method_added, Module],
+    assert_equal(["c-return", 4, :method_added, self.class],
                  events.shift)
     assert_equal(["line", 8, __method__, self.class],
                  events.shift)
@@ -191,9 +191,9 @@ class TestSetTraceFunc < Test::Unit::TestCase
                  events.shift)
     assert_equal(["line", 4, __method__, self.class],
                  events.shift)
-    assert_equal(["c-call", 4, :method_added, Module],
+    assert_equal(["c-call", 4, :method_added, self.class],
                  events.shift)
-    assert_equal(["c-return", 4, :method_added, Module],
+    assert_equal(["c-return", 4, :method_added, self.class],
                  events.shift)
     assert_equal(["line", 8, __method__, self.class],
                  events.shift)
@@ -365,5 +365,9 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
     set_trace_func(func)
     assert_equal(self, ok, bug3921)
+  end
+
+  class << self
+    define_method(:method_added, Module.method(:method_added))
   end
 end
