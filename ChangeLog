@@ -1,3 +1,8 @@
+Fri Feb 11 12:06:48 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (add_gems, require_libraries, proc_options): add
+	  --require and --gem options.
+
 Fri Feb 11 12:03:24 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (rubygems): add --disable-rubygems option.
