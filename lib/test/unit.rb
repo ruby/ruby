@@ -48,7 +48,7 @@ module Test
         opts.parse!(args)
         orig_args -= args
         args = @init_hook.call(args, options) if @init_hook
-        non_options(args, options) or return nil
+        non_options(args, options)
         @help = orig_args.map { |s| s =~ /[\s|&<>$()]/ ? s.inspect : s }.join " "
         @options = options
       end
@@ -167,7 +167,8 @@ module Test
 
     module RequireFiles
       def non_options(files, options)
-        return false if !super or files.empty?
+        return false if !super
+        result = false
         files.each {|f|
           d = File.dirname(path = File.expand_path(f))
           unless $:.include? d
@@ -175,10 +176,12 @@ module Test
           end
           begin
             require path
+            result = true
           rescue LoadError
             puts "#{f}: #{$!}"
           end
         }
+        result
       end
     end
 
@@ -227,7 +230,7 @@ module Test
       def initialize(force_standalone = false, default_dir = nil, argv = ARGV)
         @runner = Runner.new do |files, options|
           options[:base_directory] ||= default_dir
-          files << default_dir if files.empty?
+          files << default_dir if files.empty? and default_dir
           @to_run = files
           yield self if block_given?
           files
@@ -238,6 +241,7 @@ module Test
 
       def process_args(*args)
         @runner.process_args(*args)
+        !@to_run.empty?
       end
 
       def run

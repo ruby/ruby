@@ -1,3 +1,17 @@
+Sun Feb 13 00:29:18 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::Options#process_args): always
+	  return options.
+
+	* lib/test/unit.rb (Test::Unit::RequireFiles#non_options): return
+	  if any test case get loaded.
+
+	* lib/test/unit.rb (Test::Unit::AutoRunner#initialize): do not add
+	  default directory if it is nil.
+
+	* lib/test/unit.rb (Test::Unit::AutoRunner#process_args): return
+	  true if any test cases to run.
+
 Sat Feb 12 23:17:43 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit.rb (assert_include): add alias.
