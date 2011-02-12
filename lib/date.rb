@@ -1,7 +1,7 @@
 #
 # date.rb - date and time library
 #
-# Author: Tadayoshi Funaba 1998-2010
+# Author: Tadayoshi Funaba 1998-2011
 #
 # Documentation: William Webber <william@williamwebber.com>
 #
@@ -1103,7 +1103,7 @@ class Date
 	  end
 	end;
       end
-    end
+    end # <<dummy
 
     private :once
 
@@ -1399,8 +1399,11 @@ class Date
     when Numeric; return jd == other
     when Date;    return jd == other.jd
     else
-      l, r = other.coerce(self)
-      return l === r
+      begin
+	l, r = other.coerce(self)
+	return l === r
+      rescue NoMethodError
+      end
     end
     false
   end
