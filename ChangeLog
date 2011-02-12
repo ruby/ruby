@@ -1,3 +1,8 @@
+Sat Feb 12 09:30:00 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::GlobOption#non_options): run tests
+	  under base directory if no argument given.
+
 Sat Feb 12 08:03:12 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_settracefunc.rb (TestSetTraceFunc): ensure to use

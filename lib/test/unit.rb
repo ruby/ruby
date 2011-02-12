@@ -100,6 +100,7 @@ module Test
         if reject = options.delete(:reject)
           reject_pat = Regexp.union(reject.map {|r| /#{r}/ })
         end
+        files << "" if files.empty?
         files.map! {|f|
           f = f.tr(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
           [*(paths if /\A\.\.?(?:\z|\/)/ !~ f), nil].uniq.any? do |prefix|
