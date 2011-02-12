@@ -1,4 +1,9 @@
-Sat Feb 12 14:42:11 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Feb 12 14:44:20 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_io_blocking_region): new function to run
+	  blocking region with GIL released, for fd.
+
+	* thread.c (rb_thread_fd_close): implement.  [ruby-core:35203]
 
 	* vm.c (th_init): rename from th_init2.
 

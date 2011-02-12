@@ -73,6 +73,8 @@ static const VALUE eKillSignal = INT2FIX(0);
 static const VALUE eTerminateSignal = INT2FIX(1);
 static volatile int system_working = 1;
 
+#define closed_stream_error GET_VM()->special_exceptions[ruby_error_closed_stream]
+
 inline static void
 st_delete_wrap(st_table *table, st_data_t key)
 {
@@ -1122,6 +1124,7 @@ rb_thread_blocking_region(
     rb_thread_t *th = GET_THREAD();
     int saved_errno = 0;
 
+    th->waiting_fd = -1;
     if (ubf == RUBY_UBF_IO || ubf == RUBY_UBF_PROCESS) {
 	ubf = ubf_select;
 	data2 = th;
@@ -1131,6 +1134,23 @@ rb_thread_blocking_region(
 	val = func(data1);
 	saved_errno = errno;
     }, ubf, data2);
+    errno = saved_errno;
+
+    return val;
+}
+
+VALUE
+rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
+{
+    VALUE val;
+    rb_thread_t *th = GET_THREAD();
+    int saved_errno = 0;
+
+    th->waiting_fd = fd;
+    BLOCKING_REGION({
+	val = func(data1);
+	saved_errno = errno;
+    }, ubf_select, th);
     errno = saved_errno;
 
     return val;
@@ -1427,10 +1447,36 @@ rb_threadptr_reset_raised(rb_thread_t *th)
     return 1;
 }
 
+#define THREAD_IO_WAITING_P(th) (			\
+	((th)->status == THREAD_STOPPED ||		\
+	 (th)->status == THREAD_STOPPED_FOREVER) &&	\
+	(th)->blocking_region_buffer &&			\
+	(th)->unblock.func == ubf_select &&		\
+	1)
+
+static int
+thread_fd_close_i(st_data_t key, st_data_t val, st_data_t data)
+{
+    int fd = (int)data;
+    rb_thread_t *th;
+    GetThreadPtr((VALUE)key, th);
+
+    if (THREAD_IO_WAITING_P(th)) {
+	native_mutex_lock(&th->interrupt_lock);
+	if (THREAD_IO_WAITING_P(th) && th->waiting_fd == fd) {
+	    th->errinfo = th->vm->special_exceptions[ruby_error_closed_stream];
+	    RUBY_VM_SET_INTERRUPT(th);
+	    (th->unblock.func)(th->unblock.arg);
+	}
+	native_mutex_unlock(&th->interrupt_lock);
+    }
+    return ST_CONTINUE;
+}
+
 void
 rb_thread_fd_close(int fd)
 {
-    /* TODO: fix me */
+    st_foreach(GET_THREAD()->vm->living_threads, thread_fd_close_i, (st_index_t)fd);
 }
 
 /*
@@ -4361,6 +4407,10 @@ Init_Thread(void)
     rb_define_method(rb_cThread, "backtrace", rb_thread_backtrace_m, 0);
 
     rb_define_method(rb_cThread, "inspect", rb_thread_inspect, 0);
+
+    closed_stream_error = rb_exc_new2(rb_eIOError, "stream closed");
+    OBJ_TAINT(closed_stream_error);
+    OBJ_FREEZE(closed_stream_error);
 
     cThGroup = rb_define_class("ThreadGroup", rb_cObject);
     rb_define_alloc_func(cThGroup, thgroup_s_alloc);

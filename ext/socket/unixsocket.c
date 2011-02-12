@@ -249,7 +249,7 @@ unix_send_io(VALUE sock, VALUE val)
 
     arg.fd = fptr->fd;
     rb_thread_fd_writable(arg.fd);
-    if ((int)BLOCKING_REGION(sendmsg_blocking, &arg) == -1)
+    if ((int)BLOCKING_REGION_FD(sendmsg_blocking, &arg) == -1)
 	rb_sys_fail("sendmsg(2)");
 
     return Qnil;
@@ -335,7 +335,7 @@ unix_recv_io(int argc, VALUE *argv, VALUE sock)
 
     arg.fd = fptr->fd;
     rb_thread_wait_fd(arg.fd);
-    if ((int)BLOCKING_REGION(recvmsg_blocking, &arg) == -1)
+    if ((int)BLOCKING_REGION_FD(recvmsg_blocking, &arg) == -1)
 	rb_sys_fail("recvmsg(2)");
 
 #if FD_PASSING_BY_MSG_CONTROL

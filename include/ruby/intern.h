@@ -797,6 +797,7 @@ void rb_thread_check_ints(void);
 int rb_thread_interrupted(VALUE thval);
 VALUE rb_thread_blocking_region(rb_blocking_function_t *func, void *data1,
 				rb_unblock_function_t *ubf, void *data2);
+VALUE rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd);
 #define RUBY_UBF_IO ((rb_unblock_function_t *)-1)
 #define RUBY_UBF_PROCESS ((rb_unblock_function_t *)-1)
 VALUE rb_mutex_new(void);

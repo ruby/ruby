@@ -260,6 +260,7 @@ enum ruby_special_exceptions {
     ruby_error_reenter,
     ruby_error_nomemory,
     ruby_error_sysstack,
+    ruby_error_closed_stream,
     ruby_special_error_count
 };
 
@@ -394,6 +395,8 @@ typedef struct rb_thread_struct {
 
     /* passing state */
     int state;
+
+    int waiting_fd;
 
     /* for rb_iterate */
     const rb_block_t *passed_block;

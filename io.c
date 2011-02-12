@@ -605,7 +605,7 @@ rb_read_internal(int fd, void *buf, size_t count)
     iis.buf = buf;
     iis.capa = count;
 
-    return (ssize_t)rb_thread_blocking_region(internal_read_func, &iis, RUBY_UBF_IO, 0);
+    return (ssize_t)rb_thread_io_blocking_region(internal_read_func, &iis, fd);
 }
 
 static ssize_t
@@ -616,7 +616,7 @@ rb_write_internal(int fd, const void *buf, size_t count)
     iis.buf = buf;
     iis.capa = count;
 
-    return (ssize_t)rb_thread_blocking_region(internal_write_func, &iis, RUBY_UBF_IO, 0);
+    return (ssize_t)rb_thread_io_blocking_region(internal_write_func, &iis, fd);
 }
 
 static long
@@ -653,7 +653,8 @@ io_flush_buffer_sync(void *arg)
 static VALUE
 io_flush_buffer_async(VALUE arg)
 {
-    return rb_thread_blocking_region(io_flush_buffer_sync, (void *)arg, RUBY_UBF_IO, 0);
+    rb_io_t *fptr = (rb_io_t *)arg;
+    return rb_thread_io_blocking_region(io_flush_buffer_sync, fptr, fptr->fd);
 }
 
 static inline int
@@ -7475,7 +7476,7 @@ do_io_advise(rb_io_t *fptr, VALUE advice, off_t offset, off_t len)
     ias.offset = offset;
     ias.len    = len;
 
-    if (rv = (int)rb_thread_blocking_region(io_advise_internal, &ias, RUBY_UBF_IO, 0))
+    if (rv = (int)rb_thread_io_blocking_region(io_advise_internal, &ias, fptr->fd))
 	/* posix_fadvise(2) doesn't set errno. On success it returns 0; otherwise
 	   it returns the error code. */
 	rb_syserr_fail(rv, RSTRING_PTR(fptr->pathv));
