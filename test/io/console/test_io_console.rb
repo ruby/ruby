@@ -117,7 +117,7 @@ class TestIO_Console < Test::Unit::TestCase
       s.print "a"
       s.oflush # oflush may be issued after "a" is already sent.
       s.print "b"
-      assert_includes(["b", "ab"], m.readpartial(10))
+      assert_include(["b", "ab"], m.readpartial(10))
     }
   end
 
@@ -135,7 +135,7 @@ class TestIO_Console < Test::Unit::TestCase
       s.print "a"
       s.ioflush # ioflush may be issued after "a" is already sent.
       s.print "b"
-      assert_includes(["b", "ab"], m.readpartial(10))
+      assert_include(["b", "ab"], m.readpartial(10))
     }
   end
 

@@ -35,7 +35,7 @@ class TestSocketAddrinfo < Test::Unit::TestCase
     assert_equal(Socket::AF_INET, ai.afamily)
     assert_equal(Socket::PF_INET, ai.pfamily)
     assert_equal(Socket::SOCK_STREAM, ai.socktype)
-    assert_includes([0, Socket::IPPROTO_TCP], ai.protocol)
+    assert_include([0, Socket::IPPROTO_TCP], ai.protocol)
   end
 
   def test_addrinfo_udp
@@ -44,7 +44,7 @@ class TestSocketAddrinfo < Test::Unit::TestCase
     assert_equal(Socket::AF_INET, ai.afamily)
     assert_equal(Socket::PF_INET, ai.pfamily)
     assert_equal(Socket::SOCK_DGRAM, ai.socktype)
-    assert_includes([0, Socket::IPPROTO_UDP], ai.protocol)
+    assert_include([0, Socket::IPPROTO_UDP], ai.protocol)
   end
 
   def test_addrinfo_ip_unpack

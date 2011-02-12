@@ -139,7 +139,7 @@ class TestPack < Test::Unit::TestCase
 
   def test_integer_endian
     s = [1].pack("s")
-    assert_includes(["\0\1", "\1\0"], s)
+    assert_include(["\0\1", "\1\0"], s)
     if s == "\0\1"
       _integer_big_endian()
     else

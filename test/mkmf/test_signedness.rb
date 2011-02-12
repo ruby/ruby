@@ -19,7 +19,7 @@ class TestMkmf
           }
           $defs.clear
           assert_equal(expect.to_i, mkmf {check_signedness("test1_t", "confdefs.h")}, MKMFLOG)
-          assert_includes($defs, "-DSIGNEDNESS_OF_TEST1_T=#{expect}")
+          assert_include($defs, "-DSIGNEDNESS_OF_TEST1_T=#{expect}")
         end
       end
     end

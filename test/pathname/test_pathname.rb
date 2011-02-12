@@ -532,7 +532,7 @@ class TestPathname < Test::Unit::TestCase
 
   def test_mountpoint?
     r = Pathname("/").mountpoint?
-    assert_includes([true, false], r)
+    assert_include([true, false], r)
   end
 
   def test_destructive_update

@@ -1,3 +1,7 @@
+Sat Feb 12 23:17:43 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (assert_include): add alias.
+
 Sat Feb 12 14:44:20 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_thread_io_blocking_region): new function to run

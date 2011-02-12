@@ -21,10 +21,10 @@ class TestMkmf
           assert_equal((prefix || signed)+type,
                        mkmf {convertible_int("test1_t", "confdefs.h")}, MKMFLOG)
           (u = signed[/^u/]) and u.upcase!
-          assert_includes($defs, "-DTYPEOF_TEST1_T="+"#{prefix||signed}#{type}".quote)
-          assert_includes($defs, "-DPRI_TEST1T_PREFIX=PRI_#{type.upcase}_PREFIX")
-          assert_includes($defs, "-DTEST1T2NUM=#{u}#{type.upcase}2NUM")
-          assert_includes($defs, "-DNUM2TEST1T=NUM2#{u}#{type.upcase}")
+          assert_include($defs, "-DTYPEOF_TEST1_T="+"#{prefix||signed}#{type}".quote)
+          assert_include($defs, "-DPRI_TEST1T_PREFIX=PRI_#{type.upcase}_PREFIX")
+          assert_include($defs, "-DTEST1T2NUM=#{u}#{type.upcase}2NUM")
+          assert_include($defs, "-DNUM2TEST1T=NUM2#{u}#{type.upcase}")
         end
       end
     end
