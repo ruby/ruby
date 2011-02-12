@@ -537,7 +537,7 @@ inject_op_i(VALUE i, VALUE p, int argc, VALUE *argv)
  *  will be passed to the named method of <i>memo</i>.
  *  In either case, the result becomes the new value for <i>memo</i>.
  *  At the end of the iteration, the final value of <i>memo</i> is the
- *  return value fo the method.
+ *  return value for the method.
  *
  *  If you do not explicitly specify an <i>initial</i> value for <i>memo</i>,
  *  then uses the first element of collection is used as the initial value

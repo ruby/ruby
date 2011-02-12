@@ -1,3 +1,8 @@
+Sun Feb 13 07:39:51 2011  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_inject): typo fixed. a patch from Gaku Ueda in
+	  [ruby-core:35216].
+
 Sun Feb 13 00:48:47 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb (Date#===): [ruby-core:35127]
