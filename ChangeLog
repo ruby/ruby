@@ -1,4 +1,6 @@
-Sat Feb 12 09:30:00 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Feb 12 14:40:59 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::Runner): rename from Test::Unit::Mini.
 
 	* lib/test/unit.rb (Test::Unit::GlobOption#non_options): run tests
 	  under base directory if no argument given.

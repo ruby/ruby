@@ -183,18 +183,19 @@ module Test
       end
     end
 
-    class Mini < MiniTest::Unit
+    class Runner < MiniTest::Unit
+      include Test::Unit::Options
+      include Test::Unit::RequireFiles
       include Test::Unit::GlobOption
       include Test::Unit::LoadPathOption
       include Test::Unit::GCStressOption
       include Test::Unit::RunCount
-      include Test::Unit::Options
 
       class << self; undef autorun; end
       def self.autorun
         at_exit {
           Test::Unit::RunCount.run_once {
-            exit(Test::Unit::Mini.new.run(ARGV) || true)
+            exit(Test::Unit::Runner.new.run(ARGV) || true)
           }
         } unless @@installed_at_exit
         @@installed_at_exit = true
@@ -222,10 +223,6 @@ module Test
     end
 
     class AutoRunner
-      class Runner < Mini
-        include Test::Unit::RequireFiles
-      end
-
       attr_accessor :to_run, :options
 
       def initialize(force_standalone = false, default_dir = nil, argv = ARGV)
@@ -254,4 +251,4 @@ module Test
   end
 end
 
-Test::Unit::Mini.autorun
+Test::Unit::Runner.autorun
