@@ -1781,7 +1781,7 @@ thread_alloc(VALUE klass)
 }
 
 static void
-th_init2(rb_thread_t *th, VALUE self)
+th_init(rb_thread_t *th, VALUE self)
 {
     th->self = self;
 
@@ -1797,12 +1797,7 @@ th_init2(rb_thread_t *th, VALUE self)
     th->status = THREAD_RUNNABLE;
     th->errinfo = Qnil;
     th->last_status = Qnil;
-}
-
-static void
-th_init(rb_thread_t *th, VALUE self)
-{
-    th_init2(th, self);
+    th->waiting_fd = -1;
 }
 
 static VALUE
@@ -2142,7 +2137,7 @@ Init_BareVM(void)
     ruby_current_vm = vm;
 
     Init_native_thread();
-    th_init2(th, 0);
+    th_init(th, 0);
     th->vm = vm;
     ruby_thread_init_stack(th);
 }

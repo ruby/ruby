@@ -1,3 +1,7 @@
+Sat Feb 12 14:42:11 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (th_init): rename from th_init2.
+
 Sat Feb 12 14:41:36 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit.rb (Test::Unit::AutoRunner#initialize): use
