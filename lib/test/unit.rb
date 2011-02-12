@@ -96,11 +96,10 @@ module Test
       end
 
       def non_options(files, options)
-        paths = [options.delete(:base_directory), nil].compact
+        paths = [options.delete(:base_directory), nil].uniq
         if reject = options.delete(:reject)
           reject_pat = Regexp.union(reject.map {|r| /#{r}/ })
         end
-        files << "" if files.empty?
         files.map! {|f|
           f = f.tr(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
           [*(paths if /\A\.\.?(?:\z|\/)/ !~ f), nil].uniq.any? do |prefix|
@@ -228,6 +227,7 @@ module Test
       def initialize(force_standalone = false, default_dir = nil, argv = ARGV)
         @runner = Runner.new do |files, options|
           options[:base_directory] ||= default_dir
+          files << default_dir if files.empty?
           @to_run = files
           yield self if block_given?
           files

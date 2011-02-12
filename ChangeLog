@@ -1,4 +1,7 @@
-Sat Feb 12 14:40:59 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Feb 12 14:41:36 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::AutoRunner#initialize): use
+	  default_dir if no test case given.
 
 	* lib/test/unit.rb (Test::Unit::Runner): rename from Test::Unit::Mini.
 
