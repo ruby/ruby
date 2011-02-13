@@ -83,8 +83,8 @@ no_window(void)
 #define GetWINDOW(obj, winp) do {\
     if (!OBJ_TAINTED(obj) && rb_safe_level() >= 4)\
 	rb_raise(rb_eSecurityError, "Insecure: operation on untainted window");\
-    Data_Get_Struct(obj, struct windata, winp);\
-    if (winp->window == 0) no_window();\
+    Data_Get_Struct((obj), struct windata, (winp));\
+    if ((winp)->window == 0) no_window();\
 } while (0)
 
 static void
@@ -784,8 +784,8 @@ no_mevent(void)
 #define GetMOUSE(obj, data) do {\
     if (!OBJ_TAINTED(obj) && rb_safe_level() >= 4)\
 	rb_raise(rb_eSecurityError, "Insecure: operation on untainted mouse");\
-    Data_Get_Struct(obj, struct mousedata, data);\
-    if (data->mevent == 0) no_mevent();\
+    Data_Get_Struct((obj), struct mousedata, (data));\
+    if ((data)->mevent == 0) no_mevent();\
 } while (0)
 
 static void
