@@ -1,4 +1,7 @@
-Sun Feb 13 09:56:36 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Feb 13 09:56:40 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/io/nonblock/test_flush.rb (TestIONonblock#flush_test):
+	 return true to finish the test.
 
 	* test/syck/test_string.rb (Syck::TestString#test_non_binary_string):
 	 use assert_not instead of refute, unless required minitest

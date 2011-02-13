@@ -41,5 +41,6 @@ class TestIONonblock < Test::Unit::TestCase
       assert_nothing_raised {t.join}
     }
     assert_equal(4097, result.size)
+    true
   end
 end if IO.method_defined?(:nonblock)
