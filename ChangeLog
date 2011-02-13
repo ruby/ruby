@@ -1,4 +1,7 @@
-Sun Feb 13 09:56:40 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Feb 13 09:56:44 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/openssl/test_config.rb (OpenSSL#test_freeze): fix error
+	 message assertion.
 
 	* test/io/nonblock/test_flush.rb (TestIONonblock#flush_test):
 	 return true to finish the test.

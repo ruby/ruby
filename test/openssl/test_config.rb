@@ -262,11 +262,12 @@ __EOC__
     c['foo'] = [['key', 'value']]
     c.freeze
 
-    # [ruby-core:18377]
+    bug = '[ruby-core:18377]'
     # RuntimeError for 1.9, TypeError for 1.8
-    assert_raise(TypeError, /frozen/) do
+    e = assert_raise(TypeError, bug) do
       c['foo'] = [['key', 'wrong']]
     end
+    assert_match(/can't modify/, e.message, bug)
   end
 
   def test_dup
