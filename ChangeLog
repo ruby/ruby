@@ -1,4 +1,10 @@
-Sun Feb 13 09:56:32 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Feb 13 09:56:36 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/syck/test_string.rb (Syck::TestString#test_non_binary_string):
+	 use assert_not instead of refute, unless required minitest
+	 directly.
+
+	* test/test_prime.rb (TestPrime::sieve.Integer): ditto.
 
 	* test/xmlrpc/webrick_testing.rb (WEBrick_Testing#start_server):
 	 catch IOError when server socket was closed.

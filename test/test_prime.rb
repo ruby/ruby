@@ -169,6 +169,6 @@ class TestPrime < Test::Unit::TestCase
       end
     end
 
-    refute_includes Prime.each(7*37).to_a, 7*37, "[ruby-dev:39465]"
+    assert_not_include Prime.each(7*37).to_a, 7*37, "[ruby-dev:39465]"
   end
 end
