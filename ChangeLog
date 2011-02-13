@@ -1,3 +1,8 @@
+Sun Feb 13 09:56:32 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/xmlrpc/webrick_testing.rb (WEBrick_Testing#start_server):
+	 catch IOError when server socket was closed.
+
 Sun Feb 13 07:39:51 2011  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enum.c (enum_inject): typo fixed. a patch from Gaku Ueda in
