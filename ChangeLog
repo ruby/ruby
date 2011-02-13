@@ -1,3 +1,8 @@
+Sun Feb 13 19:41:47 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::RequireFiles#non_options): skip
+	  test suites failed to load instead of mere messages.
+
 Sun Feb 13 09:56:44 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/openssl/test_config.rb (OpenSSL#test_freeze): fix error
