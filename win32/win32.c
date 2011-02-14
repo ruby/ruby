@@ -854,6 +854,8 @@ is_internal_cmd(const char *cmd, int nt)
     do {
 	if (!(c = *cmd++)) return 0;
     } while (isspace(c));
+    if (c == '@')
+	return 1;
     while (isalpha(c)) {
 	*b++ = tolower(c);
 	if (b == cmdname + sizeof(cmdname)) return 0;
