@@ -469,8 +469,6 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
     AS_CASE([" $warnflags "],[*" -Wno-missing-field-initializers "*], [wflag=-Wextra],
                              [wflag=-Wall])
     RUBY_TRY_CFLAGS($wflag, [warnflags="$wflag${warnflags+ $warnflags}"])
-    rb_cv_warnflags="$warnflags"
-    warnflags=
 fi
 if test "$GCC" = yes; then
     RUBY_TRY_CFLAGS(-fvisibility=hidden, [RUBY_APPEND_OPTION(XCFLAGS, -fvisibility=hidden)])
@@ -2582,7 +2580,6 @@ if test "${ARCH_FLAG}"; then
     CXXFLAGS=`echo "$CXXFLAGS" | sed "s|$archflagpat"'|$(ARCH_FLAG)|'`
     LDFLAGS=`echo "$LDFLAGS" | sed "s|$archflagpat"'|$(ARCH_FLAG)|'`
 fi
-warnflags="$rb_cv_warnflags"
 AC_SUBST(cppflags, [])dnl
 AC_SUBST(cflags, ["$orig_cflags "'${optflags} ${debugflags} ${warnflags}'])dnl
 AC_SUBST(cxxflags, ["$orig_cxxflags "'${optflags} ${debugflags} ${warnflags}'])dnl

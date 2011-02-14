@@ -1,3 +1,8 @@
+Mon Feb 14 21:06:50 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* configure.in: revert r30621.  That revision introduced mkmf test
+	  failures and it turned out to be OK to revert. [ruby-dev:43203]
+
 Mon Feb 14 21:04:01 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/fiddle/conversions.h: parenthesize macro arguments.
