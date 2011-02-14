@@ -91,7 +91,20 @@ class TestSystem < Test::Unit::TestCase
   def test_system_at
       if /mswin|mingw/ =~ RUBY_PLATFORM
         testname = '[ruby-core:35218]'
+
+        # @ + builtin command
         assert_equal("foo\n", `@echo foo`, testname);
+        assert_equal("foo\n", `@@echo foo`, testname);
+
+        # @ + non builtin command
+        Dir.mktmpdir("ruby_script_tmp") {|tmpdir|
+          tmpfilename = "#{tmpdir}/ruby_script_tmp.#{$$}"
+
+          tmp = open(tmpfilename, "w")
+          tmp.print "foo\nbar\nbaz";
+          tmp.close
+          assert_match(/\n.*\nbar\nbaz\n/, `@@find "ba" #{tmpfilename.gsub("/", "\\")}`, testname);
+        }
       end
   end
 
