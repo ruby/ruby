@@ -58,6 +58,10 @@ BASERUBY = $(BASERUBY:/=\)
 !if defined(NTVER)
 NTVER = $(NTVER)
 !endif
+!if defined(USE_RUBYGEMS)
+USE_RUBYGEMS = $(USE_RUBYGEMS)
+!endif
+
 <<
 !if !defined(BASERUBY)
 	@for %I in (ruby.exe) do @echo BASERUBY = %~s$$PATH:I>> $(MAKEFILE)

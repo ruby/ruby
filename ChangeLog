@@ -1,3 +1,9 @@
+Mon Feb 14 18:41:47 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* win32/setup.mak (USE_RUBYGEMS): fixed r30835. It didn't work on
+	  mswin32 port. If you changed win32/configure.bat, you should change
+	  setup.mak too.
+
 Mon Feb 14 17:28:34 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_system.rb (TestSystem#test_system_at):
