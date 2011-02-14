@@ -1,3 +1,8 @@
+Mon Feb 14 17:28:34 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_system.rb (TestSystem#test_system_at):
+	  added test. [ruby-core:35218] (#4393)
+
 Mon Feb 14 13:15:35 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (is_internal_cmd): if the first char of prog is '@',

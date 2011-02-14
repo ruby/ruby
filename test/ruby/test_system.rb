@@ -88,6 +88,13 @@ class TestSystem < Test::Unit::TestCase
     }
   end
 
+  def test_system_at
+      if /mswin|mingw/ =~ RUBY_PLATFORM
+        testname = '[ruby-core:35218]'
+        assert_equal("foo\n", `@echo foo`, testname);
+      end
+  end
+
   def test_empty_evstr
     assert_equal("", eval('"#{}"', nil, __FILE__, __LINE__), "[ruby-dev:25113]")
   end
