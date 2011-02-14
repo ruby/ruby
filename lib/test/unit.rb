@@ -166,9 +166,6 @@ module Test
     end
 
     module RequireFiles
-      path = File.expand_path('../../rubygems/custom_require.rb', __FILE__)
-      CUSTOM_REQUIRE = /\A#{Regexp.quote(path)}:\d+:in `require'\z/ #'
-
       def non_options(files, options)
         return false if !super
         result = false
@@ -180,17 +177,8 @@ module Test
           begin
             require path
             result = true
-          rescue LoadError => e
-            Class.new(Test::Unit::TestCase) do
-              message = e.message
-              / -- (?<failed>.*)/ =~ message
-              define_singleton_method(:to_s) {failed}
-              backtrace = e.backtrace
-              backtrace.shift while CUSTOM_REQUIRE =~ backtrace.first
-              /(?<file>.*):(?<line>\d+):in\s`/ =~ backtrace.first
-              line = line.to_i
-              define_method(:test_require_failed) {eval "skip(message)", nil, file, line}
-            end
+          rescue LoadError
+            puts "#{f}: #{$!}"
           end
         }
         result

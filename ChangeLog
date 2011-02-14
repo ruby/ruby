@@ -1,3 +1,7 @@
+Mon Feb 14 10:33:45 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/test/unit.rb: revert r30863, because it causes too many noise.
+
 Mon Feb 14 07:34:55 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/curses/curses.c: parenthesize macro arguments.
