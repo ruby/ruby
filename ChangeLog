@@ -1,3 +1,7 @@
+Mon Feb 14 21:04:01 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/fiddle/conversions.h: parenthesize macro arguments.
+
 Mon Feb 14 18:41:47 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* win32/setup.mak (USE_RUBYGEMS): fixed r30835. It didn't work on
