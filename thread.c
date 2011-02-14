@@ -1151,6 +1151,7 @@ rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
 	val = func(data1);
 	saved_errno = errno;
     }, ubf_select, th);
+    th->waiting_fd = -1;
     errno = saved_errno;
 
     return val;

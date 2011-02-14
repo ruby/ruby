@@ -1,3 +1,9 @@
+Mon Feb 14 23:01:19 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* thread.c (rb_thread_io_blocking_region): reset th->waiting_fd
+	  after blocking region, because remaining waiting_fd might
+	  cause unnecessary IOError.
+
 Mon Feb 14 21:06:50 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* configure.in: revert r30621.  That revision introduced mkmf test
