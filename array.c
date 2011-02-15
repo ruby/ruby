@@ -1650,7 +1650,7 @@ ary_join_1(VALUE obj, VALUE ary, VALUE sep, long i, VALUE result, int *first)
 		rb_raise(rb_eArgError, "recursive array join");
 	    }
 	    else {
-		VALUE args[3];
+		VALUE args[4];
 
 		args[0] = val;
 		args[1] = sep;

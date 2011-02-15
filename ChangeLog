@@ -1,3 +1,7 @@
+Tue Feb 15 20:34:53 2011  Tanaka Akira  <akr@fsij.org>
+
+	* array.c (ary_join_1): fix array size.
+
 Tue Feb 15 19:43:23 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: fix and resubmit r30621. [ruby-dev:43203]
