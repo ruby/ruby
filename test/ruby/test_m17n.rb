@@ -933,6 +933,10 @@ class TestM17N < Test::Unit::TestCase
   def test_aset
     s = e("\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4")
     assert_raise(Encoding::CompatibilityError){s["\xb0\xa3"] = "foo"}
+
+    a = ua("a")
+    a[/a/] = u("")
+    assert_equal Encoding::US_ASCII, a.encoding
   end
 
   def test_str_center
