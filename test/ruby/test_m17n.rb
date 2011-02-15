@@ -1098,8 +1098,8 @@ class TestM17N < Test::Unit::TestCase
     s = e("\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4")
     assert_equal(e("\xa3\xb0z\xa3\xb2\xa3\xb3\xa3\xb4"), s.gsub(/\xa3\xb1/e, "z"))
 
-    assert_equal(Encoding::EUC_JP, (a("").gsub(//) { e("") }.encoding))
-    assert_equal(Encoding::EUC_JP, (a("a").gsub(/a/) { e("") }.encoding))
+    assert_equal(Encoding::ASCII_8BIT, (a("").gsub(//) { e("") }.encoding))
+    assert_equal(Encoding::ASCII_8BIT, (a("a").gsub(/a/) { e("") }.encoding))
   end
 
   def test_end_with

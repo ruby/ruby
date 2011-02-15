@@ -1899,7 +1899,6 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
     int str_encindex = ENCODING_GET(str);
     int res_encindex;
     int str_cr, res_cr;
-    int str_a8 = ENCODING_IS_ASCII8BIT(str);
     int ptr_a8 = ptr_encindex == 0;
 
     str_cr = ENC_CODERANGE(str);
@@ -1930,7 +1929,7 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
 	    ptr_cr = coderange_scan(ptr, len, ptr_enc);
 	}
         if (str_cr == ENC_CODERANGE_UNKNOWN) {
-            if (str_a8 || ptr_cr != ENC_CODERANGE_7BIT) {
+            if (ENCODING_IS_ASCII8BIT(str) || ptr_cr != ENC_CODERANGE_7BIT) {
                 str_cr = rb_enc_str_coderange(str);
             }
         }
@@ -1953,7 +1952,7 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
     }
     else if (str_cr == ENC_CODERANGE_7BIT) {
         if (ptr_cr == ENC_CODERANGE_7BIT) {
-            res_encindex = !str_a8 ? str_encindex : ptr_encindex;
+            res_encindex = str_encindex;
             res_cr = ENC_CODERANGE_7BIT;
         }
         else {
@@ -3746,6 +3745,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     cp = sp;
     str_enc = STR_ENC_GET(str);
     rb_enc_associate(dest, str_enc);
+    ENC_CODERANGE_SET(dest, rb_enc_asciicompat(str_enc) ? ENC_CODERANGE_7BIT : ENC_CODERANGE_VALID);
 
     do {
 	n++;

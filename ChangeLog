@@ -1,3 +1,11 @@
+Tue Feb 15 15:39:37 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_enc_cr_str_buf_cat): remove special treatment of
+	  ASCII-8BIT receivers.
+
+	* string.c (str_gsub): set initial encoding of the buffer as the
+	  same of the receiver. [ruby-core:35141]
+
 Tue Feb 15 09:49:33 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_system.rb (TestSystem#test_system_at): use findstr
