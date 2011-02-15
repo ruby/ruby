@@ -1,3 +1,9 @@
+Tue Feb 15 09:49:33 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_system.rb (TestSystem#test_system_at): use findstr
+	  command instead of find command, because the latter is confusing
+	  another famous Unix command.
+
 Mon Feb 14 23:01:19 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* thread.c (rb_thread_io_blocking_region): reset th->waiting_fd

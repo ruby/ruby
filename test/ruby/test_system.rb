@@ -103,7 +103,7 @@ class TestSystem < Test::Unit::TestCase
           tmp = open(tmpfilename, "w")
           tmp.print "foo\nbar\nbaz";
           tmp.close
-          assert_match(/\n.*\nbar\nbaz\n/, `@@find "ba" #{tmpfilename.gsub("/", "\\")}`, testname);
+          assert_match(/\Abar\nbaz\n?\z/, `@@findstr "ba" #{tmpfilename.gsub("/", "\\")}`, testname);
         }
       end
   end
