@@ -441,6 +441,7 @@ AC_DEFUN(RUBY_TRY_LDFLAGS, [
     save_LDFLAGS=
 ])
 
+rb_cv_warnflags="$warnflags"
 if test "$GCC:${warnflags+set}:no" = yes::no; then
     particular_werror_flags=yes
     for wflag in -Wno-unused-parameter -Wno-parentheses -Wno-long-long \
@@ -469,6 +470,8 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
     AS_CASE([" $warnflags "],[*" -Wno-missing-field-initializers "*], [wflag=-Wextra],
                              [wflag=-Wall])
     RUBY_TRY_CFLAGS($wflag, [warnflags="$wflag${warnflags+ $warnflags}"])
+    # Disable warnflags while conftest. -Werror=* flags might make bad OS capability guess.
+    warnflags=
 fi
 if test "$GCC" = yes; then
     RUBY_TRY_CFLAGS(-fvisibility=hidden, [RUBY_APPEND_OPTION(XCFLAGS, -fvisibility=hidden)])
@@ -2580,6 +2583,7 @@ if test "${ARCH_FLAG}"; then
     CXXFLAGS=`echo "$CXXFLAGS" | sed "s|$archflagpat"'|$(ARCH_FLAG)|'`
     LDFLAGS=`echo "$LDFLAGS" | sed "s|$archflagpat"'|$(ARCH_FLAG)|'`
 fi
+warnflags="$rb_cv_warnflags"
 AC_SUBST(cppflags, [])dnl
 AC_SUBST(cflags, ["$orig_cflags "'${optflags} ${debugflags} ${warnflags}'])dnl
 AC_SUBST(cxxflags, ["$orig_cxxflags "'${optflags} ${debugflags} ${warnflags}'])dnl
