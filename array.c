@@ -1743,7 +1743,7 @@ inspect_ary(VALUE ary, VALUE dummy, int recur)
     long i;
     VALUE s, str;
 
-    if (recur) return rb_tainted_str_new2("[...]");
+    if (recur) return rb_usascii_str_new_cstr("[...]");
     str = rb_str_buf_new2("[");
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	s = rb_inspect(RARRAY_PTR(ary)[i]);

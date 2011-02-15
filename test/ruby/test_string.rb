@@ -1693,14 +1693,6 @@ class TestString < Test::Unit::TestCase
     }
   end
 
-  def test_tainted_str_new
-    a = []
-    a << a
-    s = a.inspect
-    assert(s.tainted?)
-    assert_equal("[[...]]", s)
-  end
-
   class S2 < String
   end
   def test_str_new4
