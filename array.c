@@ -14,6 +14,7 @@
 #include "ruby/ruby.h"
 #include "ruby/util.h"
 #include "ruby/st.h"
+#include "ruby/encoding.h"
 
 #ifndef ARRAY_DEBUG
 # define NDEBUG
@@ -1590,7 +1591,7 @@ rb_ary_resurrect(VALUE ary)
 
 extern VALUE rb_output_fs;
 
-static void ary_join_1(VALUE obj, VALUE ary, VALUE sep, long i, VALUE result);
+static void ary_join_1(VALUE obj, VALUE ary, VALUE sep, long i, VALUE result, int *first);
 
 static VALUE
 recursive_join(VALUE obj, VALUE argp, int recur)
@@ -1599,12 +1600,13 @@ recursive_join(VALUE obj, VALUE argp, int recur)
     VALUE ary = arg[0];
     VALUE sep = arg[1];
     VALUE result = arg[2];
+    int *first = (int *)arg[3];
 
     if (recur) {
 	rb_raise(rb_eArgError, "recursive array join");
     }
     else {
-	ary_join_1(obj, ary, sep, 0, result);
+	ary_join_1(obj, ary, sep, 0, result, first);
     }
     return Qnil;
 }
@@ -1615,6 +1617,7 @@ ary_join_0(VALUE ary, VALUE sep, long max, VALUE result)
     long i;
     VALUE val;
 
+    if (max > 0) rb_enc_copy(result, RARRAY_PTR(ary)[0]);
     for (i=0; i<max; i++) {
 	val = RARRAY_PTR(ary)[i];
 	if (i > 0 && !NIL_P(sep))
@@ -1626,7 +1629,7 @@ ary_join_0(VALUE ary, VALUE sep, long max, VALUE result)
 }
 
 static void
-ary_join_1(VALUE obj, VALUE ary, VALUE sep, long i, VALUE result)
+ary_join_1(VALUE obj, VALUE ary, VALUE sep, long i, VALUE result, int *first)
 {
     VALUE val, tmp;
 
@@ -1652,6 +1655,7 @@ ary_join_1(VALUE obj, VALUE ary, VALUE sep, long i, VALUE result)
 		args[0] = val;
 		args[1] = sep;
 		args[2] = result;
+		args[3] = (VALUE)first;
 		rb_exec_recursive(recursive_join, obj, (VALUE)args);
 	    }
 	    break;
@@ -1668,6 +1672,10 @@ ary_join_1(VALUE obj, VALUE ary, VALUE sep, long i, VALUE result)
 		goto ary_join;
 	    }
 	    val = rb_obj_as_string(val);
+	    if (*first) {
+		rb_enc_copy(result, val);
+		*first = FALSE;
+	    }
 	    goto str_join;
 	}
     }
@@ -1694,11 +1702,14 @@ rb_ary_join(VALUE ary, VALUE sep)
 	tmp = rb_check_string_type(val);
 
 	if (NIL_P(tmp) || tmp != val) {
+	    int first;
 	    result = rb_str_buf_new(len + (RARRAY_LEN(ary)-i)*10);
+	    rb_enc_associate(result, rb_usascii_encoding());
 	    if (taint) OBJ_TAINT(result);
 	    if (untrust) OBJ_UNTRUST(result);
 	    ary_join_0(ary, sep, i, result);
-	    ary_join_1(ary, ary, sep, i, result);
+	    first = i == 0;
+	    ary_join_1(ary, ary, sep, i, result, &first);
 	    return result;
 	}
 
@@ -1750,6 +1761,7 @@ inspect_ary(VALUE ary, VALUE dummy, int recur)
 	if (OBJ_TAINTED(s)) tainted = TRUE;
 	if (OBJ_UNTRUSTED(s)) untrust = TRUE;
 	if (i > 0) rb_str_buf_cat2(str, ", ");
+	else rb_enc_copy(str, s);
 	rb_str_buf_append(str, s);
     }
     rb_str_buf_cat2(str, "]");

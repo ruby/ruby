@@ -1,3 +1,17 @@
+Tue Feb 15 15:41:30 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* array.c (array_join): copy the encoding of the first element as
+	  an initial encoding.
+
+	* array.c (array_join_0): ditto.
+
+	* array.c (array_join_1): ditto.
+
+	* array.c (inspect_ary): ditto.
+
+	* array.c (array_join_1): add an argument to check the appending is
+	  first one or not.
+
 Tue Feb 15 15:40:53 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* hash.c (inspect_i): copy the encoding of the first key as

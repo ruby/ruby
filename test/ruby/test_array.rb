@@ -914,6 +914,13 @@ class TestArray < Test::Unit::TestCase
     s = a.join
     assert_equal(true, s.tainted?)
     assert_equal(true, s.untrusted?)
+
+    e = ''.force_encoding('EUC-JP')
+    u = ''.force_encoding('UTF-8')
+    assert_equal(Encoding::US_ASCII, [[]].join.encoding)
+    assert_equal(Encoding::US_ASCII, [1, [u]].join.encoding)
+    assert_equal(Encoding::UTF_8, [u, [e]].join.encoding)
+    assert_equal(Encoding::UTF_8, [u, [1]].join.encoding)
   ensure
     $, = nil
   end
