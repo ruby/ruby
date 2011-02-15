@@ -1,3 +1,10 @@
+Tue Feb 15 15:43:29 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* encoding.c (rb_enc_compatible): change the rule for empty strings:
+	  remove the special treatment of the US-ASCII encoded empty string.
+	  Now Encoding.compatible? usually respect the encoding of the
+	  receiver.
+
 Tue Feb 15 15:39:37 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_enc_cr_str_buf_cat): remove special treatment of

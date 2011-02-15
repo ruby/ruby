@@ -811,15 +811,15 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_sprintf_p
-    enc = "".inspect.encoding
-    asc = Encoding::US_ASCII
     Encoding.list.each do |e|
       format = "%p".force_encoding(e)
       ['', 'a', "\xC2\xA1", "\x00"].each do |s|
         s.force_encoding(e)
-        assert_strenc(s.inspect, e.ascii_compatible? && enc == asc ? e : enc, format % s)
+        enc = (''.force_encoding(e) + s.inspect).encoding
+        assert_strenc(s.inspect, enc, format % s)
       end
       s = "\xC2\xA1".force_encoding(e)
+      enc = ('' + s.inspect).encoding
       assert_strenc('%10s' % s.inspect, enc, "%10p" % s)
     end
   end
@@ -1086,7 +1086,6 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(false, s.ascii_only?, "[ruby-core:14566] reported by Sam Ruby")
 
     s = "abc".force_encoding(Encoding::ASCII_8BIT)
-    t = s.gsub(/b/, "\xa1\xa1".force_encoding("euc-jp"))
     assert_equal(Encoding::ASCII_8BIT, s.encoding)
 
     assert_raise(Encoding::CompatibilityError) {
@@ -1400,7 +1399,7 @@ class TestM17N < Test::Unit::TestCase
     Encoding.list.each do |enc|
       next if enc.dummy?
       strs = strings.map {|s| s.encode(enc)} rescue next
-      yield *strs
+      yield(*strs)
     end
   end
 end

@@ -754,10 +754,10 @@ rb_enc_compatible(VALUE str1, VALUE str2)
     enc1 = rb_enc_from_index(idx1);
     enc2 = rb_enc_from_index(idx2);
 
-    if (TYPE(str2) == T_STRING && RSTRING_LEN(str2) == 0)
-	return (idx1 == ENCINDEX_US_ASCII && rb_enc_asciicompat(enc2)) ? enc2 : enc1;
-    if (TYPE(str1) == T_STRING && RSTRING_LEN(str1) == 0)
-	return (idx2 == ENCINDEX_US_ASCII && rb_enc_asciicompat(enc1)) ? enc1 : enc2;
+    if (BUILTIN_TYPE(str2) == T_STRING && RSTRING_LEN(str2) == 0)
+	return enc1;
+    if (BUILTIN_TYPE(str1) == T_STRING && RSTRING_LEN(str1) == 0)
+	return (rb_enc_asciicompat(enc1) && rb_enc_str_asciionly_p(str2)) ? enc1 : enc2;
     if (!rb_enc_asciicompat(enc1) || !rb_enc_asciicompat(enc2)) {
 	return 0;
     }

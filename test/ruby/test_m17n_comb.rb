@@ -286,7 +286,7 @@ class TestM17NComb < Test::Unit::TestCase
       assert_strenc(a(s), s.encoding, "%s".force_encoding(s.encoding) % s)
       if !s.empty? # xxx
         t = enccall(a("%s"), :%, s)
-        assert_strenc(a(s), s.encoding, t)
+        assert_strenc(a(s), (a('')+s).encoding, t)
       end
     }
   end
@@ -633,13 +633,9 @@ class TestM17NComb < Test::Unit::TestCase
   def test_str_casecmp
     combination(STRINGS, STRINGS) {|s1, s2|
       #puts "#{encdump(s1)}.casecmp(#{encdump(s2)})"
-      begin
-        r = s1.casecmp(s2)
-      rescue ArgumentError
-        assert(!s1.valid_encoding? || !s2.valid_encoding?)
-        next
-      end
-      #assert_equal(s1.upcase <=> s2.upcase, r)
+      next unless s1.valid_encoding? && s2.valid_encoding? && Encoding.compatible?(s1, s2)
+      r = s1.casecmp(s2)
+      assert_equal(s1.upcase <=> s2.upcase, r)
     }
   end
 
@@ -1031,7 +1027,7 @@ class TestM17NComb < Test::Unit::TestCase
         t1.insert(nth, s2)
         slen = s2.length
         assert_equal(t1[nth-slen+1,slen], s2, "t=#{encdump s1}; t.insert(#{nth},#{encdump s2}); t")
-      rescue Encoding::CompatibilityError, IndexError => e
+      rescue Encoding::CompatibilityError, IndexError
       end
     }
   end
