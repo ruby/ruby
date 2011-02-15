@@ -14,6 +14,7 @@
 #include "ruby/ruby.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
+#include "ruby/encoding.h"
 #include <errno.h>
 
 #ifdef __APPLE__
@@ -1367,10 +1368,13 @@ inspect_i(VALUE key, VALUE value, VALUE str)
     VALUE str2;
 
     if (key == Qundef) return ST_CONTINUE;
+    str2 = rb_inspect(key);
     if (RSTRING_LEN(str) > 1) {
 	rb_str_cat2(str, ", ");
     }
-    str2 = rb_inspect(key);
+    else {
+	rb_enc_copy(str, str2);
+    }
     rb_str_buf_append(str, str2);
     OBJ_INFECT(str, str2);
     rb_str_buf_cat2(str, "=>");
