@@ -28,39 +28,39 @@ typedef int i2d_of_void();
 
 #if !defined(PEM_read_bio_DSAPublicKey)
 # define PEM_read_bio_DSAPublicKey(bp,x,cb,u) (DSA *)PEM_ASN1_read_bio( \
-        (d2i_of_void *)d2i_DSAPublicKey,PEM_STRING_DSA_PUBLIC,bp,(void **)x,cb,u)
+        (d2i_of_void *)d2i_DSAPublicKey,PEM_STRING_DSA_PUBLIC,(bp),(void **)(x),(cb),(u))
 #endif
 
 #if !defined(PEM_write_bio_DSAPublicKey)
 # define PEM_write_bio_DSAPublicKey(bp,x) \
 	PEM_ASN1_write_bio((i2d_of_void *)i2d_DSAPublicKey,\
 		PEM_STRING_DSA_PUBLIC,\
-		bp,(char *)x, NULL, NULL, 0, NULL, NULL)
+		(bp),(char *)(x), NULL, NULL, 0, NULL, NULL)
 #endif
 
 #if !defined(DSAPrivateKey_dup)
 # define DSAPrivateKey_dup(dsa) (DSA *)ASN1_dup((i2d_of_void *)i2d_DSAPrivateKey, \
-	(d2i_of_void *)d2i_DSAPrivateKey,(char *)dsa)
+	(d2i_of_void *)d2i_DSAPrivateKey,(char *)(dsa))
 #endif
 
 #if !defined(DSAPublicKey_dup)
 # define DSAPublicKey_dup(dsa) (DSA *)ASN1_dup((i2d_of_void *)i2d_DSAPublicKey, \
-	(d2i_of_void *)d2i_DSAPublicKey,(char *)dsa)
+	(d2i_of_void *)d2i_DSAPublicKey,(char *)(dsa))
 #endif
 
 #if !defined(X509_REVOKED_dup)
 # define X509_REVOKED_dup(rev) (X509_REVOKED *)ASN1_dup((i2d_of_void *)i2d_X509_REVOKED, \
-	(d2i_of_void *)d2i_X509_REVOKED, (char *)rev)
+	(d2i_of_void *)d2i_X509_REVOKED, (char *)(rev))
 #endif
 
 #if !defined(PKCS7_SIGNER_INFO_dup)
 #  define PKCS7_SIGNER_INFO_dup(si) (PKCS7_SIGNER_INFO *)ASN1_dup((i2d_of_void *)i2d_PKCS7_SIGNER_INFO, \
-	(d2i_of_void *)d2i_PKCS7_SIGNER_INFO, (char *)si)
+	(d2i_of_void *)d2i_PKCS7_SIGNER_INFO, (char *)(si))
 #endif
 
 #if !defined(PKCS7_RECIP_INFO_dup)
 #  define PKCS7_RECIP_INFO_dup(ri) (PKCS7_RECIP_INFO *)ASN1_dup((i2d_of_void *)i2d_PKCS7_RECIP_INFO, \
-	(d2i_of_void *)d2i_PKCS7_RECIP_INFO, (char *)ri)
+	(d2i_of_void *)d2i_PKCS7_RECIP_INFO, (char *)(ri))
 #endif
 
 #if !defined(HAVE_HMAC_CTX_INIT)
@@ -96,17 +96,17 @@ int EVP_CIPHER_CTX_copy(EVP_CIPHER_CTX *out, EVP_CIPHER_CTX *in);
 #endif
 
 #if !defined(HAVE_EVP_DIGESTINIT_EX)
-#  define EVP_DigestInit_ex(ctx, md, engine) EVP_DigestInit(ctx, md)
+#  define EVP_DigestInit_ex(ctx, md, engine) EVP_DigestInit((ctx), (md))
 #endif
 #if !defined(HAVE_EVP_DIGESTFINAL_EX)
-#  define EVP_DigestFinal_ex(ctx, buf, len) EVP_DigestFinal(ctx, buf, len)
+#  define EVP_DigestFinal_ex(ctx, buf, len) EVP_DigestFinal((ctx), (buf), (len))
 #endif
 
 #if !defined(HAVE_EVP_CIPHERINIT_EX)
-#  define EVP_CipherInit_ex(ctx, type, impl, key, iv, enc) EVP_CipherInit(ctx, type, key, iv, enc)
+#  define EVP_CipherInit_ex(ctx, type, impl, key, iv, enc) EVP_CipherInit((ctx), (type), (key), (iv), (enc))
 #endif
 #if !defined(HAVE_EVP_CIPHERFINAL_EX)
-#  define EVP_CipherFinal_ex(ctx, outm, outl) EVP_CipherFinal(ctx, outm, outl)
+#  define EVP_CipherFinal_ex(ctx, outm, outl) EVP_CipherFinal((ctx), (outm), (outl))
 #endif
 
 #if !defined(EVP_CIPHER_name)
@@ -118,7 +118,7 @@ int EVP_CIPHER_CTX_copy(EVP_CIPHER_CTX *out, EVP_CIPHER_CTX *in);
 #endif
 
 #if !defined(HAVE_EVP_HMAC_INIT_EX)
-#  define HMAC_Init_ex(ctx, key, len, digest, engine) HMAC_Init(ctx, key, len, digest)
+#  define HMAC_Init_ex(ctx, key, len, digest, engine) HMAC_Init((ctx), (key), (len), (digest))
 #endif
 
 #if !defined(PKCS7_is_detached)
@@ -130,7 +130,7 @@ int EVP_CIPHER_CTX_copy(EVP_CIPHER_CTX *out, EVP_CIPHER_CTX *in);
 #endif
 
 #if !defined(HAVE_OPENSSL_CLEANSE)
-#define OPENSSL_cleanse(p, l) memset(p, 0, l)
+#define OPENSSL_cleanse(p, l) memset((p), 0, (l))
 #endif
 
 #if !defined(HAVE_X509_STORE_GET_EX_DATA)

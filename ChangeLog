@@ -1,3 +1,7 @@
+Wed Feb 16 20:17:06 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/openssl_missing.h: parenthesize macro arguments.
+
 Tue Feb 15 21:37:45 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/gdbm/gdbm.c: parenthesize macro arguments.
