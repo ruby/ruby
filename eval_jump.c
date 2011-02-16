@@ -54,7 +54,7 @@ struct end_proc_data {
     struct end_proc_data *next;
 };
 
-static struct end_proc_data *end_procs, *ephemeral_end_procs, *tmp_end_procs;
+static struct end_proc_data *end_procs, *ephemeral_end_procs;
 
 void
 rb_set_end_proc(void (*func)(VALUE), VALUE data)
@@ -91,11 +91,6 @@ rb_mark_end_proc(void)
 	rb_gc_mark(link->data);
 	link = link->next;
     }
-    link = tmp_end_procs;
-    while (link) {
-	rb_gc_mark(link->data);
-	link = link->next;
-    }
 }
 
 void
@@ -107,40 +102,35 @@ rb_exec_end_proc(void)
     volatile int safe = rb_safe_level();
 
     while (ephemeral_end_procs) {
-	tmp_end_procs = link = ephemeral_end_procs;
-	ephemeral_end_procs = 0;
-	while (link) {
-	    PUSH_TAG();
-	    if ((status = EXEC_TAG()) == 0) {
-		rb_set_safe_level_force(link->safe);
-		(*link->func) (link->data);
-	    }
-	    POP_TAG();
-	    if (status) {
-		error_handle(status);
-	    }
-	    tmp = link;
-	    tmp_end_procs = link = link->next;
-	    xfree(tmp);
+	link = ephemeral_end_procs;
+	ephemeral_end_procs = link->next;
+
+	PUSH_TAG();
+	if ((status = EXEC_TAG()) == 0) {
+	    rb_set_safe_level_force(link->safe);
+	    (*link->func) (link->data);
 	}
+	POP_TAG();
+	if (status) {
+	    error_handle(status);
+	}
+	xfree(link);
     }
+
     while (end_procs) {
-	tmp_end_procs = link = end_procs;
-	end_procs = 0;
-	while (link) {
-	    PUSH_TAG();
-	    if ((status = EXEC_TAG()) == 0) {
-		rb_set_safe_level_force(link->safe);
-		(*link->func) (link->data);
-	    }
-	    POP_TAG();
-	    if (status) {
-		error_handle(status);
-	    }
-	    tmp = link;
-	    tmp_end_procs = link = link->next;
-	    xfree(tmp);
+	link = end_procs;
+	end_procs = link->next;
+
+	PUSH_TAG();
+	if ((status = EXEC_TAG()) == 0) {
+	    rb_set_safe_level_force(link->safe);
+	    (*link->func) (link->data);
 	}
+	POP_TAG();
+	if (status) {
+	    error_handle(status);
+	}
+	xfree(link);
     }
     rb_set_safe_level_force(safe);
 }

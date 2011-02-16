@@ -1,3 +1,14 @@
+Wed Feb 16 20:37:48 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* eval_jump.c (rb_exec_end_proc): changed at_exit and END proc
+	  evaluation order. [Bug #4400] [ruby-core:35237]
+	* eval_jump.c (rb_mark_end_proc): ditto.
+
+	* test/ruby/test_beginendblock.rb (TestBeginEndBlock#test_nested_at_exit):
+	  added a test for nested at_exit.
+	* test/ruby/test_beginendblock.rb (TestBeginEndBlock#test_beginendblock):
+	  changed the test to adopt new spec.
+
 Wed Feb 16 20:17:06 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/openssl_missing.h: parenthesize macro arguments.
