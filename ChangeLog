@@ -1,3 +1,8 @@
+Thu Feb 17 23:54:29 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* iseq.c (prepare_iseq_build): initialize iseq_compile_data::err_info
+	  with nil. this fix exception in rb_iseq_load().
+
 Thu Feb 17 22:32:35 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* test/ruby/test_marshal.rb (test_marshal_dump_extra_iv):

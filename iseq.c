@@ -250,6 +250,7 @@ prepare_iseq_build(rb_iseq_t *iseq,
 
     iseq->compile_data = ALLOC(struct iseq_compile_data);
     MEMZERO(iseq->compile_data, struct iseq_compile_data, 1);
+    iseq->compile_data->err_info = Qnil;
     iseq->compile_data->mark_ary = rb_ary_tmp_new(3);
 
     iseq->compile_data->storage_head = iseq->compile_data->storage_current =
