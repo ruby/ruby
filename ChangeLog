@@ -1,3 +1,8 @@
+Thu Feb 17 22:32:35 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* test/ruby/test_marshal.rb (test_marshal_dump_extra_iv):
+	  fix a typo of local variable. [Bug #3720] [ruby-dev:42083]
+
 Thu Feb 17 21:32:53 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/ossl.h: parenthesize macro arguments.

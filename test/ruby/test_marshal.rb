@@ -431,7 +431,7 @@ class TestMarshal < Test::Unit::TestCase
       m = Marshal.dump(o)
     }
     o2 = Marshal.load(m)
-    assert_equal(STDIN, o.stdin)
+    assert_equal(STDIN, o2.stdin)
   end
 
   def test_marshal_string_encoding
