@@ -84,21 +84,21 @@ extern VALUE eOSSLError;
  * CheckTypes
  */
 #define OSSL_Check_Kind(obj, klass) do {\
-  if (!rb_obj_is_kind_of(obj, klass)) {\
+  if (!rb_obj_is_kind_of((obj), (klass))) {\
     ossl_raise(rb_eTypeError, "wrong argument (%s)! (Expected kind of %s)",\
                rb_obj_classname(obj), rb_class2name(klass));\
   }\
 } while (0)
 
 #define OSSL_Check_Instance(obj, klass) do {\
-  if (!rb_obj_is_instance_of(obj, klass)) {\
+  if (!rb_obj_is_instance_of((obj), (klass))) {\
     ossl_raise(rb_eTypeError, "wrong argument (%s)! (Expected instance of %s)",\
                rb_obj_classname(obj), rb_class2name(klass));\
   }\
 } while (0)
 
 #define OSSL_Check_Same_Class(obj1, obj2) do {\
-  if (!rb_obj_is_instance_of(obj1, rb_obj_class(obj2))) {\
+  if (!rb_obj_is_instance_of((obj1), rb_obj_class(obj2))) {\
     ossl_raise(rb_eTypeError, "wrong argument type");\
   }\
 } while (0)
@@ -129,7 +129,7 @@ do{\
     int len = RSTRING_LEN(str);\
     int newlen = (p) - (unsigned char*)RSTRING_PTR(str);\
     assert(newlen <= len);\
-    rb_str_set_len(str, newlen);\
+    rb_str_set_len((str), newlen);\
 }while(0)
 
 /*
@@ -180,13 +180,13 @@ extern VALUE dOSSL;
 } while (0)
 
 #define OSSL_Warning(fmt, ...) do { \
-  OSSL_Debug(fmt, ##__VA_ARGS__); \
-  rb_warning(fmt, ##__VA_ARGS__); \
+  OSSL_Debug((fmt), ##__VA_ARGS__); \
+  rb_warning((fmt), ##__VA_ARGS__); \
 } while (0)
 
 #define OSSL_Warn(fmt, ...) do { \
-  OSSL_Debug(fmt, ##__VA_ARGS__); \
-  rb_warn(fmt, ##__VA_ARGS__); \
+  OSSL_Debug((fmt), ##__VA_ARGS__); \
+  rb_warn((fmt), ##__VA_ARGS__); \
 } while (0)
 #else
 void ossl_debug(const char *, ...);

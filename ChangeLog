@@ -1,3 +1,7 @@
+Thu Feb 17 21:32:53 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/ossl.h: parenthesize macro arguments.
+
 Wed Feb 16 20:37:48 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* eval_jump.c (rb_exec_end_proc): changed at_exit and END proc
