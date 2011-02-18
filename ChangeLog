@@ -1,3 +1,16 @@
+Fri Feb 18 21:18:55 2011  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* test/ruby/test_exception.rb (TestException::test_to_s_taintness_propagation):
+	  Test for below.
+
+Fri Feb 18 21:18:55 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* error.c (exc_to_s): untainted strings can be tainted via
+	  Exception#to_s, which enables attackers to overwrite sane strings.
+	  Reported by: Yusuke Endoh <mame at tsg.ne.jp>.
+
+	* error.c (name_err_to_s): ditto.
+
 Fri Feb 18 21:17:22 2011  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/fileutils.rb (FileUtils::remove_entry_secure): there is a
