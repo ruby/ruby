@@ -403,7 +403,6 @@ exc_to_s(exc)
     VALUE mesg = rb_attr_get(exc, rb_intern("mesg"));
 
     if (NIL_P(mesg)) return rb_class_name(CLASS_OF(exc));
-    if (OBJ_TAINTED(exc)) OBJ_TAINT(mesg);
     return mesg;
 }
 
@@ -667,10 +666,9 @@ name_err_to_s(exc)
     if (NIL_P(mesg)) return rb_class_name(CLASS_OF(exc));
     StringValue(str);
     if (str != mesg) {
-	rb_iv_set(exc, "mesg", mesg = str);
+	OBJ_INFECT(str, mesg);
     }
-    if (OBJ_TAINTED(exc)) OBJ_TAINT(mesg);
-    return mesg;
+    return str;
 }
 
 /*

@@ -1,3 +1,16 @@
+Fri Feb 18 20:02:29 2011  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* test/ruby/test_exception.rb (TestException::test_to_s_taintness_propagation):
+	  Test for below.
+
+Fri Feb 18 19:58:34 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* error.c (exc_to_s): untainted strings can be tainted via
+	  Exception#to_s, which enables attackers to overwrite sane strings.
+	  Reported by: Yusuke Endoh <mame at tsg.ne.jp>.
+
+	* error.c (name_err_to_s): ditto.
+
 Wed Jan 19 17:38:03 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (init_stdhandle): backport mistake of r29382.
