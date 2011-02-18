@@ -1,3 +1,10 @@
+Fri Feb 18 19:22:17 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* configure.in: revert revision r29854.  This revision introduced
+	  binary incompatibilities on some circumstances.  The bug that
+	  revision was fixing gets reopened by this reversion.
+	  [ruby-dev:43152] cf. [Bug #2553]
+
 Thu Dec 23 12:22:35 2010  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb (Resolv::IPv4::Regex): make it only accept 0 to 255.
