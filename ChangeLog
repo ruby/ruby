@@ -1,3 +1,13 @@
+Fri Jan 28 02:37:18 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* re.c (rb_reg_raise): add GC guard to prevent intermediate
+	  variable from GC.
+
+Fri Jan 28 02:35:41 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* hash.c (rb_hash_fetch_m): add GC guard to prevent intermediate
+	  variable from GC.
+
 Wed Jan 26 22:57:30 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* class.c (clone_method): add GC guard to prevent intermediate
