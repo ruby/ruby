@@ -1,3 +1,11 @@
+Fri Feb 18 19:31:31 2011  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/fileutils.rb (FileUtils::remove_entry_secure): there is a
+	  race condition in the case where the given path is a directory,
+	  and some other user can move that directory, and create a
+	  symlink while this method is executing.
+	  Reported by: Nicholas Jefferson <nicholas at pythonic.com.au>
+
 Sat Jan 29 22:16:26 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* array.c (rb_ary_join): [].join.encoding must be US-ASCII.
