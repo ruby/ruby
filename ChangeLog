@@ -1,3 +1,10 @@
+Sat Feb 19 06:36:27 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* lib/test/unit.rb: partial revert of r30849. [ruby-core:32864]
+
+	* test/testunit/test_rake_integration.rb: adding an integration test
+	  with the rake loader to prevent regressions.
+
 Fri Feb 18 19:31:31 2011  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/fileutils.rb (FileUtils::remove_entry_secure): there is a
