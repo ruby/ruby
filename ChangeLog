@@ -1,3 +1,11 @@
+Fri Feb 18 20:46:55 2011  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/fileutils.rb (FileUtils::remove_entry_secure): there is a
+	  race condition in the case where the given path is a directory,
+	  and some other user can move that directory, and create a
+	  symlink while this method is executing.
+	  Reported by: Nicholas Jefferson <nicholas at pythonic.com.au>
+
 Fri Feb 18 20:02:29 2011  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/ruby/test_exception.rb (TestException::test_to_s_taintness_propagation):
