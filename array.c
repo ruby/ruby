@@ -1643,7 +1643,7 @@ rb_ary_join(VALUE ary, VALUE sep)
     int untrust = FALSE;
     VALUE val, tmp, result;
 
-    if (RARRAY_LEN(ary) == 0) return rb_str_new(0, 0);
+    if (RARRAY_LEN(ary) == 0) return rb_usascii_str_new(0, 0);
     if (OBJ_TAINTED(ary) || OBJ_TAINTED(sep)) taint = TRUE;
     if (OBJ_UNTRUSTED(ary) || OBJ_UNTRUSTED(sep)) untrust = TRUE;
 

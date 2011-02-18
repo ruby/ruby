@@ -1,3 +1,8 @@
+Sat Jan 29 22:16:26 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* array.c (rb_ary_join): [].join.encoding must be US-ASCII.
+	  [ruby-list:47790]
+
 Fri Jan 28 12:05:48 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: Add #include<sys/stat.h> when struct stat is
