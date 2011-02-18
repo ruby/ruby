@@ -1,3 +1,8 @@
+Wed Jan 26 22:57:30 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* class.c (clone_method): add GC guard to prevent intermediate
+	  variable from GC. [Bug #4321] [ruby-dev:43107]
+
 Wed Jan 26 22:28:49 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* vm_eval.c (rb_throw_obj): add GC guard to prevent intermediate

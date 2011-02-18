@@ -127,11 +127,13 @@ VALUE rb_iseq_clone(VALUE iseqval, VALUE newcbase);
 static int
 clone_method(ID mid, const rb_method_entry_t *me, struct clone_method_data *data)
 {
+    VALUE newiseqval;
     if (me->def && me->def->type == VM_METHOD_TYPE_ISEQ) {
-	VALUE newiseqval = rb_iseq_clone(me->def->body.iseq->self, data->klass);
 	rb_iseq_t *iseq;
+	newiseqval = rb_iseq_clone(me->def->body.iseq->self, data->klass);
 	GetISeqPtr(newiseqval, iseq);
 	rb_add_method(data->klass, mid, VM_METHOD_TYPE_ISEQ, iseq, me->flag);
+	RB_GC_GUARD(newiseqval);
     }
     else {
 	rb_method_entry_set(data->klass, mid, me, me->flag);
