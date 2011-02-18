@@ -1437,6 +1437,7 @@ rb_throw_obj(VALUE tag, VALUE value)
     }
     if (!tt) {
 	VALUE desc = rb_inspect(tag);
+	RB_GC_GUARD(desc);
 	rb_raise(rb_eArgError, "uncaught throw %s", RSTRING_PTR(desc));
     }
     rb_trap_restore_mask();

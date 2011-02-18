@@ -1,3 +1,8 @@
+Wed Jan 26 22:28:49 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* vm_eval.c (rb_throw_obj): add GC guard to prevent intermediate
+	  variable from GC. [Bug #4322] [ruby-dev:43108]
+
 Wed Jan 26 10:36:28 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (=~): documentation fix; the return value is nil when
