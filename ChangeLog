@@ -1,3 +1,11 @@
+Fri Feb 18 21:17:22 2011  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/fileutils.rb (FileUtils::remove_entry_secure): there is a
+	  race condition in the case where the given path is a directory,
+	  and some other user can move that directory, and create a
+	  symlink while this method is executing.
+	  Reported by: Nicholas Jefferson <nicholas at pythonic.com.au>
+
 Fri Feb 18 19:46:46 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (init_stdhandle): backport mistake of r29382.
