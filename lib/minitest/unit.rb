@@ -1,8 +1,8 @@
-############################################################
-# This file is imported from a different project.
-# DO NOT make modifications in this repo.
-# File a patch instead and assign it to Ryan Davis
-############################################################
+######################################################################
+# This file is imported from the minitest project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis.
+######################################################################
 
 require 'optparse'
 
@@ -100,7 +100,8 @@ module MiniTest
     # Fails unless the block returns a true value.
 
     def assert_block msg = nil
-      assert yield, "Expected block to return true value."
+      msg = message(msg) { "Expected block to return true value" }
+      assert yield, msg
     end
 
     ##

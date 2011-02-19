@@ -1,8 +1,8 @@
-############################################################
-# This file is imported from a different project.
-# DO NOT make modifications in this repo.
-# File a patch instead and assign it to Ryan Davis
-############################################################
+######################################################################
+# This file is imported from the minitest project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis.
+######################################################################
 
 require 'stringio'
 require 'pathname'
@@ -409,8 +409,8 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
   end
 
   def test_assert_block_triggered
-    util_assert_triggered 'Expected block to return true value.' do
-      @tc.assert_block do
+    util_assert_triggered "blah.\nExpected block to return true value." do
+      @tc.assert_block "blah" do
         false
       end
     end
