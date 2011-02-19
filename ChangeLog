@@ -1,3 +1,8 @@
+Sat Feb 19 22:37:42 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* vm_insnhelper.c (vm_check_if_namespace): guard temporary object
+	  from GC.
+
 Sat Feb 19 06:36:27 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* lib/test/unit.rb: partial revert of r30849. [ruby-core:32864]
