@@ -1,3 +1,11 @@
+Sun Feb 20 02:14:09 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* signal.c (sig_trap): avoid pthread_sigmask(xx, &mask, &mask) usage
+	  because FreeBSD don't permit it. If it's used, it behave as
+	  pthread_sigmask(xx, NULL, &mask).
+
+	* signal.c (init_sigchld): ditto.
+
 Sun Feb 20 00:46:51 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/ossl_bn.c: parenthesize macro arguments.

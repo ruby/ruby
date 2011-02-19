@@ -964,11 +964,15 @@ sig_trap(int argc, VALUE *argv)
 	rb_raise(rb_eSecurityError, "Insecure: tainted signal trap");
     }
 #if USE_TRAP_MASK
-    /* disable interrupt */
-    sigfillset(&arg.mask);
-    pthread_sigmask(SIG_BLOCK, &arg.mask, &arg.mask);
+    {
+      sigset_t fullmask;
 
-    return rb_ensure(trap, (VALUE)&arg, trap_ensure, (VALUE)&arg);
+      /* disable interrupt */
+      sigfillset(&fullmask);
+      pthread_sigmask(SIG_BLOCK, &fullmask, &arg.mask);
+      
+      return rb_ensure(trap, (VALUE)&arg, trap_ensure, (VALUE)&arg);
+    }
 #else
     return trap(&arg);
 #endif
@@ -1014,15 +1018,17 @@ init_sigchld(int sig)
 #if USE_TRAP_MASK
 # ifdef HAVE_SIGPROCMASK
     sigset_t mask;
+    sigset_t fullmask;
 # else
     int mask;
+    int fullmask;
 # endif
 #endif
 
 #if USE_TRAP_MASK
     /* disable interrupt */
-    sigfillset(&mask);
-    pthread_sigmask(SIG_BLOCK, &mask, &mask);
+    sigfillset(&fullmask);
+    pthread_sigmask(SIG_BLOCK, &fullmask, &mask);
 #endif
 
     oldfunc = ruby_signal(sig, SIG_DFL);
