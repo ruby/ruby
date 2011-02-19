@@ -12,22 +12,22 @@
 #include "ossl.h"
 
 #define WrapBN(klass, obj, bn) do { \
-  if (!bn) { \
+  if (!(bn)) { \
     ossl_raise(rb_eRuntimeError, "BN wasn't initialized!"); \
   } \
-  obj = Data_Wrap_Struct(klass, 0, BN_clear_free, bn); \
+  (obj) = Data_Wrap_Struct((klass), 0, BN_clear_free, (bn)); \
 } while (0)
 
 #define GetBN(obj, bn) do { \
-  Data_Get_Struct(obj, BIGNUM, bn); \
-  if (!bn) { \
+  Data_Get_Struct((obj), BIGNUM, (bn)); \
+  if (!(bn)) { \
     ossl_raise(rb_eRuntimeError, "BN wasn't initialized!"); \
   } \
 } while (0)
 
 #define SafeGetBN(obj, bn) do { \
-  OSSL_Check_Kind(obj, cBN); \
-  GetBN(obj, bn); \
+  OSSL_Check_Kind((obj), cBN); \
+  GetBN((obj), (bn)); \
 } while (0)
 
 /*
