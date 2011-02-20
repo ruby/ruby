@@ -11,23 +11,23 @@
 #include "ossl.h"
 
 #define WrapCipher(obj, klass, ctx) \
-    obj = Data_Wrap_Struct(klass, 0, ossl_cipher_free, ctx)
+    (obj) = Data_Wrap_Struct((klass), 0, ossl_cipher_free, (ctx))
 #define MakeCipher(obj, klass, ctx) \
-    obj = Data_Make_Struct(klass, EVP_CIPHER_CTX, 0, ossl_cipher_free, ctx)
+    (obj) = Data_Make_Struct((klass), EVP_CIPHER_CTX, 0, ossl_cipher_free, (ctx))
 #define AllocCipher(obj, ctx) \
     memset(DATA_PTR(obj) = (ctx) = ALLOC(EVP_CIPHER_CTX), 0, sizeof(EVP_CIPHER_CTX))
 #define GetCipherInit(obj, ctx) do { \
-    Data_Get_Struct(obj, EVP_CIPHER_CTX, ctx); \
+    Data_Get_Struct((obj), EVP_CIPHER_CTX, (ctx)); \
 } while (0)
 #define GetCipher(obj, ctx) do { \
-    GetCipherInit(obj, ctx); \
-    if (!ctx) { \
+    GetCipherInit((obj), (ctx)); \
+    if (!(ctx)) { \
 	ossl_raise(rb_eRuntimeError, "Cipher not inititalized!"); \
     } \
 } while (0)
 #define SafeGetCipher(obj, ctx) do { \
-    OSSL_Check_Kind(obj, cCipher); \
-    GetCipher(obj, ctx); \
+    OSSL_Check_Kind((obj), cCipher); \
+    GetCipher((obj), (ctx)); \
 } while (0)
 
 /*
