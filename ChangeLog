@@ -1,3 +1,8 @@
+Mon Feb 21 00:38:56 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_system.rb (TestSystem#test_system_at):
+	  add testcase for bug4396.
+
 Sun Feb 20 19:59:32 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/ossl_cipher.c: parenthesize macro arguments.
