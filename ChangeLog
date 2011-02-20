@@ -1,4 +1,6 @@
-Sun Feb 20 16:23:52 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Feb 20 16:26:45 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (exec_recursive): prevent temporary objects from GC.
 
 	* prevent temporary objects from GC, and should not use
 	  RSTRING_PTR() for function calls since it evaluates the argument

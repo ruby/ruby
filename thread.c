@@ -3701,10 +3701,14 @@ exec_recursive_i(VALUE tag, struct exec_recursive_params *p)
 static VALUE
 exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE arg, int outer)
 {
+    VALUE result = Qundef;
     struct exec_recursive_params p;
     int outermost;
     p.list = recursive_list_access();
     p.objid = rb_obj_id(obj);
+    p.obj = obj;
+    p.pairid = pairid;
+    p.arg = arg;
     outermost = outer && !recursive_check(p.list, ID2SYM(recursive_key), 0);
 
     if (recursive_check(p.list, p.objid, pairid)) {
@@ -3714,11 +3718,7 @@ exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE
 	return (*func)(obj, arg, TRUE);
     }
     else {
-	VALUE result = Qundef;
 	p.func = func;
-	p.obj = obj;
-	p.pairid = pairid;
-	p.arg = arg;
 
 	if (outermost) {
 	    recursive_push(p.list, ID2SYM(recursive_key), 0);
@@ -3731,8 +3731,9 @@ exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE
 	else {
 	    result = exec_recursive_i(0, &p);
 	}
-	return result;
     }
+    *(volatile struct exec_recursive_params *)&p;
+    return result;
 }
 
 /*
