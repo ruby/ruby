@@ -7498,8 +7498,9 @@ advice_arg_check(VALUE advice)
 	advice != sym_willneed &&
 	advice != sym_dontneed &&
 	advice != sym_noreuse) {
-	rb_raise(rb_eNotImpError, "Unsupported advice: :%s",
-		 RSTRING_PTR(rb_id2str(SYM2ID(advice))));
+	VALUE symname = rb_inspect(advice);
+	rb_raise(rb_eNotImpError, "Unsupported advice: %s",
+		 StringValuePtr(symname));
     }
 }
 

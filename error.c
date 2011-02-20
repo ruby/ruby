@@ -356,7 +356,8 @@ rb_check_type(VALUE x, int t)
 		    etype = "Symbol";
 		}
 		else if (rb_special_const_p(x)) {
-		    etype = RSTRING_PTR(rb_obj_as_string(x));
+		    x = rb_obj_as_string(x);
+		    etype = StringValuePtr(x);
 		}
 		else {
 		    etype = rb_obj_classname(x);

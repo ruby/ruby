@@ -1143,7 +1143,7 @@ vm_check_if_namespace(VALUE klass)
       default:
 	str = rb_inspect(klass);
 	rb_raise(rb_eTypeError, "%s is not a class/module",
-		 RSTRING_PTR(RB_GC_GUARD(str)));
+		 StringValuePtr(str));
     }
 }
 
