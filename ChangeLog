@@ -1,3 +1,8 @@
+Sun Feb 20 16:22:53 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_flock): use rb_thread_io_blocking_region for the
+	  time being.
+
 Sun Feb 20 05:33:17 2011  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* lib/minitest/*.rb: Imported minitest 2.0.2 r6207.
