@@ -210,6 +210,7 @@ class Date
   private :emit, :emit_w, :emit_n, :emit_sn, :emit_z,
 	  :emit_a, :emit_ad, :emit_au
 
+  # See Time#strftime for details on supported formats.
   def strftime(fmt='%F')
     fmt.gsub(/%([-_0^#]+)?(\d+)?([EO]?(?::{1,3}z|.))/m) do
       f = {}

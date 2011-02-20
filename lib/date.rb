@@ -211,6 +211,11 @@ require 'date/format'
 # The Date class includes the Comparable module, allowing
 # date objects to be compared and sorted, ranges of dates
 # to be created, and so forth.
+#
+# See the Date::parse and Date::strptime methods to parse Dates
+# and Date#strftime for formatting Dates.  See Time#strftime for
+# details on supported formats.
+
 class Date
 
   include Comparable
@@ -1024,7 +1029,7 @@ class Date
   #
   # +str+ is a String holding a date representation.
   # +fmt+ is the format that the date is in.  See
-  # date/format.rb for details on supported formats.
+  # Time#strftime for details on supported formats.
   #
   # The default +str+ is '-4712-01-01', and the default
   # +fmt+ is '%F', which means Year-Month-Day_of_Month.
