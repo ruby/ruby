@@ -1,3 +1,15 @@
+Tue Feb 22 03:04:46 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/streaming.rb: refactor streaming methods to a
+	  module.
+	* ext/psych/lib/psych/stream.rb: extracted streaming specific methods
+	  to a module.
+	* ext/psych/lib/psych/json/stream.rb: JSON stream inherits from
+	  JSONTree and includes streaming methods.
+	* ext/psych/lib/psych/visitors/json_tree.rb: JSON does not support
+	  object references, so remove object reference testing when building
+	  JSON trees.
+
 Tue Feb 22 02:41:51 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/yaml_tree.rb (accept): use Hash#key?

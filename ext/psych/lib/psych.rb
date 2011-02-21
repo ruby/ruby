@@ -1,5 +1,6 @@
 require 'psych.so'
 require 'psych/nodes'
+require 'psych/streaming'
 require 'psych/visitors'
 require 'psych/handler'
 require 'psych/tree_builder'
