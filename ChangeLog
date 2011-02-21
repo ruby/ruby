@@ -1,3 +1,9 @@
+Mon Feb 21 10:01:01 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/json/stream.rb: fix JSON stream emits to use
+	  double quotes during stream.
+	* test/psych/json/test_stream.rb: tests to reflect changes.
+
 Mon Feb 21 00:38:56 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_system.rb (TestSystem#test_system_at):

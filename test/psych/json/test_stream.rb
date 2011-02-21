@@ -31,12 +31,12 @@ module Psych
 
       def test_string
         @stream.push "foo"
-        assert_match(/(['"])foo\1/, @io.string)
+        assert_match(/(["])foo\1/, @io.string)
       end
 
       def test_symbol
         @stream.push :foo
-        assert_match(/(['"])foo\1/, @io.string)
+        assert_match(/(["])foo\1/, @io.string)
       end
 
       def test_int
@@ -56,8 +56,8 @@ module Psych
         json = @io.string
         assert_match(/}$/, json)
         assert_match(/^--- \{/, json)
-        assert_match(/['"]one['"]/, json)
-        assert_match(/['"]two['"]/, json)
+        assert_match(/["]one['"]/, json)
+        assert_match(/["]two['"]/, json)
       end
 
       def test_list_to_json
@@ -67,8 +67,22 @@ module Psych
         json = @io.string
         assert_match(/]$/, json)
         assert_match(/^--- \[/, json)
-        assert_match(/['"]one['"]/, json)
-        assert_match(/['"]two['"]/, json)
+        assert_match(/["]one["]/, json)
+        assert_match(/["]two["]/, json)
+      end
+
+      def test_time
+        time = Time.utc(2010, 10, 10)
+        @stream.push({'a' => time })
+        json = @io.string
+        assert_match "{\"a\": \"2010-10-10 00:00:00.000000000Z\"}\n", json
+      end
+
+      def test_datetime
+        time = Time.new(2010, 10, 10).to_datetime
+        @stream.push({'a' => time })
+        json = @io.string
+        assert_match "{\"a\": \"#{time.strftime("%Y-%m-%d %H:%M:%S.%9N %:z")}\"}\n", json
       end
     end
   end
