@@ -1,3 +1,8 @@
+Tue Feb 22 03:09:10 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb: increase Psych to 1.1.0 for help with
+	  debugging.
+
 Tue Feb 22 03:04:46 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/streaming.rb: refactor streaming methods to a
