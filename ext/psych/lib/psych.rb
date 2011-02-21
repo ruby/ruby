@@ -9,6 +9,7 @@ require 'psych/set'
 require 'psych/coder'
 require 'psych/core_ext'
 require 'psych/deprecated'
+require 'psych/json'
 
 ###
 # = Overview
@@ -97,7 +98,6 @@ module Psych
   end
 
   autoload :Stream, 'psych/stream'
-  autoload :JSON, 'psych/json'
 
   ###
   # Load +yaml+ in to a Ruby data structure.  If multiple documents are
