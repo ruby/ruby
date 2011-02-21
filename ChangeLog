@@ -1,3 +1,8 @@
+2011-02-21  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/syslog/syslog.c: Apply documentation patch from mathew murphy.
+	  [Bug #4149]
+
 Tue Feb 22 03:09:10 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych.rb: increase Psych to 1.1.0 for help with

@@ -2,6 +2,7 @@
  * UNIX Syslog extension for Ruby
  * Amos Gouaux, University of Texas at Dallas
  * <amos+ruby@utdallas.edu>
+ * Documented by mathew <meta@pobox.com>
  *
  * $RoughId: syslog.c,v 1.21 2002/02/25 12:21:17 knu Exp $
  * $Id$
@@ -36,7 +37,9 @@ static void syslog_write(int pri, int argc, VALUE *argv)
     syslog(pri, "%s", RSTRING_PTR(str));
 }
 
-/* Syslog module methods */
+/* Closes the syslog facility.
+ * Raises a runtime exception if it is not open.
+ */
 static VALUE mSyslog_close(VALUE self)
 {
     rb_secure(4);
@@ -54,6 +57,84 @@ static VALUE mSyslog_close(VALUE self)
     return Qnil;
 }
 
+/* call-seq:
+ *   open(ident, options, facility) => syslog
+ *
+ * :yields: syslog
+ *
+ * Open the syslog facility.
+ * Raises a runtime exception if it is already open.
+ *
+ * Can be called with or without a code block. If called with a block, the
+ * Syslog object created is passed to the block.
+ *
+ * If the syslog is already open, raises a RuntimeError.
+ *
+ * +ident+ is a String which identifies the calling program.
+ *
+ * +options+ is the logical OR of any of the following:
+ *
+ * LOG_CONS:: If there is an error while sending to the system logger,
+ *            write directly to the console instead.
+ *
+ * LOG_NDELAY:: Open the connection now, rather than waiting for the first
+ *              message to be written.
+ *
+ * LOG_NOWAIT:: Don't wait for any child processes created while logging
+ *              messages. (Has no effect on Linux.)
+ *
+ * LOG_ODELAY:: Opposite of LOG_NDELAY; wait until a message is sent before
+ *              opening the connection. (This is the default.)
+ *
+ * LOG_PERROR:: Print the message to stderr as well as sending it to syslog.
+ *              (Not in POSIX.1-2001.)
+ *
+ * LOG_PID:: Include the current process ID with each message.
+ *
+ * +facility+ describes the type of program opening the syslog, and is
+ * the logical OR of any of the following which are defined for the host OS:
+ *
+ * LOG_AUTH:: Security or authorization. Deprecated, use LOG_AUTHPRIV
+ *            instead.
+ *
+ * LOG_AUTHPRIV:: Security or authorization messages which should be kept
+ *                private.
+ *
+ * LOG_CONSOLE:: System console message.
+ *
+ * LOG_CRON:: System task scheduler (cron or at).
+ *
+ * LOG_DAEMON:: A system daemon which has no facility value of its own.
+ *
+ * LOG_FTP:: An FTP server.
+ *
+ * LOG_KERN:: A kernel message (not sendable by user processes, so not of
+ *            much use to Ruby, but listed here for completeness).
+ *
+ * LOG_LRP:: Line printer subsystem.
+ *
+ * LOG_MAIL:: Mail delivery or transport subsystem.
+ *
+ * LOG_NEWS:: Usenet news system.
+ *
+ * LOG_NTP:: Network Time Protocol server.
+ *
+ * LOG_SECURITY:: General security message.
+ *
+ * LOG_SYSLOG:: Messages generated internally by syslog.
+ *
+ * LOG_USER:: Generic user-level message.
+ *
+ * LOG_UUCP:: UUCP subsystem.
+ *
+ * LOG_LOCAL0 to LOG_LOCAL7:: Locally-defined facilities.
+ *
+ * Example:
+ *
+ *  Syslog.open("webrick", Syslog::LOG_PID,
+ *              Syslog::LOG_DAEMON | Syslog::LOG_LOCAL3)
+ *
+ */
 static VALUE mSyslog_open(int argc, VALUE *argv, VALUE self)
 {
     VALUE ident, opt, fac;
@@ -96,6 +177,15 @@ static VALUE mSyslog_open(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+/* call-seq:
+ *   open(ident, options, facility) => syslog
+ *
+ * :yields: syslog
+ *
+ * Closes and then reopens the syslog.
+ *
+ * Arguments are the same as for open().
+ */
 static VALUE mSyslog_reopen(int argc, VALUE *argv, VALUE self)
 {
     mSyslog_close(self);
@@ -103,31 +193,58 @@ static VALUE mSyslog_reopen(int argc, VALUE *argv, VALUE self)
     return mSyslog_open(argc, argv, self);
 }
 
+/*
+ * Returns true if the syslog is open.
+ */
 static VALUE mSyslog_isopen(VALUE self)
 {
     return syslog_opened ? Qtrue : Qfalse;
 }
 
+/* Returns the identity string used in the last call to open()
+ */
 static VALUE mSyslog_ident(VALUE self)
 {
     return syslog_opened ? rb_str_new2(syslog_ident) : Qnil;
 }
 
+/* Returns the options bitmask used in the last call to open()
+ */
 static VALUE mSyslog_options(VALUE self)
 {
     return syslog_opened ? INT2NUM(syslog_options) : Qnil;
 }
 
+/* Returns the facility number used in the last call to open()
+ */
 static VALUE mSyslog_facility(VALUE self)
 {
     return syslog_opened ? INT2NUM(syslog_facility) : Qnil;
 }
 
+/* Returns the log priority mask in effect. The mask is not reset by opening
+ * or closing syslog.
+ */
 static VALUE mSyslog_get_mask(VALUE self)
 {
     return syslog_opened ? INT2NUM(syslog_mask) : Qnil;
 }
 
+/* call-seq:
+ *   mask(priority_mask)
+ *
+ * Sets the log priority mask. A method LOG_UPTO is defined to make it easier
+ * to set mask values. Example:
+ *
+ *   Syslog.mask = Syslog::LOG_UPTO(Syslog::LOG_ERR)
+ *
+ * Alternatively, specific priorities can be selected and added together using
+ * binary OR. Example:
+ *
+ *   Syslog.mask = Syslog::LOG_MASK(Syslog::LOG_ERR) | Syslog::LOG_MASK(Syslog::LOG_CRIT)
+ *
+ * The priority mask persists through calls to open() and close().
+ */
 static VALUE mSyslog_set_mask(VALUE self, VALUE mask)
 {
     rb_secure(4);
@@ -140,6 +257,30 @@ static VALUE mSyslog_set_mask(VALUE self, VALUE mask)
     return mask;
 }
 
+/* call-seq:
+ *   log(priority, format-string, ... )
+ *
+ * Log a message with the specified priority. Example:
+ *
+ *   log(Syslog::LOG_CRIT, "Out of disk space")
+ *   log(Syslog::LOG_CRIT, "User %s logged in", ENV['USER'])
+ *
+ * The priority levels, in descending order, are:
+ *
+ * LOG_EMERG::   System is unusable
+ * LOG_ALERT::   Action needs to be taken immediately
+ * LOG_CRIT::    A critical condition has occurred
+ * LOG_ERR::     An error occurred
+ * LOG_WARNING:: Warning of a possible problem
+ * LOG_NOTICE::  A normal but significant condition occurred
+ * LOG_INFO::    Informational message
+ * LOG_DEBUG::   Debugging information
+ *
+ * Format strings are as for printf/sprintf, except that in addition %m is
+ * replaced with the error message string that would be returned by
+ * strerror(errno).
+ *
+ */
 static VALUE mSyslog_log(int argc, VALUE *argv, VALUE self)
 {
     VALUE pri;
@@ -160,6 +301,8 @@ static VALUE mSyslog_log(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+/* Returns an inspect() string summarizing the object state.
+ */
 static VALUE mSyslog_inspect(VALUE self)
 {
     char buf[1024];
@@ -180,6 +323,8 @@ static VALUE mSyslog_inspect(VALUE self)
     return rb_str_new2(buf);
 }
 
+/* Returns self, for backward compatibility.
+ */
 static VALUE mSyslog_instance(VALUE self)
 {
     return self;
@@ -218,21 +363,50 @@ define_syslog_shortcut_method(LOG_INFO, info)
 define_syslog_shortcut_method(LOG_DEBUG, debug)
 #endif
 
+/* call-seq:
+ *   LOG_MASK(priority_level) => priority_mask
+ *
+ * Generates a mask bit for a priority level. See #mask=
+ */
 static VALUE mSyslogConstants_LOG_MASK(VALUE klass, VALUE pri)
 {
     return INT2FIX(LOG_MASK(NUM2INT(pri)));
 }
 
+/* call-seq:
+ *   LOG_UPTO(priority_level) => priority_mask
+ *
+ * Generates a mask value for priority levels at or below the level specified.
+ * See #mask=
+ */
 static VALUE mSyslogConstants_LOG_UPTO(VALUE klass, VALUE pri)
 {
     return INT2FIX(LOG_UPTO(NUM2INT(pri)));
 }
 
-/* Init for package syslog */
+/* The syslog package provides a Ruby interface to the POSIX system logging
+ * facility.
+ *
+ * Syslog messages are typically passed to a central logging daemon.
+ * The daemon may filter them; route them into different files (usually
+ * found under /var/log); place them in SQL databases; forward
+ * them to centralized logging servers via TCP or UDP; or even alert the
+ * system administrator via email, pager or text message.
+ *
+ * Unlike application-level logging via Logger or Log4r, syslog is designed
+ * to allow secure tamper-proof logging.
+ *
+ * The syslog protocol is standardized in RFC 5424.
+ */
 void Init_syslog()
 {
     mSyslog = rb_define_module("Syslog");
 
+    /* Document-module: Syslog::Constants
+     *
+     * Module holding Syslog constants.  See Syslog::log and Syslog::open for
+     * constant descriptions.
+     */
     mSyslogConstants = rb_define_module_under(mSyslog, "Constants");
 
     rb_include_module(mSyslog, mSyslogConstants);
