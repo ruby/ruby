@@ -1,6 +1,10 @@
+require 'psych/json/ruby_events'
+
 module Psych
   module JSON
     class Stream < Psych::Stream
+      include Psych::JSON::RubyEvents
+
       class Emitter < Psych::Stream::Emitter # :nodoc:
         def start_document version, tag_directives, implicit
           super(version, tag_directives, !streaming?)
@@ -22,20 +26,6 @@ module Psych
           end
         end
       end
-
-      def visit_Time o
-        formatted = format_time o
-        @emitter.scalar formatted, nil, nil, false, true, Nodes::Scalar::DOUBLE_QUOTED
-      end
-
-      def visit_DateTime o
-        visit_Time o.to_time
-      end
-
-      def visit_String o
-        @emitter.scalar o.to_s, nil, nil, false, true, Nodes::Scalar::DOUBLE_QUOTED
-      end
-      alias :visit_Symbol :visit_String
     end
   end
 end
