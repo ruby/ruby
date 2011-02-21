@@ -74,8 +74,8 @@ module Psych
           oid         = target.object_id
           node        = @st[oid]
           anchor      = oid.to_s
-          node.anchor = oid
-          return @emitter.alias oid
+          node.anchor = anchor
+          return @emitter.alias anchor
         end
 
         if target.respond_to?(:to_yaml)
