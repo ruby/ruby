@@ -1,3 +1,12 @@
+Mon Feb 21 10:58:39 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/json/yaml_events.rb: refactoring JSON event
+	  handling methods to a module for reuse.
+	* ext/psych/lib/psych/json/tree_builder.rb: AST builder uses JSON
+	  event methods.
+	* ext/psych/lib/psych/json/stream.rb: stream emitter uses JSON event
+	  methods.
+
 Mon Feb 21 10:54:29 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/json/stream.rb: do not emit custom tags in maps
