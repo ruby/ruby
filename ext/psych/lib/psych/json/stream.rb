@@ -11,11 +11,11 @@ module Psych
         end
 
         def start_mapping anchor, tag, implicit, style
-          super(anchor, tag, implicit, Nodes::Mapping::FLOW)
+          super(anchor, nil, implicit, Nodes::Mapping::FLOW)
         end
 
         def start_sequence anchor, tag, implicit, style
-          super(anchor, tag, implicit, Nodes::Sequence::FLOW)
+          super(anchor, nil, implicit, Nodes::Sequence::FLOW)
         end
 
         def scalar value, anchor, tag, plain, quoted, style

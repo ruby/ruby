@@ -71,6 +71,26 @@ module Psych
         assert_match(/["]two["]/, json)
       end
 
+      class Foo; end
+
+      def test_json_dump_exclude_tag
+        @stream << Foo.new
+        json = @io.string
+        refute_match('Foo', json)
+      end
+
+      class Bar
+        def encode_with coder
+          coder.represent_seq 'omg', %w{ a b c }
+        end
+      end
+
+      def test_json_list_dump_exclude_tag
+        @stream << Bar.new
+        json = @io.string
+        refute_match('omg', json)
+      end
+
       def test_time
         time = Time.utc(2010, 10, 10)
         @stream.push({'a' => time })

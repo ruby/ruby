@@ -31,6 +31,17 @@ module Psych
       assert_match(/['"]two['"]/, json)
     end
 
+    class Bar
+      def encode_with coder
+        coder.represent_seq 'omg', %w{ a b c }
+      end
+    end
+
+    def test_json_list_dump_exclude_tag
+      json = Psych.to_json Bar.new
+      refute_match('omg', json)
+    end
+
     def test_list_to_json
       list = %w{ one two }
       json = Psych.to_json(list)
