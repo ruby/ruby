@@ -1,3 +1,9 @@
+Tue Feb 22 02:41:51 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb (accept): use Hash#key?
+	  when looking up object references to err on the side of cache
+	  misses.
+
 Mon Feb 21 10:58:39 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/json/yaml_events.rb: refactoring JSON event

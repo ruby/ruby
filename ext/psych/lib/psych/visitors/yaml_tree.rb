@@ -70,9 +70,12 @@ module Psych
 
       def accept target
         # return any aliases we find
-        if node = @st[target.object_id]
-          node.anchor = target.object_id.to_s
-          return @emitter.alias target.object_id.to_s
+        if @st.key? target.object_id
+          oid         = target.object_id
+          node        = @st[oid]
+          anchor      = oid.to_s
+          node.anchor = oid
+          return @emitter.alias oid
         end
 
         if target.respond_to?(:to_yaml)
