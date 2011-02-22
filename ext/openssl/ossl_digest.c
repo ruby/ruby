@@ -11,14 +11,14 @@
 #include "ossl.h"
 
 #define GetDigest(obj, ctx) do { \
-    Data_Get_Struct(obj, EVP_MD_CTX, ctx); \
-    if (!ctx) { \
+    Data_Get_Struct((obj), EVP_MD_CTX, (ctx)); \
+    if (!(ctx)) { \
 	ossl_raise(rb_eRuntimeError, "Digest CTX wasn't initialized!"); \
     } \
 } while (0)
 #define SafeGetDigest(obj, ctx) do { \
-    OSSL_Check_Kind(obj, cDigest); \
-    GetDigest(obj, ctx); \
+    OSSL_Check_Kind((obj), cDigest); \
+    GetDigest((obj), (ctx)); \
 } while (0)
 
 /*

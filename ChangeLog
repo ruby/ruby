@@ -1,3 +1,7 @@
+Tue Feb 22 21:39:28 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/ossl_digest.c: parenthesize macro arguments.
+
 Tue Feb 22 14:34:26 2011  Shota Fukumori (sora_h) <sorah@tubusu.net>
 
 	* lib/test/unit.rb: Fix merging miss.
