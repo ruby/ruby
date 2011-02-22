@@ -1,3 +1,7 @@
+Tue Feb 22 14:34:26 2011  Shota Fukumori (sora_h) <sorah@tubusu.net>
+
+	* lib/test/unit.rb: Fix merging miss.
+
 Tue Feb 22 12:27:26 2011  Shota Fukumori (sora_h) <sorah@tubusu.net>
 
 	* lib/test/unit.rb: Add new options; --jobs,-j,--ruby,--jobs-status,

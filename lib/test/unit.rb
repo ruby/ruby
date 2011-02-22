@@ -218,7 +218,6 @@ module Test
 
     class Runner < MiniTest::Unit
       include Test::Unit::Options
-      include Test::Unit::RequireFiles
       include Test::Unit::GlobOption
       include Test::Unit::LoadPathOption
       include Test::Unit::GCStressOption
@@ -521,6 +520,10 @@ module Test
     end
 
     class AutoRunner
+      class Runner < Test::Unit::Runner
+        include Test::Unit::RequireFiles
+      end
+
       attr_accessor :to_run, :options
 
       def initialize(force_standalone = false, default_dir = nil, argv = ARGV)
