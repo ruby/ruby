@@ -131,7 +131,7 @@ class TestCSV::Serialization < TestCSV
   def test_io
     test_class_dump
 
-    data_file = File.join(File.dirname(__FILE__), "temp_test_data.csv")
+    data_file = File.join(File.dirname(__FILE__), "serialization_test_data.csv")
     CSV.dump(@names, File.open(data_file, "wb"))
 
     assert(File.exist?(data_file))

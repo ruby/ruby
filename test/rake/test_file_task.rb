@@ -29,7 +29,9 @@ class Rake::TestFileTask < Test::Unit::TestCase
   end
 
   def test_file_times_new_depends_on_old
-    create_timed_files(OLDFILE, NEWFILE)
+    until File.exist?(OLDFILE) && File.exist?(NEWFILE)
+      create_timed_files(OLDFILE, NEWFILE)
+    end
 
     t1 = Rake.application.intern(FileTask, NEWFILE).enhance([OLDFILE])
     t2 = Rake.application.intern(FileTask, OLDFILE)
@@ -38,7 +40,9 @@ class Rake::TestFileTask < Test::Unit::TestCase
   end
 
   def test_file_times_old_depends_on_new
-    create_timed_files(OLDFILE, NEWFILE)
+    until File.exist?(OLDFILE) && File.exist?(NEWFILE)
+      create_timed_files(OLDFILE, NEWFILE)
+    end
 
     t1 = Rake.application.intern(FileTask,OLDFILE).enhance([NEWFILE])
     t2 = Rake.application.intern(FileTask, NEWFILE)
@@ -93,46 +97,46 @@ class Rake::TestDirectoryTask < Test::Unit::TestCase
   include Rake
 
   def setup
-    rm_rf "testdata", :verbose=>false
+    rm_rf "testdata2", :verbose=>false
   end
 
   def teardown
-    rm_rf "testdata", :verbose=>false
+    rm_rf "testdata2", :verbose=>false
   end
 
   def test_directory
     desc "DESC"
-    directory "testdata/a/b/c"
-    assert_equal FileCreationTask, Task["testdata"].class
-    assert_equal FileCreationTask, Task["testdata/a"].class
-    assert_equal FileCreationTask, Task["testdata/a/b/c"].class
-    assert_nil             Task["testdata"].comment
-    assert_equal "DESC",   Task["testdata/a/b/c"].comment
-    assert_nil             Task["testdata/a/b"].comment
+    directory "testdata2/a/b/c"
+    assert_equal FileCreationTask, Task["testdata2"].class
+    assert_equal FileCreationTask, Task["testdata2/a"].class
+    assert_equal FileCreationTask, Task["testdata2/a/b/c"].class
+    assert_nil             Task["testdata2"].comment
+    assert_equal "DESC",   Task["testdata2/a/b/c"].comment
+    assert_nil             Task["testdata2/a/b"].comment
     verbose(false) {
-      Task['testdata/a/b'].invoke
+      Task['testdata2/a/b'].invoke
     }
-    assert File.exist?("testdata/a/b")
-    assert ! File.exist?("testdata/a/b/c")
+    assert File.exist?("testdata2/a/b")
+    assert ! File.exist?("testdata2/a/b/c")
   end
 
   if Rake::Win32.windows?
     def test_directory_win32
       desc "WIN32 DESC"
-      FileUtils.mkdir_p("testdata")
-      Dir.chdir("testdata") do
-        directory 'c:/testdata/a/b/c'
-        assert_equal FileCreationTask, Task['c:/testdata'].class
-        assert_equal FileCreationTask, Task['c:/testdata/a'].class
-        assert_equal FileCreationTask, Task['c:/testdata/a/b/c'].class
-        assert_nil             Task['c:/testdata'].comment
-        assert_equal "WIN32 DESC",   Task['c:/testdata/a/b/c'].comment
-        assert_nil             Task['c:/testdata/a/b'].comment
+      FileUtils.mkdir_p("testdata2")
+      Dir.chdir("testdata2") do
+        directory 'c:/testdata2/a/b/c'
+        assert_equal FileCreationTask, Task['c:/testdata2'].class
+        assert_equal FileCreationTask, Task['c:/testdata2/a'].class
+        assert_equal FileCreationTask, Task['c:/testdata2/a/b/c'].class
+        assert_nil             Task['c:/testdata2'].comment
+        assert_equal "WIN32 DESC",   Task['c:/testdata2/a/b/c'].comment
+        assert_nil             Task['c:/testdata2/a/b'].comment
         verbose(false) {
-          Task['c:/testdata/a/b'].invoke
+          Task['c:/testdata2/a/b'].invoke
         }
-        assert File.exist?('c:/testdata/a/b')
-        assert ! File.exist?('c:/testdata/a/b/c')
+        assert File.exist?('c:/testdata2/a/b')
+        assert ! File.exist?('c:/testdata2/a/b/c')
       end
     end
   end

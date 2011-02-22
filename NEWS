@@ -113,6 +113,13 @@ with all sufficient information, see the ChangeLog file.
   * extended method:
     * StringIO#set_encoding can get 2nd argument and optional hash.
 
+* test/unit
+  * New arguments:
+    * -j N, --jobs=N: Allow run N testcases at once.
+    * --jobs-status: Show status of jobs when parallel running.
+    * --no-retry: Don't retry testcases which failed when parallel running.
+    * --ruby=RUBY: path to ruby for job(worker) process. optional.
+
 * uri
   * new methods:
     * URI::Generic#hostname
