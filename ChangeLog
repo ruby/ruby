@@ -1,3 +1,8 @@
+Tue Feb 22 23:15:17 2011  Shota Fukumori (sora_h) <sorah@tubusu.net>
+
+	* lib/test/unit.rb: Fix --ruby option doesn't effect.
+	* lib/test/unit.rb: Fix typo.
+
 Tue Feb 22 21:39:28 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/ossl_digest.c: parenthesize macro arguments.
