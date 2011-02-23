@@ -2900,8 +2900,8 @@ bm_search_notrev(regex_t* reg, const UChar* target, const UChar* target_end,
   ptrdiff_t skip, tlen1;
 
 #ifdef ONIG_DEBUG_SEARCH
-  fprintf(stderr, "bm_search_notrev: text: %d, text_end: %d, text_range: %d\n",
-	  (int )text, (int )text_end, (int )text_range);
+  fprintf(stderr, "bm_search_notrev: text: %"PRIuPTR", text_end: %"PRIuPTR", text_range: %"PRIuPTR"\n",
+	  text, text_end, text_range);
 #endif
 
   tail = target_end - 1;
@@ -2953,6 +2953,11 @@ bm_search(regex_t* reg, const UChar* target, const UChar* target_end,
   const UChar *s, *t, *p, *end;
   const UChar *tail;
 
+#ifdef ONIG_DEBUG_SEARCH
+  fprintf(stderr, "bm_search: text: %"PRIuPTR", text_end: %"PRIuPTR", text_range: %"PRIuPTR"\n",
+	  text, text_end, text_range);
+#endif
+
   end = text_range + (target_end - target) - 1;
   if (end > text_end)
     end = text_end;
@@ -2963,6 +2968,10 @@ bm_search(regex_t* reg, const UChar* target, const UChar* target_end,
     while (s < end) {
       p = s;
       t = tail;
+#ifdef ONIG_DEBUG_SEARCH
+  fprintf(stderr, "bm_search_loop: pos: %d %s\n",
+	  (int)(s - text), s);
+#endif
       while (*p == *t) {
 	if (t == target) return (UChar* )p;
 	p--; t--;
@@ -3136,8 +3145,8 @@ forward_search_range(regex_t* reg, const UChar* str, const UChar* end, UChar* s,
   UChar *p, *pprev = (UChar* )NULL;
 
 #ifdef ONIG_DEBUG_SEARCH
-  fprintf(stderr, "forward_search_range: str: %d, end: %d, s: %d, range: %d\n",
-	  (int )str, (int )end, (int )s, (int )range);
+  fprintf(stderr, "forward_search_range: str: %"PRIuPTR", end: %"PRIuPTR", s: %"PRIuPTR", range: %"PRIuPTR"\n",
+	  str, end, s, range);
 #endif
 
   p = s;
@@ -3404,8 +3413,8 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
 
 #ifdef ONIG_DEBUG_SEARCH
   fprintf(stderr,
-     "onig_search (entry point): str: %d, end: %d, start: %d, range: %d\n",
-     (int )str, (int )(end - str), (int )(start - str), (int )(range - str));
+     "onig_search (entry point): str: %"PRIuPTR", end: %"PRIuPTR", start: %"PRIuPTR", range: %"PRIuPTR"\n",
+     str, end - str, start - str, range - str);
 #endif
 
   if (region
