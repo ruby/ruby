@@ -10,6 +10,7 @@ module Test
       alias orig_run_suite _run_suite
       undef _run_suite
       undef _run_suites
+      undef run
 
       def _run_suites suites, type
         suites.map do |suite|
@@ -42,13 +43,12 @@ module Test
         MiniTest::Unit.output = orig_stdout
 
         o.close
-        i.close
-
         begin
           th.join
         rescue IOError
           raise unless ["stream closed","closed stream"].include? $!.message
         end
+        i.close
 
         result << (report - r)
         result << [@errors-e,@failures-f,@skips-s]

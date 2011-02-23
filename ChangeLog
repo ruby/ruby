@@ -1,3 +1,12 @@
+Wed Feb 23 23:07:38 2011  Shota Fukumori (sora_h) <sorah@tubusu.net>
+
+	* test/testunit/test_parallel.rb, test/testunit/parallel/*:
+		Test for r30939.
+	* lib/test/unit.rb: For test.
+	* lib/test/parallel.rb: For test.
+	* lib/test/unit/testcase.rb: For test.
+
+
 Wed Feb 23 22:05:13 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/ossl_engine.c: parenthesize macro arguments.
