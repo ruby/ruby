@@ -5094,7 +5094,7 @@ static void print_enc_string(FILE* fp, OnigEncoding enc,
     }
   }
 
-  fprintf(fp, "/\n");
+  fprintf(fp, "/ (%s)\n", enc->name);
 }
 
 static void
