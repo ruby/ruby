@@ -892,6 +892,7 @@ change: PHONY
 	$(BASERUBY) -C "$(srcdir)" ./tool/change_maker.rb $(CHANGES) > change.log
 
 love: ruby
+	@echo Not war.
 
 help: PHONY
 	$(MESSAGE_BEGIN) \
