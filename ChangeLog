@@ -1,6 +1,6 @@
 Thu Feb 24 14:40:33 2011  Shota Fukumori  <sorah@tubusu.net>
 
-	* ChangeLog(vim): Modeline for vim
+	* ChangeLog (vim): Modeline for vim
 
 Thu Feb 24 13:39:25 2011  Shota Fukumori  <sorah@tubusu.net>
 
@@ -59,7 +59,7 @@ Tue Feb 22 12:27:26 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* test/rake/test_file_task.rb: test/unit parallel running ready.
 
-2011-02-21  Eric Hodel  <drbrain@segment7.net>
+Tue Feb 22 06:09:10 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/syslog/syslog.c: Apply documentation patch from mathew murphy.
 	  [Bug #4149]
