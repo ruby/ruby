@@ -181,6 +181,19 @@ ruby_vm_at_exit(void (*func)(rb_vm_t *))
     rb_ary_push((VALUE)&GET_VM()->at_exit, (VALUE)func);
 }
 
+static void
+ruby_vm_run_at_exit_hooks(rb_vm_t *vm)
+{
+    VALUE hook = (VALUE)&vm->at_exit;
+
+    while (RARRAY_LEN(hook) > 0) {
+	typedef void rb_vm_at_exit_func(rb_vm_t*);
+	rb_vm_at_exit_func *func = (rb_vm_at_exit_func*)rb_ary_pop(hook);
+	(*func)(vm);
+    }
+    rb_ary_free(hook);
+}
+
 /* Env */
 
 /*
@@ -1550,6 +1563,7 @@ ruby_vm_destruct(rb_vm_t *vm)
 	    rb_objspace_free(objspace);
 	}
 #endif
+	ruby_vm_run_at_exit_hooks(vm);
 	rb_vm_gvl_destroy(vm);
 	ruby_xfree(vm);
 	ruby_current_vm = 0;

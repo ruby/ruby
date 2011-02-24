@@ -129,9 +129,6 @@ ruby_cleanup(volatile int ex)
     int nerr;
     void rb_threadptr_interrupt(rb_thread_t *th);
     void rb_threadptr_check_signal(rb_thread_t *mth);
-    long i;
-    rb_vm_t *vm = GET_VM();
-    VALUE ary = (VALUE)&vm->at_exit;
 
     rb_threadptr_interrupt(th);
     rb_threadptr_check_signal(th);
@@ -164,13 +161,6 @@ ruby_cleanup(volatile int ex)
     ruby_finalize_1();
     POP_TAG();
     rb_thread_stop_timer_thread();
-
-    /* at_exit functions called here; any other place more apropriate
-     * for this purpose? let me know if any. */
-    for (i=RARRAY_LEN(ary) - 1; i>=0; i--) {
-       ((void(*)(rb_vm_t*))RARRAY_PTR(ary)[i])(vm);
-    }
-    rb_ary_free(ary);
 
 #if EXIT_SUCCESS != 0 || EXIT_FAILURE != 1
     switch (ex) {
