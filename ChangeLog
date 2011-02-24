@@ -1,3 +1,10 @@
+Thu Feb 24 13:39:25 2011  Shota Fukumori (sora_h) <sorah@tubusu.net>
+
+	* common.mk: Use $RUNRUBY for worker process.
+	* lib/test/unit.rb: Fix bug.
+	* lib/test/unit.rb: @options[:ruby](@opts[:ruby]) is now Array.
+	* test/testunit/parallel.rb: Fix for above.
+
 Thu Feb 24 10:05:55 2011  Shota Fukumori (sora_h) <sorah@tubusu.net>
 
 	* test/testunit/tests_for_parallel/misc.rb: Fix bug in r30947.

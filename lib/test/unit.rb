@@ -101,7 +101,7 @@ module Test
         end
 
         opts.on '--ruby VAL', "Path to ruby; It'll have used at -j option" do |a|
-          options[:ruby] = a
+          options[:ruby] = a.split(/ /).reject(&:empty?)
         end
       end
 
@@ -364,8 +364,9 @@ module Test
               i,o = IO.pipe("ASCII-8BIT") # worker o>|i> master
               j,k = IO.pipe("ASCII-8BIT") # worker <j|<k master
               k.sync = true
-              pid = spawn(*@opts[:ruby].split(/ /),File.dirname(__FILE__) +
-                          "/unit/parallel.rb", *@args, out: o, in: j)
+              pid = spawn(*@opts[:ruby],
+                          "#{File.dirname(__FILE__)}/unit/parallel.rb",
+                          *@args, out: o, in: j)
               [o,j].each{|io| io.close }
               {in: k, out: i, pid: pid, status: :waiting}
             end
