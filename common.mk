@@ -891,6 +891,8 @@ info-arch:
 change: PHONY
 	$(BASERUBY) -C "$(srcdir)" ./tool/change_maker.rb $(CHANGES) > change.log
 
+love: ruby
+
 help: PHONY
 	$(MESSAGE_BEGIN) \
 	"                Makefile of Ruby" \

@@ -1,3 +1,7 @@
+Thu Feb 24 22:53:10 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (love): for the birthday.
+
 Thu Feb 24 22:51:54 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (ruby_vm_destruct): run vm exit hooks after all objects are
