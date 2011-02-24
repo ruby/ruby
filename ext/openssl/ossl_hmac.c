@@ -13,16 +13,16 @@
 #include "ossl.h"
 
 #define MakeHMAC(obj, klass, ctx) \
-    obj = Data_Make_Struct(klass, HMAC_CTX, 0, ossl_hmac_free, ctx)
+    (obj) = Data_Make_Struct((klass), HMAC_CTX, 0, ossl_hmac_free, (ctx))
 #define GetHMAC(obj, ctx) do { \
-    Data_Get_Struct(obj, HMAC_CTX, ctx); \
-    if (!ctx) { \
+    Data_Get_Struct((obj), HMAC_CTX, (ctx)); \
+    if (!(ctx)) { \
 	ossl_raise(rb_eRuntimeError, "HMAC wasn't initialized"); \
     } \
 } while (0)
 #define SafeGetHMAC(obj, ctx) do { \
-    OSSL_Check_Kind(obj, cHMAC); \
-    GetHMAC(obj, ctx); \
+    OSSL_Check_Kind((obj), cHMAC); \
+    GetHMAC((obj), (ctx)); \
 } while (0)
 
 /*

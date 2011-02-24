@@ -1,3 +1,7 @@
+Thu Feb 24 23:02:55 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/ossl_hmac.c: parenthesize macro arguments.
+
 Thu Feb 24 22:53:10 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (love): for the birthday.
