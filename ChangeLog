@@ -1,3 +1,8 @@
+Thu Feb 24 10:05:55 2011  Shota Fukumori (sora_h) <sorah@tubusu.net>
+
+	* test/testunit/tests_for_parallel/misc.rb: Fix bug in r30947.
+	* lib/test/unit.rb, lib/test/unit/assertions.rb: For this test.
+
 Wed Feb 23 23:07:38 2011  Shota Fukumori (sora_h) <sorah@tubusu.net>
 
 	* test/testunit/test_parallel.rb, test/testunit/parallel/*:

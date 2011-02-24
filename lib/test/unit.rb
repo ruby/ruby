@@ -32,6 +32,7 @@ module Test
     module Options
       def initialize(*, &block)
         @init_hook = block
+        @options = nil
         super(&nil)
       end
 
@@ -232,6 +233,11 @@ module Test
 
       alias orig_run_anything _run_anything
       undef _run_anything
+      undef options
+
+      def options
+        @optss ||= (@options||{}).merge(@opts)
+      end
 
       def _run_anything type
         if @opts[:parallel] && @warnings
