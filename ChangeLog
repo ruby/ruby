@@ -1,3 +1,10 @@
+Sat Feb 26 07:10:05 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/scalar_scanner.rb: fix parsing timezone's whose
+	  whose format is (+/-)hhmm.  Thanks Gonçalo Silva!
+
+	* test/psych/test_scalar_scanner.rb: test for bug.
+
 Thu Feb 24 23:02:55 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/ossl_hmac.c: parenthesize macro arguments.
