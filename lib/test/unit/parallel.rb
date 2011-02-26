@@ -6,7 +6,7 @@ module Test
       class << self
         undef autorun
       end
-      
+
       alias orig_run_suite _run_suite
       undef _run_suite
       undef _run_suites
@@ -91,7 +91,7 @@ module Test
                     begin
                       stdout.puts "bye"
                     rescue Errno::EPIPE; end
-                    exit 
+                    exit
                   end
                 end
               end

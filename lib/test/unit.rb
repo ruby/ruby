@@ -54,7 +54,7 @@ module Test
         @options = options
         @opts = @options = options
         if @options[:parallel]
-          @files = args 
+          @files = args
           @args = orig_args
         end
       end
@@ -81,7 +81,7 @@ module Test
         opts.on '-n', '--name PATTERN', "Filter test names on pattern." do |a|
           options[:filter] = a
         end
- 
+
         opts.on '--jobs-status [TYPE]', "Show status of jobs every file; Disabled when --jobs isn't specified." do |type|
           options[:job_status] = true
           options[:job_status_type] = type.to_sym if type
@@ -293,7 +293,7 @@ module Test
         end
 
         private
-        
+
         def call_hook(id,*additional)
           @hooks[id] ||= []
           @hooks[id].each{|hook| hook[self,additional] }

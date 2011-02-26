@@ -51,7 +51,7 @@ module TestParallel
         assert_match(/^ready/,@worker_out.gets)
       end
     end
-    
+
     def test_accept_run_command_multiple_times
       timeout(10) do
         assert_match(/^ready/,@worker_out.gets)
@@ -145,7 +145,7 @@ module TestParallel
 
     #def test_childs
     #end
-    
+
     def test_should_run_all_without_any_leaks
       spawn_runner
       buf = timeout(10){@test_out.read}
