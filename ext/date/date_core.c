@@ -600,56 +600,56 @@ daydiff_to_sec(VALUE vof, int *rof)
 {
     switch (TYPE(vof)) {
       case T_FIXNUM:
-      {
-	  int n;
+	{
+	    int n;
 
-	  n = FIX2INT(vof);
-	  if (n != -1 && n != 0 && n != 1)
-	      return 0;
-	  *rof = n * DAY_IN_SECONDS;
-	  return 1;
-      }
+	    n = FIX2INT(vof);
+	    if (n != -1 && n != 0 && n != 1)
+		return 0;
+	    *rof = n * DAY_IN_SECONDS;
+	    return 1;
+	}
       case T_FLOAT:
-      {
-	  double n;
+	{
+	    double n;
 
-	  n = NUM2DBL(vof);
-	  if (n < -DAY_IN_SECONDS || n > DAY_IN_SECONDS)
-	      return 0;
-	  *rof = round(n * DAY_IN_SECONDS);
-	  return 1;
-      }
+	    n = NUM2DBL(vof);
+	    if (n < -DAY_IN_SECONDS || n > DAY_IN_SECONDS)
+		return 0;
+	    *rof = round(n * DAY_IN_SECONDS);
+	    return 1;
+	}
       case T_RATIONAL:
-      {
-	  VALUE vs = f_mul(vof, INT2FIX(DAY_IN_SECONDS));
-	  VALUE vn = RRATIONAL(vs)->num;
-	  VALUE vd = RRATIONAL(vs)->den;
-	  int n, d;
+	{
+	    VALUE vs = f_mul(vof, INT2FIX(DAY_IN_SECONDS));
+	    VALUE vn = RRATIONAL(vs)->num;
+	    VALUE vd = RRATIONAL(vs)->den;
+	    int n, d;
 
-	  if (!FIXNUM_P(vn) || !FIXNUM_P(vd))
-	      return 0;
-	  n = FIX2INT(vn);
-	  d = FIX2INT(vd);
-	  if (d != 1)
-	      return 0;
-	  if (n < -DAY_IN_SECONDS || n > DAY_IN_SECONDS)
-	      return 0;
-	  *rof = n;
-	  return 1;
-      }
+	    if (!FIXNUM_P(vn) || !FIXNUM_P(vd))
+		return 0;
+	    n = FIX2INT(vn);
+	    d = FIX2INT(vd);
+	    if (d != 1)
+		return 0;
+	    if (n < -DAY_IN_SECONDS || n > DAY_IN_SECONDS)
+		return 0;
+	    *rof = n;
+	    return 1;
+	}
       case T_STRING:
-      {
-	  VALUE vs = rb_funcall(cDate, rb_intern("zone_to_diff"), 1, vof);
-	  int n;
+	{
+	    VALUE vs = rb_funcall(cDate, rb_intern("zone_to_diff"), 1, vof);
+	    int n;
 
-	  if (!FIXNUM_P(vs))
-	      return 0;
-	  n = FIX2INT(vs);
-	  if (n < -DAY_IN_SECONDS || n > DAY_IN_SECONDS)
-	      return 0;
-	  *rof = n;
-	  return 1;
-      }
+	    if (!FIXNUM_P(vs))
+		return 0;
+	    n = FIX2INT(vs);
+	    if (n < -DAY_IN_SECONDS || n > DAY_IN_SECONDS)
+		return 0;
+	    *rof = n;
+	    return 1;
+	}
     }
     return 0;
 }
@@ -1666,28 +1666,28 @@ d_lite_plus(VALUE self, VALUE other)
 
     switch (TYPE(other)) {
       case T_FIXNUM:
-      {
-	  long jd;
+	{
+	    long jd;
 
-	  get_d_jd(dat);
+	    get_d_jd(dat);
 
-	  jd = dat->l.jd + FIX2LONG(other);
+	    jd = dat->l.jd + FIX2LONG(other);
 
-	  if (LIGHTABLE_JD(jd) && jd >= dat->l.sg)
-	      return d_lite_s_new_internal(CLASS_OF(self),
-					   jd, dat->l.sg,
-					   0, 0, 0,
-					   dat->l.flags & ~HAVE_CIVIL);
-      }
-      break;
+	    if (LIGHTABLE_JD(jd) && jd >= dat->l.sg)
+		return d_lite_s_new_internal(CLASS_OF(self),
+					     jd, dat->l.sg,
+					     0, 0, 0,
+					     dat->l.flags & ~HAVE_CIVIL);
+	}
+	break;
       case T_FLOAT:
-      {
-	  double d = NUM2DBL(other);
-	  long l = round(d);
-	  if (l == d && LIGHTABLE_JD(l))
-	      return d_lite_plus(self, INT2FIX(l));
-      }
-      break;
+	{
+	    double d = NUM2DBL(other);
+	    long l = round(d);
+	    if (l == d && LIGHTABLE_JD(l))
+		return d_lite_plus(self, INT2FIX(l));
+	}
+	break;
     }
     return iforwardop("plus_r");
 }
@@ -1758,7 +1758,7 @@ d_lite_minus(VALUE self, VALUE other)
 	    d = adat->l.jd - bdat->l.jd;
 	    return rb_rational_new1(LONG2NUM(d));
 	}
-  }
+    }
 
     switch (TYPE(other)) {
       case T_FIXNUM:
@@ -2948,102 +2948,102 @@ dt_lite_plus(VALUE self, VALUE other)
 
     switch (TYPE(other)) {
       case T_FIXNUM:
-      {
-	  long jd;
+	{
+	    long jd;
 
-	  get_dt1(self);
-	  get_dt_jd(dat);
-	  get_dt_df(dat);
+	    get_dt1(self);
+	    get_dt_jd(dat);
+	    get_dt_df(dat);
 
-	  jd = dat->l.jd + FIX2LONG(other);
+	    jd = dat->l.jd + FIX2LONG(other);
 
-	  if (LIGHTABLE_JD(jd) && jd >= dat->l.sg)
-	      return dt_lite_s_new_internal(CLASS_OF(self),
-					    jd,
-					    dat->l.df,
-					    dat->l.sf,
-					    dat->l.of,
-					    dat->l.sg,
-					    0, 0, 0,
-					    dat->l.hour,
-					    dat->l.min,
-					    dat->l.sec,
-					    dat->l.flags & ~HAVE_CIVIL);
-      }
-      break;
+	    if (LIGHTABLE_JD(jd) && jd >= dat->l.sg)
+		return dt_lite_s_new_internal(CLASS_OF(self),
+					      jd,
+					      dat->l.df,
+					      dat->l.sf,
+					      dat->l.of,
+					      dat->l.sg,
+					      0, 0, 0,
+					      dat->l.hour,
+					      dat->l.min,
+					      dat->l.sec,
+					      dat->l.flags & ~HAVE_CIVIL);
+	}
+	break;
       case T_FLOAT:
-      {
-	  long jd, df;
-	  long long sf;
-	  long double o;
-	  int s;
+	{
+	    long jd, df;
+	    long long sf;
+	    long double o;
+	    int s;
 
-	  get_dt1(self);
-	  get_dt_jd(dat);
-	  get_dt_df(dat);
+	    get_dt1(self);
+	    get_dt_jd(dat);
+	    get_dt_df(dat);
 
-	  jd = dat->l.jd;
-	  o = NUM2DBL(other);
+	    jd = dat->l.jd;
+	    o = NUM2DBL(other);
 
-	  if (o < 0) {
-	      s = -1;
-	      o = -o;
-	  }
-	  else
-	      s = +1;
+	    if (o < 0) {
+		s = -1;
+		o = -o;
+	    }
+	    else
+		s = +1;
 
-	  jd = (long)floorl(o);
-	  o = o - jd;
-	  o *= DAY_IN_SECONDS;
-	  df = (long)floorl(o);
-	  o = o - df;
-	  o *= SECOND_IN_NANOSECONDS;
-	  sf = (long)roundl(o);
+	    jd = (long)floorl(o);
+	    o = o - jd;
+	    o *= DAY_IN_SECONDS;
+	    df = (long)floorl(o);
+	    o = o - df;
+	    o *= SECOND_IN_NANOSECONDS;
+	    sf = (long)roundl(o);
 
-	  if (s < 0) {
-	      jd = -jd;
-	      df = -df;
-	      sf = -sf;
-	  }
+	    if (s < 0) {
+		jd = -jd;
+		df = -df;
+		sf = -sf;
+	    }
 
-	  sf = dat->l.sf + sf;
-	  if (sf < 0) {
-	      df -= 1;
-	      sf += SECOND_IN_NANOSECONDS;
-	  }
-	  else if (sf >= SECOND_IN_NANOSECONDS) {
-	      df += 1;
-	      sf -= SECOND_IN_NANOSECONDS;
-	  }
+	    sf = dat->l.sf + sf;
+	    if (sf < 0) {
+		df -= 1;
+		sf += SECOND_IN_NANOSECONDS;
+	    }
+	    else if (sf >= SECOND_IN_NANOSECONDS) {
+		df += 1;
+		sf -= SECOND_IN_NANOSECONDS;
+	    }
 
-	  df = dat->l.df + df;
-	  if (df < 0) {
-	      jd -= 1;
-	      df += DAY_IN_SECONDS;
-	  }
-	  else if (df >= DAY_IN_SECONDS) {
-	      jd += 1;
-	      df -= DAY_IN_SECONDS;
-	  }
+	    df = dat->l.df + df;
+	    if (df < 0) {
+		jd -= 1;
+		df += DAY_IN_SECONDS;
+	    }
+	    else if (df >= DAY_IN_SECONDS) {
+		jd += 1;
+		df -= DAY_IN_SECONDS;
+	    }
 
-	  jd = dat->l.jd + jd;
+	    jd = dat->l.jd + jd;
 
-	  if (LIGHTABLE_JD(jd) && jd >= dat->l.sg)
-	      return dt_lite_s_new_internal(CLASS_OF(self),
-					    jd,
-					    df,
-					    sf,
-					    dat->l.of,
-					    dat->l.sg,
-					    0, 0, 0,
-					    dat->l.hour,
-					    dat->l.min,
-					    dat->l.sec,
-					    dat->l.flags &
-					    ~HAVE_CIVIL &
-					    ~HAVE_TIME);
-      }
-      break;
+	    if (LIGHTABLE_JD(jd) && jd >= dat->l.sg)
+		return dt_lite_s_new_internal(CLASS_OF(self),
+					      jd,
+					      df,
+					      sf,
+					      dat->l.of,
+					      dat->l.sg,
+					      0, 0, 0,
+					      dat->l.hour,
+					      dat->l.min,
+					      dat->l.sec,
+					      dat->l.flags &
+					      ~HAVE_CIVIL &
+					      ~HAVE_TIME);
+	}
+	break;
     }
     return iforwardop("plus_r");
 }
