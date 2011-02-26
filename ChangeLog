@@ -1,3 +1,11 @@
+Sat Feb 26 17:07:53 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb: [Feature #4257]
+
+	* ext/date/extconf.rb: new
+
+	* ext/date/date_core.c: new
+
 Sat Feb 26 16:10:23 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* lib/test/unit.rb: --jobs-status won't puts over 2 lines.
