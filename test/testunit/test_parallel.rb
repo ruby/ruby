@@ -169,8 +169,7 @@ module TestParallel
     def test_jobs_status
       spawn_runner "--jobs-status"
       buf = timeout(10){@test_out.read}
-      assert_match(/\d+:(ready|prepare|running) */,buf)
-      assert_match(/test_(first|second|third|forth) */,buf)
+      assert_match(/\d+=test_(first|second|third|forth) */,buf)
     end
 
   end
