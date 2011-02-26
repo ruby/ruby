@@ -9,7 +9,7 @@ Sat Feb 26 16:10:23 2011  Shota Fukumori  <sorah@tubusu.net>
 Sat Feb 26 07:10:05 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/scalar_scanner.rb: fix parsing timezone's whose
-	  whose format is (+/-)hhmm.  Thanks Gonçalo Silva!
+	  whose format is (+/-)hhmm.  Thanks Gon??alo Silva!
 
 	* test/psych/test_scalar_scanner.rb: test for bug.
 
@@ -6247,6 +6247,7 @@ For the changes before 1.9.3, see doc/ChangeLog-1.9.3
 For the changes before 1.8.0, see doc/ChangeLog-1.8.0
 
 Local variables:
+coding: us-ascii
 add-log-time-format: (lambda ()
   (let* ((time (current-time))
 	 (system-time-locale "C")
