@@ -1,3 +1,10 @@
+Sun Feb 27 18:00:09 2011  Shota Fukumori  <sorah@tubusu.net>
+
+	* lib/test/unit.rb: Refactoring; Worker never use Hash for internal
+	storage.
+
+	* lib/test/unit.rb: Never use Kernel#spawn. Use IO.popen instead.
+
 Sun Feb 27 13:16:48 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/ossl_ns_spki.c: parenthesize macro arguments.
