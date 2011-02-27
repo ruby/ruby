@@ -1,3 +1,11 @@
+Mon Feb 28 07:28:35 2011  Shota Fukumori  <sorah@tubusu.net>
+
+	* lib/test/unit.rb(Test::Unit::Runner#after_worker_quit):
+	  method name more be natural English.
+
+	* lib/test/unit.rb(Test::Unit::Runner::Worker.launch):
+	  IO.sync doesn't need. Should use "b" for mode.
+
 Sun Feb 27 21:59:37 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_system.rb (TestSystem#test_system_redirect_win):

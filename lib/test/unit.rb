@@ -233,8 +233,7 @@ module Test
         def self.launch(ruby,args=[])
           io = IO.popen([*ruby,
                         "#{File.dirname(__FILE__)}/unit/parallel.rb",
-                        *args], "r+")
-          io.sync = true
+                        *args], "rb+")
           new(io: io, pid: io.pid, status: :waiting)
         end
 
@@ -353,7 +352,7 @@ module Test
         puts "" unless @opts[:verbose]
         status_line = @workers.map(&:to_s).join(" ")
         if @opts[:job_status] == :replace
-          @terminal_width ||= $stdout.winsize[1] || ENV["COLUMNS"] || 80
+          @terminal_width ||= $stdout.winsize[1] || ENV["COLUMNS"].to_i || 80
           @jstr_size ||= 0
           del_jobs_status
           $stdout.flush
@@ -371,7 +370,7 @@ module Test
         print "\r"+" "*@jstr_size+"\r"
       end
 
-      def after_worker_dead(worker)
+      def after_worker_quit(worker)
         return unless @opts[:parallel]
         return if @interrupt
         @workers.delete(worker)
@@ -395,7 +394,7 @@ module Test
           @workers = @opts[:parallel].times.map {
             worker = Worker.launch(@opts[:ruby],@args)
             worker.hook(:dead) do |w,info|
-              after_worker_dead w
+              after_worker_quit w
               after_worker_down w, *info unless info.empty?
             end
             worker
@@ -450,7 +449,7 @@ module Test
                 after_worker_down worker, Marshal.load($1.unpack("m")[0])
               when /^bye$/
                 if shutting_down
-                  after_worker_dead worker
+                  after_worker_quit worker
                 else
                   after_worker_down worker
                 end
