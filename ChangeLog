@@ -1,3 +1,7 @@
+Mon Feb 28 11:57:40 2011  Shota Fukumori  <sorah@tubusu.net>
+
+	* test/testunit/test_parallel.rb: Temporally disable test on Windows.
+
 Mon Feb 28 07:28:35 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* lib/test/unit.rb(Test::Unit::Runner#after_worker_quit):

@@ -8,6 +8,10 @@ module TestParallel
 
   class TestParallelWorker < Test::Unit::TestCase
     def setup
+      if /mswin|mingw|cygwin/ =~ RUBY_PLATFORM
+        skip "parallel testing doesn't support Windows yet."
+      end
+
       i, @worker_in = IO.pipe
       @worker_out, o = IO.pipe
       @worker_pid = spawn(*@options[:ruby], PARALLEL_RB,
@@ -16,13 +20,15 @@ module TestParallel
     end
 
     def teardown
-      begin
-        @worker_in.puts "quit"
-        timeout(2) do
-          Process.waitpid(@worker_pid)
+      if @worker_pid && @worker_in
+        begin
+          @worker_in.puts "quit"
+          timeout(2) do
+            Process.waitpid(@worker_pid)
+          end
+        rescue IOError, Errno::EPIPE, Timeout::Error
+          Process.kill(:KILL, @worker_pid)
         end
-      rescue IOError, Errno::EPIPE, Timeout::Error
-        Process.kill(:KILL, @worker_pid)
       end
     end
 
@@ -122,6 +128,12 @@ module TestParallel
   end
 
   class TestParallel < Test::Unit::TestCase
+    def setup
+      if /mswin|mingw|cygwin/ =~ RUBY_PLATFORM
+        skip "parallel testing doesn't support Windows yet."
+      end
+    end
+
     def spawn_runner(*opt_args)
       @test_out, o = IO.pipe
       @test_pid = spawn(*@options[:ruby], TESTS+"/runner.rb",
