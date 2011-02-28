@@ -5060,7 +5060,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 		else c = NUM2INT(tmp);
 	    }
 	    else {
-		c = errc;
+		c = cflag ? last : errc;
 	    }
 	    if (c != errc) {
 		tlen = rb_enc_codelen(c, enc);

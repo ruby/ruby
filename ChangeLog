@@ -1,3 +1,9 @@
+Mon Feb 28 16:28:15 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (tr_trans): when the hash for multibyte repl is empty,
+	  tr is inverse mode, and a character doesn't much the table, the
+	  character should be replaced by last replacement. Bug #4449
+
 Mon Feb 28 16:38:56 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/ossl_ocsp.c: parenthesize macro arguments.
