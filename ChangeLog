@@ -1,3 +1,7 @@
+Mon Feb 28 16:38:56 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/ossl_ocsp.c: parenthesize macro arguments.
+
 Mon Feb 28 13:02:15 2011  Danial Pearce <github@tigris.id.au>
 
 	* lib/tempfile.rb: Fix example file paths in docs for tempfile.
