@@ -1,3 +1,7 @@
+Mon Feb 28 16:48:42 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/ossl_pkcs12.c: parenthesize macro arguments.
+
 Mon Feb 28 16:28:15 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (tr_trans): when the hash for multibyte repl is empty,
