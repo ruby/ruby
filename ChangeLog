@@ -1,3 +1,15 @@
+Mon Feb 28 22:48:56 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* win32/win32.c (rb_w32_spawn): use shell if a commandline contain
+	  double-quote character.
+	* win32/win32.c (is_internal_cmd): similar, use shell if a commandline
+	  contain caret character.
+
+	* test/ruby/test_system.rb (TestSystem#test_system_at): fix
+	  wrong test case. if system() invoke a command by using shell,
+	  system() never return nil. Also, "" quotation must not appear
+	  twice in a command line.
+
 Mon Feb 28 17:36:57 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/ossl_pkcs7.c: parenthesize macro arguments.

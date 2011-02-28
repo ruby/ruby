@@ -102,11 +102,10 @@ class TestSystem < Test::Unit::TestCase
         assert_equal("@@foo\n", `"echo" @@foo`, bug4396);
         assert_equal("@@foo\n", `"@@echo" @@foo`, bug4396);
         assert_equal("@@foo\n", `"@@echo @@foo"`, bug4396);
-        assert_equal('"@foo"\n', `"echo" "@foo"`, bug4396);
 
         # ^ + @ + built-in
-        assert_equal(nil, system('^@echo foo'), bug4396);
-        assert_equal(nil, system('"^@echo foo"'), bug4396);
+        assert_equal(false, system('^@echo foo'), bug4396);
+        assert_equal(false, system('"^@echo foo"'), bug4396);
         assert_equal("@foo\n", `echo ^@foo`);
 
         Dir.mktmpdir("ruby_script_tmp") {|tmpdir|
@@ -120,8 +119,8 @@ class TestSystem < Test::Unit::TestCase
           assert_match(/\Abar\nbaz\n?\z/, `@@findstr "ba" #{tmpfilename.gsub("/", "\\")}`, bug4393);
 
           # "" + @ + non built-in
-          assert_match(/\Abar\nbaz\n?\z/, `"@@findstr" "ba" #{tmpfilename.gsub("/", "\\")}`, bug4396);
-          assert_match(/\A@foo\n?\z/, `"@@findstr" "@foo" #{tmpfilename.gsub("/", "\\")}`, bug4396);
+          assert_match(/\Abar\nbaz\n?\z/, `"@@findstr ba" #{tmpfilename.gsub("/", "\\")}`, bug4396);
+          assert_match(/\A@foo\n?\z/, `"@@findstr @foo" #{tmpfilename.gsub("/", "\\")}`, bug4396);
         }
       end
   end

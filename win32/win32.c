@@ -851,6 +851,9 @@ is_internal_cmd(const char *cmd, int nt)
 {
     char cmdname[9], *b = cmdname, c;
 
+    if (strchr(cmd, '^'))
+	return 1;
+
     do {
 	if (!(c = *cmd++)) return 0;
     } while (isspace(c));
@@ -1136,6 +1139,12 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
 	if ((shell = getenv("RUBYSHELL")) && (redir = has_redirection(cmd))) {
 	    char *tmp = ALLOCV(v, strlen(shell) + strlen(cmd) + sizeof(" -c ") + 2);
 	    sprintf(tmp, "%s -c \"%s\"", shell, cmd);
+	    cmd = tmp;
+	}
+	else if ((shell = getenv("COMSPEC")) &&
+		 strchr(cmd, '"')) {
+	    char *tmp = ALLOCV(v, strlen(shell) + strlen(cmd) + sizeof(" /c "));
+	    sprintf(tmp, "%s /c %s", shell, cmd);
 	    cmd = tmp;
 	}
 	else if ((shell = getenv("COMSPEC")) &&
