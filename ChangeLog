@@ -1,3 +1,9 @@
+Mon Feb 28 12:28:13 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/date/date_core.c (datetime_s_now): localtime() and localtime_r()
+	  required time_t pointer as 1st parameter, and tv_sec member of struct
+	  timeval is long.
+
 Mon Feb 28 11:57:40 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* test/testunit/test_parallel.rb: Temporally disable test on Windows.

@@ -261,7 +261,7 @@ civil_to_jd(int y, int m, int d, double sg, long *rjd, int *ns)
     else
 	*ns = 1;
 
-    *rjd = jd;
+    *rjd = (long)jd;
 }
 
 static void
@@ -289,9 +289,9 @@ jd_to_civil(long jd, double sg, int *ry, int *rm, int *rdom)
 	y = c - 4715;
     }
 
-    *ry = y;
-    *rm = m;
-    *rdom = dom;
+    *ry = (int)y;
+    *rm = (int)m;
+    *rdom = (int)dom;
 }
 
 static void
@@ -2443,6 +2443,7 @@ datetime_s_now(int argc, VALUE *argv, VALUE klass)
     struct timespec ts;
 #else
     struct timeval tv;
+    time_t sec;
 #endif
     struct tm tm;
     long y;
@@ -2463,7 +2464,8 @@ datetime_s_now(int argc, VALUE *argv, VALUE klass)
 #else
     if (gettimeofday(&tv, NULL) == -1)
 	rb_sys_fail("gettimeofday");
-    localtime_r(&tv.tv_sec, &tm);
+    sec = tv.tv_sec;
+    localtime_r(&sec, &tm);
 #endif
 
     y = tm.tm_year + 1900;
