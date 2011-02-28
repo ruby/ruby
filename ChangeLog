@@ -1,3 +1,8 @@
+Mon Feb 28 23:52:13 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* test/testunit/test_rake_integration.rb (test_with_rake_runner):
+	  use assert_in_out_err for suppress messages.
+
 Mon Feb 28 22:48:56 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* win32/win32.c (rb_w32_spawn): use shell if a commandline contain
