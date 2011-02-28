@@ -1,3 +1,8 @@
+Mon Feb 28 13:02:15 2011  Danial Pearce <github@tigris.id.au>
+
+	* lib/tempfile.rb: Fix example file paths in docs for tempfile.
+	  https://github.com/ruby/ruby/pull/5
+
 Mon Feb 28 12:56:18 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* ext/openssl/ossl_cipher.c (ossl_cipher_init): typo fix.
