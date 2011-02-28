@@ -1,3 +1,8 @@
+Mon Feb 28 12:56:18 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* ext/openssl/ossl_cipher.c (ossl_cipher_init): typo fix.
+	  https://github.com/ruby/ruby/pull/8
+
 Mon Feb 28 12:28:13 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/date/date_core.c (datetime_s_now): localtime() and localtime_r()
