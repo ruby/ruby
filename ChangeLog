@@ -1,3 +1,8 @@
+Tue Mar  1 00:12:49 2011  Tajima Akio <artonx@yahoo.co.jp>
+
+	* include/ruby/win32.h: define WIN32 if neither _WIN64 nor WIN32 
+	  defined. it forces to use push/pop for pack(4) pragma.
+	
 Mon Feb 28 23:52:13 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* test/testunit/test_rake_integration.rb (test_with_rake_runner):

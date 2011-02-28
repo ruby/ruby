@@ -34,6 +34,9 @@ extern "C" {
 #if defined(__cplusplus) && defined(_MSC_VER)
 extern "C++" {			/* template without extern "C++" */
 #endif
+#if !defined(_WIN64) && !defined(WIN32)
+#define WIN32
+#endif
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #if defined(__cplusplus) && defined(_MSC_VER)
