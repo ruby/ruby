@@ -1,3 +1,9 @@
+Tue Mar  1 20:51:57 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_system.rb (TestSystem#test_system_at):
+	  remove tests for [bug#4396]. because we decided to reject this
+	  ticket.
+
 Tue Mar  1 19:46:19 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* test/date/{test_date.rb,test_date_attr.rb}: [ruby-dev:43280]
