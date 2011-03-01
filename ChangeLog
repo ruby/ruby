@@ -1,3 +1,7 @@
+Tue Mar  1 22:29:10 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/ossl_pkey.h: parenthesize macro arguments.
+
 Tue Mar  1 22:02:35 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* lib/test/unit/parallel.rb: Fix number.
