@@ -131,7 +131,7 @@ class Gem::SourceIndex
   # Returns an Array specifications for the latest released versions
   # of each gem in this index.
 
-  def latest_specs
+  def latest_specs(include_prerelease=false)
     result = Hash.new { |h,k| h[k] = [] }
     latest = {}
 
@@ -140,7 +140,7 @@ class Gem::SourceIndex
       curr_ver = spec.version
       prev_ver = latest.key?(name) ? latest[name].version : nil
 
-      next if curr_ver.prerelease?
+      next if !include_prerelease && curr_ver.prerelease?
       next unless prev_ver.nil? or curr_ver >= prev_ver or
                   latest[name].platform != Gem::Platform::RUBY
 
@@ -273,6 +273,7 @@ class Gem::SourceIndex
     when Gem::Dependency then
       only_platform = platform_only
       requirement = gem_pattern.requirement
+
       gem_pattern = if Regexp === gem_pattern.name then
                       gem_pattern.name
                     elsif gem_pattern.name.empty? then

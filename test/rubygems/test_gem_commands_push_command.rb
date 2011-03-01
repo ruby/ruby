@@ -7,16 +7,28 @@
 require 'rubygems/test_case'
 require 'rubygems/commands/push_command'
 
+module Gem
+  class << self; remove_method :latest_rubygems_version; end
+
+  def self.latest_rubygems_version
+    Gem::Version.new Gem::VERSION
+  end
+end
+
 class TestGemCommandsPushCommand < Gem::TestCase
 
   def setup
     super
 
-    @gems_dir = File.join @tempdir, 'gems'
-    @cache_dir = File.join @gemhome, 'cache'
+    @gems_dir  = File.join @tempdir, 'gems'
+    @cache_dir = Gem.cache_dir @gemhome
+
     FileUtils.mkdir @gems_dir
-    Gem.configuration.rubygems_api_key = "ed244fbf2b1a52e012da8616c512fa47f9aa5250"
-    @spec, @path = util_gem("freewill", "1.0.0")
+
+    Gem.configuration.rubygems_api_key =
+      "ed244fbf2b1a52e012da8616c512fa47f9aa5250"
+
+    @spec, @path = util_gem "freewill", "1.0.0"
 
     @fetcher = Gem::FakeFetcher.new
     Gem::RemoteFetcher.fetcher = @fetcher
@@ -83,5 +95,19 @@ class TestGemCommandsPushCommand < Gem::TestCase
     assert_match response, @ui.output
   end
 
-end
+  def test_sending_gem_key
+    @response = "Successfully registered gem: freewill (1.0.0)"
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = [@response, 200, "OK"]
+    File.open Gem.configuration.credentials_path, 'a' do |f|
+      f.write ':other: 701229f217cdf23b1344c7b4b54ca97'
+    end
+    Gem.configuration.load_api_keys
 
+    @cmd.handle_options %w(-k other)
+    @cmd.send_gem(@path)
+
+    assert_equal Gem.configuration.api_keys[:other],
+                 @fetcher.last_request["Authorization"]
+  end
+
+end

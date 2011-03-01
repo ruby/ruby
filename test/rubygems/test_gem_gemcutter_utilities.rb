@@ -6,6 +6,7 @@
 
 require 'rubygems/test_case'
 require 'rubygems'
+require 'rubygems/command'
 require 'rubygems/gemcutter_utilities'
 
 class TestGemGemcutterUtilities < Gem::TestCase
@@ -18,6 +19,35 @@ class TestGemGemcutterUtilities < Gem::TestCase
 
     @cmd = Gem::Command.new '', 'summary'
     @cmd.extend Gem::GemcutterUtilities
+  end
+
+  def test_api_key
+    keys = { :rubygems_api_key => 'KEY' }
+    FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
+
+    open Gem.configuration.credentials_path, 'w' do |f|
+      f.write keys.to_yaml
+    end
+
+    Gem.configuration.load_api_keys
+
+    assert_equal 'KEY', @cmd.api_key
+  end
+
+  def test_api_key_override
+    keys = { :rubygems_api_key => 'KEY', :other => 'OTHER' }
+    FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
+
+    open Gem.configuration.credentials_path, 'w' do |f|
+      f.write keys.to_yaml
+    end
+
+    Gem.configuration.load_api_keys
+
+    @cmd.add_key_option
+    @cmd.handle_options %w[--key other]
+
+    assert_equal 'OTHER', @cmd.api_key
   end
 
   def test_sign_in
@@ -102,6 +132,24 @@ class TestGemGemcutterUtilities < Gem::TestCase
 
     use_ui @sign_in_ui do
       @cmd.sign_in
+    end
+  end
+
+  def test_verify_api_key
+    keys = {:other => 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'}
+    FileUtils.mkdir_p File.dirname(Gem.configuration.credentials_path)
+    File.open Gem.configuration.credentials_path, 'w' do |f|
+      f.write keys.to_yaml
+    end
+    Gem.configuration.load_api_keys
+
+    assert_equal 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903',
+                 @cmd.verify_api_key(:other)
+  end
+
+  def test_verify_missing_api_key
+    assert_raises Gem::MockGemUi::TermError do
+      @cmd.verify_api_key :missing
     end
   end
 

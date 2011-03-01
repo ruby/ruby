@@ -156,6 +156,9 @@ class Gem::Installer
 
     Gem.ensure_gem_subdirectories @gem_home
 
+    # Completely remove any previous gem files
+    FileUtils.rm_rf(@gem_dir) if File.exist?(@gem_dir)
+
     FileUtils.mkdir_p @gem_dir
 
     extract_files
@@ -179,10 +182,9 @@ class Gem::Installer
 
     write_require_paths_file_if_needed if Gem::QUICKLOADER_SUCKAGE
 
-    # HACK remove?  Isn't this done in multiple places?
-    cached_gem = File.join @gem_home, "cache", @gem.split(/\//).pop
+    cached_gem = Gem.cache_gem(File.basename(@gem), @gem_home)
     unless File.exist? cached_gem then
-      FileUtils.cp @gem, File.join(@gem_home, "cache")
+      FileUtils.cp @gem, Gem.cache_dir(@gem_home)
     end
 
     say @spec.post_install_message unless @spec.post_install_message.nil?
@@ -235,7 +237,7 @@ class Gem::Installer
   # specifications directory.
 
   def write_spec
-    rubycode = @spec.to_ruby
+    rubycode = @spec.to_ruby_for_cache
 
     file_name = File.join @gem_home, 'specifications', @spec.spec_name
 
@@ -275,8 +277,10 @@ class Gem::Installer
     @spec.executables.each do |filename|
       filename.untaint
       bin_path = File.expand_path "#{@spec.bindir}/#{filename}", @gem_dir
-      mode = File.stat(bin_path).mode | 0111
-      File.chmod mode, bin_path
+      if File.exist?(bin_path)
+        mode = File.stat(bin_path).mode | 0111
+        File.chmod mode, bin_path
+      end
 
       if @wrappers then
         generate_bin_script filename, bindir
@@ -298,7 +302,7 @@ class Gem::Installer
 
     FileUtils.rm_f bin_script_path # prior install may have been --no-wrappers
 
-    File.open bin_script_path, 'w', 0755 do |file|
+    File.open bin_script_path, 'wb', 0755 do |file|
       file.print app_script_text(filename)
     end
 

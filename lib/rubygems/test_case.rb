@@ -24,20 +24,8 @@ require 'uri'
 require 'rubygems/package'
 require 'rubygems/test_utilities'
 require 'pp'
-require 'yaml'
 require 'zlib'
-
-begin
-  YAML::ENGINE.yamler = 'psych'
-rescue LoadError
-end if YAML.const_defined? :ENGINE
-
-begin
-  gem 'rdoc'
-rescue Gem::LoadError
-end
-
-require 'rdoc/rdoc'
+Gem.load_yaml
 
 require 'rubygems/mock_gem_ui'
 
@@ -99,6 +87,8 @@ class Gem::TestCase < MiniTest::Unit::TestCase
   undef_method :default_test if instance_methods.include? 'default_test' or
                                 instance_methods.include? :default_test
 
+  @@project_dir = Dir.pwd
+
   ##
   # #setup prepares a sandboxed location to install gems.  All installs are
   # directed to a temporary directory.  All install plugins are removed.
@@ -128,14 +118,14 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     @gemhome  = File.join @tempdir, 'gemhome'
     @userhome = File.join @tempdir, 'userhome'
 
-    Gem.ensure_gem_subdirectories @gemhome
-
     @orig_ruby = if ruby = ENV['RUBY'] then
                    Gem.class_eval { ruby, @ruby = @ruby, ruby }
                    ruby
                  end
 
     Gem.ensure_gem_subdirectories @gemhome
+
+    Dir.chdir @tempdir
 
     @orig_ENV_HOME = ENV['HOME']
     ENV['HOME'] = @userhome
@@ -146,6 +136,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
 
     Gem.use_paths(@gemhome)
     Gem.loaded_specs.clear
+    Gem.unresolved_deps.clear
 
     Gem.configuration.verbose = true
     Gem.configuration.update_sources = true
@@ -154,6 +145,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     @uri = URI.parse @gem_repo
     Gem.sources.replace [@gem_repo]
 
+    Gem.searcher = nil
     Gem::SpecFetcher.fetcher = nil
 
     @orig_BASERUBY = Gem::ConfigMap[:BASERUBY]
@@ -169,17 +161,14 @@ class Gem::TestCase < MiniTest::Unit::TestCase
 
     @marshal_version = "#{Marshal::MAJOR_VERSION}.#{Marshal::MINOR_VERSION}"
 
-    @private_key = File.expand_path('../../../test/rubygems/private_key.pem',
-                                    __FILE__)
-    @public_cert = File.expand_path('../../../test/rubygems/public_cert.pem',
-                                    __FILE__)
-
+    # TODO: move to installer test cases
     Gem.post_build_hooks.clear
     Gem.post_install_hooks.clear
     Gem.post_uninstall_hooks.clear
     Gem.pre_install_hooks.clear
     Gem.pre_uninstall_hooks.clear
 
+    # TODO: move to installer test cases
     Gem.post_build do |installer|
       @post_build_hook_arg = installer
       true
@@ -218,6 +207,8 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     if defined? Gem::RemoteFetcher then
       Gem::RemoteFetcher.fetcher = nil
     end
+
+    Dir.chdir @@project_dir
 
     FileUtils.rm_rf @tempdir unless ENV['KEEP_FILES']
 
@@ -319,14 +310,14 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     require 'rubygems/specification'
 
     spec = Gem::Specification.new do |s|
-      s.platform = Gem::Platform::RUBY
-      s.name = name
-      s.version = version
-      s.author = 'A User'
-      s.email = 'example@example.com'
-      s.homepage = 'http://example.com'
-      s.has_rdoc = true
-      s.summary = "this is a summary"
+      s.platform    = Gem::Platform::RUBY
+      s.name        = name
+      s.version     = version
+      s.author      = 'A User'
+      s.email       = 'example@example.com'
+      s.homepage    = 'http://example.com'
+      s.has_rdoc    = true
+      s.summary     = "this is a summary"
       s.description = "This is a test description"
 
       yield(s) if block_given?
@@ -338,6 +329,30 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     end
 
     spec.loaded_from = written_path
+
+    Gem.source_index.add_spec spec
+
+    return spec
+  end
+
+  def quick_spec name, version = '2'
+    require 'rubygems/specification'
+
+    spec = Gem::Specification.new do |s|
+      s.platform    = Gem::Platform::RUBY
+      s.name        = name
+      s.version     = version
+      s.author      = 'A User'
+      s.email       = 'example@example.com'
+      s.homepage    = 'http://example.com'
+      s.has_rdoc    = true
+      s.summary     = "this is a summary"
+      s.description = "This is a test description"
+
+      yield(s) if block_given?
+    end
+
+    spec.loaded_from = @gemhome
 
     Gem.source_index.add_spec spec
 
@@ -364,7 +379,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
       end
 
       FileUtils.mv spec.file_name,
-                   File.join(@gemhome, 'cache', "#{spec.original_name}.gem")
+                   Gem.cache_gem("#{spec.original_name}.gem")
     end
   end
 
@@ -372,9 +387,58 @@ class Gem::TestCase < MiniTest::Unit::TestCase
   # Removes all installed gems from +@gemhome+.
 
   def util_clear_gems
-    FileUtils.rm_r File.join(@gemhome, 'gems')
-    FileUtils.rm_r File.join(@gemhome, 'specifications')
+    FileUtils.rm_rf File.join(@gemhome, 'gems')
+    FileUtils.rm_rf File.join(@gemhome, 'specifications')
     Gem.source_index.refresh!
+  end
+
+  ##
+  # Install the provided specs
+
+  def install_specs(*specs)
+    specs.each do |spec|
+      # TODO: inverted responsibility
+      Gem.source_index.add_spec spec
+    end
+    Gem.searcher = nil
+  end
+
+  ##
+  # Create a new spec (or gem if passed an array of files) and set it
+  # up properly. Use this instead of util_spec and util_gem.
+
+  def new_spec name, version, deps = nil, *files
+    # TODO: unfactor and deprecate util_gem and util_spec
+    spec, = unless files.empty? then
+              util_gem name, version do |s|
+                Array(deps).each do |n,v|
+                  s.add_dependency n, v
+                end
+                s.files.push(*files)
+              end
+            else
+              util_spec name, version, deps
+            end
+    spec.loaded_from = File.join @gemhome, 'specifications', spec.spec_name
+    spec.loaded = false
+    spec
+  end
+
+  ##
+  # Creates a spec with +name+, +version+ and +deps+.
+
+  def util_spec(name, version, deps = nil, &block)
+    raise "deps or block, not both" if deps and block
+
+    if deps then
+      block = proc do |s|
+        deps.each do |n, req|
+          s.add_dependency n, (req || '>= 0')
+        end
+      end
+    end
+
+    quick_spec(name, version, &block)
   end
 
   ##
@@ -384,6 +448,8 @@ class Gem::TestCase < MiniTest::Unit::TestCase
   # location are returned.
 
   def util_gem(name, version, deps = nil, &block)
+    raise "deps or block, not both" if deps and block
+
     if deps then
       block = proc do |s|
         deps.each do |n, req|
@@ -397,8 +463,9 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     util_build_gem spec
 
     cache_file = File.join @tempdir, 'gems', "#{spec.original_name}.gem"
-    FileUtils.mv File.join(@gemhome, 'cache', "#{spec.original_name}.gem"),
-                 cache_file
+    gems_dir = File.dirname cache_file
+    FileUtils.mkdir_p File.dirname cache_file
+    FileUtils.mv Gem.cache_gem("#{spec.original_name}.gem"), cache_file
     FileUtils.rm File.join(@gemhome, 'specifications', spec.spec_name)
 
     spec.loaded_from = nil
@@ -436,6 +503,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
   # Additional +prerelease+ gems may also be created:
   #
   # +@a2_pre+:: gem a version 2.a
+  # TODO: nuke this and fix tests. this should speed up a lot
 
   def util_make_gems(prerelease = false)
     @a1 = quick_gem 'a', '1' do |s|
@@ -459,11 +527,12 @@ Also, a list:
       s.require_paths = %w[lib]
     end
 
-    @a2 = quick_gem('a', '2', &init)
-    @a3a = quick_gem('a', '3.a', &init)
+    @a2      = quick_gem('a', '2',      &init)
+    @a3a     = quick_gem('a', '3.a',    &init)
     @a_evil9 = quick_gem('a_evil', '9', &init)
-    @b2 = quick_gem('b', '2', &init)
-    @c1_2   = quick_gem('c', '1.2',   &init)
+    @b2      = quick_gem('b', '2',      &init)
+    @c1_2    = quick_gem('c', '1.2',    &init)
+
     @pl1     = quick_gem 'pl', '1' do |s| # l for legacy
       s.files = %w[lib/code.rb]
       s.require_paths = %w[lib]
@@ -477,12 +546,12 @@ Also, a list:
       util_build_gem @a2_pre
     end
 
-    write_file File.join(*%W[gems #{@a1.original_name} lib code.rb])
-    write_file File.join(*%W[gems #{@a2.original_name} lib code.rb])
-    write_file File.join(*%W[gems #{@a3a.original_name} lib code.rb])
-    write_file File.join(*%W[gems #{@b2.original_name} lib code.rb])
+    write_file File.join(*%W[gems #{@a1.original_name}   lib code.rb])
+    write_file File.join(*%W[gems #{@a2.original_name}   lib code.rb])
+    write_file File.join(*%W[gems #{@a3a.original_name}  lib code.rb])
+    write_file File.join(*%W[gems #{@b2.original_name}   lib code.rb])
     write_file File.join(*%W[gems #{@c1_2.original_name} lib code.rb])
-    write_file File.join(*%W[gems #{@pl1.original_name} lib code.rb])
+    write_file File.join(*%W[gems #{@pl1.original_name}  lib code.rb])
 
     [@a1, @a2, @a3a, @a_evil9, @b2, @c1_2, @pl1].each do |spec|
       util_build_gem spec
@@ -703,7 +772,7 @@ Also, a list:
 
   @@ruby = rubybin
   env_rake = ENV['rake']
-  ruby19_rake = File.expand_path("../../../bin/rake", __FILE__)
+  ruby19_rake = File.expand_path("bin/rake", @@project_dir)
   @@rake = if env_rake then
              ENV["rake"]
            elsif File.exist? ruby19_rake then

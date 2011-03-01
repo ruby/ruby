@@ -130,6 +130,11 @@ class Gem::ConfigFile
   attr_reader :rubygems_api_key
 
   ##
+  # Hash of RubyGems.org and alternate API keys
+
+  attr_reader :api_keys
+
+  ##
   # Create the config file object.  +args+ is the list of arguments
   # from the command line.
   #
@@ -192,7 +197,7 @@ class Gem::ConfigFile
     @update_sources   = @hash[:update_sources]   if @hash.key? :update_sources
     @verbose          = @hash[:verbose]          if @hash.key? :verbose
 
-    load_rubygems_api_key
+    load_api_keys
 
     Gem.sources = @hash[:sources] if @hash.key? :sources
     handle_arguments arg_list
@@ -205,10 +210,12 @@ class Gem::ConfigFile
     File.join(Gem.user_home, '.gem', 'credentials')
   end
 
-  def load_rubygems_api_key
-    api_key_hash = File.exists?(credentials_path) ? load_file(credentials_path) : @hash
-
-    @rubygems_api_key = api_key_hash[:rubygems_api_key] if api_key_hash.key? :rubygems_api_key
+  def load_api_keys
+    @api_keys = File.exists?(credentials_path) ? load_file(credentials_path) : @hash
+    if @api_keys.key? :rubygems_api_key then
+      @rubygems_api_key = @api_keys[:rubygems_api_key]
+      @api_keys[:rubygems] = @api_keys.delete :rubygems_api_key unless @api_keys.key? :rubygems
+    end
   end
 
   def rubygems_api_key=(api_key)

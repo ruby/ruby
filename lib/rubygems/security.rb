@@ -12,6 +12,7 @@
 
 require 'rubygems/exceptions'
 require 'rubygems/gem_openssl'
+require 'fileutils'
 
 #
 # = Signed Gems README

@@ -64,12 +64,15 @@ class Gem::InstallerTestCase < Gem::TestCase
     super
 
     @spec = quick_gem 'a'
+    util_make_exec @spec
 
     @gem = File.join @tempdir, @spec.file_name
 
     @installer = util_installer @spec, @gem, @gemhome
 
     @user_spec = quick_gem 'b'
+    util_make_exec @user_spec
+
     @user_gem = File.join @tempdir, @user_spec.file_name
 
     @user_installer = util_installer @user_spec, @user_gem, Gem.user_dir
@@ -77,31 +80,38 @@ class Gem::InstallerTestCase < Gem::TestCase
                                         @user_spec.full_name)
   end
 
-  def util_gem_bindir(version = '2')
-    File.join util_gem_dir(version), "bin"
+  def util_gem_bindir spec = @spec
+    File.join util_gem_dir(spec), "bin"
   end
 
-  def util_gem_dir(version = '2')
-    File.join @gemhome, "gems", "a-#{version}" # HACK
+  def util_gem_dir spec = @spec
+    File.join @gemhome, "gems", spec.full_name
   end
 
   def util_inst_bindir
     File.join @gemhome, "bin"
   end
 
-  def util_make_exec(version = '2', shebang = "#!/usr/bin/ruby")
-    @spec.executables = ["my_exec"]
+  def util_make_exec(spec = @spec, shebang = "#!/usr/bin/ruby")
+    spec.executables = %w[executable]
+    spec.files << 'bin/executable'
 
-    FileUtils.mkdir_p util_gem_bindir(version)
-    exec_path = File.join util_gem_bindir(version), "my_exec"
-    File.open exec_path, 'w' do |f|
-      f.puts shebang
+    bindir = util_gem_bindir spec
+    FileUtils.mkdir_p bindir
+    exec_path = File.join bindir, 'executable'
+    open exec_path, 'w' do |io|
+      io.puts shebang
+    end
+
+    temp_bin = File.join(@tempdir, 'bin')
+    FileUtils.mkdir_p temp_bin
+    open File.join(temp_bin, 'executable'), 'w' do |io|
+      io.puts shebang
     end
   end
 
   def util_setup_gem(ui = @ui) # HACK fix use_ui to make this automatic
-    @spec.files = File.join('lib', 'code.rb')
-    @spec.executables << 'executable'
+    @spec.files << File.join('lib', 'code.rb')
     @spec.extensions << File.join('ext', 'a', 'mkrf_conf.rb')
 
     Dir.chdir @tempdir do
@@ -127,9 +137,7 @@ class Gem::InstallerTestCase < Gem::TestCase
 
   def util_installer(spec, gem_path, gem_home)
     util_build_gem spec
-    FileUtils.mv File.join(@gemhome, 'cache', spec.file_name),
-                 @tempdir
-
+    FileUtils.mv Gem.cache_gem(spec.file_name), @tempdir
     installer = Gem::Installer.new gem_path
     installer.gem_dir = util_gem_dir
     installer.gem_home = gem_home

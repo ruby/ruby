@@ -55,6 +55,9 @@ class TestGemPackageTarOutput < Gem::Package::TarTestCase
 
   if defined? OpenSSL then
     def test_self_open_signed
+      @private_key = File.expand_path('test/rubygems/private_key.pem', @@project_dir)
+      @public_cert = File.expand_path('test/rubygems/public_cert.pem', @@project_dir)
+
       signer = Gem::Security::Signer.new @private_key, [@public_cert]
 
       open @file, 'wb' do |tar_io|

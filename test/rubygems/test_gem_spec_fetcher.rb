@@ -16,7 +16,7 @@ class TestGemSpecFetcher < Gem::TestCase
 
     util_setup_fake_fetcher
 
-    @a_pre = quick_gem 'a', '1.a'
+    @a_pre = quick_spec 'a', '1.a'
     @source_index.add_spec @pl1
     @source_index.add_spec @a_pre
 
@@ -412,5 +412,10 @@ class TestGemSpecFetcher < Gem::TestCase
     assert_equal @latest_specs, latest_specs
   end
 
+  def test_cache_dir_escapes_windows_paths
+    uri = URI.parse("file:///C:/WINDOWS/Temp/gem_repo")
+    cache_dir = @sf.cache_dir(uri)
+    assert cache_dir !~ /:/, "#{cache_dir} should not contain a :"
+  end
 end
 

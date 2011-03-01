@@ -22,14 +22,11 @@ class TestGemCommandsOutdatedCommand < Gem::TestCase
   def test_execute
     quick_gem 'foo', '0.1'
     quick_gem 'foo', '0.2'
-    remote_10 = quick_gem 'foo', '1.0'
-    remote_20 = quick_gem 'foo', '2.0'
+    remote_10 = quick_spec 'foo', '1.0'
+    remote_20 = quick_spec 'foo', '2.0'
 
     remote_spec_file = File.join @gemhome, 'specifications', remote_10.spec_name
-    FileUtils.rm remote_spec_file
-
     remote_spec_file = File.join @gemhome, 'specifications', remote_20.spec_name
-    FileUtils.rm remote_spec_file
 
     @fetcher = Gem::FakeFetcher.new
     Gem::RemoteFetcher.fetcher = @fetcher

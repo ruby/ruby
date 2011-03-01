@@ -13,7 +13,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
   def setup
     super
 
-    @gem = quick_gem 'some_gem' do |s|
+    @gem = quick_spec 'some_gem' do |s|
       s.rubyforge_project = 'example'
     end
 

@@ -56,6 +56,7 @@ class Gem::Uninstaller
     @force_all = options[:all]
     @force_ignore = options[:ignore]
     @bin_dir = options[:bin_dir]
+    @format_executable = options[:format_executable]
 
     # only add user directory if install_dir is not set
     @user_install = false
@@ -107,6 +108,13 @@ class Gem::Uninstaller
 
   def uninstall_gem(spec, specs)
     @spec = spec
+
+    unless dependencies_ok? spec
+      unless ask_if_ok(spec)
+        raise Gem::DependencyRemovalException,
+          "Uninstallation aborted due to dependent gem(s)"
+      end
+    end
 
     Gem.pre_uninstall_hooks.each do |hook|
       hook.call self
@@ -161,8 +169,8 @@ class Gem::Uninstaller
 
       spec.executables.each do |exe_name|
         say "Removing #{exe_name}"
-        FileUtils.rm_f File.join(bindir, exe_name)
-        FileUtils.rm_f File.join(bindir, "#{exe_name}.bat")
+        FileUtils.rm_f File.join(bindir, formatted_program_filename(exe_name))
+        FileUtils.rm_f File.join(bindir, "#{formatted_program_filename(exe_name)}.bat")
       end
     end
   end
@@ -184,11 +192,6 @@ class Gem::Uninstaller
   # uninstalled a gem, it is removed from that list.
 
   def remove(spec, list)
-    unless dependencies_ok? spec then
-      raise Gem::DependencyRemovalException,
-            "Uninstallation aborted due to dependent gem(s)"
-    end
-
     unless path_ok?(@gem_home, spec) or
            (@user_install and path_ok?(Gem.user_dir, spec)) then
       e = Gem::GemNotInHomeException.new \
@@ -215,11 +218,10 @@ class Gem::Uninstaller
 
     FileUtils.rm_rf gemspec
 
-    cache_dir = File.join spec.installation_path, 'cache'
-    gem = File.join cache_dir, spec.file_name
+    gem = Gem.cache_gem(spec.file_name, spec.installation_path)
 
     unless File.exist? gem then
-      gem = File.join cache_dir, "#{original_platform_name}.gem"
+      gem = Gem.cache_gem("#{original_platform_name}.gem", spec.installation_path)
     end
 
     FileUtils.rm_rf gem
@@ -246,7 +248,7 @@ class Gem::Uninstaller
 
     deplist = Gem::DependencyList.from_source_index @source_index
     deplist.add(*@user_index.gems.values) if @user_install
-    deplist.ok_to_remove?(spec.full_name) || ask_if_ok(spec)
+    deplist.ok_to_remove?(spec.full_name)
   end
 
   def ask_if_ok(spec)
@@ -262,6 +264,15 @@ class Gem::Uninstaller
     msg << 'Continue with Uninstall?'
     return ask_yes_no(msg.join("\n"), true)
   end
+
+  def formatted_program_filename(filename)
+    if @format_executable then
+      Gem::Installer.exec_format % File.basename(filename)
+    else
+      filename
+    end
+  end
+
 
 end
 

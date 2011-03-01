@@ -78,6 +78,23 @@ class Gem::RemoteFetcher
   end
 
   ##
+  # Given a name and requirement, downloads this gem into cache and returns the
+  # filename. Returns nil if the gem cannot be located.
+  #--
+  # Should probably be integrated with #download below, but that will be a
+  # larger, more emcompassing effort. -erikh
+
+  def download_to_cache dependency
+    found = Gem::SpecFetcher.fetcher.fetch dependency
+
+    return if found.empty?
+
+    spec, source_uri = found.first
+
+    download spec, source_uri
+  end
+
+  ##
   # Moves the gem +spec+ from +source_uri+ to the cache dir unless it is
   # already there.  If the source_uri is local the gem cache dir copy is
   # always replaced.
@@ -86,9 +103,9 @@ class Gem::RemoteFetcher
     Gem.ensure_gem_subdirectories(install_dir) rescue nil
 
     if File.writable?(install_dir)
-      cache_dir = File.join install_dir, 'cache'
+      cache_dir = Gem.cache_dir(install_dir)
     else
-      cache_dir = File.join(Gem.user_dir, 'cache')
+      cache_dir = Gem.cache_dir(Gem.user_dir)
     end
 
     gem_file_name = spec.file_name
@@ -140,7 +157,7 @@ class Gem::RemoteFetcher
         path = source_uri.path
         path = File.dirname(path) if File.extname(path) == '.gem'
 
-        remote_gem_path = File.join(path, 'gems', gem_file_name)
+        remote_gem_path = correct_for_windows_path(File.join(path, 'gems', gem_file_name))
 
         FileUtils.cp(remote_gem_path, local_gem_path)
       rescue Errno::EACCES
@@ -276,6 +293,14 @@ class Gem::RemoteFetcher
     raise FetchError.new(e.message, uri)
   end
 
+  def correct_for_windows_path(path)
+    if path[0].chr == '/' && path[1].chr =~ /[a-z]/i && path[2].chr == ':'
+      path = path[1..-1]
+    else
+      path
+    end
+  end
+
   ##
   # Read the data from the (source based) URI, but if it is a file:// URI,
   # read from the filesystem instead.
@@ -293,13 +318,7 @@ class Gem::RemoteFetcher
     end
 
     if uri.scheme == 'file'
-      path = uri.path
-
-      # Deal with leading slash on Windows paths
-      if path[0].chr == '/' && path[1].chr =~ /[a-zA-Z]/ && path[2].chr == ':'
-         path = path[1..-1]
-      end
-
+      path = correct_for_windows_path(uri.path)
       return Gem.read_binary(path)
     end
 

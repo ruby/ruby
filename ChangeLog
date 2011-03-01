@@ -1,3 +1,8 @@
+Tue Mar  1 18:40:38 2011  Ryan Davis  <ryan@YPCMC09457>
+
+	* lib/rubygems*: Import rubygems 1.6.0 (released version @ 58d8a0b9)
+	* test/rubygems: Ditto
+
 Tue Mar  1 16:22:22 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c: revert r30987 because it causes some failures in

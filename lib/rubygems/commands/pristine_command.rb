@@ -79,11 +79,13 @@ revert the gem.
     say "Restoring gem(s) to pristine condition..."
 
     specs.each do |spec|
-      gem = Dir[File.join(Gem.dir, 'cache', spec.file_name)].first
+      gem = spec.cache_gem
 
       if gem.nil? then
-        alert_error "Cached gem for #{spec.full_name} not found, use `gem install` to restore"
-        next
+        say "Cached gem for #{spec.full_name} not found, attempting to fetch..."
+        dep = Gem::Dependency.new spec.name, spec.version
+        Gem::RemoteFetcher.fetcher.download_to_cache dep
+        gem = spec.cache_gem
       end
 
       # TODO use installer options

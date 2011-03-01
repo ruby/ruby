@@ -76,7 +76,8 @@ class Gem::SpecFetcher
   # Returns the local directory to write +uri+ to.
 
   def cache_dir(uri)
-    File.join @dir, "#{uri.host}%#{uri.port}", File.dirname(uri.path)
+    escaped_path = uri.path.sub(%r[^/([a-z]):/]i, '/\\1-/') # Correct for windows paths
+    File.join @dir, "#{uri.host}%#{uri.port}", File.dirname(escaped_path)
   end
 
   ##
@@ -100,6 +101,7 @@ class Gem::SpecFetcher
   end
 
   def fetch_spec(spec, source_uri)
+    source_uri = URI.parse source_uri if String === source_uri
     spec = spec - [nil, 'ruby', '']
     spec_file_name = "#{spec.join '-'}.gemspec"
 
@@ -179,7 +181,7 @@ class Gem::SpecFetcher
   def suggest_gems_from_name gem_name
     gem_name        = gem_name.downcase
     max             = gem_name.size / 2
-    specs           = list.values.flatten(1) # flatten(1) is 1.8.7 and up
+    specs           = list.values.flatten 1
 
     matches = specs.map { |name, version, platform|
       next unless Gem::Platform.match platform

@@ -33,11 +33,6 @@ class Gem::Dependency
   attr_writer :prerelease
 
   ##
-  # Dependency type.
-
-  attr_reader :type
-
-  ##
   # Constructs a dependency with +name+ and +requirements+. The last
   # argument can optionally be the dependency type, which defaults to
   # <tt>:runtime</tt>.
@@ -72,7 +67,7 @@ class Gem::Dependency
 
   def inspect # :nodoc:
     "<%s type=%p name=%p requirements=%p>" %
-      [self.class, @type, @name, requirement.to_s]
+      [self.class, self.type, self.name, requirement.to_s]
   end
 
   ##
@@ -132,7 +127,18 @@ class Gem::Dependency
   end
 
   def to_s # :nodoc:
-    "#{name} (#{requirement}, #{type})"
+    if type != :runtime then
+      "#{name} (#{requirement}, #{type})"
+    else
+      "#{name} (#{requirement})"
+    end
+  end
+
+  ##
+  # Dependency type.
+
+  def type
+    @type ||= :runtime
   end
 
   def == other # :nodoc:
@@ -146,7 +152,7 @@ class Gem::Dependency
   # Dependencies are ordered by name.
 
   def <=> other
-    @name <=> other.name
+    self.name <=> other.name
   end
 
   ##
@@ -185,6 +191,25 @@ class Gem::Dependency
     return true  if requirement.none?
 
     requirement.satisfied_by?(spec.version)
+  end
+
+  ##
+  # Merges the requirements of +other+ into this dependency
+
+  def merge other
+    unless name == other.name then
+      raise ArgumentError,
+            "#{self} and #{other} have different names"
+    end
+
+    default = Gem::Requirement.default
+    self_req  = self.requirement
+    other_req = other.requirement
+
+    return self.class.new name, self_req  if other_req == default
+    return self.class.new name, other_req if self_req  == default
+
+    self.class.new name, self_req.as_list.concat(other_req.as_list)
   end
 
 end

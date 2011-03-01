@@ -33,13 +33,7 @@ class Gem::Commands::SetupCommand < Gem::Command
     end
 
     add_option '--[no-]vendor',
-               'Install into vendorlibdir not sitelibdir',
-               '(Requires Ruby 1.8.7)' do |vendor, options|
-      if vendor and Gem.ruby_version < Gem::Version.new('1.8.7') then
-        raise OptionParser::InvalidOption,
-              "requires ruby 1.8.7+ (you have #{Gem.ruby_version})"
-      end
-
+               'Install into vendorlibdir not sitelibdir' do |vendor, options|
       options[:site_or_vendor] = vendor ? :vendorlibdir : :sitelibdir
     end
 
@@ -61,7 +55,7 @@ class Gem::Commands::SetupCommand < Gem::Command
   end
 
   def check_ruby_version
-    required_version = Gem::Requirement.new '>= 1.8.6'
+    required_version = Gem::Requirement.new '>= 1.8.7'
 
     unless required_version.satisfied_by? Gem.ruby_version then
       alert_error "Expected Ruby version #{required_version}, is #{Gem.ruby_version}"
@@ -341,7 +335,6 @@ abort "#{deprecation_message}"
 
     require 'rdoc/rdoc'
 
-    args << '--quiet'
     args << '--main' << 'README.rdoc'
     args << '.'
     args << 'README.rdoc' << 'UPGRADING.rdoc'

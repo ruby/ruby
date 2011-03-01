@@ -55,6 +55,11 @@ class Gem::Commands::UninstallCommand < Gem::Command
       options[:user_install] = value
     end
 
+    add_option('--[no-]format-executable',
+               'Assume executable names match Ruby\'s prefix and suffix.') do |value, options|
+      options[:format_executable] = value
+    end
+
     add_version_option
     add_platform_option
   end

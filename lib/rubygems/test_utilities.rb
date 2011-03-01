@@ -104,7 +104,7 @@ class Gem::FakeFetcher
 
   def download spec, source_uri, install_dir = Gem.dir
     name = spec.file_name
-    path = File.join(install_dir, 'cache', name)
+    path = Gem.cache_gem(name, install_dir)
 
     Gem.ensure_gem_subdirectories install_dir
 
@@ -117,6 +117,16 @@ class Gem::FakeFetcher
     end
 
     path
+  end
+
+  def download_to_cache dependency
+    found = Gem::SpecFetcher.fetcher.fetch dependency
+
+    return if found.empty?
+
+    spec, source_uri = found.first
+
+    download spec, source_uri
   end
 
 end
