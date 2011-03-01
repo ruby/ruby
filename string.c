@@ -4014,6 +4014,7 @@ str_byte_substr(VALUE str, long beg, long len)
 	}
 	else {
 	    str2 = rb_str_new5(str, p, len);
+	    rb_enc_cr_str_copy_for_substr(str2, str);
 	    OBJ_INFECT(str2, str);
 	}
 
@@ -4030,14 +4031,13 @@ str_byte_aref(VALUE str, VALUE indx)
 
       num_index:
 	str = str_byte_substr(str, idx, 1);
-	if (!NIL_P(str) && RSTRING_LEN(str) == 0) return Qnil;
+	if (NIL_P(str) || RSTRING_LEN(str) == 0) return Qnil;
 	return str;
 
       default:
 	/* check if indx is Range */
 	{
 	    long beg, len = RSTRING_LEN(str);
-	    VALUE tmp;
 
 	    switch (rb_range_beg_len(indx, &beg, &len, len, 0)) {
 	      case Qfalse:
@@ -4045,8 +4045,7 @@ str_byte_aref(VALUE str, VALUE indx)
 	      case Qnil:
 		return Qnil;
 	      default:
-		tmp = str_byte_substr(str, beg, len);
-		return tmp;
+		return str_byte_substr(str, beg, len);
 	    }
 	}
 	idx = NUM2LONG(indx);
@@ -4069,7 +4068,7 @@ str_byte_aref(VALUE str, VALUE indx)
  *  an offset is negative, it is counted from the end of <i>str</i>. Returns
  *  <code>nil</code> if the initial offset falls outside the string, the length
  *  is negative, or the beginning of the range is greater than the end.
- *  The encoding of th3 resulted string is always ASCII-8BIT.
+ *  The encoding of the resulted string keeps original encoding.
  *
  *     "hello".byteslice(1)     #=> "e"
  *     "hello".byteslice(-1)    #=> "o"

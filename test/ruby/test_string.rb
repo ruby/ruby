@@ -1945,32 +1945,34 @@ class TestString < Test::Unit::TestCase
     assert_equal(S("hello "), b)
   end
 
-  def b(str)
-    str.force_encoding(Encoding::ASCII_8BIT)
+  def u(str)
+    str.force_encoding(Encoding::UTF_8)
   end
 
   def test_byteslice
-    assert_equal(b("h"), "hello".byteslice(0))
+    assert_equal("h", "hello".byteslice(0))
     assert_equal(nil, "hello".byteslice(5))
-    assert_equal(b("o"), "hello".byteslice(-1))
+    assert_equal("o", "hello".byteslice(-1))
     assert_equal(nil, "hello".byteslice(-6))
 
-    assert_equal(b(""), "hello".byteslice(0, 0))
-    assert_equal(b("hello"), "hello".byteslice(0, 6))
-    assert_equal(b("hello"), "hello".byteslice(0, 6))
-    assert_equal(b(""), "hello".byteslice(5, 1))
-    assert_equal(b("o"), "hello".byteslice(-1, 6))
+    assert_equal("", "hello".byteslice(0, 0))
+    assert_equal("hello", "hello".byteslice(0, 6))
+    assert_equal("hello", "hello".byteslice(0, 6))
+    assert_equal("", "hello".byteslice(5, 1))
+    assert_equal("o", "hello".byteslice(-1, 6))
     assert_equal(nil, "hello".byteslice(-6, 1))
 
-    assert_equal(b("h"), "hello".byteslice(0..0))
-    assert_equal(b(""), "hello".byteslice(5..0))
-    assert_equal(b("o"), "hello".byteslice(4..5))
+    assert_equal("h", "hello".byteslice(0..0))
+    assert_equal("", "hello".byteslice(5..0))
+    assert_equal("o", "hello".byteslice(4..5))
     assert_equal(nil, "hello".byteslice(6..0))
-    assert_equal(b(""), "hello".byteslice(-1..0))
-    assert_equal(b("llo"), "hello".byteslice(-3..5))
+    assert_equal("", "hello".byteslice(-1..0))
+    assert_equal("llo", "hello".byteslice(-3..5))
 
-    assert_equal(b("\x81"), "\u3042".byteslice(1))
-    assert_equal(b("\x81\x82"), "\u3042".byteslice(1, 2))
-    assert_equal(b("\x81\x82"), "\u3042".byteslice(1..2))
+    assert_equal(u("\x81"), "\u3042".byteslice(1))
+    assert_equal(u("\x81\x82"), "\u3042".byteslice(1, 2))
+    assert_equal(u("\x81\x82"), "\u3042".byteslice(1..2))
+
+    assert_equal(u("\x82")+("\u3042"*9), ("\u3042"*10).byteslice(2, 28))
   end
 end
