@@ -13,7 +13,7 @@ module Test
       undef run
 
       def inclement_io orig
-        *rest, io = 500.times.inject([orig.dup]){|ios, | ios << ios.last.dup }
+        *rest, io = 32.times.inject([orig.dup]){|ios, | ios << ios.last.dup }
         rest.each(&:close)
         io
       end

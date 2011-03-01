@@ -1,3 +1,7 @@
+Tue Mar  1 22:02:35 2011  Shota Fukumori  <sorah@tubusu.net>
+
+	* lib/test/unit/parallel.rb: Fix number.
+
 Tue Mar  1 21:48:22 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* lib/test/unit/parallel.rb: For Windows.
