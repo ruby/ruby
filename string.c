@@ -4064,11 +4064,12 @@ str_byte_aref(VALUE str, VALUE indx)
  *  Byte Reference---If passed a single <code>Fixnum</code>, returns a
  *  substring of one byte at that position. If passed two <code>Fixnum</code>
  *  objects, returns a substring starting at the offset given by the first, and
- *  a length given by the second. If given a range, a substring containing
+ *  a length given by the second. If given a <code>Range</code>, a substring containing
  *  bytes at offsets given by the range is returned. In all three cases, if
  *  an offset is negative, it is counted from the end of <i>str</i>. Returns
  *  <code>nil</code> if the initial offset falls outside the string, the length
  *  is negative, or the beginning of the range is greater than the end.
+ *  The encoding of th3 resulted string is always ASCII-8BIT.
  *
  *     "hello".byteslice(1)     #=> "e"
  *     "hello".byteslice(-1)    #=> "o"
