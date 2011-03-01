@@ -1,3 +1,7 @@
+Tue Mar  1 19:46:19 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* test/date/{test_date.rb,test_date_attr.rb}: [ruby-dev:43280]
+
 Tue Mar  1 18:40:38 2011  Ryan Davis  <ryan@YPCMC09457>
 
 	* lib/rubygems*: Import rubygems 1.6.0 (released version @ 58d8a0b9)
