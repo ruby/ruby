@@ -1,3 +1,12 @@
+Tue Mar  1 21:48:22 2011  Shota Fukumori  <sorah@tubusu.net>
+
+	* lib/test/unit/parallel.rb: For Windows.
+
+	* test/testunit/test_parallel.rb(TestParallelWorker#test_quit_in_test):
+	  Fix for above specification change.
+	* test/testunit/test_parallel.rb(TestParallel#spawn_runner):
+	  Fix outputing empty line in running test.
+
 Tue Mar  1 20:51:57 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_system.rb (TestSystem#test_system_at):

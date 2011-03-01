@@ -117,14 +117,6 @@ module TestParallel
         assert_match(/^bye$/m,@worker_out.read)
       end
     end
-
-    def test_quit_in_test
-      timeout(10) do
-        @worker_in.puts "run #{TESTS}/test_third.rb ptest"
-        @worker_in.puts "quit"
-        assert_match(/^ready\nokay\nbye/m,@worker_out.read)
-      end
-    end
   end
 
   class TestParallel < Test::Unit::TestCase
@@ -137,7 +129,7 @@ module TestParallel
     def spawn_runner(*opt_args)
       @test_out, o = IO.pipe
       @test_pid = spawn(*@options[:ruby], TESTS+"/runner.rb",
-                        "-j","t2","-x","sleeping",*opt_args, out: o)
+                        "-j","t2","-x","sleeping",*opt_args, out: o, err: :out)
       o.close
     end
 

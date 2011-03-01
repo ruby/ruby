@@ -12,6 +12,12 @@ module Test
       undef _run_suites
       undef run
 
+      def inclement_io orig
+        *rest, io = 500.times.inject([orig.dup]){|ios, | ios << ios.last.dup }
+        rest.each(&:close)
+        io
+      end
+
       def _run_suites suites, type
         suites.map do |suite|
           result = _run_suite(suite, type)
@@ -24,12 +30,10 @@ module Test
         i,o = IO.pipe
         MiniTest::Unit.output = o
 
-        stdout = STDOUT.dup
-
         th = Thread.new do
           begin
             while buf = (self.verbose ? i.gets : i.read(5))
-              stdout.puts "p #{[buf].pack("m").gsub("\n","")}"
+              @stdout.puts "p #{[buf].pack("m").gsub("\n","")}"
             end
           rescue IOError
           rescue Errno::EPIPE
@@ -56,7 +60,7 @@ module Test
         result << suite.name
 
         begin
-          STDOUT.puts "done #{[Marshal.dump(result)].pack("m").gsub("\n","")}"
+          @stdout.puts "done #{[Marshal.dump(result)].pack("m").gsub("\n","")}"
         rescue Errno::EPIPE; end
         return result
       ensure
@@ -73,28 +77,17 @@ module Test
         Signal.trap(:INT,"IGNORE")
         @old_loadpath = []
         begin
-          STDOUT.sync = true
-          STDOUT.puts "ready"
-          stdin = STDIN.dup
-          stdout = STDOUT.dup
-          while buf = stdin.gets
+          @stdout = inclement_io(STDOUT)
+          @stdin = inclement_io(STDIN)
+          @stdout.sync = true
+          @stdout.puts "ready"
+          while buf = @stdin.gets
             case buf.chomp
             when /^loadpath (.+?)$/
               @old_loadpath = $:.dup
               $:.push(*Marshal.load($1.unpack("m")[0].force_encoding("ASCII-8BIT"))).uniq!
             when /^run (.+?) (.+?)$/
-              STDOUT.puts "okay"
-
-              th = Thread.new do
-                while puf = stdin.gets
-                  if puf.chomp == "quit"
-                    begin
-                      stdout.puts "bye"
-                    rescue Errno::EPIPE; end
-                    exit
-                  end
-                end
-              end
+              @stdout.puts "okay"
 
               @options = @opts.dup
               suites = MiniTest::Unit::TestCase.test_suites
@@ -102,21 +95,16 @@ module Test
               begin
                 require $1
               rescue LoadError
-                th.kill
-                STDOUT.puts "after #{[Marshal.dump([$1, $!])].pack("m").gsub("\n","")}"
-                STDOUT.puts "ready"
+                @stdout.puts "after #{[Marshal.dump([$1, $!])].pack("m").gsub("\n","")}"
+                @stdout.puts "ready"
                 next
               end
               _run_suites MiniTest::Unit::TestCase.test_suites-suites, $2.to_sym
 
-              STDIN.reopen(stdin)
-              STDOUT.reopen(stdout)
-
-              th.kill
-              STDOUT.puts "ready"
+              @stdout.puts "ready"
             when /^quit$/
               begin
-                STDOUT.puts "bye"
+                @stdout.puts "bye"
               rescue Errno::EPIPE; end
               exit
             end
@@ -124,11 +112,12 @@ module Test
         rescue Errno::EPIPE
         rescue Exception => e
           begin
-            STDOUT.puts "bye #{[Marshal.dump(e)].pack("m").gsub("\n","")}"
+            @stdout.puts "bye #{[Marshal.dump(e)].pack("m").gsub("\n","")}"
           rescue Errno::EPIPE;end
           exit
         ensure
-          stdin.close
+          @stdin.close
+          @stdout.close
         end
       end
     end
