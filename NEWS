@@ -72,6 +72,7 @@ with all sufficient information, see the ChangeLog file.
       * String#unpack supports endian modifiers
     * new method:
       * String#prepend
+      * String#byteslice
 
   * Time
     * extended method:

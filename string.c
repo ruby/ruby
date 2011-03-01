@@ -3987,6 +3987,108 @@ rb_str_setbyte(VALUE str, VALUE index, VALUE value)
     return value;
 }
 
+static VALUE
+str_byte_substr(VALUE str, long beg, long len)
+{
+	char *p, *s = RSTRING_PTR(str), *e = s + RSTRING_LEN(str);
+	VALUE str2;
+	if (beg > RSTRING_LEN(str)) return Qnil;
+	if (beg < 0) {
+	    beg += RSTRING_LEN(str);
+	    if (beg < 0) return Qnil;
+	}
+	if (beg + len > RSTRING_LEN(str))
+	    len = RSTRING_LEN(str) - beg;
+	if (len <= 0) {
+	    len = 0;
+	    p = 0;
+	}
+	else
+	    p = s + beg;
+
+	if (len > RSTRING_EMBED_LEN_MAX && beg + len == RSTRING_LEN(str)) {
+	    str2 = rb_str_new4(str);
+	    str2 = str_new3(rb_obj_class(str2), str2);
+	    RSTRING(str2)->as.heap.ptr += RSTRING(str2)->as.heap.len - len;
+	    RSTRING(str2)->as.heap.len = len;
+	}
+	else {
+	    str2 = rb_str_new5(str, p, len);
+	    OBJ_INFECT(str2, str);
+	}
+
+	return str2;
+}
+
+static VALUE
+str_byte_aref(VALUE str, VALUE indx)
+{
+    long idx;
+    switch (TYPE(indx)) {
+      case T_FIXNUM:
+	idx = FIX2LONG(indx);
+
+      num_index:
+	str = str_byte_substr(str, idx, 1);
+	if (!NIL_P(str) && RSTRING_LEN(str) == 0) return Qnil;
+	return str;
+
+      default:
+	/* check if indx is Range */
+	{
+	    long beg, len = RSTRING_LEN(str);
+	    VALUE tmp;
+
+	    switch (rb_range_beg_len(indx, &beg, &len, len, 0)) {
+	      case Qfalse:
+		break;
+	      case Qnil:
+		return Qnil;
+	      default:
+		tmp = str_byte_substr(str, beg, len);
+		return tmp;
+	    }
+	}
+	idx = NUM2LONG(indx);
+	goto num_index;
+    }
+    return Qnil;		/* not reached */
+}
+
+/*
+ *  call-seq:
+ *     str.byteslice(fixnum)           -> new_str or nil
+ *     str.byteslice(fixnum, fixnum)   -> new_str or nil
+ *     str.byteslice(range)            -> new_str or nil
+ *
+ *  Byte Reference---If passed a single <code>Fixnum</code>, returns a
+ *  substring of one byte at that position. If passed two <code>Fixnum</code>
+ *  objects, returns a substring starting at the offset given by the first, and
+ *  a length given by the second. If given a range, a substring containing
+ *  bytes at offsets given by the range is returned. In all three cases, if
+ *  an offset is negative, it is counted from the end of <i>str</i>. Returns
+ *  <code>nil</code> if the initial offset falls outside the string, the length
+ *  is negative, or the beginning of the range is greater than the end.
+ *
+ *     "hello".byteslice(1)     #=> "e"
+ *     "hello".byteslice(-1)    #=> "o"
+ *     "hello".byteslice(1, 2)  #=> "el"
+ *     "\u3042".byteslice(1, 2) #=> "\x81\x82"
+ *     "\u3042".byteslice(1..3) #=> "\x81\x82"
+ */
+
+static VALUE
+rb_str_byteslice(int argc, VALUE *argv, VALUE str)
+{
+    if (argc == 2) {
+	return str_byte_substr(str, NUM2LONG(argv[0]), NUM2LONG(argv[1]));
+    }
+    if (argc != 1) {
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..2)", argc);
+    }
+    return str_byte_aref(str, argv[0]);
+}
+
 /*
  *  call-seq:
  *     str.reverse   -> new_str
@@ -7649,6 +7751,7 @@ Init_String(void)
     rb_define_method(rb_cString, "chr", rb_str_chr, 0);
     rb_define_method(rb_cString, "getbyte", rb_str_getbyte, 1);
     rb_define_method(rb_cString, "setbyte", rb_str_setbyte, 2);
+    rb_define_method(rb_cString, "byteslice", rb_str_byteslice, -1);
 
     rb_define_method(rb_cString, "to_i", rb_str_to_i, -1);
     rb_define_method(rb_cString, "to_f", rb_str_to_f, 0);

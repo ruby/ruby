@@ -1944,4 +1944,33 @@ class TestString < Test::Unit::TestCase
     assert_equal(S("hello world"), a)
     assert_equal(S("hello "), b)
   end
+
+  def b(str)
+    str.force_encoding(Encoding::ASCII_8BIT)
+  end
+
+  def test_byteslice
+    assert_equal(b("h"), "hello".byteslice(0))
+    assert_equal(nil, "hello".byteslice(5))
+    assert_equal(b("o"), "hello".byteslice(-1))
+    assert_equal(nil, "hello".byteslice(-6))
+
+    assert_equal(b(""), "hello".byteslice(0, 0))
+    assert_equal(b("hello"), "hello".byteslice(0, 6))
+    assert_equal(b("hello"), "hello".byteslice(0, 6))
+    assert_equal(b(""), "hello".byteslice(5, 1))
+    assert_equal(b("o"), "hello".byteslice(-1, 6))
+    assert_equal(nil, "hello".byteslice(-6, 1))
+
+    assert_equal(b("h"), "hello".byteslice(0..0))
+    assert_equal(b(""), "hello".byteslice(5..0))
+    assert_equal(b("o"), "hello".byteslice(4..5))
+    assert_equal(nil, "hello".byteslice(6..0))
+    assert_equal(b(""), "hello".byteslice(-1..0))
+    assert_equal(b("llo"), "hello".byteslice(-3..5))
+
+    assert_equal(b("\x81"), "\u3042".byteslice(1))
+    assert_equal(b("\x81\x82"), "\u3042".byteslice(1, 2))
+    assert_equal(b("\x81\x82"), "\u3042".byteslice(1..2))
+  end
 end

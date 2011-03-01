@@ -1,3 +1,7 @@
+Tue Mar  1 10:34:39 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_byteslice): Add String#byteslice. [ruby-core:35376]
+
 Tue Mar  1 00:12:49 2011  Tajima Akio <artonx@yahoo.co.jp>
 
 	* include/ruby/win32.h: define WIN32 if neither _WIN64 nor WIN32 
