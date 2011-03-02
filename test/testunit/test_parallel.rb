@@ -129,7 +129,7 @@ module TestParallel
     def spawn_runner(*opt_args)
       @test_out, o = IO.pipe
       @test_pid = spawn(*@options[:ruby], TESTS+"/runner.rb",
-                        "-j","t2","-x","sleeping",*opt_args, out: o, err: :out)
+                        "-j","t2",*opt_args, out: o, err: o)
       o.close
     end
 
