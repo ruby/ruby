@@ -18,7 +18,7 @@ class EncodingTester < Test::Unit::TestCase
   def test_encoded_in_encoded_out
     doc = Document.new( @encoded )
     doc.write( out="" )
-    out.force_encoding('binary') if out.respond_to? :force_encoding
+    out.force_encoding(::Encoding::ASCII_8BIT)
     assert_equal( @encoded, out )
   end
 
@@ -26,12 +26,12 @@ class EncodingTester < Test::Unit::TestCase
   def test_encoded_in_change_out
     doc = Document.new( @encoded )
     doc.xml_decl.encoding = "UTF-8"
-    assert_equal( ::Encoding::UTF_8, doc.encoding )
+    assert_equal("UTF-8", doc.encoding)
     REXML::Formatters::Default.new.write( doc.root, out="" )
-    out.force_encoding('binary') if out.respond_to? :force_encoding
+    out.force_encoding(::Encoding::ASCII_8BIT)
     assert_equal( @not_encoded, out )
     char = XPath.first( doc, "/a/b/text()" ).to_s
-    char.force_encoding('binary') if char.respond_to? :force_encoding
+    char.force_encoding(::Encoding::ASCII_8BIT)
     assert_equal( "Ä‰", char )
   end
 
@@ -39,7 +39,7 @@ class EncodingTester < Test::Unit::TestCase
   def test_encoded_in_different_out
     doc = Document.new( @encoded )
     REXML::Formatters::Default.new.write( doc.root, Output.new( out="", "UTF-8" ) )
-    out.force_encoding('binary') if out.respond_to? :force_encoding
+    out.force_encoding(::Encoding::ASCII_8BIT)
     assert_equal( @not_encoded, out )
   end
 
@@ -47,9 +47,9 @@ class EncodingTester < Test::Unit::TestCase
   def test_in_change_out
     doc = Document.new( @not_encoded )
     doc.xml_decl.encoding = "ISO-8859-3"
-    assert_equal( ::Encoding::ISO_8859_3, doc.encoding )
+    assert_equal("ISO-8859-3", doc.encoding)
     doc.write( out="" )
-    out.force_encoding('binary') if out.respond_to? :force_encoding
+    out.force_encoding(::Encoding::ASCII_8BIT)
     assert_equal( @encoded, out )
   end
 
@@ -57,7 +57,7 @@ class EncodingTester < Test::Unit::TestCase
   def test_in_different_out
     doc = Document.new( @not_encoded )
     doc.write( Output.new( out="", "ISO-8859-3" ) )
-    out.force_encoding('binary') if out.respond_to? :force_encoding
+    out.force_encoding(::Encoding::ASCII_8BIT)
     assert_equal( @encoded, out )
   end
 
@@ -66,10 +66,10 @@ class EncodingTester < Test::Unit::TestCase
   def test_in_different_access
     doc = Document.new <<-EOL
     <?xml version='1.0' encoding='ISO-8859-1'?>
-    <a a="ÿ">ÿ</a>
+    <a a="\xFF">\xFF</a>
     EOL
     expect = "\303\277"
-    expect.force_encoding('UTF-8') if expect.respond_to? :force_encoding
+    expect.force_encoding(::Encoding::UTF_8)
     assert_equal( expect, doc.elements['a'].attributes['a'] )
     assert_equal( expect, doc.elements['a'].text )
   end
@@ -86,7 +86,7 @@ class EncodingTester < Test::Unit::TestCase
 
   def test_ticket_110
     utf16 = REXML::Document.new(File.new(fixture_path("ticket_110_utf16.xml")))
-    assert_equal( ::Encoding::UTF_16BE, utf16.encoding )
+    assert_equal(utf16.encoding, "UTF-16")
     assert( utf16[0].kind_of?(REXML::XMLDecl))
   end
 end

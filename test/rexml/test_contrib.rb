@@ -241,7 +241,7 @@ DELIMITER
     end
 
     doc = REXML::Document.new(source_iso)
-    assert_equal('ISO-8859-1', doc.xml_decl.encoding.to_s)
+    assert_equal('ISO-8859-1', doc.xml_decl.encoding)
     assert_equal(koln_utf, doc.root.text)
     doc.write(out="")
     assert_equal(source_iso, out )
@@ -255,23 +255,21 @@ DELIMITER
 <position><aktuell datum="01-10-11">Technik</aktuell></position>
 <hauptspalte>
 <headline>Technik</headline>
-Die Technik ist das Rückgrat der meisten Geschäftsprozesse bei Home of the Brave. Deshalb sollen hier alle relevanten technischen Abläufe, Daten und Einrichtungen beschrieben werden, damit jeder im Bedarfsfall die nötigen Informationen, Anweisungen und Verhaltensempfehlungen nachlesen und/oder abrufen kann.
+Die Technik ist das R\xFCckgrat der meisten Gesch\xFCftsprozesse bei Home of the Brave. Deshalb sollen hier alle relevanten technischen Abl\xFCufe, Daten und Einrichtungen beschrieben werden, damit jeder im Bedarfsfall die n\xFCtigen Informationen, Anweisungen und Verhaltensempfehlungen nachlesen und/oder abrufen kann.
 </hauptspalte>
 <nebenspalte>
   <link ziel="Flash/">Flash</link><umbruch/>
-  Nützliches von Flashern für Flasher.<umbruch/>
+  N\xFCtzliches von Flashern f\xFCr Flasher.<umbruch/>
   <link neu="ja" ziel="Cvs/">CVS-FAQ</link><umbruch/>
   FAQ zur Benutzung von CVS bei HOB
 </nebenspalte>
 </intranet>
 EOF
     tn = XPath.first(doc, "//nebenspalte/text()[2]")
-    expected_iso = "Nützliches von Flashern für Flasher."
-                expected_utf = expected_iso.unpack('C*').pack('U*')
-                if expected_utf.respond_to? :encode
-      expected_iso.force_encoding("iso-8859-1")
-      expected_utf.force_encoding(::Encoding::UTF_8)
-                end
+    expected_iso = "N\xFCtzliches von Flashern f\xFCr Flasher."
+    expected_utf = expected_iso.unpack('C*').pack('U*')
+    expected_iso.force_encoding(::Encoding::ISO_8859_1)
+    expected_utf.force_encoding(::Encoding::UTF_8)
     assert_equal(expected_utf, tn.to_s.strip)
     f = REXML::Formatters::Default.new
     f.write( tn, Output.new(o = "", "ISO-8859-1") )
