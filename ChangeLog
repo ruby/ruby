@@ -1,3 +1,8 @@
+Wed Mar  2 14:24:04 2011  Shota Fukumori  <sorah@tubusu.net>
+
+	* lib/test/unit/parallel.rb: Fix name from `inclement_io` to
+	  `increment_io`.
+
 Wed Mar  2 14:06:01 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_str_slice_bang): move treatments which is only needed

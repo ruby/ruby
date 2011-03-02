@@ -12,13 +12,13 @@ module Test
       undef _run_suites
       undef run
 
-      def inclement_io orig
+      def increment_io(orig)
         *rest, io = 32.times.inject([orig.dup]){|ios, | ios << ios.last.dup }
         rest.each(&:close)
         io
       end
 
-      def _run_suites suites, type
+      def _run_suites(suites, type)
         suites.map do |suite|
           result = _run_suite(suite, type)
         end
@@ -77,8 +77,8 @@ module Test
         Signal.trap(:INT,"IGNORE")
         @old_loadpath = []
         begin
-          @stdout = inclement_io(STDOUT)
-          @stdin = inclement_io(STDIN)
+          @stdout = increment_io(STDOUT)
+          @stdin = increment_io(STDIN)
           @stdout.sync = true
           @stdout.puts "ready"
           while buf = @stdin.gets
