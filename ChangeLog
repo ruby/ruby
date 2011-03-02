@@ -1,3 +1,7 @@
+Wed Mar  2 21:15:00 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/ossl_pkey_dh.c: parenthesize macro arguments.
+
 Wed Mar  2 14:24:04 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* lib/test/unit/parallel.rb: Fix name from `inclement_io` to
