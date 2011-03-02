@@ -3503,10 +3503,10 @@ rb_str_slice_bang(int argc, VALUE *argv, VALUE str)
     for (i=0; i<argc; i++) {
 	buf[i] = argv[i];
     }
-    str_modify_keep_cr(str);
-    buf[i] = rb_str_new(0,0);
     result = rb_str_aref_m(argc, buf, str);
     if (!NIL_P(result)) {
+	str_modify_keep_cr(str);
+	buf[i] = rb_str_new(0,0);
 	rb_str_aset_m(argc+1, buf, str);
     }
     return result;
@@ -4073,8 +4073,8 @@ str_byte_aref(VALUE str, VALUE indx)
  *     "hello".byteslice(1)     #=> "e"
  *     "hello".byteslice(-1)    #=> "o"
  *     "hello".byteslice(1, 2)  #=> "el"
- *     "\u3042".byteslice(1, 2) #=> "\x81\x82"
- *     "\u3042".byteslice(1..3) #=> "\x81\x82"
+ *     "\x80\u3042".byteslice(1, 3) #=> "\u3042"
+ *     "\x03\u3042\xff".byteslice(1..3) #=> "\u3942"
  */
 
 static VALUE
