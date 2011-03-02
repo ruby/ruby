@@ -1961,6 +1961,7 @@ class TestString < Test::Unit::TestCase
     assert_equal("", "hello".byteslice(5, 1))
     assert_equal("o", "hello".byteslice(-1, 6))
     assert_equal(nil, "hello".byteslice(-6, 1))
+    assert_equal(nil, "hello".byteslice(0, -1))
 
     assert_equal("h", "hello".byteslice(0..0))
     assert_equal("", "hello".byteslice(5..0))

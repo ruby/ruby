@@ -1,3 +1,7 @@
+Wed Mar  2 23:19:56 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (str_byte_substr): return nil for negative length.
+
 Wed Mar  2 21:15:00 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/ossl_pkey_dh.c: parenthesize macro arguments.
