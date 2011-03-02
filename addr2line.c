@@ -85,7 +85,7 @@ uleb128(char **p) {
     for (;;) {
 	unsigned char b = *(unsigned char *)(*p)++;
 	if (b < 0x80) {
-	    r += b << s;
+	    r += (unsigned long)b << s;
 	    break;
 	}
 	r += (b & 0x7f) << s;
@@ -442,6 +442,12 @@ fill_lines(int num_traces, void **traces, char **syms, int check_debuglink,
 	return;
     }
     filesize = lseek(fd, 0, SEEK_END);
+    if (filesize < 0) {
+	int e = errno;
+	close(fd);
+	fprintf(stderr, "lseek: %s\n", strerror(e));
+	return;
+    }
     lseek(fd, 0, SEEK_SET);
     /* async-signal unsafe */
     file = (char *)mmap(NULL, filesize, PROT_READ, MAP_SHARED, fd, 0);

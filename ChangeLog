@@ -1,3 +1,9 @@
+Thu Mar  3 00:46:51 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* addr2line.c (uleb128): cast the value to unsigned long.
+
+	* addr2line.c (fill_lines): print error when lseek fails.
+
 Thu Mar  3 00:36:29 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/rexml/encoding.rb (REXML::Encoding#encoding=): store @encoding
