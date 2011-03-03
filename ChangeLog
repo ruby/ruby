@@ -1,3 +1,12 @@
+Thu Mar  3 22:10:26 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* process.c (check_exec_redirect_fd, check_exec_redirect): raise
+	  ArgumentError if fd >= 3 on Windows because the feature is not
+	  supported.
+
+	* test/ruby/test_process.rb (test_execopts_redirect): remove meaningless
+	  argument.
+
 Thu Mar  3 21:21:42 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_process.rb (test_execopts_redirect): redirecting fd

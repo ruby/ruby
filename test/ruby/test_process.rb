@@ -384,7 +384,7 @@ class TestProcess < Test::Unit::TestCase
       Process.wait Process.spawn(*ECHO["c"], STDERR=>STDOUT, STDOUT=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644])
       assert_equal("c", File.read("out").chomp)
       File.open("out", "w") {|f|
-        Process.wait Process.spawn(*ECHO["d"], f=>STDOUT, STDOUT=>f)
+        Process.wait Process.spawn(*ECHO["d"], STDOUT=>f)
         assert_equal("d", File.read("out").chomp)
       }
       opts = {STDOUT=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644]}

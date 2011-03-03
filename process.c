@@ -1294,7 +1294,7 @@ enum {
 };
 
 static VALUE
-check_exec_redirect_fd(VALUE v)
+check_exec_redirect_fd(VALUE v, int iskey)
 {
     VALUE tmp;
     int fd;
@@ -1326,6 +1326,11 @@ check_exec_redirect_fd(VALUE v)
       wrong:
         rb_raise(rb_eArgError, "negative file descriptor");
     }
+#ifdef _WIN32
+    else if (fd >= 3 && iskey) {
+        rb_raise(rb_eArgError, "wrong file descriptor (%d)", fd);
+    }
+#endif
     return INT2FIX(fd);
 }
 
@@ -1363,7 +1368,7 @@ check_exec_redirect(VALUE key, VALUE val, VALUE options)
         break;
 
       case T_FILE:
-        val = check_exec_redirect_fd(val);
+        val = check_exec_redirect_fd(val, 0);
         /* fall through */
       case T_FIXNUM:
         index = EXEC_OPTION_DUP2;
@@ -1375,7 +1380,7 @@ check_exec_redirect(VALUE key, VALUE val, VALUE options)
         if (RARRAY_LEN(val) == 2 && SYMBOL_P(path) &&
             SYM2ID(path) == rb_intern("child")) {
             index = EXEC_OPTION_DUP2_CHILD;
-            param = check_exec_redirect_fd(rb_ary_entry(val, 1));
+            param = check_exec_redirect_fd(rb_ary_entry(val, 1), 0);
         }
         else {
             index = EXEC_OPTION_OPEN;
@@ -1399,7 +1404,7 @@ check_exec_redirect(VALUE key, VALUE val, VALUE options)
         path = val;
         FilePathValue(path);
         if (TYPE(key) == T_FILE)
-            key = check_exec_redirect_fd(key);
+            key = check_exec_redirect_fd(key, 1);
         if (FIXNUM_P(key) && (FIX2INT(key) == 1 || FIX2INT(key) == 2))
             flags = INT2NUM(O_WRONLY|O_CREAT|O_TRUNC);
         else
@@ -1419,14 +1424,14 @@ check_exec_redirect(VALUE key, VALUE val, VALUE options)
         rb_ary_store(options, index, ary);
     }
     if (TYPE(key) != T_ARRAY) {
-        VALUE fd = check_exec_redirect_fd(key);
+        VALUE fd = check_exec_redirect_fd(key, !NIL_P(param));
         rb_ary_push(ary, hide_obj(rb_assoc_new(fd, param)));
     }
     else {
         int i, n=0;
         for (i = 0 ; i < RARRAY_LEN(key); i++) {
             VALUE v = RARRAY_PTR(key)[i];
-            VALUE fd = check_exec_redirect_fd(v);
+            VALUE fd = check_exec_redirect_fd(v, !NIL_P(param));
             rb_ary_push(ary, hide_obj(rb_assoc_new(fd, param)));
             n++;
         }
