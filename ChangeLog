@@ -1,3 +1,8 @@
+Thu Mar  3 17:10:49 2011  Akinori MUSHA  <knu@iDaemons.org>
+
+	* array.c (rb_ary_collect), enum.c (enum_collect): Add
+	  compatibility warnings for a call without a block.
+
 Fri Feb 18 20:46:55 2011  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/fileutils.rb (FileUtils::remove_entry_secure): there is a

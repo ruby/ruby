@@ -430,7 +430,14 @@ enum_collect(obj)
 {
     VALUE ary = rb_ary_new();
 
-    rb_iterate(rb_each, obj, rb_block_given_p() ? collect_i : collect_all, ary);
+    if (!rb_block_given_p()) {
+	rb_warn("Enumerable#%s without a block does not return an array in 1.9 and later",
+		rb_id2name(rb_frame_last_func()));
+	rb_iterate(rb_each, obj, collect_all, ary);
+    }
+    else {
+	rb_iterate(rb_each, obj, collect_i, ary);
+    }
 
     return ary;
 }

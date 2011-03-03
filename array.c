@@ -1902,6 +1902,8 @@ rb_ary_collect(ary)
     VALUE collect;
 
     if (!rb_block_given_p()) {
+	rb_warn("Array#%s without a block does not return an array in 1.9 and later",
+		rb_id2name(rb_frame_last_func()));
 	return rb_ary_new4(RARRAY(ary)->len, RARRAY(ary)->ptr);
     }
 
