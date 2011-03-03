@@ -1,3 +1,7 @@
+Wed Mar  2 21:15:00 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/ossl_pkey_dsa.c: parenthesize macro arguments.
+
 Thu Mar  3 22:10:26 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* process.c (check_exec_redirect_fd, check_exec_redirect): raise
