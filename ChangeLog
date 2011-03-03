@@ -1,3 +1,7 @@
+Thu Mar  3 18:59:04 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_slice_bang): raise error when the string is frozen.
+
 Thu Mar  3 14:25:19 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* strftime.c (STRFTIME): return 0 and ERANGE when precision is too

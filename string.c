@@ -3503,9 +3503,9 @@ rb_str_slice_bang(int argc, VALUE *argv, VALUE str)
     for (i=0; i<argc; i++) {
 	buf[i] = argv[i];
     }
+    str_modify_keep_cr(str);
     result = rb_str_aref_m(argc, buf, str);
     if (!NIL_P(result)) {
-	str_modify_keep_cr(str);
 	buf[i] = rb_str_new(0,0);
 	rb_str_aset_m(argc+1, buf, str);
     }
