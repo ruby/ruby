@@ -1,3 +1,8 @@
+Thu Mar  3 14:25:19 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* strftime.c (STRFTIME): return 0 and ERANGE when precision is too
+	  large. [ruby-dev:43284] fixes #4456
+
 Thu Mar  3 00:46:51 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* addr2line.c (uleb128): cast the value to unsigned long.
