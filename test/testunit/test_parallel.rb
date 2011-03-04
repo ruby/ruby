@@ -154,6 +154,7 @@ module TestParallel
       spawn_runner
       buf = timeout(10){@test_out.read}
       assert_match(/^\.+SF\.+F\.*$/,buf)
+      assert_match(/^\.*(\.SF\.*F|F\.*\.+SF)\.*$/,buf)
     end
 
     def test_should_retry_failed_on_workers

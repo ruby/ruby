@@ -1,3 +1,9 @@
+Fri Mar  4 23:09:12 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* test/testunit/test_parallel.rb
+	  (test_should_run_all_without_any_leaks): consider that the order of
+	  testcase could change. [ruby-dev:43300] [Bug #4466]
+
 Fri Mar  4 22:01:14 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (io_cntl): change 'cmd' type to int. ioctl and fcntl need to
