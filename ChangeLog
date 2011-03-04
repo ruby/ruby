@@ -1,3 +1,9 @@
+Fri Mar  4 22:01:14 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (io_cntl): change 'cmd' type to int. ioctl and fcntl need to
+	  be passed int.
+	* io.c (rb_io_ctl): ditto.
+
 Fri Mar  4 21:10:40 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: save warnflags. the patch is created by Eric Wong.

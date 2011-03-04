@@ -7650,7 +7650,7 @@ rb_f_select(int argc, VALUE *argv, VALUE obj)
 }
 
 static int
-io_cntl(int fd, unsigned long cmd, long narg, int io_p)
+io_cntl(int fd, int cmd, long narg, int io_p)
 {
     int retval;
 
@@ -7658,7 +7658,7 @@ io_cntl(int fd, unsigned long cmd, long narg, int io_p)
 # if defined(__CYGWIN__)
     retval = io_p?ioctl(fd, cmd, (void*)narg):fcntl(fd, cmd, narg);
 # else
-    retval = io_p?ioctl(fd, cmd, narg):fcntl(fd, (int)cmd, narg);
+    retval = io_p?ioctl(fd, cmd, narg):fcntl(fd, cmd, narg);
 # endif
 # if defined(F_DUPFD)
     if (!io_p && retval != -1 && cmd == F_DUPFD) {
@@ -7677,7 +7677,7 @@ io_cntl(int fd, unsigned long cmd, long narg, int io_p)
 static VALUE
 rb_io_ctl(VALUE io, VALUE req, VALUE arg, int io_p)
 {
-    unsigned long cmd = NUM2ULONG(req);
+    int cmd = NUM2INT(req);
     rb_io_t *fptr;
     long len = 0;
     long narg = 0;
