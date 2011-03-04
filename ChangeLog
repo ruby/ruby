@@ -1,3 +1,8 @@
+Fri Mar  4 21:10:40 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: save warnflags. the patch is created by Eric Wong.
+	  [Bug #4465]
+
 Wed Mar  2 21:15:00 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/ossl_pkey_dsa.c: parenthesize macro arguments.

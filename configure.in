@@ -471,6 +471,7 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
                              [wflag=-Wall])
     RUBY_TRY_CFLAGS($wflag, [warnflags="$wflag${warnflags+ $warnflags}"])
     # Disable warnflags while conftest. -Werror=* flags might make bad OS capability guess.
+    rb_cv_warnflags="$warnflags"
     warnflags=
 fi
 if test "$GCC" = yes; then
