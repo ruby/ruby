@@ -7649,28 +7649,47 @@ rb_f_select(int argc, VALUE *argv, VALUE obj)
 
 }
 
+struct io_cntl_arg {
+    int		fd;
+    int		cmd;
+    long	narg;
+    int		io_p;
+};
+
+static VALUE nogvl_io_cntl(void *ptr)
+{
+    struct io_cntl_arg *arg = ptr;
+
+    if (arg->io_p)
+	return (VALUE)ioctl(arg->fd, arg->cmd, arg->narg);
+    else
+	return (VALUE)fcntl(arg->fd, arg->cmd, arg->narg);
+}
+
 static int
 io_cntl(int fd, int cmd, long narg, int io_p)
 {
     int retval;
+    struct io_cntl_arg arg;
 
-#ifdef HAVE_FCNTL
-# if defined(__CYGWIN__)
-    retval = io_p?ioctl(fd, cmd, (void*)narg):fcntl(fd, cmd, narg);
-# else
-    retval = io_p?ioctl(fd, cmd, narg):fcntl(fd, cmd, narg);
-# endif
-# if defined(F_DUPFD)
-    if (!io_p && retval != -1 && cmd == F_DUPFD) {
-        UPDATE_MAXFD(retval);
-    }
-# endif
-#else
+#ifndef HAVE_FCNTL
     if (!io_p) {
 	rb_notimplement();
     }
-    retval = ioctl(fd, cmd, narg);
 #endif
+
+    arg.fd = fd;
+    arg.cmd = cmd;
+    arg.narg = narg;
+    arg.io_p = io_p;
+
+    retval = (int)rb_thread_blocking_region(nogvl_io_cntl, &arg, RUBY_UBF_IO, 0);
+#if defined(F_DUPFD)
+    if (!io_p && retval != -1 && cmd == F_DUPFD) {
+	UPDATE_MAXFD(retval);
+    }
+#endif
+
     return retval;
 }
 

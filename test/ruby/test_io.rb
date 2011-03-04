@@ -1776,4 +1776,38 @@ End
       end
     end
   end
+
+
+  if /x86_64-linux/ =~ RUBY_PLATFORM # A binary form of struct flock depend on platform
+    F_WRLCK = 1
+    F_UNLCK = 2
+    SEEK_SET = 0
+
+    def test_fcntl_lock
+      pad = 0
+      flocktype = "s!s!s!s!L!L!i!"
+
+      Tempfile.open(self.class.name) do |f|
+        r, w = IO.pipe
+        pid = fork do
+          r.close
+          lock = [F_WRLCK, SEEK_SET, pad, pad, 0, 0, 0].pack(flocktype)
+          f.fcntl Fcntl::F_SETLKW, lock
+          w.syswrite "."
+          sleep
+        end
+        w.close
+        assert_equal ".", r.read(1)
+        r.close
+        pad = 0
+        getlock = [F_WRLCK, 0, pad, pad, 0, 0, 0].pack(flocktype)
+        f.fcntl Fcntl::F_GETLK, getlock
+
+        ptype, whence, pad, pad, start, len, lockpid = getlock.unpack(flocktype)
+        assert_equal(pid, lockpid)
+        Process.kill :TERM, pid
+        Process.waitpid2(pid)
+      end
+    end
+  end
 end

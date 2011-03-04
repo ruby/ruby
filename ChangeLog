@@ -1,3 +1,12 @@
+Sat Mar  5 01:33:46 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (io_cntl, nogvl_io_cntl): IO.fcntl() and IO.ioctl()
+	  release GVL during calling kernel interface.
+	  Suggested by Eric Wong. [ruby-core:35417][Bug #4463]
+
+	* test/ruby/test_io.rb (TestIO#test_fcntl_lock): add new test for
+	  IO.fcntl().
+
 Fri Mar  4 23:09:12 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* test/testunit/test_parallel.rb
