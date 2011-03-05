@@ -7683,7 +7683,7 @@ io_cntl(int fd, int cmd, long narg, int io_p)
     arg.narg = narg;
     arg.io_p = io_p;
 
-    retval = (int)rb_thread_blocking_region(nogvl_io_cntl, &arg, RUBY_UBF_IO, 0);
+    retval = (int)rb_thread_io_blocking_region(nogvl_io_cntl, &arg, fd);
 #if defined(F_DUPFD)
     if (!io_p && retval != -1 && cmd == F_DUPFD) {
 	UPDATE_MAXFD(retval);

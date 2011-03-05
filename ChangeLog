@@ -1,3 +1,8 @@
+Sun Mar  6 03:22:27 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (io_cntl): use rb_thread_io_blocking_region() instead
+	  rb_thread_blocking_region().
+
 Sat Mar  5 22:54:36 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* include/ruby/intern.h: fix a typo of prototype declaration.
