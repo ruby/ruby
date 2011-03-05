@@ -1,3 +1,7 @@
+Sat Mar  5 19:44:03 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_io.rb (TestIO#test_fcntl_lock): small clean up.
+
 Sat Mar  5 01:33:46 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (io_cntl, nogvl_io_cntl): IO.fcntl() and IO.ioctl()

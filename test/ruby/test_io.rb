@@ -1777,37 +1777,36 @@ End
     end
   end
 
+  def test_fcntl_lock
+    return if /x86_64-linux/ !~ RUBY_PLATFORM # A binary form of struct flock depend on platform
 
-  if /x86_64-linux/ =~ RUBY_PLATFORM # A binary form of struct flock depend on platform
-    F_WRLCK = 1
-    F_UNLCK = 2
-    SEEK_SET = 0
-
-    def test_fcntl_lock
-      pad = 0
-      flocktype = "s!s!s!s!L!L!i!"
-
-      Tempfile.open(self.class.name) do |f|
-        r, w = IO.pipe
-        pid = fork do
-          r.close
-          lock = [F_WRLCK, SEEK_SET, pad, pad, 0, 0, 0].pack(flocktype)
-          f.fcntl Fcntl::F_SETLKW, lock
-          w.syswrite "."
-          sleep
-        end
-        w.close
-        assert_equal ".", r.read(1)
+    pad=0
+    Tempfile.open(self.class.name) do |f|
+      r, w = IO.pipe
+      pid = fork do
         r.close
-        pad = 0
-        getlock = [F_WRLCK, 0, pad, pad, 0, 0, 0].pack(flocktype)
-        f.fcntl Fcntl::F_GETLK, getlock
-
-        ptype, whence, pad, pad, start, len, lockpid = getlock.unpack(flocktype)
-        assert_equal(pid, lockpid)
-        Process.kill :TERM, pid
-        Process.waitpid2(pid)
+        lock = [Fcntl::F_WRLCK, IO::SEEK_SET, pad, 12, 34, 0].pack("s!s!i!L!L!i!")
+        f.fcntl Fcntl::F_SETLKW, lock
+        w.syswrite "."
+        sleep
       end
+      w.close
+      assert_equal ".", r.read(1)
+      r.close
+      pad = 0
+      getlock = [Fcntl::F_WRLCK, 0, pad, 0, 0, 0].pack("s!s!i!L!L!i!")
+      f.fcntl Fcntl::F_GETLK, getlock
+
+      ptype, whence, pad, start, len, lockpid = getlock.unpack("s!s!i!L!L!i!")
+
+      assert_equal(ptype, Fcntl::F_WRLCK)
+      assert_equal(whence, IO::SEEK_SET)
+      assert_equal(start, 12)
+      assert_equal(len, 34)
+      assert_equal(pid, lockpid)
+
+      Process.kill :TERM, pid
+      Process.waitpid2(pid)
     end
   end
 end
