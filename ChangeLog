@@ -1,3 +1,8 @@
+Sat Mar  5 22:54:36 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* include/ruby/intern.h: fix a typo of prototype declaration.
+	  rb_mutex_try_lock -> rb_mutex_trylock [ruby-dev:43213]
+
 Sat Mar  5 19:44:03 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_io.rb (TestIO#test_fcntl_lock): small clean up.

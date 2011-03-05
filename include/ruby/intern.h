@@ -802,7 +802,7 @@ VALUE rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, in
 #define RUBY_UBF_PROCESS ((rb_unblock_function_t *)-1)
 VALUE rb_mutex_new(void);
 VALUE rb_mutex_locked_p(VALUE mutex);
-VALUE rb_mutex_try_lock(VALUE mutex);
+VALUE rb_mutex_trylock(VALUE mutex);
 VALUE rb_mutex_lock(VALUE mutex);
 VALUE rb_mutex_unlock(VALUE mutex);
 VALUE rb_mutex_sleep(VALUE self, VALUE timeout);
