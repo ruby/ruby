@@ -988,14 +988,14 @@ rb_class_public_instance_methods(int argc, VALUE *argv, VALUE mod)
  *  <i>obj</i>'s ancestors.
  *
  *     class Klass
- *       def kMethod()
+ *       def klass_method()
  *       end
  *     end
  *     k = Klass.new
- *     k.methods[0..9]    #=> [:kMethod, :freeze, :nil?, :is_a?,
- *                        #    :class, :instance_variable_set,
- *                        #    :methods, :extend, :__send__, :instance_eval]
- *     k.methods.length   #=> 42
+ *     k.methods[0..9]    #=> [:klass_method, :nil?, :===,
+ *                        #    :==~, :!, :eql?
+ *                        #    :hash, :<=>, :class, :singleton_class]
+ *     k.methods.length   #=> 57
  */
 
 VALUE
