@@ -1,3 +1,7 @@
+Sun Mar  6 22:20:59 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/ossl_pkey_ec.c: parenthesize macro arguments.
+
 Sun Mar  6 21:49:04 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* sample/list.rb (MyElem#initialize): initialize @head

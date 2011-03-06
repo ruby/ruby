@@ -22,70 +22,70 @@ typedef struct {
 
 
 #define GetPKeyEC(obj, pkey) do { \
-    GetPKey(obj, pkey); \
-    if (EVP_PKEY_type(pkey->type) != EVP_PKEY_EC) { \
+    GetPKey((obj), (pkey)); \
+    if (EVP_PKEY_type((pkey)->type) != EVP_PKEY_EC) { \
 	ossl_raise(rb_eRuntimeError, "THIS IS NOT A EC PKEY!"); \
     } \
 } while (0)
 
 #define SafeGet_ec_group(obj, group) do { \
-    OSSL_Check_Kind(obj, cEC_GROUP); \
-    Data_Get_Struct(obj, ossl_ec_group, group); \
+    OSSL_Check_Kind((obj), cEC_GROUP); \
+    Data_Get_Struct((obj), ossl_ec_group, (group)); \
 } while(0)
 
 #define Get_EC_KEY(obj, key) do { \
     EVP_PKEY *pkey; \
-    GetPKeyEC(obj, pkey); \
-    key = pkey->pkey.ec; \
+    GetPKeyEC((obj), pkey); \
+    (key) = pkey->pkey.ec; \
 } while(0)
 
 #define Require_EC_KEY(obj, key) do { \
-    Get_EC_KEY(obj, key); \
-    if (key == NULL) \
+    Get_EC_KEY((obj), (key)); \
+    if ((key) == NULL) \
         rb_raise(eECError, "EC_KEY is not initialized"); \
 } while(0)
 
 #define SafeRequire_EC_KEY(obj, key) do { \
-    OSSL_Check_Kind(obj, cEC); \
-    Require_EC_KEY(obj, key); \
+    OSSL_Check_Kind((obj), cEC); \
+    Require_EC_KEY((obj), (key)); \
 } while (0)
 
 #define Get_EC_GROUP(obj, g) do { \
     ossl_ec_group *ec_group; \
-    Data_Get_Struct(obj, ossl_ec_group, ec_group); \
+    Data_Get_Struct((obj), ossl_ec_group, ec_group); \
     if (ec_group == NULL) \
         rb_raise(eEC_GROUP, "missing ossl_ec_group structure"); \
-    g = ec_group->group; \
+    (g) = ec_group->group; \
 } while(0)
 
 #define Require_EC_GROUP(obj, group) do { \
-    Get_EC_GROUP(obj, group); \
-    if (group == NULL) \
+    Get_EC_GROUP((obj), (group)); \
+    if ((group) == NULL) \
         rb_raise(eEC_GROUP, "EC_GROUP is not initialized"); \
 } while(0)
 
 #define SafeRequire_EC_GROUP(obj, group) do { \
-    OSSL_Check_Kind(obj, cEC_GROUP); \
-    Require_EC_GROUP(obj, group); \
+    OSSL_Check_Kind((obj), cEC_GROUP); \
+    Require_EC_GROUP((obj), (group)); \
 } while(0)
 
 #define Get_EC_POINT(obj, p) do { \
     ossl_ec_point *ec_point; \
-    Data_Get_Struct(obj, ossl_ec_point, ec_point); \
+    Data_Get_Struct((obj), ossl_ec_point, ec_point); \
     if (ec_point == NULL) \
         rb_raise(eEC_POINT, "missing ossl_ec_point structure"); \
-    p = ec_point->point; \
+    (p) = ec_point->point; \
 } while(0)
 
 #define Require_EC_POINT(obj, point) do { \
-    Get_EC_POINT(obj, point); \
-    if (point == NULL) \
+    Get_EC_POINT((obj), (point)); \
+    if ((point) == NULL) \
         rb_raise(eEC_POINT, "EC_POINT is not initialized"); \
 } while(0)
 
 #define SafeRequire_EC_POINT(obj, point) do { \
-    OSSL_Check_Kind(obj, cEC_POINT); \
-    Require_EC_POINT(obj, point); \
+    OSSL_Check_Kind((obj), cEC_POINT); \
+    Require_EC_POINT((obj), (point)); \
 } while(0)
 
 VALUE cEC;
