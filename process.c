@@ -4531,7 +4531,28 @@ proc_setgid(VALUE obj, VALUE id)
 #endif
 
 
-static int maxgroups = 32;
+/*
+ * Maximum supplementary groups are platform dependent.
+ * FWIW, 65536 is enough big for our supported OSs.
+ *
+ * OS Name			max groups
+ * -----------------------------------------------
+ * Linux Kernel >= 2.6.3	65536
+ * Linux Kernel < 2.6.3		   32
+ * IBM AIX 5.2			   64
+ * IBM AIX 5.3 ... 6.1		  128
+ * IBM AIX 7.1			  128 (can be configured to be up to 2048)
+ * OpenBSD, NetBSD		   16
+ * FreeBSD < 8.0		   16
+ * FreeBSD >=8.0		 1023
+ * Darwin (Mac OS X)		   16
+ * Sun Solaris 7,8,9,10		   16
+ * Sun Solaris 11 / OpenSolaris	 1024
+ * HP-UX			   20
+ * Windows			 1015
+ */
+#define RB_MAX_GROUPS (65536)
+static int maxgroups = RB_MAX_GROUPS;
 
 
 #ifdef HAVE_GETGROUPS
@@ -4694,8 +4715,8 @@ proc_setmaxgroups(VALUE obj, VALUE val)
 {
     int ngroups = FIX2UINT(val);
 
-    if (ngroups > 4096)
-	ngroups = 4096;
+    if (ngroups > RB_MAX_GROUPS)
+	ngroups = RB_MAX_GROUPS;
 
     maxgroups = ngroups;
 

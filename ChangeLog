@@ -1,3 +1,8 @@
+Sun Mar  6 23:18:23 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* process.c (maxgroups, proc_setmaxgroups): increase max groups
+	  limitation up to 65536.
+
 Sun Mar  6 22:20:59 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/ossl_pkey_ec.c: parenthesize macro arguments.
