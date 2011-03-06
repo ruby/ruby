@@ -1,3 +1,7 @@
+Sun Mar  6 23:45:40 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: rlim_t use standard RUBY_REPLACE_TYPE mechanism.
+
 Sun Mar  6 23:26:07 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* process.c (proc_setmaxgroups): added negative value check.

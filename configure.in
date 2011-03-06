@@ -689,6 +689,7 @@ RUBY_REPLACE_TYPE(gid_t, int, GIDT)
 RUBY_REPLACE_TYPE(time_t, [], TIMET, [@%:@include <time.h>])
 RUBY_REPLACE_TYPE(dev_t, [int long "long long"], DEVT)
 RUBY_REPLACE_TYPE(mode_t, ["unsigned int" long], MODET, [@%:@include <sys/stat.h>])
+RUBY_REPLACE_TYPE(rlim_t, [int long "long long"], RLIM, [@%:@include <sys/resource.h>])
 
 AC_CACHE_CHECK(for prototypes, rb_cv_have_prototypes,
   [AC_TRY_COMPILE([int foo(int x) { return 0; }], [return foo(10);],
@@ -1125,23 +1126,6 @@ AC_CHECK_HEADERS(limits.h sys/file.h sys/ioctl.h sys/syscall.h\
 		 sys/mkdev.h sys/utime.h xti.h netinet/in_systm.h float.h ieeefp.h \
 		 ucontext.h intrinsics.h langinfo.h locale.h sys/sendfile.h time.h \
 		 net/socket.h sys/socket.h)
-
-dnl Check additional types.
-RUBY_CHECK_SIZEOF(rlim_t, [int long "long long"], [], [
-  #ifdef HAVE_SYS_TYPES_H
-  # include <sys/types.h>
-  #endif
-  #ifdef HAVE_SYS_TIME_H
-  # include <sys/time.h>
-  #endif
-  #ifdef HAVE_SYS_RESOURCE_H
-  # include <sys/resource.h>
-  #endif
-  #ifdef HAVE_UNISTD_H
-  # include <unistd.h>
-  #endif
-  #include <stdio.h>
-])
 
 AC_TYPE_SIZE_T
 RUBY_CHECK_SIZEOF(size_t, [int long void*], [], [@%:@include <sys/types.h>])

@@ -122,17 +122,6 @@ static VALUE rb_cProcessTms;
 #endif
 #endif
 
-#if SIZEOF_RLIM_T == SIZEOF_INT
-# define RLIM2NUM(v) UINT2NUM(v)
-# define NUM2RLIM(v) NUM2UINT(v)
-#elif SIZEOF_RLIM_T == SIZEOF_LONG
-# define RLIM2NUM(v) ULONG2NUM(v)
-# define NUM2RLIM(v) NUM2ULONG(v)
-#elif SIZEOF_RLIM_T == SIZEOF_LONG_LONG
-# define RLIM2NUM(v) ULL2NUM(v)
-# define NUM2RLIM(v) NUM2ULL(v)
-#endif
-
 #define preserving_errno(stmts) \
 	do {int saved_errno = errno; stmts; errno = saved_errno;} while (0)
 
