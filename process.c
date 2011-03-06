@@ -4563,9 +4563,13 @@ proc_getgroups(VALUE obj)
     int i, ngroups;
     rb_gid_t *groups;
 
-    groups = ALLOCA_N(rb_gid_t, maxgroups);
+    ngroups = getgroups(0, NULL);
+    if (ngroups == -1)
+	rb_sys_fail(0);
 
-    ngroups = getgroups(maxgroups, groups);
+    groups = ALLOCA_N(rb_gid_t, ngroups);
+
+    ngroups = getgroups(ngroups, groups);
     if (ngroups == -1)
 	rb_sys_fail(0);
 

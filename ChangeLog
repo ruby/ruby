@@ -1,3 +1,8 @@
+Mon Mar  7 00:21:11 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* process.c (proc_getgroups): get rid of maxgroups dependency.
+	  ngroups can be calculated dynamically.
+
 Sun Mar  6 23:45:40 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: rlim_t use standard RUBY_REPLACE_TYPE mechanism.
