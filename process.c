@@ -4713,7 +4713,10 @@ proc_getmaxgroups(VALUE obj)
 static VALUE
 proc_setmaxgroups(VALUE obj, VALUE val)
 {
-    int ngroups = FIX2UINT(val);
+    int ngroups = FIX2INT(val);
+
+    if (ngroups <= 0)
+	rb_raise(rb_eArgError, "maxgroups %d shold be positive", ngroups);
 
     if (ngroups > RB_MAX_GROUPS)
 	ngroups = RB_MAX_GROUPS;
