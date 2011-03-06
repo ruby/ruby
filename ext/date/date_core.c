@@ -14,13 +14,6 @@
 #include RUBY_EXTCONF_H
 #endif
 
-#ifndef HAVE_FLOORL
-#define floorl(x) ((long double)floor((double)(x)))
-#endif
-#ifndef HAVE_ROUNDL
-#define roundl(x) ((long double)round((double)(x)))
-#endif
-
 #define LIGHT_MODE (1 << 0)
 #define HAVE_JD    (1 << 1)
 #define HAVE_DF    (1 << 2)
@@ -89,7 +82,7 @@ union DateTimeData
 	unsigned flags;
 	long jd;	/* as utc */
 	int df;		/* as utc, in secs */
-	long long sf;	/* in nano secs */
+	long sf;	/* in nano secs */
 	int of;		/* in secs */
 	double sg;
 	/* decoded as local */
@@ -1699,8 +1692,8 @@ minus_dd(VALUE self, VALUE other)
 
     if (light_mode_p(adat) &&
 	light_mode_p(bdat)) {
-	long d;
-	int df, sf;
+	long d, sf;
+	int df;
 	VALUE r;
 
 	get_dt_jd(adat);
@@ -2075,7 +2068,7 @@ d_right_cache(VALUE self)
 
 inline static VALUE
 dt_lite_s_new_internal(VALUE klass, long jd, int df,
-		       long long sf, int of, double sg,
+		       long sf, int of, double sg,
 		       int y, int m, int d,
 		       int h, int min, int s,
 		       unsigned flags)
@@ -2103,7 +2096,7 @@ dt_lite_s_new_internal(VALUE klass, long jd, int df,
 
 static VALUE
 dt_lite_s_new_internal_wo_civil(VALUE klass, long jd, int df,
-				long long sf, int of, double sg,
+				long sf, int of, double sg,
 				unsigned flags)
 {
     return dt_lite_s_new_internal(klass, jd, df, sf, of, sg,
@@ -2443,12 +2436,11 @@ datetime_s_now(int argc, VALUE *argv, VALUE klass)
     struct timespec ts;
 #else
     struct timeval tv;
-    time_t sec;
 #endif
+    time_t sec;
     struct tm tm;
-    long y;
+    long y, sf;
     int m, d, h, min, s, of;
-    long long sf;
 
     rb_scan_args(argc, argv, "01", &vsg);
 
@@ -2460,13 +2452,13 @@ datetime_s_now(int argc, VALUE *argv, VALUE klass)
 #ifdef HAVE_CLOCK_GETTIME
     if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
 	rb_sys_fail("clock_gettime");
-    localtime_r(&ts.tv_sec, &tm);
+    sec = ts.tv_sec;
 #else
     if (gettimeofday(&tv, NULL) == -1)
 	rb_sys_fail("gettimeofday");
     sec = tv.tv_sec;
-    localtime_r(&sec, &tm);
 #endif
+    localtime_r(&sec, &tm);
 
     y = tm.tm_year + 1900;
     m = tm.tm_mon + 1;
@@ -2975,10 +2967,9 @@ dt_lite_plus(VALUE self, VALUE other)
 	break;
       case T_FLOAT:
 	{
-	    long jd, df;
-	    long long sf;
-	    long double o;
-	    int s;
+	    long sf;
+	    double jd, o, tmp;
+	    int s, df;
 
 	    get_dt1(self);
 	    get_dt_jd(dat);
@@ -2994,13 +2985,12 @@ dt_lite_plus(VALUE self, VALUE other)
 	    else
 		s = +1;
 
-	    jd = (long)floorl(o);
-	    o = o - jd;
+	    o = modf(o, &jd);
 	    o *= DAY_IN_SECONDS;
-	    df = (long)floorl(o);
-	    o = o - df;
+	    o = modf(o, &tmp);
+	    df = (int)tmp;
 	    o *= SECOND_IN_NANOSECONDS;
-	    sf = (long)roundl(o);
+	    sf = (long)round(o);
 
 	    if (s < 0) {
 		jd = -jd;
@@ -3032,7 +3022,7 @@ dt_lite_plus(VALUE self, VALUE other)
 
 	    if (LIGHTABLE_JD(jd) && jd >= dat->l.sg)
 		return dt_lite_s_new_internal(CLASS_OF(self),
-					      jd,
+					      (long)jd,
 					      df,
 					      sf,
 					      dat->l.of,
