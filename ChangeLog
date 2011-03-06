@@ -1,3 +1,11 @@
+Sun Mar  6 21:49:04 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* sample/list.rb (MyElem#initialize): initialize @head
+	  explicitely. Otherwise -W2 option makes following warning.
+	  "warning: instance variable @head not initialized".
+	  This issue was founded by Andrew Grimm. Thanks Andrew!
+	  [ruby-core:35435][Bug#4471]
+
 Sun Mar  6 05:21:41 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* class.c: fix camelCase to snake_case in documentation code examples.
