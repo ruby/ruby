@@ -1,3 +1,11 @@
+Mon Mar  7 08:38:14 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/date/date_core.c (DateTimeData): should not use bare 'long long'
+	  and 'long double', which are not defined by C89.
+
+	* ext/date/date_core.c (dt_lite_plus): get rid of overflow at casting
+	  down double to integer.
+
 Mon Mar  7 00:21:11 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* process.c (proc_getgroups): get rid of maxgroups dependency.
