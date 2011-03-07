@@ -401,7 +401,7 @@ typedef struct rb_objspace {
 static int ruby_initial_gc_stress = 0;
 int *ruby_initial_gc_stress_ptr = &ruby_initial_gc_stress;
 #else
-static rb_objspace_t rb_objspace = {{initial_malloc_limit}, {initial_heap_min_slots}};
+static rb_objspace_t rb_objspace = {{GC_MALLOC_LIMIT}, {HEAP_MIN_SLOTS}};
 int *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #endif
 #define malloc_limit		objspace->malloc_params.limit
