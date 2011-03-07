@@ -4545,7 +4545,7 @@ static int _maxgroups = -1;
 static int maxgroups(void)
 {
     if (_maxgroups < 0) {
-	_maxgroups = sysconf(_SC_NGROUPS_MAX);
+	_maxgroups = (int)sysconf(_SC_NGROUPS_MAX);
 	if (_maxgroups < 0)
 	    _maxgroups = RB_MAX_GROUPS;
     }
@@ -4626,7 +4626,7 @@ proc_setgroups(VALUE obj, VALUE ary)
     if (RARRAY_LEN(ary) > maxgroups())
 	rb_raise(rb_eArgError, "too many groups, %d max", maxgroups());
 
-    ngroups = RARRAY_LEN(ary);
+    ngroups = (int)RARRAY_LEN(ary);
     groups = ALLOCA_N(rb_gid_t, ngroups);
 
     for (i = 0; i < ngroups; i++) {
@@ -4729,7 +4729,7 @@ static VALUE
 proc_setmaxgroups(VALUE obj, VALUE val)
 {
     int ngroups = FIX2INT(val);
-    int ngroups_max = sysconf(_SC_NGROUPS_MAX);
+    int ngroups_max = (int)sysconf(_SC_NGROUPS_MAX);
 
     if (ngroups <= 0)
 	rb_raise(rb_eArgError, "maxgroups %d shold be positive", ngroups);
