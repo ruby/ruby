@@ -127,21 +127,16 @@ class PStore
     if File::exist? file and not File::readable? file
       raise PStore::Error, format("file %s not readable", file)
     end
-    @transaction = false
     @filename = file
     @abort = false
     @ultra_safe = false
     @thread_safe = thread_safe
-    if @thread_safe
-      @lock = Mutex.new
-    else
-      @lock = DummyMutex.new
-    end
+    @lock = Mutex.new
   end
 
   # Raises PStore::Error if the calling code is not in a PStore#transaction.
   def in_transaction
-    raise PStore::Error, "not in transaction" unless @transaction
+    raise PStore::Error, "not in transaction" unless @lock.locked?
   end
   #
   # Raises PStore::Error if the calling code is not in a PStore#transaction or
@@ -318,10 +313,9 @@ class PStore
   #
   def transaction(read_only = false, &block)  # :yields:  pstore
     value = nil
-    raise PStore::Error, "nested transaction" if @transaction
+    raise PStore::Error, "nested transaction" if !@thread_safe && @lock.locked?
     @lock.synchronize do
       @rdonly = read_only
-      @transaction = true
       @abort = false
       file = open_and_lock_file(@filename, read_only)
       if file
@@ -347,8 +341,6 @@ class PStore
       end
     end
     value
-  ensure
-    @transaction = false
   end
 
   private
@@ -356,12 +348,6 @@ class PStore
   EMPTY_STRING = ""
   EMPTY_MARSHAL_DATA = Marshal.dump({})
   EMPTY_MARSHAL_CHECKSUM = Digest::MD5.digest(EMPTY_MARSHAL_DATA)
-
-  class DummyMutex
-    def synchronize
-      yield
-    end
-  end
 
   #
   # Open the specified filename (either in read-only mode or in

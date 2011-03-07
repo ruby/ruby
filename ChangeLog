@@ -1,3 +1,10 @@
+Mon Mar  7 22:59:39 2011  Shota Fukumori  <sorah@tubusu.net>
+
+	* lib/pstore.rb: Delete variable @transaction and fix #4474. Patch by
+	  Masaki Matsushita (Glass_saga).
+
+	* test/test_pstore.rb(test_thread_safe): Add test for #4474.
+
 Mon Mar  7 21:31:38 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* process.c (proc_setgroups): replace getgrnam() with getgrnam_r()
