@@ -4612,7 +4612,7 @@ proc_getgroups(VALUE obj)
 static VALUE
 proc_setgroups(VALUE obj, VALUE ary)
 {
-    size_t ngroups, i;
+    int ngroups, i;
     rb_gid_t *groups;
     long getgr_buf_len = sysconf(_SC_GETGR_R_SIZE_MAX);
     char* getgr_buf;
@@ -4623,13 +4623,13 @@ proc_setgroups(VALUE obj, VALUE ary)
 
     Check_Type(ary, T_ARRAY);
 
-    ngroups = RARRAY_LEN(ary);
-    if (ngroups > (size_t)maxgroups())
-	rb_raise(rb_eArgError, "too many groups, %u max", maxgroups());
+    if (RARRAY_LEN(ary) > maxgroups())
+	rb_raise(rb_eArgError, "too many groups, %d max", maxgroups());
 
+    ngroups = RARRAY_LEN(ary);
     groups = ALLOCA_N(rb_gid_t, ngroups);
 
-    for (i = 0; i < ngroups && i < (size_t)RARRAY_LEN(ary); i++) {
+    for (i = 0; i < ngroups; i++) {
 	VALUE g = RARRAY_PTR(ary)[i];
 
 	if (FIXNUM_P(g)) {
@@ -4659,7 +4659,7 @@ proc_setgroups(VALUE obj, VALUE ary)
 	}
     }
 
-    if (setgroups((int)ngroups, groups) == -1) /* ngroups <= maxgroups */
+    if (setgroups(ngroups, groups) == -1) /* ngroups <= maxgroups */
 	rb_sys_fail(0);
 
     return proc_getgroups(obj);
