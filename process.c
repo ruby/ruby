@@ -4542,10 +4542,18 @@ proc_setgid(VALUE obj, VALUE id)
  */
 #define RB_MAX_GROUPS (65536)
 static int _maxgroups = -1;
+static int get_sc_ngroups_max(void)
+{
+#ifdef _SC_NGROUPS_MAX
+    return (int)sysconf(_SC_NGROUPS_MAX);
+#else
+	return 32;
+#endif
+}
 static int maxgroups(void)
 {
     if (_maxgroups < 0) {
-	_maxgroups = (int)sysconf(_SC_NGROUPS_MAX);
+	_maxgroups = get_sc_ngroups_max();
 	if (_maxgroups < 0)
 	    _maxgroups = RB_MAX_GROUPS;
     }
@@ -4729,7 +4737,7 @@ static VALUE
 proc_setmaxgroups(VALUE obj, VALUE val)
 {
     int ngroups = FIX2INT(val);
-    int ngroups_max = (int)sysconf(_SC_NGROUPS_MAX);
+    int ngroups_max = get_sc_ngroups_max();
 
     if (ngroups <= 0)
 	rb_raise(rb_eArgError, "maxgroups %d shold be positive", ngroups);

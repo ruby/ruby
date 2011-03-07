@@ -1,3 +1,12 @@
+Tue Mar  8 01:43:11 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* process.c (get_sc_ngroups_max): define to wrap sysconf(3).
+	  this also supports Windows which doesn't have sysconf(3).
+
+	* process.c (maxgroups): use get_sc_ngroups_max.
+
+	* process.c (proc_setmaxgroups): ditto.
+
 Tue Mar  8 01:16:49 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* gc.c (rb_objspace): an initializer must be a constant.
