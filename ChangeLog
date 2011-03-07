@@ -1,3 +1,8 @@
+Mon Mar  7 09:05:18 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c: NUM2RLIM is defined but no getrlimit and setrlimit on
+	  mingw.
+
 Mon Mar  7 08:38:14 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/date/date_core.c (DateTimeData): should not use bare 'long long'

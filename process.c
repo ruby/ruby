@@ -1427,7 +1427,7 @@ check_exec_redirect(VALUE key, VALUE val, VALUE options)
     }
 }
 
-#ifdef RLIM2NUM
+#if defined(HAVE_SETRLIMIT) && defined(NUM2RLIM)
 static int rlimit_type_by_lname(const char *name);
 #endif
 
@@ -1465,7 +1465,7 @@ rb_exec_arg_addopt(struct rb_exec_arg *e, VALUE key, VALUE val)
         }
         else
 #endif
-#ifdef RLIM2NUM
+#if defined(HAVE_SETRLIMIT) && defined(NUM2RLIM)
         if (strncmp("rlimit_", rb_id2name(id), 7) == 0 &&
             (rtype = rlimit_type_by_lname(rb_id2name(id)+7)) != -1) {
             VALUE ary = rb_ary_entry(options, EXEC_OPTION_RLIMIT);
@@ -2222,7 +2222,7 @@ run_exec_pgroup(VALUE obj, VALUE save, char *errmsg, size_t errmsg_buflen)
 }
 #endif
 
-#ifdef RLIM2NUM
+#if defined(HAVE_SETRLIMIT) && defined(RLIM2NUM)
 static int
 run_exec_rlimit(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
 {
@@ -2284,7 +2284,7 @@ rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char
     }
 #endif
 
-#ifdef RLIM2NUM
+#if defined(HAVE_SETRLIMIT) && defined(RLIM2NUM)
     obj = rb_ary_entry(options, EXEC_OPTION_RLIMIT);
     if (!NIL_P(obj)) {
         if (run_exec_rlimit(obj, soptions, errmsg, errmsg_buflen) == -1)
@@ -3626,7 +3626,7 @@ proc_setpriority(VALUE obj, VALUE which, VALUE who, VALUE prio)
 #define proc_setpriority rb_f_notimplement
 #endif
 
-#if defined(RLIM2NUM)
+#if defined(HAVE_SETRLIMIT) && defined(NUM2RLIM)
 static int
 rlimit_resource_name2int(const char *name, int casetype)
 {
@@ -5690,7 +5690,7 @@ Init_process(void)
 
     rb_define_module_function(rb_mProcess, "getrlimit", proc_getrlimit, 1);
     rb_define_module_function(rb_mProcess, "setrlimit", proc_setrlimit, -1);
-#ifdef RLIM2NUM
+#if defined(RLIM2NUM) && defined(RLIM_INFINITY)
     {
         VALUE inf = RLIM2NUM(RLIM_INFINITY);
 #ifdef RLIM_SAVED_MAX
