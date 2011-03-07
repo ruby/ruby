@@ -1,3 +1,7 @@
+Tue Mar  8 00:02:47 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/ossl_pkey_rsa.c: parenthesize macro arguments.
+
 Mon Mar  7 22:59:39 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* lib/pstore.rb: Delete variable @transaction and fix #4474. Patch by

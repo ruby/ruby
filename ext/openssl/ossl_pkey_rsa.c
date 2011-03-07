@@ -13,8 +13,8 @@
 #include "ossl.h"
 
 #define GetPKeyRSA(obj, pkey) do { \
-    GetPKey(obj, pkey); \
-    if (EVP_PKEY_type(pkey->type) != EVP_PKEY_RSA) { /* PARANOIA? */ \
+    GetPKey((obj), (pkey)); \
+    if (EVP_PKEY_type((pkey)->type) != EVP_PKEY_RSA) { /* PARANOIA? */ \
 	ossl_raise(rb_eRuntimeError, "THIS IS NOT A RSA!") ; \
     } \
 } while (0)
