@@ -153,7 +153,6 @@ module TestParallel
     def test_should_run_all_without_any_leaks
       spawn_runner
       buf = timeout(10){@test_out.read}
-      assert_match(/^\.+SF\.+F\.*$/,buf)
       assert_match(/^\.*(\.SF\.*F|F\.*\.+SF)\.*$/,buf)
     end
 
