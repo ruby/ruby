@@ -4614,7 +4614,12 @@ proc_setgroups(VALUE obj, VALUE ary)
 {
     size_t ngroups, i;
     rb_gid_t *groups;
-    struct group *gr;
+    long getgr_buf_len = sysconf(_SC_GETGR_R_SIZE_MAX);
+    char* getgr_buf;
+
+    if (getgr_buf_len < 0)
+	getgr_buf_len = 4096;
+    getgr_buf = ALLOCA_N(char, getgr_buf_len);
 
     Check_Type(ary, T_ARRAY);
 
@@ -4632,18 +4637,24 @@ proc_setgroups(VALUE obj, VALUE ary)
 	}
 	else {
 	    VALUE tmp = rb_check_string_type(g);
+	    struct group grp;
+	    struct group *p;
+	    int ret;
 
 	    if (NIL_P(tmp)) {
 		groups[i] = NUM2GIDT(g);
 	    }
 	    else {
-		gr = getgrnam(RSTRING_PTR(tmp));
-		if (gr == NULL) {
-		    RB_GC_GUARD(tmp);
+		StringValue(tmp);
+
+		ret = getgrnam_r(RSTRING_PTR(tmp), &grp, getgr_buf, getgr_buf_len, &p);
+		if (ret)
+		    rb_sys_fail("getgrnam_r");
+		if (p == NULL) {
 		    rb_raise(rb_eArgError,
 			     "can't find group for %s", RSTRING_PTR(tmp));
 		}
-		groups[i] = gr->gr_gid;
+		groups[i] = grp.gr_gid;
 	    }
 	}
     }
