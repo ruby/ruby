@@ -4541,7 +4541,18 @@ proc_setgid(VALUE obj, VALUE id)
  * Windows			 1015
  */
 #define RB_MAX_GROUPS (65536)
-static int maxgroups = RB_MAX_GROUPS;
+static int _maxgroups = -1;
+static int maxgroups(void)
+{
+    if (_maxgroups < 0) {
+	_maxgroups = sysconf(_SC_NGROUPS_MAX);
+	if (_maxgroups < 0)
+	    _maxgroups = RB_MAX_GROUPS;
+    }
+
+    return _maxgroups;
+}
+
 
 
 #ifdef HAVE_GETGROUPS
@@ -4608,8 +4619,8 @@ proc_setgroups(VALUE obj, VALUE ary)
     Check_Type(ary, T_ARRAY);
 
     ngroups = RARRAY_LEN(ary);
-    if (ngroups > (size_t)maxgroups)
-	rb_raise(rb_eArgError, "too many groups, %u max", maxgroups);
+    if (ngroups > (size_t)maxgroups())
+	rb_raise(rb_eArgError, "too many groups, %u max", maxgroups());
 
     groups = ALLOCA_N(rb_gid_t, ngroups);
 
@@ -4691,7 +4702,7 @@ proc_initgroups(VALUE obj, VALUE uname, VALUE base_grp)
 static VALUE
 proc_getmaxgroups(VALUE obj)
 {
-    return INT2FIX(maxgroups);
+    return INT2FIX(maxgroups());
 }
 
 
@@ -4707,6 +4718,7 @@ static VALUE
 proc_setmaxgroups(VALUE obj, VALUE val)
 {
     int ngroups = FIX2INT(val);
+    int ngroups_max = sysconf(_SC_NGROUPS_MAX);
 
     if (ngroups <= 0)
 	rb_raise(rb_eArgError, "maxgroups %d shold be positive", ngroups);
@@ -4714,9 +4726,12 @@ proc_setmaxgroups(VALUE obj, VALUE val)
     if (ngroups > RB_MAX_GROUPS)
 	ngroups = RB_MAX_GROUPS;
 
-    maxgroups = ngroups;
+    if (ngroups_max > 0 && ngroups > ngroups_max)
+	ngroups = ngroups_max;
 
-    return INT2FIX(maxgroups);
+    _maxgroups = ngroups;
+
+    return INT2FIX(_maxgroups);
 }
 
 #if defined(HAVE_DAEMON) || (defined(HAVE_FORK) && defined(HAVE_SETSID))

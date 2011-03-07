@@ -1,3 +1,8 @@
+Mon Mar  7 20:49:12 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* process.c (proc_getmaxgroups, proc_setmaxgroups): refrect
+	  platform maxgroups limitation by default instead hardcoded 65536.
+
 Mon Mar  7 17:13:00 2011  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (rb_gc_set_params): allow GC parameter configuration by
