@@ -384,16 +384,20 @@ class TestProcess < Test::Unit::TestCase
       Process.wait Process.spawn(*ECHO["c"], STDERR=>STDOUT, STDOUT=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644])
       assert_equal("c", File.read("out").chomp)
       File.open("out", "w") {|f|
-        Process.wait Process.spawn(*ECHO["d"], f=>STDOUT, STDOUT=>f)
+        Process.wait Process.spawn(*ECHO["d"], STDOUT=>f)
         assert_equal("d", File.read("out").chomp)
       }
-      Process.wait Process.spawn(*ECHO["e"], STDOUT=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644],
-                                 3=>STDOUT, 4=>STDOUT, 5=>STDOUT, 6=>STDOUT, 7=>STDOUT)
+      opts = {STDOUT=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644]}
+      if /mswin|mingw/ !~ RUBY_PLATFORM
+        opts.merge(3=>STDOUT, 4=>STDOUT, 5=>STDOUT, 6=>STDOUT, 7=>STDOUT)
+      end
+      Process.wait Process.spawn(*ECHO["e"], opts)
       assert_equal("e", File.read("out").chomp)
-      Process.wait Process.spawn(*ECHO["ee"], STDOUT=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644],
-                                 3=>0, 4=>:in, 5=>STDIN,
-                                 6=>1, 7=>:out, 8=>STDOUT,
-                                 9=>2, 10=>:err, 11=>STDERR)
+      opts = {STDOUT=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644]}
+      if /mswin|mingw/ !~ RUBY_PLATFORM
+        opts.merge(3=>0, 4=>:in, 5=>STDIN, 6=>1, 7=>:out, 8=>STDOUT, 9=>2, 10=>:err, 11=>STDERR)
+      end
+      Process.wait Process.spawn(*ECHO["ee"], opts)
       assert_equal("ee", File.read("out").chomp)
       if /mswin|mingw/ !~ RUBY_PLATFORM
         # passing non-stdio fds is not supported on Windows

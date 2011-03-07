@@ -10,7 +10,7 @@ require 'rubygems/builder'
 class TestGemBuilder < Gem::TestCase
 
   def test_build
-    builder = Gem::Builder.new quick_gem('a')
+    builder = Gem::Builder.new quick_spec('a')
 
     use_ui @ui do
       Dir.chdir @tempdir do

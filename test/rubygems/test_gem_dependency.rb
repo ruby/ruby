@@ -106,6 +106,45 @@ class TestGemDependency < Gem::TestCase
     refute_equal dep("pkg", :development), dep("pkg", :runtime), "type"
   end
 
+  def test_merge
+    a1 = dep 'a', '~> 1.0'
+    a2 = dep 'a', '= 1.0'
+
+    a3 = a1.merge a2
+
+    assert_equal dep('a', '~> 1.0', '= 1.0'), a3
+  end
+
+  def test_merge_default
+    a1 = dep 'a'
+    a2 = dep 'a', '1'
+
+    a3 = a1.merge a2
+
+    assert_equal dep('a', '1'), a3
+  end
+
+  def test_merge_name_mismatch
+    a = dep 'a'
+    b = dep 'b'
+
+    e = assert_raises ArgumentError do
+      a.merge b
+    end
+
+    assert_equal 'a (>= 0) and b (>= 0) have different names',
+                 e.message
+  end
+
+  def test_merge_other_default
+    a1 = dep 'a', '1'
+    a2 = dep 'a'
+
+    a3 = a1.merge a2
+
+    assert_equal dep('a', '1'), a3
+  end
+
   def test_prerelease_eh
     d = dep "pkg", "= 1"
 

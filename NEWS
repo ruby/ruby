@@ -72,6 +72,7 @@ with all sufficient information, see the ChangeLog file.
       * String#unpack supports endian modifiers
     * new method:
       * String#prepend
+      * String#byteslice
 
   * Time
     * extended method:
@@ -153,8 +154,3 @@ with all sufficient information, see the ChangeLog file.
 * Kernel#respond_to?
 
   See above.
-
-* REXML::Document#encoding, REXML::XMLDecl#encoding,
-  REXML::Output#encoding and REXML::Source#encoding
-
-  Return an Encoding object not encoding name as a String.

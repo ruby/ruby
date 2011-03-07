@@ -962,6 +962,7 @@ class TestM17N < Test::Unit::TestCase
 
     assert_equal("X\u3042\u3044X", "A\u3042\u3044\u3046".tr("^\u3042\u3044", "X"))
     assert_equal("\u3042\u3046" * 100, ("\u3042\u3044" * 100).tr("\u3044", "\u3046"))
+    assert_equal("Y", "\u3042".tr("^X", "Y"))
   end
 
   def test_tr_s

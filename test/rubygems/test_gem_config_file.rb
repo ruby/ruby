@@ -283,6 +283,20 @@ class TestGemConfigFile < Gem::TestCase
     assert_equal "701229f217cdf23b1344c7b4b54ca97", @cfg.rubygems_api_key
   end
 
+  def test_load_api_keys_from_config
+    temp_cred = File.join Gem.user_home, '.gem', 'credentials'
+    FileUtils.mkdir File.dirname(temp_cred)
+    File.open temp_cred, 'w' do |fp|
+      fp.puts ":rubygems_api_key: 701229f217cdf23b1344c7b4b54ca97"
+      fp.puts ":other: a5fdbb6ba150cbb83aad2bb2fede64c"
+    end
+
+    util_config_file
+
+    assert_equal({:rubygems => '701229f217cdf23b1344c7b4b54ca97',
+                  :other => 'a5fdbb6ba150cbb83aad2bb2fede64c'}, @cfg.api_keys)
+  end
+
   def util_config_file(args = @cfg_args)
     @cfg = Gem::ConfigFile.new args
   end

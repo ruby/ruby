@@ -1152,20 +1152,20 @@ top_private(int argc, VALUE *argv)
  *     end
  *     class Cls
  *       include Mod
- *       def callOne
+ *       def call_one
  *         one
  *       end
  *     end
  *     Mod.one     #=> "This is one"
  *     c = Cls.new
- *     c.callOne   #=> "This is one"
+ *     c.call_one  #=> "This is one"
  *     module Mod
  *       def one
  *         "This is the new one"
  *       end
  *     end
  *     Mod.one     #=> "This is one"
- *     c.callOne   #=> "This is the new one"
+ *     c.call_one  #=> "This is the new one"
  */
 
 static VALUE

@@ -33,7 +33,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
       end
     end
 
-    if win_platform?
+    if win_platform? then
       assert File.exist?(@executable)
     else
       assert File.symlink?(@executable)
@@ -42,9 +42,9 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     # Evil hack to prevent false removal success
     FileUtils.rm_f @executable
 
-    open(@executable, "wb+") {|f| f.puts "binary"}
+    open @executable, "wb+" do |f| f.puts "binary" end
 
-    @cmd.options[:args] = Array(@spec.name)
+    @cmd.options[:args] = [@spec.name]
     use_ui @ui do
       @cmd.execute
     end
@@ -54,6 +54,25 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     assert_match(/Successfully uninstalled/, output.shift)
     assert_equal false, File.exist?(@executable)
     assert_nil output.shift, "UI output should have contained only two lines"
+  end
+
+  def test_execute_removes_formatted_executable
+    FileUtils.rm_f @executable # Wish this didn't happen in #setup
+
+    Gem::Installer.exec_format = 'foo-%s-bar'
+
+    @installer.format_executable = true
+    @installer.install
+
+    formatted_executable = File.join @gemhome, 'bin', 'foo-executable-bar'
+    assert_equal true, File.exist?(formatted_executable)
+
+    @cmd.options[:format_executable] = true
+    @cmd.execute
+
+    assert_equal false, File.exist?(formatted_executable)
+  rescue
+    Gem::Installer.exec_format = nil
   end
 
   def test_execute_not_installed
@@ -70,7 +89,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
   end
 
   def test_execute_prerelease
-    @spec = quick_gem "pre", "2.b"
+    @spec = quick_spec "pre", "2.b"
     @gem = File.join @tempdir, @spec.file_name
     FileUtils.touch @gem
 
