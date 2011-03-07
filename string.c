@@ -4976,8 +4976,8 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
     rb_encoding *enc, *e1, *e2;
     struct tr trsrc, trrepl;
     int cflag = 0;
-    unsigned int c, c0;
-    int last = 0, modify = 0, i, l;
+    unsigned int c, c0, last = 0;
+    int modify = 0, i, l;
     char *s, *send;
     VALUE hash = 0;
     int singlebyte = single_byte_optimizable(str);
