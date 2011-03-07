@@ -6,18 +6,18 @@
 #include "ossl.h"
 
 #define WrapPKCS12(klass, obj, p12) do { \
-    if(!(p12)) ossl_raise(rb_eRuntimeError, "PKCS12 wasn't initialized."); \
-    (obj) = Data_Wrap_Struct((klass), 0, PKCS12_free, (p12)); \
+    if(!p12) ossl_raise(rb_eRuntimeError, "PKCS12 wasn't initialized."); \
+    obj = Data_Wrap_Struct(klass, 0, PKCS12_free, p12); \
 } while (0)
 
 #define GetPKCS12(obj, p12) do { \
-    Data_Get_Struct((obj), PKCS12, (p12)); \
-    if(!(p12)) ossl_raise(rb_eRuntimeError, "PKCS12 wasn't initialized."); \
+    Data_Get_Struct(obj, PKCS12, p12); \
+    if(!p12) ossl_raise(rb_eRuntimeError, "PKCS12 wasn't initialized."); \
 } while (0)
 
 #define SafeGetPKCS12(obj, p12) do { \
-    OSSL_Check_Kind((obj), cPKCS12); \
-    GetPKCS12((obj), (p12)); \
+    OSSL_Check_Kind(obj, cPKCS12); \
+    GetPKCS12(obj, p12); \
 } while (0)
 
 #define ossl_pkcs12_set_key(o,v)      rb_iv_set((o), "@key", (v))

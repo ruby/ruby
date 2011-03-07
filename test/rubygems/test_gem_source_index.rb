@@ -23,7 +23,7 @@ class TestGemSourceIndex < Gem::TestCase
 
     FileUtils.mkdir_p spec_dir
 
-    a1 = quick_spec 'a', '1' do |spec| spec.author = 'author 1' end
+    a1 = quick_gem 'a', '1' do |spec| spec.author = 'author 1' end
 
     spec_file = File.join spec_dir, a1.spec_name
 
@@ -44,7 +44,7 @@ class TestGemSourceIndex < Gem::TestCase
 
     FileUtils.mkdir_p spec_dir
 
-    a1 = quick_spec 'a', '1' do |spec| spec.author = 'author 1' end
+    a1 = quick_gem 'a', '1' do |spec| spec.author = 'author 1' end
 
     spec_file = File.join spec_dir, a1.spec_name
 
@@ -214,24 +214,24 @@ end
   end
 
   def test_latest_specs
-    p1_ruby = quick_spec 'p', '1'
-    p1_platform = quick_spec 'p', '1' do |spec|
+    p1_ruby = quick_gem 'p', '1'
+    p1_platform = quick_gem 'p', '1' do |spec|
       spec.platform = Gem::Platform::CURRENT
     end
 
-    a1_platform = quick_spec @a1.name, (@a1.version) do |s|
+    a1_platform = quick_gem @a1.name, (@a1.version) do |s|
       s.platform = Gem::Platform.new 'x86-my_platform1'
     end
 
-    a2_platform = quick_spec @a2.name, (@a2.version) do |s|
+    a2_platform = quick_gem @a2.name, (@a2.version) do |s|
       s.platform = Gem::Platform.new 'x86-my_platform1'
     end
 
-    a2_platform_other = quick_spec @a2.name, (@a2.version) do |s|
+    a2_platform_other = quick_gem @a2.name, (@a2.version) do |s|
       s.platform = Gem::Platform.new 'x86-other_platform1'
     end
 
-    a3_platform_other = quick_spec @a2.name, (@a2.version.bump) do |s|
+    a3_platform_other = quick_gem @a2.name, (@a2.version.bump) do |s|
       s.platform = Gem::Platform.new 'x86-other_platform1'
     end
 
@@ -266,8 +266,8 @@ end
     FileUtils.mkdir_p spec_dir1
     FileUtils.mkdir_p spec_dir2
 
-    a1 = quick_spec 'a', '1' do |spec| spec.author = 'author 1' end
-    a2 = quick_spec 'a', '1' do |spec| spec.author = 'author 2' end
+    a1 = quick_gem 'a', '1' do |spec| spec.author = 'author 1' end
+    a2 = quick_gem 'a', '1' do |spec| spec.author = 'author 2' end
 
     File.open File.join(spec_dir1, a1.spec_name), 'w' do |fp|
       fp.write a1.to_ruby
@@ -287,12 +287,12 @@ end
 
     assert_equal [], @source_index.outdated
 
-    updated = quick_spec @a2.name, (@a2.version.bump)
+    updated = quick_gem @a2.name, (@a2.version.bump)
     util_setup_spec_fetcher updated
 
     assert_equal [updated.name], @source_index.outdated
 
-    updated_platform = quick_spec @a2.name, (updated.version.bump) do |s|
+    updated_platform = quick_gem @a2.name, (updated.version.bump) do |s|
       s.platform = Gem::Platform.new 'x86-other_platform1'
     end
 
@@ -302,11 +302,10 @@ end
   end
 
   def test_prerelease_specs_kept_in_right_place
-    gem_a1_alpha = quick_spec 'abba', '1.a'
+    gem_a1_alpha = quick_gem 'abba', '1.a'
     @source_index.add_spec gem_a1_alpha
 
     refute @source_index.latest_specs.include?(gem_a1_alpha)
-    assert @source_index.latest_specs(true).include?(gem_a1_alpha)
     assert @source_index.find_name(gem_a1_alpha.full_name).empty?
     assert @source_index.prerelease_specs.include?(gem_a1_alpha)
   end
@@ -364,11 +363,11 @@ end
   def test_search_platform
     util_set_arch 'x86-my_platform1'
 
-    a1 = quick_spec 'a', '1'
-    a1_mine = quick_spec 'a', '1' do |s|
+    a1 = quick_gem 'a', '1'
+    a1_mine = quick_gem 'a', '1' do |s|
       s.platform = Gem::Platform.new 'x86-my_platform1'
     end
-    a1_other = quick_spec 'a', '1' do |s|
+    a1_other = quick_gem 'a', '1' do |s|
       s.platform = Gem::Platform.new 'x86-other_platform1'
     end
 

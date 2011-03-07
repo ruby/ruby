@@ -459,12 +459,12 @@ NORETURN(static void raise_method_missing(rb_thread_t *th, int argc, const VALUE
  *  values.
  *
  *     class Roman
- *       def roman_to_int(str)
+ *       def romanToInt(str)
  *         # ...
  *       end
  *       def method_missing(methId)
  *         str = methId.id2name
- *         roman_to_int(str)
+ *         romanToInt(str)
  *       end
  *     end
  *
@@ -1082,12 +1082,12 @@ eval_string(VALUE self, VALUE src, VALUE scope, const char *file, int line)
  *  optional <em>filename</em> and <em>lineno</em> parameters are
  *  present, they will be used when reporting syntax errors.
  *
- *     def get_binding(str)
+ *     def getBinding(str)
  *       return binding
  *     end
  *     str = "hello"
  *     eval "str + ' Fred'"                      #=> "hello Fred"
- *     eval "str + ' Fred'", get_binding("bye")  #=> "bye Fred"
+ *     eval "str + ' Fred'", getBinding("bye")   #=> "bye Fred"
  */
 
 VALUE

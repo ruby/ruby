@@ -1,3 +1,9 @@
+Mon Mar  7 17:13:00 2011  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (rb_gc_set_params): allow GC parameter configuration by
+	  environment variables.  based on a patch from funny-falcon at
+	  https://gist.github.com/856296, but honors safe level.
+
 Mon Mar  7 09:05:18 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c: NUM2RLIM is defined but no getrlimit and setrlimit on
@@ -6567,7 +6573,6 @@ For the changes before 1.9.3, see doc/ChangeLog-1.9.3
 For the changes before 1.8.0, see doc/ChangeLog-1.8.0
 
 Local variables:
-coding: us-ascii
 add-log-time-format: (lambda ()
   (let* ((time (current-time))
 	 (system-time-locale "C")

@@ -876,7 +876,7 @@ clear_dump_arg(struct dump_arg *arg)
  *       def initialize(str)
  *         @str = str
  *       end
- *       def say_hello
+ *       def sayHello
  *         @str
  *       end
  *     end
@@ -886,7 +886,7 @@ clear_dump_arg(struct dump_arg *arg)
  *     o = Klass.new("hello\n")
  *     data = Marshal.dump(o)
  *     obj = Marshal.load(data)
- *     obj.say_hello  #=> "hello\n"
+ *     obj.sayHello   #=> "hello\n"
  *
  * Marshal can't dump following objects:
  * * anonymous Class/Module.

@@ -22,7 +22,7 @@ class TestGemCommandsFetchCommand < Gem::TestCase
     util_setup_spec_fetcher @a2
 
     @fetcher.data["#{@gem_repo}gems/#{@a2.file_name}"] =
-      File.read(Gem.cache_gem(@a2.file_name, @gemhome))
+      File.read(File.join(@gemhome, 'cache', @a2.file_name))
 
     @cmd.options[:args] = [@a2.name]
 
@@ -41,9 +41,9 @@ class TestGemCommandsFetchCommand < Gem::TestCase
     util_setup_spec_fetcher @a2, @a2_pre
 
     @fetcher.data["#{@gem_repo}gems/#{@a2.file_name}"] =
-      File.read(Gem.cache_gem(@a2.file_name, @gemhome))
+      File.read(File.join(@gemhome, 'cache', @a2.file_name))
     @fetcher.data["#{@gem_repo}gems/#{@a2_pre.file_name}"] =
-      File.read(Gem.cache_gem(@a2_pre.file_name, @gemhome))
+      File.read(File.join(@gemhome, 'cache', @a2_pre.file_name))
 
     @cmd.options[:args] = [@a2.name]
     @cmd.options[:prerelease] = true
@@ -63,7 +63,7 @@ class TestGemCommandsFetchCommand < Gem::TestCase
     util_setup_spec_fetcher @a1, @a2
 
     @fetcher.data["#{@gem_repo}gems/#{@a1.file_name}"] =
-      File.read(Gem.cache_gem(@a1.file_name, @gemhome))
+      File.read(File.join(@gemhome, 'cache', @a1.file_name))
 
     @cmd.options[:args] = [@a2.name]
     @cmd.options[:version] = Gem::Requirement.new '1'

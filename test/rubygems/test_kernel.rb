@@ -46,7 +46,7 @@ class TestKernel < Gem::TestCase
       gem 'a', '= 2'
     end
 
-    assert_match(/activate a \(= 2\)/, ex.message)
+    assert_match(/activate a \(= 2, runtime\)/, ex.message)
     assert_match(/activated a-1/, ex.message)
     assert_equal 'a', ex.name
     assert_equal Gem::Requirement.new('= 2'), ex.requirement

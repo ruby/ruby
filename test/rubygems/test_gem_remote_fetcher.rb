@@ -99,10 +99,9 @@ gems:
 
     # REFACTOR: copied from test_gem_dependency_installer.rb
     @gems_dir = File.join @tempdir, 'gems'
-    @cache_dir = Gem.cache_dir(@gemhome)
+    @cache_dir = File.join @gemhome, 'cache'
     FileUtils.mkdir @gems_dir
 
-    # TODO: why does the remote fetcher need it written to disk?
     @a1, @a1_gem = util_gem 'a', '1' do |s| s.executables << 'a_bin' end
 
     Gem::RemoteFetcher.fetcher = nil
@@ -209,7 +208,7 @@ gems:
 
     fetcher = util_fuck_with_fetcher a1_data
 
-    a1_cache_gem = Gem.cache_gem(@a1.file_name, @gemhome)
+    a1_cache_gem = File.join(@gemhome, 'cache', @a1.file_name)
     assert_equal a1_cache_gem, fetcher.download(@a1, 'http://gems.example.com')
     assert_equal("http://gems.example.com/gems/a-1.gem",
                  fetcher.instance_variable_get(:@test_arg).to_s)
@@ -221,7 +220,7 @@ gems:
 
     inst = Gem::RemoteFetcher.fetcher
 
-    assert_equal Gem.cache_gem(@a1.file_name, @gemhome),
+    assert_equal File.join(@gemhome, 'cache', @a1.file_name),
                  inst.download(@a1, 'http://gems.example.com')
   end
 
@@ -234,7 +233,7 @@ gems:
       inst = Gem::RemoteFetcher.fetcher
     end
 
-    assert_equal Gem.cache_gem(@a1.file_name, @gemhome),
+    assert_equal File.join(@gemhome, 'cache', @a1.file_name),
                  inst.download(@a1, local_path)
   end
 
@@ -249,7 +248,7 @@ gems:
       inst = Gem::RemoteFetcher.fetcher
     end
 
-    assert_equal Gem.cache_gem(@a1.file_name, @gemhome),
+    assert_equal File.join(@gemhome, 'cache', @a1.file_name),
                  inst.download(@a1, local_path)
   end
 
@@ -263,7 +262,7 @@ gems:
 
     install_dir = File.join @tempdir, 'more_gems'
 
-    a1_cache_gem = Gem.cache_gem(@a1.file_name, install_dir)
+    a1_cache_gem = File.join install_dir, 'cache', @a1.file_name
     FileUtils.mkdir_p(File.dirname(a1_cache_gem))
     actual = fetcher.download(@a1, 'http://gems.example.com', install_dir)
 
@@ -279,7 +278,7 @@ gems:
       FileUtils.mv @a1_gem, @tempdir
       local_path = File.join @tempdir, @a1.file_name
       inst = nil
-      File.chmod 0555, Gem.cache_dir(@gemhome)
+      File.chmod 0555, File.join(@gemhome, 'cache')
 
       Dir.chdir @tempdir do
         inst = Gem::RemoteFetcher.fetcher
@@ -288,19 +287,19 @@ gems:
       assert_equal File.join(@tempdir, @a1.file_name),
         inst.download(@a1, local_path)
     ensure
-      File.chmod 0755, Gem.cache_dir(@gemhome)
+      File.chmod 0755, File.join(@gemhome, 'cache')
     end
 
     def test_download_read_only
-      File.chmod 0555, Gem.cache_dir(@gemhome)
+      File.chmod 0555, File.join(@gemhome, 'cache')
       File.chmod 0555, File.join(@gemhome)
 
       fetcher = util_fuck_with_fetcher File.read(@a1_gem)
       fetcher.download(@a1, 'http://gems.example.com')
-      assert File.exist?(Gem.cache_gem(@a1.file_name, Gem.user_dir))
+      assert File.exist?(File.join(Gem.user_dir, 'cache', @a1.file_name))
     ensure
-      File.chmod 0755, @gemhome
-      File.chmod 0755, Gem.cache_dir(@gemhome)
+      File.chmod 0755, File.join(@gemhome)
+      File.chmod 0755, File.join(@gemhome, 'cache')
     end
   end
 
@@ -319,7 +318,7 @@ gems:
 
     fetcher = util_fuck_with_fetcher e1_data, :blow_chunks
 
-    e1_cache_gem = Gem.cache_gem(e1.file_name, @gemhome)
+    e1_cache_gem = File.join(@gemhome, 'cache', e1.file_name)
 
     assert_equal e1_cache_gem, fetcher.download(e1, 'http://gems.example.com')
 
@@ -337,7 +336,7 @@ gems:
       inst = Gem::RemoteFetcher.fetcher
     end
 
-    cache_path = Gem.cache_gem(@a1.file_name, @gemhome)
+    cache_path = File.join @gemhome, 'cache', @a1.file_name
     FileUtils.mv local_path, cache_path
 
     gem = Gem::Format.from_file_by_path cache_path
@@ -743,14 +742,6 @@ gems:
       end
       sleep 0.2                 # Give the servers time to startup
     end
-  end
-
-  def test_correct_for_windows_path
-    path = "/C:/WINDOWS/Temp/gems"
-    assert_equal "C:/WINDOWS/Temp/gems", @fetcher.correct_for_windows_path(path)
-
-    path = "/home/skillet"
-    assert_equal "/home/skillet", @fetcher.correct_for_windows_path(path)
   end
 
 end

@@ -13,8 +13,8 @@
 #include "ossl.h"
 
 #define GetPKeyDH(obj, pkey) do { \
-    GetPKey((obj), (pkey)); \
-    if (EVP_PKEY_type((pkey)->type) != EVP_PKEY_DH) { /* PARANOIA? */ \
+    GetPKey(obj, pkey); \
+    if (EVP_PKEY_type(pkey->type) != EVP_PKEY_DH) { /* PARANOIA? */ \
 	ossl_raise(rb_eRuntimeError, "THIS IS NOT A DH!") ; \
     } \
 } while (0)

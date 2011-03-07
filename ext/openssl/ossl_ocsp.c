@@ -14,55 +14,55 @@
 #if defined(OSSL_OCSP_ENABLED)
 
 #define WrapOCSPReq(klass, obj, req) do { \
-    if(!(req)) ossl_raise(rb_eRuntimeError, "Request wasn't initialized!"); \
-    (obj) = Data_Wrap_Struct((klass), 0, OCSP_REQUEST_free, (req)); \
+    if(!req) ossl_raise(rb_eRuntimeError, "Request wasn't initialized!"); \
+    obj = Data_Wrap_Struct(klass, 0, OCSP_REQUEST_free, req); \
 } while (0)
 #define GetOCSPReq(obj, req) do { \
-    Data_Get_Struct((obj), OCSP_REQUEST, (req)); \
-    if(!(req)) ossl_raise(rb_eRuntimeError, "Request wasn't initialized!"); \
+    Data_Get_Struct(obj, OCSP_REQUEST, req); \
+    if(!req) ossl_raise(rb_eRuntimeError, "Request wasn't initialized!"); \
 } while (0)
 #define SafeGetOCSPReq(obj, req) do { \
-    OSSL_Check_Kind((obj), cOCSPReq); \
-    GetOCSPReq((obj), (req)); \
+    OSSL_Check_Kind(obj, cOCSPReq); \
+    GetOCSPReq(obj, req); \
 } while (0)
 
 #define WrapOCSPRes(klass, obj, res) do { \
-    if(!(res)) ossl_raise(rb_eRuntimeError, "Response wasn't initialized!"); \
-    (obj) = Data_Wrap_Struct((klass), 0, OCSP_RESPONSE_free, (res)); \
+    if(!res) ossl_raise(rb_eRuntimeError, "Response wasn't initialized!"); \
+    obj = Data_Wrap_Struct(klass, 0, OCSP_RESPONSE_free, res); \
 } while (0)
 #define GetOCSPRes(obj, res) do { \
-    Data_Get_Struct((obj), OCSP_RESPONSE, (res)); \
-    if(!(res)) ossl_raise(rb_eRuntimeError, "Response wasn't initialized!"); \
+    Data_Get_Struct(obj, OCSP_RESPONSE, res); \
+    if(!res) ossl_raise(rb_eRuntimeError, "Response wasn't initialized!"); \
 } while (0)
 #define SafeGetOCSPRes(obj, res) do { \
-    OSSL_Check_Kind((obj), cOCSPRes); \
-    GetOCSPRes((obj), (res)); \
+    OSSL_Check_Kind(obj, cOCSPRes); \
+    GetOCSPRes(obj, res); \
 } while (0)
 
 #define WrapOCSPBasicRes(klass, obj, res) do { \
-    if(!(res)) ossl_raise(rb_eRuntimeError, "Response wasn't initialized!"); \
-    (obj) = Data_Wrap_Struct((klass), 0, OCSP_BASICRESP_free, (res)); \
+    if(!res) ossl_raise(rb_eRuntimeError, "Response wasn't initialized!"); \
+    obj = Data_Wrap_Struct(klass, 0, OCSP_BASICRESP_free, res); \
 } while (0)
 #define GetOCSPBasicRes(obj, res) do { \
-    Data_Get_Struct((obj), OCSP_BASICRESP, (res)); \
-    if(!(res)) ossl_raise(rb_eRuntimeError, "Response wasn't initialized!"); \
+    Data_Get_Struct(obj, OCSP_BASICRESP, res); \
+    if(!res) ossl_raise(rb_eRuntimeError, "Response wasn't initialized!"); \
 } while (0)
 #define SafeGetOCSPBasicRes(obj, res) do { \
-    OSSL_Check_Kind((obj), cOCSPBasicRes); \
-    GetOCSPBasicRes((obj), (res)); \
+    OSSL_Check_Kind(obj, cOCSPBasicRes); \
+    GetOCSPBasicRes(obj, res); \
 } while (0)
 
 #define WrapOCSPCertId(klass, obj, cid) do { \
-    if(!(cid)) ossl_raise(rb_eRuntimeError, "Cert ID wasn't initialized!"); \
-    (obj) = Data_Wrap_Struct((klass), 0, OCSP_CERTID_free, (cid)); \
+    if(!cid) ossl_raise(rb_eRuntimeError, "Cert ID wasn't initialized!"); \
+    obj = Data_Wrap_Struct(klass, 0, OCSP_CERTID_free, cid); \
 } while (0)
 #define GetOCSPCertId(obj, cid) do { \
-    Data_Get_Struct((obj), OCSP_CERTID, (cid)); \
-    if(!(cid)) ossl_raise(rb_eRuntimeError, "Cert ID wasn't initialized!"); \
+    Data_Get_Struct(obj, OCSP_CERTID, cid); \
+    if(!cid) ossl_raise(rb_eRuntimeError, "Cert ID wasn't initialized!"); \
 } while (0)
 #define SafeGetOCSPCertId(obj, cid) do { \
-    OSSL_Check_Kind((obj), cOCSPCertId); \
-    GetOCSPCertId((obj), (cid)); \
+    OSSL_Check_Kind(obj, cOCSPCertId); \
+    GetOCSPCertId(obj, cid); \
 } while (0)
 
 VALUE mOCSP;

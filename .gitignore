@@ -97,9 +97,6 @@
 /ext/-test-/*/Makefile
 /ext/-test-/*/extconf.h
 /ext/-test-/*/mkmf.log
-/ext/-test-/*/*/Makefile
-/ext/-test-/*/*/extconf.h
-/ext/-test-/*/*/mkmf.log
 
 # /ext/bigdecimal/
 /ext/bigdecimal/*.def
@@ -448,11 +445,6 @@
 /ext/zlib/mkmf.log
 /ext/zlib/zlib.a
 /ext/zlib/conftest.dSYM
-
-# /ext/date/
-/ext/date/Makefile
-/ext/date/extconf.h
-/ext/date/mkmf.log
 
 # /lib/rexml/
 

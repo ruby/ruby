@@ -22,7 +22,7 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
 
     assert_equal(
       @cmd.find_in_cache(@a1.file_name), 
-      Gem.cache_gem(@a1.file_name, @gemhome),
+      File.join(@gemhome, 'cache', @a1.file_name), 
       'found a-1.gem in the cache'
     )
   end
@@ -34,7 +34,7 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
     
     a1_data = nil
 
-    open Gem.cache_gem(@a1.file_name, @gemhome), 'rb' do |fp|
+    open File.join(@gemhome, 'cache', @a1.file_name), 'rb' do |fp|
       a1_data = fp.read
     end
 
@@ -44,15 +44,15 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
     dep = Gem::Dependency.new(@a1.name, @a1.version)
     assert_equal(
       @cmd.get_path(dep), 
-      Gem.cache_gem(@a1.file_name, @gemhome), 
+      File.join(@gemhome, 'cache', @a1.file_name), 
       'fetches a-1 and returns the cache path'
     )
 
-    FileUtils.rm Gem.cache_gem(@a1.file_name, @gemhome)
+    FileUtils.rm File.join(@gemhome, 'cache', @a1.file_name)
 
     assert_equal(
       @cmd.get_path(dep), 
-      Gem.cache_gem(@a1.file_name, @gemhome), 
+      File.join(@gemhome, 'cache', @a1.file_name), 
       'when removed from cache, refetches a-1'
     )
   end
@@ -74,8 +74,6 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
 
   def test_execute_gem_path
     util_make_gems
-    util_setup_spec_fetcher
-    util_setup_fake_fetcher
 
     Gem.clear_paths
 
@@ -123,7 +121,7 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
     util_clear_gems
 
     a2_data = nil
-    open Gem.cache_gem(@a2.file_name, @gemhome), 'rb' do |fp|
+    open File.join(@gemhome, 'cache', @a2.file_name), 'rb' do |fp|
       a2_data = fp.read
     end
 
@@ -177,8 +175,8 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
   end
 
   def test_execute_exact_match
-    foo_spec = quick_spec 'foo'
-    foo_bar_spec = quick_spec 'foo_bar'
+    foo_spec = quick_gem 'foo'
+    foo_bar_spec = quick_gem 'foo_bar'
 
     use_ui @ui do
       Dir.chdir @tempdir do

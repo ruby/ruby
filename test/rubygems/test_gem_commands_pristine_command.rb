@@ -15,7 +15,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
   def test_execute
-    a = quick_spec 'a' do |s| s.executables = %w[foo] end
+    a = quick_gem 'a' do |s| s.executables = %w[foo] end
     FileUtils.mkdir_p File.join(@tempdir, 'bin')
     File.open File.join(@tempdir, 'bin', 'foo'), 'w' do |fp|
       fp.puts "#!/usr/bin/ruby"
@@ -45,7 +45,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
   def test_execute_all
-    a = quick_spec 'a' do |s| s.executables = %w[foo] end
+    a = quick_gem 'a' do |s| s.executables = %w[foo] end
     FileUtils.mkdir_p File.join(@tempdir, 'bin')
     File.open File.join(@tempdir, 'bin', 'foo'), 'w' do |fp|
       fp.puts "#!/usr/bin/ruby"
@@ -73,29 +73,15 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
   def test_execute_missing_cache_gem
-    a = quick_spec 'a' do |s|
-      s.executables = %w[foo]
-    end
-
+    a = quick_gem 'a' do |s| s.executables = %w[foo] end
     FileUtils.mkdir_p File.join(@tempdir, 'bin')
-
     File.open File.join(@tempdir, 'bin', 'foo'), 'w' do |fp|
       fp.puts "#!/usr/bin/ruby"
     end
 
     install_gem a
 
-    a_data = nil
-    open File.join(@gemhome, 'cache', a.file_name), 'rb' do |fp|
-      a_data = fp.read
-    end
-
-    util_setup_fake_fetcher
-    util_setup_spec_fetcher a
-
-    Gem::RemoteFetcher.fetcher.data["http://gems.example.com/gems/#{a.file_name}"] = a_data
-
-    FileUtils.rm Gem.cache_gem(a.file_name, @gemhome)
+    FileUtils.rm File.join(@gemhome, 'cache', a.file_name)
 
     @cmd.options[:args] = %w[a]
 
@@ -105,17 +91,11 @@ class TestGemCommandsPristineCommand < Gem::TestCase
 
     out = @ui.output.split "\n"
 
-    [
-      "Restoring gem\(s\) to pristine condition...",
-      "Restored a-1",
-      "Cached gem for a-2 not found, attempting to fetch...",
-      "Restored a-2",
-      "Restored a-3.a"
-    ].each do |line|
-      assert_equal line, out.shift
-    end
-
+    assert_equal "Restoring gem\(s\) to pristine condition...", out.shift
     assert_empty out, out.inspect
+
+    assert_equal "ERROR:  Cached gem for #{a.full_name} not found, use `gem install` to restore\n",
+                 @ui.error
   end
 
   def test_execute_no_gem

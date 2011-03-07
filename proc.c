@@ -336,10 +336,10 @@ rb_binding_new(void)
  *  calling +eval+ to execute the evaluated command in this
  *  environment. Also see the description of class +Binding+.
  *
- *     def get_binding(param)
+ *     def getBinding(param)
  *       return binding
  *     end
- *     b = get_binding("hello")
+ *     b = getBinding("hello")
  *     eval("param", b)   #=> "hello"
  */
 
@@ -358,10 +358,10 @@ rb_f_binding(VALUE self)
  *  <em>lineno</em> parameters are present, they will be used when
  *  reporting syntax errors.
  *
- *     def get_binding(param)
+ *     def getBinding(param)
  *       return binding
  *     end
- *     b = get_binding("hello")
+ *     b = getBinding("hello")
  *     b.eval("param")   #=> "hello"
  */
 
@@ -2211,15 +2211,15 @@ Init_Proc(void)
  *       def initialize(n)
  *         @secret = n
  *       end
- *       def get_binding
+ *       def getBinding
  *         return binding()
  *       end
  *     end
  *
  *     k1 = Demo.new(99)
- *     b1 = k1.get_binding
+ *     b1 = k1.getBinding
  *     k2 = Demo.new(-3)
- *     b2 = k2.get_binding
+ *     b2 = k2.getBinding
  *
  *     eval("@secret", b1)   #=> 99
  *     eval("@secret", b2)   #=> -3

@@ -202,7 +202,7 @@ ossl_cipher_init(int argc, VALUE *argv, VALUE self, int mode)
 	 * keeping this behaviour for backward compatibility.
 	 */
 	const char *cname  = rb_class2name(rb_obj_class(self));
-	rb_warn("arguments for %s#encrypt and %s#decrypt were deprecated; "
+	rb_warn("argumtents for %s#encrypt and %s#decrypt were deprecated; "
                 "use %s#pkcs5_keyivgen to derive key and IV",
                 cname, cname, cname);
 	StringValue(pass);
