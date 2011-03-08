@@ -1,3 +1,7 @@
+Tue Mar  8 23:40:30 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/misc/test_ruby_mode.rb: test for ruby-mode.el.
+
 Tue Mar  8 23:27:38 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* process.c (get_sc_ngroups_max): try to use NGROUPS_MAX at first if
