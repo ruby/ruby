@@ -1,3 +1,7 @@
+Wed Mar  9 00:15:52 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb: workaround for nmake.
+
 Tue Mar  8 23:49:45 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* process.c (proc_setgroups): cleanup.
