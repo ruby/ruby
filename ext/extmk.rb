@@ -576,7 +576,7 @@ end
 $mflags.unshift("topdir=#$topdir")
 ENV.delete("RUBYOPT")
 if $configure_only and $command_output
-  exts.map! {|d| "ext/#{d}/"}
+  exts.map! {|d| "ext/#{d}/."}
   open($command_output, "wb") do |mf|
     mf.puts "V = 0"
     mf.puts "Q1 = $(V:1=)"
@@ -598,11 +598,11 @@ if $configure_only and $command_output
     mf.puts
     targets = %w[all install static install-so install-rb clean distclean realclean]
     targets.each do |target|
-      mf.puts "#{target}: $(extensions:/=/#{target})"
+      mf.puts "#{target}: $(extensions:/.=/#{target})"
     end
     mf.puts
     mf.puts "all: #{rubies.join(' ')}"
-    mf.puts "#{rubies.join(' ')}: $(extensions:/=/all)"
+    mf.puts "#{rubies.join(' ')}: $(extensions:/.=/all)"
     rubies.each do |target|
       mf.puts "#{target}:\n\t$(Q)$(MAKE) $(MFLAGS) $@"
     end
@@ -610,7 +610,7 @@ if $configure_only and $command_output
     exec = config_string("exec") {|s| s + " "}
     targets.each do |target|
       exts.each do |d|
-        mf.puts "#{d}#{target}:\n\t$(Q)cd $(@D) && #{exec}$(MAKE) $(MFLAGS) $(@F)"
+        mf.puts "#{d[0..-2]}#{target}:\n\t$(Q)cd $(@D) && #{exec}$(MAKE) $(MFLAGS) $(@F)"
       end
     end
   end
