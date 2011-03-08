@@ -1,3 +1,7 @@
+Tue Mar  8 09:08:00 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c: RARRAY_LEN() returns long int.
+
 Tue Mar  8 09:07:03 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_REPLACE_TYPE): enclose in quotes for multiple

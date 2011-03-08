@@ -1569,8 +1569,8 @@ check_exec_fds(VALUE options)
 {
     VALUE h = rb_hash_new();
     VALUE ary;
-    int index, i;
-    int maxhint = -1;
+    int index, maxhint = -1;
+    long i;
 
     for (index = EXEC_OPTION_DUP2; index <= EXEC_OPTION_DUP2_CHILD; index++) {
         ary = rb_ary_entry(options, index);
@@ -2116,7 +2116,8 @@ run_exec_dup2(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
 static int
 run_exec_close(VALUE ary, char *errmsg, size_t errmsg_buflen)
 {
-    int i, ret;
+    long i;
+    int ret;
 
     for (i = 0; i < RARRAY_LEN(ary); i++) {
         VALUE elt = RARRAY_PTR(ary)[i];
@@ -2133,7 +2134,8 @@ run_exec_close(VALUE ary, char *errmsg, size_t errmsg_buflen)
 static int
 run_exec_open(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
 {
-    int i, ret;
+    long i;
+    int ret;
 
     for (i = 0; i < RARRAY_LEN(ary);) {
         VALUE elt = RARRAY_PTR(ary)[i];
@@ -2179,7 +2181,9 @@ run_exec_open(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
 static int
 run_exec_dup2_child(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
 {
-    int i, ret;
+    long i;
+    int ret;
+
     for (i = 0; i < RARRAY_LEN(ary); i++) {
         VALUE elt = RARRAY_PTR(ary)[i];
         int newfd = FIX2INT(RARRAY_PTR(elt)[0]);
@@ -2226,7 +2230,7 @@ run_exec_pgroup(VALUE obj, VALUE save, char *errmsg, size_t errmsg_buflen)
 static int
 run_exec_rlimit(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
 {
-    int i;
+    long i;
     for (i = 0; i < RARRAY_LEN(ary); i++) {
         VALUE elt = RARRAY_PTR(ary)[i];
         int rtype = NUM2INT(RARRAY_PTR(elt)[0]);
@@ -2300,7 +2304,7 @@ rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char
 
     obj = rb_ary_entry(options, EXEC_OPTION_ENV);
     if (!NIL_P(obj)) {
-        int i;
+        long i;
         save_env(soptions);
         for (i = 0; i < RARRAY_LEN(obj); i++) {
             VALUE pair = RARRAY_PTR(obj)[i];
@@ -4634,7 +4638,7 @@ proc_setgroups(VALUE obj, VALUE ary)
     if (RARRAY_LEN(ary) > maxgroups())
 	rb_raise(rb_eArgError, "too many groups, %d max", maxgroups());
 
-    ngroups = (int)RARRAY_LEN(ary);
+    ngroups = RARRAY_LENINT(ary);
     groups = ALLOCA_N(rb_gid_t, ngroups);
 
     for (i = 0; i < ngroups; i++) {
