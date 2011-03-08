@@ -1,3 +1,7 @@
+Tue Mar  8 23:10:16 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-parse-partial): fix for array in block.
+
 Tue Mar  8 21:44:49 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/ossl_rand.c: parenthesize macro arguments.
