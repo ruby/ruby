@@ -172,8 +172,8 @@ ossl_rand_status(VALUE self)
 }
 
 #define DEFMETH(class, name, func, argc) \
-	rb_define_method(class, name, func, argc); \
-	rb_define_singleton_method(class, name, func, argc);
+	rb_define_method((class), (name), (func), (argc)); \
+	rb_define_singleton_method((class), (name), (func), (argc));
 
 /*
  * INIT

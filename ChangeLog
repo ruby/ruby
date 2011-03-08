@@ -1,3 +1,7 @@
+Tue Mar  8 21:44:49 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/ossl_rand.c: parenthesize macro arguments.
+
 Tue Mar  8 16:45:31 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* hash.c (ruby_setenv): MSDN says that Windows XP or earlier limits
