@@ -1,7 +1,7 @@
 Tue Mar  8 09:32:48 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (configure-ext, build-ext), ext/extmk.rb (extmake):
-	  support paralell-make under ext.
+	  support parallel-make under ext.
 
 Tue Mar  8 09:25:23 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -54,7 +54,7 @@ Mon Mar  7 21:31:38 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 Mon Mar  7 20:49:12 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* process.c (proc_getmaxgroups, proc_setmaxgroups): refrect
+	* process.c (proc_getmaxgroups, proc_setmaxgroups): reflect
 	  platform maxgroups limitation by default instead hardcoded 65536.
 
 Mon Mar  7 17:13:00 2011  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -103,7 +103,7 @@ Sun Mar  6 22:20:59 2011  Tanaka Akira  <akr@fsij.org>
 Sun Mar  6 21:49:04 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* sample/list.rb (MyElem#initialize): initialize @head
-	  explicitely. Otherwise -W2 option makes following warning.
+	  explicitly. Otherwise -W2 option makes following warning.
 	  "warning: instance variable @head not initialized".
 	  This issue was founded by Andrew Grimm. Thanks Andrew!
 	  [ruby-core:35435][Bug#4471]
@@ -293,9 +293,9 @@ Tue Mar  1 10:34:39 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Tue Mar  1 00:12:49 2011  Tajima Akio <artonx@yahoo.co.jp>
 
-	* include/ruby/win32.h: define WIN32 if neither _WIN64 nor WIN32 
+	* include/ruby/win32.h: define WIN32 if neither _WIN64 nor WIN32
 	  defined. it forces to use push/pop for pack(4) pragma.
-	
+
 Mon Feb 28 23:52:13 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* test/testunit/test_rake_integration.rb (test_with_rake_runner):
