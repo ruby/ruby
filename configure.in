@@ -2908,6 +2908,8 @@ AC_CONFIG_FILES(Makefile, [{
 
 ruby_pc="${RUBY_BASE_NAME}-${MAJOR}.${MINOR}.pc"
 AC_SUBST(ruby_pc)
+AC_SUBST(exec, [exec])
+
 AC_CONFIG_FILES($ruby_pc:template/ruby.pc.in,
     [
     if sed ['s/\$(\([A-Za-z_][A-Za-z0-9_]*\))/${\1}/g;s/@[A-Za-z_][A-Za-z0-9_]*@//'] $ruby_pc > ruby.tmp.pc &&

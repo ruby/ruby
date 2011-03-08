@@ -1,3 +1,8 @@
+Tue Mar  8 09:32:48 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (configure-ext, build-ext), ext/extmk.rb (extmake):
+	  support paralell-make under ext.
+
 Tue Mar  8 09:25:23 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (proc_setgroups): use getgrnam() if getgrnam_r() is

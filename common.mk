@@ -140,7 +140,7 @@ COMPILE_PRELUDE = $(MINIRUBY) -I$(srcdir) $(srcdir)/tool/compile_prelude.rb
 all: showflags main docs
 
 main: showflags encs exts
-	@$(RUNCMD) $(MKMAIN_CMD) $(MAKE)
+	@$(NULLCMD)
 
 .PHONY: showflags
 exts enc trans: showflags
@@ -162,7 +162,16 @@ showconfig:
 	"$(configure_args)" \
 	$(MESSAGE_END)
 
-exts: $(MKMAIN_CMD)
+exts: build-ext
+
+EXTS_MK = exts.mk
+$(EXTS_MK): $(MKFILES) incs $(PREP) $(RBCONFIG) $(LIBRUBY)
+	@$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --command-output=$(EXTS_MK) $(EXTMK_ARGS) configure
+
+configure-ext: $(EXTS_MK)
+
+build-ext: $(EXTS_MK)
+	$(Q)$(MAKE) -f $(EXTS_MK) $(MFLAGS)
 
 $(MKMAIN_CMD): $(MKFILES) incs $(PREP) $(RBCONFIG) $(LIBRUBY)
 	@$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --command-output=$@ $(EXTMK_ARGS)

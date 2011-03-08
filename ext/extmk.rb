@@ -17,6 +17,7 @@ $extpath = nil
 $ignore = nil
 $message = nil
 $command_output = nil
+$configure_only = false
 
 $progname = $0
 alias $PROGRAM_NAME $0
@@ -90,8 +91,10 @@ def extract_makefile(makefile, keep = true)
 end
 
 def extmake(target)
-  print "#{$message} #{target}\n"
-  $stdout.flush
+  unless $configure_only
+    print "#{$message} #{target}\n"
+    $stdout.flush
+  end
 
   FileUtils.mkpath target unless File.directory?(target)
   begin
@@ -150,6 +153,10 @@ def extmake(target)
 	    [conf, "#{$srcdir}/depend"].any? {|f| modified?(f, [t])})
         then
 	  ok = false
+          if $configure_only
+            print "#{$message} #{target}\n"
+            $stdout.flush
+          end
           init_mkmf
 	  Logging::logfile 'mkmf.log'
 	  rm_f makefile
@@ -177,7 +184,7 @@ def extmake(target)
       return true
     end
     args = sysquote($mflags)
-    unless $destdir.to_s.empty? or $mflags.include?("DESTDIR")
+    unless $destdir.to_s.empty? or $mflags.defined?("DESTDIR")
       args += [sysquote("DESTDIR=" + relative_from($destdir, "../"+prefix))]
     end
     if $static
@@ -186,7 +193,7 @@ def extmake(target)
     end
     FileUtils.rm_f(old_cleanfiles - $distcleanfiles)
     FileUtils.rm_f(old_objs - $objs)
-    unless system($make, *args)
+    unless $configure_only or system($make, *args)
       $ignore or $continue or return false
     end
     $compiled[target] = true
@@ -330,11 +337,13 @@ if target = ARGV.shift and /^[a-z-]+$/ =~ target
     $mflags.unshift("INSTALL_PROG=install -c -p -m 0755",
                     "INSTALL_DATA=install -c -p -m 0644",
                     "MAKEDIRS=mkdir -p") if $dryrun
+  when /configure/
+    $configure_only = true
   end
 end
 unless $message
   if target
-    $message = target.sub(/^(\w+)e?\b/, '\1ing').tr('-', ' ')
+    $message = target.sub(/^(\w+?)e?\b/, '\1ing').tr('-', ' ')
   else
     $message = "compiling"
   end
@@ -445,6 +454,7 @@ exts.each do |d|
     extmake(d) or abort
   end
 end
+
 $top_srcdir = srcdir
 $topdir = "."
 $hdrdir = hdrdir
@@ -549,17 +559,14 @@ Dir.chdir ".."
 unless $destdir.to_s.empty?
   $mflags.defined?("DESTDIR") or $mflags << "DESTDIR=#{$destdir}"
 end
-message = "making #{rubies.join(', ')}"
-$mflags.concat(rubies)
 $makeflags.uniq!
-$makeflags.concat(rubies)
 
 if $nmake == ?b
   unless (vars = $mflags.grep(/\A\w+=/n)).empty?
     open(mkf = "libruby.mk", "wb") do |tmf|
       tmf.puts("!include Makefile")
       tmf.puts
-      tmf.puts(*vars.map {|v| v.sub(/=/, " = ")})
+      tmf.puts(*vars.map {|v| v.sub(/\=/, " = ")})
       tmf.puts("PRE_LIBRUBY_UPDATE = del #{mkf}")
     end
     $mflags.unshift("-f#{mkf}")
@@ -568,13 +575,55 @@ if $nmake == ?b
 end
 $mflags.unshift("topdir=#$topdir")
 ENV.delete("RUBYOPT")
-if $command_output
+if $configure_only and $command_output
+  exts.map! {|d| "ext/#{d}"}
+  open($command_output, "wb") do |mf|
+    mf.puts "V = 0"
+    mf.puts "Q1 = $(V:1=)"
+    mf.puts "Q = $(Q1:0=@)"
+    mf.puts "ECHO1 = $(V:1=@:)"
+    mf.puts "ECHO = $(ECHO1:0=@echo)"
+    mf.puts
+
+    mf.print "extensions ="
+    w = 12
+    exts.each do |d|
+      if d.size + w > 70
+        mf.print " \\\n\t    "
+        w = 12
+      end
+      mf.print " #{d}"
+      w += d.size + 1
+    end
+    mf.puts
+    targets = %w[all install static install-so install-rb clean distclean realclean]
+    targets.each do |target|
+      mf.puts "#{target}: $(extensions:=/#{target})"
+    end
+    mf.puts
+    mf.puts "all: #{rubies.join(' ')}"
+    mf.puts "#{rubies.join(' ')}: $(extensions:=/all)"
+    rubies.each do |target|
+      mf.puts "#{target}:\n\t$(Q)$(MAKE) $(MFLAGS) $@"
+    end
+    mf.puts
+    exec = config_string("exec") {|s| s + " "}
+    targets.each do |target|
+      exts.each do |d|
+        mf.puts "#{d}/#{target}:\n\t$(Q)cd $(@D) && #{exec}$(MAKE) $(MFLAGS) $(@F)"
+      end
+    end
+  end
+elsif $command_output
+  message = "making #{rubies.join(', ')}"
   message = "echo #{message}"
+  $mflags.concat(rubies)
+  $makeflags.concat(rubies)
   cmd = $makeflags.map {|ss|ss.sub(/.*[$(){};\s].*/, %q['\&'])}.join(' ')
   open($command_output, 'wb') do |ff|
     case $command_output
     when /\.sh\z/
-      ff.puts message, "rm -f $0; exec \"$@\" #{cmd}"
+      ff.puts message, "rm -f \"$0\"; exec \"$@\" #{cmd}"
     when /\.bat\z/
       ["@echo off", message, "%* #{cmd}", "del %0 & exit %ERRORLEVEL%"].each do |ss|
         ff.print ss, "\r\n"
@@ -584,9 +633,11 @@ if $command_output
     end
     ff.chmod(0755)
   end
-else
+elsif !$configure_only
+  message = "making #{rubies.join(', ')}"
   puts message
   $stdout.flush
+  $mflags.concat(rubies)
   system($make, *sysquote($mflags)) or exit($?.exitstatus)
 end
 
