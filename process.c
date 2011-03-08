@@ -4553,7 +4553,7 @@ static int get_sc_ngroups_max(void)
 #elif defined(NGROUPS_MAX)
     return (int)NGROUPS_MAX;
 #else
-	return 32;
+    return 32;
 #endif
 }
 static int maxgroups(void)
