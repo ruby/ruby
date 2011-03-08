@@ -4639,10 +4639,10 @@ proc_setgroups(VALUE obj, VALUE ary)
 
     Check_Type(ary, T_ARRAY);
 
-    if (RARRAY_LEN(ary) > maxgroups())
+    ngroups = RARRAY_LENINT(ary);
+    if (ngroups > maxgroups())
 	rb_raise(rb_eArgError, "too many groups, %d max", maxgroups());
 
-    ngroups = RARRAY_LENINT(ary);
     groups = ALLOCA_N(rb_gid_t, ngroups);
 
     for (i = 0; i < ngroups; i++) {
