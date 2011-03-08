@@ -1,4 +1,7 @@
-Tue Mar  8 09:08:00 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Mar  8 09:25:23 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (proc_setgroups): use getgrnam() if getgrnam_r() is
+	  not available.
 
 	* process.c: RARRAY_LEN() returns long int.
 

@@ -4626,12 +4626,14 @@ proc_setgroups(VALUE obj, VALUE ary)
 {
     int ngroups, i;
     rb_gid_t *groups;
+#ifdef HAVE_GETGRNAM_R
     long getgr_buf_len = sysconf(_SC_GETGR_R_SIZE_MAX);
     char* getgr_buf;
 
     if (getgr_buf_len < 0)
 	getgr_buf_len = 4096;
     getgr_buf = ALLOCA_N(char, getgr_buf_len);
+#endif
 
     Check_Type(ary, T_ARRAY);
 
@@ -4657,16 +4659,20 @@ proc_setgroups(VALUE obj, VALUE ary)
 		groups[i] = NUM2GIDT(g);
 	    }
 	    else {
-		StringValue(tmp);
+		const char *grpname = StringValueCStr(tmp);
 
-		ret = getgrnam_r(RSTRING_PTR(tmp), &grp, getgr_buf, getgr_buf_len, &p);
+#ifdef HAVE_GETGRNAM_R
+		ret = getgrnam_r(grpname, &grp, getgr_buf, getgr_buf_len, &p);
 		if (ret)
 		    rb_sys_fail("getgrnam_r");
+#else
+		p = getgrnam(grpname);
+#endif
 		if (p == NULL) {
 		    rb_raise(rb_eArgError,
 			     "can't find group for %s", RSTRING_PTR(tmp));
 		}
-		groups[i] = grp.gr_gid;
+		groups[i] = p->gr_gid;
 	    }
 	}
     }

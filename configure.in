@@ -1306,7 +1306,7 @@ AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall __syscall chroot ge
 	      setitimer setruid seteuid setreuid setresuid setproctitle socketpair\
 	      setrgid setegid setregid setresgid issetugid pause lchown lchmod\
 	      getpgrp setpgrp getpgid setpgid initgroups getgroups setgroups\
-	      getpriority getrlimit setrlimit sysconf close\
+	      getpriority getrlimit setrlimit sysconf close getgrnam_r\
 	      dlopen sigprocmask sigaction sigsetjmp _setjmp _longjmp\
 	      setsid telldir seekdir fchmod cosh sinh tanh log2 round\
 	      setuid setgid daemon select_large_fdset setenv unsetenv\
