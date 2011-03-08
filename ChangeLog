@@ -1,3 +1,9 @@
+Tue Mar  8 12:30:06 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-deep-indent-paren-p, ruby-calculate-indent):
+	  do not apply deep-indent inside parens at the beginning of
+	  expressions.
+
 Tue Mar  8 09:32:48 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (configure-ext, build-ext), ext/extmk.rb (extmake):

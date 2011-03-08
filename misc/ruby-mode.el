@@ -496,8 +496,12 @@ The variable ruby-indent-level controls the amount of indentation.
           (no-error nil)
           ((error "unterminated string")))))
 
-(defun ruby-deep-indent-paren-p (c)
-  (cond ((listp ruby-deep-indent-paren)
+(defun ruby-deep-indent-paren-p (c &optional pos)
+  (cond ((save-excursion
+	   (if pos (goto-char pos))
+	   (ruby-expr-beg))
+	 nil)
+	((listp ruby-deep-indent-paren)
          (let ((deep (assoc c ruby-deep-indent-paren)))
            (cond (deep
                   (or (cdr deep) ruby-deep-indent-paren-style))
@@ -752,7 +756,8 @@ The variable ruby-indent-level controls the amount of indentation.
         (setq indent nil))              ;  do nothing
        ((car (nth 1 state))             ; in paren
         (goto-char (setq begin (cdr (nth 1 state))))
-        (let ((deep (ruby-deep-indent-paren-p (car (nth 1 state)))))
+        (let ((deep (ruby-deep-indent-paren-p (car (nth 1 state))
+					      (1- (cdr (nth 1 state))))))
           (if deep
               (cond ((and (eq deep t) (eq (car (nth 1 state)) paren))
                      (skip-syntax-backward " ")
@@ -771,7 +776,8 @@ The variable ruby-indent-level controls the amount of indentation.
               (goto-char parse-start) (back-to-indentation))
             (setq indent (ruby-indent-size (current-column) (nth 2 state))))
           (and (eq (car (nth 1 state)) paren)
-               (ruby-deep-indent-paren-p (matching-paren paren))
+               (ruby-deep-indent-paren-p (matching-paren paren)
+					 (1- (cdr (nth 1 state))))
                (search-backward (char-to-string paren))
                (setq indent (current-column)))))
        ((and (nth 2 state) (> (nth 2 state) 0)) ; in nest
@@ -796,7 +802,9 @@ The variable ruby-indent-level controls the amount of indentation.
         (setq eol (point))
         (beginning-of-line)
         (cond
-         ((and (not (ruby-deep-indent-paren-p paren))
+         ((and (not (ruby-deep-indent-paren-p paren
+					      (and (cdr (nth 1 state))
+						   (1- (cdr (nth 1 state))))))
                (re-search-forward ruby-negative eol t))
           (and (not (eq ?_ (char-after (match-end 0))))
                (setq indent (- indent ruby-indent-level))))
