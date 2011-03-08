@@ -4550,6 +4550,8 @@ static int get_sc_ngroups_max(void)
 {
 #ifdef _SC_NGROUPS_MAX
     return (int)sysconf(_SC_NGROUPS_MAX);
+#elif defined(NGROUPS_MAX)
+    return (int)NGROUPS_MAX;
 #else
 	return 32;
 #endif
