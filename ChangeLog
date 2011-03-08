@@ -1,3 +1,10 @@
+Tue Mar  8 16:45:31 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* hash.c (ruby_setenv): MSDN says that Windows XP or earlier limits
+	  the total size of environment block to 5,120 chars.  and on such
+	  OS, putenv() causes SEGV.  So, ruby should limit the size of an
+	  environment variable to 5,120 bytes for workaround.
+
 Tue Mar  8 15:57:20 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/rubygems/test_gem_spec_fetcher.rb

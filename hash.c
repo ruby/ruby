@@ -2206,6 +2206,7 @@ ruby_setenv(const char *name, const char *value)
 	rb_sys_fail("ruby_setenv");
     }
     if (value) {
+	if (strlen(value) > 5120) goto fail;
 	buf = rb_sprintf("%s=%s", name, value);
     }
     else {
