@@ -642,7 +642,10 @@ fi
 
 dnl RUBY_REPLACE_TYPE [typename] [default type] [macro type] [included]
 AC_DEFUN([RUBY_REPLACE_TYPE], [dnl
-    AC_CHECK_TYPE([$1], [n=[$1]], [n=[$2]], [$4])
+    AC_CHECK_TYPE([$1],
+		  [n="patsubst([$1],["],[\\"])"],
+		  [n="patsubst([$2],["],[\\"])"],
+		  [$4])
     AC_CACHE_CHECK([for convertible type of [$1]], rb_cv_[$1]_convertible, [
 	u= t=
 	AS_CASE(["$n "],

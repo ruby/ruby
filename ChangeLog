@@ -1,3 +1,8 @@
+Tue Mar  8 09:07:03 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_REPLACE_TYPE): enclose in quotes for multiple
+	  type names.
+
 Tue Mar  8 01:43:11 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* process.c (get_sc_ngroups_max): define to wrap sysconf(3).
