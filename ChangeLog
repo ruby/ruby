@@ -1,3 +1,10 @@
+Tue Mar  8 15:57:20 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/rubygems/test_gem_spec_fetcher.rb
+	  (TestGemSpecFetcher#test_cache_dir_escapes_windows_paths): cache_dir
+	  may have driveletter and `:' for base of cache_dir itself, so need
+	  to skip it for checking.
+
 Tue Mar  8 12:30:06 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-deep-indent-paren-p, ruby-calculate-indent):
