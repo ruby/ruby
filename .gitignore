@@ -48,6 +48,7 @@
 /enc/trans/*.c
 /encdb.h
 /ext/win32ole/.document
+/exts.mk
 /goruby
 /id.h
 /largefile.h
