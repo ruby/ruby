@@ -281,7 +281,7 @@ EOT
       fd = IO.sysopen("tmp")
       f = IO.new(fd, "r:sjis")
       begin
-        assert_equal(Encoding::Shift_JIS, f.read.encoding)
+        assert_equal(Encoding::Windows_31J, f.read.encoding)
       ensure
         f.close
       end

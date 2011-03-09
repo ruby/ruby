@@ -1,3 +1,8 @@
+Wed Mar  9 23:51:26 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* test/ruby/test_io_m17n.rb (test_io_new_enc): "sjis" is now an alias
+	  of Windows-31J.
+
 Wed Mar  9 23:06:13 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-parse-partial): fix indent after aref.
