@@ -46,6 +46,8 @@ with all sufficient information, see the ChangeLog file.
       * CP951
       * UTF-16
       * UTF-32
+    * change alias:
+      * SJIS is Windows-31J
 
   * File
     * new constant:

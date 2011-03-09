@@ -1,6 +1,7 @@
 Wed Mar  9 11:53:31 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/shift_jis.c: Change SJIS as an alias of Windows-31J.
+	  [ruby-dev:43027] fixes #4280
 
 	* enc/shift_jis.c: Add PCK as an alias of Windows-31J.
 
