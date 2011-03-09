@@ -16,12 +16,12 @@
 #  include <unistd.h> /* for read(), and write() */
 #endif
 
-#define numberof(ary) (int)(sizeof(ary)/sizeof(ary[0]))
+#define numberof(ary) (int)(sizeof(ary)/sizeof((ary)[0]))
 
 #ifdef _WIN32
 #  define TO_SOCKET(s) _get_osfhandle(s)
 #else
-#  define TO_SOCKET(s) s
+#  define TO_SOCKET(s) (s)
 #endif
 
 VALUE mSSL;
@@ -1064,9 +1064,9 @@ ossl_ssl_setup(VALUE self)
 }
 
 #ifdef _WIN32
-#define ssl_get_error(ssl, ret) (errno = rb_w32_map_errno(WSAGetLastError()), SSL_get_error(ssl, ret))
+#define ssl_get_error(ssl, ret) (errno = rb_w32_map_errno(WSAGetLastError()), SSL_get_error((ssl), (ret)))
 #else
-#define ssl_get_error(ssl, ret) SSL_get_error(ssl, ret)
+#define ssl_get_error(ssl, ret) SSL_get_error((ssl), (ret))
 #endif
 
 static void

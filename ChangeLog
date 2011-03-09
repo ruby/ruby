@@ -1,3 +1,7 @@
+Thu Mar 10 03:00:43 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/ossl_ssl.c: parenthesize macro arguments.
+
 Wed Mar  9 23:51:26 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* test/ruby/test_io_m17n.rb (test_io_new_enc): "sjis" is now an alias
