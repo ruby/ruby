@@ -157,6 +157,24 @@ class TestGemDependencyList < Gem::TestCase
     assert_equal exp, @deplist.why_not_ok?
   end
 
+  def test_why_not_ok_eh_old_dependency
+    a  = new_spec 'a', '1',
+                  'b' => '~> 1.0'
+
+    b0 = new_spec 'b', '1.0',
+                  'd' => '>= 0'
+
+    b1 = new_spec 'b', '1.1'
+
+    util_clear_gems
+
+    @deplist.clear
+
+    @deplist.add a, b0, b1
+
+    assert_equal({},  @deplist.why_not_ok?)
+  end
+
   def test_ok_eh_mismatch
     a1 = quick_spec 'a', '1'
     a2 = quick_spec 'a', '2'

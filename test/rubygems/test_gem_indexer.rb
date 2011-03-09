@@ -29,6 +29,8 @@ class TestGemIndexer < Gem::TestCase
     @d2_0_b = quick_spec 'd', '2.0.b'
     util_build_gem @d2_0_b
 
+    @tempdir = File.join(@tempdir, 'indexer')
+
     gems = File.join(@tempdir, 'gems')
     FileUtils.mkdir_p gems
     FileUtils.mv Dir[Gem.cache_gem('*.gem', @gemhome)], gems

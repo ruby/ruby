@@ -193,11 +193,15 @@ class TestGemRequirement < Gem::TestCase
     assert_satisfied_by "  ",          "> 0.a "
     assert_satisfied_by "",            " >  0.a"
     assert_satisfied_by "3.1",         "< 3.2.rc1"
+
     assert_satisfied_by "3.2.0",       "> 3.2.0.rc1"
     assert_satisfied_by "3.2.0.rc2",   "> 3.2.0.rc1"
+
     assert_satisfied_by "3.0.rc2",     "< 3.0"
     assert_satisfied_by "3.0.rc2",     "< 3.0.0"
     assert_satisfied_by "3.0.rc2",     "< 3.0.1"
+
+    assert_satisfied_by "3.0.rc2",     "> 0"
   end
 
   def test_illformed_requirements

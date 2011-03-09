@@ -414,9 +414,8 @@ class TestGemSpecFetcher < Gem::TestCase
 
   def test_cache_dir_escapes_windows_paths
     uri = URI.parse("file:///C:/WINDOWS/Temp/gem_repo")
-    cache_dir = @sf.cache_dir(uri)
-    pos = (/\A[a-z]:/i =~ cache_dir) ? 2 : 0
-    refute /:/ =~ cache_dir[pos..-1], "#{cache_dir} should not contain a :"
+    cache_dir = @sf.cache_dir(uri).gsub(@sf.dir, '')
+    assert cache_dir !~ /:/, "#{cache_dir} should not contain a :"
   end
 end
 

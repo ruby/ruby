@@ -3,7 +3,7 @@ require 'rbconfig'
 require 'test/unit'
 
 src_testdir = File.dirname(File.expand_path(__FILE__))
-srcdir = File.dirname(src_testdir)
+$LOAD_PATH << src_testdir
 
 require_relative 'profile_test_all' if ENV['RUBY_TEST_ALL_PROFILE'] == 'true'
 

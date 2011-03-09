@@ -25,12 +25,13 @@ class Gem::Commands::OutdatedCommand < Gem::Command
     locals = Gem::SourceIndex.from_installed_gems
 
     locals.outdated.sort.each do |name|
-      local = locals.find_name(name).last
-
-      dep = Gem::Dependency.new local.name, ">= #{local.version}"
+      local   = locals.find_name(name).last
+      dep     = Gem::Dependency.new local.name, ">= #{local.version}"
       remotes = Gem::SpecFetcher.fetcher.fetch dep
-      remote = remotes.last.first
 
+      next if remotes.empty?
+
+      remote = remotes.last.first
       say "#{local.name} (#{local.version} < #{remote.version})"
     end
   end

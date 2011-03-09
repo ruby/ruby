@@ -1,3 +1,9 @@
+Thu Mar 10 07:12:03 2011  Ryan Davis  <ryand-ruby@zenspider.com>
+
+	* lib/rubygems*: Import rubygems 1.6.2 (release candidate @ 2026fbb5)
+	* test/rubygems: Ditto
+	* test/runner.rb: Added test to load path to fix test requires.
+
 Thu Mar 10 03:00:43 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/ossl_ssl.c: parenthesize macro arguments.

@@ -171,6 +171,7 @@ class Gem::DocManager
     args << @spec.require_paths.clone
     args << @spec.extra_rdoc_files
     args << '--title' << "#{@spec.full_name} Documentation"
+    args << '--quiet'
     args = args.flatten.map do |arg| arg.to_s end
 
     if self.class.rdoc_version >= Gem::Version.new('2.4.0') then

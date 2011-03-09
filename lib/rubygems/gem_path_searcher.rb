@@ -56,6 +56,14 @@ class Gem::GemPathSearcher
     end
   end
 
+  def find_active(glob)
+    # HACK violation of encapsulation
+    @gemspecs.find do |spec|
+      # TODO: inverted responsibility
+      spec.loaded? and matching_file? spec, glob
+    end
+  end
+
   ##
   # Works like #find, but finds all gemspecs matching +glob+.
 

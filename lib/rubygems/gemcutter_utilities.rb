@@ -15,7 +15,9 @@ module Gem::GemcutterUtilities
   # Add the --key option
 
   def add_key_option
-    add_option '-k', '--key KEYNAME', Symbol, 'Use the given API key' do |value,options|
+    add_option('-k', '--key KEYNAME', Symbol,
+               'Use the given API key',
+               'from ~/.gem/credentials') do |value,options|
       options[:key] = value
     end
   end

@@ -74,7 +74,7 @@ class Gem::DependencyInstaller
     @installed_gems = []
 
     @install_dir = options[:install_dir] || Gem.dir
-    @cache_dir = options[:cache_dir] || Gem.cache_dir(@install_dir)
+    @cache_dir = options[:cache_dir] || @install_dir
 
     # Set with any errors that SpecFetcher finds while search through
     # gemspecs for a dep

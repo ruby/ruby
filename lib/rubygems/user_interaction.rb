@@ -138,10 +138,19 @@ class Gem::StreamUI
 
   attr_reader :ins, :outs, :errs
 
-  def initialize(in_stream, out_stream, err_stream=STDERR)
+  def initialize(in_stream, out_stream, err_stream=STDERR, usetty=true)
     @ins = in_stream
     @outs = out_stream
     @errs = err_stream
+    @usetty = usetty
+  end
+
+  def tty?
+    if RUBY_PLATFORM =~ /mingw|mswin/
+      @usetty
+    else
+      @usetty && @ins.tty?
+    end
   end
 
   ##
@@ -173,7 +182,7 @@ class Gem::StreamUI
   # default.
 
   def ask_yes_no(question, default=nil)
-    unless @ins.tty? then
+    unless tty? then
       if default.nil? then
         raise Gem::OperationNotSupportedError,
               "Not connected to a tty and no default specified"
@@ -209,7 +218,7 @@ class Gem::StreamUI
   # Ask a question.  Returns an answer if connected to a tty, nil otherwise.
 
   def ask(question)
-    return nil if not @ins.tty?
+    return nil if not tty?
 
     @outs.print(question + "  ")
     @outs.flush
@@ -224,7 +233,7 @@ class Gem::StreamUI
     # Ask for a password. Does not echo response to terminal.
 
     def ask_for_password(question)
-      return nil if not @ins.tty?
+      return nil if not tty?
 
       require 'io/console'
 
@@ -240,7 +249,7 @@ class Gem::StreamUI
     # Ask for a password. Does not echo response to terminal.
 
     def ask_for_password(question)
-      return nil if not @ins.tty?
+      return nil if not tty?
 
       @outs.print(question + "  ")
       @outs.flush
@@ -252,6 +261,8 @@ class Gem::StreamUI
     # Asks for a password that works on windows. Ripped from the Heroku gem.
 
     def ask_for_password_on_windows
+      return nil if not tty?
+
       require "Win32API"
       char = nil
       password = ''
@@ -273,6 +284,8 @@ class Gem::StreamUI
     # Asks for a password that works on unix
 
     def ask_for_password_on_unix
+      return nil if not tty?
+
       system "stty -echo"
       password = @ins.gets
       password.chomp! if password
@@ -333,6 +346,10 @@ class Gem::StreamUI
   # Return a progress reporter object chosen from the current verbosity.
 
   def progress_reporter(*args)
+    if self.kind_of?(Gem::SilentUI)
+      return SilentProgressReporter.new(@outs, *args)
+    end
+
     case Gem.configuration.verbose
     when nil, false
       SilentProgressReporter.new(@outs, *args)
@@ -435,6 +452,10 @@ class Gem::StreamUI
   # Return a download reporter object chosen from the current verbosity
 
   def download_reporter(*args)
+    if self.kind_of?(Gem::SilentUI)
+      return SilentDownloadReporter.new(@outs, *args)
+    end
+
     case Gem.configuration.verbose
     when nil, false
       SilentDownloadReporter.new(@outs, *args)
@@ -518,7 +539,7 @@ end
 
 class Gem::ConsoleUI < Gem::StreamUI
   def initialize
-    super STDIN, STDOUT, STDERR
+    super STDIN, STDOUT, STDERR, true
   end
 end
 
@@ -537,7 +558,7 @@ class Gem::SilentUI < Gem::StreamUI
       writer = File.open('nul', 'w')
     end
 
-    super reader, writer, writer
+    super reader, writer, writer, false
   end
 
   def download_reporter(*args)

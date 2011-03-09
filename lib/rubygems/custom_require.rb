@@ -12,10 +12,16 @@
 
 module Kernel
 
-  ##
-  # The Kernel#require from before RubyGems was loaded.
+  if defined?(gem_original_require) then
+    # Ruby ships with a custom_require, override its require
+    remove_method :require
+  else
+    ##
+    # The Kernel#require from before RubyGems was loaded.
 
-  alias gem_original_require require
+    alias gem_original_require require
+    private :gem_original_require
+  end
 
   ##
   # When RubyGems is required, Kernel#require is replaced with our own which
@@ -35,15 +41,20 @@ module Kernel
     if Gem.unresolved_deps.empty? or Gem.loaded_path? path then
       gem_original_require path
     else
-      specs = Gem.searcher.find_in_unresolved path
-      unless specs.empty? then
-        specs = [specs.last]
-      else
-        specs = Gem.searcher.find_in_unresolved_tree path
-      end
+      spec = Gem.searcher.find_active path
 
-      specs.each do |spec|
-        Gem.activate spec.name, spec.version # FIX: this is dumb
+      unless spec then
+        found_specs = Gem.searcher.find_in_unresolved path
+        unless found_specs.empty? then
+          found_specs = [found_specs.last]
+        else
+          found_specs = Gem.searcher.find_in_unresolved_tree path
+        end
+
+        found_specs.each do |found_spec|
+          # FIX: this is dumb, activate a spec instead of name/version
+          Gem.activate found_spec.name, found_spec.version
+        end
       end
 
       return gem_original_require path
@@ -57,7 +68,6 @@ module Kernel
   end
 
   private :require
-  private :gem_original_require
 
 end
 

@@ -124,7 +124,7 @@ require 'rbconfig'
 # -The RubyGems Team
 
 module Gem
-  VERSION = '1.6.0'
+  VERSION = '1.6.2'
 
   ##
   # Raised when RubyGems is unable to load or activate a gem.  Contains the
@@ -258,6 +258,7 @@ module Gem
       # list of candidate gems, then we have a version conflict.
       existing_spec = @loaded_specs[dep.name]
 
+      # TODO: unless dep.matches_spec? existing_spec then
       unless matches.any? { |spec| spec.version == existing_spec.version } then
         sources_message = sources.map { |spec| spec.full_name }
         stack_message = @loaded_stacks[dep.name].map { |spec| spec.full_name }
@@ -1221,7 +1222,7 @@ module Gem
   def self.cache # :nodoc:
     warn "#{Gem.location_of_caller.join ':'}:Warning: " \
       "Gem::cache is deprecated and will be removed on or after " \
-      "August 2012.  " \
+      "August 2011.  " \
       "Use Gem::source_index."
 
     source_index
@@ -1292,7 +1293,13 @@ end
 # "#{ConfigMap[:datadir]}/#{package_name}".
 
 def RbConfig.datadir(package_name)
-  require 'rbconfig/datadir' # TODO Deprecate after June 2010.
+  warn "#{Gem.location_of_caller.join ':'}:Warning: " \
+    "RbConfig.datadir is deprecated and will be removed on or after " \
+    "August 2011.  " \
+    "Use Gem::datadir."
+
+  require 'rbconfig/datadir'
+
   Gem.datadir(package_name) ||
     File.join(Gem::ConfigMap[:datadir], package_name)
 end
@@ -1323,7 +1330,7 @@ end
 ##
 # Enables the require hook for RubyGems.
 
-require 'rubygems/custom_require' unless Gem::GEM_PRELUDE_SUCKAGE
+require 'rubygems/custom_require'
 
 Gem.clear_paths
 

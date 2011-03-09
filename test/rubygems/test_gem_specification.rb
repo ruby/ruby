@@ -372,14 +372,6 @@ end
   end
 
   def test_dependencies
-    rake = Gem::Dependency.new 'rake', '> 0.4'
-    jabber = Gem::Dependency.new 'jabber4r', '> 0.0.0'
-    pqa = Gem::Dependency.new 'pqa', ['> 0.4', '<= 0.6']
-
-    assert_equal [rake, jabber, pqa], @a1.dependencies
-  end
-
-  def test_dependencies
     util_setup_deps
     assert_equal [@bonobo, @monkey], @gem.dependencies
   end

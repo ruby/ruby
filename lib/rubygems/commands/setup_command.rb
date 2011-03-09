@@ -335,7 +335,7 @@ abort "#{deprecation_message}"
 
     require 'rdoc/rdoc'
 
-    args << '--main' << 'README.rdoc'
+    args << '--main' << 'README.rdoc' << '--quiet'
     args << '.'
     args << 'README.rdoc' << 'UPGRADING.rdoc'
     args << 'LICENSE.txt' << 'GPL.txt' << 'History.txt'

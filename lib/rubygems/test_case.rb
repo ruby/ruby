@@ -463,7 +463,6 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     util_build_gem spec
 
     cache_file = File.join @tempdir, 'gems', "#{spec.original_name}.gem"
-    gems_dir = File.dirname cache_file
     FileUtils.mkdir_p File.dirname cache_file
     FileUtils.mv Gem.cache_gem("#{spec.original_name}.gem"), cache_file
     FileUtils.rm File.join(@gemhome, 'specifications', spec.spec_name)

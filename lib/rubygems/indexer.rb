@@ -6,6 +6,7 @@
 
 require 'rubygems'
 require 'rubygems/format'
+require 'time'
 
 begin
   gem 'builder'

@@ -37,7 +37,7 @@ class Gem::MockGemUi < Gem::StreamUI
     outs.extend TTY
     errs.extend TTY
 
-    super ins, outs, errs
+    super ins, outs, errs, true
 
     @terminated = false
   end
