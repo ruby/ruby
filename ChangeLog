@@ -1,3 +1,7 @@
+Wed Mar  9 23:06:13 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-parse-partial): fix indent after aref.
+
 Wed Mar  9 12:50:24 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/yaml_tree.rb: Rescue exceptions when

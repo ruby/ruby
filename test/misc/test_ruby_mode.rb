@@ -132,5 +132,17 @@ class TestRubyMode
       |  end
       |')
     end
+
+    def test_array_literal
+      assert_indent('
+      |begin
+      |  a[b]
+      |end
+      |', '
+      |begin
+      | a[b]
+      |  end
+      |')
+    end
   end
 end if TestRubyMode::EMACS

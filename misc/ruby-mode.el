@@ -602,7 +602,12 @@ The variable ruby-indent-level controls the amount of indentation.
         )
        ((looking-at "[])}]")
         (if (ruby-deep-indent-paren-p (matching-paren (char-after))
-				      (save-excursion (ruby-backward-sexp) (point)))
+				      (if nest
+					  (1- (cdr (nth 0 nest)))
+					(save-excursion
+					  (forward-char)
+					  (ruby-backward-sexp)
+					  (point))))
             (setq depth (cdr (car pcol)) pcol (cdr pcol))
           (setq depth (1- depth)))
         (setq nest (cdr nest))
