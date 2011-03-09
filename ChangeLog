@@ -1,3 +1,12 @@
+Wed Mar  9 12:50:24 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: Rescue exceptions when
+	  people implement the method method. Thanks Lin Jen-Shin.
+	  [ruby-core:35255]
+
+	* test/psych/visitors/test_yaml_tree.rb: test for implementation of
+	  method method.
+
 Wed Mar  9 11:53:31 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/shift_jis.c: Change SJIS as an alias of Windows-31J.
