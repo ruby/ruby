@@ -1,3 +1,9 @@
+Wed Mar  9 11:53:31 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/shift_jis.c: Change SJIS as an alias of Windows-31J.
+
+	* enc/shift_jis.c: Add PCK as an alias of Windows-31J.
+
 Wed Mar  9 00:45:29 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb: nmake substitutes all occurences in macro.
