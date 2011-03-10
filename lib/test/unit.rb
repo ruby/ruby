@@ -274,7 +274,8 @@ module Test
         end
 
         def read
-          ((@status == :quit) ? @io.read : @io.gets).chomp
+          res = (@status == :quit) ? @io.read : @io.gets
+          res && res.chomp
         end
 
         def close
