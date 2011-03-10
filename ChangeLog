@@ -1,3 +1,8 @@
+Fri Mar 11 01:25:03 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* process.c (get_sc_ngroups_max): return -1 if platform don't
+	  support NGROUPS_MAX.
+
 Thu Mar 10 22:28:15 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/ossl_ssl.h: parenthesize macro arguments.
