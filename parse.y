@@ -6233,7 +6233,9 @@ parser_encode_length(struct parser_params *parser, const char *name, long len)
     if (len > 4 && name[nlen = len - 4] == '-') {
 	if (rb_memcicmp(name + nlen + 1, "dos", 3) == 0)
 	    return nlen;
-	if (rb_memcicmp(name + nlen + 1, "mac", 3) == 0)
+	if (rb_memcicmp(name + nlen + 1, "mac", 3) == 0 &&
+	    !(len == 8 && rb_memcicmp(name, "utf8-mac", len) == 0))
+	    /* exclude UTF8-MAC because the encoding named "UTF8" doesn't exist in Ruby */
 	    return nlen;
     }
     return len;
