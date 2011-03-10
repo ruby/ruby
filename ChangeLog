@@ -1,3 +1,8 @@
+Thu Mar 10 16:00:22 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* parse.y (parser_encode_length): fix typo: the length of
+	  "-dos" and "-mac" is not 5 but 4.
+	  patched by James M. Lawrence [ruby-core:35476] fixes #4489
 Thu Mar 10 10:52:01 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_require.rb: setting too long string to ENV causes
