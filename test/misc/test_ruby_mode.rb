@@ -133,7 +133,7 @@ class TestRubyMode
       |')
     end
 
-    def test_array_literal
+    def test_begin_end
       assert_indent('
       |begin
       |  a[b]
