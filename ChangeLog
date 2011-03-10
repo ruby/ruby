@@ -1,3 +1,7 @@
+Thu Mar 10 22:28:15 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/ossl_ssl.h: parenthesize macro arguments.
+
 Thu Mar 10 21:59:37 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* parse.y (parser_encode_length): add exception as UTF8-MAC for
