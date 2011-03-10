@@ -1,3 +1,9 @@
+Fri Mar 11 01:40:35 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* process.c (proc_getmaxgroups, proc_setmaxgroups): Process#maxgroups
+	  and Process#maxgroups= now raise NotImplementedError if the
+	  platform don't support supplementary groups concept.
+
 Fri Mar 11 01:25:03 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* process.c (get_sc_ngroups_max): return -1 if platform don't

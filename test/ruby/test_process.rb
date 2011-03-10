@@ -1158,6 +1158,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_maxgroups
     assert_kind_of(Integer, Process.maxgroups)
+  rescue NotImplementedError
   end
 
   def test_geteuid

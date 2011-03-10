@@ -4524,6 +4524,7 @@ proc_setgid(VALUE obj, VALUE id)
 #endif
 
 
+#if defined(HAVE_SETGROUPS) || defined(HAVE_GETGROUPS)
 /*
  * Maximum supplementary groups are platform dependent.
  * FWIW, 65536 is enough big for our supported OSs.
@@ -4566,6 +4567,7 @@ static int maxgroups(void)
 
     return _maxgroups;
 }
+#endif
 
 
 
@@ -4719,7 +4721,7 @@ proc_initgroups(VALUE obj, VALUE uname, VALUE base_grp)
 #define proc_initgroups rb_f_notimplement
 #endif
 
-
+#if defined(_SC_NGROUPS_MAX) || defined(NGROUPS_MAX)
 /*
  *  call-seq:
  *     Process.maxgroups   -> fixnum
@@ -4735,8 +4737,11 @@ proc_getmaxgroups(VALUE obj)
 {
     return INT2FIX(maxgroups());
 }
+#else
+#define proc_getmaxgroups rb_f_notimplement
+#endif
 
-
+#ifdef HAVE_SETGROUPS
 /*
  *  call-seq:
  *     Process.maxgroups= fixnum   -> fixnum
@@ -4764,6 +4769,9 @@ proc_setmaxgroups(VALUE obj, VALUE val)
 
     return INT2FIX(_maxgroups);
 }
+#else
+#define proc_setmaxgroups rb_f_notimplement
+#endif
 
 #if defined(HAVE_DAEMON) || (defined(HAVE_FORK) && defined(HAVE_SETSID))
 #ifndef HAVE_DAEMON

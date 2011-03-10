@@ -80,6 +80,10 @@ with all sufficient information, see the ChangeLog file.
     * extended method:
       * Time#strftime supports %:z and %::z.
 
+  * Process
+    * Process#maxgroups and Process#maxgroups= now raise NotImplementedError if
+      the platform don't support supplementary groups concept.
+  
 * io/console
   * new methods:
     * IO#noecho {|io| }
