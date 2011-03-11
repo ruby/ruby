@@ -1,13 +1,15 @@
 require 'test/unit'
 require 'tempfile'
-require 'mkmf'
 
 class TestRubyMode < Test::Unit::TestCase
   MISCDIR = File.expand_path("../../../misc", __FILE__)
-  if emacs = find_executable0(ENV["EMACS"] || "emacs")
-    EMACS = %W"#{emacs} --quick --batch --load #{MISCDIR}/ruby-mode.el"
-  else
+  emacs = %W"#{ENV["EMACS"] || "emacs"} -q --no-site-file --batch --load #{MISCDIR}/ruby-mode.el"
+  begin
+    IO.popen([*emacs, :err=>[:child, :out]]) {|f| f.read}
+  rescue
     EMACS = nil
+  else
+    EMACS = (emacs if $? and $?.success?)
   end
 end
 
