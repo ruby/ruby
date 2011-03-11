@@ -1,3 +1,7 @@
+Sat Mar 12 04:12:41 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/ossl_ssl_session.c: parenthesize macro arguments.
+
 Sat Mar 12 02:27:07 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c ({d,dt}_lite_marshal_load): checks the given argument.

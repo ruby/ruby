@@ -5,15 +5,15 @@
 #include "ossl.h"
 
 #define GetSSLSession(obj, sess) do { \
-	Data_Get_Struct(obj, SSL_SESSION, sess); \
-	if (!sess) { \
+	Data_Get_Struct((obj), SSL_SESSION, (sess)); \
+	if (!(sess)) { \
 		ossl_raise(rb_eRuntimeError, "SSL Session wasn't initialized."); \
 	} \
 } while (0)
 
 #define SafeGetSSLSession(obj, sess) do { \
-	OSSL_Check_Kind(obj, cSSLSession); \
-	GetSSLSession(obj, sess); \
+	OSSL_Check_Kind((obj), cSSLSession); \
+	GetSSLSession((obj), (sess)); \
 } while (0)
 
 
