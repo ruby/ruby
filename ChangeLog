@@ -1,3 +1,7 @@
+Sat Mar 12 01:16:02 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c, ext/date/lib/*: moved rdoc descriptions.
+
 Sat Mar 12 00:06:24 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/lib: moved from lib.

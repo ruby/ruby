@@ -1049,6 +1049,15 @@ date_s_new_l_bang(int argc, VALUE *argv, VALUE klass)
     return d_lite_s_new_l_bang(argc, argv, klass);
 }
 
+/*
+ * call-seq:
+ *    Date.jd([jd=0[, start=Date::ITALY]])
+ *
+ * Create a new Date object from a Julian Day Number.
+ *
+ * +jd+ is the Julian Day Number; if not specified, it defaults to 0.
+ * +sg+ specifies the Day of Calendar Reform.
+ */
 static VALUE
 date_s_jd(int argc, VALUE *argv, VALUE klass)
 {
@@ -1080,6 +1089,21 @@ date_s_jd(int argc, VALUE *argv, VALUE klass)
     return d_lite_s_new_internal_wo_civil(klass, jd, sg, LIGHT_MODE | HAVE_JD);
 }
 
+/*
+ * call-seq:
+ *    Date.ordinal([year=-4712[, yday=1[, start=Date::ITALY]]])
+ *
+ * Create a new Date object from an Ordinal Date, specified
+ * by year +y+ and day-of-year +d+. +d+ can be negative,
+ * in which it counts backwards from the end of the year.
+ * No year wraparound is performed, however.  An invalid
+ * value for +d+ results in an ArgumentError being raised.
+ *
+ * +y+ defaults to -4712, and +d+ to 1; this is Julian Day
+ * Number day 0.
+ *
+ * +sg+ specifies the Day of Calendar Reform.
+ */
 static VALUE
 date_s_ordinal(int argc, VALUE *argv, VALUE klass)
 {
@@ -1126,6 +1150,25 @@ date_s_ordinal(int argc, VALUE *argv, VALUE klass)
     }
 }
 
+/*
+ * call-seq:
+ *    Date.civil([year=-4712[, mon=1[, mday=1[, start=Date::ITALY]]]])
+ *    Date.new([year=-4712[, mon=1[, mday=1[, start=Date::ITALY]]]])
+ *
+ * Create a new Date object for the Civil Date specified by
+ * year +y+, month +m+, and day-of-month +d+.
+ *
+ * +m+ and +d+ can be negative, in which case they count
+ * backwards from the end of the year and the end of the
+ * month respectively.  No wraparound is performed, however,
+ * and invalid values cause an ArgumentError to be raised.
+ * can be negative
+ *
+ * +y+ defaults to -4712, +m+ to 1, and +d+ to 1; this is
+ * Julian Day Number day 0.
+ *
+ * +sg+ specifies the Day of Calendar Reform.
+ */
 static VALUE
 date_s_civil(int argc, VALUE *argv, VALUE klass)
 {
@@ -1183,6 +1226,25 @@ date_s_civil(int argc, VALUE *argv, VALUE klass)
     }
 }
 
+/*
+ * call-seq:
+ *    Date.commercial([cwyear=-4712[, cweek=1[, cwday=1[, start=Date::ITALY]]]])
+ *
+ * Create a new Date object for the Commercial Date specified by
+ * year +y+, week-of-year +w+, and day-of-week +d+.
+ *
+ * Monday is day-of-week 1; Sunday is day-of-week 7.
+ *
+ * +w+ and +d+ can be negative, in which case they count
+ * backwards from the end of the year and the end of the
+ * week respectively.  No wraparound is performed, however,
+ * and invalid values cause an ArgumentError to be raised.
+ *
+ * +y+ defaults to -4712, +w+ to 1, and +d+ to 1; this is
+ * Julian Day Number day 0.
+ *
+ * +sg+ specifies the Day of Calendar Reform.
+ */
 static VALUE
 date_s_commercial(int argc, VALUE *argv, VALUE klass)
 {
@@ -1244,6 +1306,14 @@ localtime_r(const time_t *t, struct tm *tm)
 }
 #endif
 
+/*
+ * call-seq:
+ *    Date.today([start=Date::ITALY])
+ *
+ * Create a new Date object representing today.
+ *
+ * +sg+ specifies the Day of Calendar Reform.
+ */
 static VALUE
 date_s_today(int argc, VALUE *argv, VALUE klass)
 {
@@ -1286,6 +1356,12 @@ date_s_today(int argc, VALUE *argv, VALUE klass)
     }
 }
 
+/*
+ * call-seq:
+ *    d.ajd
+ *
+ * Get the date as an Astronomical Julian Day Number.
+ */
 static VALUE
 d_lite_ajd(VALUE self)
 {
@@ -1298,6 +1374,12 @@ d_lite_ajd(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    d.amjd
+ *
+ * Get the date as an Astronomical Modified Julian Day Number.
+ */
 static VALUE
 d_lite_amjd(VALUE self)
 {
@@ -1310,6 +1392,12 @@ d_lite_amjd(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    d.jd
+ *
+ * Get the date as a Julian Day Number.
+ */
 static VALUE
 d_lite_jd(VALUE self)
 {
@@ -1322,6 +1410,12 @@ d_lite_jd(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    d.mjd
+ *
+ * Get the date as a Modified Julian Day Number.
+ */
 static VALUE
 d_lite_mjd(VALUE self)
 {
@@ -1334,6 +1428,12 @@ d_lite_mjd(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    d.ld
+ *
+ * Get the date as a Lilian Day Number.
+ */
 static VALUE
 d_lite_ld(VALUE self)
 {
@@ -1346,6 +1446,12 @@ d_lite_ld(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    d.year
+ *
+ * Get the year of this date.
+ */
 static VALUE
 d_lite_year(VALUE self)
 {
@@ -1358,6 +1464,14 @@ d_lite_year(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    d.yday
+ *
+ * Get the day-of-the-year of this date.
+ *
+ * January 1 is day-of-the-year 1
+ */
 static VALUE
 d_lite_yday(VALUE self)
 {
@@ -1373,6 +1487,14 @@ d_lite_yday(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    d.mon
+ *
+ * Get the month of this date.
+ *
+ * January is month 1.
+ */
 static VALUE
 d_lite_mon(VALUE self)
 {
@@ -1385,6 +1507,12 @@ d_lite_mon(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    d.mday
+ *
+ * Get the day-of-the-month of this date.
+ */
 static VALUE
 d_lite_mday(VALUE self)
 {
@@ -1397,6 +1525,12 @@ d_lite_mday(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    d.day_fraction
+ *
+ * Get any fractional day part of the date.
+ */
 static VALUE
 d_lite_day_fraction(VALUE self)
 {
@@ -1436,6 +1570,12 @@ d_lite_wnum1(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    d.hour
+ *
+ * Get the hour of this date.
+ */
 static VALUE
 d_lite_hour(VALUE self)
 {
@@ -1445,6 +1585,13 @@ d_lite_hour(VALUE self)
     return INT2FIX(0);
 }
 
+/*
+ * call-seq:
+ *    d.min
+ *    d.minute
+ *
+ * Get the minute of this date.
+ */
 static VALUE
 d_lite_min(VALUE self)
 {
@@ -1454,6 +1601,13 @@ d_lite_min(VALUE self)
     return INT2FIX(0);
 }
 
+/*
+ * call-seq:
+ *    d.sec
+ *    d.second
+ *
+ * Get the second of this date.
+ */
 static VALUE
 d_lite_sec(VALUE self)
 {
@@ -1463,6 +1617,13 @@ d_lite_sec(VALUE self)
     return INT2FIX(0);
 }
 
+/*
+ * call-seq:
+ *    d.sec_fraction
+ *    d.second_fraction
+ *
+ * Get the fraction-of-a-second of this date.
+ */
 static VALUE
 d_lite_sec_fraction(VALUE self)
 {
@@ -1472,6 +1633,12 @@ d_lite_sec_fraction(VALUE self)
     return INT2FIX(0);
 }
 
+/*
+ * call-seq:
+ *    d.offset
+ *
+ * Get the offset of this date.
+ */
 static VALUE
 d_lite_offset(VALUE self)
 {
@@ -1481,6 +1648,12 @@ d_lite_offset(VALUE self)
     return INT2FIX(0);
 }
 
+/*
+ * call-seq:
+ *    d.zone
+ *
+ * Get the zone name of this date.
+ */
 static VALUE
 d_lite_zone(VALUE self)
 {
@@ -1490,6 +1663,13 @@ d_lite_zone(VALUE self)
     return rb_usascii_str_new2("+00:00");
 }
 
+/*
+ * call-seq:
+ *    d.cwyear
+ *
+ * Get the commercial year of this date.  See *Commercial* *Date*
+ * in the introduction for how this differs from the normal year.
+ */
 static VALUE
 d_lite_cwyear(VALUE self)
 {
@@ -1505,6 +1685,12 @@ d_lite_cwyear(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    d.cweek
+ *
+ * Get the commercial week of the year of this date.
+ */
 static VALUE
 d_lite_cweek(VALUE self)
 {
@@ -1520,6 +1706,13 @@ d_lite_cweek(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    d.cwday
+ *
+ * Get the commercial day of the week of this date.  Monday is
+ * commercial day-of-week 1; Sunday is commercial day-of-week 7.
+ */
 static VALUE
 d_lite_cwday(VALUE self)
 {
@@ -1537,6 +1730,13 @@ d_lite_cwday(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    d.wday
+ *
+ * Get the week day of this date.  Sunday is day-of-week 0;
+ * Saturday is day-of-week 6.
+ */
 static VALUE
 d_lite_wday(VALUE self)
 {
@@ -1549,6 +1749,12 @@ d_lite_wday(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    d.julian?
+ *
+ * Is the current date old-style (Julian Calendar)?
+ */
 static VALUE
 d_lite_julian_p(VALUE self)
 {
@@ -1558,6 +1764,12 @@ d_lite_julian_p(VALUE self)
     return Qfalse;
 }
 
+/*
+ * call-seq:
+ *    d.gregorian?
+ *
+ * Is the current date new-style (Gregorian Calendar)?
+ */
 static VALUE
 d_lite_gregorian_p(VALUE self)
 {
@@ -1567,6 +1779,12 @@ d_lite_gregorian_p(VALUE self)
     return Qtrue;
 }
 
+/*
+ * call-seq:
+ *    d.leap?
+ *
+ * Is this a leap year?
+ */
 static VALUE
 d_lite_leap_p(VALUE self)
 {
@@ -1579,6 +1797,12 @@ d_lite_leap_p(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    d.start
+ *
+ * When is the Day of Calendar Reform for this Date object?
+ */
 static VALUE
 d_lite_start(VALUE self)
 {
@@ -1588,6 +1812,12 @@ d_lite_start(VALUE self)
     return DBL2NUM(dat->l.sg);
 }
 
+/*
+ * call-seq:
+ *    d.new_start([start=Date::ITALY])
+ *
+ * Create a copy of this Date object using a new Day of Calendar Reform.
+ */
 static VALUE
 d_lite_new_start(int argc, VALUE *argv, VALUE self)
 {
@@ -1619,6 +1849,12 @@ d_lite_new_start(int argc, VALUE *argv, VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    d.new_offset([offset=0])
+ *
+ * Create a copy of this Date object using a new offset.
+ */
 static VALUE
 d_lite_new_offset(int argc, VALUE *argv, VALUE self)
 {
@@ -1649,6 +1885,20 @@ d_lite_new_offset(int argc, VALUE *argv, VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    d + n
+ *
+ * Return a new Date object that is +n+ days later than the
+ * current one.
+ *
+ * +n+ may be a negative value, in which case the new Date
+ * is earlier than the current one; however, #-() might be
+ * more intuitive.
+ *
+ * If +n+ is not a Numeric, a TypeError will be thrown.  In
+ * particular, two Dates cannot be added to each other.
+ */
 static VALUE
 d_lite_plus(VALUE self, VALUE other)
 {
@@ -1731,6 +1981,20 @@ minus_dd(VALUE self, VALUE other)
     return iforwardop("minus_r");
 }
 
+/*
+ * call-seq:
+ *    d - n
+ *    d - d2
+ *
+ * If +x+ is a Numeric value, create a new Date object that is
+ * +x+ days earlier than the current one.
+ *
+ * If +x+ is a Date, return the number of days between the
+ * two dates; or, more precisely, how many days later the current
+ * date is than +x+.
+ *
+ * If +x+ is neither Numeric nor a Date, a TypeError is raised.
+ */
 static VALUE
 d_lite_minus(VALUE self, VALUE other)
 {
@@ -1803,6 +2067,23 @@ cmp_dd(VALUE self, VALUE other)
     return iforwardop("cmp_r");
 }
 
+/*
+ * call-seq:
+ *    d <=> n
+ *    d <=> d2
+ *
+ * Compare this date with another date.
+ *
+ * +other+ can also be a Numeric value, in which case it is
+ * interpreted as an Astronomical Julian Day Number.
+ *
+ * Comparison is by Astronomical Julian Day Number, including
+ * fractional days.  This means that both the time and the
+ * offset are taken into account when comparing
+ * two DateTime instances.  When comparing a DateTime instance
+ * with a Date instance, the time of the latter will be
+ * considered as falling on midnight UTC.
+ */
 static VALUE
 d_lite_cmp(VALUE self, VALUE other)
 {
@@ -1877,6 +2158,17 @@ equal_dd(VALUE self, VALUE other)
     return iforwardop("equal_r");
 }
 
+/*
+ * call-seq:
+ *    d == other
+ *
+ * The relationship operator for Date.
+ *
+ * Compares dates by Julian Day Number.  When comparing
+ * two DateTime instances, or a DateTime with a Date,
+ * the instances will be regarded as equivalent if they
+ * fall on the same date in local time.
+ */
 static VALUE
 d_lite_equal(VALUE self, VALUE other)
 {
@@ -1931,6 +2223,14 @@ eql_p_dd(VALUE self, VALUE other)
     return iforwardop("eql_r?");
 }
 
+/*
+ * call-seq:
+ *    d.eql?(other)
+ *
+ * Is this Date equal to +other+?
+ *
+ * +other+ must both be a Date object, and represent the same date.
+ */
 static VALUE
 d_lite_eql_p(VALUE self, VALUE other)
 {
@@ -1964,6 +2264,12 @@ d_lite_eql_p(VALUE self, VALUE other)
     return iforwardop("eql_r?");
 }
 
+/*
+ * call-seq:
+ *    d.hash
+ *
+ * Calculate a hash value for this date.
+ */
 static VALUE
 d_lite_hash(VALUE self)
 {
@@ -1973,6 +2279,12 @@ d_lite_hash(VALUE self)
     return rb_hash(d_lite_ajd(self));
 }
 
+/*
+ * call-seq:
+ *    d.to_s
+ *
+ * Return the date as a human-readable string.
+ */
 static VALUE
 d_lite_to_s(VALUE self)
 {
@@ -1987,6 +2299,12 @@ d_lite_to_s(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    d.inspect
+ *
+ * Return internal object state as a programmer-readable string.
+ */
 static VALUE
 d_lite_inspect(VALUE self)
 {
@@ -2004,6 +2322,12 @@ d_lite_inspect(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    d.marshal_dump
+ *
+ * Dump to Marshal format.
+ */
 static VALUE
 d_lite_marshal_dump(VALUE self)
 {
@@ -2026,6 +2350,12 @@ d_lite_marshal_dump(VALUE self)
     return a;
 }
 
+/*
+ * call-seq:
+ *    d.marshal_load(ary)
+ *
+ * Load from Marshal format.
+ */
 static VALUE
 d_lite_marshal_load(VALUE self, VALUE a)
 {
@@ -2152,6 +2482,24 @@ datetime_s_new_l_bang(int argc, VALUE *argv, VALUE klass)
     return dt_lite_s_new_l_bang(argc, argv, klass);
 }
 
+/*
+ * call-seq:
+ *    DateTime.jd([jd=0[, hour=0[, min=0[, sec=0[, offset=0[, start=Date::ITALY]]]]]])
+ *
+ * Create a new DateTime object corresponding to the specified
+ * Julian Day Number +jd+ and hour +h+, minute +min+, second +s+.
+ *
+ * The 24-hour clock is used.  Negative values of +h+, +min+, and
+ * +sec+ are treating as counting backwards from the end of the
+ * next larger unit (e.g. a +min+ of -2 is treated as 58).  No
+ * wraparound is performed.  If an invalid time portion is specified,
+ * an ArgumentError is raised.
+ *
+ * +of+ is the offset from UTC as a fraction of a day (defaults to 0).
+ * +sg+ specifies the Day of Calendar Reform.
+ *
+ * All day/time values default to 0.
+ */
 static VALUE
 datetime_s_jd(int argc, VALUE *argv, VALUE klass)
 {
@@ -2204,6 +2552,25 @@ datetime_s_jd(int argc, VALUE *argv, VALUE klass)
 				  LIGHT_MODE | HAVE_JD | HAVE_TIME);
 }
 
+/*
+ * call-seq:
+ *    DateTime.ordinal([year=-4712[, yday=1[, hour=0[, min=0[, sec=0[, offset=0[, start=Date::ITALY]]]]]]])
+ *
+ * Create a new DateTime object corresponding to the specified
+ * Ordinal Date and hour +h+, minute +min+, second +s+.
+ *
+ * The 24-hour clock is used.  Negative values of +h+, +min+, and
+ * +sec+ are treating as counting backwards from the end of the
+ * next larger unit (e.g. a +min+ of -2 is treated as 58).  No
+ * wraparound is performed.  If an invalid time portion is specified,
+ * an ArgumentError is raised.
+ *
+ * +of+ is the offset from UTC as a fraction of a day (defaults to 0).
+ * +sg+ specifies the Day of Calendar Reform.
+ *
+ * +y+ defaults to -4712, and +d+ to 1; this is Julian Day Number
+ * day 0.  The time values default to 0.
+*/
 static VALUE
 datetime_s_ordinal(int argc, VALUE *argv, VALUE klass)
 {
@@ -2272,6 +2639,26 @@ datetime_s_ordinal(int argc, VALUE *argv, VALUE klass)
     }
 }
 
+/*
+ * call-seq:
+ *    DateTime.civil([year=-4712[, mon=1[, mday=1[, hour=0[, min=0[, sec=0[, offset=0[, start=Date::ITALY]]]]]]]])
+ *    DateTime.new([year=-4712[, mon=1[, mday=1[, hour=0[, min=0[, sec=0[, offset=0[, start=Date::ITALY]]]]]]]])
+ *
+ * Create a new DateTime object corresponding to the specified
+ * Civil Date and hour +h+, minute +min+, second +s+.
+ *
+ * The 24-hour clock is used.  Negative values of +h+, +min+, and
+ * +sec+ are treating as counting backwards from the end of the
+ * next larger unit (e.g. a +min+ of -2 is treated as 58).  No
+ * wraparound is performed.  If an invalid time portion is specified,
+ * an ArgumentError is raised.
+ *
+ * +of+ is the offset from UTC as a fraction of a day (defaults to 0).
+ * +sg+ specifies the Day of Calendar Reform.
+ *
+ * +y+ defaults to -4712, +m+ to 1, and +d+ to 1; this is Julian Day
+ * Number day 0.  The time values default to 0.
+ */
 static VALUE
 datetime_s_civil(int argc, VALUE *argv, VALUE klass)
 {
@@ -2355,6 +2742,26 @@ datetime_s_civil(int argc, VALUE *argv, VALUE klass)
     }
 }
 
+/*
+ * call-seq:
+ *    DateTime.commercial([cwyear=-4712[, cweek=1[, cwday=1[, hour=0[, min=0[, sec=0[, offset=0[, start=Date::ITALY]]]]]]]])
+ *
+ * Create a new DateTime object corresponding to the specified
+ * Commercial Date and hour +h+, minute +min+, second +s+.
+ *
+ * The 24-hour clock is used.  Negative values of +h+, +min+, and
+ * +sec+ are treating as counting backwards from the end of the
+ * next larger unit (e.g. a +min+ of -2 is treated as 58).  No
+ * wraparound is performed.  If an invalid time portion is specified,
+ * an ArgumentError is raised.
+ *
+ * +of+ is the offset from UTC as a fraction of a day (defaults to 0).
+ * +sg+ specifies the Day of Calendar Reform.
+ *
+ * +y+ defaults to -4712, +w+ to 1, and +d+ to 1; this is
+ * Julian Day Number day 0.
+ * The time values default to 0.
+ */
 static VALUE
 datetime_s_commercial(int argc, VALUE *argv, VALUE klass)
 {
@@ -2427,6 +2834,14 @@ datetime_s_commercial(int argc, VALUE *argv, VALUE klass)
     }
 }
 
+/*
+ * call-seq:
+ *    DateTime.now([start=Date::ITALY])
+ *
+ * Create a new DateTime object representing the current time.
+ *
+ * +sg+ specifies the Day of Calendar Reform.
+ */
 static VALUE
 datetime_s_now(int argc, VALUE *argv, VALUE klass)
 {
@@ -2503,6 +2918,12 @@ datetime_s_now(int argc, VALUE *argv, VALUE klass)
     }
 }
 
+/*
+ * call-seq:
+ *    dt.ajd
+ *
+ * Get the date as an Astronomical Julian Day Number.
+ */
 static VALUE
 dt_lite_ajd(VALUE self)
 {
@@ -2525,6 +2946,12 @@ dt_lite_ajd(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    dt.amjd
+ *
+ * Get the date as an Astronomical Modified Julian Day Number.
+ */
 static VALUE
 dt_lite_amjd(VALUE self)
 {
@@ -2547,6 +2974,12 @@ dt_lite_amjd(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    dt.jd
+ *
+ * Get the date as a Julian Day Number.
+ */
 static VALUE
 dt_lite_jd(VALUE self)
 {
@@ -2560,6 +2993,12 @@ dt_lite_jd(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    dt.mjd
+ *
+ * Get the date as a Modified Julian Day Number.
+ */
 static VALUE
 dt_lite_mjd(VALUE self)
 {
@@ -2573,6 +3012,12 @@ dt_lite_mjd(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    dt.ld
+ *
+ * Get the date as a Lilian Day Number.
+ */
 static VALUE
 dt_lite_ld(VALUE self)
 {
@@ -2586,6 +3031,12 @@ dt_lite_ld(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    dt.year
+ *
+ * Get the year of this date.
+ */
 static VALUE
 dt_lite_year(VALUE self)
 {
@@ -2598,6 +3049,14 @@ dt_lite_year(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    dt.yday
+ *
+ * Get the day-of-the-year of this date.
+ *
+ * January 1 is day-of-the-year 1
+ */
 static VALUE
 dt_lite_yday(VALUE self)
 {
@@ -2614,6 +3073,14 @@ dt_lite_yday(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    dt.mon
+ *
+ * Get the month of this date.
+ *
+ * January is month 1.
+ */
 static VALUE
 dt_lite_mon(VALUE self)
 {
@@ -2626,6 +3093,12 @@ dt_lite_mon(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    dt.mday
+ *
+ * Get the day-of-the-month of this date.
+ */
 static VALUE
 dt_lite_mday(VALUE self)
 {
@@ -2638,6 +3111,12 @@ dt_lite_mday(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    dt.day_fraction
+ *
+ * Get any fractional day part of the date.
+ */
 static VALUE
 dt_lite_day_fraction(VALUE self)
 {
@@ -2683,6 +3162,12 @@ dt_lite_wnum1(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    dt.hour
+ *
+ * Get the hour of this date.
+ */
 static VALUE
 dt_lite_hour(VALUE self)
 {
@@ -2695,6 +3180,13 @@ dt_lite_hour(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    dt.min
+ *    dt.minute
+ *
+ * Get the minute of this date.
+ */
 static VALUE
 dt_lite_min(VALUE self)
 {
@@ -2707,6 +3199,13 @@ dt_lite_min(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    dt.sec
+ *    dt.second
+ *
+ * Get the second of this date.
+ */
 static VALUE
 dt_lite_sec(VALUE self)
 {
@@ -2719,6 +3218,13 @@ dt_lite_sec(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    dt.sec_fraction
+ *    dt.second_fraction
+ *
+ * Get the fraction-of-a-second of this date.
+ */
 static VALUE
 dt_lite_sec_fraction(VALUE self)
 {
@@ -2728,6 +3234,12 @@ dt_lite_sec_fraction(VALUE self)
     return rb_rational_new2(INT2FIX(dat->l.sf), INT2FIX(SECOND_IN_NANOSECONDS));
 }
 
+/*
+ * call-seq:
+ *    dt.offset
+ *
+ * Get the offset of this date.
+ */
 static VALUE
 dt_lite_offset(VALUE self)
 {
@@ -2746,6 +3258,12 @@ dt_lite_offset(VALUE self)
     m = a % 3600 / 60;\
 }
 
+/*
+ * call-seq:
+ *    dt.zone
+ *
+ * Get the zone name of this date.
+ */
 static VALUE
 dt_lite_zone(VALUE self)
 {
@@ -2758,6 +3276,13 @@ dt_lite_zone(VALUE self)
     return rb_enc_sprintf(rb_usascii_encoding(), "%c%02d:%02d", s, h, m);
 }
 
+/*
+ * call-seq:
+ *    dt.cwyear
+ *
+ * Get the commercial year of this date.  See *Commercial* *Date*
+ * in the introduction for how this differs from the normal year.
+ */
 static VALUE
 dt_lite_cwyear(VALUE self)
 {
@@ -2774,6 +3299,12 @@ dt_lite_cwyear(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    dt.cweek
+ *
+ * Get the commercial week of the year of this date.
+ */
 static VALUE
 dt_lite_cweek(VALUE self)
 {
@@ -2790,6 +3321,13 @@ dt_lite_cweek(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    dt.cwday
+ *
+ * Get the commercial day of the week of this date.  Monday is
+ * commercial day-of-week 1; Sunday is commercial day-of-week 7.
+ */
 static VALUE
 dt_lite_cwday(VALUE self)
 {
@@ -2808,6 +3346,13 @@ dt_lite_cwday(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    dt.wday
+ *
+ * Get the week day of this date.  Sunday is day-of-week 0;
+ * Saturday is day-of-week 6.
+ */
 static VALUE
 dt_lite_wday(VALUE self)
 {
@@ -2824,6 +3369,12 @@ dt_lite_wday(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    dt.julian?
+ *
+ * Is the current date old-style (Julian Calendar)?
+ */
 static VALUE
 dt_lite_julian_p(VALUE self)
 {
@@ -2833,6 +3384,12 @@ dt_lite_julian_p(VALUE self)
     return Qfalse;
 }
 
+/*
+ * call-seq:
+ *    dt.gregorian?
+ *
+ * Is the current date new-style (Gregorian Calendar)?
+ */
 static VALUE
 dt_lite_gregorian_p(VALUE self)
 {
@@ -2842,6 +3399,12 @@ dt_lite_gregorian_p(VALUE self)
     return Qtrue;
 }
 
+/*
+ * call-seq:
+ *    dt.leap?
+ *
+ * Is this a leap year?
+ */
 static VALUE
 dt_lite_leap_p(VALUE self)
 {
@@ -2854,6 +3417,12 @@ dt_lite_leap_p(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    dt.start
+ *
+ * When is the Day of Calendar Reform for this Date object?
+ */
 static VALUE
 dt_lite_start(VALUE self)
 {
@@ -2863,6 +3432,12 @@ dt_lite_start(VALUE self)
     return DBL2NUM(dat->l.sg);
 }
 
+/*
+ * call-seq:
+ *    dt.new_start([start=Date::ITALY])
+ *
+ * Create a copy of this Date object using a new Day of Calendar Reform.
+ */
 static VALUE
 dt_lite_new_start(int argc, VALUE *argv, VALUE self)
 {
@@ -2898,6 +3473,12 @@ dt_lite_new_start(int argc, VALUE *argv, VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    dt.new_offset([offset=0])
+ *
+ * Create a copy of this Date object using a new offset.
+ */
 static VALUE
 dt_lite_new_offset(int argc, VALUE *argv, VALUE self)
 {
@@ -2932,6 +3513,20 @@ dt_lite_new_offset(int argc, VALUE *argv, VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    dt + n
+ *
+ * Return a new Date object that is +n+ days later than the
+ * current one.
+ *
+ * +n+ may be a negative value, in which case the new Date
+ * is earlier than the current one; however, #-() might be
+ * more intuitive.
+ *
+ * If +n+ is not a Numeric, a TypeError will be thrown.  In
+ * particular, two Dates cannot be added to each other.
+ */
 static VALUE
 dt_lite_plus(VALUE self, VALUE other)
 {
@@ -3040,6 +3635,20 @@ dt_lite_plus(VALUE self, VALUE other)
     return iforwardop("plus_r");
 }
 
+/*
+ * call-seq:
+ *    dt - n
+ *    dt - dt2
+ *
+ * If +x+ is a Numeric value, create a new Date object that is
+ * +x+ days earlier than the current one.
+ *
+ * If +x+ is a Date, return the number of days between the
+ * two dates; or, more precisely, how many days later the current
+ * date is than +x+.
+ *
+ * If +x+ is neither Numeric nor a Date, a TypeError is raised.
+ */
 static VALUE
 dt_lite_minus(VALUE self, VALUE other)
 {
@@ -3055,6 +3664,23 @@ dt_lite_minus(VALUE self, VALUE other)
     return iforwardop("minus_r");
 }
 
+/*
+ * call-seq:
+ *    dt <=> n
+ *    dt <=> d2
+ *
+ * Compare this date with another date.
+ *
+ * +other+ can also be a Numeric value, in which case it is
+ * interpreted as an Astronomical Julian Day Number.
+ *
+ * Comparison is by Astronomical Julian Day Number, including
+ * fractional days.  This means that both the time and the
+ * offset are taken into account when comparing
+ * two DateTime instances.  When comparing a DateTime instance
+ * with a Date instance, the time of the latter will be
+ * considered as falling on midnight UTC.
+ */
 static VALUE
 dt_lite_cmp(VALUE self, VALUE other)
 {
@@ -3063,6 +3689,17 @@ dt_lite_cmp(VALUE self, VALUE other)
     return iforwardop("cmp_r");
 }
 
+/*
+ * call-seq:
+ *    dt == other
+ *
+ * The relationship operator for Date.
+ *
+ * Compares dates by Julian Day Number.  When comparing
+ * two DateTime instances, or a DateTime with a Date,
+ * the instances will be regarded as equivalent if they
+ * fall on the same date in local time.
+ */
 static VALUE
 dt_lite_equal(VALUE self, VALUE other)
 {
@@ -3071,6 +3708,14 @@ dt_lite_equal(VALUE self, VALUE other)
     return iforwardop("equal_r");
 }
 
+/*
+ * call-seq:
+ *    dt.eql?(other)
+ *
+ * Is this Date equal to +other+?
+ *
+ * +other+ must both be a Date object, and represent the same date.
+ */
 static VALUE
 dt_lite_eql_p(VALUE self, VALUE other)
 {
@@ -3079,6 +3724,12 @@ dt_lite_eql_p(VALUE self, VALUE other)
     return iforwardop("eql_r?");
 }
 
+/*
+ * call-seq:
+ *    dt.hash
+ *
+ * Calculate a hash value for this date.
+ */
 static VALUE
 dt_lite_hash(VALUE self)
 {
@@ -3088,6 +3739,12 @@ dt_lite_hash(VALUE self)
     return rb_hash(dt_lite_ajd(self));
 }
 
+/*
+ * call-seq:
+ *    dt.to_s
+ *
+ * Return the date as a human-readable string.
+ */
 static VALUE
 dt_lite_to_s(VALUE self)
 {
@@ -3108,6 +3765,12 @@ dt_lite_to_s(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    dt.inspect
+ *
+ * Return internal object state as a programmer-readable string.
+ */
 static VALUE
 dt_lite_inspect(VALUE self)
 {
@@ -3135,6 +3798,12 @@ dt_lite_inspect(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    dt.marshal_dump
+ *
+ * Dump to Marshal format.
+ */
 static VALUE
 dt_lite_marshal_dump(VALUE self)
 {
@@ -3161,6 +3830,12 @@ dt_lite_marshal_dump(VALUE self)
     return a;
 }
 
+/*
+ * call-seq:
+ *    dt.marshal_load(ary)
+ *
+ * Load from Marshal format.
+ */
 static VALUE
 dt_lite_marshal_load(VALUE self, VALUE a)
 {
