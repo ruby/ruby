@@ -77,7 +77,7 @@ Wed Mar  9 11:53:31 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Wed Mar  9 00:45:29 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* ext/extmk.rb: nmake substitutes all occurences in macro.
+	* ext/extmk.rb: nmake substitutes all occurrences in macro.
 
 	* ext/extmk.rb: workaround for nmake.
 
