@@ -1327,11 +1327,20 @@ end
 # Internal use only.
 #
 def find_executable0(bin, path = nil)
+  executable_file = proc do |name|
+    begin
+      stat = File.stat(name)
+    rescue SystemCallError
+    else
+      next name if stat.file? and stat.executable?
+    end
+  end
+
   exts = config_string('EXECUTABLE_EXTS') {|s| s.split} || config_string('EXEEXT') {|s| [s]}
   if File.expand_path(bin) == bin
-    return bin if File.executable?(bin)
+    return bin if executable_file.call(bin)
     if exts
-      exts.each {|ext| File.executable?(file = bin + ext) and return file}
+      exts.each {|ext| executable_file.call(file = bin + ext) and return file}
     end
     return nil
   end
@@ -1342,9 +1351,9 @@ def find_executable0(bin, path = nil)
   end
   file = nil
   path.each do |dir|
-    return file if File.executable?(file = File.join(dir, bin))
+    return file if executable_file.call(file = File.join(dir, bin))
     if exts
-      exts.each {|ext| File.executable?(ext = file + ext) and return ext}
+      exts.each {|ext| executable_file.call(ext = file + ext) and return ext}
     end
   end
   nil
