@@ -1216,7 +1216,7 @@ class Date
 
   def new_start_r(sg=self.class::ITALY) self.class.new_r!(ajd, offset, sg) end # :nodoc:
 
-  private :start_r, :new_start_r
+  private :new_start_r
 
   # Create a copy of this Date object that uses the Italian/Catholic
   # Day of Calendar Reform.

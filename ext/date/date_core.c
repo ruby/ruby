@@ -209,7 +209,7 @@ find_ldoy(int y, double sg, long *rjd, int *ns)
     return 0;
 }
 
-#if 0
+#ifndef NDEBUG
 static int
 find_fdom(int y, int m, double sg, long *rjd, int *ns)
 {
@@ -344,7 +344,7 @@ jd_to_commercial(long jd, double sg, int *ry, int *rw, int *rd)
 	*rd = 7;
 }
 
-#if 0
+#ifndef NDEBUG
 static void
 weeknum_to_jd(int y, int w, int d, int f, double sg, long *rjd, int *ns)
 {
@@ -372,7 +372,7 @@ jd_to_weeknum(long jd, int f, double sg, int *ry, int *rw, int *rd)
     *rd = MOD(j, 7);
 }
 
-#if 0
+#ifndef NDEBUG
 static void
 nth_kday_to_jd(int y, int m, int n, int k, double sg, long *rjd, int *ns)
 {
@@ -392,7 +392,7 @@ nth_kday_to_jd(int y, int m, int n, int k, double sg, long *rjd, int *ns)
 }
 #endif
 
-#if 0
+#ifndef NDEBUG
 inline static int jd_to_wday(long jd);
 
 static void
