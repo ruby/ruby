@@ -988,7 +988,7 @@ d_lite_s_new_internal_wo_civil(VALUE klass, long jd, double sg,
 static VALUE
 d_lite_s_alloc(VALUE klass)
 {
-    return d_lite_s_new_internal_wo_civil(klass, 0, 0, 0);
+    return d_lite_s_new_internal_wo_civil(klass, 0, 0, LIGHT_MODE);
 }
 
 static VALUE
@@ -2361,20 +2361,28 @@ d_lite_marshal_load(VALUE self, VALUE a)
 {
     get_d1(self);
 
-    if (!FIXNUM_P(RARRAY_PTR(a)[0])) {
+    if (TYPE(a) != T_ARRAY)
+	rb_raise(rb_eTypeError, "expected an array");
+
+    switch (RARRAY_LEN(a)) {
+      case 3:
 	dat->r.ajd = RARRAY_PTR(a)[0];
 	dat->r.of = RARRAY_PTR(a)[1];
 	dat->r.sg = RARRAY_PTR(a)[2];
 	dat->r.cache = rb_hash_new();
 	dat->r.flags = 0;
-    }
-    else {
+	break;
+      case 2:
 	dat->l.jd = NUM2LONG(RARRAY_PTR(a)[0]);
 	dat->l.sg = NUM2DBL(RARRAY_PTR(a)[1]);
 	dat->l.year = 0;
 	dat->l.mon = 0;
 	dat->l.mday = 0;
 	dat->l.flags = LIGHT_MODE | HAVE_JD;
+	break;
+      default:
+	rb_raise(rb_eTypeError, "invalid size");
+	break;
     }
 
     if (FL_TEST(a, FL_EXIVAR)) {
@@ -2436,7 +2444,7 @@ dt_lite_s_new_internal_wo_civil(VALUE klass, long jd, int df,
 static VALUE
 dt_lite_s_alloc(VALUE klass)
 {
-    return dt_lite_s_new_internal_wo_civil(klass, 0, 0, 0, 0, 0, 0);
+    return dt_lite_s_new_internal_wo_civil(klass, 0, 0, 0, 0, 0, LIGHT_MODE);
 }
 
 static VALUE
@@ -3841,14 +3849,18 @@ dt_lite_marshal_load(VALUE self, VALUE a)
 {
     get_dt1(self);
 
-    if (!FIXNUM_P(RARRAY_PTR(a)[0])) {
+    if (TYPE(a) != T_ARRAY)
+	rb_raise(rb_eTypeError, "expected an array");
+
+    switch (RARRAY_LEN(a)) {
+      case 3:
 	dat->r.ajd = RARRAY_PTR(a)[0];
 	dat->r.of = RARRAY_PTR(a)[1];
 	dat->r.sg = RARRAY_PTR(a)[2];
 	dat->r.cache = rb_hash_new();
 	dat->r.flags = 0;
-    }
-    else {
+	break;
+      case 5:
 	dat->l.jd = NUM2LONG(RARRAY_PTR(a)[0]);
 	dat->l.df = FIX2INT(RARRAY_PTR(a)[1]);
 	dat->l.sf = FIX2INT(RARRAY_PTR(a)[2]);
@@ -3861,6 +3873,10 @@ dt_lite_marshal_load(VALUE self, VALUE a)
 	dat->l.min = 0;
 	dat->l.sec = 0;
 	dat->l.flags = LIGHT_MODE | HAVE_JD | HAVE_DF;
+	break;
+      default:
+	rb_raise(rb_eTypeError, "invalid size");
+	break;
     }
 
     if (FL_TEST(a, FL_EXIVAR)) {
