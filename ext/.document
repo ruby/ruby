@@ -3,6 +3,8 @@
 bigdecimal/bigdecimal.c
 bigdecimal/lib
 coverage/coverage.c
+date/date_core.c
+date/lib
 digest/digest.c
 etc/etc.c
 fcntl/fcntl.c
