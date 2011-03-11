@@ -1,3 +1,7 @@
+Fri Mar 11 23:32:38 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date/delta*: removed undocumented delta.
+
 Fri Mar 11 18:42:43 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (find_executable0): should exclude directories.
