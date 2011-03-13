@@ -1,3 +1,7 @@
+Sun Mar 13 18:11:28 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/ossl_x509attr.c: parenthesize macro arguments.
+
 Sun Mar 13 16:07:58 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* lib/pstore.rb: Fix don't raise "nested transaction" when thread_safe
