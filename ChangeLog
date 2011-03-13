@@ -1,3 +1,11 @@
+Sun Mar 13 16:07:58 2011  Shota Fukumori  <sorah@tubusu.net>
+
+	* lib/pstore.rb: Fix don't raise "nested transaction" when thread_safe
+	  is true. Patch by Masaki Matsushita (Glass_saga). [ruby-dev:43337]
+
+	* test/test_pstore.rb: Test for above.
+	  Patch by Masaki Matsushita (Glass_saga) [ruby-dev:43337]
+
 Sat Mar 12 04:12:41 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/ossl_ssl_session.c: parenthesize macro arguments.
