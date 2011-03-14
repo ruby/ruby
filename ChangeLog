@@ -1,3 +1,12 @@
+Mon Mar 14 21:20:44 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* test/ruby/test_require.rb (test_require_too_long_filename):
+	  increase path length, because MAXPATHLEN is defined as 4096 on linux.
+
+	* test/ruby/test_require.rb (test_require_path_home_1): ditto.
+
+	* test/ruby/test_require.rb (test_require_path_home_2): ditto.
+
 Mon Mar 14 19:54:37 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/ossl_x509cert.c: parenthesize macro arguments.

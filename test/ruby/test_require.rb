@@ -29,7 +29,7 @@ class TestRequire < Test::Unit::TestCase
     INPUT
 
     begin
-      assert_in_out_err(["-S", "-w", "foo/" * 1000 + "foo"], "") do |r, e|
+      assert_in_out_err(["-S", "-w", "foo/" * 1024 + "foo"], "") do |r, e|
         assert_equal([], r)
         assert_operator(2, :<=, e.size)
         assert_match(/warning: openpath: pathname too long \(ignored\)/, e.first)
@@ -51,7 +51,7 @@ class TestRequire < Test::Unit::TestCase
     pathname_too_long = /pathname too long \(ignored\).*\(LoadError\)/m
 
     ENV["RUBYPATH"] = "~"
-    ENV["HOME"] = "/foo" * 1000
+    ENV["HOME"] = "/foo" * 1024
     assert_in_out_err(%w(-S -w test_ruby_test_require), "", [], pathname_too_long)
 
   ensure
@@ -63,7 +63,7 @@ class TestRequire < Test::Unit::TestCase
     env_rubypath, env_home = ENV["RUBYPATH"], ENV["HOME"]
     pathname_too_long = /pathname too long \(ignored\).*\(LoadError\)/m
 
-    ENV["RUBYPATH"] = "~" + "/foo" * 1000
+    ENV["RUBYPATH"] = "~" + "/foo" * 1024
     ENV["HOME"] = "/foo"
     assert_in_out_err(%w(-S -w test_ruby_test_require), "", [], pathname_too_long)
 
