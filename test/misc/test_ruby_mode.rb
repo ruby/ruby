@@ -103,6 +103,7 @@ class TestRubyMode
     end
 
     def test_singleton_class
+      skip("pending")
       assert_indent('
       |class<<bar
       |  foo
