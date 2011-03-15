@@ -11,20 +11,20 @@
 #include "ossl.h"
 
 #define WrapX509CRL(klass, obj, crl) do { \
-    if (!crl) { \
+    if (!(crl)) { \
 	ossl_raise(rb_eRuntimeError, "CRL wasn't initialized!"); \
     } \
-    obj = Data_Wrap_Struct(klass, 0, X509_CRL_free, crl); \
+    (obj) = Data_Wrap_Struct((klass), 0, X509_CRL_free, (crl)); \
 } while (0)
 #define GetX509CRL(obj, crl) do { \
-    Data_Get_Struct(obj, X509_CRL, crl); \
-    if (!crl) { \
+    Data_Get_Struct((obj), X509_CRL, (crl)); \
+    if (!(crl)) { \
 	ossl_raise(rb_eRuntimeError, "CRL wasn't initialized!"); \
     } \
 } while (0)
 #define SafeGetX509CRL(obj, crl) do { \
-    OSSL_Check_Kind(obj, cX509CRL); \
-    GetX509CRL(obj, crl); \
+    OSSL_Check_Kind((obj), cX509CRL); \
+    GetX509CRL((obj), (crl)); \
 } while (0)
 
 /*
