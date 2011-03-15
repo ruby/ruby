@@ -1,3 +1,7 @@
+Wed Mar 16 08:40:39 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/ossl_x509ext.c: parenthesize macro arguments.
+
 Tue Mar 15 18:34:27 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/ossl_x509crl.c: parenthesize macro arguments.

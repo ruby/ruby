@@ -11,30 +11,30 @@
 #include "ossl.h"
 
 #define WrapX509Ext(klass, obj, ext) do { \
-    if (!ext) { \
+    if (!(ext)) { \
 	ossl_raise(rb_eRuntimeError, "EXT wasn't initialized!"); \
     } \
-    obj = Data_Wrap_Struct(klass, 0, X509_EXTENSION_free, ext); \
+    (obj) = Data_Wrap_Struct((klass), 0, X509_EXTENSION_free, (ext)); \
 } while (0)
 #define GetX509Ext(obj, ext) do { \
-    Data_Get_Struct(obj, X509_EXTENSION, ext); \
-    if (!ext) { \
+    Data_Get_Struct((obj), X509_EXTENSION, (ext)); \
+    if (!(ext)) { \
 	ossl_raise(rb_eRuntimeError, "EXT wasn't initialized!"); \
     } \
 } while (0)
 #define SafeGetX509Ext(obj, ext) do { \
-    OSSL_Check_Kind(obj, cX509Ext); \
-    GetX509Ext(obj, ext); \
+    OSSL_Check_Kind((obj), cX509Ext); \
+    GetX509Ext((obj), (ext)); \
 } while (0)
 #define MakeX509ExtFactory(klass, obj, ctx) do { \
-    if (!(ctx = OPENSSL_malloc(sizeof(X509V3_CTX)))) \
+    if (!((ctx) = OPENSSL_malloc(sizeof(X509V3_CTX)))) \
         ossl_raise(rb_eRuntimeError, "CTX wasn't allocated!"); \
-    X509V3_set_ctx(ctx, NULL, NULL, NULL, NULL, 0); \
-    obj = Data_Wrap_Struct(klass, 0, ossl_x509extfactory_free, ctx); \
+    X509V3_set_ctx((ctx), NULL, NULL, NULL, NULL, 0); \
+    (obj) = Data_Wrap_Struct((klass), 0, ossl_x509extfactory_free, (ctx)); \
 } while (0)
 #define GetX509ExtFactory(obj, ctx) do { \
-    Data_Get_Struct(obj, X509V3_CTX, ctx); \
-    if (!ctx) { \
+    Data_Get_Struct((obj), X509V3_CTX, (ctx)); \
+    if (!(ctx)) { \
 	ossl_raise(rb_eRuntimeError, "CTX wasn't initialized!"); \
     } \
 } while (0)
