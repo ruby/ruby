@@ -12,9 +12,9 @@ Wed Mar 16 15:06:21 2011  Eric Hodel  <drbrain@segment7.net>
 
 Wed Mar 16 13:45:28 2011  Eric Hodel  <drbrain@segment7.net>
 
-	* ext/openss/lib/openssl/bufering.rb: de-nest Buffering module
+	* ext/openssl/lib/openssl/buffering.rb: de-nest Buffering module
 
-	* ext/openss/lib/openssl/bufering.rb: add RDoc
+	* ext/openssl/lib/openssl/buffering.rb: add RDoc
 
 Wed Mar 16 08:40:39 2011  Tanaka Akira  <akr@fsij.org>
 
@@ -26,7 +26,7 @@ Tue Mar 15 18:34:27 2011  Tanaka Akira  <akr@fsij.org>
 
 Tue Mar 15 09:49:03 2011  Shota Fukumori  <sorah@tubusu.net>
 
-	* test/misc/test_ruby_mode.rb(test_singleton_class): Skip for Pending.
+	* test/misc/test_ruby_mode.rb (test_singleton_class): Skip for Pending.
 
 Mon Mar 14 21:20:44 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
