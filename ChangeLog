@@ -1,3 +1,7 @@
+Wed Mar 16 08:40:39 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/ossl_x509name.c: parenthesize macro arguments.
+
 Wed Mar 16 20:36:56 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ipsocket.c (init_inetsock_internal): raise an error on

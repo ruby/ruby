@@ -11,20 +11,20 @@
 #include "ossl.h"
 
 #define WrapX509Name(klass, obj, name) do { \
-    if (!name) { \
+    if (!(name)) { \
 	ossl_raise(rb_eRuntimeError, "Name wasn't initialized."); \
     } \
-    obj = Data_Wrap_Struct(klass, 0, X509_NAME_free, name); \
+    (obj) = Data_Wrap_Struct((klass), 0, X509_NAME_free, (name)); \
 } while (0)
 #define GetX509Name(obj, name) do { \
-    Data_Get_Struct(obj, X509_NAME, name); \
-    if (!name) { \
+    Data_Get_Struct((obj), X509_NAME, (name)); \
+    if (!(name)) { \
 	ossl_raise(rb_eRuntimeError, "Name wasn't initialized."); \
     } \
 } while (0)
 #define SafeGetX509Name(obj, name) do { \
-    OSSL_Check_Kind(obj, cX509Name); \
-    GetX509Name(obj, name); \
+    OSSL_Check_Kind((obj), cX509Name); \
+    GetX509Name((obj), (name)); \
 } while (0)
 
 #define OBJECT_TYPE_TEMPLATE \
@@ -89,7 +89,7 @@ ossl_x509name_alloc(VALUE klass)
 
 static int id_aref;
 static VALUE ossl_x509name_add_entry(int, VALUE*, VALUE);
-#define rb_aref(obj, key) rb_funcall(obj, id_aref, 1, key)
+#define rb_aref(obj, key) rb_funcall((obj), id_aref, 1, (key))
 
 static VALUE
 ossl_x509name_init_i(VALUE i, VALUE args)
