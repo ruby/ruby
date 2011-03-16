@@ -1,3 +1,9 @@
+Wed Mar 16 13:45:28 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/openss/lib/openssl/bufering.rb: de-nest Buffering module
+
+	* ext/openss/lib/openssl/bufering.rb: add RDoc
+
 Wed Mar 16 08:40:39 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/ossl_x509ext.c: parenthesize macro arguments.
