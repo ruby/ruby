@@ -12,16 +12,6 @@ end
 
 dir_config("win32", inc, lib)
 
-SRCFILES=<<SRC
-win32ole.c
-SRC
-
-def create_docfile(src)
-  open(File.expand_path($srcdir) + "/.document", "w") {|ofs|
-    ofs.print src
-  }
-end
-
 def create_win32ole_makefile
   if have_library("ole32") and
      have_library("oleaut32") and
@@ -34,9 +24,6 @@ def create_win32ole_makefile
       have_type("IMultiLanguage", "mlang.h")
     end
     create_makefile("win32ole")
-    create_docfile(SRCFILES)
-  else
-    create_docfile("")
   end
 end
 

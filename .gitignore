@@ -47,7 +47,6 @@
 /enc.mk
 /enc/trans/*.c
 /encdb.h
-/ext/win32ole/.document
 /exts.mk
 /goruby
 /id.h
@@ -440,7 +439,6 @@
 /ext/win32ole/Makefile
 /ext/win32ole/mkmf.log
 /ext/win32ole/*.log
-/ext/win32ole/.document
 
 # /ext/zlib/
 /ext/zlib/*.def

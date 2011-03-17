@@ -1,3 +1,9 @@
+Fri Mar 18 00:59:38 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/win32ole/extconf.rb (create_docfile): removed.  should not
+	  modify source directory unnecessarily, platform dependent
+	  documentation should be dealt with by rdoc.  [ruby-core:35495]
+
 Fri Mar 18 00:54:20 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (rb_funcall_passing_block): add prototype.
