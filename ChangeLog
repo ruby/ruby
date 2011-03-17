@@ -1,3 +1,8 @@
+Fri Mar 18 00:54:20 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (rb_funcall_passing_block): add prototype.
+	  a patch by James M. Lawrence at [ruby-core:35501]
+
 Wed Mar 16 08:40:39 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/ossl_x509name.c: parenthesize macro arguments.
