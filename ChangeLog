@@ -1,3 +1,9 @@
+Fri Mar 18 08:48:06 2011  Oleg Shaldybin  <oleg.shaldybin@gmail.com>
+
+	* lib/fileutils.rb (FileUtils::Entry_#copy_file): updated FileUtils.cp
+	  to still copy file permissions when :preserve is false (as cp does
+	  this even when -p isn't set).
+
 Fri Mar 18 00:59:38 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/win32ole/extconf.rb (create_docfile): removed.  should not
