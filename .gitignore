@@ -1,9 +1,11 @@
 # /
+*-*-*.def
 *.a
 *.bak
 *.dSYM
 *.dylib
 *.inc
+*.log
 *.o
 *.orig
 *.rej
@@ -19,9 +21,10 @@
 .pc
 .ppack
 .svn
+Makefile
+extconf.h
 y.output
 y.tab.c
-/.git
 /*.pc
 /*_prelude.c
 /COPYING.LIB
@@ -93,10 +96,6 @@ y.tab.c
 
 # /ext/
 /ext/extinit.c
-/ext/**/*.def
-/ext/**/*.log
-/ext/**/Makefile
-/ext/**/extconf.h
 
 # /ext/dl/
 /ext/dl/*.func
