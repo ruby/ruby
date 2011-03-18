@@ -1,3 +1,7 @@
+Fri Mar 18 20:44:36 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/ossl_x509req.c: parenthesize macro arguments.
+
 Fri Mar 18 08:48:06 2011  Oleg Shaldybin  <oleg.shaldybin@gmail.com>
 
 	* lib/fileutils.rb (FileUtils::Entry_#copy_file): updated FileUtils.cp
@@ -15,7 +19,7 @@ Fri Mar 18 00:54:20 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* include/ruby/ruby.h (rb_funcall_passing_block): add prototype.
 	  a patch by James M. Lawrence at [ruby-core:35501]
 
-Wed Mar 16 08:40:39 2011  Tanaka Akira  <akr@fsij.org>
+Wed Mar 17 06:23:31 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/ossl_x509name.c: parenthesize macro arguments.
 
