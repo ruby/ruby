@@ -2198,13 +2198,9 @@ envix(const char *nam)
 static int
 getenvsize(char* p)
 {
-    char prev = *p++;
-    int len = 1;
-    for (; prev || *p; p++) {
-	prev = *p;
-	len++;
-    }
-    return len;
+    char* porg = p;
+    while (*p || *(p + 1)) ++p;
+    return p - porg + 1;
 }
 #endif
 
