@@ -1,3 +1,8 @@
+Sat Mar 19 18:35:05 2011  Tajima Akio <artonx@yahoo.co.jp>
+
+	* hash.c (ruby_setenv): calculate total env block size for win32.
+	* test/ruby/test_env.rb: add test for above patch.
+
 Sat Mar 19 17:14:46 2011  Tajima Akio <artonx@yahoo.co.jp>
 
 	* hash.c (ruby_setenv): checking with max process environment 

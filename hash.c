@@ -2194,6 +2194,20 @@ envix(const char *nam)
 }
 #endif
 
+#if defined(_WIN32)
+static int
+getenvsize(char* p)
+{
+    char prev = *p++;
+    int len = 1;
+    for (; prev || *p; p++) {
+	prev = *p;
+	len++;
+    }
+    return len;
+}
+#endif
+
 void
 ruby_setenv(const char *name, const char *value)
 {
@@ -2208,7 +2222,7 @@ ruby_setenv(const char *name, const char *value)
     if (value) {
 	char* p = GetEnvironmentStringsA();
 	if (p) {
-            if (strlen(value) + strlen(p) >= 32767) goto fail;
+	    if (strlen(name) + 1 + strlen(value) + getenvsize(p) >= 32767) goto fail;
 	} else {
 	    if (strlen(value) >= 5120) goto fail;
 	}

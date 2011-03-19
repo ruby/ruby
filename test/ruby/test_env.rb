@@ -387,4 +387,16 @@ class TestEnv < Test::Unit::TestCase
       assert_equal(huge_value, ENV["foo"])
     end
   end
+
+  if /mswin|mingw/ =~ RUBY_PLATFORM
+    def test_win32_blocksize
+      len = 32767 - ENV.to_a.flatten.inject(0) {|r,e| r + e.size + 2 }
+      val = "bar" * 1000
+      key = nil
+      1.upto(12) {|i|
+        ENV[key] = val while (len -= val.size + (key="foo#{len}").size + 2) > 0
+        assert_raise(Errno::EINVAL) { ENV[key] = val }
+      }
+    end
+  end
 end
