@@ -1,3 +1,9 @@
+Sat Mar 19 17:14:46 2011  Tajima Akio <artonx@yahoo.co.jp>
+
+	* hash.c (ruby_setenv): checking with max process environment 
+	  block size fow Win32. 32767 for 2000/XP, 2003. if failed to
+	  read the block, then checking with 5120 for earlier Windows.
+
 Sat Mar 19 12:30:25 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/ossl_x509revoked.c: parenthesize macro arguments.
