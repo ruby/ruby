@@ -1,4 +1,3 @@
-# /
 *-*-*.def
 *.a
 *.bak
@@ -25,6 +24,8 @@ Makefile
 extconf.h
 y.output
 y.tab.c
+
+# /
 /*.pc
 /*_prelude.c
 /COPYING.LIB
@@ -33,7 +34,6 @@ y.tab.c
 /ChangeLog.pre1_1
 /Doxyfile
 /GNUmakefile
-/Makefile
 /README.atheos
 /README.fat-patch
 /README.v6
@@ -46,7 +46,6 @@ y.tab.c
 /config.cache
 /config.h
 /config.h.in
-/config.log
 /config.status
 /config.status.lineno
 /configure
@@ -123,8 +122,6 @@ y.tab.c
 
 # /ext/tk/
 /ext/tk/config_list
-
-# /lib/rexml/
 
 # /spec/
 /spec/mspec
