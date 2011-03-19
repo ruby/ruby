@@ -2195,12 +2195,17 @@ envix(const char *nam)
 #endif
 
 #if defined(_WIN32)
-static int
-getenvsize(char* p)
+static size_t
+getenvsize(const char* p)
 {
-    char* porg = p;
-    while (*p || *(p + 1)) ++p;
+    const char* porg = p;
+    while (*p++) p += strlen(p) + 1;
     return p - porg + 1;
+}
+static size_t
+getenvblocksize()
+{
+    return (rb_w32_osver() >= 5) ? 32767 : 5120;
 }
 #endif
 
@@ -2216,11 +2221,10 @@ ruby_setenv(const char *name, const char *value)
 	rb_sys_fail("ruby_setenv");
     }
     if (value) {
-	char* p = GetEnvironmentStringsA();
-	if (p) {
-	    if (strlen(name) + 1 + strlen(value) + getenvsize(p) >= 32767) goto fail;
-	} else {
-	    if (strlen(value) >= 5120) goto fail;
+	const char* p = GetEnvironmentStringsA();
+	if (!p) goto fail; /* never happen */
+	if (strlen(name) + 2 + strlen(value) + getenvsize(p) >= getenvblocksize()) {
+	    goto fail;  /* 2 for '=' & '\0' */
 	}
 	buf = rb_sprintf("%s=%s", name, value);
     }

@@ -252,7 +252,7 @@ rb_w32_osid(void)
 }
 #endif
 
-static DWORD
+DWORD
 rb_w32_osver(void)
 {
     return osver.dwMajorVersion;
