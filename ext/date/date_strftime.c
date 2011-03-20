@@ -663,10 +663,12 @@ date_strftime_wo_timespec(char *s, size_t maxsize, const char *format,
 
 		case 'E':
 			/* POSIX locale extensions, ignored for now */
+			SKIP_MODIFIER_EO;
 			flags |= BIT_OF(LOCALE_E);
 			goto again;
 		case 'O':
 			/* POSIX locale extensions, ignored for now */
+			SKIP_MODIFIER_EO;
 			flags |= BIT_OF(LOCALE_O);
 			goto again;
 
