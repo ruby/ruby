@@ -47,7 +47,7 @@ class TestDateStrftime < Test::Unit::TestCase
     '%t'=>["\t",{}],
     '%u'=>['6',{:cwday=>6}],
     '%V'=>['05',{:cweek=>5}],
-    '%v'=>[' 3-Feb-2001',{:mday=>3,:mon=>2,:year=>2001}],
+    '%v'=>[' 3-FEB-2001',{:mday=>3,:mon=>2,:year=>2001}],
     '%z'=>['+0000',{:zone=>'+0000',:offset=>0}],
     '%+'=>['Sat Feb  3 00:00:00 +00:00 2001',
       {:wday=>6,:mon=>2,:mday=>3,

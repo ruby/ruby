@@ -1464,6 +1464,17 @@ d_lite_year(VALUE self)
     }
 }
 
+static const int yeartab[2][13] = {
+    { 0, 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 },
+    { 0, 0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335 }
+};
+
+static int
+civil_to_yday(int y, int m, int d)
+{
+    return yeartab[leap_p(y) ? 1 : 0][m] + d;
+}
+
 /*
  * call-seq:
  *    d.yday
@@ -1481,9 +1492,8 @@ d_lite_yday(VALUE self)
     if (!light_mode_p(dat))
 	return iforward0("yday_r");
     {
-	get_d_jd(dat);
-	jd_to_ordinal(dat->l.jd, dat->l.sg, &ry, &rd);
-	return INT2FIX(rd);
+	get_d_civil(dat);
+	return INT2FIX(civil_to_yday(dat->l.year, dat->l.mon, dat->l.mday));
     }
 }
 
@@ -2322,6 +2332,158 @@ d_lite_inspect(VALUE self)
     }
 }
 
+#include <errno.h>
+#include "timev.h"
+
+size_t
+date_strftime(char *s, size_t maxsize, const char *format,
+	      const struct vtm *vtm, VALUE timev, int gmt);
+
+#define SMALLBUF 100
+static size_t
+date_strftime_alloc(char **buf, const char *format,
+		    struct vtm *vtm, VALUE timev)
+{
+    size_t size, len, flen;
+
+    (*buf)[0] = '\0';
+    flen = strlen(format);
+    if (flen == 0) {
+	return 0;
+    }
+    errno = 0;
+    len = date_strftime(*buf, SMALLBUF, format, vtm, timev, 0);
+    if (len != 0 || (**buf == '\0' && errno != ERANGE)) return len;
+    for (size=1024; ; size*=2) {
+	*buf = xmalloc(size);
+	(*buf)[0] = '\0';
+	len = date_strftime(*buf, size, format, vtm, timev, 0);
+	/*
+	 * buflen can be zero EITHER because there's not enough
+	 * room in the string, or because the control command
+	 * goes to the empty string. Make a reasonable guess that
+	 * if the buffer is 1024 times bigger than the length of the
+	 * format string, it's not failing for lack of room.
+	 */
+	if (len > 0 || size >= 1024 * flen) break;
+	xfree(*buf);
+    }
+    return len;
+}
+
+static void
+d_lite_set_vtm_and_timev(VALUE self, struct vtm *vtm, VALUE *timev)
+{
+    get_d1(self);
+
+    if (!light_mode_p(dat)) {
+	vtm->year = iforward0("year_r");
+	vtm->mon = FIX2INT(iforward0("mon_r"));
+	vtm->mday = FIX2INT(iforward0("mday_r"));
+	vtm->hour = FIX2INT(iforward0("hour_r"));
+	vtm->min = FIX2INT(iforward0("min_r"));
+	vtm->sec = FIX2INT(iforward0("sec_r"));
+	vtm->subsecx = iforward0("sec_fraction_r");
+	vtm->utc_offset = INT2FIX(0);
+	vtm->wday = FIX2INT(iforward0("wday_r"));
+	vtm->yday = FIX2INT(iforward0("yday_r"));
+	vtm->isdst = 0;
+	vtm->zone = RSTRING_PTR(iforward0("zone_r"));
+	*timev = f_mul(f_sub(dat->r.ajd,
+			     rb_rational_new2(INT2FIX(4881175), INT2FIX(2))),
+		       INT2FIX(86400));
+    }
+    else {
+	get_d_jd(dat);
+	get_d_civil(dat);
+
+	vtm->year = LONG2NUM(dat->l.year);
+	vtm->mon = dat->l.mon;
+	vtm->mday = dat->l.mday;
+	vtm->hour = 0;
+	vtm->min = 0;
+	vtm->sec = 0;
+	vtm->subsecx = INT2FIX(0);
+	vtm->utc_offset = INT2FIX(0);
+	vtm->wday = jd_to_wday(dat->l.jd);
+	vtm->yday = civil_to_yday(dat->l.year, dat->l.mon, dat->l.mday);
+	vtm->isdst = 0;
+	vtm->zone = "+00:00";
+	*timev = f_mul(INT2FIX(dat->l.jd - 2440588),
+		       INT2FIX(86400));
+    }
+}
+
+static VALUE
+date_strftime_internal(int argc, VALUE *argv, VALUE self,
+		       const char *default_fmt,
+		       void (*func)(VALUE, struct vtm *, VALUE *))
+{
+    get_d1(self);
+    {
+	VALUE vfmt;
+	const char *fmt;
+	long len;
+	char buffer[SMALLBUF], *buf = buffer;
+	struct vtm vtm;
+	VALUE timev;
+	VALUE str;
+
+	rb_scan_args(argc, argv, "01", &vfmt);
+
+	if (argc < 1)
+	    vfmt = rb_usascii_str_new2(default_fmt);
+	else {
+	    StringValue(vfmt);
+	    if (!rb_enc_str_asciicompat_p(vfmt)) {
+		rb_raise(rb_eArgError,
+			 "format should have ASCII compatible encoding");
+	    }
+	}
+	fmt = RSTRING_PTR(vfmt);
+	len = RSTRING_LEN(vfmt);
+	(*func)(self, &vtm, &timev);
+	if (memchr(fmt, '\0', len)) {
+	    /* Ruby string may contain \0's. */
+	    const char *p = fmt, *pe = fmt + len;
+
+	    str = rb_str_new(0, 0);
+	    while (p < pe) {
+		len = date_strftime_alloc(&buf, p, &vtm, timev);
+		rb_str_cat(str, buf, len);
+		p += strlen(p);
+		if (buf != buffer) {
+		    xfree(buf);
+		    buf = buffer;
+		}
+		for (fmt = p; p < pe && !*p; ++p);
+		if (p > fmt) rb_str_cat(str, fmt, p - fmt);
+	    }
+	    return str;
+	}
+	else
+	    len = date_strftime_alloc(&buf, fmt, &vtm, timev);
+
+	str = rb_str_new(buf, len);
+	if (buf != buffer) xfree(buf);
+	rb_enc_copy(str, vfmt);
+	return str;
+    }
+}
+
+/*
+ * call-seq:
+ *    d.strftime([format="%F"])
+ *
+ * Return a formatted string.
+ */
+static VALUE
+d_lite_strftime(int argc, VALUE *argv, VALUE self)
+{
+    return date_strftime_internal(argc, argv, self,
+				  "%F", d_lite_set_vtm_and_timev);
+}
+
 /*
  * call-seq:
  *    d.marshal_dump
@@ -3074,10 +3236,8 @@ dt_lite_yday(VALUE self)
     if (!light_mode_p(dat))
 	return iforward0("yday_r");
     {
-	get_dt_jd(dat);
-	get_dt_df(dat);
-	jd_to_ordinal(local_jd(dat), dat->l.sg, &ry, &rd);
-	return INT2FIX(rd);
+	get_dt_civil(dat);
+	return INT2FIX(civil_to_yday(dat->l.year, dat->l.mon, dat->l.mday));
     }
 }
 
@@ -3806,6 +3966,64 @@ dt_lite_inspect(VALUE self)
     }
 }
 
+static void
+dt_lite_set_vtm_and_timev(VALUE self, struct vtm *vtm, VALUE *timev)
+{
+    get_dt1(self);
+
+    if (!light_mode_p(dat)) {
+	vtm->year = iforward0("year_r");
+	vtm->mon = FIX2INT(iforward0("mon_r"));
+	vtm->mday = FIX2INT(iforward0("mday_r"));
+	vtm->hour = FIX2INT(iforward0("hour_r"));
+	vtm->min = FIX2INT(iforward0("min_r"));
+	vtm->sec = FIX2INT(iforward0("sec_r"));
+	vtm->subsecx = iforward0("sec_fraction_r");
+	vtm->utc_offset = INT2FIX(0);
+	vtm->wday = FIX2INT(iforward0("wday_r"));
+	vtm->yday = FIX2INT(iforward0("yday_r"));
+	vtm->isdst = 0;
+	vtm->zone = RSTRING_PTR(iforward0("zone_r"));
+	*timev = f_mul(f_sub(dat->r.ajd,
+			     rb_rational_new2(INT2FIX(4881175), INT2FIX(2))),
+		       INT2FIX(86400));
+    }
+    else {
+	get_dt_jd(dat);
+	get_dt_civil(dat);
+	get_dt_time(dat);
+
+	vtm->year = LONG2NUM(dat->l.year);
+	vtm->mon = dat->l.mon;
+	vtm->mday = dat->l.mday;
+	vtm->hour = dat->l.hour;
+	vtm->min = dat->l.min;
+	vtm->sec = dat->l.sec;
+	vtm->subsecx = LONG2NUM(dat->l.sf);
+	vtm->utc_offset = INT2FIX(dat->l.of);
+	vtm->wday = jd_to_wday(local_jd(dat));
+	vtm->yday = civil_to_yday(dat->l.year, dat->l.mon, dat->l.mday);
+	vtm->isdst = 0;
+	vtm->zone = RSTRING_PTR(dt_lite_zone(self));
+	*timev = f_mul(f_sub(dt_lite_ajd(self),
+			     rb_rational_new2(INT2FIX(4881175), INT2FIX(2))),
+		       INT2FIX(86400));
+    }
+}
+
+/*
+ * call-seq:
+ *    dt.strftime([format="%FT%T%:z"])
+ *
+ * Return a formatted string.
+ */
+static VALUE
+dt_lite_strftime(int argc, VALUE *argv, VALUE self)
+{
+    return date_strftime_internal(argc, argv, self,
+				  "%FT%T%:z", dt_lite_set_vtm_and_timev);
+}
+
 /*
  * call-seq:
  *    dt.marshal_dump
@@ -4214,6 +4432,7 @@ Init_date_core(void)
 
     rb_define_method(cDate, "to_s", d_lite_to_s, 0);
     rb_define_method(cDate, "inspect", d_lite_inspect, 0);
+    rb_define_method(cDate, "strftime", d_lite_strftime, -1);
 
     rb_define_method(cDate, "marshal_dump", d_lite_marshal_dump, 0);
     rb_define_method(cDate, "marshal_load", d_lite_marshal_load, 1);
@@ -4288,6 +4507,7 @@ Init_date_core(void)
 
     rb_define_method(cDateTime, "to_s", dt_lite_to_s, 0);
     rb_define_method(cDateTime, "inspect", dt_lite_inspect, 0);
+    rb_define_method(cDateTime, "strftime", dt_lite_strftime, -1);
 
     rb_define_method(cDateTime, "marshal_dump", dt_lite_marshal_dump, 0);
     rb_define_method(cDateTime, "marshal_load", dt_lite_marshal_load, 1);
