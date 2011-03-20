@@ -1,3 +1,7 @@
+Sun Mar 20 22:32:30 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_strftime.c: removed unused code and arguments.
+
 Sun Mar 20 21:34:49 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: replacement of implementation of

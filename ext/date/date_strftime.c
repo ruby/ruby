@@ -168,7 +168,8 @@ max(int a, int b)
 /* strftime --- produce formatted time */
 
 static size_t
-date_strftime_with_timespec(char *s, size_t maxsize, const char *format, const struct vtm *vtm, VALUE timev, struct timespec *ts, int gmt)
+date_strftime_wo_timespec(char *s, size_t maxsize, const char *format,
+			  const struct vtm *vtm, VALUE timev)
 {
 	char *endp = s + maxsize;
 	char *start = s;
@@ -234,7 +235,7 @@ date_strftime_with_timespec(char *s, size_t maxsize, const char *format, const s
 		} while (0)
 #define STRFTIME(fmt) \
 		do { \
-			i = date_strftime_with_timespec(s, endp - s, (fmt), vtm, timev, ts, gmt); \
+			i = date_strftime_wo_timespec(s, endp - s, (fmt), vtm, timev); \
 			if (!i) return 0; \
 			if (precision > i) {\
 				if (start + maxsize < s + precision) { \
@@ -418,14 +419,7 @@ date_strftime_with_timespec(char *s, size_t maxsize, const char *format, const s
 
 		case 's':
 			SKIP_MODIFIER_EO;
-                        if (ts) {
-                                time_t sec = ts->tv_sec;
-                                if (~(time_t)0 <= 0)
-                                    FMT('0', 1, PRI_TIMET_PREFIX"d", sec);
-                                else
-                                    FMT('0', 1, PRI_TIMET_PREFIX"u", sec);
-                        }
-                        else {
+			{
                                 VALUE sec = div(timev, INT2FIX(1));
                                 FMTV('0', 1, "d", sec);
                         }
@@ -495,12 +489,7 @@ date_strftime_with_timespec(char *s, size_t maxsize, const char *format, const s
 			{
 				int aoff, hl, hw;
 
-				if (gmt) {
-					off = 0;
-				}
-				else {
-					off = NUM2LONG(rb_funcall(vtm->utc_offset, rb_intern("round"), 0));
-				}
+				off = NUM2LONG(rb_funcall(vtm->utc_offset, rb_intern("round"), 0));
 
 				aoff = off;
 				if (aoff < 0)
@@ -592,11 +581,6 @@ date_strftime_with_timespec(char *s, size_t maxsize, const char *format, const s
 			if (flags & BIT_OF(CHCASE)) {
 				flags &= ~(BIT_OF(UPPER)|BIT_OF(CHCASE));
 				flags |= BIT_OF(LOWER);
-			}
-			if (gmt) {
-				i = 3;
-				tp = "UTC";
-				break;
 			}
                         if (vtm->zone == NULL)
                             tp = "";
@@ -761,22 +745,7 @@ date_strftime_with_timespec(char *s, size_t maxsize, const char *format, const s
                         }
                         NEEDS(precision);
 
-                        if (ts) {
-                                long subsec = ts->tv_nsec;
-                                if (9 < precision) {
-                                        snprintf(s, endp - s, "%09ld", subsec);
-                                        memset(s+9, '0', precision-9);
-                                        s += precision;
-                                }
-                                else {
-                                        int i;
-                                        for (i = 0; i < 9-precision; i++)
-                                                subsec /= 10;
-                                        snprintf(s, endp - s, "%0*ld", precision, subsec);
-                                        s += precision;
-                                }
-                        }
-                        else {
+			{
                                 VALUE subsec = mod(timev, INT2FIX(1));
                                 int ww;
                                 long n;
@@ -896,15 +865,9 @@ date_strftime_with_timespec(char *s, size_t maxsize, const char *format, const s
 }
 
 size_t
-date_strftime(char *s, size_t maxsize, const char *format, const struct vtm *vtm, VALUE timev, int gmt)
+date_strftime(char *s, size_t maxsize, const char *format, const struct vtm *vtm, VALUE timev)
 {
-    return date_strftime_with_timespec(s, maxsize, format, vtm, timev, NULL, gmt);
-}
-
-size_t
-date_strftime_timespec(char *s, size_t maxsize, const char *format, const struct vtm *vtm, struct timespec *ts, int gmt)
-{
-    return date_strftime_with_timespec(s, maxsize, format, vtm, Qnil, ts, gmt);
+	return date_strftime_wo_timespec(s, maxsize, format, vtm, timev);
 }
 
 /* isleap --- is a year a leap year? */
