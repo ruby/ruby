@@ -2337,7 +2337,7 @@ d_lite_inspect(VALUE self)
 
 size_t
 date_strftime(char *s, size_t maxsize, const char *format,
-	      const struct vtm *vtm, VALUE timev, int gmt);
+	      const struct vtm *vtm, VALUE timev);
 
 #define SMALLBUF 100
 static size_t
@@ -2352,12 +2352,12 @@ date_strftime_alloc(char **buf, const char *format,
 	return 0;
     }
     errno = 0;
-    len = date_strftime(*buf, SMALLBUF, format, vtm, timev, 0);
+    len = date_strftime(*buf, SMALLBUF, format, vtm, timev);
     if (len != 0 || (**buf == '\0' && errno != ERANGE)) return len;
     for (size=1024; ; size*=2) {
 	*buf = xmalloc(size);
 	(*buf)[0] = '\0';
-	len = date_strftime(*buf, size, format, vtm, timev, 0);
+	len = date_strftime(*buf, size, format, vtm, timev);
 	/*
 	 * buflen can be zero EITHER because there's not enough
 	 * room in the string, or because the control command
