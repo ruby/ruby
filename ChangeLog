@@ -1,3 +1,7 @@
+Sun Mar 20 12:43:12 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/ossl_x509store.c: parenthesize macro arguments.
+
 Sun Mar 20 01:39:48 2011  Tajima Akio <artonx@yahoo.co.jp>
 
 	* hash.c (ruby_setenv): check env process block size with OS ver.

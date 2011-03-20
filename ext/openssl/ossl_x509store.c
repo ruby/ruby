@@ -11,37 +11,37 @@
 #include "ossl.h"
 
 #define WrapX509Store(klass, obj, st) do { \
-    if (!st) { \
+    if (!(st)) { \
 	ossl_raise(rb_eRuntimeError, "STORE wasn't initialized!"); \
     } \
-    obj = Data_Wrap_Struct(klass, 0, X509_STORE_free, st); \
+    (obj) = Data_Wrap_Struct((klass), 0, X509_STORE_free, (st)); \
 } while (0)
 #define GetX509Store(obj, st) do { \
-    Data_Get_Struct(obj, X509_STORE, st); \
-    if (!st) { \
+    Data_Get_Struct((obj), X509_STORE, (st)); \
+    if (!(st)) { \
 	ossl_raise(rb_eRuntimeError, "STORE wasn't initialized!"); \
     } \
 } while (0)
 #define SafeGetX509Store(obj, st) do { \
-    OSSL_Check_Kind(obj, cX509Store); \
-    GetX509Store(obj, st); \
+    OSSL_Check_Kind((obj), cX509Store); \
+    GetX509Store((obj), (st)); \
 } while (0)
 
 #define WrapX509StCtx(klass, obj, ctx) do { \
-    if (!ctx) { \
+    if (!(ctx)) { \
 	ossl_raise(rb_eRuntimeError, "STORE_CTX wasn't initialized!"); \
     } \
-    obj = Data_Wrap_Struct(klass, 0, ossl_x509stctx_free, ctx); \
+    (obj) = Data_Wrap_Struct((klass), 0, ossl_x509stctx_free, (ctx)); \
 } while (0)
 #define GetX509StCtx(obj, ctx) do { \
-    Data_Get_Struct(obj, X509_STORE_CTX, ctx); \
-    if (!ctx) { \
+    Data_Get_Struct((obj), X509_STORE_CTX, (ctx)); \
+    if (!(ctx)) { \
 	ossl_raise(rb_eRuntimeError, "STORE_CTX is out of scope!"); \
     } \
 } while (0)
 #define SafeGetX509StCtx(obj, storep) do { \
-    OSSL_Check_Kind(obj, cX509StoreContext); \
-    GetX509Store(obj, ctx); \
+    OSSL_Check_Kind((obj), cX509StoreContext); \
+    GetX509Store((obj), (ctx)); \
 } while (0)
 
 /*
