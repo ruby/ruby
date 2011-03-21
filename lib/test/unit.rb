@@ -487,20 +487,13 @@ module Test
             end
           end
 
-          if @interrupt || @opts[:no_retry]
+          if @interrupt || @opts[:no_retry] || @need_quit
             rep.each do |r|
               report.push(*r[:report])
             end
             @errors += rep.map{|x| x[:result][0] }.inject(:+)
             @failures += rep.map{|x| x[:result][1] }.inject(:+)
             @skips += rep.map{|x| x[:result][2] }.inject(:+)
-          elsif @need_quit
-            rep.each do |r|
-              report.push(*r[:report])
-              @errors += r[:result][0]
-              @failures += r[:result][1]
-              @skips += r[:result][2]
-            end
           else
             puts ""
             puts "Retrying..."
