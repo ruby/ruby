@@ -10741,7 +10741,7 @@ Init_ripper(void)
     ripper_init_eventids1(Ripper);
     ripper_init_eventids2(Ripper);
     /* ensure existing in symbol table */
-    rb_intern("||");
-    rb_intern("&&");
+    (void)rb_intern("||");
+    (void)rb_intern("&&");
 }
 #endif /* RIPPER */
