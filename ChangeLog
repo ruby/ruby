@@ -1,3 +1,7 @@
+Tue Mar 22 06:42:42 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/date/date_core.c: surpress warning: shorten-64-to-32.
+
 Tue Mar 22 06:41:37 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/test/unit/parallel.rb: remove unused variable.
