@@ -1,3 +1,8 @@
+Tue Mar 22 06:47:46 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/date/date_strftime.c (date_strftime_wo_timespec):
+	  surpress warning: shorten-64-to-32.
+
 Tue Mar 22 06:42:42 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/date/date_core.c: surpress warning: shorten-64-to-32.
