@@ -42,10 +42,10 @@
 #define DAY_IN_NANOSECONDS 86400000000000LL
 
 /* copied from time.c */
-#define NDIV(x,y) (-(-((x)+1)/(y))-1)
-#define NMOD(x,y) ((y)-(-((x)+1)%(y))-1)
-#define DIV(n,d) ((n)<0 ? NDIV((n),(d)) : (n)/(d))
-#define MOD(n,d) ((n)<0 ? NMOD((n),(d)) : (n)%(d))
+#define NDIV(x,y) ((int)(-(-((x)+1)/(y))-1))
+#define NMOD(x,y) ((int)((y)-(-((x)+1)%(y))-1))
+#define DIV(n,d) ((int)((n)<0 ? NDIV((n),(d)) : (n)/(d)))
+#define MOD(n,d) ((int)((n)<0 ? NMOD((n),(d)) : (n)%(d)))
 
 union DateData
 {
@@ -305,7 +305,7 @@ jd_to_ordinal(long jd, double sg, int *ry, int *rd)
 
     jd_to_civil(jd, sg, ry, &rm2, &rd2);
     find_fdoy(*ry, sg, &rjd, &ns);
-    *rd = jd - rjd + 1;
+    *rd = (int)(jd - rjd) + 1;
 }
 
 static void
@@ -820,11 +820,11 @@ date_s_valid_civil_p(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 4:
       case 3:
-	d = NUM2LONG(vd);
+	d = NUM2INT(vd);
       case 2:
-	m = NUM2LONG(vm);
+	m = NUM2INT(vm);
       case 1:
-	y = NUM2LONG(vy);
+	y = NUM2INT(vy);
 	if (!LIGHTABLE_YEAR(y))
 	    return cforwardv("valid_civil_r?");
     }
@@ -868,9 +868,9 @@ date_s_valid_ordinal_p(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 3:
       case 2:
-	d = NUM2LONG(vd);
+	d = NUM2INT(vd);
       case 1:
-	y = NUM2LONG(vy);
+	y = NUM2INT(vy);
 	if (!LIGHTABLE_YEAR(y))
 	    return cforwardv("valid_ordinal_r?");
     }
@@ -911,11 +911,11 @@ date_s_valid_commercial_p(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 4:
       case 3:
-	d = NUM2LONG(vd);
+	d = NUM2INT(vd);
       case 2:
-	w = NUM2LONG(vw);
+	w = NUM2INT(vw);
       case 1:
-	y = NUM2LONG(vy);
+	y = NUM2INT(vy);
 	if (!LIGHTABLE_CWYEAR(y))
 	    return cforwardv("valid_commercial_r?");
     }
@@ -1128,9 +1128,9 @@ date_s_ordinal(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 3:
       case 2:
-	d = NUM2LONG(vd);
+	d = NUM2INT(vd);
       case 1:
-	y = NUM2LONG(vy);
+	y = NUM2INT(vy);
 	if (!LIGHTABLE_YEAR(y))
 	    return cforwardv("ordinal_r");
     }
@@ -1195,11 +1195,11 @@ date_s_civil(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 4:
       case 3:
-	d = NUM2LONG(vd);
+	d = NUM2INT(vd);
       case 2:
-	m = NUM2LONG(vm);
+	m = NUM2INT(vm);
       case 1:
-	y = NUM2LONG(vy);
+	y = NUM2INT(vy);
 	if (!LIGHTABLE_YEAR(y))
 	    return cforwardv("civil_r");
     }
@@ -1271,11 +1271,11 @@ date_s_commercial(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 4:
       case 3:
-	d = NUM2LONG(vd);
+	d = NUM2INT(vd);
       case 2:
-	w = NUM2LONG(vw);
+	w = NUM2INT(vw);
       case 1:
-	y = NUM2LONG(vy);
+	y = NUM2INT(vy);
 	if (!LIGHTABLE_CWYEAR(y))
 	    return cforwardv("commercial_r");
     }
@@ -2697,11 +2697,11 @@ datetime_s_jd(int argc, VALUE *argv, VALUE klass)
 	if (!daydiff_to_sec(vof, &rof))
 	    return cforwardv("jd_r");
       case 4:
-	s = NUM2LONG(vs);
+	s = NUM2INT(vs);
       case 3:
-	min = NUM2LONG(vmin);
+	min = NUM2INT(vmin);
       case 2:
-	h = NUM2LONG(vh);
+	h = NUM2INT(vh);
       case 1:
 	jd = NUM2LONG(vjd);
 	if (!LIGHTABLE_JD(jd))
@@ -2774,15 +2774,15 @@ datetime_s_ordinal(int argc, VALUE *argv, VALUE klass)
 	if (!daydiff_to_sec(vof, &rof))
 	    return cforwardv("ordinal_r");
       case 5:
-	s = NUM2LONG(vs);
+	s = NUM2INT(vs);
       case 4:
-	min = NUM2LONG(vmin);
+	min = NUM2INT(vmin);
       case 3:
-	h = NUM2LONG(vh);
+	h = NUM2INT(vh);
       case 2:
-	d = NUM2LONG(vd);
+	d = NUM2INT(vd);
       case 1:
-	y = NUM2LONG(vy);
+	y = NUM2INT(vy);
 	if (!LIGHTABLE_YEAR(y))
 	    return cforwardv("ordinal_r");
     }
@@ -2864,17 +2864,17 @@ datetime_s_civil(int argc, VALUE *argv, VALUE klass)
 	if (!daydiff_to_sec(vof, &rof))
 	    return cforwardv("civil_r");
       case 6:
-	s = NUM2LONG(vs);
+	s = NUM2INT(vs);
       case 5:
-	min = NUM2LONG(vmin);
+	min = NUM2INT(vmin);
       case 4:
-	h = NUM2LONG(vh);
+	h = NUM2INT(vh);
       case 3:
-	d = NUM2LONG(vd);
+	d = NUM2INT(vd);
       case 2:
-	m = NUM2LONG(vm);
+	m = NUM2INT(vm);
       case 1:
-	y = NUM2LONG(vy);
+	y = NUM2INT(vy);
 	if (!LIGHTABLE_YEAR(y))
 	    return cforwardv("civil_r");
     }
@@ -2967,17 +2967,17 @@ datetime_s_commercial(int argc, VALUE *argv, VALUE klass)
 	if (!daydiff_to_sec(vof, &rof))
 	    return cforwardv("commercial_r");
       case 6:
-	s = NUM2LONG(vs);
+	s = NUM2INT(vs);
       case 5:
-	min = NUM2LONG(vmin);
+	min = NUM2INT(vmin);
       case 4:
-	h = NUM2LONG(vh);
+	h = NUM2INT(vh);
       case 3:
-	d = NUM2LONG(vd);
+	d = NUM2INT(vd);
       case 2:
-	w = NUM2LONG(vw);
+	w = NUM2INT(vw);
       case 1:
-	y = NUM2LONG(vy);
+	y = NUM2INT(vy);
 	if (!LIGHTABLE_CWYEAR(y))
 	    return cforwardv("commercial_r");
     }
@@ -3054,7 +3054,7 @@ datetime_s_now(int argc, VALUE *argv, VALUE klass)
     if (s == 60)
 	s = 59;
 #ifdef HAVE_STRUCT_TM_TM_GMTOFF
-    of = tm.tm_gmtoff;
+    of = (int)tm.tm_gmtoff;
 #else
     of = (int)-timezone;
 #endif

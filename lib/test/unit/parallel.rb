@@ -20,7 +20,7 @@ module Test
 
       def _run_suites(suites, type)
         suites.map do |suite|
-          result = _run_suite(suite, type)
+          _run_suite(suite, type)
         end
       end
 

@@ -1,3 +1,7 @@
+Tue Mar 22 06:41:37 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/test/unit/parallel.rb: remove unused variable.
+
 Tue Mar 22 06:19:42 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/utf_16le.c: surpress warning: shorten-64-to-32.
@@ -7,7 +11,6 @@ Tue Mar 22 06:19:42 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 	* ext/gdbm/gdbm.c: ditto.
 
 	* parse.y (Init_ripper): surpress warning: unused value.
-
 
 Mon Mar 21 11:21:32 2011  Shota Fukumori  <sorah@tubusu.net>
 
