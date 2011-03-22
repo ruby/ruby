@@ -484,7 +484,7 @@ static void
 add_gems(VALUE *req_list, const char *mod)
 {
     VALUE list = *req_list;
-    VALUE gem, ver;
+    VALUE gem;
     const char *v;
 
     if (!list) {
