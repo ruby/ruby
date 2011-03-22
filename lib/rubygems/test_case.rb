@@ -106,6 +106,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     @orig_gem_home = ENV['GEM_HOME']
     @orig_gem_path = ENV['GEM_PATH']
 
+    @current_dir = Dir.pwd
     @ui = Gem::MockGemUi.new
     tmpdir = nil
     Dir.chdir Dir.tmpdir do tmpdir = Dir.pwd end # HACK OSX /private/tmp
@@ -208,7 +209,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
       Gem::RemoteFetcher.fetcher = nil
     end
 
-    Dir.chdir @@project_dir
+    Dir.chdir @current_dir
 
     FileUtils.rm_rf @tempdir unless ENV['KEEP_FILES']
 

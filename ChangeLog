@@ -1,3 +1,8 @@
+Tue Mar 22 21:20:10 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/rubygems/test_case.rb: save current dir to @current_dir
+	  before Dir.chdir.
+
 Tue Mar 22 20:10:04 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/psych/parser.c: parenthesize macro arguments.
