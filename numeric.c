@@ -1479,17 +1479,14 @@ flo_round(int argc, VALUE *argv, VALUE num)
 {
     VALUE nd;
     double number, f;
-    int ndigits = 0, i;
+    int ndigits = 0;
     long val;
 
     if (argc > 0 && rb_scan_args(argc, argv, "01", &nd) == 1) {
 	ndigits = NUM2INT(nd);
     }
     number  = RFLOAT_VALUE(num);
-    f = 1.0;
-    i = abs(ndigits);
-    while  (--i >= 0)
-	f = f*10.0;
+    f = pow(10, abs(ndigits));
 
     if (isinf(f)) {
 	if (ndigits < 0) number = 0;

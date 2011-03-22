@@ -1,3 +1,8 @@
+Tue Mar 22 09:38:19 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* numeric.c (flo_round): use pow instead of while-loop. fixes #4510
+	  patched by Alex Young [ruby-core:35526]
+
 Tue Mar 22 06:47:46 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/date/date_strftime.c (date_strftime_wo_timespec):
