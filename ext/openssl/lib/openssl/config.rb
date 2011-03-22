@@ -10,9 +10,6 @@
 
 =end
 
-##
-# Should we care what if somebody require this file directly?
-#require 'openssl'
 require 'stringio'
 
 module OpenSSL

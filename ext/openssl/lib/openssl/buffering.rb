@@ -14,8 +14,6 @@
   $Id$
 =end
 
-require 'openssl'
-
 ##
 # OpenSSL IO buffering mix-in module.
 #

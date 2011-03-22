@@ -14,10 +14,6 @@
   $Id$
 =end
 
-##
-# Should we care what if somebody require this file directly?
-#require 'openssl'
-
 module OpenSSL
   class Digest
 

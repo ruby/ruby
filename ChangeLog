@@ -1,3 +1,15 @@
+Tue Mar 22 13:33:22 2011  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* ext/openssl/lib/openssl/buffering.rb: removed circular require of
+	  openssl.rb.
+
+	* ext/openssl/lib/openssl/*: removed following comment for transition
+	  measures of avoiding circular require. No one claimed about this as
+	  far as I know.
+	  ##
+	  # Should we care what if somebody require this file directly?
+	  # require "openssl"
+
 Tue Mar 22 10:57:36 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/runner.rb: set Gem::TestCase's @@project_dir.
