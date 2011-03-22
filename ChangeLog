@@ -1,3 +1,7 @@
+Sun Mar 20 12:43:12 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/ruby_missing.h: parenthesize macro arguments.
+
 Tue Mar 22 13:33:22 2011  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* ext/openssl/lib/openssl/buffering.rb: removed circular require of
