@@ -126,6 +126,7 @@ VALUE rb_big_plus(VALUE, VALUE);
 VALUE rb_big_minus(VALUE, VALUE);
 VALUE rb_big_mul(VALUE, VALUE);
 VALUE rb_big_div(VALUE, VALUE);
+VALUE rb_big_idiv(VALUE, VALUE);
 VALUE rb_big_modulo(VALUE, VALUE);
 VALUE rb_big_divmod(VALUE, VALUE);
 VALUE rb_big_pow(VALUE, VALUE);

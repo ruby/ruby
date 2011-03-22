@@ -1,3 +1,7 @@
+Wed Mar 23 08:07:33 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (flo_round): fix inaccurate results.
+
 Wed Mar 23 00:12:16 2011  Tajima Akio <artonx@yahoo.co.jp>
 
 	* win32/win32.c: wait process real termination after reading 
