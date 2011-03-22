@@ -19,9 +19,9 @@ static ID id_end_mapping;
 
 #define PSYCH_TRANSCODE(_str, _yaml_enc, _internal_enc) \
   do { \
-    rb_enc_associate_index(_str, _yaml_enc); \
+    rb_enc_associate_index((_str), (_yaml_enc)); \
     if(_internal_enc) \
-      _str = rb_str_export_to_enc(_str, _internal_enc); \
+      (_str) = rb_str_export_to_enc((_str), (_internal_enc)); \
   } while (0)
 
 static int io_reader(void * data, unsigned char *buf, size_t size, size_t *read)

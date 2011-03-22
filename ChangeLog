@@ -1,4 +1,8 @@
-Sun Mar 20 12:43:12 2011  Tanaka Akira  <akr@fsij.org>
+Tue Mar 22 20:10:04 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/psych/parser.c: parenthesize macro arguments.
+
+Tue Mar 22 20:10:01 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/ruby_missing.h: parenthesize macro arguments.
 
