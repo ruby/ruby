@@ -1,3 +1,8 @@
+Wed Mar 23 00:12:16 2011  Tajima Akio <artonx@yahoo.co.jp>
+
+	* win32/win32.c: wait process real termination after reading 
+	  exit code. fixes #4518
+
 Tue Mar 22 21:20:10 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/rubygems/test_case.rb: save current dir to @current_dir

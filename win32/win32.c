@@ -3549,6 +3549,7 @@ poll_child_status(struct ChildRecord *child, int *stat_loc)
 
     if (!GetExitCodeProcess(child->hProcess, &exitcode)) {
 	/* If an error occured, return immediatly. */
+    error_exit:
 	err = GetLastError();
 	if (err == ERROR_INVALID_PARAMETER)
 	    errno = ECHILD;
@@ -3562,7 +3563,12 @@ poll_child_status(struct ChildRecord *child, int *stat_loc)
 	return -1;
     }
     if (exitcode != STILL_ACTIVE) {
-	/* If already died, return immediatly. */
+        rb_pid_t pid;
+	/* If already died, wait process's real termination. */
+        if (rb_w32_wait_events_blocking(&child->hProcess, 1, INFINITE) != WAIT_OBJECT_0) {
+	    goto error_exit;
+        }
+	pid = child->pid;
 	rb_pid_t pid = child->pid;
 	CloseChildHandle(child);
 	if (stat_loc) *stat_loc = exitcode << 8;
