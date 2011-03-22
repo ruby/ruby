@@ -3569,7 +3569,6 @@ poll_child_status(struct ChildRecord *child, int *stat_loc)
 	    goto error_exit;
         }
 	pid = child->pid;
-	rb_pid_t pid = child->pid;
 	CloseChildHandle(child);
 	if (stat_loc) *stat_loc = exitcode << 8;
 	return pid;
