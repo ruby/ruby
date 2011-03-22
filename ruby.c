@@ -480,31 +480,6 @@ add_modules(VALUE *req_list, const char *mod)
     rb_ary_push(list, rb_obj_freeze(rb_str_new2(mod)));
 }
 
-static void
-add_gems(VALUE *req_list, const char *mod)
-{
-    VALUE list = *req_list;
-    VALUE gem;
-    const char *v;
-
-    if (!list) {
-	*req_list = list = rb_ary_new();
-	RBASIC(list)->klass = 0;
-    }
-    for (v = mod; *v && !ISSPACE(*v) && !strchr("=!<>~", *v); ++v);
-    gem = rb_obj_freeze(rb_str_new(mod, v-mod));
-    if (*v) {
-	while (ISSPACE(*v)) ++v;
-    }
-    if (*v) {
-	gem = rb_assoc_new(gem, rb_obj_freeze(rb_str_new2(v)));
-    }
-    else {
-	gem = rb_ary_new4(1, &gem);
-    }
-    rb_ary_push(list, rb_obj_freeze(gem));
-}
-
 extern void Init_ext(void);
 extern VALUE rb_vm_top_self(void);
 
@@ -513,7 +488,7 @@ require_libraries(VALUE *req_list)
 {
     VALUE list = *req_list;
     VALUE self = rb_vm_top_self();
-    ID require, gem;
+    ID require;
     rb_thread_t *th = GET_THREAD();
     rb_block_t *prev_base_block = th->base_block;
     int prev_parse_in_eval = th->parse_in_eval;
@@ -522,15 +497,9 @@ require_libraries(VALUE *req_list)
 
     Init_ext();		/* should be called here for some reason :-( */
     CONST_ID(require, "require");
-    CONST_ID(gem, "gem");
     while (list && RARRAY_LEN(list) > 0) {
 	VALUE feature = rb_ary_shift(list);
-	if (RB_TYPE_P(feature, T_ARRAY)) {
-	    rb_funcall2(self, gem, RARRAY_LENINT(feature), RARRAY_PTR(feature));
-	}
-	else {
-	    rb_funcall2(self, require, 1, &feature);
-	}
+	rb_funcall2(self, require, 1, &feature);
     }
     *req_list = 0;
 
@@ -1068,18 +1037,6 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 		set_source_encoding_once(opt, s, 0);
 	    }
 #endif
-	    else if (is_option_with_arg("gem", Qfalse, Qtrue)) {
-                if (strcmp("disabled", s) == 0) {
-                    opt->disable |= DISABLE_BIT(gems);
-                }
-                else if (strcmp("enabled", s) == 0) {
-                    opt->disable &= ~DISABLE_BIT(gems);
-                }
-                else {
-                    opt->disable &= ~DISABLE_BIT(gems);
-                    add_gems(&opt->req_list, s);
-                }
-	    }
 	    else if (strcmp("version", s) == 0) {
 		if (envopt) goto noenvopt_long;
 		opt->dump |= DUMP_BIT(version);
