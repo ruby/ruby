@@ -1,3 +1,10 @@
+Tue Mar 22 10:57:36 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/runner.rb: set Gem::TestCase's @@project_dir.
+
+	* lib/rubygems/test_case.rb: set Gem::TestCase's @@project_dir only
+	  when it is not defined.
+
 Tue Mar 22 09:38:19 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* numeric.c (flo_round): use pow instead of while-loop. fixes #4510

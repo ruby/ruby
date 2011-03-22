@@ -87,7 +87,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
   undef_method :default_test if instance_methods.include? 'default_test' or
                                 instance_methods.include? :default_test
 
-  @@project_dir = Dir.pwd
+  @@project_dir = Dir.pwd unless defined?(@@project_dir)
 
   ##
   # #setup prepares a sandboxed location to install gems.  All installs are
