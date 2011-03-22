@@ -1068,9 +1068,6 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 		set_source_encoding_once(opt, s, 0);
 	    }
 #endif
-	    else if (is_option_with_arg("require", Qfalse, Qtrue)) {
-		add_modules(&opt->req_list, s);
-	    }
 	    else if (is_option_with_arg("gem", Qfalse, Qtrue)) {
                 if (strcmp("disabled", s) == 0) {
                     opt->disable |= DISABLE_BIT(gems);
