@@ -75,7 +75,7 @@ static char **readline_attempted_completion_function(const char *text,
 
 #define OutputStringValue(str) do {\
     SafeStringValue(str);\
-    str = rb_str_conv_enc(str, rb_enc_get(str), rb_locale_encoding());\
+    (str) = rb_str_conv_enc((str), rb_enc_get(str), rb_locale_encoding());\
 } while (0)\
 
 

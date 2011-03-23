@@ -1,3 +1,7 @@
+Wed Mar 23 21:09:29 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/readline/readline.c: parenthesize macro arguments.
+
 Wed Mar 23 08:07:33 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (flo_round): fix inaccurate results.
