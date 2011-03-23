@@ -8,7 +8,7 @@ Wed Mar 23 08:07:33 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Wed Mar 23 00:12:16 2011  Tajima Akio <artonx@yahoo.co.jp>
 
-	* win32/win32.c: wait process real termination after reading 
+	* win32/win32.c: wait process real termination after reading
 	  exit code. fixes #4518
 
 Tue Mar 22 21:20:10 2011  NARUSE, Yui  <naruse@ruby-lang.org>
@@ -51,11 +51,11 @@ Tue Mar 22 09:38:19 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 Tue Mar 22 06:47:46 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/date/date_strftime.c (date_strftime_wo_timespec):
-	  surpress warning: shorten-64-to-32.
+	  suppress warning: shorten-64-to-32.
 
 Tue Mar 22 06:42:42 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* ext/date/date_core.c: surpress warning: shorten-64-to-32.
+	* ext/date/date_core.c: suppress warning: shorten-64-to-32.
 
 Tue Mar 22 06:41:37 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
@@ -63,13 +63,13 @@ Tue Mar 22 06:41:37 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Tue Mar 22 06:19:42 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* enc/utf_16le.c: surpress warning: shorten-64-to-32.
+	* enc/utf_16le.c: suppress warning: shorten-64-to-32.
 
 	* ext/dbm/dbm.c: ditto.
 
 	* ext/gdbm/gdbm.c: ditto.
 
-	* parse.y (Init_ripper): surpress warning: unused value.
+	* parse.y (Init_ripper): suppress warning: unused value.
 
 Mon Mar 21 11:21:32 2011  Shota Fukumori  <sorah@tubusu.net>
 
@@ -108,7 +108,7 @@ Sat Mar 19 18:35:05 2011  Tajima Akio <artonx@yahoo.co.jp>
 
 Sat Mar 19 17:14:46 2011  Tajima Akio <artonx@yahoo.co.jp>
 
-	* hash.c (ruby_setenv): checking with max process environment 
+	* hash.c (ruby_setenv): checking with max process environment
 	  block size for Win32. 32767 for 2000/XP, 2003. if failed to
 	  read the block, then checking with 5120 for earlier Windows.
 
