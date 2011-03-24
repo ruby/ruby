@@ -1,3 +1,10 @@
+Thu Mar 24 09:56:19 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/openssl/ossl_ocsp.c (ossl_ocspreq_verify): flags is VALUE,
+	  so it should use NUM2INT.
+
+	* ext/openssl/ossl_ocsp.c (ossl_ocspbres_verify): ditto.
+
 Wed Mar 23 21:09:29 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/readline/readline.c: parenthesize macro arguments.
