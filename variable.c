@@ -1816,7 +1816,7 @@ rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 	    if (visibility && ce->flag == CONST_PRIVATE) {
 		return (int)Qfalse;
 	    }
-	    if (ce->value == Qundef && !autoload_node((VALUE)klass, id, 0))
+	    if (ce->value == Qundef && !autoload_node(tmp, id, 0))
 		return (int)Qfalse;
 	    return (int)Qtrue;
 	}

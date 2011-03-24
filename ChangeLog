@@ -1,3 +1,8 @@
+Thu Mar 24 23:05:42 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (rb_const_defined_0): fix autoloading base.
+	  [ruby-core:35509]
+
 Thu Mar 24 22:48:43 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/sdbm/_sdbm.c: parenthesize macro arguments.
