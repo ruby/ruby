@@ -1,3 +1,8 @@
+Thu Mar 24 10:04:35 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/io/console/console.c (console_set_winsize):
+	  surpress warning: shorten-64-to-32.
+
 Thu Mar 24 09:56:19 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/openssl/ossl_ocsp.c (ossl_ocspreq_verify): flags is VALUE,

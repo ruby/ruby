@@ -414,7 +414,7 @@ console_set_winsize(VALUE io, VALUE size)
 
     GetOpenFile(io, fptr);
     size = rb_Array(size);
-    rb_scan_args(RARRAY_LEN(size), RARRAY_PTR(size), "22",
+    rb_scan_args((int)RARRAY_LEN(size), RARRAY_PTR(size), "22",
                 &row, &col, &xpixel, &ypixel);
 #if defined TIOCSWINSZ
     fd = GetWriteFD(fptr);
