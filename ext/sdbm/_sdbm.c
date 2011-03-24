@@ -30,9 +30,9 @@
 
 #ifdef BSD42
 #define SEEK_SET	L_SET
-#define	memset(s,c,n)	bzero(s, n)		/* only when c is zero */
-#define	memcpy(s1,s2,n)	bcopy(s2, s1, n)
-#define	memcmp(s1,s2,n)	bcmp(s1,s2,n)
+#define	memset(s,c,n)	bzero((s), (n))		/* only when c is zero */
+#define	memcpy(s1,s2,n)	bcopy((s2), (s1), (n))
+#define	memcmp(s1,s2,n)	bcmp((s1),(s2),(n))
 #endif
 
 /*
@@ -60,8 +60,8 @@
 #define GET_SHORT(p, i)	(((unsigned)((unsigned char *)(p))[(i)*2] << 8) + (((unsigned char *)(p))[(i)*2 + 1]))
 #define PUT_SHORT(p, i, s) (((unsigned char *)(p))[(i)*2] = (unsigned char)((s) >> 8), ((unsigned char *)(p))[(i)*2 + 1] = (unsigned char)(s))
 #else
-#define GET_SHORT(p, i)	((p)[i])
-#define PUT_SHORT(p, i, s)	((p)[i] = (s))
+#define GET_SHORT(p, i)	((p)[(i)])
+#define PUT_SHORT(p, i, s)	((p)[(i)] = (s))
 #endif
 
 /*#include "pair.h"*/

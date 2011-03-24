@@ -1,3 +1,7 @@
+Thu Mar 24 22:48:43 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/sdbm/_sdbm.c: parenthesize macro arguments.
+
 Thu Mar 24 14:45:57 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/openssl/ossl.c: surpress warning: shorten-64-to-32.
