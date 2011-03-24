@@ -105,6 +105,8 @@ class TestDefined < Test::Unit::TestCase
   end
 
   def test_autoloaded_noload
+    loaded = $".dup
+    $".clear
     klass = Class.new do
       autoload(:A, "a")
       def a?
@@ -113,5 +115,8 @@ class TestDefined < Test::Unit::TestCase
     end
     x = klass.new
     assert_equal("constant", x.a?)
+    assert_equal([], $")
+  ensure
+    $".replace(loaded)
   end
 end
