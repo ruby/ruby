@@ -149,7 +149,7 @@ ossl_rand_egd(VALUE self, VALUE filename)
 static VALUE
 ossl_rand_egd_bytes(VALUE self, VALUE filename, VALUE len)
 {
-    long n = NUM2INT(len);
+    int n = NUM2INT(len);
 
     SafeStringValue(filename);
 

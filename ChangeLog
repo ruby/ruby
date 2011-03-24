@@ -1,3 +1,18 @@
+Thu Mar 24 11:48:19 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/openssl/ossl_rand.c (ossl_rand_egd_bytes): use NUM2INT because
+	  the result is used with functions whose argument is int.
+
+	* ext/openssl/ossl_ssl.c (ossl_sslctx_setup): ditto.
+
+	* ext/openssl/ossl_x509store.c (ossl_x509store_set_purpose): ditto.
+
+	* ext/openssl/ossl_x509store.c (ossl_x509store_set_trust): ditto.
+
+	* ext/openssl/ossl_x509store.c (ossl_x509stctx_set_purpose): ditto.
+
+	* ext/openssl/ossl_x509store.c (ossl_x509stctx_set_trust): ditto.
+
 Thu Mar 24 11:36:55 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/openssl/ossl_x509name.c: id_aref's type is ID.
