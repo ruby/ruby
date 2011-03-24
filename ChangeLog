@@ -12,7 +12,7 @@ Thu Mar 24 22:48:43 2011  Tanaka Akira  <akr@fsij.org>
 
 Thu Mar 24 14:45:57 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* ext/openssl/ossl.c: surpress warning: shorten-64-to-32.
+	* ext/openssl/ossl.c: suppress warning: shorten-64-to-32.
 
 	* ext/openssl/ossl.h: ditto.
 
@@ -72,7 +72,7 @@ Thu Mar 24 11:36:55 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 Thu Mar 24 10:04:35 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/io/console/console.c (console_set_winsize):
-	  surpress warning: shorten-64-to-32.
+	  suppress warning: shorten-64-to-32.
 
 Thu Mar 24 09:56:19 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
