@@ -103,4 +103,15 @@ class TestDefined < Test::Unit::TestCase
     end
     assert_equal("constant", klass.new.a?, bug)
   end
+
+  def test_autoloaded_noload
+    klass = Class.new do
+      autoload(:A, "a")
+      def a?
+        defined?(A)
+      end
+    end
+    x = klass.new
+    assert_equal("constant", x.a?)
+  end
 end
