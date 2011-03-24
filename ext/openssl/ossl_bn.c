@@ -133,12 +133,12 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
 
     switch (base) {
     case 0:
-	if (!BN_mpi2bn((unsigned char *)RSTRING_PTR(str), RSTRING_LEN(str), bn)) {
+	if (!BN_mpi2bn((unsigned char *)RSTRING_PTR(str), RSTRING_LENINT(str), bn)) {
 	    ossl_raise(eBNError, NULL);
 	}
 	break;
     case 2:
-	if (!BN_bin2bn((unsigned char *)RSTRING_PTR(str), RSTRING_LEN(str), bn)) {
+	if (!BN_bin2bn((unsigned char *)RSTRING_PTR(str), RSTRING_LENINT(str), bn)) {
 	    ossl_raise(eBNError, NULL);
 	}
 	break;
@@ -198,11 +198,11 @@ ossl_bn_to_s(int argc, VALUE *argv, VALUE self)
 	break;
     case 10:
 	if (!(buf = BN_bn2dec(bn))) ossl_raise(eBNError, NULL);
-	str = ossl_buf2str(buf, strlen(buf));
+	str = ossl_buf2str(buf, rb_long2int(strlen(buf)));
 	break;
     case 16:
 	if (!(buf = BN_bn2hex(bn))) ossl_raise(eBNError, NULL);
-	str = ossl_buf2str(buf, strlen(buf));
+	str = ossl_buf2str(buf, rb_long2int(strlen(buf)));
 	break;
     default:
 	ossl_raise(rb_eArgError, "invalid radix %d", base);

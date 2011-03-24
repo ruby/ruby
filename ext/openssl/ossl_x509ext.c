@@ -340,7 +340,7 @@ ossl_x509ext_set_value(VALUE self, VALUE data)
 	OPENSSL_free(s);
 	ossl_raise(eX509ExtError, NULL);
     }
-    if(!M_ASN1_OCTET_STRING_set(asn1s, s, RSTRING_LEN(data))){
+    if(!M_ASN1_OCTET_STRING_set(asn1s, s, RSTRING_LENINT(data))){
 	OPENSSL_free(s);
 	ASN1_OCTET_STRING_free(asn1s);
 	ossl_raise(eX509ExtError, NULL);

@@ -194,7 +194,7 @@ ossl_pkey_verify(VALUE self, VALUE digest, VALUE sig, VALUE data)
     StringValue(sig);
     StringValue(data);
     EVP_VerifyUpdate(&ctx, RSTRING_PTR(data), RSTRING_LEN(data));
-    switch (EVP_VerifyFinal(&ctx, (unsigned char *)RSTRING_PTR(sig), RSTRING_LEN(sig), pkey)) {
+    switch (EVP_VerifyFinal(&ctx, (unsigned char *)RSTRING_PTR(sig), RSTRING_LENINT(sig), pkey)) {
     case 0:
 	return Qfalse;
     case 1:

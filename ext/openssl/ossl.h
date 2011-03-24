@@ -126,8 +126,8 @@ VALUE ossl_x509crl_sk2ary(STACK_OF(X509_CRL) *crl);
 VALUE ossl_buf2str(char *buf, int len);
 #define ossl_str_adjust(str, p) \
 do{\
-    int len = RSTRING_LEN(str);\
-    int newlen = (p) - (unsigned char*)RSTRING_PTR(str);\
+    int len = RSTRING_LENINT(str);\
+    int newlen = rb_long2int((p) - (unsigned char*)RSTRING_PTR(str));\
     assert(newlen <= len);\
     rb_str_set_len((str), newlen);\
 }while(0)

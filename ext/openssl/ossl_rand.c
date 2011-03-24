@@ -37,7 +37,7 @@ static VALUE
 ossl_rand_seed(VALUE self, VALUE str)
 {
     StringValue(str);
-    RAND_seed(RSTRING_PTR(str), RSTRING_LEN(str));
+    RAND_seed(RSTRING_PTR(str), RSTRING_LENINT(str));
 
     return str;
 }
@@ -51,7 +51,7 @@ static VALUE
 ossl_rand_add(VALUE self, VALUE str, VALUE entropy)
 {
     StringValue(str);
-    RAND_add(RSTRING_PTR(str), RSTRING_LEN(str), NUM2DBL(entropy));
+    RAND_add(RSTRING_PTR(str), RSTRING_LENINT(str), NUM2DBL(entropy));
 
     return self;
 }

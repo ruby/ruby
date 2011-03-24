@@ -1,3 +1,43 @@
+Thu Mar 24 14:45:57 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/openssl/ossl.c: surpress warning: shorten-64-to-32.
+
+	* ext/openssl/ossl.h: ditto.
+
+	* ext/openssl/ossl_asn1.c: ditto.
+
+	* ext/openssl/ossl_bio.c: ditto.
+
+	* ext/openssl/ossl_bn.c: ditto.
+
+	* ext/openssl/ossl_cipher.c: ditto.
+
+	* ext/openssl/ossl_hmac.c: ditto.
+
+	* ext/openssl/ossl_ns_spki.c: ditto.
+
+	* ext/openssl/ossl_ocsp.c: ditto.
+
+	* ext/openssl/ossl_pkcs5.c: ditto.
+
+	* ext/openssl/ossl_pkey.c: ditto.
+
+	* ext/openssl/ossl_pkey_dh.c: ditto.
+
+	* ext/openssl/ossl_pkey_dsa.c: ditto.
+
+	* ext/openssl/ossl_pkey_ec.c: ditto.
+
+	* ext/openssl/ossl_pkey_rsa.c: ditto.
+
+	* ext/openssl/ossl_rand.c: ditto.
+
+	* ext/openssl/ossl_ssl.c: ditto.
+
+	* ext/openssl/ossl_x509ext.c: ditto.
+
+	* ext/openssl/ossl_x509name.c: ditto.
+
 Thu Mar 24 11:48:19 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/openssl/ossl_rand.c (ossl_rand_egd_bytes): use NUM2INT because

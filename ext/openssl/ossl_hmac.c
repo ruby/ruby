@@ -70,7 +70,7 @@ ossl_hmac_initialize(VALUE self, VALUE key, VALUE digest)
 
     StringValue(key);
     GetHMAC(self, ctx);
-    HMAC_Init_ex(ctx, RSTRING_PTR(key), RSTRING_LEN(key),
+    HMAC_Init_ex(ctx, RSTRING_PTR(key), RSTRING_LENINT(key),
 		 GetDigestPtr(digest), NULL);
 
     return self;
@@ -198,7 +198,7 @@ ossl_hmac_s_digest(VALUE klass, VALUE digest, VALUE key, VALUE data)
 
     StringValue(key);
     StringValue(data);
-    buf = HMAC(GetDigestPtr(digest), RSTRING_PTR(key), RSTRING_LEN(key),
+    buf = HMAC(GetDigestPtr(digest), RSTRING_PTR(key), RSTRING_LENINT(key),
 	       (unsigned char *)RSTRING_PTR(data), RSTRING_LEN(data), NULL, &buf_len);
 
     return rb_str_new((const char *)buf, buf_len);
@@ -220,7 +220,7 @@ ossl_hmac_s_hexdigest(VALUE klass, VALUE digest, VALUE key, VALUE data)
     StringValue(key);
     StringValue(data);
 
-    buf = HMAC(GetDigestPtr(digest), RSTRING_PTR(key), RSTRING_LEN(key),
+    buf = HMAC(GetDigestPtr(digest), RSTRING_PTR(key), RSTRING_LENINT(key),
 	       (unsigned char *)RSTRING_PTR(data), RSTRING_LEN(data), NULL, &buf_len);
     if (string2hex(buf, buf_len, &hexbuf, NULL) != 2 * (int)buf_len) {
 	ossl_raise(eHMACError, "Cannot convert buf to hexbuf");

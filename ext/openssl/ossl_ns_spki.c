@@ -106,7 +106,7 @@ ossl_spki_to_pem(VALUE self)
     if (!(data = NETSCAPE_SPKI_b64_encode(spki))) {
 	ossl_raise(eSPKIError, NULL);
     }
-    str = ossl_buf2str(data, strlen(data));
+    str = ossl_buf2str(data, rb_long2int(strlen(data)));
 
     return str;
 }
@@ -184,7 +184,7 @@ ossl_spki_set_challenge(VALUE self, VALUE str)
     StringValue(str);
     GetSPKI(self, spki);
     if (!ASN1_STRING_set(spki->spkac->challenge, RSTRING_PTR(str),
-			 RSTRING_LEN(str))) {
+			 RSTRING_LENINT(str))) {
 	ossl_raise(eSPKIError, NULL);
     }
 

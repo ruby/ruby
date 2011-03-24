@@ -170,7 +170,7 @@ ossl_pem_passwd_cb(char *buf, int max_len, int flag, void *pwd)
 	rflag = flag ? Qtrue : Qfalse;
 	pass  = rb_protect(ossl_pem_passwd_cb0, rflag, &status);
 	if (status) return -1; /* exception was raised. */
-	len = RSTRING_LEN(pass);
+	len = RSTRING_LENINT(pass);
 	if (len < 4) { /* 4 is OpenSSL hardcoded limit */
 	    rb_warning("password must be longer than 4 bytes");
 	    continue;
@@ -302,7 +302,7 @@ ossl_make_error(VALUE exc, const char *fmt, va_list args)
     }
     ERR_clear_error();
 
-    if(len > BUFSIZ) len = strlen(buf);
+    if(len > BUFSIZ) len = rb_long2int(strlen(buf));
     return rb_exc_new(exc, buf, len);
 }
 

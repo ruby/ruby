@@ -75,8 +75,8 @@ ossl_pkcs5_pbkdf2_hmac_sha1(VALUE self, VALUE pass, VALUE salt, VALUE iter, VALU
 
     str = rb_str_new(0, len);
 
-    if (PKCS5_PBKDF2_HMAC_SHA1(RSTRING_PTR(pass), RSTRING_LEN(pass),
-			       (const unsigned char *)RSTRING_PTR(salt), RSTRING_LEN(salt), NUM2INT(iter),
+    if (PKCS5_PBKDF2_HMAC_SHA1(RSTRING_PTR(pass), RSTRING_LENINT(pass),
+			       (const unsigned char *)RSTRING_PTR(salt), RSTRING_LENINT(salt), NUM2INT(iter),
 			       len, (unsigned char *)RSTRING_PTR(str)) != 1)
         ossl_raise(ePKCS5, "PKCS5_PBKDF2_HMAC_SHA1");
 

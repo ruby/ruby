@@ -671,7 +671,7 @@ static VALUE ossl_ec_key_dsa_sign_asn1(VALUE self, VALUE data)
 	ossl_raise(eECError, "Private EC key needed!");
 
     str = rb_str_new(0, ECDSA_size(ec) + 16);
-    if (ECDSA_sign(0, (unsigned char *) RSTRING_PTR(data), RSTRING_LEN(data), (unsigned char *) RSTRING_PTR(str), &buf_len, ec) != 1)
+    if (ECDSA_sign(0, (unsigned char *) RSTRING_PTR(data), RSTRING_LENINT(data), (unsigned char *) RSTRING_PTR(str), &buf_len, ec) != 1)
          ossl_raise(eECError, "ECDSA_sign");
 
     rb_str_resize(str, buf_len);
@@ -693,7 +693,7 @@ static VALUE ossl_ec_key_dsa_verify_asn1(VALUE self, VALUE data, VALUE sig)
     StringValue(data);
     StringValue(sig);
 
-    switch (ECDSA_verify(0, (unsigned char *) RSTRING_PTR(data), RSTRING_LEN(data), (unsigned char *) RSTRING_PTR(sig), RSTRING_LEN(sig), ec)) {
+    switch (ECDSA_verify(0, (unsigned char *) RSTRING_PTR(data), RSTRING_LENINT(data), (unsigned char *) RSTRING_PTR(sig), (int)RSTRING_LEN(sig), ec)) {
     case 1:	return Qtrue;
     case 0:	return Qfalse;
     default:	break;
@@ -965,7 +965,7 @@ static VALUE ossl_s_builtin_curves(VALUE self)
 {
     EC_builtin_curve *curves = NULL;
     int n;
-    int crv_len = EC_get_builtin_curves(NULL, 0);
+    int crv_len = rb_long2int(EC_get_builtin_curves(NULL, 0));
     VALUE ary, ret;
 
     curves = ALLOCA_N(EC_builtin_curve, crv_len);

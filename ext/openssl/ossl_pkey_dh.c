@@ -473,8 +473,8 @@ ossl_create_dh(unsigned char *p, size_t plen, unsigned char *g, size_t glen)
     DH *dh;
 
     if ((dh = DH_new()) == NULL) ossl_raise(eDHError, NULL);
-    dh->p = BN_bin2bn(p, plen, NULL);
-    dh->g = BN_bin2bn(g, glen, NULL);
+    dh->p = BN_bin2bn(p, rb_long2int(plen), NULL);
+    dh->g = BN_bin2bn(g, rb_long2int(glen), NULL);
     if (dh->p == NULL || dh->g == NULL){
         DH_free(dh);
 	ossl_raise(eDHError, NULL);

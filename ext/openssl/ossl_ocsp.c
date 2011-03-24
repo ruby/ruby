@@ -136,7 +136,7 @@ ossl_ocspreq_add_nonce(int argc, VALUE *argv, VALUE self)
     else{
 	StringValue(val);
 	GetOCSPReq(self, req);
-	ret = OCSP_request_add1_nonce(req, (unsigned char *)RSTRING_PTR(val), RSTRING_LEN(val));
+	ret = OCSP_request_add1_nonce(req, (unsigned char *)RSTRING_PTR(val), RSTRING_LENINT(val));
     }
     if(!ret) ossl_raise(eOCSPError, NULL);
 
@@ -440,7 +440,7 @@ ossl_ocspbres_add_nonce(int argc, VALUE *argv, VALUE self)
     else{
 	StringValue(val);
 	GetOCSPBasicRes(self, bs);
-	ret = OCSP_basic_add1_nonce(bs, (unsigned char *)RSTRING_PTR(val), RSTRING_LEN(val));
+	ret = OCSP_basic_add1_nonce(bs, (unsigned char *)RSTRING_PTR(val), RSTRING_LENINT(val));
     }
     if(!ret) ossl_raise(eOCSPError, NULL);
 

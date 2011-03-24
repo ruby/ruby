@@ -323,7 +323,7 @@ ossl_rsa_public_encrypt(int argc, VALUE *argv, VALUE self)
     pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
     StringValue(buffer);
     str = rb_str_new(0, ossl_rsa_buf_size(pkey));
-    buf_len = RSA_public_encrypt(RSTRING_LEN(buffer), (unsigned char *)RSTRING_PTR(buffer),
+    buf_len = RSA_public_encrypt(RSTRING_LENINT(buffer), (unsigned char *)RSTRING_PTR(buffer),
 				 (unsigned char *)RSTRING_PTR(str), pkey->pkey.rsa,
 				 pad);
     if (buf_len < 0) ossl_raise(eRSAError, NULL);
@@ -352,7 +352,7 @@ ossl_rsa_public_decrypt(int argc, VALUE *argv, VALUE self)
     pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
     StringValue(buffer);
     str = rb_str_new(0, ossl_rsa_buf_size(pkey));
-    buf_len = RSA_public_decrypt(RSTRING_LEN(buffer), (unsigned char *)RSTRING_PTR(buffer),
+    buf_len = RSA_public_decrypt(RSTRING_LENINT(buffer), (unsigned char *)RSTRING_PTR(buffer),
 				 (unsigned char *)RSTRING_PTR(str), pkey->pkey.rsa,
 				 pad);
     if (buf_len < 0) ossl_raise(eRSAError, NULL);
@@ -384,7 +384,7 @@ ossl_rsa_private_encrypt(int argc, VALUE *argv, VALUE self)
     pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
     StringValue(buffer);
     str = rb_str_new(0, ossl_rsa_buf_size(pkey));
-    buf_len = RSA_private_encrypt(RSTRING_LEN(buffer), (unsigned char *)RSTRING_PTR(buffer),
+    buf_len = RSA_private_encrypt(RSTRING_LENINT(buffer), (unsigned char *)RSTRING_PTR(buffer),
 				  (unsigned char *)RSTRING_PTR(str), pkey->pkey.rsa,
 				  pad);
     if (buf_len < 0) ossl_raise(eRSAError, NULL);
@@ -416,7 +416,7 @@ ossl_rsa_private_decrypt(int argc, VALUE *argv, VALUE self)
     pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
     StringValue(buffer);
     str = rb_str_new(0, ossl_rsa_buf_size(pkey));
-    buf_len = RSA_private_decrypt(RSTRING_LEN(buffer), (unsigned char *)RSTRING_PTR(buffer),
+    buf_len = RSA_private_decrypt(RSTRING_LENINT(buffer), (unsigned char *)RSTRING_PTR(buffer),
 				  (unsigned char *)RSTRING_PTR(str), pkey->pkey.rsa,
 				  pad);
     if (buf_len < 0) ossl_raise(eRSAError, NULL);

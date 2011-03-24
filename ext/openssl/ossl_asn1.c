@@ -223,7 +223,7 @@ obj_to_asn1bstr(VALUE obj, long unused_bits)
     StringValue(obj);
     if(!(bstr = ASN1_BIT_STRING_new()))
 	ossl_raise(eASN1Error, NULL);
-    ASN1_BIT_STRING_set(bstr, (unsigned char *)RSTRING_PTR(obj), RSTRING_LEN(obj));
+    ASN1_BIT_STRING_set(bstr, (unsigned char *)RSTRING_PTR(obj), RSTRING_LENINT(obj));
     bstr->flags &= ~(ASN1_STRING_FLAG_BITS_LEFT|0x07); /* clear */
     bstr->flags |= ASN1_STRING_FLAG_BITS_LEFT|(unused_bits&0x07);
 
@@ -238,7 +238,7 @@ obj_to_asn1str(VALUE obj)
     StringValue(obj);
     if(!(str = ASN1_STRING_new()))
 	ossl_raise(eASN1Error, NULL);
-    ASN1_STRING_set(str, RSTRING_PTR(obj), RSTRING_LEN(obj));
+    ASN1_STRING_set(str, RSTRING_PTR(obj), RSTRING_LENINT(obj));
 
     return str;
 }
@@ -304,7 +304,7 @@ obj_to_asn1derstr(VALUE obj)
     str = ossl_to_der(obj);
     if(!(a1str = ASN1_STRING_new()))
 	ossl_raise(eASN1Error, NULL);
-    ASN1_STRING_set(a1str, RSTRING_PTR(str), RSTRING_LEN(str));
+    ASN1_STRING_set(a1str, RSTRING_PTR(str), RSTRING_LENINT(str));
 
     return a1str;
 }
@@ -498,7 +498,7 @@ ossl_asn1_get_asn1type(VALUE obj)
     VALUE value, rflag;
     void *ptr;
     void (*free_func)();
-    long tag, flag;
+    int tag, flag;
 
     tag = ossl_asn1_default_tag(obj);
     value = ossl_asn1_get_value(obj);
@@ -709,11 +709,11 @@ ossl_asn1data_to_der(VALUE self)
         is_cons = 2;
         tmp_cons = 2;
     }
-    if((length = ASN1_object_size(tmp_cons, RSTRING_LEN(value), tag)) <= 0)
+    if((length = ASN1_object_size(tmp_cons, RSTRING_LENINT(value), tag)) <= 0)
 	ossl_raise(eASN1Error, NULL);
     der = rb_str_new(0, length);
     p = (unsigned char *)RSTRING_PTR(der);
-    ASN1_put_object(&p, is_cons, RSTRING_LEN(value), tag, tag_class);
+    ASN1_put_object(&p, is_cons, RSTRING_LENINT(value), tag, tag_class);
     memcpy(p, RSTRING_PTR(value), RSTRING_LEN(value));
     p += RSTRING_LEN(value);
     ossl_str_adjust(der, p);
@@ -739,7 +739,7 @@ ossl_asn1_decode0(unsigned char **pp, long length, long *offset, long depth,
 	j = ASN1_get_object(&p0, &len, &tag, &tc, length);
 	p = (unsigned char *)p0;
 	if(j & 0x80) ossl_raise(eASN1Error, NULL);
-	hlen = p - start;
+	hlen = rb_long2int(p - start);
 	if(yield){
 	    VALUE arg = rb_ary_new();
 	    rb_ary_push(arg, LONG2NUM(depth));
@@ -784,28 +784,29 @@ ossl_asn1_decode0(unsigned char **pp, long length, long *offset, long depth,
 	    VALUE klass = *ossl_asn1_info[tag].klass;
 	    long flag = 0;
 	    if(!rb_obj_is_kind_of(value, rb_cArray)){
+		int l = rb_long2int(hlen + len);
 		switch(tag){
 		case V_ASN1_BOOLEAN:
-		    value = decode_bool(start, hlen+len);
+		    value = decode_bool(start, l);
 		    break;
 		case V_ASN1_INTEGER:
-		    value = decode_int(start, hlen+len);
+		    value = decode_int(start, l);
 		    break;
 		case V_ASN1_BIT_STRING:
-		    value = decode_bstr(start, hlen+len, &flag);
+		    value = decode_bstr(start, l, &flag);
 		    break;
 		case V_ASN1_NULL:
-		    value = decode_null(start, hlen+len);
+		    value = decode_null(start, l);
 		    break;
 		case V_ASN1_ENUMERATED:
-		    value = decode_enum(start, hlen+len);
+		    value = decode_enum(start, l);
 		    break;
 		case V_ASN1_OBJECT:
-		    value = decode_obj(start, hlen+len);
+		    value = decode_obj(start, l);
 		    break;
 		case V_ASN1_UTCTIME:           /* FALLTHROUGH */
 		case V_ASN1_GENERALIZEDTIME:
-		    value = decode_time(start, hlen+len);
+		    value = decode_time(start, l);
 		    break;
 		default:
 		    /* use original value */
@@ -1008,7 +1009,7 @@ ossl_asn1prim_to_der(VALUE self)
     ossl_ASN1_TYPE_free(asn1);
     reallen = p - buf;
     assert(reallen <= len);
-    str = ossl_buf2str((char *)buf, reallen); /* buf will be free in ossl_buf2str */
+    str = ossl_buf2str((char *)buf, rb_long2int(reallen)); /* buf will be free in ossl_buf2str */
 
     return str;
 }
@@ -1017,8 +1018,8 @@ static VALUE
 ossl_asn1cons_to_der(VALUE self)
 {
     int tag, tn, tc, explicit, constructed = 1;
-    int found_prim = 0;
-    long seq_len, length;
+    int found_prim = 0, seq_len;
+    long length;
     unsigned char *p;
     VALUE value, str, inf_length, ary, example;
 
@@ -1060,19 +1061,19 @@ ossl_asn1cons_to_der(VALUE self)
     explicit = ossl_asn1_is_explicit(self);
     value = join_der(ossl_asn1_get_value(self));
 
-    seq_len = ASN1_object_size(constructed, RSTRING_LEN(value), tag);
+    seq_len = ASN1_object_size(constructed, RSTRING_LENINT(value), tag);
     length = ASN1_object_size(constructed, seq_len, tn);
     str = rb_str_new(0, length);
     p = (unsigned char *)RSTRING_PTR(str);
     if(tc == V_ASN1_UNIVERSAL)
-    	ASN1_put_object(&p, constructed, RSTRING_LEN(value), tn, tc);
+	ASN1_put_object(&p, constructed, RSTRING_LENINT(value), tn, tc);
     else{
 	if(explicit){
-    	    ASN1_put_object(&p, constructed, seq_len, tn, tc);
-	    ASN1_put_object(&p, constructed, RSTRING_LEN(value), tag, V_ASN1_UNIVERSAL);
+	    ASN1_put_object(&p, constructed, seq_len, tn, tc);
+	    ASN1_put_object(&p, constructed, RSTRING_LENINT(value), tag, V_ASN1_UNIVERSAL);
 	}
         else{
-            ASN1_put_object(&p, constructed, RSTRING_LEN(value), tn, tc);
+            ASN1_put_object(&p, constructed, RSTRING_LENINT(value), tn, tc);
         }
     }
     memcpy(p, RSTRING_PTR(value), RSTRING_LEN(value));

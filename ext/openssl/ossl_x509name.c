@@ -167,7 +167,7 @@ VALUE ossl_x509name_add_entry(int argc, VALUE *argv, VALUE self)
     if(NIL_P(type)) type = rb_aref(OBJECT_TYPE_TEMPLATE, oid);
     GetX509Name(self, name);
     if (!X509_NAME_add_entry_by_txt(name, RSTRING_PTR(oid), NUM2INT(type),
-		(const unsigned char *)RSTRING_PTR(value), RSTRING_LEN(value), -1, 0)) {
+		(const unsigned char *)RSTRING_PTR(value), RSTRING_LENINT(value), -1, 0)) {
 	ossl_raise(eX509NameError, NULL);
     }
 

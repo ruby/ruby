@@ -217,7 +217,7 @@ ossl_cipher_init(int argc, VALUE *argv, VALUE self, int mode)
 	    else memcpy(iv, RSTRING_PTR(init_v), sizeof(iv));
 	}
 	EVP_BytesToKey(EVP_CIPHER_CTX_cipher(ctx), EVP_md5(), iv,
-		       (unsigned char *)RSTRING_PTR(pass), RSTRING_LEN(pass), 1, key, NULL);
+		       (unsigned char *)RSTRING_PTR(pass), RSTRING_LENINT(pass), 1, key, NULL);
 	p_key = key;
 	p_iv = iv;
     }
@@ -300,7 +300,7 @@ ossl_cipher_pkcs5_keyivgen(int argc, VALUE *argv, VALUE self)
     digest = NIL_P(vdigest) ? EVP_md5() : GetDigestPtr(vdigest);
     GetCipher(self, ctx);
     EVP_BytesToKey(EVP_CIPHER_CTX_cipher(ctx), digest, salt,
-		   (unsigned char *)RSTRING_PTR(vpass), RSTRING_LEN(vpass), iter, key, iv);
+		   (unsigned char *)RSTRING_PTR(vpass), RSTRING_LENINT(vpass), iter, key, iv);
     if (EVP_CipherInit_ex(ctx, NULL, NULL, key, iv, -1) != 1)
 	ossl_raise(eCipherError, NULL);
     OPENSSL_cleanse(key, sizeof key);
@@ -330,7 +330,7 @@ ossl_cipher_update(int argc, VALUE *argv, VALUE self)
 
     StringValue(data);
     in = (unsigned char *)RSTRING_PTR(data);
-    if ((in_len = RSTRING_LEN(data)) == 0)
+    if ((in_len = RSTRING_LENINT(data)) == 0)
         rb_raise(rb_eArgError, "data must not be empty");
     GetCipher(self, ctx);
     out_len = in_len+EVP_CIPHER_CTX_block_size(ctx);
