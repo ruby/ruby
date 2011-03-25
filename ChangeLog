@@ -1,3 +1,8 @@
+Sat Mar 26 05:27:34 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/date/lib/date/format.rb (DateTime#strftime): removed because
+	  date_core defines it.
+
 Fri Mar 25 21:59:45 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: should not force cast with macros.
@@ -20,7 +25,7 @@ Fri Mar 25 19:39:40 2011  Ben Walton <bwalton@artsci.utoronto.ca>
 
 	  Use LOG_PID instead of LOG_PERROR in Syslog.open test
 
-          LOG_PERROR isn't a POSIX option for syslog, so it fails on platforms
+	  LOG_PERROR isn't a POSIX option for syslog, so it fails on platforms
 	  that don't define it.  Solaris 9 and 10 are examples of this.
 
 	  Use LOG_PID instead.

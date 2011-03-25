@@ -1073,10 +1073,6 @@ end
 
 class DateTime < Date
 
-  def strftime(fmt='%FT%T%:z')
-    super(fmt)
-  end
-
   def self._strptime(str, fmt='%FT%T%z')
     super(str, fmt)
   end
