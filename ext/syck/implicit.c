@@ -38,9 +38,9 @@ try_tag_implicit( SyckNode *n, int taguri )
     if ( n->type_id != NULL ) S_FREE( n->type_id );
     if ( taguri == 1 )
     {
-        n->type_id = syck_taguri( YAML_DOMAIN, tid, strlen( tid ) );
+        n->type_id = syck_taguri( YAML_DOMAIN, tid, (int)strlen( tid ) );
     } else {
-        n->type_id = syck_strndup( tid, strlen( tid ) );
+        n->type_id = syck_strndup( tid, (int)strlen( tid ) );
     }
 }
 
@@ -1764,7 +1764,7 @@ yy205:	yyaccept = 0;
 	}
 yy206:
 #line 202 "implicit.re"
-{   return syck_taguri( YAML_DOMAIN, type_id, strlen( type_id ) ); }
+{   return syck_taguri( YAML_DOMAIN, type_id, (int)strlen( type_id ) ); }
 #line 1768 "<stdout>"
 yy207:	yyaccept = 0;
 	yych = *(YYMARKER = ++YYCURSOR);
@@ -1838,7 +1838,7 @@ yy208:	++YYCURSOR;
 	goto yy209;
 yy209:
 #line 176 "implicit.re"
-{   return syck_xprivate( type_id + 1, strlen( type_id ) - 1 ); }
+{   return syck_xprivate( type_id + 1, (int)strlen( type_id ) - 1 ); }
 #line 1842 "<stdout>"
 yy210:	yyaccept = 0;
 	yych = *(YYMARKER = ++YYCURSOR);
@@ -2141,7 +2141,7 @@ yy219:
                     strncat( domain, type_id, ( YYCURSOR - type_id ) - 1 );
                     strcat( domain, "." );
                     strcat( domain, YAML_DOMAIN );
-                    uri = syck_taguri( domain, YYCURSOR, YYLIMIT - YYCURSOR );
+                    uri = syck_taguri( domain, YYCURSOR, (int)(YYLIMIT - YYCURSOR) );
 
                     S_FREE( domain );
                     return uri;
@@ -2357,7 +2357,7 @@ yy230:
 
                                domain[0] = '\0';
                                strncat( domain, type_id, ( YYCURSOR - type_id ) - 1 );
-                               uri = syck_taguri( domain, YYCURSOR, YYLIMIT - YYCURSOR );
+                               uri = syck_taguri( domain, YYCURSOR, (int)(YYLIMIT - YYCURSOR) );
 
                                S_FREE( domain );
                                return uri;

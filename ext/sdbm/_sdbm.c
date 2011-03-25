@@ -155,7 +155,7 @@ sdbm_open(register char *file, register int flags, register int mode)
 	register DBM *db;
 	register char *dirname;
 	register char *pagname;
-	register int n;
+	register size_t n;
 
 	if (file == NULL || !*file)
 		return errno = EINVAL, (DBM *) NULL;
@@ -164,7 +164,7 @@ sdbm_open(register char *file, register int flags, register int mode)
  */
 	n = strlen(file) * 2 + strlen(DIRFEXT) + strlen(PAGFEXT) + 2;
 
-	if ((dirname = malloc((unsigned) n)) == NULL)
+	if ((dirname = malloc(n)) == NULL)
 		return errno = ENOMEM, (DBM *) NULL;
 /*
  * build the file names
@@ -755,9 +755,9 @@ delpair(char *pag, datum key)
 		register int m;
 		register char *dst = pag + (i == 1 ? PBLKSIZ : GET_SHORT(ino,i - 1));
 		register char *src = pag + GET_SHORT(ino,i + 1);
-		register int   zoo = dst - src;
+		register ptrdiff_t   zoo = dst - src;
 
-		debug(("free-up %d ", zoo));
+		debug(("free-up %"PRIdPTRDIFF" ", zoo));
 /*
  * shift data/keys down
  */

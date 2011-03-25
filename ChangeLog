@@ -1,3 +1,25 @@
+Fri Mar 25 15:42:17 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/sdbm/_sdbm.c (sdbm_open): use size_t.
+
+	* ext/syck/bytecode.c: ditto.
+
+	* ext/sdbm/_sdbm.c (delpair): use ptrdiff_t.
+
+	* ext/sdbm/init.c: use RSTRING_LENINT.
+
+	* ext/dl/handle.c: suppress warning: shorten-64-to-32.
+
+	* ext/strscan/strscan.c: ditto.
+
+	* ext/syck/emitter.c: ditto.
+
+	* ext/syck/implicit.c: ditto.
+
+	* ext/syck/syck.c: ditto.
+
+	* ext/syck/token.c: ditto.
+
 Fri Mar 25 12:14:58 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c: import nkf 7f18e30.

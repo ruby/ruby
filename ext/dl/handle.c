@@ -310,7 +310,7 @@ dlhandle_sym(void *handle, const char *name)
 #if defined(FUNC_STDCALL)
     if( !func ){
 	int  i;
-	int  len = strlen(name);
+	int  len = (int)strlen(name);
 	char *name_n;
 #if defined(__CYGWIN__) || defined(_WIN32) || defined(__MINGW32__)
 	{
