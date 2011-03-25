@@ -140,8 +140,9 @@ class TestSyslog < Test::Unit::TestCase
     stderr[1].close
     Process.waitpid(pid)
 
-    # LOG_PERROR is not yet implemented on Cygwin.
-    return if RUBY_PLATFORM =~ /cygwin/
+    # LOG_PERROR is not implemented on Cygwin or Solaris.  Only test
+    # these on systems that define it.
+    return unless Syslog.const_defined?(:LOG_PERROR)
 
     2.times {
       assert_equal("syslog_test: test1 - hello, world!\n", stderr[0].gets)
