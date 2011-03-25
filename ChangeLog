@@ -1,3 +1,7 @@
+Fri Mar 25 21:56:10 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/sdbm/init.c: parenthesize macro arguments.
+
 Fri Mar 25 19:39:40 2011  Ben Walton <bwalton@artsci.utoronto.ca>
 
 	* test/test_syslog.rb:
