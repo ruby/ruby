@@ -1,3 +1,7 @@
+Fri Mar 25 21:59:45 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: should not force cast with macros.
+
 Fri Mar 25 21:56:10 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/sdbm/init.c: parenthesize macro arguments.

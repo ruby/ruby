@@ -42,10 +42,10 @@
 #define DAY_IN_NANOSECONDS 86400000000000LL
 
 /* copied from time.c */
-#define NDIV(x,y) ((int)(-(-((x)+1)/(y))-1))
-#define NMOD(x,y) ((int)((y)-(-((x)+1)%(y))-1))
-#define DIV(n,d) ((int)((n)<0 ? NDIV((n),(d)) : (n)/(d)))
-#define MOD(n,d) ((int)((n)<0 ? NMOD((n),(d)) : (n)%(d)))
+#define NDIV(x,y) (-(-((x)+1)/(y))-1)
+#define NMOD(x,y) ((y)-(-((x)+1)%(y))-1)
+#define DIV(n,d) ((n)<0 ? NDIV((n),(d)) : (n)/(d))
+#define MOD(n,d) ((n)<0 ? NMOD((n),(d)) : (n)%(d))
 
 union DateData
 {
@@ -338,8 +338,8 @@ jd_to_commercial(long jd, double sg, int *ry, int *rw, int *rd)
 	commercial_to_jd(a, 1, 1, sg, &rjd2, &ns2);
 	*ry = a;
     }
-    *rw = 1 + DIV(jd - rjd2,  7);
-    *rd = MOD(jd + 1, 7);
+    *rw = 1 + (int)DIV(jd - rjd2,  7);
+    *rd = (int)MOD(jd + 1, 7);
     if (*rd == 0)
 	*rd = 7;
 }
@@ -368,8 +368,8 @@ jd_to_weeknum(long jd, int f, double sg, int *ry, int *rw, int *rd)
     find_fdoy(*ry, sg, &rjd, &ns);
     rjd += 6;
     j = jd - (rjd - MOD((rjd - f) + 1, 7)) + 7;
-    *rw = DIV(j, 7);
-    *rd = MOD(j, 7);
+    *rw = (int)DIV(j, 7);
+    *rd = (int)MOD(j, 7);
 }
 
 #ifndef NDEBUG
@@ -403,7 +403,7 @@ jd_to_nth_kday(long jd, double sg, int *ry, int *rm, int *rn, int *rk)
 
     jd_to_civil(jd, sg, ry, rm, &rd);
     find_fdom(*ry, *rm, sg, &rjd, &ns2);
-    *rn = DIV(jd - rjd, 7) + 1;
+    *rn = (int)DIV(jd - rjd, 7) + 1;
     *rk = jd_to_wday(jd);
 }
 #endif
@@ -585,7 +585,7 @@ time_to_df(int h, int min, int s)
 inline static int
 jd_to_wday(long jd)
 {
-    return MOD(jd + 1, 7);
+    return (int)MOD(jd + 1, 7);
 }
 
 static int

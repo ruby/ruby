@@ -487,13 +487,14 @@ date_strftime_wo_timespec(char *s, size_t maxsize, const char *format,
 		case 'z':	/* time zone offset east of GMT e.g. -0600 */
 			SKIP_MODIFIER_EO;
 			{
-				int aoff, hl, hw;
+				long aoff;
+				int hl, hw;
 
 				off = NUM2LONG(rb_funcall(vtm->utc_offset, rb_intern("round"), 0));
 
-				aoff = (int)off;
+				aoff = off;
 				if (aoff < 0)
-					aoff = (int)-off;
+					aoff = -off;
 
 				if ((aoff / 3600) < 10)
 					hl = 1;
