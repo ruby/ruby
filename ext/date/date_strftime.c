@@ -1134,6 +1134,7 @@ How nicer it depends on a compiler, of course, but always a tiny bit.
 #ifndef NULL
 #include	<stdio.h>
 #endif
+#include	<time.h>
 #include	<sys/time.h>
 #include	<string.h>
 
@@ -1191,8 +1192,6 @@ main(argc, argv)
 int argc;
 char **argv;
 {
-	long time();
-
 	char *next;
 	char string[MAXTIME];
 
@@ -1201,11 +1200,11 @@ char **argv;
 
 	struct tm *tm;
 
-	long clock;
+	time_t clock;
 
 	/* Call the function. */
 
-	clock = time((long *) 0);
+	clock = time(NULL);
 	tm = localtime(&clock);
 
 	for (k = 0; next = array[k]; k++) {
