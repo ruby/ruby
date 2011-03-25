@@ -7,12 +7,13 @@
 #  Copyright 2005 James Edward Gray II. You can redistribute or modify this code
 #  under the terms of Ruby's license.
 
-require "test/unit"
+require_relative "base"
 
-require "csv"
+class TestCSV::Table < TestCSV
+  extend DifferentOFS
 
-class TestCSVTable < Test::Unit::TestCase
   def setup
+    super
     @rows  = [ CSV::Row.new(%w{A B C}, [1, 2, 3]),
                CSV::Row.new(%w{A B C}, [4, 5, 6]),
                CSV::Row.new(%w{A B C}, [7, 8, 9]) ]
@@ -253,7 +254,7 @@ class TestCSVTable < Test::Unit::TestCase
     # with options
     assert_equal( csv.gsub(",", "|").gsub("\n", "\r\n"),
                   @table.to_csv(col_sep: "|", row_sep: "\r\n") )
-    assert_equal( csv.lines.to_a[1..-1].join,
+    assert_equal( csv.lines.to_a[1..-1].join(''),
                   @table.to_csv(:write_headers => false) )
 
     # with headers
@@ -272,7 +273,7 @@ class TestCSVTable < Test::Unit::TestCase
     assert_equal(CSV::Row.new(%w[A B C], [13, 14, 15]), @table[-1])
   end
 
-  def test_delete
+  def test_delete_mixed
     ##################
     ### Mixed Mode ###
     ##################
@@ -288,11 +289,12 @@ class TestCSVTable < Test::Unit::TestCase
     2,3
     8,9
     END_RESULT
+  end
 
+  def test_delete_column
     ###################
     ### Column Mode ###
     ###################
-    setup
     @table.by_col!
 
     assert_equal(@rows.map { |row| row[0] }, @table.delete(0))
@@ -305,11 +307,12 @@ class TestCSVTable < Test::Unit::TestCase
     5
     8
     END_RESULT
+  end
 
+  def test_delete_row
     ################
     ### Row Mode ###
     ################
-    setup
     @table.by_row!
 
     assert_equal(@rows[1], @table.delete(1))
@@ -329,7 +332,7 @@ class TestCSVTable < Test::Unit::TestCase
     assert_equal(["ra2", nil, "rb2"], table.delete("col2"))
   end
   
-  def test_delete_if
+  def test_delete_if_row
     ######################
     ### Mixed/Row Mode ###
     ######################
@@ -341,11 +344,12 @@ class TestCSVTable < Test::Unit::TestCase
     A,B,C
     4,5,6
     END_RESULT
+  end
 
+  def test_delete_if_column
     ###################
     ### Column Mode ###
     ###################
-    setup
     @table.by_col!
 
     assert_equal(@table, @table.delete_if { |h, v| h > "A" })

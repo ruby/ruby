@@ -88,6 +88,40 @@ class TestSystem < Test::Unit::TestCase
     }
   end
 
+  def test_system_at
+      if /mswin|mingw/ =~ RUBY_PLATFORM
+        bug4393 = '[ruby-core:35218]'
+
+        # @ + builtin command
+        assert_equal("foo\n", `@echo foo`, bug4393);
+        assert_equal("foo\n", `@@echo foo`, bug4393);
+        assert_equal("@@foo\n", `@@echo @@foo`, bug4393);
+
+        # @ + non builtin command
+        Dir.mktmpdir("ruby_script_tmp") {|tmpdir|
+          tmpfilename = "#{tmpdir}/ruby_script_tmp.#{$$}"
+
+          tmp = open(tmpfilename, "w")
+          tmp.print "foo\nbar\nbaz\n@foo";
+          tmp.close
+
+          assert_match(/\Abar\nbaz\n?\z/, `@@findstr "ba" #{tmpfilename.gsub("/", "\\")}`, bug4393);
+        }
+      end
+  end
+
+  def test_system_redirect_win
+    if /mswin|mingw/ !~ RUBY_PLATFORM
+      return
+    end
+
+    cmd = "%WINDIR%/system32/ping.exe \"BFI3CHL671\" > out.txt 2>NUL"
+    assert_equal(false, system(cmd), '[ruby-talk:258939]');
+
+    cmd = "\"%WINDIR%/system32/ping.exe BFI3CHL671\" > out.txt 2>NUL"
+    assert_equal(false, system(cmd), '[ruby-talk:258939]');
+  end
+
   def test_empty_evstr
     assert_equal("", eval('"#{}"', nil, __FILE__, __LINE__), "[ruby-dev:25113]")
   end

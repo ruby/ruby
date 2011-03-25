@@ -2,6 +2,7 @@ require "test/unit"
 begin
   require 'net/https'
   require 'stringio'
+  require 'timeout'
   require File.expand_path("../../openssl/utils", File.dirname(__FILE__))
   require File.expand_path("utils", File.dirname(__FILE__))
 rescue LoadError
@@ -23,7 +24,7 @@ class TestNetHTTPS < Test::Unit::TestCase
 
   CONFIG = {
     'host' => '127.0.0.1',
-    'port' => 10081,
+    'port' => 10082, # different from test_http.rb
     'proxy_host' => nil,
     'proxy_port' => nil,
     'ssl_enable' => true,
@@ -103,5 +104,26 @@ class TestNetHTTPS < Test::Unit::TestCase
       http.request_get("/") {|res| }
     }
     assert_match(/hostname does not match/, ex.message)
+  end
+
+  def test_timeout_during_SSL_handshake
+    bug4246 = "expected the SSL connection to have timed out but have not. [ruby-core:34203]"
+
+    # listen for connections... but deliberately do not complete SSL handshake
+    TCPServer.open(0) {|server|
+      port = server.addr[1]
+
+      conn = Net::HTTP.new('localhost', port)
+      conn.use_ssl = true
+      conn.read_timeout = 1
+      conn.open_timeout = 1
+
+      th = Thread.new do
+        assert_raise(Timeout::Error) {
+          conn.get('/')
+        }
+      end
+      assert th.join(10), bug4246
+    }
   end
 end if defined?(OpenSSL)

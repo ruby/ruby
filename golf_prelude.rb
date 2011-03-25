@@ -112,3 +112,11 @@ class Enumerator
   alias old_inspect inspect
   alias inspect old_to_s
 end
+
+class Symbol
+  def call(*args, &block)
+    proc do |recv|
+      recv.__send__(self, *args, &block)
+    end
+  end
+end

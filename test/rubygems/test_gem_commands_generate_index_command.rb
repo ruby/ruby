@@ -1,8 +1,14 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require 'rubygems/test_case'
 require 'rubygems/indexer'
 require 'rubygems/commands/generate_index_command'
 
-class TestGemCommandsGenerateIndexCommand < RubyGemTestCase
+class TestGemCommandsGenerateIndexCommand < Gem::TestCase
 
   def setup
     super
@@ -16,15 +22,11 @@ class TestGemCommandsGenerateIndexCommand < RubyGemTestCase
       @cmd.execute
     end
 
-    yaml = File.join @gemhome, 'yaml'
-    yaml_z = File.join @gemhome, 'yaml.Z'
-    quick_index = File.join @gemhome, 'quick', 'index'
-    quick_index_rz = File.join @gemhome, 'quick', 'index.rz'
+    marshal = File.join @gemhome, 'Marshal.4.8'
+    marshal_z = File.join @gemhome, 'Marshal.4.8.Z'
 
-    assert File.exist?(yaml), yaml
-    assert File.exist?(yaml_z), yaml_z
-    assert File.exist?(quick_index), quick_index
-    assert File.exist?(quick_index_rz), quick_index_rz
+    assert File.exist?(marshal), marshal
+    assert File.exist?(marshal_z), marshal_z
   end
 
   def test_execute_rss_update
@@ -33,7 +35,7 @@ class TestGemCommandsGenerateIndexCommand < RubyGemTestCase
     @cmd.options[:rss_gems_host] = 'gems.example.com'
 
     use_ui @ui do
-      assert_raises MockGemUi::TermError do
+      assert_raises Gem::MockGemUi::TermError do
         @cmd.execute
       end
     end

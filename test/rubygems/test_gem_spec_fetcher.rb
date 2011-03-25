@@ -1,7 +1,13 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require 'rubygems/test_case'
 require 'rubygems/spec_fetcher'
 
-class TestGemSpecFetcher < RubyGemTestCase
+class TestGemSpecFetcher < Gem::TestCase
 
   def setup
     super
@@ -10,7 +16,7 @@ class TestGemSpecFetcher < RubyGemTestCase
 
     util_setup_fake_fetcher
 
-    @a_pre = quick_gem 'a', '1.a'
+    @a_pre = quick_spec 'a', '1.a'
     @source_index.add_spec @pl1
     @source_index.add_spec @a_pre
 
@@ -406,5 +412,10 @@ class TestGemSpecFetcher < RubyGemTestCase
     assert_equal @latest_specs, latest_specs
   end
 
+  def test_cache_dir_escapes_windows_paths
+    uri = URI.parse("file:///C:/WINDOWS/Temp/gem_repo")
+    cache_dir = @sf.cache_dir(uri).gsub(@sf.dir, '')
+    assert cache_dir !~ /:/, "#{cache_dir} should not contain a :"
+  end
 end
 

@@ -129,11 +129,13 @@ VALUE rb_iseq_clone(VALUE iseqval, VALUE newcbase);
 static int
 clone_method(ID mid, const rb_method_entry_t *me, struct clone_method_data *data)
 {
+    VALUE newiseqval;
     if (me->def && me->def->type == VM_METHOD_TYPE_ISEQ) {
-	VALUE newiseqval = rb_iseq_clone(me->def->body.iseq->self, data->klass);
 	rb_iseq_t *iseq;
+	newiseqval = rb_iseq_clone(me->def->body.iseq->self, data->klass);
 	GetISeqPtr(newiseqval, iseq);
 	rb_add_method(data->klass, mid, VM_METHOD_TYPE_ISEQ, iseq, me->flag);
+	RB_GC_GUARD(newiseqval);
     }
     else {
 	rb_method_entry_set(data->klass, mid, me, me->flag);
@@ -272,7 +274,7 @@ rb_singleton_class_attached(VALUE klass, VALUE obj)
  * @retval 1 if \a k is a meta^(n)-class of Class class (n >= 0)
  * @retval 0 otherwise
  */
-#define META_CLASS_OF_CLASS_CLASS_P(k)  (METACLASS_OF(k) == k)
+#define META_CLASS_OF_CLASS_CLASS_P(k)  (METACLASS_OF(k) == (k))
 
 
 /*!
@@ -283,7 +285,7 @@ rb_singleton_class_attached(VALUE klass, VALUE obj)
  * @note this macro creates a new eigenclass if necessary.
  */
 #define ENSURE_EIGENCLASS(klass) \
- (rb_ivar_get(METACLASS_OF(klass), id_attached) == klass ? METACLASS_OF(klass) : make_metaclass(klass))
+ (rb_ivar_get(METACLASS_OF(klass), id_attached) == (klass) ? METACLASS_OF(klass) : make_metaclass(klass))
 
 
 /*!
@@ -314,7 +316,7 @@ make_metaclass(VALUE klass)
     }
 
     super = RCLASS_SUPER(klass);
-    while (FL_TEST(super, T_ICLASS)) super = RCLASS_SUPER(super);
+    while (RB_TYPE_P(super, T_ICLASS)) super = RCLASS_SUPER(super);
     RCLASS_SUPER(metaclass) = super ? ENSURE_EIGENCLASS(super) : rb_cClass;
 
     OBJ_INFECT(metaclass, RCLASS_SUPER(metaclass));
@@ -986,14 +988,14 @@ rb_class_public_instance_methods(int argc, VALUE *argv, VALUE mod)
  *  <i>obj</i>'s ancestors.
  *
  *     class Klass
- *       def kMethod()
+ *       def klass_method()
  *       end
  *     end
  *     k = Klass.new
- *     k.methods[0..9]    #=> [:kMethod, :freeze, :nil?, :is_a?,
- *                        #    :class, :instance_variable_set,
- *                        #    :methods, :extend, :__send__, :instance_eval]
- *     k.methods.length   #=> 42
+ *     k.methods[0..9]    #=> [:klass_method, :nil?, :===,
+ *                        #    :==~, :!, :eql?
+ *                        #    :hash, :<=>, :class, :singleton_class]
+ *     k.methods.length   #=> 57
  */
 
 VALUE
@@ -1224,7 +1226,7 @@ rb_undef_method(VALUE klass, const char *name)
 
 #define SPECIAL_SINGLETON(x,c) do {\
     if (obj == (x)) {\
-	return c;\
+	return (c);\
     }\
 } while (0)
 

@@ -54,6 +54,7 @@
    (c-basic-offset . 4)
    (tab-width . 8)
    (indent-tabs-mode . t)
+   (setq show-trailing-whitespace t)
    (c-offsets-alist
     (case-label . *)
     (label . (ruby-style-label-indent *))

@@ -1,3 +1,9 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 require 'rubygems/command'
 require 'rubygems/indexer'
 
@@ -19,8 +25,7 @@ class Gem::Commands::GenerateIndexCommand < Gem::Command
     end
 
     add_option '--[no-]legacy',
-               'Generate indexes for RubyGems older than',
-               '1.2.0' do |value, options|
+               'Generate Marshal.4.8' do |value, options|
       unless options[:build_modern] or value then
         raise OptionParser::InvalidOption, 'no indicies will be built'
       end
@@ -87,20 +92,12 @@ When done, it will generate a set of files like this:
   quick/Marshal.<version>/<gemname>.gemspec.rz # Marshal quick index file
 
   # these files support legacy RubyGems
-  quick/index
-  quick/index.rz                               # quick index manifest
-  quick/<gemname>.gemspec.rz                   # legacy YAML quick index
-                                               # file
   Marshal.<version>
   Marshal.<version>.Z                          # Marshal full index
-  yaml
-  yaml.Z                                       # legacy YAML full index
 
 The .Z and .rz extension files are compressed with the inflate algorithm.
 The Marshal version number comes from ruby's Marshal::MAJOR_VERSION and
 Marshal::MINOR_VERSION constants.  It is used to ensure compatibility.
-The yaml indexes exist for legacy RubyGems clients and fallback in case of
-Marshal version changes.
 
 If --rss-host and --rss-gem-host are given an RSS feed will be generated at
 index.rss containing gems released in the last two days.

@@ -70,21 +70,29 @@ module Psych
 
       def accept target
         # return any aliases we find
-        if node = @st[target.object_id]
-          node.anchor = target.object_id.to_s
-          return @emitter.alias target.object_id.to_s
+        if @st.key? target.object_id
+          oid         = target.object_id
+          node        = @st[oid]
+          anchor      = oid.to_s
+          node.anchor = anchor
+          return @emitter.alias anchor
         end
 
         if target.respond_to?(:to_yaml)
-          loc = target.method(:to_yaml).source_location.first
-          if loc !~ /(syck\/rubytypes.rb|psych\/core_ext.rb)/
-            unless target.respond_to?(:encode_with)
-              if $VERBOSE
-                warn "implementing to_yaml is deprecated, please implement \"encode_with\""
-              end
+          begin
+            loc = target.method(:to_yaml).source_location.first
+            if loc !~ /(syck\/rubytypes.rb|psych\/core_ext.rb)/
+              unless target.respond_to?(:encode_with)
+                if $VERBOSE
+                  warn "implementing to_yaml is deprecated, please implement \"encode_with\""
+                end
 
-              target.to_yaml(:nodump => true)
+                target.to_yaml(:nodump => true)
+              end
             end
+          rescue
+            # public_method or source_location might be overridden,
+            # and it's OK to skip it since it's only to emit a warning
           end
         end
 
@@ -279,7 +287,7 @@ module Psych
       end
 
       def visit_NilClass o
-        @emitter.scalar('', nil, 'tag:yaml.org,2002:null', false, false, Nodes::Scalar::ANY)
+        @emitter.scalar('', nil, 'tag:yaml.org,2002:null', true, false, Nodes::Scalar::ANY)
       end
 
       def visit_Symbol o
@@ -297,12 +305,17 @@ module Psych
 
       # FIXME: remove this method once "to_yaml_properties" is removed
       def find_ivars target
-        loc = target.method(:to_yaml_properties).source_location.first
-        unless loc.start_with?(Psych::DEPRECATED) || loc.end_with?('rubytypes.rb')
-          if $VERBOSE
-            warn "#{loc}: to_yaml_properties is deprecated, please implement \"encode_with(coder)\""
+        begin
+          loc = target.method(:to_yaml_properties).source_location.first
+          unless loc.start_with?(Psych::DEPRECATED) || loc.end_with?('rubytypes.rb')
+            if $VERBOSE
+              warn "#{loc}: to_yaml_properties is deprecated, please implement \"encode_with(coder)\""
+            end
+            return target.to_yaml_properties
           end
-          return target.to_yaml_properties
+        rescue
+          # public_method or source_location might be overridden,
+          # and it's OK to skip it since it's only to emit a warning.
         end
 
         target.instance_variables
@@ -342,6 +355,8 @@ module Psych
             accept v
           end
           @emitter.end_mapping
+        when :object
+          accept c.object
         end
       end
 

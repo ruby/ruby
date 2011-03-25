@@ -53,7 +53,7 @@ class TestRDocRIDriver < MiniTest::Unit::TestCase
   def test_self_dump
     util_store
 
-    out, err = capture_io do
+    out, = capture_io do
       RDoc::RI::Driver.dump @store.cache_path
     end
 
@@ -83,8 +83,8 @@ class TestRDocRIDriver < MiniTest::Unit::TestCase
     expected = @RM::Document.new(
       @RM::Rule.new(1),
       @RM::Paragraph.new('Also found in:'),
-      @RM::Verbatim.new('  ', 'ruby core', "\n",
-                        '  ', '~/.ri', "\n"))
+      @RM::Verbatim.new("ruby core\n",
+                        "~/.ri\n"))
 
     assert_equal expected, out
   end
@@ -143,7 +143,7 @@ class TestRDocRIDriver < MiniTest::Unit::TestCase
       @RM::BlankLine.new,
       @RM::Paragraph.new("Include thingy"),
       @RM::BlankLine.new,
-      @RM::Verbatim.new('  ', 'Enumerable', "\n"))
+      @RM::Verbatim.new("Enumerable\n"))
 
     assert_equal expected, out
   end
@@ -163,8 +163,8 @@ class TestRDocRIDriver < MiniTest::Unit::TestCase
       @RM::Rule.new(1),
       @RM::Heading.new(1, "Includes:"),
       @RM::Paragraph.new("(from #{@store.friendly_path})"),
-      @RM::Verbatim.new('  ', 'Inc', "\n",
-                        '  ', 'Enumerable', "\n"))
+      @RM::Verbatim.new("Inc\n",
+                        "Enumerable\n"))
 
     assert_equal expected, out
   end
@@ -195,7 +195,7 @@ class TestRDocRIDriver < MiniTest::Unit::TestCase
     expected = @RM::Document.new(
       @RM::Heading.new(1, 'Class methods:'),
       @RM::BlankLine.new,
-      @RM::Verbatim.new('  ', 'new'),
+      @RM::Verbatim.new('new'),
       @RM::BlankLine.new)
 
     assert_equal expected, out
@@ -285,7 +285,7 @@ class TestRDocRIDriver < MiniTest::Unit::TestCase
     doc = @RM::Document.new(
             @RM::Paragraph.new('hi'))
 
-    out, err = capture_io do
+    out, = capture_io do
       @driver.display doc
     end
 
@@ -295,12 +295,12 @@ class TestRDocRIDriver < MiniTest::Unit::TestCase
   def test_display_class
     util_store
 
-    out, err = capture_io do
+    out, = capture_io do
       @driver.display_class 'Foo::Bar'
     end
 
     assert_match %r%^= Foo::Bar%, out
-    assert_match %r%^\(from%, out # )
+    assert_match %r%^\(from%, out
 
     assert_match %r%^= Class methods:%, out
     assert_match %r%^  new%, out
@@ -315,7 +315,7 @@ class TestRDocRIDriver < MiniTest::Unit::TestCase
   def test_display_class_ambiguous
     util_multi_store
 
-    out, err = capture_io do
+    out, = capture_io do
       @driver.display_class 'Ambiguous'
     end
 
@@ -325,7 +325,7 @@ class TestRDocRIDriver < MiniTest::Unit::TestCase
   def test_display_class_multi_no_doc
     util_multi_store
 
-    out, err = capture_io do
+    out, = capture_io do
       @driver.display_class 'Foo::Baz'
     end
 
@@ -339,7 +339,7 @@ class TestRDocRIDriver < MiniTest::Unit::TestCase
   def test_display_class_superclass
     util_multi_store
 
-    out, err = capture_io do
+    out, = capture_io do
       @driver.display_class 'Bar'
     end
 
@@ -349,7 +349,7 @@ class TestRDocRIDriver < MiniTest::Unit::TestCase
   def test_display_class_module
     util_store
 
-    out, err = capture_io do
+    out, = capture_io do
       @driver.display_class 'Inc'
     end
 
@@ -359,7 +359,7 @@ class TestRDocRIDriver < MiniTest::Unit::TestCase
   def test_display_method
     util_store
 
-    out, err = capture_io do
+    out, = capture_io do
       @driver.display_method 'Foo::Bar#blah'
     end
 
@@ -371,7 +371,7 @@ class TestRDocRIDriver < MiniTest::Unit::TestCase
   def test_display_method_attribute
     util_store
 
-    out, err = capture_io do
+    out, = capture_io do
       @driver.display_method 'Foo::Bar#attr'
     end
 
@@ -382,7 +382,7 @@ class TestRDocRIDriver < MiniTest::Unit::TestCase
   def test_display_method_inherited
     util_multi_store
 
-    out, err = capture_io do
+    out, = capture_io do
       @driver.display_method 'Bar#inherit'
     end
 
@@ -390,10 +390,20 @@ class TestRDocRIDriver < MiniTest::Unit::TestCase
     assert_match %r%^=== Implementation from Foo%, out
   end
 
+  def test_display_method_overriden
+    util_multi_store
+
+    out, = capture_io do
+      @driver.display_method 'Bar#override'
+    end
+
+    refute_match %r%must not be displayed%, out
+  end
+
   def test_display_name_not_found_class
     util_store
 
-    out, err = capture_io do
+    out, = capture_io do
       assert_equal false, @driver.display_name('Foo::B')
     end
 
@@ -410,7 +420,7 @@ Foo::Baz
   def test_display_name_not_found_method
     util_store
 
-    out, err = capture_io do
+    out, = capture_io do
       assert_equal false, @driver.display_name('Foo::Bar#b')
     end
 
@@ -427,7 +437,7 @@ Foo::Bar#bother
   def test_display_method_params
     util_store
 
-    out, err = capture_io do
+    out, = capture_io do
       @driver.display_method 'Foo::Bar#bother'
     end
 
@@ -495,25 +505,61 @@ Foo::Bar#bother
     assert_equal expected, items
   end
 
+  def test_filter_methods
+    util_multi_store
+
+    name = 'Bar#override'
+
+    found = @driver.load_methods_matching name
+
+    sorted = @driver.filter_methods found, name
+
+    expected = [[@store2, [@override]]]
+
+    assert_equal expected, sorted
+  end
+
+  def test_filter_methods_not_found
+    util_multi_store
+
+    name = 'Bar#inherit'
+
+    found = @driver.load_methods_matching name
+
+    sorted = @driver.filter_methods found, name
+
+    assert_equal found, sorted
+  end
+
   def test_formatter
+    tty = Object.new
+    def tty.tty?() true; end
+
     driver = RDoc::RI::Driver.new
 
-    io = Object.new
-    def io.tty?; false; end
+    assert_instance_of @RM::ToAnsi, driver.formatter(tty)
 
-    assert_instance_of @RM::ToBs, driver.formatter(io)
-
-    def io.tty?; true; end
-
-    assert_instance_of @RM::ToAnsi, driver.formatter(io)
+    assert_instance_of @RM::ToBs, driver.formatter(StringIO.new)
 
     driver.instance_variable_set :@paging, true
 
-    assert_instance_of @RM::ToBs, driver.formatter(io)
+    assert_instance_of @RM::ToBs, driver.formatter(StringIO.new)
 
     driver.instance_variable_set :@formatter_klass, @RM::ToHtml
 
-    assert_instance_of @RM::ToHtml, driver.formatter(io)
+    assert_instance_of @RM::ToHtml, driver.formatter(tty)
+  end
+
+  def test_in_path_eh
+    path = ENV['PATH']
+
+    refute @driver.in_path?('/nonexistent')
+
+    ENV['PATH'] = File.expand_path '..', __FILE__
+
+    assert @driver.in_path?(File.basename(__FILE__))
+  ensure
+    ENV['PATH'] = path
   end
 
   def test_method_type
@@ -523,11 +569,21 @@ Foo::Bar#bother
     assert_equal :class,    @driver.method_type('::')
   end
 
+  def test_name_regexp
+    assert_equal %r%^RDoc::AnyMethod#new$%,
+                 @driver.name_regexp('RDoc::AnyMethod#new')
+    assert_equal %r%^RDoc::AnyMethod::new$%,
+                 @driver.name_regexp('RDoc::AnyMethod::new')
+
+    assert_equal %r%^RDoc::AnyMethod(#|::)new$%,
+                 @driver.name_regexp('RDoc::AnyMethod.new')
+  end
+
   def test_list_known_classes
     util_store
 
-    out, err = capture_io do
-      @driver.list_known_classes 
+    out, = capture_io do
+      @driver.list_known_classes
     end
 
     assert_equal "Ambiguous\nFoo\nFoo::Bar\nFoo::Baz\nInc\n", out
@@ -756,6 +812,7 @@ Foo::Bar#bother
     @mAmbiguous = RDoc::NormalModule.new 'Ambiguous'
 
     @cFoo = RDoc::NormalClass.new 'Foo'
+
     @cBar = RDoc::NormalClass.new 'Bar'
     @cBar.superclass = 'Foo'
     @cFoo_Baz = RDoc::NormalClass.new 'Baz'
@@ -764,10 +821,15 @@ Foo::Bar#bother
     @baz = RDoc::AnyMethod.new nil, 'baz'
     @cBar.add_method @baz
 
+    @override = RDoc::AnyMethod.new nil, 'override'
+    @override.comment = 'must be displayed'
+    @cBar.add_method @override
+
     @store2.save_class @mAmbiguous
     @store2.save_class @cBar
     @store2.save_class @cFoo_Baz
 
+    @store2.save_method @cBar, @override
     @store2.save_method @cBar, @baz
 
     @store2.save_cache
@@ -814,6 +876,11 @@ Foo::Bar#bother
     @inherit = RDoc::AnyMethod.new nil, 'inherit'
     @cFoo.add_method @inherit
 
+    # overriden by Bar in multi_store
+    @overriden = RDoc::AnyMethod.new nil, 'override'
+    @overriden.comment = 'must not be displayed'
+    @cFoo.add_method @overriden
+
     @store.save_class @cFoo
     @store.save_class @cFoo_Bar
     @store.save_class @cFoo_Baz
@@ -826,6 +893,7 @@ Foo::Bar#bother
     @store.save_method @cFoo_Bar, @attr
 
     @store.save_method @cFoo, @inherit
+    @store.save_method @cFoo, @overriden
 
     @store.save_cache
 

@@ -1,10 +1,21 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
 # See LICENSE.txt for permissions.
 #++
 
+require 'rubygems'
 require 'rubygems/user_interaction'
+
+Gem.load_yaml
+
+require 'rubygems/package'
 
 ##
 # The Builder class processes RubyGem specification files
@@ -20,10 +31,6 @@ class Gem::Builder
   # spec:: [Gem::Specification] The specification instance
 
   def initialize(spec)
-    require "yaml"
-    require "rubygems/package"
-    require "rubygems/security"
-
     @spec = spec
   end
 
@@ -61,6 +68,8 @@ EOM
     signer = nil
 
     if @spec.respond_to?(:signing_key) and @spec.signing_key then
+      require 'rubygems/security'
+
       signer = Gem::Security::Signer.new @spec.signing_key, @spec.cert_chain
       @spec.signing_key = nil
       @spec.cert_chain = signer.cert_chain.map { |cert| cert.to_s }
@@ -72,7 +81,8 @@ EOM
   def write_package
     open @spec.file_name, 'wb' do |gem_io|
       Gem::Package.open gem_io, 'w', @signer do |pkg|
-        pkg.metadata = @spec.to_yaml
+        yaml = @spec.to_yaml
+        pkg.metadata = yaml
 
         @spec.files.each do |file|
           next if File.directory? file

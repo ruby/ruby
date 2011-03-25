@@ -607,6 +607,9 @@ has only one source file, choosing ``LIBRARY.c'' as a file name is
 preferred.  On the other hand, in case your library has multiple source
 files, avoid choosing ``LIBRARY.c'' for a file name.  It may conflict
 with an intermediate file ``LIBRARY.o'' on some platforms.
+Note that some functions in mkmf library described below generate
+a file ``conftest.c'' for checking with compilation.  You shouldn't
+choose ``conftest.c'' as a name of a source file.
 
 Ruby will execute the initializing function named ``Init_LIBRARY'' in
 the library.  For example, ``Init_dbm()'' will be executed when loading

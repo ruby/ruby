@@ -18,8 +18,13 @@ module WEBrick_Testing
           :StartCallback => proc { @__started = true }
         }.update(config))
       yield @__server
-      @__server.start
-      @__started = false
+      begin
+        @__server.start
+      rescue IOError => e
+        assert_match(/closed/, e.message)
+      ensure
+        @__started = false
+      end
     }
 
     Timeout.timeout(5) {

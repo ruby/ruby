@@ -20,7 +20,7 @@ module Syck
     def test_non_binary_string
       string = binary_string(0.29)
       yml = YAML.dump string
-      refute_match(/binary/, yml)
+      assert_not_match(/binary/, yml)
       assert_equal string, YAML.load(yml)
     end
 

@@ -276,7 +276,7 @@ strdup_with_null(OnigEncoding enc, UChar* s, UChar* end)
 
 static UChar*
 strcat_capa(UChar* dest, UChar* dest_end, const UChar* src, const UChar* src_end,
-	      int capa)
+	      size_t capa)
 {
   UChar* r;
 
@@ -293,7 +293,7 @@ strcat_capa(UChar* dest, UChar* dest_end, const UChar* src, const UChar* src_end
 /* dest on static area */
 static UChar*
 strcat_capa_from_static(UChar* dest, UChar* dest_end,
-			const UChar* src, const UChar* src_end, int capa)
+			const UChar* src, const UChar* src_end, size_t capa)
 {
   UChar* r;
 
@@ -1450,7 +1450,7 @@ onig_node_str_cat(Node* node, const UChar* s, const UChar* end)
 
 	CHECK_NULL_RETURN_MEMERR(p);
 	NSTR(node)->s    = p;
-	NSTR(node)->capa = capa;
+	NSTR(node)->capa = (int)capa;
       }
     }
     else {
@@ -2006,7 +2006,7 @@ and_cclass(CClassNode* dest, CClassNode* cc, ScanEnv* env)
 {
   OnigEncoding enc = env->enc;
   int r, not1, not2;
-  BBuf *buf1, *buf2, *pbuf;
+  BBuf *buf1, *buf2, *pbuf = 0;
   BitSetRef bsr1, bsr2;
   BitSet bs1, bs2;
 
@@ -2041,17 +2041,16 @@ and_cclass(CClassNode* dest, CClassNode* cc, ScanEnv* env)
     else {
       r = and_code_range_buf(buf1, not1, buf2, not2, &pbuf, env);
       if (r == 0 && not1 != 0) {
-	BBuf *tbuf;
+	BBuf *tbuf = 0;
 	r = not_code_range_buf(enc, pbuf, &tbuf, env);
-	if (r != 0) {
-	  bbuf_free(pbuf);
-	  return r;
-	}
 	bbuf_free(pbuf);
 	pbuf = tbuf;
       }
     }
-    if (r != 0) return r;
+    if (r != 0) {
+	bbuf_free(pbuf);
+	return r;
+    }
 
     dest->mbuf = pbuf;
     bbuf_free(buf1);
@@ -2065,7 +2064,7 @@ or_cclass(CClassNode* dest, CClassNode* cc, ScanEnv* env)
 {
   OnigEncoding enc = env->enc;
   int r, not1, not2;
-  BBuf *buf1, *buf2, *pbuf;
+  BBuf *buf1, *buf2, *pbuf = 0;
   BitSetRef bsr1, bsr2;
   BitSet bs1, bs2;
 
@@ -2100,17 +2099,16 @@ or_cclass(CClassNode* dest, CClassNode* cc, ScanEnv* env)
     else {
       r = or_code_range_buf(enc, buf1, not1, buf2, not2, &pbuf, env);
       if (r == 0 && not1 != 0) {
-	BBuf *tbuf;
+	BBuf *tbuf = 0;
 	r = not_code_range_buf(enc, pbuf, &tbuf, env);
-	if (r != 0) {
-	  bbuf_free(pbuf);
-	  return r;
-	}
 	bbuf_free(pbuf);
 	pbuf = tbuf;
       }
     }
-    if (r != 0) return r;
+    if (r != 0) {
+	bbuf_free(pbuf);
+	return r;
+    }
 
     dest->mbuf = pbuf;
     bbuf_free(buf1);

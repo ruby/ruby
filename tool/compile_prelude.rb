@@ -36,6 +36,7 @@ class Prelude
     @need_ruby_prefix = false
     @preludes = {}
     @mains = preludes.map {|filename| translate(filename)[0]}
+    @preludes.delete_if {|_, (_, _, lines, sub)| !sub && lines.empty?}
   end
 
   def translate(filename, sub = false)

@@ -11,57 +11,57 @@
 #include "ossl.h"
 
 #define WrapPKCS7(klass, obj, pkcs7) do { \
-    if (!pkcs7) { \
+    if (!(pkcs7)) { \
 	ossl_raise(rb_eRuntimeError, "PKCS7 wasn't initialized."); \
     } \
-    obj = Data_Wrap_Struct(klass, 0, PKCS7_free, pkcs7); \
+    (obj) = Data_Wrap_Struct((klass), 0, PKCS7_free, (pkcs7)); \
 } while (0)
 #define GetPKCS7(obj, pkcs7) do { \
-    Data_Get_Struct(obj, PKCS7, pkcs7); \
-    if (!pkcs7) { \
+    Data_Get_Struct((obj), PKCS7, (pkcs7)); \
+    if (!(pkcs7)) { \
 	ossl_raise(rb_eRuntimeError, "PKCS7 wasn't initialized."); \
     } \
 } while (0)
 #define SafeGetPKCS7(obj, pkcs7) do { \
-    OSSL_Check_Kind(obj, cPKCS7); \
-    GetPKCS7(obj, pkcs7); \
+    OSSL_Check_Kind((obj), cPKCS7); \
+    GetPKCS7((obj), (pkcs7)); \
 } while (0)
 
 #define WrapPKCS7si(klass, obj, p7si) do { \
-    if (!p7si) { \
+    if (!(p7si)) { \
 	ossl_raise(rb_eRuntimeError, "PKCS7si wasn't initialized."); \
     } \
-    obj = Data_Wrap_Struct(klass, 0, PKCS7_SIGNER_INFO_free, p7si); \
+    (obj) = Data_Wrap_Struct((klass), 0, PKCS7_SIGNER_INFO_free, (p7si)); \
 } while (0)
 #define GetPKCS7si(obj, p7si) do { \
-    Data_Get_Struct(obj, PKCS7_SIGNER_INFO, p7si); \
-    if (!p7si) { \
+    Data_Get_Struct((obj), PKCS7_SIGNER_INFO, (p7si)); \
+    if (!(p7si)) { \
 	ossl_raise(rb_eRuntimeError, "PKCS7si wasn't initialized."); \
     } \
 } while (0)
 #define SafeGetPKCS7si(obj, p7si) do { \
-    OSSL_Check_Kind(obj, cPKCS7Signer); \
-    GetPKCS7si(obj, p7si); \
+    OSSL_Check_Kind((obj), cPKCS7Signer); \
+    GetPKCS7si((obj), (p7si)); \
 } while (0)
 
 #define WrapPKCS7ri(klass, obj, p7ri) do { \
-    if (!p7ri) { \
+    if (!(p7ri)) { \
 	ossl_raise(rb_eRuntimeError, "PKCS7ri wasn't initialized."); \
     } \
-    obj = Data_Wrap_Struct(klass, 0, PKCS7_RECIP_INFO_free, p7ri); \
+    (obj) = Data_Wrap_Struct((klass), 0, PKCS7_RECIP_INFO_free, (p7ri)); \
 } while (0)
 #define GetPKCS7ri(obj, p7ri) do { \
-    Data_Get_Struct(obj, PKCS7_RECIP_INFO, p7ri); \
-    if (!p7ri) { \
+    Data_Get_Struct((obj), PKCS7_RECIP_INFO, (p7ri)); \
+    if (!(p7ri)) { \
 	ossl_raise(rb_eRuntimeError, "PKCS7ri wasn't initialized."); \
     } \
 } while (0)
 #define SafeGetPKCS7ri(obj, p7ri) do { \
-    OSSL_Check_Kind(obj, cPKCS7Recipient); \
-    GetPKCS7ri(obj, p7ri); \
+    OSSL_Check_Kind((obj), cPKCS7Recipient); \
+    GetPKCS7ri((obj), (p7ri)); \
 } while (0)
 
-#define numberof(ary) (int)(sizeof(ary)/sizeof(ary[0]))
+#define numberof(ary) (int)(sizeof(ary)/sizeof((ary)[0]))
 
 #define ossl_pkcs7_set_data(o,v)       rb_iv_set((o), "@data", (v))
 #define ossl_pkcs7_get_data(o)         rb_iv_get((o), "@data")

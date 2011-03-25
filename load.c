@@ -9,12 +9,20 @@
 
 VALUE ruby_dln_librefs;
 
-#define IS_RBEXT(e) (strcmp(e, ".rb") == 0)
-#define IS_SOEXT(e) (strcmp(e, ".so") == 0 || strcmp(e, ".o") == 0)
-#ifdef DLEXT2
-#define IS_DLEXT(e) (strcmp(e, DLEXT) == 0 || strcmp(e, DLEXT2) == 0)
+#if CASEFOLD_FILESYSTEM
+#define fncomp strcasecmp
+#define fnncomp strncasecmp
 #else
-#define IS_DLEXT(e) (strcmp(e, DLEXT) == 0)
+#define fncomp strcmp
+#define fnncomp strncmp
+#endif
+
+#define IS_RBEXT(e) (fncomp((e), ".rb") == 0)
+#define IS_SOEXT(e) (fncomp((e), ".so") == 0 || fncomp((e), ".o") == 0)
+#ifdef DLEXT2
+#define IS_DLEXT(e) (fncomp((e), DLEXT) == 0 || fncomp((e), DLEXT2) == 0)
+#else
+#define IS_DLEXT(e) (fncomp((e), DLEXT) == 0)
 #endif
 
 
@@ -40,14 +48,6 @@ rb_get_expanded_load_path(void)
     VALUE ary;
     long i;
 
-    for (i = 0; i < RARRAY_LEN(load_path); ++i) {
-	VALUE str = rb_check_string_type(RARRAY_PTR(load_path)[i]);
-	if (NIL_P(str) || !rb_is_absolute_path(RSTRING_PTR(str)))
-	    goto relative_path_found;
-    }
-    return load_path;
-
-  relative_path_found:
     ary = rb_ary_new2(RARRAY_LEN(load_path));
     for (i = 0; i < RARRAY_LEN(load_path); ++i) {
 	VALUE path = rb_file_expand_path(RARRAY_PTR(load_path)[i], Qnil);
@@ -88,8 +88,8 @@ loaded_feature_path(const char *name, long vlen, const char *feature, long len,
 	long n = RSTRING_LEN(p);
 
 	if (vlen < n + len + 1) continue;
-	if (n && (strncmp(name, s, n) || name[n] != '/')) continue;
-	if (strncmp(name + n + 1, feature, len)) continue;
+	if (n && (fnncomp(name, s, n) || name[n] != '/')) continue;
+	if (fnncomp(name + n + 1, feature, len)) continue;
 	if (name[n+len+1] && name[n+len+1] != '.') continue;
 	switch (type) {
 	  case 's':
@@ -151,7 +151,7 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
 	v = RARRAY_PTR(features)[i];
 	f = StringValuePtr(v);
 	if ((n = RSTRING_LEN(v)) < len) continue;
-	if (strncmp(f, feature, len) != 0) {
+	if (fnncomp(f, feature, len) != 0) {
 	    if (expanded) continue;
 	    if (!load_path) load_path = rb_get_expanded_load_path();
 	    if (!(p = loaded_feature_path(f, n, feature, len, type, load_path)))
@@ -390,7 +390,8 @@ load_lock(const char *ftptr)
     if (!loading_tbl || !st_lookup(loading_tbl, (st_data_t)ftptr, &data)) {
 	/* loading ruby library should be serialized. */
 	if (!loading_tbl) {
-	    GET_VM()->loading_table = loading_tbl = st_init_strtable();
+	    GET_VM()->loading_table = loading_tbl =
+		(CASEFOLD_FILESYSTEM ? st_init_strcasetable() : st_init_strtable());
 	}
 	/* partial state */
 	ftptr = ruby_strdup(ftptr);
@@ -453,6 +454,14 @@ rb_f_require(VALUE obj, VALUE fname)
     return rb_require_safe(fname, rb_safe_level());
 }
 
+/*
+ * call-seq:
+ *   require_relative(string) -> true or false
+ *
+ * Ruby tries to load the library named _string_ relative to the requiring
+ * file's path.  If the file's path cannot be determined a LoadError is raised.
+ * If a file is loaded +true+ is returned and false otherwise.
+ */
 VALUE
 rb_f_require_relative(VALUE obj, VALUE fname)
 {
@@ -745,7 +754,7 @@ void
 Init_load()
 {
 #undef rb_intern
-#define rb_intern(str) rb_intern2(str, strlen(str))
+#define rb_intern(str) rb_intern2((str), strlen(str))
     rb_vm_t *vm = GET_VM();
     static const char var_load_path[] = "$:";
     ID id_load_path = rb_intern2(var_load_path, sizeof(var_load_path)-1);

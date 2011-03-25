@@ -1059,7 +1059,7 @@ static char *
 ole_wc2mb(LPWSTR pw)
 {
     LPSTR pm;
-    int size = 0;
+    UINT size = 0;
     if (conv_51932(cWIN32OLE_cp)) {
 #ifndef pIMultiLanguage
 	DWORD dw = 0;
@@ -1290,7 +1290,7 @@ ole_vstr2wc(VALUE vstr)
 {
     rb_encoding *enc;
     int cp;
-    int size = 0;
+    UINT size = 0;
     LPWSTR pw;
     st_data_t data;
     enc = rb_enc_get(vstr);
@@ -1316,7 +1316,7 @@ ole_vstr2wc(VALUE vstr)
     if (conv_51932(cp)) {
 #ifndef pIMultiLanguage
 	DWORD dw = 0;
-	int len = RSTRING_LEN(vstr);
+	UINT len = RSTRING_LENINT(vstr);
 	HRESULT hr = pIMultiLanguage->lpVtbl->ConvertStringToUnicode(pIMultiLanguage,
 		&dw, cp, RSTRING_PTR(vstr), &len, NULL, &size);
 	if (FAILED(hr)) {
@@ -1341,13 +1341,13 @@ ole_vstr2wc(VALUE vstr)
 static LPWSTR
 ole_mb2wc(char *pm, int len)
 {
-    int size = 0;
+    UINT size = 0;
     LPWSTR pw;
 
     if (conv_51932(cWIN32OLE_cp)) {
 #ifndef pIMultiLanguage
 	DWORD dw = 0;
-	int n = len;
+	UINT n = len;
 	HRESULT hr = pIMultiLanguage->lpVtbl->ConvertStringToUnicode(pIMultiLanguage,
 		&dw, cWIN32OLE_cp, pm, &n, NULL, &size);
 	if (FAILED(hr)) {
@@ -2336,23 +2336,23 @@ reg_get_val(HKEY hkey, const char *subkey)
 {
     char *pbuf;
     DWORD dwtype = 0;
-    LONG size = 0;
+    DWORD size = 0;
     VALUE val = Qnil;
     LONG err = RegQueryValueEx(hkey, subkey, NULL, &dwtype, NULL, &size);
 
     if (err == ERROR_SUCCESS) {
         pbuf = ALLOC_N(char, size + 1);
-        err = RegQueryValueEx(hkey, subkey, NULL, &dwtype, pbuf, &size);
+        err = RegQueryValueEx(hkey, subkey, NULL, &dwtype, (BYTE *)pbuf, &size);
         if (err == ERROR_SUCCESS) {
             pbuf[size] = '\0';
             if (dwtype == REG_EXPAND_SZ) {
-                 char* pbuf2 = pbuf;
-                 DWORD len = ExpandEnvironmentStrings(pbuf2, NULL, 0);
-                 pbuf = ALLOC_N(char, len + 1);
-                 ExpandEnvironmentStrings(pbuf2, pbuf, len + 1);
-                 free(pbuf2);
+		char* pbuf2 = (char *)pbuf;
+		DWORD len = ExpandEnvironmentStrings(pbuf2, NULL, 0);
+		pbuf = ALLOC_N(char, len + 1);
+		ExpandEnvironmentStrings(pbuf2, pbuf, len + 1);
+		free(pbuf2);
             }
-            val = rb_str_new2(pbuf);
+            val = rb_str_new2((char *)pbuf);
         }
         free(pbuf);
     }
@@ -2574,7 +2574,7 @@ clsid_from_remote(VALUE host, VALUE com, CLSID *pclsid)
         hr = HRESULT_FROM_WIN32(err);
     else {
         len = sizeof(clsid);
-        err = RegQueryValueEx(hpid, (LPBYTE)"", NULL, &dwtype, clsid, &len);
+        err = RegQueryValueEx(hpid, "", NULL, &dwtype, (BYTE *)clsid, &len);
         if (err == ERROR_SUCCESS && dwtype == REG_SZ) {
             pbuf  = ole_mb2wc(clsid, -1);
             hr = CLSIDFromString(pbuf, pclsid);

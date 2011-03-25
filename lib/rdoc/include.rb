@@ -17,6 +17,7 @@ class RDoc::Include < RDoc::CodeObject
     super()
     @name = name
     self.comment = comment
+    @module = nil   # cache for module if found
   end
 
   ##
@@ -52,9 +53,47 @@ class RDoc::Include < RDoc::CodeObject
   ##
   # Attempts to locate the included module object.  Returns the name if not
   # known.
+  #
+  # The scoping rules of Ruby to resolve the name of an included module are:
+  # - first look into the children of the current context;
+  # - if not found, look into the children of included modules,
+  #   in reverse inclusion order;
+  # - if still not found, go up the hierarchy of names.
 
   def module
-    RDoc::TopLevel.find_module_named(@name) || @name
+    return @module if @module
+
+    # search the current context
+    return @name unless parent
+    full_name = parent.child_name(@name)
+    @module = RDoc::TopLevel.modules_hash[full_name]
+    return @module if @module
+    return @name if @name =~ /^::/
+
+    # search the includes before this one, in reverse order
+    searched = parent.includes.take_while { |i| i != self }.reverse
+    searched.each do |i|
+      inc = i.module
+      next if String === inc
+      full_name = inc.child_name(@name)
+      @module = RDoc::TopLevel.modules_hash[full_name]
+      return @module if @module
+    end
+
+    # go up the hierarchy of names
+    p = parent.parent
+    while p
+      full_name = p.child_name(@name)
+      @module = RDoc::TopLevel.modules_hash[full_name]
+      return @module if @module
+      p = p.parent
+    end
+
+    @name
+  end
+
+  def to_s # :nodoc:
+    "include #@name in: #{parent}"
   end
 
 end

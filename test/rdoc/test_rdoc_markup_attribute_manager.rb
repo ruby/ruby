@@ -1,9 +1,9 @@
-require "rubygems"
-require "minitest/autorun"
+require 'rubygems'
+require 'minitest/autorun'
 require 'rdoc'
 require 'rdoc/markup'
-require "rdoc/markup/inline"
-require "rdoc/markup/to_html_crossref"
+require 'rdoc/markup/inline'
+require 'rdoc/markup/to_html_crossref'
 
 class TestRDocMarkupAttributeManager < MiniTest::Unit::TestCase
 

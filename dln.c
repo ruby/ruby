@@ -57,7 +57,7 @@ void *xrealloc();
 #include <sys/stat.h>
 
 #ifndef S_ISDIR
-#   define S_ISDIR(m) ((m & S_IFMT) == S_IFDIR)
+#   define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
 #endif
 
 #ifdef HAVE_SYS_PARAM_H
@@ -107,44 +107,47 @@ dln_loaderror(const char *format, ...)
 
 #ifndef FUNCNAME_PATTERN
 # if defined(__hp9000s300) || ((defined(__NetBSD__) || defined(__FreeBSD__) || defined(__OpenBSD__)) && !defined(__ELF__)) || defined(__BORLANDC__) || defined(NeXT) || defined(__WATCOMC__) || defined(MACOSX_DYLD)
-#  define FUNCNAME_PATTERN "_Init_%s"
+#  define FUNCNAME_PREFIX "_Init_"
 # else
-#  define FUNCNAME_PATTERN "Init_%s"
+#  define FUNCNAME_PREFIX "Init_"
 # endif
 #endif
 
+#if defined __CYGWIN__ || defined DOSISH
+#define isdirsep(x) ((x) == '/' || (x) == '\\')
+#else
+#define isdirsep(x) ((x) == '/')
+#endif
+
 static size_t
-init_funcname_len(char **buf, const char *file)
+init_funcname_len(const char **file)
 {
-    char *p;
-    const char *slash;
-    size_t len;
+    const char *p = *file, *base, *dot = NULL;
 
     /* Load the file as an object one */
-    for (slash = file-1; *file; file++) /* Find position of last '/' */
-	if (*file == '/') slash = file;
-
-    len = strlen(FUNCNAME_PATTERN) + strlen(slash + 1);
-    *buf = xmalloc(len);
-    snprintf(*buf, len, FUNCNAME_PATTERN, slash + 1);
-    for (p = *buf; *p; p++) {         /* Delete suffix if it exists */
-	if (*p == '.') {
-	    *p = '\0'; break;
-	}
+    for (base = p; *p; p++) { /* Find position of last '/' */
+	if (*p == '.' && !dot) dot = p;
+	if (isdirsep(*p)) base = p+1, dot = NULL;
     }
-    return p - *buf;
+    *file = base;
+    /* Delete suffix if it exists */
+    return (dot ? dot : p) - base;
 }
 
+static const char funcname_prefix[sizeof(FUNCNAME_PREFIX) - 1] = FUNCNAME_PREFIX;
+
 #define init_funcname(buf, file) do {\
-    size_t len = init_funcname_len(buf, file);\
-    char *tmp = ALLOCA_N(char, len+1);\
+    const char *base = (file);\
+    const size_t flen = init_funcname_len(&base);\
+    const size_t plen = sizeof(funcname_prefix);\
+    char *const tmp = ALLOCA_N(char, plen+flen+1);\
     if (!tmp) {\
-	free(*buf);\
 	dln_memerror();\
     }\
-    strlcpy(tmp, *buf, len + 1);\
-    free(*buf);\
-    *buf = tmp;\
+    memcpy(tmp, funcname_prefix, plen);\
+    memcpy(tmp+plen, base, flen);\
+    tmp[plen+flen] = '\0';\
+    *(buf) = tmp;\
 } while (0)
 
 #ifdef USE_DLN_A_OUT
@@ -1129,7 +1132,7 @@ dln_strerror(char *message, size_t size)
 
 #define format_message(sublang) FormatMessage(\
 	FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,	\
-	NULL, error, MAKELANGID(LANG_NEUTRAL, sublang),			\
+	NULL, error, MAKELANGID(LANG_NEUTRAL, (sublang)),		\
 	message + len, size - len, NULL)
     if (format_message(SUBLANG_ENGLISH_US) == 0)
 	format_message(SUBLANG_DEFAULT);
@@ -1177,7 +1180,7 @@ aix_loaderror(const char *pathname)
 {
   char *message[1024], errbuf[1024];
   int i;
-#define ERRBUF_APPEND(s) strncat(errbuf, s, sizeof(errbuf)-strlen(errbuf)-1)
+#define ERRBUF_APPEND(s) strncat(errbuf, (s), sizeof(errbuf)-strlen(errbuf)-1)
   snprintf(errbuf, sizeof(errbuf), "load failed - %s. ", pathname);
 
   if (loadquery(L_GETMESSAGES, &message[0], sizeof(message)) != -1) {
@@ -1234,7 +1237,7 @@ rb_w32_check_imported(HMODULE ext, HMODULE mine)
 	do { \
 	    *p++ = ((c = *file++) == '/') ? DLN_NEEDS_ALT_SEPARATOR : c; \
 	} while (c); \
-	src = tmp; \
+	(src) = tmp; \
     } while (0)
 #else
 #define translit_separator(str) (void)(str)

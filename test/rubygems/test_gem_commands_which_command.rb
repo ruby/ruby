@@ -1,7 +1,13 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require 'rubygems/test_case'
 require 'rubygems/commands/which_command'
 
-class TestGemCommandsWhichCommand < RubyGemTestCase
+class TestGemCommandsWhichCommand < Gem::TestCase
 
   def setup
     super
@@ -39,7 +45,7 @@ class TestGemCommandsWhichCommand < RubyGemTestCase
     @cmd.handle_options %w[missing]
 
     use_ui @ui do
-      assert_raises MockGemUi::TermError do
+      assert_raises Gem::MockGemUi::TermError do
         @cmd.execute
       end
     end
@@ -51,7 +57,7 @@ class TestGemCommandsWhichCommand < RubyGemTestCase
 
   def util_foo_bar
     files = %w[lib/foo_bar.rb Rakefile]
-    @foo_bar = quick_gem 'foo_bar' do |gem|
+    @foo_bar = quick_spec 'foo_bar' do |gem|
       gem.files = files
     end
 

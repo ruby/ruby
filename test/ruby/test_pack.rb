@@ -139,7 +139,7 @@ class TestPack < Test::Unit::TestCase
 
   def test_integer_endian
     s = [1].pack("s")
-    assert_includes(["\0\1", "\1\0"], s)
+    assert_include(["\0\1", "\1\0"], s)
     if s == "\0\1"
       _integer_big_endian()
     else
@@ -570,6 +570,8 @@ class TestPack < Test::Unit::TestCase
     assert_equal(["\x0a"], "=0A=\n".unpack("M"))
     assert_equal([""], "=0Z=\n".unpack("M"))
     assert_equal([""], "=\r\n".unpack("M"))
+    assert_equal([""], "=\r\n".unpack("M"))
+    assert_equal(["\xC6\xF7"], "=C6=F7".unpack('M*'))
   end
 
   def test_pack_unpack_P2
@@ -629,5 +631,12 @@ class TestPack < Test::Unit::TestCase
       str = [1].pack(fmt)
       assert_equal([1,nil], str.unpack("#{fmt}2"))
     }
+  end
+
+  def test_short_with_block
+    bug4059 = '[ruby-core:33193]'
+    result = :ok
+    assert_nil("".unpack("i") {|x| result = x}, bug4059)
+    assert_equal(:ok, result)
   end
 end

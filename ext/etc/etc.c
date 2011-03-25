@@ -557,7 +557,7 @@ etc_getgrent(VALUE obj)
     return Qnil;
 }
 
-#define numberof(array) (sizeof(array) / sizeof(*array))
+#define numberof(array) (sizeof(array) / sizeof(*(array)))
 
 #ifdef _WIN32
 VALUE rb_w32_special_folder(int type);

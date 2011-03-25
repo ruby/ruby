@@ -15,9 +15,12 @@ class RDoc::Markup::AttributeManager
   # optimistic
   #++
 
-  A_PROTECT  = 004 # :nodoc:
+  A_PROTECT = 004 # :nodoc:
 
-  PROTECT_ATTR  = A_PROTECT.chr # :nodoc:
+  ##
+  # Special mask character to prevent inline markup handling
+
+  PROTECT_ATTR = A_PROTECT.chr # :nodoc:
 
   ##
   # This maps delimiters that occur around words (such as *bold* or +tt+)
@@ -56,7 +59,7 @@ class RDoc::Markup::AttributeManager
   def initialize
     @html_tags = {}
     @matching_word_pairs = {}
-    @protectable = %w[<\\]
+    @protectable = %w[<]
     @special = {}
     @word_pair_map = {}
 
@@ -71,7 +74,6 @@ class RDoc::Markup::AttributeManager
     add_html "code", :TT
   end
 
-
   ##
   # Return an attribute object with the given turn_on and turn_off bits set
 
@@ -79,12 +81,19 @@ class RDoc::Markup::AttributeManager
     RDoc::Markup::AttrChanger.new turn_on, turn_off
   end
 
-  def change_attribute(current, new)
+  ##
+  # Changes the current attribute from +current+ to +new+
+
+  def change_attribute current, new
     diff = current ^ new
     attribute(new & diff, current & diff)
   end
 
-  def changed_attribute_by_name(current_set, new_set)
+  ##
+  # Used by the tests to change attributes by name from +current_set+ to
+  # +new_set+
+
+  def changed_attribute_by_name current_set, new_set
     current = new = 0
     current_set.each do |name|
       current |= RDoc::Markup::Attribute.bitmap_for(name)
@@ -96,6 +105,9 @@ class RDoc::Markup::AttributeManager
 
     change_attribute(current, new)
   end
+
+  ##
+  # Copies +start_pos+ to +end_pos+ from the current string
 
   def copy_string(start_pos, end_pos)
     res = @str[start_pos...end_pos]
@@ -112,7 +124,7 @@ class RDoc::Markup::AttributeManager
     # first do matching ones
     tags = @matching_word_pairs.keys.join("")
 
-    re = /(^|[^\w#{NULL}])([#{tags}])([#:\\]?[\w.\/-]+?\S?)\2(\W|$)/
+    re = /(^|\W)([#{tags}])([#:\\]?[\w.\/-]+?\S?)\2(\W|$)/
 
     1 while str.gsub!(re) do
       attr = @matching_word_pairs[$2]
@@ -164,6 +176,9 @@ class RDoc::Markup::AttributeManager
   # Escapes special sequences of text to prevent conversion to RDoc
 
   def mask_protected_sequences
+    # protect __send__, __FILE__, etc.
+    @str.gsub!(/__([a-z]+)__/i,
+      "_#{PROTECT_ATTR}_#{PROTECT_ATTR}\\1_#{PROTECT_ATTR}_#{PROTECT_ATTR}")
     @str.gsub!(/\\([#{Regexp.escape @protectable.join('')}])/,
                "\\1#{PROTECT_ATTR}")
   end
@@ -228,8 +243,8 @@ class RDoc::Markup::AttributeManager
 
     @attrs = RDoc::Markup::AttrSpan.new @str.length
 
-    convert_html     @str, @attrs
     convert_attrs    @str, @attrs
+    convert_html     @str, @attrs
     convert_specials @str, @attrs
 
     unmask_protected_sequences
@@ -262,10 +277,12 @@ class RDoc::Markup::AttributeManager
     end
   end
 
+  ##
+  # Splits the string into chunks by attribute change
+
   def split_into_flow
     res = []
     current_attr = 0
-    str = ""
 
     str_len = @str.length
 

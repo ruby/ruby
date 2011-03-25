@@ -237,15 +237,16 @@ ancillary_s_unix_rights(int argc, VALUE *argv, VALUE klass)
  *   # recvmsg needs :scm_rights=>true for unix_rights
  *   s1, s2 = UNIXSocket.pair
  *   p s1                                         #=> #<UNIXSocket:fd 3>
- *   s1.sendmsg "stdin and a socket", 0, nil, [:SOCKET, :RIGHTS, [0,s1.fileno].pack("ii")]
+ *   s1.sendmsg "stdin and a socket", 0, nil, Socket::AncillaryData.unix_rights(STDIN, s1)
  *   _, _, _, ctl = s2.recvmsg(:scm_rights=>true)
+ *   p ctl                                        #=> #<Socket::AncillaryData: UNIX SOCKET RIGHTS 6 7>
  *   p ctl.unix_rights                            #=> [#<IO:fd 6>, #<Socket:fd 7>]
  *   p File.identical?(STDIN, ctl.unix_rights[0]) #=> true
  *   p File.identical?(s1, ctl.unix_rights[1])    #=> true
  *
  *   # If :scm_rights=>true is not given, unix_rights returns nil
  *   s1, s2 = UNIXSocket.pair
- *   s1.sendmsg "stdin and a socket", 0, nil, [:SOCKET, :RIGHTS, [0,s1.fileno].pack("ii")]
+ *   s1.sendmsg "stdin and a socket", 0, nil, Socket::AncillaryData.unix_rights(STDIN, s1)
  *   _, _, _, ctl = s2.recvmsg
  *   p ctl #=> #<Socket::AncillaryData: UNIX SOCKET RIGHTS 6 7>
  *   p ctl.unix_rights #=> nil
@@ -1597,7 +1598,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
         if (NIL_P(vmaxctllen) && (mh.msg_flags & MSG_CTRUNC)) {
 #define BIG_ENOUGH_SPACE 65536
             if (BIG_ENOUGH_SPACE < maxctllen &&
-                mh.msg_controllen < maxctllen - BIG_ENOUGH_SPACE) {
+                mh.msg_controllen < (socklen_t)(maxctllen - BIG_ENOUGH_SPACE)) {
                 /* there are big space bug truncated.
                  * file descriptors limit? */
                 if (!gc_done) {

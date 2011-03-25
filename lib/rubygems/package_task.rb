@@ -1,3 +1,9 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 # Copyright (c) 2003, 2004 Jim Weirich, 2009 Eric Hodel
 #
 # Permission is hereby granted, free of charge, to any person obtaining
@@ -86,7 +92,7 @@ class Gem::PackageTask < Rake::PackageTask
   # Initialization tasks without the "yield self" or define operations.
 
   def init(gem)
-    super gem.name, gem.version
+    super gem.full_name, :noversion
     @gem_spec = gem
     @package_files += gem_spec.files if gem_spec.files
   end
@@ -111,10 +117,12 @@ class Gem::PackageTask < Rake::PackageTask
     Gem.configuration.verbose = trace
 
     file gem_path => [package_dir, gem_dir] + @gem_spec.files do
-      when_writing "Creating #{gem_spec.file_name}" do
-        Gem::Builder.new(gem_spec).build
-        verbose trace do
-          mv gem_file, gem_path
+      chdir(gem_dir) do
+        when_writing "Creating #{gem_spec.file_name}" do
+          Gem::Builder.new(gem_spec).build
+          verbose trace do
+            mv gem_file, '..'
+          end
         end
       end
     end

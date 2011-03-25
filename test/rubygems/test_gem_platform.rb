@@ -1,8 +1,14 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require 'rubygems/test_case'
 require 'rubygems/platform'
 require 'rbconfig'
 
-class TestGemPlatform < RubyGemTestCase
+class TestGemPlatform < Gem::TestCase
 
   def test_self_local
     util_set_arch 'i686-darwin8.10.1'
@@ -117,7 +123,6 @@ class TestGemPlatform < RubyGemTestCase
 
   def test_initialize_platform
     platform = Gem::Platform.new 'cpu-my_platform1'
-    expected = Gem::Platform.new platform
 
     assert_equal 'cpu', platform.cpu
     assert_equal 'my_platform', platform.os

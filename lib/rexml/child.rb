@@ -88,7 +88,7 @@ module REXML
 
     # This doesn't yet handle encodings
     def bytes
-      encoding = document.encoding
+      document.encoding
 
       to_s
     end

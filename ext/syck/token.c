@@ -207,7 +207,7 @@
     } \
     else if ( *YYLINEPTR == ' ' ) \
     { \
-        ict = YYCURSOR - YYLINEPTR; \
+        ict = (int)(YYCURSOR - YYLINEPTR); \
     }
 
 /*
@@ -377,7 +377,7 @@ yy12:	++YYCURSOR;
 	goto yy16;
 yy13:
 #line 370 "token.re"
-{   doc_level = YYCURSOR - YYLINEPTR;
+{   doc_level = (int)(YYCURSOR - YYLINEPTR);
                         goto Header;
                     }
 #line 384 "<stdout>"
@@ -1037,16 +1037,16 @@ yy81:	++YYCURSOR;
 	goto yy82;
 yy82:
 #line 441 "token.re"
-{   ENSURE_YAML_IOPEN(lvl, YYTOKEN - YYLINEPTR, 1);
+{   ENSURE_YAML_IOPEN(lvl, (int)(YYTOKEN - YYLINEPTR), 1);
                         FORCE_NEXT_TOKEN(YAML_IOPEN);
                         if ( *YYCURSOR == '#' || is_newline( YYCURSOR ) || is_newline( YYCURSOR - 1 ) )
                         {
                             YYCURSOR--;
-                            ADD_LEVEL((YYTOKEN + 1) - YYLINEPTR, syck_lvl_seq);
+                            ADD_LEVEL((int)((YYTOKEN + 1) - YYLINEPTR), syck_lvl_seq);
                         }
                         else /* spaces followed by content uses the space as indentation */
                         {
-                            ADD_LEVEL(YYCURSOR - YYLINEPTR, syck_lvl_seq);
+                            ADD_LEVEL((int)(YYCURSOR - YYLINEPTR), syck_lvl_seq);
                         }
                         return YYTOKEN[0];
                     }
@@ -2363,7 +2363,7 @@ ScalarBlock:
             }
             else if ( isdigit( *yyt ) )
             {
-                forceIndent = strtol( yyt, NULL, 10 );
+                forceIndent = rb_long2int(strtol( yyt, NULL, 10 ));
             }
         }
 

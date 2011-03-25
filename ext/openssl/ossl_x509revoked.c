@@ -11,20 +11,20 @@
 #include "ossl.h"
 
 #define WrapX509Rev(klass, obj, rev) do { \
-    if (!rev) { \
+    if (!(rev)) { \
 	ossl_raise(rb_eRuntimeError, "REV wasn't initialized!"); \
     } \
-    obj = Data_Wrap_Struct(klass, 0, X509_REVOKED_free, rev); \
+    (obj) = Data_Wrap_Struct((klass), 0, X509_REVOKED_free, (rev)); \
 } while (0)
 #define GetX509Rev(obj, rev) do { \
-    Data_Get_Struct(obj, X509_REVOKED, rev); \
-    if (!rev) { \
+    Data_Get_Struct((obj), X509_REVOKED, (rev)); \
+    if (!(rev)) { \
 	ossl_raise(rb_eRuntimeError, "REV wasn't initialized!"); \
     } \
 } while (0)
 #define SafeGetX509Rev(obj, rev) do { \
-    OSSL_Check_Kind(obj, cX509Rev); \
-    GetX509Rev(obj, rev); \
+    OSSL_Check_Kind((obj), cX509Rev); \
+    GetX509Rev((obj), (rev)); \
 } while (0)
 
 /*

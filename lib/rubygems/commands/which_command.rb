@@ -1,3 +1,9 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 require 'rubygems/command'
 require 'rubygems/gem_path_searcher'
 
@@ -33,6 +39,7 @@ class Gem::Commands::WhichCommand < Gem::Command
     found = false
 
     options[:args].each do |arg|
+      arg = arg.sub(/#{Regexp.union(*EXT)}$/, '')
       dirs = $LOAD_PATH
       spec = searcher.find arg
 

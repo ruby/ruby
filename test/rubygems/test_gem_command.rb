@@ -1,11 +1,17 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require 'rubygems/test_case'
 require 'rubygems/command'
 
 class Gem::Command
   public :parser
 end
 
-class TestGemCommand < RubyGemTestCase
+class TestGemCommand < Gem::TestCase
 
   def setup
     super
@@ -87,7 +93,7 @@ class TestGemCommand < RubyGemTestCase
     assert done
   end
 
-  def test_invode_with_bad_options
+  def test_invoke_with_bad_options
     use_ui @ui do
       @cmd.when_invoked do true end
 

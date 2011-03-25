@@ -1,5 +1,6 @@
 require 'psych.so'
 require 'psych/nodes'
+require 'psych/streaming'
 require 'psych/visitors'
 require 'psych/handler'
 require 'psych/tree_builder'
@@ -9,6 +10,7 @@ require 'psych/set'
 require 'psych/coder'
 require 'psych/core_ext'
 require 'psych/deprecated'
+require 'psych/json'
 
 ###
 # = Overview
@@ -88,7 +90,7 @@ require 'psych/deprecated'
 
 module Psych
   # The version is Psych you're using
-  VERSION         = '1.0.0'
+  VERSION         = '1.1.0'
 
   # The version of libyaml Psych is using
   LIBYAML_VERSION = Psych.libyaml_version.join '.'
@@ -97,7 +99,6 @@ module Psych
   end
 
   autoload :Stream, 'psych/stream'
-  autoload :JSON, 'psych/json'
 
   ###
   # Load +yaml+ in to a Ruby data structure.  If multiple documents are

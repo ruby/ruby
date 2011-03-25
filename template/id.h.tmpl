@@ -50,6 +50,8 @@ end
 #include "parse.h"
 #endif
 
+#include "vm_opts.h" /* for SUPPORT_JOKE */
+
 #define symIFUNC ID2SYM(idIFUNC)
 #define symCFUNC ID2SYM(idCFUNC)
 
@@ -129,7 +131,7 @@ enum ruby_method_ids {
 #ifdef tLAST_TOKEN
 struct ruby_method_ids_check {
 #define ruby_method_id_check_for(name, value) \
-    int checking_for_##name[name == value ? 1 : -1]
+    int checking_for_##name[name == (value) ? 1 : -1]
 % tokens.map do |token, value|
 ruby_method_id_check_for(<%=token%>, <%=value%>);
 % end

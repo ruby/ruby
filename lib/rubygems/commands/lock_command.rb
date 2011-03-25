@@ -1,3 +1,9 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 require 'rubygems/command'
 
 class Gem::Commands::LockCommand < Gem::Command
@@ -75,7 +81,7 @@ lock it down to the exact version.
     until pending.empty? do
       full_name = pending.shift
 
-      spec = Gem::SourceIndex.load_specification spec_path(full_name)
+      spec = Gem::Specification.load spec_path(full_name)
 
       if spec.nil? then
         complain "Could not find gem #{full_name}, try using the full name"

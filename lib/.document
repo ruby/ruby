@@ -16,9 +16,6 @@ cgi
 cgi.rb
 complex.rb
 csv.rb
-date
-date.rb
-date2.rb
 debug.rb
 delegate.rb
 drb
@@ -54,7 +51,6 @@ optparse
 optparse.rb
 ostruct.rb
 parsearg.rb
-parsedate.rb
 pathname.rb
 ping.rb
 pp.rb

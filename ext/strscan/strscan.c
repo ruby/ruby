@@ -405,7 +405,7 @@ strscan_do_scan(VALUE self, VALUE regex, int succptr, int getstr, int headonly)
     regex_t *rb_reg_prepare_re(VALUE re, VALUE str);
     struct strscanner *p;
     regex_t *re;
-    int ret;
+    long ret;
     int tmpreg;
 
     Check_Type(regex, T_REGEXP);
@@ -655,7 +655,7 @@ static void
 adjust_registers_to_matched(struct strscanner *p)
 {
     onig_region_clear(&(p->regs));
-    onig_region_set(&(p->regs), 0, 0, p->curr - p->prev);
+    onig_region_set(&(p->regs), 0, 0, (int)(p->curr - p->prev));
 }
 
 /*

@@ -505,12 +505,12 @@ class CSV
       end
       str << ">"
       begin
-        str.join
+        str.join('')
       rescue  # any encoding error
         str.map do |s|
           e = Encoding::Converter.asciicompat_encoding(s.encoding)
           e ? s.encode(e) : s.force_encoding("ASCII-8BIT")
-        end.join
+        end.join('')
       end
     end
   end
@@ -845,7 +845,7 @@ class CSV
         else
           rows + [row.fields.to_csv(options)]
         end
-      end.join
+      end.join('')
     end
     alias_method :to_s, :to_csv
 
@@ -1203,10 +1203,7 @@ class CSV
   # but transcode it to UTF-8 before CSV parses it.
   #
   def self.foreach(path, options = Hash.new, &block)
-    encoding =  options.delete(:encoding)
-    mode     =  "rb"
-    mode     << ":#{encoding}" if encoding
-    open(path, mode, options) do |csv|
+    open(path, options) do |csv|
       csv.each(&block)
     end
   end
@@ -1338,9 +1335,9 @@ class CSV
     # find the +options+ Hash
     options = if args.last.is_a? Hash then args.pop else Hash.new end
     # default to a binary open mode
-    args << "rb" if args.size == 1
+    args << "rb" if args.size == 1 and !options.key?(:mode)
     # wrap a File opened with the remaining +args+
-    csv     = new(File.open(*args), options)
+    csv     = new(File.open(*args, options), options)
 
     # handle blocks like Ruby's open(), not like the CSV library
     if block_given?
@@ -1562,24 +1559,35 @@ class CSV
     options = DEFAULT_OPTIONS.merge(options)
 
     # create the IO object we will read from
-    @io       =   if data.is_a? String then StringIO.new(data) else data end
+    @io       = data.is_a?(String) ? StringIO.new(data) : data
     # honor the IO encoding if we can, otherwise default to ASCII-8BIT
-    @encoding = raw_encoding || Encoding.default_internal || Encoding.default_external
+    @encoding = raw_encoding(nil) ||
+                (if encoding = options.delete(:internal_encoding)
+                   case encoding
+                   when Encoding; encoding
+                   else Encoding.find(encoding)
+                   end
+                 end) ||
+                (case encoding = options.delete(:encoding)
+                 when Encoding; encoding
+                 when /\A[^:]+/; Encoding.find($&)
+                 end) ||
+                Encoding.default_internal || Encoding.default_external
     #
     # prepare for building safe regular expressions in the target encoding,
     # if we can transcode the needed characters
     #
     @re_esc   =   "\\".encode(@encoding) rescue ""
-    @re_chars =   %w[ \\ .  [  ]  -  ^  $  ?
-                      *  +  {  }  (  )  |  #
-                      \  \r \n \t \f \v ].
-                  map { |s| s.encode(@encoding) rescue nil }.compact
+    @re_chars =   /#{%"[-][\\.^$?*+{}()|# \r\n\t\f\v]".encode(@encoding, fallback: proc{""})}/
 
     init_separators(options)
     init_parsers(options)
     init_converters(options)
     init_headers(options)
 
+    options.delete(:encoding)
+    options.delete(:internal_encoding)
+    options.delete(:external_encoding)
     unless options.empty?
       raise ArgumentError, "Unknown options:  #{options.keys.join(', ')}."
     end
@@ -1711,7 +1719,14 @@ class CSV
     @headers =  row if header_row?
     @lineno  += 1
 
-    @io << row.map(&@quote).join(@col_sep) + @row_sep  # quote and separate
+    output = row.map(&@quote).join(@col_sep) + @row_sep  # quote and separate
+    if @io.is_a?(StringIO)             and
+       output.encoding != raw_encoding and
+       (compatible_encoding = Encoding.compatible?(@io.string, output))
+      @io = StringIO.new(@io.string.force_encoding(compatible_encoding))
+      @io.seek(0, IO::SEEK_END)
+    end
+    @io << output
 
     self  # for chaining
   end
@@ -1965,12 +1980,12 @@ class CSV
     end
     str << ">"
     begin
-      str.join
+      str.join('')
     rescue  # any encoding error
       str.map do |s|
         e = Encoding::Converter.asciicompat_encoding(s.encoding)
         e ? s.encode(e) : s.force_encoding("ASCII-8BIT")
-      end.join
+      end.join('')
     end
   end
 
@@ -2012,15 +2027,13 @@ class CSV
             # if we run out of data, it's probably a single line
             # (use a sensible default)
             #
-            if @io.eof?
+            unless sample = @io.gets(nil, 1024)
               @row_sep = $INPUT_RECORD_SEPARATOR
               break
             end
 
             # read ahead a bit
-            sample =  read_to_char(1024)
-            sample += read_to_char(1) if sample[-1..-1] == encode_str("\r") and
-                                         not @io.eof?
+            sample << (@io.gets(nil, 1) || "") if sample.end_with?(encode_str("\r"))
             # try to find a standard separator
             if sample =~ encode_re("\r\n?|\n")
               @row_sep = $&
@@ -2043,11 +2056,13 @@ class CSV
     @row_sep = @row_sep.to_s.encode(@encoding)
 
     # establish quoting rules
-    @force_quotes = options.delete(:force_quotes)
-    do_quote      = lambda do |field|
-      @quote_char                                      +
-      String(field).gsub(@quote_char, @quote_char * 2) +
-      @quote_char
+    @force_quotes   = options.delete(:force_quotes)
+    do_quote        = lambda do |field|
+      field         = String(field)
+      encoded_quote = @quote_char.encode(field.encoding)
+      encoded_quote                                +
+      field.gsub(encoded_quote, encoded_quote * 2) +
+      encoded_quote
     end
     quotable_chars = encode_str("\r\n", @col_sep, @quote_char)
     @quote         = if @force_quotes
@@ -2252,7 +2267,7 @@ class CSV
   # a backslash cannot be transcoded.
   #
   def escape_re(str)
-    str.chars.map { |c| @re_chars.include?(c) ? @re_esc + c : c }.join
+    str.gsub(@re_chars) {|c| @re_esc + c}
   end
 
   #
@@ -2268,36 +2283,12 @@ class CSV
   # that encoding.
   #
   def encode_str(*chunks)
-    chunks.map { |chunk| chunk.encode(@encoding.name) }.join
-  end
-
-  #
-  # Reads at least +bytes+ from <tt>@io</tt>, but will read up 10 bytes ahead if
-  # needed to ensure the data read is valid in the ecoding of that data.  This
-  # should ensure that it is safe to use regular expressions on the read data,
-  # unless it is actually a broken encoding.  The read data will be returned in
-  # <tt>@encoding</tt>.
-  #
-  def read_to_char(bytes)
-    return "" if @io.eof?
-    data = read_io(bytes)
-    begin
-      raise unless data.valid_encoding?
-      encoded = encode_str(data)
-      raise unless encoded.valid_encoding?
-      return encoded
-    rescue  # encoding error or my invalid data raise
-      if @io.eof? or data.size >= bytes + 10
-        return data
-      else
-        data += read_io(1)
-        retry
-      end
-    end
+    chunks.map { |chunk| chunk.encode(@encoding.name) }.join('')
   end
 
   private
-  def raw_encoding
+
+  def raw_encoding(default = Encoding::ASCII_8BIT)
     if @io.respond_to? :internal_encoding
       @io.internal_encoding || @io.external_encoding
     elsif @io.is_a? StringIO
@@ -2305,12 +2296,8 @@ class CSV
     elsif @io.respond_to? :encoding
       @io.encoding
     else
-      Encoding::ASCII_8BIT
+      default
     end
-  end
-
-  def read_io(bytes)
-    @io.read(bytes).force_encoding(raw_encoding)
   end
 end
 

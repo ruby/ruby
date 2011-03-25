@@ -30,7 +30,7 @@ typedef LONG rb_atomic_t;
  * has its own pseudo-insns to support them.  See info, or
  * http://gcc.gnu.org/onlinedocs/gcc/Atomic-Builtins.html */
 
-typedef unsigned char rb_atomic_t; /* Anything OK */
+typedef unsigned int rb_atomic_t; /* Anything OK */
 # define ATOMIC_TEST(var) __sync_lock_test_and_set(&(var), 0)
 # define ATOMIC_SET(var, val)  __sync_lock_test_and_set(&(var), (val))
 # define ATOMIC_INC(var) __sync_fetch_and_add(&(var), 1)
@@ -354,7 +354,7 @@ VALUE
 rb_f_kill(int argc, VALUE *argv)
 {
 #ifndef HAS_KILLPG
-#define killpg(pg, sig) kill(-(pg), sig)
+#define killpg(pg, sig) kill(-(pg), (sig))
 #endif
     int negative = 0;
     int sig;
@@ -477,7 +477,7 @@ ruby_signal(int signum, sighandler_t handler)
 #endif
 
     sigemptyset(&sigact.sa_mask);
-#ifdef SA_SIGINFO
+#ifdef USE_SIGALTSTACK
     sigact.sa_sigaction = (ruby_sigaction_t*)handler;
     sigact.sa_flags = SA_SIGINFO;
 #else
@@ -508,7 +508,7 @@ posix_signal(int signum, sighandler_t handler)
 }
 
 #else /* !POSIX_SIGNAL */
-#define ruby_signal(sig,handler) (/* rb_trap_accept_nativethreads[sig] = 0,*/ signal((sig),(handler)))
+#define ruby_signal(sig,handler) (/* rb_trap_accept_nativethreads[(sig)] = 0,*/ signal((sig),(handler)))
 #if 0 /* def HAVE_NATIVETHREAD */
 static sighandler_t
 ruby_nativethread_signal(int signum, sighandler_t handler)
@@ -964,11 +964,15 @@ sig_trap(int argc, VALUE *argv)
 	rb_raise(rb_eSecurityError, "Insecure: tainted signal trap");
     }
 #if USE_TRAP_MASK
-    /* disable interrupt */
-    sigfillset(&arg.mask);
-    pthread_sigmask(SIG_BLOCK, &arg.mask, &arg.mask);
+    {
+      sigset_t fullmask;
 
-    return rb_ensure(trap, (VALUE)&arg, trap_ensure, (VALUE)&arg);
+      /* disable interrupt */
+      sigfillset(&fullmask);
+      pthread_sigmask(SIG_BLOCK, &fullmask, &arg.mask);
+      
+      return rb_ensure(trap, (VALUE)&arg, trap_ensure, (VALUE)&arg);
+    }
 #else
     return trap(&arg);
 #endif
@@ -1014,15 +1018,17 @@ init_sigchld(int sig)
 #if USE_TRAP_MASK
 # ifdef HAVE_SIGPROCMASK
     sigset_t mask;
+    sigset_t fullmask;
 # else
     int mask;
+    int fullmask;
 # endif
 #endif
 
 #if USE_TRAP_MASK
     /* disable interrupt */
-    sigfillset(&mask);
-    pthread_sigmask(SIG_BLOCK, &mask, &mask);
+    sigfillset(&fullmask);
+    pthread_sigmask(SIG_BLOCK, &fullmask, &mask);
 #endif
 
     oldfunc = ruby_signal(sig, SIG_DFL);

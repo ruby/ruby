@@ -320,6 +320,8 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(1.110, 1.111.round(2))
     assert_equal(11110.0, 11111.1.round(-1))
     assert_equal(11100.0, 11111.1.round(-2))
+
+    assert_equal(10**300, 1.1e300.round(-300))
   end
 
   VS = [
@@ -470,6 +472,11 @@ class TestFloat < Test::Unit::TestCase
     o = Object.new
     def o.to_f; inf = Float::INFINITY; inf/inf; end
     assert(Float(o).nan?)
+  end
+
+  def test_invalid_str
+    bug4310 = '[ruby-core:34820]'
+    assert_raise(ArgumentError, bug4310) {under_gc_stress {Float('a'*10000)}}
   end
 
   def test_num2dbl

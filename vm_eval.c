@@ -459,12 +459,12 @@ NORETURN(static void raise_method_missing(rb_thread_t *th, int argc, const VALUE
  *  values.
  *
  *     class Roman
- *       def romanToInt(str)
+ *       def roman_to_int(str)
  *         # ...
  *       end
  *       def method_missing(methId)
  *         str = methId.id2name
- *         romanToInt(str)
+ *         roman_to_int(str)
  *       end
  *     end
  *
@@ -619,10 +619,11 @@ rb_funcall(VALUE recv, ID mid, int n, ...)
 {
     VALUE *argv;
     va_list ar;
-    va_init_list(ar, n);
 
     if (n > 0) {
 	long i;
+
+	va_init_list(ar, n);
 
 	argv = ALLOCA_N(VALUE, n);
 
@@ -1014,7 +1015,8 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 	th->base_block = 0;
 
 	if (0) {		/* for debug */
-	    printf("%s\n", RSTRING_PTR(rb_iseq_disasm(iseqval)));
+	    VALUE disasm = rb_iseq_disasm(iseqval);
+	    printf("%s\n", StringValuePtr(disasm));
 	}
 
 	/* save new env */
@@ -1080,12 +1082,12 @@ eval_string(VALUE self, VALUE src, VALUE scope, const char *file, int line)
  *  optional <em>filename</em> and <em>lineno</em> parameters are
  *  present, they will be used when reporting syntax errors.
  *
- *     def getBinding(str)
+ *     def get_binding(str)
  *       return binding
  *     end
  *     str = "hello"
  *     eval "str + ' Fred'"                      #=> "hello Fred"
- *     eval "str + ' Fred'", getBinding("bye")   #=> "bye Fred"
+ *     eval "str + ' Fred'", get_binding("bye")  #=> "bye Fred"
  */
 
 VALUE
@@ -1437,6 +1439,7 @@ rb_throw_obj(VALUE tag, VALUE value)
     }
     if (!tt) {
 	VALUE desc = rb_inspect(tag);
+	RB_GC_GUARD(desc);
 	rb_raise(rb_eArgError, "uncaught throw %s", RSTRING_PTR(desc));
     }
     rb_trap_restore_mask();

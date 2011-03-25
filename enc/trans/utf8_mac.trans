@@ -52,7 +52,7 @@ struct from_utf8_mac_status {
     int end;
     int len;
 };
-#define buf_length(sp) (sp->len)
+#define buf_length(sp) ((sp)->len)
 
 int
 buf_bytesize(struct from_utf8_mac_status *sp)

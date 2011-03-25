@@ -21,7 +21,7 @@ VALUE rb_eConverterNotFoundError;
 
 VALUE rb_cEncodingConverter;
 
-static VALUE sym_invalid, sym_undef, sym_replace, sym_fallback;
+static VALUE sym_invalid, sym_undef, sym_replace, sym_fallback, sym_aref;
 static VALUE sym_xml, sym_text, sym_attr;
 static VALUE sym_universal_newline;
 static VALUE sym_crlf_newline;
@@ -234,7 +234,7 @@ rb_declare_transcoder(const char *enc1, const char *enc2, const char *lib)
     declare_transcoder(enc1, enc2, lib);
 }
 
-#define encoding_equal(enc1, enc2) (STRCASECMP(enc1, enc2) == 0)
+#define encoding_equal(enc1, enc2) (STRCASECMP((enc1), (enc2)) == 0)
 
 typedef struct search_path_queue_tag {
     struct search_path_queue_tag *next;
@@ -452,7 +452,7 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
             tc->recognized_len -= readagain_len; \
             tc->readagain_len = readagain_len; \
         } \
-        return ret; \
+        return (ret); \
         resume_label ## num:; \
     } while (0)
 #define SUSPEND_OBUF(num) \
@@ -2240,6 +2240,26 @@ output_replacement_character(rb_econv_t *ec)
 }
 
 #if 1
+#define hash_fallback rb_hash_aref
+
+static VALUE
+proc_fallback(VALUE fallback, VALUE c)
+{
+    return rb_proc_call(fallback, rb_ary_new4(1, &c));
+}
+
+static VALUE
+method_fallback(VALUE fallback, VALUE c)
+{
+    return rb_method_call(1, &c, fallback);
+}
+
+static VALUE
+aref_fallback(VALUE fallback, VALUE c)
+{
+    return rb_funcall3(fallback, sym_aref, 1, &c);
+}
+
 static void
 transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
 	       const unsigned char *in_stop, unsigned char *out_stop,
@@ -2257,13 +2277,27 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     int max_output;
     VALUE exc;
     VALUE fallback = Qnil;
+    VALUE (*fallback_func)(VALUE, VALUE) = 0;
 
     ec = rb_econv_open_opts(src_encoding, dst_encoding, ecflags, ecopts);
     if (!ec)
         rb_exc_raise(rb_econv_open_exc(src_encoding, dst_encoding, ecflags));
 
-    if (!NIL_P(ecopts) && TYPE(ecopts) == T_HASH)
+    if (!NIL_P(ecopts) && TYPE(ecopts) == T_HASH) {
 	fallback = rb_hash_aref(ecopts, sym_fallback);
+	if (RB_TYPE_P(fallback, T_HASH)) {
+	    fallback_func = hash_fallback;
+	}
+	else if (rb_obj_is_proc(fallback)) {
+	    fallback_func = proc_fallback;
+	}
+	else if (rb_obj_is_method(fallback)) {
+	    fallback_func = method_fallback;
+	}
+	else {
+	    fallback_func = aref_fallback;
+	}
+    }
     last_tc = ec->last_tc;
     max_output = last_tc ? last_tc->transcoder->max_output : 1;
 
@@ -2275,8 +2309,8 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
 		(const char *)ec->last_error.error_bytes_start,
 		ec->last_error.error_bytes_len,
 		rb_enc_find(ec->last_error.source_encoding));
-	rep = rb_hash_lookup2(fallback, rep, Qundef);
-	if (rep != Qundef) {
+	rep = (*fallback_func)(fallback, rep);
+	if (rep != Qundef && !NIL_P(rep)) {
 	    StringValue(rep);
 	    ret = rb_econv_insert_output(ec, (const unsigned char *)RSTRING_PTR(rep),
 		    RSTRING_LEN(rep), rb_enc_name(rb_enc_get(rep)));
@@ -2479,8 +2513,10 @@ rb_econv_prepare_opts(VALUE opthash, VALUE *opts)
 
     v = rb_hash_aref(opthash, sym_fallback);
     if (!NIL_P(v)) {
-	v = rb_convert_type(v, T_HASH, "Hash", "to_hash");
-	if (!NIL_P(v)) {
+	VALUE h = rb_check_hash_type(v);
+	if (NIL_P(h)
+	    ? (rb_obj_is_proc(v) || rb_obj_is_method(v) || rb_respond_to(v, sym_aref))
+	    : (v = h, 1)) {
 	    if (NIL_P(newhash))
 		newhash = rb_hash_new();
 	    rb_hash_aset(newhash, sym_fallback, v);
@@ -2721,52 +2757,54 @@ str_encode_bang(int argc, VALUE *argv, VALUE str)
     return str_encode_associate(str, encidx);
 }
 
+static VALUE encoded_dup(VALUE newstr, VALUE str, int encidx);
+
 /*
  *  call-seq:
  *     str.encode(encoding [, options] )   -> str
  *     str.encode(dst_encoding, src_encoding [, options] )   -> str
  *     str.encode([options])   -> str
  *
- *  The first form returns a copy of <i>str</i> transcoded
+ *  The first form returns a copy of +str+ transcoded
  *  to encoding +encoding+.
- *  The second form returns a copy of <i>str</i> transcoded
+ *  The second form returns a copy of +str+ transcoded
  *  from src_encoding to dst_encoding.
- *  The last form returns a copy of <i>str</i> transcoded to
- *  <code>Encoding.default_internal</code>.
+ *  The last form returns a copy of +str+ transcoded to
+ *  <tt>Encoding.default_internal</tt>.
+ *
  *  By default, the first and second form raise
  *  Encoding::UndefinedConversionError for characters that are
  *  undefined in the destination encoding, and
  *  Encoding::InvalidByteSequenceError for invalid byte sequences
  *  in the source encoding. The last form by default does not raise
  *  exceptions but uses replacement strings.
- *  The <code>options</code> Hash gives details for conversion.
  *
- *  === options
- *  The hash <code>options</code> can have the following keys:
+ *  The +options+ Hash gives details for conversion and can have the following
+ *  keys:
+ *
  *  :invalid ::
- *    If the value is <code>:replace</code>, <code>#encode</code> replaces
- *    invalid byte sequences in <code>str</code> with the replacement character.
- *    The default is to raise the exception
+ *    If the value is +:replace+, #encode replaces invalid byte sequences in
+ *    +str+ with the replacement character.  The default is to raise the
+ *    Encoding::InvalidByteSequenceError exception
  *  :undef ::
- *    If the value is <code>:replace</code>, <code>#encode</code> replaces
- *    characters which are undefined in the destination encoding with
- *    the replacement character.
+ *    If the value is +:replace+, #encode replaces characters which are
+ *    undefined in the destination encoding with the replacement character.
+ *    The default is to raise the Encoding::UndefinedConversionError.
  *  :replace ::
- *    Sets the replacement string to the value. The default replacement
+ *    Sets the replacement string to the given value. The default replacement
  *    string is "\uFFFD" for Unicode encoding forms, and "?" otherwise.
  *  :fallback ::
- *    Sets the replacement string by the hash for undefined character.
- *    Its key is a such undefined character encoded in source encoding
+ *    Sets the replacement string by the given hash for undefined character.
+ *    Its key is an undefined character encoded in the source encoding
  *    of current transcoder. Its value can be any encoding until it
  *    can be converted into the destination encoding of the transcoder.
  *  :xml ::
- *    The value must be <code>:text</code> or <code>:attr</code>.
- *    If the value is <code>:text</code> <code>#encode</code> replaces
- *    undefined characters with their (upper-case hexadecimal) numeric
- *    character references. '&', '<', and '>' are converted to "&amp;",
- *    "&lt;", and "&gt;", respectively.
- *    If the value is <code>:attr</code>, <code>#encode</code> also quotes
- *    the replacement result (using '"'), and replaces '"' with "&quot;".
+ *    The value must be +:text+ or +:attr+.
+ *    If the value is +:text+ #encode replaces undefined characters with their
+ *    (upper-case hexadecimal) numeric character references. '&', '<', and '>'
+ *    are converted to "&amp;", "&lt;", and "&gt;", respectively.
+ *    If the value is +:attr+, #encode also quotes the replacement result
+ *    (using '"'), and replaces '"' with "&quot;".
  *  :cr_newline ::
  *    Replaces LF ("\n") with CR ("\r") if value is true.
  *  :crlf_newline ::
@@ -2780,15 +2818,7 @@ str_encode(int argc, VALUE *argv, VALUE str)
 {
     VALUE newstr = str;
     int encidx = str_transcode(argc, argv, &newstr);
-
-    if (encidx < 0) return rb_str_dup(str);
-    if (newstr == str) {
-	newstr = rb_str_dup(str);
-    }
-    else {
-	RBASIC(newstr)->klass = rb_obj_class(str);
-    }
-    return str_encode_associate(newstr, encidx);
+    return encoded_dup(newstr, str, encidx);
 }
 
 VALUE
@@ -2798,7 +2828,12 @@ rb_str_encode(VALUE str, VALUE to, int ecflags, VALUE ecopts)
     VALUE *argv = &to;
     VALUE newstr = str;
     int encidx = str_transcode0(argc, argv, &newstr, ecflags, ecopts);
+    return encoded_dup(newstr, str, encidx);
+}
 
+static VALUE
+encoded_dup(VALUE newstr, VALUE str, int encidx)
+{
     if (encidx < 0) return rb_str_dup(str);
     if (newstr == str) {
 	newstr = rb_str_dup(str);
@@ -4258,6 +4293,7 @@ Init_transcode(void)
     sym_undef = ID2SYM(rb_intern("undef"));
     sym_replace = ID2SYM(rb_intern("replace"));
     sym_fallback = ID2SYM(rb_intern("fallback"));
+    sym_aref = ID2SYM(rb_intern("[]"));
     sym_xml = ID2SYM(rb_intern("xml"));
     sym_text = ID2SYM(rb_intern("text"));
     sym_attr = ID2SYM(rb_intern("attr"));

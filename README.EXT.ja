@@ -680,7 +680,10 @@ Ruby 1.1からは任意のディレクトリでダイナミックライブラリを作
 言語のソースが複数の場合には逆に「ライブラリ名.c」というファ
 イル名は避ける必要があります．オブジェクトファイルとモジュー
 ル生成時に中間的に生成される「ライブラリ名.o」というファイル
-とが衝突するからです．
+とが衝突するからです．また，後述する mkmf ライブラリのいくつ
+かの関数がコンパイルを要するテストのために「conftest.c」とい
+うファイル名を使用することに注意してください．ソースファイル
+名として「conftest.c」を使用してはなりません．
 
 Rubyは拡張ライブラリをロードする時に「Init_ライブラリ名」と
 いう関数を自動的に実行します．dbmライブラリの場合「Init_dbm」
@@ -1314,7 +1317,7 @@ VALUE rb_rescue(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2)
   しなかった時はfunc1の戻り値, 例外が発生した時にはfunc2の戻
   り値である．
 
-VALUE rb_ensure(VALUE (*func1)(), VALUE arg1, void (*func2)(), VALUE arg2)
+VALUE rb_ensure(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2)
 
   関数func1をarg1を引数として実行し, 実行終了後(たとえ例外が
   発生しても) func2をarg2を引数として実行する．戻り値はfunc1

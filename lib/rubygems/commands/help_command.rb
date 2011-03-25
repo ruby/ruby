@@ -1,3 +1,9 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 require 'rubygems/command'
 
 class Gem::Commands::HelpCommand < Gem::Command
@@ -13,11 +19,6 @@ Some examples of 'gem' usage.
 * Install 'rake', only from remote server:
 
     gem install rake --remote
-
-* Install 'rake' from remote server, and run unit tests,
-  and generate RDocs:
-
-    gem install --remote rake --test --rdoc --ri
 
 * Install 'rake', but only version 0.3.1, even if dependencies
   are not met, and into a user-specific directory:

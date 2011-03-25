@@ -152,9 +152,11 @@ chfunc(void *data, char *errbuf, size_t errbuf_len)
     VALUE *argv = carg->argv;
 
 #define ERROR_EXIT(str) do { \
-	strlcpy(errbuf, str, errbuf_len); \
+	strlcpy(errbuf, (str), errbuf_len); \
 	return -1; \
     } while (0)
+
+    rb_thread_atfork_before_exec();
 
     /*
      * Set free from process group and controlling terminal
@@ -203,7 +205,8 @@ chfunc(void *data, char *errbuf, size_t errbuf_len)
     seteuid(getuid());
 #endif
 
-    return rb_f_exec(argc, argv);
+    rb_f_exec(argc, argv);
+    return 0;
 #undef ERROR_EXIT
 }
 

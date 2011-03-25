@@ -1,9 +1,4 @@
-begin
-  require "openssl"
-  require_relative "utils"
-rescue LoadError
-end
-require "test/unit"
+require_relative "utils"
 
 if defined?(OpenSSL)
 
@@ -20,6 +15,14 @@ class OpenSSL::TestX509Store < Test::Unit::TestCase
   end
 
   def teardown
+  end
+
+  def test_nosegv_on_cleanup
+    cert  = OpenSSL::X509::Certificate.new
+    store = OpenSSL::X509::Store.new
+    ctx   = OpenSSL::X509::StoreContext.new(store, cert, [])
+    ctx.cleanup
+    ctx.verify
   end
 
   def issue_cert(*args)

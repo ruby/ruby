@@ -1,12 +1,18 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
 
+require 'rubygems/test_case'
 require 'rubygems/commands/cert_command'
+require 'rubygems/fix_openssl_warnings' if RUBY_VERSION < "1.9"
 
 unless defined? OpenSSL then
   warn "`gem cert` tests are being skipped, module OpenSSL not found"
 end
 
-class TestGemCommandsCertCommand < RubyGemTestCase
+class TestGemCommandsCertCommand < Gem::TestCase
 
   def setup
     super
@@ -16,7 +22,7 @@ class TestGemCommandsCertCommand < RubyGemTestCase
 
     @cmd = Gem::Commands::CertCommand.new
 
-    root = File.expand_path(File.dirname(__FILE__))
+    root = File.expand_path(File.dirname(__FILE__), @@project_dir)
 
     FileUtils.cp File.join(root, 'data', 'gem-private_key.pem'), @tempdir
     FileUtils.cp File.join(root, 'data', 'gem-public_cert.pem'), @tempdir
@@ -73,7 +79,7 @@ class TestGemCommandsCertCommand < RubyGemTestCase
     assert_equal '', @ui.error
 
     assert_equal File.read(@cert_file_name),
-                 Gem::Security::OPT[:issuer_cert].to_s
+                 @cmd.options[:issuer_cert].to_s
   end
 
   def test_execute_list
@@ -94,7 +100,7 @@ class TestGemCommandsCertCommand < RubyGemTestCase
     assert_equal '', @ui.error
 
     assert_equal File.read(@pkey_file_name),
-                 Gem::Security::OPT[:issuer_key].to_s
+                 @cmd.options[:issuer_key].to_s
   end
 
   def test_execute_remove

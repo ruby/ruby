@@ -111,12 +111,15 @@ cmdline_options_init(struct cmdline_options *opt)
     opt->src.enc.index = src_encoding_index;
     opt->ext.enc.index = -1;
     opt->intern.enc.index = -1;
+#if defined DISABLE_RUBYGEMS && DISABLE_RUBYGEMS
+    opt->disable |= DISABLE_BIT(gems);
+#endif
     return opt;
 }
 
 static NODE *load_file(VALUE, const char *, int, struct cmdline_options *);
 static void forbid_setid(const char *, struct cmdline_options *);
-#define forbid_setid(s) forbid_setid(s, opt)
+#define forbid_setid(s) forbid_setid((s), opt)
 
 static struct {
     int argc;
@@ -255,7 +258,14 @@ push_include_cygwin(const char *path, VALUE (*filter)(VALUE))
 		p = strncpy(RSTRING_PTR(buf), p, len);
 	    }
 	}
-	if (cygwin_conv_to_posix_path(p, rubylib) == 0)
+#ifdef HAVE_CYGWIN_CONV_PATH
+#define CONV_TO_POSIX_PATH(p, lib) \
+	cygwin_conv_path(CCP_WIN_A_TO_POSIX|CCP_RELATIVE, (p), (lib), sizeof(lib))
+#else
+#define CONV_TO_POSIX_PATH(p, lib) \
+	cygwin_conv_to_posix_path((p), (lib))
+#endif
+	if (CONV_TO_POSIX_PATH(p, rubylib) == 0)
 	    p = rubylib;
 	push_include(p, filter);
 	if (!*s) break;
@@ -343,7 +353,7 @@ ruby_init_loadpath_safe(int safe_level)
     extern const char ruby_initial_load_paths[];
     const char *paths = ruby_initial_load_paths;
 #if defined LOAD_RELATIVE
-# if defined HAVE_DLADDR || (defined __CYGWIN__ && defined CCP_WIN_A_TO_POSIX)
+# if defined HAVE_DLADDR || defined HAVE_CYGWIN_CONV_PATH
 #   define VARIABLE_LIBPATH 1
 # else
 #   define VARIABLE_LIBPATH 0
@@ -373,7 +383,7 @@ ruby_init_loadpath_safe(int safe_level)
 	VALUE rb_realpath_internal(VALUE basedir, VALUE path, int strict);
 	char fbuf[MAXPATHLEN];
 	char *f = dln_find_file_r(dli.dli_fname, getenv(PATH_ENV), fbuf, sizeof(fbuf));
-	VALUE fname = rb_str_new_cstr(f);
+	VALUE fname = rb_str_new_cstr(f ? f : dli.dli_fname);
 	rb_str_freeze(fname);
 	sopath = rb_realpath_internal(Qnil, fname, 1);
     }
@@ -433,10 +443,10 @@ ruby_init_loadpath_safe(int safe_level)
 
 #define BASEPATH() rb_str_buf_cat(rb_str_buf_new(baselen+len), libpath, baselen)
 
-#define RUBY_RELATIVE(path, len) rb_str_buf_cat(BASEPATH(), path, len)
+#define RUBY_RELATIVE(path, len) rb_str_buf_cat(BASEPATH(), (path), (len))
 #else
     static const char exec_prefix[] = RUBY_EXEC_PREFIX;
-#define RUBY_RELATIVE(path, len) rubylib_mangled_path(path, len)
+#define RUBY_RELATIVE(path, len) rubylib_mangled_path((path), (len))
 #define PREFIX_PATH() RUBY_RELATIVE(exec_prefix, sizeof(exec_prefix)-1)
 #endif
     load_path = GET_VM()->load_path;
@@ -477,6 +487,7 @@ static void
 require_libraries(VALUE *req_list)
 {
     VALUE list = *req_list;
+    VALUE self = rb_vm_top_self();
     ID require;
     rb_thread_t *th = GET_THREAD();
     rb_block_t *prev_base_block = th->base_block;
@@ -488,7 +499,7 @@ require_libraries(VALUE *req_list)
     CONST_ID(require, "require");
     while (list && RARRAY_LEN(list) > 0) {
 	VALUE feature = rb_ary_shift(list);
-	rb_funcall2(rb_vm_top_self(), require, 1, &feature);
+	rb_funcall2(self, require, 1, &feature);
     }
     *req_list = 0;
 
@@ -612,16 +623,16 @@ moreswitches(const char *s, struct cmdline_options *opt, int envopt)
 }
 
 #define NAME_MATCH_P(name, str, len) \
-    ((len) < (int)sizeof(name) && strncmp((str), name, (len)) == 0)
+    ((len) < (int)sizeof(name) && strncmp((str), (name), (len)) == 0)
 
 #define UNSET_WHEN(name, bit, str, len)	\
-    if (NAME_MATCH_P(name, str, len)) { \
+    if (NAME_MATCH_P((name), (str), (len))) { \
 	*(unsigned int *)arg &= ~(bit); \
 	return;				\
     }
 
 #define SET_WHEN(name, bit, str, len)	\
-    if (NAME_MATCH_P(name, str, len)) { \
+    if (NAME_MATCH_P((name), (str), (len))) { \
 	*(unsigned int *)arg |= (bit);	\
 	return;				\
     }
@@ -685,11 +696,11 @@ set_option_encoding_once(const char *type, VALUE *name, const char *e, long elen
 }
 
 #define set_internal_encoding_once(opt, e, elen) \
-    set_option_encoding_once("default_internal", &opt->intern.enc.name, e, elen)
+    set_option_encoding_once("default_internal", &(opt)->intern.enc.name, (e), (elen))
 #define set_external_encoding_once(opt, e, elen) \
-    set_option_encoding_once("default_external", &opt->ext.enc.name, e, elen)
+    set_option_encoding_once("default_external", &(opt)->ext.enc.name, (e), (elen))
 #define set_source_encoding_once(opt, e, elen) \
-    set_option_encoding_once("source", &opt->src.enc.name, e, elen)
+    set_option_encoding_once("source", &(opt)->src.enc.name, (e), (elen))
 
 static long
 proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
@@ -964,17 +975,17 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 	    s++;
 
 #	define is_option_end(c, allow_hyphen) \
-	    (!(c) || (allow_hyphen && (c) == '-') || (c) == '=')
+	    (!(c) || ((allow_hyphen) && (c) == '-') || (c) == '=')
 #	define check_envopt(name, allow_envopt) \
-	    ((allow_envopt || !envopt) ? (void)0 : \
+	    (((allow_envopt) || !envopt) ? (void)0 : \
 	     rb_raise(rb_eRuntimeError, "invalid switch in RUBYOPT: --" name))
 #	define need_argument(name, s) \
-	    ((*s++ ? !*s : (!--argc || !(s = *++argv))) ?		\
+	    ((*(s)++ ? !*(s) : (!--argc || !((s) = *++argv))) ?		\
 	     rb_raise(rb_eRuntimeError, "missing argument for --" name) \
 	     : (void)0)
 #	define is_option_with_arg(name, allow_hyphen, allow_envopt) \
-	    (strncmp(name, s, n = sizeof(name) - 1) == 0 && is_option_end(s[n], allow_hyphen) ? \
-	     (check_envopt(name, allow_envopt), s += n, need_argument(name, s), 1) : 0)
+	    (strncmp((name), s, n = sizeof(name) - 1) == 0 && is_option_end(s[n], (allow_hyphen)) ? \
+	     (check_envopt(name, (allow_envopt)), s += n, need_argument(name, s), 1) : 0)
 
 	    if (strcmp("copyright", s) == 0) {
 		if (envopt) goto noenvopt_long;
@@ -1096,9 +1107,8 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 void Init_prelude(void);
 
 static void
-ruby_init_gems(int enable)
+ruby_init_prelude(void)
 {
-    if (enable) rb_define_module("Gem");
     Init_prelude();
     rb_const_remove(rb_cObject, rb_intern_const("TMP_RUBY_PREFIX"));
 }
@@ -1358,7 +1368,14 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	    rb_enc_associate(RARRAY_PTR(load_path)[i], lenc);
 	}
     }
-    ruby_init_gems(!(opt->disable & DISABLE_BIT(gems)));
+    if (!(opt->disable & DISABLE_BIT(gems))) {
+#if defined DISABLE_RUBYGEMS && DISABLE_RUBYGEMS
+	rb_require("rubygems");
+#else
+	rb_define_module("Gem");
+#endif
+    }
+    ruby_init_prelude();
     ruby_set_argv(argc, argv);
     process_sflag(&opt->sflag);
 
@@ -1481,6 +1498,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     rb_define_readonly_boolean("$-a", opt->do_split);
 
     rb_set_safe_level(opt->safe_level);
+    rb_gc_set_params();
 
     return iseq;
 }
@@ -1506,6 +1524,7 @@ load_file_internal(VALUE arg)
     NODE *tree = 0;
     rb_encoding *enc;
     ID set_encoding;
+    int xflag = 0;
 
     if (!fname)
 	rb_load_fail(fname);
@@ -1517,8 +1536,10 @@ load_file_internal(VALUE arg)
 #if defined DOSISH || defined __CYGWIN__
 	{
 	    const char *ext = strrchr(fname, '.');
-	    if (ext && STRCASECMP(ext, ".exe") == 0)
+	    if (ext && STRCASECMP(ext, ".exe") == 0) {
 		mode |= O_BINARY;
+		xflag = 1;
+	    }
 	}
 #endif
 	if ((fd = open(fname, mode)) < 0) {
@@ -1540,7 +1561,8 @@ load_file_internal(VALUE arg)
 	enc = rb_ascii8bit_encoding();
 	rb_funcall(f, set_encoding, 1, rb_enc_from_encoding(enc));
 
-	if (opt->xflag) {
+	if (xflag || opt->xflag) {
+	    line_start--;
 	  search_shebang:
 	    forbid_setid("-x");
 	    opt->xflag = FALSE;
@@ -1852,7 +1874,7 @@ ruby_set_argv(int argc, char **argv)
 #endif
     rb_ary_clear(av);
     for (i = 0; i < argc; i++) {
-	VALUE arg = rb_external_str_new(argv[i], strlen(argv[i]));
+	VALUE arg = rb_external_str_new_cstr(argv[i]);
 
 	OBJ_FREEZE(arg);
 	rb_ary_push(av, arg);

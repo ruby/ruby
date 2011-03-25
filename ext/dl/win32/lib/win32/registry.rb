@@ -210,7 +210,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       dlload "advapi32.dll"
       [
         "long RegOpenKeyExA(void *, void *, long, long, void *)",
-        "long RegCreateKeyExA(void *, void *, long, long, long, long, void *, void *)",
+        "long RegCreateKeyExA(void *, void *, long, long, long, long, void *, void *, void *)",
         "long RegEnumValueA(void *, long, void *, void *, void *, void *, void *, void *)",
         "long RegEnumKeyExA(void *, long, void *, void *, void *, void *, void *, void *)",
         "long RegQueryValueExA(void *, void *, void *, void *, void *, void *)",

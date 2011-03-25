@@ -26,8 +26,8 @@ typedef enum {
 } rb_method_flag_t;
 
 #define NOEX_SAFE(n) ((int)((n) >> 8) & 0x0F)
-#define NOEX_WITH(n, s) ((s << 8) | (n) | (ruby_running ? 0 : NOEX_BASIC))
-#define NOEX_WITH_SAFE(n) NOEX_WITH(n, rb_safe_level())
+#define NOEX_WITH(n, s) (((s) << 8) | (n) | (ruby_running ? 0 : NOEX_BASIC))
+#define NOEX_WITH_SAFE(n) NOEX_WITH((n), rb_safe_level())
 
 /* method data type */
 

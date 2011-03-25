@@ -34,13 +34,38 @@ class TestRDocContext < XrefTestCase
 
     @context.add_alias as
 
-    assert_equal [as], @context.aliases
-    assert_equal [as], @context.unmatched_alias_lists['old_name']
+    assert_equal [as], @context.external_aliases
+    assert_equal [as], @context.unmatched_alias_lists['#old_name']
+  end
+
+  def test_add_alias_method_attr
+    top_level = RDoc::TopLevel.new 'file.rb'
+
+    attr = RDoc::Attr.new nil, 'old_name', 'R', ''
+
+    as = RDoc::Alias.new nil, 'old_name', 'new_name', 'comment'
+    as.record_location top_level
+    as.parent = @context
+
+    @context.add_attribute attr
+    @context.add_alias as
+
+    assert_empty @context.aliases
+    assert_empty @context.unmatched_alias_lists
+    assert_equal %w[old_name new_name], @context.attributes.map { |m| m.name }
+
+    new = @context.attributes.last
+    assert_equal top_level, new.file
   end
 
   def test_add_alias_method
+    top_level = RDoc::TopLevel.new 'file.rb'
+
     meth = RDoc::AnyMethod.new nil, 'old_name'
+    meth.singleton = false
+
     as = RDoc::Alias.new nil, 'old_name', 'new_name', 'comment'
+    as.record_location top_level
     as.parent = @context
 
     @context.add_method meth
@@ -49,28 +74,28 @@ class TestRDocContext < XrefTestCase
     assert_empty @context.aliases
     assert_empty @context.unmatched_alias_lists
     assert_equal %w[old_name new_name], @context.method_list.map { |m| m.name }
+
+    new = @context.method_list.last
+    assert_equal top_level, new.file
   end
 
-  def test_add_alias_impl
+  def test_add_alias_method_singleton
     meth = RDoc::AnyMethod.new nil, 'old_name'
-    meth.comment    = 'old comment'
-    meth.singleton  = false
-    meth.visibility = :private
+    meth.singleton = true
 
-    alas = RDoc::Alias.new nil, 'old_name', 'new_name', 'new comment'
+    as = RDoc::Alias.new nil, 'old_name', 'new_name', 'comment'
+    as.singleton = true
 
-    @context.add_alias_impl alas, meth
+    as.parent = @context
 
-    assert_equal 1, @context.method_list.length
+    @context.add_method meth
+    @context.add_alias as
 
-    alas_meth = @context.method_list.first
-    assert_equal 'new_name',    alas_meth.name
-    assert_equal 'new comment', alas_meth.comment
-    assert_equal false,         alas_meth.singleton
-    assert_equal meth,          alas_meth.is_alias_for
-    assert_equal :private,      alas_meth.visibility
+    assert_empty @context.aliases
+    assert_empty @context.unmatched_alias_lists
+    assert_equal %w[old_name new_name], @context.method_list.map { |m| m.name }
 
-    assert_equal [alas_meth], meth.aliases
+    assert @context.method_list.last.singleton
   end
 
   def test_add_class
@@ -133,11 +158,11 @@ class TestRDocContext < XrefTestCase
     meth = RDoc::AnyMethod.new nil, 'old_name'
 
     @context.add_alias as
-    refute_empty @context.aliases
+    refute_empty @context.external_aliases
 
     @context.add_method meth
 
-    assert_empty @context.aliases
+    assert_empty @context.external_aliases
     assert_empty @context.unmatched_alias_lists
     assert_equal %w[old_name new_name], @context.method_list.map { |m| m.name }
   end
@@ -149,9 +174,16 @@ class TestRDocContext < XrefTestCase
   end
 
   def test_add_module_alias
-    c3_c4 = @c2.add_module_alias @c2_c3, 'C4'
+    tl = RDoc::TopLevel.new 'file.rb'
 
-    assert_equal @c2.find_module_named('C4'), c3_c4
+    c3_c4 = @c2.add_module_alias @c2_c3, 'C4', tl
+
+    c4 = @c2.find_module_named('C4')
+
+    alias_constant = @c2.constants.first
+
+    assert_equal c4, c3_c4
+    assert_equal tl, alias_constant.file
   end
 
   def test_add_module_class
@@ -217,6 +249,34 @@ class TestRDocContext < XrefTestCase
     assert_equal @c3,    @c3
     refute_equal @c2,    @c3
     refute_equal @c2_c3, @c3
+  end
+
+  def test_each_section
+    sects  = []
+    consts = []
+    attrs  = []
+
+    @c1.each_section do |section, constants, attributes|
+      sects  << section
+      consts << constants
+      attrs  << attributes
+    end
+
+    assert_equal [nil, 'separate'], sects.map { |section| section.title }
+
+    expected_consts = [
+      [@c1.constants.first],
+      [],
+    ]
+
+    assert_equal expected_consts, consts
+
+    expected_attrs = [
+      [@c1.attributes[0], @c1.attributes[3]],
+      [@c1.attributes[1], @c1.attributes[2]],
+    ]
+
+    assert_equal expected_attrs, attrs
   end
 
   def test_find_attribute_named
@@ -292,6 +352,46 @@ class TestRDocContext < XrefTestCase
     assert_equal @c1__m, @c1.find_symbol('::m')
   end
 
+  def test_fully_documented_eh
+    context = RDoc::Context.new
+
+    refute context.fully_documented?
+
+    context.comment = 'hi'
+
+    assert context.fully_documented?
+
+    m = @c1_m
+
+    context.add_method m
+
+    refute context.fully_documented?
+
+    m.comment = 'hi'
+
+    assert context.fully_documented?
+
+    c = RDoc::Constant.new 'C', '0', nil
+
+    context.add_constant c
+
+    refute context.fully_documented?
+
+    c.comment = 'hi'
+
+    assert context.fully_documented?
+
+    a = RDoc::Attr.new '', 'a', 'RW', nil
+
+    context.add_attribute a
+
+    refute context.fully_documented?
+
+    a.comment = 'hi'
+
+    assert context.fully_documented?
+  end
+
   def test_spaceship
     assert_equal(-1, @c2.<=>(@c3))
     assert_equal 0,  @c2.<=>(@c2)
@@ -299,6 +399,43 @@ class TestRDocContext < XrefTestCase
 
     assert_equal 1,  @c2_c3.<=>(@c2)
     assert_equal(-1, @c2_c3.<=>(@c3))
+  end
+
+  def test_methods_by_type
+    expected = {
+      'instance' => {
+        :private   => [],
+        :protected => [],
+        :public    => [@c1_m],
+      },
+      'class' => {
+        :private   => [],
+        :protected => [],
+        :public    => [@c1__m],
+      },
+    }
+
+    assert_equal expected, @c1.methods_by_type
+  end
+
+  def test_methods_by_type_section
+    separate = @c1.sections_hash['separate']
+    @c1_m.section = separate
+
+    expected = {
+      'instance' => {
+        :private   => [],
+        :protected => [],
+        :public    => [@c1_m],
+      },
+      'class' => {
+        :private   => [],
+        :protected => [],
+        :public    => [],
+      },
+    }
+
+    assert_equal expected, @c1.methods_by_type(separate)
   end
 
 end

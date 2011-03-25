@@ -100,7 +100,7 @@
 #define NSTR_AMBIG              (1<<1)
 #define NSTR_DONT_GET_OPT_INFO  (1<<2)
 
-#define NSTRING_LEN(node)             ((node)->u.str.end - (node)->u.str.s)
+#define NSTRING_LEN(node) (OnigDistance)((node)->u.str.end - (node)->u.str.s)
 #define NSTRING_SET_RAW(node)          (node)->u.str.flag |= NSTR_RAW
 #define NSTRING_CLEAR_RAW(node)        (node)->u.str.flag &= ~NSTR_RAW
 #define NSTRING_SET_AMBIG(node)        (node)->u.str.flag |= NSTR_AMBIG

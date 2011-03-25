@@ -16,9 +16,9 @@ headers = {
   "db4" => ["db4/db.h", "db4.h", "db.h"],
   "db5" => ["db5/db.h", "db5.h", "db.h"],
   "dbm" => ["ndbm.h"],
-  "gdbm" => ["gdbm-ndbm.h", "ndbm.h"],
-  "gdbm_compat" => ["gdbm-ndbm.h", "ndbm.h"],
-  "qdbm" => ["relic.h"],
+  "gdbm" => ["gdbm-ndbm.h", "ndbm.h", "gdbm/ndbm.h"],
+  "gdbm_compat" => ["gdbm-ndbm.h", "ndbm.h", "gdbm/ndbm.h"],
+  "qdbm" => ["relic.h", "qdbm/relic.h"],
 }
 
 def headers.db_check(db)

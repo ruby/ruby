@@ -20,7 +20,7 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
 
   def parse(str, nm = nil, &bl)
     dp = DummyParser.new(str)
-    dp.hook(nm, &bl) if nm
+    dp.hook(*nm, &bl) if nm
     dp.parse.to_s
   end
 
@@ -160,6 +160,8 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
 
   def test_array   # array literal
     assert_equal '[array([1,2,3])]', parse('[1,2,3]')
+    assert_equal '[array([abc,def])]', parse('%w[abc def]')
+    assert_equal '[array([abc,def])]', parse('%W[abc def]')
   end
 
   def test_assign   # generic assignment
@@ -347,10 +349,10 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal true, thru_heredoc_beg
     assert_match(/string_content\(\),heredoc\n/, tree, bug1921)
     heredoc = nil
-    parse("<<EOS\nheredoc1\nheredoc2\nEOS\n", :on_string_add) {|n, s| heredoc = s}
+    parse("<<EOS\nheredoc1\nheredoc2\nEOS\n", :on_string_add) {|e, n, s| heredoc = s}
     assert_equal("heredoc1\nheredoc2\n", heredoc, bug1921)
     heredoc = nil
-    parse("<<-EOS\nheredoc1\nheredoc2\n\tEOS\n", :on_string_add) {|n, s| heredoc = s}
+    parse("<<-EOS\nheredoc1\nheredoc2\n\tEOS\n", :on_string_add) {|e, n, s| heredoc = s}
     assert_equal("heredoc1\nheredoc2\n", heredoc, bug1921)
   end
 
@@ -368,6 +370,7 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
 
   def test_mlhs_add_star
     bug2232 = '[ruby-core:26163]'
+    bug4364 = '[ruby-core:35078]'
 
     thru_mlhs_add_star = false
     tree = parse("a, *b = 1, 2", :on_mlhs_add_star) {thru_mlhs_add_star = true}
@@ -377,6 +380,18 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     tree = parse("a, *b, c = 1, 2", :on_mlhs_add_star) {thru_mlhs_add_star = true}
     assert_equal true, thru_mlhs_add_star
     assert_match(/mlhs_add\(mlhs_add_star\(mlhs_add\(mlhs_new\(\),a\),b\),mlhs_add\(mlhs_new\(\),c\)\)/, tree, bug2232)
+    thru_mlhs_add_star = false
+    tree = parse("a, *, c = 1, 2", :on_mlhs_add_star) {thru_mlhs_add_star = true}
+    assert_equal true, thru_mlhs_add_star
+    assert_match(/mlhs_add\(mlhs_add_star\(mlhs_add\(mlhs_new\(\),a\)\),mlhs_add\(mlhs_new\(\),c\)\)/, tree, bug4364)
+    thru_mlhs_add_star = false
+    tree = parse("*b, c = 1, 2", :on_mlhs_add_star) {thru_mlhs_add_star = true}
+    assert_equal true, thru_mlhs_add_star
+    assert_match(/mlhs_add\(mlhs_add_star\(mlhs_new\(\),b\),mlhs_add\(mlhs_new\(\),c\)\)/, tree, bug4364)
+    thru_mlhs_add_star = false
+    tree = parse("*, c = 1, 2", :on_mlhs_add_star) {thru_mlhs_add_star = true}
+    assert_equal true, thru_mlhs_add_star
+    assert_match(/mlhs_add\(mlhs_add_star\(mlhs_new\(\)\),mlhs_add\(mlhs_new\(\),c\)\)/, tree, bug4364)
   end
 
   def test_mlhs_new
@@ -674,6 +689,15 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     thru_opassign = false
     parse('a ||= b', :on_opassign) {thru_opassign = true}
     assert_equal true, thru_opassign
+  end
+
+  def test_opassign_error
+    thru_opassign = []
+    events = [:on_opassign, :on_assign_error]
+    parse('a::X ||= c 1', events) {|a,*b|
+      thru_opassign << a
+    }
+    assert_equal events, thru_opassign
   end
 
   def test_param_error
@@ -1097,14 +1121,14 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal("[fcall(proc,[],&block([],[void()]))]", parse("proc{|;y|}"))
     if defined?(Process::RLIMIT_AS)
       assert_in_out_err(["-I#{File.dirname(__FILE__)}", "-rdummyparser"],
-                        'Process.setrlimit(Process::RLIMIT_AS,102400); puts DummyParser.new("proc{|;y|!y}").parse',
+                        'Process.setrlimit(Process::RLIMIT_AS,100*1024*1024); puts DummyParser.new("proc{|;y|!y}").parse',
                         ["[fcall(proc,[],&block([],[unary(!,ref(y))]))]"], [], '[ruby-dev:39423]')
     end
   end
 
   def test_unterminated_regexp
     compile_error = false
-    parse('/', :compile_error) {|msg| compile_error = msg}
+    parse('/', :compile_error) {|e, msg| compile_error = msg}
     assert_equal("unterminated regexp meets end of file", compile_error)
   end
 end if ripper_test

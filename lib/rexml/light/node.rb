@@ -1,5 +1,4 @@
 require 'rexml/xmltokens'
-require 'rexml/light/node'
 
 # [ :element, parent, name, attributes, children* ]
   # a = Node.new

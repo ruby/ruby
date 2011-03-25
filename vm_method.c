@@ -285,10 +285,10 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 
 #define CALL_METHOD_HOOK(klass, hook, mid) do {		\
 	const VALUE arg = ID2SYM(mid);			\
-	VALUE recv_class = klass;			\
-	ID hook_id = hook;				\
-	if (FL_TEST(klass, FL_SINGLETON)) {		\
-	    recv_class = rb_ivar_get(klass, attached);	\
+	VALUE recv_class = (klass);			\
+	ID hook_id = (hook);				\
+	if (FL_TEST((klass), FL_SINGLETON)) {		\
+	    recv_class = rb_ivar_get((klass), attached);	\
 	    hook_id = singleton_##hook;			\
 	}						\
 	rb_funcall2(recv_class, hook_id, 1, &arg);	\
@@ -1152,20 +1152,20 @@ top_private(int argc, VALUE *argv)
  *     end
  *     class Cls
  *       include Mod
- *       def callOne
+ *       def call_one
  *         one
  *       end
  *     end
  *     Mod.one     #=> "This is one"
  *     c = Cls.new
- *     c.callOne   #=> "This is one"
+ *     c.call_one  #=> "This is one"
  *     module Mod
  *       def one
  *         "This is the new one"
  *       end
  *     end
  *     Mod.one     #=> "This is one"
- *     c.callOne   #=> "This is the new one"
+ *     c.call_one  #=> "This is the new one"
  */
 
 static VALUE

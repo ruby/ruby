@@ -229,11 +229,6 @@ module Net
       "#<#{self.class} #{@address}:#{@port} started=#{@started}>"
     end
 
-    # +true+ if the SMTP object uses ESMTP (which it does by default).
-    def esmtp?
-      @esmtp
-    end
-
     #
     # Set whether to use ESMTP or not.  This should be done before
     # calling #start.  Note that if #start is called in ESMTP mode,
@@ -241,11 +236,10 @@ module Net
     # object will automatically switch to plain SMTP mode and
     # retry (but not vice versa).
     #
-    def esmtp=(bool)
-      @esmtp = bool
-    end
+    attr_accessor :esmtp
 
-    alias esmtp esmtp?
+    # +true+ if the SMTP object uses ESMTP (which it does by default).
+    alias :esmtp? :esmtp
 
     # true if server advertises STARTTLS.
     # You cannot get valid value before opening SMTP session.
@@ -542,13 +536,17 @@ module Net
 
     private
 
+    def tcp_socket(address, port)
+      TCPSocket.open address, port
+    end
+
     def do_start(helo_domain, user, secret, authtype)
       raise IOError, 'SMTP session already started' if @started
       if user or secret
         check_auth_method(authtype || DEFAULT_AUTH_TYPE)
         check_auth_args user, secret
       end
-      s = timeout(@open_timeout) { TCPSocket.open(@address, @port) }
+      s = timeout(@open_timeout) { tcp_socket(@address, @port) }
       logging "Connection opened: #{@address}:#{@port}"
       @socket = new_internet_message_io(tls? ? tlsconnect(s) : s)
       check_response critical { recv_response() }
@@ -573,15 +571,23 @@ module Net
       end
     end
 
+    def ssl_socket(socket, context)
+      OpenSSL::SSL::SSLSocket.new socket, context
+    end
+
     def tlsconnect(s)
-      s = OpenSSL::SSL::SSLSocket.new(s, @ssl_context)
+      verified = false
+      s = ssl_socket(s, @ssl_context)
       logging "TLS connection started"
       s.sync_close = true
       s.connect
       if @ssl_context.verify_mode != OpenSSL::SSL::VERIFY_NONE
         s.post_connection_check(@address)
       end
+      verified = true
       s
+    ensure
+      s.close unless verified
     end
 
     def new_internet_message_io(s)
@@ -962,7 +968,7 @@ module Net
     end
 
     class Response
-      def Response.parse(str)
+      def self.parse(str)
         new(str[0,3], str)
       end
 
@@ -998,7 +1004,7 @@ module Net
         return {} unless @string[3, 1] == '-'
         h = {}
         @string.lines.drop(1).each do |line|
-          k, *v = line[4..-1].chomp.split(nil)
+          k, *v = line[4..-1].chomp.split
           h[k] = v
         end
         h

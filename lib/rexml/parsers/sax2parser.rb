@@ -87,7 +87,7 @@ module REXML
         @listeners.each { |sym,match,block|
           block.start_document if sym == :start_document or sym.nil?
         }
-        root = context = []
+        context = []
         while true
           event = @parser.pull
           case event[0]

@@ -527,7 +527,7 @@ module RSS
             return false unless inline_other?
             return false if inline_other_xml?
 
-            media_type, subtype = mime_split
+            media_type, = mime_split
             return true if "text" == media_type.downcase
             false
           end

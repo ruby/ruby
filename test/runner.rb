@@ -1,19 +1,13 @@
 require 'rbconfig'
-exit if CROSS_COMPILING
 
 require 'test/unit'
 
 src_testdir = File.dirname(File.expand_path(__FILE__))
-srcdir = File.dirname(src_testdir)
+$LOAD_PATH << src_testdir
+class Gem::TestCase < MiniTest::Unit::TestCase
+  @@project_dir = File.dirname($LOAD_PATH.last)
+end
 
 require_relative 'profile_test_all' if ENV['RUBY_TEST_ALL_PROFILE'] == 'true'
 
-tests = Test::Unit.new {|files, options|
-  options[:base_directory] = src_testdir
-  if files.empty?
-    [src_testdir]
-  else
-    files
-  end
-}
-exit tests.run(ARGV) || true
+exit Test::Unit::AutoRunner.run(true, src_testdir)

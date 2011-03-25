@@ -56,6 +56,13 @@ module WEBrick
            (param = params[spec][param]) ? escape(param) : "-"
          when ?t
            params[spec].strftime(param || CLF_TIME_FORMAT)
+         when ?p
+           case param
+           when 'remote'
+             escape(params["i"].peeraddr[1].to_s)
+           else
+             escape(params["p"].to_s)
+           end
          when ?%
            "%"
          else

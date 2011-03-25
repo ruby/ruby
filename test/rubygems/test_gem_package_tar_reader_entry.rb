@@ -1,7 +1,13 @@
-require_relative 'gem_package_tar_test_case'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require 'rubygems/package/tar_test_case'
 require 'rubygems/package'
 
-class TestGemPackageTarReaderEntry < TarTestCase
+class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
 
   def setup
     super
@@ -59,6 +65,16 @@ class TestGemPackageTarReaderEntry < TarTestCase
 
   def test_full_name
     assert_equal 'lib/foo', @entry.full_name
+  end
+
+  def test_full_name_null
+    @entry.header.prefix << "\000"
+
+    e = assert_raises Gem::Package::TarInvalidError do
+      @entry.full_name
+    end
+
+    assert_equal 'tar is corrupt, name contains null byte', e.message
   end
 
   def test_getc

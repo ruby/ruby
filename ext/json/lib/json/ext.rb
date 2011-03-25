@@ -6,10 +6,10 @@ module JSON
   module Ext
     require 'json/ext/parser'
     require 'json/ext/generator'
-    $DEBUG and warn "Using c extension for JSON."
+    $DEBUG and warn "Using Ext extension for JSON."
     JSON.parser = Parser
     JSON.generator = Generator
   end
 
-  JSON_LOADED = true
+  JSON_LOADED = true unless const_defined?(:JSON_LOADED)
 end

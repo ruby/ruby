@@ -1,8 +1,12 @@
-require 'yaml'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 require 'rubygems/command'
 require 'rubygems/local_remote_options'
 require 'rubygems/version_option'
-require 'rubygems/source_info_cache'
 require 'rubygems/format'
 
 class Gem::Commands::SpecificationCommand < Gem::Command
@@ -11,6 +15,8 @@ class Gem::Commands::SpecificationCommand < Gem::Command
   include Gem::VersionOption
 
   def initialize
+    Gem.load_yaml
+
     super 'specification', 'Display gem specification (in yaml)',
           :domain => :local, :version => Gem::Requirement.default,
           :format => :yaml

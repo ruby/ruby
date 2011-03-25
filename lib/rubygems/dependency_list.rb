@@ -1,3 +1,9 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -11,6 +17,7 @@ require 'tsort'
 # correct order to avoid conflicts.
 
 class Gem::DependencyList
+  attr_reader :specs
 
   include Enumerable
   include TSort
@@ -48,6 +55,10 @@ class Gem::DependencyList
 
   def add(*gemspecs)
     @specs.push(*gemspecs)
+  end
+
+  def clear
+    @specs.clear
   end
 
   ##
@@ -104,11 +115,26 @@ class Gem::DependencyList
   # Are all the dependencies in the list satisfied?
 
   def ok?
-    @specs.all? do |spec|
-      spec.runtime_dependencies.all? do |dep|
-        @specs.find { |s| s.satisfies_requirement? dep }
+    why_not_ok?(:quick).empty?
+  end
+
+  def why_not_ok? quick = false
+    unsatisfied = Hash.new { |h,k| h[k] = [] }
+    source_index = Gem.source_index
+    each do |spec|
+      spec.runtime_dependencies.each do |dep|
+        inst = source_index.any? { |_, installed_spec|
+          dep.name == installed_spec.name and
+            dep.requirement.satisfied_by? installed_spec.version
+        }
+
+        unless inst or @specs.find { |s| s.satisfies_requirement? dep } then
+          unsatisfied[spec.name] << dep
+          return unsatisfied if quick
+        end
       end
     end
+    unsatisfied
   end
 
   ##
@@ -137,6 +163,18 @@ class Gem::DependencyList
       siblings.any? { |s|
         s.satisfies_requirement? dep
       }
+    }
+  end
+
+  ##
+  # Remove everything in the DependencyList that matches but doesn't
+  # satisfy items in +dependencies+ (a hash of gem names to arrays of
+  # dependencies).
+
+  def remove_specs_unsatisfied_by dependencies
+    specs.reject! { |spec|
+      dep = dependencies[spec.name]
+      dep and not dep.requirement.satisfied_by? spec.version
     }
   end
 
@@ -187,6 +225,7 @@ class Gem::DependencyList
           begin
             yield spec
           rescue TSort::Cyclic
+            # do nothing
           end
           break
         end
@@ -201,13 +240,7 @@ class Gem::DependencyList
   # +ignored+.
 
   def active_count(specs, ignored)
-    result = 0
-
-    specs.each do |spec|
-      result += 1 unless ignored[spec.full_name]
-    end
-
-    result
+    specs.count { |spec| ignored[spec.full_name].nil? }
   end
 
 end

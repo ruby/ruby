@@ -16,6 +16,7 @@ class TestRDocCodeObject < XrefTestCase
     assert @co.document_children, 'document_children'
     refute @co.force_documentation, 'force_documentation'
     refute @co.done_documenting, 'done_documenting'
+    refute @co.received_nodoc, 'received_nodoc'
     assert_equal '', @co.comment, 'comment is empty'
   end
 
@@ -29,20 +30,52 @@ class TestRDocCodeObject < XrefTestCase
     assert_equal 'I am a comment', @co.comment
   end
 
+  def test_comment_equals_encoding
+    skip "Encoding not implemented" unless Object.const_defined? :Encoding
+
+    refute_equal Encoding::UTF_8, ''.encoding, 'Encoding sanity check'
+
+    input = 'text'
+    input.force_encoding Encoding::UTF_8
+
+    @co.comment = input
+
+    assert_equal 'text', @co.comment
+    assert_equal Encoding::UTF_8, @co.comment.encoding
+  end
+
+  def test_comment_equals_encoding_blank
+    skip "Encoding not implemented" unless Object.const_defined? :Encoding
+
+    refute_equal Encoding::UTF_8, ''.encoding, 'Encoding sanity check'
+
+    input = ''
+    input.force_encoding Encoding::UTF_8
+
+    @co.comment = input
+
+    assert_equal '', @co.comment
+    assert_equal Encoding::UTF_8, @co.comment.encoding
+  end
+
   def test_document_children_equals
     @co.document_children = false
     refute @co.document_children
 
-    @c2.document_children = false
-    assert_empty @c2.classes
+    # TODO this is not true anymore:
+    # test all the nodoc stuff etc...
+    #@c2.document_children = false
+    #assert_empty @c2.classes
   end
 
   def test_document_self_equals
     @co.document_self = false
     refute @co.document_self
 
-    @c1.document_self = false
-    assert_empty @c1.method_list
+    # TODO this is not true anymore:
+    # test all the nodoc stuff etc...
+    #@c1.document_self = false
+    #assert_empty @c1.method_list
   end
 
   def test_documented_eh
@@ -56,9 +89,50 @@ class TestRDocCodeObject < XrefTestCase
 
     refute @co.documented?
 
-    @co.document_self = false
+    @co.document_self = nil # notify :nodoc:
 
     assert @co.documented?
+  end
+
+  def test_done_documenting
+    # once done_documenting is set, other properties refuse to go to "true"
+    @co.done_documenting = true
+
+    @co.document_self = true
+    refute @co.document_self
+
+    @co.document_children = true
+    refute @co.document_children
+
+    @co.force_documentation = true
+    refute @co.force_documentation
+
+    @co.start_doc
+    refute @co.document_self
+    refute @co.document_children
+
+    # turning done_documenting on
+    # resets others to true
+
+    @co.done_documenting = false
+    assert @co.document_self
+    assert @co.document_children
+  end
+
+  def test_full_name_equals
+    @co.full_name = 'hi'
+
+    assert_equal 'hi', @co.instance_variable_get(:@full_name)
+
+    @co.full_name = nil
+
+    assert_nil @co.instance_variable_get(:@full_name)
+  end
+
+  def test_line
+    @c1_m.line = 5
+
+    assert_equal 5, @c1_m.line
   end
 
   def test_metadata
@@ -73,6 +147,12 @@ class TestRDocCodeObject < XrefTestCase
     assert_equal 'not_rdoc', @co.metadata['markup']
   end
 
+  def test_offset
+    @c1_m.offset = 5
+
+    assert_equal 5, @c1_m.offset
+  end
+
   def test_parent_file_name
     assert_equal '(unknown)', @co.parent_file_name
     assert_equal 'xref_data.rb', @c1.parent_file_name
@@ -82,6 +162,23 @@ class TestRDocCodeObject < XrefTestCase
     assert_equal '(unknown)', @co.parent_name
     assert_equal 'xref_data.rb', @c1.parent_name
     assert_equal 'C2', @c2_c3.parent_name
+  end
+
+  def test_received_ndoc
+    @co.document_self = false
+    refute @co.received_nodoc
+
+    @co.document_self = nil
+    assert @co.received_nodoc
+
+    @co.document_self = true
+  end
+
+  def test_record_location
+    c = RDoc::CodeObject.new
+    c.record_location @xref_data
+
+    assert_equal 'xref_data.rb', c.file.relative_name
   end
 
   def test_start_doc

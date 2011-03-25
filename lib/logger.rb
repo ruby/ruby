@@ -1,7 +1,6 @@
 # logger.rb - simple logging utility
-# Copyright (C) 2000-2003, 2005, 2008  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
+# Copyright (C) 2000-2003, 2005, 2008, 2011  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 #
-# Author:: NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 # Documentation:: NAKAMURA, Hiroshi and Gavin Sinclair
 # License::
 #   You can redistribute it and/or modify it under the same terms of Ruby's
@@ -40,6 +39,21 @@ require 'monitor'
 # repetitive information).  When you are developing it, though, you probably
 # want to know about the program's internal state, and would set them to
 # +DEBUG+.
+#
+# **Note**: Logger does not escape or sanitize any messages passed to it.
+# Developers should be aware of when potentially malicious data (user-input)
+# is passed to Logger, and manually escape the untrusted data:
+#
+#   logger.info("User-input: #{input.dump}")
+#   logger.info("User-input: %p" % input)
+#
+# You can use Logger#formatter= for escaping all data.
+#
+#   original_formatter = Logger::Formatter.new
+#   logger.formatter = proc { |severity, datetime, progname, msg|
+#     original_formatter.call(severity, datetime, progname, msg.dump)
+#   }
+#   logger.info(input)
 #
 # === Example
 #

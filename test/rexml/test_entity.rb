@@ -1,5 +1,6 @@
 require "test/unit/testcase"
 
+require 'rexml/document'
 require 'rexml/entity'
 require 'rexml/source'
 

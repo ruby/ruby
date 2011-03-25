@@ -13,8 +13,8 @@
 #include "ossl.h"
 
 #define GetPKeyDSA(obj, pkey) do { \
-    GetPKey(obj, pkey); \
-    if (EVP_PKEY_type(pkey->type) != EVP_PKEY_DSA) { /* PARANOIA? */ \
+    GetPKey((obj), (pkey)); \
+    if (EVP_PKEY_type((pkey)->type) != EVP_PKEY_DSA) { /* PARANOIA? */ \
 	ossl_raise(rb_eRuntimeError, "THIS IS NOT A DSA!"); \
     } \
 } while (0)
@@ -396,7 +396,7 @@ ossl_dsa_sign(VALUE self, VALUE data)
 	ossl_raise(eDSAError, "Private DSA key needed!");
     }
     str = rb_str_new(0, ossl_dsa_buf_size(pkey));
-    if (!DSA_sign(0, (unsigned char *)RSTRING_PTR(data), RSTRING_LEN(data),
+    if (!DSA_sign(0, (unsigned char *)RSTRING_PTR(data), RSTRING_LENINT(data),
 		  (unsigned char *)RSTRING_PTR(str),
 		  &buf_len, pkey->pkey.dsa)) { /* type is ignored (0) */
 	ossl_raise(eDSAError, NULL);
@@ -421,8 +421,8 @@ ossl_dsa_verify(VALUE self, VALUE digest, VALUE sig)
     StringValue(digest);
     StringValue(sig);
     /* type is ignored (0) */
-    ret = DSA_verify(0, (unsigned char *)RSTRING_PTR(digest), RSTRING_LEN(digest),
-		     (unsigned char *)RSTRING_PTR(sig), RSTRING_LEN(sig), pkey->pkey.dsa);
+    ret = DSA_verify(0, (unsigned char *)RSTRING_PTR(digest), RSTRING_LENINT(digest),
+		     (unsigned char *)RSTRING_PTR(sig), RSTRING_LENINT(sig), pkey->pkey.dsa);
     if (ret < 0) {
 	ossl_raise(eDSAError, NULL);
     }
@@ -445,8 +445,8 @@ OSSL_PKEY_BN(dsa, priv_key)
 void
 Init_ossl_dsa()
 {
-#if 0 /* let rdoc know about mOSSL and mPKey */
-    mOSSL = rb_define_module("OpenSSL");
+#if 0
+    mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL and mPKey */
     mPKey = rb_define_module_under(mOSSL, "PKey");
 #endif
 

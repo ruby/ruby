@@ -450,7 +450,7 @@ void syck_emit_tag( SyckEmitter *e, const char *tag, const char *ignore )
 
     /* global types */
     } else if ( strncmp( tag, "tag:", 4 ) == 0 ) {
-        int taglen = strlen( tag );
+        int taglen = (int)strlen( tag );
         syck_emitter_write( e, "!", 1 );
         if ( strncmp( tag + 4, YAML_DOMAIN, strlen( YAML_DOMAIN ) ) == 0 ) {
             int skip = 4 + strlen( YAML_DOMAIN ) + 1;
@@ -662,7 +662,7 @@ void syck_emit_scalar( SyckEmitter *e, const char *tag, enum scalar_style force_
     match_implicit = syck_match_implicit( str, len );
 
     /* quote strings which default to implicits */
-    implicit = syck_taguri( YAML_DOMAIN, match_implicit, strlen( match_implicit ) );
+    implicit = syck_taguri( YAML_DOMAIN, match_implicit, (int)strlen( match_implicit ) );
     if ( syck_tagcmp( tag, implicit ) != 0 && syck_tagcmp( tag, "tag:yaml.org,2002:str" ) == 0 ) {
         force_style = scalar_2quote;
     } else {
@@ -1231,7 +1231,7 @@ syck_emitter_mark_node( SyckEmitter *e, st_data_t n )
             /*
              * Second time hitting this object, let's give it an anchor
              */
-            idx = e->anchors->num_entries + 1;
+            idx = (int)(e->anchors->num_entries + 1);
             anchor_name = S_ALLOC_N( char, strlen( anc ) + 10 );
             S_MEMZERO( anchor_name, char, strlen( anc ) + 10 );
             sprintf( anchor_name, anc, idx );

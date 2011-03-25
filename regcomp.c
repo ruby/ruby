@@ -44,7 +44,6 @@ onig_set_default_case_fold_flag(OnigCaseFoldType case_fold_flag)
   return 0;
 }
 
-
 #ifndef PLATFORM_UNALIGNED_WORD_ACCESS
 static unsigned char PadBuf[WORD_ALIGNMENT_SIZE];
 #endif
@@ -123,6 +122,12 @@ bitset_is_empty(BitSetRef bs)
 
 #ifdef ONIG_DEBUG
 static int
+onig_is_prelude(void)
+{
+    return !rb_const_defined(rb_cThread, rb_intern_const("MUTEX_FOR_THREAD_EXCLUSIVE"));
+}
+
+static int
 bitset_on_num(BitSetRef bs)
 {
   int i, n;
@@ -136,7 +141,7 @@ bitset_on_num(BitSetRef bs)
 #endif
 
 extern int
-onig_bbuf_init(BBuf* buf, int size)
+onig_bbuf_init(BBuf* buf, OnigDistance size)
 {
   if (size <= 0) {
     size   = 0;
@@ -147,7 +152,7 @@ onig_bbuf_init(BBuf* buf, int size)
     if (IS_NULL(buf->p)) return(ONIGERR_MEMORY);
   }
 
-  buf->alloc = size;
+  buf->alloc = (unsigned int)size;
   buf->used  = 0;
   return 0;
 }
@@ -234,7 +239,7 @@ add_abs_addr(regex_t* reg, int addr)
 }
 
 static int
-add_length(regex_t* reg, int len)
+add_length(regex_t* reg, OnigDistance len)
 {
   LengthType l = (LengthType )len;
 
@@ -279,7 +284,7 @@ add_opcode_rel_addr(regex_t* reg, int opcode, int addr)
 }
 
 static int
-add_bytes(regex_t* reg, UChar* bytes, int len)
+add_bytes(regex_t* reg, UChar* bytes, OnigDistance len)
 {
   BBUF_ADD(reg, bytes, len);
   return 0;
@@ -312,7 +317,7 @@ static int compile_tree(Node* node, regex_t* reg);
     (op) == OP_EXACTMB3N || (op) == OP_EXACTMBN  || (op) == OP_EXACTN_IC)
 
 static int
-select_str_opcode(int mb_len, int str_len, int ignore_case)
+select_str_opcode(int mb_len, OnigDistance str_len, int ignore_case)
 {
   int op;
 
@@ -433,7 +438,7 @@ add_compile_string_length(UChar* s ARG_UNUSED, int mb_len, OnigDistance str_len,
 }
 
 static int
-add_compile_string(UChar* s, int mb_len, int str_len,
+add_compile_string(UChar* s, int mb_len, OnigDistance str_len,
                    regex_t* reg, int ignore_case)
 {
   int op = select_str_opcode(mb_len, str_len, ignore_case);
@@ -2305,7 +2310,7 @@ get_char_length_tree1(Node* node, regex_t* reg, int* len, int level)
     do {
       r = get_char_length_tree1(NCAR(node), reg, &tlen, level);
       if (r == 0)
-	*len = distance_add(*len, tlen);
+	*len = (int)distance_add(*len, tlen);
     } while (r == 0 && IS_NOT_NULL(node = NCDR(node)));
     break;
 
@@ -2352,7 +2357,7 @@ get_char_length_tree1(Node* node, regex_t* reg, int* len, int level)
       if (qn->lower == qn->upper) {
 	r = get_char_length_tree1(qn->target, reg, &tlen, level);
 	if (r == 0)
-	  *len = distance_multiply(tlen, qn->lower);
+	  *len = (int)distance_multiply(tlen, qn->lower);
       }
       else
 	r = GET_CHAR_LEN_VARLEN;
@@ -2425,7 +2430,8 @@ get_char_length_tree(Node* node, regex_t* reg, int* len)
 static int
 is_not_included(Node* x, Node* y, regex_t* reg)
 {
-  int i, len;
+  int i;
+  OnigDistance len;
   OnigCodePoint code;
   UChar *p, c;
   int ytype;
@@ -2577,7 +2583,7 @@ is_not_included(Node* x, Node* y, regex_t* reg)
             return 0;
 	  }
 	  else {
-	    for (i = 0, p = ys->s, q = xs->s; i < len; i++, p++, q++) {
+	    for (i = 0, p = ys->s, q = xs->s; (OnigDistance)i < len; i++, p++, q++) {
 	      if (*p != *q) return 1;
 	    }
 	  }
@@ -3219,7 +3225,8 @@ update_string_node_case_fold(regex_t* reg, Node *node)
 {
   UChar *p, *q, *end, buf[ONIGENC_MBC_CASE_FOLD_MAXLEN];
   UChar *sbuf, *ebuf, *sp;
-  int r, i, len, sbuf_size;
+  int r, i, len;
+  OnigDistance sbuf_size;
   StrNode* sn = NSTR(node);
 
   end = sn->end;
@@ -3686,6 +3693,7 @@ setup_tree(Node* node, regex_t* reg, int state, ScanEnv* env)
   int type;
   int r = 0;
 
+restart:
   type = NTYPE(node);
   switch (type) {
   case NT_LIST:
@@ -3793,7 +3801,7 @@ setup_tree(Node* node, regex_t* reg, int state, ScanEnv* env)
       if (NTYPE(target) == NT_STR) {
 	if (!IS_REPEAT_INFINITE(qn->lower) && qn->lower == qn->upper &&
 	    qn->lower > 1 && qn->lower <= EXPAND_STRING_MAX_LENGTH) {
-	  int len = NSTRING_LEN(target);
+	  OnigDistance len = NSTRING_LEN(target);
 	  StrNode* sn = NSTR(target);
 
 	  if (len * qn->lower <= EXPAND_STRING_MAX_LENGTH) {
@@ -3900,6 +3908,7 @@ setup_tree(Node* node, regex_t* reg, int state, ScanEnv* env)
 	  if (r > 0) return ONIGERR_INVALID_LOOK_BEHIND_PATTERN;
 	  r = setup_look_behind(node, reg, env);
 	  if (r != 0) return r;
+	  if (NTYPE(node) != NT_ANCHOR) goto restart;
 	  r = setup_tree(an->target, reg, state, env);
 	}
 	break;
@@ -3912,6 +3921,7 @@ setup_tree(Node* node, regex_t* reg, int state, ScanEnv* env)
 	  if (r > 0) return ONIGERR_INVALID_LOOK_BEHIND_PATTERN;
 	  r = setup_look_behind(node, reg, env);
 	  if (r != 0) return r;
+	  if (NTYPE(node) != NT_ANCHOR) goto restart;
 	  r = setup_tree(an->target, reg, (state | IN_NOT), env);
 	}
 	break;
@@ -3931,7 +3941,7 @@ static int
 set_bm_skip(UChar* s, UChar* end, OnigEncoding enc ARG_UNUSED,
 	    UChar skip[], int** int_skip)
 {
-  int i, len;
+  OnigDistance i, len;
 
   len = end - s;
   if (len < ONIG_CHAR_TABLE_SIZE) {
@@ -3945,10 +3955,10 @@ set_bm_skip(UChar* s, UChar* end, OnigEncoding enc ARG_UNUSED,
       *int_skip = (int* )xmalloc(sizeof(int) * ONIG_CHAR_TABLE_SIZE);
       if (IS_NULL(*int_skip)) return ONIGERR_MEMORY;
     }
-    for (i = 0; i < ONIG_CHAR_TABLE_SIZE; i++) (*int_skip)[i] = len;
+    for (i = 0; i < ONIG_CHAR_TABLE_SIZE; i++) (*int_skip)[i] = (int)len;
 
     for (i = 0; i < len - 1; i++)
-      (*int_skip)[s[i]] = len - 1 - i;
+      (*int_skip)[s[i]] = (int)(len - 1 - i);
   }
   return 0;
 }
@@ -4044,12 +4054,12 @@ distance_value(MinMaxLen* mm)
       11,   11,   11,   11,   11,   10,   10,   10,   10,   10
   };
 
-  int d;
+  OnigDistance d;
 
   if (mm->max == ONIG_INFINITE_DISTANCE) return 0;
 
   d = mm->max - mm->min;
-  if (d < (int )(sizeof(dist_vals)/sizeof(dist_vals[0])))
+  if (d < sizeof(dist_vals)/sizeof(dist_vals[0]))
     /* return dist_vals[d] * 16 / (mm->min + 12); */
     return (int )dist_vals[d];
   else
@@ -4531,7 +4541,7 @@ concat_left_node_opt_info(OnigEncoding enc, NodeOptInfo* to, NodeOptInfo* add)
   if (to->expr.len > 0) {
     if (add->len.max > 0) {
       if (to->expr.len > (int )add->len.max)
-	to->expr.len = add->len.max;
+	to->expr.len = (int)add->len.max;
 
       if (to->expr.mmd.max == 0)
 	select_opt_exact_info(enc, &to->exb, &to->expr);
@@ -4609,7 +4619,7 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
   case NT_STR:
     {
       StrNode* sn = NSTR(node);
-      int slen = sn->end - sn->s;
+      OnigDistance slen = sn->end - sn->s;
       int is_raw = NSTRING_IS_RAW(node);
 
       if (! NSTRING_IS_AMBIG(node)) {
@@ -4621,7 +4631,7 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
         set_mml(&opt->len, slen, slen);
       }
       else {
-        int max;
+        OnigDistance max;
 
 	if (NSTRING_IS_DONT_GET_OPT_INFO(node)) {
           int n = onigenc_strlen(env->enc, sn->s, sn->end);
@@ -4644,7 +4654,7 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
         set_mml(&opt->len, slen, max);
       }
 
-      if (opt->exb.len == slen)
+      if ((OnigDistance)opt->exb.len == slen)
 	opt->exb.reach_end = 1;
     }
     break;
@@ -4897,7 +4907,7 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
 
   default:
 #ifdef ONIG_DEBUG
-    fprintf(stderr, "optimize_node_left: undefined node type %d\n",
+    if (!onig_is_prelude()) fprintf(stderr, "optimize_node_left: undefined node type %d\n",
 	    NTYPE(node));
 #endif
     r = ONIGERR_TYPE_BUG;
@@ -4948,7 +4958,7 @@ set_optimize_exact_info(regex_t* reg, OptExactInfo* e)
   reg->dmax = e->mmd.max;
 
   if (reg->dmin != ONIG_INFINITE_DISTANCE) {
-    reg->threshold_len = reg->dmin + (reg->exact_end - reg->exact);
+    reg->threshold_len = (int)(reg->dmin + (reg->exact_end - reg->exact));
   }
 
   return 0;
@@ -4967,7 +4977,7 @@ set_optimize_map_info(regex_t* reg, OptMapInfo* m)
   reg->dmax       = m->mmd.max;
 
   if (reg->dmin != ONIG_INFINITE_DISTANCE) {
-    reg->threshold_len = reg->dmin + 1;
+    reg->threshold_len = (int)(reg->dmin + 1);
   }
 }
 
@@ -5032,7 +5042,7 @@ set_optimize_info_from_tree(Node* node, regex_t* reg, ScanEnv* scan_env)
   }
 
 #if defined(ONIG_DEBUG_COMPILE) || defined(ONIG_DEBUG_MATCH)
-  print_optimize_info(stderr, reg);
+  if (!onig_is_prelude()) print_optimize_info(stderr, reg);
 #endif
   return r;
 }
@@ -5084,7 +5094,7 @@ static void print_enc_string(FILE* fp, OnigEncoding enc,
     }
   }
 
-  fprintf(fp, "/\n");
+  fprintf(fp, "/ (%s)\n", enc->name);
 }
 
 static void
@@ -5093,14 +5103,14 @@ print_distance_range(FILE* f, OnigDistance a, OnigDistance b)
   if (a == ONIG_INFINITE_DISTANCE)
     fputs("inf", f);
   else
-    fprintf(f, "(%u)", a);
+    fprintf(f, "(%"PRIuSIZE")", a);
 
   fputs("-", f);
 
   if (b == ONIG_INFINITE_DISTANCE)
     fputs("inf", f);
   else
-    fprintf(f, "(%u)", b);
+    fprintf(f, "(%"PRIuSIZE")", b);
 }
 
 static void
@@ -5176,7 +5186,7 @@ print_optimize_info(FILE* f, regex_t* reg)
     for (p = reg->exact; p < reg->exact_end; p++) {
       fputc(*p, f);
     }
-    fprintf(f, "]: length: %d\n", (reg->exact_end - reg->exact));
+    fprintf(f, "]: length: %ld\n", (reg->exact_end - reg->exact));
   }
   else if (reg->optimize & ONIG_OPTIMIZE_MAP) {
     int c, i, n = 0;
@@ -5307,7 +5317,8 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
 {
 #define COMPILE_INIT_SIZE  20
 
-  int r, init_size;
+  int r;
+  OnigDistance init_size;
   Node*  root;
   ScanEnv  scan_env = {0};
 #ifdef USE_SUBEXP_CALL
@@ -5321,7 +5332,7 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
   reg->state = ONIG_STATE_COMPILING;
 
 #ifdef ONIG_DEBUG
-  print_enc_string(stderr, reg->enc, pattern, pattern_end);
+  if (!onig_is_prelude()) print_enc_string(stderr, reg->enc, pattern, pattern_end);
 #endif
 
   if (reg->alloc == 0) {
@@ -5344,6 +5355,15 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
 
   r = onig_parse_make_tree(&root, pattern, pattern_end, reg, &scan_env);
   if (r != 0) goto err;
+
+#ifdef ONIG_DEBUG_PARSE_TREE
+# if 0
+  fprintf(stderr, "ORIGINAL PARSE TREE:\n");
+  if (!onig_is_prelude()) {
+    print_tree(stderr, root);
+  }
+# endif
+#endif
 
 #ifdef USE_NAMED_GROUP
   /* mixed use named group and no-named group */
@@ -5381,7 +5401,7 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
   if (r != 0) goto err_unset;
 
 #ifdef ONIG_DEBUG_PARSE_TREE
-  print_tree(stderr, root);
+  if (!onig_is_prelude()) print_tree(stderr, root);
 #endif
 
   reg->capture_history  = scan_env.capture_history;
@@ -5461,9 +5481,9 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
 
 #ifdef ONIG_DEBUG_COMPILE
 #ifdef USE_NAMED_GROUP
-  onig_print_names(stderr, reg);
+  if (!onig_is_prelude()) onig_print_names(stderr, reg);
 #endif
-  print_compiled_byte_code_list(stderr, reg);
+  if (!onig_is_prelude()) print_compiled_byte_code_list(stderr, reg);
 #endif
 
  end:
@@ -5626,7 +5646,7 @@ onig_end(void)
   THREAD_ATOMIC_START;
 
 #ifdef ONIG_DEBUG_STATISTICS
-  onig_print_statistics(stderr);
+  if (!onig_is_prelude()) onig_print_statistics(stderr);
 #endif
 
 #ifdef USE_SHARED_CCLASS_TABLE
@@ -5808,7 +5828,7 @@ OnigOpInfoType OnigOpInfo[] = {
   { -1, "", ARG_NON }
 };
 
-static char*
+static const char*
 op2name(int opcode)
 {
   int i;
@@ -6009,7 +6029,7 @@ onig_print_compiled_byte_code(FILE* f, UChar* bp, UChar* bpend, UChar** nextp,
 
         GET_POINTER_INC(cc, bp);
         n = bitset_on_num(cc->bs);
-        fprintf(f, ":%u:%d", (unsigned int )cc, n);
+        fprintf(f, ":%"PRIuPTR":%d", (uintptr_t)cc, n);
       }
       break;
 
@@ -6108,14 +6128,14 @@ print_compiled_byte_code_list(FILE* f, regex_t* reg)
 
   fprintf(f, "code length: %d\n", reg->used);
 
-  ncode = 0;
+  ncode = -1;
   while (bp < end) {
     ncode++;
     if (bp > reg->p) {
       if (ncode % 5 == 0)
-	fprintf(f, "\n");
+	fprintf(f, "\n%ld:", bp-reg->p);
       else
-	fputs(" ", f);
+	fprintf(f, " %ld:", bp-reg->p);
     }
     onig_print_compiled_byte_code(f, bp, end, &bp, reg->enc);
   }
@@ -6126,7 +6146,7 @@ print_compiled_byte_code_list(FILE* f, regex_t* reg)
 static void
 print_indent_tree(FILE* f, Node* node, int indent)
 {
-  int i, type;
+  int i, type, container_p = 0;
   int add = 3;
   UChar* p;
 
@@ -6141,9 +6161,9 @@ print_indent_tree(FILE* f, Node* node, int indent)
   case NT_LIST:
   case NT_ALT:
     if (NTYPE(node) == NT_LIST)
-      fprintf(f, "<list:%x>\n", (int )node);
+      fprintf(f, "<list:%"PRIxPTR">\n", (intptr_t)node);
     else
-      fprintf(f, "<alt:%x>\n", (int )node);
+      fprintf(f, "<alt:%"PRIxPTR">\n", (intptr_t)node);
 
     print_indent_tree(f, NCAR(node), indent + add);
     while (IS_NOT_NULL(node = NCDR(node))) {
@@ -6156,8 +6176,8 @@ print_indent_tree(FILE* f, Node* node, int indent)
     break;
 
   case NT_STR:
-    fprintf(f, "<string%s:%x>",
-	    (NSTRING_IS_RAW(node) ? "-raw" : ""), (int )node);
+    fprintf(f, "<string%s:%"PRIxPTR">",
+	    (NSTRING_IS_RAW(node) ? "-raw" : ""), (intptr_t)node);
     for (p = NSTR(node)->s; p < NSTR(node)->end; p++) {
       if (*p >= 0x20 && *p < 0x7f)
 	fputc(*p, f);
@@ -6168,11 +6188,11 @@ print_indent_tree(FILE* f, Node* node, int indent)
     break;
 
   case NT_CCLASS:
-    fprintf(f, "<cclass:%x>", (int )node);
+    fprintf(f, "<cclass:%"PRIxPTR">", (intptr_t)node);
     if (IS_NCCLASS_NOT(NCCLASS(node))) fputs(" not", f);
     if (NCCLASS(node)->mbuf) {
       BBuf* bbuf = NCCLASS(node)->mbuf;
-      for (i = 0; i < bbuf->used; i++) {
+      for (i = 0; i < (int)bbuf->used; i++) {
 	if (i > 0) fprintf(f, ",");
 	fprintf(f, "%0x", bbuf->p[i]);
       }
@@ -6180,7 +6200,7 @@ print_indent_tree(FILE* f, Node* node, int indent)
     break;
 
   case NT_CTYPE:
-    fprintf(f, "<ctype:%x> ", (int )node);
+    fprintf(f, "<ctype:%"PRIxPTR"> ", (intptr_t)node);
     switch (NCTYPE(node)->ctype) {
     case ONIGENC_CTYPE_WORD:
       if (NCTYPE(node)->not != 0)
@@ -6196,11 +6216,11 @@ print_indent_tree(FILE* f, Node* node, int indent)
     break;
 
   case NT_CANY:
-    fprintf(f, "<anychar:%x>", (int )node);
+    fprintf(f, "<anychar:%"PRIxPTR">", (intptr_t)node);
     break;
 
   case NT_ANCHOR:
-    fprintf(f, "<anchor:%x> ", (int )node);
+    fprintf(f, "<anchor:%"PRIxPTR"> ", (intptr_t)node);
     switch (NANCHOR(node)->type) {
     case ANCHOR_BEGIN_BUF:      fputs("begin buf",      f); break;
     case ANCHOR_END_BUF:        fputs("end buf",        f); break;
@@ -6215,10 +6235,10 @@ print_indent_tree(FILE* f, Node* node, int indent)
     case ANCHOR_WORD_BEGIN:      fputs("word begin", f);     break;
     case ANCHOR_WORD_END:        fputs("word end", f);       break;
 #endif
-    case ANCHOR_PREC_READ:       fputs("prec read",      f); break;
-    case ANCHOR_PREC_READ_NOT:   fputs("prec read not",  f); break;
-    case ANCHOR_LOOK_BEHIND:     fputs("look_behind",    f); break;
-    case ANCHOR_LOOK_BEHIND_NOT: fputs("look_behind_not",f); break;
+    case ANCHOR_PREC_READ:       fputs("prec read",      f); container_p = TRUE; break;
+    case ANCHOR_PREC_READ_NOT:   fputs("prec read not",  f); container_p = TRUE; break;
+    case ANCHOR_LOOK_BEHIND:     fputs("look_behind",    f); container_p = TRUE; break;
+    case ANCHOR_LOOK_BEHIND_NOT: fputs("look_behind_not",f); container_p = TRUE; break;
 
     default:
       fprintf(f, "ERROR: undefined anchor type.\n");
@@ -6231,7 +6251,7 @@ print_indent_tree(FILE* f, Node* node, int indent)
       int* p;
       BRefNode* br = NBREF(node);
       p = BACKREFS_P(br);
-      fprintf(f, "<backref:%x>", (int )node);
+      fprintf(f, "<backref:%"PRIxPTR">", (intptr_t)node);
       for (i = 0; i < br->back_num; i++) {
 	if (i > 0) fputs(", ", f);
 	fprintf(f, "%d", p[i]);
@@ -6243,21 +6263,21 @@ print_indent_tree(FILE* f, Node* node, int indent)
   case NT_CALL:
     {
       CallNode* cn = NCALL(node);
-      fprintf(f, "<call:%x>", (int )node);
+      fprintf(f, "<call:%"PRIxPTR">", (intptr_t)node);
       p_string(f, cn->name_end - cn->name, cn->name);
     }
     break;
 #endif
 
   case NT_QTFR:
-    fprintf(f, "<quantifier:%x>{%d,%d}%s\n", (int )node,
+    fprintf(f, "<quantifier:%"PRIxPTR">{%d,%d}%s\n", (intptr_t)node,
 	    NQTFR(node)->lower, NQTFR(node)->upper,
 	    (NQTFR(node)->greedy ? "" : "?"));
     print_indent_tree(f, NQTFR(node)->target, indent + add);
     break;
 
   case NT_ENCLOSE:
-    fprintf(f, "<enclose:%x> ", (int )node);
+    fprintf(f, "<enclose:%"PRIxPTR"> ", (intptr_t)node);
     switch (NENCLOSE(node)->type) {
     case ENCLOSE_OPTION:
       fprintf(f, "option:%d\n", NENCLOSE(node)->option);
@@ -6285,6 +6305,9 @@ print_indent_tree(FILE* f, Node* node, int indent)
   if (type != NT_LIST && type != NT_ALT && type != NT_QTFR &&
       type != NT_ENCLOSE)
     fprintf(f, "\n");
+
+  if (container_p) print_indent_tree(f, NANCHOR(node)->target, indent + add);
+
   fflush(f);
 }
 #endif /* ONIG_DEBUG */

@@ -1,14 +1,14 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require 'rubygems/test_case'
 require 'rubygems/source_index'
 require 'rubygems/config_file'
 
-class Gem::SourceIndex
-  public :fetcher, :fetch_bulk_index, :fetch_quick_index,
-         :find_missing, :gems, :remove_extra,
-         :update_with_missing, :unzip
-end
-
-class TestGemSourceIndex < RubyGemTestCase
+class TestGemSourceIndex < Gem::TestCase
 
   def setup
     super
@@ -23,7 +23,7 @@ class TestGemSourceIndex < RubyGemTestCase
 
     FileUtils.mkdir_p spec_dir
 
-    a1 = quick_gem 'a', '1' do |spec| spec.author = 'author 1' end
+    a1 = quick_spec 'a', '1' do |spec| spec.author = 'author 1' end
 
     spec_file = File.join spec_dir, a1.spec_name
 
@@ -44,7 +44,7 @@ class TestGemSourceIndex < RubyGemTestCase
 
     FileUtils.mkdir_p spec_dir
 
-    a1 = quick_gem 'a', '1' do |spec| spec.author = 'author 1' end
+    a1 = quick_spec 'a', '1' do |spec| spec.author = 'author 1' end
 
     spec_file = File.join spec_dir, a1.spec_name
 
@@ -116,19 +116,14 @@ end
       fp.write 'raise Exception, "epic fail"'
     end
 
-    use_ui @ui do
+    out, err = capture_io do
       assert_equal nil, Gem::SourceIndex.load_specification(spec_file)
     end
 
-    assert_equal '', @ui.output
+    assert_equal '', out
 
-    expected = <<-EOF
-WARNING:  #<Exception: epic fail>
-raise Exception, "epic fail"
-WARNING:  Invalid .gemspec format in '#{spec_file}'
-    EOF
-
-    assert_equal expected, @ui.error
+    expected = "Invalid gemspec in [#{spec_file}]: epic fail\n"
+    assert_equal expected, err
   end
 
   def test_self_load_specification_interrupt
@@ -163,14 +158,13 @@ WARNING:  Invalid .gemspec format in '#{spec_file}'
       fp.write '1 +'
     end
 
-    use_ui @ui do
+    out, err = capture_io do
       assert_equal nil, Gem::SourceIndex.load_specification(spec_file)
     end
 
-    assert_equal '', @ui.output
+    assert_equal '', out
 
-    assert_match(/syntax error/, @ui.error)
-    assert_match(/1 \+/, @ui.error)
+    assert_match(/syntax error/, err)
   end
 
   def test_self_load_specification_system_exit
@@ -198,23 +192,6 @@ WARNING:  Invalid .gemspec format in '#{spec_file}'
     # TODO
   end
 
-  def test_fetcher
-    assert_equal @fetcher, @source_index.fetcher
-  end
-
-  def test_find_missing
-    missing = @source_index.find_missing [@b2.full_name]
-    assert_equal [@b2.full_name], missing
-  end
-
-  def test_find_missing_none_missing
-    missing = @source_index.find_missing [
-      @a1.full_name, @a2.full_name, @c1_2.full_name
-    ]
-
-    assert_equal [], missing
-  end
-
   def test_find_name
     assert_equal [@a1, @a2, @a3a], @source_index.find_name('a')
     assert_equal [@a2], @source_index.find_name('a', '= 2')
@@ -237,24 +214,24 @@ WARNING:  Invalid .gemspec format in '#{spec_file}'
   end
 
   def test_latest_specs
-    p1_ruby = quick_gem 'p', '1'
-    p1_platform = quick_gem 'p', '1' do |spec|
+    p1_ruby = quick_spec 'p', '1'
+    p1_platform = quick_spec 'p', '1' do |spec|
       spec.platform = Gem::Platform::CURRENT
     end
 
-    a1_platform = quick_gem @a1.name, (@a1.version) do |s|
+    a1_platform = quick_spec @a1.name, (@a1.version) do |s|
       s.platform = Gem::Platform.new 'x86-my_platform1'
     end
 
-    a2_platform = quick_gem @a2.name, (@a2.version) do |s|
+    a2_platform = quick_spec @a2.name, (@a2.version) do |s|
       s.platform = Gem::Platform.new 'x86-my_platform1'
     end
 
-    a2_platform_other = quick_gem @a2.name, (@a2.version) do |s|
+    a2_platform_other = quick_spec @a2.name, (@a2.version) do |s|
       s.platform = Gem::Platform.new 'x86-other_platform1'
     end
 
-    a3_platform_other = quick_gem @a2.name, (@a2.version.bump) do |s|
+    a3_platform_other = quick_spec @a2.name, (@a2.version.bump) do |s|
       s.platform = Gem::Platform.new 'x86-other_platform1'
     end
 
@@ -289,8 +266,8 @@ WARNING:  Invalid .gemspec format in '#{spec_file}'
     FileUtils.mkdir_p spec_dir1
     FileUtils.mkdir_p spec_dir2
 
-    a1 = quick_gem 'a', '1' do |spec| spec.author = 'author 1' end
-    a2 = quick_gem 'a', '1' do |spec| spec.author = 'author 2' end
+    a1 = quick_spec 'a', '1' do |spec| spec.author = 'author 1' end
+    a2 = quick_spec 'a', '1' do |spec| spec.author = 'author 2' end
 
     File.open File.join(spec_dir1, a1.spec_name), 'w' do |fp|
       fp.write a1.to_ruby
@@ -310,12 +287,12 @@ WARNING:  Invalid .gemspec format in '#{spec_file}'
 
     assert_equal [], @source_index.outdated
 
-    updated = quick_gem @a2.name, (@a2.version.bump)
+    updated = quick_spec @a2.name, (@a2.version.bump)
     util_setup_spec_fetcher updated
 
     assert_equal [updated.name], @source_index.outdated
 
-    updated_platform = quick_gem @a2.name, (updated.version.bump) do |s|
+    updated_platform = quick_spec @a2.name, (updated.version.bump) do |s|
       s.platform = Gem::Platform.new 'x86-other_platform1'
     end
 
@@ -325,10 +302,11 @@ WARNING:  Invalid .gemspec format in '#{spec_file}'
   end
 
   def test_prerelease_specs_kept_in_right_place
-    gem_a1_alpha = quick_gem 'abba', '1.a'
+    gem_a1_alpha = quick_spec 'abba', '1.a'
     @source_index.add_spec gem_a1_alpha
 
     refute @source_index.latest_specs.include?(gem_a1_alpha)
+    assert @source_index.latest_specs(true).include?(gem_a1_alpha)
     assert @source_index.find_name(gem_a1_alpha.full_name).empty?
     assert @source_index.prerelease_specs.include?(gem_a1_alpha)
   end
@@ -359,27 +337,6 @@ WARNING:  Invalid .gemspec format in '#{spec_file}'
     assert_equal 'source index not created from disk', e.message
   end
 
-  def test_remove_extra
-    @source_index.add_spec @a1
-    @source_index.add_spec @a2
-    @source_index.add_spec @pl1
-
-    @source_index.remove_extra [@a1.full_name, @pl1.full_name]
-
-    assert_equal [@a1.full_name],
-                 @source_index.gems.map { |n,s| n }.sort
-  end
-
-  def test_remove_extra_no_changes
-    gems = [@a1.full_name, @a2.full_name]
-    @source_index.add_spec @a1
-    @source_index.add_spec @a2
-
-    @source_index.remove_extra gems
-
-    assert_equal gems, @source_index.gems.map { |n,s| n }.sort
-  end
-
   def test_remove_spec
     deleted = @source_index.remove_spec 'a-1'
 
@@ -407,11 +364,11 @@ WARNING:  Invalid .gemspec format in '#{spec_file}'
   def test_search_platform
     util_set_arch 'x86-my_platform1'
 
-    a1 = quick_gem 'a', '1'
-    a1_mine = quick_gem 'a', '1' do |s|
+    a1 = quick_spec 'a', '1'
+    a1_mine = quick_spec 'a', '1' do |s|
       s.platform = Gem::Platform.new 'x86-my_platform1'
     end
-    a1_other = quick_gem 'a', '1' do |s|
+    a1_other = quick_spec 'a', '1' do |s|
       s.platform = Gem::Platform.new 'x86-other_platform1'
     end
 
@@ -440,21 +397,6 @@ WARNING:  Invalid .gemspec format in '#{spec_file}'
   def test_index_signature
     sig = @source_index.index_signature
     assert_match(/^[a-f0-9]{64}$/, sig)
-  end
-
-  def test_unzip
-    input = "x\234+\316\317MU(I\255(\001\000\021\350\003\232"
-    assert_equal 'some text', @source_index.unzip(input)
-  end
-
-  def util_setup_bulk_fetch(compressed)
-    source_index = @source_index.dump
-
-    if compressed then
-      @fetcher.data["#{@gem_repo}Marshal.#{@marshal_version}.Z"] = util_zip source_index
-    else
-      @fetcher.data["#{@gem_repo}Marshal.#{@marshal_version}"] = source_index
-    end
   end
 
 end

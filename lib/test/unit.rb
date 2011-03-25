@@ -4,6 +4,7 @@ require 'minitest/unit'
 require 'test/unit/assertions'
 require 'test/unit/testcase'
 require 'optparse'
+require 'io/console'
 
 module Test
   module Unit
@@ -30,25 +31,38 @@ module Test
     end
 
     module Options
-      def initialize(&block)
+      def initialize(*, &block)
         @init_hook = block
+        @options = nil
         super(&nil)
       end
 
+      def option_parser
+        @option_parser ||= OptionParser.new
+      end
+
       def process_args(args = [])
+        return @options if @options
+        orig_args = args.dup
         options = {}
-        OptionParser.new do |opts|
-          setup_options(opts, options)
-          opts.parse!(args)
-        end
+        opts = option_parser
+        setup_options(opts, options)
+        opts.parse!(args)
+        orig_args -= args
         args = @init_hook.call(args, options) if @init_hook
         non_options(args, options)
-        options
+        @help = orig_args.map { |s| s =~ /[\s|&<>$()]/ ? s.inspect : s }.join " "
+        @options = options
+        @opts = @options = options
+        if @options[:parallel]
+          @files = args
+          @args = orig_args
+        end
       end
 
       private
       def setup_options(opts, options)
-        opts.banner  = 'minitest options:'
+        opts.separator 'minitest options:'
         opts.version = MiniTest::Unit::VERSION
 
         opts.on '-h', '--help', 'Display this help.' do
@@ -62,14 +76,46 @@ module Test
 
         opts.on '-v', '--verbose', "Verbose. Show progress processing files." do
           options[:verbose] = true
+          self.verbose = options[:verbose]
         end
 
         opts.on '-n', '--name PATTERN', "Filter test names on pattern." do |a|
           options[:filter] = a
         end
+
+        opts.on '--jobs-status [TYPE]', "Show status of jobs every file; Disabled when --jobs isn't specified." do |type|
+          options[:job_status] = (type && type.to_sym) || :normal
+        end
+
+        opts.on '-j N', '--jobs N', "Allow run tests with N jobs at once" do |a|
+          if /^t/ =~ a
+            options[:testing] = true # For testing
+            options[:parallel] = a[1..-1].to_i
+          else
+            options[:parallel] = a.to_i
+          end
+        end
+
+        opts.on '--no-retry', "Don't retry running testcase when --jobs specified" do
+          options[:no_retry] = true
+        end
+
+        opts.on '--ruby VAL', "Path to ruby; It'll have used at -j option" do |a|
+          options[:ruby] = a.split(/ /).reject(&:empty?)
+        end
       end
 
       def non_options(files, options)
+        begin
+          require "rbconfig"
+        rescue LoadError
+          warn "#{caller(1)[0]}: warning: Parallel running disabled because can't get path to ruby; run specify with --ruby argument"
+          options[:parallel] = nil
+        else
+          options[:ruby] ||= RbConfig.ruby
+        end
+
+        true
       end
     end
 
@@ -78,20 +124,28 @@ module Test
 
       def setup_options(parser, options)
         super
-        parser.on '-x', '--exclude PATTERN' do |pattern|
+        parser.on '-b', '--basedir=DIR', 'Base directory of test suites.' do |dir|
+          options[:base_directory] = dir
+        end
+        parser.on '-x', '--exclude PATTERN', 'Exclude test files on pattern.' do |pattern|
           (options[:reject] ||= []) << pattern
         end
       end
 
       def non_options(files, options)
-        paths = [options.delete(:base_directory), nil].compact
+        paths = [options.delete(:base_directory), nil].uniq
         if reject = options.delete(:reject)
           reject_pat = Regexp.union(reject.map {|r| /#{r}/ })
         end
         files.map! {|f|
           f = f.tr(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
-          [*paths, nil].any? do |prefix|
-            path = prefix ? "#{prefix}/#{f}" : f
+          [*(paths if /\A\.\.?(?:\z|\/)/ !~ f), nil].uniq.any? do |prefix|
+            if prefix
+              path = f.empty? ? prefix : "#{prefix}/#{f}"
+            else
+              next if f.empty?
+              path = f
+            end
             if !(match = Dir["#{path}/**/test_*.rb"]).empty?
               if reject
                 match.reject! {|n|
@@ -116,70 +170,421 @@ module Test
 
       def setup_options(parser, options)
         super
-        parser.on '-Idirectory' do |dirs|
+        parser.on '-Idirectory', 'Add library load path' do |dirs|
           dirs.split(':').each { |d| $LOAD_PATH.unshift d }
         end
       end
     end
 
+    module GCStressOption
+      def setup_options(parser, options)
+        super
+        parser.on '--[no-]gc-stress', 'Set GC.stress as true' do |flag|
+          options[:gc_stress] = flag
+        end
+      end
+
+      def non_options(files, options)
+        if options.delete(:gc_stress)
+          MiniTest::Unit::TestCase.class_eval do
+            oldrun = instance_method(:run)
+            define_method(:run) do |runner|
+              begin
+                gc_stress, GC.stress = GC.stress, true
+                oldrun.bind(self).call(runner)
+              ensure
+                GC.stress = gc_stress
+              end
+            end
+          end
+        end
+        super
+      end
+    end
+
     module RequireFiles
       def non_options(files, options)
-        super
+        return false if !super
+        result = false
         files.each {|f|
           d = File.dirname(path = File.expand_path(f))
           unless $:.include? d
             $: << d
           end
           begin
-            require path
+            require path unless options[:parallel]
+            result = true
           rescue LoadError
             puts "#{f}: #{$!}"
           end
         }
+        result
       end
     end
 
-    def self.new(*args, &block)
-      Mini.class_eval do
-        include Test::Unit::RequireFiles
-      end
-      Mini.new(*args, &block)
-    end
-
-    class Mini < MiniTest::Unit
+    class Runner < MiniTest::Unit
+      include Test::Unit::Options
       include Test::Unit::GlobOption
       include Test::Unit::LoadPathOption
+      include Test::Unit::GCStressOption
       include Test::Unit::RunCount
-      include Test::Unit::Options
+
+      class Worker
+        def self.launch(ruby,args=[])
+          io = IO.popen([*ruby,
+                        "#{File.dirname(__FILE__)}/unit/parallel.rb",
+                        *args], "rb+")
+          new(io: io, pid: io.pid, status: :waiting)
+        end
+
+        def initialize(h={})
+          @io = h[:io]
+          @pid = h[:pid]
+          @status = h[:status]
+          @file = nil
+          @real_file = nil
+          @loadpath = []
+          @hooks = {}
+        end
+
+        def puts(*args)
+          @io.puts(*args)
+        end
+
+        def run(task,type)
+          @file = File.basename(task).gsub(/\.rb/,"")
+          @real_file = task
+          begin
+            puts "loadpath #{[Marshal.dump($:-@loadpath)].pack("m").gsub("\n","")}"
+            @loadpath = $:.dup
+            puts "run #{task} #{type}"
+            @status = :prepare
+          rescue Errno::EPIPE
+            dead
+          rescue IOError
+            raise unless ["stream closed","closed stream"].include? $!.message
+            dead
+          end
+        end
+
+        def hook(id,&block)
+          @hooks[id] ||= []
+          @hooks[id] << block
+          self
+        end
+
+        def read
+          res = (@status == :quit) ? @io.read : @io.gets
+          res && res.chomp
+        end
+
+        def close
+          @io.close
+          self
+        end
+
+        def dead(*additional)
+          @status = :quit
+          @in.close
+          @out.close
+
+          call_hook(:dead,*additional)
+        end
+
+        def to_s
+          if @file
+            "#{@pid}=#{@file}"
+          else
+            "#{@pid}:#{@status.to_s.ljust(7)}"
+          end
+        end
+
+        attr_reader :io, :pid
+        attr_accessor :status, :file, :real_file, :loadpath
+
+        private
+
+        def call_hook(id,*additional)
+          @hooks[id] ||= []
+          @hooks[id].each{|hook| hook[self,additional] }
+          self
+        end
+
+      end
 
       class << self; undef autorun; end
+
+      undef options
+
+      def options
+        @optss ||= (@options||{}).merge(@opts)
+      end
+
+      @@stop_auto_run = false
       def self.autorun
         at_exit {
           Test::Unit::RunCount.run_once {
-            exit(Test::Unit::Mini.new.run(ARGV) || true)
-          }
+            exit(Test::Unit::Runner.new.run(ARGV) || true)
+          } unless @@stop_auto_run
         } unless @@installed_at_exit
         @@installed_at_exit = true
       end
 
-      def run(*args)
-        result = super
-        abort if @interrupt
+      def after_worker_down(worker, e=nil, c=1)
+        return unless @opts[:parallel]
+        return if @interrupt
+        if e
+          b = e.backtrace
+          warn "#{b.shift}: #{e.message} (#{e.class})"
+          STDERR.print b.map{|s| "\tfrom #{s}"}.join("\n")
+        end
+        @need_quit = true
+        warn ""
+        warn "Some worker was crashed. It seems ruby interpreter's bug"
+        warn "or, a bug of test/unit/parallel.rb. try again without -j"
+        warn "option."
+        warn ""
+        STDERR.flush
+        exit c
+      end
+
+      def jobs_status
+        return unless @opts[:job_status]
+        puts "" unless @opts[:verbose]
+        status_line = @workers.map(&:to_s).join(" ")
+        if @opts[:job_status] == :replace
+          @terminal_width ||= $stdout.winsize[1] || ENV["COLUMNS"].to_i || 80
+          @jstr_size ||= 0
+          del_jobs_status
+          $stdout.flush
+          print status_line[0...@terminal_width]
+          $stdout.flush
+          @jstr_size = status_line.size > @terminal_width ? \
+                         @terminal_width : status_line.size
+        else
+          puts status_line
+        end
+      end
+
+      def del_jobs_status
+        return unless @opts[:job_status] == :replace && @jstr_size
+        print "\r"+" "*@jstr_size+"\r"
+      end
+
+      def after_worker_quit(worker)
+        return unless @opts[:parallel]
+        return if @interrupt
+        @workers.delete(worker)
+        @dead_workers << worker
+        @ios = @workers.map(&:io)
+      end
+
+      def _run_parallel suites, type, result
+        begin
+          # Require needed things for parallel running
+          require 'thread'
+          require 'timeout'
+          @tasks = @files.dup # Array of filenames.
+          @need_quit = false
+          @dead_workers = []  # Array of dead workers.
+          @warnings = []
+          shutting_down = false
+          rep = [] # FIXME: more good naming
+
+          # Array of workers.
+          @workers = @opts[:parallel].times.map {
+            worker = Worker.launch(@opts[:ruby],@args)
+            worker.hook(:dead) do |w,info|
+              after_worker_quit w
+              after_worker_down w, *info unless info.empty?
+            end
+            worker
+          }
+
+          # Thread: watchdog
+          watchdog = Thread.new do
+            while stat = Process.wait2
+              break if @interrupt # Break when interrupt
+              w = (@workers + @dead_workers).find{|x| stat[0] == x.pid }.dup
+              next unless w
+              unless w.status == :quit
+                # Worker down
+                w.dead(nil, stat[1].to_i)
+              end
+            end
+          end
+
+          @workers_hash = Hash[@workers.map {|w| [w.io,w] }] # out-IO => worker
+          @ios = @workers.map{|w| w.io } # Array of worker IOs
+
+          while _io = IO.select(@ios)[0]
+            break unless _io.each do |io|
+              break if @need_quit
+              worker = @workers_hash[io]
+              case worker.read
+              when /^okay$/
+                worker.status = :running
+                jobs_status
+              when /^ready$/
+                worker.status = :ready
+                if @tasks.empty?
+                  break unless @workers.find{|x| x.status == :running }
+                else
+                  worker.run(@tasks.shift, type)
+                end
+
+                jobs_status
+              when /^done (.+?)$/
+                r = Marshal.load($1.unpack("m")[0])
+                result << r[0..1]
+                rep    << {file: worker.real_file,
+                           report: r[2], result: r[3], testcase: r[5]}
+                $:.push(*r[4]).uniq!
+              when /^p (.+?)$/
+                del_jobs_status
+                print $1.unpack("m")[0]
+                jobs_status if @opts[:job_status] == :replace
+              when /^after (.+?)$/
+                @warnings << Marshal.load($1.unpack("m")[0])
+              when /^bye (.+?)$/
+                after_worker_down worker, Marshal.load($1.unpack("m")[0])
+              when /^bye$/
+                if shutting_down
+                  after_worker_quit worker
+                else
+                  after_worker_down worker
+                end
+              end
+              break if @need_quit
+            end
+          end
+        rescue Interrupt => e
+          @interrupt = e
+          return result
+        ensure
+          shutting_down = true
+
+          watchdog.kill if watchdog
+          @workers.each do |worker|
+            begin
+              timeout(1) do
+                worker.puts "quit"
+              end
+            rescue Errno::EPIPE
+            rescue Timeout::Error
+            end
+            worker.close
+          end
+          begin
+            timeout(0.2*@workers.size) do
+              Process.waitall
+            end
+          rescue Timeout::Error
+            @workers.each do |worker|
+              begin
+                Process.kill(:KILL,worker.pid)
+              rescue Errno::ESRCH; end
+            end
+          end
+
+          if @interrupt || @opts[:no_retry] || @need_quit
+            rep.each do |r|
+              report.push(*r[:report])
+            end
+            @errors += rep.map{|x| x[:result][0] }.inject(:+)
+            @failures += rep.map{|x| x[:result][1] }.inject(:+)
+            @skips += rep.map{|x| x[:result][2] }.inject(:+)
+          else
+            puts ""
+            puts "Retrying..."
+            puts ""
+            @options = @opts
+            rep.each do |r|
+              if r[:testcase] && r[:file] && !r[:report].empty?
+                require r[:file]
+                _run_suite(eval(r[:testcase]),type)
+              else
+                report.push(*r[:report])
+                @errors += r[:result][0]
+                @failures += r[:result][1]
+                @skips += r[:result][2]
+              end
+            end
+          end
+          if @warnings
+            warn ""
+            ary = []
+            @warnings.reject! do |w|
+              r = ary.include?(w[1].message)
+              ary << w[1].message
+              r
+            end
+            @warnings.each do |w|
+              warn "#{w[0]}: #{w[1].message} (#{w[1].class})"
+            end
+            warn ""
+          end
+        end
+      end
+
+      def _run_suites suites, type
+        @interrupt = nil
+        result = []
+        if @opts[:parallel]
+          _run_parallel suites, type, result
+        else
+          suites.each {|suite|
+            begin
+              result << _run_suite(suite, type)
+            rescue Interrupt => e
+              @interrupt = e
+              break
+            end
+          }
+        end
         result
       end
 
-      def run_test_suites(*args)
-        old_sync = @@out.sync if @@out.respond_to?(:sync=)
-        @interrupt = false
-        super
-      rescue Interrupt
-        @interrupt = true
-        [@test_count, @assertion_count]
-      ensure
-        @@out.sync = old_sync if @@out.respond_to?(:sync=)
+      def status(*args)
+        result = super
+        raise @interrupt if @interrupt
+        result
+      end
+    end
+
+    class AutoRunner
+      class Runner < Test::Unit::Runner
+        include Test::Unit::RequireFiles
+      end
+
+      attr_accessor :to_run, :options
+
+      def initialize(force_standalone = false, default_dir = nil, argv = ARGV)
+        @runner = Runner.new do |files, options|
+          options[:base_directory] ||= default_dir
+          files << default_dir if files.empty? and default_dir
+          @to_run = files
+          yield self if block_given?
+          files
+        end
+        @options = @runner.option_parser
+        @argv = argv
+      end
+
+      def process_args(*args)
+        @runner.process_args(*args)
+        !@to_run.empty?
+      end
+
+      def run
+        @runner.run(@argv) || true
+      end
+
+      def self.run(*args)
+        new(*args).run
       end
     end
   end
 end
 
-Test::Unit::Mini.autorun
+Test::Unit::Runner.autorun

@@ -667,10 +667,10 @@ module FileUtils
   # removing directories.  This requires the current process is the
   # owner of the removing whole directory tree, or is the super user (root).
   #
-  # WARNING: You must ensure that *ALL* parent directories are not
-  # world writable.  Otherwise this method does not work.
-  # Only exception is temporary directory like /tmp and /var/tmp,
-  # whose permission is 1777.
+  # WARNING: You must ensure that *ALL* parent directories cannot be
+  # moved by other untrusted users.  For example, parent directories
+  # should not be owned by untrusted users, and should not be world
+  # writable except when the sticky bit set.
   #
   # WARNING: Only the owner of the removing directory tree, or Unix super
   # user (root) should invoke this method.  Otherwise this method does not
@@ -713,6 +713,11 @@ module FileUtils
       end
       f.chown euid, -1
       f.chmod 0700
+      unless fu_stat_identical_entry?(st, File.lstat(fullpath))
+        # TOC-to-TOU attack?
+        File.unlink fullpath
+        return
+      end
     }
     # ---- tree root is frozen ----
     root = Entry_.new(path)
@@ -1271,7 +1276,7 @@ module FileUtils
 
     def copy_file(dest)
       File.open(path()) do |s|
-        File.open(dest, 'wb') do |f|
+        File.open(dest, 'wb', s.stat.mode) do |f|
           IO.copy_stream(s, f)
         end
       end
@@ -1519,6 +1524,12 @@ module FileUtils
     OPT_TABLE.keys.select {|m| OPT_TABLE[m].include?(opt) }
   end
 
+  LOW_METHODS = singleton_methods(false) - collect_method(:noop).map(&:intern)
+  module LowMethods
+    module_eval("private\n" + ::FileUtils::LOW_METHODS.map {|name| "def #{name}(*)end"}.join("\n"),
+                __FILE__, __LINE__)
+  end
+
   METHODS = singleton_methods() - [:private_module_function,
       :commands, :options, :have_option?, :options_of, :collect_method]
 
@@ -1554,6 +1565,7 @@ module FileUtils
   #
   module NoWrite
     include FileUtils
+    include LowMethods
     @fileutils_output  = $stderr
     @fileutils_label   = ''
     ::FileUtils.collect_method(:noop).each do |name|
@@ -1580,6 +1592,7 @@ module FileUtils
   #
   module DryRun
     include FileUtils
+    include LowMethods
     @fileutils_output  = $stderr
     @fileutils_label   = ''
     ::FileUtils.collect_method(:noop).each do |name|

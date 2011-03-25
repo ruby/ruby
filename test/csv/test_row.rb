@@ -7,12 +7,13 @@
 #  Copyright 2005 James Edward Gray II. You can redistribute or modify this code
 #  under the terms of Ruby's license.
 
-require "test/unit"
+require_relative "base"
 
-require "csv"
+class TestCSV::Row < TestCSV
+  extend DifferentOFS
 
-class TestCSVRow < Test::Unit::TestCase
   def setup
+    super
     @row = CSV::Row.new(%w{A B C A A}, [1, 2, 3, 4])
   end
 

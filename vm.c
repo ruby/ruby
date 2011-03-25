@@ -173,6 +173,27 @@ vm_get_ruby_level_caller_cfp(rb_thread_t *th, rb_control_frame_t *cfp)
     return 0;
 }
 
+/* at exit */
+
+void
+ruby_vm_at_exit(void (*func)(rb_vm_t *))
+{
+    rb_ary_push((VALUE)&GET_VM()->at_exit, (VALUE)func);
+}
+
+static void
+ruby_vm_run_at_exit_hooks(rb_vm_t *vm)
+{
+    VALUE hook = (VALUE)&vm->at_exit;
+
+    while (RARRAY_LEN(hook) > 0) {
+	typedef void rb_vm_at_exit_func(rb_vm_t*);
+	rb_vm_at_exit_func *func = (rb_vm_at_exit_func*)rb_ary_pop(hook);
+	(*func)(vm);
+    }
+    rb_ary_free(hook);
+}
+
 /* Env */
 
 /*
@@ -222,7 +243,7 @@ env_free(void * const ptr)
 {
     RUBY_FREE_ENTER("env");
     if (ptr) {
-	const rb_env_t * const env = ptr;
+	rb_env_t *const env = ptr;
 	RUBY_FREE_UNLESS_NULL(env->env);
 	ruby_xfree(ptr);
     }
@@ -472,14 +493,14 @@ rb_vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass)
     }
 
     if (GC_GUARDED_PTR_REF(cfp->lfp[0])) {
-	    rb_proc_t *p;
+	rb_proc_t *p;
 
-	    blockprocval = vm_make_proc_from_block(
-		th, (rb_block_t *)GC_GUARDED_PTR_REF(*cfp->lfp));
+	blockprocval = vm_make_proc_from_block(
+	    th, (rb_block_t *)GC_GUARDED_PTR_REF(*cfp->lfp));
 
-	    GetProcPtr(blockprocval, p);
-	    *cfp->lfp = GC_GUARDED_PTR(&p->block);
-	}
+	GetProcPtr(blockprocval, p);
+	*cfp->lfp = GC_GUARDED_PTR(&p->block);
+    }
 
     envval = rb_vm_make_env_object(th, cfp);
 
@@ -1438,7 +1459,7 @@ rb_thread_current_status(const rb_thread_t *th)
     }
     else if (cfp->me->def->original_id) {
 	str = rb_sprintf("`%s#%s' (cfunc)",
-			 RSTRING_PTR(rb_class_name(cfp->me->klass)),
+			 rb_class2name(cfp->me->klass),
 			 rb_id2name(cfp->me->def->original_id));
     }
 
@@ -1537,15 +1558,15 @@ ruby_vm_destruct(rb_vm_t *vm)
 	    st_free_table(vm->living_threads);
 	    vm->living_threads = 0;
 	}
-	rb_thread_lock_unlock(&vm->global_vm_lock);
-	rb_thread_lock_destroy(&vm->global_vm_lock);
-	ruby_xfree(vm);
-	ruby_current_vm = 0;
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 	if (objspace) {
 	    rb_objspace_free(objspace);
 	}
 #endif
+	ruby_vm_run_at_exit_hooks(vm);
+	rb_vm_gvl_destroy(vm);
+	ruby_xfree(vm);
+	ruby_current_vm = 0;
     }
     RUBY_FREE_LEAVE("vm");
     return 0;
@@ -1573,6 +1594,8 @@ vm_init2(rb_vm_t *vm)
 {
     MEMZERO(vm, rb_vm_t, 1);
     vm->src_encoding_index = -1;
+    vm->at_exit.basic.flags = (T_ARRAY | RARRAY_EMBED_FLAG) & ~RARRAY_EMBED_LEN_MASK; /* len set 0 */
+    vm->at_exit.basic.klass = 0;
 }
 
 /* Thread */
@@ -1644,6 +1667,7 @@ rb_thread_mark(void *ptr)
 	    while (cfp != limit_cfp) {
 		rb_iseq_t *iseq = cfp->iseq;
 		rb_gc_mark(cfp->proc);
+		rb_gc_mark(cfp->self);
 		if (iseq) {
 		    rb_gc_mark(RUBY_VM_NORMAL_ISEQ_P(iseq) ? iseq->self : (VALUE)iseq);
 		}
@@ -1720,6 +1744,8 @@ thread_free(void *ptr)
 #endif
 	    ruby_xfree(ptr);
 	}
+        if (ruby_current_thread == th)
+            ruby_current_thread = NULL;
     }
     RUBY_FREE_LEAVE("thread");
 }
@@ -1744,7 +1770,8 @@ thread_memsize(const void *ptr)
     }
 }
 
-static const rb_data_type_t thread_data_type = {
+#define thread_data_type ruby_thread_data_type
+const rb_data_type_t ruby_thread_data_type = {
     "VM/thread",
     {
 	rb_thread_mark,
@@ -1768,7 +1795,7 @@ thread_alloc(VALUE klass)
 }
 
 static void
-th_init2(rb_thread_t *th, VALUE self)
+th_init(rb_thread_t *th, VALUE self)
 {
     th->self = self;
 
@@ -1784,12 +1811,7 @@ th_init2(rb_thread_t *th, VALUE self)
     th->status = THREAD_RUNNABLE;
     th->errinfo = Qnil;
     th->last_status = Qnil;
-}
-
-static void
-th_init(rb_thread_t *th, VALUE self)
-{
-    th_init2(th, self);
+    th->waiting_fd = -1;
 }
 
 static VALUE
@@ -1827,8 +1849,9 @@ vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
     GetISeqPtr(iseqval, miseq);
 
     if (miseq->klass) {
-       iseqval = rb_iseq_clone(iseqval, 0);
-       GetISeqPtr(iseqval, miseq);
+	iseqval = rb_iseq_clone(iseqval, 0);
+	RB_GC_GUARD(iseqval);
+	GetISeqPtr(iseqval, miseq);
     }
 
     if (NIL_P(klass)) {
@@ -2128,7 +2151,7 @@ Init_BareVM(void)
     ruby_current_vm = vm;
 
     Init_native_thread();
-    th_init2(th, 0);
+    th_init(th, 0);
     th->vm = vm;
     ruby_thread_init_stack(th);
 }

@@ -56,7 +56,8 @@ static int
 utf16le_mbc_enc_len(const UChar* p, const OnigUChar* e,
 		    OnigEncoding enc ARG_UNUSED)
 {
-  int len = e-p, byte;
+  int len = (int)(e - p);
+  UChar byte;
   if (len < 2)
     return ONIGENC_CONSTRUCT_MBCLEN_NEEDMORE(1);
   byte = p[1];

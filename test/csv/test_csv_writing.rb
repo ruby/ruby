@@ -7,11 +7,11 @@
 #  Copyright 2005 James Edward Gray II. You can redistribute or modify this code
 #  under the terms of Ruby's license.
 
-require "test/unit"
+require_relative "base"
 
-require "csv"
+class TestCSV::Writing < TestCSV
+  extend DifferentOFS
 
-class TestCSVWriting < Test::Unit::TestCase
   def test_writing
     [ ["\t",                      ["\t"]],
       ["foo,\"\"\"\"\"\",baz",    ["foo", "\"\"", "baz"]],

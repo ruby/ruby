@@ -1,7 +1,13 @@
-require_relative 'gem_package_tar_test_case'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require 'rubygems/package/tar_test_case'
 require 'rubygems/package/tar_input'
 
-class TestGemPackageTarInput < TarTestCase
+class TestGemPackageTarInput < Gem::Package::TarTestCase
 
   # Sometimes the setgid bit doesn't take.  Don't know if this is a problem on
   # all systems, or just some.  But for now, we will ignore it in the tests.
@@ -53,7 +59,24 @@ class TestGemPackageTarInput < TarTestCase
     @entry_contents = %w[0123456789 01234]
   end
 
-  def test_each_works
+  def test_initialize_no_metadata_file
+    Tempfile.open 'no_meta' do |io|
+      io.write tar_file_header('a', '', 0644, 1)
+      io.write 'a'
+      io.rewind
+
+      e = assert_raises Gem::Package::FormatError do
+        open io.path, Gem.binary_mode do |file|
+          Gem::Package::TarInput.open file do end
+        end
+      end
+
+      assert_equal "no metadata found in #{io.path}", e.message
+      assert_equal io.path, e.path
+    end
+  end
+
+  def test_each
     open @file, 'rb' do |io|
       Gem::Package::TarInput.open io do |tar_input|
         count = 0
@@ -73,7 +96,7 @@ class TestGemPackageTarInput < TarTestCase
     end
   end
 
-  def test_extract_entry_works
+  def test_extract_entry
     open @file, 'rb' do |io|
       Gem::Package::TarInput.open io do |tar_input|
         assert_equal @spec, tar_input.metadata

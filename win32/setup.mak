@@ -58,9 +58,16 @@ BASERUBY = $(BASERUBY:/=\)
 !if defined(NTVER)
 NTVER = $(NTVER)
 !endif
+!if defined(USE_RUBYGEMS)
+USE_RUBYGEMS = $(USE_RUBYGEMS)
+!endif
+
 <<
 !if !defined(BASERUBY)
-	@for %I in (ruby.exe) do @echo BASERUBY = %~s$$PATH:I >> $(MAKEFILE)
+	@for %I in (ruby.exe) do @echo BASERUBY = %~s$$PATH:I>> $(MAKEFILE)
+	@echo !if "$$(BASERUBY)" == "">> $(MAKEFILE)
+	@echo BASERUBY = echo executable host ruby is required.  use --with-baseruby option.^& exit 1 >> $(MAKEFILE)
+	@echo !endif>> $(MAKEFILE)
 !endif
 
 -system-vars-: -runtime- -unicows-
@@ -76,7 +83,7 @@ NTVER = $(NTVER)
 	@echo TARGET_OS = mswin64 >>$(MAKEFILE)
 
 -runtime-: nul
-	$(CC) -MD <<rtname.c user32.lib -link > nul
+	@$(CC) -MD <<rtname.c user32.lib -link > nul
 #include <windows.h>
 #include <memory.h>
 #include <string.h>
@@ -164,7 +171,7 @@ int main()
 
 -version-: nul
 	@$(APPEND)
-	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(MAKEFILE)" | find "=" >>$(MAKEFILE)
+	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(MAKEFILE)" | findstr "=" >>$(MAKEFILE)
 #define RUBY_REVISION 0
 #include "version.h"
 MAJOR = RUBY_API_VERSION_MAJOR
@@ -175,11 +182,11 @@ MSC_VER = _MSC_VER
 
 -program-name-:
 	@type << >>$(MAKEFILE)
-!ifdef RUBY_PREFIX
-RUBY_PREFIX = $(RUBY_PREFIX)
+!ifdef PROGRAM_PREFIX
+PROGRAM_PREFIX = $(PROGRAM_PREFIX)
 !endif
-!ifdef RUBY_SUFFIX
-RUBY_SUFFIX = $(RUBY_SUFFIX)
+!ifdef PROGRAM_SUFFIX
+PROGRAM_SUFFIX = $(PROGRAM_SUFFIX)
 !endif
 !ifdef RUBY_INSTALL_NAME
 RUBY_INSTALL_NAME = $(RUBY_INSTALL_NAME)

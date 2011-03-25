@@ -11,6 +11,12 @@ class TestRegexp < Test::Unit::TestCase
     $VERBOSE = @verbose
   end
 
+  def test_has_NOENCODING
+    assert Regexp::NOENCODING
+    re = //n
+    assert_equal Regexp::NOENCODING, re.options
+  end
+
   def test_ruby_dev_999
     assert_match(/(?<=a).*b/, "aab")
     assert_match(/(?<=\u3042).*b/, "\u3042ab")
@@ -583,6 +589,9 @@ class TestRegexp < Test::Unit::TestCase
     failcheck('(?<!.*)')
     check(/(?<=A|B.)C/, [%w(C AC), %w(C BXC)], %w(C BC))
     check(/(?<!A|B.)C/, [%w(C C), %w(C BC)], %w(AC BXC))
+
+    assert_not_match(/(?<!aa|b)c/i, "Aac")
+    assert_not_match(/(?<!b|aa)c/i, "Aac")
   end
 
   def test_parse_kg
@@ -798,6 +807,25 @@ class TestRegexp < Test::Unit::TestCase
     assert_nothing_raised { 0x7fffffff.chr("utf-8").size }
   end
 
+  def test_unicode_age
+    assert_match(/^\p{Age=6.0}$/u, "\u261c")
+    assert_match(/^\p{Age=1.1}$/u, "\u261c")
+    assert_no_match(/^\P{age=6.0}$/u, "\u261c")
+
+    assert_match(/^\p{age=6.0}$/u, "\u31f6")
+    assert_match(/^\p{age=3.2}$/u, "\u31f6")
+    assert_no_match(/^\p{age=3.1}$/u, "\u31f6")
+    assert_no_match(/^\p{age=3.0}$/u, "\u31f6")
+    assert_no_match(/^\p{age=1.1}$/u, "\u31f6")
+
+    assert_match(/^\p{age=6.0}$/u, "\u2754")
+    assert_no_match(/^\p{age=5.0}$/u, "\u2754")
+    assert_no_match(/^\p{age=4.0}$/u, "\u2754")
+    assert_no_match(/^\p{age=3.0}$/u, "\u2754")
+    assert_no_match(/^\p{age=2.0}$/u, "\u2754")
+    assert_no_match(/^\p{age=1.1}$/u, "\u2754")
+  end
+
   def test_matchdata
     a = "haystack".match(/hay/)
     b = "haystack".match(/hay/)
@@ -809,14 +837,6 @@ class TestRegexp < Test::Unit::TestCase
   def test_regexp_poped
     assert_nothing_raised { eval("a = 1; /\#{ a }/; a") }
     assert_nothing_raised { eval("a = 1; /\#{ a }/o; a") }
-  end
-
-  def test_optimize_last_anycharstar
-    s = "1" + " " * 5000000
-    assert_nothing_raised { s.match(/(\d) (.*)/) }
-    assert_equal("1", $1)
-    assert_equal(" " * 4999999, $2)
-    assert_match(/(?:A.+){2}/, 'AbAb')
   end
 
   def test_invalid_fragment

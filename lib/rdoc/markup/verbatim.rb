@@ -3,6 +3,9 @@
 
 class RDoc::Markup::Verbatim < RDoc::Markup::Raw
 
+  ##
+  # Calls #accept_verbatim on +visitor+
+
   def accept visitor
     visitor.accept_verbatim self
   end
@@ -17,16 +20,16 @@ class RDoc::Markup::Verbatim < RDoc::Markup::Raw
 
     @parts.each do |part|
       case part
-      when /\n/ then
+      when /^\s*\n/ then
         newlines += 1
-        parts << part if newlines <= 2
+        parts << part if newlines == 1
       else
         newlines = 0
         parts << part
       end
     end
 
-    parts.slice!(-1) if parts[-2..-1] == ["\n", "\n"]
+    parts.pop if parts.last =~ /\A\r?\n\z/
 
     @parts = parts
   end

@@ -1,3 +1,9 @@
+V = 0
+Q1 = $(V:1=)
+Q = $(Q1:0=@)
+ECHO1 = $(V:1=@:)
+ECHO = $(ECHO1:0=@echo)
+
 encsrcdir = @srcdir@
 topdir = .
 prefix = @prefix@
@@ -45,7 +51,7 @@ archflag = @ARCH_FLAG@
 DLDFLAGS = $(ldflags) $(dldflags) $(archflag)
 RUBY     = $(MINIRUBY)
 
-WORKDIRS = $(ENCSODIR) $(TRANSSODIR) enc enc/trans
+WORKDIRS = @WORKDIRS@
 
 RM = @RM@
 RMDIR = @RMDIR@
@@ -57,10 +63,10 @@ MAKEDIRS = @MAKEDIRS@
 all: make-workdir
 
 make-workdir:
-	$(MAKEDIRS) $(WORKDIRS)
+	$(Q)$(MAKEDIRS) $(WORKDIRS)
 
 clean:
 
-distclean: clean clean-srcs
-	@$(RM) enc.mk
-realclean: distclean
+distclean: clean
+	$(Q)$(RM) enc.mk
+realclean: distclean clean-srcs

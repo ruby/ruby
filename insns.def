@@ -894,7 +894,8 @@ defineclass
     VALUE klass;
 
     switch ((int)define_type) {
-      case 0:
+      case 0: /* scoped:   class Foo::Bar */
+      case 3: /* no scope: class Bar */
 	/* val is dummy.  classdef returns class scope value */
 
 	if (super == Qnil) {
@@ -907,7 +908,7 @@ defineclass
 	rb_autoload_load(cbase, id);
 	if (rb_const_defined_at(cbase, id)) {
 	    /* already exist */
-	    klass = rb_const_get_at(cbase, id);
+	    klass = define_type == 0 ? rb_public_const_get(cbase, id) : rb_const_get_at(cbase, id);
 	    if (TYPE(klass) != T_CLASS) {
 		rb_raise(rb_eTypeError, "%s is not a class", rb_id2name(id));
 	    }
@@ -935,7 +936,8 @@ defineclass
 	/* super is dummy */
 	klass = rb_singleton_class(cbase);
 	break;
-      case 2:
+      case 2: /* scoped:   module Foo::Bar  or  module ::Bar */
+      case 5: /* no scope: module Bar */
 	/* val is dummy.  classdef returns class scope value */
 	/* super is dummy */
 
@@ -943,7 +945,7 @@ defineclass
 
 	/* find klass */
 	if (rb_const_defined_at(cbase, id)) {
-	    klass = rb_const_get_at(cbase, id);
+	    klass = define_type == 2 ? rb_public_const_get(cbase, id) : rb_const_get_at(cbase, id);
 	    /* already exist */
 	    if (TYPE(klass) != T_MODULE) {
 		rb_raise(rb_eTypeError, "%s is not a module", rb_id2name(id));

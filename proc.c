@@ -28,7 +28,6 @@ VALUE rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc);
 
 static VALUE bmcall(VALUE, VALUE);
 static int method_arity(VALUE);
-static int rb_obj_is_method(VALUE m);
 rb_iseq_t *rb_method_get_iseq(VALUE method);
 
 /* Proc */
@@ -337,10 +336,10 @@ rb_binding_new(void)
  *  calling +eval+ to execute the evaluated command in this
  *  environment. Also see the description of class +Binding+.
  *
- *     def getBinding(param)
+ *     def get_binding(param)
  *       return binding
  *     end
- *     b = getBinding("hello")
+ *     b = get_binding("hello")
  *     eval("param", b)   #=> "hello"
  */
 
@@ -359,10 +358,10 @@ rb_f_binding(VALUE self)
  *  <em>lineno</em> parameters are present, they will be used when
  *  reporting syntax errors.
  *
- *     def getBinding(param)
+ *     def get_binding(param)
  *       return binding
  *     end
- *     b = getBinding("hello")
+ *     b = get_binding("hello")
  *     b.eval("param")   #=> "hello"
  */
 
@@ -544,16 +543,16 @@ proc_call(int argc, VALUE *argv, VALUE procval)
     rb_proc_t *proc;
     rb_block_t *blockptr = 0;
     rb_iseq_t *iseq;
+    VALUE passed_procval;
     GetProcPtr(procval, proc);
 
     iseq = proc->block.iseq;
     if (BUILTIN_TYPE(iseq) == T_NODE || iseq->arg_block != -1) {
 	if (rb_block_given_p()) {
-	    rb_proc_t *proc;
-	    VALUE procval;
-	    procval = rb_block_proc();
-	    GetProcPtr(procval, proc);
-	    blockptr = &proc->block;
+	    rb_proc_t *passed_proc;
+	    RB_GC_GUARD(passed_procval) = rb_block_proc();
+	    GetProcPtr(passed_procval, passed_proc);
+	    blockptr = &passed_proc->block;
 	}
     }
 
@@ -893,10 +892,15 @@ static const rb_data_type_t method_data_type = {
     },
 };
 
-static inline int
+VALUE
 rb_obj_is_method(VALUE m)
 {
-    return rb_typeddata_is_kind_of(m, &method_data_type);
+    if (rb_typeddata_is_kind_of(m, &method_data_type)) {
+	return Qtrue;
+    }
+    else {
+	return Qfalse;
+    }
 }
 
 static VALUE
@@ -2207,15 +2211,15 @@ Init_Proc(void)
  *       def initialize(n)
  *         @secret = n
  *       end
- *       def getBinding
+ *       def get_binding
  *         return binding()
  *       end
  *     end
  *
  *     k1 = Demo.new(99)
- *     b1 = k1.getBinding
+ *     b1 = k1.get_binding
  *     k2 = Demo.new(-3)
- *     b2 = k2.getBinding
+ *     b2 = k2.get_binding
  *
  *     eval("@secret", b1)   #=> 99
  *     eval("@secret", b2)   #=> -3

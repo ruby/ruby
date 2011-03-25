@@ -874,7 +874,6 @@ module REXML
     #  a.elements.add(Element.new('b'))  #-> <a><b/></a>
     #  a.elements.add('c')               #-> <a><b/><c/></a>
     def add element=nil
-      rv = nil
       if element.nil?
         Element.new("", self, @element.context)
       elsif not element.kind_of?(Element)
@@ -1092,7 +1091,7 @@ module REXML
         delete attr
         return
       end
-      element_document = @element.document
+
       unless value.kind_of? Attribute
         if @element.document and @element.document.doctype
           value = Text::normalize( value, @element.document.doctype )
@@ -1197,7 +1196,7 @@ module REXML
         return @element
       else # the supplied attribute is a top-level one
         attr = old
-        res = super(name)
+        super(name)
       end
       @element
     end

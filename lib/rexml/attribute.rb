@@ -115,7 +115,7 @@ module REXML
     def doctype
       if @element
         doc = @element.document
-        doctype = doc.doctype if doc
+        doc.doctype if doc
       end
     end
 

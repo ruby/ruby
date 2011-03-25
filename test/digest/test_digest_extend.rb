@@ -1,7 +1,10 @@
 require 'test/unit'
 require 'digest'
+require_relative '../with_different_ofs.rb'
 
 class TestDigestExtend < Test::Unit::TestCase
+  extend DifferentOFS
+
   class MyDigest < Digest::Class
     def initialize(*arg)
       super
@@ -20,7 +23,7 @@ class TestDigestExtend < Test::Unit::TestCase
     alias << update
 
     def finish
-      (@buf.join.length % 256).chr
+      (@buf.join('').length % 256).chr
     end
 
     def reset
@@ -35,12 +38,16 @@ class TestDigestExtend < Test::Unit::TestCase
     end
   end
 
+  def setup
+    @MyDigest = Class.new(MyDigest)
+  end
+
   def test_digest_s_hexencode
     assert_equal('', Digest.hexencode(''))
     assert_equal('0102', Digest.hexencode("\1\2"))
     assert_equal(
-      (0..0xff).to_a.map { |c| sprintf("%02x", c ) }.join,
-      Digest.hexencode((0..0xff).to_a.map { |c| c.chr }.join)
+      (0..0xff).to_a.map { |c| sprintf("%02x", c ) }.join(''),
+      Digest.hexencode((0..0xff).to_a.map { |c| c.chr }.join(''))
     )
   end
 
@@ -60,11 +67,11 @@ class TestDigestExtend < Test::Unit::TestCase
   end
 
   def test_hexdigest
-    assert_equal("03", MyDigest.hexdigest("foo"))
+    assert_equal("03", @MyDigest.hexdigest("foo"))
   end
 
   def test_context
-    digester = MyDigest.new
+    digester = @MyDigest.new
     digester.update("foo")
     assert_equal("\3", digester.digest)
     digester.update("foobar")
@@ -88,7 +95,7 @@ class TestDigestExtend < Test::Unit::TestCase
     [:digest, :hexdigest].each do |m|
       exp_1st = "\3"; exp_1st = Digest.hexencode(exp_1st) if m == :hexdigest
       exp_2nd = "\6"; exp_2nd = Digest.hexencode(exp_2nd) if m == :hexdigest
-      digester = MyDigest.new
+      digester = @MyDigest.new
       digester.update("foo")
       obj = digester.send(m)
       # digest w/o param does not reset the org digester.
@@ -105,7 +112,7 @@ class TestDigestExtend < Test::Unit::TestCase
   def test_digest_hexdigest_bang
     [:digest!, :hexdigest!].each do |m|
       exp_1st = "\3"; exp_1st = Digest.hexencode(exp_1st) if m == :hexdigest!
-      digester = MyDigest.new
+      digester = @MyDigest.new
       digester.update("foo")
       obj = digester.send(m) # digest! always resets the org digester.
       assert_equal(exp_1st, obj)
@@ -116,30 +123,35 @@ class TestDigestExtend < Test::Unit::TestCase
   end
 
   def test_to_s
-    digester = MyDigest.new
+    digester = @MyDigest.new
     digester.update("foo")
     assert_equal("03", digester.to_s)
   end
 
   def test_length
-    digester = MyDigest.new
-    assert_equal(2, digester.length)
-    assert_equal(2, digester.size)
-  end
-
-  def test_digest_length # breaks MyDigest#digest_length
-    assert_equal(1, MyDigest.new.digest_length)
-    MyDigest.class_eval do
+    @MyDigest.class_eval do
       def digest_length
         2
       end
     end
-    assert_equal(2, MyDigest.new.digest_length)
+    digester = @MyDigest.new
+    assert_equal(2, digester.length)
+    assert_equal(2, digester.size)
+  end
+
+  def test_digest_length # breaks @MyDigest#digest_length
+    assert_equal(1, @MyDigest.new.digest_length)
+    @MyDigest.class_eval do
+      def digest_length
+        2
+      end
+    end
+    assert_equal(2, @MyDigest.new.digest_length)
   end
 
   def test_block_length
     assert_raises(RuntimeError) do
-      MyDigest.new.block_length
+      @MyDigest.new.block_length
     end
   end
 end

@@ -115,7 +115,6 @@ module REXML
       output << " #{@long_name.inspect}" if @long_name
       output << " #{@uri.inspect}" if @uri
       unless @children.empty?
-        next_indent = indent + 1
         output << ' ['
         @children.each { |child|
           output << "\n"
@@ -249,11 +248,11 @@ module REXML
     end
 
     def to_s
-      "<!NOTATION #@name #@middle#{
-        @public ? ' ' + public.inspect : ''
-      }#{
-        @system ? ' ' +@system.inspect : ''
-      }>"
+      notation = "<!NOTATION #{@name} #{@middle}"
+      notation << " #{@public.inspect}" if @public
+      notation << " #{@system.inspect}" if @system
+      notation << ">"
+      notation
     end
 
     def write( output, indent=-1 )

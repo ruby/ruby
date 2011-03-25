@@ -19,6 +19,10 @@ class TestTime < Test::Unit::TestCase
     assert_equal(Time.utc(2000,2,10), Time.new(2000,2,9, 13,0,0, -3600*11))
     assert_equal(Time.utc(2000,2,10), Time.new(2000,2,10, 11,0,0, "+11:00"))
     assert_equal(Rational(1,2), Time.new(2000,2,10, 11,0,5.5, "+11:00").subsec)
+    bug4090 = '[ruby-dev:42631]'
+    tm = [2001,2,28,23,59,30]
+    t = Time.new(*tm, "-12:00")
+    assert_equal([2001,2,28,23,59,30,-43200], [t.year, t.month, t.mday, t.hour, t.min, t.sec, t.gmt_offset], bug4090)
   end
 
   def test_time_add()
@@ -465,6 +469,7 @@ class TestTime < Test::Unit::TestCase
     assert_equal(1, T2000.yday)
     assert_equal(false, T2000.isdst)
     assert_equal("UTC", T2000.zone)
+    assert_equal(Encoding.find("locale"), T2000.zone.encoding)
     assert_equal(0, T2000.gmt_offset)
     assert(!T2000.sunday?)
     assert(!T2000.monday?)
@@ -486,6 +491,7 @@ class TestTime < Test::Unit::TestCase
     assert_equal(t.yday, Time.at(946684800).yday)
     assert_equal(t.isdst, Time.at(946684800).isdst)
     assert_equal(t.zone, Time.at(946684800).zone)
+    assert_equal(Encoding.find("locale"), Time.at(946684800).zone.encoding)
     assert_equal(t.gmt_offset, Time.at(946684800).gmt_offset)
     assert_equal(t.sunday?, Time.at(946684800).sunday?)
     assert_equal(t.monday?, Time.at(946684800).monday?)
@@ -584,6 +590,18 @@ class TestTime < Test::Unit::TestCase
     assert_equal("02", t.strftime("%0l"))
     assert_equal(" 2", t.strftime("%_l"))
 
+    t = Time.utc(1,1,4)
+    assert_equal("0001", t.strftime("%Y"))
+    assert_equal("0001", t.strftime("%G"))
+
+    t = Time.utc(0,1,4)
+    assert_equal("0000", t.strftime("%Y"))
+    assert_equal("0000", t.strftime("%G"))
+
+    t = Time.utc(-1,1,4)
+    assert_equal("-0001", t.strftime("%Y"))
+    assert_equal("-0001", t.strftime("%G"))
+
     # [ruby-dev:37155]
     t = Time.mktime(1970, 1, 18)
     assert_equal("0", t.strftime("%w"))
@@ -628,6 +646,9 @@ class TestTime < Test::Unit::TestCase
                  t.strftime("%m/%d/%Y %l:%M:%S.%9N"))
     assert_equal("03/14/1592  6:53:58.97932384",
                  t.strftime("%m/%d/%Y %l:%M:%S.%8N"))
+
+    # [ruby-core:33985]
+    assert_equal("3000000000", Time.at(3000000000).strftime('%s'))
   end
 
   def test_delegate

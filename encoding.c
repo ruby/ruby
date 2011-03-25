@@ -436,20 +436,23 @@ rb_enc_unicode_p(rb_encoding *enc)
     return name[0] == 'U' && name[1] == 'T' && name[2] == 'F' && name[4] != '7';
 }
 
-static const char *
+/*
+ * Returns copied alias name when the key is added for st_table,
+ * else returns NULL.
+ */
+static int
 enc_alias_internal(const char *alias, int idx)
 {
-    alias = strdup(alias);
-    st_insert(enc_table.names, (st_data_t)alias, (st_data_t)idx);
-    return alias;
+    return st_insert2(enc_table.names, (st_data_t)alias, (st_data_t)idx,
+	    (st_data_t(*)(st_data_t))strdup);
 }
 
 static int
 enc_alias(const char *alias, int idx)
 {
     if (!valid_encoding_name_p(alias)) return -1;
-    alias = enc_alias_internal(alias, idx);
-    set_encoding_const(alias, rb_enc_from_index(idx));
+    if (!enc_alias_internal(alias, idx))
+	set_encoding_const(alias, rb_enc_from_index(idx));
     return idx;
 }
 
@@ -751,10 +754,10 @@ rb_enc_compatible(VALUE str1, VALUE str2)
     enc1 = rb_enc_from_index(idx1);
     enc2 = rb_enc_from_index(idx2);
 
-    if (TYPE(str2) == T_STRING && RSTRING_LEN(str2) == 0)
-	return (idx1 == ENCINDEX_US_ASCII && rb_enc_asciicompat(enc2)) ? enc2 : enc1;
-    if (TYPE(str1) == T_STRING && RSTRING_LEN(str1) == 0)
-	return (idx2 == ENCINDEX_US_ASCII && rb_enc_asciicompat(enc1)) ? enc1 : enc2;
+    if (BUILTIN_TYPE(str2) == T_STRING && RSTRING_LEN(str2) == 0)
+	return enc1;
+    if (BUILTIN_TYPE(str1) == T_STRING && RSTRING_LEN(str1) == 0)
+	return (rb_enc_asciicompat(enc1) && rb_enc_str_asciionly_p(str2)) ? enc1 : enc2;
     if (!rb_enc_asciicompat(enc1) || !rb_enc_asciicompat(enc2)) {
 	return 0;
     }
@@ -1553,7 +1556,7 @@ Init_Encoding(void)
 /* locale insensitive ctype functions */
 
 #define ctype_test(c, ctype) \
-    (rb_isascii(c) && ONIGENC_IS_ASCII_CODE_CTYPE((c), ctype))
+    (rb_isascii(c) && ONIGENC_IS_ASCII_CODE_CTYPE((c), (ctype)))
 
 int rb_isalnum(int c) { return ctype_test(c, ONIGENC_CTYPE_ALNUM); }
 int rb_isalpha(int c) { return ctype_test(c, ONIGENC_CTYPE_ALPHA); }

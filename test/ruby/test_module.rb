@@ -947,6 +947,28 @@ class TestModule < Test::Unit::TestCase
     c.private_constant(:FOO)
     assert_raise(NameError) { c::FOO }
     assert_equal("foo", c.class_eval("FOO"))
+    assert_equal("foo", c.const_get("FOO"))
+    $VERBOSE, verbose = nil, $VERBOSE
+    c.const_set(:FOO, "foo")
+    $VERBOSE = verbose
+    assert_raise(NameError) { c::FOO }
+  end
+
+  class PrivateClass
+  end
+  private_constant :PrivateClass
+
+  def test_define_module_under_private_constant
+    assert_raise(NameError) do
+      eval %q{class TestModule::PrivateClass; end}
+    end
+    assert_raise(NameError) do
+      eval %q{module TestModule::PrivateClass::TestModule; end}
+    end
+    eval %q{class PrivateClass; end}
+    eval %q{module PrivateClass::TestModule; end}
+    assert_instance_of(Module, PrivateClass::TestModule)
+    PrivateClass.class_eval { remove_const(:TestModule) }
   end
 
   def test_public_constant
@@ -958,5 +980,24 @@ class TestModule < Test::Unit::TestCase
     assert_equal("foo", c.class_eval("FOO"))
     c.public_constant(:FOO)
     assert_equal("foo", c::FOO)
+  end
+
+  def test_constants_with_private_constant
+    assert(!(::TestModule).constants.include?(:PrivateClass))
+  end
+
+  def test_toplevel_private_constant
+    src = <<-INPUT
+      class Object
+        private_constant :Object
+      end
+      p Object
+      begin
+        p ::Object
+      rescue
+        p :ok
+      end
+    INPUT
+    assert_in_out_err([], src, %w(Object :ok), [])
   end
 end

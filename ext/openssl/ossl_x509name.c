@@ -11,20 +11,20 @@
 #include "ossl.h"
 
 #define WrapX509Name(klass, obj, name) do { \
-    if (!name) { \
+    if (!(name)) { \
 	ossl_raise(rb_eRuntimeError, "Name wasn't initialized."); \
     } \
-    obj = Data_Wrap_Struct(klass, 0, X509_NAME_free, name); \
+    (obj) = Data_Wrap_Struct((klass), 0, X509_NAME_free, (name)); \
 } while (0)
 #define GetX509Name(obj, name) do { \
-    Data_Get_Struct(obj, X509_NAME, name); \
-    if (!name) { \
+    Data_Get_Struct((obj), X509_NAME, (name)); \
+    if (!(name)) { \
 	ossl_raise(rb_eRuntimeError, "Name wasn't initialized."); \
     } \
 } while (0)
 #define SafeGetX509Name(obj, name) do { \
-    OSSL_Check_Kind(obj, cX509Name); \
-    GetX509Name(obj, name); \
+    OSSL_Check_Kind((obj), cX509Name); \
+    GetX509Name((obj), (name)); \
 } while (0)
 
 #define OBJECT_TYPE_TEMPLATE \
@@ -87,9 +87,9 @@ ossl_x509name_alloc(VALUE klass)
     return obj;
 }
 
-static int id_aref;
+static ID id_aref;
 static VALUE ossl_x509name_add_entry(int, VALUE*, VALUE);
-#define rb_aref(obj, key) rb_funcall(obj, id_aref, 1, key)
+#define rb_aref(obj, key) rb_funcall((obj), id_aref, 1, (key))
 
 static VALUE
 ossl_x509name_init_i(VALUE i, VALUE args)
@@ -167,7 +167,7 @@ VALUE ossl_x509name_add_entry(int argc, VALUE *argv, VALUE self)
     if(NIL_P(type)) type = rb_aref(OBJECT_TYPE_TEMPLATE, oid);
     GetX509Name(self, name);
     if (!X509_NAME_add_entry_by_txt(name, RSTRING_PTR(oid), NUM2INT(type),
-		(const unsigned char *)RSTRING_PTR(value), RSTRING_LEN(value), -1, 0)) {
+		(const unsigned char *)RSTRING_PTR(value), RSTRING_LENINT(value), -1, 0)) {
 	ossl_raise(eX509NameError, NULL);
     }
 
@@ -266,6 +266,14 @@ ossl_x509name_cmp0(VALUE self, VALUE other)
     return X509_NAME_cmp(name1, name2);
 }
 
+/*
+ * call-seq:
+ *    name.cmp other => integer
+ *    name.<=> other => integer
+ *
+ * Compares this Name with +other+ and returns 0 if they are the same and -1 or
+ * +1 if they are greater or less than each other respectively.
+ */
 static VALUE
 ossl_x509name_cmp(VALUE self, VALUE other)
 {
@@ -292,6 +300,9 @@ ossl_x509name_eql(VALUE self, VALUE other)
 /*
  * call-seq:
  *    name.hash => integer
+ *
+ * The hash value returned is suitable for use as a certificate's filename in
+ * a CA path.
  */
 static VALUE
 ossl_x509name_hash(VALUE self)
@@ -341,6 +352,8 @@ Init_ossl_x509name()
     id_aref = rb_intern("[]");
     eX509NameError = rb_define_class_under(mX509, "NameError", eOSSLError);
     cX509Name = rb_define_class_under(mX509, "Name", rb_cObject);
+
+    rb_include_module(cX509Name, rb_mComparable);
 
     rb_define_alloc_func(cX509Name, ossl_x509name_alloc);
     rb_define_method(cX509Name, "initialize", ossl_x509name_initialize, -1);

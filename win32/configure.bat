@@ -1,7 +1,4 @@
 @echo off
-::: Don't set environment variable in batch file other than autoexec.bat
-::: to avoid "Out of environment space" problem on Windows 95/98.
-::: set TMPMAKE=~tmp~.mak
 
 echo> ~tmp~.mak ####
 echo>> ~tmp~.mak conf = %0
@@ -29,6 +26,8 @@ if "%1" == "--enable-win95" goto :enable-win95
 if "%1" == "--disable-win95" goto :disable-win95
 if "%1" == "--enable-debug-env" goto :enable-debug-env
 if "%1" == "--disable-debug-env" goto :disable-debug-env
+if "%1" == "--enable-rubygems" goto :enable-rubygems
+if "%1" == "--disable-rubygems" goto :disable-rubygems
 if "%1" == "--extout" goto :extout
 if "%1" == "--path" goto :path
 if "%1" == "--with-baseruby" goto :baseruby
@@ -45,46 +44,46 @@ if "%1" == "--help" goto :help
   shift
 goto :loop
 :srcdir
-  echo>> ~tmp~.mak 	"srcdir=%2" \
+  echo>> ~tmp~.mak 	"srcdir=%~2" \
   echo>>confargs.tmp --srcdir=%2 \
   shift
   shift
 goto :loop
 :prefix
-  echo>> ~tmp~.mak 	"prefix=%2" \
+  echo>> ~tmp~.mak 	"prefix=%~2" \
   echo>>confargs.tmp %1=%2 \
   shift
   shift
 goto :loop
 :pprefix
-  echo>> ~tmp~.mak 	"RUBY_PREFIX=%2" \
+  echo>> ~tmp~.mak 	"PROGRAM_PREFIX=%~2" \
   echo>>confargs.tmp %1=%2 \
   shift
   shift
 goto :loop
 :suffix
-  echo>> ~tmp~.mak 	"RUBY_SUFFIX=%2" \
+  echo>> ~tmp~.mak 	"PROGRAM_SUFFIX=%~2" \
   echo>>confargs.tmp %1=%2 \
   shift
   shift
 goto :loop
 :installname
-  echo>> ~tmp~.mak 	"RUBY_INSTALL_NAME=%2" \
+  echo>> ~tmp~.mak 	"RUBY_INSTALL_NAME=%~2" \
   echo>>confargs.tmp %1=%2 \
   shift
   shift
 goto :loop
 :soname
-  echo>> ~tmp~.mak 	"RUBY_SO_NAME=%2" \
+  echo>> ~tmp~.mak 	"RUBY_SO_NAME=%~2" \
   echo>>confargs.tmp %1=%2 \
   shift
   shift
 goto :loop
 :target
-  echo>> ~tmp~.mak 	"%2" \
+  echo>> ~tmp~.mak 	"%~2" \
   echo>>confargs.tmp --target=%2 \
-  if "%2" == "x64-mswin64" goto target2
-  if NOT "%2" == "ia64-mswin64" goto target3
+  if "%~2" == "x64-mswin64" goto target2
+  if NOT "%~2" == "ia64-mswin64" goto target3
 :target2
   echo>> ~tmp~.mak 	"TARGET_OS=mswin64" \
 :target3
@@ -126,26 +125,36 @@ goto :loop
   echo>>confargs.tmp %1 \
   shift
 goto :loop
+:enable-rubygems
+  echo>> ~tmp~.mak 	"USE_RUBYGEMS=YES" \
+  echo>>confargs.tmp %1 \
+  shift
+goto :loop
+:disable-rubygems
+  echo>> ~tmp~.mak 	"USE_RUBYGEMS=NO" \
+  echo>>confargs.tmp %1 \
+  shift
+goto :loop
 :ntver
-  echo>> ~tmp~.mak 	"NTVER=%2" \
+  echo>> ~tmp~.mak 	"NTVER=%~2" \
   echo>>confargs.tmp %1=%2 \
   shift
   shift
 goto :loop
 :extout
-  echo>> ~tmp~.mak 	"EXTOUT=%2" \
+  echo>> ~tmp~.mak 	"EXTOUT=%~2" \
   echo>>confargs.tmp %1=%2 \
   shift
   shift
 goto :loop
 :path
-  echo>>pathlist.tmp %2;\
+  echo>>pathlist.tmp %~2;\
   echo>>confargs.tmp %1=%2 \
   shift
   shift
 goto :loop
 :baseruby
-  echo>> ~tmp~.mak 	"BASERUBY=%2" \
+  echo>> ~tmp~.mak 	"BASERUBY=%~2" \
   echo>>confargs.tmp %1=%2 \
   shift
   shift

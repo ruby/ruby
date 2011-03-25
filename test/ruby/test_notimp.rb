@@ -3,14 +3,14 @@ require 'tmpdir'
 
 class TestNotImplement < Test::Unit::TestCase
   def test_respond_to_fork
-    assert_includes(Process.methods, :fork)
+    assert_include(Process.methods, :fork)
     if /linux/ =~ RUBY_PLATFORM
       assert_equal(true, Process.respond_to?(:fork))
     end
   end
 
   def test_respond_to_lchmod
-    assert_includes(File.methods, :lchmod)
+    assert_include(File.methods, :lchmod)
     if /linux/ =~ RUBY_PLATFORM
       assert_equal(false, File.respond_to?(:lchmod))
     end

@@ -22,11 +22,11 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
   end
 
   def make_range_request(range_spec)
-    msg = <<-_end_of_request_
+    msg = <<-END_OF_REQUEST
       GET / HTTP/1.0
       Range: #{range_spec}
 
-    _end_of_request_
+    END_OF_REQUEST
     return StringIO.new(msg.gsub(/^ {6}/, ""))
   end
 
@@ -241,6 +241,13 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
       :CGIInterpreter => TestWEBrick::RubyBin,
       :DocumentRoot => File.dirname(__FILE__),
       :CGIPathEnv => ENV['PATH'],
+      :RequestCallback => Proc.new{|req, res|
+        def req.meta_vars
+          meta = super
+          meta["RUBYLIB"] = $:.join(File::PATH_SEPARATOR)
+          return meta
+        end
+      },
     }
     TestWEBrick.start_httpserver(config) do |server, addr, port, log|
       http = Net::HTTP.new(addr, port)

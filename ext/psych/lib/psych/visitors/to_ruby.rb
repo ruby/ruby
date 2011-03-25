@@ -60,7 +60,7 @@ module Psych
         when "tag:yaml.org,2002:float", "!float"
           Float(@ss.tokenize(o.value))
         when "!ruby/regexp"
-          o.value =~ /^\/(.*)\/([mix]*)$/
+          o.value =~ /^\/(.*)\/([mixn]*)$/
           source  = $1
           options = 0
           lang    = nil
@@ -69,6 +69,7 @@ module Psych
             when 'x' then options |= Regexp::EXTENDED
             when 'i' then options |= Regexp::IGNORECASE
             when 'm' then options |= Regexp::MULTILINE
+            when 'n' then options |= Regexp::NOENCODING
             else lang = option
             end
           end
@@ -187,14 +188,17 @@ module Psych
           o.children.each_slice(2) { |k,v|
             key = accept(k)
 
-            if key == '<<' && Nodes::Alias === v
-              # FIXME: remove this when "<<" syntax is deprecated
-              if $VERBOSE
-                where = caller.find { |x| x !~ /psych/ }
-                warn where
-                warn "\"<<: *#{v.anchor}\" is no longer supported, please switch to \"*#{v.anchor}\""
+            if key == '<<'
+              case v
+              when Nodes::Alias
+                hash.merge! accept(v)
+              when Nodes::Sequence
+                accept(v).reverse_each do |value|
+                  hash.merge! value
+                end
+              else
+                hash[key] = accept(v)
               end
-              return accept(v)
             else
               hash[key] = accept(v)
             end

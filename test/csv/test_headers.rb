@@ -7,12 +7,13 @@
 #  Copyright 2005 James Edward Gray II. You can redistribute or modify this code
 #  under the terms of Ruby's license.
 
-require "test/unit"
+require_relative "base"
 
-require "csv"
+class TestCSV::Headers < TestCSV
+  extend DifferentOFS
 
-class TestCSVHeaders < Test::Unit::TestCase
   def setup
+    super
     @data = <<-END_CSV.gsub(/^\s+/, "")
     first,second,third
     A,B,C

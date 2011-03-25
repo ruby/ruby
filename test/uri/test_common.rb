@@ -97,6 +97,11 @@ class TestCommon < Test::Unit::TestCase
     assert_equal('=', URI.encode_www_form([['', '']]))
     assert_equal('a%26b=1&c=2%3B3&e=4', URI.encode_www_form([['a&b', '1'], ['c', '2;3'], ['e', '4']]))
     assert_equal('image&title&price', URI.encode_www_form([['image', nil], ['title', nil], ['price', nil]]))
+
+    assert_equal("q=ruby&lang=en", URI.encode_www_form([["q", "ruby"], ["lang", "en"]]))
+    assert_equal("q=ruby&lang=en", URI.encode_www_form("q" => "ruby", "lang" => "en"))
+    assert_equal("q=ruby&q=perl&lang=en", URI.encode_www_form("q" => ["ruby", "perl"], "lang" => "en"))
+    assert_equal("q=ruby&q=perl&lang=en", URI.encode_www_form([["q", "ruby"], ["q", "perl"], ["lang", "en"]]))
   end
 
   def test_decode_www_form
@@ -110,6 +115,8 @@ class TestCommon < Test::Unit::TestCase
     assert_raise(ArgumentError){URI.decode_www_form("a=1&%=2")}
     assert_raise(ArgumentError){URI.decode_www_form("a=1&b=%")}
     assert_raise(ArgumentError){URI.decode_www_form("a&b")}
+    bug4098 = '[ruby-core:33464]'
+    assert_raise(ArgumentError, bug4098){URI.decode_www_form("a=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&b")}
   end
 end
 

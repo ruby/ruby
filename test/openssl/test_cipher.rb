@@ -1,8 +1,4 @@
-begin
-  require "openssl"
-rescue LoadError
-end
-require "test/unit"
+require_relative 'utils'
 
 if defined?(OpenSSL)
 
@@ -66,6 +62,11 @@ class OpenSSL::TestCipher < Test::Unit::TestCase
   def test_empty_data
     @c1.encrypt
     assert_raise(ArgumentError){ @c1.update("") }
+  end
+
+  def test_initialize
+    assert_raise(RuntimeError) {@c1.__send__(:initialize, "DES-EDE3-CBC")}
+    assert_raise(RuntimeError) {OpenSSL::Cipher.allocate.final}
   end
 
   if OpenSSL::OPENSSL_VERSION_NUMBER > 0x00907000

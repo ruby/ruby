@@ -72,25 +72,25 @@ int flock(int, int);
 
 /* define system APIs */
 #ifdef _WIN32
-#define STAT(p, s)	rb_w32_ustati64(p, s)
+#define STAT(p, s)	rb_w32_ustati64((p), (s))
 #undef lstat
-#define lstat(p, s)	rb_w32_ustati64(p, s)
+#define lstat(p, s)	rb_w32_ustati64((p), (s))
 #undef access
-#define access(p, m)	rb_w32_uaccess(p, m)
+#define access(p, m)	rb_w32_uaccess((p), (m))
 #undef chmod
-#define chmod(p, m)	rb_w32_uchmod(p, m)
+#define chmod(p, m)	rb_w32_uchmod((p), (m))
 #undef chown
-#define chown(p, o, g)	rb_w32_uchown(p, o, g)
+#define chown(p, o, g)	rb_w32_uchown((p), (o), (g))
 #undef utime
-#define utime(p, t)	rb_w32_uutime(p, t)
+#define utime(p, t)	rb_w32_uutime((p), (t))
 #undef link
-#define link(f, t)	rb_w32_ulink(f, t)
+#define link(f, t)	rb_w32_ulink((f), (t))
 #undef unlink
 #define unlink(p)	rb_w32_uunlink(p)
 #undef rename
-#define rename(f, t)	rb_w32_urename(f, t)
+#define rename(f, t)	rb_w32_urename((f), (t))
 #else
-#define STAT(p, s)	stat(p, s)
+#define STAT(p, s)	stat((p), (s))
 #endif
 
 #if defined(__BEOS__) || defined(__HAIKU__) /* should not change ID if -1 */
@@ -124,7 +124,7 @@ VALUE rb_cFile;
 VALUE rb_mFileTest;
 VALUE rb_cStat;
 
-#define insecure_obj_p(obj, level) (level >= 4 || (level > 0 && OBJ_TAINTED(obj)))
+#define insecure_obj_p(obj, level) ((level) >= 4 || ((level) > 0 && OBJ_TAINTED(obj)))
 
 static VALUE
 file_path_convert(VALUE name)
@@ -713,6 +713,8 @@ rb_stat_mtime(VALUE self)
  *  directory information about the file was changed, not the file
  *  itself).
  *
+ *  Note that on Windows (NTFS), returns creation time (birth time).
+ *
  *     File.stat("testfile").ctime   #=> Wed Apr 09 08:53:14 CDT 2003
  *
  */
@@ -833,15 +835,18 @@ w32_io_info(VALUE *file, BY_HANDLE_FILE_INFORMATION *st)
 	VALUE tmp;
 	WCHAR *ptr;
 	int len;
+	VALUE v;
+
 	FilePathValue(*file);
 	tmp = rb_str_encode_ospath(*file);
 	len = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(tmp), -1, NULL, 0);
-	ptr = ALLOCA_N(WCHAR, len);
+	ptr = ALLOCV_N(WCHAR, v, len);
 	MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(tmp), -1, ptr, len);
 	f = CreateFileW(ptr, 0,
 			FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
 			rb_w32_iswin95() ? 0 : FILE_FLAG_BACKUP_SEMANTICS,
 			NULL);
+	ALLOCV_END(v);
 	if (f == INVALID_HANDLE_VALUE) return f;
 	ret = f;
     }
@@ -1097,7 +1102,7 @@ VALUE
 rb_file_directory_p(VALUE obj, VALUE fname)
 {
 #ifndef S_ISDIR
-#   define S_ISDIR(m) ((m & S_IFMT) == S_IFDIR)
+#   define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
 #endif
 
     struct stat st;
@@ -1119,7 +1124,7 @@ rb_file_pipe_p(VALUE obj, VALUE fname)
 {
 #ifdef S_IFIFO
 #  ifndef S_ISFIFO
-#    define S_ISFIFO(m) ((m & S_IFMT) == S_IFIFO)
+#    define S_ISFIFO(m) (((m) & S_IFMT) == S_IFIFO)
 #  endif
 
     struct stat st;
@@ -1146,10 +1151,10 @@ rb_file_symlink_p(VALUE obj, VALUE fname)
 #    define S_ISLNK(m) _S_ISLNK(m)
 #  else
 #    ifdef _S_IFLNK
-#      define S_ISLNK(m) ((m & S_IFMT) == _S_IFLNK)
+#      define S_ISLNK(m) (((m) & S_IFMT) == _S_IFLNK)
 #    else
 #      ifdef S_IFLNK
-#	 define S_ISLNK(m) ((m & S_IFMT) == S_IFLNK)
+#	 define S_ISLNK(m) (((m) & S_IFMT) == S_IFLNK)
 #      endif
 #    endif
 #  endif
@@ -1183,10 +1188,10 @@ rb_file_socket_p(VALUE obj, VALUE fname)
 #    define S_ISSOCK(m) _S_ISSOCK(m)
 #  else
 #    ifdef _S_IFSOCK
-#      define S_ISSOCK(m) ((m & S_IFMT) == _S_IFSOCK)
+#      define S_ISSOCK(m) (((m) & S_IFMT) == _S_IFSOCK)
 #    else
 #      ifdef S_IFSOCK
-#	 define S_ISSOCK(m) ((m & S_IFMT) == S_IFSOCK)
+#	 define S_ISSOCK(m) (((m) & S_IFMT) == S_IFSOCK)
 #      endif
 #    endif
 #  endif
@@ -1214,7 +1219,7 @@ rb_file_blockdev_p(VALUE obj, VALUE fname)
 {
 #ifndef S_ISBLK
 #   ifdef S_IFBLK
-#	define S_ISBLK(m) ((m & S_IFMT) == S_IFBLK)
+#	define S_ISBLK(m) (((m) & S_IFMT) == S_IFBLK)
 #   else
 #	define S_ISBLK(m) (0)  /* anytime false */
 #   endif
@@ -1240,7 +1245,7 @@ static VALUE
 rb_file_chardev_p(VALUE obj, VALUE fname)
 {
 #ifndef S_ISCHR
-#   define S_ISCHR(m) ((m & S_IFMT) == S_IFCHR)
+#   define S_ISCHR(m) (((m) & S_IFMT) == S_IFCHR)
 #endif
 
     struct stat st;
@@ -1441,7 +1446,7 @@ rb_file_executable_real_p(VALUE obj, VALUE fname)
 }
 
 #ifndef S_ISREG
-#   define S_ISREG(m) ((m & S_IFMT) == S_IFREG)
+#   define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
 #endif
 
 /*
@@ -1869,6 +1874,8 @@ rb_file_mtime(VALUE obj)
  *  directory information about the file was changed, not the file
  *  itself).
  *
+ *  Note that on Windows (NTFS), returns creation time (birth time).
+ *
  *     File.ctime("testfile")   #=> Wed Apr 09 08:53:13 CDT 2003
  *
  */
@@ -1891,6 +1898,8 @@ rb_file_s_ctime(VALUE klass, VALUE fname)
  *
  *  Returns the change time for <i>file</i> (that is, the time directory
  *  information about the file was changed, not the file itself).
+ *
+ *  Note that on Windows (NTFS), returns creation time (birth time).
  *
  *     File.new("testfile").ctime   #=> Wed Apr 09 08:53:14 CDT 2003
  *
@@ -3087,30 +3096,56 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
     if ((s = strrdirsep(b = buf)) != 0 && !strpbrk(s, "*?")) {
 	size_t len;
 	WIN32_FIND_DATA wfd;
+	HANDLE h;
 #ifdef __CYGWIN__
+#ifdef HAVE_CYGWIN_CONV_PATH
+	char *w32buf = NULL;
+	const int flags = CCP_POSIX_TO_WIN_A | CCP_RELATIVE;
+#else
+	char w32buf[MAXPATHLEN];
+#endif
+	const char *path;
+	ssize_t bufsize;
 	int lnk_added = 0, is_symlink = 0;
 	struct stat st;
-	char w32buf[MAXPATHLEN];
 	p = (char *)s;
+	len = strlen(p);
 	if (lstat(buf, &st) == 0 && S_ISLNK(st.st_mode)) {
 	    is_symlink = 1;
-	    *p = '\0';
-	}
-	if (cygwin_conv_to_win32_path((*buf ? buf : "/"), w32buf) == 0) {
-	    b = w32buf;
-	}
-	if (is_symlink && b == w32buf) {
-	    *p = '\\';
-	    strlcat(w32buf, p, sizeof(w32buf));
-	    len = strlen(p);
 	    if (len > 4 && STRCASECMP(p + len - 4, ".lnk") != 0) {
 		lnk_added = 1;
-		strlcat(w32buf, ".lnk", sizeof(w32buf));
 	    }
+	}
+	path = *buf ? buf : "/";
+#ifdef HAVE_CYGWIN_CONV_PATH
+	bufsize = cygwin_conv_path(flags, path, NULL, 0);
+	if (bufsize > 0) {
+	    bufsize += len;
+	    if (lnk_added) bufsize += 4;
+	    w32buf = ALLOCA_N(char, bufsize);
+	    if (cygwin_conv_path(flags, path, w32buf, bufsize) == 0) {
+		b = w32buf;
+	    }
+	}
+#else
+	bufsize = MAXPATHLEN;
+	if (cygwin_conv_to_win32_path(path, w32buf) == 0) {
+	    b = w32buf;
+	}
+#endif
+	if (is_symlink && b == w32buf) {
+	    *p = '\\';
+	    strlcat(w32buf, p, bufsize);
+	    if (lnk_added) {
+		strlcat(w32buf, ".lnk", bufsize);
+	    }
+	}
+	else {
+	    lnk_added = 0;
 	}
 	*p = '/';
 #endif
-	HANDLE h = FindFirstFile(b, &wfd);
+	h = FindFirstFile(b, &wfd);
 	if (h != INVALID_HANDLE_VALUE) {
 	    FindClose(h);
 	    len = strlen(wfd.cFileName);
@@ -3144,8 +3179,8 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
 #define EXPAND_PATH_BUFFER() rb_usascii_str_new(0, MAXPATHLEN + 2)
 
 #define check_expand_path_args(fname, dname) \
-    ((fname = rb_get_path(fname)), \
-     (void)(NIL_P(dname) ? dname : (dname = rb_get_path(dname))))
+    (((fname) = rb_get_path(fname)), \
+     (void)(NIL_P(dname) ? (dname) : ((dname) = rb_get_path(dname))))
 
 static VALUE
 file_expand_path_1(VALUE fname)
@@ -4023,7 +4058,7 @@ rb_file_flock(VALUE obj, VALUE operation)
     if (fptr->mode & FMODE_WRITABLE) {
 	rb_io_flush(obj);
     }
-    while ((int)rb_thread_blocking_region(rb_thread_flock, op, RUBY_UBF_IO, 0) < 0) {
+    while ((int)rb_thread_io_blocking_region(rb_thread_flock, op, fptr->fd) < 0) {
 	switch (errno) {
 	  case EAGAIN:
 	  case EACCES:
@@ -4984,7 +5019,7 @@ path_check_0(VALUE path, int execpath)
 #endif
 
 #if ENABLE_PATH_CHECK
-#define fpath_check(path) path_check_0(path, FALSE)
+#define fpath_check(path) path_check_0((path), FALSE)
 #else
 #define fpath_check(path) 1
 #endif

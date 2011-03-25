@@ -8,8 +8,6 @@ cgi/session.rb	CGI session class
 cmath.rb	math support for complex numbers
 complex.rb	includes cmath and set complex arithemtic as default (obsolete)
 csv.rb		CSV parser/generator
-date.rb		date object
-date/format.rb	date parsing and formatting
 debug.rb	ruby debugger
 delegate.rb	delegates messages to other object
 drb.rb		distributed Ruby

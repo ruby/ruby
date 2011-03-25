@@ -2,23 +2,22 @@ require_relative 'helper'
 
 module Psych
   class TestScalarScanner < TestCase
-    def test_scan_time
-      [ '2001-12-15T02:59:43.1Z',
-        '2001-12-14t21:59:43.10-05:00',
-        '2001-12-14 21:59:43.10 -5',
-        '2010-01-06 00:00:00 -08:00',
-        '2001-12-15 2:59:43.10',
-      ].each do |time|
-        ss = Psych::ScalarScanner.new
-        assert_instance_of Time, ss.tokenize(time)
-      end
-    end
-
     attr_reader :ss
 
     def setup
       super
       @ss = Psych::ScalarScanner.new
+    end
+
+    def test_scan_time
+      { '2001-12-15T02:59:43.1Z' => Time.utc(2001, 12, 15, 02, 59, 43, 100000),
+        '2001-12-14t21:59:43.10-05:00' => Time.utc(2001, 12, 15, 02, 59, 43, 100000),
+        '2001-12-14 21:59:43.10 -5' => Time.utc(2001, 12, 15, 02, 59, 43, 100000),
+        '2001-12-15 2:59:43.10' => Time.utc(2001, 12, 15, 02, 59, 43, 100000),
+        '2011-02-24 11:17:06 -0800' => Time.utc(2011, 02, 24, 19, 17, 06)
+      }.each do |time_str, time|
+        assert_equal time, @ss.tokenize(time_str)
+      end
     end
 
     def test_scan_date

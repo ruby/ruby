@@ -12,22 +12,22 @@
 #include "ossl.h"
 
 #define WrapBN(klass, obj, bn) do { \
-  if (!bn) { \
+  if (!(bn)) { \
     ossl_raise(rb_eRuntimeError, "BN wasn't initialized!"); \
   } \
-  obj = Data_Wrap_Struct(klass, 0, BN_clear_free, bn); \
+  (obj) = Data_Wrap_Struct((klass), 0, BN_clear_free, (bn)); \
 } while (0)
 
 #define GetBN(obj, bn) do { \
-  Data_Get_Struct(obj, BIGNUM, bn); \
-  if (!bn) { \
+  Data_Get_Struct((obj), BIGNUM, (bn)); \
+  if (!(bn)) { \
     ossl_raise(rb_eRuntimeError, "BN wasn't initialized!"); \
   } \
 } while (0)
 
 #define SafeGetBN(obj, bn) do { \
-  OSSL_Check_Kind(obj, cBN); \
-  GetBN(obj, bn); \
+  OSSL_Check_Kind((obj), cBN); \
+  GetBN((obj), (bn)); \
 } while (0)
 
 /*
@@ -69,6 +69,8 @@ GetBNPtr(VALUE obj)
 	    ossl_raise(eBNError, NULL);
 	}
 	WrapBN(cBN, obj, bn); /* Handle potencial mem leaks */
+	break;
+    case T_NIL:
 	break;
     default:
 	ossl_raise(rb_eTypeError, "Cannot convert into OpenSSL::BN");
@@ -131,12 +133,12 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
 
     switch (base) {
     case 0:
-	if (!BN_mpi2bn((unsigned char *)RSTRING_PTR(str), RSTRING_LEN(str), bn)) {
+	if (!BN_mpi2bn((unsigned char *)RSTRING_PTR(str), RSTRING_LENINT(str), bn)) {
 	    ossl_raise(eBNError, NULL);
 	}
 	break;
     case 2:
-	if (!BN_bin2bn((unsigned char *)RSTRING_PTR(str), RSTRING_LEN(str), bn)) {
+	if (!BN_bin2bn((unsigned char *)RSTRING_PTR(str), RSTRING_LENINT(str), bn)) {
 	    ossl_raise(eBNError, NULL);
 	}
 	break;
@@ -196,11 +198,11 @@ ossl_bn_to_s(int argc, VALUE *argv, VALUE self)
 	break;
     case 10:
 	if (!(buf = BN_bn2dec(bn))) ossl_raise(eBNError, NULL);
-	str = ossl_buf2str(buf, strlen(buf));
+	str = ossl_buf2str(buf, rb_long2int(strlen(buf)));
 	break;
     case 16:
 	if (!(buf = BN_bn2hex(bn))) ossl_raise(eBNError, NULL);
-	str = ossl_buf2str(buf, strlen(buf));
+	str = ossl_buf2str(buf, rb_long2int(strlen(buf)));
 	break;
     default:
 	ossl_raise(rb_eArgError, "invalid radix %d", base);
@@ -731,8 +733,8 @@ ossl_bn_is_prime_fasttest(int argc, VALUE *argv, VALUE self)
 void
 Init_ossl_bn()
 {
-#if 0 /* let rdoc know about mOSSL */
-    mOSSL = rb_define_module("OpenSSL");
+#if 0
+    mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL */
 #endif
 
     if (!(ossl_bn_ctx = BN_CTX_new())) {

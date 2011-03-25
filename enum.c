@@ -537,7 +537,7 @@ inject_op_i(VALUE i, VALUE p, int argc, VALUE *argv)
  *  will be passed to the named method of <i>memo</i>.
  *  In either case, the result becomes the new value for <i>memo</i>.
  *  At the end of the iteration, the final value of <i>memo</i> is the
- *  return value fo the method.
+ *  return value for the method.
  *
  *  If you do not explicitly specify an <i>initial</i> value for <i>memo</i>,
  *  then uses the first element of collection is used as the initial value
@@ -616,7 +616,7 @@ partition_i(VALUE i, VALUE *ary, int argc, VALUE *argv)
  *
  *  If no block is given, an enumerator is returned instead.
  *
- *     (1..6).partition {|i| (i&1).zero?}   #=> [[2, 4, 6], [1, 3, 5]]
+ *     (1..6).partition {|v| v.even? }  #=> [[2, 4, 6], [1, 3, 5]]
  *
  */
 
@@ -714,6 +714,11 @@ first_i(VALUE i, VALUE *params, int argc, VALUE *argv)
  *  If the enumerable is empty, the first form returns <code>nil</code>, and the
  *  second form returns an empty array.
  *
+ *    %w[foo bar baz].first     #=> "foo"
+ *    %w[foo bar baz].first(2)  #=> ["foo", "bar"]
+ *    %w[foo bar baz].first(10) #=> ["foo", "bar", "baz"]
+ *    [].first                  #=> nil
+ *
  */
 
 static VALUE
@@ -765,32 +770,55 @@ enum_sort(VALUE obj)
     return rb_ary_sort(enum_to_a(0, 0, obj));
 }
 
+#define SORT_BY_BUFSIZE 16
+struct sort_by_data {
+    VALUE ary;
+    VALUE buf;
+    int n;
+};
+
 static VALUE
-sort_by_i(VALUE i, VALUE ary, int argc, VALUE *argv)
+sort_by_i(VALUE i, VALUE _data, int argc, VALUE *argv)
 {
-    NODE *memo;
+    struct sort_by_data *data = (struct sort_by_data *)_data;
+    VALUE ary = data->ary;
+    VALUE v;
 
     ENUM_WANT_SVALUE();
+
+    v = rb_yield(i);
 
     if (RBASIC(ary)->klass) {
 	rb_raise(rb_eRuntimeError, "sort_by reentered");
     }
-    /* use NODE_DOT2 as memo(v, v, -) */
-    memo = rb_node_newnode(NODE_DOT2, rb_yield(i), i, 0);
-    rb_ary_push(ary, (VALUE)memo);
+    if (RARRAY_LEN(data->buf) != SORT_BY_BUFSIZE*2) {
+	rb_raise(rb_eRuntimeError, "sort_by reentered");
+    }
+
+    RARRAY_PTR(data->buf)[data->n*2] = v;
+    RARRAY_PTR(data->buf)[data->n*2+1] = i;
+    data->n++;
+    if (data->n == SORT_BY_BUFSIZE) {
+	rb_ary_concat(ary, data->buf);
+	data->n = 0;
+    }
     return Qnil;
 }
 
 static int
 sort_by_cmp(const void *ap, const void *bp, void *data)
 {
-    VALUE a = (*(NODE *const *)ap)->u1.value;
-    VALUE b = (*(NODE *const *)bp)->u1.value;
+    VALUE a;
+    VALUE b;
     VALUE ary = (VALUE)data;
 
     if (RBASIC(ary)->klass) {
 	rb_raise(rb_eRuntimeError, "sort_by reentered");
     }
+
+    a = *(VALUE *)ap;
+    b = *(VALUE *)bp;
+
     return rb_cmpint(rb_funcall(a, id_cmp, 1, b), a, b);
 }
 
@@ -870,27 +898,37 @@ enum_sort_by(VALUE obj)
 {
     VALUE ary;
     long i;
+    struct sort_by_data data;
 
     RETURN_ENUMERATOR(obj, 0, 0);
 
-    if (TYPE(obj) == T_ARRAY) {
-	ary  = rb_ary_new2(RARRAY_LEN(obj));
+    if (TYPE(obj) == T_ARRAY && RARRAY_LEN(obj) <= LONG_MAX/2) {
+	ary = rb_ary_new2(RARRAY_LEN(obj)*2);
     }
     else {
 	ary = rb_ary_new();
     }
     RBASIC(ary)->klass = 0;
-    rb_block_call(obj, id_each, 0, 0, sort_by_i, ary);
-    if (RARRAY_LEN(ary) > 1) {
-	ruby_qsort(RARRAY_PTR(ary), RARRAY_LEN(ary), sizeof(VALUE),
+    data.ary = ary;
+    data.buf = rb_ary_tmp_new(SORT_BY_BUFSIZE*2);
+    data.n = 0;
+    rb_ary_store(data.buf, SORT_BY_BUFSIZE*2-1, Qnil);
+    rb_block_call(obj, id_each, 0, 0, sort_by_i, (VALUE)&data);
+    if (data.n) {
+	rb_ary_resize(data.buf, data.n*2);
+	rb_ary_concat(ary, data.buf);
+    }
+    if (RARRAY_LEN(ary) > 2) {
+	ruby_qsort(RARRAY_PTR(ary), RARRAY_LEN(ary)/2, 2*sizeof(VALUE),
 		   sort_by_cmp, (void *)ary);
     }
     if (RBASIC(ary)->klass) {
 	rb_raise(rb_eRuntimeError, "sort_by reentered");
     }
-    for (i=0; i<RARRAY_LEN(ary); i++) {
-	RARRAY_PTR(ary)[i] = RNODE(RARRAY_PTR(ary)[i])->u2.value;
+    for (i=1; i<RARRAY_LEN(ary); i+=2) {
+	RARRAY_PTR(ary)[i/2] = RARRAY_PTR(ary)[i];
     }
+    rb_ary_resize(ary, RARRAY_LEN(ary)/2);
     RBASIC(ary)->klass = rb_cArray;
     OBJ_INFECT(ary, obj);
 
@@ -1627,6 +1665,13 @@ enum_each_with_index(int argc, VALUE *argv, VALUE obj)
  *
  *  If no block is given, an enumerator is returned instead.
  *
+ *      (1..3).reverse_each {|v| p v }
+ *
+ *    produces:
+ *      
+ *      3
+ *      2
+ *      1
  */
 
 static VALUE
@@ -1671,13 +1716,17 @@ each_val_i(VALUE i, VALUE p, int argc, VALUE *argv)
  *       def each
  *         yield 1
  *         yield 1,2
+ *         yield
  *       end
  *     end
- *     Foo.new.each_entry{|o| print o, " -- "}
+ *     Foo.new.each_entry{|o| p o }
  *
  *  produces:
  *
- *     1 -- [1, 2] --
+ *     1
+ *     [1, 2]
+ *     nil
+ *
  */
 
 static VALUE

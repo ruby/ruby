@@ -2237,11 +2237,11 @@ static int gnAlloc=0; /* Memory allocation counter */
 VP_EXPORT void *
 VpMemAlloc(size_t mb)
 {
-    void *p = xmalloc((unsigned int)mb);
-    if(!p) {
-        VpException(VP_EXCEPTION_MEMORY,"failed to allocate memory",1);
+    void *p = xmalloc(mb);
+    if (!p) {
+        VpException(VP_EXCEPTION_MEMORY, "failed to allocate memory", 1);
     }
-    memset(p,0,mb);
+    memset(p, 0, mb);
 #ifdef BIGDECIMAL_DEBUG
     gnAlloc++; /* Count allocation call */
 #endif /* BIGDECIMAL_DEBUG */

@@ -35,7 +35,7 @@ class BigDecimal < Numeric
       self.to_s
     else
       i       = self.to_i.to_s
-      s,f,y,z = self.frac.split
+      _,f,_,z = self.frac.split
       i + "." + ("0"*(-z)) + f
     end
   end

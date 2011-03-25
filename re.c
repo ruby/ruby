@@ -21,8 +21,8 @@ VALUE rb_eRegexpError;
 typedef char onig_errmsg_buffer[ONIG_MAX_ERROR_MESSAGE_LEN];
 #define errcpy(err, msg) strlcpy((err), (msg), ONIG_MAX_ERROR_MESSAGE_LEN)
 
-#define BEG(no) regs->beg[no]
-#define END(no) regs->end[no]
+#define BEG(no) (regs->beg[(no)])
+#define END(no) (regs->end[(no)])
 
 #if 'a' == 97   /* it's ascii */
 static const char casetable[] = {
@@ -321,11 +321,14 @@ rb_reg_expr_str(VALUE str, const char *s, long len,
 	rb_encoding *enc, rb_encoding *resenc)
 {
     const char *p, *pend;
+    int cr = ENC_CODERANGE_UNKNOWN;
     int need_escape = 0;
     int c, clen;
 
     p = s; pend = p + len;
-    if (rb_enc_asciicompat(enc)) {
+    rb_str_coderange_scan_restartable(p, pend, enc, &cr);
+    if (rb_enc_asciicompat(enc) &&
+	(cr == ENC_CODERANGE_VALID || cr == ENC_CODERANGE_7BIT)) {
 	while (p < pend) {
 	    c = rb_enc_ascget(p, pend, &clen, enc);
 	    if (c == -1) {
@@ -587,7 +590,7 @@ rb_reg_to_s(VALUE re)
 static void
 rb_reg_raise(const char *s, long len, const char *err, VALUE re)
 {
-    VALUE desc = rb_reg_desc(s, len, re);
+    volatile VALUE desc = rb_reg_desc(s, len, re);
 
     rb_raise(rb_eRegexpError, "%s: %s", err, RSTRING_PTR(desc));
 }
@@ -2443,6 +2446,7 @@ rb_reg_initialize_str(VALUE obj, VALUE str, int options, onig_errmsg_buffer err,
     }
     ret = rb_reg_initialize(obj, RSTRING_PTR(str), RSTRING_LEN(str), enc,
 			    options, err, sourcefile, sourceline);
+    OBJ_INFECT(obj, str);
     RB_GC_GUARD(str);
     return ret;
 }
@@ -3281,7 +3285,7 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
     rb_encoding *str_enc = rb_enc_get(str);
     rb_encoding *src_enc = rb_enc_get(src);
     int acompat = rb_enc_asciicompat(str_enc);
-#define ASCGET(s,e,cl) (acompat ? (*cl=1,ISASCII(s[0])?s[0]:-1) : rb_enc_ascget(s, e, cl, str_enc))
+#define ASCGET(s,e,cl) (acompat ? (*(cl)=1,ISASCII((s)[0])?(s)[0]:-1) : rb_enc_ascget((s), (e), (cl), str_enc))
 
     p = s = RSTRING_PTR(str);
     e = s + RSTRING_LEN(str);
@@ -3558,6 +3562,7 @@ Init_Regexp(void)
     rb_define_const(rb_cRegexp, "EXTENDED", INT2FIX(ONIG_OPTION_EXTEND));
     rb_define_const(rb_cRegexp, "MULTILINE", INT2FIX(ONIG_OPTION_MULTILINE));
     rb_define_const(rb_cRegexp, "FIXEDENCODING", INT2FIX(ARG_ENCODING_FIXED));
+    rb_define_const(rb_cRegexp, "NOENCODING", INT2FIX(ARG_ENCODING_NONE));
 
     rb_global_variable(&reg_cache);
 

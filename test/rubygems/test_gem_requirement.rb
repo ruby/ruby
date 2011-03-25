@@ -1,7 +1,13 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require 'rubygems/test_case'
 require "rubygems/requirement"
 
-class TestGemRequirement < RubyGemTestCase
+class TestGemRequirement < Gem::TestCase
 
   def test_equals2
     r = req "= 1.2"
@@ -187,11 +193,15 @@ class TestGemRequirement < RubyGemTestCase
     assert_satisfied_by "  ",          "> 0.a "
     assert_satisfied_by "",            " >  0.a"
     assert_satisfied_by "3.1",         "< 3.2.rc1"
+
     assert_satisfied_by "3.2.0",       "> 3.2.0.rc1"
     assert_satisfied_by "3.2.0.rc2",   "> 3.2.0.rc1"
+
     assert_satisfied_by "3.0.rc2",     "< 3.0"
     assert_satisfied_by "3.0.rc2",     "< 3.0.0"
     assert_satisfied_by "3.0.rc2",     "< 3.0.1"
+
+    assert_satisfied_by "3.0.rc2",     "> 0"
   end
 
   def test_illformed_requirements
@@ -216,9 +226,9 @@ class TestGemRequirement < RubyGemTestCase
     refute_satisfied_by "2.0",     "~> 1.4.4"
 
     refute_satisfied_by "1.1.pre", "~> 1.0.0"
-    assert_satisfied_by "1.1.pre", "~> 1.1"
+    refute_satisfied_by "1.1.pre", "~> 1.1"
     refute_satisfied_by "2.0.a",   "~> 1.0"
-    assert_satisfied_by "2.0.a",   "~> 2.0"
+    refute_satisfied_by "2.0.a",   "~> 2.0"
   end
 
   def test_satisfied_by_eh_multiple

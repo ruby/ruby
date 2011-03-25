@@ -71,4 +71,43 @@ class PStoreTest < Test::Unit::TestCase
       end
     end
   end
+
+  def test_thread_safe
+    assert_raise(PStore::Error) do
+      flag = false
+      Thread.new do
+        @pstore.transaction do
+          @pstore[:foo] = "bar"
+          flag = true
+          sleep 1
+        end
+      end
+      until flag; end
+      @pstore.transaction {}
+    end
+    assert_block do
+      pstore = PStore.new("pstore.tmp2.#{Process.pid}",true)
+      flag = false
+      Thread.new do
+        pstore.transaction do
+          pstore[:foo] = "bar"
+          flag = true
+          sleep 1
+        end
+      end
+      until flag; end
+      pstore.transaction { pstore[:foo] == "bar" }
+      File.unlink("pstore.tmp2.#{Process.pid}") rescue nil
+    end
+  end
+  
+  def test_nested_transaction_raises_error
+    assert_raise(PStore::Error) do
+      @pstore.transaction { @pstore.transaction { } }
+    end
+    pstore = PStore.new("pstore.tmp2.#{Process.pid}", true)
+    assert_raise(PStore::Error) do
+      pstore.transaction { pstore.transaction { } }
+    end
+  end
 end

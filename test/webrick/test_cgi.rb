@@ -10,7 +10,7 @@ class TestWEBrickCGI < Test::Unit::TestCase
       :CGIInterpreter => TestWEBrick::RubyBin,
       :DocumentRoot => File.dirname(__FILE__),
       :DirectoryIndex => ["webrick.cgi"],
-      :RequestHandler => Proc.new{|req, res|
+      :RequestCallback => Proc.new{|req, res|
         def req.meta_vars
           meta = super
           meta["RUBYLIB"] = $:.join(File::PATH_SEPARATOR)

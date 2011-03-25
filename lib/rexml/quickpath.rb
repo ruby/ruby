@@ -33,7 +33,6 @@ module REXML
         results = filter(element.to_a, path)
       when /^[\[!\w:]/u
         # match on child
-        matches = []
         children = element.to_a
         results = filter(children, path)
       else
@@ -51,8 +50,6 @@ module REXML
       when /^\/\//u											# Descendant
         return axe( elements, "descendant-or-self", $' )
       when /^\/?\b(\w[-\w]*)\b::/u							# Axe
-        axe_name = $1
-        rest = $'
         return axe( elements, $1, $' )
       when /^\/(?=\b([:!\w][-\.\w]*:)?[-!\*\.\w]*\b([^:(]|$)|\*)/u	# Child
         rest = $'

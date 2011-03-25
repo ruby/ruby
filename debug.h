@@ -19,10 +19,10 @@
 #pragma GCC visibility push(default)
 #endif
 
-#define dpv(h,v) ruby_debug_print_value(-1, 0, h, v)
-#define dp(v)    ruby_debug_print_value(-1, 0, "", v)
-#define dpi(i)   ruby_debug_print_id(-1, 0, "", i)
-#define dpn(n)   ruby_debug_print_node(-1, 0, "", n)
+#define dpv(h,v) ruby_debug_print_value(-1, 0, (h), (v))
+#define dp(v)    ruby_debug_print_value(-1, 0, "", (v))
+#define dpi(i)   ruby_debug_print_id(-1, 0, "", (i))
+#define dpn(n)   ruby_debug_print_node(-1, 0, "", (n))
 
 #define bp()     ruby_debug_breakpoint()
 

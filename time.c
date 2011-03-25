@@ -184,7 +184,7 @@ quo(VALUE x, VALUE y)
     return ret;
 }
 
-#define mulquo(x,y,z) ((y == z) ? x : quo(mul(x,y),z))
+#define mulquo(x,y,z) (((y) == (z)) ? (x) : quo(mul((x),(y)),(z)))
 
 static void
 divmodv(VALUE n, VALUE d, VALUE *q, VALUE *r)
@@ -853,11 +853,11 @@ static const char *find_time_t(struct tm *tptr, int utc_p, time_t *tp);
 static struct vtm *localtimew(wideval_t timew, struct vtm *result);
 
 static int leap_year_p(long y);
-#define leap_year_v_p(y) leap_year_p(NUM2LONG(mod(v, INT2FIX(400))))
+#define leap_year_v_p(y) leap_year_p(NUM2LONG(mod((y), INT2FIX(400))))
 
 #ifdef HAVE_GMTIME_R
-#define rb_gmtime_r(t, tm) gmtime_r(t, tm)
-#define rb_localtime_r(t, tm) localtime_r(t, tm)
+#define rb_gmtime_r(t, tm) gmtime_r((t), (tm))
+#define rb_localtime_r(t, tm) localtime_r((t), (tm))
 #else
 static inline struct tm *
 rb_gmtime_r(const time_t *tp, struct tm *result)
@@ -885,8 +885,8 @@ rb_localtime_r2(const time_t *t, struct tm *result)
     result = rb_localtime_r(t, result);
 #if defined(HAVE_MKTIME) && defined(LOCALTIME_OVERFLOW_PROBLEM)
     if (result) {
-        int gmtoff1 = 0;
-        int gmtoff2 = 0;
+        long gmtoff1 = 0;
+        long gmtoff2 = 0;
         struct tm tmp = *result;
         time_t t2;
 #  if defined(HAVE_STRUCT_TM_TM_GMTOFF)
@@ -1799,9 +1799,9 @@ struct time_object {
 };
 
 #define GetTimeval(obj, tobj) \
-    TypedData_Get_Struct(obj, struct time_object, &time_data_type, tobj)
+    TypedData_Get_Struct((obj), struct time_object, &time_data_type, (tobj))
 
-#define IsTimeval(obj) rb_typeddata_is_kind_of(obj, &time_data_type)
+#define IsTimeval(obj) rb_typeddata_is_kind_of((obj), &time_data_type)
 
 #define TIME_UTC_P(tobj) ((tobj)->gmt == 1)
 #define TIME_SET_UTC(tobj) ((tobj)->gmt = 1)
@@ -2740,7 +2740,7 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
     int status;
     int tptr_tm_yday;
 
-#define GUESS(p) (DEBUG_FIND_TIME_NUMGUESS_INC (utc_p ? gmtime_with_leapsecond(p, &result) : LOCALTIME(p, result)))
+#define GUESS(p) (DEBUG_FIND_TIME_NUMGUESS_INC (utc_p ? gmtime_with_leapsecond((p), &result) : LOCALTIME((p), result)))
 
     guess_lo = TIMET_MIN;
     guess_hi = TIMET_MAX;
@@ -4189,11 +4189,11 @@ time_zone(VALUE time)
     MAKE_TM(time, tobj);
 
     if (TIME_UTC_P(tobj)) {
-	return rb_str_new2("UTC");
+	return rb_obj_untaint(rb_locale_str_new_cstr("UTC"));
     }
     if (tobj->vtm.zone == NULL)
         return Qnil;
-    return rb_str_new2(tobj->vtm.zone);
+    return rb_obj_untaint(rb_locale_str_new_cstr(tobj->vtm.zone));
 }
 
 /*
@@ -4362,9 +4362,10 @@ strftimev(const char *fmt, VALUE time)
  *  Format directives:
  *
  *    Date (Year, Month, Day):
- *      %Y - Year with century
- *      %C - Century (20 in 2009)
- *      %y - Year without a century (00..99)
+ *      %Y - Year with century (can be negative, 4 digits at least)
+ *              -0001, 0000, 1995, 2009, 14292, etc.
+ *      %C - year / 100 (round down.  20 in 2009)
+ *      %y - year % 100 (00..99)
  *      
  *      %m - Month of the year, zero-padded (01..12)
  *              %_m  blank-padded ( 1..12)
@@ -4398,6 +4399,7 @@ strftimev(const char *fmt, VALUE time)
  *              %3N  millisecond (3 digits)
  *              %6N  microsecond (6 digits)
  *              %9N  nanosecond (9 digits)
+ *              %12N picosecond (12 digits)
  *      
  *    Time zone:
  *      %z - Time zone as hour and minute offset from UTC (e.g. +0900)
@@ -4408,6 +4410,8 @@ strftimev(const char *fmt, VALUE time)
  *    Weekday:
  *      %A - The full weekday name (``Sunday'')
  *              %^A  uppercased (``SUNDAY'')
+ *      %a - The abbreviated name (``Sun'')
+ *              %^a  uppercased (``SUN'')
  *      %u - Day of the week (Monday is 1, 1..7)
  *      %w - Day of the week (Sunday is 0, 0..6)
  *      
@@ -4450,7 +4454,7 @@ strftimev(const char *fmt, VALUE time)
  *  However this method is locale independent since Ruby 1.9.
  *  So, the result may differ even if a same format string is used in other
  *  systems such as C.
- *  It is good practice to avoid %x and %X c because there are corresponding
+ *  It is good practice to avoid %x and %X because there are corresponding
  *  locale independent representations, %D and %T.
  *
  *  Examples:
@@ -4460,40 +4464,40 @@ strftimev(const char *fmt, VALUE time)
  *    t.strftime("at %I:%M%p")            #=> "at 08:37AM"
  *    
  *  Various ISO 8601 formats:
- *    %Y%m%d           => "20071119"                  Calendar date (basic format)
- *    %F               => "2007-11-19"                Calendar date (extended format)
- *    %Y-%m            => "2007-11"                   Calendar date, reduced accuracy, specific month
- *    %Y               => "2007"                      Calendar date, reduced accuracy, specific year
- *    %C               => "20"                        Calendar date, reduced accuracy, specific century
- *    %Y%j             => "2007323"                   Ordinal date (basic format)
- *    %Y-%j            => "2007-323"                  Ordinal date (extended format)
- *    %GW%V%u          => "2007W471"                  Week date (basic format)
- *    %G-W%V-%u        => "2007-W47-1"                Week date (extended format)
- *    %GW%V            => "2007W47"                   Week date, reduced accuracy, specific week (basic format)
- *    %G-W%V           => "2007-W47"                  Week date, reduced accuracy, specific week (extended format)
- *    %H%M%S           => "083748"                    Local time (basic format)
- *    %T               => "08:37:48"                  Local time (extended format)
- *    %H%M             => "0837"                      Local time, reduced accuracy, specific minute (basic format)
- *    %H:%M            => "08:37"                     Local time, reduced accuracy, specific minute (extended format)
- *    %H               => "08"                        Local time, reduced accuracy, specific hour
- *    %H%M%S,%L        => "083748,000"                Local time with decimal fraction, comma as decimal sign (basic format)
- *    %T,%L            => "08:37:48,000"              Local time with decimal fraction, comma as decimal sign (extended format)
- *    %H%M%S.%L        => "083748.000"                Local time with decimal fraction, full stop as decimal sign (basic format)
- *    %T.%L            => "08:37:48.000"              Local time with decimal fraction, full stop as decimal sign (extended format)
- *    %H%M%S%z         => "083748-0600"               Local time and the difference from UTC (basic format)
- *    %T%:z            => "08:37:48-06:00"            Local time and the difference from UTC (extended format)
- *    %Y%m%dT%H%M%S%z  => "20071119T083748-0600"      Date and time of day for calendar date (basic format)
- *    %FT%T%:z         => "2007-11-19T08:37:48-06:00" Date and time of day for calendar date (extended format)
- *    %Y%jT%H%M%S%z    => "2007323T083748-0600"       Date and time of day for ordinal date (basic format)
- *    %Y-%jT%T%:z      => "2007-323T08:37:48-06:00"   Date and time of day for ordinal date (extended format)
- *    %GW%V%uT%H%M%S%z => "2007W471T083748-0600"      Date and time of day for week date (basic format)
- *    %G-W%V-%uT%T%:z  => "2007-W47-1T08:37:48-06:00" Date and time of day for week date (extended format)
- *    %Y%m%dT%H%M      => "20071119T0837"             Calendar date and local time (basic format)
- *    %FT%R            => "2007-11-19T08:37"          Calendar date and local time (extended format)
- *    %Y%jT%H%MZ       => "2007323T0837Z"             Ordinal date and UTC of day (basic format)
- *    %Y-%jT%RZ        => "2007-323T08:37Z"           Ordinal date and UTC of day (extended format)
- *    %GW%V%uT%H%M%z   => "2007W471T0837-0600"        Week date and local time and difference from UTC (basic format)
- *    %G-W%V-%uT%R%:z  => "2007-W47-1T08:37-06:00"    Week date and local time and difference from UTC (extended format)
+ *    %Y%m%d           => 20071119                  Calendar date (basic)
+ *    %F               => 2007-11-19                Calendar date (extended)
+ *    %Y-%m            => 2007-11                   Calendar date, reduced accuracy, specific month
+ *    %Y               => 2007                      Calendar date, reduced accuracy, specific year
+ *    %C               => 20                        Calendar date, reduced accuracy, specific century
+ *    %Y%j             => 2007323                   Ordinal date (basic)
+ *    %Y-%j            => 2007-323                  Ordinal date (extended)
+ *    %GW%V%u          => 2007W471                  Week date (basic)
+ *    %G-W%V-%u        => 2007-W47-1                Week date (extended)
+ *    %GW%V            => 2007W47                   Week date, reduced accuracy, specific week (basic)
+ *    %G-W%V           => 2007-W47                  Week date, reduced accuracy, specific week (extended)
+ *    %H%M%S           => 083748                    Local time (basic)
+ *    %T               => 08:37:48                  Local time (extended)
+ *    %H%M             => 0837                      Local time, reduced accuracy, specific minute (basic)
+ *    %H:%M            => 08:37                     Local time, reduced accuracy, specific minute (extended)
+ *    %H               => 08                        Local time, reduced accuracy, specific hour
+ *    %H%M%S,%L        => 083748,000                Local time with decimal fraction, comma as decimal sign (basic)
+ *    %T,%L            => 08:37:48,000              Local time with decimal fraction, comma as decimal sign (extended)
+ *    %H%M%S.%L        => 083748.000                Local time with decimal fraction, full stop as decimal sign (basic)
+ *    %T.%L            => 08:37:48.000              Local time with decimal fraction, full stop as decimal sign (extended)
+ *    %H%M%S%z         => 083748-0600               Local time and the difference from UTC (basic)
+ *    %T%:z            => 08:37:48-06:00            Local time and the difference from UTC (extended)
+ *    %Y%m%dT%H%M%S%z  => 20071119T083748-0600      Date and time of day for calendar date (basic)
+ *    %FT%T%:z         => 2007-11-19T08:37:48-06:00 Date and time of day for calendar date (extended)
+ *    %Y%jT%H%M%S%z    => 2007323T083748-0600       Date and time of day for ordinal date (basic)
+ *    %Y-%jT%T%:z      => 2007-323T08:37:48-06:00   Date and time of day for ordinal date (extended)
+ *    %GW%V%uT%H%M%S%z => 2007W471T083748-0600      Date and time of day for week date (basic)
+ *    %G-W%V-%uT%T%:z  => 2007-W47-1T08:37:48-06:00 Date and time of day for week date (extended)
+ *    %Y%m%dT%H%M      => 20071119T0837             Calendar date and local time (basic)
+ *    %FT%R            => 2007-11-19T08:37          Calendar date and local time (extended)
+ *    %Y%jT%H%MZ       => 2007323T0837Z             Ordinal date and UTC of day (basic)
+ *    %Y-%jT%RZ        => 2007-323T08:37Z           Ordinal date and UTC of day (extended)
+ *    %GW%V%uT%H%M%z   => 2007W471T0837-0600        Week date and local time and difference from UTC (basic)
+ *    %G-W%V-%uT%R%:z  => 2007-W47-1T08:37-06:00    Week date and local time and difference from UTC (extended)
  *
  */
 

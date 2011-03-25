@@ -1065,7 +1065,7 @@ class TestIO < Test::Unit::TestCase
   end
 
   def make_tempfile
-    t = Tempfile.new("foo")
+    t = Tempfile.new("test_io")
     t.binmode
     t.puts "foo"
     t.puts "bar"
@@ -1417,20 +1417,28 @@ class TestIO < Test::Unit::TestCase
     open(__FILE__) do |f|
       f.gets
       f2 = open(t.path)
-      f2.gets
-      assert_nothing_raised {
-        f.reopen(f2)
-        assert_equal("bar\n", f.gets, '[ruby-core:24240]')
-      }
+      begin
+        f2.gets
+        assert_nothing_raised {
+          f.reopen(f2)
+          assert_equal("bar\n", f.gets, '[ruby-core:24240]')
+        }
+      ensure
+        f2.close
+      end
     end
 
     open(__FILE__) do |f|
       f2 = open(t.path)
-      f.reopen(f2)
-      assert_equal("foo\n", f.gets)
-      assert_equal("bar\n", f.gets)
-      f.reopen(f2)
-      assert_equal("baz\n", f.gets, '[ruby-dev:39479]')
+      begin
+        f.reopen(f2)
+        assert_equal("foo\n", f.gets)
+        assert_equal("bar\n", f.gets)
+        f.reopen(f2)
+        assert_equal("baz\n", f.gets, '[ruby-dev:39479]')
+      ensure
+        f2.close
+      end
     end
   end
 
@@ -1587,8 +1595,12 @@ End
   def test_reinitialize
     t = make_tempfile
     f = open(t.path)
-    assert_raise(RuntimeError) do
-      f.instance_eval { initialize }
+    begin
+      assert_raise(RuntimeError) do
+        f.instance_eval { initialize }
+      end
+    ensure
+      f.close
     end
   end
 
@@ -1654,7 +1666,6 @@ End
 
   def test_binmode_after_closed
     t = make_tempfile
-    t.close
     assert_raise(IOError) {t.binmode}
   end
 
@@ -1677,7 +1688,9 @@ End
   def test_flush_in_finalizer1
     require 'tempfile'
     bug3910 = '[ruby-dev:42341]'
-    path = Tempfile.new("bug3910").path
+    t = Tempfile.new("bug3910")
+    path = t.path
+    t.close
     fds = []
     assert_nothing_raised(TypeError, bug3910) do
       500.times {
@@ -1693,7 +1706,9 @@ End
   def test_flush_in_finalizer2
     require 'tempfile'
     bug3910 = '[ruby-dev:42341]'
-    path = Tempfile.new("bug3910").path
+    t = Tempfile.new("bug3910")
+    path = t.path
+    t.close
     1.times do
       io = open(path,"w")
       io.print "hoge"
@@ -1720,6 +1735,78 @@ End
       assert_raise(ArgumentError, bug4024) do
         io.each_line(0).next
       end
+    end
+  end
+
+  def test_advise
+    t = make_tempfile
+    assert_raise(ArgumentError, "no arguments") { t.advise }
+    %w{normal random sequential willneed dontneed noreuse}.map(&:to_sym).each do |adv|
+      [[0,0], [0, 20], [400, 2]].each do |offset, len|
+        open(make_tempfile.path) do |t|
+          assert_equal(t.advise(adv, offset, len), nil)
+          assert_raise(ArgumentError, "superfluous arguments") do
+            t.advise(adv, offset, len, offset)
+          end
+          assert_raise(TypeError, "wrong type for first argument") do
+            t.advise(adv.to_s, offset, len)
+          end
+          assert_raise(TypeError, "wrong type for last argument") do
+            t.advise(adv, offset, Array(len))
+          end
+          assert_raise(RangeError, "last argument too big") do
+            t.advise(adv, offset, 9999e99)
+          end
+        end
+        assert_raise(IOError, "closed file") do
+          make_tempfile.advise(adv.to_sym, offset, len)
+        end
+      end
+    end
+  end
+
+  def test_invalid_advise
+    feature4204 = '[ruby-dev:42887]'
+    t = make_tempfile
+    %w{Normal rand glark will_need zzzzzzzzzzzz \u2609}.map(&:to_sym).each do |adv|
+      [[0,0], [0, 20], [400, 2]].each do |offset, len|
+        open(make_tempfile.path) do |t|
+          assert_raise(NotImplementedError, feature4204) { t.advise(adv, offset, len) }
+        end
+      end
+    end
+  end
+
+  def test_fcntl_lock
+    return if /x86_64-linux/ !~ RUBY_PLATFORM # A binary form of struct flock depend on platform
+
+    pad=0
+    Tempfile.open(self.class.name) do |f|
+      r, w = IO.pipe
+      pid = fork do
+        r.close
+        lock = [Fcntl::F_WRLCK, IO::SEEK_SET, pad, 12, 34, 0].pack("s!s!i!L!L!i!")
+        f.fcntl Fcntl::F_SETLKW, lock
+        w.syswrite "."
+        sleep
+      end
+      w.close
+      assert_equal ".", r.read(1)
+      r.close
+      pad = 0
+      getlock = [Fcntl::F_WRLCK, 0, pad, 0, 0, 0].pack("s!s!i!L!L!i!")
+      f.fcntl Fcntl::F_GETLK, getlock
+
+      ptype, whence, pad, start, len, lockpid = getlock.unpack("s!s!i!L!L!i!")
+
+      assert_equal(ptype, Fcntl::F_WRLCK)
+      assert_equal(whence, IO::SEEK_SET)
+      assert_equal(start, 12)
+      assert_equal(len, 34)
+      assert_equal(pid, lockpid)
+
+      Process.kill :TERM, pid
+      Process.waitpid2(pid)
     end
   end
 end

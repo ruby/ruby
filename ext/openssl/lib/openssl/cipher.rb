@@ -14,10 +14,6 @@
   $Id$
 =end
 
-##
-# Should we care what if somebody require this file directly?
-#require 'openssl'
-
 module OpenSSL
   class Cipher
     %w(AES CAST5 BF DES IDEA RC2 RC4 RC5).each{|name|

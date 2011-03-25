@@ -198,7 +198,7 @@ module Rinda
     def lookup_ring_any(timeout=5)
       queue = Queue.new
 
-      th = Thread.new do
+      Thread.new do
 	self.lookup_ring(timeout) do |ts|
 	  queue.push(ts)
 	end
@@ -252,7 +252,7 @@ if __FILE__ == $0
   when 's'
     require 'rinda/tuplespace'
     ts = Rinda::TupleSpace.new
-    place = Rinda::RingServer.new(ts)
+    Rinda::RingServer.new(ts)
     $stdin.gets
   when 'w'
     finger = Rinda::RingFinger.new(nil)

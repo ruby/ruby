@@ -1,7 +1,13 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require 'rubygems/test_case'
 require 'rubygems/commands/outdated_command'
 
-class TestGemCommandsOutdatedCommand < RubyGemTestCase
+class TestGemCommandsOutdatedCommand < Gem::TestCase
 
   def setup
     super
@@ -14,16 +20,13 @@ class TestGemCommandsOutdatedCommand < RubyGemTestCase
   end
 
   def test_execute
-    local_01 = quick_gem 'foo', '0.1'
-    local_02 = quick_gem 'foo', '0.2'
-    remote_10 = quick_gem 'foo', '1.0'
-    remote_20 = quick_gem 'foo', '2.0'
+    quick_gem 'foo', '0.1'
+    quick_gem 'foo', '0.2'
+    remote_10 = quick_spec 'foo', '1.0'
+    remote_20 = quick_spec 'foo', '2.0'
 
     remote_spec_file = File.join @gemhome, 'specifications', remote_10.spec_name
-    FileUtils.rm remote_spec_file
-
     remote_spec_file = File.join @gemhome, 'specifications', remote_20.spec_name
-    FileUtils.rm remote_spec_file
 
     @fetcher = Gem::FakeFetcher.new
     Gem::RemoteFetcher.fetcher = @fetcher

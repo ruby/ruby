@@ -22,6 +22,11 @@ class YAML_Unit_Tests < Test::Unit::TestCase
         YAML::ENGINE.yamler = @current_engine
     end
 
+    # [ruby-core:34969]
+    def test_regexp_with_n
+        assert_cycle(Regexp.new('',0,'n'))
+    end
+
 	#
 	# Convert between YAML and the object to verify correct parsing and
 	# emitting

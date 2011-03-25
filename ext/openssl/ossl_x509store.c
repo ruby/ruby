@@ -11,37 +11,37 @@
 #include "ossl.h"
 
 #define WrapX509Store(klass, obj, st) do { \
-    if (!st) { \
+    if (!(st)) { \
 	ossl_raise(rb_eRuntimeError, "STORE wasn't initialized!"); \
     } \
-    obj = Data_Wrap_Struct(klass, 0, X509_STORE_free, st); \
+    (obj) = Data_Wrap_Struct((klass), 0, X509_STORE_free, (st)); \
 } while (0)
 #define GetX509Store(obj, st) do { \
-    Data_Get_Struct(obj, X509_STORE, st); \
-    if (!st) { \
+    Data_Get_Struct((obj), X509_STORE, (st)); \
+    if (!(st)) { \
 	ossl_raise(rb_eRuntimeError, "STORE wasn't initialized!"); \
     } \
 } while (0)
 #define SafeGetX509Store(obj, st) do { \
-    OSSL_Check_Kind(obj, cX509Store); \
-    GetX509Store(obj, st); \
+    OSSL_Check_Kind((obj), cX509Store); \
+    GetX509Store((obj), (st)); \
 } while (0)
 
 #define WrapX509StCtx(klass, obj, ctx) do { \
-    if (!ctx) { \
+    if (!(ctx)) { \
 	ossl_raise(rb_eRuntimeError, "STORE_CTX wasn't initialized!"); \
     } \
-    obj = Data_Wrap_Struct(klass, 0, ossl_x509stctx_free, ctx); \
+    (obj) = Data_Wrap_Struct((klass), 0, ossl_x509stctx_free, (ctx)); \
 } while (0)
 #define GetX509StCtx(obj, ctx) do { \
-    Data_Get_Struct(obj, X509_STORE_CTX, ctx); \
-    if (!ctx) { \
+    Data_Get_Struct((obj), X509_STORE_CTX, (ctx)); \
+    if (!(ctx)) { \
 	ossl_raise(rb_eRuntimeError, "STORE_CTX is out of scope!"); \
     } \
 } while (0)
 #define SafeGetX509StCtx(obj, storep) do { \
-    OSSL_Check_Kind(obj, cX509StoreContext); \
-    GetX509Store(obj, ctx); \
+    OSSL_Check_Kind((obj), cX509StoreContext); \
+    GetX509Store((obj), (ctx)); \
 } while (0)
 
 /*
@@ -170,7 +170,7 @@ ossl_x509store_set_purpose(VALUE self, VALUE purpose)
 {
 #if (OPENSSL_VERSION_NUMBER >= 0x00907000L)
     X509_STORE *store;
-    long p = NUM2LONG(purpose);
+    int p = NUM2INT(purpose);
 
     GetX509Store(self, store);
     X509_STORE_set_purpose(store, p);
@@ -186,7 +186,7 @@ ossl_x509store_set_trust(VALUE self, VALUE trust)
 {
 #if (OPENSSL_VERSION_NUMBER >= 0x00907000L)
     X509_STORE *store;
-    long t = NUM2LONG(trust);
+    int t = NUM2INT(trust);
 
     GetX509Store(self, store);
     X509_STORE_set_trust(store, t);
@@ -511,17 +511,6 @@ ossl_x509stctx_get_curr_crl(VALUE self)
 }
 
 static VALUE
-ossl_x509stctx_cleanup(VALUE self)
-{
-    X509_STORE_CTX *ctx;
-
-    GetX509StCtx(self, ctx);
-    X509_STORE_CTX_cleanup(ctx);
-
-    return self;
-}
-
-static VALUE
 ossl_x509stctx_set_flags(VALUE self, VALUE flags)
 {
     X509_STORE_CTX *store;
@@ -537,7 +526,7 @@ static VALUE
 ossl_x509stctx_set_purpose(VALUE self, VALUE purpose)
 {
     X509_STORE_CTX *store;
-    long p = NUM2LONG(purpose);
+    int p = NUM2INT(purpose);
 
     GetX509StCtx(self, store);
     X509_STORE_CTX_set_purpose(store, p);
@@ -549,7 +538,7 @@ static VALUE
 ossl_x509stctx_set_trust(VALUE self, VALUE trust)
 {
     X509_STORE_CTX *store;
-    long t = NUM2LONG(trust);
+    int t = NUM2INT(trust);
 
     GetX509StCtx(self, store);
     X509_STORE_CTX_set_trust(store, t);
@@ -615,7 +604,6 @@ Init_ossl_x509store()
     rb_define_method(x509stctx,"error_depth", ossl_x509stctx_get_err_depth, 0);
     rb_define_method(x509stctx,"current_cert",ossl_x509stctx_get_curr_cert, 0);
     rb_define_method(x509stctx,"current_crl", ossl_x509stctx_get_curr_crl, 0);
-    rb_define_method(x509stctx,"cleanup",     ossl_x509stctx_cleanup, 0);
     rb_define_method(x509stctx,"flags=",      ossl_x509stctx_set_flags, 1);
     rb_define_method(x509stctx,"purpose=",    ossl_x509stctx_set_purpose, 1);
     rb_define_method(x509stctx,"trust=",      ossl_x509stctx_set_trust, 1);

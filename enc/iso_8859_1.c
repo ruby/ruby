@@ -29,6 +29,8 @@
 
 #include "regenc.h"
 
+#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
+
 #define ENC_IS_ISO_8859_1_CTYPE(code,ctype) \
   ((EncISO_8859_1_CtypeTable[code] & CTYPE_TO_BIT(ctype)) != 0)
 
@@ -107,7 +109,7 @@ apply_all_case_fold(OnigCaseFoldType flag,
 		    OnigEncoding enc ARG_UNUSED)
 {
   return onigenc_apply_all_case_fold_with_map(
-            sizeof(CaseFoldMap)/sizeof(OnigPairCaseFoldCodes), CaseFoldMap, 1,
+            numberof(CaseFoldMap), CaseFoldMap, 1,
             flag, f, arg);
 }
 

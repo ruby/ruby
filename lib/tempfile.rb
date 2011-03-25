@@ -96,11 +96,11 @@ class Tempfile < DelegateClass(File)
   # element, and end with the second element. For example:
   #
   #   file = Tempfile.new('hello')
-  #   file.path  # => something like: "/tmp/foo2843-8392-92849382--0"
+  #   file.path  # => something like: "/tmp/hello2843-8392-92849382--0"
   #
   #   # Use the Array form to enforce an extension in the filename:
   #   file = Tempfile.new(['hello', '.jpg'])
-  #   file.path  # => something like: "/tmp/foo2843-8392-92849382--0.jpg"
+  #   file.path  # => something like: "/tmp/hello2843-8392-92849382--0.jpg"
   #
   # The temporary file will be placed in the directory as specified
   # by the +tmpdir+ parameter. By default, this is +Dir.tmpdir+.
@@ -110,7 +110,7 @@ class Tempfile < DelegateClass(File)
   # come from environment variables (e.g. <tt>$TMPDIR</tt>).
   #
   #   file = Tempfile.new('hello', '/home/aisaka')
-  #   file.path  # => something like: "/home/aisaka/foo2843-8392-92849382--0"
+  #   file.path  # => something like: "/home/aisaka/hello2843-8392-92849382--0"
   #
   # You can also pass an options hash. Under the hood, Tempfile creates
   # the temporary file using +File.open+. These options will be passed to

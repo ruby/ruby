@@ -1,19 +1,13 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require 'rubygems/test_case'
 require 'rubygems/dependency'
 
-class TestGemDependency < RubyGemTestCase
-
-  def test_subclass
-    sc = Class.new Gem::Dependency
-    def sc.requirement() bogus; end
-
-    out, err = capture_io do
-      assert_equal Gem::Requirement.default, sc.new('a').version_requirement
-    end
-
-    assert_match %r%deprecated%, err
-  end
-
+class TestGemDependency < Gem::TestCase
   def test_initialize
     d = dep "pkg", "> 1.0"
 
@@ -70,7 +64,7 @@ class TestGemDependency < RubyGemTestCase
   def test_equals_tilde
     d = dep "a", "0"
 
-    assert_match d,                  d,             "matche self"
+    assert_match d,                  d,             "match self"
     assert_match dep("a", ">= 0"),   d,             "match version exact"
     assert_match dep("a", ">= 0"),   dep("a", "1"), "match version"
     assert_match dep(/a/, ">= 0"),   d,             "match simple regexp"
@@ -112,6 +106,45 @@ class TestGemDependency < RubyGemTestCase
     refute_equal dep("pkg", :development), dep("pkg", :runtime), "type"
   end
 
+  def test_merge
+    a1 = dep 'a', '~> 1.0'
+    a2 = dep 'a', '= 1.0'
+
+    a3 = a1.merge a2
+
+    assert_equal dep('a', '~> 1.0', '= 1.0'), a3
+  end
+
+  def test_merge_default
+    a1 = dep 'a'
+    a2 = dep 'a', '1'
+
+    a3 = a1.merge a2
+
+    assert_equal dep('a', '1'), a3
+  end
+
+  def test_merge_name_mismatch
+    a = dep 'a'
+    b = dep 'b'
+
+    e = assert_raises ArgumentError do
+      a.merge b
+    end
+
+    assert_equal 'a (>= 0) and b (>= 0) have different names',
+                 e.message
+  end
+
+  def test_merge_other_default
+    a1 = dep 'a', '1'
+    a2 = dep 'a'
+
+    a3 = a1.merge a2
+
+    assert_equal dep('a', '1'), a3
+  end
+
   def test_prerelease_eh
     d = dep "pkg", "= 1"
 
@@ -133,17 +166,5 @@ class TestGemDependency < RubyGemTestCase
 
     assert d.prerelease?
   end
-
-  def test_version_requirements_equals_deprecated
-    d = dep "pkg", "1.0"
-
-    out, err = capture_io do
-      d.version_requirements = '2.0'
-      assert_equal Gem::Requirement.new(%w[2.0]), d.requirement
-    end
-
-    assert_match %r%deprecated%, err
-  end
-
 end
 

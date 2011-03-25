@@ -36,7 +36,9 @@ def parse_args(argv = ARGV)
   $dir_mode = nil
   $script_mode = nil
   $strip = false
-  $cmdtype = ('bat' if File::ALT_SEPARATOR == '\\')
+  $cmdtype = (if File::ALT_SEPARATOR == '\\'
+                File.exist?("rubystub.exe") ? 'exe' : 'bat'
+              end)
   mflags = []
   opt = OptionParser.new
   opt.on('-n', '--dry-run') {$dryrun = true}
@@ -195,7 +197,8 @@ def install_recursive(srcdir, dest, options = {})
   noinst = opts.delete(:no_install)
   glob = opts.delete(:glob) || "*"
   subpath = (srcdir.size+1)..-1
-  prune = skip = FalseProc
+  prune = []
+  skip = []
   if noinst
     if Array === noinst
       prune = noinst.grep(/#{File::SEPARATOR}/o).map!{|f| f.chomp(File::SEPARATOR)}
@@ -207,10 +210,10 @@ def install_recursive(srcdir, dest, options = {})
         skip = [noinst]
       end
     end
-    skip |= %w"#*# *~ *.old *.bak *.orig *.rej *.diff *.patch *.core"
-    prune = path_matcher(prune)
-    skip = path_matcher(skip)
   end
+  skip |= %w"#*# *~ *.old *.bak *.orig *.rej *.diff *.patch *.core"
+  prune = path_matcher(prune)
+  skip = path_matcher(skip)
   File.directory?(srcdir) or return rescue return
   paths = [[srcdir, dest, true]]
   found = []
@@ -237,7 +240,11 @@ def install_recursive(srcdir, dest, options = {})
       makedirs(d)
     else
       makedirs(File.dirname(d))
-      install src, d, opts
+      if block_given?
+        yield src, d, opts
+      else
+        install src, d, opts
+      end
     end
   end
 end
@@ -405,6 +412,9 @@ install?(:local, :comm, :bin, :'bin-comm') do
   ruby_shebang = File.join(bindir, ruby_install_name)
   if File::ALT_SEPARATOR
     ruby_bin = ruby_shebang.tr(File::SEPARATOR, File::ALT_SEPARATOR)
+    if $cmdtype == 'exe'
+      stub = File.open("rubystub.exe", "rb") {|f| f.read} << "\n" rescue nil
+    end
   end
   if trans = CONFIG["program_transform_name"]
     exp = []
@@ -430,13 +440,8 @@ install?(:local, :comm, :bin, :'bin-comm') do
   else
     trans = proc {|base| base}
   end
-  for src in Dir[File.join(srcdir, "bin/*")]
-    next unless File.file?(src)
-    s = src.downcase
-    next if %w(old bak orig rej diff patch core).include? File.extname(s)
-    next if /^\.\#|(~|core)$/i =~ File.basename(s)
-
-    name = RbConfig.expand(trans[File.basename(src)])
+  install_recursive(File.join(srcdir, "bin"), bindir) do |src, cmd|
+    cmd = File.join(File.dirname(cmd), RbConfig.expand(trans[File.basename(cmd)]))
 
     shebang = ''
     body = ''
@@ -452,10 +457,11 @@ install?(:local, :comm, :bin, :'bin-comm') do
     shebang.sub!(/\r$/, '')
     body.gsub!(/\r$/, '')
 
-    cmd = File.join(bindir, name)
     cmd << ".#{$cmdtype}" if $cmdtype
     open_for_install(cmd, $script_mode) do
       case $cmdtype
+      when "exe"
+        stub + shebang + body
       when "bat"
         [<<-"EOH".gsub(/^\s+/, ''), shebang, body, "__END__\n:endofruby\n"].join.gsub(/$/, "\r")
           @echo off

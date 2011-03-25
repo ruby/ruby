@@ -1,13 +1,21 @@
-require 'fileutils'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 require 'rubygems/command'
 require 'rubygems/installer'
 require 'rubygems/version_option'
+require 'rubygems/remote_fetcher'
 
 class Gem::Commands::UnpackCommand < Gem::Command
 
   include Gem::VersionOption
 
   def initialize
+    require 'fileutils'
+
     super 'unpack', 'Unpack an installed gem to the current directory',
           :version => Gem::Requirement.default,
           :target  => Dir.pwd
@@ -32,16 +40,6 @@ class Gem::Commands::UnpackCommand < Gem::Command
     "#{program_name} GEMNAME"
   end
 
-  def download dependency
-    found = Gem::SpecFetcher.fetcher.fetch dependency
-
-    return if found.empty?
-
-    spec, source_uri = found.first
-
-    Gem::RemoteFetcher.fetcher.download spec, source_uri
-  end
-
   #--
   # TODO: allow, e.g., 'gem unpack rake-0.3.1'.  Find a general solution for
   # this, so that it works for uninstall as well.  (And check other commands
@@ -62,6 +60,23 @@ class Gem::Commands::UnpackCommand < Gem::Command
         alert_error "Gem '#{name}' not installed."
       end
     end
+  end
+
+  ##
+  #
+  # Find cached filename in Gem.path. Returns nil if the file cannot be found.
+  #
+  #--
+  # TODO: see comments in get_path() about general service.
+
+  def find_in_cache(filename)
+
+    Gem.path.each do |path|
+      this_path = Gem.cache_gem(filename, path)
+      return this_path if File.exist? this_path
+    end
+
+    return nil
   end
 
   ##
@@ -88,19 +103,17 @@ class Gem::Commands::UnpackCommand < Gem::Command
 
     selected = specs.sort_by { |s| s.version }.last
 
-    return download(dependency) if selected.nil?
+    return Gem::RemoteFetcher.fetcher.download_to_cache(dependency) unless
+      selected
 
     return unless dependency.name =~ /^#{selected.name}$/i
 
     # We expect to find (basename).gem in the 'cache' directory.  Furthermore,
     # the name match must be exact (ignoring case).
-    filename = selected.file_name
-    path = nil
 
-    Gem.path.find do |gem_dir|
-      path = File.join gem_dir, 'cache', filename
-      File.exist? path
-    end
+    path = find_in_cache selected.file_name
+
+    return Gem::RemoteFetcher.fetcher.download_to_cache(dependency) unless path
 
     path
   end

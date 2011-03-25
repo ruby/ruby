@@ -1,3 +1,9 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 ##
 # Available list of platforms for targeting Gem installations.
 
@@ -70,7 +76,7 @@ class Gem::Platform
                       when /hpux(\d+)/ then            [ 'hpux',      $1  ]
                       when /^java$/, /^jruby$/ then    [ 'java',      nil ]
                       when /^java([\d.]*)/ then        [ 'java',      $1  ]
-                      when /^dotnet$/ then             [ 'dotnet',    nil ]                       
+                      when /^dotnet$/ then             [ 'dotnet',    nil ]
                       when /^dotnet([\d.]*)/ then      [ 'dotnet',    $1  ]
                       when /linux/ then                [ 'linux',     $1  ]
                       when /mingw32/ then              [ 'mingw32',   nil ]

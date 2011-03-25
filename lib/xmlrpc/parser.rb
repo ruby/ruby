@@ -714,7 +714,7 @@ module XMLRPC
         end
 
         def parse(str)
-          parser = REXML::Document.parse_stream(str, self)
+          REXML::Document.parse_stream(str, self)
         end
       end
 

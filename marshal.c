@@ -25,7 +25,7 @@
 
 #define BITSPERSHORT (2*CHAR_BIT)
 #define SHORTMASK ((1<<BITSPERSHORT)-1)
-#define SHORTDN(x) RSHIFT(x,BITSPERSHORT)
+#define SHORTDN(x) RSHIFT((x),BITSPERSHORT)
 
 #if SIZEOF_SHORT == SIZEOF_BDIGITS
 #define SHORTLEN(x) (x)
@@ -246,7 +246,7 @@ w_bytes(const char *s, long n, struct dump_arg *arg)
     w_nbyte(s, n, arg);
 }
 
-#define w_cstr(s, arg) w_bytes(s, strlen(s), arg)
+#define w_cstr(s, arg) w_bytes((s), strlen(s), (arg))
 
 static void
 w_short(int x, struct dump_arg *arg)
@@ -590,7 +590,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
     st_table *ivtbl = 0;
     st_data_t num;
     int hasiv = 0;
-#define has_ivars(obj, ivtbl) ((ivtbl = rb_generic_ivar_table(obj)) != 0 || \
+#define has_ivars(obj, ivtbl) (((ivtbl) = rb_generic_ivar_table(obj)) != 0 || \
 			       (!SPECIAL_CONST_P(obj) && !ENCODING_IS_ASCII8BIT(obj)))
 
     if (limit == 0) {
@@ -864,7 +864,7 @@ clear_dump_arg(struct dump_arg *arg)
 
 /*
  * call-seq:
- *      dump( obj [, anIO] , limit=--1 ) -> anIO
+ *      dump( obj [, anIO] , limit=-1 ) -> anIO
  *
  * Serializes obj and all descendant objects. If anIO is
  * specified, the serialized data will be written to it, otherwise the
@@ -876,7 +876,7 @@ clear_dump_arg(struct dump_arg *arg)
  *       def initialize(str)
  *         @str = str
  *       end
- *       def sayHello
+ *       def say_hello
  *         @str
  *       end
  *     end
@@ -886,7 +886,7 @@ clear_dump_arg(struct dump_arg *arg)
  *     o = Klass.new("hello\n")
  *     data = Marshal.dump(o)
  *     obj = Marshal.load(data)
- *     obj.sayHello   #=> "hello\n"
+ *     obj.say_hello  #=> "hello\n"
  *
  * Marshal can't dump following objects:
  * * anonymous Class/Module.
@@ -1002,7 +1002,7 @@ static const rb_data_type_t load_arg_data = {
     {mark_load_arg, free_load_arg, memsize_load_arg,},
 };
 
-#define r_entry(v, arg) r_entry0(v, (arg)->data->num_entries, arg)
+#define r_entry(v, arg) r_entry0((v), (arg)->data->num_entries, (arg))
 static VALUE r_entry0(VALUE v, st_index_t num, struct load_arg *arg);
 static VALUE r_object(struct load_arg *arg);
 static ID r_symbol(struct load_arg *arg);

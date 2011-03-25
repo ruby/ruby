@@ -31,7 +31,7 @@ module URI
       # mark          = "-" | "_" | "." | "!" | "~" | "*" | "'" |
       #                 "(" | ")"
       # unreserved    = alphanum | mark
-      UNRESERVED = "-_.!~*'()#{ALNUM}"
+      UNRESERVED = "\\-_.!~*'()#{ALNUM}"
       # reserved      = ";" | "/" | "?" | ":" | "@" | "&" | "=" | "+" |
       #                 "$" | ","
       # reserved      = ";" | "/" | "?" | ":" | "@" | "&" | "=" | "+" |
@@ -239,8 +239,8 @@ module URI
       ret[:ESCAPED] = escaped = (opts.delete(:ESCAPED) || PATTERN::ESCAPED)
       ret[:UNRESERVED] = unreserved = opts.delete(:UNRESERVED) || PATTERN::UNRESERVED
       ret[:RESERVED] = reserved = opts.delete(:RESERVED) || PATTERN::RESERVED
-      ret[:DOMLABEL] = domlabel = opts.delete(:DOMLABEL) || PATTERN::DOMLABEL
-      ret[:TOPLABEL] = toplabel = opts.delete(:TOPLABEL) || PATTERN::TOPLABEL
+      ret[:DOMLABEL] = opts.delete(:DOMLABEL) || PATTERN::DOMLABEL
+      ret[:TOPLABEL] = opts.delete(:TOPLABEL) || PATTERN::TOPLABEL
       ret[:HOSTNAME] = hostname = opts.delete(:HOSTNAME)
 
       # RFC 2396 (URI Generic Syntax)
@@ -258,8 +258,9 @@ module URI
       ret[:FRAGMENT] = fragment = "#{uric}*"
 
       # hostname      = *( domainlabel "." ) toplabel [ "." ]
+      # reg-name      = *( unreserved / pct-encoded / sub-delims ) # RFC3986
       unless hostname
-	ret[:HOSTNAME] = hostname = "(?:#{domlabel}\\.)*#{toplabel}\\.?"
+	ret[:HOSTNAME] = hostname = "(?:[a-zA-Z0-9\\-.]|%\\h\\h)+"
       end
 
       # RFC 2373, APPENDIX B:
@@ -326,7 +327,7 @@ module URI
       ret[:REL_SEGMENT] = rel_segment = "(?:[#{unreserved};@&=+$,]|#{escaped})+"
 
       # scheme        = alpha *( alpha | digit | "+" | "-" | "." )
-      ret[:SCHEME] = scheme = "[#{PATTERN::ALPHA}][-+.#{PATTERN::ALPHA}\\d]*"
+      ret[:SCHEME] = scheme = "[#{PATTERN::ALPHA}][\\-+.#{PATTERN::ALPHA}\\d]*"
 
       # abs_path      = "/"  path_segments
       ret[:ABS_PATH] = abs_path = "/#{path_segments}"
@@ -733,10 +734,11 @@ module URI
 
   # Encode given +str+ to URL-encoded form data.
   #
-  # This doesn't convert *, -, ., 0-9, A-Z, _, a-z,
-  # does convert SP to +, and convert others to %XX.
+  # This method doesn't convert *, -, ., 0-9, A-Z, _, a-z, but does convert SP
+  # (ASCII space) to + and converts others to %XX.
   #
-  # This refers http://www.w3.org/TR/html5/forms.html#url-encoded-form-data
+  # This is an implementation of
+  # http://www.w3.org/TR/html5/forms.html#url-encoded-form-data
   #
   # See URI.decode_www_form_component, URI.encode_www_form
   def self.encode_www_form_component(str)
@@ -786,28 +788,48 @@ module URI
   #
   # This internally uses URI.encode_www_form_component(str).
   #
-  # This doesn't convert encodings of give items, so convert them before call
-  # this method if you want to send data as other than original encoding or
-  # mixed encoding data. (strings which is encoded in HTML5 ASCII incompatible
-  # encoding is converted to UTF-8)
+  # This method doesn't convert the encoding of given items, so convert them
+  # before call this method if you want to send data as other than original
+  # encoding or mixed encoding data. (Strings which are encoded in an HTML5
+  # ASCII incompatible encoding are converted to UTF-8.)
   #
-  # This doesn't treat files. When you send a file, use multipart/form-data.
+  # This method doesn't handle files.  When you send a file, use
+  # multipart/form-data.
   #
-  # This refers http://www.w3.org/TR/html5/forms.html#url-encoded-form-data
+  # This is an implementation of
+  # http://www.w3.org/TR/html5/forms.html#url-encoded-form-data
+  #
+  #    URI.encode_www_form([["q", "ruby"], ["lang", "en"]])
+  #    #=> "q=ruby&lang=en"
+  #    URI.encode_www_form("q" => "ruby", "lang" => "en")
+  #    #=> "q=ruby&lang=en"
+  #    URI.encode_www_form("q" => ["ruby", "perl"], "lang" => "en")
+  #    #=> "q=ruby&q=perl&lang=en"
+  #    URI.encode_www_form([["q", "ruby"], ["q", "perl"], ["lang", "en"]])
+  #    #=> "q=ruby&q=perl&lang=en"
   #
   # See URI.encode_www_form_component, URI.decode_www_form
   def self.encode_www_form(enum)
     enum.map do |k,v|
-      str = encode_www_form_component(k)
-      if v
+      if v.nil?
+        encode_www_form_component(k)
+      elsif v.respond_to?(:to_ary)
+        v.to_ary.map do |w|
+          str = encode_www_form_component(k)
+          unless w.nil?
+            str << '='
+            str << encode_www_form_component(w)
+          end
+        end.join('&')
+      else
+        str = encode_www_form_component(k)
         str << '='
         str << encode_www_form_component(v)
       end
-      str
     end.join('&')
   end
 
-  WFKV_ = '(?:%\h\h|[^%#=;&]+)' # :nodoc:
+  WFKV_ = '(?:%\h\h|[^%#=;&])' # :nodoc:
 
   # Decode URL-encoded form data from given +str+.
   #

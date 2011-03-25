@@ -39,10 +39,10 @@
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 # include <valgrind/memcheck.h>
 # ifndef VALGRIND_MAKE_MEM_DEFINED
-#  define VALGRIND_MAKE_MEM_DEFINED(p, n) VALGRIND_MAKE_READABLE(p, n)
+#  define VALGRIND_MAKE_MEM_DEFINED(p, n) VALGRIND_MAKE_READABLE((p), (n))
 # endif
 # ifndef VALGRIND_MAKE_MEM_UNDEFINED
-#  define VALGRIND_MAKE_MEM_UNDEFINED(p, n) VALGRIND_MAKE_WRITABLE(p, n)
+#  define VALGRIND_MAKE_MEM_UNDEFINED(p, n) VALGRIND_MAKE_WRITABLE((p), (n))
 # endif
 #else
 # define VALGRIND_MAKE_MEM_DEFINED(p, n) /* empty */
@@ -78,6 +78,47 @@ void *alloca ();
 #ifndef GC_MALLOC_LIMIT
 #define GC_MALLOC_LIMIT 8000000
 #endif
+#define HEAP_MIN_SLOTS 10000
+#define FREE_MIN  4096
+
+static unsigned int initial_malloc_limit   = GC_MALLOC_LIMIT;
+static unsigned int initial_heap_min_slots = HEAP_MIN_SLOTS;
+static unsigned int initial_free_min       = FREE_MIN;
+
+void
+rb_gc_set_params(void)
+{
+    char *malloc_limit_ptr, *heap_min_slots_ptr, *free_min_ptr;
+
+    if (rb_safe_level() > 0) return;
+
+    malloc_limit_ptr = getenv("RUBY_GC_MALLOC_LIMIT");
+    if (malloc_limit_ptr != NULL) {
+	int malloc_limit_i = atoi(malloc_limit_ptr);
+	printf("malloc_limit=%d (%d)\n", malloc_limit_i, initial_malloc_limit);
+	if (malloc_limit_i > 0) {
+	    initial_malloc_limit = malloc_limit_i;
+	}
+    }
+
+    heap_min_slots_ptr = getenv("RUBY_HEAP_MIN_SLOTS");
+    if (heap_min_slots_ptr != NULL) {
+	int heap_min_slots_i = atoi(heap_min_slots_ptr);
+	printf("heap_min_slots=%d (%d)\n", heap_min_slots_i, initial_heap_min_slots);
+	if (heap_min_slots_i > 0) {
+	    initial_heap_min_slots = heap_min_slots_i;
+	}
+    }
+
+    free_min_ptr = getenv("RUBY_FREE_MIN");
+    if (free_min_ptr != NULL) {
+	int free_min_i = atoi(free_min_ptr);
+	printf("free_min=%d (%d)\n", free_min_i, initial_free_min);
+	if (free_min_i > 0) {
+	    initial_free_min = free_min_i;
+	}
+    }
+}
 
 #define nomem_error GET_VM()->special_exceptions[ruby_error_nomemory]
 
@@ -215,13 +256,13 @@ getrusage_time(void)
 #define GC_PROF_SET_HEAP_INFO(record) do {\
         live = objspace->heap.live_num;\
         total = heaps_used * HEAP_OBJ_LIMIT;\
-        record.heap_use_slots = heaps_used;\
-        record.heap_live_objects = live;\
-        record.heap_free_objects = total - live;\
-        record.heap_total_objects = total;\
-        record.have_finalize = deferred_final_list ? Qtrue : Qfalse;\
-        record.heap_use_size = live * sizeof(RVALUE);\
-        record.heap_total_size = total * sizeof(RVALUE);\
+        (record).heap_use_slots = heaps_used;\
+        (record).heap_live_objects = live;\
+        (record).heap_free_objects = total - live;\
+        (record).heap_total_objects = total;\
+        (record).have_finalize = deferred_final_list ? Qtrue : Qfalse;\
+        (record).heap_use_size = live * sizeof(RVALUE);\
+        (record).heap_total_size = total * sizeof(RVALUE);\
     } while(0)
 #define GC_PROF_INC_LIVE_NUM objspace->heap.live_num++
 #define GC_PROF_DEC_LIVE_NUM objspace->heap.live_num--
@@ -236,9 +277,9 @@ getrusage_time(void)
 #define GC_PROF_SET_HEAP_INFO(record) do {\
         live = objspace->heap.live_num;\
         total = heaps_used * HEAP_OBJ_LIMIT;\
-        record.heap_total_objects = total;\
-        record.heap_use_size = live * sizeof(RVALUE);\
-        record.heap_total_size = total * sizeof(RVALUE);\
+        (record).heap_total_objects = total;\
+        (record).heap_use_size = live * sizeof(RVALUE);\
+        (record).heap_total_size = total * sizeof(RVALUE);\
     } while(0)
 #define GC_PROF_INC_LIVE_NUM
 #define GC_PROF_DEC_LIVE_NUM
@@ -296,9 +337,6 @@ struct sorted_heaps_slot {
     RVALUE *end;
     struct heaps_slot *slot;
 };
-
-#define HEAP_MIN_SLOTS 10000
-#define FREE_MIN  4096
 
 struct gc_list {
     VALUE *varptr;
@@ -394,15 +432,21 @@ rb_objspace_alloc(void)
 {
     rb_objspace_t *objspace = malloc(sizeof(rb_objspace_t));
     memset(objspace, 0, sizeof(*objspace));
-    malloc_limit = GC_MALLOC_LIMIT;
+    malloc_limit = initial_malloc_limit;
     ruby_gc_stress = ruby_initial_gc_stress;
 
     return objspace;
 }
 
+static void gc_sweep(rb_objspace_t *);
+static void slot_sweep(rb_objspace_t *, struct heaps_slot *);
+static void gc_clear_mark_on_sweep_slots(rb_objspace_t *);
+
 void
 rb_objspace_free(rb_objspace_t *objspace)
 {
+    gc_clear_mark_on_sweep_slots(objspace);
+    gc_sweep(objspace);
     if (objspace->profile.record) {
 	free(objspace->profile.record);
 	objspace->profile.record = 0;
@@ -924,13 +968,17 @@ assign_heap_slot(rb_objspace_t *objspace)
 
     objs = HEAP_OBJ_LIMIT;
     p = (RVALUE*)malloc(HEAP_SIZE);
-    slot = (struct heaps_slot *)malloc(sizeof(struct heaps_slot));
-    MEMZERO((void*)slot, struct heaps_slot, 1);
-
-    if (p == 0 || slot == 0) {
+    if (p == 0) {
 	during_gc = 0;
 	rb_memerror();
     }
+    slot = (struct heaps_slot *)malloc(sizeof(struct heaps_slot));
+    if (slot == 0) {
+	xfree(p);
+	during_gc = 0;
+	rb_memerror();
+    }
+    MEMZERO((void*)slot, struct heaps_slot, 1);
 
     slot->next = heaps;
     if (heaps) heaps->prev = slot;
@@ -988,7 +1036,7 @@ init_heap(rb_objspace_t *objspace)
 {
     size_t add, i;
 
-    add = HEAP_MIN_SLOTS / HEAP_OBJ_LIMIT;
+    add = initial_heap_min_slots / HEAP_OBJ_LIMIT;
 
     if (!add) {
         add = 1;
@@ -1320,7 +1368,7 @@ rb_gc_mark_locations(VALUE *start, VALUE *end)
     gc_mark_locations(&rb_objspace, start, end);
 }
 
-#define rb_gc_mark_locations(start, end) gc_mark_locations(objspace, start, end)
+#define rb_gc_mark_locations(start, end) gc_mark_locations(objspace, (start), (end))
 
 struct mark_tbl_arg {
     rb_objspace_t *objspace;
@@ -1948,7 +1996,10 @@ slot_sweep(rb_objspace_t *objspace, struct heaps_slot *sweep_slot)
     objspace->heap.final_num += final_num;
 
     if (deferred_final_list) {
-	RUBY_VM_SET_FINALIZER_INTERRUPT(GET_THREAD());
+        rb_thread_t *th = GET_THREAD();
+        if (th) {
+            RUBY_VM_SET_FINALIZER_INTERRUPT(th);
+        }
     }
 }
 
@@ -1973,9 +2024,9 @@ before_gc_sweep(rb_objspace_t *objspace)
     freelist = 0;
     objspace->heap.do_heap_free = (size_t)((heaps_used * HEAP_OBJ_LIMIT) * 0.65);
     objspace->heap.free_min = (size_t)((heaps_used * HEAP_OBJ_LIMIT)  * 0.2);
-    if (objspace->heap.free_min < FREE_MIN) {
+    if (objspace->heap.free_min < initial_free_min) {
 	objspace->heap.do_heap_free = heaps_used * HEAP_OBJ_LIMIT;
-        objspace->heap.free_min = FREE_MIN;
+        objspace->heap.free_min = initial_free_min;
     }
     objspace->heap.sweep_slots = heaps;
     objspace->heap.free_num = 0;
@@ -1989,7 +2040,6 @@ before_gc_sweep(rb_objspace_t *objspace)
 static void
 after_gc_sweep(rb_objspace_t *objspace)
 {
-    rb_thread_t *th = GET_THREAD();
     GC_PROF_SET_MALLOC_INFO;
 
     if (objspace->heap.free_num < objspace->heap.free_min) {
@@ -1999,7 +2049,7 @@ after_gc_sweep(rb_objspace_t *objspace)
 
     if (malloc_increase > malloc_limit) {
 	malloc_limit += (size_t)((malloc_increase - malloc_limit) * (double)objspace->heap.live_num / (heaps_used * HEAP_OBJ_LIMIT));
-	if (malloc_limit < GC_MALLOC_LIMIT) malloc_limit = GC_MALLOC_LIMIT;
+	if (malloc_limit < initial_malloc_limit) malloc_limit = initial_malloc_limit;
     }
     malloc_increase = 0;
 
@@ -2264,13 +2314,13 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 void rb_vm_mark(void *ptr);
 
 #if STACK_GROW_DIRECTION < 0
-#define GET_STACK_BOUNDS(start, end, appendix) (start = STACK_END, end = STACK_START)
+#define GET_STACK_BOUNDS(start, end, appendix) ((start) = STACK_END, (end) = STACK_START)
 #elif STACK_GROW_DIRECTION > 0
-#define GET_STACK_BOUNDS(start, end, appendix) (start = STACK_START, end = STACK_END+appendix)
+#define GET_STACK_BOUNDS(start, end, appendix) ((start) = STACK_START, (end) = STACK_END+(appendix))
 #else
 #define GET_STACK_BOUNDS(start, end, appendix) \
     ((STACK_END < STACK_START) ? \
-     (start = STACK_END, end = STACK_START) : (start = STACK_START, end = STACK_END+appendix))
+     ((start) = STACK_END, (end) = STACK_START) : ((start) = STACK_START, (end) = STACK_END+(appendix)))
 #endif
 
 #define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
@@ -2518,7 +2568,7 @@ objspace_each_objects(VALUE arg)
     while (i < heaps_used) {
 	while (0 < i && (uintptr_t)membase < (uintptr_t)objspace->heap.sorted[i-1].slot->membase)
 	    i--;
-	while (i < heaps_used && (uintptr_t)objspace->heap.sorted[i].slot->membase <= (uintptr_t)membase )
+	while (i < heaps_used && (uintptr_t)objspace->heap.sorted[i].slot->membase <= (uintptr_t)membase)
 	    i++;
 	if (heaps_used <= i)
 	  break;
@@ -3164,7 +3214,7 @@ count_objects(int argc, VALUE *argv, VALUE os)
     for (i = 0; i <= T_MASK; i++) {
         VALUE type;
         switch (i) {
-#define COUNT_TYPE(t) case t: type = ID2SYM(rb_intern(#t)); break;
+#define COUNT_TYPE(t) case (t): type = ID2SYM(rb_intern(#t)); break;
 	    COUNT_TYPE(T_NONE);
 	    COUNT_TYPE(T_OBJECT);
 	    COUNT_TYPE(T_CLASS);
@@ -3486,7 +3536,7 @@ Init_GC(void)
     OBJ_TAINT(nomem_error);
     OBJ_FREEZE(nomem_error);
 
-    rb_define_method(rb_mKernel, "__id__", rb_obj_id, 0);
+    rb_define_method(rb_cBasicObject, "__id__", rb_obj_id, 0);
     rb_define_method(rb_mKernel, "object_id", rb_obj_id, 0);
 
     rb_define_module_function(rb_mObSpace, "count_objects", count_objects, -1);

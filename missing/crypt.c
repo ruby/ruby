@@ -258,21 +258,21 @@ typedef union {
  */
 #define	TO_SIX_BIT(rslt, src) {				\
 		C_block cvt;				\
-		cvt.b[0] = (unsigned char)src; src >>= 6; \
-		cvt.b[1] = (unsigned char)src; src >>= 6; \
-		cvt.b[2] = (unsigned char)src; src >>= 6; \
-		cvt.b[3] = (unsigned char)src;		\
-		rslt = (cvt.b32.i0 & 0x3f3f3f3fL) << 2;	\
+		cvt.b[0] = (unsigned char)(src); (src) >>= 6; \
+		cvt.b[1] = (unsigned char)(src); (src) >>= 6; \
+		cvt.b[2] = (unsigned char)(src); (src) >>= 6; \
+		cvt.b[3] = (unsigned char)(src);		\
+		(rslt) = (cvt.b32.i0 & 0x3f3f3f3fL) << 2;	\
 	}
 
 /*
  * These macros may someday permit efficient use of 64-bit integers.
  */
-#define	ZERO(d,d0,d1)			d0 = 0, d1 = 0
-#define	LOAD(d,d0,d1,bl)		d0 = (bl).b32.i0, d1 = (bl).b32.i1
-#define	LOADREG(d,d0,d1,s,s0,s1)	d0 = s0, d1 = s1
-#define	OR(d,d0,d1,bl)			d0 |= (bl).b32.i0, d1 |= (bl).b32.i1
-#define	STORE(s,s0,s1,bl)		(bl).b32.i0 = s0, (bl).b32.i1 = s1
+#define	ZERO(d,d0,d1)			((d0) = 0, (d1) = 0)
+#define	LOAD(d,d0,d1,bl)		((d0) = (bl).b32.i0, (d1) = (bl).b32.i1)
+#define	LOADREG(d,d0,d1,s,s0,s1)	((d0) = (s0), (d1) = (s1))
+#define	OR(d,d0,d1,bl)			((d0) |= (bl).b32.i0, (d1) |= (bl).b32.i1)
+#define	STORE(s,s0,s1,bl)		((bl).b32.i0 = (s0), (bl).b32.i1 = (s1))
 #define	DCL_BLOCK(d,d0,d1)		long d0, d1
 
 #if defined(LARGEDATA)
@@ -280,27 +280,27 @@ typedef union {
 #define	LGCHUNKBITS	3
 #define	CHUNKBITS	(1<<LGCHUNKBITS)
 #define	PERM6464(d,d0,d1,cpp,p)				\
-	LOAD(d,d0,d1,(p)[(0<<CHUNKBITS)+(cpp)[0]]);		\
-	OR (d,d0,d1,(p)[(1<<CHUNKBITS)+(cpp)[1]]);		\
-	OR (d,d0,d1,(p)[(2<<CHUNKBITS)+(cpp)[2]]);		\
-	OR (d,d0,d1,(p)[(3<<CHUNKBITS)+(cpp)[3]]);		\
-	OR (d,d0,d1,(p)[(4<<CHUNKBITS)+(cpp)[4]]);		\
-	OR (d,d0,d1,(p)[(5<<CHUNKBITS)+(cpp)[5]]);		\
-	OR (d,d0,d1,(p)[(6<<CHUNKBITS)+(cpp)[6]]);		\
-	OR (d,d0,d1,(p)[(7<<CHUNKBITS)+(cpp)[7]]);
+	LOAD((d),(d0),(d1),(p)[(0<<CHUNKBITS)+(cpp)[0]]);		\
+	OR ((d),(d0),(d1),(p)[(1<<CHUNKBITS)+(cpp)[1]]);		\
+	OR ((d),(d0),(d1),(p)[(2<<CHUNKBITS)+(cpp)[2]]);		\
+	OR ((d),(d0),(d1),(p)[(3<<CHUNKBITS)+(cpp)[3]]);		\
+	OR (d),(d0),(d1),(p)[(4<<CHUNKBITS)+(cpp)[4]]);		\
+	OR (d),(d0),(d1),(p)[(5<<CHUNKBITS)+(cpp)[5]]);		\
+	OR (d),(d0),(d1),(p)[(6<<CHUNKBITS)+(cpp)[6]]);		\
+	OR (d),(d0),(d1),(p)[(7<<CHUNKBITS)+(cpp)[7]]);
 #define	PERM3264(d,d0,d1,cpp,p)				\
-	LOAD(d,d0,d1,(p)[(0<<CHUNKBITS)+(cpp)[0]]);		\
-	OR (d,d0,d1,(p)[(1<<CHUNKBITS)+(cpp)[1]]);		\
-	OR (d,d0,d1,(p)[(2<<CHUNKBITS)+(cpp)[2]]);		\
-	OR (d,d0,d1,(p)[(3<<CHUNKBITS)+(cpp)[3]]);
+	LOAD((d),(d0),(d1),(p)[(0<<CHUNKBITS)+(cpp)[0]]);		\
+	OR ((d),(d0),(d1),(p)[(1<<CHUNKBITS)+(cpp)[1]]);		\
+	OR ((d),(d0),(d1),(p)[(2<<CHUNKBITS)+(cpp)[2]]);		\
+	OR ((d),(d0),(d1),(p)[(3<<CHUNKBITS)+(cpp)[3]]);
 #else
 	/* "small data" */
 #define	LGCHUNKBITS	2
 #define	CHUNKBITS	(1<<LGCHUNKBITS)
 #define	PERM6464(d,d0,d1,cpp,p)				\
-	{ C_block tblk; permute(cpp,&tblk,p,8); LOAD (d,d0,d1,tblk); }
+	{ C_block tblk; permute((cpp),&tblk,(p),8); LOAD ((d),(d0),(d1),tblk); }
 #define	PERM3264(d,d0,d1,cpp,p)				\
-	{ C_block tblk; permute(cpp,&tblk,p,4); LOAD (d,d0,d1,tblk); }
+	{ C_block tblk; permute((cpp),&tblk,(p),4); LOAD ((d),(d0),(d1),tblk); }
 
 STATIC void
 permute(cp, out, p, chars_in)
@@ -694,34 +694,34 @@ des_cipher(in, out, salt, num_iter)
 		loop_count = 8;
 		do {
 
-#define	SPTAB(t, i)	(*(long *)((unsigned char *)t + i*(sizeof(long)/4)))
+#define	SPTAB(t, i)	(*(long *)((unsigned char *)(t) + (i)*(sizeof(long)/4)))
 #if defined(gould)
 			/* use this if B.b[i] is evaluated just once ... */
-#define	DOXOR(x,y,i)	x^=SPTAB(SPE[0][i],B.b[i]); y^=SPTAB(SPE[1][i],B.b[i]);
+#define	DOXOR(x,y,i)	(x)^=SPTAB(SPE[0][(i)],B.b[(i)]); (y)^=SPTAB(SPE[1][(i)],B.b[(i)]);
 #else
 #if defined(pdp11)
 			/* use this if your "long" int indexing is slow */
-#define	DOXOR(x,y,i)	j=B.b[i]; x^=SPTAB(SPE[0][i],j); y^=SPTAB(SPE[1][i],j);
+#define	DOXOR(x,y,i)	j=B.b[(i)]; (x)^=SPTAB(SPE[0][(i)],j); (y)^=SPTAB(SPE[1][(i)],j);
 #else
 			/* use this if "k" is allocated to a register ... */
-#define	DOXOR(x,y,i)	k=B.b[i]; x^=SPTAB(SPE[0][i],k); y^=SPTAB(SPE[1][i],k);
+#define	DOXOR(x,y,i)	k=B.b[(i)]; (x)^=SPTAB(SPE[0][(i)],k); (y)^=SPTAB(SPE[1][(i)],k);
 #endif
 #endif
 
 #define	CRUNCH(p0, p1, q0, q1)	\
-			k = (q0 ^ q1) & SALT;	\
-			B.b32.i0 = k ^ q0 ^ kp->b32.i0;		\
-			B.b32.i1 = k ^ q1 ^ kp->b32.i1;		\
+			k = ((q0) ^ (q1)) & SALT;	\
+			B.b32.i0 = k ^ (q0) ^ kp->b32.i0;		\
+			B.b32.i1 = k ^ (q1) ^ kp->b32.i1;		\
 			kp = (C_block *)((char *)kp+ks_inc);	\
 							\
-			DOXOR(p0, p1, 0);		\
-			DOXOR(p0, p1, 1);		\
-			DOXOR(p0, p1, 2);		\
-			DOXOR(p0, p1, 3);		\
-			DOXOR(p0, p1, 4);		\
-			DOXOR(p0, p1, 5);		\
-			DOXOR(p0, p1, 6);		\
-			DOXOR(p0, p1, 7);
+			DOXOR((p0), (p1), 0);		\
+			DOXOR((p0), (p1), 1);		\
+			DOXOR((p0), (p1), 2);		\
+			DOXOR((p0), (p1), 3);		\
+			DOXOR((p0), (p1), 4);		\
+			DOXOR((p0), (p1), 5);		\
+			DOXOR((p0), (p1), 6);		\
+			DOXOR((p0), (p1), 7);
 
 			CRUNCH(L0, L1, R0, R1);
 			CRUNCH(R0, R1, L0, L1);

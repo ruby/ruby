@@ -1,7 +1,34 @@
-require 'net/http'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 require 'rubygems/remote_fetcher'
 
 module Gem::GemcutterUtilities
+  OptionParser.accept Symbol do |value|
+    value.to_sym
+  end
+
+  ##
+  # Add the --key option
+
+  def add_key_option
+    add_option('-k', '--key KEYNAME', Symbol,
+               'Use the given API key',
+               'from ~/.gem/credentials') do |value,options|
+      options[:key] = value
+    end
+  end
+
+  def api_key
+    if options[:key] then
+      verify_api_key options[:key]
+    else
+      Gem.configuration.rubygems_api_key
+    end
+  end
 
   def sign_in
     return if Gem.configuration.rubygems_api_key
@@ -23,9 +50,12 @@ module Gem::GemcutterUtilities
     end
   end
 
-  def rubygems_api_request(method, path, &block)
-    host = ENV['RUBYGEMS_HOST'] || 'https://rubygems.org'
+  def rubygems_api_request(method, path, host = Gem.host, &block)
+    require 'net/http'
+    host = ENV['RUBYGEMS_HOST'] if ENV['RUBYGEMS_HOST']
     uri = URI.parse "#{host}/#{path}"
+
+    say "Pushing gem to #{host}..."
 
     request_method = Net::HTTP.const_get method.to_s.capitalize
 
@@ -42,6 +72,15 @@ module Gem::GemcutterUtilities
       end
     else
       say resp.body
+      terminate_interaction 1
+    end
+  end
+
+  def verify_api_key(key)
+    if Gem.configuration.api_keys.key? key then
+      Gem.configuration.api_keys[key]
+    else
+      alert_error "No such API key. You can add it with gem keys --add #{key}"
       terminate_interaction 1
     end
   end

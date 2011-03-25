@@ -141,7 +141,7 @@ set_debug_option(const char *str, int len, void *arg)
 {
 #define SET_WHEN(name, var) do {	    \
 	if (len == sizeof(name) - 1 &&	    \
-	    strncmp(str, name, len) == 0) { \
+	    strncmp(str, (name), len) == 0) { \
 	    extern int var;	    \
 	    var = 1;		    \
 	    return;			    \

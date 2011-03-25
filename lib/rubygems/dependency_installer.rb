@@ -1,3 +1,9 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 require 'rubygems'
 require 'rubygems/dependency_list'
 require 'rubygems/installer'
@@ -78,7 +84,7 @@ class Gem::DependencyInstaller
   ##
   # Returns a list of pairs of gemspecs and source_uris that match
   # Gem::Dependency +dep+ from both local (Dir.pwd) and remote (Gem.sources)
-  # sources.  Gems are sorted with newer gems prefered over older gems, and
+  # sources.  Gems are sorted with newer gems preferred over older gems, and
   # local gems preferred over remote gems.
 
   def find_gems_with_sources(dep)
@@ -130,43 +136,66 @@ class Gem::DependencyInstaller
   def gather_dependencies
     specs = @specs_and_sources.map { |spec,_| spec }
 
+    # these gems were listed by the user, always install them
+    keep_names = specs.map { |spec| spec.full_name }
+
     dependency_list = Gem::DependencyList.new @development
     dependency_list.add(*specs)
+    to_do = specs.dup
 
-    unless @ignore_dependencies then
-      to_do = specs.dup
-      seen = {}
+    add_found_dependencies to_do, dependency_list unless @ignore_dependencies
 
-      until to_do.empty? do
-        spec = to_do.shift
-        next if spec.nil? or seen[spec.name]
-        seen[spec.name] = true
+    dependency_list.specs.reject! { |spec|
+      ! keep_names.include? spec.full_name and
+        @source_index.any? { |n,_| n == spec.full_name }
+    }
 
-        deps = spec.runtime_dependencies
-        deps |= spec.development_dependencies if @development
+    unless dependency_list.ok? or @ignore_dependencies or @force then
+      reason = dependency_list.why_not_ok?.map { |k,v|
+        "#{k} requires #{v.join(", ")}"
+      }.join("; ")
+      raise Gem::DependencyError, "Unable to resolve dependencies: #{reason}"
+    end
 
-        deps.each do |dep|
-          results = find_gems_with_sources(dep).reverse
+    @gems_to_install = dependency_list.dependency_order.reverse
+  end
 
-          results.reject! do |dep_spec,|
-            to_do.push dep_spec
+  def add_found_dependencies to_do, dependency_list
+    seen = {}
+    dependencies = Hash.new { |h, name| h[name] = Gem::Dependency.new name }
 
-            @source_index.any? do |_, installed_spec|
-              dep.name == installed_spec.name and
-                dep.requirement.satisfied_by? installed_spec.version
-            end
+    until to_do.empty? do
+      spec = to_do.shift
+      next if spec.nil? or seen[spec.name]
+      seen[spec.name] = true
+
+      deps = spec.runtime_dependencies
+      deps |= spec.development_dependencies if @development
+
+      deps.each do |dep|
+        dependencies[dep.name] = dependencies[dep.name].merge dep
+
+        results = find_gems_with_sources(dep).reverse
+
+        results.reject! do |dep_spec,|
+          to_do.push dep_spec
+
+          # already locally installed
+          @source_index.any? do |_, installed_spec|
+            dep.name == installed_spec.name and
+              dep.requirement.satisfied_by? installed_spec.version
           end
+        end
 
-          results.each do |dep_spec, source_uri|
-            next if seen[dep_spec.name]
-            @specs_and_sources << [dep_spec, source_uri]
-            dependency_list.add dep_spec
-          end
+        results.each do |dep_spec, source_uri|
+          @specs_and_sources << [dep_spec, source_uri]
+
+          dependency_list.add dep_spec
         end
       end
     end
 
-    @gems_to_install = dependency_list.dependency_order.reverse
+    dependency_list.remove_specs_unsatisfied_by dependencies
   end
 
   ##
@@ -246,7 +275,6 @@ class Gem::DependencyInstaller
 
     @gems_to_install.each do |spec|
       last = spec == @gems_to_install.last
-      # HACK is this test for full_name acceptable?
       next if @source_index.any? { |n,_| n == spec.full_name } and not last
 
       # TODO: make this sorta_verbose so other users can benefit from it

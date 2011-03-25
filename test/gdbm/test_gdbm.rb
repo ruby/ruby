@@ -92,8 +92,8 @@ if defined? GDBM
       end
     end
     def test_s_open_no_create
-      assert_nil(gdbm = GDBM.open("#{@tmpdir}/#{@prefix}", nil),
-                 "this test is failed on libgdbm 1.8.0")
+      skip "gdbm_open(GDBM_WRITER) is broken on libgdbm 1.8.0" if /1\.8\.0/ =~ GDBM::VERSION
+      assert_nil(gdbm = GDBM.open("#{@tmpdir}/#{@prefix}", nil))
     ensure
       gdbm.close if gdbm
     end
@@ -667,6 +667,8 @@ if defined? GDBM
     end
 
     def test_writer_open_notexist
+      skip "gdbm_open(GDBM_WRITER) is broken on libgdbm 1.8.0" if /1\.8\.0/ =~ GDBM::VERSION
+
       assert_raise(Errno::ENOENT) {
         GDBM.open("#{@tmproot}/a", 0666, GDBM::WRITER)
       }

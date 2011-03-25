@@ -34,7 +34,7 @@ VALUE rb_cBignum;
 # define DIGSPERLL (SIZEOF_LONG_LONG/SIZEOF_BDIGITS)
 #endif
 #define BIGUP(x) ((BDIGIT_DBL)(x) << BITSPERDIG)
-#define BIGDN(x) RSHIFT(x,BITSPERDIG)
+#define BIGDN(x) RSHIFT((x),BITSPERDIG)
 #define BIGLO(x) ((BDIGIT)((x) & (BIGRAD-1)))
 #define BDIGMAX ((BDIGIT)-1)
 
@@ -148,7 +148,7 @@ bignew_1(VALUE klass, long len, int sign)
     return (VALUE)big;
 }
 
-#define bignew(len,sign) bignew_1(rb_cBignum,len,sign)
+#define bignew(len,sign) bignew_1(rb_cBignum,(len),(sign))
 
 VALUE
 rb_big_new(long len, int sign)
@@ -511,7 +511,7 @@ rb_quad_pack(char *buf, VALUE val)
     }
 }
 
-#define BNEG(b) (RSHIFT(((BDIGIT*)b)[QUAD_SIZE/SIZEOF_BDIGITS-1],BITSPERDIG-1) != 0)
+#define BNEG(b) (RSHIFT(((BDIGIT*)(b))[QUAD_SIZE/SIZEOF_BDIGITS-1],BITSPERDIG-1) != 0)
 
 VALUE
 rb_quad_unpack(const char *buf, int sign)
@@ -734,6 +734,8 @@ rb_str_to_inum(VALUE str, int base, int badcheck)
 {
     char *s;
     long len;
+    VALUE v = 0;
+    VALUE ret;
 
     StringValue(str);
     if (badcheck) {
@@ -745,14 +747,17 @@ rb_str_to_inum(VALUE str, int base, int badcheck)
     if (s) {
 	len = RSTRING_LEN(str);
 	if (s[len]) {		/* no sentinel somehow */
-	    char *p = ALLOCA_N(char, len+1);
+	    char *p = ALLOCV(v, len+1);
 
 	    MEMCPY(p, s, char, len);
 	    p[len] = '\0';
 	    s = p;
 	}
     }
-    return rb_cstr_to_inum(s, base, badcheck);
+    ret = rb_cstr_to_inum(s, base, badcheck);
+    if (v)
+	ALLOCV_END(v);
+    return ret;
 }
 
 #if HAVE_LONG_LONG
@@ -2157,14 +2162,14 @@ bigmul1_karatsuba(VALUE x, VALUE y)
     t3 = bigmul0(xh, yh);
 
     i = xn + yn - n;
+    /* subtract t1 from t3 */
+    bigsub_core(BDIGITS(t3), big_real_len(t3), BDIGITS(t1), t1n, BDIGITS(t3), big_real_len(t3));
+
+    /* subtract t2 from t3; t3 is now the middle term of the product */
+    if (t2 != Qundef) bigsub_core(BDIGITS(t3), big_real_len(t3), BDIGITS(t2), t2n, BDIGITS(t3), big_real_len(t3));
+
     /* add t3 to middle bytes of the result (z1) */
     bigadd_core(zds + n, i, BDIGITS(t3), big_real_len(t3), zds + n, i);
-
-    /* subtract t1 from middle bytes of the result (z1) */
-    bigsub_core(zds + n, i, BDIGITS(t1), t1n, zds + n, i);
-
-    /* subtract t2 from middle bytes of the result (z1) */
-    if (t2 != Qundef) bigsub_core(zds + n, i, BDIGITS(t2), t2n, zds + n, i);
 
     return z;
 }

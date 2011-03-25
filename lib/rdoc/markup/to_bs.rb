@@ -1,4 +1,4 @@
-require 'rdoc/markup/inline'
+require 'rdoc/markup/to_rdoc'
 
 ##
 # Outputs RDoc markup with hot backspace action!  You will probably need a
@@ -7,6 +7,9 @@ require 'rdoc/markup/inline'
 # This formatter won't work on 1.8.6 because it lacks String#chars.
 
 class RDoc::Markup::ToBs < RDoc::Markup::ToRdoc
+
+  ##
+  # Returns a new ToBs that is ready for hot backspace action!
 
   def initialize
     super
@@ -22,7 +25,11 @@ class RDoc::Markup::ToBs < RDoc::Markup::ToRdoc
   def init_tags
     add_tag :BOLD, '+b', '-b'
     add_tag :EM,   '+_', '-_'
+    add_tag :TT,   ''  , ''   # we need in_tt information maintained
   end
+
+  ##
+  # Makes heading text bold.
 
   def accept_heading heading
     use_prefix or @res << ' ' * @indent
@@ -44,7 +51,6 @@ class RDoc::Markup::ToBs < RDoc::Markup::ToRdoc
     when '+_' then @in_em = true
     when '-_' then @in_em = false
     end
-
     ''
   end
 

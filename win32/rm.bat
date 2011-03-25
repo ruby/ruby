@@ -5,7 +5,6 @@ if "%1" == "-r" (set recursive=1 & goto :optloop)
 if "%recursive%" == "1" goto :recursive
 :begin
 if "%1" == "" goto :end
-if exist "%1" del "%1"
 set p=%1
 if exist "%p:/=\%" del "%p:/=\%"
 shift

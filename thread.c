@@ -73,6 +73,8 @@ static const VALUE eKillSignal = INT2FIX(0);
 static const VALUE eTerminateSignal = INT2FIX(1);
 static volatile int system_working = 1;
 
+#define closed_stream_error GET_VM()->special_exceptions[ruby_error_closed_stream]
+
 inline static void
 st_delete_wrap(st_table *table, st_data_t key)
 {
@@ -103,10 +105,10 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
 #define GVL_UNLOCK_BEGIN() do { \
   rb_thread_t *_th_stored = GET_THREAD(); \
   RB_GC_SAVE_MACHINE_CONTEXT(_th_stored); \
-  native_mutex_unlock(&_th_stored->vm->global_vm_lock)
+  gvl_release(_th_stored->vm);
 
 #define GVL_UNLOCK_END() \
-  native_mutex_lock(&_th_stored->vm->global_vm_lock); \
+  gvl_acquire(_th_stored->vm, _th_stored); \
   rb_thread_set_current(_th_stored); \
 } while(0)
 
@@ -125,13 +127,13 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
     (th)->status = THREAD_STOPPED; \
     thread_debug("enter blocking region (%p)\n", (void *)(th)); \
     RB_GC_SAVE_MACHINE_CONTEXT(th); \
-    native_mutex_unlock(&(th)->vm->global_vm_lock); \
+    gvl_release((th)->vm); \
   } while (0)
 
 #define BLOCKING_REGION(exec, ubf, ubfarg) do { \
     rb_thread_t *__th = GET_THREAD(); \
     struct rb_blocking_region_buffer __region; \
-    blocking_region_begin(__th, &__region, ubf, ubfarg); \
+    blocking_region_begin(__th, &__region, (ubf), (ubfarg)); \
     exec; \
     blocking_region_end(__th, &__region); \
     RUBY_VM_CHECK_INTS(); \
@@ -245,6 +247,13 @@ rb_thread_debug(
     DEBUG_OUT();
 }
 #endif
+
+void
+rb_vm_gvl_destroy(rb_vm_t *vm)
+{
+    gvl_release(vm);
+    gvl_destroy(vm);
+}
 
 void
 rb_thread_lock_unlock(rb_thread_lock_t *lock)
@@ -384,12 +393,22 @@ thread_cleanup_func_before_exec(void *th_ptr)
 }
 
 static void
-thread_cleanup_func(void *th_ptr)
+thread_cleanup_func(void *th_ptr, int atfork)
 {
     rb_thread_t *th = th_ptr;
 
     th->locking_mutex = Qfalse;
     thread_cleanup_func_before_exec(th_ptr);
+
+    /*
+     * Unfortunately, we can't release native threading resource at fork
+     * because libc may have unstable locking state therefore touching
+     * a threading resource may cause a deadlock.
+     */
+    if (atfork)
+	return;
+
+    native_mutex_destroy(&th->interrupt_lock);
     native_thread_destroy(th);
 }
 
@@ -426,7 +445,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 #endif
     thread_debug("thread start: %p\n", (void *)th);
 
-    native_mutex_lock(&th->vm->global_vm_lock);
+    gvl_acquire(th->vm, th);
     {
 	thread_debug("thread start (get lock): %p\n", (void *)th);
 	rb_thread_set_current(th);
@@ -507,19 +526,20 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	    join_th = join_th->join_list_next;
 	}
 
+	thread_unlock_all_locking_mutexes(th);
+	if (th != main_th) rb_check_deadlock(th->vm);
+
 	if (!th->root_fiber) {
 	    rb_thread_recycle_stack_release(th->stack);
 	    th->stack = 0;
 	}
     }
-    thread_unlock_all_locking_mutexes(th);
-    if (th != main_th) rb_check_deadlock(th->vm);
     if (th->vm->main_thread == th) {
 	ruby_cleanup(state);
     }
     else {
-	thread_cleanup_func(th);
-	native_mutex_unlock(&th->vm->global_vm_lock);
+	thread_cleanup_func(th, FALSE);
+	gvl_release(th->vm);
     }
 
     return 0;
@@ -1002,11 +1022,11 @@ rb_thread_schedule_rec(int sched_depth)
 	thread_debug("rb_thread_schedule/switch start\n");
 
 	RB_GC_SAVE_MACHINE_CONTEXT(th);
-	native_mutex_unlock(&th->vm->global_vm_lock);
+	gvl_release(th->vm);
 	{
 	    native_thread_yield();
 	}
-	native_mutex_lock(&th->vm->global_vm_lock);
+	gvl_acquire(th->vm, th);
 
 	rb_thread_set_current(th);
 	thread_debug("rb_thread_schedule/switch done\n");
@@ -1028,7 +1048,7 @@ rb_thread_schedule(void)
 static inline void
 blocking_region_end(rb_thread_t *th, struct rb_blocking_region_buffer *region)
 {
-    native_mutex_lock(&th->vm->global_vm_lock);
+    gvl_acquire(th->vm, th);
     rb_thread_set_current(th);
     thread_debug("leave blocking region (%p)\n", (void *)th);
     remove_signal_thread_list(th);
@@ -1104,6 +1124,7 @@ rb_thread_blocking_region(
     rb_thread_t *th = GET_THREAD();
     int saved_errno = 0;
 
+    th->waiting_fd = -1;
     if (ubf == RUBY_UBF_IO || ubf == RUBY_UBF_PROCESS) {
 	ubf = ubf_select;
 	data2 = th;
@@ -1113,6 +1134,24 @@ rb_thread_blocking_region(
 	val = func(data1);
 	saved_errno = errno;
     }, ubf, data2);
+    errno = saved_errno;
+
+    return val;
+}
+
+VALUE
+rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
+{
+    VALUE val;
+    rb_thread_t *th = GET_THREAD();
+    int saved_errno = 0;
+
+    th->waiting_fd = fd;
+    BLOCKING_REGION({
+	val = func(data1);
+	saved_errno = errno;
+    }, ubf_select, th);
+    th->waiting_fd = -1;
     errno = saved_errno;
 
     return val;
@@ -1409,10 +1448,36 @@ rb_threadptr_reset_raised(rb_thread_t *th)
     return 1;
 }
 
+#define THREAD_IO_WAITING_P(th) (			\
+	((th)->status == THREAD_STOPPED ||		\
+	 (th)->status == THREAD_STOPPED_FOREVER) &&	\
+	(th)->blocking_region_buffer &&			\
+	(th)->unblock.func == ubf_select &&		\
+	1)
+
+static int
+thread_fd_close_i(st_data_t key, st_data_t val, st_data_t data)
+{
+    int fd = (int)data;
+    rb_thread_t *th;
+    GetThreadPtr((VALUE)key, th);
+
+    if (THREAD_IO_WAITING_P(th)) {
+	native_mutex_lock(&th->interrupt_lock);
+	if (THREAD_IO_WAITING_P(th) && th->waiting_fd == fd) {
+	    th->errinfo = th->vm->special_exceptions[ruby_error_closed_stream];
+	    RUBY_VM_SET_INTERRUPT(th);
+	    (th->unblock.func)(th->unblock.arg);
+	}
+	native_mutex_unlock(&th->interrupt_lock);
+    }
+    return ST_CONTINUE;
+}
+
 void
 rb_thread_fd_close(int fd)
 {
-    /* TODO: fix me */
+    st_foreach(GET_THREAD()->vm->living_threads, thread_fd_close_i, (st_index_t)fd);
 }
 
 /*
@@ -2351,9 +2416,9 @@ rb_fd_select(int n, rb_fdset_t *readfds, rb_fdset_t *writefds, rb_fdset_t *excep
 #undef FD_ISSET
 
 #define FD_ZERO(f)	rb_fd_zero(f)
-#define FD_SET(i, f)	rb_fd_set(i, f)
-#define FD_CLR(i, f)	rb_fd_clr(i, f)
-#define FD_ISSET(i, f)	rb_fd_isset(i, f)
+#define FD_SET(i, f)	rb_fd_set((i), (f))
+#define FD_CLR(i, f)	rb_fd_clr((i), (f))
+#define FD_ISSET(i, f)	rb_fd_isset((i), (f))
 
 #elif defined(_WIN32)
 
@@ -2397,9 +2462,9 @@ rb_fd_set(int fd, rb_fdset_t *set)
 #undef FD_ISSET
 
 #define FD_ZERO(f)	rb_fd_zero(f)
-#define FD_SET(i, f)	rb_fd_set(i, f)
-#define FD_CLR(i, f)	rb_fd_clr(i, f)
-#define FD_ISSET(i, f)	rb_fd_isset(i, f)
+#define FD_SET(i, f)	rb_fd_set((i), (f))
+#define FD_CLR(i, f)	rb_fd_clr((i), (f))
+#define FD_ISSET(i, f)	rb_fd_isset((i), (f))
 
 #endif
 
@@ -2753,7 +2818,7 @@ rb_thread_atfork_internal(int (*atfork)(st_data_t, st_data_t, st_data_t))
     VALUE thval = th->self;
     vm->main_thread = th;
 
-    native_mutex_reinitialize_atfork(&th->vm->global_vm_lock);
+    gvl_atfork(th->vm);
     st_foreach(vm->living_threads, atfork, (st_data_t)th);
     st_clear(vm->living_threads);
     st_insert(vm->living_threads, thval, (st_data_t)th->thread_id);
@@ -2773,7 +2838,7 @@ terminate_atfork_i(st_data_t key, st_data_t val, st_data_t current_th)
 	    rb_mutex_abandon_all(th->keeping_mutexes);
 	}
 	th->keeping_mutexes = NULL;
-	thread_cleanup_func(th);
+	thread_cleanup_func(th, TRUE);
     }
     return ST_CONTINUE;
 }
@@ -2783,6 +2848,8 @@ rb_thread_atfork(void)
 {
     rb_thread_atfork_internal(terminate_atfork_i);
     GET_THREAD()->join_list_head = 0;
+
+    /* We don't want reproduce CVE-2003-0900. */
     rb_reset_random_seed();
 }
 
@@ -3026,7 +3093,7 @@ thgroup_add(VALUE group, VALUE thread)
  */
 
 #define GetMutexPtr(obj, tobj) \
-    TypedData_Get_Struct(obj, mutex_t, &mutex_data_type, tobj)
+    TypedData_Get_Struct((obj), mutex_t, &mutex_data_type, (tobj))
 
 static const char *mutex_unlock(mutex_t *mutex, rb_thread_t volatile *th);
 
@@ -3436,7 +3503,7 @@ barrier_alloc(VALUE klass)
     return TypedData_Wrap_Struct(klass, &barrier_data_type, (void *)mutex_alloc(0));
 }
 
-#define GetBarrierPtr(obj) (VALUE)rb_check_typeddata(obj, &barrier_data_type)
+#define GetBarrierPtr(obj) ((VALUE)rb_check_typeddata((obj), &barrier_data_type))
 
 VALUE
 rb_barrier_new(void)
@@ -3634,10 +3701,14 @@ exec_recursive_i(VALUE tag, struct exec_recursive_params *p)
 static VALUE
 exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE arg, int outer)
 {
+    VALUE result = Qundef;
     struct exec_recursive_params p;
     int outermost;
     p.list = recursive_list_access();
     p.objid = rb_obj_id(obj);
+    p.obj = obj;
+    p.pairid = pairid;
+    p.arg = arg;
     outermost = outer && !recursive_check(p.list, ID2SYM(recursive_key), 0);
 
     if (recursive_check(p.list, p.objid, pairid)) {
@@ -3647,11 +3718,7 @@ exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE
 	return (*func)(obj, arg, TRUE);
     }
     else {
-	VALUE result = Qundef;
 	p.func = func;
-	p.obj = obj;
-	p.pairid = pairid;
-	p.arg = arg;
 
 	if (outermost) {
 	    recursive_push(p.list, ID2SYM(recursive_key), 0);
@@ -3664,8 +3731,9 @@ exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE
 	else {
 	    result = exec_recursive_i(0, &p);
 	}
-	return result;
     }
+    *(volatile struct exec_recursive_params *)&p;
+    return result;
 }
 
 /*
@@ -4297,6 +4365,7 @@ Init_Thread(void)
 #define rb_intern(str) rb_intern_const(str)
 
     VALUE cThGroup;
+    rb_thread_t *th = GET_THREAD();
 
     rb_define_singleton_method(rb_cThread, "new", thread_s_new, -1);
     rb_define_singleton_method(rb_cThread, "start", thread_start, -2);
@@ -4341,6 +4410,10 @@ Init_Thread(void)
 
     rb_define_method(rb_cThread, "inspect", rb_thread_inspect, 0);
 
+    closed_stream_error = rb_exc_new2(rb_eIOError, "stream closed");
+    OBJ_TAINT(closed_stream_error);
+    OBJ_FREEZE(closed_stream_error);
+
     cThGroup = rb_define_class("ThreadGroup", rb_cObject);
     rb_define_alloc_func(cThGroup, thgroup_s_alloc);
     rb_define_method(cThGroup, "list", thgroup_list, 0);
@@ -4349,7 +4422,6 @@ Init_Thread(void)
     rb_define_method(cThGroup, "add", thgroup_add, 1);
 
     {
-	rb_thread_t *th = GET_THREAD();
 	th->thgroup = th->vm->thgroup_default = rb_obj_alloc(cThGroup);
 	rb_define_const(cThGroup, "Default", th->thgroup);
     }
@@ -4376,10 +4448,9 @@ Init_Thread(void)
 	/* main thread setting */
 	{
 	    /* acquire global vm lock */
-	    rb_thread_lock_t *lp = &GET_THREAD()->vm->global_vm_lock;
-	    native_mutex_initialize(lp);
-	    native_mutex_lock(lp);
-	    native_mutex_initialize(&GET_THREAD()->interrupt_lock);
+	    gvl_init(th->vm);
+	    gvl_acquire(th->vm, th);
+	    native_mutex_initialize(&th->interrupt_lock);
 	}
     }
 
@@ -4502,3 +4573,4 @@ rb_reset_coverages(void)
     GET_VM()->coverages = Qfalse;
     rb_remove_event_hook(update_coverage);
 }
+

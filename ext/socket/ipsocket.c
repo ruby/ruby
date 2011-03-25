@@ -108,7 +108,7 @@ init_inetsock_internal(struct inetsock_arg *arg)
 	status = listen(fd, 5);
 	if (status < 0) {
 	    close(fd);
-	    syscall = "listen(2)";
+            rb_sys_fail("listen(2)");
 	}
     }
 

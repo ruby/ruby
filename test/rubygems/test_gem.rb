@@ -1,11 +1,17 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require 'rubygems/test_case'
 require 'rubygems'
 require 'rubygems/gem_openssl'
 require 'rubygems/installer'
 require 'pathname'
 require 'tmpdir'
 
-class TestGem < RubyGemTestCase
+class TestGem < Gem::TestCase
 
   def setup
     super
@@ -18,6 +24,392 @@ class TestGem < RubyGemTestCase
                       end
 
     util_remove_interrupt_command
+  end
+
+  def assert_activate expected, *specs
+    specs.each do |spec|
+      case spec
+      when Array
+        Gem.activate(*spec)
+      when String
+        Gem.activate spec
+      else
+        Gem.activate spec.name
+      end
+    end
+
+    loaded = Gem.loaded_specs.values.map(&:full_name)
+
+    assert_equal expected.sort, loaded.sort if expected
+  end
+
+  def test_self_activate
+    foo = util_spec 'foo', '1'
+
+    assert_activate %w[foo-1], foo
+  end
+
+  def loaded_spec_names
+    Gem.loaded_specs.values.map(&:full_name).sort
+  end
+
+  def unresolved_names
+    Gem.unresolved_deps.values.map(&:to_s).sort
+  end
+
+  def test_self_activate_via_require
+    new_spec "a", "1", "b" => "= 1"
+    new_spec "b", "1", nil, "lib/b/c.rb"
+    new_spec "b", "2", nil, "lib/b/c.rb"
+
+    Gem.activate "a", "= 1"
+    require "b/c"
+
+    assert_equal %w(a-1 b-1), loaded_spec_names
+  end
+
+  def test_self_activate_deep_unambiguous
+    a1 = new_spec "a", "1", "b" => "= 1"
+    b1 = new_spec "b", "1", "c" => "= 1"
+    b2 = new_spec "b", "2", "c" => "= 2"
+    c1 = new_spec "c", "1"
+    c2 = new_spec "c", "2"
+
+    install_specs a1, b1, b2, c1, c2
+
+    Gem.activate "a", "= 1"
+    assert_equal %w(a-1 b-1 c-1), loaded_spec_names
+  end
+
+  def save_loaded_features
+    old_loaded_features = $LOADED_FEATURES.dup
+    yield
+  ensure
+    $LOADED_FEATURES.replace old_loaded_features
+  end
+
+  def test_self_activate_ambiguous_direct
+    save_loaded_features do
+      a1 = new_spec "a", "1", "b" => "> 0"
+      b1 = new_spec("b", "1", { "c" => ">= 1" }, "lib/d.rb")
+      b2 = new_spec("b", "2", { "c" => ">= 2" }, "lib/d.rb")
+      c1 = new_spec "c", "1"
+      c2 = new_spec "c", "2"
+
+      install_specs a1, b1, b2, c1, c2
+
+      Gem.activate "a", "= 1"
+      assert_equal %w(a-1), loaded_spec_names
+      assert_equal ["b (> 0)"], unresolved_names
+
+      require "d"
+
+      assert_equal %w(a-1 b-2 c-2), loaded_spec_names
+      assert_equal [], unresolved_names
+    end
+  end
+
+  def test_self_activate_ambiguous_indirect
+    save_loaded_features do
+      a1 = new_spec "a", "1", "b" => "> 0"
+      b1 = new_spec "b", "1", "c" => ">= 1"
+      b2 = new_spec "b", "2", "c" => ">= 2"
+      c1 = new_spec "c", "1", nil, "lib/d.rb"
+      c2 = new_spec "c", "2", nil, "lib/d.rb"
+
+      install_specs a1, b1, b2, c1, c2
+
+      Gem.activate "a", "= 1"
+      assert_equal %w(a-1), loaded_spec_names
+      assert_equal ["b (> 0)"], unresolved_names
+
+      require "d"
+
+      assert_equal %w(a-1 b-2 c-2), loaded_spec_names
+      assert_equal [], unresolved_names
+    end
+  end
+
+  def test_self_activate_ambiguous_unrelated
+    save_loaded_features do
+      a1 = new_spec "a", "1", "b" => "> 0"
+      b1 = new_spec "b", "1", "c" => ">= 1"
+      b2 = new_spec "b", "2", "c" => ">= 2"
+      c1 = new_spec "c", "1"
+      c2 = new_spec "c", "2"
+      d1 = new_spec "d", "1", nil, "lib/d.rb"
+
+      install_specs a1, b1, b2, c1, c2, d1
+
+      Gem.activate "a", "= 1"
+      assert_equal %w(a-1), loaded_spec_names
+      assert_equal ["b (> 0)"], unresolved_names
+
+      require "d"
+
+      assert_equal %w(a-1 d-1), loaded_spec_names
+      assert_equal ["b (> 0)"], unresolved_names
+    end
+  end
+
+  def test_self_activate_ambiguous_indirect_conflict
+    save_loaded_features do
+      a1 = new_spec "a", "1", "b" => "> 0"
+      a2 = new_spec "a", "2", "b" => "> 0"
+      b1 = new_spec "b", "1", "c" => ">= 1"
+      b2 = new_spec "b", "2", "c" => ">= 2"
+      c1 = new_spec "c", "1", nil, "lib/d.rb"
+      c2 = new_spec("c", "2", { "a" => "1" }, "lib/d.rb") # conflicts with a-2
+
+      install_specs a1, a2, b1, b2, c1, c2
+
+      Gem.activate "a", "= 2"
+      assert_equal %w(a-2), loaded_spec_names
+      assert_equal ["b (> 0)"], unresolved_names
+
+      require "d"
+
+      assert_equal %w(a-2 b-1 c-1), loaded_spec_names
+      assert_equal [], unresolved_names
+    end
+  end
+
+  def test_require_already_activated
+    save_loaded_features do
+      a1 = new_spec "a", "1", nil, "lib/d.rb"
+
+      install_specs a1 # , a2, b1, b2, c1, c2
+
+      Gem.activate "a", "= 1"
+      assert_equal %w(a-1), loaded_spec_names
+      assert_equal [], unresolved_names
+
+      assert require "d"
+
+      assert_equal %w(a-1), loaded_spec_names
+      assert_equal [], unresolved_names
+    end
+  end
+
+  def test_require_already_activated_indirect_conflict
+    save_loaded_features do
+      a1 = new_spec "a", "1", "b" => "> 0"
+      a2 = new_spec "a", "2", "b" => "> 0"
+      b1 = new_spec "b", "1", "c" => ">= 1"
+      b2 = new_spec "b", "2", "c" => ">= 2"
+      c1 = new_spec "c", "1", nil, "lib/d.rb"
+      c2 = new_spec("c", "2", { "a" => "1" }, "lib/d.rb") # conflicts with a-2
+
+      install_specs a1, a2, b1, b2, c1, c2
+
+      Gem.activate "a", "= 1"
+      Gem.activate "c", "= 1"
+      assert_equal %w(a-1 c-1), loaded_spec_names
+      assert_equal ["b (> 0)"], unresolved_names
+
+      assert require "d"
+
+      assert_equal %w(a-1 c-1), loaded_spec_names
+      assert_equal ["b (> 0)"], unresolved_names
+    end
+  end
+
+  def test_require_missing
+    save_loaded_features do
+      assert_raises ::LoadError do
+        require "q"
+      end
+    end
+  end
+
+  def test_self_activate_loaded
+    util_spec 'foo', '1'
+
+    assert Gem.activate 'foo'
+    refute Gem.activate 'foo'
+  end
+
+  ##
+  # [A] depends on
+  #     [B] >= 1.0 (satisfied by 2.0)
+  # [C] depends on nothing
+
+  def test_self_activate_unrelated
+    a = util_spec 'a', '1.0', 'b' => '>= 1.0'
+        util_spec 'b', '1.0'
+    c = util_spec 'c', '1.0'
+
+    assert_activate %w[b-1.0 c-1.0 a-1.0], a, c, "b"
+  end
+
+  ##
+  # [A] depends on
+  #     [B] >= 1.0 (satisfied by 2.0)
+  #     [C]  = 1.0 depends on
+  #         [B] ~> 1.0
+  #
+  # and should resolve using b-1.0
+
+  def test_self_activate_over
+    util_spec 'a', '1.0', 'b' => '>= 1.0', 'c' => '= 1.0'
+    util_spec 'b', '1.0'
+    util_spec 'b', '1.1'
+    util_spec 'b', '2.0'
+    util_spec 'c', '1.0', 'b' => '~> 1.0'
+
+    Gem.activate "a"
+
+    assert_equal %w[a-1.0 c-1.0], loaded_spec_names
+    assert_equal ["b (>= 1.0, ~> 1.0)"], unresolved_names
+  end
+
+  ##
+  # [A] depends on
+  #     [B] ~> 1.0 (satisfied by 1.1)
+  #     [C]  = 1.0 depends on
+  #         [B] = 1.0
+  #
+  # and should resolve using b-1.0
+  #
+  # TODO: this is not under, but over... under would require depth
+  # first resolve through a dependency that is later pruned.
+
+  def test_self_activate_under
+    a,   _ = util_spec 'a', '1.0', 'b' => '~> 1.0', 'c' => '= 1.0'
+             util_spec 'b', '1.0'
+             util_spec 'b', '1.1'
+    c,   _ = util_spec 'c', '1.0', 'b' => '= 1.0'
+
+    assert_activate %w[b-1.0 c-1.0 a-1.0], a, c, "b"
+  end
+
+  ##
+  # [A1] depends on
+  #    [B] > 0 (satisfied by 2.0)
+  # [B1] depends on
+  #    [C] > 0 (satisfied by 1.0)
+  # [B2] depends on nothing!
+  # [C1] depends on nothing
+
+  def test_self_activate_dropped
+    a1, = util_spec 'a', '1', 'b' => nil
+          util_spec 'b', '1', 'c' => nil
+          util_spec 'b', '2'
+          util_spec 'c', '1'
+
+    assert_activate %w[b-2 a-1], a1, "b"
+  end
+
+  ##
+  # [A] depends on
+  #     [B] >= 1.0 (satisfied by 1.1) depends on
+  #         [Z]
+  #     [C] >= 1.0 depends on
+  #         [B] = 1.0
+  #
+  # and should backtrack to resolve using b-1.0, pruning Z from the
+  # resolve.
+
+  def test_self_activate_raggi_the_edgecase_generator
+    a,  _ = util_spec 'a', '1.0', 'b' => '>= 1.0', 'c' => '>= 1.0'
+            util_spec 'b', '1.0'
+            util_spec 'b', '1.1', 'z' => '>= 1.0'
+    c,  _ = util_spec 'c', '1.0', 'b' => '= 1.0'
+
+    assert_activate %w[b-1.0 c-1.0 a-1.0], a, c, "b"
+  end
+
+  def test_self_activate_conflict
+    util_spec 'b', '1.0'
+    util_spec 'b', '2.0'
+
+    gem "b", "= 1.0"
+
+    assert_raises Gem::LoadError do
+      gem "b", "= 2.0"
+    end
+  end
+
+  ##
+  # [A] depends on
+  #     [B] ~> 1.0 (satisfied by 1.0)
+  #     [C]  = 1.0 depends on
+  #         [B] = 2.0
+
+  def test_self_activate_divergent
+    a, _  = util_spec 'a', '1.0', 'b' => '~> 1.0', 'c' => '= 1.0'
+            util_spec 'b', '1.0'
+            util_spec 'b', '2.0'
+    c,  _ = util_spec 'c', '1.0', 'b' => '= 2.0'
+
+    e = assert_raises Gem::LoadError do
+      assert_activate nil, a, c, "b"
+    end
+
+    assert_match(/Unable to activate c-1.0,/, e.message)
+    assert_match(/because b-1.0 conflicts with b .= 2.0/, e.message)
+  end
+
+  ##
+  # DOC
+
+  def test_self_activate_platform_alternate
+    @x1_m = util_spec 'x', '1' do |s|
+      s.platform = Gem::Platform.new %w[cpu my_platform 1]
+    end
+
+    @x1_o = util_spec 'x', '1' do |s|
+      s.platform = Gem::Platform.new %w[cpu other_platform 1]
+    end
+
+    @w1 = util_spec 'w', '1', 'x' => nil
+
+    util_set_arch 'cpu-my_platform1'
+
+    assert_activate %w[x-1-cpu-my_platform-1 w-1], @w1, @x1_m
+  end
+
+  ##
+  # DOC
+
+  def test_self_activate_platform_bump
+    @y1 = util_spec 'y', '1'
+
+    @y1_1_p = util_spec 'y', '1.1' do |s|
+      s.platform = Gem::Platform.new %w[cpu my_platform 1]
+    end
+
+    @z1 = util_spec 'z', '1', 'y' => nil
+
+    assert_activate %w[y-1 z-1], @z1, @y1
+  end
+
+  ##
+  # [C] depends on
+  #     [A] = 1.a
+  #     [B] = 1.0 depends on
+  #         [A] >= 0 (satisfied by 1.a)
+
+  def test_self_activate_prerelease
+    @c1_pre = util_spec 'c', '1.a', "a" => "1.a", "b" => "1"
+    @a1_pre = util_spec 'a', '1.a'
+    @b1     = util_spec 'b', '1' do |s|
+      s.add_dependency 'a'
+      s.add_development_dependency 'aa'
+    end
+
+    assert_activate %w[a-1.a b-1 c-1.a], @c1_pre, @a1_pre, @b1
+  end
+
+  ##
+  # DOC
+
+  def test_self_activate_old_required
+    e1, = util_spec 'e', '1', 'd' => '= 1'
+    @d1 = util_spec 'd', '1'
+    @d2 = util_spec 'd', '2'
+
+    assert_activate %w[d-1 e-1], e1, "d"
   end
 
   def test_self_all_load_paths
@@ -64,19 +456,19 @@ class TestGem < RubyGemTestCase
     assert_equal @exec_path, Gem.bin_path('a', nil, '4')
   end
 
-  def test_self_bin_path_no_default_bin
-    quick_gem 'a', '2' do |s|
+  def test_self_bin_path_nonexistent_binfile
+    quick_spec 'a', '2' do |s|
       s.executables = ['exec']
     end
-    assert_raises(Gem::Exception) do
-      Gem.bin_path('a', '2')
+    assert_raises(Gem::GemNotFoundException) do
+      Gem.bin_path('a', 'other', '2')
     end
   end
 
   def test_self_bin_path_no_bin_file
-    quick_gem 'a', '1'
+    quick_spec 'a', '1'
     assert_raises(Gem::Exception) do
-      Gem.bin_path('a', '1')
+      Gem.bin_path('a', nil, '1')
     end
   end
 
@@ -84,6 +476,16 @@ class TestGem < RubyGemTestCase
     assert_raises(Gem::GemNotFoundException) do
       Gem.bin_path('non-existent')
     end
+  end
+
+  def test_self_bin_path_bin_file_gone_in_latest
+    util_exec_gem
+    quick_spec 'a', '10' do |s|
+      s.executables = []
+      s.default_executable = nil
+    end
+    # Should not find a-10's non-abin (bug)
+    assert_equal @abin_path, Gem.bin_path('a', 'abin')
   end
 
   def test_self_bindir
@@ -134,7 +536,7 @@ class TestGem < RubyGemTestCase
         fp.puts 'blah'
       end
 
-      foo = quick_gem 'foo' do |s| s.files = %w[data/foo.txt] end
+      foo = quick_spec 'foo' do |s| s.files = %w[data/foo.txt] end
       install_gem foo
     end
 
@@ -196,7 +598,7 @@ class TestGem < RubyGemTestCase
 
     Gem.ensure_gem_subdirectories @gemhome
 
-    assert File.directory?(File.join(@gemhome, "cache"))
+    assert File.directory?(Gem.cache_dir(@gemhome))
   end
 
   def test_self_ensure_gem_directories_missing_parents
@@ -208,7 +610,7 @@ class TestGem < RubyGemTestCase
 
     Gem.ensure_gem_subdirectories gemdir
 
-    assert File.directory?("#{gemdir}/cache")
+    assert File.directory?(Gem.cache_dir(gemdir))
   end
 
   unless win_platform? then # only for FS that support write protection
@@ -222,7 +624,7 @@ class TestGem < RubyGemTestCase
 
       Gem.ensure_gem_subdirectories gemdir
 
-      refute File.exist?("#{gemdir}/cache")
+      refute File.exist?(Gem.cache_dir(gemdir))
     ensure
       FileUtils.chmod 0600, gemdir
     end
@@ -239,7 +641,7 @@ class TestGem < RubyGemTestCase
 
       Gem.ensure_gem_subdirectories gemdir
 
-      refute File.exist?("#{gemdir}/cache")
+      refute File.exist?(Gem.cache_dir(gemdir))
     ensure
       FileUtils.chmod 0600, parent
     end
@@ -259,15 +661,15 @@ class TestGem < RubyGemTestCase
   end
 
   def test_self_find_files
-    discover_path = File.join 'lib', 'foo', 'discover.rb'
-    cwd = File.expand_path '..', __FILE__
-    $LOAD_PATH.unshift cwd.dup
+    discover_path = File.join 'lib', 'sff', 'discover.rb'
+    cwd = File.expand_path("test/rubygems", @@project_dir)
+    $LOAD_PATH.unshift cwd
 
-    foo1 = quick_gem 'foo', '1' do |s|
+    foo1 = quick_gem 'sff', '1' do |s|
       s.files << discover_path
     end
 
-    foo2 = quick_gem 'foo', '2' do |s|
+    foo2 = quick_gem 'sff', '2' do |s|
       s.files << discover_path
     end
 
@@ -285,14 +687,13 @@ class TestGem < RubyGemTestCase
     Gem.searcher = nil
 
     expected = [
-      File.expand_path('../foo/discover.rb', __FILE__),
+      File.expand_path('test/rubygems/sff/discover.rb', @@project_dir),
       File.join(foo2.full_gem_path, discover_path),
       File.join(foo1.full_gem_path, discover_path),
     ]
 
-    assert_equal expected, Gem.find_files('foo/discover')
-    bug3701 = '[ruby-core:31730]'
-    assert_equal expected, Gem.find_files('foo/**.rb'), bug3701
+    assert_equal expected, Gem.find_files('sff/discover')
+    assert_equal expected, Gem.find_files('sff/**.rb'), '[ruby-core:31730]'
   ensure
     assert_equal cwd, $LOAD_PATH.shift
   end
@@ -312,7 +713,7 @@ class TestGem < RubyGemTestCase
   end
 
   def test_self_loaded_specs
-    foo = quick_gem 'foo'
+    foo = quick_spec 'foo'
     install_gem foo
     Gem.source_index = nil
 
@@ -321,11 +722,18 @@ class TestGem < RubyGemTestCase
     assert_equal true, Gem.loaded_specs.keys.include?('foo')
   end
 
+  def util_path
+    ENV.delete "GEM_HOME"
+    ENV.delete "GEM_PATH"
+  end
+
   def test_self_path
     assert_equal [Gem.dir], Gem.path
   end
 
   def test_self_path_default
+    util_path
+
     if defined? APPLE_GEM_HOME
       orig_APPLE_GEM_HOME = APPLE_GEM_HOME
       Object.send :remove_const, :APPLE_GEM_HOME
@@ -339,6 +747,8 @@ class TestGem < RubyGemTestCase
 
   unless win_platform?
     def test_self_path_APPLE_GEM_HOME
+      util_path
+
       Gem.clear_paths
       apple_gem_home = File.join @tempdir, 'apple_gem_home'
       Gem.const_set :APPLE_GEM_HOME, apple_gem_home
@@ -406,22 +816,12 @@ class TestGem < RubyGemTestCase
   end
 
   def test_self_prefix
-    file_name = File.expand_path __FILE__
-
-    prefix = File.dirname File.dirname(file_name)
-    prefix = File.dirname prefix if File.basename(prefix) == 'test'
-
-    assert_equal prefix, Gem.prefix
+    assert_equal @@project_dir, Gem.prefix
   end
 
   def test_self_prefix_libdir
     orig_libdir = Gem::ConfigMap[:libdir]
-
-    file_name = File.expand_path __FILE__
-    prefix = File.dirname File.dirname(file_name)
-    prefix = File.dirname prefix if File.basename(prefix) == 'test'
-
-    Gem::ConfigMap[:libdir] = prefix
+    Gem::ConfigMap[:libdir] = @@project_dir
 
     assert_nil Gem.prefix
   ensure
@@ -430,12 +830,7 @@ class TestGem < RubyGemTestCase
 
   def test_self_prefix_sitelibdir
     orig_sitelibdir = Gem::ConfigMap[:sitelibdir]
-
-    file_name = File.expand_path __FILE__
-    prefix = File.dirname File.dirname(file_name)
-    prefix = File.dirname prefix if File.basename(prefix) == 'test'
-
-    Gem::ConfigMap[:sitelibdir] = prefix
+    Gem::ConfigMap[:sitelibdir] = @@project_dir
 
     assert_nil Gem.prefix
   ensure
@@ -599,47 +994,111 @@ class TestGem < RubyGemTestCase
     end
   end
 
-  def test_self_user_home_user_drive_and_path
-    Gem.clear_paths
+  def test_self_cache_dir
+    util_ensure_gem_dirs
 
-    # safe-keep env variables
-    orig_home, orig_user_profile = ENV['HOME'], ENV['USERPROFILE']
-    orig_user_drive, orig_user_path = ENV['HOMEDRIVE'], ENV['HOMEPATH']
+    assert_equal File.join(@gemhome, 'cache'), Gem.cache_dir
+    assert_equal File.join(@userhome, '.gem', Gem.ruby_engine, Gem::ConfigMap[:ruby_version], 'cache'), Gem.cache_dir(Gem.user_dir)
+  end
 
-    # prepare the environment
-    ENV.delete('HOME')
-    ENV.delete('USERPROFILE')
-    ENV['HOMEDRIVE'] = 'Z:'
-    ENV['HOMEPATH'] = '\\Users\\RubyUser'
+  def test_self_cache_gem
+    util_ensure_gem_dirs
 
-    assert_equal "Z:\\Users\\RubyUser", Gem.user_home
+    assert_equal File.join(@gemhome, 'cache', 'test.gem'), Gem.cache_gem('test.gem')
+    assert_equal File.join(@userhome, '.gem', Gem.ruby_engine, Gem::ConfigMap[:ruby_version], 'cache', 'test.gem'), Gem.cache_gem('test.gem', Gem.user_dir)
+  end
 
-  ensure
-    ENV['HOME'] = orig_home
-    ENV['USERPROFILE'] = orig_user_profile
-    ENV['USERDRIVE'] = orig_user_drive
-    ENV['USERPATH'] = orig_user_path
-  end if '1.9' > RUBY_VERSION
+  if Gem.win_platform? then
+    def test_self_user_home_userprofile
+      skip 'Ruby 1.9 properly handles ~ path expansion' unless '1.9' > RUBY_VERSION
+
+      Gem.clear_paths
+
+      # safe-keep env variables
+      orig_home, orig_user_profile = ENV['HOME'], ENV['USERPROFILE']
+
+      # prepare for the test
+      ENV.delete('HOME')
+      ENV['USERPROFILE'] = "W:\\Users\\RubyUser"
+
+      assert_equal 'W:/Users/RubyUser', Gem.user_home
+
+    ensure
+      ENV['HOME'] = orig_home
+      ENV['USERPROFILE'] = orig_user_profile
+    end
+
+    def test_self_user_home_user_drive_and_path
+      skip 'Ruby 1.9 properly handles ~ path expansion' unless '1.9' > RUBY_VERSION
+
+      Gem.clear_paths
+
+      # safe-keep env variables
+      orig_home, orig_user_profile = ENV['HOME'], ENV['USERPROFILE']
+      orig_home_drive, orig_home_path = ENV['HOMEDRIVE'], ENV['HOMEPATH']
+
+      # prepare the environment
+      ENV.delete('HOME')
+      ENV.delete('USERPROFILE')
+      ENV['HOMEDRIVE'] = 'Z:'
+      ENV['HOMEPATH'] = "\\Users\\RubyUser"
+
+      assert_equal 'Z:/Users/RubyUser', Gem.user_home
+
+    ensure
+      ENV['HOME'] = orig_home
+      ENV['USERPROFILE'] = orig_user_profile
+      ENV['HOMEDRIVE'] = orig_home_drive
+      ENV['HOMEPATH'] = orig_home_path
+    end
+  end
 
   def test_load_plugins
-    with_plugin('load') { Gem.load_plugins }
-    assert_equal :loaded, TEST_PLUGIN_LOAD
+    plugin_path = File.join "lib", "rubygems_plugin.rb"
+
+    Dir.chdir @tempdir do
+      FileUtils.mkdir_p 'lib'
+      File.open plugin_path, "w" do |fp|
+        fp.puts "class TestGem; TEST_SPEC_PLUGIN_LOAD = :loaded; end"
+      end
+
+      foo = quick_spec 'foo', '1' do |s|
+        s.files << plugin_path
+      end
+
+      install_gem foo
+    end
+
+    Gem.source_index = nil
+    Gem.searcher = nil
+
+    gem 'foo'
+
+    Gem.load_plugins
+
+    assert_equal :loaded, TEST_SPEC_PLUGIN_LOAD
+  end
+
+  def test_load_env_plugins
+    with_plugin('load') { Gem.load_env_plugins }
+    assert_equal :loaded, TEST_PLUGIN_LOAD rescue nil
 
     util_remove_interrupt_command
 
     # Should attempt to cause a StandardError
-    with_plugin('standarderror') { Gem.load_plugins }
-    assert_equal :loaded, TEST_PLUGIN_STANDARDERROR
+    with_plugin('standarderror') { Gem.load_env_plugins }
+    assert_equal :loaded, TEST_PLUGIN_STANDARDERROR rescue nil
 
     util_remove_interrupt_command
 
     # Should attempt to cause an Exception
-    with_plugin('exception') { Gem.load_plugins }
-    assert_equal :loaded, TEST_PLUGIN_EXCEPTION
+    with_plugin('exception') { Gem.load_env_plugins }
+    assert_equal :loaded, TEST_PLUGIN_EXCEPTION rescue nil
   end
 
   def with_plugin(path)
-    test_plugin_path = File.expand_path "../plugin/#{path}", __FILE__
+    test_plugin_path = File.expand_path("test/rubygems/plugin/#{path}",
+                                        @@project_dir)
 
     # A single test plugin should get loaded once only, in order to preserve
     # sane test semantics.
@@ -661,7 +1120,7 @@ class TestGem < RubyGemTestCase
   end
 
   def util_exec_gem
-    spec, _ = quick_gem 'a', '4' do |s|
+    spec, _ = quick_spec 'a', '4' do |s|
       s.default_executable = 'exec'
       s.executables = ['exec', 'abin']
     end
@@ -705,6 +1164,5 @@ class TestGem < RubyGemTestCase
     Gem::Commands.send :remove_const, :InterruptCommand if
       Gem::Commands.const_defined? :InterruptCommand
   end
-
 end
 

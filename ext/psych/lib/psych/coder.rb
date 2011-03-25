@@ -6,17 +6,18 @@ module Psych
   # objects like Sequence and Scalar may be emitted if +seq=+ or +scalar=+ are
   # called, respectively.
   class Coder
-    attr_accessor :tag, :style, :implicit
+    attr_accessor :tag, :style, :implicit, :object
     attr_reader   :type, :seq
 
     def initialize tag
-      @map        = {}
-      @seq        = []
-      @implicit   = false
-      @type       = :map
-      @tag        = tag
-      @style      = Psych::Nodes::Mapping::BLOCK
-      @scalar     = nil
+      @map      = {}
+      @seq      = []
+      @implicit = false
+      @type     = :map
+      @tag      = tag
+      @style    = Psych::Nodes::Mapping::BLOCK
+      @scalar   = nil
+      @object   = nil
     end
 
     def scalar *args
@@ -52,6 +53,13 @@ module Psych
     def represent_map tag, map
       @tag = tag
       self.map = map
+    end
+
+    # Emit an arbitrary object +obj+ and +tag+
+    def represent_object tag, obj
+      @tag    = tag
+      @type   = :object
+      @object = obj
     end
 
     # Emit a scalar with +value+

@@ -29,13 +29,13 @@ require "date.rb"
 require "optparse"
 require "optparse/date"
 
-def printHeader(y, m, d, p, w)
+def print_header(y, m, d, p, w)
   print "\n>>> Biorhythm <<<\n"
   printf "The birthday %04d.%02d.%02d is a %s\n", y, m, d, w
   printf "Age in days: [%d]\n\n", p
 end
 
-def getPosition(z)
+def get_position(z)
   pi = Math::PI
   z = Integer(z)
   phys = (50.0 * (1.0 + sin((z / 23.0 - (z / 23)) * 360.0 * pi / 180.0))).to_i
@@ -89,24 +89,24 @@ ausgabeart = options[:graph] ? "g" : "v"
 display_period = options[:days]
 
 if ausgabeart == "v"
-  printHeader(bd.year, bd.month, bd.day, dd - bd, bd.strftime("%a"))
+  print_header(bd.year, bd.month, bd.day, dd - bd, bd.strftime("%a"))
   print "\n"
   
-  phys, emot, geist = getPosition(dd - bd)
+  phys, emot, geist = get_position(dd - bd)
   printf "Biorhythm:   %04d.%02d.%02d\n", dd.year, dd.month, dd.day
   printf "Physical:    %d%%\n", phys
   printf "Emotional:   %d%%\n", emot
   printf "Mental:      %d%%\n", geist
   print "\n"
 else
-  printHeader(bd.year, bd.month, bd.day, dd - bd, bd.strftime("%a"))
+  print_header(bd.year, bd.month, bd.day, dd - bd, bd.strftime("%a"))
   print "                     P=physical, E=emotional, M=mental\n"
   print "             -------------------------+-------------------------\n"
   print "                     Bad Condition    |    Good Condition\n"
   print "             -------------------------+-------------------------\n"
   
   (dd - bd).step(dd - bd + display_period) do |z|
-    phys, emot, geist = getPosition(z)
+    phys, emot, geist = get_position(z)
     
     printf "%04d.%02d.%02d : ", dd.year, dd.month, dd.day
     p = (phys / 2.0 + 0.5).to_i

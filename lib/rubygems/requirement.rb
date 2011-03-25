@@ -1,3 +1,9 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 require "rubygems/version"
 
 ##
@@ -14,7 +20,7 @@ class Gem::Requirement
     "<"  =>  lambda { |v, r| v < r  },
     ">=" =>  lambda { |v, r| v >= r },
     "<=" =>  lambda { |v, r| v <= r },
-    "~>" =>  lambda { |v, r| v = v.release; v >= r && v < r.bump }
+    "~>" =>  lambda { |v, r| v >= r && v.release < r.bump }
   }
 
   quoted  = OPS.keys.map { |k| Regexp.quote k }.join "|"
@@ -102,7 +108,7 @@ class Gem::Requirement
   end
 
   def as_list # :nodoc:
-    requirements.map { |op, version| "#{op} #{version}" }
+    requirements.map { |op, version| "#{op} #{version}" }.sort
   end
 
   def hash # :nodoc:
@@ -131,7 +137,8 @@ class Gem::Requirement
   # True if +version+ satisfies this Requirement.
 
   def satisfied_by? version
-    requirements.all? { |op, rv| OPS[op].call version, rv }
+    # #28965: syck has a bug with unquoted '=' YAML.loading as YAML::DefaultKey
+    requirements.all? { |op, rv| (OPS[op] || OPS["="]).call version, rv }
   end
 
   def to_s # :nodoc:

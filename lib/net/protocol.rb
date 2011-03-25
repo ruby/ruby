@@ -62,6 +62,10 @@ module Net # :nodoc:
       "#<#{self.class} io=#{@io}>"
     end
 
+    def eof?
+      @io.eof?
+    end
+
     def closed?
       @io.closed?
     end
@@ -167,6 +171,8 @@ module Net # :nodoc:
         write0 str
       }
     end
+
+    alias << write
 
     def writeline(str)
       writing {

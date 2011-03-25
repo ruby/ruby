@@ -435,9 +435,9 @@ class IMAPTest < Test::Unit::TestCase
     begin
       begin
         imap = yield(port)
-        imap.logout
+        imap.logout if !imap.disconnected?
       ensure
-        imap.disconnect if imap
+        imap.disconnect if imap && !imap.disconnected?
       end
     ensure
       server.close

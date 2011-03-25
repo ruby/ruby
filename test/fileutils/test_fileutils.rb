@@ -8,6 +8,7 @@ require 'test/unit'
 
 class TestFileUtils < Test::Unit::TestCase
   TMPROOT = "#{Dir.tmpdir}/fileutils.rb.#{$$}"
+  include Test::Unit::FileAssertions
 end
 
 prevdir = Dir.pwd
@@ -227,6 +228,16 @@ class TestFileUtils
     assert_raise(ArgumentError) {
       cp 'tmp/cptmp', 'tmp/cptmp'
     }
+  end
+
+  def test_cp_preserve_permissions
+    bug4507 = '[ruby-core:35518]'
+    touch 'tmp/cptmp'
+    chmod 0755, 'tmp/cptmp'
+    cp 'tmp/cptmp', 'tmp/cptmp2'
+    assert_equal(File.stat('tmp/cptmp').mode,
+                 File.stat('tmp/cptmp2').mode,
+                 bug4507)
   end
 
   def test_cp_symlink

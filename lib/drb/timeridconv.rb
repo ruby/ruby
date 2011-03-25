@@ -64,7 +64,7 @@ module DRb
       def keeper
 	Thread.new do
 	  loop do
-	    size = alternate
+	    alternate
 	    sleep(@timeout)
 	  end
 	end

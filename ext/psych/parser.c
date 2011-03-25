@@ -4,6 +4,7 @@ VALUE cPsychParser;
 VALUE ePsychSyntaxError;
 
 static ID id_read;
+static ID id_path;
 static ID id_empty;
 static ID id_start_stream;
 static ID id_end_stream;
@@ -18,9 +19,9 @@ static ID id_end_mapping;
 
 #define PSYCH_TRANSCODE(_str, _yaml_enc, _internal_enc) \
   do { \
-    rb_enc_associate_index(_str, _yaml_enc); \
+    rb_enc_associate_index((_str), (_yaml_enc)); \
     if(_internal_enc) \
-      _str = rb_str_export_to_enc(_str, _internal_enc); \
+      (_str) = rb_str_export_to_enc((_str), (_internal_enc)); \
   } while (0)
 
 static int io_reader(void * data, unsigned char *buf, size_t size, size_t *read)
@@ -93,10 +94,20 @@ static VALUE parse(VALUE self, VALUE yaml)
 
     while(!done) {
 	if(!yaml_parser_parse(parser, &event)) {
+	    VALUE path;
 	    size_t line   = parser->mark.line;
 	    size_t column = parser->mark.column;
 
-	    rb_raise(ePsychSyntaxError, "couldn't parse YAML at line %d column %d",
+	    if(rb_respond_to(yaml, id_path))
+		path = rb_funcall(yaml, id_path, 0);
+	    else
+		path = rb_str_new2("<unknown>");
+
+	    yaml_parser_delete(parser);
+	    yaml_parser_initialize(parser);
+
+	    rb_raise(ePsychSyntaxError, "(%s): couldn't parse YAML at line %d column %d",
+		    StringValuePtr(path),
 		    (int)line, (int)column);
 	}
 
@@ -307,6 +318,28 @@ static VALUE set_external_encoding(VALUE self, VALUE encoding)
     return encoding;
 }
 
+/*
+ * call-seq:
+ *    parser.mark # => #<Psych::Parser::Mark>
+ *
+ * Returns a Psych::Parser::Mark object that contains line, column, and index
+ * information.
+ */
+static VALUE mark(VALUE self)
+{
+    VALUE mark_klass;
+    VALUE args[3];
+    yaml_parser_t * parser;
+
+    Data_Get_Struct(self, yaml_parser_t, parser);
+    mark_klass = rb_const_get_at(cPsychParser, rb_intern("Mark"));
+    args[0] = INT2NUM(parser->mark.index);
+    args[1] = INT2NUM(parser->mark.line);
+    args[2] = INT2NUM(parser->mark.column);
+
+    return rb_class_new_instance(3, args, mark_klass);
+}
+
 void Init_psych_parser()
 {
 #if 0
@@ -331,9 +364,11 @@ void Init_psych_parser()
     ePsychSyntaxError = rb_define_class_under(mPsych, "SyntaxError", rb_eSyntaxError);
 
     rb_define_method(cPsychParser, "parse", parse, 1);
+    rb_define_method(cPsychParser, "mark", mark, 0);
     rb_define_method(cPsychParser, "external_encoding=", set_external_encoding, 1);
 
     id_read           = rb_intern("read");
+    id_path           = rb_intern("path");
     id_empty          = rb_intern("empty");
     id_start_stream   = rb_intern("start_stream");
     id_end_stream     = rb_intern("end_stream");

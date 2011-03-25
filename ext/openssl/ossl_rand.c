@@ -37,7 +37,7 @@ static VALUE
 ossl_rand_seed(VALUE self, VALUE str)
 {
     StringValue(str);
-    RAND_seed(RSTRING_PTR(str), RSTRING_LEN(str));
+    RAND_seed(RSTRING_PTR(str), RSTRING_LENINT(str));
 
     return str;
 }
@@ -51,7 +51,7 @@ static VALUE
 ossl_rand_add(VALUE self, VALUE str, VALUE entropy)
 {
     StringValue(str);
-    RAND_add(RSTRING_PTR(str), RSTRING_LEN(str), NUM2DBL(entropy));
+    RAND_add(RSTRING_PTR(str), RSTRING_LENINT(str), NUM2DBL(entropy));
 
     return self;
 }
@@ -149,7 +149,7 @@ ossl_rand_egd(VALUE self, VALUE filename)
 static VALUE
 ossl_rand_egd_bytes(VALUE self, VALUE filename, VALUE len)
 {
-    long n = NUM2INT(len);
+    int n = NUM2INT(len);
 
     SafeStringValue(filename);
 
@@ -172,8 +172,8 @@ ossl_rand_status(VALUE self)
 }
 
 #define DEFMETH(class, name, func, argc) \
-	rb_define_method(class, name, func, argc); \
-	rb_define_singleton_method(class, name, func, argc);
+	rb_define_method((class), (name), (func), (argc)); \
+	rb_define_singleton_method((class), (name), (func), (argc));
 
 /*
  * INIT
@@ -181,8 +181,8 @@ ossl_rand_status(VALUE self)
 void
 Init_ossl_rand()
 {
-#if 0 /* let rdoc know about mOSSL */
-    mOSSL = rb_define_module("OpenSSL");
+#if 0
+    mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL */
 #endif
 
     mRandom = rb_define_module_under(mOSSL, "Random");

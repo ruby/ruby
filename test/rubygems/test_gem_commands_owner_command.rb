@@ -1,7 +1,13 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require 'rubygems/test_case'
 require 'rubygems/commands/owner_command'
 
-class TestGemCommandsOwnerCommand < RubyGemTestCase
+class TestGemCommandsOwnerCommand < Gem::TestCase
 
   def setup
     super
@@ -20,7 +26,7 @@ class TestGemCommandsOwnerCommand < RubyGemTestCase
 - email: user2@example.com
 EOF
 
-    @fetcher.data["https://rubygems.org/api/v1/gems/freewill/owners.yaml"] = [response, 200, 'OK']
+    @fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners.yaml"] = [response, 200, 'OK']
 
     use_ui @ui do
       @cmd.show_owners("freewill")
@@ -36,9 +42,9 @@ EOF
 
   def test_show_owners_denied
     response = "You don't have permission to push to this gem"
-    @fetcher.data["https://rubygems.org/api/v1/gems/freewill/owners.yaml"] = [response, 403, 'Forbidden']
+    @fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners.yaml"] = [response, 403, 'Forbidden']
 
-    assert_raises MockGemUi::TermError do
+    assert_raises Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.show_owners("freewill")
       end
@@ -47,9 +53,23 @@ EOF
     assert_match response, @ui.output
   end
 
+  def test_show_owners_key
+    response = "- email: user1@example.com\n"
+    @fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners.yaml"] = [response, 200, 'OK']
+    File.open Gem.configuration.credentials_path, 'a' do |f|
+      f.write ':other: 701229f217cdf23b1344c7b4b54ca97'
+    end
+    Gem.configuration.load_api_keys
+
+    @cmd.handle_options %w(-k other)
+    @cmd.show_owners('freewill')
+
+    assert_equal '701229f217cdf23b1344c7b4b54ca97', @fetcher.last_request['Authorization']
+  end
+
   def test_add_owners
     response = "Owner added successfully."
-    @fetcher.data["https://rubygems.org/api/v1/gems/freewill/owners"] = [response, 200, 'OK']
+    @fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = [response, 200, 'OK']
 
     use_ui @ui do
       @cmd.add_owners("freewill", ["user-new1@example.com"])
@@ -64,9 +84,9 @@ EOF
 
   def test_add_owners_denied
     response = "You don't have permission to push to this gem"
-    @fetcher.data["https://rubygems.org/api/v1/gems/freewill/owners"] = [response, 403, 'Forbidden']
+    @fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = [response, 403, 'Forbidden']
 
-    assert_raises MockGemUi::TermError do
+    assert_raises Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.add_owners("freewill", ["user-new1@example.com"])
       end
@@ -75,9 +95,23 @@ EOF
     assert_match response, @ui.output
   end
 
+  def test_add_owners_key
+    response = "Owner added successfully."
+    @fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = [response, 200, 'OK']
+    File.open Gem.configuration.credentials_path, 'a' do |f|
+      f.write ':other: 701229f217cdf23b1344c7b4b54ca97'
+    end
+    Gem.configuration.load_api_keys
+
+    @cmd.handle_options %w(-k other)
+    @cmd.add_owners('freewill', ['user-new1@example.com'])
+
+    assert_equal '701229f217cdf23b1344c7b4b54ca97', @fetcher.last_request['Authorization']
+  end
+
   def test_remove_owners
     response = "Owner removed successfully."
-    @fetcher.data["https://rubygems.org/api/v1/gems/freewill/owners"] = [response, 200, 'OK']
+    @fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = [response, 200, 'OK']
 
     use_ui @ui do
       @cmd.remove_owners("freewill", ["user-remove1@example.com"])
@@ -92,14 +126,28 @@ EOF
 
   def test_remove_owners_denied
     response = "You don't have permission to push to this gem"
-    @fetcher.data["https://rubygems.org/api/v1/gems/freewill/owners"] = [response, 403, 'Forbidden']
+    @fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = [response, 403, 'Forbidden']
 
-    assert_raises MockGemUi::TermError do
+    assert_raises Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.remove_owners("freewill", ["user-remove1@example.com"])
       end
     end
 
     assert_match response, @ui.output
+  end
+
+  def test_remove_owners_key
+    response = "Owner removed successfully."
+    @fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = [response, 200, 'OK']
+    File.open Gem.configuration.credentials_path, 'a' do |f|
+      f.write ':other: 701229f217cdf23b1344c7b4b54ca97'
+    end
+    Gem.configuration.load_api_keys
+
+    @cmd.handle_options %w(-k other)
+    @cmd.remove_owners('freewill', ['user-remove1@example.com'])
+
+    assert_equal '701229f217cdf23b1344c7b4b54ca97', @fetcher.last_request['Authorization']
   end
 end

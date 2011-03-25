@@ -105,11 +105,15 @@ class TestSocket < Test::Unit::TestCase
     49152 + rand(65535-49152+1)
   end
 
+  def errors_addrinuse
+    [Errno::EADDRINUSE]
+  end
+
   def test_tcp_server_sockets
     port = random_port
     begin
       sockets = Socket.tcp_server_sockets(port)
-    rescue Errno::EADDRINUSE
+    rescue *errors_addrinuse
       return # not test failure
     end
     begin
@@ -406,4 +410,24 @@ class TestSocket < Test::Unit::TestCase
     assert_equal(stamp.data[-8,8].unpack("Q")[0], t.subsec * 2**64)
   end
 
+  def test_closed_read
+    require 'timeout'
+    require 'socket'
+    bug4390 = '[ruby-core:35203]'
+    server = TCPServer.new("localhost", 0)
+    serv_thread = Thread.new {server.accept}
+    begin sleep(0.1) end until serv_thread.stop?
+    sock = TCPSocket.new("localhost", server.addr[1])
+    client_thread = Thread.new do
+      sock.readline
+    end
+    begin sleep(0.1) end until client_thread.stop?
+    Timeout.timeout(1) do
+      sock.close
+      sock = nil
+      assert_raise(IOError, bug4390) {client_thread.join}
+    end
+  ensure
+    server.close
+  end
 end if defined?(Socket)

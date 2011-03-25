@@ -8,9 +8,10 @@ class RDoc::Generator::RI
 
   RDoc::RDoc.add_generator self
 
-  def self.for options
-    new options
-  end
+  ##
+  # Description of this generator
+
+  DESCRIPTION = 'creates ri data files'
 
   ##
   # Set up a new ri generator
@@ -20,6 +21,8 @@ class RDoc::Generator::RI
     @store       = RDoc::RI::Store.new '.'
     @old_siginfo = nil
     @current     = nil
+
+    @store.dry_run = @options.dry_run
   end
 
   ##

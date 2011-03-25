@@ -1,7 +1,6 @@
 ##
 # Parse a non-source file. We basically take the whole thing as one big
-# comment. If the first character in the file is '#', we strip leading pound
-# signs.
+# comment.
 
 class RDoc::Parser::Simple < RDoc::Parser
 
@@ -32,9 +31,15 @@ class RDoc::Parser::Simple < RDoc::Parser
     @top_level
   end
 
-  def remove_private_comments(comment)
-    comment.gsub(/^--\n.*?^\+\+/m, '').sub(/^--\n.*/m, '')
+  ##
+  # Removes comments wrapped in <tt>--/++</tt>
+
+  def remove_private_comments text
+    text.gsub(/^--\n.*?^\+\+/m, '').sub(/^--\n.*/m, '')
   end
+
+  ##
+  # Removes the encoding magic comment from +text+
 
   def remove_coding_comment text
     text.sub(/\A# .*coding[=:].*$/, '')

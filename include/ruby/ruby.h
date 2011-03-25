@@ -44,10 +44,6 @@ extern "C" {
 #define PRINTF_ARGS(decl, string_index, first_to_check) decl
 #endif
 
-#ifdef HAVE_STDLIB_H
-# include <stdlib.h>
-#endif
-
 #ifdef HAVE_STRING_H
 # include <string.h>
 #else
@@ -66,7 +62,6 @@ extern "C" {
 #endif
 
 #include <stdarg.h>
-#include <stddef.h>
 #include <stdio.h>
 
 #include "defines.h"
@@ -101,7 +96,7 @@ typedef unsigned LONG_LONG ID;
 # define SIGNED_VALUE LONG_LONG
 # define LONG_LONG_VALUE 1
 # define SIZEOF_VALUE SIZEOF_LONG_LONG
-# define PRI_VALUE_PREFIX "ll"
+# define PRI_VALUE_PREFIX PRI_LL_PREFIX
 #else
 # error ---->> ruby requires sizeof(void*) == sizeof(long) to be compiled. <<----
 #endif
@@ -112,6 +107,13 @@ typedef char ruby_check_sizeof_long[SIZEOF_LONG == sizeof(long) ? 1 : -1];
 typedef char ruby_check_sizeof_long_long[SIZEOF_LONG_LONG == sizeof(LONG_LONG) ? 1 : -1];
 #endif
 typedef char ruby_check_sizeof_voidp[SIZEOF_VOIDP == sizeof(void*) ? 1 : -1];
+
+#ifndef PRI_INT_PREFIX
+#define PRI_INT_PREFIX ""
+#endif
+#ifndef PRI_LONG_PREFIX
+#define PRI_LONG_PREFIX "l"
+#endif
 
 #if defined PRIdPTR && !defined PRI_VALUE_PREFIX
 #define PRIdVALUE PRIdPTR
@@ -138,19 +140,17 @@ typedef char ruby_check_sizeof_voidp[SIZEOF_VOIDP == sizeof(void*) ? 1 : -1];
 # elif SIZEOF_TIME_T == SIZEOF_LONG
 #  define PRI_TIMET_PREFIX "l"
 # elif SIZEOF_TIME_T == SIZEOF_LONG_LONG
-#  define PRI_TIMET_PREFIX "ll"
+#  define PRI_TIMET_PREFIX PRI_LL_PREFIX
 # endif
 #endif
 
 #if defined PRI_PTRDIFF_PREFIX
-#elif defined PRIdPTR
-# define PRI_PTRDIFF_PREFIX "t"
 #elif SIZEOF_PTRDIFF_T == SIZEOF_INT
-# define PRI_PTRDIFF_PREFIX
+# define PRI_PTRDIFF_PREFIX ""
 #elif SIZEOF_PTRDIFF_T == SIZEOF_LONG
 # define PRI_PTRDIFF_PREFIX "l"
 #elif SIZEOF_PTRDIFF_T == SIZEOF_LONG_LONG
-# define PRI_PTRDIFF_PREFIX "ll"
+# define PRI_PTRDIFF_PREFIX PRI_LL_PREFIX
 #endif
 #define PRIdPTRDIFF PRI_PTRDIFF_PREFIX"d"
 #define PRIiPTRDIFF PRI_PTRDIFF_PREFIX"i"
@@ -160,14 +160,12 @@ typedef char ruby_check_sizeof_voidp[SIZEOF_VOIDP == sizeof(void*) ? 1 : -1];
 #define PRIXPTRDIFF PRI_PTRDIFF_PREFIX"X"
 
 #if defined PRI_SIZE_PREFIX
-#elif defined PRIdPTR
-# define PRI_SIZE_PREFIX "z"
 #elif SIZEOF_SIZE_T == SIZEOF_INT
-# define PRI_SIZE_PREFIX
+# define PRI_SIZE_PREFIX ""
 #elif SIZEOF_SIZE_T == SIZEOF_LONG
 # define PRI_SIZE_PREFIX "l"
 #elif SIZEOF_SIZE_T == SIZEOF_LONG_LONG
-# define PRI_SIZE_PREFIX "ll"
+# define PRI_SIZE_PREFIX PRI_LL_PREFIX
 #endif
 #define PRIdSIZE PRI_SIZE_PREFIX"d"
 #define PRIiSIZE PRI_SIZE_PREFIX"i"
@@ -312,8 +310,14 @@ rb_long2int(long n) {rb_long2int_internal(n, i); return i;}
 #ifndef NUM2GIDT
 #define NUM2GIDT(v) NUM2LONG(v)
 #endif
+#ifndef NUM2MODET
+#define NUM2MODET(v) NUM2INT(v)
+#endif
+#ifndef MODET2NUM
+#define MODET2NUM(v) INT2NUM(v)
+#endif
 
-#define FIX2LONG(x) RSHIFT((SIGNED_VALUE)(x),1)
+#define FIX2LONG(x) (long)RSHIFT((SIGNED_VALUE)(x),1)
 #define FIX2ULONG(x) ((((VALUE)(x))>>1)&LONG_MAX)
 #define FIXNUM_P(f) (((SIGNED_VALUE)(f))&FIXNUM_FLAG)
 #define POSFIXABLE(f) ((f) < FIXNUM_MAX+1)
@@ -1025,6 +1029,18 @@ NUM2CHR(VALUE x)
 
 #define ALLOCA_N(type,n) (type*)alloca(sizeof(type)*(n))
 
+void *rb_alloc_tmp_buffer(volatile VALUE *store, long len);
+void rb_free_tmp_buffer(volatile VALUE *store);
+/* allocates _n_ bytes temporary buffer and stores VALUE including it
+ * in _v_.  _n_ may be evaluated twice. */
+#ifdef C_ALLOCA
+# define ALLOCV(v, n) rb_alloc_tmp_buffer(&(v), (n))
+#else
+# define ALLOCV(v, n) ((n) < 1024 ? (RB_GC_GUARD(v) = 0, alloca(n)) : rb_alloc_tmp_buffer(&(v), (n)))
+#endif
+#define ALLOCV_N(type, v, n) (type*)ALLOCV((v), sizeof(type)*(n))
+#define ALLOCV_END(v) rb_free_tmp_buffer(&(v))
+
 #define MEMZERO(p,type,n) memset((p), 0, sizeof(type)*(n))
 #define MEMCPY(p1,p2,type,n) memcpy((p1), (p2), sizeof(type)*(n))
 #define MEMMOVE(p1,p2,type,n) memmove((p1), (p2), sizeof(type)*(n))
@@ -1128,6 +1144,7 @@ VALUE rb_eval_string_wrap(const char*, int*);
 VALUE rb_funcall(VALUE, ID, int, ...);
 VALUE rb_funcall2(VALUE, ID, int, const VALUE*);
 VALUE rb_funcall3(VALUE, ID, int, const VALUE*);
+VALUE rb_funcall_passing_block(VALUE, ID, int, const VALUE*);
 int rb_scan_args(int, const VALUE*, const char*, ...);
 VALUE rb_call_super(int, const VALUE*);
 
@@ -1152,6 +1169,9 @@ NORETURN(void rb_mod_sys_fail(VALUE, const char*));
 NORETURN(void rb_iter_break(void));
 NORETURN(void rb_exit(int));
 NORETURN(void rb_notimplement(void));
+VALUE rb_syserr_new(int, const char *);
+NORETURN(void rb_syserr_fail(int, const char*));
+NORETURN(void rb_mod_syserr_fail(VALUE, int, const char*));
 
 /* reports if `-W' specified */
 PRINTF_ARGS(void rb_warning(const char*, ...), 1, 2);

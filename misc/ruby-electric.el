@@ -85,7 +85,7 @@ inserted. The word 'all' will do all insertions."
               (const :tag "Double quote" ?\" )
               (const :tag "Back quote" ?\` )
               (const :tag "Vertical bar" ?\| ))
-  :group 'ruby-electric) 
+  :group 'ruby-electric)
 
 (defcustom ruby-electric-newline-before-closing-bracket nil
   "*Controls whether a newline should be inserted before the
@@ -142,13 +142,13 @@ strings. Note that you must have Font Lock enabled."
 
 (defun ruby-electric-is-last-command-char-expandable-punct-p()
   (or (memq 'all ruby-electric-expand-delimiters-list)
-      (memq last-command-char ruby-electric-expand-delimiters-list))) 
+      (memq last-command-char ruby-electric-expand-delimiters-list)))
 
 (defun ruby-electric-space-can-be-expanded-p()
   (if (ruby-electric-code-at-point-p)
-      (let* ((ruby-electric-keywords-re 
+      (let* ((ruby-electric-keywords-re
               (concat ruby-electric-simple-keywords-re "\\s-$"))
-             (ruby-electric-single-keyword-in-line-re 
+             (ruby-electric-single-keyword-in-line-re
               (concat "\\s-*" ruby-electric-keywords-re)))
         (save-excursion
           (backward-word 1)
@@ -171,6 +171,11 @@ strings. Note that you must have Font Lock enabled."
                    (newline))
                (insert "}")))
             ((ruby-electric-string-at-point-p)
+             (if (eq last-command-event ?{)
+                 (save-excursion
+                   (when (not (char-equal ?\# (preceding-char)))
+                       (delete-backward-char)
+                       (insert "#"))))
              (save-excursion
                (backward-char 1)
                (when (char-equal ?\# (preceding-char))
@@ -183,7 +188,7 @@ strings. Note that you must have Font Lock enabled."
   (and (ruby-electric-is-last-command-char-expandable-punct-p)
        (ruby-electric-code-at-point-p)
        (save-excursion
-         (insert (cdr (assoc last-command-char 
+         (insert (cdr (assoc last-command-char
                              ruby-electric-matching-delimeter-alist))))))
 
 (defun ruby-electric-bar(arg)
@@ -193,7 +198,7 @@ strings. Note that you must have Font Lock enabled."
        (ruby-electric-code-at-point-p)
        (and (save-excursion (re-search-backward ruby-electric-expandable-bar nil t))
             (= (point) (match-end 0))) ;looking-back is missing on XEmacs
-       (save-excursion 
+       (save-excursion
          (insert "|"))))
 
 

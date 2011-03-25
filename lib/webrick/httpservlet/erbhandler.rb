@@ -44,8 +44,8 @@ module WEBrick
       private
       def evaluate(erb, servlet_request, servlet_response)
         Module.new.module_eval{
-          meta_vars = servlet_request.meta_vars
-          query = servlet_request.query
+          servlet_request.meta_vars
+          servlet_request.query
           erb.result(binding)
         }
       end

@@ -122,7 +122,7 @@ module DRb
     end
 
     def self.open(uri, config)
-      host, port, option = parse_uri(uri)
+      host, port, = parse_uri(uri)
       host.untaint
       port.untaint
       soc = TCPSocket.open(host, port)
@@ -134,7 +134,7 @@ module DRb
 
     def self.open_server(uri, config)
       uri = 'drbssl://:0' unless uri
-      host, port, opt = parse_uri(uri)
+      host, port, = parse_uri(uri)
       if host.size == 0
         host = getservername
         soc = open_server_inaddr_any(host, port)

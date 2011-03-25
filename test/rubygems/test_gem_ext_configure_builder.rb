@@ -1,7 +1,13 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require 'rubygems/test_case'
 require 'rubygems/ext'
 
-class TestGemExtConfigureBuilder < RubyGemTestCase
+class TestGemExtConfigureBuilder < Gem::TestCase
 
   def setup
     super

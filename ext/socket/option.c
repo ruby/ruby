@@ -324,7 +324,7 @@ inspect_errno(int level, int optname, VALUE data, VALUE ret)
     }
 }
 
-#if defined(IPV6_MULTICAST_IF) || defined(IPV6_MULTICAST_LOOP)
+#if defined(IPV6_MULTICAST_LOOP)
 static int
 inspect_uint(int level, int optname, VALUE data, VALUE ret)
 {
@@ -395,6 +395,210 @@ inspect_timeval_as_interval(int level, int optname, VALUE data, VALUE ret)
         return 0;
     }
 }
+
+/*
+ * socket option for IPv4 multicast is bit confusing.
+ *
+ * IP Multicast is implemented by Steve Deering at first:
+ *   IP Multicast Extensions for 4.3BSD UNIX and related systems
+ *   (MULTICAST 1.2 Release)
+ *   http://www.kohala.com/start/mcast.api.txt
+ *
+ * There are 3 socket options which takes a struct.
+ *
+ *   IP_MULTICAST_IF: struct in_addr
+ *   IP_ADD_MEMBERSHIP: struct ip_mreq
+ *   IP_DROP_MEMBERSHIP: struct ip_mreq
+ *
+ * But they uses an IP address to specify an interface.
+ * This means the API cannot specify an unnumbered interface.
+ *
+ * Linux 2.4 introduces struct ip_mreqn to fix this problem.
+ * struct ip_mreqn has imr_ifindex field to specify interface index.
+ *
+ *   IP_MULTICAST_IF: struct ip_mreqn
+ *   IP_ADD_MEMBERSHIP: struct ip_mreqn
+ *   IP_DROP_MEMBERSHIP: struct ip_mreqn
+ *
+ * FreeBSD 7 obtained struct ip_mreqn for IP_MULTICAST_IF.
+ * http://www.FreeBSD.org/cgi/cvsweb.cgi/src/sys/netinet/in.h.diff?r1=1.99;r2=1.100
+ *
+ * Another hackish workaround is "RFC 1724 hack".
+ * RFC 1724 section 3.3 suggests unnumbered interfaces
+ * specified by pseudo address 0.0.0.0/8.
+ * NetBSD 4 and FreeBSD 5 documented it.
+ * http://cvsweb.netbsd.org/cgi-bin/cvsweb.cgi/src/share/man/man4/ip.4.diff?r1=1.16&r2=1.17
+ * http://www.FreeBSD.org/cgi/cvsweb.cgi/src/share/man/man4/ip.4.diff?r1=1.37;r2=1.38
+ * FreeBSD 7.0 removed it.
+ * http://www.FreeBSD.org/cgi/cvsweb.cgi/src/share/man/man4/ip.4.diff?r1=1.49;r2=1.50
+ *
+ * RFC 1724 hack is not supported by Socket::Option#inspect because
+ * it is not distinguishable by the size.
+ */
+
+#ifndef HAVE_INET_NTOP
+static char *
+inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)
+{
+#ifdef HAVE_INET_NTOA
+    struct in_addr in;
+    memcpy(&in.s_addr, addr, sizeof(in.s_addr));
+    snprintf(numaddr, numaddr_len, "%s", inet_ntoa(in));
+#else
+    unsigned long x = ntohl(*(unsigned long*)addr);
+    snprintf(numaddr, numaddr_len, "%d.%d.%d.%d",
+	     (int) (x>>24) & 0xff, (int) (x>>16) & 0xff,
+	     (int) (x>> 8) & 0xff, (int) (x>> 0) & 0xff);
+#endif
+    return numaddr;
+}
+#endif
+
+/* Although the buffer size needed depends on the prefixes, "%u" may generate "4294967295".  */
+static int
+rb_if_indextoname(const char *succ_prefix, const char *fail_prefix, unsigned int ifindex, char *buf, size_t len)
+{
+#if defined(HAVE_IF_INDEXTONAME)
+    char ifbuf[IFNAMSIZ];
+    if (if_indextoname(ifindex, ifbuf) == NULL)
+        return snprintf(buf, len, "%s%u", fail_prefix, ifindex);
+    else
+        return snprintf(buf, len, "%s%s", succ_prefix, ifbuf);
+#else
+#   ifndef IFNAMSIZ
+#       define IFNAMSIZ (sizeof(unsigned int)*3+1)
+#   endif
+    return snprintf(buf, len, "%s%u", fail_prefix, ifindex);
+#endif
+}
+
+#if defined(IPPROTO_IP) && defined(HAVE_TYPE_STRUCT_IP_MREQ) /* 4.4BSD, GNU/Linux */
+static int
+inspect_ipv4_mreq(int level, int optname, VALUE data, VALUE ret)
+{
+    if (RSTRING_LEN(data) == sizeof(struct ip_mreq)) {
+        struct ip_mreq s;
+        char addrbuf[INET_ADDRSTRLEN];
+        memcpy((char*)&s, RSTRING_PTR(data), sizeof(s));
+        if (inet_ntop(AF_INET, &s.imr_multiaddr, addrbuf, (socklen_t)sizeof(addrbuf)) == NULL)
+            rb_str_cat2(ret, " invalid-address");
+        else
+            rb_str_catf(ret, " %s", addrbuf);
+        if (inet_ntop(AF_INET, &s.imr_interface, addrbuf, (socklen_t)sizeof(addrbuf)) == NULL)
+            rb_str_catf(ret, " invalid-address");
+        else
+            rb_str_catf(ret, " %s", addrbuf);
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+#endif
+
+#if defined(IPPROTO_IP) && defined(HAVE_TYPE_STRUCT_IP_MREQN) /* GNU/Linux, FreeBSD 7 */
+static int
+inspect_ipv4_mreqn(int level, int optname, VALUE data, VALUE ret)
+{
+    if (RSTRING_LEN(data) == sizeof(struct ip_mreqn)) {
+        struct ip_mreqn s;
+        char addrbuf[INET_ADDRSTRLEN], ifbuf[32+IFNAMSIZ];
+        memcpy((char*)&s, RSTRING_PTR(data), sizeof(s));
+        if (inet_ntop(AF_INET, &s.imr_multiaddr, addrbuf, (socklen_t)sizeof(addrbuf)) == NULL)
+            rb_str_cat2(ret, " invalid-address");
+        else
+            rb_str_catf(ret, " %s", addrbuf);
+        if (inet_ntop(AF_INET, &s.imr_address, addrbuf, (socklen_t)sizeof(addrbuf)) == NULL)
+            rb_str_catf(ret, " invalid-address");
+        else
+            rb_str_catf(ret, " %s", addrbuf);
+        rb_if_indextoname(" ", " ifindex:", s.imr_ifindex, ifbuf, sizeof(ifbuf));
+        rb_str_cat2(ret, ifbuf);
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+#endif
+
+#if defined(IPPROTO_IP) && defined(HAVE_TYPE_STRUCT_IP_MREQ) /* 4.4BSD, GNU/Linux */
+static int
+inspect_ipv4_add_drop_membership(int level, int optname, VALUE data, VALUE ret)
+{
+    if (RSTRING_LEN(data) == sizeof(struct ip_mreq))
+        return inspect_ipv4_mreq(level, optname, data, ret);
+# if defined(HAVE_TYPE_STRUCT_IP_MREQN)
+    else if (RSTRING_LEN(data) == sizeof(struct ip_mreqn)) 
+        return inspect_ipv4_mreqn(level, optname, data, ret);
+# endif
+    else
+        return 0;
+}
+#endif
+
+#if defined(IPPROTO_IP) && defined(IP_MULTICAST_IF) && defined(HAVE_TYPE_STRUCT_IP_MREQN) /* 4.4BSD, GNU/Linux */
+static int
+inspect_ipv4_multicast_if(int level, int optname, VALUE data, VALUE ret)
+{
+    if (RSTRING_LEN(data) == sizeof(struct in_addr)) {
+        struct in_addr s;
+        char addrbuf[INET_ADDRSTRLEN];
+        memcpy((char*)&s, RSTRING_PTR(data), sizeof(s));
+        if (inet_ntop(AF_INET, &s, addrbuf, (socklen_t)sizeof(addrbuf)) == NULL)
+            rb_str_cat2(ret, " invalid-address");
+        else
+            rb_str_catf(ret, " %s", addrbuf);
+        return 1;
+    }
+    else if (RSTRING_LEN(data) == sizeof(struct ip_mreqn)) {
+        return inspect_ipv4_mreqn(level, optname, data, ret);
+    }
+    else {
+        return 0;
+    }
+}
+#endif
+
+#if defined(IPV6_MULTICAST_IF) /* POSIX, RFC 3493 */
+static int
+inspect_ipv6_multicast_if(int level, int optname, VALUE data, VALUE ret)
+{
+    if (RSTRING_LEN(data) == sizeof(int)) {
+        char ifbuf[32+IFNAMSIZ];
+        unsigned int ifindex;
+        memcpy((char*)&ifindex, RSTRING_PTR(data), sizeof(unsigned int));
+        rb_if_indextoname(" ", " ", ifindex, ifbuf, sizeof(ifbuf));
+        rb_str_cat2(ret, ifbuf);
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+#endif
+
+#if defined(IPPROTO_IPV6) && defined(HAVE_TYPE_STRUCT_IPV6_MREQ) /* POSIX, RFC 3493 */
+static int
+inspect_ipv6_mreq(int level, int optname, VALUE data, VALUE ret)
+{
+    if (RSTRING_LEN(data) == sizeof(struct ipv6_mreq)) {
+        struct ipv6_mreq s;
+        char addrbuf[INET6_ADDRSTRLEN], ifbuf[32+IFNAMSIZ];
+        memcpy((char*)&s, RSTRING_PTR(data), sizeof(s));
+        if (inet_ntop(AF_INET6, &s.ipv6mr_multiaddr, addrbuf, (socklen_t)sizeof(addrbuf)) == NULL)
+            rb_str_cat2(ret, " invalid-address");
+        else
+            rb_str_catf(ret, " %s", addrbuf);
+        rb_if_indextoname(" ", " interface:", s.ipv6mr_interface, ifbuf, sizeof(ifbuf));
+        rb_str_cat2(ret, ifbuf);
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+#endif
 
 #if defined(SOL_SOCKET) && defined(SO_PEERCRED) /* GNU/Linux, OpenBSD */
 #if defined(__OpenBSD__)
@@ -587,18 +791,39 @@ sockopt_inspect(VALUE self)
       case AF_INET6:
 #endif
         switch (level) {
+#        if defined(IPPROTO_IP)
+          case IPPROTO_IP:
+            switch (optname) {
+#            if defined(IP_MULTICAST_IF) && defined(HAVE_TYPE_STRUCT_IP_MREQN) /* 4.4BSD, GNU/Linux */
+              case IP_MULTICAST_IF: inspected = inspect_ipv4_multicast_if(level, optname, data, ret); break;
+#            endif
+#            if defined(IP_ADD_MEMBERSHIP) /* 4.4BSD, GNU/Linux */
+              case IP_ADD_MEMBERSHIP: inspected = inspect_ipv4_add_drop_membership(level, optname, data, ret); break;
+#            endif
+#            if defined(IP_DROP_MEMBERSHIP) /* 4.4BSD, GNU/Linux */
+              case IP_DROP_MEMBERSHIP: inspected = inspect_ipv4_add_drop_membership(level, optname, data, ret); break;
+#            endif
+            }
+            break;
+#        endif
+
 #        if defined(IPPROTO_IPV6)
           case IPPROTO_IPV6:
             switch (optname) {
-              /* IPV6_JOIN_GROUP ipv6_mreq, IPV6_LEAVE_GROUP ipv6_mreq */
 #            if defined(IPV6_MULTICAST_HOPS) /* POSIX */
               case IPV6_MULTICAST_HOPS: inspected = inspect_int(level, optname, data, ret); break;
 #            endif
 #            if defined(IPV6_MULTICAST_IF) /* POSIX */
-              case IPV6_MULTICAST_IF: inspected = inspect_uint(level, optname, data, ret); break;
+              case IPV6_MULTICAST_IF: inspected = inspect_ipv6_multicast_if(level, optname, data, ret); break;
 #            endif
 #            if defined(IPV6_MULTICAST_LOOP) /* POSIX */
               case IPV6_MULTICAST_LOOP: inspected = inspect_uint(level, optname, data, ret); break;
+#            endif
+#            if defined(IPV6_JOIN_GROUP) /* POSIX */
+              case IPV6_JOIN_GROUP: inspected = inspect_ipv6_mreq(level, optname, data, ret); break;
+#            endif
+#            if defined(IPV6_LEAVE_GROUP) /* POSIX */
+              case IPV6_LEAVE_GROUP: inspected = inspect_ipv6_mreq(level, optname, data, ret); break;
 #            endif
 #            if defined(IPV6_UNICAST_HOPS) /* POSIX */
               case IPV6_UNICAST_HOPS: inspected = inspect_int(level, optname, data, ret); break;

@@ -1,12 +1,4 @@
-begin
-  require "openssl"
-  require_relative "utils.rb"
-rescue LoadError
-end
-require "rbconfig"
-require "socket"
-require "test/unit"
-require_relative '../ruby/envutil'
+require_relative "utils"
 
 if defined?(OpenSSL)
 
@@ -83,6 +75,7 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
   rescue Errno::EBADF, IOError, Errno::EINVAL, Errno::ECONNABORTED, Errno::ENOTSOCK
   end
 
+  DHParam = OpenSSL::PKey::DH.new(128)
   def start_server(port0, verify_mode, start_immediately, args = {}, &block)
     ctx_proc = args[:ctx_proc]
     server_proc = args[:server_proc]
@@ -96,6 +89,7 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
     #ctx.extra_chain_cert = [ ca_cert ]
     ctx.cert = @svr_cert
     ctx.key = @svr_key
+    ctx.tmp_dh_callback = proc { DHParam }
     ctx.verify_mode = verify_mode
     ctx_proc.call(ctx) if ctx_proc
 
@@ -158,6 +152,13 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
     ctx = OpenSSL::SSL::SSLContext.new
     assert_equal(ctx.setup, true)
     assert_equal(ctx.setup, nil)
+  end
+
+  def test_not_started_session
+    skip "non socket argument of SSLSocket.new is not supported on this platform" if /mswin|mingw/ =~ RUBY_PLATFORM
+    open(__FILE__) do |f|
+      assert_nil OpenSSL::SSL::SSLSocket.new(f).cert
+    end
   end
 
   def test_ssl_read_nonblock

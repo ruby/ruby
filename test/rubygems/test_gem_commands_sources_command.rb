@@ -1,7 +1,13 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require 'rubygems/test_case'
 require 'rubygems/commands/sources_command'
 
-class TestGemCommandsSourcesCommand < RubyGemTestCase
+class TestGemCommandsSourcesCommand < Gem::TestCase
 
   def setup
     super
@@ -84,7 +90,9 @@ class TestGemCommandsSourcesCommand < RubyGemTestCase
     util_setup_spec_fetcher
 
     use_ui @ui do
-      @cmd.execute
+      assert_raises Gem::MockGemUi::TermError do
+        @cmd.execute
+      end
     end
 
     expected = <<-EOF
@@ -102,7 +110,9 @@ Error fetching http://beta-gems.example.com:
     util_setup_spec_fetcher
 
     use_ui @ui do
-      @cmd.execute
+      assert_raises Gem::MockGemUi::TermError do
+        @cmd.execute
+      end
     end
 
     assert_equal [@gem_repo], Gem.sources
@@ -131,10 +141,6 @@ beta-gems.example.com is not a URI
 
     expected = <<-EOF
 *** Removed specs cache ***
-*** Removed user source cache ***
-*** Removed latest user source cache ***
-*** Removed system source cache ***
-*** Removed latest system source cache ***
     EOF
 
     assert_equal expected, @ui.output

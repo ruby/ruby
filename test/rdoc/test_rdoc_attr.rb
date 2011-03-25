@@ -8,6 +8,12 @@ class TestRDocAttr < MiniTest::Unit::TestCase
     @a = RDoc::Attr.new nil, 'attr', 'RW', ''
   end
 
+  def test_aref
+    m = RDoc::Attr.new nil, 'attr', 'RW', nil
+
+    assert_equal 'attribute-i-attr', m.aref
+  end
+
   def test_arglists
     assert_nil @a.arglists
   end
@@ -18,6 +24,18 @@ class TestRDocAttr < MiniTest::Unit::TestCase
 
   def test_call_seq
     assert_nil @a.call_seq
+  end
+
+  def test_definition
+    assert_equal 'attr_accessor', @a.definition
+
+    @a.rw = 'R'
+
+    assert_equal 'attr_reader', @a.definition
+
+    @a.rw = 'W'
+
+    assert_equal 'attr_writer', @a.definition
   end
 
   def test_full_name
@@ -33,15 +51,10 @@ class TestRDocAttr < MiniTest::Unit::TestCase
   end
 
   def test_type
-    assert_equal 'attr_accessor', @a.type
+    assert_equal 'instance', @a.type
 
-    @a.rw = 'R'
-
-    assert_equal 'attr_reader', @a.type
-
-    @a.rw = 'W'
-
-    assert_equal 'attr_writer', @a.type
+    @a.singleton = true
+    assert_equal 'class', @a.type
   end
 
 end

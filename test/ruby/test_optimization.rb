@@ -137,4 +137,27 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal true, MyObj.new == nil
   end
 
+  def test_tailcall
+    bug4082 = '[ruby-core:33289]'
+
+    option = {
+      tailcall_optimization: true,
+      trace_instruction: false,
+    }
+    iseq = RubyVM::InstructionSequence.new(<<-EOF, "Bug#4082", bug4082, nil, option).eval
+      class #{self.class}::Tailcall
+        def fact_helper(n, res)
+          if n == 1
+            res
+          else
+            fact_helper(n - 1, n * res)
+          end
+        end
+        def fact(n)
+          fact_helper(n, 1)
+        end
+      end
+    EOF
+    assert_equal(9131, Tailcall.new.fact(3000).to_s.size, bug4082)
+  end
 end

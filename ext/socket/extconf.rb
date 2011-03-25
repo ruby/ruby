@@ -301,12 +301,13 @@ if getaddr_info_ok == :wide or
   $objs += ["getaddrinfo.#{$OBJEXT}"]
   $objs += ["getnameinfo.#{$OBJEXT}"]
   $defs << "-DGETADDRINFO_EMU"
-  have_func("inet_ntop") or have_func("inet_ntoa")
-  have_func("inet_pton") or have_func("inet_aton")
-  have_func("getservbyport")
-  have_header("arpa/nameser.h")
-  have_header("resolv.h")
 end
+
+have_func("inet_ntop") or have_func("inet_ntoa")
+have_func("inet_pton") or have_func("inet_aton")
+have_func("getservbyport")
+have_header("arpa/nameser.h")
+have_header("resolv.h")
 
 have_header("ifaddrs.h")
 have_func("getifaddrs")
@@ -339,6 +340,12 @@ have_func("getpeereid")
 
 have_header("ucred.h", headers)
 have_func("getpeerucred")
+
+have_func("if_indextoname")
+
+have_type("struct ip_mreq", headers) # 4.4BSD
+have_type("struct ip_mreqn", headers) # Linux 2.4
+have_type("struct ipv6_mreq", headers) # RFC 3493
 
 # workaround for recent Windows SDK
 $defs << "-DIPPROTO_IPV6=IPPROTO_IPV6" if $defs.include?("-DHAVE_CONST_IPPROTO_IPV6") && !have_macro("IPPROTO_IPV6")

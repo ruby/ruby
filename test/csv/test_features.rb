@@ -7,12 +7,13 @@
 #  Copyright 2005 James Edward Gray II. You can redistribute or modify this code
 #  under the terms of Ruby's license.
 
-require "test/unit"
 require "zlib"
 
-require "csv"
+require_relative "base"
 
-class TestCSVFeatures < Test::Unit::TestCase
+class TestCSV::Features < TestCSV
+  extend DifferentOFS
+
   TEST_CASES = [ [%Q{a,b},               ["a", "b"]],
                  [%Q{a,"""b"""},         ["a", "\"b\""]],
                  [%Q{a,"""b"},           ["a", "\"b"]],
@@ -32,6 +33,7 @@ class TestCSVFeatures < Test::Unit::TestCase
                  [%Q{"\r\n,",},          ["\r\n,", nil]] ]
 
   def setup
+    super
     @sample_data = <<-END_DATA.gsub(/^ +/, "")
     line,1,abc
     line,2,"def\nghi"

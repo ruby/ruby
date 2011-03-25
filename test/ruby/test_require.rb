@@ -29,10 +29,10 @@ class TestRequire < Test::Unit::TestCase
     INPUT
 
     begin
-      assert_in_out_err(["-S", "foo/" * 2500 + "foo"], "") do |r, e|
+      assert_in_out_err(["-S", "-w", "foo/" * 1024 + "foo"], "") do |r, e|
         assert_equal([], r)
         assert_operator(2, :<=, e.size)
-        assert_equal("openpath: pathname too long (ignored)", e.first)
+        assert_match(/warning: openpath: pathname too long \(ignored\)/, e.first)
         assert_match(/\(LoadError\)/, e.last)
       end
     rescue Errno::EINVAL
@@ -46,17 +46,34 @@ class TestRequire < Test::Unit::TestCase
     assert_match(/\u{221e}\z/, e.message, bug3758)
   end
 
-  def test_require_path_home
+  def test_require_path_home_1
     env_rubypath, env_home = ENV["RUBYPATH"], ENV["HOME"]
     pathname_too_long = /pathname too long \(ignored\).*\(LoadError\)/m
 
     ENV["RUBYPATH"] = "~"
-    ENV["HOME"] = "/foo" * 2500
-    assert_in_out_err(%w(-S test_ruby_test_require), "", [], pathname_too_long)
+    ENV["HOME"] = "/foo" * 1024
+    assert_in_out_err(%w(-S -w test_ruby_test_require), "", [], pathname_too_long)
 
-    ENV["RUBYPATH"] = "~" + "/foo" * 2500
+  ensure
+    env_rubypath ? ENV["RUBYPATH"] = env_rubypath : ENV.delete("RUBYPATH")
+    env_home ? ENV["HOME"] = env_home : ENV.delete("HOME")
+  end
+
+  def test_require_path_home_2
+    env_rubypath, env_home = ENV["RUBYPATH"], ENV["HOME"]
+    pathname_too_long = /pathname too long \(ignored\).*\(LoadError\)/m
+
+    ENV["RUBYPATH"] = "~" + "/foo" * 1024
     ENV["HOME"] = "/foo"
-    assert_in_out_err(%w(-S test_ruby_test_require), "", [], pathname_too_long)
+    assert_in_out_err(%w(-S -w test_ruby_test_require), "", [], pathname_too_long)
+
+  ensure
+    env_rubypath ? ENV["RUBYPATH"] = env_rubypath : ENV.delete("RUBYPATH")
+    env_home ? ENV["HOME"] = env_home : ENV.delete("HOME")
+  end
+
+  def test_require_path_home_3
+    env_rubypath, env_home = ENV["RUBYPATH"], ENV["HOME"]
 
     t = Tempfile.new(["test_ruby_test_require", ".rb"])
     t.puts "p :ok"
@@ -75,7 +92,7 @@ class TestRequire < Test::Unit::TestCase
   end
 
   def test_require_with_unc
-    assert(system(File.expand_path(EnvUtil.rubybin).sub(/\A(\w):/, '//localhost/\1$/'), "-rabbrev", "-e0"))
+    assert(system(File.expand_path(EnvUtil.rubybin).sub(/\A(\w):/, '//127.0.0.1/\1$/'), "-rabbrev", "-e0"))
   end if /mswin|mingw/ =~ RUBY_PLATFORM
 
   def test_define_class
@@ -322,4 +339,20 @@ class TestRequire < Test::Unit::TestCase
                       [], /\$LOADED_FEATURES is frozen; cannot append feature \(RuntimeError\)$/,
                       bug3756)
   end
+
+  def test_case_insensitive
+    load_path = $:.dup
+    loaded = $".dup
+    path = File.expand_path(__FILE__)
+    $:.unshift(File.dirname(path))
+    $".push(path) unless $".include?(path)
+    bug4255 = '[ruby-core:34297]'
+    assert_equal(false, $bug4255 ||= false, bug4255)
+    $bug4255 = true
+    f = File.basename(__FILE__, ".*").upcase
+    assert_equal(false, require(f))
+  ensure
+    $:.replace(load_path)
+    $".replace(loaded)
+  end if File.identical?(__FILE__, __FILE__.upcase)
 end

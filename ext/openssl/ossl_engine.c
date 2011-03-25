@@ -13,20 +13,20 @@
 #if defined(OSSL_ENGINE_ENABLED)
 
 #define WrapEngine(klass, obj, engine) do { \
-    if (!engine) { \
+    if (!(engine)) { \
 	ossl_raise(rb_eRuntimeError, "ENGINE wasn't initialized."); \
     } \
-    obj = Data_Wrap_Struct(klass, 0, ENGINE_free, engine); \
+    (obj) = Data_Wrap_Struct((klass), 0, ENGINE_free, (engine)); \
 } while(0)
 #define GetEngine(obj, engine) do { \
-    Data_Get_Struct(obj, ENGINE, engine); \
-    if (!engine) { \
+    Data_Get_Struct((obj), ENGINE, (engine)); \
+    if (!(engine)) { \
         ossl_raise(rb_eRuntimeError, "ENGINE wasn't initialized."); \
     } \
 } while (0)
 #define SafeGetEngine(obj, engine) do { \
-    OSSL_Check_Kind(obj, cEngine); \
-    GetPKCS7(obj, engine); \
+    OSSL_Check_Kind((obj), cEngine); \
+    GetPKCS7((obj), (engine)); \
 } while (0)
 
 /*

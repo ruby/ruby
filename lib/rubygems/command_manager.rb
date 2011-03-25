@@ -1,10 +1,15 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
 # See LICENSE.txt for permissions.
 #++
 
-require 'timeout'
 require 'rubygems/command'
 require 'rubygems/user_interaction'
 
@@ -42,6 +47,7 @@ class Gem::CommandManager
   # Register all the subcommands supported by the gem command.
 
   def initialize
+    require 'timeout'
     @commands = {}
     register_command :build
     register_command :cert
@@ -56,7 +62,6 @@ class Gem::CommandManager
     register_command :install
     register_command :list
     register_command :lock
-    register_command :mirror
     register_command :outdated
     register_command :owner
     register_command :pristine

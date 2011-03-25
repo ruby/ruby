@@ -1,7 +1,13 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require 'rubygems/test_case'
 require 'rubygems/commands/specification_command'
 
-class TestGemCommandsSpecificationCommand < RubyGemTestCase
+class TestGemCommandsSpecificationCommand < Gem::TestCase
 
   def setup
     super
@@ -10,7 +16,7 @@ class TestGemCommandsSpecificationCommand < RubyGemTestCase
   end
 
   def test_execute
-    foo = quick_gem 'foo'
+    foo = quick_spec 'foo'
     Gem.source_index.add_spec foo
 
     @cmd.options[:args] = %w[foo]
@@ -25,8 +31,8 @@ class TestGemCommandsSpecificationCommand < RubyGemTestCase
   end
 
   def test_execute_all
-    foo1 = quick_gem 'foo', '0.0.1'
-    foo2 = quick_gem 'foo', '0.0.2'
+    quick_spec 'foo', '0.0.1'
+    quick_spec 'foo', '0.0.2'
 
     @cmd.options[:args] = %w[foo]
     @cmd.options[:all] = true
@@ -45,7 +51,7 @@ class TestGemCommandsSpecificationCommand < RubyGemTestCase
   def test_execute_bad_name
     @cmd.options[:args] = %w[foo]
 
-    assert_raises MockGemUi::TermError do
+    assert_raises Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end
@@ -56,8 +62,8 @@ class TestGemCommandsSpecificationCommand < RubyGemTestCase
   end
 
   def test_execute_exact_match
-    foo = quick_gem 'foo'
-    foo_bar = quick_gem 'foo_bar'
+    quick_spec 'foo'
+    quick_spec 'foo_bar'
 
     @cmd.options[:args] = %w[foo]
 
@@ -71,7 +77,7 @@ class TestGemCommandsSpecificationCommand < RubyGemTestCase
   end
 
   def test_execute_field
-    foo = quick_gem 'foo'
+    foo = quick_spec 'foo'
     Gem.source_index.add_spec foo
 
     @cmd.options[:args] = %w[foo name]
@@ -84,7 +90,7 @@ class TestGemCommandsSpecificationCommand < RubyGemTestCase
   end
 
   def test_execute_marshal
-    foo = quick_gem 'foo'
+    foo = quick_spec 'foo'
     Gem.source_index.add_spec foo
 
     @cmd.options[:args] = %w[foo]
@@ -120,7 +126,7 @@ class TestGemCommandsSpecificationCommand < RubyGemTestCase
   end
 
   def test_execute_ruby
-    foo = quick_gem 'foo'
+    foo = quick_spec 'foo'
     Gem.source_index.add_spec foo
 
     @cmd.options[:args] = %w[foo]

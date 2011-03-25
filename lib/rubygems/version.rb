@@ -1,3 +1,9 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 ##
 # The Version class processes string versions into comparable
 # values. A version string should normally be a series of numbers
@@ -8,15 +14,18 @@
 #
 # If any part contains letters (currently only a-z are supported) then
 # that version is considered prerelease. Versions with a prerelease
-# part in the Nth part sort less than versions with N-1 parts. Prerelease
-# parts are sorted alphabetically using the normal Ruby string sorting
-# rules.
+# part in the Nth part sort less than versions with N-1
+# parts. Prerelease parts are sorted alphabetically using the normal
+# Ruby string sorting rules. If a prerelease part contains both
+# letters and numbers, it will be broken into multiple parts to
+# provide expected sort behavior (1.0.a10 becomes 1.0.a.10, and is
+# greater than 1.0.a9).
 #
 # Prereleases sort between real releases (newest to oldest):
 #
 # 1. 1.0
-# 2. 1.0.b
-# 3. 1.0.a
+# 2. 1.0.b1
+# 3. 1.0.a.2
 # 4. 0.9
 #
 # == How Software Changes
@@ -138,6 +147,8 @@
 #   "~> 3.5.0"    3.5.0 ... 3.6
 
 class Gem::Version
+  autoload :Requirement, 'rubygems/requirement'
+
   include Comparable
 
   VERSION_PATTERN = '[0-9]+(\.[0-9a-zA-Z]+)*' # :nodoc:
@@ -184,15 +195,13 @@ class Gem::Version
 
     @version = version.to_s
     @version.strip!
-
-    segments # prime @segments
   end
 
   ##
   # Return a new version object where the next to the last revision
   # number is one greater (e.g., 5.3.1 => 5.4).
   #
-  # Pre-release (alpha) parts, e.g, 5.3.1.b2 => 5.4, are ignored.
+  # Pre-release (alpha) parts, e.g, 5.3.1.b.2 => 5.4, are ignored.
 
   def bump
     segments = self.segments.dup
@@ -208,7 +217,7 @@ class Gem::Version
   # same precision. Version "1.0" is not the same as version "1".
 
   def eql? other
-    self.class === other and segments == other.segments
+    self.class === other and @version == other.version
   end
 
   def hash # :nodoc:
@@ -239,7 +248,7 @@ class Gem::Version
   # A version is considered a prerelease if it contains a letter.
 
   def prerelease?
-    @prerelease ||= segments.any? { |s| String === s }
+    @prerelease ||= @version =~ /[a-zA-Z]/
   end
 
   def pretty_print q # :nodoc:
@@ -260,12 +269,10 @@ class Gem::Version
 
   def segments # :nodoc:
 
-    # @segments is lazy so it can pick up @version values that come
-    # from old marshaled versions, which don't go through
-    # marshal_load. +segments+ is called in +initialize+ to "prime
-    # the pump" in normal cases.
+    # segments is lazy so it can pick up version values that come from
+    # old marshaled versions, which don't go through marshal_load.
 
-    @segments ||= @version.scan(/[0-9a-z]+/i).map do |s|
+    @segments ||= @version.scan(/[0-9]+|[a-z]+/i).map do |s|
       /^\d+$/ =~ s ? s.to_i : s
     end
   end
@@ -284,23 +291,33 @@ class Gem::Version
   end
 
   ##
-  # Compares this version with +other+ returning -1, 0, or 1 if the other
-  # version is larger, the same, or smaller than this one.
+  # Compares this version with +other+ returning -1, 0, or 1 if the
+  # other version is larger, the same, or smaller than this
+  # one. Attempts to compare to something that's not a
+  # <tt>Gem::Version</tt> return +nil+.
 
   def <=> other
-    return   1 unless other # HACK: comparable with nil? why?
-    return nil unless self.class === other
+    return unless Gem::Version === other
+    return 0 if @version == other.version
 
-    lhsize = segments.size
-    rhsize = other.segments.size
+    lhsegments = segments
+    rhsegments = other.segments
+
+    lhsize = lhsegments.size
+    rhsize = rhsegments.size
     limit  = (lhsize > rhsize ? lhsize : rhsize) - 1
 
-    0.upto(limit) do |i|
-      lhs, rhs = segments[i] || 0, other.segments[i] || 0
+    i = 0
 
-      return  -1         if String  === lhs && Numeric === rhs
-      return   1         if Numeric === lhs && String  === rhs
-      return lhs <=> rhs if lhs != rhs
+    while i <= limit
+      lhs, rhs = lhsegments[i] || 0, rhsegments[i] || 0
+      i += 1
+
+      next      if lhs == rhs
+      return -1 if String  === lhs && Numeric === rhs
+      return  1 if Numeric === lhs && String  === rhs
+
+      return lhs <=> rhs
     end
 
     return 0

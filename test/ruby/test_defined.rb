@@ -66,23 +66,57 @@ class TestDefined < Test::Unit::TestCase
     /a/ =~ 'a'
     assert_equal 'global-variable', defined?($&)
     assert_equal 'global-variable', defined?($`)
-    assert_equal 'global-variable', defined?($')
+    assert_equal 'global-variable', defined?($') # '
     assert_equal nil, defined?($+)
     assert_equal nil, defined?($1)
     assert_equal nil, defined?($2)
     /(a)/ =~ 'a'
     assert_equal 'global-variable', defined?($&)
     assert_equal 'global-variable', defined?($`)
-    assert_equal 'global-variable', defined?($')
+    assert_equal 'global-variable', defined?($') # '
     assert_equal 'global-variable', defined?($+)
     assert_equal 'global-variable', defined?($1)
     assert_equal nil, defined?($2)
     /(a)b/ =~ 'ab'
     assert_equal 'global-variable', defined?($&)
     assert_equal 'global-variable', defined?($`)
-    assert_equal 'global-variable', defined?($')
+    assert_equal 'global-variable', defined?($') # '
     assert_equal 'global-variable', defined?($+)
     assert_equal 'global-variable', defined?($1)
     assert_equal nil, defined?($2)
+  end
+
+  def test_autoloaded_subclass
+    bug = "[ruby-core:35509]"
+
+    klass = Class.new do
+      autoload(:A, "a")
+    end
+    x = klass.new
+    class << x
+      def a?; defined?(A); end
+    end
+    assert_equal("constant", x.a?, bug)
+
+    klass = Class.new(klass) do
+      def a?; defined?(A); end
+    end
+    assert_equal("constant", klass.new.a?, bug)
+  end
+
+  def test_autoloaded_noload
+    loaded = $".dup
+    $".clear
+    klass = Class.new do
+      autoload(:A, "a")
+      def a?
+        defined?(A)
+      end
+    end
+    x = klass.new
+    assert_equal("constant", x.a?)
+    assert_equal([], $")
+  ensure
+    $".replace(loaded)
   end
 end

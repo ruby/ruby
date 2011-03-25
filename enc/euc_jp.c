@@ -193,7 +193,7 @@ code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc)
   if (enclen(enc, buf, p) != (p - buf))
     return ONIGERR_INVALID_CODE_POINT_VALUE;
 #endif  
-  return p - buf;
+  return (int)(p - buf);
 }
 
 static int
@@ -274,8 +274,8 @@ init_property_list(void)
 {
   int r;
 
-  PROPERTY_LIST_ADD_PROP("Hiragana", CR_Hiragana);
-  PROPERTY_LIST_ADD_PROP("Katakana", CR_Katakana);
+  PROPERTY_LIST_ADD_PROP("hiragana", CR_Hiragana);
+  PROPERTY_LIST_ADD_PROP("katakana", CR_Katakana);
   PropertyInited = 1;
 
  end:
@@ -286,14 +286,20 @@ static int
 property_name_to_ctype(OnigEncoding enc, UChar* p, UChar* end)
 {
   st_data_t ctype;
+  UChar *s, *e;
 
   PROPERTY_LIST_INIT_CHECK;
 
-  if (onig_st_lookup_strend(PropertyNameTable, p, end, &ctype) == 0) {
-    return onigenc_minimum_property_name_to_ctype(enc, p, end);
+  s = e = ALLOCA_N(UChar, end-p+1);
+  for (; p < end; p++) {
+    *e++ = ONIGENC_ASCII_CODE_TO_LOWER_CASE(*p);
   }
 
-  return ctype;
+  if (onig_st_lookup_strend(PropertyNameTable, s, e, &ctype) == 0) {
+    return onigenc_minimum_property_name_to_ctype(enc, s, e);
+  }
+
+  return (int)ctype;
 }
 
 static int

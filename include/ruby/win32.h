@@ -34,6 +34,9 @@ extern "C" {
 #if defined(__cplusplus) && defined(_MSC_VER)
 extern "C++" {			/* template without extern "C++" */
 #endif
+#if !defined(_WIN64) && !defined(WIN32)
+#define WIN32
+#endif
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #if defined(__cplusplus) && defined(_MSC_VER)
@@ -267,6 +270,8 @@ extern int    rb_w32_urename(const char *, const char *);
 extern char **rb_w32_get_environ(void);
 extern void   rb_w32_free_environ(char **);
 extern int    rb_w32_map_errno(DWORD);
+extern char * WSAAPI rb_w32_inet_ntop(int,void *,char *,size_t);
+extern DWORD  rb_w32_osver(void); 
 
 extern int chown(const char *, int, int);
 extern int rb_w32_uchown(const char *, int, int);
@@ -542,6 +547,9 @@ extern char *rb_w32_strerror(int);
 #define FD_ISSET(f, s)		rb_w32_fdisset(f, s)
 
 #ifdef RUBY_EXPORT
+#undef inet_ntop
+#define inet_ntop(f,a,n,l)      rb_w32_inet_ntop(f,a,n,l)
+
 #undef accept
 #define accept(s, a, l)		rb_w32_accept(s, a, l)
 
@@ -654,7 +662,7 @@ size_t rb_w32_read(int, void *, size_t);
 size_t rb_w32_write(int, const void *, size_t);
 int  rb_w32_utime(const char *, const struct utimbuf *);
 int  rb_w32_uutime(const char *, const struct utimbuf *);
-long rb_w32_write_console(unsigned long, int);
+long rb_w32_write_console(uintptr_t, int);	/* use uintptr_t instead of VALUE because it's not defined yet here */
 int  WINAPI rb_w32_Sleep(unsigned long msec);
 int  rb_w32_wait_events_blocking(HANDLE *events, int num, DWORD timeout);
 

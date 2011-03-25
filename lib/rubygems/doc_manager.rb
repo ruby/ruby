@@ -1,10 +1,15 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
 # See LICENSE.txt for permissions.
 #++
 
-require 'fileutils'
 require 'rubygems'
 
 ##
@@ -77,7 +82,7 @@ class Gem::DocManager
       :formatter => RDoc::RI::Formatter,
     }
 
-    driver = RDoc::RI::Driver.new(options).class_cache
+    RDoc::RI::Driver.new(options).class_cache
   end
 
   ##
@@ -85,6 +90,7 @@ class Gem::DocManager
   # RDoc (template etc.) as a String.
 
   def initialize(spec, rdoc_args="")
+    require 'fileutils'
     @spec = spec
     @doc_dir = File.join(spec.installation_path, "doc", spec.full_name)
     @rdoc_args = rdoc_args.nil? ? [] : rdoc_args.split
@@ -162,10 +168,10 @@ class Gem::DocManager
   def run_rdoc(*args)
     args << @spec.rdoc_options
     args << self.class.configured_args
-    args << '--quiet'
     args << @spec.require_paths.clone
     args << @spec.extra_rdoc_files
     args << '--title' << "#{@spec.full_name} Documentation"
+    args << '--quiet'
     args = args.flatten.map do |arg| arg.to_s end
 
     if self.class.rdoc_version >= Gem::Version.new('2.4.0') then
@@ -175,6 +181,8 @@ class Gem::DocManager
       args.delete '--one-file'
       # HACK more
     end
+
+    debug_args = args.dup
 
     r = RDoc::RDoc.new
 
@@ -188,13 +196,15 @@ class Gem::DocManager
     rescue Errno::EACCES => e
       dirname = File.dirname e.message.split("-")[1].strip
       raise Gem::FilePermissionError.new(dirname)
-    rescue RuntimeError => ex
+    rescue Interrupt => e
+      raise e
+    rescue Exception => ex
       alert_error "While generating documentation for #{@spec.full_name}"
       ui.errs.puts "... MESSAGE:   #{ex}"
-      ui.errs.puts "... RDOC args: #{args.join(' ')}"
+      ui.errs.puts "... RDOC args: #{debug_args.join(' ')}"
       ui.errs.puts "\t#{ex.backtrace.join "\n\t"}" if
-      Gem.configuration.backtrace
-      ui.errs.puts "(continuing with the rest of the installation)"
+        Gem.configuration.backtrace
+      terminate_interaction 1
     ensure
       Dir.chdir old_pwd
     end

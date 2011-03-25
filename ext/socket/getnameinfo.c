@@ -114,9 +114,6 @@ static struct afd {
 #define ENI_FAMILY	5
 #define ENI_SALEN	6
 
-#ifdef __HAIKU__
-#define HAVE_INET_NTOP
-#endif
 #ifndef HAVE_INET_NTOP
 static const char *
 inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)

@@ -1,8 +1,14 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require 'rubygems/test_case'
 require 'stringio'
 require 'rubygems/specification'
 
-class TestGemSpecification < RubyGemTestCase
+class TestGemSpecification < Gem::TestCase
 
   LEGACY_YAML_SPEC = <<-EOF
 --- !ruby/object:Gem::Specification
@@ -40,6 +46,7 @@ end
   def setup
     super
 
+    # TODO: there is no reason why the spec tests need to write to disk
     @a1 = quick_gem 'a', '1' do |s|
       s.executable = 'exec'
       s.extensions << 'ext/a/extconf.rb'
@@ -159,6 +166,13 @@ end
     input = "--- !ruby/object:Gem::Specification "
     assert_equal input,
       Gem::Specification.normalize_yaml_input(StringIO.new(input))
+  end
+
+  def test_self_normalize_yaml_input_with_192_yaml
+    input = "--- !ruby/object:Gem::Specification \nblah: !!null \n"
+    expected = "--- !ruby/object:Gem::Specification \nblah: \n"
+
+    assert_equal expected, Gem::Specification.normalize_yaml_input(input)
   end
 
   def test_initialize
@@ -288,7 +302,7 @@ end
   end
 
   def test_add_dependency_with_explicit_type
-    gem = quick_gem "awesome", "1.0" do |awesome|
+    gem = quick_spec "awesome", "1.0" do |awesome|
       awesome.add_development_dependency "monkey"
     end
 
@@ -358,25 +372,18 @@ end
   end
 
   def test_dependencies
-    rake = Gem::Dependency.new 'rake', '> 0.4'
-    jabber = Gem::Dependency.new 'jabber4r', '> 0.0.0'
-    pqa = Gem::Dependency.new 'pqa', ['> 0.4', '<= 0.6']
-
-    assert_equal [rake, jabber, pqa], @a1.dependencies
+    util_setup_deps
+    assert_equal [@bonobo, @monkey], @gem.dependencies
   end
 
-  def test_dependencies_scoped_by_type
-    gem = quick_gem "awesome", "1.0" do |awesome|
-      awesome.add_runtime_dependency "bonobo", []
-      awesome.add_development_dependency "monkey", []
-    end
+  def test_runtime_dependencies
+    util_setup_deps
+    assert_equal [@bonobo], @gem.runtime_dependencies
+  end
 
-    bonobo = Gem::Dependency.new("bonobo", [])
-    monkey = Gem::Dependency.new("monkey", [], :development)
-
-    assert_equal([bonobo, monkey], gem.dependencies)
-    assert_equal([bonobo], gem.runtime_dependencies)
-    assert_equal([monkey], gem.development_dependencies)
+  def test_development_dependencies
+    util_setup_deps
+    assert_equal [@monkey], @gem.development_dependencies
   end
 
   def test_description
@@ -384,8 +391,8 @@ end
   end
 
   def test_eql_eh
-    g1 = quick_gem 'gem'
-    g2 = quick_gem 'gem'
+    g1 = quick_spec 'gem'
+    g2 = quick_spec 'gem'
 
     assert_equal g1, g2
     assert_equal g1.hash, g2.hash
@@ -684,7 +691,7 @@ end
   end
 
   def test_prerelease_spec_adds_required_rubygems_version
-    @prerelease = quick_gem('tardis', '2.2.0.a')
+    @prerelease = quick_spec('tardis', '2.2.0.a')
     refute @prerelease.required_rubygems_version.satisfied_by?(Gem::Version.new('1.3.1'))
     assert @prerelease.required_rubygems_version.satisfied_by?(Gem::Version.new('1.4.0'))
   end
@@ -710,8 +717,8 @@ end
   end
 
   def test_spaceship_name
-    s1 = quick_gem 'a', '1'
-    s2 = quick_gem 'b', '1'
+    s1 = quick_spec 'a', '1'
+    s2 = quick_spec 'b', '1'
 
     assert_equal(-1, (s1 <=> s2))
     assert_equal( 0, (s1 <=> s1))
@@ -719,8 +726,8 @@ end
   end
 
   def test_spaceship_platform
-    s1 = quick_gem 'a', '1'
-    s2 = quick_gem 'a', '1' do |s|
+    s1 = quick_spec 'a', '1'
+    s2 = quick_spec 'a', '1' do |s|
       s.platform = Gem::Platform.new 'x86-my_platform1'
     end
 
@@ -730,8 +737,8 @@ end
   end
 
   def test_spaceship_version
-    s1 = quick_gem 'a', '1'
-    s2 = quick_gem 'a', '2'
+    s1 = quick_spec 'a', '1'
+    s2 = quick_spec 'a', '2'
 
     assert_equal( -1, (s1 <=> s2))
     assert_equal(  0, (s1 <=> s1))
@@ -777,7 +784,6 @@ Gem::Specification.new do |s|
   s.summary = %q{this is a summary}
 
   if s.respond_to? :specification_version then
-    current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION
     s.specification_version = #{Gem::Specification::CURRENT_SPECIFICATION_VERSION}
 
     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
@@ -795,6 +801,54 @@ end
 
     same_spec = eval ruby_code
 
+    assert_equal @a2, same_spec
+  end
+
+  def test_to_ruby_for_cache
+    @a2.add_runtime_dependency 'b', '1'
+    @a2.dependencies.first.instance_variable_set :@type, nil
+    @a2.required_rubygems_version = Gem::Requirement.new '> 0'
+
+    # cached specs do not have spec.files populated:
+    ruby_code = @a2.to_ruby_for_cache
+
+    expected = <<-SPEC
+# -*- encoding: utf-8 -*-
+
+Gem::Specification.new do |s|
+  s.name = %q{a}
+  s.version = \"2\"
+
+  s.required_rubygems_version = Gem::Requirement.new(\"> 0\") if s.respond_to? :required_rubygems_version=
+  s.authors = [\"A User\"]
+  s.date = %q{#{Gem::Specification::TODAY.strftime "%Y-%m-%d"}}
+  s.description = %q{This is a test description}
+  s.email = %q{example@example.com}
+  s.homepage = %q{http://example.com}
+  s.require_paths = [\"lib\"]
+  s.rubygems_version = %q{#{Gem::VERSION}}
+  s.summary = %q{this is a summary}
+
+  if s.respond_to? :specification_version then
+    s.specification_version = #{Gem::Specification::CURRENT_SPECIFICATION_VERSION}
+
+    if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
+      s.add_runtime_dependency(%q<b>, [\"= 1\"])
+    else
+      s.add_dependency(%q<b>, [\"= 1\"])
+    end
+  else
+    s.add_dependency(%q<b>, [\"= 1\"])
+  end
+end
+    SPEC
+
+    assert_equal expected, ruby_code
+
+    same_spec = eval ruby_code
+
+    # cached specs do not have spec.files populated:
+    @a2.files = []
     assert_equal @a2, same_spec
   end
 
@@ -832,22 +886,21 @@ Gem::Specification.new do |s|
   s.test_files = [\"test/suite.rb\"]
 
   if s.respond_to? :specification_version then
-    current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION
     s.specification_version = 3
 
     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
       s.add_runtime_dependency(%q<rake>, [\"> 0.4\"])
       s.add_runtime_dependency(%q<jabber4r>, [\"> 0.0.0\"])
-      s.add_runtime_dependency(%q<pqa>, [\"> 0.4\", \"<= 0.6\"])
+      s.add_runtime_dependency(%q<pqa>, [\"<= 0.6\", \"> 0.4\"])
     else
       s.add_dependency(%q<rake>, [\"> 0.4\"])
       s.add_dependency(%q<jabber4r>, [\"> 0.0.0\"])
-      s.add_dependency(%q<pqa>, [\"> 0.4\", \"<= 0.6\"])
+      s.add_dependency(%q<pqa>, [\"<= 0.6\", \"> 0.4\"])
     end
   else
     s.add_dependency(%q<rake>, [\"> 0.4\"])
     s.add_dependency(%q<jabber4r>, [\"> 0.0.0\"])
-    s.add_dependency(%q<pqa>, [\"> 0.4\", \"<= 0.6\"])
+    s.add_dependency(%q<pqa>, [\"<= 0.6\", \"> 0.4\"])
   end
 end
     SPEC
@@ -880,6 +933,9 @@ end
 
   def test_to_yaml
     yaml_str = @a1.to_yaml
+
+    refute_match '!!null', yaml_str
+
     same_spec = YAML.load(yaml_str)
 
     assert_equal @a1, same_spec
@@ -993,7 +1049,7 @@ end
 
       assert_equal "WARNING:  no description specified\n", @ui.error, 'error'
 
-      @ui = MockGemUi.new
+      @ui = Gem::MockGemUi.new
       @a1.summary = 'this is my summary'
       @a1.description = @a1.summary
 
@@ -1129,7 +1185,7 @@ end
 
       assert_equal "WARNING:  no homepage specified\n", @ui.error, 'error'
 
-      @ui = MockGemUi.new
+      @ui = Gem::MockGemUi.new
 
       @a1.homepage = ''
 
@@ -1172,21 +1228,6 @@ end
 
       @a1.platform = 'powerpc-darwin'
       assert @a1.validate
-    end
-  end
-
-  def test_validate_rubyforge_project
-    util_setup_validate
-
-    Dir.chdir @tempdir do
-      @a1.rubyforge_project = ''
-
-      use_ui @ui do
-        @a1.validate
-      end
-
-      assert_equal "WARNING:  no rubyforge_project specified\n",
-                   @ui.error, 'error'
     end
   end
 
@@ -1258,13 +1299,25 @@ end
     specfile.write "raise 'boom'"
     specfile.close
     begin
-      Gem::Specification.load(specfile.path)
+      capture_io do
+        Gem::Specification.load(specfile.path)
+      end
     rescue => e
       name_rexp = Regexp.new(Regexp.escape(specfile.path))
       assert e.backtrace.grep(name_rexp).any?
     end
   ensure
     specfile.delete
+  end
+
+  def util_setup_deps
+    @gem = quick_spec "awesome", "1.0" do |awesome|
+      awesome.add_runtime_dependency "bonobo", []
+      awesome.add_development_dependency "monkey", []
+    end
+
+    @bonobo = Gem::Dependency.new("bonobo", [])
+    @monkey = Gem::Dependency.new("monkey", [], :development)
   end
 
   def util_setup_validate
@@ -1278,6 +1331,4 @@ end
       FileUtils.touch File.join('test', 'suite.rb')
     end
   end
-
 end
-

@@ -133,7 +133,6 @@ module DL
     end
 
     def test_NEXT
-      skip "DL::Handle::NEXT is not supported" if /mswin|mingw/ =~ RUBY_PLATFORM
       begin
         # Linux / Darwin
         #
@@ -163,12 +162,12 @@ module DL
         handle = DL::Handle::NEXT
         assert_not_nil handle['Init_objspace']
       end
-    end
+    end unless /mswin|mingw/ =~ RUBY_PLATFORM
 
     def test_DEFAULT
       skip "DL::Handle::DEFAULT is not supported" if /mswin|mingw/ =~ RUBY_PLATFORM
       handle = DL::Handle::DEFAULT
       assert_not_nil handle['malloc']
-    end
+    end unless /mswin|mingw/ =~ RUBY_PLATFORM
   end
 end

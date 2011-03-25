@@ -1,8 +1,17 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 # -*- coding: iso-8859-1 -*-
 #++
 # Copyright (C) 2004 Mauricio Julio Fernández Pradier
 # See LICENSE.txt for additional licensing information.
 #--
+
+require 'zlib'
+Gem.load_yaml
 
 class Gem::Package::TarInput
 
@@ -108,7 +117,11 @@ class Gem::Package::TarInput
     @tarreader.rewind
     @fileops = Gem::FileOperations.new
 
-    raise Gem::Package::FormatError, "No metadata found!" unless has_meta
+    unless has_meta then
+      path = io.path if io.respond_to? :path
+      error = Gem::Package::FormatError.new 'no metadata found', path
+      raise error
+    end
   end
 
   def close

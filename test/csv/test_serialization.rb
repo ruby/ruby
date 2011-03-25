@@ -7,9 +7,7 @@
 #  Copyright 2005 James Edward Gray II. You can redistribute or modify this code
 #  under the terms of Ruby's license.
 
-require "test/unit"
-
-require "csv"
+require_relative "base"
 
 # An example of how to provide custom CSV serialization.
 class Hash
@@ -26,7 +24,8 @@ class Hash
   end
 end
 
-class TestSerialization < Test::Unit::TestCase
+class TestCSV::Serialization < TestCSV
+  extend DifferentOFS
 
   ### Classes Used to Test Serialization ###
 
@@ -71,7 +70,7 @@ class TestSerialization < Test::Unit::TestCase
       @data = CSV.dump(@names)
     end
     assert_equal(<<-END_CLASS_DUMP.gsub(/^\s*/, ""), @data)
-    class,TestSerialization::ReadOnlyName
+    class,TestCSV::Serialization::ReadOnlyName
     @first,@last
     James,Gray
     Dana,Gray
@@ -90,7 +89,7 @@ class TestSerialization < Test::Unit::TestCase
       @data = CSV.dump(@names)
     end
     assert_equal(<<-END_STRUCT_DUMP.gsub(/^\s*/, ""), @data)
-    class,TestSerialization::Name
+    class,TestCSV::Serialization::Name
     first=,last=
     James,Gray
     Dana,Gray
@@ -109,7 +108,7 @@ class TestSerialization < Test::Unit::TestCase
       @data = CSV.dump(@names)
     end
     assert_equal(<<-END_STRUCT_DUMP.gsub(/^\s*/, ""), @data)
-    class,TestSerialization::FullName
+    class,TestCSV::Serialization::FullName
     @suffix,first=,last=
     II,James,Gray
     ,Dana,Gray
@@ -132,12 +131,12 @@ class TestSerialization < Test::Unit::TestCase
   def test_io
     test_class_dump
 
-    data_file = File.join(File.dirname(__FILE__), "temp_test_data.csv")
+    data_file = File.join(File.dirname(__FILE__), "serialization_test_data.csv")
     CSV.dump(@names, File.open(data_file, "wb"))
 
     assert(File.exist?(data_file))
     assert_equal(<<-END_IO_DUMP.gsub(/^\s*/, ""), File.read(data_file))
-    class,TestSerialization::ReadOnlyName
+    class,TestCSV::Serialization::ReadOnlyName
     @first,@last
     James,Gray
     Dana,Gray

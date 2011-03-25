@@ -3,6 +3,9 @@
 
 class RDoc::Markup::Heading < Struct.new :level, :text
 
+  ##
+  # Calls #accept_heading on +visitor+
+
   def accept visitor
     visitor.accept_heading self
   end

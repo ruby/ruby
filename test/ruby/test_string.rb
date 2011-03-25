@@ -674,6 +674,21 @@ class TestString < Test::Unit::TestCase
     assert_raise(ArgumentError) { "foo".gsub }
   end
 
+  def test_gsub_encoding
+    a = S("hello world")
+    a.force_encoding Encoding::UTF_8
+
+    b = S("hi")
+    b.force_encoding Encoding::US_ASCII
+
+    assert_equal Encoding::UTF_8, a.gsub(/hello/, b).encoding
+
+    c = S("everybody")
+    c.force_encoding Encoding::US_ASCII
+
+    assert_equal Encoding::UTF_8, a.gsub(/world/, c).encoding
+  end
+
   def test_gsub!
     a = S("hello")
     b = a.dup
@@ -727,6 +742,8 @@ class TestString < Test::Unit::TestCase
   def test_hash
     assert_equal(S("hello").hash, S("hello").hash)
     assert(S("hello").hash != S("helLO").hash)
+    bug4104 = '[ruby-core:33500]'
+    assert_not_equal(S("a").hash, S("a\0").hash, bug4104)
   end
 
   def test_hash_random
@@ -966,6 +983,14 @@ class TestString < Test::Unit::TestCase
     res = []
     a.scan(/(...)/) { |w| res << w }
     assert_equal([[S("cru")], [S("el ")], [S("wor")]],res)
+
+    a = S("hello")
+    a.taint
+    a.untrust
+    res = []
+    a.scan(/./) { |w| res << w }
+    assert(res[0].tainted?, '[ruby-core:33338] #4087')
+    assert(res[0].untrusted?, '[ruby-core:33338] #4087')
   end
 
   def test_size
@@ -1668,14 +1693,6 @@ class TestString < Test::Unit::TestCase
     }
   end
 
-  def test_tainted_str_new
-    a = []
-    a << a
-    s = a.inspect
-    assert(s.tainted?)
-    assert_equal("[[...]]", s)
-  end
-
   class S2 < String
   end
   def test_str_new4
@@ -1890,11 +1907,26 @@ class TestString < Test::Unit::TestCase
   end
 
   def test_ascii_incomat_inspect
+    bug4081 = '[ruby-core:33283]'
     [Encoding::UTF_16LE, Encoding::UTF_16BE,
      Encoding::UTF_32LE, Encoding::UTF_32BE].each do |e|
       assert_equal('"abc"', "abc".encode(e).inspect)
       assert_equal('"\\u3042\\u3044\\u3046"', "\u3042\u3044\u3046".encode(e).inspect)
+      assert_equal('"ab\\"c"', "ab\"c".encode(e).inspect, bug4081)
     end
+    begin
+      ext = Encoding.default_external
+      Encoding.default_external = "us-ascii"
+      i = "abc\"\\".force_encoding("utf-8").inspect
+    ensure
+      Encoding.default_external = ext
+    end
+    assert_equal('"abc\\"\\\\"', i, bug4081)
+  end
+
+  def test_dummy_inspect
+    assert_equal('"\e\x24\x42\x22\x4C\x22\x68\e\x28\x42"',
+                 "\u{ffe2}\u{2235}".encode("cp50220").inspect)
   end
 
   def test_prepend
@@ -1911,5 +1943,37 @@ class TestString < Test::Unit::TestCase
     a.prepend(b)
     assert_equal(S("hello world"), a)
     assert_equal(S("hello "), b)
+  end
+
+  def u(str)
+    str.force_encoding(Encoding::UTF_8)
+  end
+
+  def test_byteslice
+    assert_equal("h", "hello".byteslice(0))
+    assert_equal(nil, "hello".byteslice(5))
+    assert_equal("o", "hello".byteslice(-1))
+    assert_equal(nil, "hello".byteslice(-6))
+
+    assert_equal("", "hello".byteslice(0, 0))
+    assert_equal("hello", "hello".byteslice(0, 6))
+    assert_equal("hello", "hello".byteslice(0, 6))
+    assert_equal("", "hello".byteslice(5, 1))
+    assert_equal("o", "hello".byteslice(-1, 6))
+    assert_equal(nil, "hello".byteslice(-6, 1))
+    assert_equal(nil, "hello".byteslice(0, -1))
+
+    assert_equal("h", "hello".byteslice(0..0))
+    assert_equal("", "hello".byteslice(5..0))
+    assert_equal("o", "hello".byteslice(4..5))
+    assert_equal(nil, "hello".byteslice(6..0))
+    assert_equal("", "hello".byteslice(-1..0))
+    assert_equal("llo", "hello".byteslice(-3..5))
+
+    assert_equal(u("\x81"), "\u3042".byteslice(1))
+    assert_equal(u("\x81\x82"), "\u3042".byteslice(1, 2))
+    assert_equal(u("\x81\x82"), "\u3042".byteslice(1..2))
+
+    assert_equal(u("\x82")+("\u3042"*9), ("\u3042"*10).byteslice(2, 28))
   end
 end

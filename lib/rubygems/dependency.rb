@@ -1,21 +1,15 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 require "rubygems/requirement"
 
 ##
 # The Dependency class holds a Gem name and a Gem::Requirement.
 
 class Gem::Dependency
-
-  # :stopdoc:
-  @warned_version_requirement = false
-
-  def self.warned_version_requirement
-    @warned_version_requirement
-  end
-
-  def self.warned_version_requirement= value
-    @warned_version_requirement = value
-  end
-  # :startdoc:
 
   ##
   # Valid dependency types.
@@ -39,11 +33,6 @@ class Gem::Dependency
   attr_writer :prerelease
 
   ##
-  # Dependency type.
-
-  attr_reader :type
-
-  ##
   # Constructs a dependency with +name+ and +requirements+. The last
   # argument can optionally be the dependency type, which defaults to
   # <tt>:runtime</tt>.
@@ -54,7 +43,7 @@ class Gem::Dependency
 
     unless TYPES.include? type
       raise ArgumentError, "Valid types are #{TYPES.inspect}, "
-        + "not #{@type.inspect}"
+        + "not #{type.inspect}"
     end
 
     @name        = name
@@ -62,7 +51,7 @@ class Gem::Dependency
     @type        = type
     @prerelease  = false
 
-    # This is for Marshal backwards compatability. See the comments in
+    # This is for Marshal backwards compatibility. See the comments in
     # +requirement+ for the dirty details.
 
     @version_requirements = @requirement
@@ -78,7 +67,7 @@ class Gem::Dependency
 
   def inspect # :nodoc:
     "<%s type=%p name=%p requirements=%p>" %
-      [self.class, @type, @name, requirement.to_s]
+      [self.class, self.type, self.name, requirement.to_s]
   end
 
   ##
@@ -88,7 +77,7 @@ class Gem::Dependency
     @prerelease || requirement.prerelease?
   end
 
-  def pretty_print(q) # :nodoc:
+  def pretty_print q # :nodoc:
     q.group 1, 'Gem::Dependency.new(', ')' do
       q.pp name
       q.text ','
@@ -133,42 +122,23 @@ class Gem::Dependency
     @requirement = @version_requirements if defined?(@version_requirements)
   end
 
-  ##
-  # Rails subclasses Gem::Dependency and uses this method, so we'll hack
-  # around it.
-
-  alias __requirement requirement # :nodoc:
-
   def requirements_list
     requirement.as_list
   end
 
   def to_s # :nodoc:
-    "#{name} (#{requirement}, #{type})"
-  end
-
-  def version_requirements # :nodoc:
-    unless Gem::Dependency.warned_version_requirement then
-      warn "#{Gem.location_of_caller.join ':'}:Warning: " \
-           "Gem::Dependency#version_requirements is deprecated " \
-           "and will be removed on or after August 2010.  " \
-           "Use #requirement"
-
-      Gem::Dependency.warned_version_requirement = true
+    if type != :runtime then
+      "#{name} (#{requirement}, #{type})"
+    else
+      "#{name} (#{requirement})"
     end
-
-    __requirement
   end
 
-  alias version_requirement version_requirements # :nodoc:
+  ##
+  # Dependency type.
 
-  def version_requirements= requirements # :nodoc:
-    warn "#{Gem.location_of_caller.join ':'}:Warning: " \
-         "Gem::Dependency#version_requirements= is deprecated " \
-         "and will be removed on or after August 2010.  " \
-         "Use Gem::Dependency.new."
-
-    @requirement = Gem::Requirement.create requirements
+  def type
+    @type ||= :runtime
   end
 
   def == other # :nodoc:
@@ -182,7 +152,7 @@ class Gem::Dependency
   # Dependencies are ordered by name.
 
   def <=> other
-    [@name] <=> [other.name]
+    self.name <=> other.name
   end
 
   ##
@@ -193,16 +163,11 @@ class Gem::Dependency
 
   def =~ other
     unless Gem::Dependency === other
-      other = Gem::Dependency.new other.name, other.version rescue return false
+      return unless other.respond_to?(:name) && other.respond_to?(:version)
+      other = Gem::Dependency.new other.name, other.version
     end
 
-    pattern = name
-
-    if Regexp === pattern then
-      return false unless pattern =~ other.name
-    else
-      return false unless pattern == other.name
-    end
+    return false unless name === other.name
 
     reqs = other.requirement.requirements
 
@@ -214,18 +179,37 @@ class Gem::Dependency
     requirement.satisfied_by? version
   end
 
-  def match?(spec_name, spec_version)
-    pattern = name
-
-    if Regexp === pattern
-      return false unless pattern =~ spec_name
-    else
-      return false unless pattern == spec_name
-    end
-
+  def match? name, version
+    return false unless self.name === name
     return true if requirement.none?
 
-    requirement.satisfied_by? Gem::Version.new(spec_version)
+    requirement.satisfied_by? Gem::Version.new(version)
+  end
+
+  def matches_spec? spec
+    return false unless name === spec.name
+    return true  if requirement.none?
+
+    requirement.satisfied_by?(spec.version)
+  end
+
+  ##
+  # Merges the requirements of +other+ into this dependency
+
+  def merge other
+    unless name == other.name then
+      raise ArgumentError,
+            "#{self} and #{other} have different names"
+    end
+
+    default = Gem::Requirement.default
+    self_req  = self.requirement
+    other_req = other.requirement
+
+    return self.class.new name, self_req  if other_req == default
+    return self.class.new name, other_req if self_req  == default
+
+    self.class.new name, self_req.as_list.concat(other_req.as_list)
   end
 
 end

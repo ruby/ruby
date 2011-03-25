@@ -97,7 +97,7 @@ static ID i_json_creatable_p, i_json_create, i_create_id, i_create_additions,
     VNaN                = 'NaN';
     VInfinity           = 'Infinity';
     VMinusInfinity      = '-Infinity';
-    begin_value         = [nft"\-[{NI] | digit;
+    begin_value         = [nft\"\-\[\{NI] | digit;
     begin_object        = '{';
     end_object          = '}';
     begin_array         = '[';
@@ -457,17 +457,17 @@ static VALUE json_string_unescape(VALUE result, char *string, char *stringEnd)
     action parse_string {
         *result = json_string_unescape(*result, json->memo + 1, p);
         if (NIL_P(*result)) {
-            fhold;
-            fbreak;
-        } else {
-            FORCE_UTF8(*result);
-            fexec p + 1;
-        }
-    }
+			fhold;
+			fbreak;
+		} else {
+			FORCE_UTF8(*result);
+			fexec p + 1;
+		}
+	}
 
     action exit { fhold; fbreak; }
 
-    main := '"' ((^(["\\] | 0..0x1f) | '\\'["\\/bfnrt] | '\\u'[0-9a-fA-F]{4} | '\\'^(["\\/bfnrtu]|0..0x1f))* %parse_string) '"' @exit;
+    main := '"' ((^([\"\\] | 0..0x1f) | '\\'[\"\\/bfnrt] | '\\u'[0-9a-fA-F]{4} | '\\'^([\"\\/bfnrtu]|0..0x1f))* %parse_string) '"' @exit;
 }%%
 
 static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *result)
@@ -608,7 +608,11 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
     char *ptr;
     long len;
     VALUE source, opts;
-    GET_PARSER;
+    GET_PARSER_INIT;
+
+    if (json->Vsource) {
+        rb_raise(rb_eTypeError, "already initialized instance");
+    }
     rb_scan_args(argc, argv, "11", &source, &opts);
     source = convert_encoding(StringValue(source));
     ptr = RSTRING_PTR(source);
@@ -790,3 +794,11 @@ void Init_parser()
     i_iconv = rb_intern("iconv");
 #endif
 }
+
+/*
+ * Local variables:
+ * mode: c
+ * c-file-style: ruby
+ * indent-tabs-mode: nil
+ * End:
+ */

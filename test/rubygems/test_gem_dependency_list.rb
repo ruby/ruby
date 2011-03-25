@@ -1,24 +1,30 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require 'rubygems/test_case'
 require 'rubygems/dependency_list'
 
-class TestGemDependencyList < RubyGemTestCase
+class TestGemDependencyList < Gem::TestCase
 
   def setup
     super
 
     @deplist = Gem::DependencyList.new
 
-    @a1 = quick_gem 'a', '1'
-    @a2 = quick_gem 'a', '2'
-    @a3 = quick_gem 'a', '3'
+    @a1 = quick_spec 'a', '1'
+    @a2 = quick_spec 'a', '2'
+    @a3 = quick_spec 'a', '3'
 
-    @b1 = quick_gem 'b', '1' do |s| s.add_dependency 'a', '>= 1' end
-    @b2 = quick_gem 'b', '2' do |s| s.add_dependency 'a', '>= 1' end
+    @b1 = quick_spec 'b', '1' do |s| s.add_dependency 'a', '>= 1' end
+    @b2 = quick_spec 'b', '2' do |s| s.add_dependency 'a', '>= 1' end
 
-    @c1 = quick_gem 'c', '1' do |s| s.add_dependency 'b', '>= 1' end
-    @c2 = quick_gem 'c', '2'
+    @c1 = quick_spec 'c', '1' do |s| s.add_dependency 'b', '>= 1' end
+    @c2 = quick_spec 'c', '2'
 
-    @d1 = quick_gem 'd', '1' do |s| s.add_dependency 'c', '>= 1' end
+    @d1 = quick_spec 'd', '1' do |s| s.add_dependency 'c', '>= 1' end
   end
 
   def test_self_from_source_index
@@ -66,9 +72,9 @@ class TestGemDependencyList < RubyGemTestCase
   end
 
   def test_dependency_order_development
-    e1 = quick_gem 'e', '1'
-    f1 = quick_gem 'f', '1'
-    g1 = quick_gem 'g', '1'
+    e1 = quick_spec 'e', '1'
+    f1 = quick_spec 'f', '1'
+    g1 = quick_spec 'g', '1'
 
     @a1.add_dependency 'e'
     @a1.add_dependency 'f'
@@ -94,7 +100,7 @@ class TestGemDependencyList < RubyGemTestCase
 
   def test_dependency_order_diamond
     util_diamond
-    e1 = quick_gem 'e', '1'
+    e1 = quick_spec 'e', '1'
     @deplist.add e1
     @a1.add_dependency 'e', '>= 1'
 
@@ -104,7 +110,7 @@ class TestGemDependencyList < RubyGemTestCase
                  'deps of trimmed specs not included'
   end
 
-  def test_dependency_order_no_dependendencies
+  def test_dependency_order_no_dependencies
     @deplist.add @a1, @c2
 
     order = @deplist.dependency_order
@@ -122,6 +128,8 @@ class TestGemDependencyList < RubyGemTestCase
   end
 
   def test_ok_eh
+    util_clear_gems
+
     assert @deplist.ok?, 'no dependencies'
 
     @deplist.add @b2
@@ -133,14 +141,48 @@ class TestGemDependencyList < RubyGemTestCase
     assert @deplist.ok?, 'satisfied dependency'
   end
 
+  def test_why_not_ok_eh
+    util_clear_gems
+
+    assert_equal({},  @deplist.why_not_ok?)
+
+    @deplist.add @b2
+
+    exp = {
+      "b" => [
+              Gem::Dependency.new("a", ">= 1")
+             ]
+    }
+
+    assert_equal exp, @deplist.why_not_ok?
+  end
+
+  def test_why_not_ok_eh_old_dependency
+    a  = new_spec 'a', '1',
+                  'b' => '~> 1.0'
+
+    b0 = new_spec 'b', '1.0',
+                  'd' => '>= 0'
+
+    b1 = new_spec 'b', '1.1'
+
+    util_clear_gems
+
+    @deplist.clear
+
+    @deplist.add a, b0, b1
+
+    assert_equal({},  @deplist.why_not_ok?)
+  end
+
   def test_ok_eh_mismatch
-    a1 = quick_gem 'a', '1'
-    a2 = quick_gem 'a', '2'
+    a1 = quick_spec 'a', '1'
+    a2 = quick_spec 'a', '2'
 
-    b = quick_gem 'b', '1' do |s| s.add_dependency 'a', '= 1' end
-    c = quick_gem 'c', '1' do |s| s.add_dependency 'a', '= 2' end
+    b = quick_spec 'b', '1' do |s| s.add_dependency 'a', '= 1' end
+    c = quick_spec 'c', '1' do |s| s.add_dependency 'a', '= 2' end
 
-    d = quick_gem 'd', '1' do |s|
+    d = quick_spec 'd', '1' do |s|
       s.add_dependency 'b'
       s.add_dependency 'c'
     end
@@ -186,6 +228,8 @@ class TestGemDependencyList < RubyGemTestCase
   end
 
   def test_remove_by_name
+    util_clear_gems
+
     @deplist.add @a1, @b2
 
     @deplist.remove_by_name "a-1"

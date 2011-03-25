@@ -11,14 +11,14 @@
 #include "ossl.h"
 
 #define WrapSPKI(klass, obj, spki) do { \
-    if (!spki) { \
+    if (!(spki)) { \
 	ossl_raise(rb_eRuntimeError, "SPKI wasn't initialized!"); \
     } \
-    obj = Data_Wrap_Struct(klass, 0, NETSCAPE_SPKI_free, spki); \
+    (obj) = Data_Wrap_Struct((klass), 0, NETSCAPE_SPKI_free, (spki)); \
 } while (0)
 #define GetSPKI(obj, spki) do { \
-    Data_Get_Struct(obj, NETSCAPE_SPKI, spki); \
-    if (!spki) { \
+    Data_Get_Struct((obj), NETSCAPE_SPKI, (spki)); \
+    if (!(spki)) { \
 	ossl_raise(rb_eRuntimeError, "SPKI wasn't initialized!"); \
     } \
 } while (0)
@@ -106,7 +106,7 @@ ossl_spki_to_pem(VALUE self)
     if (!(data = NETSCAPE_SPKI_b64_encode(spki))) {
 	ossl_raise(eSPKIError, NULL);
     }
-    str = ossl_buf2str(data, strlen(data));
+    str = ossl_buf2str(data, rb_long2int(strlen(data)));
 
     return str;
 }
@@ -184,7 +184,7 @@ ossl_spki_set_challenge(VALUE self, VALUE str)
     StringValue(str);
     GetSPKI(self, spki);
     if (!ASN1_STRING_set(spki->spkac->challenge, RSTRING_PTR(str),
-			 RSTRING_LEN(str))) {
+			 RSTRING_LENINT(str))) {
 	ossl_raise(eSPKIError, NULL);
     }
 

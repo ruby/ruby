@@ -378,6 +378,12 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal("a" * 10000 + "zz", f.gets("zz"))
     f = StringIO.new("a" * 10000 + "zz!")
     assert_equal("a" * 10000 + "zz!", f.gets("zzz"))
+
+    bug4112 = '[ruby-dev:42674]'
+    ["a".encode("utf-16be"), "\u3042"].each do |s|
+      assert_equal(s, StringIO.new(s).gets(1), bug4112)
+      assert_equal(s, StringIO.new(s).gets(nil, 1), bug4112)
+    end
   end
 
   def test_each
@@ -464,5 +470,14 @@ class TestStringIO < Test::Unit::TestCase
 
       expected_pos += 1
     end
+  end
+
+  def test_frozen
+    s = StringIO.new
+    s.freeze
+    bug = '[ruby-core:33648]'
+    assert_raise(RuntimeError, bug) {s.puts("foo")}
+    assert_raise(RuntimeError, bug) {s.string = "foo"}
+    assert_raise(RuntimeError, bug) {s.reopen("")}
   end
 end

@@ -1,3 +1,9 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 require 'rubygems/command'
 require 'rubygems/version_option'
 require 'rubygems/uninstaller'
@@ -47,6 +53,11 @@ class Gem::Commands::UninstallCommand < Gem::Command
                'Uninstall from user\'s home directory',
                'in addition to GEM_HOME.') do |value, options|
       options[:user_install] = value
+    end
+
+    add_option('--[no-]format-executable',
+               'Assume executable names match Ruby\'s prefix and suffix.') do |value, options|
+      options[:format_executable] = value
     end
 
     add_version_option

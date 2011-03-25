@@ -96,7 +96,6 @@ module DL
 
     def parse_bind_options(opts)
       h = {}
-      prekey = nil
       while( opt = opts.shift() )
         case opt
         when :stdcall, :cdecl

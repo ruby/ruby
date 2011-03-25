@@ -13,8 +13,8 @@
 #include "ossl.h"
 
 #define GetPKeyDH(obj, pkey) do { \
-    GetPKey(obj, pkey); \
-    if (EVP_PKEY_type(pkey->type) != EVP_PKEY_DH) { /* PARANOIA? */ \
+    GetPKey((obj), (pkey)); \
+    if (EVP_PKEY_type((pkey)->type) != EVP_PKEY_DH) { /* PARANOIA? */ \
 	ossl_raise(rb_eRuntimeError, "THIS IS NOT A DH!") ; \
     } \
 } while (0)
@@ -473,8 +473,8 @@ ossl_create_dh(unsigned char *p, size_t plen, unsigned char *g, size_t glen)
     DH *dh;
 
     if ((dh = DH_new()) == NULL) ossl_raise(eDHError, NULL);
-    dh->p = BN_bin2bn(p, plen, NULL);
-    dh->g = BN_bin2bn(g, glen, NULL);
+    dh->p = BN_bin2bn(p, rb_long2int(plen), NULL);
+    dh->g = BN_bin2bn(g, rb_long2int(glen), NULL);
     if (dh->p == NULL || dh->g == NULL){
         DH_free(dh);
 	ossl_raise(eDHError, NULL);
@@ -489,8 +489,8 @@ ossl_create_dh(unsigned char *p, size_t plen, unsigned char *g, size_t glen)
 void
 Init_ossl_dh()
 {
-#if 0 /* let rdoc know about mOSSL and mPKey */
-    mOSSL = rb_define_module("OpenSSL");
+#if 0
+    mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL and mPKey */
     mPKey = rb_define_module_under(mOSSL, "PKey");
 #endif
 

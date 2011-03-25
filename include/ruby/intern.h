@@ -54,6 +54,7 @@ VALUE rb_ary_new3(long,...);
 VALUE rb_ary_new4(long, const VALUE *);
 VALUE rb_ary_tmp_new(long);
 void rb_ary_free(VALUE);
+void rb_ary_modify(VALUE);
 VALUE rb_ary_freeze(VALUE);
 VALUE rb_ary_aref(int, VALUE*, VALUE);
 VALUE rb_ary_subseq(VALUE, long, long);
@@ -69,7 +70,6 @@ VALUE rb_ary_unshift(VALUE, VALUE);
 VALUE rb_ary_entry(VALUE, long);
 VALUE rb_ary_each(VALUE);
 VALUE rb_ary_join(VALUE, VALUE);
-VALUE rb_ary_print_on(VALUE, VALUE);
 VALUE rb_ary_reverse(VALUE);
 VALUE rb_ary_sort(VALUE);
 VALUE rb_ary_sort_bang(VALUE);
@@ -84,6 +84,7 @@ VALUE rb_ary_includes(VALUE, VALUE);
 VALUE rb_ary_cmp(VALUE, VALUE);
 VALUE rb_ary_replace(VALUE copy, VALUE orig);
 VALUE rb_get_values_at(VALUE, long, int, VALUE*, VALUE(*)(VALUE,long));
+VALUE rb_ary_resize(VALUE ary, long len);
 /* bignum.c */
 VALUE rb_big_new(long, int);
 int rb_bigzero_p(VALUE x);
@@ -125,6 +126,7 @@ VALUE rb_big_plus(VALUE, VALUE);
 VALUE rb_big_minus(VALUE, VALUE);
 VALUE rb_big_mul(VALUE, VALUE);
 VALUE rb_big_div(VALUE, VALUE);
+VALUE rb_big_idiv(VALUE, VALUE);
 VALUE rb_big_modulo(VALUE, VALUE);
 VALUE rb_big_divmod(VALUE, VALUE);
 VALUE rb_big_pow(VALUE, VALUE);
@@ -209,6 +211,7 @@ PRINTF_ARGS(NORETURN(void rb_loaderror(const char*, ...)), 1, 2);
 PRINTF_ARGS(NORETURN(void rb_name_error(ID, const char*, ...)), 2, 3);
 NORETURN(void rb_invalid_str(const char*, const char*));
 PRINTF_ARGS(void rb_compile_error(const char*, int, const char*, ...), 3, 4);
+PRINTF_ARGS(void rb_compile_error_with_enc(const char*, int, void *, const char*, ...), 4, 5);
 PRINTF_ARGS(void rb_compile_error_append(const char*, ...), 1, 2);
 NORETURN(void rb_load_fail(const char*));
 NORETURN(void rb_error_frozen(const char*));
@@ -340,6 +343,7 @@ int rb_proc_arity(VALUE);
 VALUE rb_proc_lambda_p(VALUE);
 VALUE rb_binding_new(void);
 VALUE rb_obj_method(VALUE, VALUE);
+VALUE rb_obj_is_method(VALUE);
 VALUE rb_method_call(int, VALUE*, VALUE);
 int rb_mod_method_arity(VALUE, ID);
 int rb_obj_method_arity(VALUE, ID);
@@ -421,6 +425,7 @@ VALUE rb_gc_enable(void);
 VALUE rb_gc_disable(void);
 VALUE rb_gc_start(void);
 #define Init_stack(addr) ruby_init_stack(addr)
+void rb_gc_set_params(void);
 /* hash.c */
 void st_foreach_safe(struct st_table *, int (*)(ANYARGS), st_data_t);
 VALUE rb_check_hash_type(VALUE);
@@ -436,6 +441,8 @@ VALUE rb_hash_fetch(VALUE, VALUE);
 VALUE rb_hash_aset(VALUE, VALUE, VALUE);
 VALUE rb_hash_delete_if(VALUE);
 VALUE rb_hash_delete(VALUE,VALUE);
+typedef VALUE rb_hash_update_func(VALUE newkey, VALUE oldkey, VALUE value);
+VALUE rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func);
 struct st_table *rb_hash_tbl(VALUE);
 int rb_path_check(const char*);
 int rb_env_path_tainted(void);
@@ -707,6 +714,7 @@ long rb_str_strlen(VALUE);
 VALUE rb_str_length(VALUE);
 long rb_str_offset(VALUE, long);
 size_t rb_str_capacity(VALUE);
+VALUE rb_str_ellipsize(VALUE, long);
 #if defined __GNUC__
 #define rb_str_new_cstr(str) __extension__ (	\
 {						\
@@ -791,11 +799,12 @@ void rb_thread_check_ints(void);
 int rb_thread_interrupted(VALUE thval);
 VALUE rb_thread_blocking_region(rb_blocking_function_t *func, void *data1,
 				rb_unblock_function_t *ubf, void *data2);
+VALUE rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd);
 #define RUBY_UBF_IO ((rb_unblock_function_t *)-1)
 #define RUBY_UBF_PROCESS ((rb_unblock_function_t *)-1)
 VALUE rb_mutex_new(void);
 VALUE rb_mutex_locked_p(VALUE mutex);
-VALUE rb_mutex_try_lock(VALUE mutex);
+VALUE rb_mutex_trylock(VALUE mutex);
 VALUE rb_mutex_lock(VALUE mutex);
 VALUE rb_mutex_unlock(VALUE mutex);
 VALUE rb_mutex_sleep(VALUE self, VALUE timeout);

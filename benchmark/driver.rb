@@ -205,7 +205,7 @@ class BenchmarkDriver
     }
 
     if $? != 0
-      raise "Benchmark process exited with abnormal status (#{$?})"
+      raise "\`#{cmd}\' exited with abnormal status (#{$?})"
     end
 
     m.real

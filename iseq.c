@@ -183,11 +183,9 @@ set_relation(rb_iseq_t *iseq, const VALUE parent)
     if (type == ISEQ_TYPE_TOP) {
 	/* toplevel is private */
 	iseq->cref_stack = NEW_BLOCK(rb_cObject);
-	iseq->cref_stack->nd_file = 0;
 	iseq->cref_stack->nd_visi = NOEX_PRIVATE;
 	if (th->top_wrapper) {
 	    NODE *cref = NEW_BLOCK(th->top_wrapper);
-	    cref->nd_file = 0;
 	    cref->nd_visi = NOEX_PRIVATE;
 	    cref->nd_next = iseq->cref_stack;
 	    iseq->cref_stack = cref;
@@ -195,7 +193,6 @@ set_relation(rb_iseq_t *iseq, const VALUE parent)
     }
     else if (type == ISEQ_TYPE_METHOD || type == ISEQ_TYPE_CLASS) {
 	iseq->cref_stack = NEW_BLOCK(0); /* place holder */
-	iseq->cref_stack->nd_file = 0;
     }
     else if (RTEST(parent)) {
 	rb_iseq_t *piseq;
@@ -253,6 +250,7 @@ prepare_iseq_build(rb_iseq_t *iseq,
 
     iseq->compile_data = ALLOC(struct iseq_compile_data);
     MEMZERO(iseq->compile_data, struct iseq_compile_data, 1);
+    iseq->compile_data->err_info = Qnil;
     iseq->compile_data->mark_ary = rb_ary_tmp_new(3);
 
     iseq->compile_data->storage_head = iseq->compile_data->storage_current =
@@ -328,13 +326,13 @@ make_compile_option(rb_compile_option_t *option, VALUE opt)
 	*option = COMPILE_OPTION_DEFAULT;
 
 #define SET_COMPILE_OPTION(o, h, mem) \
-  { VALUE flag = rb_hash_aref(h, ID2SYM(rb_intern(#mem))); \
-      if (flag == Qtrue)  { o->mem = 1; } \
-      else if (flag == Qfalse)  { o->mem = 0; } \
+  { VALUE flag = rb_hash_aref((h), ID2SYM(rb_intern(#mem))); \
+      if (flag == Qtrue)  { (o)->mem = 1; } \
+      else if (flag == Qfalse)  { (o)->mem = 0; } \
   }
 #define SET_COMPILE_OPTION_NUM(o, h, mem) \
   { VALUE num = rb_hash_aref(opt, ID2SYM(rb_intern(#mem))); \
-      if (!NIL_P(num)) o->mem = NUM2INT(num); \
+      if (!NIL_P(num)) (o)->mem = NUM2INT(num); \
   }
 	SET_COMPILE_OPTION(option, opt, inline_const_cache);
 	SET_COMPILE_OPTION(option, opt, peephole_optimization);
@@ -358,9 +356,9 @@ make_compile_option_value(rb_compile_option_t *option)
 {
     VALUE opt = rb_hash_new();
 #define SET_COMPILE_OPTION(o, h, mem) \
-  rb_hash_aset(h, ID2SYM(rb_intern(#mem)), o->mem ? Qtrue : Qfalse)
+  rb_hash_aset((h), ID2SYM(rb_intern(#mem)), (o)->mem ? Qtrue : Qfalse)
 #define SET_COMPILE_OPTION_NUM(o, h, mem) \
-  rb_hash_aset(h, ID2SYM(rb_intern(#mem)), INT2NUM(o->mem))
+  rb_hash_aset((h), ID2SYM(rb_intern(#mem)), INT2NUM((o)->mem))
     {
 	SET_COMPILE_OPTION(option, opt, inline_const_cache);
 	SET_COMPILE_OPTION(option, opt, peephole_optimization);
@@ -436,9 +434,9 @@ rb_iseq_new_with_bopt(NODE *node, VALUE name, VALUE filename, VALUE filepath, VA
 					   bopt, &COMPILE_OPTION_DEFAULT);
 }
 
-#define CHECK_ARRAY(v)   rb_convert_type(v, T_ARRAY, "Array", "to_ary")
-#define CHECK_STRING(v)  rb_convert_type(v, T_STRING, "String", "to_str")
-#define CHECK_SYMBOL(v)  rb_convert_type(v, T_SYMBOL, "Symbol", "to_sym")
+#define CHECK_ARRAY(v)   rb_convert_type((v), T_ARRAY, "Array", "to_ary")
+#define CHECK_STRING(v)  rb_convert_type((v), T_STRING, "String", "to_str")
+#define CHECK_SYMBOL(v)  rb_convert_type((v), T_SYMBOL, "Symbol", "to_sym")
 static inline VALUE CHECK_INTEGER(VALUE v) {(void)NUM2LONG(v); return v;}
 static VALUE
 iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
@@ -1385,7 +1383,7 @@ rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc)
     VALUE a, args = rb_ary_new2(iseq->arg_size);
     ID req, opt, rest, block;
 #define PARAM_TYPE(type) rb_ary_push(a = rb_ary_new2(2), ID2SYM(type))
-#define PARAM_ID(i) iseq->local_table[i]
+#define PARAM_ID(i) iseq->local_table[(i)]
 #define PARAM(i, type) (		      \
 	PARAM_TYPE(type),		      \
 	rb_id2name(PARAM_ID(i)) ?	      \

@@ -1,3 +1,9 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 require 'rubygems/command'
 require 'rubygems/builder'
 
@@ -35,7 +41,7 @@ class Gem::Commands::BuildCommand < Gem::Command
           while not f.eof? and spec = Gem::Specification.from_yaml(f)
             result << spec
           end
-        rescue Gem::EndOfYAMLException => e
+        rescue Gem::EndOfYAMLException
           # OK
         end
       end

@@ -19,37 +19,71 @@ with all sufficient information, see the ChangeLog file.
 * rb_scan_args() is enhanced with support for option hash argument
   extraction.
 
+* ruby_vm_at_exit() added.  This enables extension libs to hook a VM
+  termination.
+
 === Library updates (outstanding ones only)
 
 * builtin classes
 
-  * Kernel
-
-    * Kernel#respond_to? now returns false for protected methods.
-
-  * Float
-    * new constants:
-      * File::NULL
-        name of NULL device.
-    * extended methods:
-      * String#unpack supports endian modifiers
-
-  * String
+  * ARGF
     * new methods:
-      * String#prepend
-
-  * Time
-    * extended methods:
-      * Time#strftime supports %:z and %::z.
-
-  * IO
-    * extended methods:
-      * IO#putc supports multibyte characters
+      * ARGF.print
+      * ARGF.printf
+      * ARGF.putc
+      * ARGF.puts
+      * ARGF.read_nonblock
+      * ARGF.to_write_io
+      * ARGF.write
 
   * Array
-    * extended methods:
+    * extended method:
       * Array#pack supports endian modifiers
 
+  * Encoding
+    * new encodings:
+      * CP950
+      * CP951
+      * UTF-16
+      * UTF-32
+    * change alias:
+      * SJIS is Windows-31J
+
+  * File
+    * new constant:
+      * File::NULL
+        name of NULL device.
+
+  * IO
+    * extended method:
+      * IO#putc supports multibyte characters
+    * new method:
+      * IO#advise
+
+  * Kernel
+    * Kernel#respond_to? now returns false for protected methods.
+    * move #__id__ to BasicObject.
+
+  * Module
+    * new methods:
+      * Module#private_constant
+      * Module#public_constant
+
+  * String
+    * extended method:
+      * String#unpack supports endian modifiers
+    * new method:
+      * String#prepend
+      * String#byteslice
+
+  * Time
+    * extended method:
+      * Time#strftime supports %:z and %::z.
+
+  * Process
+    * Process#maxgroups and Process#maxgroups= now raise NotImplementedError if
+      the platform don't support supplementary groups concept.
+  
 * io/console
   * new methods:
     * IO#noecho {|io| }
@@ -61,37 +95,68 @@ with all sufficient information, see the ChangeLog file.
     * IO#winsize
     * IO.console
 
-* webrick
-  * new method:
-    * WEBrick::HTTPRequest#continue for generating '100 continue' response.
+* net/http
+  * SNI (Server Name Indication) supported for HTTPS. 
+
+* optparse
+  * support for bash/zsh completion.
+
+* RDoc
+  * RDoc has been upgraded to RDoc 3.5.3.  For full release notes see
+    http://docs.seattlerb.org/rdoc/History_txt.html
+
+* rexml
+  * [incompatible] support Ruby native encoding mechanism
+    and iconv dependency is dropped. This means encoding
+    methods (Document#encoding, XMLDecl#encoding,
+    Output#encoding and Source#encoding) return an Encoding
+    object instead of an encoding name.
+
+* Rubygems
+  * Rubygems has been upgraded to rubygems 1.5.0. For full release notes see 
+    http://rubygems.rubyforge.org/rubygems-update/History_txt.html
+
+* stringio
+  * extended method:
+    * StringIO#set_encoding can get 2nd argument and optional hash.
+
+* test/unit
+  * New arguments:
+    * -j N, --jobs=N: Allow run N testcases at once.
+    * --jobs-status: Show status of jobs when parallel running.
+    * --no-retry: Don't retry testcases which failed when parallel running.
+    * --ruby=RUBY: path to ruby for job(worker) process. optional.
 
 * uri
   * new methods:
     * URI::Generic#hostname
     * URI::Generic#hostname=
 
-* stringio
-  * extended methods:
-    * StringIO#set_encoding can get 2nd argument and optional hash.
+* webrick
+  * new method:
+    * WEBrick::HTTPRequest#continue for generating '100 continue' response.
+  * new logging directive:
+    * %{remote}p for remote (client) port number.
 
-* rexml
-  * [incompatible] support Ruby native encoding mechanism
-    and iconv dependency is droped. This means encoding
-    methods (Document#encoding, XMLDecl#encoding,
-    Output#encoding and Source#encoding) return an Encoding
-    object instead of an encoding name.
+* zlib
+  * new methods:
+    * Zlib.deflate
+    * Zlib.inflate
 
 === Language changes
 
-* Regexps now support Unicode 6.0 (new characters and scripts)
+* Regexps now support Unicode 6.0. (new characters and scripts)
+
+* [experimental] Regexps now support Age property.
+  Unlike Perl, current implementation takes interpretation of the
+  interpretation of UTS #18.
+  http://www.unicode.org/reports/tr18/
+
+* Turning on/off indentation warnings with directives.
+  ("# -*- warn-indent: true -*-" / "# -*- warn-indent: false -*-")
 
 === Compatibility issues (excluding feature bug fixes)
 
 * Kernel#respond_to?
 
   See above.
-
-* REXML::Document#encoding, REXML::XMLDecl#encoding,
-  REXML::Output#encoding and REXML::Source#encoding
-
-  Return an Encoding object not encoding name as a String.

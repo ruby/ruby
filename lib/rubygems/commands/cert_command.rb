@@ -1,3 +1,9 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 require 'rubygems/command'
 require 'rubygems/security'
 
@@ -59,21 +65,21 @@ class Gem::Commands::CertCommand < Gem::Command
     add_option('-C', '--certificate CERT',
                'Certificate for --sign command.') do |value, options|
       cert = OpenSSL::X509::Certificate.new(File.read(value))
-      Gem::Security::OPT[:issuer_cert] = cert
+      options[:issuer_cert] = cert
     end
 
     add_option('-K', '--private-key KEY',
                'Private key for --sign command.') do |value, options|
       key = OpenSSL::PKey::RSA.new(File.read(value))
-      Gem::Security::OPT[:issuer_key] = key
+      options[:issuer_key] = key
     end
 
     add_option('-s', '--sign NEWCERT',
                'Sign a certificate with my key and',
                'certificate.') do |value, options|
       cert = OpenSSL::X509::Certificate.new(File.read(value))
-      my_cert = Gem::Security::OPT[:issuer_cert]
-      my_key = Gem::Security::OPT[:issuer_key]
+      my_cert = options[:issuer_cert]
+      my_key = options[:issuer_key]
       cert = Gem::Security.sign_cert(cert, my_key, my_cert)
       File.open(value, 'wb') { |file| file.write(cert.to_pem) }
     end

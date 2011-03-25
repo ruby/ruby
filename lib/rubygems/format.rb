@@ -1,10 +1,14 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
 # See LICENSE.txt for permissions.
 #++
-
-require 'fileutils'
 
 require 'rubygems/package'
 
@@ -18,8 +22,6 @@ class Gem::Format
   attr_accessor :file_entries
   attr_accessor :gem_path
 
-  extend Gem::UserInteraction
-
   ##
   # Constructs a Format representing the gem's data which came from +gem_path+
 
@@ -32,8 +34,6 @@ class Gem::Format
   # representing the data in the gem
 
   def self.from_file_by_path(file_path, security_policy = nil)
-    format = nil
-
     unless File.exist?(file_path)
       raise Gem::Exception, "Cannot load gem at [#{file_path}] in #{Dir.pwd}"
     end
@@ -47,8 +47,13 @@ class Gem::Format
 
       Gem::OldFormat.from_file_by_path file_path
     else
-      open file_path, Gem.binary_mode do |io|
-        from_io io, file_path, security_policy
+      begin
+        open file_path, Gem.binary_mode do |io|
+          from_io io, file_path, security_policy
+        end
+      rescue Gem::Package::TarInvalidError => e
+        message = "corrupt gem (#{e.class}: #{e.message})"
+        raise Gem::Package::FormatError.new(message, file_path)
       end
     end
   end

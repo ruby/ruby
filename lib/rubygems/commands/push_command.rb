@@ -1,3 +1,9 @@
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
 require 'rubygems/command'
 require 'rubygems/local_remote_options'
 require 'rubygems/gemcutter_utilities'
@@ -21,6 +27,14 @@ class Gem::Commands::PushCommand < Gem::Command
   def initialize
     super 'push', description
     add_proxy_option
+    add_key_option
+
+    add_option(
+      '--host HOST',
+      'Push to another gemcutter-compatible host'
+    ) do |value, options|
+      options[:host] = value
+    end
   end
 
   def execute
@@ -29,13 +43,20 @@ class Gem::Commands::PushCommand < Gem::Command
   end
 
   def send_gem name
-    say "Pushing gem to RubyGems.org..."
+    args = [:post, "api/v1/gems"]
 
-    response = rubygems_api_request :post, "api/v1/gems" do |request|
+    args << options[:host] if options[:host]
+
+    if Gem.latest_rubygems_version < Gem::Version.new(Gem::VERSION) then
+      alert_error "Using beta/unreleased version of rubygems. Not pushing."
+      terminate_interaction 1
+    end
+
+    response = rubygems_api_request(*args) do |request|
       request.body = Gem.read_binary name
       request.add_field "Content-Length", request.body.size
       request.add_field "Content-Type",   "application/octet-stream"
-      request.add_field "Authorization",  Gem.configuration.rubygems_api_key
+      request.add_field "Authorization",  api_key
     end
 
     with_response response

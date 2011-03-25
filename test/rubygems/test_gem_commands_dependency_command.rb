@@ -1,7 +1,13 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require 'rubygems/test_case'
 require 'rubygems/commands/dependency_command'
 
-class TestGemCommandsDependencyCommand < RubyGemTestCase
+class TestGemCommandsDependencyCommand < Gem::TestCase
 
   def setup
     super
@@ -26,7 +32,7 @@ class TestGemCommandsDependencyCommand < RubyGemTestCase
       @cmd.execute
     end
 
-    assert_equal "Gem foo-2\n  bar (> 1, runtime)\n  baz (> 1, runtime)\n\n",
+    assert_equal "Gem foo-2\n  bar (> 1)\n  baz (> 1)\n\n",
                  @ui.output
     assert_equal '', @ui.error
   end
@@ -66,7 +72,7 @@ Gem pl-1-x86-linux
   def test_execute_no_match
     @cmd.options[:args] = %w[foo]
 
-    assert_raises MockGemUi::TermError do
+    assert_raises Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end
@@ -77,7 +83,7 @@ Gem pl-1-x86-linux
   end
 
   def test_execute_pipe_format
-    quick_gem 'foo' do |gem|
+    quick_spec 'foo' do |gem|
       gem.add_dependency 'bar', '> 1'
     end
 
@@ -121,6 +127,7 @@ Gem b-2
   end
 
   def test_execute_reverse
+    # FIX: this shouldn't need to write out, but fails if you switch it
     quick_gem 'foo' do |gem|
       gem.add_dependency 'bar', '> 1'
     end
@@ -140,9 +147,9 @@ Gem b-2
 
     expected = <<-EOF
 Gem foo-2
-  bar (> 1, runtime)
+  bar (> 1)
   Used by
-    baz-2 (foo (>= 0, runtime))
+    baz-2 (foo (>= 0))
 
     EOF
 
@@ -155,7 +162,7 @@ Gem foo-2
     @cmd.options[:reverse_dependencies] = true
     @cmd.options[:domain] = :remote
 
-    assert_raises MockGemUi::TermError do
+    assert_raises Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end
@@ -188,7 +195,7 @@ ERROR:  Only reverse dependencies for local gems are supported.
       @cmd.execute
     end
 
-    assert_equal "Gem foo-2\n  bar (> 1, runtime)\n\n", @ui.output
+    assert_equal "Gem foo-2\n  bar (> 1)\n\n", @ui.output
     assert_equal '', @ui.error
   end
 

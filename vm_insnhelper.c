@@ -132,15 +132,15 @@ argument_error(const rb_iseq_t *iseq, int miss_argc, int correct_argc)
 }
 
 #define VM_CALLEE_SETUP_ARG(ret, th, iseq, orig_argc, orig_argv, block) \
-    if (LIKELY(iseq->arg_simple & 0x01)) { \
+    if (LIKELY((iseq)->arg_simple & 0x01)) { \
 	/* simple check */ \
-	if (orig_argc != iseq->argc) { \
-	    argument_error(iseq, orig_argc, iseq->argc); \
+	if ((orig_argc) != (iseq)->argc) { \
+	    argument_error((iseq), (orig_argc), (iseq)->argc); \
 	} \
-	ret = 0; \
+	(ret) = 0; \
     } \
     else { \
-	ret = vm_callee_setup_arg_complex(th, iseq, orig_argc, orig_argv, block); \
+	(ret) = vm_callee_setup_arg_complex((th), (iseq), (orig_argc), (orig_argv), (block)); \
     }
 
 static inline int
@@ -629,7 +629,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 	    else if (!(flag & VM_CALL_OPT_SEND_BIT) && (me->flag & NOEX_MASK) & NOEX_PROTECTED) {
 		VALUE defined_class = me->klass;
 
-		if (TYPE(defined_class) == T_ICLASS) {
+		if (RB_TYPE_P(defined_class, T_ICLASS)) {
 		    defined_class = RBASIC(defined_class)->klass;
 		}
 
@@ -1087,7 +1087,6 @@ vm_cref_push(rb_thread_t *th, VALUE klass, int noex, rb_block_t *blockptr)
 {
     rb_control_frame_t *cfp = vm_get_ruby_level_caller_cfp(th, th->cfp);
     NODE *cref = NEW_BLOCK(klass);
-    cref->nd_file = 0;
     cref->nd_visi = noex;
 
     if (blockptr) {
@@ -1136,13 +1135,15 @@ vm_get_const_base(const rb_iseq_t *iseq, const VALUE *lfp, const VALUE *dfp)
 static inline void
 vm_check_if_namespace(VALUE klass)
 {
+    VALUE str;
     switch (TYPE(klass)) {
       case T_CLASS:
       case T_MODULE:
 	break;
       default:
+	str = rb_inspect(klass);
 	rb_raise(rb_eTypeError, "%s is not a class/module",
-		 RSTRING_PTR(rb_inspect(klass)));
+		 StringValuePtr(str));
     }
 }
 
@@ -1176,6 +1177,7 @@ vm_get_ev_const(rb_thread_t *th, const rb_iseq_t *iseq,
 		    if (val == Qundef) {
 			if (am == klass) break;
 			am = klass;
+			if (is_defined) return 1;
 			rb_autoload_load(klass, id);
 			goto search_continue;
 		    }
@@ -1209,10 +1211,10 @@ vm_get_ev_const(rb_thread_t *th, const rb_iseq_t *iseq,
     else {
 	vm_check_if_namespace(orig_klass);
 	if (is_defined) {
-	    return rb_const_defined_from(orig_klass, id);
+	    return rb_public_const_defined_from(orig_klass, id);
 	}
 	else {
-	    return rb_const_get_from(orig_klass, id);
+	    return rb_public_const_get_from(orig_klass, id);
 	}
     }
 }
@@ -1477,7 +1479,7 @@ vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 
 		    while ((VALUE *)cfp < th->stack + th->stack_size) {
 			if (cfp->dfp == dfp) {
-			    VALUE epc = epc = cfp->pc - cfp->iseq->iseq_encoded;
+			    VALUE epc = cfp->pc - cfp->iseq->iseq_encoded;
 			    rb_iseq_t *iseq = cfp->iseq;
 			    int i;
 

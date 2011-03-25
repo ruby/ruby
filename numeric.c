@@ -97,6 +97,9 @@ round(double x)
 }
 #endif
 
+static VALUE fix_mul(VALUE x, VALUE y);
+static VALUE int_pow(long x, unsigned long y);
+
 static ID id_coerce, id_to_i, id_eq;
 
 VALUE rb_cNumeric;
@@ -1479,23 +1482,28 @@ flo_round(int argc, VALUE *argv, VALUE num)
 {
     VALUE nd;
     double number, f;
-    int ndigits = 0, i;
+    int ndigits = 0;
     long val;
 
     if (argc > 0 && rb_scan_args(argc, argv, "01", &nd) == 1) {
 	ndigits = NUM2INT(nd);
     }
     number  = RFLOAT_VALUE(num);
-    f = 1.0;
-    i = abs(ndigits);
-    while  (--i >= 0)
-	f = f*10.0;
+    f = pow(10, abs(ndigits));
 
     if (isinf(f)) {
 	if (ndigits < 0) number = 0;
     }
     else {
-	if (ndigits < 0) number /= f;
+	if (ndigits < 0) {
+	    if (fabs(number) < f) return INT2FIX(0);
+	    if (!FIXABLE(number)) {
+		VALUE f10 = int_pow(10, -ndigits);
+		num = rb_big_idiv(rb_dbl2big(number), f10);
+		return FIXNUM_P(num) ? fix_mul(num, f10) : rb_big_mul(num, f10);
+	    }
+	    number /= f;
+	}
 	else number *= f;
 	number = round(number);
 	if (ndigits < 0) number *= f;
@@ -3375,6 +3383,7 @@ Init_Numeric(void)
 #elif defined(__BORLANDC__)
     /* Turn off floating point exceptions for overflow, etc. */
     _control87(MCW_EM, MCW_EM);
+    _control87(_control87(0,0),0x1FFF);
 #endif
     id_coerce = rb_intern("coerce");
     id_to_i = rb_intern("to_i");

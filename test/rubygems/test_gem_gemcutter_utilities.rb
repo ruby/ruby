@@ -1,9 +1,15 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require 'rubygems/test_case'
 require 'rubygems'
 require 'rubygems/command'
 require 'rubygems/gemcutter_utilities'
 
-class TestGemGemcutterUtilities < RubyGemTestCase
+class TestGemGemcutterUtilities < Gem::TestCase
 
   def setup
     super
@@ -13,6 +19,35 @@ class TestGemGemcutterUtilities < RubyGemTestCase
 
     @cmd = Gem::Command.new '', 'summary'
     @cmd.extend Gem::GemcutterUtilities
+  end
+
+  def test_api_key
+    keys = { :rubygems_api_key => 'KEY' }
+    FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
+
+    open Gem.configuration.credentials_path, 'w' do |f|
+      f.write keys.to_yaml
+    end
+
+    Gem.configuration.load_api_keys
+
+    assert_equal 'KEY', @cmd.api_key
+  end
+
+  def test_api_key_override
+    keys = { :rubygems_api_key => 'KEY', :other => 'OTHER' }
+    FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
+
+    open Gem.configuration.credentials_path, 'w' do |f|
+      f.write keys.to_yaml
+    end
+
+    Gem.configuration.load_api_keys
+
+    @cmd.add_key_option
+    @cmd.handle_options %w[--key other]
+
+    assert_equal 'OTHER', @cmd.api_key
   end
 
   def test_sign_in
@@ -69,7 +104,7 @@ class TestGemGemcutterUtilities < RubyGemTestCase
   def test_sign_in_with_bad_credentials
     skip 'Always uses $stdin on windows' if Gem.win_platform?
 
-    assert_raises MockGemUi::TermError do
+    assert_raises Gem::MockGemUi::TermError do
       util_sign_in ['Access Denied.', 403, 'Forbidden']
     end
 
@@ -86,17 +121,35 @@ class TestGemGemcutterUtilities < RubyGemTestCase
     if host
       ENV['RUBYGEMS_HOST'] = host
     else
-      host = "https://rubygems.org"
+      host = Gem.host
     end
 
     @fetcher = Gem::FakeFetcher.new
     @fetcher.data["#{host}/api/v1/api_key"] = response
     Gem::RemoteFetcher.fetcher = @fetcher
 
-    @sign_in_ui = MockGemUi.new "#{email}\n#{password}\n"
+    @sign_in_ui = Gem::MockGemUi.new "#{email}\n#{password}\n"
 
     use_ui @sign_in_ui do
       @cmd.sign_in
+    end
+  end
+
+  def test_verify_api_key
+    keys = {:other => 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'}
+    FileUtils.mkdir_p File.dirname(Gem.configuration.credentials_path)
+    File.open Gem.configuration.credentials_path, 'w' do |f|
+      f.write keys.to_yaml
+    end
+    Gem.configuration.load_api_keys
+
+    assert_equal 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903',
+                 @cmd.verify_api_key(:other)
+  end
+
+  def test_verify_missing_api_key
+    assert_raises Gem::MockGemUi::TermError do
+      @cmd.verify_api_key :missing
     end
   end
 

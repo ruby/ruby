@@ -1,4 +1,7 @@
-require_relative 'helper'
+begin
+  require_relative 'helper'
+rescue LoadError
+end
 
 class TestFiddle < Fiddle::TestCase
   def test_constants_match
@@ -16,4 +19,14 @@ class TestFiddle < Fiddle::TestCase
       assert_equal(DL.const_get(name), Fiddle.const_get(name))
     end
   end
-end
+
+  def test_windows_constant
+    require 'rbconfig'
+    if RbConfig::CONFIG['host_os'] =~ /mswin|mingw/
+      assert Fiddle::WINDOWS, "Fiddle::WINDOWS should be 'true' on Windows platforms"
+    else
+      refute Fiddle::WINDOWS, "Fiddle::WINDOWS should be 'false' on non-Windows platforms"
+    end
+  end
+
+end if defined?(Fiddle)

@@ -92,9 +92,9 @@ class RDoc::RubyLex
   end
 
   def inspect # :nodoc:
-    "#<%s:0x%x lex_state %p space_seen %p>" % [
+    "#<%s:0x%x pos %d lex_state %p space_seen %p>" % [
       self.class, object_id,
-      @lex_state, @space_seen,
+      @io.pos, @lex_state, @space_seen,
     ]
   end
 
@@ -149,6 +149,7 @@ class RDoc::RubyLex
     else
       @char_no += 1
     end
+
     c
   end
 
@@ -400,13 +401,15 @@ class RDoc::RubyLex
       |op, io|
       @ltype = "="
       res = ''
-      until (ch = getc) == "\n" do res << ch end
+      nil until (ch = getc) == "\n"
+
       until peek_equal?("=end") && peek(4) =~ /\s/ do
         until (ch = getc) == "\n" do res << ch end
       end
-      res << gets
+      gets # consume =end
+
       @ltype = nil
-      Token(TkRD_COMMENT, res)
+      Token(TkCOMMENT, res)
     end
 
     @OP.def_rule("\n") do |op, io|
@@ -540,12 +543,12 @@ class RDoc::RubyLex
       catch(:RET) do
         if @lex_state == EXPR_ARG
           if @space_seen and peek(0) =~ /[0-9]/
-            throw :RET, identify_number
+            throw :RET, identify_number(op)
           else
             @lex_state = EXPR_BEG
           end
         elsif @lex_state != EXPR_END and peek(0) =~ /[0-9]/
-          throw :RET, identify_number
+          throw :RET, identify_number(op)
         else
           @lex_state = EXPR_BEG
         end
@@ -674,7 +677,7 @@ class RDoc::RubyLex
         tk_c = TkLPAREN
       end
       @indent_stack.push tk_c
-      tk = Token(tk_c)
+      Token tk_c
     end
 
     @OP.def_rule("[]", proc{|op, io| @lex_state == EXPR_FNAME}) do
@@ -822,6 +825,12 @@ class RDoc::RubyLex
     end
   end
 
+  IDENT_RE = if defined? Encoding then
+               /[\w\u0080-\uFFFF]/u
+             else
+               /[\w\x80-\xFF]/
+             end
+
   def identify_identifier
     token = ""
     if peek(0) =~ /[$@]/
@@ -831,15 +840,7 @@ class RDoc::RubyLex
       end
     end
 
-    # HACK to avoid a warning the regexp is hidden behind an eval
-    # HACK need a better way to detect oniguruma
-    @identifier_re ||= if defined? Encoding then
-                         eval '/[\p{Alnum}_]/u'
-                       else
-                         eval '/[\w\x80-\xff]/'
-                       end
-
-    while (ch = getc) =~ @identifier_re
+    while (ch = getc) =~ IDENT_RE do
       print " :#{ch}: " if RDoc::RubyLex.debug?
       token.concat ch
     end
@@ -1011,10 +1012,10 @@ class RDoc::RubyLex
     identify_string(lt, @quoted)
   end
 
-  def identify_number
+  def identify_number(op = "")
     @lex_state = EXPR_END
 
-    num = ''
+    num = op
 
     if peek(0) == "0" && peek(1) !~ /[.eE]/
       num << getc

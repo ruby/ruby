@@ -129,7 +129,7 @@ rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
 
     while (rb_io_check_closed(fptr),
 	   rb_thread_wait_fd(arg.fd),
-	   (slen = BLOCKING_REGION(recvfrom_blocking, &arg)) < 0) {
+	   (slen = BLOCKING_REGION_FD(recvfrom_blocking, &arg)) < 0) {
         if (!rb_io_wait_readable(fptr->fd)) {
             rb_sys_fail("recvfrom(2)");
         }
@@ -380,7 +380,7 @@ rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks)
     if (socks) func = socks_connect_blocking;
 #endif
     for (;;) {
-	status = (int)BLOCKING_REGION(func, &arg);
+	status = (int)BLOCKING_REGION_FD(func, &arg);
 	if (status < 0) {
 	    switch (errno) {
 	      case EAGAIN:
@@ -515,7 +515,7 @@ rsock_s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len)
     arg.len = len;
   retry:
     rb_thread_wait_fd(fd);
-    fd2 = (int)BLOCKING_REGION(accept_blocking, &arg);
+    fd2 = (int)BLOCKING_REGION_FD(accept_blocking, &arg);
     if (fd2 < 0) {
 	switch (errno) {
 	  case EMFILE:

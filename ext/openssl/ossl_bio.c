@@ -39,7 +39,7 @@ ossl_obj2bio(VALUE obj)
     }
     else {
 	StringValue(obj);
-	bio = BIO_new_mem_buf(RSTRING_PTR(obj), RSTRING_LEN(obj));
+	bio = BIO_new_mem_buf(RSTRING_PTR(obj), RSTRING_LENINT(obj));
 	if (!bio) ossl_raise(eOSSLError, NULL);
     }
 

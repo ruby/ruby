@@ -1,9 +1,15 @@
-require_relative 'gemutilities'
+######################################################################
+# This file is imported from the rubygems project.
+# DO NOT make modifications in this repo. They _will_ be reverted!
+# File a patch instead and assign it to Ryan Davis or Eric Hodel.
+######################################################################
+
+require 'rubygems/test_case'
 require 'rubygems/package'
 require 'rubygems/security'
 require 'rubygems/commands/fetch_command'
 
-class TestGemCommandsFetchCommand < RubyGemTestCase
+class TestGemCommandsFetchCommand < Gem::TestCase
 
   def setup
     super
@@ -16,7 +22,7 @@ class TestGemCommandsFetchCommand < RubyGemTestCase
     util_setup_spec_fetcher @a2
 
     @fetcher.data["#{@gem_repo}gems/#{@a2.file_name}"] =
-      File.read(File.join(@gemhome, 'cache', @a2.file_name))
+      File.read(Gem.cache_gem(@a2.file_name, @gemhome))
 
     @cmd.options[:args] = [@a2.name]
 
@@ -35,9 +41,9 @@ class TestGemCommandsFetchCommand < RubyGemTestCase
     util_setup_spec_fetcher @a2, @a2_pre
 
     @fetcher.data["#{@gem_repo}gems/#{@a2.file_name}"] =
-      File.read(File.join(@gemhome, 'cache', @a2.file_name))
+      File.read(Gem.cache_gem(@a2.file_name, @gemhome))
     @fetcher.data["#{@gem_repo}gems/#{@a2_pre.file_name}"] =
-      File.read(File.join(@gemhome, 'cache', @a2_pre.file_name))
+      File.read(Gem.cache_gem(@a2_pre.file_name, @gemhome))
 
     @cmd.options[:args] = [@a2.name]
     @cmd.options[:prerelease] = true
@@ -57,7 +63,7 @@ class TestGemCommandsFetchCommand < RubyGemTestCase
     util_setup_spec_fetcher @a1, @a2
 
     @fetcher.data["#{@gem_repo}gems/#{@a1.file_name}"] =
-      File.read(File.join(@gemhome, 'cache', @a1.file_name))
+      File.read(Gem.cache_gem(@a1.file_name, @gemhome))
 
     @cmd.options[:args] = [@a2.name]
     @cmd.options[:version] = Gem::Requirement.new '1'

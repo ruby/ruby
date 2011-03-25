@@ -25,12 +25,20 @@
 #define EXIT_SUCCESS 0
 #endif
 
+#ifndef WIFEXITED
+#define WIFEXITED(status) 1
+#endif
+
+#ifndef WEXITSTATUS
+#define WEXITSTATUS(status) (status)
+#endif
+
 extern const char ruby_description[];
 
 static const char *
 rb_strerrno(int err)
 {
-#define defined_error(name, num) if (err == num) return name;
+#define defined_error(name, num) if (err == (num)) return (name);
 #define undefined_error(name)
 #include "known_errors.inc"
 #undef defined_error
@@ -80,7 +88,19 @@ compile_snprintf(char *buf, long len, const char *file, int line, const char *fm
     }
 }
 
-static void err_append(const char*);
+static void err_append(const char*, rb_encoding *);
+
+void
+rb_compile_error_with_enc(const char *file, int line, void *enc, const char *fmt, ...)
+{
+    va_list args;
+    char buf[BUFSIZ];
+
+    va_start(args, fmt);
+    compile_snprintf(buf, BUFSIZ, file, line, fmt, args);
+    va_end(args);
+    err_append(buf, (rb_encoding *)enc);
+}
 
 void
 rb_compile_error(const char *file, int line, const char *fmt, ...)
@@ -91,7 +111,7 @@ rb_compile_error(const char *file, int line, const char *fmt, ...)
     va_start(args, fmt);
     compile_snprintf(buf, BUFSIZ, file, line, fmt, args);
     va_end(args);
-    err_append(buf);
+    err_append(buf, NULL);
 }
 
 void
@@ -103,7 +123,7 @@ rb_compile_error_append(const char *fmt, ...)
     va_start(args, fmt);
     vsnprintf(buf, BUFSIZ, fmt, args);
     va_end(args);
-    err_append(buf);
+    err_append(buf, NULL);
 }
 
 static void
@@ -336,7 +356,8 @@ rb_check_type(VALUE x, int t)
 		    etype = "Symbol";
 		}
 		else if (rb_special_const_p(x)) {
-		    etype = RSTRING_PTR(rb_obj_as_string(x));
+		    x = rb_obj_as_string(x);
+		    etype = StringValuePtr(x);
 		}
 		else {
 		    etype = rb_obj_classname(x);
@@ -346,7 +367,10 @@ rb_check_type(VALUE x, int t)
 	    }
 	    type++;
 	}
-	rb_bug("unknown type 0x%x (0x%x given)", t, TYPE(x));
+	if (xt > T_MASK && xt <= 0x3f) {
+	    rb_fatal("unknown type 0x%x (0x%x given, probably comes from extension library for ruby 1.8)", t, xt);
+	}
+	rb_bug("unknown type 0x%x (0x%x given)", t, xt);
     }
 }
 
@@ -499,10 +523,12 @@ static VALUE
 exc_to_s(VALUE exc)
 {
     VALUE mesg = rb_attr_get(exc, rb_intern("mesg"));
+    VALUE r = Qnil;
 
     if (NIL_P(mesg)) return rb_class_name(CLASS_OF(exc));
-    OBJ_INFECT(mesg, exc);
-    return mesg;
+    r = rb_String(mesg);
+    OBJ_INFECT(r, exc);
+    return r;
 }
 
 /*
@@ -710,9 +736,15 @@ exit_status(VALUE exc)
 static VALUE
 exit_success_p(VALUE exc)
 {
-    VALUE status = rb_attr_get(exc, rb_intern("status"));
-    if (NIL_P(status)) return Qtrue;
-    if (status == INT2FIX(EXIT_SUCCESS)) return Qtrue;
+    VALUE status_val = rb_attr_get(exc, rb_intern("status"));
+    int status;
+
+    if (NIL_P(status_val))
+	return Qtrue;
+    status = NUM2INT(status_val);
+    if (WIFEXITED(status) && WEXITSTATUS(status) == EXIT_SUCCESS)
+	return Qtrue;
+
     return Qfalse;
 }
 
@@ -939,7 +971,7 @@ nometh_err_args(VALUE self)
 void
 rb_invalid_str(const char *str, const char *type)
 {
-    VALUE s = rb_str_inspect(rb_str_new2(str));
+    volatile VALUE s = rb_str_inspect(rb_str_new2(str));
 
     rb_raise(rb_eArgError, "invalid value for %s: %s", type, RSTRING_PTR(s));
 }
@@ -1532,15 +1564,26 @@ static VALUE
 make_errno_exc(const char *mesg)
 {
     int n = errno;
-    VALUE arg;
 
     errno = 0;
     if (n == 0) {
 	rb_bug("rb_sys_fail(%s) - errno == 0", mesg ? mesg : "");
     }
+    return rb_syserr_new(n, mesg);
+}
 
+VALUE
+rb_syserr_new(int n, const char *mesg)
+{
+    VALUE arg;
     arg = mesg ? rb_str_new2(mesg) : Qnil;
     return rb_class_new_instance(1, &arg, get_syserr(n));
+}
+
+void
+rb_syserr_fail(int e, const char *mesg)
+{
+    rb_exc_raise(rb_syserr_new(e, mesg));
 }
 
 void
@@ -1553,6 +1596,14 @@ void
 rb_mod_sys_fail(VALUE mod, const char *mesg)
 {
     VALUE exc = make_errno_exc(mesg);
+    rb_extend_object(exc, mod);
+    rb_exc_raise(exc);
+}
+
+void
+rb_mod_syserr_fail(VALUE mod, int e, const char *mesg)
+{
+    VALUE exc = rb_syserr_new(e, mesg);
     rb_extend_object(exc, mod);
     rb_exc_raise(exc);
 }
@@ -1600,22 +1651,23 @@ void
 Init_syserr(void)
 {
     rb_eNOERROR = set_syserr(0, "NOERROR");
-#define defined_error(name, num) set_syserr(num, name);
-#define undefined_error(name) set_syserr(0, name);
+#define defined_error(name, num) set_syserr((num), (name));
+#define undefined_error(name) set_syserr(0, (name));
 #include "known_errors.inc"
 #undef defined_error
 #undef undefined_error
 }
 
 static void
-err_append(const char *s)
+err_append(const char *s, rb_encoding *enc)
 {
     rb_thread_t *th = GET_THREAD();
     VALUE err = th->errinfo;
 
     if (th->mild_compile_error) {
 	if (!RTEST(err)) {
-	    err = rb_exc_new2(rb_eSyntaxError, s);
+	    err = rb_exc_new3(rb_eSyntaxError,
+			      rb_enc_str_new(s, strlen(s), enc));
 	    th->errinfo = err;
 	}
 	else {

@@ -143,7 +143,7 @@ module WEBrick
           setup_header
           @header_part << CRLF
           @header_part.rewind
-        rescue Exception => ex
+        rescue Exception
           raise CGIError, "invalid CGI environment"
         end
       end

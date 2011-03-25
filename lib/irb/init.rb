@@ -207,7 +207,7 @@ module IRB
 	IRB.print_usage
 	exit 0
       when "--"
-	if opt = ARGV.shfit
+	if opt = ARGV.shift
 	  @CONF[:SCRIPT] = opt
 	  $0 = opt
 	end

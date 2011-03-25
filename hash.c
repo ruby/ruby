@@ -14,6 +14,7 @@
 #include "ruby/ruby.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
+#include "ruby/encoding.h"
 #include <errno.h>
 
 #ifdef __APPLE__
@@ -583,10 +584,11 @@ rb_hash_fetch_m(int argc, VALUE *argv, VALUE hash)
     if (!RHASH(hash)->ntbl || !st_lookup(RHASH(hash)->ntbl, key, &val)) {
 	if (block_given) return rb_yield(key);
 	if (argc == 1) {
-	    VALUE desc = rb_protect(rb_inspect, key, 0);
-	    if (NIL_P(desc) || RSTRING_LEN(desc) > 65) {
+	    volatile VALUE desc = rb_protect(rb_inspect, key, 0);
+	    if (NIL_P(desc)) {
 		desc = rb_any_to_s(key);
 	    }
+	    desc = rb_str_ellipsize(desc, 65);
 	    rb_raise(rb_eKeyError, "key not found: %s", RSTRING_PTR(desc));
 	}
 	return if_none;
@@ -1366,10 +1368,13 @@ inspect_i(VALUE key, VALUE value, VALUE str)
     VALUE str2;
 
     if (key == Qundef) return ST_CONTINUE;
+    str2 = rb_inspect(key);
     if (RSTRING_LEN(str) > 1) {
 	rb_str_cat2(str, ", ");
     }
-    str2 = rb_inspect(key);
+    else {
+	rb_enc_copy(str, str2);
+    }
     rb_str_buf_append(str, str2);
     OBJ_INFECT(str, str2);
     rb_str_buf_cat2(str, "=>");
@@ -1663,9 +1668,12 @@ static int
 hash_i(VALUE key, VALUE val, VALUE arg)
 {
     st_index_t *hval = (st_index_t *)arg;
+    st_index_t hdata[2];
 
     if (key == Qundef) return ST_CONTINUE;
-    *hval ^= rb_hash_end(rb_hash_uint(rb_hash_start(rb_hash(key)), rb_hash(val)));
+    hdata[0] = rb_hash(key);
+    hdata[1] = rb_hash(val);
+    *hval ^= st_hash(hdata, sizeof(hdata), 0);
     return ST_CONTINUE;
 }
 
@@ -1678,9 +1686,10 @@ recursive_hash(VALUE hash, VALUE dummy, int recur)
         return LONG2FIX(0);
     hval = RHASH(hash)->ntbl->num_entries;
     if (recur)
-	hval = rb_hash_end(rb_hash_uint(rb_hash_start(rb_hash(rb_cHash)), hval));
+	hval = rb_hash_uint(rb_hash_start(rb_hash(rb_cHash)), hval);
     else
 	rb_hash_foreach(hash, hash_i, (VALUE)&hval);
+    hval = rb_hash_end(hval);
     return INT2FIX(hval);
 }
 
@@ -1778,6 +1787,43 @@ rb_hash_update(VALUE hash1, VALUE hash2)
     hash2 = to_hash(hash2);
     if (rb_block_given_p()) {
 	rb_hash_foreach(hash2, rb_hash_update_block_i, hash1);
+    }
+    else {
+	rb_hash_foreach(hash2, rb_hash_update_i, hash1);
+    }
+    return hash1;
+}
+
+struct update_arg {
+    VALUE hash;
+    rb_hash_update_func *func;
+};
+
+static int
+rb_hash_update_func_i(VALUE key, VALUE value, VALUE arg0)
+{
+    struct update_arg *arg = (struct update_arg *)arg0;
+    VALUE hash = arg->hash;
+
+    if (key == Qundef) return ST_CONTINUE;
+    if (rb_hash_has_key(hash, key)) {
+	value = (*arg->func)(key, rb_hash_aref(hash, key), value);
+    }
+    hash_update(hash, key);
+    st_insert(RHASH(hash)->ntbl, key, value);
+    return ST_CONTINUE;
+}
+
+VALUE
+rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func)
+{
+    rb_hash_modify(hash1);
+    hash2 = to_hash(hash2);
+    if (func) {
+	struct update_arg arg;
+	arg.hash = hash1;
+	arg.func = func;
+	rb_hash_foreach(hash2, rb_hash_update_func_i, (VALUE)&arg);
     }
     else {
 	rb_hash_foreach(hash2, rb_hash_update_i, hash1);
@@ -1966,7 +2012,7 @@ static int path_tainted = -1;
 
 static char **origenviron;
 #ifdef _WIN32
-#define GET_ENVIRON(e) (e = rb_w32_get_environ())
+#define GET_ENVIRON(e) ((e) = rb_w32_get_environ())
 #define FREE_ENVIRON(e) rb_w32_free_environ(e)
 static char **my_environ;
 #undef environ
@@ -1982,11 +2028,11 @@ extern char **environ;
 #define FREE_ENVIRON(e)
 #endif
 #ifdef ENV_IGNORECASE
-#define ENVMATCH(s1, s2) (STRCASECMP(s1, s2) == 0)
-#define ENVNMATCH(s1, s2, n) (STRNCASECMP(s1, s2, n) == 0)
+#define ENVMATCH(s1, s2) (STRCASECMP((s1), (s2)) == 0)
+#define ENVNMATCH(s1, s2, n) (STRNCASECMP((s1), (s2), (n)) == 0)
 #else
-#define ENVMATCH(n1, n2) (strcmp(n1, n2) == 0)
-#define ENVNMATCH(s1, s2, n) (memcmp(s1, s2, n) == 0)
+#define ENVMATCH(n1, n2) (strcmp((n1), (n2)) == 0)
+#define ENVNMATCH(s1, s2, n) (memcmp((s1), (s2), (n)) == 0)
 #endif
 
 static VALUE
@@ -2148,6 +2194,21 @@ envix(const char *nam)
 }
 #endif
 
+#if defined(_WIN32)
+static size_t
+getenvsize(const char* p)
+{
+    const char* porg = p;
+    while (*p++) p += strlen(p) + 1;
+    return p - porg + 1;
+}
+static size_t
+getenvblocksize()
+{
+    return (rb_w32_osver() >= 5) ? 32767 : 5120;
+}
+#endif
+
 void
 ruby_setenv(const char *name, const char *value)
 {
@@ -2160,6 +2221,11 @@ ruby_setenv(const char *name, const char *value)
 	rb_sys_fail("ruby_setenv");
     }
     if (value) {
+	const char* p = GetEnvironmentStringsA();
+	if (!p) goto fail; /* never happen */
+	if (strlen(name) + 2 + strlen(value) + getenvsize(p) >= getenvblocksize()) {
+	    goto fail;  /* 2 for '=' & '\0' */
+	}
 	buf = rb_sprintf("%s=%s", name, value);
     }
     else {

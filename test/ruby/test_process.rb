@@ -384,16 +384,20 @@ class TestProcess < Test::Unit::TestCase
       Process.wait Process.spawn(*ECHO["c"], STDERR=>STDOUT, STDOUT=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644])
       assert_equal("c", File.read("out").chomp)
       File.open("out", "w") {|f|
-        Process.wait Process.spawn(*ECHO["d"], f=>STDOUT, STDOUT=>f)
+        Process.wait Process.spawn(*ECHO["d"], STDOUT=>f)
         assert_equal("d", File.read("out").chomp)
       }
-      Process.wait Process.spawn(*ECHO["e"], STDOUT=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644],
-                                 3=>STDOUT, 4=>STDOUT, 5=>STDOUT, 6=>STDOUT, 7=>STDOUT)
+      opts = {STDOUT=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644]}
+      if /mswin|mingw/ !~ RUBY_PLATFORM
+        opts.merge(3=>STDOUT, 4=>STDOUT, 5=>STDOUT, 6=>STDOUT, 7=>STDOUT)
+      end
+      Process.wait Process.spawn(*ECHO["e"], opts)
       assert_equal("e", File.read("out").chomp)
-      Process.wait Process.spawn(*ECHO["ee"], STDOUT=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644],
-                                 3=>0, 4=>:in, 5=>STDIN,
-                                 6=>1, 7=>:out, 8=>STDOUT,
-                                 9=>2, 10=>:err, 11=>STDERR)
+      opts = {STDOUT=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644]}
+      if /mswin|mingw/ !~ RUBY_PLATFORM
+        opts.merge(3=>0, 4=>:in, 5=>STDIN, 6=>1, 7=>:out, 8=>STDOUT, 9=>2, 10=>:err, 11=>STDERR)
+      end
+      Process.wait Process.spawn(*ECHO["ee"], opts)
       assert_equal("ee", File.read("out").chomp)
       if /mswin|mingw/ !~ RUBY_PLATFORM
         # passing non-stdio fds is not supported on Windows
@@ -1154,6 +1158,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_maxgroups
     assert_kind_of(Integer, Process.maxgroups)
+  rescue NotImplementedError
   end
 
   def test_geteuid
@@ -1185,15 +1190,15 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_wait_and_sigchild
+    if /freebsd/ =~ RUBY_PLATFORM
+      skip "this randomly fails on FreeBSD"
+    end
     signal_received = []
     Signal.trap(:CHLD)  { signal_received << true }
-    pid = fork { sleep 1; exit }
+    pid = fork { sleep 0.1; exit }
     Thread.start { raise }
     Process.wait pid
-    5.times do
-      sleep 1
-      break unless signal_received.empty?
-    end
+    sleep 0.1
     assert_equal [true], signal_received, " [ruby-core:19744]"
   rescue NotImplementedError, ArgumentError
   ensure
@@ -1204,22 +1209,19 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_no_curdir
-    if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
-      skip "removing current directory is not supported"
-    end
     with_tmpchdir {|d|
       Dir.mkdir("vd")
       status = nil
       Dir.chdir("vd") {
         dir = "#{d}/vd"
         # OpenSolaris cannot remove the current directory.
-        system(RUBY, "-e", "Dir.chdir '..'; Dir.rmdir #{dir.dump}")
-        system({"RUBYLIB"=>nil}, RUBY, "-e", "exit true")
+        system(RUBY, "--disable-gems", "-e", "Dir.chdir '..'; Dir.rmdir #{dir.dump}")
+        system({"RUBYLIB"=>nil}, RUBY, "--disable-gems", "-e", "exit true")
         status = $?
       }
       assert(status.success?, "[ruby-dev:38105]")
     }
-  end
+  end unless /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
 
   def test_fallback_to_sh
     feature = '[ruby-core:32745]'
@@ -1234,4 +1236,18 @@ class TestProcess < Test::Unit::TestCase
       assert_equal("2: a b c\n", result, feature)
     end
   end if File.executable?("/bin/sh")
+
+  def test_too_long_path
+    bug4314 = '[ruby-core:34842]'
+    exs = [Errno::ENOENT]
+    exs << Errno::E2BIG if defined?(Errno::E2BIG)
+    assert_raise(*exs, bug4314) {Process.spawn("a" * 10_000_000)}
+  end
+
+  def test_too_long_path2
+    bug4315 = '[ruby-core:34833]'
+    exs = [Errno::ENOENT]
+    exs << Errno::E2BIG if defined?(Errno::E2BIG)
+    assert_raise(*exs, bug4315) {Process.spawn('"a"|'*10_000_000)}
+  end
 end
