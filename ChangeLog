@@ -1,3 +1,22 @@
+Fri Mar 25 19:39:40 2011  Ben Walton <bwalton@artsci.utoronto.ca>
+
+	* test/test_syslog.rb:
+	  Skip syslog tests that rely on LOG_PERROR unless it's defined
+
+	  Instead of checking looking at the platform to determine if the tests
+	  relying on LOG_PERROR should be run, look for the definition of the
+	  constant as this will be robust against all platforms as long as the
+	  underlying syslog.c code sets it up correctly.
+
+	  This specifically addresses failures on Solaris 9.
+
+	  Use LOG_PID instead of LOG_PERROR in Syslog.open test
+
+          LOG_PERROR isn't a POSIX option for syslog, so it fails on platforms
+	  that don't define it.  Solaris 9 and 10 are examples of this.
+
+	  Use LOG_PID instead.
+
 Fri Mar 25 15:42:17 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/sdbm/_sdbm.c (sdbm_open): use size_t.
