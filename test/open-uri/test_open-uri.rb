@@ -522,7 +522,6 @@ class TestOpenURI < Test::Unit::TestCase
   end
 
   def test_find_proxy_case_sensitive_env
-    skip "environment variable name is not case sensitive on Windows" if RUBY_PLATFORM =~ /mswin|mingw/
     with_env('http_proxy'=>'http://127.0.0.1:8080', 'REQUEST_METHOD'=>'GET') {
       assert_equal(URI('http://127.0.0.1:8080'), URI("http://192.0.2.1/").find_proxy)
     }
@@ -532,7 +531,7 @@ class TestOpenURI < Test::Unit::TestCase
     with_env('http_proxy'=>'http://127.0.0.1:8080', 'HTTP_PROXY'=>'http://127.0.0.1:8081', 'REQUEST_METHOD'=>'GET') {
       assert_equal(URI('http://127.0.0.1:8080'), URI("http://192.0.2.1/").find_proxy)
     }
-  end
+  end unless RUBY_PLATFORM =~ /mswin|mingw/
 
   def test_ftp_invalid_request
     assert_raise(ArgumentError) { URI("ftp://127.0.0.1/").read }

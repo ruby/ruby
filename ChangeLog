@@ -1,3 +1,19 @@
+Fri Mar 25 11:49:29 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_process.rb (TestProcess#test_no_curdir): skip silently
+	  on Windows, because this tests a platform specific feature and it'll
+	  never be supported on ruby on Windows.
+
+	* test/ruby/test_dir_m17n.rb
+	  (TestDir_M17N#test_filename_extutf8_invalid,
+	  TestDir_M17N#test_filename_as_bytes_extutf8): ditto.
+
+	* test/open-uri/test_open-uri.rb
+	  (TestOpenURI#test_find_proxy_case_sensitive_env): ditto.
+
+	* test/dl/test_handle.rb (DL::TestHandle#test_NEXT,
+	  DL::TestHandle#test_DEFAULT): ditto.
+
 Thu Mar 24 23:06:29 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_get_ev_const): should not autoload in

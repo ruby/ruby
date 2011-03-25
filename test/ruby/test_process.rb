@@ -1209,9 +1209,6 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_no_curdir
-    if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
-      skip "removing current directory is not supported"
-    end
     with_tmpchdir {|d|
       Dir.mkdir("vd")
       status = nil
@@ -1224,7 +1221,7 @@ class TestProcess < Test::Unit::TestCase
       }
       assert(status.success?, "[ruby-dev:38105]")
     }
-  end
+  end unless /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
 
   def test_fallback_to_sh
     feature = '[ruby-core:32745]'
