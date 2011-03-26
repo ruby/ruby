@@ -1,3 +1,7 @@
+Sat Mar 26 15:16:09 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/getaddrinfo.c: parenthesize macro arguments.
+
 Sat Mar 26 05:27:34 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/date/lib/date/format.rb (DateTime#strftime): removed because
