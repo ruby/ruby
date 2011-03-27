@@ -1,3 +1,7 @@
+Sun Mar 27 23:16:31 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ipsocket.c: parenthesize macro arguments.
+
 Sun Mar 27 16:55:34 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-mode-map): remove unnecessary

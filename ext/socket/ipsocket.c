@@ -139,7 +139,7 @@ static ID id_numeric, id_hostname;
 int
 rsock_revlookup_flag(VALUE revlookup, int *norevlookup)
 {
-#define return_norevlookup(x) {*norevlookup = x; return 1;}
+#define return_norevlookup(x) {*norevlookup = (x); return 1;}
     ID id;
 
     switch (revlookup) {
