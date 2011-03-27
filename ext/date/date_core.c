@@ -1486,8 +1486,6 @@ civil_to_yday(int y, int m, int d)
 static VALUE
 d_lite_yday(VALUE self)
 {
-    int ry, rd;
-
     get_d1(self);
     if (!light_mode_p(dat))
 	return iforward0("yday_r");
@@ -3230,8 +3228,6 @@ dt_lite_year(VALUE self)
 static VALUE
 dt_lite_yday(VALUE self)
 {
-    int ry, rd;
-
     get_dt1(self);
     if (!light_mode_p(dat))
 	return iforward0("yday_r");

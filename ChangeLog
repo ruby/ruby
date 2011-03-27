@@ -1,3 +1,7 @@
+Sun Mar 27 11:18:35 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: removed unused variables.
+
 Sat Mar 26 15:16:09 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/getaddrinfo.c: parenthesize macro arguments.
