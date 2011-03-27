@@ -1,4 +1,8 @@
-Sun Mar 27 15:45:47 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Mar 27 16:55:34 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-mode-map): remove unnecessary
+	  binding. fixes
+	  http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=468952
 
 	* misc/ruby-mode.el: suppress warnings at byte compile.  fixes
 	  http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=502926
