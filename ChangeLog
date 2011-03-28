@@ -1,3 +1,9 @@
+Tue Mar 29 00:03:51 2011 Tajima Akil <artonx@yahoo.co.jp>	
+
+	* test/webrick/test_filehandler.rb (test_short_filename):
+	 read real short filename by cmd because smb mounted files
+	 have different naming convention.
+
 Mon Mar 28 11:38:08 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/date/date_core.c (date_s_today): use int for year.

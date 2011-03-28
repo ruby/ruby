@@ -216,8 +216,12 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
     }
     TestWEBrick.start_httpserver(config) do |server, addr, port, log|
       http = Net::HTTP.new(addr, port)
-
-      req = Net::HTTP::Get.new("/webric~1.cgi/test")
+      if windows?
+        fname = IO.popen("dir /x webrick_long_filename.cgi", "r").read.match(/\s(w.+?cgi)\s/i)[1].downcase
+      else
+        fname = "webric~1.cgi"
+      end
+      req = Net::HTTP::Get.new("/#{fname}/test")
       http.request(req) do |res|
         if windows?
           assert_equal("200", res.code, log.call)
