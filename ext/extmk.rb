@@ -583,6 +583,7 @@ if $configure_only and $command_output
     mf.puts "Q = $(Q1:0=@)"
     mf.puts "ECHO1 = $(V:1=@:)"
     mf.puts "ECHO = $(ECHO1:0=@echo)"
+    mf.puts "MFLAGS = -$(MAKEFLAGS)" if $nmake
     mf.puts
 
     mf.print "extensions ="
