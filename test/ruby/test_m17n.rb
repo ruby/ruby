@@ -1074,6 +1074,12 @@ class TestM17N < Test::Unit::TestCase
     s1 = s("\x81\x40")
     s2 = "@"
     assert_equal(false, s1.end_with?(s2), "#{encdump s1}.end_with?(#{encdump s2})")
+    each_encoding("\u3042\u3044", "\u3044") do |_s1, _s2|
+      assert_equal(true, _s1.end_with?(_s2), "#{encdump _s1}.end_with?(#{encdump _s2})")
+    end
+    each_encoding("\u3042a\u3044", "a\u3044") do |_s1, _s2|
+      assert_equal(true, _s1.end_with?(_s2), "#{encdump _s1}.end_with?(#{encdump _s2})")
+    end
   end
 
   def test_each_line
@@ -1108,6 +1114,10 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(e("\xa1\xa2\xa1\xa3").split(//),
                  [e("\xa1\xa2"), e("\xa1\xa3")],
                  '[ruby-dev:32452]')
+
+    each_encoding("abc,def", ",", "abc", "def") do |str, sep, *expected|
+      assert_equal(expected, str.split(sep, -1))
+    end
   end
 
   def test_nonascii_method_name
@@ -1352,5 +1362,13 @@ class TestM17N < Test::Unit::TestCase
 
   def test_combchar_codepoint
     assert_equal([0x30BB, 0x309A], "\u30BB\u309A".codepoints.to_a)
+  end
+
+  def each_encoding(*strings)
+    Encoding.list.each do |enc|
+      next if enc.dummy?
+      strs = strings.map {|s| s.encode(enc)} rescue next
+      yield *strs
+    end
   end
 end
