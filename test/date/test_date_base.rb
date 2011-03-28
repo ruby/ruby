@@ -194,7 +194,7 @@ class TestDateBase < Test::Unit::TestCase
   end
 
   def test_jd
-    assert_equal(1<<33, Date.jd(1<<33))
+    assert_equal(1<<33, Date.jd(1<<33).jd)
   end
 
   def test_mjd
