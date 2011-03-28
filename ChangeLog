@@ -1,3 +1,15 @@
+Thu Feb  3 07:02:16 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: ARG_ENCODING_NONE regular
+	  expressions can round trip. [ruby-core:34969]
+
+	* test/psych/test_yaml.rb: test for ARG_ENCODING_NONE regex
+
+	* ext/sych/lib/syck/rubytypes.rb: ARG_ENCODING_NONE regular
+	  expressions can round trip.
+
+	* test/syck/test_yaml.rb: test for ARG_ENCODING_NONE regex
+
 Mon Jan 31 21:32:44 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* thread.c (thread_start_func_2): check deadlock condition before
