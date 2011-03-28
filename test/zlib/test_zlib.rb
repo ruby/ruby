@@ -86,7 +86,7 @@ if defined? Zlib
     def test_adler
       z = Zlib::Deflate.new
       z << "foo"
-      s = z.finish
+      z.finish
       assert_equal(0x02820145, z.adler)
     end
 
@@ -95,7 +95,7 @@ if defined? Zlib
       assert_equal(false, z.finished?)
       z << "foo"
       assert_equal(false, z.finished?)
-      s = z.finish
+      z.finish
       assert_equal(true, z.finished?)
       z.close
       assert_raise(Zlib::Error) { z.finished? }
@@ -459,12 +459,40 @@ if defined? Zlib
       t.close
       Zlib::GzipWriter.open(t.path) {|gz| gz.print("foobar") }
 
-      f = Zlib::GzipReader.open(t.path)
-      assert_equal("foo", f.read(3))
-      f.unused
-      assert_equal("bar", f.read)
-      f.unused
-      f.close
+      Zlib::GzipReader.open(t.path) do |f|
+        assert_equal(nil, f.unused)
+        assert_equal("foo", f.read(3))
+        assert_equal(nil, f.unused)
+        assert_equal("bar", f.read)
+        assert_equal(nil, f.unused)
+      end
+    end
+
+    def test_unused2
+      zio = StringIO.new
+
+      io = Zlib::GzipWriter.new zio
+      io.write 'aaaa'
+      io.finish
+
+      io = Zlib::GzipWriter.new zio
+      io.write 'bbbb'
+      io.finish
+
+      zio.rewind
+
+      io = Zlib::GzipReader.new zio
+      assert_equal('aaaa', io.read)
+      unused = io.unused
+      assert_equal(24, unused.bytesize)
+      io.finish
+
+      zio.pos -= unused.length
+
+      io = Zlib::GzipReader.new zio
+      assert_equal('bbbb', io.read)
+      assert_equal(nil, io.unused)
+      io.finish
     end
 
     def test_read

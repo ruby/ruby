@@ -2400,7 +2400,7 @@ gzfile_reader_get_unused(struct gzfile *gz)
     }
     if (NIL_P(gz->z.input)) return Qnil;
 
-    str = rb_str_dup(gz->z.input);
+    str = rb_str_resurrect(gz->z.input);
     OBJ_TAINT(str);  /* for safe */
     return str;
 }
