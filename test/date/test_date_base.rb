@@ -193,6 +193,10 @@ class TestDateBase < Test::Unit::TestCase
     end
   end
 
+  def test_jd
+    assert_equal(1<<33, Date.jd(1<<33))
+  end
+
   def test_mjd
     jd = Date.__send__(:mjd_to_jd, 51321)
     mjd = Date.__send__(:jd_to_mjd, jd)

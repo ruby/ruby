@@ -1321,7 +1321,7 @@ date_s_today(int argc, VALUE *argv, VALUE klass)
     double sg;
     time_t t;
     struct tm tm;
-    long y;
+    int y;
     int m, d;
 
     rb_scan_args(argc, argv, "01", &vsg);
@@ -1343,15 +1343,15 @@ date_s_today(int argc, VALUE *argv, VALUE klass)
 	rb_raise(rb_eArgError, "cannot create");
 
     if (isinf(sg) && sg < 0)
-	return d_lite_s_new_internal(klass, 0, sg, (int)y, m, d,
+	return d_lite_s_new_internal(klass, 0, sg, y, m, d,
 				     LIGHT_MODE | HAVE_CIVIL);
     else {
 	long jd;
 	int ns;
 
-	civil_to_jd((int)y, m, d, sg, &jd, &ns);
+	civil_to_jd(y, m, d, sg, &jd, &ns);
 
-	return d_lite_s_new_internal(klass, jd, sg, (int)y, m, d,
+	return d_lite_s_new_internal(klass, jd, sg, y, m, d,
 				     LIGHT_MODE | HAVE_JD | HAVE_CIVIL);
     }
 }
@@ -3022,8 +3022,8 @@ datetime_s_now(int argc, VALUE *argv, VALUE klass)
 #endif
     time_t sec;
     struct tm tm;
-    long y, sf;
-    int m, d, h, min, s, of;
+    long sf;
+    int y, m, d, h, min, s, of;
 
     rb_scan_args(argc, argv, "01", &vsg);
 
@@ -3067,20 +3067,20 @@ datetime_s_now(int argc, VALUE *argv, VALUE klass)
 
     if (isinf(sg) && sg < 0)
 	return dt_lite_s_new_internal(klass, 0, 0, sf, of, sg,
-				      (int)y, m, d, h, min, s,
+				      y, m, d, h, min, s,
 				      LIGHT_MODE | HAVE_CIVIL | HAVE_TIME);
     else {
 	long jd;
 	int ns;
 
-	civil_to_jd((int)y, m, d, sg, &jd, &ns);
+	civil_to_jd(y, m, d, sg, &jd, &ns);
 
 	return dt_lite_s_new_internal(klass,
 				      jd_local_to_utc(jd,
 						      time_to_df(h, min, s),
 						      of),
 				      0, sf, of, sg,
-				      (int)y, m, d, h, min, s,
+				      y, m, d, h, min, s,
 				      LIGHT_MODE | HAVE_JD |
 				      HAVE_CIVIL | HAVE_TIME);
     }

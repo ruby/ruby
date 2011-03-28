@@ -1,3 +1,9 @@
+Mon Mar 28 11:38:08 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/date/date_core.c (date_s_today): use int for year.
+
+	* ext/date/date_core.c (datetime_s_now): ditto.
+
 Mon Mar 28 11:07:41 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/extmk.rb: set MFLAGS from MAKEFLAGS when using nmake.
