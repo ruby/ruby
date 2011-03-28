@@ -131,7 +131,7 @@ PRE_LIBRUBY_UPDATE = $(MINIRUBY) -e 'ARGV[1] or File.unlink(ARGV[0]) rescue nil'
 TESTSDIR      = $(srcdir)/test
 TESTWORKDIR   = testwork
 
-TESTRUN_SCRIPT = $(srcdir)/test.rb
+TESTRUN_SCRIPT = ./test.rb
 
 BOOTSTRAPRUBY = $(BASERUBY)
 
@@ -900,8 +900,8 @@ info-arch:
 change: PHONY
 	$(BASERUBY) -C "$(srcdir)" ./tool/change_maker.rb $(CHANGES) > change.log
 
-love: ruby
-	@echo Not war.
+love: up all test install test-all
+	@echo love is the all you need
 
 help: PHONY
 	$(MESSAGE_BEGIN) \

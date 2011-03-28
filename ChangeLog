@@ -1,3 +1,7 @@
+Mon Mar 28 11:07:00 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* common.mk (love): all you need is love.
+
 Sun Mar 27 23:16:31 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ipsocket.c: parenthesize macro arguments.
