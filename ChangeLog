@@ -1,3 +1,11 @@
+Mon Jan 31 04:45:12 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* array.c (rb_ary_uniq_bang): call ARY_SET_LEN(ary, 0) before
+	  rb_resize_capa because rb_resize_capa expects resized length is
+	  smaller than current array length. call rb_ary_unshare before
+	  rb_resize_capa because rb_resize_capa losts the reference to
+	  original shared array. [ruby-core:34997]
+
 Sun Jan 30 16:15:20 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/dl/test_dl2.rb (TestDL#test_sin): math functions do not

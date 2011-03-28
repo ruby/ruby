@@ -3430,8 +3430,12 @@ rb_ary_uniq_bang(VALUE ary)
 	if (RARRAY_LEN(ary) == (i = RHASH_SIZE(hash))) {
 	    return Qnil;
 	}
-	ary_resize_capa(ary, i);
 	ARY_SET_LEN(ary, 0);
+	if (ARY_SHARED_P(ary) && !ARY_EMBED_P(ary)) {
+	    rb_ary_unshare(ary);
+	    FL_SET_EMBED(ary);
+	}
+	ary_resize_capa(ary, i);
 	st_foreach(RHASH_TBL(hash), push_value, ary);
     }
     else {
