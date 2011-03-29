@@ -2360,7 +2360,10 @@ rb_num2dbl(VALUE val)
 VALUE
 rb_String(VALUE val)
 {
-    return rb_convert_type(val, T_STRING, "String", "to_s");
+    VALUE tmp = rb_check_string_type(val);
+    if (NIL_P(tmp))
+	tmp = rb_convert_type(val, T_STRING, "String", "to_s");
+    return tmp;
 }
 
 
