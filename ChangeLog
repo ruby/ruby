@@ -1,6 +1,6 @@
 Tue Mar 29 21:51:31 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
-	* string.c (rb_String): Kernel#String should call to_str before to_s.
+	* object.c (rb_String): Kernel#String should call to_str before to_s.
 
 Tue Mar 29 10:28:08 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
