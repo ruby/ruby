@@ -30,7 +30,7 @@ struct StringIO {
 
 static void strio_init(int, VALUE *, struct StringIO *);
 
-#define IS_STRIO(obj) (rb_typeddata_is_kind_of(obj, &strio_data_type))
+#define IS_STRIO(obj) (rb_typeddata_is_kind_of((obj), &strio_data_type))
 #define error_inval(msg) (errno = EINVAL, rb_sys_fail(msg))
 
 static struct StringIO *
@@ -80,7 +80,7 @@ static const rb_data_type_t strio_data_type = {
     },
 };
 
-#define check_strio(self) ((struct StringIO*)rb_check_typeddata(self, &strio_data_type))
+#define check_strio(self) ((struct StringIO*)rb_check_typeddata((self), &strio_data_type))
 
 static struct StringIO*
 get_strio(VALUE self)

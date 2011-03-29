@@ -1,3 +1,7 @@
+Wed Mar 30 00:24:53 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/stringio/stringio.c: parenthesize macro arguments.
+
 Tue Mar 29 21:51:31 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* object.c (rb_String): Kernel#String should call to_str before to_s.
