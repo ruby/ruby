@@ -1,3 +1,9 @@
+Tue Mar 29 10:28:08 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/webrick/test_filehandler.rb
+	  (WEBrick::TestFileHandler#test_short_filename): the cgi doesn't exist
+	  on current directory.
+
 Tue Mar 29 05:19:57 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/raddrinfo.c: parenthesize macro arguments.
