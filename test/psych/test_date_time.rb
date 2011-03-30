@@ -1,4 +1,4 @@
-require_relative 'helper'
+require 'psych/helper'
 require 'date'
 
 module Psych

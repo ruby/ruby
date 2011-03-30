@@ -2,7 +2,7 @@
 #												vim:sw=4:ts=4
 # $Id$
 #
-require_relative 'helper'
+require 'psych/helper'
 
 # [ruby-core:01946]
 module Psych_Tests
