@@ -99,7 +99,7 @@ class TestPsych < Psych::TestCase
 
   def test_add_builtin_type
     got = nil
-    Psych.add_builtin_type 'omap', do |type, val|
+    Psych.add_builtin_type 'omap' do |type, val|
       got = val
     end
     Psych.load('--- !!omap hello')
