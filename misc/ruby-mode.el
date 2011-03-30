@@ -910,7 +910,7 @@ An end of a defun is found by moving forward from the beginning of one."
   (forward-line 1))
 
 (defun ruby-move-to-block (n)
-  (let (start pos done down)
+  (let (start pos done down (orig (point)))
     (setq start (ruby-calculate-indent))
     (setq down (looking-at (if (< n 0) ruby-block-end-re
                              (concat "\\<\\(" ruby-block-beg-re "\\)\\>"))))
@@ -936,8 +936,18 @@ An end of a defun is found by moving forward from the beginning of one."
           (save-excursion
             (back-to-indentation)
             (if (looking-at (concat "\\<\\(" ruby-block-mid-re "\\)\\>"))
-                (setq done nil))))))
-  (back-to-indentation))
+                (setq done nil)))))
+    (back-to-indentation)
+    (when (< n 0)
+      (let ((eol (point-at-eol)) state next)
+	(if (< orig eol) (setq eol orig))
+	(setq orig (point))
+	(while (and (setq next (apply 'ruby-parse-partial eol state))
+		    (< (point) eol))
+	  (setq state next))
+	(when (cdaadr state)
+	  (goto-char (cdaadr state)))
+	(backward-word)))))
 
 (defun-region-command ruby-beginning-of-block (&optional arg)
   "Move backward to next beginning-of-block"

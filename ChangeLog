@@ -1,3 +1,8 @@
+Wed Mar 30 22:54:24 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-move-to-block): move to opening of
+	  block.
+
 Wed Mar 30 14:35:15 2011  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_insnhelper.h (COPY_CREF): should copy
