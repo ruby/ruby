@@ -1,4 +1,6 @@
-Wed Mar 30 22:54:24 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Mar 30 22:55:47 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-toggle-block): toggle do/end and {}.
 
 	* misc/ruby-mode.el (ruby-move-to-block): move to opening of
 	  block.

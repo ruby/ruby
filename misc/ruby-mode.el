@@ -172,6 +172,7 @@
   (define-key ruby-mode-map "\t" 'ruby-indent-command)
   (define-key ruby-mode-map "\C-c\C-e" 'ruby-insert-end)
   (define-key ruby-mode-map "\C-j" 'ruby-reindent-then-newline-and-indent)
+  (define-key ruby-mode-map "\C-c{" 'ruby-toggle-block)
   (define-key ruby-mode-map "\C-c\C-u" 'uncomment-region))
 
 (defvar ruby-mode-syntax-table nil
@@ -1160,6 +1161,44 @@ balanced expression is found."
           (if mname
               (if mlist (concat mlist mname) mname)
             mlist)))))
+
+(defun ruby-brace-to-do-end ()
+  (when (looking-at "{")
+    (let ((orig (point)) (end (progn (ruby-forward-sexp) (point))))
+      (when (eq (char-before) ?\})
+	(delete-char -1)
+	(if (eq (char-syntax (char-before)) ?w)
+	    (insert " "))
+	(insert "end")
+	(if (eq (char-syntax (char-after)) ?w)
+	    (insert " "))
+	(goto-char orig)
+	(delete-char 1)
+	(if (eq (char-syntax (char-before)) ?w)
+	    (insert " "))
+	(insert "do")
+	(if (eq (char-syntax (char-after)) ?w)
+	    (insert " "))
+	t))))
+
+(defun ruby-do-end-to-brace ()
+  (when (and (or (bolp)
+		 (not (memq (char-syntax (char-before)) '(?w ?_))))
+	     (looking-at "\\<do\\(\\s \\|$\\)"))
+    (let ((orig (point)) (end (progn (ruby-forward-sexp) (point))))
+      (backward-char 3)
+      (when (looking-at ruby-block-end-re)
+	(delete-char 3)
+	(insert "}")
+	(goto-char orig)
+	(delete-char 2)
+	(insert "{")
+	t))))
+
+(defun ruby-toggle-block ()
+  (interactive)
+  (or (ruby-brace-to-do-end)
+      (ruby-do-end-to-brace)))
 
 (eval-when-compile
   (if (featurep 'font-lock)
