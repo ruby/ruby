@@ -1,3 +1,9 @@
+Wed Mar 30 14:35:15 2011  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_insnhelper.h (COPY_CREF): should copy
+	  the NODE_FL_CREF_PUSHED_BY_EVAL flag to hide constants from
+	  methods defined by class_eval.  [ruby-dev:43365]
+
 Wed Mar 30 00:24:53 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/stringio/stringio.c: parenthesize macro arguments.

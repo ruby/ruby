@@ -154,6 +154,9 @@ extern VALUE ruby_vm_const_missing_count;
   (c1)->nd_clss = __tmp_c2->nd_clss; \
   (c1)->nd_visi = __tmp_c2->nd_visi;\
   (c1)->nd_next = __tmp_c2->nd_next; \
+  if (__tmp_c2->flags & NODE_FL_CREF_PUSHED_BY_EVAL) { \
+      (c1)->flags |= NODE_FL_CREF_PUSHED_BY_EVAL; \
+  } \
 } while (0)
 
 #define CALL_METHOD(num, blockptr, flag, id, me, recv) do { \

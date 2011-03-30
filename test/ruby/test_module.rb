@@ -1000,4 +1000,20 @@ class TestModule < Test::Unit::TestCase
     INPUT
     assert_in_out_err([], src, %w(Object :ok), [])
   end
+
+  module A
+    B = 42
+  end
+
+  def test_constant_lookup_in_method_defined_by_class_eval
+    A.class_eval do
+      def self.f
+        B
+      end
+    end
+
+    assert_raise(NameError) do
+      A.f
+    end
+  end
 end
