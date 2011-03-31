@@ -1049,4 +1049,23 @@ class TestModule < Test::Unit::TestCase
     INPUT
     assert_in_out_err([], src, ["uninitialized constant A"], [])
   end
+
+  def test_constant_lookup_in_module_in_class_eval
+    src = <<-INPUT
+      class A
+        B = 42
+      end
+
+      A.class_eval do
+        module C
+          begin
+            B
+          rescue NameError
+            puts "NameError"
+          end
+        end
+      end
+    INPUT
+    assert_in_out_err([], src, ["NameError"], [])
+  end
 end

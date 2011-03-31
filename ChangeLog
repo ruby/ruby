@@ -1,3 +1,8 @@
+Thu Mar 31 18:06:12 2011  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_get_ev_const): should ignore crefs with
+	  the NODE_FL_CREF_PUSHED_BY_EVAL flag.
+
 Thu Mar 31 16:49:56 2011  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_get_ev_const): search root cref properly.

@@ -1164,7 +1164,12 @@ vm_get_ev_const(rb_thread_t *th, const rb_iseq_t *iseq,
 	}
 	cref = root_cref;
 	while (cref && cref->nd_next) {
-	    klass = cref->nd_clss;
+	    if (cref->flags & NODE_FL_CREF_PUSHED_BY_EVAL) {
+		klass = Qnil;
+	    }
+	    else {
+		klass = cref->nd_clss;
+	    }
 	    cref = cref->nd_next;
 
 	    if (!NIL_P(klass)) {
