@@ -1,3 +1,8 @@
+Thu Mar 31 23:15:46 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-brace-to-do-end, ruby-do-end-to-brace):
+	  adjust space between block beginning and block arguments
+
 Thu Mar 31 20:42:05 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/strscan/strscan.c:  parenthesize macro arguments.

@@ -1177,8 +1177,9 @@ balanced expression is found."
 	(if (eq (char-syntax (char-before)) ?w)
 	    (insert " "))
 	(insert "do")
-	(if (eq (char-syntax (char-after)) ?w)
-	    (insert " "))
+	(when (looking-at "\\sw\\||")
+	  (insert " ")
+	  (backward-char))
 	t))))
 
 (defun ruby-do-end-to-brace ()
@@ -1193,6 +1194,8 @@ balanced expression is found."
 	(goto-char orig)
 	(delete-char 2)
 	(insert "{")
+	(if (looking-at "\\s +|")
+	    (delete-char (- (match-end 0) (match-beginning 0) 1)))
 	t))))
 
 (defun ruby-toggle-block ()
