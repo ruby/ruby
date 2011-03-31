@@ -1,3 +1,7 @@
+Thu Mar 31 20:42:05 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/strscan/strscan.c:  parenthesize macro arguments.
+
 Thu Mar 31 18:06:12 2011  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_get_ev_const): should ignore crefs with

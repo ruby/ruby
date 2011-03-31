@@ -51,8 +51,8 @@ struct strscanner
 #define EOS_P(s) ((s)->curr >= RSTRING_LEN(p->str))
 
 #define GET_SCANNER(obj,var) do {\
-    Data_Get_Struct(obj, struct strscanner, var);\
-    if (NIL_P(var->str)) rb_raise(rb_eArgError, "uninitialized StringScanner object");\
+    Data_Get_Struct((obj), struct strscanner, (var));\
+    if (NIL_P((var)->str)) rb_raise(rb_eArgError, "uninitialized StringScanner object");\
 } while (0)
 
 /* =======================================================================
