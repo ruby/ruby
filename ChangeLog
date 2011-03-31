@@ -53,7 +53,7 @@ Tue Mar 29 05:19:57 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/raddrinfo.c: parenthesize macro arguments.
 
-Tue Mar 29 00:03:51 2011 Tajima Akil <artonx@yahoo.co.jp>	
+Tue Mar 29 00:03:51 2011 Tajima Akio <artonx@yahoo.co.jp>	
 
 	* test/webrick/test_filehandler.rb (test_short_filename):
 	 read real short filename by cmd because smb mounted files
