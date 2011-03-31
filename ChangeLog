@@ -1,3 +1,8 @@
+Thu Mar 31 16:49:56 2011  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_get_ev_const): search root cref properly.
+	  [ruby-dev:43365]
+
 Thu Mar 31 14:50:25 2011  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* eval.c (rb_mod_s_constants): should ignore crefs with

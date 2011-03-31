@@ -1006,19 +1006,47 @@ class TestModule < Test::Unit::TestCase
     assert_in_out_err([], src, %w(Object :ok), [])
   end
 
-  module A
-    B = 42
+  def test_constant_lookup_in_method_defined_by_class_eval
+    src = <<-INPUT
+      class A
+        B = 42
+      end
+
+      A.class_eval do
+        def self.f
+          B
+        end
+
+        def f
+          B
+        end
+      end
+
+      begin
+        A.f
+      rescue NameError
+        puts "A.f"
+      end
+      begin
+        A.new.f
+      rescue NameError
+        puts "A.new.f"
+      end
+    INPUT
+    assert_in_out_err([], src, %w(A.f A.new.f), [])
   end
 
-  def test_constant_lookup_in_method_defined_by_class_eval
-    A.class_eval do
-      def self.f
-        B
+  def test_constant_lookup_in_toplevel_class_eval
+    src = <<-INPUT
+      module X
+        A = 123
       end
-    end
-
-    assert_raise(NameError) do
-      A.f
-    end
+      begin
+        X.class_eval { A }
+      rescue NameError => e
+        puts e
+      end
+    INPUT
+    assert_in_out_err([], src, ["uninitialized constant A"], [])
   end
 end

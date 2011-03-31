@@ -137,7 +137,7 @@ assert_equal %q{C}, %q{
   }
   C.new.m
 }
-assert_equal %q{C}, %q{
+assert_equal %q{top}, %q{
   Const = :top
   class C
     Const = :C
