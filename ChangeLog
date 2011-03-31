@@ -1,3 +1,8 @@
+Thu Mar 31 14:50:25 2011  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c (rb_mod_s_constants): should ignore crefs with
+	  the NODE_FL_CREF_PUSHED_BY_EVAL flag.
+
 Wed Mar 30 22:55:47 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-toggle-block): toggle do/end and {}.

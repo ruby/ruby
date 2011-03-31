@@ -322,7 +322,8 @@ rb_mod_s_constants(int argc, VALUE *argv, VALUE mod)
 
     while (cref) {
 	klass = cref->nd_clss;
-	if (!NIL_P(klass)) {
+	if (!(cref->flags & NODE_FL_CREF_PUSHED_BY_EVAL) &&
+	    !NIL_P(klass)) {
 	    data = rb_mod_const_at(cref->nd_clss, data);
 	    if (!cbase) {
 		cbase = klass;

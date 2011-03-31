@@ -403,6 +403,11 @@ class TestModule < Test::Unit::TestCase
       p Module.constants - ary, Module.constants(true), Module.constants(false)
     INPUT
     assert_in_out_err([], src, %w([:M] [:WALTER] []), [])
+
+    klass = Class.new do
+      const_set(:X, 123)
+    end
+    assert_equal(false, klass.class_eval { Module.constants }.include?(:X))
   end
 
   module M1
