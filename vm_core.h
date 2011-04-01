@@ -703,9 +703,9 @@ void rb_thread_lock_unlock(rb_thread_lock_t *);
 void rb_thread_lock_destroy(rb_thread_lock_t *);
 
 #define RUBY_VM_CHECK_INTS_TH(th) do { \
-  if (UNLIKELY((th)->interrupt_flag)) { \
-    rb_threadptr_execute_interrupts(th); \
-  } \
+    if (UNLIKELY((th)->interrupt_flag)) { \
+	rb_threadptr_execute_interrupts(th); \
+    } \
 } while (0)
 
 #define RUBY_VM_CHECK_INTS() \

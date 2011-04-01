@@ -1,3 +1,8 @@
+Fri Apr  1 13:19:20 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_core.h (RUBY_VM_CHECK_INTS_TH): merge a patch by ko1
+	  in [ruby-dev:43373].
+
 Thu Mar 31 23:15:46 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-brace-to-do-end, ruby-do-end-to-brace):
