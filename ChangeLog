@@ -1,3 +1,7 @@
+Fri Apr  1 22:25:50 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/syslog/syslog.c: parenthesize macro arguments.
+
 Fri Apr 1 18:53:06 2011  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/webrick/cookie.rb (WEBrick::Cookie.parse): 'white space is

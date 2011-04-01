@@ -333,7 +333,7 @@ static VALUE mSyslog_instance(VALUE self)
 #define define_syslog_shortcut_method(pri, name) \
 static VALUE mSyslog_##name(int argc, VALUE *argv, VALUE self) \
 { \
-    syslog_write(pri, argc, argv); \
+    syslog_write((pri), argc, argv); \
 \
     return self; \
 }
