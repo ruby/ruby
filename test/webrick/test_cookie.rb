@@ -54,6 +54,26 @@ class TestWEBrickCookie < Test::Unit::TestCase
     assert_equal("9865ecfd514be7f7", cookies[1].value)
   end
 
+  def test_parse_non_whitespace
+    data = [
+      '$Version="1";', 
+      'Customer="WILE_E_COYOTE";$Path="/acme";',
+      'Part_Number="Rocket_Launcher_0001";$Path="/acme";',
+      'Shipping="FedEx";$Path="/acme"'
+    ].join
+    cookies = WEBrick::Cookie.parse(data)
+    assert_equal(1, cookies[0].version)
+    assert_equal("Customer", cookies[0].name)
+    assert_equal("WILE_E_COYOTE", cookies[0].value)
+    assert_equal("/acme", cookies[0].path)
+    assert_equal(1, cookies[1].version)
+    assert_equal("Part_Number", cookies[1].name)
+    assert_equal("Rocket_Launcher_0001", cookies[1].value)
+    assert_equal(1, cookies[2].version)
+    assert_equal("Shipping", cookies[2].name)
+    assert_equal("FedEx", cookies[2].value)
+  end
+
   def test_parse_set_cookie
     data = %(Customer="WILE_E_COYOTE"; Version="1"; Path="/acme")
     cookie = WEBrick::Cookie.parse_set_cookie(data)

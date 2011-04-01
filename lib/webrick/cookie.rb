@@ -57,7 +57,7 @@ module WEBrick
         ret = []
         cookie = nil
         ver = 0
-        str.split(/[;,]\s+/).each{|x|
+        str.split(/[;,]\s*/).each{|x|
           key, val = x.split(/=/,2)
           val = val ? HTTPUtils::dequote(val) : ""
           case key
