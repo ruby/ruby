@@ -1,3 +1,8 @@
+Sun Apr  3 21:33:58 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: disable fdatasync again on Mac OS X.
+	  [ruby-core:35493][Bug #4500]
+
 Sun Apr  3 21:16:20 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (io_reopen): IO#close releases GVL if possible.

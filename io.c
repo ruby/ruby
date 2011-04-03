@@ -1414,8 +1414,9 @@ rb_io_fsync(VALUE io)
  *
  *  Immediately writes all buffered data in <em>ios</em> to disk.
  *
- *  <code>NotImplementedError</code> is raised
- *  if the underlying operating system does not support <em>fdatasync(2)</em>.
+ *  If the underlying operating system does not support <em>fdatasync(2)</em>,
+ *  <code>IO#fsync</code> is called instead (which might raise a
+ *  <code>NotImplementedError</code>).
  */
 
 static VALUE
