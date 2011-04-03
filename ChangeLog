@@ -1,3 +1,7 @@
+Sun Apr  3 22:10:09 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/zlib/zlib.c: parenthesize macro arguments.
+
 Sun Apr  3 21:33:58 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: disable fdatasync again on Mac OS X.
