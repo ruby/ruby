@@ -3489,6 +3489,45 @@ finish_writeconv_sync(VALUE arg)
     return finish_writeconv(p->fptr, p->noalloc);
 }
 
+static VALUE
+nogvl_close(void *ptr)
+{
+    int *fd = ptr;
+
+    return (VALUE)close(*fd);
+}
+
+static int
+maygvl_close(int fd, int keepgvl)
+{
+    if (keepgvl)
+	return close(fd);
+
+    /*
+     * close() may block for certain file types (NFS, SO_LINGER sockets,
+     * inotify), so let other threads run.
+     */
+    return (int)rb_thread_blocking_region(nogvl_close, &fd, RUBY_UBF_IO, 0);
+}
+
+static VALUE
+nogvl_fclose(void *ptr)
+{
+    FILE *file = ptr;
+
+    return (VALUE)fclose(file);
+}
+
+static int
+maygvl_fclose(FILE *file, int keepgvl)
+{
+    if (keepgvl)
+	return fclose(file);
+
+    return (int)rb_thread_blocking_region(nogvl_fclose, file, RUBY_UBF_IO, 0);
+}
+
+
 static void
 fptr_finalize(rb_io_t *fptr, int noraise)
 {
@@ -3520,15 +3559,15 @@ fptr_finalize(rb_io_t *fptr, int noraise)
     if (fptr->stdio_file) {
         /* fptr->stdio_file is deallocated anyway
          * even if fclose failed.  */
-        if (fclose(fptr->stdio_file) < 0 && NIL_P(err))
+	if ((maygvl_fclose(fptr->stdio_file, noraise) < 0) && NIL_P(err))
             err = noraise ? Qtrue : INT2NUM(errno);
     }
     else if (0 <= fptr->fd) {
         /* fptr->fd may be closed even if close fails.
          * POSIX doesn't specify it.
          * We assumes it is closed.  */
-        if (close(fptr->fd) < 0 && NIL_P(err))
-            err = noraise ? Qtrue : INT2NUM(errno);
+	if ((maygvl_close(fptr->fd, noraise) < 0) && NIL_P(err))
+	    err = noraise ? Qtrue : INT2NUM(errno);
     }
   skip_fd_close:
     fptr->fd = -1;
@@ -5784,7 +5823,7 @@ io_reopen(VALUE io, VALUE nfile)
 		rb_sys_fail_path(orig->pathv);
 	}
 	else {
-            fclose(fptr->stdio_file);
+	    maygvl_fclose(fptr->stdio_file, 0);
             fptr->stdio_file = 0;
             fptr->fd = -1;
             if (dup2(fd2, fd) < 0)

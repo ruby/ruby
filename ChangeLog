@@ -1,3 +1,17 @@
+Sun Apr  3 21:16:20 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (io_reopen): IO#close releases GVL if possible.
+	  close() may block for certain file types (NFS, SO_LINGER
+	  sockets, inotify), so let other threads run. The patch was
+	  created by Eric Wong [ruby-core:35555][Bug #4527]
+
+	* io.c (fptr_finalize): ditto.
+
+	* io.c (maygvl_fclose): new.
+	* io.c (nogvl_fclose): ditto.
+	* io.c (maygvl_close): ditto.
+	* io.c (nogvl_close): ditto.
+
 Fri Apr  1 22:25:50 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/syslog/syslog.c: parenthesize macro arguments.
