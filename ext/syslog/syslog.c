@@ -178,7 +178,7 @@ static VALUE mSyslog_open(int argc, VALUE *argv, VALUE self)
 }
 
 /* call-seq:
- *   open(ident, options, facility) => syslog
+ *   reopen(ident, options, facility) => syslog
  *
  * :yields: syslog
  *
@@ -193,7 +193,9 @@ static VALUE mSyslog_reopen(int argc, VALUE *argv, VALUE self)
     return mSyslog_open(argc, argv, self);
 }
 
-/*
+/* call-seq:
+ *   opened?
+ *
  * Returns true if the syslog is open.
  */
 static VALUE mSyslog_isopen(VALUE self)
@@ -231,7 +233,7 @@ static VALUE mSyslog_get_mask(VALUE self)
 }
 
 /* call-seq:
- *   mask(priority_mask)
+ *   mask=(priority_mask)
  *
  * Sets the log priority mask. A method LOG_UPTO is defined to make it easier
  * to set mask values. Example:
@@ -258,12 +260,12 @@ static VALUE mSyslog_set_mask(VALUE self, VALUE mask)
 }
 
 /* call-seq:
- *   log(priority, format-string, ... )
+ *   log(priority, format_string, *format_args)
  *
  * Log a message with the specified priority. Example:
  *
- *   log(Syslog::LOG_CRIT, "Out of disk space")
- *   log(Syslog::LOG_CRIT, "User %s logged in", ENV['USER'])
+ *   Syslog.log(Syslog::LOG_CRIT, "Out of disk space")
+ *   Syslog.log(Syslog::LOG_CRIT, "User %s logged in", ENV['USER'])
  *
  * The priority levels, in descending order, are:
  *
@@ -275,6 +277,12 @@ static VALUE mSyslog_set_mask(VALUE self, VALUE mask)
  * LOG_NOTICE::  A normal but significant condition occurred
  * LOG_INFO::    Informational message
  * LOG_DEBUG::   Debugging information
+ *
+ * Each priority level also has a shortcut method that logs with it's named priority.
+ * As an example, the two following statements would produce the same result:
+ *
+ *   Syslog.log(Syslog::LOG_ALERT, "Out of memory")
+ *   Syslog.alert("Out of memory")
  *
  * Format strings are as for printf/sprintf, except that in addition %m is
  * replaced with the error message string that would be returned by

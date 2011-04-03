@@ -1,3 +1,8 @@
+Sun Apr  3 22:52:22 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* ext/syslog/syslog.c: improve rdoc.
+	  a patch by Jonas Pfenniger. [ruby-core:35592] fixes #4545
+
 Sun Apr  3 22:10:09 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/zlib/zlib.c: parenthesize macro arguments.
