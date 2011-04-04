@@ -1,3 +1,8 @@
+Mon Apr  4 11:50:40 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/test_tempfile.rb: simply ignore platform depedent testcases
+	  instead of skipping.
+
 Sun Apr  3 22:52:22 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* ext/syslog/syslog.c: improve rdoc.
