@@ -1,3 +1,11 @@
+Mon Apr  4 22:02:16 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ext/io/nonblock/nonblock.c (io_nonblock_set): Avoid F_SETFL if
+	  we're not changing the O_NONBLOCK bit. F_SETFL is an expensive
+	  operation since it needs to affect all processes with the same
+	  file object.
+	  The patch is written by Eric Wong. [ruby-core:35556]
+
 Mon Apr  4 21:41:26 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (rb_io_syswrite): While local FS writes are usually

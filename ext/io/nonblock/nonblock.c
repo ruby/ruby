@@ -47,10 +47,16 @@ rb_io_nonblock_p(VALUE io)
 static void
 io_nonblock_set(int fd, int f, int nb)
 {
-    if (nb)
+    if (nb) {
+	if ((f & O_NONBLOCK) != 0)
+	    return;
 	f |= O_NONBLOCK;
-    else
+    }
+    else {
+	if ((f & O_NONBLOCK) == 0)
+	    return;
 	f &= ~O_NONBLOCK;
+    }
     if (fcntl(fd, F_SETFL, f) == -1)
 	rb_sys_fail(0);
 }
