@@ -1,3 +1,11 @@
+Mon Apr  4 21:41:26 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (rb_io_syswrite): While local FS writes are usually
+	  buffered, the buffers can be full or the file opened with
+	  O_SYNC. IO#syswrite can also be used on blocking IOs
+	  (pipe/socket) just like IO#write.
+	  The patch is written by Eric Wong. [ruby-core:35554]
+
 Mon Apr  4 11:50:40 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/test_tempfile.rb: simply ignore platform depedent testcases
