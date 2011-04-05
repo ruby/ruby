@@ -1,3 +1,7 @@
+Tue Apr  5 20:33:43 2011  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h: parenthesize macro arguments.
+
 Mon Apr  4 22:02:16 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/io/nonblock/nonblock.c (io_nonblock_set): Avoid F_SETFL if

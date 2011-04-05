@@ -62,12 +62,12 @@ extern "C" {
 #define ENC_CODERANGE_ASCIIONLY(obj) (ENC_CODERANGE(obj) == ENC_CODERANGE_7BIT)
 #define ENC_CODERANGE_SET(obj,cr) (RBASIC(obj)->flags = \
 				   (RBASIC(obj)->flags & ~ENC_CODERANGE_MASK) | (cr))
-#define ENC_CODERANGE_CLEAR(obj) ENC_CODERANGE_SET(obj,0)
+#define ENC_CODERANGE_CLEAR(obj) ENC_CODERANGE_SET((obj),0)
 
 /* assumed ASCII compatibility */
 #define ENC_CODERANGE_AND(a, b) \
-    (a == ENC_CODERANGE_7BIT ? b : \
-     a == ENC_CODERANGE_VALID ? (b == ENC_CODERANGE_7BIT ? ENC_CODERANGE_VALID : b) : \
+    ((a) == ENC_CODERANGE_7BIT ? (b) : \
+     (a) == ENC_CODERANGE_VALID ? ((b) == ENC_CODERANGE_7BIT ? ENC_CODERANGE_VALID : (b)) : \
      ENC_CODERANGE_UNKNOWN)
 
 #define ENCODING_CODERANGE_SET(obj, encindex, cr) \
@@ -149,34 +149,34 @@ unsigned int rb_enc_codepoint_len(const char *p, const char *e, int *len, rb_enc
 unsigned int rb_enc_codepoint(const char *p, const char *e, rb_encoding *enc);
 /* overriding macro */
 #define rb_enc_codepoint(p,e,enc) rb_enc_codepoint_len((p),(e),0,(enc))
-#define rb_enc_mbc_to_codepoint(p, e, enc) ONIGENC_MBC_TO_CODE(enc,(UChar*)(p),(UChar*)(e))
+#define rb_enc_mbc_to_codepoint(p, e, enc) ONIGENC_MBC_TO_CODE((enc),(UChar*)(p),(UChar*)(e))
 
 /* -> codelen>0 or raise exception */
 int rb_enc_codelen(int code, rb_encoding *enc);
 
 /* code,ptr,encoding -> write buf */
-#define rb_enc_mbcput(c,buf,enc) ONIGENC_CODE_TO_MBC(enc,c,(UChar*)(buf))
+#define rb_enc_mbcput(c,buf,enc) ONIGENC_CODE_TO_MBC((enc),(c),(UChar*)(buf))
 
 /* start, ptr, end, encoding -> prev_char */
-#define rb_enc_prev_char(s,p,e,enc) (char *)onigenc_get_prev_char_head(enc,(UChar*)(s),(UChar*)(p),(UChar*)(e))
+#define rb_enc_prev_char(s,p,e,enc) ((char *)onigenc_get_prev_char_head((enc),(UChar*)(s),(UChar*)(p),(UChar*)(e)))
 /* start, ptr, end, encoding -> next_char */
-#define rb_enc_left_char_head(s,p,e,enc) (char *)onigenc_get_left_adjust_char_head(enc,(UChar*)(s),(UChar*)(p),(UChar*)(e))
-#define rb_enc_right_char_head(s,p,e,enc) (char *)onigenc_get_right_adjust_char_head(enc,(UChar*)(s),(UChar*)(p),(UChar*)(e))
-#define rb_enc_step_back(s,p,e,n,enc) (char *)onigenc_step_back(enc,(UChar*)(s),(UChar*)(p),(UChar*)(e),(int)(n))
+#define rb_enc_left_char_head(s,p,e,enc) ((char *)onigenc_get_left_adjust_char_head((enc),(UChar*)(s),(UChar*)(p),(UChar*)(e)))
+#define rb_enc_right_char_head(s,p,e,enc) ((char *)onigenc_get_right_adjust_char_head((enc),(UChar*)(s),(UChar*)(p),(UChar*)(e)))
+#define rb_enc_step_back(s,p,e,n,enc) ((char *)onigenc_step_back((enc),(UChar*)(s),(UChar*)(p),(UChar*)(e),(int)(n)))
 
 /* ptr, ptr, encoding -> newline_or_not */
-#define rb_enc_is_newline(p,end,enc)  ONIGENC_IS_MBC_NEWLINE(enc,(UChar*)(p),(UChar*)(end))
+#define rb_enc_is_newline(p,end,enc)  ONIGENC_IS_MBC_NEWLINE((enc),(UChar*)(p),(UChar*)(end))
 
-#define rb_enc_isctype(c,t,enc) ONIGENC_IS_CODE_CTYPE(enc,c,t)
+#define rb_enc_isctype(c,t,enc) ONIGENC_IS_CODE_CTYPE((enc),(c),(t))
 #define rb_enc_isascii(c,enc) ONIGENC_IS_CODE_ASCII(c)
-#define rb_enc_isalpha(c,enc) ONIGENC_IS_CODE_ALPHA(enc,c)
-#define rb_enc_islower(c,enc) ONIGENC_IS_CODE_LOWER(enc,c)
-#define rb_enc_isupper(c,enc) ONIGENC_IS_CODE_UPPER(enc,c)
-#define rb_enc_ispunct(c,enc) ONIGENC_IS_CODE_PUNCT(enc,c)
-#define rb_enc_isalnum(c,enc) ONIGENC_IS_CODE_ALNUM(enc,c)
-#define rb_enc_isprint(c,enc) ONIGENC_IS_CODE_PRINT(enc,c)
-#define rb_enc_isspace(c,enc) ONIGENC_IS_CODE_SPACE(enc,c)
-#define rb_enc_isdigit(c,enc) ONIGENC_IS_CODE_DIGIT(enc,c)
+#define rb_enc_isalpha(c,enc) ONIGENC_IS_CODE_ALPHA((enc),(c))
+#define rb_enc_islower(c,enc) ONIGENC_IS_CODE_LOWER((enc),(c))
+#define rb_enc_isupper(c,enc) ONIGENC_IS_CODE_UPPER((enc),(c))
+#define rb_enc_ispunct(c,enc) ONIGENC_IS_CODE_PUNCT((enc),(c))
+#define rb_enc_isalnum(c,enc) ONIGENC_IS_CODE_ALNUM((enc),(c))
+#define rb_enc_isprint(c,enc) ONIGENC_IS_CODE_PRINT((enc),(c))
+#define rb_enc_isspace(c,enc) ONIGENC_IS_CODE_SPACE((enc),(c))
+#define rb_enc_isdigit(c,enc) ONIGENC_IS_CODE_DIGIT((enc),(c))
 
 #define rb_enc_asciicompat(enc) (rb_enc_mbminlen(enc)==1 && !rb_enc_dummy_p(enc))
 
