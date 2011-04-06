@@ -1,3 +1,8 @@
+Wed Apr  6 11:36:44 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/openssl/ossl_pkey_rsa.c (ossl_rsa_initialize):
+	  pop pushed error after each try of reading. fixes #4550
+
 Tue Apr  5 20:33:43 2011  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h: parenthesize macro arguments.
