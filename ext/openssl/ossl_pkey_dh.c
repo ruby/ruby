@@ -170,10 +170,14 @@ ossl_dh_initialize(int argc, VALUE *argv, VALUE self)
 	dh = PEM_read_bio_DHparams(in, NULL, NULL, NULL);
 	if (!dh){
 	    (void)BIO_reset(in);
+	    (void)ERR_get_error();
 	    dh = d2i_DHparams_bio(in, NULL);
 	}
 	BIO_free(in);
-	if (!dh) ossl_raise(eDHError, NULL);
+	if (!dh) {
+	    (void)ERR_get_error();
+	    ossl_raise(eDHError, NULL);
+	}
     }
     if (!EVP_PKEY_assign_DH(pkey, dh)) {
 	DH_free(dh);
