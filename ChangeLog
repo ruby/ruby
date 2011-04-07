@@ -1,3 +1,7 @@
+Thu Apr  7 20:03:52 2011  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/io.h: parenthesize macro arguments.
+
 Wed Apr  6 21:08:31 2011  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/intern.h: parenthesize macro arguments.
