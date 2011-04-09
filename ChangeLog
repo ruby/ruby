@@ -1,3 +1,10 @@
+Sat Apr  9 21:54:15 2011  Shota Fukumori  <sorah@tubusu.net>
+
+	* ext/stringio/stringio.c (strio_each, strio_readlines):
+	  limit must not be zero. Fixes [ruby-dev:43392].
+
+	* test/stringio/test_stringio.rb: Add tests for above.
+
 Sat Apr  9 18:01:36 2011  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/util.h: parenthesize macro arguments.
