@@ -1,3 +1,8 @@
+Sat Apr  9 23:31:47 2011  Shota Fukumori  <sorah@tubusu.net>
+
+	* ext/stringio/stringio.c (strio_each, strio_readlines):
+	  Use `NUM2LONG` instead of `FIX2INT`. Fixes [ruby-dev:43395].
+
 Sat Apr  9 23:22:27 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* ext/stringio/stringio.c (strio_each):
