@@ -488,6 +488,7 @@ class TestStringIO < Test::Unit::TestCase
   end
 
   def test_each_line_limit_0
-    assert_raise(ArgumentError, "[ruby-dev:43392]") { StringIO.new.each_line(0) }
+    assert_raise(ArgumentError, "[ruby-dev:43392]") { StringIO.new.each_line(0){} }
+    assert_raise(ArgumentError, "[ruby-dev:43392]") { StringIO.new.each_line("a",0){} }
   end
 end

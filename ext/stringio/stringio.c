@@ -1067,12 +1067,12 @@ strio_each(int argc, VALUE *argv, VALUE self)
     struct StringIO *ptr = StringIO(self);
     VALUE line;
 
+    RETURN_ENUMERATOR(self, argc, argv);
+
     if(argc > 0 && TYPE(argv[argc-1]) == T_FIXNUM &&
        FIX2INT(argv[argc-1]) == 0) {
-	rb_raise(rb_eArgError, "invalid limit: 0 for readlines");
+	rb_raise(rb_eArgError, "invalid limit: 0 for each_line");
     }
-
-    RETURN_ENUMERATOR(self, argc, argv);
 
     while (!NIL_P(line = strio_getline(argc, argv, readable(ptr)))) {
 	rb_yield(line);
