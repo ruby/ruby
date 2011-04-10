@@ -1,3 +1,7 @@
+Mon Apr 11 07:24:13 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/openssl/ossl.c:  Fix typo, document version constants.
+
 Sun Apr 10 22:23:45 2011  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/ruby.h: parenthesize macro arguments.

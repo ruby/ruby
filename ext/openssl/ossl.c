@@ -758,7 +758,7 @@ ossl_debug_set(VALUE self, VALUE val)
  * === Peer Verification
  *
  * An unverified SSL connection does not provide much security.  For enhanced
- * security the client or server can verify the certificate the of its peer.
+ * security the client or server can verify the certificate of its peer.
  *
  * The client can be modified to verify the server's certificate against the
  * certificate authority's certificate:
@@ -819,10 +819,18 @@ Init_openssl()
     mOSSL = rb_define_module("OpenSSL");
 
     /*
-     * Constants
+     * OpenSSL ruby extension version
      */
     rb_define_const(mOSSL, "VERSION", rb_str_new2(OSSL_VERSION));
+
+    /*
+     * Version of OpenSSL the ruby OpenSSL extension was built with
+     */
     rb_define_const(mOSSL, "OPENSSL_VERSION", rb_str_new2(OPENSSL_VERSION_TEXT));
+    /*
+     * Version number of OpenSSL the ruby OpenSSL extension was built with
+     * (base 16)
+     */
     rb_define_const(mOSSL, "OPENSSL_VERSION_NUMBER", INT2NUM(OPENSSL_VERSION_NUMBER));
 
     /*
