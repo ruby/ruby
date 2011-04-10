@@ -280,8 +280,8 @@ NORETURN(void rb_out_of_int(SIGNED_VALUE num));
 
 #if SIZEOF_INT < SIZEOF_LONG
 #define rb_long2int_internal(n, i) \
-    int i = (int)(n); \
-    if ((long)i != (n)) rb_out_of_int(n)
+    int (i) = (int)(n); \
+    if ((long)(i) != (n)) rb_out_of_int(n)
 #ifdef __GNUC__
 #define rb_long2int(n) __extension__ ({long i2l_n = (n); rb_long2int_internal(i2l_n, i2l_i); i2l_i;})
 #else
@@ -440,7 +440,7 @@ static inline volatile VALUE *rb_gc_guarded_ptr(volatile VALUE *ptr) {return ptr
 #define RB_GC_GUARD(v) (*RB_GC_GUARD_PTR(&(v)))
 
 void rb_check_type(VALUE,int);
-#define Check_Type(v,t) rb_check_type((VALUE)(v),t)
+#define Check_Type(v,t) rb_check_type((VALUE)(v),(t))
 
 VALUE rb_str_to_str(VALUE);
 VALUE rb_string_value(volatile VALUE*);
@@ -496,11 +496,11 @@ NUM2LONG(VALUE x)
     return NUM2LONG_internal(x);
 }
 #endif
-#define NUM2ULONG(x) rb_num2ulong((VALUE)x)
+#define NUM2ULONG(x) rb_num2ulong((VALUE)(x))
 #if SIZEOF_INT < SIZEOF_LONG
 long rb_num2int(VALUE);
 long rb_fix2int(VALUE);
-#define FIX2INT(x) ((int)rb_fix2int((VALUE)x))
+#define FIX2INT(x) ((int)rb_fix2int((VALUE)(x)))
 #define NUM2INT_internal(x) (FIXNUM_P(x) ? FIX2INT(x) : (int)rb_num2int(x))
 #ifdef __GNUC__
 #define NUM2INT(x) \
@@ -537,7 +537,7 @@ NUM2LL(VALUE x)
     return NUM2LL_internal(x);
 }
 # endif
-# define NUM2ULL(x) rb_num2ull((VALUE)x)
+# define NUM2ULL(x) rb_num2ull((VALUE)(x))
 #endif
 
 #if defined(HAVE_LONG_LONG) && SIZEOF_OFF_T > SIZEOF_LONG
@@ -561,20 +561,20 @@ VALUE rb_uint2big(VALUE);
 VALUE rb_int2big(SIGNED_VALUE);
 
 VALUE rb_newobj(void);
-#define NEWOBJ(obj,type) type *obj = (type*)rb_newobj()
+#define NEWOBJ(obj,type) type *(obj) = (type*)rb_newobj()
 #define OBJSETUP(obj,c,t) do {\
     RBASIC(obj)->flags = (t);\
     RBASIC(obj)->klass = (c);\
-    if (rb_safe_level() >= 3) FL_SET(obj, FL_TAINT | FL_UNTRUSTED);\
+    if (rb_safe_level() >= 3) FL_SET((obj), FL_TAINT | FL_UNTRUSTED);\
 } while (0)
 #define CLONESETUP(clone,obj) do {\
-    OBJSETUP(clone,rb_singleton_class_clone((VALUE)obj),RBASIC(obj)->flags);\
-    rb_singleton_class_attached(RBASIC(clone)->klass, (VALUE)clone);\
-    if (FL_TEST(obj, FL_EXIVAR)) rb_copy_generic_ivar((VALUE)clone,(VALUE)obj);\
+    OBJSETUP((clone),rb_singleton_class_clone((VALUE)(obj)),RBASIC(obj)->flags);\
+    rb_singleton_class_attached(RBASIC(clone)->klass, (VALUE)(clone));\
+    if (FL_TEST((obj), FL_EXIVAR)) rb_copy_generic_ivar((VALUE)(clone),(VALUE)(obj));\
 } while (0)
 #define DUPSETUP(dup,obj) do {\
-    OBJSETUP(dup,rb_obj_class(obj), (RBASIC(obj)->flags)&(T_MASK|FL_EXIVAR|FL_TAINT|FL_UNTRUSTED)); \
-    if (FL_TEST(obj, FL_EXIVAR)) rb_copy_generic_ivar((VALUE)dup,(VALUE)obj);\
+    OBJSETUP((dup),rb_obj_class(obj), (RBASIC(obj)->flags)&(T_MASK|FL_EXIVAR|FL_TAINT|FL_UNTRUSTED)); \
+    if (FL_TEST((obj), FL_EXIVAR)) rb_copy_generic_ivar((VALUE)(dup),(VALUE)(obj));\
 } while (0)
 
 struct RBasic {
@@ -791,7 +791,7 @@ struct RTypedData {
 #define RTYPEDDATA_DATA(v) (RTYPEDDATA(v)->data)
 
 /*
-#define RUBY_DATA_FUNC(func) ((void (*)(void*))func)
+#define RUBY_DATA_FUNC(func) ((void (*)(void*))(func))
 */
 typedef void (*RUBY_DATA_FUNC)(void*);
 
@@ -800,37 +800,37 @@ VALUE rb_data_typed_object_alloc(VALUE klass, void *datap, const rb_data_type_t 
 int rb_typeddata_inherited_p(const rb_data_type_t *child, const rb_data_type_t *parent);
 int rb_typeddata_is_kind_of(VALUE, const rb_data_type_t *);
 void *rb_check_typeddata(VALUE, const rb_data_type_t *);
-#define Check_TypedStruct(v,t) rb_check_typeddata((VALUE)(v),t)
+#define Check_TypedStruct(v,t) rb_check_typeddata((VALUE)(v),(t))
 #define RUBY_DEFAULT_FREE ((RUBY_DATA_FUNC)-1)
 #define RUBY_NEVER_FREE   ((RUBY_DATA_FUNC)0)
 #define RUBY_TYPED_DEFAULT_FREE RUBY_DEFAULT_FREE
 #define RUBY_TYPED_NEVER_FREE   RUBY_NEVER_FREE
 
 #define Data_Wrap_Struct(klass,mark,free,sval)\
-    rb_data_object_alloc(klass,sval,(RUBY_DATA_FUNC)mark,(RUBY_DATA_FUNC)free)
+    rb_data_object_alloc((klass),(sval),(RUBY_DATA_FUNC)(mark),(RUBY_DATA_FUNC)(free))
 
 #define Data_Make_Struct(klass,type,mark,free,sval) (\
-    sval = ALLOC(type),\
-    memset(sval, 0, sizeof(type)),\
-    Data_Wrap_Struct(klass,mark,free,sval)\
+    (sval) = ALLOC(type),\
+    memset((sval), 0, sizeof(type)),\
+    Data_Wrap_Struct((klass),(mark),(free),(sval))\
 )
 
 #define TypedData_Wrap_Struct(klass,data_type,sval)\
-  rb_data_typed_object_alloc(klass,sval,data_type)
+  rb_data_typed_object_alloc((klass),(sval),(data_type))
 
 #define TypedData_Make_Struct(klass, type, data_type, sval) (\
-    sval = ALLOC(type),\
-    memset(sval, 0, sizeof(type)),\
-    TypedData_Wrap_Struct(klass,data_type,sval)\
+    (sval) = ALLOC(type),\
+    memset((sval), 0, sizeof(type)),\
+    TypedData_Wrap_Struct((klass),(data_type),(sval))\
 )
 
 #define Data_Get_Struct(obj,type,sval) do {\
-    Check_Type(obj, T_DATA); \
-    sval = (type*)DATA_PTR(obj);\
+    Check_Type((obj), T_DATA); \
+    (sval) = (type*)DATA_PTR(obj);\
 } while (0)
 
 #define TypedData_Get_Struct(obj,type,data_type,sval) do {\
-    sval = (type*)rb_check_typeddata(obj, data_type); \
+    (sval) = (type*)rb_check_typeddata((obj), (data_type)); \
 } while (0)
 
 #define RSTRUCT_EMBED_LEN_MAX 3
@@ -946,8 +946,8 @@ struct RBignum {
 
 #define FL_ABLE(x) (!SPECIAL_CONST_P(x) && BUILTIN_TYPE(x) != T_NODE)
 #define FL_TEST(x,f) (FL_ABLE(x)?(RBASIC(x)->flags&(f)):0)
-#define FL_ANY(x,f) FL_TEST(x,f)
-#define FL_ALL(x,f) (FL_TEST(x,f) == (f))
+#define FL_ANY(x,f) FL_TEST((x),(f))
+#define FL_ALL(x,f) (FL_TEST((x),(f)) == (f))
 #define FL_SET(x,f) do {if (FL_ABLE(x)) RBASIC(x)->flags |= (f);} while (0)
 #define FL_UNSET(x,f) do {if (FL_ABLE(x)) RBASIC(x)->flags &= ~(f);} while (0)
 #define FL_REVERSE(x,f) do {if (FL_ABLE(x)) RBASIC(x)->flags ^= (f);} while (0)
@@ -1023,11 +1023,11 @@ NUM2CHR(VALUE x)
 #endif
 #define CHR2FIX(x) INT2FIX((long)((x)&0xff))
 
-#define ALLOC_N(type,n) (type*)xmalloc2((n),sizeof(type))
-#define ALLOC(type) (type*)xmalloc(sizeof(type))
-#define REALLOC_N(var,type,n) (var)=(type*)xrealloc2((char*)(var),(n),sizeof(type))
+#define ALLOC_N(type,n) ((type*)xmalloc2((n),sizeof(type)))
+#define ALLOC(type) ((type*)xmalloc(sizeof(type)))
+#define REALLOC_N(var,type,n) ((var)=(type*)xrealloc2((char*)(var),(n),sizeof(type)))
 
-#define ALLOCA_N(type,n) (type*)alloca(sizeof(type)*(n))
+#define ALLOCA_N(type,n) ((type*)alloca(sizeof(type)*(n)))
 
 void *rb_alloc_tmp_buffer(volatile VALUE *store, long len);
 void rb_free_tmp_buffer(volatile VALUE *store);
@@ -1038,7 +1038,7 @@ void rb_free_tmp_buffer(volatile VALUE *store);
 #else
 # define ALLOCV(v, n) ((n) < 1024 ? (RB_GC_GUARD(v) = 0, alloca(n)) : rb_alloc_tmp_buffer(&(v), (n)))
 #endif
-#define ALLOCV_N(type, v, n) (type*)ALLOCV((v), sizeof(type)*(n))
+#define ALLOCV_N(type, v, n) ((type*)ALLOCV((v), sizeof(type)*(n)))
 #define ALLOCV_END(v) rb_free_tmp_buffer(&(v))
 
 #define MEMZERO(p,type,n) memset((p), 0, sizeof(type)*(n))
@@ -1088,7 +1088,7 @@ void rb_define_readonly_variable(const char*,VALUE*);
 void rb_define_const(VALUE,const char*,VALUE);
 void rb_define_global_const(const char*,VALUE);
 
-#define RUBY_METHOD_FUNC(func) ((VALUE (*)(ANYARGS))func)
+#define RUBY_METHOD_FUNC(func) ((VALUE (*)(ANYARGS))(func))
 void rb_define_method(VALUE,const char*,VALUE(*)(ANYARGS),int);
 void rb_define_module_function(VALUE,const char*,VALUE(*)(ANYARGS),int);
 void rb_define_global_function(const char*,VALUE(*)(ANYARGS),int);
@@ -1113,24 +1113,24 @@ VALUE rb_id2str(ID);
     {							\
 	static ID rb_intern_id_cache;			\
 	if (!rb_intern_id_cache)			\
-	    rb_intern_id_cache = rb_intern2(str, (long)strlen(str)); \
+	    rb_intern_id_cache = rb_intern2((str), (long)strlen(str)); \
 	result rb_intern_id_cache;			\
     }
 #define CONST_ID(var, str) \
-    do CONST_ID_CACHE(var =, str) while (0)
+    do CONST_ID_CACHE((var) =, (str)) while (0)
 #ifdef __GNUC__
 /* __builtin_constant_p and statement expression is available
  * since gcc-2.7.2.3 at least. */
 #define rb_intern(str) \
     (__builtin_constant_p(str) ? \
-        __extension__ (CONST_ID_CACHE((ID), str)) : \
+        __extension__ (CONST_ID_CACHE((ID), (str))) : \
         rb_intern(str))
 #define rb_intern_const(str) \
     (__builtin_constant_p(str) ? \
-     __extension__ (rb_intern2(str, (long)strlen(str))) : \
+     __extension__ (rb_intern2((str), (long)strlen(str))) : \
      (rb_intern)(str))
 #else
-#define rb_intern_const(str) rb_intern2(str, (long)strlen(str))
+#define rb_intern_const(str) rb_intern2((str), (long)strlen(str))
 #endif
 
 const char *rb_class2name(VALUE);
@@ -1204,7 +1204,7 @@ VALUE rb_require(const char*);
 
 #ifdef __ia64
 void ruby_init_stack(volatile VALUE*, void*);
-#define ruby_init_stack(addr) ruby_init_stack(addr, rb_ia64_bsp())
+#define ruby_init_stack(addr) ruby_init_stack((addr), rb_ia64_bsp())
 #else
 void ruby_init_stack(volatile VALUE*);
 #endif
@@ -1347,7 +1347,7 @@ rb_type(VALUE obj)
 
 #ifdef __GNUC__
 #define rb_type_p(obj, type) \
-    __extension__ (__builtin_constant_p(type) ? RB_TYPE_P(obj, type) : \
+    __extension__ (__builtin_constant_p(type) ? RB_TYPE_P((obj), (type)) : \
 		   rb_type(obj) == (type))
 #else
 #define rb_type_p(obj, type) (rb_type(obj) == (type))
@@ -1449,11 +1449,11 @@ int rb_toupper(int c);
 
 int st_strcasecmp(const char *s1, const char *s2);
 int st_strncasecmp(const char *s1, const char *s2, size_t n);
-#define STRCASECMP(s1, s2) (st_strcasecmp(s1, s2))
-#define STRNCASECMP(s1, s2, n) (st_strncasecmp(s1, s2, n))
+#define STRCASECMP(s1, s2) (st_strcasecmp((s1), (s2)))
+#define STRNCASECMP(s1, s2, n) (st_strncasecmp((s1), (s2), (n)))
 
 unsigned long ruby_strtoul(const char *str, char **endptr, int base);
-#define STRTOUL(str, endptr, base) (ruby_strtoul(str, endptr, base))
+#define STRTOUL(str, endptr, base) (ruby_strtoul((str), (endptr), (base)))
 
 #define InitVM(ext) {void InitVM_##ext(void);InitVM_##ext();}
 

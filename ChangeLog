@@ -1,3 +1,7 @@
+Sun Apr 10 22:23:45 2011  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/ruby.h: parenthesize macro arguments.
+
 Sat Apr  9 23:31:47 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* ext/stringio/stringio.c (strio_each, strio_readlines):
