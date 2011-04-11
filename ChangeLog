@@ -1,3 +1,11 @@
+Tue Apr 12 01:33:00 2011  Luis Lavena  <luislavena@gmail.com>
+
+	* configure.in: properly evaluate existence of truncate, ftruncate
+	  and ftello for MinGW. [ruby-core:35678]
+	* win32/win32.c: rename truncate, ftruncate and ftello to avoid 
+	  redefinitions.
+	* win32/win32.h: ditto.
+
 Mon Apr 11 21:51:52 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c: revert r31230.
