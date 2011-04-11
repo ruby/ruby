@@ -1,3 +1,7 @@
+Mon Apr 11 21:51:52 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c: revert r31230.
+
 Mon Apr 11 21:49:18 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_io.rb: Added TestIO#test_cross_thread_close_stdio
