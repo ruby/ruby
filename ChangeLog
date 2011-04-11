@@ -1,3 +1,8 @@
+Mon Apr 11 21:15:54 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* file.c (rb_group_member): kill 256K of stack usage.
+	  the patch was written by Eric Wong. [ruby-core:35699]
+
 Mon Apr 11 07:24:13 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/openssl/ossl.c:  Fix typo, document version constants.
