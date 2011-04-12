@@ -743,11 +743,16 @@ module URI
   # See URI.decode_www_form_component, URI.encode_www_form
   def self.encode_www_form_component(str)
     if TBLENCWWWCOMP_.empty?
+      tbl = {}
       256.times do |i|
-        TBLENCWWWCOMP_[i.chr] = '%%%02X' % i
+        tbl[i.chr] = '%%%02X' % i
       end
-      TBLENCWWWCOMP_[' '] = '+'
-      TBLENCWWWCOMP_.freeze
+      tbl[' '] = '+'
+      begin
+        TBLENCWWWCOMP_.replace(tbl)
+        TBLENCWWWCOMP_.freeze
+      rescue
+      end
     end
     str = str.to_s
     if HTML5ASCIIINCOMPAT.include?(str.encoding)
@@ -767,15 +772,20 @@ module URI
   # See URI.encode_www_form_component, URI.decode_www_form
   def self.decode_www_form_component(str, enc=Encoding::UTF_8)
     if TBLDECWWWCOMP_.empty?
+      tbl = {}
       256.times do |i|
         h, l = i>>4, i&15
-        TBLDECWWWCOMP_['%%%X%X' % [h, l]] = i.chr
-        TBLDECWWWCOMP_['%%%x%X' % [h, l]] = i.chr
-        TBLDECWWWCOMP_['%%%X%x' % [h, l]] = i.chr
-        TBLDECWWWCOMP_['%%%x%x' % [h, l]] = i.chr
+        tbl['%%%X%X' % [h, l]] = i.chr
+        tbl['%%%x%X' % [h, l]] = i.chr
+        tbl['%%%X%x' % [h, l]] = i.chr
+        tbl['%%%x%x' % [h, l]] = i.chr
       end
-      TBLDECWWWCOMP_['+'] = ' '
-      TBLDECWWWCOMP_.freeze
+      tbl['+'] = ' '
+      begin
+        TBLDECWWWCOMP_.replace(tbl)
+        TBLDECWWWCOMP_.freeze
+      rescue
+      end
     end
     raise ArgumentError, "invalid %-encoding (#{str})" unless /\A(?:%\h\h|[^%]+)*\z/ =~ str
     str.gsub(/\+|%\h\h/, TBLDECWWWCOMP_).force_encoding(enc)

@@ -1,3 +1,7 @@
+Tue Apr 12 19:19:50 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/common.rb: avoid race condition. fixes #4572
+
 Tue Apr 12 18:07:13 2011  TAKAO Kouji  <kouji@takao7.net>
 
 	* ext/readline/extconf.rb: --disable-libedit to disable
