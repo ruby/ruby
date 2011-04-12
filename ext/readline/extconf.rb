@@ -34,10 +34,17 @@ have_library("ncurses", "tgetnum") ||
   have_library("termcap", "tgetnum") ||
   have_library("curses", "tgetnum")
 
-if enable_libedit
+case enable_libedit
+when true
   unless (have_readline_header("editline/readline.h") ||
           have_readline_header("readline/readline.h")) &&
           have_library("edit", "readline")
+    exit
+  end
+when nil
+  unless ((have_readline_header("readline/readline.h") &&
+           have_readline_header("readline/history.h")) &&
+           have_library("readline", "readline"))
     exit
   end
 else
