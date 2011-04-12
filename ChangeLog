@@ -1,3 +1,9 @@
+Tue Apr 12 10:37:39 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* include/ruby/win32.h: VC doesn't have ftruncate() and others, but
+	  ruby needs HAVE_ macros to use our emulation functions.
+	  (fix the problem of 31262)
+
 Tue Apr 12 01:33:00 2011  Luis Lavena  <luislavena@gmail.com>
 
 	* configure.in: properly evaluate existence of truncate, ftruncate
