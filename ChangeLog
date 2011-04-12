@@ -1,3 +1,7 @@
+Tue Apr 12 20:54:12 2011  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/st.h: parenthesize macro arguments.
+
 Tue Apr 12 19:19:50 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/common.rb: avoid race condition. fixes #4572

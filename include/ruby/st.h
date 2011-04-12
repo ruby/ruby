@@ -95,7 +95,7 @@ struct st_table {
     struct st_table_entry *head, *tail;
 };
 
-#define st_is_member(table,key) st_lookup(table,key,(st_data_t *)0)
+#define st_is_member(table,key) st_lookup((table),(key),(st_data_t *)0)
 
 enum st_retval {ST_CONTINUE, ST_STOP, ST_DELETE, ST_CHECK};
 
