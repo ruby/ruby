@@ -1,3 +1,8 @@
+Thu Apr 14 00:41:09 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* thread.c (thread_fd_close_i): IOError exception should be assigned
+	  to rb_thread_t::thrown_errinfo.
+
 Wed Apr 13 20:12:26 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* io.c (rb_io_fdatasync): remove unused variable.

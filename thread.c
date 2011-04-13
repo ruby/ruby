@@ -1465,7 +1465,7 @@ thread_fd_close_i(st_data_t key, st_data_t val, st_data_t data)
     if (THREAD_IO_WAITING_P(th)) {
 	native_mutex_lock(&th->interrupt_lock);
 	if (THREAD_IO_WAITING_P(th) && th->waiting_fd == fd) {
-	    th->errinfo = th->vm->special_exceptions[ruby_error_closed_stream];
+	    th->thrown_errinfo = th->vm->special_exceptions[ruby_error_closed_stream];
 	    RUBY_VM_SET_INTERRUPT(th);
 	    (th->unblock.func)(th->unblock.arg);
 	}
