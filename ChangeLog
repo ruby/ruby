@@ -1,3 +1,7 @@
+Wed Apr 13 20:12:26 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* io.c (rb_io_fdatasync): remove unused variable.
+
 Tue Apr 12 20:54:12 2011  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/st.h: parenthesize macro arguments.

@@ -1423,7 +1423,6 @@ static VALUE
 rb_io_fdatasync(VALUE io)
 {
     rb_io_t *fptr;
-    int saved_errno = 0;
 
     io = GetWriteIO(io);
     GetOpenFile(io, fptr);
