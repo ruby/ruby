@@ -285,8 +285,7 @@ module Test
 
         def dead(*additional)
           @status = :quit
-          @in.close
-          @out.close
+          @io.close
 
           call_hook(:dead,*additional)
         end
