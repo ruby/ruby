@@ -70,7 +70,7 @@ module Test
         end
 
         opts.on '-s', '--seed SEED', Integer, "Sets random seed" do |m|
-          options[:seed] = m.to_i
+          options[:seed] = m
         end
 
         opts.on '-v', '--verbose', "Verbose. Show progress processing files." do
@@ -82,8 +82,9 @@ module Test
           options[:filter] = a
         end
 
-        opts.on '--jobs-status [TYPE]', "Show status of jobs every file; Disabled when --jobs isn't specified." do |type|
-          options[:job_status] = (type && type.to_sym) || :normal
+        opts.on '--jobs-status [TYPE]', [:normal, :replace],
+                "Show status of jobs every file; Disabled when --jobs isn't specified." do |type|
+          options[:job_status] = type || :normal
         end
 
         opts.on '-j N', '--jobs N', "Allow run tests with N jobs at once" do |a|

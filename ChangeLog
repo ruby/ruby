@@ -1,4 +1,7 @@
-Thu Apr 14 22:48:08 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Apr 14 22:48:12 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::Options#setup_options): set possible
+	  values for completion. no conversion is needed.
 
 	* lib/test/unit.rb (Test::Unit::Runner::Worker#initialize): use
 	  positional arguments instead of keyword arguments.
