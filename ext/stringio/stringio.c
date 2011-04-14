@@ -1069,8 +1069,8 @@ strio_each(int argc, VALUE *argv, VALUE self)
 
     RETURN_ENUMERATOR(self, argc, argv);
 
-    if(argc > 0 && !NIL_P(argv[argc-1]) && NIL_P(rb_check_string_type(argv[argc-1])) &&
-       NUM2LONG(argv[argc-1]) == 0) {
+    if (argc > 0 && !NIL_P(argv[argc-1]) && NIL_P(rb_check_string_type(argv[argc-1])) &&
+	NUM2LONG(argv[argc-1]) == 0) {
 	rb_raise(rb_eArgError, "invalid limit: 0 for each_line");
     }
 
@@ -1094,8 +1094,8 @@ strio_readlines(int argc, VALUE *argv, VALUE self)
     struct StringIO *ptr = StringIO(self);
     VALUE ary = rb_ary_new(), line;
 
-    if(argc > 0 && !NIL_P(argv[argc-1]) && NIL_P(rb_check_string_type(argv[argc-1])) &&
-       NUM2LONG(argv[argc-1]) == 0) {
+    if (argc > 0 && !NIL_P(argv[argc-1]) && NIL_P(rb_check_string_type(argv[argc-1])) &&
+	NUM2LONG(argv[argc-1]) == 0) {
 	rb_raise(rb_eArgError, "invalid limit: 0 for readlines");
     }
 
