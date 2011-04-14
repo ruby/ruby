@@ -4,7 +4,6 @@ require 'minitest/unit'
 require 'test/unit/assertions'
 require 'test/unit/testcase'
 require 'optparse'
-require 'io/console'
 
 module Test
   module Unit
@@ -351,22 +350,27 @@ module Test
         return unless @opts[:job_status]
         puts "" unless @opts[:verbose]
         status_line = @workers.map(&:to_s).join(" ")
-        if @opts[:job_status] == :replace
-          @terminal_width ||= $stdout.winsize[1] || ENV["COLUMNS"].to_i || 80
+        if @opts[:job_status] == :replace and $stdout.tty?
+          @terminal_width ||=
+            begin
+              require 'io/console'
+              $stdout.winsize[1]
+            rescue LoadError, NoMethodError
+              ENV["COLUMNS"].to_i.nonzero? || 80
+            end
           @jstr_size ||= 0
           del_jobs_status
           $stdout.flush
           print status_line[0...@terminal_width]
           $stdout.flush
-          @jstr_size = status_line.size > @terminal_width ? \
-                         @terminal_width : status_line.size
+          @jstr_size = [status_line.size, @terminal_width].min
         else
           puts status_line
         end
       end
 
       def del_jobs_status
-        return unless @opts[:job_status] == :replace && @jstr_size
+        return unless @opts[:job_status] == :replace && @jstr_size.nonzero?
         print "\r"+" "*@jstr_size+"\r"
       end
 
