@@ -46,7 +46,8 @@ Tue Apr 12 01:33:00 2011  Luis Lavena  <luislavena@gmail.com>
 
 Mon Apr 11 21:51:52 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* io.c: revert r31230.
+	* io.c: revert r31230. Because it made a regression.
+	  [ruby-core:35631]
 
 Mon Apr 11 21:49:18 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
