@@ -1,4 +1,7 @@
-Thu Apr 14 22:47:54 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Apr 14 22:47:58 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::Runner::Worker#died): rename using a
+	  verb.
 
 	* lib/test/unit.rb (Test::Unit::Runner#_run_parallel): check if worker
 	  is signaled and use its exit status.

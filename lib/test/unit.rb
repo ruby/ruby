@@ -260,10 +260,10 @@ module Test
             puts "run #{task} #{type}"
             @status = :prepare
           rescue Errno::EPIPE
-            dead
+            died
           rescue IOError
             raise unless ["stream closed","closed stream"].include? $!.message
-            dead
+            died
           end
         end
 
@@ -283,7 +283,7 @@ module Test
           self
         end
 
-        def dead(*additional)
+        def died(*additional)
           @status = :quit
           @io.close
 
@@ -409,7 +409,7 @@ module Test
               next unless w
               unless w.status == :quit
                 # Worker down
-                w.dead(nil, !stat.signaled? && stat.exitstatus)
+                w.died(nil, !stat.signaled? && stat.exitstatus)
               end
             end
           end
