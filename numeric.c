@@ -1634,7 +1634,7 @@ ruby_float_step(VALUE from, VALUE to, VALUE step, int excl)
 	else {
 	    if (err>0.5) err=0.5;
 	    n = floor(n + err);
-	    if (!excl) n++;
+	    if (!excl || ((long)n)*unit+beg < end) n++;
 	    for (i=0; i<n; i++) {
 		rb_yield(DBL2NUM(i*unit+beg));
 	    }
