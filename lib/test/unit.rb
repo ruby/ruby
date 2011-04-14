@@ -233,13 +233,13 @@ module Test
           io = IO.popen([*ruby,
                         "#{File.dirname(__FILE__)}/unit/parallel.rb",
                         *args], "rb+")
-          new(io: io, pid: io.pid, status: :waiting)
+          new(io, io.pid, :waiting)
         end
 
-        def initialize(h={})
-          @io = h[:io]
-          @pid = h[:pid]
-          @status = h[:status]
+        def initialize(io, pid, status)
+          @io = io
+          @pid = pid
+          @status = status
           @file = nil
           @real_file = nil
           @loadpath = []

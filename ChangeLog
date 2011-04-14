@@ -1,4 +1,7 @@
-Thu Apr 14 22:48:03 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Apr 14 22:48:08 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::Runner::Worker#initialize): use
+	  positional arguments instead of keyword arguments.
 
 	* lib/test/unit.rb (Test::Unit::Runner#jobs_status): io/console may
 	  not be available. use 80 as the last resort if IO#winsize and
