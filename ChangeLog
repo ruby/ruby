@@ -1,3 +1,7 @@
+Thu Apr 14 21:20:51 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_read): suppress warning.
+
 Thu Apr 14 19:55:54 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* lib/fileutils.rb (FileUtils#touch): fix corrupted output when

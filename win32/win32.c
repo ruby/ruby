@@ -5045,7 +5045,7 @@ rb_w32_read(int fd, void *buf, size_t size)
     size_t ret;
     OVERLAPPED ol, *pol = NULL;
     BOOL isconsole;
-    BOOL islineinput;
+    BOOL islineinput = FALSE;
     int start = 0;
 
     if (is_socket(sock))
@@ -5070,7 +5070,7 @@ rb_w32_read(int fd, void *buf, size_t size)
 
     ret = 0;
     isconsole = is_console(_osfhnd(fd));
-    if(isconsole){
+    if (isconsole) {
 	DWORD mode;
 	GetConsoleMode((HANDLE)_osfhnd(fd),&mode);
 	islineinput = (mode & ENABLE_LINE_INPUT) != 0;
