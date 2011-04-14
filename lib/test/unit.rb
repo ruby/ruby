@@ -329,7 +329,7 @@ module Test
         @@installed_at_exit = true
       end
 
-      def after_worker_down(worker, e=nil, c=1)
+      def after_worker_down(worker, e=nil, c=false)
         return unless @opts[:parallel]
         return if @interrupt
         if e
@@ -404,11 +404,12 @@ module Test
           watchdog = Thread.new do
             while stat = Process.wait2
               break if @interrupt # Break when interrupt
-              w = (@workers + @dead_workers).find{|x| stat[0] == x.pid }.dup
+              pid, stat = stat
+              w = (@workers + @dead_workers).find{|x| pid == x.pid }.dup
               next unless w
               unless w.status == :quit
                 # Worker down
-                w.dead(nil, stat[1].to_i)
+                w.dead(nil, !stat.signaled? && stat.exitstatus)
               end
             end
           end
