@@ -34,4 +34,22 @@ p Foo::Bar
     File.unlink(*tmpfiles) rescue nil if tmpfiles
     tmpdirs.each {|dir| Dir.rmdir(dir)}
   end
+
+  def test_autoload_p
+    bug4565 = '[ruby-core:35679]'
+
+    require 'tmpdir'
+    tmpdir = Dir.mktmpdir('autoload')
+    tmpfile = tmpdir + '/foo.rb'
+    a = Module.new do
+      autoload :X, tmpfile
+    end
+    b = Module.new do
+      include a
+    end
+    assert_equal(true, a.const_defined?(:X))
+    assert_equal(true, b.const_defined?(:X))
+    assert_equal(tmpfile, a.autoload?(:X), bug4565)
+    assert_equal(tmpfile, b.autoload?(:X), bug4565)
+  end
 end

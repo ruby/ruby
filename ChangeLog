@@ -1,3 +1,8 @@
+Thu Apr 14 21:23:29 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (rb_autoload_p): search superclasses as same as actual
+	  loading.  fixes [ruby-core:35679]
+
 Thu Apr 14 21:21:06 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/win32.h (frexp, modf): wrongly declared as pure in

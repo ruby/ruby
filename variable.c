@@ -1569,7 +1569,10 @@ rb_autoload_p(VALUE mod, ID id)
     NODE *load;
     const char *loading = 0;
 
-    if (!autoload_node_id(mod, id)) return Qnil;
+    while (!autoload_node_id(mod, id)) {
+	mod = RCLASS_SUPER(mod);
+	if (!mod) return Qnil;
+    }
     load = autoload_node(mod, id, &loading);
     if (!load) return Qnil;
     return load && (file = load->nd_lit) ? file : Qnil;
