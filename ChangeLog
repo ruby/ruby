@@ -1,4 +1,7 @@
-Thu Apr 14 21:21:01 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Apr 14 21:21:06 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/win32.h (frexp, modf): wrongly declared as pure in
+	  mingw math.h.
 
 	* include/ruby/win32.h (ftruncate, truncate): mingw64 misses
 	  prototypes.

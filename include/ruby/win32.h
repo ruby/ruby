@@ -692,6 +692,20 @@ uintptr_t rb_w32_asynchronize(asynchronous_func_t func, uintptr_t self, int argc
 #pragma GCC visibility pop
 #endif
 
+#ifdef __MINGW_ATTRIB_PURE
+/* get rid of bugs in math.h of mingw */
+#define frexp(_X, _Y) __extension__ ({\
+    int *intptr_frexp_bug = (_Y);\
+    *intptr_frexp_bug = *intptr_frexp_bug;\
+    frexp((_X), intptr_frexp_bug);\
+})
+#define modf(_X, _Y) __extension__ ({\
+    double *intptr_modf_bug = (_Y);\
+    *intptr_modf_bug = *intptr_modf_bug;\
+    modf((_X), intptr_modf_bug);\
+})
+#endif
+
 #if defined(__cplusplus)
 #if 0
 { /* satisfy cc-mode */
