@@ -1,3 +1,9 @@
+Thu Apr 14 19:55:54 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* lib/fileutils.rb (FileUtils#touch): fix corrupted output when
+	  FileUtils.touch(:nocreate => true, :verbose => true) case.
+	  The patch was written by Hiroyuki Iwatsuki. [ruby-dev:43401]
+
 Thu Apr 14 16:01:45 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* io.c (rb_f_syscall): reduce warning: "HAVE___SYSCALL" is not defined.
