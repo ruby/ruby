@@ -222,14 +222,20 @@ class URI::TestGeneric < Test::Unit::TestCase
     url = URI.parse('http://hoge/a/b/').route_to('http://hoge/b/')
     assert_equal('../../b/', url.to_s)
 
-    url = URI.parse('http://hoge/a/b/').route_to('http://hoge/a/b')
-    assert_equal('../b', url.to_s)
-
     url = URI.parse('http://hoge/a/b/').route_to('http://HOGE/b/')
     assert_equal('../../b/', url.to_s)
 
     url = URI.parse('http://hoge/a/b/').route_to('http://MOGE/b/')
     assert_equal('//MOGE/b/', url.to_s)
+
+    url = URI.parse('http://hoge/b').route_to('http://hoge/b/')
+    assert_equal('b/', url.to_s)
+    url = URI.parse('http://hoge/b/a').route_to('http://hoge/b/')
+    assert_equal('./', url.to_s)
+    url = URI.parse('http://hoge/b/').route_to('http://hoge/b')
+    assert_equal('../b', url.to_s)
+    url = URI.parse('http://hoge/b').route_to('http://hoge/b:c')
+    assert_equal('./b:c', url.to_s)
 
     url = URI.parse('file:///a/b/').route_to('file:///a/b/')
     assert_equal('', url.to_s)
