@@ -222,6 +222,9 @@ class URI::TestGeneric < Test::Unit::TestCase
     url = URI.parse('http://hoge/a/b/').route_to('http://hoge/b/')
     assert_equal('../../b/', url.to_s)
 
+    url = URI.parse('http://hoge/a/b/').route_to('http://hoge/a/b')
+    assert_equal('../b', url.to_s)
+
     url = URI.parse('http://hoge/a/b/').route_to('http://HOGE/b/')
     assert_equal('../../b/', url.to_s)
 
@@ -230,6 +233,8 @@ class URI::TestGeneric < Test::Unit::TestCase
 
     url = URI.parse('file:///a/b/').route_to('file:///a/b/')
     assert_equal('', url.to_s)
+    url = URI.parse('file:///a/b/').route_to('file:///a/b')
+    assert_equal('../b', url.to_s)
 
     url = URI.parse('mailto:foo@example.com').route_to('mailto:foo@example.com#bar')
     assert_equal('#bar', url.to_s)
