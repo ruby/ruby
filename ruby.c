@@ -1017,7 +1017,7 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 		    if (!*(s = ++p)) break;
 		    set_encoding_part(internal);
 		    if (!*(s = ++p)) break;
-#if ALLOW_DEFAULT_SOURCE_ENCODING
+#if defined ALLOW_DEFAULT_SOURCE_ENCODING && ALLOW_DEFAULT_SOURCE_ENCODING
 		    set_encoding_part(source);
 		    if (!*(s = ++p)) break;
 #endif
@@ -1032,7 +1032,7 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 	    else if (is_option_with_arg("external-encoding", Qfalse, Qtrue)) {
 		set_external_encoding_once(opt, s, 0);
 	    }
-#if ALLOW_DEFAULT_SOURCE_ENCODING
+#if defined ALLOW_DEFAULT_SOURCE_ENCODING && ALLOW_DEFAULT_SOURCE_ENCODING
 	    else if (is_option_with_arg("source-encoding", Qfalse, Qtrue)) {
 		set_source_encoding_once(opt, s, 0);
 	    }

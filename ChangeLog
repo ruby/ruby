@@ -1,3 +1,8 @@
+Fri Apr 15 23:41:18 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* ruby.c (proc_options): reduce warning:
+	  "ALLOW_DEFAULT_SOURCE_ENCODING" is not defined.
+
 Fri Apr 15 15:10:29 2011  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/uri/generic.rb (#route_from_path): Fix a bug where
