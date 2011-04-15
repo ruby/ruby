@@ -1,3 +1,9 @@
+Fri Apr 15 14:58:06 2011  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/fileutils.rb (FileUtils#touch): Fix corrupted output when
+	  mtime is specified in addition to nocreate (and verbose).
+	  ref [ruby-dev:43401]
+
 Thu Apr 14 23:43:43 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* numeric.c (ruby_float_step): wrong loop condition.
