@@ -1,3 +1,8 @@
+Sat Apr 16 10:18:30 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* vm.c (Init_VM): suppress warning: "OPT_BASIC_OPERATIONS" is not
+	  defined.
+
 Fri Apr 15 23:41:18 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* ruby.c (proc_options): reduce warning:

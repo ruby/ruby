@@ -2047,10 +2047,6 @@ Init_VM(void)
     rb_ary_push(opts, rb_str_new2("call threaded code"));
 #endif
 
-#if OPT_BASIC_OPERATIONS
-    rb_ary_push(opts, rb_str_new2("optimize basic operation"));
-#endif
-
 #if OPT_STACK_CACHING
     rb_ary_push(opts, rb_str_new2("stack caching"));
 #endif
