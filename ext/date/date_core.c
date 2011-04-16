@@ -1417,7 +1417,7 @@ date_s__strptime_internal(int argc, VALUE *argv, VALUE klass,
 
 /*
  * call-seq:
- *    Date._strftime(string, [format="%F"])
+ *    Date._strptime(string, [format="%F"])
  *
  * Return a hash of parsed elements.
  */
@@ -3159,7 +3159,7 @@ datetime_s_now(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    DateTime._strftime(string, [format="%FT%T%z"])
+ *    DateTime._strptime(string, [format="%FT%T%z"])
  *
  * Return a hash of parsed elements.
  */
