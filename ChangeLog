@@ -1,3 +1,8 @@
+Sun Apr 17 00:20:14 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_{core,strftime}.c: use struct tmx instead of vtm.
+	* ext/date/date_tmx.h: new.
+
 Sat Apr 16 22:23:52 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_strftime.c (date_strftime_wo_timespec): changed

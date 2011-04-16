@@ -1,2 +1,2 @@
-date_core.o: $(top_srcdir)/timev.h
-date_strftime.o: $(top_srcdir)/timev.h
+date_core.o: date_tmx.h
+date_strftime.o: date_tmx.h
