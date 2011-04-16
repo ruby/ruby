@@ -1,3 +1,8 @@
+Sat Apr 16 22:23:52 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_strftime.c (date_strftime_wo_timespec): changed
+	  the way of validation of locale modifiers.
+
 Sat Apr 16 21:55:12 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: replacement of implementation of

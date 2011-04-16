@@ -271,18 +271,6 @@ date_strftime_wo_timespec(char *s, size_t maxsize, const char *format,
                                 s += l; \
                         } \
                 } while (0)
-#define SKIP_MODIFIER_E \
-		if (flags & BIT_OF(LOCALE_E)) {	\
-			format--; \
-			goto unknown; \
-		}
-#define SKIP_MODIFIER_O \
-		if (flags & BIT_OF(LOCALE_O)) { \
-			format--; \
-			goto unknown; \
-		}
-#define SKIP_MODIFIER_EO \
-		{ SKIP_MODIFIER_E; SKIP_MODIFIER_O }
 
 		if (*format != '%') {
 			*s++ = *format;
@@ -301,13 +289,11 @@ date_strftime_wo_timespec(char *s, size_t maxsize, const char *format,
 			goto unknown;
 
 		case '%':
-			SKIP_MODIFIER_EO;
 			FILL_PADDING(1);
 			*s++ = '%';
 			continue;
 
 		case 'a':	/* abbreviated weekday name */
-			SKIP_MODIFIER_EO;
 			if (flags & BIT_OF(CHCASE)) {
 				flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
 				flags |= BIT_OF(UPPER);
@@ -319,7 +305,6 @@ date_strftime_wo_timespec(char *s, size_t maxsize, const char *format,
 			break;
 
 		case 'A':	/* full weekday name */
-			SKIP_MODIFIER_EO;
 			if (flags & BIT_OF(CHCASE)) {
 				flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
 				flags |= BIT_OF(UPPER);
@@ -334,7 +319,6 @@ date_strftime_wo_timespec(char *s, size_t maxsize, const char *format,
 		case 'h':	/* abbreviated month name */
 #endif
 		case 'b':	/* abbreviated month name */
-			SKIP_MODIFIER_EO;
 			if (flags & BIT_OF(CHCASE)) {
 				flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
 				flags |= BIT_OF(UPPER);
@@ -346,7 +330,6 @@ date_strftime_wo_timespec(char *s, size_t maxsize, const char *format,
 			break;
 
 		case 'B':	/* full month name */
-			SKIP_MODIFIER_EO;
 			if (flags & BIT_OF(CHCASE)) {
 				flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
 				flags |= BIT_OF(UPPER);
@@ -358,24 +341,20 @@ date_strftime_wo_timespec(char *s, size_t maxsize, const char *format,
 			break;
 
 		case 'c':	/* appropriate date and time representation */
-			SKIP_MODIFIER_O;
 			STRFTIME("%a %b %e %H:%M:%S %Y");
 			continue;
 
 		case 'd':	/* day of the month, 01 - 31 */
-			SKIP_MODIFIER_E;
 			i = range(1, vtm->mday, 31);
 			FMT('0', 2, "d", (int)i);
 			continue;
 
 		case 'H':	/* hour, 24-hour clock, 00 - 23 */
-			SKIP_MODIFIER_E;
 			i = range(0, vtm->hour, 23);
 			FMT('0', 2, "d", (int)i);
 			continue;
 
 		case 'I':	/* hour, 12-hour clock, 01 - 12 */
-			SKIP_MODIFIER_E;
 			i = range(0, vtm->hour, 23);
 			if (i == 0)
 				i = 12;
@@ -385,25 +364,21 @@ date_strftime_wo_timespec(char *s, size_t maxsize, const char *format,
 			continue;
 
 		case 'j':	/* day of the year, 001 - 366 */
-			SKIP_MODIFIER_EO;
 			FMT('0', 3, "d", vtm->yday);
 			continue;
 
 		case 'm':	/* month, 01 - 12 */
-			SKIP_MODIFIER_E;
 			i = range(1, vtm->mon, 12);
 			FMT('0', 2, "d", (int)i);
 			continue;
 
 		case 'M':	/* minute, 00 - 59 */
-			SKIP_MODIFIER_E;
 			i = range(0, vtm->min, 59);
 			FMT('0', 2, "d", (int)i);
 			continue;
 
 		case 'p':	/* AM or PM based on 12-hour clock */
 		case 'P':	/* am or pm based on 12-hour clock */
-			SKIP_MODIFIER_EO;
 			if ((*format == 'p' && (flags & BIT_OF(CHCASE))) ||
 			    (*format == 'P' && !(flags & (BIT_OF(CHCASE)|BIT_OF(UPPER))))) {
 				flags &= ~(BIT_OF(UPPER)|BIT_OF(CHCASE));
@@ -418,7 +393,6 @@ date_strftime_wo_timespec(char *s, size_t maxsize, const char *format,
 			break;
 
 		case 's':
-			SKIP_MODIFIER_EO;
 			{
                                 VALUE sec = div(timev, INT2FIX(1));
                                 FMTV('0', 1, "d", sec);
@@ -426,7 +400,6 @@ date_strftime_wo_timespec(char *s, size_t maxsize, const char *format,
                         continue;
 
 		case 'Q':
-			SKIP_MODIFIER_EO;
 			{
 				VALUE sec = div(timev,
 						rb_rational_new2(INT2FIX(1),
@@ -436,34 +409,28 @@ date_strftime_wo_timespec(char *s, size_t maxsize, const char *format,
                         continue;
 
 		case 'S':	/* second, 00 - 60 */
-			SKIP_MODIFIER_E;
 			i = range(0, vtm->sec, 60);
 			FMT('0', 2, "d", (int)i);
 			continue;
 
 		case 'U':	/* week of year, Sunday is first day of week */
-			SKIP_MODIFIER_E;
 			FMT('0', 2, "d", weeknumber_v(vtm, 0));
 			continue;
 
 		case 'w':	/* weekday, Sunday == 0, 0 - 6 */
-			SKIP_MODIFIER_E;
 			i = range(0, vtm->wday, 6);
 			FMT('0', 1, "d", (int)i);
 			continue;
 
 		case 'W':	/* week of year, Monday is first day of week */
-			SKIP_MODIFIER_E;
 			FMT('0', 2, "d", weeknumber_v(vtm, 1));
 			continue;
 
 		case 'x':	/* appropriate date representation */
-			SKIP_MODIFIER_O;
 			STRFTIME("%m/%d/%y");
 			continue;
 
 		case 'X':	/* appropriate time representation */
-			SKIP_MODIFIER_O;
 			STRFTIME("%H:%M:%S");
 			continue;
 
@@ -473,7 +440,6 @@ date_strftime_wo_timespec(char *s, size_t maxsize, const char *format,
 			continue;
 
 		case 'Y':	/* year with century */
-			SKIP_MODIFIER_O;
                         if (FIXNUM_P(vtm->year)) {
                             long y = FIX2LONG(vtm->year);
                             FMT('0', 0 <= y ? 4 : 5, "ld", y);
@@ -485,7 +451,6 @@ date_strftime_wo_timespec(char *s, size_t maxsize, const char *format,
 
 #ifdef MAILHEADER_EXT
 		case 'z':	/* time zone offset east of GMT e.g. -0600 */
-			SKIP_MODIFIER_EO;
 			{
 				long aoff;
 				int hl, hw;
@@ -578,7 +543,6 @@ date_strftime_wo_timespec(char *s, size_t maxsize, const char *format,
 #endif /* MAILHEADER_EXT */
 
 		case 'Z':	/* time zone name or abbreviation */
-			SKIP_MODIFIER_EO;
 			if (flags & BIT_OF(CHCASE)) {
 				flags &= ~(BIT_OF(UPPER)|BIT_OF(CHCASE));
 				flags |= BIT_OF(LOWER);
@@ -592,52 +556,43 @@ date_strftime_wo_timespec(char *s, size_t maxsize, const char *format,
 
 #ifdef SYSV_EXT
 		case 'n':	/* same as \n */
-			SKIP_MODIFIER_EO;
 			FILL_PADDING(1);
 			*s++ = '\n';
 			continue;
 
 		case 't':	/* same as \t */
-			SKIP_MODIFIER_EO;
 			FILL_PADDING(1);
 			*s++ = '\t';
 			continue;
 
 		case 'D':	/* date as %m/%d/%y */
-			SKIP_MODIFIER_EO;
 			STRFTIME("%m/%d/%y");
 			continue;
 
 		case 'e':	/* day of month, blank padded */
-			SKIP_MODIFIER_E;
 			FMT(' ', 2, "d", range(1, vtm->mday, 31));
 			continue;
 
 		case 'r':	/* time as %I:%M:%S %p */
-			SKIP_MODIFIER_EO;
 			STRFTIME("%I:%M:%S %p");
 			continue;
 
 		case 'R':	/* time as %H:%M */
-			SKIP_MODIFIER_EO;
 			STRFTIME("%H:%M");
 			continue;
 
 		case 'T':	/* time as %H:%M:%S */
-			SKIP_MODIFIER_EO;
 			STRFTIME("%H:%M:%S");
 			continue;
 #endif
 
 #ifdef SUNOS_EXT
 		case 'k':	/* hour, 24-hour clock, blank pad */
-			SKIP_MODIFIER_EO;
 			i = range(0, vtm->hour, 23);
 			FMT(' ', 2, "d", (int)i);
 			continue;
 
 		case 'l':	/* hour, 12-hour clock, 1 - 12, blank pad */
-			SKIP_MODIFIER_EO;
 			i = range(0, vtm->hour, 23);
 			if (i == 0)
 				i = 12;
@@ -650,7 +605,6 @@ date_strftime_wo_timespec(char *s, size_t maxsize, const char *format,
 
 #ifdef VMS_EXT
 		case 'v':	/* date as dd-bbb-YYYY */
-			SKIP_MODIFIER_EO;
 			STRFTIME("%e-%^b-%4Y");
 			continue;
 #endif
@@ -658,29 +612,28 @@ date_strftime_wo_timespec(char *s, size_t maxsize, const char *format,
 
 #ifdef POSIX2_DATE
 		case 'C':
-			SKIP_MODIFIER_O;
                         FMTV('0', 2, "d", div(vtm->year, INT2FIX(100)));
 			continue;
 
 		case 'E':
 			/* POSIX locale extensions, ignored for now */
-			SKIP_MODIFIER_EO;
 			flags |= BIT_OF(LOCALE_E);
-			goto again;
+			if (*(format + 1) && strchr("cCxXyY", *(format + 1)))
+				goto again;
+			goto unknown;
 		case 'O':
 			/* POSIX locale extensions, ignored for now */
-			SKIP_MODIFIER_EO;
 			flags |= BIT_OF(LOCALE_O);
-			goto again;
-
+			if (*(format + 1) && strchr("deHImMSuUVwWy",
+						    *(format + 1)))
+				goto again;
+			goto unknown;
 		case 'V':	/* week of year according ISO 8601 */
-			SKIP_MODIFIER_E;
 			FMT('0', 2, "d", iso8601wknum_v(vtm));
 			continue;
 
 		case 'u':
 		/* ISO 8601: Weekday as a decimal number [1 (Monday) - 7] */
-			SKIP_MODIFIER_E;
 			FMT('0', 1, "d", vtm->wday == 0 ? 7 : vtm->wday);
 			continue;
 #endif	/* POSIX2_DATE */
@@ -697,7 +650,6 @@ date_strftime_wo_timespec(char *s, size_t maxsize, const char *format,
 			 * 53, that week is in last year.
 			 * Otherwise, it's this year.
 			 */
-			SKIP_MODIFIER_EO;
                         {
                                 VALUE yv = vtm->year;
                                 w = iso8601wknum_v(vtm);
@@ -727,12 +679,10 @@ date_strftime_wo_timespec(char *s, size_t maxsize, const char *format,
 
 
 		case 'L':
-			SKIP_MODIFIER_EO;
 			w = 3;
 			goto subsec;
 
 		case 'N':
-			SKIP_MODIFIER_EO;
 			/*
 			 * fractional second digits. default is 9 digits
 			 * (nanosecond).
@@ -783,11 +733,9 @@ date_strftime_wo_timespec(char *s, size_t maxsize, const char *format,
 			continue;
 
 		case 'F':	/*  Equivalent to %Y-%m-%d */
-			SKIP_MODIFIER_EO;
 			STRFTIME("%Y-%m-%d");
 			continue;
 		case '+':
-			SKIP_MODIFIER_EO;
 			STRFTIME("%a %b %e %H:%M:%S %Z %Y");
 			continue;
 
