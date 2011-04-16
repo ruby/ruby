@@ -1,3 +1,10 @@
+Sat Apr 16 21:55:12 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: replacement of implementation of
+	  _strptime.  [experimental]
+	* ext/date/date_strptime.c: new.
+	* ext/date/lib/date/format.rb: removed ruby version of _strptime.
+
 Sat Apr 16 10:18:30 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* vm.c (Init_VM): suppress warning: "OPT_BASIC_OPERATIONS" is not

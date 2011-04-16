@@ -1356,6 +1356,77 @@ date_s_today(int argc, VALUE *argv, VALUE klass)
     }
 }
 
+VALUE
+zone_to_diff(VALUE s)
+{
+    return rb_funcall(cDate, rb_intern("zone_to_diff"), 1, s);
+}
+
+VALUE
+date__strptime(const char *str, size_t slen,
+	       const char *fmt, size_t flen, VALUE hash);
+
+static VALUE
+date_s__strptime_internal(int argc, VALUE *argv, VALUE klass,
+			  const char *default_fmt)
+{
+    VALUE vstr, vfmt, hash;
+    const char *str, *fmt;
+    size_t slen, flen;
+
+    rb_scan_args(argc, argv, "11", &vstr, &vfmt);
+
+    StringValue(vstr);
+    if (!rb_enc_str_asciicompat_p(vstr))
+	rb_raise(rb_eArgError,
+		 "string should have ASCII compatible encoding");
+    str = RSTRING_PTR(vstr);
+    slen = RSTRING_LEN(vstr);
+    if (argc < 2) {
+	fmt = default_fmt;
+	flen = strlen(default_fmt);
+    }
+    else {
+	StringValue(vfmt);
+	if (!rb_enc_str_asciicompat_p(vfmt))
+	    rb_raise(rb_eArgError,
+		     "format should have ASCII compatible encoding");
+	fmt = RSTRING_PTR(vfmt);
+	flen = RSTRING_LEN(vfmt);
+    }
+    hash = rb_hash_new();
+    if (NIL_P(date__strptime(str, slen, fmt, flen, hash)))
+	return Qnil;
+
+    {
+	VALUE zone = rb_hash_aref(hash, ID2SYM(rb_intern("zone")));
+	VALUE left = rb_hash_aref(hash, ID2SYM(rb_intern("leftover")));
+
+	if (!NIL_P(zone)) {
+	    rb_enc_copy(zone, vstr);
+	    rb_hash_aset(hash, ID2SYM(rb_intern("zone")), zone);
+	}
+	if (!NIL_P(left)) {
+	    rb_enc_copy(left, vstr);
+	    rb_hash_aset(hash, ID2SYM(rb_intern("leftover")), left);
+	}
+    }
+
+    return hash;
+}
+
+/*
+ * call-seq:
+ *    Date._strftime(string, [format="%F"])
+ *
+ * Return a hash of parsed elements.
+ */
+static VALUE
+date_s__strptime(int argc, VALUE *argv, VALUE klass)
+{
+    return date_s__strptime_internal(argc, argv, klass, "%F");
+}
+
 /*
  * call-seq:
  *    d.ajd
@@ -3088,6 +3159,18 @@ datetime_s_now(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
+ *    DateTime._strftime(string, [format="%FT%T%z"])
+ *
+ * Return a hash of parsed elements.
+ */
+static VALUE
+datetime_s__strptime(int argc, VALUE *argv, VALUE klass)
+{
+    return date_s__strptime_internal(argc, argv, klass, "%FT%T%z");
+}
+
+/*
+ * call-seq:
  *    dt.ajd
  *
  * Get the date as an Astronomical Julian Day Number.
@@ -4376,6 +4459,7 @@ Init_date_core(void)
     rb_define_singleton_method(cDate, "new", date_s_civil, -1);
     rb_define_singleton_method(cDate, "commercial", date_s_commercial, -1);
     rb_define_singleton_method(cDate, "today", date_s_today, -1);
+    rb_define_singleton_method(cDate, "_strptime", date_s__strptime, -1);
 
     rb_define_method(cDate, "ajd", d_lite_ajd, 0);
     rb_define_method(cDate, "amjd", d_lite_amjd, 0);
@@ -4451,6 +4535,8 @@ Init_date_core(void)
     rb_define_singleton_method(cDateTime, "commercial",
 			       datetime_s_commercial, -1);
     rb_define_singleton_method(cDateTime, "now", datetime_s_now, -1);
+    rb_define_singleton_method(cDateTime, "_strptime",
+			       datetime_s__strptime, -1);
 
     rb_define_method(cDateTime, "ajd", dt_lite_ajd, 0);
     rb_define_method(cDateTime, "amjd", dt_lite_amjd, 0);
