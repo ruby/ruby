@@ -5,7 +5,7 @@ Sat Apr 16 10:18:30 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 Fri Apr 15 23:41:18 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
-	* ruby.c (proc_options): reduce warning:
+	* ruby.c (proc_options): suppress warning:
 	  "ALLOW_DEFAULT_SOURCE_ENCODING" is not defined.
 
 Fri Apr 15 15:10:29 2011  Akinori MUSHA  <knu@iDaemons.org>
@@ -72,7 +72,7 @@ Thu Apr 14 19:55:54 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 Thu Apr 14 16:01:45 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
-	* io.c (rb_f_syscall): reduce warning: "HAVE___SYSCALL" is not defined.
+	* io.c (rb_f_syscall): suppress warning: "HAVE___SYSCALL" is not defined.
 
 Thu Apr 14 00:41:09 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
