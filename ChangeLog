@@ -610,7 +610,7 @@ Sun Mar 20 21:34:49 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 	  strftime. It has some limitations that is same as Time's
 	  one.  [experimental]
 	* ext/date/date_strftime.c: new.
-	* ext/date/lib/date/format.c: removed ruby version of strftime.
+	* ext/date/lib/date/format.rb: removed ruby version of strftime.
 
 Sun Mar 20 12:43:12 2011  Tanaka Akira  <akr@fsij.org>
 
