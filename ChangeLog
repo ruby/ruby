@@ -1,3 +1,8 @@
+Tue Apr 19 01:00:21 2011  Tajima Akio <artonx@yahoo.co.jp>
+
+	* test/ruby/test_io.rb (TestIO#test_cross_thread_close_fd):
+	  skip cross thread pipe close if windows
+
 Mon Apr 18 12:15:46 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_range.rb (TestRange#test_step_ruby_core_35753):
