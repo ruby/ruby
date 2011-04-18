@@ -1,3 +1,8 @@
+Mon Apr 18 12:15:46 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_range.rb (TestRange#test_step_ruby_core_35753):
+	  avoid float error. [ruby-core:35804]
+
 Sun Apr 17 00:20:14 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_{core,strftime}.c: use struct tmx instead of vtm.
