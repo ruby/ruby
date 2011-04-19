@@ -556,7 +556,7 @@ Also ignores spaces after parenthesis when 'space."
               (progn
                 (and (eq deep 'space) (looking-at ".\\s +[^# \t\n]")
                      (setq pnt (1- (match-end 0))))
-                (setq nest (cons (cons (char-after (point)) pnt) nest))
+                (setq nest (cons (cons (char-after (point)) (point)) nest))
                 (setq pcol (cons (cons pnt depth) pcol))
                 (setq depth 0))
             (setq nest (cons (cons (char-after (point)) pnt) nest))
@@ -566,7 +566,7 @@ Also ignores spaces after parenthesis when 'space."
        ((looking-at "[])}]")
         (if (ruby-deep-indent-paren-p (matching-paren (char-after))
 				      (if nest
-					  (1- (cdr (nth 0 nest)))
+					  (cdr (nth 0 nest))
 					(save-excursion
 					  (forward-char)
 					  (ruby-backward-sexp)

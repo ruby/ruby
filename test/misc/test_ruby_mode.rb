@@ -147,5 +147,21 @@ class TestRubyMode
       |  end
       |')
     end
+
+    def test_array_after_paren_and_space
+      assert_indent('
+      |class A
+      |  def foo
+      |    foo( [])
+      |  end
+      |end
+      |', '
+      |class A
+      | def foo
+      |foo( [])
+      |end
+      |  end
+      |')
+    end
   end
 end if TestRubyMode::EMACS
