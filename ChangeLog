@@ -1,3 +1,8 @@
+Thu Apr 21 01:01:28 2011  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* win32/win32.c (CreateChild): maximum length of lpCommandLine is
+	  32,768 characters, including the Unicode terminating null character.
+	
 Wed Apr 20 21:32:11 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_strptime.c (date__strptime_internal): do not
