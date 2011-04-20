@@ -1,3 +1,8 @@
+Wed Apr 20 21:40:36 2011  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.h (RMATCH_REGS): parenthesize cast expression.  suggested
+	  from Nikolai Weibull in [ruby-core:35825].
+
 Mon Apr 18 10:04:41 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	backported r31286 from trunk
