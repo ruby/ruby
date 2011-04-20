@@ -1,3 +1,8 @@
+Wed Apr 20 14:41:28 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_each_line): check string's length when compare
+	  separator and string. [ruby-core:35815] fixes #4586
+
 Wed Apr 20 00:02:13 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-parse-partial): use position of open paren.
