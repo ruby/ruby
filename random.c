@@ -760,8 +760,8 @@ random_load(VALUE obj, VALUE dump)
  *     srand(number=0)    -> old_seed
  *
  *  Seeds the pseudorandom number generator to the value of
- *  <i>number</i>. If <i>number</i> is omitted
- *  or zero, seeds the generator using a combination of the time, the
+ *  <i>number</i>. If <i>number</i> is omitted,
+ *  seeds the generator using a combination of the time, the
  *  process id, and a sequence number. (This is also the behavior if
  *  <code>Kernel::rand</code> is called without previously calling
  *  <code>srand</code>, but without the sequence.) By setting the seed
