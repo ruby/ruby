@@ -1,3 +1,8 @@
+Wed Apr 20 21:32:11 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_strptime.c (date__strptime_internal): do not
+	  overwrite local variables.
+
 Wed Apr 20 14:41:28 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_str_each_line): check string's length when compare

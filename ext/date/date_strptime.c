@@ -576,6 +576,7 @@ date__strptime_internal(const char *str, size_t slen,
 		    }
 
 		    b = rb_backref_get();
+		    rb_match_busy(b);
 		    m = f_match(pat, rb_usascii_str_new2(&str[si]));
 
 		    if (!NIL_P(m)) {
