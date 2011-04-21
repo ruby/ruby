@@ -73,6 +73,7 @@ static VALUE parse(VALUE self, VALUE yaml)
     yaml_parser_t * parser;
     yaml_event_t event;
     int done = 0;
+    int tainted = 0;
 #ifdef HAVE_RUBY_ENCODING_H
     int encoding = rb_utf8_encindex();
     rb_encoding * internal_enc = rb_default_internal_encoding();
@@ -81,8 +82,11 @@ static VALUE parse(VALUE self, VALUE yaml)
 
     Data_Get_Struct(self, yaml_parser_t, parser);
 
+    if (OBJ_TAINTED(yaml)) tainted = 1;
+
     if(rb_respond_to(yaml, id_read)) {
 	yaml_parser_set_input(parser, io_reader, (void *)yaml);
+	if (RTEST(rb_obj_is_kind_of(yaml, rb_cIO))) tainted = 1;
     } else {
 	StringValue(yaml);
 	yaml_parser_set_input_string(
@@ -140,6 +144,7 @@ static VALUE parse(VALUE self, VALUE yaml)
 			VALUE prefix = Qnil;
 			if(start->handle) {
 			    handle = rb_str_new2((const char *)start->handle);
+			    if (tainted) OBJ_TAINT(handle);
 #ifdef HAVE_RUBY_ENCODING_H
 			    PSYCH_TRANSCODE(handle, encoding, internal_enc);
 #endif
@@ -147,6 +152,7 @@ static VALUE parse(VALUE self, VALUE yaml)
 
 			if(start->prefix) {
 			    prefix = rb_str_new2((const char *)start->prefix);
+			    if (tainted) OBJ_TAINT(prefix);
 #ifdef HAVE_RUBY_ENCODING_H
 			    PSYCH_TRANSCODE(prefix, encoding, internal_enc);
 #endif
@@ -171,6 +177,7 @@ static VALUE parse(VALUE self, VALUE yaml)
 		VALUE alias = Qnil;
 		if(event.data.alias.anchor) {
 		    alias = rb_str_new2((const char *)event.data.alias.anchor);
+		    if (tainted) OBJ_TAINT(alias);
 #ifdef HAVE_RUBY_ENCODING_H
 		    PSYCH_TRANSCODE(alias, encoding, internal_enc);
 #endif
@@ -188,6 +195,7 @@ static VALUE parse(VALUE self, VALUE yaml)
 		    (const char *)event.data.scalar.value,
 		    (long)event.data.scalar.length
 		    );
+		if (tainted) OBJ_TAINT(val);
 
 #ifdef HAVE_RUBY_ENCODING_H
 		PSYCH_TRANSCODE(val, encoding, internal_enc);
@@ -195,6 +203,7 @@ static VALUE parse(VALUE self, VALUE yaml)
 
 		if(event.data.scalar.anchor) {
 		    anchor = rb_str_new2((const char *)event.data.scalar.anchor);
+		    if (tainted) OBJ_TAINT(anchor);
 #ifdef HAVE_RUBY_ENCODING_H
 		    PSYCH_TRANSCODE(anchor, encoding, internal_enc);
 #endif
@@ -202,6 +211,7 @@ static VALUE parse(VALUE self, VALUE yaml)
 
 		if(event.data.scalar.tag) {
 		    tag = rb_str_new2((const char *)event.data.scalar.tag);
+		    if (tainted) OBJ_TAINT(tag);
 #ifdef HAVE_RUBY_ENCODING_H
 		    PSYCH_TRANSCODE(tag, encoding, internal_enc);
 #endif
@@ -226,6 +236,7 @@ static VALUE parse(VALUE self, VALUE yaml)
 		VALUE implicit, style;
 		if(event.data.sequence_start.anchor) {
 		    anchor = rb_str_new2((const char *)event.data.sequence_start.anchor);
+		    if (tainted) OBJ_TAINT(anchor);
 #ifdef HAVE_RUBY_ENCODING_H
 		    PSYCH_TRANSCODE(anchor, encoding, internal_enc);
 #endif
@@ -234,6 +245,7 @@ static VALUE parse(VALUE self, VALUE yaml)
 		tag = Qnil;
 		if(event.data.sequence_start.tag) {
 		    tag = rb_str_new2((const char *)event.data.sequence_start.tag);
+		    if (tainted) OBJ_TAINT(tag);
 #ifdef HAVE_RUBY_ENCODING_H
 		    PSYCH_TRANSCODE(tag, encoding, internal_enc);
 #endif
@@ -258,6 +270,7 @@ static VALUE parse(VALUE self, VALUE yaml)
 		VALUE implicit, style;
 		if(event.data.mapping_start.anchor) {
 		    anchor = rb_str_new2((const char *)event.data.mapping_start.anchor);
+		    if (tainted) OBJ_TAINT(anchor);
 #ifdef HAVE_RUBY_ENCODING_H
 		    PSYCH_TRANSCODE(anchor, encoding, internal_enc);
 #endif
@@ -265,6 +278,7 @@ static VALUE parse(VALUE self, VALUE yaml)
 
 		if(event.data.mapping_start.tag) {
 		    tag = rb_str_new2((const char *)event.data.mapping_start.tag);
+		    if (tainted) OBJ_TAINT(tag);
 #ifdef HAVE_RUBY_ENCODING_H
 		    PSYCH_TRANSCODE(tag, encoding, internal_enc);
 #endif
