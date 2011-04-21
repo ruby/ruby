@@ -210,6 +210,9 @@ module XMLRPC
         when Float
           @writer.tag("double", param.to_s)
 
+        when BigDecimal
+          @writer.tag("double", param.to_s("F"))
+
         when Struct
           h = param.members.collect do |key|
             value = param[key]
