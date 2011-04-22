@@ -206,8 +206,7 @@ module XMLRPC
           end
 
         when Float
-          raise "Wrong value Infinity. Not allowed!" if param.infinite?
-          raise "Wrong value NaN. Not allowed!" if param.nan?
+          raise "Wrong value #{param}. Not allowed!" unless param.finite?
           @writer.tag("double", param.to_s)
 
         when Struct
