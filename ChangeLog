@@ -1,3 +1,8 @@
+Fri Apr 22 12:04:15 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* array.c (rb_ary_sort_bang): fix rdoc.
+	  patched by burningTyger. https://github.com/ruby/ruby/pull/11
+
 Fri Apr 22 11:49:49 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/xmlrpc/create.rb (XMLRPC::Create#conv2value):

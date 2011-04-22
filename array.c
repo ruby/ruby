@@ -2068,8 +2068,8 @@ sort_2(const void *ap, const void *bp, void *dummy)
  *  <code>Enumerable#sort_by</code>.
  *
  *     a = [ "d", "a", "e", "c", "b" ]
- *     a.sort                    #=> ["a", "b", "c", "d", "e"]
- *     a.sort {|x,y| y <=> x }   #=> ["e", "d", "c", "b", "a"]
+ *     a.sort!                    #=> ["a", "b", "c", "d", "e"]
+ *     a.sort! {|x,y| y <=> x }   #=> ["e", "d", "c", "b", "a"]
  */
 
 VALUE
