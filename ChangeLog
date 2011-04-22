@@ -1,3 +1,12 @@
+Fri Apr 22 11:49:49 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/xmlrpc/create.rb (XMLRPC::Create#conv2value):
+	  XML-RPC's int is 32bit int, and Fixnum also may be beyond 32bit.
+
+	* lib/xmlrpc/create.rb (XMLRPC::Create#conv2value):
+	  XML-RPC doesn't allow Infinity and NaN.
+	  http://www.xmlrpc.com/spec
+
 Fri Apr 22 04:16:14 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/parser.c (parse): strings from psych have proper taint
