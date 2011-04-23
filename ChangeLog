@@ -1,3 +1,9 @@
+Sun Apr 24 02:25:23 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* include/ruby/intern.h: pcc can't use __builtin_constant_p.
+
+	* vm_exec.c: change condition.
+
 Sun Apr 24 01:58:01 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/date/date_core.c (leap_p): surpress warning: parentheses.

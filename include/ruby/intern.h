@@ -715,7 +715,7 @@ VALUE rb_str_length(VALUE);
 long rb_str_offset(VALUE, long);
 size_t rb_str_capacity(VALUE);
 VALUE rb_str_ellipsize(VALUE, long);
-#if defined __GNUC__
+#if defined(__GNUC__) && !defined(__PCC__)
 #define rb_str_new_cstr(str) __extension__ (	\
 {						\
     (__builtin_constant_p(str)) ?		\
