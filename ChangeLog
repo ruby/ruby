@@ -1,3 +1,8 @@
+Sun Apr 24 00:34:23 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_parse.c: removed some unused macros.  use strchr()
+	  instead of index().
+
 Sat Apr 23 21:29:42 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: replacement of implementation of

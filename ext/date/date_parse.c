@@ -296,8 +296,7 @@ parse_day_cb(VALUE m, VALUE hash)
 static int
 parse_day(VALUE str, VALUE hash)
 {
-    static const char pat_source[] =
-	"\\b(" ABBR_DAYS ")[^-\\d\\s]*";
+    static const char pat_source[] = "\\b(" ABBR_DAYS ")[^-\\d\\s]*";
     static VALUE pat = Qnil;
 
     REGCOMP_I(pat);
@@ -555,8 +554,7 @@ parse_iso22_cb(VALUE m, VALUE hash)
 static int
 parse_iso22(VALUE str, VALUE hash)
 {
-    static const char pat_source[] =
-	"-w-(\\d)\\b";
+    static const char pat_source[] = "-w-(\\d)\\b";
     static VALUE pat = Qnil;
 
     REGCOMP_I(pat);
@@ -581,8 +579,7 @@ parse_iso23_cb(VALUE m, VALUE hash)
 static int
 parse_iso23(VALUE str, VALUE hash)
 {
-    static const char pat_source[] =
-	"--(\\d{2})?-(\\d{2})\\b";
+    static const char pat_source[] = "--(\\d{2})?-(\\d{2})\\b";
     static VALUE pat = Qnil;
 
     REGCOMP_0(pat);
@@ -607,8 +604,7 @@ parse_iso24_cb(VALUE m, VALUE hash)
 static int
 parse_iso24(VALUE str, VALUE hash)
 {
-    static const char pat_source[] =
-	"--(\\d{2})(\\d{2})?\\b";
+    static const char pat_source[] = "--(\\d{2})(\\d{2})?\\b";
     static VALUE pat = Qnil;
 
     REGCOMP_0(pat);
@@ -632,11 +628,9 @@ parse_iso25_cb(VALUE m, VALUE hash)
 static int
 parse_iso25(VALUE str, VALUE hash)
 {
-    static const char pat0_source[] =
-	"[,.](\\d{2}|\\d{4})-\\d{3}\\b";
+    static const char pat0_source[] = "[,.](\\d{2}|\\d{4})-\\d{3}\\b";
     static VALUE pat0 = Qnil;
-    static const char pat_source[] =
-	"\\b(\\d{2}|\\d{4})-(\\d{3})\\b";
+    static const char pat_source[] = "\\b(\\d{2}|\\d{4})-(\\d{3})\\b";
     static VALUE pat = Qnil;
 
     REGCOMP_0(pat0);
@@ -660,11 +654,9 @@ parse_iso26_cb(VALUE m, VALUE hash)
 static int
 parse_iso26(VALUE str, VALUE hash)
 {
-    static const char pat0_source[] =
-	"\\d-\\d{3}\\b";
+    static const char pat0_source[] = "\\d-\\d{3}\\b";
     static VALUE pat0 = Qnil;
-    static const char pat_source[] =
-	"\\b-(\\d{3})\\b";
+    static const char pat_source[] = "\\b-(\\d{3})\\b";
     static VALUE pat = Qnil;
 
     REGCOMP_0(pat0);
@@ -1102,7 +1094,7 @@ parse_ddd_cb(VALUE m, VALUE hash)
 	    buf[l5 - 1] = '\0';
 
 	    s1 = buf + 1;
-	    s2 = index(buf, ':');
+	    s2 = strchr(buf, ':');
 	    if (s2) {
 		*s2 = '\0';
 		s2++;
@@ -1233,8 +1225,6 @@ check_class(VALUE s)
     return flags;
 }
 
-#define HAVE_ALPHA_P() (check_class(str) & HAVE_ALPHA)
-#define HAVE_DIGIT_P() (check_class(str) & HAVE_DIGIT)
 #define HAVE_ELEM_P(x) ((check_class(str) & (x)) == (x))
 
 VALUE
