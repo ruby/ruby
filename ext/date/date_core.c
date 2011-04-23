@@ -1417,7 +1417,7 @@ date_s__strptime_internal(int argc, VALUE *argv, VALUE klass,
 
 /*
  * call-seq:
- *    Date._strptime(string, [format="%F"])
+ *    Date._strptime(string[, format="%F"])
  *
  * Return a hash of parsed elements.
  */
@@ -1425,6 +1425,50 @@ static VALUE
 date_s__strptime(int argc, VALUE *argv, VALUE klass)
 {
     return date_s__strptime_internal(argc, argv, klass, "%F");
+}
+
+VALUE
+date__parse(VALUE str, VALUE comp);
+
+static VALUE
+date_s__parse_internal(int argc, VALUE *argv, VALUE klass)
+{
+    VALUE vstr, vcomp, hash;
+    const char *str;
+
+    rb_scan_args(argc, argv, "11", &vstr, &vcomp);
+    StringValue(vstr);
+    if (!rb_enc_str_asciicompat_p(vstr))
+	rb_raise(rb_eArgError,
+		 "string should have ASCII compatible encoding");
+    str = RSTRING_PTR(vstr);
+    if (argc < 2)
+	vcomp = Qtrue;
+
+    hash = date__parse(vstr, vcomp);
+
+    {
+	VALUE zone = rb_hash_aref(hash, ID2SYM(rb_intern("zone")));
+
+	if (!NIL_P(zone)) {
+	    rb_enc_copy(zone, vstr);
+	    rb_hash_aset(hash, ID2SYM(rb_intern("zone")), zone);
+	}
+    }
+
+    return hash;
+}
+
+/*
+ * call-seq:
+ *    Date._parse(string[, comp=true])
+ *
+ * Return a hash of parsed elements.
+ */
+static VALUE
+date_s__parse(int argc, VALUE *argv, VALUE klass)
+{
+    return date_s__parse_internal(argc, argv, klass);
 }
 
 /*
@@ -3155,7 +3199,7 @@ datetime_s_now(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    DateTime._strptime(string, [format="%FT%T%z"])
+ *    DateTime._strptime(string[, format="%FT%T%z"])
  *
  * Return a hash of parsed elements.
  */
@@ -4454,6 +4498,7 @@ Init_date_core(void)
     rb_define_singleton_method(cDate, "commercial", date_s_commercial, -1);
     rb_define_singleton_method(cDate, "today", date_s_today, -1);
     rb_define_singleton_method(cDate, "_strptime", date_s__strptime, -1);
+    rb_define_singleton_method(cDate, "_parse", date_s__parse, -1);
 
     rb_define_method(cDate, "ajd", d_lite_ajd, 0);
     rb_define_method(cDate, "amjd", d_lite_amjd, 0);

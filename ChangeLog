@@ -1,3 +1,10 @@
+Sat Apr 23 21:29:42 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: replacement of implementation of
+	  _parse.  [experimental]
+	* ext/date/date_parse.c: new.
+	* ext/date/lib/date/format.rb: removed ruby version of _parse.
+
 Fri Apr 22 12:04:15 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* array.c (rb_ary_sort_bang): fix rdoc.
