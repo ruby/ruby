@@ -900,9 +900,10 @@ parse_mday(VALUE str, VALUE hash)
 }
 
 static int
-n2i(const char *s, int f, int w)
+n2i(const char *s, long f, long w)
 {
-    int e, v, i;
+    long e, i;
+    int v;
     
     e = f + w;
     v = 0;
