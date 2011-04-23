@@ -918,7 +918,7 @@ parse_ddd_cb(VALUE m, VALUE hash)
 {
     VALUE s1, s2, s3, s4, s5;
     const char *cs2, *cs3, *cs5;
-    long l2, l3, l4, l5;
+    int l2, l3, l4, l5;
 
     s1 = f_aref(m, INT2FIX(1));
     s2 = f_aref(m, INT2FIX(2));
@@ -927,7 +927,7 @@ parse_ddd_cb(VALUE m, VALUE hash)
     s5 = f_aref(m, INT2FIX(5));
 
     cs2 = RSTRING_PTR(s2);
-    l2 = RSTRING_LEN(s2);
+    l2 = RSTRING_LENINT(s2);
 
     switch (l2) {
       case 2:
@@ -1042,7 +1042,7 @@ parse_ddd_cb(VALUE m, VALUE hash)
     }
     if (!NIL_P(s3)) {
 	cs3 = RSTRING_PTR(s3);
-	l3 = RSTRING_LEN(s3);
+	l3 = RSTRING_LENINT(s3);
 
 	if (!NIL_P(s4)) {
 	    switch (l3) {
@@ -1072,7 +1072,7 @@ parse_ddd_cb(VALUE m, VALUE hash)
 	}
     }
     if (!NIL_P(s4)) {
-	l4 = RSTRING_LEN(s4);
+	l4 = RSTRING_LENINT(s4);
 
 	set_hash("sec_fraction",
 		 rb_rational_new2(str2num(s4),
@@ -1081,7 +1081,7 @@ parse_ddd_cb(VALUE m, VALUE hash)
     if (!NIL_P(s5)) {
 	VALUE zone_to_diff(VALUE s);
 	cs5 = RSTRING_PTR(s5);
-	l5 = RSTRING_LEN(s5);
+	l5 = RSTRING_LENINT(s5);
 
 	set_hash("zone", s5);
 

@@ -1,3 +1,15 @@
+Sun Apr 24 01:58:01 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/date/date_core.c (leap_p): surpress warning: parentheses.
+
+	* ext/date/date_core.c (date_s__parse_internal): remove unused
+	  variable "str".
+
+	* ext/date/date_parse.c (parse_ddd_cb): use RSTRING_LENINT.
+
+	* ext/date/date_strftime.c (date_strftime_with_tmx): remove unused
+	  variable.
+
 Sun Apr 24 00:34:23 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_parse.c: removed some unused macros.  use strchr()

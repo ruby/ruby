@@ -440,7 +440,7 @@ static const int monthtab[2][13] = {
 inline static int
 leap_p(int y)
 {
-    return MOD(y, 4) == 0 && y % 100 != 0 || MOD(y, 400) == 0;
+    return (MOD(y, 4) == 0 && y % 100 != 0) || (MOD(y, 400) == 0);
 }
 
 static int
@@ -1434,14 +1434,12 @@ static VALUE
 date_s__parse_internal(int argc, VALUE *argv, VALUE klass)
 {
     VALUE vstr, vcomp, hash;
-    const char *str;
 
     rb_scan_args(argc, argv, "11", &vstr, &vcomp);
     StringValue(vstr);
     if (!rb_enc_str_asciicompat_p(vstr))
 	rb_raise(rb_eArgError,
 		 "string should have ASCII compatible encoding");
-    str = RSTRING_PTR(vstr);
     if (argc < 2)
 	vcomp = Qtrue;
 
