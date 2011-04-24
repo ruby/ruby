@@ -1,3 +1,8 @@
+Mon Apr 25 03:31:06 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/time.rb: require 'date'.
+	* ext/date/lib/date/format.rb: removed require line.
+
 Mon Apr 25 03:08:39 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/lib/date/format.rb: require 'date'.

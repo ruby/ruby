@@ -40,7 +40,7 @@
 # The above statements are not valid now.
 #
 
-require 'date/format'
+require 'date'
 
 #
 # Implements the extensions to the Time class that are described in the

@@ -1,7 +1,5 @@
 # format.rb: Written by Tadayoshi Funaba 1999-2011
 
-require 'date'
-
 class Date
 
   module Format # :nodoc:
