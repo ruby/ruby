@@ -1,3 +1,9 @@
+Mon Apr 25 02:51:22 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/date/lib/date/format.rb: require 'date_core.so'.
+	  date/format needs methods which are now in date_core.so.
+	  This breaks make rdoc which uses Date._parse from time.rb.
+
 Mon Apr 25 02:47:46 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/lib/date/format.rb: fixed a bug of regex.
