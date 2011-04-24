@@ -1,3 +1,7 @@
+Mon Apr 25 08:24:04 2011  Shota Fukumori  <sorah@tubusu.net>
+
+	* random.c (rb_f_rand, random_s_rand): RDocs for them.
+
 Mon Apr 25 07:18:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* random.c (random_s_rand, Init_Random): Random.rand should behave as

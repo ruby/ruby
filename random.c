@@ -1199,14 +1199,22 @@ random_equal(VALUE self, VALUE other)
  *  call-seq:
  *     rand(max=0)    -> number
  *
- *  Converts <i>max</i> to an integer using max1 =
- *  max<code>.to_i.abs</code>. If _max_ is +nil+ the result is zero, returns a
- *  pseudorandom floating point number greater than or equal to 0.0 and
- *  less than 1.0. Otherwise, returns a pseudorandom integer greater
- *  than or equal to zero and less than max1. <code>Kernel::srand</code>
- *  may be used to ensure repeatable sequences of random numbers between
- *  different runs of the program. Ruby currently uses a modified
- *  Mersenne Twister with a period of 2**19937-1.
+ *
+ *  If <i>max</i> is +Range+, returns a pseudorandom number where
+ *  range.member(number) == true.
+ *
+ *  Or else converts _max_ to an integer using max1 =
+ *  max<code>.to_i.abs</code>. 
+ *
+ *  Then if _max_ is +nil+ the result is zero, returns a pseudorandom floating
+ *  point number greater than or equal to 0.0 and less than 1.0.
+ *
+ *  Otherwise, returns a pseudorandom integer greater than or equal to zero and
+ *  less than max1.
+ *
+ *  <code>Kernel::srand</code> may be used to ensure repeatable sequences of
+ *  random numbers between different runs of the program. Ruby currently uses
+ *  a modified Mersenne Twister with a period of 2**19937-1.
  *
  *     srand 1234                 #=> 0
  *     [ rand,  rand ]            #=> [0.191519450163469, 0.49766366626136]
@@ -1234,6 +1242,15 @@ rb_f_rand(int argc, VALUE *argv, VALUE obj)
     }
     return r;
 }
+
+/*
+ *  call-seq:
+ *     Random.rand -> float
+ *     Random.rand(limit) -> number
+ *
+ *     Alias of _Random::DEFAULT.rand_.
+ *
+ */
 
 static VALUE
 random_s_rand(int argc, VALUE *argv, VALUE obj)
