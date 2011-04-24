@@ -145,36 +145,173 @@ class Date
   end
 
   def self._iso8601(str) # :nodoc:
-    if /\A\s*(([-+]?\d{2,}|-)-\d{2}-\d{2}|
-	      ([-+]?\d{2,})?-\d{3}|
-	      (\d{2}|\d{4})?-w\d{2}-\d|
-	      -w-\d)
-	(t
-	\d{2}:\d{2}(:\d{2}([,.]\d+)?)?
+    if /\A\s*(?:([-+]?\d{2,}|-)-(\d{2})-(\d{2})|
+	        ([-+]?\d{2,})?-(\d{3})|
+	        (\d{2}|\d{4})?-w(\d{2})-(\d)|
+	        -w-(\d))
+	(?:t
+	(\d{2}):(\d{2})(?::(\d{2})(?:[,.](\d+))?)?
+	(z|[-+]\d{2}(?::?\d{2})?)?)?\s*\z/ix =~ str
+      if $3
+	e = {
+	  :mon => $2.to_i,
+	  :mday => $3.to_i
+	}
+	if $1 != '-'
+	  y = $1.to_i
+	  if $1.size < 4
+	    y += if y >= 69 then 1900 else 2000 end
+	  end
+	  e[:year] = y
+	end
+      elsif $5
+	e = {
+	  :yday => $5.to_i
+	}
+	if $4
+	  y = $4.to_i
+	  if $4.size < 4
+	    y += if y >= 69 then 1900 else 2000 end
+	  end
+	  e[:year] = y
+	end
+      elsif $8
+	e = {
+	  :cweek => $7.to_i,
+	  :cwday => $8.to_i
+	}
+	if $6
+	  y = $6.to_i
+	  if $6.size < 4
+	    y += if y >= 69 then 1900 else 2000 end
+	  end
+	  e[:cwyear] = y
+	end
+      elsif $9
+	e = {
+	  :cwday => $9.to_i
+	}
+      end
+      if $10
+	e[:hour] = $10.to_i
+	e[:min] = $11.to_i
+	e[:sec] = $12.to_i if $12
+      end
+      if $13
+	e[:sec_fraction] = Rational($13.to_i, 10**$13.size)
+      end
+      if $14
+	e[:zone] = $14
+	e[:offset] = zone_to_diff($14)
+      end
+      e
+    elsif /\A\s*(?:([-+]?(?:\d{4}|\d{2})|--)(\d{2})(\d{2})|
+		   ([-+]?(?:\d{4}|\d{2}))?(\d{3)}|-(\d{3})|
+		   (\d{4}|\d{2})?w(\d{2})(\d))
+	(?:t?
+	(\d{2})(\d{2})(?:(\d{2})(?:[,.](\d+))?)?
+	(z|[-+]\d{2}(?:\d{2})?)?)?\s*\z/ix =~ str
+      if $3
+	e = {
+	  :mon => $2.to_i,
+	  :mday => $3.to_i
+	}
+	if $1 != '--'
+	  y = $1.to_i
+	  if $1.size < 4
+	    y += if y >= 69 then 1900 else 2000 end
+	  end
+	  e[:year] = y
+	end
+      elsif $5
+	e = {
+	  :yday => $5.to_i
+	}
+	if $4
+	  y = $4.to_i
+	  if $4.size < 4
+	    y += if y >= 69 then 1900 else 2000 end
+	  end
+	  e[:year] = y
+	end
+      elsif $6
+	e = {
+	  :yday => $6.to_i
+	}
+      elsif $9
+	e = {
+	  :cweek => $8.to_i,
+	  :cwday => $9.to_i
+	}
+	if $7
+	  y = $7.to_i
+	  if $7.size < 4
+	    y += if y >= 69 then 1900 else 2000 end
+	  end
+	  e[:cwyear] = y
+	end
+      end
+      if $10
+	e[:hour] = $10.to_i
+	e[:min] = $11.to_i
+	e[:sec] = $12.to_i if $12
+      end
+      if $13
+	e[:sec_fraction] = Rational($13.to_i, 10**$13.size)
+      end
+      if $14
+	e[:zone] = $14
+	e[:offset] = zone_to_diff($14)
+      end
+      e
+    elsif /\A\s*(?:(\d{2}):(\d{2})(?::(\d{2})(?:[,.](\d+))?)?
 	(z|[-+]\d{2}(:?\d{2})?)?)?\s*\z/ix =~ str
-      _parse(str)
-    elsif /\A\s*(([-+]?(\d{2}|\d{4})|--)\d{2}\d{2}|
-	      ([-+]?(\d{2}|\d{4}))?\d{3}|-\d{3}|
-	      (\d{2}|\d{4})?w\d{2}\d)
-	(t?
-	\d{2}\d{2}(\d{2}([,.]\d+)?)?
+      e = {}
+      e[:hour] = $1.to_i if $1
+      e[:min] = $2.to_i if $2
+      e[:sec] = $3.to_i if $3
+      if $4
+	e[:sec_fraction] = Rational($4.to_i, 10**$4.size)
+      end
+      if $5
+	e[:zone] = $5
+	e[:offset] = zone_to_diff($5)
+      end
+      e
+    elsif /\A\s*(?:(\d{2})(\d{2})(?:(\d{2})(?:[,.](\d+))?)?
 	(z|[-+]\d{2}(\d{2})?)?)?\s*\z/ix =~ str
-      _parse(str)
-    elsif /\A\s*(\d{2}:\d{2}(:\d{2}([,.]\d+)?)?
-	(z|[-+]\d{2}(:?\d{2})?)?)?\s*\z/ix =~ str
-      _parse(str)
-    elsif /\A\s*(\d{2}\d{2}(\d{2}([,.]\d+)?)?
-	(z|[-+]\d{2}(\d{2})?)?)?\s*\z/ix =~ str
-      _parse(str)
+      e = {}
+      e[:hour] = $1.to_i if $1
+      e[:min] = $2.to_i if $2
+      e[:sec] = $3.to_i if $3
+      if $4
+	e[:sec_fraction] = Rational($4.to_i, 10**$4.size)
+      end
+      if $5
+	e[:zone] = $5
+	e[:offset] = zone_to_diff($5)
+      end
+      e
     end
   end
 
   def self._rfc3339(str) # :nodoc:
-    if /\A\s*-?\d{4}-\d{2}-\d{2} # allow minus, anyway
-	(t|\s)
-	\d{2}:\d{2}:\d{2}(\.\d+)?
+    if /\A\s*(-?\d{4})-(\d{2})-(\d{2}) # allow minus, anyway
+	(?:t|\s)
+	(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?
 	(z|[-+]\d{2}:\d{2})\s*\z/ix =~ str
-      _parse(str)
+      e = {
+	:year => $1.to_i,
+	:mon => $2.to_i,
+	:mday => $3.to_i,
+	:hour => $4.to_i,
+	:min => $5.to_i,
+	:sec => $6.to_i,
+	:zone => $8,
+	:offset => zone_to_diff($8)
+      }
+      e[:sec_fraction] = Rational($7.to_i, 10**$7.size) if $7
+      e
     end
   end
 
@@ -223,20 +360,27 @@ class Date
   end
 
   def self._rfc2822(str) # :nodoc:
-    if /\A\s*(?:(?:#{Format::ABBR_DAYS.keys.join('|')})\s*,\s+)?
-	\d{1,2}\s+
-	(?:#{Format::ABBR_MONTHS.keys.join('|')})\s+
-	-?(\d{2,})\s+ # allow minus, anyway
-	\d{2}:\d{2}(?::\d{2})?\s*
-	(?:[-+]\d{4}|ut|gmt|e[sd]t|c[sd]t|m[sd]t|p[sd]t|[a-ik-z])\s*\z/iox =~ str
-      e = _parse(str, false)
-      if $1.size < 4
-	if e[:year] < 50
-	  e[:year] += 2000
-	elsif e[:year] < 1000
-	  e[:year] += 1900
-	end
+    if /\A\s*(?:(#{Format::ABBR_DAYS.keys.join('|')})\s*,\s+)?
+	(\d{1,2})\s+
+	(#{Format::ABBR_MONTHS.keys.join('|')})\s+
+	(-?\d{2,})\s+ # allow minus, anyway
+	(\d{2}):(\d{2})(?::(\d{2}))?\s*
+	([-+]\d{4}|ut|gmt|e[sd]t|c[sd]t|m[sd]t|p[sd]t|[a-ik-z])\s*\z/iox =~ str
+      y = $4.to_i
+      if $4.size < 4
+	y += if y >= 50 then 1900 else 2000 end
       end
+      e = {
+	:wday => Format::ABBR_DAYS[$1.downcase],
+	:mday => $2.to_i,
+	:mon =>  Format::ABBR_MONTHS[$3.downcase],
+	:year => y,
+	:hour => $5.to_i,
+	:min => $6.to_i,
+	:zone => $8,
+	:offset => zone_to_diff($8)
+      }
+      e[:sec] = $7.to_i if $7
       e
     end
   end
@@ -245,38 +389,89 @@ class Date
 
   def self._httpdate(str) # :nodoc:
     if /\A\s*(#{Format::ABBR_DAYS.keys.join('|')})\s*,\s+
-	\d{2}\s+
+	(\d{2})\s+
 	(#{Format::ABBR_MONTHS.keys.join('|')})\s+
-	-?\d{4}\s+ # allow minus, anyway
-	\d{2}:\d{2}:\d{2}\s+
-	gmt\s*\z/iox =~ str
-      _rfc2822(str)
+	(-?\d{4})\s+ # allow minus, anyway
+	(\d{2}):(\d{2}):(\d{2})\s+
+	(gmt)\s*\z/iox =~ str
+      {
+	:wday => Format::ABBR_DAYS[$1.downcase],
+	:mday => $2.to_i,
+	:mon =>  Format::ABBR_MONTHS[$3.downcase],
+	:year => $4.to_i,
+	:hour => $5.to_i,
+	:min => $6.to_i,
+	:sec => $7.to_i,
+	:zone => $8,
+	:offset => zone_to_diff($8)
+      }
     elsif /\A\s*(#{Format::DAYS.keys.join('|')})\s*,\s+
-	\d{2}\s*-\s*
+	(\d{2})\s*-\s*
 	(#{Format::ABBR_MONTHS.keys.join('|')})\s*-\s*
-	\d{2}\s+
-	\d{2}:\d{2}:\d{2}\s+
-	gmt\s*\z/iox =~ str
-      _parse(str)
+	(\d{2})\s+
+	(\d{2}):(\d{2}):(\d{2})\s+
+	(gmt)\s*\z/iox =~ str
+      y = $4.to_i
+      if y >= 0 && y <= 99
+	y += if y >= 69 then 1900 else 2000 end
+      end
+      {
+	:wday => Format::DAYS[$1.downcase],
+	:mday => $2.to_i,
+	:mon =>  Format::ABBR_MONTHS[$3.downcase],
+	:year => y,
+	:hour => $5.to_i,
+	:min => $6.to_i,
+	:sec => $7.to_i,
+	:zone => $8,
+	:offset => zone_to_diff($8)
+      }
     elsif /\A\s*(#{Format::ABBR_DAYS.keys.join('|')})\s+
 	(#{Format::ABBR_MONTHS.keys.join('|')})\s+
-	\d{1,2}\s+
-	\d{2}:\d{2}:\d{2}\s+
-	\d{4}\s*\z/iox =~ str
-      _parse(str)
+	(\d{1,2})\s+
+	(\d{2}):(\d{2}):(\d{2})\s+
+	(\d{4})\s*\z/iox =~ str
+      {
+	:wday => Format::ABBR_DAYS[$1.downcase],
+	:mon =>  Format::ABBR_MONTHS[$2.downcase],
+	:mday => $3.to_i,
+	:hour => $4.to_i,
+	:min => $5.to_i,
+	:sec => $6.to_i,
+	:year => $7.to_i
+      }
     end
   end
 
   def self._jisx0301(str) # :nodoc:
-    if /\A\s*[mtsh]?\d{2}\.\d{2}\.\d{2}
-	(t
-	(\d{2}:\d{2}(:\d{2}([,.]\d*)?)?
-	(z|[-+]\d{2}(:?\d{2})?)?)?)?\s*\z/ix =~ str
-      if /\A\s*\d/ =~ str
-	_parse(str.sub(/\A\s*(\d)/, 'h\1'))
-      else
-	_parse(str)
+    if /\A\s*([mtsh])?(\d{2})\.(\d{2})\.(\d{2})
+	(?:t
+	(?:(\d{2}):(\d{2})(?::(\d{2})(?:[,.](\d*))?)?
+	(z|[-+]\d{2}(?::?\d{2})?)?)?)?\s*\z/ix =~ str
+      era = {
+	'm'=>1867,
+	't'=>1911,
+	's'=>1925,
+	'h'=>1988
+      }[$1 ? $1.downcase : 'h']
+      e = {
+	:year => $2.to_i + era,
+	:mon =>  $3.to_i,
+	:mday => $4.to_i
+      }
+      if $5
+	e[:hour] = $5.to_i
+	e[:min] = $6.to_i if $6
+	e[:sec] = $7.to_i if $7
       end
+      if $8
+	e[:sec_fraction] = Rational($8.to_i, 10**$8.size)
+      end
+      if $9
+	e[:zone] = $9
+	e[:offset] = zone_to_diff($9)
+      end
+      e
     else
       _iso8601(str)
     end
