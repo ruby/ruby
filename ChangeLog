@@ -1,3 +1,7 @@
+Mon Apr 25 02:12:26 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/lib/date/format.rb: an adjustment of regex.
+
 Mon Apr 25 01:58:50 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/lib/date/format.rb: omitted to call _parse.
