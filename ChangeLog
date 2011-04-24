@@ -1,3 +1,7 @@
+Mon Apr 25 01:03:03 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* string.c (rb_to_id): remove unused variable.
+
 Sun Apr 24 22:19:05 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c, rational.c: omitted some method calls.

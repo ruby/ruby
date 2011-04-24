@@ -7678,7 +7678,6 @@ ID
 rb_to_id(VALUE name)
 {
     VALUE tmp;
-    ID id;
 
     switch (TYPE(name)) {
       default:
@@ -7696,7 +7695,7 @@ rb_to_id(VALUE name)
       case T_SYMBOL:
 	return SYM2ID(name);
     }
-    return id;
+    return Qnil; /* not reached */
 }
 
 /*
