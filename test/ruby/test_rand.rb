@@ -347,19 +347,33 @@ END
   end
 
   def test_random_range
+    srand(0)
     r = Random.new(0)
-    %w(9 5 8).each {|w| assert_equal(w.to_i, r.rand(5..9)) }
-    %w(-237 731 383).each {|w| assert_equal(w.to_i, r.rand(-1000..1000)) }
+    %w(9 5 8).each {|w|
+      assert_equal(w.to_i, rand(5..9))
+      assert_equal(w.to_i, r.rand(5..9))
+    }
+    %w(-237 731 383).each {|w|
+      assert_equal(w.to_i, rand(-1000..1000))
+      assert_equal(w.to_i, r.rand(-1000..1000))
+    }
     %w(1267650600228229401496703205382
        1267650600228229401496703205384
        1267650600228229401496703205383).each do |w|
+      assert_equal(w.to_i, rand(2**100+5..2**100+9))
       assert_equal(w.to_i, r.rand(2**100+5..2**100+9))
     end
+
+    v = rand(3.1..4)
+    assert_instance_of(Float, v, '[ruby-core:24679]')
+    assert_include(3.1..4, v)
+
     v = r.rand(3.1..4)
     assert_instance_of(Float, v, '[ruby-core:24679]')
     assert_include(3.1..4, v)
 
     now = Time.now
+    assert_equal(now, rand(now..now))
     assert_equal(now, r.rand(now..now))
   end
 

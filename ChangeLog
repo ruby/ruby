@@ -1,3 +1,14 @@
+Mon Apr 25 07:18:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* random.c (random_s_rand, Init_Random): Random.rand should behave as
+	  Random::DEFAULT.rand rather than Kernel#rand.
+
+	* random.c (rand_range, random_rand): rand_range function extracted
+	  from random_rand function.
+
+	* random.c (rb_f_rand): accept a Range argument as Random#rand
+	  [ruby-dev:43427] #4605
+
 Mon Apr 25 03:31:06 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/time.rb: require 'date'.

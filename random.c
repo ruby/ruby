@@ -324,6 +324,7 @@ int_pair_to_real_inclusive(unsigned int a, unsigned int b)
 }
 
 VALUE rb_cRandom;
+static VALUE rb_Random_DEFAULT;
 #define id_minus '-'
 #define id_plus  '+'
 static ID id_rand, id_bytes;
@@ -1025,6 +1026,88 @@ float_value(VALUE v)
     return x;
 }
 
+static inline VALUE
+rand_range(struct MT* mt, VALUE range)
+{
+    VALUE beg = Qundef, end = Qundef, vmax, v;
+    int excl = 0;
+
+    if ((v = vmax = range_values(range, &beg, &end, &excl)) == Qfalse)
+	return Qfalse;
+    if (TYPE(vmax) != T_FLOAT && (v = rb_check_to_integer(vmax, "to_int"), !NIL_P(v))) {
+	long max;
+	vmax = v;
+	v = Qnil;
+	if (FIXNUM_P(vmax)) {
+	  fixnum:
+	    if ((max = FIX2LONG(vmax) - excl) >= 0) {
+		unsigned long r = limited_rand(mt, (unsigned long)max);
+		v = ULONG2NUM(r);
+	    }
+	}
+	else if (BUILTIN_TYPE(vmax) == T_BIGNUM && RBIGNUM_SIGN(vmax) && !rb_bigzero_p(vmax)) {
+	    vmax = excl ? rb_big_minus(vmax, INT2FIX(1)) : rb_big_norm(vmax);
+	    if (FIXNUM_P(vmax)) {
+		excl = 0;
+		goto fixnum;
+	    }
+	    v = limited_big_rand(mt, RBIGNUM(vmax));
+	}
+    }
+    else if (v = rb_check_to_float(vmax), !NIL_P(v)) {
+	int scale = 1;
+	double max = RFLOAT_VALUE(v), mid = 0.5, r;
+	if (isinf(max)) {
+	    double min = float_value(rb_to_float(beg)) / 2.0;
+	    max = float_value(rb_to_float(end)) / 2.0;
+	    scale = 2;
+	    mid = max + min;
+	    max -= min;
+	}
+	else {
+	    float_value(v);
+	}
+	v = Qnil;
+	if (max > 0.0) {
+	    if (excl) {
+		r = genrand_real(mt);
+	    }
+	    else {
+		r = genrand_real2(mt);
+	    }
+	    if (scale > 1) {
+		return rb_float_new(+(+(+(r - 0.5) * max) * scale) + mid);
+	    }
+	    v = rb_float_new(r * max);
+	}
+	else if (max == 0.0 && !excl) {
+	    v = rb_float_new(0.0);
+	}
+    }
+
+    if (FIXNUM_P(beg) && FIXNUM_P(v)) {
+	long x = FIX2LONG(beg) + FIX2LONG(v);
+	return LONG2NUM(x);
+    }
+    switch (TYPE(v)) {
+      case T_NIL:
+	break;
+      case T_BIGNUM:
+	return rb_big_plus(v, beg);
+      case T_FLOAT: {
+	VALUE f = rb_check_to_float(beg);
+	if (!NIL_P(f)) {
+	    RFLOAT_VALUE(v) += RFLOAT_VALUE(f);
+	    return v;
+	}
+      }
+      default:
+	return rb_funcall2(beg, id_plus, 1, &v);
+    }
+
+    return v;
+}
+
 /*
  * call-seq:
  *     prng.rand -> float
@@ -1076,58 +1159,8 @@ random_rand(int argc, VALUE *argv, VALUE obj)
 	else
 	    v = Qnil;
     }
-    else if ((v = range_values(vmax, &beg, &end, &excl)) != Qfalse) {
-	vmax = v;
-	if (TYPE(vmax) != T_FLOAT && (v = rb_check_to_integer(vmax, "to_int"), !NIL_P(v))) {
-	    long max;
-	    vmax = v;
-	    v = Qnil;
-	    if (FIXNUM_P(vmax)) {
-	      fixnum:
-		if ((max = FIX2LONG(vmax) - excl) >= 0) {
-		    unsigned long r = limited_rand(&rnd->mt, (unsigned long)max);
-		    v = ULONG2NUM(r);
-		}
-	    }
-	    else if (BUILTIN_TYPE(vmax) == T_BIGNUM && RBIGNUM_SIGN(vmax) && !rb_bigzero_p(vmax)) {
-		vmax = excl ? rb_big_minus(vmax, INT2FIX(1)) : rb_big_norm(vmax);
-		if (FIXNUM_P(vmax)) {
-		    excl = 0;
-		    goto fixnum;
-		}
-		v = limited_big_rand(&rnd->mt, RBIGNUM(vmax));
-	    }
-	}
-	else if (v = rb_check_to_float(vmax), !NIL_P(v)) {
-	    int scale = 1;
-	    double max = RFLOAT_VALUE(v), mid = 0.5, r;
-	    if (isinf(max)) {
-		double min = float_value(rb_to_float(beg)) / 2.0;
-		max = float_value(rb_to_float(end)) / 2.0;
-		scale = 2;
-		mid = max + min;
-		max -= min;
-	    }
-	    else {
-		float_value(v);
-	    }
-	    v = Qnil;
-	    if (max > 0.0) {
-		if (excl) {
-		    r = genrand_real(&rnd->mt);
-		}
-		else {
-		    r = genrand_real2(&rnd->mt);
-		}
-		if (scale > 1) {
-		    return rb_float_new(+(+(+(r - 0.5) * max) * scale) + mid);
-		}
-		v = rb_float_new(r * max);
-	    }
-	    else if (max == 0.0 && !excl) {
-		v = rb_float_new(0.0);
-	    }
-	}
+    else if ((v = rand_range(&rnd->mt, vmax)) != Qfalse) {
+	/* nothing to do */
     }
     else {
 	v = Qnil;
@@ -1138,24 +1171,8 @@ random_rand(int argc, VALUE *argv, VALUE obj)
 	rb_str_append(mesg, rb_obj_as_string(argv[0]));
 	rb_exc_raise(rb_exc_new3(rb_eArgError, mesg));
     }
-    if (beg == Qundef) return v;
-    if (FIXNUM_P(beg) && FIXNUM_P(v)) {
-	long x = FIX2LONG(beg) + FIX2LONG(v);
-	return LONG2NUM(x);
-    }
-    switch (TYPE(v)) {
-      case T_BIGNUM:
-	return rb_big_plus(v, beg);
-      case T_FLOAT: {
-	VALUE f = rb_check_to_float(beg);
-	if (!NIL_P(f)) {
-	    RFLOAT_VALUE(v) += RFLOAT_VALUE(f);
-	    return v;
-	}
-      }
-      default:
-	return rb_funcall2(beg, id_plus, 1, &v);
-    }
+
+    return v;
 }
 
 /*
@@ -1201,18 +1218,27 @@ random_equal(VALUE self, VALUE other)
 static VALUE
 rb_f_rand(int argc, VALUE *argv, VALUE obj)
 {
-    VALUE vmax, r;
+    VALUE v, vmax, r;
     struct MT *mt = default_mt();
 
     if (argc == 0) goto zero_arg;
     rb_scan_args(argc, argv, "01", &vmax);
     if (NIL_P(vmax)) goto zero_arg;
+    if ((v = rand_range(mt, vmax)) != Qfalse) {
+	return v;
+    }
     vmax = rb_to_int(vmax);
     if (vmax == INT2FIX(0) || NIL_P(r = rand_int(mt, vmax, 0))) {
       zero_arg:
 	return DBL2NUM(genrand_real(mt));
     }
     return r;
+}
+
+static VALUE
+random_s_rand(int argc, VALUE *argv, VALUE obj)
+{
+    return random_rand(argc, argv, rb_Random_DEFAULT);
 }
 
 static st_index_t hashseed;
@@ -1297,11 +1323,13 @@ Init_Random(void)
     rb_define_private_method(rb_cRandom, "state", random_state, 0);
     rb_define_private_method(rb_cRandom, "left", random_left, 0);
     rb_define_method(rb_cRandom, "==", random_equal, 1);
-    rb_define_const(rb_cRandom, "DEFAULT",
-		    TypedData_Wrap_Struct(rb_cRandom, &random_data_type, &default_rand));
+
+    rb_Random_DEFAULT = TypedData_Wrap_Struct(rb_cRandom, &random_data_type, &default_rand);
+    rb_global_variable(&rb_Random_DEFAULT);
+    rb_define_const(rb_cRandom, "DEFAULT", rb_Random_DEFAULT);
 
     rb_define_singleton_method(rb_cRandom, "srand", rb_f_srand, -1);
-    rb_define_singleton_method(rb_cRandom, "rand", rb_f_rand, -1);
+    rb_define_singleton_method(rb_cRandom, "rand", random_s_rand, -1);
     rb_define_singleton_method(rb_cRandom, "new_seed", random_seed, 0);
     rb_define_private_method(CLASS_OF(rb_cRandom), "state", random_s_state, 0);
     rb_define_private_method(CLASS_OF(rb_cRandom), "left", random_s_left, 0);
