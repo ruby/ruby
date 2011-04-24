@@ -209,7 +209,8 @@ class Date
     elsif /\A\s*(?:([-+]?(?:\d{4}|\d{2})|--)(\d{2})(\d{2})|
 		   ([-+]?(?:\d{4}|\d{2}))?(\d{3})|
 		   -(\d{3})|
-		   (\d{4}|\d{2})?w(\d{2})(\d))
+		   (\d{4}|\d{2})?w(\d{2})(\d)|
+		-w-(\d))
 	(?:t?
 	(\d{2})(\d{2})(?:(\d{2})(?:[,.](\d+))?)?
 	(z|[-+]\d{2}(?:\d{2})?)?)?\s*\z/ix =~ str
@@ -252,18 +253,22 @@ class Date
 	  end
 	  e[:cwyear] = y
 	end
+      elsif $10
+	e = {
+	  :cwday => $10.to_i
+	}
       end
-      if $10
-	e[:hour] = $10.to_i
-	e[:min] = $11.to_i
-	e[:sec] = $12.to_i if $12
-      end
-      if $13
-	e[:sec_fraction] = Rational($13.to_i, 10**$13.size)
+      if $11
+	e[:hour] = $11.to_i
+	e[:min] = $12.to_i
+	e[:sec] = $13.to_i if $13
       end
       if $14
-	e[:zone] = $14
-	e[:offset] = zone_to_diff($14)
+	e[:sec_fraction] = Rational($14.to_i, 10**$14.size)
+      end
+      if $15
+	e[:zone] = $15
+	e[:offset] = zone_to_diff($15)
       end
       e
     elsif /\A\s*(?:(\d{2}):(\d{2})(?::(\d{2})(?:[,.](\d+))?)?

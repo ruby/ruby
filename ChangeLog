@@ -1,3 +1,7 @@
+Mon Apr 25 03:04:16 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/lib/date/format.rb (_iso8601): added a pattern.
+
 Mon Apr 25 02:51:22 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/date/lib/date/format.rb: require 'date_core.so'.
@@ -6,7 +10,7 @@ Mon Apr 25 02:51:22 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Mon Apr 25 02:47:46 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
-	* ext/date/lib/date/format.rb: fixed a bug of regex.
+	* ext/date/lib/date/format.rb (_iso8601): fixed a bug of regex.
 
 Mon Apr 25 02:12:26 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
