@@ -1,5 +1,6 @@
 # format.rb: Written by Tadayoshi Funaba 1999-2011
-require 'date_core.so'
+
+require 'date'
 
 class Date
 

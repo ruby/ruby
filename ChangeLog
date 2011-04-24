@@ -1,3 +1,7 @@
+Mon Apr 25 03:08:39 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/lib/date/format.rb: require 'date'.
+
 Mon Apr 25 03:04:16 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/lib/date/format.rb (_iso8601): added a pattern.
