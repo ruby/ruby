@@ -1,5 +1,5 @@
 /*
-  complex.c: Coded by Tadayoshi Funaba 2008-2010
+  complex.c: Coded by Tadayoshi Funaba 2008-2011
 
   This implementation is based on Keiju Ishitsuka's Complex library
   which is written in ruby.
@@ -162,8 +162,21 @@ fun1(numerator)
 fun1(real)
 fun1(real_p)
 
-fun1(to_f)
-fun1(to_i)
+inline static VALUE
+f_to_i(VALUE x)
+{
+    if (TYPE(x) == T_STRING)
+	return rb_str_to_inum(x, 10, 0);
+    return rb_funcall(x, id_to_i, 0);
+}
+inline static VALUE
+f_to_f(VALUE x)
+{
+    if (TYPE(x) == T_STRING)
+	return DBL2NUM(rb_str_to_dbl(x, 0));
+    return rb_funcall(x, id_to_f, 0);
+}
+
 fun1(to_r)
 fun1(to_s)
 
@@ -1438,15 +1451,6 @@ make_patterns(void)
 #define id_post_match rb_intern("post_match")
 #define f_post_match(x) rb_funcall((x), id_post_match, 0)
 
-#define id_split rb_intern("split")
-#define f_split(x,y) rb_funcall((x), id_split, 1, (y))
-
-#define id_include_p rb_intern("include?")
-#define f_include_p(x,y) rb_funcall((x), id_include_p, 1, (y))
-
-#define id_count rb_intern("count")
-#define f_count(x,y) rb_funcall((x), id_count, 1, (y))
-
 #define id_gsub_bang rb_intern("gsub!")
 #define f_gsub_bang(x,y,z) rb_funcall((x), id_gsub_bang, 2, (y), (z))
 
@@ -1512,17 +1516,17 @@ string_to_c_internal(VALUE self)
 	r = INT2FIX(0);
 	i = INT2FIX(0);
 	if (!NIL_P(sr)) {
-	    if (f_include_p(sr, a_slash))
+	    if (strchr(RSTRING_PTR(sr), '/'))
 		r = f_to_r(sr);
-	    else if (f_gt_p(f_count(sr, a_dot_and_an_e), INT2FIX(0)))
+	    else if (strchr(RSTRING_PTR(sr), '.'))
 		r = f_to_f(sr);
 	    else
 		r = f_to_i(sr);
 	}
 	if (!NIL_P(si)) {
-	    if (f_include_p(si, a_slash))
+	    if (strchr(RSTRING_PTR(si), '/'))
 		i = f_to_r(si);
-	    else if (f_gt_p(f_count(si, a_dot_and_an_e), INT2FIX(0)))
+	    else if (strchr(RSTRING_PTR(si), '.'))
 		i = f_to_f(si);
 	    else
 		i = f_to_i(si);

@@ -1,3 +1,7 @@
+Sun Apr 24 22:19:05 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c, rational.c: omitted some method calls.
+
 Sun Apr 24 02:57:27 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_parse.c (n2i): takes long.
