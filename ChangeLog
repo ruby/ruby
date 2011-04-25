@@ -1,3 +1,7 @@
+Mon Apr 25 19:59:47 2011  Tajima, Akio <artonx@yahoo.co.jp>
+
+	* win32/win32.c (kill): accept 0 as pid, fixes #4596
+
 Mon Apr 25 16:43:45 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* random.c (random_rand): remove unused variables.
