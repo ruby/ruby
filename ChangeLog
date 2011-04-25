@@ -1,3 +1,8 @@
+Mon Apr 25 11:02:11 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/ripper/lib/ripper/sexp.rb: fix rdoc arround sexp.
+	  patched by Sho Hashimoto. fixes #4599
+
 Mon Apr 25 08:24:04 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* random.c (rb_f_rand, random_s_rand): RDocs for them.
