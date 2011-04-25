@@ -3733,7 +3733,7 @@ kill(int pid, int sig)
     int ret = 0;
     DWORD err;
 
-    if (pid < 0) {
+    if (pid < 0 || pid == 0 && sig != SIGINT) {
 	errno = EINVAL;
 	return -1;
     }
