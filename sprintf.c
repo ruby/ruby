@@ -30,9 +30,7 @@ static void fmt_setup(char*,size_t,int,int,int,int);
 static char*
 remove_sign_bits(char *str, int base)
 {
-    char *s, *t;
-
-    s = t = str;
+    char *t = str;
 
     if (base == 16) {
 	while (*t == 'f') {
@@ -746,7 +744,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		char sc = 0;
 		long v = 0;
 		int base, bignum = 0;
-		int len, pos;
+		int len;
 
 		switch (*p) {
 		  case 'd':
@@ -910,7 +908,6 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    len = rb_long2int(RSTRING_END(tmp) - s);
 		}
 
-		pos = -1;
 		if (dots) {
 		    prec -= 2;
 		    width -= 2;

@@ -240,12 +240,10 @@ rb_struct_define_without_accessor(const char *class_name, VALUE super, rb_alloc_
     VALUE klass;
     va_list ar;
     VALUE members;
-    long i;
     char *name;
 
     members = rb_ary_new2(0);
     va_start(ar, alloc);
-    i = 0;
     while ((name = va_arg(ar, char*)) != NULL) {
         rb_ary_push(members, ID2SYM(rb_intern(name)));
     }

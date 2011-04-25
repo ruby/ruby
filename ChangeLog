@@ -1,3 +1,17 @@
+Mon Apr 25 16:43:45 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* random.c (random_rand): remove unused variables.
+
+	* struct.c (rb_struct_define_without_accessor): ditto.
+
+	* strftime.c (rb_strftime_with_timespec): ditto.
+
+	* sprintf.c: ditto.
+
+	* time.c (time_asctime): remove useless GetTimeval().
+
+	* thread_pthread.c: cast to (void *) for %p.
+
 Mon Apr 25 11:02:11 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/ripper/lib/ripper/sexp.rb: fix rdoc arround sexp.

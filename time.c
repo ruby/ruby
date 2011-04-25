@@ -3629,9 +3629,6 @@ static VALUE strftimev(const char *fmt, VALUE time);
 static VALUE
 time_asctime(VALUE time)
 {
-    struct time_object *tobj;
-
-    GetTimeval(time, tobj);
     return strftimev("%a %b %e %T %Y", time);
 }
 

@@ -689,17 +689,15 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, const str
                                 subsec = div(subsec, INT2FIX(1));
 
                                 if (FIXNUM_P(subsec)) {
-                                        int l;
-                                        l = snprintf(s, endp - s, "%0*ld", precision, FIX2LONG(subsec));
+                                        (void)snprintf(s, endp - s, "%0*ld", precision, FIX2LONG(subsec));
                                         s += precision;
                                 }
                                 else {
                                         VALUE args[2], result;
-                                        size_t l;
                                         args[0] = INT2FIX(precision);
                                         args[1] = subsec;
                                         result = rb_str_format(2, args, rb_str_new2("%0*d"));
-                                        l = strlcpy(s, StringValueCStr(result), endp-s);
+                                        (void)strlcpy(s, StringValueCStr(result), endp-s);
                                         s += precision;
                                 }
 			}

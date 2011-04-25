@@ -1136,8 +1136,7 @@ static VALUE
 random_rand(int argc, VALUE *argv, VALUE obj)
 {
     rb_random_t *rnd = get_rnd(obj);
-    VALUE vmax, beg = Qundef, end = Qundef, v;
-    int excl = 0;
+    VALUE vmax, v;
 
     if (argc == 0) {
 	return rb_float_new(genrand_real(&rnd->mt));
