@@ -81,7 +81,7 @@ class TestCSV::Interface < TestCSV
     assert_equal(nil,       CSV.parse_line(""))  # to signal eof
     assert_equal(Array.new, CSV.parse_line("\n1,2,3"))
   end
-  
+
   def test_read_and_readlines
     assert_equal( @expected,
                   CSV.read(@path, col_sep: "\t", row_sep: "\r\n") )

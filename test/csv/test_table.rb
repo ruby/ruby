@@ -331,7 +331,7 @@ class TestCSV::Table < TestCSV
     table = CSV.parse(data, :headers => true)
     assert_equal(["ra2", nil, "rb2"], table.delete("col2"))
   end
-  
+
   def test_delete_if_row
     ######################
     ### Mixed/Row Mode ###

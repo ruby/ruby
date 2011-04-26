@@ -154,11 +154,11 @@ require "stringio"
 #   CSV(csv = "")   { |csv_str| csv_str << %w{my data here} }  # to a String
 #   CSV($stderr)    { |csv_err| csv_err << %w{my data here} }  # to $stderr
 #   CSV($stdin)     { |csv_in|  csv_in.each { |row| p row } }  # from $stdin
-# 
+#
 # == Advanced Usage
-# 
+#
 # === Wrap an IO Object
-# 
+#
 #   csv = CSV.new(io, options)
 #   # ... read (with gets() or each()) from and write (with <<) to csv here ...
 #
@@ -836,7 +836,7 @@ class CSV
     #
     # This method assumes you want the Table.headers(), unless you explicitly
     # pass <tt>:write_headers => false</tt>.
-    # 
+    #
     def to_csv(options = Hash.new)
       wh = options.fetch(:write_headers, true)
       @table.inject(wh ? [headers.to_csv(options)] : [ ]) do |rows, row|
