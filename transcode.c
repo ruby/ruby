@@ -26,6 +26,9 @@ static VALUE sym_xml, sym_text, sym_attr;
 static VALUE sym_universal_newline;
 static VALUE sym_crlf_newline;
 static VALUE sym_cr_newline;
+#ifdef ENABLE_ECONV_NEWLINE_OPTION
+static VALUE sym_newline, sym_universal, sym_crlf, sym_cr, sym_lf;
+#endif
 static VALUE sym_partial_input;
 
 static VALUE sym_invalid_byte_sequence;
@@ -2468,6 +2471,32 @@ econv_opts(VALUE opt, int ecflags)
         }
     }
 
+#ifdef ENABLE_ECONV_NEWLINE_OPTION
+    v = rb_hash_aref(opt, sym_newline);
+    if (!NIL_P(v)) {
+	ecflags &= ~ECONV_NEWLINE_DECORATOR_MASK;
+	if (v == sym_universal) {
+	    ecflags |= ECONV_UNIVERSAL_NEWLINE_DECORATOR;
+	}
+	else if (v == sym_crlf) {
+	    ecflags |= ECONV_CRLF_NEWLINE_DECORATOR;
+	}
+	else if (v == sym_cr) {
+	    ecflags |= ECONV_CR_NEWLINE_DECORATOR;
+	}
+	else if (v == sym_lf) {
+	    /* ecflags |= ECONV_LF_NEWLINE_DECORATOR; */
+	}
+	else if (SYMBOL_P(v)) {
+	    rb_raise(rb_eArgError, "unexpected value for newline option: %s",
+		     rb_id2name(SYM2ID(v)));
+	}
+	else {
+	    rb_raise(rb_eArgError, "unexpected value for newline option");
+	}
+    }
+    else
+#endif
     {
 	int setflags = 0, newlineflag = 0;
 
@@ -4323,6 +4352,14 @@ Init_transcode(void)
     sym_crlf_newline = ID2SYM(rb_intern("crlf_newline"));
     sym_cr_newline = ID2SYM(rb_intern("cr_newline"));
     sym_partial_input = ID2SYM(rb_intern("partial_input"));
+
+#ifdef ENABLE_ECONV_NEWLINE_OPTION
+    sym_newline = ID2SYM(rb_intern("newline"));
+    sym_universal = ID2SYM(rb_intern("universal"));
+    sym_crlf = ID2SYM(rb_intern("crlf"));
+    sym_cr = ID2SYM(rb_intern("cr"));
+    sym_lf = ID2SYM(rb_intern("lf"));
+#endif
 
     rb_define_method(rb_cString, "encode", str_encode, -1);
     rb_define_method(rb_cString, "encode!", str_encode_bang, -1);

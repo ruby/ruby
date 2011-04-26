@@ -1,4 +1,6 @@
-Wed Apr 27 00:55:18 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Apr 27 00:55:56 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (econv_opts): add newline option.
 
 	* io.c (validate_enc_binmode, rb_io_extract_modeenc): set newline
 	  decorator according to open mode.
