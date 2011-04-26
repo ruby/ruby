@@ -101,6 +101,9 @@ typedef unsigned int uintptr_t;
 #ifndef __MINGW32__
 # define mode_t int
 #endif
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 
 #ifdef WIN95
 extern DWORD rb_w32_osid(void);
@@ -382,21 +385,41 @@ scalb(double a, long b)
 
 #define SUFFIX
 
-#if !defined HAVE_FTRUNCATE || defined(_MSC_VER)
+extern int 	 rb_w32_ftruncate(int fd, off_t length);
+extern int 	 rb_w32_truncate(const char *path, off_t length);
+extern off_t	 rb_w32_ftello(FILE *stream);
+extern int 	 rb_w32_fseeko(FILE *stream, off_t offset, int whence);
+
+#undef HAVE_FTRUNCATE
+#define HAVE_FTRUNCATE 1
+#if defined HAVE_FTRUNCATE64
+#define ftruncate ftruncate64
+#else
 #define ftruncate rb_w32_ftruncate
 #endif
-extern int       ftruncate(int fd, off_t length);
 
-#if !defined HAVE_TRUNCATE || defined(_MSC_VER)
+#undef HAVE_TRUNCATE
+#define HAVE_TRUNCATE 1
+#if defined HAVE_TRUNCATE64
+#define truncate truncate64
+#else
 #define truncate rb_w32_truncate
 #endif
-extern int       truncate(const char *path, off_t length);
 
-extern int       fseeko(FILE *stream, off_t offset, int whence);
+#undef HAVE_FSEEKO
+#define HAVE_FSEEKO 1
+#if defined HAVE_FSEEKO64
+#define fseeko fseeko64
+#else
+#define fseeko rb_w32_fseeko
+#endif
 
-#if !defined HAVE_FTELLO || defined(_MSC_VER)
+#undef HAVE_FTELLO
+#define HAVE_FTELLO 1
+#if defined HAVE_FTELLO64
+#define ftello ftello64
+#else
 #define ftello rb_w32_ftello
-extern off_t     rb_w32_ftello(FILE *stream);
 #endif
 
 //
