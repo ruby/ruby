@@ -4106,6 +4106,7 @@ dt_lite_set_tmx(VALUE self, struct tmx *tmx)
     }
     else {
 	get_dt_jd(dat);
+	get_dt_df(dat);
 	get_dt_civil(dat);
 	get_dt_time(dat);
 
