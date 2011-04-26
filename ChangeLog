@@ -1,3 +1,8 @@
+Tue Apr 26 22:34:04 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/lib/date/format.rb (_iso8601): allowed day only civil
+	  date.  disallowed separatorless day only ordinal date.
+
 Mon Apr 25 21:31:36 2011  Nobuhiro Iwamatsu  <iwamatsu@nigauri.org>
 
 	* ext/openssl/extconf.rb: Should check SSLv2_*method.

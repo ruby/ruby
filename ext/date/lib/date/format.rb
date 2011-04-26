@@ -145,7 +145,7 @@ class Date
   end
 
   def self._iso8601(str) # :nodoc:
-    if /\A\s*(?:([-+]?\d{2,}|-)-(\d{2})-(\d{2})|
+    if /\A\s*(?:([-+]?\d{2,}|-)-(\d{2})?-(\d{2})|
 		([-+]?\d{2,})?-(\d{3})|
 		(\d{4}|\d{2})?-w(\d{2})-(\d)|
 		-w-(\d))
@@ -154,7 +154,6 @@ class Date
 	(z|[-+]\d{2}(?::?\d{2})?)?)?\s*\z/ix =~ str
       if $3
 	e = {
-	  :mon => $2.to_i,
 	  :mday => $3.to_i
 	}
 	if $1 != '-'
@@ -163,6 +162,11 @@ class Date
 	    y += if y >= 69 then 1900 else 2000 end
 	  end
 	  e[:year] = y
+	end
+	if $2.nil?
+	  return if $1 != '-'
+	else
+	  e[:mon] = $2.to_i
 	end
       elsif $5
 	e = {
@@ -205,17 +209,17 @@ class Date
 	e[:offset] = zone_to_diff($14)
       end
       e
-    elsif /\A\s*(?:([-+]?(?:\d{4}|\d{2})|--)(\d{2})(\d{2})|
-		   ([-+]?(?:\d{4}|\d{2}))?(\d{3})|
+    elsif /\A\s*(?:([-+]?(?:\d{4}|\d{2})|--)(\d{2}|-)(\d{2})|
+		   ([-+]?(?:\d{4}|\d{2}))(\d{3})|
 		   -(\d{3})|
-		   (\d{4}|\d{2})?w(\d{2})(\d)|
-		-w-(\d))
+		   (\d{4}|\d{2})w(\d{2})(\d)|
+		   -w(\d{2})(\d)|
+		   -w-(\d))
 	(?:t?
 	(\d{2})(\d{2})(?:(\d{2})(?:[,.](\d+))?)?
 	(z|[-+]\d{2}(?:\d{2})?)?)?\s*\z/ix =~ str
       if $3
 	e = {
-	  :mon => $2.to_i,
 	  :mday => $3.to_i
 	}
 	if $1 != '--'
@@ -225,17 +229,20 @@ class Date
 	  end
 	  e[:year] = y
 	end
+	if $2 == '-'
+	  return if $1 != '--'
+	else
+	  e[:mon] = $2.to_i
+	end
       elsif $5
 	e = {
 	  :yday => $5.to_i
 	}
-	if $4
-	  y = $4.to_i
-	  if $4.size < 4
-	    y += if y >= 69 then 1900 else 2000 end
-	  end
-	  e[:year] = y
+	y = $4.to_i
+	if $4.size < 4
+	  y += if y >= 69 then 1900 else 2000 end
 	end
+	e[:year] = y
       elsif $6
 	e = {
 	  :yday => $6.to_i
@@ -245,29 +252,32 @@ class Date
 	  :cweek => $8.to_i,
 	  :cwday => $9.to_i
 	}
-	if $7
-	  y = $7.to_i
-	  if $7.size < 4
-	    y += if y >= 69 then 1900 else 2000 end
-	  end
-	  e[:cwyear] = y
+	y = $7.to_i
+	if $7.size < 4
+	  y += if y >= 69 then 1900 else 2000 end
 	end
-      elsif $10
+	e[:cwyear] = y
+      elsif $11
 	e = {
-	  :cwday => $10.to_i
+	  :cweek => $10.to_i,
+	  :cwday => $11.to_i
+	}
+      elsif $12
+	e = {
+	  :cwday => $12.to_i
 	}
       end
-      if $11
-	e[:hour] = $11.to_i
-	e[:min] = $12.to_i
-	e[:sec] = $13.to_i if $13
+      if $13
+	e[:hour] = $13.to_i
+	e[:min] = $14.to_i
+	e[:sec] = $15.to_i if $15
       end
-      if $14
-	e[:sec_fraction] = Rational($14.to_i, 10**$14.size)
+      if $16
+	e[:sec_fraction] = Rational($16.to_i, 10**$16.size)
       end
-      if $15
-	e[:zone] = $15
-	e[:offset] = zone_to_diff($15)
+      if $17
+	e[:zone] = $17
+	e[:offset] = zone_to_diff($17)
       end
       e
     elsif /\A\s*(?:(\d{2}):(\d{2})(?::(\d{2})(?:[,.](\d+))?)?

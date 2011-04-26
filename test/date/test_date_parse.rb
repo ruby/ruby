@@ -667,14 +667,17 @@ class TestDateParse < Test::Unit::TestCase
   end
 
   def test__iso8601
-    h = Date._iso8601('01-02-03')
-    assert_equal([2001, 2, 3, nil, nil, nil, nil],
+    h = Date._iso8601('01-02-03T04:05:06Z')
+    assert_equal([2001, 2, 3, 4, 5, 6, 0],
 		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
-    h = Date._iso8601('2001-02-03')
-    assert_equal([2001, 2, 3, nil, nil, nil, nil],
+    h = Date._iso8601('2001-02-03T04:05:06Z')
+    assert_equal([2001, 2, 3, 4, 5, 6, 0],
 		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
-    h = Date._iso8601('--02-03')
-    assert_equal([nil, 2, 3, nil, nil, nil, nil],
+    h = Date._iso8601('--02-03T04:05:06Z')
+    assert_equal([nil, 2, 3, 4, 5, 6, 0],
+		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
+    h = Date._iso8601('---03T04:05:06Z')
+    assert_equal([nil, nil, 3, 4, 5, 6, 0],
 		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
 
     h = Date._iso8601('2001-02-03T04:05')
@@ -693,14 +696,17 @@ class TestDateParse < Test::Unit::TestCase
     assert_equal([2001, 2, 3, 4, 5, 6, 3600],
 		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
 
-    h = Date._iso8601('010203')
-    assert_equal([2001, 2, 3, nil, nil, nil, nil],
+    h = Date._iso8601('010203T040506Z')
+    assert_equal([2001, 2, 3, 4, 5, 6, 0],
 		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
-    h = Date._iso8601('20010203')
-    assert_equal([2001, 2, 3, nil, nil, nil, nil],
+    h = Date._iso8601('20010203T040506Z')
+    assert_equal([2001, 2, 3, 4, 5, 6, 0],
 		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
-    h = Date._iso8601('--0203')
-    assert_equal([nil, 2, 3, nil, nil, nil, nil],
+    h = Date._iso8601('--0203T040506Z')
+    assert_equal([nil, 2, 3, 4, 5, 6, 0],
+		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
+    h = Date._iso8601('---03T040506Z')
+    assert_equal([nil, nil, 3, 4, 5, 6, 0],
 		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
 
     h = Date._iso8601('010203T0405')
@@ -738,15 +744,51 @@ class TestDateParse < Test::Unit::TestCase
     assert_equal([2001, 2, 3, 4, 5, 6, 3600],
 		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
 
-    h = Date._iso8601('01-023')
-    assert_equal([2001, 23, nil, nil, nil, nil],
+    h = Date._iso8601('01-023T04:05:06Z')
+    assert_equal([2001, 23, 4, 5, 6, 0],
 		 h.values_at(:year, :yday, :hour, :min, :sec, :offset))
-    h = Date._iso8601('2001-023')
-    assert_equal([2001, 23, nil, nil, nil, nil],
+    h = Date._iso8601('2001-023T04:05:06Z')
+    assert_equal([2001, 23, 4, 5, 6, 0],
 		 h.values_at(:year, :yday, :hour, :min, :sec, :offset))
-    h = Date._iso8601('-023')
-    assert_equal([nil, 23, nil, nil, nil, nil],
+    h = Date._iso8601('-023T04:05:06Z')
+    assert_equal([nil, 23, 4, 5, 6, 0],
 		 h.values_at(:year, :yday, :hour, :min, :sec, :offset))
+
+    h = Date._iso8601('01023T040506Z')
+    assert_equal([2001, 23, 4, 5, 6, 0],
+		 h.values_at(:year, :yday, :hour, :min, :sec, :offset))
+    h = Date._iso8601('2001023T040506Z')
+    assert_equal([2001, 23, 4, 5, 6, 0],
+		 h.values_at(:year, :yday, :hour, :min, :sec, :offset))
+    h = Date._iso8601('-023T040506Z')
+    assert_equal([nil, 23, 4, 5, 6, 0],
+		 h.values_at(:year, :yday, :hour, :min, :sec, :offset))
+
+    h = Date._iso8601('01-w02-3T04:05:06Z')
+    assert_equal([2001, 2, 3, 4, 5, 6, 0],
+		 h.values_at(:cwyear, :cweek, :cwday, :hour, :min, :sec, :offset))
+    h = Date._iso8601('2001-w02-3T04:05:06Z')
+    assert_equal([2001, 2, 3, 4, 5, 6, 0],
+		 h.values_at(:cwyear, :cweek, :cwday, :hour, :min, :sec, :offset))
+    h = Date._iso8601('-w02-3T04:05:06Z')
+    assert_equal([nil, 2, 3, 4, 5, 6, 0],
+		 h.values_at(:cwyear, :cweek, :cwday, :hour, :min, :sec, :offset))
+    h = Date._iso8601('-w-3T04:05:06Z')
+    assert_equal([nil, nil, 3, 4, 5, 6, 0],
+		 h.values_at(:cwyear, :cweek, :cwday, :hour, :min, :sec, :offset))
+
+    h = Date._iso8601('01w023T040506Z')
+    assert_equal([2001, 2, 3, 4, 5, 6, 0],
+		 h.values_at(:cwyear, :cweek, :cwday, :hour, :min, :sec, :offset))
+    h = Date._iso8601('2001w023T040506Z')
+    assert_equal([2001, 2, 3, 4, 5, 6, 0],
+		 h.values_at(:cwyear, :cweek, :cwday, :hour, :min, :sec, :offset))
+    h = Date._iso8601('-w023T040506Z')
+    assert_equal([nil, 2, 3, 4, 5, 6, 0],
+		 h.values_at(:cwyear, :cweek, :cwday, :hour, :min, :sec, :offset))
+    h = Date._iso8601('-w-3T040506Z')
+    assert_equal([nil, nil, 3, 4, 5, 6, 0],
+		 h.values_at(:cwyear, :cweek, :cwday, :hour, :min, :sec, :offset))
 
     h = Date._iso8601('04:05')
     assert_equal([nil, nil, nil, 4, 5, nil, nil],
@@ -771,21 +813,6 @@ class TestDateParse < Test::Unit::TestCase
     assert_equal([nil, nil, nil, 4, 5, 6, 3600],
 		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
 
-    h = Date._iso8601('01-w02-3')
-    assert_equal([2001, 2, 3, nil, nil, nil, nil],
-		 h.values_at(:cwyear, :cweek, :cwday, :hour, :min, :sec, :offset))
-    h = Date._iso8601('2001-w02-3')
-    assert_equal([2001, 2, 3, nil, nil, nil, nil],
-		 h.values_at(:cwyear, :cweek, :cwday, :hour, :min, :sec, :offset))
-    h = Date._iso8601('2001w023')
-    assert_equal([2001, 2, 3, nil, nil, nil, nil],
-		 h.values_at(:cwyear, :cweek, :cwday, :hour, :min, :sec, :offset))
-    h = Date._iso8601('-w02-3')
-    assert_equal([nil, 2, 3, nil, nil, nil, nil],
-		 h.values_at(:cwyear, :cweek, :cwday, :hour, :min, :sec, :offset))
-    h = Date._iso8601('-w-3')
-    assert_equal([nil, nil, 3, nil, nil, nil, nil],
-		 h.values_at(:cwyear, :cweek, :cwday, :hour, :min, :sec, :offset))
   end
 
   def test__rfc3339
