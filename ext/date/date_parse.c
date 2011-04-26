@@ -914,6 +914,8 @@ n2i(const char *s, long f, long w)
     return v;
 }
 
+VALUE date_zone_to_diff(VALUE);
+
 static int
 parse_ddd_cb(VALUE m, VALUE hash)
 {
@@ -1080,7 +1082,6 @@ parse_ddd_cb(VALUE m, VALUE hash)
 				  f_expt(INT2FIX(10), LONG2NUM(l4))));
     }
     if (!NIL_P(s5)) {
-	VALUE zone_to_diff(VALUE s);
 	cs5 = RSTRING_PTR(s5);
 	l5 = RSTRING_LEN(s5);
 
@@ -1108,7 +1109,7 @@ parse_ddd_cb(VALUE m, VALUE hash)
 	    set_hash("zone", zone);
 	    if (isdigit(*s1))
 		*--s1 = '+';
-	    set_hash("offset", zone_to_diff(rb_str_new2(s1)));
+	    set_hash("offset", date_zone_to_diff(rb_str_new2(s1)));
 	}
     }
 
@@ -1231,7 +1232,6 @@ check_class(VALUE s)
 VALUE
 date__parse(VALUE str, VALUE comp)
 {
-    VALUE zone_to_diff(VALUE s);
     VALUE backref, hash;
 
     backref = rb_backref_get();
@@ -1325,7 +1325,7 @@ date__parse(VALUE str, VALUE comp)
     {
 	VALUE zone = ref_hash("zone");
 	if (!NIL_P(zone) && NIL_P(ref_hash("offset")))
-	    set_hash("offset", zone_to_diff(zone));
+	    set_hash("offset", date_zone_to_diff(zone));
     }
 
     rb_backref_set(backref);

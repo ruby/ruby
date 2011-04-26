@@ -1,3 +1,9 @@
+Wed Apr 27 01:20:59 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c (date_zone_to_diff): renamed.
+	* ext/date/date_parse.c: ditto.
+	* ext/date/date_strptime.c: ditto.
+
 Wed Apr 27 01:16:59 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (enc_find): accept Encoding objects.

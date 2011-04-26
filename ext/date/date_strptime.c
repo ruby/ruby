@@ -150,6 +150,8 @@ valid_range_p(VALUE v, int a, int b)
     si += l; \
 }
 
+VALUE date_zone_to_diff(VALUE);
+
 static size_t
 date__strptime_internal(const char *str, size_t slen,
 			const char *fmt, size_t flen, VALUE hash)
@@ -567,7 +569,6 @@ date__strptime_internal(const char *str, size_t slen,
 			")";
 		    static VALUE pat = Qnil;
 		    VALUE m, b;
-		    VALUE zone_to_diff(VALUE s);
 
 		    if (NIL_P(pat)) {
 			pat = rb_reg_new(pat_source, sizeof pat_source - 1,
@@ -584,7 +585,7 @@ date__strptime_internal(const char *str, size_t slen,
 
 			s = f_aref(m, INT2FIX(1));
 			l = f_end(m, INT2FIX(0));
-			o = zone_to_diff(s);
+			o = date_zone_to_diff(s);
 			si += NUM2LONG(l);
 			set_hash("zone", s);
 			set_hash("offset", o);

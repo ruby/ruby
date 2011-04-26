@@ -591,6 +591,12 @@ jd_to_wday(long jd)
     return (int)MOD(jd + 1, 7);
 }
 
+VALUE
+date_zone_to_diff(VALUE s)
+{
+    return rb_funcall(cDate, rb_intern("zone_to_diff"), 1, s);
+}
+
 static int
 daydiff_to_sec(VALUE vof, int *rof)
 {
@@ -635,7 +641,7 @@ daydiff_to_sec(VALUE vof, int *rof)
 	}
       case T_STRING:
 	{
-	    VALUE vs = rb_funcall(cDate, rb_intern("zone_to_diff"), 1, vof);
+	    VALUE vs = date_zone_to_diff(vof);
 	    int n;
 
 	    if (!FIXNUM_P(vs))
@@ -1469,12 +1475,6 @@ date_s_today(int argc, VALUE *argv, VALUE klass)
 	return d_lite_s_new_internal(klass, jd, sg, y, m, d,
 				     LIGHT_MODE | HAVE_JD | HAVE_CIVIL);
     }
-}
-
-VALUE
-zone_to_diff(VALUE s)
-{
-    return rb_funcall(cDate, rb_intern("zone_to_diff"), 1, s);
 }
 
 VALUE
