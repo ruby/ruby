@@ -3963,7 +3963,7 @@ rb_file_truncate(VALUE obj, VALUE len)
 	rb_sys_fail_path(fptr->pathv);
 #else /* defined(HAVE_CHSIZE) */
     if (chsize(fptr->fd, pos) < 0)
-	rb_sys_fail(fptr->pathv);
+	rb_sys_fail_path(fptr->pathv);
 #endif
     return INT2FIX(0);
 }

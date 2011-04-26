@@ -1,4 +1,6 @@
-Wed Apr 27 00:50:06 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Apr 27 00:51:01 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_truncate): fix function.
 
 	* include/ruby/win32.h (ftruncate, truncate, ftello, fseeko): non-64
 	  versions on mingw are useless because they use int32_t.  fixes #4564
