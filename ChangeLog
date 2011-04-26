@@ -17,6 +17,11 @@ Wed Apr 27 00:51:01 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* include/ruby/win32.h (ftruncate, truncate, ftello, fseeko): non-64
 	  versions on mingw are useless because they use int32_t.  fixes #4564
 
+Wed Apr 27 00:50:33 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: modified validation methods.
+	* ext/date/lib/date.rb: ditto.
+
 Wed Apr 27 00:00:37 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c (dt_lite_set_tmx): should get df value.

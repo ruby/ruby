@@ -325,7 +325,7 @@ class Date
     def find_fdoy(y, sg) # :nodoc:
       j = nil
       1.upto(31) do |d|
-	break if j = _valid_civil?(y, 1, d, sg)
+	break if j = _valid_civil_r?(y, 1, d, sg)
       end
       j
     end
@@ -333,7 +333,7 @@ class Date
     def find_ldoy(y, sg) # :nodoc:
       j = nil
       31.downto(1) do |d|
-	break if j = _valid_civil?(y, 12, d, sg)
+	break if j = _valid_civil_r?(y, 12, d, sg)
       end
       j
     end
@@ -341,7 +341,7 @@ class Date
     def find_fdom(y, m, sg) # :nodoc:
       j = nil
       1.upto(31) do |d|
-	break if j = _valid_civil?(y, m, d, sg)
+	break if j = _valid_civil_r?(y, m, d, sg)
       end
       j
     end
@@ -349,7 +349,7 @@ class Date
     def find_ldom(y, m, sg) # :nodoc:
       j = nil
       31.downto(1) do |d|
-	break if j = _valid_civil?(y, m, d, sg)
+	break if j = _valid_civil_r?(y, m, d, sg)
       end
       j
     end
@@ -576,7 +576,7 @@ class Date
     #
     # If it is, returns it.  In fact, any value is treated as a valid
     # Julian Day Number.
-    def _valid_jd? (jd, sg=GREGORIAN) jd end # :nodoc:
+    def _valid_jd_r? (jd, sg=GREGORIAN) jd end # :nodoc:
 
     # Do the year +y+ and day-of-year +d+ make a valid Ordinal Date?
     # Returns the corresponding Julian Day Number if they do, or
@@ -591,7 +591,7 @@ class Date
     # adjustment is not valid.
     #
     # +sg+ specifies the Day of Calendar Reform.
-    def _valid_ordinal? (y, d, sg=GREGORIAN) # :nodoc:
+    def _valid_ordinal_r? (y, d, sg=GREGORIAN) # :nodoc:
       if d < 0
 	return unless j = find_ldoy(y, sg)
 	ny, nd = jd_to_ordinal(j + d + 1, sg)
@@ -615,7 +615,7 @@ class Date
     # Reform adjustment is not valid.
     #
     # +sg+ specifies the Day of Calendar Reform.
-    def _valid_civil? (y, m, d, sg=GREGORIAN) # :nodoc:
+    def _valid_civil_r? (y, m, d, sg=GREGORIAN) # :nodoc:
       if m < 0
 	m += 13
       end
@@ -644,7 +644,7 @@ class Date
     # Reform adjustment is not valid.
     #
     # +sg+ specifies the Day of Calendar Reform.
-    def _valid_commercial? (y, w, d, sg=GREGORIAN) # :nodoc:
+    def _valid_commercial_r? (y, w, d, sg=GREGORIAN) # :nodoc:
       if d < 0
 	d += 8
       end
@@ -659,7 +659,7 @@ class Date
       jd
     end
 
-    def _valid_weeknum? (y, w, d, f, sg=GREGORIAN) # :nodoc:
+    def _valid_weeknum_r? (y, w, d, f, sg=GREGORIAN) # :nodoc:
       if d < 0
 	d += 7
       end
@@ -674,7 +674,7 @@ class Date
       jd
     end
 
-    def _valid_nth_kday? (y, m, n, k, sg=GREGORIAN) # :nodoc:
+    def _valid_nth_kday_r? (y, m, n, k, sg=GREGORIAN) # :nodoc:
       if k < 0
 	k += 7
       end
@@ -700,7 +700,7 @@ class Date
     # +sec+ are treating as counting backwards from the end of the
     # next larger unit (e.g. a +min+ of -2 is treated as 58).  No
     # wraparound is performed.
-    def _valid_time? (h, min, s) # :nodoc:
+    def _valid_time_r? (h, min, s) # :nodoc:
       h   += 24 if h   < 0
       min += 60 if min < 0
       s   += 60 if s   < 0
@@ -731,48 +731,6 @@ class Date
 
   class << self; alias_method :leap?, :gregorian_leap? end
 
-  def self.valid_jd_r? (jd, sg=ITALY)
-    !!_valid_jd?(jd, sg)
-  end
-
-  private_class_method :valid_jd_r?
-
-  def self.valid_ordinal_r? (y, d, sg=ITALY)
-    !!_valid_ordinal?(y, d, sg)
-  end
-
-  private_class_method :valid_ordinal_r?
-
-  def self.valid_civil_r? (y, m, d, sg=ITALY)
-    !!_valid_civil?(y, m, d, sg)
-  end
-
-  private_class_method :valid_civil_r?
-
-  def self.valid_commercial_r? (y, w, d, sg=ITALY)
-    !!_valid_commercial?(y, w, d, sg)
-  end
-
-  private_class_method :valid_commercial_r?
-
-  def self.valid_weeknum? (y, w, d, f, sg=ITALY) # :nodoc:
-    !!_valid_weeknum?(y, w, d, f, sg)
-  end
-
-  private_class_method :valid_weeknum?
-
-  def self.valid_nth_kday? (y, m, n, k, sg=ITALY) # :nodoc:
-    !!_valid_nth_kday?(y, m, n, k, sg)
-  end
-
-  private_class_method :valid_nth_kday?
-
-  def self.valid_time? (h, min, s) # :nodoc:
-    !!_valid_time?(h, min, s)
-  end
-
-  private_class_method :valid_time?
-
   def self.new!(ajd=0, of=0, sg=ITALY)
     jd, df = ajd_to_jd(ajd, 0)
     if !(Fixnum === jd) ||
@@ -784,14 +742,14 @@ class Date
   end
 
   def self.jd_r(jd=0, sg=ITALY) # :nodoc:
-    jd = _valid_jd?(jd, sg)
+    jd = _valid_jd_r?(jd, sg)
     new_r!(jd_to_ajd(jd, 0, 0), 0, sg)
   end
 
   private_class_method :jd_r
 
   def self.ordinal_r(y=-4712, d=1, sg=ITALY) # :nodoc:
-    unless jd = _valid_ordinal?(y, d, sg)
+    unless jd = _valid_ordinal_r?(y, d, sg)
       raise ArgumentError, 'invalid date'
     end
     new_r!(jd_to_ajd(jd, 0, 0), 0, sg)
@@ -800,7 +758,7 @@ class Date
   private_class_method :ordinal_r
 
   def self.civil_r(y=-4712, m=1, d=1, sg=ITALY) # :nodoc:
-    unless jd = _valid_civil?(y, m, d, sg)
+    unless jd = _valid_civil_r?(y, m, d, sg)
       raise ArgumentError, 'invalid date'
     end
     new_r!(jd_to_ajd(jd, 0, 0), 0, sg)
@@ -809,7 +767,7 @@ class Date
   private_class_method :civil_r
 
   def self.commercial_r(y=-4712, w=1, d=1, sg=ITALY) # :nodoc:
-    unless jd = _valid_commercial?(y, w, d, sg)
+    unless jd = _valid_commercial_r?(y, w, d, sg)
       raise ArgumentError, 'invalid date'
     end
     new_r!(jd_to_ajd(jd, 0, 0), 0, sg)
@@ -818,7 +776,7 @@ class Date
   private_class_method :commercial_r
 
   def self.weeknum(y=-4712, w=0, d=1, f=0, sg=ITALY)
-    unless jd = _valid_weeknum?(y, w, d, f, sg)
+    unless jd = _valid_weeknum_r?(y, w, d, f, sg)
       raise ArgumentError, 'invalid date'
     end
     new!(jd_to_ajd(jd, 0, 0), 0, sg)
@@ -827,7 +785,7 @@ class Date
   private_class_method :weeknum
 
   def self.nth_kday(y=-4712, m=1, n=1, k=1, sg=ITALY)
-    unless jd = _valid_nth_kday?(y, m, n, k, sg)
+    unless jd = _valid_nth_kday_r?(y, m, n, k, sg)
       raise ArgumentError, 'invalid date'
     end
     new!(jd_to_ajd(jd, 0, 0), 0, sg)
@@ -935,21 +893,21 @@ class Date
     catch :jd do
       a = elem.values_at(:jd)
       if a.all?
-	if jd = _valid_jd?(*(a << sg))
+	if jd = _valid_jd_r?(*(a << sg))
 	  throw :jd, jd
 	end
       end
 
       a = elem.values_at(:year, :yday)
       if a.all?
-	if jd = _valid_ordinal?(*(a << sg))
+	if jd = _valid_ordinal_r?(*(a << sg))
 	  throw :jd, jd
 	end
       end
 
       a = elem.values_at(:year, :mon, :mday)
       if a.all?
-	if jd = _valid_civil?(*(a << sg))
+	if jd = _valid_civil_r?(*(a << sg))
 	  throw :jd, jd
 	end
       end
@@ -959,7 +917,7 @@ class Date
 	a[2] = elem[:wday].nonzero? || 7
       end
       if a.all?
-	if jd = _valid_commercial?(*(a << sg))
+	if jd = _valid_commercial_r?(*(a << sg))
 	  throw :jd, jd
 	end
       end
@@ -969,7 +927,7 @@ class Date
 	a[2] = elem[:cwday] % 7
       end
       if a.all?
-	if jd = _valid_weeknum?(*(a << 0 << sg))
+	if jd = _valid_weeknum_r?(*(a << 0 << sg))
 	  throw :jd, jd
 	end
       end
@@ -982,7 +940,7 @@ class Date
 	a[2] = (elem[:cwday] - 1) % 7
       end
       if a.all?
-	if jd = _valid_weeknum?(*(a << 1 << sg))
+	if jd = _valid_weeknum_r?(*(a << 1 << sg))
 	  throw :jd, jd
 	end
       end
@@ -993,7 +951,7 @@ class Date
 
   def self.valid_time_frags? (elem) # :nodoc:
     h, min, s = elem.values_at(:hour, :min, :sec)
-    _valid_time?(h, min, s)
+    _valid_time_r?(h, min, s)
   end
 
   private_class_method :valid_time_frags?
@@ -1323,7 +1281,7 @@ class Date
     y, m = (year * 12 + (mon - 1) + n).divmod(12)
     m,   = (m + 1)                    .divmod(1)
     d = mday
-    until jd2 = _valid_civil?(y, m, d, start)
+    until jd2 = _valid_civil_r?(y, m, d, start)
       d -= 1
       raise ArgumentError, 'invalid date' unless d > 0
     end
@@ -1464,8 +1422,8 @@ class DateTime < Date
   end
 
   def self.jd_r(jd=0, h=0, min=0, s=0, of=0, sg=ITALY) # :nodoc:
-    unless (jd = _valid_jd?(jd, sg)) &&
-	   (fr = _valid_time?(h, min, s))
+    unless (jd = _valid_jd_r?(jd, sg)) &&
+	   (fr = _valid_time_r?(h, min, s))
       raise ArgumentError, 'invalid date'
     end
     if String === of
@@ -1479,8 +1437,8 @@ class DateTime < Date
   private_class_method :jd_r
 
   def self.ordinal_r(y=-4712, d=1, h=0, min=0, s=0, of=0, sg=ITALY) # :nodoc:
-    unless (jd = _valid_ordinal?(y, d, sg)) &&
-	   (fr = _valid_time?(h, min, s))
+    unless (jd = _valid_ordinal_r?(y, d, sg)) &&
+	   (fr = _valid_time_r?(h, min, s))
       raise ArgumentError, 'invalid date'
     end
     if String === of
@@ -1494,8 +1452,8 @@ class DateTime < Date
   private_class_method :ordinal_r
 
   def self.civil_r(y=-4712, m=1, d=1, h=0, min=0, s=0, of=0, sg=ITALY) # :nodoc:
-    unless (jd = _valid_civil?(y, m, d, sg)) &&
-	   (fr = _valid_time?(h, min, s))
+    unless (jd = _valid_civil_r?(y, m, d, sg)) &&
+	   (fr = _valid_time_r?(h, min, s))
       raise ArgumentError, 'invalid date'
     end
     if String === of
@@ -1509,8 +1467,8 @@ class DateTime < Date
   private_class_method :civil_r
 
   def self.commercial_r(y=-4712, w=1, d=1, h=0, min=0, s=0, of=0, sg=ITALY) # :nodoc:
-    unless (jd = _valid_commercial?(y, w, d, sg)) &&
-	   (fr = _valid_time?(h, min, s))
+    unless (jd = _valid_commercial_r?(y, w, d, sg)) &&
+	   (fr = _valid_time_r?(h, min, s))
       raise ArgumentError, 'invalid date'
     end
     if String === of
@@ -1524,8 +1482,8 @@ class DateTime < Date
   private_class_method :commercial_r
 
   def self.weeknum(y=-4712, w=0, d=1, f=0, h=0, min=0, s=0, of=0, sg=ITALY) # :nodoc:
-    unless (jd = _valid_weeknum?(y, w, d, f, sg)) &&
-	   (fr = _valid_time?(h, min, s))
+    unless (jd = _valid_weeknum_r?(y, w, d, f, sg)) &&
+	   (fr = _valid_time_r?(h, min, s))
       raise ArgumentError, 'invalid date'
     end
     if String === of
@@ -1539,8 +1497,8 @@ class DateTime < Date
   private_class_method :weeknum
 
   def self.nth_kday(y=-4712, m=1, n=1, k=1, h=0, min=0, s=0, of=0, sg=ITALY) # :nodoc:
-    unless (jd = _valid_nth_kday?(y, m, n, k, sg)) &&
-	   (fr = _valid_time?(h, min, s))
+    unless (jd = _valid_nth_kday_r?(y, m, n, k, sg)) &&
+	   (fr = _valid_time_r?(h, min, s))
       raise ArgumentError, 'invalid date'
     end
     if String === of

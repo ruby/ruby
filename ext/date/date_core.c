@@ -36,6 +36,9 @@
 #define LIGHTABLE_CWYEAR(y) LIGHTABLE_YEAR(y)
 
 #define ITALY 2299161
+#define ENGLAND 2361222
+#define JULIAN (NUM2DBL(rb_const_get(rb_cFloat, rb_intern("INFINITY"))))
+#define GREGORIAN (-NUM2DBL(rb_const_get(rb_cFloat, rb_intern("INFINITY"))))
 
 #define DAY_IN_SECONDS 86400
 #define SECOND_IN_NANOSECONDS 1000000000
@@ -785,149 +788,261 @@ k_numeric_p(VALUE x)
 }
 
 static VALUE
-date_s_valid_jd_p(int argc, VALUE *argv, VALUE klass)
+valid_jd_sub(int argc, VALUE *argv, VALUE klass)
+{
+    return argv[0];
+}
+
+#ifndef NDEBUG
+static VALUE
+date_s__valid_jd_p(int argc, VALUE *argv, VALUE klass)
 {
     VALUE vjd, vsg;
+    VALUE argv2[2];
 
     rb_scan_args(argc, argv, "11", &vjd, &vsg);
 
+    argv2[0] = vjd;
+    if (argc < 2)
+	argv[1] = DBL2NUM(GREGORIAN);
+    else
+	argv[1] = vsg;
+
+    return valid_jd_sub(2, argv2, klass);
+}
+#endif
+
+static VALUE
+date_s_valid_jd_p(int argc, VALUE *argv, VALUE klass)
+{
+    VALUE vjd, vsg;
+    VALUE argv2[2];
+
+    rb_scan_args(argc, argv, "11", &vjd, &vsg);
+
+    argv2[0] = vjd;
+    if (argc < 2)
+	argv[1] = INT2FIX(ITALY);
+    else
+	argv[1] = vsg;
+
+    if (NIL_P(valid_jd_sub(2, argv2, klass)))
+	return Qfalse;
     return Qtrue;
 }
 
 static VALUE
-date_s_valid_civil_p(int argc, VALUE *argv, VALUE klass)
+valid_civil_sub(int argc, VALUE *argv, VALUE klass, int need_jd)
 {
-    VALUE vy, vm, vd, vsg;
     int y, m, d, rm, rd;
     double sg;
 
-    rb_scan_args(argc, argv, "31", &vy, &vm, &vd, &vsg);
+    if (!(FIXNUM_P(argv[0]) &&
+	  FIXNUM_P(argv[1]) &&
+	  FIXNUM_P(argv[2])))
+	return cforwardv("_valid_civil_r?");
 
-    if (!(FIXNUM_P(vy) &&
-	  FIXNUM_P(vm) &&
-	  FIXNUM_P(vd)))
-	return cforwardv("valid_civil_r?");
+    y = NUM2INT(argv[0]);
+    if (!LIGHTABLE_YEAR(y))
+	return cforwardv("_valid_civil_r?");
 
-    if (!NIL_P(vsg))
-	sg = NUM2DBL(vsg);
-    else
-	sg = ITALY;
+    m = NUM2INT(argv[1]);
+    d = NUM2INT(argv[2]);
+    sg = NUM2DBL(argv[3]);
 
-    y = -4712;
-    m = 1;
-    d = 1;
-
-    switch (argc) {
-      case 4:
-      case 3:
-	d = NUM2INT(vd);
-      case 2:
-	m = NUM2INT(vm);
-      case 1:
-	y = NUM2INT(vy);
-	if (!LIGHTABLE_YEAR(y))
-	    return cforwardv("valid_civil_r?");
-    }
-
-    if (isinf(sg) && sg < 0) {
+    if (!need_jd && isinf(sg) && sg < 0) {
 	if (!valid_gregorian_p(y, m, d, &rm, &rd))
-	    return Qfalse;
-	return Qtrue;
+	    return Qnil;
+	return INT2FIX(0); /* dummy */
     }
     else {
 	long jd;
 	int ns;
 
 	if (!valid_civil_p(y, m, d, sg, &rm, &rd, &jd, &ns))
-	    return Qfalse;
-	return Qtrue;
+	    return Qnil;
+	return LONG2NUM(jd);
     }
 }
 
+#ifndef NDEBUG
 static VALUE
-date_s_valid_ordinal_p(int argc, VALUE *argv, VALUE klass)
+date_s__valid_civil_p(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE vy, vd, vsg;
+    VALUE vy, vm, vd, vsg;
+    VALUE argv2[4];
+
+    rb_scan_args(argc, argv, "31", &vy, &vm, &vd, &vsg);
+
+    argv2[0] = vy;
+    argv2[1] = vm;
+    argv2[2] = vd;
+    if (argc < 4)
+	argv2[3] = DBL2NUM(GREGORIAN);
+    else
+	argv2[3] = vsg;
+
+    return valid_civil_sub(4, argv2, klass, 1);
+}
+#endif
+
+static VALUE
+date_s_valid_civil_p(int argc, VALUE *argv, VALUE klass)
+{
+    VALUE vy, vm, vd, vsg;
+    VALUE argv2[4];
+
+    rb_scan_args(argc, argv, "31", &vy, &vm, &vd, &vsg);
+
+    argv2[0] = vy;
+    argv2[1] = vm;
+    argv2[2] = vd;
+    if (argc < 4)
+	argv2[3] = INT2FIX(ITALY);
+    else
+	argv2[3] = vsg;
+
+    if (NIL_P(valid_civil_sub(4, argv2, klass, 0)))
+	return Qfalse;
+    return Qtrue;
+}
+
+static VALUE
+valid_ordinal_sub(int argc, VALUE *argv, VALUE klass)
+{
     int y, d, rd;
     double sg;
 
-    rb_scan_args(argc, argv, "21", &vy, &vd, &vsg);
+    if (!(FIXNUM_P(argv[0]) &&
+	  FIXNUM_P(argv[1])))
+	return cforwardv("_valid_ordinal_r?");
 
-    if (!(FIXNUM_P(vy) &&
-	  FIXNUM_P(vd)))
-	return cforwardv("valid_ordinal_r?");
+    y = NUM2INT(argv[0]);
+    if (!LIGHTABLE_YEAR(y))
+	return cforwardv("_valid_ordinal_r?");
 
-    if (!NIL_P(vsg))
-	sg = NUM2DBL(vsg);
-    else
-	sg = ITALY;
-
-    y = -4712;
-    d = 1;
-
-    switch (argc) {
-      case 3:
-      case 2:
-	d = NUM2INT(vd);
-      case 1:
-	y = NUM2INT(vy);
-	if (!LIGHTABLE_YEAR(y))
-	    return cforwardv("valid_ordinal_r?");
-    }
+    d = NUM2INT(argv[1]);
+    sg = NUM2DBL(argv[2]);
 
     {
 	long jd;
 	int ns;
 
 	if (!valid_ordinal_p(y, d, sg, &rd, &jd, &ns))
-	    return Qfalse;
-	return Qtrue;
+	    return Qnil;
+	return LONG2NUM(jd);
     }
 }
 
+#ifndef NDEBUG
 static VALUE
-date_s_valid_commercial_p(int argc, VALUE *argv, VALUE klass)
+date_s__valid_ordinal_p(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE vy, vw, vd, vsg;
+    VALUE vy, vd, vsg;
+    VALUE argv2[3];
+
+    rb_scan_args(argc, argv, "21", &vy, &vd, &vsg);
+
+    argv2[0] = vy;
+    argv2[1] = vd;
+    if (argc < 3)
+	argv2[2] = DBL2NUM(GREGORIAN);
+    else
+	argv2[2] = vsg;
+
+    return valid_ordinal_sub(3, argv2, klass);
+}
+#endif
+
+static VALUE
+date_s_valid_ordinal_p(int argc, VALUE *argv, VALUE klass)
+{
+    VALUE vy, vd, vsg;
+    VALUE argv2[3];
+
+    rb_scan_args(argc, argv, "21", &vy, &vd, &vsg);
+
+    argv2[0] = vy;
+    argv2[1] = vd;
+    if (argc < 3)
+	argv2[2] = INT2FIX(ITALY);
+    else
+	argv2[2] = vsg;
+
+    if (NIL_P(valid_ordinal_sub(3, argv2, klass)))
+	return Qfalse;
+    return Qtrue;
+}
+
+static VALUE
+valid_commercial_sub(int argc, VALUE *argv, VALUE klass)
+{
     int y, w, d, rw, rd;
     double sg;
 
-    rb_scan_args(argc, argv, "31", &vy, &vw, &vd, &vsg);
+    if (!(FIXNUM_P(argv[0]) &&
+	  FIXNUM_P(argv[1]) &&
+	  FIXNUM_P(argv[2])))
+	return cforwardv("_valid_commercial_r?");
 
-    if (!(FIXNUM_P(vy) &&
-	  FIXNUM_P(vw) &&
-	  FIXNUM_P(vd)))
-	return cforwardv("valid_commercial_r?");
+    y = NUM2INT(argv[0]);
+    if (!LIGHTABLE_CWYEAR(y))
+	return cforwardv("_valid_commercial_r?");
 
-    if (!NIL_P(vsg))
-	sg = NUM2DBL(vsg);
-    else
-	sg = ITALY;
-
-    y = -4712;
-    w = 1;
-    d = 1;
-
-    switch (argc) {
-      case 4:
-      case 3:
-	d = NUM2INT(vd);
-      case 2:
-	w = NUM2INT(vw);
-      case 1:
-	y = NUM2INT(vy);
-	if (!LIGHTABLE_CWYEAR(y))
-	    return cforwardv("valid_commercial_r?");
-    }
+    w = NUM2INT(argv[1]);
+    d = NUM2INT(argv[2]);
+    sg = NUM2DBL(argv[3]);
 
     {
 	long jd;
 	int ns;
 
 	if (!valid_commercial_p(y, w, d, sg, &rw, &rd, &jd, &ns))
-	    return Qfalse;
-	return Qtrue;
+	    return Qnil;
+	return LONG2NUM(jd);
     }
+}
+
+#ifndef NDEBUG
+static VALUE
+date_s__valid_commercial_p(int argc, VALUE *argv, VALUE klass)
+{
+    VALUE vy, vw, vd, vsg;
+    VALUE argv2[4];
+
+    rb_scan_args(argc, argv, "31", &vy, &vw, &vd, &vsg);
+
+    argv2[0] = vy;
+    argv2[1] = vw;
+    argv2[2] = vd;
+    if (argc < 4)
+	argv2[3] = DBL2NUM(GREGORIAN);
+    else
+	argv2[3] = vsg;
+
+    return valid_commercial_sub(4, argv2, klass);
+}
+#endif
+
+static VALUE
+date_s_valid_commercial_p(int argc, VALUE *argv, VALUE klass)
+{
+    VALUE vy, vw, vd, vsg;
+    VALUE argv2[4];
+
+    rb_scan_args(argc, argv, "31", &vy, &vw, &vd, &vsg);
+
+    argv2[0] = vy;
+    argv2[1] = vw;
+    argv2[2] = vd;
+    if (argc < 4)
+	argv2[3] = INT2FIX(ITALY);
+    else
+	argv2[3] = vsg;
+
+    if (NIL_P(valid_commercial_sub(4, argv2, klass)))
+	return Qfalse;
+    return Qtrue;
 }
 
 static void
@@ -4482,7 +4597,18 @@ Init_date_core(void)
     rb_define_alloc_func(cDate, d_lite_s_alloc);
     rb_define_singleton_method(cDate, "new_r!", date_s_new_r_bang, -1);
     rb_define_singleton_method(cDate, "new_l!", date_s_new_l_bang, -1);
-
+#ifndef NDEBUG
+    rb_define_private_method(CLASS_OF(cDate), "_valid_jd?",
+			     date_s__valid_jd_p, -1);
+    rb_define_private_method(CLASS_OF(cDate), "_valid_ordinal?",
+			     date_s__valid_ordinal_p, -1);
+    rb_define_private_method(CLASS_OF(cDate), "_valid_civil?",
+			     date_s__valid_civil_p, -1);
+    rb_define_private_method(CLASS_OF(cDate), "_valid_date?",
+			     date_s__valid_civil_p, -1);
+    rb_define_private_method(CLASS_OF(cDate), "_valid_commercial?",
+			     date_s__valid_commercial_p, -1);
+#endif
     rb_define_singleton_method(cDate, "valid_jd?", date_s_valid_jd_p, -1);
     rb_define_singleton_method(cDate, "valid_ordinal?",
 			       date_s_valid_ordinal_p, -1);
