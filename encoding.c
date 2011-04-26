@@ -1037,7 +1037,7 @@ enc_list(VALUE klass)
 static VALUE
 enc_find(VALUE klass, VALUE enc)
 {
-    return rb_enc_from_encoding(to_encoding(enc));
+    return rb_enc_from_encoding(rb_to_encoding(enc));
 }
 
 /*

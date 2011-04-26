@@ -1,3 +1,7 @@
+Wed Apr 27 01:16:59 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (enc_find): accept Encoding objects.
+
 Wed Apr 27 00:55:56 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (econv_opts): add newline option.
