@@ -1,3 +1,7 @@
+Wed Apr 27 00:54:12 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/encoding.h (ECONV_NEWLINE_DECORATOR_MASK): add.
+
 Wed Apr 27 00:51:01 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_truncate): fix function.

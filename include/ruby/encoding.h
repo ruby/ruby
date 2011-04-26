@@ -303,6 +303,7 @@ void rb_econv_binmode(rb_econv_t *ec);
 #define ECONV_UNDEF_HEX_CHARREF                 0x00000030
 
 #define ECONV_DECORATOR_MASK                    0x0000ff00
+#define ECONV_NEWLINE_DECORATOR_MASK            0x00003f00
 
 #define ECONV_UNIVERSAL_NEWLINE_DECORATOR       0x00000100
 #define ECONV_CRLF_NEWLINE_DECORATOR            0x00001000

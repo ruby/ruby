@@ -1025,13 +1025,15 @@ decorator_names(int ecflags, const char **decorators_ret)
 {
     int num_decorators;
 
-    if ((ecflags & ECONV_CRLF_NEWLINE_DECORATOR) &&
-        (ecflags & ECONV_CR_NEWLINE_DECORATOR))
+    switch (ecflags & ECONV_NEWLINE_DECORATOR_MASK) {
+      case ECONV_UNIVERSAL_NEWLINE_DECORATOR:
+      case ECONV_CRLF_NEWLINE_DECORATOR:
+      case ECONV_CR_NEWLINE_DECORATOR:
+      case 0:
+	break;
+      default:
         return -1;
-
-    if ((ecflags & (ECONV_CRLF_NEWLINE_DECORATOR|ECONV_CR_NEWLINE_DECORATOR)) &&
-        (ecflags & ECONV_UNIVERSAL_NEWLINE_DECORATOR))
-        return -1;
+    }
 
     if ((ecflags & ECONV_XML_TEXT_DECORATOR) &&
         (ecflags & ECONV_XML_ATTR_CONTENT_DECORATOR))
@@ -1965,7 +1967,7 @@ rb_econv_binmode(rb_econv_t *ec)
         }
     }
 
-    ec->flags &= ~(ECONV_UNIVERSAL_NEWLINE_DECORATOR|ECONV_CRLF_NEWLINE_DECORATOR|ECONV_CR_NEWLINE_DECORATOR);
+    ec->flags &= ~ECONV_NEWLINE_DECORATOR_MASK;
 
 }
 
@@ -1987,9 +1989,7 @@ econv_description(const char *sname, const char *dname, int ecflags, VALUE mesg)
         has_description = 1;
     }
 
-    if (ecflags & (ECONV_UNIVERSAL_NEWLINE_DECORATOR|
-                   ECONV_CRLF_NEWLINE_DECORATOR|
-                   ECONV_CR_NEWLINE_DECORATOR|
+    if (ecflags & (ECONV_NEWLINE_DECORATOR_MASK|
                    ECONV_XML_TEXT_DECORATOR|
                    ECONV_XML_ATTR_CONTENT_DECORATOR|
                    ECONV_XML_ATTR_QUOTE_DECORATOR)) {
@@ -2647,9 +2647,7 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
     arg2 = argc<=1 ? Qnil : argv[1];
     dencidx = str_transcode_enc_args(str, &arg1, &arg2, &sname, &senc, &dname, &denc);
 
-    if ((ecflags & (ECONV_UNIVERSAL_NEWLINE_DECORATOR|
-                    ECONV_CRLF_NEWLINE_DECORATOR|
-                    ECONV_CR_NEWLINE_DECORATOR|
+    if ((ecflags & (ECONV_NEWLINE_DECORATOR_MASK|
                     ECONV_XML_TEXT_DECORATOR|
                     ECONV_XML_ATTR_CONTENT_DECORATOR|
                     ECONV_XML_ATTR_QUOTE_DECORATOR)) == 0) {
