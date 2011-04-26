@@ -13,6 +13,7 @@ class TestEncoding < Test::Unit::TestCase
       assert_equal(e, Encoding.find(e.name.upcase))
       assert_equal(e, Encoding.find(e.name.capitalize))
       assert_equal(e, Encoding.find(e.name.downcase))
+      assert_equal(e, Encoding.find(e))
     end
   end
 
