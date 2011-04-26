@@ -1,3 +1,8 @@
+Wed Apr 27 07:42:44 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (STRIP): use proper toolchain.  based on a patch
+	  from Jon Forums at [ruby-core:35909].  fixes #4617
+
 Wed Apr 27 01:20:59 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c (date_zone_to_diff): renamed.
