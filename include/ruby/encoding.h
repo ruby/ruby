@@ -244,6 +244,7 @@ typedef struct rb_econv_t rb_econv_t;
 VALUE rb_str_encode(VALUE str, VALUE to, int ecflags, VALUE ecopts);
 int rb_econv_has_convpath_p(const char* from_encoding, const char* to_encoding);
 
+int rb_econv_prepare_options(VALUE opthash, VALUE *ecopts, int ecflags);
 int rb_econv_prepare_opts(VALUE opthash, VALUE *ecopts);
 
 rb_econv_t *rb_econv_open(const char *source_encoding, const char *destination_encoding, int ecflags);
@@ -313,6 +314,12 @@ void rb_econv_binmode(rb_econv_t *ec);
 
 #define ECONV_STATEFUL_DECORATOR_MASK           0x00f00000
 #define ECONV_XML_ATTR_QUOTE_DECORATOR          0x00100000
+
+#if defined(RUBY_TEST_CRLF_ENVIRONMENT) || defined(_WIN32)
+#define ECONV_DEFAULT_NEWLINE_DECORATOR ECONV_UNIVERSAL_NEWLINE_DECORATOR
+#else
+#define ECONV_DEFAULT_NEWLINE_DECORATOR 0
+#endif
 
 /* end of flags for rb_econv_open */
 

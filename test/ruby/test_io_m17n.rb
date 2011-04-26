@@ -1349,6 +1349,9 @@ EOT
       open("t.crlf", "rt:euc-jp:utf-8") {|f| assert_equal("a\nb\nc\n", f.read) }
       open("t.crlf", "rt") {|f| assert_equal("a\nb\nc\n", f.read) }
       open("t.crlf", "r", :textmode=>true) {|f| assert_equal("a\nb\nc\n", f.read) }
+      open("t.crlf", "r", textmode: true, universal_newline: false) {|f|
+        assert_equal("a\r\nb\r\nc\r\n", f.read)
+      }
 
       generate_file("t.cr", "a\rb\rc\r")
       assert_equal("a\nb\nc\n", File.read("t.cr", mode:"rt:euc-jp:utf-8"))

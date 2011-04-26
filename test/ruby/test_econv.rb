@@ -449,6 +449,16 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_econv("abc\rdef", :finished, 50, ec, "abc\ndef", "")
   end
 
+  def test_no_universal_newline1
+    ec = Encoding::Converter.new("UTF-8", "EUC-JP", universal_newline: false)
+    assert_econv("abc\r\ndef", :finished, 50, ec, "abc\r\ndef", "")
+  end
+
+  def test_no_universal_newline2
+    ec = Encoding::Converter.new("", "", universal_newline: false)
+    assert_econv("abc\r\ndef", :finished, 50, ec, "abc\r\ndef", "")
+  end
+
   def test_after_output
     ec = Encoding::Converter.new("UTF-8", "EUC-JP")
     a =     ["",  "abc\u{3042}def", ec, nil, 100, :after_output=>true]

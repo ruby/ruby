@@ -1,4 +1,10 @@
-Wed Apr 27 00:54:12 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Apr 27 00:55:18 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (validate_enc_binmode, rb_io_extract_modeenc): set newline
+	  decorator according to open mode.
+
+	* transcode.c (rb_econv_prepare_options): new function, to prepare
+	  econv options with newline flags.
 
 	* include/ruby/encoding.h (ECONV_NEWLINE_DECORATOR_MASK): add.
 

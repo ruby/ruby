@@ -2423,10 +2423,9 @@ str_transcoding_resize(VALUE destination, size_t len, size_t new_len)
 }
 
 static int
-econv_opts(VALUE opt)
+econv_opts(VALUE opt, int ecflags)
 {
     VALUE v;
-    int ecflags = 0;
 
     v = rb_hash_aref(opt, sym_invalid);
     if (NIL_P(v)) {
@@ -2469,25 +2468,36 @@ econv_opts(VALUE opt)
         }
     }
 
-    v = rb_hash_aref(opt, sym_universal_newline);
-    if (RTEST(v))
-        ecflags |= ECONV_UNIVERSAL_NEWLINE_DECORATOR;
+    {
+	int setflags = 0, newlineflag = 0;
 
-    v = rb_hash_aref(opt, sym_crlf_newline);
-    if (RTEST(v))
-        ecflags |= ECONV_CRLF_NEWLINE_DECORATOR;
+	v = rb_hash_aref(opt, sym_universal_newline);
+	if (RTEST(v))
+	    setflags |= ECONV_UNIVERSAL_NEWLINE_DECORATOR;
+	newlineflag |= !NIL_P(v);
 
-    v = rb_hash_aref(opt, sym_cr_newline);
-    if (RTEST(v))
-        ecflags |= ECONV_CR_NEWLINE_DECORATOR;
+	v = rb_hash_aref(opt, sym_crlf_newline);
+	if (RTEST(v))
+	    setflags |= ECONV_CRLF_NEWLINE_DECORATOR;
+	newlineflag |= !NIL_P(v);
+
+	v = rb_hash_aref(opt, sym_cr_newline);
+	if (RTEST(v))
+	    setflags |= ECONV_CR_NEWLINE_DECORATOR;
+	newlineflag |= !NIL_P(v);
+
+	if (newlineflag) {
+	    ecflags &= ~ECONV_NEWLINE_DECORATOR_MASK;
+	    ecflags |= setflags;
+	}
+    }
 
     return ecflags;
 }
 
 int
-rb_econv_prepare_opts(VALUE opthash, VALUE *opts)
+rb_econv_prepare_options(VALUE opthash, VALUE *opts, int ecflags)
 {
-    int ecflags;
     VALUE newhash = Qnil;
     VALUE v;
 
@@ -2495,7 +2505,7 @@ rb_econv_prepare_opts(VALUE opthash, VALUE *opts)
         *opts = Qnil;
         return 0;
     }
-    ecflags = econv_opts(opthash);
+    ecflags = econv_opts(opthash, ecflags);
 
     v = rb_hash_aref(opthash, sym_replace);
     if (!NIL_P(v)) {
@@ -2528,6 +2538,12 @@ rb_econv_prepare_opts(VALUE opthash, VALUE *opts)
     *opts = newhash;
 
     return ecflags;
+}
+
+int
+rb_econv_prepare_opts(VALUE opthash, VALUE *opts)
+{
+    return rb_econv_prepare_options(opthash, opts, 0);
 }
 
 rb_econv_t *

@@ -217,15 +217,15 @@ static int max_file_descriptor = NOFILE;
 #  endif
 #endif
 
+#define NEED_NEWLINE_DECORATOR_ON_READ(fptr) ((fptr)->mode & FMODE_TEXTMODE)
+#define NEED_NEWLINE_DECORATOR_ON_WRITE(fptr) ((fptr)->mode & FMODE_TEXTMODE)
 #if defined(RUBY_TEST_CRLF_ENVIRONMENT) || defined(_WIN32)
 /* Windows */
-# define NEED_NEWLINE_DECORATOR_ON_READ(fptr) (!((fptr)->mode & FMODE_BINMODE))
-# define NEED_NEWLINE_DECORATOR_ON_WRITE(fptr) (!((fptr)->mode & FMODE_BINMODE))
+# define DEFAULT_TEXTMODE FMODE_TEXTMODE
 # define TEXTMODE_NEWLINE_DECORATOR_ON_WRITE ECONV_CRLF_NEWLINE_DECORATOR
 #else
 /* Unix */
-# define NEED_NEWLINE_DECORATOR_ON_READ(fptr) ((fptr)->mode & FMODE_TEXTMODE)
-# define NEED_NEWLINE_DECORATOR_ON_WRITE(fptr) 0
+# define DEFAULT_TEXTMODE 0
 #endif
 #define NEED_READCONV(fptr) ((fptr)->encs.enc2 != NULL || NEED_NEWLINE_DECORATOR_ON_READ(fptr))
 #define NEED_WRITECONV(fptr) (((fptr)->encs.enc != NULL && (fptr)->encs.enc != rb_ascii8bit_encoding()) || NEED_NEWLINE_DECORATOR_ON_WRITE(fptr) || ((fptr)->encs.ecflags & (ECONV_DECORATOR_MASK|ECONV_STATEFUL_DECORATOR_MASK)))
@@ -1672,8 +1672,6 @@ make_readconv(rb_io_t *fptr, int size)
         const char *sname, *dname;
         ecflags = fptr->encs.ecflags;
         ecopts = fptr->encs.ecopts;
-        if (NEED_NEWLINE_DECORATOR_ON_READ(fptr))
-            ecflags |= ECONV_UNIVERSAL_NEWLINE_DECORATOR;
         if (fptr->encs.enc2) {
             sname = rb_enc_name(fptr->encs.enc2);
             dname = rb_enc_name(fptr->encs.enc);
@@ -3994,7 +3992,7 @@ rb_io_binmode(VALUE io)
         rb_econv_binmode(fptr->writeconv);
     fptr->mode |= FMODE_BINMODE;
     fptr->mode &= ~FMODE_TEXTMODE;
-    fptr->writeconv_pre_ecflags &= ~(ECONV_UNIVERSAL_NEWLINE_DECORATOR|ECONV_CRLF_NEWLINE_DECORATOR|ECONV_CR_NEWLINE_DECORATOR);
+    fptr->writeconv_pre_ecflags &= ~ECONV_NEWLINE_DECORATOR_MASK;
     return io;
 }
 
@@ -4442,13 +4440,25 @@ rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2
 typedef struct rb_io_enc_t convconfig_t;
 
 static void
-validate_enc_binmode(int fmode, rb_encoding *enc, rb_encoding *enc2)
+validate_enc_binmode(int *fmode_p, int ecflags, rb_encoding *enc, rb_encoding *enc2)
 {
+    int fmode = *fmode_p;
+
     if ((fmode & FMODE_READABLE) &&
         !enc2 &&
         !(fmode & FMODE_BINMODE) &&
         !rb_enc_asciicompat(enc ? enc : rb_default_external_encoding()))
         rb_raise(rb_eArgError, "ASCII incompatible encoding needs binmode");
+
+    if (!(fmode & FMODE_BINMODE) &&
+	(ecflags & ECONV_NEWLINE_DECORATOR_MASK)) {
+	fmode |= DEFAULT_TEXTMODE;
+	*fmode_p = fmode;
+    }
+    else if (!(ecflags & ECONV_NEWLINE_DECORATOR_MASK)) {
+	fmode &= ~FMODE_TEXTMODE;
+	*fmode_p = fmode;
+    }
 }
 
 static void
@@ -4516,7 +4526,9 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
     }
 
     if (NIL_P(opthash)) {
-        ecflags = 0;
+	ecflags = (fmode & FMODE_READABLE) ?
+	    MODE_BTMODE(ECONV_DEFAULT_NEWLINE_DECORATOR,
+			0, ECONV_UNIVERSAL_NEWLINE_DECORATOR) : 0;
         ecopts = Qnil;
     }
     else {
@@ -4549,7 +4561,10 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
 		/* perm no use, just ignore */
 	    }
 	}
-        ecflags = rb_econv_prepare_opts(opthash, &ecopts);
+	ecflags = (fmode & FMODE_READABLE) ?
+	    MODE_BTMODE(ECONV_DEFAULT_NEWLINE_DECORATOR,
+			0, ECONV_UNIVERSAL_NEWLINE_DECORATOR) : 0;
+        ecflags = rb_econv_prepare_options(opthash, &ecopts, ecflags);
 
         if (rb_io_extract_encoding_option(opthash, &enc, &enc2, &fmode)) {
             if (has_enc) {
@@ -4558,7 +4573,7 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
         }
     }
 
-    validate_enc_binmode(fmode, enc, enc2);
+    validate_enc_binmode(&fmode, ecflags, enc, enc2);
 
     *vmode_p = vmode;
 
@@ -4756,7 +4771,8 @@ rb_file_open_generic(VALUE io, VALUE filename, int oflags, int fmode, convconfig
         cc.ecopts = Qnil;
         convconfig = &cc;
     }
-    validate_enc_binmode(fmode, convconfig->enc, convconfig->enc2);
+    validate_enc_binmode(&fmode, convconfig->ecflags,
+			 convconfig->enc, convconfig->enc2);
 
     MakeOpenFile(io, fptr);
     fptr->mode = fmode;
@@ -8024,7 +8040,7 @@ io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
 	    }
 	}
     }
-    validate_enc_binmode(fptr->mode, enc, enc2);
+    validate_enc_binmode(&fptr->mode, ecflags, enc, enc2);
     fptr->encs.enc = enc;
     fptr->encs.enc2 = enc2;
     fptr->encs.ecflags = ecflags;
