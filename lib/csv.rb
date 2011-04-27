@@ -1398,11 +1398,8 @@ class CSV
   # <tt>encoding: "UTF-32BE:UTF-8"</tt> would read UTF-32BE data from the file
   # but transcode it to UTF-8 before CSV parses it.
   #
-  def self.read(path, options = Hash.new)
-    encoding =  options.delete(:encoding)
-    mode     =  "rb"
-    mode     << ":#{encoding}" if encoding
-    open(path, mode, options) { |csv| csv.read }
+  def self.read(path, *options)
+    open(path, *options) { |csv| csv.read }
   end
 
   # Alias for CSV::read().
