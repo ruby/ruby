@@ -4496,7 +4496,7 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
     rb_io_ext_int_to_encs(NULL, NULL, &enc, &enc2);
 
     if (NIL_P(vmode)) {
-        fmode = FMODE_READABLE;
+        fmode = FMODE_READABLE | DEFAULT_TEXTMODE;
         oflags = O_RDONLY;
     }
     else if (!NIL_P(intmode = rb_check_to_integer(vmode, "to_int"))) {
@@ -5248,6 +5248,9 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
     fptr->mode = fmode | FMODE_SYNC|FMODE_DUPLEX;
     if (convconfig) {
         fptr->encs = *convconfig;
+    }
+    else if (NEED_NEWLINE_DECORATOR_ON_READ(fptr)) {
+        fptr->encs.ecflags |= ECONV_UNIVERSAL_NEWLINE_DECORATOR;
     }
     fptr->pid = pid;
 
@@ -7248,7 +7251,7 @@ rb_f_backquote(VALUE obj, VALUE str)
     rb_io_t *fptr;
 
     SafeStringValue(str);
-    port = pipe_open_s(str, "r", FMODE_READABLE, NULL);
+    port = pipe_open_s(str, "r", FMODE_READABLE|DEFAULT_TEXTMODE, NULL);
     if (NIL_P(port)) return rb_str_new(0,0);
 
     GetOpenFile(port, fptr);

@@ -1,3 +1,10 @@
+Thu Apr 28 06:06:56 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_extract_modeenc, rb_f_backquote): set default text
+	  mode.  fixes #4619
+
+	* io.c (pipe_open): set universal newline decorator if needed.
+
 Wed Apr 27 11:33:08 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/trans/emoji_iso2022_kddi.trans: ISO-2022-JP-KDDI doesn't have
