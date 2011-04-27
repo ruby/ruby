@@ -31,7 +31,6 @@
                                                    JISX0208VDC:NEC/UCS
                                                    CP932VDC:NEC_IBM/UCS
                                                    CP932VDC:IBM/UCS
-                                                   CP932UDA/UCS
                                                    JISX0208:MS/UCS).join(",")),
     nil
 
@@ -43,7 +42,6 @@
                                                    UCS/JISX0208VDC:NEC
                                                    UCS/CP932VDC:NEC_IBM
                                                    UCS/CP932VDC:IBM
-                                                   UCS/CP932UDA
                                                    UCS/JISX0208:MS).join(",")),
     ValidEncoding('UTF-8')
 %>
