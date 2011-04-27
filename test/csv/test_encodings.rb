@@ -79,6 +79,21 @@ class TestCSV::Encodings < TestCSV
     end
   end
 
+  def test_read_with_default_encoding
+    data = "abc"
+    default_external = Encoding.default_external
+    each_encoding do |encoding|
+      File.open(@temp_csv_path, "wb", encoding: encoding) {|f| f << data}
+      begin
+        Encoding.default_external = encoding
+        result = CSV.read(@temp_csv_path)[0][0]
+      ensure
+        Encoding.default_external = default_external
+      end
+      assert_equal(encoding, result.encoding)
+    end
+  end
+
   #######################################################################
   ### Stress Test ASCII Compatible and Non-ASCII Compatible Encodings ###
   #######################################################################

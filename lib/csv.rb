@@ -1334,10 +1334,18 @@ class CSV
   def self.open(*args)
     # find the +options+ Hash
     options = if args.last.is_a? Hash then args.pop else Hash.new end
-    # default to a binary open mode
-    args << "rb" if args.size == 1 and !options.key?(:mode)
-    # wrap a File opened with the remaining +args+
-    csv     = new(File.open(*args, options), options)
+    # wrap a File opened with the remaining +args+ with no newline
+    # decorator
+    file_opts = {universal_newline: false}.merge(options)
+    begin
+      f = File.open(*args, file_opts)
+    rescue ArgumentError => e
+      raise unless /needs binmode/ =~ e.message and args.size == 1
+      args << "rb"
+      file_opts = {encoding: Encoding.default_external}.merge(file_opts)
+      retry
+    end
+    csv = new(f, options)
 
     # handle blocks like Ruby's open(), not like the CSV library
     if block_given?

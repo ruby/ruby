@@ -1,4 +1,7 @@
-Thu Apr 28 06:07:02 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Apr 28 06:07:06 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/csv.rb (CSV::open): suppress universal newline decorator.
+	  fixes #4603
 
 	* lib/csv.rb (CSV.read): no mode is needed.
 
