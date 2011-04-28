@@ -1690,14 +1690,30 @@ open_dir_handle(const WCHAR *filename, WIN32_FIND_DATAW *fd)
 }
 
 static DIR *
-opendir_internal(HANDLE fh, WIN32_FIND_DATAW *fd)
+opendir_internal(WCHAR *wpath, const char *filename)
 {
+    struct stati64 sbuf;
+    WIN32_FIND_DATAW fd;
+    HANDLE fh;
     DIR *p;
     long len;
     long idx;
     WCHAR *tmpW;
     char *tmp;
 
+    //
+    // check to see if we've got a directory
+    //
+    if (wstati64(wpath, &sbuf) < 0) {
+	return NULL;
+    }
+    if (!(sbuf.st_mode & S_IFDIR) &&
+	(!ISALPHA(filename[0]) || filename[1] != ':' || filename[2] != '\0' ||
+	 ((1 << ((filename[0] & 0x5f) - 'A')) & GetLogicalDrives()) == 0)) {
+	errno = ENOTDIR;
+	return NULL;
+    }
+    fh = open_dir_handle(wpath, &fd);
     if (fh == INVALID_HANDLE_VALUE) {
 	return NULL;
     }
@@ -1718,7 +1734,7 @@ opendir_internal(HANDLE fh, WIN32_FIND_DATAW *fd)
     // of the previous string found.
     //
     do {
-	len = lstrlenW(fd->cFileName) + 1;
+	len = lstrlenW(fd.cFileName) + 1;
 
 	//
 	// bump the string table size by enough for the
@@ -1734,7 +1750,7 @@ opendir_internal(HANDLE fh, WIN32_FIND_DATAW *fd)
 	}
 
 	p->start = tmpW;
-	memcpy(&p->start[idx], fd->cFileName, len * sizeof(WCHAR));
+	memcpy(&p->start[idx], fd.cFileName, len * sizeof(WCHAR));
 
 	if (p->nfiles % DIRENT_PER_CHAR == 0) {
 	    tmp = realloc(p->bits, p->nfiles / DIRENT_PER_CHAR + 1);
@@ -1743,14 +1759,14 @@ opendir_internal(HANDLE fh, WIN32_FIND_DATAW *fd)
 	    p->bits = tmp;
 	    p->bits[p->nfiles / DIRENT_PER_CHAR] = 0;
 	}
-	if (fd->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+	if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 	    SetBit(p->bits, BitOfIsDir(p->nfiles));
-	if (fd->dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
+	if (fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
 	    SetBit(p->bits, BitOfIsRep(p->nfiles));
 
 	p->nfiles++;
 	idx += len;
-    } while (FindNextFileW(fh, fd));
+    } while (FindNextFileW(fh, &fd));
     FindClose(fh);
     p->size = idx;
     p->curr = p->start;
@@ -1789,31 +1805,25 @@ mbstr_to_wstr(UINT cp, const char *str, int clen, long *plen)
 DIR *
 rb_w32_opendir(const char *filename)
 {
-    struct stati64 sbuf;
-    WIN32_FIND_DATAW fd;
-    HANDLE fh;
-    WCHAR *wpath;
-
-    if (!(wpath = filecp_to_wstr(filename, NULL)))
+    DIR *ret;
+    WCHAR *wpath = filecp_to_wstr(filename, NULL);
+    if (!wpath)
 	return NULL;
-
-    //
-    // check to see if we've got a directory
-    //
-    if (wstati64(wpath, &sbuf) < 0) {
-	free(wpath);
-	return NULL;
-    }
-    if (!(sbuf.st_mode & S_IFDIR) &&
-	(!ISALPHA(filename[0]) || filename[1] != ':' || filename[2] != '\0' ||
-	 ((1 << ((filename[0] & 0x5f) - 'A')) & GetLogicalDrives()) == 0)) {
-	free(wpath);
-	errno = ENOTDIR;
-	return NULL;
-    }
-    fh = open_dir_handle(wpath, &fd);
+    ret = opendir_internal(wpath, filename);
     free(wpath);
-    return opendir_internal(fh, &fd);
+    return ret;
+}
+
+DIR *
+rb_w32_uopendir(const char *filename)
+{
+    DIR *ret;
+    WCHAR *wpath = utf8_to_wstr(filename, NULL);
+    if (!wpath)
+	return NULL;
+    ret = opendir_internal(wpath, filename);
+    free(wpath);
+    return ret;
 }
 
 //

@@ -1,3 +1,16 @@
+Thu Apr 28 16:15:49 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/{win32.c,dir.h} (rb_w32_uopendir): new API to pass UTF-8 path.
+
+	* win32/win32.c (opendir_internal, rb_w32_opendir): extract and merge
+	  common part of rb_w32_opendir() and rb_w32_uopendir().
+
+	* dir.c (do_opendir, glob_helper): encoding.
+
+	* dir.c (dir_initialize, do_opendir): convert path to UTF-8 and call
+	  rb_w32_uopendir() instead of rb_w32_opendir() on Windows.
+	  fixes #4491, reported by Joey Zhou.
+
 Thu Apr 28 15:32:53 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/dl/test_base.rb (DL::LIBC_SO): its always msvc*.dll on

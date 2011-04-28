@@ -75,6 +75,8 @@ char *strchr(char*,char);
 #define mkdir(p, m) rb_w32_umkdir((p), (m))
 #undef rmdir
 #define rmdir(p) rb_w32_urmdir(p)
+#undef opendir
+#define opendir(p) rb_w32_uopendir(p)
 #endif
 
 #define FNM_NOESCAPE	0x01
@@ -402,6 +404,7 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
     }
 
     GlobPathValue(dirname, FALSE);
+    dirname = rb_str_encode_ospath(dirname);
 
     TypedData_Get_Struct(dir, struct dir_data, &dir_data_type, dp);
     if (dp->dir) closedir(dp->dir);
@@ -1033,9 +1036,20 @@ do_lstat(const char *path, struct stat *pst, int flags)
 }
 
 static DIR *
-do_opendir(const char *path, int flags)
+do_opendir(const char *path, int flags, rb_encoding *enc)
 {
-    DIR *dirp = opendir(path);
+    DIR *dirp;
+#ifdef _WIN32
+    volatile VALUE tmp;
+    if (enc != rb_usascii_encoding() &&
+	enc != rb_ascii8bit_encoding() &&
+	enc != rb_utf8_encoding()) {
+	tmp = rb_enc_str_new(path, strlen(path), enc);
+	tmp = rb_str_encode_ospath(tmp);
+	path = RSTRING_PTR(tmp);
+    }
+#endif
+    dirp = opendir(path);
     if (dirp == NULL && !to_be_ignored(errno))
 	sys_warning(path);
 
@@ -1354,7 +1368,7 @@ glob_helper(
 	struct dirent *dp;
 	DIR *dirp;
 	IF_HAVE_READDIR_R(DEFINE_STRUCT_DIRENT entry);
-	dirp = do_opendir(*path ? path : ".", flags);
+	dirp = do_opendir(*path ? path : ".", flags, enc);
 	if (dirp == NULL) return 0;
 
 	while (READDIR(dirp, enc, &STRUCT_DIRENT(entry), dp)) {

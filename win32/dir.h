@@ -28,6 +28,7 @@ typedef struct {
 
 
 DIR*           rb_w32_opendir(const char*);
+DIR*           rb_w32_uopendir(const char*);
 struct direct* rb_w32_readdir(DIR *);
 struct direct* rb_w32_readdir_with_enc(DIR *, rb_encoding *);
 long           rb_w32_telldir(DIR *);
