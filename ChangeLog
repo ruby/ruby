@@ -1,3 +1,8 @@
+Thu Apr 28 15:32:53 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/dl/test_base.rb (DL::LIBC_SO): its always msvc*.dll on
+	  mswin/mingw.
+
 Thu Apr 28 06:07:06 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/csv.rb (CSV::open): suppress universal newline decorator.
