@@ -1,3 +1,8 @@
+Fri Apr 29 10:25:31 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* vm_method.c (rb_clear_cache_by_class): Revert r29673. It made
+	  a segmentation fault regression. [Bug #4289][ruby-core:34554].
+
 Fri Apr 29 10:24:51 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (make_writeconv): do not add textmode newline decorator if any

@@ -85,9 +85,6 @@ rb_clear_cache_by_class(VALUE klass)
 {
     struct cache_entry *ent, *end;
 
-    if (RCLASS_M_TBL(klass)->num_entries == 0)
-        return;
-
     rb_vm_change_state();
 
     if (!ruby_running)
