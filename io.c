@@ -789,7 +789,8 @@ make_writeconv(rb_io_t *fptr)
         ecflags = fptr->encs.ecflags;
         ecopts = fptr->encs.ecopts;
 #ifdef TEXTMODE_NEWLINE_DECORATOR_ON_WRITE
-        if (NEED_NEWLINE_DECORATOR_ON_WRITE(fptr))
+	if (NEED_NEWLINE_DECORATOR_ON_WRITE(fptr) &&
+	    !(ecflags & ECONV_NEWLINE_DECORATOR_MASK))
             ecflags |= TEXTMODE_NEWLINE_DECORATOR_ON_WRITE;
 #endif
 
