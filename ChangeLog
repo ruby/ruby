@@ -1,3 +1,9 @@
+Fri Apr 29 10:43:09 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* benchmark/bm_vm4_pipe.rb: Add two new benchmark for GVL
+	  performance. They was written by Koichi Sasada.
+	* benchmark/bm_vm4_thread_pass.rb: ditto.
+
 Fri Apr 29 10:25:31 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* vm_method.c (rb_clear_cache_by_class): Revert r29673. It made
