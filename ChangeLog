@@ -1,3 +1,7 @@
+Fri Apr 29 10:17:42 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (lock_func): small cleanup.
+
 Fri Apr 29 10:07:13 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_mutex_lock, lock_func): Avoid busy loop and

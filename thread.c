@@ -3235,9 +3235,14 @@ lock_func(rb_thread_t *th, mutex_t *mutex, int timeout_ms)
 
     native_mutex_lock(&mutex->lock);
     th->transition_for_lock = 0;
-    while (mutex->th || (mutex->th = th, 0)) {
+    for (;;) {
 	struct timespec ts;
 	int ret;
+
+	if (!mutex->th) {
+	    mutex->th = th;
+	    break;
+	}
 
 	mutex->cond_waiting++;
 	if (timeout_ms) {
