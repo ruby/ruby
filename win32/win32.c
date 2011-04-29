@@ -2528,8 +2528,12 @@ do_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     return r;
 }
 
-static inline int
-subtract(struct timeval *rest, const struct timeval *wait)
+/*
+ * rest -= wait
+ * return 0 if rest is smaller than wait.
+ */
+int
+rb_w32_time_subtract(struct timeval *rest, const struct timeval *wait)
 {
     if (rest->tv_sec < wait->tv_sec) {
 	return 0;
@@ -2668,7 +2672,7 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 		    struct timeval now;
 		    gettimeofday(&now, NULL);
 		    rest = limit;
-		    if (!subtract(&rest, &now)) break;
+		    if (!rb_w32_time_subtract(&rest, &now)) break;
 		    if (compare(&rest, &wait) < 0) dowait = &rest;
 		}
 		Sleep(dowait->tv_sec * 1000 + dowait->tv_usec / 1000);

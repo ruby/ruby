@@ -21,19 +21,6 @@
 
 static volatile DWORD ruby_native_thread_key = TLS_OUT_OF_INDEXES;
 
-static int native_mutex_lock(rb_thread_lock_t *);
-static int native_mutex_unlock(rb_thread_lock_t *);
-static int native_mutex_trylock(rb_thread_lock_t *);
-static void native_mutex_initialize(rb_thread_lock_t *);
-static void native_mutex_destroy(rb_thread_lock_t *);
-
-static void native_cond_signal(rb_thread_cond_t *cond);
-static void native_cond_broadcast(rb_thread_cond_t *cond);
-static void native_cond_wait(rb_thread_cond_t *cond, rb_thread_lock_t *mutex);
-static void native_cond_initialize(rb_thread_cond_t *cond);
-static void native_cond_destroy(rb_thread_cond_t *cond);
-static int w32_wait_events(HANDLE *events, int count, DWORD timeout, rb_thread_t *th);
-
 static void
 w32_error(const char *func)
 {
@@ -433,8 +420,9 @@ native_cond_broadcast(rb_thread_cond_t *cond)
     }
 }
 
-static void
-native_cond_wait(rb_thread_cond_t *cond, rb_thread_lock_t *mutex)
+
+static int
+__cond_timedwait(rb_thread_cond_t *cond, rb_thread_lock_t *mutex, unsigned long msec)
 {
     DWORD r;
     struct cond_event_entry entry;
@@ -454,14 +442,49 @@ native_cond_wait(rb_thread_cond_t *cond, rb_thread_lock_t *mutex)
 
     native_mutex_unlock(mutex);
     {
-	r = WaitForSingleObject(entry.event, INFINITE);
-	if (r != WAIT_OBJECT_0) {
+	r = WaitForSingleObject(entry.event, msec);
+	if ((r != WAIT_OBJECT_0) && (r != WAIT_TIMEOUT)) {
 	    rb_bug("native_cond_wait: WaitForSingleObject returns %lu", r);
 	}
     }
     native_mutex_lock(mutex);
 
     w32_close_handle(entry.event);
+    return (r == WAIT_OBJECT_0) ? 0 : ETIMEDOUT;
+}
+
+static int
+native_cond_wait(rb_thread_cond_t *cond, rb_thread_lock_t *mutex)
+{
+    return __cond_timedwait(cond, mutex, INFINITE);
+}
+
+static unsigned long
+abs_timespec_to_timeout_ms(struct timespec *ts)
+{
+    struct timeval tv;
+    struct timeval now;
+
+    gettimeofday(&now, NULL);
+    tv.tv_sec = ts->tv_sec;
+    tv.tv_usec = ts->tv_nsec;
+
+    if (!rb_w32_time_subtract(&tv, &now))
+	return 0;
+
+    return (tv.tv_sec * 1000) + (tv.tv_usec / 1000);
+}
+
+static int
+native_cond_timedwait(rb_thread_cond_t *cond, rb_thread_lock_t *mutex, struct timespec *ts)
+{
+    unsigned long timeout_ms;
+
+    timeout_ms = abs_timespec_to_timeout_ms(ts);
+    if (!timeout_ms)
+	return ETIMEDOUT;
+
+    return __cond_timedwait(cond, mutex, timeout_ms);
 }
 
 static void
