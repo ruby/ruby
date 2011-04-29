@@ -21,6 +21,10 @@
 
 static volatile DWORD ruby_native_thread_key = TLS_OUT_OF_INDEXES;
 
+static int w32_wait_events(HANDLE *events, int count, DWORD timeout, rb_thread_t *th);
+static int native_mutex_lock(rb_thread_lock_t *lock);
+static int native_mutex_unlock(rb_thread_lock_t *lock);
+
 static void
 w32_error(const char *func)
 {
