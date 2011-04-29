@@ -3210,22 +3210,22 @@ rb_mutex_trylock(VALUE self)
 
 static struct timespec init_lock_timeout(int timeout_ms)
 {
-	struct timespec ts;
-	struct timeval tv;
-	int ret;
+    struct timespec ts;
+    struct timeval tv;
+    int ret;
 
-	ret = gettimeofday(&tv, NULL);
-	if (ret < 0)
-	    rb_sys_fail(0);
+    ret = gettimeofday(&tv, NULL);
+    if (ret < 0)
+	rb_sys_fail(0);
 
-	ts.tv_sec = tv.tv_sec;
-	ts.tv_nsec = tv.tv_usec * 1000 + timeout_ms * 1000 * 1000;
-	if (ts.tv_nsec >= 1000000000) {
-	    ts.tv_sec++;
-	    ts.tv_nsec -= 1000000000;
-	}
+    ts.tv_sec = tv.tv_sec;
+    ts.tv_nsec = tv.tv_usec * 1000 + timeout_ms * 1000 * 1000;
+    if (ts.tv_nsec >= 1000000000) {
+	ts.tv_sec++;
+	ts.tv_nsec -= 1000000000;
+    }
 
-	return ts;
+    return ts;
 }
 
 static int
