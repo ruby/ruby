@@ -6,7 +6,7 @@ Fri Apr 29 10:07:13 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_mutex_lock, lock_func): Avoid busy loop and
 	  performance degression. bm_vm3_thread_mutex.rb performance
-	  change from 109.064sec to 16.331sec.
+	  change from 109.064sec to 16.331sec. [Feature #4607]
 
 	* thread.c (init_lock_timeout): New helper function.
 
