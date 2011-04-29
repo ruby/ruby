@@ -1,3 +1,8 @@
+Sat Apr 30 00:34:56 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* include/ruby/win32.h: remove redundunt declaration of
+	  rb_w32_time_subtract().
+
 Sat Apr 30 00:16:40 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (gvl_init): fix hangup if GVL_SIMPLE_LOCK=1.

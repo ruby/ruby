@@ -303,7 +303,6 @@ extern int rb_w32_stati64(const char *, struct stati64 *);
 extern int rb_w32_ustati64(const char *, struct stati64 *);
 extern int rb_w32_access(const char *, int);
 extern int rb_w32_uaccess(const char *, int);
-extern int rb_w32_subtract(struct timeval *rest, const struct timeval *wait);
 
 #ifdef __BORLANDC__
 extern int rb_w32_fstati64(int, struct stati64 *);
