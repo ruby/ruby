@@ -1,3 +1,8 @@
+Sat Apr 30 03:25:53 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/io/wait/test_io_wait.rb: New. for testing ext/io/wait.
+	  the patch was written by Eric Wong. [Feature #4531]
+
 Sat Apr 30 00:34:56 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* include/ruby/win32.h: remove redundant declaration of
