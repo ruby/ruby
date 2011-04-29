@@ -128,7 +128,7 @@ gvl_init(rb_vm_t *vm)
     if (GVL_DEBUG) fprintf(stderr, "gvl init\n");
 
 #if GVL_SIMPLE_LOCK
-    native_mutex_reinitialize_atfork(&vm->gvl.lock);
+    native_mutex_initialize(&vm->gvl.lock);
 #else
     native_mutex_initialize(&vm->gvl.lock);
     vm->gvl.waiting_threads = 0;
