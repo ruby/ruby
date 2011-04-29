@@ -1,3 +1,11 @@
+Fri Apr 29 10:07:13 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_mutex_lock, lock_func): Avoid busy loop and
+	  performance degression. bm_vm3_thread_mutex.rb performance
+	  change from 109.064sec to 16.331sec.
+
+	* thread.c (init_lock_timeout): New helper function.
+
 Thu Apr 28 16:15:49 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/{win32.c,dir.h} (rb_w32_uopendir): new API to pass UTF-8 path.

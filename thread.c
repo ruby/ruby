@@ -3208,24 +3208,49 @@ rb_mutex_trylock(VALUE self)
     return locked;
 }
 
+static struct timespec init_lock_timeout(int timeout_ms)
+{
+	struct timespec ts;
+	struct timeval tv;
+	int ret;
+
+	ret = gettimeofday(&tv, NULL);
+	if (ret < 0)
+	    rb_sys_fail(0);
+
+	ts.tv_sec = tv.tv_sec;
+	ts.tv_nsec = tv.tv_usec * 1000 + timeout_ms * 1000 * 1000;
+	if (ts.tv_nsec >= 1000000000) {
+	    ts.tv_sec++;
+	    ts.tv_nsec -= 1000000000;
+	}
+
+	return ts;
+}
+
 static int
-lock_func(rb_thread_t *th, mutex_t *mutex, int last_thread)
+lock_func(rb_thread_t *th, mutex_t *mutex, int timeout_ms)
 {
     int interrupted = 0;
-#if 0 /* for debug */
-    native_thread_yield();
-#endif
 
     native_mutex_lock(&mutex->lock);
     th->transition_for_lock = 0;
     while (mutex->th || (mutex->th = th, 0)) {
-	if (last_thread) {
-	    interrupted = 2;
-	    break;
-	}
+	struct timespec ts;
+	int ret;
 
 	mutex->cond_waiting++;
-	native_cond_wait(&mutex->cond, &mutex->lock);
+	if (timeout_ms) {
+	    ts = init_lock_timeout(timeout_ms);
+	    ret = native_cond_timedwait(&mutex->cond, &mutex->lock, &ts);
+	    if (ret == ETIMEDOUT) {
+		interrupted = 2;
+		break;
+	    }
+	}
+	else {
+	    native_cond_wait(&mutex->cond, &mutex->lock);
+	}
 	mutex->cond_notified--;
 
 	if (RUBY_VM_INTERRUPTED(th)) {
@@ -3235,11 +3260,6 @@ lock_func(rb_thread_t *th, mutex_t *mutex, int last_thread)
     }
     th->transition_for_lock = 1;
     native_mutex_unlock(&mutex->lock);
-
-    if (interrupted == 2) native_thread_yield();
-#if 0 /* for debug */
-    native_thread_yield();
-#endif
 
     return interrupted;
 }
@@ -3280,20 +3300,26 @@ rb_mutex_lock(VALUE self)
 	while (mutex->th != th) {
 	    int interrupted;
 	    enum rb_thread_status prev_status = th->status;
-	    int last_thread = 0;
+	    int timeout_ms = 0;
 	    struct rb_unblock_callback oldubf;
 
 	    set_unblock_function(th, lock_interrupt, mutex, &oldubf);
 	    th->status = THREAD_STOPPED_FOREVER;
 	    th->vm->sleeper++;
 	    th->locking_mutex = self;
+
+	    /*
+	     * Carefully! while some contended threads are in lock_fun(),
+	     * vm->sleepr is unstable value. we have to avoid both deadlock
+	     * and busy loop.
+	     */
 	    if (vm_living_thread_num(th->vm) == th->vm->sleeper) {
-		last_thread = 1;
+		timeout_ms = 100;
 	    }
 
 	    th->transition_for_lock = 1;
 	    BLOCKING_REGION_CORE({
-		interrupted = lock_func(th, mutex, last_thread);
+		interrupted = lock_func(th, mutex, timeout_ms);
 	    });
 	    th->transition_for_lock = 0;
 	    remove_signal_thread_list(th);
