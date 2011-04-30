@@ -1,3 +1,8 @@
+Sat Apr 30 16:13:17 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* benchmark/bm_io_select.rb, benchmark/bm_io_select2.rb: New.
+	  based on a patch from Eric Wong at [Feature #4531]
+
 Sat Apr 30 03:25:53 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/io/wait/test_io_wait.rb: New. for testing ext/io/wait.
