@@ -1,3 +1,9 @@
+Sat Apr 30 23:10:15 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* win32/win32.c (rb_w32_fdcopy): New. This can copy even though
+	  fdset size exceed FD_SETSIZE.
+	* include/ruby/intern.h (rb_fd_copy): use rb_w32_fdcopy()
+
 Sat Apr 30 20:18:43 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (do_select): Change arugment type to rb_fdset_t.

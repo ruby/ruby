@@ -2366,6 +2366,18 @@ rb_w32_fdisset(int fd, fd_set *set)
     return ret;
 }
 
+void
+rb_w32_fdcopy(rb_fdset_t *dst, const rb_fdset_t *src)
+{
+    if (dst->capa < src->fdset->fd_count) {
+	dst->capa = (src->fdset->fd_count / FD_SETSIZE + 1) * FD_SETSIZE;
+	dst->fdset = xrealloc(dst->fdset, sizeof(unsigned int) + sizeof(SOCKET) * dst->capa);
+    }
+    
+    memcpy(dst->fdset->fd_array, src->fdset->fd_array,
+	   src->fdset->fd_count * sizeof(src->fdset->fd_array[0]));
+}
+
 //
 // Networking trampolines
 // These are used to avoid socket startup/shutdown overhead in case 
