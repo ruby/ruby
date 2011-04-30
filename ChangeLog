@@ -1,3 +1,8 @@
+Sat Apr 30 20:06:36 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (do_select): remove useless ifdef. time calculation
+	  is not heavy weight.
+
 Sat Apr 30 16:48:36 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* benchmark/bm_io_select3.rb: New.

@@ -2503,8 +2503,6 @@ do_select(int n, fd_set *read, fd_set *write, fd_set *except,
     fd_set UNINITIALIZED_VAR(orig_read);
     fd_set UNINITIALIZED_VAR(orig_write);
     fd_set UNINITIALIZED_VAR(orig_except);
-
-#ifndef linux
     double limit = 0;
     struct timeval wait_rest;
 # if defined(__CYGWIN__) || defined(_WIN32)
@@ -2522,7 +2520,6 @@ do_select(int n, fd_set *read, fd_set *write, fd_set *except,
 	wait_rest = *timeout;
 	timeout = &wait_rest;
     }
-#endif
 
     if (read) orig_read = *read;
     if (write) orig_write = *write;
@@ -2583,7 +2580,7 @@ do_select(int n, fd_set *read, fd_set *write, fd_set *except,
 	    if (read) *read = orig_read;
 	    if (write) *write = orig_write;
 	    if (except) *except = orig_except;
-#ifndef linux
+
 	    if (timeout) {
 		double d = limit - timeofday();
 
@@ -2592,7 +2589,7 @@ do_select(int n, fd_set *read, fd_set *write, fd_set *except,
 		if (wait_rest.tv_sec < 0)  wait_rest.tv_sec = 0;
 		if (wait_rest.tv_usec < 0) wait_rest.tv_usec = 0;
 	    }
-#endif
+
 	    goto retry;
 	  default:
 	    break;
