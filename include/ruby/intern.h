@@ -250,7 +250,7 @@ void rb_fd_zero(rb_fdset_t *);
 void rb_fd_set(int, rb_fdset_t *);
 void rb_fd_clr(int, rb_fdset_t *);
 int rb_fd_isset(int, const rb_fdset_t *);
-void rb_fd_copy(rb_fdset_t *, const fd_set *, int);
+void rb_fd_copy(rb_fdset_t *dst, const rb_fdset_t *src);
 int rb_fd_select(int, rb_fdset_t *, rb_fdset_t *, rb_fdset_t *, struct timeval *);
 
 #define rb_fd_ptr(f)	((f)->fdset)
@@ -269,6 +269,7 @@ void rb_fd_term(rb_fdset_t *);
 void rb_fd_set(int, rb_fdset_t *);
 #define rb_fd_clr(n, f)		rb_w32_fdclr((n), (f)->fdset)
 #define rb_fd_isset(n, f)	rb_w32_fdisset((n), (f)->fdset)
+#define rb_fd_copy(d, s)	*((d)->fdset) = *((s)->fdset)
 #define rb_fd_select(n, rfds, wfds, efds, timeout)	rb_w32_select((n), (rfds) ? ((rb_fdset_t*)(rfds))->fdset : NULL, (wfds) ? ((rb_fdset_t*)(wfds))->fdset : NULL, (efds) ? ((rb_fdset_t*)(efds))->fdset: NULL, (timeout))
 #define rb_fd_resize(n, f)	((void)(f))
 
@@ -282,7 +283,7 @@ typedef fd_set rb_fdset_t;
 #define rb_fd_set(n, f)	FD_SET((n), (f))
 #define rb_fd_clr(n, f)	FD_CLR((n), (f))
 #define rb_fd_isset(n, f) FD_ISSET((n), (f))
-#define rb_fd_copy(d, s, n) (*(d) = *(s))
+#define rb_fd_copy(d, s) (*(d) = *(s))
 #define rb_fd_resize(n, f)	((void)(f))
 #define rb_fd_ptr(f)	(f)
 #define rb_fd_init(f)	FD_ZERO(f)

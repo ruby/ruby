@@ -1,3 +1,9 @@
+Sat Apr 30 20:16:53 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_fd_copy): Change function argument. Now
+	  rb_fd_copy() has fully copy semantics.
+	* include/ruby/intern.h: ditto.
+
 Sat Apr 30 20:11:47 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* include/ruby/intern.h (rb_thread_select): mark as deprecated.

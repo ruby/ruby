@@ -2381,12 +2381,13 @@ rb_fd_isset(int n, const rb_fdset_t *fds)
 }
 
 void
-rb_fd_copy(rb_fdset_t *dst, const fd_set *src, int max)
+rb_fd_copy(rb_fdset_t *dst, const rb_fdset_t *src)
 {
-    size_t size = howmany(max, NFDBITS) * sizeof(fd_mask);
+    size_t size = howmany(rb_fd_max(src), NFDBITS) * sizeof(fd_mask);
 
-    if (size < sizeof(fd_set)) size = sizeof(fd_set);
-    dst->maxfd = max;
+    if (size < sizeof(fd_set))
+	size = sizeof(fd_set);
+    dst->maxfd = src->maxfd;
     dst->fdset = xrealloc(dst->fdset, size);
     memcpy(dst->fdset, src, size);
 }
