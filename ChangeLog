@@ -1,3 +1,9 @@
+Sat Apr 30 16:27:09 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (copy_stream_body, rb_io_s_copy_stream): move rb_fd_init()
+	  from copy_stream_body to rb_io_s_copy_stream. fds of passing
+	  rb_fd_term() have to be guaranteed initialized.
+
 Sat Apr 30 16:13:17 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* benchmark/bm_io_select.rb, benchmark/bm_io_select2.rb: New.

@@ -8934,7 +8934,6 @@ copy_stream_body(VALUE arg)
         return copy_stream_fallback(stp);
     }
 
-    rb_fd_init(&stp->fds);
     rb_fd_set(src_fd, &stp->fds);
     rb_fd_set(dst_fd, &stp->fds);
 
@@ -9013,6 +9012,7 @@ rb_io_s_copy_stream(int argc, VALUE *argv, VALUE io)
     else
         st.src_offset = NUM2OFFT(src_offset);
 
+    rb_fd_init(&st.fds);
     rb_ensure(copy_stream_body, (VALUE)&st, copy_stream_finalize, (VALUE)&st);
 
     return OFFT2NUM(st.total);
