@@ -2497,13 +2497,13 @@ subtract_tv(struct timeval *rest, const struct timeval *wait)
 #endif
 
 static int
-do_select(int n, fd_set *read, fd_set *write, fd_set *except,
+do_select(int n, rb_fdset_t *read, rb_fdset_t *write, rb_fdset_t *except,
 	  struct timeval *timeout)
 {
     int result, lerrno;
-    fd_set UNINITIALIZED_VAR(orig_read);
-    fd_set UNINITIALIZED_VAR(orig_write);
-    fd_set UNINITIALIZED_VAR(orig_except);
+    rb_fdset_t UNINITIALIZED_VAR(orig_read);
+    rb_fdset_t UNINITIALIZED_VAR(orig_write);
+    rb_fdset_t UNINITIALIZED_VAR(orig_except);
     double limit = 0;
     struct timeval wait_rest;
 # if defined(__CYGWIN__) || defined(_WIN32)
@@ -2522,9 +2522,18 @@ do_select(int n, fd_set *read, fd_set *write, fd_set *except,
 	timeout = &wait_rest;
     }
 
-    if (read) orig_read = *read;
-    if (write) orig_write = *write;
-    if (except) orig_except = *except;
+    if (read) {
+	rb_fd_init(&orig_read);
+	rb_fd_copy(&orig_read, read);
+    }
+    if (write) {
+	rb_fd_init(&orig_write);
+	rb_fd_copy(&orig_write, write);
+    }
+    if (except) {
+	rb_fd_init(&orig_except);
+	rb_fd_copy(&orig_except, except);
+    }
 
   retry:
     lerrno = 0;
@@ -2541,13 +2550,16 @@ do_select(int n, fd_set *read, fd_set *write, fd_set *except,
 	    wait = (timeout == 0 || cmp_tv(&wait_100ms, timeout) < 0) ? &wait_100ms : timeout;
 	    BLOCKING_REGION({
 		do {
-		    result = select(n, read, write, except, wait);
+		    result = rb_fd_select(n, read, write, except, wait);
 		    if (result < 0) lerrno = errno;
 		    if (result != 0) break;
 
-		    if (read) *read = orig_read;
-		    if (write) *write = orig_write;
-		    if (except) *except = orig_except;
+		    if (read)
+			rb_fd_copy(read, &orig_read);
+		    if (write)
+			rb_fd_copy(write, &orig_write);
+		    if (except)
+			rb_fd_copy(except, &orig_except);
 		    if (timeout) {
 			struct timeval elapsed;
 			gettimeofday(&elapsed, NULL);
@@ -2565,7 +2577,7 @@ do_select(int n, fd_set *read, fd_set *write, fd_set *except,
     }
 #else
     BLOCKING_REGION({
-	result = select(n, read, write, except, timeout);
+	result = rb_fd_select(n, read, write, except, timeout);
 	if (result < 0) lerrno = errno;
     }, ubf_select, GET_THREAD());
 #endif
@@ -2578,9 +2590,12 @@ do_select(int n, fd_set *read, fd_set *write, fd_set *except,
 #ifdef ERESTART
 	  case ERESTART:
 #endif
-	    if (read) *read = orig_read;
-	    if (write) *write = orig_write;
-	    if (except) *except = orig_except;
+	    if (read)
+		rb_fd_copy(read, &orig_read);
+	    if (write)
+		rb_fd_copy(write, &orig_write);
+	    if (except)
+		rb_fd_copy(except, &orig_except);
 
 	    if (timeout) {
 		double d = limit - timeofday();
@@ -2615,10 +2630,10 @@ rb_thread_wait_fd_rw(int fd, int read)
 	FD_SET(fd, &set);
 
 	if (read) {
-	    result = do_select(fd + 1, rb_fd_ptr(&set), 0, 0, 0);
+	    result = do_select(fd + 1, &set, 0, 0, 0);
 	}
 	else {
-	    result = do_select(fd + 1, 0, rb_fd_ptr(&set), 0, 0);
+	    result = do_select(fd + 1, 0, &set, 0, 0);
 	}
 
 	rb_fd_term(&set);
@@ -2657,7 +2672,7 @@ rb_thread_select(int max, fd_set * read, fd_set * write, fd_set * except,
 	return 0;
     }
     else {
-	return do_select(max, read, write, except, timeout);
+	return select(max, read, write, except, timeout);
     }
 }
 
@@ -2666,8 +2681,6 @@ int
 rb_thread_fd_select(int max, rb_fdset_t * read, rb_fdset_t * write, rb_fdset_t * except,
 		    struct timeval *timeout)
 {
-    fd_set *r = NULL, *w = NULL, *e = NULL;
-
     if (!read && !write && !except) {
 	if (!timeout) {
 	    rb_thread_sleep_forever();
@@ -2678,18 +2691,15 @@ rb_thread_fd_select(int max, rb_fdset_t * read, rb_fdset_t * write, rb_fdset_t *
     }
 
     if (read) {
-        rb_fd_resize(max - 1, read);
-        r = rb_fd_ptr(read);
+	rb_fd_resize(max - 1, read);
     }
     if (write) {
-        rb_fd_resize(max - 1, write);
-        w = rb_fd_ptr(write);
+	rb_fd_resize(max - 1, write);
     }
     if (except) {
-        rb_fd_resize(max - 1, except);
-        e = rb_fd_ptr(except);
+	rb_fd_resize(max - 1, except);
     }
-    return do_select(max, r, w, e, timeout);
+    return do_select(max, read, write, except, timeout);
 }
 
 

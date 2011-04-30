@@ -1,3 +1,14 @@
+Sat Apr 30 20:18:43 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (do_select): Change arugment type to rb_fdset_t.
+	  Now do_select() is free from unexpected hangup if
+	  HAVE_RB_FD_INIT=1 [Bug #4636]
+
+	* thread.c (rb_thread_fd_select, rb_thread_wait_fd_rw):
+	  adapt new argument type.
+
+	* thread.c (rb_thread_select): make dummy implementation.
+
 Sat Apr 30 20:16:53 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_fd_copy): Change function argument. Now
