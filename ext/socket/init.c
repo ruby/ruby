@@ -266,7 +266,7 @@ wait_connectable0(int fd, rb_fdset_t *fds_w, rb_fdset_t *fds_e)
 	rb_fd_set(fd, fds_w);
 	rb_fd_set(fd, fds_e);
 
-	rb_thread_select(fd+1, 0, rb_fd_ptr(fds_w), rb_fd_ptr(fds_e), 0);
+	rb_thread_fd_select(fd+1, 0, fds_w, fds_e, 0);
 
 	if (rb_fd_isset(fd, fds_w)) {
 	    return 0;

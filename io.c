@@ -691,7 +691,7 @@ wait_readable(VALUE p)
 {
     rb_fdset_t *rfds = (rb_fdset_t *)p;
 
-    return rb_thread_select(rb_fd_max(rfds), rb_fd_ptr(rfds), NULL, NULL, NULL);
+    return rb_thread_fd_select(rb_fd_max(rfds), rfds, NULL, NULL, NULL);
 }
 #endif
 
@@ -721,7 +721,7 @@ rb_io_wait_readable(int f)
 	rb_ensure(wait_readable, (VALUE)&rfds,
 		  (VALUE (*)(VALUE))rb_fd_term, (VALUE)&rfds);
 #else
-	rb_thread_select(f + 1, rb_fd_ptr(&rfds), NULL, NULL, NULL);
+	rb_thread_fd_select(f + 1, &rfds, NULL, NULL, NULL);
 #endif
 	return TRUE;
 
@@ -736,7 +736,7 @@ wait_writable(VALUE p)
 {
     rb_fdset_t *wfds = (rb_fdset_t *)p;
 
-    return rb_thread_select(rb_fd_max(wfds), NULL, rb_fd_ptr(wfds), NULL, NULL);
+    return rb_thread_fd_select(rb_fd_max(wfds), NULL, wfds, NULL, NULL);
 }
 #endif
 
@@ -766,7 +766,7 @@ rb_io_wait_writable(int f)
 	rb_ensure(wait_writable, (VALUE)&wfds,
 		  (VALUE (*)(VALUE))rb_fd_term, (VALUE)&wfds);
 #else
-	rb_thread_select(f + 1, NULL, rb_fd_ptr(&wfds), NULL, NULL);
+	rb_thread_fd_select(f + 1, NULL, &wfds, NULL, NULL);
 #endif
 	return TRUE;
 

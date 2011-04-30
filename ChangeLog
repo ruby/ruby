@@ -1,3 +1,14 @@
+Sat Apr 30 20:11:47 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* include/ruby/intern.h (rb_thread_select): mark as deprecated.
+
+	* ext/io/wait/wait.c (wait_readable): use rb_thread_fd_select
+	  instead of rb_thread_select.
+	* ext/socket/init.c (wait_connectable0): ditto.
+	* ext/readline/readline.c (readline_event): ditto.
+	* io.c (rb_io_wait_readable, wait_readable, rb_io_wait_writable,
+	  wait_writable): ditto.
+
 Sat Apr 30 20:06:36 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (do_select): remove useless ifdef. time calculation

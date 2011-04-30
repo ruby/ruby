@@ -100,7 +100,7 @@ wait_readable(VALUE p)
     struct wait_readable_arg *arg = (struct wait_readable_arg *)p;
     rb_fdset_t *fds = &arg->fds;
 
-    return (VALUE)rb_thread_select(rb_fd_max(fds), rb_fd_ptr(fds), NULL, NULL, arg->timeout);
+    return (VALUE)rb_thread_fd_select(rb_fd_max(fds), fds, NULL, NULL, arg->timeout);
 }
 #endif
 
@@ -143,7 +143,7 @@ io_wait(int argc, VALUE *argv, VALUE io)
     i = (int)rb_ensure(wait_readable, (VALUE)&arg,
 		       (VALUE (*)_((VALUE)))rb_fd_term, (VALUE)&arg.fds);
 #else
-    i = rb_thread_select(fd + 1, rb_fd_ptr(&arg.fds), NULL, NULL, arg.timeout);
+    i = rb_thread_fd_select(fd + 1, &arg.fds, NULL, NULL, arg.timeout);
 #endif
     if (i < 0)
 	rb_sys_fail(0);
