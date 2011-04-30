@@ -1,3 +1,7 @@
+Sat Apr 30 16:48:36 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* benchmark/bm_io_select3.rb: New.
+
 Sat Apr 30 16:27:09 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (copy_stream_body, rb_io_s_copy_stream): move rb_fd_init()

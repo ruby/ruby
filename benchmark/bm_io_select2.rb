@@ -1,4 +1,4 @@
-# IO.select performance. worst case
+# IO.select performance. worst case of single fd.
 
 ios = []
 nr = 1000000
