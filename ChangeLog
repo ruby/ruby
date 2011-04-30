@@ -1,3 +1,7 @@
+Sun May  1 01:06:24 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_thread_select): release GVL while waiting select().
+
 Sat Apr 30 23:10:15 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* win32/win32.c (rb_w32_fdcopy): New. This can copy even though

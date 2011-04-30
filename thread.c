@@ -2672,7 +2672,17 @@ rb_thread_select(int max, fd_set * read, fd_set * write, fd_set * except,
 	return 0;
     }
     else {
-	return select(max, read, write, except, timeout);
+	int lerrno;
+	int result;
+
+	BLOCKING_REGION({
+		result = select(max, read, write, except, timeout);
+		if (result < 0)
+		    lerrno = errno;
+	    }, ubf_select, GET_THREAD());
+	errno = lerrno;
+
+	return result;
     }
 }
 
