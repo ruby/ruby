@@ -1,3 +1,17 @@
+Mon May  2 01:02:04 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* lib/fileutils.rb (FileUtils#chmod): accept symbolic mode argument.
+	  The patch was written by takkanm. [ruby-core:26029][Feature #2190]
+
+	* lib/fileutils.rb (FileUtils#fu_mode): new helper function.
+	* lib/fileutils.rb (FileUtils#symbolic_modes_to_i): ditto.
+	* lib/fileutils.rb (FileUtils#mode_mask): ditto.
+	* lib/fileutils.rb (FileUtils#user_mask): ditto.
+
+	* test/fileutils/test_fileutils.rb (TestFileUtils#test_chmod_symbol_mode):
+	  new test for the above symbolic mode.
+	* test/fileutils/test_fileutils.rb (TestFileUtils#test_chmod_R): ditto.
+
 Mon May  2 00:36:12 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/socket/init.c (rsock_connect): add to care EINTR. based

@@ -143,6 +143,10 @@ with all sufficient information, see the ChangeLog file.
     * Zlib.deflate
     * Zlib.inflate
 
+* FileUtils
+  * extended method:
+    * FileUtils#chmod supports symbolic mode argument.
+
 === Language changes
 
 * Regexps now support Unicode 6.0. (new characters and scripts)

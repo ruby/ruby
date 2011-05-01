@@ -893,6 +893,29 @@ class TestFileUtils
     assert_equal 0500, File.stat('tmp/a').mode & 0777
   end if have_file_perm?
 
+  def test_chmod_symbol_mode
+    check_singleton :chmod
+
+    touch 'tmp/a'
+    chmod "u=wrx,g=,o=", 'tmp/a'
+    assert_equal 0700, File.stat('tmp/a').mode & 0777
+    chmod "u=rx,go=", 'tmp/a'
+    assert_equal 0500, File.stat('tmp/a').mode & 0777
+    chmod "+wrx", 'tmp/a'
+    assert_equal 0777, File.stat('tmp/a').mode & 0777
+    chmod "u+s,o=s", 'tmp/a'
+    assert_equal 04770, File.stat('tmp/a').mode & 07777
+    chmod "u-w,go-wrx", 'tmp/a'
+    assert_equal 04500, File.stat('tmp/a').mode & 07777
+    chmod "+s", 'tmp/a'
+    assert_equal 06500, File.stat('tmp/a').mode & 07777
+    chmod "u+t,o+t", 'tmp/a'
+    assert_equal 07500, File.stat('tmp/a').mode & 07777
+    chmod "a-t,a-s", 'tmp/a'
+    assert_equal 0500, File.stat('tmp/a').mode & 07777
+  end if have_file_perm?
+
+
   def test_chmod_R
     check_singleton :chmod_R
 
@@ -907,6 +930,24 @@ class TestFileUtils
     assert_equal 0500, File.stat('tmp/dir').mode & 0777
     assert_equal 0500, File.stat('tmp/dir/file').mode & 0777
     assert_equal 0500, File.stat('tmp/dir/dir').mode & 0777
+    assert_equal 0500, File.stat('tmp/dir/dir/file').mode & 0777
+    chmod_R 0700, 'tmp/dir'   # to remove
+  end if have_file_perm?
+
+  def test_chmod_symbol_mode_R
+    check_singleton :chmod_R
+
+    mkdir_p 'tmp/dir/dir'
+    touch %w( tmp/dir/file tmp/dir/dir/file )
+    chmod_R "u=wrx,g=,o=", 'tmp/dir'
+    assert_equal 0700, File.stat('tmp/dir').mode & 0777
+    assert_equal 0700, File.stat('tmp/dir/file').mode & 0777
+    assert_equal 0700, File.stat('tmp/dir/dir').mode & 0777
+    assert_equal 0700, File.stat('tmp/dir/dir/file').mode & 0777
+    chmod_R "u=xr,g+X,o=", 'tmp/dir'
+    assert_equal 0510, File.stat('tmp/dir').mode & 0777
+    assert_equal 0500, File.stat('tmp/dir/file').mode & 0777
+    assert_equal 0510, File.stat('tmp/dir/dir').mode & 0777
     assert_equal 0500, File.stat('tmp/dir/dir/file').mode & 0777
     chmod_R 0700, 'tmp/dir'   # to remove
   end if have_file_perm?
