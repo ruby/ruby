@@ -383,6 +383,12 @@ rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks)
 	status = (int)BLOCKING_REGION_FD(func, &arg);
 	if (status < 0) {
 	    switch (errno) {
+	      case EINTR:
+#if defined(ERESTART)
+	      case ERESTART:
+#endif
+		continue;
+
 	      case EAGAIN:
 #ifdef EINPROGRESS
 	      case EINPROGRESS:
