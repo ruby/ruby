@@ -1,3 +1,11 @@
+Wed Apr  6 21:25:08 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* thread.c (thread_s_kill): workaround for [ruby-core:35086].
+	  fixes #4367.
+
+	* test/ruby/test_thread.rb (TestThread#test_kill_wrong_argument):
+	  test for [ruby-core:35086].
+
 Fri Feb  4 12:11:51 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* string.c (str_utf8_nth): fixed a conditon of optimized lead
