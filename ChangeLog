@@ -1,3 +1,8 @@
+Sat Feb  5 02:09:39 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (lex_getline, parser_set_encode): set encoding of lines
+	  in SCRIPT_LINES__ as source encoding.  [ruby-dev:43168]
+
 Wed Apr  6 21:25:08 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* thread.c (thread_s_kill): workaround for [ruby-core:35086].
