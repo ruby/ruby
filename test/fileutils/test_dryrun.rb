@@ -1,11 +1,13 @@
 # $Id$
 
-require 'test/unit'
 require 'fileutils'
+require 'test/unit'
+require_relative 'clobber'
 
 class TestFileUtilsDryRun < Test::Unit::TestCase
 
   include FileUtils::DryRun
+  include TestFileUtils::Clobber
 
   def test_visibility
     FileUtils::METHODS.each do |m|

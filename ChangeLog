@@ -1,3 +1,23 @@
+Sun May  1 18:35:34 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/fileutils/fileasserts.rb (assert_block): little workaround
+	  for [ruby-dev:43174].
+
+Sat Feb  5 20:40:34 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/fileutils/fileasserts.rb (assert_block): pass arguments
+	  as-is.  [ruby-dev:43174]
+
+Sat Feb  5 03:37:47 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/fileutils.rb (FileUtils::LowMethods): make low level methods
+	  in NoWrite and DryRun to do nothing.  [ruby-dev:43129]
+
+	* test/fileutils/fileasserts.rb: add message arguments.
+
+	* test/fileutils/fileasserts.rb (Test::Unit::Assertions#assert_block):
+	  show the given message.
+
 Sat Feb  5 02:09:39 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (lex_getline, parser_set_encode): set encoding of lines
