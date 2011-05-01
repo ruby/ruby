@@ -1,3 +1,8 @@
+Fri Feb  4 12:11:51 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* string.c (str_utf8_nth): fixed a conditon of optimized lead
+	  byte counting. [Bug #4366][ruby-dev:43170]
+
 Fri Feb  4 00:14:55 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/zlib/zlib.c (gzfile_reader_get_unused): no need to dup

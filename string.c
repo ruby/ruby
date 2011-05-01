@@ -1487,7 +1487,7 @@ rb_str_offset(VALUE str, long pos)
 static char *
 str_utf8_nth(const char *p, const char *e, long nth)
 {
-    if ((int)SIZEOF_VALUE < e - p && (int)SIZEOF_VALUE * 2 < nth) {
+    if ((int)SIZEOF_VALUE * 2 < e - p && (int)SIZEOF_VALUE * 2 < nth) {
 	const VALUE *s, *t;
 	const VALUE lowbits = sizeof(VALUE) - 1;
 	s = (const VALUE*)(~lowbits & ((VALUE)p + lowbits));
