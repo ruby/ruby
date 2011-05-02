@@ -2672,7 +2672,7 @@ rb_thread_select(int max, fd_set * read, fd_set * write, fd_set * except,
 	return 0;
     }
     else {
-	int lerrno;
+	int lerrno = errno;
 	int result;
 
 	BLOCKING_REGION({

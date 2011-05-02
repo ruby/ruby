@@ -1,3 +1,8 @@
+Tue May  3 04:27:53 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_select): preserve errno if no error
+	  occurred.
+
 Tue May  3 03:57:04 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/intern.h (rb_w32_fdcopy): add prototype.  fixes
