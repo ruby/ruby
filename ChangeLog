@@ -1,3 +1,8 @@
+Tue May  3 03:57:04 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (rb_w32_fdcopy): add prototype.  fixes
+	  #4640
+
 Mon May  2 01:02:04 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* lib/fileutils.rb (FileUtils#chmod): accept symbolic mode argument.
