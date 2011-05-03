@@ -909,10 +909,17 @@ class TestFileUtils
     assert_equal 04500, File.stat('tmp/a').mode & 07777
     chmod "+s", 'tmp/a'
     assert_equal 06500, File.stat('tmp/a').mode & 07777
-    chmod "u+t,o+t", 'tmp/a'
-    assert_equal 07500, File.stat('tmp/a').mode & 07777
-    chmod "a-t,a-s", 'tmp/a'
-    assert_equal 0500, File.stat('tmp/a').mode & 07777
+
+    # FreeBSD ufs and tmpfs don't allow to change sticky bit against
+    # regular file. It's slightly strange. Anyway it's no effect bit.
+    # see /usr/src/sys/ufs/ufs/ufs_chmod()
+    if /freebsd/ !~ RUBY_PLATFORM
+      chmod "u+t,o+t", 'tmp/a'
+      assert_equal 07500, File.stat('tmp/a').mode & 07777
+      chmod "a-t,a-s", 'tmp/a'
+      assert_equal 0500, File.stat('tmp/a').mode & 07777
+    end
+
   end if have_file_perm?
 
 

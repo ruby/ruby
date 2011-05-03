@@ -1,3 +1,9 @@
+Tue May  3 20:29:33 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/fileutils/test_fileutils.rb (TestFileUtils#test_chmod_symbol_mode):
+	  Skip sticky bit test if the platform is FreeBSD. It doesn't allow to
+	  change sticky bit if a target is regular file.
+
 Tue May  3 18:23:57 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/date/test_date.rb (TestDate#test_coerce):
