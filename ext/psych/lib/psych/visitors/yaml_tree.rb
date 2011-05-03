@@ -297,7 +297,7 @@ module Psych
       private
       def format_time time
         if time.utc?
-          time.strftime("%Y-%m-%d %H:%M:%S.%9NZ")
+          time.strftime("%Y-%m-%d %H:%M:%S.%9N Z")
         else
           time.strftime("%Y-%m-%d %H:%M:%S.%9N %:z")
         end

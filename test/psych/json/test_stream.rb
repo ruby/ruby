@@ -95,7 +95,7 @@ module Psych
         time = Time.utc(2010, 10, 10)
         @stream.push({'a' => time })
         json = @io.string
-        assert_match "{\"a\": \"2010-10-10 00:00:00.000000000Z\"}\n", json
+        assert_match "{\"a\": \"2010-10-10 00:00:00.000000000 Z\"}\n", json
       end
 
       def test_datetime

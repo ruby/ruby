@@ -1,3 +1,8 @@
+Wed May  4 08:04:59 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: fix time dumping so that
+	  Syck can load UTC times that Psych dumps.
+
 Wed May  4 07:33:00 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_fd_copy): fix wrong argument.This issue was pointed
