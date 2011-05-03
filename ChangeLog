@@ -1,3 +1,8 @@
+Tue May  3 18:23:57 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/date/test_date.rb (TestDate#test_coerce):
+	  test for [ruby-core:35127].
+
 Tue May  3 04:27:53 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_thread_select): preserve errno if no error
