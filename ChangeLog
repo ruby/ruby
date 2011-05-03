@@ -39,7 +39,7 @@ Sat Apr 30 23:10:15 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 Sat Apr 30 20:18:43 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* thread.c (do_select): Change arugment type to rb_fdset_t.
+	* thread.c (do_select): Change argument type to rb_fdset_t.
 	  Now do_select() is free from unexpected hangup if
 	  HAVE_RB_FD_INIT=1 [Bug #4636]
 
@@ -111,7 +111,6 @@ Fri Apr 29 13:15:15 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 	* win32/win32.c (rb_w32_time_subtract): rename from subtract and
 	  remove static.
 
-
 Fri Apr 29 10:43:09 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* benchmark/bm_vm4_pipe.rb: Add two new benchmark for GVL
@@ -135,7 +134,7 @@ Fri Apr 29 10:17:42 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 Fri Apr 29 10:07:13 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_mutex_lock, lock_func): Avoid busy loop and
-	  performance degression. bm_vm3_thread_mutex.rb performance
+	  performance regression. bm_vm3_thread_mutex.rb performance
 	  change from 109.064sec to 16.331sec. [Feature #4607]
 
 	* thread.c (init_lock_timeout): New helper function.
@@ -258,7 +257,7 @@ Mon Apr 25 16:43:45 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Mon Apr 25 11:02:11 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* ext/ripper/lib/ripper/sexp.rb: fix rdoc arround sexp.
+	* ext/ripper/lib/ripper/sexp.rb: fix rdoc around sexp.
 	  patched by Sho Hashimoto. fixes #4599
 
 Mon Apr 25 08:24:04 2011  Shota Fukumori  <sorah@tubusu.net>
@@ -331,7 +330,7 @@ Sun Apr 24 02:25:23 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Sun Apr 24 01:58:01 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* ext/date/date_core.c (leap_p): surpress warning: parentheses.
+	* ext/date/date_core.c (leap_p): suppress warning: parentheses.
 
 	* ext/date/date_core.c (date_s__parse_internal): remove unused
 	  variable "str".
@@ -383,7 +382,7 @@ Thu Apr 21 01:01:28 2011  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* win32/win32.c (CreateChild): maximum length of lpCommandLine is
 	  32,768 characters, including the Unicode terminating null character.
-	
+
 Wed Apr 20 21:32:11 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_strptime.c (date__strptime_internal): do not
