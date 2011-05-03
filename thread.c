@@ -2389,7 +2389,7 @@ rb_fd_copy(rb_fdset_t *dst, const rb_fdset_t *src)
 	size = sizeof(fd_set);
     dst->maxfd = src->maxfd;
     dst->fdset = xrealloc(dst->fdset, size);
-    memcpy(dst->fdset, src, size);
+    memcpy(dst->fdset, src->fdset, size);
 }
 
 int

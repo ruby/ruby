@@ -1,3 +1,8 @@
+Wed May  4 07:33:00 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_fd_copy): fix wrong argument.This issue was pointed
+	  out by Eric Wong. [ruby-core:35982]
+
 Tue May  3 20:29:33 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/fileutils/test_fileutils.rb (TestFileUtils#test_chmod_symbol_mode):
