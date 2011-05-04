@@ -2704,6 +2704,63 @@ rb_thread_fd_select(int max, rb_fdset_t * read, rb_fdset_t * write, rb_fdset_t *
     return do_select(max, read, write, except, timeout);
 }
 
+/*
+ * poll() is supported by many OSes, but so far Linux is the only
+ * one we know of that supports using poll() in all places select()
+ * would work.
+ */
+#if defined(HAVE_POLL) && defined(linux)
+#  define USE_POLL
+#endif
+
+#ifdef USE_POLL
+/*
+ * returns a mask of events
+ */
+int
+rb_wait_for_single_fd(int fd, int events, struct timeval *tv)
+{
+    struct pollfd fds;
+    int result, lerrno;
+    double start;
+    int timeout = tv ? tv->tv_sec * 1000 + (tv->tv_usec + 500) / 1000 : -1;
+
+    fds.fd = fd;
+    fds.events = (short)events;
+
+retry:
+    lerrno = 0;
+    start = timeofday();
+    BLOCKING_REGION({
+	result = poll(&fds, 1, timeout);
+	if (result < 0) lerrno = errno;
+    }, ubf_select, GET_THREAD());
+
+    if (result > 0) {
+	/* remain compatible with select(2)-based implementation */
+	result = (int)(fds.revents & fds.events);
+	return result == 0 ? events : result;
+    }
+
+    if (result < 0) {
+	errno = lerrno;
+	switch (errno) {
+	  case EINTR:
+#ifdef ERESTART
+	  case ERESTART:
+#endif
+	    if (timeout > 0) {
+		timeout -= (timeofday() - start) * 1000;
+		if (timeout < 0)
+		    timeout = 0;
+	    }
+	    goto retry;
+	}
+    }
+
+    return result;
+}
+#else /* ! USE_POLL - implement rb_io_poll_fd() using select() */
 static rb_fdset_t *init_set_fd(int fd, rb_fdset_t *fds)
 {
     rb_fd_init(fds);
@@ -2777,6 +2834,7 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *tv)
 
     return r;
 }
+#endif /* ! USE_POLL */
 
 /*
  * for GC

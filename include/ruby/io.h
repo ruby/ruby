@@ -27,9 +27,17 @@ extern "C" {
 #include <stdio_ext.h>
 #endif
 
-#define RB_WAITFD_IN  0x001
-#define RB_WAITFD_PRI 0x002
-#define RB_WAITFD_OUT 0x004
+#include "ruby/config.h"
+#if defined(HAVE_POLL)
+#  include <poll.h>
+#  define RB_WAITFD_IN  POLLIN
+#  define RB_WAITFD_PRI POLLPRI
+#  define RB_WAITFD_OUT POLLOUT
+#else
+#  define RB_WAITFD_IN  0x001
+#  define RB_WAITFD_PRI 0x002
+#  define RB_WAITFD_OUT 0x004
+#endif
 
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility push(default)
