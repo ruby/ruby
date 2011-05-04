@@ -1,3 +1,7 @@
+Wed May  4 11:51:01 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (rb_f_select): remove useless ifdef.
+
 Wed May  4 11:42:47 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/socket/init.c (wait_connectable): fix error handling code.

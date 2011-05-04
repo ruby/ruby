@@ -7362,7 +7362,6 @@ struct select_args {
     rb_fdset_t fdsets[4];
 };
 
-#ifdef HAVE_RB_FD_INIT
 static VALUE
 select_call(VALUE arg)
 {
@@ -7381,7 +7380,6 @@ select_end(VALUE arg)
 	rb_fd_term(&p->fdsets[i]);
     return Qnil;
 }
-#endif
 
 static VALUE sym_normal,   sym_sequential, sym_random,
              sym_willneed, sym_dontneed, sym_noreuse;
@@ -7622,13 +7620,7 @@ rb_f_select(int argc, VALUE *argv, VALUE obj)
     for (i = 0; i < numberof(args.fdsets); ++i)
 	rb_fd_init(&args.fdsets[i]);
 
-#ifdef HAVE_RB_FD_INIT
     return rb_ensure(select_call, (VALUE)&args, select_end, (VALUE)&args);
-#else
-    return select_internal(args.read, args.write, args.except,
-			   args.timeout, args.fdsets);
-#endif
-
 }
 
 struct io_cntl_arg {
