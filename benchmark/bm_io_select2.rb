@@ -5,7 +5,7 @@ nr = 1000000
 max = Process.getrlimit(Process::RLIMIT_NOFILE)[0]
 puts "max fd: #{max} (results not apparent with <= 1024 max fd)"
 
-((max / 2) - 2).times do
+((max / 2) - 10).times do
   ios.concat IO.pipe
 end
 

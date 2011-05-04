@@ -1,3 +1,8 @@
+Wed May  4 21:11:28 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* benchmark/bm_io_select2.rb: reduce number of using file
+	  descriptors. because gdb need some fds.
+
 Wed May  4 20:22:12 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (Init_IO): Added File::CLOEXEC constant.
