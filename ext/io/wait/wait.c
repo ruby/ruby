@@ -88,22 +88,6 @@ io_ready_p(VALUE io)
     return Qfalse;
 }
 
-struct wait_readable_arg {
-    rb_fdset_t fds;
-    struct timeval *timeout;
-};
-
-#ifdef HAVE_RB_FD_INIT
-static VALUE
-wait_readable(VALUE p)
-{
-    struct wait_readable_arg *arg = (struct wait_readable_arg *)p;
-    rb_fdset_t *fds = &arg->fds;
-
-    return (VALUE)rb_thread_fd_select(rb_fd_max(fds), fds, NULL, NULL, arg->timeout);
-}
-#endif
-
 /*
  * call-seq:
  *   io.wait          -> IO, true, false or nil
@@ -117,34 +101,26 @@ static VALUE
 io_wait(int argc, VALUE *argv, VALUE io)
 {
     rb_io_t *fptr;
-    struct wait_readable_arg arg;
-    int fd, i;
+    int i;
     ioctl_arg n;
     VALUE timeout;
     struct timeval timerec;
+    struct timeval *tv;
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
     rb_scan_args(argc, argv, "01", &timeout);
     if (NIL_P(timeout)) {
-	arg.timeout = 0;
+	tv = NULL;
     }
     else {
 	timerec = rb_time_interval(timeout);
-	arg.timeout = &timerec;
+	tv = &timerec;
     }
 
     if (rb_io_read_pending(fptr)) return Qtrue;
     if (!FIONREAD_POSSIBLE_P(fptr->fd)) return Qfalse;
-    fd = fptr->fd;
-    rb_fd_init(&arg.fds);
-    rb_fd_set(fd, &arg.fds);
-#ifdef HAVE_RB_FD_INIT
-    i = (int)rb_ensure(wait_readable, (VALUE)&arg,
-		       (VALUE (*)_((VALUE)))rb_fd_term, (VALUE)&arg.fds);
-#else
-    i = rb_thread_fd_select(fd + 1, &arg.fds, NULL, NULL, arg.timeout);
-#endif
+    i = rb_wait_for_single_fd(fptr->fd, RB_WAITFD_IN, tv);
     if (i < 0)
 	rb_sys_fail(0);
     rb_io_check_closed(fptr);
