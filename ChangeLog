@@ -1,3 +1,8 @@
+Wed May  4 10:12:39 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ext/readline/readline.c (readline_event): use rb_wait_for_single_fd().
+	The patch was written by Eric Wong. [Ruby 1.9 - Feature #4531]
+
 Wed May  4 10:10:28 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/socket/init.c (wait_connectable): use rb_wait_for_single_fd().
