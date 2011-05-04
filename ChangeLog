@@ -1,3 +1,9 @@
+Wed May  4 19:00:59 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_wait_for_single_fd): Fix wrong return value.
+	* test/-ext-/wait_for_single_fd/test_wait_for_single_fd.rb
+	(TestWaitForSingleFD#test_wait_for_closed_pipe): test for it.
+
 Wed May  4 18:46:39 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/-test-/wait_for_single_fd: New. for testing

@@ -2714,6 +2714,13 @@ rb_thread_fd_select(int max, rb_fdset_t * read, rb_fdset_t * write, rb_fdset_t *
 #endif
 
 #ifdef USE_POLL
+
+
+/* The same with linux kernel. TODO: make platform independent definition. */
+#define POLLIN_SET (POLLRDNORM | POLLRDBAND | POLLIN | POLLHUP | POLLERR)
+#define POLLOUT_SET (POLLWRBAND | POLLWRNORM | POLLOUT | POLLERR)
+#define POLLEX_SET (POLLPRI)
+
 /*
  * returns a mask of events
  */
@@ -2736,15 +2743,6 @@ retry:
 	if (result < 0) lerrno = errno;
     }, ubf_select, GET_THREAD());
 
-    if (result > 0) {
-	if (fds.revents & POLLNVAL) {
-	    errno = EBADF;
-	    return -1;
-	}
-	result = (int)(fds.revents & fds.events);
-	return result == 0 ? events : result;
-    }
-
     if (result < 0) {
 	errno = lerrno;
 	switch (errno) {
@@ -2759,7 +2757,25 @@ retry:
 	    }
 	    goto retry;
 	}
+	return -1;
     }
+
+    if (fds.revents & POLLNVAL) {
+	errno = EBADF;
+	return -1;
+    }
+
+    /*
+     * POLLIN, POLLOUT have a different meanings from select(2)'s read/write bit.
+     * Therefore we need fix it up.
+     */
+    result = 0;
+    if (fds.revents & POLLIN_SET)
+	result |= RB_WAITFD_IN;
+    if (fds.revents & POLLOUT_SET)
+	result |= RB_WAITFD_OUT;
+    if (fds.revents & POLLEX_SET)
+	result |= RB_WAITFD_PRI;
 
     return result;
 }

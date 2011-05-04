@@ -29,4 +29,14 @@ class TestWaitForSingleFD < Test::Unit::TestCase
       end
     end
   end
+
+  def test_wait_for_closed_pipe
+    with_pipe do |r,w|
+      w.close
+      rc = IO.wait_for_single_fd(r.fileno, RB_WAITFD_IN, nil)
+      assert_equal RB_WAITFD_IN, rc
+    end
+  end
+
+
 end
