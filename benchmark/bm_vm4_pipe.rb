@@ -1,7 +1,7 @@
 # Mesure small and plenty pipe read/write.
 # A performance may depend on GVL implementation.
 
-lmax = 1_000_000
+lmax = 100_000
 r, w = IO.pipe
 [Thread.new{
   lmax.times{

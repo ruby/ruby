@@ -1,3 +1,9 @@
+Wed May  4 22:13:09 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* benchmark/bm_vm4_pipe.rb: Reduced iterations. Too slow benchmark
+	  is bad.
+	* benchmark/bm_vm4_thread_pass.rb: ditto.
+
 Wed May  4 22:08:22 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/date/test_date_base.rb: don't use no message skip().
