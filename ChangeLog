@@ -1,3 +1,7 @@
+Wed May  4 22:08:22 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/date/test_date_base.rb: don't use no message skip().
+
 Wed May  4 21:11:28 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* benchmark/bm_io_select2.rb: reduce number of using file
