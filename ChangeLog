@@ -1,3 +1,11 @@
+Wed May  4 10:10:28 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ext/socket/init.c (wait_connectable): use rb_wait_for_single_fd().
+	The patch was written by Eric Wong. [Ruby 1.9 - Feature #4531]
+
+	* ext/socket/init.c (try_wait_connectable, wait_connectable_ensure):
+	  removed.
+
 Wed May  4 10:07:48 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/io/wait/wait.c (io_wait): use rb_wait_for_single_fd().
