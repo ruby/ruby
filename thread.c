@@ -2737,7 +2737,10 @@ retry:
     }, ubf_select, GET_THREAD());
 
     if (result > 0) {
-	/* remain compatible with select(2)-based implementation */
+	if (fds.revents & POLLNVAL) {
+	    errno = EBADF;
+	    return -1;
+	}
 	result = (int)(fds.revents & fds.events);
 	return result == 0 ? events : result;
     }
