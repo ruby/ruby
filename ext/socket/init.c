@@ -258,22 +258,42 @@ wait_connectable(int fd)
 {
     int sockerr;
     socklen_t sockerrlen;
-    int r;
+    int revents;
+    int ret;
 
     for (;;) {
-	r = rb_wait_for_single_fd(fd, RB_WAITFD_OUT|RB_WAITFD_PRI, NULL);
-	if ((r > 0) && (r & RB_WAITFD_OUT))
-	    return 0;
+	/*
+	 * Stevens book says, succuessful finish turn on RB_WAITFD_OUT and
+	 * failure finish turn on both RB_WAITFD_IN and RB_WAITFD_OUT.
+	 */
+	revents = rb_wait_for_single_fd(fd, RB_WAITFD_IN|RB_WAITFD_OUT, NULL);
 
-	sockerrlen = (socklen_t)sizeof(sockerr);
-	if (getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)&sockerr,
-		       &sockerrlen) == 0) {
+	if (revents & (RB_WAITFD_IN|RB_WAITFD_OUT)) {
+	    sockerrlen = (socklen_t)sizeof(sockerr);
+	    ret = getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)&sockerr, &sockerrlen);
+
+	    /*
+	     * Solaris getsockopt(SO_ERROR) return -1 and set errno
+	     * in getsockopt(). Let's return immediately.
+	     */
+	    if (ret < 0)
+		break;
 	    if (sockerr == 0)
 		continue;	/* workaround for winsock */
+
+	    /* BSD and Linux use sockerr. */
 	    errno = sockerr;
+	    ret = -1;
+	    break;
 	}
-	return -1;
+
+	if ((revents & (RB_WAITFD_IN|RB_WAITFD_OUT)) == RB_WAITFD_OUT) {
+	    ret = 0;
+	    break;
+	}
     }
+
+    return ret;
 }
 
 #ifdef __CYGWIN__

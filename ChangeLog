@@ -1,3 +1,8 @@
+Wed May  4 11:42:47 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ext/socket/init.c (wait_connectable): fix error handling code.
+	  RB_WAITFD_OUT is turned on even though an error occur.
+
 Wed May  4 10:12:39 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/readline/readline.c (readline_event): use rb_wait_for_single_fd().
