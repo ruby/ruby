@@ -80,10 +80,10 @@ module Psych
     def parse_time string
       date, time = *(string.split(/[ tT]/, 2))
       (yy, m, dd) = date.split('-').map { |x| x.to_i }
-      md = time.match(/(\d+:\d+:\d+)(\.\d*)?\s*(Z|[-+]\d+(:\d\d)?)?/)
+      md = time.match(/(\d+:\d+:\d+)(?:\.(\d*))?\s*(Z|[-+]\d+(:\d\d)?)?/)
 
       (hh, mm, ss) = md[1].split(':').map { |x| x.to_i }
-      us = (md[2] ? Rational(md[2].sub(/^\./, '0.')) : 0) * 1000000
+      us = (md[2] ? Rational("0.#{md[2]}") : 0) * 1000000
 
       time = Time.utc(yy, m, dd, hh, mm, ss, us)
 
