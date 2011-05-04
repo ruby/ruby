@@ -27,6 +27,10 @@ extern "C" {
 #include <stdio_ext.h>
 #endif
 
+#define RB_WAITFD_IN  0x001
+#define RB_WAITFD_PRI 0x002
+#define RB_WAITFD_OUT 0x004
+
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility push(default)
 #endif
@@ -160,6 +164,7 @@ VALUE rb_io_get_write_io(VALUE io);
 VALUE rb_io_set_write_io(VALUE io, VALUE w);
 int rb_io_wait_readable(int);
 int rb_io_wait_writable(int);
+int rb_wait_for_single_fd(int fd, int events, struct timeval *tv);
 void rb_io_set_nonblock(rb_io_t *fptr);
 int rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p, int *fmode_p);
 ssize_t rb_io_bufwrite(VALUE io, const void *buf, size_t size);

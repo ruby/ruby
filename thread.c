@@ -46,6 +46,7 @@
 
 #include "eval_intern.h"
 #include "gc.h"
+#include "ruby/io.h"
 
 #ifndef USE_NATIVE_THREAD_PRIORITY
 #define USE_NATIVE_THREAD_PRIORITY 0
@@ -2618,6 +2619,8 @@ static void
 rb_thread_wait_fd_rw(int fd, int read)
 {
     int result = 0;
+    int events = read ? RB_WAITFD_IN : RB_WAITFD_OUT;
+
     thread_debug("rb_thread_wait_fd_rw(%d, %s)\n", fd, read ? "read" : "write");
 
     if (fd < 0) {
@@ -2625,18 +2628,7 @@ rb_thread_wait_fd_rw(int fd, int read)
     }
     if (rb_thread_alone()) return;
     while (result <= 0) {
-	rb_fdset_t set;
-	rb_fd_init(&set);
-	FD_SET(fd, &set);
-
-	if (read) {
-	    result = do_select(fd + 1, &set, 0, 0, 0);
-	}
-	else {
-	    result = do_select(fd + 1, 0, &set, 0, 0);
-	}
-
-	rb_fd_term(&set);
+	result = rb_wait_for_single_fd(fd, events, NULL);
 
 	if (result < 0) {
 	    rb_sys_fail(0);
@@ -2712,6 +2704,79 @@ rb_thread_fd_select(int max, rb_fdset_t * read, rb_fdset_t * write, rb_fdset_t *
     return do_select(max, read, write, except, timeout);
 }
 
+static rb_fdset_t *init_set_fd(int fd, rb_fdset_t *fds)
+{
+    rb_fd_init(fds);
+    rb_fd_set(fd, fds);
+
+    return fds;
+}
+
+struct select_args {
+    union {
+	int fd;
+	int error;
+    } as;
+    rb_fdset_t *read;
+    rb_fdset_t *write;
+    rb_fdset_t *except;
+    struct timeval *tv;
+};
+
+static VALUE
+select_single(VALUE ptr)
+{
+    struct select_args *args = (struct select_args *)ptr;
+    int r;
+
+    r = rb_thread_fd_select(args->as.fd + 1,
+                            args->read, args->write, args->except, args->tv);
+    if (r == -1)
+	args->as.error = errno;
+    if (r > 0) {
+	r = 0;
+	if (args->read && rb_fd_isset(args->as.fd, args->read))
+	    r |= RB_WAITFD_IN;
+	if (args->write && rb_fd_isset(args->as.fd, args->write))
+	    r |= RB_WAITFD_OUT;
+	if (args->except && rb_fd_isset(args->as.fd, args->except))
+	    r |= RB_WAITFD_PRI;
+    }
+    return (VALUE)r;
+}
+
+static VALUE
+select_single_cleanup(VALUE ptr)
+{
+    struct select_args *args = (struct select_args *)ptr;
+
+    if (args->read) rb_fd_term(args->read);
+    if (args->write) rb_fd_term(args->write);
+    if (args->except) rb_fd_term(args->except);
+
+    return (VALUE)-1;
+}
+
+int
+rb_wait_for_single_fd(int fd, int events, struct timeval *tv)
+{
+    rb_fdset_t rfds, wfds, efds;
+    struct select_args args;
+    int r;
+    VALUE ptr = (VALUE)&args;
+
+    args.as.fd = fd;
+    args.read = (events & RB_WAITFD_IN) ? init_set_fd(fd, &rfds) : NULL;
+    args.write = (events & RB_WAITFD_OUT) ? init_set_fd(fd, &wfds) : NULL;
+    args.except = (events & RB_WAITFD_PRI) ? init_set_fd(fd, &efds) : NULL;
+    args.tv = tv;
+
+    r = (int)rb_ensure(select_single, ptr, select_single_cleanup, ptr);
+    if (r == -1)
+	errno = args.as.error;
+
+    return r;
+}
 
 /*
  * for GC

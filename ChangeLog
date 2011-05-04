@@ -1,3 +1,20 @@
+Wed May  4 09:56:57 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_wait_for_single_fd): new.
+	* thread.c (select_single): select(2) based backend for rb_wait_for_single_fd().
+
+	* io.c (make_writeconv): use rb_wait_for_single_fd() instaed of
+	  rb_thread_fd_select().
+	* io.c (rb_io_wait_readable): ditto.
+	* thread.c (rb_thread_wait_fd_rw): ditto.
+
+	* io.c (wait_readable): removed.
+	* thread.c (init_set_fd): new helper function.
+	* include/ruby/io.h (RB_WAITFD_IN, RB_WAITFD_PRI, RB_WAITFD_OUT):
+	  new constant for rb_single_wait_fd().
+
+	The patch was written by Eric Wong. [Ruby 1.9 - Feature #4531]
+
 Wed May  4 08:04:59 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/yaml_tree.rb: fix time dumping so that

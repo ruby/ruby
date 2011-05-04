@@ -685,21 +685,9 @@ io_fflush(rb_io_t *fptr)
     return 0;
 }
 
-#ifdef HAVE_RB_FD_INIT
-static VALUE
-wait_readable(VALUE p)
-{
-    rb_fdset_t *rfds = (rb_fdset_t *)p;
-
-    return rb_thread_fd_select(rb_fd_max(rfds), rfds, NULL, NULL, NULL);
-}
-#endif
-
 int
 rb_io_wait_readable(int f)
 {
-    rb_fdset_t rfds;
-
     if (f < 0) {
 	rb_raise(rb_eIOError, "closed stream");
     }
@@ -715,14 +703,7 @@ rb_io_wait_readable(int f)
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
       case EWOULDBLOCK:
 #endif
-	rb_fd_init(&rfds);
-	rb_fd_set(f, &rfds);
-#ifdef HAVE_RB_FD_INIT
-	rb_ensure(wait_readable, (VALUE)&rfds,
-		  (VALUE (*)(VALUE))rb_fd_term, (VALUE)&rfds);
-#else
-	rb_thread_fd_select(f + 1, &rfds, NULL, NULL, NULL);
-#endif
+	rb_wait_for_single_fd(f, RB_WAITFD_IN, NULL);
 	return TRUE;
 
       default:
@@ -730,21 +711,9 @@ rb_io_wait_readable(int f)
     }
 }
 
-#ifdef HAVE_RB_FD_INIT
-static VALUE
-wait_writable(VALUE p)
-{
-    rb_fdset_t *wfds = (rb_fdset_t *)p;
-
-    return rb_thread_fd_select(rb_fd_max(wfds), NULL, wfds, NULL, NULL);
-}
-#endif
-
 int
 rb_io_wait_writable(int f)
 {
-    rb_fdset_t wfds;
-
     if (f < 0) {
 	rb_raise(rb_eIOError, "closed stream");
     }
@@ -760,14 +729,7 @@ rb_io_wait_writable(int f)
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
       case EWOULDBLOCK:
 #endif
-	rb_fd_init(&wfds);
-	rb_fd_set(f, &wfds);
-#ifdef HAVE_RB_FD_INIT
-	rb_ensure(wait_writable, (VALUE)&wfds,
-		  (VALUE (*)(VALUE))rb_fd_term, (VALUE)&wfds);
-#else
-	rb_thread_fd_select(f + 1, NULL, &wfds, NULL, NULL);
-#endif
+	rb_wait_for_single_fd(f, RB_WAITFD_OUT, NULL);
 	return TRUE;
 
       default:
