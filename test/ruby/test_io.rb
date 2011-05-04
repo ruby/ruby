@@ -1238,6 +1238,37 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
+  def test_O_CLOEXEC
+    if !defined? File::CLOEXEC
+      return
+    end
+
+    mkcdtmpdir do
+      normal_file = Tempfile.new("normal_file");
+      assert_equal(false, normal_file.close_on_exec?)
+
+      cloexec_file = Tempfile.new("cloexec_file", :mode => File::CLOEXEC);
+      assert_equal(true, cloexec_file.close_on_exec?)
+
+      argfile = Tempfile.new("argfile");
+
+      argfile.puts normal_file.fileno
+      argfile.puts cloexec_file.fileno
+      argfile.flush
+
+      ruby('-e', <<-'End', argfile.path) { |f|
+        begin
+	  puts IO.for_fd(ARGF.gets.to_i).fileno
+	  puts IO.for_fd(ARGF.gets.to_i).fileno
+        rescue
+          puts "nofile"
+        end
+      End
+      assert_equal("#{normal_file.fileno}\nnofile\n", f.read)
+    }
+    end
+  end
+
   def test_close_security_error
     with_pipe do |r, w|
       assert_raise(SecurityError) do

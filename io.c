@@ -10576,6 +10576,10 @@ Init_IO(void)
     /*  Try to minimize cache effects of the I/O to and from this file. */
     rb_file_const("DIRECT", INT2FIX(O_DIRECT));
 #endif
+#ifdef O_CLOEXEC
+    /* enable close-on-exec flag */
+    rb_file_const("CLOEXEC", INT2FIX(O_CLOEXEC)); /* Linux, POSIX-2008. */
+#endif
 
     sym_mode = ID2SYM(rb_intern("mode"));
     sym_perm = ID2SYM(rb_intern("perm"));

@@ -1,3 +1,9 @@
+Wed May  4 20:22:12 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (Init_IO): Added File::CLOEXEC constant.
+	[ruby-core:22893] [Feature #1291]
+	* test/ruby/test_io.rb (TestIO#test_o_cloexec): test for File::CLOEXEC.
+
 Wed May  4 19:00:59 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_wait_for_single_fd): Fix wrong return value.
