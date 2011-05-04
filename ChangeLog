@@ -42,7 +42,7 @@ Wed May  4 09:56:57 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 	* thread.c (rb_wait_for_single_fd): new.
 	* thread.c (select_single): select(2) based backend for rb_wait_for_single_fd().
 
-	* io.c (make_writeconv): use rb_wait_for_single_fd() instaed of
+	* io.c (make_writeconv): use rb_wait_for_single_fd() instead of
 	  rb_thread_fd_select().
 	* io.c (rb_io_wait_readable): ditto.
 	* thread.c (rb_thread_wait_fd_rw): ditto.
