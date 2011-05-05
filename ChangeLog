@@ -1,3 +1,9 @@
+Thu May  5 22:23:34 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (native_mutex_reinitialize_atfork): removed
+	  unused macro.
+	* thread_win32.c (native_mutex_reinitialize_atfork): ditto.
+
 Thu May  5 22:09:39 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/date/date_core.c (DAY_IN_NANOSECONDS): long long int is not

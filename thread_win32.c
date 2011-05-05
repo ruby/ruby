@@ -379,8 +379,6 @@ native_mutex_initialize(rb_thread_lock_t *lock)
 #endif
 }
 
-#define native_mutex_reinitialize_atfork(lock) (void)(lock)
-
 static void
 native_mutex_destroy(rb_thread_lock_t *lock)
 {

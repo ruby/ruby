@@ -29,11 +29,6 @@ static void native_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex);
 static void native_cond_initialize(pthread_cond_t *cond);
 static void native_cond_destroy(pthread_cond_t *cond);
 
-#define native_mutex_reinitialize_atfork(lock) (\
-	native_mutex_unlock(lock), \
-	native_mutex_initialize(lock), \
-	native_mutex_lock(lock))
-
 #define GVL_SIMPLE_LOCK 0
 #define GVL_DEBUG 0
 
