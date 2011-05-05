@@ -42,7 +42,13 @@
 
 #define DAY_IN_SECONDS 86400
 #define SECOND_IN_NANOSECONDS 1000000000
-#define DAY_IN_NANOSECONDS 86400000000000LL
+#if (ULONG_MAX / DAY_IN_SECONDS) > SECOND_IN_NANOSECONDS
+#define DAY_IN_NANOSECONDS LONG2NUM(DAY_IN_SECONDS * SECOND_IN_NANOSECONDS)
+#elif defined HAVE_LONG_LONG
+#define DAY_IN_NANOSECONDS LL2NUM((LONG_LONG)DAY_IN_SECONDS * SECOND_IN_NANOSECONDS)
+#else
+#define DAY_IN_NANOSECONDS f_mul(INT2FIX(DAY_IN_SECONDS), INT2FIX(SECOND_IN_NANOSECONDS))
+#endif
 
 /* copied from time.c */
 #define NDIV(x,y) (-(-((x)+1)/(y))-1)
@@ -4584,7 +4590,7 @@ Init_date_core(void)
 
     rzero = rb_rational_new1(INT2FIX(0));
     rhalf = rb_rational_new2(INT2FIX(1), INT2FIX(2));
-    day_in_nanoseconds = rb_ll2inum(DAY_IN_NANOSECONDS);
+    day_in_nanoseconds = DAY_IN_NANOSECONDS;
 
     rb_gc_register_mark_object(rzero);
     rb_gc_register_mark_object(rhalf);

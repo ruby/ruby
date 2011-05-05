@@ -1,3 +1,8 @@
+Thu May  5 22:09:39 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/date/date_core.c (DAY_IN_NANOSECONDS): long long int is not
+	  available on all platforms.
+
 Thu May  5 17:36:31 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* eval.c (frame_func_id): store result of method_entry_of_iseq() to
