@@ -1,3 +1,8 @@
+Thu May  5 23:08:32 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_io.rb (TestIO#test_O_CLOEXEC): fix false positive
+	  detection.
+
 Thu May  5 22:23:34 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (native_mutex_reinitialize_atfork): removed

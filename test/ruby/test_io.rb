@@ -1244,28 +1244,48 @@ class TestIO < Test::Unit::TestCase
     end
 
     mkcdtmpdir do
-      normal_file = Tempfile.new("normal_file");
-      assert_equal(false, normal_file.close_on_exec?)
+      ary = []
+      begin
+        10.times {
+          ary.concat IO.pipe
+        }
 
-      cloexec_file = Tempfile.new("cloexec_file", :mode => File::CLOEXEC);
-      assert_equal(true, cloexec_file.close_on_exec?)
+        normal_file = Tempfile.new("normal_file");
+        assert_equal(false, normal_file.close_on_exec?)
+        cloexec_file = Tempfile.new("cloexec_file", :mode => File::CLOEXEC);
+        assert_equal(true, cloexec_file.close_on_exec?)
+        arg, argw = IO.pipe
+        argw.puts normal_file.fileno
+        argw.puts cloexec_file.fileno
+        argw.flush
+        ret, retw = IO.pipe
 
-      argfile = Tempfile.new("argfile");
-
-      argfile.puts normal_file.fileno
-      argfile.puts cloexec_file.fileno
-      argfile.flush
-
-      ruby('-e', <<-'End', argfile.path) { |f|
-        begin
-	  puts IO.for_fd(ARGF.gets.to_i).fileno
-	  puts IO.for_fd(ARGF.gets.to_i).fileno
-        rescue
-          puts "nofile"
+        while (e = ary.shift) != nil
+          e.close
         end
-      End
-      assert_equal("#{normal_file.fileno}\nnofile\n", f.read)
-    }
+
+        spawn("ruby", "-e", <<-'End', :close_others=>false, :in=>arg, :out=>retw)
+          begin
+            puts IO.for_fd(gets.to_i).fileno
+            puts IO.for_fd(gets.to_i).fileno
+          rescue
+            puts "nofile"
+          ensure
+            exit
+          end
+        End
+        retw.close
+        Process.wait
+        assert_equal("#{normal_file.fileno}\nnofile\n", ret.read)
+      ensure
+        while (e = ary.shift) != nil
+          e.close
+        end
+        arg.close unless arg.closed?
+        argw.close unless argw.closed?
+        ret.close unless ret.closed?
+        retw.close unless retw.closed?
+      end
     end
   end
 
