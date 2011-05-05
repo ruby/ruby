@@ -92,6 +92,32 @@ class TestMethod < Test::Unit::TestCase
     assert_nil(eval("class TestCallee; __method__; end"))
   end
 
+  def test_method_in_define_method_block
+    bug4606 = '[ruby-core:35386]'
+    c = Class.new do
+      [:m1, :m2].each do |m|
+        define_method(m) do
+          __method__
+        end
+      end
+    end
+    assert_equal(:m1, c.new.m1, bug4606)
+    assert_equal(:m2, c.new.m2, bug4606)
+  end
+
+  def test_method_in_block_in_define_method_block
+    bug4606 = '[ruby-core:35386]'
+    c = Class.new do
+      [:m1, :m2].each do |m|
+        define_method(m) do
+          tap { return __method__ }
+        end
+      end
+    end
+    assert_equal(:m1, c.new.m1, bug4606)
+    assert_equal(:m2, c.new.m2, bug4606)
+  end
+
   def test_body
     o = Object.new
     def o.foo; end
