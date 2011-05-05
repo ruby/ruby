@@ -784,6 +784,7 @@ frame_func_id(rb_control_frame_t *cfp)
 	}
 	me_local = method_entry_of_iseq(cfp, iseq);
 	if (me_local) {
+	    cfp->me = me_local;
 	    return me_local->def->original_id;
 	}
 	if (iseq->defined_method_id) {

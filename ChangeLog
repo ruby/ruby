@@ -1,3 +1,8 @@
+Thu May  5 17:36:31 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* eval.c (frame_func_id): store result of method_entry_of_iseq() to
+	  cfp->me because method_entry_of_iseq() might become expensive.
+
 Thu May  5 15:03:51 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* eval.c (frame_func_id): __method__ return different name from
