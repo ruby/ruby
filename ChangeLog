@@ -1,3 +1,9 @@
+Fri May  6 16:27:33 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/date/date_core.c (DAY_IN_NANOSECONDS): refix: 31438.
+	  check with LONG_MAX and cast as long; without this the calculation
+	  will be done as int and overflow.
+
 Fri May  6 15:01:11 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* ext/syck/rubyext.c (mktime_do): avoid buffer overrun, by
