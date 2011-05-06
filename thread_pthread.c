@@ -296,16 +296,29 @@ native_cond_timedwait(rb_thread_cond_t *cond, pthread_mutex_t *mutex, struct tim
     return r;
 }
 
+#if SIZEOF_TIME_T == SIZEOF_LONG
+typedef unsigned long unsigned_time_t;
+#elif SIZEOF_TIME_T == SIZEOF_INT
+typedef unsigned int unsigned_time_t;
+#elif SIZEOF_TIME_T == SIZEOF_LONG_LONG
+typedef unsigned LONG_LONG unsigned_time_t;
+#else
+# error cannot find integer type which size is same as time_t.
+#endif
+
+#define TIMET_MAX (~(time_t)0 <= 0 ? (time_t)((~(unsigned_time_t)0) >> 1) : (time_t)(~(unsigned_time_t)0))
+
 static struct timespec
 native_cond_timeout(rb_thread_cond_t *cond, struct timespec timeout_rel)
 {
     int ret;
     struct timeval tv;
     struct timespec timeout;
+    struct timespec now;
 
 #if USE_MONOTONIC_COND
     if (cond->clockid == CLOCK_MONOTONIC) {
-	ret = clock_gettime(cond->clockid, &timeout);
+	ret = clock_gettime(cond->clockid, &now);
 	if (ret != 0)
 	    rb_sys_fail("clock_gettime()");
 	goto out;
@@ -318,16 +331,23 @@ native_cond_timeout(rb_thread_cond_t *cond, struct timespec timeout_rel)
     ret = gettimeofday(&tv, 0);
     if (ret != 0)
 	rb_sys_fail(0);
-    timeout.tv_sec = tv.tv_sec;
-    timeout.tv_nsec = tv.tv_usec * 1000;
+    now.tv_sec = tv.tv_sec;
+    now.tv_nsec = tv.tv_usec * 1000;
 
   out:
+    timeout.tv_sec = now.tv_sec;
+    timeout.tv_nsec = now.tv_nsec;
     timeout.tv_sec += timeout_rel.tv_sec;
     timeout.tv_nsec += timeout_rel.tv_nsec;
+
     if (timeout.tv_nsec >= 1000*1000*1000) {
 	timeout.tv_sec++;
 	timeout.tv_nsec -= 1000*1000*1000;
     }
+
+    if (timeout.tv_sec < now.tv_sec)
+	timeout.tv_sec = TIMET_MAX;
+
     return timeout;
 }
 
@@ -383,7 +403,7 @@ Init_native_thread(void)
 static void
 native_thread_init(rb_thread_t *th)
 {
-    native_cond_initialize(&th->native_thread_data.sleep_cond, 0);
+    native_cond_initialize(&th->native_thread_data.sleep_cond, RB_CONDATTR_CLOCK_MONOTONIC);
     native_cond_initialize(&th->native_thread_data.gvl_cond, 0);
     ruby_thread_set_native(th);
 }
@@ -809,25 +829,25 @@ ubf_select(void *ptr)
 #define PER_NANO 1000000000
 
 static void
-native_sleep(rb_thread_t *th, struct timeval *tv)
+native_sleep(rb_thread_t *th, struct timeval *timeout_tv)
 {
-    struct timespec ts;
+    struct timespec timeout;
     struct timeval tvn;
+    pthread_mutex_t *lock = &th->interrupt_lock;
+    rb_thread_cond_t *cond = &th->native_thread_data.sleep_cond;
 
-    if (tv) {
-	gettimeofday(&tvn, NULL);
-	ts.tv_sec = tvn.tv_sec + tv->tv_sec;
-	ts.tv_nsec = (tvn.tv_usec + tv->tv_usec) * 1000;
-	if (ts.tv_nsec >= PER_NANO){
-	    ts.tv_sec += 1;
-	    ts.tv_nsec -= PER_NANO;
-	}
+    if (timeout_tv) {
+	struct timespec timeout_rel;
+
+	timeout_rel.tv_sec = timeout_tv->tv_sec;
+	timeout_rel.tv_nsec = timeout_tv->tv_usec;
+
+	timeout = native_cond_timeout(cond, timeout_rel);
     }
 
-    thread_debug("native_sleep %ld\n", (long)(tv ? tv->tv_sec : -1));
     GVL_UNLOCK_BEGIN();
     {
-	pthread_mutex_lock(&th->interrupt_lock);
+	pthread_mutex_lock(lock);
 	th->unblock.func = ubf_pthread_cond_signal;
 	th->unblock.arg = th;
 
@@ -836,27 +856,15 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
 	    thread_debug("native_sleep: interrupted before sleep\n");
 	}
 	else {
-	    if (tv == 0 || ts.tv_sec < tvn.tv_sec /* overflow */ ) {
-		thread_debug("native_sleep: pthread_cond_wait start\n");
-		native_cond_wait(&th->native_thread_data.sleep_cond,
-				 &th->interrupt_lock);
-		thread_debug("native_sleep: pthread_cond_wait end\n");
-	    }
-	    else {
-		int r;
-		thread_debug("native_sleep: pthread_cond_timedwait start (%ld, %ld)\n",
-			     (unsigned long)ts.tv_sec, ts.tv_nsec);
-		r = native_cond_timedwait(&th->native_thread_data.sleep_cond,
-					  &th->interrupt_lock, &ts);
-		if (r && r != ETIMEDOUT) rb_bug_errno("pthread_cond_timedwait", r);
-
-		thread_debug("native_sleep: pthread_cond_timedwait end (%d)\n", r);
-	    }
+	    if (!timeout_tv)
+		native_cond_wait(cond, lock);
+	    else
+		native_cond_timedwait(cond, lock, &timeout);
 	}
 	th->unblock.func = 0;
 	th->unblock.arg = 0;
 
-	pthread_mutex_unlock(&th->interrupt_lock);
+	pthread_mutex_unlock(lock);
     }
     GVL_UNLOCK_END();
 

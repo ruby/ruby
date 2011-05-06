@@ -491,28 +491,48 @@ native_cond_timedwait(rb_thread_cond_t *cond, rb_thread_lock_t *mutex, struct ti
     return __cond_timedwait(cond, mutex, timeout_ms);
 }
 
+#if SIZEOF_TIME_T == SIZEOF_LONG
+typedef unsigned long unsigned_time_t;
+#elif SIZEOF_TIME_T == SIZEOF_INT
+typedef unsigned int unsigned_time_t;
+#elif SIZEOF_TIME_T == SIZEOF_LONG_LONG
+typedef unsigned LONG_LONG unsigned_time_t;
+#else
+# error cannot find integer type which size is same as time_t.
+#endif
+
+#define TIMET_MAX (~(time_t)0 <= 0 ? (time_t)((~(unsigned_time_t)0) >> 1) : (time_t)(~(unsigned_time_t)0))
+
 static struct timespec
 native_cond_timeout(rb_thread_cond_t *cond, struct timespec timeout_rel)
 {
     int ret;
     struct timeval tv;
     struct timespec timeout;
+    struct timespec now;
 
     ret = gettimeofday(&tv, 0);
     if (ret != 0)
 	rb_sys_fail(0);
-    timeout.tv_sec = tv.tv_sec;
-    timeout.tv_nsec = tv.tv_usec * 1000;
+    now.tv_sec = tv.tv_sec;
+    now.tv_nsec = tv.tv_usec * 1000;
 
+  out:
+    timeout.tv_sec = now.tv_sec;
+    timeout.tv_nsec = now.tv_nsec;
     timeout.tv_sec += timeout_rel.tv_sec;
     timeout.tv_nsec += timeout_rel.tv_nsec;
+
     if (timeout.tv_nsec >= 1000*1000*1000) {
 	timeout.tv_sec++;
 	timeout.tv_nsec -= 1000*1000*1000;
     }
+
+    if (timeout.tv_sec < now.tv_sec)
+	timeout.tv_sec = TIMET_MAX;
+
     return timeout;
 }
-
 
 static void
 native_cond_initialize(rb_thread_cond_t *cond, int flags)

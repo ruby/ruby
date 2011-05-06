@@ -1,3 +1,14 @@
+Sat May  7 03:14:13 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	sleep_cond use monotonic time if possible.
+
+	* thread_pthread.c (native_thread_init): change sleep_cond
+	  attribute to monotonic.
+	* thread_pthread.c (native_sleep): use native_cond_timeout().
+
+	* thread_pthread.c (native_cond_timeout): add overflow care.
+	* thread_win32.c (native_cond_timeout): ditto.
+
 Sat May  7 02:49:12 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 	  fix win32 compile error.
 
