@@ -920,10 +920,29 @@ static pthread_mutex_t timer_thread_lock = PTHREAD_MUTEX_INITIALIZER;
 static struct timespec *
 get_ts(struct timespec *ts, unsigned long nsec)
 {
+    int ret;
     struct timeval tv;
-    gettimeofday(&tv, 0);
+
+#if USE_MONOTONIC_COND
+    if (timer_thread_cond.clockid == CLOCK_MONOTONIC) {
+	ret = clock_gettime(CLOCK_MONOTONIC, ts);
+	if (ret != 0)
+	    rb_sys_fail("clock_gettime(CLOCK_MONOTONIC)");
+	goto out;
+    }
+#endif
+
+    if (timer_thread_cond.clockid != CLOCK_REALTIME)
+	rb_bug("unsupported clockid %d", timer_thread_cond.clockid);
+
+    ret = gettimeofday(&tv, 0);
+    if (ret != 0)
+	rb_sys_fail(0);
     ts->tv_sec = tv.tv_sec;
-    ts->tv_nsec = tv.tv_usec * 1000 + nsec;
+    ts->tv_nsec = tv.tv_usec * 1000;
+
+  out:
+    ts->tv_nsec += nsec;
     if (ts->tv_nsec >= PER_NANO) {
 	ts->tv_sec++;
 	ts->tv_nsec -= PER_NANO;
@@ -975,7 +994,7 @@ rb_thread_create_timer_thread(void)
 	int err;
 
 	pthread_attr_init(&attr);
-	native_cond_initialize(&timer_thread_cond, 0);
+	native_cond_initialize(&timer_thread_cond, RB_CONDATTR_CLOCK_MONOTONIC);
 #ifdef PTHREAD_STACK_MIN
 	pthread_attr_setstacksize(&attr,
 				  PTHREAD_STACK_MIN + (THREAD_DEBUG ? BUFSIZ : 0));
