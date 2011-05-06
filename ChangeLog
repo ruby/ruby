@@ -1,3 +1,8 @@
+Fri May  6 14:25:53 2011  Tinco Andringa <mail@tinco.nl>
+
+	* ext/syck/rubyext.c (mktime_do): YAML.load time correctly parse
+	  usecs smaller than 1 fixes #4571
+
 Thu May  5 23:08:32 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_io.rb (TestIO#test_O_CLOEXEC): fix false positive
