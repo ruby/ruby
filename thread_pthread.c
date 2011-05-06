@@ -28,9 +28,10 @@ static void native_cond_wait(rb_thread_cond_t *cond, pthread_mutex_t *mutex);
 static void native_cond_initialize(rb_thread_cond_t *cond, int flags);
 static void native_cond_destroy(rb_thread_cond_t *cond);
 
+#define RB_CONDATTR_CLOCK_MONOTONIC 1
+
 #if defined(HAVE_PTHREAD_CONDATTR_SETCLOCK) && defined(CLOCK_MONOTONIC) && defined(HAVE_CLOCK_GETTIME)
 #define USE_MONOTONIC_COND 1
-#define RB_CONDATTR_CLOCK_MONOTONIC 1
 #endif
 
 #define GVL_SIMPLE_LOCK 0

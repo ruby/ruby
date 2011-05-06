@@ -1,3 +1,10 @@
+Sat May  7 02:49:12 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+	  fix win32 compile error.
+
+	* thread_win32.c (RB_CONDATTR_CLOCK_MONOTONIC): define
+	  RB_CONDATTR_CLOCK_MONOTONIC always.
+	* thread_pthread.c (RB_CONDATTR_CLOCK_MONOTONIC): ditto.
+
 Sat May  7 02:29:41 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	  mutex: deadlock check timeout use monotonic time.

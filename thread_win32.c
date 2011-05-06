@@ -14,6 +14,8 @@
 #include <process.h>
 
 #define WIN32_WAIT_TIMEOUT 10	/* 10 ms */
+#define RB_CONDATTR_CLOCK_MONOTONIC 1 /* no effect */
+
 #undef Sleep
 
 #define native_thread_yield() Sleep(0)
