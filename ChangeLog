@@ -1,3 +1,8 @@
+Fri May  6 23:13:43 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: remove nanosleep check. we no longer use it.
+	r20124 removed last usage.
+
 Fri May  6 22:35:56 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/syck/rubyext.c (mktime_do): extra digits are not used.

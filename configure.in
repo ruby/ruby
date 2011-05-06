@@ -1731,16 +1731,10 @@ if test x"$enable_pthread" = xyes; then
     else
 	AC_MSG_WARN("Don't know how to find pthread library on your system -- thread support disabled")
     fi
-    AC_CHECK_FUNCS(nanosleep sched_yield pthread_attr_setinheritsched \
+    AC_CHECK_FUNCS(sched_yield pthread_attr_setinheritsched \
 	pthread_getattr_np pthread_attr_get_np pthread_attr_getstack\
 	pthread_get_stackaddr_np pthread_get_stacksize_np \
 	thr_stksegment pthread_stackseg_np pthread_getthrds_np)
-    if test x"$ac_cv_func_nanosleep" = xno; then
-       AC_CHECK_LIB(rt, nanosleep)
-       if test x"$ac_cv_lib_rt_nanosleep" = xyes; then
-           AC_DEFINE(HAVE_NANOSLEEP)
-       fi
-    fi
 fi
 if test x"$ac_cv_header_ucontext_h" = xyes; then
     if test x"$rb_with_pthread" = xyes; then
