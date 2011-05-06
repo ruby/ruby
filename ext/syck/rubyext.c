@@ -226,7 +226,7 @@ mktime_do(VALUE varg)
     VALUE hour = INT2FIX(0);
     VALUE min = INT2FIX(0);
     VALUE sec = INT2FIX(0);
-    double usec;
+    long usec;
 
     /* Year*/
     if ( ptr[0] != '\0' && len > 0 ) {
@@ -272,19 +272,19 @@ mktime_do(VALUE varg)
     ptr += 2;
     if ( len > ptr - str && *ptr == '.' )
     {
-        char padded[] = "000000.000000";
-        const int padding = 6;
+        char padded[] = "000000";
+        const int padding = (int)(sizeof(padded) - 1);
         const char *end = ptr + 1;
         const char *begin = end;
-        int length;
+        ptrdiff_t length;
         while ( isdigit( *end ) ) end++;
-        length = (int)(end - begin) <= padding ? (int)(end - begin) : padding;
+        if ((length = (end - begin)) > padding) length = padding;
         MEMCPY(padded, begin, char, length);
-        usec = strtod(padded, NULL);
+        usec = strtol(padded, NULL, 10);
     }
     else
     {
-        usec = 0.0;
+        usec = 0;
     }
 
     /* Time Zone*/
@@ -312,12 +312,12 @@ mktime_do(VALUE varg)
         time = rb_funcall(rb_cTime, s_utc, 6, year, mon, day, hour, min, sec);
         tmp = rb_funcall(time, s_to_i, 0);
         tmp = rb_funcall(tmp, '-', 1, LONG2FIX(tz_offset));
-        return rb_funcall(rb_cTime, s_at, 2, tmp, rb_float_new(usec));
+        return rb_funcall(rb_cTime, s_at, 2, tmp, LONG2NUM(usec));
     }
     else
     {
         /* Make UTC time*/
-        return rb_funcall(rb_cTime, s_utc, 7, year, mon, day, hour, min, sec, rb_float_new(usec));
+        return rb_funcall(rb_cTime, s_utc, 7, year, mon, day, hour, min, sec, LONG2NUM(usec));
     }
 }
 

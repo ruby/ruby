@@ -1,3 +1,7 @@
+Fri May  6 22:35:56 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/syck/rubyext.c (mktime_do): extra digits are not used.
+
 Fri May  6 17:43:07 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/syck/rubyext.c (mktime_do): remove unused variable offset.
