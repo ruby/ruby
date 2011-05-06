@@ -274,7 +274,6 @@ mktime_do(VALUE varg)
     {
         char padded[] = "000000.000000";
         const int padding = 6;
-        const int offset = padding + 1;
         const char *end = ptr + 1;
         const char *begin = end;
         int length;

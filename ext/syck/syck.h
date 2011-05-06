@@ -30,7 +30,7 @@ extern "C" {
 #include <alloca.h>
 #endif
 
-#if DEBUG
+#ifdef DEBUG
 void syck_assert( const char *, unsigned, const char * );
 # define ASSERT(f) \
     (( f ) ? (void)0 : syck_assert( __FILE__, __LINE__, #f ))

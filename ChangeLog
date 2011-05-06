@@ -1,3 +1,9 @@
+Fri May  6 17:43:07 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/syck/rubyext.c (mktime_do): remove unused variable offset.
+
+	* ext/syck/syck.h: use #ifdef instead of #if DEBUG.
+
 Fri May  6 16:27:33 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/date/date_core.c (DAY_IN_NANOSECONDS): refix: 31438.
