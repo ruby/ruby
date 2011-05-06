@@ -281,12 +281,6 @@ mktime_do(VALUE varg)
         while ( isdigit( *end ) ) end++;
         length = (int)(end - begin) <= padding ? (int)(end - begin) : padding;
         MEMCPY(padded, begin, char, length);
-        length = (int)(end - begin);
-        if (length > padding) {
-          length = length - padding;
-          MEMCPY(padded + offset, begin + padding, char, length);
-        }
-
         usec = strtod(padded, NULL);
     }
     else
