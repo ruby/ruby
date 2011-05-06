@@ -1,3 +1,8 @@
+Fri May  6 23:29:47 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_wait_for_single_fd): use ppoll() instead of poll()
+	  if possible. based on a patch from Eric Wong. [ruby-core:36003].
+
 Fri May  6 23:13:43 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: remove nanosleep check. we no longer use it.

@@ -2715,11 +2715,40 @@ rb_thread_fd_select(int max, rb_fdset_t * read, rb_fdset_t * write, rb_fdset_t *
 
 #ifdef USE_POLL
 
-
 /* The same with linux kernel. TODO: make platform independent definition. */
 #define POLLIN_SET (POLLRDNORM | POLLRDBAND | POLLIN | POLLHUP | POLLERR)
 #define POLLOUT_SET (POLLWRBAND | POLLWRNORM | POLLOUT | POLLERR)
 #define POLLEX_SET (POLLPRI)
+
+#define TIMET_MAX (~(time_t)0 <= 0 ? (time_t)((~(unsigned_time_t)0) >> 1) : (time_t)(~(unsigned_time_t)0))
+#define TIMET_MIN (~(time_t)0 <= 0 ? (time_t)(((unsigned_time_t)1) << (sizeof(time_t) * CHAR_BIT - 1)) : (time_t)0)
+
+#ifndef HAVE_PPOLL
+/* TODO: don't ignore sigmask */
+int ppoll(struct pollfd *fds, nfds_t nfds,
+	  const struct timespec *ts, const sigset_t *sigmask)
+{
+    int timeout_ms;
+
+    if (ts) {
+	int tmp, tmp2;
+
+	if (ts->tv_sec > TIMET_MAX/1000)
+	    timeout_ms = -1;
+	else {
+	    tmp = ts->tv_sec * 1000;
+	    tmp2 = tv->tv_nsec / (1000 * 1000);
+	    if (TIMET_MAX - tmp < tmp2)
+		timeout_ms = -1;
+	    else
+		timeout_ms = tmp + tmp2;
+	}
+    } else
+	timeout = -1;
+
+    return poll(fds, nfds, timeout_ms);
+}
+#endif
 
 /*
  * returns a mask of events
@@ -2729,17 +2758,25 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *tv)
 {
     struct pollfd fds;
     int result, lerrno;
-    double start;
-    int timeout = tv ? tv->tv_sec * 1000 + (tv->tv_usec + 500) / 1000 : -1;
+    double limit = 0;
+    struct timespec ts;
+    struct timespec *timeout = NULL;
+
+    if (tv) {
+	ts.tv_sec = tv->tv_sec;
+	ts.tv_nsec = tv->tv_usec * 1000;
+	limit = timeofday();
+	limit += (double)tv->tv_sec + (double)tv->tv_usec * 1e-6;
+	timeout = &ts;
+    }
 
     fds.fd = fd;
     fds.events = (short)events;
 
 retry:
     lerrno = 0;
-    start = timeofday();
     BLOCKING_REGION({
-	result = poll(&fds, 1, timeout);
+	result = ppoll(&fds, 1, timeout, NULL);
 	if (result < 0) lerrno = errno;
     }, ubf_select, GET_THREAD());
 
@@ -2750,10 +2787,15 @@ retry:
 #ifdef ERESTART
 	  case ERESTART:
 #endif
-	    if (timeout > 0) {
-		timeout -= (timeofday() - start) * 1000;
-		if (timeout < 0)
-		    timeout = 0;
+	    if (timeout) {
+		double d = limit - timeofday();
+
+		ts.tv_sec = (long)d;
+		ts.tv_nsec = (long)((d - (double)ts.tv_sec) * 1e9);
+		if (ts.tv_sec < 0)
+		    ts.tv_sec = 0;
+		if (ts.tv_nsec < 0)
+		    ts.tv_nsec = 0;
 	    }
 	    goto retry;
 	}
