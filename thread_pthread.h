@@ -17,12 +17,16 @@
 #endif
 typedef pthread_t rb_thread_id_t;
 typedef pthread_mutex_t rb_thread_lock_t;
-typedef pthread_cond_t rb_thread_cond_t;
+
+typedef struct rb_thread_cond_struct {
+    pthread_cond_t cond;
+    clockid_t clockid;
+} rb_thread_cond_t;
 
 typedef struct native_thread_data_struct {
     void *signal_thread_list;
-    pthread_cond_t sleep_cond;
-    pthread_cond_t gvl_cond;
+    rb_thread_cond_t sleep_cond;
+    rb_thread_cond_t gvl_cond;
     struct rb_thread_struct *gvl_next;
 } native_thread_data_t;
 

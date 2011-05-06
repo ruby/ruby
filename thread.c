@@ -3336,7 +3336,7 @@ mutex_alloc(VALUE klass)
 
     obj = TypedData_Make_Struct(klass, mutex_t, &mutex_data_type, mutex);
     native_mutex_initialize(&mutex->lock);
-    native_cond_initialize(&mutex->cond);
+    native_cond_initialize(&mutex->cond, 0);
     return obj;
 }
 

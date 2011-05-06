@@ -22,12 +22,16 @@ static void native_mutex_unlock(pthread_mutex_t *lock);
 static int native_mutex_trylock(pthread_mutex_t *lock);
 static void native_mutex_initialize(pthread_mutex_t *lock);
 static void native_mutex_destroy(pthread_mutex_t *lock);
+static void native_cond_signal(rb_thread_cond_t *cond);
+static void native_cond_broadcast(rb_thread_cond_t *cond);
+static void native_cond_wait(rb_thread_cond_t *cond, pthread_mutex_t *mutex);
+static void native_cond_initialize(rb_thread_cond_t *cond, int flags);
+static void native_cond_destroy(rb_thread_cond_t *cond);
 
-static void native_cond_signal(pthread_cond_t *cond);
-static void native_cond_broadcast(pthread_cond_t *cond);
-static void native_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex);
-static void native_cond_initialize(pthread_cond_t *cond);
-static void native_cond_destroy(pthread_cond_t *cond);
+#if defined(HAVE_PTHREAD_CONDATTR_SETCLOCK) && defined(CLOCK_MONOTONIC) && defined(HAVE_CLOCK_GETTIME)
+#define USE_MONOTONIC_COND 1
+#define RB_CONDATTR_CLOCK_MONOTONIC 1
+#endif
 
 #define GVL_SIMPLE_LOCK 0
 #define GVL_DEBUG 0
@@ -220,54 +224,71 @@ native_mutex_destroy(pthread_mutex_t *lock)
 }
 
 static void
-native_cond_initialize(pthread_cond_t *cond)
+native_cond_initialize(rb_thread_cond_t *cond, int flags)
 {
-    int r = pthread_cond_init(cond, 0);
+    int r;
+    pthread_condattr_t attr;
+
+    cond->clockid = CLOCK_REALTIME;
+    pthread_condattr_init(&attr);
+
+#if USE_MONOTONIC_COND
+    if (flags & RB_CONDATTR_CLOCK_MONOTONIC) {
+	r = pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
+	if (r == 0) {
+	    cond->clockid = CLOCK_MONOTONIC;
+	}
+    }
+#endif
+
+    r = pthread_cond_init(&cond->cond, &attr);
     if (r != 0) {
 	rb_bug_errno("pthread_cond_init", r);
     }
-}
+
+    return;
+ }
 
 static void
-native_cond_destroy(pthread_cond_t *cond)
+native_cond_destroy(rb_thread_cond_t *cond)
 {
-    int r = pthread_cond_destroy(cond);
+    int r = pthread_cond_destroy(&cond->cond);
     if (r != 0) {
 	rb_bug_errno("pthread_cond_destroy", r);
     }
 }
 
 static void
-native_cond_signal(pthread_cond_t *cond)
+native_cond_signal(rb_thread_cond_t *cond)
 {
-    int r = pthread_cond_signal(cond);
+    int r = pthread_cond_signal(&cond->cond);
     if (r != 0) {
 	rb_bug_errno("pthread_cond_signal", r);
     }
 }
 
 static void
-native_cond_broadcast(pthread_cond_t *cond)
+native_cond_broadcast(rb_thread_cond_t *cond)
 {
-    int r = pthread_cond_broadcast(cond);
+    int r = pthread_cond_broadcast(&cond->cond);
     if (r != 0) {
 	rb_bug_errno("native_cond_broadcast", r);
     }
 }
 
 static void
-native_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
+native_cond_wait(rb_thread_cond_t *cond, pthread_mutex_t *mutex)
 {
-    int r = pthread_cond_wait(cond, mutex);
+    int r = pthread_cond_wait(&cond->cond, mutex);
     if (r != 0) {
 	rb_bug_errno("pthread_cond_wait", r);
     }
 }
 
 static int
-native_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, struct timespec *ts)
+native_cond_timedwait(rb_thread_cond_t *cond, pthread_mutex_t *mutex, struct timespec *ts)
 {
-    int r = pthread_cond_timedwait(cond, mutex, ts);
+    int r = pthread_cond_timedwait(&cond->cond, mutex, ts);
     if (r != 0 && r != ETIMEDOUT && r != EINTR /* Linux */) {
 	rb_bug_errno("pthread_cond_timedwait", r);
     }
@@ -326,16 +347,16 @@ Init_native_thread(void)
 static void
 native_thread_init(rb_thread_t *th)
 {
-    native_cond_initialize(&th->native_thread_data.sleep_cond);
-    native_cond_initialize(&th->native_thread_data.gvl_cond);
+    native_cond_initialize(&th->native_thread_data.sleep_cond, 0);
+    native_cond_initialize(&th->native_thread_data.gvl_cond, 0);
     ruby_thread_set_native(th);
 }
 
 static void
 native_thread_destroy(rb_thread_t *th)
 {
-    pthread_cond_destroy(&th->native_thread_data.gvl_cond);
-    pthread_cond_destroy(&th->native_thread_data.sleep_cond);
+    native_cond_destroy(&th->native_thread_data.gvl_cond);
+    native_cond_destroy(&th->native_thread_data.sleep_cond);
 }
 
 #define USE_THREAD_CACHE 0
@@ -725,7 +746,7 @@ ubf_pthread_cond_signal(void *ptr)
 {
     rb_thread_t *th = (rb_thread_t *)ptr;
     thread_debug("ubf_pthread_cond_signal (%p)\n", (void *)th);
-    pthread_cond_signal(&th->native_thread_data.sleep_cond);
+    native_cond_signal(&th->native_thread_data.sleep_cond);
 }
 
 #if !defined(__CYGWIN__) && !defined(__SYMBIAN32__)
@@ -780,19 +801,17 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
 	}
 	else {
 	    if (tv == 0 || ts.tv_sec < tvn.tv_sec /* overflow */ ) {
-		int r;
 		thread_debug("native_sleep: pthread_cond_wait start\n");
-		r = pthread_cond_wait(&th->native_thread_data.sleep_cond,
-				      &th->interrupt_lock);
-                if (r) rb_bug_errno("pthread_cond_wait", r);
+		native_cond_wait(&th->native_thread_data.sleep_cond,
+				 &th->interrupt_lock);
 		thread_debug("native_sleep: pthread_cond_wait end\n");
 	    }
 	    else {
 		int r;
 		thread_debug("native_sleep: pthread_cond_timedwait start (%ld, %ld)\n",
 			     (unsigned long)ts.tv_sec, ts.tv_nsec);
-		r = pthread_cond_timedwait(&th->native_thread_data.sleep_cond,
-					   &th->interrupt_lock, &ts);
+		r = native_cond_timedwait(&th->native_thread_data.sleep_cond,
+					  &th->interrupt_lock, &ts);
 		if (r && r != ETIMEDOUT) rb_bug_errno("pthread_cond_timedwait", r);
 
 		thread_debug("native_sleep: pthread_cond_timedwait end (%d)\n", r);
@@ -895,7 +914,7 @@ remove_signal_thread_list(rb_thread_t *th)
 }
 
 static pthread_t timer_thread_id;
-static pthread_cond_t timer_thread_cond = PTHREAD_COND_INITIALIZER;
+static rb_thread_cond_t timer_thread_cond;
 static pthread_mutex_t timer_thread_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static struct timespec *
@@ -956,6 +975,7 @@ rb_thread_create_timer_thread(void)
 	int err;
 
 	pthread_attr_init(&attr);
+	native_cond_initialize(&timer_thread_cond, 0);
 #ifdef PTHREAD_STACK_MIN
 	pthread_attr_setstacksize(&attr,
 				  PTHREAD_STACK_MIN + (THREAD_DEBUG ? BUFSIZ : 0));

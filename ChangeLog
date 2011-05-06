@@ -1,3 +1,13 @@
+Sat May  7 01:43:37 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.h (rb_thread_cond_t): add clockid field. it's
+	  no longer an alias of pthread_cond_t.
+	* thread_pthread.c: adapt new rb_thread_cond_t type.
+	* thread.c (mutex_alloc): ditto.
+	* thread_win32.c (native_cond_initialize): ditto.
+	* configure.in: add check for pthread_cond_attr_setclock() and
+	  clockid_t type.
+
 Fri May  6 23:29:47 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_wait_for_single_fd): use ppoll() instead of poll()

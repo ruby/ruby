@@ -490,7 +490,7 @@ native_cond_timedwait(rb_thread_cond_t *cond, rb_thread_lock_t *mutex, struct ti
 }
 
 static void
-native_cond_initialize(rb_thread_cond_t *cond)
+native_cond_initialize(rb_thread_cond_t *cond, int flags)
 {
     cond->next = 0;
     cond->last = 0;
