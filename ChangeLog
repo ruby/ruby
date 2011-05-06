@@ -1,3 +1,18 @@
+Sat May  7 02:29:41 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	  mutex: deadlock check timeout use monotonic time.
+
+	* thread_pthread.c (native_cond_timeout): new internal api.
+	  it calculate a proper time for argument of native_cond_timedwait().
+	* thread_win32.c (native_cond_timeout): ditto.
+
+	* thread_pthread.c (thread_timer): use native_cond_timeout()
+	  instead of get_ts.
+	* thread.c (lock_func): ditto.
+
+	* thread_pthread.c (get_ts): removed. use native_cond_timeout().
+	* thread.c (init_lock_timeout): ditto.
+
 Sat May  7 01:54:21 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (get_ts): add monotonic clock capability.

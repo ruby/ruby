@@ -489,6 +489,29 @@ native_cond_timedwait(rb_thread_cond_t *cond, rb_thread_lock_t *mutex, struct ti
     return __cond_timedwait(cond, mutex, timeout_ms);
 }
 
+static struct timespec
+native_cond_timeout(rb_thread_cond_t *cond, struct timespec timeout_rel)
+{
+    int ret;
+    struct timeval tv;
+    struct timespec timeout;
+
+    ret = gettimeofday(&tv, 0);
+    if (ret != 0)
+	rb_sys_fail(0);
+    timeout.tv_sec = tv.tv_sec;
+    timeout.tv_nsec = tv.tv_usec * 1000;
+
+    timeout.tv_sec += timeout_rel.tv_sec;
+    timeout.tv_nsec += timeout_rel.tv_nsec;
+    if (timeout.tv_nsec >= 1000*1000*1000) {
+	timeout.tv_sec++;
+	timeout.tv_nsec -= 1000*1000*1000;
+    }
+    return timeout;
+}
+
+
 static void
 native_cond_initialize(rb_thread_cond_t *cond, int flags)
 {

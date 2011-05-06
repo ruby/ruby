@@ -3336,7 +3336,7 @@ mutex_alloc(VALUE klass)
 
     obj = TypedData_Make_Struct(klass, mutex_t, &mutex_data_type, mutex);
     native_mutex_initialize(&mutex->lock);
-    native_cond_initialize(&mutex->cond, 0);
+    native_cond_initialize(&mutex->cond, RB_CONDATTR_CLOCK_MONOTONIC);
     return obj;
 }
 
@@ -3410,26 +3410,6 @@ rb_mutex_trylock(VALUE self)
     return locked;
 }
 
-static struct timespec init_lock_timeout(int timeout_ms)
-{
-    struct timespec ts;
-    struct timeval tv;
-    int ret;
-
-    ret = gettimeofday(&tv, NULL);
-    if (ret < 0)
-	rb_sys_fail(0);
-
-    ts.tv_sec = tv.tv_sec;
-    ts.tv_nsec = tv.tv_usec * 1000 + timeout_ms * 1000 * 1000;
-    if (ts.tv_nsec >= 1000000000) {
-	ts.tv_sec++;
-	ts.tv_nsec -= 1000000000;
-    }
-
-    return ts;
-}
-
 static int
 lock_func(rb_thread_t *th, mutex_t *mutex, int timeout_ms)
 {
@@ -3438,9 +3418,6 @@ lock_func(rb_thread_t *th, mutex_t *mutex, int timeout_ms)
     native_mutex_lock(&mutex->lock);
     th->transition_for_lock = 0;
     for (;;) {
-	struct timespec ts;
-	int ret;
-
 	if (!mutex->th) {
 	    mutex->th = th;
 	    break;
@@ -3448,8 +3425,14 @@ lock_func(rb_thread_t *th, mutex_t *mutex, int timeout_ms)
 
 	mutex->cond_waiting++;
 	if (timeout_ms) {
-	    ts = init_lock_timeout(timeout_ms);
-	    ret = native_cond_timedwait(&mutex->cond, &mutex->lock, &ts);
+	    int ret;
+	    struct timespec timeout_rel;
+	    struct timespec timeout;
+
+	    timeout_rel.tv_sec = 0;
+	    timeout_rel.tv_nsec = timeout_ms * 1000 * 1000;
+	    timeout = native_cond_timeout(&mutex->cond, timeout_rel);
+	    ret = native_cond_timedwait(&mutex->cond, &mutex->lock, &timeout);
 	    if (ret == ETIMEDOUT) {
 		interrupted = 2;
 		break;

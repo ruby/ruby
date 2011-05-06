@@ -295,6 +295,41 @@ native_cond_timedwait(rb_thread_cond_t *cond, pthread_mutex_t *mutex, struct tim
     return r;
 }
 
+static struct timespec
+native_cond_timeout(rb_thread_cond_t *cond, struct timespec timeout_rel)
+{
+    int ret;
+    struct timeval tv;
+    struct timespec timeout;
+
+#if USE_MONOTONIC_COND
+    if (cond->clockid == CLOCK_MONOTONIC) {
+	ret = clock_gettime(cond->clockid, &timeout);
+	if (ret != 0)
+	    rb_sys_fail("clock_gettime()");
+	goto out;
+    }
+#endif
+
+    if (cond->clockid != CLOCK_REALTIME)
+	rb_bug("unsupported clockid %d", cond->clockid);
+
+    ret = gettimeofday(&tv, 0);
+    if (ret != 0)
+	rb_sys_fail(0);
+    timeout.tv_sec = tv.tv_sec;
+    timeout.tv_nsec = tv.tv_usec * 1000;
+
+  out:
+    timeout.tv_sec += timeout_rel.tv_sec;
+    timeout.tv_nsec += timeout_rel.tv_nsec;
+    if (timeout.tv_nsec >= 1000*1000*1000) {
+	timeout.tv_sec++;
+	timeout.tv_nsec -= 1000*1000*1000;
+    }
+    return timeout;
+}
+
 #define native_cleanup_push pthread_cleanup_push
 #define native_cleanup_pop  pthread_cleanup_pop
 #ifdef HAVE_SCHED_YIELD
@@ -917,49 +952,23 @@ static pthread_t timer_thread_id;
 static rb_thread_cond_t timer_thread_cond;
 static pthread_mutex_t timer_thread_lock = PTHREAD_MUTEX_INITIALIZER;
 
-static struct timespec *
-get_ts(struct timespec *ts, unsigned long nsec)
-{
-    int ret;
-    struct timeval tv;
-
-#if USE_MONOTONIC_COND
-    if (timer_thread_cond.clockid == CLOCK_MONOTONIC) {
-	ret = clock_gettime(CLOCK_MONOTONIC, ts);
-	if (ret != 0)
-	    rb_sys_fail("clock_gettime(CLOCK_MONOTONIC)");
-	goto out;
-    }
-#endif
-
-    if (timer_thread_cond.clockid != CLOCK_REALTIME)
-	rb_bug("unsupported clockid %d", timer_thread_cond.clockid);
-
-    ret = gettimeofday(&tv, 0);
-    if (ret != 0)
-	rb_sys_fail(0);
-    ts->tv_sec = tv.tv_sec;
-    ts->tv_nsec = tv.tv_usec * 1000;
-
-  out:
-    ts->tv_nsec += nsec;
-    if (ts->tv_nsec >= PER_NANO) {
-	ts->tv_sec++;
-	ts->tv_nsec -= PER_NANO;
-    }
-    return ts;
-}
-
 static void *
 thread_timer(void *dummy)
 {
-    struct timespec ts;
+    struct timespec timeout_10ms;
+
+    timeout_10ms.tv_sec = 0;
+    timeout_10ms.tv_nsec = 10 * 1000 * 1000;
 
     native_mutex_lock(&timer_thread_lock);
     native_cond_broadcast(&timer_thread_cond);
-#define WAIT_FOR_10MS() native_cond_timedwait(&timer_thread_cond, &timer_thread_lock, get_ts(&ts, PER_NANO/100))
     while (system_working > 0) {
-	int err = WAIT_FOR_10MS();
+	int err;
+	struct timespec timeout;
+
+	timeout = native_cond_timeout(&timer_thread_cond, timeout_10ms);
+	err = native_cond_timedwait(&timer_thread_cond, &timer_thread_lock,
+				    &timeout);
 	if (err == ETIMEDOUT);
 	else if (err == 0 || err == EINTR) {
 	    if (rb_signal_buff_size() == 0) break;
