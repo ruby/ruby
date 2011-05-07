@@ -1,3 +1,8 @@
+Sat May  7 23:56:56 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/io/wait/test_io_wait.rb: skip tests if the platform is
+	  mswin.
+
 Sat May  7 22:43:48 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_fd_zero): remove redundant zero fill.
