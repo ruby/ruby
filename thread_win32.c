@@ -393,6 +393,7 @@ native_mutex_destroy(rb_thread_lock_t *lock)
 
 struct cond_event_entry {
     struct cond_event_entry* next;
+    struct cond_event_entry* prev;
     HANDLE event;
 };
 
@@ -401,9 +402,16 @@ native_cond_signal(rb_thread_cond_t *cond)
 {
     /* cond is guarded by mutex */
     struct cond_event_entry *e = cond->next;
+    struct cond_event_entry *head = (struct cond_event_entry*)cond;
 
-    if (e) {
-	cond->next = e->next;
+    if (e != head) {
+	struct cond_event_entry *next = e->next;
+	struct cond_event_entry *prev = e->prev;
+
+	prev->next = next;
+	next->prev = prev;
+	e->next = e->prev = e;
+
 	SetEvent(e->event);
     }
     else {
@@ -416,11 +424,19 @@ native_cond_broadcast(rb_thread_cond_t *cond)
 {
     /* cond is guarded by mutex */
     struct cond_event_entry *e = cond->next;
-    cond->next = 0;
+    struct cond_event_entry *head = (struct cond_event_entry*)cond;
 
-    while (e) {
+    while (e != head) {
+	struct cond_event_entry *next = e->next;
+	struct cond_event_entry *prev = e->prev;
+
 	SetEvent(e->event);
-	e = e->next;
+
+	prev->next = next;
+	next->prev = prev;
+	e->next = e->prev = e;
+
+	e = next;
     }
 }
 
@@ -430,19 +446,16 @@ __cond_timedwait(rb_thread_cond_t *cond, rb_thread_lock_t *mutex, unsigned long 
 {
     DWORD r;
     struct cond_event_entry entry;
+    struct cond_event_entry *head = (struct cond_event_entry*)cond;
 
-    entry.next = 0;
     entry.event = CreateEvent(0, FALSE, FALSE, 0);
+    entry.mutex = mutex;
 
     /* cond is guarded by mutex */
-    if (cond->next) {
-	cond->last->next = &entry;
-	cond->last = &entry;
-    }
-    else {
-	cond->next = &entry;
-	cond->last = &entry;
-    }
+    entry.next = head;
+    entry.prev = head->prev;
+    head->prev->next = &entry;
+    head->prev = &entry;
 
     native_mutex_unlock(mutex);
     {
@@ -452,6 +465,9 @@ __cond_timedwait(rb_thread_cond_t *cond, rb_thread_lock_t *mutex, unsigned long 
 	}
     }
     native_mutex_lock(mutex);
+
+    entry.prev->next = entry.next;
+    entry.next->prev = entry.prev;
 
     w32_close_handle(entry.event);
     return (r == WAIT_OBJECT_0) ? 0 : ETIMEDOUT;
@@ -537,8 +553,8 @@ native_cond_timeout(rb_thread_cond_t *cond, struct timespec timeout_rel)
 static void
 native_cond_initialize(rb_thread_cond_t *cond, int flags)
 {
-    cond->next = 0;
-    cond->last = 0;
+    cond->next = (struct cond_event_entry *)cond;
+    cond->prev = (struct cond_event_entry *)cond;
 }
 
 static void

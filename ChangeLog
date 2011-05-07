@@ -1,3 +1,18 @@
+Sat May  7 15:15:10 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	fix win32 native_cond_timedwait() makes SIGSEGV.
+
+	* thread_win32.h (rb_thread_cond_struct): add prev field instead of last.
+	  (ie cond_event_entry is now using double linked list instead of single)
+	* thread_win32.c (cond_event_entry): add prev field.
+
+	* thread_win32.c (__cond_timedwait): remove entry properly if timeout
+	  was happen.
+
+	* thread_win32.c (native_cond_signal): change for double linked list.
+	* thread_win32.c (native_cond_broadcast): ditto.
+	* thread_win32.c (native_cond_initialize): ditto.
+
 Sat May  7 12:41:04 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 	fix mutex deadlock test hang-up.
 

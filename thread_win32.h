@@ -25,7 +25,7 @@ typedef HANDLE rb_thread_id_t;
 typedef CRITICAL_SECTION rb_thread_lock_t;
 typedef struct rb_thread_cond_struct {
     struct cond_event_entry *next;
-    struct cond_event_entry *last;
+    struct cond_event_entry *prev;
 } rb_thread_cond_t;
 
 typedef struct native_thread_data_struct {
