@@ -2320,7 +2320,7 @@ rb_thread_priority_set(VALUE thread, VALUE prio)
  */
 
 void
-rb_fd_init(volatile rb_fdset_t *fds)
+rb_fd_init(rb_fdset_t *fds)
 {
     fds->maxfd = 0;
     fds->fdset = ALLOC(fd_set);
@@ -2437,7 +2437,7 @@ rb_fd_select(int n, rb_fdset_t *readfds, rb_fdset_t *writefds, rb_fdset_t *excep
 #elif defined(_WIN32)
 
 void
-rb_fd_init(volatile rb_fdset_t *set)
+rb_fd_init(rb_fdset_t *set)
 {
     set->capa = FD_SETSIZE;
     set->fdset = ALLOC(fd_set);

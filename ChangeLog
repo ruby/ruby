@@ -1,3 +1,7 @@
+Sat May  7 22:38:04 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_fd_init): remove volatile qualifier.
+
 Sat May  7 22:34:29 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_fd_init_copy): new internal api. It provide efficient

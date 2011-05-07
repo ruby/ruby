@@ -244,7 +244,7 @@ typedef struct {
     fd_set *fdset;
 } rb_fdset_t;
 
-void rb_fd_init(volatile rb_fdset_t *);
+void rb_fd_init(rb_fdset_t *);
 void rb_fd_term(rb_fdset_t *);
 void rb_fd_zero(rb_fdset_t *);
 void rb_fd_set(int, rb_fdset_t *);
@@ -263,7 +263,7 @@ typedef struct {
     fd_set *fdset;
 } rb_fdset_t;
 
-void rb_fd_init(volatile rb_fdset_t *);
+void rb_fd_init(rb_fdset_t *);
 void rb_fd_term(rb_fdset_t *);
 #define rb_fd_zero(f)		((f)->fdset->fd_count = 0)
 void rb_fd_set(int, rb_fdset_t *);
