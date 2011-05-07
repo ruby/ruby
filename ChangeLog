@@ -1,3 +1,7 @@
+Sat May  7 22:43:48 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_fd_zero): remove redundant zero fill.
+
 Sat May  7 22:38:04 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_fd_init): remove volatile qualifier.

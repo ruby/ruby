@@ -2350,10 +2350,8 @@ rb_fd_term(rb_fdset_t *fds)
 void
 rb_fd_zero(rb_fdset_t *fds)
 {
-    if (fds->fdset) {
+    if (fds->fdset)
 	MEMZERO(fds->fdset, fd_mask, howmany(fds->maxfd, NFDBITS));
-	FD_ZERO(fds->fdset);
-    }
 }
 
 static void
