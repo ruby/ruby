@@ -20,7 +20,9 @@ typedef pthread_mutex_t rb_thread_lock_t;
 
 typedef struct rb_thread_cond_struct {
     pthread_cond_t cond;
+#ifdef HAVE_CLOCKID_T
     clockid_t clockid;
+#endif
 } rb_thread_cond_t;
 
 typedef struct native_thread_data_struct {

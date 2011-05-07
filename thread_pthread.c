@@ -30,8 +30,11 @@ static void native_cond_destroy(rb_thread_cond_t *cond);
 
 #define RB_CONDATTR_CLOCK_MONOTONIC 1
 
-#if defined(HAVE_PTHREAD_CONDATTR_SETCLOCK) && defined(CLOCK_MONOTONIC) && defined(HAVE_CLOCK_GETTIME)
+#if defined(HAVE_PTHREAD_CONDATTR_SETCLOCK) && defined(HAVE_CLOCKID_T) && \
+    defined(CLOCK_REALTIME) && defined(CLOCK_MONOTONIC) && defined(HAVE_CLOCK_GETTIME)
 #define USE_MONOTONIC_COND 1
+#else
+#define USE_MONOTONIC_COND 0
 #endif
 
 #define GVL_SIMPLE_LOCK 0
@@ -230,10 +233,10 @@ native_cond_initialize(rb_thread_cond_t *cond, int flags)
     int r;
     pthread_condattr_t attr;
 
-    cond->clockid = CLOCK_REALTIME;
     pthread_condattr_init(&attr);
 
 #if USE_MONOTONIC_COND
+    cond->clockid = CLOCK_REALTIME;
     if (flags & RB_CONDATTR_CLOCK_MONOTONIC) {
 	r = pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
 	if (r == 0) {
@@ -323,10 +326,10 @@ native_cond_timeout(rb_thread_cond_t *cond, struct timespec timeout_rel)
 	    rb_sys_fail("clock_gettime()");
 	goto out;
     }
-#endif
 
     if (cond->clockid != CLOCK_REALTIME)
 	rb_bug("unsupported clockid %d", cond->clockid);
+#endif
 
     ret = gettimeofday(&tv, 0);
     if (ret != 0)

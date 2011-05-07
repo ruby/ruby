@@ -1,3 +1,10 @@
+Sat May  7 18:28:37 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (USE_MONOTONIC_COND): check the availability
+	  more strictly.
+
+	* thread_pthread.h (rb_thread_cond_t): ditto.
+
 Sat May  7 15:18:06 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 	fix incorrect native_cond_signal call when deadlock was detected.
 
