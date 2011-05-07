@@ -904,7 +904,7 @@ class TestIO < Test::Unit::TestCase
     with_pipe do |r, w|
       s = ""
       t = Thread.new { r.readpartial(5, s) }
-      0 until s.size == 5
+      Thread.pass until s.size == 5
       assert_raise(RuntimeError) { s.clear }
       w.write "foobarbaz"
       w.close
@@ -939,7 +939,7 @@ class TestIO < Test::Unit::TestCase
     with_pipe do |r, w|
       s = ""
       t = Thread.new { r.read(5, s) }
-      0 until s.size == 5
+      Thread.pass until s.size == 5
       assert_raise(RuntimeError) { s.clear }
       w.write "foobarbaz"
       w.close
