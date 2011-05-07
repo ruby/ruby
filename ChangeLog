@@ -9,7 +9,7 @@ Sat May  7 15:18:06 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 	fix incorrect native_cond_signal call when deadlock was detected.
 
 	* thread.c (lock_func): timedwait don't touch cond_waiting and
-	  cond_notifid variables.
+	  cond_notified variables.
 
 Sat May  7 15:15:10 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
@@ -116,7 +116,7 @@ Fri May  6 15:01:11 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
 	  is a wrong idea because when using alloca there is always risk
 	  of integer overflow.  A function that accepts outer-process
 	  resources like this should not blindly trust its inputs.  In
-	  this particular case we just want to generate miliseconds
+	  this particular case we just want to generate milliseconds
 	  resolution by strtod() so the string in question needs no more
 	  length than what we originally have.  Ignoring lesser
 	  significant digits should suffice I believe.
