@@ -471,7 +471,7 @@ abs_timespec_to_timeout_ms(struct timespec *ts)
 
     gettimeofday(&now, NULL);
     tv.tv_sec = ts->tv_sec;
-    tv.tv_usec = ts->tv_nsec;
+    tv.tv_usec = ts->tv_nsec / 1000;
 
     if (!rb_w32_time_subtract(&tv, &now))
 	return 0;

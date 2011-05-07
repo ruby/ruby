@@ -1,3 +1,9 @@
+Sat May  7 12:41:04 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+	fix mutex deadlock test hang-up.
+
+	* thread_win32.c (abs_timespec_to_timeout_ms): fix 1000x calculation
+	  mistake. (ie fix hang-up native_cond_timedwait())
+
 Sat May  7 03:14:13 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	sleep_cond use monotonic time if possible.
