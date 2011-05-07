@@ -1,3 +1,9 @@
+Sat May  7 22:34:29 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_fd_init_copy): new internal api. It provide efficient
+	  copy constructor semantics.
+	* thread.c (do_select): use rb_fd_init_copy().
+
 Sat May  7 15:18:06 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 	fix incorrect native_cond_signal call when deadlock was detected.
 

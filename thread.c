@@ -2328,6 +2328,18 @@ rb_fd_init(volatile rb_fdset_t *fds)
 }
 
 void
+rb_fd_init_copy(rb_fdset_t *dst, rb_fdset_t *src)
+{
+    size_t size = howmany(rb_fd_max(src), NFDBITS) * sizeof(fd_mask);
+
+    if (size < sizeof(fd_set))
+	size = sizeof(fd_set);
+    dst->maxfd = src->maxfd;
+    dst->fdset = xmalloc(size);
+    memcpy(dst->fdset, src->fdset, size);
+}
+
+void
 rb_fd_term(rb_fdset_t *fds)
 {
     if (fds->fdset) xfree(fds->fdset);
@@ -2433,6 +2445,13 @@ rb_fd_init(volatile rb_fdset_t *set)
 }
 
 void
+rb_fd_init_copy(rb_fdset_t *dst, rb_fdset_t *src)
+{
+    rb_fd_init(dst);
+    rb_fd_copy(dst, src);
+}
+
+void
 rb_fd_term(rb_fdset_t *set)
 {
     xfree(set->fdset);
@@ -2523,18 +2542,12 @@ do_select(int n, rb_fdset_t *read, rb_fdset_t *write, rb_fdset_t *except,
 	timeout = &wait_rest;
     }
 
-    if (read) {
-	rb_fd_init(&orig_read);
-	rb_fd_copy(&orig_read, read);
-    }
-    if (write) {
-	rb_fd_init(&orig_write);
-	rb_fd_copy(&orig_write, write);
-    }
-    if (except) {
-	rb_fd_init(&orig_except);
-	rb_fd_copy(&orig_except, except);
-    }
+    if (read)
+	rb_fd_init_copy(&orig_read, read);
+    if (write)
+	rb_fd_init_copy(&orig_write, write);
+    if (except)
+	rb_fd_init_copy(&orig_except, except);
 
   retry:
     lerrno = 0;
