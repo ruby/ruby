@@ -449,7 +449,6 @@ __cond_timedwait(rb_thread_cond_t *cond, rb_thread_lock_t *mutex, unsigned long 
     struct cond_event_entry *head = (struct cond_event_entry*)cond;
 
     entry.event = CreateEvent(0, FALSE, FALSE, 0);
-    entry.mutex = mutex;
 
     /* cond is guarded by mutex */
     entry.next = head;
