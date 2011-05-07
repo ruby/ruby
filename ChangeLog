@@ -1,7 +1,7 @@
-Sat May  7 23:56:56 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+Sun May  8 00:13:05 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* test/io/wait/test_io_wait.rb: skip tests if the platform is
-	  mswin.
+	* test/io/wait/test_io_wait.rb: use Socket.pair instaed of pipe.
+	  Windows can only treat a socket.
 
 Sat May  7 22:43:48 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
