@@ -3423,7 +3423,6 @@ lock_func(rb_thread_t *th, mutex_t *mutex, int timeout_ms)
 	    break;
 	}
 
-	mutex->cond_waiting++;
 	if (timeout_ms) {
 	    int ret;
 	    struct timespec timeout_rel;
@@ -3439,9 +3438,10 @@ lock_func(rb_thread_t *th, mutex_t *mutex, int timeout_ms)
 	    }
 	}
 	else {
+	    mutex->cond_waiting++;
 	    native_cond_wait(&mutex->cond, &mutex->lock);
+	    mutex->cond_notified--;
 	}
-	mutex->cond_notified--;
 
 	if (RUBY_VM_INTERRUPTED(th)) {
 	    interrupted = 1;

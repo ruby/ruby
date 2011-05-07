@@ -1,3 +1,9 @@
+Sat May  7 15:18:06 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+	fix incorrect native_cond_signal call when deadlock was detected.
+
+	* thread.c (lock_func): timedwait don't touch cond_waiting and
+	  cond_notifid variables.
+
 Sat May  7 15:15:10 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	fix win32 native_cond_timedwait() makes SIGSEGV.
