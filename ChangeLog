@@ -1,3 +1,9 @@
+Sun May  8 05:19:37 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/io/wait/test_io_wait.rb: Linux socketpair(2) only support
+	  AF_UNIX, but windows socketpair doesn't support it. we can't
+	  avoid platform check. sigh!
+
 Sun May  8 00:13:05 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/io/wait/test_io_wait.rb: use Socket.pair instaed of pipe.
