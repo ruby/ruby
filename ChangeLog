@@ -1,3 +1,11 @@
+Sun May  8 21:02:31 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* test/ruby/test_{complex2,complexrational}.rb: NEVER SKIP.
+
+Sun May  8 21:01:21 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* test/date/test_date_base.rb: fixed.
+
 Sun May  8 20:54:11 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* test/date/*.rb: NEVER SKIP.
