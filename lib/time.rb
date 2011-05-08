@@ -519,7 +519,7 @@ class Time
   def xmlschema(fraction_digits=0)
     sprintf('%0*d-%02d-%02dT%02d:%02d:%02d',
       year < 0 ? 5 : 4, year, mon, day, hour, min, sec) +
-    if fraction_digits == 0
+    if fraction_digits <= 0
       ''
     else
       '.' + sprintf('%0*d', fraction_digits, (subsec * 10**fraction_digits).floor)

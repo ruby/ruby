@@ -1,3 +1,7 @@
+Sun May  8 19:04:15 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/time.rb (xmlschema): avoid passing any negative numbers.
+
 Sun May  8 18:40:03 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_{parse,strptime}.c: introduced some macros.
