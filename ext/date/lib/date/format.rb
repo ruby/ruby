@@ -419,7 +419,7 @@ class Date
 	:min => $6.to_i,
 	:sec => $7.to_i,
 	:zone => $8,
-	:offset => zone_to_diff($8)
+	:offset => 0
       }
     elsif /\A\s*(#{Format::DAYS.keys.join('|')})\s*,\s+
 	(\d{2})\s*-\s*
@@ -440,7 +440,7 @@ class Date
 	:min => $6.to_i,
 	:sec => $7.to_i,
 	:zone => $8,
-	:offset => zone_to_diff($8)
+	:offset => 0
       }
     elsif /\A\s*(#{Format::ABBR_DAYS.keys.join('|')})\s+
 	(#{Format::ABBR_MONTHS.keys.join('|')})\s+

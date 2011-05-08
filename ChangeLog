@@ -1,3 +1,7 @@
+Sun May  8 17:04:55 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/lib/date/format.rb (_httpdate): omitted to call zone_to_diff.
+
 Sun May  8 16:56:19 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c (date_s_test_*): use macros.
