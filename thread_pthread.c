@@ -362,12 +362,14 @@ native_cond_timeout(rb_thread_cond_t *cond, struct timespec timeout_rel)
 #define native_thread_yield() ((void)0)
 #endif
 
-#ifndef __CYGWIN__
-static void add_signal_thread_list(rb_thread_t *th);
+#if defined(SIGVTALRM) && !defined(__CYGWIN__) && !defined(__SYMBIAN32__)
+#define USE_SIGNAL_THREAD_LIST 1
 #endif
+#ifdef USE_SIGNAL_THREAD_LIST
+static void add_signal_thread_list(rb_thread_t *th);
 static void remove_signal_thread_list(rb_thread_t *th);
-
 static rb_thread_lock_t signal_thread_list_lock;
+#endif
 
 static pthread_key_t ruby_native_thread_key;
 
@@ -399,7 +401,9 @@ Init_native_thread(void)
     pthread_key_create(&ruby_native_thread_key, NULL);
     th->thread_id = pthread_self();
     native_thread_init(th);
+#ifdef USE_SIGNAL_THREAD_LIST
     native_mutex_initialize(&signal_thread_list_lock);
+#endif
     posix_signal(SIGVTALRM, null_func);
 }
 
@@ -808,27 +812,6 @@ ubf_pthread_cond_signal(void *ptr)
     native_cond_signal(&th->native_thread_data.sleep_cond);
 }
 
-#if !defined(__CYGWIN__) && !defined(__SYMBIAN32__)
-static void
-ubf_select_each(rb_thread_t *th)
-{
-    thread_debug("ubf_select_each (%p)\n", (void *)th->thread_id);
-    if (th) {
-	pthread_kill(th->thread_id, SIGVTALRM);
-    }
-}
-
-static void
-ubf_select(void *ptr)
-{
-    rb_thread_t *th = (rb_thread_t *)ptr;
-    add_signal_thread_list(th);
-    ubf_select_each(th);
-}
-#else
-#define ubf_select 0
-#endif
-
 #define PER_NANO 1000000000
 
 static void
@@ -874,17 +857,16 @@ native_sleep(rb_thread_t *th, struct timeval *timeout_tv)
     thread_debug("native_sleep done\n");
 }
 
+#ifdef USE_SIGNAL_THREAD_LIST
 struct signal_thread_list {
     rb_thread_t *th;
     struct signal_thread_list *prev;
     struct signal_thread_list *next;
 };
 
-#ifndef __CYGWIN__
 static struct signal_thread_list signal_thread_list_anchor = {
     0, 0, 0,
 };
-#endif
 
 #define FGLOCK(lock, body) do { \
     native_mutex_lock(lock); \
@@ -909,7 +891,6 @@ print_signal_list(char *str)
 }
 #endif
 
-#ifndef __CYGWIN__
 static void
 add_signal_thread_list(rb_thread_t *th)
 {
@@ -935,7 +916,6 @@ add_signal_thread_list(rb_thread_t *th)
 	});
     }
 }
-#endif
 
 static void
 remove_signal_thread_list(rb_thread_t *th)
@@ -955,10 +935,45 @@ remove_signal_thread_list(rb_thread_t *th)
 	    free(list); /* ok */
 	});
     }
-    else {
-	/* */
+}
+
+static void
+ubf_select_each(rb_thread_t *th)
+{
+    thread_debug("ubf_select_each (%p)\n", (void *)th->thread_id);
+    if (th) {
+	pthread_kill(th->thread_id, SIGVTALRM);
     }
 }
+
+static void
+ubf_select(void *ptr)
+{
+    rb_thread_t *th = (rb_thread_t *)ptr;
+    add_signal_thread_list(th);
+    ubf_select_each(th);
+}
+
+static void
+ping_signal_thread_list(void) {
+    if (signal_thread_list_anchor.next) {
+	FGLOCK(&signal_thread_list_lock, {
+	    struct signal_thread_list *list;
+
+	    list = signal_thread_list_anchor.next;
+	    while (list) {
+		ubf_select_each(list->th);
+		list = list->next;
+	    }
+	});
+    }
+}
+#else /* USE_SIGNAL_THREAD_LIST */
+static void add_signal_thread_list(rb_thread_t *th) { }
+static void remove_signal_thread_list(rb_thread_t *th) { }
+#define ubf_select 0
+static void ping_signal_thread_list(void) { }
+#endif /* USE_SIGNAL_THREAD_LIST */
 
 static pthread_t timer_thread_id;
 static rb_thread_cond_t timer_thread_cond;
@@ -987,18 +1002,7 @@ thread_timer(void *dummy)
 	}
 	else rb_bug_errno("thread_timer/timedwait", err);
 
-#if !defined(__CYGWIN__) && !defined(__SYMBIAN32__)
-	if (signal_thread_list_anchor.next) {
-	    FGLOCK(&signal_thread_list_lock, {
-		struct signal_thread_list *list;
-		list = signal_thread_list_anchor.next;
-		while (list) {
-		    ubf_select_each(list->th);
-		    list = list->next;
-		}
-	    });
-	}
-#endif
+	ping_signal_thread_list();
 	timer_thread_function(dummy);
     }
     native_mutex_unlock(&timer_thread_lock);

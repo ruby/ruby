@@ -1,3 +1,9 @@
+Sun May  8 10:24:16 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c: cleanup signal_thread_list related ifdef.
+	  1) we don't have to use #ifdef FOO-PLATFORM directly 2) About
+	  half #ifdef didn't care symbian properly.
+
 Sun May  8 05:19:37 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/io/wait/test_io_wait.rb: Linux socketpair(2) only support
