@@ -96,7 +96,7 @@ class TestDateAttr < Test::Unit::TestCase
   end
 
   def test_nth_kday
-    skip unless Date.new.respond_to?(:nth_kday?, true)
+    skip 'not provided'unless Date.new.respond_to?(:nth_kday?, true)
     assert_equal(false, Date.new(2001,1,14).__send__(:nth_kday?, 1,0))
     assert_equal(true, Date.new(2001,1,14).__send__(:nth_kday?, 2,0))
     assert_equal(false, Date.new(2001,1,14).__send__(:nth_kday?, 3,0))

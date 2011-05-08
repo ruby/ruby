@@ -1,3 +1,7 @@
+Sun May  8 20:32:43 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* test/date/*.rb: reverted 31483.
+
 Sun May  8 19:39:16 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (native_cond_timedwait): add to care EINTR.
@@ -10,6 +14,10 @@ Sun May  8 19:04:15 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 Sun May  8 18:40:03 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_{parse,strptime}.c: introduced some macros.
+
+Sun May  8 17:17:13 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* test/date/*.rb: use skip /w messages.
 
 Sun May  8 17:04:55 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 

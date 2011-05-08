@@ -53,7 +53,7 @@ class TestDateBase < Test::Unit::TestCase
   end
 
   def test_ordinal__julian
-    return unless defined?(Calendar)
+    skip 'not provided'unless defined?(Calendar)
     for j in @from..@to
       m, d, y = julian_from_absolute(absolute_from_julian_day_number(j))
       j0 = julian_day_number_from_absolute(absolute_from_julian(12, 31, y - 1))
@@ -68,7 +68,7 @@ class TestDateBase < Test::Unit::TestCase
   end
 
   def test_ordinal__gregorian
-    return unless defined?(Calendar)
+    skip 'not provided'unless defined?(Calendar)
     for j in @from..@to
       m, d, y = gregorian_from_absolute(absolute_from_julian_day_number(j))
       j0 =
@@ -84,7 +84,7 @@ class TestDateBase < Test::Unit::TestCase
   end
 
   def test_civil__julian
-    return unless defined?(Calendar)
+    skip 'not provided'unless defined?(Calendar)
     for j in @from..@to
       m, d, y = julian_from_absolute(absolute_from_julian_day_number(j))
       j2 = julian_day_number_from_absolute(absolute_from_julian(m, d, y))
@@ -99,7 +99,7 @@ class TestDateBase < Test::Unit::TestCase
   end
 
   def test_civil__gregorian
-    return unless defined?(Calendar)
+    skip 'not provided'unless defined?(Calendar)
     for j in @from..@to
       m, d, y = gregorian_from_absolute(absolute_from_julian_day_number(j))
       j2 = julian_day_number_from_absolute(absolute_from_gregorian(m, d, y))
@@ -114,7 +114,7 @@ class TestDateBase < Test::Unit::TestCase
   end
 
   def test_commercial__gregorian
-    return unless defined?(Calendar)
+    skip 'not provided'unless defined?(Calendar)
     for j in @from..@to
       w, d, y = iso_from_absolute(absolute_from_julian_day_number(j))
       j2 = julian_day_number_from_absolute(absolute_from_iso(w, d, y))
@@ -129,7 +129,7 @@ class TestDateBase < Test::Unit::TestCase
   end
 
   def test_weeknum
-    return unless defined?(Calendar)
+    skip 'not provided'unless defined?(Calendar)
     for j in @from..@to
       for k in 0..1
 	wy, ww, wd = Date.__send__(:jd_to_weeknum, j, k, Date::GREGORIAN)
@@ -140,7 +140,7 @@ class TestDateBase < Test::Unit::TestCase
   end
 
   def test_weeknum__2
-    return unless defined?(Calendar)
+    skip 'not provided'unless defined?(Calendar)
     for j in @from4t..@to4t
       d = Date.jd(j)
       t = Time.mktime(d.year, d.mon, d.mday)
@@ -158,8 +158,8 @@ class TestDateBase < Test::Unit::TestCase
   end
 
   def test_nth_kday
-    return unless defined?(Calendar)
-    return unless (Date.respond_to?(:nth_kday_to_jd, true) &&
+    skip 'not provided'unless defined?(Calendar)
+    skip 'not provided'unless (Date.respond_to?(:nth_kday_to_jd, true) &&
 		 Date.respond_to?(:jd_to_nth_kday, true))
     for y in 1601..2401
       for m in 1..12
@@ -221,7 +221,7 @@ class TestDateBase < Test::Unit::TestCase
 
   def test_valid_jd
     valid_jd_p =  :_valid_jd?
-    return unless Date.respond_to?(valid_jd_p, true)
+    skip 'not provided'unless Date.respond_to?(valid_jd_p, true)
     assert_equal(-1, Date.__send__(valid_jd_p, -1))
     assert_equal(0, Date.__send__(valid_jd_p, 0))
     assert_equal(1, Date.__send__(valid_jd_p, 1))
@@ -230,7 +230,7 @@ class TestDateBase < Test::Unit::TestCase
 
   def test_valid_ordinal
     valid_ordinal_p = :_valid_ordinal?
-    return unless Date.respond_to?(valid_ordinal_p, true)
+    skip 'not provided'unless Date.respond_to?(valid_ordinal_p, true)
     assert_nil(Date.__send__(valid_ordinal_p, 1999,366))
     assert_equal(2451910, Date.__send__(valid_ordinal_p, 2000,366))
     assert_nil(Date.__send__(valid_ordinal_p, 1999,-366))
@@ -245,7 +245,7 @@ class TestDateBase < Test::Unit::TestCase
 
   def test_valid_ordinal__edge
     valid_ordinal_p = :_valid_ordinal?
-    return unless Date.respond_to?(valid_ordinal_p, true)
+    skip 'not provided'unless Date.respond_to?(valid_ordinal_p, true)
     (1601..2400).each do |y|
       d = if Date.leap?(y) then 366 else 365 end
       assert_not_nil(Date.__send__(valid_ordinal_p, y,d))
@@ -271,7 +271,7 @@ class TestDateBase < Test::Unit::TestCase
 
   def test_valid_ordinal__italy
     valid_ordinal_p =  :_valid_ordinal?
-    return unless Date.respond_to?(valid_ordinal_p, true)
+    skip 'not provided'unless Date.respond_to?(valid_ordinal_p, true)
     (1..355).each do |d|
       assert_not_nil(Date.__send__(valid_ordinal_p, 1582,d,Date::ITALY))
     end
@@ -288,7 +288,7 @@ class TestDateBase < Test::Unit::TestCase
 
   def test_valid_ordinal__england
     valid_ordinal_p =  :_valid_ordinal?
-    return unless Date.respond_to?(valid_ordinal_p, true)
+    skip 'not provided'unless Date.respond_to?(valid_ordinal_p, true)
     (1..355).each do |d|
       assert_not_nil(Date.__send__(valid_ordinal_p, 1752,d,Date::ENGLAND))
     end
@@ -299,7 +299,7 @@ class TestDateBase < Test::Unit::TestCase
 
   def test_valid_civil
     valid_civil_p = :_valid_civil?
-    return unless Date.respond_to?(valid_civil_p, true)
+    skip 'not provided'unless Date.respond_to?(valid_civil_p, true)
     assert_nil(Date.__send__(valid_civil_p, 1999,2,29))
     assert_equal(2451604, Date.__send__(valid_civil_p, 2000,2,29))
     assert_nil(Date.__send__(valid_civil_p, 1999,2,-29))
@@ -315,7 +315,7 @@ class TestDateBase < Test::Unit::TestCase
 
   def test_valid_civil__edge
     valid_civil_p = :_valid_civil?
-    return unless Date.respond_to?(valid_civil_p, true)
+    skip 'not provided'unless Date.respond_to?(valid_civil_p, true)
     (1601..2400).each do |y|
       d = if Date.leap?(y) then 29 else 28 end
       assert_not_nil(Date.__send__(valid_civil_p, y,2,d))
@@ -334,7 +334,7 @@ class TestDateBase < Test::Unit::TestCase
 
   def test_valid_civil__italy
     valid_civil_p = :_valid_civil?
-    return unless Date.respond_to?(valid_civil_p, true)
+    skip 'not provided'unless Date.respond_to?(valid_civil_p, true)
     (1..4).each do |d|
       assert_not_nil(Date.__send__(valid_civil_p, 1582,10,d,Date::ITALY))
     end
@@ -363,7 +363,7 @@ class TestDateBase < Test::Unit::TestCase
 
   def test_valid_civil__england
     valid_civil_p = :_valid_civil?
-    return unless Date.respond_to?(valid_civil_p, true)
+    skip 'not provided'unless Date.respond_to?(valid_civil_p, true)
     (1..2).each do |d|
       assert_not_nil(Date.__send__(valid_civil_p, 1752,9,d,Date::ENGLAND))
     end
@@ -386,7 +386,7 @@ class TestDateBase < Test::Unit::TestCase
 
   def test_valid_commercial
     valid_commercial_p = :_valid_commercial?
-    return unless Date.respond_to?(valid_commercial_p, true)
+    skip 'not provided'unless Date.respond_to?(valid_commercial_p, true)
     assert_nil(Date.__send__(valid_commercial_p, 1999,53,1))
     assert_equal(2453367, Date.__send__(valid_commercial_p, 2004,53,1))
     assert_nil(Date.__send__(valid_commercial_p, 1999,-53,-1))
@@ -396,7 +396,7 @@ class TestDateBase < Test::Unit::TestCase
 
   def test_valid_weeknum
     valid_weeknum_p = :_valid_weeknum?
-    return unless Date.respond_to?(valid_weeknum_p, true)
+    skip 'not provided'unless Date.respond_to?(valid_weeknum_p, true)
     assert_nil(Date.__send__(valid_weeknum_p, 1999,53,0, 0))
     assert_equal(2454101, Date.__send__(valid_weeknum_p, 2006,53,0, 0))
     assert_nil(Date.__send__(valid_weeknum_p, 1999,-53,-1, 0))
@@ -411,7 +411,7 @@ class TestDateBase < Test::Unit::TestCase
 
   def test_valid_nth_kday
     valid_nth_kday_p = :_valid_nth_kday?
-    return unless Date.respond_to?(valid_nth_kday_p, true)
+    skip 'not provided'unless Date.respond_to?(valid_nth_kday_p, true)
     assert_nil(Date.__send__(valid_nth_kday_p, 1992,2, 5,0))
     assert_equal(2448682, Date.__send__(valid_nth_kday_p, 1992,2, 5,6))
     assert_equal(2448682, Date.__send__(valid_nth_kday_p, 1992,2, 5,-1))
@@ -421,7 +421,7 @@ class TestDateBase < Test::Unit::TestCase
 
   def test_valid_time
     valid_time_p = :_valid_time?
-    return unless Date.respond_to?(valid_time_p, true)
+    skip 'not provided'unless Date.respond_to?(valid_time_p, true)
     assert_equal(Rational(0), DateTime.__send__(valid_time_p, 0,0,0))
     assert_nil(DateTime.__send__(valid_time_p, 25,59,59))
     assert_nil(DateTime.__send__(valid_time_p, 23,60,59))
