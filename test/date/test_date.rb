@@ -113,27 +113,6 @@ class TestDate < Test::Unit::TestCase
     assert_equal(d2, dt2)
   end
 
-  def test_coerce
-    bug4375 = '[ruby-core:35127]'
-    d = Date.jd(0)
-    d2 = Date.jd(1)
-    others = [1, d2, Date::Infinity.new, nil, Object.new]
-    assert_nothing_raised(bug4375) {
-      others.each do |o|
-        case o
-        when d
-          flunk("expected not to match")
-        end
-      end
-    }
-    assert_nothing_raised(bug4375) {
-      case d
-      when *others
-        flunk("expected not to match")
-      end
-    }
-  end
-
   def test_hash
     h = {}
     h[Date.new(1999,5,23)] = 0

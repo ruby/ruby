@@ -1,3 +1,7 @@
+Sun May  8 20:54:11 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* test/date/*.rb: NEVER SKIP.
+
 Sun May  8 20:37:33 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* test/date/*.rb: reverted 31432.
