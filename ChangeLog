@@ -11,10 +11,6 @@ Sun May  8 18:40:03 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_{parse,strptime}.c: introduced some macros.
 
-Sun May  8 17:17:13 2011  Tadayoshi Funaba  <tadf@dotrb.org>
-
-	* test/date/*.rb: use skip /w messages.
-
 Sun May  8 17:04:55 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/lib/date/format.rb (_httpdate): omitted to call zone_to_diff.
