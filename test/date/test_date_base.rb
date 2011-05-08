@@ -168,7 +168,7 @@ class TestDateBase < Test::Unit::TestCase
     return
 #    skip unless defined?(Calendar)
 #    skip unless (Date.respond_to?(:nth_kday_to_jd, true) &&
-		 Date.respond_to?(:jd_to_nth_kday, true))
+#		 Date.respond_to?(:jd_to_nth_kday, true))
     for y in 1601..2401
       for m in 1..12
 	for n in -5..5
