@@ -4375,13 +4375,11 @@ test_civil(long from, long to, double sg)
 static VALUE
 date_s_test_civil(VALUE klass)
 {
-    double greg = -NUM2DBL(rb_const_get(rb_cFloat, rb_intern("INFINITY")));
-
-    if (!test_civil(MIN_JD, MIN_JD + 366, greg))
+    if (!test_civil(MIN_JD, MIN_JD + 366, GREGORIAN))
 	return Qfalse;
-    if (!test_civil(2305814, 2598007, greg))
+    if (!test_civil(2305814, 2598007, GREGORIAN))
 	return Qfalse;
-    if (!test_civil(MAX_JD - 366, MAX_JD, greg))
+    if (!test_civil(MAX_JD - 366, MAX_JD, GREGORIAN))
 	return Qfalse;
 
     if (!test_civil(MIN_JD, MIN_JD + 366, ITALY))
@@ -4417,13 +4415,11 @@ test_ordinal(long from, long to, double sg)
 static VALUE
 date_s_test_ordinal(VALUE klass)
 {
-    double greg = -NUM2DBL(rb_const_get(rb_cFloat, rb_intern("INFINITY")));
-
-    if (!test_ordinal(MIN_JD, MIN_JD + 366, greg))
+    if (!test_ordinal(MIN_JD, MIN_JD + 366, GREGORIAN))
 	return Qfalse;
-    if (!test_ordinal(2305814, 2598007, greg))
+    if (!test_ordinal(2305814, 2598007, GREGORIAN))
 	return Qfalse;
-    if (!test_ordinal(MAX_JD - 366, MAX_JD, greg))
+    if (!test_ordinal(MAX_JD - 366, MAX_JD, GREGORIAN))
 	return Qfalse;
 
     if (!test_ordinal(MIN_JD, MIN_JD + 366, ITALY))
@@ -4459,13 +4455,11 @@ test_commercial(long from, long to, double sg)
 static VALUE
 date_s_test_commercial(VALUE klass)
 {
-    double greg = -NUM2DBL(rb_const_get(rb_cFloat, rb_intern("INFINITY")));
-
-    if (!test_commercial(MIN_JD, MIN_JD + 366, greg))
+    if (!test_commercial(MIN_JD, MIN_JD + 366, GREGORIAN))
 	return Qfalse;
-    if (!test_commercial(2305814, 2598007, greg))
+    if (!test_commercial(2305814, 2598007, GREGORIAN))
 	return Qfalse;
-    if (!test_commercial(MAX_JD - 366, MAX_JD, greg))
+    if (!test_commercial(MAX_JD - 366, MAX_JD, GREGORIAN))
 	return Qfalse;
 
     if (!test_commercial(MIN_JD, MIN_JD + 366, ITALY))
@@ -4501,15 +4495,14 @@ test_weeknum(long from, long to, int f, double sg)
 static VALUE
 date_s_test_weeknum(VALUE klass)
 {
-    double greg = -NUM2DBL(rb_const_get(rb_cFloat, rb_intern("INFINITY")));
     int f;
 
     for (f = 0; f <= 1; f++) {
-	if (!test_weeknum(MIN_JD, MIN_JD + 366, f, greg))
+	if (!test_weeknum(MIN_JD, MIN_JD + 366, f, GREGORIAN))
 	    return Qfalse;
-	if (!test_weeknum(2305814, 2598007, f, greg))
+	if (!test_weeknum(2305814, 2598007, f, GREGORIAN))
 	    return Qfalse;
-	if (!test_weeknum(MAX_JD - 366, MAX_JD, f, greg))
+	if (!test_weeknum(MAX_JD - 366, MAX_JD, f, GREGORIAN))
 	    return Qfalse;
 
 	if (!test_weeknum(MIN_JD, MIN_JD + 366, f, ITALY))
@@ -4547,13 +4540,11 @@ test_nth_kday(long from, long to, double sg)
 static VALUE
 date_s_test_nth_kday(VALUE klass)
 {
-    double greg = -NUM2DBL(rb_const_get(rb_cFloat, rb_intern("INFINITY")));
-
-    if (!test_nth_kday(MIN_JD, MIN_JD + 366, greg))
+    if (!test_nth_kday(MIN_JD, MIN_JD + 366, GREGORIAN))
 	return Qfalse;
-    if (!test_nth_kday(2305814, 2598007, greg))
+    if (!test_nth_kday(2305814, 2598007, GREGORIAN))
 	return Qfalse;
-    if (!test_nth_kday(MAX_JD - 366, MAX_JD, greg))
+    if (!test_nth_kday(MAX_JD - 366, MAX_JD, GREGORIAN))
 	return Qfalse;
 
     if (!test_nth_kday(MIN_JD, MIN_JD + 366, ITALY))
@@ -4603,6 +4594,7 @@ Init_date_core(void)
     rb_define_alloc_func(cDate, d_lite_s_alloc);
     rb_define_singleton_method(cDate, "new_r!", date_s_new_r_bang, -1);
     rb_define_singleton_method(cDate, "new_l!", date_s_new_l_bang, -1);
+
 #ifndef NDEBUG
     rb_define_private_method(CLASS_OF(cDate), "_valid_jd?",
 			     date_s__valid_jd_p, -1);
@@ -4615,6 +4607,7 @@ Init_date_core(void)
     rb_define_private_method(CLASS_OF(cDate), "_valid_commercial?",
 			     date_s__valid_commercial_p, -1);
 #endif
+
     rb_define_singleton_method(cDate, "valid_jd?", date_s_valid_jd_p, -1);
     rb_define_singleton_method(cDate, "valid_ordinal?",
 			       date_s_valid_ordinal_p, -1);
@@ -4622,6 +4615,7 @@ Init_date_core(void)
     rb_define_singleton_method(cDate, "valid_date?", date_s_valid_civil_p, -1);
     rb_define_singleton_method(cDate, "valid_commercial?",
 			       date_s_valid_commercial_p, -1);
+
     rb_define_singleton_method(cDate, "jd", date_s_jd, -1);
     rb_define_singleton_method(cDate, "ordinal", date_s_ordinal, -1);
     rb_define_singleton_method(cDate, "civil", date_s_civil, -1);
