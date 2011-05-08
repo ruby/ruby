@@ -52,6 +52,8 @@ static const char *extz_pats[] = {
 #define f_aref(o,i) rb_funcall(o, rb_intern("[]"), 1, i)
 #define f_end(o,i) rb_funcall(o, rb_intern("end"), 1, i)
 
+#define issign(c) ((c) == '-' || (c) == '+')
+
 static int
 num_pattern_p(const char *s)
 {
@@ -344,7 +346,7 @@ date__strptime_internal(const char *str, size_t slen,
 		    int sign = 1;
 		    size_t osi;
 
-		    if (str[si] == '-' || str[si] == '+') {
+		    if (issign(str[si])) {
 			if (str[si] == '-')
 			    sign = -1;
 			si++;
@@ -526,7 +528,7 @@ date__strptime_internal(const char *str, size_t slen,
 		      VALUE n;
 		      int sign = 1;
 
-		      if (str[si] == '-' || str[si] == '+') {
+		      if (issign(str[si])) {
 			  if (str[si] == '-')
 			      sign = -1;
 			  si++;

@@ -53,6 +53,9 @@ static const char *abbr_months[] = {
     "jul", "aug", "sep", "oct", "nov", "dec"
 };
 
+#define issign(c) ((c) == '-' || (c) == '+')
+#define asp_string() rb_str_new(" ", 1)
+
 static void
 s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 {
@@ -87,12 +90,11 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	size_t l;
 
 	s = RSTRING_PTR(y);
-	while (*s != '-' && *s != '+' && !isdigit(*s))
+	while (!issign(*s) && !isdigit(*s))
 	    s++;
 	bp = s;
-	if (*s == '-' || *s == '+') {
+	if (issign(*s))
 	    s++;
-	}
 	l = strspn(s, "0123456789");
 	ep = s + l;
 	if (*ep) {
@@ -137,10 +139,10 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	VALUE iy;
 
 	s = RSTRING_PTR(y);
-	while (*s != '-' && *s != '+' && !isdigit(*s))
+	while (!issign(*s) && !isdigit(*s))
 	    s++;
 	bp = s;
-	if (*s == '-' || *s == '+') {
+	if (issign(*s)) {
 	    s++;
 	    sign = 1;
 	}
@@ -253,8 +255,7 @@ subs(VALUE str, VALUE pat, VALUE hash, int (*cb)(VALUE, VALUE))
 
 	be = f_begin(m, INT2FIX(0));
 	en = f_end(m, INT2FIX(0));
-	f_aset2(str, be, LONG2NUM(NUM2LONG(en) - NUM2LONG(be)),
-		rb_str_new(" ", 1));
+	f_aset2(str, be, LONG2NUM(NUM2LONG(en) - NUM2LONG(be)), asp_string());
 	(*cb)(m, hash);
     }
 
@@ -1243,7 +1244,7 @@ date__parse(VALUE str, VALUE comp)
 
 	str = rb_str_dup(str);
 	REGCOMP_0(pat);
-	f_gsub_bang(str, pat, rb_str_new(" ", 1));
+	f_gsub_bang(str, pat, asp_string());
     }
 
     hash = rb_hash_new();
