@@ -897,7 +897,7 @@ add_signal_thread_list(rb_thread_t *th)
     if (!th->native_thread_data.signal_thread_list) {
 	FGLOCK(&signal_thread_list_lock, {
 	    struct signal_thread_list *list =
-	      malloc(sizeof(struct signal_thread_list));
+	      xmalloc(sizeof(struct signal_thread_list));
 
 	    if (list == 0) {
 		fprintf(stderr, "[FATAL] failed to allocate memory\n");
@@ -932,7 +932,7 @@ remove_signal_thread_list(rb_thread_t *th)
 	    }
 	    th->native_thread_data.signal_thread_list = 0;
 	    list->th = 0;
-	    free(list); /* ok */
+	    xfree(list); /* ok */
 	});
     }
 }

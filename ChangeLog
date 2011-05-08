@@ -1,3 +1,10 @@
+Sun May  8 10:54:06 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (add_signal_thread_list): use xmalloc instead
+	  of malloc.
+	* thread_pthread.c (remove_signal_thread_list): use xfree instead
+	  of free.
+
 Sun May  8 10:24:16 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c: cleanup signal_thread_list related ifdef.
