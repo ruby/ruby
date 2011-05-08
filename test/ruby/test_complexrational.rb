@@ -3,8 +3,7 @@ require 'test/unit'
 class ComplexRational_Test < Test::Unit::TestCase
 
   def test_rat_srat
-    return
-#    skip unless defined?(Rational)
+    skip unless defined?(Rational)
 
     c = SimpleRat(1,3)
     cc = Rational(3,2)

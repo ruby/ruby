@@ -1,3 +1,8 @@
+Sun May  8 22:17:24 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* test/ruby/test_{complex2,complexrational}.rb: use skip.
+	* test/date/*.rb: ditto.
+
 Sun May  8 21:02:31 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* test/ruby/test_{complex2,complexrational}.rb: NEVER SKIP.

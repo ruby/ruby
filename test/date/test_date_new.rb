@@ -211,8 +211,7 @@ class TestDateNew < Test::Unit::TestCase
   end
 
   def test_weeknum
-    return
-#    skip unless Date.respond_to?(:weeknum, true)
+    skip unless Date.respond_to?(:weeknum, true)
     d = Date.__send__(:weeknum)
     dt = DateTime.__send__(:weeknum)
     assert_equal([-4712, 1, 1], [d.year, d.mon, d.mday])
@@ -235,8 +234,7 @@ class TestDateNew < Test::Unit::TestCase
   end
 
   def test_nth_kday
-    return
-#    skip unless Date.respond_to?(:nth_kday, true)
+    skip unless Date.respond_to?(:nth_kday, true)
     d = Date.__send__(:nth_kday)
     dt = DateTime.__send__(:nth_kday)
     assert_equal([-4712, 1, 1], [d.year, d.mon, d.mday])

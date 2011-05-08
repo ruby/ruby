@@ -3,8 +3,7 @@ require 'test/unit'
 class Complex_Test2 < Test::Unit::TestCase
 
   def test_kumi
-    return
-#    skip unless defined?(Rational)
+    skip unless defined?(Rational)
 
     assert_equal(Complex(1, 0), +Complex(1, 0))
     assert_equal(Complex(-1, 0), -Complex(1, 0))
