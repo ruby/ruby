@@ -1,3 +1,7 @@
+Sun May  8 20:37:33 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* test/date/*.rb: reverted 31432.
+
 Sun May  8 20:32:43 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* test/date/*.rb: reverted 31483.
