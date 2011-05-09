@@ -2182,8 +2182,7 @@ int_chr(int argc, VALUE *argv, VALUE num)
  */
 
 static VALUE
-int_ord(num)
-    VALUE num;
+int_ord(VALUE num)
 {
     return num;
 }

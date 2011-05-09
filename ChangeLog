@@ -1,3 +1,8 @@
+Mon May  9 11:52:48 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* numeric.c (int_ord): remove K&R style.
+	  patched by Daehyub Kim. https://github.com/ruby/ruby/pull/17
+
 Sun May  8 22:17:24 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* test/ruby/test_{complex2,complexrational}.rb: use skip.
