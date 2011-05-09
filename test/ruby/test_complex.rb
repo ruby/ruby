@@ -689,6 +689,15 @@ class Complex_Test < Test::Unit::TestCase
     assert_equal(Complex(0.0,3.0), '3.0i'.to_c)
     assert_equal(Complex(0.0,-3.0), '-3.0i'.to_c)
 
+    assert_equal(Complex(5.1), '5.1'.to_c)
+    assert_equal(Complex(-5.2), '-5.2'.to_c)
+    assert_equal(Complex(5.3,3.4), '5.3+3.4i'.to_c)
+    assert_equal(Complex(-5.5,3.6), '-5.5+3.6i'.to_c)
+    assert_equal(Complex(5.3,-3.4), '5.3-3.4i'.to_c)
+    assert_equal(Complex(-5.5,-3.6), '-5.5-3.6i'.to_c)
+    assert_equal(Complex(0.0,3.1), '3.1i'.to_c)
+    assert_equal(Complex(0.0,-3.2), '-3.2i'.to_c)
+
     assert_equal(Complex(5.0), '5e0'.to_c)
     assert_equal(Complex(-5.0), '-5e0'.to_c)
     assert_equal(Complex(5.0,3.0), '5e0+3e0i'.to_c)
@@ -697,6 +706,15 @@ class Complex_Test < Test::Unit::TestCase
     assert_equal(Complex(-5.0,-3.0), '-5e0-3e0i'.to_c)
     assert_equal(Complex(0.0,3.0), '3e0i'.to_c)
     assert_equal(Complex(0.0,-3.0), '-3e0i'.to_c)
+
+    assert_equal(Complex(5e1), '5e1'.to_c)
+    assert_equal(Complex(-5e2), '-5e2'.to_c)
+    assert_equal(Complex(5e3,3e4), '5e003+3e4i'.to_c)
+    assert_equal(Complex(-5e5,3e6), '-5e5+3e006i'.to_c)
+    assert_equal(Complex(5e3,-3e4), '5e003-3e4i'.to_c)
+    assert_equal(Complex(-5e5,-3e6), '-5e5-3e006i'.to_c)
+    assert_equal(Complex(0.0,3e1), '3e1i'.to_c)
+    assert_equal(Complex(0.0,-3e2), '-3e2i'.to_c)
 
     assert_equal(Complex(0.33), '.33'.to_c)
     assert_equal(Complex(0.33), '0.33'.to_c)
@@ -740,6 +758,15 @@ class Complex_Test < Test::Unit::TestCase
     assert_equal(Complex(0.0,3.0), Complex('3.0i'))
     assert_equal(Complex(0.0,-3.0), Complex('-3.0i'))
 
+    assert_equal(Complex(5.1), Complex('5.1'))
+    assert_equal(Complex(-5.2), Complex('-5.2'))
+    assert_equal(Complex(5.3,3.4), Complex('5.3+3.4i'))
+    assert_equal(Complex(-5.5,3.6), Complex('-5.5+3.6i'))
+    assert_equal(Complex(5.3,-3.4), Complex('5.3-3.4i'))
+    assert_equal(Complex(-5.5,-3.6), Complex('-5.5-3.6i'))
+    assert_equal(Complex(0.0,3.1), Complex('3.1i'))
+    assert_equal(Complex(0.0,-3.2), Complex('-3.2i'))
+
     assert_equal(Complex(5.0), Complex('5e0'))
     assert_equal(Complex(-5.0), Complex('-5e0'))
     assert_equal(Complex(5.0,3.0), Complex('5e0+3e0i'))
@@ -748,6 +775,15 @@ class Complex_Test < Test::Unit::TestCase
     assert_equal(Complex(-5.0,-3.0), Complex('-5e0-3e0i'))
     assert_equal(Complex(0.0,3.0), Complex('3e0i'))
     assert_equal(Complex(0.0,-3.0), Complex('-3e0i'))
+
+    assert_equal(Complex(5e1), Complex('5e1'))
+    assert_equal(Complex(-5e2), Complex('-5e2'))
+    assert_equal(Complex(5e3,3e4), Complex('5e003+3e4i'))
+    assert_equal(Complex(-5e5,3e6), Complex('-5e5+3e006i'))
+    assert_equal(Complex(5e3,-3e4), Complex('5e003-3e4i'))
+    assert_equal(Complex(-5e5,-3e6), Complex('-5e5-3e006i'))
+    assert_equal(Complex(0.0,3e1), Complex('3e1i'))
+    assert_equal(Complex(0.0,-3e2), Complex('-3e2i'))
 
     assert_equal(Complex(0.33), Complex('.33'))
     assert_equal(Complex(0.33), Complex('0.33'))

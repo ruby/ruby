@@ -851,6 +851,13 @@ class Rational_Test < Test::Unit::TestCase
 #    assert_equal(Rational(5,-3), '5e0/-3'.to_r)
 #    assert_equal(Rational(-5,-3), '-5e0/-3'.to_r)
 
+    assert_equal(Rational(5e1), '5e1'.to_r)
+    assert_equal(Rational(-5e2), '-5e2'.to_r)
+    assert_equal(Rational(5e3,3), '5e003/3'.to_r)
+    assert_equal(Rational(-5e4,3), '-5e004/3'.to_r)
+#    assert_equal(Rational(5e1,-3), '5e1/-3'.to_r)
+#    assert_equal(Rational(-5e2,-3), '-5e2/-3'.to_r)
+
     assert_equal(Rational(33,100), '.33'.to_r)
     assert_equal(Rational(33,100), '0.33'.to_r)
     assert_equal(Rational(-33,100), '-.33'.to_r)
@@ -887,6 +894,13 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(Rational(-5,3), Rational('-5e0/3'))
 #    assert_equal(Rational(5,-3), Rational('5e0/-3'))
 #    assert_equal(Rational(-5,-3), Rational('-5e0/-3'))
+
+    assert_equal(Rational(5e1), Rational('5e1'))
+    assert_equal(Rational(-5e2), Rational('-5e2'))
+    assert_equal(Rational(5e3,3), Rational('5e003/3'))
+    assert_equal(Rational(-5e4,3), Rational('-5e004/3'))
+#    assert_equal(Rational(5e1,-3), Rational('5e1/-3'))
+#    assert_equal(Rational(-5e2,-3), Rational('-5e2/-3'))
 
     assert_equal(Rational(33,100), Rational('.33'))
     assert_equal(Rational(33,100), Rational('0.33'))
