@@ -1,3 +1,14 @@
+Tue May 10 04:22:09  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/webrick/log.rb: Hide copyright info from ri
+	* lib/webrick/httpstatus.rb: ditto
+	* lib/webrick/htmlutils.rb: ditto
+	* lib/webrick/httpversion.rb: ditto
+	* lib/webrick/version.rb: ditto
+	* lib/webrick/httpauth/userdb.rb: ditto
+	* lib/webrick/httpauth/authenticator.rb: ditto
+	* lib/webrick/accesslog.rb: ditto
+
 Mon May  9 20:57:13 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* test/ruby/test_{complex,rational}.rb: added tests.

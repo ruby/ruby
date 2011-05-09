@@ -1,4 +1,4 @@
-#
+#--
 # accesslog.rb -- Access log handling utilities
 #
 # Author: IPR -- Internet Programming with Ruby -- writers

@@ -1,4 +1,4 @@
-#
+#--
 # httpauth/userdb.rb -- UserDB mix-in module.
 #
 # Author: IPR -- Internet Programming with Ruby -- writers

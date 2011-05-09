@@ -1,4 +1,4 @@
-#
+#--
 # version.rb -- version and release date
 #
 # Author: IPR -- Internet Programming with Ruby -- writers

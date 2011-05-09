@@ -1,4 +1,4 @@
-#
+#--
 # httpauth/authenticator.rb -- Authenticator mix-in module.
 #
 # Author: IPR -- Internet Programming with Ruby -- writers

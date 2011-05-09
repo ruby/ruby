@@ -1,4 +1,4 @@
-#
+#--
 # log.rb -- Log Class
 #
 # Author: IPR -- Internet Programming with Ruby -- writers

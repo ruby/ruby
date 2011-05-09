@@ -1,4 +1,4 @@
-#
+#--
 # httpstatus.rb -- HTTPStatus Class
 #
 # Author: IPR -- Internet Programming with Ruby -- writers

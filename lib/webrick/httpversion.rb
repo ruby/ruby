@@ -1,4 +1,4 @@
-#
+#--
 # HTTPVersion.rb -- presentation of HTTP version
 #
 # Author: IPR -- Internet Programming with Ruby -- writers
