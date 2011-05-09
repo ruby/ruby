@@ -1,3 +1,9 @@
+Mon May  9 13:49:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* complex.c (string_to_c_internal): support scientific notation.
+	  patched by Tinco Andringa. https://github.com/ruby/ruby/pull/16
+	  [ruby-core:36046][Bug #4655]
+
 Mon May  9 11:52:48 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* numeric.c (int_ord): remove K&R style.

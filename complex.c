@@ -1498,6 +1498,7 @@ string_to_c_internal(VALUE self)
 	    m = f_match(comp_pat2, s);
 	    if (NIL_P(m))
 		return rb_assoc_new(Qnil, self);
+	    /* string is of form "x+yi" */
 	    sr = f_aref(m, INT2FIX(1));
 	    if (NIL_P(f_aref(m, INT2FIX(2))))
 		si = Qnil;
@@ -1518,7 +1519,7 @@ string_to_c_internal(VALUE self)
 	if (!NIL_P(sr)) {
 	    if (strchr(RSTRING_PTR(sr), '/'))
 		r = f_to_r(sr);
-	    else if (strchr(RSTRING_PTR(sr), '.'))
+	    else if (strchr(RSTRING_PTR(sr), '.') || strchr(RSTRING_PTR(sr), 'e') || strchr(RSTRING_PTR(sr), 'E'))
 		r = f_to_f(sr);
 	    else
 		r = f_to_i(sr);
@@ -1526,7 +1527,7 @@ string_to_c_internal(VALUE self)
 	if (!NIL_P(si)) {
 	    if (strchr(RSTRING_PTR(si), '/'))
 		i = f_to_r(si);
-	    else if (strchr(RSTRING_PTR(si), '.'))
+	    else if (strchr(RSTRING_PTR(si), '.') || strchr(RSTRING_PTR(si), 'e') || strchr(RSTRING_PTR(si), 'E'))
 		i = f_to_f(si);
 	    else
 		i = f_to_i(si);

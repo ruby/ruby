@@ -704,6 +704,10 @@ class Complex_Test < Test::Unit::TestCase
     assert_equal(Complex(-0.33), '-0.33'.to_c)
     assert_equal(Complex(-0.33), '-0.3_3'.to_c)
 
+    assert_equal(Complex(2, 2e4), '2+2e4i'.to_c)
+    assert_equal(Complex(2e3, 2), '2e3+2i'.to_c)
+    assert_equal(Complex(2e3, 2e4), '2e3+2e4i'.to_c)
+
     assert_equal(Complex.polar(10,10), '10@10'.to_c)
     assert_equal(Complex.polar(-10,-10), '-10@-10'.to_c)
     assert_equal(Complex.polar(10.5,10.5), '10.5@10.5'.to_c)
