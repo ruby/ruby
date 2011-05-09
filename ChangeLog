@@ -1,3 +1,9 @@
+Mon May  9 18:33:05 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c: Improve documentation for String#start_with? and
+	  String#end_with?. fixes #4652
+	  patched by Andrew Grimm <andrew.j.grimm at gmail.com>
+
 Mon May  9 13:49:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* complex.c (string_to_c_internal): support scientific notation.
