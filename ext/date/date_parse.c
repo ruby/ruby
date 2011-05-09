@@ -80,8 +80,8 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	    d = Qnil;
 	}
 	if (!NIL_P(d) && *RSTRING_PTR(d) == '\'') {
-		y = d;
-		d = Qnil;
+	    y = d;
+	    d = Qnil;
 	}
     }
 
