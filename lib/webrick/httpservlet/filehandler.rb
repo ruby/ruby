@@ -125,17 +125,48 @@ module WEBrick
       end
     end
 
+    ##
+    # Serves files from a directory
+
     class FileHandler < AbstractServlet
       HandlerTable = Hash.new
+
+      ##
+      # Allow custom handling of requests for files with +suffix+ by class
+      # +handler+
 
       def self.add_handler(suffix, handler)
         HandlerTable[suffix] = handler
       end
 
+      ##
+      # Remove custom handling of requests for files with +suffix+
+
       def self.remove_handler(suffix)
         HandlerTable.delete(suffix)
       end
 
+      ##
+      # Creates a FileHandler servlet on +server+ that serves files starting
+      # at directory +root+
+      #
+      # If +options+ is a Hash the following keys are allowed:
+      # 
+      # :AcceptableLanguages:: Array of languages allowed for accept-language
+      # :DirectoryCallback:: Allows preprocessing of directory requests
+      # :FancyIndexing:: If true, show an index for directories
+      # :FileCallback:: Allows preprocessing of file requests
+      # :HandlerCallback:: Allows preprocessing of requests
+      # :HandlerTable:: Maps file suffixes to file handlers.
+      #                 DefaultFileHandler is used by default but any servlet
+      #                 can be used.
+      # :NondisclosureName:: Do not show files matching this array of globs
+      # :UserDir:: Directory inside ~user to serve content from for /~user
+      #            requests.  Only works if mounted on /
+      #
+      # If +options+ is true or false then +:FancyIndexing+ is enabled or
+      # disabled respectively.
+      
       def initialize(server, root, options={}, default=Config::FileHandler)
         @config = server.config
         @logger = @config[:Logger]

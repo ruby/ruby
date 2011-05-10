@@ -19,7 +19,28 @@ require 'webrick/accesslog'
 module WEBrick
   class HTTPServerError < ServerError; end
 
+  ##
+  # An HTTP Server
+
   class HTTPServer < ::WEBrick::GenericServer
+    ##
+    # Creates a new HTTP server according to +config+
+    #
+    # An HTTP server uses the following attributes:
+    #
+    # :AccessLog:: An array of access logs.  See WEBrick::AccessLog
+    # :BindAddress:: Local address for the server to bind to
+    # :DocumentRoot:: Root path to serve files from
+    # :DocumentRootOptions:: Options for the default HTTPServlet::FileHandler
+    # :HTTPVersion:: The HTTP version of this server
+    # :Port:: Port to listen on
+    # :RequestCallback:: Called with a request and response before each
+    #                    request is serviced.
+    # :RequestTimeout:: Maximum time to wait between requests
+    # :ServerAlias:: Array of alternate names for this server for virtual
+    #                hosting
+    # :ServerName:: Name for this server for virtual hosting
+
     def initialize(config={}, default=Config::HTTP)
       super(config, default)
       @http_version = HTTPVersion::convert(@config[:HTTPVersion])
@@ -39,6 +60,9 @@ module WEBrick
 
       @virtual_hosts = Array.new
     end
+
+    ##
+    # Processes requests on +sock+
 
     def run(sock)
       while true
@@ -93,6 +117,9 @@ module WEBrick
       end
     end
 
+    ##
+    # Services +req+ and fills in +res+
+
     def service(req, res)
       if req.unparsed_uri == "*"
         if req.request_method == "OPTIONS"
@@ -115,10 +142,18 @@ module WEBrick
       res["allow"] = "GET,HEAD,POST,OPTIONS"
     end
 
+    ##
+    # Mounts +servlet+ on +dir+ passing +options+ to the servlet at creation
+    # time
+
     def mount(dir, servlet, *options)
       @logger.debug(sprintf("%s is mounted on %s.", servlet.inspect, dir))
       @mount_tab[dir] = [ servlet, options ]
     end
+
+    ##
+    # Mounts +proc+ or +block+ on +dir+ and calls it with a
+    # WEBrick::HTTPRequest and WEBrick::HTTPResponse
 
     def mount_proc(dir, proc=nil, &block)
       proc ||= block
@@ -126,11 +161,17 @@ module WEBrick
       mount(dir, HTTPServlet::ProcHandler.new(proc))
     end
 
+    ##
+    # Unmounts +dir+
+
     def unmount(dir)
       @logger.debug(sprintf("unmount %s.", dir))
       @mount_tab.delete(dir)
     end
     alias umount unmount
+
+    ##
+    # Finds a servlet for +path+
 
     def search_servlet(path)
       script_name, path_info = @mount_tab.scan(path)
@@ -139,6 +180,9 @@ module WEBrick
         [ servlet, options, script_name, path_info ]
       end
     end
+
+    ##
+    # Adds +server+ as a virtual host.
 
     def virtual_host(server)
       @virtual_hosts << server
@@ -150,6 +194,9 @@ module WEBrick
         num
       }
     end
+
+    ##
+    # Finds the appropriate virtual host to handle +req+
 
     def lookup_server(req)
       @virtual_hosts.find{|s|

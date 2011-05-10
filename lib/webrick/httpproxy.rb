@@ -33,7 +33,24 @@ module WEBrick
     end
   end
 
+  ##
+  # An HTTP Proxy server which proxies GET, HEAD and POST requests.
+
   class HTTPProxyServer < HTTPServer
+
+    ##
+    # Proxy server configurations.  The proxy server handles the following
+    # configuration items in addition to those supported by HTTPServer:
+    #
+    # :ProxyAuthProc:: Called with a request and response to authorize a
+    #                  request
+    # :ProxyVia:: Appended to the via header
+    # :ProxyURI:: The proxy server's URI
+    # :ProxyContentHandler:: Called with a request and resopnse and allows
+    #                        modification of the response
+    # :ProxyTimeout:: Sets the proxy timeouts to 30 seconds for open and 60
+    #                 seconds for read operations
+
     def initialize(config={}, default=Config::HTTP)
       super(config, default)
       c = @config

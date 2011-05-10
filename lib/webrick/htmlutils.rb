@@ -11,6 +11,9 @@
 module WEBrick
   module HTMLUtils
 
+    ##
+    # Escapes &, ", > and < in +string+
+
     def escape(string)
       str = string ? string.dup : ""
       str.gsub!(/&/n, '&amp;')

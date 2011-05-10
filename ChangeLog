@@ -1,3 +1,7 @@
+Tue May 10 09:13:21 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/webrick: Add Documentation
+
 Tue May 10 04:22:09  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/webrick/log.rb: Hide copyright info from ri
