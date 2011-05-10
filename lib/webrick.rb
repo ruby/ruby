@@ -133,6 +133,12 @@
 # +:ProxyContentHandler+ callback which will be invoked with the request and
 # respone after the remote content has been fetched.
 #
+# == Basic and Digest authentication
+#
+# WEBrick provides both Basic and Digest authentication for regular and proxy
+# servers.  See WEBrick::HTTPAuth, WEBrick::HTTPAuth::BasicAuth and
+# WEBrick::HTTPAuth::DigestAuth.
+#
 # == WEBrick as a Production Web Server
 #
 # WEBrick can be run as a production server for small loads.

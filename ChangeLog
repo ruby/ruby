@@ -1,3 +1,7 @@
+Wed May 11 08:36:38 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/webrick: Add documentation for WEBrick::HTTPAuth
+
 Wed May 11 03:06:35 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rss.rb: Add documentation for RSS.  Patch by Steve Klabnik.

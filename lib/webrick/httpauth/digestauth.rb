@@ -29,12 +29,11 @@ module WEBrick
     #
     #   config = { :Realm => 'DigestAuth example realm' }
     #
-    #   htpasswd = WEBrick::HTTPAuth::Htpasswd.new 'my_password_file'
-    #   htpasswd.auth_type = WEBrick::HTTPAuth::DigestAuth
-    #   htpasswd.set_passwd config[:Realm], 'username', 'password'
-    #   htpasswd.flush
+    #   htdigest = WEBrick::HTTPAuth::Htdigest.new 'my_password_file'
+    #   htdigest.set_passwd config[:Realm], 'username', 'password'
+    #   htdigest.flush
     #
-    #   config[:UserDB] = htpasswd
+    #   config[:UserDB] = htdigest
     #
     #   digest_auth = WEBrick::HTTPAuth::DigestAuth.new config
     #
@@ -51,7 +50,7 @@ module WEBrick
       attr_reader :algorithm, :qop
 
       ##
-      # Used by UserDB to create a password entry
+      # Used by UserDB to create a digest password entry
 
       def self.make_passwd(realm, user, pass)
         pass ||= ""
@@ -68,8 +67,8 @@ module WEBrick
       # You must supply the following configuration entries:
       #
       # :Realm:: The name of the realm being protected.
-      # :UserDB:: A database of usernames and passwords.  See Htpasswd,
-      #           Htdigest, Htgroup
+      # :UserDB:: A database of usernames and passwords.
+      #           A WEBrick::HTTPAuth::Htdigest instance should be used.
 
       def initialize(config, default=Config::DigestAuth)
         check_init(config)
@@ -380,6 +379,9 @@ module WEBrick
       end
 
     end
+
+    ##
+    # Digest authentication for proxy servers.  See DigestAuth for details.
 
     class ProxyDigestAuth < DigestAuth
       include ProxyAuthenticator

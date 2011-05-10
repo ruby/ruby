@@ -11,7 +11,26 @@ require 'tempfile'
 
 module WEBrick
   module HTTPAuth
+
+    ##
+    # Htgroup accesses apache-compatible group files.  Htgroup can be used to
+    # provide group-based authentication for users.  Currently Htgroup is not
+    # directly integrated with any authenticators in WEBrick.  For security,
+    # the path for a digest password database should be stored outside of the
+    # paths available to the HTTP server.
+    #
+    # Example:
+    #
+    #   htgroup = WEBrick::HTTPAuth::Htgroup.new 'my_group_file'
+    #   htgroup.add 'superheroes', %w[spiderman batman]
+    #
+    #   htgroup.members('superheroes').include? 'magneto' # => false
+
     class Htgroup
+
+      ##
+      # Open a group database at +path+
+
       def initialize(path)
         @path = path
         @mtime = Time.at(0)
@@ -19,6 +38,9 @@ module WEBrick
         open(@path,"a").close unless File::exist?(@path)
         reload
       end
+
+      ##
+      # Reload groups from the database
 
       def reload
         if (mtime = File::mtime(@path)) > @mtime
@@ -34,6 +56,10 @@ module WEBrick
         end
       end
 
+      ##
+      # Flush the group database.  If +output+ is given the database will be
+      # written there instead of to the original path.
+
       def flush(output=nil)
         output ||= @path
         tmp = Tempfile.new("htgroup", File::dirname(output))
@@ -48,10 +74,16 @@ module WEBrick
         end
       end
 
+      ##
+      # Retrieve the list of members from +group+
+
       def members(group)
         reload
         @group[group] || []
       end
+
+      ##
+      # Add an Array of +members+ to +group+
 
       def add(group, members)
         @group[group] = members(group) | members

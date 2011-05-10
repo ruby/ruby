@@ -9,19 +9,42 @@
 
 module WEBrick
   module HTTPAuth
+
+    ##
+    # User database mixin for HTTPAuth.  This mixin dispatches user record
+    # access to the underlying auth_type for this database.
+
     module UserDB
-      attr_accessor :auth_type # BasicAuth or DigestAuth
+
+      ##
+      # The authentication type.
+      #
+      # WEBrick::HTTPAuth::BasicAuth or WEBrick::HTTPAuth::DigestAuth are
+      # built-in.
+
+      attr_accessor :auth_type
+
+      ##
+      # Creates an obscured password in +realm+ with +user+ and +password+
+      # using the auth_type of this database.
 
       def make_passwd(realm, user, pass)
         @auth_type::make_passwd(realm, user, pass)
       end
 
+      ##
+      # Sets a password in +realm+ with +user+ and +password+ for the
+      # auth_type of this database.
+
       def set_passwd(realm, user, pass)
         self[user] = pass
       end
 
+      ##
+      # Retrieves a password in +realm+ for +user+ for the auth_type of this
+      # database.  +reload_db+ is a dummy value.
+
       def get_passwd(realm, user, reload_db=false)
-        # reload_db is dummy
         make_passwd(realm, user, self[user])
       end
     end
