@@ -910,7 +910,7 @@ class library
   struct.c      : Struct
   time.c        : Time
 
-  defs/knwon_errors.def  : Errno::* exception classes
+  defs/known_errors.def  : Errno::* exception classes
     -> known_errors.inc  : automatically generated
 
 multilingualization
