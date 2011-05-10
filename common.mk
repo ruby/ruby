@@ -402,7 +402,7 @@ rdoc: PHONY main
 	$(Q) $(XRUBY) "$(srcdir)/bin/rdoc" --encoding=UTF-8 --no-force-update --all --ri --op "$(RDOCOUT)" $(RDOCFLAGS) "$(srcdir)"
 rdoc-coverage: PHONY main
 	@echo Generating RDoc coverage report
-	$(Q) $(XRUBY) "$(srcdir)/bin/rdoc" --all -C $(RDOCFLAGS) "$(srcdir)"
+	$(Q) $(XRUBY) "$(srcdir)/bin/rdoc" --encoding=UTF-8 --all --quiet -C $(RDOCFLAGS) "$(srcdir)"
 rdoc-coverage: PHONY main
 nodoc: PHONY
 
