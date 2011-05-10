@@ -1,3 +1,8 @@
+Wed May 11 03:06:35 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rss.rb: Add documentation for RSS.  Patch by Steve Klabnik.
+	  [Ruby 1.9 - Bug #4663]
+
 Tue May 10 14:50:32 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* lib/test/unit.rb: Add option for hiding skip messages when test
