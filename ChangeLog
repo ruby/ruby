@@ -1,3 +1,11 @@
+Tue May 10 14:50:32 2011  Shota Fukumori  <sorah@tubusu.net>
+
+	* lib/test/unit.rb: Add option for hiding skip messages when test
+	ends. #4657
+
+	* test/testunit/test_hideskip.rb, test/testunit/test4test_hideskip.rb:
+	test for above.
+
 Tue May 10 10:53:04 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* common.mk (rdoc): Add rdoc-coverage rule

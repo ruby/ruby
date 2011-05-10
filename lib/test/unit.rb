@@ -103,6 +103,10 @@ module Test
         opts.on '--ruby VAL', "Path to ruby; It'll have used at -j option" do |a|
           options[:ruby] = a.split(/ /).reject(&:empty?)
         end
+
+        opts.on '-q', '--hide-skip', 'Hide skipped tests' do
+          options[:hide_skip] = true
+        end
       end
 
       def non_options(files, options)
@@ -547,6 +551,7 @@ module Test
             end
           }
         end
+        report.reject!{|r| r.start_with? "Skipped:" } if @opts[:hide_skip]
         result
       end
 
