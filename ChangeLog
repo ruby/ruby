@@ -1,3 +1,7 @@
+Tue May 10 10:53:04 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* common.mk (rdoc): Add rdoc-coverage rule
+
 Tue May 10 09:13:21 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/webrick: Add Documentation
