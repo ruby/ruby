@@ -1,3 +1,8 @@
+Sat Feb 19 22:37:42 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* vm_insnhelper.c (vm_check_if_namespace): guard temporary object
+	  from GC.
+
 Fri Feb 18 00:28:39 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* compile.c (get_exception_sym2type): guard temporary object from GC.

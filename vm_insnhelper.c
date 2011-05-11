@@ -1134,13 +1134,15 @@ vm_get_const_base(const rb_iseq_t *iseq, const VALUE *lfp, const VALUE *dfp)
 static inline void
 vm_check_if_namespace(VALUE klass)
 {
+    VALUE str;
     switch (TYPE(klass)) {
       case T_CLASS:
       case T_MODULE:
 	break;
       default:
+	str = rb_inspect(klass);
 	rb_raise(rb_eTypeError, "%s is not a class/module",
-		 RSTRING_PTR(rb_inspect(klass)));
+		 RSTRING_PTR(RB_GC_GUARD(str)));
     }
 }
 
