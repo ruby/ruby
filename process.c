@@ -4464,9 +4464,11 @@ proc_setgroups(VALUE obj, VALUE ary)
 	    }
 	    else {
 		gr = getgrnam(RSTRING_PTR(tmp));
-		if (gr == NULL)
+		if (gr == NULL) {
+		    RB_GC_GUARD(tmp);
 		    rb_raise(rb_eArgError,
 			     "can't find group for %s", RSTRING_PTR(tmp));
+		}
 		groups[i] = gr->gr_gid;
 	    }
 	}

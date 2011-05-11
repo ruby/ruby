@@ -1,3 +1,8 @@
+Tue Feb  8 01:00:21 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* process.c (proc_setgroups): add GC guard to prevent intermediate
+	  variable from GC.
+
 Mon Feb  7 22:56:16 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* lib/benchmark.rb (Benchmark#bmbm): use ensure clause instead of
