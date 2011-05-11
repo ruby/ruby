@@ -1,3 +1,9 @@
+Thu May 12 08:01:14 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_pkey_ec.c: Allow encryption when PEM-encoding 
+	  Elliptic Curve private keys.
+	  [ruby-core:35329] [Bug #4423]
+
 Thu May 12 07:54:59 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* object.c (rb_obj_equal):  Add documentation.  Patch by Vincent Batts.
@@ -11,13 +17,13 @@ Thu May 12 07:30:08 2011  Eric Hodel  <drbrain@segment7.net>
 	* Various .document files: Update .document files to match files which
 	  have documentation.
 
-Thu May 12 08:18:45 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+Thu May 12 07:18:45 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_pkey_dsa.c: Use generic X.509 SubjectPublicKeyInfo
 	  format for PEM-encoding DSA public keys.
 	  [ruby-core:35328] [Bug #4422]
 
-Thu May 12 07:27:31 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+Thu May 12 06:27:31 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_pkey_rsa.c: Use generic X.509 SubjectPublicKeyInfo
 	  format for encoding RSA public keys.
