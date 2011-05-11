@@ -1,6 +1,11 @@
+Thu May 12 08:10:46 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/set.rb (class Set):  Add nodoc to internal-use methods.  Patch
+	  by Pete Higgins.  [Ruby 1.9 - Bug #4665]
+
 Thu May 12 08:01:14 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
-	* ext/openssl/ossl_pkey_ec.c: Allow encryption when PEM-encoding 
+	* ext/openssl/ossl_pkey_ec.c: Allow encryption when PEM-encoding
 	  Elliptic Curve private keys.
 	  [ruby-core:35329] [Bug #4423]
 

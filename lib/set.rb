@@ -76,7 +76,7 @@ class Set
     end
   end
 
-  def do_with_enum(enum, &block)
+  def do_with_enum(enum, &block) # :nodoc:
     if enum.respond_to?(:each_entry)
       enum.each_entry(&block)
     elsif enum.respond_to?(:each)
@@ -145,7 +145,7 @@ class Set
     @hash.keys
   end
 
-  def flatten_merge(set, seen = Set.new)
+  def flatten_merge(set, seen = Set.new) # :nodoc:
     set.each { |e|
       if e.is_a?(Set)
 	if seen.include?(e_id = e.object_id)
