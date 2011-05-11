@@ -1,3 +1,7 @@
+Fri Feb 18 00:28:39 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* compile.c (get_exception_sym2type): guard temporary object from GC.
+
 Tue May  3 18:23:57 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/date/test_date.rb (TestDate#test_coerce):

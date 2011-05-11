@@ -5152,6 +5152,7 @@ get_exception_sym2type(VALUE sym)
 {
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
+    VALUE sym_inspect;
     static VALUE symRescue, symEnsure, symRetry;
     static VALUE symBreak, symRedo, symNext;
 
@@ -5170,8 +5171,9 @@ get_exception_sym2type(VALUE sym)
     if (sym == symBreak)  return CATCH_TYPE_BREAK;
     if (sym == symRedo)   return  CATCH_TYPE_REDO;
     if (sym == symNext)   return CATCH_TYPE_NEXT;
+    sym_inspect = rb_inspect(sym);
     rb_raise(rb_eSyntaxError, "invalid exception symbol: %s",
-	     RSTRING_PTR(rb_inspect(sym)));
+	     RSTRING_PTR(RB_GC_GUARD(sym_inspect)));
     return 0;
 }
 
