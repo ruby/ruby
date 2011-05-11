@@ -159,11 +159,6 @@ ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
 	if (!rsa) {
 	    (void)BIO_reset(in);
 	    (void)ERR_get_error();
-	    rsa = PEM_read_bio_RSAPublicKey(in, NULL, NULL, NULL);
-	}
-	if (!rsa) {
-	    (void)BIO_reset(in);
-	    (void)ERR_get_error();
 	    rsa = PEM_read_bio_RSA_PUBKEY(in, NULL, NULL, NULL);
 	}
 	if (!rsa) {
@@ -174,12 +169,17 @@ ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
 	if (!rsa) {
 	    (void)BIO_reset(in);
 	    (void)ERR_get_error();
-	    rsa = d2i_RSAPublicKey_bio(in, NULL);
+	    rsa = d2i_RSA_PUBKEY_bio(in, NULL);
 	}
 	if (!rsa) {
 	    (void)BIO_reset(in);
 	    (void)ERR_get_error();
-	    rsa = d2i_RSA_PUBKEY_bio(in, NULL);
+	    rsa = PEM_read_bio_RSAPublicKey(in, NULL, NULL, NULL);
+	}
+	if (!rsa) {
+	    (void)BIO_reset(in);
+	    (void)ERR_get_error();
+	    rsa = d2i_RSAPublicKey_bio(in, NULL);
 	}
 	BIO_free(in);
 	if (!rsa) {
@@ -268,7 +268,7 @@ ossl_rsa_export(int argc, VALUE *argv, VALUE self)
 	    ossl_raise(eRSAError, NULL);
 	}
     } else {
-	if (!PEM_write_bio_RSAPublicKey(out, pkey->pkey.rsa)) {
+	if (!PEM_write_bio_RSA_PUBKEY(out, pkey->pkey.rsa)) {
 	    BIO_free(out);
 	    ossl_raise(eRSAError, NULL);
 	}
@@ -297,7 +297,7 @@ ossl_rsa_to_der(VALUE self)
     if(RSA_HAS_PRIVATE(pkey->pkey.rsa))
 	i2d_func = i2d_RSAPrivateKey;
     else
-	i2d_func = i2d_RSAPublicKey;
+	i2d_func = (int (*)(const RSA*, unsigned char**))i2d_RSA_PUBKEY;
     if((len = i2d_func(pkey->pkey.rsa, NULL)) <= 0)
 	ossl_raise(eRSAError, NULL);
     str = rb_str_new(0, len);

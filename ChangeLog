@@ -1,3 +1,9 @@
+Thu May 12 07:27:31 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_pkey_rsa.c: Use generic X.509 SubjectPublicKeyInfo
+	  format for encoding RSA public keys. 
+	  [ruby-core:35327] [Bug #4421]
+
 Wed May 11 19:45:27 2011  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
 	* lib/forwardable.rb: support 'delegate :foo => :bar' for to meet
