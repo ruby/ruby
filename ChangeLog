@@ -1,3 +1,8 @@
+Wed May 11 19:45:27 2011  Keiju Ishitsuka  <keiju@ishitsuka.com>
+
+	* lib/forwardable.rb: support 'delegate :foo => :bar' for to meet
+	  by specification of RDOC.
+
 Wed May 11 08:36:38 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/webrick: Add documentation for WEBrick::HTTPAuth
