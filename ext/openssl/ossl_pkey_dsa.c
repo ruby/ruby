@@ -163,11 +163,6 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
 	if (!dsa) {
 	    (void)BIO_reset(in);
 	    (void)ERR_get_error();
-	    dsa = PEM_read_bio_DSAPublicKey(in, NULL, NULL, NULL);
-	}
-	if (!dsa) {
-	    (void)BIO_reset(in);
-	    (void)ERR_get_error();
 	    dsa = PEM_read_bio_DSA_PUBKEY(in, NULL, NULL, NULL);
 	}
 	if (!dsa) {
@@ -179,6 +174,11 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
 	    (void)BIO_reset(in);
 	    (void)ERR_get_error();
 	    dsa = d2i_DSA_PUBKEY_bio(in, NULL);
+	}
+	if (!dsa) {
+	    (void)BIO_reset(in);
+	    (void)ERR_get_error();
+	    dsa = PEM_read_bio_DSAPublicKey(in, NULL, NULL, NULL);
 	}
 	BIO_free(in);
 	if (!dsa) {
@@ -264,7 +264,7 @@ ossl_dsa_export(int argc, VALUE *argv, VALUE self)
 	    ossl_raise(eDSAError, NULL);
 	}
     } else {
-	if (!PEM_write_bio_DSAPublicKey(out, pkey->pkey.dsa)) {
+	if (!PEM_write_bio_DSA_PUBKEY(out, pkey->pkey.dsa)) {
 	    BIO_free(out);
 	    ossl_raise(eDSAError, NULL);
 	}

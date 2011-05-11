@@ -1,3 +1,9 @@
+Thu May 12 08:18:45 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_pkey_dsa.c: Use generic X.509 SubjectPublicKeyInfo
+	  format for PEM-encoding DSA public keys. 
+	  [ruby-core:35328] [Bug #4422]
+
 Thu May 12 07:27:31 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_pkey_rsa.c: Use generic X.509 SubjectPublicKeyInfo
