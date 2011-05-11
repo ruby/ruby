@@ -231,7 +231,7 @@ class Date
 	  @delta.real / (u * RUNITS['#{k}'])
 	end
       end;
-    end
+    end # <<dummy
 
     alias_method :in_mins, :in_minutes
     alias_method :in_secs, :in_seconds

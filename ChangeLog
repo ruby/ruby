@@ -1,3 +1,12 @@
+Tue May  3 18:23:57 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/date/test_date.rb (TestDate#test_coerce):
+	  test for [ruby-core:35127].
+
+Sun Feb 13 00:48:47 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb (Date#===): [ruby-core:35127]
+
 Fri Feb 11 19:45:26 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (ruby_cleanup): use rb_ary_free to free internal object.
