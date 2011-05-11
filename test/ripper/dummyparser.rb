@@ -130,44 +130,44 @@ class DummyParser < Ripper
     on_args_add_block(m.children, b)
     m
   end
-  
+
   def on_paren(params)
     params
   end
-  
+
   def on_brace_block(params, code)
     Node.new('block', params, code)
   end
-  
+
   def on_block_var(params, shadow)
     params
   end
-  
+
   def on_rest_param(var)
     "*#{var}"
   end
-  
+
   def on_blockarg(var)
     "&#{var}"
   end
-  
+
   def on_params(required, optional, rest, more, block)
     args = NodeList.new
-    
+
     required.each do |req|
       args.push(req)
     end if required
-    
+
     optional.each do |var, val|
       args.push("#{var}=#{val}")
     end if optional
-    
+
     args.push(rest) if rest
-    
+
     more.each do |m|
       args.push(m)
     end if more
-    
+
     args.push(block) if block
     args
   end
@@ -182,6 +182,30 @@ class DummyParser < Ripper
 
   def on_assoclist_from_args(a)
     Node.new('assocs', *a)
+  end
+
+  def on_word_new
+    ""
+  end
+
+  def on_word_add(word, w)
+    word << w
+  end
+
+  def on_words_new
+    NodeList.new
+  end
+
+  def on_words_add(words, word)
+    words.push word
+  end
+
+  def on_qwords_new
+    NodeList.new
+  end
+
+  def on_qwords_add(words, word)
+    words.push word
   end
 
   (Ripper::PARSER_EVENTS.map(&:to_s) - instance_methods(false).map {|n|n.to_s.sub(/^on_/, '')}).each do |event|

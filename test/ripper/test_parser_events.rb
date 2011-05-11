@@ -160,6 +160,8 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
 
   def test_array   # array literal
     assert_equal '[array([1,2,3])]', parse('[1,2,3]')
+    assert_equal '[array([abc,def])]', parse('%w[abc def]')
+    assert_equal '[array([abc,def])]', parse('%W[abc def]')
   end
 
   def test_assign   # generic assignment
