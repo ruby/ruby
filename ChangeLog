@@ -1,3 +1,8 @@
+Mon Feb  7 22:56:16 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* lib/benchmark.rb (Benchmark#bmbm): use ensure clause instead of
+	  Object#tap to restore STDOUT.sync.
+
 Sun Feb  6 12:18:25 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (words, qwords): dispatch array events.  based on a
