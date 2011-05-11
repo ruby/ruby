@@ -608,7 +608,11 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
     char *ptr;
     long len;
     VALUE source, opts;
-    GET_PARSER;
+    GET_PARSER_INIT;
+
+    if (json->Vsource) {
+        rb_raise(rb_eTypeError, "already initialized instance");
+    }
     rb_scan_args(argc, argv, "11", &source, &opts);
     source = convert_encoding(StringValue(source));
     ptr = RSTRING_PTR(source);

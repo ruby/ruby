@@ -1,3 +1,14 @@
+Sat Feb  5 11:29:10 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/json/parser/parser.h (GET_PARSER): raise TypeError.
+
+	* ext/json/parser/parser.rl (cParser_initialize): ditto.
+
+	* ext/json/parser/parser.h (GET_PARSER): check if initialized.
+	  [ruby-core:35079]
+
+	* ext/json/parser/parser.rl (cParser_initialize): ditto.
+
 Sun May  1 18:35:34 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/fileutils/fileasserts.rb (assert_block): little workaround
