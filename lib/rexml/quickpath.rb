@@ -6,6 +6,8 @@ module REXML
     include Functions
     include XMLTokens
 
+    # A base Hash object to be used when initializing a
+    # default empty namespaces set.
     EMPTY_HASH = {}
 
     def QuickPath::first element, path, namespaces=EMPTY_HASH

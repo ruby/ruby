@@ -1,3 +1,11 @@
+Thu May 12 07:54:59 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* object.c (rb_obj_equal):  Add documentation.  Patch by Vincent Batts.
+	  [Ruby 1.9 - Bug #4664]
+	* lib/rexml:  ditto
+	* lib/mkmf.rb:  ditto
+	* ext/socket/lib/socket.rb:  ditto
+
 Thu May 12 07:30:08 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* Various .document files: Update .document files to match files which

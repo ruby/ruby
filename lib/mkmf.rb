@@ -1013,6 +1013,10 @@ SRC
   end
 end
 
+# Returns whether or not the static type +type+ is defined.
+#
+# See also +have_type+
+#
 def try_type(type, headers = nil, opt = "", &b)
   if try_compile(<<"SRC", opt, &b)
 #{cpp_include(headers)}
@@ -1066,6 +1070,10 @@ def find_type(type, opt, *headers, &b)
   end
 end
 
+# Returns whether or not the Constant +const+ is defined.
+#
+# See also +have_const+
+#
 def try_const(const, headers = nil, opt = "", &b)
   const, type = *const
   if try_compile(<<"SRC", opt, &b)
@@ -1730,6 +1738,8 @@ preload = #{defined?($preload) && $preload ? $preload.join(' ') : ''}
 end
 # :startdoc:
 
+# creates a stub Makefile.
+#
 def dummy_makefile(srcdir)
   configuration(srcdir) << <<RULES << CLEANINGS
 CLEANFILES = #{$cleanfiles.join(' ')}
@@ -1742,6 +1752,11 @@ all install static install-so install-rb: Makefile
 RULES
 end
 
+# Processes the data contents of the "depend" file.
+# Each line of this file is expected to be a file name.
+# 
+# Returns the output of findings, in Makefile format.
+#
 def depend_rules(depend)
   suffixes = []
   depout = []
