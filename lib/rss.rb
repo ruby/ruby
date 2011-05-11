@@ -35,7 +35,7 @@
 #
 # As you can see, the workhorse is RSS::Parser#parse, which takes the source of
 # the feed and a parameter that performs validation on the feed. We get back an
-# object that has all of the data from our feed, accessable through methods.
+# object that has all of the data from our feed, accessible through methods.
 # This example shows getting the title out of the channel element, and looping
 # through the list of items.
 #

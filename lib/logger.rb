@@ -607,7 +607,7 @@ private
       if FileTest.exist?(age_file)
         # try to avoid filename crash caused by Timestamp change.
         idx = 0
-        # .99 can be overriden; avoid too much file search with 'loop do'
+        # .99 can be overridden; avoid too much file search with 'loop do'
         while idx < 100
           idx += 1
           age_file = "#{@filename}.#{postfix}.#{idx}"

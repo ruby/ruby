@@ -22,7 +22,7 @@ module WEBrick
       AuthException     = HTTPStatus::Unauthorized
 
       ##
-      # Method of authentication, must be overriden by the including class
+      # Method of authentication, must be overridden by the including class
 
       AuthScheme        = nil
 

@@ -1556,7 +1556,7 @@ class CSV
   #
   # See CSV::DEFAULT_OPTIONS for the default settings.
   #
-  # Options cannot be overriden in the instance methods for performance reasons,
+  # Options cannot be overridden in the instance methods for performance reasons,
   # so be sure to set what you want here.
   #
   def initialize(data, options = Hash.new)
