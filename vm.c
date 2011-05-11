@@ -221,7 +221,7 @@ env_free(void * const ptr)
 {
     RUBY_FREE_ENTER("env");
     if (ptr) {
-	const rb_env_t * const env = ptr;
+	rb_env_t *const env = ptr;
 	RUBY_FREE_UNLESS_NULL(env->env);
 	ruby_xfree(ptr);
     }
