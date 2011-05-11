@@ -1,13 +1,18 @@
+Thu May 12 07:30:08 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* Various .document files: Update .document files to match files which
+	  have documentation.
+
 Thu May 12 08:18:45 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_pkey_dsa.c: Use generic X.509 SubjectPublicKeyInfo
-	  format for PEM-encoding DSA public keys. 
+	  format for PEM-encoding DSA public keys.
 	  [ruby-core:35328] [Bug #4422]
 
 Thu May 12 07:27:31 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_pkey_rsa.c: Use generic X.509 SubjectPublicKeyInfo
-	  format for encoding RSA public keys. 
+	  format for encoding RSA public keys.
 	  [ruby-core:35327] [Bug #4421]
 
 Wed May 11 19:45:27 2011  Keiju Ishitsuka  <keiju@ishitsuka.com>
