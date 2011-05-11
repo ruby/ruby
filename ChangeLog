@@ -1,3 +1,8 @@
+Fri Feb 11 16:57:03 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_transcode.rb (test_from_cp50221): fix wrong
+	  assertion and move back.
+
 Tue Feb  8 01:00:21 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* process.c (proc_setgroups): add GC guard to prevent intermediate
