@@ -854,6 +854,7 @@ rb_require_safe_2(VALUE fname, int safe)
   // TODO: WTF does the second part here do
   // TODO: Raise LoadError if file does not exist
   if (path == Qnil || !(ftptr = load_lock(RSTRING_PTR(path)))) {
+    load_failed(fname);
     result = Qfalse;
   } else {
     if (!rb_file_is_required(path)) {
