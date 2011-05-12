@@ -806,6 +806,23 @@ rb_file_is_ruby(VALUE fname)
   return 1;
 }
 
+int
+rb_file_is_required(VALUE expanded_path)
+{
+  int i;
+  VALUE loaded_features;
+  VALUE loaded_feature;
+  loaded_features = get_loaded_features();
+  for (i = 0; i < RARRAY_LEN(loaded_features); ++i) {
+    loaded_feature = RARRAY_PTR(loaded_features)[i];
+
+    if (rb_funcall(expanded_path, rb_intern("=="), 1, loaded_feature) == Qtrue) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
 VALUE
 rb_require_safe_2(VALUE fname, int safe)
 {
@@ -839,15 +856,19 @@ rb_require_safe_2(VALUE fname, int safe)
   if (path == Qnil || !(ftptr = load_lock(RSTRING_PTR(path)))) {
     result = Qfalse;
   } else {
-    if (rb_file_is_ruby(path)) {
-      rb_load_internal(path, 0);
+    if (!rb_file_is_required(path)) {
+      if (rb_file_is_ruby(path)) {
+        rb_load_internal(path, 0);
+      } else {
+        handle = (long)rb_vm_call_cfunc(rb_vm_top_self(), load_ext,
+                path, 0, path);
+        rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
+      }
+      rb_provide_feature(path);
+      result = Qtrue;
     } else {
-      handle = (long)rb_vm_call_cfunc(rb_vm_top_self(), load_ext,
-              path, 0, path);
-      rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
+      result = Qfalse;
     }
-    rb_provide_feature(path);
-    result = Qtrue;
   }
     }
     POP_TAG();
