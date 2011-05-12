@@ -70,6 +70,9 @@ module RSS
 
   class InvalidRSSError < Error; end
 
+  ##
+  # Raised if no matching tag is found.
+
   class MissingTagError < InvalidRSSError
     attr_reader :tag, :parent
     def initialize(tag, parent)
@@ -77,6 +80,9 @@ module RSS
       super("tag <#{tag}> is missing in tag <#{parent}>")
     end
   end
+
+  ##
+  # Raised if there are more occurrences of the tag than expected.
 
   class TooMuchTagError < InvalidRSSError
     attr_reader :tag, :parent
@@ -86,6 +92,9 @@ module RSS
     end
   end
 
+  ##
+  # Raised if a required attribute is missing.
+
   class MissingAttributeError < InvalidRSSError
     attr_reader :tag, :attribute
     def initialize(tag, attribute)
@@ -94,6 +103,9 @@ module RSS
     end
   end
 
+  ##
+  # Raised when an unknown tag is found.
+
   class UnknownTagError < InvalidRSSError
     attr_reader :tag, :uri
     def initialize(tag, uri)
@@ -101,6 +113,9 @@ module RSS
       super("tag <#{tag}> is unknown in namespace specified by uri <#{uri}>")
     end
   end
+
+  ##
+  # Raised when an unexpected tag is encountered.
 
   class NotExpectedTagError < InvalidRSSError
     attr_reader :tag, :uri, :parent
@@ -111,6 +126,9 @@ module RSS
   end
   # For backward compatibility :X
   NotExceptedTagError = NotExpectedTagError
+
+  ##
+  # Raised when an incorrect value is used.
 
   class NotAvailableValueError < InvalidRSSError
     attr_reader :tag, :value, :attribute
@@ -123,6 +141,9 @@ module RSS
     end
   end
 
+  ##
+  # Raised when an unknown conversion error occurs.
+
   class UnknownConversionMethodError < Error
     attr_reader :to, :from
     def initialize(to, from)
@@ -134,6 +155,9 @@ module RSS
   # for backward compatibility
   UnknownConvertMethod = UnknownConversionMethodError
 
+  ##
+  # Raised when a conversion failure occurs.
+
   class ConversionError < Error
     attr_reader :string, :to, :from
     def initialize(string, to, from)
@@ -144,6 +168,9 @@ module RSS
     end
   end
 
+  ##
+  # Raised when a required variable is not set.
+
   class NotSetError < Error
     attr_reader :name, :variables
     def initialize(name, variables)
@@ -152,6 +179,9 @@ module RSS
       super("required variables of #{@name} are not set: #{@variables.join(', ')}")
     end
   end
+
+  ##
+  # Raised when a RSS::Maker attempts to use an unknown maker.
 
   class UnsupportedMakerVersionError < Error
     attr_reader :version

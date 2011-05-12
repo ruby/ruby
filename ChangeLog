@@ -1,3 +1,10 @@
+Fri May 13 05:16:38 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rss/atom.rb (module RSS):  Document URIs.  Patch by Mark Turner.
+	  [Ruby 1.9 - #4671]
+	* lib/rss/rss.rb (module RSS):  Document exception classes.  Patch by
+	  Mark Turner.  [Ruby 1.9 - #4671]
+
 Fri May 13 02:15:18 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (select_internal): remove unused variable (interrupt_flag).
