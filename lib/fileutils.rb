@@ -739,7 +739,7 @@ module FileUtils
   end
   module_function :remove_entry_secure
 
-  def fu_have_symlink?   #:nodoc
+  def fu_have_symlink?   #:nodoc:
     File.symlink nil, nil
   rescue NotImplementedError
     return false
@@ -860,7 +860,7 @@ module FileUtils
 
   OPT_TABLE['install'] = [:mode, :preserve, :noop, :verbose]
 
-  def user_mask(target)
+  def user_mask(target)  #:nodoc:
     mask = 0
     target.each_byte do |byte_chr|
       case byte_chr.chr
@@ -878,7 +878,7 @@ module FileUtils
   end
   private_module_function :user_mask
 
-  def mode_mask(mode, path)
+  def mode_mask(mode, path)  #:nodoc:
     mask = 0
     mode.each_byte do |byte_chr|
       case byte_chr.chr
@@ -900,7 +900,7 @@ module FileUtils
   end
   private_module_function :mode_mask
 
-  def symbolic_modes_to_i(modes, path)
+  def symbolic_modes_to_i(modes, path)  #:nodoc:
     current_mode = (File.stat(path).mode & 07777)
     modes.split(/,/).inject(0) do |mode, mode_sym|
       mode_sym = "a#{mode_sym}" if mode_sym =~ %r!^[+-=]!
@@ -921,7 +921,7 @@ module FileUtils
   end
   private_module_function :symbolic_modes_to_i
 
-  def fu_mode(mode, path)
+  def fu_mode(mode, path)  #:nodoc:
     mode.is_a?(String) ? symbolic_modes_to_i(mode, path) : mode
   end
   private_module_function :fu_mode
