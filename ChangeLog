@@ -1,3 +1,12 @@
+Thu May 12 18:24:34 2011  Kouhei Sutou  <kou@clear-code.com>
+
+	* configure.in: limit to "T" type for prefix of external symbols
+	  because x86_64-w64-mingw32-gcc on Debian GNU/Linux generates the
+	  following symbol:
+	    0000000068483390 D _GLOBAL__F__conftest_external
+
+	  Approved by nobu.
+
 Thu May 12 14:50:52 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/dl/test_base.rb (Fiddle::LIBC_SO): its always msvc*.dll on
