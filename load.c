@@ -750,6 +750,61 @@ rb_f_autoload_p(VALUE obj, VALUE sym)
     return rb_mod_autoload_p(klass, sym);
 }
 
+VALUE
+rb_find_file_relative(VALUE fname)
+{
+  return Qnil;
+}
+
+static VALUE
+rb_file_exist_p(VALUE obj, VALUE path);
+
+int
+rb_feature_exists(VALUE expanded_path)
+{
+
+  if (rb_file_exist_p(Qnil, expanded_path) == Qtrue) {
+    return 1;
+  } else {
+    return 0;
+  }
+  
+  return 0;
+}
+
+VALUE
+rb_find_file_in_load_path(VALUE fname)
+{
+  long i;
+  VALUE load_path = rb_get_expanded_load_path();
+  VALUE expanded_path = Qnil;
+
+  for (i = 0; i < RARRAY_LEN(load_path); ++i) {
+    VALUE directory = RARRAY_PTR(load_path)[i];
+
+    // TODO: Loop over potential extensions
+    expanded_path = rb_funcall(directory, rb_intern("+"), 1, rb_str_new2("/"));
+    expanded_path = rb_funcall(expanded_path, rb_intern("+"), 1, fname);
+    expanded_path = rb_funcall(expanded_path, rb_intern("+"), 1, rb_str_new2(".rb"));
+
+    if (rb_feature_exists(expanded_path)) {
+      return expanded_path;
+    }
+  }
+  return Qnil;
+}
+
+int
+rb_is_relative_path(VALUE fname)
+{
+  return 0;
+}
+
+int
+rb_file_is_ruby(VALUE fname)
+{
+  return 1;
+}
 
 VALUE
 rb_require_safe_2(VALUE fname, int safe)
@@ -773,27 +828,27 @@ rb_require_safe_2(VALUE fname, int safe)
 	rb_set_safe_level_force(safe);
 	FilePathValue(fname);
 	rb_set_safe_level_force(0);
-	found = search_required(fname, &path, safe);
-	if (found) {
-	    if (!path || !(ftptr = load_lock(RSTRING_PTR(path)))) {
-		result = Qfalse;
-	    }
-	    else {
-		switch (found) {
-		  case 'r':
-		    rb_load_internal(path, 0);
-		    break;
 
-		  case 's':
-		    handle = (long)rb_vm_call_cfunc(rb_vm_top_self(), load_ext,
-						    path, 0, path);
-		    rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
-		    break;
-		}
-		rb_provide_feature(path);
-		result = Qtrue;
-	    }
-	}
+  if (rb_is_relative_path(fname)) {
+    path = rb_find_file_relative(fname);
+  } else {
+    path = rb_find_file_in_load_path(fname);
+  }
+  // TODO: WTF does the second part here do
+  // TODO: Raise LoadError if file does not exist
+  if (path == Qnil || !(ftptr = load_lock(RSTRING_PTR(path)))) {
+    result = Qfalse;
+  } else {
+    if (rb_file_is_ruby(path)) {
+      rb_load_internal(path, 0);
+    } else {
+      handle = (long)rb_vm_call_cfunc(rb_vm_top_self(), load_ext,
+              path, 0, path);
+      rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
+    }
+    rb_provide_feature(path);
+    result = Qtrue;
+  }
     }
     POP_TAG();
     load_unlock(ftptr, !state);
