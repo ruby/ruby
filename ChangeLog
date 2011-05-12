@@ -1,3 +1,8 @@
+Thu May 12 14:50:52 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/dl/test_base.rb (Fiddle::LIBC_SO): its always msvc*.dll on
+	  mswin/mingw.
+
 Thu May 12 14:47:53 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/mkmf.rb (Logging.postpone): copy only when tmporary logfile
