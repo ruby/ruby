@@ -1,3 +1,7 @@
+Fri May 13 07:36:23 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/webrick/httpservlet/erbhandler.rb:  Add documentation.
+
 Fri May 13 07:04:33 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/mathn.rb:  Fix indentation.  Patch by Jason Dew.
