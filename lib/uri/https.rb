@@ -14,6 +14,7 @@ module URI
   # than 'http:'. Other than that, HTTPS URIs are identical to HTTP URIs;
   # see URI::HTTP.
   class HTTPS < HTTP
+    # A Default port of 443 for URI::HTTPS
     DEFAULT_PORT = 443
   end
   @@schemes['HTTPS'] = HTTPS

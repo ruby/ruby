@@ -19,8 +19,10 @@ module URI
   # update. See <URL:http://support.microsoft.com/kb/834489>.
   #
   class HTTP < Generic
+    # A Default port of 80 for URI::HTTP
     DEFAULT_PORT = 80
 
+    # An Array of the available components for URI::HTTP
     COMPONENT = [
       :scheme,
       :userinfo, :host, :port,
@@ -71,8 +73,11 @@ module URI
     #
     # Example:
     #
-    #     uri = URI::HTTP.new(['http', nil, "www.example.com", nil, "/path",
-    #       "query", 'fragment'])
+    #     uri = URI::HTTP.new('http', nil, "www.example.com", nil, "/path",
+    #       "query", 'fragment')
+    #
+    #
+    # See also URI::Generic.new
     #
     def initialize(*arg)
       super(*arg)

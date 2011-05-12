@@ -7,6 +7,9 @@
 #
 
 module URI
+  # 
+  # Includes URI::REGEXP::PATTERN
+  # 
   module REGEXP
     #
     # Patterns used to parse URI's
@@ -51,6 +54,10 @@ module URI
     # :startdoc:
   end # REGEXP
 
+  # class that Parses String's into URI's
+  #
+  # It contains a Hash set of patterns and Regexp's that match and validate.
+  #
   class Parser
     include REGEXP
 
@@ -95,8 +102,18 @@ module URI
       @regexp.each_value {|v| v.freeze}
       @regexp.freeze
     end
-    attr_reader :pattern, :regexp
 
+    # The Hash of patterns.
+    #
+    # see also URI::Parser.initialize_pattern
+    attr_reader :pattern
+
+    # The Hash of Regexp 
+    #
+    # see also URI::Parser.initialize_regexp
+    attr_reader :regexp
+
+    # Returns a split URI against regexp[:ABS_URI]
     def split(uri)
       case uri
       when ''
@@ -169,6 +186,23 @@ module URI
       return ret
     end
 
+    #
+    # == Args
+    #
+    # +uri+::
+    #    String
+    #
+    # == Description
+    #
+    # parses +uri+ and constructs either matching URI scheme object 
+    # (FTP, HTTP, HTTPS, LDAP, LDAPS, or MailTo) or URI::Generic
+    #
+    # == Usage
+    #
+    #	p = URI::Parser.new
+    #	p.parse("ldap://ldap.example.com/dc=example?user=john")
+    #	#=> #<URI::LDAP:0x00000000b9e7e8 URL:ldap://ldap.example.com/dc=example?user=john>
+    #
     def parse(uri)
       scheme, userinfo, host, port,
        	registry, path, opaque, query, fragment = self.split(uri)
@@ -184,11 +218,43 @@ module URI
       end
     end
 
+
+    #
+    # == Args
+    #
+    # +uris+::
+    #    an Array of Strings
+    #
+    # == Description
+    #
+    # Attempts to parse and merge a set of URIs
+    #
     def join(*uris)
       uris[0] = URI(uris[0], self)
       uris.inject :merge
     end
 
+    # 
+    # :call-seq:
+    # 	extract( str )
+    # 	extract( str, schemes )
+    # 	extract( str, schemes ) {|item| block }
+    #
+    # == Args
+    #
+    # +str+::
+    #    String to search
+    # +schemes+::
+    #    Patterns to apply to +str+
+    #
+    # == Description
+    #
+    # Attempts to parse and merge a set of URIs
+    # If no +block+ given , then returns the result,
+    # else it calls +block+ for each element in result.
+    #
+    # see also URI::Parser.make_regexp
+    #
     def extract(str, schemes = nil, &block)
       if block_given?
        	str.scan(make_regexp(schemes)) { yield $& }
@@ -200,6 +266,8 @@ module URI
       end
     end
 
+    # returns Regexp that is default self.regexp[:ABS_URI_REF],
+    # unless +schemes+ is provided. Then it is a Regexp.union with self.pattern[:X_ABS_URI]
     def make_regexp(schemes = nil)
       unless schemes
        	@regexp[:ABS_URI_REF]
@@ -208,6 +276,22 @@ module URI
       end
     end
 
+    # 
+    # :call-seq:
+    # 	escape( str )
+    # 	escape( str, unsafe )
+    #
+    # == Args
+    #
+    # +str+::
+    #    String to make safe
+    # +unsafe+::
+    #    Regexp to apply. Defaults to self.regexp[:UNSAFE]
+    #
+    # == Description
+    #
+    # constructs a safe String from +str+, removing unsafe characters, replacing them with codes.
+    #
     def escape(str, unsafe = @regexp[:UNSAFE])
       unless unsafe.kind_of?(Regexp)
         # perhaps unsafe is String object
@@ -223,6 +307,22 @@ module URI
       end.force_encoding(Encoding::US_ASCII)
     end
 
+    # 
+    # :call-seq:
+    # 	unescape( str )
+    # 	unescape( str, unsafe )
+    #
+    # == Args
+    #
+    # +str+::
+    #    String to remove escapes from
+    # +unsafe+::
+    #    Regexp to apply. Defaults to self.regexp[:ESCAPED]
+    #
+    # == Description
+    #
+    # Removes escapes from +str+
+    #
     def unescape(str, escaped = @regexp[:ESCAPED])
       str.gsub(escaped) { [$&[1, 2].hex].pack('C') }.force_encoding(str.encoding)
     end
@@ -234,6 +334,7 @@ module URI
 
     private
 
+    # Constructs the default Hash of patterns
     def initialize_pattern(opts = {})
       ret = {}
       ret[:ESCAPED] = escaped = (opts.delete(:ESCAPED) || PATTERN::ESCAPED)
@@ -391,6 +492,7 @@ module URI
       ret
     end
 
+    # Constructs the default Hash of Regexp's
     def initialize_regexp(pattern)
       ret = {}
 
@@ -423,6 +525,7 @@ module URI
     end
   end # class Parser
 
+  # URI::Parser.new
   DEFAULT_PARSER = Parser.new
   DEFAULT_PARSER.pattern.each_pair do |sym, str|
     unless REGEXP::PATTERN.const_defined?(sym)
@@ -465,6 +568,7 @@ module URI
     module_function :make_components_hash
   end
 
+  # module for escaping unsafe characters with codes.
   module Escape
     #
     # == Synopsis
@@ -535,6 +639,7 @@ module URI
   include REGEXP
 
   @@schemes = {}
+  # Returns a Hash of the defined schemes
   def self.scheme_list
     @@schemes
   end

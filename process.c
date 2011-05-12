@@ -5677,13 +5677,17 @@ Init_process(void)
     rb_mProcess = rb_define_module("Process");
 
 #ifdef WNOHANG
+    /* see Process.wait */
     rb_define_const(rb_mProcess, "WNOHANG", INT2FIX(WNOHANG));
 #else
+    /* see Process.wait */
     rb_define_const(rb_mProcess, "WNOHANG", INT2FIX(0));
 #endif
 #ifdef WUNTRACED
+    /* see Process.wait */
     rb_define_const(rb_mProcess, "WUNTRACED", INT2FIX(WUNTRACED));
 #else
+    /* see Process.wait */
     rb_define_const(rb_mProcess, "WUNTRACED", INT2FIX(0));
 #endif
 
@@ -5737,8 +5741,11 @@ Init_process(void)
     rb_define_module_function(rb_mProcess, "setpriority", proc_setpriority, 3);
 
 #ifdef HAVE_GETPRIORITY
+    /* see Process.setpriority */
     rb_define_const(rb_mProcess, "PRIO_PROCESS", INT2FIX(PRIO_PROCESS));
+    /* see Process.setpriority */
     rb_define_const(rb_mProcess, "PRIO_PGRP", INT2FIX(PRIO_PGRP));
+    /* see Process.setpriority */
     rb_define_const(rb_mProcess, "PRIO_USER", INT2FIX(PRIO_USER));
 #endif
 
@@ -5750,63 +5757,133 @@ Init_process(void)
 #ifdef RLIM_SAVED_MAX
 	{
 	    VALUE v = RLIM_INFINITY == RLIM_SAVED_MAX ? inf : RLIM2NUM(RLIM_SAVED_MAX);
+	    /* see Process.setrlimit */
 	    rb_define_const(rb_mProcess, "RLIM_SAVED_MAX", v);
 	}
 #endif
+	/* see Process.setrlimit */
         rb_define_const(rb_mProcess, "RLIM_INFINITY", inf);
 #ifdef RLIM_SAVED_CUR
 	{
 	    VALUE v = RLIM_INFINITY == RLIM_SAVED_CUR ? inf : RLIM2NUM(RLIM_SAVED_CUR);
+	    /* see Process.setrlimit */
 	    rb_define_const(rb_mProcess, "RLIM_SAVED_CUR", v);
 	}
 #endif
     }
 #ifdef RLIMIT_AS
+    /* Maximum size of the process's virtual memory (address space) in bytes.
+     *
+     * see the system getrlimit(2) manual for details.
+     */
     rb_define_const(rb_mProcess, "RLIMIT_AS", INT2FIX(RLIMIT_AS));
 #endif
 #ifdef RLIMIT_CORE
+    /* Maximum size of the core file.
+     *
+     * see the system getrlimit(2) manual for details.
+     */
     rb_define_const(rb_mProcess, "RLIMIT_CORE", INT2FIX(RLIMIT_CORE));
 #endif
 #ifdef RLIMIT_CPU
+    /* CPU time limit in seconds.
+     *
+     * see the system getrlimit(2) manual for details.
+     */
     rb_define_const(rb_mProcess, "RLIMIT_CPU", INT2FIX(RLIMIT_CPU));
 #endif
 #ifdef RLIMIT_DATA
+    /* Maximum size of the process's data segment.
+     *
+     * see the system getrlimit(2) manual for details.
+     */
     rb_define_const(rb_mProcess, "RLIMIT_DATA", INT2FIX(RLIMIT_DATA));
 #endif
 #ifdef RLIMIT_FSIZE
+    /* Maximum size of files that the process may create.
+     *
+     * see the system getrlimit(2) manual for details.
+     */
     rb_define_const(rb_mProcess, "RLIMIT_FSIZE", INT2FIX(RLIMIT_FSIZE));
 #endif
 #ifdef RLIMIT_MEMLOCK
+    /* Maximum number of bytes of memory that may be locked into RAM.
+     *
+     * see the system getrlimit(2) manual for details.
+     */
     rb_define_const(rb_mProcess, "RLIMIT_MEMLOCK", INT2FIX(RLIMIT_MEMLOCK));
 #endif
 #ifdef RLIMIT_MSGQUEUE
+    /* Specifies the limit on the number of bytes that can be allocated
+     * for POSIX message queues for the real user ID of the calling process.
+     *
+     * see the system getrlimit(2) manual for details.
+     */
     rb_define_const(rb_mProcess, "RLIMIT_MSGQUEUE", INT2FIX(RLIMIT_MSGQUEUE));
 #endif
 #ifdef RLIMIT_NICE
+    /* Specifies a ceiling to which the process's nice value can be raised.
+     *
+     * see the system getrlimit(2) manual for details.
+     */
     rb_define_const(rb_mProcess, "RLIMIT_NICE", INT2FIX(RLIMIT_NICE));
 #endif
 #ifdef RLIMIT_NOFILE
+    /* Specifies a value one greater than the maximum file descriptor
+     * number that can be opened by this process.
+     *
+     * see the system getrlimit(2) manual for details.
+     */
     rb_define_const(rb_mProcess, "RLIMIT_NOFILE", INT2FIX(RLIMIT_NOFILE));
 #endif
 #ifdef RLIMIT_NPROC
+    /* The maximum number of processes that can be created for the
+     * real user ID of the calling process.
+     *
+     * see the system getrlimit(2) manual for details.
+     */
     rb_define_const(rb_mProcess, "RLIMIT_NPROC", INT2FIX(RLIMIT_NPROC));
 #endif
 #ifdef RLIMIT_RSS
+    /* Specifies the limit (in pages) of the process's resident set.
+     *
+     * see the system getrlimit(2) manual for details.
+     */
     rb_define_const(rb_mProcess, "RLIMIT_RSS", INT2FIX(RLIMIT_RSS));
 #endif
 #ifdef RLIMIT_RTPRIO
+    /* Specifies a ceiling on the real-time priority that may be set for this process.
+     *
+     * see the system getrlimit(2) manual for details.
+     */
     rb_define_const(rb_mProcess, "RLIMIT_RTPRIO", INT2FIX(RLIMIT_RTPRIO));
 #endif
 #ifdef RLIMIT_RTTIME
+    /* Specifies limit on CPU time this process scheduled under a real-time
+     * scheduling policy can consume.
+     *
+     * see the system getrlimit(2) manual for details.
+     */
     rb_define_const(rb_mProcess, "RLIMIT_RTTIME", INT2FIX(RLIMIT_RTTIME));
 #endif
 #ifdef RLIMIT_SBSIZE
+    /* Maximum size of the socket buffer.
+     */
     rb_define_const(rb_mProcess, "RLIMIT_SBSIZE", INT2FIX(RLIMIT_SBSIZE));
 #endif
 #ifdef RLIMIT_SIGPENDING
+    /* Specifies a limit on the number of signals that may be queued for
+     * the real user ID of the calling process.
+     *
+     * see the system getrlimit(2) manual for details.
+     */
     rb_define_const(rb_mProcess, "RLIMIT_SIGPENDING", INT2FIX(RLIMIT_SIGPENDING));
 #endif
 #ifdef RLIMIT_STACK
+    /* Maximum size of the stack, in bytes.
+     *
+     * see the system getrlimit(2) manual for details.
+     */
     rb_define_const(rb_mProcess, "RLIMIT_STACK", INT2FIX(RLIMIT_STACK));
 #endif
 #endif

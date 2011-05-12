@@ -6,6 +6,7 @@ module URI
   # than 'ldap:'. Other than that, LDAPS URIs are identical to LDAP URIs;
   # see URI::LDAP.
   class LDAPS < LDAP
+    # A Default port of 636 for URI::LDAPS
     DEFAULT_PORT = 636
   end
   @@schemes['LDAPS'] = LDAPS
