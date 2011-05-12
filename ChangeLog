@@ -1,3 +1,8 @@
+Fri May 13 06:50:43 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/mathn.rb:  Add documentation.  Patch by Jason Dew.  [Ruby 1.9 -
+	  Feature #4667]
+
 Fri May 13 05:44:19 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/logger.rb (class Logger):  Document Logger#datetime_format.

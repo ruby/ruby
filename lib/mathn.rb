@@ -1,13 +1,27 @@
+##
+# = mathn
 #
-#   mathn.rb -
-#   	$Release Version: 0.5 $
-#   	$Revision: 1.1.1.1.4.1 $
-#   	by Keiju ISHITSUKA(SHL Japan Inc.)
+# mathn is a library for changing the way Ruby does math.
+#
+# == Usage
+#
+# To start using this library, simply:
+#
+#   require "mathn"
+#
+# This will change the way division works for Fixnums, specifically
+#
+#   3 / 2
+#
+# will return (3/2) instead of the usual 1.
+#
+# == Copyright
+#
+# Author: Keiju ISHITSUKA(SHL Japan Inc.)
 #
 # --
-#
-#
-#
+# $Release Version: 0.5 $
+# $Revision: 1.1.1.1.4.1 $
 
 require "cmath.rb"
 require "matrix.rb"
@@ -27,6 +41,8 @@ class Fixnum
 
   alias power! ** unless method_defined? :power!
 
+  ##
+  # exponentiate by +other+
   def ** (other)
     if self < 0 && other.round != other
       Complex(self, 0.0) ** other
@@ -43,6 +59,8 @@ class Bignum
 
   alias power! ** unless method_defined? :power!
 
+  ##
+  # exponentiate by +other+
   def ** (other)
     if self < 0 && other.round != other
       Complex(self, 0.0) ** other
@@ -119,6 +137,9 @@ end
 
 module Math
   remove_method(:sqrt)
+
+  ##
+  # compute the square root of +a+
   def sqrt(a)
     if a.kind_of?(Complex)
       abs = sqrt(a.real*a.real + a.imag*a.imag)
@@ -144,7 +165,7 @@ module Math
     end
   end
 
-  def rsqrt(a)
+  def rsqrt(a) # :nodoc:
     if a.kind_of?(Float)
       sqrt!(a)
     elsif a.kind_of?(Rational)
@@ -199,6 +220,8 @@ end
 class Float
   alias power! **
 
+  ##
+  # exponentiate by +other+
   def ** (other)
     if self < 0 && other.round != other
       Complex(self, 0.0) ** other
