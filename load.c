@@ -750,6 +750,74 @@ rb_f_autoload_p(VALUE obj, VALUE sym)
     return rb_mod_autoload_p(klass, sym);
 }
 
+
+VALUE
+rb_require_safe_2(VALUE fname, int safe)
+{
+    volatile VALUE result = Qnil;
+    rb_thread_t *th = GET_THREAD();
+    volatile VALUE errinfo = th->errinfo;
+    int state;
+    struct {
+	int safe;
+    } volatile saved;
+    char *volatile ftptr = 0;
+
+    PUSH_TAG();
+    saved.safe = rb_safe_level();
+    if ((state = EXEC_TAG()) == 0) {
+	VALUE path;
+	long handle;
+	int found;
+
+	rb_set_safe_level_force(safe);
+	FilePathValue(fname);
+	rb_set_safe_level_force(0);
+	found = search_required(fname, &path, safe);
+	if (found) {
+	    if (!path || !(ftptr = load_lock(RSTRING_PTR(path)))) {
+		result = Qfalse;
+	    }
+	    else {
+		switch (found) {
+		  case 'r':
+		    rb_load_internal(path, 0);
+		    break;
+
+		  case 's':
+		    handle = (long)rb_vm_call_cfunc(rb_vm_top_self(), load_ext,
+						    path, 0, path);
+		    rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
+		    break;
+		}
+		rb_provide_feature(path);
+		result = Qtrue;
+	    }
+	}
+    }
+    POP_TAG();
+    load_unlock(ftptr, !state);
+
+    rb_set_safe_level_force(saved.safe);
+    if (state) {
+	JUMP_TAG(state);
+    }
+
+    if (NIL_P(result)) {
+	load_failed(fname);
+    }
+
+    th->errinfo = errinfo;
+
+    return result;
+}
+
+VALUE
+rb_f_require_2(VALUE obj, VALUE fname)
+{
+    return rb_require_safe_2(fname, rb_safe_level());
+}
+
 void
 Init_load()
 {
@@ -770,6 +838,7 @@ Init_load()
 
     rb_define_global_function("load", rb_f_load, -1);
     rb_define_global_function("require", rb_f_require, 1);
+    rb_define_global_function("require_2", rb_f_require_2, 1);
     rb_define_global_function("require_relative", rb_f_require_relative, 1);
     rb_define_method(rb_cModule, "autoload", rb_mod_autoload, 2);
     rb_define_method(rb_cModule, "autoload?", rb_mod_autoload_p, 1);
