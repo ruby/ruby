@@ -1,3 +1,9 @@
+Fri May 13 08:34:00 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/rdoc.rb:  Output summary after documentation report.
+	* lib/rdoc/stats/normal.rb:  Don't output information for users when
+	  we're not on a TTY
+
 Fri May 13 07:49:02 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/fileutils.rb:  Hide internal methods from RDoc.  Patch by Darragh

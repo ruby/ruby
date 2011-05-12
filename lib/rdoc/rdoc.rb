@@ -455,7 +455,7 @@ The internal error was:
       end
     end
 
-    unless @options.quiet or not @stats then
+    if @stats and (@options.coverage_report or not @options.quiet) then
       puts
       puts @stats.summary
     end
