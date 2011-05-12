@@ -1,3 +1,9 @@
+Thu May 12 12:24:22 2011  Nobuhiro Iwamatsu  <iwamatsu@nigauri.org>
+
+        * ext/openssl/ossl_ssl.c: By trunk@31346, function check of SSLv2 is executed.
+        However, the problem is not revised in this.
+        This adds the control of using function of SSLv2 in made macro by function check.
+
 Thu May 12 08:10:46 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/set.rb (class Set):  Add nodoc to internal-use methods.  Patch
