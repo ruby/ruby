@@ -224,6 +224,7 @@ class Logger
     @default_formatter.datetime_format = datetime_format
   end
 
+  # Returns the date format (string passed to +strftime+) being used (it's set using datetime_format=)
   def datetime_format
     @default_formatter.datetime_format
   end

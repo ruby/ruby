@@ -1,3 +1,24 @@
+Fri May 13 05:44:19 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/logger.rb (class Logger):  Document Logger#datetime_format.
+	  Patch by Sergio Gil Pérez de la Manga.  [Ruby 1.9 - Bug #4678]
+
+Fri May 13 05:39:11 2011  Eric Hodel <drbrain@segment7.net>
+
+	* re.c (Init_Regexp): Document option constants.  Patch by Vincent
+	  Batts.  [Ruby 1.9 - Bug #4677]
+	* lib/uri/common.rb (module URI):  Documentation for URI.  Patch by
+	  Vincent Batts.  [Ruby 1.9- Bug #4677]
+	* lib/uri/ftp.rb (module URI):  ditto
+	* lib/uri/generic.rb (module URI):  ditto
+	* lib/uri/http.rb (module URI):  ditto
+	* lib/uri/https.rb (module URI):  ditto
+	* lib/uri/ldap.rb (module URI):  ditto
+	* lib/uri/ldaps.rb (module URI):  ditto
+	* lib/uri/mailto.rb (module URI):  ditto
+	* process.c (Init_process):  Document Process constants.  Patch by
+	  Vincent Batts.  [Ruby 1.9- Bug #4677]
+
 Fri May 13 05:16:38 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rss/atom.rb (module RSS):  Document URIs.  Patch by Mark Turner.
