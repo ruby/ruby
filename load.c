@@ -750,13 +750,8 @@ rb_f_autoload_p(VALUE obj, VALUE sym)
     return rb_mod_autoload_p(klass, sym);
 }
 
-VALUE
-rb_find_file_relative(VALUE fname)
-{
-  return Qnil;
-}
 
-static VALUE
+VALUE
 rb_file_exist_p(VALUE obj, VALUE path);
 
 int
@@ -771,6 +766,21 @@ rb_feature_exists(VALUE expanded_path)
   
   return 0;
 }
+VALUE
+rb_find_file_relative(VALUE fname)
+{
+  VALUE expanded_file_name;
+
+  expanded_file_name = rb_file_expand_path(fname, Qnil);
+
+  // TODO: Deal with extensions
+  if (rb_feature_exists(expanded_file_name)) {
+    return expanded_file_name;
+  } else {
+    return Qnil;
+  }
+}
+// TODO: Consistent naming across expanded_file_name and expanded_path
 
 VALUE
 rb_find_file_in_load_path(VALUE fname)
@@ -797,7 +807,15 @@ rb_find_file_in_load_path(VALUE fname)
 int
 rb_is_relative_path(VALUE fname)
 {
-  return 0;
+  VALUE start_of_path;
+
+  start_of_path = rb_funcall(fname, rb_intern("slice"), 2, INT2NUM(0), INT2NUM(2));
+  // TODO: Detect "../"
+  if (rb_funcall(start_of_path, rb_intern("=="), 1, rb_str_new2("./")) == Qtrue) {
+    return 1;
+  } else {
+    return 0;
+  }
 }
 
 int
