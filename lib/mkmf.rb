@@ -284,7 +284,7 @@ module Logging
         log.print(open {yield @log})
       ensure
         @log.close if @log and not @log.closed?
-        File::open(tmplog) {|t| FileUtils.copy_stream(t, log)}
+        File::open(tmplog) {|t| FileUtils.copy_stream(t, log)} if File.exist?(tmplog)
         @log, @logfile, @orgout, @orgerr = log, *save
         @postpone -= 1
         rm_f tmplog

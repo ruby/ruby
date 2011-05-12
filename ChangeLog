@@ -1,3 +1,8 @@
+Thu May 12 14:47:53 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/mkmf.rb (Logging.postpone): copy only when tmporary logfile
+	  exists.
+
 Thu May 12 12:24:22 2011  Nobuhiro Iwamatsu  <iwamatsu@nigauri.org>
 
         * ext/openssl/ossl_ssl.c: By trunk@31346, function check of SSLv2 is executed.
