@@ -1,3 +1,7 @@
+Fri May 13 02:15:18 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (select_internal): remove unused variable (interrupt_flag).
+
 Thu May 12 18:24:34 2011  Kouhei Sutou  <kou@clear-code.com>
 
 	* configure.in: limit to "T" type for prefix of external symbols
