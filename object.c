@@ -97,14 +97,15 @@ rb_obj_equal(VALUE obj1, VALUE obj2)
     return Qfalse;
 }
 
-/* 
- * Generates a <code>Fixnum</code> hash value for this object. This function must have the
- * property that a.eql?(b) implies a.hash <code>==</code> b.hash. The hash value is used by
- * class <code>Hash</code>. Any hash value that exceeds the capacity of a <code>Fixnum</code> will be
+/*
+ * Generates a <code>Fixnum</code> hash value for this object.
+ * This function must have the property that a.eql?(b) implies
+ * a.hash <code>==</code> b.hash.
+ * The hash value is used by class <code>Hash</code>.
+ * Any hash value that exceeds the capacity of a <code>Fixnum</code> will be
  * truncated before being used.
  *
- * 	"waffle"	#=> "waffle"
- * 	"waffle".hash	#=> -910576647
+ *      "waffle".hash #=> -910576647
  */
 VALUE
 rb_obj_hash(VALUE obj)
