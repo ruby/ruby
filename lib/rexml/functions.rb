@@ -28,6 +28,7 @@ module REXML
       end
     end
 
+    # Returns the last node of the given list of nodes.
     def Functions::last( )
       @@context[:size]
     end
@@ -36,6 +37,7 @@ module REXML
       @@context[:index]
     end
 
+    # Returns the size of the given list of nodes.
     def Functions::count( node_set )
       node_set.size
     end
@@ -129,6 +131,11 @@ module REXML
       end
     end
 
+    # A node-set is converted to a string by
+    # returning the concatenation of the string-value
+    # of each of the children of the node in the
+    # node-set that is first in document order.
+    # If the node-set is empty, an empty string is returned.
     def Functions::string_value( o )
       rv = ""
       o.children.each { |e|

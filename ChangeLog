@@ -1,3 +1,8 @@
+Sat May 14 02:54:04 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rexml/functions.rb:  Add some documentation for REXML::Functions.
+	  Patch by Sebastian Martinez.  [Ruby 1.9 - Feature #4688]
+
 Sat May 14 02:51:42 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/resolv.rb:  Hide private method and state-tracking constants from
