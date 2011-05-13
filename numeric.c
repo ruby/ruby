@@ -669,7 +669,7 @@ flo_to_s(VALUE flt)
 
 /*
  *  call-seq:
- *     flt.flo_coerce(numeric)  ->  array
+ *     flt.coerce(numeric)  ->  array
  *
  *  Returns an array with both <i>aNumeric</i> and <i>flt</i> represented
  *  as <code>Float</code> objects.
