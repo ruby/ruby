@@ -766,12 +766,51 @@ rb_feature_exists(VALUE expanded_path)
   
   return 0;
 }
+
+const char *available_extensions[] = {".rb", ".so", ""};
+
+VALUE
+rb_find_file_absolute(VALUE fname)
+{
+  int j;
+  VALUE base_file_name;
+  VALUE expanded_file_name;
+
+  base_file_name = fname;
+  for (j = 0; j < 3; ++j) {
+    expanded_file_name = rb_funcall(base_file_name, rb_intern("+"), 1, rb_str_new2(available_extensions[j]));
+
+    // printf("Checking absolute %s\n", RSTRING_PTR(expanded_file_name));
+    if (rb_feature_exists(expanded_file_name)) {
+      return expanded_file_name;
+    }
+  }
+  return Qnil;
+
+  // TODO: Deal with extensions
+  if (rb_feature_exists(expanded_file_name)) {
+    return expanded_file_name;
+  } else {
+    return Qnil;
+  }
+}
 VALUE
 rb_find_file_relative(VALUE fname)
 {
+  int j;
+  VALUE base_file_name;
   VALUE expanded_file_name;
 
-  expanded_file_name = rb_file_expand_path(fname, Qnil);
+  base_file_name = rb_file_expand_path(fname, Qnil);
+  for (j = 0; j < 3; ++j) {
+    expanded_file_name = rb_funcall(base_file_name, rb_intern("+"), 1, rb_str_new2(available_extensions[j]));
+
+    // printf("Checking relative %s\n", RSTRING_PTR(expanded_file_name));
+    if (rb_feature_exists(expanded_file_name)) {
+      return expanded_file_name;
+    }
+  }
+  return Qnil;
 
   // TODO: Deal with extensions
   if (rb_feature_exists(expanded_file_name)) {
@@ -785,20 +824,23 @@ rb_find_file_relative(VALUE fname)
 VALUE
 rb_find_file_in_load_path(VALUE fname)
 {
-  long i;
+  long i, j;
   VALUE load_path = rb_get_expanded_load_path();
   VALUE expanded_path = Qnil;
 
   for (i = 0; i < RARRAY_LEN(load_path); ++i) {
     VALUE directory = RARRAY_PTR(load_path)[i];
 
-    // TODO: Loop over potential extensions
-    expanded_path = rb_funcall(directory, rb_intern("+"), 1, rb_str_new2("/"));
-    expanded_path = rb_funcall(expanded_path, rb_intern("+"), 1, fname);
-    expanded_path = rb_funcall(expanded_path, rb_intern("+"), 1, rb_str_new2(".rb"));
+    // TODO: Don't check extra extensions if an extension is provided
+    for (j = 0; j < 3; ++j) {
+      expanded_path = rb_funcall(directory, rb_intern("+"), 1, rb_str_new2("/"));
+      expanded_path = rb_funcall(expanded_path, rb_intern("+"), 1, fname);
+      expanded_path = rb_funcall(expanded_path, rb_intern("+"), 1, rb_str_new2(available_extensions[j]));
 
-    if (rb_feature_exists(expanded_path)) {
-      return expanded_path;
+      // printf("Checking load path %s\n", RSTRING_PTR(expanded_path));
+      if (rb_feature_exists(expanded_path)) {
+        return expanded_path;
+      }
     }
   }
   return Qnil;
@@ -866,6 +908,8 @@ rb_require_safe_2(VALUE fname, int safe)
 
   if (rb_is_relative_path(fname)) {
     path = rb_find_file_relative(fname);
+  } else if (rb_is_absolute_path(RSTRING_PTR(fname))) {
+    path = rb_find_file_absolute(fname);
   } else {
     path = rb_find_file_in_load_path(fname);
   }
