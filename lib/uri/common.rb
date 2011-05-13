@@ -1,9 +1,12 @@
+#--
 # = uri/common.rb
 #
 # Author:: Akira Yamada <akira@ruby-lang.org>
 # Revision:: $Id$
 # License::
 #   You can redistribute it and/or modify it under the same term as Ruby.
+#
+# See URI for general documentation
 #
 
 module URI
@@ -634,7 +637,7 @@ module URI
       DEFAULT_PARSER.unescape(*arg)
     end
     alias decode unescape
-  end
+  end # module Escape
 
   extend Escape
   include REGEXP
@@ -978,7 +981,7 @@ module URI
     end
     ary
   end
-end
+end # module URI
 
 module Kernel
 

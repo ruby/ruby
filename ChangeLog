@@ -1,3 +1,8 @@
+Sat May 14 05:02:58 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/uri.rb:  Add toplevel documentation.  Patch by Vincent Batts.
+	  [Ruby 1.9 - Bug #4690]
+
 Sat May 14 04:19:06 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* NEWS: Describe altered behaviour for RSA and DSA public key

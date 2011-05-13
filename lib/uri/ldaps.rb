@@ -1,3 +1,10 @@
+# = uri/ldap.rb
+#
+# License:: You can redistribute it and/or modify it under the same term as Ruby.
+#
+# See URI for general documentation
+#
+
 require 'uri/ldap'
 
 module URI
