@@ -98,6 +98,12 @@ with all sufficient information, see the ChangeLog file.
 * net/http
   * SNI (Server Name Indication) supported for HTTPS. 
 
+* openssl
+  * PKey::RSA and PKey::DSA now use the generic X.509 encoding scheme 
+    (e.g. used in a X.509 certificate's Subject Public Key Info) when
+    exporting public keys to DER or PEM. Backward compatibility is 
+    ensured by (already existing) fallbacks during creation.
+
 * optparse
   * support for bash/zsh completion.
 

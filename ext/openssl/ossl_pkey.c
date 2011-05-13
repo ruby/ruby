@@ -18,6 +18,9 @@ VALUE cPKey;
 VALUE ePKeyError;
 ID id_private_q;
 
+#define reset_bio(b)		(void)BIO_reset((b)); \
+				(void)ERR_get_error();
+
 /*
  * callback for generating keys
  */
@@ -65,23 +68,50 @@ ossl_pkey_new(EVP_PKEY *pkey)
     return Qnil; /* not reached */
 }
 
-VALUE
-ossl_pkey_new_from_file(VALUE filename)
+/*
+ *  call-seq:
+ *     OpenSSL::PKey.read(string [, pwd ] ) -> PKey
+ *     OpenSSL::PKey.read(file [, pwd ]) -> PKey
+ *
+ *  === Parameters
+ *  * +string+ is a DER- or PEM-encoded string containing an arbitrary private
+ *             or public key.
+ *  * +file+ is an instance of +File+ containing a DER- or PEM-encoded
+ *	     arbitrary private or public key.
+ *  * +pwd+ is an optional password in case +string+ or +file+ is an encrypted
+ *          PEM resource.
+ */
+VALUE 
+ossl_pkey_new_from_data(int argc, VALUE *argv, VALUE self)
 {
-    FILE *fp;
     EVP_PKEY *pkey;
+    BIO *bio;
+    VALUE data, pass;
+    char *passwd = NULL;
 
-    SafeStringValue(filename);
-    if (!(fp = fopen(RSTRING_PTR(filename), "r"))) {
-	ossl_raise(ePKeyError, "%s", strerror(errno));
+    rb_scan_args(argc, argv, "11", &data, &pass);
+
+    bio = ossl_obj2bio(data);
+    if (!(pkey = d2i_PrivateKey_bio(bio, NULL))) {
+	reset_bio(bio);
+	if (!NIL_P(pass)) {
+	    passwd = StringValuePtr(pass);
+	}
+	if (!(pkey = PEM_read_bio_PrivateKey(bio, NULL, ossl_pem_passwd_cb, passwd))) {
+	    reset_bio(bio);
+	    if (!(pkey = d2i_PUBKEY_bio(bio, NULL))) {
+		reset_bio(bio);
+		if (!NIL_P(pass)) {
+		    passwd = StringValuePtr(pass);
+		}
+		pkey = PEM_read_bio_PUBKEY(bio, NULL, ossl_pem_passwd_cb, passwd);
+	    }
+	}
     }
-
-    pkey = PEM_read_PrivateKey(fp, NULL, ossl_pem_passwd_cb, NULL);
-    fclose(fp);
-    if (!pkey) {
-	ossl_raise(ePKeyError, NULL);
-    }
-
+    
+    BIO_free(bio);
+    if (!pkey)
+	ossl_raise(rb_eArgError, "Could not parse PKey");
     return ossl_pkey_new(pkey);
 }
 
@@ -220,6 +250,8 @@ Init_ossl_pkey()
     ePKeyError = rb_define_class_under(mPKey, "PKeyError", eOSSLError);
 
     cPKey = rb_define_class_under(mPKey, "PKey", rb_cObject);
+
+    rb_define_module_function(mPKey, "read", ossl_pkey_new_from_data, -1);
 
     rb_define_alloc_func(cPKey, ossl_pkey_alloc);
     rb_define_method(cPKey, "initialize", ossl_pkey_initialize, 0);
