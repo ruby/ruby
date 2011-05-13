@@ -1,3 +1,10 @@
+Fri May 13 18:42:22 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* README.EXT: fix typo.  Patch by William Blackerby.
+	  https://github.com/ruby/ruby/pull/19
+
+	* README.EXT.ja: ditto.
+
 Fri May 13 15:22:34 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_select): check invalid handle before doing
@@ -8457,7 +8464,7 @@ For the changes before 1.9.3, see doc/ChangeLog-1.9.3
 For the changes before 1.8.0, see doc/ChangeLog-1.8.0
 
 Local variables:
-coding: us-ascii
+coding: utf-8
 add-log-time-format: (lambda ()
   (let* ((time (current-time))
 	 (system-time-locale "C")

@@ -1010,7 +1010,7 @@ Rubyコマンドの実装
   struct.c      : Struct
   time.c        : Time
 
-  defs/knwon_errors.def  : 例外クラス Errno::*
+  defs/known_errors.def  : 例外クラス Errno::*
     -> known_errors.inc  : 自動生成
 
 多言語化
