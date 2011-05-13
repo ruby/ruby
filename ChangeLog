@@ -1,3 +1,7 @@
+Sat May 14 07:30:29 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb: released a new gem, so increasing version.
+
 Sat May 14 05:08:32 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_digest.c
