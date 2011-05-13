@@ -23,6 +23,7 @@ unless Socket.const_defined? "AF_INET6"
   end
 
   class << IPSocket
+    # Returns +true+ if +addr+ is a valid IPv4 address.
     def valid_v4?(addr)
       if /\A(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\Z/ =~ addr
         return $~.captures.all? {|i| i.to_i < 256}
@@ -30,6 +31,7 @@ unless Socket.const_defined? "AF_INET6"
       return false
     end
 
+    # Returns +true+ if +addr+ is a valid IPv6 address.
     def valid_v6?(addr)
       # IPv6 (normal)
       return true if /\A[\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*\Z/ =~ addr
@@ -43,6 +45,7 @@ unless Socket.const_defined? "AF_INET6"
       false
     end
 
+    # Returns +true+ if +addr+ is either a valid IPv4 or IPv6 address.
     def valid?(addr)
       valid_v4?(addr) || valid_v6?(addr)
     end

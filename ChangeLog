@@ -1,3 +1,8 @@
+Sat May 14 02:57:52 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/ipaddr.rb (unless Socket):  Document valid*? methods.  Patch by
+	  Sebastian Martinez.  [Ruby 1.9 - Feature #4687]
+
 Sat May 14 02:54:04 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rexml/functions.rb:  Add some documentation for REXML::Functions.
