@@ -1,3 +1,9 @@
+Fri May 13 19:23:21 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* numeric.c (flo_coerce): Add #flo_coerce documentation.
+	  Patch by Sebastian Martinez.
+	  https://github.com/ruby/ruby/pull/21
+
 Fri May 13 18:42:22 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* README.EXT: fix typo.  Patch by William Blackerby.
