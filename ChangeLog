@@ -1,3 +1,8 @@
+Sat May 14 02:51:42 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/resolv.rb:  Hide private method and state-tracking constants from
+	  RDoc.  Patch by Mark Turner.  [Ruby 1.9 - Feature #4691]
+
 Fri May 13 19:23:21 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* numeric.c (flo_coerce): Add #flo_coerce documentation.
