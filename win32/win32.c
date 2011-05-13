@@ -2391,34 +2391,41 @@ static int
 extract_fd(rb_fdset_t *dst, fd_set *src, int (*func)(SOCKET))
 {
     unsigned int s = 0;
-    if (!src || !dst) return 0;
+    unsigned int m = 0;
+    if (!src) return 0;
 
     while (s < src->fd_count) {
         SOCKET fd = src->fd_array[s];
 
-	if (!func || (*func)(fd)) { /* move it to dst */
-	    unsigned int d;
+	if (!func || (*func)(fd)) {
+	    if (dst) { /* move it to dst */
+		unsigned int d;
 
-	    for (d = 0; d < dst->fdset->fd_count; d++) {
-		if (dst->fdset->fd_array[d] == fd)
-		    break;
-	    }
-	    if (d == dst->fdset->fd_count) {
-		if ((int)dst->fdset->fd_count >= dst->capa) {
-		    dst->capa = (dst->fdset->fd_count / FD_SETSIZE + 1) * FD_SETSIZE;
-		    dst->fdset = xrealloc(dst->fdset, sizeof(unsigned int) + sizeof(SOCKET) * dst->capa);
+		for (d = 0; d < dst->fdset->fd_count; d++) {
+		    if (dst->fdset->fd_array[d] == fd)
+			break;
 		}
-		dst->fdset->fd_array[dst->fdset->fd_count++] = fd;
+		if (d == dst->fdset->fd_count) {
+		    if ((int)dst->fdset->fd_count >= dst->capa) {
+			dst->capa = (dst->fdset->fd_count / FD_SETSIZE + 1) * FD_SETSIZE;
+			dst->fdset = xrealloc(dst->fdset, sizeof(unsigned int) + sizeof(SOCKET) * dst->capa);
+		    }
+		    dst->fdset->fd_array[dst->fdset->fd_count++] = fd;
+		}
+		memmove(
+		    &src->fd_array[s],
+		    &src->fd_array[s+1],
+		    sizeof(src->fd_array[0]) * (--src->fd_count - s));
 	    }
-	    memmove(
-		&src->fd_array[s],
-		&src->fd_array[s+1],
-		sizeof(src->fd_array[0]) * (--src->fd_count - s));
+	    else {
+		m++;
+		s++;
+	    }
 	}
 	else s++;
     }
 
-    return dst->fdset->fd_count;
+    return dst ? dst->fdset->fd_count : m;
 }
 
 static int
@@ -2512,6 +2519,12 @@ is_readable_console(SOCKET sock) /* call this for console only */
     );
 
     return ret;
+}
+
+static int
+is_invalid_handle(SOCKET sock)
+{
+    return (HANDLE)sock == INVALID_HANDLE_VALUE;
 }
 
 static int
@@ -2625,14 +2638,23 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     rb_fd_init(&else_rd);
     nonsock += extract_fd(&else_rd, rd, is_not_socket);
 
+    rb_fd_init(&else_wr);
+    nonsock += extract_fd(&else_wr, wr, is_not_socket);
+
+    // check invalid handles
+    if (extract_fd(NULL, else_rd.fdset, is_invalid_handle) > 0 ||
+	extract_fd(NULL, else_wr.fdset, is_invalid_handle) > 0) {
+	rb_fd_term(&else_wr);
+	rb_fd_term(&else_rd);
+	errno = EBADF;
+	return -1;
+    }
+
     rb_fd_init(&pipe_rd);
     extract_fd(&pipe_rd, else_rd.fdset, is_pipe); // should not call is_pipe for socket
 
     rb_fd_init(&cons_rd);
     extract_fd(&cons_rd, else_rd.fdset, is_console); // ditto
-
-    rb_fd_init(&else_wr);
-    nonsock += extract_fd(&else_wr, wr, is_not_socket);
 
     rb_fd_init(&except);
     extract_fd(&except, ex, is_not_socket); // drop only
@@ -2694,9 +2716,9 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     }
 
     rb_fd_term(&except);
-    rb_fd_term(&else_wr);
     rb_fd_term(&cons_rd);
     rb_fd_term(&pipe_rd);
+    rb_fd_term(&else_wr);
     rb_fd_term(&else_rd);
 
     return r;

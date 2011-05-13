@@ -1,3 +1,8 @@
+Fri May 13 15:22:34 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_select): check invalid handle before doing
+	  select operations.  see [ruby-dev:43513], [ruby-dev:43535]
+
 Fri May 13 08:34:00 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/rdoc.rb:  Output summary after documentation report.
