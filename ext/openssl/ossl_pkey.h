@@ -41,7 +41,7 @@ extern ID id_private_q;
 void ossl_generate_cb(int, int, void *);
 
 VALUE ossl_pkey_new(EVP_PKEY *);
-VALUE ossl_pkey_new_from_data(int, VALUE *, VALUE);
+VALUE ossl_pkey_new_from_file(VALUE);
 EVP_PKEY *GetPKeyPtr(VALUE);
 EVP_PKEY *DupPKeyPtr(VALUE);
 EVP_PKEY *GetPrivPKeyPtr(VALUE);

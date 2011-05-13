@@ -1,3 +1,11 @@
+Sat May 14 05:08:32 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_digest.c
+	* ext/openssl/ossl_pkey.c
+	* ext/openssl/ossl_pkey.h
+	* test/openssl/pkey/test_pkey_rsa.rb
+	Reverted premature commit. Sorry for the noise!
+
 Sat May 14 05:02:58 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/uri.rb:  Add toplevel documentation.  Patch by Vincent Batts.

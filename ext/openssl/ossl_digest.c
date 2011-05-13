@@ -239,8 +239,6 @@ Init_ossl_digest()
     mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL */
 #endif
 
-    /* Allows you to compute cryptographic hashes of arbitrary data. 
-     */
     cDigest = rb_define_class_under(mOSSL, "Digest", rb_path2class("Digest::Class"));
     eDigestError = rb_define_class_under(cDigest, "DigestError", eOSSLError);
 
