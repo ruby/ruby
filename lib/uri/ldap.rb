@@ -37,8 +37,9 @@ module URI
     # Scopes available for the starting point.
     #
     # * SCOPE_BASE - the Base DN
-    # * SCOPE_ONE  - one level under the Base DN, not including the base DN and not including any entries under this.
-    # * SCOPE_SUB  - subtress, all entries at all levels 
+    # * SCOPE_ONE  - one level under the Base DN, not including the base DN and
+    #                not including any entries under this.
+    # * SCOPE_SUB  - subtress, all entries at all levels
     #
     SCOPE = [
       SCOPE_ONE = 'one',

@@ -290,7 +290,8 @@ module URI
     #
     # == Description
     #
-    # constructs a safe String from +str+, removing unsafe characters, replacing them with codes.
+    # constructs a safe String from +str+, removing unsafe characters,
+    # replacing them with codes.
     #
     def escape(str, unsafe = @regexp[:UNSAFE])
       unless unsafe.kind_of?(Regexp)

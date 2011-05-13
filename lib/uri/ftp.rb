@@ -47,8 +47,8 @@ module URI
     # alternate initialization
     # Creates a new URI::FTP object.
     #
-    # Unlike build(), this method does not escape the path component as required by
-    # RFC1738; instead it is treated as per RFC2396.
+    # Unlike build(), this method does not escape the path component as
+    # required by RFC1738; instead it is treated as per RFC2396.
     #
     # Arguments are user, password, host, port, path, typecode,
     # and arg_check, in that order.

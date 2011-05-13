@@ -224,7 +224,8 @@ class Logger
     @default_formatter.datetime_format = datetime_format
   end
 
-  # Returns the date format (string passed to +strftime+) being used (it's set using datetime_format=)
+  # Returns the date format (string passed to +strftime+) being used (it's set
+  # using datetime_format=)
   def datetime_format
     @default_formatter.datetime_format
   end
@@ -305,8 +306,8 @@ class Logger
   # +message+::
   #   The log message.  A String or Exception.
   # +progname+::
-  #   Program name string.  Can be omitted.  Treated as a message if no +message+ and
-  #   +block+ are given.
+  #   Program name string.  Can be omitted.  Treated as a message if no
+  #   +message+ and +block+ are given.
   # +block+::
   #   Can be omitted.  Called to get a message string if +message+ is nil.
   #
