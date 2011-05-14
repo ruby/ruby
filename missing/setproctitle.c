@@ -39,7 +39,9 @@
 
 #include <stdarg.h>
 #include <stdlib.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #ifdef HAVE_SYS_PSTAT_H
 #include <sys/pstat.h>
 #endif

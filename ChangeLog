@@ -1,3 +1,9 @@
+Sun May 15 00:58:47 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+	fix mswin32 build error.
+
+	* missing/setproctitle.c: oadd #ifdef HAVE_UNISTD_H.
+	* win32/Makefile.sub (MISSING): add setproctitle.obj
+
 Sat May 14 22:45:28 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* missing/setproctitle.c: add to include "ruby/util.h".
