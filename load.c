@@ -846,14 +846,19 @@ rb_find_file_in_load_path(VALUE fname)
   return Qnil;
 }
 
+// TODO: The code in this function is rubbish
 int
 rb_is_relative_path(VALUE fname)
 {
-  VALUE start_of_path;
+  VALUE start_of_path_2;
+  VALUE start_of_path_3;
 
-  start_of_path = rb_funcall(fname, rb_intern("slice"), 2, INT2NUM(0), INT2NUM(2));
-  // TODO: Detect "../"
-  if (rb_funcall(start_of_path, rb_intern("=="), 1, rb_str_new2("./")) == Qtrue) {
+  start_of_path_2 = rb_funcall(fname, rb_intern("slice"), 2, INT2NUM(0), INT2NUM(2));
+  start_of_path_3 = rb_funcall(fname, rb_intern("slice"), 2, INT2NUM(0), INT2NUM(3));
+  if (
+    rb_funcall(start_of_path_2, rb_intern("=="), 1, rb_str_new2("./")) == Qtrue ||
+    rb_funcall(start_of_path_3, rb_intern("=="), 1, rb_str_new2("../")) == Qtrue
+  ) {
     return 1;
   } else {
     return 0;
