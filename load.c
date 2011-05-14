@@ -868,7 +868,14 @@ rb_is_relative_path(VALUE fname)
 int
 rb_file_is_ruby(VALUE fname)
 {
-  return 1;
+  char * ext;
+  ext = ruby_find_extname(RSTRING_PTR(fname), 0);
+
+  if (IS_RBEXT(ext)) {
+    return 1;
+  } else {
+    return 0;
+  }
 }
 
 int
