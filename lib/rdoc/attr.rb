@@ -68,6 +68,19 @@ class RDoc::Attr < RDoc::MethodAttr
     end
   end
 
+  def inspect # :nodoc:
+    alias_for = @is_alias_for ? " (alias for #{@is_alias_for.name})" : nil
+    visibility = self.visibility
+    visibility = "forced #{visibility}" if force_documentation
+    "#<%s:0x%x %s %s (%s)%s>" % [
+      self.class, object_id,
+      full_name,
+      rw,
+      visibility,
+      alias_for,
+    ]
+  end
+
   ##
   # Dumps this Attr for use by ri.  See also #marshal_load
 

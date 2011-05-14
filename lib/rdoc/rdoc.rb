@@ -418,7 +418,7 @@ The internal error was:
       @last_modified = setup_output_dir @options.op_dir, @options.force_update
     end
 
-    start_time = Time.now
+    @start_time = Time.now
 
     file_info = parse_files @options.files
 
@@ -439,20 +439,7 @@ The internal error was:
 
       @generator = gen_klass.new @options
 
-      Dir.chdir @options.op_dir do
-        begin
-          self.class.current = self
-
-          unless @options.quiet then
-            $stderr.puts "\nGenerating #{gen_klass.name.sub(/^.*::/, '')} format into #{Dir.pwd}..."
-          end
-
-          @generator.generate file_info
-          update_output_dir ".", start_time, @last_modified
-        ensure
-          self.class.current = nil
-        end
-      end
+      generate file_info
     end
 
     if @stats and (@options.coverage_report or not @options.quiet) then
@@ -461,6 +448,28 @@ The internal error was:
     end
 
     exit @stats.fully_documented? if @options.coverage_report
+  end
+
+  ##
+  # Generates documentation for +file_info+ (from #parse_files) into the
+  # output dir using the generator selected
+  # by the RDoc options
+
+  def generate file_info
+    Dir.chdir @options.op_dir do
+      begin
+        self.class.current = self
+
+        unless @options.quiet then
+          $stderr.puts "\nGenerating #{@generator.class.name.sub(/^.*::/, '')} format into #{Dir.pwd}..."
+        end
+
+        @generator.generate file_info
+        update_output_dir '.', @start_time, @last_modified
+      ensure
+        self.class.current = nil
+      end
+    end
   end
 
   ##

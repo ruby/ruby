@@ -1558,31 +1558,44 @@ class RDoc::Parser::Ruby < RDoc::Parser
     when TkNL, TkUNLESS_MOD, TkIF_MOD, TkSEMICOLON then
       container.ongoing_visibility = vis
     else
-      if vis_type == 'module_function' then
+      new_methods = []
+
+      case vis_type 
+      when 'module_function' then
         args = parse_symbol_arg
         container.set_visibility_for args, :private, false
-
-        module_functions = []
 
         container.methods_matching args do |m|
           s_m = m.dup
           s_m.record_location @top_level
           s_m.singleton = true
-          s_m.visibility = :public
-          module_functions << s_m
+          new_methods << s_m
         end
+      when 'public_class_method', 'private_class_method' then
+        args = parse_symbol_arg
 
-        module_functions.each do |s_m|
-          case s_m
-          when RDoc::AnyMethod then
-            container.add_method s_m
-          when RDoc::Attr then
-            container.add_attribute s_m
+        container.methods_matching args, true do |m|
+          if m.parent != container then
+            m = m.dup
+            m.record_location @top_level
+            new_methods << m
           end
+
+          m.visibility = vis
         end
       else
         args = parse_symbol_arg
         container.set_visibility_for args, vis, singleton
+      end
+
+      new_methods.each do |method|
+        case method
+        when RDoc::AnyMethod then
+          container.add_method method
+        when RDoc::Attr then
+          container.add_attribute method
+        end
+        method.visibility = vis
       end
     end
   end

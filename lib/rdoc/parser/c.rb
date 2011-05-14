@@ -376,7 +376,7 @@ class RDoc::Parser::C < RDoc::Parser
     when %r%((?>/\*.*?\*/\s*)?)
             ((?:(?:static|SWIGINTERN)\s+)?
              (?:intern\s+)?VALUE\s+#{meth_name}
-             \s*(\(.*?\))([^;]|$))%xm then
+             \s*(\([^)]*\))([^;]|$))%xm then
       comment = $1
       body = $2
       offset = $~.offset(2).first

@@ -1,3 +1,7 @@
+Sat May 14 09:31:43 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc.rb: Updated to RDoc 3.6
+
 Sat May 14 07:30:29 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych.rb: released a new gem, so increasing version.

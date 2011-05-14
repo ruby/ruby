@@ -333,6 +333,8 @@ class RDoc::MethodAttr < RDoc::CodeObject
 
   def inspect # :nodoc:
     alias_for = @is_alias_for ? " (alias for #{@is_alias_for.name})" : nil
+    visibility = self.visibility
+    visibility = "forced #{visibility}" if force_documentation
     "#<%s:0x%x %s (%s)%s>" % [
       self.class, object_id,
       full_name,

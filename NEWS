@@ -108,7 +108,7 @@ with all sufficient information, see the ChangeLog file.
   * support for bash/zsh completion.
 
 * RDoc
-  * RDoc has been upgraded to RDoc 3.5.3.  For full release notes see
+  * RDoc has been upgraded to RDoc 3.6.  For full release notes see
     http://docs.seattlerb.org/rdoc/History_txt.html
 
 * rexml

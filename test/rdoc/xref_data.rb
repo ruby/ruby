@@ -63,5 +63,14 @@ end
 
 module M1::M2
 end
+
+class Parent
+  def m() end
+  def self.m() end
+end
+
+class Child < Parent
+end
+
 XREF_DATA
 

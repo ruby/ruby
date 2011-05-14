@@ -403,9 +403,11 @@ class RDoc::RubyLex
       res = ''
       nil until (ch = getc) == "\n"
 
-      until peek_equal?("=end") && peek(4) =~ /\s/ do
-        until (ch = getc) == "\n" do res << ch end
+      until ( peek_equal?("=end") && peek(4) =~ /\s/ ) do
+        (ch = getc)
+        res << ch
       end
+  
       gets # consume =end
 
       @ltype = nil

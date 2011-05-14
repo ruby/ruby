@@ -31,7 +31,7 @@ class RDoc::Stats
 
     @coverage_level = 0
     @doc_items = nil
-    @fully_documented = nil
+    @fully_documented = false
     @num_params = 0
     @percent_doc = nil
     @start = Time.now

@@ -181,6 +181,20 @@ class RDoc::CodeObject
   end
 
   ##
+  # Yields each parent of this CodeObject.  See also
+  # RDoc::ClassModule#each_ancestor
+
+  def each_parent
+    code_object = self
+
+    while code_object = code_object.parent do
+      yield code_object
+    end
+
+    self
+  end
+
+  ##
   # Force the documentation of this object unless documentation
   # has been turned off by :endoc:
   #--

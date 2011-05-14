@@ -7,6 +7,18 @@ require 'fileutils'
 # The store manages reading and writing ri data for a project (gem, path,
 # etc.) and maintains a cache of methods, classes and ancestors in the
 # store.
+#
+# The store maintains a #cache of its contents for faster lookup.  After
+# adding items to the store it must be flushed using #save_cache.  The cache
+# contains the following structures:
+#
+#    @cache = {
+#      :class_methods    => {}, # class name => class methods
+#      :instance_methods => {}, # class name => instance methods
+#      :attributes       => {}, # class name => attributes
+#      :modules          => [], # classes and modules in this store
+#      :ancestors        => {}, # class name => ancestor names
+#    }
 
 class RDoc::RI::Store
 

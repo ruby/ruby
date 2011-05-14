@@ -3,31 +3,39 @@ $DEBUG_RDOC = nil
 # :main: README.txt
 
 ##
-# = \RDoc - Ruby Documentation System
+# RDoc is a Ruby documentation system which contains RDoc::RDoc for generating
+# documentation, RDoc::RI for interactive documentation and RDoc::Markup for
+# text markup.
 #
-# This package contains RDoc and RDoc::Markup.  RDoc is an application that
-# produces documentation for one or more Ruby source files.  It works similarly
-# to JavaDoc, parsing the source, and extracting the definition for classes,
-# modules, and methods (along with includes and requires).  It associates with
-# these optional documentation contained in the immediately preceding comment
-# block, and then renders the result using a pluggable output formatter.
-# RDoc::Markup is a library that converts plain text into various output
-# formats.  The markup library is used to interpret the comment blocks that
-# RDoc uses to document methods, classes, and so on.
+# RDoc::RDoc produces documentation for Ruby source files.  It works similarly
+# to JavaDoc, parsing the source and extracting the definition for classes,
+# modules, methods, includes and requires.  It associates these with optional
+# documentation contained in an immediately preceding comment block then
+# renders the result using an output formatter.
+#
+# RDoc::Markup that converts plain text into various output formats.  The
+# markup library is used to interpret the comment blocks that RDoc uses to
+# document methods, classes, and so on.
+#
+# RDoc::RI implements the +ri+ command-line tool which displays on-line
+# documentation for ruby classes, methods, etc.  +ri+ features several output
+# formats and an interactive mode (<tt>ri -i</tt>).  See <tt>ri --help</tt>
+# for further details.
 #
 # == Roadmap
 #
 # * If you want to use RDoc to create documentation for your Ruby source files,
-#   read the summary below, and refer to <tt>rdoc --help</tt> for command line
-#   usage, and RDoc::Markup for a detailed description of RDoc's markup.
+#   see RDoc::Markup and refer to <tt>rdoc --help</tt> for command line
+#   usage.
 # * If you want to generate documentation for extensions written in C, see
 #   RDoc::Parser::C
+# * If you want to generate documentation using <tt>rake</tt> see RDoc::Task.
 # * If you want to drive RDoc programmatically, see RDoc::RDoc.
 # * If you want to use the library to format text blocks into HTML, look at
 #   RDoc::Markup.
 # * If you want to make an RDoc plugin such as a generator or directive
 #   handler see RDoc::RDoc.
-# * If you want to try writing your own output generator see RDoc::Generator.
+# * If you want to write your own output generator see RDoc::Generator.
 #
 # == Summary
 #
@@ -95,7 +103,7 @@ module RDoc
   ##
   # RDoc version you are using
 
-  VERSION = '3.5.3'
+  VERSION = '3.6'
 
   ##
   # Method visibilities
