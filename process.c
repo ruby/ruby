@@ -5611,12 +5611,12 @@ p_gid_switch(VALUE obj)
  *  call-seq:
  *     Process.times   -> aStructTms
  *
- *  Returns a <code>Tms</code> structure (see <code>Struct::Tms</code>
- *  on page 388) that contains user and system CPU times for this
- *  process.
+ *  Returns a <code>Tms</code> structure (see <code>Struct::Tms</code>)
+ *  that contains user and system CPU times for this process,
+ *  and also for children processes.
  *
  *     t = Process.times
- *     [ t.utime, t.stime ]   #=> [0.0, 0.02]
+ *     [ t.utime, t.stime, t.cutime, t.cstime ]   #=> [0.0, 0.02, 0.00, 0.00]
  */
 
 VALUE

@@ -1,3 +1,8 @@
+Sat May 14 17:42:21 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* process.c (rb_proc_times): improve documentation.
+	  [ruby-core:35785] fixes #4581, reported by Andrew Grimm.
+
 Sat May 14 12:12:54 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/test_pkey_dsa.rb: Add basic tests and tests that 
