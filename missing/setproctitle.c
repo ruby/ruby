@@ -110,12 +110,8 @@ compat_init_setproctitle(int argc, char *argv[])
 	argv_len = lastargv - argv[0];
 	argv_env_len = lastenvp - argv[0];
 
-	/*
-	 * Copy environment
-	 * XXX - will truncate env on strdup fail
-	 */
 	for (i = 0; envp[i] != NULL; i++)
-		environ[i] = strdup(envp[i]);
+		environ[i] = ruby_strdup(envp[i]);
 	environ[i] = NULL;
 #endif /* SPT_REUSEARGV */
 }
