@@ -1,3 +1,11 @@
+Sat May 14 12:12:54 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* test/openssl/test_pkey_dsa.rb: Add basic tests and tests that 
+	ensure new public key PEM encoding behavior and ensure backward 
+	compatibility.
+	[Ruby 1.9 - Bug #4422] [ruby-core:35328]
+	* test/openssl/test_pkey_rsa.rb: Remove line with 'puts'.
+
 Sat May 14 12:06:49 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/context.rb (class RDoc):  Fix infinite loop caused by
@@ -7,7 +15,7 @@ Sat May 14 10:32:36 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/test_pkey_rsa.rb: Add tests that ensure new public key
 	encoding behavior and also ensure backward compatibility.
-	[Ruby 1.9 - Bug #4421, Bug #4422] [ruby-core:35327,35328]
+	[Ruby 1.9 - Bug #4421] [ruby-core:35327]
 
 Sat May 14 09:50:10 2011  Eric Hodel  <drbrain@segment7.net>
 

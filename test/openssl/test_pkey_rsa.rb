@@ -65,9 +65,9 @@ class OpenSSL::TestPKeyRSA < Test::Unit::TestCase
   def test_read_RSA_PUBKEY
     modulus = 10664264882656732240315063514678024569492171560814833397008094754351396057398262071307709191731289492697968568138092052265293364132872019762410446076526351
     exponent = 65537
-    algo_id = OpenSSL::ASN1::ObjectId.new('rsaEncryption')
+    algo = OpenSSL::ASN1::ObjectId.new('rsaEncryption')
     null_params = OpenSSL::ASN1::Null.new(nil)
-    algo_id = OpenSSL::ASN1::Sequence.new ([algo_id, null_params])
+    algo_id = OpenSSL::ASN1::Sequence.new ([algo, null_params])
     pub_key = OpenSSL::ASN1::Sequence.new([OpenSSL::ASN1::Integer.new(modulus), OpenSSL::ASN1::Integer.new(exponent)])
     seq = OpenSSL::ASN1::Sequence.new([algo_id, OpenSSL::ASN1::BitString.new(pub_key.to_der)])
     key = OpenSSL::PKey::RSA.new(seq.to_der)
@@ -128,8 +128,7 @@ AwEAAQ==
   def test_export_format_is_RSA_PUBKEY_pem
     key = OpenSSL::PKey::RSA.new(512)
     pem = key.public_key.to_pem
-    pem.gsub!(/^-*(\w|\s)+-*$/, "") # eliminate --------BEGIN...-------
-    puts pem
+    pem.gsub!(/^-+(\w|\s)+-+$/, "") # eliminate --------BEGIN...-------
     asn1 = OpenSSL::ASN1.decode(Base64.decode64(pem))
     check_PUBKEY(asn1, key)
   end
