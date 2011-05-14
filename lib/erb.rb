@@ -1,7 +1,7 @@
 # = ERB -- Ruby Templating
 #
 # Author:: Masatoshi SEKI
-# Documentation:: James Edward Gray II and Gavin Sinclair
+# Documentation:: James Edward Gray II, Gavin Sinclair, and Simon Chiang
 #
 # See ERB for primary documentation and ERB::Util for a couple of utility
 # routines.
@@ -265,7 +265,77 @@ end
 #--
 # ERB::Compiler
 class ERB
-  class Compiler # :nodoc:
+  # = ERB::Compiler
+  # 
+  # Compiles ERB templates into Ruby code; the compiled code produces the
+  # template result when evaluated. ERB::Compiler provides hooks to define how
+  # generated output is handled.
+  #
+  # Internally ERB does something like this to generate the code returned by
+  # ERB#src:
+  #
+  #   compiler = ERB::Compiler.new('<>')
+  #   compiler.pre_cmd    = ["_erbout=''"]
+  #   compiler.put_cmd    = "_erbout.concat"
+  #   compiler.insert_cmd = "_erbout.concat"
+  #   compiler.post_cmd   = ["_erbout"]
+  #
+  #   code, enc = compiler.compile("Got <%= obj %>!\n")
+  #   puts code
+  #
+  # <i>Generates</i>:
+  #
+  #   #coding:UTF-8
+  #   _erbout=''; _erbout.concat "Got "; _erbout.concat(( obj ).to_s); _erbout.concat "!\n"; _erbout
+  #
+  # By default the output is sent to the print method.  For example:
+  #
+  #   compiler = ERB::Compiler.new('<>')
+  #   code, enc = compiler.compile("Got <%= obj %>!\n")
+  #   puts code
+  #
+  # <i>Generates</i>:
+  #
+  #   #coding:UTF-8
+  #   print "Got "; print(( obj ).to_s); print "!\n"
+  #
+  # == Evaluation
+  #
+  # The compiled code can be used in any context where the names in the code
+  # correctly resolve. Using the last example, each of these print 'Got It!'
+  #
+  # Evaluate using a variable:
+  #
+  #   obj = 'It'
+  #   eval code
+  # 
+  # Evaluate using an input:
+  #
+  #   mod = Module.new
+  #   mod.module_eval %{
+  #     def get(obj)
+  #       #{code}
+  #     end
+  #   }
+  #   extend mod
+  #   get('It')
+  #
+  # Evaluate using an accessor:
+  #
+  #   klass = Class.new Object
+  #   klass.class_eval %{
+  #     attr_accessor :obj
+  #     def initialize(obj)
+  #       @obj = obj
+  #     end
+  #     def get_it
+  #       #{code}
+  #     end
+  #   }
+  #   klass.new('It').get_it
+  #
+  # Good! See also ERB#def_method, ERB#def_module, and ERB#def_class.
+  class Compiler
     class PercentLine # :nodoc:
       def initialize(str)
         @value = str
@@ -501,7 +571,7 @@ class ERB
       end
     end
 
-    def content_dump(s)
+    def content_dump(s) # :nodoc:
       n = s.count("\n")
       if n > 0
         s.dump + "\n" * n
@@ -510,6 +580,8 @@ class ERB
       end
     end
 
+    # Compiles an ERB template into Ruby code.  Returns an array of the code
+    # and encoding like ["code", Encoding].
     def compile(s)
       enc = s.encoding
       raise ArgumentError, "#{enc} is not ASCII compatible" if enc.dummy?
@@ -575,7 +647,7 @@ class ERB
       return out.script, enc
     end
 
-    def prepare_trim_mode(mode)
+    def prepare_trim_mode(mode) # :nodoc:
       case mode
       when 1
 	return [false, '>']
@@ -599,10 +671,12 @@ class ERB
       end
     end
 
-    def make_scanner(src)
+    def make_scanner(src) # :nodoc:
       Scanner.make_scanner(src, @trim_mode, @percent)
     end
 
+    # Construct a new compiler using the trim_mode. See ERB#new for available
+    # trim modes.
     def initialize(trim_mode)
       @percent, @trim_mode = prepare_trim_mode(trim_mode)
       @put_cmd = 'print'
@@ -611,7 +685,18 @@ class ERB
       @post_cmd = []
     end
     attr_reader :percent, :trim_mode
-    attr_accessor :put_cmd, :insert_cmd, :pre_cmd, :post_cmd
+
+    # The command to handle text that ends with a newline
+    attr_accessor :put_cmd
+
+    # The command to handle text that is inserted prior to a newline
+    attr_accessor :insert_cmd
+
+    # An array of commands prepended to compiled code
+    attr_accessor :pre_cmd
+
+    # An array of commands appended to compiled code
+    attr_accessor :post_cmd
 
     private
     def detect_magic_comment(s)
