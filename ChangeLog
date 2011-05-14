@@ -1,3 +1,8 @@
+Sun May 15 03:39:35 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/zlib/zlib.c:  Improve documentation.  Patch by Vincent Batts.
+	  [Ruby 1.9 - Bug #4695]
+
 Sun May 15 03:23:46 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/erb.rb:  Document ERB::Compiler.  Patch by Simon Chiang.

@@ -219,7 +219,39 @@ static VALUE rb_gzreader_each(int, VALUE*, VALUE);
 static VALUE rb_gzreader_readlines(int, VALUE*, VALUE);
 #endif /* GZIP_SUPPORT */
 
-
+/* 
+ * Document-module: Zlib
+ *
+ * == Overview
+ *
+ * Access to the zlib library.
+ *
+ * == Class tree
+ * 
+ * - Zlib::Deflate
+ * - Zlib::Inflate
+ * - Zlib::ZStream
+ * - Zlib::Error
+ *   - Zlib::StreamEnd
+ *   - Zlib::NeedDict
+ *   - Zlib::DataError
+ *   - Zlib::StreamError
+ *   - Zlib::MemError
+ *   - Zlib::BufError
+ *   - Zlib::VersionError
+ *
+ * (if you have GZIP_SUPPORT)
+ * - Zlib::GzipReader
+ * - Zlib::GzipWriter
+ * - Zlib::GzipFile
+ * - Zlib::GzipFile::Error
+ *   - Zlib::GzipFile::LengthError
+ *   - Zlib::GzipFile::CRCError
+ *   - Zlib::GzipFile::NoFooter
+ *
+ * see also zlib.h
+ *
+ */
 void Init_zlib(void);
 
 /*--------- Exceptions --------*/
@@ -285,6 +317,8 @@ finalizer_warn(const char *msg)
 /*-------- module Zlib --------*/
 
 /*
+ * Document-method: Zlib.zlib_version
+ *
  * Returns the string which represents the version of zlib library.
  */
 static VALUE
@@ -347,6 +381,8 @@ do_checksum(argc, argv, func)
 }
 
 /*
+ * Document-method: Zlib.adler32
+ *
  * call-seq: Zlib.adler32(string, adler)
  *
  * Calculates Adler-32 checksum for +string+, and returns updated value of
@@ -363,6 +399,8 @@ rb_zlib_adler32(int argc, VALUE *argv, VALUE klass)
 
 #ifdef HAVE_ADLER32_COMBINE
 /*
+ * Document-method: Zlib.adler32_combine
+ *
  * call-seq: Zlib.adler32_combine(adler1, adler2, len2)
  *
  * Combine two Adler-32 check values in to one.  +alder1+ is the first Adler-32
@@ -381,6 +419,8 @@ rb_zlib_adler32_combine(VALUE klass, VALUE adler1, VALUE adler2, VALUE len2)
 #endif
 
 /*
+ * Document-method: Zlib.crc32
+ *
  * call-seq: Zlib.crc32(string, adler)
  *
  * Calculates CRC checksum for +string+, and returns updated value of +crc+. If
@@ -397,6 +437,8 @@ rb_zlib_crc32(int argc, VALUE *argv, VALUE klass)
 
 #ifdef HAVE_CRC32_COMBINE
 /*
+ * Document-method: Zlib.crc32_combine
+ *
  * call-seq: Zlib.crc32_combine(crc1, crc2, len2)
  *
  * Combine two CRC-32 check values in to one.  +crc1+ is the first CRC-32
@@ -415,6 +457,8 @@ rb_zlib_crc32_combine(VALUE klass, VALUE crc1, VALUE crc2, VALUE len2)
 #endif
 
 /*
+ * Document-method: Zlib.crc_table
+ *
  * Returns the table for calculating CRC checksum as an array.
  */
 static VALUE
@@ -1131,8 +1175,8 @@ rb_zstream_total_out(VALUE obj)
 
 /*
  * Guesses the type of the data which have been inputed into the stream. The
- * returned value is either <tt>Zlib::BINARY</tt>, <tt>Zlib::ASCII</tt>, or
- * <tt>Zlib::UNKNOWN</tt>.
+ * returned value is either <tt>BINARY</tt>, <tt>ASCII</tt>, or
+ * <tt>UNKNOWN</tt>.
  */
 static VALUE
 rb_zstream_data_type(VALUE obj)
@@ -1175,7 +1219,7 @@ rb_zstream_closed_p(VALUE obj)
 /*
  * Document-class: Zlib::Deflate
  *
- * Zlib::Deflate is the class for compressing data.  See Zlib::Stream for more
+ * Zlib::Deflate is the class for compressing data.  See Zlib::ZStream for more
  * information.
  */
 
@@ -1197,13 +1241,62 @@ rb_deflate_s_allocate(VALUE klass)
 }
 
 /*
+ * Document-method: Zlib::Deflate.new
+ *
  * call-seq: Zlib::Deflate.new(level=nil, windowBits=nil, memlevel=nil, strategy=nil)
+ *
+ * == Arguments
+ *
+ * +level+::
+ *   An Integer compression level between
+ *   BEST_SPEED and BEST_COMPRESSION
+ * +windowBits+::
+ *   An Integer for the windowBits size. Should be
+ *   in the range 8..15, larger values of this parameter
+ *   result in better at the expense of memory usage.
+ * +memlevel+::
+ *   Specifies how much memory should be allocated for
+ *   the internal compression state.
+ *   Between DEF_MEM_LEVEL and MAX_MEM_LEVEL
+ * +strategy+::
+ *   A parameter to tune the compression algorithm. Use the
+ *   DEFAULT_STRATEGY for normal data, FILTERED for data produced by a
+ *   filter (or predictor), HUFFMAN_ONLY to force Huffman encoding only (no
+ *   string match).
+ *
+ * == Description 
  *
  * Creates a new deflate stream for compression. See zlib.h for details of
  * each argument. If an argument is nil, the default value of that argument is
  * used.
  *
- * TODO: document better!
+ *
+ * == examples
+ *
+ * === basic
+ *
+ *   f = File.new("compressed.file","w+")
+ *   #=> #<File:compressed.file> 
+ *   f << Zlib::Deflate.new().deflate(File.read("big.file"))
+ *   #=> #<File:compressed.file> 
+ *   f.close
+ *   #=> nil 
+ *
+ * === a little more robust
+ * 
+ *   compressed_file = File.open("compressed.file", "w+")
+ *   #=> #<File:compressed.file>
+ *   zd = Zlib::Deflate.new(Zlib::BEST_COMPRESSION, 15, Zlib::MAX_MEM_LEVEL, Zlib::HUFFMAN_ONLY)
+ *   #=> #<Zlib::Deflate:0x000000008610a0>
+ *   compressed_file << zd.deflate(File.read("big.file"))
+ *   #=> "\xD4z\xC6\xDE\b\xA1K\x1Ej\x8A ..."
+ *   compressed_file.close
+ *   #=> nil
+ *   zd.close
+ *   #=> nil
+ *
+ * (while this example will work, for best optimization the flags need to be reviewed for your specific function)
+ *
  */
 static VALUE
 rb_deflate_initialize(int argc, VALUE *argv, VALUE obj)
@@ -1227,6 +1320,8 @@ rb_deflate_initialize(int argc, VALUE *argv, VALUE obj)
 }
 
 /*
+ * Document-method: Zlib::Deflate#initialize_copy
+ *
  * Duplicates the deflate stream.
  */
 static VALUE
@@ -1261,19 +1356,21 @@ deflate_run(VALUE args)
 }
 
 /*
+ * Document-method: Zlib::Deflate.deflate
+ *
  * call-seq: Zlib.deflate(string[, level])
  *           Zlib::Deflate.deflate(string[, level])
  *
  * Compresses the given +string+. Valid values of level are
- * <tt>Zlib::NO_COMPRESSION</tt>, <tt>Zlib::BEST_SPEED</tt>,
- * <tt>Zlib::BEST_COMPRESSION</tt>, <tt>Zlib::DEFAULT_COMPRESSION</tt>, and an
+ * <tt>NO_COMPRESSION</tt>, <tt>BEST_SPEED</tt>,
+ * <tt>BEST_COMPRESSION</tt>, <tt>DEFAULT_COMPRESSION</tt>, and an
  * integer from 0 to 9 (the default is 6).
  *
  * This method is almost equivalent to the following code:
  *
  *   def deflate(string, level)
  *     z = Zlib::Deflate.new(level)
- *     dst = z.deflate(string, Zlib::FINISH)
+ *     dst = z.deflate(string, Zlib::NO_FLUSH)
  *     z.close
  *     dst
  *   end
@@ -1321,18 +1418,37 @@ do_deflate(struct zstream *z, VALUE src, int flush)
 }
 
 /*
+ * Document-method: Zlib.deflate
+ *
  * call-seq: deflate(string[, flush])
+ *
+ * == Arguments
+ * 
+ * +string+::
+ *   String
+ *
+ * +flush+::
+ *   Integer representing a flush code. Either NO_FLUSH,
+ *   SYNC_FLUSH, FULL_FLUSH, or FINISH. See zlib.h for details.
+ *   Normally the parameter flush is set to Z_NO_FLUSH, which allows deflate to
+ *   decide how much data to accumulate before producing output, in order to
+ *   maximize compression.
+ *
+ * == Description
  *
  * Inputs +string+ into the deflate stream and returns the output from the
  * stream.  On calling this method, both the input and the output buffers of
- * the stream are flushed. If +string+ is nil, this method finishes the
+ * the stream are flushed.
+ *
+ * If +string+ is nil, this method finishes the
  * stream, just like Zlib::ZStream#finish.
  *
- * The value of +flush+ should be either <tt>Zlib::NO_FLUSH</tt>,
- * <tt>Zlib::SYNC_FLUSH</tt>, <tt>Zlib::FULL_FLUSH</tt>, or
- * <tt>Zlib::FINISH</tt>. See zlib.h for details.
+ * == Usage
  *
- * TODO: document better!
+ *   comp = Zlib.deflate(File.read("big.file"))
+ * or 
+ *   comp = Zlib.deflate(File.read("big.file"), Zlib::FULL_FLUSH)
+ *
  */
 static VALUE
 rb_deflate_deflate(int argc, VALUE *argv, VALUE obj)
@@ -1350,6 +1466,8 @@ rb_deflate_deflate(int argc, VALUE *argv, VALUE obj)
 }
 
 /*
+ * Document-method: Zlib::Deflate.<<
+ *
  * call-seq: << string
  *
  * Inputs +string+ into the deflate stream just like Zlib::Deflate#deflate, but
@@ -1365,13 +1483,16 @@ rb_deflate_addstr(VALUE obj, VALUE src)
 }
 
 /*
+ * Document-method: Zlib::Deflate#flush
+ *
  * call-seq: flush(flush)
  *
  * This method is equivalent to <tt>deflate('', flush)</tt>.  If flush is omitted,
- * <tt>Zlib::SYNC_FLUSH</tt> is used as flush.  This method is just provided
+ * <tt>SYNC_FLUSH</tt> is used as flush.  This method is just provided
  * to improve the readability of your Ruby program.
  *
- * TODO: document better!
+ * Please visit your zlib.h for a deeper detail on NO_FLUSH, SYNC_FLUSH, FULL_FLUSH, and FINISH
+ *
  */
 static VALUE
 rb_deflate_flush(int argc, VALUE *argv, VALUE obj)
@@ -1392,13 +1513,23 @@ rb_deflate_flush(int argc, VALUE *argv, VALUE obj)
 }
 
 /*
+ * Document-method: Zlib::Deflate.params
+ *
  * call-seq: params(level, strategy)
  *
  * Changes the parameters of the deflate stream. See zlib.h for details. The
  * output from the stream by changing the params is preserved in output
  * buffer.
  *
- * TODO: document better!
+ * +level+::
+ *   An Integer compression level between
+ *   BEST_SPEED and BEST_COMPRESSION
+ * +strategy+::
+ *   A parameter to tune the compression algorithm. Use the
+ *   DEFAULT_STRATEGY for normal data, FILTERED for data produced by a
+ *   filter (or predictor), HUFFMAN_ONLY to force Huffman encoding only (no
+ *   string match).
+ *
  */
 static VALUE
 rb_deflate_params(VALUE obj, VALUE v_level, VALUE v_strategy)
@@ -1429,13 +1560,18 @@ rb_deflate_params(VALUE obj, VALUE v_level, VALUE v_strategy)
 }
 
 /*
+ * Document-method: Zlib::Deflate.set_dictionary
+ *
  * call-seq: set_dictionary(string)
  *
  * Sets the preset dictionary and returns +string+. This method is available
  * just only after Zlib::Deflate.new or Zlib::ZStream#reset method was called.
  * See zlib.h for details.
  *
- * TODO: document better!
+ * Can raise errors of Z_STREAM_ERROR if a parameter is invalid (such as
+ * NULL dictionary) or the stream state is inconsistent, Z_DATA_ERROR if
+ * the given dictionary doesn't match the expected one (incorrect adler32 value)
+ *
  */
 static VALUE
 rb_deflate_set_dictionary(VALUE obj, VALUE dic)
@@ -1475,12 +1611,44 @@ rb_inflate_s_allocate(VALUE klass)
 }
 
 /*
+ * Document-method: Zlib::Inflate.new 
+ *
  * call-seq: Zlib::Inflate.new(window_bits)
+ *
+ * == Arguments
+ *
+ * +windowBits+::
+ *   An Integer for the windowBits size. Should be
+ *   in the range 8..15, larger values of this parameter
+ *   result in better at the expense of memory usage.
+ *
+ * == Description
  *
  * Creates a new inflate stream for decompression. See zlib.h for details
  * of the argument.  If +window_bits+ is +nil+, the default value is used.
  *
- * TODO: document better!
+ * == Example
+ *
+ *   cf = File.open("compressed.file")
+ *   ucf = File.open("uncompressed.file", "w+")
+ *   zi = Zlib::Inflate.new(Zlib::MAX_WBITS)
+ *
+ *   ucf << zi.inflate(cf.read)
+ *
+ *   ucf.close
+ *   zi.close
+ *   cf.close
+ *
+ * or 
+ *
+ *   File.open("compressed.file") {|cf|
+ *     zi = Zlib::Inflate.new
+ *     File.open("uncompressed.file", "w+") {|ucf|
+ *       ucf << zi.inflate(cf.read)
+ *     }
+ *     zi.close
+ *   }
+ *
  */
 static VALUE
 rb_inflate_initialize(int argc, VALUE *argv, VALUE obj)
@@ -1513,8 +1681,9 @@ inflate_run(VALUE args)
 }
 
 /*
- * call-seq: Zlib.inflate(string)
- *           Zlib::Inflate.inflate(string)
+ * Document-method: Zlib::Inflate.inflate
+ *
+ * call-seq: Zlib::Inflate.inflate(string)
  *
  * Decompresses +string+. Raises a Zlib::NeedDict exception if a preset
  * dictionary is needed for decompression.
@@ -1569,6 +1738,8 @@ do_inflate(struct zstream *z, VALUE src)
 }
 
 /*
+ * Document-method: Zlib::Inflate#inflate
+ *
  * call-seq: inflate(string)
  *
  * Inputs +string+ into the inflate stream and returns the output from the
@@ -1580,7 +1751,7 @@ do_inflate(struct zstream *z, VALUE src)
  * decompress.  Set the dictionary by Zlib::Inflate#set_dictionary and then
  * call this method again with an empty string.  (<i>???</i>)
  *
- * TODO: document better!
+ * See also Zlib::Inflate.new
  */
 static VALUE
 rb_inflate_inflate(VALUE obj, VALUE src)
@@ -1684,10 +1855,11 @@ rb_inflate_sync_point_p(VALUE obj)
 }
 
 /*
+ * Document-method: Zlib::Inflate#set_dictionary
+ *
  * Sets the preset dictionary and returns +string+.  This method is available just
  * only after a Zlib::NeedDict exception was raised.  See zlib.h for details.
  *
- * TODO: document better!
  */
 static VALUE
 rb_inflate_set_dictionary(VALUE obj, VALUE dic)
@@ -2003,6 +2175,11 @@ gzfile_raise(struct gzfile *gz, VALUE klass, const char *message)
     rb_exc_raise(exc);
 }
 
+/*
+ * Document-method: Zlib::GzipFile::Error#inspect
+ *
+ * Constructs a String of the GzipFile Error
+ */
 static VALUE
 gzfile_error_inspect(VALUE error)
 {
@@ -2498,6 +2675,35 @@ get_gzfile(VALUE obj)
  * Zlib::GzipReader for reading, and Zlib::GzipWriter for writing.
  *
  * GzipReader should be used by associating an IO, or IO-like, object.
+ *
+ * == Method Catalogue
+ *
+ * - wrap
+ * - open
+ * - #close
+ * - #closed?
+ * - #comment
+ * - #comment=
+ * - #crc
+ * - #eof?
+ * - #finish
+ * - #level
+ * - #lineno
+ * - #lineno=
+ * - #mtime
+ * - #mtime=
+ * - #orig_name
+ * - #orig_name=
+ * - #os_code
+ * - #path
+ * - #sync
+ * - #sync=
+ * - #to_io
+ * - #total_in
+ * - #total_out
+ *
+ * (due to internal structure, documentation may appear under Zlib::GzipReader
+ * or Zlib::GzipWriter)
  */
 
 
@@ -2556,6 +2762,8 @@ gzfile_wrap(int argc, VALUE *argv, VALUE klass, int close_io_on_error)
 }
 
 /*
+ * Document-method: Zlib::GzipFile.wrap
+ *
  * call-seq: Zlib::GzipFile.wrap(io) { |gz| ... }
  *
  * Creates a GzipFile object associated with +io+, and
@@ -2572,6 +2780,8 @@ rb_gzfile_s_wrap(int argc, VALUE *argv, VALUE klass)
 }
 
 /*
+ * Document-method: Zlib::GzipFile.open
+ *
  * See Zlib::GzipReader#open and Zlib::GzipWriter#open.
  */
 static VALUE
@@ -2589,6 +2799,8 @@ gzfile_s_open(int argc, VALUE *argv, VALUE klass, const char *mode)
 }
 
 /*
+ * Document-method: Zlib::GzipFile#to_io
+ *
  * Same as IO.
  */
 static VALUE
@@ -2598,6 +2810,8 @@ rb_gzfile_to_io(VALUE obj)
 }
 
 /*
+ * Document-method: Zlib::GzipFile#crc
+ *
  * Returns CRC value of the uncompressed data.
  */
 static VALUE
@@ -2607,6 +2821,8 @@ rb_gzfile_crc(VALUE obj)
 }
 
 /*
+ * Document-method: Zlib::GzipFile#mtime
+ *
  * Returns last modification time recorded in the gzip file header.
  */
 static VALUE
@@ -2616,6 +2832,8 @@ rb_gzfile_mtime(VALUE obj)
 }
 
 /*
+ * Document-method: Zlib::GzipFile#level
+ *
  * Returns compression level.
  */
 static VALUE
@@ -2625,6 +2843,8 @@ rb_gzfile_level(VALUE obj)
 }
 
 /*
+ * Document-method: Zlib::GzipFile#os_code
+ *
  * Returns OS code number recorded in the gzip file header.
  */
 static VALUE
@@ -2634,6 +2854,8 @@ rb_gzfile_os_code(VALUE obj)
 }
 
 /*
+ * Document-method: Zlib::GzipFile#orig_name
+ *
  * Returns original filename recorded in the gzip file header, or +nil+ if
  * original filename is not present.
  */
@@ -2649,6 +2871,8 @@ rb_gzfile_orig_name(VALUE obj)
 }
 
 /*
+ * Document-method: Zlib::GzipFile#comment
+ *
  * Returns comments recorded in the gzip file header, or nil if the comments
  * is not present.
  */
@@ -2664,7 +2888,9 @@ rb_gzfile_comment(VALUE obj)
 }
 
 /*
- * ???
+ * Document-method: Zlib::GzipFile#lineno
+ *
+ * The line number of the last row read from this file.
  */
 static VALUE
 rb_gzfile_lineno(VALUE obj)
@@ -2673,7 +2899,9 @@ rb_gzfile_lineno(VALUE obj)
 }
 
 /*
- * ???
+ * Document-method: Zlib::GzipFile#set_lineno
+ *
+ * Specify line number of the last row read from this file.
  */
 static VALUE
 rb_gzfile_set_lineno(VALUE obj, VALUE lineno)
@@ -2684,7 +2912,10 @@ rb_gzfile_set_lineno(VALUE obj, VALUE lineno)
 }
 
 /*
- * ???
+ * Document-method: Zlib::GzipFile#set_mtime
+ *
+ * Specify the modification time (+mtime+) in the gzip header.
+ * Using a Fixnum or Integer
  */
 static VALUE
 rb_gzfile_set_mtime(VALUE obj, VALUE mtime)
@@ -2707,7 +2938,9 @@ rb_gzfile_set_mtime(VALUE obj, VALUE mtime)
 }
 
 /*
- * ???
+ * Document-method: Zlib::GzipFile#set_orig_name
+ *
+ * Specify the original name (+str+) in the gzip header.
  */
 static VALUE
 rb_gzfile_set_orig_name(VALUE obj, VALUE str)
@@ -2729,7 +2962,9 @@ rb_gzfile_set_orig_name(VALUE obj, VALUE str)
 }
 
 /*
- * ???
+ * Document-method: Zlib::GzipFile#set_comment
+ *
+ * Specify the comment (+str+) in the gzip header.
  */
 static VALUE
 rb_gzfile_set_comment(VALUE obj, VALUE str)
@@ -2751,6 +2986,8 @@ rb_gzfile_set_comment(VALUE obj, VALUE str)
 }
 
 /*
+ * Document-method: Zlib::GzipFile#close
+ *
  * Closes the GzipFile object. This method calls close method of the
  * associated IO object. Returns the associated IO object.
  */
@@ -2766,6 +3003,8 @@ rb_gzfile_close(VALUE obj)
 }
 
 /*
+ * Document-method: Zlib::GzipFile#finish
+ *
  * Closes the GzipFile object. Unlike Zlib::GzipFile#close, this method never
  * calls the close method of the associated IO object. Returns the associated IO
  * object.
@@ -2782,7 +3021,10 @@ rb_gzfile_finish(VALUE obj)
 }
 
 /*
- * Same as IO.
+ * Document-method: Zlib::GzipFile#closed?
+ *
+ * Same as IO#closed?
+ *
  */
 static VALUE
 rb_gzfile_closed_p(VALUE obj)
@@ -2793,7 +3035,9 @@ rb_gzfile_closed_p(VALUE obj)
 }
 
 /*
- * ???
+ * Document-method: Zlib::GzipFile#eof?
+ *
+ * Returns +true+ or +false+ whether the stream has reached the end.
  */
 static VALUE
 rb_gzfile_eof_p(VALUE obj)
@@ -2803,7 +3047,10 @@ rb_gzfile_eof_p(VALUE obj)
 }
 
 /*
- * Same as IO.
+ * Document-method: Zlib::GzipFile#sync
+ *
+ * Same as IO#sync
+ *
  */
 static VALUE
 rb_gzfile_sync(VALUE obj)
@@ -2812,6 +3059,8 @@ rb_gzfile_sync(VALUE obj)
 }
 
 /*
+ * Document-method: Zlib::GzipFile#set_sync
+ *
  * call-seq: sync = flag
  *
  * Same as IO.  If flag is +true+, the associated IO object must respond to the
@@ -2833,7 +3082,9 @@ rb_gzfile_set_sync(VALUE obj, VALUE mode)
 }
 
 /*
- * ???
+ * Document-method: Zlib::GzipFile#total_in
+ *
+ * Total number of input bytes read so far.
  */
 static VALUE
 rb_gzfile_total_in(VALUE obj)
@@ -2842,7 +3093,9 @@ rb_gzfile_total_in(VALUE obj)
 }
 
 /*
- * ???
+ * Document-method: Zlib::GzipFile#total_out
+ *
+ * Total number of output bytes output so far.
  */
 static VALUE
 rb_gzfile_total_out(VALUE obj)
@@ -2852,7 +3105,7 @@ rb_gzfile_total_out(VALUE obj)
 }
 
 /*
- * Document-method: path
+ * Document-method: Zlib::GzipFile#path
  *
  * call-seq: path
  *
@@ -3077,9 +3330,6 @@ rb_gzwriter_putc(VALUE obj, VALUE ch)
  *     gz.close
  *   end
  *
- *   # TODO: test these.  Are they equivalent?  Can GzipReader.new take a
- *   # block?
- *
  * == Method Catalogue
  *
  * The following methods in Zlib::GzipReader are just like their counterparts
@@ -3123,6 +3373,8 @@ rb_gzreader_s_allocate(VALUE klass)
 }
 
 /*
+ * Document-method: Zlib::GzipReader.open
+ *
  * call-seq: Zlib::GzipReader.open(filename) {|gz| ... }
  *
  * Opens a file specified by +filename+ as a gzipped file, and returns a
@@ -3136,6 +3388,8 @@ rb_gzreader_s_open(int argc, VALUE *argv, VALUE klass)
 }
 
 /*
+ * Document-method: Zlib::GzipReader.new
+ *
  * call-seq: Zlib::GzipReader.new(io)
  *
  * Creates a GzipReader object associated with +io+. The GzipReader object reads
@@ -3174,6 +3428,8 @@ rb_gzreader_initialize(int argc, VALUE *argv, VALUE obj)
 }
 
 /*
+ * Document-method: Zlib::GzipReader#rewind
+ *
  * Resets the position of the file pointer to the point created the GzipReader
  * object.  The associated IO object needs to respond to the +seek+ method.
  */
@@ -3186,6 +3442,8 @@ rb_gzreader_rewind(VALUE obj)
 }
 
 /*
+ * Document-method: Zlib::GzipReader#unused
+ *
  * Returns the rest of the data which had read for parsing gzip format, or
  * +nil+ if the whole gzip file is not parsed yet.
  */
@@ -3198,6 +3456,8 @@ rb_gzreader_unused(VALUE obj)
 }
 
 /*
+ * Document-method: Zlib::GzipReader#read
+ *
  * See Zlib::GzipReader documentation for a description.
  */
 static VALUE
@@ -3220,6 +3480,8 @@ rb_gzreader_read(int argc, VALUE *argv, VALUE obj)
 }
 
 /*
+ * Document-method: Zlib::GzipReader#readpartial
+ *
  *  call-seq:
  *     gzipreader.readpartial(maxlen [, outbuf]) => string, outbuf
  *
@@ -3248,6 +3510,8 @@ rb_gzreader_readpartial(int argc, VALUE *argv, VALUE obj)
 }
 
 /*
+ * Document-method: Zlib::GzipReader#getc
+ *
  * See Zlib::GzipReader documentation for a description.
  */
 static VALUE
@@ -3259,6 +3523,8 @@ rb_gzreader_getc(VALUE obj)
 }
 
 /*
+ * Document-method: Zlib::GzipReader#readchar
+ *
  * See Zlib::GzipReader documentation for a description.
  */
 static VALUE
@@ -3273,6 +3539,8 @@ rb_gzreader_readchar(VALUE obj)
 }
 
 /*
+ * Document-method: Zlib::GzipReader#getbyte
+ *
  * See Zlib::GzipReader documentation for a description.
  */
 static VALUE
@@ -3289,6 +3557,8 @@ rb_gzreader_getbyte(VALUE obj)
 }
 
 /*
+ * Document-method: Zlib::GzipReader#readbyte
+ *
  * See Zlib::GzipReader documentation for a description.
  */
 static VALUE
@@ -3303,6 +3573,8 @@ rb_gzreader_readbyte(VALUE obj)
 }
 
 /*
+ * Document-method: Zlib::GzipReader#each_char
+ *
  * See Zlib::GzipReader documentation for a description.
  */
 static VALUE
@@ -3319,6 +3591,8 @@ rb_gzreader_each_char(VALUE obj)
 }
 
 /*
+ * Document-method: Zlib::GzipReader#each_byte
+ *
  * See Zlib::GzipReader documentation for a description.
  */
 static VALUE
@@ -3335,6 +3609,8 @@ rb_gzreader_each_byte(VALUE obj)
 }
 
 /*
+ * Document-method: Zlib::GzipReader#ungetc
+ *
  * See Zlib::GzipReader documentation for a description.
  */
 static VALUE
@@ -3354,6 +3630,8 @@ rb_gzreader_ungetc(VALUE obj, VALUE s)
 }
 
 /*
+ * Document-method: Zlib::GzipReader#ungetbyte
+ *
  * See Zlib::GzipReader documentation for a description.
  */
 static VALUE
@@ -3547,6 +3825,8 @@ gzreader_gets(int argc, VALUE *argv, VALUE obj)
 }
 
 /*
+ * Document-method: Zlib::GzipReader#gets
+ *
  * See Zlib::GzipReader documentation for a description.
  */
 static VALUE
@@ -3561,6 +3841,8 @@ rb_gzreader_gets(int argc, VALUE *argv, VALUE obj)
 }
 
 /*
+ * Document-method: Zlib::GzipReader#readline
+ *
  * See Zlib::GzipReader documentation for a description.
  */
 static VALUE
@@ -3575,6 +3857,8 @@ rb_gzreader_readline(int argc, VALUE *argv, VALUE obj)
 }
 
 /*
+ * Document-method: Zlib::GzipReader#each
+ *
  * See Zlib::GzipReader documentation for a description.
  */
 static VALUE
@@ -3591,6 +3875,8 @@ rb_gzreader_each(int argc, VALUE *argv, VALUE obj)
 }
 
 /*
+ * Document-method: Zlib::GzipReader#readlines
+ *
  * See Zlib::GzipReader documentation for a description.
  */
 static VALUE
@@ -3609,6 +3895,8 @@ rb_gzreader_readlines(int argc, VALUE *argv, VALUE obj)
 
 
 /*
+ * Document-module: Zlib
+ *
  * The Zlib module contains several classes for compressing and decompressing
  * streams, and for working with "gzip" files.
  *
@@ -3713,7 +4001,9 @@ Init_zlib()
     rb_define_module_function(mZlib, "crc32_combine", rb_zlib_crc32_combine, 3);
     rb_define_module_function(mZlib, "crc_table", rb_zlib_crc_table, 0);
 
+    /* The Ruby/zlib version string. */
     rb_define_const(mZlib, "VERSION", rb_str_new2(RUBY_ZLIB_VERSION));
+    /*  The string which represents the version of zlib.h */
     rb_define_const(mZlib, "ZLIB_VERSION", rb_str_new2(ZLIB_VERSION));
 
     cZStream = rb_define_class_under(mZlib, "ZStream", rb_cObject);
@@ -3736,8 +4026,14 @@ Init_zlib()
     rb_define_method(cZStream, "flush_next_in", rb_zstream_flush_next_in, 0);
     rb_define_method(cZStream, "flush_next_out", rb_zstream_flush_next_out, 0);
 
+    /* Integer representing date types which
+     * ZStream#data_type method returns */ 
     rb_define_const(mZlib, "BINARY", INT2FIX(Z_BINARY));
+    /* Integer representing date types which
+     * ZStream#data_type method returns */ 
     rb_define_const(mZlib, "ASCII", INT2FIX(Z_ASCII));
+    /* Integer representing date types which
+     * ZStream#data_type method returns */ 
     rb_define_const(mZlib, "UNKNOWN", INT2FIX(Z_UNKNOWN));
 
     cDeflate = rb_define_class_under(mZlib, "Deflate", cZStream);
@@ -3763,23 +4059,71 @@ Init_zlib()
     rb_define_method(cInflate, "sync_point?", rb_inflate_sync_point_p, 0);
     rb_define_method(cInflate, "set_dictionary", rb_inflate_set_dictionary, 1);
 
+    /* compression level 0
+     *
+     * Which is an argument for Deflate.new, Deflate#deflate, and so on. */
     rb_define_const(mZlib, "NO_COMPRESSION", INT2FIX(Z_NO_COMPRESSION));
+    /* compression level 1
+     *
+     * Which is an argument for Deflate.new, Deflate#deflate, and so on. */
     rb_define_const(mZlib, "BEST_SPEED", INT2FIX(Z_BEST_SPEED));
+    /* compression level 9
+     *
+     * Which is an argument for Deflate.new, Deflate#deflate, and so on. */
     rb_define_const(mZlib, "BEST_COMPRESSION", INT2FIX(Z_BEST_COMPRESSION));
+    /* compression level -1
+     *
+     * Which is an argument for Deflate.new, Deflate#deflate, and so on. */
     rb_define_const(mZlib, "DEFAULT_COMPRESSION",
 		    INT2FIX(Z_DEFAULT_COMPRESSION));
 
+    /* compression method 1
+     *
+     * Which is an argument for Deflate.new and Deflate#params. */
     rb_define_const(mZlib, "FILTERED", INT2FIX(Z_FILTERED));
+    /* compression method 2
+     *
+     * Which is an argument for Deflate.new and Deflate#params. */
     rb_define_const(mZlib, "HUFFMAN_ONLY", INT2FIX(Z_HUFFMAN_ONLY));
+    /* compression method 0
+     *
+     * Which is an argument for Deflate.new and Deflate#params. */
     rb_define_const(mZlib, "DEFAULT_STRATEGY", INT2FIX(Z_DEFAULT_STRATEGY));
 
+     /* The default value of windowBits which is an argument for
+      * Deflate.new and Inflate.new.
+      */
     rb_define_const(mZlib, "MAX_WBITS", INT2FIX(MAX_WBITS));
+    /* Default value is 8
+     *
+     * The integer representing memory levels.
+     * Which are an argument for Deflate.new, Deflate#params, and so on. */
     rb_define_const(mZlib, "DEF_MEM_LEVEL", INT2FIX(DEF_MEM_LEVEL));
+    /* Maximum level is 9
+     *
+     * The integers representing memory levels which are an argument for
+     * Deflate.new, Deflate#params, and so on. */
     rb_define_const(mZlib, "MAX_MEM_LEVEL", INT2FIX(MAX_MEM_LEVEL));
 
+    /* Output control - 0
+     *
+     * The integers to control the output of the deflate stream, which are
+     * an argument for Deflate#deflate and so on. */
     rb_define_const(mZlib, "NO_FLUSH", INT2FIX(Z_NO_FLUSH));
+    /* Output control - 2
+     *
+     * The integers to control the output of the deflate stream, which are
+     * an argument for Deflate#deflate and so on. */
     rb_define_const(mZlib, "SYNC_FLUSH", INT2FIX(Z_SYNC_FLUSH));
+    /* Output control - 3
+     *
+     * The integers to control the output of the deflate stream, which are
+     * an argument for Deflate#deflate and so on. */
     rb_define_const(mZlib, "FULL_FLUSH", INT2FIX(Z_FULL_FLUSH));
+    /* Oputput control - 4
+     *
+     * The integers to control the output of the deflate stream, which are
+     * an argument for Deflate#deflate and so on. */
     rb_define_const(mZlib, "FINISH", INT2FIX(Z_FINISH));
 
 #if GZIP_SUPPORT
@@ -3794,6 +4138,8 @@ Init_zlib()
 
     cGzipFile = rb_define_class_under(mZlib, "GzipFile", rb_cObject);
     cGzError = rb_define_class_under(cGzipFile, "Error", cZError);
+
+    /* input gzipped string */
     rb_define_attr(cGzError, "input", 1, 0);
     rb_define_method(cGzError, "inspect", gzfile_error_inspect, 0);
 
@@ -3865,22 +4211,38 @@ Init_zlib()
     rb_define_method(cGzipReader, "lines", rb_gzreader_each, -1);
     rb_define_method(cGzipReader, "readlines", rb_gzreader_readlines, -1);
 
+    /* From GzipFile#os_code - code of current host */
     rb_define_const(mZlib, "OS_CODE", INT2FIX(OS_CODE));
+    /* From GzipFile#os_code - 0x00 */
     rb_define_const(mZlib, "OS_MSDOS", INT2FIX(OS_MSDOS));
+    /* From GzipFile#os_code - 0x01 */
     rb_define_const(mZlib, "OS_AMIGA", INT2FIX(OS_AMIGA));
+    /* From GzipFile#os_code - 0x02 */
     rb_define_const(mZlib, "OS_VMS", INT2FIX(OS_VMS));
+    /* From GzipFile#os_code - 0x03 */
     rb_define_const(mZlib, "OS_UNIX", INT2FIX(OS_UNIX));
+    /* From GzipFile#os_code - 0x05 */
     rb_define_const(mZlib, "OS_ATARI", INT2FIX(OS_ATARI));
+    /* From GzipFile#os_code - 0x06 */
     rb_define_const(mZlib, "OS_OS2", INT2FIX(OS_OS2));
+    /* From GzipFile#os_code - 0x07 */
     rb_define_const(mZlib, "OS_MACOS", INT2FIX(OS_MACOS));
+    /* From GzipFile#os_code - 0x0a */
     rb_define_const(mZlib, "OS_TOPS20", INT2FIX(OS_TOPS20));
+    /* From GzipFile#os_code - 0x0b */
     rb_define_const(mZlib, "OS_WIN32", INT2FIX(OS_WIN32));
 
+    /* From GzipFile#os_code - 0x04 */
     rb_define_const(mZlib, "OS_VMCMS", INT2FIX(OS_VMCMS));
+    /* From GzipFile#os_code - 0x08 */
     rb_define_const(mZlib, "OS_ZSYSTEM", INT2FIX(OS_ZSYSTEM));
+    /* From GzipFile#os_code - 0x09 */
     rb_define_const(mZlib, "OS_CPM", INT2FIX(OS_CPM));
+    /* From GzipFile#os_code - 0x0c */
     rb_define_const(mZlib, "OS_QDOS", INT2FIX(OS_QDOS));
+    /* From GzipFile#os_code - 0x0d */
     rb_define_const(mZlib, "OS_RISCOS", INT2FIX(OS_RISCOS));
+    /* From GzipFile#os_code - 0xff */
     rb_define_const(mZlib, "OS_UNKNOWN", INT2FIX(OS_UNKNOWN));
 
 #endif /* GZIP_SUPPORT */
@@ -3904,6 +4266,77 @@ Init_zlib()
  * - Zlib::MemError
  * - Zlib::BufError
  * - Zlib::VersionError
+ *
+ */
+
+/*
+ * Document-class: Zlib::StreamEnd
+ *
+ * Subclass of Zlib::Error
+ *
+ * When zlib returns a Z_STREAM_END
+ * is return if the end of the compressed data has been reached
+ * and all uncompressed out put has been produced.
+ *
+ */
+
+/*
+ * Document-class: Zlib::NeedDict
+ *
+ * Subclass of Zlib::Error
+ *
+ * When zlib returns a Z_NEED_DICT
+ * if a preset dictionary is needed at this point.
+ *
+ * Used by Zlib::Inflate.inflate and <tt>Zlib.inflate</tt>
+ */
+
+/*
+ * Document-class: Zlib::VersionError
+ *
+ * Subclass of Zlib::Error
+ *
+ * When zlib returns a Z_VERSION_ERROR,
+ * usually if the zlib library version is incompatible with the
+ * version assumed by the caller.
+ *
+ */
+
+/*
+ * Document-class: Zlib::MemError
+ *
+ * Subclass of Zlib::Error
+ *
+ * When zlib returns a Z_MEM_ERROR,
+ * usually if there was not enough memory.
+ *
+ */
+
+/*
+ * Document-class: Zlib::StreamError
+ *
+ * Subclass of Zlib::Error
+ *
+ * When zlib returns a Z_STREAM_ERROR, 
+ * usually if the stream state was inconsistent.
+ *
+ */
+
+/*
+ * Document-class: Zlib::BufError
+ *
+ * Subclass of Zlib::Error when zlib returns a Z_BUF_ERROR.
+ *
+ * Usually if no progress is possible.
+ *
+ */
+
+/*
+ * Document-class: Zlib::DataError
+ *
+ * Subclass of Zlib::Error when zlib returns a Z_DATA_ERROR.
+ *
+ * Usually if a stream was prematurely freed.
  *
  */
 
