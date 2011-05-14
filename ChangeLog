@@ -1,3 +1,8 @@
+Sat May 14 12:06:49 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/context.rb (class RDoc):  Fix infinite loop caused by
+	  re-encountering BasicObject.
+
 Sat May 14 10:32:36 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/test_pkey_rsa.rb: Add tests that ensure new public key

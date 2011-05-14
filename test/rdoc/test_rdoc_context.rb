@@ -105,6 +105,38 @@ class TestRDocContext < XrefTestCase
     assert_includes RDoc::TopLevel.classes.map { |k| k.full_name }, 'C1::Klass'
   end
 
+  def test_add_class_basic_object
+    skip 'BasicObject is 1.9 only' unless defined?(BasicObject)
+
+    @xref_data.add_class RDoc::NormalClass, 'BasicObject'
+
+    basic = @xref_data.find_module_named 'BasicObject'
+
+    assert_nil basic.superclass
+
+    @c1.add_class RDoc::NormalClass, 'BasicObject'
+
+    basic = @c1.find_module_named 'BasicObject'
+
+    assert_equal 'Object', basic.superclass
+  end
+
+  def test_add_class_object
+    root_class = defined?(BasicObject) ? 'BasicObject' : nil
+
+    @xref_data.add_class RDoc::NormalClass, 'Object'
+
+    object = @xref_data.find_module_named 'Object'
+
+    assert_equal root_class, object.superclass
+
+    @c1.add_class RDoc::NormalClass, 'Object'
+
+    object = @c1.find_module_named 'Object'
+
+    assert_equal 'Object', object.superclass.full_name
+  end
+
   def test_add_class_superclass
     @c1.add_class RDoc::NormalClass, 'Klass', 'Object'
     @c1.add_class RDoc::NormalClass, 'Klass', 'Other'

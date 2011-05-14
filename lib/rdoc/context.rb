@@ -373,6 +373,12 @@ class RDoc::Context < RDoc::CodeObject
       end
     end
 
+    # fix up superclass
+    superclass = nil if full_name == 'BasicObject'
+    superclass = nil if full_name == 'Object' and defined?(::BasicObject)
+    superclass = '::BasicObject' if
+      defined?(::BasicObject) and full_name == 'Object'
+
     # find the superclass full name
     if superclass then
       if superclass =~ /^:+/ then
@@ -655,6 +661,13 @@ class RDoc::Context < RDoc::CodeObject
     else
       "method #{method_attr.pretty_name}"
     end
+  end
+
+  ##
+  # Iterator for ancestors for duck-typing.  Does nothing.  See
+  # RDoc::ClassModule#each_ancestor.
+
+  def each_ancestor # :nodoc:
   end
 
   ##
