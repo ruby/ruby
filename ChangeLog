@@ -1,3 +1,9 @@
+Sat May 14 10:32:36 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* test/openssl/test_pkey_rsa.rb: Add tests that ensure new public key
+	encoding behavior and also ensure backward compatibility.
+	[Ruby 1.9 - Bug #4421, Bug #4422] [ruby-core:35327,35328]
+
 Sat May 14 09:50:10 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/yaml/dbm.rb:  Add documentation.  Patch by Justin Collins.
