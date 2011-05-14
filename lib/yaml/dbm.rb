@@ -66,7 +66,7 @@ class DBM < ::DBM
         keys.collect { |k| fetch( k ) }
     end
 
-    # Deletes value from database assocated with +key+.
+    # Deletes value from database associated with +key+.
     #
     # Returns value or +nil+.
     def delete( key )
