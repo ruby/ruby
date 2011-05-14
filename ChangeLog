@@ -1,3 +1,18 @@
+Sat May 14 19:37:31 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* include/ruby/missing.h: add setproctitle() declaration.
+	* missing/setproctitle.c: added.
+	* configure.in: add check for missing/setproctitle.c.
+
+	* ruby.c (ruby_process_options): add to call compat_init_setproctitle().
+	* ruby.c (set_arg0): remove all platform specific code. it's
+	  moved to missing/setproctitle.c.
+	* ruby.c (origarg): remove len field. It's no longer used.
+	* ruby.c (get_arglen): removed.
+
+	This patch makes a lot of cleanup set_arg0 related code and fixes
+	[Feature #4689].
+
 Sat May 14 17:42:21 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* process.c (rb_proc_times): improve documentation.
