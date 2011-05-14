@@ -33,6 +33,7 @@
  */
 
 #include "ruby.h"
+#include "ruby/util.h"
 
 #ifndef HAVE_SETPROCTITLE
 
