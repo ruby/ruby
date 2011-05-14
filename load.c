@@ -884,11 +884,18 @@ rb_file_is_required(VALUE expanded_path)
   int i;
   VALUE loaded_features;
   VALUE loaded_feature;
+  VALUE downcased_expanded_path;
+  VALUE downcased_loaded_feature;
+
+  downcased_expanded_path = rb_funcall(expanded_path, rb_intern("downcase"), 0);
+
   loaded_features = get_loaded_features();
   for (i = 0; i < RARRAY_LEN(loaded_features); ++i) {
     loaded_feature = RARRAY_PTR(loaded_features)[i];
+    // TODO: This downcase totally tanks performance by orders of magnitude
+    downcased_loaded_feature = rb_funcall(loaded_feature, rb_intern("downcase"), 0);
 
-    if (rb_funcall(expanded_path, rb_intern("=="), 1, loaded_feature) == Qtrue) {
+    if (rb_funcall(downcased_expanded_path, rb_intern("=="), 1, downcased_loaded_feature) == Qtrue) {
       return 1;
     }
   }
