@@ -1,3 +1,8 @@
+Sat May 14 19:52:22 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_rubyoptions.rb (TestRubyOptions#test_set_program_name):
+	add for $0 test.
+
 Sat May 14 19:50:46 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* missing/setproctitle.c (compat_init_setproctitle): use

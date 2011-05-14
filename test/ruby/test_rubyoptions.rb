@@ -400,6 +400,14 @@ class TestRubyOptions < Test::Unit::TestCase
     }
   end
 
+  def test_set_program_name
+    skip if /linux|freebsd|netbsd|openbsd/ !~ RUBY_PLATFORM
+
+    $0 = 'hello world'
+    ps = `ps -p #{$$} -o cmd`
+    assert_match(/hello world/, ps)
+  end
+
   def test_segv_test
     opts = {}
     if /mswin|mingw/ =~ RUBY_PLATFORM
