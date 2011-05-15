@@ -1,3 +1,9 @@
+Sun May 15 21:43:09 2011  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/uri/generic.rb (#route_from_path): Fix a bug where
+	  URI('http://h/b/').route_to('http://h/b') wrongly returned './'
+	  (should be '../b'). [Bug #4476]
+
 Sun May 15 21:37:54 2011  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/fileutils.rb (FileUtils#touch): Fix corrupted output.
