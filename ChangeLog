@@ -1,3 +1,9 @@
+Mon May 16 00:32:05 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_signal.rb (TestSignal#test_signal_process_group):
+	  skip if the platform doesn't have :pgroup capability. (i.e. skip
+	  if mswin32)
+
 Sun May 15 23:53:31 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* include/ruby/intern.h: resurrect old rb_fd_copy().

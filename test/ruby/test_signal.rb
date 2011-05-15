@@ -38,6 +38,8 @@ class TestSignal < Test::Unit::TestCase
 
   def test_signal_process_group
     return unless Process.respond_to?(:kill)
+    return unless Process.respond_to?(:pgroup) # for mswin32
+
     bug4362 = '[ruby-dev:43169]'
     assert_nothing_raised(bug4362) do
       pid = Process.spawn(EnvUtil.rubybin, '-e', '"sleep 10"', :pgroup => true)
