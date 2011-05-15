@@ -797,9 +797,6 @@ const char *available_extensions[] = {
   ""
 };
 
-const int number_of_available_extensions = sizeof(available_extensions) / 
-                                           sizeof(char*);
-
 const char *alternate_dl_extensions[] = {
   DLEXT,
 #ifdef DLEXT2
@@ -819,7 +816,7 @@ rb_find_file_with_extensions(VALUE base_file_name) {
   extension = rb_funcall(rb_cFile, rb_intern("extname"), 1, base_file_name);
 
   if (RSTRING_LEN(extension) == 0) {
-    for (j = 0; j < number_of_available_extensions; ++j) {
+    for (j = 0; j < CHAR_ARRAY_LEN(available_extensions); ++j) {
       file_name_with_extension = rb_funcall(
         base_file_name,
         rb_intern("+"),
