@@ -1,3 +1,7 @@
+Mon May 16 05:49:54 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/drb/acl.rb:  Add documentation.
+
 Mon May 16 05:13:20 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_asn1.c: Add documentation.
