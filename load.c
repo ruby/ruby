@@ -34,6 +34,8 @@ static const char *const loadable_ext[] = {
     0
 };
 
+VALUE rb_require_safe_2(VALUE, int);
+
 VALUE
 rb_get_load_path(void)
 {
@@ -495,6 +497,18 @@ rb_f_require_relative(VALUE obj, VALUE fname)
     }
     base = rb_file_dirname(base);
     return rb_require_safe(rb_file_absolute_path(fname, base), rb_safe_level());
+}
+
+VALUE
+rb_f_require_relative_2(VALUE obj, VALUE fname)
+{
+    VALUE rb_current_realfilepath(void);
+    VALUE base = rb_current_realfilepath();
+    if (NIL_P(base)) {
+	rb_raise(rb_eLoadError, "cannot infer basepath");
+    }
+    base = rb_file_dirname(base);
+    return rb_require_safe_2(rb_file_absolute_path(fname, base), rb_safe_level());
 }
 
 static int
@@ -1100,6 +1114,7 @@ Init_load()
     rb_define_global_function("require", rb_f_require, 1);
     rb_define_global_function("require_2", rb_f_require_2, 1);
     rb_define_global_function("require_relative", rb_f_require_relative, 1);
+    rb_define_global_function("require_relative_2", rb_f_require_relative_2, 1);
     rb_define_method(rb_cModule, "autoload", rb_mod_autoload, 2);
     rb_define_method(rb_cModule, "autoload?", rb_mod_autoload_p, 1);
     rb_define_global_function("autoload", rb_f_autoload, 2);
