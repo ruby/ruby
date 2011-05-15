@@ -896,13 +896,13 @@ VALUE
 rb_downcase_with_cache(VALUE string)
 {
   VALUE cached;
-  VALUE cache_ivar = rb_str_new2("@downcase_cache");
+  ID cache_ivar = rb_intern("@downcase_cache");
 
-  cached = rb_funcall(string, rb_intern("instance_variable_get"), 1, cache_ivar);
+  cached = rb_ivar_get(string, cache_ivar);
 
   if (cached == Qnil) {
     cached = rb_funcall(string, rb_intern("downcase"), 0);
-    rb_funcall(string, rb_intern("instance_variable_set"), 2, cache_ivar, cached);
+    rb_ivar_set(string, cache_ivar, cached);
   }
 
   return cached;
