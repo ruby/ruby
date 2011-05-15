@@ -1,3 +1,10 @@
+Sun May 15 22:26:39 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* signal.c (rb_f_kill): accept '-SIGXXX' style signal with Symbol or
+	  implicit convertion with #to_str. [ruby-dev:43169] fixes #4362
+	* test/ruby/test_signal.rb (test_signal_process_group): add a test
+	  for send signal to process group.
+
 Sun May 15 21:22:35 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* cont.c (cont_init): clear macihne_stack_start/end of saved thread to

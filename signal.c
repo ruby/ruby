@@ -359,6 +359,7 @@ rb_f_kill(int argc, VALUE *argv)
     int negative = 0;
     int sig;
     int i;
+    volatile VALUE str;
     const char *s;
 
     rb_secure(2);
@@ -376,11 +377,11 @@ rb_f_kill(int argc, VALUE *argv)
 
       case T_STRING:
 	s = RSTRING_PTR(argv[0]);
+      str_signal:
 	if (s[0] == '-') {
 	    negative++;
 	    s++;
 	}
-      str_signal:
 	if (strncmp("SIG", s, 3) == 0)
 	    s += 3;
 	if((sig = signm2signo(s)) == 0)
@@ -391,17 +392,13 @@ rb_f_kill(int argc, VALUE *argv)
 	break;
 
       default:
-        {
-	    VALUE str;
-
-	    str = rb_check_string_type(argv[0]);
-	    if (!NIL_P(str)) {
-		s = RSTRING_PTR(str);
-		goto str_signal;
-	    }
-	    rb_raise(rb_eArgError, "bad signal type %s",
-		     rb_obj_classname(argv[0]));
+	str = rb_check_string_type(argv[0]);
+	if (!NIL_P(str)) {
+	    s = RSTRING_PTR(str);
+	    goto str_signal;
 	}
+	rb_raise(rb_eArgError, "bad signal type %s",
+		 rb_obj_classname(argv[0]));
 	break;
     }
 
