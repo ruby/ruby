@@ -800,11 +800,21 @@ const char *available_extensions[] = {
 const int number_of_available_extensions = sizeof(available_extensions) / 
                                            sizeof(char*);
 
+const char *alternate_dl_extensions[] = {
+  DLEXT,
+#ifdef DLEXT2
+  DLEXT2
+#endif
+};
+
+#define CHAR_ARRAY_LEN(array) sizeof(array) / sizeof(char*)
+
 VALUE
 rb_find_file_with_extensions(VALUE base_file_name) {
   int j;
   VALUE file_name_with_extension;
   VALUE extension;
+  VALUE directory, basename;
 
   extension = rb_funcall(rb_cFile, rb_intern("extname"), 1, base_file_name);
 
@@ -823,6 +833,26 @@ rb_find_file_with_extensions(VALUE base_file_name) {
   } else {
     if (rb_feature_exists(base_file_name)) {
       return base_file_name;
+    } else {
+      if (IS_SOEXT(RSTRING_PTR(extension))) {
+        // Try loading the native DLEXT version of this platform.
+        // This allows 'pathname.so' to require 'pathname.bundle' on OSX
+        for (j = 0; j < CHAR_ARRAY_LEN(alternate_dl_extensions); ++j) {
+          directory = rb_funcall(rb_cFile, rb_intern("dirname"), 1, 
+                                  base_file_name);
+          basename  = rb_funcall(rb_cFile, rb_intern("basename"), 2, 
+                                  base_file_name, extension);
+          basename  = rb_funcall(basename, rb_intern("+"), 1, 
+                                  rb_str_new2(alternate_dl_extensions[j]));
+
+          file_name_with_extension = rb_funcall(rb_cFile, rb_intern("join"), 2, 
+                                                  directory, basename);
+
+          if (rb_feature_exists(file_name_with_extension)) {
+            return file_name_with_extension;
+          }
+        }
+      }
     }
   }
   return Qnil;

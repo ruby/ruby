@@ -35,10 +35,21 @@ class TestRequire < Test::Unit::TestCase
   end
 
   def test_can_require_dl_extension
-    # This depends on strscan.o in the stdlib, not sure of a better way
+    # This depends on strscan in the stdlib, not sure of a better way
     # to test this.
     assert_in_out_err([], <<-INPUT, %w(:ok), [])
       require_2 'strscan'
+      p :ok
+    INPUT
+  end
+
+  def test_so_extension_should_require_native_dl_ext
+    # This depends on pathname in the stdlib, not sure of a better way
+    # to test this.
+    #
+    # On OSX, this should require pathname.bundle
+    assert_in_out_err([], <<-INPUT, %w(:ok), [])
+      require_2 'pathname.so'
       p :ok
     INPUT
   end
