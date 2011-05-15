@@ -5,6 +5,22 @@ require_relative 'envutil'
 require 'tmpdir'
 
 class TestRequire < Test::Unit::TestCase
+  def test_circular_require
+    load_path = $:.dup
+    $:.delete(".")
+    Dir.mktmpdir do |tmp|
+      Dir.chdir(tmp) do
+        $:.unshift tmp
+        File.open('a.rb', 'wb') {|f| f.puts("require_2 './b'") }
+        File.open('b.rb', 'wb') {|f| f.puts("require_2 './a'") }
+
+        assert require_2('./a.rb')
+      end
+    end
+  ensure
+    $:.replace(load_path) if load_path
+  end
+
   def test_no_require_double_extension
     t = Tempfile.new(["test_ruby_test_require", ".rb.rb"])
     t.close

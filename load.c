@@ -968,23 +968,22 @@ rb_require_safe_2(VALUE fname, int safe)
       rb_raise(rb_eSecurityError, "Loading from unsafe file %s", RSTRING_PTR(path));
     }
   }
-  // TODO: WTF does the second part here do
-  if (path == Qnil || !(ftptr = load_lock(RSTRING_PTR(path)))) {
+  result = Qfalse;
+  if (path == Qnil) {
     load_failed(fname);
-    result = Qfalse;
   } else {
-    if (!rb_file_is_required(path)) {
-      if (rb_file_is_ruby(path)) {
-        rb_load_internal(path, 0);
-      } else {
-        handle = (long)rb_vm_call_cfunc(rb_vm_top_self(), load_ext,
-                path, 0, path);
-        rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
+    if (ftptr = load_lock(RSTRING_PTR(path))) { // Allows circular requires to work
+      if (!rb_file_is_required(path)) {
+        if (rb_file_is_ruby(path)) {
+          rb_load_internal(path, 0);
+        } else {
+          handle = (long)rb_vm_call_cfunc(rb_vm_top_self(), load_ext,
+                  path, 0, path);
+          rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
+        }
+        rb_provide_feature(path);
+        result = Qtrue;
       }
-      rb_provide_feature(path);
-      result = Qtrue;
-    } else {
-      result = Qfalse;
     }
   }
     }
