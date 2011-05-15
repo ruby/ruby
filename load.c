@@ -808,6 +808,7 @@ rb_find_file_absolute(VALUE fname)
   VALUE expanded_file_name;
 
   base_file_name = fname;
+
   for (j = 0; j < number_of_available_extensions; ++j) {
     expanded_file_name = rb_funcall(base_file_name, rb_intern("+"), 1, rb_str_new2(available_extensions[j]));
 
@@ -816,14 +817,8 @@ rb_find_file_absolute(VALUE fname)
     }
   }
   return Qnil;
-
-  // TODO: Deal with extensions
-  if (rb_feature_exists(expanded_file_name)) {
-    return expanded_file_name;
-  } else {
-    return Qnil;
-  }
 }
+
 VALUE
 rb_find_file_relative(VALUE fname)
 {
@@ -832,6 +827,7 @@ rb_find_file_relative(VALUE fname)
   VALUE expanded_file_name;
 
   base_file_name = rb_file_expand_path(fname, Qnil);
+
   for (j = 0; j < number_of_available_extensions; ++j) {
     expanded_file_name = rb_funcall(base_file_name, rb_intern("+"), 1, rb_str_new2(available_extensions[j]));
 
@@ -840,34 +836,27 @@ rb_find_file_relative(VALUE fname)
     }
   }
   return Qnil;
-
-  // TODO: Deal with extensions
-  if (rb_feature_exists(expanded_file_name)) {
-    return expanded_file_name;
-  } else {
-    return Qnil;
-  }
 }
-// TODO: Consistent naming across expanded_file_name and expanded_path
 
 VALUE
 rb_find_file_in_load_path(VALUE fname)
 {
   long i, j;
   VALUE load_path = rb_get_expanded_load_path();
-  VALUE expanded_path = Qnil;
+  VALUE expanded_file_name = Qnil;
+  VALUE base_file_name = Qnil;
 
   for (i = 0; i < RARRAY_LEN(load_path); ++i) {
     VALUE directory = RARRAY_PTR(load_path)[i];
 
-    // TODO: Don't check extra extensions if an extension is provided
-    for (j = 0; j < number_of_available_extensions; ++j) {
-      expanded_path = rb_funcall(directory, rb_intern("+"), 1, rb_str_new2("/"));
-      expanded_path = rb_funcall(expanded_path, rb_intern("+"), 1, fname);
-      expanded_path = rb_funcall(expanded_path, rb_intern("+"), 1, rb_str_new2(available_extensions[j]));
+    base_file_name = rb_funcall(directory, rb_intern("+"), 1, rb_str_new2("/"));
+    base_file_name = rb_funcall(base_file_name, rb_intern("+"), 1, fname);
 
-      if (rb_feature_exists(expanded_path)) {
-        return expanded_path;
+    for (j = 0; j < number_of_available_extensions; ++j) {
+      expanded_file_name = rb_funcall(base_file_name, rb_intern("+"), 1, rb_str_new2(available_extensions[j]));
+
+      if (rb_feature_exists(expanded_file_name)) {
+        return expanded_file_name;
       }
     }
   }
