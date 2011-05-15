@@ -801,13 +801,9 @@ const char *available_extensions[] = {
 const int number_of_available_extensions = sizeof(available_extensions) / sizeof(char*);
 
 VALUE
-rb_find_file_absolute(VALUE fname)
-{
+rb_find_file_with_extensions(VALUE base_file_name) {
   int j;
-  VALUE base_file_name;
   VALUE expanded_file_name;
-
-  base_file_name = fname;
 
   for (j = 0; j < number_of_available_extensions; ++j) {
     expanded_file_name = rb_funcall(base_file_name, rb_intern("+"), 1, rb_str_new2(available_extensions[j]));
@@ -816,26 +812,18 @@ rb_find_file_absolute(VALUE fname)
       return expanded_file_name;
     }
   }
-  return Qnil;
+}
+
+VALUE
+rb_find_file_absolute(VALUE fname)
+{
+  return rb_find_file_with_extensions(fname);
 }
 
 VALUE
 rb_find_file_relative(VALUE fname)
 {
-  int j;
-  VALUE base_file_name;
-  VALUE expanded_file_name;
-
-  base_file_name = rb_file_expand_path(fname, Qnil);
-
-  for (j = 0; j < number_of_available_extensions; ++j) {
-    expanded_file_name = rb_funcall(base_file_name, rb_intern("+"), 1, rb_str_new2(available_extensions[j]));
-
-    if (rb_feature_exists(expanded_file_name)) {
-      return expanded_file_name;
-    }
-  }
-  return Qnil;
+  return rb_find_file_with_extensions( rb_file_expand_path(fname, Qnil) );
 }
 
 VALUE
@@ -852,12 +840,10 @@ rb_find_file_in_load_path(VALUE fname)
     base_file_name = rb_funcall(directory, rb_intern("+"), 1, rb_str_new2("/"));
     base_file_name = rb_funcall(base_file_name, rb_intern("+"), 1, fname);
 
-    for (j = 0; j < number_of_available_extensions; ++j) {
-      expanded_file_name = rb_funcall(base_file_name, rb_intern("+"), 1, rb_str_new2(available_extensions[j]));
+    expanded_file_name = rb_find_file_with_extensions(base_file_name);
 
-      if (rb_feature_exists(expanded_file_name)) {
-        return expanded_file_name;
-      }
+    if (expanded_file_name) {
+      return expanded_file_name;
     }
   }
   return Qnil;
