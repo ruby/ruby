@@ -508,7 +508,7 @@ rb_f_require_relative_2(VALUE obj, VALUE fname)
 	rb_raise(rb_eLoadError, "cannot infer basepath");
     }
     base = rb_file_dirname(base);
-    return rb_require_safe_2(rb_file_absolute_path(fname, base), rb_safe_level());
+    return (rb_require_safe_2(rb_file_absolute_path(fname, base), rb_safe_level()) == Qnil) ? Qfalse : Qtrue;
 }
 
 static int
@@ -949,9 +949,14 @@ rb_file_is_required(VALUE expanded_path)
   }
 }
 
+/* 
+ * returns the path loaded, or nil if the file was already loaded. Raises
+ * LoadError if a file cannot be found. 
+ */
 VALUE
 rb_require_safe_2(VALUE fname, int safe)
 {
+    VALUE path = Qnil;
     volatile VALUE result = Qnil;
     rb_thread_t *th = GET_THREAD();
     volatile VALUE errinfo = th->errinfo;
@@ -964,7 +969,6 @@ rb_require_safe_2(VALUE fname, int safe)
     PUSH_TAG();
     saved.safe = rb_safe_level();
     if ((state = EXEC_TAG()) == 0) {
-	VALUE path;
 	long handle;
 	int found;
 
@@ -1015,13 +1019,17 @@ rb_require_safe_2(VALUE fname, int safe)
 
     th->errinfo = errinfo;
 
-    return result;
+    if (result == Qtrue) {
+      return path;
+    } else {
+      return Qnil;
+    }
 }
 
 VALUE
 rb_f_require_2(VALUE obj, VALUE fname)
 {
-    return rb_require_safe_2(fname, rb_safe_level());
+    return rb_require_safe_2(fname, rb_safe_level()) == Qnil ? Qfalse : Qtrue;
 }
 
 void
