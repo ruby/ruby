@@ -324,6 +324,8 @@ typedef struct rb_vm_struct {
      * objects so do *NOT* mark this when you GC.
      */
     struct RArray at_exit;
+
+    struct st_table *new_loading_table;
 } rb_vm_t;
 
 typedef struct {

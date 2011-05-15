@@ -35,14 +35,17 @@ static const char *const loadable_ext[] = {
 };
 
 VALUE
-rb_downcase_with_cache(VALUE);
-
-VALUE
 rb_get_load_path(void)
 {
     VALUE load_path = GET_VM()->load_path;
     return load_path;
 }
+static st_table *
+get_new_loading_table(void)
+{
+    return GET_VM()->new_loading_table;
+}
+
 
 VALUE
 rb_get_expanded_load_path(void)
@@ -254,20 +257,21 @@ static void
 rb_provide_feature(VALUE feature)
 {
     int frozen = 0;
+
     if (OBJ_FROZEN(get_loaded_features())) {
 	rb_raise(rb_eRuntimeError,
 		 "$LOADED_FEATURES is frozen; cannot append feature");
     }
 
-    if (OBJ_FROZEN(feature)) {
-      frozen = 1;
-      feature = rb_funcall(feature, rb_intern("dup"), 0);
+    st_table* new_loading_table = get_new_loading_table();
+    if (!new_loading_table) {
+      GET_VM()->new_loading_table = new_loading_table = st_init_strcasetable();
     }
-    rb_downcase_with_cache(feature);
-    
-    if (frozen) {
-      OBJ_FREEZE(feature);
-    }
+    st_insert(
+      new_loading_table,
+      (st_data_t)ruby_strdup(RSTRING_PTR(feature)),
+      (st_data_t)rb_barrier_new());
+
     rb_ary_push(get_loaded_features(), feature);
 }
 
@@ -764,7 +768,6 @@ rb_f_autoload_p(VALUE obj, VALUE sym)
     return rb_mod_autoload_p(klass, sym);
 }
 
-
 VALUE
 rb_file_exist_p(VALUE obj, VALUE path);
 
@@ -892,43 +895,17 @@ rb_file_is_ruby(VALUE fname)
   }
 }
 
-VALUE
-rb_downcase_with_cache(VALUE string)
-{
-  VALUE cached;
-  ID cache_ivar = rb_intern("@downcase_cache");
-
-  cached = rb_ivar_get(string, cache_ivar);
-
-  if (cached == Qnil) {
-    cached = rb_funcall(string, rb_intern("downcase"), 0);
-    rb_ivar_set(string, cache_ivar, cached);
-  }
-
-  return cached;
-}
-
 int
 rb_file_is_required(VALUE expanded_path)
 {
-  int i;
-  VALUE loaded_features;
-  VALUE loaded_feature;
-  VALUE downcased_expanded_path;
-  VALUE downcased_loaded_feature;
+  st_data_t data;
+  st_table *loading_tbl = get_new_loading_table();
 
-  downcased_expanded_path = rb_funcall(expanded_path, rb_intern("downcase"), 0);
-
-  loaded_features = get_loaded_features();
-  for (i = 0; i < RARRAY_LEN(loaded_features); ++i) {
-    loaded_feature = RARRAY_PTR(loaded_features)[i];
-    downcased_loaded_feature = rb_downcase_with_cache(loaded_feature);
-
-    if (rb_funcall(downcased_expanded_path, rb_intern("=="), 1, downcased_loaded_feature) == Qtrue) {
-      return 1;
-    }
+  if (st_lookup(loading_tbl, (st_data_t)RSTRING_PTR(expanded_path), &data)) {
+    return 1;
+  } else {
+    return 0;
   }
-  return 0;
 }
 
 VALUE
