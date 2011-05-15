@@ -2368,7 +2368,7 @@ rb_w32_fdisset(int fd, fd_set *set)
 }
 
 void
-rb_w32_fdcopy(rb_fdset_t *dst, const rb_fdset_t *src)
+rb_w32_fd_dup(rb_fdset_t *dst, const rb_fdset_t *src)
 {
     if ((UINT)dst->capa < src->fdset->fd_count) {
 	dst->capa = (src->fdset->fd_count / FD_SETSIZE + 1) * FD_SETSIZE;

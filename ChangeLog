@@ -1,3 +1,10 @@
+Sun May 15 23:45:11 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* include/ruby/intern.h: remove rb_fd_copy() to rb_fd_dup() and
+	  rb_w32_fdcopy() to rb_w32_fd_dup().
+	* win32/win32.c: ditto.
+	* thread.c: ditto.
+
 Sun May 15 22:26:39 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* signal.c (rb_f_kill): accept '-SIGXXX' style signal with Symbol or
