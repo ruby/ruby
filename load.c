@@ -980,6 +980,76 @@ rb_f_require_2(VALUE obj, VALUE fname)
 }
 
 void
+rb_rehash_loaded_features()
+{
+  int i;
+  VALUE features;
+  VALUE feature;
+
+  st_table* new_loading_table = get_new_loading_table();
+
+  if (!new_loading_table) {
+    printf("Can't rehash, no table loaded\n");
+    return;
+  }
+
+  st_clear(new_loading_table);
+
+  features = get_loaded_features();
+
+  for (i = 0; i < RARRAY_LEN(features); ++i) {
+    feature = RARRAY_PTR(features)[i];
+    st_insert(
+      new_loading_table,
+      (st_data_t)ruby_strdup(RSTRING_PTR(feature)),
+      (st_data_t)rb_barrier_new());
+  }
+}
+
+
+
+VALUE 
+ary_new(VALUE, long); // array.c
+
+static VALUE rb_cLoadedFeaturesProxy;
+
+static VALUE  
+rb_loaded_features_hook(int argc, VALUE *argv, VALUE self)  
+{ 
+  VALUE ret;
+  ret = rb_call_super(argc, argv);
+  rb_rehash_loaded_features();
+  return ret;
+}
+
+/*
+ * $LOADED_FEATURES is exposed publically as an array, but under the covers
+ * we also store this data in a hash for fast lookups. So that we can rebuild
+ * the hash whenever $LOADED_FEATURES is changed, we wrap the Array class
+ * in a proxy that intercepts all data-modifying methods and rebuilds the
+ * hash. * * Note that the list of intercepted methods is currently non-comprehensive
+ * --- it only covers modifications made by the ruby and rubyspec test suites.
+ */
+void 
+define_loaded_features_proxy()
+{
+    char* methods_to_hook[] = {"push", "clear", "replace"};
+    int i;
+
+    rb_cLoadedFeaturesProxy = rb_define_class("LoadedFeaturesProxy", rb_cArray); 
+    for (i = 0; i < 3; ++i) {
+      rb_define_method(
+        rb_cLoadedFeaturesProxy,
+        methods_to_hook[i],
+        rb_loaded_features_hook,
+        -1);
+  }
+}
+
+
+
+
+void
 Init_load()
 {
 #undef rb_intern
@@ -995,7 +1065,10 @@ Init_load()
 
     rb_define_virtual_variable("$\"", get_loaded_features, 0);
     rb_define_virtual_variable("$LOADED_FEATURES", get_loaded_features, 0);
-    vm->loaded_features = rb_ary_new();
+
+    define_loaded_features_proxy();
+
+    vm->loaded_features = ary_new(rb_cLoadedFeaturesProxy, RARRAY_EMBED_LEN_MAX);
 
     rb_define_global_function("load", rb_f_load, -1);
     rb_define_global_function("require", rb_f_require, 1);

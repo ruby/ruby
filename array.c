@@ -305,7 +305,7 @@ ary_alloc(VALUE klass)
     return (VALUE)ary;
 }
 
-static VALUE
+VALUE // TODO: Removed the static declaration off this, figure out if that is OK
 ary_new(VALUE klass, long capa)
 {
     VALUE ary;
