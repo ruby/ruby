@@ -35,6 +35,9 @@ static const char *const loadable_ext[] = {
 };
 
 VALUE
+rb_downcase_with_cache(VALUE);
+
+VALUE
 rb_get_load_path(void)
 {
     VALUE load_path = GET_VM()->load_path;
@@ -250,9 +253,20 @@ rb_feature_provided(const char *feature, const char **loading)
 static void
 rb_provide_feature(VALUE feature)
 {
+    int frozen = 0;
     if (OBJ_FROZEN(get_loaded_features())) {
 	rb_raise(rb_eRuntimeError,
 		 "$LOADED_FEATURES is frozen; cannot append feature");
+    }
+
+    if (OBJ_FROZEN(feature)) {
+      frozen = 1;
+      feature = rb_funcall(feature, rb_intern("dup"), 0);
+    }
+    rb_downcase_with_cache(feature);
+    
+    if (frozen) {
+      OBJ_FREEZE(feature);
     }
     rb_ary_push(get_loaded_features(), feature);
 }
@@ -869,13 +883,29 @@ int
 rb_file_is_ruby(VALUE fname)
 {
   char * ext;
-  ext = ruby_find_extname(RSTRING_PTR(fname), 0);
+  ext = ruby_find_extname(RSTRING_PTR(fname), 0); // TODO: This causes a warning. Why?
 
   if (IS_RBEXT(ext)) {
     return 1;
   } else {
     return 0;
   }
+}
+
+VALUE
+rb_downcase_with_cache(VALUE string)
+{
+  VALUE cached;
+  VALUE cache_ivar = rb_str_new2("@downcase_cache");
+
+  cached = rb_funcall(string, rb_intern("instance_variable_get"), 1, cache_ivar);
+
+  if (cached == Qnil) {
+    cached = rb_funcall(string, rb_intern("downcase"), 0);
+    rb_funcall(string, rb_intern("instance_variable_set"), 2, cache_ivar, cached);
+  }
+
+  return cached;
 }
 
 int
@@ -892,8 +922,7 @@ rb_file_is_required(VALUE expanded_path)
   loaded_features = get_loaded_features();
   for (i = 0; i < RARRAY_LEN(loaded_features); ++i) {
     loaded_feature = RARRAY_PTR(loaded_features)[i];
-    // TODO: This downcase totally tanks performance by orders of magnitude
-    downcased_loaded_feature = rb_funcall(loaded_feature, rb_intern("downcase"), 0);
+    downcased_loaded_feature = rb_downcase_with_cache(loaded_feature);
 
     if (rb_funcall(downcased_expanded_path, rb_intern("=="), 1, downcased_loaded_feature) == Qtrue) {
       return 1;
