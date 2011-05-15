@@ -779,7 +779,7 @@ rb_file_exist_p(VALUE obj, VALUE path);
 int
 rb_feature_exists(VALUE expanded_path)
 {
-  if (rb_file_exist_p(Qnil, expanded_path) == Qtrue) {
+  if ( rb_funcall(rb_cFile, rb_intern("file?"), 1, expanded_path) == Qtrue ) {
     return 1;
   } else {
     return 0;

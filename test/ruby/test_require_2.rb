@@ -54,6 +54,13 @@ class TestRequire < Test::Unit::TestCase
     INPUT
   end
 
+  def test_file_over_directory
+    assert_in_out_err([], <<-INPUT, %w(:ok), [])
+      require_2 'rbconfig'
+      p :ok
+    INPUT
+  end
+
   def test_require_too_long_filename
     assert_in_out_err(["RUBYOPT"=>nil], <<-INPUT, %w(:ok), [])
       begin
