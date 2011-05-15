@@ -851,7 +851,7 @@ rb_find_file_relative(VALUE fname)
 // TODO: Consistent naming across expanded_file_name and expanded_path
 
 VALUE
-rb_find_file_in_load_path(VALUE fname, int safe)
+rb_find_file_in_load_path(VALUE fname)
 {
   long i, j;
   VALUE load_path = rb_get_expanded_load_path();
@@ -867,9 +867,6 @@ rb_find_file_in_load_path(VALUE fname, int safe)
       expanded_path = rb_funcall(expanded_path, rb_intern("+"), 1, rb_str_new2(available_extensions[j]));
 
       if (rb_feature_exists(expanded_path)) {
-        if (safe >= 1 && OBJ_TAINTED(expanded_path)) {
-          rb_raise(rb_eSecurityError, "Loading from unsafe file %s", RSTRING_PTR(expanded_path));
-        }
         return expanded_path;
       }
     }
@@ -950,7 +947,10 @@ rb_require_safe_2(VALUE fname, int safe)
   } else if (rb_is_absolute_path(RSTRING_PTR(fname))) {
     path = rb_find_file_absolute(fname);
   } else {
-    path = rb_find_file_in_load_path(fname, safe);
+    path = rb_find_file_in_load_path(fname);
+    if (safe >= 1 && OBJ_TAINTED(path)) {
+      rb_raise(rb_eSecurityError, "Loading from unsafe file %s", RSTRING_PTR(path));
+    }
   }
   // TODO: WTF does the second part here do
   // TODO: Raise LoadError if file does not exist
