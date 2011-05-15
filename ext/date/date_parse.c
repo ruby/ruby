@@ -905,7 +905,7 @@ n2i(const char *s, long f, long w)
 {
     long e, i;
     int v;
-    
+
     e = f + w;
     v = 0;
     for (i = f; i < e; i++) {

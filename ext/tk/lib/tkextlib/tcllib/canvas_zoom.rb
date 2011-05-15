@@ -3,7 +3,7 @@
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
 #
 #   * Part of tcllib extension
-#   * 
+#   *
 #
 
 require 'tk'

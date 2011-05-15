@@ -1,11 +1,11 @@
-#   tracer.rb - 
+#   tracer.rb -
 #   	$Release Version: 0.3$
 #   	$Revision: 1.12 $
 #   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
 #
 # --
 #
-#   
+#
 #
 require "thread"
 
@@ -136,7 +136,7 @@ class Tracer
       return unless p.call event, file, line, id, binding, klass
     end
 
-    return unless Tracer::display_c_call? or 
+    return unless Tracer::display_c_call? or
       event != "c-call" && event != "c-return"
 
     Tracer::stdout_mutex.synchronize do
@@ -151,7 +151,7 @@ class Tracer
 	printf("%s:%d:%s:%s: %s",
 	       file,
 	       line,
-	       klass || '', 
+	       klass || '',
 	       EVENT_SYMBOL[event],
 	       source)
       end

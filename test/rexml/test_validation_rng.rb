@@ -334,7 +334,7 @@ class RNGValidation < Test::Unit::TestCase
     error( validator, %q{<A><B>XYZ</B></A>} )
     no_error( validator, %q{<A><B>Option 1</B></A>} )
     no_error( validator, %q{<A><B>Option 2</B></A>} )
-    
+
     # Attribute values
     rng = %q{
 <?xml version="1.0" encoding="UTF-8"?>
@@ -772,13 +772,13 @@ class RNGValidation < Test::Unit::TestCase
     error( validator, %q{<A><B/><B/></A>} )
     error( validator, %q{<A><C/></A>} )
   end
-  
+
 
 
   def error( validator, source )
     parser = REXML::Parsers::TreeParser.new( source )
     parser.add_listener( validator.reset )
-    assert_raise( REXML::Validation::ValidationException, 
+    assert_raise( REXML::Validation::ValidationException,
                   "Expected a validation error" ) { parser.parse }
   end
 

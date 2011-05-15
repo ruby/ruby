@@ -27,7 +27,7 @@
 #
 # A menu_info is an array of menu entries:
 #   [ entry_info, entry_info, ... ]
-# 
+#
 #
 # underline, accelerator, and configs are optional pearameters.
 # Hashes are OK instead of Arrays. Then the entry type ('command',

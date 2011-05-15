@@ -5,7 +5,7 @@ require 'thread'
 
 module DRb
   module HTTP0
-    
+
     def self.open_server(uri, config)
       unless /^http:/ =~ uri
 	raise(DRbBadScheme, uri) unless uri =~ /^http:/
@@ -20,7 +20,7 @@ module DRb
 	@drb = drb
 	@queue = Queue.new
       end
-      
+
       def do_POST(req, res)
 	@req = req
 	@res = res
@@ -28,7 +28,7 @@ module DRb
 	@res.body = @queue.pop
 	@res['content-type'] = 'application/octet-stream;'
       end
-      
+
       def req_body
 	@req.body
       end
@@ -36,7 +36,7 @@ module DRb
       def reply(body)
 	@queue.push(body)
       end
-      
+
       def close
 	@queue.push('')
       end
@@ -78,7 +78,7 @@ module DRb
 	s.start
       end
     end
-    
+
     class ServerSide
       def initialize(callback, config)
 	@callback = callback
@@ -86,7 +86,7 @@ module DRb
 	@msg = DRbMessage.new(@config)
 	@req_stream = StrStream.new(@callback.req_body)
       end
-      
+
       def close
 	@callback.close if @callback
 	@callback = nil

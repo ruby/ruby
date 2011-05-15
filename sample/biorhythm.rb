@@ -1,13 +1,13 @@
 #!/usr/local/bin/ruby
 #
-#               biorhythm.rb - 
+#               biorhythm.rb -
 #                       $Release Version: $
 #                       $Revision$
 #                       by Yasuo OHBA(STAFS Development Room)
 #
 # --
 #
-#       
+#
 #
 
 # probably based on:
@@ -91,7 +91,7 @@ display_period = options[:days]
 if ausgabeart == "v"
   print_header(bd.year, bd.month, bd.day, dd - bd, bd.strftime("%a"))
   print "\n"
-  
+
   phys, emot, geist = get_position(dd - bd)
   printf "Biorhythm:   %04d.%02d.%02d\n", dd.year, dd.month, dd.day
   printf "Physical:    %d%%\n", phys
@@ -104,10 +104,10 @@ else
   print "             -------------------------+-------------------------\n"
   print "                     Bad Condition    |    Good Condition\n"
   print "             -------------------------+-------------------------\n"
-  
+
   (dd - bd).step(dd - bd + display_period) do |z|
     phys, emot, geist = get_position(z)
-    
+
     printf "%04d.%02d.%02d : ", dd.year, dd.month, dd.day
     p = (phys / 2.0 + 0.5).to_i
     e = (emot / 2.0 + 0.5).to_i

@@ -11,7 +11,7 @@ module Syck
 ---
 - ~
 - null
-- 
+-
 - Null
 - NULL
       eoyml

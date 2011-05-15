@@ -219,7 +219,7 @@ static VALUE rb_gzreader_each(int, VALUE*, VALUE);
 static VALUE rb_gzreader_readlines(int, VALUE*, VALUE);
 #endif /* GZIP_SUPPORT */
 
-/* 
+/*
  * Document-module: Zlib
  *
  * == Overview
@@ -227,7 +227,7 @@ static VALUE rb_gzreader_readlines(int, VALUE*, VALUE);
  * Access to the zlib library.
  *
  * == Class tree
- * 
+ *
  * - Zlib::Deflate
  * - Zlib::Inflate
  * - Zlib::ZStream
@@ -1264,7 +1264,7 @@ rb_deflate_s_allocate(VALUE klass)
  *   filter (or predictor), HUFFMAN_ONLY to force Huffman encoding only (no
  *   string match).
  *
- * == Description 
+ * == Description
  *
  * Creates a new deflate stream for compression. See zlib.h for details of
  * each argument. If an argument is nil, the default value of that argument is
@@ -1276,14 +1276,14 @@ rb_deflate_s_allocate(VALUE klass)
  * === basic
  *
  *   f = File.new("compressed.file","w+")
- *   #=> #<File:compressed.file> 
+ *   #=> #<File:compressed.file>
  *   f << Zlib::Deflate.new().deflate(File.read("big.file"))
- *   #=> #<File:compressed.file> 
+ *   #=> #<File:compressed.file>
  *   f.close
- *   #=> nil 
+ *   #=> nil
  *
  * === a little more robust
- * 
+ *
  *   compressed_file = File.open("compressed.file", "w+")
  *   #=> #<File:compressed.file>
  *   zd = Zlib::Deflate.new(Zlib::BEST_COMPRESSION, 15, Zlib::MAX_MEM_LEVEL, Zlib::HUFFMAN_ONLY)
@@ -1423,7 +1423,7 @@ do_deflate(struct zstream *z, VALUE src, int flush)
  * call-seq: deflate(string[, flush])
  *
  * == Arguments
- * 
+ *
  * +string+::
  *   String
  *
@@ -1446,7 +1446,7 @@ do_deflate(struct zstream *z, VALUE src, int flush)
  * == Usage
  *
  *   comp = Zlib.deflate(File.read("big.file"))
- * or 
+ * or
  *   comp = Zlib.deflate(File.read("big.file"), Zlib::FULL_FLUSH)
  *
  */
@@ -1611,7 +1611,7 @@ rb_inflate_s_allocate(VALUE klass)
 }
 
 /*
- * Document-method: Zlib::Inflate.new 
+ * Document-method: Zlib::Inflate.new
  *
  * call-seq: Zlib::Inflate.new(window_bits)
  *
@@ -1639,7 +1639,7 @@ rb_inflate_s_allocate(VALUE klass)
  *   zi.close
  *   cf.close
  *
- * or 
+ * or
  *
  *   File.open("compressed.file") {|cf|
  *     zi = Zlib::Inflate.new
@@ -4027,13 +4027,13 @@ Init_zlib()
     rb_define_method(cZStream, "flush_next_out", rb_zstream_flush_next_out, 0);
 
     /* Integer representing date types which
-     * ZStream#data_type method returns */ 
+     * ZStream#data_type method returns */
     rb_define_const(mZlib, "BINARY", INT2FIX(Z_BINARY));
     /* Integer representing date types which
-     * ZStream#data_type method returns */ 
+     * ZStream#data_type method returns */
     rb_define_const(mZlib, "ASCII", INT2FIX(Z_ASCII));
     /* Integer representing date types which
-     * ZStream#data_type method returns */ 
+     * ZStream#data_type method returns */
     rb_define_const(mZlib, "UNKNOWN", INT2FIX(Z_UNKNOWN));
 
     cDeflate = rb_define_class_under(mZlib, "Deflate", cZStream);
@@ -4317,7 +4317,7 @@ Init_zlib()
  *
  * Subclass of Zlib::Error
  *
- * When zlib returns a Z_STREAM_ERROR, 
+ * When zlib returns a Z_STREAM_ERROR,
  * usually if the stream state was inconsistent.
  *
  */

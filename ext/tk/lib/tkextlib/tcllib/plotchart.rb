@@ -221,7 +221,7 @@ module Tk::Tcllib::Plotchart
     end
 
     def legend(series, text)
-      tk_call_without_enc(@chart, 'legend', 
+      tk_call_without_enc(@chart, 'legend',
                           _get_eval_enc_str(series), _get_eval_enc_str(text))
       self
     end
@@ -238,7 +238,7 @@ module Tk::Tcllib::Plotchart
 
       text, dir = args
 
-      tk_call_without_enc(@chart, 'balloon', x, y, 
+      tk_call_without_enc(@chart, 'balloon', x, y,
                           _get_eval_enc_str(text), dir)
       self
     end
@@ -263,7 +263,7 @@ module Tk::Tcllib::Plotchart
 
       text, dir = args
 
-      tk_call_without_enc(@chart, 'plaintext', x, y, 
+      tk_call_without_enc(@chart, 'plaintext', x, y,
                           _get_eval_enc_str(text), dir)
       self
     end
@@ -485,7 +485,7 @@ module Tk::Tcllib::Plotchart
     end
 
     def dot(series, xcrd, ycrd, value)
-      tk_call_without_enc(@chart, 'dot', _get_eval_enc_str(series), 
+      tk_call_without_enc(@chart, 'dot', _get_eval_enc_str(series),
                           xcrd, ycrd, value)
       self
     end
@@ -804,7 +804,7 @@ module Tk::Tcllib::Plotchart
     private :_create_chart
 
     def plot(label, yvalue, color)
-      tk_call_without_enc(@chart, 'plot', _get_eval_enc_str(label), 
+      tk_call_without_enc(@chart, 'plot', _get_eval_enc_str(label),
                           _get_eval_enc_str(yvalue), color)
       self
     end
@@ -1262,8 +1262,8 @@ module Tk::Tcllib::Plotchart
       # time_begin := String of time format (e.g. "1 january 2004")
       # time_end   := String of time format (e.g. "1 january 2004")
       # args := Expected/maximum number of items
-      #          ( This determines the vertical spacing. ), 
-      #         Expected/maximum width of items, 
+      #          ( This determines the vertical spacing. ),
+      #         Expected/maximum width of items,
       #         Option Hash ( { key=>value, ... } )
       if args[0].kind_of?(String)
         @time_begin = args.shift

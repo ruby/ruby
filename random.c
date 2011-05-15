@@ -1203,7 +1203,7 @@ random_equal(VALUE self, VALUE other)
  *  range.member(number) == true.
  *
  *  Or else converts _max_ to an integer using max1 =
- *  max<code>.to_i.abs</code>. 
+ *  max<code>.to_i.abs</code>.
  *
  *  Then if _max_ is +nil+ the result is zero, returns a pseudorandom floating
  *  point number greater than or equal to 0.0 and less than 1.0.

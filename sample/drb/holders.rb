@@ -14,7 +14,7 @@
 
   % ruby holderc.rb druby://yourhost:1234
 =end
-  
+
 
 require 'drb/drb'
 
@@ -36,11 +36,11 @@ end
 
 class DRbEx4
   include DRbUndumped
-  
+
   def initialize
     @curr = 1
   end
-  
+
   def gen
     begin
       @curr += 1

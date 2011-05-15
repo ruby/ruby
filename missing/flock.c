@@ -27,7 +27,7 @@ int
 flock(int fd, int operation)
 {
     struct flock lock;
- 
+
     switch (operation & ~LOCK_NB) {
     case LOCK_SH:
 	lock.l_type = F_RDLCK;
@@ -44,7 +44,7 @@ flock(int fd, int operation)
     }
     lock.l_whence = SEEK_SET;
     lock.l_start = lock.l_len = 0L;
- 
+
     return fcntl(fd, (operation & LOCK_NB) ? F_SETLK : F_SETLKW, &lock);
 }
 

@@ -58,7 +58,7 @@ module DL
       assert_equal("123", str.to_s)
     ensure
       GC.stress = stress
-    end   
+    end
 
     def test_isdigit()
       f = Function.new(CFunc.new(@libc['isdigit'], TYPE_INT, 'isdigit'),

@@ -18,7 +18,7 @@ class Rake::TestFileUtils < Test::Unit::TestCase
       @oldruby = nil
     end
   end
-  
+
   def teardown
     FileUtils.rm_rf("testdata")
     FileUtils::LN_SUPPORTED[0] = true
@@ -28,7 +28,7 @@ class Rake::TestFileUtils < Test::Unit::TestCase
       FileUtils.class_eval {const_set(:RUBY, ruby)}
     end
   end
-  
+
   def test_rm_one_file
     create_file("testdata/a")
     FileUtils.rm_rf "testdata/a"
@@ -165,7 +165,7 @@ class Rake::TestFileUtils < Test::Unit::TestCase
   end
 
   def test_sh_failure
-    assert_raise(RuntimeError) { 
+    assert_raise(RuntimeError) {
       verbose(false) { Sh.run "#{RUBY} #{File.expand_path('../shellcommand.rb', __FILE__)} 1" }
     }
   end
@@ -241,7 +241,7 @@ class Rake::TestFileUtils < Test::Unit::TestCase
   end
 
   private
-  
+
   def redirect_stderr
     old_err = $stderr
     $stderr = StringIO.new
@@ -258,5 +258,5 @@ class Rake::TestFileUtils < Test::Unit::TestCase
   def env_var
     windows? ? '%RAKE_TEST_SH%' : '$RAKE_TEST_SH'
   end
-  
+
 end

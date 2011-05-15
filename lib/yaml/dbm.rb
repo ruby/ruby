@@ -4,7 +4,7 @@ require 'dbm'
 module YAML
 
 # YAML + DBM = YDBM
-# 
+#
 # YAML::DBM provides the same interface as ::DBM.
 #
 # However, while DBM only allows strings for both keys and values,
@@ -199,7 +199,7 @@ class DBM < ::DBM
         a
     end
 
-   
+
     # Converts the contents of the database to an in-memory Hash object, and
     # returns it.
     def to_hash

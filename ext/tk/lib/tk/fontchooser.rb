@@ -86,7 +86,7 @@ class << TkFont::Chooser
 
   def configure(option, value=None)
     if option.kind_of? Hash
-      tk_call('tk', 'fontchooser', 'configure', 
+      tk_call('tk', 'fontchooser', 'configure',
               *hash_kv(_symbolkey2str(option)))
     else
       opt = option.to_s
@@ -141,8 +141,8 @@ class << TkFont::Chooser
   def set_for(target, title="Font")
     if target.kind_of? TkFont
       configs = {
-        :font=>target.actual_hash, 
-        :command=>proc{|fnt, *args| 
+        :font=>target.actual_hash,
+        :command=>proc{|fnt, *args|
           target.configure(TkFont.actual_hash(fnt))
         }
       }
@@ -152,14 +152,14 @@ class << TkFont::Chooser
       fnt = fnt.actual_hash if fnt.kind_of?(TkFont)
       configs = {
         :font => fnt,
-        :command=>proc{|fnt, *args| 
+        :command=>proc{|fnt, *args|
           target[:font] = TkFont.actual_hash(fnt)
         }
       }
     else
       configs = {
-        :font=>target.cget_tkstring(:font), 
-        :command=>proc{|fnt, *args| 
+        :font=>target.cget_tkstring(:font),
+        :command=>proc{|fnt, *args|
           target.font = TkFont.actual_hash_displayof(fnt, target)
         }
       }

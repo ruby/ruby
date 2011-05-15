@@ -21,7 +21,7 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
     util_make_gems
 
     assert_equal(
-      @cmd.find_in_cache(@a1.file_name), 
+      @cmd.find_in_cache(@a1.file_name),
       Gem.cache_gem(@a1.file_name, @gemhome),
       'found a-1.gem in the cache'
     )
@@ -31,7 +31,7 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
     util_make_gems
     util_setup_fake_fetcher
     util_setup_spec_fetcher @a1
-    
+
     a1_data = nil
 
     open Gem.cache_gem(@a1.file_name, @gemhome), 'rb' do |fp|
@@ -40,19 +40,19 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
 
     Gem::RemoteFetcher.fetcher.data['http://gems.example.com/gems/a-1.gem'] =
       a1_data
-    
+
     dep = Gem::Dependency.new(@a1.name, @a1.version)
     assert_equal(
-      @cmd.get_path(dep), 
-      Gem.cache_gem(@a1.file_name, @gemhome), 
+      @cmd.get_path(dep),
+      Gem.cache_gem(@a1.file_name, @gemhome),
       'fetches a-1 and returns the cache path'
     )
 
     FileUtils.rm Gem.cache_gem(@a1.file_name, @gemhome)
 
     assert_equal(
-      @cmd.get_path(dep), 
-      Gem.cache_gem(@a1.file_name, @gemhome), 
+      @cmd.get_path(dep),
+      Gem.cache_gem(@a1.file_name, @gemhome),
       'when removed from cache, refetches a-1'
     )
   end

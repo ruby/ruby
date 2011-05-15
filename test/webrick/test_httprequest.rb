@@ -309,7 +309,7 @@ class TestWEBrickHTTPRequest < Test::Unit::TestCase
     msg = <<-_end_of_message_
       POST /path HTTP/1.1
       Expect: 100-continue
-      
+
     _end_of_message_
     msg.gsub!(/^ {6}/, "")
     req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
@@ -325,7 +325,7 @@ class TestWEBrickHTTPRequest < Test::Unit::TestCase
   def test_continue_not_sent
     msg = <<-_end_of_message_
       POST /path HTTP/1.1
-      
+
     _end_of_message_
     msg.gsub!(/^ {6}/, "")
     req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)

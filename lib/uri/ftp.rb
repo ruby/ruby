@@ -151,7 +151,7 @@ module URI
       end
     end
 
-    # typecode accessor 
+    # typecode accessor
     #
     # see URI::FTP::COMPONENT
     attr_reader :typecode

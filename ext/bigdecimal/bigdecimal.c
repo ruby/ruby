@@ -4645,9 +4645,9 @@ VpMidRound(Real *y, unsigned short f, ssize_t nf)
     /* so the representation used (in y->frac) is an array of BDIGIT, where
        each BDIGIT contains a value between 0 and BASE-1, consisting of BASE_FIG
        decimal places.
-       
+
        (that numbers of decimal places are typed as ssize_t is somewhat confusing)
-       
+
        nf is now position (in decimal places) of the digit from the start of
           the array.
        ix is the position (in BDIGITS) of the BDIGIT containing the decimal digit,
@@ -4666,7 +4666,7 @@ VpMidRound(Real *y, unsigned short f, ssize_t nf)
 
     fracf = (v % (shifter * 10) > 0);
     fracf_1further = ((v % shifter) > 0);
-    
+
     v /= shifter;
     div = v / 10;
     v = v - div*10;
@@ -4687,12 +4687,12 @@ VpMidRound(Real *y, unsigned short f, ssize_t nf)
 	    break;
 	}
     }
-    
+
     /* now fracf = does any positive digit exist under the rounding position?
        now fracf_1further = does any positive digit exist under one further than the
        rounding position?
        now v = the first digit under the rounding position */
-    
+
     /* drop digits after pointed digit */
     memset(y->frac+ix+1, 0, (y->Prec - (ix+1)) * sizeof(BDIGIT));
 

@@ -91,10 +91,10 @@ class AttributesTester < Test::Unit::TestCase
 
   # Submitted by Kou
   def test_namespace_conflict
-    assert_raise( ParseException, 
+    assert_raise( ParseException,
                   "Declaring two attributes with the same namespace should be an error" ) do
       REXML::Document.new <<-XML
-      <x xmlns:n1="http://www.w3.org" 
+      <x xmlns:n1="http://www.w3.org"
          xmlns:n2="http://www.w3.org" >
         <bad n1:a="1"  n2:a="2" />
       </x>

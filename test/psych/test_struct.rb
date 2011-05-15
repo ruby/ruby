@@ -39,7 +39,7 @@ module Psych
 
     def test_load
       obj = Psych.load(<<-eoyml)
---- !ruby/struct:PsychStructWithIvar 
+--- !ruby/struct:PsychStructWithIvar
 :foo: bar
 :@bar: hello
       eoyml

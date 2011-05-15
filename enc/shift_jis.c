@@ -208,7 +208,7 @@ is_mbc_ambiguous(OnigCaseFoldType flag,
 		 const UChar** pp, const UChar* end)
 {
   return onigenc_mbn_is_mbc_ambiguous(enc, flag, pp, end);
-                                      
+
 }
 #endif
 
@@ -243,7 +243,7 @@ left_adjust_char_head(const UChar* start, const UChar* s, const UChar* end, Onig
 	p++;
 	break;
       }
-    } 
+    }
   }
   len = enclen(enc, p, end);
   if (p + len > s) return (UChar* )p;

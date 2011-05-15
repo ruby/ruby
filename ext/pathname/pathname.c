@@ -170,7 +170,7 @@ path_sub(int argc, VALUE *argv, VALUE self)
 /*
  * Return a pathname which the extension of the basename is substituted by
  * <i>repl</i>.
- * 
+ *
  * If self has no extension part, <i>repl</i> is appended.
  */
 static VALUE
@@ -220,7 +220,7 @@ path_realpath(int argc, VALUE *argv, VALUE self)
 /*
  * Returns the real (absolute) pathname of +self+ in the actual filesystem.
  * The real pathname doesn't contain symlinks or useless dots.
- * 
+ *
  * The last component of the real pathname can be nonexistent.
  */
 static VALUE
@@ -239,10 +239,10 @@ path_realdirpath(int argc, VALUE *argv, VALUE self)
  *   pathname.each_line(limit [, open_args]) {|line| block }      -> nil
  *   pathname.each_line(sep, limit [, open_args]) {|line| block } -> nil
  *   pathname.each_line(...)                                      -> an_enumerator
- *        
+ *
  * #each_line iterates over the line in the file.  It yields a String object
  * for each line.
- * 
+ *
  * This method is availabel since 1.8.1.
  */
 static VALUE
@@ -265,7 +265,7 @@ path_each_line(int argc, VALUE *argv, VALUE self)
  * call-seq:
  *   pathname.read([length [, offset]]) -> string
  *   pathname.read([length [, offset]], open_args) -> string
- *        
+ *
  * See <tt>IO.read</tt>.  Returns all data from the file, or the first +N+ bytes
  * if specified.
  *
@@ -284,7 +284,7 @@ path_read(int argc, VALUE *argv, VALUE self)
 /*
  * call-seq:
  *   pathname.binread([length [, offset]]) -> string
- *        
+ *
  * See <tt>IO.binread</tt>.  Returns all the bytes from the file, or the first +N+
  * if specified.
  *
@@ -305,7 +305,7 @@ path_binread(int argc, VALUE *argv, VALUE self)
  *   pathname.readlines(sep=$/ [, open_args])     -> array
  *   pathname.readlines(limit [, open_args])      -> array
  *   pathname.readlines(sep, limit [, open_args]) -> array
- *        
+ *
  * See <tt>IO.readlines</tt>.  Returns all the lines from the file.
  *
  */
@@ -323,7 +323,7 @@ path_readlines(int argc, VALUE *argv, VALUE self)
 /*
  * call-seq:
  *   pathname.sysopen([mode, [perm]])  -> fixnum
- *        
+ *
  * See <tt>IO.sysopen</tt>.
  *
  */
@@ -405,7 +405,7 @@ path_lchown(VALUE self, VALUE owner, VALUE group)
  * call-seq:
  *    pathname.fnmatch(pattern, [flags])        -> string
  *    pathname.fnmatch?(pattern, [flags])       -> string
- *   
+ *
  * See <tt>File.fnmatch</tt>.  Return +true+ if the receiver matches the given
  * pattern.
  */

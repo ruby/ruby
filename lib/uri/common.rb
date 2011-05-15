@@ -10,9 +10,9 @@
 #
 
 module URI
-  # 
+  #
   # Includes URI::REGEXP::PATTERN
-  # 
+  #
   module REGEXP
     #
     # Patterns used to parse URI's
@@ -111,7 +111,7 @@ module URI
     # see also URI::Parser.initialize_pattern
     attr_reader :pattern
 
-    # The Hash of Regexp 
+    # The Hash of Regexp
     #
     # see also URI::Parser.initialize_regexp
     attr_reader :regexp
@@ -197,7 +197,7 @@ module URI
     #
     # == Description
     #
-    # parses +uri+ and constructs either matching URI scheme object 
+    # parses +uri+ and constructs either matching URI scheme object
     # (FTP, HTTP, HTTPS, LDAP, LDAPS, or MailTo) or URI::Generic
     #
     # == Usage
@@ -237,7 +237,7 @@ module URI
       uris.inject :merge
     end
 
-    # 
+    #
     # :call-seq:
     # 	extract( str )
     # 	extract( str, schemes )
@@ -279,7 +279,7 @@ module URI
       end
     end
 
-    # 
+    #
     # :call-seq:
     # 	escape( str )
     # 	escape( str, unsafe )
@@ -311,7 +311,7 @@ module URI
       end.force_encoding(Encoding::US_ASCII)
     end
 
-    # 
+    #
     # :call-seq:
     # 	unescape( str )
     # 	unescape( str, unsafe )

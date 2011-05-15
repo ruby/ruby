@@ -19,10 +19,10 @@ require "e2mmap.rb"
 #     STDERR.puts "Thread #{t} has terminated."
 #   end
 #
-#   
+#
 #   th = ThreadsWait.new(thread1,...)
 #   th.next_wait # next one to be done
-#    
+#
 #
 class ThreadsWait
   RCS_ID='-$Id: thwait.rb,v 1.3 1998/06/26 03:19:34 keiju Exp keiju $-'

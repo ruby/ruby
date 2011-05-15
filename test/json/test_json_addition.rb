@@ -23,7 +23,7 @@ class TC_JSONAddition < Test::Unit::TestCase
     def ==(other)
       a == other.a
     end
-    
+
     def self.json_create(object)
       new(*object['args'])
     end

@@ -82,7 +82,7 @@ class TupleSpace
       end
     end
     return nil unless found
-    
+
     @que[sz].delete_at(i)
 
     return x
@@ -167,7 +167,7 @@ if __FILE__ == $0
   def client(ts, n)
     Thread.start {
       ac = Object.new
-      tuples = (1..10).collect { |i| 
+      tuples = (1..10).collect { |i|
 	['req', ac, i * 10 + n]
       }
       ts.out(*tuples)
@@ -201,7 +201,7 @@ if __FILE__ == $0
     clients.push(client(ts, n))
   end
 
-  (1..3).each do 
+  (1..3).each do
     watcher(ts)
   end
 

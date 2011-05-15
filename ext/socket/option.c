@@ -529,7 +529,7 @@ inspect_ipv4_add_drop_membership(int level, int optname, VALUE data, VALUE ret)
     if (RSTRING_LEN(data) == sizeof(struct ip_mreq))
         return inspect_ipv4_mreq(level, optname, data, ret);
 # if defined(HAVE_TYPE_STRUCT_IP_MREQN)
-    else if (RSTRING_LEN(data) == sizeof(struct ip_mreqn)) 
+    else if (RSTRING_LEN(data) == sizeof(struct ip_mreqn))
         return inspect_ipv4_mreqn(level, optname, data, ret);
 # endif
     else

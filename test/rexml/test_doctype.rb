@@ -18,7 +18,7 @@ class TestDocTypeAccessor < Test::Unit::TestCase
     <r/>
     XMLEND
     @doctype1 = REXML::Document.new(document_string1).doctype
-    
+
     @pubid = "TEST_ID"
     document_string2 = <<-"XMLEND"
     <!DOCTYPE r PUBLIC "#{@pubid}">
@@ -31,15 +31,15 @@ class TestDocTypeAccessor < Test::Unit::TestCase
     <r/>
     XMLEND
     @doctype3 = REXML::Document.new(document_string3).doctype
-  
+
   end
-   
+
   def test_public
     assert_equal(nil, @doctype1.public)
     assert_equal(@pubid, @doctype2.public)
     assert_equal(@pubid, @doctype3.public)
   end
-  
+
   def test_system
     assert_equal(@sysid, @doctype1.system)
     assert_equal(nil, @doctype2.system)
@@ -50,20 +50,20 @@ class TestDocTypeAccessor < Test::Unit::TestCase
     assert_equal(@notid1, @doctype1.notation("n1").system)
     assert_equal(@notid2, @doctype1.notation("n2").system)
   end
-  
+
   def test_notations
     notations = @doctype1.notations
     assert_equal(2, notations.length)
     assert_equal(@notid1, find_notation(notations, "n1").system)
     assert_equal(@notid2, find_notation(notations, "n2").system)
   end
-  
+
   def find_notation(notations, name)
     notations.find { |notation|
       name == notation.name
     }
   end
-  
+
 end
 
 class TestNotationDeclPublic < Test::Unit::TestCase

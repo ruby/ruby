@@ -1,6 +1,6 @@
 =begin
  distributed Ruby --- dRuby Sample Client
- 	Copyright (c) 1999-2000 Masatoshi SEKI 
+ 	Copyright (c) 1999-2000 Masatoshi SEKI
 =end
 
 require 'drb/drb'

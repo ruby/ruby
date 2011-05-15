@@ -407,7 +407,7 @@ class RDoc::RubyLex
         (ch = getc)
         res << ch
       end
-  
+
       gets # consume =end
 
       @ltype = nil

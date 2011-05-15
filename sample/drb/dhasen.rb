@@ -1,13 +1,13 @@
 =begin
  distributed Ruby --- dRuby Sample Server --- chasen server
- 	Copyright (c) 1999-2001 Masatoshi SEKI 
+ 	Copyright (c) 1999-2001 Masatoshi SEKI
 =end
 
 =begin
  How to play.
 
  Terminal 1
- | % ruby dhasen.rb 
+ | % ruby dhasen.rb
  | druby://yourhost:7640
 
  Terminal 2

@@ -251,7 +251,7 @@ module URI
     # returns the port component of the URI.
     #
     #   URI("http://foo/bar/baz").port #=> "80"
-    # 
+    #
     #   URI("http://foo:8080/bar/baz").port #=> "8080"
     #
     attr_reader :port
@@ -265,13 +265,13 @@ module URI
     # returns the path component of the URI.
     #
     #   URI("http://foo/bar/baz").path #=> "/bar/baz"
-    # 
+    #
     attr_reader :path
 
     # returns the query component of the URI.
     #
     #   URI("http://foo/bar/baz?search=FooBar").query #=> "search=FooBar"
-    # 
+    #
     attr_reader :query
 
     # returns the opaque part of the URI.
@@ -287,7 +287,7 @@ module URI
     # returns the fragment component of the URI.
     #
     #   URI("http://foo/bar/baz?search=FooBar#ponies").fragment #=> "ponies"
-    # 
+    #
     attr_reader :fragment
 
     # returns the parser to be used.
@@ -518,7 +518,7 @@ module URI
     # (with validation)
     #
     # see also URI::Generic.userinfo=
-    # 
+    #
     def set_userinfo(user, password = nil)
       unless password
         user, password = split_userinfo(user)
@@ -1081,7 +1081,7 @@ module URI
     end
     private :split_path
 
-    # 
+    #
     # Merges a base path +base+, with relative path +rel+,
     # returns a modified base path.
     #

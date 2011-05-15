@@ -110,7 +110,7 @@ assert_equal %q{100}, %q{
     end
     return arg
   end
-  
+
   test(100)
 }
 assert_equal %q{ok}, %q{
@@ -169,7 +169,7 @@ assert_equal %q{[:false, :false, :false, :false, :false, :false, :false, :false,
       res
     end
   end
-  
+
   def each_test
     conds = make_perm(['fv', 'tv'], 3)
     bangs = make_perm(['', '!'], 3)
@@ -184,10 +184,10 @@ assert_equal %q{[:false, :false, :false, :false, :false, :false, :false, :false,
       }
     }
   end
-  
+
   fv = false
   tv = true
-  
+
   $ans = []
   each_test{|syn, conds, bangs, exprs|
     c1, c2, c3 = conds
@@ -695,7 +695,7 @@ assert_equal 'ok', %q{
   while true
     counter -= 1
     break if counter == 0
-    next 
+    next
     redo
   end
   :ok
@@ -706,7 +706,7 @@ assert_equal 'ok', %q{
   while true
     counter -= 1
     break if counter == 0
-    next 
+    next
     "#{ redo }"
   end
   :ok

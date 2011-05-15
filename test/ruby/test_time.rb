@@ -176,7 +176,7 @@ class TestTime < Test::Unit::TestCase
 
     t = Time.at(2**40 + "1/3".to_r, 9999999999999).utc
     assert_equal(36812, t.year)
-    
+
     t = Time.at(-0x3fff_ffff_ffff_ffff)
     assert_equal(-146138510344, t.year)
     t = Time.at(-0x4000_0000_0000_0000)

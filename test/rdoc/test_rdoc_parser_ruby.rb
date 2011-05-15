@@ -2067,7 +2067,7 @@ end
 
     foo = @top_level.classes.first
 
-    assert_equal "= DESCRIPTION\n\nThis is a simple test class\n\n= RUMPUS\n\nIs a silly word", 
+    assert_equal "= DESCRIPTION\n\nThis is a simple test class\n\n= RUMPUS\n\nIs a silly word",
       foo.comment
 
     m = foo.method_list.first

@@ -75,7 +75,7 @@ assert_equal %q{[1, 2, 3]}, %q{
       }
     end
   end
-  
+
   C.new.to_a
 }
 assert_equal %q{[4, 5, 6]}, %q{
@@ -87,7 +87,7 @@ assert_equal %q{[4, 5, 6]}, %q{
       }
     end
   end
-  
+
   C.new.map{|e|
     e + 3
   }
@@ -110,7 +110,7 @@ assert_equal %q{20}, %q{
   def m
     yield 1
   end
-  
+
   m{|ib|
     m{|jb|
       i = 20
@@ -121,7 +121,7 @@ assert_equal %q{2}, %q{
   def m
     yield 1
   end
-  
+
   m{|ib|
     m{|jb|
       ib = 20
@@ -135,11 +135,11 @@ assert_equal %q{3}, %q{
       yield
     }
   end
-  
+
   def iter2
     yield
   end
-  
+
   iter1{
     jb = 2
     iter1{
@@ -154,11 +154,11 @@ assert_equal %q{2}, %q{
       yield
     }
   end
-  
+
   def iter2
     yield
   end
-  
+
   iter1{
     jb = 2
     iter1{
@@ -226,11 +226,11 @@ assert_equal %q{[10, 20, 30, 40, nil, nil]}, %q{
 }
 assert_equal %q{[1]}, %q{
   $a = []
-  
+
   def iter
     yield 1
   end
-  
+
   def m
     x = iter{|x|
       $a << x
@@ -450,7 +450,7 @@ assert_equal 'ok', %q{
   end
   vs1 = []
   C.new.each {|*v| vs1 << v }
-  vs2 = []               
+  vs2 = []
   C.new.to_enum.each {|*v| vs2 << v }
   vs1 == vs2 ? :ok : :ng
 }, '[ruby-dev:32329]'
@@ -468,9 +468,9 @@ assert_equal '[nil, []]', %q{
   def m() yield nil,[] end
   l = lambda {|*v| v}
   GC.stress=true
-  r = m(&l)      
+  r = m(&l)
   GC.stress=false
-  r.inspect             
+  r.inspect
 }, '[ruby-dev:32567]'
 
 assert_equal NilClass.to_s, %q{

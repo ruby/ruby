@@ -295,7 +295,7 @@ class << Tk::Tile::Style
     fail ArgumentError, "too many arguments" unless args.empty?
 
     # define a Microsoft Visual Styles element
-    tk_call(TkCommandNames[0], 'element', 'create', name, 'vsapi', 
+    tk_call(TkCommandNames[0], 'element', 'create', name, 'vsapi',
             class_name, part_id, state_map, opts)
   end
 

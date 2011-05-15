@@ -92,7 +92,7 @@ DELIMITER
     doc = REXML::Document.new source
     assert_equal "myprog-config", doc.root.name
     count = 0
-    REXML::XPath.each(doc, "x:myprog-config/x:main/x:parameter", 
+    REXML::XPath.each(doc, "x:myprog-config/x:main/x:parameter",
       {"x"=>"http://someurl/program/version"}) { |element|
         assert_equal "name", element.attributes["name"]
       count += 1;
@@ -183,7 +183,7 @@ DELIMITER
     result = XPath.first(doc, xpath)
     assert_equal desired_result.to_s, result.to_s
   end
-  
+
   def test_xpath_whitespace_TobiasReif
     # same as above, with whitespace in XPath
     doc = Document.new(XML_STRING_01.dup)
@@ -193,7 +193,7 @@ DELIMITER
     failure_message = "\n[[[TR: AFAIK, whitespace should be allowed]]]\n"
     assert_equal(desired_result.to_s, result.to_s, failure_message)
   end
-  
+
   def test_xpath_02_TobiasReif
     doc = Document.new XML_STRING_01.dup
     desired_result = Document.new '<author>Thomas, David; Hunt, Andrew</author>'
@@ -211,7 +211,7 @@ DELIMITER
     failure_message = "\nHow to handle the apos inside the string inside the XPath?\nXPath = #{xpath}\n"
     assert_equal desired_result.to_s, result.to_s, failure_message
   end
-  
+
   def test_xpath_03_TobiasReif
     doc = Document.new XML_STRING_02.dup
     desired_result_string = "<entry type='Book'>
@@ -303,7 +303,7 @@ EOF
 
     assert_nil XPath.first(doc,'//leg')
     assert_equal 'http://www.foo.com/human', doc.root.elements[1].namespace
-    assert_equal 'human leg', 
+    assert_equal 'human leg',
       XPath.first(doc, '//x:leg/text()', {'x'=>'http://www.foo.com/human'}).to_s
   end
 
@@ -312,8 +312,8 @@ EOF
     source = File.new(fixture_path('ProductionSupport.xml'))
     h = Hash.new
     doc = REXML::Document.new source
-    doc.elements.each("//CommonError") { |el| 
-      h[el.elements['Key'].text] = 'okay' 
+    doc.elements.each("//CommonError") { |el|
+      h[el.elements['Key'].text] = 'okay'
     }
     assert(h.include?('MotorInsuranceContract(Object)>>#error:'))
   end
@@ -426,7 +426,7 @@ EOF
       assert text !~ /&rbconfig/, "'#{text}' failed"
     end
 
-    #Error occurred in test_package_file_opens(TC_PackageInstall): 
+    #Error occurred in test_package_file_opens(TC_PackageInstall):
     # ArgumentError:
     #illegal access mode &rbconfig.prefix;/lib/rexml
     #
@@ -464,7 +464,7 @@ EOL
     end
   end
 
-  def test_maintain_dtd 
+  def test_maintain_dtd
     src = %q{<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE ivattacks SYSTEM "../../ivacm.dtd" [
 <!ENTITY % extern-packages SYSTEM "../../ivpackages.dtd">

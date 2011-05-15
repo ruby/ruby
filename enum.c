@@ -1668,7 +1668,7 @@ enum_each_with_index(int argc, VALUE *argv, VALUE obj)
  *      (1..3).reverse_each {|v| p v }
  *
  *    produces:
- *      
+ *
  *      3
  *      2
  *      1

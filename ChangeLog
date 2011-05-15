@@ -21,7 +21,7 @@ Sat May 14 22:45:28 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 Sat May 14 19:52:22 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_rubyoptions.rb (TestRubyOptions#test_set_program_name):
-	add for $0 test.
+	  add for $0 test.
 
 Sat May 14 19:50:46 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
@@ -50,10 +50,10 @@ Sat May 14 17:42:21 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 Sat May 14 12:12:54 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
-	* test/openssl/test_pkey_dsa.rb: Add basic tests and tests that 
-	ensure new public key PEM encoding behavior and ensure backward 
-	compatibility.
-	[Ruby 1.9 - Bug #4422] [ruby-core:35328]
+	* test/openssl/test_pkey_dsa.rb: Add basic tests and tests that
+	  ensure new public key PEM encoding behavior and ensure backward
+	  compatibility.
+	  [Ruby 1.9 - Bug #4422] [ruby-core:35328]
 	* test/openssl/test_pkey_rsa.rb: Remove line with 'puts'.
 
 Sat May 14 12:06:49 2011  Eric Hodel  <drbrain@segment7.net>
@@ -64,8 +64,8 @@ Sat May 14 12:06:49 2011  Eric Hodel  <drbrain@segment7.net>
 Sat May 14 10:32:36 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/test_pkey_rsa.rb: Add tests that ensure new public key
-	encoding behavior and also ensure backward compatibility.
-	[Ruby 1.9 - Bug #4421] [ruby-core:35327]
+	  encoding behavior and also ensure backward compatibility.
+	  [Ruby 1.9 - Bug #4421] [ruby-core:35327]
 
 Sat May 14 09:50:10 2011  Eric Hodel  <drbrain@segment7.net>
 
@@ -87,7 +87,7 @@ Sat May 14 05:08:32 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 	* ext/openssl/ossl_pkey.c
 	* ext/openssl/ossl_pkey.h
 	* test/openssl/pkey/test_pkey_rsa.rb
-	Reverted premature commit. Sorry for the noise!
+	  Reverted premature commit. Sorry for the noise!
 
 Sat May 14 05:02:58 2011  Eric Hodel  <drbrain@segment7.net>
 
@@ -97,8 +97,8 @@ Sat May 14 05:02:58 2011  Eric Hodel  <drbrain@segment7.net>
 Sat May 14 04:19:06 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* NEWS: Describe altered behaviour for RSA and DSA public key
-	encoding. [Ruby 1.9 - Bug #4421, Bug #4422]
-	[ruby-core:35327,35328]
+	  encoding. [Ruby 1.9 - Bug #4421, Bug #4422]
+	  [ruby-core:35327,35328]
 
 Sat May 14 02:57:52 2011  Eric Hodel  <drbrain@segment7.net>
 
@@ -488,7 +488,7 @@ Fri May  6 23:29:47 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 Fri May  6 23:13:43 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: remove nanosleep check. we no longer use it.
-	r20124 removed last usage.
+	  r20124 removed last usage.
 
 Fri May  6 22:35:56 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -551,7 +551,7 @@ Thu May  5 15:03:51 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 	* eval.c (frame_func_id): __method__ return different name from
 	  methods defined by Module#define_method with a same block.
 	  [ruby-core:35386] fixes #4606
-	* eval (method_entry_of_iseq): new helper function. search control
+	* eval.c (method_entry_of_iseq): new helper function. search control
 	  frame stack for a method entry which has given iseq.
 	* test/ruby/test_method.rb: add tests for #4696
 
@@ -573,14 +573,14 @@ Wed May  4 21:11:28 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 Wed May  4 20:22:12 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (Init_IO): Added File::CLOEXEC constant.
-	[ruby-core:22893] [Feature #1291]
+	  [ruby-core:22893] [Feature #1291]
 	* test/ruby/test_io.rb (TestIO#test_o_cloexec): test for File::CLOEXEC.
 
 Wed May  4 19:00:59 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_wait_for_single_fd): Fix wrong return value.
 	* test/-ext-/wait_for_single_fd/test_wait_for_single_fd.rb
-	(TestWaitForSingleFD#test_wait_for_closed_pipe): test for it.
+	  (TestWaitForSingleFD#test_wait_for_closed_pipe): test for it.
 
 Wed May  4 18:46:39 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
@@ -1201,7 +1201,7 @@ Tue Apr 12 01:33:00 2011  Luis Lavena  <luislavena@gmail.com>
 
 	* configure.in: properly evaluate existence of truncate, ftruncate
 	  and ftello for MinGW. [ruby-core:35678]
-	* win32/win32.c: rename truncate, ftruncate and ftello to avoid 
+	* win32/win32.c: rename truncate, ftruncate and ftello to avoid
 	  redefinitions.
 	* win32/win32.h: ditto.
 
@@ -1409,11 +1409,11 @@ Tue Mar 29 05:19:57 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/raddrinfo.c: parenthesize macro arguments.
 
-Tue Mar 29 00:03:51 2011 Tajima Akio <artonx@yahoo.co.jp>	
+Tue Mar 29 00:03:51 2011 Tajima Akio <artonx@yahoo.co.jp>
 
 	* test/webrick/test_filehandler.rb (test_short_filename):
-	 read real short filename by cmd because smb mounted files
-	 have different naming convention.
+	  read real short filename by cmd because smb mounted files
+	  have different naming convention.
 
 Mon Mar 28 11:38:08 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 

@@ -170,9 +170,9 @@ class OpenSSL::TestX509Certificate < Test::Unit::TestCase
                         nil, nil, OpenSSL::Digest::MD5.new)
     }
   end
-  
+
   private
-  
+
   def certificate_error_returns_false
     yield
   rescue OpenSSL::X509::CertificateError

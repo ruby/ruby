@@ -266,7 +266,7 @@ end
 # ERB::Compiler
 class ERB
   # = ERB::Compiler
-  # 
+  #
   # Compiles ERB templates into Ruby code; the compiled code produces the
   # template result when evaluated. ERB::Compiler provides hooks to define how
   # generated output is handled.
@@ -308,7 +308,7 @@ class ERB
   #
   #   obj = 'It'
   #   eval code
-  # 
+  #
   # Evaluate using an input:
   #
   #   mod = Module.new

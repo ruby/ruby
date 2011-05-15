@@ -845,7 +845,7 @@ ossl_asn1_decode0(unsigned char **pp, long length, long *offset, long depth,
             ossl_asn1_set_infinite_length(asn1data, Qtrue);
         else
             ossl_asn1_set_infinite_length(asn1data, Qfalse);
-        
+
 	rb_ary_push(ary, asn1data);
 	length -= len;
         if(once) break;

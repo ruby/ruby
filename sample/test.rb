@@ -21,7 +21,7 @@ def test_ok(cond,n=1)
   else
     STDERR.print "F"
     printf "not ok %s %d -- %s\n", $what, $testnum, where
-    $failed+=1 
+    $failed+=1
   end
   STDOUT.flush
   STDERR.flush
@@ -657,7 +657,7 @@ $string = "this must be handled no.3"
 begin
   begin
     raise "exception in rescue clause"
-  rescue 
+  rescue
     raise $string
   end
   test_ok(false)
@@ -671,7 +671,7 @@ end
 begin
   begin
     raise "this must be handled no.4"
-  ensure 
+  ensure
     raise "exception in ensure clause"
   end
   test_ok(false)
@@ -741,7 +741,7 @@ test_ok($x[1,3] == [1, 2, 3])
 
 $x[0, 2] = 10
 test_ok($x[0] == 10 && $x[1] == 2)
-  
+
 $x[0, 0] = -1
 test_ok($x[0] == -1 && $x[1] == 10)
 
@@ -817,7 +817,7 @@ $x = {1=>2, 2=>4, 3=>6}
 
 test_ok($x[1] == 2)
 
-test_ok(begin   
+test_ok(begin
      for k,v in $x
        raise if k*2 != v
      end
@@ -1164,7 +1164,7 @@ def proc_return4
 end
 test_ok(proc_return4() == 42)
 
-def ljump_test(state, proc, *args) 
+def ljump_test(state, proc, *args)
   x = state
   begin
     proc.call(*args)
@@ -1362,7 +1362,7 @@ class ITER_TEST4 < ITER_TEST3
   end
 end
 
-ITER_TEST4.new.foo(44){55}   
+ITER_TEST4.new.foo(44){55}
 
 class ITER_TEST5
    def tt(aa)
@@ -1628,8 +1628,8 @@ test_ok(-265419172580680477752431643787347.to_s(36) == "-justanotherrubyhacker")
 
 a = []
 (0..255).each {|n|
-  ch = [n].pack("C")                     
-  a.push ch if /a#{Regexp.quote ch}b/x =~ "ab" 
+  ch = [n].pack("C")
+  a.push ch if /a#{Regexp.quote ch}b/x =~ "ab"
 }
 test_ok(a.size == 0)
 
@@ -1960,7 +1960,7 @@ end
 
 test_ok(bar.test2 == "test2")
 test_ok(bar.test == "test")
-test_ok(foo.test == "test")  
+test_ok(foo.test == "test")
 
 begin
   foo.test2
@@ -2054,7 +2054,7 @@ class Gods
 
   def self.ruler1		# <= per method definition style
     @@rule
-  end		   
+  end
   class << self			# <= multiple method definition style
     def ruler2
       @@rule

@@ -36,7 +36,7 @@ def get_mailfile(user)
   file = user
   unless user
     file = ENV['MAIL']
-    user = ENV['USER'] || ENV['USERNAME'] || ENV['LOGNAME'] 
+    user = ENV['USER'] || ENV['USERNAME'] || ENV['LOGNAME']
   end
 
   if file == nil or !File.exist?(file)

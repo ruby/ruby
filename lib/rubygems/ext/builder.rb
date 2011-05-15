@@ -19,7 +19,7 @@ class Gem::Ext::Builder
 
   def self.make(dest_path, results)
     unless File.exist? 'Makefile' then
-      raise Gem::InstallError, "Makefile not found:\n\n#{results.join "\n"}" 
+      raise Gem::InstallError, "Makefile not found:\n\n#{results.join "\n"}"
     end
 
     mf = File.read('Makefile')

@@ -30,7 +30,7 @@ module Syck
 
     def test_load
       obj = YAML.load(<<-eoyml)
---- !ruby/struct:StructWithIvar 
+--- !ruby/struct:StructWithIvar
 foo: bar
 @bar: hello
 eoyml

@@ -3,7 +3,7 @@
 
 if ARGV[0] =~ /-p/
   ARGV.shift
-  path = ARGV.shift 
+  path = ARGV.shift
 end
 
 if path == nil

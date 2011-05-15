@@ -154,7 +154,7 @@ module IRB
 	  begin
 	    candidates = []
 	    rec = eval(receiver, bind)
-	    if sep == "::" and rec.kind_of?(Module) 
+	    if sep == "::" and rec.kind_of?(Module)
 	      candidates = rec.constants.collect{|m| m.to_s}
 	    end
 	    candidates |= rec.methods.collect{|m| m.to_s}

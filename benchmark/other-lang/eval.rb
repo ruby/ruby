@@ -51,14 +51,14 @@ Bench.each{|b|
 
 require 'pp'
 # utime
-puts Lang.join("\t")  
+puts Lang.join("\t")
 Bench.each_with_index{|b, bi|
   print b, "\t"
   puts Result[bi].map{|e| e[0]}.join("\t")
 }
 
 # rtime
-puts Lang.join("\t")  
+puts Lang.join("\t")
 Bench.each_with_index{|b, bi|
   print b, "\t"
   puts Result[bi].map{|e| e[1]}.join("\t")

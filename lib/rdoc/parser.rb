@@ -185,7 +185,7 @@ class RDoc::Parser
   end
 
   ##
-  # Creates a new Parser storing +top_level+, +file_name+, +content+, 
+  # Creates a new Parser storing +top_level+, +file_name+, +content+,
   # +options+ and +stats+ in instance variables.
   #
   # Usually invoked by +super+

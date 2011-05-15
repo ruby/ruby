@@ -151,7 +151,7 @@ module WEBrick
       # at directory +root+
       #
       # If +options+ is a Hash the following keys are allowed:
-      # 
+      #
       # :AcceptableLanguages:: Array of languages allowed for accept-language
       # :DirectoryCallback:: Allows preprocessing of directory requests
       # :FancyIndexing:: If true, show an index for directories
@@ -166,7 +166,7 @@ module WEBrick
       #
       # If +options+ is true or false then +:FancyIndexing+ is enabled or
       # disabled respectively.
-      
+
       def initialize(server, root, options={}, default=Config::FileHandler)
         @config = server.config
         @logger = @config[:Logger]

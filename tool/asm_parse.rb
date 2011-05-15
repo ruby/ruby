@@ -7,7 +7,7 @@ while line = ARGF.gets
     puts line
     size = 0
     len  = 0
-    
+
     while line = ARGF.gets
       if /\[start\] (\w+)/ =~ line
         puts "\t; # length: #{len}, size: #{size}"
@@ -29,8 +29,8 @@ while line = ARGF.gets
           size += 1
         end
       end
-      
-      
+
+
       if /__NEXT_INSN__/ !~ line && /\[end  \] (\w+)/ =~ line
         ename = $1
         if name != ename

@@ -41,18 +41,18 @@ class JaxenTester < Test::Unit::TestCase
         file = File.new(fixture_path(fname+".xml"))
         doc = Document.new( file )
         XPath.each( doc, "/tests/document" ) {|e| handleDocument(e)}
-#      end 
+#      end
 #    }
   end
 
-  # processes a tests/document/context node 
+  # processes a tests/document/context node
   def handleContext( testDoc, ctxElement)
     testCtx = XPath.match( testDoc, ctxElement.attributes["select"] )[0]
-    namespaces = {} 
+    namespaces = {}
     if testCtx.class == Element
-      testCtx.prefixes.each { |pre| handleNamespace( testCtx, pre, namespaces ) } 
+      testCtx.prefixes.each { |pre| handleNamespace( testCtx, pre, namespaces ) }
     end
-    variables = {} 
+    variables = {}
     XPath.each( ctxElement, "@*[namespace-uri() = 'http://jaxen.org/test-harness/var']") { |attrib| handleVariable(testCtx, variables, attrib) }
     XPath.each( ctxElement, "valueOf") { |e| handleValueOf(testCtx, variables, namespaces, e) }
     XPath.each( ctxElement, "test[not(@exception) or (@exception != 'true') ]") { |e| handleNominalTest(testCtx,variables, namespaces, e) }
@@ -61,7 +61,7 @@ class JaxenTester < Test::Unit::TestCase
 
   # processes a tests/document/context/valueOf or tests/document/context/test/valueOf node
   def handleValueOf(ctx,variables, namespaces, valueOfElement)
-    expected = valueOfElement.text 
+    expected = valueOfElement.text
     got = XPath.match( ctx, valueOfElement.attributes["select"], namespaces, variables )[0]
     assert_true( (got.nil? && expected.nil?) || !got.nil? )
     case got.class
@@ -71,10 +71,10 @@ class JaxenTester < Test::Unit::TestCase
       assert_equal( expected, got.to_s )
     when Instruction
       assert_equal( expected, got.content )
-    when Fixnum 
+    when Fixnum
       assert_equal( exected.to_f, got )
     when String
-      # normalize values for comparison 
+      # normalize values for comparison
       got = "" if got == nil or got == ""
       expected = "" if expected == nil or expected == ""
       assert_equal( expected, got )
@@ -82,45 +82,45 @@ class JaxenTester < Test::Unit::TestCase
       assert_fail( "Wassup?" )
     end
   end
-  
-  
+
+
   # processes a tests/document/context/test node ( where @exception is false or doesn't exist )
   def handleNominalTest(ctx, variables, namespaces, testElement)
-    expected = testElement.attributes["count"] 
+    expected = testElement.attributes["count"]
     got = XPath.match( ctx, testElement.attributes["select"], namespaces, variables )
     # might be a test with no count attribute, but nested valueOf elements
     assert( expected == got.size.to_s ) if !expected.nil?
-    
-    XPath.each( testElement, "valueOf") { |e| 
-      handleValueOf(got, variables, namespaces, e) 
+
+    XPath.each( testElement, "valueOf") { |e|
+      handleValueOf(got, variables, namespaces, e)
     }
   end
-  
-  # processes a tests/document/context/test node ( where @exception is true ) 
+
+  # processes a tests/document/context/test node ( where @exception is true )
   def handleExceptionalTest(ctx, variables, namespaces, testElement)
     assert_raise( Exception ) {
       XPath.match( ctx, testElement.attributes["select"], namespaces, variables )
     }
   end
 
-  # processes a tests/document node 
+  # processes a tests/document node
   def handleDocument(docElement)
     puts "- Processing document: #{docElement.attributes['url']}"
     testFile = File.new( docElement.attributes["url"] )
     testDoc = Document.new testFile
     XPath.each( docElement, "context") { |e| handleContext(testDoc, e) }
   end
-  
-  # processes a variable definition in a namespace like <test var:foo="bar"> 
+
+  # processes a variable definition in a namespace like <test var:foo="bar">
   def handleVariable( ctx, variables, attrib )
     puts "--- Found attribute: #{attrib.name}"
     variables[attrib.name] = attrib.value
   end
-  
-  # processes a namespace definition like <test xmlns:foo="fiz:bang:bam"> 
+
+  # processes a namespace definition like <test xmlns:foo="fiz:bang:bam">
   def handleNamespace( ctx, prefix, namespaces )
     puts "--- Found namespace: #{prefix}"
-    namespaces[prefix] = ctx.namespaces[prefix] 
+    namespaces[prefix] = ctx.namespaces[prefix]
   end
-  
+
 end

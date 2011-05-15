@@ -429,7 +429,7 @@ class  OpenSSL::TestASN1 < Test::Unit::TestCase
       assert_equal(raw, OpenSSL::ASN1.decode(raw).to_der)
     end
   end
-  
+
   def test_primitive_inf_length
     assert_raises(OpenSSL::ASN1::ASN1Error) do
       spec = %w{ 02 80 02 01 01 00 00 }
@@ -438,6 +438,6 @@ class  OpenSSL::TestASN1 < Test::Unit::TestCase
       OpenSSL::ASN1.decode_all(raw)
     end
   end
-  
+
 end if defined?(OpenSSL)
 

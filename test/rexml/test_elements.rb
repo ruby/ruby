@@ -19,16 +19,16 @@ class ElementsTester < Test::Unit::TestCase
     doc.root.elements['c'] = Element.new('d')
     assert_equal 'd', doc.root.elements[1].name
   end
-  
+
   def test_elements_delete
     doc = Document.new '<a><b/><c/><c id="1"/></a>'
-    block = proc { |str| 
+    block = proc { |str|
       out = ''
       doc.write out
-      assert_equal str, out 
+      assert_equal str, out
     }
     b = doc.root.elements[1]
-    doc.root.elements.delete b 
+    doc.root.elements.delete b
     block.call( "<a><c/><c id='1'/></a>" )
     doc.elements.delete("a/c[@id='1']")
     block.call( '<a><c/></a>' )
@@ -90,13 +90,13 @@ class ElementsTester < Test::Unit::TestCase
     assert_equal 2, doc.root.elements.to_a("child::node()").size
     assert_equal 4, XPath.match(doc.root, "child::node()").size
   end
-  
+
   def test_elements_collect
     doc = Document.new( "<a><b id='1'/><b id='2'/></a>" )
     r = doc.elements.collect( "/a/b" ) { |e| e.attributes["id"].to_i }
     assert_equal( [1,2], r )
   end
-  
+
   def test_elements_inject
     doc = Document.new( "<a><b id='1'/><b id='2'/></a>" )
     r = doc.elements.inject( "/a/b", 3 ) { |s, e|

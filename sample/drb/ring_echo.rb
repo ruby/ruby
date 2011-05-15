@@ -8,7 +8,7 @@ class RingEcho
   def initialize(name)
     @name = name
   end
-  
+
   def echo(str)
     "#{@name}: #{str}"
   end

@@ -123,7 +123,7 @@ class Rake::TestApplication < Test::Unit::TestCase
 
   def test_load_rakefile
     in_environment("PWD" => File.join(BASEDIR, "data/unittest")) do
-      @app.instance_eval do 
+      @app.instance_eval do
         handle_options
         options.silent = true
         load_rakefile
@@ -151,8 +151,8 @@ class Rake::TestApplication < Test::Unit::TestCase
         handle_options
         options.silent = true
       end
-      ex = assert_raise(RuntimeError) do 
-        @app.instance_eval do raw_load_rakefile end 
+      ex = assert_raise(RuntimeError) do
+        @app.instance_eval do raw_load_rakefile end
       end
       assert_match(/no rakefile found/i, ex.message)
     end
@@ -313,7 +313,7 @@ class Rake::TestApplicationOptions < Test::Unit::TestCase
     RakeFileUtils.verbose_flag = false
     RakeFileUtils.nowrite_flag = false
   end
-  
+
   def clear_argv
     while ! ARGV.empty?
       ARGV.pop
@@ -519,7 +519,7 @@ class Rake::TestApplicationOptions < Test::Unit::TestCase
       assert_equal :exit, @exit
     end
   end
-  
+
   def test_classic_namespace
     flags(['--classic-namespace'], ['-C', '-T', '-P', '-n', '-s', '-t']) do |opts|
       assert opts.classic_namespace
@@ -534,7 +534,7 @@ class Rake::TestApplicationOptions < Test::Unit::TestCase
   def test_bad_option
     capture_stderr do
       ex = assert_raise(OptionParser::InvalidOption) do
-        flags('--bad-option') 
+        flags('--bad-option')
       end
       if ex.message =~ /^While/ # Ruby 1.9 error message
         assert_match(/while parsing/i, ex.message)
@@ -549,12 +549,12 @@ class Rake::TestApplicationOptions < Test::Unit::TestCase
     command_line("a", "b")
     assert_equal ["a", "b"], @tasks.sort
   end
-  
+
   def test_default_task_collection
     command_line()
     assert_equal ["default"], @tasks
   end
-  
+
   def test_environment_definition
     ENV.delete('TESTKEY')
     command_line("a", "TESTKEY=12")
@@ -562,12 +562,12 @@ class Rake::TestApplicationOptions < Test::Unit::TestCase
     assert '12', ENV['TESTKEY']
   end
 
-  private 
+  private
 
   def flags(*sets)
     sets.each do |set|
       ARGV.clear
-      @out = capture_stdout { 
+      @out = capture_stdout {
         @exit = catch(:system_exit) { opts = command_line(*set) }
       }
       yield(@app.options) if block_given?
@@ -593,31 +593,31 @@ class Rake::TestTaskArgumentParsing < Test::Unit::TestCase
   def setup
     @app = Rake::Application.new
   end
-  
+
   def test_name_only
     name, args = @app.parse_task_string("name")
     assert_equal "name", name
     assert_equal [], args
   end
-  
+
   def test_empty_args
     name, args = @app.parse_task_string("name[]")
     assert_equal "name", name
     assert_equal [], args
   end
-  
+
   def test_one_argument
     name, args = @app.parse_task_string("name[one]")
     assert_equal "name", name
     assert_equal ["one"], args
   end
-  
+
   def test_two_arguments
     name, args = @app.parse_task_string("name[one,two]")
     assert_equal "name", name
     assert_equal ["one", "two"], args
   end
-  
+
   def test_can_handle_spaces_between_args
     name, args = @app.parse_task_string("name[one, two,\tthree , \tfour]")
     assert_equal "name", name

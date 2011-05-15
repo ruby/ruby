@@ -208,9 +208,9 @@ class OpenSSL::TestX509CRL < Test::Unit::TestCase
     crl.version = 0
     assert_equal(false, crl.verify(@dsa512))
   end
-  
+
   private
-  
+
   def crl_error_returns_false
     yield
   rescue OpenSSL::X509::CRLError

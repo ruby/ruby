@@ -313,7 +313,7 @@ module Net
       @receiver_thread.join
       synchronize do
         unless @sock.closed?
-          @sock.close 
+          @sock.close
         end
       end
       raise e if e

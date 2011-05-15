@@ -235,7 +235,7 @@ class TestGemPlatform < Gem::TestCase
     util_set_arch 'java'
     assert_match 'java',  Gem::Platform.local
     assert_match 'jruby', Gem::Platform.local
-      
+
     util_set_arch 'universal-dotnet2.0'
     assert_match 'universal-dotnet',     Gem::Platform.local
     assert_match 'universal-dotnet-2.0', Gem::Platform.local
@@ -243,13 +243,13 @@ class TestGemPlatform < Gem::TestCase
     assert_match 'dotnet',               Gem::Platform.local
     assert_match 'dotnet-2.0',           Gem::Platform.local
     refute_match 'dotnet-4.0',           Gem::Platform.local
-    
+
     util_set_arch 'universal-dotnet4.0'
     assert_match 'universal-dotnet',      Gem::Platform.local
-    refute_match 'universal-dotnet-2.0',  Gem::Platform.local  
+    refute_match 'universal-dotnet-2.0',  Gem::Platform.local
     assert_match 'universal-dotnet-4.0',  Gem::Platform.local
     assert_match 'dotnet',                Gem::Platform.local
-    refute_match 'dotnet-2.0',            Gem::Platform.local  
+    refute_match 'dotnet-2.0',            Gem::Platform.local
     assert_match 'dotnet-4.0',            Gem::Platform.local
 
     util_set_arch 'powerpc-darwin'

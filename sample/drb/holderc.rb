@@ -11,7 +11,7 @@ DRb.start_service()
 ro = DRbObject.new(nil, there)
 
 ary = []
-10.times do 
+10.times do
   ary.push(ro.gen)
 end
 

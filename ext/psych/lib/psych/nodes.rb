@@ -31,7 +31,7 @@ module Psych
   #   doc    = Psych::Nodes::Document.new
   #   seq    = Psych::Nodes::Sequence.new
   #   scalar = Psych::Nodes::Scalar.new('foo')
-  #   
+  #
   #   # Build up our tree
   #   stream.children << doc
   #   doc.children    << seq

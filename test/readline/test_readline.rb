@@ -118,8 +118,8 @@ class TestReadline < Test::Unit::TestCase
         stdin.close(true)
         stdout.close(true)
       end
-    end 
-    
+    end
+
     # line_buffer
     # point
     def test_line_buffer__point
@@ -129,7 +129,7 @@ class TestReadline < Test::Unit::TestCase
       rescue NotImplementedError
         return
       end
-      
+
       stdin = Tempfile.new("test_readline_stdin")
       stdout = Tempfile.new("test_readline_stdout")
       begin

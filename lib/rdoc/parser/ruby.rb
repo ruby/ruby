@@ -1560,7 +1560,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
     else
       new_methods = []
 
-      case vis_type 
+      case vis_type
       when 'module_function' then
         args = parse_symbol_arg
         container.set_visibility_for args, :private, false

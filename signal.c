@@ -970,7 +970,7 @@ sig_trap(int argc, VALUE *argv)
       /* disable interrupt */
       sigfillset(&fullmask);
       pthread_sigmask(SIG_BLOCK, &fullmask, &arg.mask);
-      
+
       return rb_ensure(trap, (VALUE)&arg, trap_ensure, (VALUE)&arg);
     }
 #else

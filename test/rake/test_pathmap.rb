@@ -23,7 +23,7 @@ class Rake::TestPathMap < Test::Unit::TestCase
 
   def test_n_returns_basename_without_extension
     assert_equal "abc", "abc.rb".pathmap("%n")
-    assert_equal "abc", "abc".pathmap("%n") 
+    assert_equal "abc", "abc".pathmap("%n")
     assert_equal "abc", "this/is/a/dir/abc.rb".pathmap("%n")
     assert_equal "abc", "/this/is/a/dir/abc.rb".pathmap("%n")
     assert_equal "abc", "/this/is/a/dir/abc".pathmap("%n")

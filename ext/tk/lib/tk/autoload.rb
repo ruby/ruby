@@ -538,8 +538,8 @@ class << Tk
           @TOPLEVEL_ALIAS_TABLE[target][sym] = obj
 
         else # NOT topalias_defined?(sym)
-          # Nobody controls ALIAS[sym]. 
-          # At leaset, current widget set doesn't control ALIAS[sym]. 
+          # Nobody controls ALIAS[sym].
+          # At leaset, current widget set doesn't control ALIAS[sym].
           # Keep Object::sym (even if it is not defined)
           # Keep OWNER[sym].
           @TOPLEVEL_ALIAS_TABLE[target][sym] = obj
@@ -552,7 +552,7 @@ class << Tk
         @TOPLEVEL_ALIAS_TABLE[target][sym] = obj
         replace_topalias(sym, obj)
         replace_topobj(sym, obj)
-        
+
       when nil
         # New definition for sym
         @TOPLEVEL_ALIAS_OWNER[sym] = target
@@ -566,7 +566,7 @@ class << Tk
         # Keep ALIAS[sym].
         # Keep OWNER[sym].
         @TOPLEVEL_ALIAS_TABLE[target][sym] = obj
-        
+
       end
     end
 
@@ -583,7 +583,7 @@ class << Tk
 
   def __set_loaded_toplevel_aliases__(autopath, target, obj, *symbols)
     # autopath is an autoload file
-    # Currently, this method doesn't support that autoload loads 
+    # Currently, this method doesn't support that autoload loads
     # different toplevels between <basename>.rb and <basename>.so extension.
     shortpath = (autopath =~ /^(.*)(.rb|.so)$/)? $1: autopath
     target = target.to_sym

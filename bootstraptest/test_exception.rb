@@ -97,7 +97,7 @@ assert_equal %q{[#<RuntimeError: FOO>, #<RuntimeError: FOO>]}, %q{
   def m
     $!
   end
-  
+
   begin
     begin
       raise "FOO"
@@ -205,11 +205,11 @@ assert_equal %q{3}, %q{
 assert_equal %q{ok3}, %q{
   class E1 < Exception
   end
-  
+
   def m
     yield
   end
-  
+
   begin
     begin
       begin
@@ -239,7 +239,7 @@ assert_equal %q{7}, %q{
           $i += 2
           break
         ensure
-          
+
         end
       ensure
         $i += 4
@@ -247,7 +247,7 @@ assert_equal %q{7}, %q{
       $i = 0
     }
   end
-  
+
   def iter
     yield
   end
@@ -349,7 +349,7 @@ assert_equal %q{12}, %q{
    7+7
  end
    }
-assert_equal %q{ok}, %q{ # 
+assert_equal %q{ok}, %q{ #
   proc{
     begin
       raise
@@ -376,7 +376,7 @@ assert_match /undefined method `foo\'/, %q{#`
     def inspect
       bar {}
     end
-    
+
     def bar
       raise
     ensure

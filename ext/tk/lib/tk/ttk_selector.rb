@@ -62,7 +62,7 @@ module Tk
   major, minor, type, patchlevel = TclTkLib.get_version
 
   #  ttk::spinbox is supported on Tcl/Tk8.6b1 or later
-  if ([major,minor,type,patchlevel] <=> 
+  if ([major,minor,type,patchlevel] <=>
         [8,6,TclTkLib::RELEASE_TYPE::BETA,1]) >= 0
     @TOPLEVEL_ALIAS_TABLE[:Ttk].update(
       :TkSpinbox => 'tkextlib/tile/tspinbox'

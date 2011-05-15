@@ -914,7 +914,7 @@ assert_equal %q{[:ok, :ok, :ok, :ok, :ok, :ok, :ng, :ng]}, %q{
 
   o1 = c1.new
   o2 = c2.new
-  
+
   test{o1.m}
   test{o2.mm}
   test{o1.send :m}
@@ -1074,7 +1074,7 @@ assert_equal '[1, 2, [3, 4]]', %q{
   def regular(a, b, *c)
     [a, b, c]
   end
-  regular(*[], 1, *[], *[2, 3], *[], 4) 
+  regular(*[], 1, *[], *[2, 3], *[], 4)
 }, '[ruby-core:19413]'
 
 assert_equal '[1, [:foo, 3, 4, :foo]]', %q{
@@ -1093,7 +1093,7 @@ assert_equal '["B", "A"]', %q{
   end
 
   class B < A
-    define_method(:m) do    
+    define_method(:m) do
       ['B', super()]
     end
   end

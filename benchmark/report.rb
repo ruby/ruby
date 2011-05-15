@@ -25,7 +25,7 @@ end
 
 def benchmark cmd
   rubybin = ENV['RUBY'] || RbConfig.ruby
-    
+
   IO.popen(rubybin, 'r+'){|io|
     io.write cmd
     io.close_write

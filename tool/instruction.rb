@@ -35,7 +35,7 @@ class RubyVM
       @sc << sci
       sci.set_sc
     end
-    
+
     attr_reader :name, :opes, :pops, :rets
     attr_reader :body, :comm
     attr_reader :nextsc, :pushsc
@@ -45,11 +45,11 @@ class RubyVM
     attr_reader :is_sc
     attr_reader :tvars
     attr_reader :sp_inc
-    
+
     def set_sc
       @is_sc = true
     end
-    
+
     def add_unif insns
       @unifs << insns
     end
@@ -84,7 +84,7 @@ class RubyVM
         "return depth + #{rets.size - pops.size};"
       end
     end
-    
+
     def inspect
       "#<Instruction:#{@name}>"
     end
@@ -113,7 +113,7 @@ class RubyVM
 
     attr_reader :vpath
     attr_reader :destdir
-  
+
     %w[use_const verbose].each do |attr|
       attr_reader attr
       alias_method "#{attr}?", attr
@@ -455,7 +455,7 @@ class RubyVM
                   rv = rpvars[1]
                   "#define #{pv[1]} #{rv[1]}"
                 }.join("\n") +
-                "\n" + 
+                "\n" +
                 redef_vars.map{|v, type|
                   "#define #{v} #{v}_#{i}"
                 }.join("\n") + "\n" +
@@ -693,7 +693,7 @@ class RubyVM
         }
       }
     end
-  
+
     def make_header_operands insn
       comment "  /* declare and get from iseq */"
 
@@ -718,7 +718,7 @@ class RubyVM
       # ops.join
       commit ops.reverse
     end
-  
+
     def make_header_default_operands insn
       vars = insn.defopes
 
@@ -907,7 +907,7 @@ class RubyVM
           commit "  ELABEL_PTR(#{insn.name}),\n"
         }
       end
-    
+
       ERB.new(vpath.read('template/vmtc.inc.tmpl')).result(binding)
     end
   end
@@ -1156,7 +1156,7 @@ class RubyVM
                              uni_insns.map{|e| "BIN(#{e.name})"}.join(", ") + "};\n"
           }
         else
-          
+
         end
         if size > 0
           unif_insns << "static const int *const UNIFIED_#{insn.name}[] = {(int *)#{size+1}, \n"
