@@ -1,3 +1,7 @@
+Mon May 16 05:13:20 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_asn1.c: Add documentation.
+
 Mon May 16 00:32:05 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_signal.rb (TestSignal#test_signal_process_group):
