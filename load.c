@@ -43,7 +43,14 @@ rb_get_load_path(void)
 static st_table *
 get_new_loading_table(void)
 {
-    return GET_VM()->new_loading_table;
+    st_table* new_loading_table;
+    new_loading_table = GET_VM()->new_loading_table;
+
+    if (!new_loading_table) {
+      GET_VM()->new_loading_table = new_loading_table = st_init_strcasetable();
+    }
+
+    return new_loading_table;
 }
 
 
@@ -257,16 +264,14 @@ static void
 rb_provide_feature(VALUE feature)
 {
     int frozen = 0;
+    st_table* new_loading_table;
 
     if (OBJ_FROZEN(get_loaded_features())) {
 	rb_raise(rb_eRuntimeError,
 		 "$LOADED_FEATURES is frozen; cannot append feature");
     }
 
-    st_table* new_loading_table = get_new_loading_table();
-    if (!new_loading_table) {
-      GET_VM()->new_loading_table = new_loading_table = st_init_strcasetable();
-    }
+    new_loading_table = get_new_loading_table();
     st_insert(
       new_loading_table,
       (st_data_t)ruby_strdup(RSTRING_PTR(feature)),
@@ -999,11 +1004,6 @@ rb_rehash_loaded_features()
   VALUE feature;
 
   st_table* new_loading_table = get_new_loading_table();
-
-  if (!new_loading_table) {
-    printf("Can't rehash, no table loaded\n");
-    return;
-  }
 
   st_clear(new_loading_table);
 
