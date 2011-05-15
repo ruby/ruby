@@ -797,7 +797,6 @@ rb_find_file_absolute(VALUE fname)
   for (j = 0; j < 3; ++j) {
     expanded_file_name = rb_funcall(base_file_name, rb_intern("+"), 1, rb_str_new2(available_extensions[j]));
 
-    // printf("Checking absolute %s\n", RSTRING_PTR(expanded_file_name));
     if (rb_feature_exists(expanded_file_name)) {
       return expanded_file_name;
     }
@@ -822,7 +821,6 @@ rb_find_file_relative(VALUE fname)
   for (j = 0; j < 3; ++j) {
     expanded_file_name = rb_funcall(base_file_name, rb_intern("+"), 1, rb_str_new2(available_extensions[j]));
 
-    // printf("Checking relative %s\n", RSTRING_PTR(expanded_file_name));
     if (rb_feature_exists(expanded_file_name)) {
       return expanded_file_name;
     }
@@ -854,7 +852,6 @@ rb_find_file_in_load_path(VALUE fname)
       expanded_path = rb_funcall(expanded_path, rb_intern("+"), 1, fname);
       expanded_path = rb_funcall(expanded_path, rb_intern("+"), 1, rb_str_new2(available_extensions[j]));
 
-      // printf("Checking load path %s\n", RSTRING_PTR(expanded_path));
       if (rb_feature_exists(expanded_path)) {
         return expanded_path;
       }
