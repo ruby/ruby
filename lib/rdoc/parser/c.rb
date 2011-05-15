@@ -218,13 +218,22 @@ class RDoc::Parser::C < RDoc::Parser
       handle_class_module(var_name, "module", class_name, nil, in_module)
     end
 
-    @content.scan(/([\w\.]+)\s* = \s*rb_define_class_under\s*
-                  \(
-                     \s*(\w+),
-                     \s*"(\w+)",
-                     \s*([\w\*\s\(\)\.\->]+)\s*  # for SWIG
-                  \s*\)/mx) do |var_name, in_module, class_name, parent|
-      handle_class_module(var_name, "class", class_name, parent, in_module)
+    @content.scan(/([\w\.]+)\s* =                  # var_name
+                   \s*rb_define_class_under\s*
+                   \(
+                     \s* (\w+),                    # under
+                     \s* "(\w+)",                  # class_name
+                     \s*
+                     (?:
+                       ([\w\*\s\(\)\.\->]+) |      # parent_name
+                       rb_path2class\("([\w:]+)"\) # path
+                     )
+                     \s*
+                   \)
+                  /mx) do |var_name, under, class_name, parent_name, path|
+      parent = path || parent_name
+
+      handle_class_module var_name, 'class', class_name, parent, under
     end
 
     @content.scan(/([\w\.]+)\s* = \s*rb_singleton_class\s*
@@ -650,8 +659,8 @@ class RDoc::Parser::C < RDoc::Parser
       enclosure = @classes[in_module] || @@enclosure_classes[in_module]
 
       if enclosure.nil? and enclosure = @known_classes[in_module] then
-        type = /^rb_m/ =~ in_module ? "module" : "class"
-        handle_class_module in_module, type, enclosure, nil, nil
+        enc_type = /^rb_m/ =~ in_module ? "module" : "class"
+        handle_class_module in_module, enc_type, enclosure, nil, nil
         enclosure = @classes[in_module]
       end
 
@@ -675,16 +684,20 @@ class RDoc::Parser::C < RDoc::Parser
       end
 
       cm = enclosure.add_class RDoc::NormalClass, class_name, parent_name
-
-      @stats.add_class cm
     else
       cm = enclosure.add_module RDoc::NormalModule, class_name
-      @stats.add_module cm
     end
 
     cm.record_location enclosure.top_level
 
     find_class_comment cm.full_name, cm
+
+    case cm
+    when RDoc::NormalClass
+      @stats.add_class cm
+    when RDoc::NormalModule
+      @stats.add_module cm
+    end
 
     @classes[var_name] = cm
     @@enclosure_classes[var_name] = cm

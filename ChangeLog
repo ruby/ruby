@@ -1,3 +1,8 @@
+Mon May 16 08:00:05 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc.rb:  Update to RDoc 3.6.1, allows OpenSSL::Digest to be
+	  found.
+
 Mon May 16 05:49:54 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/drb/acl.rb:  Add documentation.

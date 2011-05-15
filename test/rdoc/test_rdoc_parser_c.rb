@@ -236,17 +236,6 @@ VALUE cFoo = rb_define_class("Foo", rb_cObject);
     assert_equal "this is the Foo class", klass.comment
   end
 
-  def test_do_classes_singleton
-    content = <<-EOF
-VALUE cFoo = rb_define_class("Foo", rb_cObject);
-VALUE cFooS = rb_singleton_class(cFoo);
-    EOF
-
-    util_get_class content, 'cFooS'
-
-    assert_equal 'Foo', @parser.singleton_classes['cFooS']
-  end
-
   def test_do_classes_class_under
     content = <<-EOF
 /* Document-class: Kernel::Foo
@@ -256,7 +245,34 @@ VALUE cFoo = rb_define_class_under(rb_mKernel, "Foo", rb_cObject);
     EOF
 
     klass = util_get_class content, 'cFoo'
+    assert_equal 'Kernel::Foo', klass.full_name
     assert_equal "this is the Foo class under Kernel", klass.comment
+  end
+
+  def test_do_classes_class_under_rb_path2class
+    content = <<-EOF
+/* Document-class: Kernel::Foo
+ * this is Kernel::Foo < A::B
+ */
+VALUE cFoo = rb_define_class_under(rb_mKernel, "Foo", rb_path2class("A::B"));
+    EOF
+
+    klass = util_get_class content, 'cFoo'
+
+    assert_equal 'Kernel::Foo', klass.full_name
+    assert_equal 'A::B', klass.superclass
+    assert_equal 'this is Kernel::Foo < A::B', klass.comment
+  end
+
+  def test_do_classes_singleton
+    content = <<-EOF
+VALUE cFoo = rb_define_class("Foo", rb_cObject);
+VALUE cFooS = rb_singleton_class(cFoo);
+    EOF
+
+    util_get_class content, 'cFooS'
+
+    assert_equal 'Foo', @parser.singleton_classes['cFooS']
   end
 
   def test_do_classes_module
