@@ -808,7 +808,7 @@ const char *alternate_dl_extensions[] = {
 
 VALUE
 rb_find_file_with_extensions(VALUE base_file_name) {
-  int j;
+  unsigned int j;
   VALUE file_name_with_extension;
   VALUE extension;
   VALUE directory, basename;
@@ -912,10 +912,10 @@ rb_is_relative_path(VALUE fname)
 int
 rb_file_is_ruby(VALUE fname)
 {
-  char * ext;
-  ext = ruby_find_extname(RSTRING_PTR(fname), 0); // TODO: This causes a warning. Why?
+  const char * ext;
+  ext = ruby_find_extname(RSTRING_PTR(fname), 0);
 
-  if (IS_RBEXT(ext)) {
+  if (ext && IS_RBEXT(ext)) {
     return 1;
   } else {
     return 0;
@@ -969,7 +969,6 @@ rb_require_safe_2(VALUE fname, int safe)
     }
   }
   // TODO: WTF does the second part here do
-  // TODO: Raise LoadError if file does not exist
   if (path == Qnil || !(ftptr = load_lock(RSTRING_PTR(path)))) {
     load_failed(fname);
     result = Qfalse;
@@ -1061,7 +1060,7 @@ rb_loaded_features_hook(int argc, VALUE *argv, VALUE self)
 void 
 define_loaded_features_proxy()
 {
-    char* methods_to_hook[] = {"push", "clear", "replace"};
+    const char* methods_to_hook[] = {"push", "clear", "replace"};
     int i;
 
     rb_cLoadedFeaturesProxy = rb_define_class("LoadedFeaturesProxy", rb_cArray); 
