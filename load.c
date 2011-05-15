@@ -879,18 +879,16 @@ rb_find_file_in_load_path(VALUE fname)
   return Qnil;
 }
 
-// TODO: The code in this function is rubbish
 int
 rb_is_relative_path(VALUE fname)
 {
-  VALUE start_of_path_2;
-  VALUE start_of_path_3;
+  const char * fname_ptr = RSTRING_PTR(fname);
+  const char * current_directory = "./";
+  const char * parent_directory  = "../";
 
-  start_of_path_2 = rb_funcall(fname, rb_intern("slice"), 2, INT2NUM(0), INT2NUM(2));
-  start_of_path_3 = rb_funcall(fname, rb_intern("slice"), 2, INT2NUM(0), INT2NUM(3));
   if (
-    rb_funcall(start_of_path_2, rb_intern("=="), 1, rb_str_new2("./")) == Qtrue ||
-    rb_funcall(start_of_path_3, rb_intern("=="), 1, rb_str_new2("../")) == Qtrue
+    strncmp(current_directory, fname_ptr, 2) == 0 ||
+    strncmp(parent_directory,  fname_ptr, 3) == 0
   ) {
     return 1;
   } else {
