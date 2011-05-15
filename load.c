@@ -236,31 +236,6 @@ rb_provided(const char *feature)
     return rb_feature_provided(feature, 0);
 }
 
-int
-rb_feature_provided(const char *feature, const char **loading)
-{
-    const char *ext = strrchr(feature, '.');
-    volatile VALUE fullpath = 0;
-
-    if (*feature == '.' &&
-	(feature[1] == '/' || strncmp(feature+1, "./", 2) == 0)) {
-	fullpath = rb_file_expand_path(rb_str_new2(feature), Qnil);
-	feature = RSTRING_PTR(fullpath);
-    }
-    if (ext && !strchr(ext, '/')) {
-	if (IS_RBEXT(ext)) {
-	    if (rb_feature_p(feature, ext, TRUE, FALSE, loading)) return TRUE;
-	    return FALSE;
-	}
-	else if (IS_SOEXT(ext) || IS_DLEXT(ext)) {
-	    if (rb_feature_p(feature, ext, FALSE, FALSE, loading)) return TRUE;
-	    return FALSE;
-	}
-    }
-    if (rb_feature_p(feature, 0, TRUE, FALSE, loading))
-	return TRUE;
-    return FALSE;
-}
 
 static void
 rb_provide_feature(VALUE feature)
@@ -1095,6 +1070,30 @@ define_loaded_features_proxy()
 }
 
 
+/* Should return true if the file exists to be loaded, but should not actually load the file */
+int
+rb_feature_provided(const char *feature, const char **loading)
+{
+    const char *ext = strrchr(feature, '.');
+    volatile VALUE fullpath = 0;
+
+    VALUE path = Qnil;
+    VALUE fname = Qnil;
+
+    fname = rb_str_new2(feature);
+
+    // TODO: feature is converted to a char* just to pass into this function
+    // TODO: DRY up with rb_require_safe_2
+    if (rb_is_relative_path(fname)) {
+      path = rb_find_file_relative(fname);
+    } else if (rb_is_absolute_path(RSTRING_PTR(fname))) {
+      path = rb_find_file_absolute(fname);
+    } else {
+      path = rb_find_file_in_load_path(fname);
+    }
+
+    return (path == Qnil) ? FALSE : TRUE; 
+}
 
 
 void
