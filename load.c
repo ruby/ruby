@@ -779,7 +779,6 @@ rb_file_exist_p(VALUE obj, VALUE path);
 int
 rb_feature_exists(VALUE expanded_path)
 {
-
   if (rb_file_exist_p(Qnil, expanded_path) == Qtrue) {
     return 1;
   } else {
@@ -798,20 +797,35 @@ const char *available_extensions[] = {
   ""
 };
 
-const int number_of_available_extensions = sizeof(available_extensions) / sizeof(char*);
+const int number_of_available_extensions = sizeof(available_extensions) / 
+                                           sizeof(char*);
 
 VALUE
 rb_find_file_with_extensions(VALUE base_file_name) {
   int j;
-  VALUE expanded_file_name;
+  VALUE file_name_with_extension;
+  VALUE extension;
 
-  for (j = 0; j < number_of_available_extensions; ++j) {
-    expanded_file_name = rb_funcall(base_file_name, rb_intern("+"), 1, rb_str_new2(available_extensions[j]));
+  extension = rb_funcall(rb_cFile, rb_intern("extname"), 1, base_file_name);
 
-    if (rb_feature_exists(expanded_file_name)) {
-      return expanded_file_name;
+  if (RSTRING_LEN(extension) == 0) {
+    for (j = 0; j < number_of_available_extensions; ++j) {
+      file_name_with_extension = rb_funcall(
+        base_file_name,
+        rb_intern("+"),
+        1,
+        rb_str_new2(available_extensions[j]));
+
+      if (rb_feature_exists(file_name_with_extension)) {
+        return file_name_with_extension;
+      }
+    }
+  } else {
+    if (rb_feature_exists(base_file_name)) {
+      return base_file_name;
     }
   }
+  return Qnil;
 }
 
 VALUE
@@ -842,7 +856,7 @@ rb_find_file_in_load_path(VALUE fname)
 
     expanded_file_name = rb_find_file_with_extensions(base_file_name);
 
-    if (expanded_file_name) {
+    if (expanded_file_name != Qnil) {
       return expanded_file_name;
     }
   }
