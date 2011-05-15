@@ -2392,6 +2392,17 @@ rb_fd_isset(int n, const rb_fdset_t *fds)
 }
 
 void
+rb_fd_copy(rb_fdset_t *dst, const fd_set *src, int max)
+{
+    size_t size = howmany(max, NFDBITS) * sizeof(fd_mask);
+
+    if (size < sizeof(fd_set)) size = sizeof(fd_set);
+    dst->maxfd = max;
+    dst->fdset = xrealloc(dst->fdset, size);
+    memcpy(dst->fdset, src, size);
+}
+
+void
 rb_fd_dup(rb_fdset_t *dst, const rb_fdset_t *src)
 {
     size_t size = howmany(rb_fd_max(src), NFDBITS) * sizeof(fd_mask);

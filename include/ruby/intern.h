@@ -250,6 +250,7 @@ void rb_fd_zero(rb_fdset_t *);
 void rb_fd_set(int, rb_fdset_t *);
 void rb_fd_clr(int, rb_fdset_t *);
 int rb_fd_isset(int, const rb_fdset_t *);
+void rb_fd_copy(rb_fdset_t *, const fd_set *, int);
 void rb_fd_dup(rb_fdset_t *dst, const rb_fdset_t *src);
 int rb_fd_select(int, rb_fdset_t *, rb_fdset_t *, rb_fdset_t *, struct timeval *);
 
@@ -284,6 +285,7 @@ typedef fd_set rb_fdset_t;
 #define rb_fd_set(n, f)	FD_SET((n), (f))
 #define rb_fd_clr(n, f)	FD_CLR((n), (f))
 #define rb_fd_isset(n, f) FD_ISSET((n), (f))
+#define rb_fd_copy(d, s, n) (*(d) = *(s))
 #define rb_fd_dup(d, s) (*(d) = *(s))
 #define rb_fd_resize(n, f)	((void)(f))
 #define rb_fd_ptr(f)	(f)

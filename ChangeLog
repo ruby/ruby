@@ -1,3 +1,8 @@
+Sun May 15 23:53:31 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* include/ruby/intern.h: resurrect old rb_fd_copy().
+	* thread.c (rb_fd_copy): ditto.
+
 Sun May 15 23:45:11 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* include/ruby/intern.h: remove rb_fd_copy() to rb_fd_dup() and
