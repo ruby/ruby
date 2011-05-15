@@ -383,6 +383,7 @@ cont_init(rb_context_t *cont, rb_thread_t *th)
     /* save thread context */
     cont->saved_thread = *th;
     cont->saved_thread.local_storage = 0;
+    cont->saved_thread.machine_stack_start = cont->saved_thread.machine_stack_end = 0;
 }
 
 static rb_context_t *
