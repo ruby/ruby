@@ -97,7 +97,7 @@ class TestRequire < Test::Unit::TestCase
 
   def test_define_class
     begin
-      require "socket"
+      require_2 "socket"
     rescue LoadError
       return
     end
@@ -135,7 +135,7 @@ class TestRequire < Test::Unit::TestCase
 
   def test_define_class_under
     begin
-      require "zlib"
+      require_2 "zlib"
     rescue LoadError
       return
     end
@@ -176,7 +176,7 @@ class TestRequire < Test::Unit::TestCase
 
   def test_define_module
     begin
-      require "zlib"
+      require_2 "zlib"
     rescue LoadError
       return
     end
@@ -194,7 +194,7 @@ class TestRequire < Test::Unit::TestCase
 
   def test_define_module_under
     begin
-      require "socket"
+      require_2 "socket"
     rescue LoadError
       return
     end
