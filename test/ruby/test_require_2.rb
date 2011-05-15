@@ -19,6 +19,15 @@ class TestRequire < Test::Unit::TestCase
     INPUT
   end
 
+  def test_can_require_dl_extension
+    # This depends on strscan.o in the stdlib, not sure of a better way
+    # to test this.
+    assert_in_out_err([], <<-INPUT, %w(:ok), [])
+      require_2 'strscan'
+      p :ok
+    INPUT
+  end
+
   def test_require_too_long_filename
     assert_in_out_err(["RUBYOPT"=>nil], <<-INPUT, %w(:ok), [])
       begin

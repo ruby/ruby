@@ -784,7 +784,16 @@ rb_feature_exists(VALUE expanded_path)
   return 0;
 }
 
-const char *available_extensions[] = {".rb", ".so", ""};
+const char *available_extensions[] = {
+  ".rb",
+  DLEXT,
+#ifdef DLEXT2
+  DLEXT2,
+#endif
+  ""
+};
+
+const int number_of_available_extensions = sizeof(available_extensions) / sizeof(char*);
 
 VALUE
 rb_find_file_absolute(VALUE fname)
@@ -794,7 +803,7 @@ rb_find_file_absolute(VALUE fname)
   VALUE expanded_file_name;
 
   base_file_name = fname;
-  for (j = 0; j < 3; ++j) {
+  for (j = 0; j < number_of_available_extensions; ++j) {
     expanded_file_name = rb_funcall(base_file_name, rb_intern("+"), 1, rb_str_new2(available_extensions[j]));
 
     if (rb_feature_exists(expanded_file_name)) {
@@ -818,7 +827,7 @@ rb_find_file_relative(VALUE fname)
   VALUE expanded_file_name;
 
   base_file_name = rb_file_expand_path(fname, Qnil);
-  for (j = 0; j < 3; ++j) {
+  for (j = 0; j < number_of_available_extensions; ++j) {
     expanded_file_name = rb_funcall(base_file_name, rb_intern("+"), 1, rb_str_new2(available_extensions[j]));
 
     if (rb_feature_exists(expanded_file_name)) {
@@ -847,7 +856,7 @@ rb_find_file_in_load_path(VALUE fname, int safe)
     VALUE directory = RARRAY_PTR(load_path)[i];
 
     // TODO: Don't check extra extensions if an extension is provided
-    for (j = 0; j < 3; ++j) {
+    for (j = 0; j < number_of_available_extensions; ++j) {
       expanded_path = rb_funcall(directory, rb_intern("+"), 1, rb_str_new2("/"));
       expanded_path = rb_funcall(expanded_path, rb_intern("+"), 1, fname);
       expanded_path = rb_funcall(expanded_path, rb_intern("+"), 1, rb_str_new2(available_extensions[j]));
