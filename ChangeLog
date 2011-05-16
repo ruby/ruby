@@ -1,3 +1,8 @@
+Mon May 16 11:21:09 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* configure.in, win32/Makefile.sub (RUBY_SO_NAME): add CPU as prefix
+	  of RUBY_SO_NAME on x64/ia64 mswin/mingw.
+
 Mon May 16 08:00:05 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc.rb:  Update to RDoc 3.6.1, allows OpenSSL::Digest to be

@@ -130,6 +130,9 @@ ruby_version = $(MAJOR).$(MINOR).$(TEENY)
 
 !ifndef RUBY_SO_NAME
 RUBY_SO_NAME = $(RT)-$(RUBY_BASE_NAME)$(MAJOR)$(MINOR)$(TEENY)
+!if "$(ARCH)" != "i386"
+RUBY_SO_NAME = $(ARCH)-$(RUBY_SO_NAME)
+!endif
 !endif
 !ifndef RUBY_PLATFORM
 RUBY_PLATFORM = $(arch)

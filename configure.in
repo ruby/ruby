@@ -2472,6 +2472,9 @@ AS_CASE(["$target_os"],
 	    ],
 	[mingw*], [
 	    RUBY_SO_NAME="${rb_cv_msvcrt}-${RUBY_SO_NAME}"
+	    if test x"${target_cpu}" != xi386; then
+		RUBY_SO_NAME="${target_cpu}-${RUBY_SO_NAME}"
+	    fi
 	    if test x"$enable_shared" = xyes; then
 		LIBRUBY_SO='$(RUBY_SO_NAME)'.dll
 		LIBRUBY_DLDFLAGS="${LIBRUBY_DLDFLAGS}"' $(RUBYDEF)'
