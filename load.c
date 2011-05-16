@@ -34,7 +34,28 @@ static const char *const loadable_ext[] = {
     0
 };
 
+static VALUE rb_find_file_with_extensions(VALUE);
+
+static VALUE rb_find_file_absolute(VALUE);
+static VALUE rb_find_file_relative(VALUE);
+static VALUE rb_find_file_in_load_path(VALUE);
+
+static int rb_is_relative_path(VALUE);
+static int rb_file_is_ruby(VALUE);
+static int rb_file_is_required(VALUE);
+
+static VALUE rb_locate_file(VALUE);
+
 VALUE rb_require_safe_2(VALUE, int);
+VALUE rb_f_require_2(VALUE, VALUE);
+
+static VALUE rb_cLoadedFeaturesProxy;
+
+static void rb_rehash_loaded_features();
+static VALUE rb_loaded_features_hook(int, VALUE*, VALUE);
+static void define_loaded_features_proxy();
+
+VALUE ary_new(VALUE, long); // array.c
 
 VALUE
 rb_get_load_path(void)
@@ -765,16 +786,10 @@ rb_f_autoload_p(VALUE obj, VALUE sym)
 VALUE
 rb_file_exist_p(VALUE obj, VALUE path);
 
-int
+static int
 rb_feature_exists(VALUE expanded_path)
 {
-  if ( rb_funcall(rb_cFile, rb_intern("file?"), 1, expanded_path) == Qtrue ) {
-    return 1;
-  } else {
-    return 0;
-  }
-  
-  return 0;
+  return rb_funcall(rb_cFile, rb_intern("file?"), 1, expanded_path) == Qtrue;
 }
 
 const char *available_extensions[] = {
@@ -795,7 +810,7 @@ const char *alternate_dl_extensions[] = {
 
 #define CHAR_ARRAY_LEN(array) sizeof(array) / sizeof(char*)
 
-VALUE
+static VALUE
 rb_find_file_with_extensions(VALUE base_file_name) {
   unsigned int j;
   VALUE file_name_with_extension;
@@ -844,19 +859,19 @@ rb_find_file_with_extensions(VALUE base_file_name) {
   return Qnil;
 }
 
-VALUE
+static VALUE
 rb_find_file_absolute(VALUE fname)
 {
   return rb_find_file_with_extensions(fname);
 }
 
-VALUE
+static VALUE
 rb_find_file_relative(VALUE fname)
 {
   return rb_find_file_with_extensions(rb_file_expand_path(fname, Qnil));
 }
 
-VALUE
+static VALUE
 rb_find_file_in_load_path(VALUE fname)
 {
   long i, j;
@@ -879,7 +894,7 @@ rb_find_file_in_load_path(VALUE fname)
   return Qnil;
 }
 
-int
+static int
 rb_is_relative_path(VALUE fname)
 {
   const char * fname_ptr = RSTRING_PTR(fname);
@@ -892,7 +907,7 @@ rb_is_relative_path(VALUE fname)
   );
 }
 
-int
+static int
 rb_file_is_ruby(VALUE fname)
 {
   const char * ext;
@@ -901,7 +916,7 @@ rb_file_is_ruby(VALUE fname)
   return ext && IS_RBEXT(ext);
 }
 
-int
+static int
 rb_file_is_required(VALUE expanded_path)
 {
   st_data_t data;
@@ -1007,7 +1022,7 @@ rb_f_require_2(VALUE obj, VALUE fname)
     return rb_require_safe_2(fname, rb_safe_level()) == Qnil ? Qfalse : Qtrue;
 }
 
-void
+static void
 rb_rehash_loaded_features()
 {
   int i;
@@ -1029,13 +1044,6 @@ rb_rehash_loaded_features()
   }
 }
 
-
-
-VALUE 
-ary_new(VALUE, long); // array.c
-
-static VALUE rb_cLoadedFeaturesProxy;
-
 static VALUE  
 rb_loaded_features_hook(int argc, VALUE *argv, VALUE self)  
 { 
@@ -1055,7 +1063,7 @@ rb_loaded_features_hook(int argc, VALUE *argv, VALUE self)
  * Note that the list of intercepted methods is currently non-comprehensive
  * --- it only covers modifications made by the ruby and rubyspec test suites.
  */
-void 
+static void 
 define_loaded_features_proxy()
 {
     const char* methods_to_hook[] = {"push", "clear", "replace", "delete"};
