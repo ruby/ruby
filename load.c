@@ -34,22 +34,20 @@ static const char *const loadable_ext[] = {
     0
 };
 
+VALUE rb_f_require_2(VALUE, VALUE);
+VALUE rb_require_safe_2(VALUE, int);
+static int rb_file_has_been_required(VALUE);
+static int rb_file_is_ruby(VALUE);
+
 static VALUE rb_locate_file(VALUE);
 static VALUE rb_locate_file_absolute(VALUE);
 static VALUE rb_locate_file_relative(VALUE);
 static VALUE rb_locate_file_in_load_path(VALUE);
 static VALUE rb_locate_file_with_extensions(VALUE);
-
-static int rb_is_relative_path(VALUE);
-static int rb_file_is_ruby(VALUE);
-static int rb_file_is_required(VALUE);
-
-
-VALUE rb_require_safe_2(VALUE, int);
-VALUE rb_f_require_2(VALUE, VALUE);
+static int rb_path_is_absolute(VALUE);
+static int rb_path_is_relative(VALUE);
 
 static VALUE rb_cLoadedFeaturesProxy;
-
 static void rb_rehash_loaded_features();
 static VALUE rb_loaded_features_hook(int, VALUE*, VALUE);
 static void define_loaded_features_proxy();
@@ -871,7 +869,7 @@ rb_locate_file_relative(VALUE fname)
 }
 
 static VALUE
-rb_locate_file_in_load_path(VALUE fname)
+rb_locate_file_in_load_path(VALUE path)
 {
   long i, j;
   VALUE load_path = rb_get_expanded_load_path();
@@ -882,7 +880,7 @@ rb_locate_file_in_load_path(VALUE fname)
     VALUE directory = RARRAY_PTR(load_path)[i];
 
     base_file_name = rb_funcall(directory, rb_intern("+"), 1, rb_str_new2("/"));
-    base_file_name = rb_funcall(base_file_name, rb_intern("+"), 1, fname);
+    base_file_name = rb_funcall(base_file_name, rb_intern("+"), 1, path);
 
     expanded_file_name = rb_locate_file_with_extensions(base_file_name);
 
@@ -894,29 +892,36 @@ rb_locate_file_in_load_path(VALUE fname)
 }
 
 static int
-rb_is_relative_path(VALUE fname)
+rb_path_is_relative(VALUE path)
 {
-  const char * fname_ptr = RSTRING_PTR(fname);
+  const char * path_ptr = RSTRING_PTR(path);
   const char * current_directory = "./";
   const char * parent_directory  = "../";
 
   return (
-    strncmp(current_directory, fname_ptr, 2) == 0 ||
-    strncmp(parent_directory,  fname_ptr, 3) == 0
+    strncmp(current_directory, path_ptr, 2) == 0 ||
+    strncmp(parent_directory,  path_ptr, 3) == 0
   );
 }
 
 static int
-rb_file_is_ruby(VALUE fname)
+rb_file_is_ruby(VALUE path)
 {
   const char * ext;
-  ext = ruby_find_extname(RSTRING_PTR(fname), 0);
+  ext = ruby_find_extname(RSTRING_PTR(path), 0);
 
   return ext && IS_RBEXT(ext);
 }
 
 static int
-rb_file_is_required(VALUE expanded_path)
+rb_path_is_absolute(VALUE path)
+{
+  // Delegate to file.c
+  return rb_is_absolute_path(RSTRING_PTR(path));
+}
+
+static int
+rb_file_has_been_required(VALUE expanded_path)
 {
   st_data_t data;
   st_data_t path_key = (st_data_t)RSTRING_PTR(expanded_path);
@@ -931,9 +936,9 @@ rb_locate_file(VALUE filename)
 {
   VALUE full_path = Qnil;
 
-  if (rb_is_relative_path(filename)) {
+  if (rb_path_is_relative(filename)) {
     full_path = rb_locate_file_relative(filename);
-  } else if (rb_is_absolute_path(RSTRING_PTR(filename))) {
+  } else if (rb_path_is_absolute(filename)) {
     full_path = rb_locate_file_absolute(filename);
   } else {
     full_path = rb_locate_file_in_load_path(filename);
@@ -980,7 +985,7 @@ rb_require_safe_2(VALUE fname, int safe)
     load_failed(fname);
   } else {
     if (ftptr = load_lock(RSTRING_PTR(path))) { // Allows circular requires to work
-      if (!rb_file_is_required(path)) {
+      if (!rb_file_has_been_required(path)) {
         if (rb_file_is_ruby(path)) {
           rb_load_internal(path, 0);
         } else {
