@@ -34,17 +34,16 @@ static const char *const loadable_ext[] = {
     0
 };
 
-static VALUE rb_find_file_with_extensions(VALUE);
-
-static VALUE rb_find_file_absolute(VALUE);
-static VALUE rb_find_file_relative(VALUE);
-static VALUE rb_find_file_in_load_path(VALUE);
+static VALUE rb_locate_file(VALUE);
+static VALUE rb_locate_file_absolute(VALUE);
+static VALUE rb_locate_file_relative(VALUE);
+static VALUE rb_locate_file_in_load_path(VALUE);
+static VALUE rb_locate_file_with_extensions(VALUE);
 
 static int rb_is_relative_path(VALUE);
 static int rb_file_is_ruby(VALUE);
 static int rb_file_is_required(VALUE);
 
-static VALUE rb_locate_file(VALUE);
 
 VALUE rb_require_safe_2(VALUE, int);
 VALUE rb_f_require_2(VALUE, VALUE);
@@ -811,7 +810,7 @@ const char *alternate_dl_extensions[] = {
 #define CHAR_ARRAY_LEN(array) sizeof(array) / sizeof(char*)
 
 static VALUE
-rb_find_file_with_extensions(VALUE base_file_name) {
+rb_locate_file_with_extensions(VALUE base_file_name) {
   unsigned int j;
   VALUE file_name_with_extension;
   VALUE extension;
@@ -860,19 +859,19 @@ rb_find_file_with_extensions(VALUE base_file_name) {
 }
 
 static VALUE
-rb_find_file_absolute(VALUE fname)
+rb_locate_file_absolute(VALUE fname)
 {
-  return rb_find_file_with_extensions(fname);
+  return rb_locate_file_with_extensions(fname);
 }
 
 static VALUE
-rb_find_file_relative(VALUE fname)
+rb_locate_file_relative(VALUE fname)
 {
-  return rb_find_file_with_extensions(rb_file_expand_path(fname, Qnil));
+  return rb_locate_file_with_extensions(rb_file_expand_path(fname, Qnil));
 }
 
 static VALUE
-rb_find_file_in_load_path(VALUE fname)
+rb_locate_file_in_load_path(VALUE fname)
 {
   long i, j;
   VALUE load_path = rb_get_expanded_load_path();
@@ -885,7 +884,7 @@ rb_find_file_in_load_path(VALUE fname)
     base_file_name = rb_funcall(directory, rb_intern("+"), 1, rb_str_new2("/"));
     base_file_name = rb_funcall(base_file_name, rb_intern("+"), 1, fname);
 
-    expanded_file_name = rb_find_file_with_extensions(base_file_name);
+    expanded_file_name = rb_locate_file_with_extensions(base_file_name);
 
     if (expanded_file_name != Qnil) {
       return expanded_file_name;
@@ -933,11 +932,11 @@ rb_locate_file(VALUE filename)
   VALUE full_path = Qnil;
 
   if (rb_is_relative_path(filename)) {
-    full_path = rb_find_file_relative(filename);
+    full_path = rb_locate_file_relative(filename);
   } else if (rb_is_absolute_path(RSTRING_PTR(filename))) {
-    full_path = rb_find_file_absolute(filename);
+    full_path = rb_locate_file_absolute(filename);
   } else {
-    full_path = rb_find_file_in_load_path(filename);
+    full_path = rb_locate_file_in_load_path(filename);
   }
 
   return full_path;
