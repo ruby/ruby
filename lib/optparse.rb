@@ -60,7 +60,8 @@
 # 4. Arguments can be automatically converted to a specified class.
 # 5. Arguments can be restricted to a certain set.
 #
-# All of these features are demonstrated in the examples below.
+# All of these features are demonstrated in the examples below.  See
+# #make_switch for full documentation.
 #
 # === Minimal example
 #
