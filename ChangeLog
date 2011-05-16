@@ -1,3 +1,8 @@
+Tue May 17 03:33:21 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/timeout.rb (module Timeout):  Hide internal constants.  Patch by
+	  Pete Higgins.  [Ruby 1.9 - Bug #4701]
+
 Mon May 16 11:21:09 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* configure.in, win32/Makefile.sub (RUBY_SO_NAME): add CPU as prefix

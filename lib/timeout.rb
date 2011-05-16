@@ -29,8 +29,10 @@ module Timeout
   class ExitException < ::Exception # :nodoc:
   end
 
+  # :stopdoc:
   THIS_FILE = /\A#{Regexp.quote(__FILE__)}:/o
   CALLER_OFFSET = ((c = caller[0]) && THIS_FILE =~ c) ? 1 : 0
+  # :startdoc:
 
   # Executes the method's block.  If the block execution terminates before
   # +sec+ seconds has passed, it returns the result value of the block.
