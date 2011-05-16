@@ -1,3 +1,8 @@
+Tue May 17 03:51:42 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/abbrev.rb:  Hide copyright and revision information from RDoc.
+	  Inspired by patch from David Copeland, bug #4703.
+
 Tue May 17 03:33:21 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/timeout.rb (module Timeout):  Hide internal constants.  Patch by
