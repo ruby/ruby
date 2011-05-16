@@ -1,3 +1,9 @@
+Tue May 17 07:09:01 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/pop.rb:  Improve documentation.  Patch by Vincent Batts.
+	  [Ruby 1.9 - Bug #4711]
+	* lib/net/telnet.rb:  ditto
+
 Tue May 17 07:00:41 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/net/http.rb:  Fix nodoc for Net::HTTP::version_1_1?.  Patch by

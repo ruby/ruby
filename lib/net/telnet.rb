@@ -754,6 +754,7 @@ module Net
       line
     end
 
+    # Closes the connection
     def close
       @sock.close
     end
