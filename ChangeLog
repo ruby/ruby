@@ -216,7 +216,7 @@ Fri May 13 06:50:43 2011  Eric Hodel  <drbrain@segment7.net>
 Fri May 13 05:44:19 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/logger.rb (class Logger):  Document Logger#datetime_format.
-	  Patch by Sergio Gil Pérez de la Manga.  [Ruby 1.9 - Bug #4678]
+	  Patch by Sergio Gil Pe'rez de la Manga.  [Ruby 1.9 - Bug #4678]
 
 Fri May 13 05:39:11 2011  Eric Hodel <drbrain@segment7.net>
 
@@ -8642,7 +8642,7 @@ For the changes before 1.9.3, see doc/ChangeLog-1.9.3
 For the changes before 1.8.0, see doc/ChangeLog-1.8.0
 
 Local variables:
-coding: utf-8
+coding: us-ascii
 add-log-time-format: (lambda ()
   (let* ((time (current-time))
 	 (system-time-locale "C")
