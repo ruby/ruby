@@ -883,9 +883,17 @@ module Net   #:nodoc:
         @is_proxy_class
       end
 
+      # Address of proxy host. If Net::HTTP does not use a proxy, nil.
       attr_reader :proxy_address
+
+      # Port number of proxy host. If Net::HTTP does not use a proxy, nil.
       attr_reader :proxy_port
+
+      # User name for accessing proxy. If Net::HTTP does not use a proxy, nil.
       attr_reader :proxy_user
+
+      # User password for accessing proxy. If Net::HTTP does not use a proxy,
+      # nil.
       attr_reader :proxy_pass
     end
 
@@ -894,22 +902,22 @@ module Net   #:nodoc:
       self.class.proxy_class?
     end
 
-    # Address of proxy host. If self does not use a proxy, nil.
+    # A convenience method for accessing value of proxy_address from Net::HTTP.
     def proxy_address
       self.class.proxy_address
     end
 
-    # Port number of proxy host. If self does not use a proxy, nil.
+    # A convenience method for accessing value of proxy_port from Net::HTTP.
     def proxy_port
       self.class.proxy_port
     end
 
-    # User name for accessing proxy. If self does not use a proxy, nil.
+    # A convenience method for accessing value of proxy_user from Net::HTTP.
     def proxy_user
       self.class.proxy_user
     end
 
-    # User password for accessing proxy. If self does not use a proxy, nil.
+    # A convenience method for accessing value of proxy_pass from Net::HTTP.
     def proxy_pass
       self.class.proxy_pass
     end
