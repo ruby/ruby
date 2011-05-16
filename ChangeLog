@@ -1,3 +1,8 @@
+Tue May 17 05:52:30 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/digest: Improve documentation of Digest, Digest::HMAC and
+	  Digest::SHA2.  Patch by Pete Higgins.  [Ruby 1.9 - Bug #4702]
+
 Tue May 17 03:51:42 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/abbrev.rb:  Hide copyright and revision information from RDoc.

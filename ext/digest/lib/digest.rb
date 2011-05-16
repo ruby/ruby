@@ -1,7 +1,7 @@
 require 'digest.so'
 
 module Digest
-  def self.const_missing(name)
+  def self.const_missing(name) # :nodoc:
     case name
     when :SHA256, :SHA384, :SHA512
       lib = 'digest/sha2.so'
@@ -23,8 +23,8 @@ module Digest
   class ::Digest::Class
     # creates a digest object and reads a given file, _name_.
     #
-    #  p Digest::SHA256.file("X11R6.8.2-src.tar.bz2").hexdigest
-    #  # => "f02e3c85572dc9ad7cb77c2a638e3be24cc1b5bea9fdbb0b0299c9668475c534"
+    #   p Digest::SHA256.file("X11R6.8.2-src.tar.bz2").hexdigest
+    #   # => "f02e3c85572dc9ad7cb77c2a638e3be24cc1b5bea9fdbb0b0299c9668475c534"
     def self.file(name)
       new.file(name)
     end
@@ -53,8 +53,8 @@ module Digest
     # If none is given, returns the resulting hash value of the digest
     # in a base64 encoded form, keeping the digest's state.
     #
-    # If a _string_ is given, returns the hash value for the given
-    # _string_ in a base64 encoded form, resetting the digest to the
+    # If a +string+ is given, returns the hash value for the given
+    # +string+ in a base64 encoded form, resetting the digest to the
     # initial state before and after the process.
     #
     # In either case, the return value is properly padded with '=' and
@@ -71,6 +71,18 @@ module Digest
   end
 end
 
+# call-seq:
+#   Digest(name) -> digest_subclass
+#
+# Returns a Digest subclass by +name+.
+#
+#   require 'digest'
+#
+#   Digest("MD5")
+#   # => Digest::MD5
+#
+#   Digest("Foo")
+#   # => LoadError: library not found for class Digest::Foo -- digest/foo
 def Digest(name)
   Digest.const_get(name)
 end

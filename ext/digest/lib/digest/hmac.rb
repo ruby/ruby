@@ -1,34 +1,3 @@
-# = digest/hmac.rb
-#
-# An implementation of HMAC keyed-hashing algorithm
-#
-# == Overview
-#
-# CAUTION: Use of this library is discouraged, because this
-# implementation was meant to be experimental but somehow got into the
-# 1.9 series without being noticed.  Please use OpenSSL::HMAC in the
-# "openssl" library instead.
-#
-# This library adds a method named hmac() to Digest classes, which
-# creates a Digest class for calculating HMAC digests.
-#
-# == Examples
-#
-#   require 'digest/hmac'
-#
-#   # one-liner example
-#   puts Digest::HMAC.hexdigest("data", "hash key", Digest::SHA1)
-#
-#   # rather longer one
-#   hmac = Digest::HMAC.new("foo", Digest::RMD160)
-#
-#   buf = ""
-#   while stream.read(16384, buf)
-#     hmac.update(buf)
-#   end
-#
-#   puts hmac.bubblebabble
-#
 # == License
 #
 # Copyright (c) 2006 Akinori MUSHA <knu@iDaemons.org>
@@ -46,7 +15,38 @@ warn "use of the experimetal library 'digest/hmac' is discouraged; require 'open
 require 'digest'
 
 module Digest
+  # = digest/hmac.rb
+  #
+  # An experimental implementation of HMAC keyed-hashing algorithm
+  #
+  # == Overview
+  #
+  # CAUTION: Use of this library is discouraged, because this
+  # implementation was meant to be experimental but somehow got into the
+  # 1.9 series without being noticed.  Please use OpenSSL::HMAC in the
+  # "openssl" library instead.
+  #
+  # == Examples
+  #
+  #   require 'digest/hmac'
+  #
+  #   # one-liner example
+  #   puts Digest::HMAC.hexdigest("data", "hash key", Digest::SHA1)
+  #
+  #   # rather longer one
+  #   hmac = Digest::HMAC.new("foo", Digest::RMD160)
+  #
+  #   buf = ""
+  #   while stream.read(16384, buf)
+  #     hmac.update(buf)
+  #   end
+  #
+  #   puts hmac.bubblebabble
+  #
   class HMAC < Digest::Class
+
+    # Creates a Digest::HMAC instance.
+
     def initialize(key, digester)
       @md = digester.new
 
@@ -70,23 +70,32 @@ module Digest
       @md.update(@ipad)
     end
 
-    def initialize_copy(other)
+    def initialize_copy(other) # :nodoc:
       @md = other.instance_eval { @md.clone }
     end
 
+    # call-seq:
+    #   hmac.update(string) -> hmac
+    #   hmac << string -> hmac
+    #
+    # Updates the hmac using a given +string+ and returns self.
     def update(text)
       @md.update(text)
       self
     end
     alias << update
 
+    # call-seq:
+    #   hmac.reset -> hmac
+    #
+    # Resets the hmac to the initial state and returns self.
     def reset
       @md.reset
       @md.update(@ipad)
       self
     end
 
-    def finish
+    def finish # :nodoc:
       d = @md.digest!
       @md.update(@opad)
       @md.update(d)
@@ -94,14 +103,26 @@ module Digest
     end
     private :finish
 
+    # call-seq:
+    #   hmac.digest_length -> Integer
+    #
+    # Returns the length in bytes of the hash value of the digest.
     def digest_length
       @md.digest_length
     end
 
+    # call-seq:
+    #   hmac.block_length -> Integer
+    #
+    # Returns the block length in bytes of the hmac.
     def block_length
       @md.block_length
     end
 
+    # call-seq:
+    #   hmac.inspect -> string
+    #
+    # Creates a printable version of the hmac object.
     def inspect
       sprintf('#<%s: key=%s, digest=%s>', self.class.name, @key.inspect, @md.inspect.sub(/^\#<(.*)>$/) { $1 });
     end
