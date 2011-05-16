@@ -922,6 +922,23 @@ rb_file_is_required(VALUE expanded_path)
   }
 }
 
+
+static VALUE
+rb_locate_file(VALUE filename)
+{
+  VALUE full_path = Qnil;
+
+  if (rb_is_relative_path(filename)) {
+    full_path = rb_find_file_relative(filename);
+  } else if (rb_is_absolute_path(RSTRING_PTR(filename))) {
+    full_path = rb_find_file_absolute(filename);
+  } else {
+    full_path = rb_find_file_in_load_path(filename);
+  }
+
+  return full_path;
+}
+
 /* 
  * returns the path loaded, or nil if the file was already loaded. Raises
  * LoadError if a file cannot be found. 
@@ -949,16 +966,12 @@ rb_require_safe_2(VALUE fname, int safe)
 	FilePathValue(fname);
 	rb_set_safe_level_force(0);
 
-  if (rb_is_relative_path(fname)) {
-    path = rb_find_file_relative(fname);
-  } else if (rb_is_absolute_path(RSTRING_PTR(fname))) {
-    path = rb_find_file_absolute(fname);
-  } else {
-    path = rb_find_file_in_load_path(fname);
-    if (safe >= 1 && OBJ_TAINTED(path)) {
-      rb_raise(rb_eSecurityError, "Loading from unsafe file %s", RSTRING_PTR(path));
-    }
+  path = rb_locate_file(fname);
+
+  if (safe >= 1 && OBJ_TAINTED(path)) {
+    rb_raise(rb_eSecurityError, "Loading from unsafe file %s", RSTRING_PTR(path));
   }
+
   result = Qfalse;
   if (path == Qnil) {
     load_failed(fname);
@@ -1067,30 +1080,17 @@ define_loaded_features_proxy()
   }
 }
 
-
-/* Should return true if the file exists to be loaded, but should not actually load the file */
+/* Should return true if the file exists to be loaded, but should 
+ * not actually load the file 
+ */
 int
 rb_feature_provided(const char *feature, const char **loading)
 {
-    const char *ext = strrchr(feature, '.');
-    volatile VALUE fullpath = 0;
+    // TODO: feature is converted to a char* just to pass into 
+    // this function, which is kind of redundant
+    VALUE fname = rb_str_new2(feature);
 
-    VALUE path = Qnil;
-    VALUE fname = Qnil;
-
-    fname = rb_str_new2(feature);
-
-    // TODO: feature is converted to a char* just to pass into this function
-    // TODO: DRY up with rb_require_safe_2
-    if (rb_is_relative_path(fname)) {
-      path = rb_find_file_relative(fname);
-    } else if (rb_is_absolute_path(RSTRING_PTR(fname))) {
-      path = rb_find_file_absolute(fname);
-    } else {
-      path = rb_find_file_in_load_path(fname);
-    }
-
-    return (path == Qnil) ? FALSE : TRUE; 
+    return (rb_locate_file(fname) == Qnil) ? FALSE : TRUE; 
 }
 
 
