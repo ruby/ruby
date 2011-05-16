@@ -1,8 +1,8 @@
+class CGI
   # Base module for HTML-generation mixins.
   #
   # Provides methods for code generation for tags following
   # the various DTD element types.
-class CGI
   module TagMaker # :nodoc:
 
     # Generate code for an element with required start and end tags.

@@ -1,3 +1,14 @@
+Tue May 17 06:21:15 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/cgi.rb: Add toplevel documentation to class CGI
+	* lib/cgi/session.rb: Add overview documentation to CGI::Cookie
+	* lib/cgi/html.rb:  Don't add CGI::TagMaker documentation to CGI.
+	  Patch by David Copeland.  [Ruby 1.9 - Bug #4704]
+	* lib/cgi/core.rb:  Clean up CGI documentation.  Patch by David
+	  Copeland.  [Ruby 1.9 - Bug #4704]
+	* lib/cgi/cookie.rb:  Clean up CGI::Cookie documentation.  Patch by
+	  David Copeland.  [Ruby 1.9 - Bug #4704]
+
 Tue May 17 05:52:30 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/digest: Improve documentation of Digest, Digest::HMAC and

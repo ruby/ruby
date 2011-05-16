@@ -8,28 +8,22 @@
 # Author: Yukihiro "Matz" Matsumoto
 #
 # Documentation: William Webber (william@williamwebber.com)
-#
-# == Overview
-#
-# This file provides the +CGI::Session+ class, which provides session
-# support for CGI scripts.  A session is a sequence of HTTP requests
-# and responses linked together and associated with a single client.
-# Information associated with the session is stored
-# on the server between requests.  A session id is passed between client
-# and server with every request and response, transparently
-# to the user.  This adds state information to the otherwise stateless
-# HTTP request/response protocol.
-#
-# See the documentation to the +CGI::Session+ class for more details
-# and examples of usage.  See cgi.rb for the +CGI+ class itself.
 
 require 'cgi'
 require 'tmpdir'
 
 class CGI
 
-  # Class representing an HTTP session.  See documentation for the file
-  # cgi/session.rb for an introduction to HTTP sessions.
+  # == Overview
+  #
+  # This file provides the CGI::Session class, which provides session
+  # support for CGI scripts.  A session is a sequence of HTTP requests
+  # and responses linked together and associated with a single client.
+  # Information associated with the session is stored
+  # on the server between requests.  A session id is passed between client
+  # and server with every request and response, transparently
+  # to the user.  This adds state information to the otherwise stateless
+  # HTTP request/response protocol.
   #
   # == Lifecycle
   #

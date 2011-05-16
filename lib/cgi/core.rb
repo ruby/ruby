@@ -1,3 +1,7 @@
+#--
+# Methods for generating HTML, parsing CGI-related parameters, and
+# generating HTTP responses.
+#++
 class CGI
 
   $CGI_ENV = ENV    # for FCGI support
@@ -56,39 +60,68 @@ class CGI
 
   private :env_table, :stdinput, :stdoutput
 
-
   # Create an HTTP header block as a string.
+  #
+  # :call-seq:
+  #   headers(content_type_string="text/html")
+  #   headers(headers_hash)
   #
   # Includes the empty line that ends the header block.
   #
-  # +options+ can be a string specifying the Content-Type (defaults
-  # to text/html), or a hash of header key/value pairs.  The following
-  # header keys are recognized:
+  # +content_type_string+::
+  #   If this form is used, this string is the <tt>Content-Type</tt>
+  # +headers_hash+::
+  #   A Hash of header values. The following header keys are recognized:
   #
-  # type:: the Content-Type header.  Defaults to "text/html"
-  # charset:: the charset of the body, appended to the Content-Type header.
-  # nph:: a boolean value.  If true, prepend protocol string and status code, and
-  #       date; and sets default values for "server" and "connection" if not
-  #       explicitly set.
-  # status:: the HTTP status code, returned as the Status header.  See the
-  #          list of available status codes below.
-  # server:: the server software, returned as the Server header.
-  # connection:: the connection type, returned as the Connection header (for
-  #              instance, "close".
-  # length:: the length of the content that will be sent, returned as the
-  #          Content-Length header.
-  # language:: the language of the content, returned as the Content-Language
-  #            header.
-  # expires:: the time on which the current content expires, as a +Time+
-  #           object, returned as the Expires header.
-  # cookie:: a cookie or cookies, returned as one or more Set-Cookie headers.
-  #          The value can be the literal string of the cookie; a CGI::Cookie
-  #          object; an Array of literal cookie strings or Cookie objects; or a
-  #          hash all of whose values are literal cookie strings or Cookie objects.
-  #          These cookies are in addition to the cookies held in the
-  #          @output_cookies field.
+  #   type:: The Content-Type header.  Defaults to "text/html"
+  #   charset:: The charset of the body, appended to the Content-Type header.
+  #   nph:: A boolean value.  If true, prepend protocol string and status
+  #         code, and date; and sets default values for "server" and
+  #         "connection" if not explicitly set.
+  #   status::
+  #     The HTTP status code as a String, returned as the Status header.  The
+  #     values are:
   #
-  # Other header lines can also be set; they are appended as key: value.
+  #     OK:: 200 OK
+  #     PARTIAL_CONTENT:: 206 Partial Content
+  #     MULTIPLE_CHOICES:: 300 Multiple Choices
+  #     MOVED:: 301 Moved Permanently
+  #     REDIRECT:: 302 Found
+  #     NOT_MODIFIED:: 304 Not Modified
+  #     BAD_REQUEST:: 400 Bad Request
+  #     AUTH_REQUIRED:: 401 Authorization Required
+  #     FORBIDDEN:: 403 Forbidden
+  #     NOT_FOUND:: 404 Not Found
+  #     METHOD_NOT_ALLOWED:: 405 Method Not Allowed
+  #     NOT_ACCEPTABLE:: 406 Not Acceptable
+  #     LENGTH_REQUIRED:: 411 Length Required
+  #     PRECONDITION_FAILED:: 412 Precondition Failed
+  #     SERVER_ERROR:: 500 Internal Server Error
+  #     NOT_IMPLEMENTED:: 501 Method Not Implemented
+  #     BAD_GATEWAY:: 502 Bad Gateway
+  #     VARIANT_ALSO_VARIES:: 506 Variant Also Negotiates
+  #
+  #   server:: The server software, returned as the Server header.
+  #   connection:: The connection type, returned as the Connection header (for
+  #                instance, "close".
+  #   length:: The length of the content that will be sent, returned as the
+  #            Content-Length header.
+  #   language:: The language of the content, returned as the Content-Language
+  #              header.
+  #   expires:: The time on which the current content expires, as a +Time+
+  #             object, returned as the Expires header.
+  #   cookie::
+  #     A cookie or cookies, returned as one or more Set-Cookie headers.  The
+  #     value can be the literal string of the cookie; a CGI::Cookie object;
+  #     an Array of literal cookie strings or Cookie objects; or a hash all of
+  #     whose values are literal cookie strings or Cookie objects.
+  #
+  #     These cookies are in addition to the cookies held in the
+  #     @output_cookies field.
+  #
+  #   Other headers can also be set; they are appended as key: value.
+  #
+  # Examples:
   #
   #   header
   #     # Content-Type: text/html
@@ -110,27 +143,6 @@ class CGI
   #          "cookie"     => [cookie1, cookie2],
   #          "my_header1" => "my_value"
   #          "my_header2" => "my_value")
-  #
-  # The status codes are:
-  #
-  #   "OK"                  --> "200 OK"
-  #   "PARTIAL_CONTENT"     --> "206 Partial Content"
-  #   "MULTIPLE_CHOICES"    --> "300 Multiple Choices"
-  #   "MOVED"               --> "301 Moved Permanently"
-  #   "REDIRECT"            --> "302 Found"
-  #   "NOT_MODIFIED"        --> "304 Not Modified"
-  #   "BAD_REQUEST"         --> "400 Bad Request"
-  #   "AUTH_REQUIRED"       --> "401 Authorization Required"
-  #   "FORBIDDEN"           --> "403 Forbidden"
-  #   "NOT_FOUND"           --> "404 Not Found"
-  #   "METHOD_NOT_ALLOWED"  --> "405 Method Not Allowed"
-  #   "NOT_ACCEPTABLE"      --> "406 Not Acceptable"
-  #   "LENGTH_REQUIRED"     --> "411 Length Required"
-  #   "PRECONDITION_FAILED" --> "412 Precondition Failed"
-  #   "SERVER_ERROR"        --> "500 Internal Server Error"
-  #   "NOT_IMPLEMENTED"     --> "501 Method Not Implemented"
-  #   "BAD_GATEWAY"         --> "502 Bad Gateway"
-  #   "VARIANT_ALSO_VARIES" --> "506 Variant Also Negotiates"
   #
   # This method does not perform charset conversion.
   def header(options='text/html')
@@ -257,13 +269,30 @@ class CGI
     return ''
   end
   private :_header_for_modruby
-  #
 
   # Print an HTTP header and body to $DEFAULT_OUTPUT ($>)
   #
-  # The header is provided by +options+, as for #header().
-  # The body of the document is that returned by the passed-
-  # in block.  This block takes no arguments.  It is required.
+  # :call-seq:
+  #   cgi.out(content_type_string='text/html')
+  #   cgi.out(headers_hash)
+  #
+  # +content_type_string+::
+  #   If a string is passed, it is assumed to be the content type.
+  # +headers_hash+::
+  #   This is a Hash of headers, similar to that used by #header.
+  # +block+::
+  #   A block is required and should evaluate to the body of the response.
+  #
+  # <tt>Content-Length</tt> is automatically calculated from the size of
+  # the String returned by the content block.
+  #
+  # If <tt>ENV['REQUEST_METHOD'] == "HEAD"</tt>, then only the header
+  # is output (the content block is still required, but it is ignored).
+  #
+  # If the charset is "iso-2022-jp" or "euc-jp" or "shift_jis" then the
+  # content is converted to this charset, and the language is set to "ja".
+  #
+  # Example:
   #
   #   cgi = CGI.new
   #   cgi.out{ "string" }
@@ -290,17 +319,20 @@ class CGI
   #           "cookie"     => [cookie1, cookie2],
   #           "my_header1" => "my_value",
   #           "my_header2" => "my_value") { "string" }
-  #
-  # Content-Length is automatically calculated from the size of
-  # the String returned by the content block.
-  #
-  # If ENV['REQUEST_METHOD'] == "HEAD", then only the header
-  # is outputted (the content block is still required, but it
-  # is ignored).
-  #
-  # If the charset is "iso-2022-jp" or "euc-jp" or "shift_jis" then
-  # the content is converted to this charset, and the language is set
-  # to "ja".
+  #      # HTTP/1.1 200 OK
+  #      # Date: Sun, 15 May 2011 17:35:54 GMT
+  #      # Server: Apache 2.2.0
+  #      # Connection: close
+  #      # Content-Type: text/html; charset=iso-2022-jp
+  #      # Content-Length: 6
+  #      # Content-Language: ja
+  #      # Expires: Tue, 14 Jun 2011 17:35:54 GMT
+  #      # Set-Cookie: foo
+  #      # Set-Cookie: bar
+  #      # my_header1: my_value
+  #      # my_header2: my_value
+  #      #
+  #      # string
   def out(options = "text/html") # :yield:
 
     options = { "type" => options } if options.kind_of?(String)
@@ -350,17 +382,21 @@ class CGI
   # Maximum number of request parameters when multipart
   MAX_MULTIPART_COUNT = 128
 
-  # Mixin module. It provides the follow functionality groups:
+  # Mixin module that provides the following:
   #
-  # 1. Access to CGI environment variables as methods.  See
-  #    documentation to the CGI class for a list of these variables.
+  # 1. Access to the CGI environment variables as methods.  See
+  #    documentation to the CGI class for a list of these variables.  The
+  #    methods are exposed by removing the leading +HTTP_+ (if it exists) and
+  #    downcasing the name.  For example, +auth_type+ will return the
+  #    environment variable +AUTH_TYPE+, and +accept+ will return the value
+  #    for +HTTP_ACCEPT+.
   #
   # 2. Access to cookies, including the cookies attribute.
   #
   # 3. Access to parameters, including the params attribute, and overloading
-  #    [] to perform parameter value lookup by key.
+  #    #[] to perform parameter value lookup by key.
   #
-  # 4. The initialize_query method, for initialising the above
+  # 4. The initialize_query method, for initializing the above
   #    mechanisms, handling multipart forms, and allowing the
   #    class to be used in "offline" mode.
   #
@@ -623,7 +659,7 @@ class CGI
     # Get the value for the parameter with a given key.
     #
     # If the parameter has multiple values, only the first will be
-    # retrieved; use #params() to get the array of values.
+    # retrieved; use #params to get the array of values.
     def [](key)
       params = @params[key]
       return '' unless params
@@ -642,12 +678,12 @@ class CGI
       end
     end
 
-    # Return all parameter keys as an array.
+    # Return all query parameter names as an array of String.
     def keys(*args)
       @params.keys(*args)
     end
 
-    # Returns true if a given parameter key exists in the query.
+    # Returns true if a given query string parameter exists.
     def has_key?(*args)
       @params.has_key?(*args)
     end
@@ -656,7 +692,7 @@ class CGI
 
   end # QueryExtension
 
-  # InvalidEncoding Exception class
+  # Exception raised when there is an invalid encoding detected
   class InvalidEncoding < Exception; end
 
   # @@accept_charset is default accept character set.
@@ -677,69 +713,65 @@ class CGI
     @@accept_charset=accept_charset
   end
 
+  attr_reader :accept_charset
+
   # Create a new CGI instance.
   #
-  # CGI accept constructor parameters either in a hash, string as a block.
-  # But string is as same as using :tag_maker of hash.
+  # :call-seq:
+  #   CGI.new(tag_maker) { block }
+  #   CGI.new(options_hash = {}) { block }
   #
-  #   CGI.new("html3") #=>  CGI.new(:tag_maker=>"html3")
   #
-  # And, if you specify string, @accept_charset cannot be changed.
-  # Instead, please use hash parameter.
+  # <tt>tag_maker</tt>::
+  #   This is the same as using the +options_hash+ form with the value <tt>{
+  #   :tag_maker => tag_maker }</tt> Note that it is recommended to use the
+  #   +options_hash+ form, since it also allows you specify the charset you
+  #   will accept.
+  # <tt>options_hash</tt>::
+  #   A Hash that recognizes two options:
   #
-  # == accept_charset
+  #   <tt>:accept_charset</tt>::
+  #     specifies encoding of received query string.  If omitted,
+  #     <tt>@@accept_charset</tt> is used.  If the encoding is not valid, a
+  #     CGI::InvalidEncoding will be raised.
   #
-  # :accept_charset specifies encoding of received query string.
-  # ( Default value is @@accept_charset. )
-  # If not valid, raise CGI::InvalidEncoding
+  #     Example. Suppose <tt>@@accept_charset</tt> is "UTF-8"
   #
-  # Example. Suppose @@accept_charset # => "UTF-8"
+  #     when not specified:
   #
-  # when not specified:
+  #         cgi=CGI.new      # @accept_charset # => "UTF-8"
   #
-  #   cgi=CGI.new      # @accept_charset # => "UTF-8"
+  #     when specified as "EUC-JP":
   #
-  # when specified "EUC-JP":
+  #         cgi=CGI.new(:accept_charset => "EUC-JP") # => "EUC-JP"
   #
-  #   cgi=CGI.new(:accept_charset => "EUC-JP") # => "EUC-JP"
+  #   <tt>:tag_maker</tt>::
+  #     String that specifies which version of the HTML generation methods to
+  #     use.  If not specified, no HTML generation methods will be loaded.
   #
-  # == block
+  #     The following values are supported:
   #
-  # When you use a block, you can write a process
-  # that query encoding is invalid. Example:
+  #     "html3":: HTML 3.x
+  #     "html4":: HTML 4.0
+  #     "html4Tr":: HTML 4.0 Transitional
+  #     "html4Fr":: HTML 4.0 with Framesets
   #
-  #   encoding_error={}
-  #   cgi=CGI.new(:accept_charset=>"EUC-JP") do |name,value|
-  #     encoding_error[key] = value
-  #   end
+  # <tt>block</tt>::
+  #   If provided, the block is called when an invalid encoding is
+  #   encountered. For example:
   #
-  # == tag_maker
+  #     encoding_errors={}
+  #     cgi=CGI.new(:accept_charset=>"EUC-JP") do |name,value|
+  #       encoding_errors[name] = value
+  #     end
   #
-  # :tag_maker specifies which version of HTML to load the HTML generation
-  # methods for.  The following versions of HTML are supported:
-  #
-  # html3:: HTML 3.x
-  # html4:: HTML 4.0
-  # html4Tr:: HTML 4.0 Transitional
-  # html4Fr:: HTML 4.0 with Framesets
-  #
-  # If not specified, no HTML generation methods will be loaded.
-  #
-  # If the CGI object is not created in a standard CGI call environment
-  # (that is, it can't locate REQUEST_METHOD in its environment), then
-  # it will run in "offline" mode.  In this mode, it reads its parameters
+  # Finally, if the CGI object is not created in a standard CGI call
+  # environment (that is, it can't locate REQUEST_METHOD in its environment),
+  # then it will run in "offline" mode.  In this mode, it reads its parameters
   # from the command line or (failing that) from standard input.  Otherwise,
   # cookies and other parameters are parsed automatically from the standard
-  # CGI locations, which varies according to the REQUEST_METHOD. It works this:
-  #
-  #   CGI.new(:tag_maker=>"html3")
-  #
-  # This will be obsolete:
-  #
-  #   CGI.new("html3")
-  #
-  attr_reader :accept_charset
-  def initialize(options = {},&block)
+  # CGI locations, which varies according to the REQUEST_METHOD.
+  def initialize(options = {}, &block) # :yields: name, value
     @accept_charset_error_block=block if block_given?
     @options={:accept_charset=>@@accept_charset}
     case options
