@@ -38,6 +38,7 @@ VALUE rb_f_require_2(VALUE, VALUE);
 VALUE rb_require_safe_2(VALUE, int);
 static int rb_file_has_been_required(VALUE);
 static int rb_file_is_ruby(VALUE);
+static st_table * get_loaded_features_hash(void);
 
 static VALUE rb_locate_file(VALUE);
 static VALUE rb_locate_file_absolute(VALUE);
@@ -61,16 +62,16 @@ rb_get_load_path(void)
     return load_path;
 }
 static st_table *
-get_new_loading_table(void)
+get_loaded_features_hash(void)
 {
-    st_table* new_loading_table;
-    new_loading_table = GET_VM()->new_loading_table;
+    st_table* loaded_features_hash;
+    loaded_features_hash = GET_VM()->loaded_features_hash;
 
-    if (!new_loading_table) {
-      GET_VM()->new_loading_table = new_loading_table = st_init_strcasetable();
+    if (!loaded_features_hash) {
+      GET_VM()->loaded_features_hash = loaded_features_hash = st_init_strcasetable();
     }
 
-    return new_loading_table;
+    return loaded_features_hash;
 }
 
 
@@ -259,16 +260,16 @@ static void
 rb_provide_feature(VALUE feature)
 {
     int frozen = 0;
-    st_table* new_loading_table;
+    st_table* loaded_features_hash;
 
     if (OBJ_FROZEN(get_loaded_features())) {
 	rb_raise(rb_eRuntimeError,
 		 "$LOADED_FEATURES is frozen; cannot append feature");
     }
 
-    new_loading_table = get_new_loading_table();
+    loaded_features_hash = get_loaded_features_hash();
     st_insert(
-      new_loading_table,
+      loaded_features_hash,
       (st_data_t)ruby_strdup(RSTRING_PTR(feature)),
       (st_data_t)rb_barrier_new());
 
@@ -925,7 +926,7 @@ rb_file_has_been_required(VALUE expanded_path)
 {
   st_data_t data;
   st_data_t path_key = (st_data_t)RSTRING_PTR(expanded_path);
-  st_table *loaded_features_hash = get_new_loading_table();
+  st_table *loaded_features_hash = get_loaded_features_hash();
 
   return st_lookup(loaded_features_hash, path_key, &data);
 }
@@ -1033,16 +1034,16 @@ rb_rehash_loaded_features()
   VALUE features;
   VALUE feature;
 
-  st_table* new_loading_table = get_new_loading_table();
+  st_table* loaded_features_hash = get_loaded_features_hash();
 
-  st_clear(new_loading_table);
+  st_clear(loaded_features_hash);
 
   features = get_loaded_features();
 
   for (i = 0; i < RARRAY_LEN(features); ++i) {
     feature = RARRAY_PTR(features)[i];
     st_insert(
-      new_loading_table,
+      loaded_features_hash,
       (st_data_t)ruby_strdup(RSTRING_PTR(feature)),
       (st_data_t)rb_barrier_new());
   }
