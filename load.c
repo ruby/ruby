@@ -1058,7 +1058,7 @@ define_loaded_features_proxy()
     int i;
 
     rb_cLoadedFeaturesProxy = rb_define_class("LoadedFeaturesProxy", rb_cArray); 
-    for (i = 0; i < 3; ++i) {
+    for (i = 0; i < CHAR_ARRAY_LEN(methods_to_hook); ++i) {
       rb_define_method(
         rb_cLoadedFeaturesProxy,
         methods_to_hook[i],
