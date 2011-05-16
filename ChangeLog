@@ -1,3 +1,7 @@
+Tue May 17 08:04:26 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_digest.c: Add documentation.
+
 Tue May 17 07:14:58 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/net/http.rb:  Improve documentation of proxy configuration
