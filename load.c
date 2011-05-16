@@ -26,19 +26,16 @@ VALUE ruby_dln_librefs;
 #endif
 
 
-static const char *const loadable_ext[] = {
-    ".rb", DLEXT,
-#ifdef DLEXT2
-    DLEXT2,
-#endif
-    0
-};
-
 VALUE rb_f_require_2(VALUE, VALUE);
+VALUE rb_f_require_relative_2(VALUE, VALUE fname);
 VALUE rb_require_safe_2(VALUE, int);
 static int rb_file_has_been_required(VALUE);
 static int rb_file_is_ruby(VALUE);
 static st_table * get_loaded_features_hash(void);
+static void rb_load_internal(VALUE, int);
+static char * load_lock(const char *);
+static void load_unlock(const char *, int);
+static void load_failed(VALUE fname);
 
 static VALUE rb_locate_file(VALUE);
 static VALUE rb_locate_file_absolute(VALUE);
@@ -47,6 +44,7 @@ static VALUE rb_locate_file_in_load_path(VALUE);
 static VALUE rb_locate_file_with_extensions(VALUE);
 static int rb_path_is_absolute(VALUE);
 static int rb_path_is_relative(VALUE);
+VALUE rb_get_expanded_load_path();
 
 static VALUE rb_cLoadedFeaturesProxy;
 static void rb_rehash_loaded_features();
@@ -55,12 +53,22 @@ static void define_loaded_features_proxy();
 
 VALUE ary_new(VALUE, long); // array.c
 
+static const char *const loadable_ext[] = {
+    ".rb", 
+    DLEXT,
+#ifdef DLEXT2
+    DLEXT2,
+#endif
+    0
+};
+
 VALUE
 rb_get_load_path(void)
 {
     VALUE load_path = GET_VM()->load_path;
     return load_path;
 }
+
 static st_table *
 get_loaded_features_hash(void)
 {
@@ -73,7 +81,6 @@ get_loaded_features_hash(void)
 
     return loaded_features_hash;
 }
-
 
 VALUE
 rb_get_expanded_load_path(void)
