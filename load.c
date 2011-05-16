@@ -853,7 +853,7 @@ rb_find_file_absolute(VALUE fname)
 VALUE
 rb_find_file_relative(VALUE fname)
 {
-  return rb_find_file_with_extensions( rb_file_expand_path(fname, Qnil) );
+  return rb_find_file_with_extensions(rb_file_expand_path(fname, Qnil));
 }
 
 VALUE
@@ -886,14 +886,10 @@ rb_is_relative_path(VALUE fname)
   const char * current_directory = "./";
   const char * parent_directory  = "../";
 
-  if (
+  return (
     strncmp(current_directory, fname_ptr, 2) == 0 ||
     strncmp(parent_directory,  fname_ptr, 3) == 0
-  ) {
-    return 1;
-  } else {
-    return 0;
-  }
+  );
 }
 
 int
@@ -902,24 +898,17 @@ rb_file_is_ruby(VALUE fname)
   const char * ext;
   ext = ruby_find_extname(RSTRING_PTR(fname), 0);
 
-  if (ext && IS_RBEXT(ext)) {
-    return 1;
-  } else {
-    return 0;
-  }
+  return ext && IS_RBEXT(ext);
 }
 
 int
 rb_file_is_required(VALUE expanded_path)
 {
   st_data_t data;
-  st_table *loading_tbl = get_new_loading_table();
+  st_data_t path_key = (st_data_t)RSTRING_PTR(expanded_path);
+  st_table *loaded_features_hash = get_new_loading_table();
 
-  if (st_lookup(loading_tbl, (st_data_t)RSTRING_PTR(expanded_path), &data)) {
-    return 1;
-  } else {
-    return 0;
-  }
+  return st_lookup(loaded_features_hash, path_key, &data);
 }
 
 
@@ -1061,14 +1050,16 @@ rb_loaded_features_hook(int argc, VALUE *argv, VALUE self)
  * we also store this data in a hash for fast lookups. So that we can rebuild
  * the hash whenever $LOADED_FEATURES is changed, we wrap the Array class
  * in a proxy that intercepts all data-modifying methods and rebuilds the
- * hash. * * Note that the list of intercepted methods is currently non-comprehensive
+ * hash.
+ *
+ * Note that the list of intercepted methods is currently non-comprehensive
  * --- it only covers modifications made by the ruby and rubyspec test suites.
  */
 void 
 define_loaded_features_proxy()
 {
     const char* methods_to_hook[] = {"push", "clear", "replace", "delete"};
-    int i;
+    unsigned int i;
 
     rb_cLoadedFeaturesProxy = rb_define_class("LoadedFeaturesProxy", rb_cArray); 
     for (i = 0; i < CHAR_ARRAY_LEN(methods_to_hook); ++i) {
