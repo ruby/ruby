@@ -1,3 +1,8 @@
+Tue May 17 07:00:41 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/http.rb:  Fix nodoc for Net::HTTP::version_1_1?.  Patch by
+	  Alf Mikula.  [Ruby 1.9 - Bug #4713]
+
 Tue May 17 06:56:26 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/optparse.rb:  Add link to make_switch to improve documentation.

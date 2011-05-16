@@ -385,8 +385,7 @@ module Net   #:nodoc:
       true
     end
 
-    # :nodoc:
-    def HTTP.version_1_1?
+    def HTTP.version_1_1?  #:nodoc:
       false
     end
 
