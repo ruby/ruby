@@ -1,3 +1,8 @@
+Tue May 17 06:28:14 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/gserver.rb:  Improve documentation.  Patch by David Copeland.
+	  [Ruby 1.9 - Bug #4705]
+
 Tue May 17 06:21:15 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/cgi.rb: Add toplevel documentation to class CGI
