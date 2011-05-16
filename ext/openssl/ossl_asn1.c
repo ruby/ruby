@@ -662,13 +662,13 @@ ossl_asn1_class2sym(int tc)
  * +value+: Please have a look at Constructive and Primitive to see how Ruby
  * types are mapped to ASN.1 types and vice versa.
  * +tag+: A +Number+ indicating the tag number.
- * +tag_class: A +Symbol+ indicating the tag class. Please cf. ASN1 for 
+ * +tag_class: A +Symbol+ indicating the tag class. Please cf. ASN1 for
  * possible values.
  *
  * == Example
  *     asn1_int = OpenSSL::ASN1Data.new(42, 2, :UNIVERSAL) # => Same as OpenSSL::ASN1::Integer.new(42)
  *     tagged_int = OpenSSL::ASN1Data.new(42, 0, :CONTEXT_SPECIFIC) # implicitly 0-tagged INTEGER
- */     
+ */
 static VALUE
 ossl_asn1data_initialize(VALUE self, VALUE value, VALUE tag, VALUE tag_class)
 {
@@ -707,7 +707,7 @@ join_der(VALUE enumerable)
  *
  * Encodes this ASN1Data into a DER-encoded String value. The result is
  * DER-encoded except for the possibility of infinite length encodings.
- * Infinite length encodings are not allowed in strict DER, so strictly 
+ * Infinite length encodings are not allowed in strict DER, so strictly
  * speaking the result of such an encoding would be a BER-encoding.
  */
 static VALUE
@@ -878,7 +878,7 @@ ossl_asn1_decode0(unsigned char **pp, long length, long *offset, long depth,
 
     return ary;
 }
- 
+
 /*
  * call-seq:
  *    OpenSSL::ASN1.traverse(asn1) -> nil
@@ -926,7 +926,7 @@ ossl_asn1_traverse(VALUE self, VALUE obj)
  * == Example
  *     der = File.binread('asn1data')
  *     asn1 = OpenSSL::ASN1.decode(der)
- */ 
+ */
 static VALUE
 ossl_asn1_decode(VALUE self, VALUE obj)
 {
@@ -1069,7 +1069,7 @@ ossl_ASN1_TYPE_free(ASN1_TYPE *a)
 /*
  * call-seq:
  *    asn1.to_der => DER-encoded String
- * 
+ *
  * See ASN1Data#to_der for details. *
  */
 static VALUE
@@ -1306,17 +1306,17 @@ Init_ossl_asn1()
     /*
      * Document-module: OpenSSL::ASN1
      *
-     * Abstract Syntax Notation One (or ASN.1) is a notation syntax to 
-     * describe data structures and is defined in ITU-T X.680. ASN.1 itself 
-     * does not mandate any encoding or parsing rules, but usually ASN.1 data 
+     * Abstract Syntax Notation One (or ASN.1) is a notation syntax to
+     * describe data structures and is defined in ITU-T X.680. ASN.1 itself
+     * does not mandate any encoding or parsing rules, but usually ASN.1 data
      * structures are encoded using the Distinguished Encoding Rules (DER) or
      * less often the Basic Encoding Rules (BER) described in ITU-T X.690. DER
-     * and BER encodings are binary Tag-Length-Value (TLV) encodings that are 
+     * and BER encodings are binary Tag-Length-Value (TLV) encodings that are
      * quite concise compared to other popular data description formats such
      * as XML, JSON etc.
-     * ASN.1 data structures are very common in cryptographic applications, 
-     * e.g. X.509 public key certificates or certificate revocation lists 
-     * (CRLs) are all defined in ASN.1 and DER-encoded. ASN.1, DER and BER are 
+     * ASN.1 data structures are very common in cryptographic applications,
+     * e.g. X.509 public key certificates or certificate revocation lists
+     * (CRLs) are all defined in ASN.1 and DER-encoded. ASN.1, DER and BER are
      * the building blocks of applied cryptography.
      * The ASN1 module provides the necessary classes that allow generation
      * of ASN.1 data structures and the methods to encode them using a DER
@@ -1324,13 +1324,13 @@ Init_ossl_asn1()
      * data to a Ruby object that can then be modified and re-encoded at will.
      *
      * == ASN.1 class hierarchy
-     * 
-     * The base class representing ASN.1 structues is ASN1Data. ASN1Data offers
-     * attributes to read and set the +tag+, the +tag_class+ and finally the 
-     * +value+ of a particular ASN.1 item. Upon parsing, any tagged values 
+     *
+     * The base class representing ASN.1 structures is ASN1Data. ASN1Data offers
+     * attributes to read and set the +tag+, the +tag_class+ and finally the
+     * +value+ of a particular ASN.1 item. Upon parsing, any tagged values
      * (implicit or explicit) will be represented by ASN1Data instances because
      * their "real type" can only be determined using out-of-band information
-     * from the ASN.1 type declaration. Since this information is normally 
+     * from the ASN.1 type declaration. Since this information is normally
      * known when encoding a type, all sub-classes of ASN1Data offer an
      * additional attribute +tagging+ that allows to encode a value implicitly
      * (+:IMPLICIT+) or explicitly (+:EXPLICIT+).
@@ -1339,17 +1339,17 @@ Init_ossl_asn1()
      *
      * Constructive is, as its name implies, the base class for all
      * constructed encodings, i.e. those that consist of several values,
-     * opposed to "primitive" encodings with just one single value. 
+     * opposed to "primitive" encodings with just one single value.
      * Primitive values that are encoded with "infinite length" are typically
      * constructed (their values come in multiple chunks) and are therefore
      * represented by instances of Constructive. The value of an Constructive
      * is always an Array.
-     * 
+     *
      * ==== ASN1::Set and ASN1::Sequence
      *
      * The most common constructive encodings are SETs and SEQUENCEs, which is
      * why there are two sub-classes of Constructive representing each of
-     * them. 
+     * them.
      *
      * === Primitive
      *
@@ -1357,15 +1357,15 @@ Init_ossl_asn1()
      * itself is not used when parsing ASN.1 data, all values are either
      * instances of a corresponding sub-class of Primitive or they are
      * instances of ASN1Data if the value was tagged implicitly or explicitly.
-     * Please cf. Primitive documentation for details on sub-classes and 
+     * Please cf. Primitive documentation for details on sub-classes and
      * their respective mappings of ASN.1 data types to Ruby types.
      *
      * == Possible values for attribute +tagging+
-     * 
+     *
      * When constructing an ASN1Data object the ASN.1 type definition may
      * require certain elements to be either implicitly or explicitly tagged.
-     * This can be achieved by setting the +tagging+ attribute manually for 
-     * sub-classes of ASN1Data. Use the symbol +:IMPLICIT+ for implicit 
+     * This can be achieved by setting the +tagging+ attribute manually for
+     * sub-classes of ASN1Data. Use the symbol +:IMPLICIT+ for implicit
      * tagging and +:EXPLICIT+ if the element requires explicit tagging.
      *
      * == Possible values for +tag_class+
@@ -1376,7 +1376,7 @@ Init_ossl_asn1()
      * * +:UNIVERSAL+ (the default for untagged values)
      * * +:CONTEXT_SPECIFIC+ (the default for tagged values)
      * * +:APPLICATION+
-     * * +:PRIVATE+ 
+     * * +:PRIVATE+
      *
      * == Tag constants
      *
@@ -1410,7 +1410,7 @@ Init_ossl_asn1()
      * An Array that stores the name of a given tag number. These names are
      * the same as the name of the tag constant that is additionally defined,
      * e.g. UNIVERSAL_TAG_NAME[2] = "INTEGER" and OpenSSL::ASN1::INTEGER = 2.
-     * 
+     *
      * == Example usage
      *
      * === Decoding and viewing a DER-encoded file
@@ -1424,24 +1424,24 @@ Init_ossl_asn1()
      *     require 'openssl'
      *     version = OpenSSL::ASN1::Integer.new(1)
      *     # Explicitly 0-tagged implies context-specific tag class
-     *     serial = OpenSSL::ASN1::Integer.new(12345, 0, :EXPLICIT, :CONTEXT_SPECIFIC) 
+     *     serial = OpenSSL::ASN1::Integer.new(12345, 0, :EXPLICIT, :CONTEXT_SPECIFIC)
      *     name = OpenSSL::ASN1::PrintableString.new('Data 1')
      *     sequence = OpenSSL::ASN1::Sequence.new( [ version, serial, name ] )
      *     der = sequence.to_der
      */
     mASN1 = rb_define_module_under(mOSSL, "ASN1");
-    
+
     /* Document-class: OpenSSL::ASN1::ASN1Error
      *
      * Generic error class for all errors raised in ASN1 and any of the
-     * classes defined in it. 
+     * classes defined in it.
      */
     eASN1Error = rb_define_class_under(mASN1, "ASN1Error", eOSSLError);
     rb_define_module_function(mASN1, "traverse", ossl_asn1_traverse, 1);
     rb_define_module_function(mASN1, "decode", ossl_asn1_decode, 1);
     rb_define_module_function(mASN1, "decode_all", ossl_asn1_decode_all, 1);
     ary = rb_ary_new();
-    
+
     /*
      * Array storing tag names at the tag's index.
      */
@@ -1459,9 +1459,9 @@ Init_ossl_asn1()
      * of ASN1Data.
      *
      * == Attributes
-     * 
+     *
      * === +value+
-     * 
+     *
      * Carries the value of a ASN.1 type.
      * Please confer Constructive and Primitive for the mappings between
      * ASN.1 data types and Ruby classes.
@@ -1471,8 +1471,8 @@ Init_ossl_asn1()
      * A +Number+ representing the tag number of this ASN1Data. Never +nil+.
      *
      * === +tag_class+
-     * 
-     * A +Symbol+ reprensenting the tag class of this ASN1Data. Never +nil+.
+     *
+     * A +Symbol+ representing the tag class of this ASN1Data. Never +nil+.
      * See ASN1Data for possible values.
      *
      * === +infinite_length+
@@ -1483,11 +1483,11 @@ Init_ossl_asn1()
      * In DER, every value has a finite length associated with it. But in
      * scenarios where large amounts of data need to be transferred it
      * might be desirable to have some kind of streaming support available.
-     * For example, huge OCTET STRINGs are preferrably sent in smaller-sized
+     * For example, huge OCTET STRINGs are preferably sent in smaller-sized
      * chunks, each at a time.
      * This is possible in BER by setting the length bytes of an encoding
-     * to zero and by this indicating that the following value will be 
-     * sent in chunks. Infinite length encodings are always constructed. 
+     * to zero and by this indicating that the following value will be
+     * sent in chunks. Infinite length encodings are always constructed.
      * The end of such a stream of chunks is indicated by sending a EOC
      * (End of Content) tag. SETs and SEQUENCEs may use an infinite length
      * encoding, but also primitive types such as e.g. OCTET STRINGS or
@@ -1504,14 +1504,14 @@ Init_ossl_asn1()
      * tagging.
      * === Example of a parsed implicitly tagged value
      *
-     * An implicitly 1-tagged INTEGER value will be parsed as an 
+     * An implicitly 1-tagged INTEGER value will be parsed as an
      * ASN1Data with
      * * +tag+ equal to 1
      * * +tag_class+ equal to +:CONTEXT_SPECIFIC+
      * * +value+ equal to a +String+ that carries the raw encoding
      *   of the INTEGER.
      * This implies that a subsequent decoding step is required to
-     * completely decode implicitly tagged values. 
+     * completely decode implicitly tagged values.
      *
      * === Example of a parsed explicitly tagged value
      *
@@ -1586,7 +1586,7 @@ Init_ossl_asn1()
      * for ASN1Data, with the addition of +tagging+. +tagging+ may be used
      * as a hint for encoding a value either implicitly or explicitly by
      * setting it either to +:IMPLICIT+ or to +:EXPLICIT+.
-     * +tagging+ is not set when a ASN.1 structure is parsed using 
+     * +tagging+ is not set when a ASN.1 structure is parsed using
      * OpenSSL::ASN1.decode.      * Primitive values can never be infinite length encodings, thus it is not
      * possible to set the +infinite_length+ attribute for Primitive and its
      * sub-classes.
@@ -1618,7 +1618,7 @@ Init_ossl_asn1()
      *
      * === Additional attributes
      * +unused_bits+: if the underlying BIT STRING's
-     * length is a multiple of 8 then +unused_bits+ is 0. Otherwise 
+     * length is a multiple of 8 then +unused_bits+ is 0. Otherwise
      * +unused_bits+ indicates the number of bits that are to be ignored in
      * the final octet of the +BitString+'s +value+.
      *
@@ -1656,7 +1656,7 @@ Init_ossl_asn1()
      * for ASN1Data, with the addition of +tagging+. +tagging+ may be used
      * as a hint for encoding to encode a value either implicitly or
      * explicitly by setting it either to +:IMPLICIT+ or to +:EXPLICIT+.
-     * +tagging+ is not set when a ASN.1 structure is parsed using 
+     * +tagging+ is not set when a ASN.1 structure is parsed using
      * OpenSSL::ASN1.decode.
      *
      * == SET and SEQUENCE
@@ -1682,7 +1682,7 @@ Init_ossl_asn1()
      *
      * == Infinite length primitive values
      *
-     * The only case where Constructive is used directly is for infinite 
+     * The only case where Constructive is used directly is for infinite
      * length encodings of primitive values. These encodings are always
      * constructed, with the contents of the +value+ +Array+ being either
      * UNIVERSAL non-infinite length partial encodings of the actual value
@@ -1690,15 +1690,15 @@ Init_ossl_asn1()
      * length primitive encodings may be constructed recursively with another
      * infinite length value within an already infinite length value). Each
      * partial encoding must be of the same UNIVERSAL type as the overall
-     * encoding. The value of the overall encoding consists of the 
+     * encoding. The value of the overall encoding consists of the
      * concatenation of each partial encoding taken in sequence. The +value+
-     * array of the outer infinite length value must end with a 
+     * array of the outer infinite length value must end with a
      * OpenSSL::ASN1::EndOfContent instance.
      *
      * === Example - Infinite length OCTET STRING
      *     partial1 = OpenSSL::ASN1::OctetString.new("\x01")
      *     partial2 = OpenSSL::ASN1::OctetString.new("\x02")
-     *     inf_octets = OpenSSL::ASN1::Constructive.new( [ partial1, 
+     *     inf_octets = OpenSSL::ASN1::Constructive.new( [ partial1,
      *                                                     partial2,
      *                                                     OpenSSL::ASN1::EndOfContent.new ],
      *                                                   OpenSSL::ASN1::OCTET_STRING,
@@ -1709,7 +1709,7 @@ Init_ossl_asn1()
      *     inf_octets.infinite_length = true
      *     der = inf_octets.to_der
      *     asn1 = OpenSSL::ASN1.decode(der)
-     *     puts asn1.infinite_length # => true 
+     *     puts asn1.infinite_length # => true
      */
     cASN1Constructive = rb_define_class_under(mASN1,"Constructive", cASN1Data);
     rb_include_module(cASN1Constructive, rb_mEnumerable);
