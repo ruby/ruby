@@ -1,3 +1,8 @@
+Wed May 18 05:10:35 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/tracer.rb:  Improve documentation.  Patch by Richard Ramsden.
+	  [Ruby 1.9 - Feature #4720]
+
 Wed May 18 04:53:41 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/cmath.rb:  Improve documentation.  Patch by Jason Dew.
