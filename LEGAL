@@ -253,6 +253,7 @@ missing/tgamma.c:
 missing/lgamma_r.c:
 missing/crypt.c:
 missing/vsnprintf.c:
+missing/setproctitle.c
 
   This file is under the old-style BSD license.  Note that the
   paragraph 3 below is now null and void.

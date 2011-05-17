@@ -1,3 +1,7 @@
+Tue May 17 19:54:26 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* LEGAL (configure): add missing/setproctitle.c
+
 Tue May 17 19:35:01 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 	Fix FreeBSD test failure.
 
