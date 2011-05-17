@@ -1,3 +1,8 @@
+Wed May 18 05:40:31 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/benchmark.rb:  Remove nodoc from Benchmark::Job and
+	  Benchmark::Report.  Patch by Sandor Szücs.  [Ruby 1.9 - Bug #4726]
+
 Wed May 18 05:29:26 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/webrick/compat.rb:  Improve documentation.  Patch by Sandor

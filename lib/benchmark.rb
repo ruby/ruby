@@ -302,7 +302,7 @@ module Benchmark
   # A Job is a sequence of labelled blocks to be processed by the
   # Benchmark.bmbm method.  It is of little direct interest to the user.
   #
-  class Job # :nodoc:
+  class Job 
     #
     # Returns an initialized Job instance.
     # Usually, one doesn't call this method directly, as new
@@ -340,7 +340,7 @@ module Benchmark
   # This class is used by the Benchmark.benchmark and Benchmark.bm methods.
   # It is of little direct interest to the user.
   #
-  class Report # :nodoc:
+  class Report
     #
     # Returns an initialized Report instance.
     # Usually, one doesn't call this method directly, as new
@@ -377,7 +377,11 @@ module Benchmark
   # measurement.
   #
   class Tms
+
+    # Default caption, see also Benchmark::CAPTION
     CAPTION = "      user     system      total        real\n"
+    
+    # Default format string, see also Benchmark::FORMAT
     FORMAT = "%10.6u %10.6y %10.6t %10.6r\n"
 
     # User CPU time
