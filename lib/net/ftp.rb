@@ -143,6 +143,8 @@ module Net
       end
     end
 
+    # A setter to toggle transfers in binary mode.
+    # +newmode+ is either +true+ or +false+
     def binary=(newmode)
       if newmode != @binary
         @binary = newmode
@@ -150,6 +152,9 @@ module Net
       end
     end
 
+    # Sends a command to destination host, with the current binary sendmode type.
+    # If binary mode is +true+, then send "TYPE I" (image)
+    # else send "TYPE A" (ascii).
     def send_type_command
       if @binary
         voidcmd("TYPE I")
@@ -159,6 +164,11 @@ module Net
     end
     private :send_type_command
 
+    # Toggles transfers in binary mode and yields to a block.
+    # This preserves your current binary send mode, but allows a temporary
+    # transaction with binary sendmode of +newmode+.
+    #
+    # +newmode+ is either +true+ or +false+
     def with_binary(newmode)
       oldmode = binary
       self.binary = newmode
@@ -181,6 +191,10 @@ module Net
       $stderr.puts("warning: Net::FTP#return_code= is obsolete and do nothing")
     end
 
+    # Contructs a socket with +host+ and +port+.
+    # If SOCKSSocket is defined and the environment (ENV)
+    # defines SOCKS_SERVER, then a SOCKSSocket is returned,
+    # else a TCPSocket is returned.
     def open_socket(host, port)
       if defined? SOCKSSocket and ENV["SOCKS_SERVER"]
 	@passive = true
@@ -219,6 +233,8 @@ module Net
       end
     end
 
+    # If string +s+ includes the PASS command (password),
+    # then the contents of the password are cleaned from the string using "*"
     def sanitize(s)
       if s =~ /^PASS /i
 	return s[0, 5] + "*" * (s.length - 5)
@@ -228,6 +244,8 @@ module Net
     end
     private :sanitize
 
+    # Ensures that +line+ has a control return / line feed (CRLF)
+    # and writes it to the socket.
     def putline(line)
       if @debug_mode
 	print "put: ", sanitize(line), "\n"
@@ -237,6 +255,8 @@ module Net
     end
     private :putline
 
+    # Reads a line from the sock.
+    # If EOF, then it will raise EOFError
     def getline
       line = @sock.readline # if get EOF, raise EOFError
       line.sub!(/(\r\n|\n|\r)\z/n, "")
@@ -247,6 +267,7 @@ module Net
     end
     private :getline
 
+    # Receive a section of lines until the response code's match.
     def getmultiline
       line = getline
       buff = line
@@ -261,6 +282,9 @@ module Net
     end
     private :getmultiline
 
+    # Recieves a response from the destination host.
+    # Either returns the response code, FTPTempError,
+    # FTPPermError, or FTPProtoError
     def getresp
       @last_response = getmultiline
       @last_response_code = @last_response[0, 3]
@@ -277,6 +301,8 @@ module Net
     end
     private :getresp
 
+    # Recieves a response.
+    # Raises FTPReplyError if the first position of the response code is not equal 2.
     def voidresp
       resp = getresp
       if resp[0] != ?2
@@ -305,6 +331,7 @@ module Net
       end
     end
 
+    # Constructs and send the appropriate PORT (or EPRT) command
     def sendport(host, port)
       af = (@sock.peeraddr)[0]
       if af == "AF_INET"
@@ -318,6 +345,9 @@ module Net
     end
     private :sendport
 
+    # Constructs a TCPServer socket, and sends it the PORT command
+    #
+    # Returns the constructed TCPServer socket
     def makeport
       sock = TCPServer.open(@sock.addr[3], 0)
       port = sock.addr[1]
@@ -327,6 +357,7 @@ module Net
     end
     private :makeport
 
+    # sends the appropriate command to enable a passive connection
     def makepasv
       if @sock.peeraddr[0] == "AF_INET"
 	host, port = parse227(sendcmd("PASV"))
@@ -338,6 +369,7 @@ module Net
     end
     private :makepasv
 
+    # Constructs a connection for transferring data
     def transfercmd(cmd, rest_offset = nil)
       if @passive
 	host, port = makepasv
@@ -644,7 +676,10 @@ module Net
     end
 
     #
-    # Sends the ACCT command.  TODO: more info.
+    # Sends the ACCT command.
+    #
+    # This is a less common FTP command, to send account
+    # information if the destination host requires it.
     #
     def acct(account)
       cmd = "ACCT " + account
@@ -846,6 +881,8 @@ module Net
     #
     # Issues a NOOP command.
     #
+    # Does nothing except return a response.
+    #
     def noop
       voidcmd("NOOP")
     end
@@ -873,6 +910,10 @@ module Net
       @sock == nil or @sock.closed?
     end
 
+    # handler for response code 227
+    # (Entering Passive Mode (h1,h2,h3,h4,p1,p2))
+    #
+    # Returns host and port.
     def parse227(resp)
       if resp[0, 3] != "227"
 	raise FTPReplyError, resp
@@ -892,6 +933,10 @@ module Net
     end
     private :parse227
 
+    # handler for response code 228
+    # (Entering Long Passive Mode)
+    #
+    # Returns host and port.
     def parse228(resp)
       if resp[0, 3] != "228"
 	raise FTPReplyError, resp
@@ -924,6 +969,10 @@ module Net
     end
     private :parse228
 
+    # handler for response code 229
+    # (Extended Passive Mode Entered)
+    #
+    # Returns host and port.
     def parse229(resp)
       if resp[0, 3] != "229"
 	raise FTPReplyError, resp
@@ -943,6 +992,10 @@ module Net
     end
     private :parse229
 
+    # handler for response code 257
+    # ("PATHNAME" created)
+    #
+    # Returns host and port.
     def parse257(resp)
       if resp[0, 3] != "257"
 	raise FTPReplyError, resp
