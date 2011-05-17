@@ -1,108 +1,140 @@
+require 'thread'
+
 # The Singleton module implements the Singleton pattern.
 #
-# Usage:
+# == Usage
+#
+# To use Singleton, include the module in your class.
+#
 #    class Klass
 #       include Singleton
 #       # ...
 #    end
 #
-# *  this ensures that only one instance of Klass lets call it
-#    ``the instance'' can be created.
+# This ensures that only one instance of Klass can be created.
 #
 #      a,b  = Klass.instance, Klass.instance
-#      a == b    # => true
-#      Klass.new #  NoMethodError - new is private ...
+#      
+#      a == b    
+#      # => true
 #
-# *  ``The instance'' is created at instantiation time, in other
-#    words the first call of Klass.instance(), thus
+#      Klass.new 
+#      # => NoMethodError - new is private ...
+#
+# The instance is created at upon the first call of Klass.instance().
 #
 #      class OtherKlass
 #        include Singleton
 #        # ...
 #      end
-#      ObjectSpace.each_object(OtherKlass){} # => 0.
 #
-# *  This behavior is preserved under inheritance and cloning.
+#      ObjectSpace.each_object(OtherKlass){} 
+#      # => 0
 #
-#
-#
-# This is achieved by marking
-# *  Klass.new and Klass.allocate - as private
-#
-# Providing (or modifying) the class methods
-# *  Klass.inherited(sub_klass) and Klass.clone()  -
-#    to ensure that the Singleton pattern is properly
-#    inherited and cloned.
-#
-# *  Klass.instance()  -  returning ``the instance''. After a
-#    successful self modifying (normally the first) call the
-#    method body is a simple:
-#
-#       def Klass.instance()
-#         return @singleton__instance__
-#       end
-#
-# *  Klass._load(str)  -  calling Klass.instance()
-#
-# *  Klass._instantiate?()  -  returning ``the instance'' or
-#    nil. This hook method puts a second (or nth) thread calling
-#    Klass.instance() on a waiting loop. The return value
-#    signifies the successful completion or premature termination
-#    of the first, or more generally, current "instantiation thread".
+#      OtherKlass.instance
+#      ObjectSpace.each_object(OtherKlass){} 
+#      # => 1
 #
 #
-# The instance method of Singleton are
-# * clone and dup - raising TypeErrors to prevent cloning or duping
+# This behavior is preserved under inheritance and cloning.
 #
-# *  _dump(depth) - returning the empty string.  Marshalling strips
-#    by default all state information, e.g. instance variables and
-#    taint state, from ``the instance''.  Providing custom _load(str)
-#    and _dump(depth) hooks allows the (partially) resurrections of
-#    a previous state of ``the instance''.
-
-require 'thread'
-
+# == Implementation
+#
+# This above is achieved by:
+#
+# *  Making Klass.new and Klass.allocate private.
+#
+# *  Overriding Klass.inherited(sub_klass) and Klass.clone() to ensure that the
+#    Singleton properties are kept when inherited and cloned.
+#
+# *  Providing the Klass.instance() method that returns the same object each
+#    time it is called.
+#
+# *  Overriding Klass._load(str) to call Klass.instance().
+#
+# *  Overriding Klass#clone and Klass#dup to raise TypeErrors to prevent 
+#    cloning or duping.
+#
+# == Singleton and Marshal
+#
+# By default Singleton's #_dump(depth) returns the empty string. Marshalling by
+# default will strip state information, e.g. instance variables and taint 
+# state, from the instance. Classes using Singleton can provide custom 
+# _load(str) and _dump(depth) methods to retain some of the previous state of 
+# the instance.
+#
+#    require 'singleton'
+#    
+#    class Example
+#      include Singleton
+#      attr_accessor :keep, :strip
+#      def _dump(depth)
+#        # this strips the @strip information from the instance
+#        Marshal.dump(@keep, depth)
+#      end
+#    
+#      def self._load(str)
+#        instance.keep = Marshal.load(str)
+#        instance
+#      end
+#    end
+#    
+#    a = Example.instance
+#    a.keep = "keep this"
+#    a.strip = "get rid of this"
+#    a.taint
+#    
+#    stored_state = Marshal.dump(a)
+#    
+#    a.keep = nil
+#    a.strip = nil
+#    b = Marshal.load(stored_state)
+#    p a == b  #  => true
+#    p a.keep  #  => "keep this"
+#    p a.strip #  => nil
+#
 module Singleton
-  #  disable build-in copying methods
+  # Raises a TypeError to prevent cloning.
   def clone
     raise TypeError, "can't clone instance of singleton #{self.class}"
   end
+
+  # Raises a TypeError to prevent duping.
   def dup
     raise TypeError, "can't dup instance of singleton #{self.class}"
   end
 
-  #  default marshalling strategy
+  # By default, do not retain any state when marshalling.
   def _dump(depth = -1)
     ''
   end
 
-  module SingletonClassMethods
-    # properly clone the Singleton pattern - did you know
-    # that duping doesn't copy class methods?
-    def clone
+  module SingletonClassMethods # :nodoc:
+
+    def clone # :nodoc:
       Singleton.__init__(super)
     end
 
+    # By default calls instance(). Override to retain singleton state.
     def _load(str)
       instance
     end
 
     private
 
-    #  ensure that the Singleton pattern is properly inherited
     def inherited(sub_klass)
       super
       Singleton.__init__(sub_klass)
     end
   end
 
-  class << Singleton
-    def __init__(klass)
+  class << Singleton # :nodoc:
+    def __init__(klass) # :nodoc:
       klass.instance_eval {
         @singleton__instance__ = nil
         @singleton__mutex__ = Mutex.new
       }
-      def klass.instance
+      def klass.instance # :nodoc:
         return @singleton__instance__ if @singleton__instance__
         @singleton__mutex__.synchronize {
           return @singleton__instance__ if @singleton__instance__
@@ -115,7 +147,7 @@ module Singleton
 
     private
 
-    #  extending an object with Singleton is a bad idea
+    # extending an object with Singleton is a bad idea
     undef_method :extend_object
 
     def append_features(mod)
@@ -128,186 +160,13 @@ module Singleton
 
     def included(klass)
       super
-      klass.private_class_method  :new, :allocate
+      klass.private_class_method :new, :allocate
       klass.extend SingletonClassMethods
       Singleton.__init__(klass)
     end
   end
 
-end
-
-
-if __FILE__ == $0
-
-def num_of_instances(klass)
-    "#{ObjectSpace.each_object(klass){}} #{klass} instance(s)"
-end
-
-# The basic and most important example.
-
-class SomeSingletonClass
-  include Singleton
-end
-puts "There are #{num_of_instances(SomeSingletonClass)}"
-
-a = SomeSingletonClass.instance
-b = SomeSingletonClass.instance # a and b are same object
-puts "basic test is #{a == b}"
-
-begin
-  SomeSingletonClass.new
-rescue  NoMethodError => mes
-  puts mes
-end
-
-
-
-puts "\nThreaded example with exception and customized #_instantiate?() hook"; p
-Thread.abort_on_exception = false
-
-class Ups < SomeSingletonClass
-  def initialize
-    self.class.__sleep
-    puts "initialize called by thread ##{Thread.current[:i]}"
-  end
-end
-
-class << Ups
-  def _instantiate?
-    @enter.push Thread.current[:i]
-    while false.equal?(@singleton__instance__)
-      @singleton__mutex__.unlock
-      sleep 0.08
-      @singleton__mutex__.lock
-    end
-    @leave.push Thread.current[:i]
-    @singleton__instance__
-  end
-
-  def __sleep
-    sleep(rand(0.08))
-  end
-
-  def new
-    begin
-      __sleep
-      raise  "boom - thread ##{Thread.current[:i]} failed to create instance"
-    ensure
-      # simple flip-flop
-      class << self
-        remove_method :new
-      end
-    end
-  end
-
-  def instantiate_all
-    @enter = []
-    @leave = []
-    1.upto(9) {|i|
-      Thread.new {
-        begin
-          Thread.current[:i] = i
-          __sleep
-          instance
-        rescue RuntimeError => mes
-          puts mes
-        end
-      }
-    }
-    puts "Before there were #{num_of_instances(self)}"
-    sleep 3
-    puts "Now there is #{num_of_instances(self)}"
-    puts "#{@enter.join '; '} was the order of threads entering the waiting loop"
-    puts "#{@leave.join '; '} was the order of threads leaving the waiting loop"
-  end
-end
-
-
-Ups.instantiate_all
-# results in message like
-# Before there were 0 Ups instance(s)
-# boom - thread #6 failed to create instance
-# initialize called by thread #3
-# Now there is 1 Ups instance(s)
-# 3; 2; 1; 8; 4; 7; 5 was the order of threads entering the waiting loop
-# 3; 2; 1; 7; 4; 8; 5 was the order of threads leaving the waiting loop
-
-
-puts "\nLets see if class level cloning really works"
-Yup = Ups.clone
-def Yup.new
-  begin
-    __sleep
-    raise  "boom - thread ##{Thread.current[:i]} failed to create instance"
-  ensure
-    # simple flip-flop
-    class << self
-      remove_method :new
-    end
-  end
-end
-Yup.instantiate_all
-
-
-puts "\n\n","Customized marshalling"
-class A
-  include Singleton
-  attr_accessor :persist, :die
-  def _dump(depth)
-    # this strips the @die information from the instance
-    Marshal.dump(@persist,depth)
-  end
-end
-
-def A._load(str)
-  instance.persist = Marshal.load(str)
-  instance
-end
-
-a = A.instance
-a.persist = ["persist"]
-a.die = "die"
-a.taint
-
-stored_state = Marshal.dump(a)
-# change state
-a.persist = nil
-a.die = nil
-b = Marshal.load(stored_state)
-p a == b  #  => true
-p a.persist  #  => ["persist"]
-p a.die      #  => nil
-
-
-puts "\n\nSingleton with overridden default #inherited() hook"
-class Up
-end
-def Up.inherited(sub_klass)
-  puts "#{sub_klass} subclasses #{self}"
-end
-
-
-class Middle < Up
-  include Singleton
-end
-
-class Down < Middle; end
-
-puts  "and basic \"Down test\" is #{Down.instance == Down.instance}\n
-Various exceptions"
-
-begin
-  module AModule
-    include Singleton
-  end
-rescue TypeError => mes
-  puts mes  #=> Inclusion of the OO-Singleton module in module AModule
-end
-
-begin
-  'aString'.extend Singleton
-rescue NoMethodError => mes
-  puts mes  #=> undefined method `extend_object' for Singleton:Module
-end
-
+  ##
+  # :singleton-method: _load
+  #  By default calls instance(). Override to retain singleton state.
 end
