@@ -1,3 +1,10 @@
+Tue May 17 19:35:01 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+	Fix FreeBSD test failure.
+
+	* test/ruby/test_rubyoptions.rb	(TestRubyOptions#test_set_program_name):
+	  use ps -o command instead of ps -o cmd. FreeBSD doesn't support
+	  -o cmd option.
+
 Tue May 17 08:04:26 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_digest.c: Add documentation.

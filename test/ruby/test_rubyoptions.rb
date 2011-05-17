@@ -404,7 +404,7 @@ class TestRubyOptions < Test::Unit::TestCase
     skip if /linux|freebsd|netbsd|openbsd/ !~ RUBY_PLATFORM
 
     $0 = 'hello world'
-    ps = `ps -p #{$$} -o cmd`
+    ps = `ps -p #{$$} -o command`
     assert_match(/hello world/, ps)
   end
 
