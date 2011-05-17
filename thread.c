@@ -3535,7 +3535,6 @@ rb_mutex_lock(VALUE self)
 		interrupted = lock_func(th, mutex, timeout_ms);
 	    });
 	    th->transition_for_lock = 0;
-	    remove_signal_thread_list(th);
 	    reset_unblock_function(th, &oldubf);
 
 	    th->locking_mutex = Qfalse;

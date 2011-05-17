@@ -1,3 +1,9 @@
+Tue May 17 21:24:04 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_mutex_lock): remove remove_signal_thread_list() call.
+	  It's meaningless because lock_interrupt doesn't call
+	  add_signal_thread_list().
+
 Tue May 17 20:20:49 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* vm_core.h (rb_thread_struct): add volatile to
