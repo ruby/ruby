@@ -1,3 +1,7 @@
+Wed May 18 01:02:53 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_io.rb (TestIO#test_O_CLOEXEC): add null check.
+
 Tue May 17 21:24:04 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_mutex_lock): remove remove_signal_thread_list() call.

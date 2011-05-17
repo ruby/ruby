@@ -1281,10 +1281,10 @@ class TestIO < Test::Unit::TestCase
         while (e = ary.shift) != nil
           e.close
         end
-        arg.close unless arg.closed?
-        argw.close unless argw.closed?
-        ret.close unless ret.closed?
-        retw.close unless retw.closed?
+        arg.close  unless !arg  || arg.closed?
+        argw.close unless !argw || argw.closed?
+        ret.close  unless !ret  || ret.closed?
+        retw.close unless !retw || retw.closed?
       end
     end
   end
