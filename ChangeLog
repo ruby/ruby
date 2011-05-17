@@ -1,3 +1,8 @@
+Wed May 18 06:09:24 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/cmath.rb:  Add some examples and improve documentation.  Patch by
+	  Sandor Szücs.  [Ruby 1.9 - Bug #4727]
+
 Wed May 18 05:40:31 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/benchmark.rb:  Remove nodoc from Benchmark::Job and

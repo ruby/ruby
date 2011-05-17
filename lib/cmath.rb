@@ -1,5 +1,19 @@
 ##
-# Math functions for Complex numbers
+# = CMath
+#
+# CMath is a library that provides trigonometric and transcendental
+# functions for complex numbers.
+#
+# == Usage
+#
+# To start using this library, simply:
+#
+#   require "cmath"
+#
+# Square root of a negative number is a complex number.
+#
+#   CMath.sqrt(-9)  #=> 0+3.0i
+#
 
 module CMath
 
@@ -30,7 +44,11 @@ module CMath
   alias atanh! atanh
 
   ##
-  # returns the value of e raised to the +z+ power
+  # Math::E raised to the +z+ power
+  #
+  #   exp(Complex(0,0))      #=> 1.0+0.0i
+  #   exp(Complex(0,PI))     #=> -1.0+1.2246467991473532e-16i
+  #   exp(Complex(0,PI/2.0)) #=> 6.123233995736766e-17+1.0i
   def exp(z)
     if z.real?
       exp!(z)
@@ -42,8 +60,10 @@ module CMath
   end
 
   ##
-  # returns the log of the first argument with the base
-  # optionally specified as the second argument
+  # Returns the natural logarithm of Complex.  If a second argument is given,
+  # it will be the base of logarithm.
+  #
+  #   log(Complex(0,0)) #=> -Infinity+0.0i
   def log(*args)
     z, b = args
     if z.real? and z >= 0 and (b.nil? or b >= 0)
@@ -58,7 +78,7 @@ module CMath
   end
 
   ##
-  # returns the log base 2 of +z+
+  # returns the base 2 logarithm of +z+
   def log2(z)
     if z.real? and z >= 0
       log2!(z)
@@ -68,7 +88,7 @@ module CMath
   end
 
   ##
-  # returns the log base 10 of +z+
+  # returns the base 10 logarithm of +z+
   def log10(z)
     if z.real? and z >= 0
       log10!(z)
@@ -78,7 +98,10 @@ module CMath
   end
 
   ##
-  # returns the square root of +z+
+  # Returns the non-negative square root of Complex.
+  #   sqrt(-1)            #=> 0+1.0i
+  #   sqrt(Complex(-1,0)) #=> 0.0+1.0i
+  #   sqrt(Complex(0,8))  #=> 2.0+2.0i
   def sqrt(z)
     if z.real?
       if z < 0
@@ -141,7 +164,7 @@ module CMath
   end
 
   ##
-  # returns the hyperbolic sine of +z+
+  # returns the hyperbolic sine of +z+, where +z+ is given in radians
   def sinh(z)
     if z.real?
       sinh!(z)
@@ -152,7 +175,7 @@ module CMath
   end
 
   ##
-  # returns the hyperbolic cosine of +z+
+  # returns the hyperbolic cosine of +z+, where +z+ is given in radians
   def cosh(z)
     if z.real?
       cosh!(z)
@@ -163,7 +186,7 @@ module CMath
   end
 
   ##
-  # returns the hyperbolic tangent of +z+
+  # returns the hyperbolic tangent of +z+, where +z+ is given in radians
   def tanh(z)
     if z.real?
       tanh!(z)
@@ -203,8 +226,8 @@ module CMath
   end
 
   ##
-  # returns the arc tangent of +y+ / +x+ using the signs
-  # of +y+ and +x+ to determine the quadrant
+  # returns the arc tangent of +y+ divided by +x+ using the signs of +y+ and
+  # +x+ to determine the quadrant
   def atan2(y,x)
     if y.real? and x.real?
       atan2!(y,x)
