@@ -1,3 +1,12 @@
+Tue May 17 20:08:53 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* LEGAL (missing/{elf,tgamma,lgamma_r}.c): they've been replaced by
+	  public domain implementations.
+
+	* LEGAL (vsnprintf.c): it has moved to srcdir from missing/.
+
+	* LEGAL (missing/crypt.c): list its original license.
+
 Tue May 17 19:54:26 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* LEGAL (configure): add missing/setproctitle.c
