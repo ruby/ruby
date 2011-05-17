@@ -1,3 +1,6 @@
+##
+# Math functions for Complex numbers
+
 module CMath
 
   include Math
@@ -26,6 +29,8 @@ module CMath
   alias acosh! acosh
   alias atanh! atanh
 
+  ##
+  # returns the value of e raised to the +z+ power
   def exp(z)
     if z.real?
       exp!(z)
@@ -36,6 +41,9 @@ module CMath
     end
   end
 
+  ##
+  # returns the log of the first argument with the base
+  # optionally specified as the second argument
   def log(*args)
     z, b = args
     if z.real? and z >= 0 and (b.nil? or b >= 0)
@@ -49,6 +57,8 @@ module CMath
     end
   end
 
+  ##
+  # returns the log base 2 of +z+
   def log2(z)
     if z.real? and z >= 0
       log2!(z)
@@ -57,6 +67,8 @@ module CMath
     end
   end
 
+  ##
+  # returns the log base 10 of +z+
   def log10(z)
     if z.real? and z >= 0
       log10!(z)
@@ -65,6 +77,8 @@ module CMath
     end
   end
 
+  ##
+  # returns the square root of +z+
   def sqrt(z)
     if z.real?
       if z < 0
@@ -84,6 +98,8 @@ module CMath
     end
   end
 
+  ##
+  # returns the cube root of +z+
   def cbrt(z)
     if z.real?
       cbrt!(z)
@@ -92,6 +108,8 @@ module CMath
     end
   end
 
+  ##
+  # returns the sine of +z+, where +z+ is given in radians
   def sin(z)
     if z.real?
       sin!(z)
@@ -101,6 +119,8 @@ module CMath
     end
   end
 
+  ##
+  # returns the cosine of +z+, where +z+ is given in radians
   def cos(z)
     if z.real?
       cos!(z)
@@ -110,6 +130,8 @@ module CMath
     end
   end
 
+  ##
+  # returns the tangent of +z+, where +z+ is given in radians
   def tan(z)
     if z.real?
       tan!(z)
@@ -118,6 +140,8 @@ module CMath
     end
   end
 
+  ##
+  # returns the hyperbolic sine of +z+
   def sinh(z)
     if z.real?
       sinh!(z)
@@ -127,6 +151,8 @@ module CMath
     end
   end
 
+  ##
+  # returns the hyperbolic cosine of +z+
   def cosh(z)
     if z.real?
       cosh!(z)
@@ -136,6 +162,8 @@ module CMath
     end
   end
 
+  ##
+  # returns the hyperbolic tangent of +z+
   def tanh(z)
     if z.real?
       tanh!(z)
@@ -144,6 +172,8 @@ module CMath
     end
   end
 
+  ##
+  # returns the arc sine of +z+
   def asin(z)
     if z.real? and z >= -1 and z <= 1
       asin!(z)
@@ -152,6 +182,8 @@ module CMath
     end
   end
 
+  ##
+  # returns the arc cosine of +z+
   def acos(z)
     if z.real? and z >= -1 and z <= 1
       acos!(z)
@@ -160,6 +192,8 @@ module CMath
     end
   end
 
+  ##
+  # returns the arc tangent of +z+
   def atan(z)
     if z.real?
       atan!(z)
@@ -168,6 +202,9 @@ module CMath
     end
   end
 
+  ##
+  # returns the arc tangent of +y+ / +x+ using the signs
+  # of +y+ and +x+ to determine the quadrant
   def atan2(y,x)
     if y.real? and x.real?
       atan2!(y,x)
@@ -176,6 +213,8 @@ module CMath
     end
   end
 
+  ##
+  # returns the inverse hyperbolic sine of +z+
   def asinh(z)
     if z.real?
       asinh!(z)
@@ -184,6 +223,8 @@ module CMath
     end
   end
 
+  ##
+  # returns the inverse hyperbolic cosine of +z+
   def acosh(z)
     if z.real? and z >= 1
       acosh!(z)
@@ -192,6 +233,8 @@ module CMath
     end
   end
 
+  ##
+  # returns the inverse hyperbolic tangent of +z+
   def atanh(z)
     if z.real? and z >= -1 and z <= 1
       atanh!(z)
