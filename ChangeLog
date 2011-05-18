@@ -1,3 +1,10 @@
+Thu May 19 06:06:07 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/cgi/util.rb:  Improve documentation.  Patch by Clinton Nixon.
+	  [Ruby 1.9 - Bug #4733]
+	* lib/cgi/core.rb:  ditto
+	* lib/cgi/cookie.rb:  ditto
+
 Thu May 19 06:02:21 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/tempfile.rb:  Document Dir.mkdir and Dir.rmdir.  Patch by Clinton

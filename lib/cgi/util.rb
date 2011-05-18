@@ -83,9 +83,13 @@ class CGI
       end
     end
   end
+
+  # Synonym for CGI.escapeHTML.
   def CGI::escape_html(str)
     escapeHTML(str)
   end
+
+  # Synonym for CGI.unescapeHTML.
   def CGI::unescape_html(str)
     unescapeHTML(str)
   end
@@ -134,9 +138,13 @@ class CGI
       string
     end
   end
+
+  # Synonym for CGI.escapeElement.
   def CGI::escape_element(str)
     escapeElement(str)
   end
+
+  # Synonym for CGI.unescapeElement.
   def CGI::unescape_element(str)
     unescapeElement(str)
   end

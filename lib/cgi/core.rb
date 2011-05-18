@@ -46,14 +46,17 @@ class CGI
 
   # :startdoc:
 
+  # Synonym for ENV.
   def env_table
     ENV
   end
 
+  # Synonym for $stdin.
   def stdinput
     $stdin
   end
 
+  # Synonym for $stdout.
   def stdoutput
     $stdout
   end
@@ -705,14 +708,17 @@ class CGI
 
   @@accept_charset="UTF-8"
 
+  # Return the accept character set for all new CGI instances.
   def self.accept_charset
     @@accept_charset
   end
 
+  # Set the accept character set for all new CGI instances.
   def self.accept_charset=(accept_charset)
     @@accept_charset=accept_charset
   end
 
+  # Return the accept character set for this CGI instance.
   attr_reader :accept_charset
 
   # Create a new CGI instance.

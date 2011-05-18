@@ -104,10 +104,12 @@ class CGI
     # True if this cookie is secure; false otherwise
     attr_reader("secure")
 
+    # Returns the value or list of values for this cookie.
     def value
       self
     end
 
+    # Replaces the value of this cookie with a new value or list of values.
     def value=(val)
       replace(Array(val))
     end
