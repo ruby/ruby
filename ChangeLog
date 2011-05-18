@@ -1,3 +1,7 @@
+Thu May 19 06:30:38 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/mkmf.rb:  Fix indentation of EOM for heredoc.
+
 Thu May 19 06:16:41 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib:  Convert tabs to spaces for ruby files per

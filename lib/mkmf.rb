@@ -337,12 +337,12 @@ def log_src(src)
   Logging::message <<"EOM"
 checked program was:
 /* begin */
-  EOM
+EOM
   src.each_with_index {|line, no| Logging::message fmt, no+1, line}
   Logging::message <<"EOM"
 /* end */
 
-  EOM
+EOM
 end
 
 def create_tmpsrc(src)
