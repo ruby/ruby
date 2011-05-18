@@ -1,17 +1,17 @@
 Wed May 18 06:09:24 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/cmath.rb:  Add some examples and improve documentation.  Patch by
-	  Sandor Szücs.  [Ruby 1.9 - Bug #4727]
+	  Sandor Szucs.  [Ruby 1.9 - Bug #4727]
 
 Wed May 18 05:40:31 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/benchmark.rb:  Remove nodoc from Benchmark::Job and
-	  Benchmark::Report.  Patch by Sandor Szücs.  [Ruby 1.9 - Bug #4726]
+	  Benchmark::Report.  Patch by Sandor Szucs.  [Ruby 1.9 - Bug #4726]
 
 Wed May 18 05:29:26 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/webrick/compat.rb:  Improve documentation.  Patch by Sandor
-	  Szücs.  [Ruby 1.9 - Bug #4725]
+	  Szucs.  [Ruby 1.9 - Bug #4725]
 
 Wed May 18 05:10:35 2011  Eric Hodel  <drbrain@segment7.net>
 
@@ -357,7 +357,7 @@ Fri May 13 06:50:43 2011  Eric Hodel  <drbrain@segment7.net>
 Fri May 13 05:44:19 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/logger.rb (class Logger):  Document Logger#datetime_format.
-	  Patch by Sergio Gil Pe'rez de la Manga.  [Ruby 1.9 - Bug #4678]
+	  Patch by Sergio Gil Perez de la Manga.  [Ruby 1.9 - Bug #4678]
 
 Fri May 13 05:39:11 2011  Eric Hodel <drbrain@segment7.net>
 
@@ -2545,7 +2545,7 @@ Sat Feb 26 16:10:23 2011  Shota Fukumori  <sorah@tubusu.net>
 Sat Feb 26 07:10:05 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/scalar_scanner.rb: fix parsing timezone's whose
-	  whose format is (+/-)hhmm.  Thanks Gon??alo Silva!
+	  whose format is (+/-)hhmm.  Thanks Goncalo Silva!
 
 	* test/psych/test_scalar_scanner.rb: test for bug.
 
