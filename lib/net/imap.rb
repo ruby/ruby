@@ -2032,43 +2032,43 @@ module Net
       T_TEXT    = :TEXT
 
       BEG_REGEXP = /\G(?:\
-                       (?# 1:  SPACE   )( +)|\
-                       (?# 2:  NIL     )(NIL)(?=[\x80-\xff(){ \x00-\x1f\x7f%*#{'"'}\\\[\]+])|\
-                         (?# 3:  NUMBER  )(\d+)(?=[\x80-\xff(){ \x00-\x1f\x7f%*#{'"'}\\\[\]+])|\
-                           (?# 4:  ATOM    )([^\x80-\xff(){ \x00-\x1f\x7f%*#{'"'}\\\[\]+]+)|\
-                             (?# 5:  QUOTED  )"((?:[^\x00\r\n"\\]|\\["\\])*)"|\
-                             (?# 6:  LPAR    )(\()|\
-                                               (?# 7:  RPAR    )(\))|\
-                                               (?# 8:  BSLASH  )(\\)|\
-                                               (?# 9:  STAR    )(\*)|\
-                                               (?# 10: LBRA    )(\[)|\
-                                                 (?# 11: RBRA    )(\])|\
-                                                 (?# 12: LITERAL )\{(\d+)\}\r\n|\
-                                                 (?# 13: PLUS    )(\+)|\
-                                                 (?# 14: PERCENT )(%)|\
-                                                 (?# 15: CRLF    )(\r\n)|\
-                                                 (?# 16: EOF     )(\z))/ni
+(?# 1:  SPACE   )( +)|\
+(?# 2:  NIL     )(NIL)(?=[\x80-\xff(){ \x00-\x1f\x7f%*#{'"'}\\\[\]+])|\
+(?# 3:  NUMBER  )(\d+)(?=[\x80-\xff(){ \x00-\x1f\x7f%*#{'"'}\\\[\]+])|\
+(?# 4:  ATOM    )([^\x80-\xff(){ \x00-\x1f\x7f%*#{'"'}\\\[\]+]+)|\
+(?# 5:  QUOTED  )"((?:[^\x00\r\n"\\]|\\["\\])*)"|\
+(?# 6:  LPAR    )(\()|\
+(?# 7:  RPAR    )(\))|\
+(?# 8:  BSLASH  )(\\)|\
+(?# 9:  STAR    )(\*)|\
+(?# 10: LBRA    )(\[)|\
+(?# 11: RBRA    )(\])|\
+(?# 12: LITERAL )\{(\d+)\}\r\n|\
+(?# 13: PLUS    )(\+)|\
+(?# 14: PERCENT )(%)|\
+(?# 15: CRLF    )(\r\n)|\
+(?# 16: EOF     )(\z))/ni
 
-                                                 DATA_REGEXP = /\G(?:\
-                                                                   (?# 1:  SPACE   )( )|\
-                                                                   (?# 2:  NIL     )(NIL)|\
-                                                                   (?# 3:  NUMBER  )(\d+)|\
-                                                                   (?# 4:  QUOTED  )"((?:[^\x00\r\n"\\]|\\["\\])*)"|\
-                                                                   (?# 5:  LITERAL )\{(\d+)\}\r\n|\
-                                                                   (?# 6:  LPAR    )(\()|\
-                                                                                     (?# 7:  RPAR    )(\)))/ni
+      DATA_REGEXP = /\G(?:\
+(?# 1:  SPACE   )( )|\
+(?# 2:  NIL     )(NIL)|\
+(?# 3:  NUMBER  )(\d+)|\
+(?# 4:  QUOTED  )"((?:[^\x00\r\n"\\]|\\["\\])*)"|\
+(?# 5:  LITERAL )\{(\d+)\}\r\n|\
+(?# 6:  LPAR    )(\()|\
+(?# 7:  RPAR    )(\)))/ni
 
-                                                                                     TEXT_REGEXP = /\G(?:\
-                                                                                                       (?# 1:  TEXT    )([^\x00\r\n]*))/ni
+      TEXT_REGEXP = /\G(?:\
+(?# 1:  TEXT    )([^\x00\r\n]*))/ni
 
-                                                                                                       RTEXT_REGEXP = /\G(?:\
-                                                                                                                          (?# 1:  LBRA    )(\[)|\
-                                                                                                                            (?# 2:  TEXT    )([^\x00\r\n]*))/ni
+      RTEXT_REGEXP = /\G(?:\
+(?# 1:  LBRA    )(\[)|\
+(?# 2:  TEXT    )([^\x00\r\n]*))/ni
 
-                                                                                                                            CTEXT_REGEXP = /\G(?:\
-                                                                                                                                               (?# 1:  TEXT    )([^\x00\r\n\]]*))/ni
+      CTEXT_REGEXP = /\G(?:\
+(?# 1:  TEXT    )([^\x00\r\n\]]*))/ni
 
-                                                                                                                                               Token = Struct.new(:symbol, :value)
+      Token = Struct.new(:symbol, :value)
 
       def response
         token = lookahead
@@ -2932,11 +2932,11 @@ module Net
       end
 
       ADDRESS_REGEXP = /\G\
-        (?# 1: NAME     )(?:NIL|"((?:[^\x80-\xff\x00\r\n"\\]|\\["\\])*)") \
-        (?# 2: ROUTE    )(?:NIL|"((?:[^\x80-\xff\x00\r\n"\\]|\\["\\])*)") \
-        (?# 3: MAILBOX  )(?:NIL|"((?:[^\x80-\xff\x00\r\n"\\]|\\["\\])*)") \
-        (?# 4: HOST     )(?:NIL|"((?:[^\x80-\xff\x00\r\n"\\]|\\["\\])*)")\
-        \)/ni
+(?# 1: NAME     )(?:NIL|"((?:[^\x80-\xff\x00\r\n"\\]|\\["\\])*)") \
+(?# 2: ROUTE    )(?:NIL|"((?:[^\x80-\xff\x00\r\n"\\]|\\["\\])*)") \
+(?# 3: MAILBOX  )(?:NIL|"((?:[^\x80-\xff\x00\r\n"\\]|\\["\\])*)") \
+(?# 4: HOST     )(?:NIL|"((?:[^\x80-\xff\x00\r\n"\\]|\\["\\])*)")\
+\)/ni
 
       def address
         match(T_LPAR)
@@ -2999,8 +2999,8 @@ module Net
       #        end
 
       FLAG_REGEXP = /\
-        (?# FLAG        )\\([^\x80-\xff(){ \x00-\x1f\x7f%"\\]+)|\
-          (?# ATOM        )([^\x80-\xff(){ \x00-\x1f\x7f%*"\\]+)/n
+(?# FLAG        )\\([^\x80-\xff(){ \x00-\x1f\x7f%"\\]+)|\
+(?# ATOM        )([^\x80-\xff(){ \x00-\x1f\x7f%*"\\]+)/n
 
             def flag_list
               if @str.index(/\(([^)]*)\)/ni, @pos)

@@ -1,3 +1,8 @@
+Thu May 19 07:06:56 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/benchmark.rb:  Fix indentation.
+	* lib/net/imap.rb:  Fix indentation of regular expressions.
+
 Thu May 19 06:36:11 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/net/imap.rb:  Fix indentation of EOF for heredoc.

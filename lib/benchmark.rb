@@ -254,9 +254,9 @@ module Benchmark
     puts 'Rehearsal '.ljust(width+CAPTION.length,'-')
     ets = job.list.inject(Tms.new) { |sum,(label,item)|
       print label.ljust(width)
-    res = Benchmark.measure(&item)
-    print res.format
-    sum + res
+      res = Benchmark.measure(&item)
+      print res.format
+      sum + res
     }.format("total: %tsec")
     print " #{ets}\n\n".rjust(width+CAPTION.length+2,'-')
 
