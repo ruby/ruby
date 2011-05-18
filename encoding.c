@@ -1246,7 +1246,25 @@ rb_enc_default_external(void)
  *
  * Returns default external encoding.
  *
- * It is initialized by the locale or -E option.
+ * The default external encoding is used by default for strings created from
+ * the following locations:
+ *
+ * * CSV
+ * * File data read from disk
+ * * SDBM
+ * * StringIO
+ * * Zlib::GzipReader
+ * * Zlib::GzipWriter
+ * * String#inspect
+ * * Regexp#inspect 
+ *
+ * While strings created from these locations will have this encoding, the
+ * encoding may not be valid.  Be sure to check String#valid_encoding?.
+ *
+ * File data written to disk will be transcoded to the default external
+ * encoding when written.
+ *
+ * The default external encoding is initialized by the locale or -E option.
  */
 static VALUE
 get_default_external(VALUE klass)
@@ -1268,7 +1286,14 @@ rb_enc_set_default_external(VALUE encoding)
  * call-seq:
  *   Encoding.default_external = enc
  *
- * Sets default external encoding.
+ * Sets default external encoding.  You should not set
+ * Encoding::default_external in ruby code as strings created before changing
+ * the value may have a different encoding from strings created after thevalue
+ * was changed., instead you should use <tt>ruby -E</tt> to invoke ruby with
+ * the correct default_external.
+ *
+ * See Encoding::default_external for information on how the default external
+ * encoding is used.
  */
 static VALUE
 set_default_external(VALUE klass, VALUE encoding)
@@ -1300,9 +1325,32 @@ rb_enc_default_internal(void)
  * call-seq:
  *   Encoding.default_internal -> enc
  *
- * Returns default internal encoding.
+ * Returns default internal encoding.  Strings will be transcoded to the
+ * default internal encoding in the following places if the default internal
+ * encoding is not nil:
  *
- * It is initialized by the source internal_encoding or -E option.
+ * * CSV
+ * * Etc.sysconfdir and Etc.systmpdir
+ * * File data read from disk
+ * * File names from Dir
+ * * Integer#chr
+ * * String#inspect and Regexp#inspect 
+ * * Strings returned from Curses
+ * * Strings returned from Readline
+ * * Strings returned from SDBM
+ * * Time#zone
+ * * Values from ENV
+ * * Values in ARGV including $PROGRAM_NAME
+ * * __FILE__
+ *
+ * Additionally String#encode and String#encode! use the default internal
+ * encoding if no encoding is given.
+ *
+ * The locale encoding (__ENCODING__), not default_internal, is used as the
+ * encoding of created strings.
+ *
+ * Encoding::default_internal is initialized by the source file's
+ * internal_encoding or -E option.
  */
 static VALUE
 get_default_internal(VALUE klass)
@@ -1321,8 +1369,14 @@ rb_enc_set_default_internal(VALUE encoding)
  * call-seq:
  *   Encoding.default_internal = enc or nil
  *
- * Sets default internal encoding.
- * Or removes default internal encoding when passed nil.
+ * Sets default internal encoding or removes default internal encoding when
+ * passed nil.  You should not set Encoding::default_internal in ruby code as
+ * strings created before changing the value may have a different encoding
+ * from strings created after the change.  Instead you should use
+ * <tt>ruby -E</tt> to invoke ruby with the correct default_internal.
+ *
+ * See Encoding::default_internal for information on how the default internal
+ * encoding is used.
  */
 static VALUE
 set_default_internal(VALUE klass, VALUE encoding)

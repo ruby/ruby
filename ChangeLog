@@ -1,3 +1,8 @@
+Thu May 19 05:57:52 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* encoding.c:  Improve documentation for Encoding#default_external and
+	  Encoding#default_internal.
+
 Wed May 18 22:45:26 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/io/console/lib/console/size.rb (IO#console_size): new
