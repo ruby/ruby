@@ -14,11 +14,11 @@ require 'thread'
 # This ensures that only one instance of Klass can be created.
 #
 #      a,b  = Klass.instance, Klass.instance
-#      
-#      a == b    
+#
+#      a == b
 #      # => true
 #
-#      Klass.new 
+#      Klass.new
 #      # => NoMethodError - new is private ...
 #
 # The instance is created at upon the first call of Klass.instance().
@@ -28,11 +28,11 @@ require 'thread'
 #        # ...
 #      end
 #
-#      ObjectSpace.each_object(OtherKlass){} 
+#      ObjectSpace.each_object(OtherKlass){}
 #      # => 0
 #
 #      OtherKlass.instance
-#      ObjectSpace.each_object(OtherKlass){} 
+#      ObjectSpace.each_object(OtherKlass){}
 #      # => 1
 #
 #
@@ -52,19 +52,19 @@ require 'thread'
 #
 # *  Overriding Klass._load(str) to call Klass.instance().
 #
-# *  Overriding Klass#clone and Klass#dup to raise TypeErrors to prevent 
+# *  Overriding Klass#clone and Klass#dup to raise TypeErrors to prevent
 #    cloning or duping.
 #
 # == Singleton and Marshal
 #
 # By default Singleton's #_dump(depth) returns the empty string. Marshalling by
-# default will strip state information, e.g. instance variables and taint 
-# state, from the instance. Classes using Singleton can provide custom 
-# _load(str) and _dump(depth) methods to retain some of the previous state of 
+# default will strip state information, e.g. instance variables and taint
+# state, from the instance. Classes using Singleton can provide custom
+# _load(str) and _dump(depth) methods to retain some of the previous state of
 # the instance.
 #
 #    require 'singleton'
-#    
+#
 #    class Example
 #      include Singleton
 #      attr_accessor :keep, :strip
@@ -72,20 +72,20 @@ require 'thread'
 #        # this strips the @strip information from the instance
 #        Marshal.dump(@keep, depth)
 #      end
-#    
+#
 #      def self._load(str)
 #        instance.keep = Marshal.load(str)
 #        instance
 #      end
 #    end
-#    
+#
 #    a = Example.instance
 #    a.keep = "keep this"
 #    a.strip = "get rid of this"
 #    a.taint
-#    
+#
 #    stored_state = Marshal.dump(a)
-#    
+#
 #    a.keep = nil
 #    a.strip = nil
 #    b = Marshal.load(stored_state)

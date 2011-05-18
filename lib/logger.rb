@@ -139,7 +139,7 @@ require 'monitor'
 # 4. With severity.
 #
 #      logger.add(Logger::FATAL) { 'Fatal error!' }
-# 
+#
 # The block form allows you to create potentially complex log messages,
 # but to delay their evaluation until and unless the message is
 # logged.  For example, if we have the following:
@@ -209,7 +209,7 @@ class Logger
   end
   # not used after 1.2.7. just for compat.
   class ShiftingError < Error # :nodoc:
-  end 
+  end
 
   # Logging severity.
   module Severity

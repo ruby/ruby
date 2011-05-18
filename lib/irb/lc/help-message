@@ -1,16 +1,16 @@
 # -*- coding: US-ASCII -*-
 #
-#   irb/lc/help-message.rb - 
+#   irb/lc/help-message.rb -
 #   	$Release Version: 0.9.6$
 #   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
-#   
+#
 #
 Usage:  irb.rb [options] [programfile] [arguments]
-  -f		    Suppress read of ~/.irbrc 
+  -f		    Suppress read of ~/.irbrc
   -m		    Bc mode (load mathn, fraction or matrix are available)
   -d                Set $DEBUG to true (same as `ruby -d')
   -r load-module    Same as `ruby -r'
@@ -27,14 +27,14 @@ Usage:  irb.rb [options] [programfile] [arguments]
   --prompt-mode prompt-mode
 		    Switch prompt mode. Pre-defined prompt modes are
 		    `default', `simple', `xmp' and `inf-ruby'
-  --inf-ruby-mode   Use prompt appropriate for inf-ruby-mode on emacs. 
-		    Suppresses --readline. 
+  --inf-ruby-mode   Use prompt appropriate for inf-ruby-mode on emacs.
+		    Suppresses --readline.
   --simple-prompt   Simple prompt mode
   --noprompt	    No prompt mode
   --tracer	    Display trace for each execution of commands.
   --back-trace-limit n
 		    Display backtrace top n and tail n. The default
-		    value is 16. 
+		    value is 16.
   --irb_debug n	    Set internal debug level to n (not for popular use)
   -v, --version	    Print the version of irb
 # vim:fileencoding=us-ascii

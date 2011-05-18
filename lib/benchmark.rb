@@ -302,7 +302,7 @@ module Benchmark
   # A Job is a sequence of labelled blocks to be processed by the
   # Benchmark.bmbm method.  It is of little direct interest to the user.
   #
-  class Job 
+  class Job
     #
     # Returns an initialized Job instance.
     # Usually, one doesn't call this method directly, as new
@@ -380,7 +380,7 @@ module Benchmark
 
     # Default caption, see also Benchmark::CAPTION
     CAPTION = "      user     system      total        real\n"
-    
+
     # Default format string, see also Benchmark::FORMAT
     FORMAT = "%10.6u %10.6y %10.6t %10.6r\n"
 

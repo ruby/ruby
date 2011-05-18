@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-#   irb/lc/ja/help-message.rb - 
+#   irb/lc/ja/help-message.rb -
 #   	$Release Version: 0.9.6$
 #   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
-#   
+#
 #
 Usage:  irb.rb [options] [programfile] [arguments]
   -f		    ~/.irbrc を読み込まない.
@@ -18,14 +18,14 @@ Usage:  irb.rb [options] [programfile] [arguments]
   -E enc            ruby -E と同じ.
   -w                ruby -w と同じ.
   -W[level=2]       ruby -W と同じ.
-  --inspect	    結果出力にinspectを用いる(bcモード以外はデフォルト). 
+  --inspect	    結果出力にinspectを用いる(bcモード以外はデフォルト).
   --noinspect	    結果出力にinspectを用いない.
   --readline	    readlineライブラリを利用する.
-  --noreadline	    readlineライブラリを利用しない. 
+  --noreadline	    readlineライブラリを利用しない.
   --prompt prompt-mode/--prompt-mode prompt-mode
 		    プロンプトモードを切替えます. 現在定義されているプ
 		    ロンプトモードは, default, simple, xmp, inf-rubyが
-		    用意されています. 
+		    用意されています.
   --inf-ruby-mode   emacsのinf-ruby-mode用のプロンプト表示を行なう. 特
 		    に指定がない限り, readlineライブラリは使わなくなる.
   --simple-prompt   非常にシンプルなプロンプトを用いるモードです.
@@ -33,7 +33,7 @@ Usage:  irb.rb [options] [programfile] [arguments]
   --tracer	    コマンド実行時にトレースを行なう.
   --back-trace-limit n
 		    バックトレース表示をバックトレースの頭から n, 後ろ
-		    からnだけ行なう. デフォルトは16 
+		    からnだけ行なう. デフォルトは16
   --irb_debug n	    irbのデバッグデバッグレベルをnに設定する(利用しな
 		    い方が無難でしょう).
   -v, --version	    irbのバージョンを表示する
