@@ -135,6 +135,8 @@ NORETURN(void _longjmp(jmp_buf, int));
 
 #define JUMP_TAG(st) TH_JUMP_TAG(GET_THREAD(), (st))
 
+#define INTERNAL_EXCEPTION_P(exc) FIXNUM_P(exc)
+
 enum ruby_tag_type {
     RUBY_TAG_RETURN	= 0x1,
     RUBY_TAG_BREAK	= 0x2,

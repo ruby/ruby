@@ -1,3 +1,7 @@
+Wed May 18 22:36:43 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (setup_exception): internal exception should be hidden
+
 Wed May 18 20:25:04 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* lib/timeout.rb (Timeout#timeout): don't leak "execution expired"

@@ -1,5 +1,6 @@
 require 'test/unit'
 require 'timeout'
+require 'tempfile'
 require_relative 'envutil'
 
 class TestSignal < Test::Unit::TestCase
@@ -194,5 +195,29 @@ class TestSignal < Test::Unit::TestCase
     end
     w.close
     assert_equal(r.read, "foo")
+  end
+
+  def test_signal_requiring
+    t = Tempfile.new(%w"require_ensure_test .rb")
+    t.puts "sleep"
+    t.close
+    error = IO.popen([EnvUtil.rubybin, "-e", <<EOS, t.path, err: :close]) do |child|
+th = Thread.new do
+  begin
+    require ARGV[0]
+  ensure
+    Marshal.dump($!, STDOUT)
+  end
+end
+STDOUT.puts
+STDOUT.flush
+th.join
+EOS
+      child.gets
+      Process.kill("INT", child.pid)
+      Marshal.load(child)
+    end
+    t.close!
+    assert_nil(error)
   end
 end

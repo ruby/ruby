@@ -70,8 +70,8 @@ static int rb_threadptr_dead(rb_thread_t *th);
 
 static void rb_check_deadlock(rb_vm_t *vm);
 
-static const VALUE eKillSignal = INT2FIX(0);
-static const VALUE eTerminateSignal = INT2FIX(1);
+#define eKillSignal INT2FIX(0)
+#define eTerminateSignal INT2FIX(1)
 static volatile int system_working = 1;
 
 #define closed_stream_error GET_VM()->special_exceptions[ruby_error_closed_stream]

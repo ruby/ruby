@@ -371,8 +371,10 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg)
     const char *file;
     volatile int line = 0;
 
-    if (NIL_P(mesg))
+    if (NIL_P(mesg)) {
 	mesg = th->errinfo;
+	if (INTERNAL_EXCEPTION_P(mesg)) JUMP_TAG(TAG_FATAL);
+    }
     if (NIL_P(mesg)) {
 	mesg = rb_exc_new(rb_eRuntimeError, 0, 0);
     }
