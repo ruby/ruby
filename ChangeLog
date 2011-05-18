@@ -1,3 +1,7 @@
+Thu May 19 07:19:16 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_pkey.c: Add documentation.
+
 Thu May 19 07:06:56 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/benchmark.rb:  Fix indentation.
