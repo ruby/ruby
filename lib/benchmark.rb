@@ -254,9 +254,9 @@ module Benchmark
     puts 'Rehearsal '.ljust(width+CAPTION.length,'-')
     ets = job.list.inject(Tms.new) { |sum,(label,item)|
       print label.ljust(width)
-      res = Benchmark.measure(&item)
-      print res.format
-      sum + res
+    res = Benchmark.measure(&item)
+    print res.format
+    sum + res
     }.format("total: %tsec")
     print " #{ets}\n\n".rjust(width+CAPTION.length+2,'-')
 
@@ -520,14 +520,14 @@ module Benchmark
                            cutime.__send__(op, x.cutime),
                            cstime.__send__(op, x.cstime),
                            real.__send__(op, x.real)
-                           )
+                          )
       else
         Benchmark::Tms.new(utime.__send__(op, x),
                            stime.__send__(op, x),
                            cutime.__send__(op, x),
                            cstime.__send__(op, x),
                            real.__send__(op, x)
-                           )
+                          )
       end
     end
   end
@@ -548,13 +548,13 @@ if __FILE__ == $0
     x.report("for:")   {for _ in 1..n; _ = "1"; end} # Benchmark.measure
     x.report("times:") {n.times do   ; _ = "1"; end}
     x.report("upto:")  {1.upto(n) do ; _ = "1"; end}
-  end
+end
 
-  benchmark do
-    [
-      measure{for _ in 1..n; _ = "1"; end},  # Benchmark.measure
-      measure{n.times do   ; _ = "1"; end},
-      measure{1.upto(n) do ; _ = "1"; end}
-    ]
+benchmark do
+  [
+    measure{for _ in 1..n; _ = "1"; end},  # Benchmark.measure
+    measure{n.times do   ; _ = "1"; end},
+    measure{1.upto(n) do ; _ = "1"; end}
+  ]
   end
 end

@@ -1091,7 +1091,7 @@ module Net
             when UntaggedResponse
               record_response(resp.name, resp.data)
               if resp.data.instance_of?(ResponseText) &&
-                  (code = resp.data.code)
+                (code = resp.data.code)
                 record_response(code.name, code.data)
               end
               if resp.name == "BYE" && @logout_command_tag.nil?
@@ -1550,7 +1550,7 @@ module Net
       def ensure_nz_number(num)
         if num < -1 || num == 0 || num >= 4294967296
           msg = "nz_number must be non-zero unsigned 32-bit integer: " +
-                num.inspect
+            num.inspect
           raise DataFormatError, msg
         end
       end
@@ -2032,43 +2032,43 @@ module Net
       T_TEXT    = :TEXT
 
       BEG_REGEXP = /\G(?:\
-(?# 1:  SPACE   )( +)|\
-(?# 2:  NIL     )(NIL)(?=[\x80-\xff(){ \x00-\x1f\x7f%*#{'"'}\\\[\]+])|\
-(?# 3:  NUMBER  )(\d+)(?=[\x80-\xff(){ \x00-\x1f\x7f%*#{'"'}\\\[\]+])|\
-(?# 4:  ATOM    )([^\x80-\xff(){ \x00-\x1f\x7f%*#{'"'}\\\[\]+]+)|\
-(?# 5:  QUOTED  )"((?:[^\x00\r\n"\\]|\\["\\])*)"|\
-(?# 6:  LPAR    )(\()|\
-(?# 7:  RPAR    )(\))|\
-(?# 8:  BSLASH  )(\\)|\
-(?# 9:  STAR    )(\*)|\
-(?# 10: LBRA    )(\[)|\
-(?# 11: RBRA    )(\])|\
-(?# 12: LITERAL )\{(\d+)\}\r\n|\
-(?# 13: PLUS    )(\+)|\
-(?# 14: PERCENT )(%)|\
-(?# 15: CRLF    )(\r\n)|\
-(?# 16: EOF     )(\z))/ni
+                       (?# 1:  SPACE   )( +)|\
+                       (?# 2:  NIL     )(NIL)(?=[\x80-\xff(){ \x00-\x1f\x7f%*#{'"'}\\\[\]+])|\
+                         (?# 3:  NUMBER  )(\d+)(?=[\x80-\xff(){ \x00-\x1f\x7f%*#{'"'}\\\[\]+])|\
+                           (?# 4:  ATOM    )([^\x80-\xff(){ \x00-\x1f\x7f%*#{'"'}\\\[\]+]+)|\
+                             (?# 5:  QUOTED  )"((?:[^\x00\r\n"\\]|\\["\\])*)"|\
+                             (?# 6:  LPAR    )(\()|\
+                                               (?# 7:  RPAR    )(\))|\
+                                               (?# 8:  BSLASH  )(\\)|\
+                                               (?# 9:  STAR    )(\*)|\
+                                               (?# 10: LBRA    )(\[)|\
+                                                 (?# 11: RBRA    )(\])|\
+                                                 (?# 12: LITERAL )\{(\d+)\}\r\n|\
+                                                 (?# 13: PLUS    )(\+)|\
+                                                 (?# 14: PERCENT )(%)|\
+                                                 (?# 15: CRLF    )(\r\n)|\
+                                                 (?# 16: EOF     )(\z))/ni
 
-      DATA_REGEXP = /\G(?:\
-(?# 1:  SPACE   )( )|\
-(?# 2:  NIL     )(NIL)|\
-(?# 3:  NUMBER  )(\d+)|\
-(?# 4:  QUOTED  )"((?:[^\x00\r\n"\\]|\\["\\])*)"|\
-(?# 5:  LITERAL )\{(\d+)\}\r\n|\
-(?# 6:  LPAR    )(\()|\
-(?# 7:  RPAR    )(\)))/ni
+                                                 DATA_REGEXP = /\G(?:\
+                                                                   (?# 1:  SPACE   )( )|\
+                                                                   (?# 2:  NIL     )(NIL)|\
+                                                                   (?# 3:  NUMBER  )(\d+)|\
+                                                                   (?# 4:  QUOTED  )"((?:[^\x00\r\n"\\]|\\["\\])*)"|\
+                                                                   (?# 5:  LITERAL )\{(\d+)\}\r\n|\
+                                                                   (?# 6:  LPAR    )(\()|\
+                                                                                     (?# 7:  RPAR    )(\)))/ni
 
-      TEXT_REGEXP = /\G(?:\
-(?# 1:  TEXT    )([^\x00\r\n]*))/ni
+                                                                                     TEXT_REGEXP = /\G(?:\
+                                                                                                       (?# 1:  TEXT    )([^\x00\r\n]*))/ni
 
-      RTEXT_REGEXP = /\G(?:\
-(?# 1:  LBRA    )(\[)|\
-(?# 2:  TEXT    )([^\x00\r\n]*))/ni
+                                                                                                       RTEXT_REGEXP = /\G(?:\
+                                                                                                                          (?# 1:  LBRA    )(\[)|\
+                                                                                                                            (?# 2:  TEXT    )([^\x00\r\n]*))/ni
 
-      CTEXT_REGEXP = /\G(?:\
-(?# 1:  TEXT    )([^\x00\r\n\]]*))/ni
+                                                                                                                            CTEXT_REGEXP = /\G(?:\
+                                                                                                                                               (?# 1:  TEXT    )([^\x00\r\n\]]*))/ni
 
-      Token = Struct.new(:symbol, :value)
+                                                                                                                                               Token = Struct.new(:symbol, :value)
 
       def response
         token = lookahead
@@ -2932,11 +2932,11 @@ module Net
       end
 
       ADDRESS_REGEXP = /\G\
-(?# 1: NAME     )(?:NIL|"((?:[^\x80-\xff\x00\r\n"\\]|\\["\\])*)") \
-(?# 2: ROUTE    )(?:NIL|"((?:[^\x80-\xff\x00\r\n"\\]|\\["\\])*)") \
-(?# 3: MAILBOX  )(?:NIL|"((?:[^\x80-\xff\x00\r\n"\\]|\\["\\])*)") \
-(?# 4: HOST     )(?:NIL|"((?:[^\x80-\xff\x00\r\n"\\]|\\["\\])*)")\
-\)/ni
+        (?# 1: NAME     )(?:NIL|"((?:[^\x80-\xff\x00\r\n"\\]|\\["\\])*)") \
+        (?# 2: ROUTE    )(?:NIL|"((?:[^\x80-\xff\x00\r\n"\\]|\\["\\])*)") \
+        (?# 3: MAILBOX  )(?:NIL|"((?:[^\x80-\xff\x00\r\n"\\]|\\["\\])*)") \
+        (?# 4: HOST     )(?:NIL|"((?:[^\x80-\xff\x00\r\n"\\]|\\["\\])*)")\
+        \)/ni
 
       def address
         match(T_LPAR)
@@ -2965,62 +2965,62 @@ module Net
         return Address.new(name, route, mailbox, host)
       end
 
-#        def flag_list
-#       result = []
-#       match(T_LPAR)
-#       while true
-#         token = lookahead
-#         case token.symbol
-#         when T_RPAR
-#           shift_token
-#           break
-#         when T_SPACE
-#           shift_token
-#         end
-#         result.push(flag)
-#       end
-#       return result
-#        end
+      #        def flag_list
+      #       result = []
+      #       match(T_LPAR)
+      #       while true
+      #         token = lookahead
+      #         case token.symbol
+      #         when T_RPAR
+      #           shift_token
+      #           break
+      #         when T_SPACE
+      #           shift_token
+      #         end
+      #         result.push(flag)
+      #       end
+      #       return result
+      #        end
 
-#        def flag
-#       token = lookahead
-#       if token.symbol == T_BSLASH
-#         shift_token
-#         token = lookahead
-#         if token.symbol == T_STAR
-#           shift_token
-#           return token.value.intern
-#         else
-#           return atom.intern
-#         end
-#       else
-#         return atom
-#       end
-#        end
+      #        def flag
+      #       token = lookahead
+      #       if token.symbol == T_BSLASH
+      #         shift_token
+      #         token = lookahead
+      #         if token.symbol == T_STAR
+      #           shift_token
+      #           return token.value.intern
+      #         else
+      #           return atom.intern
+      #         end
+      #       else
+      #         return atom
+      #       end
+      #        end
 
       FLAG_REGEXP = /\
-(?# FLAG        )\\([^\x80-\xff(){ \x00-\x1f\x7f%"\\]+)|\
-(?# ATOM        )([^\x80-\xff(){ \x00-\x1f\x7f%*"\\]+)/n
+        (?# FLAG        )\\([^\x80-\xff(){ \x00-\x1f\x7f%"\\]+)|\
+          (?# ATOM        )([^\x80-\xff(){ \x00-\x1f\x7f%*"\\]+)/n
 
-      def flag_list
-        if @str.index(/\(([^)]*)\)/ni, @pos)
-          @pos = $~.end(0)
-          return $1.scan(FLAG_REGEXP).collect { |flag, atom|
-            if atom
-              atom
-            else
-              symbol = flag.capitalize.untaint.intern
-              @flag_symbols[symbol] = true
-              if @flag_symbols.length > IMAP.max_flag_count
-                raise FlagCountError, "number of flag symbols exceeded"
+            def flag_list
+              if @str.index(/\(([^)]*)\)/ni, @pos)
+                @pos = $~.end(0)
+                return $1.scan(FLAG_REGEXP).collect { |flag, atom|
+                  if atom
+                    atom
+                  else
+                    symbol = flag.capitalize.untaint.intern
+                    @flag_symbols[symbol] = true
+                    if @flag_symbols.length > IMAP.max_flag_count
+                      raise FlagCountError, "number of flag symbols exceeded"
+                    end
+                    symbol
+                  end
+                }
+              else
+                parse_error("invalid flag list")
               end
-              symbol
             end
-          }
-        else
-          parse_error("invalid flag list")
-        end
-      end
 
       def nstring
         token = lookahead
@@ -3347,73 +3347,73 @@ module Net
     # #authenticate().
     class DigestMD5Authenticator
       def process(challenge)
-	case @stage
-	when STAGE_ONE
-	  @stage = STAGE_TWO
-	  sparams = {}
-	  c = StringScanner.new(challenge)
-	  while c.scan(/(?:\s*,)?\s*(\w+)=("(?:[^\\"]+|\\.)*"|[^,]+)\s*/)
-	    k, v = c[1], c[2]
-	    if v =~ /^"(.*)"$/
-	      v = $1
-	      if v =~ /,/
-		v = v.split(',')
-	      end
-	    end
-	    sparams[k] = v
-	  end
+        case @stage
+        when STAGE_ONE
+          @stage = STAGE_TWO
+          sparams = {}
+          c = StringScanner.new(challenge)
+          while c.scan(/(?:\s*,)?\s*(\w+)=("(?:[^\\"]+|\\.)*"|[^,]+)\s*/)
+            k, v = c[1], c[2]
+            if v =~ /^"(.*)"$/
+              v = $1
+              if v =~ /,/
+                v = v.split(',')
+              end
+            end
+            sparams[k] = v
+          end
 
-	  raise DataFormatError, "Bad Challenge: '#{challenge}'" unless c.rest.size == 0
-	  raise Error, "Server does not support auth (qop = #{sparams['qop'].join(',')})" unless sparams['qop'].include?("auth")
+          raise DataFormatError, "Bad Challenge: '#{challenge}'" unless c.rest.size == 0
+          raise Error, "Server does not support auth (qop = #{sparams['qop'].join(',')})" unless sparams['qop'].include?("auth")
 
-	  response = {
-	    :nonce => sparams['nonce'],
-	    :username => @user,
-	    :realm => sparams['realm'],
-	    :cnonce => Digest::MD5.hexdigest("%.15f:%.15f:%d" % [Time.now.to_f, rand, Process.pid.to_s]),
-	    :'digest-uri' => 'imap/' + sparams['realm'],
-	    :qop => 'auth',
-	    :maxbuf => 65535,
-	    :nc => "%08d" % nc(sparams['nonce']),
-	    :charset => sparams['charset'],
-	  }
+          response = {
+            :nonce => sparams['nonce'],
+            :username => @user,
+            :realm => sparams['realm'],
+            :cnonce => Digest::MD5.hexdigest("%.15f:%.15f:%d" % [Time.now.to_f, rand, Process.pid.to_s]),
+            :'digest-uri' => 'imap/' + sparams['realm'],
+            :qop => 'auth',
+            :maxbuf => 65535,
+            :nc => "%08d" % nc(sparams['nonce']),
+            :charset => sparams['charset'],
+          }
 
-	  response[:authzid] = @authname unless @authname.nil?
+          response[:authzid] = @authname unless @authname.nil?
 
-	  # now, the real thing
-	  a0 = Digest::MD5.digest( [ response.values_at(:username, :realm), @password ].join(':') )
+          # now, the real thing
+          a0 = Digest::MD5.digest( [ response.values_at(:username, :realm), @password ].join(':') )
 
-	  a1 = [ a0, response.values_at(:nonce,:cnonce) ].join(':')
-	  a1 << ':' + response[:authzid] unless response[:authzid].nil?
+          a1 = [ a0, response.values_at(:nonce,:cnonce) ].join(':')
+          a1 << ':' + response[:authzid] unless response[:authzid].nil?
 
-	  a2 = "AUTHENTICATE:" + response[:'digest-uri']
-	  a2 << ":00000000000000000000000000000000" if response[:qop] and response[:qop] =~ /^auth-(?:conf|int)$/
+          a2 = "AUTHENTICATE:" + response[:'digest-uri']
+          a2 << ":00000000000000000000000000000000" if response[:qop] and response[:qop] =~ /^auth-(?:conf|int)$/
 
-	  response[:response] = Digest::MD5.hexdigest(
-	    [
-	     Digest::MD5.hexdigest(a1),
-	     response.values_at(:nonce, :nc, :cnonce, :qop),
-	     Digest::MD5.hexdigest(a2)
-	    ].join(':')
-	  )
+            response[:response] = Digest::MD5.hexdigest(
+              [
+                Digest::MD5.hexdigest(a1),
+                response.values_at(:nonce, :nc, :cnonce, :qop),
+                Digest::MD5.hexdigest(a2)
+          ].join(':')
+          )
 
-	  return response.keys.map {|key| qdval(key.to_s, response[key]) }.join(',')
-	when STAGE_TWO
-	  @stage = nil
-	  # if at the second stage, return an empty string
-	  if challenge =~ /rspauth=/
-	    return ''
-	  else
-	    raise ResponseParseError, challenge
-	  end
-	else
-	  raise ResponseParseError, challenge
-	end
+          return response.keys.map {|key| qdval(key.to_s, response[key]) }.join(',')
+        when STAGE_TWO
+          @stage = nil
+          # if at the second stage, return an empty string
+          if challenge =~ /rspauth=/
+            return ''
+          else
+            raise ResponseParseError, challenge
+          end
+        else
+          raise ResponseParseError, challenge
+        end
       end
 
       def initialize(user, password, authname = nil)
-	@user, @password, @authname = user, password, authname
-	@nc, @stage = {}, STAGE_ONE
+        @user, @password, @authname = user, password, authname
+        @nc, @stage = {}, STAGE_ONE
       end
 
       private
@@ -3422,23 +3422,23 @@ module Net
       STAGE_TWO = :stage_two
 
       def nc(nonce)
-	if @nc.has_key? nonce
-	  @nc[nonce] = @nc[nonce] + 1
-	else
-	  @nc[nonce] = 1
-	end
-	return @nc[nonce]
+        if @nc.has_key? nonce
+          @nc[nonce] = @nc[nonce] + 1
+        else
+          @nc[nonce] = 1
+        end
+        return @nc[nonce]
       end
 
       # some responses need quoting
       def qdval(k, v)
-	return if k.nil? or v.nil?
-	if %w"username authzid realm nonce cnonce digest-uri qop".include? k
-	  v.gsub!(/([\\"])/, "\\\1")
-	  return '%s="%s"' % [k, v]
-	else
-	  return '%s=%s' % [k, v]
-	end
+        return if k.nil? or v.nil?
+        if %w"username authzid realm nonce cnonce digest-uri qop".include? k
+          v.gsub!(/([\\"])/, "\\\1")
+          return '%s="%s"' % [k, v]
+        else
+          return '%s=%s' % [k, v]
+        end
       end
     end
     add_authenticator "DIGEST-MD5", DigestMD5Authenticator
@@ -3514,7 +3514,7 @@ usage: #{$0} [options] <host>
   --auth=AUTH                   specifies auth type
   --starttls                    use starttls
   --ssl                         use ssl
-EOF
+    EOF
   end
 
   begin
@@ -3649,7 +3649,7 @@ summary                         display summary
 fetch [msgno]                   display message
 logout                          logout
 help, ?                         display help message
-EOF
+          EOF
         else
           print "unknown command: ", cmd, "\n"
         end

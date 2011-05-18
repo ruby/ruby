@@ -120,71 +120,71 @@ module URI
     def split(uri)
       case uri
       when ''
-	# null uri
+        # null uri
 
       when @regexp[:ABS_URI]
-	scheme, opaque, userinfo, host, port,
-	  registry, path, query, fragment = $~[1..-1]
+        scheme, opaque, userinfo, host, port,
+          registry, path, query, fragment = $~[1..-1]
 
-	# URI-reference = [ absoluteURI | relativeURI ] [ "#" fragment ]
+        # URI-reference = [ absoluteURI | relativeURI ] [ "#" fragment ]
 
-	# absoluteURI   = scheme ":" ( hier_part | opaque_part )
-	# hier_part     = ( net_path | abs_path ) [ "?" query ]
-	# opaque_part   = uric_no_slash *uric
+        # absoluteURI   = scheme ":" ( hier_part | opaque_part )
+        # hier_part     = ( net_path | abs_path ) [ "?" query ]
+        # opaque_part   = uric_no_slash *uric
 
-	# abs_path      = "/"  path_segments
-	# net_path      = "//" authority [ abs_path ]
+        # abs_path      = "/"  path_segments
+        # net_path      = "//" authority [ abs_path ]
 
-	# authority     = server | reg_name
-	# server        = [ [ userinfo "@" ] hostport ]
+        # authority     = server | reg_name
+        # server        = [ [ userinfo "@" ] hostport ]
 
-	if !scheme
-	  raise InvalidURIError,
-	    "bad URI(absolute but no scheme): #{uri}"
-	end
-	if !opaque && (!path && (!host && !registry))
-	  raise InvalidURIError,
-	    "bad URI(absolute but no path): #{uri}"
-	end
+        if !scheme
+          raise InvalidURIError,
+            "bad URI(absolute but no scheme): #{uri}"
+        end
+        if !opaque && (!path && (!host && !registry))
+          raise InvalidURIError,
+            "bad URI(absolute but no path): #{uri}"
+        end
 
       when @regexp[:REL_URI]
-	scheme = nil
-	opaque = nil
+        scheme = nil
+        opaque = nil
 
-	userinfo, host, port, registry,
-	  rel_segment, abs_path, query, fragment = $~[1..-1]
-	if rel_segment && abs_path
-	  path = rel_segment + abs_path
-	elsif rel_segment
-	  path = rel_segment
-	elsif abs_path
-	  path = abs_path
-	end
+        userinfo, host, port, registry,
+          rel_segment, abs_path, query, fragment = $~[1..-1]
+        if rel_segment && abs_path
+          path = rel_segment + abs_path
+        elsif rel_segment
+          path = rel_segment
+        elsif abs_path
+          path = abs_path
+        end
 
-	# URI-reference = [ absoluteURI | relativeURI ] [ "#" fragment ]
+        # URI-reference = [ absoluteURI | relativeURI ] [ "#" fragment ]
 
-	# relativeURI   = ( net_path | abs_path | rel_path ) [ "?" query ]
+        # relativeURI   = ( net_path | abs_path | rel_path ) [ "?" query ]
 
-	# net_path      = "//" authority [ abs_path ]
-	# abs_path      = "/"  path_segments
-	# rel_path      = rel_segment [ abs_path ]
+        # net_path      = "//" authority [ abs_path ]
+        # abs_path      = "/"  path_segments
+        # rel_path      = rel_segment [ abs_path ]
 
-	# authority     = server | reg_name
-	# server        = [ [ userinfo "@" ] hostport ]
+        # authority     = server | reg_name
+        # server        = [ [ userinfo "@" ] hostport ]
 
       else
-	raise InvalidURIError, "bad URI(is not URI?): #{uri}"
+        raise InvalidURIError, "bad URI(is not URI?): #{uri}"
       end
 
       path = '' if !path && !opaque # (see RFC2396 Section 5.2)
       ret = [
-	scheme,
-	userinfo, host, port,         # X
-	registry,                     # X
-	path,                         # Y
-	opaque,                       # Y
-	query,
-	fragment
+        scheme,
+        userinfo, host, port,         # X
+        registry,                     # X
+        path,                         # Y
+        opaque,                       # Y
+        query,
+        fragment
       ]
       return ret
     end
@@ -202,22 +202,22 @@ module URI
     #
     # == Usage
     #
-    #	p = URI::Parser.new
-    #	p.parse("ldap://ldap.example.com/dc=example?user=john")
-    #	#=> #<URI::LDAP:0x00000000b9e7e8 URL:ldap://ldap.example.com/dc=example?user=john>
+    #  p = URI::Parser.new
+    #  p.parse("ldap://ldap.example.com/dc=example?user=john")
+    #  #=> #<URI::LDAP:0x00000000b9e7e8 URL:ldap://ldap.example.com/dc=example?user=john>
     #
     def parse(uri)
       scheme, userinfo, host, port,
-       	registry, path, opaque, query, fragment = self.split(uri)
+         registry, path, opaque, query, fragment = self.split(uri)
 
       if scheme && URI.scheme_list.include?(scheme.upcase)
-	URI.scheme_list[scheme.upcase].new(scheme, userinfo, host, port,
+        URI.scheme_list[scheme.upcase].new(scheme, userinfo, host, port,
                                            registry, path, opaque, query,
                                            fragment, self)
       else
-	Generic.new(scheme, userinfo, host, port,
-	   	    registry, path, opaque, query,
-	    	    fragment, self)
+        Generic.new(scheme, userinfo, host, port,
+                    registry, path, opaque, query,
+                    fragment, self)
       end
     end
 
@@ -239,9 +239,9 @@ module URI
 
     #
     # :call-seq:
-    # 	extract( str )
-    # 	extract( str, schemes )
-    # 	extract( str, schemes ) {|item| block }
+    #   extract( str )
+    #   extract( str, schemes )
+    #   extract( str, schemes ) {|item| block }
     #
     # == Args
     #
@@ -260,12 +260,12 @@ module URI
     #
     def extract(str, schemes = nil, &block)
       if block_given?
-       	str.scan(make_regexp(schemes)) { yield $& }
-	nil
+        str.scan(make_regexp(schemes)) { yield $& }
+        nil
       else
-	result = []
-	str.scan(make_regexp(schemes)) { result.push $& }
-	result
+        result = []
+        str.scan(make_regexp(schemes)) { result.push $& }
+        result
       end
     end
 
@@ -273,16 +273,16 @@ module URI
     # unless +schemes+ is provided. Then it is a Regexp.union with self.pattern[:X_ABS_URI]
     def make_regexp(schemes = nil)
       unless schemes
-       	@regexp[:ABS_URI_REF]
+         @regexp[:ABS_URI_REF]
       else
-	/(?=#{Regexp.union(*schemes)}:)#{@pattern[:X_ABS_URI]}/x
+        /(?=#{Regexp.union(*schemes)}:)#{@pattern[:X_ABS_URI]}/x
       end
     end
 
     #
     # :call-seq:
-    # 	escape( str )
-    # 	escape( str, unsafe )
+    #   escape( str )
+    #   escape( str, unsafe )
     #
     # == Args
     #
@@ -313,8 +313,8 @@ module URI
 
     #
     # :call-seq:
-    # 	unescape( str )
-    # 	unescape( str, unsafe )
+    #   unescape( str )
+    #   unescape( str, unsafe )
     #
     # == Args
     #
@@ -365,7 +365,7 @@ module URI
       # hostname      = *( domainlabel "." ) toplabel [ "." ]
       # reg-name      = *( unreserved / pct-encoded / sub-delims ) # RFC3986
       unless hostname
-	ret[:HOSTNAME] = hostname = "(?:[a-zA-Z0-9\\-.]|%\\h\\h)+"
+        ret[:HOSTNAME] = hostname = "(?:[a-zA-Z0-9\\-.]|%\\h\\h)+"
       end
 
       # RFC 2373, APPENDIX B:

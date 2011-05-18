@@ -1,9 +1,9 @@
 #
 #   forwardable.rb -
-#   	$Release Version: 1.1$
-#   	$Revision$
-#   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
-#	original definition by delegator.rb
+#     $Release Version: 1.1$
+#     $Revision$
+#     by Keiju ISHITSUKA(keiju@ishitsuka.com)
+#     original definition by delegator.rb
 #       Revised by Daniel J. Berger with suggestions from Florian Gross.
 #
 #       Documentation by James Edward Gray II and Gavin Sinclair
@@ -84,7 +84,7 @@
 #      def_delegator :Implementation, :service
 #
 #      class Implementation
-#	  def service...
+#    def service...
 #      end
 #    end
 #
@@ -178,12 +178,12 @@ module Forwardable
   def def_instance_delegator(accessor, method, ali = method)
     line_no = __LINE__; str = %{
       def #{ali}(*args, &block)
-	begin
-	  #{accessor}.__send__(:#{method}, *args, &block)
-	rescue Exception
-	  $@.delete_if{|s| %r"#{Regexp.quote(__FILE__)}"o =~ s} unless Forwardable::debug
-	  ::Kernel::raise
-	end
+  begin
+      #{accessor}.__send__(:#{method}, *args, &block)
+  rescue Exception
+    $@.delete_if{|s| %r"#{Regexp.quote(__FILE__)}"o =~ s} unless Forwardable::debug
+    ::Kernel::raise
+  end
       end
     }
     # If it's not a class or module, it's an instance
@@ -248,12 +248,12 @@ module SingleForwardable
   def def_single_delegator(accessor, method, ali = method)
     str = %{
       def #{ali}(*args, &block)
-	begin
-	  #{accessor}.__send__(:#{method}, *args, &block)
-	rescue Exception
-	  $@.delete_if{|s| %r"#{Regexp.quote(__FILE__)}"o =~ s} unless Forwardable::debug
-	  ::Kernel::raise
-	end
+  begin
+      #{accessor}.__send__(:#{method}, *args, &block)
+  rescue Exception
+    $@.delete_if{|s| %r"#{Regexp.quote(__FILE__)}"o =~ s} unless Forwardable::debug
+    ::Kernel::raise
+  end
       end
     }
 

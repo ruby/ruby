@@ -130,9 +130,9 @@ class Tracer
     if block_given?
       on
       begin
-	yield
+        yield
       ensure
-	off
+        off
       end
     else
       set_trace_func method(:trace_func).to_proc
@@ -160,14 +160,14 @@ class Tracer
 
     unless list = SCRIPT_LINES__[file]
       begin
-	f = File::open(file)
-	begin
-	  SCRIPT_LINES__[file] = list = f.readlines
-	ensure
-	  f.close
-	end
+        f = File::open(file)
+        begin
+          SCRIPT_LINES__[file] = list = f.readlines
+        ensure
+          f.close
+        end
       rescue
-	SCRIPT_LINES__[file] = list = []
+        SCRIPT_LINES__[file] = list = []
       end
     end
 
@@ -198,19 +198,19 @@ class Tracer
 
     Tracer::stdout_mutex.synchronize do
       if EVENT_SYMBOL[event]
-	stdout.printf("<%d>", $$) if Tracer::display_process_id?
-	stdout.printf("#%d:", get_thread_no) if Tracer::display_thread_id?
-	if line == 0
-	  source = "?\n"
-	else
-	  source = get_line(file, line)
-	end
-	printf("%s:%d:%s:%s: %s",
-	       file,
-	       line,
-	       klass || '',
-	       EVENT_SYMBOL[event],
-	       source)
+        stdout.printf("<%d>", $$) if Tracer::display_process_id?
+        stdout.printf("#%d:", get_thread_no) if Tracer::display_thread_id?
+        if line == 0
+          source = "?\n"
+        else
+          source = get_line(file, line)
+        end
+        printf("%s:%d:%s:%s: %s",
+               file,
+               line,
+               klass || '',
+               EVENT_SYMBOL[event],
+               source)
       end
     end
 

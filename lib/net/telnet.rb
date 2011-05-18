@@ -433,18 +433,18 @@ module Net
       # combine CR+NULL into CR
       string = string.gsub(/#{CR}#{NULL}/no, CR) if @options["Telnetmode"]
 
-      # combine EOL into "\n"
-      string = string.gsub(/#{EOL}/no, "\n") unless @options["Binmode"]
+        # combine EOL into "\n"
+        string = string.gsub(/#{EOL}/no, "\n") unless @options["Binmode"]
 
-      # remove NULL
-      string = string.gsub(/#{NULL}/no, '') unless @options["Binmode"]
+        # remove NULL
+        string = string.gsub(/#{NULL}/no, '') unless @options["Binmode"]
 
-      string.gsub(/#{IAC}(
-                   [#{IAC}#{AO}#{AYT}#{DM}#{IP}#{NOP}]|
-                   [#{DO}#{DONT}#{WILL}#{WONT}]
-                     [#{OPT_BINARY}-#{OPT_NEW_ENVIRON}#{OPT_EXOPL}]|
-                   #{SB}[^#{IAC}]*#{IAC}#{SE}
-                 )/xno) do
+        string.gsub(/#{IAC}(
+          [#{IAC}#{AO}#{AYT}#{DM}#{IP}#{NOP}]|
+          [#{DO}#{DONT}#{WILL}#{WONT}]
+      [#{OPT_BINARY}-#{OPT_NEW_ENVIRON}#{OPT_EXOPL}]|
+      #{SB}[^#{IAC}]*#{IAC}#{SE}
+      )/xno) do
         if    IAC == $1  # handle escaped IAC characters
           IAC
         elsif AYT == $1  # respond to "IAC AYT" (are you there)
@@ -464,301 +464,301 @@ module Net
         elsif WILL[0] == $1[0]  # respond to "IAC WILL x"
           if    OPT_BINARY[0] == $1[1]
             self.write(IAC + DO + OPT_BINARY)
-          elsif OPT_ECHO[0] == $1[1]
-            self.write(IAC + DO + OPT_ECHO)
-          elsif OPT_SGA[0]  == $1[1]
-            @telnet_option["SGA"] = true
-            self.write(IAC + DO + OPT_SGA)
-          else
-            self.write(IAC + DONT + $1[1..1])
-          end
-          ''
-        elsif WONT[0] == $1[0]  # respond to "IAC WON'T x"
-          if    OPT_ECHO[0] == $1[1]
-            self.write(IAC + DONT + OPT_ECHO)
-          elsif OPT_SGA[0]  == $1[1]
-            @telnet_option["SGA"] = false
-            self.write(IAC + DONT + OPT_SGA)
-          else
-            self.write(IAC + DONT + $1[1..1])
-          end
-          ''
-        else
-          ''
-        end
-      end
-    end # preprocess
-
-    # Read data from the host until a certain sequence is matched.
-    #
-    # If a block is given, the received data will be yielded as it
-    # is read in (not necessarily all in one go), or nil if EOF
-    # occurs before any data is received.  Whether a block is given
-    # or not, all data read will be returned in a single string, or again
-    # nil if EOF occurs before any data is received.  Note that
-    # received data includes the matched sequence we were looking for.
-    #
-    # +options+ can be either a regular expression or a hash of options.
-    # If a regular expression, this specifies the data to wait for.
-    # If a hash, this can specify the following options:
-    #
-    # Match:: a regular expression, specifying the data to wait for.
-    # Prompt:: as for Match; used only if Match is not specified.
-    # String:: as for Match, except a string that will be converted
-    #          into a regular expression.  Used only if Match and
-    #          Prompt are not specified.
-    # Timeout:: the number of seconds to wait for data from the host
-    #           before raising a TimeoutError.  If set to false,
-    #           no timeout will occur.  If not specified, the
-    #           Timeout option value specified when this instance
-    #           was created will be used, or, failing that, the
-    #           default value of 10 seconds.
-    # Waittime:: the number of seconds to wait after matching against
-    #            the input data to see if more data arrives.  If more
-    #            data arrives within this time, we will judge ourselves
-    #            not to have matched successfully, and will continue
-    #            trying to match.  If not specified, the Waittime option
-    #            value specified when this instance was created will be
-    #            used, or, failing that, the default value of 0 seconds,
-    #            which means not to wait for more input.
-    # FailEOF:: if true, when the remote end closes the connection then an
-    #           EOFError will be raised. Otherwise, defaults to the old
-    #           behaviour that the function will return whatever data
-    #           has been received already, or nil if nothing was received.
-    #
-    def waitfor(options) # :yield: recvdata
-      time_out = @options["Timeout"]
-      waittime = @options["Waittime"]
-      fail_eof = @options["FailEOF"]
-
-      if options.kind_of?(Hash)
-        prompt   = if options.has_key?("Match")
-                     options["Match"]
-                   elsif options.has_key?("Prompt")
-                     options["Prompt"]
-                   elsif options.has_key?("String")
-                     Regexp.new( Regexp.quote(options["String"]) )
-                   end
-        time_out = options["Timeout"]  if options.has_key?("Timeout")
-        waittime = options["Waittime"] if options.has_key?("Waittime")
-        fail_eof = options["FailEOF"]  if options.has_key?("FailEOF")
-      else
-        prompt = options
-      end
-
-      if time_out == false
-        time_out = nil
-      end
-
-      line = ''
-      buf = ''
-      rest = ''
-      until(prompt === line and not IO::select([@sock], nil, nil, waittime))
-        unless IO::select([@sock], nil, nil, time_out)
-          raise TimeoutError, "timed out while waiting for more data"
-        end
-        begin
-          c = @sock.readpartial(1024 * 1024)
-          @dumplog.log_dump('<', c) if @options.has_key?("Dump_log")
-          if @options["Telnetmode"]
-            c = rest + c
-            if Integer(c.rindex(/#{IAC}#{SE}/no) || 0) <
-               Integer(c.rindex(/#{IAC}#{SB}/no) || 0)
-              buf = preprocess(c[0 ... c.rindex(/#{IAC}#{SB}/no)])
-              rest = c[c.rindex(/#{IAC}#{SB}/no) .. -1]
-            elsif pt = c.rindex(/#{IAC}[^#{IAC}#{AO}#{AYT}#{DM}#{IP}#{NOP}]?\z/no) ||
-                       c.rindex(/\r\z/no)
-              buf = preprocess(c[0 ... pt])
-              rest = c[pt .. -1]
-            else
-              buf = preprocess(c)
-              rest = ''
+            elsif OPT_ECHO[0] == $1[1]
+              self.write(IAC + DO + OPT_ECHO)
+              elsif OPT_SGA[0]  == $1[1]
+                @telnet_option["SGA"] = true
+                self.write(IAC + DO + OPT_SGA)
+                else
+                  self.write(IAC + DONT + $1[1..1])
+                end
+                ''
+              elsif WONT[0] == $1[0]  # respond to "IAC WON'T x"
+                if    OPT_ECHO[0] == $1[1]
+                  self.write(IAC + DONT + OPT_ECHO)
+                elsif OPT_SGA[0]  == $1[1]
+                  @telnet_option["SGA"] = false
+                  self.write(IAC + DONT + OPT_SGA)
+                else
+                  self.write(IAC + DONT + $1[1..1])
+                end
+                ''
+              else
+                ''
+              end
             end
-         else
-           # Not Telnetmode.
-           #
-           # We cannot use preprocess() on this data, because that
-           # method makes some Telnetmode-specific assumptions.
-           buf = rest + c
-           rest = ''
-           unless @options["Binmode"]
-             if pt = buf.rindex(/\r\z/no)
-               buf = buf[0 ... pt]
-               rest = buf[pt .. -1]
-             end
-             buf.gsub!(/#{EOL}/no, "\n")
-           end
+          end # preprocess
+
+          # Read data from the host until a certain sequence is matched.
+          #
+          # If a block is given, the received data will be yielded as it
+          # is read in (not necessarily all in one go), or nil if EOF
+          # occurs before any data is received.  Whether a block is given
+          # or not, all data read will be returned in a single string, or again
+          # nil if EOF occurs before any data is received.  Note that
+          # received data includes the matched sequence we were looking for.
+          #
+          # +options+ can be either a regular expression or a hash of options.
+          # If a regular expression, this specifies the data to wait for.
+          # If a hash, this can specify the following options:
+          #
+          # Match:: a regular expression, specifying the data to wait for.
+          # Prompt:: as for Match; used only if Match is not specified.
+          # String:: as for Match, except a string that will be converted
+          #          into a regular expression.  Used only if Match and
+          #          Prompt are not specified.
+          # Timeout:: the number of seconds to wait for data from the host
+          #           before raising a TimeoutError.  If set to false,
+          #           no timeout will occur.  If not specified, the
+          #           Timeout option value specified when this instance
+          #           was created will be used, or, failing that, the
+          #           default value of 10 seconds.
+          # Waittime:: the number of seconds to wait after matching against
+          #            the input data to see if more data arrives.  If more
+          #            data arrives within this time, we will judge ourselves
+          #            not to have matched successfully, and will continue
+          #            trying to match.  If not specified, the Waittime option
+          #            value specified when this instance was created will be
+          #            used, or, failing that, the default value of 0 seconds,
+          #            which means not to wait for more input.
+          # FailEOF:: if true, when the remote end closes the connection then an
+          #           EOFError will be raised. Otherwise, defaults to the old
+          #           behaviour that the function will return whatever data
+          #           has been received already, or nil if nothing was received.
+          #
+          def waitfor(options) # :yield: recvdata
+            time_out = @options["Timeout"]
+            waittime = @options["Waittime"]
+            fail_eof = @options["FailEOF"]
+
+            if options.kind_of?(Hash)
+              prompt   = if options.has_key?("Match")
+                           options["Match"]
+                         elsif options.has_key?("Prompt")
+                           options["Prompt"]
+                         elsif options.has_key?("String")
+                           Regexp.new( Regexp.quote(options["String"]) )
+                         end
+              time_out = options["Timeout"]  if options.has_key?("Timeout")
+              waittime = options["Waittime"] if options.has_key?("Waittime")
+              fail_eof = options["FailEOF"]  if options.has_key?("FailEOF")
+            else
+              prompt = options
+            end
+
+            if time_out == false
+              time_out = nil
+            end
+
+            line = ''
+            buf = ''
+            rest = ''
+            until(prompt === line and not IO::select([@sock], nil, nil, waittime))
+              unless IO::select([@sock], nil, nil, time_out)
+                raise TimeoutError, "timed out while waiting for more data"
+              end
+              begin
+                c = @sock.readpartial(1024 * 1024)
+                @dumplog.log_dump('<', c) if @options.has_key?("Dump_log")
+                if @options["Telnetmode"]
+                  c = rest + c
+                  if Integer(c.rindex(/#{IAC}#{SE}/no) || 0) <
+                    Integer(c.rindex(/#{IAC}#{SB}/no) || 0)
+                    buf = preprocess(c[0 ... c.rindex(/#{IAC}#{SB}/no)])
+                    rest = c[c.rindex(/#{IAC}#{SB}/no) .. -1]
+                  elsif pt = c.rindex(/#{IAC}[^#{IAC}#{AO}#{AYT}#{DM}#{IP}#{NOP}]?\z/no) ||
+                    c.rindex(/\r\z/no)
+                    buf = preprocess(c[0 ... pt])
+                    rest = c[pt .. -1]
+                  else
+                    buf = preprocess(c)
+                    rest = ''
+                  end
+                else
+                  # Not Telnetmode.
+                  #
+                  # We cannot use preprocess() on this data, because that
+                  # method makes some Telnetmode-specific assumptions.
+                  buf = rest + c
+                  rest = ''
+                  unless @options["Binmode"]
+                    if pt = buf.rindex(/\r\z/no)
+                      buf = buf[0 ... pt]
+                      rest = buf[pt .. -1]
+                    end
+                    buf.gsub!(/#{EOL}/no, "\n")
+                  end
+                end
+                @log.print(buf) if @options.has_key?("Output_log")
+                line += buf
+                yield buf if block_given?
+              rescue EOFError # End of file reached
+                raise if fail_eof
+                if line == ''
+                  line = nil
+                  yield nil if block_given?
+                end
+                break
+              end
+            end
+            line
           end
-          @log.print(buf) if @options.has_key?("Output_log")
-          line += buf
-          yield buf if block_given?
-        rescue EOFError # End of file reached
-          raise if fail_eof
-          if line == ''
-            line = nil
-            yield nil if block_given?
+
+          # Write +string+ to the host.
+          #
+          # Does not perform any conversions on +string+.  Will log +string+ to the
+          # dumplog, if the Dump_log option is set.
+          def write(string)
+            length = string.length
+            while 0 < length
+              IO::select(nil, [@sock])
+              @dumplog.log_dump('>', string[-length..-1]) if @options.has_key?("Dump_log")
+              length -= @sock.syswrite(string[-length..-1])
+            end
           end
-          break
-        end
-      end
-      line
-    end
 
-    # Write +string+ to the host.
-    #
-    # Does not perform any conversions on +string+.  Will log +string+ to the
-    # dumplog, if the Dump_log option is set.
-    def write(string)
-      length = string.length
-      while 0 < length
-        IO::select(nil, [@sock])
-        @dumplog.log_dump('>', string[-length..-1]) if @options.has_key?("Dump_log")
-        length -= @sock.syswrite(string[-length..-1])
-      end
-    end
+          # Sends a string to the host.
+          #
+          # This does _not_ automatically append a newline to the string.  Embedded
+          # newlines may be converted and telnet command sequences escaped
+          # depending upon the values of telnetmode, binmode, and telnet options
+          # set by the host.
+          def print(string)
+            string = string.gsub(/#{IAC}/no, IAC + IAC) if @options["Telnetmode"]
 
-    # Sends a string to the host.
-    #
-    # This does _not_ automatically append a newline to the string.  Embedded
-    # newlines may be converted and telnet command sequences escaped
-    # depending upon the values of telnetmode, binmode, and telnet options
-    # set by the host.
-    def print(string)
-      string = string.gsub(/#{IAC}/no, IAC + IAC) if @options["Telnetmode"]
+              if @options["Binmode"]
+                self.write(string)
+              else
+                if @telnet_option["BINARY"] and @telnet_option["SGA"]
+                  # IAC WILL SGA IAC DO BIN send EOL --> CR
+                  self.write(string.gsub(/\n/n, CR))
+                elsif @telnet_option["SGA"]
+                  # IAC WILL SGA send EOL --> CR+NULL
+                  self.write(string.gsub(/\n/n, CR + NULL))
+                else
+                  # NONE send EOL --> CR+LF
+                  self.write(string.gsub(/\n/n, EOL))
+                end
+              end
+          end
 
-      if @options["Binmode"]
-        self.write(string)
-      else
-        if @telnet_option["BINARY"] and @telnet_option["SGA"]
-          # IAC WILL SGA IAC DO BIN send EOL --> CR
-          self.write(string.gsub(/\n/n, CR))
-        elsif @telnet_option["SGA"]
-          # IAC WILL SGA send EOL --> CR+NULL
-          self.write(string.gsub(/\n/n, CR + NULL))
-        else
-          # NONE send EOL --> CR+LF
-          self.write(string.gsub(/\n/n, EOL))
-        end
-      end
-    end
+          # Sends a string to the host.
+          #
+          # Same as #print(), but appends a newline to the string.
+          def puts(string)
+            self.print(string + "\n")
+          end
 
-    # Sends a string to the host.
-    #
-    # Same as #print(), but appends a newline to the string.
-    def puts(string)
-      self.print(string + "\n")
-    end
+          # Send a command to the host.
+          #
+          # More exactly, sends a string to the host, and reads in all received
+          # data until is sees the prompt or other matched sequence.
+          #
+          # If a block is given, the received data will be yielded to it as
+          # it is read in.  Whether a block is given or not, the received data
+          # will be return as a string.  Note that the received data includes
+          # the prompt and in most cases the host's echo of our command.
+          #
+          # +options+ is either a String, specified the string or command to
+          # send to the host; or it is a hash of options.  If a hash, the
+          # following options can be specified:
+          #
+          # String:: the command or other string to send to the host.
+          # Match:: a regular expression, the sequence to look for in
+          #         the received data before returning.  If not specified,
+          #         the Prompt option value specified when this instance
+          #         was created will be used, or, failing that, the default
+          #         prompt of /[$%#>] \z/n.
+          # Timeout:: the seconds to wait for data from the host before raising
+          #           a Timeout error.  If not specified, the Timeout option
+          #           value specified when this instance was created will be
+          #           used, or, failing that, the default value of 10 seconds.
+          #
+          # The command or other string will have the newline sequence appended
+          # to it.
+          def cmd(options) # :yield: recvdata
+            match    = @options["Prompt"]
+            time_out = @options["Timeout"]
+            fail_eof = @options["FailEOF"]
 
-    # Send a command to the host.
-    #
-    # More exactly, sends a string to the host, and reads in all received
-    # data until is sees the prompt or other matched sequence.
-    #
-    # If a block is given, the received data will be yielded to it as
-    # it is read in.  Whether a block is given or not, the received data
-    # will be return as a string.  Note that the received data includes
-    # the prompt and in most cases the host's echo of our command.
-    #
-    # +options+ is either a String, specified the string or command to
-    # send to the host; or it is a hash of options.  If a hash, the
-    # following options can be specified:
-    #
-    # String:: the command or other string to send to the host.
-    # Match:: a regular expression, the sequence to look for in
-    #         the received data before returning.  If not specified,
-    #         the Prompt option value specified when this instance
-    #         was created will be used, or, failing that, the default
-    #         prompt of /[$%#>] \z/n.
-    # Timeout:: the seconds to wait for data from the host before raising
-    #           a Timeout error.  If not specified, the Timeout option
-    #           value specified when this instance was created will be
-    #           used, or, failing that, the default value of 10 seconds.
-    #
-    # The command or other string will have the newline sequence appended
-    # to it.
-    def cmd(options) # :yield: recvdata
-      match    = @options["Prompt"]
-      time_out = @options["Timeout"]
-      fail_eof = @options["FailEOF"]
+            if options.kind_of?(Hash)
+              string   = options["String"]
+              match    = options["Match"]   if options.has_key?("Match")
+              time_out = options["Timeout"] if options.has_key?("Timeout")
+              fail_eof = options["FailEOF"] if options.has_key?("FailEOF")
+            else
+              string = options
+            end
 
-      if options.kind_of?(Hash)
-        string   = options["String"]
-        match    = options["Match"]   if options.has_key?("Match")
-        time_out = options["Timeout"] if options.has_key?("Timeout")
-        fail_eof = options["FailEOF"] if options.has_key?("FailEOF")
-      else
-        string = options
-      end
+            self.puts(string)
+            if block_given?
+              waitfor({"Prompt" => match, "Timeout" => time_out, "FailEOF" => fail_eof}){|c| yield c }
+            else
+              waitfor({"Prompt" => match, "Timeout" => time_out, "FailEOF" => fail_eof})
+            end
+          end
 
-      self.puts(string)
-      if block_given?
-        waitfor({"Prompt" => match, "Timeout" => time_out, "FailEOF" => fail_eof}){|c| yield c }
-      else
-        waitfor({"Prompt" => match, "Timeout" => time_out, "FailEOF" => fail_eof})
-      end
-    end
+          # Login to the host with a given username and password.
+          #
+          # The username and password can either be provided as two string
+          # arguments in that order, or as a hash with keys "Name" and
+          # "Password".
+          #
+          # This method looks for the strings "login" and "Password" from the
+          # host to determine when to send the username and password.  If the
+          # login sequence does not follow this pattern (for instance, you
+          # are connecting to a service other than telnet), you will need
+          # to handle login yourself.
+          #
+          # The password can be omitted, either by only
+          # provided one String argument, which will be used as the username,
+          # or by providing a has that has no "Password" key.  In this case,
+          # the method will not look for the "Password:" prompt; if it is
+          # sent, it will have to be dealt with by later calls.
+          #
+          # The method returns all data received during the login process from
+          # the host, including the echoed username but not the password (which
+          # the host should not echo).  If a block is passed in, this received
+          # data is also yielded to the block as it is received.
+          def login(options, password = nil) # :yield: recvdata
+            login_prompt = /[Ll]ogin[: ]*\z/n
+            password_prompt = /[Pp]ass(?:word|phrase)[: ]*\z/n
+            if options.kind_of?(Hash)
+              username = options["Name"]
+              password = options["Password"]
+              login_prompt = options["LoginPrompt"] if options["LoginPrompt"]
+              password_prompt = options["PasswordPrompt"] if options["PasswordPrompt"]
+            else
+              username = options
+            end
 
-    # Login to the host with a given username and password.
-    #
-    # The username and password can either be provided as two string
-    # arguments in that order, or as a hash with keys "Name" and
-    # "Password".
-    #
-    # This method looks for the strings "login" and "Password" from the
-    # host to determine when to send the username and password.  If the
-    # login sequence does not follow this pattern (for instance, you
-    # are connecting to a service other than telnet), you will need
-    # to handle login yourself.
-    #
-    # The password can be omitted, either by only
-    # provided one String argument, which will be used as the username,
-    # or by providing a has that has no "Password" key.  In this case,
-    # the method will not look for the "Password:" prompt; if it is
-    # sent, it will have to be dealt with by later calls.
-    #
-    # The method returns all data received during the login process from
-    # the host, including the echoed username but not the password (which
-    # the host should not echo).  If a block is passed in, this received
-    # data is also yielded to the block as it is received.
-    def login(options, password = nil) # :yield: recvdata
-      login_prompt = /[Ll]ogin[: ]*\z/n
-      password_prompt = /[Pp]ass(?:word|phrase)[: ]*\z/n
-      if options.kind_of?(Hash)
-        username = options["Name"]
-        password = options["Password"]
-	login_prompt = options["LoginPrompt"] if options["LoginPrompt"]
-	password_prompt = options["PasswordPrompt"] if options["PasswordPrompt"]
-      else
-        username = options
-      end
+            if block_given?
+              line = waitfor(login_prompt){|c| yield c }
+              if password
+                line += cmd({"String" => username,
+                            "Match" => password_prompt}){|c| yield c }
+                line += cmd(password){|c| yield c }
+              else
+                line += cmd(username){|c| yield c }
+              end
+            else
+              line = waitfor(login_prompt)
+              if password
+                line += cmd({"String" => username,
+                            "Match" => password_prompt})
+                line += cmd(password)
+              else
+                line += cmd(username)
+              end
+            end
+            line
+          end
 
-      if block_given?
-        line = waitfor(login_prompt){|c| yield c }
-        if password
-          line += cmd({"String" => username,
-                       "Match" => password_prompt}){|c| yield c }
-          line += cmd(password){|c| yield c }
-        else
-          line += cmd(username){|c| yield c }
-        end
-      else
-        line = waitfor(login_prompt)
-        if password
-          line += cmd({"String" => username,
-                       "Match" => password_prompt})
-          line += cmd(password)
-        else
-          line += cmd(username)
-        end
-      end
-      line
-    end
+          # Closes the connection
+          def close
+            @sock.close
+          end
 
-    # Closes the connection
-    def close
-      @sock.close
-    end
-
-  end  # class Telnet
-end  # module Net
+        end  # class Telnet
+        end  # module Net
 

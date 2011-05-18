@@ -1,8 +1,8 @@
 #
 #   sync.rb - 2 phase lock with counter
-#   	$Release Version: 1.0$
-#   	$Revision$
-#   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
+#     $Release Version: 1.0$
+#     $Revision$
+#     by Keiju ISHITSUKA(keiju@ishitsuka.com)
 #
 # --
 #  Sync_m, Synchronizer_m
@@ -10,8 +10,8 @@
 #   obj.extend(Sync_m)
 #   or
 #   class Foo
-#	include Sync_m
-#	:
+#     include Sync_m
+#  :
 #   end
 #
 #   Sync_m#sync_mode
@@ -58,17 +58,17 @@ module Sync_m
     class UnknownLocker < Err
       Message = "Thread(%s) not locked."
       def UnknownLocker.Fail(th)
-	super(th.inspect)
+        super(th.inspect)
       end
     end
 
     class LockModeFailer < Err
       Message = "Unknown lock mode(%s)"
       def LockModeFailer.Fail(mode)
-	if mode.id2name
-	  mode = id2name
-	end
-	super(mode)
+        if mode.id2name
+          mode = id2name
+        end
+        super(mode)
       end
     end
   end
@@ -100,12 +100,12 @@ module Sync_m
 
   def sync_extend
     unless (defined? locked? and
-	    defined? shared? and
-	    defined? exclusive? and
-	    defined? lock and
-	    defined? unlock and
-	    defined? try_lock and
-	    defined? synchronize)
+      defined? shared? and
+      defined? exclusive? and
+      defined? lock and
+      defined? unlock and
+      defined? try_lock and
+      defined? synchronize)
       Sync_m.define_aliases(singleton_class)
     end
     sync_initialize
@@ -137,17 +137,17 @@ module Sync_m
 
     while true
       @sync_mutex.synchronize do
-	if sync_try_lock_sub(m)
-	  return self
-	else
-	  if sync_sh_locker[Thread.current]
-	    sync_upgrade_waiting.push [Thread.current, sync_sh_locker[Thread.current]]
-	    sync_sh_locker.delete(Thread.current)
-	  else
-	    sync_waiting.push Thread.current
-	  end
-	  @sync_mutex.sleep
-	end
+        if sync_try_lock_sub(m)
+          return self
+        else
+          if sync_sh_locker[Thread.current]
+            sync_upgrade_waiting.push [Thread.current, sync_sh_locker[Thread.current]]
+            sync_sh_locker.delete(Thread.current)
+          else
+            sync_waiting.push Thread.current
+          end
+          @sync_mutex.sleep
+        end
       end
     end
     self
@@ -157,7 +157,7 @@ module Sync_m
     wakeup_threads = []
     @sync_mutex.synchronize do
       if sync_mode == UN
-	Err::UnknownLocker.Fail(Thread.current)
+        Err::UnknownLocker.Fail(Thread.current)
       end
 
       m = sync_mode if m == EX and sync_mode == SH
@@ -165,51 +165,51 @@ module Sync_m
       runnable = false
       case m
       when UN
-	Err::UnknownLocker.Fail(Thread.current)
+        Err::UnknownLocker.Fail(Thread.current)
 
       when EX
-	if sync_ex_locker == Thread.current
-	  if (self.sync_ex_count = sync_ex_count - 1) == 0
-	    self.sync_ex_locker = nil
-	    if sync_sh_locker.include?(Thread.current)
-	      self.sync_mode = SH
-	    else
-	      self.sync_mode = UN
-	    end
-	    runnable = true
-	  end
-	else
-	  Err::UnknownLocker.Fail(Thread.current)
-	end
+        if sync_ex_locker == Thread.current
+          if (self.sync_ex_count = sync_ex_count - 1) == 0
+            self.sync_ex_locker = nil
+            if sync_sh_locker.include?(Thread.current)
+              self.sync_mode = SH
+            else
+              self.sync_mode = UN
+            end
+            runnable = true
+          end
+        else
+          Err::UnknownLocker.Fail(Thread.current)
+        end
 
       when SH
-	if (count = sync_sh_locker[Thread.current]).nil?
-	  Err::UnknownLocker.Fail(Thread.current)
-	else
-	  if (sync_sh_locker[Thread.current] = count - 1) == 0
-	    sync_sh_locker.delete(Thread.current)
-	    if sync_sh_locker.empty? and sync_ex_count == 0
-	      self.sync_mode = UN
-	      runnable = true
-	    end
-	  end
-	end
+        if (count = sync_sh_locker[Thread.current]).nil?
+          Err::UnknownLocker.Fail(Thread.current)
+        else
+          if (sync_sh_locker[Thread.current] = count - 1) == 0
+            sync_sh_locker.delete(Thread.current)
+            if sync_sh_locker.empty? and sync_ex_count == 0
+              self.sync_mode = UN
+              runnable = true
+            end
+          end
+        end
       end
 
       if runnable
-	if sync_upgrade_waiting.size > 0
-	  th, count = sync_upgrade_waiting.shift
-	  sync_sh_locker[th] = count
-	  th.wakeup
-	  wakeup_threads.push th
-	else
-	  wait = sync_waiting
-	  self.sync_waiting = []
-	  for th in wait
-	    th.wakeup
-	    wakeup_threads.push th
-	  end
-	end
+        if sync_upgrade_waiting.size > 0
+          th, count = sync_upgrade_waiting.shift
+          sync_sh_locker[th] = count
+          th.wakeup
+          wakeup_threads.push th
+        else
+          wait = sync_waiting
+          self.sync_waiting = []
+          for th in wait
+            th.wakeup
+            wakeup_threads.push th
+          end
+        end
       end
     end
     for th in wakeup_threads
@@ -263,34 +263,34 @@ module Sync_m
     when SH
       case sync_mode
       when UN
-	self.sync_mode = m
-	sync_sh_locker[Thread.current] = 1
-	ret = true
+        self.sync_mode = m
+        sync_sh_locker[Thread.current] = 1
+        ret = true
       when SH
-	count = 0 unless count = sync_sh_locker[Thread.current]
-	sync_sh_locker[Thread.current] = count + 1
-	ret = true
+        count = 0 unless count = sync_sh_locker[Thread.current]
+        sync_sh_locker[Thread.current] = count + 1
+        ret = true
       when EX
-	# in EX mode, lock will upgrade to EX lock
-	if sync_ex_locker == Thread.current
-	  self.sync_ex_count = sync_ex_count + 1
-	  ret = true
-	else
-	  ret = false
-	end
+        # in EX mode, lock will upgrade to EX lock
+        if sync_ex_locker == Thread.current
+          self.sync_ex_count = sync_ex_count + 1
+          ret = true
+        else
+          ret = false
+        end
       end
     when EX
       if sync_mode == UN or
-	  sync_mode == SH && sync_sh_locker.size == 1 && sync_sh_locker.include?(Thread.current)
-	self.sync_mode = m
-	self.sync_ex_locker = Thread.current
-	self.sync_ex_count = 1
-	ret = true
+        sync_mode == SH && sync_sh_locker.size == 1 && sync_sh_locker.include?(Thread.current)
+        self.sync_mode = m
+        self.sync_ex_locker = Thread.current
+        self.sync_ex_count = 1
+        ret = true
       elsif sync_mode == EX && sync_ex_locker == Thread.current
-	self.sync_ex_count = sync_ex_count + 1
-	ret = true
+        self.sync_ex_count = sync_ex_count + 1
+        ret = true
       else
-	ret = false
+        ret = false
       end
     else
       Err::LockModeFailer.Fail mode

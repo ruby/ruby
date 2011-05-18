@@ -1,3 +1,10 @@
+Thu May 19 06:16:41 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib:  Convert tabs to spaces for ruby files per
+	  http://redmine.ruby-lang.org/projects/ruby/wiki/DeveloperHowto#coding-style
+	  Patch by Steve Klabnik [Ruby 1.9 - Bug #4730]
+	  Patch by Jason Dew [Ruby 1.9 - Feature #4718]
+
 Thu May 19 06:06:07 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/cgi/util.rb:  Improve documentation.  Patch by Clinton Nixon.

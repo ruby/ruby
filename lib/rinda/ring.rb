@@ -43,10 +43,10 @@ module Rinda
 
     def write_service
       Thread.new do
-	loop do
-	  msg = @soc.recv(1024)
-	  do_write(msg)
-	end
+        loop do
+          msg = @soc.recv(1024)
+          do_write(msg)
+        end
       end
     end
 
@@ -56,11 +56,11 @@ module Rinda
 
     def do_write(msg)
       Thread.new do
-	begin
-	  tuple, sec = Marshal.load(msg)
-	  @ts.write(tuple, sec)
-	rescue
-	end
+        begin
+          tuple, sec = Marshal.load(msg)
+          @ts.write(tuple, sec)
+        rescue
+        end
       end
     end
 
@@ -69,9 +69,9 @@ module Rinda
 
     def reply_service
       Thread.new do
-	loop do
-	  do_reply
-	end
+        loop do
+          do_reply
+        end
       end
     end
 
@@ -105,8 +105,8 @@ module Rinda
 
     def self.finger
       unless @@finger
-	@@finger = self.new
-	@@finger.lookup_ring_any
+        @@finger = self.new
+        @@finger.lookup_ring_any
       end
       @@finger
     end
@@ -178,15 +178,15 @@ module Rinda
 
       msg = Marshal.dump([[:lookup_ring, DRbObject.new(block)], timeout])
       @broadcast_list.each do |it|
-	soc = UDPSocket.open
-	begin
-	  soc.setsockopt(Socket::SOL_SOCKET, Socket::SO_BROADCAST, true)
-	  soc.send(msg, 0, it, @port)
-	rescue
-	  nil
-	ensure
-	  soc.close
-	end
+        soc = UDPSocket.open
+        begin
+          soc.setsockopt(Socket::SOL_SOCKET, Socket::SO_BROADCAST, true)
+          soc.send(msg, 0, it, @port)
+        rescue
+          nil
+        ensure
+          soc.close
+        end
       end
       sleep(timeout)
     end
@@ -199,13 +199,13 @@ module Rinda
       queue = Queue.new
 
       Thread.new do
-	self.lookup_ring(timeout) do |ts|
-	  queue.push(ts)
-	end
-	queue.push(nil)
-	while it = queue.pop
-	  @rings.push(it)
-	end
+        self.lookup_ring(timeout) do |ts|
+          queue.push(ts)
+        end
+        queue.push(nil)
+        while it = queue.pop
+          @rings.push(it)
+        end
       end
 
       @primary = queue.pop

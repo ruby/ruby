@@ -7,7 +7,7 @@ module REXML
   # class directly.
   class Child
     include Node
-    attr_reader :parent		# The Parent of this object
+    attr_reader :parent    # The Parent of this object
 
     # Constructor.  Any inheritors of this class should call super to make
     # sure this method is called.

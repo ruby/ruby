@@ -23,10 +23,10 @@ class Dir
       tmp = @@systmpdir
     else
       for dir in [ENV['TMPDIR'], ENV['TMP'], ENV['TEMP'], @@systmpdir, '/tmp']
-	if dir and stat = File.stat(dir) and stat.directory? and stat.writable?
-	  tmp = dir
-	  break
-	end rescue nil
+        if dir and stat = File.stat(dir) and stat.directory? and stat.writable?
+          tmp = dir
+          break
+        end rescue nil
       end
       File.expand_path(tmp)
     end

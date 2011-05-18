@@ -13,11 +13,11 @@ module RSS
       end
 
       def self.install_image_item(klass)
-	klass.module_eval(<<-EOC, __FILE__, __LINE__ + 1)
+        klass.module_eval(<<-EOC, __FILE__, __LINE__ + 1)
           class ImageItem < ImageItemBase
             DublinCoreModel.install_dublin_core(self)
           end
-EOC
+        EOC
       end
 
       class ImageItemBase < Base
@@ -29,9 +29,9 @@ EOC
         add_need_initialize_variable("image_width")
         add_need_initialize_variable("image_height")
         alias width= image_width=
-        alias width image_width
+          alias width image_width
         alias height= image_height=
-        alias height image_height
+          alias height image_height
 
         def have_required_values?
           @about
@@ -57,7 +57,7 @@ EOC
       end
 
       def self.install_image_favicon(klass)
-	klass.module_eval(<<-EOC, __FILE__, __LINE__ + 1)
+        klass.module_eval(<<-EOC, __FILE__, __LINE__ + 1)
           class ImageFavicon < ImageFaviconBase
             DublinCoreModel.install_dublin_core(self)
           end
@@ -73,9 +73,9 @@ EOC
         alias size image_size
         alias size= image_size=
 
-        def have_required_values?
-          @about and @image_size
-        end
+          def have_required_values?
+            @about and @image_size
+          end
 
         def to_feed(feed, current)
           if current.respond_to?(:image_favicon=) and have_required_values?

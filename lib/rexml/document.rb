@@ -165,7 +165,7 @@ module REXML
     #   Document.new("<a><b/></a>").serialize( tr )
     #
     # output::
-    #	  output an object which supports '<< string'; this is where the
+    #    output an object which supports '<< string'; this is where the
     #   document will be written.
     # indent::
     #   An integer.  If -1, no indenting will be used; otherwise, the
@@ -188,15 +188,15 @@ module REXML
         output = Output.new( output, xml_decl.encoding )
       end
       formatter = if indent > -1
-          if transitive
-            require "rexml/formatters/transitive"
-            REXML::Formatters::Transitive.new( indent, ie_hack )
-          else
-            REXML::Formatters::Pretty.new( indent, ie_hack )
-          end
-        else
-          REXML::Formatters::Default.new( ie_hack )
-        end
+                    if transitive
+                      require "rexml/formatters/transitive"
+                      REXML::Formatters::Transitive.new( indent, ie_hack )
+                    else
+                      REXML::Formatters::Pretty.new( indent, ie_hack )
+                    end
+                  else
+                    REXML::Formatters::Default.new( ie_hack )
+                  end
       formatter.write( self, output )
     end
 

@@ -466,11 +466,11 @@ module DRb
     def initialize(err, buf)
       case err.to_s
       when /uninitialized constant (\S+)/
-	@name = $1
+        @name = $1
       when /undefined class\/module (\S+)/
-	@name = $1
+        @name = $1
       else
-	@name = nil
+        @name = nil
       end
       @buf = buf
     end
@@ -486,9 +486,9 @@ module DRb
 
     def self._load(s) # :nodoc:
       begin
-	Marshal::load(s)
+        Marshal::load(s)
       rescue NameError, ArgumentError
-	DRbUnknown.new($!, s)
+        DRbUnknown.new($!, s)
       end
     end
 
@@ -514,16 +514,16 @@ module DRb
   class DRbArray
     def initialize(ary)
       @ary = ary.collect { |obj|
-	if obj.kind_of? DRbUndumped
-	  DRbObject.new(obj)
-	else
-	  begin
-	    Marshal.dump(obj)
-	    obj
-	  rescue
-	    DRbObject.new(obj)
-	  end
-	end
+        if obj.kind_of? DRbUndumped
+          DRbObject.new(obj)
+        else
+          begin
+            Marshal.dump(obj)
+            obj
+          rescue
+            DRbObject.new(obj)
+          end
+        end
       }
     end
 
@@ -554,16 +554,16 @@ module DRb
     def dump(obj, error=false)  # :nodoc:
       obj = make_proxy(obj, error) if obj.kind_of? DRbUndumped
       begin
-	str = Marshal::dump(obj)
+        str = Marshal::dump(obj)
       rescue
-	str = Marshal::dump(make_proxy(obj, error))
+        str = Marshal::dump(make_proxy(obj, error))
       end
       [str.size].pack('N') + str
     end
 
     def load(soc)  # :nodoc:
       begin
-        sz = soc.read(4)	# sizeof (N)
+        sz = soc.read(4)  # sizeof (N)
       rescue
         raise(DRbConnError, $!.message, $!.backtrace)
       end
@@ -600,7 +600,7 @@ module DRb
       ary.push(dump(msg_id.id2name))
       ary.push(dump(arg.length))
       arg.each do |e|
-	ary.push(dump(e))
+        ary.push(dump(e))
       end
       ary.push(dump(b))
       stream.write(ary.join(''))
@@ -616,7 +616,7 @@ module DRb
       raise(DRbConnError, "too many arguments") if @argc_limit < argc
       argv = Array.new(argc, nil)
       argc.times do |n|
-	argv[n] = load(stream)
+        argv[n] = load(stream)
       end
       block = load(stream)
       return ro, msg, argv, block
@@ -727,18 +727,18 @@ module DRb
     # URI, but an error occurs in opening it, a DRbConnError is raised.
     def open(uri, config, first=true)
       @protocol.each do |prot|
-	begin
-	  return prot.open(uri, config)
-	rescue DRbBadScheme
-	rescue DRbConnError
-	  raise($!)
-	rescue
-	  raise(DRbConnError, "#{uri} - #{$!.inspect}")
-	end
+        begin
+          return prot.open(uri, config)
+        rescue DRbBadScheme
+        rescue DRbConnError
+          raise($!)
+        rescue
+          raise(DRbConnError, "#{uri} - #{$!.inspect}")
+        end
       end
       if first && (config[:auto_load] != false)
-	auto_load(uri, config)
-	return open(uri, config, false)
+        auto_load(uri, config)
+        return open(uri, config, false)
       end
       raise DRbBadURI, 'can\'t parse uri:' + uri
     end
@@ -755,14 +755,14 @@ module DRb
     # error is passed on to the caller.
     def open_server(uri, config, first=true)
       @protocol.each do |prot|
-	begin
-	  return prot.open_server(uri, config)
-	rescue DRbBadScheme
-	end
+        begin
+          return prot.open_server(uri, config)
+        rescue DRbBadScheme
+        end
       end
       if first && (config[:auto_load] != false)
-	auto_load(uri, config)
-	return open_server(uri, config, false)
+        auto_load(uri, config)
+        return open_server(uri, config, false)
       end
       raise DRbBadURI, 'can\'t parse uri:' + uri
     end
@@ -776,15 +776,15 @@ module DRb
     # URI, then a DRbBadURI error is raised.
     def uri_option(uri, config, first=true)
       @protocol.each do |prot|
-	begin
-	  uri, opt = prot.uri_option(uri, config)
-	  # opt = nil if opt == ''
-	  return uri, opt
-	rescue DRbBadScheme
-	end
+        begin
+          uri, opt = prot.uri_option(uri, config)
+          # opt = nil if opt == ''
+          return uri, opt
+        rescue DRbBadScheme
+        end
       end
       if first && (config[:auto_load] != false)
-	auto_load(uri, config)
+        auto_load(uri, config)
         return uri_option(uri, config, false)
       end
       raise DRbBadURI, 'can\'t parse uri:' + uri
@@ -793,7 +793,7 @@ module DRb
 
     def auto_load(uri, config)  # :nodoc:
       if uri =~ /^drb([a-z0-9]+):/
-	require("drb/#{$1}") rescue nil
+        require("drb/#{$1}") rescue nil
       end
     end
     module_function :auto_load
@@ -806,13 +806,13 @@ module DRb
     private
     def self.parse_uri(uri)
       if uri =~ /^druby:\/\/(.*?):(\d+)(\?(.*))?$/
-	host = $1
-	port = $2.to_i
-	option = $4
-	[host, port, option]
+        host = $1
+        port = $2.to_i
+        option = $4
+        [host, port, option]
       else
-	raise(DRbBadScheme, uri) unless uri =~ /^druby:/
-	raise(DRbBadURI, 'can\'t parse uri:' + uri)
+        raise(DRbBadScheme, uri) unless uri =~ /^druby:/
+          raise(DRbBadURI, 'can\'t parse uri:' + uri)
       end
     end
 
@@ -858,7 +858,7 @@ module DRb
         host = getservername
         soc = open_server_inaddr_any(host, port)
       else
-	soc = TCPServer.open(host, port)
+        soc = TCPServer.open(host, port)
       end
       port = soc.addr[1] if port == 0
       config[:tcp_port] = port
@@ -928,8 +928,8 @@ module DRb
     # client-server session.
     def close
       if @socket
-	@socket.close
-	@socket = nil
+        @socket.close
+        @socket = nil
       end
     end
 
@@ -938,9 +938,9 @@ module DRb
     # the server's side of this client-server session.
     def accept
       while true
-	s = @socket.accept
-	break if (@acl ? @acl.allow_socket?(s) : true)
-	s.close
+        s = @socket.accept
+        break if (@acl ? @acl.allow_socket?(s) : true)
+        s.close
       end
       if @config[:tcp_original_host].to_s.size == 0
         uri = "druby://#{s.addr[3]}:#{@config[:tcp_port]}"
@@ -954,8 +954,8 @@ module DRb
     def alive?
       return false unless @socket
       if IO.select([@socket], nil, nil, 0)
-	close
-	return false
+        close
+        return false
       end
       true
     end
@@ -1004,7 +1004,7 @@ module DRb
       uri, ref = Marshal.load(s)
 
       if DRb.here?(uri)
-	obj = DRb.to_obj(ref)
+        obj = DRb.to_obj(ref)
         if ((! obj.tainted?) && Thread.current[:drb_untaint])
           Thread.current[:drb_untaint].push(obj)
         end
@@ -1042,12 +1042,12 @@ module DRb
       @uri = nil
       @ref = nil
       if obj.nil?
-	return if uri.nil?
-	@uri, option = DRbProtocol.uri_option(uri, DRb.config)
-	@ref = DRbURIOption.new(option) unless option.nil?
+        return if uri.nil?
+        @uri, option = DRbProtocol.uri_option(uri, DRb.config)
+        @ref = DRbURIOption.new(option) unless option.nil?
       else
-	@uri = uri ? uri : (DRb.uri rescue nil)
-	@ref = obj ? DRb.to_id(obj) : nil
+        @uri = uri ? uri : (DRb.uri rescue nil)
+        @ref = obj ? DRb.to_id(obj) : nil
       end
     end
 
@@ -1078,9 +1078,9 @@ module DRb
     # Routes method calls to the referenced object.
     def method_missing(msg_id, *a, &b)
       if DRb.here?(@uri)
-	obj = DRb.to_obj(@ref)
-	DRb.current_server.check_insecure_method(obj, msg_id)
-	return obj.__send__(msg_id, *a, &b)
+        obj = DRb.to_obj(@ref)
+        DRb.current_server.check_insecure_method(obj, msg_id)
+        return obj.__send__(msg_id, *a, &b)
       end
 
       succ, result = self.class.with_friend(@uri) do
@@ -1095,7 +1095,7 @@ module DRb
         raise result
       else
         bt = self.class.prepare_backtrace(@uri, result)
-	result.set_backtrace(bt + caller)
+        result.set_backtrace(bt + caller)
         raise result
       end
     end
@@ -1117,7 +1117,7 @@ module DRb
       result.backtrace.each do |x|
         break if /`__send__'$/ =~ x
         if /^\(druby:\/\// =~ x
-          bt.push(x)
+               bt.push(x)
         else
           bt.push(prefix + x)
         end
@@ -1153,36 +1153,36 @@ module DRb
 
     def self.open(remote_uri)  # :nodoc:
       begin
-	conn = nil
+        conn = nil
 
-	@mutex.synchronize do
-	  #FIXME
-	  new_pool = []
-	  @pool.each do |c|
-	    if conn.nil? and c.uri == remote_uri
-	      conn = c if c.alive?
-	    else
-	      new_pool.push c
-	    end
-	  end
-	  @pool = new_pool
-	end
+        @mutex.synchronize do
+          #FIXME
+          new_pool = []
+          @pool.each do |c|
+            if conn.nil? and c.uri == remote_uri
+              conn = c if c.alive?
+            else
+              new_pool.push c
+            end
+          end
+          @pool = new_pool
+        end
 
-	conn = self.new(remote_uri) unless conn
-	succ, result = yield(conn)
-	return succ, result
+        conn = self.new(remote_uri) unless conn
+        succ, result = yield(conn)
+        return succ, result
 
       ensure
-	if conn
-	  if succ
-	    @mutex.synchronize do
-	      @pool.unshift(conn)
-	      @pool.pop.close while @pool.size > POOL_SIZE
-	    end
-	  else
-	    conn.close
-	  end
-	end
+        if conn
+          if succ
+            @mutex.synchronize do
+              @pool.unshift(conn)
+              @pool.pop.close while @pool.size > POOL_SIZE
+            end
+          else
+            conn.close
+          end
+        end
       end
     end
 
@@ -1274,11 +1274,11 @@ module DRb
 
     def self.make_config(hash={})  # :nodoc:
       default_config = {
-	:idconv => @@idconv,
-	:verbose => @@verbose,
-	:tcp_acl => @@acl,
-	:load_limit => @@load_limit,
-	:argc_limit => @@argc_limit,
+        :idconv => @@idconv,
+        :verbose => @@verbose,
+        :tcp_acl => @@acl,
+        :load_limit => @@load_limit,
+        :argc_limit => @@argc_limit,
         :safe_level => @@safe_level
       }
       default_config.update(hash)
@@ -1329,12 +1329,12 @@ module DRb
     # The server will immediately start running in its own thread.
     def initialize(uri=nil, front=nil, config_or_acl=nil)
       if Hash === config_or_acl
-	config = config_or_acl.dup
+        config = config_or_acl.dup
       else
-	acl = config_or_acl || @@acl
-	config = {
-	  :tcp_acl => acl
-	}
+        acl = config_or_acl || @@acl
+        config = {
+          :tcp_acl => acl
+        }
       end
 
       @config = self.class.make_config(config)
@@ -1414,28 +1414,28 @@ module DRb
     private
     def kill_sub_thread
       Thread.new do
-	grp = ThreadGroup.new
-	grp.add(Thread.current)
-	list = @grp.list
-	while list.size > 0
-	  list.each do |th|
-	    th.kill if th.alive?
-	  end
-	  list = @grp.list
-	end
+        grp = ThreadGroup.new
+        grp.add(Thread.current)
+        list = @grp.list
+        while list.size > 0
+          list.each do |th|
+            th.kill if th.alive?
+          end
+          list = @grp.list
+        end
       end
     end
 
     def run
       Thread.start do
-	begin
-	  while true
-	    main_loop
-	  end
-	ensure
-	  @protocol.close if @protocol
-	  kill_sub_thread
-	end
+        begin
+          while true
+            main_loop
+          end
+        ensure
+          @protocol.close if @protocol
+          kill_sub_thread
+        end
       end
     end
 
@@ -1473,10 +1473,10 @@ module DRb
       raise(SecurityError, "insecure method `#{msg_id}'") if insecure_method?(msg_id)
 
       if obj.private_methods.include?(msg_id)
-	desc = any_to_s(obj)
+        desc = any_to_s(obj)
         raise NoMethodError, "private method `#{msg_id}' called for #{desc}"
       elsif obj.protected_methods.include?(msg_id)
-	desc = any_to_s(obj)
+        desc = any_to_s(obj)
         raise NoMethodError, "protected method `#{msg_id}' called for #{desc}"
       else
         true
@@ -1486,15 +1486,15 @@ module DRb
 
     class InvokeMethod  # :nodoc:
       def initialize(drb_server, client)
-	@drb_server = drb_server
+        @drb_server = drb_server
         @safe_level = drb_server.safe_level
-	@client = client
+        @client = client
       end
 
       def perform
-	@result = nil
-	@succ = false
-	setup_message
+        @result = nil
+        @succ = false
+        setup_message
 
         if $SAFE < @safe_level
           info = Thread.current['DRb']
@@ -1518,19 +1518,19 @@ module DRb
             @result = perform_without_block
           end
         end
-	@succ = true
-	if @msg_id == :to_ary && @result.class == Array
-	  @result = DRbArray.new(@result)
-	end
-	return @succ, @result
+        @succ = true
+        if @msg_id == :to_ary && @result.class == Array
+          @result = DRbArray.new(@result)
+        end
+        return @succ, @result
       rescue StandardError, ScriptError, Interrupt
-	@result = $!
-	return @succ, @result
+        @result = $!
+        return @succ, @result
       end
 
       private
       def init_with_client
-	obj, msg, argv, block = @client.recv_request
+        obj, msg, argv, block = @client.recv_request
         @obj = obj
         @msg_id = msg.intern
         @argv = argv
@@ -1542,21 +1542,21 @@ module DRb
       end
 
       def setup_message
-	init_with_client
-	check_insecure_method
+        init_with_client
+        check_insecure_method
       end
 
       def perform_without_block
-	if Proc === @obj && @msg_id == :__drb_yield
+        if Proc === @obj && @msg_id == :__drb_yield
           if @argv.size == 1
-	    ary = @argv
-	  else
-	    ary = [@argv]
-	  end
-	  ary.collect(&@obj)[0]
-	else
-	  @obj.__send__(@msg_id, *@argv)
-	end
+            ary = @argv
+          else
+            ary = [@argv]
+          end
+          ary.collect(&@obj)[0]
+        else
+          @obj.__send__(@msg_id, *@argv)
+        end
       end
 
     end
@@ -1582,29 +1582,29 @@ module DRb
     # or a local method call fails.
     def main_loop
       Thread.start(@protocol.accept) do |client|
-	@grp.add Thread.current
-	Thread.current['DRb'] = { 'client' => client ,
-	                          'server' => self }
-	loop do
-	  begin
-	    succ = false
-	    invoke_method = InvokeMethod.new(self, client)
-	    succ, result = invoke_method.perform
-	    if !succ && verbose
-	      p result
-	      result.backtrace.each do |x|
-		puts x
-	      end
-	    end
-	    client.send_reply(succ, result) rescue nil
-	  ensure
+        @grp.add Thread.current
+        Thread.current['DRb'] = { 'client' => client ,
+          'server' => self }
+        loop do
+          begin
+            succ = false
+            invoke_method = InvokeMethod.new(self, client)
+            succ, result = invoke_method.perform
+            if !succ && verbose
+              p result
+              result.backtrace.each do |x|
+                puts x
+              end
+            end
+            client.send_reply(succ, result) rescue nil
+          ensure
             client.close unless succ
             if Thread.current['DRb']['stop_service']
               Thread.new { stop_service }
             end
             break unless succ
-	  end
-	end
+          end
+        end
       end
     end
   end

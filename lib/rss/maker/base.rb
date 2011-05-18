@@ -51,7 +51,7 @@ module RSS
 
           module_eval(<<-EOC, __FILE__, __LINE__ + 1)
             def new_#{name}
-              #{name} = self.class::#{klass_name}.new(@maker)
+            #{name} = self.class::#{klass_name}.new(@maker)
               @#{plural} << #{name}
               if block_given?
                 yield #{name}
@@ -63,14 +63,14 @@ module RSS
 
             def to_feed(*args)
               @#{plural}.each do |#{name}|
-                #{name}.to_feed(*args)
+            #{name}.to_feed(*args)
               end
             end
 
             def replace(elements)
               @#{plural}.replace(elements.to_a)
             end
-          EOC
+            EOC
         end
 
         def def_classed_element_without_accessor(name, class_name=nil)
@@ -88,7 +88,7 @@ module RSS
             def make_#{name}
               self.class::#{class_name}.new(@maker)
             end
-          EOC
+            EOC
         end
 
         def def_classed_element(name, class_name=nil, attribute_name=nil)
@@ -106,7 +106,7 @@ module RSS
               def #{name}=(new_value)
                 @#{name}.#{attribute_name} = new_value
               end
-            EOC
+                  EOC
           else
             attr_reader name
           end
@@ -126,17 +126,17 @@ module RSS
           end
           module_eval(<<-EOC, __FILE__, __LINE__ + 1)
             def #{name}
-              #{local_variable_name} = #{plural_name}.first
-              #{local_variable_name} ? #{local_variable_name}.#{attribute} : nil
+            #{local_variable_name} = #{plural_name}.first
+            #{local_variable_name} ? #{local_variable_name}.#{attribute} : nil
             end
 
             def #{name}=(#{new_value_variable_name})
-              #{local_variable_name} =
-                #{plural_name}.first || #{plural_name}.new_#{new_name}
-              #{additional_setup_code}
-              #{local_variable_name}.#{attribute} = #{new_value_variable_name}
+            #{local_variable_name} =
+            #{plural_name}.first || #{plural_name}.new_#{new_name}
+            #{additional_setup_code}
+            #{local_variable_name}.#{attribute} = #{new_value_variable_name}
             end
-          EOC
+            EOC
         end
 
         def def_other_element(name)
@@ -153,7 +153,7 @@ module RSS
                 current.#{name} = @#{name}
               end
             end
-          EOC
+                EOC
         end
 
         def def_csv_element(name, type=nil)
@@ -167,7 +167,7 @@ module RSS
             def #{name}=(value)
               @#{name} = Utils::CSV.parse(value)#{converter}
             end
-          EOC
+              EOC
         end
       end
 
@@ -308,7 +308,7 @@ module RSS
         def ensure_xml_content(content)
           xhtml_uri = ::RSS::Atom::XHTML_URI
           unless content.is_a?(RSS::XML::Element) and
-              ["div", xhtml_uri] == [content.name, content.uri]
+            ["div", xhtml_uri] == [content.name, content.uri]
             children = content
             children = [children] unless content.is_a?(Array)
             children = set_xhtml_uri_as_default_uri(children)
@@ -331,7 +331,7 @@ module RSS
         def set_xhtml_uri_as_default_uri(children)
           children.collect do |child|
             if child.is_a?(RSS::XML::Element) and
-                child.prefix.nil? and child.uri.nil?
+              child.prefix.nil? and child.uri.nil?
               RSS::XML::Element.new(child.name, nil, ::RSS::Atom::XHTML_URI,
                                     child.attributes.dup,
                                     set_xhtml_uri_as_default_uri(child.children))
@@ -385,7 +385,7 @@ module RSS
         }
         _language = language
         if _language and
-            !dc_languages.any? {|dc_language| dc_language.value == _language}
+          !dc_languages.any? {|dc_language| dc_language.value == _language}
           dc_language = self.class::DublinCoreLanguages::DublinCoreLanguage.new(self)
           dc_language.value = _language.dup
           dc_languages.unshift(dc_language)
@@ -417,7 +417,7 @@ module RSS
           def make_#{element}
             self.class::#{Utils.to_class_name(element)}.new(self)
           end
-        EOC
+          EOC
       end
 
       attr_reader :feed_version
@@ -500,9 +500,9 @@ module RSS
       end
 
       [
-       ["link", "href", Proc.new {|target,| "#{target}.href = 'self'"}],
-       ["author", "name"],
-       ["contributor", "name"],
+        ["link", "href", Proc.new {|target,| "#{target}.href = 'self'"}],
+        ["author", "name"],
+        ["contributor", "name"],
       ].each do |name, attribute, additional_setup_maker|
         def_classed_elements(name, attribute, &additional_setup_maker)
       end
@@ -511,7 +511,7 @@ module RSS
          managingEditor webMaster rating docs ttl).each do |element|
         attr_accessor element
         add_need_initialize_variable(element)
-      end
+         end
 
       %w(date lastBuildDate).each do |date_element|
         attr_reader date_element
@@ -713,12 +713,12 @@ module RSS
         end
 
         [
-         ["author", "name"],
-         ["link", "href", Proc.new {|target,| "#{target}.href = 'alternate'"}],
-         ["contributor", "name"],
+          ["author", "name"],
+          ["link", "href", Proc.new {|target,| "#{target}.href = 'alternate'"}],
+          ["contributor", "name"],
         ].each do |name, attribute|
           def_classed_elements(name, attribute)
-	end
+        end
 
         %w(comments id published).each do |element|
           attr_accessor element
@@ -795,10 +795,10 @@ module RSS
           %w(authors categories contributors generator icon
              logo rights subtitle title).each do |name|
             def_classed_element(name)
-          end
+             end
 
           [
-           ["link", "href"],
+            ["link", "href"],
           ].each do |name, attribute|
             def_classed_elements(name, attribute)
           end

@@ -55,7 +55,7 @@ module CMath
     else
       ere = exp!(z.real)
       Complex(ere * cos!(z.imag),
-	      ere * sin!(z.imag))
+              ere * sin!(z.imag))
     end
   end
 
@@ -71,7 +71,7 @@ module CMath
     else
       a = Complex(log!(z.abs), z.arg)
       if b
-	a /= log(b)
+        a /= log(b)
       end
       a
     end
@@ -105,18 +105,18 @@ module CMath
   def sqrt(z)
     if z.real?
       if z < 0
-	Complex(0, sqrt!(-z))
+        Complex(0, sqrt!(-z))
       else
-	sqrt!(z)
+        sqrt!(z)
       end
     else
       if z.imag < 0 ||
-	  (z.imag == 0 && z.imag.to_s[0] == '-')
-	sqrt(z.conjugate).conjugate
+        (z.imag == 0 && z.imag.to_s[0] == '-')
+        sqrt(z.conjugate).conjugate
       else
-	r = z.abs
-	x = z.real
-	Complex(sqrt!((r + x) / 2.0), sqrt!((r - x) / 2.0))
+        r = z.abs
+        x = z.real
+        Complex(sqrt!((r + x) / 2.0), sqrt!((r - x) / 2.0))
       end
     end
   end
@@ -138,7 +138,7 @@ module CMath
       sin!(z)
     else
       Complex(sin!(z.real) * cosh!(z.imag),
-	      cos!(z.real) * sinh!(z.imag))
+              cos!(z.real) * sinh!(z.imag))
     end
   end
 
@@ -149,7 +149,7 @@ module CMath
       cos!(z)
     else
       Complex(cos!(z.real) * cosh!(z.imag),
-	      -sin!(z.real) * sinh!(z.imag))
+              -sin!(z.real) * sinh!(z.imag))
     end
   end
 
@@ -170,7 +170,7 @@ module CMath
       sinh!(z)
     else
       Complex(sinh!(z.real) * cos!(z.imag),
-	      cosh!(z.real) * sin!(z.imag))
+              cosh!(z.real) * sin!(z.imag))
     end
   end
 
@@ -181,7 +181,7 @@ module CMath
       cosh!(z)
     else
       Complex(cosh!(z.real) * cos!(z.imag),
-	      sinh!(z.real) * sin!(z.imag))
+              sinh!(z.real) * sin!(z.imag))
     end
   end
 

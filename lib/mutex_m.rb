@@ -1,26 +1,26 @@
 #
 #   mutex_m.rb -
-#   	$Release Version: 3.0$
-#   	$Revision: 1.7 $
+#     $Release Version: 3.0$
+#     $Revision: 1.7 $
 #       Original from mutex.rb
-#   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
+#     by Keiju ISHITSUKA(keiju@ishitsuka.com)
 #       modified by matz
 #       patched by akira yamada
 #
 # --
 #   Usage:
-#	require "mutex_m.rb"
-#	obj = Object.new
-#	obj.extend Mutex_m
-#	...
-#	extended object can be handled like Mutex
+#  require "mutex_m.rb"
+#  obj = Object.new
+#  obj.extend Mutex_m
+#  ...
+#  extended object can be handled like Mutex
 #       or
-#	class Foo
-#	  include Mutex_m
-#	  ...
-#	end
-#	obj = Foo.new
-#	this obj can be handled like Mutex
+#  class Foo
+#    include Mutex_m
+#    ...
+#  end
+#  obj = Foo.new
+#  this obj can be handled like Mutex
 #
 
 require 'thread'
@@ -48,11 +48,11 @@ module Mutex_m
 
   def mu_extended
     unless (defined? locked? and
-	    defined? lock and
-	    defined? unlock and
-	    defined? try_lock and
-	    defined? synchronize)
-      Mutex_m.define_aliases(singleton_class)
+            defined? lock and
+            defined? unlock and
+            defined? try_lock and
+            defined? synchronize)
+            Mutex_m.define_aliases(singleton_class)
     end
     mu_initialize
   end

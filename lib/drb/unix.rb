@@ -9,12 +9,12 @@ module DRb
   class DRbUNIXSocket < DRbTCPSocket
     def self.parse_uri(uri)
       if /^drbunix:(.*?)(\?(.*))?$/ =~ uri
-	filename = $1
-	option = $3
-	[filename, option]
+        filename = $1
+        option = $3
+        [filename, option]
       else
-	raise(DRbBadScheme, uri) unless uri =~ /^drbunix:/
-	raise(DRbBadURI, 'can\'t parse uri:' + uri)
+        raise(DRbBadScheme, uri) unless uri =~ /^drbunix:/
+          raise(DRbBadURI, 'can\'t parse uri:' + uri)
       end
     end
 
@@ -28,11 +28,11 @@ module DRb
     def self.open_server(uri, config)
       filename, = parse_uri(uri)
       if filename.size == 0
-	soc = temp_server
+        soc = temp_server
         filename = soc.path
-	uri = 'drbunix:' + soc.path
+        uri = 'drbunix:' + soc.path
       else
-	soc = UNIXServer.open(filename)
+        soc = UNIXServer.open(filename)
       end
       owner = config[:UNIXFileOwner]
       group = config[:UNIXFileGroup]
@@ -67,18 +67,18 @@ module DRb
       tmpdir = Dir::tmpdir
       n = 0
       while true
-	begin
-	  tmpname = sprintf('%s/druby%d.%d', tmpdir, $$, n)
-	  lock = tmpname + '.lock'
-	  unless File.exist?(tmpname) or File.exist?(lock)
-	    Dir.mkdir(lock)
-	    break
-	  end
-	rescue
-	  raise "cannot generate tempfile `%s'" % tmpname if n >= Max_try
-	  #sleep(1)
-	end
-	n += 1
+        begin
+          tmpname = sprintf('%s/druby%d.%d', tmpdir, $$, n)
+          lock = tmpname + '.lock'
+          unless File.exist?(tmpname) or File.exist?(lock)
+            Dir.mkdir(lock)
+            break
+          end
+        rescue
+          raise "cannot generate tempfile `%s'" % tmpname if n >= Max_try
+          #sleep(1)
+        end
+        n += 1
       end
       soc = UNIXServer.new(tmpname)
       Dir.rmdir(lock)

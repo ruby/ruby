@@ -6,15 +6,15 @@ module REXML
     STOP = ']]>'
     ILLEGAL = /(\]\]>)/
 
-    #	Constructor.  CData is data between <![CDATA[ ... ]]>
-    #
-    # _Examples_
-    #  CData.new( source )
-    #  CData.new( "Here is some CDATA" )
-    #  CData.new( "Some unprocessed data", respect_whitespace_TF, parent_element )
-    def initialize( first, whitespace=true, parent=nil )
-      super( first, whitespace, parent, false, true, ILLEGAL )
-    end
+      #  Constructor.  CData is data between <![CDATA[ ... ]]>
+      #
+      # _Examples_
+      #  CData.new( source )
+      #  CData.new( "Here is some CDATA" )
+      #  CData.new( "Some unprocessed data", respect_whitespace_TF, parent_element )
+      def initialize( first, whitespace=true, parent=nil )
+        super( first, whitespace, parent, false, true, ILLEGAL )
+      end
 
     # Make a copy of this object
     #

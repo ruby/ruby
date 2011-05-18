@@ -45,24 +45,24 @@ module Abbrev
     seen = Hash.new(0)
 
     if pattern.is_a?(String)
-      pattern = /^#{Regexp.quote(pattern)}/	# regard as a prefix
+      pattern = /^#{Regexp.quote(pattern)}/  # regard as a prefix
     end
 
     words.each do |word|
       next if (abbrev = word).empty?
       while (len = abbrev.rindex(/[\w\W]\z/)) > 0
-	abbrev = word[0,len]
+        abbrev = word[0,len]
 
-	next if pattern && pattern !~ abbrev
+        next if pattern && pattern !~ abbrev
 
-	case seen[abbrev] += 1
-	when 1
-	  table[abbrev] = word
-	when 2
-	  table.delete(abbrev)
-	else
-	  break
-	end
+        case seen[abbrev] += 1
+        when 1
+          table[abbrev] = word
+        when 2
+          table.delete(abbrev)
+        else
+          break
+        end
       end
     end
 

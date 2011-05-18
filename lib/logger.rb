@@ -263,9 +263,9 @@ class Logger
   alias sev_threshold level
   alias sev_threshold= level=
 
-  # Returns +true+ iff the current severity level allows for the printing of
-  # +DEBUG+ messages.
-  def debug?; @level <= DEBUG; end
+    # Returns +true+ iff the current severity level allows for the printing of
+    # +DEBUG+ messages.
+    def debug?; @level <= DEBUG; end
 
   # Returns +true+ iff the current severity level allows for the printing of
   # +INFO+ messages.
@@ -312,7 +312,7 @@ class Logger
     @logdev = nil
     if logdev
       @logdev = LogDevice.new(logdev, :shift_age => shift_age,
-        :shift_size => shift_size)
+                              :shift_size => shift_size)
     end
   end
 
@@ -376,7 +376,7 @@ class Logger
     end
     @logdev.write(
       format_message(format_severity(severity), Time.now, progname, message))
-    true
+      true
   end
   alias log add
 
@@ -478,7 +478,7 @@ class Logger
     @logdev.close if @logdev
   end
 
-private
+  private
 
   # Severity label for logging. (max 5 char)
   SEV_LABEL = %w(DEBUG INFO WARN ERROR FATAL ANY)
@@ -507,7 +507,7 @@ private
         msg2str(msg)]
     end
 
-  private
+    private
 
     def format_datetime(time)
       if @datetime_format.nil?
@@ -523,7 +523,7 @@ private
         msg
       when ::Exception
         "#{ msg.message } (#{ msg.class })\n" <<
-          (msg.backtrace || []).join("\n")
+        (msg.backtrace || []).join("\n")
       else
         msg.inspect
       end
@@ -585,7 +585,7 @@ private
       end
     end
 
-  private
+    private
 
     def open_logfile(filename)
       if (FileTest.exist?(filename))
@@ -791,7 +791,7 @@ private
       @log.add(severity, message, @appname, &block) if @log
     end
 
-  private
+    private
 
     def run
       # TODO: should be an NotImplementedError

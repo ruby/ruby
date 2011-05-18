@@ -743,7 +743,7 @@ module XMLRPC
         end
 
         alias :on_stag :startElement
- 	alias :on_etag :endElement
+        alias :on_etag :endElement
 
         def on_stag_end(name); end
 

@@ -51,15 +51,15 @@ class ACL
 
     def initialize(str)
       if str == '*' or str == 'all'
-	@pat = [:all]
+        @pat = [:all]
       elsif str.include?('*')
         @pat = [:name, dot_pat(str)]
       else
-	begin
-	  @pat = [:ip, IPAddr.new(str)]
-	rescue ArgumentError
-	  @pat = [:name, dot_pat(str)]
-	end
+        begin
+          @pat = [:ip, IPAddr.new(str)]
+        rescue ArgumentError
+          @pat = [:name, dot_pat(str)]
+        end
       end
     end
 
@@ -70,7 +70,7 @@ class ACL
 
     def dot_pat_str(str)
       list = str.split('.').collect { |s|
-	(s == '*') ? '.+' : s
+        (s == '*') ? '.+' : s
       }
       list.join("\\.")
     end
@@ -93,19 +93,19 @@ class ACL
     def match(addr)
       case @pat[0]
       when :all
-	true
+        true
       when :ip
-	begin
-	  ipaddr = IPAddr.new(addr[3])
-	  ipaddr = ipaddr.ipv4_mapped if @pat[1].ipv6? && ipaddr.ipv4?
-	rescue ArgumentError
-	  return false
-	end
-	(@pat[1].include?(ipaddr)) ? true : false
+        begin
+          ipaddr = IPAddr.new(addr[3])
+          ipaddr = ipaddr.ipv4_mapped if @pat[1].ipv6? && ipaddr.ipv4?
+        rescue ArgumentError
+          return false
+        end
+        (@pat[1].include?(ipaddr)) ? true : false
       when :name
-	(@pat[1] =~ addr[2]) ? true : false
+        (@pat[1] =~ addr[2]) ? true : false
       else
-	false
+        false
       end
     end
   end
@@ -130,7 +130,7 @@ class ACL
 
     def match(addr)
       @list.each do |e|
-	return true if e.match(addr)
+        return true if e.match(addr)
       end
       false
     end
@@ -219,11 +219,11 @@ class ACL
       permission, domain = list.slice(i,2)
       case permission.downcase
       when 'allow'
-	@allow.add(domain)
+        @allow.add(domain)
       when 'deny'
-	@deny.add(domain)
+        @deny.add(domain)
       else
-	raise "Invalid ACL entry #{list.to_s}"
+        raise "Invalid ACL entry #{list.to_s}"
       end
       i += 2
     end
@@ -234,17 +234,17 @@ end
 if __FILE__ == $0
   # example
   list = %w(deny all
-	    allow 192.168.1.1
+      allow 192.168.1.1
             allow ::ffff:192.168.1.2
             allow 192.168.1.3
-            )
+           )
 
-  addr = ["AF_INET", 10, "lc630", "192.168.1.3"]
+           addr = ["AF_INET", 10, "lc630", "192.168.1.3"]
 
-  acl = ACL.new
-  p acl.allow_addr?(addr)
+           acl = ACL.new
+           p acl.allow_addr?(addr)
 
-  acl = ACL.new(list, ACL::DENY_ALLOW)
-  p acl.allow_addr?(addr)
+           acl = ACL.new(list, ACL::DENY_ALLOW)
+           p acl.allow_addr?(addr)
 end
 

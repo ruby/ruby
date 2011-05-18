@@ -49,20 +49,20 @@ module REXML
     def QuickPath::filter elements, path
       return elements if path.nil? or path == '' or elements.size == 0
       case path
-      when /^\/\//u											# Descendant
+      when /^\/\//u                      # Descendant
         return axe( elements, "descendant-or-self", $' )
-      when /^\/?\b(\w[-\w]*)\b::/u							# Axe
+      when /^\/?\b(\w[-\w]*)\b::/u              # Axe
         return axe( elements, $1, $' )
-      when /^\/(?=\b([:!\w][-\.\w]*:)?[-!\*\.\w]*\b([^:(]|$)|\*)/u	# Child
-        rest = $'
-        results = []
-        elements.each do |element|
-          results |= filter( element.to_a, rest )
-        end
-        return results
-      when /^\/?(\w[-\w]*)\(/u							# / Function
-        return function( elements, $1, $' )
-      when Namespace::NAMESPLIT		# Element name
+      when /^\/(?=\b([:!\w][-\.\w]*:)?[-!\*\.\w]*\b([^:(]|$)|\*)/u  # Child
+                rest = $'
+                results = []
+                elements.each do |element|
+                  results |= filter( element.to_a, rest )
+                end
+                return results
+      when /^\/?(\w[-\w]*)\(/u              # / Function
+                            return function( elements, $1, $' )
+      when Namespace::NAMESPLIT    # Element name
         name = $2
         ns = $1
         rest = $'
@@ -79,22 +79,22 @@ module REXML
           matches |= predicate( element.to_a, path[1..-1] ) if element.kind_of? Element
         end
         return matches
-      when /^\[/u												# Predicate
+      when /^\[/u                        # Predicate
         return predicate( elements, path )
-      when /^\/?\.\.\./u										# Ancestor
+      when /^\/?\.\.\./u                    # Ancestor
         return axe( elements, "ancestor", $' )
-      when /^\/?\.\./u											# Parent
+      when /^\/?\.\./u                      # Parent
         return filter( elements.collect{|e|e.parent}, $' )
-      when /^\/?\./u												# Self
+      when /^\/?\./u                        # Self
         return filter( elements, $' )
-      when /^\*/u													# Any
+      when /^\*/u                          # Any
         results = []
         elements.each do |element|
           results |= filter( [element], $' ) if element.kind_of? Element
           #if element.kind_of? Element
-          #	children = element.to_a
-          #	children.delete_if { |child| !child.kind_of?(Element) }
-          #	results |= filter( children, $' )
+          #  children = element.to_a
+          #  children.delete_if { |child| !child.kind_of?(Element) }
+          #  results |= filter( children, $' )
           #end
         end
         return results
@@ -132,7 +132,7 @@ module REXML
         matches = filter(elements.collect{|element| element.parent}.uniq, rest)
       when "following-sibling"
         matches = filter(elements.collect{|element| element.next_sibling}.uniq,
-          rest)
+                         rest)
       when "previous-sibling"
         matches = filter(elements.collect{|element|
           element.previous_sibling}.uniq, rest )
@@ -174,32 +174,32 @@ module REXML
       predicate.gsub!(
         /#{OPERAND_}\s*([<>=])\s*#{OPERAND_}\s*([<>=])\s*#{OPERAND_}/u,
         '\1 \2 \3 and \3 \4 \5' )
-      # Let's do some Ruby trickery to avoid some work:
-      predicate.gsub!( /&/u, "&&" )
-      predicate.gsub!( /=/u, "==" )
-      predicate.gsub!( /@(\w[-\w.]*)/u, 'attribute("\1")' )
-      predicate.gsub!( /\bmod\b/u, "%" )
-      predicate.gsub!( /\b(\w[-\w.]*\()/u ) {
-        fname = $1
-        fname.gsub( /-/u, "_" )
-      }
+        # Let's do some Ruby trickery to avoid some work:
+        predicate.gsub!( /&/u, "&&" )
+        predicate.gsub!( /=/u, "==" )
+        predicate.gsub!( /@(\w[-\w.]*)/u, 'attribute("\1")' )
+        predicate.gsub!( /\bmod\b/u, "%" )
+        predicate.gsub!( /\b(\w[-\w.]*\()/u ) {
+          fname = $1
+          fname.gsub( /-/u, "_" )
+        }
 
-      Functions.pair = [ 0, elements.size ]
-      results = []
-      elements.each do |element|
-        Functions.pair[0] += 1
-        Functions.node = element
-        res = eval( predicate )
-        case res
-        when true
-          results << element
-        when Fixnum
-          results << element if Functions.pair[0] == res
-        when String
-          results << element
+        Functions.pair = [ 0, elements.size ]
+        results = []
+        elements.each do |element|
+          Functions.pair[0] += 1
+          Functions.node = element
+          res = eval( predicate )
+          case res
+          when true
+            results << element
+          when Fixnum
+            results << element if Functions.pair[0] == res
+          when String
+            results << element
+          end
         end
-      end
-      return filter( results, rest )
+        return filter( results, rest )
     end
 
     def QuickPath::attribute( name )

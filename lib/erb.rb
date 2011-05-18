@@ -254,7 +254,7 @@
 # Rails, the web application framework, uses ERB to create views.
 #
 class ERB
-  Revision = '$Date::                           $' 	#'
+  Revision = '$Date::                           $' #'
 
   # Returns revision information for the erb.rb module.
   def self.version
@@ -351,21 +351,21 @@ class ERB
     class Scanner # :nodoc:
       @scanner_map = {}
       def self.regist_scanner(klass, trim_mode, percent)
-	@scanner_map[[trim_mode, percent]] = klass
+        @scanner_map[[trim_mode, percent]] = klass
       end
 
       def self.default_scanner=(klass)
-	@default_scanner = klass
+        @default_scanner = klass
       end
 
       def self.make_scanner(src, trim_mode, percent)
-	klass = @scanner_map.fetch([trim_mode, percent], @default_scanner)
-	klass.new(src, trim_mode, percent)
+        klass = @scanner_map.fetch([trim_mode, percent], @default_scanner)
+        klass.new(src, trim_mode, percent)
       end
 
       def initialize(src, trim_mode, percent)
-	@src = src
-	@stag = nil
+        @src = src
+        @stag = nil
       end
       attr_accessor :stag
 
@@ -374,44 +374,44 @@ class ERB
 
     class TrimScanner < Scanner # :nodoc:
       def initialize(src, trim_mode, percent)
-	super
-	@trim_mode = trim_mode
-	@percent = percent
-	if @trim_mode == '>'
-	  @scan_line = self.method(:trim_line1)
-	elsif @trim_mode == '<>'
-	  @scan_line = self.method(:trim_line2)
-	elsif @trim_mode == '-'
-	  @scan_line = self.method(:explicit_trim_line)
-	else
-	  @scan_line = self.method(:scan_line)
-	end
+        super
+        @trim_mode = trim_mode
+        @percent = percent
+        if @trim_mode == '>'
+          @scan_line = self.method(:trim_line1)
+        elsif @trim_mode == '<>'
+          @scan_line = self.method(:trim_line2)
+        elsif @trim_mode == '-'
+          @scan_line = self.method(:explicit_trim_line)
+        else
+          @scan_line = self.method(:scan_line)
+        end
       end
       attr_accessor :stag
 
       def scan(&block)
-	@stag = nil
-	if @percent
-	  @src.each_line do |line|
-	    percent_line(line, &block)
-	  end
-	else
+        @stag = nil
+        if @percent
+          @src.each_line do |line|
+            percent_line(line, &block)
+          end
+        else
           @scan_line.call(@src, &block)
-	end
-	nil
+        end
+        nil
       end
 
       def percent_line(line, &block)
-	if @stag || line[0] != ?%
-	  return @scan_line.call(line, &block)
-	end
+        if @stag || line[0] != ?%
+          return @scan_line.call(line, &block)
+        end
 
-	line[0] = ''
-	if line[0] == ?%
-	  @scan_line.call(line, &block)
-	else
+        line[0] = ''
+        if line[0] == ?%
+          @scan_line.call(line, &block)
+        else
           yield(PercentLine.new(line.chomp))
-	end
+        end
       end
 
       def scan_line(line)
@@ -420,7 +420,7 @@ class ERB
             next if token.empty?
             yield(token)
           end
-	end
+        end
       end
 
       def trim_line1(line)
@@ -434,11 +434,11 @@ class ERB
               yield(token)
             end
           end
-	end
+        end
       end
 
       def trim_line2(line)
-	head = nil
+        head = nil
         line.scan(/(.*?)(<%%|%%>|<%=|<%#|<%|%>\n|%>|\n|\z)/m) do |tokens|
           tokens.each do |token|
             next if token.empty?
@@ -456,7 +456,7 @@ class ERB
               head = nil if token == "\n"
             end
           end
-	end
+        end
       end
 
       def explicit_trim_line(line)
@@ -479,7 +479,7 @@ class ERB
 
       ERB_STAG = %w(<%= <%# <%)
       def is_erb_stag?(s)
-	ERB_STAG.member?(s)
+        ERB_STAG.member?(s)
       end
     end
 
@@ -492,7 +492,7 @@ class ERB
             next if token.empty?
             yield(token)
           end
-	end
+        end
       end
     end
 
@@ -515,23 +515,23 @@ class ERB
       Scanner.regist_scanner(SimpleScanner2, nil, false)
 
       class ExplicitScanner < Scanner # :nodoc:
-	def scan
+        def scan
           stag_reg = /(.*?)(^[ \t]*<%-|<%%|<%=|<%#|<%-|<%|\z)/m
           etag_reg = /(.*?)(%%>|-%>|%>|\z)/m
           scanner = StringScanner.new(@src)
           while ! scanner.eos?
-	    scanner.scan(@stag ? etag_reg : stag_reg)
+            scanner.scan(@stag ? etag_reg : stag_reg)
             yield(scanner[1])
 
             elem = scanner[2]
             if /[ \t]*<%-/ =~ elem
               yield('<%')
             elsif elem == '-%>'
-	      yield('%>')
-	      yield(:cr) if scanner.scan(/(\n|\z)/)
-	    else
-	      yield(elem)
-	    end
+              yield('%>')
+              yield(:cr) if scanner.scan(/(\n|\z)/)
+            else
+              yield(elem)
+            end
           end
         end
       end
@@ -542,32 +542,32 @@ class ERB
 
     class Buffer # :nodoc:
       def initialize(compiler, enc=nil)
-	@compiler = compiler
-	@line = []
+        @compiler = compiler
+        @line = []
         @script = enc ? "#coding:#{enc.to_s}\n" : ""
-	@compiler.pre_cmd.each do |x|
-	  push(x)
-	end
+        @compiler.pre_cmd.each do |x|
+          push(x)
+        end
       end
       attr_reader :script
 
       def push(cmd)
-	@line << cmd
+        @line << cmd
       end
 
       def cr
-	@script << (@line.join('; '))
-	@line = []
-	@script << "\n"
+        @script << (@line.join('; '))
+        @line = []
+        @script << "\n"
       end
 
       def close
-	return unless @line
-	@compiler.post_cmd.each do |x|
-	  push(x)
-	end
-	@script << (@line.join('; '))
-	@line = nil
+        return unless @line
+        @compiler.post_cmd.each do |x|
+          push(x)
+        end
+        @script << (@line.join('; '))
+        @line = nil
       end
     end
 
@@ -594,53 +594,53 @@ class ERB
       scanner.scan do |token|
         next if token.nil?
         next if token == ''
-	if scanner.stag.nil?
-	  case token
+        if scanner.stag.nil?
+          case token
           when PercentLine
-	    out.push("#{@put_cmd} #{content_dump(content)}") if content.size > 0
-	    content = ''
+            out.push("#{@put_cmd} #{content_dump(content)}") if content.size > 0
+            content = ''
             out.push(token.to_s)
             out.cr
-	  when :cr
-	    out.cr
-	  when '<%', '<%=', '<%#'
-	    scanner.stag = token
-	    out.push("#{@put_cmd} #{content_dump(content)}") if content.size > 0
-	    content = ''
-	  when "\n"
-	    content << "\n"
-	    out.push("#{@put_cmd} #{content_dump(content)}")
-	    content = ''
-	  when '<%%'
-	    content << '<%'
-	  else
-	    content << token
-	  end
-	else
-	  case token
-	  when '%>'
-	    case scanner.stag
-	    when '<%'
-	      if content[-1] == ?\n
-		content.chop!
-		out.push(content)
-		out.cr
-	      else
-		out.push(content)
-	      end
-	    when '<%='
-	      out.push("#{@insert_cmd}((#{content}).to_s)")
-	    when '<%#'
-	      # out.push("# #{content_dump(content)}")
-	    end
-	    scanner.stag = nil
-	    content = ''
-	  when '%%>'
-	    content << '%>'
-	  else
-	    content << token
-	  end
-	end
+          when :cr
+            out.cr
+          when '<%', '<%=', '<%#'
+            scanner.stag = token
+            out.push("#{@put_cmd} #{content_dump(content)}") if content.size > 0
+            content = ''
+          when "\n"
+            content << "\n"
+            out.push("#{@put_cmd} #{content_dump(content)}")
+            content = ''
+          when '<%%'
+            content << '<%'
+          else
+            content << token
+          end
+        else
+          case token
+          when '%>'
+            case scanner.stag
+            when '<%'
+              if content[-1] == ?\n
+                content.chop!
+                out.push(content)
+                out.cr
+              else
+                out.push(content)
+              end
+            when '<%='
+              out.push("#{@insert_cmd}((#{content}).to_s)")
+            when '<%#'
+              # out.push("# #{content_dump(content)}")
+            end
+            scanner.stag = nil
+            content = ''
+          when '%%>'
+            content << '%>'
+          else
+            content << token
+          end
+        end
       end
       out.push("#{@put_cmd} #{content_dump(content)}") if content.size > 0
       out.close
@@ -650,24 +650,24 @@ class ERB
     def prepare_trim_mode(mode) # :nodoc:
       case mode
       when 1
-	return [false, '>']
+        return [false, '>']
       when 2
-	return [false, '<>']
+        return [false, '<>']
       when 0
-	return [false, nil]
+        return [false, nil]
       when String
-	perc = mode.include?('%')
-	if mode.include?('-')
-	  return [perc, '-']
-	elsif mode.include?('<>')
-	  return [perc, '<>']
-	elsif mode.include?('>')
-	  return [perc, '>']
-	else
-	  [perc, nil]
-	end
+        perc = mode.include?('%')
+        if mode.include?('-')
+          return [perc, '-']
+        elsif mode.include?('<>')
+          return [perc, '<>']
+        elsif mode.include?('>')
+          return [perc, '>']
+        else
+          [perc, nil]
+        end
       else
-	return [false, nil]
+        return [false, nil]
       end
     end
 
@@ -701,12 +701,12 @@ class ERB
     private
     def detect_magic_comment(s)
       if /\A<%#(.*)%>/ =~ s or (@percent and /\A%#(.*)/ =~ s)
-	comment = $1
-	comment = $1 if comment[/-\*-\s*(.*?)\s*-*-$/]
-	if %r"coding\s*[=:]\s*([[:alnum:]\-_]+)" =~ comment
-	  enc = $1.sub(/-(?:mac|dos|unix)/i, '')
-	  enc = Encoding.find(enc)
-	end
+        comment = $1
+        comment = $1 if comment[/-\*-\s*(.*?)\s*-*-$/]
+        if %r"coding\s*[=:]\s*([[:alnum:]\-_]+)" =~ comment
+          enc = $1.sub(/-(?:mac|dos|unix)/i, '')
+          enc = Encoding.find(enc)
+        end
       end
     end
   end
@@ -726,9 +726,9 @@ class ERB
   # If _trim_mode_ is passed a String containing one or more of the following
   # modifiers, ERB will adjust its code generation as listed:
   #
-  # 	%  enables Ruby code processing for lines beginning with %
-  # 	<> omit newline for lines starting with <% and ending in %>
-  # 	>  omit newline for lines ending in %>
+  #   %  enables Ruby code processing for lines beginning with %
+  #   <> omit newline for lines starting with <% and ending in %>
+  #   >  omit newline for lines ending in %>
   #
   # _eoutvar_ can be used to set the name of the variable ERB will build up
   # its output in.  This is useful when you need to run multiple ERB
@@ -831,8 +831,8 @@ class ERB
   def result(b=TOPLEVEL_BINDING)
     if @safe_level
       proc {
-	$SAFE = @safe_level
-	eval(@src, b, (@filename || '(erb)'), 0)
+        $SAFE = @safe_level
+        eval(@src, b, (@filename || '(erb)'), 0)
       }.call
     else
       eval(@src, b, (@filename || '(erb)'), 0)
@@ -899,14 +899,14 @@ class ERB
     #
     # A utility method for escaping HTML tag characters in _s_.
     #
-    # 	require "erb"
-    # 	include ERB::Util
+    #   require "erb"
+    #   include ERB::Util
     #
-    # 	puts html_escape("is a > 0 & a < 10?")
+    #   puts html_escape("is a > 0 & a < 10?")
     #
     # _Generates_
     #
-    # 	is a &gt; 0 &amp; a &lt; 10?
+    #   is a &gt; 0 &amp; a &lt; 10?
     #
     def html_escape(s)
       s.to_s.gsub(/&/, "&amp;").gsub(/\"/, "&quot;").gsub(/>/, "&gt;").gsub(/</, "&lt;")
@@ -918,14 +918,14 @@ class ERB
     #
     # A utility method for encoding the String _s_ as a URL.
     #
-    # 	require "erb"
-    # 	include ERB::Util
+    #   require "erb"
+    #   include ERB::Util
     #
-    # 	puts url_encode("Programming Ruby:  The Pragmatic Programmer's Guide")
+    #   puts url_encode("Programming Ruby:  The Pragmatic Programmer's Guide")
     #
     # _Generates_
     #
-    # 	Programming%20Ruby%3A%20%20The%20Pragmatic%20Programmer%27s%20Guide
+    #   Programming%20Ruby%3A%20%20The%20Pragmatic%20Programmer%27s%20Guide
     #
     def url_encode(s)
       s.to_s.dup.force_encoding("ASCII-8BIT").gsub(/[^a-zA-Z0-9_\-.]/n) {
@@ -971,7 +971,7 @@ class ERB
   #
   module DefMethod
     public
-  # define _methodname_ as instance method of current module, using ERB object or eRuby file
+    # define _methodname_ as instance method of current module, using ERB object or eRuby file
     def def_erb_method(methodname, erb_or_fname)
       if erb_or_fname.kind_of? String
         fname = erb_or_fname

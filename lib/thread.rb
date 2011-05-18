@@ -1,6 +1,6 @@
 #
-#		thread.rb - thread support classes
-#			by Yukihiro Matsumoto <matz@netlab.co.jp>
+#    thread.rb - thread support classes
+#      by Yukihiro Matsumoto <matz@netlab.co.jp>
 #
 # Copyright (C) 2001  Yukihiro Matsumoto
 # Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
@@ -144,7 +144,7 @@ class Queue
   def initialize
     @que = []
     @waiting = []
-    @que.taint		# enable tainted comunication
+    @que.taint    # enable tainted comunication
     @waiting.taint
     self.taint
     @mutex = Mutex.new
@@ -252,7 +252,7 @@ class SizedQueue < Queue
     raise ArgumentError, "queue size must be positive" unless max > 0
     @max = max
     @queue_wait = []
-    @queue_wait.taint		# enable tainted comunication
+    @queue_wait.taint    # enable tainted comunication
     super()
   end
 
@@ -278,12 +278,12 @@ class SizedQueue < Queue
     }
     if diff
       diff.times do
-	begin
-	  t = @queue_wait.shift
-	  t.run if t
-	rescue ThreadError
-	  retry
-	end
+        begin
+          t = @queue_wait.shift
+          t.run if t
+        rescue ThreadError
+          retry
+        end
       end
     end
     max

@@ -1,6 +1,6 @@
 =begin
  external service manager
- 	Copyright (c) 2000 Masatoshi SEKI
+   Copyright (c) 2000 Masatoshi SEKI
 =end
 
 require 'drb/drb'
@@ -54,17 +54,17 @@ module DRb
 
     def unregist(name)
       synchronize do
-	@servers.delete(name)
+        @servers.delete(name)
       end
     end
 
     private
     def invoke_thread
       Thread.new do
-	while true
-	  name = @queue.pop
-	  invoke_service_command(name, @@command[name])
-	end
+        while true
+          name = @queue.pop
+          invoke_service_command(name, @@command[name])
+        end
       end
     end
 
@@ -75,8 +75,8 @@ module DRb
     def invoke_service_command(name, command)
       raise "invalid command. name: #{name}" unless command
       synchronize do
-	return if @servers.include?(name)
-	@servers[name] = false
+        return if @servers.include?(name)
+        @servers[name] = false
       end
       uri = @uri || DRb.uri
       Process.detach spawn("#{command} #{uri} #{name}")

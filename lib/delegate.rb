@@ -330,12 +330,12 @@ end
 # :stopdoc:
 def Delegator.delegating_block(mid)
   lambda do |*args, &block|
-    target = self.__getobj__
-    begin
-      target.__send__(mid, *args, &block)
-    ensure
-      $@.delete_if {|t| /\A#{Regexp.quote(__FILE__)}:#{__LINE__-2}:/o =~ t} if $@
-    end
+  target = self.__getobj__
+  begin
+    target.__send__(mid, *args, &block)
+  ensure
+    $@.delete_if {|t| /\A#{Regexp.quote(__FILE__)}:#{__LINE__-2}:/o =~ t} if $@
+  end
   end
 end
 # :startdoc:
@@ -368,10 +368,10 @@ def DelegateClass(superclass)
     end
   end
   klass.define_singleton_method :public_instance_methods do |all=true|
-    super(all) - superclass.protected_instance_methods
+  super(all) - superclass.protected_instance_methods
   end
   klass.define_singleton_method :protected_instance_methods do |all=true|
-    super(all) | superclass.protected_instance_methods
+  super(all) | superclass.protected_instance_methods
   end
   return klass
 end
@@ -405,7 +405,7 @@ if __FILE__ == $0
   foo2 = SimpleDelegator.new(foo)
   p foo2
   foo2.instance_eval{print "foo\n"}
-  p foo.test == foo2.test	# => true
+  p foo.test == foo2.test  # => true
   p foo2.iter{[55,true]}        # => true
-  foo2.error			# raise error!
+  foo2.error      # raise error!
 end

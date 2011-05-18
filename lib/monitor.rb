@@ -109,7 +109,7 @@ module MonitorMixin
     #
     def wait_while
       while yield
-	wait
+        wait
       end
     end
 
@@ -118,7 +118,7 @@ module MonitorMixin
     #
     def wait_until
       until yield
-	wait
+        wait
       end
     end
 
