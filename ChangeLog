@@ -1,3 +1,8 @@
+Wed May 18 20:25:04 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* lib/timeout.rb (Timeout#timeout): don't leak "execution expired"
+	  exception. [Bug #4283] [ruby-core:34534].
+
 Wed May 18 06:09:24 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/cmath.rb:  Add some examples and improve documentation.  Patch by

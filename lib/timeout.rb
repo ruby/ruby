@@ -46,17 +46,24 @@ module Timeout
     return yield(sec) if sec == nil or sec.zero?
     exception = klass || Class.new(ExitException)
     begin
-      x = Thread.current
-      y = Thread.start {
-        begin
-          sleep sec
-        rescue => e
-          x.raise e
-        else
-          x.raise exception, "execution expired" if x.alive?
+      begin
+        x = Thread.current
+        y = Thread.start {
+          begin
+            sleep sec
+          rescue => e
+            x.raise e
+          else
+            x.raise exception, "execution expired"
+          end
+        }
+        return yield(sec)
+      ensure
+        if y
+          y.kill
+          y.join # make sure y is dead.
         end
-      }
-      return yield(sec)
+      end
     rescue exception => e
       rej = /\A#{Regexp.quote(__FILE__)}:#{__LINE__-4}\z/o
       (bt = e.backtrace).reject! {|m| rej =~ m}
@@ -68,11 +75,6 @@ module Timeout
       raise if klass            # if exception class is specified, it
                                 # would be expected outside.
       raise Error, e.message, e.backtrace
-    ensure
-      if y and y.alive?
-        y.kill
-        y.join # make sure y is dead.
-      end
     end
   end
 
