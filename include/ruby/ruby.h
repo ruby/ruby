@@ -609,11 +609,7 @@ struct RObject {
      ROBJECT(o)->as.heap.iv_index_tbl)
 
 /** @internal */
-typedef struct {
-    VALUE super;
-    struct st_table *iv_tbl;
-    struct st_table *const_tbl;
-} rb_classext_t;
+typedef struct rb_classext_struct rb_classext_t;
 
 struct RClass {
     struct RBasic basic;

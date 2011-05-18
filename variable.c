@@ -17,6 +17,7 @@
 #include "ruby/encoding.h"
 #include "node.h"
 #include "constant.h"
+#include "internal.h"
 
 void rb_vm_change_state(void);
 void rb_vm_inc_const_missing_count(void);

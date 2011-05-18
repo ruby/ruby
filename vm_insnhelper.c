@@ -12,6 +12,7 @@
 #include "insns.inc"
 #include <math.h>
 #include "constant.h"
+#include "internal.h"
 
 /* control stack frame */
 

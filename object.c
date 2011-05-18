@@ -20,6 +20,7 @@
 #include <math.h>
 #include <float.h>
 #include "constant.h"
+#include "internal.h"
 
 VALUE rb_cBasicObject;
 VALUE rb_mKernel;
@@ -1601,7 +1602,7 @@ rb_class_new_instance(int argc, VALUE *argv, VALUE klass)
  *
  */
 
-static VALUE
+VALUE
 rb_class_superclass(VALUE klass)
 {
     VALUE super = RCLASS_SUPER(klass);

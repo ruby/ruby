@@ -10,6 +10,7 @@
 **********************************************************************/
 
 #include "eval_intern.h"
+#include "internal.h"
 #include "gc.h"
 
 struct METHOD {

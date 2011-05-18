@@ -18,6 +18,7 @@
 #include "ruby/util.h"
 #include "eval_intern.h"
 #include "vm_core.h"
+#include "internal.h"
 #include "gc.h"
 #include "constant.h"
 #include <stdio.h>
