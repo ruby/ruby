@@ -189,7 +189,8 @@ GORUBY = go$(RUBY_INSTALL_NAME)
 golf: $(LIBRUBY) $(GOLFOBJS) PHONY
 	$(Q) $(MAKE) $(MFLAGS) MAINOBJ="$(GOLFOBJS)" PROGRAM=$(GORUBY)$(EXEEXT) program
 capi: $(CAPIOUT)/.timestamp PHONY
-doc/capi/.timestamp: Doxyfile $(PREP) 
+
+doc/capi/.timestamp: Doxyfile $(PREP)
 	$(Q) $(MAKEDIRS) doc/capi
 	$(ECHO) generating capi
 	$(Q) $(DOXYGEN) -b
@@ -400,10 +401,11 @@ post-install-doc::
 rdoc: PHONY main
 	@echo Generating RDoc documentation
 	$(Q) $(XRUBY) "$(srcdir)/bin/rdoc" --encoding=UTF-8 --no-force-update --all --ri --op "$(RDOCOUT)" $(RDOCFLAGS) "$(srcdir)"
+
 rdoc-coverage: PHONY main
 	@echo Generating RDoc coverage report
 	$(Q) $(XRUBY) "$(srcdir)/bin/rdoc" --encoding=UTF-8 --all --quiet -C $(RDOCFLAGS) "$(srcdir)"
-rdoc-coverage: PHONY main
+
 nodoc: PHONY
 
 what-where-doc: no-install-doc
