@@ -1,3 +1,8 @@
+Thu May 19 06:02:21 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/tempfile.rb:  Document Dir.mkdir and Dir.rmdir.  Patch by Clinton
+	  Nixon.  [Ruby 1.9 - Bug #4728]
+
 Thu May 19 05:57:52 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* encoding.c:  Improve documentation for Encoding#default_external and
