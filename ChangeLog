@@ -1,3 +1,8 @@
+Thu May 19 06:36:11 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/imap.rb:  Fix indentation of EOF for heredoc.
+	* lib/debug.rb (Commands):  Fix indentation of EOHELP for heredoc.
+
 Thu May 19 06:30:38 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/mkmf.rb:  Fix indentation of EOM for heredoc.

@@ -3514,7 +3514,7 @@ usage: #{$0} [options] <host>
   --auth=AUTH                   specifies auth type
   --starttls                    use starttls
   --ssl                         use ssl
-    EOF
+EOF
   end
 
   begin
@@ -3649,7 +3649,7 @@ summary                         display summary
 fetch [msgno]                   display message
 logout                          logout
 help, ?                         display help message
-          EOF
+EOF
         else
           print "unknown command: ", cmd, "\n"
         end

@@ -548,7 +548,7 @@ Commands
   p expression               evaluate expression and print its value
   h[elp]                     print this help
   <everything else>          evaluate
-      EOHELP
+EOHELP
   end
 
   def display_expressions(binding)
