@@ -1,3 +1,8 @@
+Wed May 18 22:45:26 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/console/lib/console/size.rb (IO#console_size): new
+	  method.  (EXPERIMENTAL)
+
 Wed May 18 22:41:51 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* internal.h: add for internal use only.
