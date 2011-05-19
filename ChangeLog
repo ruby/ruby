@@ -1,3 +1,7 @@
+Fri May 20 00:58:01 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/trans/ibm737-tbl.rb: greek code page.  fixes #4738
+
 Thu May 19 14:44:05 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_signal.rb (test_signal_requiring): skip on Windows.
