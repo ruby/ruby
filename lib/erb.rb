@@ -254,7 +254,7 @@
 # Rails, the web application framework, uses ERB to create views.
 #
 class ERB
-  Revision = '$Date::                           $' #'
+  Revision = '$Date::                           $'      #'
 
   # Returns revision information for the erb.rb module.
   def self.version
@@ -726,9 +726,9 @@ class ERB
   # If _trim_mode_ is passed a String containing one or more of the following
   # modifiers, ERB will adjust its code generation as listed:
   #
-  #   %  enables Ruby code processing for lines beginning with %
-  #   <> omit newline for lines starting with <% and ending in %>
-  #   >  omit newline for lines ending in %>
+  #     %  enables Ruby code processing for lines beginning with %
+  #     <> omit newline for lines starting with <% and ending in %>
+  #     >  omit newline for lines ending in %>
   #
   # _eoutvar_ can be used to set the name of the variable ERB will build up
   # its output in.  This is useful when you need to run multiple ERB
@@ -971,7 +971,7 @@ class ERB
   #
   module DefMethod
     public
-    # define _methodname_ as instance method of current module, using ERB object or eRuby file
+  # define _methodname_ as instance method of current module, using ERB object or eRuby file
     def def_erb_method(methodname, erb_or_fname)
       if erb_or_fname.kind_of? String
         fname = erb_or_fname

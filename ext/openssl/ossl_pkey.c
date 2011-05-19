@@ -267,7 +267,7 @@ Init_ossl_pkey()
      * Asymmetric public key algorithms solve the problem of establishing and
      * sharing secret keys to en-/decrypt messages. The key in such an
      * algorithm consists of two parts: a public key that may be distributed
-     * to others and a private key that needs to remain secret. 
+     * to others and a private key that needs to remain secret.
      *
      * Messages encrypted with a public key can only be encrypted by
      * recipients that are in possession of the associated private key.
@@ -299,7 +299,7 @@ Init_ossl_pkey()
      *
      * == Diffie-Hellman Key Exchange
      *
-     * Finally PKey also features OpenSSL::PKey::DH, an implementation of 
+     * Finally PKey also features OpenSSL::PKey::DH, an implementation of
      * the Diffie-Hellman key exchange protocol based on discrete logarithms
      * in finite fields, the same basis that DSA is built on.
      * The Diffie-Hellman protocol can be used to exchange (symmetric) keys

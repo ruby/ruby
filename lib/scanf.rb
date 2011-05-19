@@ -506,28 +506,28 @@ module Scanf
   class FormatString
 
     attr_reader :string_left, :last_spec_tried,
-      :last_match_tried, :matched_count, :space
+                :last_match_tried, :matched_count, :space
 
     SPECIFIERS = 'diuXxofFeEgGscaA'
     REGEX = /
-      # possible space, followed by...
-      (?:\s*
-       # percent sign, followed by...
-       %
-    # another percent sign, or...
-    (?:%|
-     # optional assignment suppression flag
-     \*?
-     # optional maximum field width
-     \d*
-     # named character class, ...
-     (?:\[\[:\w+:\]\]|
-      # traditional character class, or...
-      \[[^\]]*\]|
-      # specifier letter.
-      [#{SPECIFIERS}])))|
-      # or miscellaneous characters
-      [^%\s]+/ix
+        # possible space, followed by...
+          (?:\s*
+          # percent sign, followed by...
+            %
+            # another percent sign, or...
+              (?:%|
+                 # optional assignment suppression flag
+                 \*?
+                 # optional maximum field width
+                 \d*
+                   # named character class, ...
+                   (?:\[\[:\w+:\]\]|
+                   # traditional character class, or...
+                      \[[^\]]*\]|
+                   # specifier letter.
+                      [#{SPECIFIERS}])))|
+            # or miscellaneous characters
+              [^%\s]+/ix
 
     def initialize(str)
       @specs = []
@@ -578,33 +578,33 @@ end
 
 class IO
 
-  # The trick here is doing a match where you grab one *line*
-  # of input at a time.  The linebreak may or may not occur
-  # at the boundary where the string matches a format specifier.
-  # And if it does, some rule about whitespace may or may not
-  # be in effect...
-  #
-  # That's why this is much more elaborate than the string
-  # version.
-  #
-  # For each line:
-  # Match succeeds (non-emptily)
-  # and the last attempted spec/string sub-match succeeded:
-  #
-  #   could the last spec keep matching?
-  #     yes: save interim results and continue (next line)
-  #
-  # The last attempted spec/string did not match:
-  #
-  # are we on the next-to-last spec in the string?
-  #   yes:
-  #     is fmt_string.string_left all spaces?
-  #       yes: does current spec care about input space?
-  #         yes: fatal failure
-  #         no: save interim results and continue
-  #   no: continue  [this state could be analyzed further]
-  #
-  #
+# The trick here is doing a match where you grab one *line*
+# of input at a time.  The linebreak may or may not occur
+# at the boundary where the string matches a format specifier.
+# And if it does, some rule about whitespace may or may not
+# be in effect...
+#
+# That's why this is much more elaborate than the string
+# version.
+#
+# For each line:
+# Match succeeds (non-emptily)
+# and the last attempted spec/string sub-match succeeded:
+#
+#   could the last spec keep matching?
+#     yes: save interim results and continue (next line)
+#
+# The last attempted spec/string did not match:
+#
+# are we on the next-to-last spec in the string?
+#   yes:
+#     is fmt_string.string_left all spaces?
+#       yes: does current spec care about input space?
+#         yes: fatal failure
+#         no: save interim results and continue
+#   no: continue  [this state could be analyzed further]
+#
+#
 
   def scanf(str,&b)
     return block_scanf(str,&b) if b
@@ -671,8 +671,8 @@ class IO
 
   def block_scanf(str)
     final = []
-    # Sub-ideal, since another FS gets created in scanf.
-    # But used here to determine the number of specifiers.
+# Sub-ideal, since another FS gets created in scanf.
+# But used here to determine the number of specifiers.
     fstr = Scanf::FormatString.new(str)
     last_spec = fstr.last_spec
     begin

@@ -1256,7 +1256,7 @@ rb_enc_default_external(void)
  * * Zlib::GzipReader
  * * Zlib::GzipWriter
  * * String#inspect
- * * Regexp#inspect 
+ * * Regexp#inspect
  *
  * While strings created from these locations will have this encoding, the
  * encoding may not be valid.  Be sure to check String#valid_encoding?.
@@ -1334,7 +1334,7 @@ rb_enc_default_internal(void)
  * * File data read from disk
  * * File names from Dir
  * * Integer#chr
- * * String#inspect and Regexp#inspect 
+ * * String#inspect and Regexp#inspect
  * * Strings returned from Curses
  * * Strings returned from Readline
  * * Strings returned from SDBM

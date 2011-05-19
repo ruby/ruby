@@ -14,7 +14,7 @@ module DRb
         [filename, option]
       else
         raise(DRbBadScheme, uri) unless uri =~ /^drbunix:/
-          raise(DRbBadURI, 'can\'t parse uri:' + uri)
+        raise(DRbBadURI, 'can\'t parse uri:' + uri)
       end
     end
 

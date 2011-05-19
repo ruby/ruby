@@ -28,15 +28,15 @@ module REXML
       # Listen arguments:
       #
       # Symbol, Array, Block
-      #   Listen to Symbol events on Array elements
+      #         Listen to Symbol events on Array elements
       # Symbol, Block
       #   Listen to Symbol events
       # Array, Listener
-      #   Listen to all events on Array elements
+      #         Listen to all events on Array elements
       # Array, Block
-      #   Listen to :start_element events on Array elements
+      #         Listen to :start_element events on Array elements
       # Listener
-      #   Listen to All events
+      #         Listen to All events
       #
       # Symbol can be one of: :start_element, :end_element,
       # :start_prefix_mapping, :end_prefix_mapping, :characters,
@@ -209,7 +209,7 @@ module REXML
             ((name.nil? and match.nil?) or match.nil? or (
               (name == match) or
               (match.kind_of? Regexp and name =~ match)
-            )
+              )
             )
           )
         end.collect{|x| x[-1]}
@@ -222,7 +222,7 @@ module REXML
             ((name.nil? and match.nil?) or match.nil? or (
               (name == match) or
               (match.kind_of? Regexp and name =~ match)
-            )
+              )
             )
           )
         end.collect{|x| x[-1]}

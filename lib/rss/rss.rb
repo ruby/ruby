@@ -5,27 +5,27 @@ class Time
     unless respond_to?(:w3cdtf)
       def w3cdtf(date)
         if /\A\s*
-          (-?\d+)-(\d\d)-(\d\d)
-          (?:T
-           (\d\d):(\d\d)(?::(\d\d))?
-             (\.\d+)?
-             (Z|[+-]\d\d:\d\d)?)?
-             \s*\z/ix =~ date and (($5 and $8) or (!$5 and !$8))
-           datetime = [$1.to_i, $2.to_i, $3.to_i, $4.to_i, $5.to_i, $6.to_i]
-           usec = 0
-           usec = $7.to_f * 1000000 if $7
-           zone = $8
-           if zone
-             off = zone_offset(zone, datetime[0])
-             datetime = apply_offset(*(datetime + [off]))
-             datetime << usec
-             time = Time.utc(*datetime)
-             time.localtime unless zone_utc?(zone)
-             time
-           else
-             datetime << usec
-             Time.local(*datetime)
-           end
+            (-?\d+)-(\d\d)-(\d\d)
+            (?:T
+            (\d\d):(\d\d)(?::(\d\d))?
+            (\.\d+)?
+            (Z|[+-]\d\d:\d\d)?)?
+            \s*\z/ix =~ date and (($5 and $8) or (!$5 and !$8))
+          datetime = [$1.to_i, $2.to_i, $3.to_i, $4.to_i, $5.to_i, $6.to_i]
+          usec = 0
+          usec = $7.to_f * 1000000 if $7
+          zone = $8
+          if zone
+            off = zone_offset(zone, datetime[0])
+            datetime = apply_offset(*(datetime + [off]))
+            datetime << usec
+            time = Time.utc(*datetime)
+            time.localtime unless zone_utc?(zone)
+            time
+          else
+            datetime << usec
+            Time.local(*datetime)
+          end
         else
           raise ArgumentError.new("invalid date: #{date.inspect}")
         end
@@ -209,7 +209,7 @@ module RSS
         else
           ''
         end
-        EOC
+EOC
       end
     end
     alias_method(:install_have_attribute_element, :install_have_child_element)
@@ -230,7 +230,7 @@ module RSS
           rv << value if /\\A\\s*\\z/ !~ value
         end
         rv.join("\n")
-        EOC
+EOC
       end
     end
 
@@ -259,12 +259,12 @@ module RSS
           else
             rv << value
           end
-          rv << "</#{elem_name}>"
+            rv << "</#{elem_name}>"
           rv
         else
           ''
         end
-          EOC
+EOC
       end
     end
 
@@ -290,12 +290,12 @@ module RSS
           else
             rv << value
           end
-          rv << "</#{elem_name}>"
+            rv << "</#{elem_name}>"
           rv
         else
           ''
         end
-        EOC
+EOC
       end
 
     end
@@ -307,10 +307,10 @@ module RSS
       add_to_element_method(method_name)
       module_eval(<<-EOC, *get_file_and_line_from_caller(2))
       def #{method_name}(need_convert=true, indent='')
-      #{yield(name, elem_name)}
+        #{yield(name, elem_name)}
       end
       private :#{method_name}
-      EOC
+EOC
     end
 
     def inherit_convert_attr_reader(*attrs)
@@ -323,14 +323,14 @@ module RSS
 
         def #{attr}
           if @#{attr}
-          #{attr}_without_inherit
+            #{attr}_without_inherit
           elsif @parent
             @parent.#{attr}
           else
             nil
           end
         end
-            EOC
+EOC
       end
     end
 
@@ -351,7 +351,7 @@ module RSS
             "\#{base}\#{value}"
           end
         end
-        EOC
+EOC
       end
     end
 
@@ -362,7 +362,7 @@ module RSS
         def #{attr}
           convert(@#{attr})
         end
-        EOC
+EOC
       end
     end
 
@@ -408,7 +408,7 @@ module RSS
               @#{attr}.join(#{separator.dump})
             end
           end
-              EOC
+        EOC
       end
     end
 
@@ -448,7 +448,7 @@ module RSS
         end
 
       end
-          EOC
+EOC
     end
 
     def integer_writer(name, disp_name=name)
@@ -468,7 +468,7 @@ module RSS
           end
         end
       end
-      EOC
+EOC
     end
 
     def positive_integer_writer(name, disp_name=name)
@@ -490,7 +490,7 @@ module RSS
           end
         end
       end
-      EOC
+EOC
     end
 
     def boolean_writer(name, disp_name=name)
@@ -510,7 +510,7 @@ module RSS
           end
         end
       end
-      EOC
+EOC
     end
 
     def text_type_writer(name, disp_name=name)
@@ -522,7 +522,7 @@ module RSS
         end
         @#{name} = new_value
       end
-      EOC
+EOC
     end
 
     def content_writer(name, disp_name=name)
@@ -536,7 +536,7 @@ module RSS
           @#{name}.content = new_value
         end
       end
-      EOC
+EOC
     end
 
     def yes_clean_other_writer(name, disp_name=name)
@@ -603,7 +603,7 @@ module RSS
         end
       end
       alias_method(:set_#{accessor_name}, :#{accessor_name}=)
-        EOC
+EOC
     end
   end
 
@@ -630,7 +630,7 @@ module RSS
         value = __send__(var)
         next if value.nil?
         if value.respond_to?("setup_maker") and
-          !not_need_to_call_setup_maker_variables.include?(var)
+            !not_need_to_call_setup_maker_variables.include?(var)
           value.setup_maker(target)
         else
           setter = "#{var}="
@@ -1173,7 +1173,7 @@ module RSS
         else
           if name == tag
             if models[i+1] and models[i+1][0] != name and
-              tags and tags.first == name
+                tags and tags.first == name
               raise TooMuchTagError.new(name, tag_name)
             end
           else

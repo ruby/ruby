@@ -1,8 +1,8 @@
 #
 #   irb.rb - irb main module
-#     $Release Version: 0.9.6 $
-#     $Revision$
-#     by Keiju ISHITSUKA(keiju@ruby-lang.org)
+#       $Release Version: 0.9.6 $
+#       $Revision$
+#       by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
@@ -72,7 +72,7 @@ module IRB
     ensure
       irb_at_exit
     end
-    #    print "\n"
+#    print "\n"
   end
 
   def IRB.irb_at_exit
@@ -167,7 +167,7 @@ module IRB
           if exc
             print exc.class, ": ", exc, "\n"
             if exc.backtrace[0] =~ /irb(2)?(\/.*|-.*|\.rb)?:/ && exc.class.to_s !~ /^IRB/ &&
-              !(SyntaxError === exc)
+                !(SyntaxError === exc)
               irb_bug = true
             else
               irb_bug = false

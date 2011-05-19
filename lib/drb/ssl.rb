@@ -60,10 +60,10 @@ module DRb
           when 0; $stderr.putc "."  # BN_generate_prime
           when 1; $stderr.putc "+"  # BN_generate_prime
           when 2; $stderr.putc "*"  # searching good prime,
-            # n = #of try,
-            # but also data from BN_generate_prime
+                                    # n = #of try,
+                                    # but also data from BN_generate_prime
           when 3; $stderr.putc "\n" # found good prime, n==0 - p, n==1 - q,
-            # but also data from BN_generate_prime
+                                    # but also data from BN_generate_prime
           else;   $stderr.putc "*"  # BN_generate_prime
           end
         }
@@ -82,16 +82,16 @@ module DRb
         cert.extensions = [
           ef.create_extension("basicConstraints","CA:FALSE"),
           ef.create_extension("subjectKeyIdentifier", "hash") ]
-          ef.issuer_certificate = cert
-          cert.add_extension(ef.create_extension("authorityKeyIdentifier",
-                                                 "keyid:always,issuer:always"))
-          if comment = self[:SSLCertComment]
-            cert.add_extension(ef.create_extension("nsComment", comment))
-          end
-          cert.sign(rsa, OpenSSL::Digest::SHA1.new)
+        ef.issuer_certificate = cert
+        cert.add_extension(ef.create_extension("authorityKeyIdentifier",
+                                               "keyid:always,issuer:always"))
+        if comment = self[:SSLCertComment]
+          cert.add_extension(ef.create_extension("nsComment", comment))
+        end
+        cert.sign(rsa, OpenSSL::Digest::SHA1.new)
 
-          @cert = cert
-          @pkey = rsa
+        @cert = cert
+        @pkey = rsa
       end
 
       def setup_ssl_context
@@ -117,7 +117,7 @@ module DRb
         [host, port, option]
       else
         raise(DRbBadScheme, uri) unless uri =~ /^drbssl:/
-          raise(DRbBadURI, 'can\'t parse uri:' + uri)
+        raise(DRbBadURI, 'can\'t parse uri:' + uri)
       end
     end
 
@@ -172,13 +172,13 @@ module DRb
 
     def accept
       begin
-        while true
-          soc = @socket.accept
-          break if (@acl ? @acl.allow_socket?(soc) : true)
-          soc.close
-        end
-        ssl = @config.accept(soc)
-        self.class.new(uri, ssl, @config, true)
+      while true
+        soc = @socket.accept
+        break if (@acl ? @acl.allow_socket?(soc) : true)
+        soc.close
+      end
+      ssl = @config.accept(soc)
+      self.class.new(uri, ssl, @config, true)
       rescue OpenSSL::SSL::SSLError
         warn("#{__FILE__}:#{__LINE__}: warning: #{$!.message} (#{$!.class})") if @config[:verbose]
         retry

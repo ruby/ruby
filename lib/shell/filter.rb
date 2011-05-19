@@ -1,8 +1,8 @@
 #
 #   shell/filter.rb -
-#     $Release Version: 0.7 $
-#     $Revision$
-#     by Keiju ISHITSUKA(keiju@ruby-lang.org)
+#       $Release Version: 0.7 $
+#       $Revision$
+#       by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
@@ -19,8 +19,8 @@ class Shell
     include Enumerable
 
     def initialize(sh)
-      @shell = sh    # parent shell
-      @input = nil    # input filter
+      @shell = sh         # parent shell
+      @input = nil        # input filter
     end
 
     attr_reader :input

@@ -1091,7 +1091,7 @@ module Net
             when UntaggedResponse
               record_response(resp.name, resp.data)
               if resp.data.instance_of?(ResponseText) &&
-                (code = resp.data.code)
+                  (code = resp.data.code)
                 record_response(code.name, code.data)
               end
               if resp.name == "BYE" && @logout_command_tag.nil?
@@ -1550,7 +1550,7 @@ module Net
       def ensure_nz_number(num)
         if num < -1 || num == 0 || num >= 4294967296
           msg = "nz_number must be non-zero unsigned 32-bit integer: " +
-            num.inspect
+                num.inspect
           raise DataFormatError, msg
         end
       end
@@ -2965,62 +2965,62 @@ module Net
         return Address.new(name, route, mailbox, host)
       end
 
-      #        def flag_list
-      #       result = []
-      #       match(T_LPAR)
-      #       while true
-      #         token = lookahead
-      #         case token.symbol
-      #         when T_RPAR
-      #           shift_token
-      #           break
-      #         when T_SPACE
-      #           shift_token
-      #         end
-      #         result.push(flag)
-      #       end
-      #       return result
-      #        end
+#        def flag_list
+#       result = []
+#       match(T_LPAR)
+#       while true
+#         token = lookahead
+#         case token.symbol
+#         when T_RPAR
+#           shift_token
+#           break
+#         when T_SPACE
+#           shift_token
+#         end
+#         result.push(flag)
+#       end
+#       return result
+#        end
 
-      #        def flag
-      #       token = lookahead
-      #       if token.symbol == T_BSLASH
-      #         shift_token
-      #         token = lookahead
-      #         if token.symbol == T_STAR
-      #           shift_token
-      #           return token.value.intern
-      #         else
-      #           return atom.intern
-      #         end
-      #       else
-      #         return atom
-      #       end
-      #        end
+#        def flag
+#       token = lookahead
+#       if token.symbol == T_BSLASH
+#         shift_token
+#         token = lookahead
+#         if token.symbol == T_STAR
+#           shift_token
+#           return token.value.intern
+#         else
+#           return atom.intern
+#         end
+#       else
+#         return atom
+#       end
+#        end
 
       FLAG_REGEXP = /\
 (?# FLAG        )\\([^\x80-\xff(){ \x00-\x1f\x7f%"\\]+)|\
 (?# ATOM        )([^\x80-\xff(){ \x00-\x1f\x7f%*"\\]+)/n
 
-            def flag_list
-              if @str.index(/\(([^)]*)\)/ni, @pos)
-                @pos = $~.end(0)
-                return $1.scan(FLAG_REGEXP).collect { |flag, atom|
-                  if atom
-                    atom
-                  else
-                    symbol = flag.capitalize.untaint.intern
-                    @flag_symbols[symbol] = true
-                    if @flag_symbols.length > IMAP.max_flag_count
-                      raise FlagCountError, "number of flag symbols exceeded"
-                    end
-                    symbol
-                  end
-                }
-              else
-                parse_error("invalid flag list")
+      def flag_list
+        if @str.index(/\(([^)]*)\)/ni, @pos)
+          @pos = $~.end(0)
+          return $1.scan(FLAG_REGEXP).collect { |flag, atom|
+            if atom
+              atom
+            else
+              symbol = flag.capitalize.untaint.intern
+              @flag_symbols[symbol] = true
+              if @flag_symbols.length > IMAP.max_flag_count
+                raise FlagCountError, "number of flag symbols exceeded"
               end
+              symbol
             end
+          }
+        else
+          parse_error("invalid flag list")
+        end
+      end
 
       def nstring
         token = lookahead
@@ -3389,12 +3389,12 @@ module Net
           a2 = "AUTHENTICATE:" + response[:'digest-uri']
           a2 << ":00000000000000000000000000000000" if response[:qop] and response[:qop] =~ /^auth-(?:conf|int)$/
 
-            response[:response] = Digest::MD5.hexdigest(
-              [
-                Digest::MD5.hexdigest(a1),
-                response.values_at(:nonce, :nc, :cnonce, :qop),
-                Digest::MD5.hexdigest(a2)
-          ].join(':')
+          response[:response] = Digest::MD5.hexdigest(
+            [
+             Digest::MD5.hexdigest(a1),
+             response.values_at(:nonce, :nc, :cnonce, :qop),
+             Digest::MD5.hexdigest(a2)
+            ].join(':')
           )
 
           return response.keys.map {|key| qdval(key.to_s, response[key]) }.join(',')

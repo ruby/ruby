@@ -272,7 +272,7 @@ module Net
       line = getline
       buff = line
       if line[3] == ?-
-        code = line[0, 3]
+          code = line[0, 3]
         begin
           line = getline
           buff << "\n" << line
@@ -781,15 +781,15 @@ module Net
 
     MDTM_REGEXP = /^(\d\d\d\d)(\d\d)(\d\d)(\d\d)(\d\d)(\d\d)/  # :nodoc:
 
-      #
-      # Returns the last modification time of the (remote) file.  If +local+ is
-      # +true+, it is returned as a local time, otherwise it's a UTC time.
-      #
-      def mtime(filename, local = false)
-        str = mdtm(filename)
-        ary = str.scan(MDTM_REGEXP)[0].collect {|i| i.to_i}
-        return local ? Time.local(*ary) : Time.gm(*ary)
-      end
+    #
+    # Returns the last modification time of the (remote) file.  If +local+ is
+    # +true+, it is returned as a local time, otherwise it's a UTC time.
+    #
+    def mtime(filename, local = false)
+      str = mdtm(filename)
+      ary = str.scan(MDTM_REGEXP)[0].collect {|i| i.to_i}
+      return local ? Time.local(*ary) : Time.gm(*ary)
+    end
 
     #
     # Creates a remote directory.

@@ -20,7 +20,7 @@ module REXML
   class Element < Parent
     include Namespace
 
-    UNDEFINED = "UNDEFINED";    # The default name
+    UNDEFINED = "UNDEFINED";            # The default name
 
     # Mechanisms for accessing attributes and child elements of this
     # element.
@@ -297,7 +297,7 @@ module REXML
       el = @elements.add(element)
       attrs.each do |key, value|
         el.attributes[key]=value
-      end  if attrs.kind_of? Hash
+      end       if attrs.kind_of? Hash
       el
     end
 
@@ -667,7 +667,7 @@ module REXML
     #
     # Writes out this element, and recursively, all children.
     # output::
-    #    output an object which supports '<< string'; this is where the
+    #     output an object which supports '<< string'; this is where the
     #   document will be written.
     # indent::
     #   An integer.  If -1, no indenting will be used; otherwise, the
@@ -690,15 +690,15 @@ module REXML
     def write(output=$stdout, indent=-1, transitive=false, ie_hack=false)
       Kernel.warn("#{self.class.name}.write is deprecated.  See REXML::Formatters")
       formatter = if indent > -1
-                    if transitive
-                      require "rexml/formatters/transitive"
-                      REXML::Formatters::Transitive.new( indent, ie_hack )
-                    else
-                      REXML::Formatters::Pretty.new( indent, ie_hack )
-                    end
-                  else
-                    REXML::Formatters::Default.new( ie_hack )
-                  end
+          if transitive
+            require "rexml/formatters/transitive"
+            REXML::Formatters::Transitive.new( indent, ie_hack )
+          else
+            REXML::Formatters::Pretty.new( indent, ie_hack )
+          end
+        else
+          REXML::Formatters::Default.new( ie_hack )
+        end
       formatter.write( self, output )
     end
 
@@ -778,7 +778,7 @@ module REXML
       else
         return XPath::first( @element, index )
         #{ |element|
-        #  return element if element.kind_of? Element
+        #       return element if element.kind_of? Element
         #}
         #return nil
       end
@@ -1086,7 +1086,7 @@ module REXML
     #  doc.root.attributes['foo'] = '4'
     #  doc.root.attributes['x:foo'] = nil
     def []=( name, value )
-      if value.nil?    # Delete the named attribute
+      if value.nil?             # Delete the named attribute
         attr = get_attribute(name)
         delete attr
         return
@@ -1116,8 +1116,8 @@ module REXML
           value.prefix != "xmlns" and old_attr.prefix != "xmlns" and
           @element.namespace( old_attr.prefix ) ==
             @element.namespace( value.prefix )
-          store value.name, { old_attr.prefix  => old_attr,
-            value.prefix    => value }
+          store value.name, { old_attr.prefix   => old_attr,
+            value.prefix                => value }
       else
         store value.name, value
       end
@@ -1236,7 +1236,7 @@ module REXML
           ( !namespace.empty? || !attribute.fully_expanded_name.index(':') )
           # foo will match xmlns:foo, but only if foo isn't also an attribute
           result = attribute if !result or !namespace.empty? or
-          !attribute.fully_expanded_name.index(':')
+                                !attribute.fully_expanded_name.index(':')
         end
       }
       result

@@ -1,8 +1,8 @@
 #
 #   thwait.rb - thread synchronization class
-#     $Release Version: 0.9 $
-#     $Revision: 1.3 $
-#     by Keiju ISHITSUKA(Nihon Rational Software Co.,Ltd.)
+#       $Release Version: 0.9 $
+#       $Revision: 1.3 $
+#       by Keiju ISHITSUKA(Nihon Rational Software Co.,Ltd.)
 
 require "thread.rb"
 require "e2mmap.rb"

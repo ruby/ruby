@@ -165,7 +165,7 @@ class Tempfile < DelegateClass(File)
     __setobj__(@tmpfile)
   end
 
-  def _close  # :nodoc:
+  def _close    # :nodoc:
     @tmpfile.close if @tmpfile
     @tmpfile = nil
     @data[1] = nil if @data

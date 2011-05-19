@@ -563,7 +563,7 @@ module DRb
 
     def load(soc)  # :nodoc:
       begin
-        sz = soc.read(4)  # sizeof (N)
+        sz = soc.read(4)        # sizeof (N)
       rescue
         raise(DRbConnError, $!.message, $!.backtrace)
       end
@@ -812,7 +812,7 @@ module DRb
         [host, port, option]
       else
         raise(DRbBadScheme, uri) unless uri =~ /^druby:/
-          raise(DRbBadURI, 'can\'t parse uri:' + uri)
+        raise(DRbBadURI, 'can\'t parse uri:' + uri)
       end
     end
 
@@ -1117,7 +1117,7 @@ module DRb
       result.backtrace.each do |x|
         break if /`__send__'$/ =~ x
         if /^\(druby:\/\// =~ x
-               bt.push(x)
+          bt.push(x)
         else
           bt.push(prefix + x)
         end
@@ -1584,7 +1584,7 @@ module DRb
       Thread.start(@protocol.accept) do |client|
         @grp.add Thread.current
         Thread.current['DRb'] = { 'client' => client ,
-          'server' => self }
+                                  'server' => self }
         loop do
           begin
             succ = false

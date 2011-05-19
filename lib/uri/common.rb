@@ -202,13 +202,13 @@ module URI
     #
     # == Usage
     #
-    #  p = URI::Parser.new
-    #  p.parse("ldap://ldap.example.com/dc=example?user=john")
-    #  #=> #<URI::LDAP:0x00000000b9e7e8 URL:ldap://ldap.example.com/dc=example?user=john>
+    #   p = URI::Parser.new
+    #   p.parse("ldap://ldap.example.com/dc=example?user=john")
+    #   #=> #<URI::LDAP:0x00000000b9e7e8 URL:ldap://ldap.example.com/dc=example?user=john>
     #
     def parse(uri)
       scheme, userinfo, host, port,
-         registry, path, opaque, query, fragment = self.split(uri)
+        registry, path, opaque, query, fragment = self.split(uri)
 
       if scheme && URI.scheme_list.include?(scheme.upcase)
         URI.scheme_list[scheme.upcase].new(scheme, userinfo, host, port,
@@ -273,7 +273,7 @@ module URI
     # unless +schemes+ is provided. Then it is a Regexp.union with self.pattern[:X_ABS_URI]
     def make_regexp(schemes = nil)
       unless schemes
-         @regexp[:ABS_URI_REF]
+        @regexp[:ABS_URI_REF]
       else
         /(?=#{Regexp.union(*schemes)}:)#{@pattern[:X_ABS_URI]}/x
       end

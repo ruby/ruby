@@ -1,8 +1,8 @@
 #
 #   shell.rb -
-#     $Release Version: 0.7 $
-#     $Revision: 1.9 $
-#     by Keiju ISHITSUKA(keiju@ruby-lang.org)
+#       $Release Version: 0.7 $
+#       $Revision: 1.9 $
+#       by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
@@ -25,7 +25,7 @@ class Shell
   include Error
   extend Exception2MessageMapper
 
-  #  @cascade = true
+#  @cascade = true
   # debug: true -> normal debug
   # debug: 1    -> eval definition debug
   # debug: 2    -> detail inspect debug
@@ -41,7 +41,7 @@ class Shell
 
     attr_accessor :cascade, :debug, :verbose
 
-    #    alias cascade? cascade
+#    alias cascade? cascade
     alias debug? debug
     alias verbose? verbose
     @verbose = true
@@ -286,7 +286,7 @@ class Shell
         yield mes if iterator?
         if _head
           _head = false
-          #    "shell" " + mes
+#         "shell" " + mes
           prefix + mes
         else
           " "* prefix.size + mes

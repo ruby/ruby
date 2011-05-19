@@ -1,3 +1,7 @@
+Thu May 19 09:07:08 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib: revert r31635-r31638 and untabify with expand(1).
+
 Thu May 19 07:47:26 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/test_pkey_rsa.rb: Add tests for sign/verify.

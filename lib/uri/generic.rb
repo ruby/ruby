@@ -1321,8 +1321,8 @@ module URI
                              self.query, self.fragment, parser)
 
       if rel.userinfo != oth.userinfo ||
-         rel.host.to_s.downcase != oth.host.to_s.downcase ||
-         rel.port != oth.port
+          rel.host.to_s.downcase != oth.host.to_s.downcase ||
+          rel.port != oth.port
 
         if self.userinfo.nil? && self.host.nil?
           return self, self.dup

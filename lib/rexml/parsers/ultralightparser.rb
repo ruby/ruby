@@ -42,10 +42,10 @@ module REXML
     end
 
     # An element is an array.  The array contains:
-    #  0      The parent element
-    #  1      The tag name
-    #  2      A hash of attributes
-    #  3..-1  The child elements
+    #  0                        The parent element
+    #  1                        The tag name
+    #  2                        A hash of attributes
+    #  3..-1    The child elements
     # An element is an array of size > 3
     # Text is a String
     # PIs are [ :processing_instruction, target, data ]

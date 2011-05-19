@@ -1584,7 +1584,7 @@ Init_ossl_asn1()
     /* Document-class: OpenSSL::ASN1::Primitive
      *
      * The parent class for all primitive encodings. Attributes are the same as
-     * for ASN1Data, with the addition of +tagging+. 
+     * for ASN1Data, with the addition of +tagging+.
      * Primitive values can never be infinite length encodings, thus it is not
      * possible to set the +infinite_length+ attribute for Primitive and its
      * sub-classes.

@@ -284,7 +284,7 @@ class GetoptLong
 
     arguments.each do |arg|
       if !arg.is_a?(Array)
-        raise ArgumentError, "the option list contains non-Array argument"
+       raise ArgumentError, "the option list contains non-Array argument"
       end
 
       #

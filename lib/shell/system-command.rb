@@ -1,8 +1,8 @@
 #
 #   shell/system-command.rb -
-#     $Release Version: 0.7 $
-#     $Revision$
-#     by Keiju ISHITSUKA(keiju@ruby-lang.org)
+#       $Release Version: 0.7 $
+#       $Revision$
+#       by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
@@ -141,9 +141,9 @@ class Shell
 
     # ex)
     #    if you wish to output:
-    #      "shell: job(#{@command}:#{@pid}) close pipe-out."
-    #   then
-    #      mes: "job(%id) close pipe-out."
+    #       "shell: job(#{@command}:#{@pid}) close pipe-out."
+    #    then
+    #       mes: "job(%id) close pipe-out."
     #    yorn: Boolean(@shell.debug? or @shell.verbose?)
     def notify(*opts, &block)
       @shell.notify(*opts) do |mes|

@@ -299,11 +299,11 @@ end
 
 def xsystem command, opts = nil
   varpat = /\$\((\w+)\)|\$\{(\w+)\}/
-    if varpat =~ command
-      vars = Hash.new {|h, k| h[k] = ''; ENV[k]}
-      command = command.dup
-      nil while command.gsub!(varpat) {vars[$1||$2]}
-    end
+  if varpat =~ command
+    vars = Hash.new {|h, k| h[k] = ''; ENV[k]}
+    command = command.dup
+    nil while command.gsub!(varpat) {vars[$1||$2]}
+  end
   Logging::open do
     puts command.quote
     if opts and opts[:werror]
@@ -410,7 +410,7 @@ def cc_command(opt="")
                                 'arch_hdrdir' => "#$arch_hdrdir",
                                 'top_srcdir' => $top_srcdir.quote)
   RbConfig::expand("$(CC) #$INCFLAGS #$CPPFLAGS #$CFLAGS #$ARCH_FLAG #{opt} -c #{CONFTEST_C}",
-       conf)
+                   conf)
 end
 
 def cpp_command(outfile, opt="")
@@ -418,7 +418,7 @@ def cpp_command(outfile, opt="")
                                 'arch_hdrdir' => "#$arch_hdrdir",
                                 'top_srcdir' => $top_srcdir.quote)
   RbConfig::expand("$(CPP) #$INCFLAGS #$CPPFLAGS #$CFLAGS #{opt} #{CONFTEST_C} #{outfile}",
-       conf)
+                   conf)
 end
 
 def libpathflag(libpath=$DEFLIBPATH|$LIBPATH)
@@ -547,7 +547,7 @@ end
 def try_static_assert(expr, headers = nil, opt = "", &b)
   headers = cpp_include(headers)
   try_compile(<<SRC, opt, &b)
-  #{headers}
+#{headers}
 /*top*/
 int conftest_const[(#{expr}) ? 1 : -1];
 SRC
@@ -616,15 +616,15 @@ def try_func(func, libs, headers = nil, &b)
     decltype = proc {|x| "void ((*#{x})())"}
   end
   try_link(<<"SRC", libs, &b) or
-  #{headers}
+#{headers}
 /*top*/
-  #{MAIN_DOES_NOTHING}
+#{MAIN_DOES_NOTHING}
 int t() { #{decltype["volatile p"]}; p = (#{decltype[]})#{func}; return 0; }
 SRC
   call && try_link(<<"SRC", libs, &b)
-  #{headers}
+#{headers}
 /*top*/
-  #{MAIN_DOES_NOTHING}
+#{MAIN_DOES_NOTHING}
 int t() { #{func}(); return 0; }
 SRC
 end
@@ -633,9 +633,9 @@ end
 def try_var(var, headers = nil, &b)
   headers = cpp_include(headers)
   try_compile(<<"SRC", &b)
-  #{headers}
+#{headers}
 /*top*/
-  #{MAIN_DOES_NOTHING}
+#{MAIN_DOES_NOTHING}
 int t() { const volatile void *volatile p; p = &(&#{var})[0]; return 0; }
 SRC
 end
@@ -659,18 +659,18 @@ def egrep_cpp(pat, src, opt = "", &b)
     if Regexp === pat
       puts("    ruby -ne 'print if #{pat.inspect}'")
       f.grep(pat) {|l|
-  puts "#{f.lineno}: #{l}"
-  return true
+        puts "#{f.lineno}: #{l}"
+        return true
       }
       false
     else
       puts("    egrep '#{pat}'")
       begin
-  stdin = $stdin.dup
-  $stdin.reopen(f)
-  system("egrep", pat)
+        stdin = $stdin.dup
+        $stdin.reopen(f)
+        system("egrep", pat)
       ensure
-  $stdin.reopen(stdin)
+        $stdin.reopen(stdin)
       end
     end
   end
@@ -867,11 +867,11 @@ def find_library(lib, func, *paths, &b)
     libs = append_library($libs, lib)
     begin
       until r = try_func(func, libs, &b) or paths.empty?
-  $LIBPATH = libpath | [paths.shift]
+        $LIBPATH = libpath | [paths.shift]
       end
       if r
-  $libs = libs
-  libpath = nil
+        $libs = libs
+        libpath = nil
       end
     ensure
       $LIBPATH = libpath if libpath
@@ -999,9 +999,9 @@ end
 def have_struct_member(type, member, headers = nil, &b)
   checking_for checking_message("#{type}.#{member}", headers) do
     if try_compile(<<"SRC", &b)
-    #{cpp_include(headers)}
+#{cpp_include(headers)}
 /*top*/
-    #{MAIN_DOES_NOTHING}
+#{MAIN_DOES_NOTHING}
 int s = (char *)&((#{type}*)0)->#{member} - (char *)0;
 SRC
       $defs.push(format("-DHAVE_%s_%s", type.tr_cpp, member.tr_cpp))
@@ -1019,7 +1019,7 @@ end
 #
 def try_type(type, headers = nil, opt = "", &b)
   if try_compile(<<"SRC", opt, &b)
-  #{cpp_include(headers)}
+#{cpp_include(headers)}
 /*top*/
 typedef #{type} conftest_type;
 int conftestval[sizeof(conftest_type)?1:-1];
@@ -1077,7 +1077,7 @@ end
 def try_const(const, headers = nil, opt = "", &b)
   const, type = *const
   if try_compile(<<"SRC", opt, &b)
-  #{cpp_include(headers)}
+#{cpp_include(headers)}
 /*top*/
 typedef #{type || 'int'} conftest_type;
 conftest_type conftestval = #{type ? '' : '(int)'}#{const};
@@ -1217,18 +1217,18 @@ def convertible_int(type, headers = nil, opts = nil, &b)
       u = "unsigned " if signed > 0
       prelude << "extern rbcv_typedef_ foo();"
       compat = UNIVERSAL_INTS.find {|t|
-  try_compile([prelude, "extern #{u}#{t} foo();"].join("\n"), opts, :werror=>true, &b)
+        try_compile([prelude, "extern #{u}#{t} foo();"].join("\n"), opts, :werror=>true, &b)
       }
       if compat
-  macname ||= type.sub(/_(?=t\z)/, '').tr_cpp
-  conv = (compat == "long long" ? "LL" : compat.upcase)
-  compat = "#{u}#{compat}"
-  $defs.push(format("-DTYPEOF_%s=%s", type.tr_cpp, compat.quote))
-  $defs.push(format("-DPRI_%s_PREFIX=PRI_%s_PREFIX", macname, conv))
-  conv = (u ? "U" : "") + conv
-  $defs.push(format("-D%s2NUM=%s2NUM", macname, conv))
-  $defs.push(format("-DNUM2%s=NUM2%s", macname, conv))
-  compat
+        macname ||= type.sub(/_(?=t\z)/, '').tr_cpp
+        conv = (compat == "long long" ? "LL" : compat.upcase)
+        compat = "#{u}#{compat}"
+        $defs.push(format("-DTYPEOF_%s=%s", type.tr_cpp, compat.quote))
+        $defs.push(format("-DPRI_%s_PREFIX=PRI_%s_PREFIX", macname, conv))
+        conv = (u ? "U" : "") + conv
+        $defs.push(format("-D%s2NUM=%s2NUM", macname, conv))
+        $defs.push(format("-DNUM2%s=NUM2%s", macname, conv))
+        compat
       end
     end
   end
@@ -1239,10 +1239,10 @@ end
 # pointer.
 def scalar_ptr_type?(type, member = nil, headers = nil, &b)
   try_compile(<<"SRC", &b)   # pointer
-  #{cpp_include(headers)}
+#{cpp_include(headers)}
 /*top*/
 volatile #{type} conftestval;
-  #{MAIN_DOES_NOTHING}
+#{MAIN_DOES_NOTHING}
 int t() {return (int)(1-*(conftestval#{member ? ".#{member}" : ""}));}
 SRC
 end
@@ -1251,10 +1251,10 @@ end
 # pointer.
 def scalar_type?(type, member = nil, headers = nil, &b)
   try_compile(<<"SRC", &b)   # pointer
-  #{cpp_include(headers)}
+#{cpp_include(headers)}
 /*top*/
 volatile #{type} conftestval;
-  #{MAIN_DOES_NOTHING}
+#{MAIN_DOES_NOTHING}
 int t() {return (int)(1-(conftestval#{member ? ".#{member}" : ""}));}
 SRC
 end
@@ -1266,7 +1266,7 @@ def have_typeof?
   $typeof = %w[__typeof__ typeof].find do |t|
     try_compile(<<SRC)
 int rbcv_foo;
-    #{t}(rbcv_foo) rbcv_bar;
+#{t}(rbcv_foo) rbcv_bar;
 SRC
   end
 end
@@ -1644,7 +1644,7 @@ ECHO1 = $(V:1=@:)
 ECHO = $(ECHO1:0=@echo)
 
 #### Start of system configuration section. ####
-    #{"top_srcdir = " + $top_srcdir.sub(%r"\A#{Regexp.quote($topdir)}/", "$(topdir)/") if $extmk}
+#{"top_srcdir = " + $top_srcdir.sub(%r"\A#{Regexp.quote($topdir)}/", "$(topdir)/") if $extmk}
 srcdir = #{srcdir.gsub(/\$\((srcdir)\)|\$\{(srcdir)\}/) {mkintpath(CONFIG[$1||$2])}.quote}
 topdir = #{mkintpath($extmk ? CONFIG["topdir"] : $topdir).quote}
 hdrdir = #{mkintpath(CONFIG["hdrdir"]).quote}
@@ -1730,7 +1730,7 @@ preload = #{defined?($preload) && $preload ? $preload.join(' ') : ''}
       x.gsub!(/^(MAKEDIRS|INSTALL_(?:PROG|DATA))+\s*=.*\n/) do
         "!ifndef " + $1 + "\n" +
         $& +
-  "!endif\n"
+        "!endif\n"
       end
     end
   end
@@ -2006,7 +2006,7 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
       mfile.print "#{dest}: #{f}\n\t@-$(MAKEDIRS) $(@D#{sep})\n"
       mfile.print "\t$(INSTALL_PROG) #{fseprepl[f]} $(@D#{sep})\n"
       if defined?($installed_list)
-  mfile.print "\t@echo #{dir}/#{File.basename(f)}>>$(INSTALLED_LIST)\n"
+        mfile.print "\t@echo #{dir}/#{File.basename(f)}>>$(INSTALLED_LIST)\n"
       end
     end
   else
@@ -2020,17 +2020,17 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
     files = install_files(mfile, i, nil, srcprefix) or next
     for dir, *files in files
       unless dirs.include?(dir)
-  dirs << dir
-  mfile.print "pre-install-rb#{sfx}: #{dir}\n"
+        dirs << dir
+        mfile.print "pre-install-rb#{sfx}: #{dir}\n"
       end
       for f in files
-  dest = "#{dir}/#{File.basename(f)}"
-  mfile.print("install-rb#{sfx}: #{dest} #{dir}\n")
-  mfile.print("#{dest}: #{f}\n")
-  mfile.print("\t$(Q) $(#{$extout ? 'COPY' : 'INSTALL_DATA'}) #{f} $(@D#{sep})\n")
-  if defined?($installed_list) and !$extout
-    mfile.print("\t@echo #{dest}>>$(INSTALLED_LIST)\n")
-  end
+        dest = "#{dir}/#{File.basename(f)}"
+        mfile.print("install-rb#{sfx}: #{dest} #{dir}\n")
+        mfile.print("#{dest}: #{f}\n")
+        mfile.print("\t$(Q) $(#{$extout ? 'COPY' : 'INSTALL_DATA'}) #{f} $(@D#{sep})\n")
+        if defined?($installed_list) and !$extout
+          mfile.print("\t@echo #{dest}>>$(INSTALLED_LIST)\n")
+        end
         if $extout
           mfile.print("clean-rb#{sfx}::\n")
           mfile.print("\t@-$(RM) #{fseprepl[dest]}\n")

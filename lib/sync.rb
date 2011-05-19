@@ -1,8 +1,8 @@
 #
 #   sync.rb - 2 phase lock with counter
-#     $Release Version: 1.0$
-#     $Revision$
-#     by Keiju ISHITSUKA(keiju@ishitsuka.com)
+#       $Release Version: 1.0$
+#       $Revision$
+#       by Keiju ISHITSUKA(keiju@ishitsuka.com)
 #
 # --
 #  Sync_m, Synchronizer_m
@@ -10,8 +10,8 @@
 #   obj.extend(Sync_m)
 #   or
 #   class Foo
-#     include Sync_m
-#  :
+#       include Sync_m
+#       :
 #   end
 #
 #   Sync_m#sync_mode
@@ -100,12 +100,12 @@ module Sync_m
 
   def sync_extend
     unless (defined? locked? and
-      defined? shared? and
-      defined? exclusive? and
-      defined? lock and
-      defined? unlock and
-      defined? try_lock and
-      defined? synchronize)
+            defined? shared? and
+            defined? exclusive? and
+            defined? lock and
+            defined? unlock and
+            defined? try_lock and
+            defined? synchronize)
       Sync_m.define_aliases(singleton_class)
     end
     sync_initialize
@@ -281,7 +281,7 @@ module Sync_m
       end
     when EX
       if sync_mode == UN or
-        sync_mode == SH && sync_sh_locker.size == 1 && sync_sh_locker.include?(Thread.current)
+          sync_mode == SH && sync_sh_locker.size == 1 && sync_sh_locker.include?(Thread.current)
         self.sync_mode = m
         self.sync_ex_locker = Thread.current
         self.sync_ex_count = 1

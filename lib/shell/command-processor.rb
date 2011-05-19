@@ -1,8 +1,8 @@
 #
 #   shell/command-controller.rb -
-#     $Release Version: 0.7 $
-#     $Revision$
-#     by Keiju ISHITSUKA(keiju@ruby-lang.org)
+#       $Release Version: 0.7 $
+#       $Revision$
+#       by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
@@ -19,7 +19,7 @@ require "shell/builtin-command"
 
 class Shell
   class CommandProcessor
-    #    include Error
+#    include Error
 
     #
     # initialize of Shell and related classes.
@@ -68,9 +68,9 @@ class Shell
 
     #
     # CommandProcessor#expand_path(path)
-    #    path:    String
-    #    return: String
-    #  returns the absolute path for <path>
+    #     path:   String
+    #     return: String
+    #   returns the absolute path for <path>
     #
     def expand_path(path)
       @shell.expand_path(path)
@@ -86,13 +86,13 @@ class Shell
     # -
     #
     # CommandProcessor#foreach(path, rs)
-    #    path: String
-    #    rs:  String - record separator
-    #    iterator
-    #  Same as:
-    #    File#foreach (when path is file)
-    #    Dir#foreach (when path is directory)
-    #  path is relative to pwd
+    #     path: String
+    #     rs:   String - record separator
+    #     iterator
+    #   Same as:
+    #     File#foreach (when path is file)
+    #     Dir#foreach (when path is directory)
+    #   path is relative to pwd
     #
     def foreach(path = nil, *rs)
       path = "." unless path
@@ -107,13 +107,13 @@ class Shell
 
     #
     # CommandProcessor#open(path, mode)
-    #    path:    String
-    #    mode:    String
-    #    return: File or Dir
-    #  Same as:
-    #    File#open (when path is file)
-    #    Dir#open  (when path is directory)
-    #  mode has an effect only when path is a file
+    #     path:   String
+    #     mode:   String
+    #     return: File or Dir
+    #   Same as:
+    #     File#open (when path is file)
+    #     Dir#open  (when path is directory)
+    #   mode has an effect only when path is a file
     #
     def open(path, mode = nil, perm = 0666, &b)
       path = expand_path(path)
@@ -136,9 +136,9 @@ class Shell
 
     #
     # CommandProcessor#unlink(path)
-    #  same as:
-    #    Dir#unlink  (when path is directory)
-    #    File#unlink (when path is file)
+    #   same as:
+    #     Dir#unlink  (when path is directory)
+    #     File#unlink (when path is file)
     #
     def unlink(path)
       @shell.check_point
@@ -155,19 +155,19 @@ class Shell
     #
     # CommandProcessor#test(command, file1, file2)
     # CommandProcessor#[command, file1, file2]
-    #    command: char or String or Symbol
-    #    file1:   String
-    #    file2:   String(optional)
-    #    return: Boolean
-    #  same as:
-    #    test()     (when command is char or length 1 string or symbol)
-    #    FileTest.command (others)
-    #  example:
-    #    sh[?e, "foo"]
-    #    sh[:e, "foo"]
-    #    sh["e", "foo"]
-    #    sh[:exists?, "foo"]
-    #    sh["exists?", "foo"]
+    #     command: char or String or Symbol
+    #     file1:   String
+    #     file2:   String(optional)
+    #     return: Boolean
+    #   same as:
+    #     test()           (when command is char or length 1 string or symbol)
+    #     FileTest.command (others)
+    #   example:
+    #     sh[?e, "foo"]
+    #     sh[:e, "foo"]
+    #     sh["e", "foo"]
+    #     sh[:exists?, "foo"]
+    #     sh["exists?", "foo"]
     #
     alias top_level_test test
     def test(command, file1, file2=nil)
@@ -209,8 +209,8 @@ class Shell
     #--
     #
     # CommandProcessor#mkdir(*path)
-    #    path: String
-    #  same as Dir.mkdir()
+    #     path: String
+    #   same as Dir.mkdir()
     #
     def mkdir(*path)
       @shell.check_point
@@ -234,8 +234,8 @@ class Shell
 
     #
     # CommandProcessor#rmdir(*path)
-    #    path: String
-    #  same as Dir.rmdir()
+    #     path: String
+    #   same as Dir.rmdir()
     #
     def rmdir(*path)
       @shell.check_point
@@ -249,13 +249,13 @@ class Shell
 
     #
     # CommandProcessor#system(command, *opts)
-    #    command: String
-    #    opts:     String
-    #    return:  SystemCommand
-    #  Same as system() function
-    #  example:
-    #    print sh.system("ls", "-l")
-    #    sh.system("ls", "-l") | sh.head > STDOUT
+    #     command: String
+    #     opts:    String
+    #     return:  SystemCommand
+    #   Same as system() function
+    #   example:
+    #     print sh.system("ls", "-l")
+    #     sh.system("ls", "-l") | sh.head > STDOUT
     #
     def system(command, *opts)
       if opts.empty?
@@ -270,7 +270,7 @@ class Shell
 
     #
     # ProcessCommand#rehash
-    #  clear command hash table.
+    #   clear command hash table.
     #
     def rehash
       @system_commands = {}
@@ -373,21 +373,21 @@ class Shell
 
     #
     # CommandProcessor.def_system_command(command, path)
-    #    command:  String
-    #    path:      String
-    #  define 'command()' method as method.
+    #     command:  String
+    #     path:     String
+    #   define 'command()' method as method.
     #
     def self.def_system_command(command, path = command)
       begin
         eval((d = %Q[def #{command}(*opts)
-                 SystemCommand.new(@shell, '#{path}', *opts)
+                  SystemCommand.new(@shell, '#{path}', *opts)
                end]), nil, __FILE__, __LINE__ - 1)
       rescue SyntaxError
         Shell.notify "warn: Can't define #{command} path: #{path}."
       end
       Shell.notify "Define #{command} path: #{path}.", Shell.debug?
       Shell.notify("Definition of #{command}: ", d,
-                   Shell.debug.kind_of?(Integer) && Shell.debug > 1)
+             Shell.debug.kind_of?(Integer) && Shell.debug > 1)
     end
 
     def self.undef_system_command(command)
@@ -417,11 +417,11 @@ class Shell
           eval((d = %Q[def #{ali}(*opts)
                           @shell.__send__(:#{command},
                                           *(CommandProcessor.alias_map[:#{ali}].call *opts))
-                  end]), nil, __FILE__, __LINE__ - 1)
+                        end]), nil, __FILE__, __LINE__ - 1)
 
         else
-          args = opts.collect{|opt| '"' + opt + '"'}.join(",")
-          eval((d = %Q[def #{ali}(*opts)
+           args = opts.collect{|opt| '"' + opt + '"'}.join(",")
+           eval((d = %Q[def #{ali}(*opts)
                           @shell.__send__(:#{command}, #{args}, *opts)
                         end]), nil, __FILE__, __LINE__ - 1)
         end
@@ -432,7 +432,7 @@ class Shell
       end
       Shell.notify "Define #{ali} command: #{command}.", Shell.debug?
       Shell.notify("Definition of #{ali}: ", d,
-                   Shell.debug.kind_of?(Integer) && Shell.debug > 1)
+             Shell.debug.kind_of?(Integer) && Shell.debug > 1)
       self
     end
 
@@ -444,14 +444,14 @@ class Shell
 
     #
     # CommandProcessor.def_builtin_commands(delegation_class, command_specs)
-    #    delegation_class: Class or Module
-    #    command_specs: [[command_name, [argument,...]],...]
-    #       command_name: String
-    #       arguments:     String
-    #    FILENAME?? -> expand_path(filename??)
-    #    *FILENAME?? -> filename??.collect{|f|expand_path(f)}.join(", ")
-    #  define command_name(argument,...) as
-    #      delegation_class.command_name(argument,...)
+    #     delegation_class: Class or Module
+    #     command_specs: [[command_name, [argument,...]],...]
+    #        command_name: String
+    #        arguments:    String
+    #           FILENAME?? -> expand_path(filename??)
+    #           *FILENAME?? -> filename??.collect{|f|expand_path(f)}.join(", ")
+    #   define command_name(argument,...) as
+    #       delegation_class.command_name(argument,...)
     #
     def self.def_builtin_commands(delegation_class, command_specs)
       for meth, args in command_specs
@@ -469,18 +469,18 @@ class Shell
           end
         }.join(", ")
         d = %Q[def #{meth}(#{arg_str})
-          #{delegation_class}.#{meth}(#{call_arg_str})
-     end]
-     Shell.notify "Define #{meth}(#{arg_str})", Shell.debug?
-     Shell.notify("Definition of #{meth}: ", d,
-                  Shell.debug.kind_of?(Integer) && Shell.debug > 1)
-     eval d
+                    #{delegation_class}.#{meth}(#{call_arg_str})
+                 end]
+        Shell.notify "Define #{meth}(#{arg_str})", Shell.debug?
+        Shell.notify("Definition of #{meth}: ", d,
+                     Shell.debug.kind_of?(Integer) && Shell.debug > 1)
+        eval d
       end
     end
 
     #
     # CommandProcessor.install_system_commands(pre)
-    #      pre: String - command name prefix
+    #       pre: String - command name prefix
     # defines every command which belongs in default_system_path via
     # CommandProcessor.command().  It doesn't define already defined
     # methods twice.  By default, "pre_" is prefixes to each method
@@ -526,29 +526,29 @@ class Shell
       end
       Shell.notify "method added: Shell##{name}.", Shell.debug?
       Shell.module_eval(%Q[def #{name}(*args, &block)
-          begin
-            @command_processor.__send__(:#{name}, *args, &block)
-          rescue Exception
-            $@.delete_if{|s| /:in `__getobj__'$/ =~ s} #`
-                        $@.delete_if{|s| /^\\(eval\\):/ =~ s}
-          raise
-          end
+                            begin
+                              @command_processor.__send__(:#{name}, *args, &block)
+                            rescue Exception
+                              $@.delete_if{|s| /:in `__getobj__'$/ =~ s} #`
+                              $@.delete_if{|s| /^\\(eval\\):/ =~ s}
+                            raise
+                            end
                           end], __FILE__, __LINE__)
 
-                          if Shell::Filter.method_defined?(id)
-                            Shell.notify "warn: override definition of Shell::Filter##{name}."
-                            Shell.notify "warn: alias Shell##{name} to Shell::Filter##{name}_org."
-                            Filter.module_eval "alias #{name}_org #{name}"
-                          end
-                          Shell.notify "method added: Shell::Filter##{name}.", Shell.debug?
-                          Filter.module_eval(%Q[def #{name}(*args, &block)
-          begin
-            self | @shell.__send__(:#{name}, *args, &block)
-          rescue Exception
-            $@.delete_if{|s| /:in `__getobj__'$/ =~ s} #`
-                        $@.delete_if{|s| /^\\(eval\\):/ =~ s}
-          raise
-          end
+      if Shell::Filter.method_defined?(id)
+        Shell.notify "warn: override definition of Shell::Filter##{name}."
+        Shell.notify "warn: alias Shell##{name} to Shell::Filter##{name}_org."
+        Filter.module_eval "alias #{name}_org #{name}"
+      end
+      Shell.notify "method added: Shell::Filter##{name}.", Shell.debug?
+      Filter.module_eval(%Q[def #{name}(*args, &block)
+                            begin
+                              self | @shell.__send__(:#{name}, *args, &block)
+                            rescue Exception
+                              $@.delete_if{|s| /:in `__getobj__'$/ =~ s} #`
+                              $@.delete_if{|s| /^\\(eval\\):/ =~ s}
+                            raise
+                            end
                           end], __FILE__, __LINE__)
     end
 
@@ -557,7 +557,7 @@ class Shell
     #
     def self.install_builtin_commands
       # method related File.
-      #  (exclude open/foreach/unlink)
+      # (exclude open/foreach/unlink)
       normal_delegation_file_methods = [
         ["atime", ["FILENAME"]],
         ["basename", ["fn", "*opts"]],
@@ -580,12 +580,12 @@ class Shell
         ["truncate", ["FILENAME", "length"]],
         ["utime", ["atime", "mtime", "*FILENAMES"]]]
 
-        def_builtin_commands(File, normal_delegation_file_methods)
-        alias_method :rm, :delete
+      def_builtin_commands(File, normal_delegation_file_methods)
+      alias_method :rm, :delete
 
-        # method related FileTest
-        def_builtin_commands(FileTest,
-                             FileTest.singleton_methods(false).collect{|m| [m, ["FILENAME"]]})
+      # method related FileTest
+      def_builtin_commands(FileTest,
+                   FileTest.singleton_methods(false).collect{|m| [m, ["FILENAME"]]})
 
     end
 

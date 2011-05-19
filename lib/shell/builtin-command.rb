@@ -1,8 +1,8 @@
 #
 #   shell/builtin-command.rb -
-#     $Release Version: 0.7 $
-#     $Revision$
-#     by Keiju ISHITSUKA(keiju@ruby-lang.org)
+#       $Release Version: 0.7 $
+#       $Revision$
+#       by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
@@ -83,19 +83,19 @@ class Shell
     end
   end
 
-  #   class Sort < Cat
-  #     def initialize(sh, *filenames)
-  #       super
-  #     end
-  #
-  #     def each(rs = nil)
-  #       ary = []
-  #       super{|l|  ary.push l}
-  #       for l in ary.sort!
-  #   yield l
-  #       end
-  #     end
-  #   end
+#   class Sort < Cat
+#     def initialize(sh, *filenames)
+#       super
+#     end
+#
+#     def each(rs = nil)
+#       ary = []
+#       super{|l|       ary.push l}
+#       for l in ary.sort!
+#       yield l
+#       end
+#     end
+#   end
 
   class AppendIO < BuiltInCommand
     def initialize(sh, io, filter)

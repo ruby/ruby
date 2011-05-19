@@ -72,17 +72,17 @@ end
 #
 #   ipaddr1 = IPAddr.new "3ffe:505:2::1"
 #
-#   p ipaddr1      #=> #<IPAddr: IPv6:3ffe:0505:0002:0000:0000:0000:0000:0001/ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff>
+#   p ipaddr1                   #=> #<IPAddr: IPv6:3ffe:0505:0002:0000:0000:0000:0000:0001/ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff>
 #
-#   p ipaddr1.to_s    #=> "3ffe:505:2::1"
+#   p ipaddr1.to_s              #=> "3ffe:505:2::1"
 #
 #   ipaddr2 = ipaddr1.mask(48)  #=> #<IPAddr: IPv6:3ffe:0505:0002:0000:0000:0000:0000:0000/ffff:ffff:ffff:0000:0000:0000:0000:0000>
 #
-#   p ipaddr2.to_s    #=> "3ffe:505:2::"
+#   p ipaddr2.to_s              #=> "3ffe:505:2::"
 #
 #   ipaddr3 = IPAddr.new "192.168.2.0/24"
 #
-#   p ipaddr3      #=> #<IPAddr: IPv4:192.168.2.0/255.255.255.0>
+#   p ipaddr3                   #=> #<IPAddr: IPv4:192.168.2.0/255.255.255.0>
 
 class IPAddr
 
@@ -157,8 +157,8 @@ class IPAddr
   #   net1 = IPAddr.new("192.168.2.0/24")
   #   net2 = IPAddr.new("192.168.2.100")
   #   net3 = IPAddr.new("192.168.3.0")
-  #   p net1.include?(net2)  #=> true
-  #   p net1.include?(net3)  #=> false
+  #   p net1.include?(net2)     #=> true
+  #   p net1.include?(net3)     #=> false
   def include?(other)
     other = coerce_other(other)
     if ipv4_mapped?
@@ -473,9 +473,9 @@ class IPAddr
     end
     # It seems AI_NUMERICHOST doesn't do the job.
     #Socket.getaddrinfo(left, nil, Socket::AF_INET6, Socket::SOCK_STREAM, nil,
-    #           Socket::AI_NUMERICHOST)
+    #                  Socket::AI_NUMERICHOST)
     begin
-      IPSocket.getaddress(prefix)    # test if address is valid
+      IPSocket.getaddress(prefix)               # test if address is valid
     rescue
       raise ArgumentError, "invalid address"
     end
@@ -514,8 +514,8 @@ class IPAddr
   def in_addr(addr)
     if addr =~ /^\d+\.\d+\.\d+\.\d+$/
       return addr.split('.').inject(0) { |i, s|
-      i << 8 | s.to_i
-    }
+        i << 8 | s.to_i
+      }
     end
     return nil
   end

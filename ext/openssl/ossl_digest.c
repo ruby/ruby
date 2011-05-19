@@ -330,8 +330,8 @@ Init_ossl_digest()
      *
      * === Mapping between Digest class and sn/ln
      *
-     * The sn (short names) and ln (long names) are defined in 
-     * <openssl/object.h> and <openssl/obj_mac.h>. They are textual 
+     * The sn (short names) and ln (long names) are defined in
+     * <openssl/object.h> and <openssl/obj_mac.h>. They are textual
      * representations of ASN.1 OBJECT IDENTIFIERs. Each supported digest
      * algorithm has an OBJECT IDENTIFIER associated to it and those again
      * have short/long names assigned to them.
