@@ -111,10 +111,6 @@ Wed May 18 03:03:07 2011  Eric Hodel  <drbrain@segment7.net>
 	* lib/singleton.rb:  Improve documentation.  Patch by Pete Higgins.
 	  [Ruby 1.9 - Bug #4709]
 
-Wed May 18 01:02:53 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
-
-	* test/ruby/test_io.rb (TestIO#test_O_CLOEXEC): add null check.
-
 Tue May 17 21:24:04 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_mutex_lock): remove remove_signal_thread_list() call.
@@ -794,11 +790,6 @@ Fri May  6 14:25:53 2011  Tinco Andringa <mail@tinco.nl>
 	* ext/syck/rubyext.c (mktime_do): YAML.load time correctly parse
 	  usecs smaller than 1 fixes #4571
 
-Thu May  5 23:08:32 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
-
-	* test/ruby/test_io.rb (TestIO#test_O_CLOEXEC): fix false positive
-	  detection.
-
 Thu May  5 22:23:34 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (native_mutex_reinitialize_atfork): removed
@@ -838,12 +829,6 @@ Wed May  4 21:11:28 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* benchmark/bm_io_select2.rb: reduce number of using file
 	  descriptors. because gdb need some fds.
-
-Wed May  4 20:22:12 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
-
-	* io.c (Init_IO): Added File::CLOEXEC constant.
-	  [ruby-core:22893] [Feature #1291]
-	* test/ruby/test_io.rb (TestIO#test_o_cloexec): test for File::CLOEXEC.
 
 Wed May  4 19:00:59 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
