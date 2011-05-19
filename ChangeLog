@@ -1,3 +1,8 @@
+Thu May 19 14:44:05 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_signal.rb (test_signal_requiring): skip on Windows.
+	  we can send SIGINT only to pid 0 and the process itself.
+
 Thu May 19 09:07:08 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib: revert r31635-r31638 and untabify with expand(1).
