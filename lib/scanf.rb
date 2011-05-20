@@ -170,7 +170,7 @@
 #
 # Without a block, scanf returns an array containing all the conversions
 # it has found.  If none are found, scanf will return an empty array. An
-# unsuccesful match is never ignored, but rather always signals the end
+# unsuccessful match is never ignored, but rather always signals the end
 # of the scanning operation.  If the first unsuccessful match takes place
 # after one or more successful matches have already taken place, the
 # returned array will contain the results of those successful matches.
@@ -205,7 +205,7 @@
 #
 # This software is provided "as is" and without any express or implied
 # warranties, including, without limitation, the implied warranties of
-# merchantibility and fitness for a particular purpose.
+# merchantability and fitness for a particular purpose.
 #
 # == Credits and acknowledgements
 #
