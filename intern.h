@@ -392,6 +392,7 @@ VALUE rb_length_by_each _((VALUE));
 /* random.c */
 unsigned long rb_genrand_int32(void);
 double rb_genrand_real(void);
+void rb_reset_random_seed(void);
 /* re.c */
 int rb_memcmp _((const void*,const void*,long));
 int rb_memcicmp _((const void*,const void*,long));

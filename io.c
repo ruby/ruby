@@ -3274,6 +3274,7 @@ retry:
     rb_thread_stop_timer();
     switch ((pid = fork())) {
       case 0:			/* child */
+        rb_thread_atfork();
 	if (modef & FMODE_READABLE) {
 	    close(pr[0]);
 	    if (pr[1] != 1) {

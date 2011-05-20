@@ -1,3 +1,16 @@
+Sat May 21 05:43:03 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* eval.c (rb_thread_atfork): When a ruby process forks, its random
+	  seed shall be reinitialized to prevent CVE-2003-0900 situation.
+	  This bug affects for 1.8 and earlier series, but not for 1.9.
+	  fixed [ruby-core:34944].
+
+	* io.c (pipe_open): ditto.
+
+	* random.c (rb_reset_random_seed): ditto.
+
+	* intern.h (rb_reset_random_seed): ditto.
+
 Sun May 15 21:43:09 2011  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/uri/generic.rb (#route_from_path): Fix a bug where
