@@ -27,7 +27,7 @@ struct RMatch {
 };
 
 #define RMATCH(obj)  (R_CAST(RMatch)(obj))
-#define RMATCH_REGS(obj)  (R_CAST(RMatch)(obj)->regs)
+#define RMATCH_REGS(obj)  (R_MATCH(obj)->regs)
 
 VALUE rb_reg_regcomp _((VALUE));
 long rb_reg_search _((VALUE, VALUE, long, long));
