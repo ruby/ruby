@@ -1,4 +1,6 @@
+#--
 # format.rb: Written by Tadayoshi Funaba 1999-2011
+#++
 
 class Date
 
@@ -110,22 +112,44 @@ class Date
 
   end
 
+  # Returns a String representing this Date in the form:
+  # Sun Sep 30 00:00:00 1977.
   def asctime() strftime('%c') end
 
   alias_method :ctime, :asctime
 
+  # Returns a String representing this Date in the form:
+  # 1977-09-30.
+  #
+  # This form is in accordance with
+  # ISO8601[http://www.iso.org/iso/support/faqs/faqs_widely_used_standards/widely_used_standards_other/date_and_time_format.htm].
   def iso8601() strftime('%F') end
 
+  # Returns a String representing this Date in the form:
+  # 1977-09-30T00:00:00+00:00
+  #
+  # This form is in accordance with the format for a timestamp in
+  # RFC3339[http://www.ietf.org/rfc/rfc3339.txt].
   def rfc3339() strftime('%FT%T%:z') end
 
+  # Synonym for Date.iso8601.
   def xmlschema() iso8601 end # :nodoc:
 
+  # Returns a String representing this Date in the form:
+  # Fri, 30 Sep 1977 00:00:00 +0000
+  #
+  # This form is in accordance with the format for a full
+  # date and time specification in
+  # RFC2822[http://www.ietf.org/rfc/rfc2822.txt].
   def rfc2822() strftime('%a, %-d %b %Y %T %z') end
 
   alias_method :rfc822, :rfc2822
 
   def httpdate() new_offset(0).strftime('%a, %d %b %Y %T GMT') end # :nodoc:
 
+  # Returns a String representing this Date in a form
+  # that is in accordance with the Japanese specification
+  # JIS X 0301.
   def jisx0301
     if jd < 2405160
       strftime('%F')

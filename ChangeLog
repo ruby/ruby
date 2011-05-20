@@ -1,3 +1,8 @@
+Sat May 21 02:22:34 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/date/lib/date/format.rb:  Document date formats.  Patch by
+	  Clinton Nixon.  [Ruby 1.9 - Bug #4743]
+
 Fri May 20 05:15:19 2011  Nobuhiro Iwamatsu  <iwamatsu@nigauri.org>
 
 	* gc.c: Fix build on m68k by 'error: too few arguments to
