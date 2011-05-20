@@ -71,7 +71,11 @@
 #include <in.h>
 #include <netdb.h>
 #else
+#if USE_WINSOCK2
 #include <winsock2.h>
+#else
+#include <winsock.h>
+#endif
 #include <io.h>
 #endif
 #include <string.h>
