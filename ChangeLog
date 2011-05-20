@@ -1,3 +1,8 @@
+Sat May 21 04:54:20 2011  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/fileutils.rb (FileUtils#touch): Fix corrupted output.
+	  ref [ruby-dev:43401]
+
 Sat May 21 02:10:09 2011  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.h (RMATCH_REGS): parenthesize cast expression.  suggested
