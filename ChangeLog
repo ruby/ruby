@@ -2,7 +2,7 @@ Fri May 20 05:15:19 2011  Nobuhiro Iwamatsu  <iwamatsu@nigauri.org>
 
 	* gc.c: Fix build on m68k by 'error: too few arguments to
 	  function 'mark_locations_array''.
-	    
+
 Fri May 20 04:23:42 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/scanf.rb:  Improve documentation.  Patch by Gabe McArthur.
@@ -152,7 +152,7 @@ Tue May 17 19:54:26 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 Tue May 17 19:35:01 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 	Fix FreeBSD test failure.
 
-	* test/ruby/test_rubyoptions.rb	(TestRubyOptions#test_set_program_name):
+	* test/ruby/test_rubyoptions.rb (TestRubyOptions#test_set_program_name):
 	  use ps -o command instead of ps -o cmd. FreeBSD doesn't support
 	  -o cmd option.
 
@@ -269,8 +269,9 @@ Sun May 15 22:26:39 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 Sun May 15 21:22:35 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* cont.c (cont_init): clear macihne_stack_start/end of saved thread to
-	  prevent mark machine stack of GC'ed Thread. root Fiber is not initialized by
-	  fiber_init(). based on a patch by Serge Balyuk [ruby-core:35891] fixes #4612
+	  prevent mark machine stack of GC'ed Thread. root Fiber is not
+	  initialized by fiber_init().
+	  based on a patch by Serge Balyuk [ruby-core:35891] fixes #4612
 	* test/ruby/test_fiber.rb (test_gc_root_fiber): add test for it.
 
 Sun May 15 21:04:29 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -349,7 +350,7 @@ Sat May 14 10:32:36 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 Sat May 14 09:50:10 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/yaml/dbm.rb:  Add documentation.  Patch by Justin Collins.
-          [Ruby 1.9 - Bug #4693]
+	  [Ruby 1.9 - Bug #4693]
 	* lib/yaml/store.rb:  ditto
 
 Sat May 14 09:31:43 2011  Eric Hodel  <drbrain@segment7.net>
@@ -430,7 +431,7 @@ Fri May 13 07:36:23 2011  Eric Hodel  <drbrain@segment7.net>
 Fri May 13 07:04:33 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/mathn.rb:  Fix indentation.  Patch by Jason Dew.
-          [Ruby 1.9 - Feature #4682]
+	  [Ruby 1.9 - Feature #4682]
 
 Fri May 13 06:50:43 2011  Eric Hodel  <drbrain@segment7.net>
 
@@ -490,9 +491,11 @@ Thu May 12 14:47:53 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Thu May 12 12:24:22 2011  Nobuhiro Iwamatsu  <iwamatsu@nigauri.org>
 
-        * ext/openssl/ossl_ssl.c: By trunk@31346, function check of SSLv2 is executed.
-        However, the problem is not revised in this.
-        This adds the control of using function of SSLv2 in made macro by function check.
+	* ext/openssl/ossl_ssl.c: By trunk@31346, function check of SSLv2 is
+	  executed.
+	  However, the problem is not revised in this.
+	  This adds the control of using function of SSLv2 in made macro by
+	  function check.
 
 Thu May 12 08:10:46 2011  Eric Hodel  <drbrain@segment7.net>
 
@@ -547,10 +550,10 @@ Wed May 11 03:06:35 2011  Eric Hodel  <drbrain@segment7.net>
 Tue May 10 14:50:32 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* lib/test/unit.rb: Add option for hiding skip messages when test
-	ends. #4657
+	  ends. #4657
 
 	* test/testunit/test_hideskip.rb, test/testunit/test4test_hideskip.rb:
-	test for above.
+	  test for above.
 
 Tue May 10 10:53:04 2011  Eric Hodel  <drbrain@segment7.net>
 
@@ -693,8 +696,9 @@ Sat May  7 15:15:10 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	fix win32 native_cond_timedwait() makes SIGSEGV.
 
-	* thread_win32.h (rb_thread_cond_struct): add prev field instead of last.
-	  (ie cond_event_entry is now using double linked list instead of single)
+	* thread_win32.h (rb_thread_cond_struct): add prev field instead of
+	  last. (ie cond_event_entry is now using double linked list instead of
+	  single)
 	* thread_win32.c (cond_event_entry): add prev field.
 
 	* thread_win32.c (__cond_timedwait): remove entry properly if timeout
@@ -880,7 +884,7 @@ Wed May  4 10:12:39 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 Wed May  4 10:10:28 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/socket/init.c (wait_connectable): use rb_wait_for_single_fd().
-	The patch was written by Eric Wong. [Ruby 1.9 - Feature #4531]
+	  The patch was written by Eric Wong. [Ruby 1.9 - Feature #4531]
 
 	* ext/socket/init.c (try_wait_connectable, wait_connectable_ensure):
 	  removed.
@@ -888,11 +892,12 @@ Wed May  4 10:10:28 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 Wed May  4 10:07:48 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/io/wait/wait.c (io_wait): use rb_wait_for_single_fd().
-	The patch was written by Eric Wong. [Ruby 1.9 - Feature #4531]
+	  The patch was written by Eric Wong. [Ruby 1.9 - Feature #4531]
 
 Wed May  4 10:01:27 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* thread.c (rb_wait_for_single_fd): new. poll(2) based backend for rb_wait_for_single_fd().
+	* thread.c (rb_wait_for_single_fd): new. poll(2) based backend for
+	  rb_wait_for_single_fd().
 	  Now only Linux uses it.
 
 	The patch was written by Eric Wong. [Ruby 1.9 - Feature #4531]
@@ -900,7 +905,8 @@ Wed May  4 10:01:27 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 Wed May  4 09:56:57 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_wait_for_single_fd): new.
-	* thread.c (select_single): select(2) based backend for rb_wait_for_single_fd().
+	* thread.c (select_single): select(2) based backend for
+	  rb_wait_for_single_fd().
 
 	* io.c (make_writeconv): use rb_wait_for_single_fd() instead of
 	  rb_thread_fd_select().
@@ -1435,7 +1441,8 @@ Thu Apr 14 19:55:54 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 Thu Apr 14 16:01:45 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
-	* io.c (rb_f_syscall): suppress warning: "HAVE___SYSCALL" is not defined.
+	* io.c (rb_f_syscall): suppress warning: "HAVE___SYSCALL" is not
+	  defined.
 
 Thu Apr 14 00:41:09 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
@@ -1505,7 +1512,8 @@ Sat Apr  9 23:31:47 2011  Shota Fukumori  <sorah@tubusu.net>
 Sat Apr  9 23:22:27 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* ext/stringio/stringio.c (strio_each):
-	  Fix exception message and don't raise immediately if block is not given.
+	  Fix exception message and don't raise immediately if block is not
+	  given.
 	  Fixes [ruby-dev:43394].
 
 	* test/stringio/test_stringio.rb (test_each_line_limit_0):
@@ -2079,7 +2087,8 @@ Sat Mar 12 04:12:41 2011  Tanaka Akira  <akr@fsij.org>
 
 Sat Mar 12 02:27:07 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
-	* ext/date/date_core.c ({d,dt}_lite_marshal_load): checks the given argument.
+	* ext/date/date_core.c ({d,dt}_lite_marshal_load): checks the given
+	  argument.
 
 Sat Mar 12 01:26:24 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
@@ -2590,7 +2599,7 @@ Sun Feb 27 21:59:37 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 Sun Feb 27 18:00:09 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* lib/test/unit.rb: Refactoring; Worker never use Hash for internal
-	storage.
+	  storage.
 
 	* lib/test/unit.rb: Never use Kernel#spawn. Use IO.popen instead.
 
@@ -3079,7 +3088,7 @@ Wed Feb  9 23:11:27 2011  Tanaka Akira  <akr@fsij.org>
 Tue Feb  8 11:47:11 2011  Loren Sands-Ramshaw  <lorensr@gmail.com>
 
 	* array.c: documentation clarification in rotate, rotate!,
-	index, and rindex. [ruby-core:35144]
+	  index, and rindex. [ruby-core:35144]
 
 Wed Feb  9 09:45:43 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -3105,7 +3114,8 @@ Tue Feb  8 16:04:03 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 Tue Feb  8 15:59:23 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* process.c (rb_run_exec_options_err): use MODET2NUM() instead LONG2NUM().
+	* process.c (rb_run_exec_options_err): use MODET2NUM() instead
+	  LONG2NUM().
 
 Tue Feb  8 13:59:56 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
@@ -3523,7 +3533,8 @@ Sun Jan 30 03:29:47 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Sun Jan 30 01:02:28 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* include/ruby/ruby.h: Added NUM2MODET() and MODET2NUM() default definition.
+	* include/ruby/ruby.h: Added NUM2MODET() and MODET2NUM() default
+	  definition.
 	  Because r30686 introduced win32 build failure.
 
 Sat Jan 29 22:16:26 2011  NARUSE, Yui  <naruse@ruby-lang.org>
@@ -3599,8 +3610,8 @@ Sat Jan 29 00:30:44 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 Fri Jan 28 23:20:28 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/gdbm/test_gdbm.rb (TestGDBM#test_s_open_no_create,
-	TestGDBM2#test_writer_open_notexist): We only need to skip libgdbm 1.8.0,
-	not all 1.8.x. 1.8.1 or later don't have GDBM_WRITER sickness.
+	  TestGDBM2#test_writer_open_notexist): We only need to skip libgdbm
+	  1.8.0, not all 1.8.x. 1.8.1 or later don't have GDBM_WRITER sickness.
 
 Fri Jan 28 21:56:57 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
@@ -4023,7 +4034,8 @@ Tue Jan 18 23:04:51 2011  Tanaka Akira  <akr@fsij.org>
 
 Tue Jan 18 18:31:14 2011  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
-	* lib/irb/completion.rb: Irb tab completion support for XX::method forms.
+	* lib/irb/completion.rb: Irb tab completion support for XX::method
+	  forms.
 
 Tue Jan 18 15:05:55 2011  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
@@ -4172,7 +4184,8 @@ Thu Jan 13 00:06:38 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 Thu Jan 13 00:00:07 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (rb_f_syscall): Some syscall return unsigned or pointer value.
-	  Therefore we should only check the result is -1 or not. [ruby-core:34062]
+	  Therefore we should only check the result is -1 or not.
+	  [ruby-core:34062]
 
 Wed Jan 12 23:55:48 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
@@ -4421,7 +4434,8 @@ Sat Jan  1 17:02:50 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 	* lib/irb/locale.rb (IRB::Locale#search_file): make it possible
 	  to load a localization from a gem.
 	  (IRB::Locale#lc_path): obsoleted because of the change of #search_file
-	  (IRB::Locale#each_localized_path): new private method, based on lc_path
+	  (IRB::Locale#each_localized_path): new private method, based on
+	  lc_path
 	  (IRB::Locale#find): follows the change of #search_file.
 	  (IRB::Locale#load): removed duplicate with #find.
 
@@ -4930,7 +4944,8 @@ Mon Dec 20 12:15:32 2010  Eric Hodel  <drbrain@segment7.net>
 
 Mon Dec 20 01:55:03 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* io.c (Init_IO): Added O_DIRECT. This feature was proposed by Run Paint Run Run.
+	* io.c (Init_IO): Added O_DIRECT. This feature was proposed by
+	  Run Paint Run Run.
 	  [Feature #4015] [ruby-core:33018]
 
 Sun Dec 19 19:15:23 2010  Tanaka Akira  <akr@fsij.org>
@@ -5227,7 +5242,8 @@ Sat Dec 11 05:48:28 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/lib/multi-tk.rb: infinite loop on method_missing at loading.
 	  [ruby-dev:42716] [Ruby 1.9-Bug#4129]
 
-	* ext/tk/lib/multi-tk.rb: when no eventloop is running, ruby freezes at exit.
+	* ext/tk/lib/multi-tk.rb: when no eventloop is running, ruby freezes at
+	  exit.
 
 Sat Dec 11 02:23:15 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
@@ -5265,7 +5281,7 @@ Fri Dec 10 18:12:31 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  config.h.
 
 	* test/mkmf/test_sizeof.rb (TestMkmf::TestSizeof#test_sizeof_builtin),
-	 (TestMkmf::TestSizeof#test_sizeof_struct): more tests.
+	  (TestMkmf::TestSizeof#test_sizeof_struct): more tests.
 
 	* lib/mkmf.rb (check_signedness): should use the prelude code.
 	  [ruby-dev:42731]
@@ -6372,7 +6388,8 @@ Sun Nov 14 04:22:32 2010  Alexander Zavorine  <alexandre.zavorine@nokia.com>
 
 	* symbian/setup (config.h): Added HAVE_LABS and HAVE_LLABS to config.h.
 
-	* symbian/configure.bat: Changed packaging version in line with API style 3 versioning.
+	* symbian/configure.bat: Changed packaging version in line with API
+	  style 3 versioning.
 
 Sat Nov 13 16:37:56 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -6386,7 +6403,8 @@ Sat Nov 13 01:31:30 2010  Akio Tajima <artonx@yahoo.co.jp>
 
 Fri Nov 12 20:52:34 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* common.mk (showflags, help): use caret to quote leading spaces on Windows.
+	* common.mk (showflags, help): use caret to quote leading spaces on
+	  Windows.
 
 	* Makefile.in, common.mk, cygwin/GNUmakefile.in, enc/depend,
 	  ext/ripper/depend, lib/mkmf.rb, win32/Makefile.sub: caddle up.
@@ -7912,7 +7930,8 @@ Fri Sep 24 15:50:43 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Fri Sep 24 15:28:35 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* string.c (rb_str_rindex): use rb_enc_prev_char instead of repeated str_nth.
+	* string.c (rb_str_rindex): use rb_enc_prev_char instead of repeated
+	  str_nth.
 	  patched by Michael Selig [ruby-core:32498]
 
 Fri Sep 24 14:19:12 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
@@ -8704,7 +8723,7 @@ Sat Aug 28 08:11:05 2010  Tanaka Akira  <akr@fsij.org>
 Fri Aug 27 16:20:01 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* string.c (rb_str_prepend): new method by Shota Fukumori (sora_h)
-	 [Feature #3765]
+	  [Feature #3765]
 
 Fri Aug 27 15:24:20 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
