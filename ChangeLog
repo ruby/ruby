@@ -1,3 +1,8 @@
+Sat May 21 02:51:01 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/bigdecimal/lib/bigdecimal/util.rb:  Improve documentation.  Patch
+	  by Pete Higgins.  [Ruby 1.9 - Bug #4746]
+
 Sat May 21 02:44:10 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/bigdecimal/lib/bigdecimal/jacobian.rb:  Document isEqual.  Patch
