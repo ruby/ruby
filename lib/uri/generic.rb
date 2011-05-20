@@ -799,30 +799,26 @@ module URI
     private :merge0
 
     def route_from_path(src, dst)
-      # RFC2396, Section 4.2
-      return '' if src == dst
-
-      src_path = split_path(src)
-      dst_path = split_path(dst)
-
-      # hmm... dst has abnormal absolute path, 
-      # like "/./", "/../", "/x/../", ...
-      if dst_path.include?('..') ||
-          dst_path.include?('.')
+      case dst
+      when src
+        # RFC2396, Section 4.2
+        return ''
+      when %r{(?:\A|/)\.\.?(?:/|\z)}
+        # dst has abnormal absolute path,
+        # like "/./", "/../", "/x/../", ...
         return dst.dup
       end
 
-      src_path.pop
+      src_path = src.scan(%r{(?:\A|[^/]+)/})
+      dst_path = dst.scan(%r{(?:\A|[^/]+)/?})
 
       # discard same parts
-      while dst_path.first == src_path.first
-        break if dst_path.empty?
-
+      while !dst_path.empty? && dst_path.first == src_path.first
         src_path.shift
         dst_path.shift
       end
 
-      tmp = dst_path.join('/')
+      tmp = dst_path.join
 
       # calculate
       if src_path.empty?
