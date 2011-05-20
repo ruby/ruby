@@ -117,145 +117,6 @@ get_loading_table(void)
     return GET_VM()->loading_table;
 }
 
-static VALUE
-loaded_feature_path(const char *name, long vlen, const char *feature, long len,
-		    int type, VALUE load_path)
-{
-    long i;
-
-    for (i = 0; i < RARRAY_LEN(load_path); ++i) {
-	VALUE p = RARRAY_PTR(load_path)[i];
-	const char *s = StringValuePtr(p);
-	long n = RSTRING_LEN(p);
-
-	if (vlen < n + len + 1) continue;
-	if (n && (fnncomp(name, s, n) || name[n] != '/')) continue;
-	if (fnncomp(name + n + 1, feature, len)) continue;
-	if (name[n+len+1] && name[n+len+1] != '.') continue;
-	switch (type) {
-	  case 's':
-	    if (IS_DLEXT(&name[n+len+1])) return p;
-	    break;
-	  case 'r':
-	    if (IS_RBEXT(&name[n+len+1])) return p;
-	    break;
-	  default:
-	    return p;
-	}
-    }
-    return 0;
-}
-
-struct loaded_feature_searching {
-    const char *name;
-    long len;
-    int type;
-    VALUE load_path;
-    const char *result;
-};
-
-static int
-loaded_feature_path_i(st_data_t v, st_data_t b, st_data_t f)
-{
-    const char *s = (const char *)v;
-    struct loaded_feature_searching *fp = (struct loaded_feature_searching *)f;
-    VALUE p = loaded_feature_path(s, strlen(s), fp->name, fp->len,
-				  fp->type, fp->load_path);
-    if (!p) return ST_CONTINUE;
-    fp->result = s;
-    return ST_STOP;
-}
-
-static int
-rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const char **fn)
-{
-    VALUE v, features, p, load_path = 0;
-    const char *f, *e;
-    long i, len, elen, n;
-    st_table *loading_tbl;
-    st_data_t data;
-    int type;
-
-    if (fn) *fn = 0;
-    if (ext) {
-	elen = strlen(ext);
-	len = strlen(feature) - elen;
-	type = rb ? 'r' : 's';
-    }
-    else {
-	len = strlen(feature);
-	elen = 0;
-	type = 0;
-    }
-    features = get_loaded_features();
-    for (i = 0; i < RARRAY_LEN(features); ++i) {
-	v = RARRAY_PTR(features)[i];
-	f = StringValuePtr(v);
-	if ((n = RSTRING_LEN(v)) < len) continue;
-	if (fnncomp(f, feature, len) != 0) {
-	    if (expanded) continue;
-	    if (!load_path) load_path = rb_get_expanded_load_path();
-	    if (!(p = loaded_feature_path(f, n, feature, len, type, load_path)))
-		continue;
-	    expanded = 1;
-	    f += RSTRING_LEN(p) + 1;
-	}
-	if (!*(e = f + len)) {
-	    if (ext) continue;
-	    return 'u';
-	}
-	if (*e != '.') continue;
-	if ((!rb || !ext) && (IS_SOEXT(e) || IS_DLEXT(e))) {
-	    return 's';
-	}
-	if ((rb || !ext) && (IS_RBEXT(e))) {
-	    return 'r';
-	}
-    }
-    loading_tbl = get_loading_table();
-    if (loading_tbl) {
-	f = 0;
-	if (!expanded) {
-	    struct loaded_feature_searching fs;
-	    fs.name = feature;
-	    fs.len = len;
-	    fs.type = type;
-	    fs.load_path = load_path ? load_path : rb_get_load_path();
-	    fs.result = 0;
-	    st_foreach(loading_tbl, loaded_feature_path_i, (st_data_t)&fs);
-	    if ((f = fs.result) != 0) {
-		if (fn) *fn = f;
-		goto loading;
-	    }
-	}
-	if (st_get_key(loading_tbl, (st_data_t)feature, &data)) {
-	    if (fn) *fn = (const char*)data;
-	  loading:
-	    if (!ext) return 'u';
-	    return !IS_RBEXT(ext) ? 's' : 'r';
-	}
-	else {
-	    VALUE bufstr;
-	    char *buf;
-
-	    if (ext && *ext) return 0;
-	    bufstr = rb_str_tmp_new(len + DLEXT_MAXLEN);
-	    buf = RSTRING_PTR(bufstr);
-	    MEMCPY(buf, feature, char, len);
-	    for (i = 0; (e = loadable_ext[i]) != 0; i++) {
-		strlcpy(buf + len, e, DLEXT_MAXLEN + 1);
-		if (st_get_key(loading_tbl, (st_data_t)buf, &data)) {
-		    rb_str_resize(bufstr, 0);
-		    if (fn) *fn = (const char*)data;
-		    return i ? 's' : 'r';
-		}
-	    }
-	    rb_str_resize(bufstr, 0);
-	}
-    }
-    return 0;
-}
-
 int
 rb_provided(const char *feature)
 {
@@ -512,93 +373,6 @@ rb_f_require_relative_2(VALUE obj, VALUE fname)
     return (rb_require_safe_2(rb_file_absolute_path(fname, base), rb_safe_level()) == Qnil) ? Qfalse : Qtrue;
 }
 
-static int
-search_required(VALUE fname, volatile VALUE *path, int safe_level)
-{
-    VALUE tmp;
-    char *ext, *ftptr;
-    int type, ft = 0;
-    const char *loading;
-
-    *path = 0;
-    ext = strrchr(ftptr = RSTRING_PTR(fname), '.');
-    if (ext && !strchr(ext, '/')) {
-	if (IS_RBEXT(ext)) {
-	    if (rb_feature_p(ftptr, ext, TRUE, FALSE, &loading)) {
-		if (loading) *path = rb_str_new2(loading);
-		return 'r';
-	    }
-	    if ((tmp = rb_find_file_safe(fname, safe_level)) != 0) {
-		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
-		if (!rb_feature_p(ftptr, ext, TRUE, TRUE, &loading) || loading)
-		    *path = tmp;
-		return 'r';
-	    }
-	    return 0;
-	}
-	else if (IS_SOEXT(ext)) {
-	    if (rb_feature_p(ftptr, ext, FALSE, FALSE, &loading)) {
-		if (loading) *path = rb_str_new2(loading);
-		return 's';
-	    }
-	    tmp = rb_str_new(RSTRING_PTR(fname), ext - RSTRING_PTR(fname));
-#ifdef DLEXT2
-	    OBJ_FREEZE(tmp);
-	    if (rb_find_file_ext_safe(&tmp, loadable_ext + 1, safe_level)) {
-		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
-		if (!rb_feature_p(ftptr, ext, FALSE, TRUE, &loading) || loading)
-		    *path = tmp;
-		return 's';
-	    }
-#else
-	    rb_str_cat2(tmp, DLEXT);
-	    OBJ_FREEZE(tmp);
-	    if ((tmp = rb_find_file_safe(tmp, safe_level)) != 0) {
-		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
-		if (!rb_feature_p(ftptr, ext, FALSE, TRUE, &loading) || loading)
-		    *path = tmp;
-		return 's';
-	    }
-#endif
-	}
-	else if (IS_DLEXT(ext)) {
-	    if (rb_feature_p(ftptr, ext, FALSE, FALSE, &loading)) {
-		if (loading) *path = rb_str_new2(loading);
-		return 's';
-	    }
-	    if ((tmp = rb_find_file_safe(fname, safe_level)) != 0) {
-		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
-		if (!rb_feature_p(ftptr, ext, FALSE, TRUE, &loading) || loading)
-		    *path = tmp;
-		return 's';
-	    }
-	}
-    }
-    else if ((ft = rb_feature_p(ftptr, 0, FALSE, FALSE, &loading)) == 'r') {
-	if (loading) *path = rb_str_new2(loading);
-	return 'r';
-    }
-    tmp = fname;
-    type = rb_find_file_ext_safe(&tmp, loadable_ext, safe_level);
-    switch (type) {
-      case 0:
-	if (ft)
-	    break;
-	ftptr = RSTRING_PTR(tmp);
-	return rb_feature_p(ftptr, 0, FALSE, TRUE, 0);
-
-      default:
-	if (ft)
-	    break;
-      case 1:
-	ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
-	if (rb_feature_p(ftptr, ext, !--type, TRUE, &loading) && !loading)
-	    break;
-	*path = tmp;
-    }
-    return type ? 's' : 'r';
-}
-
 static void
 load_failed(VALUE fname)
 {
@@ -617,62 +391,7 @@ load_ext(VALUE path)
 VALUE
 rb_require_safe(VALUE fname, int safe)
 {
-    volatile VALUE result = Qnil;
-    rb_thread_t *th = GET_THREAD();
-    volatile VALUE errinfo = th->errinfo;
-    int state;
-    struct {
-	int safe;
-    } volatile saved;
-    char *volatile ftptr = 0;
-
-    PUSH_TAG();
-    saved.safe = rb_safe_level();
-    if ((state = EXEC_TAG()) == 0) {
-	VALUE path;
-	long handle;
-	int found;
-
-	rb_set_safe_level_force(safe);
-	FilePathValue(fname);
-	rb_set_safe_level_force(0);
-	found = search_required(fname, &path, safe);
-	if (found) {
-	    if (!path || !(ftptr = load_lock(RSTRING_PTR(path)))) {
-		result = Qfalse;
-	    }
-	    else {
-		switch (found) {
-		  case 'r':
-		    rb_load_internal(path, 0);
-		    break;
-
-		  case 's':
-		    handle = (long)rb_vm_call_cfunc(rb_vm_top_self(), load_ext,
-						    path, 0, path);
-		    rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
-		    break;
-		}
-		rb_provide_feature(path);
-		result = Qtrue;
-	    }
-	}
-    }
-    POP_TAG();
-    load_unlock(ftptr, !state);
-
-    rb_set_safe_level_force(saved.safe);
-    if (state) {
-	JUMP_TAG(state);
-    }
-
-    if (NIL_P(result)) {
-	load_failed(fname);
-    }
-
-    th->errinfo = errinfo;
-
-    return result;
+   return rb_require_safe_2(fname, safe); 
 }
 
 VALUE
@@ -1141,9 +860,9 @@ Init_load()
     vm->loaded_features = ary_new(rb_cLoadedFeaturesProxy, RARRAY_EMBED_LEN_MAX);
 
     rb_define_global_function("load", rb_f_load, -1);
-    rb_define_global_function("require", rb_f_require, 1);
+    rb_define_global_function("require", rb_f_require_2, 1);
     rb_define_global_function("require_2", rb_f_require_2, 1);
-    rb_define_global_function("require_relative", rb_f_require_relative, 1);
+    rb_define_global_function("require_relative", rb_f_require_relative_2, 1);
     rb_define_global_function("require_relative_2", rb_f_require_relative_2, 1);
     rb_define_method(rb_cModule, "autoload", rb_mod_autoload, 2);
     rb_define_method(rb_cModule, "autoload?", rb_mod_autoload_p, 1);
