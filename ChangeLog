@@ -1,3 +1,8 @@
+Fri May 20 05:15:19 2011  Nobuhiro Iwamatsu  <iwamatsu@nigauri.org>
+
+	* gc.c: Fix build on m68k by 'error: too few arguments to
+	  function 'mark_locations_array''.
+	    
 Fri May 20 04:23:42 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/scanf.rb:  Improve documentation.  Patch by Gabe McArthur.

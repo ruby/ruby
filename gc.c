@@ -2349,7 +2349,7 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_thread_t *th)
     rb_gc_mark_locations(th->machine_register_stack_start, th->machine_register_stack_end);
 #endif
 #if defined(__mc68000__)
-    mark_locations_array((VALUE*)((char*)STACK_END + 2),
+    mark_locations_array(objspace, (VALUE*)((char*)STACK_END + 2),
 			 (STACK_START - STACK_END));
 #endif
 }
