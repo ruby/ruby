@@ -3,6 +3,7 @@
 bigdecimal/bigdecimal.c
 bigdecimal/lib
 coverage/coverage.c
+curses/curses.c
 date/date_core.c
 date/lib
 dbm/dbm.c

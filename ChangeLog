@@ -1,3 +1,9 @@
+Sat May 21 02:58:46 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/.document:  Add curses to documented extensions.
+	* ext/curses/curses.c:  Improve documentation.  Patch by Vincent Batts.
+	  [Ruby 1.9 - Bug #4747]
+
 Sat May 21 02:51:01 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/bigdecimal/lib/bigdecimal/util.rb:  Improve documentation.  Patch
