@@ -124,24 +124,24 @@ rb_provided(const char *feature)
 }
 
 
-static void
+	static void
 rb_provide_feature(VALUE feature)
 {
-    int frozen = 0;
-    st_table* loaded_features_hash;
+	int frozen = 0;
+	st_table* loaded_features_hash;
 
-    if (OBJ_FROZEN(get_loaded_features())) {
-	rb_raise(rb_eRuntimeError,
-		 "$LOADED_FEATURES is frozen; cannot append feature");
-    }
+	if (OBJ_FROZEN(get_loaded_features())) {
+		rb_raise(rb_eRuntimeError,
+				"$LOADED_FEATURES is frozen; cannot append feature");
+	}
 
-    loaded_features_hash = get_loaded_features_hash();
-    st_insert(
-      loaded_features_hash,
-      (st_data_t)ruby_strdup(RSTRING_PTR(feature)),
-      (st_data_t)rb_barrier_new());
+	loaded_features_hash = get_loaded_features_hash();
+	st_insert(
+			loaded_features_hash,
+			(st_data_t)ruby_strdup(RSTRING_PTR(feature)),
+			(st_data_t)rb_barrier_new());
 
-    rb_ary_push(get_loaded_features(), feature);
+	rb_ary_push(get_loaded_features(), feature);
 }
 
 void
@@ -536,142 +536,142 @@ const char *alternate_dl_extensions[] = {
 
 static VALUE
 rb_locate_file_with_extensions(VALUE base_file_name) {
-  unsigned int j;
-  VALUE file_name_with_extension;
-  VALUE extension;
-  VALUE directory, basename;
+	unsigned int j;
+	VALUE file_name_with_extension;
+	VALUE extension;
+	VALUE directory, basename;
 
-  extension = rb_funcall(rb_cFile, rb_intern("extname"), 1, base_file_name);
+	extension = rb_funcall(rb_cFile, rb_intern("extname"), 1, base_file_name);
 
-  if (RSTRING_LEN(extension) == 0) {
-    for (j = 0; j < CHAR_ARRAY_LEN(available_extensions); ++j) {
-      file_name_with_extension = rb_funcall(
-        base_file_name,
-        rb_intern("+"),
-        1,
-        rb_str_new2(available_extensions[j]));
+	if (RSTRING_LEN(extension) == 0) {
+		for (j = 0; j < CHAR_ARRAY_LEN(available_extensions); ++j) {
+			file_name_with_extension = rb_funcall(
+					base_file_name,
+					rb_intern("+"),
+					1,
+					rb_str_new2(available_extensions[j]));
 
-      if (rb_feature_exists(file_name_with_extension)) {
-        return file_name_with_extension;
-      }
-    }
-  } else {
-    if (rb_feature_exists(base_file_name)) {
-      return base_file_name;
-    } else {
-      if (IS_SOEXT(RSTRING_PTR(extension))) {
-        // Try loading the native DLEXT version of this platform.
-        // This allows 'pathname.so' to require 'pathname.bundle' on OSX
-        for (j = 0; j < CHAR_ARRAY_LEN(alternate_dl_extensions); ++j) {
-          directory = rb_funcall(rb_cFile, rb_intern("dirname"), 1, 
-                                  base_file_name);
-          basename  = rb_funcall(rb_cFile, rb_intern("basename"), 2, 
-                                  base_file_name, extension);
-          basename  = rb_funcall(basename, rb_intern("+"), 1, 
-                                  rb_str_new2(alternate_dl_extensions[j]));
+			if (rb_feature_exists(file_name_with_extension)) {
+				return file_name_with_extension;
+			}
+		}
+	} else {
+		if (rb_feature_exists(base_file_name)) {
+			return base_file_name;
+		} else {
+			if (IS_SOEXT(RSTRING_PTR(extension))) {
+				// Try loading the native DLEXT version of this platform.
+				// This allows 'pathname.so' to require 'pathname.bundle' on OSX
+				for (j = 0; j < CHAR_ARRAY_LEN(alternate_dl_extensions); ++j) {
+					directory = rb_funcall(rb_cFile, rb_intern("dirname"), 1, 
+							base_file_name);
+					basename  = rb_funcall(rb_cFile, rb_intern("basename"), 2, 
+							base_file_name, extension);
+					basename  = rb_funcall(basename, rb_intern("+"), 1, 
+							rb_str_new2(alternate_dl_extensions[j]));
 
-          file_name_with_extension = rb_funcall(rb_cFile, rb_intern("join"), 2, 
-                                                  directory, basename);
+					file_name_with_extension = rb_funcall(rb_cFile, rb_intern("join"), 2, 
+							directory, basename);
 
-          if (rb_feature_exists(file_name_with_extension)) {
-            return file_name_with_extension;
-          }
-        }
-      }
-    }
-  }
-  return Qnil;
+					if (rb_feature_exists(file_name_with_extension)) {
+						return file_name_with_extension;
+					}
+				}
+			}
+		}
+	}
+	return Qnil;
 }
 
 static VALUE
 rb_locate_file_absolute(VALUE fname)
 {
-  return rb_locate_file_with_extensions(fname);
+	return rb_locate_file_with_extensions(fname);
 }
 
 static VALUE
 rb_locate_file_relative(VALUE fname)
 {
-  return rb_locate_file_with_extensions(rb_file_expand_path(fname, Qnil));
+	return rb_locate_file_with_extensions(rb_file_expand_path(fname, Qnil));
 }
 
 static VALUE
 rb_locate_file_in_load_path(VALUE path)
 {
-  long i, j;
-  VALUE load_path = rb_get_expanded_load_path();
-  VALUE expanded_file_name = Qnil;
-  VALUE base_file_name = Qnil;
+	long i, j;
+	VALUE load_path = rb_get_expanded_load_path();
+	VALUE expanded_file_name = Qnil;
+	VALUE base_file_name = Qnil;
 
-  for (i = 0; i < RARRAY_LEN(load_path); ++i) {
-    VALUE directory = RARRAY_PTR(load_path)[i];
+	for (i = 0; i < RARRAY_LEN(load_path); ++i) {
+		VALUE directory = RARRAY_PTR(load_path)[i];
 
-    base_file_name = rb_funcall(directory, rb_intern("+"), 1, rb_str_new2("/"));
-    base_file_name = rb_funcall(base_file_name, rb_intern("+"), 1, path);
+		base_file_name = rb_funcall(directory, rb_intern("+"), 1, rb_str_new2("/"));
+		base_file_name = rb_funcall(base_file_name, rb_intern("+"), 1, path);
 
-    expanded_file_name = rb_locate_file_with_extensions(base_file_name);
+		expanded_file_name = rb_locate_file_with_extensions(base_file_name);
 
-    if (expanded_file_name != Qnil) {
-      return expanded_file_name;
-    }
-  }
-  return Qnil;
+		if (expanded_file_name != Qnil) {
+			return expanded_file_name;
+		}
+	}
+	return Qnil;
 }
 
 static int
 rb_path_is_relative(VALUE path)
 {
-  const char * path_ptr = RSTRING_PTR(path);
-  const char * current_directory = "./";
-  const char * parent_directory  = "../";
+	const char * path_ptr = RSTRING_PTR(path);
+	const char * current_directory = "./";
+	const char * parent_directory  = "../";
 
-  return (
-    strncmp(current_directory, path_ptr, 2) == 0 ||
-    strncmp(parent_directory,  path_ptr, 3) == 0
-  );
+	return (
+			strncmp(current_directory, path_ptr, 2) == 0 ||
+			strncmp(parent_directory,  path_ptr, 3) == 0
+		   );
 }
 
 static int
 rb_file_is_ruby(VALUE path)
 {
-  const char * ext;
-  ext = ruby_find_extname(RSTRING_PTR(path), 0);
+	const char * ext;
+	ext = ruby_find_extname(RSTRING_PTR(path), 0);
 
-  return ext && IS_RBEXT(ext);
+	return ext && IS_RBEXT(ext);
 }
 
 static int
 rb_path_is_absolute(VALUE path)
 {
-  // Delegate to file.c
-  return rb_is_absolute_path(RSTRING_PTR(path));
+	// Delegate to file.c
+	return rb_is_absolute_path(RSTRING_PTR(path));
 }
 
 static int
 rb_file_has_been_required(VALUE expanded_path)
 {
-  st_data_t data;
-  st_data_t path_key = (st_data_t)RSTRING_PTR(expanded_path);
-  st_table *loaded_features_hash = get_loaded_features_hash();
+	st_data_t data;
+	st_data_t path_key = (st_data_t)RSTRING_PTR(expanded_path);
+	st_table *loaded_features_hash = get_loaded_features_hash();
 
-  return st_lookup(loaded_features_hash, path_key, &data);
+	return st_lookup(loaded_features_hash, path_key, &data);
 }
 
 
 static VALUE
 rb_locate_file(VALUE filename)
 {
-  VALUE full_path = Qnil;
+	VALUE full_path = Qnil;
 
-  if (rb_path_is_relative(filename)) {
-    full_path = rb_locate_file_relative(filename);
-  } else if (rb_path_is_absolute(filename)) {
-    full_path = rb_locate_file_absolute(filename);
-  } else {
-    full_path = rb_locate_file_in_load_path(filename);
-  }
+	if (rb_path_is_relative(filename)) {
+		full_path = rb_locate_file_relative(filename);
+	} else if (rb_path_is_absolute(filename)) {
+		full_path = rb_locate_file_absolute(filename);
+	} else {
+		full_path = rb_locate_file_in_load_path(filename);
+	}
 
-  return full_path;
+	return full_path;
 }
 
 /* 
@@ -681,70 +681,70 @@ rb_locate_file(VALUE filename)
 VALUE
 rb_require_safe_2(VALUE fname, int safe)
 {
-    VALUE path = Qnil;
-    volatile VALUE result = Qnil;
-    rb_thread_t *th = GET_THREAD();
-    volatile VALUE errinfo = th->errinfo;
-    int state;
-    struct {
-	int safe;
-    } volatile saved;
-    char *volatile ftptr = 0;
+	VALUE path = Qnil;
+	volatile VALUE result = Qnil;
+	rb_thread_t *th = GET_THREAD();
+	volatile VALUE errinfo = th->errinfo;
+	int state;
+	struct {
+		int safe;
+	} volatile saved;
+	char *volatile ftptr = 0;
 
-    PUSH_TAG();
-    saved.safe = rb_safe_level();
-    if ((state = EXEC_TAG()) == 0) {
-	long handle;
-	int found;
+	PUSH_TAG();
+	saved.safe = rb_safe_level();
+	if ((state = EXEC_TAG()) == 0) {
+		long handle;
+		int found;
 
-	rb_set_safe_level_force(safe);
-	FilePathValue(fname);
-	rb_set_safe_level_force(0);
+		rb_set_safe_level_force(safe);
+		FilePathValue(fname);
+		rb_set_safe_level_force(0);
 
-  path = rb_locate_file(fname);
+		path = rb_locate_file(fname);
 
-  if (safe >= 1 && OBJ_TAINTED(path)) {
-    rb_raise(rb_eSecurityError, "Loading from unsafe file %s", RSTRING_PTR(path));
-  }
+		if (safe >= 1 && OBJ_TAINTED(path)) {
+			rb_raise(rb_eSecurityError, "Loading from unsafe file %s", RSTRING_PTR(path));
+		}
 
-  result = Qfalse;
-  if (path == Qnil) {
-    load_failed(fname);
-  } else {
-    if (ftptr = load_lock(RSTRING_PTR(path))) { // Allows circular requires to work
-      if (!rb_file_has_been_required(path)) {
-        if (rb_file_is_ruby(path)) {
-          rb_load_internal(path, 0);
-        } else {
-          handle = (long)rb_vm_call_cfunc(rb_vm_top_self(), load_ext,
-                  path, 0, path);
-          rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
-        }
-        rb_provide_feature(path);
-        result = Qtrue;
-      }
-    }
-  }
-    }
-    POP_TAG();
-    load_unlock(ftptr, !state);
+		result = Qfalse;
+		if (path == Qnil) {
+			load_failed(fname);
+		} else {
+			if (ftptr = load_lock(RSTRING_PTR(path))) { // Allows circular requires to work
+				if (!rb_file_has_been_required(path)) {
+					if (rb_file_is_ruby(path)) {
+						rb_load_internal(path, 0);
+					} else {
+						handle = (long)rb_vm_call_cfunc(rb_vm_top_self(), load_ext,
+								path, 0, path);
+						rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
+					}
+					rb_provide_feature(path);
+					result = Qtrue;
+				}
+			}
+		}
+	}
+	POP_TAG();
+	load_unlock(ftptr, !state);
 
-    rb_set_safe_level_force(saved.safe);
-    if (state) {
-	JUMP_TAG(state);
-    }
+	rb_set_safe_level_force(saved.safe);
+	if (state) {
+		JUMP_TAG(state);
+	}
 
-    if (NIL_P(result)) {
-	load_failed(fname);
-    }
+	if (NIL_P(result)) {
+		load_failed(fname);
+	}
 
-    th->errinfo = errinfo;
+	th->errinfo = errinfo;
 
-    if (result == Qtrue) {
-      return path;
-    } else {
-      return Qnil;
-    }
+	if (result == Qtrue) {
+		return path;
+	} else {
+		return Qnil;
+	}
 }
 
 VALUE
@@ -778,10 +778,10 @@ rb_rehash_loaded_features()
 static VALUE  
 rb_loaded_features_hook(int argc, VALUE *argv, VALUE self)  
 { 
-  VALUE ret;
-  ret = rb_call_super(argc, argv);
-  rb_rehash_loaded_features();
-  return ret;
+	VALUE ret;
+	ret = rb_call_super(argc, argv);
+	rb_rehash_loaded_features();
+	return ret;
 }
 
 /*
@@ -797,26 +797,26 @@ rb_loaded_features_hook(int argc, VALUE *argv, VALUE self)
 static void 
 define_loaded_features_proxy()
 {
-    const char* methods_to_hook[] = {"push", "clear", "replace", "delete"};
-    unsigned int i;
+	const char* methods_to_hook[] = {"push", "clear", "replace", "delete"};
+	unsigned int i;
 
-    rb_cLoadedFeaturesProxy = rb_define_class("LoadedFeaturesProxy", rb_cArray); 
-    for (i = 0; i < CHAR_ARRAY_LEN(methods_to_hook); ++i) {
-      rb_define_method(
-        rb_cLoadedFeaturesProxy,
-        methods_to_hook[i],
-        rb_loaded_features_hook,
-        -1);
-  }
+	rb_cLoadedFeaturesProxy = rb_define_class("LoadedFeaturesProxy", rb_cArray); 
+	for (i = 0; i < CHAR_ARRAY_LEN(methods_to_hook); ++i) {
+		rb_define_method(
+				rb_cLoadedFeaturesProxy,
+				methods_to_hook[i],
+				rb_loaded_features_hook,
+				-1);
+	}
 }
 
 static int
 rb_file_is_being_required(VALUE full_path) {
 	const char *ftptr = RSTRING_PTR(full_path);
-    st_data_t data;
-    st_table *loading_tbl = get_loading_table();
+	st_data_t data;
+	st_table *loading_tbl = get_loading_table();
 
-    return (loading_tbl && st_lookup(loading_tbl, (st_data_t)ftptr, &data));
+	return (loading_tbl && st_lookup(loading_tbl, (st_data_t)ftptr, &data));
 }
 
 /* Should return true if the file has or is being loaded, but should 
