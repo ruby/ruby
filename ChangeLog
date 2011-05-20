@@ -1,3 +1,21 @@
+Fri May 20 23:06:31 2011  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* Backported the fix at
+	  Mon Sep 13 09:23:58 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/openssl/ossl_bn.c (ossl_bn_is_prime): fix comparison
+	  with rb_scan_args. Before this fix, OpenSSL::BN#prime?
+	  is fully broken.
+
+Fri May 20 23:06:31 2011  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* Backported the fix at
+	  Mon Oct  4 09:30:42 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/openssl/lib/openssl/bn.rb (Integer#to_bn): OpenSSL::BN.new
+	  accepts only Strings, so call Integer#to_s(16).
+	  16 is for an optimization. [ruby-dev:42336]
+
 Fri Feb 18 21:18:55 2011  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/ruby/test_exception.rb (TestException::test_to_s_taintness_propagation):
