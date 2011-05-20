@@ -1,3 +1,13 @@
+Sat May 21 01:32:08 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	backported r31286 from trunk
+
+	* numeric.c (ruby_float_step): wrong loop condition.
+	  fixes [ruby-core:35753], reported by Joey Zhou.
+
+	* test/ruby/test_range.rb (TestRange#test_step_ruby_core_35753):
+	  test above change.
+
 Sat May 21 00:55:21 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/zlib/zlib.c (gzfile_check_footer): ISIZE (Input SIZE) in gzip's
