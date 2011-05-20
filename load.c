@@ -534,6 +534,7 @@ const char *alternate_dl_extensions[] = {
 
 #define CHAR_ARRAY_LEN(array) sizeof(array) / sizeof(char*)
 
+// TODO: Optimize this function, it gets called heaps. Do far less in ruby.
 static VALUE
 rb_locate_file_with_extensions(VALUE base_file_name) {
 	unsigned int j;
@@ -661,6 +662,7 @@ rb_file_has_been_required(VALUE expanded_path)
 static VALUE
 rb_locate_file(VALUE filename)
 {
+	// TODO: Cache filename -> full_path mapping as an optimization.
 	VALUE full_path = Qnil;
 
 	if (rb_path_is_relative(filename)) {
