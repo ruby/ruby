@@ -1,3 +1,10 @@
+Fri May 20 23:10:07 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/README.win32: note to need NT based OS to build ruby.
+
+	* win32/{configure.bat,setup.mak}: backport current build method from
+	  trunk. [ruby-dev:42893] (#4206)
+
 Fri May 20 23:06:31 2011  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* Backported the fix at

@@ -4,13 +4,15 @@
 
 == Requirement
 
-(1) Visual C++ 5.0 or later.
+(1) Windows 2000 or later (NT based kernel).
 
-(2) If you want to run `((%nmake clean%))' or `((%nmake distclean%))'
+(2) Visual C++ 6.0 or later.
+
+(3) If you want to run `((%nmake clean%))' or `((%nmake distclean%))'
     properly, you must install UNIX compatible `((%rm%))' command on
     your ((|PATH|)) if you want to clean after compile.
 
-(3) Please set environment variable (({INCLUDE})), (({LIB})), (({PATH}))
+(4) Please set environment variable (({INCLUDE})), (({LIB})), (({PATH}))
     to run required commands properly from the command line.
 
     Note: building ruby requires following commands.
