@@ -1,3 +1,8 @@
+Sat May 21 07:33:54 2011  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/zlib/zlib.c (zstream_append_input2): add RB_GC_GUARD.
+	  This caused failure when test/csv is executed with GC.stress = true.
+
 Sat May 21 05:43:03 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* eval.c (rb_thread_atfork): When a ruby process forks, its random

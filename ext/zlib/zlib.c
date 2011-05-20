@@ -610,7 +610,8 @@ zstream_append_input(z, src, len)
 }
 
 #define zstream_append_input2(z,v)\
-    zstream_append_input((z), (Bytef*)RSTRING(v)->ptr, RSTRING(v)->len)
+    RB_GC_GUARD(v),\
+    zstream_append_input((z), (Bytef*)RSTRING_PTR(v), RSTRING_LEN(v))
 
 static void
 zstream_discard_input(z, len)
