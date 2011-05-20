@@ -1091,8 +1091,17 @@ define_loaded_features_proxy()
   }
 }
 
-/* Should return true if the file exists to be loaded, but should 
- * not actually load the file 
+static int
+rb_file_is_being_required(VALUE full_path) {
+	const char *ftptr = RSTRING_PTR(full_path);
+    st_data_t data;
+    st_table *loading_tbl = get_loading_table();
+
+    return (loading_tbl && st_lookup(loading_tbl, (st_data_t)ftptr, &data));
+}
+
+/* Should return true if the file has or is being loaded, but should 
+ * not actually load the file.
  */
 int
 rb_feature_provided(const char *feature, const char **loading)
@@ -1100,8 +1109,13 @@ rb_feature_provided(const char *feature, const char **loading)
     // TODO: feature is converted to a char* just to pass into 
     // this function, which is kind of redundant
     VALUE fname = rb_str_new2(feature);
+	VALUE full_path = rb_locate_file(fname);
 
-    return (rb_locate_file(fname) == Qnil) ? FALSE : TRUE; 
+	if (rb_file_has_been_required(full_path) || rb_file_is_being_required(full_path)) {
+		return TRUE;
+	} else {
+		return FALSE;
+	}
 }
 
 
