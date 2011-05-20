@@ -1,3 +1,8 @@
+Sat May 21 02:44:10 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/bigdecimal/lib/bigdecimal/jacobian.rb:  Document isEqual.  Patch
+	  by Kuba Fietkiewicz.  [Ruby 1.9 - Bug #4744]
+
 Sat May 21 02:22:34 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/date/lib/date/format.rb:  Document date formats.  Patch by
