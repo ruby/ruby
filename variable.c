@@ -1488,10 +1488,9 @@ autoload_delete(VALUE mod, ID id)
 }
 
 static VALUE
-autoload_provided(VALUE arg)
+autoload_provided(VALUE fname)
 {
-    const char **p = (const char **)arg;
-    return rb_feature_provided(*p, p);
+    return rb_feature_provided_2(fname);
 }
 
 static VALUE
@@ -1524,7 +1523,7 @@ autoload_node(VALUE mod, ID id, const char **loadingpath)
     loading = RSTRING_PTR(file);
     safe = rb_safe_level();
     rb_set_safe_level_force(0);
-    if (!rb_ensure(autoload_provided, (VALUE)&loading, reset_safe, (VALUE)safe)) {
+    if (!rb_ensure(autoload_provided, (VALUE)file, reset_safe, (VALUE)safe)) {
 	return load;
     }
     if (loadingpath && loading) {

@@ -819,15 +819,22 @@ rb_file_is_being_required(VALUE full_path) {
 	return (loading_tbl && st_lookup(loading_tbl, (st_data_t)ftptr, &data));
 }
 
-/* Should return true if the file has or is being loaded, but should 
- * not actually load the file.
+/*
+ * Deprecated, use rb_feature_provided_2
  */
 int
 rb_feature_provided(const char *feature, const char **loading)
 {
-    // TODO: feature is converted to a char* just to pass into 
-    // this function, which is kind of redundant
     VALUE fname = rb_str_new2(feature);
+	rb_feature_provided_2(fname);
+}
+
+/* Should return true if the file has or is being loaded, but should 
+ * not actually load the file.
+ */
+int
+rb_feature_provided_2(VALUE fname)
+{
 	VALUE full_path = rb_locate_file(fname);
 
 	if (rb_file_has_been_required(full_path) || rb_file_is_being_required(full_path)) {
