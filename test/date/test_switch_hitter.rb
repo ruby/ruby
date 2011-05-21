@@ -256,6 +256,11 @@ class TestSH < Test::Unit::TestCase
     h = Date._strptime('15:43+09:00'.taint, '%R%z')
     assert_equal(true, h[:zone].tainted?)
 
+    h = Date._strptime('1;1/0', '%d')
+    assert_equal(false, h[:leftover].tainted?)
+    h = Date._strptime('1;1/0'.taint, '%d')
+    assert_equal(true, h[:leftover].tainted?)
+
     h = Date._parse('15:43+09:00')
     assert_equal(false, h[:zone].tainted?)
     h = Date._parse('15:43+09:00'.taint)
