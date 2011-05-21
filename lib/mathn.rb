@@ -16,14 +16,14 @@
 # will return (3/2) instead of the usual 1. The results will be fractions instead
 # of floats when possible. 
 #
-# Mathn also provides a Prime class for enumerating prime numbers. Sample:
+# mathn also provides a Prime class for enumerating prime numbers. Sample:
 #
 #    Prime.first(5)
 #
 # will return [2, 3, 5, 7, 11] 
 #
 # Requiring mathn you can also solve classic prime number problems
-# Problmes like 'what is the largest prime factor of 9?'
+# Problems like 'what is the largest prime factor of 9?'
 #
 #   results = 9.prime_division
 #   puts results[results.length-1][0]
@@ -37,7 +37,7 @@
 #
 #   Matrix[[1,2,3],[4,5,6]].transpose
 #
-# will retrun Matrix[[1, 4], [2, 5], [3, 6]]
+# will return Matrix[[1, 4], [2, 5], [3, 6]]
 #
 #
 #
