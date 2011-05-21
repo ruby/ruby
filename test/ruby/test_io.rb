@@ -1849,4 +1849,16 @@ End
     end
     rescue NotImplementedError
   end
+
+  def test_open_mode
+    feature4742 = "[ruby-core:36338]"
+
+    mkcdtmpdir do
+      refute_nil(File.open('symbolic', 'w'))
+      refute_nil(File.open('numeric',  File::WRONLY|File::TRUNC|File::CREAT))
+      refute_nil(File.open('hash-symbolic', :mode => 'w'))
+      refute_nil(File.open('hash-numeric', :mode => File::WRONLY|File::TRUNC|File::CREAT), feature4742)
+    end
+  end
+
 end

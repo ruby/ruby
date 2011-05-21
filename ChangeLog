@@ -1,3 +1,10 @@
+Sat May 21 22:14:35 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (rb_io_extract_modeenc): accept combination hash and
+	  File::Constants. (eg. File.open('yo', :mode => File::WRONLY))
+	  [Feature #4742][ruby-core:36338]
+	* test/ruby/test_io.rb (TestIO#test_open_mode): new test.
+
 Sat May 21 21:44:14 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* test/date/test_switch_hitter.rb: new.
