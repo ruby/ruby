@@ -22,6 +22,32 @@ class OpenSSL::TestPKeyDSA < Test::Unit::TestCase
     assert_equal([], OpenSSL.errors)
   end
 
+  def test_sign_verify
+    check_sign_verify(OpenSSL::Digest::DSS1.new)
+  end
+
+if (OpenSSL::OPENSSL_VERSION_NUMBER > 0x10000000)
+  def test_sign_verify_sha1
+    check_sign_verify(OpenSSL::Digest::SHA1.new)
+  end
+
+  def test_sign_verify_sha256
+    check_sign_verify(OpenSSL::Digest::SHA256.new)
+  end
+end
+
+  def test_digest_state_irrelevant_verify
+    key = OpenSSL::PKey::DSA.new(256)
+    digest1 = OpenSSL::Digest::DSS1.new
+    digest2 = OpenSSL::Digest::DSS1.new
+    data = 'Sign me!'
+    sig = key.sign(digest1, data)
+    digest1.reset
+    digest1 << 'Change state of digest1'
+    assert(key.verify(digest1, sig, data))
+    assert(key.verify(digest2, sig, data))
+  end
+
   def test_read_DSA_PUBKEY
     p = 7188211954100152441468596248707152960171255279130004340103875772401008316444412091945435731597638374542374929457672178957081124632837356913990200866056699
     q = 957032439192465935099784319494405376402293318491
@@ -120,6 +146,15 @@ YNMbNw==
     pub_key = OpenSSL::ASN1.decode(seq[1].value)
     assert_equal(OpenSSL::ASN1::INTEGER, pub_key.tag)
     assert_equal(key.pub_key, pub_key.value)
+  end
+
+  private
+
+  def check_sign_verify(digest)
+    key = OpenSSL::PKey::DSA.new(256)
+    data = 'Sign me!'
+    sig = key.sign(digest, data)
+    assert(key.verify(digest, sig, data))
   end
 end
 
