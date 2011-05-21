@@ -1575,17 +1575,17 @@ date_s__valid_civil_p(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *    Date.valid_civil?(year, month, mday[, start=Date::ITALY])
  *
- * Do year +y+, month +m+, and day-of-month +d+ make a
+ * Do +year+, +month+ and +mday+ (day-of-month) make a
  * valid Civil Date?  Returns true or false.
  *
- * +m+ and +d+ can be negative, in which case they count
+ * +month+ and +mday+ can be negative, in which case they count
  * backwards from the end of the year and the end of the
  * month respectively.  No wraparound is performed, however,
  * and invalid values cause an ArgumentError to be raised.
  * A date falling in the period skipped in the Day of Calendar
  * Reform adjustment is not valid.
  *
- * +sg+ specifies the Day of Calendar Reform.
+ * +start+ specifies the Day of Calendar Reform.
  */
 static VALUE
 date_s_valid_civil_p(int argc, VALUE *argv, VALUE klass)
@@ -1670,18 +1670,18 @@ date_s__valid_ordinal_p(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *    Date.valid_ordinal?(year, yday[, start=Date::ITALY])
  *
- * Do the year +y+ and day-of-year +d+ make a valid Ordinal Date?
+ * Do the +year+ and +yday+ (day-of-year) make a valid Ordinal Date?
  * Returns true or false.
  *
- * +d+ can be a negative number, in which case it counts backwards
+ * +yday+ can be a negative number, in which case it counts backwards
  * from the end of the year (-1 being the last day of the year).
  * No year wraparound is performed, however, so valid values of
- * +d+ are -365 .. -1, 1 .. 365 on a non-leap-year,
+ * +yday+ are -365 .. -1, 1 .. 365 on a non-leap-year,
  * -366 .. -1, 1 .. 366 on a leap year.
  * A date falling in the period skipped in the Day of Calendar Reform
  * adjustment is not valid.
  *
- * +sg+ specifies the Day of Calendar Reform.
+ * +start+ specifies the Day of Calendar Reform.
  */
 static VALUE
 date_s_valid_ordinal_p(int argc, VALUE *argv, VALUE klass)
@@ -1766,21 +1766,22 @@ date_s__valid_commercial_p(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.valid_commercial?(year, week, day[, start=Date::ITALY])
+ *    Date.valid_commercial?(cwyear, cweek, cwday[, start=Date::ITALY])
  *
- * Do year +y+, week-of-year +w+, and day-of-week +d+ make a
+ * Do +cwyear+ (calendar-week-based-year), +cweek+ (week-of-year)
+ * and +cwday+ (day-of-week) make a
  * valid Commercial Date?  Returns true or false.
  *
  * Monday is day-of-week 1; Sunday is day-of-week 7.
  *
- * +w+ and +d+ can be negative, in which case they count
+ * +cweek+ and +cwday+ can be negative, in which case they count
  * backwards from the end of the year and the end of the
  * week respectively.  No wraparound is performed, however,
  * and invalid values cause an ArgumentError to be raised.
  * A date falling in the period skipped in the Day of Calendar
  * Reform adjustment is not valid.
  *
- * +sg+ specifies the Day of Calendar Reform.
+ * +start+ specifies the Day of Calendar Reform.
  */
 static VALUE
 date_s_valid_commercial_p(int argc, VALUE *argv, VALUE klass)
@@ -2243,7 +2244,7 @@ rt_date_s_jd(int argc, VALUE *argv, VALUE klass)
  * Create a new Date object from a Julian Day Number.
  *
  * +jd+ is the Julian Day Number; if not specified, it defaults to 0.
- * +sg+ specifies the Day of Calendar Reform.
+ * +start+ specifies the Day of Calendar Reform.
  */
 static VALUE
 date_s_jd(int argc, VALUE *argv, VALUE klass)
@@ -2308,15 +2309,15 @@ rt_date_s_ordinal(int argc, VALUE *argv, VALUE klass)
  *    Date.ordinal([year=-4712[, yday=1[, start=Date::ITALY]]])
  *
  * Create a new Date object from an Ordinal Date, specified
- * by year +y+ and day-of-year +d+. +d+ can be negative,
+ * by +year+ and +yday+ (day-of-year). +yday+ can be negative,
  * in which it counts backwards from the end of the year.
  * No year wraparound is performed, however.  An invalid
- * value for +d+ results in an ArgumentError being raised.
+ * value for +yday+ results in an ArgumentError being raised.
  *
- * +y+ defaults to -4712, and +d+ to 1; this is Julian Day
+ * +year+ defaults to -4712, and +yday+ to 1; this is Julian Day
  * Number day 0.
  *
- * +sg+ specifies the Day of Calendar Reform.
+ * +start+ specifies the Day of Calendar Reform.
  */
 static VALUE
 date_s_ordinal(int argc, VALUE *argv, VALUE klass)
@@ -2393,22 +2394,22 @@ rt_date_s_civil(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.civil([year=-4712[, mon=1[, mday=1[, start=Date::ITALY]]]])
- *    Date.new([year=-4712[, mon=1[, mday=1[, start=Date::ITALY]]]])
+ *    Date.civil([year=-4712[, month=1[, mday=1[, start=Date::ITALY]]]])
+ *    Date.new([year=-4712[, month=1[, mday=1[, start=Date::ITALY]]]])
  *
  * Create a new Date object for the Civil Date specified by
- * year +y+, month +m+, and day-of-month +d+.
+ * +year+, +month+ and +mday+ (day-of-month).
  *
- * +m+ and +d+ can be negative, in which case they count
+ * +month+ and +mday+ can be negative, in which case they count
  * backwards from the end of the year and the end of the
  * month respectively.  No wraparound is performed, however,
  * and invalid values cause an ArgumentError to be raised.
  * can be negative
  *
- * +y+ defaults to -4712, +m+ to 1, and +d+ to 1; this is
+ * +year+ defaults to -4712, +month+ to 1, and +mday+ to 1; this is
  * Julian Day Number day 0.
  *
- * +sg+ specifies the Day of Calendar Reform.
+ * +start+ specifies the Day of Calendar Reform.
  */
 static VALUE
 date_s_civil(int argc, VALUE *argv, VALUE klass)
@@ -2499,19 +2500,20 @@ rt_date_s_commercial(int argc, VALUE *argv, VALUE klass)
  *    Date.commercial([cwyear=-4712[, cweek=1[, cwday=1[, start=Date::ITALY]]]])
  *
  * Create a new Date object for the Commercial Date specified by
- * year +y+, week-of-year +w+, and day-of-week +d+.
+ * +cwyear+ (calendar-week-based-year), +cweek+ (week-of-year)
+ * and +cwday+ (day-of-week).
  *
  * Monday is day-of-week 1; Sunday is day-of-week 7.
  *
- * +w+ and +d+ can be negative, in which case they count
+ * +cweek+ and +cwday+ can be negative, in which case they count
  * backwards from the end of the year and the end of the
  * week respectively.  No wraparound is performed, however,
  * and invalid values cause an ArgumentError to be raised.
  *
- * +y+ defaults to -4712, +w+ to 1, and +d+ to 1; this is
+ * +cwyear+ defaults to -4712, +cweek+ to 1, and +cwday+ to 1; this is
  * Julian Day Number day 0.
  *
- * +sg+ specifies the Day of Calendar Reform.
+ * +start+ specifies the Day of Calendar Reform.
  */
 static VALUE
 date_s_commercial(int argc, VALUE *argv, VALUE klass)
@@ -2749,7 +2751,7 @@ localtime_r(const time_t *t, struct tm *tm)
  *
  * Create a new Date object representing today.
  *
- * +sg+ specifies the Day of Calendar Reform.
+ * +start+ specifies the Day of Calendar Reform.
  */
 static VALUE
 date_s_today(int argc, VALUE *argv, VALUE klass)
@@ -3285,17 +3287,16 @@ date_s__strptime(int argc, VALUE *argv, VALUE klass)
  * Create a new Date object by parsing from a String
  * according to a specified format.
  *
- * +str+ is a String holding a date representation.
- * +fmt+ is the format that the date is in.  See
- * date/format.rb for details on supported formats.
+ * +string+ is a String holding a date representation.
+ * +format+ is the format that the date is in.
  *
- * The default +str+ is '-4712-01-01', and the default
- * +fmt+ is '%F', which means Year-Month-Day_of_Month.
+ * The default +string+ is '-4712-01-01', and the default
+ * +format+ is '%F', which means Year-Month-Day_of_Month.
  * This gives Julian Day Number day 0.
  *
- * +sg+ specifies the Day of Calendar Reform.
+ * +start+ specifies the Day of Calendar Reform.
  *
- * An ArgumentError will be raised if +str+ cannot be
+ * An ArgumentError will be raised if +string+ cannot be
  * parsed.
  */
 static VALUE
@@ -3374,18 +3375,17 @@ date_s__parse(int argc, VALUE *argv, VALUE klass)
  * Create a new Date object by parsing from a String,
  * without specifying the format.
  *
- * +str+ is a String holding a date representation.
+ * +string+ is a String holding a date representation.
  * +comp+ specifies whether to interpret 2-digit years
  * as 19XX (>= 69) or 20XX (< 69); the default is to.
  * The method will attempt to parse a date from the String
- * using various heuristics; see #_parse in date/format.rb
- * for more details.  If parsing fails, an ArgumentError
- * will be raised.
+ * using various heuristics.
+ * If parsing fails, an ArgumentError will be raised.
  *
- * The default +str+ is '-4712-01-01'; this is Julian
+ * The default +string+ is '-4712-01-01'; this is Julian
  * Day Number day 0.
  *
- * +sg+ specifies the Day of Calendar Reform.
+ * +start+ specifies the Day of Calendar Reform.
  */
 static VALUE
 date_s_parse(int argc, VALUE *argv, VALUE klass)
@@ -3887,6 +3887,7 @@ d_right_mon(VALUE self)
 /*
  * call-seq:
  *    d.mon
+ *    d.month
  *
  * Get the month of this date.
  *
@@ -3913,6 +3914,7 @@ d_right_mday(VALUE self)
 /*
  * call-seq:
  *    d.mday
+ *    d.day
  *
  * Get the day-of-the-month of this date.
  */
@@ -4707,16 +4709,16 @@ d_right_plus(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    d + n
+ *    d + other
  *
- * Return a new Date object that is +n+ days later than the
+ * Return a new Date object that is +other+ days later than the
  * current one.
  *
- * +n+ may be a negative value, in which case the new Date
+ * +otehr+ may be a negative value, in which case the new Date
  * is earlier than the current one; however, #-() might be
  * more intuitive.
  *
- * If +n+ is not a Numeric, a TypeError will be thrown.  In
+ * If +other+ is not a Numeric, a TypeError will be thrown.  In
  * particular, two Dates cannot be added to each other.
  */
 static VALUE
@@ -4828,17 +4830,16 @@ minus_dd(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    d - n
- *    d - d2
+ *    d - other
  *
- * If +x+ is a Numeric value, create a new Date object that is
- * +x+ days earlier than the current one.
+ * If +other+ is a Numeric value, create a new Date object that is
+ * +other+ days earlier than the current one.
  *
- * If +x+ is a Date, return the number of days between the
+ * If +other+ is a Date, return the number of days between the
  * two dates; or, more precisely, how many days later the current
- * date is than +x+.
+ * date is than +other+.
  *
- * If +x+ is neither Numeric nor a Date, a TypeError is raised.
+ * If +other+ is neither Numeric nor a Date, a TypeError is raised.
  */
 static VALUE
 d_lite_minus(VALUE self, VALUE other)
@@ -5192,8 +5193,7 @@ cmp_dd(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    d <=> n
- *    d <=> d2
+ *    d <=> other
  *
  * Compare this date with another date.
  *
@@ -6138,19 +6138,19 @@ rt_datetime_s_jd(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    DateTime.jd([jd=0[, hour=0[, min=0[, sec=0[, offset=0[, start=Date::ITALY]]]]]])
+ *    DateTime.jd([jd=0[, hour=0[, minute=0[, second=0[, offset=0[, start=Date::ITALY]]]]]])
  *
  * Create a new DateTime object corresponding to the specified
- * Julian Day Number +jd+ and hour +h+, minute +min+, second +s+.
+ * Julian Day Number +jd+, +hour+, +minute+ and +second+.
  *
- * The 24-hour clock is used.  Negative values of +h+, +min+, and
- * +sec+ are treating as counting backwards from the end of the
- * next larger unit (e.g. a +min+ of -2 is treated as 58).  No
+ * The 24-hour clock is used.  Negative values of +hour+, +minute+, and
+ * +second+ are treating as counting backwards from the end of the
+ * next larger unit (e.g. a +minute+ of -2 is treated as 58).  No
  * wraparound is performed.  If an invalid time portion is specified,
  * an ArgumentError is raised.
  *
- * +of+ is the offset from UTC as a fraction of a day (defaults to 0).
- * +sg+ specifies the Day of Calendar Reform.
+ * +offset+ is the offset from UTC as a fraction of a day (defaults to 0).
+ * +start+ specifies the Day of Calendar Reform.
  *
  * All day/time values default to 0.
  */
@@ -6245,21 +6245,21 @@ rt_datetime_s_ordinal(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    DateTime.ordinal([year=-4712[, yday=1[, hour=0[, min=0[, sec=0[, offset=0[, start=Date::ITALY]]]]]]])
+ *    DateTime.ordinal([year=-4712[, yday=1[, hour=0[, minute=0[, second=0[, offset=0[, start=Date::ITALY]]]]]]])
  *
  * Create a new DateTime object corresponding to the specified
- * Ordinal Date and hour +h+, minute +min+, second +s+.
+ * Ordinal Date, +hour+, +minute+ and +second+.
  *
- * The 24-hour clock is used.  Negative values of +h+, +min+, and
- * +sec+ are treating as counting backwards from the end of the
- * next larger unit (e.g. a +min+ of -2 is treated as 58).  No
+ * The 24-hour clock is used.  Negative values of +hour+, +minute+, and
+ * +second+ are treating as counting backwards from the end of the
+ * next larger unit (e.g. a +minute+ of -2 is treated as 58).  No
  * wraparound is performed.  If an invalid time portion is specified,
  * an ArgumentError is raised.
  *
- * +of+ is the offset from UTC as a fraction of a day (defaults to 0).
- * +sg+ specifies the Day of Calendar Reform.
+ * +offset+ is the offset from UTC as a fraction of a day (defaults to 0).
+ * +start+ specifies the Day of Calendar Reform.
  *
- * +y+ defaults to -4712, and +d+ to 1; this is Julian Day Number
+ * +year+ defaults to -4712, and +yda+ to 1; this is Julian Day Number
  * day 0.  The time values default to 0.
 */
 static VALUE
@@ -6371,22 +6371,22 @@ rt_datetime_s_civil(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    DateTime.civil([year=-4712[, mon=1[, mday=1[, hour=0[, min=0[, sec=0[, offset=0[, start=Date::ITALY]]]]]]]])
- *    DateTime.new([year=-4712[, mon=1[, mday=1[, hour=0[, min=0[, sec=0[, offset=0[, start=Date::ITALY]]]]]]]])
+ *    DateTime.civil([year=-4712[, month=1[, mday=1[, hour=0[, minute=0[, second=0[, offset=0[, start=Date::ITALY]]]]]]]])
+ *    DateTime.new([year=-4712[, month=1[, mday=1[, hour=0[, minute=0[, second=0[, offset=0[, start=Date::ITALY]]]]]]]])
  *
  * Create a new DateTime object corresponding to the specified
- * Civil Date and hour +h+, minute +min+, second +s+.
+ * Civil Date, +hour+, +minute+ and +second+.
  *
- * The 24-hour clock is used.  Negative values of +h+, +min+, and
- * +sec+ are treating as counting backwards from the end of the
- * next larger unit (e.g. a +min+ of -2 is treated as 58).  No
+ * The 24-hour clock is used.  Negative values of +hour+, +minute+, and
+ * +second+ are treating as counting backwards from the end of the
+ * next larger unit (e.g. a +minute+ of -2 is treated as 58).  No
  * wraparound is performed.  If an invalid time portion is specified,
  * an ArgumentError is raised.
  *
- * +of+ is the offset from UTC as a fraction of a day (defaults to 0).
- * +sg+ specifies the Day of Calendar Reform.
+ * +offset+ is the offset from UTC as a fraction of a day (defaults to 0).
+ * +start+ specifies the Day of Calendar Reform.
  *
- * +y+ defaults to -4712, +m+ to 1, and +d+ to 1; this is Julian Day
+ * +year+ defaults to -4712, +month+ to 1, and +mday+ to 1; this is Julian Day
  * Number day 0.  The time values default to 0.
  */
 static VALUE
@@ -6512,21 +6512,22 @@ rt_datetime_s_commercial(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    DateTime.commercial([cwyear=-4712[, cweek=1[, cwday=1[, hour=0[, min=0[, sec=0[, offset=0[, start=Date::ITALY]]]]]]]])
+ *    DateTime.commercial([cwyear=-4712[, cweek=1[, cwday=1[, hour=0[, minute=0[, second=0[, offset=0[, start=Date::ITALY]]]]]]]])
  *
  * Create a new DateTime object corresponding to the specified
- * Commercial Date and hour +h+, minute +min+, second +s+.
+ * Commercial Date, +hour+, +minute+ and +second+.
  *
- * The 24-hour clock is used.  Negative values of +h+, +min+, and
- * +sec+ are treating as counting backwards from the end of the
- * next larger unit (e.g. a +min+ of -2 is treated as 58).  No
+ * The 24-hour clock is used.  Negative values of +hour+, +minute+, and
+ * +second+ are treating as counting backwards from the end of the
+ * next larger unit (e.g. a +minut+ of -2 is treated as 58).  No
  * wraparound is performed.  If an invalid time portion is specified,
  * an ArgumentError is raised.
  *
- * +of+ is the offset from UTC as a fraction of a day (defaults to 0).
- * +sg+ specifies the Day of Calendar Reform.
+ * +offset+ is the offset from UTC as a fraction of a day (defaults to 0).
+ * +start+ specifies the Day of Calendar Reform.
  *
- * +y+ defaults to -4712, +w+ to 1, and +d+ to 1; this is
+ * +cwyear+ (calendar-week-based-year) defaults to -4712,
+ * +cweek+ to 1, and +mday+ to 1; this is
  * Julian Day Number day 0.
  * The time values default to 0.
  */
@@ -6848,7 +6849,7 @@ datetime_s_nth_kday(int argc, VALUE *argv, VALUE klass)
  *
  * Create a new DateTime object representing the current time.
  *
- * +sg+ specifies the Day of Calendar Reform.
+ * +start+ specifies the Day of Calendar Reform.
  */
 static VALUE
 datetime_s_now(int argc, VALUE *argv, VALUE klass)
@@ -6984,14 +6985,13 @@ datetime_s__strptime(int argc, VALUE *argv, VALUE klass)
  * Create a new DateTime object by parsing from a String
  * according to a specified format.
  *
- * +str+ is a String holding a date-time representation.
- * +fmt+ is the format that the date-time is in.  See
- * date/format.rb for details on supported formats.
+ * +string+ is a String holding a date-time representation.
+ * +format+ is the format that the date-time is in.
  *
- * The default +str+ is '-4712-01-01T00:00:00+00:00', and the default
+ * The default +string+ is '-4712-01-01T00:00:00+00:00', and the default
  * +fmt+ is '%FT%T%z'.  This gives midnight on Julian Day Number day 0.
  *
- * +sg+ specifies the Day of Calendar Reform.
+ * +start+ specifies the Day of Calendar Reform.
  *
  * An ArgumentError will be raised if +str+ cannot be
  * parsed.
@@ -7029,18 +7029,17 @@ datetime_s_strptime(int argc, VALUE *argv, VALUE klass)
  * Create a new DateTime object by parsing from a String,
  * without specifying the format.
  *
- * +str+ is a String holding a date-time representation.
+ * +string+ is a String holding a date-time representation.
  * +comp+ specifies whether to interpret 2-digit years
  * as 19XX (>= 69) or 20XX (< 69); the default is to.
  * The method will attempt to parse a date-time from the String
- * using various heuristics; see #_parse in date/format.rb
- * for more details.  If parsing fails, an ArgumentError
- * will be raised.
+ * using various heuristics.
+ * If parsing fails, an ArgumentError will be raised.
  *
- * The default +str+ is '-4712-01-01T00:00:00+00:00'; this is Julian
+ * The default +string+ is '-4712-01-01T00:00:00+00:00'; this is Julian
  * Day Number day 0.
  *
- * +sg+ specifies the Day of Calendar Reform.
+ * +start+ specifies the Day of Calendar Reform.
  */
 static VALUE
 datetime_s_parse(int argc, VALUE *argv, VALUE klass)
@@ -7490,6 +7489,7 @@ dt_right_mon(VALUE self)
 /*
  * call-seq:
  *    dt.mon
+ *    dt.month
  *
  * Get the month of this date.
  *
@@ -7516,6 +7516,7 @@ dt_right_mday(VALUE self)
 /*
  * call-seq:
  *    dt.mday
+ *    dt.day
  *
  * Get the day-of-the-month of this date.
  */
@@ -8321,16 +8322,16 @@ dt_right_plus(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    dt + n
+ *    dt + other
  *
- * Return a new Date object that is +n+ days later than the
+ * Return a new Date object that is +other+ days later than the
  * current one.
  *
- * +n+ may be a negative value, in which case the new Date
+ * +other+ may be a negative value, in which case the new Date
  * is earlier than the current one; however, #-() might be
  * more intuitive.
  *
- * If +n+ is not a Numeric, a TypeError will be thrown.  In
+ * If +other+ is not a Numeric, a TypeError will be thrown.  In
  * particular, two Dates cannot be added to each other.
  */
 static VALUE
@@ -8464,17 +8465,16 @@ dt_right_minus(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    dt - n
- *    dt - dt2
+ *    dt - other
  *
- * If +x+ is a Numeric value, create a new Date object that is
+ * If +other+ is a Numeric value, create a new Date object that is
  * +x+ days earlier than the current one.
  *
- * If +x+ is a Date, return the number of days between the
+ * If +other+ is a Date, return the number of days between the
  * two dates; or, more precisely, how many days later the current
- * date is than +x+.
+ * date is than +other+.
  *
- * If +x+ is neither Numeric nor a Date, a TypeError is raised.
+ * If +ohter+ is neither Numeric nor a Date, a TypeError is raised.
  */
 static VALUE
 dt_lite_minus(VALUE self, VALUE other)
@@ -8669,8 +8669,7 @@ dt_right_cmp(VALUE self, VALUE other)
 }
 /*
  * call-seq:
- *    dt <=> n
- *    dt <=> d2
+ *    dt <=> other
  *
  * Compare this date with another date.
  *
@@ -9770,11 +9769,12 @@ mk_ary_of_str(long len, const char *a[])
 }
 
 /*
- * date.rb - date and time library
+ * date and time library
  *
  * Author: Tadayoshi Funaba 1998-2011
  *
- * Initial Documentation: William Webber <william@williamwebber.com>
+ * Initial Documentation for bundled version of Date 2:
+ *   William Webber <william@williamwebber.com>
  *
  * == Overview
  *
@@ -9861,7 +9861,7 @@ mk_ary_of_str(long len, const char *a[])
  * The Gregorian Calendar was introduced at different times
  * in different regions.  The day on which it was introduced
  * for a particular region is the *Day* *of* *Calendar*
- * *Reform* for that region.  This is abbreviated as +sg+
+ * *Reform* for that region.  This is abbreviated as +start+
  * (for Start of Gregorian calendar) in the Date class.
  *
  * Two such days are of particular
@@ -9896,7 +9896,7 @@ mk_ary_of_str(long len, const char *a[])
  * except for converting between them and year-based representations.
  *
  * In the Date and DateTime classes, the Day of Calendar Reform or
- * +sg+ can be specified a number of ways.  First, it can be as
+ * +start+ can be specified a number of ways.  First, it can be as
  * the Julian Day Number of the Day of Calendar Reform.  Second,
  * it can be using the constants Date::ITALY or Date::ENGLAND; these
  * are in fact the Julian Day Numbers of the Day of Calendar Reform
@@ -9918,7 +9918,7 @@ mk_ary_of_str(long len, const char *a[])
  * As you travel east, the offset increases until you
  * reach the dateline in the middle of the Pacific Ocean;
  * as you travel west, the offset decreases.  This offset
- * is abbreviated as +of+ in the Date class.
+ * is abbreviated as +offset+ in the Date class.
  *
  * This simple representation of offsets does not take
  * into account the common practice of Daylight Savings
@@ -9971,12 +9971,10 @@ Init_date_core(void)
     /*
      * Class representing a date.
      *
-     * See the documentation to the file date.rb for an overview.
-     *
      * Internally, the date is represented as an Astronomical
-     * Julian Day Number, +ajd+.  The Day of Calendar Reform, +sg+, is
+     * Julian Day Number, +ajd+.  The Day of Calendar Reform, +start+, is
      * also stored, for conversions to other date formats.  (There
-     * is also an +of+ field for a time zone offset, but this
+     * is also an +offset+ field for a time zone offset, but this
      * is only for the use of the DateTime subclass.)
      *
      * A new Date object is created using one of the object creation

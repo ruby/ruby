@@ -1,3 +1,7 @@
+Sun May 22 01:35:12 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: modified documentation.
+
 Sat May 21 22:46:26 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_strftime(date_strftime_with_tmx): "%v" means "%e-%b-%Y".
