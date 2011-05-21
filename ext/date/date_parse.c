@@ -14,6 +14,7 @@
 #define f_sub(x,y) rb_funcall(x, '-', 1, y)
 #define f_mul(x,y) rb_funcall(x, '*', 1, y)
 #define f_div(x,y) rb_funcall(x, '/', 1, y)
+#define f_idiv(x,y) rb_funcall(x, rb_intern("div"), 1, y)
 #define f_mod(x,y) rb_funcall(x, '%', 1, y)
 #define f_expt(x,y) rb_funcall(x, rb_intern("**"), 1, y)
 
@@ -33,8 +34,6 @@
 #define f_aset2(o,i,j,v) rb_funcall(o, rb_intern("[]="), 3, i, j, v)
 #define f_sub_bang(s,r,x) rb_funcall(s, rb_intern("sub!"), 2, r, x)
 #define f_gsub_bang(s,r,x) rb_funcall(s, rb_intern("gsub!"), 2, r, x)
-#define f_split(s,p) rb_funcall(s, rb_intern("split"), 1, p)
-#define f_downcase(x) rb_funcall(x, rb_intern("downcase"), 0)
 
 #define set_hash(k,v) rb_hash_aset(hash, ID2SYM(rb_intern(k)), v)
 #define ref_hash(k) rb_hash_aref(hash, ID2SYM(rb_intern(k)))
@@ -213,6 +212,8 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	set_hash("_comp", c);
 }
 
+#define DAYS "sunday|monday|tuesday|wednesday|thursday|friday|saturday"
+#define MONTHS "january|february|march|april|may|june|july|august|september|october|november|december"
 #define ABBR_DAYS "sun|mon|tue|wed|thu|fri|sat"
 #define ABBR_MONTHS "jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec"
 
@@ -262,6 +263,277 @@ subs(VALUE str, VALUE pat, VALUE hash, int (*cb)(VALUE, VALUE))
     return 1;
 }
 
+struct zone {
+    const char *name;
+    int offset;
+};
+
+static struct zone zones_source[] = {
+    {"ut",   0*3600}, {"gmt",  0*3600}, {"est", -5*3600}, {"edt", -4*3600},
+    {"cst", -6*3600}, {"cdt", -5*3600}, {"mst", -7*3600}, {"mdt", -6*3600},
+    {"pst", -8*3600}, {"pdt", -7*3600},
+    {"a",    1*3600}, {"b",    2*3600}, {"c",    3*3600}, {"d",    4*3600},
+    {"e",    5*3600}, {"f",    6*3600}, {"g",    7*3600}, {"h",    8*3600},
+    {"i",    9*3600}, {"k",   10*3600}, {"l",   11*3600}, {"m",   12*3600},
+    {"n",   -1*3600}, {"o",   -2*3600}, {"p",   -3*3600}, {"q",   -4*3600},
+    {"r",   -5*3600}, {"s",   -6*3600}, {"t",   -7*3600}, {"u",   -8*3600},
+    {"v",   -9*3600}, {"w",  -10*3600}, {"x",  -11*3600}, {"y",  -12*3600},
+    {"z",    0*3600},
+
+    {"utc",  0*3600}, {"wet",  0*3600},
+    {"at",  -2*3600}, {"brst",-2*3600}, {"ndt", -(2*3600+1800)},
+    {"art", -3*3600}, {"adt", -3*3600}, {"brt", -3*3600}, {"clst",-3*3600},
+    {"nst", -(3*3600+1800)},
+    {"ast", -4*3600}, {"clt", -4*3600},
+    {"akdt",-8*3600}, {"ydt", -8*3600},
+    {"akst",-9*3600}, {"hadt",-9*3600}, {"hdt", -9*3600}, {"yst", -9*3600},
+    {"ahst",-10*3600},{"cat",-10*3600}, {"hast",-10*3600},{"hst",-10*3600},
+    {"nt",  -11*3600},
+    {"idlw",-12*3600},
+    {"bst",  1*3600}, {"cet",  1*3600}, {"fwt",  1*3600}, {"met",  1*3600},
+    {"mewt", 1*3600}, {"mez",  1*3600}, {"swt",  1*3600}, {"wat",  1*3600},
+    {"west", 1*3600},
+    {"cest", 2*3600}, {"eet",  2*3600}, {"fst",  2*3600}, {"mest", 2*3600},
+    {"mesz", 2*3600}, {"sast", 2*3600}, {"sst",  2*3600},
+    {"bt",   3*3600}, {"eat",  3*3600}, {"eest", 3*3600}, {"msk",  3*3600},
+    {"msd",  4*3600}, {"zp4",  4*3600},
+    {"zp5",  5*3600}, {"ist",  (5*3600+1800)},
+    {"zp6",  6*3600},
+    {"wast", 7*3600},
+    {"cct",  8*3600}, {"sgt",  8*3600}, {"wadt", 8*3600},
+    {"jst",  9*3600}, {"kst",  9*3600},
+    {"east",10*3600}, {"gst", 10*3600},
+    {"eadt",11*3600},
+    {"idle",12*3600}, {"nzst",12*3600}, {"nzt", 12*3600},
+    {"nzdt",13*3600},
+
+    {"afghanistan",             16200}, {"alaskan",                -32400},
+    {"arab",                    10800}, {"arabian",                 14400},
+    {"arabic",                  10800}, {"atlantic",               -14400},
+    {"aus central",             34200}, {"aus eastern",             36000},
+    {"azores",                  -3600}, {"canada central",         -21600},
+    {"cape verde",              -3600}, {"caucasus",                14400},
+    {"cen. australia",          34200}, {"central america",        -21600},
+    {"central asia",            21600}, {"central europe",           3600},
+    {"central european",         3600}, {"central pacific",         39600},
+    {"central",                -21600}, {"china",                   28800},
+    {"dateline",               -43200}, {"e. africa",               10800},
+    {"e. australia",            36000}, {"e. europe",                7200},
+    {"e. south america",       -10800}, {"eastern",                -18000},
+    {"egypt",                    7200}, {"ekaterinburg",            18000},
+    {"fiji",                    43200}, {"fle",                      7200},
+    {"greenland",              -10800}, {"greenwich",                   0},
+    {"gtb",                      7200}, {"hawaiian",               -36000},
+    {"india",                   19800}, {"iran",                    12600},
+    {"jerusalem",                7200}, {"korea",                   32400},
+    {"mexico",                 -21600}, {"mid-atlantic",            -7200},
+    {"mountain",               -25200}, {"myanmar",                 23400},
+    {"n. central asia",         21600}, {"nepal",                   20700},
+    {"new zealand",             43200}, {"newfoundland",           -12600},
+    {"north asia east",         28800}, {"north asia",              25200},
+    {"pacific sa",             -14400}, {"pacific",                -28800},
+    {"romance",                  3600}, {"russian",                 10800},
+    {"sa eastern",             -10800}, {"sa pacific",             -18000},
+    {"sa western",             -14400}, {"samoa",                  -39600},
+    {"se asia",                 25200}, {"malay peninsula",         28800},
+    {"south africa",             7200}, {"sri lanka",               21600},
+    {"taipei",                  28800}, {"tasmania",                36000},
+    {"tokyo",                   32400}, {"tonga",                   46800},
+    {"us eastern",             -18000}, {"us mountain",            -25200},
+    {"vladivostok",             36000}, {"w. australia",            28800},
+    {"w. central africa",        3600}, {"w. europe",                3600},
+    {"west asia",               18000}, {"west pacific",            36000},
+    {"yakutsk",                 32400}
+};
+
+VALUE
+date_zone_to_diff(VALUE str)
+{
+    VALUE offset = Qnil;
+
+    long l, i;
+    char *s, *dest, *d;
+    int sp = 1;
+
+    l = RSTRING_LEN(str);
+    s = RSTRING_PTR(str);
+
+    dest = d = ALLOC_N(char, l + 1);
+
+    for (i = 0; i < l; i++) {
+	if (isspace(s[i]) || s[i] == '\0') {
+	    if (!sp)
+		*d++ = ' ';
+	    sp = 1;
+	}
+	else {
+	    if (isalpha(s[i]))
+		*d++ = tolower(s[i]);
+	    else
+		*d++ = s[i];
+	    sp = 0;
+	}
+    }
+    if (d > dest) {
+	if (*(d - 1) == ' ')
+	    --d;
+	*d = '\0';
+    }
+    str = rb_str_new2(dest);
+    {
+#define STD " standard time"
+#define DST " daylight time"
+	char *ss, *ds;
+	long sl, dl;
+	int dst = 0;
+
+	sl = RSTRING_LEN(str) - (sizeof STD - 1);
+	ss = RSTRING_PTR(str) + sl;
+	dl = RSTRING_LEN(str) - (sizeof DST - 1);
+	ds = RSTRING_PTR(str) + dl;
+
+	if (strcmp(ss, STD) == 0) {
+	    str = rb_str_new(RSTRING_PTR(str), sl);
+	}
+	else if (strcmp(ds, DST) == 0) {
+	    str = rb_str_new(RSTRING_PTR(str), dl);
+	    dst = 1;
+	}
+#undef STD
+#undef DST
+	else {
+#define DST " dst"
+	    char *ds;
+	    long dl;
+
+	    dl = RSTRING_LEN(str) - (sizeof DST - 1);
+	    ds = RSTRING_PTR(str) + dl;
+
+	    if (strcmp(ds, DST) == 0) {
+		str = rb_str_new(RSTRING_PTR(str), dl);
+		dst = 1;
+	    }
+#undef DST
+	}
+	{
+	    static VALUE zones = Qnil;
+
+	    if (NIL_P(zones)) {
+		int i;
+
+		zones = rb_hash_new();
+		rb_gc_register_mark_object(zones);
+		for (i = 0; i < (int)sizeof_array(zones_source); i++) {
+		    VALUE name = rb_str_new2(zones_source[i].name);
+		    VALUE offset = INT2FIX(zones_source[i].offset);
+		    rb_hash_aset(zones, name, offset);
+		}
+	    }
+
+	    offset = f_aref(zones, str);
+	    if (!NIL_P(offset)) {
+		if (dst)
+		    offset = f_add(offset, INT2FIX(3600));
+		goto ok;
+	    }
+	}
+	{
+	    char *s, *p;
+	    VALUE sign;
+	    VALUE hour = Qnil, min = Qnil, sec = Qnil;
+
+	    s = RSTRING_PTR(str);
+
+	    if (strncmp(s, "gmt", 3) == 0 ||
+		strncmp(s, "utc", 3) == 0)
+		s += 3;
+	    if (issign(*s)) {
+		sign = rb_str_new(s, 1);
+		s++;
+
+		str = rb_str_new2(s);
+
+		if (p = strchr(s, ':')) {
+		    hour = rb_str_new(s, p - s);
+		    s = ++p;
+		    if (p = strchr(s, ':')) {
+			min = rb_str_new(s, p - s);
+			s = ++p;
+			if (p = strchr(s, ':')) {
+			    sec = rb_str_new(s, p - s);
+			}
+			else
+			    sec = rb_str_new2(s);
+		    }
+		    else
+			min = rb_str_new2(s);
+		    goto num;
+		}
+		if (strpbrk(RSTRING_PTR(str), ",.")) {
+		    char *a, *b;
+
+		    a = ALLOC_N(char, RSTRING_LEN(str) + 1);
+		    strcpy(a, RSTRING_PTR(str));
+		    b = strpbrk(a, ",.");
+		    *b = '\0';
+		    b++;
+
+		    hour = cstr2num(a);
+		    min = f_mul(rb_rational_new2
+				(cstr2num(b),
+				 f_expt(INT2FIX(10),
+					LONG2NUM((long)strlen(b)))),
+				INT2FIX(60));
+		    goto num;
+		}
+		{
+		    const char *cs = RSTRING_PTR(str);
+		    long cl = RSTRING_LEN(str);
+
+		    if (cl % 2) {
+			if (cl >= 1)
+			    hour = rb_str_new(&cs[0], 1);
+			if (cl >= 3)
+			    min  = rb_str_new(&cs[1], 2);
+			if (cl >= 5)
+			    min  = rb_str_new(&cs[3], 2);
+		    }
+		    else {
+			if (cl >= 2)
+			    hour = rb_str_new(&cs[0], 2);
+			if (cl >= 4)
+			    min  = rb_str_new(&cs[2], 2);
+			if (cl >= 6)
+			    sec  = rb_str_new(&cs[4], 2);
+		    }
+		    goto num;
+		}
+	      num:
+		if (NIL_P(hour))
+		    offset = INT2FIX(0);
+		else {
+		    if (TYPE(hour) == T_STRING)
+			hour = str2num(hour);
+		    offset = f_mul(hour, INT2FIX(3600));
+		}
+		if (!NIL_P(min)) {
+		    if (TYPE(min) == T_STRING)
+			min = str2num(min);
+		    offset = f_add(offset, f_mul(min, INT2FIX(60)));
+		}
+		if (!NIL_P(sec))
+		    offset = f_add(offset, str2num(sec));
+		if (!NIL_P(sign) &&
+		    RSTRING_LEN(sign) == 1 &&
+		    *RSTRING_PTR(sign) == '-')
+		    offset = f_negate(offset);
+	    }
+	}
+    }
+  ok:
+    return offset;
+}
+
 static int
 day_num(VALUE s)
 {
@@ -289,7 +561,7 @@ parse_day_cb(VALUE m, VALUE hash)
 {
     VALUE s;
 
-    s = f_aref(m, INT2FIX(1));
+    s = rb_reg_nth_match(1, m);
     set_hash("wday", INT2FIX(day_num(s)));
     return 1;
 }
@@ -309,24 +581,24 @@ parse_time2_cb(VALUE m, VALUE hash)
 {
     VALUE h, min, s, f, p;
 
-    h = f_aref(m, INT2FIX(1));
+    h = rb_reg_nth_match(1, m);
     h = str2num(h);
 
-    min = f_aref(m, INT2FIX(2));
+    min = rb_reg_nth_match(2, m);
     if (!NIL_P(min))
 	min = str2num(min);
 
-    s = f_aref(m, INT2FIX(3));
+    s = rb_reg_nth_match(3, m);
     if (!NIL_P(s))
 	s = str2num(s);
 
-    f = f_aref(m, INT2FIX(4));
+    f = rb_reg_nth_match(4, m);
 
     if (!NIL_P(f))
 	f = rb_rational_new2(str2num(f),
 			     f_expt(INT2FIX(10), LONG2NUM(RSTRING_LEN(f))));
 
-    p = f_aref(m, INT2FIX(5));
+    p = rb_reg_nth_match(5, m);
 
     if (!NIL_P(p)) {
 	int ih = NUM2INT(h);
@@ -361,8 +633,8 @@ parse_time_cb(VALUE m, VALUE hash)
     static VALUE pat = Qnil;
     VALUE s1, s2;
 
-    s1 = f_aref(m, INT2FIX(1));
-    s2 = f_aref(m, INT2FIX(2));
+    s1 = rb_reg_nth_match(1, m);
+    s2 = rb_reg_nth_match(2, m);
 
     if (!NIL_P(s2))
 	set_hash("zone", s2);
@@ -421,10 +693,10 @@ parse_eu_cb(VALUE m, VALUE hash)
 {
     VALUE y, mon, d, b;
 
-    d = f_aref(m, INT2FIX(1));
-    mon = f_aref(m, INT2FIX(2));
-    b = f_aref(m, INT2FIX(3));
-    y = f_aref(m, INT2FIX(4));
+    d = rb_reg_nth_match(1, m);
+    mon = rb_reg_nth_match(2, m);
+    b = rb_reg_nth_match(3, m);
+    y = rb_reg_nth_match(4, m);
 
     mon = INT2FIX(mon_num(mon));
 
@@ -458,10 +730,10 @@ parse_us_cb(VALUE m, VALUE hash)
 {
     VALUE y, mon, d, b;
 
-    mon = f_aref(m, INT2FIX(1));
-    d = f_aref(m, INT2FIX(2));
-    b = f_aref(m, INT2FIX(3));
-    y = f_aref(m, INT2FIX(4));
+    mon = rb_reg_nth_match(1, m);
+    d = rb_reg_nth_match(2, m);
+    b = rb_reg_nth_match(3, m);
+    y = rb_reg_nth_match(4, m);
 
     mon = INT2FIX(mon_num(mon));
 
@@ -495,9 +767,9 @@ parse_iso_cb(VALUE m, VALUE hash)
 {
     VALUE y, mon, d;
 
-    y = f_aref(m, INT2FIX(1));
-    mon = f_aref(m, INT2FIX(2));
-    d = f_aref(m, INT2FIX(3));
+    y = rb_reg_nth_match(1, m);
+    mon = rb_reg_nth_match(2, m);
+    d = rb_reg_nth_match(3, m);
 
     s3e(hash, y, mon, d, 0);
     return 1;
@@ -518,9 +790,9 @@ parse_iso21_cb(VALUE m, VALUE hash)
 {
     VALUE y, w, d;
 
-    y = f_aref(m, INT2FIX(1));
-    w = f_aref(m, INT2FIX(2));
-    d = f_aref(m, INT2FIX(3));
+    y = rb_reg_nth_match(1, m);
+    w = rb_reg_nth_match(2, m);
+    d = rb_reg_nth_match(3, m);
 
     if (!NIL_P(y))
 	set_hash("cwyear", str2num(y));
@@ -547,7 +819,7 @@ parse_iso22_cb(VALUE m, VALUE hash)
 {
     VALUE d;
 
-    d = f_aref(m, INT2FIX(1));
+    d = rb_reg_nth_match(1, m);
     set_hash("cwday", str2num(d));
     return 1;
 }
@@ -567,8 +839,8 @@ parse_iso23_cb(VALUE m, VALUE hash)
 {
     VALUE mon, d;
 
-    mon = f_aref(m, INT2FIX(1));
-    d = f_aref(m, INT2FIX(2));
+    mon = rb_reg_nth_match(1, m);
+    d = rb_reg_nth_match(2, m);
 
     if (!NIL_P(mon))
 	set_hash("mon", str2num(mon));
@@ -592,8 +864,8 @@ parse_iso24_cb(VALUE m, VALUE hash)
 {
     VALUE mon, d;
 
-    mon = f_aref(m, INT2FIX(1));
-    d = f_aref(m, INT2FIX(2));
+    mon = rb_reg_nth_match(1, m);
+    d = rb_reg_nth_match(2, m);
 
     set_hash("mon", str2num(mon));
     if (!NIL_P(d))
@@ -617,8 +889,8 @@ parse_iso25_cb(VALUE m, VALUE hash)
 {
     VALUE y, d;
 
-    y = f_aref(m, INT2FIX(1));
-    d = f_aref(m, INT2FIX(2));
+    y = rb_reg_nth_match(1, m);
+    d = rb_reg_nth_match(2, m);
 
     set_hash("year", str2num(y));
     set_hash("yday", str2num(d));
@@ -647,7 +919,7 @@ parse_iso26_cb(VALUE m, VALUE hash)
 {
     VALUE d;
 
-    d = f_aref(m, INT2FIX(1));
+    d = rb_reg_nth_match(1, m);
     set_hash("yday", str2num(d));
 
     return 1;
@@ -690,23 +962,32 @@ parse_iso2(VALUE str, VALUE hash)
 }
 
 static int
+gengo(int c)
+{
+    int e;
+
+    switch (c) {
+      case 'M': case 'm': e = 1867; break;
+      case 'T': case 't': e = 1911; break;
+      case 'S': case 's': e = 1925; break;
+      case 'H': case 'h': e = 1988; break;
+      default:  e = 0; break;
+    }
+    return e;
+}
+
+static int
 parse_jis_cb(VALUE m, VALUE hash)
 {
     VALUE e, y, mon, d;
     int ep;
 
-    e = f_aref(m, INT2FIX(1));
-    y = f_aref(m, INT2FIX(2));
-    mon = f_aref(m, INT2FIX(3));
-    d = f_aref(m, INT2FIX(4));
+    e = rb_reg_nth_match(1, m);
+    y = rb_reg_nth_match(2, m);
+    mon = rb_reg_nth_match(3, m);
+    d = rb_reg_nth_match(4, m);
 
-    switch (*RSTRING_PTR(e)) {
-      case 'M': case 'm': ep = 1867; break;
-      case 'T': case 't': ep = 1911; break;
-      case 'S': case 's': ep = 1925; break;
-      case 'H': case 'h': ep = 1988; break;
-      default:  ep = 0; break;
-    }
+    ep = gengo(*RSTRING_PTR(e));
 
     set_hash("year", f_add(str2num(y), INT2FIX(ep)));
     set_hash("mon", str2num(mon));
@@ -730,9 +1011,9 @@ parse_vms11_cb(VALUE m, VALUE hash)
 {
     VALUE y, mon, d;
 
-    d = f_aref(m, INT2FIX(1));
-    mon = f_aref(m, INT2FIX(2));
-    y = f_aref(m, INT2FIX(3));
+    d = rb_reg_nth_match(1, m);
+    mon = rb_reg_nth_match(2, m);
+    y = rb_reg_nth_match(3, m);
 
     mon = INT2FIX(mon_num(mon));
 
@@ -757,9 +1038,9 @@ parse_vms12_cb(VALUE m, VALUE hash)
 {
     VALUE y, mon, d;
 
-    mon = f_aref(m, INT2FIX(1));
-    d = f_aref(m, INT2FIX(2));
-    y = f_aref(m, INT2FIX(3));
+    mon = rb_reg_nth_match(1, m);
+    d = rb_reg_nth_match(2, m);
+    y = rb_reg_nth_match(3, m);
 
     mon = INT2FIX(mon_num(mon));
 
@@ -797,9 +1078,9 @@ parse_sla_cb(VALUE m, VALUE hash)
 {
     VALUE y, mon, d;
 
-    y = f_aref(m, INT2FIX(1));
-    mon = f_aref(m, INT2FIX(2));
-    d = f_aref(m, INT2FIX(3));
+    y = rb_reg_nth_match(1, m);
+    mon = rb_reg_nth_match(2, m);
+    d = rb_reg_nth_match(3, m);
 
     s3e(hash, y, mon, d, 0);
     return 1;
@@ -821,9 +1102,9 @@ parse_dot_cb(VALUE m, VALUE hash)
 {
     VALUE y, mon, d;
 
-    y = f_aref(m, INT2FIX(1));
-    mon = f_aref(m, INT2FIX(2));
-    d = f_aref(m, INT2FIX(3));
+    y = rb_reg_nth_match(1, m);
+    mon = rb_reg_nth_match(2, m);
+    d = rb_reg_nth_match(3, m);
 
     s3e(hash, y, mon, d, 0);
     return 1;
@@ -845,7 +1126,7 @@ parse_year_cb(VALUE m, VALUE hash)
 {
     VALUE y;
 
-    y = f_aref(m, INT2FIX(1));
+    y = rb_reg_nth_match(1, m);
     set_hash("year", str2num(y));
     return 1;
 }
@@ -865,7 +1146,7 @@ parse_mon_cb(VALUE m, VALUE hash)
 {
     VALUE mon;
 
-    mon = f_aref(m, INT2FIX(1));
+    mon = rb_reg_nth_match(1, m);
     set_hash("mon", INT2FIX(mon_num(mon)));
     return 1;
 }
@@ -885,7 +1166,7 @@ parse_mday_cb(VALUE m, VALUE hash)
 {
     VALUE d;
 
-    d = f_aref(m, INT2FIX(1));
+    d = rb_reg_nth_match(1, m);
     set_hash("mday", str2num(d));
     return 1;
 }
@@ -915,8 +1196,6 @@ n2i(const char *s, long f, long w)
     return v;
 }
 
-VALUE date_zone_to_diff(VALUE);
-
 static int
 parse_ddd_cb(VALUE m, VALUE hash)
 {
@@ -924,11 +1203,11 @@ parse_ddd_cb(VALUE m, VALUE hash)
     const char *cs2, *cs3, *cs5;
     long l2, l3, l4, l5;
 
-    s1 = f_aref(m, INT2FIX(1));
-    s2 = f_aref(m, INT2FIX(2));
-    s3 = f_aref(m, INT2FIX(3));
-    s4 = f_aref(m, INT2FIX(4));
-    s5 = f_aref(m, INT2FIX(5));
+    s1 = rb_reg_nth_match(1, m);
+    s2 = rb_reg_nth_match(2, m);
+    s3 = rb_reg_nth_match(3, m);
+    s4 = rb_reg_nth_match(4, m);
+    s5 = rb_reg_nth_match(5, m);
 
     cs2 = RSTRING_PTR(s2);
     l2 = RSTRING_LEN(s2);
@@ -1172,7 +1451,7 @@ parse_frag_cb(VALUE m, VALUE hash)
 {
     VALUE s, n;
 
-    s = f_aref(m, INT2FIX(1));
+    s = rb_reg_nth_match(1, m);
 
     if (!NIL_P(ref_hash("hour")) && NIL_P(ref_hash("mday"))) {
 	n = str2num(s);
@@ -1331,6 +1610,784 @@ date__parse(VALUE str, VALUE comp)
 
     rb_backref_set(backref);
 
+    return hash;
+}
+
+static VALUE
+comp_year69(VALUE y)
+{
+    if (f_ge_p(y, INT2FIX(69)))
+	return f_add(y, INT2FIX(1900));
+    return f_add(y, INT2FIX(2000));
+}
+
+static VALUE
+comp_year50(VALUE y)
+{
+    if (f_ge_p(y, INT2FIX(50)))
+	return f_add(y, INT2FIX(1900));
+    return f_add(y, INT2FIX(2000));
+}
+
+static VALUE
+sec_fraction(VALUE f)
+{
+    return rb_rational_new2(str2num(f),
+			    f_expt(INT2FIX(10),
+				   LONG2NUM(RSTRING_LEN(f))));
+}
+
+#define SNUM 14
+
+static int
+iso8601_ext_datetime_cb(VALUE m, VALUE hash)
+{
+    VALUE s[SNUM + 1], y;
+
+    {
+	int i;
+	s[0] = Qnil;
+	for (i = 1; i <= SNUM; i++)
+	    s[i] = rb_reg_nth_match(i, m);
+    }
+
+    if (!NIL_P(s[3])) {
+	set_hash("mday", str2num(s[3]));
+	if (strcmp(RSTRING_PTR(s[1]), "-") != 0) {
+	    y = str2num(s[1]);
+	    if (RSTRING_LEN(s[1]) < 4)
+		y = comp_year69(y);
+	    set_hash("year", y);
+	}
+	if (NIL_P(s[2])) {
+	    if (strcmp(RSTRING_PTR(s[1]), "-") != 0)
+		return 0;
+	}
+	else
+	    set_hash("mon", str2num(s[2]));
+    }
+    else if (!NIL_P(s[5])) {
+	set_hash("yday", str2num(s[5]));
+	if (!NIL_P(s[4])) {
+	    y = str2num(s[4]);
+	    if (RSTRING_LEN(s[4]) < 4)
+		y = comp_year69(y);
+	    set_hash("year", y);
+	}
+    }
+    else if (!NIL_P(s[8])) {
+	set_hash("cweek", str2num(s[7]));
+	set_hash("cwday", str2num(s[8]));
+	if (!NIL_P(s[6])) {
+	    y = str2num(s[6]);
+	    if (RSTRING_LEN(s[6]) < 4)
+		y = comp_year69(y);
+	    set_hash("cwyear", y);
+	}
+    }
+    else if (!NIL_P(s[9])) {
+	set_hash("cwday", str2num(s[9]));
+    }
+    if (!NIL_P(s[10])) {
+	set_hash("hour", str2num(s[10]));
+	set_hash("min", str2num(s[11]));
+	if (!NIL_P(s[12]))
+	    set_hash("sec", str2num(s[12]));
+    }
+    if (!NIL_P(s[13])) {
+	set_hash("sec_fraction", sec_fraction(s[13]));
+    }
+    if (!NIL_P(s[14])) {
+	set_hash("zone", s[14]);
+	set_hash("offset", date_zone_to_diff(s[14]));
+    }
+
+    return 1;
+}
+
+static int
+iso8601_ext_datetime(VALUE str, VALUE hash)
+{
+    static const char pat_source[] =
+	"\\A\\s*(?:([-+]?\\d{2,}|-)-(\\d{2})?-(\\d{2})|"
+		"([-+]?\\d{2,})?-(\\d{3})|"
+		"(\\d{4}|\\d{2})?-w(\\d{2})-(\\d)|"
+		"-w-(\\d))"
+	"(?:t"
+	"(\\d{2}):(\\d{2})(?::(\\d{2})(?:[,.](\\d+))?)?"
+	"(z|[-+]\\d{2}(?::?\\d{2})?)?)?\\s*\\z";
+    static VALUE pat = Qnil;
+
+    REGCOMP_I(pat);
+    SUBS(str, pat, iso8601_ext_datetime_cb);
+}
+
+#undef SNUM
+#define SNUM 17
+
+static int
+iso8601_bas_datetime_cb(VALUE m, VALUE hash)
+{
+    VALUE s[SNUM + 1], y;
+
+    {
+	int i;
+	s[0] = Qnil;
+	for (i = 1; i <= SNUM; i++)
+	    s[i] = rb_reg_nth_match(i, m);
+    }
+
+    if (!NIL_P(s[3])) {
+	set_hash("mday", str2num(s[3]));
+	if (strcmp(RSTRING_PTR(s[1]), "--") != 0) {
+	    y = str2num(s[1]);
+	    if (RSTRING_LEN(s[1]) < 4)
+		y = comp_year69(y);
+	    set_hash("year", y);
+	}
+	if (*RSTRING_PTR(s[2]) == '-') {
+	    if (strcmp(RSTRING_PTR(s[1]), "--") != 0)
+		return 0;
+	}
+	else
+	    set_hash("mon", str2num(s[2]));
+    }
+    else if (!NIL_P(s[5])) {
+	set_hash("yday", str2num(s[5]));
+	y = str2num(s[4]);
+	if (RSTRING_LEN(s[4]) < 4)
+	    y = comp_year69(y);
+	set_hash("year", y);
+    }
+    else if (!NIL_P(s[6])) {
+	set_hash("yday", str2num(s[6]));
+    }
+    else if (!NIL_P(s[9])) {
+	set_hash("cweek", str2num(s[8]));
+	set_hash("cwday", str2num(s[9]));
+	y = str2num(s[7]);
+	if (RSTRING_LEN(s[7]) < 4)
+	    y = comp_year69(y);
+	set_hash("cwyear", y);
+    }
+    else if (!NIL_P(s[11])) {
+	set_hash("cweek", str2num(s[10]));
+	set_hash("cwday", str2num(s[11]));
+    }
+    else if (!NIL_P(s[12])) {
+	set_hash("cwday", str2num(s[12]));
+    }
+    if (!NIL_P(s[13])) {
+	set_hash("hour", str2num(s[13]));
+	set_hash("min", str2num(s[14]));
+	if (!NIL_P(s[15]))
+	    set_hash("sec", str2num(s[15]));
+    }
+    if (!NIL_P(s[16])) {
+	set_hash("sec_fraction", sec_fraction(s[16]));
+    }
+    if (!NIL_P(s[17])) {
+	set_hash("zone", s[17]);
+	set_hash("offset", date_zone_to_diff(s[17]));
+    }
+
+    return 1;
+}
+
+static int
+iso8601_bas_datetime(VALUE str, VALUE hash)
+{
+    static const char pat_source[] =
+	"\\A\\s*(?:([-+]?(?:\\d{4}|\\d{2})|--)(\\d{2}|-)(\\d{2})|"
+		   "([-+]?(?:\\d{4}|\\d{2}))(\\d{3})|"
+		   "-(\\d{3})|"
+		   "(\\d{4}|\\d{2})w(\\d{2})(\\d)|"
+		   "-w(\\d{2})(\\d)|"
+		   "-w-(\\d))"
+	"(?:t?"
+	"(\\d{2})(\\d{2})(?:(\\d{2})(?:[,.](\\d+))?)?"
+	"(z|[-+]\\d{2}(?:\\d{2})?)?)?\\s*\\z";
+    static VALUE pat = Qnil;
+
+    REGCOMP_I(pat);
+    SUBS(str, pat, iso8601_bas_datetime_cb);
+}
+
+#undef SNUM
+#define SNUM 5
+
+static int
+iso8601_ext_time_cb(VALUE m, VALUE hash)
+{
+    VALUE s[SNUM + 1];
+
+    {
+	int i;
+	s[0] = Qnil;
+	for (i = 1; i <= SNUM; i++)
+	    s[i] = rb_reg_nth_match(i, m);
+    }
+
+    set_hash("hour", str2num(s[1]));
+    set_hash("min", str2num(s[2]));
+    if (!NIL_P(s[3]))
+	set_hash("sec", str2num(s[3]));
+    if (!NIL_P(s[4]))
+	set_hash("sec_fraction", sec_fraction(s[4]));
+    if (!NIL_P(s[5])) {
+	set_hash("zone", s[5]);
+	set_hash("offset", date_zone_to_diff(s[5]));
+    }
+
+    return 1;
+}
+
+#define iso8601_bas_time_cb iso8601_ext_time_cb
+
+static int
+iso8601_ext_time(VALUE str, VALUE hash)
+{
+    static const char pat_source[] =
+	"\\A\\s*(?:(\\d{2}):(\\d{2})(?::(\\d{2})(?:[,.](\\d+))?)?"
+	"(z|[-+]\\d{2}(:?\\d{2})?)?)?\\s*\\z";
+    static VALUE pat = Qnil;
+
+    REGCOMP_I(pat);
+    SUBS(str, pat, iso8601_ext_time_cb);
+}
+
+static int
+iso8601_bas_time(VALUE str, VALUE hash)
+{
+    static const char pat_source[] =
+	"\\A\\s*(?:(\\d{2})(\\d{2})(?:(\\d{2})(?:[,.](\\d+))?)?"
+	"(z|[-+]\\d{2}(\\d{2})?)?)?\\s*\\z";
+    static VALUE pat = Qnil;
+
+    REGCOMP_I(pat);
+    SUBS(str, pat, iso8601_bas_time_cb);
+}
+
+VALUE
+date__iso8601(VALUE str)
+{
+    VALUE backref, hash;
+
+    backref = rb_backref_get();
+    rb_match_busy(backref);
+
+    hash = rb_hash_new();
+
+    if (iso8601_ext_datetime(str, hash))
+	goto ok;
+    if (iso8601_bas_datetime(str, hash))
+	goto ok;
+    if (iso8601_ext_time(str, hash))
+	goto ok;
+    if (iso8601_bas_time(str, hash))
+	goto ok;
+
+  ok:
+    rb_backref_set(backref);
+
+    return hash;
+}
+
+#undef SNUM
+#define SNUM 8
+
+static int
+rfc3339_cb(VALUE m, VALUE hash)
+{
+    VALUE s[SNUM + 1];
+
+    {
+	int i;
+	s[0] = Qnil;
+	for (i = 1; i <= SNUM; i++)
+	    s[i] = rb_reg_nth_match(i, m);
+    }
+
+    set_hash("year", str2num(s[1]));
+    set_hash("mon", str2num(s[2]));
+    set_hash("mday", str2num(s[3]));
+    set_hash("hour", str2num(s[4]));
+    set_hash("min", str2num(s[5]));
+    set_hash("sec", str2num(s[6]));
+    set_hash("zone", s[8]);
+    set_hash("offset", date_zone_to_diff(s[8]));
+    if (!NIL_P(s[7]))
+	set_hash("sec_fraction", sec_fraction(s[7]));
+
+    return 1;
+}
+
+static int
+rfc3339(VALUE str, VALUE hash)
+{
+    static const char pat_source[] =
+	"\\A\\s*(-?\\d{4})-(\\d{2})-(\\d{2})"
+	"(?:t|\\s)"
+	"(\\d{2}):(\\d{2}):(\\d{2})(?:\\.(\\d+))?"
+	"(z|[-+]\\d{2}:\\d{2})\\s*\\z";
+    static VALUE pat = Qnil;
+
+    REGCOMP_I(pat);
+    SUBS(str, pat, rfc3339_cb);
+}
+
+VALUE
+date__rfc3339(VALUE str)
+{
+    VALUE backref, hash;
+
+    backref = rb_backref_get();
+    rb_match_busy(backref);
+
+    hash = rb_hash_new();
+    rfc3339(str, hash);
+    rb_backref_set(backref);
+    return hash;
+}
+
+#undef SNUM
+#define SNUM 8
+
+static int
+xmlschema_datetime_cb(VALUE m, VALUE hash)
+{
+    VALUE s[SNUM + 1];
+
+    {
+	int i;
+	s[0] = Qnil;
+	for (i = 1; i <= SNUM; i++)
+	    s[i] = rb_reg_nth_match(i, m);
+    }
+
+    set_hash("year", str2num(s[1]));
+    if (!NIL_P(s[2]))
+	set_hash("mon", str2num(s[2]));
+    if (!NIL_P(s[3]))
+	set_hash("mday", str2num(s[3]));
+    if (!NIL_P(s[4]))
+	set_hash("hour", str2num(s[4]));
+    if (!NIL_P(s[5]))
+	set_hash("min", str2num(s[5]));
+    if (!NIL_P(s[6]))
+	set_hash("sec", str2num(s[6]));
+    if (!NIL_P(s[7]))
+	set_hash("sec_fraction", sec_fraction(s[7]));
+    if (!NIL_P(s[8])) {
+	set_hash("zone", s[8]);
+	set_hash("offset", date_zone_to_diff(s[8]));
+    }
+
+    return 1;
+}
+
+static int
+xmlschema_datetime(VALUE str, VALUE hash)
+{
+    static const char pat_source[] =
+	"\\A\\s*(-?\\d{4,})(?:-(\\d{2})(?:-(\\d{2}))?)?"
+	"(?:t"
+	  "(\\d{2}):(\\d{2}):(\\d{2})(?:\\.(\\d+))?)?"
+	"(z|[-+]\\d{2}:\\d{2})?\\s*\\z";
+    static VALUE pat = Qnil;
+
+    REGCOMP_I(pat);
+    SUBS(str, pat, xmlschema_datetime_cb);
+}
+
+#undef SNUM
+#define SNUM 5
+
+static int
+xmlschema_time_cb(VALUE m, VALUE hash)
+{
+    VALUE s[SNUM + 1];
+
+    {
+	int i;
+	s[0] = Qnil;
+	for (i = 1; i <= SNUM; i++)
+	    s[i] = rb_reg_nth_match(i, m);
+    }
+
+    set_hash("hour", str2num(s[1]));
+    set_hash("min", str2num(s[2]));
+    if (!NIL_P(s[3]))
+	set_hash("sec", str2num(s[3]));
+    if (!NIL_P(s[4]))
+	set_hash("sec_fraction", sec_fraction(s[4]));
+    if (!NIL_P(s[5])) {
+	set_hash("zone", s[5]);
+	set_hash("offset", date_zone_to_diff(s[5]));
+    }
+
+    return 1;
+}
+
+static int
+xmlschema_time(VALUE str, VALUE hash)
+{
+    static const char pat_source[] =
+	"\\A\\s*(\\d{2}):(\\d{2}):(\\d{2})(?:\\.(\\d+))?"
+	"(z|[-+]\\d{2}:\\d{2})?\\s*\\z";
+    static VALUE pat = Qnil;
+
+    REGCOMP_I(pat);
+    SUBS(str, pat, xmlschema_time_cb);
+}
+
+#undef SNUM
+#define SNUM 4
+
+static int
+xmlschema_trunc_cb(VALUE m, VALUE hash)
+{
+    VALUE s[SNUM + 1];
+
+    {
+	int i;
+	s[0] = Qnil;
+	for (i = 1; i <= SNUM; i++)
+	    s[i] = rb_reg_nth_match(i, m);
+    }
+
+    if (!NIL_P(s[1]))
+	set_hash("mon", str2num(s[1]));
+    if (!NIL_P(s[2]))
+	set_hash("mday", str2num(s[2]));
+    if (!NIL_P(s[3]))
+	set_hash("mday", str2num(s[3]));
+    if (!NIL_P(s[4])) {
+	set_hash("zone", s[4]);
+	set_hash("offset", date_zone_to_diff(s[4]));
+    }
+
+    return 1;
+}
+
+static int
+xmlschema_trunc(VALUE str, VALUE hash)
+{
+    static const char pat_source[] =
+	"\\A\\s*(?:--(\\d{2})(?:-(\\d{2}))?|---(\\d{2}))"
+	"(z|[-+]\\d{2}:\\d{2})?\\s*\\z";
+    static VALUE pat = Qnil;
+
+    REGCOMP_I(pat);
+    SUBS(str, pat, xmlschema_trunc_cb);
+}
+
+VALUE
+date__xmlschema(VALUE str)
+{
+    VALUE backref, hash;
+
+    backref = rb_backref_get();
+    rb_match_busy(backref);
+
+    hash = rb_hash_new();
+
+    if (xmlschema_datetime(str, hash))
+	goto ok;
+    if (xmlschema_time(str, hash))
+	goto ok;
+    if (xmlschema_trunc(str, hash))
+	goto ok;
+
+  ok:
+    rb_backref_set(backref);
+
+    return hash;
+}
+
+#undef SNUM
+#define SNUM 8
+
+static int
+rfc2822_cb(VALUE m, VALUE hash)
+{
+    VALUE s[SNUM + 1], y;
+
+    {
+	int i;
+	s[0] = Qnil;
+	for (i = 1; i <= SNUM; i++)
+	    s[i] = rb_reg_nth_match(i, m);
+    }
+
+    set_hash("wday", INT2FIX(day_num(s[1])));
+    set_hash("mday", str2num(s[2]));
+    set_hash("mon", INT2FIX(mon_num(s[3])));
+    y = str2num(s[4]);
+    if (RSTRING_LEN(s[4]) < 4)
+	y = comp_year50(y);
+    set_hash("year", y);
+    set_hash("hour", str2num(s[5]));
+    set_hash("min", str2num(s[6]));
+    if (!NIL_P(s[7]))
+	set_hash("sec", str2num(s[7]));
+    set_hash("zone", s[8]);
+    set_hash("offset", date_zone_to_diff(s[8]));
+
+    return 1;
+}
+
+static int
+rfc2822(VALUE str, VALUE hash)
+{
+    static const char pat_source[] =
+	"\\A\\s*(?:(" ABBR_DAYS ")\\s*,\\s+)?"
+	"(\\d{1,2})\\s+"
+	"(" ABBR_MONTHS ")\\s+"
+	"(-?\\d{2,})\\s+"
+	"(\\d{2}):(\\d{2})(?::(\\d{2}))?\\s*"
+	"([-+]\\d{4}|ut|gmt|e[sd]t|c[sd]t|m[sd]t|p[sd]t|[a-ik-z])\\s*\\z";
+    static VALUE pat = Qnil;
+
+    REGCOMP_I(pat);
+    SUBS(str, pat, rfc2822_cb);
+}
+
+VALUE
+date__rfc2822(VALUE str)
+{
+    VALUE backref, hash;
+
+    backref = rb_backref_get();
+    rb_match_busy(backref);
+
+    hash = rb_hash_new();
+    rfc2822(str, hash);
+    rb_backref_set(backref);
+    return hash;
+}
+
+#undef SNUM
+#define SNUM 8
+
+static int
+httpdate_type1_cb(VALUE m, VALUE hash)
+{
+    VALUE s[SNUM + 1];
+
+    {
+	int i;
+	s[0] = Qnil;
+	for (i = 1; i <= SNUM; i++)
+	    s[i] = rb_reg_nth_match(i, m);
+    }
+
+    set_hash("wday", INT2FIX(day_num(s[1])));
+    set_hash("mday", str2num(s[2]));
+    set_hash("mon", INT2FIX(mon_num(s[3])));
+    set_hash("year", str2num(s[4]));
+    set_hash("hour", str2num(s[5]));
+    set_hash("min", str2num(s[6]));
+    set_hash("sec", str2num(s[7]));
+    set_hash("zone", s[8]);
+    set_hash("offset", INT2FIX(0));
+
+    return 1;
+}
+
+static int
+httpdate_type1(VALUE str, VALUE hash)
+{
+    static const char pat_source[] =
+	"\\A\\s*(" ABBR_DAYS ")\\s*,\\s+"
+	"(\\d{2})\\s+"
+	"(" ABBR_MONTHS ")\\s+"
+	"(-?\\d{4})\\s+"
+	"(\\d{2}):(\\d{2}):(\\d{2})\\s+"
+	"(gmt)\\s*\\z";
+    static VALUE pat = Qnil;
+
+    REGCOMP_I(pat);
+    SUBS(str, pat, httpdate_type1_cb);
+}
+
+#undef SNUM
+#define SNUM 8
+
+static int
+httpdate_type2_cb(VALUE m, VALUE hash)
+{
+    VALUE s[SNUM + 1], y;
+
+    {
+	int i;
+	s[0] = Qnil;
+	for (i = 1; i <= SNUM; i++)
+	    s[i] = rb_reg_nth_match(i, m);
+    }
+
+    set_hash("wday", INT2FIX(day_num(s[1])));
+    set_hash("mday", str2num(s[2]));
+    set_hash("mon", INT2FIX(mon_num(s[3])));
+    y = str2num(s[4]);
+    if (f_ge_p(y, INT2FIX(0)) && f_le_p(y, INT2FIX(99)))
+	y = comp_year69(y);
+    set_hash("year", y);
+    set_hash("hour", str2num(s[5]));
+    set_hash("min", str2num(s[6]));
+    set_hash("sec", str2num(s[7]));
+    set_hash("zone", s[8]);
+    set_hash("offset", INT2FIX(0));
+
+    return 1;
+}
+
+static int
+httpdate_type2(VALUE str, VALUE hash)
+{
+    static const char pat_source[] =
+	"\\A\\s*(" DAYS ")\\s*,\\s+"
+	"(\\d{2})\\s*-\\s*"
+	"(" ABBR_MONTHS ")\\s*-\\s*"
+	"(\\d{2})\\s+"
+	"(\\d{2}):(\\d{2}):(\\d{2})\\s+"
+	"(gmt)\\s*\\z";
+    static VALUE pat = Qnil;
+
+    REGCOMP_I(pat);
+    SUBS(str, pat, httpdate_type2_cb);
+}
+
+#undef SNUM
+#define SNUM 7
+
+static int
+httpdate_type3_cb(VALUE m, VALUE hash)
+{
+    VALUE s[SNUM + 1];
+
+    {
+	int i;
+	s[0] = Qnil;
+	for (i = 1; i <= SNUM; i++)
+	    s[i] = rb_reg_nth_match(i, m);
+    }
+
+    set_hash("wday", INT2FIX(day_num(s[1])));
+    set_hash("mon", INT2FIX(mon_num(s[2])));
+    set_hash("mday", str2num(s[3]));
+    set_hash("hour", str2num(s[4]));
+    set_hash("min", str2num(s[5]));
+    set_hash("sec", str2num(s[6]));
+    set_hash("year", str2num(s[7]));
+
+    return 1;
+}
+
+static int
+httpdate_type3(VALUE str, VALUE hash)
+{
+    static const char pat_source[] =
+	"\\A\\s*(" ABBR_DAYS ")\\s+"
+	"(" ABBR_MONTHS ")\\s+"
+	"(\\d{1,2})\\s+"
+	"(\\d{2}):(\\d{2}):(\\d{2})\\s+"
+	"(\\d{4})\\s*\\z";
+    static VALUE pat = Qnil;
+
+    REGCOMP_I(pat);
+    SUBS(str, pat, httpdate_type3_cb);
+}
+
+VALUE
+date__httpdate(VALUE str)
+{
+    VALUE backref, hash;
+
+    backref = rb_backref_get();
+    rb_match_busy(backref);
+
+    hash = rb_hash_new();
+
+    if (httpdate_type1(str, hash))
+	goto ok;
+    if (httpdate_type2(str, hash))
+	goto ok;
+    if (httpdate_type3(str, hash))
+	goto ok;
+
+  ok:
+    rb_backref_set(backref);
+
+    return hash;
+}
+
+#undef SNUM
+#define SNUM 9
+
+static int
+jisx0301_cb(VALUE m, VALUE hash)
+{
+    VALUE s[SNUM + 1];
+    int ep;
+
+    {
+	int i;
+	s[0] = Qnil;
+	for (i = 1; i <= SNUM; i++)
+	    s[i] = rb_reg_nth_match(i, m);
+    }
+
+    ep = gengo(NIL_P(s[1]) ? 'h' : *RSTRING_PTR(s[1]));
+    set_hash("year", f_add(str2num(s[2]), INT2FIX(ep)));
+    set_hash("mon", str2num(s[3]));
+    set_hash("mday", str2num(s[4]));
+    if (!NIL_P(s[5])) {
+	set_hash("hour", str2num(s[5]));
+	if (!NIL_P(s[6]))
+	    set_hash("min", str2num(s[6]));
+	if (!NIL_P(s[7]))
+	    set_hash("sec", str2num(s[7]));
+    }
+    if (!NIL_P(s[8]))
+	set_hash("sec_fraction", sec_fraction(s[8]));
+    if (!NIL_P(s[9])) {
+	set_hash("zone", s[9]);
+	set_hash("offset", date_zone_to_diff(s[9]));
+    }
+
+    return 1;
+}
+
+static int
+jisx0301(VALUE str, VALUE hash)
+{
+    static const char pat_source[] =
+	"\\A\\s*([mtsh])?(\\d{2})\\.(\\d{2})\\.(\\d{2})"
+	"(?:t"
+	"(?:(\\d{2}):(\\d{2})(?::(\\d{2})(?:[,.](\\d*))?)?"
+	"(z|[-+]\\d{2}(?::?\\d{2})?)?)?)?\\s*\\z";
+    static VALUE pat = Qnil;
+
+    REGCOMP_I(pat);
+    SUBS(str, pat, jisx0301_cb);
+}
+
+VALUE
+date__jisx0301(VALUE str)
+{
+    VALUE backref, hash;
+
+    backref = rb_backref_get();
+    rb_match_busy(backref);
+
+    hash = rb_hash_new();
+    if (jisx0301(str, hash))
+	goto ok;
+    hash = date__iso8601(str);
+
+  ok:
+    rb_backref_set(backref);
     return hash;
 }
 

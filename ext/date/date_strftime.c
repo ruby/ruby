@@ -602,13 +602,11 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 			continue;
 #endif
 
-
 #ifdef VMS_EXT
 		case 'v':	/* date as dd-bbb-YYYY */
 			STRFTIME("%e-%^b-%4Y");
 			continue;
 #endif
-
 
 #ifdef POSIX2_DATE
 		case 'C':
@@ -676,7 +674,6 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
                         }
 
 #endif /* ISO_DATE_EXT */
-
 
 		case 'L':
 			w = 3;
@@ -833,7 +830,6 @@ isleap(long year)
 {
 	return ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0);
 }
-
 
 static void
 tmx2tm_noyear(const struct tmx *tmx, struct tm *result)

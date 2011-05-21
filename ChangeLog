@@ -1,3 +1,8 @@
+Sat May 21 21:18:29 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_{core,parse}.c: moved nearly all core code from ext/date/lib.
+	* ext/date/lib/{date,date/format}.rb: removed nearly all code.
+
 Sat May 21 02:58:46 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/.document:  Add curses to documented extensions.
