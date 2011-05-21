@@ -1,3 +1,7 @@
+Sat May 21 22:46:26 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_strftime(date_strftime_with_tmx): "%v" means "%e-%b-%Y".
+
 Sat May 21 22:14:35 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (rb_io_extract_modeenc): accept combination hash and

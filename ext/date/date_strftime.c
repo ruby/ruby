@@ -604,7 +604,7 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 
 #ifdef VMS_EXT
 		case 'v':	/* date as dd-bbb-YYYY */
-			STRFTIME("%e-%^b-%4Y");
+			STRFTIME("%e-%b-%Y");
 			continue;
 #endif
 
