@@ -1,3 +1,8 @@
+Sun May 22 06:07:17 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* test/openssl/test_x509cert.rb: Merge DSA-related tests from ruby_1_8
+	branch.
+
 Sun May 22 04:11:12 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (Init_Thread): add a code comment why the meaningless
