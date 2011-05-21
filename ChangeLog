@@ -1,3 +1,7 @@
+Sun May 22 07:54:16 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_digest.c: Explain DSS and DSS1 in documentation.
+
 Sun May 22 07:10:25 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/test_pkey_dsa.rb: Add tests for sign/verify.
