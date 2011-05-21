@@ -4694,6 +4694,7 @@ Init_Thread(void)
 
     rb_thread_create_timer_thread();
 
+    /* suppress warnings on cygwin, mingw and mswin.*/
     (void)native_mutex_trylock;
 }
 
