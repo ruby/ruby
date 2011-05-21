@@ -1,8 +1,8 @@
 ##
 # = mathn
 #
-# mathn is a library for changing the way Ruby does math.
-#
+# mathn is a library for changing the way Ruby does math. mathn is used to pull in 
+# other standard libraries to integrate with Ruby's numeric system. 
 # == Usage
 #
 # To start using this library, simply:
@@ -13,7 +13,33 @@
 #
 #   3 / 2
 #
-# will return (3/2) instead of the usual 1.
+# will return (3/2) instead of the usual 1. The results will be fractions instead
+# of floats when possible. 
+#
+# Mathn also provides a Prime class for enumerating prime numbers. Sample:
+#
+#    Prime.first(5)
+#
+# will return [2, 3, 5, 7, 11] 
+#
+# Requiring mathn you can also solve classic prime number problems
+# Problmes like 'what is the largest prime factor of 9?'
+#
+#   results = 9.prime_division
+#   puts results[results.length-1][0]
+#
+# mathn also provides Matrix and Vector
+#
+#   Vector[1,2,3] * 3
+#
+# will return Vector[3,6,9]
+#
+#
+#   Matrix[[1,2,3],[4,5,6]].transpose
+#
+# will retrun Matrix[[1, 4], [2, 5], [3, 6]]
+#
+#
 #
 # == Copyright
 #
