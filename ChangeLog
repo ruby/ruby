@@ -1,3 +1,7 @@
+Sat May 21 21:44:14 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* test/date/test_switch_hitter.rb: new.
+
 Sat May 21 21:18:29 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_{core,parse}.c: moved nearly all core code from ext/date/lib.
