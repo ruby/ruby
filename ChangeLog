@@ -1,3 +1,8 @@
+Sun May 22 09:29:43 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_rubyoptions.rb (TestRubyOptions#test_set_program_name):
+	  use spawn. it prevent that other tests inherit renamed $0.
+
 Sun May 22 08:57:13 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_asn1.c: Default tag lookup in constant time via hash

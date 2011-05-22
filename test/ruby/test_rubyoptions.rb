@@ -403,9 +403,10 @@ class TestRubyOptions < Test::Unit::TestCase
   def test_set_program_name
     skip if /linux|freebsd|netbsd|openbsd/ !~ RUBY_PLATFORM
 
-    $0 = 'hello world'
-    ps = `ps -p #{$$} -o command`
+    pid = spawn([EnvUtil.rubybin, %!-e "$0 = 'hello world'; sleep 100"!])
+    ps = `ps -p #{pid} -o command`
     assert_match(/hello world/, ps)
+    Process.kill :KILL, pid
   end
 
   def test_segv_test
