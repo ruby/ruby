@@ -3,7 +3,7 @@
 #
 # rolodex --
 # このスクリプトは Tom LaStrange の rolodex の一部です。
-# 
+#
 # Copyright (C) 1998 by Takaaki Tateishi <ttate@jaist.ac.jp>
 # Time-stamp: "04/04/09 00:32:12 nagai"
 #
@@ -20,7 +20,7 @@ def show_help(topic,x=0,y=0)
       end
     end
   end
-  
+
   if( $helpTopics.include?(topic) )
     msg = $helpTopics[topic]
   else

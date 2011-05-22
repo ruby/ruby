@@ -37,28 +37,28 @@ readline([prompt, [add_hist]]) -> String | nil
   エンターキーの押下などでユーザが文字列を入力し終えると、
   入力した文字列を返します。
   このとき、add_hist が true であれば、入力した文字列をヒストリに追加します。
-  
+
   何も入力していない状態で EOF(UNIX では ^D) を入力するなどで、
   ユーザからの入力がない場合は nil を返します。
-  
+
   次の条件を全て満たす場合、例外 IOError が発生します。
   1. 標準入力が tty でない。
   2. 標準入力をクローズしている。(isatty(2) の errno が EBADF である。)
-  
+
   本メソッドはスレッドに対応しています。
   入力待ち状態のときはスレッドコンテキストの切替えが発生します。
-  
+
   入力時には行内編集が可能で、vi モードと Emacs モードが用意されています。
   デフォルトは Emacs モードです。
-  
+
   本メソッドには注意事項があります。
   入力待ちの状態で ^C すると ruby インタプリタが終了し、端末状態を復帰しません。
   これを回避するための例を3つ挙げます。
-  
+
   * ^CによるInterrupt例外を補足して、端末状態を復帰します:
-  
+
       require "readline"
-      
+
       stty_save = `stty -g`.chomp
       begin
         while buf = Readline.readline
@@ -70,48 +70,48 @@ readline([prompt, [add_hist]]) -> String | nil
           end
         end
       end
-  
+
   * INTシグナルを補足して、端末状態を復帰します:
-  
+
       require "readline"
-      
+
       stty_save = `stty -g`.chomp
       trap("INT") { system "stty", stty_save; exit }
-    
+
       while buf = Readline.readline
         p buf
       end
-  
+
   * 単に ^C を無視する方法もあります:
-  
+
       require "readline"
-      
+
       trap("INT", "SIG_IGN")
-      
+
       while buf = Readline.readline
         p buf
       end
-  
+
   入力履歴 Readline::HISTORY を使用して、空行や直前の入力と同じ内容は入力
   履歴に残さないということもできます。
-  
+
     require "readline"
-      
+
     while buf = Readline.readline("> ", true)
       # p Readline::HISTORY.to_a
       Readline::HISTORY.pop if /^\s*$/ =~ buf
-   
+
       begin
         if Readline::HISTORY[Readline::HISTORY.length-2] == buf
-          Readline::HISTORY.pop 
+          Readline::HISTORY.pop
         end
       rescue IndexError
       end
-   
+
       # p Readline::HISTORY.to_a
       print "-> ", buf, "\n"
     end
-  
+
   $SAFE が 4 の場合、例外 SecurityError が発生します。
 
 === クラスメソッド
@@ -171,7 +171,7 @@ Readline.completion_case_fold -> bool
   そのまま取得するので、次のような動作をします。
 
     require "readline"
-    
+
     Readline.completion_case_fold = "This is a String."
     p Readline.completion_case_fold # => "This is a String."
 
@@ -238,7 +238,7 @@ Readline.completion_append_character = char
   使用例:
 
     require "readline"
-    
+
     Readline.readline("> ", true)
     Readline.completion_append_character = " "
 
@@ -246,13 +246,13 @@ Readline.completion_append_character = char
 
     >
     ここで "/var/li" を入力します。
-    
+
     > /var/li
     ここで TAB キーを入力します。
-    
+
     > /var/lib
     "b" が補完され、最後に " " が追加されるので、"/usr" を連続して入力できます。
-    
+
     > /var/lib /usr
 
   なお、1文字しか指定することはできません。
@@ -304,7 +304,7 @@ Readline.completer_word_break_characters = string
   Readline.basic_word_break_characters= との違いは、
   GNU Readline の rl_complete_internal 関数で使用されることです。
 
-  GNU Readline のデフォルトの値は、 
+  GNU Readline のデフォルトの値は、
   Readline.basic_word_break_characters と同じです。
 
   サポートしていない環境では、例外 NotImplementedError が発生します。
@@ -388,7 +388,7 @@ HISTORY
   例えば、HISTORY[4] により 5 番目に入力した内容を取り出すことができます。
 
     require "readline"
-    
+
     Readline::HISTORY.push("a", "b", "c", "d", "e")
     p Readline::HISTORY[4] # => "e"
 
@@ -421,7 +421,7 @@ HISTORY
 FILENAME_COMPLETION_PROC
 
   ファイル名の補完を行う call メソッドを持つオブジェクトです。
- 
+
   Readline.completion_proc= により、ユーザの入力時にファイル名の補完を
   行うように設定するために使用することを想定してます。
 

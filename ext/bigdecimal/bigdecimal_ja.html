@@ -41,7 +41,7 @@ Ruby ‚É‚Â‚¢‚Ä‚ÌÚ‚µ‚¢“à—e‚ÍˆÈ‰º‚ÌURL‚ğQÆ‚µ‚Ä‚­‚¾‚³‚¢B
 <UL>
 <LI><A HREF="http://www.ruby-lang.org/ja/">http://www.ruby-lang.org/ja/</A>FRubyŒö®ƒy[ƒW</LI>
 <LI><A HREF="http://kahori.com/ruby/ring/">http://kahori.com/ruby/ring/</A>FRuby‚ÉŠÖ‚·‚éƒy[ƒW‚ğ’H‚ê‚Ü‚·</LI>
-</UL> 
+</UL>
 <hr>
 <H2>–ÚŸ</H2>
 <UL>
@@ -73,8 +73,8 @@ Ruby ‚É‚Í Bignum ‚Æ‚¢‚¤ƒNƒ‰ƒX‚ª‚ ‚èA”•SŒ…‚Ì®”‚Å‚àŒvZ‚·‚é‚±‚Æ‚ª‚Å‚«‚Ü‚·B
 BigDecimal ‚ğŠÜ‚Ş Ruby ‚ÌÅV”Å‚Í<A HREF="http://www.ruby-lang.org/ja/">RubyŒö®ƒy[ƒW</A>‚©‚çƒ_ƒEƒ“ƒ[ƒh‚Å‚«‚Ü‚·B
 ƒ_ƒEƒ“ƒ[ƒh‚µ‚½ÅV”Å‚ğ‰ğ“€‚µ‚½‚çA’Êí‚ÌƒCƒ“ƒXƒg[ƒ‹è‡‚ğÀs‚µ‚Ä‰º‚³‚¢B
 Ruby ‚ª³‚µ‚­ƒCƒ“ƒXƒg[ƒ‹‚³‚ê‚ê‚ÎA“¯‚É BigDecimal ‚à—˜—p‚Å‚«‚é‚æ‚¤‚É‚È‚é‚Í‚¸‚Å‚·B
-ƒ\[ƒXƒtƒ@ƒCƒ‹‚Í 
-bigdecimal.c,bigdecimal.h 
+ƒ\[ƒXƒtƒ@ƒCƒ‹‚Í
+bigdecimal.c,bigdecimal.h
 ‚Ì‚QŒÂ‚Ì‚İ‚Å‚·B<BR>
 
 <hr>
@@ -332,7 +332,7 @@ n>=0 ‚È‚çA¬”“_ˆÈ‰º n+1 ˆÊ‚Ì”š‚ğ‘€ì‚µ‚Ü‚·(­”“_ˆÈ‰º‚ğAÅ‘å n Œ…‚É‚µ‚Ü‚·)
 <LI><B>round[(n[,b])]</B></LI><BLOCKQUOTE>
 c = a.round<BR>
 
-ƒNƒ‰ƒXƒƒ\ƒbƒh BigDecimal::mode(BigDecimal::ROUND_MODE,flag) ‚Åw’è‚µ‚½ 
+ƒNƒ‰ƒXƒƒ\ƒbƒh BigDecimal::mode(BigDecimal::ROUND_MODE,flag) ‚Åw’è‚µ‚½
 ROUND_MODE ‚É]‚Á‚ÄŠÛ‚ß‘€ì‚ğÀs‚µ‚Ü‚·B
 BigDecimal::mode(BigDecimal::ROUND_MODE,flag) ‚Å‰½‚àw’è‚¹‚¸A‚©‚ÂAˆø”
 ‚ğw’è‚µ‚È‚¢ê‡‚Íu¬”“_ˆÈ‰º‘æˆêˆÊ‚Ì”‚ğlÌŒÜ“ü‚µ‚Ä®”iBigDecimal ’ljv‚É‚µ‚Ü‚·B<BR>
@@ -505,7 +505,7 @@ c = a.sqrt(n)<BR>
 
 <LI><B>&lt=&gt</B></LI><BLOCKQUOTE>
 a==b ‚È‚ç 0Aa &gt b ‚È‚ç 1Aa &lt b ‚È‚ç -1 ‚É‚È‚è‚Ü‚·B<BR>
-c = a &lt=&gt b 
+c = a &lt=&gt b
 </BLOCKQUOTE>
 </UL>
 Œã‚ÍA“Ç‚ñ‚Åš‚Ì”@‚­‚Å‚·B<BR>
@@ -753,7 +753,7 @@ def big_pi(sig) # sig: Number of significant figures
   k = BigDecimal::new("1")
   w = BigDecimal::new("1")
   t = BigDecimal::new("-80")
-  while (u.nonzero? && u.exponent >= exp) 
+  while (u.nonzero? && u.exponent >= exp)
     t   = t*m25
     u   = t.div(k,sig)
     pi  = pi + u

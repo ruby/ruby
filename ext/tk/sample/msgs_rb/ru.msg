@@ -31,7 +31,7 @@ TkMsgCatalog.new('::tk') {
     ru 'Details >>', '\u041f\u043e\u0434\u0440\u043e\u0431\u043d\u0435\u0435 >>'
     ru 'Directory "%1\$s" does not exist.', '\u041a\u0430\u0442\u0430\u043b\u043e\u0433\u0430 "%1\$s" \u043d\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442.'
     ru '&Directory:', '&\u041a\u0430\u0442\u0430\u043b\u043e\u0433:'
-    ru 'Error: %1\$s', '\u041e\u0448\u0438\u0431\u043a\u0430: %1\$s' 
+    ru 'Error: %1\$s', '\u041e\u0448\u0438\u0431\u043a\u0430: %1\$s'
     ru 'Exit', '\u0412\u044b\u0445\u043e\u0434'
     ru 'File "%1\$s" already exists.' "\n" 'Do you want to overwrite it?' \
                             '\u0424\u0430\u0439\u043b "%1\$s" \u0443\u0436\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442.' "\n" '\u0417\u0430\u043c\u0435\u043d\u0438\u0442\u044c \u0435\u0433\u043e?'
@@ -47,7 +47,7 @@ TkMsgCatalog.new('::tk') {
     ru 'Hi', '\u041f\u0440\u0438\u0432\u0435\u0442'
     ru 'Hide Console', '\u0421\u043f\u0440\u044f\u0442\u0430\u0442\u044c \u043a\u043e\u043d\u0441\u043e\u043b\u044c'
     ru '&Ignore', '&\u0418\u0433\u043d\u043e\u0440\u0438\u0440\u043e\u0432\u0430\u0442\u044c'
-    ru 'Invalid file name "%1\$s".', '\u041d\u0435\u0432\u0435\u0440\u043d\u043e\u0435 \u0438\u043c\u044f \u0444\u0430\u0439\u043b\u0430 "%1\$s".' 
+    ru 'Invalid file name "%1\$s".', '\u041d\u0435\u0432\u0435\u0440\u043d\u043e\u0435 \u0438\u043c\u044f \u0444\u0430\u0439\u043b\u0430 "%1\$s".'
     ru 'Log Files', '\u0424\u0430\u0439\u043b\u044b \u0436\u0443\u0440\u043d\u0430\u043b\u0430'
     ru '&No', '&\u041d\u0435\u0442'
     ru '&OK', '&\u041e\u041a'

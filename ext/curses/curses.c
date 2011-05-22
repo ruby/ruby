@@ -219,7 +219,7 @@ curses_closed(void)
  * Document-method: Curses.clear
  *
  * Clears every position on the screen completely,
- * so that a subsequent call by Curses.refresh for the screen/window 
+ * so that a subsequent call by Curses.refresh for the screen/window
  * will be repainted from scratch.
  */
 static VALUE
@@ -230,7 +230,7 @@ curses_clear(VALUE obj)
     return Qnil;
 }
 
-/*  
+/*
  * Document-method: Curses.clrtoeol
  *
  * Clears to the end of line, that the cursor is currently on.
@@ -243,7 +243,7 @@ curses_clrtoeol(void)
     return Qnil;
 }
 
-/*  
+/*
  * Document-method: Curses.refresh
  *
  * Refreshes the windows and lines.
@@ -257,7 +257,7 @@ curses_refresh(VALUE obj)
     return Qnil;
 }
 
-/*  
+/*
  * Document-method: Curses.doupdate
  *
  * Refreshes the windows and lines.
@@ -361,7 +361,7 @@ curses_noraw(VALUE obj)
  * call Curses.cbreak or Curses.nocbreak explicitly.
  * Most interactive programs using curses set the cbreak mode.
  * Note that Curses.cbreak overrides Curses.raw.
- * 
+ *
  * see also Curses.raw
  */
 static VALUE
@@ -430,7 +430,7 @@ curses_nonl(VALUE obj)
  *
  * Sounds an audible alarm on the terminal, if possible;
  * otherwise it flashes the screen (visual bell).
- * 
+ *
  * see also Curses.flash
  */
 static VALUE
@@ -448,7 +448,7 @@ curses_beep(VALUE obj)
  *
  * Flashs the screen, for visual alarm on the terminal, if possible;
  * otherwise it sounds the alert.
- * 
+ *
  * see also Curses.beep
  */
 static VALUE
@@ -483,7 +483,7 @@ curses_char(VALUE c)
 }
 
 #ifdef HAVE_UNGETCH
-/* 
+/*
  * Document-method: Curses.ungetch
  * call-seq: ungetch(ch)
  *
@@ -504,7 +504,7 @@ curses_ungetch(VALUE obj, VALUE ch)
 #define curses_ungetch rb_f_notimplement
 #endif
 
-/*  
+/*
  * Document-method: Curses.setpos
  * call-seq: setpos(y, x)
  *
@@ -520,7 +520,7 @@ curses_setpos(VALUE obj, VALUE y, VALUE x)
     return Qnil;
 }
 
-/* 
+/*
  * Document-method: Curses.standout
  *
  * Enables the best highlighting mode of the terminal.
@@ -537,7 +537,7 @@ curses_standout(VALUE obj)
     return Qnil;
 }
 
-/* 
+/*
  * Document-method: Curses.standend
  *
  * Enables the Normal display (no highlight)
@@ -554,7 +554,7 @@ curses_standend(VALUE obj)
     return Qnil;
 }
 
-/* 
+/*
  * Document-method: Curses.inch
  *
  * Returns the character at the current position.
@@ -566,12 +566,12 @@ curses_inch(VALUE obj)
     return CH2FIX(inch());
 }
 
-/* 
+/*
  * Document-method: Curses.addch
  * call-seq: addch(ch)
  *
  * Add a character +ch+, with attributes, then advance the cursor.
- * 
+ *
  * see also the system manual for curs_addch(3)
  */
 static VALUE
@@ -582,12 +582,12 @@ curses_addch(VALUE obj, VALUE ch)
     return Qnil;
 }
 
-/* 
+/*
  * Document-method: Curses.insch
  * call-seq: insch(ch)
  *
  * Insert a character +ch+, before the cursor.
- * 
+ *
  */
 static VALUE
 curses_insch(VALUE obj, VALUE ch)
@@ -794,7 +794,7 @@ curses_curs_set(VALUE obj, VALUE visibility)
 #endif
 }
 
-/* 
+/*
  * Document-method: Curses.scrl
  * call-seq: scrl(num)
  *
@@ -818,7 +818,7 @@ curses_scrl(VALUE obj, VALUE n)
 #endif
 }
 
-/* 
+/*
  * Document-method: Curses.setscrreg
  * call-seq: setscrreg(top, bottom)
  *
@@ -843,7 +843,7 @@ curses_setscrreg(VALUE obj, VALUE top, VALUE bottom)
 #endif
 }
 
-/* 
+/*
  * Document-method: Curses.attroff
  * call-seq: attroff(attrs)
  *
@@ -859,7 +859,7 @@ curses_attroff(VALUE obj, VALUE attrs)
     /* return INT2FIX(attroff(NUM2INT(attrs))); */
 }
 
-/* 
+/*
  * Document-method: Curses.attron
  * call-seq: attron(attrs)
  *
@@ -893,7 +893,7 @@ curses_attrset(VALUE obj, VALUE attrs)
     /* return INT2FIX(attroff(NUM2INT(attrs))); */
 }
 
-/* 
+/*
  * Document-method: Curses.bkgdset
  * call-seq: bkgdset(ch)
  *
@@ -916,7 +916,7 @@ curses_bkgdset(VALUE obj, VALUE ch)
     return Qnil;
 }
 
-/* 
+/*
  * call-seq: bkgd(ch)
  *
  * Window background manipulation routines.
@@ -956,7 +956,7 @@ curses_use_default_colors(VALUE obj)
 #endif
 
 #if defined(HAVE_TABSIZE)
-/* 
+/*
  * Document-method: TABSIZE=
  * call-seq: TABSIZE=(value)
  *
@@ -973,7 +973,7 @@ curses_tabsize_set(VALUE obj, VALUE val)
 #endif
 
 #if defined(HAVE_TABSIZE)
-/* 
+/*
  * Returns the number of positions in a tab.
  */
 static VALUE
@@ -986,7 +986,7 @@ curses_tabsize_get(VALUE ojb)
 #endif
 
 #if defined(HAVE_ESCDELAY)
-/* 
+/*
  * call-seq: ESCDELAY=(value)
  *
  * Sets the ESCDELAY to Integer +value+
@@ -1002,7 +1002,7 @@ curses_escdelay_set(VALUE obj, VALUE val)
 #endif
 
 #if defined(HAVE_ESCDELAY)
-/* 
+/*
  * Returns the total time, in milliseconds, for which
  * curses will await a character sequence, e.g., a function key
  */
@@ -1015,7 +1015,7 @@ curses_escdelay_get(VALUE obj)
 #define curses_escdelay_get rb_f_notimplement
 #endif
 
-/* 
+/*
  * Document-method: Curses.resize
  * call-seq: resize(lines, cols)
  *
@@ -1023,7 +1023,7 @@ curses_escdelay_get(VALUE obj)
  *
  */
 
-/* 
+/*
  * Document-method: Curses.resizeterm
  * call-seq: resizeterm(lines, cols)
  *
@@ -1180,7 +1180,7 @@ curses_color_pairs(VALUE obj)
  * Document-method: Curses.pair_content
  * call-seq: pair_content(pair)
  *
- * Returns a 2 item Array, with the foreground and 
+ * Returns a 2 item Array, with the foreground and
  * background color, in +pair+
  */
 static VALUE
@@ -1248,7 +1248,7 @@ curses_mousedata_free(struct mousedata *mdata)
 	xfree(mdata->mevent);
 }
 
-/* 
+/*
  * Document-method: Curses.getmouse
  *
  * Returns coordinates of the mouse.
@@ -1395,7 +1395,7 @@ curses_timeout(VALUE obj, VALUE delay)
  *
  * Save the current terminal modes as the "program"
  * state for use by the Curses.reset_prog_mode
- * 
+ *
  * This is done automatically by Curses.init_screen
  */
 static VALUE
@@ -1414,7 +1414,7 @@ curses_def_prog_mode(VALUE obj)
  *
  * Reset the current terminal modes to the saved state
  * by the Curses.def_prog_mode
- * 
+ *
  * This is done automatically by Curses.close_screen
  */
 static VALUE
@@ -1438,14 +1438,14 @@ window_s_allocate(VALUE class)
     return Data_Make_Struct(class, struct windata, 0, free_window, winp);
 }
 
-/* 
+/*
  * Document-method: Curses::Window.new
  * call-seq: new(height, width, top, left)
  *
- * Contruct a new Curses::Window with constraints of 
+ * Contruct a new Curses::Window with constraints of
  * +height+ lines, +width+ columns, begin at +top+ line, and begin +left+ most column.
  *
- * A new window using full screen is called as 
+ * A new window using full screen is called as
  * 	Curses::Window.new(0,0,0,0)
  *
  */
@@ -1466,11 +1466,11 @@ window_initialize(VALUE obj, VALUE h, VALUE w, VALUE top, VALUE left)
     return obj;
 }
 
-/* 
+/*
  * Document-method: Curses::Window.subwin
  * call-seq: subwin(height, width, top, left)
  *
- * Contruct a new subwindow with constraints of 
+ * Contruct a new subwindow with constraints of
  * +height+ lines, +width+ columns, begin at +top+ line, and begin +left+ most column.
  *
  */
@@ -1493,7 +1493,7 @@ window_subwin(VALUE obj, VALUE height, VALUE width, VALUE top, VALUE left)
     return win;
 }
 
-/*  
+/*
  * Document-method: Curses::Window.close
  *
  * Deletes the window, and frees the memory
@@ -1510,7 +1510,7 @@ window_close(VALUE obj)
     return Qnil;
 }
 
-/*  
+/*
  * Document-method: Curses::Window.clear
  *
  * Clear the window.
@@ -1526,7 +1526,7 @@ window_clear(VALUE obj)
     return Qnil;
 }
 
-/*  
+/*
  * Document-method: Curses::Window.clrtoeol
  *
  * Clear the window to the end of line, that the cursor is currently on.
@@ -1542,7 +1542,7 @@ window_clrtoeol(VALUE obj)
     return Qnil;
 }
 
-/*  
+/*
  * Document-method: Curses::Window.refresh
  *
  * Refreshes the windows and lines.
@@ -1559,7 +1559,7 @@ window_refresh(VALUE obj)
     return Qnil;
 }
 
-/*  
+/*
  * Document-method: Curses::Window.noutrefresh
  *
  * Refreshes the windows and lines.
@@ -1582,7 +1582,7 @@ window_noutrefresh(VALUE obj)
     return Qnil;
 }
 
-/*  
+/*
  * Document-method: Curses::Window.move
  * call-seq: move(y,x)
  *
@@ -1599,7 +1599,7 @@ window_move(VALUE obj, VALUE y, VALUE x)
     return Qnil;
 }
 
-/*  
+/*
  * Document-method: Curses::Window.setpos
  * call-seq: setpos(y, x)
  *
@@ -1618,7 +1618,7 @@ window_setpos(VALUE obj, VALUE y, VALUE x)
     return Qnil;
 }
 
-/*  
+/*
  * Document-method: Curses::Window.cury
  *
  * A getter for the current line (Y coord) of the window
@@ -1634,7 +1634,7 @@ window_cury(VALUE obj)
     return INT2FIX(y);
 }
 
-/*  
+/*
  * Document-method: Curses::Window.curx
  *
  * A getter for the current column (X coord) of the window
@@ -1650,7 +1650,7 @@ window_curx(VALUE obj)
     return INT2FIX(x);
 }
 
-/*  
+/*
  * Document-method: Curses::Window.maxy
  *
  * A getter for the maximum lines for the window
@@ -1674,7 +1674,7 @@ window_maxy(VALUE obj)
 #endif
 }
 
-/*  
+/*
  * Document-method: Curses::Window.maxx
  *
  * A getter for the maximum columns for the window
@@ -1698,7 +1698,7 @@ window_maxx(VALUE obj)
 #endif
 }
 
-/*  
+/*
  * Document-method: Curses::Window.begy
  *
  * A getter for the beginning line (Y coord) of the window
@@ -1718,7 +1718,7 @@ window_begy(VALUE obj)
 #endif
 }
 
-/*  
+/*
  * Document-method: Curses::Window.begx
  *
  * A getter for the beginning column (X coord) of the window
@@ -1738,7 +1738,7 @@ window_begx(VALUE obj)
 #endif
 }
 
-/* 
+/*
  * Document-method: Curses::Window.box
  * call-seq: box(vert, hor)
  *
@@ -1782,7 +1782,7 @@ window_box(int argc, VALUE *argv, VALUE self)
     return Qnil;
 }
 
-/* 
+/*
  * Document-method: Curses::Window.standout
  *
  * Enables the best highlighting mode of the terminal.
@@ -1801,7 +1801,7 @@ window_standout(VALUE obj)
     return Qnil;
 }
 
-/* 
+/*
  * Document-method: Curses::Window.standend
  *
  * Enables the Normal display (no highlight)
@@ -1820,7 +1820,7 @@ window_standend(VALUE obj)
     return Qnil;
 }
 
-/* 
+/*
  * Document-method: Curses::Window.inch
  *
  * Returns the character at the current position of the window.
@@ -1834,12 +1834,12 @@ window_inch(VALUE obj)
     return CH2FIX(winch(winp->window));
 }
 
-/* 
+/*
  * Document-method: Curses::Window.addch
  * call-seq: addch(ch)
  *
  * Add a character +ch+, with attributes, to the window, then advance the cursor.
- * 
+ *
  * see also the system manual for curs_addch(3)
  */
 static VALUE
@@ -1853,12 +1853,12 @@ window_addch(VALUE obj, VALUE ch)
     return Qnil;
 }
 
-/* 
+/*
  * Document-method: Curses::Window.insch
  * call-seq: insch(ch)
  *
  * Insert a character +ch+, before the cursor, in the current window
- * 
+ *
  */
 static VALUE
 window_insch(VALUE obj, VALUE ch)
@@ -2086,7 +2086,7 @@ window_idlok(VALUE obj, VALUE bf)
     return Qnil;
 }
 
-/* 
+/*
  * Document-method: Curses::Window.setscrreg
  * call-seq: setscrreg(top, bottom)
  *
@@ -2119,7 +2119,7 @@ window_setscrreg(VALUE obj, VALUE top, VALUE bottom)
 /*
  * Document-method: Curses::Window.color_set
  * call-seq: color_set(col)
- * 
+ *
  * Sets the current color of the given window to the
  * foreground/background combination described by the Fixnum +col+.
  */
@@ -2135,7 +2135,7 @@ window_color_set(VALUE obj, VALUE col)
 }
 #endif /* defined(USE_COLOR) && defined(HAVE_WCOLOR_SET) */
 
-/* 
+/*
  * Document-method: Curses::Window.scroll
  *
  * Scrolls the current window up one line.
@@ -2150,7 +2150,7 @@ window_scroll(VALUE obj)
     return (scroll(winp->window) == OK) ? Qtrue : Qfalse;
 }
 
-/* 
+/*
  * Document-method: Curses::Window.scrl
  * call-seq: scrl(num)
  *
@@ -2176,7 +2176,7 @@ window_scrl(VALUE obj, VALUE n)
 #endif
 }
 
-/* 
+/*
  * Document-method: Curses::Window.attroff
  * call-seq: attroff(attrs)
  *
@@ -2197,7 +2197,7 @@ window_attroff(VALUE obj, VALUE attrs)
 #endif
 }
 
-/* 
+/*
  * Document-method: Curses::Window.attron
  * call-seq: attron(attrs)
  *
@@ -2228,7 +2228,7 @@ window_attron(VALUE obj, VALUE attrs)
 #endif
 }
 
-/* 
+/*
  * Document-method: Curses::Window.attrset
  * call-seq: attrset(attrs)
  *
@@ -2329,7 +2329,7 @@ window_getbkgd(VALUE obj)
 #endif
 }
 
-/* 
+/*
  * Document-method: Curses::Window.resize
  * call-seq: resize(lines, cols)
  *
@@ -2354,15 +2354,15 @@ window_resize(VALUE obj, VALUE lin, VALUE col)
 /*
  * Document-method: Curses::Window.keypad=
  * call-seq: keypad=(bool)
- * 
+ *
  * see Curses::Window.keypad
  */
 
-/* 
+/*
  * Document-method: Curses::Window.keypad
  * call-seq: keypad(bool)
  *
- * Enables the keypad of the user's terminal. 
+ * Enables the keypad of the user's terminal.
  * If enabled (+bool+ is +true+), the user can press a function key
  * (such as an arrow key) and wgetch returns a single value representing
  * the function key, as in KEY_LEFT.  If disabled (+bool+ is +false+),
@@ -2449,7 +2449,7 @@ window_timeout(VALUE obj, VALUE delay)
 
 /*------------------------- Initialization -------------------------*/
 
-/* 
+/*
  * Document-module: Curses
  *
  * == Description
@@ -2483,7 +2483,7 @@ window_timeout(VALUE obj, VALUE delay)
  *
  *
  * == Examples
- * 
+ *
  * * hello.rb
  *     :include: hello.rb
  *
@@ -2517,7 +2517,7 @@ Init_curses(void)
     rb_gc_register_address(&rb_stdscr);
 
 #ifdef USE_MOUSE
-    /* 
+    /*
      * Document-class: Curses::MouseEvent
      *
      * == Description
@@ -2618,11 +2618,11 @@ Init_curses(void)
 
     /*
      * Document-class: Curses::Window
-     * 
-     * == Description 
+     *
+     * == Description
      *
      * The means by which to create and manage frames or windows.
-     * While there may be more than one window at a time, only one window 
+     * While there may be more than one window at a time, only one window
      * receive the input.
      *
      * == Usage
@@ -2738,56 +2738,56 @@ Init_curses(void)
     rb_curses_define_const(A_COLOR);
 
 #ifdef COLORS
-    /* 
+    /*
      * Document-const: Curses::COLORS
      *
      * Integer of the colors available
      */
     rb_curses_define_const(COLORS);
 #endif
-    /* 
+    /*
      * Document-const: Curses::COLOR_BLACK
      *
      * Integer of the color black
      */
     rb_curses_define_const(COLOR_BLACK);
-    /* 
+    /*
      * Document-const: COLOR_RED
      *
      * Integer of the color red
      */
     rb_curses_define_const(COLOR_RED);
-    /* 
+    /*
      * Document-const: COLOR_GREEN
      *
      * Integer of the color green
      */
     rb_curses_define_const(COLOR_GREEN);
-    /* 
+    /*
      * Document-const: COLOR_YELLOW
      *
      * Integer of the color yellow
      */
     rb_curses_define_const(COLOR_YELLOW);
-    /* 
+    /*
      * Document-const: COLOR_BLUE
      *
      * Integer of the color blue
      */
     rb_curses_define_const(COLOR_BLUE);
-    /* 
+    /*
      * Document-const: COLOR_MAGENTA
      *
      * Integer of the color magenta
      */
     rb_curses_define_const(COLOR_MAGENTA);
-    /* 
+    /*
      * Document-const: COLOR_CYAN
      *
      * Integer of the color cyan
      */
     rb_curses_define_const(COLOR_CYAN);
-    /* 
+    /*
      * Document-const: COLOR_WHITE
      *
      * Integer of the color white

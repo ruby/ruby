@@ -41,7 +41,7 @@ tcl/tk インタプリタでは, ウィジェットに何か指示を送るには, ウィジェッ
 
 このような考えに基づき, tcltk ライブラリでは, tcl/tk のコマンドやウィ
 ジェットに対応するオブジェクトを生成します. オブジェクトに対するメソッ
-ド呼び出しは, e() メソッドにより実行されます. 例えば, tcl/tk の info 
+ド呼び出しは, e() メソッドにより実行されます. 例えば, tcl/tk の info
 コマンドに対応する ruby のオブジェクトが info という名前であるとすると,
 tcl/tk の
 	info commands
@@ -53,7 +53,7 @@ tcl/tk の
 	. configure -height 300 -width 300
 という tcl/tk の命令は
 	root.e("configure -height 300 -width 300")
-と記述されます. このような記述は, 見ためには美しくありませんが, そして, 
+と記述されます. このような記述は, 見ためには美しくありませんが, そして,
 スクリプトを読む人には見づらいかも知れませんが, 実際にスクリプトを書い
 てみると予想外に手軽です.
 
@@ -173,7 +173,7 @@ require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
 
       定数  DONT_WAIT
          : 処理対象イベントが存在しない場合に，イベント発生を待たず
-         : に do_one_event を終了 ( false を返す ) する 
+         : に do_one_event を終了 ( false を返す ) する
 
    モジュール TclTkLib::VarAccessFlag
       : _get_variable などでのフラグを指定するためのもの．フラグに
@@ -217,7 +217,7 @@ require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
          : 含む可能性がある (開き括弧を含み，閉じ括弧で終わる) こ
          : とを示す．その場合，括弧の間が要素名指定，最初の開き括
          : 弧までが連想配列名として扱われる．_set_variable2 などで
-         : このフラグを指定する場合，連想配列名と要素名は var_name 
+         : このフラグを指定する場合，連想配列名と要素名は var_name
          : から抽出されるはずであるから，index_name 引数は nil と
          : せねばならない．
 
@@ -250,7 +250,7 @@ require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
          : カレントスレッドがイベントループを実行しているスレッド
          : かどうかを返す．
          : イベントループを実行しているスレッドであれば true を，
-         : どのスレッドでもイベントループが実行されていない場合は 
+         : どのスレッドでもイベントループが実行されていない場合は
          : nil を，他のスレッドでイベントループが実行されている場
          : 合は false を返す．
          : false の際に Tk インタープリタを直接呼ぶのは危険である．
@@ -264,7 +264,7 @@ require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
          : ( 監視スレッドを生成した後にイベントループを実行する )．
          : 引数の意味は mainloop と同じである．
 
-      do_one_event(flag = TclTkLib::EventFlag::ALL | 
+      do_one_event(flag = TclTkLib::EventFlag::ALL |
                             TclTkLib::EventFlag::DONT_WAIT)
          : 処理待ちのイベント 1 個を実行する．
          : イベントを処理した場合は true を返す．
@@ -309,7 +309,7 @@ require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
          : 稼働スレッドがイベントループだけの場合には意味をなさない．
          : 一度のスレッド切り替えの間に処理するイベントの最大数と，
          : 処理待ちのイベントが存在しない際の加算数とを設定する．
-         : 処理待ちイベントが存在しない場合は no_event_wait ( see 
+         : 処理待ちイベントが存在しない場合は no_event_wait ( see
          : set_no_event_wait ) だけの間 sleep 状態に入る．
          : デフォルトではそれぞれ 800 回と 10 回，つまり，800 個のイ
          : ベント (アイドルイベントを含む) を処理するとか，イベント
@@ -363,10 +363,10 @@ require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
 
       _subst_UTF_backslash(str)
       _subst_Tcl_backslash(str)
-         : Tcl のルールでバックスラッシュ記法 ( \uhhhh による 
+         : Tcl のルールでバックスラッシュ記法 ( \uhhhh による
          : Unicode 文字表現を含む ) を解析する．
          : _subst_Tcl_backslash はすべてのバックスラッシュ記法を
-         : 置き換えるのに対し，_subst_UTF_backslash は \uhhhh 
+         : 置き換えるのに対し，_subst_UTF_backslash は \uhhhh
          : による Unicode 文字表現だけを置き換える．
 
       encoding_system
@@ -402,7 +402,7 @@ require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
 	 : safe には生成するインタープリタを safe インタープリタとする
          : かを指定する．デフォルトは false ということになっているが，
          : たとえ明確に false を指定していたとしても，親となるインター
-         : プリタが safe インタープリタであれば，その設定を引き継いで 
+         : プリタが safe インタープリタであれば，その設定を引き継いで
          : safe インタープリタとして生成される．
          : $SAFE >= 4 では，safe インタープリタ以外の生成が禁止される．
 
@@ -416,7 +416,7 @@ require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
          : safe インタープリタであれば true を返す．
 
       allow_ruby_exit?
-         : 対象となるインタープリタ上の評価で，ruby の exit 関数または 
+         : 対象となるインタープリタ上の評価で，ruby の exit 関数または
          : Tcl/Tk 上の exit コマンドによって ruby 自体を終了させること
          : を許すかどうかを返す．
 	 : 許さない場合は対象のインタープリタだけが終了する．
@@ -500,7 +500,7 @@ require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
       _get_variable(var_name, flag)
       _get_variable2(var_name, index_name, flag)
          : Tcl/Tk 上の var という変数名の変数の値を返す．
-         : もし index_name が指定 (PARSE_VARNAME フラグの説明も参照) 
+         : もし index_name が指定 (PARSE_VARNAME フラグの説明も参照)
          : された場合は連想配列 var_name の index_name の要素を返す．
          : flag には変数を検索する際の条件を指定する．flag に与える
          : 値はモジュール TclTkLib::VarAccessFlag を参照すること．
@@ -508,7 +508,7 @@ require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
       _set_variable(var_name, value, flag)
       _set_variable2(var_name, index_name, value, flag)
          : Tcl/Tk 上の var という変数名の変数に値を設定する．
-         : もし index_name が指定 (PARSE_VARNAME フラグの説明も参照) 
+         : もし index_name が指定 (PARSE_VARNAME フラグの説明も参照)
          : された場合は連想配列 var_name の index_name の要素を設定
          : する．
          : flag には変数を検索する際の条件を指定する．flag に与える
@@ -517,7 +517,7 @@ require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
       _unset_variable(var_name)
       _unset_variable2(var_name, index_name)
          : Tcl/Tk 上の var_name という変数名の変数を消去する．
-         : もし index_name が指定 (PARSE_VARNAME フラグの説明も参照) 
+         : もし index_name が指定 (PARSE_VARNAME フラグの説明も参照)
          : された場合は連想配列 var_name から index_name の要素だけ
          : を消去する．
 

@@ -130,7 +130,7 @@ def _null_binding
 end
 private :_null_binding
 
-def doUpdate 
+def doUpdate
   newCmd = $command.to_s.gsub("%%","\"#{$color}\"")
   eval(newCmd, _null_binding)
 end
@@ -138,7 +138,7 @@ end
 
 def tc_scaleChanged
   if( $updating.to_i == 1 )
-    return 
+    return
   end
 
   $master = :scale if $master == nil
@@ -155,7 +155,7 @@ def tc_scaleChanged
   when :cmy
     $red = (65535 - scale1.get * 65.535).to_i
     $green = (65535 - scale2.get * 65.535).to_i
-    $blue = (65535 - scale3.get * 65.535).to_i        
+    $blue = (65535 - scale3.get * 65.535).to_i
   when :hsb
     list = hsbToRgb(scale1.get / 1000.0,
 		    scale2.get / 1000.0,
@@ -183,7 +183,7 @@ def tc_setScales
   scale1 = $root.middle.middle.scale1
   scale2 = $root.middle.middle.scale2
   scale3 = $root.middle.middle.scale3
-  
+
   case $colorSpace.value.intern
   when :rgb
     scale1.set($red / 65.535)
@@ -209,7 +209,7 @@ end
 def tc_loadNamedColor(name)
   $name.value = name
   $master = :name if $master == nil
-  if name[0,1] != "#" 
+  if name[0,1] != "#"
     list = TkWinfo.rgb($root.middle.right.swatch,name)
     $red = list[0]
     $green = list[1]
@@ -243,7 +243,7 @@ def tc_loadNamedColor(name)
     $green = $green << shift
     $blue = $blue << shift
   end
-  
+
   tc_setScales
   $color = format("#%04x%04x%04x",$red,$green,$blue)
   $root.middle.right.set_color($color)
@@ -325,7 +325,7 @@ class TkColorMenuFrame<TkFrame
 	  "underline" => "0",
 	  "command" => proc{exit}
       }
-      
+
       # FileメニューとFileボタンを関連付ける
       menu @file_menu
 
@@ -361,7 +361,7 @@ class TkColorBotFrame<TkFrame
 
     self
   end
-end    
+end
 
 
 # 中段左のフレーム
@@ -467,7 +467,7 @@ class TkColorMiddleRightFrame<TkFrame
     super(parent)
     @swatch = TkFrame.new(self, "width"=>"2c", "height"=>"5c",
 			  "background"=>$color)
-    @value = TkLabel.new(self, 
+    @value = TkLabel.new(self,
 			 "text"=>$color,
 			 "width"=>"13",
 			 "font"=>"-Adobe-Courier-Medium-R-Normal--*-120-*-*-*-*-*-*")

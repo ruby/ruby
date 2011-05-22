@@ -8,7 +8,7 @@ class Float < Numeric
   #     require 'bigdecimal/util'
   #
   #     0.5.to_d
-  #     # => #<BigDecimal:1dc69e0,'0.5E0',9(18)> 
+  #     # => #<BigDecimal:1dc69e0,'0.5E0',9(18)>
   #
   def to_d
     BigDecimal(self.to_s)
@@ -25,7 +25,7 @@ class String
   #     require 'bigdecimal/util'
   #
   #     "0.5".to_d
-  #     # => #<BigDecimal:1dc69e0,'0.5E0',9(18)> 
+  #     # => #<BigDecimal:1dc69e0,'0.5E0',9(18)>
   #
   def to_d
     BigDecimal(self)
@@ -69,7 +69,7 @@ class Rational < Numeric
   #   r.to_d
   #   # => #<BigDecimal:1a52bd8,'0.3142857142 8571427937 0154144999 105E1',45(63)>
   #   r.to_d(3)
-  #   # => #<BigDecimal:1a44d08,'0.314E1',18(36)> 
+  #   # => #<BigDecimal:1a44d08,'0.314E1',18(36)>
   def to_d(nFig=0)
     num = self.numerator.to_s
     if nFig<=0

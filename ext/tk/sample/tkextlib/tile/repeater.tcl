@@ -17,7 +17,7 @@
 # Notes:
 #	Repeater buttons work more like scrollbar arrows than
 #	Tk repeating buttons: they fire once immediately when
-#	first pressed, and $State(delay) specifies the initial 
+#	first pressed, and $State(delay) specifies the initial
 #	interval before the button starts autorepeating.
 #
 
@@ -49,8 +49,8 @@ bind Repeater <B1-Enter> \
 ### Binding procedures.
 #
 
-## Activate -- Keyboard activation binding. 
-#	Simulate clicking the button, and invoke the command once. 
+## Activate -- Keyboard activation binding.
+#	Simulate clicking the button, and invoke the command once.
 #
 proc tile::Repeater::Activate {w} {
     $w instate disabled { return }
@@ -61,7 +61,7 @@ proc tile::Repeater::Activate {w} {
 }
 
 ## Press -- ButtonPress-1 binding.
-#	Invoke the command once and start autorepeating after 
+#	Invoke the command once and start autorepeating after
 #	$State(delay) milliseconds.
 #
 proc tile::Repeater::Press {w} {
@@ -104,7 +104,7 @@ proc tile::Repeater::Resume {w} {
 }
 
 ## Repeat -- Timer script
-#	Invoke the command and reschedule another repetition 
+#	Invoke the command and reschedule another repetition
 #	after $State(interval) milliseconds.
 #
 proc tile::Repeater::Repeat {w} {

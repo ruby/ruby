@@ -26,15 +26,15 @@ $RubyTk_WidgetDemo = true
 # $demo_dir = File.dirname($0)
 $demo_dir = File.dirname(__FILE__)
 
-# root 
+# root
 $root = TkRoot.new{title "Ruby/Tk Widget Demonstration"}
 
-# tk 
+# tk
 $tk_version = Tk::TK_VERSION
 $tk_major_ver, $tk_minor_ver = $tk_version.split('.').map{|n| n.to_i}
 $tk_patchlevel = Tk::TK_PATCHLEVEL
 
-# tcl_platform 
+# tcl_platform
 $tk_platform = TkVarAccess.new('tcl_platform')
 
 #
@@ -104,18 +104,18 @@ $image['print'] = TkPhotoImage.new(:height=>19, :format=>'GIF', :data=><<EOD)
 EOD
 end
 
-# 
+#
 if $tk_major_ver >= 8
-  $root.add_menubar([[['File', 0], 
+  $root.add_menubar([[['File', 0],
                         ['About ... ', proc{aboutBox}, 0, '<F1>'],
-                        '---', 
+                        '---',
                         ['Quit', proc{exit}, 0, 'Ctrl-Q']
                       ]])
 else
-  TkMenubar.new($root, 
-                [[['File', 0], 
+  TkMenubar.new($root,
+                [[['File', 0],
                     ['About ... ', proc{aboutBox}, 0, '<F1>'],
-                    '---', 
+                    '---',
                     ['Quit', proc{exit}, 0, 'Ctrl-Q']
                   ]]).pack('side'=>'top', 'fill'=>'x')
 end
@@ -135,7 +135,7 @@ TkFrame.new($root){|frame|
 }.pack('side'=>'top', 'fill'=>'x')
 =end
 
-# 
+#
 if $tk_version =~ /^4\.[01]/
   scr = TkScrollbar.new($root, 'orient'=>'vertical')
   txt = TkText.new($root) {
@@ -151,7 +151,7 @@ if $tk_version =~ /^4\.[01]/
   txt.pack('expand'=>'yes', 'fill'=>'both')
 else
   textFrame = TkFrame.new($root)
-  scr = TkScrollbar.new($root, 'orient'=>'vertical', 
+  scr = TkScrollbar.new($root, 'orient'=>'vertical',
                         'highlightthickness'=>0, 'takefocus'=>1) {
     pack('in'=>textFrame, 'side'=>'right', 'fill'=>'y', 'padx'=>1)
   }
@@ -184,10 +184,10 @@ else
       statusfont = 'Helvetica 10'
     end
     $statusBarLabel = \
-    TkLabel.new(f, 'text'=>"   ", 'relief'=>'sunken', 'bd'=>1, 'anchor'=>'w', 
+    TkLabel.new(f, 'text'=>"   ", 'relief'=>'sunken', 'bd'=>1, 'anchor'=>'w',
                 'font'=>statusfont) \
         .pack('side'=>'left', 'padx'=>2, 'expand'=>'yes', 'fill'=>'both')
-    TkLabel.new(f, 'width'=>8, 'relief'=>'sunken', 'bd'=>1, 'anchor'=>'w', 
+    TkLabel.new(f, 'width'=>8, 'relief'=>'sunken', 'bd'=>1, 'anchor'=>'w',
                 'font'=>statusfont) \
         .pack('side'=>'left', 'padx'=>2)
   }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>2)
@@ -196,7 +196,7 @@ end
 # Create a bunch of tags to use in the text widget, such as those for
 # section titles and demo descriptions.  Also define the bindings for
 # tags.
-  
+
 if $tk_version =~ /^4.*/
   tag_title = TkTextTag.new(txt, 'font'=>'-*-Helvetica-Bold-R-Normal--*-180-*-*-*-*-*-*')
 else
@@ -210,23 +210,23 @@ end
 tag_demospace = TkTextTag.new(txt, 'lmargin1'=>'1c', 'lmargin2'=>'1c')
 
 if TkWinfo.depth($root) == 1
-  tag_demo = TkTextTag.new(txt, 'lmargin1'=>'1c', 'lmargin2'=>'1c', 
+  tag_demo = TkTextTag.new(txt, 'lmargin1'=>'1c', 'lmargin2'=>'1c',
                            'underline'=>1)
-  $tag_visited = TkTextTag.new(txt, 'lmargin1'=>'1c', 'lmargin2'=>'1c', 
+  $tag_visited = TkTextTag.new(txt, 'lmargin1'=>'1c', 'lmargin2'=>'1c',
                               'underline'=>1)
   tag_hot = TkTextTag.new(txt, 'background'=>'black', 'foreground'=>'white')
 else
-  tag_demo = TkTextTag.new(txt, 'lmargin1'=>'1c', 'lmargin2'=>'1c', 
+  tag_demo = TkTextTag.new(txt, 'lmargin1'=>'1c', 'lmargin2'=>'1c',
                            'foreground'=>'blue', 'underline'=>1)
-  $tag_visited = TkTextTag.new(txt, 'lmargin1'=>'1c', 'lmargin2'=>'1c', 
+  $tag_visited = TkTextTag.new(txt, 'lmargin1'=>'1c', 'lmargin2'=>'1c',
                               'foreground'=>'#303080', 'underline'=>1)
-#  tag_hot = TkTextTag.new(txt, 'relief'=>'raised', 'borderwidth'=>1, 
+#  tag_hot = TkTextTag.new(txt, 'relief'=>'raised', 'borderwidth'=>1,
 #                         'background'=>'SeaGreen3')
   tag_hot = TkTextTag.new(txt, 'borderwidth'=>1, 'foreground'=>'red')
 end
 
 #tag_demo.bind('Button-1', proc{invoke txt, txt.index('current')})
-tag_demo.bind('ButtonRelease-1', 
+tag_demo.bind('ButtonRelease-1',
               proc{|x,y|invoke txt, txt.index("@#{x},#{y}")}, '%x %y')
 
 lastLine = TkVariable.new("")
@@ -237,7 +237,7 @@ tag_demo.bind('Enter', proc{|x,y|
                 showStatus txt, txt.index("@#{x},#{y}")
               },
               '%x %y')
-tag_demo.bind('Leave', 
+tag_demo.bind('Leave',
               proc{
                 tag_hot.remove('1.0','end')
                 txt.configure('cursor','xterm')
@@ -248,10 +248,10 @@ tag_demo.bind('Motion', proc{|x, y|
                 if newLine.value != lastLine.value
                   tag_hot.remove('1.0','end')
                   lastLine.value = newLine.value
-                  if ( txt.tag_names("@#{x},#{y}").find{|t| 
+                  if ( txt.tag_names("@#{x},#{y}").find{|t|
                         t.kind_of?(String) && t =~ /^demo-/
                       } )
-                    tag_hot.add(lastLine.value, 
+                    tag_hot.add(lastLine.value,
                                 "#{lastLine.value} lineend -1 chars")
                   end
                 end
@@ -273,7 +273,7 @@ demonstration.  If you wish, you can edit the code and click the \
 with the modified code. \
 Don't worry about breaking the source code. \
 Your modifications are not reflected on the original file. \
-Please try many kind of changes. 
+Please try many kind of changes.
 
 Some demo scripts require the recent version of Tk library \
 (e.g. Tk8.4 or later) \
@@ -353,8 +353,8 @@ txt.insert('end', "1. Without scrollbars.\n", tag_demo, "demo-entry1")
 txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "2. With scrollbars.\n", tag_demo, "demo-entry2")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', 
-           "3. Validated entries and password fields. (if supported)\n", 
+txt.insert('end',
+           "3. Validated entries and password fields. (if supported)\n",
            tag_demo, "demo-entry3")
 txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "4. Spin-boxes. (if supported)\n", tag_demo, "demo-spin")
@@ -499,7 +499,7 @@ $showVarsWin = {}
 def showVars1(parent, *args)
   if $showVarsWin[parent.path]
     begin
-      $showVarsWin[parent.path].destroy 
+      $showVarsWin[parent.path].destroy
     rescue
     end
   end
@@ -539,7 +539,7 @@ end
 def showVars2(parent, *args)
   if $showVarsWin[parent.path]
     begin
-      $showVarsWin[parent.path].destroy 
+      $showVarsWin[parent.path].destroy
     rescue
     end
   end
@@ -548,11 +548,11 @@ def showVars2(parent, *args)
 
     base = TkFrame.new(top).pack(:fill=>:both, :expand=>true)
 
-    TkLabelFrame.new(base, :text=>"Variable values:", 
+    TkLabelFrame.new(base, :text=>"Variable values:",
                      :font=>{:family=>'Helvetica', :size=>14}){|f|
       args.each{|vnam,vbody|
-        TkGrid(TkLabel.new(f, :text=>"#{vnam}: ", :anchor=>'w'), 
-               TkLabel.new(f, :textvariable=>vbody, :anchor=>'w'), 
+        TkGrid(TkLabel.new(f, :text=>"#{vnam}: ", :anchor=>'w'),
+               TkLabel.new(f, :textvariable=>vbody, :anchor=>'w'),
                :padx=>2, :pady=>2, :sticky=>'w')
       }
 
@@ -560,7 +560,7 @@ def showVars2(parent, *args)
       f.grid_columnconfig(1, :weight=>1)
       f.grid_rowconfig(100, :weight=>1)
     }
-    TkButton.new(base, :text=>"OK", :width=>8, :default=>:active, 
+    TkButton.new(base, :text=>"OK", :width=>8, :default=>:active,
                  :command=>proc{top.destroy}){|b|
       top.bind('Return', proc{b.invoke})
       top.bind('Escape', proc{b.invoke})
@@ -610,9 +610,9 @@ class Object
 
   def method_missing(id, *args)
     begin
-      has_top = (top = Thread.current[:TOPLEVEL]) && 
-                   top.respond_to?(:pseudo_toplevel_evaluable?) && 
-                   top.pseudo_toplevel_evaluable? && 
+      has_top = (top = Thread.current[:TOPLEVEL]) &&
+                   top.respond_to?(:pseudo_toplevel_evaluable?) &&
+                   top.pseudo_toplevel_evaluable? &&
                    top.respond_to?(id)
     rescue Exception => e
       has_top = false
@@ -738,7 +738,7 @@ def showStatus (txt, index)
     newcursor = 'xterm'
   else
     demoname = tag[5..-1]
-    $statusBarLabel.configure('text', 
+    $statusBarLabel.configure('text',
                              "Run the \"#{demoname}\" sample program")
     newcursor = 'hand2'
   end
@@ -800,9 +800,9 @@ def showCode1(demo)
       TkFrame.new($code_window) {|f|
         pack('expand'=>'yes', 'fill'=>'both', 'padx'=>1, 'pady'=>1)
 
-        hs = TkScrollbar.new($code_window, 'highlightthickness'=>0, 
+        hs = TkScrollbar.new($code_window, 'highlightthickness'=>0,
                              'orient'=>'horizontal')
-        vs = TkScrollbar.new($code_window, 'highlightthickness'=>0, 
+        vs = TkScrollbar.new($code_window, 'highlightthickness'=>0,
                              'orient'=>'vertical')
         $code_text = TkText.new($code_window) {|t|
           height 40
@@ -817,11 +817,11 @@ def showCode1(demo)
           vs.command(proc{|*args| $code_text.yview(*args)})
         }
 
-        $code_text.grid('in'=>f, 'padx'=>1, 'pady'=>1, 'row'=>0, 'column'=>0, 
+        $code_text.grid('in'=>f, 'padx'=>1, 'pady'=>1, 'row'=>0, 'column'=>0,
                         'rowspan'=>1, 'columnspan'=>1, 'sticky'=>'news')
-        vs.grid('in'=>f, 'padx'=>1, 'pady'=>1, 'row'=>0, 'column'=>1, 
+        vs.grid('in'=>f, 'padx'=>1, 'pady'=>1, 'row'=>0, 'column'=>1,
                 'rowspan'=>1, 'columnspan'=>1, 'sticky'=>'news')
-#       xs.grid('in'=>f, 'padx'=>1, 'pady'=>1, 'row'=>1, 'column'=>0, 
+#       xs.grid('in'=>f, 'padx'=>1, 'pady'=>1, 'row'=>1, 'column'=>0,
 #               'rowspan'=>1, 'columnspan'=>1, 'sticky'=>'news')
 
 # JKC 2001-07-26: segfaults under 1.7.1 (2001-06-19) [i686-linux]
@@ -866,8 +866,8 @@ def showCode2(demo)
   if $code_window == nil || TkWinfo.exist?($code_window) == false
     $code_window = TkToplevel.new(nil)
     tf = TkFrame.new($code_window)
-    $code_text = TkText.new(tf, :font=>'Courier 10', :height=>30, 
-                            :wrap=>'word', :bd=>1, :setgrid=>true, 
+    $code_text = TkText.new(tf, :font=>'Courier 10', :height=>30,
+                            :wrap=>'word', :bd=>1, :setgrid=>true,
                             :highlightthickness=>0, :pady=>2, :padx=>3)
     xscr = TkScrollbar.new(tf, :bd=>1){assign($code_text)}
     yscr = TkScrollbar.new(tf, :bd=>1){assign($code_text)}
@@ -890,20 +890,20 @@ def showCode2(demo)
       posnum.text  = pos
     }
 
-    b_dis = TkButton.new(bf, :text=>'Dismiss', :default=>:active, 
+    b_dis = TkButton.new(bf, :text=>'Dismiss', :default=>:active,
                          :command=>proc{
                            $code_window.destroy
                            $code_window = nil
-                         }, 
+                         },
                          :image=>$image['delete'], :compound=>:left)
-    b_prn = TkButton.new(bf, :text=>'Print Code', 
-                         :command=>proc{printCode($code_text, file)}, 
+    b_prn = TkButton.new(bf, :text=>'Print Code',
+                         :command=>proc{printCode($code_text, file)},
                          :image=>$image['print'], :compound=>:left)
-    b_run = TkButton.new(bf, :text=>'Rerun Demo', 
+    b_run = TkButton.new(bf, :text=>'Rerun Demo',
                          :command=>proc{
                            # eval($code_text.get('1.0','end'), _null_binding)
                            eval_samplecode($code_text.get('1.0','end'), '<viewer>')
-                         }, 
+                         },
                          :image=>$image['refresh'], :compound=>:left)
 
     TkGrid(lf, 'x', b_run, b_prn, b_dis, :padx=>4, :pady=>[6,4])
@@ -979,23 +979,23 @@ def printCode(txt, file)
     when 'unix'
       msg = `lp -c #{fname}`
       unless $?.exitstatus == 0
-        Tk.messageBox(:title=>'Print spooling failure', 
+        Tk.messageBox(:title=>'Print spooling failure',
                       :message=>'Print spooling probably failed: ' + msg)
       end
     when 'windows'
       begin
         printTextWin32(fname)
       rescue => e
-        Tk.messageBox(:title=>'Print spooling failure', 
-                      :message=>'Print spooling probably failed: ' + 
+        Tk.messageBox(:title=>'Print spooling failure',
+                      :message=>'Print spooling probably failed: ' +
                       e.message)
-      end      
+      end
     when 'macintosh'
-      Tk.messageBox(:title=>'Operation not Implemented', 
+      Tk.messageBox(:title=>'Operation not Implemented',
                     :message=>'Oops, sorry: not implemented yet!')
     else
-      Tk.messageBox(:title=>'Operation not Implemented', 
-                    :message=>'Wow! Unknown platform: ' + 
+      Tk.messageBox(:title=>'Operation not Implemented',
+                    :message=>'Wow! Unknown platform: ' +
                     Tk::TCL_PLATFORM('platform'))
     end
   ensure
@@ -1025,7 +1025,7 @@ def printTextWin32(fname)
   pcmd.gsub!('%1', fname)
   puts pcmd
   cmd = Tk.tk_call('auto_execok', 'start') + ' /min ' + pcmd
-  
+
   msg = `#{cmd}`
   unless $?.exitstatus == 0
     fail RuntimeError, msg
@@ -1037,16 +1037,16 @@ end
 #      Pops up a message box with an "about" message
 #
 def aboutBox
-  Tk.messageBox('icon'=>'info', 'type'=>'ok', 'title'=>'About Widget Demo', 
-                'message'=>"Ruby/Tk widget demonstration Ver.1.7.1-en\n\n" + 
-                           "based on demos of Tk8.1 -- 8.5  " + 
-                           "( Copyright of Tcl/Tk demos:: " + 
-                           "(c) 1996-1997 Sun Microsystems, Inc. / " + 
-                           "(c) 1997-2000 Ajuba Solutions, Inc. / " + 
-                           "(c) 2001-2007 Donal K. Fellows / " + 
+  Tk.messageBox('icon'=>'info', 'type'=>'ok', 'title'=>'About Widget Demo',
+                'message'=>"Ruby/Tk widget demonstration Ver.1.7.1-en\n\n" +
+                           "based on demos of Tk8.1 -- 8.5  " +
+                           "( Copyright of Tcl/Tk demos:: " +
+                           "(c) 1996-1997 Sun Microsystems, Inc. / " +
+                           "(c) 1997-2000 Ajuba Solutions, Inc. / " +
+                           "(c) 2001-2007 Donal K. Fellows / " +
                            "(c) 2002-2007 Daniel A. Steffen )\n\n" +
-                           "Your Ruby & Tk Version ::\n" + 
-                           "Ruby#{RUBY_VERSION}(#{RUBY_RELEASE_DATE})[#{RUBY_PLATFORM}] / Tk#{$tk_patchlevel}#{(Tk::JAPANIZED_TK)? '-jp': ''}\n\n" + 
+                           "Your Ruby & Tk Version ::\n" +
+                           "Ruby#{RUBY_VERSION}(#{RUBY_RELEASE_DATE})[#{RUBY_PLATFORM}] / Tk#{$tk_patchlevel}#{(Tk::JAPANIZED_TK)? '-jp': ''}\n\n" +
                            "Ruby/Tk release date :: tcltklib #{TclTkLib::RELEASE_DATE}; tk #{Tk::RELEASE_DATE}")
 end
 
@@ -1060,11 +1060,11 @@ else
   # show the root widget to make it lower then demo windows
   Tk.update
 end
-ARGV.each{|cmd| 
+ARGV.each{|cmd|
   if cmd =~ /(.*).rb/
     cmd = $1
   end
-  #eval(IO.readlines("#{[$demo_dir, cmd].join(File::Separator)}.rb").join, 
+  #eval(IO.readlines("#{[$demo_dir, cmd].join(File::Separator)}.rb").join,
   #     _null_binding)
   eval_samplecode(IO.readlines("#{[$demo_dir, cmd].join(File::Separator)}.rb").join, cmd + '.rb')
 }

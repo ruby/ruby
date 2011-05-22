@@ -1,13 +1,13 @@
 Ruby/Tk does NOT support forking the process on which Tk interpreter
-is running (unless NEVER control Tk interpreter under the forked child 
-process). In the library 'tk.rb', a Tk interpreter is initialized. 
+is running (unless NEVER control Tk interpreter under the forked child
+process). In the library 'tk.rb', a Tk interpreter is initialized.
 Therefore, if you want running Tk under a child process, please call
-"require 'tk'" in the child process. 
+"require 'tk'" in the child process.
 
-# If do fork and exec(<new Ruby/Tk>) on the child process, you can 
-# control Ruby/Tk interpreter on the child process by 'send' command 
-# of Tcl/Tk. About this, please see Tk.appsend and Tk.rb_appsend, or 
-# 'remote-tk.rb' and the sample 'sample/remote-ip_sample.rb'. 
+# If do fork and exec(<new Ruby/Tk>) on the child process, you can
+# control Ruby/Tk interpreter on the child process by 'send' command
+# of Tcl/Tk. About this, please see Tk.appsend and Tk.rb_appsend, or
+# 'remote-tk.rb' and the sample 'sample/remote-ip_sample.rb'.
 
 For example, the following sample1 will NOT work, and sample2 will
 work properly.

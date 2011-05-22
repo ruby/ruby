@@ -125,16 +125,16 @@ end
 
 # メニュー設定
 if $tk_major_ver >= 8
-  $root.add_menubar([[['File', 0], 
+  $root.add_menubar([[['File', 0],
                         ['About ... ', proc{aboutBox}, 0, '<F1>'],
-                        '---', 
+                        '---',
                         ['Quit', proc{exit}, 0, 'Ctrl-Q']
                       ]])
 else
-  TkMenubar.new($root, 
-                [[['File', 0], 
+  TkMenubar.new($root,
+                [[['File', 0],
                     ['About ... ', proc{aboutBox}, 0, '<F1>'],
-                    '---', 
+                    '---',
                     ['Quit', proc{exit}, 0, 'Ctrl-Q']
                   ]]).pack('side'=>'top', 'fill'=>'x')
 end
@@ -171,7 +171,7 @@ if $tk_version =~ /^4\.[01]/
   txt.pack('expand'=>'yes', 'fill'=>'both')
 else
   textFrame = TkFrame.new($root)
-  scr = TkScrollbar.new($root, 'orient'=>'vertical', 
+  scr = TkScrollbar.new($root, 'orient'=>'vertical',
                         'highlightthickness'=>0, 'takefocus'=>1) {
     pack('in'=>textFrame, 'side'=>'right', 'fill'=>'y', 'padx'=>1)
   }
@@ -206,10 +206,10 @@ else
       statusfont = 'Helvetica 10'
     end
     $statusBarLabel = \
-    TkLabel.new(f, 'text'=>"   ", 'relief'=>'sunken', 'bd'=>1, 'anchor'=>'w', 
+    TkLabel.new(f, 'text'=>"   ", 'relief'=>'sunken', 'bd'=>1, 'anchor'=>'w',
                 'font'=>statusfont) \
     .pack('side'=>'left', 'padx'=>2, 'expand'=>'yes', 'fill'=>'both')
-    TkLabel.new(f, 'width'=>8, 'relief'=>'sunken', 'bd'=>1, 'anchor'=>'w', 
+    TkLabel.new(f, 'width'=>8, 'relief'=>'sunken', 'bd'=>1, 'anchor'=>'w',
                 'font'=>statusfont) \
     .pack('side'=>'left', 'padx'=>2)
   }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>2)
@@ -228,23 +228,23 @@ tag_middle = TkTextTag.new(txt, 'font'=>$kanji_font)
 tag_demospace = TkTextTag.new(txt, 'lmargin1'=>'1c', 'lmargin2'=>'1c')
 
 if TkWinfo.depth($root) == 1
-  tag_demo = TkTextTag.new(txt, 'lmargin1'=>'1c', 'lmargin2'=>'1c', 
+  tag_demo = TkTextTag.new(txt, 'lmargin1'=>'1c', 'lmargin2'=>'1c',
                            'underline'=>1)
-  $tag_visited = TkTextTag.new(txt, 'lmargin1'=>'1c', 'lmargin2'=>'1c', 
+  $tag_visited = TkTextTag.new(txt, 'lmargin1'=>'1c', 'lmargin2'=>'1c',
                               'underline'=>1)
   tag_hot = TkTextTag.new(txt, 'background'=>'black', 'foreground'=>'white')
 else
-  tag_demo = TkTextTag.new(txt, 'lmargin1'=>'1c', 'lmargin2'=>'1c', 
+  tag_demo = TkTextTag.new(txt, 'lmargin1'=>'1c', 'lmargin2'=>'1c',
                            'foreground'=>'blue', 'underline'=>1)
-  $tag_visited = TkTextTag.new(txt, 'lmargin1'=>'1c', 'lmargin2'=>'1c', 
+  $tag_visited = TkTextTag.new(txt, 'lmargin1'=>'1c', 'lmargin2'=>'1c',
                               'foreground'=>'#303080', 'underline'=>1)
-#  tag_hot = TkTextTag.new(txt, 'relief'=>'raised', 'borderwidth'=>1, 
+#  tag_hot = TkTextTag.new(txt, 'relief'=>'raised', 'borderwidth'=>1,
 #                         'background'=>'SeaGreen3')
   tag_hot = TkTextTag.new(txt, 'borderwidth'=>1, 'foreground'=>'red')
 end
 
 #tag_demo.bind('Button-1', proc{invoke txt, txt.index('current')})
-tag_demo.bind('ButtonRelease-1', 
+tag_demo.bind('ButtonRelease-1',
               proc{|x,y|invoke txt, txt.index("@#{x},#{y}")}, '%x %y')
 
 lastLine = TkVariable.new("")
@@ -255,7 +255,7 @@ tag_demo.bind('Enter', proc{|x,y|
                 showStatus txt, txt.index("@#{x},#{y}")
               },
               '%x %y')
-tag_demo.bind('Leave', 
+tag_demo.bind('Leave',
               proc{
                 tag_hot.remove('1.0','end')
                 txt.configure('cursor','xterm')
@@ -266,10 +266,10 @@ tag_demo.bind('Motion', proc{|x, y|
                 if newLine.value != lastLine.value
                   tag_hot.remove('1.0','end')
                   lastLine.value = newLine.value
-                  if ( txt.tag_names("@#{x},#{y}").find{|t| 
+                  if ( txt.tag_names("@#{x},#{y}").find{|t|
                         t.kind_of?(String) && t =~ /^demo-/
                       } )
-                    tag_hot.add(lastLine.value, 
+                    tag_hot.add(lastLine.value,
                                 "#{lastLine.value} lineend -1 chars")
                   end
                 end
@@ -321,50 +321,50 @@ Ttk 拡張は、Tk8.5 以上では標準の機能として組み込まれています。
 EOT
 
 #txt.insert('end',"ラベル, ボタン, チェックボタン, ラジオボタン\n",tag_middle)
-txt.insert('end', "ラベル, ボタン, チェックボタン, ラジオボタン\n", 
+txt.insert('end', "ラベル, ボタン, チェックボタン, ラジオボタン\n",
            tag_kanji_title)
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "1. ラベル (テキスト, ビットマップ)\n", 
+txt.insert('end', "1. ラベル (テキスト, ビットマップ)\n",
            tag_demo, "demo-label")
 txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "2. ラベルとUNICODEテキスト (機能に対応したバージョンのTkが必要)\n", tag_demo, "demo-unicodeout")
 txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "3. ボタン \n", tag_demo, "demo-button")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "4. チェックボタン (複数を選択可能)\n", 
+txt.insert('end', "4. チェックボタン (複数を選択可能)\n",
            tag_demo, "demo-check")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "5. ３状態チェックボタン (機能に対応したバージョンのTkが必要)\n", 
+txt.insert('end', "5. ３状態チェックボタン (機能に対応したバージョンのTkが必要)\n",
            tag_demo, "demo-check2")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "6. ラジオボタン (任意の一つを選択可能)\n", 
+txt.insert('end', "6. ラジオボタン (任意の一つを選択可能)\n",
            tag_demo, "demo-radio")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "7. ラジオボタン (機能に対応したバージョンのTkが必要)\n", 
+txt.insert('end', "7. ラジオボタン (機能に対応したバージョンのTkが必要)\n",
            tag_demo, "demo-radio2")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "8. ３状態ラジオボタン (機能に対応したバージョンのTkが必要)\n", 
+txt.insert('end', "8. ３状態ラジオボタン (機能に対応したバージョンのTkが必要)\n",
            tag_demo, "demo-radio3")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "9. ボタンで作られた15-パズルゲーム\n", 
+txt.insert('end', "9. ボタンで作られた15-パズルゲーム\n",
            tag_demo, "demo-puzzle")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "10. ビットマップを使用したアイコンボタン\n", 
+txt.insert('end', "10. ビットマップを使用したアイコンボタン\n",
            tag_demo, "demo-icon")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "11. 画像を表示する二つのラベル\n", 
+txt.insert('end', "11. 画像を表示する二つのラベル\n",
            tag_demo, "demo-image1")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "12. 画像を見るための簡単なユーザインターフェース\n", 
+txt.insert('end', "12. 画像を見るための簡単なユーザインターフェース\n",
            tag_demo, "demo-image2")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "13. 画像を見るための簡単なユーザインターフェース (機能に対応したバージョンのTkが必要)\n", 
+txt.insert('end', "13. 画像を見るための簡単なユーザインターフェース (機能に対応したバージョンのTkが必要)\n",
            tag_demo, "demo-image3")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "14. ラベル付きフレーム (機能に対応したバージョンのTkが必要)\n", 
+txt.insert('end', "14. ラベル付きフレーム (機能に対応したバージョンのTkが必要)\n",
            tag_demo, "demo-labelframe")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "15. テーマに対応したウィジェットの簡単な例 (Tile/Ttk拡張への対応が必要)\n", 
+txt.insert('end', "15. テーマに対応したウィジェットの簡単な例 (Tile/Ttk拡張への対応が必要)\n",
            tag_demo, "demo-ttkbut")
 txt.insert('end', " \n ", tag_demospace)
 
@@ -374,15 +374,15 @@ txt.insert('end', "リストボックス\n", tag_kanji_title)
 txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "1. 都道府県.\n", tag_demo, "demo-states")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "2. 色: アプリケーションのための配色を変える\n", 
+txt.insert('end', "2. 色: アプリケーションのための配色を変える\n",
            "#{tag_demo.id} demo-colors")
 txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "3. 格言集\n", tag_demo, "demo-sayings")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "4. 国についてのマルチカラムリスト (Tile/Ttk拡張への対応が必要)\n", 
+txt.insert('end', "4. 国についてのマルチカラムリスト (Tile/Ttk拡張への対応が必要)\n",
            tag_demo, "demo-mclist")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "5. ディレクトリブラウザ (Tile/Ttk拡張への対応が必要)\n", 
+txt.insert('end', "5. ディレクトリブラウザ (Tile/Ttk拡張への対応が必要)\n",
            tag_demo, "demo-tree")
 txt.insert('end', " \n ", tag_demospace)
 
@@ -394,13 +394,13 @@ txt.insert('end', "1. スクロールバーなし\n", tag_demo, "demo-entry1")
 txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "2. スクロールバーあり\n", tag_demo, "demo-entry2")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "3. 認証処理付きのエントリボックスとパスワードフィールド (機能に対応したバージョンのTkが必要)\n", 
+txt.insert('end', "3. 認証処理付きのエントリボックスとパスワードフィールド (機能に対応したバージョンのTkが必要)\n",
            tag_demo, "demo-entry3")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "4. スピンボックス (機能に対応したバージョンのTkが必要)\n", 
+txt.insert('end', "4. スピンボックス (機能に対応したバージョンのTkが必要)\n",
            tag_demo, "demo-spin")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "5. コンボボックス (Tile/Ttk拡張への対応が必要)\n", 
+txt.insert('end', "5. コンボボックス (Tile/Ttk拡張への対応が必要)\n",
            tag_demo, "demo-combo")
 txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "6. 簡単なフォーム\n", tag_demo, "demo-form")
@@ -414,13 +414,13 @@ txt.insert('end', "1. 基本的なテキスト\n", tag_demo, "demo-text")
 txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "2. 表示スタイル.\n", tag_demo, "demo-style")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "3. ハイパーテキスト(タグバインド).\n", 
+txt.insert('end', "3. ハイパーテキスト(タグバインド).\n",
            tag_demo, "demo-bind")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "4. ウィンドウを埋め込んだテキスト\n", 
+txt.insert('end', "4. ウィンドウを埋め込んだテキスト\n",
            tag_demo, "demo-twind")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "5. ウィンドウを埋め込んだテキスト (機能に対応したバージョンのTkが必要)\n", 
+txt.insert('end', "5. ウィンドウを埋め込んだテキスト (機能に対応したバージョンのTkが必要)\n",
            tag_demo, "demo-twind2")
 txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "6. 検索\n", tag_demo, "demo-search")
@@ -446,10 +446,10 @@ txt.insert('end', "6. フロアプラン\n", tag_demo, "demo-floor")
 txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "7. フロアプラン (異なるキャンバスアイテム作成方法を使用)\n", tag_demo, "demo-floor2")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "8. スクロール可能なキャンバス\n", 
+txt.insert('end', "8. スクロール可能なキャンバス\n",
            tag_demo, "demo-cscroll")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "9. チェスボード上の騎士の巡回 (Tile/Ttk拡張への対応が必要)\n", 
+txt.insert('end', "9. チェスボード上の騎士の巡回 (Tile/Ttk拡張への対応が必要)\n",
            tag_demo, "demo-knightstour")
 txt.insert('end', " \n ", tag_demospace)
 
@@ -467,16 +467,16 @@ txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "\n")
 txt.insert('end', "ペインドウィンドウとノートブック\n", tag_kanji_title)
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "1. 水平方向 (機能に対応したバージョンのTkが必要)\n", 
+txt.insert('end', "1. 水平方向 (機能に対応したバージョンのTkが必要)\n",
            tag_demo.id, "demo-paned1")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "2. 垂直方向 (機能に対応したバージョンのTkが必要)\n", 
+txt.insert('end', "2. 垂直方向 (機能に対応したバージョンのTkが必要)\n",
            tag_demo.id, "demo-paned2")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "3. テーマに対応した埋め込みペイン (Tile/Ttk拡張への対応が必要)\n", 
+txt.insert('end', "3. テーマに対応した埋め込みペイン (Tile/Ttk拡張への対応が必要)\n",
            tag_demo.id, "demo-ttkpane")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "4. ノートブックウィジェット (Tile/Ttk拡張への対応が必要)\n", 
+txt.insert('end', "4. ノートブックウィジェット (Tile/Ttk拡張への対応が必要)\n",
            tag_demo.id, "demo-ttknote")
 txt.insert('end', " \n ", tag_demospace)
 
@@ -484,22 +484,22 @@ txt.insert('end', "\n")
 #txt.insert('end', "メニューとツールバー\n", tag_middle)
 txt.insert('end', "メニューとツールバー\n", tag_kanji_title)
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "1. メニューとカスケードを含んだウィンドウ\n", 
+txt.insert('end', "1. メニューとカスケードを含んだウィンドウ\n",
            tag_demo, "demo-menu")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "2. メニューとカスケードを含んだウィンドウ (Tk8.x 専用)\n", 
+txt.insert('end', "2. メニューとカスケードを含んだウィンドウ (Tk8.x 専用)\n",
            tag_demo, "demo-menu8x")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "3.                 〃                (機能に対応したバージョンのTkが必要)\n", 
+txt.insert('end', "3.                 〃                (機能に対応したバージョンのTkが必要)\n",
            tag_demo, "demo-menu84")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "4. メニューボタン (Tk8.x 専用)\n", 
+txt.insert('end', "4. メニューボタン (Tk8.x 専用)\n",
            tag_demo, "demo-menubu")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "5. テーマに対応したメニューボタン (Tile/Ttk拡張への対応が必要)\n", 
+txt.insert('end', "5. テーマに対応したメニューボタン (Tile/Ttk拡張への対応が必要)\n",
            tag_demo.id, "demo-ttkmenu")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "6. テーマに対応したツールバー (Tile/Ttk拡張への対応が必要)\n", 
+txt.insert('end', "6. テーマに対応したツールバー (Tile/Ttk拡張への対応が必要)\n",
            tag_demo.id, "demo-toolbar")
 txt.insert('end', " \n ", tag_demospace)
 
@@ -534,10 +534,10 @@ txt.insert('end', "その他\n", tag_kanji_title)
 txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "1. 組み込みのビットマップ\n", tag_demo, "demo-bitmap")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "2. モーダルダイアログ(ローカルグラブ)\n", 
+txt.insert('end', "2. モーダルダイアログ(ローカルグラブ)\n",
            tag_demo, "demo-dialog1")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "3. モーダルダイアログ(グローバルグラブ)\n", 
+txt.insert('end', "3. モーダルダイアログ(グローバルグラブ)\n",
            tag_demo, "demo-dialog2")
 txt.insert('end', " \n ", tag_demospace)
 
@@ -556,7 +556,7 @@ $showVarsWin = {}
 def showVars1(parent, *args)
   if $showVarsWin[parent.path]
     begin
-      $showVarsWin[parent.path].destroy 
+      $showVarsWin[parent.path].destroy
     rescue
     end
   end
@@ -596,7 +596,7 @@ end
 def showVars2(parent, *args)
   if $showVarsWin[parent.path]
     begin
-      $showVarsWin[parent.path].destroy 
+      $showVarsWin[parent.path].destroy
     rescue
     end
   end
@@ -605,11 +605,11 @@ def showVars2(parent, *args)
 
     base = TkFrame.new(top).pack(:fill=>:both, :expand=>true)
 
-    TkLabelFrame.new(base, :text=>"変数値:", 
+    TkLabelFrame.new(base, :text=>"変数値:",
                      :font=>{:family=>'Helvetica', :size=>14}){|f|
       args.each{|vnam,vbody|
-        TkGrid(TkLabel.new(f, :text=>"#{vnam}: ", :anchor=>'w'), 
-               TkLabel.new(f, :textvariable=>vbody, :anchor=>'w'), 
+        TkGrid(TkLabel.new(f, :text=>"#{vnam}: ", :anchor=>'w'),
+               TkLabel.new(f, :textvariable=>vbody, :anchor=>'w'),
                :padx=>2, :pady=>2, :sticky=>'w')
       }
 
@@ -617,7 +617,7 @@ def showVars2(parent, *args)
       f.grid_columnconfig(1, :weight=>1)
       f.grid_rowconfig(100, :weight=>1)
     }
-    TkButton.new(base, :text=>"了解", :width=>8, :default=>:active, 
+    TkButton.new(base, :text=>"了解", :width=>8, :default=>:active,
                  :command=>proc{top.destroy}){|b|
       top.bind('Return', proc{b.invoke})
       top.bind('Escape', proc{b.invoke})
@@ -667,9 +667,9 @@ class Object
 
   def method_missing(id, *args)
     begin
-      has_top = (top = Thread.current[:TOPLEVEL]) && 
-                   top.respond_to?(:pseudo_toplevel_evaluable?) && 
-                   top.pseudo_toplevel_evaluable? && 
+      has_top = (top = Thread.current[:TOPLEVEL]) &&
+                   top.respond_to?(:pseudo_toplevel_evaluable?) &&
+                   top.pseudo_toplevel_evaluable? &&
                    top.respond_to?(id)
     rescue Exception => e
       has_top = false
@@ -733,9 +733,9 @@ def eval_samplecode(code, file=nil)
         end
       rescue Exception=>e
         #p e
-        TkBgError.show(e.message + "\n" + 
-                         "\n---< backtrace of Ruby side >-----\n" + 
-                         e.backtrace.join("\n") + 
+        TkBgError.show(e.message + "\n" +
+                         "\n---< backtrace of Ruby side >-----\n" +
+                         e.backtrace.join("\n") +
                          "\n---< backtrace of Tk side >-------")
       end
     }
@@ -785,7 +785,7 @@ def showStatus (txt, index)
     newcursor = 'xterm'
   else
     demoname = tag[5..-1]
-    $statusBarLabel.configure('text', 
+    $statusBarLabel.configure('text',
                              "サンプルプログラム \"#{demoname}\" の実行 ")
     newcursor = 'hand2'
   end
@@ -841,9 +841,9 @@ def showCode1(demo)
       TkFrame.new($code_window) {|f|
         pack('expand'=>'yes', 'fill'=>'both', 'padx'=>1, 'pady'=>1)
 
-        hs = TkScrollbar.new($code_window, 'highlightthickness'=>0, 
+        hs = TkScrollbar.new($code_window, 'highlightthickness'=>0,
                              'orient'=>'horizontal')
-        vs = TkScrollbar.new($code_window, 'highlightthickness'=>0, 
+        vs = TkScrollbar.new($code_window, 'highlightthickness'=>0,
                              'orient'=>'vertical')
         $code_text = TkText.new($code_window) {|t|
           height 40
@@ -859,11 +859,11 @@ def showCode1(demo)
           vs.command(proc{|*args| $code_text.yview(*args)})
         }
 
-        $code_text.grid('in'=>f, 'padx'=>1, 'pady'=>1, 'row'=>0, 'column'=>0, 
+        $code_text.grid('in'=>f, 'padx'=>1, 'pady'=>1, 'row'=>0, 'column'=>0,
                         'rowspan'=>1, 'columnspan'=>1, 'sticky'=>'news')
-        vs.grid('in'=>f, 'padx'=>1, 'pady'=>1, 'row'=>0, 'column'=>1, 
+        vs.grid('in'=>f, 'padx'=>1, 'pady'=>1, 'row'=>0, 'column'=>1,
                 'rowspan'=>1, 'columnspan'=>1, 'sticky'=>'news')
-#       xs.grid('in'=>f, 'padx'=>1, 'pady'=>1, 'row'=>1, 'column'=>0, 
+#       xs.grid('in'=>f, 'padx'=>1, 'pady'=>1, 'row'=>1, 'column'=>0,
 #               'rowspan'=>1, 'columnspan'=>1, 'sticky'=>'news')
         TkGrid.rowconfigure(f, 0, 'weight'=>1, 'minsize'=>0)
         TkGrid.columnconfigure(f, 0, 'weight'=>1, 'minsize'=>0)
@@ -900,8 +900,8 @@ def showCode2(demo)
   if $code_window == nil || TkWinfo.exist?($code_window) == false
     $code_window = TkToplevel.new(nil)
     tf = TkFrame.new($code_window)
-    $code_text = TkText.new(tf, :font=>'Courier 10', :height=>30, 
-                           :wrap=>'word', :bd=>1, :setgrid=>true, 
+    $code_text = TkText.new(tf, :font=>'Courier 10', :height=>30,
+                           :wrap=>'word', :bd=>1, :setgrid=>true,
                            :highlightthickness=>0, :pady=>2, :padx=>3)
     xscr = TkScrollbar.new(tf, :bd=>1){assign($code_text)}
     yscr = TkScrollbar.new(tf, :bd=>1){assign($code_text)}
@@ -924,21 +924,21 @@ def showCode2(demo)
       posnum.text  = pos
     }
 
-    #b_dis = TkButton.new(bf, :text=>'了解', :default=>:active, 
-    b_dis = TkButton.new(bf, :text=>'閉じる', :default=>:active, 
+    #b_dis = TkButton.new(bf, :text=>'了解', :default=>:active,
+    b_dis = TkButton.new(bf, :text=>'閉じる', :default=>:active,
                          :command=>proc{
                            $code_window.destroy
                            $code_window = nil
-                         }, 
+                         },
                          :image=>$image['delete'], :compound=>:left)
-    b_prn = TkButton.new(bf, :text=>'印刷', 
-                         :command=>proc{printCode($code_text, file)}, 
+    b_prn = TkButton.new(bf, :text=>'印刷',
+                         :command=>proc{printCode($code_text, file)},
                          :image=>$image['print'], :compound=>:left)
-    b_run = TkButton.new(bf, :text=>'再実行', 
+    b_run = TkButton.new(bf, :text=>'再実行',
                          :command=>proc{
                            # eval($code_text.get('1.0','end'), _null_binding)
                            eval_samplecode($code_text.get('1.0','end'), '<viewer>')
-                         }, 
+                         },
                          :image=>$image['refresh'], :compound=>:left)
 
     TkGrid(lf, 'x', b_run, b_prn, b_dis, :padx=>4, :pady=>[6,4])
@@ -1011,27 +1011,27 @@ def printCode(txt, file)
     when 'unix'
       msg = `lp -c #{fname}`
       unless $?.exitstatus == 0
-        Tk.messageBox(:title=>'Print spooling failure', 
-                      :message=>'エラーが発生しました．' + 
+        Tk.messageBox(:title=>'Print spooling failure',
+                      :message=>'エラーが発生しました．' +
                                 '印刷に失敗したものと思われます : ' + msg)
       end
     when 'windows'
       begin
         printTextWin32(fname)
       rescue => e
-        Tk.messageBox(:title=>'Print spooling failure', 
-                      :message=>'エラーが発生しました．' + 
-                                '印刷に失敗したものと思われます : ' + 
+        Tk.messageBox(:title=>'Print spooling failure',
+                      :message=>'エラーが発生しました．' +
+                                '印刷に失敗したものと思われます : ' +
                                 e.message)
-      end      
+      end
     when 'macintosh'
-      Tk.messageBox(:title=>'Operation not Implemented', 
+      Tk.messageBox(:title=>'Operation not Implemented',
                     :message=>'印刷機能はまだ実装されていません')
     else
-      Tk.messageBox(:title=>'Operation not Implemented', 
-                    :message=>'検出された環境 ' + 
-                              Tk::TCL_PLATFORM('platform') + 
-                              ' は未知の環境であるため，' + 
+      Tk.messageBox(:title=>'Operation not Implemented',
+                    :message=>'検出された環境 ' +
+                              Tk::TCL_PLATFORM('platform') +
+                              ' は未知の環境であるため，' +
                               '印刷機能は実装されていません: ')
     end
   ensure
@@ -1061,7 +1061,7 @@ def printTextWin32(fname)
   pcmd.gsub!('%1', fname)
   puts pcmd
   cmd = Tk.tk_call('auto_execok', 'start') + ' /min ' + pcmd
-  
+
   msg = `#{cmd}`
   unless $?.exitstatus == 0
     fail RuntimeError, msg
@@ -1073,16 +1073,16 @@ end
 #      Pops up a message box with an "about" message
 #
 def aboutBox
-  Tk.messageBox('icon'=>'info', 'type'=>'ok', 'title'=>'About Widget Demo', 
-                'message'=>"Ruby/Tk ウィジェットデモ Ver.1.7.1-jp\n\n" + 
-                           "based on demos of Tk8.1 -- 8.5  " + 
-                           "( Copyright of Tcl/Tk demos:: " + 
-                           "(c) 1996-1997 Sun Microsystems, Inc. / " + 
-                           "(c) 1997-2000 Ajuba Solutions, Inc. / " + 
-                           "(c) 2001-2007 Donal K. Fellows / " + 
+  Tk.messageBox('icon'=>'info', 'type'=>'ok', 'title'=>'About Widget Demo',
+                'message'=>"Ruby/Tk ウィジェットデモ Ver.1.7.1-jp\n\n" +
+                           "based on demos of Tk8.1 -- 8.5  " +
+                           "( Copyright of Tcl/Tk demos:: " +
+                           "(c) 1996-1997 Sun Microsystems, Inc. / " +
+                           "(c) 1997-2000 Ajuba Solutions, Inc. / " +
+                           "(c) 2001-2007 Donal K. Fellows / " +
                            "(c) 2002-2007 Daniel A. Steffen )\n\n" +
-                           "Your Ruby & Tk Version ::\n" + 
-                           "Ruby#{RUBY_VERSION}(#{RUBY_RELEASE_DATE})[#{RUBY_PLATFORM}] / Tk#{$tk_patchlevel}#{(Tk::JAPANIZED_TK)? '-jp': ''}\n\n" + 
+                           "Your Ruby & Tk Version ::\n" +
+                           "Ruby#{RUBY_VERSION}(#{RUBY_RELEASE_DATE})[#{RUBY_PLATFORM}] / Tk#{$tk_patchlevel}#{(Tk::JAPANIZED_TK)? '-jp': ''}\n\n" +
                            "Ruby/Tk release date :: tcltklib #{TclTkLib::RELEASE_DATE}; tk #{Tk::RELEASE_DATE}")
 end
 
@@ -1096,11 +1096,11 @@ else
   # show the root widget to make it lower then demo windows
   Tk.update
 end
-ARGV.each{|cmd| 
+ARGV.each{|cmd|
   if cmd =~ /(.*).rb/
     cmd = $1
   end
-  #eval(IO.readlines("#{[$demo_dir, cmd].join(File::Separator)}.rb").join, 
+  #eval(IO.readlines("#{[$demo_dir, cmd].join(File::Separator)}.rb").join,
   #     _null_binding)
   eval_samplecode(IO.readlines("#{[$demo_dir, cmd].join(File::Separator)}.rb").join, cmd + '.rb')
 }

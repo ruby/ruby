@@ -122,8 +122,8 @@ char	MasterDevice[] = "/dev/pty%s",
 
 static VALUE eChildExited;
 
-/* Returns the exit status of the child for which PTY#check 
- * raised this exception 
+/* Returns the exit status of the child for which PTY#check
+ * raised this exception
  */
 static VALUE
 echild_status(VALUE self)
