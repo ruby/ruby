@@ -1,3 +1,8 @@
+Sun May 22 21:56:51 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_asn1.c: Use OpenSSL constants V_ASN1_xxx instead of
+	hardcoded numbers for initializing class_tag_map.
+
 Sun May 22 21:29:29 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* include/ruby/defines.h (CASEFOLD_FILESYSTEM): Revert r30508. See #4255.
