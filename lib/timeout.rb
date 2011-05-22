@@ -1,23 +1,22 @@
-# = timeout.rb
+# Timeout long-running blocks
 #
-# execution timeout
-#
-# = Synopsis
+# == Synopsis
 #
 #   require 'timeout'
 #   status = Timeout::timeout(5) {
-#     # Something that should be interrupted if it takes too much time...
+#     # Something that should be interrupted if it takes more than 5 seconds...
 #   }
 #
-# = Description
+# == Description
 #
-# A way of performing a potentially long-running operation in a thread, and terminating
-# it's execution if it hasn't finished by a fixed amount of time.
+# Timeout provides a way to auto-terminate a potentially long-running
+# operation if it hasn't finished in a fixed amount of time.
 #
-# Previous versions of timeout didn't provide use a module for namespace. This version
-# provides both Timeout.timeout, and a backwards-compatible #timeout.
+# Previous versions didn't use a module for namespacing, however
+# #timeout is provided for backwards compatibility.  You
+# should prefer Timeout#timeout instead.
 #
-# = Copyright
+# == Copyright
 #
 # Copyright:: (C) 2000  Network Applied Communication Laboratory, Inc.
 # Copyright:: (C) 2000  Information-technology Promotion Agency, Japan
@@ -34,14 +33,22 @@ module Timeout
   CALLER_OFFSET = ((c = caller[0]) && THIS_FILE =~ c) ? 1 : 0
   # :startdoc:
 
-  # Executes the method's block.  If the block execution terminates before
-  # +sec+ seconds has passed, it returns the result value of the block.
-  # If not, it terminates the execution and raises +exception+ (which defaults
-  # to Timeout::Error).
+  # Perform an operation in a block, timing it out if it takes longer
+  # than +sec+ seconds to complete.
   #
-  # Note that this is both a method of module Timeout, so you can 'include Timeout'
-  # into your classes so they have a #timeout method, as well as a module method,
-  # so you can call it directly as Timeout.timeout().
+  # +sec+:: number of seconds to wait for the block to terminate
+  # +klass+:: Exception Class to raise if the block fails to terminate
+  #           in +sec+ seconds.  Omitting will use the default, Timeout::Error
+  #
+  # The block will be executed on another thread and will be given one
+  # argument: +sec+.
+  #
+  # Returns the result of the block *if* the block completed before
+  # +sec+ seconds, otherwise throws an exception, based on the value of +klass+.
+  #
+  # Note that this is both a method of module Timeout, so you can <tt>include
+  # Timeout</tt> into your classes so they have a #timeout method, as well as
+  # a module method, so you can call it directly as Timeout.timeout().
   def timeout(sec, klass = nil)   #:yield: +sec+
     return yield(sec) if sec == nil or sec.zero?
     exception = klass || Class.new(ExitException)
@@ -85,8 +92,8 @@ end
 #
 #   Timeout::timeout(n, e, &block).
 #
-# Defined for backwards compatibility with earlier versions of timeout.rb, see
-# Timeout#timeout.
+# This method is deprecated and provided only for backwards compatibility.
+# You should use Timeout#timeout instead.
 def timeout(n, e = nil, &block)
   Timeout::timeout(n, e, &block)
 end
