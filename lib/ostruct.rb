@@ -9,31 +9,79 @@
 #
 
 #
-# OpenStruct allows you to create data objects and set arbitrary attributes.
-# For example:
+# An OpenStruct is a data structure, similar to a Hash, that allows the
+# definition of arbitrary attributes with their accompanying values. This is
+# accomplished by using Ruby's metaporgramming to define methods on the class
+# itself.
+#
+# == Examples:
 #
 #   require 'ostruct'
 #
-#   record = OpenStruct.new
-#   record.name    = "John Smith"
-#   record.age     = 70
-#   record.pension = 300
+#   person = OpenStruct.new
+#   person.name    = "John Smith"
+#   person.age     = 70
+#   person.pension = 300
 #
-#   puts record.name     # -> "John Smith"
-#   puts record.address  # -> nil
+#   puts person.name     # -> "John Smith"
+#   puts person.age      # -> 70
+#   puts person.address  # -> nil
 #
-# It is like a hash with a different way to access the data.  In fact, it is
-# implemented with a hash, and you can initialize it with one.
+# An OpenStruct employs a Hash internally to store the methods and values and
+# can even be initialized with one:
 #
-#   hash = { "country" => "Australia", :population => 20_000_000 }
-#   data = OpenStruct.new(hash)
+#   country_data = { :country => "Australia", :population => 20_000_000 }
+#   australia = OpenStruct.new(country_data)
+#   p australia   # -> <OpenStruct country="Australia" population=20000000>
 #
-#   p data        # -> <OpenStruct country="Australia" population=20000000>
+# You may also define the hash in the initialization call:
+#
+#   australia = OpenStruct.new(:country => "Australia", :population => 20_000_000)
+#   p australia   # -> <OpenStruct country="Australia" population=20000000>
+#
+# Hash keys with spaces or characters that would normally not be able to use for
+# method calls (e.g. ()[]*) will not be immediately available on the
+# OpenStruct object as a method for retrieval or assignment, but can be still be
+# reached through the Object#send method.
+#
+#   measurements = OpenStruct.new("length (in inches)" => 24)
+#   measurements.send("length (in inches)")  # -> 24
+#
+#   data_point = OpenStruct.new(:queued? => true)
+#   data_point.queued?                       # -> true
+#   data_point.send("queued?=",false)
+#   data_point.queued?                       # -> false
+#
+# Removing the presence of a method requires the execution the delete_field
+# method as setting the property value to +nil+ will not remove the method.
+#
+#   first_pet = OpenStruct.new(:name => 'Rowdy', :owner => 'John Smith')
+#   first_pet.owner = nil
+#   second_pet = OpenStruct.new(:name => 'Rowdy')
+#
+#   first_pet == second_pet   # -> false
+#
+#   first_pet.delete_field(:owner)
+#   first_pet == second_pet   # -> true
+#
+#
+# == Implementation:
+#
+# An OpenStruct utilizes Ruby's method lookup structure to and find and define
+# the necessary methods for properties. This is accomplished through the method
+# method_missing and define_method.
+#
+# This should be a consideration if there is a concern about the performance of
+# the objects that are created. As there is much more overhead in the setting
+# of these properties compard to utilizing a Hash or a Struct.
 #
 class OpenStruct
   #
-  # Create a new OpenStruct object.  The optional +hash+, if given, will
-  # generate attributes and values.  For example.
+  # Creates a new OpenStruct object.  By default, the resulting OpenStruct
+  # object will have no attributes.
+  #
+  # The optional +hash+, if given, will generate attributes and values.
+  # For example:
   #
   #   require 'ostruct'
   #   hash = { "country" => "Australia", :population => 20_000_000 }
@@ -41,7 +89,11 @@ class OpenStruct
   #
   #   p data        # -> <OpenStruct country="Australia" population=20000000>
   #
-  # By default, the resulting OpenStruct object will have no attributes.
+  # You may also define the hash in the initialization call:
+  #
+  #   australia = OpenStruct.new(:country => "Australia",
+  #                              :population => 20_000_000)
+  #   p australia   # -> <OpenStruct country="Australia" population=20000000>
   #
   def initialize(hash=nil)
     @table = {}
@@ -59,14 +111,43 @@ class OpenStruct
     @table = @table.dup
   end
 
+  #
+  # Provides marshalling support for use by the Marshal library. Returning the
+  # underlying Hash table that contains the functions defined as the keys and
+  # the values assigned to them.
+  #
+  #    require 'ostruct'
+  #
+  #    person = OpenStruct.new
+  #    person.name = 'John Smith'
+  #    person.age  = 70
+  #
+  #    person.marshal_dump # => { :name => 'John Smith', :age => 70 }
+  #
   def marshal_dump
     @table
   end
+
+  #
+  # Provides marshalling support for use by the Marshal library. Accepting
+  # a Hash of keys and values which will be used to populate the internal table
+  #
+  #    require 'ostruct'
+  #
+  #    event = OpenStruct.new
+  #    hash = { 'time' => Time.now, 'title' => 'Birthday Party' }
+  #    event.marshal_load(hash)
+  #    event.title # => 'Birthday Party'
+  #
   def marshal_load(x)
     @table = x
     @table.each_key{|key| new_ostruct_member(key)}
   end
 
+  #
+  # #modifiable is used internally to check if the OpenStruct is able to be
+  # modified before granting access to the internal Hash table to be augmented.
+  #
   def modifiable
     begin
       @modifiable = true
@@ -77,6 +158,11 @@ class OpenStruct
   end
   protected :modifiable
 
+  #
+  # new_ostruct_member is used internally to defined properties on the
+  # OpenStruct. It does this by using the metaprogramming function
+  # define_method for both the getter method and the setter method.
+  #
   def new_ostruct_member(name)
     name = name.to_sym
     unless self.respond_to?(name)
@@ -104,7 +190,14 @@ class OpenStruct
   end
 
   #
-  # Remove the named field from the object.
+  # Remove the named field from the object. Returning the value that the field
+  # contained if it has defined.
+  #
+  #   require 'ostruct'
+  #
+  #   person = OpenStruct.new('name' => 'John Smith', 'age' => 70)
+  #
+  #   person.delete_field('name')  # => 'John Smith'
   #
   def delete_field(name)
     sym = name.to_sym
@@ -144,7 +237,9 @@ class OpenStruct
   protected :table
 
   #
-  # Compare this object and +other+ for equality.
+  # Compares this object and +other+ for equality.  An OpenStruct is equal to
+  # +other+ when +other+ is an OpenStruct and the two object's Hash tables are
+  # equal.
   #
   def ==(other)
     return false unless(other.kind_of?(OpenStruct))

@@ -1,3 +1,8 @@
+Mon May 23 08:45:55 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/ostruct.rb:  Improve documentation.  Patch by Franklin Webber.
+	  [Ruby 1.9 - Bug #4761]
+
 Mon May 23 08:35:24 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* hash.c:  Improve documentation of Hash#key.  Patch by Utkarsh
