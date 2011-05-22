@@ -103,6 +103,11 @@ with all sufficient information, see the ChangeLog file.
     (e.g. used in a X.509 certificate's Subject Public Key Info) when
     exporting public keys to DER or PEM. Backward compatibility is 
     ensured by (already existing) fallbacks during creation.
+  * OpenSSL::ASN1::Constructive#new and OpenSSL::ASN1::Primitive#new
+    (and the constructors of their sub-classes) will no longer force
+    tagging to be set to :EXPLICIT when tag and/or tag_class are passed
+    as parameters. tagging must be set explicitly.
+  * Support for infinite length encodings via infinite_length attribute.
 
 * optparse
   * support for bash/zsh completion.

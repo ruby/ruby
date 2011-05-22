@@ -1,3 +1,8 @@
+Mon May 23 07:19:45 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* NEWS (openssl): Infinite length support. Different behavior of
+	Constructive and Primitive constructors.
+
 Mon May 23 06:58:33 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_asn1.c: Forbid Constructives whose value is not an
