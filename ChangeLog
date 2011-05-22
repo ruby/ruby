@@ -1,3 +1,8 @@
+Sun May 22 11:21:41 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/ipaddr.rb:  Improve documentation.  Patch by Sandor Szucs.
+	  [Ruby 1.9 - Bug #4753]
+
 Sun May 22 11:14:40 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/forwardable.rb:  Document def_delegator.  Patch by Sandor Szucs.
