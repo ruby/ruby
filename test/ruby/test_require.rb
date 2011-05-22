@@ -339,20 +339,4 @@ class TestRequire < Test::Unit::TestCase
                       [], /\$LOADED_FEATURES is frozen; cannot append feature \(RuntimeError\)$/,
                       bug3756)
   end
-
-  def test_case_insensitive
-    load_path = $:.dup
-    loaded = $".dup
-    path = File.expand_path(__FILE__)
-    $:.unshift(File.dirname(path))
-    $".push(path) unless $".include?(path)
-    bug4255 = '[ruby-core:34297]'
-    assert_equal(false, $bug4255 ||= false, bug4255)
-    $bug4255 = true
-    f = File.basename(__FILE__, ".*").upcase
-    assert_equal(false, require(f))
-  ensure
-    $:.replace(load_path)
-    $".replace(loaded)
-  end if File.identical?(__FILE__, __FILE__.upcase)
 end
