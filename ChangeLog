@@ -1,3 +1,8 @@
+Mon May 23 08:35:24 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* hash.c:  Improve documentation of Hash#key.  Patch by Utkarsh
+	  Kukreti.  [Ruby 1.9 - Bug #4760]
+
 Mon May 23 08:32:59 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* enumerator.c:  Improve documentation.  Patch by Dave Copeland.
