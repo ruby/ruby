@@ -702,11 +702,9 @@ garbage_collect_with_gvl(rb_objspace_t *objspace)
 
 static void vm_xfree(rb_objspace_t *objspace, void *ptr);
 
-static void *
-vm_xmalloc(rb_objspace_t *objspace, size_t size)
+static inline void
+vm_malloc_prepare(rb_objspace_t *objspace, size_t size)
 {
-    void *mem;
-
     if ((ssize_t)size < 0) {
 	negative_size_allocation_error("negative allocation size (or too big)");
     }
@@ -720,15 +718,11 @@ vm_xmalloc(rb_objspace_t *objspace, size_t size)
 	(malloc_increase+size) > malloc_limit) {
 	garbage_collect_with_gvl(objspace);
     }
-    mem = malloc(size);
-    if (!mem) {
-	if (garbage_collect_with_gvl(objspace)) {
-	    mem = malloc(size);
-	}
-	if (!mem) {
-	    ruby_memerror();
-	}
-    }
+}
+
+static inline void *
+vm_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
+{
     malloc_increase += size;
 
 #if CALC_EXACT_MALLOC_SIZE
@@ -739,6 +733,24 @@ vm_xmalloc(rb_objspace_t *objspace, size_t size)
 #endif
 
     return mem;
+}
+
+#define TRY_WITH_GC(alloc) do { \
+	if (!(alloc) && \
+	    (!garbage_collect_with_gvl(objspace) || \
+	     !(alloc))) { \
+	    ruby_memerror(); \
+	} \
+    } while (0)
+
+static void *
+vm_xmalloc(rb_objspace_t *objspace, size_t size)
+{
+    void *mem;
+
+    vm_malloc_prepare(objspace, size);
+    TRY_WITH_GC(mem = malloc(size));
+    return vm_malloc_fixup(objspace, mem, size);
 }
 
 static void *
@@ -803,23 +815,37 @@ ruby_xmalloc(size_t size)
     return vm_xmalloc(&rb_objspace, size);
 }
 
-void *
-ruby_xmalloc2(size_t n, size_t size)
+static inline size_t
+xmalloc2_size(size_t n, size_t size)
 {
     size_t len = size * n;
     if (n != 0 && size != len / n) {
 	rb_raise(rb_eArgError, "malloc: possible integer overflow");
     }
-    return vm_xmalloc(&rb_objspace, len);
+    return len;
+}
+
+void *
+ruby_xmalloc2(size_t n, size_t size)
+{
+    return vm_xmalloc(&rb_objspace, xmalloc2_size(n, size));
+}
+
+static void *
+vm_xcalloc(rb_objspace_t *objspace, size_t count, size_t elsize)
+{
+    void *mem;
+    const size_t size = xmalloc2_size(count, elsize);
+
+    vm_malloc_prepare(objspace, size);
+    TRY_WITH_GC(mem = calloc(count, elsize));
+    return vm_malloc_fixup(objspace, mem, size);
 }
 
 void *
 ruby_xcalloc(size_t n, size_t size)
 {
-    void *mem = ruby_xmalloc2(n, size);
-    memset(mem, 0, n * size);
-
-    return mem;
+    return vm_xcalloc(&rb_objspace, n, size);
 }
 
 void *

@@ -1,3 +1,8 @@
+Sun May 22 18:26:43 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (vm_xcalloc): use calloc provided by platforms.
+	  fixes #4754
+
 Sun May 22 11:44:53 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/pty/pty.c:  Improve documentaton.  Patch by David Copeland.
