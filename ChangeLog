@@ -1,3 +1,8 @@
+Sun May 22 11:07:47 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/curses/curses.c:  Complete documentation.  Patch by Vincent
+	  Batts.  [Ruby 1.9 - Bug #4748]
+
 Sun May 22 09:29:43 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_rubyoptions.rb (TestRubyOptions#test_set_program_name):
