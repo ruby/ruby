@@ -489,6 +489,8 @@ static ossl_asn1_info_t ossl_asn1_info[] = {
 
 int ossl_asn1_info_size = (sizeof(ossl_asn1_info)/sizeof(ossl_asn1_info[0]));
 
+static VALUE class_tag_map;
+
 static int ossl_asn1_default_tag(VALUE obj);
 
 ASN1_TYPE*
@@ -570,13 +572,13 @@ ossl_asn1_get_asn1type(VALUE obj)
 static int
 ossl_asn1_default_tag(VALUE obj)
 {
-    int i;
-
-    for(i = 0; i < ossl_asn1_info_size; i++){
-	if(ossl_asn1_info[i].klass &&
-	   rb_obj_is_kind_of(obj, *ossl_asn1_info[i].klass)){
-	    return i;
-	}
+    VALUE tmp_class = CLASS_OF(obj);
+    while (tmp_class) {
+        VALUE tag = rb_hash_lookup(class_tag_map, tmp_class);
+        if (tag != Qnil) {
+            return NUM2INT(tag);
+        }
+        tmp_class = RCLASS_SUPER(tmp_class);
     }
     ossl_raise(eASN1Error, "universal tag for %s not found",
 	       rb_class2name(CLASS_OF(obj)));
@@ -1765,4 +1767,30 @@ do{\
     rb_attr(cASN1BitString, rb_intern("unused_bits"), 1, 1, 0);
 
     rb_define_method(cASN1EndOfContent, "initialize", ossl_asn1eoc_initialize, 0);
+
+    class_tag_map = rb_hash_new();
+    rb_hash_aset(class_tag_map, cASN1EndOfContent, INT2NUM(0));
+    rb_hash_aset(class_tag_map, cASN1Boolean, INT2NUM(1));
+    rb_hash_aset(class_tag_map, cASN1Integer, INT2NUM(2));
+    rb_hash_aset(class_tag_map, cASN1BitString, INT2NUM(3));
+    rb_hash_aset(class_tag_map, cASN1OctetString, INT2NUM(4));
+    rb_hash_aset(class_tag_map, cASN1Null, INT2NUM(5));
+    rb_hash_aset(class_tag_map, cASN1ObjectId, INT2NUM(6));
+    rb_hash_aset(class_tag_map, cASN1Enumerated, INT2NUM(10));
+    rb_hash_aset(class_tag_map, cASN1UTF8String, INT2NUM(12));
+    rb_hash_aset(class_tag_map, cASN1Sequence, INT2NUM(16));
+    rb_hash_aset(class_tag_map, cASN1Set, INT2NUM(17));
+    rb_hash_aset(class_tag_map, cASN1NumericString, INT2NUM(18));
+    rb_hash_aset(class_tag_map, cASN1PrintableString, INT2NUM(19));
+    rb_hash_aset(class_tag_map, cASN1T61String, INT2NUM(20));
+    rb_hash_aset(class_tag_map, cASN1VideotexString, INT2NUM(21));
+    rb_hash_aset(class_tag_map, cASN1IA5String, INT2NUM(22));
+    rb_hash_aset(class_tag_map, cASN1UTCTime, INT2NUM(23));
+    rb_hash_aset(class_tag_map, cASN1GeneralizedTime, INT2NUM(24));
+    rb_hash_aset(class_tag_map, cASN1GraphicString, INT2NUM(25));
+    rb_hash_aset(class_tag_map, cASN1ISO64String, INT2NUM(26));
+    rb_hash_aset(class_tag_map, cASN1GeneralString, INT2NUM(27));
+    rb_hash_aset(class_tag_map, cASN1UniversalString, INT2NUM(28));
+    rb_hash_aset(class_tag_map, cASN1BMPString, INT2NUM(30));
+    rb_global_variable(&class_tag_map);
 }

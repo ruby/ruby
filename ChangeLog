@@ -1,3 +1,9 @@
+Sun May 22 08:57:13 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_asn1.c: Default tag lookup in constant time via hash
+	instead of previous linear algorithm.
+	[Ruby 1.9 - Feature #4309][ruby-core:34813]
+
 Sun May 22 07:54:16 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_digest.c: Explain DSS and DSS1 in documentation.
