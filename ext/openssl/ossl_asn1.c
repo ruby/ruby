@@ -158,17 +158,17 @@ num_to_asn1integer(VALUE obj, ASN1_INTEGER *ai)
 /*
  * ASN1 module
  */
-#define ossl_asn1_get_value(o)           rb_attr_get((o),rb_intern("@value"))
-#define ossl_asn1_get_tag(o)             rb_attr_get((o),rb_intern("@tag"))
-#define ossl_asn1_get_tagging(o)         rb_attr_get((o),rb_intern("@tagging"))
-#define ossl_asn1_get_tag_class(o)       rb_attr_get((o),rb_intern("@tag_class"))
-#define ossl_asn1_get_infinite_length(o) rb_attr_get((o),rb_intern("@infinite_length"))
+#define ossl_asn1_get_value(o)           rb_attr_get((o),sivVALUE)
+#define ossl_asn1_get_tag(o)             rb_attr_get((o),sivTAG)
+#define ossl_asn1_get_tagging(o)         rb_attr_get((o),sivTAGGING)
+#define ossl_asn1_get_tag_class(o)       rb_attr_get((o),sivTAG_CLASS)
+#define ossl_asn1_get_infinite_length(o) rb_attr_get((o),sivINFINITE_LENGTH)
 
-#define ossl_asn1_set_value(o,v)           rb_iv_set((o),"@value",(v))
-#define ossl_asn1_set_tag(o,v)             rb_iv_set((o),"@tag",(v))
-#define ossl_asn1_set_tagging(o,v)         rb_iv_set((o),"@tagging",(v))
-#define ossl_asn1_set_tag_class(o,v)       rb_iv_set((o),"@tag_class",(v))
-#define ossl_asn1_set_infinite_length(o,v) rb_iv_set((o),"@infinite_length",(v))
+#define ossl_asn1_set_value(o,v)           rb_ivar_set((o),sivVALUE,(v))
+#define ossl_asn1_set_tag(o,v)             rb_ivar_set((o),sivTAG,(v))
+#define ossl_asn1_set_tagging(o,v)         rb_ivar_set((o),sivTAGGING,(v))
+#define ossl_asn1_set_tag_class(o,v)       rb_ivar_set((o),sivTAG_CLASS,(v))
+#define ossl_asn1_set_infinite_length(o,v) rb_ivar_set((o),sivINFINITE_LENGTH,(v))
 
 VALUE mASN1;
 VALUE eASN1Error;
@@ -194,6 +194,7 @@ VALUE cASN1Sequence, cASN1Set;                /* CONSTRUCTIVE      */
 
 static ID sIMPLICIT, sEXPLICIT;
 static ID sUNIVERSAL, sAPPLICATION, sCONTEXT_SPECIFIC, sPRIVATE;
+static ID sivVALUE, sivTAG, sivTAG_CLASS, sivTAGGING, sivINFINITE_LENGTH, sivUNUSED_BITS;
 
 /*
  * Ruby to ASN1 converters
@@ -515,7 +516,7 @@ ossl_asn1_get_asn1type(VALUE obj)
 	free_func = ASN1_INTEGER_free;
 	break;
     case V_ASN1_BIT_STRING:
-        rflag = rb_attr_get(obj, rb_intern("@unused_bits"));
+        rflag = rb_attr_get(obj, sivUNUSED_BITS);
         flag = NIL_P(rflag) ? -1 : NUM2INT(rflag);
 	ptr = obj_to_asn1bstr(value, flag);
 	free_func = ASN1_BIT_STRING_free;
@@ -862,7 +863,7 @@ ossl_asn1_decode0(unsigned char **pp, long length, long *offset, long depth,
                 }
             }
 	    if(tag == V_ASN1_BIT_STRING){
-		rb_iv_set(asn1data, "@unused_bits", LONG2NUM(flag));
+		rb_ivar_set(asn1data, sivUNUSED_BITS, LONG2NUM(flag));
 	    }
 	}
 	else{
@@ -1311,6 +1312,13 @@ Init_ossl_asn1()
     sPRIVATE = rb_intern("PRIVATE");
     sEXPLICIT = rb_intern("EXPLICIT");
     sIMPLICIT = rb_intern("IMPLICIT");
+
+    sivVALUE = rb_intern("@value");
+    sivTAG = rb_intern("@tag");
+    sivTAGGING = rb_intern("@tagging");
+    sivTAG_CLASS = rb_intern("@tag_class");
+    sivINFINITE_LENGTH = rb_intern("@infinite_length");
+    sivUNUSED_BITS = rb_intern("@unused_bits");
 
     /*
      * Document-module: OpenSSL::ASN1
