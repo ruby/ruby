@@ -2,9 +2,26 @@ require 'test/unit'
 
 require 'tmpdir'
 require 'tempfile'
+require 'pathname'
+
 require_relative 'envutil'
 
 class TestRubyOptions < Test::Unit::TestCase
+  def write_file(filename, content)
+    File.open(filename, "w") {|f|
+      f << content
+    }
+  end
+
+  def with_tmpchdir
+    Dir.mktmpdir {|d|
+      d = Pathname.new(d).realpath.to_s
+      Dir.chdir(d) {
+        yield d
+      }
+    }
+  end
+
   def test_source_file
     assert_in_out_err([], "", [], [])
   end
@@ -403,10 +420,15 @@ class TestRubyOptions < Test::Unit::TestCase
   def test_set_program_name
     skip if /linux|freebsd|netbsd|openbsd/ !~ RUBY_PLATFORM
 
-    pid = spawn([EnvUtil.rubybin, %!-e "$0 = 'hello world'; sleep 100"!])
-    ps = `ps -p #{pid} -o command`
-    assert_match(/hello world/, ps)
-    Process.kill :KILL, pid
+    with_tmpchdir do
+      write_file("test-script", "$0 = 'hello world'; sleep 60")
+
+      pid = spawn(EnvUtil.rubybin, "test-script")
+      sleep 0.1
+      ps = `ps -p #{pid} -o command`
+      assert_match(/hello world/, ps)
+      Process.kill :KILL, pid
+    end
   end
 
   def test_segv_test
