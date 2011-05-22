@@ -1,3 +1,8 @@
+Mon May 23 06:58:33 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_asn1.c: Forbid Constructives whose value is not an
+	Array to prevent segfault. Added test.
+
 Mon May 23 06:33:17 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_asn1.c: Forbid Constructive without infinite

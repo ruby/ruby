@@ -1225,19 +1225,22 @@ ossl_asn1cons_to_der(VALUE self)
     int found_prim = 0, seq_len;
     long length;
     unsigned char *p;
-    VALUE value, str, inf_length, ary, example;
+    VALUE value, str, inf_length;
 
     tn = NUM2INT(ossl_asn1_get_tag(self));
     tc = ossl_asn1_tag_class(self);
     inf_length = ossl_asn1_get_infinite_length(self);
     if (inf_length == Qtrue) {
+	VALUE ary, example;
 	constructed = 2;
 	if (CLASS_OF(self) == cASN1Sequence ||
 	    CLASS_OF(self) == cASN1Set) {
 	    tag = ossl_asn1_default_tag(self);
 	}
-	else { /*BIT_STRING OR OCTET_STRING*/
+	else { /* must be a constructive encoding of a primitive value */
 	    ary = ossl_asn1_get_value(self);
+	    if (!rb_obj_is_kind_of(ary, rb_cArray))
+		ossl_raise(eASN1Error, "Constructive value must be an Array");
 	    /* Recursively descend until a primitive value is found.
 	    The overall value of the entire constructed encoding
 	    is of the type of the first primitive encoding to be

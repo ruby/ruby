@@ -254,6 +254,18 @@ class  OpenSSL::TestASN1 < Test::Unit::TestCase
     end
   end
 
+  def test_cons_without_array_forbidden
+    assert_raise(OpenSSL::ASN1::ASN1Error) do
+      val = OpenSSL::ASN1::OctetString.new('a')
+      cons = OpenSSL::ASN1::Constructive.new(val,
+                                            OpenSSL::ASN1::OCTET_STRING,
+                                            nil,
+                                            :UNIVERSAL)
+      cons.infinite_length = true
+      cons.to_der
+    end
+  end
+
   def test_seq_infinite_length
     begin
       content = [ OpenSSL::ASN1::Null.new(nil),
