@@ -525,6 +525,12 @@ const char *available_extensions[] = {
   ""
 };
 
+#ifdef DLEXT2
+VALUE available_ext_rb_str[4];
+#else
+VALUE available_ext_rb_str[3];
+#endif
+
 const char *alternate_dl_extensions[] = {
   DLEXT,
 #ifdef DLEXT2
@@ -533,6 +539,7 @@ const char *alternate_dl_extensions[] = {
 };
 
 #define CHAR_ARRAY_LEN(array) sizeof(array) / sizeof(char*)
+#define VALUE_ARRAY_LEN(array) sizeof(array) / sizeof(VALUE)
 
 // TODO: Optimize this function, it gets called heaps. Do far less in ruby.
 static VALUE
@@ -545,12 +552,10 @@ rb_locate_file_with_extensions(VALUE base_file_name) {
 	extension = rb_funcall(rb_cFile, rb_intern("extname"), 1, base_file_name);
 
 	if (RSTRING_LEN(extension) == 0) {
-		for (j = 0; j < CHAR_ARRAY_LEN(available_extensions); ++j) {
-			file_name_with_extension = rb_funcall(
+		for (j = 0; j < VALUE_ARRAY_LEN(available_ext_rb_str); ++j) {
+			file_name_with_extension = rb_str_plus(
 					base_file_name,
-					rb_intern("+"),
-					1,
-					rb_str_new2(available_extensions[j]));
+					available_ext_rb_str[j]);
 
 			if (rb_feature_exists(file_name_with_extension)) {
 				return file_name_with_extension;
@@ -603,12 +608,13 @@ rb_locate_file_in_load_path(VALUE path)
 	VALUE load_path = rb_get_expanded_load_path();
 	VALUE expanded_file_name = Qnil;
 	VALUE base_file_name = Qnil;
+	VALUE sep = rb_str_new2("/");
 
 	for (i = 0; i < RARRAY_LEN(load_path); ++i) {
 		VALUE directory = RARRAY_PTR(load_path)[i];
 
-		base_file_name = rb_funcall(directory, rb_intern("+"), 1, rb_str_new2("/"));
-		base_file_name = rb_funcall(base_file_name, rb_intern("+"), 1, path);
+		base_file_name = rb_str_plus(directory, sep);
+		base_file_name = rb_str_concat(base_file_name, path);
 
 		expanded_file_name = rb_locate_file_with_extensions(base_file_name);
 
@@ -852,6 +858,7 @@ Init_load()
 {
 #undef rb_intern
 #define rb_intern(str) rb_intern2((str), strlen(str))
+	unsigned int j;
     rb_vm_t *vm = GET_VM();
     static const char var_load_path[] = "$:";
     ID id_load_path = rb_intern2(var_load_path, sizeof(var_load_path)-1);
@@ -880,4 +887,9 @@ Init_load()
 
     ruby_dln_librefs = rb_ary_new();
     rb_gc_register_mark_object(ruby_dln_librefs);
+
+	for (j = 0; j < CHAR_ARRAY_LEN(available_extensions); ++j) {
+		available_ext_rb_str[j] = rb_str_new2(available_extensions[j]);
+		rb_gc_register_mark_object(available_ext_rb_str[j]);
+	}
 }
