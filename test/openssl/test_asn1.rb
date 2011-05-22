@@ -215,6 +215,34 @@ class  OpenSSL::TestASN1 < Test::Unit::TestCase
     end
   end
 
+  def test_decode_all
+    expected = %w{ 02 01 01 02 01 02 02 01 03 }
+    raw = [expected.join('')].pack('H*')
+    ary = OpenSSL::ASN1.decode_all(raw)
+    assert_equal(3, ary.size)
+    ary.each_with_index do |asn1, i|
+      assert_universal(OpenSSL::ASN1::INTEGER, asn1)
+      assert_equal(i + 1, asn1.value)
+    end
+  end
+
+  def test_create_inf_length_primitive
+    expected = %w{ 24 80 04 01 61 00 00 }
+    raw = [expected.join('')].pack('H*')
+    val = OpenSSL::ASN1::OctetString.new('a')
+    cons = OpenSSL::ASN1::Constructive.new([val,
+                                            OpenSSL::ASN1::EndOfContent.new],
+                                            OpenSSL::ASN1::OCTET_STRING,
+                                            nil,
+                                            :UNIVERSAL)
+    cons.infinite_length = true
+    assert_equal(nil, cons.tagging)
+    assert_equal(raw, cons.to_der)
+    asn1 = OpenSSL::ASN1.decode(raw)
+    assert(asn1.infinite_length)
+    assert_equal(raw, asn1.to_der)
+  end
+
   def test_seq_infinite_length
     begin
       content = [ OpenSSL::ASN1::Null.new(nil),
@@ -315,7 +343,7 @@ class  OpenSSL::TestASN1 < Test::Unit::TestCase
                   OpenSSL::ASN1::EndOfContent.new() ]
       seq = OpenSSL::ASN1::Sequence.new(content, 2, :EXPLICIT)
       seq.infinite_length = true
-      expected = %w{ A2 80 30 80 13 03 61 62 63 00 00 }
+      expected = %w{ A2 80 30 80 13 03 61 62 63 00 00 00 00 }
       raw = [expected.join('')].pack('H*')
       assert_equal(raw, seq.to_der)
       assert_equal(raw, OpenSSL::ASN1.decode(raw).to_der)
@@ -355,7 +383,7 @@ class  OpenSSL::TestASN1 < Test::Unit::TestCase
         1,
         :EXPLICIT)
       cons.infinite_length = true
-      expected = %w{ A1 80 24 80 04 03 61 61 61 00 00 }
+      expected = %w{ A1 80 24 80 04 03 61 61 61 00 00 00 00 }
       raw = [expected.join('')].pack('H*')
       assert_equal(raw, cons.to_der)
       assert_equal(raw, OpenSSL::ASN1.decode(raw).to_der)
@@ -437,6 +465,51 @@ class  OpenSSL::TestASN1 < Test::Unit::TestCase
       OpenSSL::ASN1.decode(raw)
       OpenSSL::ASN1.decode_all(raw)
     end
+  end
+
+  def test_recursive_octet_string_parse
+    test = %w{ 24 80 24 80 04 01 01 00 00 24 80 04 01 02 00 00 04 01 03 00 00 }
+    raw = [test.join('')].pack('H*')
+    asn1 = OpenSSL::ASN1.decode(raw)
+    assert_equal(OpenSSL::ASN1::Constructive, asn1.class)
+    assert_universal(OpenSSL::ASN1::OCTET_STRING, asn1)
+    assert_equal(true, asn1.infinite_length)
+    assert_equal(4, asn1.value.size)
+    nested1 = asn1.value[0]
+    assert_equal(OpenSSL::ASN1::Constructive, nested1.class)
+    assert_universal(OpenSSL::ASN1::OCTET_STRING, nested1)
+    assert_equal(true, nested1.infinite_length)
+    assert_equal(2, nested1.value.size)
+    oct1 = nested1.value[0]
+    assert_universal(OpenSSL::ASN1::OCTET_STRING, oct1)
+    assert_equal(false, oct1.infinite_length)
+    assert_universal(OpenSSL::ASN1::EOC, nested1.value[1])
+    assert_equal(false, nested1.value[1].infinite_length)
+    nested2 = asn1.value[1]
+    assert_equal(OpenSSL::ASN1::Constructive, nested2.class)
+    assert_universal(OpenSSL::ASN1::OCTET_STRING, nested2)
+    assert_equal(true, nested2.infinite_length)
+    assert_equal(2, nested2.value.size)
+    oct2 = nested2.value[0]
+    assert_universal(OpenSSL::ASN1::OCTET_STRING, oct2)
+    assert_equal(false, oct2.infinite_length)
+    assert_universal(OpenSSL::ASN1::EOC, nested2.value[1])
+    assert_equal(false, nested2.value[1].infinite_length)
+    oct3 = asn1.value[2]
+    assert_universal(OpenSSL::ASN1::OCTET_STRING, oct3)
+    assert_equal(false, oct3.infinite_length)
+    assert_universal(OpenSSL::ASN1::EOC, asn1.value[3])
+    assert_equal(false, asn1.value[3].infinite_length)
+  end
+
+  private
+
+  def assert_universal(tag, asn1)
+    assert_equal(tag, asn1.tag)
+    if asn1.respond_to?(:tagging)
+      assert_nil(asn1.tagging)
+    end
+    assert_equal(:UNIVERSAL, asn1.tag_class)
   end
 
 end if defined?(OpenSSL)

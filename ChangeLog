@@ -1,3 +1,10 @@
+Mon May 23 05:58:14 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_asn1.c: Fix decoding of infinite length values.
+	Simplified ossl_asn1_decode0 by splitting it into three separate
+	functions. Add tests.
+	[Ruby 1.9 - Bug #4374][ruby-core:35123]
+
 Mon May 23 04:03:46 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_asn1.c (ossl_asn1_initialize): Allow creation of
