@@ -1,3 +1,9 @@
+Mon May 23 06:33:17 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_asn1.c: Forbid Constructive without infinite
+	length. This also prevents a segfault. Added test and improved
+	documentation.
+
 Mon May 23 05:58:14 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_asn1.c: Fix decoding of infinite length values.

@@ -1260,6 +1260,8 @@ ossl_asn1cons_to_der(VALUE self)
 	}
     }
     else {
+	if (CLASS_OF(self) == cASN1Constructive)
+	    ossl_raise(eASN1Error, "Constructive shall only be used with infinite length");
 	tag = ossl_asn1_default_tag(self);
     }
     explicit = ossl_asn1_is_explicit(self);
@@ -1808,6 +1810,10 @@ Init_ossl_asn1()
      * concatenation of each partial encoding taken in sequence. The +value+
      * array of the outer infinite length value must end with a
      * OpenSSL::ASN1::EndOfContent instance.
+     *
+     * Please note that it is not possible to encode Constructive without
+     * the +infinite_length+ attribute being set to +true+, use 
+     * OpenSSL::ASN1::Sequence or OpenSSL::ASN1::Set in these cases instead.
      *
      * === Example - Infinite length OCTET STRING
      *   partial1 = OpenSSL::ASN1::OctetString.new("\x01")
