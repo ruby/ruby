@@ -1,5 +1,12 @@
 Mon May 23 04:03:46 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
+	* ext/openssl/ossl_asn1.c (ossl_asn1_initialize): Allow creation of
+	Constructives with an explicit tag_class parameter without
+	automatically setting tagging to :EXPLICIT. Fixes a bug when encoding
+	infinite length primitive values.
+
+Mon May 23 04:03:46 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
 	* ext/openssl/ossl_asn1.c (ossl_asn1_cons_to_der): Add an additional
 	EOC for infinite length Constructives that are supposed to be encoded
 	with explicit tagging. Also tabify method correctly.
