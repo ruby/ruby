@@ -122,6 +122,9 @@ char	MasterDevice[] = "/dev/pty%s",
 
 static VALUE eChildExited;
 
+/* Returns the exit status of the child for which PTY#check 
+ * raised this exception 
+ */
 static VALUE
 echild_status(VALUE self)
 {
@@ -428,20 +431,28 @@ pty_close_pty(VALUE assoc)
 
 /*
  * call-seq:
- *   PTY.open   => [master_io, slave_file]
- *   PTY.open {|master_io, slave_file| ... }    => block value
+ *   PTY.open => [master_io, slave_file]
+ *   PTY.open {|master_io, slave_file| ... } => block value
  *
  * Allocates a pty (pseudo-terminal).
  *
- * It returns an array which contains an IO object and a File object.
- * The former is the master of the pty.
- * The latter is the slave of the pty.
+ * In the non-block form, returns a two element array, <tt>[master_io,
+ * slave_file]</tt>.
  *
- * If a block is given, it yields the array instead of return.
- * The value of the block is returned.
- * master_io and slave_file is closed when return if they are not closed.
+ * In the block form, yields two arguments <tt>master_io, slave_file</tt>
+ * and the value of the block is returned from +open+.
  *
- * The path name of the terminal device can be gotten by slave_file.path.
+ * The IO and File are both closed after the block completes if they haven't
+ * been already closed.
+ *
+ * The arguments in both forms are:
+ *
+ * <tt>master_io</tt>:: the master of the pty, as an IO.
+ * <tt>slave_file</tt>:: the slave of the pty, as a File.  The path to the
+ *                       terminal device is available via
+ *                       <tt>slave_file.path</tt>
+ *
+ * === Example
  *
  *   PTY.open {|m, s|
  *     p m      #=> #<IO:masterpty:/dev/pts/1>
@@ -465,7 +476,8 @@ pty_close_pty(VALUE assoc)
  *   w.puts "144"
  *   p m.gets #=> "144: 2 2 2 2 3 3\n"
  *   w.close
- *   # The result of read operation when pty slave is closed is platform dependnet.
+ *   # The result of read operation when pty slave is closed is platform
+ *   # dependent.
  *   ret = begin
  *           m.gets          # FreeBSD returns nil.
  *         rescue Errno::EIO # GNU/Linux raises EIO.
@@ -513,24 +525,34 @@ pty_detach_process(struct pty_info *info)
 
 /*
  * call-seq:
- *   PTY.spawn(command...) {|r, w, pid| ... }   => nil
- *   PTY.spawn(command...)                      => r, w, pid
- *   PTY.getpty(command...) {|r, w, pid| ... }  => nil
- *   PTY.getpty(command...)                     => r, w, pid
+ *   PTY.spawn(command_line)  { |r, w, pid| ... }
+ *   PTY.spawn(command_line)  => [r, w, pid]
+ *   PTY.spawn(command, args, ...)  { |r, w, pid| ... }
+ *   PTY.spawn(command, args, ...)  => [r, w, pid]
+ *   PTY.getpty(command_line)  { |r, w, pid| ... }
+ *   PTY.getpty(command_line)  => [r, w, pid]
+ *   PTY.getpty(command, args, ...)  { |r, w, pid| ... }
+ *   PTY.getpty(command, args, ...)  => [r, w, pid]
  *
- * spawns the specified command on a newly allocated pty.
+ * Spawns the specified command on a newly allocated pty.
  *
- * The command's controlling tty is set to the slave device of the pty.
- * Also its standard input/output/error is redirected to the slave device.
+ * The command's controlling tty is set to the slave device of the pty
+ * and its standard input/output/error is redirected to the slave device.
  *
- * PTY.spawn returns two IO objects and PID.
- * PID is the process ID of the command.
- * The two IO objects are connected to the master device of the pty.
- * The first IO object is opened as read mode and
- * The second is opened as write mode.
+ * <tt>command_line</tt>:: The full command line to run
+ * <tt>command</tt>:: The command to run, as a String.
+ * <tt>args</tt>:: Zero or more arguments, as Strings, representing
+ *                 the arguments to +command+
  *
- * If a block is given, two IO objects and PID is yielded.
+ * In the non-block form this returns an array of size three,
+ * <tt>[r, w, pid]</tt>.  In the block form the block will be called with
+ * these as arguments, <tt>|r,w,pid|</tt>:
  *
+ * +r+:: An IO that can be read from that contains the command's
+ *       standard output and standard error
+ * +w+:: An IO that can be written to that is the command's
+ *       standard input
+ * +pid+:: The process identifier for the command.
  */
 static VALUE
 pty_getpty(int argc, VALUE *argv, VALUE self)
@@ -599,12 +621,19 @@ raise_from_check(pid_t pid, int status)
 
 /*
  * call-seq:
- *   PTY.check(pid[, raise=false])   => Process::Status or nil
+ *   PTY.check(pid, raise = false) => Process::Status or nil
+ *   PTY.check(pid, true)          => nil or raises PTY::ChildExited
  *
- * checks the status of the child process specified by _pid_, and
- * returns +nil+ if the process is still alive and active.  Otherwise,
- * returns +Process::Status+ about the process if _raise_ is false, or
- * +PTY::ChildExited+ exception is raised.
+ * Checks the status of the child process specified by +pid+.
+ * Returns +nil+ if the process is still alive.  If the process
+ * is not alive, will return a <tt>Process::Status</tt> or raise
+ * a <tt>PTY::ChildExited</tt> (if +raise+ was true).
+ *
+ * +pid+:: The process id of the process to check
+ * +raise+:: If true and the process identified by +pid+ is no longer
+ *           alive a <tt>PTY::ChildExited</tt> is raised.
+ *
+ * Returns nil or a <tt>Process::Status</tt> when +raise+ is false.
  */
 static VALUE
 pty_check(int argc, VALUE *argv, VALUE self)
@@ -619,10 +648,24 @@ pty_check(int argc, VALUE *argv, VALUE self)
 
     if (!RTEST(exc)) return rb_last_status_get();
     raise_from_check(cpid, status);
-    return Qnil;		/* not reached */
+    return Qnil;
 }
 
 static VALUE cPTY;
+
+/*
+ * Document-class: PTY::ChildExited
+ *
+ * Thrown when PTY#check is called for a pid that represents a process that
+ * has exited.
+ */
+
+/*
+ * Document-class: PTY
+ *
+ * Creates and managed pseudo terminals (PTYs).  See also
+ * http://en.wikipedia.org/wiki/Pseudo_terminal
+ */
 
 void
 Init_pty()
