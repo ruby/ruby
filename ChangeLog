@@ -1,7 +1,12 @@
+Sun May 22 11:14:40 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/forwardable.rb:  Document def_delegator.  Patch by Sandor Szucs.
+	  [Ruby 1.9 - Bug #4752]
+
 Sun May 22 11:11:41 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/fileutils.rb:  Document block behavior of FileUtils.cd.  Patch by
-	  Bil Kleb.  [Ruby 1.9 - Bug 4751]
+	  Bil Kleb.  [Ruby 1.9 - Bug #4751]
 
 Sun May 22 11:07:47 2011  Eric Hodel  <drbrain@segment7.net>
 
