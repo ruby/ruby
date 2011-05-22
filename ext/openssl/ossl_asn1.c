@@ -1137,36 +1137,36 @@ ossl_asn1cons_to_der(VALUE self)
     tc = ossl_asn1_tag_class(self);
     inf_length = ossl_asn1_get_infinite_length(self);
     if (inf_length == Qtrue) {
-        constructed = 2;
-        if (CLASS_OF(self) == cASN1Sequence ||
-            CLASS_OF(self) == cASN1Set) {
-            tag = ossl_asn1_default_tag(self);
-        }
-        else { /*BIT_STRING OR OCTET_STRING*/
-            ary = ossl_asn1_get_value(self);
-            /* Recursively descend until a primitive value is found.
-               The overall value of the entire constructed encoding
-               is of the type of the first primitive encoding to be
-               found. */
-            while (!found_prim){
-                example = rb_ary_entry(ary, 0);
-                if (rb_obj_is_kind_of(example, cASN1Primitive)){
-                    found_prim = 1;
-                }
-                else {
-                    /* example is another ASN1Constructive */
-                    if (!rb_obj_is_kind_of(example, cASN1Constructive)){
-                        ossl_raise(eASN1Error, "invalid constructed encoding");
-                        return Qnil; /* dummy */
-                    }
-                    ary = ossl_asn1_get_value(example);
-                }
-            }
-            tag = ossl_asn1_default_tag(example);
-        }
+	constructed = 2;
+	if (CLASS_OF(self) == cASN1Sequence ||
+	    CLASS_OF(self) == cASN1Set) {
+	    tag = ossl_asn1_default_tag(self);
+	}
+	else { /*BIT_STRING OR OCTET_STRING*/
+	    ary = ossl_asn1_get_value(self);
+	    /* Recursively descend until a primitive value is found.
+	    The overall value of the entire constructed encoding
+	    is of the type of the first primitive encoding to be
+	    found. */
+	    while (!found_prim){
+		example = rb_ary_entry(ary, 0);
+		if (rb_obj_is_kind_of(example, cASN1Primitive)){
+		    found_prim = 1;
+		}
+		else {
+		    /* example is another ASN1Constructive */
+		    if (!rb_obj_is_kind_of(example, cASN1Constructive)){
+			ossl_raise(eASN1Error, "invalid constructed encoding");
+			return Qnil; /* dummy */
+		    }
+		    ary = ossl_asn1_get_value(example);
+		}
+	    }
+	    tag = ossl_asn1_default_tag(example);
+	}
     }
     else {
-        tag = ossl_asn1_default_tag(self);
+	tag = ossl_asn1_default_tag(self);
     }
     explicit = ossl_asn1_is_explicit(self);
     value = join_der(ossl_asn1_get_value(self));
@@ -1182,12 +1182,21 @@ ossl_asn1cons_to_der(VALUE self)
 	    ASN1_put_object(&p, constructed, seq_len, tn, tc);
 	    ASN1_put_object(&p, constructed, RSTRING_LENINT(value), tag, V_ASN1_UNIVERSAL);
 	}
-        else{
-            ASN1_put_object(&p, constructed, RSTRING_LENINT(value), tn, tc);
-        }
+	else{
+	    ASN1_put_object(&p, constructed, RSTRING_LENINT(value), tn, tc);
+	}
     }
     memcpy(p, RSTRING_PTR(value), RSTRING_LEN(value));
     p += RSTRING_LEN(value);
+
+    /* In this case we need an additional EOC (one for the explicit part and
+     * one for the Constructive itself. The EOC for the Constructive is
+     * supplied by the user, but that for the "explicit wrapper" must be
+     * added here.
+     */
+    if (explicit && inf_length == Qtrue) {
+	ASN1_put_eoc(&p);
+    }
     ossl_str_adjust(str, p);
 
     return str;

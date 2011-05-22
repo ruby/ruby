@@ -1,3 +1,14 @@
+Mon May 23 04:03:46 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_asn1.c (ossl_asn1_cons_to_der): Add an additional
+	EOC for infinite length Constructives that are supposed to be encoded
+	with explicit tagging. Also tabify method correctly.
+
+Mon May 23 03:44:39 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_asn1.c (ossl_asn1data_to_der): Remove redundant
+	flag tmp_cons.
+
 Mon May 23 00:35:00 2001  Kenta Murata  <mrkn@mrkn.jp>
 
 	* bignum.c (dump_bignum, bigmul1_balance, big_split, biglsh_bang,
