@@ -115,6 +115,10 @@ module FileUtils
   #
   #   FileUtils.cd('/', :verbose => true)   # chdir and report it
   #
+  #   FileUtils.cd('/') do  # chdir
+  #     [...]               # do something
+  #   end                   # return to original directory
+  #   
   def cd(dir, options = {}, &block) # :yield: dir
     fu_check_options options, OPT_TABLE['cd']
     fu_output_message "cd #{dir}" if options[:verbose]

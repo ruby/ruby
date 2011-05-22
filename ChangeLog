@@ -1,3 +1,8 @@
+Sun May 22 11:11:41 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/fileutils.rb:  Document block behavior of FileUtils.cd.  Patch by
+	  Bil Kleb.  [Ruby 1.9 - Bug 4751]
+
 Sun May 22 11:07:47 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/curses/curses.c:  Complete documentation.  Patch by Vincent
