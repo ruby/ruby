@@ -554,7 +554,6 @@ const char *alternate_dl_extensions[] = {
 #define CHAR_ARRAY_LEN(array) sizeof(array) / sizeof(char*)
 #define VALUE_ARRAY_LEN(array) sizeof(array) / sizeof(VALUE)
 
-// TODO: Optimize this function, it gets called heaps. Do far less in ruby.
 static VALUE
 rb_locate_file_with_extensions(VALUE base_file_name) {
 	unsigned int j;
@@ -562,7 +561,6 @@ rb_locate_file_with_extensions(VALUE base_file_name) {
 	VALUE extension;
 	VALUE directory, basename;
 
-	// TODO: Only calculate this once, outside this function
 	extension = rb_funcall(rb_cFile, rb_intern("extname"), 1, base_file_name);
 
 	if (RSTRING_LEN(extension) == 0) {
