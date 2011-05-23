@@ -1,3 +1,11 @@
+Mon May 23 09:03:52 2011  Shota Fukumori  <sorah@tubusu.net>
+
+	* lib/test/unit/parallel.rb: Never Ignore SIGINT. When received
+	Interrupt, immediately puts result and exit. [ruby-dev:43571]
+
+	* lib/test/unit.rb: When received Interrupt, wait results from workers
+	and correct them. [ruby-dev:43571]
+
 Mon May 23 09:08:07 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/mathn.rb:  Improve documentation.  Patch by Sandor Szucs.
