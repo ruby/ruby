@@ -27,9 +27,12 @@ VALUE ruby_dln_librefs;
 
 
 VALUE rb_f_require(VALUE, VALUE);
-VALUE rb_f_require_relative(VALUE, VALUE fname);
+VALUE rb_f_require_relative(VALUE, VALUE);
+static VALUE rb_f_load(int, VALUE *);
 VALUE rb_require_safe(VALUE, int);
+
 static int rb_file_has_been_required(VALUE);
+static int rb_file_is_being_required(VALUE);
 static int rb_file_is_ruby(VALUE);
 static st_table * get_loaded_features_hash(void);
 static void rb_load_internal(VALUE, int);
@@ -37,6 +40,13 @@ static char * load_lock(const char *);
 static void load_unlock(const char *, int);
 static void load_failed(VALUE fname);
 
+void rb_provide(const char *feature);
+static void rb_provide_feature(VALUE);
+
+/* 
+ * TODO: These functions are all conceptually related, and should be extracted
+ * into a separate file.
+ */
 static VALUE rb_locate_file(VALUE);
 static VALUE rb_locate_file_absolute(VALUE);
 static VALUE rb_locate_file_relative(VALUE);
@@ -46,6 +56,10 @@ static int rb_path_is_absolute(VALUE);
 static int rb_path_is_relative(VALUE);
 VALUE rb_get_expanded_load_path();
 
+/* 
+ * TODO: These functions are all conceptually related, and should be extracted
+ * into a separate file.
+ */
 static VALUE rb_cLoadedFeaturesProxy;
 static void rb_rehash_loaded_features();
 static VALUE rb_loaded_features_hook(int, VALUE*, VALUE);
@@ -137,6 +151,7 @@ rb_provided(const char *feature)
 }
 
 
+/* Mark the given feature as loaded, after it has been evaluated. */
 	static void
 rb_provide_feature(VALUE feature)
 {
@@ -636,6 +651,15 @@ rb_file_has_been_required(VALUE expanded_path)
 	return st_lookup(loaded_features_hash, path_key, &data);
 }
 
+static int
+rb_file_is_being_required(VALUE full_path) {
+	const char *ftptr = RSTRING_PTR(full_path);
+	st_data_t data;
+	st_table *loading_tbl = get_loading_table();
+
+	return (loading_tbl && st_lookup(loading_tbl, (st_data_t)ftptr, &data));
+}
+
 static VALUE
 rb_get_cached_expansion(VALUE filename) 
 {
@@ -847,15 +871,6 @@ define_loaded_features_proxy()
 				rb_loaded_features_hook,
 				-1);
 	}
-}
-
-static int
-rb_file_is_being_required(VALUE full_path) {
-	const char *ftptr = RSTRING_PTR(full_path);
-	st_data_t data;
-	st_table *loading_tbl = get_loading_table();
-
-	return (loading_tbl && st_lookup(loading_tbl, (st_data_t)ftptr, &data));
 }
 
 
