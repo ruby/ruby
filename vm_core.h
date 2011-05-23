@@ -326,6 +326,7 @@ typedef struct rb_vm_struct {
     struct RArray at_exit;
 
     struct st_table *loaded_features_hash;
+    struct st_table *filename_expansion_hash;
 } rb_vm_t;
 
 typedef struct {

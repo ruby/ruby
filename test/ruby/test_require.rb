@@ -355,4 +355,34 @@ class TestRequire < Test::Unit::TestCase
     $:.replace(load_path)
     $".replace(loaded)
   end if File.identical?(__FILE__, __FILE__.upcase)
+
+  def test_feature_is_reloaded_from_new_load_path_entry
+    # This is a bit of a weird test, but it is needed to ensure that some
+    # caching optimizations are working correctly.
+    load_path      = $:.dup
+    loaded         = $".dup
+    initial_length = loaded.length
+
+    Dir.mktmpdir do |tmp|
+      Dir.chdir(tmp) do
+        Dir.mkdir "a"
+        Dir.mkdir "b"
+        File.open("a/test.rb", "w") {|f| f.puts '' }
+        File.open("b/test.rb", "w") {|f| f.puts '' }
+
+        $".clear
+        $:.unshift(File.join(tmp, "b"))
+        require 'test.rb'
+        assert $"[0].include?('b/test.rb')
+
+        $".clear
+        $:.unshift(File.join(tmp, "a"))
+        require 'test.rb'
+        assert $"[0].include?('a/test.rb')
+      end
+    end
+  ensure
+    $:.replace(load_path)
+    $".replace(loaded)
+  end
 end

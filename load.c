@@ -82,6 +82,19 @@ get_loaded_features_hash(void)
     return loaded_features_hash;
 }
 
+static st_table *
+get_filename_expansion_hash(void)
+{
+    st_table* filename_expansion_hash;
+    filename_expansion_hash = GET_VM()->filename_expansion_hash;
+
+    if (!filename_expansion_hash) {
+      GET_VM()->filename_expansion_hash = filename_expansion_hash = st_init_strcasetable();
+    }
+
+    return filename_expansion_hash;
+}
+
 VALUE
 rb_get_expanded_load_path(void)
 {
@@ -664,12 +677,39 @@ rb_file_has_been_required(VALUE expanded_path)
 	return st_lookup(loaded_features_hash, path_key, &data);
 }
 
+static VALUE
+rb_get_cached_expansion(VALUE filename) 
+{
+	st_data_t data;
+	st_data_t path_key = (st_data_t)RSTRING_PTR(filename);
+	st_table *filename_expansion_hash = get_filename_expansion_hash();
+
+	if (st_lookup(filename_expansion_hash, path_key, &data)) {
+		return (VALUE)data;
+	} else {
+		return Qnil;
+	};
+}
+
+static void
+rb_set_cached_expansion(VALUE filename, VALUE expanded)
+{
+	st_data_t data = (st_data_t)expanded;
+	st_data_t path_key = (st_data_t)RSTRING_PTR(filename);
+	st_table *filename_expansion_hash = get_filename_expansion_hash();
+
+	st_insert(filename_expansion_hash, path_key, data);
+}
 
 static VALUE
 rb_locate_file(VALUE filename)
 {
-	// TODO: Cache filename -> full_path mapping as an optimization.
 	VALUE full_path = Qnil;
+
+	full_path = rb_get_cached_expansion(filename);
+
+	if (full_path != Qnil)
+		return full_path;
 
 	if (rb_path_is_relative(filename)) {
 		full_path = rb_locate_file_relative(filename);
@@ -678,6 +718,9 @@ rb_locate_file(VALUE filename)
 	} else {
 		full_path = rb_locate_file_in_load_path(filename);
 	}
+
+	if (full_path != Qnil)
+		rb_set_cached_expansion(filename, full_path);
 
 	return full_path;
 }
@@ -783,12 +826,20 @@ rb_rehash_loaded_features()
   }
 }
 
+static void
+rb_clear_cached_expansions()
+{
+  st_table* filename_expansion_hash = get_filename_expansion_hash();
+  st_clear(filename_expansion_hash);
+}
+
 static VALUE  
 rb_loaded_features_hook(int argc, VALUE *argv, VALUE self)  
 { 
 	VALUE ret;
 	ret = rb_call_super(argc, argv);
 	rb_rehash_loaded_features();
+	rb_clear_cached_expansions();
 	return ret;
 }
 
