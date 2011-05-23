@@ -26,9 +26,9 @@ VALUE ruby_dln_librefs;
 #endif
 
 
-VALUE rb_f_require_2(VALUE, VALUE);
-VALUE rb_f_require_relative_2(VALUE, VALUE fname);
-VALUE rb_require_safe_2(VALUE, int);
+VALUE rb_f_require(VALUE, VALUE);
+VALUE rb_f_require_relative(VALUE, VALUE fname);
+VALUE rb_require_safe(VALUE, int);
 static int rb_file_has_been_required(VALUE);
 static int rb_file_is_ruby(VALUE);
 static st_table * get_loaded_features_hash(void);
@@ -327,34 +327,6 @@ load_unlock(const char *ftptr, int done)
 
 
 /*
- *  call-seq:
- *     require(string)    -> true or false
- *
- *  Ruby tries to load the library named _string_, returning
- *  +true+ if successful. If the filename does not resolve to
- *  an absolute path, it will be searched for in the directories listed
- *  in <code>$:</code>. If the file has the extension ``.rb'', it is
- *  loaded as a source file; if the extension is ``.so'', ``.o'', or
- *  ``.dll'', or whatever the default shared library extension is on
- *  the current platform, Ruby loads the shared library as a Ruby
- *  extension. Otherwise, Ruby tries adding ``.rb'', ``.so'', and so on
- *  to the name. The name of the loaded feature is added to the array in
- *  <code>$"</code>. A feature will not be loaded if its name already
- *  appears in <code>$"</code>. The file name is converted to an absolute
- *  path, so ``<code>require 'a'; require './a'</code>'' will not load
- *  <code>a.rb</code> twice.
- *
- *     require "my-library.rb"
- *     require "db-driver"
- */
-
-VALUE
-rb_f_require(VALUE obj, VALUE fname)
-{
-    return rb_require_safe(fname, rb_safe_level());
-}
-
-/*
  * call-seq:
  *   require_relative(string) -> true or false
  *
@@ -374,17 +346,6 @@ rb_f_require_relative(VALUE obj, VALUE fname)
     return rb_require_safe(rb_file_absolute_path(fname, base), rb_safe_level());
 }
 
-VALUE
-rb_f_require_relative_2(VALUE obj, VALUE fname)
-{
-    VALUE rb_current_realfilepath(void);
-    VALUE base = rb_current_realfilepath();
-    if (NIL_P(base)) {
-	rb_raise(rb_eLoadError, "cannot infer basepath");
-    }
-    base = rb_file_dirname(base);
-    return (rb_require_safe_2(rb_file_absolute_path(fname, base), rb_safe_level()) == Qnil) ? Qfalse : Qtrue;
-}
 
 static void
 load_failed(VALUE fname)
@@ -399,12 +360,6 @@ load_ext(VALUE path)
 {
     SCOPE_SET(NOEX_PUBLIC);
     return (VALUE)dln_load(RSTRING_PTR(path));
-}
-
-VALUE
-rb_require_safe(VALUE fname, int safe)
-{
-   return rb_require_safe_2(fname, safe); 
 }
 
 VALUE
@@ -734,7 +689,7 @@ rb_locate_file(VALUE filename)
  * LoadError if a file cannot be found. 
  */
 VALUE
-rb_require_safe_2(VALUE fname, int safe)
+rb_require_safe(VALUE fname, int safe)
 {
 	VALUE path = Qnil;
 	volatile VALUE result = Qnil;
@@ -802,10 +757,31 @@ rb_require_safe_2(VALUE fname, int safe)
 	}
 }
 
+/*
+ *  call-seq:
+ *     require(string)    -> true or false
+ *
+ *  Ruby tries to load the library named _string_, returning
+ *  +true+ if successful. If the filename does not resolve to
+ *  an absolute path, it will be searched for in the directories listed
+ *  in <code>$:</code>. If the file has the extension ``.rb'', it is
+ *  loaded as a source file; if the extension is ``.so'', ``.o'', or
+ *  ``.dll'', or whatever the default shared library extension is on
+ *  the current platform, Ruby loads the shared library as a Ruby
+ *  extension. Otherwise, Ruby tries adding ``.rb'', ``.so'', and so on
+ *  to the name. The name of the loaded feature is added to the array in
+ *  <code>$"</code>. A feature will not be loaded if its name already
+ *  appears in <code>$"</code>. The file name is converted to an absolute
+ *  path, so ``<code>require 'a'; require './a'</code>'' will not load
+ *  <code>a.rb</code> twice.
+ *
+ *     require "my-library.rb"
+ *     require "db-driver"
+ */
 VALUE
-rb_f_require_2(VALUE obj, VALUE fname)
+rb_f_require(VALUE obj, VALUE fname)
 {
-    return rb_require_safe_2(fname, rb_safe_level()) == Qnil ? Qfalse : Qtrue;
+    return rb_require_safe(fname, rb_safe_level()) == Qnil ? Qfalse : Qtrue;
 }
 
 static void
@@ -938,10 +914,8 @@ Init_load()
     vm->loaded_features = ary_new(rb_cLoadedFeaturesProxy, RARRAY_EMBED_LEN_MAX);
 
     rb_define_global_function("load", rb_f_load, -1);
-    rb_define_global_function("require", rb_f_require_2, 1);
-    rb_define_global_function("require_2", rb_f_require_2, 1);
-    rb_define_global_function("require_relative", rb_f_require_relative_2, 1);
-    rb_define_global_function("require_relative_2", rb_f_require_relative_2, 1);
+    rb_define_global_function("require", rb_f_require, 1);
+    rb_define_global_function("require_relative", rb_f_require_relative, 1);
     rb_define_method(rb_cModule, "autoload", rb_mod_autoload, 2);
     rb_define_method(rb_cModule, "autoload?", rb_mod_autoload_p, 1);
     rb_define_global_function("autoload", rb_f_autoload, 2);
