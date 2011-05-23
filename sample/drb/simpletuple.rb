@@ -13,7 +13,7 @@ class SimpleTupleSpace
     @waiting.taint
     self.taint
   end
-   
+
   def out(key, obj)
     Thread.critical = true
     @hash[key] ||= []
@@ -48,7 +48,7 @@ class SimpleTupleSpace
       Thread.critical = false
     end
   end
-end  
+end
 
 if __FILE__ == $0
   ts = SimpleTupleSpace.new
@@ -75,7 +75,7 @@ if __FILE__ == $0
     }
   end
 
-  3.times do 
+  3.times do
     servers.push(server(ts))
   end
 

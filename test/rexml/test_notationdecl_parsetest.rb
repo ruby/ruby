@@ -14,7 +14,7 @@ class TestNotationDecl < Test::Unit::TestCase
     XMLEND
     @doctype = REXML::Document.new(doc_string).doctype
   end
-  
+
   def test_notation
     assert(@doctype.notation('n1'), "Testing notation n1")
     assert(@doctype.notation('n2'), "Testing notation n2")

@@ -137,9 +137,9 @@ class OpenSSL::TestX509Request < Test::Unit::TestCase
     assert_raise(OpenSSL::X509::RequestError){
       issue_csr(0, @dn, @dsa512, OpenSSL::Digest::MD5.new) }
   end
-  
+
   private
-  
+
   def request_error_returns_false
     yield
   rescue OpenSSL::X509::RequestError

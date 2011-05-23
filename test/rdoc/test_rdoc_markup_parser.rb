@@ -625,6 +625,25 @@ for all good men
     assert_equal expected, @RMP.parse(str).parts
   end
 
+  def test_parse_rule
+    str = <<-STR
+now is the time
+
+---
+
+for all good men
+    STR
+
+    expected = [
+      @RM::Paragraph.new('now is the time'),
+      @RM::BlankLine.new,
+      @RM::Rule.new(1),
+      @RM::BlankLine.new,
+      @RM::Paragraph.new('for all good men')]
+
+    assert_equal expected, @RMP.parse(str).parts
+  end
+
   def test_parse_ualpha
     str = <<-STR
 A. l1

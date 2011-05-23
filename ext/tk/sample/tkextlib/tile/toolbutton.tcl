@@ -7,14 +7,14 @@
 #
 # ~ BACKGROUND
 #
-# Checkbuttons in toolbars have a very different appearance 
+# Checkbuttons in toolbars have a very different appearance
 # than regular checkbuttons: there's no indicator, they
 # "pop up" when the mouse is over them, and they appear sunken
 # when selected.
-# 
-# Tk added partial support for toolbar-style buttons in 8.4 
+#
+# Tk added partial support for toolbar-style buttons in 8.4
 # with the "-overrelief" option, and TIP #82 added further
-# support with the "-offrelief" option.  So to get a toolbar-style 
+# support with the "-offrelief" option.  So to get a toolbar-style
 # checkbutton, you can configure it with:
 #
 # checkbutton .cb \
@@ -34,11 +34,11 @@
 #
 # ~ DEMONSTRATION
 #
-# The tile built-in themes (default, "alt", windows, and XP) 
+# The tile built-in themes (default, "alt", windows, and XP)
 # already include Toolbutton styles.  This script will add
 # them to the "step" and "blue" themes as a demonstration.
 #
-# (Note: Pushbuttons and radiobuttons can also use the "Toolbutton" 
+# (Note: Pushbuttons and radiobuttons can also use the "Toolbutton"
 # style; see demo.tcl.)
 #
 
@@ -48,7 +48,7 @@ style theme settings "step" {
 # First, we use [style layout] to define what elements to
 # use and how they're arranged.  Toolbuttons are pretty
 # simple, consisting of a border, some internal padding,
-# and a label.  (See also the TScrollbar layout definition 
+# and a label.  (See also the TScrollbar layout definition
 # in demos/blue.tcl for a more complicated layout spec.)
 #
     style layout Toolbutton {
@@ -60,8 +60,8 @@ style theme settings "step" {
         }
     }
 
-# (Actually the above isn't strictly necessary, since the same layout 
-# is defined in the default theme; we could have inherited it 
+# (Actually the above isn't strictly necessary, since the same layout
+# is defined in the default theme; we could have inherited it
 # instead.)
 #
 # Next, specify default values for element options.
@@ -71,17 +71,17 @@ style theme settings "step" {
     style default Toolbutton -width 0 -padding 1 -relief flat -borderwidth 2
 
 #
-# Finally, use [style map] to specify state-specific 
+# Finally, use [style map] to specify state-specific
 # resource values.  We want a flat relief if the widget is
-# disabled, sunken if it's selected (on) or pressed, 
+# disabled, sunken if it's selected (on) or pressed,
 # and raised when it's active (the mouse pointer is
 # over the widget).  Each state-value pair is checked
 # in order, and the first matching state takes precedence.
 #
     style map Toolbutton -relief {
 	disabled 	flat
-    	selected	sunken  
-	pressed 	sunken  
+	selected	sunken
+	pressed 	sunken
 	active		raised
     }
 }
@@ -107,10 +107,10 @@ style theme settings "blue" {
     #
     style map Toolbutton -relief {
 	disabled 	flat
-    	selected	sunken  
-	pressed 	sunken  
+	selected	sunken
+	pressed 	sunken
 	active		raised
-    } 
+    }
 
     #
     # Adjust the -padding at the same time, to enhance
@@ -138,7 +138,7 @@ style theme settings "blue" {
 }
 
 #
-# ~ A final note:  
+# ~ A final note:
 #
 # TIP #82 also says: "When -indicatoron is off and the button itself
 # is on, the relief continues to be hard-coded to sunken. For symmetry,

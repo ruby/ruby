@@ -9,65 +9,65 @@ module DRb
       class InvalidIndexError < RuntimeError; end
 
       def initialize(timeout=600)
-	super()
-	@sentinel = Object.new
-	@gc = {}
-	@curr = {}
-	@renew = {}
-	@timeout = timeout
-	@keeper = keeper
+        super()
+        @sentinel = Object.new
+        @gc = {}
+        @curr = {}
+        @renew = {}
+        @timeout = timeout
+        @keeper = keeper
       end
 
       def add(obj)
-	synchronize do
-	  key = obj.__id__
-	  @curr[key] = obj
-	  return key
-	end
+        synchronize do
+          key = obj.__id__
+          @curr[key] = obj
+          return key
+        end
       end
 
       def fetch(key, dv=@sentinel)
-	synchronize do
-	  obj = peek(key)
-	  if obj == @sentinel
-	    return dv unless dv == @sentinel
-	    raise InvalidIndexError
-	  end
-	  @renew[key] = obj # KeepIt
-	  return obj
-	end
+        synchronize do
+          obj = peek(key)
+          if obj == @sentinel
+            return dv unless dv == @sentinel
+            raise InvalidIndexError
+          end
+          @renew[key] = obj # KeepIt
+          return obj
+        end
       end
 
       def include?(key)
-	synchronize do
-	  obj = peek(key)
-	  return false if obj == @sentinel
-	  true
-	end
+        synchronize do
+          obj = peek(key)
+          return false if obj == @sentinel
+          true
+        end
       end
 
       def peek(key)
-	synchronize do
-	  return @curr.fetch(key, @renew.fetch(key, @gc.fetch(key, @sentinel)))
-	end
+        synchronize do
+          return @curr.fetch(key, @renew.fetch(key, @gc.fetch(key, @sentinel)))
+        end
       end
 
       private
       def alternate
-	synchronize do
-	  @gc = @curr       # GCed
-	  @curr = @renew
-	  @renew = {}
-	end
+        synchronize do
+          @gc = @curr       # GCed
+          @curr = @renew
+          @renew = {}
+        end
       end
 
       def keeper
-	Thread.new do
-	  loop do
-	    alternate
-	    sleep(@timeout)
-	  end
-	end
+        Thread.new do
+          loop do
+            alternate
+            sleep(@timeout)
+          end
+        end
       end
     end
 

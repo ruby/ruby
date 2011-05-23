@@ -37,9 +37,8 @@ require 'rake'
 require 'rake/tasklib'
 
 ##
-# Create a documentation task that will generate the RDoc files for a project.
-#
-# The RDoc::Task will create the following targets:
+# RDoc::Task creates the following rake tasks to generate and clean up RDoc
+# output:
 #
 # [rdoc]
 #   Main task for this RDoc task.
@@ -56,12 +55,12 @@ require 'rake/tasklib'
 #   gem 'rdoc'
 #   require 'rdoc/task'
 #
-#   RDoc::Task.new do |rd|
-#     rd.main = "README.rdoc"
-#     rd.rdoc_files.include("README.rdoc", "lib/**/*.rb")
+#   RDoc::Task.new do |rdoc|
+#     rdoc.main = "README.rdoc"
+#     rdoc.rdoc_files.include("README.rdoc", "lib/**/*.rb")
 #   end
 #
-# The +rd+ object passed to the block is an RDoc::Task object. See the
+# The +rdoc+ object passed to the block is an RDoc::Task object. See the
 # attributes list for the RDoc::Task class for available customization options.
 #
 # == Specifying different task names
@@ -73,10 +72,10 @@ require 'rake/tasklib'
 #   gem 'rdoc'
 #   require 'rdoc/task'
 #
-#   RDoc::Task.new :rdoc_dev do |rd|
-#     rd.main = "README.doc"
-#     rd.rdoc_files.include("README.rdoc", "lib/**/*.rb")
-#     rd.options << "--all"
+#   RDoc::Task.new :rdoc_dev do |rdoc|
+#     rdoc.main = "README.doc"
+#     rdoc.rdoc_files.include("README.rdoc", "lib/**/*.rb")
+#     rdoc.options << "--all"
 #   end
 #
 # The tasks would then be named :<em>rdoc_dev</em>,

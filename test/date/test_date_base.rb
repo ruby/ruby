@@ -184,18 +184,21 @@ class TestDateBase < Test::Unit::TestCase
   end
 
   def test_mjd
+    skip unless Date.respond_to?(:mjd_to_jd, true)
     jd = Date.__send__(:mjd_to_jd, 51321)
     mjd = Date.__send__(:jd_to_mjd, jd)
     assert_equal(51321, mjd)
   end
 
   def test_ld
+    skip unless Date.respond_to?(:ld_to_jd, true)
     jd = Date.__send__(:ld_to_jd, 152162)
     ld = Date.__send__(:jd_to_ld, jd)
     assert_equal(152162, ld)
   end
 
   def test_wday
+    skip unless Date.respond_to?(:jd_to_wday, true)
     assert_equal(4, Date.__send__(:jd_to_wday, 3))
     assert_equal(3, Date.__send__(:jd_to_wday, 2))
     assert_equal(2, Date.__send__(:jd_to_wday, 1))

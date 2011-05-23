@@ -1,3 +1,4 @@
+#--
 # = uri/common.rb
 #
 # Author:: Akira Yamada <akira@ruby-lang.org>
@@ -5,8 +6,13 @@
 # License::
 #   You can redistribute it and/or modify it under the same term as Ruby.
 #
+# See URI for general documentation
+#
 
 module URI
+  #
+  # Includes URI::REGEXP::PATTERN
+  #
   module REGEXP
     #
     # Patterns used to parse URI's
@@ -51,6 +57,10 @@ module URI
     # :startdoc:
   end # REGEXP
 
+  # class that Parses String's into URI's
+  #
+  # It contains a Hash set of patterns and Regexp's that match and validate.
+  #
   class Parser
     include REGEXP
 
@@ -95,119 +105,197 @@ module URI
       @regexp.each_value {|v| v.freeze}
       @regexp.freeze
     end
-    attr_reader :pattern, :regexp
 
+    # The Hash of patterns.
+    #
+    # see also URI::Parser.initialize_pattern
+    attr_reader :pattern
+
+    # The Hash of Regexp
+    #
+    # see also URI::Parser.initialize_regexp
+    attr_reader :regexp
+
+    # Returns a split URI against regexp[:ABS_URI]
     def split(uri)
       case uri
       when ''
-	# null uri
+        # null uri
 
       when @regexp[:ABS_URI]
-	scheme, opaque, userinfo, host, port,
-	  registry, path, query, fragment = $~[1..-1]
+        scheme, opaque, userinfo, host, port,
+          registry, path, query, fragment = $~[1..-1]
 
-	# URI-reference = [ absoluteURI | relativeURI ] [ "#" fragment ]
+        # URI-reference = [ absoluteURI | relativeURI ] [ "#" fragment ]
 
-	# absoluteURI   = scheme ":" ( hier_part | opaque_part )
-	# hier_part     = ( net_path | abs_path ) [ "?" query ]
-	# opaque_part   = uric_no_slash *uric
+        # absoluteURI   = scheme ":" ( hier_part | opaque_part )
+        # hier_part     = ( net_path | abs_path ) [ "?" query ]
+        # opaque_part   = uric_no_slash *uric
 
-	# abs_path      = "/"  path_segments
-	# net_path      = "//" authority [ abs_path ]
+        # abs_path      = "/"  path_segments
+        # net_path      = "//" authority [ abs_path ]
 
-	# authority     = server | reg_name
-	# server        = [ [ userinfo "@" ] hostport ]
+        # authority     = server | reg_name
+        # server        = [ [ userinfo "@" ] hostport ]
 
-	if !scheme
-	  raise InvalidURIError,
-	    "bad URI(absolute but no scheme): #{uri}"
-	end
-	if !opaque && (!path && (!host && !registry))
-	  raise InvalidURIError,
-	    "bad URI(absolute but no path): #{uri}"
-	end
+        if !scheme
+          raise InvalidURIError,
+            "bad URI(absolute but no scheme): #{uri}"
+        end
+        if !opaque && (!path && (!host && !registry))
+          raise InvalidURIError,
+            "bad URI(absolute but no path): #{uri}"
+        end
 
       when @regexp[:REL_URI]
-	scheme = nil
-	opaque = nil
+        scheme = nil
+        opaque = nil
 
-	userinfo, host, port, registry,
-	  rel_segment, abs_path, query, fragment = $~[1..-1]
-	if rel_segment && abs_path
-	  path = rel_segment + abs_path
-	elsif rel_segment
-	  path = rel_segment
-	elsif abs_path
-	  path = abs_path
-	end
+        userinfo, host, port, registry,
+          rel_segment, abs_path, query, fragment = $~[1..-1]
+        if rel_segment && abs_path
+          path = rel_segment + abs_path
+        elsif rel_segment
+          path = rel_segment
+        elsif abs_path
+          path = abs_path
+        end
 
-	# URI-reference = [ absoluteURI | relativeURI ] [ "#" fragment ]
+        # URI-reference = [ absoluteURI | relativeURI ] [ "#" fragment ]
 
-	# relativeURI   = ( net_path | abs_path | rel_path ) [ "?" query ]
+        # relativeURI   = ( net_path | abs_path | rel_path ) [ "?" query ]
 
-	# net_path      = "//" authority [ abs_path ]
-	# abs_path      = "/"  path_segments
-	# rel_path      = rel_segment [ abs_path ]
+        # net_path      = "//" authority [ abs_path ]
+        # abs_path      = "/"  path_segments
+        # rel_path      = rel_segment [ abs_path ]
 
-	# authority     = server | reg_name
-	# server        = [ [ userinfo "@" ] hostport ]
+        # authority     = server | reg_name
+        # server        = [ [ userinfo "@" ] hostport ]
 
       else
-	raise InvalidURIError, "bad URI(is not URI?): #{uri}"
+        raise InvalidURIError, "bad URI(is not URI?): #{uri}"
       end
 
       path = '' if !path && !opaque # (see RFC2396 Section 5.2)
       ret = [
-	scheme,
-	userinfo, host, port,         # X
-	registry,                     # X
-	path,                         # Y
-	opaque,                       # Y
-	query,
-	fragment
+        scheme,
+        userinfo, host, port,         # X
+        registry,                     # X
+        path,                         # Y
+        opaque,                       # Y
+        query,
+        fragment
       ]
       return ret
     end
 
+    #
+    # == Args
+    #
+    # +uri+::
+    #    String
+    #
+    # == Description
+    #
+    # parses +uri+ and constructs either matching URI scheme object
+    # (FTP, HTTP, HTTPS, LDAP, LDAPS, or MailTo) or URI::Generic
+    #
+    # == Usage
+    #
+    #   p = URI::Parser.new
+    #   p.parse("ldap://ldap.example.com/dc=example?user=john")
+    #   #=> #<URI::LDAP:0x00000000b9e7e8 URL:ldap://ldap.example.com/dc=example?user=john>
+    #
     def parse(uri)
       scheme, userinfo, host, port,
-       	registry, path, opaque, query, fragment = self.split(uri)
+        registry, path, opaque, query, fragment = self.split(uri)
 
       if scheme && URI.scheme_list.include?(scheme.upcase)
-	URI.scheme_list[scheme.upcase].new(scheme, userinfo, host, port,
+        URI.scheme_list[scheme.upcase].new(scheme, userinfo, host, port,
                                            registry, path, opaque, query,
                                            fragment, self)
       else
-	Generic.new(scheme, userinfo, host, port,
-	   	    registry, path, opaque, query,
-	    	    fragment, self)
+        Generic.new(scheme, userinfo, host, port,
+                    registry, path, opaque, query,
+                    fragment, self)
       end
     end
 
+
+    #
+    # == Args
+    #
+    # +uris+::
+    #    an Array of Strings
+    #
+    # == Description
+    #
+    # Attempts to parse and merge a set of URIs
+    #
     def join(*uris)
       uris[0] = URI(uris[0], self)
       uris.inject :merge
     end
 
+    #
+    # :call-seq:
+    #   extract( str )
+    #   extract( str, schemes )
+    #   extract( str, schemes ) {|item| block }
+    #
+    # == Args
+    #
+    # +str+::
+    #    String to search
+    # +schemes+::
+    #    Patterns to apply to +str+
+    #
+    # == Description
+    #
+    # Attempts to parse and merge a set of URIs
+    # If no +block+ given , then returns the result,
+    # else it calls +block+ for each element in result.
+    #
+    # see also URI::Parser.make_regexp
+    #
     def extract(str, schemes = nil, &block)
       if block_given?
-       	str.scan(make_regexp(schemes)) { yield $& }
-	nil
+        str.scan(make_regexp(schemes)) { yield $& }
+        nil
       else
-	result = []
-	str.scan(make_regexp(schemes)) { result.push $& }
-	result
+        result = []
+        str.scan(make_regexp(schemes)) { result.push $& }
+        result
       end
     end
 
+    # returns Regexp that is default self.regexp[:ABS_URI_REF],
+    # unless +schemes+ is provided. Then it is a Regexp.union with self.pattern[:X_ABS_URI]
     def make_regexp(schemes = nil)
       unless schemes
-       	@regexp[:ABS_URI_REF]
+        @regexp[:ABS_URI_REF]
       else
-	/(?=#{Regexp.union(*schemes)}:)#{@pattern[:X_ABS_URI]}/x
+        /(?=#{Regexp.union(*schemes)}:)#{@pattern[:X_ABS_URI]}/x
       end
     end
 
+    #
+    # :call-seq:
+    #   escape( str )
+    #   escape( str, unsafe )
+    #
+    # == Args
+    #
+    # +str+::
+    #    String to make safe
+    # +unsafe+::
+    #    Regexp to apply. Defaults to self.regexp[:UNSAFE]
+    #
+    # == Description
+    #
+    # constructs a safe String from +str+, removing unsafe characters,
+    # replacing them with codes.
+    #
     def escape(str, unsafe = @regexp[:UNSAFE])
       unless unsafe.kind_of?(Regexp)
         # perhaps unsafe is String object
@@ -223,6 +311,22 @@ module URI
       end.force_encoding(Encoding::US_ASCII)
     end
 
+    #
+    # :call-seq:
+    #   unescape( str )
+    #   unescape( str, unsafe )
+    #
+    # == Args
+    #
+    # +str+::
+    #    String to remove escapes from
+    # +unsafe+::
+    #    Regexp to apply. Defaults to self.regexp[:ESCAPED]
+    #
+    # == Description
+    #
+    # Removes escapes from +str+
+    #
     def unescape(str, escaped = @regexp[:ESCAPED])
       str.gsub(escaped) { [$&[1, 2].hex].pack('C') }.force_encoding(str.encoding)
     end
@@ -234,6 +338,7 @@ module URI
 
     private
 
+    # Constructs the default Hash of patterns
     def initialize_pattern(opts = {})
       ret = {}
       ret[:ESCAPED] = escaped = (opts.delete(:ESCAPED) || PATTERN::ESCAPED)
@@ -260,7 +365,7 @@ module URI
       # hostname      = *( domainlabel "." ) toplabel [ "." ]
       # reg-name      = *( unreserved / pct-encoded / sub-delims ) # RFC3986
       unless hostname
-	ret[:HOSTNAME] = hostname = "(?:[a-zA-Z0-9\\-.]|%\\h\\h)+"
+        ret[:HOSTNAME] = hostname = "(?:[a-zA-Z0-9\\-.]|%\\h\\h)+"
       end
 
       # RFC 2373, APPENDIX B:
@@ -391,6 +496,7 @@ module URI
       ret
     end
 
+    # Constructs the default Hash of Regexp's
     def initialize_regexp(pattern)
       ret = {}
 
@@ -423,6 +529,7 @@ module URI
     end
   end # class Parser
 
+  # URI::Parser.new
   DEFAULT_PARSER = Parser.new
   DEFAULT_PARSER.pattern.each_pair do |sym, str|
     unless REGEXP::PATTERN.const_defined?(sym)
@@ -465,6 +572,7 @@ module URI
     module_function :make_components_hash
   end
 
+  # module for escaping unsafe characters with codes.
   module Escape
     #
     # == Synopsis
@@ -529,12 +637,13 @@ module URI
       DEFAULT_PARSER.unescape(*arg)
     end
     alias decode unescape
-  end
+  end # module Escape
 
   extend Escape
   include REGEXP
 
   @@schemes = {}
+  # Returns a Hash of the defined schemes
   def self.scheme_list
     @@schemes
   end
@@ -872,7 +981,7 @@ module URI
     end
     ary
   end
-end
+end # module URI
 
 module Kernel
 

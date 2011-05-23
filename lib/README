@@ -24,7 +24,7 @@ irb.rb		interactive ruby
 logger.rb	simple logging utility
 mathn.rb	extended math operation (obsolete)
 matrix.rb	matrix calculation library
-minitest/unit	minimal drop-in replacement for test-unit	
+minitest/unit	minimal drop-in replacement for test-unit
 mkmf.rb		Makefile maker
 monitor.rb	exclusive region monitor for thread
 mutex_m.rb	mutex mixin

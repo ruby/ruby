@@ -1,3 +1,701 @@
+Mon May 23 09:45:26 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* include/ruby/defines.h (CASEFOLD_FILESYSTEM): Revert r30508. Forgot to
+	  include this file in the commit r31692. __APPLE__ is not
+	  CASEFOLD_FILESYSTEM again, from this time.
+
+Mon May 23 10:01:02 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_asn1.c: Do not parse zero-tagged values as EOC. Do
+	not let current length become negative for infinite length constructed
+	values. Support constructed values of length zero. Added tests.
+
+Mon May 23 09:19:53 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/smtp.rb:  Document Net::SMTP::Response.  Patch by J.R. Garcia.
+	  [Ruby 1.9 - Bug #4768]
+
+Mon May 23 09:03:52 2011  Shota Fukumori  <sorah@tubusu.net>
+
+	* lib/test/unit/parallel.rb: Never Ignore SIGINT. When received
+	Interrupt, immediately puts result and exit. [ruby-dev:43571]
+
+	* lib/test/unit.rb: When received Interrupt, wait results from workers
+	and collect them. [ruby-dev:43571]
+
+Mon May 23 09:08:07 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/mathn.rb:  Improve documentation.  Patch by Sandor Szucs.
+	  [Ruby 1.9 - Bug #4767]
+
+Mon May 23 08:45:55 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/ostruct.rb:  Improve documentation.  Patch by Franklin Webber.
+	  [Ruby 1.9 - Bug #4761]
+
+Mon May 23 08:35:24 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* hash.c:  Improve documentation of Hash#key.  Patch by Utkarsh
+	  Kukreti.  [Ruby 1.9 - Bug #4760]
+
+Mon May 23 08:32:59 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* enumerator.c:  Improve documentation.  Patch by Dave Copeland.
+	  [Ruby 1.9 - Bug #4757]
+
+Mon May 23 07:19:45 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* NEWS (openssl): Infinite length support. Different behavior of
+	Constructive and Primitive constructors.
+
+Mon May 23 06:58:33 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_asn1.c: Forbid Constructives whose value is not an
+	Array to prevent segfault. Added test.
+
+Mon May 23 06:33:17 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_asn1.c: Forbid Constructive without infinite
+	length. This also prevents a segfault. Added test and improved
+	documentation.
+
+Mon May 23 05:58:14 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_asn1.c: Fix decoding of infinite length values.
+	Simplified ossl_asn1_decode0 by splitting it into three separate
+	functions. Add tests.
+	[Ruby 1.9 - Bug #4374][ruby-core:35123]
+
+Mon May 23 04:03:46 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_asn1.c (ossl_asn1_initialize): Allow creation of
+	Constructives with an explicit tag_class parameter without
+	automatically setting tagging to :EXPLICIT. Fixes a bug when encoding
+	infinite length primitive values.
+
+Mon May 23 04:03:46 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_asn1.c (ossl_asn1_cons_to_der): Add an additional
+	EOC for infinite length Constructives that are supposed to be encoded
+	with explicit tagging. Also tabify method correctly.
+
+Mon May 23 03:44:39 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_asn1.c (ossl_asn1data_to_der): Remove redundant
+	flag tmp_cons.
+
+Mon May 23 00:35:00 2001  Kenta Murata  <mrkn@mrkn.jp>
+
+	* bignum.c (dump_bignum, bigmul1_balance, big_split, biglsh_bang,
+	  bigrsh_bang, big_split3, bigmul1_toom3, bigmul0): implement Toom3 (Toom-Cook)
+	  multiplication.
+
+	* include/ruby/defines.h: add format prefixes for BDIGIT and BDIGIT_DBL.
+
+Sun May 22 23:24:02 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_asn1.c: Instead of rb_intern use static symbols to
+	improve performance.
+
+Sun May 22 21:56:51 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_asn1.c: Use OpenSSL constants V_ASN1_xxx instead of
+	hardcoded numbers for initializing class_tag_map.
+
+Sun May 22 21:29:29 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* include/ruby/defines.h (CASEFOLD_FILESYSTEM): Revert r30508. See #4255.
+	  Now __APPLE__ is not CASEFOLD_FILESYSTEM again.
+
+	* load.c (loaded_feature_path, rb_feature_p, load_lock): Revert r30508.
+	  See #4255. Make $LOADED_FEATURES scanning case-sensitive again.
+
+Sun May 22 18:59:27 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* ext/openssl/ossl_asn1.c(ossl_asn1_default_tag): avoid using RCLASS_SUPER
+	  to make it compilable. Plus, tabify and change variable definition style.
+
+Sun May 22 18:26:43 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (vm_xcalloc): use calloc provided by platforms.
+	  fixes #4754
+
+Sun May 22 11:44:53 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/pty/pty.c:  Improve documentaton.  Patch by David Copeland.
+	  [Ruby 1.9 - Bug #4756]
+
+Sun May 22 11:26:39 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/timeout.rb:  Improve documentation.  Patch by David Copeland.
+	  [Ruby 1.9 - Bug #4755]
+
+Sun May 22 11:21:41 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/ipaddr.rb:  Improve documentation.  Patch by Sandor Szucs.
+	  [Ruby 1.9 - Bug #4753]
+
+Sun May 22 11:14:40 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/forwardable.rb:  Document def_delegator.  Patch by Sandor Szucs.
+	  [Ruby 1.9 - Bug #4752]
+
+Sun May 22 11:11:41 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/fileutils.rb:  Document block behavior of FileUtils.cd.  Patch by
+	  Bil Kleb.  [Ruby 1.9 - Bug #4751]
+
+Sun May 22 11:07:47 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/curses/curses.c:  Complete documentation.  Patch by Vincent
+	  Batts.  [Ruby 1.9 - Bug #4748]
+
+Sun May 22 09:29:43 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_rubyoptions.rb (TestRubyOptions#test_set_program_name):
+	  use spawn. it prevent that other tests inherit renamed $0.
+
+Sun May 22 08:57:13 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_asn1.c: Default tag lookup in constant time via hash
+	instead of previous linear algorithm.
+	[Ruby 1.9 - Feature #4309][ruby-core:34813]
+
+Sun May 22 07:54:16 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_digest.c: Explain DSS and DSS1 in documentation.
+
+Sun May 22 07:10:25 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* test/openssl/test_pkey_dsa.rb: Add tests for sign/verify.
+
+Sun May 22 06:07:17 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* test/openssl/test_x509cert.rb: Merge DSA-related tests from ruby_1_8
+	branch.
+
+Sun May 22 04:11:12 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (Init_Thread): add a code comment why the meaningless
+	  line is necessary.
+
+Sun May 22 01:35:12 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: modified documentation.
+
+Sat May 21 22:46:26 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_strftime(date_strftime_with_tmx): "%v" means "%e-%b-%Y".
+
+Sat May 21 22:14:35 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (rb_io_extract_modeenc): accept combination hash and
+	  File::Constants. (eg. File.open('yo', :mode => File::WRONLY))
+	  [Feature #4742][ruby-core:36338]
+	* test/ruby/test_io.rb (TestIO#test_open_mode): new test.
+
+Sat May 21 21:44:14 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* test/date/test_switch_hitter.rb: new.
+
+Sat May 21 21:18:29 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_{core,parse}.c: moved nearly all core code from ext/date/lib.
+	* ext/date/lib/{date,date/format}.rb: removed nearly all code.
+
+Sat May 21 02:58:46 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/.document:  Add curses to documented extensions.
+	* ext/curses/curses.c:  Improve documentation.  Patch by Vincent Batts.
+	  [Ruby 1.9 - Bug #4747]
+
+Sat May 21 02:51:01 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/bigdecimal/lib/bigdecimal/util.rb:  Improve documentation.  Patch
+	  by Pete Higgins.  [Ruby 1.9 - Bug #4746]
+
+Sat May 21 02:44:10 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/bigdecimal/lib/bigdecimal/jacobian.rb:  Document isEqual.  Patch
+	  by Kuba Fietkiewicz.  [Ruby 1.9 - Bug #4744]
+
+Sat May 21 02:22:34 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/date/lib/date/format.rb:  Document date formats.  Patch by
+	  Clinton Nixon.  [Ruby 1.9 - Bug #4743]
+
+Fri May 20 05:15:19 2011  Nobuhiro Iwamatsu  <iwamatsu@nigauri.org>
+
+	* gc.c: Fix build on m68k by 'error: too few arguments to
+	  function 'mark_locations_array''.
+
+Fri May 20 04:23:42 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/scanf.rb:  Improve documentation.  Patch by Gabe McArthur.
+	  [Ruby 1.9 - Bug #4735]
+
+Fri May 20 00:58:01 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/trans/ibm737-tbl.rb: greek code page.  fixes #4738
+
+Thu May 19 14:44:05 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_signal.rb (test_signal_requiring): skip on Windows.
+	  we can send SIGINT only to pid 0 and the process itself.
+
+Thu May 19 09:07:08 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib: revert r31635-r31638 and untabify with expand(1).
+
+Thu May 19 07:47:26 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* test/openssl/test_pkey_rsa.rb: Add tests for sign/verify.
+
+Thu May 19 07:19:16 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_pkey.c: Add documentation.
+
+Thu May 19 07:06:56 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/benchmark.rb:  Fix indentation.
+	* lib/net/imap.rb:  Fix indentation of regular expressions.
+
+Thu May 19 06:36:11 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/imap.rb:  Fix indentation of EOF for heredoc.
+	* lib/debug.rb (Commands):  Fix indentation of EOHELP for heredoc.
+
+Thu May 19 06:30:38 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/mkmf.rb:  Fix indentation of EOM for heredoc.
+
+Thu May 19 06:16:41 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib:  Convert tabs to spaces for ruby files per
+	  http://redmine.ruby-lang.org/projects/ruby/wiki/DeveloperHowto#coding-style
+	  Patch by Steve Klabnik [Ruby 1.9 - Bug #4730]
+	  Patch by Jason Dew [Ruby 1.9 - Feature #4718]
+
+Thu May 19 06:06:07 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/cgi/util.rb:  Improve documentation.  Patch by Clinton Nixon.
+	  [Ruby 1.9 - Bug #4733]
+	* lib/cgi/core.rb:  ditto
+	* lib/cgi/cookie.rb:  ditto
+
+Thu May 19 06:02:21 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/tempfile.rb:  Document Dir.mkdir and Dir.rmdir.  Patch by Clinton
+	  Nixon.  [Ruby 1.9 - Bug #4728]
+
+Thu May 19 05:57:52 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* encoding.c:  Improve documentation for Encoding#default_external and
+	  Encoding#default_internal.
+
+Wed May 18 22:45:26 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/console/lib/console/size.rb (IO#console_size): new
+	  method.  (EXPERIMENTAL)
+
+Wed May 18 22:41:51 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* internal.h: add for internal use only.
+
+Wed May 18 22:36:43 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (setup_exception): internal exception should be hidden
+
+Wed May 18 20:25:04 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* lib/timeout.rb (Timeout#timeout): don't leak "execution expired"
+	  exception. [Bug #4283] [ruby-core:34534].
+
+Wed May 18 06:09:24 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/cmath.rb:  Add some examples and improve documentation.  Patch by
+	  Sandor Szucs.  [Ruby 1.9 - Bug #4727]
+
+Wed May 18 05:40:31 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/benchmark.rb:  Remove nodoc from Benchmark::Job and
+	  Benchmark::Report.  Patch by Sandor Szucs.  [Ruby 1.9 - Bug #4726]
+
+Wed May 18 05:29:26 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/webrick/compat.rb:  Improve documentation.  Patch by Sandor
+	  Szucs.  [Ruby 1.9 - Bug #4725]
+
+Wed May 18 05:10:35 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/tracer.rb:  Improve documentation.  Patch by Richard Ramsden.
+	  [Ruby 1.9 - Feature #4720]
+
+Wed May 18 04:53:41 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/cmath.rb:  Improve documentation.  Patch by Jason Dew.
+	  [Ruby 1.9 - Feature #4717]
+
+Wed May 18 04:50:24 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/ftp.rb:  Improve documentation.  Patch by Vincent Batts.
+	  [Ruby 1.9 - Bug #4710]
+
+Wed May 18 03:14:49 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* test/test_singleton.rb:  Add tests from lib/singleton.rb.  Patch by
+	  Pete Higgins.  [Ruby 1.9 - Bug #4715]
+
+Wed May 18 03:03:07 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/singleton.rb:  Improve documentation.  Patch by Pete Higgins.
+	  [Ruby 1.9 - Bug #4709]
+
+Tue May 17 21:24:04 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_mutex_lock): remove remove_signal_thread_list() call.
+	  It's meaningless because lock_interrupt doesn't call
+	  add_signal_thread_list().
+
+Tue May 17 20:20:49 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* vm_core.h (rb_thread_struct): add volatile to
+	  transition_for_lock because it is not protected by lock.
+
+Tue May 17 20:08:53 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* LEGAL (missing/{elf,tgamma,lgamma_r}.c): they've been replaced by
+	  public domain implementations.
+
+	* LEGAL (vsnprintf.c): it has moved to srcdir from missing/.
+
+	* LEGAL (missing/crypt.c): list its original license.
+
+Tue May 17 19:54:26 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* LEGAL (configure): add missing/setproctitle.c
+
+Tue May 17 19:35:01 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+	Fix FreeBSD test failure.
+
+	* test/ruby/test_rubyoptions.rb (TestRubyOptions#test_set_program_name):
+	  use ps -o command instead of ps -o cmd. FreeBSD doesn't support
+	  -o cmd option.
+
+Tue May 17 08:04:26 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_digest.c: Add documentation.
+
+Tue May 17 07:14:58 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/http.rb:  Improve documentation of proxy configuration
+	  methods.  Patch by Alf Mikula.  [Ruby 1.9 - Bug #4714]
+
+Tue May 17 07:09:01 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/pop.rb:  Improve documentation.  Patch by Vincent Batts.
+	  [Ruby 1.9 - Bug #4711]
+	* lib/net/telnet.rb:  ditto
+
+Tue May 17 07:00:41 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/http.rb:  Fix nodoc for Net::HTTP::version_1_1?.  Patch by
+	  Alf Mikula.  [Ruby 1.9 - Bug #4713]
+
+Tue May 17 06:56:26 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/optparse.rb:  Add link to make_switch to improve documentation.
+	  Patch by David Copeland.  [Ruby 1.9 - Bug #4708]
+
+Tue May 17 06:50:40 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/observer.rb:  Improve documentation.  Patch by David Copeland.
+	  [Ruby 1.9 - Bug #4707]
+
+Tue May 17 06:42:53 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/logger.rb:  Improve documentation.  Patch by David Copeland.
+	  [Ruby 1.9 - Bug #4706]
+
+Tue May 17 06:28:14 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/gserver.rb:  Improve documentation.  Patch by David Copeland.
+	  [Ruby 1.9 - Bug #4705]
+
+Tue May 17 06:21:15 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/cgi.rb: Add toplevel documentation to class CGI
+	* lib/cgi/session.rb: Add overview documentation to CGI::Cookie
+	* lib/cgi/html.rb:  Don't add CGI::TagMaker documentation to CGI.
+	  Patch by David Copeland.  [Ruby 1.9 - Bug #4704]
+	* lib/cgi/core.rb:  Clean up CGI documentation.  Patch by David
+	  Copeland.  [Ruby 1.9 - Bug #4704]
+	* lib/cgi/cookie.rb:  Clean up CGI::Cookie documentation.  Patch by
+	  David Copeland.  [Ruby 1.9 - Bug #4704]
+
+Tue May 17 05:52:30 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/digest: Improve documentation of Digest, Digest::HMAC and
+	  Digest::SHA2.  Patch by Pete Higgins.  [Ruby 1.9 - Bug #4702]
+
+Tue May 17 03:51:42 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/abbrev.rb:  Hide copyright and revision information from RDoc.
+	  Inspired by patch from David Copeland, bug #4703.
+
+Tue May 17 03:33:21 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/timeout.rb (module Timeout):  Hide internal constants.  Patch by
+	  Pete Higgins.  [Ruby 1.9 - Bug #4701]
+
+Mon May 16 11:21:09 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* configure.in, win32/Makefile.sub (RUBY_SO_NAME): add CPU as prefix
+	  of RUBY_SO_NAME on x64/ia64 mswin/mingw.
+	  [Feature #4602]
+
+Mon May 16 08:00:05 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc.rb:  Update to RDoc 3.6.1, allows OpenSSL::Digest to be
+	  found.
+
+Mon May 16 05:49:54 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/drb/acl.rb:  Add documentation.
+
+Mon May 16 05:13:20 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_asn1.c: Add documentation.
+
+Mon May 16 00:32:05 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_signal.rb (TestSignal#test_signal_process_group):
+	  skip if the platform doesn't have :pgroup capability. (i.e. skip
+	  if mswin32)
+
+Sun May 15 23:53:31 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* include/ruby/intern.h: resurrect old rb_fd_copy().
+	* thread.c (rb_fd_copy): ditto.
+
+Sun May 15 23:45:11 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* include/ruby/intern.h: remove rb_fd_copy() to rb_fd_dup() and
+	  rb_w32_fdcopy() to rb_w32_fd_dup().
+	* win32/win32.c: ditto.
+	* thread.c: ditto.
+
+Sun May 15 22:26:39 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* signal.c (rb_f_kill): accept '-SIGXXX' style signal with Symbol or
+	  implicit convertion with #to_str. [ruby-dev:43169] fixes #4362
+	* test/ruby/test_signal.rb (test_signal_process_group): add a test
+	  for send signal to process group.
+
+Sun May 15 21:22:35 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* cont.c (cont_init): clear macihne_stack_start/end of saved thread to
+	  prevent mark machine stack of GC'ed Thread. root Fiber is not
+	  initialized by fiber_init().
+	  based on a patch by Serge Balyuk [ruby-core:35891] fixes #4612
+	* test/ruby/test_fiber.rb (test_gc_root_fiber): add test for it.
+
+Sun May 15 21:04:29 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (econv_init): revert r31353.  [ruby-dev:43512]
+
+Sun May 15 03:39:35 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/zlib/zlib.c:  Improve documentation.  Patch by Vincent Batts.
+	  [Ruby 1.9 - Bug #4695]
+
+Sun May 15 03:23:46 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/erb.rb:  Document ERB::Compiler.  Patch by Simon Chiang.
+	  [Ruby 1.9 - Bug #4694]
+
+Sun May 15 00:58:47 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+	fix mswin32 build error.
+
+	* missing/setproctitle.c: oadd #ifdef HAVE_UNISTD_H.
+	* win32/Makefile.sub (MISSING): add setproctitle.obj
+
+Sat May 14 22:45:28 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* missing/setproctitle.c: add to include "ruby/util.h".
+
+Sat May 14 19:52:22 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_rubyoptions.rb (TestRubyOptions#test_set_program_name):
+	  add for $0 test.
+
+Sat May 14 19:50:46 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* missing/setproctitle.c (compat_init_setproctitle): use
+	  ruby_strdup() instead of strdup().
+
+Sat May 14 19:37:31 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* include/ruby/missing.h: add setproctitle() declaration.
+	* missing/setproctitle.c: added.
+	* configure.in: add check for missing/setproctitle.c.
+
+	* ruby.c (ruby_process_options): add to call compat_init_setproctitle().
+	* ruby.c (set_arg0): remove all platform specific code. it's
+	  moved to missing/setproctitle.c.
+	* ruby.c (origarg): remove len field. It's no longer used.
+	* ruby.c (get_arglen): removed.
+
+	This patch makes a lot of cleanup set_arg0 related code and fixes
+	[Feature #4689].
+
+Sat May 14 17:42:21 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* process.c (rb_proc_times): improve documentation.
+	  [ruby-core:35785] fixes #4581, reported by Andrew Grimm.
+
+Sat May 14 12:12:54 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* test/openssl/test_pkey_dsa.rb: Add basic tests and tests that
+	  ensure new public key PEM encoding behavior and ensure backward
+	  compatibility.
+	  [Ruby 1.9 - Bug #4422] [ruby-core:35328]
+	* test/openssl/test_pkey_rsa.rb: Remove line with 'puts'.
+
+Sat May 14 12:06:49 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/context.rb (class RDoc):  Fix infinite loop caused by
+	  re-encountering BasicObject.
+
+Sat May 14 10:32:36 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* test/openssl/test_pkey_rsa.rb: Add tests that ensure new public key
+	  encoding behavior and also ensure backward compatibility.
+	  [Ruby 1.9 - Bug #4421] [ruby-core:35327]
+
+Sat May 14 09:50:10 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/yaml/dbm.rb:  Add documentation.  Patch by Justin Collins.
+	  [Ruby 1.9 - Bug #4693]
+	* lib/yaml/store.rb:  ditto
+
+Sat May 14 09:31:43 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc.rb: Updated to RDoc 3.6
+
+Sat May 14 07:30:29 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb: released a new gem, so increasing version.
+
+Sat May 14 05:08:32 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_digest.c
+	* ext/openssl/ossl_pkey.c
+	* ext/openssl/ossl_pkey.h
+	* test/openssl/pkey/test_pkey_rsa.rb
+	  Reverted premature commit. Sorry for the noise!
+
+Sat May 14 05:02:58 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/uri.rb:  Add toplevel documentation.  Patch by Vincent Batts.
+	  [Ruby 1.9 - Bug #4690]
+
+Sat May 14 04:19:06 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* NEWS: Describe altered behaviour for RSA and DSA public key
+	  encoding. [Ruby 1.9 - Bug #4421, Bug #4422]
+	  [ruby-core:35327,35328]
+
+Sat May 14 02:57:52 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/ipaddr.rb (unless Socket):  Document valid*? methods.  Patch by
+	  Sebastian Martinez.  [Ruby 1.9 - Feature #4687]
+
+Sat May 14 02:54:04 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rexml/functions.rb:  Add some documentation for REXML::Functions.
+	  Patch by Sebastian Martinez.  [Ruby 1.9 - Feature #4688]
+
+Sat May 14 02:51:42 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/resolv.rb:  Hide private method and state-tracking constants from
+	  RDoc.  Patch by Mark Turner.  [Ruby 1.9 - Feature #4691]
+
+Fri May 13 19:23:21 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* numeric.c (flo_coerce): Add #flo_coerce documentation.
+	  Patch by Sebastian Martinez.
+	  https://github.com/ruby/ruby/pull/21
+
+Fri May 13 18:42:22 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* README.EXT: fix typo.  Patch by William Blackerby.
+	  https://github.com/ruby/ruby/pull/19
+
+	* README.EXT.ja: ditto.
+
+Fri May 13 15:22:34 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_select): check invalid handle before doing
+	  select operations.  see [ruby-dev:43513], [ruby-dev:43535]
+
+Fri May 13 08:34:00 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/rdoc.rb:  Output summary after documentation report.
+	* lib/rdoc/stats/normal.rb:  Don't output information for users when
+	  we're not on a TTY
+
+Fri May 13 07:49:02 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/fileutils.rb:  Hide internal methods from RDoc.  Patch by Darragh
+	  Curran.  [Ruby 1.9 - Bug #4684]
+
+Fri May 13 07:36:23 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/webrick/httpservlet/erbhandler.rb:  Add documentation.
+
+Fri May 13 07:04:33 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/mathn.rb:  Fix indentation.  Patch by Jason Dew.
+	  [Ruby 1.9 - Feature #4682]
+
+Fri May 13 06:50:43 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/mathn.rb:  Add documentation.  Patch by Jason Dew.  [Ruby 1.9 -
+	  Feature #4667]
+
+Fri May 13 05:44:19 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/logger.rb (class Logger):  Document Logger#datetime_format.
+	  Patch by Sergio Gil Perez de la Manga.  [Ruby 1.9 - Bug #4678]
+
+Fri May 13 05:39:11 2011  Eric Hodel <drbrain@segment7.net>
+
+	* re.c (Init_Regexp): Document option constants.  Patch by Vincent
+	  Batts.  [Ruby 1.9 - Bug #4677]
+	* lib/uri/common.rb (module URI):  Documentation for URI.  Patch by
+	  Vincent Batts.  [Ruby 1.9- Bug #4677]
+	* lib/uri/ftp.rb (module URI):  ditto
+	* lib/uri/generic.rb (module URI):  ditto
+	* lib/uri/http.rb (module URI):  ditto
+	* lib/uri/https.rb (module URI):  ditto
+	* lib/uri/ldap.rb (module URI):  ditto
+	* lib/uri/ldaps.rb (module URI):  ditto
+	* lib/uri/mailto.rb (module URI):  ditto
+	* process.c (Init_process):  Document Process constants.  Patch by
+	  Vincent Batts.  [Ruby 1.9- Bug #4677]
+
+Fri May 13 05:16:38 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rss/atom.rb (module RSS):  Document URIs.  Patch by Mark Turner.
+	  [Ruby 1.9 - #4671]
+	* lib/rss/rss.rb (module RSS):  Document exception classes.  Patch by
+	  Mark Turner.  [Ruby 1.9 - #4671]
+
+Fri May 13 02:15:18 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (select_internal): remove unused variable (interrupt_flag).
+
 Thu May 12 18:24:34 2011  Kouhei Sutou  <kou@clear-code.com>
 
 	* configure.in: limit to "T" type for prefix of external symbols
@@ -19,9 +717,11 @@ Thu May 12 14:47:53 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Thu May 12 12:24:22 2011  Nobuhiro Iwamatsu  <iwamatsu@nigauri.org>
 
-        * ext/openssl/ossl_ssl.c: By trunk@31346, function check of SSLv2 is executed.
-        However, the problem is not revised in this.
-        This adds the control of using function of SSLv2 in made macro by function check.
+	* ext/openssl/ossl_ssl.c: By trunk@31346, function check of SSLv2 is
+	  executed.
+	  However, the problem is not revised in this.
+	  This adds the control of using function of SSLv2 in made macro by
+	  function check.
 
 Thu May 12 08:10:46 2011  Eric Hodel  <drbrain@segment7.net>
 
@@ -76,10 +776,10 @@ Wed May 11 03:06:35 2011  Eric Hodel  <drbrain@segment7.net>
 Tue May 10 14:50:32 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* lib/test/unit.rb: Add option for hiding skip messages when test
-	ends. #4657
+	  ends. #4657
 
 	* test/testunit/test_hideskip.rb, test/testunit/test4test_hideskip.rb:
-	test for above.
+	  test for above.
 
 Tue May 10 10:53:04 2011  Eric Hodel  <drbrain@segment7.net>
 
@@ -222,8 +922,9 @@ Sat May  7 15:15:10 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	fix win32 native_cond_timedwait() makes SIGSEGV.
 
-	* thread_win32.h (rb_thread_cond_struct): add prev field instead of last.
-	  (ie cond_event_entry is now using double linked list instead of single)
+	* thread_win32.h (rb_thread_cond_struct): add prev field instead of
+	  last. (ie cond_event_entry is now using double linked list instead of
+	  single)
 	* thread_win32.c (cond_event_entry): add prev field.
 
 	* thread_win32.c (__cond_timedwait): remove entry properly if timeout
@@ -296,7 +997,7 @@ Fri May  6 23:29:47 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 Fri May  6 23:13:43 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: remove nanosleep check. we no longer use it.
-	r20124 removed last usage.
+	  r20124 removed last usage.
 
 Fri May  6 22:35:56 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -333,11 +1034,6 @@ Fri May  6 14:25:53 2011  Tinco Andringa <mail@tinco.nl>
 	* ext/syck/rubyext.c (mktime_do): YAML.load time correctly parse
 	  usecs smaller than 1 fixes #4571
 
-Thu May  5 23:08:32 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
-
-	* test/ruby/test_io.rb (TestIO#test_O_CLOEXEC): fix false positive
-	  detection.
-
 Thu May  5 22:23:34 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (native_mutex_reinitialize_atfork): removed
@@ -359,7 +1055,7 @@ Thu May  5 15:03:51 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 	* eval.c (frame_func_id): __method__ return different name from
 	  methods defined by Module#define_method with a same block.
 	  [ruby-core:35386] fixes #4606
-	* eval (method_entry_of_iseq): new helper function. search control
+	* eval.c (method_entry_of_iseq): new helper function. search control
 	  frame stack for a method entry which has given iseq.
 	* test/ruby/test_method.rb: add tests for #4696
 
@@ -378,17 +1074,11 @@ Wed May  4 21:11:28 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 	* benchmark/bm_io_select2.rb: reduce number of using file
 	  descriptors. because gdb need some fds.
 
-Wed May  4 20:22:12 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
-
-	* io.c (Init_IO): Added File::CLOEXEC constant.
-	[ruby-core:22893] [Feature #1291]
-	* test/ruby/test_io.rb (TestIO#test_o_cloexec): test for File::CLOEXEC.
-
 Wed May  4 19:00:59 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_wait_for_single_fd): Fix wrong return value.
 	* test/-ext-/wait_for_single_fd/test_wait_for_single_fd.rb
-	(TestWaitForSingleFD#test_wait_for_closed_pipe): test for it.
+	  (TestWaitForSingleFD#test_wait_for_closed_pipe): test for it.
 
 Wed May  4 18:46:39 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
@@ -420,7 +1110,7 @@ Wed May  4 10:12:39 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 Wed May  4 10:10:28 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/socket/init.c (wait_connectable): use rb_wait_for_single_fd().
-	The patch was written by Eric Wong. [Ruby 1.9 - Feature #4531]
+	  The patch was written by Eric Wong. [Ruby 1.9 - Feature #4531]
 
 	* ext/socket/init.c (try_wait_connectable, wait_connectable_ensure):
 	  removed.
@@ -428,11 +1118,12 @@ Wed May  4 10:10:28 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 Wed May  4 10:07:48 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/io/wait/wait.c (io_wait): use rb_wait_for_single_fd().
-	The patch was written by Eric Wong. [Ruby 1.9 - Feature #4531]
+	  The patch was written by Eric Wong. [Ruby 1.9 - Feature #4531]
 
 Wed May  4 10:01:27 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* thread.c (rb_wait_for_single_fd): new. poll(2) based backend for rb_wait_for_single_fd().
+	* thread.c (rb_wait_for_single_fd): new. poll(2) based backend for
+	  rb_wait_for_single_fd().
 	  Now only Linux uses it.
 
 	The patch was written by Eric Wong. [Ruby 1.9 - Feature #4531]
@@ -440,7 +1131,8 @@ Wed May  4 10:01:27 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 Wed May  4 09:56:57 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_wait_for_single_fd): new.
-	* thread.c (select_single): select(2) based backend for rb_wait_for_single_fd().
+	* thread.c (select_single): select(2) based backend for
+	  rb_wait_for_single_fd().
 
 	* io.c (make_writeconv): use rb_wait_for_single_fd() instead of
 	  rb_thread_fd_select().
@@ -975,7 +1667,8 @@ Thu Apr 14 19:55:54 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 Thu Apr 14 16:01:45 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
-	* io.c (rb_f_syscall): suppress warning: "HAVE___SYSCALL" is not defined.
+	* io.c (rb_f_syscall): suppress warning: "HAVE___SYSCALL" is not
+	  defined.
 
 Thu Apr 14 00:41:09 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
@@ -1009,7 +1702,7 @@ Tue Apr 12 01:33:00 2011  Luis Lavena  <luislavena@gmail.com>
 
 	* configure.in: properly evaluate existence of truncate, ftruncate
 	  and ftello for MinGW. [ruby-core:35678]
-	* win32/win32.c: rename truncate, ftruncate and ftello to avoid 
+	* win32/win32.c: rename truncate, ftruncate and ftello to avoid
 	  redefinitions.
 	* win32/win32.h: ditto.
 
@@ -1045,7 +1738,8 @@ Sat Apr  9 23:31:47 2011  Shota Fukumori  <sorah@tubusu.net>
 Sat Apr  9 23:22:27 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* ext/stringio/stringio.c (strio_each):
-	  Fix exception message and don't raise immediately if block is not given.
+	  Fix exception message and don't raise immediately if block is not
+	  given.
 	  Fixes [ruby-dev:43394].
 
 	* test/stringio/test_stringio.rb (test_each_line_limit_0):
@@ -1217,11 +1911,11 @@ Tue Mar 29 05:19:57 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/raddrinfo.c: parenthesize macro arguments.
 
-Tue Mar 29 00:03:51 2011 Tajima Akio <artonx@yahoo.co.jp>	
+Tue Mar 29 00:03:51 2011 Tajima Akio <artonx@yahoo.co.jp>
 
 	* test/webrick/test_filehandler.rb (test_short_filename):
-	 read real short filename by cmd because smb mounted files
-	 have different naming convention.
+	  read real short filename by cmd because smb mounted files
+	  have different naming convention.
 
 Mon Mar 28 11:38:08 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
@@ -1619,7 +2313,8 @@ Sat Mar 12 04:12:41 2011  Tanaka Akira  <akr@fsij.org>
 
 Sat Mar 12 02:27:07 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
-	* ext/date/date_core.c ({d,dt}_lite_marshal_load): checks the given argument.
+	* ext/date/date_core.c ({d,dt}_lite_marshal_load): checks the given
+	  argument.
 
 Sat Mar 12 01:26:24 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
@@ -2130,7 +2825,7 @@ Sun Feb 27 21:59:37 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 Sun Feb 27 18:00:09 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* lib/test/unit.rb: Refactoring; Worker never use Hash for internal
-	storage.
+	  storage.
 
 	* lib/test/unit.rb: Never use Kernel#spawn. Use IO.popen instead.
 
@@ -2157,7 +2852,7 @@ Sat Feb 26 16:10:23 2011  Shota Fukumori  <sorah@tubusu.net>
 Sat Feb 26 07:10:05 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/scalar_scanner.rb: fix parsing timezone's whose
-	  whose format is (+/-)hhmm.  Thanks Gon??alo Silva!
+	  whose format is (+/-)hhmm.  Thanks Goncalo Silva!
 
 	* test/psych/test_scalar_scanner.rb: test for bug.
 
@@ -2619,7 +3314,7 @@ Wed Feb  9 23:11:27 2011  Tanaka Akira  <akr@fsij.org>
 Tue Feb  8 11:47:11 2011  Loren Sands-Ramshaw  <lorensr@gmail.com>
 
 	* array.c: documentation clarification in rotate, rotate!,
-	index, and rindex. [ruby-core:35144]
+	  index, and rindex. [ruby-core:35144]
 
 Wed Feb  9 09:45:43 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -2645,7 +3340,8 @@ Tue Feb  8 16:04:03 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 Tue Feb  8 15:59:23 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* process.c (rb_run_exec_options_err): use MODET2NUM() instead LONG2NUM().
+	* process.c (rb_run_exec_options_err): use MODET2NUM() instead
+	  LONG2NUM().
 
 Tue Feb  8 13:59:56 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
@@ -3063,7 +3759,8 @@ Sun Jan 30 03:29:47 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Sun Jan 30 01:02:28 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* include/ruby/ruby.h: Added NUM2MODET() and MODET2NUM() default definition.
+	* include/ruby/ruby.h: Added NUM2MODET() and MODET2NUM() default
+	  definition.
 	  Because r30686 introduced win32 build failure.
 
 Sat Jan 29 22:16:26 2011  NARUSE, Yui  <naruse@ruby-lang.org>
@@ -3139,8 +3836,8 @@ Sat Jan 29 00:30:44 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 Fri Jan 28 23:20:28 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/gdbm/test_gdbm.rb (TestGDBM#test_s_open_no_create,
-	TestGDBM2#test_writer_open_notexist): We only need to skip libgdbm 1.8.0,
-	not all 1.8.x. 1.8.1 or later don't have GDBM_WRITER sickness.
+	  TestGDBM2#test_writer_open_notexist): We only need to skip libgdbm
+	  1.8.0, not all 1.8.x. 1.8.1 or later don't have GDBM_WRITER sickness.
 
 Fri Jan 28 21:56:57 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
@@ -3563,7 +4260,8 @@ Tue Jan 18 23:04:51 2011  Tanaka Akira  <akr@fsij.org>
 
 Tue Jan 18 18:31:14 2011  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
-	* lib/irb/completion.rb: Irb tab completion support for XX::method forms.
+	* lib/irb/completion.rb: Irb tab completion support for XX::method
+	  forms.
 
 Tue Jan 18 15:05:55 2011  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
@@ -3712,7 +4410,8 @@ Thu Jan 13 00:06:38 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 Thu Jan 13 00:00:07 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (rb_f_syscall): Some syscall return unsigned or pointer value.
-	  Therefore we should only check the result is -1 or not. [ruby-core:34062]
+	  Therefore we should only check the result is -1 or not.
+	  [ruby-core:34062]
 
 Wed Jan 12 23:55:48 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
@@ -3961,7 +4660,8 @@ Sat Jan  1 17:02:50 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 	* lib/irb/locale.rb (IRB::Locale#search_file): make it possible
 	  to load a localization from a gem.
 	  (IRB::Locale#lc_path): obsoleted because of the change of #search_file
-	  (IRB::Locale#each_localized_path): new private method, based on lc_path
+	  (IRB::Locale#each_localized_path): new private method, based on
+	  lc_path
 	  (IRB::Locale#find): follows the change of #search_file.
 	  (IRB::Locale#load): removed duplicate with #find.
 
@@ -4470,7 +5170,8 @@ Mon Dec 20 12:15:32 2010  Eric Hodel  <drbrain@segment7.net>
 
 Mon Dec 20 01:55:03 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* io.c (Init_IO): Added O_DIRECT. This feature was proposed by Run Paint Run Run.
+	* io.c (Init_IO): Added O_DIRECT. This feature was proposed by
+	  Run Paint Run Run.
 	  [Feature #4015] [ruby-core:33018]
 
 Sun Dec 19 19:15:23 2010  Tanaka Akira  <akr@fsij.org>
@@ -4767,7 +5468,8 @@ Sat Dec 11 05:48:28 2010  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/lib/multi-tk.rb: infinite loop on method_missing at loading.
 	  [ruby-dev:42716] [Ruby 1.9-Bug#4129]
 
-	* ext/tk/lib/multi-tk.rb: when no eventloop is running, ruby freezes at exit.
+	* ext/tk/lib/multi-tk.rb: when no eventloop is running, ruby freezes at
+	  exit.
 
 Sat Dec 11 02:23:15 2010  Aaron Patterson <aaron@tenderlovemaking.com>
 
@@ -4805,7 +5507,7 @@ Fri Dec 10 18:12:31 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  config.h.
 
 	* test/mkmf/test_sizeof.rb (TestMkmf::TestSizeof#test_sizeof_builtin),
-	 (TestMkmf::TestSizeof#test_sizeof_struct): more tests.
+	  (TestMkmf::TestSizeof#test_sizeof_struct): more tests.
 
 	* lib/mkmf.rb (check_signedness): should use the prelude code.
 	  [ruby-dev:42731]
@@ -5912,7 +6614,8 @@ Sun Nov 14 04:22:32 2010  Alexander Zavorine  <alexandre.zavorine@nokia.com>
 
 	* symbian/setup (config.h): Added HAVE_LABS and HAVE_LLABS to config.h.
 
-	* symbian/configure.bat: Changed packaging version in line with API style 3 versioning.
+	* symbian/configure.bat: Changed packaging version in line with API
+	  style 3 versioning.
 
 Sat Nov 13 16:37:56 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -5926,7 +6629,8 @@ Sat Nov 13 01:31:30 2010  Akio Tajima <artonx@yahoo.co.jp>
 
 Fri Nov 12 20:52:34 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* common.mk (showflags, help): use caret to quote leading spaces on Windows.
+	* common.mk (showflags, help): use caret to quote leading spaces on
+	  Windows.
 
 	* Makefile.in, common.mk, cygwin/GNUmakefile.in, enc/depend,
 	  ext/ripper/depend, lib/mkmf.rb, win32/Makefile.sub: caddle up.
@@ -7452,7 +8156,8 @@ Fri Sep 24 15:50:43 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Fri Sep 24 15:28:35 2010  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* string.c (rb_str_rindex): use rb_enc_prev_char instead of repeated str_nth.
+	* string.c (rb_str_rindex): use rb_enc_prev_char instead of repeated
+	  str_nth.
 	  patched by Michael Selig [ruby-core:32498]
 
 Fri Sep 24 14:19:12 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
@@ -8244,7 +8949,7 @@ Sat Aug 28 08:11:05 2010  Tanaka Akira  <akr@fsij.org>
 Fri Aug 27 16:20:01 2010  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* string.c (rb_str_prepend): new method by Shota Fukumori (sora_h)
-	 [Feature #3765]
+	  [Feature #3765]
 
 Fri Aug 27 15:24:20 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 

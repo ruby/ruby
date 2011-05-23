@@ -77,7 +77,7 @@ class Rake::TestFileTask < Test::Unit::TestCase
   # deleting the file target on failure is always the proper thing to
   # do.  I'm willing to hear input on this topic.
   def ztest_file_deletes_on_failure
-    task :obj 
+    task :obj
     file NEWFILE => [:obj] do |t|
       FileUtils.touch NEWFILE
       fail "Ooops"

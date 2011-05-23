@@ -967,39 +967,62 @@ module Net
       end
     end
 
+    # This class represents a response received by the SMTP server. Instances
+    # of this class are created by the SMTP class; they should not be directly
+    # created by the user. For more information on SMTP responses, view
+    # {Section 4.2 of RFC 5321}[http://tools.ietf.org/html/rfc5321#section-4.2]
     class Response
+      # Parses the received response and separates the reply code and the human
+      # readable reply text
       def self.parse(str)
         new(str[0,3], str)
       end
 
+      # Creates a new instance of the Response class and sets the status and
+      # string attributes
       def initialize(status, string)
         @status = status
         @string = string
       end
 
+      # The three digit reply code of the SMTP response
       attr_reader :status
+
+      # The human readable reply text of the SMTP response
       attr_reader :string
 
+      # Takes the first digit of the reply code to determine the status type
       def status_type_char
         @status[0, 1]
       end
 
+      # Determines whether the response received was a Positive Completion
+      # reply (2xx reply code)
       def success?
         status_type_char() == '2'
       end
 
+      # Determines whether the response received was a Positive Intermediate
+      # reply (3xx reply code)
       def continue?
         status_type_char() == '3'
       end
 
+      # The first line of the human readable reply text
       def message
         @string.lines.first
       end
 
+      # Creates a CRAM-MD5 challenge. You can view more information on CRAM-MD5
+      # on Wikipedia: http://en.wikipedia.org/wiki/CRAM-MD5
       def cram_md5_challenge
         @string.split(/ /)[1].unpack('m')[0]
       end
 
+      # Returns a hash of the human readable reply text in the response if it
+      # is multiple lines. It does not return the first line. The key of the
+      # hash is the first word the value of the hash is an array with each word
+      # thereafter being a value in the array
       def capabilities
         return {} unless @string[3, 1] == '-'
         h = {}
@@ -1010,6 +1033,8 @@ module Net
         h
       end
 
+      # Determines whether there was an error and raies the appropriate error
+      # based on the reply code of the response
       def exception_class
         case @status
         when /\A4/  then SMTPServerBusy

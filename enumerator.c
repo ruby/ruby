@@ -17,33 +17,52 @@
 /*
  * Document-class: Enumerator
  *
- * A class which provides a method `each' to be used as an Enumerable
- * object.
+ * A class which allows both internal and external iteration.
  *
- * An enumerator can be created by following methods.
+ * An Enumerator can be created by the following methods.
  * - Kernel#to_enum
  * - Kernel#enum_for
  * - Enumerator.new
  *
- * Also, most iteration methods without a block returns an enumerator.
- * For example, Array#map returns an enumerator if a block is not given.
- * The enumerator has the with_index method.
- * So ary.map.with_index works as follows.
+ * Most methods have two forms: a block form where the contents
+ * are evaluated for each item in the enumeration, and a non-block form
+ * which returns a new Enumerator wrapping the iteration.
  *
- *   p %w[foo bar baz].map.with_index {|w,i| "#{i}:#{w}" }
- *   #=> ["0:foo", "1:bar", "2:baz"]
+ *   enumerator = %w(one two three).each
+ *   puts enumerator.class # => Enumerator
+ *   enumerator.each_with_object("foo") do |item,obj|
+ *     puts "#{obj}: #{item}"
+ *   end
+ *   # foo: one
+ *   # foo: two
+ *   # foo: three
+ *   enum_with_obj = enumerator.each_with_object("foo")
+ *   puts enum_with_obj.class # => Enumerator
+ *   enum_with_obj.each do |item,obj|
+ *     puts "#{obj: #{item}"
+ *   end
+ *   # foo: one
+ *   # foo: two
+ *   # foo: three
  *
- * An enumerator object can be used as an external iterator.
- * I.e.  Enumerator#next returns the next value of the iterator.
- * Enumerator#next raises StopIteration at end.
+ * This allows you to chain Enumerators together.  For example, you
+ * can map a list's elements to strings containing the index
+ * and the element as a string via:
+ *
+ *   puts %w[foo bar baz].map.with_index {|w,i| "#{i}:#{w}" }
+ *   # => ["0:foo", "1:bar", "2:baz"]
+ *
+ * An Enumerator can also be used as an external iterator.
+ * For example, Enumerator#next returns the next value of the iterator
+ * or raises StopIteration if the Enumerator is at the end.
  *
  *   e = [1,2,3].each   # returns an enumerator object.
- *   p e.next   #=> 1
- *   p e.next   #=> 2
- *   p e.next   #=> 3
- *   p e.next   #raises StopIteration
+ *   puts e.next   # => 1
+ *   puts e.next   # => 2
+ *   puts e.next   # => 3
+ *   puts e.next   # raises StopIteration
  *
- * An external iterator can be used to implement an internal iterator as follows.
+ * You can use this to implement an internal iterator as follows:
  *
  *   def ext_each(e)
  *     while true
@@ -58,21 +77,22 @@
  *   end
  *
  *   o = Object.new
+ *
  *   def o.each
- *     p yield
- *     p yield(1)
- *     p yield(1, 2)
+ *     puts yield
+ *     puts yield(1)
+ *     puts yield(1, 2)
  *     3
  *   end
  *
  *   # use o.each as an internal iterator directly.
- *   p o.each {|*x| p x; [:b, *x] }
- *   #=> [], [:b], [1], [:b, 1], [1, 2], [:b, 1, 2], 3
+ *   puts o.each {|*x| puts x; [:b, *x] }
+ *   # => [], [:b], [1], [:b, 1], [1, 2], [:b, 1, 2], 3
  *
  *   # convert o.each to an external iterator for
  *   # implementing an internal iterator.
- *   p ext_each(o.to_enum) {|*x| p x; [:b, *x] }
- *   #=> [], [:b], [1], [:b, 1], [1, 2], [:b, 1, 2], 3
+ *   puts ext_each(o.to_enum) {|*x| puts x; [:b, *x] }
+ *   # => [], [:b], [1], [:b, 1], [1, 2], [:b, 1, 2], 3
  *
  */
 VALUE rb_cEnumerator;
@@ -151,22 +171,31 @@ enumerator_ptr(VALUE obj)
 }
 
 /*
- *  call-seq:
- *    obj.to_enum(method = :each, *args)
- *    obj.enum_for(method = :each, *args)
+ * call-seq:
+ *   obj.to_enum(method = :each, *args)
+ *   obj.enum_for(method = :each, *args)
  *
- *  Returns Enumerator.new(self, method, *args).
+ * Creates a new Enumerator which will enumerate by on calling +method+ on
+ * +obj+.
  *
- *  e.g.:
+ * +method+:: the method to call on +obj+ to generate the enumeration
+ * +args+:: arguments that will be passed in +method+ <i>in addition</i>
+ *          to the item itself.  Note that the number of args
+ *          must not exceed the number expected by +method+
  *
- *     str = "xyz"
+ * === Example
  *
- *     enum = str.enum_for(:each_byte)
- *     a = enum.map {|b| '%02x' % b } #=> ["78", "79", "7a"]
+ *   str = "xyz"
  *
- *     # protects an array from being modified
- *     a = [1, 2, 3]
- *     some_method(a.to_enum)
+ *   enum = str.enum_for(:each_byte)
+ *   enum.each { |b| puts b }
+ *   # => 120
+ *   # => 121
+ *   # => 122
+ *
+ *   # protect an array from being modified by some_method
+ *   a = [1, 2, 3]
+ *   some_method(a.to_enum)
  *
  */
 static VALUE
@@ -217,36 +246,38 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, VALUE *argv)
 }
 
 /*
- *  call-seq:
- *    Enumerator.new(obj, method = :each, *args)
- *    Enumerator.new { |y| ... }
+ * call-seq:
+ *   Enumerator.new { |yielder| ... }
+ *   Enumerator.new(obj, method = :each, *args)
  *
- *  Creates a new Enumerator object, which is to be used as an
- *  Enumerable object iterating in a given way.
+ * Creates a new Enumerator object, which can be used as an
+ * Enumerable.
  *
- *  In the first form, a generated Enumerator iterates over the given
- *  object using the given method with the given arguments passed.
- *  Use of this form is discouraged.  Use Kernel#enum_for(), alias
- *  to_enum, instead.
+ * In the first form, iteration is defined by the given block, in
+ * which a "yielder" object, given as block parameter, can be used to
+ * yield a value by calling the +yield+ method (aliased as +<<+):
  *
- *    e = Enumerator.new(ObjectSpace, :each_object)
- *        #-> ObjectSpace.enum_for(:each_object)
+ *   fib = Enumerator.new do |y|
+ *     a = b = 1
+ *     loop do
+ *       y << a
+ *       a, b = b, a + b
+ *     end
+ *   end
  *
- *    e.select { |obj| obj.is_a?(Class) }  #=> array of all classes
+ *   p fib.take(10) # => [1, 1, 2, 3, 5, 8, 13, 21, 34, 55]
  *
- *  In the second form, iteration is defined by the given block, in
- *  which a "yielder" object given as block parameter can be used to
- *  yield a value by calling the +yield+ method, alias +<<+.
+ * In the second, deprecated, form, a generated Enumerator iterates over the
+ * given object using the given method with the given arguments passed.
  *
- *    fib = Enumerator.new { |y|
- *      a = b = 1
- *      loop {
- *        y << a
- *        a, b = b, a + b
- *      }
- *    }
+ * Use of this form is discouraged.  Use Kernel#enum_for or Kernel#to_enum
+ * instead.
  *
- *    p fib.take(10) #=> [1, 1, 2, 3, 5, 8, 13, 21, 34, 55]
+ *   e = Enumerator.new(ObjectSpace, :each_object)
+ *       #-> ObjectSpace.enum_for(:each_object)
+ *
+ *   e.select { |obj| obj.is_a?(Class) }  #=> array of all classes
+ *
  */
 static VALUE
 enumerator_initialize(int argc, VALUE *argv, VALUE obj)
@@ -320,11 +351,11 @@ enumerator_block_call(VALUE obj, rb_block_call_func *func, VALUE arg)
 }
 
 /*
- *  call-seq:
- *    enum.each {...}
+ * call-seq:
+ *   enum.each {...}
  *
- *  Iterates the given block using the object and the method specified
- *  in the first place.  If no block is given, returns self.
+ * Iterates over the block according to how this Enumerable was constructed.
+ * If no block is given, returns self.
  *
  */
 static VALUE
@@ -350,12 +381,15 @@ enumerator_with_index_i(VALUE val, VALUE m, int argc, VALUE *argv)
 }
 
 /*
- *  call-seq:
- *    e.with_index(offset = 0) {|(*args), idx| ... }
- *    e.with_index(offset = 0)
+ * call-seq:
+ *   e.with_index(offset = 0) {|(*args), idx| ... }
+ *   e.with_index(offset = 0)
  *
- *  Iterates the given block for each element with an index, which
- *  starts from +offset+.  If no block is given, returns an enumerator.
+ * Iterates the given block for each element with an index, which
+ * starts from +offset+.  If no block is given, returns a new Enumerator
+ * that includes the index, starting from +offset+
+ *
+ * +offset+:: the starting index to use
  *
  */
 static VALUE
@@ -370,12 +404,13 @@ enumerator_with_index(int argc, VALUE *argv, VALUE obj)
 }
 
 /*
- *  call-seq:
- *    e.each_with_index {|(*args), idx| ... }
- *    e.each_with_index
+ * call-seq:
+ *   e.each_with_index {|(*args), idx| ... }
+ *   e.each_with_index
  *
- *  Same as Enumerator#with_index, except each_with_index does not
- *  receive an offset argument.
+ * Same as Enumerator#with_index(0), i.e. there is no starting offset.
+ *
+ * If no block is given, a new Enumerator is returned that includes the index.
  *
  */
 static VALUE
@@ -394,15 +429,31 @@ enumerator_with_object_i(VALUE val, VALUE memo, int argc, VALUE *argv)
 }
 
 /*
- *  call-seq:
- *    e.with_object(obj) {|(*args), memo_obj| ... }
- *    e.with_object(obj)
+ * call-seq:
+ *   e.with_object(obj) {|(*args), obj| ... }
+ *   e.with_object(obj)
  *
- *  Iterates the given block for each element with an arbitrary
- *  object given, and returns the initially given object.
+ * Iterates the given block for each element with an arbitrary object, +obj+,
+ * and returns +obj+
  *
- *  If no block is given, returns an enumerator.
+ * If no block is given, returns a new Enumerator.
  *
+ * === Example
+ *
+ *   to_three = Enumerator.new do |y|
+ *     3.times do |x|
+ *       y << x
+ *     end
+ *   end
+ *
+ *   to_three_with_string = to_three.with_object("foo")
+ *   to_three_with_string.each do |x,string|
+ *     puts "#{string}: #{x}"
+ *   end
+ *
+ *   # => foo:0
+ *   # => foo:1
+ *   # => foo:2
  */
 static VALUE
 enumerator_with_object(VALUE obj, VALUE memo)
@@ -478,11 +529,14 @@ get_next_values(VALUE obj, struct enumerator *e)
  * call-seq:
  *   e.next_values   -> array
  *
- * Returns the next object as an array in the enumerator,
- * and move the internal position forward.
- * When the position reached at the end, StopIteration is raised.
+ * Returns the next object as an array in the enumerator, and move the
+ * internal position forward.  When the position reached at the end,
+ * StopIteration is raised.
  *
- * This method can be used to distinguish <code>yield</code> and <code>yield nil</code>.
+ * This method can be used to distinguish <code>yield</code> and <code>yield
+ * nil</code>.
+ *
+ * === Example
  *
  *   o = Object.new
  *   def o.each
@@ -512,9 +566,9 @@ get_next_values(VALUE obj, struct enumerator *e)
  *   #  yield nil        [nil]            nil
  *   #  yield [1, 2]     [[1, 2]]         [1, 2]
  *
- * Note that enumeration sequence by next_values method does not affect other
- * non-external enumeration methods, unless underlying iteration
- * methods itself has side-effect, e.g. IO#each_line.
+ * Note that enumeration sequenced by +next_values+ does not affect other
+ * non-external enumeration methods, unless underlying iteration methods
+ * itself has side-effect, e.g. IO#each_line.
  *
  */
 
@@ -557,9 +611,10 @@ ary2sv(VALUE args, int dup)
  * call-seq:
  *   e.next   -> object
  *
- * Returns the next object in the enumerator, and move the internal
- * position forward.  When the position reached at the end, StopIteration
- * is raised.
+ * Returns the next object in the enumerator, and move the internal position
+ * forward.  When the position reached at the end, StopIteration is raised.
+ *
+ * === Example
  *
  *   a = [1,2,3]
  *   e = a.to_enum
@@ -568,9 +623,9 @@ ary2sv(VALUE args, int dup)
  *   p e.next   #=> 3
  *   p e.next   #raises StopIteration
  *
- * Note that enumeration sequence by next method does not affect other
- * non-external enumeration methods, unless underlying iteration
- * methods itself has side-effect, e.g. IO#each_line.
+ * Note that enumeration sequence by +next+ does not affect other non-external
+ * enumeration methods, unless the underlying iteration methods itself has
+ * side-effect, e.g. IO#each_line.
  *
  */
 
@@ -596,9 +651,11 @@ enumerator_peek_values(VALUE obj)
  * call-seq:
  *   e.peek_values   -> array
  *
- * Returns the next object as an array in the enumerator,
- * but don't move the internal position forward.
- * When the position reached at the end, StopIteration is raised.
+ * Returns the next object as an array, similar to Enumerator#next_values, but
+ * doesn't move the internal position forward.  If the position is already at
+ * the end, StopIteration is raised.
+ *
+ * === Example
  *
  *   o = Object.new
  *   def o.each
@@ -628,9 +685,11 @@ enumerator_peek_values_m(VALUE obj)
  * call-seq:
  *   e.peek   -> object
  *
- * Returns the next object in the enumerator, but don't move the internal
- * position forward.  When the position reached at the end, StopIteration
+ * Returns the next object in the enumerator, but doesn't move the internal
+ * position forward.  If the position is already at the end, StopIteration
  * is raised.
+ *
+ * === Example
  *
  *   a = [1,2,3]
  *   e = a.to_enum
@@ -655,38 +714,26 @@ enumerator_peek(VALUE obj)
  * call-seq:
  *   e.feed obj   -> nil
  *
- * Set the value for the next yield in the enumerator returns.
+ * Set the value to be returned by the next call to +yield+ by the enumerator.
+ * If the value is not set, the +yield+ returns +nil+ and the value is cleared
+ * after it is used the first time.
  *
- * If the value is not set, the yield returns nil.
+ * +obj+:: the object to return from the next call to the Enumerator's +yield+
  *
- * This value is cleared after used.
+ * === Example
  *
- *   o = Object.new
- *   def o.each
- *     # (2)
- *     x = yield
- *     p x          #=> "foo"
- *     # (5)
- *     x = yield
- *     p x          #=> nil
- *     # (7)
- *     x = yield
- *     # not reached
- *     p x
+ *   three_times = Enumerator.new do |yielder|
+ *     3.times do |x|
+ *       result = yielder.yield(x)
+ *       puts result
+ *     end
  *   end
- *   e = o.to_enum
- *   # (1)
- *   e.next
- *   # (3)
- *   e.feed "foo"
- *   # (4)
- *   e.next
- *   # (6)
- *   e.next
- *   # (8)
  *
+ *   three_times.next # => 0
+ *   three_times.feed("foo")
+ *   three_times.next # => 1, prints "foo"
+ *   three_times.next # => 2, prints nothing
  */
-
 static VALUE
 enumerator_feed(VALUE obj, VALUE v)
 {
@@ -704,7 +751,7 @@ enumerator_feed(VALUE obj, VALUE v)
  * call-seq:
  *   e.rewind   -> e
  *
- * Rewinds the enumeration sequence by the next method.
+ * Rewinds the enumeration sequence by one step.
  *
  * If the enclosed object responds to a "rewind" method, it is called.
  */
@@ -785,7 +832,7 @@ inspect_enumerator(VALUE obj, VALUE dummy, int recur)
  * call-seq:
  *   e.inspect  -> string
  *
- *  Create a printable version of <i>e</i>.
+ * Creates a printable version of <i>e</i>.
  */
 
 static VALUE
@@ -1027,27 +1074,27 @@ generator_each(VALUE obj)
 }
 
 /*
- *  Document-class: StopIteration
+ * Document-class: StopIteration
  *
- *  Raised to stop the iteration, in particular by Enumerator#next. It is
- *  rescued by Kernel#loop.
+ * Raised to stop the iteration, in particular by Enumerator#next. It is
+ * rescued by Kernel#loop.
  *
- *     loop do
- *       puts "Hello"
- *       raise StopIteration
- *       puts "World"
- *     end
- *     puts "Done!"
+ *   loop do
+ *     puts "Hello"
+ *     raise StopIteration
+ *     puts "World"
+ *   end
+ *   puts "Done!"
  *
- *  <em>produces:</em>
+ * <em>produces:</em>
  *
- *     Hello
- *     Done!
+ *   Hello
+ *   Done!
  */
 
 /*
  * call-seq:
- *   stopiteration.result       -> value
+ *   result       -> value
  *
  * Returns the return value of the iterator.
  *
@@ -1058,14 +1105,17 @@ generator_each(VALUE obj)
  *     yield 3
  *     100
  *   end
+ *
  *   e = o.to_enum
- *   p e.next                   #=> 1
- *   p e.next                   #=> 2
- *   p e.next                   #=> 3
+ *
+ *   puts e.next                   #=> 1
+ *   puts e.next                   #=> 2
+ *   puts e.next                   #=> 3
+ *
  *   begin
  *     e.next
- *   rescue StopIteration
- *     p $!.result              #=> 100
+ *   rescue StopIteration => ex
+ *     puts ex.result              #=> 100
  *   end
  *
  */

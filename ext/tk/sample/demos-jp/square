@@ -1,10 +1,10 @@
 #!/usr/bin/env ruby
 
 # square --
-# This script generates a demo application containing only 
-# a "square" widget.  It's only usable if Tk has been compiled 
-# with tkSquare.c and with the -DSQUARE_DEMO compiler switch. 
-# This demo arranges the following bindings for the widget: 
+# This script generates a demo application containing only
+# a "square" widget.  It's only usable if Tk has been compiled
+# with tkSquare.c and with the -DSQUARE_DEMO compiler switch.
+# This demo arranges the following bindings for the widget:
 #
 # Button-1 press/drag:          moves square to mouse
 # "a":                          toggle size animation on/off
@@ -19,7 +19,7 @@ class TkSquare<TkWindow
       tk_call 'square', path
     rescue
       STDERR.print "\nSorry. Your Tk interpreter does not contain " +
-	'a "square" demonstration widget.' + 
+	'a "square" demonstration widget.' +
 	"\n ( See documents included the Tcl/Tk source archive. )\n\n"
       exit
     end
@@ -53,7 +53,7 @@ def center(x,y)
 end
 
 # The procedures below provide a simple form of animation where
-# the box changes size in a pulsing pattern: larger, smaller, larger, 
+# the box changes size in a pulsing pattern: larger, smaller, larger,
 # and so on.
 
 $inc = 0

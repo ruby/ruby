@@ -1,6 +1,6 @@
 =begin
  distributed Ruby --- Queue
- 	Copyright (c) 1999-2000 Masatoshi SEKI 
+ 	Copyright (c) 1999-2000 Masatoshi SEKI
 =end
 
 require 'thread'

@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
-=begin
-#
+#--
 # Copyright (c) 2001,2003 Akinori MUSHA <knu@iDaemons.org>
 #
 # All rights reserved.  You can redistribute and/or modify it under
@@ -9,7 +8,7 @@
 # $Idaemons: /home/cvs/rb/abbrev.rb,v 1.2 2001/05/30 09:37:45 knu Exp $
 # $RoughId: abbrev.rb,v 1.4 2003/10/14 19:45:42 knu Exp $
 # $Id$
-=end
+#++
 
 # Calculate the set of unique abbreviations for a given set of strings.
 #
@@ -46,24 +45,24 @@ module Abbrev
     seen = Hash.new(0)
 
     if pattern.is_a?(String)
-      pattern = /^#{Regexp.quote(pattern)}/	# regard as a prefix
+      pattern = /^#{Regexp.quote(pattern)}/  # regard as a prefix
     end
 
     words.each do |word|
       next if (abbrev = word).empty?
       while (len = abbrev.rindex(/[\w\W]\z/)) > 0
-	abbrev = word[0,len]
+        abbrev = word[0,len]
 
-	next if pattern && pattern !~ abbrev
+        next if pattern && pattern !~ abbrev
 
-	case seen[abbrev] += 1
-	when 1
-	  table[abbrev] = word
-	when 2
-	  table.delete(abbrev)
-	else
-	  break
-	end
+        case seen[abbrev] += 1
+        when 1
+          table[abbrev] = word
+        when 2
+          table.delete(abbrev)
+        else
+          break
+        end
       end
     end
 

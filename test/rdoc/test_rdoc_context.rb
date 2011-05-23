@@ -105,6 +105,38 @@ class TestRDocContext < XrefTestCase
     assert_includes RDoc::TopLevel.classes.map { |k| k.full_name }, 'C1::Klass'
   end
 
+  def test_add_class_basic_object
+    skip 'BasicObject is 1.9 only' unless defined?(BasicObject)
+
+    @xref_data.add_class RDoc::NormalClass, 'BasicObject'
+
+    basic = @xref_data.find_module_named 'BasicObject'
+
+    assert_nil basic.superclass
+
+    @c1.add_class RDoc::NormalClass, 'BasicObject'
+
+    basic = @c1.find_module_named 'BasicObject'
+
+    assert_equal 'Object', basic.superclass
+  end
+
+  def test_add_class_object
+    root_class = defined?(BasicObject) ? 'BasicObject' : nil
+
+    @xref_data.add_class RDoc::NormalClass, 'Object'
+
+    object = @xref_data.find_module_named 'Object'
+
+    assert_equal root_class, object.superclass
+
+    @c1.add_class RDoc::NormalClass, 'Object'
+
+    object = @c1.find_module_named 'Object'
+
+    assert_equal 'Object', object.superclass.full_name
+  end
+
   def test_add_class_superclass
     @c1.add_class RDoc::NormalClass, 'Klass', 'Object'
     @c1.add_class RDoc::NormalClass, 'Klass', 'Other'
@@ -141,6 +173,16 @@ class TestRDocContext < XrefTestCase
     @context.add_include incl
 
     assert_equal [incl], @context.includes
+  end
+
+  def test_add_include_twice
+    incl1 = RDoc::Include.new 'Name', 'comment'
+    @context.add_include incl1
+
+    incl2 = RDoc::Include.new 'Name', 'comment'
+    @context.add_include incl2
+
+    assert_equal [incl1], @context.includes
   end
 
   def test_add_method
@@ -436,6 +478,147 @@ class TestRDocContext < XrefTestCase
     }
 
     assert_equal expected, @c1.methods_by_type(separate)
+  end
+
+  def test_methods_matching
+    methods = []
+
+    @parent.methods_matching 'm' do |m|
+      methods << m
+    end
+
+    assert_equal [@parent_m], methods
+  end
+
+  def test_methods_matching_singleton
+    methods = []
+
+    @parent.methods_matching 'm', true do |m|
+      methods << m
+    end
+
+    assert_equal [@parent__m], methods
+  end
+
+  def test_methods_matching_inherit
+    methods = []
+
+    @child.methods_matching 'm' do |m|
+      methods << m
+    end
+
+    assert_equal [@parent_m], methods
+  end
+
+  def test_remove_invisible_private
+    util_visibilities
+
+    @vis.remove_invisible :private
+
+    assert_equal [@pub, @prot, @priv], @vis.method_list
+    assert_equal [@apub, @aprot, @apriv], @vis.attributes
+  end
+
+  def test_remove_invisible_protected
+    util_visibilities
+
+    @vis.remove_invisible :protected
+
+    assert_equal [@pub, @prot], @vis.method_list
+    assert_equal [@apub, @aprot], @vis.attributes
+  end
+
+  def test_remove_invisible_public
+    util_visibilities
+
+    @vis.remove_invisible :public
+
+    assert_equal [@pub], @vis.method_list
+    assert_equal [@apub], @vis.attributes
+  end
+
+  def test_remove_invisible_public_force
+    util_visibilities
+
+    @priv.force_documentation = true
+    @prot.force_documentation = true
+    @apriv.force_documentation = true
+    @aprot.force_documentation = true
+
+    @vis.remove_invisible :public
+
+    assert_equal [@pub, @prot, @priv], @vis.method_list
+    assert_equal [@apub, @aprot, @apriv], @vis.attributes
+  end
+
+  def test_remove_invisible_in_protected
+    util_visibilities
+
+    methods = [@pub, @prot, @priv]
+
+    @c1.remove_invisible_in methods, :protected
+
+    assert_equal [@pub, @prot], methods
+  end
+
+  def test_remove_invisible_in_protected_force
+    util_visibilities
+
+    @priv.force_documentation = true
+
+    methods = [@pub, @prot, @priv]
+
+    @c1.remove_invisible_in methods, :protected
+
+    assert_equal [@pub, @prot, @priv], methods
+  end
+
+  def test_remove_invisible_in_public
+    util_visibilities
+
+    methods = [@pub, @prot, @priv]
+
+    @c1.remove_invisible_in methods, :public
+
+    assert_equal [@pub], methods
+  end
+
+  def test_remove_invisible_in_public_force
+    util_visibilities
+
+    @prot.force_documentation = true
+    @priv.force_documentation = true
+
+    methods = [@pub, @prot, @priv]
+
+    @c1.remove_invisible_in methods, :public
+
+    assert_equal [@pub, @prot, @priv], methods
+  end
+
+  def util_visibilities
+    @pub  = RDoc::AnyMethod.new nil, 'pub'
+    @prot = RDoc::AnyMethod.new nil, 'prot'
+    @priv = RDoc::AnyMethod.new nil, 'priv'
+
+    @apub  = RDoc::Attr.new nil, 'pub',  'RW', nil
+    @aprot = RDoc::Attr.new nil, 'prot', 'RW', nil
+    @apriv = RDoc::Attr.new nil, 'priv', 'RW', nil
+
+    @vis = RDoc::NormalClass.new 'Vis'
+    @vis.add_method @pub
+    @vis.add_method @prot
+    @vis.add_method @priv
+
+    @vis.add_attribute @apub
+    @vis.add_attribute @aprot
+    @vis.add_attribute @apriv
+
+    @prot.visibility = :protected
+    @priv.visibility = :private
+
+    @aprot.visibility = :protected
+    @apriv.visibility = :private
   end
 
 end

@@ -28,6 +28,7 @@
 #include "method.h"
 #include "constant.h"
 #include "vm_core.h"
+#include "internal.h"
 #include <ctype.h>
 
 extern st_table *rb_class_tbl;

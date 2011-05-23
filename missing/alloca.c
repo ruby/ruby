@@ -6,7 +6,7 @@
 
    This implementation of the PWB library alloca() function,
    which is used to allocate space off the run-time stack so
-   that it is automatically reclaimed upon procedure exit, 
+   that it is automatically reclaimed upon procedure exit,
    was inspired by discussions with J. Q. Johnson of Cornell.
 
    It should work under any C implementation that uses an

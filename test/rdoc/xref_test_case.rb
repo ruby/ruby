@@ -38,7 +38,6 @@ class XrefTestCase < MiniTest::Unit::TestCase
     @c1_m  = @c1.method_list.last  # C1#m
     @c1__m = @c1.method_list.first # C1::m
 
-
     @c2    = @xref_data.find_module_named 'C2'
     @c2_a  = @c2.method_list.last
     @c2_b  = @c2.method_list.first
@@ -55,6 +54,12 @@ class XrefTestCase < MiniTest::Unit::TestCase
     @m1_m  = @m1.method_list.first
 
     @m1_m2 = @xref_data.find_module_named 'M1::M2'
+
+    @parent = @xref_data.find_module_named 'Parent'
+    @child  = @xref_data.find_module_named 'Child'
+
+    @parent_m  = @parent.method_list.first # Parent#m
+    @parent__m = @parent.method_list.last  # Parent::m
   end
 
 end

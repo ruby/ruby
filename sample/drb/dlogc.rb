@@ -1,6 +1,6 @@
 =begin
  distributed Ruby --- Log test
- 	Copyright (c) 1999-2001 Masatoshi SEKI 
+ 	Copyright (c) 1999-2001 Masatoshi SEKI
 =end
 
 require 'drb/drb'

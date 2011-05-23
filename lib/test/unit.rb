@@ -445,7 +445,7 @@ module Test
                 jobs_status
               when /^done (.+?)$/
                 r = Marshal.load($1.unpack("m")[0])
-                result << r[0..1]
+                result << r[0..1] unless r[0..1] == [nil,nil]
                 rep    << {file: worker.real_file,
                            report: r[2], result: r[3], testcase: r[5]}
                 $:.push(*r[4]).uniq!
@@ -474,6 +474,24 @@ module Test
           shutting_down = true
 
           watchdog.kill if watchdog
+          if @interrupt
+            @ios.select!{|x| @workers_hash[x].status == :running }
+            while !@ios.empty? && (__io = IO.select(@ios,[],[],10))
+                _io = __io[0]
+                _io.each do |io|
+                  worker = @workers_hash[io]
+                  case worker.read
+                  when /^done (.+?)$/
+                    r = Marshal.load($1.unpack("m")[0])
+                    result << r[0..1] unless r[0..1] == [nil,nil]
+                    rep    << {file: worker.real_file,
+                               report: r[2], result: r[3], testcase: r[5]}
+                    $:.push(*r[4]).uniq!
+                    @ios.delete(io)
+                  end
+                end
+            end
+          end
           @workers.each do |worker|
             begin
               timeout(1) do
@@ -500,9 +518,9 @@ module Test
             rep.each do |r|
               report.push(*r[:report])
             end
-            @errors += rep.map{|x| x[:result][0] }.inject(:+)
+            @errors   += rep.map{|x| x[:result][0] }.inject(:+)
             @failures += rep.map{|x| x[:result][1] }.inject(:+)
-            @skips += rep.map{|x| x[:result][2] }.inject(:+)
+            @skips    += rep.map{|x| x[:result][2] }.inject(:+)
           else
             puts ""
             puts "Retrying..."

@@ -40,4 +40,4 @@ class Rake::TestMultiTask < Test::Unit::TestCase
   end
 end
 
- 
+

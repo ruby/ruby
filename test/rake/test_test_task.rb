@@ -4,7 +4,7 @@ require 'rake/testtask'
 
 class Rake::TestTestTask < Test::Unit::TestCase
   include Rake
-  
+
   def setup
     @oldwd = Dir.pwd
     @tmpwd = Dir.mktmpdir

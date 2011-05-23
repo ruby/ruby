@@ -40,6 +40,7 @@ static const char *extz_pats[] = {
 #define f_sub(x,y) rb_funcall(x, '-', 1, y)
 #define f_mul(x,y) rb_funcall(x, '*', 1, y)
 #define f_div(x,y) rb_funcall(x, '/', 1, y)
+#define f_idiv(x,y) rb_funcall(x, rb_intern("div"), 1, y)
 #define f_mod(x,y) rb_funcall(x, '%', 1, y)
 #define f_expt(x,y) rb_funcall(x, rb_intern("**"), 1, y)
 
@@ -559,7 +560,6 @@ date__strptime_internal(const char *str, size_t slen,
 		    goto matched;
 		}
 
-
 	      case 'Z':
 	      case 'z':
 		{
@@ -585,7 +585,7 @@ date__strptime_internal(const char *str, size_t slen,
 		    if (!NIL_P(m)) {
 			VALUE s, l, o;
 
-			s = f_aref(m, INT2FIX(1));
+			s = rb_reg_nth_match(1, m);
 			l = f_end(m, INT2FIX(0));
 			o = date_zone_to_diff(s);
 			si += NUM2LONG(l);

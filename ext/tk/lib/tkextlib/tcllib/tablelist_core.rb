@@ -419,7 +419,7 @@ class Tk::Tcllib::Tablelist
     columnwidth(idx, 'total')
   end
 
-  def configcelllist(lst) # lst ==> [idx, opt, val, idx, opt, val, ...] 
+  def configcelllist(lst) # lst ==> [idx, opt, val, idx, opt, val, ...]
     ary = []
     lst.slice(3){|idx, opt, val|
       ary << _to_idx(idx) << "-#{opt}" << val
@@ -439,7 +439,7 @@ class Tk::Tcllib::Tablelist
   end
   alias config_cells configcells
 
-  def configcolumnlist(lst) # lst ==> [idx, opt, val, idx, opt, val, ...] 
+  def configcolumnlist(lst) # lst ==> [idx, opt, val, idx, opt, val, ...]
     ary = []
     lst.slice(3){|idx, opt, val|
       ary << _to_idx(idx) << "-#{opt}" << val
@@ -459,7 +459,7 @@ class Tk::Tcllib::Tablelist
   end
   alias config_columns configcolumns
 
-  def configrowlist(lst) # lst ==> [idx, opt, val, idx, opt, val, ...] 
+  def configrowlist(lst) # lst ==> [idx, opt, val, idx, opt, val, ...]
     ary = []
     lst.slice(3){|idx, opt, val|
       ary << _to_idx(idx) << "-#{opt}" << val
@@ -841,11 +841,11 @@ class Tk::Tcllib::Tablelist
 
 
   # default of 'labelcommand' option
-  DEFAULT_labelcommand_value = 
+  DEFAULT_labelcommand_value =
     DEFAULT_sortByColumn_cmd = '::tablelist::sortByColumn'
 
   # default of 'labelcommand2' option
-  DEFAULT_labelcommand2_value = 
+  DEFAULT_labelcommand2_value =
     DEFAULT_addToSortColumns_cmd = '::tablelist::addToSortColumns'
 
   def sortByColumn_with_event_generate(idx)
@@ -1053,7 +1053,7 @@ class << Tk::Tcllib::Tablelist
     else
       gmt = None
     end
-    Tk.tk_call('::tablelist::addDateTimeMentry', 
+    Tk.tk_call('::tablelist::addDateTimeMentry',
                format, date_sep, time_sep, gmt, name)
   end
 

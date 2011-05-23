@@ -138,11 +138,21 @@ class RDoc::ClassModule < RDoc::Context
   end
 
   ##
+  # Iterates the ancestors of this class or module for which an
+  # RDoc::ClassModule exists.
+
+  def each_ancestor # :yields: module
+    ancestors.each do |mod|
+      next if String === mod
+      yield mod
+    end
+  end
+
+  ##
   # Looks for a symbol in the #ancestors. See Context#find_local_symbol.
 
   def find_ancestor_local_symbol symbol
-    ancestors.each do |m|
-      next if m.is_a?(String)
+    each_ancestor do |m|
       res = m.find_local_symbol(symbol)
       return res if res
     end
@@ -263,7 +273,7 @@ class RDoc::ClassModule < RDoc::Context
 
     class_module.each_attribute do |attr|
       if match = attributes.find { |a| a.name == attr.name } then
-        match.rw = [match.rw, attr.rw].compact.join
+        match.rw = [match.rw, attr.rw].compact.uniq.join
       else
         add_attribute attr
       end

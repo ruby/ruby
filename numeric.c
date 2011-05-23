@@ -572,7 +572,7 @@ num_to_int(VALUE num)
  *
  *  Floating point has a different arithmetic and is a inexact number.
  *  So you should know its esoteric system. see following:
- *  
+ *
  *  - http://docs.sun.com/source/806-3568/ncg_goldberg.html
  *  - http://wiki.github.com/rdp/ruby_tutorials_core/ruby-talk-faq#floats_imprecise
  *  - http://en.wikipedia.org/wiki/Floating_point#Accuracy_problems
@@ -668,7 +668,15 @@ flo_to_s(VALUE flt)
 }
 
 /*
- * MISSING: documentation
+ *  call-seq:
+ *     flt.coerce(numeric)  ->  array
+ *
+ *  Returns an array with both <i>aNumeric</i> and <i>flt</i> represented
+ *  as <code>Float</code> objects.
+ *  This is achieved by converting <i>aNumeric</i> to a <code>Float</code>.
+ *
+ *     1.2.coerce(3)       #=> [3.0, 1.2]
+ *     2.5.coerce(1.1)     #=> [1.1, 2.5]
  */
 
 static VALUE

@@ -20,7 +20,7 @@ class XPathPredicateTester < Test::Unit::TestCase
      </section>
   </article>
   EOL
-  
+
   def setup
     @doc = REXML::Document.new( SRC )
     @parser = REXML::Parsers::XPathParser.new
@@ -48,8 +48,8 @@ class XPathPredicateTester < Test::Unit::TestCase
     assert_equal( 1, m.size )
     assert_equal( "1", m[0].attributes["id"] )
   end
-  
-  def do_path( path ) 
+
+  def do_path( path )
     m = REXML::XPath.match( @doc, path )
     #puts path, @parser.parse( path ).inspect
     return m

@@ -950,7 +950,7 @@ Tcl_AppInitProc Dde_Init, Dde_SafeInit, Registry_Init;
 
 static char *rubytk_kitpath = NULL;
 
-static char rubytkkit_preInitCmd[] = 
+static char rubytkkit_preInitCmd[] =
 "proc tclKitPreInit {} {\n"
     "rename tclKitPreInit {}\n"
     "load {} rubytk_kitpath\n"
@@ -1009,7 +1009,7 @@ static char rubytkkit_preInitCmd[] =
 ;
 
 #if 0
-/* Not use this script. 
+/* Not use this script.
    It's a memo to support an initScript for Tcl interpreters in the future. */
 static const char initScript[] =
 "if {[file isfile [file join $::tcl::kitpath main.tcl]]} {\n"
@@ -1179,8 +1179,8 @@ static int
 call_tclkit_init_script(Tcl_Interp  *interp)
 {
 #if 0
-  /* Currently, do nothing in this function. 
-     It's a memo (quoted from kitInit.c of Tclkit) 
+  /* Currently, do nothing in this function.
+     It's a memo (quoted from kitInit.c of Tclkit)
      to support an initScript for Tcl interpreters in the future. */
   if (Tcl_EvalEx(interp, initScript, -1, TCL_EVAL_GLOBAL) == TCL_OK) {
     const char *encoding = NULL;
@@ -1247,7 +1247,7 @@ setup_rubytkkit()
     /* rbtk_win32_SetHINSTANCE("tcltklib.so"); */
     {
       volatile VALUE basename;
-      basename = rb_funcall(rb_cFile, rb_intern("basename"), 1, 
+      basename = rb_funcall(rb_cFile, rb_intern("basename"), 1,
 			    rb_str_new2(rb_sourcefile()));
       rbtk_win32_SetHINSTANCE(RSTRING_PTR(basename));
     }

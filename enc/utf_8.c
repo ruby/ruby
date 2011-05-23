@@ -84,7 +84,7 @@ static const signed char trans[][0x100] = {
     /* c */ F, F, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     /* d */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     /* e */ 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 3, 3,
-    /* f */ 5, 6, 6, 6, 7, F, F, F, F, F, F, F, F, F, F, F 
+    /* f */ 5, 6, 6, 6, 7, F, F, F, F, F, F, F, F, F, F, F
   },
   { /* S1   0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f */
     /* 0 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
@@ -102,7 +102,7 @@ static const signed char trans[][0x100] = {
     /* c */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
     /* d */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
     /* e */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
-    /* f */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F 
+    /* f */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F
   },
   { /* S2   0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f */
     /* 0 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
@@ -120,7 +120,7 @@ static const signed char trans[][0x100] = {
     /* c */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
     /* d */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
     /* e */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
-    /* f */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F 
+    /* f */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F
   },
   { /* S3   0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f */
     /* 0 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
@@ -138,7 +138,7 @@ static const signed char trans[][0x100] = {
     /* c */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
     /* d */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
     /* e */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
-    /* f */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F 
+    /* f */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F
   },
   { /* S4   0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f */
     /* 0 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
@@ -156,7 +156,7 @@ static const signed char trans[][0x100] = {
     /* c */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
     /* d */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
     /* e */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
-    /* f */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F 
+    /* f */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F
   },
   { /* S5   0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f */
     /* 0 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
@@ -174,7 +174,7 @@ static const signed char trans[][0x100] = {
     /* c */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
     /* d */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
     /* e */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
-    /* f */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F 
+    /* f */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F
   },
   { /* S6   0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f */
     /* 0 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
@@ -192,7 +192,7 @@ static const signed char trans[][0x100] = {
     /* c */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
     /* d */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
     /* e */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
-    /* f */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F 
+    /* f */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F
   },
   { /* S7   0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f */
     /* 0 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
@@ -210,7 +210,7 @@ static const signed char trans[][0x100] = {
     /* c */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
     /* d */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
     /* e */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
-    /* f */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F 
+    /* f */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F
   },
 };
 #undef A

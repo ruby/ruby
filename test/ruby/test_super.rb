@@ -146,7 +146,7 @@ class TestSuper < Test::Unit::TestCase
       @first or fail
     end
 
-    def subseq 
+    def subseq
       @first or fail
     end
   end

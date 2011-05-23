@@ -42,7 +42,12 @@ module Test
 
         e, f, s = @errors, @failures, @skips
 
-        result = orig_run_suite(suite, type)
+        begin
+          result = orig_run_suite(suite, type)
+        rescue Interrupt
+          @need_exit = true
+          result = [nil,nil]
+        end
 
         MiniTest::Unit.output = orig_stdout
 
@@ -73,8 +78,8 @@ module Test
         process_args args
         @@stop_auto_run = true
         @opts = @options.dup
+        @need_exit = false
 
-        Signal.trap(:INT,"IGNORE")
         @old_loadpath = []
         begin
           @stdout = increment_io(STDOUT)
@@ -101,7 +106,14 @@ module Test
               end
               _run_suites MiniTest::Unit::TestCase.test_suites-suites, $2.to_sym
 
-              @stdout.puts "ready"
+              if @need_exit
+                begin
+                  @stdout.puts "bye"
+                rescue Errno::EPIPE; end
+                exit
+              else
+                @stdout.puts "ready"
+              end
             when /^quit$/
               begin
                 @stdout.puts "bye"

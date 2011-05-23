@@ -24,7 +24,7 @@ class Rake::TestEarlyTime < Test::Unit::TestCase
     assert t1 < t2
     assert t2 > t1
     assert t1 == t1
-    assert t2 == t2    
+    assert t2 == t2
   end
 
   def test_to_s

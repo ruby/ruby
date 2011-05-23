@@ -1,7 +1,7 @@
 # -*- encoding: euc-jp -*-
 =begin
  distributed Ruby --- dRuby Sample Client -- chasen client
- 	Copyright (c) 1999-2001 Masatoshi SEKI 
+ 	Copyright (c) 1999-2001 Masatoshi SEKI
 =end
 
 require 'drb/drb'

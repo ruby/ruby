@@ -165,7 +165,7 @@ class Tempfile < DelegateClass(File)
     __setobj__(@tmpfile)
   end
 
-  def _close	# :nodoc:
+  def _close    # :nodoc:
     @tmpfile.close if @tmpfile
     @tmpfile = nil
     @data[1] = nil if @data
@@ -316,19 +316,28 @@ class Tempfile < DelegateClass(File)
       tempfile = new(*args)
 
       if block_given?
-	begin
-	  yield(tempfile)
-	ensure
-	  tempfile.close
-	end
+        begin
+          yield(tempfile)
+        ensure
+          tempfile.close
+        end
       else
-	tempfile
+        tempfile
       end
     end
 
+    # :call-seq:
+    #   mkdir(string, [integer]) -> 0
+    #
+    # Synonym for Dir.mkdir.
     def mkdir(*args)
       Dir.mkdir(*args)
     end
+
+    # :call-seq:
+    #   rmdir(string) -> 0
+    #
+    # Synonym for Dir.rmdir.
     def rmdir(*args)
       Dir.rmdir(*args)
     end

@@ -1,8 +1,8 @@
 #
 #   shell/builtin-command.rb -
-#   	$Release Version: 0.7 $
-#   	$Revision$
-#   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
+#       $Release Version: 0.7 $
+#       $Revision$
+#       by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
@@ -40,7 +40,7 @@ class Shell
     def each(rs = nil)
       rs =  @shell.record_separator unless rs
       for str  in @strings
-	yield str + rs
+        yield str + rs
       end
     end
   end
@@ -53,11 +53,11 @@ class Shell
 
     def each(rs = nil)
       if @cat_files.empty?
-	super
+        super
       else
-	for src in @cat_files
-	  @shell.foreach(src, rs){|l| yield l}
-	end
+        for src in @cat_files
+          @shell.foreach(src, rs){|l| yield l}
+        end
       end
     end
   end
@@ -71,14 +71,14 @@ class Shell
 
     def each(rs = nil)
       if @pattern[0] == ?/
-	@files = Dir[@pattern]
+        @files = Dir[@pattern]
       else
-	prefix = @shell.pwd+"/"
-	@files = Dir[prefix+@pattern].collect{|p| p.sub(prefix, "")}
+        prefix = @shell.pwd+"/"
+        @files = Dir[prefix+@pattern].collect{|p| p.sub(prefix, "")}
       end
       rs =  @shell.record_separator unless rs
       for f in @files
-	yield f+rs
+        yield f+rs
       end
     end
   end
@@ -90,9 +90,9 @@ class Shell
 #
 #     def each(rs = nil)
 #       ary = []
-#       super{|l|	ary.push l}
+#       super{|l|       ary.push l}
 #       for l in ary.sort!
-# 	yield l
+#       yield l
 #       end
 #     end
 #   end
@@ -107,7 +107,7 @@ class Shell
     def input=(filter)
       @input.input=filter
       for l in @input
-	@io << l
+        @io << l
       end
     end
 
@@ -122,9 +122,9 @@ class Shell
 
     def input=(filter)
       begin
-	super
+        super
       ensure
-	@io.close
+        @io.close
       end
     end
   end
@@ -138,9 +138,9 @@ class Shell
     def each(rs = nil)
       to = @shell.open(@to_filename, "w")
       begin
-	super{|l| to << l; yield l}
+        super{|l| to << l; yield l}
       ensure
-	to.close
+        to.close
       end
     end
   end
@@ -153,7 +153,7 @@ class Shell
 
     def each(rs = nil)
       while job = @jobs.shift
-	job.each{|l| yield l}
+        job.each{|l| yield l}
       end
     end
   end

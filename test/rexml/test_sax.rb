@@ -41,7 +41,7 @@ class SAX2Tester < Test::Unit::TestCase
     }
 
     start_document = 0
-    end_document = 0 
+    end_document = 0
     parser.listen( :start_document ) { start_document += 1 }
     parser.listen( :end_document ) { end_document += 1 }
     parser.listen( :start_element, %w{ changelog bugs todo }, &blok )
@@ -69,8 +69,8 @@ class SAX2Tester < Test::Unit::TestCase
       assert(text=~/@ANT_VERSION@/, "version was '#{text}'")
       tc += 1
     }
-    
-    begin 
+
+    begin
       parser.parse
     rescue => exception
       if exception.kind_of? Test::Unit::AssertionFailedError
@@ -255,12 +255,12 @@ class SAX2Tester < Test::Unit::TestCase
     assert_equal(252, result[0])
   end
 
-  class Ticket68 
-    include REXML::SAX2Listener 
-  end  
+  class Ticket68
+    include REXML::SAX2Listener
+  end
   def test_ticket_68
     parser = REXML::Parsers::SAX2Parser.new(File.new(fixture_path('ticket_68.xml')))
-    parser.listen( Ticket68.new ) 
+    parser.listen( Ticket68.new )
     begin
       parser.parse
     rescue

@@ -14,13 +14,13 @@
 
 Tue Nov 25 03:37:42 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tkextlib/blt/tabset.rb, 
-	  ext/tk/lib/tkextlib/blt/tabnotebook.rb: 
+	* ext/tk/lib/tkextlib/blt/tabset.rb,
+	  ext/tk/lib/tkextlib/blt/tabnotebook.rb:
 	  fix many bugs. Now, those work properly.
 
 Sat Nov 22 10:31:25 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tkextlib/blt.rb, ext/tk/lib/tkextlib/blt/vector.rb: 
+	* ext/tk/lib/tkextlib/blt.rb, ext/tk/lib/tkextlib/blt/vector.rb:
 	  fix NameError bug.
 
 2008-05-12  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
@@ -39,12 +39,12 @@ Sat Nov 22 10:31:25 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 2007-01-26  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tkextlib/iwidgets/checkbox.rb: wrong number of arguments 
+	* ext/tk/lib/tkextlib/iwidgets/checkbox.rb: wrong number of arguments
 	  [ruby-Bugs-7776].
 
 	* ext/tk/lib/tkextlib/iwidgets/radiobox.rb: ditto.
 
-	* ext/tk/lib/tkextlib/blt/tile/checkbutton.rb: change primary name 
+	* ext/tk/lib/tkextlib/blt/tile/checkbutton.rb: change primary name
 	  of class [ruby-dev:30080].
 
 	* ext/tk/lib/tkextlib/blt/tile/radiobutton.rb: ditto.
@@ -53,16 +53,16 @@ Sat Nov 22 10:31:25 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* lib/tkextlib/tile/treeview.rb : minor bug fix.
 
-	* lib/tkextlib/blt/table.rb: fix bugs which forbade use of 
+	* lib/tkextlib/blt/table.rb: fix bugs which forbade use of
 	  '::blt::table' command. Now, probably, it'll works properly.
 
 2006-11-06  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* lib/tkextlib/version.rb: keep release date of tkextlib on 
+	* lib/tkextlib/version.rb: keep release date of tkextlib on
 	  "Tk::Tkextlib_RELEASE_DATE".
 
-	* lib/tkextlib/tile/treeview.rb : support Tile 0.7.8. 
-	  Now, you can handle tree items as objects. 
+	* lib/tkextlib/tile/treeview.rb : support Tile 0.7.8.
+	  Now, you can handle tree items as objects.
 
 2006-10-04  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
@@ -112,7 +112,7 @@ Sat Nov 22 10:31:25 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 2005-11-19  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* sample/tkextlib/treectrl/demo.rb: remove dependency on Ruby's 
+	* sample/tkextlib/treectrl/demo.rb: remove dependency on Ruby's
 	  version (1.8 or 1.9).
 
 2005-10-23  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
@@ -375,7 +375,7 @@ Sat Nov 22 10:31:25 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* lib/tkextlib/iwidgets/scrolledtext.rb: ditto.
 
 	* lib/tkextlib/iwidgets/scrolledcanvas.rb: bug fix on
-	  TkCanvas#delete when given non-TkcItem arguments. 
+	  TkCanvas#delete when given non-TkcItem arguments.
 
 2005-05-10  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
@@ -576,7 +576,7 @@ Sat Nov 22 10:31:25 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* lib/tkextlib/blt/component.rb: bug fix on treatment of
 	  component objects.
 
-	* sample/tkextlib/blt/graph6.rb: a new sample script. 
+	* sample/tkextlib/blt/graph6.rb: a new sample script.
 
 2005-03-31  ocean  <ocean@ruby-lang.org>
 
@@ -592,7 +592,7 @@ Sat Nov 22 10:31:25 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* sample/tkextlib/iwidgets/sample/hierarchy.rb: show basename
 	  only [ruby-dev:25970]
 
-	* sample/tkextlib/treectrl/demo.rb: add check for existence of 
+	* sample/tkextlib/treectrl/demo.rb: add check for existence of
 	  'backgroundimage' option.
 
 	* sample/tkextlib/treectrl/bitmaps.rb: ditto.
@@ -626,7 +626,7 @@ Sat Nov 22 10:31:25 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 2005-03-29  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* lib/tkextlib/blt/component.rb: cannot create elements except
-	  default type of element. 
+	  default type of element.
 
 	* lib/tkextlib/blt/barchart.rb: ditto.
 
@@ -661,7 +661,7 @@ Sat Nov 22 10:31:25 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* lib/tkextlib/blt/component.rb: proper call on xaxis_* and so on.
 
 	* lib/tkextlib/blt/htext.rb: add TkVariable object to access
-          special Tcl variables. 
+          special Tcl variables.
 
 	* lib/tkextlib/treectrl/tktreectrl.rb: typo fix.
 
@@ -923,8 +923,8 @@ Sat Nov 22 10:31:25 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* use Tk::ValidateConfigure.__def_validcmd() method
           (new function to define validatecommand methods easier)
 
-	* tcllib.rb : avoid the loading trouble that almost all part of 
-	  the extension is not available when some libraries are invalid. 
+	* tcllib.rb : avoid the loading trouble that almost all part of
+	  the extension is not available when some libraries are invalid.
 
 2004-07-09  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
@@ -942,7 +942,7 @@ Sat Nov 22 10:31:25 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* add ICONS extension demo
 
-	* many bug fix 
+	* many bug fix
 
 2004-07-01  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 

@@ -274,7 +274,7 @@ extern char **rb_w32_get_environ(void);
 extern void   rb_w32_free_environ(char **);
 extern int    rb_w32_map_errno(DWORD);
 extern char * WSAAPI rb_w32_inet_ntop(int,void *,char *,size_t);
-extern DWORD  rb_w32_osver(void); 
+extern DWORD  rb_w32_osver(void);
 
 extern int chown(const char *, int, int);
 extern int rb_w32_uchown(const char *, int, int);

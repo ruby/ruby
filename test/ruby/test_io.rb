@@ -1238,57 +1238,6 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
-  def test_O_CLOEXEC
-    if !defined? File::CLOEXEC
-      return
-    end
-
-    mkcdtmpdir do
-      ary = []
-      begin
-        10.times {
-          ary.concat IO.pipe
-        }
-
-        normal_file = Tempfile.new("normal_file");
-        assert_equal(false, normal_file.close_on_exec?)
-        cloexec_file = Tempfile.new("cloexec_file", :mode => File::CLOEXEC);
-        assert_equal(true, cloexec_file.close_on_exec?)
-        arg, argw = IO.pipe
-        argw.puts normal_file.fileno
-        argw.puts cloexec_file.fileno
-        argw.flush
-        ret, retw = IO.pipe
-
-        while (e = ary.shift) != nil
-          e.close
-        end
-
-        spawn("ruby", "-e", <<-'End', :close_others=>false, :in=>arg, :out=>retw)
-          begin
-            puts IO.for_fd(gets.to_i).fileno
-            puts IO.for_fd(gets.to_i).fileno
-          rescue
-            puts "nofile"
-          ensure
-            exit
-          end
-        End
-        retw.close
-        Process.wait
-        assert_equal("#{normal_file.fileno}\nnofile\n", ret.read)
-      ensure
-        while (e = ary.shift) != nil
-          e.close
-        end
-        arg.close unless arg.closed?
-        argw.close unless argw.closed?
-        ret.close unless ret.closed?
-        retw.close unless retw.closed?
-      end
-    end
-  end
-
   def test_close_security_error
     with_pipe do |r, w|
       assert_raise(SecurityError) do
@@ -1900,4 +1849,16 @@ End
     end
     rescue NotImplementedError
   end
+
+  def test_open_mode
+    feature4742 = "[ruby-core:36338]"
+
+    mkcdtmpdir do
+      refute_nil(File.open('symbolic', 'w'))
+      refute_nil(File.open('numeric',  File::WRONLY|File::TRUNC|File::CREAT))
+      refute_nil(File.open('hash-symbolic', :mode => 'w'))
+      refute_nil(File.open('hash-numeric', :mode => File::WRONLY|File::TRUNC|File::CREAT), feature4742)
+    end
+  end
+
 end

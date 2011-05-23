@@ -31,11 +31,11 @@ class TestNotationDeclMixin < Test::Unit::TestCase
     XMLEND
     @doctype = REXML::Document.new(doc_string).doctype
   end
-  
+
   def test_name
     assert_equal('n1', @doctype.notation('n1').name)
   end
-  
+
   def test_public_2
     assert_equal(@pubid1, @doctype.notation('n1').public)
     assert_equal(@pubid2, @doctype.notation('n2').public)
@@ -45,7 +45,7 @@ class TestNotationDeclMixin < Test::Unit::TestCase
     assert_equal(@pubid6, @doctype.notation('n6').public)
     assert_nil(@doctype.notation('n7').public)
   end
-  
+
   def test_system_2
     assert_equal(@sysid2, @doctype.notation('n2').system)
     assert_nil(@doctype.notation('n3').system)

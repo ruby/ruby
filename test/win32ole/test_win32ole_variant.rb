@@ -383,7 +383,7 @@ if defined?(WIN32OLE_VARIANT)
     end
 
     # this test failed because of VariantTimeToSystemTime
-    # and SystemTimeToVariantTime API ignores wMilliseconds 
+    # and SystemTimeToVariantTime API ignores wMilliseconds
     # member of SYSTEMTIME  struct.
     #
     # def test_conversion_time_nsec2date

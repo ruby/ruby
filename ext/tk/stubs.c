@@ -334,7 +334,7 @@ ruby_tk_stubs_init(tcl_ip)
 	  FIX ME : dirty hack for Mac OS X frameworks.
 	  With stubs, fails to find Resource/Script directory of Tk.framework.
 	  So, teach it to a Tcl interpreter by an environment variable.
-	  e.g. when $tcl_library == 
+	  e.g. when $tcl_library ==
 	               /Library/Frameworks/Tcl.framwwork/8.5/Resources/Scripts
 		   ==> /Library/Frameworks/Tk.framwwork/8.5/Resources/Scripts
 	*/

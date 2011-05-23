@@ -5,7 +5,7 @@ require 'rdoc'
 require 'rdoc/code_objects'
 
 class TestRDocContextSection < MiniTest::Unit::TestCase
-  
+
   def setup
     @S = RDoc::Context::Section
     @s = @S.new nil, 'section', '# comment'

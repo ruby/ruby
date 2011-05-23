@@ -56,7 +56,7 @@ class TestWEBrickCookie < Test::Unit::TestCase
 
   def test_parse_non_whitespace
     data = [
-      '$Version="1";', 
+      '$Version="1";',
       'Customer="WILE_E_COYOTE";$Path="/acme";',
       'Part_Number="Rocket_Launcher_0001";$Path="/acme";',
       'Shipping="FedEx";$Path="/acme"'

@@ -2,7 +2,7 @@
  [ Tcl/Tk Image formats (TkImg) support ]
 
 TkImg contains a collection of format handlers for the Tk photo
-image type, and a new image type, pixmaps.  
+image type, and a new image type, pixmaps.
 
 Supported formats of TkImg version 1.3 are
 -------------------------------------------------------

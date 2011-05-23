@@ -4458,6 +4458,7 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
     /* Set to defaults */
     rb_io_ext_int_to_encs(NULL, NULL, &enc, &enc2);
 
+  vmode_handle:
     if (NIL_P(vmode)) {
         fmode = FMODE_READABLE | DEFAULT_TEXTMODE;
         oflags = O_RDONLY;
@@ -4470,7 +4471,6 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
     else {
         const char *p;
 
-      vmode_handle:
         SafeStringValue(vmode);
         p = StringValueCStr(vmode);
         fmode = rb_io_modestr_fmode(p);
@@ -7236,7 +7236,6 @@ select_internal(VALUE read, VALUE write, VALUE except, struct timeval *tp, rb_fd
     rb_io_t *fptr;
     long i;
     int max = 0, n;
-    int interrupt_flag = 0;
     int pending = 0;
     struct timeval timerec;
 
@@ -7306,49 +7305,47 @@ select_internal(VALUE read, VALUE write, VALUE except, struct timeval *tp, rb_fd
     rb_ary_push(res, wp?rb_ary_new():rb_ary_new2(0));
     rb_ary_push(res, ep?rb_ary_new():rb_ary_new2(0));
 
-    if (interrupt_flag == 0) {
-	if (rp) {
-	    list = RARRAY_PTR(res)[0];
-	    for (i=0; i< RARRAY_LEN(read); i++) {
-                VALUE obj = rb_ary_entry(read, i);
-                VALUE io = rb_io_get_io(obj);
-		GetOpenFile(io, fptr);
-		if (rb_fd_isset(fptr->fd, &fds[0]) ||
-		    rb_fd_isset(fptr->fd, &fds[3])) {
-		    rb_ary_push(list, obj);
-		}
+    if (rp) {
+	list = RARRAY_PTR(res)[0];
+	for (i=0; i< RARRAY_LEN(read); i++) {
+	    VALUE obj = rb_ary_entry(read, i);
+	    VALUE io = rb_io_get_io(obj);
+	    GetOpenFile(io, fptr);
+	    if (rb_fd_isset(fptr->fd, &fds[0]) ||
+		rb_fd_isset(fptr->fd, &fds[3])) {
+		rb_ary_push(list, obj);
 	    }
 	}
+    }
 
-	if (wp) {
-	    list = RARRAY_PTR(res)[1];
-	    for (i=0; i< RARRAY_LEN(write); i++) {
-                VALUE obj = rb_ary_entry(write, i);
-                VALUE io = rb_io_get_io(obj);
-                VALUE write_io = GetWriteIO(io);
+    if (wp) {
+	list = RARRAY_PTR(res)[1];
+	for (i=0; i< RARRAY_LEN(write); i++) {
+	    VALUE obj = rb_ary_entry(write, i);
+	    VALUE io = rb_io_get_io(obj);
+	    VALUE write_io = GetWriteIO(io);
+	    GetOpenFile(write_io, fptr);
+	    if (rb_fd_isset(fptr->fd, &fds[1])) {
+		rb_ary_push(list, obj);
+	    }
+	}
+    }
+
+    if (ep) {
+	list = RARRAY_PTR(res)[2];
+	for (i=0; i< RARRAY_LEN(except); i++) {
+	    VALUE obj = rb_ary_entry(except, i);
+	    VALUE io = rb_io_get_io(obj);
+	    VALUE write_io = GetWriteIO(io);
+	    GetOpenFile(io, fptr);
+	    if (rb_fd_isset(fptr->fd, &fds[2])) {
+		rb_ary_push(list, obj);
+	    }
+	    else if (io != write_io) {
 		GetOpenFile(write_io, fptr);
-		if (rb_fd_isset(fptr->fd, &fds[1])) {
-		    rb_ary_push(list, obj);
-		}
-	    }
-	}
-
-	if (ep) {
-	    list = RARRAY_PTR(res)[2];
-	    for (i=0; i< RARRAY_LEN(except); i++) {
-                VALUE obj = rb_ary_entry(except, i);
-                VALUE io = rb_io_get_io(obj);
-                VALUE write_io = GetWriteIO(io);
-		GetOpenFile(io, fptr);
 		if (rb_fd_isset(fptr->fd, &fds[2])) {
 		    rb_ary_push(list, obj);
 		}
-                else if (io != write_io) {
-                    GetOpenFile(write_io, fptr);
-                    if (rb_fd_isset(fptr->fd, &fds[2])) {
-                        rb_ary_push(list, obj);
-                    }
-                }
 	    }
 	}
     }
@@ -7798,7 +7795,7 @@ rb_io_fcntl(int argc, VALUE *argv, VALUE io)
  *  +String+ objects or +Integer+ objects. A +String+ object is passed
  *  as a pointer to the byte sequence. An +Integer+ object is passed
  *  as an integer whose bit size is same as a pointer.
- *  Up to nine parameters may be passed (14 on the Atari-ST). 
+ *  Up to nine parameters may be passed (14 on the Atari-ST).
  *
  *  The function identified by _num_ is system
  *  dependent. On some Unix systems, the numbers may be obtained from a
@@ -7857,7 +7854,7 @@ rb_f_syscall(int argc, VALUE *argv)
     int num, retval = -1;
 #endif
     int i;
- 
+
     if (RTEST(ruby_verbose)) {
 	rb_warning("We plan to remove a syscall function at future release. DL(Fiddle) provides safer alternative.");
     }
@@ -10575,10 +10572,6 @@ Init_IO(void)
 #ifdef O_DIRECT
     /*  Try to minimize cache effects of the I/O to and from this file. */
     rb_file_const("DIRECT", INT2FIX(O_DIRECT));
-#endif
-#ifdef O_CLOEXEC
-    /* enable close-on-exec flag */
-    rb_file_const("CLOEXEC", INT2FIX(O_CLOEXEC)); /* Linux, POSIX-2008. */
 #endif
 
     sym_mode = ID2SYM(rb_intern("mode"));

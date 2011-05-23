@@ -19,10 +19,12 @@ require 'socket'
 
 unless Socket.const_defined? "AF_INET6"
   class Socket < BasicSocket
+    # IPv6 protocol family
     AF_INET6 = Object.new
   end
 
   class << IPSocket
+    # Returns +true+ if +addr+ is a valid IPv4 address.
     def valid_v4?(addr)
       if /\A(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\Z/ =~ addr
         return $~.captures.all? {|i| i.to_i < 256}
@@ -30,6 +32,7 @@ unless Socket.const_defined? "AF_INET6"
       return false
     end
 
+    # Returns +true+ if +addr+ is a valid IPv6 address.
     def valid_v6?(addr)
       # IPv6 (normal)
       return true if /\A[\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*\Z/ =~ addr
@@ -43,11 +46,20 @@ unless Socket.const_defined? "AF_INET6"
       false
     end
 
+    # Returns +true+ if +addr+ is either a valid IPv4 or IPv6 address.
     def valid?(addr)
       valid_v4?(addr) || valid_v6?(addr)
     end
 
     alias getaddress_orig getaddress
+
+    # Returns a +String+ based representation of a valid DNS hostname,
+    # IPv4 or IPv6 address.
+    # 
+    #   IPSocket.getaddress 'localhost'         #=> "::1"
+    #   IPSocket.getaddress 'broadcasthost'     #=> "255.255.255.255"
+    #   IPSocket.getaddress 'www.ruby-lang.org' #=> "221.186.184.68"
+    #   IPSocket.getaddress 'www.ccc.de'        #=> "2a00:1328:e102:ccc0::122"
     def getaddress(s)
       if valid?(s)
         s
@@ -69,22 +81,25 @@ end
 #
 #   ipaddr1 = IPAddr.new "3ffe:505:2::1"
 #
-#   p ipaddr1			#=> #<IPAddr: IPv6:3ffe:0505:0002:0000:0000:0000:0000:0001/ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff>
+#   p ipaddr1                   #=> #<IPAddr: IPv6:3ffe:0505:0002:0000:0000:0000:0000:0001/ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff>
 #
-#   p ipaddr1.to_s		#=> "3ffe:505:2::1"
+#   p ipaddr1.to_s              #=> "3ffe:505:2::1"
 #
-#   ipaddr2 = ipaddr1.mask(48)	#=> #<IPAddr: IPv6:3ffe:0505:0002:0000:0000:0000:0000:0000/ffff:ffff:ffff:0000:0000:0000:0000:0000>
+#   ipaddr2 = ipaddr1.mask(48)  #=> #<IPAddr: IPv6:3ffe:0505:0002:0000:0000:0000:0000:0000/ffff:ffff:ffff:0000:0000:0000:0000:0000>
 #
-#   p ipaddr2.to_s		#=> "3ffe:505:2::"
+#   p ipaddr2.to_s              #=> "3ffe:505:2::"
 #
 #   ipaddr3 = IPAddr.new "192.168.2.0/24"
 #
-#   p ipaddr3			#=> #<IPAddr: IPv4:192.168.2.0/255.255.255.0>
+#   p ipaddr3                   #=> #<IPAddr: IPv4:192.168.2.0/255.255.255.0>
 
 class IPAddr
 
+  # 32 bit mask for IPv4
   IN4MASK = 0xffffffff
+  # 128 bit mask for IPv4
   IN6MASK = 0xffffffffffffffffffffffffffffffff
+  # Formatstring for IPv6
   IN6FORMAT = (["%.4x"] * 8).join(':')
 
   # Returns the address family of this IP address.
@@ -154,13 +169,13 @@ class IPAddr
   #   net1 = IPAddr.new("192.168.2.0/24")
   #   net2 = IPAddr.new("192.168.2.100")
   #   net3 = IPAddr.new("192.168.3.0")
-  #   p net1.include?(net2)	#=> true
-  #   p net1.include?(net3)	#=> false
+  #   p net1.include?(net2)     #=> true
+  #   p net1.include?(net3)     #=> false
   def include?(other)
     other = coerce_other(other)
     if ipv4_mapped?
       if (@mask_addr >> 32) != 0xffffffffffffffffffffffff
-	return false
+        return false
       end
       mask_addr = (@mask_addr & IN4MASK)
       addr = (@addr & IN4MASK)
@@ -228,7 +243,7 @@ class IPAddr
       return [@addr].pack('N')
     when Socket::AF_INET6
       return (0..7).map { |i|
-	(@addr >> (112 - 16 * i)) & 0xffff
+        (@addr >> (112 - 16 * i)) & 0xffff
       }.pack('n8')
     else
       raise "unsupported address family"
@@ -369,20 +384,23 @@ class IPAddr
       raise "unsupported address family"
     end
     return sprintf("#<%s: %s:%s/%s>", self.class.name,
-		   af, _to_string(@addr), _to_string(@mask_addr))
+                   af, _to_string(@addr), _to_string(@mask_addr))
   end
 
   protected
 
+  # Set +@addr+, the internal stored ip address, to given +addr+. The
+  # parameter +addr+ is validated using the first +family+ member,
+  # which is +Socket::AF_INET+ or +Socket::AF_INET6+.
   def set(addr, *family)
     case family[0] ? family[0] : @family
     when Socket::AF_INET
       if addr < 0 || addr > IN4MASK
-	raise ArgumentError, "invalid address"
+        raise ArgumentError, "invalid address"
       end
     when Socket::AF_INET6
       if addr < 0 || addr > IN6MASK
-	raise ArgumentError, "invalid address"
+        raise ArgumentError, "invalid address"
       end
     else
       raise ArgumentError, "unsupported address family"
@@ -394,18 +412,19 @@ class IPAddr
     return self
   end
 
+  # Set current netmask to given mask. 
   def mask!(mask)
     if mask.kind_of?(String)
       if mask =~ /^\d+$/
-	prefixlen = mask.to_i
+        prefixlen = mask.to_i
       else
-	m = IPAddr.new(mask)
-	if m.family != @family
-	  raise ArgumentError, "address family is not same"
-	end
-	@mask_addr = m.to_i
-	@addr &= @mask_addr
-	return self
+        m = IPAddr.new(mask)
+        if m.family != @family
+          raise ArgumentError, "address family is not same"
+        end
+        @mask_addr = m.to_i
+        @addr &= @mask_addr
+        return self
       end
     else
       prefixlen = mask
@@ -413,13 +432,13 @@ class IPAddr
     case @family
     when Socket::AF_INET
       if prefixlen < 0 || prefixlen > 32
-	raise ArgumentError, "invalid length"
+        raise ArgumentError, "invalid length"
       end
       masklen = 32 - prefixlen
       @mask_addr = ((IN4MASK >> masklen) << masklen)
     when Socket::AF_INET6
       if prefixlen < 0 || prefixlen > 128
-	raise ArgumentError, "invalid length"
+        raise ArgumentError, "invalid length"
       end
       masklen = 128 - prefixlen
       @mask_addr = ((IN6MASK >> masklen) << masklen)
@@ -458,9 +477,9 @@ class IPAddr
         @mask_addr = (family == Socket::AF_INET) ? IN4MASK : IN6MASK
         return
       when Socket::AF_UNSPEC
-	raise ArgumentError, "address family must be specified"
+        raise ArgumentError, "address family must be specified"
       else
-	raise ArgumentError, "unsupported address family: #{family}"
+        raise ArgumentError, "unsupported address family: #{family}"
       end
     end
     prefix, prefixlen = addr.split('/')
@@ -470,9 +489,9 @@ class IPAddr
     end
     # It seems AI_NUMERICHOST doesn't do the job.
     #Socket.getaddrinfo(left, nil, Socket::AF_INET6, Socket::SOCK_STREAM, nil,
-    #		       Socket::AI_NUMERICHOST)
+    #                  Socket::AI_NUMERICHOST)
     begin
-      IPSocket.getaddress(prefix)		# test if address is valid
+      IPSocket.getaddress(prefix)               # test if address is valid
     rescue
       raise ArgumentError, "invalid address"
     end
@@ -480,7 +499,7 @@ class IPAddr
     if family == Socket::AF_UNSPEC || family == Socket::AF_INET
       @addr = in_addr(prefix)
       if @addr
-	@family = Socket::AF_INET
+        @family = Socket::AF_INET
       end
     end
     if !@addr && (family == Socket::AF_UNSPEC || family == Socket::AF_INET6)
@@ -556,7 +575,7 @@ class IPAddr
     case @family
     when Socket::AF_INET
       return (0..3).map { |i|
-	(@addr >> (8 * i)) & 0xff
+        (@addr >> (8 * i)) & 0xff
       }.join('.')
     when Socket::AF_INET6
       return ("%.32x" % @addr).reverse!.gsub!(/.(?!$)/, '\&.')
@@ -569,7 +588,7 @@ class IPAddr
     case @family
     when Socket::AF_INET
       return (0..3).map { |i|
-	(addr >> (24 - 8 * i)) & 0xff
+        (addr >> (24 - 8 * i)) & 0xff
       }.join('.')
     when Socket::AF_INET6
       return (("%.32x" % addr).gsub!(/.{4}(?!$)/, '\&:'))
@@ -656,7 +675,7 @@ class TC_IPAddr < Test::Unit::TestCase
       ["[192.168.1.2]/120"],
     ].each { |args|
       assert_raises(ArgumentError) {
-	IPAddr.new(*args)
+        IPAddr.new(*args)
       }
     }
   end
@@ -757,7 +776,7 @@ class TC_Operator < Test::Unit::TestCase
     assert_equal("3ffe:505:2:1::", a.to_s)
     assert_equal("3ffe:505:2::", @a.to_s)
     assert_equal("3ffe:505:2:1::",
-		 (@a | 0x00000000000000010000000000000000).to_s)
+                 (@a | 0x00000000000000010000000000000000).to_s)
   end
 
   def test_and

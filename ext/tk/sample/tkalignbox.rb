@@ -201,20 +201,20 @@ if __FILE__ == $0
         TkButton.new(f, :text=>'aaa'),
         TkButton.new(f, :text=>'aaaa'))
 
-  f = Tk::RbWidget::VBox.new(:borderwidth=>5, 
+  f = Tk::RbWidget::VBox.new(:borderwidth=>5,
                              :relief=>'groove').pack(:fill=>:y, :expand=>true)
   f.add(TkButton.new(f, :text=>'a'),
         TkButton.new(f, :text=>'aa', :font=>'Helvetica 30'),
         TkButton.new(f, :text=>'aaa'),
         TkButton.new(f, :text=>'aaaa'))
 
-  f = Tk::RbWidget::HRBox.new(:borderwidth=>3, 
+  f = Tk::RbWidget::HRBox.new(:borderwidth=>3,
                               :relief=>'raised').pack(:fill=>:x)
   f.add(TkButton.new(f, :text=>'a'),
         TkButton.new(f, :text=>'aa'),
         TkButton.new(f, :text=>'aaa'))
 
-  f = Tk::RbWidget::VBBox.new(:borderwidth=>3, 
+  f = Tk::RbWidget::VBBox.new(:borderwidth=>3,
                               :relief=>'ridge').pack(:fill=>:x)
   f.propagate = false
   f.height 100

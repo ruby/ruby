@@ -31,14 +31,14 @@ pre
 <BODY BGCOLOR=#FFFFE0>
 <H1>BigDecimal(Variable Precision Floating Library for Ruby)</H1>
 <DIV align="right"><A HREF="./bigdecimal_ja.html">Japanese</A></DIV><BR>
-BigDecimal is an extension library for the Ruby interpreter. 
-Using BigDecimal class, you can obtain any number of significant digits in computation. 
+BigDecimal is an extension library for the Ruby interpreter.
+Using BigDecimal class, you can obtain any number of significant digits in computation.
 For the details about Ruby see:<BR>
 <UL>
 <LI><A HREF="http://www.ruby-lang.org/en/">http://www.ruby-lang.org/en/</A>:Official Ruby page(English).</LI>
 <LI><A HREF="http://kahori.com/ruby/ring/">http://kahori.com/ruby/ring/</A>:Mutually linked pages relating to Ruby(Japanese).
 </LI>
-</UL> 
+</UL>
 NOTE:<BR>
  This software is provided "AS IS" and without any express or
  implied warranties,including,without limitation,the implied
@@ -62,15 +62,15 @@ NOTE:<BR>
 <A NAME="#INTRO">
 <H2>Introduction</H2>
 Ruby already has builtin (variable length integer number) class Bignum. Using Bignum class,you can obtain
- any integer value in magnitude. But, variable length decimal number class is not yet built in. 
+ any integer value in magnitude. But, variable length decimal number class is not yet built in.
 This is why I made variable length floating class BigDecimal.
 Feel free to send any comments or bug reports to me.
 <A HREF="mailto:shigeo@tinyforest.gr.jp">shigeo@tinyforest.gr.jp</A>
-I will try(but can't promise) to fix bugs reported. 
+I will try(but can't promise) to fix bugs reported.
 <hr>
 <H2>Installation</H2>
 The Ruby latest version can be downloaded from <A HREF="http://www.ruby-lang.org/en/">Official Ruby page</A>.
-Once decompress the downloaded Ruby archive,follow the normal installation procedures according to the 
+Once decompress the downloaded Ruby archive,follow the normal installation procedures according to the
 documents included.
 
 <A NAME="#SPEC">
@@ -89,7 +89,7 @@ to create BigDecimal objects,the program would like:<BR>
 In 32 bits integer system,every 4 digits(in decimal) are computed simultaneously.
 This means the number of significant digits in BigDecimal is always a multiple of 4.
 <P>
-Some more methods are available in Ruby code (not C code). 
+Some more methods are available in Ruby code (not C code).
 Functions such as sin,cos ...,are in math.rb in bigdecimal directory.
 To use them,require math.rb as:
 <CODE><PRE>
@@ -110,7 +110,7 @@ For details,see the util.rb code.
 a=BigDecimal::new(s[,n]) or<BR>
 a=BigDecimal(s[,n]) or<BR>
 where:<BR>
-s: Initial value string. Spaces will be ignored. Any unrecognizable character for 
+s: Initial value string. Spaces will be ignored. Any unrecognizable character for
 representing initial value terminates the string.<BR>
 n: Maximum number of significant digits of a. n must be a Fixnum object.
 If n is omitted or is equal to 0,then the maximum number of significant digits of a is determined from the length of s.
@@ -146,7 +146,7 @@ EXCEPTION_OVERFLOW controls the execution when computation overflows.<BR>
 EXCEPTION_ZERODIVIDE controls the execution when zero-division occurs.<BR>
 EXCEPTION_ALL controls the execution when any defined exception occurs.<BR>
 If the flag is true,then the relating exception is thrown.<BR>
-No exception is thrown when the flag is false(default) and computation 
+No exception is thrown when the flag is false(default) and computation
 continues with the result:<BR>
 <BLOCKQUOTE>
 EXCEPTION_NaN results to NaN<BR>
@@ -159,7 +159,7 @@ EXCEPTION_INFINITY,EXCEPTION_OVERFLOW, and EXCEPTION_ZERODIVIDE are
  currently the same.<BR>
 The return value of mode method is the value set.<BR>
 If nil is specified for the second argument,then current setting is returned.<BR>
-Suppose the return value of the mode method is f,then 
+Suppose the return value of the mode method is f,then
  f &amp; BigDecimal::EXCEPTION_NaN !=0 means EXCEPTION_NaN is set to on.
 <P>
 <B>[ROUND error control]</B><P>
@@ -185,7 +185,7 @@ use truncate/round/ceil/floor/add/sub/mult/div methods for each instance instead
 
 <LI><B>limit[(n)]</B></LI><BLOCKQUOTE>
 Limits the maximum digits that the newly created BigDecimal objects can hold never exceed n.
-This means the rounding operation specified by BigDecimal.mode is 
+This means the rounding operation specified by BigDecimal.mode is
 performed if necessary.
 limit returns the value before set if n is nil or is not specified.
 Zero,the default value,means no upper limit.<BR>
@@ -194,7 +194,7 @@ mf = BigDecimal::limit(n)<BR>
 </BLOCKQUOTE>
 
 <LI><B>double_fig</B></LI><BLOCKQUOTE>
-double_fig is a class method which returns the number of digits 
+double_fig is a class method which returns the number of digits
 the Float class can have.
 <CODE><PRE>
   p BigDecimal::double_fig  # ==> 20 (depends on the CPU etc.)
@@ -290,7 +290,7 @@ returns the maximum integer value (in BigDecimal) which is less than or equal to
  c = BigDecimal("-1.23456").floor #  ==> -2
 </PRE></CODE>
 
-As shown in the following example,an optional integer argument (n) specifying the position 
+As shown in the following example,an optional integer argument (n) specifying the position
 of the target digit can be given.<BR>
 If n> 0,then the (n+1)th digit counted from the decimal point in fraction part is processed(resulting number of fraction part digits is less than or equal to n).<BR>
 If n<0,then the n-th digit counted from the decimal point in integer part is processed(at least n 0's are placed from the decimal point to left).
@@ -308,7 +308,7 @@ returns the minimum integer value (in BigDecimal) which is greater than or equal
  c = BigDecimal("-1.23456").ceil #  ==> -1
 </PRE></CODE>
 
-As shown in the following example,an optional integer argument (n) specifying the position 
+As shown in the following example,an optional integer argument (n) specifying the position
 of the target digit can be given.<BR>
 If n>0,then the (n+1)th digit counted from the decimal point in fraction part is processed(resulting number of fraction part digits is less than or equal to n).<BR>
 If n<0,then the n-th digit counted from the decimal point in integer part is processed(at least n 0's are placed from the decimal point to left).
@@ -327,7 +327,7 @@ round a to the nearest 1(default)ÅD<BR>
 </PRE></CODE>
 The rounding operation changes according to BigDecimal::mode(BigDecimal::ROUND_MODE,flag) if specified.
 
-As shown in the following example,an optional integer argument (n) specifying the position 
+As shown in the following example,an optional integer argument (n) specifying the position
 of the target digit can be given.<BR>
 If n>0,then the (n+1)th digit counted from the decimal point in fraction part is processed(resulting number of fraction  part digits is less than or equal to n).<BR>
 If n<0,then the n-th digit counted from the decimal point in integer part is processed(at least n 0's are placed from the decimal point to left).
@@ -346,7 +346,7 @@ c = BigDecimal::new("1.23356").round(3,BigDecimal::ROUND_HALF_EVEN)   #  ==> 1.2
 <LI><B>truncate[(n)]</B></LI><BLOCKQUOTE>
 c = a.truncate<BR>
 truncate a to the nearest 1ÅD<BR>
-As shown in the following example,an optional integer argument (n) specifying the position 
+As shown in the following example,an optional integer argument (n) specifying the position
 of the target digit can be given.<BR>
 If n>0,then the (n+1)th digit counted from the decimal point in fraction part is processed(resulting number of fraction part digits is less than or equal to n).<BR>
 If n<0,then the n-th digit counted from the decimal point in integer part is processed(at least n 0's are placed from the decimal point to left).
@@ -373,7 +373,7 @@ converts to string(default results look like "0.xxxxxEn").
 <CODE><PRE>
 BigDecimal("1.23456").to_s  #  ==> "0.123456E1"
 </PRE></CODE>
-If n(>0) is given,then a space is inserted to each of two parts divided by the decimal point 
+If n(>0) is given,then a space is inserted to each of two parts divided by the decimal point
 after every n digits for readability.
 <CODE><PRE>
 BigDecimal("0.1234567890123456789").to_s(10)   #  ==> "0.1234567890 123456789E0"
@@ -390,7 +390,7 @@ BigDecimal("0.1234567890123456789").to_s("+10") #  ==> "+0.1234567890 123456789E
 BigDecimal("-0.1234567890123456789").to_s("10") #  ==> "-0.1234567890 123456789E0"
 </PRE></CODE>
 
-At the end of the string,'E'(or 'e') or 'F'(or 'f') can be specified to change 
+At the end of the string,'E'(or 'e') or 'F'(or 'f') can be specified to change
 number representation.
 <CODE><PRE>
 BigDecimal("1234567890.123456789").to_s("E")  #  ==> "0.1234567890123456789E10"
@@ -408,7 +408,7 @@ means a = 0.xxxxxxx*10**n.
 
 <LI><B>precs</B></LI><BLOCKQUOTE>
 n,m = a.precs <BR>
-precs returns number of significant digits (n) and maximum number of 
+precs returns number of significant digits (n) and maximum number of
 significant digits (m) of a.
 </BLOCKQUOTE>
 
@@ -473,7 +473,7 @@ p a=BigDecimal::new("3.14",10)<BR>
 should produce output like "#&lt;0x112344:'0.314E1',4(12)%gt;".
 where "0x112344" is the address,
 '0.314E1' is the value,4 is the number of the significant digits,
-and 12 is the maximum number of the significant digits 
+and 12 is the maximum number of the significant digits
 the object can hold.
 </BLOCKQUOTE>
 
@@ -527,12 +527,12 @@ same as ==,used in case statement.
 <DT> 2.A is the BigDecimal object but B is other than BigDecimal object</DT>
 <DD> Operation is performed,after B is translated to corresponding BigDecimal object(because BigDecimal supports coerce method).</DD>
 <DT> 3.A is not the BigDecimal object but B is BigDecimal object</DT>
-<DD>If A has coerce method,then B will translate A to corresponding 
+<DD>If A has coerce method,then B will translate A to corresponding
 BigDecimal object and the operation is performed,otherwise an error occures.</DD>
 </DL>
 
 String is not translated to BigDecimal in default.
-Uncomment /* #define ENABLE_NUMERIC_STRING */ in bigdecimal.c, compile and install 
+Uncomment /* #define ENABLE_NUMERIC_STRING */ in bigdecimal.c, compile and install
 again if you want to enable string to BigDecimal conversion.
 Translation stops without error at the character representing non digit.
 For instance,"10XX" is translated to 10,"XXXX" is translated to 0.<BR>
@@ -563,7 +563,7 @@ and define coerce method within the new class.<BR>
 Infinite numbers and NaN can be represented by string writing "+Infinity"(or "Infinity"),"-Infinity",and "NaN" respectively in your program.
 Infinite numbers can be obtained by 1.0/0.0(=Infinity) or -1.0/0.0(=-Infinity).
 <BR><BR>
-NaN(Not a number) can be obtained by undefined computation like 0.0/0.0 
+NaN(Not a number) can be obtained by undefined computation like 0.0/0.0
 or Infinity-Infinity.
 Any computation including NaN results to NaN.
 Comparisons with NaN never become true,including comparison with NaN itself.
@@ -602,7 +602,7 @@ where 'x' is any digit representing mantissa(kept in the array frac[]),
 BASE is base value(=10000 in 32 bit integer system),
 and n is the exponent value.<BR>
 Larger BASE value enables smaller size of the array frac[],and increases computation speed.
-The value of BASE is defined ind VpInit(). In 32 bit integer system, this value is 
+The value of BASE is defined ind VpInit(). In 32 bit integer system, this value is
 10000. In 64 bit integer system, the value is 1000000000.
 When BASE is 10000,an element of the array frac[] can have value of from 0 to 9999.
 (up to 4 digits).<BR>
@@ -630,7 +630,7 @@ The decimal value 1234.56784321 is represented as(BASE=10000):<BR>
     0.1234 5678 4321*(10000)**1
 </PRE>
 where frac[0]=1234,frac[1]=5678,frac[2]=4321,
-Prec=3,sign=2,exponent=1. MaxPrec can be any value greater than or equal to 
+Prec=3,sign=2,exponent=1. MaxPrec can be any value greater than or equal to
 Prec.
 <hr>
 
@@ -657,7 +657,7 @@ The reason why I adopted decimal number representation for BigDecimal is:<BR>
    end
 </PRE></CODE>
 
-If the internal representation is binary,translation from decimal to 
+If the internal representation is binary,translation from decimal to
 binary is required and the translation error is inevitable.
 For example, 0.1 can not exactly be represented in binary.<BR>
 0.1 => b1*2**(-1)+b1*2**(-2)+b3*2**(-3)+b4*2**(-4)....<BR>
@@ -669,7 +669,7 @@ Of course, exact "0.1" is printed if the rounding operation is properly done,
 <DD>In binary representation,0.1 can not be represented in finite series of digit.
 
 But we only need one element(frac[0]=1) in decimal representation.
-This means that we can always determine the size of the array frac[] in Real 
+This means that we can always determine the size of the array frac[] in Real
 structure.
 </DL>
 
@@ -689,11 +689,11 @@ For the fundamental arithmetics such as addition,subtraction,
 multiplication,and division,I prepared 2 group of methods<BR>
 
 <H3>1. +,-,*,/</H3>
-For the operation + - * /,you can not specify the resulting 
+For the operation + - * /,you can not specify the resulting
 number of significant digits.<BR>
 Resulting number of significant digits are defined as:<BR>
-1.1 For *,resulting number of significant digits is the sum of the 
-significant digits of both side of the operator. For / ,resulting number of significant digits is the sum of the 
+1.1 For *,resulting number of significant digits is the sum of the
+significant digits of both side of the operator. For / ,resulting number of significant digits is the sum of the
 maximum significant digits of both side of the operator.<BR>
 1.2 For + and -,resulting number of significant digits is determined so that
  no round operation is needed. <br>
@@ -705,7 +705,7 @@ which means more memory is required to keep computation results.
 But,the division such as c=1.0/3.0 will always be rounded.<BR>
 
 <H3>2. add,sub,mult,div</H3>
-The length of the significant digits obtained from +,-,*,/ 
+The length of the significant digits obtained from +,-,*,/
 is always defined by that of right and left side of the operator.
 To specify the length of the significant digits by your self,
 use methos add,sub,mult,div.
@@ -724,7 +724,7 @@ decimal point.
 
 
 <H3>4. Example</H3>
-Following example compute the ratio of the circumference of a circle to 
+Following example compute the ratio of the circumference of a circle to
 its diameter(pi=3.14159265358979....) using J.Machin's formula.
 <BR><BR>
 <CODE><PRE>
@@ -746,7 +746,7 @@ def big_pi(sig) # sig: Number of significant figures
   k = BigDecimal::new("1")
   w = BigDecimal::new("1")
   t = BigDecimal::new("-80")
-  while (u.nonzero? && u.exponent >= exp) 
+  while (u.nonzero? && u.exponent >= exp)
     t   = t*m25
     u   = t.div(k,sig)
     pi  = pi + u

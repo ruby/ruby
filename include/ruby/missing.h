@@ -191,6 +191,10 @@ RUBY_EXTERN int ruby_shutdown(int, int);
 RUBY_EXTERN int ruby_close(int);
 #endif
 
+#ifndef HAVE_SETPROCTITLE
+RUBY_EXTERN void setproctitle(const char *fmt, ...);
+#endif
+
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility pop
 #endif

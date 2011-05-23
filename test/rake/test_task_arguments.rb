@@ -76,7 +76,7 @@ class Rake::TestTaskArguments < Test::Unit::TestCase
     child = Rake::TaskArguments.new(['aa'], [2], parent)
     assert_equal 2, child.aa
   end
-  
+
   def test_default_arguments_values_can_be_merged
     ta = Rake::TaskArguments.new(["aa", "bb"], [nil, "original_val"])
     ta.with_defaults({ :aa => 'default_val' })

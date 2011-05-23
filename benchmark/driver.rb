@@ -48,7 +48,7 @@ class BenchmarkDriver
 
   def progress_message *args
     unless STDOUT.tty?
-      STDERR.print(*args) 
+      STDERR.print(*args)
       STDERR.flush
     end
   end

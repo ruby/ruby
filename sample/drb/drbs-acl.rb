@@ -1,13 +1,13 @@
 =begin
  distributed Ruby --- dRuby Sample Server
- 	Copyright (c) 1999-2000 Masatoshi SEKI 
+ 	Copyright (c) 1999-2000 Masatoshi SEKI
 =end
 
 =begin
  How to play.
 
  Terminal 1
- | % ruby drbs.rb 
+ | % ruby drbs.rb
  | druby://yourhost:7640
 
  Terminal 2
@@ -41,7 +41,7 @@ if __FILE__ == $0
   acl = ACL.new(%w(deny all
                    allow 192.168.1.*
                    allow localhost))
-  
+
   DRb.install_acl(acl)
 
   DRb.start_service(nil, DRbEx.new)

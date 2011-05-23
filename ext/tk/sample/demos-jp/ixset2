@@ -135,8 +135,8 @@ class Xsettings
     def initialize(parent, text, length, range=[])
       @frame = TkFrame.new(parent)
       TkLabel.new(@frame, 'text'=>text).pack('side'=>'left')
-      if range.size > 0 
-	@entry = TkSpinbox.new(@frame, 'width'=>length, 'relief'=>'sunken', 
+      if range.size > 0
+	@entry = TkSpinbox.new(@frame, 'width'=>length, 'relief'=>'sunken',
 			       'from'=>range[0], 'to'=>range[1])
       else
 	@entry = TkEntry.new(@frame, 'width'=>length, 'relief'=>'sunken')
@@ -165,16 +165,16 @@ class Xsettings
     # Buttons
     #
     btn_frame = TkFrame.new(@root)
-    buttons = [ 
-      @btn_OK = TkButton.new(btn_frame, 'command'=>proc{win.ok}, 
+    buttons = [
+      @btn_OK = TkButton.new(btn_frame, 'command'=>proc{win.ok},
 			     'default'=>'active', 'text'=>'了解'),
-      @btn_APPLY = TkButton.new(btn_frame, 'command'=>proc{win.writesettings}, 
-				'default'=>'normal', 'text'=>'適用', 
+      @btn_APPLY = TkButton.new(btn_frame, 'command'=>proc{win.writesettings},
+				'default'=>'normal', 'text'=>'適用',
 				'state'=>'disabled'),
-      @btn_CANCEL = TkButton.new(btn_frame, 'command'=>proc{win.cancel}, 
-				 'default'=>'normal', 'text'=>'取消', 
+      @btn_CANCEL = TkButton.new(btn_frame, 'command'=>proc{win.cancel},
+				 'default'=>'normal', 'text'=>'取消',
 				'state'=>'disabled'),
-      @btn_QUIT = TkButton.new(btn_frame, 'command'=>proc{win.quit}, 
+      @btn_QUIT = TkButton.new(btn_frame, 'command'=>proc{win.quit},
 			       'default'=>'normal', 'text'=>'中止')
     ]
     buttons.each{|b| b.pack('side'=>'left', 'expand'=>'yes', 'pady'=>5) }
@@ -202,10 +202,10 @@ class Xsettings
     #
     # Bell settings
     #
-    bell = TkLabelframe.new(@root, 'text'=>'ベル設定', 
+    bell = TkLabelframe.new(@root, 'text'=>'ベル設定',
 			    'padx'=>'1.5m', 'pady'=>'1.5m')
-    @w_bellvol = TkScale.new(bell, 'from'=>0, 'to'=>100, 'length'=>200, 
-			     'tickinterval'=>20, 'orient'=>'horizontal', 
+    @w_bellvol = TkScale.new(bell, 'from'=>0, 'to'=>100, 'length'=>200,
+			     'tickinterval'=>20, 'orient'=>'horizontal',
 			     'label'=>"音量 (%)")
 
     f = TkFrame.new(bell)
@@ -219,14 +219,14 @@ class Xsettings
 
     #
     # Keyboard settings
-    # 
+    #
     kbdonoff = nil
     kbdcli = nil
-    kbd = TkLabelframe.new(@root, 'text'=>'キーボードリピート設定', 
+    kbd = TkLabelframe.new(@root, 'text'=>'キーボードリピート設定',
 			   'padx'=>'1.5m', 'pady'=>'1.5m')
     f = TkFrame.new(kbd)
-    @w_kbdonoff = TkCheckButton.new(f, 'text'=>'クリック音あり', 
-				    'relief'=>'flat', 
+    @w_kbdonoff = TkCheckButton.new(f, 'text'=>'クリック音あり',
+				    'relief'=>'flat',
 				    'onvalue'=>'on', 'offvalue'=>'off',
 				    'variable'=>@w_kbdrep ) {
       def self.set(value)
@@ -238,17 +238,17 @@ class Xsettings
       end
       pack('side'=>'left', 'expand'=>'yes', 'fill'=>'x', 'padx'=>[0, '1m'])
     }
-    @w_kbdcli = TkScale.new(f, 'from'=>0, 'to'=>100, 'length'=>200, 
-			 'tickinterval'=>20, 'orient'=>'horizontal', 
+    @w_kbdcli = TkScale.new(f, 'from'=>0, 'to'=>100, 'length'=>200,
+			 'tickinterval'=>20, 'orient'=>'horizontal',
 			 'label'=>'クリック音量 (%)')
-    @w_kbdcli.pack('side'=>'left', 'expand'=>'yes', 
+    @w_kbdcli.pack('side'=>'left', 'expand'=>'yes',
 		   'fill'=>'x', 'padx'=>['1m', 0])
     f.pack('side'=>'top', 'expand'=>'yes', 'pady'=>2, 'fill'=>'x')
 
     #
     # Mouse settings
     #
-    mouse = TkLabelframe.new(@root, 'text'=>'マウス設定', 
+    mouse = TkLabelframe.new(@root, 'text'=>'マウス設定',
 			     'padx'=>'1.5m', 'pady'=>'1.5m')
     f = TkFrame.new(mouse)
     @w_mouseacc = LabelEntry.new(f, '加速量', 5)
@@ -260,11 +260,11 @@ class Xsettings
     #
     # Screen Saver settings
     #
-    screen = TkLabelframe.new(@root, 'text'=>'スクリーンセーバ設定', 
+    screen = TkLabelframe.new(@root, 'text'=>'スクリーンセーバ設定',
 			     'padx'=>'1.5m', 'pady'=>'1.5m')
-    @w_screenblank = TkRadioButton.new(screen, 'text'=>'ブランク表示', 
-				       'relief'=>'flat', 'anchor'=>'w', 
-				       'variable'=>@w_screenbla, 
+    @w_screenblank = TkRadioButton.new(screen, 'text'=>'ブランク表示',
+				       'relief'=>'flat', 'anchor'=>'w',
+				       'variable'=>@w_screenbla,
 				       'value'=>'blank') {
       def self.set(value)
 	if value == 'blank'
@@ -275,9 +275,9 @@ class Xsettings
       end
     }
 
-    @w_screenpat = TkRadioButton.new(screen, 'text'=>'パターン表示', 
-				     'relief'=>'flat', 'anchor'=>'w', 
-				     'variable'=>@w_screenbla, 
+    @w_screenpat = TkRadioButton.new(screen, 'text'=>'パターン表示',
+				     'relief'=>'flat', 'anchor'=>'w',
+				     'variable'=>@w_screenbla,
 				     'value'=>'noblank') {
       def self.set(value)
 	if value != 'blank'
@@ -299,7 +299,7 @@ class Xsettings
     # Main window
     #
     param = {
-      'side'=>'top', 'fill'=>'both', 'expand'=>'yes', 
+      'side'=>'top', 'fill'=>'both', 'expand'=>'yes',
       'padx'=>'1m', 'pady'=>'1m'
     }
     btn_frame.pack('side'=>'top', 'fill'=>'both')

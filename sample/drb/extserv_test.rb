@@ -1,11 +1,11 @@
 =begin
  dRuby sample
- 	Copyright (c) 2000 Masatoshi SEKI 
+ 	Copyright (c) 2000 Masatoshi SEKI
 
 = How to play
 
 * Terminal 1
-  
+
   % ruby -I. extserv_test.rb server
   druby://yourhost:12345
 
@@ -26,11 +26,11 @@ end
 
 class Foo
   include DRbUndumped
-  
+
   def initialize(str)
     @str = str
   end
-  
+
   def hello(it)
     "#{it}: #{self}"
   end
@@ -55,7 +55,7 @@ when 'server'
 
   DRb::ExtServManager.command['itest1'] = "ruby -I. #{$0} itest1"
   DRb::ExtServManager.command['itest2'] = "ruby -I. #{$0} itest2"
-  
+
   s = DRb::ExtServManager.new
   DRb.start_service(ARGV.shift, s)
   puts DRb.uri
@@ -72,7 +72,7 @@ else
   t2 = s.service('itest2').front
   puts t2
   puts t1.hello(t2)
-  if (cmd == 'quit') 
+  if (cmd == 'quit')
     s.service('itest1').stop_service
     s.service('itest2').stop_service
   end

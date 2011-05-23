@@ -12,7 +12,10 @@ class TestRDocTopLevel < XrefTestCase
 
   def test_class_all_classes_and_modules
     expected = %w[
-      C1 C2 C2::C3 C2::C3::H1 C3 C3::H1 C3::H2 C4 C4::C4 C5 C5::C1 M1 M1::M2
+      C1 C2 C2::C3 C2::C3::H1 C3 C3::H1 C3::H2 C4 C4::C4 C5 C5::C1
+      Child
+      M1 M1::M2
+      Parent
     ]
 
     assert_equal expected,
@@ -22,6 +25,7 @@ class TestRDocTopLevel < XrefTestCase
   def test_class_classes
     expected = %w[
       C1 C2 C2::C3 C2::C3::H1 C3 C3::H1 C3::H2 C4 C4::C4 C5 C5::C1
+      Child Parent
     ]
 
     assert_equal expected, RDoc::TopLevel.classes.map { |m| m.full_name }.sort

@@ -9,20 +9,12 @@
 
 VALUE ruby_dln_librefs;
 
-#if CASEFOLD_FILESYSTEM
-#define fncomp strcasecmp
-#define fnncomp strncasecmp
-#else
-#define fncomp strcmp
-#define fnncomp strncmp
-#endif
-
-#define IS_RBEXT(e) (fncomp((e), ".rb") == 0)
-#define IS_SOEXT(e) (fncomp((e), ".so") == 0 || fncomp((e), ".o") == 0)
+#define IS_RBEXT(e) (strcmp((e), ".rb") == 0)
+#define IS_SOEXT(e) (strcmp((e), ".so") == 0 || strcmp((e), ".o") == 0)
 #ifdef DLEXT2
-#define IS_DLEXT(e) (fncomp((e), DLEXT) == 0 || fncomp((e), DLEXT2) == 0)
+#define IS_DLEXT(e) (strcmp((e), DLEXT) == 0 || strcmp((e), DLEXT2) == 0)
 #else
-#define IS_DLEXT(e) (fncomp((e), DLEXT) == 0)
+#define IS_DLEXT(e) (strcmp((e), DLEXT) == 0)
 #endif
 
 
@@ -305,8 +297,7 @@ load_lock(const char *ftptr)
     if (!loading_tbl || !st_lookup(loading_tbl, (st_data_t)ftptr, &data)) {
 	/* loading ruby library should be serialized. */
 	if (!loading_tbl) {
-	    GET_VM()->loading_table = loading_tbl =
-		(CASEFOLD_FILESYSTEM ? st_init_strcasetable() : st_init_strtable());
+	    GET_VM()->loading_table = loading_tbl = st_init_strtable();
 	}
 	/* partial state */
 	ftptr = ruby_strdup(ftptr);

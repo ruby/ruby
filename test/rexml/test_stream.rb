@@ -12,11 +12,11 @@ class StreamTester < Test::Unit::TestCase
   # Submitted by Han Holl
   def test_listener
     data = %Q{<session1 user="han" password="rootWeiler" />\n<session2 user="han" password="rootWeiler" />}
-    
+
     b = RequestReader.new( data )
     b = RequestReader.new( data )
   end
-  
+
   def test_ticket_49
     source = StringIO.new( <<-EOL )
     <!DOCTYPE foo [
@@ -26,7 +26,7 @@ class StreamTester < Test::Unit::TestCase
     EOL
     REXML::Document.parse_stream(source, MyListener.new)
   end
-  
+
   def test_ticket_10
     source = StringIO.new( <<-EOL )
     <!DOCTYPE foo [
@@ -55,7 +55,7 @@ class StreamTester < Test::Unit::TestCase
       end
     end
     listener.events = {}
-    
+
     REXML::Document.parse_stream( source, listener )
 
     assert( listener.events[:entitydecl] )

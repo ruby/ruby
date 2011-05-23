@@ -236,17 +236,6 @@ VALUE cFoo = rb_define_class("Foo", rb_cObject);
     assert_equal "this is the Foo class", klass.comment
   end
 
-  def test_do_classes_singleton
-    content = <<-EOF
-VALUE cFoo = rb_define_class("Foo", rb_cObject);
-VALUE cFooS = rb_singleton_class(cFoo);
-    EOF
-
-    util_get_class content, 'cFooS'
-
-    assert_equal 'Foo', @parser.singleton_classes['cFooS']
-  end
-
   def test_do_classes_class_under
     content = <<-EOF
 /* Document-class: Kernel::Foo
@@ -256,7 +245,34 @@ VALUE cFoo = rb_define_class_under(rb_mKernel, "Foo", rb_cObject);
     EOF
 
     klass = util_get_class content, 'cFoo'
+    assert_equal 'Kernel::Foo', klass.full_name
     assert_equal "this is the Foo class under Kernel", klass.comment
+  end
+
+  def test_do_classes_class_under_rb_path2class
+    content = <<-EOF
+/* Document-class: Kernel::Foo
+ * this is Kernel::Foo < A::B
+ */
+VALUE cFoo = rb_define_class_under(rb_mKernel, "Foo", rb_path2class("A::B"));
+    EOF
+
+    klass = util_get_class content, 'cFoo'
+
+    assert_equal 'Kernel::Foo', klass.full_name
+    assert_equal 'A::B', klass.superclass
+    assert_equal 'this is Kernel::Foo < A::B', klass.comment
+  end
+
+  def test_do_classes_singleton
+    content = <<-EOF
+VALUE cFoo = rb_define_class("Foo", rb_cObject);
+VALUE cFooS = rb_singleton_class(cFoo);
+    EOF
+
+    util_get_class content, 'cFooS'
+
+    assert_equal 'Foo', @parser.singleton_classes['cFooS']
   end
 
   def test_do_classes_module
@@ -680,7 +696,7 @@ Init_Foo(void) {
 
     baz = methods.last
     assert_equal 'Foo#baz', baz.full_name
-    assert_equal "a comment for bar", bar.comment
+    assert_equal "a comment for bar", baz.comment
   end
 
   def test_find_modifiers_call_seq
@@ -903,6 +919,37 @@ rb_m(int argc, VALUE *argv, VALUE obj) {
   def test_define_method
     content = <<-EOF
 /*Method Comment! */
+static VALUE
+rb_io_s_read(argc, argv, io)
+    int argc;
+    VALUE *argv;
+    VALUE io;
+{
+}
+
+void
+Init_IO(void) {
+    /*
+     * a comment for class Foo on rb_define_class
+     */
+    VALUE rb_cIO = rb_define_class("IO", rb_cObject);
+    rb_define_singleton_method(rb_cIO, "read", rb_io_s_read, -1);
+}
+    EOF
+
+    klass = util_get_class content, 'rb_cIO'
+    read_method = klass.method_list.first
+    assert_equal "read", read_method.name
+    assert_equal "Method Comment!   ", read_method.comment
+    assert_equal "rb_io_s_read", read_method.c_function
+    assert read_method.singleton
+  end
+
+  def test_define_method_with_prototype
+    content = <<-EOF
+static VALUE rb_io_s_read(int, VALUE*, VALUE);
+
+/* Method Comment! */
 static VALUE
 rb_io_s_read(argc, argv, io)
     int argc;

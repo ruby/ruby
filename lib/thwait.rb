@@ -1,8 +1,8 @@
 #
 #   thwait.rb - thread synchronization class
-#   	$Release Version: 0.9 $
-#   	$Revision: 1.3 $
-#   	by Keiju ISHITSUKA(Nihon Rational Software Co.,Ltd.)
+#       $Release Version: 0.9 $
+#       $Revision: 1.3 $
+#       by Keiju ISHITSUKA(Nihon Rational Software Co.,Ltd.)
 
 require "thread.rb"
 require "e2mmap.rb"
@@ -19,10 +19,10 @@ require "e2mmap.rb"
 #     STDERR.puts "Thread #{t} has terminated."
 #   end
 #
-#   
+#
 #   th = ThreadsWait.new(thread1,...)
 #   th.next_wait # next one to be done
-#    
+#
 #
 class ThreadsWait
   RCS_ID='-$Id: thwait.rb,v 1.3 1998/06/26 03:19:34 keiju Exp keiju $-'
@@ -39,7 +39,7 @@ class ThreadsWait
     tw = ThreadsWait.new(*threads)
     if block_given?
       tw.all_waits do |th|
-	yield th
+        yield th
       end
     else
       tw.all_waits
@@ -91,11 +91,11 @@ class ThreadsWait
     @threads.concat threads
     for th in threads
       Thread.start(th) do |t|
-	begin
-	  t.join
-	ensure
-	  @wait_queue.push t
-	end
+        begin
+          t.join
+        ensure
+          @wait_queue.push t
+        end
       end
     end
   end

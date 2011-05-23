@@ -183,7 +183,7 @@ h3, h4, h5, h6 {
 CSS
 
 XHTML_PREAMBLE = %{<?xml version="1.0" encoding="%charset%"?>
-<!DOCTYPE html 
+<!DOCTYPE html
      PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 }
@@ -510,7 +510,7 @@ FILE_INDEX = XHTML_PREAMBLE + <<HTML
 <!--
   body {
     background-color: #EEE;
-    font-family: #{FONTS}; 
+    font-family: #{FONTS};
     color: #000;
     margin: 0px;
   }

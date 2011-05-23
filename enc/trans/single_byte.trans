@@ -54,6 +54,7 @@
   transcode_tblgen_singlebyte "WINDOWS-1257"
   transcode_tblgen_singlebyte "IBM437"
   transcode_tblgen_singlebyte "IBM775"
+  transcode_tblgen_singlebyte "IBM737"
   transcode_tblgen_singlebyte "IBM852"
   transcode_tblgen_singlebyte "IBM855"
   transcode_tblgen_singlebyte "IBM857"

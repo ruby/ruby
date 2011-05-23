@@ -15,11 +15,36 @@ require 'erb'
 module WEBrick
   module HTTPServlet
 
+    ##
+    # ERBHandler evaluates an ERB file and returns the result.  This handler
+    # is automatically used if there are .rhtml files in a directory served by
+    # the FileHandler.
+    #
+    # ERBHandler supports GET and POST methods.
+    #
+    # The ERB file is evaluated with the local variables +servlet_request+ and
+    # +servlet_response+ which are a WEBrick::HTTPRequest and
+    # WEBrick::HTTPResponse respectively.
+    #
+    # Example .rhtml file:
+    #
+    #   Request to <%= servlet_request.request_uri %>
+    #
+    #   Query params <%= servlet_request.query.inspect %>
+
     class ERBHandler < AbstractServlet
+
+      ##
+      # Creates a new ERBHandler on +server+ that will evaluate and serve the
+      # ERB file +name+
+
       def initialize(server, name)
         super(server, name)
         @script_filename = name
       end
+
+      ##
+      # Handles GET requests
 
       def do_GET(req, res)
         unless defined?(ERB)
@@ -39,9 +64,17 @@ module WEBrick
         end
       end
 
+      ##
+      # Handles POST requests
+
       alias do_POST do_GET
 
       private
+
+      ##
+      # Evaluates +erb+ providing +servlet_request+ and +servlet_response+ as
+      # local variables.
+
       def evaluate(erb, servlet_request, servlet_response)
         Module.new.module_eval{
           servlet_request.meta_vars

@@ -10,7 +10,7 @@
 ###  Copyright (c) 2001 Mark D. Roth
 ###  Copyright (c) 2002, 2003 Akinori MUSHA
 ###  All rights reserved.
-### 
+###
 ###  Redistribution and use in source and binary forms, with or without
 ###  modification, are permitted provided that the following conditions
 ###  are met:
@@ -26,7 +26,7 @@
 ###  4. The University nor the names of their
 ###     contributors may be used to endorse or promote products derived from
 ###     this software without specific prior written permission.
-### 
+###
 ###  THIS SOFTWARE IS PROVIDED BY THE TRUSTEES AND CONTRIBUTORS ``AS IS'' AND
 ###  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 ###  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -210,7 +210,7 @@ class Mdoc2Man
 	retval << 'and ' unless retval.empty?
 	retval << @refauthors.shift
 
-	# title 
+	# title
 	retval << ', \\fI' << @reftitle << '\\fP'
 
 	# issue

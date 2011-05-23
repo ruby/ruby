@@ -26,7 +26,7 @@ loop do
 	s.close
 	socks.delete(s)
       # single thread gets may block whole service
-      elsif str = s.gets   
+      elsif str = s.gets
 	  s.write(str)
       end
     end

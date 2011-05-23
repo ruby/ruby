@@ -29,7 +29,7 @@ assert_equal %q{ok}, %q{
       end
     end
   end
-  
+
   ('a').lines.map{|e|
     break :ok
   }

@@ -236,7 +236,7 @@ class Gem::Package::TarWriter
       name = newname
 
       if name.size > 100 or prefix.size > 155 then
-        raise Gem::Package::TooLongFileName 
+        raise Gem::Package::TooLongFileName
       end
     end
 

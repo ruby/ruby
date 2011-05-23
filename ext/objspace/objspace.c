@@ -30,6 +30,7 @@
 #include "node.h"
 #include "gc.h"
 #include "regint.h"
+#include "internal.h"
 
 size_t rb_str_memsize(VALUE);
 size_t rb_ary_memsize(VALUE);

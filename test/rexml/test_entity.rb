@@ -10,23 +10,23 @@ class EntityTester < Test::Unit::TestCase
     simple =~ /#{REXML::Entity::GEDECL}/
     assert $&
     assert_equal simple, $&
-    
+
     REXML::Entity::ENTITYDECL =~ simple
     assert REXML::Entity::matches?(simple)
     match = REXML::Entity::ENTITYDECL.match(simple)
     assert_equal 'foo', match[1]
     assert_equal "'bar'", match[2]
 
-    simple = '<!ENTITY Pub-Status 
+    simple = '<!ENTITY Pub-Status
     "This is a pre-release of the specification.">'
     assert REXML::Entity::matches?(simple)
     match = REXML::Entity::ENTITYDECL.match(simple)
     assert_equal 'Pub-Status', match[1]
     assert_equal '"This is a pre-release of the specification."', match[2]
 
-    txt = '"This is a 
+    txt = '"This is a
     pre-release of <the> specification."'
-    simple = "<!ENTITY     Pub-Status 
+    simple = "<!ENTITY     Pub-Status
     #{txt}>"
     assert REXML::Entity::matches?(simple)
     match = REXML::Entity::ENTITYDECL.match(simple)
@@ -117,7 +117,7 @@ class EntityTester < Test::Unit::TestCase
     source = '<!DOCTYPE foo [
 <!ENTITY ent "replace">
 ]><a>replace &ent;</a>'
-    doc = REXML::Document.new( source ) 
+    doc = REXML::Document.new( source )
     assert_equal(source, doc.to_s)
     assert_equal("replace replace", doc.root.text)
     assert_equal(source, doc.to_s)

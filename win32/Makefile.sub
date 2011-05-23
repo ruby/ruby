@@ -130,6 +130,9 @@ ruby_version = $(MAJOR).$(MINOR).$(TEENY)
 
 !ifndef RUBY_SO_NAME
 RUBY_SO_NAME = $(RT)-$(RUBY_BASE_NAME)$(MAJOR)$(MINOR)$(TEENY)
+!if "$(ARCH)" != "i386"
+RUBY_SO_NAME = $(ARCH)-$(RUBY_SO_NAME)
+!endif
 !endif
 !ifndef RUBY_PLATFORM
 RUBY_PLATFORM = $(arch)
@@ -221,7 +224,7 @@ LIBS = oldnames.lib user32.lib advapi32.lib shell32.lib ws2_32.lib imagehlp.lib 
 LIBS = unicows.lib $(LIBS)
 !endif
 !if !defined(MISSING)
-MISSING = acosh.obj cbrt.obj crypt.obj erf.obj ffs.obj langinfo.obj lgamma_r.obj strlcat.obj strlcpy.obj tgamma.obj win32.obj
+MISSING = acosh.obj cbrt.obj crypt.obj erf.obj ffs.obj langinfo.obj lgamma_r.obj strlcat.obj strlcpy.obj tgamma.obj win32.obj setproctitle.obj
 !endif
 
 ARFLAGS = -machine:$(MACHINE) -out:

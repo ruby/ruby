@@ -1,6 +1,6 @@
 =begin
   multiple DRbServer client
- 	Copyright (c) 1999-2002 Masatoshi SEKI 
+ 	Copyright (c) 1999-2002 Masatoshi SEKI
 =end
 
 require 'drb/drb'

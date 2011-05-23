@@ -21,19 +21,19 @@ class PullParserTester < Test::Unit::TestCase
       end
       res[ :text ] += 1 if results.text?
     end
-    [ :xmldecl, :doctype, :a, :b ].each { |tag| 
+    [ :xmldecl, :doctype, :a, :b ].each { |tag|
       assert res[tag] , "#{tag} wasn't processed"
     }
-    assert_equal 4, res[ :text ]  
-  rescue ParseException 
+    assert_equal 4, res[ :text ]
+  rescue ParseException
     puts $!
   end
 
   def test_bad_document
     source = "<a><b></a>"
     parser = REXML::Parsers::PullParser.new(source)
-    assert_raise(ParseException, "Parsing should have failed") { 
-      results = parser.pull while parser.has_next? 
+    assert_raise(ParseException, "Parsing should have failed") {
+      results = parser.pull while parser.has_next?
     }
   end
 

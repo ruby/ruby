@@ -394,7 +394,7 @@ class Resolv
       end
     end
 
-    def use_ipv6?
+    def use_ipv6? # :nodoc:
       begin
         list = Socket.ip_address_list
       rescue NotImplementedError
@@ -599,8 +599,8 @@ class Resolv
       base + random(len)
     end
 
-    RequestID = {}
-    RequestIDMutex = Mutex.new
+    RequestID = {} # :nodoc:
+    RequestIDMutex = Mutex.new # :nodoc:
 
     def self.allocate_request_id(host, port) # :nodoc:
       id = nil

@@ -11,7 +11,7 @@ class Point
     sprintf("%d@%d", @x, @y)
   end
 end
-    
+
 list1 = [10, 20, Point.new(2, 3), Point.new(4, 5)]
 list2 = [20, Point.new(4, 5), list1]
 print("list1: ", list1.inspect, "\n")

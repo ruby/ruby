@@ -155,7 +155,7 @@ class FunctionsTester < Test::Unit::TestCase
     id_1 = doc.elements["/a/b[@id='1']"]
     id_2 = doc.elements["/a/b[@id='2']"]
     id_3 = doc.elements["/a/b[@id='3']"]
-      
+
     good = {
       "floor" => [[], [id_1], [id_2], [id_3]],
       "ceiling" => [[id_1], [id_2], [id_3], []],

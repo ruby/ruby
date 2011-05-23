@@ -12,7 +12,7 @@ class LightTester < Test::Unit::TestCase
     tag, content = parser.parse
     assert_equal([:document, :text], [tag, content.first])
   end
-  
+
   # FIXME INCOMPLETE
   # This is because the light API is not yet ready to be used to produce
   # trees.
@@ -22,7 +22,7 @@ class LightTester < Test::Unit::TestCase
     foo = doc.add_element( 'foo' )
     assert_equal( "foo", foo.name )
   end
-  
+
   def test_add_attribute
     foo = Node.new( "a" )
     foo["attr"] = "bar"

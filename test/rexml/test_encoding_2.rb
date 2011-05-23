@@ -44,7 +44,7 @@ END
         end
       end
 
-      if broken_encodings > 0 
+      if broken_encodings > 0
         fail "There were #{broken_encodings} encoding failures out of #{UnixCharsets.size} plus some REXML internal encodings"
       else
         fail "There were no encoding failures"

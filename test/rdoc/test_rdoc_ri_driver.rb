@@ -3,6 +3,7 @@ require 'rubygems'
 require 'minitest/autorun'
 require 'tmpdir'
 require 'fileutils'
+require 'stringio'
 require 'rdoc/ri/driver'
 
 class TestRDocRIDriver < MiniTest::Unit::TestCase
@@ -249,12 +250,14 @@ class TestRDocRIDriver < MiniTest::Unit::TestCase
 
     @driver.stores = [store]
 
-    assert_equal %w[Foo Foo::Bar], @driver.complete('F')
+    assert_equal %w[Foo         ], @driver.complete('F')
     assert_equal %w[    Foo::Bar], @driver.complete('Foo::B')
 
-    assert_equal %w[Foo#Bar],           @driver.complete('Foo#'),  'Foo#'
-    assert_equal %w[Foo#Bar  Foo::bar], @driver.complete('Foo.'),  'Foo.'
-    assert_equal %w[Foo::Bar Foo::bar], @driver.complete('Foo::'), 'Foo::'
+    assert_equal %w[Foo#Bar],           @driver.complete('Foo#'),   'Foo#'
+    assert_equal %w[Foo#Bar  Foo::bar], @driver.complete('Foo.'),   'Foo.'
+    assert_equal %w[Foo::Bar Foo::bar], @driver.complete('Foo::'),  'Foo::'
+
+    assert_equal %w[         Foo::bar], @driver.complete('Foo::b'), 'Foo::b'
   end
 
   def test_complete_ancestor
@@ -269,7 +272,7 @@ class TestRDocRIDriver < MiniTest::Unit::TestCase
   def test_complete_classes
     util_store
 
-    assert_equal %w[Foo   Foo::Bar Foo::Baz], @driver.complete('F')
+    assert_equal %w[Foo                    ], @driver.complete('F')
     assert_equal %w[Foo:: Foo::Bar Foo::Baz], @driver.complete('Foo::')
     assert_equal %w[      Foo::Bar Foo::Baz], @driver.complete('Foo::B')
   end
@@ -278,7 +281,8 @@ class TestRDocRIDriver < MiniTest::Unit::TestCase
     util_multi_store
 
     assert_equal %w[Bar], @driver.complete('B')
-    assert_equal %w[Foo Foo::Bar Foo::Baz], @driver.complete('F')
+    assert_equal %w[Foo], @driver.complete('F')
+    assert_equal %w[Foo::Bar Foo::Baz], @driver.complete('Foo::B')
   end
 
   def test_display
@@ -572,11 +576,18 @@ Foo::Bar#bother
   def test_name_regexp
     assert_equal %r%^RDoc::AnyMethod#new$%,
                  @driver.name_regexp('RDoc::AnyMethod#new')
+
     assert_equal %r%^RDoc::AnyMethod::new$%,
                  @driver.name_regexp('RDoc::AnyMethod::new')
 
     assert_equal %r%^RDoc::AnyMethod(#|::)new$%,
                  @driver.name_regexp('RDoc::AnyMethod.new')
+
+    assert_equal %r%^Hash(#|::)\[\]$%,
+                 @driver.name_regexp('Hash.[]')
+
+    assert_equal %r%^Hash::\[\]$%,
+                 @driver.name_regexp('Hash::[]')
   end
 
   def test_list_known_classes
@@ -589,11 +600,39 @@ Foo::Bar#bother
     assert_equal "Ambiguous\nFoo\nFoo::Bar\nFoo::Baz\nInc\n", out
   end
 
+  def test_list_known_classes_name
+    util_store
+
+    out, = capture_io do
+      @driver.list_known_classes %w[F I]
+    end
+
+    assert_equal "Foo\nFoo::Bar\nFoo::Baz\nInc\n", out
+  end
+
   def test_list_methods_matching
     util_store
 
     assert_equal %w[Foo::Bar#attr Foo::Bar#blah Foo::Bar#bother Foo::Bar::new],
                  @driver.list_methods_matching('Foo::Bar.')
+  end
+
+  def test_list_methods_matching_regexp
+    util_store
+
+    index = RDoc::AnyMethod.new nil, '[]'
+    @cFoo.add_method index
+    @store.save_method @cFoo, index
+
+    c_index = RDoc::AnyMethod.new nil, '[]'
+    c_index.singleton = true
+    @cFoo.add_method c_index
+    @store.save_method @cFoo, c_index
+
+    @store.save_cache
+
+    assert_equal %w[Foo#[]], @driver.list_methods_matching('Foo#[]')
+    assert_equal %w[Foo::[]], @driver.list_methods_matching('Foo::[]')
   end
 
   def test_load_method

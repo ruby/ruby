@@ -7,7 +7,7 @@
 #
 # --
 #
-#   
+#
 #
 
 module IRB
@@ -57,13 +57,13 @@ module IRB
 #     else
 #       inspector = IRB::Inspector(block, init_p)
 #     end
-      
+
     if block_given?
       inspector = IRB::Inspector(block, arg)
     else
       inspector = arg
     end
-    
+
     case key
     when Array
       for k in key
@@ -81,7 +81,7 @@ module IRB
   end
 
   INSPECTORS.def_inspector([false, :to_s, :raw]){|v| v.to_s}
-  INSPECTORS.def_inspector([true, :p, :inspect]){|v| 
+  INSPECTORS.def_inspector([true, :p, :inspect]){|v|
     begin
       v.inspect
     rescue NoMethodError
@@ -89,7 +89,7 @@ module IRB
     end
   }
   INSPECTORS.def_inspector([:pp, :pretty_inspect], proc{require "pp"}){|v| v.pretty_inspect.chomp}
-  INSPECTORS.def_inspector([:yaml, :YAML], proc{require "yaml"}){|v| 
+  INSPECTORS.def_inspector([:yaml, :YAML], proc{require "yaml"}){|v|
     begin
       YAML.dump(v)
     rescue
@@ -98,12 +98,12 @@ module IRB
     end
   }
 
-  INSPECTORS.def_inspector([:marshal, :Marshal, :MARSHAL, Marshal]){|v| 
+  INSPECTORS.def_inspector([:marshal, :Marshal, :MARSHAL, Marshal]){|v|
     Marshal.dump(v)
   }
 end
 
 
-  
-    
+
+
 

@@ -119,6 +119,16 @@ class TestRDocCodeObject < XrefTestCase
     assert @co.document_children
   end
 
+  def test_each_parent
+    parents = []
+
+    @parent_m.each_parent do |code_object|
+      parents << code_object
+    end
+
+    assert_equal [@parent, @xref_data], parents
+  end
+
   def test_full_name_equals
     @co.full_name = 'hi'
 

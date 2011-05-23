@@ -70,6 +70,6 @@ class Tk::Tcllib::IP_Entry
   end
 end
 
-class Tk::Tcllib::IP_Entry6 < Tk::Tcllib::IP_Entry 
+class Tk::Tcllib::IP_Entry6 < Tk::Tcllib::IP_Entry
   TkCommandNames = ['::ipentry::ipentry6'.freeze].freeze
 end

@@ -1,8 +1,8 @@
 #
 #   shell/error.rb -
-#   	$Release Version: 0.7 $
-#   	$Revision$
-#   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
+#       $Release Version: 0.7 $
+#       $Revision$
+#       by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #

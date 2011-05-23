@@ -203,12 +203,12 @@ class Prime
     for prime in generator
       count = 0
       while (value1, mod = value.divmod(prime)
-	     mod) == 0
-	value = value1
-	count += 1
+             mod) == 0
+        value = value1
+        count += 1
       end
       if count != 0
-	pv.push [prime, count]
+        pv.push [prime, count]
       end
       break if value1 <= prime
     end
@@ -259,16 +259,16 @@ class Prime
     def each(&block)
       return self.dup unless block
       if @ubound
-	last_value = nil
-	loop do
-	  prime = succ
-	  break last_value if prime > @ubound
-	  last_value = block.call(prime)
-	end
+        last_value = nil
+        loop do
+          prime = succ
+          break last_value if prime > @ubound
+          last_value = block.call(prime)
+        end
       else
-	loop do
-	  block.call(succ)
-	end
+        loop do
+          block.call(succ)
+        end
       end
     end
 
@@ -279,7 +279,7 @@ class Prime
     def with_object(obj)
       return enum_for(:with_object) unless block_given?
       each do |prime|
-	yield prime, obj
+        yield prime, obj
       end
     end
   end
@@ -334,17 +334,17 @@ class Prime
 
     def succ
       loop do
-	if (@step)
-	  @prime += @step
-	  @step = 6 - @step
-	else
-	  case @prime
-	  when 1; @prime = 2
-	  when 2; @prime = 3
-	  when 3; @prime = 5; @step = 2
-	  end
-	end
-	return @prime
+        if (@step)
+          @prime += @step
+          @step = 6 - @step
+        else
+          case @prime
+          when 1; @prime = 2
+          when 2; @prime = 3
+          when 3; @prime = 5; @step = 2
+          end
+        end
+        return @prime
       end
     end
     alias next succ
@@ -385,20 +385,20 @@ class Prime
     # +index+ is a 0-based index.
     def [](index)
       while index >= @primes.length
-	# Only check for prime factors up to the square root of the potential primes,
-	#   but without the performance hit of an actual square root calculation.
-	if @next_to_check + 4 > @ulticheck_next_squared
-	  @ulticheck_index += 1
-	  @ulticheck_next_squared = @primes.at(@ulticheck_index + 1) ** 2
-	end
-	# Only check numbers congruent to one and five, modulo six. All others
+        # Only check for prime factors up to the square root of the potential primes,
+        #   but without the performance hit of an actual square root calculation.
+        if @next_to_check + 4 > @ulticheck_next_squared
+          @ulticheck_index += 1
+          @ulticheck_next_squared = @primes.at(@ulticheck_index + 1) ** 2
+        end
+        # Only check numbers congruent to one and five, modulo six. All others
 
-	#   are divisible by two or three.  This also allows us to skip checking against
-	#   two and three.
-	@primes.push @next_to_check if @primes[2..@ulticheck_index].find {|prime| @next_to_check % prime == 0 }.nil?
-	@next_to_check += 4
-	@primes.push @next_to_check if @primes[2..@ulticheck_index].find {|prime| @next_to_check % prime == 0 }.nil?
-	@next_to_check += 2
+        #   are divisible by two or three.  This also allows us to skip checking against
+        #   two and three.
+        @primes.push @next_to_check if @primes[2..@ulticheck_index].find {|prime| @next_to_check % prime == 0 }.nil?
+        @next_to_check += 4
+        @primes.push @next_to_check if @primes[2..@ulticheck_index].find {|prime| @next_to_check % prime == 0 }.nil?
+        @next_to_check += 2
       end
       return @primes[index]
     end
@@ -428,16 +428,16 @@ class Prime
       n = (n-1).div(2)*2+3 # the next odd number to given n
       table_index, integer_index, bit_index = indices(n)
       loop do
-	extend_table until @tables.length > table_index
-	for j in integer_index...ENTRIES_PER_TABLE
-	  if !@tables[table_index][j].zero?
-	    for k in bit_index...BITS_PER_ENTRY
-	      return NUMS_PER_TABLE*table_index + NUMS_PER_ENTRY*j + 2*k+1 if !@tables[table_index][j][k].zero?
-	    end
-	  end
-	  bit_index = 0
-	end
-	table_index += 1; integer_index = 0
+        extend_table until @tables.length > table_index
+        for j in integer_index...ENTRIES_PER_TABLE
+          if !@tables[table_index][j].zero?
+            for k in bit_index...BITS_PER_ENTRY
+              return NUMS_PER_TABLE*table_index + NUMS_PER_ENTRY*j + 2*k+1 if !@tables[table_index][j][k].zero?
+            end
+          end
+          bit_index = 0
+        end
+        table_index += 1; integer_index = 0
       end
     end
 
@@ -459,15 +459,15 @@ class Prime
       ubound = lbound + NUMS_PER_TABLE
       new_table = [FILLED_ENTRY] * ENTRIES_PER_TABLE # which represents primarity in lbound...ubound
       (3..Integer(Math.sqrt(ubound))).step(2) do |p|
-	i, j, k = indices(p)
-	next if @tables[i][j][k].zero?
+        i, j, k = indices(p)
+        next if @tables[i][j][k].zero?
 
-	start = (lbound.div(p)+1)*p  # least multiple of p which is >= lbound
-	start += p if start.even?
-	(start...ubound).step(2*p) do |n|
-	  _, j, k = indices(n)
-	  new_table[j] &= FILLED_ENTRY^(1<<k)
-	end
+        start = (lbound.div(p)+1)*p  # least multiple of p which is >= lbound
+        start += p if start.even?
+        (start...ubound).step(2*p) do |n|
+          _, j, k = indices(n)
+          new_table[j] &= FILLED_ENTRY^(1<<k)
+        end
       end
       @tables << new_table.freeze
     end
@@ -488,7 +488,7 @@ class Prime
     def each(&block)
       return @generator.dup unless block_given?
       loop do
-	yield succ
+        yield succ
       end
     end
   end

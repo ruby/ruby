@@ -94,14 +94,14 @@ char *cmd;
     if (*s == '=')
     goto doshell; */
     for (s = cmd; *s; s++) {
-	if (*sw == '-' && *s != ' ' && 
+	if (*sw == '-' && *s != ' ' &&
 	    !isalpha(*s) && index("$&*(){}[]'\";\\|?<>~`\n",*s)) {
 	    if (*s == '\n' && !s[1]) {
 		*s = '\0';
 		break;
 	    }
 	    goto doshell;
-	} else if (*sw == '/' && *s != ' ' && 
+	} else if (*sw == '/' && *s != ' ' &&
 	    !isalpha(*s) && index("^()<>|&\n",*s)) {
 	    if (*s == '\n' && !s[1]) {
 		*s = '\0';

@@ -1,9 +1,10 @@
-#
 # = uri/ftp.rb
 #
 # Author:: Akira Yamada <akira@ruby-lang.org>
 # License:: You can redistribute it and/or modify it under the same term as Ruby.
 # Revision:: $Id$
+#
+# See URI for general documentation
 #
 
 require 'uri/generic'
@@ -19,13 +20,18 @@ module URI
   # http://tools.ietf.org/html/draft-hoffman-ftp-uri-04
   #
   class FTP < Generic
+    # A Default port of 21 for URI::FTP
     DEFAULT_PORT = 21
 
+    #
+    # An Array of the available components for URI::FTP
+    #
     COMPONENT = [
       :scheme,
       :userinfo, :host, :port,
       :path, :typecode
     ].freeze
+
     #
     # Typecode is "a", "i" or "d".
     #
@@ -34,8 +40,19 @@ module URI
     # * "d" indicates the contents of a directory should be displayed
     #
     TYPECODE = ['a', 'i', 'd'].freeze
+
+    # Typecode prefix
+    #  ';type='
     TYPECODE_PREFIX = ';type='.freeze
 
+    # alternate initialization
+    # Creates a new URI::FTP object.
+    #
+    # Unlike build(), this method does not escape the path component as
+    # required by RFC1738; instead it is treated as per RFC2396.
+    #
+    # Arguments are user, password, host, port, path, typecode,
+    # and arg_check, in that order.
     def self.new2(user, password, host, port, path,
                   typecode = nil, arg_check = true)
       typecode = nil if typecode.size == 0
@@ -133,8 +150,15 @@ module URI
         end
       end
     end
+
+    # typecode accessor
+    #
+    # see URI::FTP::COMPONENT
     attr_reader :typecode
 
+    # validates typecode +v+,
+    # returns a +true+ or +false+ boolean
+    #
     def check_typecode(v)
       if TYPECODE.include?(v)
         return true
@@ -145,11 +169,39 @@ module URI
     end
     private :check_typecode
 
+    # private setter for the typecode +v+
+    #
+    # see also URI::FTP.typecode=
+    #
     def set_typecode(v)
       @typecode = v
     end
     protected :set_typecode
 
+    #
+    # == Args
+    #
+    # +v+::
+    #    String
+    #
+    # == Description
+    #
+    # public setter for the typecode +v+.
+    # (with validation)
+    #
+    # see also URI::FTP.check_typecode
+    #
+    # == Usage
+    #
+    #   require 'uri'
+    #
+    #   uri = URI.parse("ftp://john@ftp.example.com/my_file.img")
+    #   #=> #<URI::FTP:0x00000000923650 URL:ftp://john@ftp.example.com/my_file.img>
+    #   uri.typecode = "i"
+    #   # =>  "i"
+    #   uri
+    #   #=> #<URI::FTP:0x00000000923650 URL:ftp://john@ftp.example.com/my_file.img;type=i>
+    #
     def typecode=(typecode)
       check_typecode(typecode)
       set_typecode(typecode)

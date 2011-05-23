@@ -136,7 +136,7 @@ module IRB
     end
 
     # @param paths load paths in which IRB find a localized file.
-    # @param dir directory 
+    # @param dir directory
     # @param file basename to be localized
     #
     # typically, for the parameters and a <path> in paths, it searches

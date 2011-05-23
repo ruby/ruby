@@ -197,6 +197,13 @@ Options may also be set in the 'RI' environment variable.
 
       opt.separator nil
 
+      opt.on("--list", "-l",
+             "List classes ri knows about.") do
+        options[:list] = true
+      end
+
+      opt.separator nil
+
       opt.on("--[no-]profile",
              "Run with the ruby profiler") do |value|
         options[:profile] = value
@@ -331,6 +338,7 @@ Options may also be set in the 'RI' environment variable.
     require 'profile' if options[:profile]
 
     @names = options[:names]
+    @list = options[:list]
 
     @doc_dirs = []
     @stores   = []
@@ -524,7 +532,10 @@ Options may also be set in the 'RI' environment variable.
     klass_name = method ? name : klass
 
     if name !~ /#|\./ then
-      completions.push(*klasses.grep(/^#{klass_name}/))
+      completions = klasses.grep(/^#{klass_name}[^:]*$/)
+      completions.concat klasses.grep(/^#{name}[^:]*$/) if name =~ /::$/
+
+      completions << klass if classes.key? klass # to complete a method name
     elsif selector then
       completions << klass if classes.key? klass
     elsif classes.key? klass_name then
@@ -546,7 +557,7 @@ Options may also be set in the 'RI' environment variable.
       completions.push(*methods)
     end
 
-    completions.sort
+    completions.sort.uniq
   end
 
   ##
@@ -878,9 +889,10 @@ Options may also be set in the 'RI' environment variable.
   end
 
   ##
-  # Lists classes known to ri
+  # Lists classes known to ri starting with +names+.  If +names+ is empty all
+  # known classes are shown.
 
-  def list_known_classes
+  def list_known_classes names = []
     classes = []
 
     stores.each do |store|
@@ -889,9 +901,19 @@ Options may also be set in the 'RI' environment variable.
 
     classes = classes.flatten.uniq.sort
 
+    unless names.empty? then
+      filter = Regexp.union names.map { |name| /^#{name}/ }
+
+      classes = classes.grep filter
+    end
+
     page do |io|
       if paging? or io.tty? then
-        io.puts "Classes and Modules known to ri:"
+        if names.empty? then
+          io.puts "Classes and Modules known to ri:"
+        else
+          io.puts "Classes and Modules starting with #{names.join ', '}:"
+        end
         io.puts
       end
 
@@ -910,7 +932,7 @@ Options may also be set in the 'RI' environment variable.
         methods = store.instance_methods[ancestor]
 
         if methods then
-          matches = methods.grep(/^#{method}/)
+          matches = methods.grep(/^#{Regexp.escape method.to_s}/)
 
           matches = matches.map do |match|
             "#{klass}##{match}"
@@ -924,7 +946,7 @@ Options may also be set in the 'RI' environment variable.
         methods = store.class_methods[ancestor]
 
         next unless methods
-        matches = methods.grep(/^#{method}/)
+        matches = methods.grep(/^#{Regexp.escape method.to_s}/)
 
         matches = matches.map do |match|
           "#{klass}::#{match}"
@@ -996,9 +1018,9 @@ Options may also be set in the 'RI' environment variable.
 
     case type
     when '#', '::' then
-      /^#{klass}#{type}#{name}$/
+      /^#{klass}#{type}#{Regexp.escape name}$/
     else
-      /^#{klass}(#|::)#{name}$/
+      /^#{klass}(#|::)#{Regexp.escape name}$/
     end
   end
 
@@ -1064,10 +1086,10 @@ Options may also be set in the 'RI' environment variable.
   def run
     if @list_doc_dirs then
       puts @doc_dirs
-    elsif @interactive then
+    elsif @list then
+      list_known_classes @names
+    elsif @interactive or @names.empty? then
       interactive
-    elsif @names.empty? then
-      list_known_classes
     else
       display_names @names
     end

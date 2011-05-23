@@ -6,7 +6,7 @@ module REXML
     STOP = ']]>'
     ILLEGAL = /(\]\]>)/
 
-    #	Constructor.  CData is data between <![CDATA[ ... ]]>
+    #   Constructor.  CData is data between <![CDATA[ ... ]]>
     #
     # _Examples_
     #  CData.new( source )

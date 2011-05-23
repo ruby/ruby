@@ -215,6 +215,8 @@ class TestRDocRIStore < MiniTest::Unit::TestCase
       },
     }
 
+    expected[:ancestors]['Object'] = %w[BasicObject] if defined?(::BasicObject)
+
     open File.join(@tmpdir, 'cache.ri'), 'rb' do |io|
       cache = Marshal.load io.read
 
@@ -250,8 +252,10 @@ class TestRDocRIStore < MiniTest::Unit::TestCase
     assert_directory File.join(@tmpdir, 'Object')
     assert_file File.join(@tmpdir, 'Object', 'cdesc-Object.ri')
 
+    object_ancestors = defined?(::BasicObject) ? %w[BasicObject] : []
+
     assert_cache({}, {}, { 'Object' => ['attr_accessor attr'] }, %w[Object],
-                 'Object' => %w[])
+                 'Object' => object_ancestors)
 
     assert_equal @klass, @s.load_class('Object')
   end
@@ -303,8 +307,10 @@ class TestRDocRIStore < MiniTest::Unit::TestCase
     assert_directory File.join(@tmpdir, 'Object')
     assert_file File.join(@tmpdir, 'Object', 'cdesc-Object.ri')
 
+    object_ancestors = defined?(::BasicObject) ? %w[BasicObject] : []
+
     assert_cache({}, {}, { 'Object' => ['attr_accessor attr'] }, %w[Object],
-                 'Object' => %w[])
+                 'Object' => object_ancestors)
 
     assert_equal @klass, @s.load_class('Object')
   end

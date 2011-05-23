@@ -718,7 +718,7 @@ module RSS
          ["contributor", "name"],
         ].each do |name, attribute|
           def_classed_elements(name, attribute)
-	end
+        end
 
         %w(comments id published).each do |element|
           attr_accessor element

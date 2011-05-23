@@ -2,11 +2,11 @@ assert_equal %q{[1, 2, 3]}, %q{
   def getproc &b
     b
   end
-  
+
   def m
     yield
   end
-  
+
   m{
     i = 1
     m{
@@ -24,14 +24,14 @@ assert_equal %q{7}, %q{
   def make_proc(&b)
     b
   end
-  
+
   def make_closure
     a = 0
     make_proc{
       a+=1
     }
   end
-  
+
   cl = make_closure
   cl.call + cl.call * cl.call
 }
@@ -41,7 +41,7 @@ assert_equal %q{ok}, %q{
       :ok
     end
   end
-  
+
   def block
     C.method(:new).to_proc
   end
@@ -52,7 +52,7 @@ assert_equal %q{[0, 1, :last, 0, 2, :last]}, %q{
   def proc &b
     b
   end
-  
+
   pr = []
   proc{|i_b|
     p3 = proc{|j_b|
@@ -63,18 +63,18 @@ assert_equal %q{[0, 1, :last, 0, 2, :last]}, %q{
     p3.call(1)
     p3.call(2)
   }.call(0)
-  
+
   pr[0].call(:last).concat pr[1].call(:last)
 }
 assert_equal %q{12}, %q{
   def iter
     yield
   end
-  
+
   def getproc &b
     b
   end
-  
+
   iter{
     bvar = 3
     getproc{
@@ -87,11 +87,11 @@ assert_equal %q{200}, %q{
   def iter
     yield
   end
-  
+
   def getproc &b
     b
   end
-  
+
   loc1 = 0
   pr1 = iter{
     bl1 = 1
@@ -101,7 +101,7 @@ assert_equal %q{200}, %q{
       loc1 + bl1
     }
   }
-  
+
   pr2 = iter{
     bl1 = 1
     getproc{
@@ -110,7 +110,7 @@ assert_equal %q{200}, %q{
       loc1 + bl1
     }
   }
-  
+
   pr1.call; pr2.call
   pr1.call; pr2.call
   pr1.call; pr2.call
@@ -120,21 +120,21 @@ assert_equal %q{[1, 2]}, %q{
   def proc(&pr)
     pr
   end
-  
+
   def m
     a = 1
     m2{
       a
     }
   end
-  
+
   def m2
     b = 2
     proc{
       [yield, b]
     }
   end
-  
+
   pr = m
   x = ['a', 1,2,3,4,5,6,7,8,9,0,
             1,2,3,4,5,6,7,8,9,0,
@@ -147,14 +147,14 @@ assert_equal %q{1}, %q{
   def proc(&pr)
     pr
   end
-  
+
   def m
     a = 1
     m2{
       a
     }
   end
-  
+
   def m2
     b = 2
     proc{

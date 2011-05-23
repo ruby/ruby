@@ -23,7 +23,7 @@
 module Jacobian
   module_function
 
-  #--
+  # Determines the equality of two numbers by comparing to zero, or using the epsilon value
   def isEqual(a,b,zero=0.0,e=1.0e-8)
     aa = a.abs
     bb = b.abs
@@ -37,7 +37,7 @@ module Jacobian
       end
     end
   end
-  #++
+
 
   # Computes the derivative of f[i] at x[i].
   # fx is the value of f at x.

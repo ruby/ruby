@@ -48,7 +48,7 @@ class CertStore
     case guess_cert_type(cert)
     when CERT_TYPE_SELF_SIGNED
       true
-    when CERT_TYPE_OTHER 
+    when CERT_TYPE_OTHER
       true
     else
       false

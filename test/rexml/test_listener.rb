@@ -11,7 +11,7 @@ class BaseTester < Test::Unit::TestCase
     return unless defined? @listener
     # Empty.
     t1 = %Q{<string></string>}
-    assert_equal( "", @listener.parse( t1 ), 
+    assert_equal( "", @listener.parse( t1 ),
       "Empty" )
   end
 
@@ -59,11 +59,11 @@ class BaseTester < Test::Unit::TestCase
     return unless defined? @listener
     # CR.
     t7 = %Q{<string> \r\n \r \n </string>}
-    assert_equal( " \n \n \n ".unpack("C*").inspect, 
+    assert_equal( " \n \n \n ".unpack("C*").inspect,
       @listener.parse( t7 ).unpack("C*").inspect, "CR" )
   end
 
-  # The accent bug, and the code that exibits the bug, was contributed by  
+  # The accent bug, and the code that exibits the bug, was contributed by
   # Guilhem Vellut
   class AccentListener
     def tag_start(name,attributes)

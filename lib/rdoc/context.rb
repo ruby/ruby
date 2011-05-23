@@ -373,6 +373,12 @@ class RDoc::Context < RDoc::CodeObject
       end
     end
 
+    # fix up superclass
+    superclass = nil if full_name == 'BasicObject'
+    superclass = nil if full_name == 'Object' and defined?(::BasicObject)
+    superclass = '::BasicObject' if
+      defined?(::BasicObject) and full_name == 'Object'
+
     # find the superclass full name
     if superclass then
       if superclass =~ /^:+/ then
@@ -480,7 +486,7 @@ class RDoc::Context < RDoc::CodeObject
   # Adds included module +include+ which should be an RDoc::Include
 
   def add_include(include)
-    add_to @includes, include
+    add_to @includes, include unless @includes.map { |i| i.full_name }.include?( include.full_name )
   end
 
   ##
@@ -655,6 +661,13 @@ class RDoc::Context < RDoc::CodeObject
     else
       "method #{method_attr.pretty_name}"
     end
+  end
+
+  ##
+  # Iterator for ancestors for duck-typing.  Does nothing.  See
+  # RDoc::ClassModule#each_ancestor.
+
+  def each_ancestor # :nodoc:
   end
 
   ##
@@ -950,9 +963,13 @@ class RDoc::Context < RDoc::CodeObject
   ##
   # Yields AnyMethod and Attr entries matching the list of names in +methods+.
 
-  def methods_matching(methods, singleton = false)
+  def methods_matching(methods, singleton = false, &block)
     (@method_list + @attributes).each do |m|
       yield m if methods.include?(m.name) and m.singleton == singleton
+    end
+
+    each_ancestor do |parent|
+      parent.methods_matching(methods, singleton, &block)
     end
   end
 
@@ -1021,11 +1038,19 @@ class RDoc::Context < RDoc::CodeObject
     remove_invisible_in @attributes, min_visibility
   end
 
+  ##
+  # Only called when min_visibility == :public or :private
+
   def remove_invisible_in(array, min_visibility) # :nodoc:
     if min_visibility == :public
-      array.reject! { |e| e.visibility != :public }
+      array.reject! { |e|
+        e.visibility != :public and not e.force_documentation
+      }
     else
-      array.reject! { |e| e.visibility == :private }
+      array.reject! { |e|
+        e.visibility == :private and
+          not e.force_documentation
+      }
     end
   end
 

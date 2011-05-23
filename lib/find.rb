@@ -38,7 +38,7 @@ module Find
     paths.collect!{|d| raise Errno::ENOENT unless File.exist?(d); d.dup}
     while file = paths.shift
       catch(:prune) do
-	yield file.dup.taint
+        yield file.dup.taint
         begin
           s = File.lstat(file)
         rescue Errno::ENOENT, Errno::EACCES, Errno::ENOTDIR, Errno::ELOOP, Errno::ENAMETOOLONG

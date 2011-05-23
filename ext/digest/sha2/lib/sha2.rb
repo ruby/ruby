@@ -18,9 +18,11 @@ module Digest
   #
   class SHA2 < Digest::Class
     # call-seq:
-    #     Digest::SHA2.new(bitlen = 256) -> digest_obj
+    #   Digest::SHA2.new(bitlen = 256) -> digest_obj
     #
     # Creates a new SHA2 hash object with a given bit length.
+    #
+    # Valid bit lengths are 256, 384 and 512.
     def initialize(bitlen = 256)
       case bitlen
       when 256
@@ -35,39 +37,70 @@ module Digest
       @bitlen = bitlen
     end
 
-    # :nodoc:
+    # call-seq:
+    #   digest_obj.reset -> digest_obj
+    #
+    # Resets the digest to the initial state and returns self.
     def reset
       @sha2.reset
       self
     end
 
-    # :nodoc:
+    # call-seq:
+    #   digest_obj.update(string) -> digest_obj
+    #   digest_obj << string -> digest_obj
+    #
+    # Updates the digest using a given _string_ and returns self.
     def update(str)
       @sha2.update(str)
       self
     end
     alias << update
 
-    def finish
+    def finish # :nodoc:
       @sha2.digest!
     end
     private :finish
 
+
+    # call-seq:
+    #   digest_obj.block_length -> Integer
+    #
+    # Returns the block length of the digest in bytes.
+    #
+    #   Digest::SHA256.new.digest_length * 8
+    #   # => 512
+    #   Digest::SHA384.new.digest_length * 8
+    #   # => 1024
+    #   Digest::SHA512.new.digest_length * 8
+    #   # => 1024
     def block_length
       @sha2.block_length
     end
 
+    # call-seq:
+    #   digest_obj.digest_length -> Integer
+    #
+    # Returns the length of the hash value of the digest in bytes.
+    #
+    #   Digest::SHA256.new.digest_length * 8
+    #   # => 256
+    #   Digest::SHA384.new.digest_length * 8
+    #   # => 384
+    #   Digest::SHA512.new.digest_length * 8
+    #   # => 512
+    #
+    # For example, digests produced by Digest::SHA256 will always be 32 bytes
+    # (256 bits) in size.
     def digest_length
       @sha2.digest_length
     end
 
-    # :nodoc:
-    def initialize_copy(other)
+    def initialize_copy(other) # :nodoc:
       @sha2 = other.instance_eval { @sha2.clone }
     end
 
-    # :nodoc:
-    def inspect
+    def inspect # :nodoc:
       "#<%s:%d %s>" % [self.class.name, @bitlen, hexdigest]
     end
   end

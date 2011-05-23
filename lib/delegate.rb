@@ -405,7 +405,7 @@ if __FILE__ == $0
   foo2 = SimpleDelegator.new(foo)
   p foo2
   foo2.instance_eval{print "foo\n"}
-  p foo.test == foo2.test	# => true
+  p foo.test == foo2.test       # => true
   p foo2.iter{[55,true]}        # => true
-  foo2.error			# raise error!
+  foo2.error                    # raise error!
 end

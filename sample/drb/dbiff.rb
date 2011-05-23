@@ -18,13 +18,13 @@ class Biff
   def run
     last = Time.now
     while true
-      begin 
+      begin
 	sleep(@interval)
 	current = File::mtime(@filename)
 	if current > last
 	  changed
 	  begin
-	    notify_observers(@filename, current) 
+	    notify_observers(@filename, current)
 	  rescue Error
 	  end
 	  last = current

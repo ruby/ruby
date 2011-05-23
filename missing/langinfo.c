@@ -65,7 +65,7 @@ nl_langinfo_codeset(void)
 {
   const char *l, *p;
   int n;
-  
+
   if (((l = getenv("LC_ALL"))   && *l) ||
       ((l = getenv("LC_CTYPE")) && *l) ||
       ((l = getenv("LANG"))     && *l)) {

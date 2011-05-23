@@ -740,10 +740,12 @@ key_i(VALUE key, VALUE value, VALUE arg)
  *  call-seq:
  *     hsh.key(value)    -> key
  *
- *  Returns the key for a given value. If not found, returns <code>nil</code>.
+ *  Returns the key of the first occurrence of a given value. If the value is
+ *  not found, returns <code>nil</code>.
  *
- *     h = { "a" => 100, "b" => 200 }
+ *     h = { "a" => 100, "b" => 200, "c" => 300, "d" => 300 }
  *     h.key(200)   #=> "b"
+ *     h.key(300)   #=> "c"
  *     h.key(999)   #=> nil
  *
  */

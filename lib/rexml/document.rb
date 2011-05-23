@@ -165,7 +165,7 @@ module REXML
     #   Document.new("<a><b/></a>").serialize( tr )
     #
     # output::
-    #	  output an object which supports '<< string'; this is where the
+    #     output an object which supports '<< string'; this is where the
     #   document will be written.
     # indent::
     #   An integer.  If -1, no indenting will be used; otherwise, the

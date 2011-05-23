@@ -209,7 +209,7 @@ end
 
 # test
 if __FILE__ == $0
-  f = Tk::RbWidget::ScrollFrame.new(:scrollbarwidth=>10, 
+  f = Tk::RbWidget::ScrollFrame.new(:scrollbarwidth=>10,
                                     :width=>300, :height=>200)
   f.pack(:expand=>true, :fill=>:both)
 
@@ -234,13 +234,13 @@ if __FILE__ == $0
   # remove a vertical scrollbar, and then the scrollframe is not scrollable.
   Tk.after(6000){ f.vscroll(false) }
 
-  # add a vertical scrollbar, and make the scrollframe scrollable. 
+  # add a vertical scrollbar, and make the scrollframe scrollable.
   Tk.after(9000){ f.vscroll(true) }
 
   # remove a horizontal scrollbar, and then the scrollframe is not scrollable.
   Tk.after(12000){ f.hscroll(false) }
 
-  # add a horizontal scrollbar, and make the scrollframe scrollable. 
+  # add a horizontal scrollbar, and make the scrollframe scrollable.
   Tk.after(15000){ f.hscroll(true) }
 
   Tk.mainloop

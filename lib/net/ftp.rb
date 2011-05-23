@@ -136,13 +136,15 @@ module Net
       @sock = NullSocket.new
       @logged_in = false
       if host
-	connect(host)
-	if user
-	  login(user, passwd, acct)
-	end
+        connect(host)
+        if user
+          login(user, passwd, acct)
+        end
       end
     end
 
+    # A setter to toggle transfers in binary mode.
+    # +newmode+ is either +true+ or +false+
     def binary=(newmode)
       if newmode != @binary
         @binary = newmode
@@ -150,6 +152,9 @@ module Net
       end
     end
 
+    # Sends a command to destination host, with the current binary sendmode type.
+    # If binary mode is +true+, then send "TYPE I" (image)
+    # else send "TYPE A" (ascii).
     def send_type_command
       if @binary
         voidcmd("TYPE I")
@@ -159,6 +164,11 @@ module Net
     end
     private :send_type_command
 
+    # Toggles transfers in binary mode and yields to a block.
+    # This preserves your current binary send mode, but allows a temporary
+    # transaction with binary sendmode of +newmode+.
+    #
+    # +newmode+ is either +true+ or +false+
     def with_binary(newmode)
       oldmode = binary
       self.binary = newmode
@@ -181,12 +191,16 @@ module Net
       $stderr.puts("warning: Net::FTP#return_code= is obsolete and do nothing")
     end
 
+    # Contructs a socket with +host+ and +port+.
+    # If SOCKSSocket is defined and the environment (ENV)
+    # defines SOCKS_SERVER, then a SOCKSSocket is returned,
+    # else a TCPSocket is returned.
     def open_socket(host, port)
       if defined? SOCKSSocket and ENV["SOCKS_SERVER"]
-	@passive = true
-	return SOCKSSocket.open(host, port)
+        @passive = true
+        return SOCKSSocket.open(host, port)
       else
-	return TCPSocket.open(host, port)
+        return TCPSocket.open(host, port)
       end
     end
     private :open_socket
@@ -199,11 +213,11 @@ module Net
     #
     def connect(host, port = FTP_PORT)
       if @debug_mode
-	print "connect: ", host, ", ", port, "\n"
+        print "connect: ", host, ", ", port, "\n"
       end
       synchronize do
-	@sock = open_socket(host, port)
-	voidresp
+        @sock = open_socket(host, port)
+        voidresp
       end
     end
 
@@ -212,75 +226,87 @@ module Net
     #
     def set_socket(sock, get_greeting = true)
       synchronize do
-	@sock = sock
-	if get_greeting
-	  voidresp
-	end
+        @sock = sock
+        if get_greeting
+          voidresp
+        end
       end
     end
 
+    # If string +s+ includes the PASS command (password),
+    # then the contents of the password are cleaned from the string using "*"
     def sanitize(s)
       if s =~ /^PASS /i
-	return s[0, 5] + "*" * (s.length - 5)
+        return s[0, 5] + "*" * (s.length - 5)
       else
-	return s
+        return s
       end
     end
     private :sanitize
 
+    # Ensures that +line+ has a control return / line feed (CRLF)
+    # and writes it to the socket.
     def putline(line)
       if @debug_mode
-	print "put: ", sanitize(line), "\n"
+        print "put: ", sanitize(line), "\n"
       end
       line = line + CRLF
       @sock.write(line)
     end
     private :putline
 
+    # Reads a line from the sock.
+    # If EOF, then it will raise EOFError
     def getline
       line = @sock.readline # if get EOF, raise EOFError
       line.sub!(/(\r\n|\n|\r)\z/n, "")
       if @debug_mode
-	print "get: ", sanitize(line), "\n"
+        print "get: ", sanitize(line), "\n"
       end
       return line
     end
     private :getline
 
+    # Receive a section of lines until the response code's match.
     def getmultiline
       line = getline
       buff = line
       if line[3] == ?-
-	  code = line[0, 3]
-	begin
-	  line = getline
-	  buff << "\n" << line
-	end until line[0, 3] == code and line[3] != ?-
+          code = line[0, 3]
+        begin
+          line = getline
+          buff << "\n" << line
+        end until line[0, 3] == code and line[3] != ?-
       end
       return buff << "\n"
     end
     private :getmultiline
 
+    # Recieves a response from the destination host.
+    # Either returns the response code, FTPTempError,
+    # FTPPermError, or FTPProtoError
     def getresp
       @last_response = getmultiline
       @last_response_code = @last_response[0, 3]
       case @last_response_code
       when /\A[123]/
-	return @last_response
+        return @last_response
       when /\A4/
-	raise FTPTempError, @last_response
+        raise FTPTempError, @last_response
       when /\A5/
-	raise FTPPermError, @last_response
+        raise FTPPermError, @last_response
       else
-	raise FTPProtoError, @last_response
+        raise FTPProtoError, @last_response
       end
     end
     private :getresp
 
+    # Recieves a response.
+    # Raises FTPReplyError if the first position of the response code is not equal 2.
     def voidresp
       resp = getresp
       if resp[0] != ?2
-	raise FTPReplyError, resp
+        raise FTPReplyError, resp
       end
     end
     private :voidresp
@@ -290,8 +316,8 @@ module Net
     #
     def sendcmd(cmd)
       synchronize do
-	putline(cmd)
-	return getresp
+        putline(cmd)
+        return getresp
       end
     end
 
@@ -300,24 +326,28 @@ module Net
     #
     def voidcmd(cmd)
       synchronize do
-	putline(cmd)
-	voidresp
+        putline(cmd)
+        voidresp
       end
     end
 
+    # Constructs and send the appropriate PORT (or EPRT) command
     def sendport(host, port)
       af = (@sock.peeraddr)[0]
       if af == "AF_INET"
-	cmd = "PORT " + (host.split(".") + port.divmod(256)).join(",")
+        cmd = "PORT " + (host.split(".") + port.divmod(256)).join(",")
       elsif af == "AF_INET6"
-	cmd = sprintf("EPRT |2|%s|%d|", host, port)
+        cmd = sprintf("EPRT |2|%s|%d|", host, port)
       else
-	raise FTPProtoError, host
+        raise FTPProtoError, host
       end
       voidcmd(cmd)
     end
     private :sendport
 
+    # Constructs a TCPServer socket, and sends it the PORT command
+    #
+    # Returns the constructed TCPServer socket
     def makeport
       sock = TCPServer.open(@sock.addr[3], 0)
       port = sock.addr[1]
@@ -327,49 +357,51 @@ module Net
     end
     private :makeport
 
+    # sends the appropriate command to enable a passive connection
     def makepasv
       if @sock.peeraddr[0] == "AF_INET"
-	host, port = parse227(sendcmd("PASV"))
+        host, port = parse227(sendcmd("PASV"))
       else
-	host, port = parse229(sendcmd("EPSV"))
-	#     host, port = parse228(sendcmd("LPSV"))
+        host, port = parse229(sendcmd("EPSV"))
+        #     host, port = parse228(sendcmd("LPSV"))
       end
       return host, port
     end
     private :makepasv
 
+    # Constructs a connection for transferring data
     def transfercmd(cmd, rest_offset = nil)
       if @passive
-	host, port = makepasv
-	conn = open_socket(host, port)
-	if @resume and rest_offset
-	  resp = sendcmd("REST " + rest_offset.to_s)
-	  if resp[0] != ?3
-	    raise FTPReplyError, resp
-	  end
-	end
-	resp = sendcmd(cmd)
+        host, port = makepasv
+        conn = open_socket(host, port)
+        if @resume and rest_offset
+          resp = sendcmd("REST " + rest_offset.to_s)
+          if resp[0] != ?3
+            raise FTPReplyError, resp
+          end
+        end
+        resp = sendcmd(cmd)
         # skip 2XX for some ftp servers
         resp = getresp if resp[0] == ?2
-	if resp[0] != ?1
-	  raise FTPReplyError, resp
-	end
+        if resp[0] != ?1
+          raise FTPReplyError, resp
+        end
       else
-	sock = makeport
-	if @resume and rest_offset
-	  resp = sendcmd("REST " + rest_offset.to_s)
-	  if resp[0] != ?3
-	    raise FTPReplyError, resp
-	  end
-	end
-	resp = sendcmd(cmd)
+        sock = makeport
+        if @resume and rest_offset
+          resp = sendcmd("REST " + rest_offset.to_s)
+          if resp[0] != ?3
+            raise FTPReplyError, resp
+          end
+        end
+        resp = sendcmd(cmd)
         # skip 2XX for some ftp servers
         resp = getresp if resp[0] == ?2
-	if resp[0] != ?1
-	  raise FTPReplyError, resp
-	end
-	conn = sock.accept
-	sock.close
+        if resp[0] != ?1
+          raise FTPReplyError, resp
+        end
+        conn = sock.accept
+        sock.close
       end
       return conn
     end
@@ -385,23 +417,23 @@ module Net
     #
     def login(user = "anonymous", passwd = nil, acct = nil)
       if user == "anonymous" and passwd == nil
-	passwd = "anonymous@"
+        passwd = "anonymous@"
       end
 
       resp = ""
       synchronize do
-	resp = sendcmd('USER ' + user)
-	if resp[0] == ?3
+        resp = sendcmd('USER ' + user)
+        if resp[0] == ?3
           raise FTPReplyError, resp if passwd.nil?
-	  resp = sendcmd('PASS ' + passwd)
-	end
-	if resp[0] == ?3
+          resp = sendcmd('PASS ' + passwd)
+        end
+        if resp[0] == ?3
           raise FTPReplyError, resp if acct.nil?
-	  resp = sendcmd('ACCT ' + acct)
-	end
+          resp = sendcmd('ACCT ' + acct)
+        end
       end
       if resp[0] != ?2
-	raise FTPReplyError, resp
+        raise FTPReplyError, resp
       end
       @welcome = resp
       send_type_command
@@ -416,7 +448,7 @@ module Net
     #
     def retrbinary(cmd, blocksize, rest_offset = nil) # :yield: data
       synchronize do
-	with_binary(true) do
+        with_binary(true) do
           conn = transfercmd(cmd, rest_offset)
           loop do
             data = conn.read(blocksize)
@@ -437,7 +469,7 @@ module Net
     #
     def retrlines(cmd) # :yield: line
       synchronize do
-	with_binary(false) do
+        with_binary(false) do
           conn = transfercmd(cmd)
           loop do
             line = conn.gets
@@ -461,7 +493,7 @@ module Net
         file.seek(rest_offset, IO::SEEK_SET)
       end
       synchronize do
-	with_binary(true) do
+        with_binary(true) do
           conn = transfercmd(cmd)
           loop do
             buf = file.read(blocksize)
@@ -490,7 +522,7 @@ module Net
     #
     def storlines(cmd, file, &block) # :yield: line
       synchronize do
-	with_binary(false) do
+        with_binary(false) do
           conn = transfercmd(cmd)
           loop do
             buf = file.gets
@@ -521,7 +553,7 @@ module Net
     # chunks.
     #
     def getbinaryfile(remotefile, localfile = File.basename(remotefile),
-		      blocksize = DEFAULT_BLOCKSIZE) # :yield: data
+                      blocksize = DEFAULT_BLOCKSIZE) # :yield: data
       result = nil
       if localfile
         if @resume
@@ -535,15 +567,15 @@ module Net
         result = ""
       end
       begin
-	f.binmode if localfile
-	retrbinary("RETR " + remotefile.to_s, blocksize, rest_offset) do |data|
-	  f.write(data) if localfile
-	  yield(data) if block_given?
+        f.binmode if localfile
+        retrbinary("RETR " + remotefile.to_s, blocksize, rest_offset) do |data|
+          f.write(data) if localfile
+          yield(data) if block_given?
           result.concat(data) if result
-	end
+        end
         return result
       ensure
-	f.close if localfile
+        f.close if localfile
       end
     end
 
@@ -562,15 +594,15 @@ module Net
         result = ""
       end
       begin
-	retrlines("RETR " + remotefile) do |line, newline|
+        retrlines("RETR " + remotefile) do |line, newline|
           l = newline ? line + "\n" : line
-	  f.print(l) if localfile
-	  yield(line, newline) if block_given?
+          f.print(l) if localfile
+          yield(line, newline) if block_given?
           result.concat(l) if result
-	end
+        end
         return result
       ensure
-	f.close if localfile
+        f.close if localfile
       end
     end
 
@@ -579,11 +611,11 @@ module Net
     # binary).  See #gettextfile and #getbinaryfile.
     #
     def get(remotefile, localfile = File.basename(remotefile),
-	    blocksize = DEFAULT_BLOCKSIZE, &block) # :yield: data
+            blocksize = DEFAULT_BLOCKSIZE, &block) # :yield: data
       if @binary
-	getbinaryfile(remotefile, localfile, blocksize, &block)
+        getbinaryfile(remotefile, localfile, blocksize, &block)
       else
-	gettextfile(remotefile, localfile, &block)
+        gettextfile(remotefile, localfile, &block)
       end
     end
 
@@ -593,7 +625,7 @@ module Net
     # data in +blocksize+ chunks.
     #
     def putbinaryfile(localfile, remotefile = File.basename(localfile),
-		      blocksize = DEFAULT_BLOCKSIZE, &block) # :yield: data
+                      blocksize = DEFAULT_BLOCKSIZE, &block) # :yield: data
       if @resume
         begin
           rest_offset = size(remotefile)
@@ -601,18 +633,18 @@ module Net
           rest_offset = nil
         end
       else
-	rest_offset = nil
+        rest_offset = nil
       end
       f = open(localfile)
       begin
-	f.binmode
+        f.binmode
         if rest_offset
           storbinary("APPE " + remotefile, f, blocksize, rest_offset, &block)
         else
           storbinary("STOR " + remotefile, f, blocksize, rest_offset, &block)
         end
       ensure
-	f.close
+        f.close
       end
     end
 
@@ -624,9 +656,9 @@ module Net
     def puttextfile(localfile, remotefile = File.basename(localfile), &block) # :yield: line
       f = open(localfile)
       begin
-	storlines("STOR " + remotefile, f, &block)
+        storlines("STOR " + remotefile, f, &block)
       ensure
-	f.close
+        f.close
       end
     end
 
@@ -635,16 +667,19 @@ module Net
     # (text or binary).  See #puttextfile and #putbinaryfile.
     #
     def put(localfile, remotefile = File.basename(localfile),
-	    blocksize = DEFAULT_BLOCKSIZE, &block)
+            blocksize = DEFAULT_BLOCKSIZE, &block)
       if @binary
-	putbinaryfile(localfile, remotefile, blocksize, &block)
+        putbinaryfile(localfile, remotefile, blocksize, &block)
       else
-	puttextfile(localfile, remotefile, &block)
+        puttextfile(localfile, remotefile, &block)
       end
     end
 
     #
-    # Sends the ACCT command.  TODO: more info.
+    # Sends the ACCT command.
+    #
+    # This is a less common FTP command, to send account
+    # information if the destination host requires it.
     #
     def acct(account)
       cmd = "ACCT " + account
@@ -657,11 +692,11 @@ module Net
     def nlst(dir = nil)
       cmd = "NLST"
       if dir
-	cmd = cmd + " " + dir
+        cmd = cmd + " " + dir
       end
       files = []
       retrlines(cmd) do |line|
-	files.push(line)
+        files.push(line)
       end
       return files
     end
@@ -673,16 +708,16 @@ module Net
     def list(*args, &block) # :yield: line
       cmd = "LIST"
       args.each do |arg|
-	cmd = cmd + " " + arg.to_s
+        cmd = cmd + " " + arg.to_s
       end
       if block
-	retrlines(cmd, &block)
+        retrlines(cmd, &block)
       else
-	lines = []
-	retrlines(cmd) do |line|
-	  lines << line
-	end
-	return lines
+        lines = []
+        retrlines(cmd) do |line|
+          lines << line
+        end
+        return lines
       end
     end
     alias ls list
@@ -694,7 +729,7 @@ module Net
     def rename(fromname, toname)
       resp = sendcmd("RNFR " + fromname)
       if resp[0] != ?3
-	raise FTPReplyError, resp
+        raise FTPReplyError, resp
       end
       voidcmd("RNTO " + toname)
     end
@@ -705,11 +740,11 @@ module Net
     def delete(filename)
       resp = sendcmd("DELE " + filename)
       if resp[0, 3] == "250"
-	return
+        return
       elsif resp[0] == ?5
-	raise FTPPermError, resp
+        raise FTPPermError, resp
       else
-	raise FTPReplyError, resp
+        raise FTPReplyError, resp
       end
     end
 
@@ -718,14 +753,14 @@ module Net
     #
     def chdir(dirname)
       if dirname == ".."
-	begin
-	  voidcmd("CDUP")
-	  return
-	rescue FTPPermError => e
-	  if e.message[0, 3] != "500"
-	    raise e
-	  end
-	end
+        begin
+          voidcmd("CDUP")
+          return
+        rescue FTPPermError => e
+          if e.message[0, 3] != "500"
+            raise e
+          end
+        end
       end
       cmd = "CWD " + dirname
       voidcmd(cmd)
@@ -786,7 +821,7 @@ module Net
     def system
       resp = sendcmd("SYST")
       if resp[0, 3] != "215"
-	raise FTPReplyError, resp
+        raise FTPReplyError, resp
       end
       return resp[4 .. -1]
     end
@@ -800,7 +835,7 @@ module Net
       @sock.send(line, Socket::MSG_OOB)
       resp = getmultiline
       unless ["426", "226", "225"].include?(resp[0, 3])
-	raise FTPProtoError, resp
+        raise FTPProtoError, resp
       end
       return resp
     end
@@ -821,7 +856,7 @@ module Net
     def mdtm(filename)
       resp = sendcmd("MDTM " + filename)
       if resp[0, 3] == "213"
-	return resp[3 .. -1].strip
+        return resp[3 .. -1].strip
       end
     end
 
@@ -831,7 +866,7 @@ module Net
     def help(arg = nil)
       cmd = "HELP"
       if arg
-	cmd = cmd + " " + arg
+        cmd = cmd + " " + arg
       end
       sendcmd(cmd)
     end
@@ -845,6 +880,8 @@ module Net
 
     #
     # Issues a NOOP command.
+    #
+    # Does nothing except return a response.
     #
     def noop
       voidcmd("NOOP")
@@ -873,18 +910,22 @@ module Net
       @sock == nil or @sock.closed?
     end
 
+    # handler for response code 227
+    # (Entering Passive Mode (h1,h2,h3,h4,p1,p2))
+    #
+    # Returns host and port.
     def parse227(resp)
       if resp[0, 3] != "227"
-	raise FTPReplyError, resp
+        raise FTPReplyError, resp
       end
       left = resp.index("(")
       right = resp.index(")")
       if left == nil or right == nil
-	raise FTPProtoError, resp
+        raise FTPProtoError, resp
       end
       numbers = resp[left + 1 .. right - 1].split(",")
       if numbers.length != 6
-	raise FTPProtoError, resp
+        raise FTPProtoError, resp
       end
       host = numbers[0, 4].join(".")
       port = (numbers[4].to_i << 8) + numbers[5].to_i
@@ -892,50 +933,58 @@ module Net
     end
     private :parse227
 
+    # handler for response code 228
+    # (Entering Long Passive Mode)
+    #
+    # Returns host and port.
     def parse228(resp)
       if resp[0, 3] != "228"
-	raise FTPReplyError, resp
+        raise FTPReplyError, resp
       end
       left = resp.index("(")
       right = resp.index(")")
       if left == nil or right == nil
-	raise FTPProtoError, resp
+        raise FTPProtoError, resp
       end
       numbers = resp[left + 1 .. right - 1].split(",")
       if numbers[0] == "4"
-	if numbers.length != 9 || numbers[1] != "4" || numbers[2 + 4] != "2"
-	  raise FTPProtoError, resp
-	end
-	host = numbers[2, 4].join(".")
-	port = (numbers[7].to_i << 8) + numbers[8].to_i
+        if numbers.length != 9 || numbers[1] != "4" || numbers[2 + 4] != "2"
+          raise FTPProtoError, resp
+        end
+        host = numbers[2, 4].join(".")
+        port = (numbers[7].to_i << 8) + numbers[8].to_i
       elsif numbers[0] == "6"
-	if numbers.length != 21 || numbers[1] != "16" || numbers[2 + 16] != "2"
-	  raise FTPProtoError, resp
-	end
-	v6 = ["", "", "", "", "", "", "", ""]
-	for i in 0 .. 7
-	  v6[i] = sprintf("%02x%02x", numbers[(i * 2) + 2].to_i,
-			  numbers[(i * 2) + 3].to_i)
-	end
-	host = v6[0, 8].join(":")
-	port = (numbers[19].to_i << 8) + numbers[20].to_i
+        if numbers.length != 21 || numbers[1] != "16" || numbers[2 + 16] != "2"
+          raise FTPProtoError, resp
+        end
+        v6 = ["", "", "", "", "", "", "", ""]
+        for i in 0 .. 7
+          v6[i] = sprintf("%02x%02x", numbers[(i * 2) + 2].to_i,
+                          numbers[(i * 2) + 3].to_i)
+        end
+        host = v6[0, 8].join(":")
+        port = (numbers[19].to_i << 8) + numbers[20].to_i
       end
       return host, port
     end
     private :parse228
 
+    # handler for response code 229
+    # (Extended Passive Mode Entered)
+    #
+    # Returns host and port.
     def parse229(resp)
       if resp[0, 3] != "229"
-	raise FTPReplyError, resp
+        raise FTPReplyError, resp
       end
       left = resp.index("(")
       right = resp.index(")")
       if left == nil or right == nil
-	raise FTPProtoError, resp
+        raise FTPProtoError, resp
       end
       numbers = resp[left + 1 .. right - 1].split(resp[left + 1, 1])
       if numbers.length != 4
-	raise FTPProtoError, resp
+        raise FTPProtoError, resp
       end
       port = numbers[3].to_i
       host = (@sock.peeraddr())[3]
@@ -943,26 +992,30 @@ module Net
     end
     private :parse229
 
+    # handler for response code 257
+    # ("PATHNAME" created)
+    #
+    # Returns host and port.
     def parse257(resp)
       if resp[0, 3] != "257"
-	raise FTPReplyError, resp
+        raise FTPReplyError, resp
       end
       if resp[3, 2] != ' "'
-	return ""
+        return ""
       end
       dirname = ""
       i = 5
       n = resp.length
       while i < n
-	c = resp[i, 1]
-	i = i + 1
-	if c == '"'
-	  if i > n or resp[i, 1] != '"'
-	    break
-	  end
-	  i = i + 1
-	end
-	dirname = dirname + c
+        c = resp[i, 1]
+        i = i + 1
+        if c == '"'
+          if i > n or resp[i, 1] != '"'
+            break
+          end
+          i = i + 1
+        end
+        dirname = dirname + c
       end
       return dirname
     end

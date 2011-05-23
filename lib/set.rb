@@ -92,19 +92,19 @@ class Set
     @hash = orig.instance_eval{@hash}.dup
   end
 
-  def freeze	# :nodoc:
+  def freeze    # :nodoc:
     super
     @hash.freeze
     self
   end
 
-  def taint	# :nodoc:
+  def taint     # :nodoc:
     super
     @hash.taint
     self
   end
 
-  def untaint	# :nodoc:
+  def untaint   # :nodoc:
     super
     @hash.untaint
     self
@@ -148,15 +148,15 @@ class Set
   def flatten_merge(set, seen = Set.new) # :nodoc:
     set.each { |e|
       if e.is_a?(Set)
-	if seen.include?(e_id = e.object_id)
-	  raise ArgumentError, "tried to flatten recursive Set"
-	end
+        if seen.include?(e_id = e.object_id)
+          raise ArgumentError, "tried to flatten recursive Set"
+        end
 
-	seen.add(e_id)
-	flatten_merge(e, seen)
-	seen.delete(e_id)
+        seen.add(e_id)
+        flatten_merge(e, seen)
+        seen.delete(e_id)
       else
-	add(e)
+        add(e)
       end
     }
 
@@ -325,15 +325,15 @@ class Set
   def |(enum)
     dup.merge(enum)
   end
-  alias + |		##
-  alias union |		##
+  alias + |             ##
+  alias union |         ##
 
   # Returns a new set built by duplicating the set, removing every
   # element that appears in the given enumerable object.
   def -(enum)
     dup.subtract(enum)
   end
-  alias difference -	##
+  alias difference -    ##
 
   # Returns a new set containing elements common to the set and the
   # given enumerable object.
@@ -342,7 +342,7 @@ class Set
     do_with_enum(enum) { |o| n.add(o) if include?(o) }
     n
   end
-  alias intersection &	##
+  alias intersection &  ##
 
   # Returns a new set containing elements exclusive between the set
   # and the given enumerable object.  (set ^ enum) is equivalent to
@@ -367,11 +367,11 @@ class Set
     end
   end
 
-  def hash	# :nodoc:
+  def hash      # :nodoc:
     @hash.hash
   end
 
-  def eql?(o)	# :nodoc:
+  def eql?(o)   # :nodoc:
     return false unless o.is_a?(Set)
     @hash.eql?(o.instance_eval{@hash})
   end
@@ -424,23 +424,23 @@ class Set
     if func.arity == 2
       require 'tsort'
 
-      class << dig = {}		# :nodoc:
-	include TSort
+      class << dig = {}         # :nodoc:
+        include TSort
 
-	alias tsort_each_node each_key
-	def tsort_each_child(node, &block)
-	  fetch(node).each(&block)
-	end
+        alias tsort_each_node each_key
+        def tsort_each_child(node, &block)
+          fetch(node).each(&block)
+        end
       end
 
       each { |u|
-	dig[u] = a = []
-	each{ |v| func.call(u, v) and a << v }
+        dig[u] = a = []
+        each{ |v| func.call(u, v) and a << v }
       }
 
       set = Set.new()
       dig.each_strongly_connected_component { |css|
-	set.add(self.class.new(css))
+        set.add(self.class.new(css))
       }
       set
     else
@@ -467,59 +467,59 @@ class Set
     end
   end
 
-  def pretty_print(pp)	# :nodoc:
+  def pretty_print(pp)  # :nodoc:
     pp.text sprintf('#<%s: {', self.class.name)
     pp.nest(1) {
       pp.seplist(self) { |o|
-	pp.pp o
+        pp.pp o
       }
     }
     pp.text "}>"
   end
 
-  def pretty_print_cycle(pp)	# :nodoc:
+  def pretty_print_cycle(pp)    # :nodoc:
     pp.text sprintf('#<%s: {%s}>', self.class.name, empty? ? '' : '...')
   end
 end
 
-# 
+#
 # SortedSet implements a Set that guarantees that it's element are
 # yielded in sorted order (according to the return values of their
 # #<=> methods) when iterating over them.
-# 
+#
 # All elements that are added to a SortedSet must respond to the <=>
 # method for comparison.
-# 
+#
 # Also, all elements must be <em>mutually comparable</em>: <tt>el1 <=>
 # el2</tt> must not return <tt>nil</tt> for any elements <tt>el1</tt>
 # and <tt>el2</tt>, else an ArgumentError will be raised when
 # iterating over the SortedSet.
 #
 # == Example
-# 
+#
 #   require "set"
-#   
+#
 #   set = SortedSet.new([2, 1, 5, 6, 4, 5, 3, 3, 3])
 #   ary = []
-#   
+#
 #   set.each do |obj|
 #     ary << obj
 #   end
-#   
+#
 #   p ary # => [1, 2, 3, 4, 5, 6]
-#   
+#
 #   set2 = SortedSet.new([1, 2, "3"])
 #   set2.each { |obj| } # => raises ArgumentError: comparison of Fixnum with String failed
-#   
+#
 class SortedSet < Set
   @@setup = false
 
   class << self
-    def [](*ary)	# :nodoc:
+    def [](*ary)        # :nodoc:
       new(ary)
     end
 
-    def setup	# :nodoc:
+    def setup   # :nodoc:
       @@setup and return
 
       module_eval {
@@ -528,89 +528,89 @@ class SortedSet < Set
         remove_method :old_init
       }
       begin
-	require 'rbtree'
+        require 'rbtree'
 
-	module_eval %{
-	  def initialize(*args, &block)
-	    @hash = RBTree.new
-	    super
-	  end
-	  
-	  def add(o)
-	    o.respond_to?(:<=>) or raise ArgumentError, "value must respond to <=>"
-	    super
-	  end
-	  alias << add
-	}
+        module_eval %{
+          def initialize(*args, &block)
+            @hash = RBTree.new
+            super
+          end
+
+          def add(o)
+            o.respond_to?(:<=>) or raise ArgumentError, "value must respond to <=>"
+            super
+          end
+          alias << add
+        }
       rescue LoadError
-	module_eval %{
-	  def initialize(*args, &block)
-	    @keys = nil
-	    super
-	  end
+        module_eval %{
+          def initialize(*args, &block)
+            @keys = nil
+            super
+          end
 
-	  def clear
-	    @keys = nil
-	    super
-	  end
+          def clear
+            @keys = nil
+            super
+          end
 
-	  def replace(enum)
-	    @keys = nil
-	    super
-	  end
+          def replace(enum)
+            @keys = nil
+            super
+          end
 
-	  def add(o)
-	    o.respond_to?(:<=>) or raise ArgumentError, "value must respond to <=>"
-	    @keys = nil
-	    super
-	  end
-	  alias << add
+          def add(o)
+            o.respond_to?(:<=>) or raise ArgumentError, "value must respond to <=>"
+            @keys = nil
+            super
+          end
+          alias << add
 
-	  def delete(o)
-	    @keys = nil
-	    @hash.delete(o)
-	    self
-	  end
+          def delete(o)
+            @keys = nil
+            @hash.delete(o)
+            self
+          end
 
-	  def delete_if
+          def delete_if
             block_given? or return enum_for(__method__)
-	    n = @hash.size
-	    super
-	    @keys = nil if @hash.size != n
-	    self
-	  end
+            n = @hash.size
+            super
+            @keys = nil if @hash.size != n
+            self
+          end
 
-	  def keep_if
-	    block_given? or return enum_for(__method__)
-	    n = @hash.size
-	    super
-	    @keys = nil if @hash.size != n
-	    self
-	  end
+          def keep_if
+            block_given? or return enum_for(__method__)
+            n = @hash.size
+            super
+            @keys = nil if @hash.size != n
+            self
+          end
 
-	  def merge(enum)
-	    @keys = nil
-	    super
-	  end
+          def merge(enum)
+            @keys = nil
+            super
+          end
 
-	  def each
-	    block_given? or return enum_for(__method__)
-	    to_a.each { |o| yield(o) }
-	    self
-	  end
+          def each
+            block_given? or return enum_for(__method__)
+            to_a.each { |o| yield(o) }
+            self
+          end
 
-	  def to_a
-	    (@keys = @hash.keys).sort! unless @keys
-	    @keys
-	  end
-	}
+          def to_a
+            (@keys = @hash.keys).sort! unless @keys
+            @keys
+          end
+        }
       end
 
       @@setup = true
     end
   end
 
-  def initialize(*args, &block)	# :nodoc:
+  def initialize(*args, &block) # :nodoc:
     SortedSet.setup
     initialize(*args, &block)
   end
@@ -657,54 +657,54 @@ end
 #
 #     if @proc.arity == 2
 #       instance_eval %{
-# 	def add(o)
-# 	  @hash[o] = true if @proc.call(self, o)
-# 	  self
-# 	end
-# 	alias << add
+#       def add(o)
+#         @hash[o] = true if @proc.call(self, o)
+#         self
+#       end
+#       alias << add
 #
-# 	def add?(o)
-# 	  if include?(o) || !@proc.call(self, o)
-# 	    nil
-# 	  else
-# 	    @hash[o] = true
-# 	    self
-# 	  end
-# 	end
+#       def add?(o)
+#         if include?(o) || !@proc.call(self, o)
+#           nil
+#         else
+#           @hash[o] = true
+#           self
+#         end
+#       end
 #
-# 	def replace(enum)
-# 	  enum.respond_to?(:each) or raise ArgumentError, "value must be enumerable"
-# 	  clear
-# 	  enum.each_entry { |o| add(o) }
+#       def replace(enum)
+#         enum.respond_to?(:each) or raise ArgumentError, "value must be enumerable"
+#         clear
+#         enum.each_entry { |o| add(o) }
 #
-# 	  self
-# 	end
+#         self
+#       end
 #
-# 	def merge(enum)
-# 	  enum.respond_to?(:each) or raise ArgumentError, "value must be enumerable"
-# 	  enum.each_entry { |o| add(o) }
+#       def merge(enum)
+#         enum.respond_to?(:each) or raise ArgumentError, "value must be enumerable"
+#         enum.each_entry { |o| add(o) }
 #
-# 	  self
-# 	end
+#         self
+#       end
 #       }
 #     else
 #       instance_eval %{
-# 	def add(o)
+#       def add(o)
 #         if @proc.call(o)
-# 	    @hash[o] = true
+#           @hash[o] = true
 #         end
-# 	  self
-# 	end
-# 	alias << add
+#         self
+#       end
+#       alias << add
 #
-# 	def add?(o)
-# 	  if include?(o) || !@proc.call(o)
-# 	    nil
-# 	  else
-# 	    @hash[o] = true
-# 	    self
-# 	  end
-# 	end
+#       def add?(o)
+#         if include?(o) || !@proc.call(o)
+#           nil
+#         else
+#           @hash[o] = true
+#           self
+#         end
+#       end
 #       }
 #     end
 #
@@ -835,12 +835,12 @@ class TC_Set < Test::Unit::TestCase
     set1 = Set[
       1,
       Set[
-	5,
-	Set[7,
-	  Set[0]
-	],
-	Set[6,2],
-	1
+        5,
+        Set[7,
+          Set[0]
+        ],
+        Set[6,2],
+        1
       ],
       3,
       Set[3,4]
@@ -1020,7 +1020,7 @@ class TC_Set < Test::Unit::TestCase
 
     assert_nothing_raised {
       set.each { |o|
-	ary.delete(o) or raise "unexpected element: #{o}"
+        ary.delete(o) or raise "unexpected element: #{o}"
       }
 
       ary.empty? or raise "forgotten elements: #{ary.join(', ')}"
@@ -1085,11 +1085,11 @@ class TC_Set < Test::Unit::TestCase
     ret = set.collect! { |i|
       case i
       when Numeric
-	i * 2
+        i * 2
       when String
-	i.upcase
+        i.upcase
       else
-	nil
+        nil
       end
     }
 
@@ -1214,15 +1214,15 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(set, ret.flatten)
     ret.each { |s|
       if s.include?(0)
-	assert_equal(Set[0,1], s)
+        assert_equal(Set[0,1], s)
       elsif s.include?(3)
-	assert_equal(Set[3,4,5], s)
+        assert_equal(Set[3,4,5], s)
       elsif s.include?(7)
-	assert_equal(Set[7], s)
+        assert_equal(Set[7], s)
       elsif s.include?(9)
-	assert_equal(Set[9,10,11], s)
+        assert_equal(Set[9,10,11], s)
       else
-	raise "unexpected group: #{s.inspect}"
+        raise "unexpected group: #{s.inspect}"
       end
     }
   end

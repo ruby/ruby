@@ -70,8 +70,8 @@ static int rb_threadptr_dead(rb_thread_t *th);
 
 static void rb_check_deadlock(rb_vm_t *vm);
 
-static const VALUE eKillSignal = INT2FIX(0);
-static const VALUE eTerminateSignal = INT2FIX(1);
+#define eKillSignal INT2FIX(0)
+#define eTerminateSignal INT2FIX(1)
 static volatile int system_working = 1;
 
 #define closed_stream_error GET_VM()->special_exceptions[ruby_error_closed_stream]
@@ -2392,7 +2392,18 @@ rb_fd_isset(int n, const rb_fdset_t *fds)
 }
 
 void
-rb_fd_copy(rb_fdset_t *dst, const rb_fdset_t *src)
+rb_fd_copy(rb_fdset_t *dst, const fd_set *src, int max)
+{
+    size_t size = howmany(max, NFDBITS) * sizeof(fd_mask);
+
+    if (size < sizeof(fd_set)) size = sizeof(fd_set);
+    dst->maxfd = max;
+    dst->fdset = xrealloc(dst->fdset, size);
+    memcpy(dst->fdset, src, size);
+}
+
+void
+rb_fd_dup(rb_fdset_t *dst, const rb_fdset_t *src)
 {
     size_t size = howmany(rb_fd_max(src), NFDBITS) * sizeof(fd_mask);
 
@@ -2446,7 +2457,7 @@ void
 rb_fd_init_copy(rb_fdset_t *dst, rb_fdset_t *src)
 {
     rb_fd_init(dst);
-    rb_fd_copy(dst, src);
+    rb_fd_dup(dst, src);
 }
 
 void
@@ -2567,11 +2578,11 @@ do_select(int n, rb_fdset_t *read, rb_fdset_t *write, rb_fdset_t *except,
 		    if (result != 0) break;
 
 		    if (read)
-			rb_fd_copy(read, &orig_read);
+			rb_fd_dup(read, &orig_read);
 		    if (write)
-			rb_fd_copy(write, &orig_write);
+			rb_fd_dup(write, &orig_write);
 		    if (except)
-			rb_fd_copy(except, &orig_except);
+			rb_fd_dup(except, &orig_except);
 		    if (timeout) {
 			struct timeval elapsed;
 			gettimeofday(&elapsed, NULL);
@@ -2603,11 +2614,11 @@ do_select(int n, rb_fdset_t *read, rb_fdset_t *write, rb_fdset_t *except,
 	  case ERESTART:
 #endif
 	    if (read)
-		rb_fd_copy(read, &orig_read);
+		rb_fd_dup(read, &orig_read);
 	    if (write)
-		rb_fd_copy(write, &orig_write);
+		rb_fd_dup(write, &orig_write);
 	    if (except)
-		rb_fd_copy(except, &orig_except);
+		rb_fd_dup(except, &orig_except);
 
 	    if (timeout) {
 		double d = limit - timeofday();
@@ -3524,7 +3535,6 @@ rb_mutex_lock(VALUE self)
 		interrupted = lock_func(th, mutex, timeout_ms);
 	    });
 	    th->transition_for_lock = 0;
-	    remove_signal_thread_list(th);
 	    reset_unblock_function(th, &oldubf);
 
 	    th->locking_mutex = Qfalse;
@@ -4684,6 +4694,7 @@ Init_Thread(void)
 
     rb_thread_create_timer_thread();
 
+    /* suppress warnings on cygwin, mingw and mswin.*/
     (void)native_mutex_trylock;
 }
 

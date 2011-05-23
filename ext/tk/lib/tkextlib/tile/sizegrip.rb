@@ -28,5 +28,5 @@ end
 #Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Sizegrip,
 #                            :TkSizegrip, :TkSizeGrip)
 Tk.__set_loaded_toplevel_aliases__('tkextlib/tile/sizegrip.rb',
-                                   :Ttk, Tk::Tile::Sizegrip, 
+                                   :Ttk, Tk::Tile::Sizegrip,
                                    :TkSizegrip, :TkSizeGrip)

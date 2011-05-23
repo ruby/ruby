@@ -1306,7 +1306,7 @@ EOS
 
         ensure
           # interp must be deleted before the thread for interp is dead.
-          # If not, raise Tcl_Panic on Tcl_AsyncDelete because async handler 
+          # If not, raise Tcl_Panic on Tcl_AsyncDelete because async handler
           # deleted by the wrong thread.
           interp.delete
         end
@@ -1339,7 +1339,7 @@ EOS
 
     INTERP.instance_eval{
       # @tk_cmd_tbl = TkUtil.untrust({})
-      @tk_cmd_tbl = 
+      @tk_cmd_tbl =
         TkUtil.untrust(Hash.new{|hash, key|
                          fail IndexError, "unknown command ID '#{key}'"
                        })

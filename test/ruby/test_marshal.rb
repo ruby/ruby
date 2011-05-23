@@ -462,7 +462,7 @@ class TestMarshal < Test::Unit::TestCase
     attr_reader :foo
   end
   private_constant :PrivateClass
-  
+
   def test_marshal_private_class
     o1 = PrivateClass.new("test")
     o2 = Marshal.load(Marshal.dump(o1))

@@ -205,9 +205,9 @@ module Open3
     result = [*parent_io, wait_thr]
     if defined? yield
       begin
-	return yield(*result)
+        return yield(*result)
       ensure
-	parent_io.each{|io| io.close unless io.closed?}
+        parent_io.each{|io| io.close unless io.closed?}
         wait_thr.join
       end
     end
@@ -700,9 +700,9 @@ module Open3
     child_io.each {|io| io.close }
     if defined? yield
       begin
-	return yield(*result)
+        return yield(*result)
       ensure
-	parent_io.each{|io| io.close unless io.closed?}
+        parent_io.each{|io| io.close unless io.closed?}
         wait_thrs.each {|t| t.join }
       end
     end

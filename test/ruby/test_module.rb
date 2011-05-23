@@ -141,7 +141,7 @@ class TestModule < Test::Unit::TestCase
       :bClass3
     end
   end
-  
+
   class CClass < BClass
     def self.cClass
     end

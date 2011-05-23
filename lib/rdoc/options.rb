@@ -256,7 +256,9 @@ class RDoc::Options
 
     @rdoc_include << "." if @rdoc_include.empty?
 
-    if @exclude.empty? then
+    if @exclude.nil? or Regexp === @exclude then
+      # done, #finish is being re-run
+    elsif @exclude.empty? then
       @exclude = nil
     else
       @exclude = Regexp.new(@exclude.join("|"))

@@ -1,8 +1,8 @@
 #
 #   shell.rb -
-#   	$Release Version: 0.7 $
-#   	$Revision: 1.9 $
-#   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
+#       $Release Version: 0.7 $
+#       $Revision: 1.9 $
+#       by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
@@ -57,9 +57,9 @@ class Shell
 
     def default_system_path
       if @default_system_path
-	@default_system_path
+        @default_system_path
       else
-	ENV["PATH"].split(":")
+        ENV["PATH"].split(":")
       end
     end
 
@@ -69,9 +69,9 @@ class Shell
 
     def default_record_separator
       if @default_record_separator
-	@default_record_separator
+        @default_record_separator
       else
-	$/
+        $/
       end
     end
 
@@ -156,10 +156,10 @@ class Shell
       notify("chdir(with block) #{path}") if verbose
       cwd_old = @cwd
       begin
-	chdir(path, nil)
-	yield
+        chdir(path, nil)
+        yield
       ensure
-	chdir(cwd_old, nil)
+        chdir(cwd_old, nil)
       end
     else
       notify("chdir #{path}") if verbose
@@ -179,9 +179,9 @@ class Shell
       notify("pushdir(with block) #{path}") if verbose
       pushdir(path, nil)
       begin
-	yield
+        yield
       ensure
-	popdir
+        popdir
       end
     elsif path
       notify("pushdir #{path}") if verbose
@@ -192,12 +192,12 @@ class Shell
     else
       notify("pushdir") if verbose
       if pop = @dir_stack.pop
-	@dir_stack.push @cwd
-	chdir pop
-	notify "dir stack: [#{@dir_stack.join ', '}]"
-	self
+        @dir_stack.push @cwd
+        chdir pop
+        notify "dir stack: [#{@dir_stack.join ', '}]"
+        self
       else
-	Shell.Fail DirStackEmpty
+        Shell.Fail DirStackEmpty
       end
     end
     Void.new(self)
@@ -265,32 +265,32 @@ class Shell
   def self.notify(*opts, &block)
     Shell::debug_output_synchronize do
       if opts[-1].kind_of?(String)
-	yorn = verbose?
+        yorn = verbose?
       else
-	yorn = opts.pop
+        yorn = opts.pop
       end
       return unless yorn
 
       if @debug_display_thread_id
-	if @debug_display_process_id
-	  prefix = "shell(##{Process.pid}:#{Thread.current.to_s.sub("Thread", "Th")}): "
-	else
-	  prefix = "shell(#{Thread.current.to_s.sub("Thread", "Th")}): "
-	end
+        if @debug_display_process_id
+          prefix = "shell(##{Process.pid}:#{Thread.current.to_s.sub("Thread", "Th")}): "
+        else
+          prefix = "shell(#{Thread.current.to_s.sub("Thread", "Th")}): "
+        end
       else
-	prefix = "shell: "
+        prefix = "shell: "
       end
       _head = true
       STDERR.print opts.collect{|mes|
-	mes = mes.dup
-	yield mes if iterator?
-	if _head
-	  _head = false
-#	  "shell" " + mes
-	  prefix + mes
-	else
-	  " "* prefix.size + mes
-	end
+        mes = mes.dup
+        yield mes if iterator?
+        if _head
+          _head = false
+#         "shell" " + mes
+          prefix + mes
+        else
+          " "* prefix.size + mes
+        end
       }.join("\n")+"\n"
     end
   end

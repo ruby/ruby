@@ -397,7 +397,7 @@ class ActionMap
   end
 
   def inspect
-    "\#<#{self.class}:" + 
+    "\#<#{self.class}:" +
     @tree.inspect +
     ">"
   end

@@ -46,14 +46,14 @@ module DRb
 
       def close; end
       def alive?; false; end
-      
+
       def send_request(ref, msg_id, *arg, &b)
 	stream = StrStream.new
 	@msg.send_request(stream, ref, msg_id, *arg, &b)
 	@reply_stream = StrStream.new
 	post(@uri, stream.buf)
       end
-      
+
       def recv_reply
 	@msg.recv_reply(@reply_stream)
       end
@@ -66,7 +66,7 @@ module DRb
 	http.post(path, data, {'Content-Type'=>'application/octetstream;'}) do |str|
 	  sio.write(str)
 	  if @config[:load_limit] < sio.buf.size
-	    raise TypeError, 'too large packet' 
+	    raise TypeError, 'too large packet'
 	  end
 	end
 	@reply_stream = sio

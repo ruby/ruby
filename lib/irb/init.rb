@@ -112,9 +112,9 @@ module IRB
 
 #    @CONF[:LC_MESSAGES] = "en"
     @CONF[:LC_MESSAGES] = Locale.new
-    
+
     @CONF[:AT_EXIT] = []
-    
+
     @CONF[:DEBUG_LEVEL] = 1
   end
 
@@ -160,7 +160,7 @@ module IRB
 	opt = $1 || ARGV.shift
 	set_encoding(*opt.split(':', 2))
       when "--inspect"
-	if /^-/ !~ ARGV.first 
+	if /^-/ !~ ARGV.first
 	  @CONF[:INSPECT_MODE] = ARGV.shift
 	else
 	  @CONF[:INSPECT_MODE] = true

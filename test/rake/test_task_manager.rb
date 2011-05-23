@@ -135,7 +135,7 @@ class Rake::TestTaskManager < Test::Unit::TestCase
       end
     end
     assert_equal t1, @tm[:t, []]
-    assert_equal t2, @tm[:t, ["a"]]    
+    assert_equal t2, @tm[:t, ["a"]]
     assert_equal t3, @tm[:t, ["a", "b"]]
     assert_equal s,  @tm[:s, ["a", "b"]]
     assert_equal s,  @tm[:s, ["a"]]
@@ -153,7 +153,7 @@ class Rake::TestTaskManager < Test::Unit::TestCase
     @tm["a:x"].invoke
     assert_equal ["next z"], values
   end
-  
+
 end
 
 class Rake::TestTaskManagerArgumentResolution < Test::Unit::TestCase

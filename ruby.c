@@ -124,9 +124,6 @@ static void forbid_setid(const char *, struct cmdline_options *);
 static struct {
     int argc;
     char **argv;
-#if !defined(PSTAT_SETCMD) && !defined(HAVE_SETPROCTITLE)
-    size_t len;
-#endif
 } origarg;
 
 static void
@@ -1680,62 +1677,6 @@ rb_load_file(const char *fname)
     return load_file(rb_parser_new(), fname, 0, cmdline_options_init(&opt));
 }
 
-#if !defined(PSTAT_SETCMD) && !defined(HAVE_SETPROCTITLE)
-#if !defined(_WIN32)
-#define USE_ENVSPACE_FOR_ARG0
-#endif
-
-#ifdef USE_ENVSPACE_FOR_ARG0
-extern char **environ;
-#endif
-
-static size_t
-get_arglen(int argc, char **argv)
-{
-    char *s = argv[0];
-    int i;
-
-    if (!argc) return 0;
-    s += strlen(s);
-    /* See if all the arguments are contiguous in memory */
-    for (i = 1; i < argc; i++) {
-	if (argv[i] == s + 1) {
-	    s++;
-	    s += strlen(s);	/* this one is ok too */
-	}
-	else {
-	    break;
-	}
-    }
-#if defined(USE_ENVSPACE_FOR_ARG0)
-    if (environ && (s+1 == environ[0])) {
-	s++;
-	s += strlen(s);
-	for (i = 1; environ[i]; i++) {
-	    if (environ[i] == s + 1) {
-		s++;
-		s += strlen(s);	/* this one is ok too */
-	    }
-	}
-# if defined(HAVE_SETENV) && defined(HAVE_UNSETENV)
-	{
-	    char *t = malloc(s - environ[0] + 1);
-	    for (i = 0; environ[i]; i++) {
-		size_t len = strlen(environ[i]) + 1;
-		memcpy(t, environ[i], len);
-		environ[i] = t;
-		t += len;
-	    }
-	}
-# else
-	ruby_setenv("", NULL); /* duplicate environ vars */
-# endif
-    }
-#endif
-    return s - argv[0];
-}
-#endif
-
 static void
 set_arg0(VALUE val, ID id)
 {
@@ -1747,42 +1688,9 @@ set_arg0(VALUE val, ID id)
     StringValue(val);
     s = RSTRING_PTR(val);
     i = RSTRING_LEN(val);
-#if defined(PSTAT_SETCMD)
-    if (i > PST_CLEN) {
-	union pstun un;
-	char buf[PST_CLEN + 1];	/* PST_CLEN is 64 (HP-UX 11.23) */
-	strlcpy(buf, s, sizeof(buf));
-	un.pst_command = buf;
-	pstat(PSTAT_SETCMD, un, PST_CLEN, 0, 0);
-    }
-    else {
-	union pstun un;
-	un.pst_command = s;
-	pstat(PSTAT_SETCMD, un, i, 0, 0);
-    }
-#elif defined(HAVE_SETPROCTITLE)
+
     setproctitle("%.*s", (int)i, s);
-#else
 
-    if ((size_t)i > origarg.len - origarg.argc) {
-	i = (long)(origarg.len - origarg.argc);
-    }
-
-    memcpy(origarg.argv[0], s, i);
-
-    {
-	int j;
-	char *t = origarg.argv[0] + i;
-	*t = '\0';
-
-	if ((size_t)(i + 1) < origarg.len) {
-	    memset(t + 1, '\0', origarg.len - i - 1);
-	}
-	for (j = 1; j < origarg.argc; j++) {
-	    origarg.argv[j] = t;
-	}
-    }
-#endif
     rb_progname = rb_obj_freeze(rb_external_str_new(s, i));
 }
 
@@ -1891,6 +1799,14 @@ ruby_process_options(int argc, char **argv)
     rb_argv0 = rb_str_new4(rb_progname);
     rb_gc_register_mark_object(rb_argv0);
     iseq = process_options(argc, argv, cmdline_options_init(&opt));
+
+#ifndef HAVE_SETPROCTITLE
+    {
+	extern compat_init_setproctitle(int argc, char *argv[]);
+	compat_init_setproctitle(argc, argv);
+    }
+#endif
+
     return (void*)(struct RData*)iseq;
 }
 
@@ -1903,9 +1819,6 @@ ruby_sysinit(int *argc, char ***argv)
 #endif
     origarg.argc = *argc;
     origarg.argv = *argv;
-#if !defined(PSTAT_SETCMD) && !defined(HAVE_SETPROCTITLE)
-    origarg.len = get_arglen(origarg.argc, origarg.argv);
-#endif
 #if defined(USE_DLN_A_OUT)
     dln_argv0 = origarg.argv[0];
 #endif

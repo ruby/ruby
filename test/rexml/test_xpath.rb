@@ -163,7 +163,7 @@ class XPathTester < Test::Unit::TestCase
     #res = XPath::first(doc, "*")
     #assert_equal "a", res.name
 
-    assert_equal( :processing_instruction, 
+    assert_equal( :processing_instruction,
     XPath::first(doc.root, "processing-instruction()").node_type)
     assert_equal( :comment, XPath::first(doc.root, "comment()").node_type)
   end
@@ -206,7 +206,7 @@ class XPathTester < Test::Unit::TestCase
   # Here are some XPath tests that were originally submitted by ...
   # The code has changed some, but the logic and the source documents are the
   # same.
-  # This method reads a document from a file, and then a series of xpaths, 
+  # This method reads a document from a file, and then a series of xpaths,
   # also from a file.  It then checks each xpath against the source file.
   def test_more
     xmlsource   = fixture_path("testsrc.xml")
@@ -222,7 +222,7 @@ class XPathTester < Test::Unit::TestCase
         rt = doc.root
         #puts "#"*80
         #print "\nDoing #{line} " ; $stdout.flush
-        doc.elements.each(line) do |el| 
+        doc.elements.each(line) do |el|
           #print "." ; $stdout.flush
           results.root << el.clone
           #results << el.to_s
@@ -255,7 +255,7 @@ class XPathTester < Test::Unit::TestCase
 
     result = XPath::first( @@doc, "descendant::f[@a='c']")
     assert_equal "11", result.attributes['id']
-    
+
     assert_equal "11", XPath::first(@@doc, "a/e/f[@a='c']").attributes["id"]
     assert_equal "11", XPath::first(@@doc, "a/e/*[@a='c']").attributes["id"]
   end
@@ -282,9 +282,9 @@ class XPathTester < Test::Unit::TestCase
     d = XPath.first( doc, "//d" )
     assert_equal "d", d.name
     b = each_test( d, "ancestor::b" ) { |el|
-      assert((1..2) === el.attributes['id'].to_i, 
+      assert((1..2) === el.attributes['id'].to_i,
         "Expected #{el.attributes['id']} to be either 1 or 2"
-      ) 
+      )
     }
     assert_equal 2, b
   end
@@ -316,7 +316,7 @@ class XPathTester < Test::Unit::TestCase
   def test_lang
     doc = Document.new(File.new(fixture_path("lang0.xml")))
     #puts IO.read( "test/lang.xml" )
-    
+
     #puts XPath.match( doc, "//language/*" ).size
     c = each_test( doc, "//language/*" ) { |element|
       #puts "#{element.name}: #{element.text}"
@@ -428,9 +428,9 @@ class XPathTester < Test::Unit::TestCase
     assert_equal 2, res.size
   end
 
-  # The following three paths were provided by 
+  # The following three paths were provided by
   # Jeni Tennison <jeni@jenitennison.com>
-  # a consultant who is also an XSL and XPath expert 
+  # a consultant who is also an XSL and XPath expert
   #def test_child_cubed
   #  els = @@jeni.elements.to_a("*****")
   #  assert_equal 3, els.size
@@ -445,7 +445,7 @@ class XPathTester < Test::Unit::TestCase
   #  results = @@jeni.root.elements[1].elements[1].elements.to_a("../following-sibling::*[*[name() = name(current())]]")
   #  puts results
   #end
- 
+
   # Contributed by Mike Stok
   def test_starts_with
     source = <<-EOF
@@ -511,7 +511,7 @@ class XPathTester < Test::Unit::TestCase
     doc = Document.new source
 
     [
-    #['o', 2], 
+    #['o', 2],
     ['foo', 1], ['bar', 0]].each { |search, expected|
       set = doc.elements.to_a("//a[contains(@href, '#{search}')]")
       assert_equal expected, set.size
@@ -614,7 +614,7 @@ class XPathTester < Test::Unit::TestCase
     assert_equal 1, REXML::XPath.match(doc, "//b[number(@id) = (1 mod 2)]").size
     assert_equal 1, REXML::XPath.match(doc, "//b[number(@id) = (4 div 2)]").size
   end
-  
+
   # Contributed by Kouhei
   def test_substring_before
     doc = Document.new("<r><a/><b/><c/></r>")
@@ -629,27 +629,27 @@ class XPathTester < Test::Unit::TestCase
       </b>
       <c id='b'/>
     </a>")
-    assert_equal( 1, REXML::XPath.match(doc, 
+    assert_equal( 1, REXML::XPath.match(doc,
       "//*[local-name()='c' and @id='b']").size )
-    assert_equal( 1, REXML::XPath.match(doc, 
+    assert_equal( 1, REXML::XPath.match(doc,
       "//*[ local-name()='c' and @id='b' ]").size )
-    assert_equal( 1, REXML::XPath.match(doc, 
+    assert_equal( 1, REXML::XPath.match(doc,
       "//*[ local-name() = 'c' and @id = 'b' ]").size )
-    assert_equal( 1, 
+    assert_equal( 1,
       REXML::XPath.match(doc, '/a/c[@id]').size )
     assert_equal( 1,
       REXML::XPath.match(doc, '/a/c[(@id)]').size )
-    assert_equal( 1, 
+    assert_equal( 1,
       REXML::XPath.match(doc, '/a/c[ @id ]').size )
-    assert_equal( 1, 
+    assert_equal( 1,
       REXML::XPath.match(doc, '/a/c[ (@id) ]').size )
-    assert_equal( 1, 
+    assert_equal( 1,
       REXML::XPath.match(doc, '/a/c[( @id )]').size )
-    assert_equal( 1, REXML::XPath.match(doc.root, 
+    assert_equal( 1, REXML::XPath.match(doc.root,
       '/a/c[ ( @id ) ]').size )
-    assert_equal( 1, REXML::XPath.match(doc, 
+    assert_equal( 1, REXML::XPath.match(doc,
       '/a/c [ ( @id ) ] ').size )
-    assert_equal( 1, REXML::XPath.match(doc, 
+    assert_equal( 1, REXML::XPath.match(doc,
       ' / a / c [ ( @id ) ] ').size )
   end
 
@@ -719,8 +719,8 @@ class XPathTester < Test::Unit::TestCase
   end
 
   def test_and
-    d = Document.new %q{<doc><route run='*' title='HNO' 
-    destination='debian_production1' date='*' edition='*' 
+    d = Document.new %q{<doc><route run='*' title='HNO'
+    destination='debian_production1' date='*' edition='*'
     source='debian_satellite1'/></doc>}
     assert_equal( nil, d.root.elements["route[@run='0']"] )
     assert_equal( nil, d.root.elements["route[@run='0' and @title='HNO']"] )
@@ -803,7 +803,7 @@ class XPathTester < Test::Unit::TestCase
     EOL
     rd = REXML::Document.new( src )
     union = rd.get_elements('//em|//strong')
-    assert_equal(2, union.length, 
+    assert_equal(2, union.length,
       'Both tag types are returned by XPath union operator')
   end
 
@@ -828,7 +828,7 @@ class XPathTester < Test::Unit::TestCase
     d = REXML::Document.new( string )
     c1 = XPath.match( d, '/a/*/*[1]' )
     assert_equal( 1, c1.length )
-    assert_equal( 'c1', c1[0].name ) 
+    assert_equal( 'c1', c1[0].name )
   end
 
   def test_sum
@@ -872,25 +872,25 @@ class XPathTester < Test::Unit::TestCase
       </channel>
     </rss>
     EOL
-    root_node = XPath.first(doc, "rss")                           
-    assert_not_nil root_node                                        
-    channel_node = XPath.first(root_node, "channel")                
-    assert_not_nil channel_node                                     
-    items = XPath.match(channel_node, "*")                          
-    assert_equal 4, items.size                                      
-    items = XPath.match(channel_node, "item")                       
+    root_node = XPath.first(doc, "rss")
+    assert_not_nil root_node
+    channel_node = XPath.first(root_node, "channel")
+    assert_not_nil channel_node
+    items = XPath.match(channel_node, "*")
+    assert_equal 4, items.size
+    items = XPath.match(channel_node, "item")
     assert_equal 3, items.size  # fails
   end
 
 
   def test_ticket_42
-    source = "<a></a>" 
-    doc = Document.new(source) 
-    bElem = Element.new('b') 
-    doc.root.add_element(bElem) 
-    doc.elements.each('//b[name(..) = "a"]') { |x| 
-      assert_equal x,bElem 
-    } 
+    source = "<a></a>"
+    doc = Document.new(source)
+    bElem = Element.new('b')
+    doc.root.add_element(bElem)
+    doc.elements.each('//b[name(..) = "a"]') { |x|
+      assert_equal x,bElem
+    }
   end
 
   def test_ticket_56
@@ -900,7 +900,7 @@ class XPathTester < Test::Unit::TestCase
 
     column_headers = []
 
-    REXML::XPath.each(finaldoc, '//h:form[@action="ModifyCampaign"]//h:th', 
+    REXML::XPath.each(finaldoc, '//h:form[@action="ModifyCampaign"]//h:th',
                       namespaces) do |el|
       node = REXML::XPath.first(el, 'h:a/text()', namespaces)
       column_headers << (node ? node.value : nil)
@@ -915,17 +915,17 @@ class XPathTester < Test::Unit::TestCase
 
   def test_ticket_70
     string = <<EOF
-  
-<mydoc>                                                                                                                           
 
-    <someelement attribute="1.10">Text1, text, 
-text</someelement>                                                                   
+<mydoc>
 
-    <someelement attribute="1.11">Text2, text, 
-text</someelement>                                                                   
+    <someelement attribute="1.10">Text1, text,
+text</someelement>
 
-  
-</mydoc>                                                                                                                          
+    <someelement attribute="1.11">Text2, text,
+text</someelement>
+
+
+</mydoc>
 
 EOF
     doc = Document.new string
@@ -933,7 +933,7 @@ EOF
   end
 
   def test_ticket_43
-    #url = http://news.search.yahoo.com/news/rss?p=market&ei=UTF-8&fl=0&x=wrt 
+    #url = http://news.search.yahoo.com/news/rss?p=market&ei=UTF-8&fl=0&x=wrt
 
     sum = Document.new(File.new(fixture_path("yahoo.xml"))).elements.to_a("//item").size
     assert_equal( 10, sum )
@@ -988,12 +988,12 @@ EOF
   def ticket_61_fixture(doc, xpath)
     matches = []
     doc.elements.each(xpath) do |element|
-      matches << element                  
-      assert_equal('Add', element.text)    
+      matches << element
+      assert_equal('Add', element.text)
       assert_equal('ButtonText', element.attributes['class'])
     end
     assert_equal(1, matches.length)
-  end  
+  end
 
   def test_ticket_61_text
     file = File.open(fixture_path("ticket_61.xml"))

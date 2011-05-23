@@ -87,7 +87,7 @@ if false && Object.const_defined?(:RubyVM) && ::RubyVM.class == Class
                                 Thread.new(l, &y).value
                               }).pack(:fill=>:x, :padx=>5)
 else
-  # KNOWN BUG:: 
+  # KNOWN BUG::
   #   Current multi-tk.rb cannot support long term threads on callbacks.
   #   Such a thread freezes the Ruby/Tk process.
 end

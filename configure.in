@@ -1294,7 +1294,15 @@ AS_CASE(["$target_os"],[freebsd*],[
 AC_REPLACE_FUNCS(dup2 memmove strerror\
 		 strchr strstr crypt flock\
 		 isnan finite isinf hypot acosh erf tgamma lgamma_r cbrt \
-                 strlcpy strlcat ffs)
+                 strlcpy strlcat ffs setproctitle)
+
+# for missing/setproctitle.c
+AS_CASE(["$target_os"],
+[aix* | k*bsd*-gnu | kopensolaris*-gnu | linux*], [AC_DEFINE(SPT_TYPE,SPT_REUSEARGV)],
+[hpux*], [AC_DEFINE(SPT_TYPE,SPT_PSTAT) ],
+[])
+
+
 AC_CACHE_CHECK(for signbit, rb_cv_have_signbit,
   [AC_TRY_LINK([
 #include <math.h>
@@ -2464,6 +2472,9 @@ AS_CASE(["$target_os"],
 	    ],
 	[mingw*], [
 	    RUBY_SO_NAME="${rb_cv_msvcrt}-${RUBY_SO_NAME}"
+	    if test x"${target_cpu}" != xi386; then
+		RUBY_SO_NAME="${target_cpu}-${RUBY_SO_NAME}"
+	    fi
 	    if test x"$enable_shared" = xyes; then
 		LIBRUBY_SO='$(RUBY_SO_NAME)'.dll
 		LIBRUBY_DLDFLAGS="${LIBRUBY_DLDFLAGS}"' $(RUBYDEF)'
