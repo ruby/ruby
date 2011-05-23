@@ -562,6 +562,7 @@ rb_locate_file_with_extensions(VALUE base_file_name) {
 	VALUE extension;
 	VALUE directory, basename;
 
+	// TODO: Only calculate this once, outside this function
 	extension = rb_funcall(rb_cFile, rb_intern("extname"), 1, base_file_name);
 
 	if (RSTRING_LEN(extension) == 0) {
