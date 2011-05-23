@@ -887,7 +887,13 @@ rb_feature_provided_2(VALUE fname)
 {
 	VALUE full_path = rb_locate_file(fname);
 
-	if (rb_file_has_been_required(full_path) || rb_file_is_being_required(full_path)) {
+	if (
+		full_path != Qnil && 
+		(
+			rb_file_has_been_required(full_path) || 
+			rb_file_is_being_required(full_path)
+		)
+	) {
 		return TRUE;
 	} else {
 		return FALSE;
