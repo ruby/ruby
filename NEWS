@@ -149,6 +149,10 @@ with all sufficient information, see the ChangeLog file.
   * new logging directive:
     * %{remote}p for remote (client) port number.
 
+* yaml
+  * The default YAML engine is now Psych. You may downgrade to syck by setting
+    YAML::ENGINE.yamler = 'syck'.
+
 * zlib
   * new methods:
     * Zlib.deflate

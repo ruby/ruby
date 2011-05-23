@@ -1,3 +1,8 @@
+Tue May 24 04:01:46 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* lib/yaml.rb: switch default YAML engine to Psych, old syck engine
+	  may be enabled via YAML::ENGINE.yamler = "syck". [ruby-core:36374]
+
 Mon May 23 09:45:26 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* include/ruby/defines.h (CASEFOLD_FILESYSTEM): Revert r30508. Forgot to
