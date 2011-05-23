@@ -878,15 +878,6 @@ rb_file_is_being_required(VALUE full_path) {
 	return (loading_tbl && st_lookup(loading_tbl, (st_data_t)ftptr, &data));
 }
 
-/*
- * Deprecated, use rb_feature_provided_2
- */
-int
-rb_feature_provided(const char *feature, const char **loading)
-{
-    VALUE fname = rb_str_new2(feature);
-	rb_feature_provided_2(fname);
-}
 
 /* Should return true if the file has or is being loaded, but should 
  * not actually load the file.
@@ -901,6 +892,16 @@ rb_feature_provided_2(VALUE fname)
 	} else {
 		return FALSE;
 	}
+}
+
+/*
+ * Deprecated, use rb_feature_provided_2
+ */
+int
+rb_feature_provided(const char *feature, const char **loading)
+{
+    VALUE fname = rb_str_new2(feature);
+	rb_feature_provided_2(fname);
 }
 
 
