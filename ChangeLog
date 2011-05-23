@@ -1,3 +1,9 @@
+Mon May 23 10:01:02 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_asn1.c: Do not parse zero-tagged values as EOC. Do
+	not let current length become negative for infinite length constructed
+	values. Support constructed values of length zero. Added tests.
+
 Mon May 23 09:19:53 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/net/smtp.rb:  Document Net::SMTP::Response.  Patch by J.R. Garcia.

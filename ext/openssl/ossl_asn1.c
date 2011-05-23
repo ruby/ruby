@@ -838,9 +838,9 @@ int_ossl_asn1_decode0_prim(unsigned char **pp, long length, int hlen, int tag,
 }
 
 static VALUE
-int_ossl_asn1_decode0_cons(unsigned char **pp, long length, long *offset,
-			   int depth, int yield, int j, int tag, VALUE tc,
-			   long *num_read)
+int_ossl_asn1_decode0_cons(unsigned char **pp, long max_len, long length,
+			   long *offset, int depth, int yield, int j,
+			   int tag, VALUE tc, long *num_read)
 {
     VALUE value, asn1data, ary;
     int infinite;
@@ -851,13 +851,18 @@ int_ossl_asn1_decode0_cons(unsigned char **pp, long length, long *offset,
 
     while (length > 0 || infinite) {
 	long inner_read = 0;
-	value = ossl_asn1_decode0(pp, length, &off, depth + 1, yield, &inner_read);
+	value = ossl_asn1_decode0(pp, max_len, &off, depth + 1, yield, &inner_read);
 	*num_read += inner_read;
+	max_len -= inner_read;
 	rb_ary_push(ary, value);
-	length -= inner_read;
+	if (length > 0)
+	    length -= inner_read;
 	
-	if (infinite && NUM2INT(ossl_asn1_get_tag(value)) == V_ASN1_EOC)
+	if (infinite &&
+	    NUM2INT(ossl_asn1_get_tag(value)) == V_ASN1_EOC &&
+	    SYM2ID(ossl_asn1_get_tag_class(value)) == sUNIVERSAL) {
 	    break;
+	}
     }
 
     if (tc == sUNIVERSAL && (tag == V_ASN1_SEQUENCE || V_ASN1_SET)) {
@@ -899,7 +904,7 @@ ossl_asn1_decode0(unsigned char **pp, long length, long *offset, int depth,
 {
     unsigned char *start, *p;
     const unsigned char *p0;
-    long len, inner_read = 0, off = *offset;
+    long len = 0, inner_read = 0, off = *offset;
     int hlen, tag, tc, j;
     VALUE asn1data, tag_class;
 
@@ -934,10 +939,9 @@ ossl_asn1_decode0(unsigned char **pp, long length, long *offset, int depth,
     }
 
     if(j & V_ASN1_CONSTRUCTED) {
-	long max_len = len == 0 ? length : len;
 	*pp += hlen;
 	off += hlen;
-	asn1data = int_ossl_asn1_decode0_cons(pp, max_len, &off, depth, yield, j, tag, tag_class, &inner_read);
+	asn1data = int_ossl_asn1_decode0_cons(pp, length, len, &off, depth, yield, j, tag, tag_class, &inner_read);
 	inner_read += hlen;
     }
     else {

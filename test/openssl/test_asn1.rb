@@ -266,6 +266,31 @@ class  OpenSSL::TestASN1 < Test::Unit::TestCase
     end
   end
 
+  def test_parse_empty_sequence
+    expected = %w{ A0 07 30 02 30 00 02 01 00 }
+    raw = [expected.join('')].pack('H*')
+    asn1 = OpenSSL::ASN1.decode(raw)
+    assert_equal(raw, asn1.to_der)
+    assert_equal(2, asn1.value.size)
+    seq = asn1.value[0]
+    assert_equal(1, seq.value.size)
+    inner_seq = seq.value[0]
+    assert_equal(0, inner_seq.value.size)
+  end
+
+  def test_parse_tagged_0_infinite
+    expected = %w{ 30 80 02 01 01 80 01 02 00 00 }
+    raw = [expected.join('')].pack('H*')
+    asn1 = OpenSSL::ASN1.decode(raw)
+    assert_equal(3, asn1.value.size)
+    int = asn1.value[0]
+    assert_universal(OpenSSL::ASN1::INTEGER, int)
+    tagged = asn1.value[1]
+    assert_equal(0, tagged.tag)
+    assert_universal(OpenSSL::ASN1::EOC, asn1.value[2])
+    assert_equal(raw, asn1.to_der)
+  end
+
   def test_seq_infinite_length
     begin
       content = [ OpenSSL::ASN1::Null.new(nil),
