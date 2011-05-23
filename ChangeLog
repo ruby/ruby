@@ -1,3 +1,9 @@
+Mon May 23 09:45:26 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* include/ruby/defines.h (CASEFOLD_FILESYSTEM): Revert r30508. Forgot to
+	  include this file in the commit r31692. __APPLE__ is not
+	  CASEFOLD_FILESYSTEM again, from this time.
+
 Mon May 23 10:01:02 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_asn1.c: Do not parse zero-tagged values as EOC. Do

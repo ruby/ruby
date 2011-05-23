@@ -321,7 +321,7 @@ void rb_ia64_flushrs(void);
 #endif
 
 #ifndef CASEFOLD_FILESYSTEM
-# if defined DOSISH || defined __APPLE__
+# if defined DOSISH
 #   define CASEFOLD_FILESYSTEM 1
 # else
 #   define CASEFOLD_FILESYSTEM 0
