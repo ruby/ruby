@@ -578,23 +578,30 @@ rb_locate_file_with_extensions(VALUE base_file_name) {
 		if (rb_feature_exists(base_file_name)) {
 			return base_file_name;
 		} else {
-			if (IS_SOEXT(RSTRING_PTR(extension))) {
+			for (j = 0; j < CHAR_ARRAY_LEN(alternate_dl_extensions); ++j) {
 				// Try loading the native DLEXT version of this platform.
 				// This allows 'pathname.so' to require 'pathname.bundle' on OSX
-				for (j = 0; j < CHAR_ARRAY_LEN(alternate_dl_extensions); ++j) {
-					directory = rb_funcall(rb_cFile, rb_intern("dirname"), 1, 
-							base_file_name);
-					basename  = rb_funcall(rb_cFile, rb_intern("basename"), 2, 
-							base_file_name, extension);
-					basename  = rb_funcall(basename, rb_intern("+"), 1, 
-							rb_str_new2(alternate_dl_extensions[j]));
+				directory = rb_funcall(rb_cFile, rb_intern("dirname"), 1, 
+						base_file_name);
+				basename  = rb_funcall(rb_cFile, rb_intern("basename"), 2, 
+						base_file_name, extension);
+				basename  = rb_funcall(basename, rb_intern("+"), 1, 
+						rb_str_new2(alternate_dl_extensions[j]));
 
-					file_name_with_extension = rb_funcall(rb_cFile, rb_intern("join"), 2, 
-							directory, basename);
+				file_name_with_extension = rb_funcall(rb_cFile, rb_intern("join"), 2, 
+						directory, basename);
 
-					if (rb_feature_exists(file_name_with_extension)) {
-						return file_name_with_extension;
-					}
+				if (rb_feature_exists(file_name_with_extension)) {
+					return file_name_with_extension;
+				}
+
+				// Also try loading 'dot.dot.bundle' for 'dot.dot'
+				file_name_with_extension = rb_str_plus(
+						base_file_name,
+						rb_str_new2(alternate_dl_extensions[j]));
+
+				if (rb_feature_exists(file_name_with_extension)) {
+					return file_name_with_extension;
 				}
 			}
 		}
