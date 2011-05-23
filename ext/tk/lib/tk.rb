@@ -1248,6 +1248,9 @@ module TkCore
           raise e
         end
 
+        interp.mainloop_abort_on_exception = true
+        Thread.current.instance_variable_set("@interp", interp)
+
         status = [nil]
         def status.value
           self[0]
@@ -1283,19 +1286,23 @@ proc __startup_rbtk_mainloop__ {args} {
 }
 set __initial_state_of_rubytk__ 1
 trace add variable __initial_state_of_rubytk__ unset __startup_rbtk_mainloop__
+
+# complete initializing
+ruby {TkCore::INTERP_THREAD[:interp] = TkCore::INTERP_THREAD.instance_variable_get('@interp')}
 EOS
 
         begin
           begin
             #TclTkLib.mainloop_abort_on_exception = false
             #Thread.current[:status].value = TclTkLib.mainloop(true)
-            interp.mainloop_abort_on_exception = true
-            Thread.current[:interp] = interp
+            #interp.mainloop_abort_on_exception = true
+            #Thread.current[:interp] = interp
             Thread.current[:status].value = interp.mainloop(true)
           rescue SystemExit=>e
             Thread.current[:status].value = e
           rescue Exception=>e
             Thread.current[:status].value = e
+            p e if $DEBUG
             retry if interp.has_mainwindow?
           ensure
             INTERP_MUTEX.synchronize{ INTERP_ROOT_CHECK.broadcast }
@@ -1312,11 +1319,19 @@ EOS
         end
       }
 
+      # check a Tcl/Tk interpreter is initialized
       until INTERP_THREAD[:interp]
-        Thread.pass
+        # Thread.pass
+        INTERP_THREAD.run
       end
+
       # INTERP_THREAD.run
       raise INTERP_THREAD[:interp] if INTERP_THREAD[:interp].kind_of? Exception
+
+      # check an eventloop is running
+      while INTERP_THREAD.alive? && TclTkLib.mainloop_thread?.nil?
+        INTERP_THREAD.run
+      end
 
       INTERP = INTERP_THREAD[:interp]
       INTERP_THREAD_STATUS = INTERP_THREAD[:status]
@@ -1328,6 +1343,9 @@ EOS
           INTERP_THREAD.kill
         end
       }
+
+      # (for safety's sake) force the eventloop to run
+      INTERP_THREAD.run
     end
 
     def INTERP.__getip
@@ -1857,6 +1875,11 @@ EOS
 
       begin
         TclTkLib.set_eventloop_window_mode(true)
+
+        # force run the eventloop
+        TkCore::INTERP._eval_without_enc('update')
+        TkCore::INTERP._eval_without_enc('catch {set __initial_state_of_rubytk__}')
+        INTERP_THREAD.run
         if check_root
           INTERP_MUTEX.synchronize{
             INTERP_ROOT_CHECK.wait(INTERP_MUTEX)
@@ -1867,8 +1890,15 @@ EOS
             end
           }
         else
-          INTERP_THREAD.value
+          # INTERP_THREAD.value
+          begin
+            INTERP_THREAD.value
+          rescue Exception => e
+            raise e
+          end
         end
+      rescue Exception => e
+        raise e
       ensure
         TclTkLib.set_eventloop_window_mode(false)
       end

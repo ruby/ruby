@@ -29,10 +29,35 @@ some or all of the following options.
                                Old "extconf.rb" doesn't support this option.
 
  --with-tcltkversion=<version>
+ --with-tcltkversion=<tclversion>,<tkversion>
       force version of Tcl/Tk libaray
-      (e.g. libtcl8.4g.so ==> --with-tcltkversion=8.4g)
+      (e.g. libtcl8.4g.so & libtk8.4g.so ==> --with-tcltkversion=8.4g
+            libtcl8.4.so  & libtk8.4g.so ==> --with-tcltkversion=8.4,8.4g)
 
- --without-tcl-config / --without-tk-config
+ --enable-tcl-h-ver-check/--disable-tcl-h-ver-check
+ --enable-tk-h-ver-check/--disable-tk-h-ver-check
+                               enable or disable for checking MAJOR_VERSION and
+                               MINOR_VERSION on tcl.h/tk.h whether match with
+                               Tcl/Tk libraries' version or not.
+
+ --with-tcl-build-dir=<dir>
+ --with-tk-build-dir=<dir>     If you want to compile with libraries on Tcl/Tk
+                               build dir (still NOT installed), you must use
+                               these options.
+                               (e.g. --with-tcl-build-dir=./build/tcl8.5.9/unix)
+                               When use these options, --with-tclConfig-dir and
+                               --with-tkConfig-dir options are ignored (however,
+                               --with-tclConfig-file and --with-tkConfig-file
+                               options are still available).
+
+ --with-tclConfig-file=<file>/--without-tclConfig-file
+ --with-tkConfig-file=<file>/--without-tkConfig-file
+                               file path of tclConfig.sh/tkConfig.sh, or don't 
+                               refer those.
+                               If you want use non-standard filenames of config
+                               files (e.g. tclConfig-static.sh), you must use
+                               these options.
+
  --with-tclConfig-dir=<dir>
  --with-tkConfig-dir=<dir>     the directory contains 'tclConfig.sh' and
                                'tkConfig.sh'.

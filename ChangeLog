@@ -1,3 +1,21 @@
+Tue May 24 07:06:34 2011  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: fail to start Tk.mainloop (exit immediately) on
+	  some environment (reported on [ruby-talk:381444]).
+
+	* ext/tk/lib/tk/canvas.rb: support creating a canvas item object from
+	  an item ID number.
+
+	* ext/tk/lib/tk/image.rb: import documents which are pull-requested.
+	  [Ruby 1.9 - Feature #4595]
+
+	* ext/tk/lib/tk/extconf.rb: search directories for 64bit library (e.g.
+	  /usr/lib64), add some new configure options (see README.tcltklib),
+	  and bug fix.
+
+	* ext/tk/lib/tk/README.tcltklib: modify docs for some new configure
+	  options.
+
 Tue May 24 04:01:46 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* lib/yaml.rb: switch default YAML engine to Psych, old syck engine
