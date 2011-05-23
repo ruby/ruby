@@ -1,3 +1,8 @@
+Mon May 23 09:08:07 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/mathn.rb:  Improve documentation.  Patch by Sandor Szucs.
+	  [Ruby 1.9 - Bug #4767]
+
 Mon May 23 08:45:55 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/ostruct.rb:  Improve documentation.  Patch by Franklin Webber.

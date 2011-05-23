@@ -1,7 +1,22 @@
 ##
 # = mathn
 #
-# mathn is a library for changing the way Ruby does math.
+# mathn is a library for changing the way Ruby does math. If you need
+# more precise rounding with multiple division or exponentiation
+# operations, then mathn is the right tool. It makes sense to use this
+# library if you can use it's late rounding. Mathn does not convert
+# Fixnums into Floats as long as you do not convert it yourself.
+# Instead of using Float as intermediate value it use Rational as
+# value representation.
+#
+# Example Fixnum with intermediate Float:
+#
+#   20 / 9 * 3 * 14 / 7 * 3 / 2  # => 18
+#
+# Example: using mathn Fixnum/Rational:
+#
+#   require 'mathn'
+#   20 / 9 * 3 * 14 / 7 * 3 / 2  # => 20
 #
 # == Usage
 #
@@ -13,13 +28,13 @@
 #
 #   3 / 2
 #
-# will return (3/2) instead of the usual 1.
+# will return +Rational+ (3/2) instead of the usual +Fixnum+ 1.
 #
 # == Copyright
 #
 # Author: Keiju ISHITSUKA(SHL Japan Inc.)
 #
-# --
+#--
 # $Release Version: 0.5 $
 # $Revision: 1.1.1.1.4.1 $
 
@@ -35,14 +50,29 @@ unless defined?(Math.exp!)
   Math = CMath
 end
 
+##
+# When mathn is required Fixnum's division and exponentiation are enhanced to
+# return more precise values in mathematical formulas.
+#
+#   2/3*3  # => 0
+#   require 'mathn'
+#   2/3*3  # => 2
+
 class Fixnum
   remove_method :/
+
+  ##
+  # +/+ defines the Rational division for Fixnum.
+  #
+  #   1/3  # => (1/3)
+
   alias / quo
 
   alias power! ** unless method_defined? :power!
 
   ##
-  # exponentiate by +other+
+  # Exponentiate by +other+
+
   def ** (other)
     if self < 0 && other.round != other
       Complex(self, 0.0) ** other
@@ -52,15 +82,26 @@ class Fixnum
   end
 
 end
+
+##
+# When mathn is required Bignum's division and exponentiation are enhanced to
+# return more precise values in mathematical formulas.
 
 class Bignum
   remove_method :/
+
+  ##
+  # +/+ defines the Rational division for Bignum.
+  #
+  #   (2**72) / ((2**70) * 3)  # => 4/3
+
   alias / quo
 
   alias power! ** unless method_defined? :power!
 
   ##
-  # exponentiate by +other+
+  # Exponentiate by +other+
+
   def ** (other)
     if self < 0 && other.round != other
       Complex(self, 0.0) ** other
@@ -70,12 +111,28 @@ class Bignum
   end
 
 end
+
+##
+# When mathn is required Rational changes to simplfy the usage of Rational
+# operations.
+#
+# Normal behaviour:
+#
+#   Rational.new!(1,3) ** 2 # => Rational(1, 9)
+#   (1 / 3) ** 2            # => 0
+#
+# require 'mathn' behaviour:
+#
+#   (1 / 3) ** 2            # => 1/9
 
 class Rational
   remove_method :**
 
   ##
-  # exponentiate by +other+
+  # Exponentiate by +other+
+  #
+  #   (1/3) ** 2 # => 1/9
+
   def ** (other)
     if other.kind_of?(Rational)
       other2 = other
@@ -138,11 +195,32 @@ class Rational
   end
 end
 
+##
+# When mathn is requried the Math module changes as follows:
+#
+# Standard Math module behaviour:
+#   Math.sqrt(4/9)     # => 0.0
+#   Math.sqrt(4.0/9.0) # => 0.666666666666667
+#   Math.sqrt(- 4/9)   # => Errno::EDOM: Numerical argument out of domain - sqrt
+#
+# After require 'mathn' this is changed to:
+#
+#   require 'mathn'
+#   Math.sqrt(4/9)      # => 2/3
+#   Math.sqrt(4.0/9.0)  # => 0.666666666666667
+#   Math.sqrt(- 4/9)    # => Complex(0, 2/3)
+
 module Math
   remove_method(:sqrt)
 
   ##
-  # compute the square root of +a+
+  # Computes the square root of +a+.  It makes use of Complex and
+  # Rational to have no rounding errors if possible.
+  #
+  #   Math.sqrt(4/9)      # => 2/3
+  #   Math.sqrt(- 4/9)    # => Complex(0, 2/3)
+  #   Math.sqrt(4.0/9.0)  # => 0.666666666666667
+
   def sqrt(a)
     if a.kind_of?(Complex)
       abs = sqrt(a.real*a.real + a.imag*a.imag)
@@ -168,7 +246,11 @@ module Math
     end
   end
 
-  def rsqrt(a) # :nodoc:
+  ##
+  # Compute square root of a non negative number. This method is
+  # internally used by +Math.sqrt+.
+
+  def rsqrt(a)
     if a.kind_of?(Float)
       sqrt!(a)
     elsif a.kind_of?(Rational)
@@ -220,11 +302,15 @@ module Math
   module_function :rsqrt
 end
 
+##
+# When mathn is required Float is changed to handle Complex numbers.
+
 class Float
   alias power! **
 
   ##
-  # exponentiate by +other+
+  # Exponentiate by +other+
+
   def ** (other)
     if self < 0 && other.round != other
       Complex(self, 0.0) ** other
