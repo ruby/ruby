@@ -1,8 +1,8 @@
 = RubySpec
 
-RubySpec (http://rubyspec.org) provides the Ruby langauge specification in an
+RubySpec (http://rubyspec.org) provides the Ruby language specification in an
 executable format. The make task `update-rubyspec' retrieves the specification
-and put it into this directory.
+and puts it into this directory.
 
 == Directory structure
  spec
