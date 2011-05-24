@@ -141,12 +141,9 @@ class Tempfile < DelegateClass(File)
       else
         opts = perm
       end
-      lock = self.class.lock_tempfile(tmpname)
-      begin
+      self.class.locking(tmpname) do
         @data[1] = @tmpfile = File.open(tmpname, mode, opts)
         @data[0] = @tmpname = tmpname
-      ensure
-        self.class.unlock_tempfile(lock)
       end
       @mode = mode & ~(File::CREAT|File::EXCL)
       perm or opts.freeze
@@ -327,16 +324,22 @@ class Tempfile < DelegateClass(File)
 
     # :stopdoc:
 
-    # makes lock for +tmpname+ and returns the lock.
-    def lock_tempfile(tmpname)
+    # yields with locking for +tmpname+ and returns the result of the
+    # block.
+    def locking(tmpname)
       lock = tmpname + '.lock'
-      Dir.mkdir(lock)
-      lock
+      mkdir(lock)
+      yield
+    ensure
+      rmdir(lock) if lock
     end
 
-    # unlock the lock made by _lock_tempfile_.
-    def unlock_tempfile(lock)
-      Dir.rmdir(lock)
+    def mkdir(*args)
+      Dir.mkdir(*args)
+    end
+
+    def rmdir(*args)
+      Dir.rmdir(*args)
     end
   end
 end

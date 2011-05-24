@@ -1,3 +1,8 @@
+Wed May 25 07:58:14 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/tempfile.rb (Tempfile.{mkdir,rmdir}): revert for backward
+	  compatibility.
+
 Wed May 25 07:13:12 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* spec/README: update the description.
