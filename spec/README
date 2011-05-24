@@ -1,15 +1,16 @@
 = RubySpec
 
-RubySpec (http://rubyspec.org) provides the Ruby language specification in an
-executable format. The make task `update-rubyspec' retrieves the specification
-and puts it into this directory.
+RubySpec (http://rubyspec.org) provides the annotation of the Ruby
+implementation in an executable format.  The make task
+`update-rubyspec' retrieves the specification and puts it into this
+directory.
 
 == Directory structure
  spec
   +-- mspec            driver library for executing the specification.
   +-- rubyspec
-       +-- core        specification for core libraries 
-       |    +-- array 
+       +-- core        specification for core libraries
+       |    +-- array
        |    +-- bignum
        |    +-- ...
        |

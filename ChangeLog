@@ -1,3 +1,7 @@
+Wed May 25 07:13:12 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* spec/README: update the description.
+
 Wed May 25 07:12:16 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/tempfile.rb (Tempfile.{lock,unlock}_tempfile): refactor.
