@@ -894,7 +894,7 @@ end
 # ERB::Util
 class ERB
   # A utility module for conversion routines, often handy in HTML generation.
-  module Util # :nodoc:
+  module Util
     public
     #
     # A utility method for escaping HTML tag characters in _s_.
@@ -969,7 +969,7 @@ class ERB
   #
   #   <b>30</b>
   #
-  module DefMethod # :nodoc:
+  module DefMethod
     public
     # define _methodname_ as instance method of current module, using ERB
     # object or eRuby file
