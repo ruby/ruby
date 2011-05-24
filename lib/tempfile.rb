@@ -326,18 +326,12 @@ class Tempfile < DelegateClass(File)
       end
     end
 
-    # :call-seq:
-    #   mkdir(string, [integer]) -> 0
-    #
-    # Synonym for Dir.mkdir.
+    # :stopdoc:
+
     def mkdir(*args)
       Dir.mkdir(*args)
     end
 
-    # :call-seq:
-    #   rmdir(string) -> 0
-    #
-    # Synonym for Dir.rmdir.
     def rmdir(*args)
       Dir.rmdir(*args)
     end
