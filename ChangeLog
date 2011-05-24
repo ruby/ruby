@@ -1,3 +1,8 @@
+Wed May 25 08:22:12 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/erb.rb:  Hide documentation for implementation details of ERB.
+	  [Ruby 1.9 - Bug #4694]
+
 Wed May 25 07:58:14 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/tempfile.rb (Tempfile.{mkdir,rmdir}): revert for backward

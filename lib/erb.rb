@@ -335,7 +335,7 @@ class ERB
   #   klass.new('It').get_it
   #
   # Good! See also ERB#def_method, ERB#def_module, and ERB#def_class.
-  class Compiler
+  class Compiler # :nodoc:
     class PercentLine # :nodoc:
       def initialize(str)
         @value = str
@@ -894,7 +894,7 @@ end
 # ERB::Util
 class ERB
   # A utility module for conversion routines, often handy in HTML generation.
-  module Util
+  module Util # :nodoc:
     public
     #
     # A utility method for escaping HTML tag characters in _s_.
@@ -969,9 +969,10 @@ class ERB
   #
   #   <b>30</b>
   #
-  module DefMethod
+  module DefMethod # :nodoc:
     public
-  # define _methodname_ as instance method of current module, using ERB object or eRuby file
+    # define _methodname_ as instance method of current module, using ERB
+    # object or eRuby file
     def def_erb_method(methodname, erb_or_fname)
       if erb_or_fname.kind_of? String
         fname = erb_or_fname
