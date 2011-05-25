@@ -302,7 +302,7 @@ module Benchmark
   # A Job is a sequence of labelled blocks to be processed by the
   # Benchmark.bmbm method.  It is of little direct interest to the user.
   #
-  class Job
+  class Job # :nodoc:
     #
     # Returns an initialized Job instance.
     # Usually, one doesn't call this method directly, as new
@@ -340,7 +340,7 @@ module Benchmark
   # This class is used by the Benchmark.benchmark and Benchmark.bm methods.
   # It is of little direct interest to the user.
   #
-  class Report
+  class Report # :nodoc:
     #
     # Returns an initialized Report instance.
     # Usually, one doesn't call this method directly, as new

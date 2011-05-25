@@ -1,3 +1,8 @@
+Wed May 25 09:35:31 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/benchmark.rb:  Restore nodoc for Benchmark::Job and
+	  Benchmark::Report.  [Ruby 1.9 - Bug #4726]
+
 Wed May 25 09:29:38 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/net/pop.rb:  Hide implementation details from RDoc.
