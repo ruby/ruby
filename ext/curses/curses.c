@@ -957,7 +957,7 @@ curses_use_default_colors(VALUE obj)
 
 #if defined(HAVE_TABSIZE)
 /*
- * Document-method: TABSIZE=
+ * Document-method: Curses.TABSIZE=
  * call-seq: TABSIZE=(value)
  *
  * Sets the TABSIZE to Integer +value+
@@ -987,7 +987,7 @@ curses_tabsize_get(VALUE ojb)
 
 #if defined(HAVE_ESCDELAY)
 /*
- * call-seq: ESCDELAY=(value)
+ * call-seq: Curses.ESCDELAY=(value)
  *
  * Sets the ESCDELAY to Integer +value+
  */
@@ -1359,9 +1359,8 @@ DEFINE_MOUSE_GET_MEMBER(curs_mouse_z, z)
 /*
  * Document-method: Curses::MouseEvent.bstate
  *
- * Returns the current mouse's B state.
- *
- * ???
+ * Returns the current mouse's button state.  Use this with the button state
+ * constants to determine which buttons were pressed.
  */
 DEFINE_MOUSE_GET_MEMBER(curs_mouse_bstate, bstate)
 #undef define_curs_mouse_member
@@ -2883,7 +2882,7 @@ Init_curses(void)
 #ifdef KEY_MIN
     /* Document-const: MIN
      *
-     * ???
+     * The minimum allowed curses key value.
      */
     rb_curses_define_const(KEY_MIN);
     rb_define_const(mKey, "MIN", INT2NUM(KEY_MIN));
@@ -3616,7 +3615,7 @@ Init_curses(void)
 #ifdef KEY_MAX
     /* Document-const: MAX
      *
-     * ???
+     * The maximum allowed curses key value.
      */
     rb_curses_define_const(KEY_MAX);
     rb_define_const(mKey, "MAX", INT2NUM(KEY_MAX));

@@ -1,3 +1,9 @@
+Wed May 25 09:56:45 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/curses/curses.c:  Add missing documentation for button state, MIN
+	  and MAX comments.  Add Curses. to TABSIZE= and ESCDELAY= methods.
+	  [Ruby 1.9 - Bug #4747]
+
 Wed May 25 09:35:31 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/benchmark.rb:  Restore nodoc for Benchmark::Job and
