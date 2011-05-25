@@ -1,3 +1,16 @@
+Wed May 25 18:40:47 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* variable.c (rb_const_get_0):  Fix  previous change.   There were
+	  possibilities   when   an   autoload-specified   library   lacks
+	  definition of  the constant  it was bound  to.  Once  after such
+	  library had  already beed loaded, the autoload  engine shall not
+	  reload  it.   Instead  the  interpreter have  to  consider  such
+	  constant nonexistent.  It results in a const_missing situation.
+
+	* variable.c (rb_autoload_load): ditto.
+
+	* variable.c (autoload_node): ditto.
+
 Wed May 25 14:35:02 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* variable.c (rb_autoload_load):  There is a  race condition while
