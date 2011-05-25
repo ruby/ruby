@@ -1333,7 +1333,6 @@ autoload_delete(mod, id)
 {
     st_data_t val, load = 0, n = id;
 
-    st_delete(RCLASS(mod)->iv_tbl, &n, 0);
     if (st_lookup(RCLASS(mod)->iv_tbl, autoload, &val)) {
 	struct st_table *tbl = check_autoload_table((VALUE)val);
 
@@ -1347,18 +1346,38 @@ autoload_delete(mod, id)
     return (NODE *)load;
 }
 
+static NODE *
+autoload_node(mod, id)
+    VALUE mod;
+    ID id;
+{
+    st_data_t val, load, n = id;
+    struct st_table *p = RCLASS(mod)->iv_tbl;
+
+    if (p && st_lookup(p, autoload, &val)) {
+        st_table *q = check_autoload_table((VALUE)val);
+
+        if (q && st_lookup(q, n, &load)) {
+            return (NODE *)load;
+        }
+    }
+    return 0;
+}
+
 VALUE
 rb_autoload_load(klass, id)
     VALUE klass;
     ID id;
 {
-    VALUE file;
-    NODE *load = autoload_delete(klass, id);
+    NODE *load = 0;
+    VALUE ret = 0;
 
-    if (!load || !(file = load->nd_lit) || rb_provided(RSTRING(file)->ptr)) {
-	return Qfalse;
+    if ((load = autoload_node(klass, id)) != 0) {
+        if ((ret = rb_require_safe(load->nd_lit, load->nd_nth)) != Qfalse) {
+            (void) autoload_delete(klass, id);
+        }
     }
-    return rb_require_safe(file, load->nd_nth);
+    return ret;
 }
 
 static VALUE
@@ -1420,7 +1439,7 @@ rb_const_get_0(klass, id, exclude, recurse)
     while (tmp) {
 	while (RCLASS(tmp)->iv_tbl && st_lookup(RCLASS(tmp)->iv_tbl,id,&value)) {
 	    if (value == Qundef) {
-		if (!RTEST(rb_autoload_load(tmp, id))) break;
+		rb_autoload_load(tmp, id);
 		continue;
 	    }
 	    if (exclude && tmp == rb_cObject && klass != rb_cObject) {

@@ -1,3 +1,25 @@
+Wed May 25 14:35:02 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* variable.c (rb_autoload_load):  There is a  race condition while
+	  autoloading.  When two or more threads touch a single autoloaded
+	  constant at  a time,  one of them  does the require,  but others
+	  behave  oddly.   To  fix  this  situation we  now  refrain  from
+	  deleting the autoload table while someone is doing the autoload.
+	  That  deletion is  deferred to  a  point where  a require  ended
+	  successfully.  Doing so make it possible for multiple threads to
+	  enter autoloading at the same  time but the require is protected
+	  against  multiple simultaneous  entrance anyway  so all  but one
+	  thread  gets blocked  at that  point.   So with  it, touching  a
+	  constant that gets autoloaded cause those threads to block until
+	  there is another one that does the same thing.
+	  [ruby-core:36308] (#921)
+
+	* variable.c (rb_const_get_0): ditto.
+
+	* variable.c (autoload_node): ditto.
+
+	* variable.c (autoload_delete): ditto.
+
 Sat May 21 07:33:54 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/zlib/zlib.c (zstream_append_input2): add RB_GC_GUARD.
