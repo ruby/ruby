@@ -2463,23 +2463,8 @@ window_timeout(VALUE obj, VALUE delay)
  *
  * === Modules
  *
- * * Curses - basis for the curses implementation
- * * Curses::Key - the collection of constants
- *
- * === Constants
- *
- * For whatever reason, these are not picked up in the RDoc
- * These are Integer of the colors.
- *
- * * COLOR_BLACK	= 0
- * * COLOR_RED		= 1
- * * COLOR_GREEN	= 2
- * * COLOR_YELLOW	= 3
- * * COLOR_BLUE		= 4
- * * COLOR_MAGENTA	= 5
- * * COLOR_CYAN		= 6
- * * COLOR_WHITE	= 7
- *
+ * Curses:: The curses implementation
+ * Curses::Key:: Collection of constants for keypress events
  *
  * == Examples
  *
@@ -2740,56 +2725,56 @@ Init_curses(void)
     /*
      * Document-const: Curses::COLORS
      *
-     * Integer of the colors available
+     * Number of the colors available
      */
     rb_curses_define_const(COLORS);
 #endif
     /*
      * Document-const: Curses::COLOR_BLACK
      *
-     * Integer of the color black
+     * Value of the color black
      */
     rb_curses_define_const(COLOR_BLACK);
     /*
      * Document-const: COLOR_RED
      *
-     * Integer of the color red
+     * Value of the color red
      */
     rb_curses_define_const(COLOR_RED);
     /*
      * Document-const: COLOR_GREEN
      *
-     * Integer of the color green
+     * Value of the color green
      */
     rb_curses_define_const(COLOR_GREEN);
     /*
      * Document-const: COLOR_YELLOW
      *
-     * Integer of the color yellow
+     * Value of the color yellow
      */
     rb_curses_define_const(COLOR_YELLOW);
     /*
      * Document-const: COLOR_BLUE
      *
-     * Integer of the color blue
+     * Value of the color blue
      */
     rb_curses_define_const(COLOR_BLUE);
     /*
      * Document-const: COLOR_MAGENTA
      *
-     * Integer of the color magenta
+     * Value of the color magenta
      */
     rb_curses_define_const(COLOR_MAGENTA);
     /*
      * Document-const: COLOR_CYAN
      *
-     * Integer of the color cyan
+     * Value of the color cyan
      */
     rb_curses_define_const(COLOR_CYAN);
     /*
      * Document-const: COLOR_WHITE
      *
-     * Integer of the color white
+     * Value of the color white
      */
     rb_curses_define_const(COLOR_WHITE);
 #endif /* USE_COLOR */

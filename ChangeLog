@@ -1,3 +1,8 @@
+Wed May 25 11:54:31 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/curses/curses.c:  Remove color constants block.
+	  [Ruby 1.9 - Bug #4748]
+
 Wed May 25 09:56:45 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/curses/curses.c:  Add missing documentation for button state, MIN
