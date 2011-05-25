@@ -1567,23 +1567,24 @@ class CSV
     @io       = data.is_a?(String) ? StringIO.new(data) : data
     # honor the IO encoding if we can, otherwise default to ASCII-8BIT
     @encoding = raw_encoding(nil) ||
-                (if encoding = options.delete(:internal_encoding)
-                   case encoding
-                   when Encoding; encoding
-                   else Encoding.find(encoding)
-                   end
-                 end) ||
-                (case encoding = options.delete(:encoding)
-                 when Encoding; encoding
-                 when /\A[^:]+/; Encoding.find($&)
-                 end) ||
+                ( if encoding = options.delete(:internal_encoding)
+                    case encoding
+                    when Encoding; encoding
+                    else Encoding.find(encoding)
+                    end
+                  end ) ||
+                ( case encoding = options.delete(:encoding)
+                  when Encoding; encoding
+                  when /\A[^:]+/; Encoding.find($&)
+                  end ) ||
                 Encoding.default_internal || Encoding.default_external
     #
     # prepare for building safe regular expressions in the target encoding,
     # if we can transcode the needed characters
     #
     @re_esc   =   "\\".encode(@encoding) rescue ""
-    @re_chars =   /#{%"[-][\\.^$?*+{}()|# \r\n\t\f\v]".encode(@encoding, fallback: proc{""})}/
+    @re_chars =   /#{%"[-][\\.^$?*+{}()|# \r\n\t\f\v]".encode(@encoding)}/
+    # @re_chars =   /#{%"[-][\\.^$?*+{}()|# \r\n\t\f\v]".encode(@encoding, fallback: proc{""})}/
 
     init_separators(options)
     init_parsers(options)
@@ -1884,7 +1885,10 @@ class CSV
           if part[-1] == @quote_char && part.count(@quote_char) % 2 != 0
             # extended column ends
             csv.last << part[0..-2]
-            raise MalformedCSVError if csv.last =~ @parsers[:stray_quote]
+            if csv.last =~ @parsers[:stray_quote]
+              raise MalformedCSVError,
+                    "Missing or stray quote in line #{lineno + 1}"
+            end
             csv.last.gsub!(@quote_char * 2, @quote_char)
             in_extended_col = false
           else
@@ -1901,7 +1905,10 @@ class CSV
           else
             # regular quoted column
             csv << part[1..-2]
-            raise MalformedCSVError if csv.last =~ @parsers[:stray_quote]
+            if csv.last =~ @parsers[:stray_quote]
+              raise MalformedCSVError,
+                    "Missing or stray quote in line #{lineno + 1}"
+            end
             csv.last.gsub!(@quote_char * 2, @quote_char)
           end
         elsif part =~ @parsers[:quote_or_nl]
@@ -1910,7 +1917,7 @@ class CSV
             raise MalformedCSVError, "Unquoted fields do not allow " +
                                      "\\r or \\n (line #{lineno + 1})."
           else
-            raise MalformedCSVError, "Illegal quoting on line #{lineno + 1}."
+            raise MalformedCSVError, "Illegal quoting in line #{lineno + 1}."
           end
         else
           # Regular ole unquoted field.

@@ -191,7 +191,7 @@ class TestCSV::Parsing < TestCSV
         assert_send([csv.lineno, :<, 4])
       end
     rescue CSV::MalformedCSVError
-      assert_equal("Illegal quoting on line 4.", $!.message)
+      assert_equal("Illegal quoting in line 4.", $!.message)
     end
   end
 

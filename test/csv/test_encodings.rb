@@ -80,15 +80,19 @@ class TestCSV::Encodings < TestCSV
   end
 
   def test_read_with_default_encoding
-    data = "abc"
+    data             = "abc"
     default_external = Encoding.default_external
     each_encoding do |encoding|
       File.open(@temp_csv_path, "wb", encoding: encoding) {|f| f << data}
       begin
-        Encoding.default_external = encoding
+        no_warnings do
+          Encoding.default_external = encoding
+        end
         result = CSV.read(@temp_csv_path)[0][0]
       ensure
-        Encoding.default_external = default_external
+        no_warnings do
+          Encoding.default_external = default_external
+        end
       end
       assert_equal(encoding, result.encoding)
     end
@@ -324,5 +328,12 @@ class TestCSV::Encodings < TestCSV
       next if encoding.dummy?  # skip "dummy" encodings
       yield encoding
     end
+  end
+  
+  def no_warnings
+    old_verbose, $VERBOSE = $VERBOSE, nil
+    yield
+  ensure
+    $VERBOSE = old_verbose
   end
 end
