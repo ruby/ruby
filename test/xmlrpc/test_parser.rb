@@ -65,6 +65,12 @@ module GenericParserTest
      assert_equal(fault.faultCode, 4)
      assert_equal(fault.faultString, "an error message")
   end
+
+  def test_fault_message
+    fault = XMLRPC::FaultException.new(1234, 'an error message')
+    assert_equal('an error message', fault.to_s)
+    assert_equal('#<XMLRPC::FaultException: an error message>', fault.inspect)
+  end
 end
 
 # create test class for each installed parser
