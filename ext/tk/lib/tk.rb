@@ -1294,9 +1294,9 @@ EOS
         begin
           begin
             #TclTkLib.mainloop_abort_on_exception = false
-            #Thread.current[:status].value = TclTkLib.mainloop(true)
             #interp.mainloop_abort_on_exception = true
             #Thread.current[:interp] = interp
+            #Thread.current[:status].value = TclTkLib.mainloop(true)
             Thread.current[:status].value = interp.mainloop(true)
           rescue SystemExit=>e
             Thread.current[:status].value = e
@@ -1308,8 +1308,10 @@ EOS
             INTERP_MUTEX.synchronize{ INTERP_ROOT_CHECK.broadcast }
           end
 
-          #Thread.current[:status].value = TclTkLib.mainloop(false)
-          Thread.current[:status].value = interp.mainloop(false)
+          unless interp.deleted?
+            #Thread.current[:status].value = TclTkLib.mainloop(false)
+            Thread.current[:status].value = interp.mainloop(false)
+          end
 
         ensure
           # interp must be deleted before the thread for interp is dead.

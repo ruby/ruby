@@ -1,3 +1,9 @@
+Fri May 27 08:35:04 2011  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: hang-up at exit before calling Tk.mainloop.
+
+	* ext/tk/lib/tk/extconf.rb: cannot make on MinGW [Ruby 1.9 - Bug #4141].
+
 Thu May 27 00:34:07 2011  James Edward Gray II  <jeg2@ruby-lang.org>
 
     * lib/csv.rb: Enhance each() to support Enumerator.
