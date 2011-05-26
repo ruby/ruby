@@ -1,3 +1,8 @@
+Thu May 26 10:32:11 2011  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	* lib/csv.rb: Documentation improvements from Ysiad Ferreiras.
+	  [Ruby 1.9 - Bug #4785]
+
 Thu May 26 15:42:02 2011  Cezary Baginski <cezary.baginski@gmail.com>
 
 	* lib/xmlrpc/parser.rb (FaultException): fix to_s and inspect

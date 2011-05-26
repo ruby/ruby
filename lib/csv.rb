@@ -27,7 +27,8 @@
 # hopefully this won't be too radically different.
 #
 # We must have met our goals because FasterCSV was renamed to CSV and replaced
-# the original library.
+# the original library as of Ruby 1.9. If you are migrating code from 1.8 or
+# earlier, you may have to change your code to comply with the new interface.
 #
 # == What's Different From the Old CSV?
 #
@@ -2220,7 +2221,7 @@ class CSV
   end
 
   #
-  # This methods is used to turn a finished +row+ into a CSV::Row.  Header rows
+  # This method is used to turn a finished +row+ into a CSV::Row.  Header rows
   # are also dealt with here, either by returning a CSV::Row with identical
   # headers and fields (save that the fields do not go through the converters)
   # or by reading past them to return a field row. Headers are also saved in
@@ -2259,8 +2260,8 @@ class CSV
   end
 
   #
-  # Thiw methods injects an instance variable <tt>unconverted_fields</tt> into
-  # +row+ and an accessor method for it called unconverted_fields().  The
+  # This method injects an instance variable <tt>unconverted_fields</tt> into
+  # +row+ and an accessor method for +row+ called unconverted_fields().  The
   # variable is set to the contents of +fields+.
   #
   def add_unconverted_fields(row, fields)
