@@ -1,3 +1,9 @@
+Thu May 26 15:42:02 2011  Cezary Baginski <cezary.baginski@gmail.com>
+
+	* lib/xmlrpc/parser.rb (FaultException): fix to_s and inspect
+
+	* test/xmlrpc/parser.rb: test for the above
+
 Wed May 25 11:54:31 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/curses/curses.c:  Remove color constants block.
