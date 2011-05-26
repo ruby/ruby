@@ -112,6 +112,14 @@ class TestCSV::Interface < TestCSV
       assert_equal(nil, csv.shift)
     end
   end
+  
+  def test_enumerators_are_supported
+    CSV.open(@path, col_sep: "\t", row_sep: "\r\n") do |csv|
+      enum = csv.each
+      assert_instance_of(Enumerator, enum)
+      assert_equal(@expected.shift, enum.next)
+    end
+  end
 
   ### Test Write Interface ###
 

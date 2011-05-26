@@ -1787,8 +1787,12 @@ class CSV
   # The data source must be open for reading.
   #
   def each
-    while row = shift
-      yield row
+    if block_given?
+      while row = shift
+        yield row
+      end
+    else
+      to_enum
     end
   end
 
