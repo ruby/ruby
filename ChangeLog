@@ -1,3 +1,7 @@
+Fri May 27 08:47:26 2011  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* thread.c (ppoll): typo bug fix.
+
 Fri May 27 08:35:04 2011  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: hang-up at exit before calling Tk.mainloop.
